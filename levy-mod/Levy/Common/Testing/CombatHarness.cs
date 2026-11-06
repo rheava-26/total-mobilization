@@ -810,6 +810,7 @@ namespace Levy.Common.Testing
 		private static void OnProjUpdate(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
 			var h = Enabled ? Instance : null;
+			if (h != null && h._ph == Ph.Scenario && global::Levy.Common.Team.TeamItems.HarnessLocal) { Main.player[0].active = true; Main.player[0].dead = false; } // team scenario: the stand-in blinks inactive during the server's player pass; a projectile that homes on a player must not see that
 			// the stand-in player's own projectiles AND Thorium's heal projectiles (which are not "friendly" but only act when Main.myPlayer == owner); with SPSWAP the soldier window does the same, as single player would
 			bool thor = self.owner == 0 && ((self.ModProjectile != null && (self.ModProjectile.Mod.Name == "ThoriumMod" || self.ModProjectile.Mod.Name == "CalamityMod")) || (_vanProbe && self.type == ProjectileID.VampireHeal));
 			if (h != null && h._ph == Ph.Run && self.owner == 0 && ((h._stage == 1 && (self.friendly || thor)) || (_spSwap && h._stage == 0 && thor)))

@@ -19,7 +19,7 @@ namespace Levy.Common.Progression
 		[ReloadRequired] [DefaultValue(false)] public bool LifeCrystalRecipe;
 		[ReloadRequired] [DefaultValue(false)] public bool LifeFruitRecipe;
 		[ReloadRequired] [DefaultValue(false)] public bool FallenStarRecipe;
-		[ReloadRequired] [DefaultValue(false)] public bool GemsToManaCrystalRecipe;
+		[ReloadRequired] [Range(1, 5)] [DefaultValue(5)] public int FallenStarsPerManaCrystal;
 		[ReloadRequired] [Range(1, 5)] [DefaultValue(5)] public int ChlorophyteOrePerBar;
 		[ReloadRequired] [DefaultValue(false)] public bool ChlorophyteOreRecipe;
 		[ReloadRequired] [Range(1, 10)] [DefaultValue(1)] public int AmmoRecipeYieldMultiplier;

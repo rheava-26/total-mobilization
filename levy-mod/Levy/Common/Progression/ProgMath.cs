@@ -18,7 +18,8 @@ namespace Levy.Common.Progression
 		public const int LifeFruitBars = 3;
 		public const int LifeFruitSpores = 5;
 		public const int FallenStarBars = 3;
-		public const int ManaCrystalGems = 8;
+		/// <summary>Fallen Stars one Mana Crystal costs in vanilla; the progression option can only lower it.</summary>
+		public const int ManaCrystalStarsVanilla = 5;
 		public const int ChlorophyteOreMud = 2;
 		public const int ChlorophyteOreSpores = 2;
 
@@ -63,6 +64,9 @@ namespace Levy.Common.Progression
 			var r = ScaleDrop(num, den, 1, 1, factor);
 			return (r.num, r.den);
 		}
+
+		/// <summary>Fallen Stars a Mana Crystal recipe costs under the option: the recipe's own cost, lowered to the option (never raised), at least 1.</summary>
+		public static int ManaCrystalStars(int recipeStars, int option) => Math.Max(1, Math.Min(recipeStars, option));
 
 		/// <summary>An ingredient count after a percent cost: never below 1.</summary>
 		public static int ScaleCost(int count, int percent)

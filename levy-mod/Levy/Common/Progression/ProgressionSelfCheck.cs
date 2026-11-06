@@ -71,6 +71,11 @@ namespace Levy.Common.Progression
 			Check("bonus 0 is exactly crafts x yield", ProgMath.BatchYield(3, 25, 0, 2) == 75);
 			Check("affordable crafts limited by scarcest ingredient", ProgMath.AffordableCrafts(new[] { 2, 1 }, new[] { 9, 50 }, 10) == 4);
 			Check("affordable crafts capped by wanted", ProgMath.AffordableCrafts(new[] { 1 }, new[] { 500 }, 10) == 10);
+			Check("mana crystal cost: option 2 on a 5-star recipe = 2", ProgMath.ManaCrystalStars(5, 2) == 2);
+			Check("mana crystal cost: option 5 leaves vanilla 5", ProgMath.ManaCrystalStars(5, 5) == 5);
+			Check("mana crystal cost: never raised above another mod's cheaper recipe", ProgMath.ManaCrystalStars(3, 5) == 3 && ProgMath.ManaCrystalStars(3, 4) == 3);
+			Check("10 stars at option 2 craft 5 mana crystals", ProgMath.AffordableCrafts(new[] { ProgMath.ManaCrystalStars(5, 2) }, new[] { 10 }, 99) == 5);
+			Check("10 stars at vanilla craft 2 mana crystals", ProgMath.AffordableCrafts(new[] { ProgMath.ManaCrystalStars(5, 5) }, new[] { 10 }, 99) == 2);
 			Check("bulk ammo price 100% = item value", ProgMath.BulkAmmoPrice(50, 100) == 50);
 			Check("bulk ammo price 150% of 50 = 75", ProgMath.BulkAmmoPrice(50, 150) == 75);
 		}
@@ -81,12 +86,20 @@ namespace Levy.Common.Progression
 			Check("life crystal recipe iff option", (RecipesMaking(ItemID.LifeCrystal, Mod) > 0) == c.LifeCrystalRecipe);
 			Check("life fruit recipe iff option", (RecipesMaking(ItemID.LifeFruit, Mod) > 0) == c.LifeFruitRecipe);
 			Check("fallen star recipe iff option", (RecipesMaking(ItemID.FallenStar, Mod) > 0) == c.FallenStarRecipe);
-			Check("mana crystal recipe iff option", (RecipesMaking(ItemID.ManaCrystal, Mod) > 0) == c.GemsToManaCrystalRecipe);
+			Check("no Levy-added mana crystal recipe (the option edits the vanilla one)", RecipesMaking(ItemID.ManaCrystal, Mod) == 0);
 			Check("chlorophyte ore recipe iff option", (RecipesMaking(ItemID.ChlorophyteOre, Mod) > 0) == c.ChlorophyteOreRecipe);
 
-			int gemRecipe = 0;
-			for (int r = 0; r < Recipe.numRecipes; r++) { var x = Main.recipe[r]; if (x.Mod == Mod && x.createItem.type == ItemID.ManaCrystal && x.requiredItem.Any(i => i.stack == ProgConst.ManaCrystalGems)) gemRecipe++; }
-			Check("gems recipe uses the any-gem group", !c.GemsToManaCrystalRecipe || gemRecipe == 1);
+			// Mana Crystal: Fallen Stars per crystal. Expected is the pre-Levy cost (another mod may already have changed it) capped by the option.
+			var crystals = Enumerable.Range(0, Recipe.numRecipes).Select(r => Main.recipe[r]).Where(x => x != null && x.Mod != Mod && !x.Disabled && x.createItem.type == ItemID.ManaCrystal && x.requiredItem.Any(i => i.type == ItemID.FallenStar)).ToList();
+			Check("mana crystal star recipe found", crystals.Count > 0, crystals.Count.ToString());
+			bool CrystalStarsOk(Recipe m)
+			{
+				int idx = m.requiredItem.FindIndex(i => i.type == ItemID.FallenStar);
+				int baseStars = ProgressionRecipes.Snapshot.TryGetValue(m, out var sn) ? sn.ing[idx] : m.requiredItem[idx].stack;
+				return m.requiredItem[idx].stack == ProgMath.ManaCrystalStars(baseStars, c.FallenStarsPerManaCrystal);
+			}
+			Check("mana crystal costs the option's Fallen Stars (default 5 = vanilla)", crystals.All(CrystalStarsOk), $"option {c.FallenStarsPerManaCrystal}");
+			Check("edited mana crystal recipe count matches", ProgressionRecipes.EditedManaCrystalRecipes == (c.FallenStarsPerManaCrystal < ProgConst.ManaCrystalStarsVanilla ? crystals.Count : 0), ProgressionRecipes.EditedManaCrystalRecipes.ToString());
 
 			// Chlorophyte bar cost: every bar recipe matches the option (vanilla = 5).
 			var bars = Enumerable.Range(0, Recipe.numRecipes).Select(r => Main.recipe[r]).Where(x => x != null && x.Mod != Mod && x.createItem.type == ItemID.ChlorophyteBar).ToList();
@@ -122,6 +135,8 @@ namespace Levy.Common.Progression
 					for (int i = 0; i < expectIng.Length; i++) expectIng[i] = ProgMath.ScaleCost(expectIng[i], pct);
 					if (Array.IndexOf(ProgConst.ProtectedArmor, res.type) >= 0 && !rec.requiredItem.Select(i => i.stack).SequenceEqual(kv.Value.ing)) protectedBad++;
 				}
+				if (res.type == ItemID.ManaCrystal)
+					for (int i = 0; i < expectIng.Length; i++) if (rec.requiredItem[i].type == ItemID.FallenStar) expectIng[i] = ProgMath.ManaCrystalStars(expectIng[i], c.FallenStarsPerManaCrystal);
 				if (isBar && c.ChlorophyteOrePerBar < 5)
 					for (int i = 0; i < expectIng.Length; i++) if (rec.requiredItem[i].type == ItemID.ChlorophyteOre) expectIng[i] = Math.Min(expectIng[i], c.ChlorophyteOrePerBar);
 				bool ingOk = rec.requiredItem.Select(i => i.stack).SequenceEqual(expectIng);
@@ -134,9 +149,9 @@ namespace Levy.Common.Progression
 			Check("armor recipes match options", armorBad == 0 && armorOk > 0, $"ok={armorOk} bad={armorBad}");
 			Check("Spectre, Shroomite and Spooky recipes never change", protectedBad == 0);
 			Check("untouched recipes identical to vanilla", otherBad == 0, $"{other} recipes");
-			bool allDefault = c.AmmoRecipeYieldMultiplier == 1 && c.ChlorophyteOrePerBar == 5 && c.ChlorophyteArmorCostPercent == 100 && c.HallowedArmorCostPercent == 100 && c.SpiderArmorCostPercent == 100 && c.LevyArmorCostPercent == 100;
-			if (allDefault) Check("defaults: zero vanilla recipes edited", ProgressionRecipes.EditedAmmoRecipes + ProgressionRecipes.EditedArmorRecipes + ProgressionRecipes.EditedBarRecipes == 0);
-			else Mod.Logger.Info($"[ProgCheck] INFO edited recipes: bar={ProgressionRecipes.EditedBarRecipes} ammo={ProgressionRecipes.EditedAmmoRecipes} armor={ProgressionRecipes.EditedArmorRecipes}");
+			bool allDefault = c.FallenStarsPerManaCrystal == ProgConst.ManaCrystalStarsVanilla && c.AmmoRecipeYieldMultiplier == 1 && c.ChlorophyteOrePerBar == 5 && c.ChlorophyteArmorCostPercent == 100 && c.HallowedArmorCostPercent == 100 && c.SpiderArmorCostPercent == 100 && c.LevyArmorCostPercent == 100;
+			if (allDefault) Check("defaults: zero vanilla recipes edited", ProgressionRecipes.EditedAmmoRecipes + ProgressionRecipes.EditedArmorRecipes + ProgressionRecipes.EditedBarRecipes + ProgressionRecipes.EditedManaCrystalRecipes == 0);
+			else Mod.Logger.Info($"[ProgCheck] INFO edited recipes: bar={ProgressionRecipes.EditedBarRecipes} mana={ProgressionRecipes.EditedManaCrystalRecipes} ammo={ProgressionRecipes.EditedAmmoRecipes} armor={ProgressionRecipes.EditedArmorRecipes}");
 		}
 
 		// ---- shimmer -----------------------------------------------------------------------------------------------
@@ -197,7 +212,7 @@ namespace Levy.Common.Progression
 			}
 			foreach (var h in new[] { "Note", "DropRates", "Chlorophyte", "Items", "ArmorCosts", "ArmsDealer"})
 				if (!Language.Exists("Mods.Levy.Configs.LevyProgressionConfig.Headers." + h)) missing.Add("Headers." + h);
-			foreach (var k in new[] { "Mods.Levy.Progression.GemGroup", "Mods.Levy.Progression.PlanteraRepeat" })
+			foreach (var k in new[] { "Mods.Levy.Progression.PlanteraRepeat" })
 				if (!Language.Exists(k)) missing.Add(k);
 			Check("every progression string has text", missing.Count == 0, string.Join(", ", missing));
 		}

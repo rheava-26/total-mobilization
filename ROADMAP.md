@@ -564,11 +564,112 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - **SHIPPED in Levy 2.0.2.**
 - The staff was the Stormjaw Staff (Eve's "Stormlion").
 
+## 🧰 Eve's medium list (2026-11-06, Calamity run on 2.0.2): 3 builders
+- **`armory-alloc` builder:**
+  1. The armory rejects hooks on shift-click; consumable throwables (Molotov etc.) are unusable.
+  2. Mana-star option → "Fallen Stars per Mana Crystal" (vanilla 5); the nonexistent "levy mana star" item is removed.
+  5. Sidearms rarely used; class-less levies should spread across melee/ranged/magic (not summon/rogue).
+  8. High-mana levies prefer magic.
+  - **armory-alloc DONE (9e22636), held for one fix:**
+    - Shift-click intake (ArmoryIntakePlayer, new) + a wider Deposit junk.
+    - Molotov classified (aiStyle 68). The allocator offers thrown stacks (it skipped maxStack>1 before).
+    - FillEmptySidearm runs on upgrade ticks.
+    - D'Hondt spread for class-less levies (no summon/rogue; Rules still win).
+    - MagicManaBias 1→4 between mana 40 and 200.
+    - ProgCheck 54/54.
+  - **Held:** it ADDED a progression FallenStarsPerManaCrystal but left the main-config "per levy mana crystal" one (the one Eve meant). Sent back to merge them into ONE crafting-cost setting the armory conversion also reads.
+  - **Open for Eve:** sidearms are fallback-only (switch on no ammo/mana). Should levies switch to the sidearm at close range? The gems→mana-crystal recipe is dropped.
+- **`field-ai-3` builder:**
+  3. Levies don't use hooks in real play. Candidate: no hook equipped because of (1); proving it.
+  9. Dodging "laughably bad" in real play. The old harness used stand-ins; re-testing vs real vanilla + Calamity bosses.
+  6. Fall damage default OFF; the Gravitation Potion catch-up teleport lands mid-air and kills them → safe-ground teleport + brief fall immunity.
+- **`guide-ui` builder:**
+  4/7. A paged in-game guide book (Thorium-guide style) opened by the starter guide: getting levies, orders, every Armory tab, WHAT LEVIES CAN USE, officers, potions/cameras, OOA, guides, settings. Plus a hint on the Items storage.
+  - **MERGED guide-ui (68b4144):**
+    - The Field Manual opens a 30-page book (720×470; contents left, page right, prev/next, Esc/arrows); new characters start with one.
+    - Thorium turned out to have no guide UI, so the book follows Levy's panel style.
+    - GuideCheck: 30 pages OK. A UI build failure only logs (TryActivateGuide). I read the construction order.
+    - UNSEEN in a real client.
+    - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
+
+## 💬 Eve's design talk (2026-11-06): class roles, gearing, count curve, bottlenecks, Calamity Rev
+- **Class AI roles:** NOT reworking yet. Eve wants hooks/double jump/Hermes in and tested first.
+  - My view: Terraria bosses ignore aggro and pass through, so "melee tank" can't work. Melee's real role is close-range burst plus beam weapons.
+  - Summoners: mid-range minions, whip only when an enemy is close.
+  - Standing still + walking off platform edges → sent to field-ai-3 as metrics.
+- **Gearing:** Eve wants new gear to go to the WORST-equipped levies ("raise the floor"), while the best weapon still goes to the best-suited class. Branch `gear-audit`: a structured progression audit (junk → ore → Ninja → Shadow → … → Chlorophyte), a fishy-list, worst-first fix if needed.
+- **Count curve:** Eve leans 10→25→40→60 (pre-HM has 7 bosses; HM ~10). Holding until boss-trials' count-curve experiment (4/6/8/10/12/15/20/30, identical loadouts) shows whether the CP boss-HP scaling cancels extra levies.
+- **Bottlenecks: DONE, sourced → levy-mod/Levy/docs/BOTTLENECKS.md** (the first pass from memory was discarded; the wiki was fetched via curl).
+  - Hallowed: 54 bars/set, 15–30/mech kill → ~48 kills for 20 sets.
+  - Spectre: 27 Ecto/set ≈ 234 dungeon kills.
+  - Lunar: ~36 ML kills for 20 sets.
+  - Shroomite: 810 mushrooms/set.
+  - Chlorophyte growth is capped by local density.
+  - Turtle Shell 1/12.
+  - Ore armor: Copper 6 → Platinum 20 def; only Platinum/Molten are worth it.
+  - **Already covered** by progression config: Ecto/Soul/Mob drop multipliers, Chlorophyte growth/chunk/ore-per-bar/recipe, Hallowed/Chlorophyte/Spider armor cost %.
+  - **GAPS** (proposed toggles, awaiting Eve): mech-boss Hallowed Bar drop multiplier, Dungeon Spirit spawn rate, Turtle Shell/Beetle Husk, Luminite/fragment multipliers, Shroomite mushroom cost, Chlorophyte density cap, Ninja armor drop rate, a Militia Kit bulk recipe for low ores.
+- **Calamity Revengeance:** branch `calrev`:
+  - Do levies get Rage/Adrenaline? Make them work if not (auto-activate when full in boss fights).
+  - Expert vs Rev on KS/EoC/BoC with the same loadouts.
+  - Propose a Calamity balance patch backed by the data.
+
+## 📈 Early-game levy count + mobility (Eve, 2026-11-06)
+- **Count:**
+  - Eve: 4 levies at start is too few; early items sit unused. Militia at ~12 feels right. "Maybe even fewer with more mods."
+  - Code: the start = CommandPointsBase (4), regardless of mods. More modded pre-HM bosses → smaller increment per boss (to be MEASURED).
+  - Branch `levy-count`: measures milestones for vanilla/Calamity/Thorium, adds config LeviesAtStart (default 10, my proposal), and switches to position-based pre-HM progress only if the data shows dilution.
+  - The 20/40/60 end points stay.
+- **Mobility:** Eve's failure mode = the boss targets the PLAYER and dashes through the levies, who never react.
+  - Wants hook-up, double jump, platform drop, dashes, boots, and no walking into lava.
+  - Test matrix sent to field-ai-3: arenas (platforms/flat/natural/mixed) × vanilla + Calamity pre-HM bosses × on-tier weapons × gear (none/hook/bottle/Hermes/dash/all), measuring survival, deaths/min, damage, and hit source.
+- Fall damage: OFF by default everywhere, presets included ("they don't know what that is").
+
 ## 🤝 Teammate items for levies (Eve, 2026-11-06): branch `teamitems`
 - "Find ALL the items that apply to teammates and patch those in" (e.g. Trinket of Chi).
 - Phase 1: an exhaustive survey of vanilla, Calamity (source) and Thorium (IL) for ally-affecting effects → levy-mod/Levy/docs/TEAM_ITEMS.md.
 - Phase 2: patch both directions (the player's team items → levies; levies' team items → player + other levies).
 - A container restart killed the first builder. Its WIP survived on disk and is saved as teamitems 21f816d (Common/Team/*, unverified). The builder was resumed from it.
+- **MERGED teamitems (7a7c8ef):** survey at levy-mod/Levy/docs/TEAM_ITEMS.md.
+  - Patched both ways: vanilla Paladin/Frozen/Hero shields, Spectre heal, Nebula boosters, info accessories.
+  - Calamity: 11, incl. **Trinket of Chi**, Affliction, Rampart, Absorber/jellies, Mycoroot (one-way).
+  - Thorium: 23 aura/bard/scythe effects.
+  - 17 not patched, with reasons.
+  - Harness team 25/0 on both toolchains. MP packet paths untested live.
+
+## 📦 SHIPPED Levy 2.0.5, at scratchpad/ship-2.0.5
+- **levy-count 0aa3e42:** LeviesAtStart (default 10; presets 10/14/6), setup popup row, warnings, guide text.
+- **Measured:** no dilution at the start. Dilution of early growth happens ONLY with Boss Checklist loaded and modded bosses unbeaten (Calamity: 9 vs 12 at Skeletron; Cal+Thorium: 7). Fixed with position-based pre-HM share (max of the old and positional).
+- Boss Checklist is NOT installed in Eve-like saves; that path is unchanged (modded kills only add).
+- New curve: 10/11/12/13/14/15/16/20 at start/KS/EoC/EoW/QB/Skel/Deer/WoF.
+- **Boots:** Thorium+MS+Mech and Calamity, 0 exceptions, all checks OK. Merge conflict in LevySettings.FrozenFields resolved (no FallenStars field, + LeviesAtStart).
+- **Running:** boss-trials (EoC experiment, controls, beam-melee appeal), field-ai-3 (mobility matrix).
+- **Eve's revised trial design (sent to boss-trials + field-ai-3):**
+  - The commander drinks SPECTATOR, so the boss targets the levies; no fake moving player.
+  - Varied rolled stats (pre-Eye ~100–200 HP, mages high mana; post-Eye ~200 HP and plenty of mana).
+  - Batches of 3, then roll new accessories/loadouts/class mix and repeat.
+  - Bosses: King Slime, Eye (pre-boss gear) → Brain of Cthulhu (post-Eye gear).
+  - Campfire + heart lantern (honey optional); Lesser → regular healing potions.
+  - BIG arena with platform rows and clear ground, plus flat and natural variants.
+  - Intent: levies shouldn't be crippled; find what it takes to win.
+
+## 📦 SHIPPED Levy 2.0.4 (Mechanization stays 0.8.1), at scratchpad/ship-2.0.4
+- Contents: guide-ui (30-page Field Manual book), teamitems (35 team effects patched both ways), armory-alloc (shift-click intake, thrown stacks/Molotov, sidearm fill, class-less spread, mana→magic, ONE "Fallen Stars per Mana Crystal" setting).
+- **Boots:**
+  - Thorium+MS+Levy+Mech: 0 exceptions; ProgCheck 54/0, intake 100, team 19, minions 31/31.
+  - Calamity+Levy+Mech (2026.10): 0 exceptions; team 26, minions 82/82, Guide 363/0.
+- Client UI (guide book, shift-click) code-reviewed by me; unseen live.
+- Still running: field-ai-3 (mobility matrix), levy-count.
+
+## 🚑 SHIPPED HOTFIX Levy 2.0.3 + Mechanization 0.8.1, at scratchpad/ship-2.0.3
+- **CRASH ON LOAD in 2.0.1/2.0.2 (Eve's client log):**
+  - What happened: NullReferenceException in ItemFilterBar.Refresh. UISearchBar.SetContents in the ctor fires OnContentsChanged → Refresh before _typeBtn/_clearBtn exist.
+  - Fix: SetContents moved after the buttons, plus a null guard in Refresh.
+- **LESSON:** headless server boots NEVER construct UI (UISystem skips on dedServ), so UI ctor bugs ship. Every UI change needs a read-through of construction order. A real client can't run here (no vanilla Content assets).
+- **Drone green line:**
+  - What happened: the status LED drawn with TextureAssets.MagicPixel (1×1000) and no source rect → a 2×2000 px line.
+  - Same bug fixed in TurretNPC muzzle flash, TurretNPC line helper and TurretHud dots: source Rectangle(0,0,1,1).
+- **Boots:** Thorium+MS+Levy 2.0.3 0 exceptions; Thorium+MS+Levy+Mech 0.8.1 0 exceptions.
 
 ## 📦 SHIPPED Levy 2.0.2 (Mechanization 0.8.0), at scratchpad/ship-2.0.2
 - Real modded minions (modsummons) + the flood guard; Calamity recipe-check fix (calrecipes).

@@ -9,24 +9,16 @@ using Terraria.ModLoader;
 namespace Levy.Common.Progression
 {
 	/// <summary>
-	/// Recipe side of progression assistance: new recipes (Life Crystal, Life Fruit, Fallen Star, Gems to Mana Crystal, Chlorophyte Ore),
-	/// edits to vanilla recipes (Chlorophyte Bar cost, ammo yield, armor cost) and the "Any Gem" group. With every option at its default nothing is added or edited.
+	/// Recipe side of progression assistance: new recipes (Life Crystal, Life Fruit, Fallen Star, Chlorophyte Ore),
+	/// edits to vanilla recipes (Chlorophyte Bar cost, Mana Crystal star cost, ammo yield, armor cost). With every option at its default nothing is added or edited.
 	/// </summary>
 	public class ProgressionRecipes : ModSystem
 	{
-		public const string AnyGemGroup = "Levy:AnyGem";
-		public static readonly int[] Gems = { ItemID.Amethyst, ItemID.Topaz, ItemID.Sapphire, ItemID.Emerald, ItemID.Ruby, ItemID.Diamond };
-
 		/// <summary>Edits applied to vanilla recipes (for the log / self-check).</summary>
-		public static int EditedBarRecipes, EditedAmmoRecipes, EditedArmorRecipes;
+		public static int EditedBarRecipes, EditedAmmoRecipes, EditedArmorRecipes, EditedManaCrystalRecipes;
 
 		/// <summary>Every non-Levy recipe as it was when this mod's PostAddRecipes ran, before Levy's edits: the recipe object (its index changes when other mods reorder recipes later) to (result stack, ingredient stacks).</summary>
 		public static readonly Dictionary<Recipe, (int result, int[] ing)> Snapshot = new(ReferenceEqualityComparer.Instance);
-
-		public override void AddRecipeGroups()
-		{
-			RecipeGroup.RegisterGroup(AnyGemGroup, new RecipeGroup(() => Language.GetTextValue("LegacyMisc.37") + " " + Language.GetTextValue("Mods.Levy.Progression.GemGroup"), Gems));
-		}
 
 		public override void AddRecipes()
 		{
@@ -53,11 +45,6 @@ namespace Levy.Common.Progression
 					.AddTile(TileID.Anvils)
 					.AddCondition(Condition.DownedEowOrBoc).Register();
 
-			if (c.GemsToManaCrystalRecipe)
-				Recipe.Create(ItemID.ManaCrystal)
-					.AddRecipeGroup(AnyGemGroup, ProgConst.ManaCrystalGems)
-					.AddTile(TileID.AlchemyTable).Register();
-
 			if (c.ChlorophyteOreRecipe)
 				Recipe.Create(ItemID.ChlorophyteOre)
 					.AddIngredient(ItemID.MudBlock, ProgConst.ChlorophyteOreMud)
@@ -69,7 +56,7 @@ namespace Levy.Common.Progression
 		public override void PostAddRecipes()
 		{
 			var c = LevyProgressionConfig.Get;
-			EditedBarRecipes = EditedAmmoRecipes = EditedArmorRecipes = 0;
+			EditedBarRecipes = EditedAmmoRecipes = EditedArmorRecipes = EditedManaCrystalRecipes = 0;
 			Snapshot.Clear();
 			for (int r = 0; r < Recipe.numRecipes; r++)
 			{
@@ -91,6 +78,13 @@ namespace Levy.Common.Progression
 				{
 					ore.stack = Math.Min(ore.stack, c.ChlorophyteOrePerBar);
 					EditedBarRecipes++;
+				}
+
+				// Mana Crystal: Fallen Stars per crystal (the option can only lower the vanilla cost).
+				if (result.type == ItemID.ManaCrystal && c.FallenStarsPerManaCrystal < ProgConst.ManaCrystalStarsVanilla && recipe.TryGetIngredient(ItemID.FallenStar, out Item stars))
+				{
+					stars.stack = ProgMath.ManaCrystalStars(stars.stack, c.FallenStarsPerManaCrystal);
+					EditedManaCrystalRecipes++;
 				}
 
 				// Ammo yield.

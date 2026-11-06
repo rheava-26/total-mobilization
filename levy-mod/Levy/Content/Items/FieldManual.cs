@@ -6,7 +6,7 @@ using Levy.Common.UI;
 
 namespace Levy.Content.Items
 {
-	/// <summary>A readable field manual: how to raise a militia and an army. Using it opens the guide as a scrollable panel. Pure client-side; no state, no packets.</summary>
+	/// <summary>The starter guide: every new character begins with one (<see cref="Levy.Common.UI.GuidePlayer"/>) and it can be crafted from wood. Using it opens the paged Field Manual (<see cref="GuidePanel"/>); it is never consumed and grants no unlock, so it reopens any time. Pure client-side; no state, no packets.</summary>
 	public class FieldManual : ModItem
 	{
 		public override void SetDefaults()

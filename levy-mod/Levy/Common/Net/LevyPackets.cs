@@ -62,6 +62,7 @@ namespace Levy.Common.Net
 	///  CompanionEffect: byte kind, then a payload the companion defines                    (Compat) — to one client; Levy only routes it to the handler the companion registered
 	///  ObserveList: int count, then per camera: int id, short tileX, short tileY, string label   (Observe)
 	///  ObservePos: byte kind(1 camera,2 levy,3 mind), int id, float x, float y   (Observe) — the watched target's world position, every 6 ticks
+	///  TeamEffect / TeamRequest: byte kind, then a payload   (Team, see TeamNet) — server -> one client: a team-item effect on the player; client -> server: a team-item reaction the player's own client owns
 	/// </summary>
 	public enum LevyPacket : byte
 	{
@@ -84,6 +85,7 @@ namespace Levy.Common.Net
 		LogisticsSnapshot, // server -> client: the whole order book (OrderBook.WriteBook)
 		ObserveList, ObservePos, // server -> one client: Command & Observe (camera list, followed-levy position)
 		LogisticsCraft, // client -> server: craft one recipe now from the sender's inventory, nearby chests and the armory stock (see LogisticsActions)
+		TeamEffect, TeamRequest, // server -> one client / client -> server: team items (Common/Team, see TeamNet); appended so no existing value moves
 	}
 
 	public static class LevyPackets

@@ -1,0 +1,367 @@
+# The in-game Field Manual: a paged book opened by the Field Manual item. Keys are relative to Mods.Levy.Guide.
+# Every page is Pages.<Name>.Title and Pages.<Name>.Body. A body is 3 to 6 lines, one short declarative sentence per line.
+# The page order lives in Common/UI/GuidePages.cs; GuideCheck logs a [GuideCheck] line for every page at boot.
+
+Title: Field Manual
+Contents: Contents
+Previous: Previous
+Next: Next
+PageOf: Page {0} of {1}
+CloseHint: Close the manual. Esc also closes it.
+PreviousHint: The previous page. The Left arrow key does the same.
+NextHint: The next page. The Right arrow key does the same.
+# Hover text for an empty slot in the Armory's storage grid.
+StorageHint: Storage holds anything. Levies use weapons, armor, accessories, grappling hooks, ammo, potions and throwables.
+DepositJunkHint: Moves every weapon, armor piece, accessory and ammo stack that is not favorited from your pack into storage.
+
+Pages: {
+	Welcome: {
+		Title: How to use this book
+		Body:
+			'''
+			This manual teaches how to raise, arm and command levies.
+			Pick a page from the contents on the left, or use Previous and Next.
+			The Left and Right arrow keys turn pages. Esc closes the book.
+			Use the Field Manual again to reopen it. It is never used up.
+			'''
+	}
+
+	Barracks: {
+		Title: Barracks and Regulars
+		Body:
+			'''
+			Craft a Barracks at a Work Bench and place it in your town.
+			Town NPCs whose homes are within 120 tiles belong to it.
+			Right-click the Barracks to enlist Regulars: named levies who follow you and fight beside you.
+			Regulars live at the Barracks. A fallen Regular returns on their own after a short time.
+			Build an Armory within 120 tiles so they can arm themselves.
+			'''
+	}
+
+	Wages: {
+		Title: Wages and command points
+		Body:
+			'''
+			Command points limit how many Regulars you can field. You start with 4, and each boss you beat adds more.
+			A Levy costs 1 point, a Man-at-Arms 3 and a Champion 7. Man-at-Arms unlocks after any mechanical boss and Champion after Golem.
+			A Regular costs a muster fee up front and a wage at dawn. Both are paid from the Barracks treasury, so deposit coins there.
+			Regulars who go unpaid for days begin to desert.
+			Reserve takes a Regular off active duty: no body in the field, no wage and no command points.
+			'''
+	}
+
+	Militia: {
+		Title: Militia
+		Body:
+			'''
+			Hold the War Horn and left-click to call up your town's militia. Left-click again to stand them down.
+			Militia arm from the Armory and fight at the settlement. A settlement needs at least two town NPCs to raise them.
+			Each town NPC adds 9 manpower. Every militiaman who falls uses 1, and manpower refills at dawn.
+			Calling them up costs a small fee per head from the treasury.
+			A Recruiting drive at the Barracks restores manpower for coins.
+			'''
+	}
+
+	Orders: {
+		Title: The orders radial
+		Body:
+			'''
+			Right-click the War Horn to open the orders radial. Pick an order and your Regulars carry it out.
+			The Command Radio opens the same radial when you click it.
+			With the War Horn, orders reach Regulars within 40 tiles. Carry a Command Radio anywhere in your pack and every order reaches every Regular, wherever they are.
+			Keys: Y follow, U hold, I return, O hold fire, P mobilize, K rally and N army overview.
+			Rebind them under Settings, Controls.
+			'''
+	}
+
+	OrdersList: {
+		Title: What each order does
+		Body:
+			'''
+			Follow me and Hold here move the line. Return to barracks sends Regulars home.
+			Hold fire stops all shooting. Fire at will turns it back on.
+			Spread out keeps wide gaps against area attacks. Close up packs the line tight around you.
+			Search & destroy hunts outward from the settlement. Free rein lets Regulars roam the whole region and follow the fighting.
+			Focus attack: click an enemy, a critter or a spot, and the squad attacks it until it is clear.
+			Rally steadies every Regular within 30 tiles, once a minute.
+			'''
+	}
+
+	BarracksOrders: {
+		Title: Orders from the Barracks
+		Body:
+			'''
+			The Barracks panel gives orders to all Regulars at once or to one at a time.
+			All Regulars has Follow, Hold and Return. Mobilize and Stand down call or send home the militia.
+			Each Regular's row has Kit, Promote, Demote, Reserve and More. More holds patrol, feeding and rebasing.
+			Patrol walks a Regular between the two nearest Patrol Banners. Place the banners within 60 tiles of the Barracks.
+			Send to map point marches every Regular to a spot on the map.
+			'''
+	}
+
+	MapOrders: {
+		Title: Map orders
+		Body:
+			'''
+			Map orders send your Regulars to a point on the full map. They march there, fight what is in reach and hold the spot.
+			They need A Guide to Autonomy, studied once in the world.
+			With a Command Radio in your pack, open the full map, hold Shift and click a point.
+			Without a radio, press Send to map point on the Barracks panel and click the map. Esc cancels.
+			'''
+	}
+
+	Armory: {
+		Title: The Armory
+		Body:
+			'''
+			The Armory is a 1000-slot store with issue rows for weapons, armor sets, ammo and potions.
+			Levies of any Barracks within 120 tiles arm themselves from it, best gear first.
+			Right-click it to open it. The tabs along the top are Items, Rules, Vanity and Logistics.
+			Each Logistical Center within 40 tiles adds 250 storage slots.
+			'''
+	}
+
+	ItemsPutIn: {
+		Title: Items tab - putting things in
+		Body:
+			'''
+			Click an item in your pack to pick it up, then click a storage slot to set it down. Shift-click an item in your pack to send the whole stack to storage.
+			Deposit junk moves everything levies can use that is not favorited into storage: weapons, throwables, armor, accessories, hooks, dyes, potions and ammo. Favorite what you want to keep.
+			Loot all takes everything back out. Sort groups storage and packs it to the front.
+			Search, the type button and the rarity swatches narrow what the grid shows.
+			Hover an empty storage slot for a reminder of what levies use.
+			'''
+	}
+
+	ItemsWeapons: {
+		Title: Items tab - weapons and armor
+		Body:
+			'''
+			Levies wield nearly any weapon a player can: swords, spears, guns, bows, magic, whips, boomerangs, yoyos, flails, summon staves, sentries, held weapons and thrown weapons.
+			Weapons in storage or on the weapon rack are issued best first. Put a weapon in the rack to issue it before the rest.
+			Hover a weapon to see its class and rank.
+			Armor goes in storage or the armor set slots. Levies prefer a complete matching set so the set bonus works.
+			'''
+	}
+
+	ItemsGear: {
+		Title: Items tab - accessories, hooks and ammo
+		Body:
+			'''
+			Accessories go in storage. Levies wear the best ones that suit their weapon and they work as they would on you. Wings take a slot.
+			A Levy has 1 accessory slot, a Man-at-Arms 3 and a Champion 5.
+			Grappling hooks go in storage. Each levy carries the best hook, swings across gaps and climbs cliffs with it.
+			Ammo goes in the ammo row or storage. Each levy carries one kind of ammo in a pouch and refills it from the Armory.
+			'''
+	}
+
+	ItemsConsumables: {
+		Title: Items tab - potions, throwables and sidearms
+		Body:
+			'''
+			The first potion slot holds a healing or mana potion. Levies drink it when hurt, and casters sip mana potions when low.
+			The other potion slots hold buff potions for the whole army.
+			Consumable throwables, such as grenades and throwing knives, go in storage. A levy refills a thrown stack from the Armory when it runs low.
+			The last weapon slot is the sidearm. A minion staff or sentry there goes to a levy who is not a summoner.
+			'''
+	}
+
+	Rules: {
+		Title: Rules tab
+		Body:
+			'''
+			The Rules tab decides which weapons the levies draw. Rules apply from the top, and the upper rule wins.
+			Class balance sets how many levies carry each class. A limit gives way before a levy is left unarmed.
+			Category rule prefers, orders, includes or requires a kind of weapon, such as bows.
+			Item list names items that are never used, or the only items used.
+			Hover a weapon in storage to set its rank to Auto, Set, Never use or Prefer.
+			'''
+	}
+
+	Vanity: {
+		Title: Vanity tab
+		Body:
+			'''
+			Vanity sets change how levies look, never what they can do.
+			Press New set to add a row with head, body and legs vanity and a dye for each.
+			A set is worn by all levies, by one class, or by chosen levies.
+			For each slot the most specific row wins: named levies, then a class, then everyone.
+			'''
+	}
+
+	LogisticsCraft: {
+		Title: Logistics tab - orders and crafting
+		Body:
+			'''
+			Orders craft sets and weapons into the Armory on their own.
+			New starts an order. Add the item on your cursor, or + Set for the whole armor set of a piece.
+			Orders craft at stations within 30 tiles. They can buy missing materials from shopkeepers, up to a budget.
+			Pause or delete an order at any time. What it made stays in the Armory.
+			Craft items browses every recipe and crafts now from your pack, nearby chests and the Armory.
+			'''
+	}
+
+	LogisticsTrade: {
+		Title: Logistics tab - buy and sell
+		Body:
+			'''
+			Buy lists what shopkeepers in reach sell. Click an item to buy it.
+			A standing buy gets one item, the best gun or the best ammo each time an order runs, until its count or budget is met.
+			Sell mass-sells Armory items to the best-paying shopkeeper in reach.
+			Pick a kind and a tier and press Select matching, or drag over slots to select a block.
+			Shimmer back returns the materials of items that shimmer apart.
+			'''
+	}
+
+	LogisticsFind: {
+		Title: Logistics tab - find
+		Body:
+			'''
+			Find lists the items in your Armory. Click one to look for it.
+			A Seeker potion makes the chosen item glow in tiles and chests, with an arrow to the nearest.
+			Stop finding clears the choice.
+			'''
+	}
+
+	Reforge: {
+		Title: Reforging
+		Body:
+			'''
+			The Reforge button at the bottom of the Items tab opens the reforge panel beside the Armory.
+			Choose the weapons: those in hand, recent additions, ones you pick by hand, or a whole class and type.
+			Choose what to roll for: a floor from Good to Best, or one named modifier.
+			Each roll costs the standard reforge price from the Barracks treasury.
+			A spending cap stops the run. Items are never lost.
+			'''
+	}
+
+	Heart: {
+		Title: Armory Heart and Magic Storage
+		Body:
+			'''
+			With Magic Storage installed, an Armory Heart joins the nearest Armory to a Magic Storage network.
+			Connect the heart to a Storage Heart with connectors.
+			Orders and buying draw from the network, and overflow goes into it.
+			An Armory near a Storage Heart, Storage Access or Remote Access can issue gear from that network.
+			Armories near a pylon pool their stored gear with each other.
+			'''
+	}
+
+	Officers: {
+		Title: Officers
+		Body:
+			'''
+			Officers are town NPCs conscripted into the army. They leave their post, march with the army and bring a special skill.
+			Press Officers on the Barracks panel to commission townsfolk housed in the settlement.
+			You start with 3 command slots. The Wall of Flesh, a mechanical boss, Plantera, Golem and Moon Lord each add one.
+			A commission costs a fee once and a wage every dawn from the settlement's treasuries and stored coin.
+			An unpaid officer goes off duty until paid. A fallen officer is gone until rehoused.
+			'''
+	}
+
+	OfficersSupport: {
+		Title: Officers - support
+		Body:
+			'''
+			The Nurse heals the most wounded soldier within reach to full, paid from the treasury.
+			The Guide makes soldiers near him aim truer and calls a volley. The Arms Dealer does the same and also stops them spending ammo.
+			The Princess gives nearby soldiers Morale: more damage, defense and crit.
+			The Angler keeps nearby soldiers Well Fed.
+			The Dryad marks enemies so the army hits them harder, and gives nearby soldiers defense and regeneration.
+			'''
+	}
+
+	OfficersUtility: {
+		Title: Officers - utility
+		Body:
+			'''
+			The Merchant adds coin to the treasury for every kill near him, and hands soldiers ammo and potions.
+			The Tax Collector marks enemies and taxes their corpses into the treasury.
+			The Goblin Tinkerer reforges soldiers' weapons on a timer, paid from the treasury.
+			The Painter's paint cuts the defense and damage of enemies it soaks.
+			The Demolitionist lobs grenades and dynamite. The Witch Doctor envenoms hits and calls voodoo spirits.
+			'''
+	}
+
+	OfficersSummoners: {
+		Title: Officers - summoners
+		Body:
+			'''
+			The Pirate Captain conscripts flintlock gunners and a cannon.
+			The Clothier raises skeleton warriors. The Wizard enchants flying swords.
+			The Zoologist marches with wolves and a werewolf.
+			The Cyborg deploys combat drones, and ore and treasure glow around his commander.
+			Fallen followers are replaced on a timer, and their damage grows as bosses fall.
+			'''
+	}
+
+	Potions: {
+		Title: Spectator and Seeker potions
+		Body:
+			'''
+			Spectator lasts 20 minutes. Enemies ignore you, and your weapons, summons and building tools stop working.
+			You stay within 60 tiles of where you drank it. Taking damage ends it.
+			With A Guide to Autonomy, your levies act on their own while you watch: fearless, falling back to heal, and going for the biggest threat.
+			Seeker lasts 12 minutes. Choose one item and tiles and chests that hold it glow, with an arrow to the nearest.
+			'''
+	}
+
+	Cameras: {
+		Title: Cameras
+		Body:
+			'''
+			The GoPro is an accessory. Put one in the Armory or in a Regular's accessory slot, and that Regular can be watched.
+			Use a GoPro to see through the next GoPro levy. Right-click or Esc stops.
+			Place a Static Camera, then right-click it from anywhere in reach to see its view. The mouse wheel zooms out.
+			The Mind Link takes direct control of the levy nearest your cursor. Right-click lets go.
+			'''
+	}
+
+	OldOnesArmy: {
+		Title: Old One's Army staves
+		Body:
+			'''
+			The Levy Rod, Levy Cane and Levy Staff plant a levy sentry at your cursor during the Old One's Army.
+			Each sentry costs 5 Etherian Mana and must be within 40 tiles of you. The Rod calls up 1 levy, the Cane 2 and the Staff 3.
+			The Tavernkeep sells them for Defender Medals: 10, 25 and 50. The Cane is stocked after a mechanical boss and the Staff after Golem.
+			He also sells Barracks Ale, Black Stout and Spiced Rum. Levies within 60 tiles gain defense, damage or attack speed for 5 minutes, and aim worse while drunk.
+			'''
+	}
+
+	EventBooks: {
+		Title: Event guide books
+		Body:
+			'''
+			Five books drop from events at 1 in 50. Each is used up once per world and applies to the whole army.
+			A Guide to Conscription, from the Blood Moon: each town NPC provides 15 manpower.
+			A Guide to Drill, from the Goblin Army: militia aim 25% better. A Guide to Plunder, from pirates: hauled coins are worth 50% more.
+			A Guide to Fortification, from the Old One's Army: soldiers within 60 tiles of a Barracks gain 4 defense.
+			A Guide to Discipline, from the Solar Eclipse: shots are 35% tighter.
+			'''
+	}
+
+	ProgressionGuides: {
+		Title: Progression guide books
+		Body:
+			'''
+			A Guide to Firepower drops from the Wall of Flesh: militia gain 100 health and 80 mana, and every Armory gains 2 buff slots.
+			A Guide to Healthcare gives militia 150 health. A Guide to the Arcane Arts gives them 60 mana. Both are crafted at a Crystal Ball and a Bookcase.
+			A Guide to Expertise drops from the Lunatic Cultist: every soldier gains 1 accessory slot.
+			A Guide to Engineering unlocks combat drones at every Barracks. It needs the Mechanization mod.
+			A Guide to Autonomy drops during Slime Rain and unlocks map orders.
+			'''
+	}
+
+	Settings: {
+		Title: Settings and /levysetup
+		Body:
+			'''
+			A setup popup opens in a new single player world. Type /levysetup, or press Setup on the Barracks panel, to open it again.
+			Pick a preset. Default is the standard army. Relaxed gives more levies and bosses never target them. Hardcore gives fewer levies and bosses you have beaten target them.
+			Customize sets how many levies you have at the start, by the Wall of Flesh, by Moon Lord and by the final boss, and how bosses treat them.
+			New worlds start with 10 levies. Pre-hardmode growth follows how far along you are, so extra modded bosses do not slow it.
+			Skip keeps the current settings. Multiplayer hosts use the mod config.
+			Every other option is under Settings, Mod Configuration, Levy.
+			'''
+	}
+}

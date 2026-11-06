@@ -244,7 +244,7 @@ namespace Levy.Common.Weapons
 			var sample = ProjectileSample(item.shoot);
 			if (sample == null || !sample.friendly || sample.hostile || sample.minion || sample.sentry || sample.minionSlots > 0f) return false;
 			int ai = sample.aiStyle;
-			bool thrownAi = ai == ProjAIStyleID.ThrownProjectile || ai == ProjAIStyleID.Arrow || ai == ProjAIStyleID.Explosive || ai == ProjAIStyleID.GroundProjectile || ai == LevyConstants.ThrownStickAiStyle;
+			bool thrownAi = ai == ProjAIStyleID.ThrownProjectile || ai == ProjAIStyleID.Arrow || ai == ProjAIStyleID.Explosive || ai == ProjAIStyleID.GroundProjectile || ai == LevyConstants.ThrownStickAiStyle || ai == LevyConstants.ThrownMolotovAiStyle;
 			if (!thrownAi) return false;
 			return item.damage > 0 || ai == ProjAIStyleID.Explosive;
 		}

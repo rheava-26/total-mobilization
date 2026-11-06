@@ -154,6 +154,16 @@ namespace Levy.Content.NPCs
 
 		public override void SetBestiary(BestiaryDatabase database, BestiaryEntry bestiaryEntry) { }
 
+		private bool _buffImmunityFixed;
+		/// <summary>
+		/// A levy acts like a town NPC, and Calamity makes every such NPC immune to regular buffs (NPCStats.SetDebuffImmunities), so a potion, a drink or a teammate's aura buff would be refused (NPC.AddBuff returns at
+		/// buffImmune). Good buffs are the point of an ally: once per body, after every mod's SetDefaults has run, he stops resisting any buff that is not a debuff. Debuffs keep whatever immunity the load gave him.
+		/// </summary>
+		private void AllowFriendlyBuffs()
+		{
+			for (int i = 1; i < NPC.buffImmune.Length; i++) if (!Main.debuff[i]) NPC.buffImmune[i] = false;
+		}
+
 		/// <summary>Attach a record to this body (server; clients receive a visual copy via ReceiveExtraAI).</summary>
 		public void Bind(SoldierRecord record)
 		{
@@ -388,6 +398,7 @@ namespace Levy.Content.NPCs
 		{
 			if (Record == null) { if (LevyUtil.IsServerOrSingle) { NPC.active = false; NPC.netUpdate = true; } return; }
 			EnsureDummy();
+			if (!_buffImmunityFixed) { _buffImmunityFixed = true; AllowFriendlyBuffs(); }
 			PinLifeMax(); // before anything reads lifeMax (the dummy's life stats just below, damage, fear): a max another mod raised since last tick is put back first
 			SyncDummyTransform();
 			if (LevyUtil.IsClient)

@@ -49,6 +49,7 @@ namespace Levy.Content.NPCs
 		private bool ComputeUpkeepNeed()
 		{
 			var g = Record?.Gear; if (g == null) return false;
+			if (Common.Team.TeamItems.HoldsStatBuff(NPC)) return true; // a team item's mod buff raises a flag the mod's later hooks read: that needs the frame
 			if (NeedsUpkeep(g.Head) || NeedsUpkeep(g.Body) || NeedsUpkeep(g.Legs)) return true;
 			int slots = Math.Min(Record.AccessorySlots, g.Accessories.Length);
 			for (int i = 0; i < slots; i++) if (NeedsUpkeep(g.Accessories[i])) return true;
@@ -142,7 +143,11 @@ namespace Levy.Content.NPCs
 				try { _buffLifeRegen = ApplyPotionBuffs(d); } catch (Exception e) { _buffLifeRegen = 0; Levy.Instance.Logger.Warn("Levy: potion buffs failed on a soldier: " + e.Message); }
 
 				// Player.Update's tail: the mod hooks that read the finished equip pass. Calamity regenerates rogue stealth in the last.
+				// What the mods' PostUpdateEquips add to lifeRegen (Calamity adds the regeneration of its buffs and gear here, a dummy never runs Player.UpdateLifeRegen) is the levy's regeneration, in the same units as the Campfire's.
+				int regen0 = d.lifeRegen;
 				RunHook(() => PlayerLoader.PostUpdateEquips(d));
+				if (d.lifeRegen > regen0) _buffLifeRegen += d.lifeRegen - regen0;
+				Common.Team.TeamItems.LevyThoriumEquips(this, d, ref _buffLifeRegen); // Thorium's Ring of Unity and life recovery for the dummy
 				// The dummy never runs ItemCheck, so it never "uses" its weapon; mod hooks that key off the first frame of an item use (Calamity spends rogue stealth there) see the soldier's use as it begins.
 				int animSaved = d.itemAnimation, animMaxSaved = d.itemAnimationMax, timeSaved = d.itemTime;
 				Item held = d.inventory[d.selectedItem];

@@ -58,7 +58,7 @@ namespace Levy.Content.TileEntities
 					bool hasW = !IsAir(g.Weapon);
 					if (hasW && (g.Weapon.maxStack > 1 || WeaponClassifier.GetProfile(g.Weapon).Family == WeaponFamily.Thrown)) continue; // thrown stacks are restocked, never swapped
 					if (hasW && !ReferenceEquals(rec, requester) && IsBusy(rec)) continue;
-					var lev = new AllocLevy { Tag = rec, Id = rec.Id, Cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs), Current = hasW ? g.Weapon : null };
+					var lev = new AllocLevy { Tag = rec, Id = rec.Id, Cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs), Current = hasW ? g.Weapon : null, Mana = rec.MaxMana + ArmorDoctrine.GearManaBonus(g.Head, g.Body, g.Legs) + ArmorDoctrine.GearManaBonus(g.Accessories) };
 					if (lev.Cls == null && !classMatch) lev.Flex = ArmorableClasses(rec, hasW);
 					if (classMatch && hasW) lev.ClassLock = WeaponClassifier.ItemDamageClass(g.Weapon);
 					var rule = PrimaryRule(rec);
@@ -67,7 +67,8 @@ namespace Levy.Content.TileEntities
 					var self = rec;
 					lev.Ok = it =>
 					{
-						if (!IsIssuable(it) || it.maxStack > 1) return false;
+						if (!IsIssuable(it)) return false;
+						if (it.maxStack > 1 && (hasW || WeaponClassifier.GetProfile(it).Family != WeaponFamily.Thrown)) return false; // a bare-handed levy may be dealt a thrown stack; a stack is never a swap
 						if (rule != null && !rule(it)) return false;
 						if (pouchFixed && it.useAmmo > 0 && pouch.ammo != it.useAmmo) return false;
 						if (!hasW) return true;
@@ -94,7 +95,13 @@ namespace Levy.Content.TileEntities
 					var src = new ShelfSrc { Owner = owner, Arr = arr };
 					for (int i = 0; i < to && i < arr.Length; i++) {
 						var it = arr[i];
-						if (IsAir(it) || it.maxStack > 1 || !IsIssuable(it) || owner.IsReservedRef(it)) continue;
+						if (IsAir(it) || !IsIssuable(it) || owner.IsReservedRef(it)) continue;
+						if (it.maxStack > 1) {
+							// A thrown stack serves several levies: one candidate per levy that could carry some; Carry draws each levy's share from the shelf (fair-share limited).
+							if (WeaponClassifier.GetProfile(it).Family != WeaponFamily.Thrown) continue;
+							for (int k = 0; k < plan.Levies.Count && k < LevyConstants.ThrownStackCandidates; k++) plan.Cands.Add(WeaponAllocator.MakeCand(it, pref, seq++, AllocSlot.Shelf, null, src));
+							continue;
+						}
 						plan.Cands.Add(WeaponAllocator.MakeCand(it, pref, seq++, AllocSlot.Shelf, null, src));
 					}
 				}
@@ -141,7 +148,11 @@ namespace Levy.Content.TileEntities
 			// 1. Take every target out of where it is: a shelf slot, or the hand / belt of the levy who gives it up.
 			foreach (var l in changers) {
 				var c = l.Target; Item it = null;
-				if (c.Slot == AllocSlot.Shelf) {
+				if (c.Slot == AllocSlot.Shelf && c.It.maxStack > 1) {
+					var stack = new Item();
+					if (DrawThrown(stack, c.It.type, LevyConstants.ThrownCarryMax) > 0) it = stack;
+				}
+				else if (c.Slot == AllocSlot.Shelf) {
 					var src = (ShelfSrc)c.Src;
 					int idx = IndexOfRef(src.Arr, c.It);
 					if (idx >= 0) it = src.Owner.TakeSlot(src.Arr, idx);

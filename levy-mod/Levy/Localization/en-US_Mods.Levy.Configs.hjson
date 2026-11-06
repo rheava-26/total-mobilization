@@ -26,9 +26,9 @@ LevyProgressionConfig: {
 		Tooltip: Craft a Fallen Star from 3 Meteorite Bars at an Anvil. Needs the Eater of Worlds or Brain of Cthulhu defeated. Needs a reload.
 	}
 
-	GemsToManaCrystalRecipe: {
-		Label: Gems to Mana Crystal
-		Tooltip: Craft a Mana Crystal from 8 gems of any kind at an Alchemy Table. Needs a reload.
+	FallenStarsPerManaCrystal: {
+		Label: Fallen Stars per Mana Crystal
+		Tooltip: Fallen Stars one Mana Crystal costs to craft, and what the Armory spends turning stars into levy mana. 5 is the normal amount. Needs a reload.
 	}
 
 	ChlorophyteOrePerBar: {

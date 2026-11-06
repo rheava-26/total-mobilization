@@ -39,6 +39,8 @@ namespace Levy.Common
 		public const float ThrownHitRadiusPx = 22f;
 		/// <summary>Projectile aiStyle 113 (sticks to what it hits: Bone Javelin).</summary>
 		public const int ThrownStickAiStyle = 113;
+		/// <summary>Projectile aiStyle 68 (Molotov Cocktail: flies straight a moment, then falls, and bursts into fire on impact).</summary>
+		public const int ThrownMolotovAiStyle = 68;
 
 		/// <summary>Flight model of a thrown projectile: ticks of straight flight, then gravity per tick, then horizontal air drag per tick.</summary>
 		public readonly struct ThrownFlight

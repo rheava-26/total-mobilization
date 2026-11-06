@@ -206,12 +206,12 @@ namespace Levy.Common.Systems
 	/// <summary>Boot self-checks for the settings layer.</summary>
 	public class LevySettingsCheck : ModSystem
 	{
-		/// <summary>Every field LevyConfig has had. A saved config file keys on these names, so the list only ever grows.</summary>
+		/// <summary>Every field LevyConfig has had. A saved config file keys on these names, so the list only ever grows (FallenStarsPerManaCrystal moved to the progression config, whose recipe cost it now sets; a saved value for it is ignored).</summary>
 		private static readonly string[] FrozenFields =
 		{
 			"BossHpScalingPercentPerCp", "BossHpScalingCapPercent", "BossesPunishSoldiers", "BossesTargetSoldiers", "FearMultiplier", "SoldierDamageMultiplier", "RenderCap", "Tombstones",
 			"EnemiesTargetSoldiers", "UseVanillaStatPipeline", "ClassMatchIssue", "WeaponRanking", "SkipArmoredWeapons", "AimAccuracy", "AutoUpgradeWeapons", "RealWeaponShoot", "AutoFeedCrystals",
-			"FallenStarsPerManaCrystal", "ArmoryTurnsStarsIntoMana", "SoldiersTriggerPressurePlates", "SoldierEffectsAtSoldier", "RealGearUpkeep", "SoldiersUseHooks", "ExtraTargetingAiStyles",
+			"ArmoryTurnsStarsIntoMana", "SoldiersTriggerPressurePlates", "SoldierEffectsAtSoldier", "RealGearUpkeep", "SoldiersUseHooks", "ExtraTargetingAiStyles",
 			"DoNotAttackNpcNames", "WageMultiplier", "AutoMusterDefault", "MilitiaFieldCap", "WageMutiny", "NurseHealsSoldiers", "Spoils", "MagicStorageSupply", "LeviesByEndOfPreHardmode",
 			"LeviesByEndOfHardmode", "LeviesByEndOfPostMoonLord", "MaxLevies", "Nameplates", "MilitiaDeathMessages", "RegularDeathMessages",
 		};

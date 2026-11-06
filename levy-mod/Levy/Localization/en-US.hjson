@@ -331,14 +331,9 @@ Mods: {
 					Tooltip: Soldiers draw Life Crystals, Life Fruit and Mana Crystals from their Armory's storage, one at a time, until they reach their grade limit.
 				}
 
-				FallenStarsPerManaCrystal: {
-					Label: Fallen Stars per levy mana crystal
-					Tooltip: Fallen Stars the Armory turns into one Mana Crystal for a levy. Vanilla uses 5.
-				}
-
 				ArmoryTurnsStarsIntoMana: {
-					Label: Armory turns Fallen Stars into levy mana
-					Tooltip: Fallen Stars in an Armory's storage raise the mana of its magic levies, worst-supplied first. Stars are kept while any weapon there or in a levy's hands fires them.
+					Label: Levies use Fallen Stars as Mana Crystals
+					Tooltip: Fallen Stars in an Armory's storage become Mana Crystals for its magic levies at the crafting cost, worst-supplied first. Stars are kept while any weapon there or in a levy's hands fires them.
 				}
 
 				RealWeaponShoot: {

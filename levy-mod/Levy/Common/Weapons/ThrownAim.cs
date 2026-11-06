@@ -24,6 +24,7 @@ namespace Levy.Common.Weapons
 					return projType == ProjectileID.Grenade || projType == ProjectileID.StickyGrenade || projType == ProjectileID.BouncyGrenade || projType == ProjectileID.PartyGirlGrenade
 						? LevyConstants.ThrownFlightGrenade : LevyConstants.ThrownFlightBomb;
 				case LevyConstants.ThrownStickAiStyle: return LevyConstants.ThrownFlightStick;
+				case LevyConstants.ThrownMolotovAiStyle: return LevyConstants.ThrownFlightGround;
 				default: return projType == 162 ? LevyConstants.ThrownFlightKnife162 : LevyConstants.ThrownFlightKnife;
 			}
 		}

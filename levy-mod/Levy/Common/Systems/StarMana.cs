@@ -12,7 +12,7 @@ namespace Levy.Common.Systems
 {
 	/// <summary>
 	/// Fallen Stars into levy mana. An Armory with <see cref="LevyConfig.ArmoryTurnsStarsIntoMana"/> on turns the Fallen Stars in its storage into Mana Crystals for its magic levies, at
-	/// <see cref="LevyConfig.FallenStarsPerManaCrystal"/> stars per crystal (vanilla: 5; each crystal is worth <see cref="LevyConstants.ManaPerCrystal"/> maximum mana, up to <see cref="LevyConstants.MaxMana"/>).
+	/// <see cref="Progression.LevyProgressionConfig.FallenStarsPerManaCrystal"/> stars per crystal (the same cost as crafting one) (vanilla: 5; each crystal is worth <see cref="LevyConstants.ManaPerCrystal"/> maximum mana, up to <see cref="LevyConstants.MaxMana"/>).
 	/// Each crystal goes to the magic levy with the fewest crystals that can still absorb one, ties to the lowest id. Whole crystals only: a remainder of stars stays in storage until it makes one.
 	/// Stars are kept while a weapon on the racks or in storage, or one a levy holds, fires them (a Star Cannon). Mana regeneration and the mana cap are not touched.
 	/// </summary>
@@ -23,7 +23,7 @@ namespace Levy.Common.Systems
 		/// <summary>The configured stars per crystal, held to 1..5.</summary>
 		public static int Ratio
 		{
-			get { var c = LevyConfig.Get; return c == null ? MaxRatio : Math.Clamp(c.FallenStarsPerManaCrystal, MinRatio, MaxRatio); }
+			get { var c = Progression.LevyProgressionConfig.Get; return c == null ? MaxRatio : Math.Clamp(c.FallenStarsPerManaCrystal, MinRatio, MaxRatio); }
 		}
 
 		/// <summary>Whole crystals <paramref name="stars"/> make at <paramref name="ratio"/> stars each.</summary>

@@ -139,6 +139,8 @@ namespace Levy.Content.NPCs
 		// triggers
 		// ---------------------------------------------------------------------------------------------
 		private Vector2 _hkGoalNow;
+		/// <summary>Harness/debug one-liner of what the hook layer and the walking layer are doing.</summary>
+		internal string HookDbgState => $"state={State} usable={HookUsable} wings={Abilities?.HasWings} hasPath={HasPath} hasGoal={HasMoveGoal} goal=({MoveGoal.X / 16f:0},{MoveGoal.Y / 16f:0}) pos=({NPC.Bottom.X / 16f:0},{NPC.Bottom.Y / 16f:0}) trig={_hkTrigTicks}/{_hkTrigNeed}:{_hkTrigReason} phase={_hkPhase} failStreak={_hkFailStreak} nextIn={(int)_hkNextAllowed - (int)Main.GameUpdateCount}";
 
 		/// <summary>A blocked branch of the movement asks for a hook. Counts consecutive ticks; <see cref="HookEvaluate"/> acts when it has held long enough.</summary>
 		private void HookTrigger(HookReason r)
@@ -225,7 +227,16 @@ namespace Levy.Content.NPCs
 			SoldierHooks.PlanTs += Stopwatch.GetTimestamp() - t0; SoldierHooks.Plans++;
 			if (SoldierHooks.Debug && plan == null || (SoldierHooks.Debug && Environment.GetEnvironmentVariable("LEVY_HOOKDBG2") == "1")) foreach (var l in HookPlanner.DiagLog.Take(60)) Levy.Instance?.Logger.Info("HOOKDBG2 " + l);
 			if (SoldierHooks.Debug) Levy.Instance?.Logger.Info($"HOOKDBG {SoldierName} {reason} from {bottom.X / 16f:0.0},{bottom.Y / 16f:0.0} goal {goalBottom.X / 16f:0.0},{goalBottom.Y / 16f:0.0} nowDist {nowDist / 16f:0.0}T: " + (plan == null ? "no plan" : $"anchors={plan.Anchors.Count} first={plan.Anchors[0].X / 16f:0.0},{plan.Anchors[0].Y / 16f:0.0} relTick={plan.ReleaseTick} relDist={plan.ReleaseDist:0} land={plan.Landing.X / 16f:0.0},{plan.Landing.Y / 16f:0.0} goalDist={plan.GoalDist / 16f:0.0}T gain={plan.Gain / 16f:0.0}T score={plan.Score:0}") + " " + HookPlanner.Describe() + (plan?.Path != null ? " path: " + string.Join(" ", plan.Path.Where((v, i) => i % 4 == 0).Select(v => $"{v.X / 16f:0.0},{v.Y / 16f:0.0}")) : ""));
-			if (plan == null || !(reason == HookReason.Rescue ? plan.Landed : plan.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f))) { if (reason != HookReason.Rescue) HookBackoff(); return; }
+			if (plan == null || !(reason == HookReason.Rescue ? plan.Landed : plan.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f)))
+			{
+				if (reason == HookReason.Wall || reason == HookReason.GoalAbove || reason == HookReason.Follow)
+				{
+					if (!_hkStepSkip && TryStepBack(reason, goalBottom, hp)) return;   // a player backs off from the wall to get a diagonal line over the lip
+				}
+				if (reason != HookReason.Rescue) HookBackoff();
+				_hkStepSkip = false; return;
+			}
+			_hkStepSkip = false;
 			SoldierHooks.PlansFound++;
 			_hkPlan = plan; _hkReason = reason; _hkTrigGoalUsed = goalBottom;
 			_hkPhase = HookPhase.InFlight; _hkTicks = 0; _hkCasted = 0; _hkStall = 0; _hkLost = 0; _hkFirstLatch = -1; _hkHang = 0; _hkBestDist = float.MaxValue; _hkNetTick = 0;
@@ -233,6 +244,55 @@ namespace Levy.Content.NPCs
 			if (!HookCast(plan.Aims[0])) { HookReset(false); HookBackoff(); SoldierHooks.Aborts++; HkAborts++; return; }
 			_hkCasted = 1;
 			NPC.netUpdate = true;
+		}
+
+		// ---------------------------------------------------------------------------------------------
+		// step back: against a tall wall the only line over the lip starts further out, as a player would back off and aim
+		// ---------------------------------------------------------------------------------------------
+		private float _hkStepX; private uint _hkStepUntil; private HookReason _hkStepReason; private Vector2 _hkStepGoal; private bool _hkStepSkip;
+		internal int HkStepBacks;
+
+		private bool TryStepBack(HookReason reason, Vector2 goalBottom, HookParams hp)
+		{
+			if (!NPC.collideY && NPC.velocity.Y != 0f) return false;
+			int side = goalBottom.X >= NPC.Center.X ? -1 : 1;          // away from the obstacle, the goal side being where the wall is
+			foreach (int tiles in H.StepBackTiles)
+			{
+				if (!StepLaneSafe(side, tiles * 16f)) break;
+				Vector2 start = NPC.Bottom + new Vector2(side * tiles * 16f, 0f);
+				float nd = Vector2.Distance(start, goalBottom) + Math.Abs(start.Y - goalBottom.Y) * 0.5f;
+				HookPlan p = HookPlanner.Plan(TileHookWorld.Instance, start, hp, goalBottom, HookGoalKind.Ground, nd);
+				if (p == null || !p.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f)) continue;
+				_hkStepX = start.X; _hkStepUntil = Main.GameUpdateCount + (uint)H.StepBackMaxTicks; _hkStepReason = reason; _hkStepGoal = goalBottom;
+				HkStepBacks++;
+				HookDbg($"step back {tiles} tiles to {start.X / 16f:0.0} for a plan (gain {p.Gain / 16f:0.0}T)");
+				return true;
+			}
+			return false;
+		}
+
+		/// <summary>Walks to the step-back spot, then casts from there. True while it owns the tick.</summary>
+		private bool HookStepBackTick(bool grounded)
+		{
+			if (_hkStepUntil == 0) return false;
+			uint now = Main.GameUpdateCount;
+			if (_hkPhase != HookPhase.Idle || !grounded || now > _hkStepUntil) { _hkStepUntil = 0; return false; }
+			float dx = _hkStepX - NPC.Bottom.X;
+			if (Math.Abs(dx) > 10f)
+			{
+				int dir = dx > 0f ? 1 : -1;
+				NPC.direction = dir; NPC.spriteDirection = dir;
+				NPC.velocity.X = dir * Math.Min(Abilities.MaxRunSpeed, 3.2f);
+				return true;
+			}
+			NPC.velocity.X = 0f; _hkStepUntil = 0;
+			if (SoldierHooks.TakePlanBudget())
+			{
+				_hkStepSkip = true;
+				try { HookStart(_hkStepReason, _hkStepGoal); } catch (Exception) { try { HookReset(true); } catch (Exception) { } HookBackoff(); }
+				_hkStepSkip = false;
+			}
+			return true;
 		}
 
 		private void HookBackoff()

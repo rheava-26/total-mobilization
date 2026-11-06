@@ -17,8 +17,9 @@ namespace Levy.Content.NPCs
 	{
 		/// <summary>0 = no dodging, 1 = the old closest-approach flinch, 2 = threat-field dodging (default). The harness flips it to compare.</summary>
 		internal static int DodgeMode = 2;
+		internal static bool DodgeDebug = Environment.GetEnvironmentVariable("LEVY_DODGEDBG") == "1";
 		private const int ThreatHorizon = 40, ThreatScanInterval = 4, ThreatCooldown = 10, ThreatBudgetPerTick = 14;
-		private int _dodgeHold; private int _dodgeBusy;
+		private int _dodgeHold; private int _dodgeBusy; private int _dodgePend, _dodgePendTiles;
 		private static uint _thrBudgetTick; private static int _thrBudget;
 		private static readonly List<Threat> _thrNear = new(32);
 		internal int DodgeManeuvers, DodgeStays, DodgeSteps, DodgeJumps, DodgeDashes, DodgeDrops, DodgeScansDone;
@@ -27,6 +28,7 @@ namespace Levy.Content.NPCs
 		private bool TickDodge(bool grounded, bool air)
 		{
 			if (DodgeMode == 0) return false;
+			if (DodgeDebug && (_dodgePend > 0 || !grounded)) Levy.Instance?.Logger.Info($"DODGEDBG-TRK t={Main.GameUpdateCount} y={NPC.Bottom.Y:0} vy={NPC.velocity.Y:0.00} pend={_dodgePend}");
 			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
 			try { return DodgeMode == 1 ? TickDodgeLegacy(grounded, air) : TickThreatDodge(grounded, air); }
 			finally { DodgeTs += System.Diagnostics.Stopwatch.GetTimestamp() - t0; }
@@ -36,6 +38,13 @@ namespace Levy.Content.NPCs
 		{
 			NPC npc = NPC;
 			if (_dodgeTicks > 0) { _dodgeTicks--; npc.velocity.X = _dodgeVx; return true; }
+			if (_dodgePend > 0)
+			{
+				if (--_dodgePend == 0 && grounded && !npc.wet) { DodgeJumps++; TryJump(_dodgePendTiles); npc.netUpdate = true; _dodgeCooldown = ThreatCooldown; }
+				else if (!grounded && !air) _dodgePend = 0;
+				else { npc.velocity.X *= StopDecel; if (Math.Abs(npc.velocity.X) < StopBelowPx) npc.velocity.X = 0f; }
+				return _dodgePend > 0;
+			}
 			if (_hkPhase != HookPhase.Idle && _hkPhase != HookPhase.Cooldown) return false;
 			if ((!grounded && !air) || _flying || npc.wet) { _dodgeHold = 0; return false; }
 			bool holding = _dodgeHold > 0;
@@ -76,18 +85,26 @@ namespace Levy.Content.NPCs
 				if (grounded && Abilities != null && Abilities.HasDash && _dashCooldown <= 0 && DashLaneClear(dir))
 					Consider(new Maneuver { Kind = 4, Vx = dir * DashSpeedPx, Dur = DashBurstTicks, Penalty = 8f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 			}
-			if (grounded) Consider(new Maneuver { Kind = 2, JumpVy = jv, Penalty = 5f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
-			if (grounded && Abilities.JumpTiles > hopTiles) Consider(new Maneuver { Kind = 6, JumpVy = -JumpSpeedFor(Abilities.JumpTiles), Penalty = 7f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+			if (grounded)
+			{
+				// a hop timed to start later (a charge still building speed arrives after a hop made now would already be over)
+				foreach (int dl in new[] { 0, 6, 12, 18, 24 })
+					Consider(new Maneuver { Kind = 2, JumpVy = jv, Delay = dl, Penalty = 5f + dl * 0.1f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+				if (Abilities.JumpTiles > hopTiles)
+					foreach (int dl in new[] { 0, 6, 12, 18, 24 })
+						Consider(new Maneuver { Kind = 6, JumpVy = -JumpSpeedFor(Abilities.JumpTiles), Delay = dl, Penalty = 7f + dl * 0.1f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+			}
 			if (grounded && PlatformDropIsSafe()) Consider(new Maneuver { Kind = 5, Drop = true, Penalty = 7f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 
 			_dodgeCooldown = ThreatCooldown;
+			if (DodgeDebug) Levy.Instance?.Logger.Info($"DODGEDBG t={Main.GameUpdateCount} {SoldierName} threats={_thrNear.Count} base={baseHits}@{firstHit}..{lastHit} best=kind{best.Kind} delay={best.Delay} hits={bestHits} vx={NPC.velocity.X:0.0} grounded={grounded}");
 			if (best.Kind == 0 || bestHits >= baseHits) { DodgeStays++; if (!grounded && AirBlip()) npc.netUpdate = true; return HoldStep(holding); }
 			DodgeManeuvers++;
 			switch (best.Kind)
 			{
 				case 1: DodgeSteps++; Begin(best.Vx, best.Dur); break;
-				case 2: DodgeJumps++; TryJump(hopTiles); break;
-				case 6: DodgeJumps++; TryJump(Abilities.JumpTiles); break;
+				case 2: if (best.Delay > 0) { _dodgePend = best.Delay; _dodgePendTiles = hopTiles; } else { DodgeJumps++; TryJump(hopTiles); } break;
+				case 6: if (best.Delay > 0) { _dodgePend = best.Delay; _dodgePendTiles = Abilities.JumpTiles; } else { DodgeJumps++; TryJump(Abilities.JumpTiles); } break;
 				case 3: DodgeJumps++; TryJump(hopTiles); Begin(best.Vx, best.Dur); break;
 				case 4: DodgeDashes++; _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); Begin(best.Vx, best.Dur); break;
 				case 5: DodgeDrops++; _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; break;

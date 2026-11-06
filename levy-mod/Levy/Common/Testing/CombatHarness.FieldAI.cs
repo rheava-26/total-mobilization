@@ -29,11 +29,12 @@ namespace Levy.Common.Testing
 		private readonly List<SoldierNPC> _faSol = new();
 		private int _faStandin = -1;
 		private int _faFired;
+		private Vector2? _faCmdPos; private int _faCmdGrap;
 
 		private bool BeginFieldAi()
 		{
 			string spec = Environment.GetEnvironmentVariable("LEVY_FIELD_SPEC");
-			var want = new HashSet<string>((string.IsNullOrWhiteSpace(spec) ? "volley,charge,beam,fallcatch,slope,fall,cost" : spec).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+			var want = new HashSet<string>((string.IsNullOrWhiteSpace(spec) ? "volley,charge,beam,fallcatch,follow,slope,fall,cost" : spec).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 			float n = Main.maxTilesX / 4200f; n *= n;
 			int band = (int)(60f + 10f * n + Main.worldSurface / 6.0) + 2;
 			_faFy = Math.Clamp(band + 75, 100, Main.maxTilesY - 120);
@@ -46,6 +47,7 @@ namespace Levy.Common.Testing
 				if (want.Contains("beam")) { _fa.Add(FaBeam(mode, 0f)); _fa.Add(FaBeam(mode, 0.0046f)); }
 			}
 			if (want.Contains("fallcatch")) foreach (bool lava in new[] { true, false }) foreach (bool hook in new[] { false, true }) _fa.Add(FaCatch(lava, hook));
+			if (want.Contains("follow")) { foreach (string kind in new[] { "gap", "gapswing", "climb" }) foreach (bool hook in new[] { false, true }) _fa.Add(FaFollow(kind, hook ? ItemID.GrapplingHook : 0)); _fa.Add(FaFollow("gapwide", ItemID.GrapplingHook)); _fa.Add(FaFollow("gapwide", ItemID.IvyWhip)); }
 			if (want.Contains("fall")) { _fa.Add(FaFall(1)); _fa.Add(FaFall(0)); }
 			if (want.Contains("cost")) foreach (int mode in new[] { 0, 1, 2 }) _fa.Add(FaCost(mode));
 			_faI = -1; _faTick = 0;
@@ -68,7 +70,7 @@ namespace Levy.Common.Testing
 			if (_faFpBefore == null && _faI == 0 && _faTick == 8) _faFpBefore = HooksLab.Fp(Main.player[0]);   // after the server has updated the stand-in once
 			if (_faTick < 0)
 			{
-				ClearAll(); _faSol.Clear(); _faStandin = -1; _faFired = 0;
+				ClearAll(); _faSol.Clear(); _faStandin = -1; _faFired = 0; _faCmdPos = null; _faCmdGrap = 0;
 				FaArena();
 				t.Setup?.Invoke();
 				_faTick = 0; return;
@@ -108,7 +110,7 @@ namespace Levy.Common.Testing
 		{
 			Player p = Main.player[0];
 			p.active = true; p.dead = false; p.name = "LevyTester"; p.statLifeMax = p.statLifeMax2 = 500; p.statLife = 500;
-			p.position = new Vector2((_cx - 105) * 16f, _faFy * 16f - p.height); p.velocity = Vector2.Zero;
+			p.position = _faCmdPos ?? new Vector2((_cx - 105) * 16f, _faFy * 16f - p.height); p.velocity = Vector2.Zero; p.grapCount = _faCmdGrap;
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
@@ -265,6 +267,60 @@ namespace Levy.Common.Testing
 			};
 		}
 
+		// ---- follow the commander across a gap / up a wall, with the hook the levy has equipped ----
+		private FaTrial FaFollow(string kind, int hookItem)
+		{
+			const int Ticks = 900; bool hook = hookItem != 0;
+			int arrive = -1, casts0 = 0; float maxStep = 0f; Vector2 last = Vector2.Zero; int minLife = int.MaxValue; int pitTicks = 0; float bestD = float.MaxValue;
+			return new FaTrial
+			{
+				Name = "FOLLOW", Ticks = Ticks,
+				Setup = () =>
+				{
+					SoldierNPC.DodgeMode = 2; SoldierNPC.FallDamageOverride = 1;
+					int cx = _cx, fy = _faFy;
+					float cmdX, cmdBottom;
+					if (kind == "climb")
+					{
+						FaFill(cx + 4, fy - 8, cx + 60, fy - 1, true);                // an 8-tile wall, the commander stands on top
+						FaFill(cx - 4, fy - 8 - 8, cx + 50, fy - 8 - 6, true);        // a cave ceiling 6 tiles over the top
+						cmdX = (cx + 20) * 16f; cmdBottom = (fy - 8) * 16f;
+					}
+					else
+					{
+						int pitR = kind == "gapwide" ? cx + 17 : cx + 11;
+						FaFill(cx - 6, fy, pitR, fy + 14, false);                     // an 18-wide (gapwide: 24-wide), 14-deep pit
+						FaFill(cx - 14, fy - 10, cx + 40, fy - 8, true);              // a cave ceiling 8 tiles over the floor
+						cmdX = (cx + (kind == "gapwide" ? 34 : 28)) * 16f; cmdBottom = fy * 16f;
+					}
+					_faCmdPos = new Vector2(cmdX - 10f, cmdBottom - Main.player[0].height); _faCmdGrap = kind == "gapswing" ? 1 : 0;
+					var b = FaSpawn((cx - 12) * 16f, fy * 16f, r =>
+					{
+						r.Order = SoldierOrder.Follow;
+						if (hook) { var it = new Item(); it.SetDefaults(hookItem); r.Gear.Hook = it; r.Gear.SetLocked(SoldierGear.SlotHook, true); }
+					});
+					b.RefreshStats(); casts0 = b.HkCasts; last = b.NPC.Center;
+				},
+				Step = t =>
+				{
+					var b = _faSol[0]; NPC n = b.NPC; if (!n.active) return;
+					if ((t % 60 == 0 || (t < 150 && t % 6 == 0 && kind == "gap" && hook)) && Environment.GetEnvironmentVariable("LEVY_FADBG") == "1") Mod.Logger.Info($"FOLLOWDBG {kind} hook={hook} t={t} vx={n.velocity.X:0.0} px={n.Bottom.X / 16f:0.00} " + b.HookDbgState);
+					minLife = Math.Min(minLife, n.life);
+					maxStep = Math.Max(maxStep, Vector2.Distance(n.Center, last) / 16f); last = n.Center;
+					Vector2 cp = Main.player[0].Bottom;
+					float d = Vector2.Distance(n.Bottom, cp) / 16f; bestD = Math.Min(bestD, d);
+					if (n.Bottom.Y > _faFy * 16f + 16f && kind != "climb") pitTicks++;
+					if (arrive < 0 && d < 5f && n.velocity.Y == 0f) arrive = t;
+				},
+				Report = () =>
+				{
+					var b = _faSol[0]; NPC n = b.NPC; bool alive = n.active && n.life > 0;
+					float d = alive ? Vector2.Distance(n.Bottom, Main.player[0].Bottom) / 16f : -1f;
+					return $"scenario={kind} hook={(hook ? Lang.GetItemNameValue(hookItem) : "none")} reachedCommanderAtTick={(arrive >= 0 ? arrive.ToString() : "never")} finalDistTiles={d:0.0} closestTiles={bestD:0.0} ticksInPit={pitTicks} biggestJumpInOneTickTiles={maxStep:0.0} (teleport if >20) hookCasts={b.HkCasts - casts0} latches={b.HkLatches} landings={b.HkLandings} aborts={b.HkAborts} lowestHp={minLife}/{n.lifeMax}";
+				},
+			};
+		}
+
 		// ---- fall damage ----
 		private FaTrial FaFall(int on)
 		{
@@ -309,12 +365,12 @@ namespace Levy.Common.Testing
 		// ---- cost at N=40 ----
 		private FaTrial FaCost(int mode)
 		{
-			const int N = 40, Ticks = 360;
+			int N = int.TryParse(Environment.GetEnvironmentVariable("LEVY_FA_N"), out int envN) ? envN : 40; float spacing = float.TryParse(Environment.GetEnvironmentVariable("LEVY_FA_SPACING"), out float envS) ? envS : 5f; const int Ticks = 360;
 			long dodge0 = 0, build0 = 0; int builds0 = 0; System.Diagnostics.Stopwatch wall = new();
 			return new FaTrial
 			{
 				Name = "COST", Ticks = Ticks,
-				Setup = () => { SoldierNPC.DodgeMode = mode; for (int k = 0; k < N; k++) FaSpawn(_cx * 16f + (k - N / 2) * 5f * 16f + 8f, _faFy * 16f); build0 = ThreatField.BuildTs; builds0 = ThreatField.Builds; wall.Restart(); },
+				Setup = () => { SoldierNPC.DodgeMode = mode; for (int k = 0; k < N; k++) FaSpawn(_cx * 16f + (k - N / 2) * spacing * 16f + 8f, _faFy * 16f); build0 = ThreatField.BuildTs; builds0 = ThreatField.Builds; wall.Restart(); },
 				Step = t =>
 				{
 					foreach (var b in _faSol) FaHeal(b);
@@ -328,7 +384,7 @@ namespace Levy.Common.Testing
 					wall.Stop();
 					long dts = _faSol.Sum(b => b.DodgeTs); double freq = System.Diagnostics.Stopwatch.Frequency;
 					double dodgeMs = dts * 1000.0 / freq / Ticks, buildMs = (ThreatField.BuildTs - build0) * 1000.0 / freq / Ticks;
-					return $"N={N} mode={mode} dodgeMsPerTick(whole army)={dodgeMs:0.0000} snapshotBuildMsPerTick={buildMs:0.0000} scans={_faSol.Sum(b => b.DodgeScansDone)} {FaCounters()}";
+					return $"N={N} spacing={spacing}T mode={mode} dodgeMsPerTick(whole army)={dodgeMs:0.0000} snapshotBuildMsPerTick={buildMs:0.0000} scans={_faSol.Sum(b => b.DodgeScansDone)} {FaCounters()}";
 				},
 			};
 		}

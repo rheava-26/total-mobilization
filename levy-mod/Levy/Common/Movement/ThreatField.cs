@@ -27,10 +27,10 @@ namespace Levy.Common.Movement
 		public bool Body;
 	}
 
-	/// <summary>A dodge candidate: horizontal velocity for Dur ticks, an optional jump, an optional platform drop.</summary>
+	/// <summary>A dodge candidate: horizontal velocity for Dur ticks, an optional jump (Delay ticks from now: a hop timed to land after a charge has passed under it), an optional platform drop.</summary>
 	public struct Maneuver
 	{
-		public float Vx; public int Dur; public float JumpVy; public bool Drop; public byte Kind; // 0 stay, 1 step, 2 jump, 3 step+jump, 4 dash, 5 drop
+		public float Vx; public int Dur, Delay; public float JumpVy; public bool Drop; public byte Kind; // 0 stay, 1 step, 2 jump, 3 step+jump, 4 dash, 5 drop
 		public float Penalty;
 	}
 
@@ -49,7 +49,8 @@ namespace Levy.Common.Movement
 		private static readonly uint[] PrevVelTick = new uint[Main.maxNPCs + 1];
 		public static long BuildTs, EvalTs; public static int Builds, Evals, EvalSamples;
 
-		public const float ChargeMinSpeed = 4.5f, ChargeAccel = 0.25f;
+		public static float BodyMarginPx = 10f;
+		public const float ChargeMinSpeed = 4.5f, ChargeAccel = 0.25f, ChargeTopSpeed = 20f, MaxBuildTicks = 60f;
 
 		public static List<Threat> Snapshot()
 		{
@@ -110,7 +111,7 @@ namespace Levy.Common.Movement
 			{
 				Threat t = all[i];
 				if (t.Line) { if (Vector2.DistanceSquared(t.P, c) <= (t.Len + reach) * (t.Len + reach)) into.Add(t); continue; }
-				Vector2 end = t.P + t.V * horizon + t.A * (0.5f * 12f * 12f + 12f * Math.Max(0, horizon - 12));
+				Vector2 end = ThreatAt(t, horizon);
 				float r = reach + Math.Max(t.Half.X, t.Half.Y);
 				if (SegDistSq(t.P, end, c) <= r * r) into.Add(t);
 			}
@@ -126,7 +127,7 @@ namespace Levy.Common.Movement
 		private static Vector2 BodyAt(Vector2 c0, in Maneuver m, float g, int t)
 		{
 			float x = c0.X + m.Vx * Math.Min(t, m.Dur), y = c0.Y;
-			if (m.JumpVy < 0f) { float d = m.JumpVy * t + 0.5f * g * t * t; if (d < 0f) y += d; }
+			if (m.JumpVy < 0f) { int tj = t - m.Delay; if (tj > 0) { float d = m.JumpVy * tj + 0.5f * g * tj * tj; if (d < 0f) y += d; } }
 			else if (m.Drop && t > 3) y += 0.5f * g * (t - 3) * (t - 3);
 			return new Vector2(x, y);
 		}
@@ -134,7 +135,14 @@ namespace Levy.Common.Movement
 		private static Vector2 ThreatAt(in Threat th, int t)
 		{
 			Vector2 p = th.P + th.V * t;
-			if (th.A != Vector2.Zero) { int ta = Math.Min(t, 12); p += th.A * (0.5f * ta * ta + ta * Math.Max(0, t - ta)); }
+			if (th.A != Vector2.Zero)
+			{
+				// a charge that is still building speed keeps building it until it reaches a charging body's top speed (it is not known; ChargeTopSpeed is a pessimistic one)
+				float aLong = th.V.LengthSquared() > 1e-4f ? Vector2.Dot(th.A, Vector2.Normalize(th.V)) : th.A.Length();
+				float tc = aLong > 0.01f ? Math.Min(MaxBuildTicks, Math.Max(0f, (ChargeTopSpeed - th.V.Length()) / aLong)) : 12f;
+				float ta = Math.Min(t, tc);
+				p += th.A * (0.5f * ta * ta + ta * Math.Max(0f, t - ta));
+			}
 			return p;
 		}
 
@@ -160,7 +168,7 @@ namespace Levy.Common.Movement
 				}
 				else
 				{
-					Vector2 half = th.Half + bHalf + new Vector2(2f);
+					Vector2 half = th.Half + bHalf + (th.Body ? new Vector2(BodyMarginPx, BodyMarginPx) : new Vector2(2f));   // a prediction of a charging body is never exact: keep a margin around it
 					Vector2 prev = ThreatAt(th, 0) - BodyAt(c0, m, g, 0);
 					if (Math.Abs(prev.X) <= half.X && Math.Abs(prev.Y) <= half.Y) hit = 0;
 					for (int t = 2; t <= horizon && hit < 0; t += 2)

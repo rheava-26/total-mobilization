@@ -102,6 +102,7 @@ namespace Levy.Content.NPCs
 		private void AfterHit(int damageDone, int attackerIndex)
 		{
 			HitsTaken++;
+			if (DodgeDebug) Levy.Instance?.Logger.Info($"DODGEDBG-HIT t={Main.GameUpdateCount} {SoldierName} dmg={damageDone} vy={NPC.velocity.Y:0.0} yAboveFloorPx={(int)(NPC.Bottom.Y)} pend={_dodgePend}");
 			ImmuneTime = LevyConstants.ImmuneTicksOnHit;
 			TicksSinceDamaged = 0;
 			_regenCounter = 0;

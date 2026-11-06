@@ -48,6 +48,9 @@ namespace Levy.Common
 			public const float FollowMinTiles = 14f;
 			/// <summary>Simulated reel ticks a plan may spend touching sloped tiles before it is judged a drag (a brush against an edge is fine).</summary>
 			public const int MaxSlopeDragTicks = 4;
+			/// <summary>Distances (tiles) a soldier backs off from a wall to look for a diagonal line over its lip, and how long it may take.</summary>
+			public static readonly int[] StepBackTiles = { 3, 5, 8, 11 };
+			public const int StepBackMaxTicks = 120;
 		}
 	}
 }

@@ -601,7 +601,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   - **Shield of Cthulhu dash: unused** (field-ai-3 is adding dash dodges).
   - The drop multiplier skips boss drops except ecto and souls.
 - **Top gaps:**
-  1. Early-HM summoner minion slots (Spider only: ~2,080 recluse kills for 20 levies; Calamity's Fathom Swarmer partly fills).
+  1. Early-HM summoner minion slots (Spider only; CORRECTED: ~720 recluse kills Classic / ~400 Expert for 20 sets, ~1,040/~580 with staffs; the audit said 2,080, wrong by 2×; Calamity's Fathom Swarmer partly fills).
   2. Hallowed (Eve: fine).
   3. Lunar tier (Calamity fills post-ML).
   4. Pumpkin-Moon summoner kit.
@@ -609,6 +609,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   6. **WoF emblems: 1 per kill, no recipe.**
   7. Accessory slot starvation.
   8. Non-functional "required" items (Yoyo Bag, SoC dash).
+- **Eve (2026-11-06 23:00):** Bee Wax / Beetle Husk are FINE (single-purpose; Golem drops plenty). HALLOWED is the real multi-use bottleneck (armor for all 4 classes + unique weapons, many also needing souls). Spider is a grind but not 2,000 kills (confirmed). Emblems: agreed. Eve asked for a FRESH, unprimed research pass (no examples given) to find issues independently.
 - **Proposed to Eve (awaiting picks):** an opt-in BossDropMultiplier (general); emblem Shimmer/recipe; a Yoyo Glove second yoyo for levies; an earlier accessory-slot milestone (Queen Bee) / milestones on; a bulk-batch station (the paused factory) as the general fix for Spider/Bee/etc.
 
 ## ✏️ Eve corrections (2026-11-06 22:45)

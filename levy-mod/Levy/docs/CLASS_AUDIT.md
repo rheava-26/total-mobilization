@@ -1,3 +1,5 @@
+> **CORRECTION (verified on terraria.wiki.gg "Spider Fang"/"Black Recluse", 2026-11-06):** Black Recluse drops 1–3 Spider Fangs at 50% (Classic) / 90% (Expert), about 1.0 / 1.8 fangs per kill. Any "~2,080 kills" figure below is ~2× too high. 20 Spider sets (36 fangs each = 720 fangs) take ~720 kills Classic / ~400 Expert; with Spider Staffs (52 per levy) ~1,040 / ~580.
+
 # Levy class audit: where is a class hard to equip in bulk?
 
 Scope: 9 progression stages, analysed CUMULATIVELY: (a) vanilla only, (b) vanilla + Calamity, (c) vanilla + Calamity + Thorium. Each cell says what the added mod contributes, so you can see where a mod FILLS a vanilla hole.

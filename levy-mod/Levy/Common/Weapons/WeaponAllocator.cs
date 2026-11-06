@@ -186,6 +186,10 @@ namespace Levy.Common.Weapons
 				if (bucketTop[b] < top * LevyConstants.ClasslessBucketMinFraction) continue; // nothing in this class is worth arming a levy with next to what the others have
 				foreach (float r in ranks[b]) if (r >= bucketTop[b] * LevyConstants.ClasslessQualityFraction) supply[b]++;
 			}
+			var weight = new float[4]; for (int b = 0; b < 3; b++) weight[b] = supply[b];
+			var stackTypes = new HashSet<int>(); // a thrown stack is offered as several copies, but it is one kind of stock: it weighs once per type
+			foreach (var c in cands) if (c.Thrown && !c.Used && c.Rank >= bucketTop[3] * LevyConstants.ClasslessQualityFraction && bucketTop[3] >= top * LevyConstants.ClasslessBucketMinFraction && Bucket(c) == 3) stackTypes.Add(c.Type);
+			weight[3] = stackTypes.Count;
 			Trace?.Invoke($"spread free={free.Count} top={top:F0} bucketTop=[{string.Join(",", Array.ConvertAll(bucketTop, x => x.ToString("F0")))}] supply=[{string.Join(",", supply)}]");
 			var cls = new DamageClass[] { DamageClass.Melee, DamageClass.Ranged, DamageClass.Magic, null };
 			var given = new int[4]; var held = new int[4];
@@ -204,7 +208,7 @@ namespace Levy.Common.Weapons
 					var bc = b == 3 ? DamageClass.Ranged : cls[b];
 					if (_book != null && _book.Hi.TryGetValue(bc, out var hi) && _book.Of(bc) + held[b] >= hi) continue; // the class maximum of a rule
 					if (l.Flex != null && l.Flex.Count > 0 && !l.Flex.Contains(b == 3 ? DamageClass.Ranged : cls[b])) continue; // he can only field armor for some classes
-					float score = supply[b] * (b == 2 ? MagicManaBias(l.Mana) : 1f) / (given[b] + 1);
+					float score = weight[b] * (b == 2 ? MagicManaBias(l.Mana) : 1f) / (given[b] + 1);
 					if (score > best) { best = score; pick = b; }
 				}
 				if (pick < 0) continue;

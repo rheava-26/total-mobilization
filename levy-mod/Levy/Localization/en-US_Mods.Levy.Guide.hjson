@@ -125,8 +125,8 @@ Pages: {
 		Title: Items tab - putting things in
 		Body:
 			'''
-			Click an item in your pack to pick it up, then click a storage slot to set it down.
-			Deposit junk moves every weapon, armor piece, accessory and ammo stack that is not favorited into storage. Favorite what you want to keep.
+			Click an item in your pack to pick it up, then click a storage slot to set it down. Shift-click an item in your pack to send the whole stack to storage.
+			Deposit junk moves everything levies can use that is not favorited into storage: weapons, throwables, armor, accessories, hooks, dyes, potions and ammo. Favorite what you want to keep.
 			Loot all takes everything back out. Sort groups storage and packs it to the front.
 			Search, the type button and the rarity swatches narrow what the grid shows.
 			Hover an empty storage slot for a reminder of what levies use.

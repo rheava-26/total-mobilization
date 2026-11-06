@@ -621,6 +621,7 @@ namespace Levy.Common.Weapons
 			if (s.Shaken) m *= LevyConstants.ShakenAimMult;
 			if (s.IsMilitia && SettlementSystem.Instance != null && SettlementSystem.Instance.BookDrill) m *= LevyConstants.DrillMilitiaAimMult;
 			if (SettlementSystem.Instance != null && SettlementSystem.Instance.BookDiscipline) m *= LevyConstants.DisciplineAimErrorMult;
+			m *= global::Levy.Content.Buffs.DrinkBuffs.AimErrorFactor(s); // Tipsy: a levy carrying a Tavernkeep drink aims worse
 			m *= OfficerSupport.AimErrorFactor(s); // exactly 1 with no officer in reach, so an army without them aims as it always did
 			return m;
 		}

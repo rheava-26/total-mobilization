@@ -194,7 +194,7 @@ namespace Levy.Common.Systems
 		/// Takes a living body off the field WITHOUT touching its record or its kit (the reserve keeps the soldier whole): whatever it was hauling goes on the
 		/// ground, its summons and thrown weapons go with it, and the NPC is deactivated and synced. A no-op for an already inactive body.
 		/// </summary>
-		private static void RetireBody(SoldierNPC body)
+		internal static void RetireBody(SoldierNPC body)
 		{
 			if (body == null) return;
 			var npc = body.NPC;
@@ -590,6 +590,7 @@ namespace Levy.Common.Systems
 			if (LevyUtil.IsClient || rec == null) return -1;
 			if (rec.Reserve) return -1; // a soldier in reserve has no body until he is recalled
 			if (rec.HasBody) return rec.BodyIndex; // never two bodies for one record
+			if (global::Levy.Common.Events.OldOnesArmySystem.BlocksSpawn(rec)) return -1; // Old One's Army: regular levies stand down; only sentries call them up
 			if (ActiveBodyCount >= LevyConfig.Get.RenderCap) return -1;
 			int type = ModContent.NPCType<SoldierNPC>();
 			if (type <= 0) return -1;

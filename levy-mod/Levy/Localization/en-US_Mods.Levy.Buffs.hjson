@@ -23,3 +23,18 @@ PaintedBuff: {
 	DisplayName: Paint-Soaked
 	Description: Covered in paint: less defense and weaker attacks.
 }
+
+AleBuff: {
+	DisplayName: Ale
+	Description: Drunk. More defense, wider aim error.
+}
+
+StoutBuff: {
+	DisplayName: Stout
+	Description: Drunk. More damage, wider aim error.
+}
+
+RumBuff: {
+	DisplayName: Rum
+	Description: Drunk. Attacks faster, wider aim error.
+}

@@ -114,7 +114,7 @@ namespace Levy.Common.UI
 			_lootAll = new LevyButton(LevyUtil.T("UI.LootAll"), LevyConstants.UI.ButtonTextScale, 104, 26, LootAll);
 			_lootAll.Left.Set(w - 36 - 112, 0f); _lootAll.Top.Set(6f, 0f);
 			_panel.Append(_lootAll);
-			_depositJunk = new LevyButton(LevyUtil.T("UI.DepositJunk"), LevyConstants.UI.ButtonTextScale, 150, 26, DepositJunk);
+			_depositJunk = new LevyButton(LevyUtil.T("UI.DepositJunk"), LevyConstants.UI.ButtonTextScale, 150, 26, DepositJunk, LevyUtil.T("Guide.DepositJunkHint"));
 			_depositJunk.Left.Set(w - 36 - 112 - 158, 0f); _depositJunk.Top.Set(6f, 0f);
 			_panel.Append(_depositJunk);
 			_sort = new LevyButton(LevyUtil.T("UI.Sort"), LevyConstants.UI.ButtonTextScale, 62, 26, SortStorage, LevyUtil.T("UI.SortHint"));
@@ -423,6 +423,7 @@ namespace Levy.Common.UI
 			var arr = Te.Storage;
 			_builtStorage = arr;
 			int cols = LevyConstants.UI.ArmoryColumns;
+			string storageHint = LevyUtil.T("Guide.StorageHint"); // hover text of an empty storage slot: what the levies can use
 			int count = _shown?.Count ?? arr.Length;
 			var rows = new List<UIElement>((count + cols - 1) / cols);
 			for (int start = 0; start < count; start += cols)
@@ -432,7 +433,7 @@ namespace Levy.Common.UI
 				for (int c = 0; c < cols && start + c < count; c++)
 				{
 					int real = _shown == null ? start + c : _shown[start + c];
-					var slot = MakeSlot(arr, real, 0, null, null);
+					var slot = MakeSlot(arr, real, 0, null, storageHint);
 					slot.Left.Set(c * Pitch, 0f);
 					row.Append(slot);
 				}

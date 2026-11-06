@@ -576,6 +576,12 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   6. Fall damage default OFF; the Gravitation Potion catch-up teleport lands mid-air and kills them → safe-ground teleport + brief fall immunity.
 - **`guide-ui` builder:**
   4/7. A paged in-game guide book (Thorium-guide style) opened by the starter guide: getting levies, orders, every Armory tab, WHAT LEVIES CAN USE, officers, potions/cameras, OOA, guides, settings. Plus a hint on the Items storage.
+  - **MERGED guide-ui (68b4144):**
+    - The Field Manual opens a 30-page book (720×470; contents left, page right, prev/next, Esc/arrows); new characters start with one.
+    - Thorium turned out to have no guide UI, so the book follows Levy's panel style.
+    - GuideCheck: 30 pages OK. A UI build failure only logs (TryActivateGuide). I read the construction order.
+    - UNSEEN in a real client.
+    - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
 ## 🤝 Teammate items for levies (Eve, 2026-11-06): branch `teamitems`
 - "Find ALL the items that apply to teammates and patch those in" (e.g. Trinket of Chi).

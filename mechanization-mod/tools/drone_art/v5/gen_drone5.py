@@ -59,7 +59,7 @@ def draw_pod(cv, x0, x1, y0, y1, k, far):
     if (gx, ty + 1) in inner: put(gx, ty + 1, 's' if k % 2 == 0 else 'h')
     ex = (xb, (ty + by) // 2)
     if ex in inner: put(ex[0], ex[1], ['m', 'd', 'h', 'd'][k])
-    draw_intake(cv, x1 - 0.9, cy, 2.3, ry + 0.1, far, mask)
+    if not far: draw_intake(cv, x1 - 0.9, cy, 2.2, ry + 0.1, far, mask)   # only the near pod shows an intake oval
     return mask
 
 
@@ -70,7 +70,7 @@ def draw_intake(cv, cx, cy, rx, ry, far, podmask):
     for (x, y) in oval:
         d = math.hypot((x + .5 - cx) / rx, (y + .5 - cy) / ry)
         t = -((x + .5 - cx) / rx) * .6 - ((y + .5 - cy) / ry) * .8      # 1 = top-left of the rim
-        if d > 0.55:
+        if d > 0.45:
             c = 's' if t > 0.2 else 'h'
             if far: c = 'h' if c == 's' else 'm'
             cv.put(x, y, pal[c])

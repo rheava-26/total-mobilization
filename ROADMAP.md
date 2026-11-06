@@ -570,6 +570,15 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
   2. Mana-star option → "Fallen Stars per Mana Crystal" (vanilla 5); the nonexistent "levy mana star" item is removed.
   5. Sidearms rarely used; class-less levies should spread across melee/ranged/magic (not summon/rogue).
   8. High-mana levies prefer magic.
+  - **armory-alloc DONE (9e22636), held for one fix:**
+    - Shift-click intake (ArmoryIntakePlayer, new) + a wider Deposit junk.
+    - Molotov classified (aiStyle 68). The allocator offers thrown stacks (it skipped maxStack>1 before).
+    - FillEmptySidearm runs on upgrade ticks.
+    - D'Hondt spread for class-less levies (no summon/rogue; Rules still win).
+    - MagicManaBias 1→4 between mana 40 and 200.
+    - ProgCheck 54/54.
+  - **Held:** it ADDED a progression FallenStarsPerManaCrystal but left the main-config "per levy mana crystal" one (the one Eve meant). Sent back to merge them into ONE crafting-cost setting the armory conversion also reads.
+  - **Open for Eve:** sidearms are fallback-only (switch on no ammo/mana). Should levies switch to the sidearm at close range? The gems→mana-crystal recipe is dropped.
 - **`field-ai-3` builder:**
   3. Levies don't use hooks in real play. Candidate: no hook equipped because of (1); proving it.
   9. Dodging "laughably bad" in real play. The old harness used stand-ins; re-testing vs real vanilla + Calamity bosses.

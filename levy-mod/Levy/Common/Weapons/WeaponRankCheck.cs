@@ -32,10 +32,11 @@ namespace Levy.Common.Weapons
 			Guard("cost solver", () => CheckSolver(Check));
 			Guard("real recipes", () => CheckRealRecipes(Check));
 			Guard("sword shots", () => CheckSwordShots(Check));
+			Guard("beam melee boost", () => CheckBeamMelee(Check));
 			Guard("armor skip", () => CheckArmorSkip(Check));
 			Guard("balanced curves", () => CheckBalancedCurves(Check));
 			Guard("balanced picks", () => CheckBalancedRanks(Check));
-			Guard("found boost", () => CheckFoundBoost(Check));
+			Guard("found boost", () => { WeaponRank.BeamBoost = false; try { CheckFoundBoost(Check); } finally { WeaponRank.BeamBoost = true; } }); // the check uses the Enchanted Sword as its found weapon: measure the found factor alone
 			Guard("aim accuracy", () => CheckAimAccuracy(Check));
 			Guard("star conversion", () => CheckStarMana(Check));
 			foreach (var (mode, skip) in new[] { (WeaponRankMode.Balanced, false), (WeaponRankMode.Balanced, true), (WeaponRankMode.SellPrice, true), (WeaponRankMode.SellPrice, false), (WeaponRankMode.SellPricePlusMaterials, true), (WeaponRankMode.SellPricePlusMaterials, false), (WeaponRankMode.Damage, false) })
@@ -54,6 +55,37 @@ namespace Levy.Common.Weapons
 				}
 			}
 			catch (Exception) { }
+		}
+
+		// ------------------------------------------------------------------ a melee weapon that fires a beam always outranks the plain blades
+
+		private static void CheckBeamMelee(Action<bool, string> check)
+		{
+			int beam = ItemID.EnchantedSword;
+			var plain = new[] { ItemID.PlatinumBroadsword, ItemID.GoldBroadsword, ItemID.IronBroadsword, ItemID.BloodButcherer, ItemID.Muramasa, ItemID.BoneSword };
+			plain = plain.Where(t => !WeaponClassifier.GetProfile(Make(t)).FiresProjectileMelee).ToArray(); // a plain blade fires nothing
+			foreach (var (mode, skip) in new[] { (WeaponRankMode.Balanced, false), (WeaponRankMode.SellPrice, false), (WeaponRankMode.SellPricePlusMaterials, false), (WeaponRankMode.Damage, false) })
+			{
+				WeaponRank.Force(mode, skip);
+				try
+				{
+					for (int stage = 0; stage <= 3; stage++)
+					{
+						WeaponRank.ForceStage = stage;
+						float b = WeaponRank.Of(Make(beam));
+						foreach (int pt in plain)
+						{
+							float r = WeaponRank.Of(Make(pt));
+							check(b > r, $"Enchanted Sword ({b:0.0}) outranks {Lang.GetItemNameValue(pt)} ({r:0.0}) in {mode} at stage {stage}");
+						}
+					}
+					WeaponRank.ForceStage = -1;
+					WeaponRank.BeamBoost = false; float off = WeaponRank.Of(Make(beam)); WeaponRank.BeamBoost = true; float on = WeaponRank.Of(Make(beam));
+					check(Math.Abs(on / Math.Max(0.001f, off) - WeaponRank.BeamMeleeBoost) < 0.01f, $"the boost is exactly x{WeaponRank.BeamMeleeBoost} in {mode} ({off:0.0} -> {on:0.0})");
+					check(WeaponRank.Of(Make(ItemID.PlatinumBroadsword)) > 0f, "a plain blade still ranks");
+				}
+				finally { WeaponRank.ForceStage = -1; WeaponRank.BeamBoost = true; WeaponRank.Release(); }
+			}
 		}
 
 		// ------------------------------------------------------------------ the cost solver, on made-up recipes

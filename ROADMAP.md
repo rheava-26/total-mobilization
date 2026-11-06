@@ -256,6 +256,16 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**MERGED: progression-assist 183c75c**
+- **Placement:** a separate "Levy: Progression assistance" config, all vanilla by default; `ReloadRequired` where needed.
+- **Recipes:** Life Crystal, Life Fruit (post-mech), Fallen Star (post-EoW/BoC, Meteorite Bars), Mana Crystal (8 gems), Chlorophyte Ore (HM); Chlorophyte ore-per-bar slider; ammo yield ×.
+- **Drop and world multipliers:** Ectoplasm, Souls, mob drops; Chlorophyte growth and chunk; HM crate ore.
+- **Shimmer ring:** Forbidden Fragment → Dark Shard → Light Shard (my choice; Eve can veto).
+- **Armor cost sliders:** Chlorophyte, Hallowed, Spider, plus a "levy sets" slider for all other sets. Spectre, Shroomite and Spooky are hard-excluded.
+- **Arms Dealer bulk ammo:** default OFF. Unlocks per ammo type after 500 crafted/picked; normal price; max 12 extra types.
+- **Plantera FACT:** the Grenade Launcher is guaranteed on the first kill (non-Expert) and is 1/7 in her later drops and bag. It's hidden in the bestiary, so Eve getting only one was RNG. The option adds an extra % roll.
+- **Stations:** parked in `levy-mod/paused-stations/` (not built).
+
 **MERGED: talk2 1991e41 (talking to levies)**
 - **Chat bars:** blue chat bars with typewriter text. Max 5 visible within 70 tiles, priority queue, one per speaker, a clump stacks upward.
 - **Talk during combat:** CanChat allows Engage (Routed is still blocked; ask Eve). Right-clicking your levy beyond reach CALLS it over (packet TalkCall), and the chat opens on arrival. While talking, the levy stays within 2.5 tiles and keeps shooting its current target.

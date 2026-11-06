@@ -38,10 +38,10 @@ namespace Levy.Common.Weapons
 		public const float RecentBoostMax = 0.6f, RecentDays = 1f;
 		/// <summary>Balanced: a weapon nobody crafts or sells (<see cref="ProgressionTier.IsFound"/>: a drop, a chest or shrine find, a catch) ranks this much higher than a crafted weapon of the same price. Kept under the 1.15 swap margin, so a crafted weapon that is clearly better still wins.</summary>
 		public const float FoundBoost = 1.12f;
-		/// <summary>A melee weapon whose swing also launches a projectile or beam (Enchanted Sword, Beam Sword, Starfury, Terra Blade; <see cref="WeaponProfile.FiresProjectileMelee"/>) ranks this many times higher in every mode: the levy fights it from range like a gun and still swings when an enemy is close, so it beats any plain blade of the same era and any blade a few stages ahead (a rank factor of 4 is the price gap between a Platinum Broadsword and a weapon about 8 times dearer).</summary>
-		public const float BeamMeleeBoost = 4f;
-		/// <summary>Probe seam: false restores the pre-boost ranking (the boss trials' baseline).</summary>
-		internal static bool BeamBoost = true;
+		/// <summary>A blade or shortsword that fires nothing (<see cref="WeaponProfile.IsPureContactBlade"/>) ranks at this fraction of its normal rank in every mode, so a levy takes any melee weapon that launches a projectile or beam (Enchanted Sword, Beam Sword, Starfury, Terra Blade; <see cref="WeaponProfile.FiresProjectileMelee"/>) first and falls back to a plain blade only when nothing else on the shelf is current. Spears, yoyos, flails, whips and boomerangs are not touched. The stage discount still applies, so an outdated weapon loses to a current one of either kind.</summary>
+		public const float PureContactFactor = 0.15f;
+		/// <summary>Probe seam: false restores the pre-change ranking (the boss trials' baseline).</summary>
+		internal static bool PureContactPenalty = true;
 		/// <summary>A weapon whose hit lands less than this share of its damage on an enemy at the world's stage defense is negligible.</summary>
 		public const float NegligibleShare = 0.25f;
 		/// <summary>Defense of the tougher ordinary enemies by progression stage: before Eye of Cthulhu, after it, after Skeletron, Hardmode, after the mechanical bosses, after Plantera, after Golem.</summary>
@@ -115,7 +115,7 @@ namespace Levy.Common.Weapons
 					if (explain) bd.Recency = rec;
 				}
 			}
-			if (p.Family == WeaponFamily.Broadsword && p.FiresProjectileMelee && it.type != ItemID.Zenith) r *= BeamBoost ? BeamMeleeBoost : 1f;
+			if (PureContactPenalty && p.IsPureContactBlade) { r = Math.Max(1f, r * PureContactFactor); if (explain) bd.Rules *= PureContactFactor; }
 			if (rules != null)
 			{
 				float f = rules.RuleFactor(it, out var note);

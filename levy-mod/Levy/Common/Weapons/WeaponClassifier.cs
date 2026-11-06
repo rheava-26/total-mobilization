@@ -57,6 +57,8 @@ namespace Levy.Common.Weapons
 		public bool IsThrown => Family == WeaponFamily.Thrown;
 		/// <summary>A reusable melee-class thrower (Daybreak, Shadowflame Knife, Vampire Knives): thrown again and again, never used up. Counts as ranged for the brain, at a short melee-thrower range.</summary>
 		public bool IsThrownMelee => Family == WeaponFamily.ThrownMelee;
+		/// <summary>A broadsword or shortsword whose swing launches nothing: it only hurts what it touches.</summary>
+		public bool IsPureContactBlade => (Family == WeaponFamily.Broadsword && !FiresProjectileMelee) || Family == WeaponFamily.Shortsword;
 		public bool IsThrust => Family == WeaponFamily.Shortsword || Family == WeaponFamily.Spear;
 		public bool UsesAmmo => Family == WeaponFamily.Gun || Family == WeaponFamily.Bow;
 		public bool Supported => Family != WeaponFamily.Unsupported && Family != WeaponFamily.None;

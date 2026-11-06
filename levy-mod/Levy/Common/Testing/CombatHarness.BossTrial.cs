@@ -516,7 +516,7 @@ namespace Levy.Common.Testing
 		{
 			if (!_btStarted)
 			{
-				BtApplyExtra(run.Extra); WeaponRank.BeamBoost = run.Beam;
+				BtApplyExtra(run.Extra); WeaponRank.PureContactPenalty = run.Beam;
 				if (run.Specs == null) { run.Specs = BtFixedSpecs(run); run.Desc = string.Join(" ; ", run.Specs.Select(sp => sp.Describe())); }
 				ClearAll(); BtPurgeNpcs();
 				Main.GameMode = run.Diff == "expert" ? GameModeID.Expert : GameModeID.Normal;
@@ -656,7 +656,7 @@ namespace Levy.Common.Testing
 			char cls = run.Comp[0];
 			if (!_btRefStarted)
 			{
-				BtApplyExtra(run.Extra); WeaponRank.BeamBoost = run.Beam;
+				BtApplyExtra(run.Extra); WeaponRank.PureContactPenalty = run.Beam;
 				ClearAll(); BtPurgeNpcs(); _btRefPlayer = false;
 				Main.GameMode = run.Diff == "expert" ? GameModeID.Expert : GameModeID.Normal;
 				Main.rand = new Terraria.Utilities.UnifiedRandom(run.Seed * 7919 + 17);

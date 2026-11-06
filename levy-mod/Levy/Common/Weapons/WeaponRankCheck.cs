@@ -34,9 +34,9 @@ namespace Levy.Common.Weapons
 			Guard("sword shots", () => CheckSwordShots(Check));
 			Guard("beam melee boost", () => CheckBeamMelee(Check));
 			Guard("armor skip", () => CheckArmorSkip(Check));
-			Guard("balanced curves", () => CheckBalancedCurves(Check));
-			Guard("balanced picks", () => CheckBalancedRanks(Check));
-			Guard("found boost", () => { WeaponRank.BeamBoost = false; try { CheckFoundBoost(Check); } finally { WeaponRank.BeamBoost = true; } }); // the check uses the Enchanted Sword as its found weapon: measure the found factor alone
+			Guard("balanced curves", () => Unpenalized(() => CheckBalancedCurves(Check)));
+			Guard("balanced picks", () => Unpenalized(() => CheckBalancedRanks(Check)));
+			Guard("found boost", () => Unpenalized(() => CheckFoundBoost(Check)));
 			Guard("aim accuracy", () => CheckAimAccuracy(Check));
 			Guard("star conversion", () => CheckStarMana(Check));
 			foreach (var (mode, skip) in new[] { (WeaponRankMode.Balanced, false), (WeaponRankMode.Balanced, true), (WeaponRankMode.SellPrice, true), (WeaponRankMode.SellPrice, false), (WeaponRankMode.SellPricePlusMaterials, true), (WeaponRankMode.SellPricePlusMaterials, false), (WeaponRankMode.Damage, false) })
@@ -57,13 +57,19 @@ namespace Levy.Common.Weapons
 			catch (Exception) { }
 		}
 
-		// ------------------------------------------------------------------ a melee weapon that fires a beam always outranks the plain blades
+		// ------------------------------------------------------------------ a pure-contact blade ranks below every melee weapon that launches a projectile
+
+		/// <summary>Runs a check that measures the stage / price / found factors on plain blades with the pure-contact factor out of the way (that factor has its own check).</summary>
+		private static void Unpenalized(Action a) { WeaponRank.PureContactPenalty = false; try { a(); } finally { WeaponRank.PureContactPenalty = true; } }
 
 		private static void CheckBeamMelee(Action<bool, string> check)
 		{
-			int beam = ItemID.EnchantedSword;
-			var plain = new[] { ItemID.PlatinumBroadsword, ItemID.GoldBroadsword, ItemID.IronBroadsword, ItemID.BloodButcherer, ItemID.Muramasa, ItemID.BoneSword };
-			plain = plain.Where(t => !WeaponClassifier.GetProfile(Make(t)).FiresProjectileMelee).ToArray(); // a plain blade fires nothing
+			var capable = new[] { ItemID.EnchantedSword, ItemID.Starfury };
+			var plain = new[] { ItemID.PlatinumBroadsword, ItemID.GoldBroadsword, ItemID.IronBroadsword, ItemID.BloodButcherer, ItemID.Muramasa, ItemID.BoneSword, ItemID.CopperShortsword };
+			plain = plain.Where(t => WeaponClassifier.GetProfile(Make(t)).IsPureContactBlade).ToArray();
+			check(plain.Length >= 4, $"{plain.Length} pure-contact blades found for the check");
+			foreach (int c in capable) check(WeaponClassifier.GetProfile(Make(c)).FiresProjectileMelee && !WeaponClassifier.GetProfile(Make(c)).IsPureContactBlade, Lang.GetItemNameValue(c) + " counts as ranged-capable");
+			check(!WeaponClassifier.GetProfile(Make(ItemID.WoodYoyo)).IsPureContactBlade && !WeaponClassifier.GetProfile(Make(ItemID.Spear)).IsPureContactBlade && !WeaponClassifier.GetProfile(Make(ItemID.WoodenBoomerang)).IsPureContactBlade, "yoyos, spears and boomerangs are not pure-contact blades");
 			foreach (var (mode, skip) in new[] { (WeaponRankMode.Balanced, false), (WeaponRankMode.SellPrice, false), (WeaponRankMode.SellPricePlusMaterials, false), (WeaponRankMode.Damage, false) })
 			{
 				WeaponRank.Force(mode, skip);
@@ -72,19 +78,23 @@ namespace Levy.Common.Weapons
 					for (int stage = 0; stage <= 3; stage++)
 					{
 						WeaponRank.ForceStage = stage;
-						float b = WeaponRank.Of(Make(beam));
-						foreach (int pt in plain)
+						foreach (int cap in capable)
 						{
-							float r = WeaponRank.Of(Make(pt));
-							check(b > r, $"Enchanted Sword ({b:0.0}) outranks {Lang.GetItemNameValue(pt)} ({r:0.0}) in {mode} at stage {stage}");
+							float b = WeaponRank.Of(Make(cap));
+							foreach (int pt in plain)
+							{
+								float r = WeaponRank.Of(Make(pt));
+								if (mode != WeaponRankMode.Damage) check(b > r, $"{Lang.GetItemNameValue(cap)} ({b:0.0}) outranks {Lang.GetItemNameValue(pt)} ({r:0.0}) in {mode} at stage {stage}");
+							}
 						}
 					}
 					WeaponRank.ForceStage = -1;
-					WeaponRank.BeamBoost = false; float off = WeaponRank.Of(Make(beam)); WeaponRank.BeamBoost = true; float on = WeaponRank.Of(Make(beam));
-					check(Math.Abs(on / Math.Max(0.001f, off) - WeaponRank.BeamMeleeBoost) < 0.01f, $"the boost is exactly x{WeaponRank.BeamMeleeBoost} in {mode} ({off:0.0} -> {on:0.0})");
-					check(WeaponRank.Of(Make(ItemID.PlatinumBroadsword)) > 0f, "a plain blade still ranks");
+					float ps = WeaponRank.Of(Make(ItemID.PlatinumBroadsword)); WeaponRank.PureContactPenalty = false; float off = WeaponRank.Of(Make(ItemID.PlatinumBroadsword)); float offE = WeaponRank.Of(Make(ItemID.EnchantedSword)); float offY = WeaponRank.Of(Make(ItemID.WoodYoyo)); WeaponRank.PureContactPenalty = true;
+					check(ps <= off * WeaponRank.PureContactFactor + 0.01f || ps <= 1.01f, $"a pure-contact blade is x{WeaponRank.PureContactFactor} in {mode} ({off:0.0} -> {ps:0.0})");
+					check(Math.Abs(WeaponRank.Of(Make(ItemID.EnchantedSword)) - offE) < 0.01f && Math.Abs(WeaponRank.Of(Make(ItemID.WoodYoyo)) - offY) < 0.01f, $"ranged-capable swords and yoyos are not changed in {mode}");
+					check(ps > 0f, "a plain blade still ranks");
 				}
-				finally { WeaponRank.ForceStage = -1; WeaponRank.BeamBoost = true; WeaponRank.Release(); }
+				finally { WeaponRank.ForceStage = -1; WeaponRank.PureContactPenalty = true; WeaponRank.Release(); }
 			}
 		}
 

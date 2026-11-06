@@ -48,7 +48,7 @@ namespace Levy.Common.UI
 		private ArmoryPanel _armory;
 		private SoldierLoadoutPanel _loadout;
 		private OfficerPanel _officers;
-		private ManualPanel _manual;
+		private GuidePanel _manual;
 		private SetupPanel _setup;
 		private OrdersRadial _radial;
 		private HudStrip _hud;
@@ -75,7 +75,7 @@ namespace Levy.Common.UI
 			// is fully loaded; doing this in Load would stamp raw keys like "Mods.Levy.UI2.Roster" into the buttons.
 			if (Main.dedServ) return;
 			_barracksUI = new UserInterface(); _armoryUI = new UserInterface(); _radialUI = new UserInterface(); _hudUI = new UserInterface(); _manualUI = new UserInterface(); _loadoutUI = new UserInterface(); _officersUI = new UserInterface(); _setupUI = new UserInterface();
-			_barracks = new BarracksPanel(); _armory = new ArmoryPanel(); _radial = new OrdersRadial(); _hud = new HudStrip(); _manual = new ManualPanel(); _loadout = new SoldierLoadoutPanel(); _officers = new OfficerPanel(); _setup = new SetupPanel();
+			_barracks = new BarracksPanel(); _armory = new ArmoryPanel(); _radial = new OrdersRadial(); _hud = new HudStrip(); _manual = new GuidePanel(); _loadout = new SoldierLoadoutPanel(); _officers = new OfficerPanel(); _setup = new SetupPanel();
 			_barracks.Activate(); _armory.Activate(); _radial.Activate(); _hud.Activate(); _manual.Activate(); _loadout.Activate(); _officers.Activate(); _setup.Activate();
 		}
 

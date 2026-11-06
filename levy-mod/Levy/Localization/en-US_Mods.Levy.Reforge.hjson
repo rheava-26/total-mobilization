@@ -32,7 +32,7 @@ ClassHint: Only weapons of this class.
 CategoryHint: Only weapons of this type, such as bows.
 Goal: Roll for
 GoalHint: A floor rerolls each weapon until its modifier is in the top slice of what it can roll. A named modifier rerolls until that one comes up.
-GoalPrefix: "Modifier: {0}"
+GoalPrefix: Modifier: {0}
 PrefixOption: "{0} ({1})"
 Cap: Spend at most
 CapHint: The run stops before it spends more than this.
@@ -46,6 +46,6 @@ PvIssuedClient: Counted when the run starts.
 Run: Reforge
 RunHint: Rerolls the weapons chosen here. Each roll costs the standard reforge price from the barracks treasury.
 NoTargets: No weapons match this reforge.
-NothingToDo: "All {0} chosen weapons already meet the goal or cannot take it."
+NothingToDo: All {0} chosen weapons already meet the goal or cannot take it.
 Report: Reforged {0} weapons in {1} rolls for {2}; {3} reached the goal.
 CapReached: Stopped at the spending cap of {0}. {1} weapons were left short.

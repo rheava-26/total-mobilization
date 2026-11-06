@@ -1445,6 +1445,8 @@ namespace Levy.Content.TileEntities
 		private static readonly Dictionary<int, double[]> _prefixScores = new Dictionary<int, double[]>();
 		/// <summary>Per weapon type: the average reforge price of a roll (the mean over the prefixes it can roll), for the run's cost estimate.</summary>
 		private static readonly Dictionary<int, long> _meanRollPrice = new Dictionary<int, long>();
+		/// <summary>Per weapon type: of the sample rolls, how many gave each prefix, and each prefix's quality. The cost estimate reads the odds of a goal off this.</summary>
+		private static readonly Dictionary<int, (int rolls, Dictionary<int, int> seen, Dictionary<int, double> quality)> _prefixOdds = new();
 
 		/// <summary>
 		/// Prefix quality for one weapon: the item's market value relative to the same weapon with no prefix. Terraria builds an item's value from
@@ -1464,14 +1466,18 @@ namespace Levy.Content.TileEntities
 		{
 			if (_prefixScores.TryGetValue(sample.type, out var cached)) return cached;
 			var byPrefix = new Dictionary<int, double>();
+			var seen = new Dictionary<int, int>();
 			long priceSum = 0;
 			for (int i = 0; i < LevyConstants.UI.ReforgeSampleRolls; i++)
 			{
 				var t = new Item();
 				t.SetDefaults(sample.type);
 				t.Prefix(-2);
-				if (t.prefix > 0 && !byPrefix.ContainsKey(t.prefix)) { byPrefix[t.prefix] = PrefixQuality(t, sample); priceSum += ReforgePrice(t); }
+				if (t.prefix <= 0) continue;
+				seen[t.prefix] = seen.TryGetValue(t.prefix, out int cnt) ? cnt + 1 : 1;
+				if (!byPrefix.ContainsKey(t.prefix)) { byPrefix[t.prefix] = PrefixQuality(t, sample); priceSum += ReforgePrice(t); }
 			}
+			_prefixOdds[sample.type] = (LevyConstants.UI.ReforgeSampleRolls, seen, byPrefix);
 			_meanRollPrice[sample.type] = byPrefix.Count == 0 ? ReforgePrice(sample) : Math.Max(1, priceSum / byPrefix.Count);
 			var arr = new double[byPrefix.Count];
 			int n = 0; foreach (var v in byPrefix.Values) arr[n++] = v;
@@ -2216,6 +2222,15 @@ namespace Levy.Content.TileEntities
 				stacks++;
 			}
 			Lent.Clear();
+			// Vanity pieces and dyes set on the vanity screen spill too, and the rows go.
+			foreach (var set in Vanity.Sets) {
+				for (int i = 0; i < set.Items.Length; i++) {
+					if (IsAir(set.Items[i])) continue;
+					Spill(set.Items[i]);
+					set.Items[i] = new Item();
+					stacks++;
+				}
+			}
 			return stacks;
 		}
 
@@ -2229,6 +2244,7 @@ namespace Levy.Content.TileEntities
 				foreach (var it in IssueArmor) if (!IsAir(it)) return true;
 				foreach (var it in IssueAmmo) if (!IsAir(it)) return true;
 				foreach (var it in IssuePotions) if (!IsAir(it)) return true;
+				foreach (var set in Vanity.Sets) foreach (var it in set.Items) if (!IsAir(it)) return true;
 				return false;
 			}
 		}

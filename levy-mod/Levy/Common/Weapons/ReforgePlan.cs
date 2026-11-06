@@ -32,7 +32,7 @@ namespace Levy.Common.Weapons
 	/// </summary>
 	public sealed class ReforgePlan
 	{
-		public const int MaxPicks = 512, MaxRecentDays = 365, FormatVersion = 1;
+		public const int MaxPicks = 512, MaxRecentDays = 365, FormatVersion = 1, MinBytes = 24;
 		/// <summary>The selectable look-back windows for <see cref="ReforgeMode.Recent"/>, in world days.</summary>
 		public static readonly int[] RecentChoices = { 1, 3, 7, 30 };
 		/// <summary>The selectable spending caps in copper (0 = no cap): 1 gold, 5 gold, 20 gold, 50 gold, 1 platinum, 5 platinum, 20 platinum.</summary>
@@ -89,7 +89,7 @@ namespace Levy.Common.Weapons
 		public static ReforgePlan FromBytes(byte[] data)
 		{
 			var p = new ReforgePlan();
-			if (data == null || data.Length == 0 || data.Length > 8 * 1024) return p;
+			if (data == null || data.Length < MinBytes || data.Length > 8 * 1024) return p;
 			try
 			{
 				using var r = new BinaryReader(new MemoryStream(data));
@@ -104,6 +104,7 @@ namespace Levy.Common.Weapons
 				p.PrefixId = Math.Max(0, r.ReadInt32());
 				p.CapCopper = Math.Clamp(r.ReadInt64(), 0L, 100_000_000_000L);
 				int n = Math.Min((int)r.ReadUInt16(), MaxPicks);
+				n = Math.Min(n, (int)((data.Length - r.BaseStream.Position) / 3));
 				for (int i = 0; i < n; i++)
 				{
 					byte region = r.ReadByte(); short slot = r.ReadInt16();

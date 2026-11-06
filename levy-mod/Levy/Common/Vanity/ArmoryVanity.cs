@@ -46,7 +46,7 @@ namespace Levy.Common.Vanity
 				case Head: return it.headSlot >= 0 && !it.accessory;
 				case Body: return it.bodySlot >= 0 && !it.accessory;
 				case Legs: return it.legSlot >= 0 && !it.accessory;
-				case DyeHead: case DyeBody: case DyeLegs: return it.dye > 0;
+				case DyeHead: case DyeBody: case DyeLegs: return it.dye > 0 || Main.dedServ; // a dedicated server never loads the shader table that sets Item.dye, so it cannot tell a dye: it keeps what a client sent (a dye is cosmetic, and every client re-checks)
 				default: return false;
 			}
 		}
@@ -111,7 +111,7 @@ namespace Levy.Common.Vanity
 	/// </summary>
 	public sealed class ArmoryVanity
 	{
-		public const int MaxSets = 16, MaxWireBytes = 48 * 1024, FormatVersion = 1;
+		public const int MaxSets = 16, MaxWireBytes = 48 * 1024, FormatVersion = 1, MinSetBytes = 10;
 
 		public List<VanitySet> Sets = new();
 		/// <summary>Bumped by the server on every accepted edit.</summary>
@@ -234,7 +234,7 @@ namespace Levy.Common.Vanity
 		public static ArmoryVanity FromBytes(byte[] data)
 		{
 			var v = new ArmoryVanity();
-			if (data == null || data.Length == 0 || data.Length > MaxWireBytes) return v;
+			if (data == null || data.Length < 2 || data.Length > MaxWireBytes) return v;
 			try
 			{
 				using var r = new BinaryReader(new MemoryStream(data));
@@ -242,6 +242,7 @@ namespace Levy.Common.Vanity
 				int n = Math.Min((int)r.ReadByte(), MaxSets);
 				for (int k = 0; k < n; k++)
 				{
+					if (data.Length - r.BaseStream.Position < MinSetBytes) break; // a truncated list ends here: never read past the end
 					var s = new VanitySet { On = r.ReadBoolean() };
 					byte kind = r.ReadByte(); s.Target = kind <= (byte)VanityTargetKind.Levies ? (VanityTargetKind)kind : VanityTargetKind.All;
 					string cls = r.ReadString(); s.ClassKey = cls.Length == 0 ? null : cls;

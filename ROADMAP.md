@@ -256,6 +256,32 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - `field-ai`: projectile/charge/beam dodging, hooks used well, fall damage.
 - `art2`: concept art for all new items, for Eve's approval.
 - `ooa-tavern`: 3-tier levy sentry staves, shop space, Tavernkeep drinks / drunk levies.
+**ART + STATION DECISIONS (Eve, 2026-11-06):**
+- **Art style:**
+  - Match vanilla exactly: 2×2 grid, MESSIER and more clumped, not neat.
+  - Placeables must be FLAT, front-facing 2D (v1 had perspective).
+  - Real vanilla sprites from terraria.wiki.gg are used as references only (`art3` branch).
+- **Picks:**
+  - GoPro A, plus a funny GoPro COLLAR variant.
+  - Static camera B.
+  - Guide to Autonomy C (slime).
+  - Staves B (stick with a house/tower).
+  - Bulk Factory B as an ANIMATED conveyor.
+  - The bulk potion station is an UPGRADE of the Alchemy Table, built with late-game items (not a standalone cauldron).
+  - Armory Heart follows Magic Storage's own look.
+- **No new radio:** use the existing Command Radio for map orders. Eve liked the walkie-talkie B look, which could reskin it later.
+- **Guide to Autonomy** drops in Slime Rain at **1/50**, so you get it during your first Slime Rain.
+- **FACTORY redesign:**
+  - Only crafts recipes and items you already have.
+  - For AMMO and consumables, not weapons, armor or accessories.
+  - Respects stations (ore needs a furnace).
+  - Pre-HM tier, plus a Mythril-anvil HM upgrade.
+  - EXPENSIVE.
+  - Better yield (e.g. Chlorophyte Bullets 90 vs 70, or less input); may produce over time.
+  - Magic Storage compatible.
+  - Redesign sent to `progression-assist`.
+- **No access to Eve's computer:** the session has no shared computer folders (list_computer_folders is empty), so vanilla refs come from the wiki.
+
 **WORKING AGREEMENT (Eve, again):** Eve's examples are EXAMPLES. Don't turn them into the whole scope or into hard rules.
 - "Dark Gate" meant ALL interaction weapons.
 - "Painter" meant ALL officers get unique, identity-driven kits.

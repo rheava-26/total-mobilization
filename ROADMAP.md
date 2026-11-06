@@ -549,6 +549,10 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - The Barracks tent is "a tad off": a flat salmon fill with almost no canvas shading, lighter and more saturated than the vanilla wood next to it, and a solid-black door.
 - Offered Eve a small tent-only tweak (darker canvas, fold shading, a door flap). NOT started; waiting for her yes.
 
+## 🐛 FIXED (unshipped): combat chat bars dropped their last row (Eve's screenshot: "Militia, assemble! Slowly! Some of")
+- Cause, from the code: Utils.WordwrapString's `out` value is the LAST row index (OfficerPanel already used `i <= count`). ChatBars used `k < count`.
+- Fix: `k <= count` in ChatBars.cs. Compiles; boots clean with Thorium+MS+Levy+Mech. Rides the next build.
+
 ## 🛠 Orders → craft browser (Eve, 2026-11-06), added to `logi-search`
 - Craft from the Orders page using the player's inventory + nearby chests + armory stock.
 - Search box, filters "Can craft" / "Has materials" / "All", and "Craft" (now, with a count) or "Make order".

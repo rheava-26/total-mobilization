@@ -103,7 +103,7 @@ namespace Levy.Common.UI
 				{
 					string[] rows = Utils.WordwrapString(e.Text, font, (int)(LevyConstants.ChatBarMaxTextWidth / sc), LevyConstants.ChatBarMaxRows, out int count);
 					var list = new List<string>(count);
-					for (int k = 0; k < count && k < rows.Length; k++) if (rows[k] != null) list.Add(rows[k].TrimEnd());
+					for (int k = 0; k <= count && k < rows.Length; k++) if (!string.IsNullOrEmpty(rows[k])) list.Add(rows[k].TrimEnd()); // count is the LAST row index (vanilla convention), not the row count
 					float w = 0f;
 					foreach (string r in list) w = Math.Max(w, font.MeasureString(r).X * sc);
 					lay = new BarLayout { Rows = list.ToArray(), W = (int)Math.Ceiling(w) + pad * 2, H = (int)Math.Ceiling(list.Count * font.LineSpacing * sc * 0.92f) + pad * 2 };

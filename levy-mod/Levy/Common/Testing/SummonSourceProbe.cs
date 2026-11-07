@@ -92,6 +92,12 @@ namespace Levy.Common.Testing
 			public List<Item> Armory = new(), Net = new(), Ms = new();
 		}
 
+		private static void Bump(uint n)
+		{
+			var pr = typeof(Main).GetProperty("GameUpdateCount");
+			pr.GetSetMethod(true).Invoke(null, new object[] { Main.GameUpdateCount + n });
+		}
+
 		private static string[] Names(IEnumerable<Item> items) => items.Select(Nm).ToArray();
 
 		private static List<Item> BetterStaves(StringBuilder sb)
@@ -190,12 +196,12 @@ namespace Levy.Common.Testing
 				var levies = new List<SoldierRecord>();
 				for (int i = 0; i < 12; i++) levies.Add(new SoldierRecord { Id = i + 1, Name = "L" + (i + 1) });
 				ArmoryTE.TestServed = levies;
-				Main.GameUpdateCount += 200;
-				foreach (var l in levies) { Main.GameUpdateCount++; te.IssueGear(l); }
+				Bump(200);
+				foreach (var l in levies) { Bump(1); te.IssueGear(l); }
 				Report(sb, "after IssueGear", levies);
 				for (int round = 1; round <= 6; round++)
 				{
-					foreach (var l in levies) { Main.GameUpdateCount++; te.UpgradeWeapons(l); }
+					foreach (var l in levies) { Bump(1); te.UpgradeWeapons(l); }
 					if (round == 1 || round == 6) Report(sb, "after upgrade round " + round, levies);
 				}
 				var left = new List<string>();

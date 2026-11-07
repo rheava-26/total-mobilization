@@ -265,6 +265,7 @@ namespace Levy.Content.NPCs
 					break;
 			}
 
+			if (State != SoldierState.Dead && State != SoldierState.Desert) ApplyFightZone(now);
 			HangWatch.Brain(-1, 0); // this think finished (a stall after this point is not in the brain)
 			if (!NPC.active) return; // despawned this think
 			if (State != prevState) StateTimer = 0;
@@ -1088,7 +1089,7 @@ namespace Levy.Content.NPCs
 					}
 					aloft = WantsAltitude || _aerial;
 				}
-				else if (!aloft && TryPerch(target, seg, range, standoff, now)) { WhyB = Why.BPerch; return true; }
+				else if (!aloft && !RowHolding(now) && TryPerch(target, seg, range, standoff, now)) { WhyB = Why.BPerch; return true; }
 				if (_engMode == EngageMode.Approach) ClearGoal();
 				_engMode = EngageMode.Hold;
 				if (!aloft && _crowdCount > 0 && now >= _nudgeNextTick && TryDisperseStep(seg, range, standoff, now)) return true;

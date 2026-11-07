@@ -43,6 +43,8 @@ namespace Levy.Content.NPCs
 			}
 			if (head == null) { _spreading = false; return false; }
 			if (Vector2.Distance(head.Center, npc.Center) > 90f * LevyConstants.TilePx && !_spreading) return false;
+			// a bystander first tries a different row from the hunted levy (up or down out of the trail's lane), before it spreads along the floor
+			if (RowsMode >= 1 && tgt != this && !PositionsAsMelee && !(WantsAltitude || _aerial) && TickPlatformPerch(now)) { WhyB = Why.BRow; return true; }
 			float tile = LevyConstants.TilePx;
 			int dir; float legTiles;
 			if (tgt == this)

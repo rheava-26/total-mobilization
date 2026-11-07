@@ -17,7 +17,6 @@ namespace Levy.Common.Movement
 		public override bool InstancePerEntity => true;
 		/// <summary>NPC index of the soldier that cast this hook, or -1.</summary>
 		public int Soldier = -1;
-		private static Player _drawBackup; private static int _drawSlot = -1;
 
 		public override void OnSpawn(Projectile projectile, IEntitySource source)
 		{
@@ -28,31 +27,22 @@ namespace Levy.Common.Movement
 			c.HookNoteSpawn(projectile.whoAmI);
 		}
 
-		// Single player draws the real hook projectile, whose chain starts at Main.player[owner].MountedCenter. tML draws the chain in the extras pass BEFORE PreDraw, so the soldier's dummy
-		// stands in the owner slot from PreDrawExtras on (PreDraw re-checks, PostDraw restores, and the frame-end systems below restore if another mod skipped the sprite).
-		public override bool PreDrawExtras(Projectile projectile)
-		{
-			BeginDrawSwap(projectile);
-			return true;
-		}
+		// Single player draws the real hook projectile, whose chain starts at Main.player[owner].MountedCenter. Main.DrawProjDirect reads that position into a LOCAL before ProjectileLoader.PreDrawExtras
+		// runs, so a swap made inside PreDrawExtras / PreDraw (the old fix) came too late: every chain was drawn from the commander's slot, often far offscreen. The swap is therefore made around the whole
+		// DrawProjDirect call (see SoldierHooks.DrawDirectDetour): the soldier's dummy stands in the owner slot while the vanilla chain, a modded hook's own chain and the hook sprite are drawn.
+		private static Player _drawBackup; private static int _drawSlot = -1;
 
-		public override bool PreDraw(Projectile projectile, ref Color lightColor)
+		/// <summary>Puts the soldier's dummy in the hook's owner slot (position on the body). Returns false when this is not a soldier hook (nothing was changed). <paramref name="force"/> also works on a dedicated server (harness check).</summary>
+		internal bool BeginDrawSwap(Projectile projectile, bool force = false)
 		{
-			BeginDrawSwap(projectile);
-			return true;
-		}
-
-		private void BeginDrawSwap(Projectile projectile)
-		{
-			if (Soldier < 0 || Main.dedServ || _drawBackup != null) return;
+			if (Soldier < 0 || (Main.dedServ && !force) || _drawBackup != null) return false;
 			NPC n = Main.npc[Soldier];
-			if (!n.active || n.ModNPC is not SoldierNPC sn || sn.Dummy == null) return;
+			if (!n.active || n.ModNPC is not SoldierNPC sn || sn.Dummy == null) return false;
 			Player d = sn.Dummy;
-			d.position = n.position; d.velocity = n.velocity; d.direction = n.direction == 0 ? 1 : n.direction; d.active = true;
+			d.position = n.position; d.Center = n.Center; d.velocity = n.velocity; d.direction = n.direction == 0 ? 1 : n.direction; d.active = true;
 			_drawSlot = projectile.owner; _drawBackup = Main.player[_drawSlot]; Main.player[_drawSlot] = d;
+			return true;
 		}
-
-		public override void PostDraw(Projectile projectile, Color lightColor) => EndDrawSwap();
 
 		internal static void EndDrawSwap()
 		{
@@ -60,14 +50,14 @@ namespace Levy.Common.Movement
 			Main.player[_drawSlot] = _drawBackup; _drawBackup = null; _drawSlot = -1;
 		}
 
-		/// <summary>Self-check helper: after the extras-pass swap the owner slot's MountedCenter must sit on the soldier. Returns the distance in px (always restores).</summary>
-		internal float SwapError(Projectile projectile)
+		/// <summary>Self-check helper: the chain origin the draw would use (the owner slot's MountedCenter under the swap) and its distance in px from the soldier's centre (always restores; float.MaxValue when not a soldier hook).</summary>
+		internal float SwapError(Projectile projectile) => SwapError(projectile, out _);
+		internal float SwapError(Projectile projectile, out Vector2 origin)
 		{
-			if (Soldier < 0 || Main.dedServ) return 0f;
-			BeginDrawSwap(projectile);
-			float err = _drawBackup == null ? float.MaxValue : Vector2.Distance(Main.player[projectile.owner].MountedCenter, Main.npc[Soldier].Center);
-			EndDrawSwap();
-			return err;
+			origin = default;
+			if (!BeginDrawSwap(projectile, true)) return float.MaxValue;
+			try { origin = Main.player[projectile.owner].MountedCenter; return Vector2.Distance(origin, Main.npc[Soldier].Center); }
+			finally { EndDrawSwap(); }
 		}
 	}
 
@@ -88,7 +78,7 @@ namespace Levy.Common.Movement
 		public static long TickTs, PlanTs, ProjTs; public static int TickCalls, Plans, PlansFound, ProjCalls, Casts, CastsOk, Latches, Releases, Landings, Aborts, Teleports, NetSuppressed, OrphanKills;
 		private static uint _enabledTick = uint.MaxValue; private static bool _enabled = true;
 		private static uint _budgetTick; private static int _budget;
-		private static bool _hookedUpdate, _hookedSend;
+		private static bool _hookedUpdate, _hookedSend, _hookedDraw;
 
 		/// <summary>The config switch, read once a tick (the harness can override it).</summary>
 		public static bool Enabled
@@ -121,12 +111,13 @@ namespace Levy.Common.Movement
 		public override void Load()
 		{
 			On_Projectile.Update += UpdateDetour; _hookedUpdate = true;
+			if (!Main.dedServ) { On_Main.DrawProjDirect += DrawDirectDetour; _hookedDraw = true; }
 			if (Main.dedServ) { On_NetMessage.SendData += SendDetour; _hookedSend = true; }
 		}
 
 		public override void Unload()
 		{
-			try { if (_hookedUpdate) On_Projectile.Update -= UpdateDetour; if (_hookedSend) On_NetMessage.SendData -= SendDetour; } catch { }
+			try { if (_hookedDraw) On_Main.DrawProjDirect -= DrawDirectDetour; if (_hookedUpdate) On_Projectile.Update -= UpdateDetour; if (_hookedSend) On_NetMessage.SendData -= SendDetour; } catch { }
 			_hookedUpdate = _hookedSend = false; Casting = null;
 		}
 
@@ -135,6 +126,15 @@ namespace Levy.Common.Movement
 		// ---------------------------------------------------------------------------------------------
 		// the hook projectile's Update, inside the owner frame
 		// ---------------------------------------------------------------------------------------------
+		private static void DrawDirectDetour(On_Main.orig_DrawProjDirect orig, Main self, Projectile proj)
+		{
+			bool swapped = false; HookTag tag = null;
+			try { swapped = proj != null && proj.active && Main.projHook[proj.type] && proj.TryGetGlobalProjectile(out tag) && tag.Soldier >= 0 && tag.BeginDrawSwap(proj); }
+			catch (Exception) { swapped = false; }
+			try { orig(self, proj); }
+			finally { if (swapped) HookTag.EndDrawSwap(); }
+		}
+
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
 			if (!self.active || self.type >= Main.projHook.Length || !Main.projHook[self.type] || !self.TryGetGlobalProjectile(out HookTag tag) || tag.Soldier < 0) { orig(self, i); return; }

@@ -7,6 +7,8 @@ namespace Levy.Common
 		{
 			// ---- speeds (a town NPC walks ~1 px/tick, a player runs 3, 6 with Hermes Boots) ----
 			public const float WalkSpeedPx = 1.2f;
+			// ---- fight zone: while the commander is in a boss fight, a levy with no explicit order stays inside this radius of the commander ----
+			public const float FightZoneTiles = 46f, FightZoneBossTiles = 90f, FightZoneEdgeFrac = 0.8f;
 			public const float WalkAccel = 0.12f;
 			public const float RunAccel = 0.2f;
 			public const float StopDecel = 0.8f;
@@ -23,6 +25,8 @@ namespace Levy.Common
 			public const int BaseJumpTiles = 3;
 			/// <summary>A player with no gear clears about this many tiles in one jump.</summary>
 			public const int PlayerBaseJumpTiles = 5;
+			/// <summary>The same, measured from Player.Update (15 frames at 5.01 px, then the coast under 0.4 gravity: about 6.6 tiles of rise): a gearless player clears a 6-tile row.</summary>
+			public const int RowBaseJumpTiles = 6;
 			/// <summary>Tiles a second jump (a bottle, a jar) adds to the reach of a goal jump.</summary>
 			public const int ExtraJumpReachTiles = 3;
 			/// <summary>A lane is judged by how many tiles it sits above or below the boss; past this many it is as safe as it gets.</summary>

@@ -119,7 +119,7 @@
   - **Contact blades do ~nothing to bosses** because of the no-suicide standoff (22–34 dmg/fight vs 195–462 for projectile blades). **SHIPPED fix:** a contact-melee main swaps to a ranged sidearm vs bosses and out-of-reach fliers. With a sidearm, a broadsword levy does 10× more damage to the Eye; ~2× vs QB.
   - The "boss outranks adds" PickTarget change was tested worse (KS) and reverted.
 - **SHIPPED Levy 2.0.15** (sidearm swap). Booted clean on both toolchains; sent to Eve.
-- **mobility4 DONE (merged 956a1f1 → 2.0.16):**
+- **SHIPPED Levy 2.0.16** (booted clean on both toolchains; sent to Eve). mobility4 DONE (merged 956a1f1):
   - **Worm spread** (bystanders keep 26 tiles from the targeted levy; the target runs a 16-tile leg away; `LEVY_SPREAD=0` turns it off). 24-cell A/B:
     - DS deaths/min 3.2 → 1.5, hits 117 → 73;
     - EoW deaths/min 0.6 → 0.3, hits 146 → 112;

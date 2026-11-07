@@ -11,15 +11,16 @@ namespace Levy.Content.Items.Potions
 	/// <summary>Spectator Potion: 20 minutes of watching. Rules in <see cref="SpectatorPlayer"/>. Cannot be drunk within 5 seconds of taking damage.</summary>
 	public class SpectatorPotion : ModItem
 	{
+		private static readonly Color[] DrinkColors = { new Color(200, 225, 255), new Color(150, 190, 240), new Color(235, 245, 255) };
 		public override string LocalizationCategory => "Potions";
 
-		public override void SetStaticDefaults() { Item.ResearchUnlockCount = 20; }
+		public override void SetStaticDefaults() { Item.ResearchUnlockCount = 20; ItemID.Sets.DrinkParticleColors[Type] = DrinkColors; }
 
 		public override void SetDefaults()
 		{
-			Item.width = 24; Item.height = 30; Item.maxStack = Item.CommonMaxStack; Item.consumable = true;
+			Item.width = 20; Item.height = 30; Item.maxStack = Item.CommonMaxStack; Item.consumable = true;
 			Item.useStyle = ItemUseStyleID.DrinkLiquid; Item.useTime = 17; Item.useAnimation = 17; Item.UseSound = SoundID.Item3; Item.useTurn = true;
-			Item.rare = ItemRarityID.Orange; Item.value = Item.sellPrice(silver: 2);
+			Item.rare = ItemRarityID.Blue; Item.value = Item.sellPrice(silver: 2);
 			Item.buffType = ModContent.BuffType<SpectatorBuff>(); Item.buffTime = PotionConstants.SpectatorTicks;
 		}
 
@@ -51,15 +52,16 @@ namespace Levy.Content.Items.Potions
 	/// <summary>Seeker Potion: 12 minutes of finding one chosen item. Drinking it opens the chooser (see <see cref="SeekerSystem"/>).</summary>
 	public class SeekerPotion : ModItem
 	{
+		private static readonly Color[] DrinkColors = { new Color(160, 90, 230), new Color(230, 190, 80), new Color(200, 140, 255) };
 		public override string LocalizationCategory => "Potions";
 
-		public override void SetStaticDefaults() { Item.ResearchUnlockCount = 20; }
+		public override void SetStaticDefaults() { Item.ResearchUnlockCount = 20; ItemID.Sets.DrinkParticleColors[Type] = DrinkColors; }
 
 		public override void SetDefaults()
 		{
-			Item.width = 24; Item.height = 30; Item.maxStack = Item.CommonMaxStack; Item.consumable = true;
+			Item.width = 20; Item.height = 30; Item.maxStack = Item.CommonMaxStack; Item.consumable = true;
 			Item.useStyle = ItemUseStyleID.DrinkLiquid; Item.useTime = 17; Item.useAnimation = 17; Item.UseSound = SoundID.Item3; Item.useTurn = true;
-			Item.rare = ItemRarityID.Orange; Item.value = Item.sellPrice(silver: 2);
+			Item.rare = ItemRarityID.Blue; Item.value = Item.sellPrice(silver: 2);
 			Item.buffType = ModContent.BuffType<SeekerBuff>(); Item.buffTime = PotionConstants.SeekerTicks;
 		}
 

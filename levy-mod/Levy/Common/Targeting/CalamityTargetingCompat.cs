@@ -29,6 +29,7 @@ namespace Levy.Common.Targeting
 			try
 			{
 				if (!ModLoader.TryGetMod("CalamityMod", out Mod cal)) return;
+				if (Environment.GetEnvironmentVariable("LEVY_CALCOMPAT") == "0") { Mod.Logger.Info("Levy Calamity targeting compat: disabled by LEVY_CALCOMPAT=0 (test switch)"); return; }
 				Type util = cal.Code.GetType("CalamityMod.CalamityUtils");
 				if (util != null)
 					foreach (MethodInfo m in util.GetMethods(BindingFlags.Public | BindingFlags.Static))

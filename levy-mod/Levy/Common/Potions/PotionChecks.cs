@@ -74,6 +74,10 @@ namespace Levy.Common.Potions
 				Check(it.UseSound.HasValue && iron.UseSound.HasValue && it.UseSound.Value == iron.UseSound.Value, n + ": drink sound as vanilla potions");
 				Check(it.consumable && it.maxStack == iron.maxStack && it.buffType > 0 && it.buffTime > 0, n + ": consumable, stack " + iron.maxStack + ", buff and duration set");
 				Check(it.ResearchUnlockCount == iron.ResearchUnlockCount, n + ": research count as vanilla potions");
+				Check(it.rare == iron.rare && it.value == iron.value, n + ": rarity and value as the vanilla basic potions");
+				Check(ItemID.Sets.DrinkParticleColors[type] != null && ItemID.Sets.DrinkParticleColors[type].Length > 0, n + ": drink particle colors set like vanilla potions");
+				var tex = Terraria.GameContent.TextureAssets.Item[type];
+				Check(tex == null || !tex.IsLoaded || (tex.Width() == it.width && tex.Height() == it.height), n + ": width and height match the sprite");
 				Check(it.damage <= 0 && !it.accessory && !it.questItem, n + ": no weapon, accessory or quest flags");
 				foreach (var f in typeof(ItemID.Sets).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
 				{

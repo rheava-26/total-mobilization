@@ -15,7 +15,29 @@
   - Regression being bisected: WITH wings, several bosses got worse (Deerclops 8.4 -> ~20 hits, Desert Scourge 28 -> ~38). Builder is sweeping a dodge-off parameter (dx0..dx32) to find it.
 - **Eve (11-07): bosses probably aren't attacking the levies in the matrix**, so low hits may mean being ignored, not dodging. UNVERIFIED. The matrix has no targeting metric. mobility3 told to add tgtLevy/tgtPlayer/tgtNone%, check causes a–f, fix the harness (not the AI), and rerun. The wings regression gets re-judged after. Desert Scourge hits get split by head/body/tail/adds (Eve: worm area coverage, not targeting).
 - **Replays (branch `rec-harness`, building):** headless `LEVY_REC_DIR` recording in harness fights, with boss-target lines. A radar-blip gallery page, shareable with Eve.
-- **Not started:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
+- **Boss lab (branch `boss-lab`, overnight 11-07), Eve's asks:**
+  - tier-appropriate Calamity/Thorium gear (calrev pools are vanilla-only today!);
+  - max-for-tier levy count plus 4/8/12/16/19/24 controls, with why kill time flattens (hypotheses a–e, incl. shared npc.immune);
+  - EoW vs DS in surface and underground arenas;
+  - BoC Rev enrage surface vs underground;
+  - Death EoC, Rev EoW;
+  - anomaly reruns, notable replays kept.
+- **CAVEAT:** the old calrev Rev Brain wins (12→5/6, 16→6/6) predate CalamityTargetingCompat, so the boss may have been on the stand-in. Being rerun with a target log.
+- Eve on count scaling: she floated compounding 2%/levy, then leaned against it (early game shouldn't get stronger). Destroyer feeling harder with more levies (HP soak) is fine by her. Discuss after the count data.
+- **Check-in 04:40:** the rec-harness gallery works (8 fieldai replays: hitboxes, trails, target line, ai readout).
+  - Lead watched the King Slime spec replay: KS targets a levy 100% of the time but gets 0 hits in 90 s. The data shows levies kite at 35–79 tiles (p5–p95), never overlap, and KS teleports once. That's real kiting, not a bug.
+  - Matrix bosses run at 2M HP by design (survival window).
+  - mobility3 has added targeting telemetry (2398698).
+- **rec-harness MERGED** (5b57781 → levy-stardust): `LEVY_REC_DIR` headless recording via FightRecAuto, format 3 (hitboxes, lhit/ldeath with source, per-sample boss target), radar viewer, `make_gallery.py`. Booted clean.
+  - Its 8 fieldai replays: spec mode = boss on a levy 100%; cmd mode = on the commander 100%. Hits: EoC 122, Deerclops 217 (4 deaths), DS 155, Skeletron 37, KS 0 (kited), Brain 1.
+  - **Open:** the BossTrial harness now reports "WIN t=0.0s" on every fight (boss inactive on tick 1), with or without recording. Not diagnosed. Worm segments are not tagged as segments in the recordings.
+- **SHIPPED Levy 2.0.13 (mobility3 merged, 48fa2a8)**: boss dance, corner escape, dash i-frames, boss-body threat weighting, no hover in flier/worm lanes, StillWhy telemetry. Booted clean on both toolchains (Calamity and shipping).
+  - **Targeting verified:** the boss head targets a levy 100% of the time (DS 99.97%). Eve's worry is resolved.
+  - **Minions don't retarget:** EoC servants (57% on the player in p1) and Brain creepers (38–46%) chase the player. A live gap: check EnemyTargeting's allowlist.
+  - 60 s, 162 cells: hits 34.0 → 26.4, deaths/min 1.0 → 0.6, still 19% → 11%. With no gear: 45.8 → 31.7 hits, deaths 1.5 → 0.5/min. The wings regression was mostly window noise (22.3 → 21.1), but wings are still worse vs fliers and worms (DS 61 → 72, QB 36 → 44).
+  - DS hits: body 72%, head 24%, tail 3%, no adds (Eve's read confirmed). DS and QB are unimproved.
+  - The harness under-exercises Skeletron hands/spin (7 AI transitions); Brain p2 spawn is an artifact.
+- **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart
 - **Built (all but the potions):** Command Radio shift-click map order + barracks "Send to map point"; static cameras (placeable 2x3 tile + tile entity, right-click to connect, Left/Right switch, wheel zooms, Esc exits); GoPro (accessory the Armory issues to a levy; use it to watch the next GoPro levy; indicator drawn over carriers); mind control (while dead until respawn, or any time with the Mind Link item); the zoomed-out arena view (config 1x to 3x per side, default 2x); MP section/position streaming for remote views. Code: `Common/Observe/`, `Content/Items/Observe/`, `Content/Tiles/StaticCamera*`. Art: placeholders from art2 (camera variant B, GoPro variant A, radio variant B scaled 24x36 to 17x26 inside the old 28x26 canvas) at stable paths, to be replaced by the redraws.

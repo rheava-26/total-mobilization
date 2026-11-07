@@ -41,6 +41,7 @@ namespace Levy.Common.Testing
 			new RealBoss { Key = "eoc", Label = "Eye of Cthulhu p1", Type = () => NPCID.EyeofCthulhu, SpawnUpTiles = 9 },
 			new RealBoss { Key = "eoc2", Label = "Eye of Cthulhu p2", Type = () => NPCID.EyeofCthulhu, Frac = 0.4f, SpawnUpTiles = 9 },
 			new RealBoss { Key = "brain", Label = "Brain of Cthulhu", Type = () => NPCID.BrainofCthulhu, SpawnUpTiles = 14 },
+			new RealBoss { Key = "brain2", Label = "Brain of Cthulhu p2", Type = () => NPCID.BrainofCthulhu, Frac = 0.4f, SpawnUpTiles = 14 },
 			new RealBoss { Key = "eow", Label = "Eater of Worlds", Type = () => NPCID.EaterofWorldsHead, SpawnUpTiles = 10 },
 			new RealBoss { Key = "queenbee", Label = "Queen Bee", Type = () => NPCID.QueenBee, SpawnUpTiles = 14 },
 			new RealBoss { Key = "skeletron", Label = "Skeletron", Type = () => NPCID.SkeletronHead, SpawnUpTiles = 14 },
@@ -147,6 +148,9 @@ namespace Levy.Common.Testing
 			if (gear == "bottle" || gear == "all") r.Gear.Accessories[a++] = RItem(ItemID.CloudinaBottle);
 			if (gear == "hermes" || gear == "all") r.Gear.Accessories[a++] = RItem(ItemID.HermesBoots);
 			if (gear == "dash" || gear == "all") r.Gear.Accessories[a++] = RItem(ItemID.EoCShield);
+			if (gear == "wings" || gear == "allw") r.Gear.Accessories[a++] = RItem(ItemID.AngelWings);
+			if (gear == "rocket") r.Gear.Accessories[a++] = RItem(ItemID.RocketBoots);
+			if (gear == "allw") { r.Grade = Grade.Champion; r.Gear.Hook = RItem(ItemID.GrapplingHook); r.Gear.SetLocked(SoldierGear.SlotHook, true); r.Gear.Accessories[a++] = RItem(ItemID.CloudinaBottle); r.Gear.Accessories[a++] = RItem(ItemID.HermesBoots); r.Gear.Accessories[a++] = RItem(ItemID.EoCShield); }
 		}
 
 		private int RealN => int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_N"), out int en) ? en : 4;
@@ -162,8 +166,10 @@ namespace Levy.Common.Testing
 			var mobs = new List<int>(); var byKind = new Dictionary<string, int>();
 			bool cmdMove = Environment.GetEnvironmentVariable("LEVY_REAL_CMDMOVE") != "0"; bool auto = Environment.GetEnvironmentVariable("LEVY_REAL_AUTO") == "1" || target == "spec"; bool lesser = rb.Key.StartsWith("eoc") || rb.Key == "kingslime" || rb.Mob; int specBuff = ModContent.BuffType<Content.Buffs.SpectatorBuff>(); int autoBuff = ModContent.BuffType<Content.Buffs.AutonomousBuff>(); float cmdBaseX = (_cx - 17) * 16f + 8f;
 			var lastGrY = new float[N]; var peakVy = new float[N]; var inAir = new bool[N]; var lastHitTick = new int[N]; int stillTicks = 0, aliveTicks = 0, edgeFalls = 0, aboveTicks = 0, climbs = 0, rowTicks = 0, airTicks = 0, airDodge = 0, airScan = 0, airKick = 0, airFall = 0, pEv = 0, pNo = 0, pOk = 0;
+			int dCorner = 0, dOver = 0, dLegs = 0, dHops = 0, dFlights = 0, dFlips = 0; var why = new Dictionary<string, int>(); int still5 = 0, still5Air = 0, aliveAirKit = 0;
+			long tgL = 0, tgP = 0, tgN = 0, bgL = 0, bgP = 0, bgN = 0, tgSamples = 0, bSamples = 0; double dLevySum = 0, dCmdSum = 0; long dSamples = 0; int aiTrans = 0, newProj = 0, fastStarts = 0; float prevSp = 0f; int prevA0 = -999, prevA1 = -999; var aiHist = new Dictionary<string, int>(); var projSeen = new HashSet<int>(); var projSeenId = new Dictionary<int, int>(); bool logT = arena == "flat" && gear == "none" && seed == 1;
 			int dNear = 0, dBase = 0, dNoBetter = 0, dBusy = 0, dDJ = 0, dDash = 0, dHook = 0, dJump = 0, dStep = 0;
-			void Acc(SoldierNPC b) { climbs += b.PlatformClimbs; airDodge += b.DodgeAirManeuvers; airScan += b.DodgeAirScans; airKick += b.DodgeAirKicks; pEv += b.PlatEvals; pNo += b.PlatNoCand; pOk += b.PlatSepOk; airFall += b.DodgeAirFalls; hookCasts += b.HkCasts; maneuvers += b.DodgeManeuvers; dNear += b.DodgeNearScans; dBase += b.DodgeBaseHitScans; dNoBetter += b.DodgeNoBetter; dBusy += b.DodgeSkippedBusy; dDJ += b.DodgeDoubleJumps; dDash += b.DodgeDashes; dHook += b.DodgeHooks; dJump += b.DodgeJumps; dStep += b.DodgeSteps; }
+			void Acc(SoldierNPC b) { dCorner += b.DanceCorners; dOver += b.DanceOvers; dLegs += b.DanceLegs; dHops += b.DanceHops; dFlights += b.DanceFlights; dFlips += b.DanceFlips; climbs += b.PlatformClimbs; airDodge += b.DodgeAirManeuvers; airScan += b.DodgeAirScans; airKick += b.DodgeAirKicks; pEv += b.PlatEvals; pNo += b.PlatNoCand; pOk += b.PlatSepOk; airFall += b.DodgeAirFalls; hookCasts += b.HkCasts; maneuvers += b.DodgeManeuvers; dNear += b.DodgeNearScans; dBase += b.DodgeBaseHitScans; dNoBetter += b.DodgeNoBetter; dBusy += b.DodgeSkippedBusy; dDJ += b.DodgeDoubleJumps; dDash += b.DodgeDashes; dHook += b.DodgeHooks; dJump += b.DodgeJumps; dStep += b.DodgeSteps; }
 			return new FaTrial
 			{
 				Name = "REAL", Ticks = ticks,
@@ -172,7 +178,7 @@ namespace Levy.Common.Testing
 					_faReal = true; RealOn = true;
 					Main.rand = new UnifiedRandom(1000 + seed * 7919);
 					SoldierNPC.DodgeMode = mode; SoldierNPC.FallDamageOverride = 0; SoldierNPC.MobilityMode = before ? 0 : 1;
-					SoldierNPC.AirMode = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_AIRMODE"), out int am) ? am : 1; SoldierNPC.PlatMode = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_PLATMODE"), out int pm) ? pm : 1;
+					SoldierNPC.DanceOff = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_DOFF"), out int dof) ? dof : 0; SoldierNPC.DanceMode = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_DANCE"), out int dm) ? dm : 1; SoldierNPC.AirMode = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_AIRMODE"), out int am) ? am : 1; SoldierNPC.PlatMode = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_PLATMODE"), out int pm) ? pm : 1;
 					var cfg = LevyConfig.Get; cfg.EnemiesTargetSoldiers = true; cfg.BossesTargetSoldiers = target == "army" || target == "spec";
 					try { global::Levy.Common.Targeting.EnemyTargeting.RefreshConfig(); } catch { }
 					RealUnlockBosses();
@@ -217,6 +223,26 @@ namespace Levy.Common.Testing
 					}
 					else if (t % 90 == 0) { for (int m = 0; m < mobs.Count; m++) if (!Main.npc[mobs[m]].active || Main.npc[mobs[m]].type != rb.Type()) FaSpawnMob(rb, mobs, m); }
 					if (t % 30 == 0) for (int pi = 0; pi < Main.maxProjectiles; pi++) { Projectile hp0 = Main.projectile[pi]; if (hp0.active && hp0.TryGetGlobalProjectile(out HookTag ht) && ht.Soldier >= 0) { float err = ht.SwapError(hp0); if (err > 6f) Mod.Logger.Error($"HOOKDRAW-CHECK FAILED: chain origin {err:0}px from the soldier"); else _hookDrawOk++; break; } }
+					{
+						// TARGETING: every hostile body (the boss, its parts and minions) each tick: who does it target (levy = the dummy slot or >= 300, player, none)
+						Player cmdP = Main.player[0]; float nearLv = 1e9f; foreach (var lv in _faSol) if (lv.NPC.active && lv.NPC.life > 0 && lv.IsAlive) nearLv = Math.Min(nearLv, 0f);
+						for (int i = 0; i < Main.maxNPCs; i++)
+						{
+							NPC hn = Main.npc[i]; if (!hn.active || hn.friendly || hn.townNPC || hn.damage <= 0 || hn.ModNPC is SoldierNPC) continue;
+							tgSamples++; bool isB = i == bossIdx;
+							if (hn.target == SoldierNPC.DummySlot || hn.target >= 300) { tgL++; if (isB) bgL++; } else if (hn.target >= 0 && hn.target < Main.maxPlayers) { tgP++; if (isB) bgP++; } else { tgN++; if (isB) bgN++; }
+							if (isB)
+							{
+								bSamples++; float bl = 1e9f; foreach (var lv in _faSol) if (lv.NPC.active && lv.NPC.life > 0 && lv.IsAlive) bl = Math.Min(bl, Vector2.Distance(lv.NPC.Center, hn.Center));
+								if (bl < 1e8f) { dLevySum += bl / 16f; dSamples++; } dCmdSum += Vector2.Distance(cmdP.Center, hn.Center) / 16f;
+								int a0 = (int)hn.ai[0], a1 = (int)hn.ai[1]; if (a0 != prevA0 || a1 != prevA1) { aiTrans++; prevA0 = a0; prevA1 = a1; }
+								string ak = a0 + "/" + a1; aiHist[ak] = aiHist.GetValueOrDefault(ak) + 1;
+								float sp2 = hn.velocity.Length(); if (sp2 > 8f && prevSp <= 4f) fastStarts++; prevSp = sp2;
+								if (logT && t < 300 && t % 10 == 0) Mod.Logger.Info($"REALT|boss={rb.Key}|t={t}|tgt={hn.target}|bx={hn.Center.X / 16f:0}|by={hn.Center.Y / 16f:0}|nearLevy={bl / 16f:0.0}|cmdDist={Vector2.Distance(cmdP.Center, hn.Center) / 16f:0.0}|ai={a0}/{a1}|v={hn.velocity.Length():0.0}|cmdActive={(cmdP.active ? 1 : 0)}");
+							}
+						}
+						for (int pi = 0; pi < Main.maxProjectiles; pi++) { Projectile hp1 = Main.projectile[pi]; if (hp1.active && hp1.hostile && hp1.damage > 0) { if (!projSeenId.TryGetValue(pi, out int idv) || idv != hp1.identity) { projSeenId[pi] = hp1.identity; newProj++; } } else projSeenId.Remove(pi); }
+					}
 					bool exposed = false;
 					for (int i = 0; i < Main.maxNPCs && !exposed; i++) { NPC n = Main.npc[i]; if (!n.active || n.friendly || n.townNPC || n.damage <= 0 || n.ModNPC is SoldierNPC) continue; foreach (var b in _faSol) if (b.NPC.active && Vector2.Distance(n.Center, b.NPC.Center) < 300f) { exposed = true; break; } }
 					if (exposed) exposure++;
@@ -231,6 +257,7 @@ namespace Levy.Common.Testing
 							continue;
 						}
 						aliveTicks++; if (nn.Bottom.Y < FaGroundRow(nn.Center.X) * 16f - 3 * 16f) aboveTicks++; if (Math.Abs(nn.velocity.X) < 0.3f && Math.Abs(nn.velocity.Y) < 0.3f) stillTicks++;
+						if (Math.Abs(nn.velocity.X) < 0.5f && Math.Abs(nn.velocity.Y) < 0.5f) { still5++; string wk = b.StillReason(); if (b.NPC.velocity.Y != 0f) { still5Air++; wk += "+air"; } if (b.ItemAnimation > 0) wk += "+swinging"; why[wk] = why.GetValueOrDefault(wk) + 1; }
 						{ Tile ft = Framing.GetTileSafely((int)(nn.Center.X / 16f), (int)((nn.Bottom.Y + 2f) / 16f)); if (ft.HasTile && ft.TileType == TileID.Platforms && nn.Bottom.Y < FaGroundRow(nn.Center.X) * 16f - 16f) rowTicks++; if (nn.velocity.Y != 0f) airTicks++; }
 						if (nn.velocity.Y == 0f) { if (inAir[k] && nn.Bottom.Y - lastGrY[k] > 7 * 16f && peakVy[k] >= 8f && t - lastHitTick[k] > 40 && !nn.lavaWet) edgeFalls++; inAir[k] = false; lastGrY[k] = nn.Bottom.Y; peakVy[k] = 0f; }
 						else { inAir[k] = true; if (nn.velocity.Y > peakVy[k]) peakVy[k] = nn.velocity.Y; }
@@ -244,7 +271,7 @@ namespace Levy.Common.Testing
 							Rectangle me = nn.Hitbox; me.Inflate(6, 6);
 							NPC contact = null;
 							for (int i = 0; i < Main.maxNPCs && contact == null; i++) { NPC a = Main.npc[i]; if (a.active && !a.friendly && !a.townNPC && a.damage > 0 && !(a.ModNPC is SoldierNPC) && a.Hitbox.Intersects(me)) contact = a; }
-							if (contact != null) { contactHits += nh; string key = "contact:" + contact.GivenOrTypeName; byKind[key] = byKind.GetValueOrDefault(key) + nh; }
+							if (contact != null) { contactHits += nh; string key = "contact:" + contact.GivenOrTypeName + "#" + (contact.ModNPC != null ? contact.ModNPC.Name : contact.type.ToString()); byKind[key] = byKind.GetValueOrDefault(key) + nh; }
 							else if (nn.lavaWet) { byKind["lava"] = byKind.GetValueOrDefault("lava") + nh; }
 							else
 							{
@@ -262,9 +289,11 @@ namespace Levy.Common.Testing
 					bool bossAlive = bossIdx < 0 || Main.npc[bossIdx].active;
 					double surv = lives > 0 ? lifeSum / (double)lives / 60.0 : 0, dpm = deaths * 3600.0 / ticks;
 					var sb = new StringBuilder();
-					sb.Append($"REALM|boss={rb.Key}|arena={arena}|gear={gear}|order={Environment.GetEnvironmentVariable("LEVY_REAL_ORDER") ?? "freerein"}|auto={(auto ? 1 : 0)}|target={target}|mode={(before ? "before" : "after")}{mode}|seed={seed}|survSec={surv:0.0}|deaths={deaths}|deathsPerMin={dpm:0.00}|bossDmg={bossDmg}|hits={hitsTotal}|contact={contactHits}|proj={projHits}|lavaTicks={lavaTicks}|exposed={exposure}|tele={teleports}|hookCasts={hookCasts}|maneuvers={maneuvers}|bossAlive={bossAlive}|abovePct={(aliveTicks > 0 ? 100.0 * aboveTicks / aliveTicks : 0):0}|climbs={climbs}|rowPct={(aliveTicks > 0 ? 100.0 * rowTicks / aliveTicks : 0):0}|airPct={(aliveTicks > 0 ? 100.0 * airTicks / aliveTicks : 0):0}|airDodge={airDodge}|airScan={airScan}|platEv={pEv}|platNoCand={pNo}|platSepOk={pOk}|airKick={airKick}|airFall={airFall}|airmode={SoldierNPC.AirMode}|platmode={SoldierNPC.PlatMode}|stillPct={(aliveTicks > 0 ? 100.0 * stillTicks / aliveTicks : 0):0}|edgeFalls={edgeFalls}|dNear={dNear}|dBase={dBase}|dNoBetter={dNoBetter}|dBusy={dBusy}|dStep={dStep}|dJump={dJump}|dDJ={dDJ}|dDash={dDash}|dHook={dHook}|fieldSeesBoss={fieldSeesBoss}|bossFast={bossFastTicks}|bossPeakV={bossPeakV:0.0}|bossDamageStat={(bossIdx >= 0 ? Main.npc[bossIdx].damage : 0)}|src=");
-					sb.Append(string.Join(";", byKind.OrderByDescending(kv => kv.Value).Take(5).Select(kv => $"{kv.Key}={kv.Value}")));
+					sb.Append($"REALM|boss={rb.Key}|arena={arena}|gear={gear}|order={Environment.GetEnvironmentVariable("LEVY_REAL_ORDER") ?? "freerein"}|auto={(auto ? 1 : 0)}|target={target}|mode={(before ? "before" : "after")}{mode}|seed={seed}|survSec={surv:0.0}|deaths={deaths}|deathsPerMin={dpm:0.00}|bossDmg={bossDmg}|hits={hitsTotal}|contact={contactHits}|proj={projHits}|lavaTicks={lavaTicks}|exposed={exposure}|tele={teleports}|hookCasts={hookCasts}|maneuvers={maneuvers}|bossAlive={bossAlive}|abovePct={(aliveTicks > 0 ? 100.0 * aboveTicks / aliveTicks : 0):0}|climbs={climbs}|rowPct={(aliveTicks > 0 ? 100.0 * rowTicks / aliveTicks : 0):0}|airPct={(aliveTicks > 0 ? 100.0 * airTicks / aliveTicks : 0):0}|airDodge={airDodge}|airScan={airScan}|platEv={pEv}|platNoCand={pNo}|platSepOk={pOk}|airKick={airKick}|airFall={airFall}|airmode={SoldierNPC.AirMode}|platmode={SoldierNPC.PlatMode}|stillPct={(aliveTicks > 0 ? 100.0 * stillTicks / aliveTicks : 0):0}|still5Pct={(aliveTicks > 0 ? 100.0 * still5 / aliveTicks : 0):0.0}|aliveTicks={aliveTicks}|danceLegs={dLegs}|danceHops={dHops}|danceFlights={dFlights}|danceFlips={dFlips}|corners={dCorner}|overs={dOver}|dance={SoldierNPC.DanceMode}|edgeFalls={edgeFalls}|dNear={dNear}|dBase={dBase}|dNoBetter={dNoBetter}|dBusy={dBusy}|dStep={dStep}|dJump={dJump}|dDJ={dDJ}|dDash={dDash}|dHook={dHook}|fieldSeesBoss={fieldSeesBoss}|bossFast={bossFastTicks}|bossPeakV={bossPeakV:0.0}|bossDamageStat={(bossIdx >= 0 ? Main.npc[bossIdx].damage : 0)}|");
+					sb.Append($"tgtLevyPct={(tgSamples > 0 ? 100.0 * tgL / tgSamples : 0):0.0}|tgtPlayerPct={(tgSamples > 0 ? 100.0 * tgP / tgSamples : 0):0.0}|tgtNonePct={(tgSamples > 0 ? 100.0 * tgN / tgSamples : 0):0.0}|bTgtLevyPct={(bSamples > 0 ? 100.0 * bgL / bSamples : 0):0.0}|bTgtPlayerPct={(bSamples > 0 ? 100.0 * bgP / bSamples : 0):0.0}|bTgtNonePct={(bSamples > 0 ? 100.0 * bgN / bSamples : 0):0.0}|bossToLevyTiles={(dSamples > 0 ? dLevySum / dSamples : 0):0.0}|bossToCmdTiles={(bSamples > 0 ? dCmdSum / bSamples : 0):0.0}|aiTrans={aiTrans}|newProj={newProj}|fastStarts={fastStarts}|aiHist={string.Join(",", aiHist.OrderByDescending(kv => kv.Value).Take(5).Select(kv => kv.Key + ":" + kv.Value))}|src=");
+					sb.Append(string.Join(";", byKind.OrderByDescending(kv => kv.Value).Take(10).Select(kv => $"{kv.Key}={kv.Value}")));
 					sb.Append("|hookDrawOk=" + _hookDrawOk); Mod.Logger.Info(sb.ToString());
+					Mod.Logger.Info($"REALW|boss={rb.Key}|arena={arena}|gear={gear}|mode={(before ? "before" : "after")}{mode}|seed={seed}|aliveTicks={aliveTicks}|still5={still5}|still5Air={still5Air}|why=" + string.Join(";", why.OrderByDescending(kv => kv.Value).Take(12).Select(kv => $"{kv.Key}={kv.Value}")));
 					return $"{rb.Key}/{arena}/{gear}: surv={surv:0.0}s deaths={deaths} bossDmg={bossDmg}";
 				},
 			};

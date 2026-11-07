@@ -304,6 +304,13 @@
 - **Interrupt stopped vert1 + ammo-slimegod again.** Both had pushed (479f696; ac1529f). RESUMED. vert1 now also does the fight-zone leash (levies stay near the commander in boss fights without an order).
 - **CAUTION (review before ship):** ammo-slimegod 67c0a8b un-hides the Spectator from boss-class NPCs the army can't target. That conflicts with the Spectator promise; it must be minimal and justified.
 - **sound-throttle MERGED (for the next release):** one new file, Common/Audio/ArmySoundThrottle.cs. Client-only detour of SoundEngine.PlaySound, scoped to Levy/Mechanization NPC and projectile AI. Limits: 3 per style and 10 total per 12 ticks; drops sounds far off-screen; stacking sounds get quieter; the player's sounds are never touched. Modelled 142 → 50 sounds/s. UNVERIFIED in real audio; Eve to retest the goblin fight.
+- **EVE'S DESERT SCOURGE SET (Master+Death, 2.0.21):**
+  - Solo ×4: 71, ~60, ~51, ~63 s (mean ~61), 3–7 hits taken.
+  - **With levies:** 7 levies ~57 s; **12 levies ~35 s and ~34 s, about 1.75× faster than solo.** 5–8 levy deaths; Eve took 2–7 hits.
+  - The worm was on levies 53–80% of the time.
+  - Contrast with KS: levies HELP vs DS (worm spread + many targets), but HURT vs KS (KS chases levies away).
+  - **Recorder bug:** DS kills are logged as bdespawn with 4–80 HP left (worm realLife death not caught). Needs a fix in Common/Recording.
+  - ks_team_2 may be missing (Eve: "might be an extra one").
 - **Launched:**
   - vert1: levies use platform rows;
   - ammo-slimegod: best-ammo armory rule + Slime God despawn.

@@ -312,6 +312,11 @@
   - **Recorder bug:** DS kills are logged as bdespawn with 4–80 HP left (worm realLife death not caught). Needs a fix in Common/Recording.
   - ks_team_2 may be missing (Eve: "might be an extra one").
 - **rec-wormkill MERGED (827a034):** worm kills logged as bdeath (BossRoot via realLife; LooksKilled). make_site treats old near-zero bdespawn plus a recent hit as a kill. Eve's 7 DS fights now read as 7 wins on the page. Not yet run against a live DS kill.
+- **ammo-slimegod DONE (merged 0c60e5a → 2.0.23 building):**
+  - **Best ammo** (AmmoRank, lock respected). Mixed stock: Brain Rev 8/12 → 11/12, EoW kill 50.5 → 43.9 s. Tier-legal-only: noise.
+  - **Slime God:** the Paladins are non-boss minions with no valid target (hidden from the Spectator, not allowlisted), so they despawn. Fix: LevyNpcData.BossOwner on spawn; modded boss-spawned NPCs follow their boss's allowlist. Expert now 1/4 (a real fight) vs 0/3 before. Biome ruled out.
+  - **KS Ruby Jewel:** 100% → 81% on levies (visible commander + bosses-target-soldiers).
+  - Spectator exception REMOVED: hidden from everything but undowned bosses, as before.
 - **Launched:**
   - vert1: levies use platform rows;
   - ammo-slimegod: best-ammo armory rule + Slime God despawn.

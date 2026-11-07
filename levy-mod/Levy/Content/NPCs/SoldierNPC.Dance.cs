@@ -17,6 +17,9 @@ namespace Levy.Content.NPCs
 	{
 		/// <summary>0 = the old shuffle (short steps, suppressed inside the standoff margin), 1 = boss dance.</summary>
 		internal static int DanceMode = 1;
+		/// <summary>Test switches (matrix harness): bit 1 boss-weighted threats, 2 fast scan, 4 dash i-frames, 8 corner escape, 16 ground dance, 32 hover lift.</summary>
+		internal static int DanceOff = 0;
+		internal static bool DOn(int bit) => (DanceOff & bit) == 0;
 		private int _danceDir, _danceLegEnd, _danceHopNext;
 		internal int DanceLegs, DanceHops, DanceFlights, DanceFlips;
 		private const int DanceLegMinTicks = 40, DanceLegMaxTicks = 95, DanceRunTiles = 10, DanceHopMinTicks = 40, DanceHopMaxTicks = 95, DanceHoverMinTiles = 5, DanceHoverSpreadTiles = 4;
@@ -82,6 +85,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Flight first: a body that can hover and strafe does, at a height that takes it out of the contact lane. Called every think of a boss fight.</summary>
 		private void DanceLift(NPC seg)
 		{
+			if (!DOn(32)) return;
 			NPC npc = NPC;
 			if (seg != null && (seg.noGravity || seg.aiStyle == NPCAIStyleID.Worm)) return;   // a flyer or a worm owns the air: hovering at its height puts the body in its lane, so on wings the body keeps its floor and strafes
 			if (!(AerialSustained && HasFlightKit && !WantsAltitude && !_aerialSpent && AerialMaxReachTiles >= LevyConstants.Movement.AerialClimbBenefitTiles && !RoofOverhead())) return;
@@ -101,7 +105,8 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private float EscapeDir(float away, NPC threat, int now)
 		{
-			if (DanceMode < 1) return away;
+			if (DanceMode < 1 || !DOn(8)) return away;
+			if (AerialSustained && HasFlightKit) return away;   // a flier is never pinned on a wall: it lifts away, it does not charge back through the boss
 			if (now < _cornerUntil)
 			{
 				if (Math.Sign(NPC.Center.X - threat.Center.X) == _cornerDir && Math.Abs(NPC.Center.X - threat.Center.X) > 6f * LevyConstants.TilePx) _cornerUntil = 0;

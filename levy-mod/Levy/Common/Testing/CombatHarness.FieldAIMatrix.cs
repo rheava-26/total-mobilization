@@ -176,7 +176,7 @@ namespace Levy.Common.Testing
 					_faReal = true; RealOn = true;
 					Main.rand = new UnifiedRandom(1000 + seed * 7919);
 					SoldierNPC.DodgeMode = mode; SoldierNPC.FallDamageOverride = 0; SoldierNPC.MobilityMode = before ? 0 : 1;
-					SoldierNPC.DanceMode = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_DANCE"), out int dm) ? dm : 1; SoldierNPC.AirMode = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_AIRMODE"), out int am) ? am : 1; SoldierNPC.PlatMode = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_PLATMODE"), out int pm) ? pm : 1;
+					SoldierNPC.DanceOff = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_DOFF"), out int dof) ? dof : 0; SoldierNPC.DanceMode = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_DANCE"), out int dm) ? dm : 1; SoldierNPC.AirMode = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_AIRMODE"), out int am) ? am : 1; SoldierNPC.PlatMode = int.TryParse(Environment.GetEnvironmentVariable("LEVY_REAL_PLATMODE"), out int pm) ? pm : 1;
 					var cfg = LevyConfig.Get; cfg.EnemiesTargetSoldiers = true; cfg.BossesTargetSoldiers = target == "army" || target == "spec";
 					try { global::Levy.Common.Targeting.EnemyTargeting.RefreshConfig(); } catch { }
 					RealUnlockBosses();

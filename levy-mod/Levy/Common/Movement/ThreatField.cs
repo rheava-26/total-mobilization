@@ -102,7 +102,7 @@ namespace Levy.Common.Movement
 				// a boss or a hard hitter that merely walks at a levy is still a body to step out of (a player does not stand and trade with a Deerclops); ordinary walkers stay below the filter
 				bool heavy = Content.NPCs.SoldierNPC.MobilityMode >= 1 && (n.damage >= LevyConstants.Movement.DodgeHeavyDamage || LevyUtil.IsBossNpc(n));
 				if (v2 < (heavy ? heavyMinSq : minSq) && !building) continue;
-				bool isBoss = Content.NPCs.SoldierNPC.DanceMode >= 1 && LevyUtil.IsBossNpc(n);
+				bool isBoss = Content.NPCs.SoldierNPC.DanceMode >= 1 && Content.NPCs.SoldierNPC.DOn(1) && LevyUtil.IsBossNpc(n);
 				float gy = 0f, floor = 0f;
 				if (isBoss) BossBodies++;
 				// a boss that hops (a slime) is in a ballistic arc: it keeps falling until the floor, so the landing spot is where it will be

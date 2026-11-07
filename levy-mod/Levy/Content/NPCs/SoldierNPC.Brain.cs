@@ -1085,7 +1085,7 @@ namespace Levy.Content.NPCs
 				// Against a boss or a hard hitter a player never stands still: the strafe runs on every think, with longer steps and the odd short hop. Aim and fire rate are untouched.
 				bool danger = SoldierNPC.MobilityMode >= 1 && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage);
 				if (danger && !aloft && TickPlatformPerch(now)) { WhyB = Why.BPlatform; return true; }
-				if (danger && DanceMode >= 1 && BossDance(seg, range, standoff, now)) return true;
+				if (danger && DanceMode >= 1 && DOn(16) && BossDance(seg, range, standoff, now)) return true;   // a flier keeps the air strafe below: the ground dance's long legs ran wing users into the boss
 				if (!danger && (_thinkCount & 1) != 0) { WhyB = Why.BOddThink; return true; }
 				if (_threatTiles < standoff + LevyConstants.StrafeMarginTiles) { WhyB = Why.BStandoffNoStrafe; return true; }
 				float side = danger ? ((_thinkCount / 3) & 1) == 0 ? 1f : -1f : ((_thinkCount >> 1) & 1) == 0 ? 1f : -1f;

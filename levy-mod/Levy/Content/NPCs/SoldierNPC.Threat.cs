@@ -83,7 +83,7 @@ namespace Levy.Content.NPCs
 			if ((!grounded && !air && !airScan) || _flying || npc.wet) { _dodgeHold = 0; DodgeSkippedBusy++; return false; }
 			bool holding = _dodgeHold > 0;
 			if (_dodgeCooldown > 0) { _dodgeCooldown--; return HoldStep(holding); }
-			if ((int)((Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)(airScan || (DanceMode >= 1 && ThreatField.BossBodies > 0) ? AirScanInterval : ThreatScanInterval)) != 0) return HoldStep(holding);
+			if ((int)((Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)(airScan || (DanceMode >= 1 && DOn(2) && ThreatField.BossBodies > 0) ? AirScanInterval : ThreatScanInterval)) != 0) return HoldStep(holding);
 			uint now = Main.GameUpdateCount;
 			if (_thrBudgetTick != now) { _thrBudgetTick = now; _thrBudget = ThreatBudgetPerTick; }
 			if (_thrBudget <= 0) return HoldStep(holding);
@@ -368,7 +368,7 @@ namespace Levy.Content.NPCs
 		private static Vector2 ThreatField_BodyAt(Vector2 c0, in Maneuver m, float g, int t) => ThreatField.PathAt(c0, m, g, t);
 
 		/// <summary>The dash burst is a window the body cannot be struck in (the contact and projectile gates read ImmuneTime).</summary>
-		private void DashIFrames() { if (DodgeMode >= 2 && DanceMode >= 1) ImmuneTime = Math.Max(ImmuneTime, DashIFrameTicks); }
+		private void DashIFrames() { if (DodgeMode >= 2 && DanceMode >= 1 && DOn(4)) ImmuneTime = Math.Max(ImmuneTime, DashIFrameTicks); }
 
 		private void Begin(float vx, int dur, float acc = 0f) { _dodgeVx = vx; _dodgeTicks = dur; _dodgeAcc = acc; if (acc <= 0f) NPC.velocity.X = vx; }
 
@@ -385,7 +385,7 @@ namespace Levy.Content.NPCs
 		private void Consider(Maneuver m, Vector2 c0, float g, ref Maneuver best, ref int bestHits, ref float bestScore, ref int bestLast)
 		{
 			if (_dAir && !m.Hook) { m.Air = true; m.V0x = _dV0x; m.V0y = _dV0y; m.FloorY = m.Kind == 13 ? _dSolidFloorY : _dFloorY; }
-			int imm = DanceMode >= 1 && DashIFrameTicks > 0 && (m.Kind == 4 || m.Kind == 8 || m.Kind == 10) ? DashIFrameTicks : 0;
+			int imm = DanceMode >= 1 && DOn(4) && DashIFrameTicks > 0 && (m.Kind == 4 || m.Kind == 8 || m.Kind == 10) ? DashIFrameTicks : 0;
 			int h = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int last, 0f, imm);
 			if (MobilityMode >= 1 && h == 0 && m.Kind != 0 && !(m.Air ? AirLandingSafe(c0, m, g) : LandingSafe(c0, m, g))) return;
 			float score = h * 100f + m.Penalty;

@@ -66,9 +66,37 @@ namespace Levy.Common.Dialogue
 							if (l.Cond == LineCond.None && (l.Needs & (LineNeeds.Tank | LineNeeds.Glutton)) == 0) continue;
 							if (DialogueSystem.RenderOne(l, a) != null) failures.Add($"line '{(l.Text.Length > 28 ? l.Text.Substring(0, 28) : l.Text)}' resolved for a roster that does not meet its condition");
 						}
+
+						// second batch: mage, hardmode+officer, goblin, lowhp, boss, {WorldName}, {Officer}
+						var mia = Make("Mia", 10); mia.Gear.Weapon = new Item(); mia.Gear.Weapon.SetDefaults(ItemID.WandofSparking);
+						var hurt = Make("Hal", 10); hurt.CurrentHp = 10;
+						var fit = Make("Fay", 10);
+						RosterFacts.TestRoster = new List<SoldierRecord> { mia, hurt, fit };
+						RosterFacts.TestWorld = "Testland"; RosterFacts.TestOfficer = "Painter";
+						RosterFacts.TestHardmode = true; RosterFacts.TestGoblin = true; RosterFacts.TestBoss = true;
+						int seenOnA = 0;
+						foreach (DialogueLine l in pool)
+						{
+							string t = l.Text.Length > 28 ? l.Text.Substring(0, 28) : l.Text;
+							string byMia = DialogueSystem.RenderOne(l, mia), byFit = DialogueSystem.RenderOne(l, fit), byHurt = DialogueSystem.RenderOne(l, hurt);
+							if ((l.Needs & LineNeeds.WorldName) != 0) { seenOnA++; if (byFit == null || !byFit.Contains("Testland")) failures.Add($"{{WorldName}} line '{t}' did not fill: {byFit}"); }
+							if ((l.Needs & LineNeeds.Officer) != 0) { seenOnA++; if (l.Cond != LineCond.HardmodeOfficer || byFit == null || !byFit.Contains("Painter")) failures.Add($"{{Officer}} line '{t}' did not fill: {byFit}"); }
+							if (l.Cond == LineCond.Mage) { seenOnA++; if (byMia == null || byFit != null) failures.Add($"[mage] line '{t}' did not resolve only for the mage"); }
+							if (l.Cond == LineCond.NonMageWithMage) { seenOnA++; if (byMia != null || byFit == null) failures.Add($"[non-mage] line '{t}' did not resolve only for a non-mage"); }
+							if (l.Cond == LineCond.LowHp) { seenOnA++; if (byHurt == null || byFit != null) failures.Add($"[lowhp] line '{t}' did not resolve only for the wounded levy"); }
+							if (l.Cond == LineCond.Goblin || l.Cond == LineCond.BossFight || l.Cond == LineCond.HardmodeOfficer) { seenOnA++; if (byFit == null) failures.Add($"line '{t}' did not resolve with its condition met"); }
+						}
+						// the same lines must go quiet when the condition is off
+						RosterFacts.TestHardmode = false; RosterFacts.TestGoblin = false; RosterFacts.TestBoss = false; RosterFacts.TestOfficer = null;
+						foreach (DialogueLine l in pool)
+						{
+							if (l.Cond == LineCond.Goblin || l.Cond == LineCond.BossFight || l.Cond == LineCond.HardmodeOfficer || (l.Needs & LineNeeds.Officer) != 0)
+								if (DialogueSystem.RenderOne(l, fit) != null) failures.Add($"line '{(l.Text.Length > 28 ? l.Text.Substring(0, 28) : l.Text)}' resolved with its condition off");
+						}
+						if (seenOnA < 9) failures.Add($"expected at least 9 second-batch tagged lines, found {seenOnA}");
 					}
-					finally { RosterFacts.TestRoster = null; }
-					if (checkedLines < 11) failures.Add($"expected at least 11 roster-aware IDLE lines, found {checkedLines}");
+					finally { RosterFacts.TestRoster = null; RosterFacts.TestHardmode = RosterFacts.TestGoblin = RosterFacts.TestBoss = null; RosterFacts.TestOfficer = RosterFacts.TestWorld = null; }
+					if (checkedLines < 21) failures.Add($"expected at least 21 roster-aware IDLE lines, found {checkedLines}");
 				}
 			}
 			catch (Exception e) { failures.Add("chatter condition check threw: " + e.GetType().Name + ": " + e.Message); }

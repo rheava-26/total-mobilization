@@ -47,7 +47,10 @@
 #   {Tank} {TankHe} {TankDeaths}        the levy with the most deaths ("he's"/"she's"); only 3 or more, never the speaker
 #   {Glutton} {GluttonKills}            the levy with the most kills; only 25 or more, never the speaker
 #   A line may start with a [condition]: [summoner] (the speaker is one), [non-summoner] (the speaker is not, and the army has one),
-#   [fragile] (most levies have under 200 max HP).
+#   [fragile] (most levies have under 200 max HP), [mage] (the speaker is one), [non-mage] (the speaker is not, and the army has one),
+#   [hardmode+officer] (hardmode and an officer is commissioned), [goblin] (the Goblin Tinkerer lives here),
+#   [lowhp] (the speaker is under 20 HP), [boss] (a boss fight is on or ended within a minute).
+#   {WorldName} the world's name           {Officer}  the role of a commissioned officer, e.g. Painter
 #   Town NPCs (the line only fires while that NPC lives in the world):
 #   {Guide} {Nurse} {ArmsDealer} {Demolitionist} {Merchant} {Dryad} {Clothier} {PartyGirl} {Tavernkeep} {TaxCollector}
 #   {Mechanic} {GoblinTinkerer} {Wizard} {Steampunker} {Cyborg} {Pirate} {Truffle} {Stylist} {Angler} {DyeTrader}
@@ -149,12 +152,28 @@ IDLE | Any | [summoner] W-what? No, I'm not a summoner! You must be imagining th
 IDLE | Any | [non-summoner] Can't believe we have to work with... summoners.
 IDLE | Any | {Tank} is really good at tanking hits. I mean, {TankHe} already died {TankDeaths} times. What a badass!
 IDLE | Any | Can't believe {Glutton} is so greedy! They've already killed {GluttonKills} monsters! Leave some for the rest of us!
-IDLE | Any | [non-summoner] A summoner told me their minions are a lot of work. I watched. They waved a stick.
-IDLE | Any | [non-summoner] I'm not saying summoners are lazy. I'm saying I have never seen one carry anything.
 IDLE | Any | [non-summoner] If a summoner's minion kills something, who gets the credit? Don't answer. I'll get angry.
-IDLE | Any | [summoner] The others go quiet when I walk past. I assume that's respect.
-IDLE | Any | [summoner] I do my own fighting. Mostly. By proxy. Don't look at me like that.
-IDLE | Any | {Tank} treats dying like a hobby. I'm starting to respect it.
+IDLE | Any | Not sure why brain chips were part of the signing agreement, but the music sounds pretty nice!
+IDLE | Any | [non-summoner] Why do those "summoners" carry staves around everywhere? They're not impressing anyone, I'll tell you that much.
+IDLE | Any | [summoner] When I summon a minion, it takes effort! It's still a swing! I just do it once instead of constantly, which gets the same amount of work done, just easier! It-it takes a ton of effort and skill! Plus I use a whip! Sometimes! If it's available!
+IDLE | Any | [non-summoner] Summon slop shouldn't be in the same group as us, but whatever.
+IDLE | Any | [non-summoner] Imagine how much mana is being used for summon weapons! It's taking all of the mana from the atmosphere! It's probably adding to the mana sickness!
+IDLE | Any | [summoner] Why are people complaining so much about us? People used to talk the same way about rangers, and now they're part of everything!
+IDLE | Any | [non-summoner] How long until we can't tell summons apart from real fighters? They're replacing us!
+IDLE | Any | I love this new neural implant. I love my employer. I love fighting. I love dodging. I love-
+IDLE | Any | When I signed up for my contract, I didn't realize it'd instantly teleport me to {WorldName}.
+IDLE | Any | [hardmode+officer] Why is that {Officer} a higher rank than us? We have enough firepower to level a mountain!
+IDLE | Any | Am I supposed to be seeing... myself from above?
+IDLE | Any | [goblin] What do you mean that goblin earns more in a day than we do in a year???
+IDLE | Any | Regenerative immortality, superhuman abilities and magic attacks powerful enough to level a city is honestly a good deal, even if you lose SOME of your free will!
+IDLE | Any | [boss] I like the music you play when we fight the boss! Helps distract from the routine death and violence!
+IDLE | Any | [lowhp] Is this what the people talking about "the thrill" meant? This is great.
+IDLE | Any | Summoner son or mage daughter? Probably summoner son, since at least they'll be earning a bunch of money. Mage daughter is gonna keep draining all the treasury from all the recruiting drives.
+IDLE | Any | [mage] I'm a good mage! I just, um, sometimes the fire goes the wrong way! It's the fire's fault! It was a really nice tent, too!
+IDLE | Any | [mage] Okay so I tried to heal everybody and it, uh, did not heal everybody! But I meant to! That's what counts, right?!
+IDLE | Any | [non-mage] The mages mean well, they do, but if one more of them sets my boots on fire by accident I'm going to scream!
+IDLE | Any | [non-summoner] They gave a skeleton my job! A skeleton! It doesn't even get paid! That's not fair to us OR the skeleton!
+IDLE | Any | [summoner] I'm not taking anybody's job! I'm making MORE jobs! For minions! Is that not a job?! It's a job!
 
 # ---------------------------------------------------------------- IDLE_NIGHT
 IDLE_NIGHT | Any | Night shift. Again. Did I enlist, or get sentenced?

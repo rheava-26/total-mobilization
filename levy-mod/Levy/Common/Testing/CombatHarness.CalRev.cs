@@ -52,9 +52,9 @@ namespace Levy.Common.Testing
 
 		internal sealed class CrRun
 		{
-			public int Mp, BossDef = -1; public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public bool Dbg, Diag; public List<CrLevySpec> Specs; public string Desc = "";
+			public int Mp, BossDef = -1; public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public string Fm = "", Surv = ""; public int Vet = -1; public bool Dbg, Diag; public List<CrLevySpec> Specs; public string Desc = "";
 			public string Key => $"{Kind}|{Boss}|{Mode}|{Order}|{Seed}|{Cap}" + (N != 10 ? "|n" + N : "") + (HpX != 1f ? "|hp" + HpX.ToString(CultureInfo.InvariantCulture) : "") + (Dr != 0f ? "|dr" + Dr.ToString(CultureInfo.InvariantCulture) : "")
-				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (Mp > 0 ? "|mp" + Mp : "") + (BossDef >= 0 ? "|bdef" + BossDef : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "") + (Fear >= 0f ? "|fe" + Fear.ToString(CultureInfo.InvariantCulture) : "");
+				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (Mp > 0 ? "|mp" + Mp : "") + (BossDef >= 0 ? "|bdef" + BossDef : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "") + (Fear >= 0f ? "|fe" + Fear.ToString(CultureInfo.InvariantCulture) : "") + (Fm != "" ? "|fm" + Fm : "") + (Surv != "" ? "|sv" + Surv : "") + (Vet >= 0 ? "|vt" + Vet : "");
 		}
 		/// <summary>The plainest ammo item for an ammo type (cw= runs and fallbacks): the lowest-damage vanilla item with that ammo type, else the first modded one.</summary>
 		private static string CrDefaultAmmo(int useAmmo)
@@ -98,7 +98,7 @@ namespace Levy.Common.Testing
 						string k = f[x].Substring(0, eq), v = f[x].Substring(eq + 1);
 						if (k == "order") r.Order = v; else if (k == "n") r.N = v == "cp" ? CrRealMax(r.Boss) : int.Parse(v); else if (k == "hpx") r.HpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "dr") r.Dr = float.Parse(v, CultureInfo.InvariantCulture);
 						else if (k == "clone") r.Clone = v[0]; else if (k == "cmd") r.Cmd = v; else if (k == "arena") r.Arena = v; else if (k == "gear") r.Gear = v; else if (k == "grade") r.Grade = v;
-						else if (k == "mp") r.Mp = int.Parse(v); else if (k == "bdef") r.BossDef = int.Parse(v); else if (k == "cw") r.CloneWeapon = v; else if (k == "side") r.Side = v; else if (k == "jungle") r.Jungle = v == "1"; else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fear") r.Fear = float.Parse(v, CultureInfo.InvariantCulture);
+						else if (k == "mp") r.Mp = int.Parse(v); else if (k == "bdef") r.BossDef = int.Parse(v); else if (k == "cw") r.CloneWeapon = v; else if (k == "side") r.Side = v; else if (k == "jungle") r.Jungle = v == "1"; else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fear") r.Fear = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fm") r.Fm = v; else if (k == "surv") r.Surv = v; else if (k == "vet") r.Vet = int.Parse(v);
 					}
 					if (r.Gear == "mod" && r.Grade == "mix") r.Grade = "lv";
 					r.Specs = r.Gear == "mod" ? CrRollTier(r.Boss, r.Seed, r.N, r.HpX, r.Grade == "lv") : CrRoll(r.Boss, r.Seed, r.N, r.HpX);
@@ -313,7 +313,7 @@ namespace Levy.Common.Testing
 			public bool Dead; public int DeathTick = -1; public int LastLife, LastAttackerType = -1;
 			public long DmgBoss, DmgAdd; public long TakenBoss, TakenAdd, TakenOther;
 			public int MaxHp; public string Weapon; public int PotionsLeft, PotionsDrunk;
-			public int ManaMin = 9999; public int LifeMin = 99999;
+			public int ManaMin = 9999; public int LifeMin = 99999; public int ShakenTicks, RoutedTicks, BodyTicks; public long DefSum;
 			public float PeakRage, PeakAdr; public int RageModeTicks, AdrModeTicks, Hits;
 		}
 
@@ -429,7 +429,7 @@ namespace Levy.Common.Testing
 		{
 			var rec = MakeRecord($"{spec.Cls}{slot}");
 			rec.Grade = spec.ManAtArms ? Grade.ManAtArms : Grade.Levy;
-			rec.LifeCrystals = spec.LifeCrystals; rec.ManaCrystals = spec.ManaCrystals;
+			rec.LifeCrystals = spec.LifeCrystals; rec.ManaCrystals = spec.ManaCrystals; if (CrVetFights(run) > 0) rec.BossFightsSurvived = CrVetFights(run);
 			rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana;
 			rec.LoadoutLocked = true;
 			rec.Order = run.Order == "sd" ? SoldierOrder.SearchDestroy : run.Order == "follow" ? SoldierOrder.Follow : SoldierOrder.FreeRein;
@@ -516,7 +516,7 @@ namespace Levy.Common.Testing
 				CrPinCommander();
 				var s = new CrState { Run = run, BossType = CrBossNpcType(run.Boss) };
 				CrSetupBoss(s, run);
-				CrSetHpScale(run); CrSetFear(run);
+				CrSetHpScale(run); CrSetFear(run); CrSetOptions(run);
 				CrResetDowned();
 				int total = run.Specs.Count, slot = 0;
 				foreach (var sp in run.Specs) s.Levies.Add(CrSpawnLevy(sp, run, slot++, total, _crCmdPos));
@@ -573,6 +573,7 @@ namespace Levy.Common.Testing
 						int at = sn.LastAttackerType;
 						if (at == st.BossType || st.PartTypes.Contains(at)) { l.TakenBoss += drop; st.Src("boss:" + CrNpcName(at), drop); } else if (st.AddTypes.Contains(at)) { l.TakenAdd += drop; st.Src("add:" + CrNpcName(at), drop); } else { l.TakenOther += drop; st.Src("other:" + CrNpcName(at), drop); }
 					}
+					l.BodyTicks++; l.DefSum += n.defense; if (sn.State == SoldierState.Shaken) l.ShakenTicks++; else if (sn.State == SoldierState.Routed) l.RoutedTicks++;
 					l.LastLife = n.life; l.LastAttackerType = sn.LastAttackerType; l.LifeMin = Math.Min(l.LifeMin, n.life);
 					l.ManaMin = Math.Min(l.ManaMin, l.Rec.Mana);
 					var bars = CrBars(l);
@@ -606,7 +607,7 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !(n.ModNPC is SoldierNPC) && !n.townNPC) n.active = false; }
 		}
 
-		private const string CrHeader = "key\tkind\tboss\tmode\torder\tseed\tresult\tticks\tsec\tbossMax\tbossLeft\tbossDmg\tbossDef\tdmgBoss\tdmgR\tdmgM\tdmgE\tdmgS\tdmgUnattr\tdmgProj\tdmgMelee\tdeaths\tdeathsR\tdeathsM\tdeathsE\tdeathsS\tavgSurvSec\ttakenBoss\ttakenAdd\ttakenOther\taddsPeak\thalfSec\tavgHp\tpotionsDrunk\trageAct\tadrAct\tdrCuts\tadrLost\tpeakRageAvg\tpeakAdrAvg\trageSec\tadrSec\thitsTaken\tgear\tarena\tn\ttgtLevyPct\ttgtPlayerPct\ttgtNonePct\taddTgtLevyPct\taddTgtPlayerPct\thitsBoss\thitsPerSec\tdmgPerSec\tdmgHead\tdmgBody\tdmgTail\tdmgAdd\tbossMoved\tenragedSec\tfirstHitSec\tpartsMax\tdtdPct\tdpsHittable\taddKills\taddKillsPerSec\tphases\tdmgSources\tperLevy";
+		private const string CrHeader = "key\tkind\tboss\tmode\torder\tseed\tresult\tticks\tsec\tbossMax\tbossLeft\tbossDmg\tbossDef\tdmgBoss\tdmgR\tdmgM\tdmgE\tdmgS\tdmgUnattr\tdmgProj\tdmgMelee\tdeaths\tdeathsR\tdeathsM\tdeathsE\tdeathsS\tavgSurvSec\ttakenBoss\ttakenAdd\ttakenOther\taddsPeak\thalfSec\tavgHp\tpotionsDrunk\trageAct\tadrAct\tdrCuts\tadrLost\tpeakRageAvg\tpeakAdrAvg\trageSec\tadrSec\thitsTaken\tgear\tarena\tn\ttgtLevyPct\ttgtPlayerPct\ttgtNonePct\taddTgtLevyPct\taddTgtPlayerPct\thitsBoss\thitsPerSec\tdmgPerSec\tdmgHead\tdmgBody\tdmgTail\tdmgAdd\tbossMoved\tenragedSec\tfirstHitSec\tpartsMax\tdtdPct\tdpsHittable\taddKills\taddKillsPerSec\tphases\tdmgSources\tfirstDeathSec\tavgDef\tfearPct\tshakenPct\troutedPct\tfm\tsurv\tperLevy";
 
 		private void CrFinishFight(CrRun run, CrState st)
 		{
@@ -630,14 +631,17 @@ namespace Levy.Common.Testing
 				CrPct(st.AddTgtLevy, st.AddTgtLevy + st.AddTgtPlayer + st.AddTgtNone), CrPct(st.AddTgtPlayer, st.AddTgtLevy + st.AddTgtPlayer + st.AddTgtNone), st.HitsBoss, f1(st.HitsBoss / Math.Max(1.0, end / 60.0)), f1(dmgBoss / Math.Max(1.0, end / 60.0)),
 				st.DmgHead, st.DmgBody, st.DmgTail, st.DmgAdd, f1(st.Moved / 16.0), f1(st.EnragedTicks / 60.0), st.FirstHitTick < 0 ? "-" : f1(st.FirstHitTick / 60.0), st.MaxParts,
 				CrPct(st.DtdTicks, st.BossAliveTicks), f1(dmgBoss / Math.Max(1.0, (st.BossAliveTicks - st.DtdTicks) / 60.0)), st.AddKills, f1(st.AddKills / Math.Max(1.0, end / 60.0)),
-				string.Join(" ", st.Phase.Select(kv => $"a{kv.Key}:{kv.Value.ticks / 60.0:0}s/{kv.Value.dmg}d={(kv.Value.dmg / Math.Max(1.0, kv.Value.ticks / 60.0)):0}")), string.Join(" ", st.Srcs.OrderByDescending(kv => kv.Value).Take(8).Select(kv => kv.Key + "=" + kv.Value)), per }));
+				string.Join(" ", st.Phase.Select(kv => $"a{kv.Key}:{kv.Value.ticks / 60.0:0}s/{kv.Value.dmg}d={(kv.Value.dmg / Math.Max(1.0, kv.Value.ticks / 60.0)):0}")), string.Join(" ", st.Srcs.OrderByDescending(kv => kv.Value).Take(8).Select(kv => kv.Key + "=" + kv.Value)),
+				deaths == 0 ? "-" : f1(st.Levies.Where(l => l.Dead).Min(l => l.DeathTick) / 60.0), f1(st.Levies.Sum(l => l.DefSum) / Math.Max(1.0, st.Levies.Sum(l => (long)l.BodyTicks))),
+				CrPct(st.Levies.Sum(l => (long)l.ShakenTicks + l.RoutedTicks), st.Levies.Sum(l => (long)l.BodyTicks)), CrPct(st.Levies.Sum(l => (long)l.ShakenTicks), st.Levies.Sum(l => (long)l.BodyTicks)), CrPct(st.Levies.Sum(l => (long)l.RoutedTicks), st.Levies.Sum(l => (long)l.BodyTicks)),
+				global::Levy.Common.Options.LevyOptions.Fear, global::Levy.Common.Options.LevyOptions.Surv, per }));
 			File.AppendAllText(_crOut, sb + "\n");
 			if (SoldierNPC.HitDbg != null) { try { File.AppendAllText(_crOut + ".hit.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitDbg.OrderByDescending(kv => kv.Value.dmg).Select(kv => $"{kv.Key}={kv.Value.dmg}/{kv.Value.n}")) + "\n"); } catch { } SoldierNPC.HitDbg = new(); }
 			if (SoldierNPC.HitGapDbg != null) { try { File.AppendAllText(_crOut + ".gap.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitGapDbg.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}:{kv.Value}")) + "\n"); } catch { } SoldierNPC.HitGapDbg = new(); }
 			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} rageAct={LevyRippers.RageActivations - st.Rage0} adrAct={LevyRippers.AdrenalineActivations - st.Adr0}");
 			if (Main.npc[st.BossIdx].active && Main.npc[st.BossIdx].type == st.BossType) Main.npc[st.BossIdx].active = false;
 			_cr = null; _crS = null; _crStarted = false; _crI++;
-			CrResetDowned(); CrSetHpScale(null); CrSetFear(null);
+			CrResetDowned(); CrSetHpScale(null); CrSetFear(null); CrSetOptions(null);
 			if (run.Diag) global::Levy.Common.Potions.SpectatorDiagnostic.Set(false);
 			ClearAll(); CrPurgeNpcs();
 		}

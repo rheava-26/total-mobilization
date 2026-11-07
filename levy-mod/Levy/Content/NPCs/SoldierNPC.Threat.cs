@@ -149,8 +149,13 @@ namespace Levy.Content.NPCs
 					// a worm's body is a long lane: a hop that keeps its sideways run for the whole flight lands far from where it left, so the landing is not back on the trail
 					foreach (int wd in LevyConstants.WormDodge.CarryDurs)
 					{
-						Consider(new Maneuver { Kind = 3, Vx = dir * sp, Dur = wd, JumpVy = jv, Penalty = 7f + wd * 0.05f + (goalSide != 0 && dir != goalSide ? 3f : 0f) }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
-						if (Abilities.JumpTiles > hopTiles) Consider(new Maneuver { Kind = 14, Vx = dir * sp, Dur = wd, JumpVy = -JumpSpeedFor(Abilities.JumpTiles), Penalty = 8f + wd * 0.05f + (goalSide != 0 && dir != goalSide ? 3f : 0f) }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+						var cj = new Maneuver { Kind = 3, Vx = dir * sp, Dur = wd, JumpVy = jv, Penalty = 7f + wd * 0.05f + (goalSide != 0 && dir != goalSide ? 3f : 0f) };
+						if (CarryClearsHead(cj, c0, g)) Consider(cj, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+						if (Abilities.JumpTiles > hopTiles)
+						{
+							var cf = new Maneuver { Kind = 14, Vx = dir * sp, Dur = wd, JumpVy = -JumpSpeedFor(Abilities.JumpTiles), Penalty = 8f + wd * 0.05f + (goalSide != 0 && dir != goalSide ? 3f : 0f) };
+							if (CarryClearsHead(cf, c0, g)) Consider(cf, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+						}
 					}
 				}
 				if (Abilities != null && Abilities.HasDash && _dashCooldown <= 0 && (grounded ? DashLaneClear(dir) : airScan && DashSpaceClear(dir)))
@@ -203,7 +208,7 @@ namespace Levy.Content.NPCs
 				case 8: DodgeDashJumps++; DodgeDashes++; DashIFrames(); _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); TryJump(Abilities.JumpTiles); Begin(best.Vx, best.Dur); break;
 				case 10: DodgeDashes++; DodgeDrops++; DashIFrames(); _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; Begin(best.Vx, best.Dur); break;
 				case 9:
-					DodgeHooks++; if (airScan) DodgeAirManeuvers += 0;
+					DodgeHooks++; if (WormBodyHigh && _thrNearChain) Levy.Instance?.Logger.Info("WORMHOOK " + SoldierName); if (airScan) DodgeAirManeuvers += 0;
 					if (SoldierHooks.TakePlanBudget()) { try { HookStart(HookReason.Rescue, best.HookTarget + new Vector2(0f, NPC.height * 0.5f)); } catch (Exception) { try { HookReset(true); } catch (Exception) { } } }
 					break;
 			}
@@ -214,6 +219,16 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>Moves a player has beyond a step and a hop: a double jump from the apex of the first, a dash combined with a jump or a platform drop, a hook up to a ledge out of the line.</summary>
+		private static readonly List<Threat> _thrHeads = new(4);
+		/// <summary>A carry hop is dropped when, over its whole flight, it crosses a worm head's predicted arc (head margin included).</summary>
+		private bool CarryClearsHead(in Maneuver m, Vector2 c0, float g)
+		{
+			_thrHeads.Clear();
+			for (int i = 0; i < _thrNear.Count; i++) if (_thrNear[i].Head) _thrHeads.Add(_thrNear[i]);
+			if (_thrHeads.Count == 0) return true;
+			return ThreatField.Hits(_thrHeads, c0, NPC.width, NPC.height, m, g, m.Dur + 14, out _, out _, LevyConstants.WormDodge.MarginPx) == 0;
+		}
+
 		private void ConsiderMobility(Vector2 c0, float g, float sp, int goalSide, ref Maneuver best, ref int bestHits, ref float bestScore, ref int bestLast)
 		{
 			NPC npc = NPC;

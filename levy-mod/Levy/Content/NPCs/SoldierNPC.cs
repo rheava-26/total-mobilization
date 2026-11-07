@@ -349,6 +349,7 @@ namespace Levy.Content.NPCs
 				Defense = def; MoveSpeedMult = 1f; Aggro = 0; Endurance = 0f; _buffLifeRegen = 0; Abilities = new Common.Movement.MovementAbilities();
 			}
 			if (ExtraDefense != null) { try { Defense += ExtraDefense(this); } catch { } }
+			if (Common.Options.LevyOptions.SurvOn) Defense = Common.Options.LevyOptions.AdjustDefense(this, Defense); // design option (LEVY_SURV); off by default
 			NPC.defense = Defense;
 			PinLifeMax(); // HP comes from the record, not from gear
 		}
@@ -450,6 +451,7 @@ namespace Levy.Content.NPCs
 			modifiers.DefenseEffectiveness *= LevyUtil.ModeDefenseEffectiveness() / 0.5f;
 			if (Endurance > 0f) modifiers.FinalDamage *= 1f - Endurance; // Player.Hurt applies endurance the same way (Endurance potion, Worm Scarf, Brain of Confusion)
 			modifiers.FinalDamage *= Rippers_IncomingMult(); // a full Calamity adrenaline bar halves the hit
+			if (Common.Options.LevyOptions.SurvOn) modifiers.FinalDamage *= 1f - Common.Options.LevyOptions.FormationDr(this); // design option (LEVY_SURV=formation); off by default
 		}
 
 		public override bool CheckDead()

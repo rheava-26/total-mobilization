@@ -107,7 +107,7 @@ namespace Levy.Common.Soldiers
 		/// Max HP: <see cref="RawHp"/> held under the hard ceiling of every soldier, <see cref="LevyConstants.MaxSoldierHp"/> (the vanilla player's 500), and never below 1.
 		/// No path raises it: it is a pure function of the record, and a body's <c>NPC.lifeMax</c> is pinned to it every tick (see <c>SoldierNPC.PinLifeMax</c>).
 		/// </summary>
-		public int MaxHp => Math.Clamp(RawHp, 1, LevyConstants.MaxSoldierHp);
+		public int MaxHp => Math.Clamp(Options.LevyOptions.SurvOn ? Options.LevyOptions.AdjustMaxHp(this, RawHp) : RawHp, 1, LevyConstants.MaxSoldierHp);
 
 		/// <summary>Max mana: <see cref="RawMana"/> held under the hard ceiling of every soldier, <see cref="LevyConstants.MaxMana"/> (the vanilla player's 200), and never below 0.</summary>
 		public int MaxMana => Math.Clamp(RawMana, 0, LevyConstants.MaxMana);

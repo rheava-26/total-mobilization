@@ -76,6 +76,21 @@ namespace Levy.Common.Testing
 			c.FearMultiplier = run != null && run.Fear >= 0f ? run.Fear : _crDefFear;
 		}
 
+		// ---- design options (LEVY_FEARMODEL / LEVY_SURV): spec tokens fm=<model> surv=<flags, comma list> vet=<boss fights survived> override the env for one fight ----
+		private static global::Levy.Common.Options.FearModel _crDefFm; private static global::Levy.Common.Options.SurvMode _crDefSurv; private static bool _crOptSaved;
+		/// <summary>The lab's stand-in for "what a player has at that progression point" (inferred typical values, see OPTIONS.md): max HP and defense per boss tier.</summary>
+		internal static (int hp, int def) CrParityTable(string boss) => boss switch { "kslime" => (160, 6), "ds" => (200, 8), "eye" => (240, 10), "eow" => (300, 12), "brain" => (300, 12), "qb" => (300, 16), "skel" => (400, 20), _ => (200, 8) };
+		/// <summary>Boss fights a campaign army has survived by this boss (veteran option): bosses before it in Boss Checklist order.</summary>
+		private static int CrVetDefault(string boss) => boss switch { "kslime" => 0, "ds" => 1, "eye" => 2, "eow" => 3, "brain" => 3, "qb" => 4, "skel" => 5, _ => 0 };
+		private static int CrVetFights(CrRun run) => run.Vet >= 0 ? run.Vet : (global::Levy.Common.Options.LevyOptions.Surv & global::Levy.Common.Options.SurvMode.Veteran) != 0 ? CrVetDefault(run.Boss) : 0;
+		private static void CrSetOptions(CrRun run)
+		{
+			if (!_crOptSaved) { _crDefFm = global::Levy.Common.Options.LevyOptions.Fear; _crDefSurv = global::Levy.Common.Options.LevyOptions.Surv; _crOptSaved = true; }
+			global::Levy.Common.Options.LevyOptions.Fear = run != null && run.Fm != "" ? global::Levy.Common.Options.LevyOptions.ParseFear(run.Fm) : _crDefFm;
+			global::Levy.Common.Options.LevyOptions.Surv = run != null && run.Surv != "" ? global::Levy.Common.Options.LevyOptions.ParseSurv(run.Surv) : _crDefSurv;
+			global::Levy.Common.Options.LevyOptions.HarnessParity = run != null && (global::Levy.Common.Options.LevyOptions.Surv & global::Levy.Common.Options.SurvMode.Parity) != 0 ? CrParityTable(run.Boss) : null;
+		}
+
 		private static Type _crDownedType;
 		private static void CrResetDowned()
 		{

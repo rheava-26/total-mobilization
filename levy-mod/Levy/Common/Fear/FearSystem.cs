@@ -4,6 +4,7 @@ using Terraria;
 using Levy.Common.Boss;
 using Levy.Common.Config;
 using Levy.Common.Dialogue;
+using Levy.Common.Options;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Util;
@@ -37,6 +38,7 @@ namespace Levy.Common.Fear
 		{
 			if (victim == null || victim.Record == null || damage <= 0 || LevyUtil.IsClient) return;
 			float amount = FearK.ComradeHitMult * damage / Math.Max(1, victim.NPC.lifeMax);
+			if (LevyOptions.Fear == FearModel.Events && damage < LevyConstants.Lab.EventsBigHitFrac * victim.NPC.lifeMax) return; // events model: only a big hit on a comrade frightens
 			AddToWitnesses(victim, amount);
 		}
 
@@ -52,7 +54,7 @@ namespace Levy.Common.Fear
 			victim.Record.Fear = 0f; // a respawned soldier starts steady
 
 			Vector2 at = victim.NPC.Center;
-			float viewPx = FearK.BossViewRange * LevyConstants.TilePx;
+			float viewPx = (LevyOptions.Fear == FearModel.Events ? LevyConstants.Lab.EventsRadiusTiles : FearK.BossViewRange) * LevyConstants.TilePx; // events model: witnesses within 40 tiles, not the whole boss view
 			float barkPx = LevyConstants.FearComradeBarkTiles * LevyConstants.TilePx;
 			SoldierNPC near1 = null, near2 = null;
 			float d1 = float.MaxValue, d2 = float.MaxValue;
@@ -200,6 +202,17 @@ namespace Levy.Common.Fear
 			return false;
 		}
 
+		/// <summary>True if any living player is within the given tiles of the point (the rally model's commander check).</summary>
+		public static bool PlayerWithin(Vector2 pos, float tiles)
+		{
+			RefreshPlayers();
+			float r = tiles * LevyConstants.TilePx;
+			float r2 = r * r;
+			for (int i = 0; i < _playerCount; i++)
+				if (Vector2.DistanceSquared(_playerPos[i], pos) <= r2) return true;
+			return false;
+		}
+
 		/// <summary>Name of the comrade who fell in the last 30 seconds, or null.</summary>
 		public static string RecentFallenName()
 		{
@@ -220,7 +233,7 @@ namespace Levy.Common.Fear
 			foreach (SoldierNPC b in roster.ActiveBodies())
 			{
 				if (b == null || b.Record == null || ReferenceEquals(b, victim) || !b.IsAlive) continue;
-				if (!LevyUtil.WithinTiles(b.NPC.Center, at, FearK.BossViewRange)) continue;
+				if (!LevyUtil.WithinTiles(b.NPC.Center, at, LevyOptions.Fear == FearModel.Events ? LevyConstants.Lab.EventsRadiusTiles : FearK.BossViewRange)) continue;
 				if (b.Fear_BossInView() == null) continue;
 				b.Fear += amount * GainMultiplier(b);
 			}

@@ -6,6 +6,7 @@ using Levy.Common;
 using Levy.Common.Boss;
 using Levy.Common.Dialogue;
 using Levy.Common.Fear;
+using Levy.Common.Options;
 using Levy.Common.Util;
 using FearK = Levy.Common.LevyConstants.Fear;
 
@@ -38,6 +39,8 @@ namespace Levy.Content.NPCs
 			if (global::Levy.Common.Potions.AutonomySystem.IsAutonomous(this)) { if (Record.Fear > 0f || State is SoldierState.Shaken or SoldierState.Routed) Fear_Rally(false); Record.Fear = 0f; return; } // Autonomous: immune to fear
 
 			NPC boss = Fear_BossInView();
+			FearModel fm = LevyOptions.Fear;
+			if (fm == FearModel.Rally && boss != null) Fear_RallyPulse();
 			if (boss == null)
 			{
 				// No main boss in view: the meter drains and a routed body counts the seconds until it rallies.
@@ -58,7 +61,9 @@ namespace Levy.Content.NPCs
 				if (FearSeen.Add(boss.whoAmI)) Fear_OnBossSighted(boss);
 
 				float gain = FearK.BossInViewPerTick * Fear_Terror(boss);
+				if (fm != FearModel.Default) gain *= LevyOptions.ProximityGainScale;
 				if (gain > 0f) Fear += gain * FearSystem.GainMultiplier(this);
+				if (fm != FearModel.Default) Fear_OptionDrain(fm);
 			}
 
 			// Shaken in, Shaken out. Routed is left alone here: only a rally, the boss dying or the out-of-sight timer ends it.
@@ -78,11 +83,40 @@ namespace Levy.Content.NPCs
 			if (Fear_BossInView() == null) return; // fear only exists during a main-boss fight
 
 			bool wasShaken = State == SoldierState.Shaken; // shaken BEFORE this hit
+			if (LevyOptions.Fear == FearModel.Events && damage < LevyConstants.Lab.EventsBigHitFrac * NPC.lifeMax) return; // events model: only a big single hit frightens
 			Fear += FearK.SelfHitMult * damage / Math.Max(1, NPC.lifeMax) * FearSystem.GainMultiplier(this);
 			if (!wasShaken) return;
 
 			float chance = (Fear - FearK.ShakenThreshold) / 50f;
 			if (chance > 0f && Main.rand.NextFloat() < chance) Fear_Rout(null, true);
+		}
+
+		// =====================================================================================================
+		// Design options (LEVY_FEARMODEL): events / proximity_slow / rally. Never reached with the default model.
+		// =====================================================================================================
+
+		/// <summary>Drain while a boss is in view: events = steadily once not hit for a few seconds; proximity_slow = while healthy. A routed body whose meter has drained below the rally value recovers.</summary>
+		private void Fear_OptionDrain(FearModel fm)
+		{
+			if (fm == FearModel.Events)
+			{
+				if (TicksSinceDamaged >= LevyConstants.Lab.EventsDrainDelayTicks && Record.Fear > 0f) Fear -= LevyConstants.Lab.EventsDrainPerSecond / 60f;
+			}
+			else if (fm == FearModel.ProximitySlow)
+			{
+				if (Record.Fear > 0f && NPC.life > LevyConstants.Lab.SlowHealthyFrac * NPC.lifeMax) Fear -= LevyConstants.Lab.SlowDrainPerSecond / 60f;
+			}
+			if (fm != FearModel.Rally && State == SoldierState.Routed && Record.Fear < FearK.RallyValue) Fear_Rally(true);
+		}
+
+		/// <summary>Rally model: a living commander within range steadies this body every pulse (fear down to the rally value; Shaken and Routed end).</summary>
+		private void Fear_RallyPulse()
+		{
+			if ((Main.GameUpdateCount + (uint)NPC.whoAmI) % (uint)LevyConstants.Lab.RallyPulseTicks != 0) return;
+			bool broken = State == SoldierState.Shaken || State == SoldierState.Routed;
+			if (!broken && Record.Fear <= FearK.RallyValue) return;
+			if (!FearSystem.PlayerWithin(NPC.Center, LevyConstants.Lab.RallyCommanderTiles)) return;
+			Fear_Rally(broken);
 		}
 
 		// =====================================================================================================

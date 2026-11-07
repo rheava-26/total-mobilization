@@ -20,6 +20,8 @@ namespace Levy.Common
 			/// <summary>The jerk fires when the head is predicted to reach the body within this many ticks (about 150 px at a worm's speed).</summary>
 			public const int CommitTicks = 14;
 			/// <summary>A head whose predicted horizontal travel over the next 20 ticks is under this (px) is rising or diving: the side is picked from its turn or the open side.</summary>
+			/// <summary>Flight lengths (ticks) of the carry hops tried against a worm body: a hop that holds its sideways run all the way to the landing.</summary>
+			public static readonly int[] CarryDurs = { 30, 44 };
 			public const float VerticalDriftPx = 40f;
 		}
 	}

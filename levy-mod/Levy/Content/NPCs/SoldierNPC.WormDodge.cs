@@ -18,6 +18,8 @@ namespace Levy.Content.NPCs
 		internal static bool WormDodgeOn = Environment.GetEnvironmentVariable("LEVY_WORMDODGE") != "0";
 		/// <summary>LEVY_WORMPICK=1: the hard pick (worse in the lab: off by default) instead of the late-deferred search. LEVY_WORMHOLD=0: keep walking while the head closes (no hold-still).</summary>
 		internal static bool WormPickOn = Environment.GetEnvironmentVariable("LEVY_WORMPICK") == "1", WormHoldOn = Environment.GetEnvironmentVariable("LEVY_WORMHOLD") != "0";
+		/// <summary>LEVY_WORMBODY=0 turns off the worm body model (the chain as one moving curve in the threat field, so a jump's landing is checked against where the body will be) and the highest-ledge preference for hooks.</summary>
+		internal static bool WormBodyHigh = Environment.GetEnvironmentVariable("LEVY_WORMBODY") != "0";
 		private bool _wormScan; private float _wormMargin;
 		internal int WormHolds, WormCommits, WormJerks;
 		private static readonly System.Collections.Generic.List<Threat> _thrAged = new(8);

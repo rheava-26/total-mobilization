@@ -592,6 +592,24 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 📦 SHIPPED Levy 2.0.9, at scratchpad/ship-2.0.9
+- spectator-fix f93d606:
+  - Creepers retarget to levies (ai 55 allowlisted while spectating).
+  - Boss keep-alive under Spectator.
+  - No player damage while spectating (CanHitNPC).
+  - Teleport ≥100 tiles ends Spectator; shorter re-anchors.
+- **Eve's "boss targets me" NOT reproduced** (DS harness + emulated SP + Calamity, all modes). It reverts only when all levies are dead.
+- Plus the short-reach melee fix (Blade of Grass etc.).
+- **Boots:** Thorium+MS and Calamity, 0 exceptions.
+
+## 🧭 Eve round (2026-11-07 01:15)
+- King Slime STILL targets her with Spectator (boss beaten, config on) → `spectator2` builds an in-game `/levyspec` diagnostic for Eve to run.
+- Spectator must NOT work vs bosses not yet beaten (first kill solo; reverses my override). The per-boss rule is being implemented; confirm with Eve whether she meant a global gate.
+- Spectator/Seeker must be formatted like real vanilla potions.
+- Midair dodging/strafing + platform use → `air-mobility` (3 seeds this time).
+- NEW: an ARMORY RELAY placeable that extends the turret/drone armory reach → `armory-relay`.
+- The results HTML rendered as source in Eve's viewer → sent as PDF.
+
 ## ✅ MERGED (next build): boss-trials d8d3e8a, the short-reach projectile melee fix
 - **Cause:** Blade of Grass etc. were classified as beam swords (40-tile reach), so levies stood off ~28 tiles while the shot dies within a few tiles → 0 damage.
 - **Fix:** a ShortShot table (Blade of Grass, Light's Bane, Chlorophyte Saber/Claymore, Ice/Death Sickle, Christmas Tree Sword, Waffle's Iron) now positions like a blade. Sweep: all 0% → 98–317% of expected.

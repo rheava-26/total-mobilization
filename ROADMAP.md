@@ -234,6 +234,17 @@
 
   - Events drops Shaken/Routed from 52–96% to 2–16%. Brain dmg/s 1 → 26.
   - **Builder recommendation:** ship events + parity; drop proximity_slow and veteran; keep formation as a knob. DS and Eye Rev stay hard.
+- **EVE'S DECISIONS (11-07 midday):**
+  - **Fear:** event fear YES (make it the default). Sunflowers slow fear. Formation defense YES (make it matter). Autonomy = fearless while spectating (verify).
+  - **Survivability:** HP/def parity NO. "Levy health and defense can stay minimal… supplying crystals isn't instant progress by intent."
+  - **Lab realism:** HP +40–60 per boss tier, 240–340 by Skeletron, cap 500. Mana: mages max, others 60–120, all max by BoC.
+  - **Targeting:** enemies of all kinds target levies and vice versa ("why would I not be okay").
+  - **Labs:** arenas only (no flat ground). Base placeables/stations by EoW/BoC. Food buffs (Well Fed, Plenty Satisfied). Hazard pay arm. Piercing for BoC/EoW/DS. Team-buff accessories. Rogue levies (Calamity only; the Acid Rain rogue set with Irradiated). New bosses: Hive Mind, Perforators, Slime God. Keep vanilla and Calamity separate.
+  - **Replays:** the gallery HTML "didn't work" on her side → publish as a hosted page.
+- **Launched:**
+  - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
+  - lab3;
+  - replay-site.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

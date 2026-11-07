@@ -61,6 +61,8 @@ namespace Levy.Common.Recording
 		private static readonly HashSet<int> _bossTypes = new();
 		private static readonly Dictionary<int, (uint tick, int proj)> _projHit = new();
 		private static readonly List<int> _gone = new();
+		private static readonly Dictionary<int, string> _lbuf = new();
+		public const int AddRangePx = 140 * 16, MaxAdds = 160;
 
 		// ---- format 4: terrain that follows the fight, static camera view, boss death / despawn
 		private static int _cx0, _cy0, _cx1, _cy1, _chunks, _coverTiles, _startCx, _startCy;
@@ -150,7 +152,7 @@ namespace Levy.Common.Recording
 				_items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
-				_bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1;
+				_lbuf.Clear(); _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1;
 				_startTick = (int)Main.GameUpdateCount;
 				_startMaxSerial = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) _startMaxSerial = Math.Max(_startMaxSerial, FightRecSpawnTag.SerialOf(Main.npc[i]));
 				string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -176,7 +178,7 @@ namespace Levy.Common.Recording
 					+ ",\"stateNames\":" + FightRecFormat.Esc(string.Join(",", Enum.GetNames(typeof(SoldierState))))
 					+ ",\"schemaP\":" + FightRecFormat.Esc(FightRecFormat.SchemaP) + ",\"flagsP\":" + FightRecFormat.Esc(FightRecFormat.SchemaPFlags)
 					+ ",\"schemaB\":" + FightRecFormat.Esc(FightRecFormat.SchemaB) + ",\"schemaJ\":" + FightRecFormat.Esc(FightRecFormat.SchemaJ)
-					+ ",\"tkinds\":" + FightRecFormat.Esc(FightRecFormat.TKinds) + ",\"schemaL\":" + FightRecFormat.Esc(FightRecFormat.SchemaL) + ",\"flagsL\":" + FightRecFormat.Esc(FightRecFormat.SchemaLFlags) + "}");
+					+ ",\"tkinds\":" + FightRecFormat.Esc(FightRecFormat.TKinds) + ",\"schemaA\":" + FightRecFormat.Esc(FightRecFormat.SchemaA) + ",\"schemaL\":" + FightRecFormat.Esc(FightRecFormat.SchemaL) + ",\"flagsL\":" + FightRecFormat.Esc(FightRecFormat.SchemaLFlags) + "}");
 				WriteArena(cmd);
 				Array.Clear(_accLast); _accLast[0] = int.MinValue; // force the first accessory event
 				_pJump = cmd.jump; _pAnim = cmd.itemAnimation; _pDashDelay = cmd.dashDelay; _pFly = false; _pHookOut = false; _pHookAtt = false;
@@ -480,10 +482,25 @@ namespace Levy.Common.Recording
 				int id = s.Record != null ? s.Record.Id : -n.whoAmI;
 				if (s.Record != null && !_soldiers.ContainsKey(id)) _soldiers[id] = s.Record.Name;
 				SeeEntity(n.Center.X, n.Center.Y);
+				if (el % 30 == 0) LevyBuffs(n, id, el);
 				Item lh = s.Dummy?.HeldItem;
 				int lflags = (Grounded(n) ? 1 : 0) | (s.IsFlying ? 2 : 0) | (s.IsAerial ? 4 : 0) | (s.IsHooking ? 8 : 0) | (s.MoveBlocked ? 16 : 0);
 				if (lh != null && !lh.IsAir && !_items.ContainsKey(lh.type)) _items[lh.type] = lh.Name;
 				f.L.Add(new double[] { id, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, lflags, n.life, (int)s.State, lh != null && !lh.IsAir ? lh.type : 0, s.WingTime, n.lifeMax, n.width, n.height });
+			}
+			// hostile adds and minions that are not boss parts (creepers, servants, worms, bees, slimes ...)
+			int ac = 0;
+			for (int i = 0; i < Main.maxNPCs && ac < MaxAdds; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC || n.damage <= 0 || n.lifeMax <= 1 || n.dontCountMe) continue;
+				if (Math.Abs(n.Center.X - p.Center.X) > AddRangePx || Math.Abs(n.Center.Y - p.Center.Y) > AddRangePx) continue;
+				if (IsBossOrPart(n)) continue;
+				if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
+				TargetOf(n, out int atk, out int atl);
+				SeeEntity(n.Center.X, n.Center.Y);
+				f.A.Add(new double[] { n.type, n.whoAmI, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, n.life, n.lifeMax, atk, atl, n.width, n.height });
+				ac++;
 			}
 			GrowTerrain();
 			Line(FightRecFormat.Frame(f));
@@ -673,6 +690,24 @@ namespace Levy.Common.Recording
 				("life", Math.Max(0, t.Life).ToString()), ("max", t.Max.ToString()), ("final", final ? "1" : "0") };
 			if (t.HitT >= 0) { ex.Add(("ht", t.HitT.ToString())); ex.Add(("hd", t.HitDmg.ToString())); ex.Add(("hs", FightRecFormat.Esc(t.HitSrc))); ex.Add(("hy", t.HitType.ToString())); ex.Add(("hn", FightRecFormat.Esc(t.HitName ?? ""))); }
 			Line(FightRecFormat.Event(tick, killed ? "bdeath" : "bdespawn", ex.ToArray())); _events++;
+		}
+
+		/// <summary>A levy's buffs, written when the set changes (checked twice a second).</summary>
+		private static void LevyBuffs(NPC n, int id, int el)
+		{
+			var sb = new StringBuilder("["); bool first = true; string key = "";
+			for (int i = 0; i < NPC.maxBuffs; i++)
+			{
+				if (n.buffType[i] <= 0 || n.buffTime[i] <= 0) continue;
+				if (!_buffs.ContainsKey(n.buffType[i])) _buffs[n.buffType[i]] = Lang.GetBuffName(n.buffType[i]);
+				if (!first) sb.Append(','); first = false;
+				sb.Append('[').Append(n.buffType[i]).Append(',').Append(n.buffTime[i]).Append(']'); key += n.buffType[i] + ",";
+			}
+			sb.Append(']');
+			_lbuf.TryGetValue(id, out string was);
+			if ((was ?? "") == key) return;
+			_lbuf[id] = key;
+			Ev("lbuf", ("id", id.ToString()), ("b", sb.ToString()));
 		}
 
 		private static void ExtraJumpEvents(Player p)

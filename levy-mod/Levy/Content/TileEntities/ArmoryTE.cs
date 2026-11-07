@@ -8,6 +8,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using Levy.Common;
+using Levy.Common.Movement;
 using Levy.Common.Flavor;
 using Levy.Common.Integrations;
 using Levy.Common.Soldiers;
@@ -898,8 +899,17 @@ namespace Levy.Content.TileEntities
 			if (g != null && g.HasWeapon) cls = WeaponClassifier.ItemDamageClass(g.Weapon);
 			if (cls == null && g != null) cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
 			bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(worn, it);
-			return TakeBest(null, 0, 0, 1, Pred, it => AccessoryScore(it, cls));
+			// Every levy takes one mobility accessory (wings, then the most extra jumps) before anything else; a second one is only a mild plus.
+			bool hasMob = MobilityFirst && AccessoryMobility.Best(worn) > 0f;
+			if (MobilityFirst && !hasMob) {
+				var m = TakeBest(null, 0, 0, 1, it => Pred(it) && AccessoryMobility.Is(it), it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
+				if (m != null) return m;
+			}
+			return TakeBest(null, 0, 0, 1, Pred, it => AccessoryScore(it, cls) + (hasMob && AccessoryMobility.Is(it) ? LevyConstants.Armory.MobilityStackBonus : 0f));
 		}
+
+		/// <summary>Armory picks give each levy one mobility accessory (extra jumps or wings) first. Harness-only switch for before/after runs.</summary>
+		internal static bool MobilityFirst = Environment.GetEnvironmentVariable("LEVY_ARMORY_MOBILITY") != "0";
 
 		/// <summary>
 		/// Fills the soldier's empty, unlocked armor slots from ONE matching set (same family head/body/legs) when the armory can supply it, so the set bonus

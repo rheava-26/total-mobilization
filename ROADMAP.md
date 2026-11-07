@@ -602,6 +602,13 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Plus the short-reach melee fix (Blade of Grass etc.).
 - **Boots:** Thorium+MS and Calamity, 0 exceptions.
 
+## 📦 SHIPPED Levy 2.0.12 (fight recorder), at scratchpad/ship-2.0.12
+- **fightrec 84d7ea3:**
+  - `/levyrec start [name]` / `stop` / status; auto-stops on boss death or despawn, world unload, or 10 min.
+  - Writes JSONL to <SavePath>/Levy/recordings at 30 Hz: player movement, jumps, dashes, hooks, wings, items, hits, accessories, bosses, projectiles, levies, an RLE arena.
+- **Viewer:** levy-mod/Levy/tools/fightviewer/viewer.html (offline, drag-drop). analyze.py compares player vs levies, incl. the response before boss dashes.
+- Verified with a headless synthetic fight + a Playwright render. A real-client recording is unverified.
+
 ## 🔁 Container restart (2026-11-07 overnight)
 - It killed mobility3 and fightrec. Both had pushed progress:
   - mobility3: 1bb3c39 still-reason telemetry + wings gear; 1bb46a6 boss dance, corner escape, dash i-frames.

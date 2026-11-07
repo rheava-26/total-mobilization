@@ -259,7 +259,7 @@ function decRows(rows,last,idx,ipos){
 }
 function fromData(o){      // a data/<fight>.json file written by make_site.py
   if(!o||!o.frames||!o.frames.length) throw new Error("the data file has no frames");
-  if(o.v>=2){const L=new Map(),B=new Map(),AA=new Map(),pl=new Set([1,2]),pb=new Set([2,3]);for(const f of o.frames){if(f.l)f.l=decRows(f.l,L,0,pl);if(f.b)f.b=decRows(f.b,B,1,pb);if(f.a)f.a=decRows(f.a,AA,1,pb);}}
+  if(o.v>=2){const L=new Map(),B=new Map(),AA=new Map(),SS=new Map(),pl=new Set([1,2]),pb=new Set([2,3]);for(const f of o.frames){if(f.l)f.l=decRows(f.l,L,0,pl);if(f.b)f.b=decRows(f.b,B,1,pb);if(f.a)f.a=decRows(f.a,AA,1,pb);if(f.s)f.s=decRows(f.s,SS,1,pb);}}
   return {hdr:o.hdr||null,arena:o.arena||null,arenas:o.arenas||(o.arena?[o.arena]:[]),cam:o.cam||null,frames:o.frames,events:o.events||[],names:o.names||{items:{},npcs:{},projectiles:{},buffs:{},soldiers:{}},end:o.end||null};
 }
 const tkOf=b=>b.length>14?b[14]:((b[12]>=0&&b[12]<255)?1:0);
@@ -310,7 +310,8 @@ function build(R){
   for(const f of R.frames){const b=mainBoss(f); if(!b) continue; const k=tkOf(b); tl[k===2?"levy":k===1?"player":"none"]++;
     if(k!==pk){if(pk>=0)R.band.push([ps,f.t,pk]);pk=k;ps=f.t;}}
   if(pk>=0)R.band.push([ps,R.tmax+R.dt,pk]); R.tally=tl;
-  R.trA=new Map(); R.hasAdds=false;
+  R.trA=new Map(); R.hasAdds=false; R.hasSeg=false;
+  for(const f of R.frames) if(f.s&&f.s.length){R.hasSeg=true;break;}
   for(const f of R.frames) for(const a of (f.a||[])){R.hasAdds=true;let t=R.trA.get(a[1]);if(!t)R.trA.set(a[1],t=[]);t.push([f.t,a[2],a[3]]);}
   R.gearCmd=R.events.filter(e=>e.e==="gear"); R.lgear=new Map(); for(const e of R.events) if(e.e==="lgear"){let a=R.lgear.get(e.id);if(!a)R.lgear.set(e.id,a=[]);a.push(e);}
   R.lbuf=new Map(); for(const e of R.events) if(e.e==="lbuf"){let a=R.lbuf.get(e.id);if(!a)R.lbuf.set(e.id,a=[]);a.push(e);}
@@ -579,6 +580,26 @@ function draw(){
       blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(8,Math.max(a0[10],a0[11])*cam.z/2+3),info:`add ${nm("npcs",a0[0])}  slot ${a0[1]}\nlife ${a0[6]}/${a0[7]}  (${(100*a0[6]/Math.max(1,a0[7])).toFixed(0)}%)\ntarget ${D.hasTarget?(k===2?"levy "+(D.lbl.get(a0[9])||a0[9]):k===1?"commander":"none"):"?"}${a0[10]?"\nhitbox "+a0[10]+" x "+a0[11]+" px":""}\nspeed ${(Math.hypot(a0[4],a0[5])*60/16).toFixed(1)} tiles/s`});
     }
   }
+  if(D.hasSeg&&f0.s&&f0.s.length){
+    // format 7: every other hostile hitbox (worm segments, damage-0 adds); the dashed ones deal no contact damage
+    const byIdS=new Map((f1.s||[]).map(q=>[q[1],q]));
+    for(const s0 of f0.s){
+      const s1=byIdS.get(s0[1])||s0, x=lerp(s0[2],s1[2],u), y=lerp(s0[3],s1[3],u), [sx,sy]=sc(x,y), fl=s0[7];
+      const pw=Math.max(s0[4]*cam.z*dpr,3*dpr),ph=Math.max(s0[5]*cam.z*dpr,3*dpr), dmg=fl&1;
+      if(showHit){g.fillStyle=al(T.amb,dmg?.12:.05);g.fillRect(sx-pw/2,sy-ph/2,pw,ph);g.strokeStyle=al(T.amb,dmg?1:.55);g.lineWidth=1*dpr;if(!dmg)g.setLineDash([3*dpr,3*dpr]);g.strokeRect(sx-pw/2,sy-ph/2,pw,ph);g.setLineDash([]);}
+      else{g.fillStyle=T.amb;g.fillRect(sx-1.5*dpr,sy-1.5*dpr,3*dpr,3*dpr);}
+      blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,Math.max(s0[4],s0[5])*cam.z/2+2),info:`${fl&4?"segment":"hostile"} ${nm("npcs",s0[0])}  slot ${s0[1]}${fl&4?" (head slot "+s0[6]+")":""}\nhitbox ${s0[4]} x ${s0[5]} px\n${dmg?"deals contact damage":"no contact damage"}${fl&2?", invulnerable":""}`});
+    }
+  }
+  // hostiles outside the view (recorded at any distance): a marker on the frame edge pointing at each, so something firing from off-screen is never invisible
+  {let off=0; const mark=(x,y,col,info)=>{const [sx,sy]=sc(x,y); if(sx>=0&&sx<=W&&sy>=0&&sy<=H) return; off++;
+      const ex=Math.max(10*dpr,Math.min(W-10*dpr,sx)), ey=Math.max(10*dpr,Math.min(H-10*dpr,sy)), ang=Math.atan2(sy-ey,sx-ex), r=6*dpr;
+      g.fillStyle=col; g.globalAlpha=.85; g.beginPath(); g.moveTo(ex+Math.cos(ang)*r,ey+Math.sin(ang)*r); g.lineTo(ex+Math.cos(ang+2.5)*r,ey+Math.sin(ang+2.5)*r); g.lineTo(ex+Math.cos(ang-2.5)*r,ey+Math.sin(ang-2.5)*r); g.closePath(); g.fill(); g.globalAlpha=1;
+      blips.push({x:ex/dpr,y:ey/dpr,r:10,info:info+"\n(off-screen, "+(Math.hypot(sx-ex,sy-ey)/(TILE*cam.z*dpr)).toFixed(0)+" tiles away)"});};
+    for(const a0 of (f0.a||[])) mark(a0[2],a0[3],T.amb,`add ${nm("npcs",a0[0])}`);
+    for(const s0 of (f0.s||[])) mark(s0[2],s0[3],T.amb,`hostile ${nm("npcs",s0[0])}`);
+    for(const j of (f0.j||[])) mark(j[1],j[2],T.proj,`projectile ${nm("projectiles",j[0])}  damage ${j[5]}`);
+    D.offCount=off;}
   const states=(D.hdr&&D.hdr.stateNames||"").split(",");
   for(const l0 of (f0.l||[])){
     const l1=byIdL.get(l0[0])||l0; const x=lerp(l0[1],l1[1],u),y=lerp(l0[2],l1[2],u);
@@ -634,7 +655,7 @@ function draw(){
   const tot=Math.max(D.levyTotal,1), alive=Math.max(0,tot-fell), bE=D.bendFinal&&cur>=D.bendFinal.t?D.bendFinal:null;
   const outHtml=bE?`<div class="out ${bE.e==="bdeath"?"k":"d"}">${bE.e==="bdeath"?"Boss killed":"Boss left (despawn)"}</div>`:"";
   const bossHp=mb0?`${nm("npcs",mb0[0])}  ${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(0)}%`:"";
-  $("hud").innerHTML=`<div class="l"><div class="tgt ${tgtCls}">boss target: ${esc(tgtText)}</div>${outHtml}${mb0?`<div class="hpt">${esc(bossHp)}</div><div class="bar"><i style="width:${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(1)}%"></i></div>`:""}</div><div class="r">levies alive ${alive} of ${tot}<br>${D.hasAdds?`adds alive ${(f0.a||[]).length}<br>`:""}${((cur-D.tmin)/TPS).toFixed(1)} s</div>`;
+  $("hud").innerHTML=`<div class="l"><div class="tgt ${tgtCls}">boss target: ${esc(tgtText)}</div>${outHtml}${mb0?`<div class="hpt">${esc(bossHp)}</div><div class="bar"><i style="width:${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(1)}%"></i></div>`:""}</div><div class="r">levies alive ${alive} of ${tot}<br>${D.hasAdds?`adds alive ${(f0.a||[]).length}${D.hasSeg?` + ${(f0.s||[]).length} other hitboxes`:""}${D.offCount?` (${D.offCount} off-screen)`:""}<br>`:""}${((cur-D.tmin)/TPS).toFixed(1)} s</div>`;
 }
 
 // ================================================================ timeline strip

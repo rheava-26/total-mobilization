@@ -21,7 +21,7 @@ namespace Levy.Common.Recording
 	internal static class FightRecorder
 	{
 		public static bool On;
-		public const int SampleEvery = 2, MaxTicks = 10 * 60 * 60, GraceTicks = 90, HeadlessGraceTicks = 40, ProjRangePx = 80 * 16, LevyRangePx = 120 * 16, MaxProj = 250;
+		public const int SampleEvery = 2, MaxTicks = 10 * 60 * 60, GraceTicks = 90, HeadlessGraceTicks = 40, ProjRangePx = 400 * 16, LevyRangePx = 120 * 16, MaxProj = 500;
 		public const int ArenaW = 200, ArenaH = 120;
 		/// <summary>Format 4 terrain growth: tiles around any recorded entity that get captured, the step the captured area grows in, and the largest area one recording may cover.</summary>
 		public const int GrowMargin = 24, GrowStep = 20, MaxCoverW = 1600, MaxCoverH = 700, MaxCoverTiles = 600000, EntityReachX = 400, EntityReachY = 250, EndGapTicks = 20;
@@ -65,7 +65,7 @@ namespace Levy.Common.Recording
 		private static readonly Dictionary<int, int> _lgear = new();
 		private static readonly Dictionary<int, string> _prefixes = new();
 		private static int _cmdGear = int.MinValue;
-		public const int AddRangePx = 140 * 16, MaxAdds = 160, MaxHitboxes = 700;
+		public const int AddRangePx = 600 * 16, MaxAdds = 400, MaxHitboxes = 900;
 		/// <summary>Format 7 hitbox rows: whoAmI -> hash of the definition (type, width, height, realLife, flags) last written in full; a row for an unchanged NPC is just [id,x,y].</summary>
 		private static readonly Dictionary<int, long> _hbDef = new();
 		private static readonly HashSet<int> _inA = new();

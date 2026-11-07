@@ -58,10 +58,29 @@ def summarize(rows):
     }
 
 
+def expand_s(r, defs):
+    """Format 7 hitbox rows: a row of 3 ([id,x,y]) leans on the last full row of that id, which may sit in a frame the downsampler drops; write full rows."""
+    s = r.get("s")
+    if not s:
+        return r
+    o = []
+    for x in s:
+        if len(x) >= 8:
+            defs[x[1]] = x
+            o.append(x)
+        elif x[0] in defs:
+            d = defs[x[0]]
+            o.append([d[0], x[0], x[1], x[2], d[4], d[5], d[6], d[7]])
+    r = dict(r)
+    r["s"] = o
+    return r
+
+
 def downsample(rows, factor=2, thin_proj=False):
-    out, i = [], 0
+    out, i, sdefs = [], 0, {}
     for r in rows:
         if r.get("k") == "f":
+            r = expand_s(r, sdefs)
             i += 1
             if (i - 1) % factor:
                 continue

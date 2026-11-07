@@ -179,6 +179,26 @@ def row(a, ints=(), ones=()):
     return [ri(v) if i in ints else r1(v) if i in ones else r2(v) for i, v in enumerate(a)]
 
 
+def expand_hitboxes(frames):
+    """Format 7 frame key s: the first row of an NPC slot (or a changed one) is full [type,id,x,y,w,h,realLife,flags], later rows are [id,x,y].
+    Expand every row to the full form, walking ALL frames in order (the short rows lean on a full row that may sit in a frame the downsampler drops)."""
+    defs = {}
+    for f in frames:
+        s = f.get("s")
+        if not s:
+            continue
+        out = []
+        for r in s:
+            if len(r) >= 8:
+                defs[r[1]] = r
+                out.append(r)
+            else:
+                d = defs.get(r[0])
+                if d is not None:
+                    out.append([d[0], r[0], r[1], r[2], d[4], d[5], d[6], d[7]])
+        f["s"] = out
+
+
 def shrink_frame(f):
     o = {"t": f["t"], "p": row(f["p"], ints=(0, 1, 13, 14))}
     if f.get("l"):
@@ -187,6 +207,8 @@ def shrink_frame(f):
         o["b"] = [row(b, ints=(2, 3), ones=(8, 9, 10, 11)) for b in f["b"]]
     if f.get("a"):
         o["a"] = [row(a, ints=(2, 3)) for a in f["a"]]
+    if f.get("s"):
+        o["s"] = [[int(round(v)) for v in r] for r in f["s"]]
     if f.get("j"):
         o["j"] = [row(j, ints=(1, 2)) for j in f["j"]]
     return o
@@ -222,17 +244,18 @@ def shrink_event(e):
 def convert(rows, factor):
     hdr = next((r for r in rows if r.get("k") == "hdr"), {})
     frames = [r for r in rows if r.get("k") == "f"]
+    expand_hitboxes(frames)
     keep = frames[::factor]
     if frames and keep[-1] is not frames[-1]:
         keep.append(frames[-1])
     hz = hdr.get("hz", 30)
     out = {
-        "v": 3,
+        "v": 4,
         "hdr": {k: hdr[k] for k in ("format", "meta", "mode", "boss", "stateNames", "levy", "date") if k in hdr},
         "frames": [],
         "events": [shrink_event(e) for e in rows if e.get("k") == "e"],
     }
-    lastL, lastB, lastA = {}, {}, {}
+    lastL, lastB, lastA, lastS = {}, {}, {}, {}
     for f in keep:
         o = shrink_frame(f)
         if "l" in o:
@@ -241,6 +264,8 @@ def convert(rows, factor):
             o["b"] = enc_rows(o["b"], lastB, 1, (2, 3))
         if "a" in o:
             o["a"] = enc_rows(o["a"], lastA, 1, (2, 3))
+        if "s" in o:
+            o["s"] = enc_rows(o["s"], lastS, 1, (2, 3))
         out["frames"].append(o)
     out["hdr"]["hz"] = max(1, hz // factor)
     for k in ("names", "end", "cam"):

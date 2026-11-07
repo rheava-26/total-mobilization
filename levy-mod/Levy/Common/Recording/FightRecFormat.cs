@@ -23,7 +23,7 @@ namespace Levy.Common.Recording
 	///         gear (the commander): arm = [[slot,type,prefix],..] over Player.armor (0-2 armor, 3-9 accessories, 10-19 vanity), inv = [[slot,type,prefix,stack],..] over the hotbar (0-9) and ammo slots (54-57); air slots are left out.
 	///         lgear (one levy): id, g = [[slot,type,prefix,stack],..] with slot 0 weapon, 1 sidearm, 2 head, 3 body, 4 legs, 5-10 accessories, 11 ammo pouch, 12 hook.
 	///         names gains prefixes (id to name). Item names are in names.items.
-	///         Format 7 adds the frame key s: the hitbox of EVERY other hostile NPC within 140 tiles of the commander that b and a do not carry (the segments of secondary worms, damage-0 adds), SchemaS, integer pixels.
+	///         Format 7 adds the frame key s: the hitbox of EVERY other hostile NPC anywhere within 600 tiles of the commander (off-screen ones too) that b and a do not carry (the segments of secondary worms, damage-0 adds), SchemaS, integer pixels.
 	///         A row is full (8 numbers) the first time an NPC slot is seen or when its type, size, realLife or flags change, and just [id,x,y] after that. Hostile projectile hitboxes (j: w,h) were already there since format 3.
 	///         Older files stay readable: every new field is appended or optional.
 	///   names type id to name tables (items, npcs, projectiles, buffs, soldiers), written at the end

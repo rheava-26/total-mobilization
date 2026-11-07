@@ -326,6 +326,8 @@ namespace Levy.Common.Targeting
 		{
 			bool r = CompeteCore(npc, faceTarget, center, manhattan, maxSoldierDist);
 			if (DiagOn) Potions.SpectatorDiagnostic.NoteCompete(npc, r, _why);
+			if (EnemyTargetingGlobalNPC.KinDbg && npc.ModNPC != null && LevyNpcData.Of(npc).BossOwner >= 0 && Main.GameUpdateCount % 90 == (uint)(npc.whoAmI % 90))
+				Levy.Instance.Logger.Info($"[KinDbg] compete {npc.ModNPC.Name}#{npc.whoAmI} chosen={r} why={_why} tgt={npc.target} allow={IsAllowlisted(npc)} style={npc.aiStyle} bodies={Bodies.Count}");
 			return r;
 		}
 
@@ -684,7 +686,20 @@ namespace Levy.Common.Targeting
 		public override void OnSpawn(NPC npc, Terraria.DataStructures.IEntitySource source)
 		{
 			if (source is Terraria.DataStructures.EntitySource_Parent p && p.Entity is NPC parent && parent.whoAmI != npc.whoAmI && EnemyTargeting.IsBossClass(parent)) { int po = LevyNpcData.Of(parent).BossOwner; LevyNpcData.Of(npc).BossOwner = po >= 0 ? po : parent.whoAmI; }
+			// A boss that summons through EntitySource_BossSpawn (Calamity's Desert Scourge calling its Desert Nuisance worms) names no parent: take the live boss of the same mod.
+			else if (source is Terraria.DataStructures.EntitySource_BossSpawn && npc.ModNPC != null && !npc.friendly && !npc.townNPC && npc.ModNPC is not SoldierNPC && LevyNpcData.Of(npc).BossOwner < 0)
+			{
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC b = Main.npc[i];
+					if (i != npc.whoAmI && b.active && !b.friendly && (b.boss || NPCID.Sets.ShouldBeCountedAsBoss[b.type]) && b.ModNPC != null && b.ModNPC.Mod == npc.ModNPC.Mod && LevyNpcData.Of(b).BossOwner < 0)
+					{ LevyNpcData.Of(npc).BossOwner = b.whoAmI; break; }
+				}
+			}
+			if (KinDbg && npc.ModNPC != null && !npc.friendly && !npc.townNPC && npc.ModNPC is not SoldierNPC)
+				Levy.Instance.Logger.Info($"[KinDbg] spawn {npc.ModNPC.Name}#{npc.whoAmI} src={source?.GetType().Name} ent={(source is Terraria.DataStructures.EntitySource_Parent pp ? pp.Entity?.GetType().Name + ":" + (pp.Entity is NPC pn ? pn.ModNPC?.Name ?? pn.TypeName : "") + ":boss=" + (pp.Entity is NPC pn2 && EnemyTargeting.IsBossClass(pn2)) : "-")} owner={LevyNpcData.Of(npc).BossOwner} ctx={(source as Terraria.DataStructures.EntitySource_Parent)?.Context}");
 		}
+		internal static readonly bool KinDbg = System.Environment.GetEnvironmentVariable("LEVY_KINDBG") == "1";
 
 		public override bool PreAI(NPC npc)
 		{

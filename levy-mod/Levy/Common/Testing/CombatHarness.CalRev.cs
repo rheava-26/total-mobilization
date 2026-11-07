@@ -496,7 +496,7 @@ namespace Levy.Common.Testing
 			return new CrLevy { Cls = spec.Cls, Rec = rec, Idx = idx, Id = rec.Id, Spec = spec, LastLife = n.life, MaxHp = rec.MaxHp, Weapon = spec.Weapon, PotionsLeft = spec.Potions };
 		}
 
-		private static int CrBossNpcType(string boss) => boss switch { "kslime" => NPCID.KingSlime, "brain" => NPCID.BrainofCthulhu, "eow" => NPCID.EaterofWorldsHead, "qb" => NPCID.QueenBee, "skel" => NPCID.SkeletronHead, "ds" => CrCalNpc("DesertScourgeHead"), "hive" => CrCalNpc("HiveMind"), "perf" => CrCalNpc("PerforatorHive"), "sg" => CrCalNpc("SlimeGodCore"), _ => NPCID.EyeofCthulhu };
+		private static int CrBossNpcType(string boss) => boss switch { "kslime" => NPCID.KingSlime, "brain" => NPCID.BrainofCthulhu, "eow" => NPCID.EaterofWorldsHead, "qb" => NPCID.QueenBee, "skel" => NPCID.SkeletronHead, "ds" => CrCalNpc("DesertScourgeHead"), "hive" => CrCalNpc("HiveMind"), "perf" => CrCalNpc("PerforatorHive"), "sg" => CrCalNpc("SlimeGodCore"), "crab" => CrCalNpc("Crabulon"), _ => NPCID.EyeofCthulhu };
 
 		private static readonly string[] CrStockPool = { "Obsidian Shield", "Charm of Myths", "Band of Regeneration", "Magma Stone", "Hermes Boots", "Worm Scarf", "Shackle", "Anklet of the Wind", "Shiny Stone", "Philosopher's Stone", "Lucky Horseshoe", "Feral Claws", "Band of Starpower" };
 

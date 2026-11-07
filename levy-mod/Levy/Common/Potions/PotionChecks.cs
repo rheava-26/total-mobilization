@@ -81,7 +81,7 @@ namespace Levy.Common.Potions
 				Check(it.damage <= 0 && !it.accessory && !it.questItem, n + ": no weapon, accessory or quest flags");
 				foreach (var f in typeof(ItemID.Sets).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
 				{
-					if (f.GetValue(null) is not bool[] arr || arr.Length <= type) continue;
+					if (f.Name == "IsAMaterial" || f.GetValue(null) is not bool[] arr || arr.Length <= type) continue; // IsAMaterial is derived from recipes
 					if (arr[ItemID.IronskinPotion] && arr[ItemID.SpelunkerPotion]) Check(arr[type], n + ": ItemID.Sets." + f.Name + " (set on vanilla potions)");
 					else if (dump && (arr[ItemID.IronskinPotion] || arr[ItemID.SpelunkerPotion])) Info("set differs between Ironskin/Spelunker: " + f.Name);
 				}

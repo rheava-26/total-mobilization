@@ -47,6 +47,7 @@
   - Uses its own installs/saves under /home/user/lab.
   - Real CP counts per fight: KS 10, DS 11, Eye 11, EoW/Brain 13, QB 14, Skeletron 14.
   - **Smoke ANOMALY:** Eye Rev targets the PLAYER ~50% of ticks even with CalamityTargetingCompat. The lab is investigating; this matters for Eve's Calamity Spectator play.
+- Check-in 05:21: boss-lab on 2.0.13 since 05:09 (Eye Rev, DPS curve, HP-scale-off, underground and worm batches running); mobility4 not pushed yet. 6 servers up, 11 GB free.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

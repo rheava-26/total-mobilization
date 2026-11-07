@@ -60,7 +60,7 @@ namespace Levy.Common.Weapons
 		internal static void Force(WeaponRankMode mode, bool skipArmored) { _forced = true; _forcedMode = mode; _forcedSkip = skipArmored; }
 		internal static void Release() { _forced = false; }
 
-		/// <summary>Families whose shop price says nothing about their strength (flat-priced towers, drops priced like staffs, whips in fixed price bands): in Balanced mode they rank on <see cref="WeaponClassifier.Score"/> times this many copper per point.</summary>
+		/// <summary>Families whose shop price says nothing about their strength (flat-priced towers, drops priced like staffs, whips in fixed price bands): in every price mode (Balanced, SellPrice, SellPricePlusMaterials) they rank on <see cref="WeaponClassifier.Score"/> times this many copper per point.</summary>
 		public static bool ScoreRanked(WeaponFamily f, out float copperPerScore)
 		{
 			switch (f)
@@ -114,7 +114,7 @@ namespace Levy.Common.Weapons
 			else
 			{
 				double key = Math.Max(0, it.value);
-				if (mode == WeaponRankMode.Balanced && it.damage > 0 && ScoreRanked(p.Family, out float copperPerScore)) key = WeaponClassifier.Score(it) * (double)copperPerScore; // a minion staff, sentry or whip ranks on what it deals: the Slime Staff's 100 000-copper price (8 damage) must not outrank a 25-damage staff, nor a flat-priced DD2 tower outrank a stronger one
+				if (it.damage > 0 && ScoreRanked(p.Family, out float copperPerScore)) key = WeaponClassifier.Score(it) * (double)copperPerScore; // a minion staff, sentry or whip ranks on what it deals in every price mode: the Slime Staff's 100 000-copper price (8 damage) must not outrank a 25-damage staff (a stored SellPrice setting, the default before Balanced, did exactly that), nor a flat-priced DD2 tower outrank a stronger one
 				if (mode == WeaponRankMode.SellPricePlusMaterials) key += MaterialCost.Of(it.type);
 				r = (float)Math.Pow(Math.Max(1d, key), PriceExponent); // at least 1: a worthless item is the cheapest of the real weapons
 				if (explain) { bd.Key = key; bd.Base = r; }

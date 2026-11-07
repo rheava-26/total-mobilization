@@ -41,6 +41,7 @@ namespace Levy.Common.Testing
 			new RealBoss { Key = "eoc", Label = "Eye of Cthulhu p1", Type = () => NPCID.EyeofCthulhu, SpawnUpTiles = 9 },
 			new RealBoss { Key = "eoc2", Label = "Eye of Cthulhu p2", Type = () => NPCID.EyeofCthulhu, Frac = 0.4f, SpawnUpTiles = 9 },
 			new RealBoss { Key = "brain", Label = "Brain of Cthulhu", Type = () => NPCID.BrainofCthulhu, SpawnUpTiles = 14 },
+			new RealBoss { Key = "brain2", Label = "Brain of Cthulhu p2", Type = () => NPCID.BrainofCthulhu, Frac = 0.4f, SpawnUpTiles = 14 },
 			new RealBoss { Key = "eow", Label = "Eater of Worlds", Type = () => NPCID.EaterofWorldsHead, SpawnUpTiles = 10 },
 			new RealBoss { Key = "queenbee", Label = "Queen Bee", Type = () => NPCID.QueenBee, SpawnUpTiles = 14 },
 			new RealBoss { Key = "skeletron", Label = "Skeletron", Type = () => NPCID.SkeletronHead, SpawnUpTiles = 14 },

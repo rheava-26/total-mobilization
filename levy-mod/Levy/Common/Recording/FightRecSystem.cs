@@ -56,7 +56,12 @@ namespace Levy.Common.Recording
 		public int Serial;
 		public override bool InstancePerEntity => true;
 		public override bool AppliesToEntity(NPC entity, bool lateInstantiation) => !string.IsNullOrEmpty(FightRecAuto.Dir);
-		public override void OnSpawn(NPC npc, Terraria.DataStructures.IEntitySource source) { Serial = ++_counter; }
+		public override void OnSpawn(NPC npc, Terraria.DataStructures.IEntitySource source)
+		{
+			// a segment, servant or add spawned by an NPC belongs to its parent's fight (Eater of Worlds spawns its body from the head's AI): same serial, so a worm's segments are not mistaken for the next trial's boss
+			if (source is Terraria.DataStructures.EntitySource_Parent par && par.Entity is NPC parent && parent.active && SerialOf(parent) > 0) { Serial = SerialOf(parent); return; }
+			Serial = ++_counter;
+		}
 		public static int SerialOf(NPC n) => n.TryGetGlobalNPC(out FightRecSpawnTag t) ? t.Serial : 0;
 	}
 

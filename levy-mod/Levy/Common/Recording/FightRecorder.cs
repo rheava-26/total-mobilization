@@ -65,6 +65,16 @@ namespace Levy.Common.Recording
 			return sb.Append('}').ToString();
 		}
 
+		/// <summary>
+		/// A boss for recording purposes. Vanilla Eater of Worlds never has NPC.boss set while it lives (the flag is raised only on the last segment's death, NPC.DropEoWLoot),
+		/// so the head is recognised by NPCID.Sets.ShouldBeCountedAsBoss / the main-boss list; a modded worm head that owns its segments' life (realLife == itself) and has a boss map icon counts too.
+		/// </summary>
+		internal static bool IsFightBoss(NPC n)
+		{
+			if (n.boss || NPCID.Sets.ShouldBeCountedAsBoss[n.type] || BossRule.IsMainBossType(n.type)) return true;
+			return n.realLife == n.whoAmI && NPCID.Sets.BossHeadTextures[n.type] >= 0;
+		}
+
 		private static bool IsBossOrPart(NPC n)
 		{
 			if (n.boss || NPCID.Sets.ShouldBeCountedAsBoss[n.type]) return true;
@@ -124,7 +134,7 @@ namespace Levy.Common.Recording
 				for (int i = 0; i < Main.maxNPCs; i++)
 				{
 					NPC n = Main.npc[i];
-					if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC || !n.boss) continue;
+					if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC || !IsFightBoss(n)) continue;
 					float d = Vector2.DistanceSquared(n.Center, cmd.Center);
 					if (d < bd) { bd = d; nearest = n; }
 				}
@@ -299,11 +309,11 @@ namespace Levy.Common.Recording
 			{
 				// a harness that clears the arena and spawns the next trial's boss in the same step leaves no gap: the boss we follow is gone and a boss with a newer spawn serial stands in the world
 				NPC pn = Main.npc[_primaryWho];
-				if (!(pn.active && pn.boss && FightRecSpawnTag.SerialOf(pn) == _primarySerial))
+				if (!(pn.active && IsFightBoss(pn) && FightRecSpawnTag.SerialOf(pn) == _primarySerial))
 					for (int i = 0; i < Main.maxNPCs; i++)
 					{
 						NPC n = Main.npc[i];
-						if (n.active && n.boss && !n.friendly && !n.townNPC && !(n.ModNPC is SoldierNPC) && FightRecSpawnTag.SerialOf(n) != _primarySerial) { Stop("next fight started"); return; }
+						if (n.active && IsFightBoss(n) && !n.friendly && !n.townNPC && !(n.ModNPC is SoldierNPC) && FightRecSpawnTag.SerialOf(n) != _primarySerial) { Stop("next fight started"); return; }
 					}
 			}
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -311,14 +321,15 @@ namespace Levy.Common.Recording
 				NPC n = Main.npc[i];
 				if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC) continue;
 				if (!IsBossOrPart(n)) continue;
-				if (n.boss) anyBoss = true;
-				bool part = !n.boss;
+				bool isBoss = IsFightBoss(n);
+				if (isBoss) anyBoss = true;
+				bool part = !isBoss;
 				if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
-				if (n.boss && _bossIdsSeen.Add(n.whoAmI)) { _bossesSeen++; Ev("boss", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString())); if (_bossNameSeen == null) _bossNameSeen = n.FullName; }
+				if (isBoss && _bossIdsSeen.Add(n.whoAmI)) { _bossesSeen++; Ev("boss", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString())); if (_bossNameSeen == null) _bossNameSeen = n.FullName; }
 				_bossTypes.Add(n.type);
 				TargetOf(n, out int tk, out int tl);
 				f.B.Add(new double[] { n.type, n.whoAmI, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, n.life, n.lifeMax, n.ai[0], n.ai[1], n.ai[2], n.ai[3], n.target, part ? 1 : 0, tk, tl, n.width, n.height });
-				if (n.boss)
+				if (isBoss)
 				{
 					if (_primaryWho < 0) { _primaryWho = n.whoAmI; _primarySerial = FightRecSpawnTag.SerialOf(n); }
 					if (n.whoAmI == _primaryWho && FightRecSpawnTag.SerialOf(n) == _primarySerial)

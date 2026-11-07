@@ -45,7 +45,7 @@ namespace Levy.Common.Recording
 				NPC n = Main.npc[i];
 				if (!n.active) continue;
 				if (n.ModNPC is SoldierNPC) { levy = true; continue; }
-				if (boss == null && n.boss && !n.friendly && !n.townNPC) boss = n;
+				if (boss == null && FightRecorder.IsFightBoss(n) && !n.friendly && !n.townNPC) boss = n;
 			}
 			if (boss == null || !levy) return;
 			Player cmd = Main.player[0];

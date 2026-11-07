@@ -33,8 +33,8 @@ namespace Levy.Common.Potions
 		/// <summary>An armory not on a Magic Storage network must be within this many tiles for the Seeker to read its list.</summary>
 		public const int SeekerArmoryReachTiles = 150;
 		/// <summary>Tiles scanned around the player (half-width and half-height), rescan interval in ticks, and the most matches kept (a drawing/perf bound).</summary>
-		public const int SeekerScanHalfW = 70, SeekerScanHalfH = 45, SeekerScanTicks = 15, SeekerMaxMatches = 2500;
+		public const int SeekerScanHalfW = 150, SeekerScanHalfH = 150, SeekerScanTicks = 15, SeekerMaxMatches = 2500;
 		/// <summary>Chests within this many tiles are checked for the item.</summary>
-		public const int SeekerChestTiles = 90;
+		public const int SeekerChestTiles = 150;
 	}
 }

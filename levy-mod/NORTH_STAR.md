@@ -113,6 +113,16 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 - Make fun of the LEVIES and how the mechanics look from the inside: homing bullets are a scandal nobody admits to using; melee troops are cowards who swing sword beams from forty feet away; summoners are "summon slop" and the Zealots' religious problem. Use the mechanics in-world. Never lampshade or criticize the game ("lamp, don't lampshade"); keep fourth-wall jokes light (the background music is fine; floating damage numbers are too on the nose).
 - Lore: brain chips and implants are normal. Death and respawning are mentioned offhandedly as ordinary, never the focus. Mages are nice and friendly (NOT nerds, no studying). Summoners are an AI-debate satire; use in-game words ("master summoner", not "artist"). Drones are treated like pets. Random real countries come up with no connection to the biome ("just like that trip to Norway" in a mushroom cave); Terraria has a Sweden via the Party Girl, but don't name Sweden.
 - Lines must still make sense to someone from outside the joke.
+- **Tone is SINCERE** (dry but sincere, like vanilla NPCs), not winking.
+- **Class archetypes (11-07 20:55), a workplace-culture plus neural-control metaphor:**
+  - Mages are the incompetent employee everyone likes: well-intentioned, fight hard, a bit dude-bro but never obnoxious, terrible at it.
+  - Summoners are vibe coders ("summon weapons are the future, bro").
+  - Melee troops are insecure, with imposter syndrome. Everyone else thinks they're doing great by keeping their distance; they secretly want to run in and don't.
+  - Rangers are just rangers (homing bullets are their quiet scandal).
+  - Zealots are religious or corporate suck-ups ("the boss said we'd get paid more if we did better"), and they microaggress summoners.
+- HP inversion: the lowest-HP levy is the bravest; the highest-HP one is getting lazy.
+- Meme and reaction-GIF references are welcome ("that one scene from the bird movie when everything explodes").
+- Show line lists as plain text, never code blocks: Eve listens with TTS, which skips code blocks.
 - Lists of lines can be blocks; worldbuilding talk is prose. When Eve says "maybe not" or "I'm iffy", she's thinking out loud, not vetoing.
 
 **Dialogue should read like vanilla Terraria NPCs.** Eve found early dialogue "a little bit AI". Rate lines and replace anything below a B (10-22). Silly death messages are liked. Use gender-neutral language (10-22; scope unclear, probably mod text).

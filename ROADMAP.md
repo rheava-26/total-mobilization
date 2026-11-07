@@ -194,6 +194,25 @@
     - routed levies running 130–190 tiles off (now leashed to 60 tiles of the anchor, still shooting).
   - **Recorder:** EoW fights now record (IsFightBoss; spawn serial inherited across head conversion).
   - **Harness:** worms spawn 80 tiles out (live-like).
+- **dud2 DONE (merged 8f2f525 → 2.0.19):**
+  - Eight of the "0-dmg" post-HM weapons were MANA-SHORT: the lab levy pool was 40, below their cost.
+  - **Fixes:**
+    - The armory never issues a mana weapon whose cost exceeds the levy's pool (`CanEverPay`).
+    - Gear mana now counts in the levy pool.
+    - Mana-cost reductions apply.
+    - UUID-bound holdouts (Yharim's Crystal, Starmageddon) work via an owner slot plus a chain update detour.
+    - Charge-release table (TitaniumRailgun), cursor script (ArtAttack), start-on-full-pool table (Rancor, YC).
+    - Murasama is locked until DoG, matching its own CanUseItem.
+    - Perdition-class sentries attack the soldier's target (0 → 95–162).
+    - Rusty Beacon's pulse fixed.
+  - **At mp=200:** HeliumFlash 0 → 5865, RainbowPartyCannon 0 → 1466, VitriolicViper 380 → 1631, Starmageddon 0 → 805.
+  - **Early sentries are weak because of boss DEFENSE** (1 dmg per hit vs defense 12), not placement.
+  - **Open:**
+    - Eternity (costs 300 mana);
+    - Rancor (mana-bound);
+    - Murasama/GrandDad/Basher weak vs bosses because levy melee stands off 8–16 tiles BY DESIGN;
+    - PulseTurretRemote.
+  - **Design question for Eve:** should levy mana pools grow with progression like a player's (crystals to 200 + gear)?
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

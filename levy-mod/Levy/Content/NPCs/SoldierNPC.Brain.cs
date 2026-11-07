@@ -1075,6 +1075,7 @@ namespace Levy.Content.NPCs
 				// In the pocket: a small lateral shuffle every other think, only with room to spare past the standoff.
 				// Against a boss or a hard hitter a player never stands still: the strafe runs on every think, with longer steps and the odd short hop. Aim and fire rate are untouched.
 				bool danger = SoldierNPC.MobilityMode >= 1 && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage);
+				if (danger && !aloft && TickPlatformPerch(now)) return true;
 				if ((!danger && (_thinkCount & 1) != 0) || _threatTiles < standoff + LevyConstants.StrafeMarginTiles) return true;
 				float side = danger ? ((_thinkCount / 3) & 1) == 0 ? 1f : -1f : ((_thinkCount >> 1) & 1) == 0 ? 1f : -1f;
 				int strafeTiles = danger ? LevyConstants.StrafeTiles * 2 : LevyConstants.StrafeTiles;

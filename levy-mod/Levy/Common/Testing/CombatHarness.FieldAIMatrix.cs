@@ -150,9 +150,9 @@ namespace Levy.Common.Testing
 			long bossDmg = 0; int fieldSeesBoss = 0, bossFastTicks = 0; float bossPeakV = 0f; int prevBossLife = -1; int bossIdx = -1; bool bossGone = false;
 			var mobs = new List<int>(); var byKind = new Dictionary<string, int>();
 			bool cmdMove = Environment.GetEnvironmentVariable("LEVY_REAL_CMDMOVE") != "0"; bool auto = Environment.GetEnvironmentVariable("LEVY_REAL_AUTO") == "1" || target == "spec"; bool lesser = rb.Key.StartsWith("eoc") || rb.Key == "kingslime" || rb.Mob; int specBuff = ModContent.BuffType<Content.Buffs.SpectatorBuff>(); int autoBuff = ModContent.BuffType<Content.Buffs.AutonomousBuff>(); float cmdBaseX = (_cx - 17) * 16f + 8f;
-			var lastGrY = new float[N]; var peakVy = new float[N]; var inAir = new bool[N]; var lastHitTick = new int[N]; int stillTicks = 0, aliveTicks = 0, edgeFalls = 0;
+			var lastGrY = new float[N]; var peakVy = new float[N]; var inAir = new bool[N]; var lastHitTick = new int[N]; int stillTicks = 0, aliveTicks = 0, edgeFalls = 0, aboveTicks = 0, climbs = 0;
 			int dNear = 0, dBase = 0, dNoBetter = 0, dBusy = 0, dDJ = 0, dDash = 0, dHook = 0, dJump = 0, dStep = 0;
-			void Acc(SoldierNPC b) { hookCasts += b.HkCasts; maneuvers += b.DodgeManeuvers; dNear += b.DodgeNearScans; dBase += b.DodgeBaseHitScans; dNoBetter += b.DodgeNoBetter; dBusy += b.DodgeSkippedBusy; dDJ += b.DodgeDoubleJumps; dDash += b.DodgeDashes; dHook += b.DodgeHooks; dJump += b.DodgeJumps; dStep += b.DodgeSteps; }
+			void Acc(SoldierNPC b) { climbs += b.PlatformClimbs; hookCasts += b.HkCasts; maneuvers += b.DodgeManeuvers; dNear += b.DodgeNearScans; dBase += b.DodgeBaseHitScans; dNoBetter += b.DodgeNoBetter; dBusy += b.DodgeSkippedBusy; dDJ += b.DodgeDoubleJumps; dDash += b.DodgeDashes; dHook += b.DodgeHooks; dJump += b.DodgeJumps; dStep += b.DodgeSteps; }
 			return new FaTrial
 			{
 				Name = "REAL", Ticks = ticks,
@@ -217,7 +217,7 @@ namespace Levy.Common.Testing
 							else if (t + 1 - deadAt[k] >= 45) { FaSpawnSlot(k, RealSpawnX(k), FaGroundRow(RealSpawnX(k)) * 16f, r => RealGear(r, gear)).RefreshStats(); lastHits[k] = 0; born[k] = t; deadAt[k] = 0; lastPos[k] = _faSol[k].NPC.Center; }
 							continue;
 						}
-						aliveTicks++; if (Math.Abs(nn.velocity.X) < 0.3f && Math.Abs(nn.velocity.Y) < 0.3f) stillTicks++;
+						aliveTicks++; if (nn.Bottom.Y < FaGroundRow(nn.Center.X) * 16f - 3 * 16f) aboveTicks++; if (Math.Abs(nn.velocity.X) < 0.3f && Math.Abs(nn.velocity.Y) < 0.3f) stillTicks++;
 						if (nn.velocity.Y == 0f) { if (inAir[k] && nn.Bottom.Y - lastGrY[k] > 7 * 16f && peakVy[k] >= 8f && t - lastHitTick[k] > 40 && !nn.lavaWet) edgeFalls++; inAir[k] = false; lastGrY[k] = nn.Bottom.Y; peakVy[k] = 0f; }
 						else { inAir[k] = true; if (nn.velocity.Y > peakVy[k]) peakVy[k] = nn.velocity.Y; }
 						if (b.HitsTaken != lastHits[k]) lastHitTick[k] = t;
@@ -248,7 +248,7 @@ namespace Levy.Common.Testing
 					bool bossAlive = bossIdx < 0 || Main.npc[bossIdx].active;
 					double surv = lives > 0 ? lifeSum / (double)lives / 60.0 : 0, dpm = deaths * 3600.0 / ticks;
 					var sb = new StringBuilder();
-					sb.Append($"REALM|boss={rb.Key}|arena={arena}|gear={gear}|order={Environment.GetEnvironmentVariable("LEVY_REAL_ORDER") ?? "freerein"}|auto={(auto ? 1 : 0)}|target={target}|mode={(before ? "before" : "after")}{mode}|seed={seed}|survSec={surv:0.0}|deaths={deaths}|deathsPerMin={dpm:0.00}|bossDmg={bossDmg}|hits={hitsTotal}|contact={contactHits}|proj={projHits}|lavaTicks={lavaTicks}|exposed={exposure}|tele={teleports}|hookCasts={hookCasts}|maneuvers={maneuvers}|bossAlive={bossAlive}|stillPct={(aliveTicks > 0 ? 100.0 * stillTicks / aliveTicks : 0):0}|edgeFalls={edgeFalls}|dNear={dNear}|dBase={dBase}|dNoBetter={dNoBetter}|dBusy={dBusy}|dStep={dStep}|dJump={dJump}|dDJ={dDJ}|dDash={dDash}|dHook={dHook}|fieldSeesBoss={fieldSeesBoss}|bossFast={bossFastTicks}|bossPeakV={bossPeakV:0.0}|bossDamageStat={(bossIdx >= 0 ? Main.npc[bossIdx].damage : 0)}|src=");
+					sb.Append($"REALM|boss={rb.Key}|arena={arena}|gear={gear}|order={Environment.GetEnvironmentVariable("LEVY_REAL_ORDER") ?? "freerein"}|auto={(auto ? 1 : 0)}|target={target}|mode={(before ? "before" : "after")}{mode}|seed={seed}|survSec={surv:0.0}|deaths={deaths}|deathsPerMin={dpm:0.00}|bossDmg={bossDmg}|hits={hitsTotal}|contact={contactHits}|proj={projHits}|lavaTicks={lavaTicks}|exposed={exposure}|tele={teleports}|hookCasts={hookCasts}|maneuvers={maneuvers}|bossAlive={bossAlive}|abovePct={(aliveTicks > 0 ? 100.0 * aboveTicks / aliveTicks : 0):0}|climbs={climbs}|stillPct={(aliveTicks > 0 ? 100.0 * stillTicks / aliveTicks : 0):0}|edgeFalls={edgeFalls}|dNear={dNear}|dBase={dBase}|dNoBetter={dNoBetter}|dBusy={dBusy}|dStep={dStep}|dJump={dJump}|dDJ={dDJ}|dDash={dDash}|dHook={dHook}|fieldSeesBoss={fieldSeesBoss}|bossFast={bossFastTicks}|bossPeakV={bossPeakV:0.0}|bossDamageStat={(bossIdx >= 0 ? Main.npc[bossIdx].damage : 0)}|src=");
 					sb.Append(string.Join(";", byKind.OrderByDescending(kv => kv.Value).Take(5).Select(kv => $"{kv.Key}={kv.Value}")));
 					sb.Append("|hookDrawOk=" + _hookDrawOk); Mod.Logger.Info(sb.ToString());
 					return $"{rb.Key}/{arena}/{gear}: surv={surv:0.0}s deaths={deaths} bossDmg={bossDmg}";

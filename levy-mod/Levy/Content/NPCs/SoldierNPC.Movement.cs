@@ -66,7 +66,9 @@ namespace Levy.Content.NPCs
 			NPC npc = NPC;
 			if (!_stepInit) { npc.stepSpeed = StepSpeed; _stepInit = true; }
 			TickReturnHomeProgress();
-			bool grounded = npc.velocity.Y == 0f && !(_wasAirborne && HeadOnCeiling());
+			// on a slope the body keeps a small downward velocity as it walks: with solid ground within a few pixels under the feet and no real fall under way it is standing, not airborne (jumping, dodging and strafing all need that)
+			bool onSlope = MobilityMode >= 1 && npc.velocity.Y > 0f && npc.velocity.Y < 2.2f && !npc.wet && Collision.SolidCollision(new Vector2(npc.position.X, npc.Bottom.Y), npc.width, 4);
+			bool grounded = (npc.velocity.Y == 0f || onSlope) && !(_wasAirborne && HeadOnCeiling());
 			RefreshKit();
 			if (grounded)
 			{

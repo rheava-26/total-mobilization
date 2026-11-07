@@ -279,5 +279,43 @@ namespace Levy.Content.NPCs
 			}
 			return true;
 		}
+
+		// ---- platform rows in a boss fight ----
+		private bool _platActive; private Vector2 _platGoal; private int _platNext, _platStart;
+		internal int PlatformClimbs;
+
+		/// <summary>
+		/// A player fights a boss from the platform rows: up out of the dash lane, down through them to dodge. Standing on plain ground with a platform in jump (or hook, or double-jump) reach, a levy in a boss fight walks / jumps / hooks up onto it,
+		/// at most once every few seconds; once up it strafes there. True while the climb is under way (the goal is set).
+		/// </summary>
+		private bool TickPlatformPerch(int now)
+		{
+			if (_platActive)
+			{
+				bool arrived = Math.Abs(NPC.Bottom.Y - _platGoal.Y) < 20f && Math.Abs(NPC.Bottom.X - _platGoal.X) < 40f;
+				if (arrived || now - _platStart > 300) { _platActive = false; return false; }
+				SetGoal(_platGoal);
+				return true;
+			}
+			if (now < _platNext || NPC.velocity.Y != 0f) return false;
+			_platNext = now + 200 + (int)(SlotFrac(SlotSaltPhase) * 200f);
+			Point feet = TileNav.FeetTile(NPC.Bottom);
+			if (TileNav.IsPlatform(feet.X, feet.Y + 1)) return false;
+			int maxUp = Abilities.JumpTiles + (Abilities.ExtraJumps > 0 ? 3 : 0);
+			if (HookUsable) maxUp = Math.Max(maxUp, 12);
+			float bestScore = float.MaxValue; Point best = default;
+			for (int dx = -8; dx <= 8; dx++)
+				for (int up = 3; up <= maxUp; up++)
+				{
+					int x = feet.X + dx, y = feet.Y - up;
+					if (!TileNav.InBounds(x, y) || !TileNav.IsPlatform(x, y + 1) || !TileNav.IsBodyClear(x, y)) continue;
+					float sc = Math.Abs(dx) + up;
+					if (sc < bestScore) { bestScore = sc; best = new Point(x, y); }
+				}
+			if (bestScore == float.MaxValue) return false;
+			_platGoal = TileNav.BottomCentre(best.X, best.Y); _platActive = true; _platStart = now; PlatformClimbs++;
+			SetGoal(_platGoal);
+			return true;
+		}
 	}
 }

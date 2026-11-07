@@ -27,6 +27,8 @@ namespace Levy.Common.Movement
 		public bool Body;
 		/// <summary>A boss body: its hits count several times over, its margin is wider, and a hopper in the air keeps falling (<see cref="Gy"/>) until the floor (<see cref="Floor"/>, px, 0 = none).</summary>
 		public bool Boss; public float Gy, Floor;
+		/// <summary>A worm segment (or a chain head): its path is a table of <see cref="TrajN"/> points, 2 ticks apart, starting at <see cref="TrajOff"/> in the field's shared trajectory store (see ThreatField.BuildChain).</summary>
+		public int TrajOff, TrajN;
 	}
 
 	/// <summary>A dodge candidate: horizontal velocity for Dur ticks, an optional jump (Delay ticks from now: a hop timed to land after a charge has passed under it), an optional platform drop.</summary>
@@ -63,13 +65,53 @@ namespace Levy.Common.Movement
 		public static int BossBodies;
 		public const float ChargeMinSpeed = 4.5f, ChargeAccel = 0.25f, ChargeTopSpeed = 20f, MaxBuildTicks = 60f;
 
+		// ---- worm chains: a segmented body is one moving curve, not a row of stationary blocks ----
+		/// <summary>Samples in a chain segment's path table (2 ticks apart: covers a 58-tick look-ahead).</summary>
+		public const int ChainSamples = 30;
+		/// <summary>Largest per-tick turn rate (rad) a chain head is assumed to keep, and how fast that turn is assumed to ease off.</summary>
+		private const float ChainMaxOmega = 0.09f, ChainOmegaDecay = 0.985f;
+		private static readonly int[] _childOf = new int[Main.maxNPCs + 1];
+		private static readonly bool[] _follower = new bool[Main.maxNPCs + 1];
+		private static readonly int[] _snapOf = new int[Main.maxNPCs + 1];
+		private static readonly float[] _omega = new float[Main.maxNPCs + 1];
+		private static Vector2[] _traj = new Vector2[4096];
+		private static int _trajN;
+		private static readonly int[] _chainSegs = new int[512];
+		private static readonly float[] _chainD = new float[512];
+		private static readonly Vector2[] _hPath = new Vector2[ChainSamples];
+		private static readonly float[] _hLen = new float[ChainSamples];
+		/// <summary>Chains and chain segments the field modelled this tick (harness / diagnostics).</summary>
+		public static int ChainsThisTick, ChainSegsThisTick;
+		/// <summary>NPC indices of the heads of the chains modelled this tick.</summary>
+		public static readonly List<int> ChainHeads = new();
+		/// <summary>Harness switch (LEVY_CHAIN=0): model worm chains (default) or fall back to treating each segment as its own body.</summary>
+		internal static bool ChainBossBody = Environment.GetEnvironmentVariable("LEVY_CHAINBOSS") == "1";
+		internal static bool ChainOn = Environment.GetEnvironmentVariable("LEVY_CHAIN") != "0";
+
+		/// <summary>
+		/// True when this NPC is a follower in a segmented body: it takes the segment ahead of it (ai[1]) as its parent and is dragged along by it (its own velocity is zeroed every tick).
+		/// Recognised by the shape every worm shares, never by name: vanilla worms (Worm AI: Eater of Worlds, Destroyer, Wyvern, giant worms) link through ai[1] with the Worm style on both ends,
+		/// and a modded worm shares the head's realLife and links to its parent (ai[1]) whose ai[0] points back at it (Calamity's Desert Scourge, Storm Weaver, Aquatic Scourge...).
+		/// </summary>
+		public static bool IsChainFollower(NPC n, out int parent)
+		{
+			parent = (int)n.ai[1];
+			if (parent < 0 || parent >= Main.maxNPCs || parent == n.whoAmI) return false;
+			NPC p = Main.npc[parent];
+			if (!p.active || p.friendly) return false;
+			bool back = (int)p.ai[0] == n.whoAmI;
+			if (n.aiStyle == NPCAIStyleID.Worm && p.aiStyle == NPCAIStyleID.Worm) return parent > 0 || back;
+			return back && n.realLife >= 0 && n.realLife != n.whoAmI && (parent == n.realLife || p.realLife == n.realLife);
+		}
+
 		public static List<Threat> Snapshot()
 		{
 			uint now = Main.GameUpdateCount;
 			if (_tick == now) return Snap;
 			_tick = now;
 			long t0 = Stopwatch.GetTimestamp();
-			Snap.Clear(); BossBodies = 0;
+			Snap.Clear(); BossBodies = 0; _trajN = 0; ChainsThisTick = 0; ChainSegsThisTick = 0; ChainHeads.Clear();
+			for (int i = 0; i < _childOf.Length; i++) { _childOf[i] = -1; _follower[i] = false; _snapOf[i] = -1; }
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
@@ -91,11 +133,21 @@ namespace Levy.Common.Movement
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
-				if (!n.active || n.friendly || n.townNPC || n.damage < (Content.NPCs.SoldierNPC.MobilityMode >= 1 ? LevyConstants.Movement.DodgeNpcMinDamageMobile : LevyConstants.Movement.DodgeNpcMinDamage) || n.ModNPC is Content.NPCs.SoldierNPC) continue;
+				if (!n.active || n.friendly || n.townNPC || n.ModNPC is Content.NPCs.SoldierNPC) continue;
+				// a follower in a worm's body is dragged along by the segment ahead (its velocity reads zero): its path comes from the chain, built below
+				if (ChainOn && IsChainFollower(n, out int par)) { _follower[i] = true; if (_childOf[par] < 0) _childOf[par] = i; continue; }
+				if (n.damage < (Content.NPCs.SoldierNPC.MobilityMode >= 1 ? LevyConstants.Movement.DodgeNpcMinDamageMobile : LevyConstants.Movement.DodgeNpcMinDamage)) continue;
 				Vector2 v = n.velocity; float v2 = v.LengthSquared();
 				// the acceleration it is showing: how its velocity changed since the last time the field looked (NPC.oldVelocity is not kept for every NPC)
 				Vector2 a = Vector2.Zero;
-				if (PrevVelTick[i] != 0 && now > PrevVelTick[i] && now - PrevVelTick[i] <= 8u) a = (n.velocity - PrevVel[i]) / (now - PrevVelTick[i]);
+				if (PrevVelTick[i] != 0 && now > PrevVelTick[i] && now - PrevVelTick[i] <= 8u)
+				{
+					float dt = now - PrevVelTick[i];
+					a = (n.velocity - PrevVel[i]) / dt;
+					// how fast its heading is turning (a worm loops on a smooth arc): smoothed, since one tick of AI steering is noisy
+					if (v2 > 1f && PrevVel[i].LengthSquared() > 1f) _omega[i] = _omega[i] * 0.6f + 0.4f * MathHelper.WrapAngle((float)(Math.Atan2(v.Y, v.X) - Math.Atan2(PrevVel[i].Y, PrevVel[i].X))) / dt;
+				}
+				else _omega[i] = 0f;
 				PrevVel[i] = n.velocity; PrevVelTick[i] = now;
 				// a charge shows itself as speed, or as speed that is still building along the direction of travel
 				bool building = v2 > 2.5f * 2.5f && Vector2.Dot(a, v) > ChargeAccel * Math.Sqrt(v2);
@@ -107,10 +159,87 @@ namespace Levy.Common.Movement
 				if (isBoss) BossBodies++;
 				// a boss that hops (a slime) is in a ballistic arc: it keeps falling until the floor, so the landing spot is where it will be
 				if (isBoss && !n.noGravity && !n.noTileCollide && n.velocity.Y != 0f && !building) { gy = 0.3f; floor = FloorBelow(n); a = Vector2.Zero; }
+				_snapOf[i] = Snap.Count;
 				Snap.Add(new Threat { P = n.Center, V = v, A = building ? a : Vector2.Zero, Half = new Vector2(n.width, n.height) * 0.5f, Weight = n.damage, Body = true, Boss = isBoss, Gy = gy, Floor = floor });
 			}
+			// every worm whose head the field is tracking: the whole chain is one moving curve (the body follows the head's path with a lag)
+			for (int i = 0; i < Main.maxNPCs; i++) if (_childOf[i] >= 0 && !_follower[i] && _snapOf[i] >= 0) BuildChain(i);
 			BuildTs += Stopwatch.GetTimestamp() - t0; Builds++;
 			return Snap;
+		}
+
+		/// <summary>
+		/// A worm as ONE moving curve. The head's path is predicted as an arc (its velocity, the acceleration it is showing, and the turn it has been making, easing off); every follower
+		/// is where the head's path puts it once the lag is counted: a segment that is s px behind the head's start has, after the head has covered L px, s - L px of the OLD trail left
+		/// ahead of it (the polyline through the current segment centres) and, once that runs out, it is on the head's own future path. So the body sweeps through exactly where the head went,
+		/// instead of standing still where it was last seen (a follower's velocity is zero). Works for any chain: nothing is keyed to a name.
+		/// </summary>
+		private static void BuildChain(int head)
+		{
+			int n = 0, cur = head; _chainSegs[n++] = head;
+			while (n < _chainSegs.Length)
+			{
+				int c = _childOf[cur];
+				if (c < 0 || c == head) break;
+				_chainSegs[n++] = c; cur = c;
+			}
+			if (n < 2) return;
+			NPC h = Main.npc[head];
+			int idx = _snapOf[head];
+			Threat th0 = Snap[idx];
+			_chainD[0] = 0f;
+			for (int k = 1; k < n; k++) _chainD[k] = _chainD[k - 1] + Vector2.Distance(Main.npc[_chainSegs[k]].Center, Main.npc[_chainSegs[k - 1]].Center);
+			// the head's future path at 2-tick samples: straight-line speed profile (with any building acceleration) bent by the turn rate
+			float omega = MathHelper.Clamp(_omega[head], -ChainMaxOmega, ChainMaxOmega);
+			float ang0 = (float)Math.Atan2(th0.V.Y, th0.V.X), arcPrev = 0f, theta = 0f, omT = omega;
+			Vector2 pos = th0.P; _hPath[0] = pos; _hLen[0] = 0f; float len = 0f;
+			for (int t = 1; t < 2 * ChainSamples - 1; t++)
+			{
+				float arc = Vector2.Distance(ThreatAt(th0, t), th0.P);
+				float step = Math.Max(0f, arc - arcPrev); arcPrev = arc;
+				theta += omT; omT *= ChainOmegaDecay;
+				pos += new Vector2((float)Math.Cos(ang0 + theta), (float)Math.Sin(ang0 + theta)) * step; len += step;
+				if ((t & 1) == 0) { _hPath[t >> 1] = pos; _hLen[t >> 1] = len; }
+			}
+			ChainsThisTick++; ChainHeads.Add(head);
+			bool dm = Content.NPCs.SoldierNPC.DanceMode >= 1 && Content.NPCs.SoldierNPC.DOn(1);
+			for (int k = 0; k < n; k++)
+			{
+				NPC seg = Main.npc[_chainSegs[k]];
+				if (_trajN + ChainSamples > _traj.Length) Array.Resize(ref _traj, _traj.Length * 2);
+				int off = _trajN; _trajN += ChainSamples;
+				float dk = _chainD[k];
+				for (int i = 0; i < ChainSamples; i++)
+				{
+					float s = dk - _hLen[i];
+					_traj[off + i] = s >= 0f ? OnTrail(n, s) : OnHeadPath(-s);
+				}
+				bool boss = dm && (k == 0 || ChainBossBody) && LevyUtil.IsBossNpc(seg);
+				if (boss) BossBodies++;
+				ChainSegsThisTick++;
+				var th = new Threat { P = seg.Center, Half = new Vector2(seg.width, seg.height) * 0.5f, Weight = k == 0 ? th0.Weight : Math.Max(seg.damage, 1), Body = true, Boss = boss, TrajOff = off, TrajN = ChainSamples };
+				if (k == 0) Snap[idx] = th; else Snap.Add(th);
+			}
+		}
+
+		/// <summary>The point <paramref name="s"/> px behind the head's start along the polyline through the segment centres.</summary>
+		private static Vector2 OnTrail(int n, float s)
+		{
+			int k = 1;
+			while (k < n - 1 && _chainD[k] < s) k++;
+			float d0 = _chainD[k - 1], d1 = _chainD[k];
+			float u = d1 - d0 > 1e-3f ? MathHelper.Clamp((s - d0) / (d1 - d0), 0f, 1f) : 0f;
+			return Vector2.Lerp(Main.npc[_chainSegs[k - 1]].Center, Main.npc[_chainSegs[k]].Center, u);
+		}
+
+		/// <summary>The point on the head's future path that is <paramref name="len"/> px of path past where the head is now.</summary>
+		private static Vector2 OnHeadPath(float len)
+		{
+			int i = 1;
+			while (i < ChainSamples - 1 && _hLen[i] < len) i++;
+			float l0 = _hLen[i - 1], l1 = _hLen[i];
+			float u = l1 - l0 > 1e-3f ? MathHelper.Clamp((len - l0) / (l1 - l0), 0f, 1f) : 0f;
+			return Vector2.Lerp(_hPath[i - 1], _hPath[i], u);
 		}
 
 		/// <summary>Y (px) of the first solid tile under the body's centre column, 0 when there is none within 40 tiles.</summary>
@@ -137,6 +266,13 @@ namespace Levy.Common.Movement
 			{
 				Threat t = all[i];
 				if (t.Line) { if (Vector2.DistanceSquared(t.P, c) <= (t.Len + reach) * (t.Len + reach)) into.Add(t); continue; }
+				if (t.TrajN > 0)
+				{
+					float rt = reach + Math.Max(t.Half.X, t.Half.Y); rt *= rt;
+					int last = Math.Min(t.TrajN - 1, (horizon + 1) >> 1);
+					for (int k = 0; k < last; k++) if (SegDistSq(_traj[t.TrajOff + k], _traj[t.TrajOff + k + 1], c) <= rt) { into.Add(t); break; }
+					continue;
+				}
 				Vector2 end = ThreatAt(t, horizon);
 				float r = reach + Math.Max(t.Half.X, t.Half.Y);
 				if (SegDistSq(t.P, end, c) <= r * r) into.Add(t);
@@ -217,6 +353,12 @@ namespace Levy.Common.Movement
 
 		private static Vector2 ThreatAt(in Threat th, int t)
 		{
+			if (th.TrajN > 0)
+			{
+				float f = t * 0.5f; int i0 = (int)f;
+				if (i0 >= th.TrajN - 1) return _traj[th.TrajOff + th.TrajN - 1];
+				return Vector2.Lerp(_traj[th.TrajOff + i0], _traj[th.TrajOff + i0 + 1], f - i0);
+			}
 			Vector2 p = th.P + th.V * t;
 			if (th.Gy > 0f)
 			{

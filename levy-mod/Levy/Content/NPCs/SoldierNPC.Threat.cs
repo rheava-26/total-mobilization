@@ -30,6 +30,11 @@ namespace Levy.Content.NPCs
 		private int _dodgeHold; private int _dodgeBusy; private int _dodgePend, _dodgePendTiles;
 		private static uint _thrBudgetTick; private static int _thrBudget;
 		private static readonly List<Threat> _thrNear = new(32);
+		private static bool _thrNearChain;
+		internal static bool ChainLongHold = Environment.GetEnvironmentVariable("LEVY_CHAINHOLD") != "0";
+		internal static bool ChainLongSteps = Environment.GetEnvironmentVariable("LEVY_CHAINSTEPS") != "0";
+		/// <summary>Step lengths (ticks) tried; a worm's body is a wide moving lane, so a segmented threat adds longer steps that clear it.</summary>
+		private static readonly int[] StepDurs = { 8, 14, 22 }, ChainStepDurs = { 8, 14, 22, 34, 48 };
 		internal int DodgeManeuvers, DodgeStays, DodgeSteps, DodgeJumps, DodgeDashes, DodgeDrops, DodgeScansDone;
 		internal long DodgeTs;
 		internal int DodgeAirKicks, DodgeAirFalls;
@@ -100,6 +105,7 @@ namespace Levy.Content.NPCs
 			float g = Gravity();
 			_dAir = airScan;
 			if (airScan) { DodgeAirScans++; _dV0x = npc.velocity.X; _dV0y = npc.velocity.Y; AirFloors(out _dFloorY, out _dSolidFloorY); }
+			_thrNearChain = false; for (int ci = 0; ci < _thrNear.Count; ci++) if (_thrNear[ci].TrajN > 0) { _thrNearChain = true; break; }
 			var stay = new Maneuver { Kind = 0 };
 			if (airScan) { stay.Air = true; stay.V0x = _dV0x; stay.V0y = _dV0y; stay.FloorY = _dFloorY; }
 			int baseHits = ThreatField.Hits(_thrNear, c0, npc.width, npc.height, stay, g, horizon, out int firstHit, out int lastHit);
@@ -115,7 +121,7 @@ namespace Levy.Content.NPCs
 			int goalSide = HasMoveGoal ? (MoveGoal.X >= c0.X ? 1 : -1) : 0;
 			for (int dir = -1; dir <= 1; dir += 2)
 			{
-				foreach (int dur in new[] { 8, 14, 22 })
+				foreach (int dur in _thrNearChain && ChainLongSteps ? ChainStepDurs : StepDurs)
 				{
 					float dist = sp * dur;
 					if (!(grounded ? StepLaneSafe(dir, dist) : SidestepClearAir(dir))) break; // a longer step in the same direction is no safer
@@ -173,7 +179,7 @@ namespace Levy.Content.NPCs
 					break;
 			}
 			// hold the safe spot until the danger that sent us here has gone by
-			_dodgeHold = best.Kind == 1 || best.Kind == 10 ? Math.Clamp(bestLast + 4 - best.Dur, 0, 30) : 0;
+			_dodgeHold = best.Kind == 1 || best.Kind == 10 ? Math.Clamp(bestLast + 4 - best.Dur, 0, _thrNearChain && ChainLongHold ? 90 : 30) : 0;
 			npc.netUpdate = true;
 			return best.Kind == 1 || best.Kind == 3 || best.Kind == 4 || best.Kind == 8 || best.Kind == 10 || (best.Kind == 7 && best.Dur > 0) || ((best.Kind == 11 || best.Kind == 12) && best.Dur > 0);
 		}

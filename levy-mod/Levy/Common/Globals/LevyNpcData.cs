@@ -22,6 +22,8 @@ namespace Levy.Common.Globals
 
 		/// <summary>NPC index of the boss that spawned this (directly or through a minion); -1 = none. Set in EnemyTargetingGlobalNPC.OnSpawn.</summary>
 		public int BossOwner = -1;
+		/// <summary>NPC type of that boss, kept after the boss dies (BossOwner's slot is then dead or reused).</summary>
+		public int OwnerType = -1;
 
 		// ---- boss rule ----
 		public int EngagedCp;

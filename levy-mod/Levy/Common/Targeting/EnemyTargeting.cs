@@ -142,6 +142,13 @@ namespace Levy.Common.Targeting
 			// the first kill of every boss is solo. Their AIs read Main.player[target] only, so they take the swap (Servants through the flyer slot, see <see cref="FlyerSlot"/>).
 			NPC owner = MinionBoss(npc);
 			if (owner != null) return BossAllowlisted(owner) && (style != NPCAIStyleID.Flying || FlyerSlotUsable);
+			// Its boss is gone (killed while the worms it spawned are still alive: Calamity's Perforator Hive leaves its worms): the add keeps the army as its target once that boss type is beaten and the army may draw it,
+			// instead of falling back to the hidden commander and digging away for lack of a target.
+			if (KinOn && npc.ModNPC != null)
+			{
+				var od = LevyNpcData.Of(npc);
+				if (od.BossOwner >= 0 && od.OwnerType >= 0 && BossDownedSystem.IsTypeDowned(od.OwnerType) && (Potions.SpectatorPlayer.AnyActive || ((_cfg ??= LevyConfig.Get) != null && _cfg.BossesTargetSoldiers)) && style != NPCAIStyleID.Flying) return true;
+			}
 			// Flying AI (Eater of Souls, hornets, meteor heads, probes, moths...) reads its target through GetTargetData(), which rejects slot 255, so it takes the flyer slot instead.
 			if (style == NPCAIStyleID.Flying) return FlyerSlotUsable;
 			if (_swapIncompatible.Contains(style)) return false;
@@ -326,8 +333,6 @@ namespace Levy.Common.Targeting
 		{
 			bool r = CompeteCore(npc, faceTarget, center, manhattan, maxSoldierDist);
 			if (DiagOn) Potions.SpectatorDiagnostic.NoteCompete(npc, r, _why);
-			if (EnemyTargetingGlobalNPC.KinDbg && npc.ModNPC != null && LevyNpcData.Of(npc).BossOwner >= 0 && Main.GameUpdateCount % 90 == (uint)(npc.whoAmI % 90))
-				Levy.Instance.Logger.Info($"[KinDbg] compete {npc.ModNPC.Name}#{npc.whoAmI} chosen={r} why={_why} tgt={npc.target} allow={IsAllowlisted(npc)} style={npc.aiStyle} bodies={Bodies.Count}");
 			return r;
 		}
 
@@ -452,7 +457,7 @@ namespace Levy.Common.Targeting
 		/// clears realLife on every segment, so its body and tail are named.
 		/// </summary>
 		private static bool CountsAsEnemy(NPC npc) =>
-			!(npc.realLife >= 0 && npc.realLife != npc.whoAmI) && npc.type != NPCID.EaterofWorldsBody && npc.type != NPCID.EaterofWorldsTail;
+			!IsFollowerSegment(npc) && npc.type != NPCID.EaterofWorldsBody && npc.type != NPCID.EaterofWorldsTail;
 
 		/// <summary>
 		/// Points an enemy's soldier lock at a body (its NPC index) or at nobody (-1) and keeps the per-body tally of locked enemies in step.
@@ -504,12 +509,15 @@ namespace Levy.Common.Targeting
 			return Math.Abs(point.X - npc.position.X + npc.width / 2) + Math.Abs(point.Y - npc.position.Y + npc.height / 2);
 		}
 
+		/// <summary>A worm segment that trails a live head (realLife = the head's index). A body segment promoted to head when the head dies (Calamity's Perforator worms) keeps a realLife that points at the dead head's slot: it is a head again, and must search for a soldier itself.</summary>
+		internal static bool IsFollowerSegment(NPC npc) => npc.realLife >= 0 && npc.realLife != npc.whoAmI && npc.realLife < Main.maxNPCs && Main.npc[npc.realLife].active;
+
 		/// <summary>True on this enemy's staggered once-a-second slot when it is allowlisted, steers itself (worm segments follow their head) and a soldier exists.</summary>
 		internal static bool ShouldPollForSoldier(NPC npc)
 		{
 			if (Bodies.Count == 0) return false;
 			if (!TargetsSpectator(npc) && (Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)LevyConstants.Targeting.RetargetIntervalTicks != 0) return false; // a spectator target is re-searched at once
-			if (npc.realLife >= 0 && npc.realLife != npc.whoAmI) return false;
+			if (IsFollowerSegment(npc)) return false;
 			return IsAllowlisted(npc);
 		}
 
@@ -683,9 +691,13 @@ namespace Levy.Common.Targeting
 	public class EnemyTargetingGlobalNPC : GlobalNPC
 	{
 		/// <summary>Marks what a boss-class NPC spawns (Calamity's Slime God Core spawns the Paladins, a Paladin its split slimes) so <see cref="EnemyTargeting.IsBossClass"/> knows the family.</summary>
+		private static readonly int[] _memOwner = new int[Main.maxNPCs + 1], _memType = new int[Main.maxNPCs + 1];
+		private static readonly uint[] _memTick = new uint[Main.maxNPCs + 1];
+
 		public override void OnSpawn(NPC npc, Terraria.DataStructures.IEntitySource source)
 		{
-			if (source is Terraria.DataStructures.EntitySource_Parent p && p.Entity is NPC parent && parent.whoAmI != npc.whoAmI && EnemyTargeting.IsBossClass(parent)) { int po = LevyNpcData.Of(parent).BossOwner; LevyNpcData.Of(npc).BossOwner = po >= 0 ? po : parent.whoAmI; }
+			if (npc.whoAmI >= 0 && npc.whoAmI < Main.maxNPCs) _memTick[npc.whoAmI] = 0; // a real new spawn in this slot: nothing to inherit
+			if (source is Terraria.DataStructures.EntitySource_Parent p && p.Entity is NPC parent && parent.whoAmI != npc.whoAmI && EnemyTargeting.IsBossClass(parent)) { int po = LevyNpcData.Of(parent).BossOwner; LevyNpcData.Of(npc).BossOwner = po >= 0 ? po : parent.whoAmI; LevyNpcData.Of(npc).OwnerType = po >= 0 ? LevyNpcData.Of(parent).OwnerType : parent.type; }
 			// A boss that summons through EntitySource_BossSpawn (Calamity's Desert Scourge calling its Desert Nuisance worms) names no parent: take the live boss of the same mod.
 			else if (source is Terraria.DataStructures.EntitySource_BossSpawn && npc.ModNPC != null && !npc.friendly && !npc.townNPC && npc.ModNPC is not SoldierNPC && LevyNpcData.Of(npc).BossOwner < 0)
 			{
@@ -693,13 +705,11 @@ namespace Levy.Common.Targeting
 				{
 					NPC b = Main.npc[i];
 					if (i != npc.whoAmI && b.active && !b.friendly && (b.boss || NPCID.Sets.ShouldBeCountedAsBoss[b.type]) && b.ModNPC != null && b.ModNPC.Mod == npc.ModNPC.Mod && LevyNpcData.Of(b).BossOwner < 0)
-					{ LevyNpcData.Of(npc).BossOwner = b.whoAmI; break; }
+					{ LevyNpcData.Of(npc).BossOwner = b.whoAmI; LevyNpcData.Of(npc).OwnerType = b.type; break; }
 				}
 			}
-			if (KinDbg && npc.ModNPC != null && !npc.friendly && !npc.townNPC && npc.ModNPC is not SoldierNPC)
-				Levy.Instance.Logger.Info($"[KinDbg] spawn {npc.ModNPC.Name}#{npc.whoAmI} src={source?.GetType().Name} ent={(source is Terraria.DataStructures.EntitySource_Parent pp ? pp.Entity?.GetType().Name + ":" + (pp.Entity is NPC pn ? pn.ModNPC?.Name ?? pn.TypeName : "") + ":boss=" + (pp.Entity is NPC pn2 && EnemyTargeting.IsBossClass(pn2)) : "-")} owner={LevyNpcData.Of(npc).BossOwner} ctx={(source as Terraria.DataStructures.EntitySource_Parent)?.Context}");
+			{ var od = LevyNpcData.Of(npc); if (od.BossOwner >= 0 && npc.whoAmI >= 0 && npc.whoAmI < Main.maxNPCs) { _memOwner[npc.whoAmI] = od.BossOwner; _memType[npc.whoAmI] = od.OwnerType; _memTick[npc.whoAmI] = Main.GameUpdateCount; } }
 		}
-		internal static readonly bool KinDbg = System.Environment.GetEnvironmentVariable("LEVY_KINDBG") == "1";
 
 		public override bool PreAI(NPC npc)
 		{
@@ -716,6 +726,14 @@ namespace Levy.Common.Targeting
 		{
 			if (!EnemyTargeting.Enabled) return;
 			LevyNpcData stamp = LevyNpcData.Of(npc);
+			// A boss's worm that loses its head promotes the next body segment in place (Calamity's Perforator worms call SetDefaults with the head type): that resets this NPC's global data, ownership included,
+			// without a new spawn. Remember the owner per slot every tick and give it back to the same slot (no OnSpawn in between) so the promoted head still belongs to its boss.
+			if (EnemyTargeting.KinOn && npc.whoAmI >= 0 && npc.whoAmI < Main.maxNPCs)
+			{
+				int w = npc.whoAmI;
+				if (stamp.BossOwner >= 0) { _memOwner[w] = stamp.BossOwner; _memType[w] = stamp.OwnerType; _memTick[w] = Main.GameUpdateCount; }
+				else if (npc.ModNPC != null && _memTick[w] != 0 && Main.GameUpdateCount - _memTick[w] <= 10) { stamp.BossOwner = _memOwner[w]; stamp.OwnerType = _memType[w]; }
+			}
 			if (stamp.PreparedTick == Main.GameUpdateCount && EnemyTargeting.IsSwapped) return;
 			stamp.PreparedTick = Main.GameUpdateCount;
 			// Both this class and the boss rule's dash use Main.player[255] for one AI call; a boss mid-dash (or about to dash) keeps the boss rule's dummy.

@@ -88,7 +88,7 @@ namespace Levy.Common.Movement
 		public static readonly List<int> ChainHeads = new();
 		/// <summary>Harness switch (LEVY_CHAIN=1): model worm chains (OFF by default: the A/B runs showed no gain, and Eater of Worlds fared worse) or fall back to treating each segment as its own body.</summary>
 		internal static bool ChainBossBody = Environment.GetEnvironmentVariable("LEVY_CHAINBOSS") == "1";
-		internal static bool ChainOn = Environment.GetEnvironmentVariable("LEVY_CHAIN") == "1";
+		internal static bool ChainOn = Environment.GetEnvironmentVariable("LEVY_CHAIN") == "1" || Environment.GetEnvironmentVariable("LEVY_WORMBODY") != "0";
 
 		/// <summary>
 		/// True when this NPC is a follower in a segmented body: it takes the segment ahead of it (ai[1]) as its parent and is dragged along by it (its own velocity is zeroed every tick).

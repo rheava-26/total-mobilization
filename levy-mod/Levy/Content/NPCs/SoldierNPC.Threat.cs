@@ -144,6 +144,20 @@ namespace Levy.Content.NPCs
 				}
 				if (grounded && StepLaneSafe(dir, sp * 14f))
 					Consider(new Maneuver { Kind = 3, Vx = dir * sp, Dur = 14, JumpVy = jv, Penalty = 6f + (goalSide != 0 && dir != goalSide ? 3f : 0f) }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+				if (grounded && WormBodyHigh && _thrNearChain && StepLaneSafe(dir, sp * 14f))
+				{
+					// a worm's body is a long lane: a hop that keeps its sideways run for the whole flight lands far from where it left, so the landing is not back on the trail
+					foreach (int wd in LevyConstants.WormDodge.CarryDurs)
+					{
+						var cj = new Maneuver { Kind = 3, Vx = dir * sp, Dur = wd, JumpVy = jv, Penalty = 7f + wd * 0.05f + (goalSide != 0 && dir != goalSide ? 3f : 0f) };
+						if (CarryClearsHead(cj, c0, g)) Consider(cj, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+						if (Abilities.JumpTiles > hopTiles)
+						{
+							var cf = new Maneuver { Kind = 14, Vx = dir * sp, Dur = wd, JumpVy = -JumpSpeedFor(Abilities.JumpTiles), Penalty = 8f + wd * 0.05f + (goalSide != 0 && dir != goalSide ? 3f : 0f) };
+							if (CarryClearsHead(cf, c0, g)) Consider(cf, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+						}
+					}
+				}
 				if (Abilities != null && Abilities.HasDash && _dashCooldown <= 0 && (grounded ? DashLaneClear(dir) : airScan && DashSpaceClear(dir)))
 					Consider(new Maneuver { Kind = 4, Vx = dir * DashSpeedPx, Dur = DashBurstTicks, Penalty = 8f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 			}
@@ -183,6 +197,7 @@ namespace Levy.Content.NPCs
 				case 2: if (best.Delay > 0) { _dodgePend = best.Delay; _dodgePendTiles = hopTiles; } else { DodgeJumps++; TryJump(hopTiles); } break;
 				case 6: if (best.Delay > 0) { _dodgePend = best.Delay; _dodgePendTiles = Abilities.JumpTiles; } else { DodgeJumps++; TryJump(Abilities.JumpTiles); } break;
 				case 3: DodgeJumps++; TryJump(hopTiles); Begin(best.Vx, best.Dur); break;
+				case 14: DodgeJumps++; TryJump(Abilities.JumpTiles); Begin(best.Vx, best.Dur); break;
 				case 4: DodgeDashes++; DashIFrames(); _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); Begin(best.Vx, best.Dur); break;
 				case 5: DodgeDrops++; _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; break;
 				case 7:
@@ -193,7 +208,7 @@ namespace Levy.Content.NPCs
 				case 8: DodgeDashJumps++; DodgeDashes++; DashIFrames(); _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); TryJump(Abilities.JumpTiles); Begin(best.Vx, best.Dur); break;
 				case 10: DodgeDashes++; DodgeDrops++; DashIFrames(); _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; Begin(best.Vx, best.Dur); break;
 				case 9:
-					DodgeHooks++; if (airScan) DodgeAirManeuvers += 0;
+					DodgeHooks++; if (WormBodyHigh && _thrNearChain) Levy.Instance?.Logger.Info("WORMHOOK " + SoldierName); if (airScan) DodgeAirManeuvers += 0;
 					if (SoldierHooks.TakePlanBudget()) { try { HookStart(HookReason.Rescue, best.HookTarget + new Vector2(0f, NPC.height * 0.5f)); } catch (Exception) { try { HookReset(true); } catch (Exception) { } } }
 					break;
 			}
@@ -204,6 +219,16 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>Moves a player has beyond a step and a hop: a double jump from the apex of the first, a dash combined with a jump or a platform drop, a hook up to a ledge out of the line.</summary>
+		private static readonly List<Threat> _thrHeads = new(4);
+		/// <summary>A carry hop is dropped when, over its whole flight, it crosses a worm head's predicted arc (head margin included).</summary>
+		private bool CarryClearsHead(in Maneuver m, Vector2 c0, float g)
+		{
+			_thrHeads.Clear();
+			for (int i = 0; i < _thrNear.Count; i++) if (_thrNear[i].Head) _thrHeads.Add(_thrNear[i]);
+			if (_thrHeads.Count == 0) return true;
+			return ThreatField.Hits(_thrHeads, c0, NPC.width, NPC.height, m, g, m.Dur + 14, out _, out _, LevyConstants.WormDodge.MarginPx) == 0;
+		}
+
 		private void ConsiderMobility(Vector2 c0, float g, float sp, int goalSide, ref Maneuver best, ref int bestHits, ref float bestScore, ref int bestLast)
 		{
 			NPC npc = NPC;
@@ -237,8 +262,10 @@ namespace Levy.Content.NPCs
 				int reach = (int)(info.ReachPx / 16f) - 2;
 				foreach (int dx in HookLedgeCols)
 				{
-					for (int up = 5; up <= Math.Min(reach, 18); up++)
+					int upLo = 5, upHi = Math.Min(reach, 18); bool hiFirst = WormBodyHigh && _thrNearChain;
+					for (int upi = upLo; upi <= upHi; upi++)
 					{
+						int up = hiFirst ? upHi - (upi - upLo) : upi;
 						int x = feet.X + dx, y = feet.Y - up;
 						if (!TileNav.InBounds(x, y) || !TileNav.IsStandable(x, y) || TileNav.HasLava(x, y + 1)) continue;
 						if (up > 6 && TileNav.IsStandable(x, y + 1)) continue;
@@ -324,13 +351,14 @@ namespace Levy.Content.NPCs
 			bool kick = AirKickAvailable() && npc.velocity.Y > -AirJumpImpulsePx * 0.8f;
 			bool thrust = AirThrustAvailable();
 			float up = -(AirJumpImpulsePx + JumpSpeedOffset);
+			int airDur = WormBodyHigh && _thrNearChain ? LevyConstants.WormDodge.CarryDurs[1] : 24;
 			for (int dir = -1; dir <= 1; dir++)
 			{
 				if (dir != 0 && !SidestepClearAir(dir)) continue;
 				float pen = dir != 0 && goalSide != 0 && dir != goalSide ? 3f : 0f;
 				if (kick) foreach (int dl in new[] { 0, 6, 12 })
-					Consider(new Maneuver { Kind = 11, Vx = dir * sp, Dur = dir == 0 ? 0 : 24, AirAcc = RunAccel, J2Vy = up, J2At = dl, Penalty = 6f + dl * 0.1f + (dir != 0 ? 1f : 0f) + pen }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
-				if (thrust) Consider(new Maneuver { Kind = 12, Vx = dir * sp, Dur = dir == 0 ? 0 : 24, AirAcc = RunAccel, J2Vy = -AirThrustVy, J2At = 0, HookDur = AirThrustTicks, Penalty = 8f + (dir != 0 ? 1f : 0f) + pen }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+					Consider(new Maneuver { Kind = 11, Vx = dir * sp, Dur = dir == 0 ? 0 : airDur, AirAcc = RunAccel, J2Vy = up, J2At = dl, Penalty = 6f + dl * 0.1f + (dir != 0 ? 1f : 0f) + pen }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+				if (thrust) Consider(new Maneuver { Kind = 12, Vx = dir * sp, Dur = dir == 0 ? 0 : airDur, AirAcc = RunAccel, J2Vy = -AirThrustVy, J2At = 0, HookDur = AirThrustTicks, Penalty = 8f + (dir != 0 ? 1f : 0f) + pen }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 			}
 			// dropping out of the line: a fast fall (and through any platform on the way) when a safe floor lies below
 			if (_dSolidFloorY < c0.Y + 40f * 16f) Consider(new Maneuver { Kind = 13, J2Vy = AirFastFallVy, J2At = 0, Penalty = 5f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
@@ -341,8 +369,10 @@ namespace Levy.Content.NPCs
 				int reach = (int)(info.ReachPx / 16f) - 2;
 				foreach (int dx in HookLedgeCols)
 				{
-					for (int upT = 2; upT <= Math.Min(reach, 14); upT++)
+					int uLo = 2, uHi = Math.Min(reach, 14); bool hiFirst = WormBodyHigh && _thrNearChain;
+					for (int ui = uLo; ui <= uHi; ui++)
 					{
+						int upT = hiFirst ? uHi - (ui - uLo) : ui;
 						int x = feet.X + dx, y = feet.Y - upT;
 						if (!TileNav.InBounds(x, y) || !TileNav.IsStandable(x, y) || TileNav.HasLava(x, y + 1)) continue;
 						if (upT > 6 && TileNav.IsStandable(x, y + 1)) continue;

@@ -108,17 +108,32 @@ namespace Levy.Content.NPCs
 			_thrNearChain = false; for (int ci = 0; ci < _thrNear.Count; ci++) if (_thrNear[ci].TrajN > 0) { _thrNearChain = true; break; }
 			var stay = new Maneuver { Kind = 0 };
 			if (airScan) { stay.Air = true; stay.V0x = _dV0x; stay.V0y = _dV0y; stay.FloorY = _dFloorY; }
-			int baseHits = ThreatField.Hits(_thrNear, c0, npc.width, npc.height, stay, g, horizon, out int firstHit, out int lastHit);
-			if (baseHits == 0) return HoldStep(holding);
-			DodgeBaseHitScans++;
-			// a threat already past the point of no return cannot be dodged by a long walk, but the same search still picks the best partial answer
-			float baseScore = baseHits * 100f;
-			Maneuver best = stay; int bestHits = baseHits; float bestScore = baseScore;
-			int bestLast = lastHit;
+			_wormScan = WormDodgeOn && ThreatField.HasHead(_thrNear);
 			float sp = Math.Max(DodgeSidestepSpeedPx, Math.Min(Abilities.MaxRunSpeed, MobilityMode >= 1 ? 9f : 5.5f));
 			int hopTiles = DodgeHopTiles + (_kitAny ? FlightDodgeHopBonusTiles : 0);
 			float jv = -JumpSpeedFor(Math.Min(hopTiles, Abilities.JumpTiles));
 			int goalSide = HasMoveGoal ? (MoveGoal.X >= c0.X ? 1 : -1) : 0;
+			int baseHits = 0, firstHit = 0, lastHit = 0, bestHits = 0, bestLast = 0; float baseScore = 0f, bestScore = 0f; Maneuver best = stay;
+			bool jerked = false;
+			if (_wormScan && WormPickOn)
+			{
+				// the worm rule is hard: it picks the manoeuvre itself (against the head's travel, late, dash + jump) and nothing else gets a vote
+				int wj = WormPick(grounded, airScan, c0, g, horizon, sp, goalSide, out Maneuver jm);
+				if (wj < 0) return HoldStep(holding);
+				if (wj == 1) return WormHoldStill();
+				if (wj == 2) { best = jm; bestHits = 0; bestLast = 0; baseHits = 1; jerked = true; WormJerks++; }
+			}
+			// a worm head is judged twice: first with a wide margin (a dodge that leaves room), then, if nothing can leave that much, by the field's own margin
+			for (int wpass = 0; wpass < (jerked ? 0 : _wormScan ? 2 : 1); wpass++)
+			{
+			_wormMargin = _wormScan && wpass == 0 ? LevyConstants.WormDodge.MarginPx : 0f;
+			baseHits = ThreatField.Hits(_thrNear, c0, npc.width, npc.height, stay, g, horizon, out firstHit, out lastHit, _wormMargin);
+			if (baseHits == 0) return _wormScan && wpass == 1 ? WormHoldStill() : HoldStep(holding);
+			if (wpass == 0 || !_wormScan) DodgeBaseHitScans++;
+			// a threat already past the point of no return cannot be dodged by a long walk, but the same search still picks the best partial answer
+			baseScore = baseHits * 100f;
+			best = stay; bestHits = baseHits; bestScore = baseScore;
+			bestLast = lastHit;
 			for (int dir = -1; dir <= 1; dir += 2)
 			{
 				foreach (int dur in _thrNearChain && ChainLongSteps ? ChainStepDurs : StepDurs)
@@ -145,6 +160,10 @@ namespace Levy.Content.NPCs
 			if (grounded && PlatformDropIsSafe()) Consider(new Maneuver { Kind = 5, Drop = true, Penalty = 7f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 			if (MobilityMode >= 1 && grounded && bestHits > 0) ConsiderMobility(c0, g, sp, goalSide, ref best, ref bestHits, ref bestScore, ref bestLast);
 
+			if (!_wormScan || bestHits == 0) break;
+			}
+			if (!jerked && _wormScan && best.Kind != 0 && bestHits == 0 && WormCanWait(best, c0, g, horizon, airScan)) return WormHoldStill();
+			if (_wormScan && DodgeDebug) Levy.Instance?.Logger.Info($"WORMDBG t={Main.GameUpdateCount} {SoldierName} margin={_wormMargin} base={baseHits}@{firstHit} best=k{best.Kind}/d{best.Delay} hits={bestHits} grounded={grounded}");
 			_dodgeCooldown = airScan ? AirCooldown : ThreatCooldown;
 			if (DodgeDebug) Levy.Instance?.Logger.Info($"DODGEDBG t={Main.GameUpdateCount} {SoldierName} threats={_thrNear.Count} base={baseHits}@{firstHit}..{lastHit} best=kind{best.Kind} delay={best.Delay} hits={bestHits} vx={NPC.velocity.X:0.0} grounded={grounded}");
 			if (best.Kind == 0 || bestHits >= baseHits) { DodgeStays++; DodgeNoBetter++; if (!grounded && air && AirBlip()) npc.netUpdate = true; return HoldStep(holding); }
@@ -392,9 +411,9 @@ namespace Levy.Content.NPCs
 		{
 			if (_dAir && !m.Hook) { m.Air = true; m.V0x = _dV0x; m.V0y = _dV0y; m.FloorY = m.Kind == 13 ? _dSolidFloorY : _dFloorY; }
 			int imm = DanceMode >= 1 && DOn(4) && DashIFrameTicks > 0 && (m.Kind == 4 || m.Kind == 8 || m.Kind == 10) ? DashIFrameTicks : 0;
-			int h = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int last, 0f, imm);
+			int h = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int last, _wormMargin, imm);
 			if (MobilityMode >= 1 && h == 0 && m.Kind != 0 && !(m.Air ? AirLandingSafe(c0, m, g) : LandingSafe(c0, m, g))) return;
-			float score = h * 100f + m.Penalty;
+			float score = h * 100f + m.Penalty + (_wormScan && m.Kind != 0 ? WormAlongPenalty(m, c0, g) : 0f);
 			if (score < bestScore) { best = m; bestHits = h; bestScore = score; bestLast = last; }
 		}
 

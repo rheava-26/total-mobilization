@@ -79,14 +79,16 @@ namespace Levy.Common.Observe
 		{
 			if (LevyUtil.IsClient || commander == null || !ValidTile(tx, ty) || !Potions.AutonomySystem.Studied) return 0; // map orders need the Guide to Autonomy
 			var roster = RosterSystem.Instance;
-			int n = 0;
+			int n = 0, refused = 0;
 			foreach (var rec in roster.RegularsOf(commander))
 			{
-				if (rec.Reserve || MutinySystem.IsMutinous(rec)) continue;
+				if (rec.Reserve) continue;
+				if (MutinySystem.IsMutinous(rec)) { refused++; if (rec.HasBody && Main.npc[rec.BodyIndex].ModNPC is SoldierNPC mb) mb.MutinyRefuse(); continue; } // refusing is loud, never silent
 				int gx = Math.Clamp(tx + SpreadOffset(n), 12, Main.maxTilesX - 12);
 				ApplyTo(rec, gx, ty);
 				n++;
 			}
+			if (refused > 0) RosterSystem.SendToPlayer(commander, LevyUtil.T("Mutiny.Refused", refused), LevyConstants.Mutiny.Alarm);
 			if (n > 0) roster.SendRosterSnapshot();
 			return n;
 		}

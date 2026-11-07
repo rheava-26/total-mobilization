@@ -32,6 +32,7 @@ namespace Levy.Common.Testing
 			if (string.Equals(Scenario, "ammo", StringComparison.OrdinalIgnoreCase)) { _scTrial = int.MaxValue; _scTick = -1; return true; }
 			if (string.Equals(Scenario, "maporder", StringComparison.OrdinalIgnoreCase)) return BeginMapOrder();
 			if (string.Equals(Scenario, "orderrepro", StringComparison.OrdinalIgnoreCase)) return BeginOrderRepro();
+			if (string.Equals(Scenario, "ordermix", StringComparison.OrdinalIgnoreCase)) return BeginOrderMix();
 			if (string.Equals(Scenario, "calrev", StringComparison.OrdinalIgnoreCase)) return BeginCalRev();
 			if (string.Equals(Scenario, "lifesteal", StringComparison.OrdinalIgnoreCase)) return BeginLifeSteal();
 			if (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase)) return BeginSpeed();
@@ -83,6 +84,7 @@ namespace Levy.Common.Testing
 			if (string.Equals(Scenario, "ammo", StringComparison.OrdinalIgnoreCase)) { RunAmmoScenario(); Finish("ammo scenario complete"); return; }
 			if (string.Equals(Scenario, "maporder", StringComparison.OrdinalIgnoreCase)) { StepMapOrder(); return; }
 			if (string.Equals(Scenario, "orderrepro", StringComparison.OrdinalIgnoreCase)) { StepOrderRepro(); return; }
+			if (string.Equals(Scenario, "ordermix", StringComparison.OrdinalIgnoreCase)) { StepOrderMix(); return; }
 			if (string.Equals(Scenario, "calrev", StringComparison.OrdinalIgnoreCase)) { StepCalRev(); return; }
 			if (string.Equals(Scenario, "lifesteal", StringComparison.OrdinalIgnoreCase)) { StepLifeSteal(); return; }
 			if (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase)) { StepSpeed(); return; }

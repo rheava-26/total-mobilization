@@ -1192,25 +1192,28 @@ namespace Levy.Common.Systems
 			if (rec.CommanderName != commander.name) return false;
 			if (rec.Reserve) return false; // a soldier in reserve takes no orders (and must not be left Following: that would hold a formation slot open)
 			body = BodyOf(rec);
-			bool picked = atBarracks || (body != null && LevyUtil.WithinTiles(body.NPC.Center, commander.Center, LevyConstants.OrderRadius));
+			bool near = body != null && LevyUtil.WithinTiles(body.NPC.Center, commander.Center, LevyConstants.OrderRadius);
+			bool picked = atBarracks || near || body == null; // a soldier on the books with no live body (waiting to respawn, under the render cap) still takes the order, or he would walk out Following
+			if (!picked && !MutinySystem.IsMutinous(rec)) _farOrders++; // out of earshot: said so after the order, never silent
 			if (picked && MutinySystem.IsMutinous(rec)) { _refusedOrders++; body?.MutinyRefuse(); return false; } // Wage Mutiny: no orders until paid
 			return picked;
 		}
 
 		/// <summary>Soldiers that refused the order being issued (Wage Mutiny); reset at the start of each order, reported once at its end.</summary>
-		private int _refusedOrders;
+		private int _refusedOrders, _farOrders;
 
 		private void ReportRefusals(Player commander)
 		{
 			if (_refusedOrders > 0) SendToPlayer(commander, LevyUtil.T("Mutiny.Refused", _refusedOrders), LevyConstants.Mutiny.Alarm);
-			_refusedOrders = 0;
+			if (_farOrders > 0) SendToPlayer(commander, LevyUtil.T("Roster.TooFar", _farOrders, LevyConstants.OrderRadius), new Color(255, 200, 120));
+			_refusedOrders = 0; _farOrders = 0;
 		}
 
 		public virtual void IssueOrder(Player commander, SoldierOrder order, bool atBarracks = false)
 		{
 			if (LevyUtil.IsClient || commander == null) return;
 			bool any = false;
-			_refusedOrders = 0;
+			_refusedOrders = 0; _farOrders = 0;
 			foreach (var rec in Regulars)
 			{
 				if (!Selected(rec, commander, atBarracks, out var body)) continue;
@@ -1229,7 +1232,7 @@ namespace Levy.Common.Systems
 		{
 			if (LevyUtil.IsClient || commander == null) return;
 			int total = 0, holding = 0;
-			_refusedOrders = 0;
+			_refusedOrders = 0; _farOrders = 0;
 			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.HoldFire) holding++; }
 			OfficerSystem.Instance.CountStance(commander, atBarracks, spread: false, ref total, ref holding); // his officers vote with the soldiers
 			if (total == 0) { ReportRefusals(commander); return; }
@@ -1251,7 +1254,7 @@ namespace Levy.Common.Systems
 		{
 			if (LevyUtil.IsClient || commander == null) return;
 			int total = 0, spread = 0, close = 0;
-			_refusedOrders = 0;
+			_refusedOrders = 0; _farOrders = 0;
 			foreach (var rec in Regulars) if (Selected(rec, commander, atBarracks, out _)) { total++; if (rec.SpreadOut) spread++; else if (rec.CloseUp) close++; }
 			OfficerSystem.Instance.CountFormation(commander, atBarracks, ref total, ref spread, ref close);
 			if (total == 0) { ReportRefusals(commander); return; }

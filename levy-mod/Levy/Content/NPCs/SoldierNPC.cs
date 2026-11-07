@@ -116,7 +116,7 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		public int ProjectileOwner => Common.Weapons.SoldierMinions.TrueMyPlayer;
 		/// <summary>Player index that receives loot/banner credit for this soldier's kills (commander, else the local player in single player, else -1).</summary>
-		public int CreditPlayer => CommanderIndex >= 0 ? CommanderIndex : (Main.netMode == NetmodeID.SinglePlayer ? Common.Weapons.SoldierMinions.TrueMyPlayer : -1);
+		public int CreditPlayer => CommanderIndex >= 0 ? CommanderIndex : (Common.Util.LevyUtil.SinglePlayerLike ? Common.Weapons.SoldierMinions.TrueMyPlayer : -1);
 		public bool IsAlive => NPC.active && NPC.life > 0 && !_deathHandled;
 		// ITargetBody (enemy targeting treats soldiers and officers alike); Dummy is a field here, so the interface members forward to it.
 		Player Common.Targeting.ITargetBody.Dummy => Dummy;

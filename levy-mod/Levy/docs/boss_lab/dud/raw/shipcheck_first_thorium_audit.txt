@@ -1,0 +1,52 @@
+--- build
+Building: Levy
+Compiling Levy.dll
+Compilation finished with 0 errors and 42 warnings
+-rw-r--r-- 1 root root 5486443 Nov  7 09:03 /home/user/lab/savehf/Mods/Levy.tmod
+[
+  "ThoriumMod",
+  "SerousCommonLib",
+  "MagicStorage",
+  "Levy",
+  "Mechanization"
+]
+--- boot
+boot exit=124 (124 = reached the world prompt)
+exception-ish lines (excluding proc/): 0
+--- self checks
+[09:04:18.386] [Main Thread/INFO] [Levy]: Levy alt-fire policies self check: PASS
+[09:04:21.055] [Main Thread/INFO] [Levy]: [ProgCheck] SUMMARY pass=90 fail=0
+[09:04:21.176] [Main Thread/INFO] [Levy]: [GuideCheck] SUMMARY pass=363 fail=0
+[09:04:21.436] [Main Thread/INFO] [Levy]: [SetBonusCheck] DONE pass=3 fail=0
+--- audit
+[09:04:18.411] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/WitherStaff kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=WitherPro
+[09:04:18.412] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/HydromancerCatalyst kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=HydromancerCatalystPro
+[09:04:18.413] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/TheJuggernaut kind=Holdout family=HeldWeapon range=7 class=MeleeNoSpeedDamageClass channel=True shoot=TheJuggernautPro
+[09:04:18.414] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/SparkingJellyBall kind=Holdout family=HeldWeapon range=7 class=MeleeNoSpeedDamageClass channel=True shoot=SparkingJellyBallPro
+[09:04:18.415] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/StarTrail kind=Holdout family=HeldWeapon range=7 class=MeleeNoSpeedDamageClass channel=True shoot=StarTrailPro
+[09:04:18.420] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/AncientSpark kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=AncientSparkPro
+[09:04:18.423] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/BowofLight kind=Holdout family=HeldWeapon range=46 class=RangedDamageClass channel=True shoot=BowofLightPro1
+[09:04:18.424] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/CatsEyeGreatStaff kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=CatsEyeGreatStaffCore
+[09:04:18.424] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/ChargedSplasher kind=Holdout family=HeldWeapon range=46 class=RangedDamageClass channel=True shoot=ChargedSplasherPro
+[09:04:18.426] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/DarkFlame kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=DarkFlamePro
+[09:04:18.427] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/GeomancersBrush kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=GeomancersBrushPro
+[09:04:18.431] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/ObsidianStaff kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=ObsidianStaffPro
+[09:04:18.432] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/OmegaBlaster kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=OmegaBlasterPro
+[09:04:18.433] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/PLG kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=PLGPro
+[09:04:18.434] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/Razorlash kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=RazorlashPro
+[09:04:18.438] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/SuperPlasmaCannon kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=SuperPlasmaCannonPro
+[09:04:18.442] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/FleshMace kind=Holdout family=HeldWeapon range=7 class=MeleeNoSpeedDamageClass channel=True shoot=FleshMacePro
+[09:04:18.450] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/IceBreaker kind=Holdout family=HeldWeapon range=7 class=MeleeDamageClass channel=True shoot=IceBreakerPro
+[09:04:18.451] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/TheSnowball kind=Holdout family=HeldWeapon range=7 class=MeleeNoSpeedDamageClass channel=True shoot=TheSnowballPro
+[09:04:18.452] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/LodeStoneBreaker kind=Holdout family=HeldWeapon range=7 class=MeleeNoSpeedDamageClass channel=True shoot=LodeStoneBreakerPro
+[09:04:18.453] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/LodeStoneStaff kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=LodestoneStaffPro
+[09:04:18.454] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/TimeGate kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=TimeGatePro
+[09:04:18.456] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/BoneFlayerTail kind=Holdout family=HeldWeapon range=7 class=MeleeNoSpeedDamageClass channel=True shoot=BoneFlayerTailPro
+[09:04:18.457] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/EbonyTail kind=Holdout family=HeldWeapon range=7 class=MeleeNoSpeedDamageClass channel=True shoot=EbonyTailPro
+[09:04:18.458] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/KineticKnife kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=KineticKnifePro
+[09:04:18.459] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/LivewireCrasher kind=Holdout family=HeldWeapon range=7 class=MeleeNoSpeedDamageClass channel=True shoot=LivewireCrasherPro
+[09:04:18.460] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/PrismStaff kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=PrismStaffPro
+[09:04:18.461] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/SteamFlail kind=Holdout family=HeldWeapon range=7 class=MeleeNoSpeedDamageClass channel=True shoot=SteamFlailPro
+[09:04:18.462] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/TheSeaMine kind=Holdout family=HeldWeapon range=7 class=MeleeNoSpeedDamageClass channel=True shoot=TheSeaMinePro
+[09:04:18.471] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT ThoriumMod/GodKiller kind=Holdout family=HeldWeapon range=46 class=MagicDamageClass channel=True shoot=GodKillerPro
+[09:04:18.474] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT total 30

@@ -298,7 +298,7 @@ namespace Levy.Content.NPCs
 					keep.originalDamage = SentryDamage(weapon);
 					keep.knockBack = weapon.knockBack;
 					bool far = Vector2.DistanceSquared(keep.Center, NPC.Center) > Sq(LevyConstants.SentryReplaceDistTiles * LevyConstants.TilePx);
-					bool stale = Main.netMode != NetmodeID.SinglePlayer && (int)Main.GameUpdateCount - _sentryBorn > LevyConstants.SentryMpRefreshTicks;
+					bool stale = !Common.Util.LevyUtil.SinglePlayerLike && (int)Main.GameUpdateCount - _sentryBorn > LevyConstants.SentryMpRefreshTicks;
 					if (!((far || stale) && inCombat && _sentryCd <= 0)) return;
 					DeploySentry(weapon, keep);
 					return;

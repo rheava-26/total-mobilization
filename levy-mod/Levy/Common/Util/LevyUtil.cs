@@ -14,6 +14,10 @@ namespace Levy.Common.Util
 		public static bool IsServerOrSingle => Main.netMode != NetmodeID.MultiplayerClient;
 		public static bool IsClient => Main.netMode == NetmodeID.MultiplayerClient;
 		public static bool IsServer => Main.netMode == NetmodeID.Server;
+		/// <summary>Harness only (CombatHarness LEVY_CR_SP): a dedicated server whose Main.myPlayer is the stand-in commander, so the single-player paths are the ones that run.</summary>
+		internal static bool SpEmulation;
+		/// <summary>True in a single-player game (or its harness emulation).</summary>
+		public static bool SinglePlayerLike => Main.netMode == NetmodeID.SinglePlayer || SpEmulation;
 
 		/// <summary>Chat line visible to everyone (server broadcast or local NewText).</summary>
 		public static void Chat(string text, Color? color = null)

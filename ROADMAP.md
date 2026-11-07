@@ -602,6 +602,12 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Plus the short-reach melee fix (Blade of Grass etc.).
 - **Boots:** Thorium+MS and Calamity, 0 exceptions.
 
+## 🔁 Container restart (2026-11-07 overnight)
+- It killed mobility3 and fightrec. Both had pushed progress:
+  - mobility3: 1bb3c39 still-reason telemetry + wings gear; 1bb46a6 boss dance, corner escape, dash i-frames.
+  - fightrec: 2ba8a41 recorder; viewer/analyze WIP.
+- WIP saved (86273e1 / 6ddfc14) and both resumed, now pushing every ~10 min.
+
 ## 📦 SHIPPED Levy 2.0.11 + Mechanization 0.9.1, at scratchpad/ship-2.0.11
 - **air-mobility (merged 7381960):**
   - Airborne dodge scan (air jump, thrust, dash, fast fall, hook), platform lane choice, player-like jumps.

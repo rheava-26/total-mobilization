@@ -244,6 +244,13 @@
 - **Tier corrections (Eve):** Crystal Ball, Bewitching Table and Ammo Box are post-Skeletron (some Hardmode); lab 3 places each placeable only from its real first tier (wiki-checked). Meteor Shot only AFTER EoW/BoC are beaten (Eve saw no meteor after smashing an orb).
 - **Ammo (Eve):** labs used plain ammo. Lab 3 now gives the best ammo for the tier, boss and arena: Meteor Shot (bounces + pierces) from the EoW/BoC fights on, enclosed arena; piercing arrows vs worms. Lab 3 also reports how the real armory picks a levy's ammo.
 - **REPLAY SITE PUBLISHED:** https://claude.ai/artifact/Q6aYA45u8MSxyB7VZxHSEH (63 fights). Rebuild with `tools/fightviewer/make_site.py <out> lab1=... lab2=... worm=... options=... lab3=...`, then republish the same file path.
+- **Eve on the replay page:** "OH THIS IS SO COOL". Feedback:
+  - the arena is tiny (platforms ~16 tiles);
+  - levies clump on the ground;
+  - a void beside the arena (terrain only snapshotted once);
+  - "did they really win?" The Eye had 13/7534 HP in the last sample, then vanished. The harness logged a kill, but the recorder has no boss-death event.
+- **rec2 builder:** terrain grows with the fight; Static Camera region; bdeath/bdespawn events; "levies alive N of M".
+- **lab3 resumed** after Eve's interrupt stopped it (from WIP dbbc19d): realistic 150–250 tile multi-row arenas, levies spawn inside, vertical-space report.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

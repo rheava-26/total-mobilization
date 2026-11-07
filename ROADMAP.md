@@ -171,7 +171,7 @@
 - **worm5 (building):**
   - The lead's replay read: a DS body hits a stationary levy every ~10–20 ticks, while a player gets 40 i-frames. Hypothesis: levy i-frames are shorter than a player's, so worm bodies shred them → test and fix to player parity.
   - Also: spawn-in hits, Skeletron flee cause, EoW recorder gap.
-- **dud-weapons DONE (merged 5b839f0 → 2.0.17):**
+- **SHIPPED Levy 2.0.17** (booted clean on both toolchains; sent to Eve). dud-weapons DONE (merged 5b839f0):
   - **LAB CAVEAT:** every lab ran on a dedicated server, where Main.myPlayer=255, so soldier shots are owned by an inactive slot. Flail/mace AIs kill themselves at once, so the lab zeros were partly a harness artifact. New `LEVY_CR_SP=1` emulates single player.
   - **Real single-player bugs fixed:**
     - Cursor-reading modded projectiles (UrchinMace, BallOFugu, YateveoBloom, FlareBolt, Pumpkaboom, MeteorFist…) aimed at the commander's cursor. Now steered to the target (IL probe ReadsCursor).

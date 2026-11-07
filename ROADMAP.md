@@ -602,6 +602,27 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Plus the short-reach melee fix (Blade of Grass etc.).
 - **Boots:** Thorium+MS and Calamity, 0 exceptions.
 
+## 📦 SHIPPED Levy 2.0.11 + Mechanization 0.9.1, at scratchpad/ship-2.0.11
+- **air-mobility (merged 7381960):**
+  - Airborne dodge scan (air jump, thrust, dash, fast fall, hook), platform lane choice, player-like jumps.
+  - Matrix (240 cells, 3 seeds, Spectator): hits −19%, contact −18%, deaths/min −10%, rowPct 2.7→4.7%, still% ~19% unchanged.
+  - Contact hits are 95% of all hits. King Slime/Skeletron not improved.
+- **Mech 0.9.1:** drones emit a real light (tinted by phase).
+
+## 🌙 Eve before bed (2026-11-07 ~03:00)
+- Eve is shocked midair movement wasn't there ("90% of Terraria movement is in the air"; why no dashing over things).
+- **Wants:**
+  - every test rerun;
+  - WHY levies stand still;
+  - a FIGHT RECORDER + viewer to compare her real movement with levies'.
+- **Running:**
+  - `mobility3`: standing-still reason codes → fixes; air-first boss movement; dash over/through contact bosses; contact-lane spacing; wings variant; full matrix rerun.
+  - `fightrec`: /levyrec start|stop JSON recorder (player inputs/movement/items/accessories/hits, boss parts, projectiles, levies, arena tiles) + an offline HTML viewer (radar blips, timeline, events, stats) + analyze.py comparing player vs levies.
+- **Later ideas from Eve:**
+  - drones patrol higher above ground;
+  - player-built drones via wires mid-game (Mechanic gate), works with turrets;
+  - "stop potions from being… I wish there was a deposit…" (unclear; ask).
+
 ## 📦 SHIPPED Levy 2.0.10 + Mechanization 0.9.0, at scratchpad/ship-2.0.10
 - **spectator2 5dd850f:**
   - **LIKELY ROOT CAUSE of "boss targets the spectator":** in Rev/Death, Calamity's vanilla-boss AI overrides pick targets with CalamityUtils.CalamityTargeting (its own player scan), bypassing Levy's TargetClosest detours. Fix: an IL hook hides spectators from it, and Calamity's PreAI gets a levy prepared in slot 255 (CalamityTargetingCompat; LEVY_CALCOMPAT=0 disables).

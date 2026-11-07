@@ -178,6 +178,21 @@ namespace Levy.Common.Testing
 				if (adds < st.PrevAdds) st.AddKills += st.PrevAdds - adds;
 				st.PrevAdds = adds;
 			}
+			if (Environment.GetEnvironmentVariable("LEVY_CR_PROJTRACE") == "1" && st.Tick <= 900)
+			{
+				// projectile trace (measurement only): every live friendly modded projectile, with its AI state and where it is relative to the nearest levy / the boss
+				int shown = 0;
+				for (int pi = 0; pi < Main.maxProjectiles && shown < 6; pi++)
+				{
+					Projectile pr = Main.projectile[pi];
+					if (!pr.active || pr.hostile || pr.type == 720) continue;
+					float dl = 1e9f; foreach (var l in st.Levies) if (!l.Dead) { var n = Main.npc[l.Idx]; if (n.active) dl = Math.Min(dl, Vector2.Distance(n.Center, pr.Center)); }
+					string ln = string.Format(CultureInfo.InvariantCulture, "PT\t{0}\t{1}\t{2}\towner={3}\tai={4:0.##},{5:0.##},{6:0.##}\tlai={7:0.##},{8:0.##}\tdmg={9}\tvel={10:0.0},{11:0.0}\ttl={12}\tdLevy={13:0}px\tdBoss={14:0}px\tpen={15}\ttile={16}\toHit={17}\tmouse={18:0},{19:0}\town={20}",
+						st.Run.Key.Substring(0, Math.Min(40, st.Run.Key.Length)), st.Tick, (pr.ModProjectile?.Name ?? ("v" + pr.type)), pr.owner, pr.ai[0], pr.ai[1], pr.ai[2], pr.localAI[0], pr.localAI[1], pr.damage, pr.velocity.X, pr.velocity.Y, pr.timeLeft, dl, Vector2.Distance(pr.Center, e.Center), pr.penetrate, pr.tileCollide ? 1 : 0, pr.ownerHitCheck ? 1 : 0, Main.MouseWorld.X, Main.MouseWorld.Y, (pr.owner < 255 ? $"act{(Main.player[pr.owner].active?1:0)}dead{(Main.player[pr.owner].dead?1:0)}noI{(Main.player[pr.owner].noItems?1:0)}cc{(Main.player[pr.owner].CCed?1:0)}ch{(Main.player[pr.owner].channel?1:0)}ctr{(Main.player[pr.owner].controlUseItem?1:0)} ownDist{Vector2.Distance(Main.player[pr.owner].Center, pr.Center):0}" : "none"));
+					try { File.AppendAllText(_crOut + ".proj.tsv", ln + "\n"); } catch { }
+					shown++;
+				}
+			}
 			if ((st.Run.Dbg || Environment.GetEnvironmentVariable("LEVY_CR_DEBUG") == "1") && st.Tick % 30 == 0)
 			{
 				int alv = st.Levies.Count(l => !l.Dead);

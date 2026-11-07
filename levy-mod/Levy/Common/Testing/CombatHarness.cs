@@ -224,6 +224,7 @@ namespace Levy.Common.Testing
 				for (int i = 0; i < StepsPerTurn && h._ph != Ph.Done; i++)
 				{
 					bool emu = HarnessOnHit.Enabled && HarnessOnHit.Emulate && h._stage == 0 && h._ph != Ph.Boot;
+					emu |= CrOn && CrSp && h._ph != Ph.Boot; // calrev single-player owner emulation (LEVY_CR_SP=1): soldier shots are owned by the commander, as in a real single-player game
 					int savedMy = Main.myPlayer;
 					if (emu) Main.myPlayer = 0; // single-player emulation: soldier shots are owned by the commander, as in a real single-player game
 					try { _update.Invoke(Main.instance, new object[] { new GameTime() }); }

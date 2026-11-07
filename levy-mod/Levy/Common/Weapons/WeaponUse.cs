@@ -450,6 +450,7 @@ namespace Levy.Common.Weapons
 		// Real weapon Shoot pipeline
 		// ------------------------------------------------------------------------------------------------------------
 		private static bool[] _projBefore;
+		internal static readonly bool _dbgTrace = Environment.GetEnvironmentVariable("LEVY_CR_PROJTRACE") == "1";
 
 		/// <summary>
 		/// The projectile a gun/bow fires with <paramref name="ammo"/>: the ammo's projectile (or the weapon's own), then the weapon-specific
@@ -552,6 +553,7 @@ namespace Levy.Common.Weapons
 				adopted++;
 			}
 			// A hook that threw may already have fired: keep what it spawned rather than firing a second shot on top of it.
+			if (_dbgTrace) ModContent.GetInstance<Levy>()?.Logger.Info($"DBGSHOT {item.Name} threw={threw} useDefault={useDefault} adopted={adopted} type={type} dmg={dmg}");
 			if (threw) return adopted > 0;
 			if (!useDefault) return adopted > 0;
 

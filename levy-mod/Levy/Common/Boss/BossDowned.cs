@@ -107,6 +107,9 @@ namespace Levy.Common.Boss
 
 		public override void ClearWorld() => _downed.Clear();
 
+		/// <summary>Probe seam (the boss trials): forgets every recorded kill.</summary>
+		internal static void ClearForTest() => _downed.Clear();
+
 		// Runs after ClearWorld and after vanilla NPC.downedX flags are populated, so already-beaten bosses are allowlisted immediately.
 		public override void OnWorldLoad() => BackfillFromVanillaFlags();
 

@@ -47,9 +47,9 @@ namespace Levy.Common.Testing
 		internal sealed class BtRun
 		{
 			public string Mode, Boss = "eye", Diff, Order, Arena = "big", Comp, Stats, Tier, Grade, Extra = "", CfgId = "fixed", Desc = "";
-			public bool Auto, Camp = true, Honey, Spec = true, Pots = true, Beam = true; public int Seed, Cap, Trial;
+			public bool Audit, Real; public bool Auto, Camp = true, Honey, Spec = true, Pots = true, Beam = true; public int Seed, Cap, Trial;
 			public List<BtLevySpec> Specs;
-			public string Key => $"{Mode}|{Boss}|{Diff}|{Order}|{(Auto ? 1 : 0)}|{Arena}|{(Camp ? 1 : 0)}{(Honey ? "h" : "")}{(Spec ? "" : "ns")}{(Pots ? "" : "np")}{(Beam ? "" : "nb")}|{CfgId}|{Comp}|{Stats}|{Tier}|{Grade}|{Extra}|{Trial}";
+			public string Key => $"{Mode}|{Boss}|{Diff}|{Order}|{(Auto ? 1 : 0)}|{Arena}|{(Camp ? 1 : 0)}{(Honey ? "h" : "")}{(Spec ? "" : "ns")}{(Pots ? "" : "np")}{(Beam ? "" : "nb")}{(Real ? "R" : "")}|{CfgId}|{Comp}|{Stats}|{Tier}|{Grade}|{Extra}|{Trial}";
 		}
 		private readonly List<BtRun> _btRuns = new();
 		private int _btI = -1; private bool _btStarted;
@@ -80,7 +80,7 @@ namespace Levy.Common.Testing
 				string seeds = f[8]; int s0 = 1, s1 = 1;
 				if (seeds.Contains('-')) { var p = seeds.Split('-'); s0 = int.Parse(p[0]); s1 = int.Parse(p[1]); } else { s1 = int.Parse(seeds); }
 				string boss = kv.GetValueOrDefault("boss", "eye"), arena = kv.GetValueOrDefault("arena", "big");
-				bool camp = kv.GetValueOrDefault("camp", "1") == "1", honey = kv.GetValueOrDefault("honey", "0") == "1", spec = kv.GetValueOrDefault("spec", "1") == "1", pots = kv.GetValueOrDefault("potions", "1") == "1", beam = kv.GetValueOrDefault("beam", "1") == "1";
+				bool camp = kv.GetValueOrDefault("camp", "1") == "1", honey = kv.GetValueOrDefault("honey", "0") == "1", spec = kv.GetValueOrDefault("spec", "1") == "1", pots = kv.GetValueOrDefault("potions", "1") == "1", beam = kv.GetValueOrDefault("beam", "1") == "1", audit = kv.GetValueOrDefault("audit", "0") == "1", real = kv.GetValueOrDefault("real", "0") == "1";
 				int cap = int.Parse(f[9]) > 0 ? int.Parse(f[9]) : 18000;
 				string cleanExtra = string.Join(";", kv.Where(k => k.Key.Contains(':')).Select(k => k.Key + "=" + k.Value));
 				Action<BtRun> add = r => { if (done.Contains(r.Key)) skipped++; else _btRuns.Add(r); };
@@ -94,7 +94,7 @@ namespace Levy.Common.Testing
 						string desc = string.Join(" ; ", specs.Select(sp => sp.Describe()));
 						cfgLog.Add($"{cfgId}\t{comp}\t{desc}");
 						for (int t = 1; t <= trials; t++)
-							add(new BtRun { Mode = "fight", Boss = boss, Diff = f[1], Order = f[2], Auto = f[3] == "1", Arena = arena, Camp = camp, Honey = honey, Spec = spec, Pots = pots, Beam = beam, Comp = comp, Stats = "roll", Tier = f[6], Grade = "mixed", CfgId = cfgId, Trial = t, Seed = cfg * 100 + t, Cap = cap, Specs = specs, Desc = desc });
+							add(new BtRun { Mode = "fight", Boss = boss, Diff = f[1], Order = f[2], Auto = f[3] == "1", Arena = arena, Camp = camp, Honey = honey, Audit = audit, Real = real, Spec = spec, Pots = pots, Beam = beam, Comp = comp, Stats = "roll", Tier = f[6], Grade = "mixed", CfgId = cfgId, Trial = t, Seed = cfg * 100 + t, Cap = cap, Specs = specs, Desc = desc });
 					}
 				}
 				else
@@ -102,7 +102,7 @@ namespace Levy.Common.Testing
 					string comp = BtCompCode(f[4]);
 					for (int s = s0; s <= s1; s++)
 					{
-						var r = new BtRun { Mode = f[0], Boss = boss, Diff = f[1], Order = f[2], Auto = f[3] == "1", Arena = arena, Camp = camp, Honey = honey, Spec = spec, Pots = pots, Beam = beam, Comp = comp, Stats = f[5], Tier = f[6], Grade = f[7], Trial = s, Seed = s, Cap = cap, Extra = cleanExtra, CfgId = "fixed-" + f[6] + "-" + f[5] };
+						var r = new BtRun { Mode = f[0], Boss = boss, Diff = f[1], Order = f[2], Auto = f[3] == "1", Arena = arena, Camp = camp, Honey = honey, Audit = audit, Real = real, Spec = spec, Pots = pots, Beam = beam, Comp = comp, Stats = f[5], Tier = f[6], Grade = f[7], Trial = s, Seed = s, Cap = cap, Extra = cleanExtra, CfgId = "fixed-" + f[6] + "-" + f[5] };
 						add(r);
 					}
 				}
@@ -361,6 +361,10 @@ namespace Levy.Common.Testing
 			public int Tick; public int BossIdx = -1; public int BossLifeMax; public int BossLife;
 			public int AddsPeak; public int HalfTick = -1; public bool BossGone; public int EndTick = -1; public string Result = "";
 			public long DmgUnattributed, ProjDmg, MeleeDmg;
+			// fidelity audit counters
+			public int PrevAi0 = int.MinValue, Ai0Changes, Phase2Tick = -1, Teleports, SeenSpawns, TargLevyTicks, TargPlayerTicks, TargNoneTicks, AliveTicks, InvulnTicks, CreeperTicksMax, DashEvents, PrevAi1 = int.MinValue;
+			public Vector2 PrevBossPos; public bool[] PrevAddActive = new bool[Main.maxNPCs + 1];
+			public int SpecLostTicks; public double NearDistSum; public int NearDistN; public int PlatformTicks, GroundTicks; public string Phases = "";
 			public void Credit(int soldierIdx, int npcType, int dmg, string how)
 			{
 				if (dmg <= 0) return;
@@ -521,8 +525,10 @@ namespace Levy.Common.Testing
 
 		private static int BtBossNpcType(string boss) => boss switch { "kslime" => NPCID.KingSlime, "brain" => NPCID.BrainofCthulhu, "eow" => NPCID.EaterofWorldsHead, _ => NPCID.EyeofCthulhu };
 
+		private bool _btDrunk; private int _btDrinkTicks;
 		private void StepBtFight(BtRun run)
 		{
+			if (!_btStarted && run.Real && !_btDrunk) { if (!BtDrinkStage(run)) return; }
 			if (!_btStarted)
 			{
 				BtApplyExtra(run.Extra); WeaponRank.PureContactPenalty = run.Beam;
@@ -531,8 +537,10 @@ namespace Levy.Common.Testing
 				Main.GameMode = run.Diff == "expert" ? GameModeID.Expert : GameModeID.Normal;
 				Main.rand = new Terraria.Utilities.UnifiedRandom(run.Seed * 7919 + 13);
 				NPC.downedBoss1 = false; NPC.downedBoss2 = false; NPC.downedSlimeKing = false;
+				global::Levy.Common.Boss.BossDownedSystem.ClearForTest(); // every kill of the previous run was recorded as a downed boss
 				_btCmdPos = new Vector2((_btCx - 6) * 16f, BtF * 16f);
-				BtPinCommander(run.Spec);
+				Systems.StationBuffSystem.ForceFlags = run.Camp ? Systems.StationFlags.Campfire | Systems.StationFlags.HeartLantern : Systems.StationFlags.None; // the soldier recomputes its stations from the armories every update, so the flags must come from the system
+				BtPinCommander(run.Spec && !run.Real);
 				var s = new BtState { Run = run, BossType = BtBossNpcType(run.Boss) };
 				if (run.Boss == "kslime") { s.AddTypes.Add(NPCID.BlueSlime); s.AddTypes.Add(NPCID.SlimeSpiked); s.AddTypes.Add(NPCID.GreenSlime); s.AddTypes.Add(NPCID.PurpleSlime); s.AddTypes.Add(NPCID.RedSlime); s.AddTypes.Add(NPCID.YellowSlime); s.AddTypes.Add(NPCID.IceSlime); s.AddTypes.Add(NPCID.JungleSlime); s.AddTypes.Add(NPCID.BlackSlime); }
 				else if (run.Boss == "brain") s.AddTypes.Add(NPCID.Creeper);
@@ -546,11 +554,13 @@ namespace Levy.Common.Testing
 				boss.timeLeft = 99999;
 				_btS = s; _bt = s; _btStarted = true; _btTickInRun = 0;
 				if (run.Auto) BtAutonomy(s);
-				Mod.Logger.Info($"HARNESS-BT: fight start {run.Key}: {run.Boss} {boss.life}/{boss.lifeMax} def {boss.defense} dmg {boss.damage}; {run.Desc}");
+				var vanilla = new NPC(); vanilla.SetDefaults(s.BossType);
+				Mod.Logger.Info($"HARNESS-BT: fight start {run.Key}: {run.Boss} {boss.life}/{boss.lifeMax} def {boss.defense} dmg {boss.damage} (fresh SetDefaults in {Main.GameMode}: {vanilla.lifeMax} hp, def {vanilla.defense}, dmg {vanilla.damage}; CP scale x{(boss.lifeMax / (double)Math.Max(1, vanilla.lifeMax)):0.000}); {run.Desc}");
+				try { File.AppendAllText(_btOut + ".bossstats.txt", $"{run.Boss}\t{run.Diff}\t{run.Comp}\t{vanilla.lifeMax}\t{boss.lifeMax}\t{vanilla.defense}\t{boss.defense}\t{vanilla.damage}\t{boss.damage}\n"); } catch { }
 				return;
 			}
 			var st = _btS; st.Tick = ++_btTickInRun;
-			BtPinCommander(run.Spec);
+			BtPinCommander(run.Spec && !run.Real);
 			if (run.Auto && st.Tick % PotionConstants.AutonomousPulseTicks == 0) BtAutonomy(st);
 			BtPinStrays(st.BossIdx);
 			NPC e = Main.npc[st.BossIdx];
@@ -558,6 +568,8 @@ namespace Levy.Common.Testing
 			if (bossAlive) { st.BossLife = e.life; st.BossLifeMax = Math.Max(st.BossLifeMax, e.lifeMax); e.timeLeft = 99999; if (st.HalfTick < 0 && e.life * 2 <= e.lifeMax) st.HalfTick = st.Tick; }
 			else if (!st.BossGone) { st.BossGone = true; st.EndTick = st.Tick; st.Result = e.life <= 0 ? "WIN" : "DESPAWN"; st.BossLife = Math.Max(0, e.life); }
 			if (run.Boss == "brain" && (st.Tick % 60 == 0 || !bossAlive && st.Tick == st.EndTick)) Mod.Logger.Info($"HARNESS-BT-DBG t{st.Tick} brain active={e.active} type={e.type} life={e.life}/{e.lifeMax} pos={e.Center / 16f} ai={e.ai[0]}/{e.ai[1]}/{e.ai[2]}/{e.ai[3]} target={e.target} dontTake={e.dontTakeDamage} timeLeft={e.timeLeft} creepers={Main.npc.Count(q => q.active && q.type == NPCID.Creeper)}");
+			if (run.Audit && st.Tick == 120) BtAuditLevies(run, st);
+			BtAuditTick(run, st, e, bossAlive);
 			int adds = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && st.AddTypes.Contains(Main.npc[i].type)) adds++;
 			st.AddsPeak = Math.Max(st.AddsPeak, adds);
 			int alive = 0;
@@ -601,6 +613,104 @@ namespace Levy.Common.Testing
 			if (st.Result != "" && (st.Result != "WIN" || st.Tick >= st.EndTick + 20)) BtFinishFight(run, st);
 		}
 
+		/// <summary>Fidelity audit: boss AI phase / state transitions, teleports, spawns, who it targets, how close it stays to the levies. Counters always run (they land in the row's note); the verbose line log needs audit=1.</summary>
+		private void BtAuditTick(BtRun run, BtState st, NPC e, bool alive)
+		{
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				bool a = Main.npc[i].active && st.AddTypes.Contains(Main.npc[i].type);
+				if (a && !st.PrevAddActive[i]) st.SeenSpawns++;
+				st.PrevAddActive[i] = a;
+			}
+			if (!alive) return;
+			st.AliveTicks++;
+			int ai0 = (int)e.ai[0];
+			if (st.PrevAi0 != int.MinValue && ai0 != st.PrevAi0) { st.Ai0Changes++; st.Phases += $"t{st.Tick}:ai0 {st.PrevAi0}->{ai0}(hp{e.life}/{e.lifeMax});"; if (run.Boss == "eye" && st.Phase2Tick < 0 && ai0 >= 1) st.Phase2Tick = st.Tick; }
+			st.PrevAi0 = ai0;
+			if (run.Boss == "eye") { int a1 = (int)e.ai[1]; if (st.PrevAi1 != int.MinValue && a1 != st.PrevAi1 && (a1 == 1 || (ai0 >= 2 && a1 == 0))) st.DashEvents++; st.PrevAi1 = a1; }
+			if (st.Tick > 1 && Vector2.Distance(e.Center, st.PrevBossPos) > 320f) st.Teleports++;
+			st.PrevBossPos = e.Center;
+			if (e.dontTakeDamage) st.InvulnTicks++;
+			if (!Main.player[0].HasBuff(ModContent.BuffType<SpectatorBuff>())) st.SpecLostTicks++;
+			int tg = e.target;
+			if (tg == SoldierNPC.DummySlot || tg >= 300) st.TargLevyTicks++; else if (tg >= 0 && tg < Main.maxPlayers && Main.player[tg].active && !Main.player[tg].dead) st.TargPlayerTicks++; else st.TargNoneTicks++;
+			float best = 1e9f;
+			foreach (var l in st.Levies) if (!l.Dead && l.Rec.HasBody) best = Math.Min(best, Vector2.Distance(e.Center, Main.npc[l.Idx].Center));
+			if (best < 1e8f) { st.NearDistSum += best / 16f; st.NearDistN++; }
+			if (run.Boss == "brain") { int cr = Main.npc.Count(q => q.active && q.type == NPCID.Creeper); st.CreeperTicksMax = Math.Max(st.CreeperTicksMax, cr); }
+			foreach (var l in st.Levies) if (!l.Dead && l.Rec.HasBody) { if (Main.npc[l.Idx].Bottom.Y / 16f < BtF - 3) st.PlatformTicks++; else st.GroundTicks++; }
+			if (run.Audit && st.Tick % 30 == 0)
+			{
+				int addN = Main.npc.Count(q => q.active && st.AddTypes.Contains(q.type));
+				int crN = Main.npc.Count(q => q.active && q.type == NPCID.Creeper);
+				try { File.AppendAllText(_btOut + ".audit.txt", $"{run.Key} t{st.Tick} {run.Boss} hp{e.life}/{e.lifeMax} def{e.defense} dmg{e.damage} ai[{e.ai[0]:0},{e.ai[1]:0},{e.ai[2]:0},{e.ai[3]:0}] tgt{tg} invuln{(e.dontTakeDamage ? 1 : 0)} pos({e.Center.X / 16f:0},{e.Center.Y / 16f:0}) nearLevy{best / 16f:0.0}t adds{addN} creepers{crN} levies{st.Levies.Count(x => !x.Dead)}\n"); } catch { }
+			}
+		}
+
+		/// <summary>Once per run (audit=1): everything a levy carries that could differ from a real-play levy.</summary>
+		private void BtAuditLevies(BtRun run, BtState st)
+		{
+			try
+			{
+				var sb = new StringBuilder();
+				foreach (var l in st.Levies)
+				{
+					NPC n = Main.npc[l.Idx]; var sn = (SoldierNPC)n.ModNPC;
+					var bufs = new List<string>(); for (int b = 0; b < n.buffType.Length; b++) if (n.buffType[b] > 0) bufs.Add(Lang.GetBuffName(n.buffType[b]) + ":" + n.buffTime[b]);
+					sb.AppendLine($"{run.Key} LEVY {l.Cls} {l.Weapon} hp{n.life}/{n.lifeMax} def{n.defense} mana{l.Rec.Mana}/{l.Rec.MaxMana} ammo{(l.Rec.Gear.Ammo?.stack ?? 0)} stations{sn.Stations} potions{l.PotionsLeft} grade{l.Rec.Grade} buffs[{string.Join(",", bufs)}] lifeRegen{n.lifeRegen}");
+				}
+				File.AppendAllText(_btOut + ".audit.txt", sb.ToString());
+			}
+			catch (Exception ex) { Mod.Logger.Warn("audit levies: " + ex.Message); }
+		}
+
+		private static string BtAuditNote(BtState st)
+		{
+			double t = Math.Max(1, st.AliveTicks);
+			return $"ph2={st.Phase2Tick};ai0chg={st.Ai0Changes};dash={st.DashEvents};spawns={st.SeenSpawns};tp={st.Teleports};invuln={st.InvulnTicks * 100 / t:0}%;tgtLevy={st.TargLevyTicks * 100 / t:0}%;tgtPlayer={st.TargPlayerTicks * 100 / t:0}%;tgtNone={st.TargNoneTicks * 100 / t:0}%;nearT={(st.NearDistN > 0 ? st.NearDistSum / st.NearDistN : 0):0.0};platform={st.PlatformTicks * 100 / Math.Max(1, st.PlatformTicks + st.GroundTicks)}%;maxCreepers={st.CreeperTicksMax};specLost={st.SpecLostTicks * 100 / t:0}%;real={(st.Run.Real ? 1 : 0)};{(st.Phases.Length > 200 ? st.Phases.Substring(0, 200) : st.Phases)}";
+		}
+
+		private static void ClearCommanderBuffs() { Player p = Main.player[0]; for (int b = 0; b < p.buffType.Length; b++) { p.buffType[b] = 0; p.buffTime[b] = 0; } }
+
+		/// <summary>REAL-PLAY condition: the commander drinks the actual Spectator Potion item through Player.ItemCheck (the path a click takes) before the levies and the boss exist; the buff is never re-applied afterwards. True when done.</summary>
+		private bool BtDrinkStage(BtRun run)
+		{
+			Player p = Main.player[0];
+			if (_btDrinkTicks == 0)
+			{
+				ClearAll(); BtPurgeNpcs(); ClearCommanderBuffs();
+				global::Levy.Common.Boss.BossDownedSystem.ClearForTest();
+				_btCmdPos = new Vector2((_btCx - 6) * 16f, BtF * 16f);
+				Main.GameMode = run.Diff == "expert" ? GameModeID.Expert : GameModeID.Normal;
+			}
+			p.active = true; p.dead = false; p.name = CommanderName; p.team = 0;
+			p.statLifeMax = p.statLifeMax2 = 500; p.statLife = 500; p.statManaMax = p.statManaMax2 = 200; p.statMana = 200;
+			p.position = new Vector2(_btCmdPos.X - p.width / 2f, _btCmdPos.Y - p.height); p.velocity = Vector2.Zero;
+			p.ZoneCrimson = true; p.ZoneOverworldHeight = true;
+			int bt = ModContent.BuffType<SpectatorBuff>();
+			if (p.HasBuff(bt)) { _btRefPlayer = false; _btDrunk = true; Mod.Logger.Info($"HARNESS-BT: Spectator Potion drunk through the item path after {_btDrinkTicks} ticks"); return true; }
+			if (_btDrinkTicks++ > 600) { _btRefPlayer = false; Mod.Logger.Warn("HARNESS-BT: the potion was not drunk in 600 ticks; adding the buff directly"); p.AddBuff(bt, 600000); return false; }
+			if (_btDrinkTicks == 1) { p.inventory[0] = BtMake("Spectator Potion"); p.selectedItem = 0; _btRefPlayer = true; SetKeepAlive(true); }
+			int savedMy = Main.myPlayer;
+			try
+			{
+				Main.myPlayer = 0;
+				p.noItems = false; p.selectedItem = 0;
+				if (p.inventory[0] == null || p.inventory[0].IsAir) p.inventory[0] = BtMake("Spectator Potion");
+				p.controlUseItem = true; Main.mouseLeft = true; Main.mouseLeftRelease = _btDrinkTicks % 2 == 0; p.releaseUseItem = true;
+				try { Terraria.GameInput.PlayerInput.Triggers.Current.MouseLeft = true; } catch { }
+				if (_btItemCheck == null)
+				{
+					foreach (var m in typeof(Player).GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic))
+						if (m.Name == "ItemCheck") { var ps = m.GetParameters(); if (ps.Length == 0) { _btItemCheck = m; _btItemCheckInt = false; break; } if (ps.Length == 1 && ps[0].ParameterType == typeof(int)) { _btItemCheck = m; _btItemCheckInt = true; } }
+				}
+				_btItemCheck.Invoke(p, _btItemCheckInt ? new object[] { 0 } : null);
+			}
+			catch (Exception e) { var ie = e.InnerException ?? e; if (_btDrinkTicks == 2) Mod.Logger.Warn("HARNESS-BT: drink itemcheck: " + ie); }
+			finally { Main.myPlayer = savedMy; p.controlUseItem = false; Main.mouseLeft = false; }
+			return false;
+		}
+
 		private void BtPurgeNpcs()
 		{
 			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !(n.ModNPC is SoldierNPC) && !n.townNPC) n.active = false; }
@@ -623,11 +733,11 @@ namespace Levy.Common.Testing
 			var sb = new StringBuilder();
 			sb.Append(run.Key).Append('\t').Append(string.Join("\t", new object[] { run.Mode, run.Boss, run.Diff, run.Order, run.Auto ? 1 : 0, run.Arena, run.Camp ? 1 : 0, run.Comp, run.CfgId, run.Trial, run.Tier, st.Result, end, f1(end / 60.0),
 				st.BossLifeMax, bossLeft, dmgBoss, dmg('R'), dmg('M'), dmg('E'), dmg('S'), st.DmgUnattributed, st.ProjDmg, st.MeleeDmg, deaths, dc('R'), dc('M'), dc('E'), dc('S'), f1(avgSurv), tB, tA, tO, st.AddsPeak,
-				st.HalfTick < 0 ? "-" : f1(st.HalfTick / 60.0), st.Levies.Count, f1(st.Levies.Average(l => l.MaxHp)), f1(st.Levies.Average(l => l.Spec.Mana)), st.Levies.Sum(l => l.PotionsDrunk), per, "-" }));
+				st.HalfTick < 0 ? "-" : f1(st.HalfTick / 60.0), st.Levies.Count, f1(st.Levies.Average(l => l.MaxHp)), f1(st.Levies.Average(l => l.Spec.Mana)), st.Levies.Sum(l => l.PotionsDrunk), per, BtAuditNote(st) }));
 			File.AppendAllText(_btOut, sb + "\n");
 			Mod.Logger.Info($"HARNESS-BT: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} (R{dmg('R')} M{dmg('M')} E{dmg('E')} S{dmg('S')}, unattr {st.DmgUnattributed}) deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} takenOther={tO}");
 			if (Main.npc[st.BossIdx].active && Main.npc[st.BossIdx].type == st.BossType) Main.npc[st.BossIdx].active = false;
-			_bt = null; _btS = null; _btStarted = false; _btI++;
+			_bt = null; _btS = null; _btStarted = false; _btI++; Systems.StationBuffSystem.ForceFlags = null; _btDrunk = false; _btDrinkTicks = 0; ClearCommanderBuffs();
 			NPC.downedBoss1 = false; NPC.downedBoss2 = false; NPC.downedSlimeKing = false;
 			ClearAll(); BtPurgeNpcs();
 		}

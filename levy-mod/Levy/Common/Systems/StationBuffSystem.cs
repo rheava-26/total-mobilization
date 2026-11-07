@@ -48,8 +48,12 @@ namespace Levy.Common.Systems
 		private static void Reset() { _cache.Clear(); _stamp = uint.MaxValue; }
 
 		/// <summary>Union of the stations beside every armory within benefit range of <paramref name="pos"/> (cached; cheap per call).</summary>
+		/// <summary>Probe seam (the combat harness): when set, every soldier counts as standing beside exactly these stations.</summary>
+		internal static StationFlags? ForceFlags;
+
 		public static StationFlags For(Vector2 pos)
 		{
+			if (ForceFlags.HasValue) return ForceFlags.Value;
 			if (!LevyUtil.IsServerOrSingle) return StationFlags.None;
 			Refresh();
 			StationFlags f = StationFlags.None;

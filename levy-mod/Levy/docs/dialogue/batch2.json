@@ -1,0 +1,242 @@
+[
+{
+"n": 71,
+"group": "Mothering the mages",
+"tag": "[non-mage]",
+"text": "Did our little mage remember their Mana Flower today? I packed one for them. Just in case."
+},
+{
+"n": 72,
+"group": "Mothering the mages",
+"tag": "[non-mage]",
+"text": "{Mate} set my hair on fire and then apologized for ten minutes. I told them it's fine. It's always fine. They're doing their best."
+},
+{
+"n": 73,
+"group": "Mothering the mages",
+"tag": "[non-mage]",
+"text": "Somebody give the mage a Mana Regeneration Potion, they've been trying so hard!"
+},
+{
+"n": 74,
+"group": "Mothering the mages",
+"tag": "[non-mage]",
+"text": "I watched {Mate} miss the boss eleven times in a row and then hit the Guide. I've never been prouder."
+},
+{
+"n": 75,
+"group": "Mothering the mages",
+"tag": "[non-mage]",
+"text": "The mages are out of mana again. Let them sit down. Let them have a snack. They've earned it."
+},
+{
+"n": 76,
+"group": "Mothering the mages",
+"tag": "[mage]",
+"text": "Everyone keeps tucking me in after boss fights. I don't know why, but it's really nice!"
+},
+{
+"n": 77,
+"group": "Mothering the mages",
+"tag": "[non-mage]",
+"text": "Don't tell {Mate} the Water Bolt bounced back and hit them. Just let them have this one."
+},
+{
+"n": 78,
+"group": "Suspiciously normal rangers",
+"tag": "[ranger]",
+"text": "I'm a normal ranger. I have normal bullets. I aim them in a normal way. Thank you for asking."
+},
+{
+"n": 79,
+"group": "Suspiciously normal rangers",
+"tag": "[ranger]",
+"text": "Chlorophyte bullets? What are those? I've never heard of those. Is that a type of plant?"
+},
+{
+"n": 80,
+"group": "Suspiciously normal rangers",
+"tag": "[ranger]",
+"text": "Hey {Mate}! Lovely weather! Just a normal person enjoying the weather, with my normal gun."
+},
+{
+"n": 81,
+"group": "Suspiciously normal rangers",
+"tag": "[ranger]",
+"text": "I bought these bullets from the Arms Dealer. Regular. Completely regular. Please stop looking at them."
+},
+{
+"n": 82,
+"group": "Suspiciously normal rangers",
+"tag": "[ranger]",
+"text": "Whoa, nice shot, me! Totally aimed that one. On purpose. With my eyes."
+},
+{
+"n": 83,
+"group": "Melee, who don't know they're loved",
+"tag": "[non-melee]",
+"text": "{Mate} is so brave, standing back like that, waiting for the perfect moment. I hope they know we all look up to them."
+},
+{
+"n": 84,
+"group": "Melee, who don't know they're loved",
+"tag": "[melee]",
+"text": "Nobody talks to me after the fights. I think they're mad I didn't charge in. I'll do better."
+},
+{
+"n": 85,
+"group": "Melee, who don't know they're loved",
+"tag": "[melee]",
+"text": "{Mate} said 'good job' to me today. I think it was sarcastic. It had to be sarcastic."
+},
+{
+"n": 86,
+"group": "Melee, who don't know they're loved",
+"tag": "[non-melee]",
+"text": "Whenever {Mate} swings that sword from across the arena, I feel safe. I'd never tell them, though. It'd go to their head."
+},
+{
+"n": 87,
+"group": "Melee, who don't know they're loved",
+"tag": "[melee]",
+"text": "My Starfury drops stars from the sky and I get the credit. I don't deserve the credit. The sky deserves the credit."
+},
+{
+"n": 88,
+"group": "Melee, who don't know they're loved",
+"tag": "[melee]",
+"text": "Everyone went quiet when I walked into the barracks. They definitely know. They know I've never touched a boss."
+},
+{
+"n": 89,
+"group": "More insincere praise",
+"tag": "",
+"text": "{Fancy} is wearing a full set of Hallowed armor to guard a dirt wall. Very humble. Very down to earth."
+},
+{
+"n": 90,
+"group": "More insincere praise",
+"tag": "",
+"text": "{Glutton} has {GluttonKills} kills. Wow. Incredible. I'm so happy for them. Really."
+},
+{
+"n": 91,
+"group": "More insincere praise",
+"tag": "",
+"text": "{Tank} has died {TankDeaths} times and still shows up to every fight. Total legend. Absolute icon. Someone please stop them."
+},
+{
+"n": 92,
+"group": "More insincere praise",
+"tag": "",
+"text": "{Bravest} only has {BravestHP} health and they still go in first. Show-off."
+},
+{
+"n": 93,
+"group": "More insincere praise",
+"tag": "",
+"text": "{Laziest} drank every Lesser Healing Potion in the armory and said it was 'for morale.'"
+},
+{
+"n": 94,
+"group": "The gods",
+"tag": "",
+"text": "K'Or'Arath, god of firestorms, doesn't support summon slop! He used real magic weapons, just like us!"
+},
+{
+"n": 95,
+"group": "The gods",
+"tag": "",
+"text": "I miss Cthulhu so much. He would never have stood by while homing bullets were around. Wait, who are we trying to stop?"
+},
+{
+"n": 96,
+"group": "The gods",
+"tag": "",
+"text": "Ul'Thazhra the Unblinking sees every soul that has ever lived. She thinks the Guide's hat is a bad choice."
+},
+{
+"n": 97,
+"group": "The gods",
+"tag": "",
+"text": "Vorrath of the Thousand Teeth demands blood every Blood Moon. He also really wants us to try the Tavernkeep's ale. He says it's underrated."
+},
+{
+"n": 98,
+"group": "The gods",
+"tag": "",
+"text": "The Drowned One whispers to me in my sleep. Mostly about how the Angler should be nicer to people."
+},
+{
+"n": 99,
+"group": "The gods",
+"tag": "",
+"text": "K'Or'Arath burned seven kingdoms to ash for using summon staves. He also loves cats. Huge cat guy."
+},
+{
+"n": 100,
+"group": "The gods",
+"tag": "",
+"text": "I asked Mother Gnash what she thinks of the Tax Collector. The silence that followed will haunt me forever."
+},
+{
+"n": 101,
+"group": "The gods",
+"tag": "",
+"text": "Our lord Ixxethra devours stars. He hates it when people chew with their mouths open. Fix that, {Mate}."
+},
+{
+"n": 102,
+"group": "The gods",
+"tag": "[non-summoner]",
+"text": "The old gods are very clear on this. Minions are an abomination. Pets are fine. Pets are adorable."
+},
+{
+"n": 103,
+"group": "Summoners, in-game",
+"tag": "[summoner]",
+"text": "My Imp Staff does all my emails. I mean, my fighting. It does all my fighting."
+},
+{
+"n": 104,
+"group": "Summoners, in-game",
+"tag": "[summoner]",
+"text": "Once I get a Stardust Dragon Staff, I'm never lifting a finger again. I am going to lift exactly zero fingers."
+},
+{
+"n": 105,
+"group": "Summoners, in-game",
+"tag": "[summoner]",
+"text": "I upgraded from the Slime Staff to the Finch Staff. That's called growth, {Mate}."
+},
+{
+"n": 106,
+"group": "Summoners, in-game",
+"tag": "[summoner]",
+"text": "Why would I learn to use a sword when my Spider Staff already knows how? Work smarter!"
+},
+{
+"n": 107,
+"group": "Summoners, in-game",
+"tag": "[summoner]",
+"text": "The Optic Staff gives me two minions for the price of one. That's just good business."
+},
+{
+"n": 108,
+"group": "Memes and the chip",
+"tag": "BOSS_WallofFlesh",
+"text": "This is just like that one video where the guy runs from the giant wall! Wait. Is that us? Is that video us?"
+},
+{
+"n": 109,
+"group": "Memes and the chip",
+"tag": "",
+"text": "My implant updated overnight. I know three new emotes now. I can't stop using them."
+},
+{
+"n": 110,
+"group": "Death, offhand",
+"tag": "",
+"text": "I respawned right next to the Nurse and she charged me anyway. For what? I was already alive!"
+}
+]

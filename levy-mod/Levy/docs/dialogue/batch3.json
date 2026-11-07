@@ -1,0 +1,560 @@
+[
+{
+"n": 111,
+"group": "The gods vs. the Cultists",
+"tag": "BOSS_CultistBoss",
+"text": "Those cultists worship the Moon Lord? The MOON Lord? K'Or'Arath could beat him up. Easily. Probably."
+},
+{
+"n": 112,
+"group": "The gods vs. the Cultists",
+"tag": "BOSS_CultistBoss",
+"text": "Look at those robes. Look at that chanting. Amateurs. Our gods don't even need us to chant. They just know."
+},
+{
+"n": 113,
+"group": "The gods vs. the Cultists",
+"tag": "",
+"text": "I tried to convert a cultist once. He tried to convert me back. We had tea. It was nice. I still won."
+},
+{
+"n": 114,
+"group": "The gods vs. the Cultists",
+"tag": "",
+"text": "Vorrath of the Thousand Teeth says the Lunatic Cultist is 'a very try-hard guy.' His words, not mine."
+},
+{
+"n": 115,
+"group": "The gods vs. the Cultists",
+"tag": "",
+"text": "Mother Gnash once ate a whole moon. She says it tasted like Clothier. Don't ask me how she knows."
+},
+{
+"n": 116,
+"group": "The gods vs. the Cultists",
+"tag": "",
+"text": "The Drowned One forgives all sins except two. Summoning, and putting the Angler's quest fish back in the water."
+},
+{
+"n": 117,
+"group": "The gods vs. the Cultists",
+"tag": "",
+"text": "Ixxethra the Star-Eater is coming for us all at the end of days. He's very excited about it. Big fan of endings."
+},
+{
+"n": 118,
+"group": "The gods vs. the Cultists",
+"tag": "[non-summoner]",
+"text": "Ul'Thazhra the Unblinking has seen every summoner's heart, {Mate}. She says yours could use some work."
+},
+{
+"n": 119,
+"group": "The gods vs. the Cultists",
+"tag": "",
+"text": "K'Or'Arath doesn't like the Princess. He won't say why. I think it's a thing from before."
+},
+{
+"n": 120,
+"group": "The gods vs. the Cultists",
+"tag": "",
+"text": "I offered my soul to K'Or'Arath and he gave it back. He said it was 'fine, just not his thing.'"
+},
+{
+"n": 121,
+"group": "Bosses",
+"tag": "BOSS_EyeofCthulhu",
+"text": "Oh, it's the eye. Hi, eye. We all miss your dad."
+},
+{
+"n": 122,
+"group": "Bosses",
+"tag": "BOSS_SkeletronHead",
+"text": "Does the old man know he's cursed? Someone should tell him. Not me. Someone nicer. Send a mage."
+},
+{
+"n": 123,
+"group": "Bosses",
+"tag": "BOSS_QueenBee",
+"text": "{Mate}, if you get stung, don't cry. Bees can smell crying. I read that somewhere. Somewhere true."
+},
+{
+"n": 124,
+"group": "Bosses",
+"tag": "BOSS_Deerclops",
+"text": "Is that a deer? Is that a deer?! Why does the deer have one eye and hands?!"
+},
+{
+"n": 125,
+"group": "Bosses",
+"tag": "BOSS_WallofFlesh",
+"text": "Okay, everyone run right! No, the other right! The right that's away from the wall!"
+},
+{
+"n": 126,
+"group": "Bosses",
+"tag": "BOSS_Plantera",
+"text": "It's a flower. It's just a big flower. My mum grows flowers. Mum never had a flower with teeth."
+},
+{
+"n": 127,
+"group": "Bosses",
+"tag": "BOSS_Golem",
+"text": "The lizards built a giant stone man and then hid him behind a door that needed a battery. Very smart, honestly."
+},
+{
+"n": 128,
+"group": "Bosses",
+"tag": "BOSS_DukeFishron",
+"text": "Who keeps feeding the pigfish truffle worms?! {Mate}! Was it you?!"
+},
+{
+"n": 129,
+"group": "Bosses",
+"tag": "BOSS_MoonLordCore",
+"text": "This is fine. This is so fine. {Mate}, if I don't make it, tell my implant I said goodbye."
+},
+{
+"n": 130,
+"group": "Bosses",
+"tag": "BOSS_HallowBoss",
+"text": "The Empress is so pretty. Is it okay to think she's pretty while she's killing me? I think it's okay."
+},
+{
+"n": 131,
+"group": "Bosses",
+"tag": "BOSS_QueenSlimeBoss",
+"text": "She has a crown and a gem and she's made of jelly. Honestly? Goals."
+},
+{
+"n": 132,
+"group": "Bosses",
+"tag": "VICTORY",
+"text": "We did it! I died four times but we did it!"
+},
+{
+"n": 133,
+"group": "Bosses",
+"tag": "VICTORY",
+"text": "Great work, everybody! Especially the mages! You got so close to the boss that time!"
+},
+{
+"n": 134,
+"group": "Bosses",
+"tag": "VICTORY",
+"text": "Was anyone else's minion in the way the whole time, or just mine? I'm a ranger. I don't have a minion. That's my point."
+},
+{
+"n": 135,
+"group": "Events",
+"tag": "EVENT_GOBLINS",
+"text": "Goblins! With bombs! In my house! Again!"
+},
+{
+"n": 136,
+"group": "Events",
+"tag": "EVENT_GOBLINS",
+"text": "Those goblins are invading for free. We get paid for this. Who's really winning here?"
+},
+{
+"n": 137,
+"group": "Events",
+"tag": "EVENT_PIRATES",
+"text": "Pirates! {Mate}, hide your coins! Hide MY coins! Hide everybody's coins!"
+},
+{
+"n": 138,
+"group": "Events",
+"tag": "EVENT_PIRATES",
+"text": "I've always wanted a parrot. I'm going to ask nicely. If that doesn't work, I'm going to ask with a shotgun."
+},
+{
+"n": 139,
+"group": "Events",
+"tag": "EVENT_FROST",
+"text": "Christmas is cancelled. A tree just shot me."
+},
+{
+"n": 140,
+"group": "Events",
+"tag": "EVENT_FROST",
+"text": "Santa is a tank now. I don't want to talk about it."
+},
+{
+"n": 141,
+"group": "Events",
+"tag": "EVENT_PUMPKIN",
+"text": "Is this what fall is like where you're from, {Player}? It's a lot of fall."
+},
+{
+"n": 142,
+"group": "Events",
+"tag": "EVENT_MARTIANS",
+"text": "Little green men in saucers! Don't get abducted, {Mate}! We just got your armor fitted!"
+},
+{
+"n": 143,
+"group": "Events",
+"tag": "EVENT_MARTIANS",
+"text": "The aliens have drones too! Do you think their drones and Biscuit would be friends?"
+},
+{
+"n": 144,
+"group": "Events",
+"tag": "EVENT_OLDONES",
+"text": "The Tavernkeep said this was a 'fun little event.' The Tavernkeep lied."
+},
+{
+"n": 145,
+"group": "Events",
+"tag": "BLOOD_MOON",
+"text": "Blood Moon. Everyone lock your doors. Not the zombies. You can't lock zombies. The doors."
+},
+{
+"n": 146,
+"group": "Events",
+"tag": "BLOOD_MOON",
+"text": "The Drowned One loves a Blood Moon. Says it's 'cozy.' I don't think the Drowned One should pick our nights out."
+},
+{
+"n": 147,
+"group": "Town and money",
+"tag": "",
+"text": "The Stylist offered me a new haircut. I said no. My helmet doesn't care what my hair looks like. My helmet loves me as I am."
+},
+{
+"n": 148,
+"group": "Town and money",
+"tag": "",
+"text": "The Dye Trader keeps calling my armor 'brave.' I don't think it's a compliment."
+},
+{
+"n": 149,
+"group": "Town and money",
+"tag": "",
+"text": "The Zoologist says I'm 'mostly human.' I said thanks. I'm still thinking about the 'mostly.'"
+},
+{
+"n": 150,
+"group": "Town and money",
+"tag": "",
+"text": "The Party Girl keeps throwing parties and never invites the army. We are very fun. We have guns."
+},
+{
+"n": 151,
+"group": "Town and money",
+"tag": "",
+"text": "The Witch Doctor told me my aura is 'complicated.' My aura has died thirty times. Of course it's complicated."
+},
+{
+"n": 152,
+"group": "Town and money",
+"tag": "",
+"text": "The Steampunker said she could make me a jetpack. I said I wanted one. She said 'no.' Why tell me, then?"
+},
+{
+"n": 153,
+"group": "Town and money",
+"tag": "",
+"text": "The Cyborg says he used to be just like us. Then he got upgraded. I'm not jealous. I'm a little jealous."
+},
+{
+"n": 154,
+"group": "Town and money",
+"tag": "[goblin]",
+"text": "The Goblin Tinkerer charged me forty gold to make my sword 'Legendary.' I watched him. He just hit it with a hammer."
+},
+{
+"n": 155,
+"group": "Town and money",
+"tag": "PAYDAY",
+"text": "Payday! I'm buying the Merchant's whole stock of torches! I don't need them! I just want to feel rich!"
+},
+{
+"n": 156,
+"group": "Town and money",
+"tag": "PAYDAY",
+"text": "Got my wages! {Mate}, I'm buying lunch! Well, I'm buying a bowl of soup. We're splitting it."
+},
+{
+"n": 157,
+"group": "Town and money",
+"tag": "UNPAID",
+"text": "No coins today. My implant says I'm 'still a valued member of the team.' I'd like the coins, implant."
+},
+{
+"n": 158,
+"group": "Town and money",
+"tag": "UNPAID",
+"text": "If we don't get paid soon, I'm going to say something very mean to the Merchant. He has nothing to do with it. He's just closest."
+},
+{
+"n": 159,
+"group": "Town and money",
+"tag": "",
+"text": "The Tax Collector taxed my respawn. I didn't know you could tax a respawn. I don't think you can. He did it anyway."
+},
+{
+"n": 160,
+"group": "Town and money",
+"tag": "",
+"text": "Pylons are great. You step on one and you're somewhere else. Like the contract, but with a choice."
+},
+{
+"n": 161,
+"group": "Items and stuff",
+"tag": "",
+"text": "{Mate} threw their sword into the Shimmer and it came back as a different sword. They said 'that's fine.' It is not fine. That was a family sword."
+},
+{
+"n": 162,
+"group": "Items and stuff",
+"tag": "[melee]",
+"text": "Someone told me the Zenith is the best sword ever made. I'd never be good enough for the Zenith. I'd let it down."
+},
+{
+"n": 163,
+"group": "Items and stuff",
+"tag": "[ranger]",
+"text": "The Megashark is a normal gun for normal people. I have a Megashark. I am a normal person."
+},
+{
+"n": 164,
+"group": "Items and stuff",
+"tag": "[mage]",
+"text": "I got the Last Prism! It makes rainbows! I'm going to make so many rainbows! At the boss! Probably at the boss!"
+},
+{
+"n": 165,
+"group": "Items and stuff",
+"tag": "[non-mage]",
+"text": "Our mage just got a Last Prism. I'm so proud. Everyone stand behind the mage. No, BEHIND."
+},
+{
+"n": 166,
+"group": "Items and stuff",
+"tag": "",
+"text": "The armory gave me a Copper Shortsword. I think it's a message. I don't know what the message is."
+},
+{
+"n": 167,
+"group": "Items and stuff",
+"tag": "",
+"text": "Somebody keeps putting Wooden Arrows in the armory. They're not funny, {Mate}. They're not funny."
+},
+{
+"n": 168,
+"group": "Items and stuff",
+"tag": "",
+"text": "I found a Life Crystal today! The commander took it. I'm sure the commander needed it more. The commander has so much life already."
+},
+{
+"n": 169,
+"group": "Items and stuff",
+"tag": "",
+"text": "Heart lanterns are the best invention ever. You stand near one and you just feel better. That's it. That's the whole lantern."
+},
+{
+"n": 170,
+"group": "Items and stuff",
+"tag": "",
+"text": "Somebody put out the campfire again. Who puts out a campfire?! That's our healing!"
+},
+{
+"n": 171,
+"group": "Summoners, more",
+"tag": "[summoner]",
+"text": "I let my Raven Staff choose my targets now. It has better taste than me."
+},
+{
+"n": 172,
+"group": "Summoners, more",
+"tag": "[summoner]",
+"text": "Summoning isn't cheating. It's delegating. Very different. Ask any manager."
+},
+{
+"n": 173,
+"group": "Summoners, more",
+"tag": "[summoner]",
+"text": "{Mate} called my minion 'a spirit.' It's not a spirit, it's a team member. It has a name. I don't know the name. But it has one."
+},
+{
+"n": 174,
+"group": "Summoners, more",
+"tag": "[summoner]",
+"text": "When the Stardust Dragon gets long enough, it'll fight the boss and file my reports. That's the dream, {Mate}."
+},
+{
+"n": 175,
+"group": "Summoners, more",
+"tag": "[summoner]",
+"text": "I'm self-taught. Well, the staff taught me. Well, the staff does it. But I hold it very well."
+},
+{
+"n": 176,
+"group": "Summoners, more",
+"tag": "[non-summoner]",
+"text": "{Mate} summoned a minion, and the minion summoned a sentry. Where does it end? Where does it END?"
+},
+{
+"n": 177,
+"group": "Summoners, more",
+"tag": "[non-summoner]",
+"text": "My grandpa fought the Eye of Cthulhu with a wooden sword. Uphill. In the rain. No minions."
+},
+{
+"n": 178,
+"group": "Summoners, more",
+"tag": "[non-summoner]",
+"text": "Summoners are going to take all our jobs, and then the drones are going to take all THEIR jobs, and honestly? Good."
+},
+{
+"n": 179,
+"group": "Drones as pets, more",
+"tag": "",
+"text": "Biscuit got his battery changed today. He was so brave. I held his little propeller the whole time."
+},
+{
+"n": 180,
+"group": "Drones as pets, more",
+"tag": "",
+"text": "{Mate} says Biscuit is 'a weapons platform.' Biscuit is a good boy who happens to have weapons."
+},
+{
+"n": 181,
+"group": "Drones as pets, more",
+"tag": "",
+"text": "The turret on the wall shot a bird. I'm going to pretend the turret didn't see it was a bird."
+},
+{
+"n": 182,
+"group": "Drones as pets, more",
+"tag": "[summoner]",
+"text": "The drones are fine. They're fine! They can't replace summoners. They don't even have a staff! Right? Right?!"
+},
+{
+"n": 183,
+"group": "Melee, more",
+"tag": "[melee]",
+"text": "{Mate} hugged me after the boss fight. They must have been confused. They must have thought I was someone else."
+},
+{
+"n": 184,
+"group": "Melee, more",
+"tag": "[melee]",
+"text": "I practice charging at the training dummy every night. The dummy is never scared. I'm a little scared."
+},
+{
+"n": 185,
+"group": "Melee, more",
+"tag": "[non-melee]",
+"text": "The melee troops always stand right where they're needed. I don't know how they know. It's like a gift."
+},
+{
+"n": 186,
+"group": "Rangers, more",
+"tag": "[ranger]",
+"text": "I don't have a favorite bullet. A normal person doesn't have a favorite bullet. It's Chlorophyte. It's not Chlorophyte."
+},
+{
+"n": 187,
+"group": "Rangers, more",
+"tag": "[ranger]",
+"text": "{Mate}, if anyone asks, I missed that shot and then it turned around on its own. Which is normal. Bullets do that."
+},
+{
+"n": 188,
+"group": "Mages, more",
+"tag": "[mage]",
+"text": "I put a Mana Crystal under my pillow last night for good luck! Woke up with zero mana. I think I did it backwards."
+},
+{
+"n": 189,
+"group": "Mages, more",
+"tag": "[mage]",
+"text": "{Mate}! I healed you! Wait, no, that was a different spell. Are you on fire? You're on fire. Hold still!"
+},
+{
+"n": 190,
+"group": "Mages, more",
+"tag": "[non-mage]",
+"text": "Someone check if the mage drank water today. They forget. They're so focused on the fireballs."
+},
+{
+"n": 191,
+"group": "Implants, more",
+"tag": "",
+"text": "My implant reminded me to drink water. Then it reminded me to die for the commander. Good reminders, both of them."
+},
+{
+"n": 192,
+"group": "Implants, more",
+"tag": "",
+"text": "Sometimes when I close my eyes I see a little map with dots on it. One of the dots is me! Hi, me!"
+},
+{
+"n": 193,
+"group": "Implants, more",
+"tag": "",
+"text": "The implant tells me when it's night. I could look at the sky. But this way is faster."
+},
+{
+"n": 194,
+"group": "Death, more",
+"tag": "",
+"text": "I died so fast I didn't even finish my sentence. Anyway, as I was saying, the soup was cold."
+},
+{
+"n": 195,
+"group": "Death, more",
+"tag": "",
+"text": "{Mate} and I died at the same time and respawned at the same time. We're basically twins now."
+},
+{
+"n": 196,
+"group": "Countries, more",
+"tag": "BIOME_DUNGEON",
+"text": "Ahh. Smells like a Tuesday in Brazil."
+},
+{
+"n": 197,
+"group": "Countries, more",
+"tag": "BIOME_HALLOW",
+"text": "This is just like when I went to Canada. Exactly like Canada. It was very pink."
+},
+{
+"n": 198,
+"group": "Countries, more",
+"tag": "BIOME_CORRUPTION",
+"text": "Reminds me of my honeymoon in Peru! We had a lovely time!"
+},
+{
+"n": 199,
+"group": "Countries, more",
+"tag": "BIOME_CRIMSON",
+"text": "This is so much like Japan. Well, the part of Japan I saw. From the plane."
+},
+{
+"n": 200,
+"group": "Countries, more",
+"tag": "RAIN",
+"text": "Rain like this always makes me miss Egypt."
+},
+{
+"n": 201,
+"group": "Memes, more",
+"tag": "",
+"text": "{Mate} just walked into the room, turned around, and walked out. I think it's that thing people do. It's a whole thing."
+},
+{
+"n": 202,
+"group": "Memes, more",
+"tag": "",
+"text": "This is fine. This is so fine. Everything is on fire and I'm a dog drinking coffee."
+},
+{
+"n": 203,
+"group": "Memes, more",
+"tag": "",
+"text": "{Mate} said 'I'm built different' and then died to a slime. That's going in the group chat."
+}
+]

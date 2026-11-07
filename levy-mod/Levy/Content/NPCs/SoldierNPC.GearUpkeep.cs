@@ -292,6 +292,7 @@ namespace Levy.Content.NPCs
 				var reason = src != null ? PlayerDeathReason.ByNPC(src.whoAmI) : PlayerDeathReason.ByCustomReason(Terraria.Localization.NetworkText.FromLiteral(SoldierName));
 				var info = new Player.HurtInfo { DamageSource = reason, Damage = damage, HitDirection = src != null && src.Center.X > NPC.Center.X ? -1 : 1, CooldownCounter = -1, Dodgeable = false, Knockback = 0f, PvP = false, SoundDisabled = true, DustDisabled = true };
 				d.Hurt(info, true);
+				if (LevyConstants.PlayerParityIFrames && d.immuneTime > ImmuneTime) ImmuneTime = d.immuneTime; // the real Player.Hurt window, mod additions included (never shorter than HitImmuneTicks)
 				int heal = d.statLife - (room - damage);
 				if (heal > 0 && NPC.life > 0) { NPC.life = Math.Min(NPC.lifeMax, NPC.life + heal); NPC.netUpdate = true; if (Record != null) Record.CurrentHp = NPC.life; GearUpkeep.LifeWriteBacks++; }
 				GearUpkeep.HurtCalls++;

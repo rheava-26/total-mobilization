@@ -103,11 +103,33 @@ namespace Levy.Content.NPCs
 		/// <summary>Harness telemetry (null = off): damage a levy took by source, "contact:Queen Bee" or "proj:Stinger&lt;-Queen Bee" mapped to (damage, hits).</summary>
 		internal static System.Collections.Generic.Dictionary<string, (long dmg, int n)> HitDbg;
 		internal static void HitDbgAdd(string k, int d) { if (HitDbg == null) return; HitDbg.TryGetValue(k, out var v); HitDbg[k] = (v.dmg + d, v.n + 1); }
+		/// <summary>
+		/// Post-hit immunity window, player parity: Player.Hurt (case cooldownCounter -1) gives 40 ticks, 20 when the hit did exactly 1 damage, and
+		/// Cross Necklace / Star Veil (longInvince) double it. The dummy's longInvince is current after RefreshStats. A soldier whose gear frame runs
+		/// also takes the dummy's real Player.Hurt result in <see cref="GearOnHurt"/> (mod additions such as Calamity's Deific Amulet frames).
+		/// </summary>
+		internal int HitImmuneTicks(int damageDone)
+		{
+			if (!LevyConstants.PlayerParityIFrames) return LevyConstants.ImmuneTicksOnHit;
+			bool longI = Dummy != null && Dummy.longInvince;
+			return damageDone <= 1 ? (longI ? 40 : 20) : (longI ? 80 : 40);
+		}
+
+		/// <summary>Harness telemetry (null = off): per levy, the game tick of the previous body hit; gaps between consecutive hits go into <see cref="HitGapDbg"/> (gap in ticks to count).</summary>
+		internal static System.Collections.Generic.Dictionary<int, int> HitGapDbg;
+		private uint _lastHitTick;
+		private void HitGapAdd(int dmg)
+		{
+			if (_lastHitTick != 0 && dmg > 0) { int g = (int)Math.Min(Main.GameUpdateCount - _lastHitTick, 300u); HitGapDbg.TryGetValue(g, out int c); HitGapDbg[g] = c + 1; }
+			_lastHitTick = Main.GameUpdateCount;
+		}
+
 		private void AfterHit(int damageDone, int attackerIndex)
 		{
 			HitsTaken++;
 			if (DodgeDebug) Levy.Instance?.Logger.Info($"DODGEDBG-HIT t={Main.GameUpdateCount} {SoldierName} dmg={damageDone} vy={NPC.velocity.Y:0.0} yAboveFloorPx={(int)(NPC.Bottom.Y)} pend={_dodgePend}");
-			ImmuneTime = LevyConstants.ImmuneTicksOnHit;
+			ImmuneTime = HitImmuneTicks(damageDone);
+			if (HitGapDbg != null) HitGapAdd(damageDone);
 			TicksSinceDamaged = 0;
 			_regenCounter = 0;
 			if (attackerIndex >= 0 && attackerIndex < Main.maxNPCs && Main.npc[attackerIndex].active) SoldierTargeting.NoteAttacker(attackerIndex);

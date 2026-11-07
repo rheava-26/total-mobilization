@@ -58,6 +58,8 @@ namespace Levy.Common.Progression
 		[Header("ArmyLoot")]
 		[Range(0f, 10f)] [Increment(0.25f)] [DefaultValue(0f)] public float ArmyLootPercentPerCp;
 		[DefaultValue(false)] public bool ArmyLootRareChance;
+		[DefaultValue(false)] public bool OrbLootScaling;
+		[Range(1, 100)] [DefaultValue(5)] public int LeviesPerExtraOrbRoll;
 
 		// ---- Dungeon Spirits -----------------------------------------------------------------------------------
 		[Header("DungeonSpirits")]

@@ -135,6 +135,16 @@ LevyProgressionConfig: {
 		Tooltip: The same percent raises the chance of rare boss drops.
 	}
 
+	OrbLootScaling: {
+		Label: Extra orb and heart loot
+		Tooltip: Smashing a Shadow Orb or Crimson Heart rolls extra drops from that orb's own loot, ammo included. Meteors, boss summons and the goblin army still count once per smash.
+	}
+
+	LeviesPerExtraOrbRoll: {
+		Label: Levies per extra orb roll
+		Tooltip: Every this many levies on duty add one more roll to each orb or heart smash. 5 gives 4 extra rolls at 20 levies.
+	}
+
 	DungeonSpiritMultiplier: {
 		Label: Dungeon Spirit spawn rate
 		Tooltip: Multiplies how often a dying dungeon monster summons a Dungeon Spirit after Plantera. Kills by levies count.

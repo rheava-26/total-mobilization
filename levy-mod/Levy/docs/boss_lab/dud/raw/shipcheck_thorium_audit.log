@@ -1,0 +1,346 @@
+[09:35:20.511] [Main Thread/INFO] [tML]: Starting tModLoader server 1.4.4.9+2026.08.3.0|2026.08|stable|Stable|c9545cf27d56c456321e1896274c02adf67d0140|5250950117352386884 built 10/01/2026 00:04
+[09:35:20.517] [Main Thread/INFO] [tML]: Log date: 11/07/2026
+[09:35:20.518] [Main Thread/INFO] [tML]: Running on Linux (v6.18.44.310) X64 NetCore 8.0.22
+[09:35:20.521] [Main Thread/INFO] [tML]: CPU: 4 processors. RAM: 10.0 GB
+[09:35:20.521] [Main Thread/INFO] [tML]: FrameworkDescription: .NET 8.0.22
+[09:35:20.521] [Main Thread/INFO] [tML]: Executable: /home/user/tml-bin/tml/tModLoader.dll
+[09:35:20.521] [Main Thread/INFO] [tML]: Working Directory: /home/user/tml-bin/tml
+[09:35:20.522] [Main Thread/INFO] [tML]: Launch Parameters: -server -nosteam -tmlsavedirectory /home/user/lab/savehf
+[09:35:20.524] [Main Thread/INFO] [tML]: Parsed Launch Parameters: -server -nosteam -tmlsavedirectory /home/user/lab/savehf
+[09:35:20.848] [Main Thread/INFO] [tML]: Saves Are Located At: /home/user/lab/savehf
+[09:35:21.340] [Main Thread/INFO] [tML]: Distribution Platform: Steam. Detection method: Terraria.exe or Terraria_v1.4.5.8.exe not found nearby
+[09:35:21.358] [Main Thread/DEBUG] [tML]: Native Resolve: FNA, Version=23.10.0.0, Culture=neutral, PublicKeyToken=null -> SDL2
+[09:35:21.358] [Main Thread/DEBUG] [tML]: 	attempting load /home/user/tml-bin/tml/Libraries/Native/Linux/libSDL2-2.0.so.0
+[09:35:21.358] [Main Thread/DEBUG] [tML]: 	success
+[09:35:21.421] [Main Thread/INFO] [tML]: Current 1281930 Workshop Folder Directory: steamapps/workshop
+[09:35:23.056] [Main Thread/DEBUG] [tML]: Network compatibility version is 2026.8.3
+[09:35:24.628] [Main Thread/INFO] [tML]: Finding Mods...
+[09:35:24.656] [Main Thread/DEBUG] [tML]: Selected Levy 2.0.15 for tML 2026.8.3.0 from Local.
+[09:35:24.656] [Main Thread/DEBUG] [tML]: Selected MagicStorage 0.7.0.11 for tML 2026.8.3.0 from Local.
+[09:35:24.656] [Main Thread/DEBUG] [tML]: Selected Mechanization 0.9.1 for tML 2026.8.3.0 from Local.
+[09:35:24.656] [Main Thread/DEBUG] [tML]: Selected SerousCommonLib 1.0.7 for tML 2026.8.3.0 from Local.
+[09:35:24.656] [Main Thread/DEBUG] [tML]: Selected ThoriumMod 1.7.2.8 for tML 2026.6.3.3 from Local.
+[09:35:24.663] [Main Thread/INFO] [tML]: Finding Mods...
+[09:35:24.718] [Main Thread/INFO] [tML]: Sandboxing: ThoriumMod (Thorium Mod) v1.7.2.8
+[09:35:24.843] [Main Thread/DEBUG] [tML]: Hook System.Runtime.Loader.AssemblyLoadContext::ValidateAssemblyNameWithSimpleName(Assembly, string) added by tModLoader
+[09:35:25.370] [Main Thread/INFO] [tML]: Sandboxing: SerousCommonLib (absoluteAquarian Utilities (SerousCommonLib)) v1.0.7
+[09:35:25.390] [Main Thread/INFO] [tML]: Sandboxing: MagicStorage (Magic Storage) v0.7.0.11
+[09:35:25.484] [Main Thread/INFO] [tML]: Sandboxing: Levy (Levy) v2.0.15
+[09:35:25.654] [Main Thread/INFO] [tML]: Sandboxing: Mechanization (Mechanization) v0.9.1
+[09:35:25.664] [Main Thread/INFO] [tML]: Constructing Mods...
+[09:35:26.542] [Main Thread/INFO] [tML]: Adding Content: ModLoader (tModLoader) v2026.8.3.0
+[09:35:26.662] [Main Thread/INFO] [tML]: Adding Content: ThoriumMod (Thorium Mod) v1.7.2.8
+[09:35:27.202] [Main Thread/DEBUG] [tML]: Hook Terraria.ID.ContentSamples+BestiaryHelper::GetSortedBestiaryEntriesList(BestiaryDatabase) added by ThoriumMod
+[09:35:27.280] [Main Thread/DEBUG] [tML]: Hook Terraria.GameInput.TriggersSet::CopyInto(Player) added by ThoriumMod
+[09:35:27.501] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::IsAmmoFreeThisShot(Item, Item, int) added by ThoriumMod
+[09:35:27.587] [Main Thread/DEBUG] [tML]: Hook Terraria.Main::TryRemovingBuff(int, int) added by ThoriumMod
+[09:35:28.106] [Main Thread/DEBUG] [tML]: Hook Terraria.DataStructures.PlayerDrawSet::BoringSetup_2(Player, List`1, List`1, List`1, Vector2, float, float, Vector2) added by ThoriumMod
+[09:35:28.155] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::GetItem_FillEmptyInventorySlot(int, Item, GetItemSettings, Item, int) added by ThoriumMod
+[09:35:28.174] [Main Thread/DEBUG] [tML]: Hook Terraria.Item::NewItem_Inner(IEntitySource, int, int, int, int, Item, int, int, bool, int, bool, bool) added by ThoriumMod
+[09:35:28.219] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::Spawn(PlayerSpawnContext) added by ThoriumMod
+[09:35:28.285] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::PickTile(int, int, int) added by ThoriumMod
+[09:35:28.290] [Main Thread/DEBUG] [tML]: Hook Terraria.HitTile::AddDamage(int, int, bool) added by ThoriumMod
+[09:35:28.331] [Main Thread/WARN] [tML]: ThoriumMod.Items.HealerItems.ForgottenCrossNecklace has reference fields (<FluffTooltipText>k__BackingField) that may not be safe to share between clones.
+For deep-cloning, add a custom Clone override and make proper copies of these fields. If shallow (memberwise) cloning is acceptable, mark the fields with [CloneByReference] or properties with [field: CloneByReference]
+[09:35:28.775] [Main Thread/DEBUG] [tML]: Hook Terraria.Item::CanFillEmptyAmmoSlot() added by ThoriumMod
+[09:35:28.783] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::QuickMana() added by ThoriumMod
+[09:35:29.138] [Main Thread/DEBUG] [tML]: Hook Terraria.NPC::DoDeathEvents(Player) added by ThoriumMod
+[09:35:29.171] [Main Thread/DEBUG] [tML]: Hook Terraria.NPC::DespawnEncouragement_AIStyle3_Fighters_NotDiscouraged(int, Vector2, NPC) added by ThoriumMod
+[09:35:29.195] [Main Thread/DEBUG] [tML]: Hook Terraria.Graphics.Renderers.LegacyPlayerRenderer::DrawPlayerInternal(Camera, Player, Vector2, float, Vector2, float, float, float, bool) added by ThoriumMod
+[09:35:29.220] [Main Thread/DEBUG] [tML]: Hook Terraria.Projectile::Shimmer() added by ThoriumMod
+[09:35:29.259] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::ItemCheck_MeleeHitNPCs(Item, Rectangle, int, float) added by ThoriumMod
+[09:35:29.530] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::UpdateItemDye(bool, bool, Item, Item) added by ThoriumMod
+[09:35:29.538] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::UpdatePortableStoolUsage() added by ThoriumMod
+[09:35:29.563] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::GrappleMovement() added by ThoriumMod
+[09:35:29.577] [Main Thread/DEBUG] [tML]: Hook Terraria.ModLoader.ExtraJumpLoader::RefreshJumps(Player) added by ThoriumMod
+[09:35:29.583] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::UpdateControlHolds() added by ThoriumMod
+[09:35:29.637] [Main Thread/DEBUG] [tML]: Hook Terraria.Main::shine(Color, int) added by ThoriumMod
+[09:35:29.646] [Main Thread/DEBUG] [tML]: Hook Terraria.Main::shine(ref Vector3, int) added by ThoriumMod
+[09:35:29.660] [Main Thread/DEBUG] [tML]: Hook Terraria.WorldGen::KillTile_ShouldDropSeeds(int, int) added by ThoriumMod
+[09:35:29.796] [Main Thread/DEBUG] [tML]: Hook Terraria.WorldGen::SetupStatueList() added by ThoriumMod
+[09:35:29.821] [Main Thread/DEBUG] [tML]: Hook Terraria.GameContent.ItemDropRules.ItemDropResolver::TryDropping(DropAttemptInfo) added by ThoriumMod
+[09:35:29.828] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::RollLuck(int) added by ThoriumMod
+[09:35:29.838] [Main Thread/DEBUG] [tML]: Hook Terraria.GameContent.UI.Elements.UICharacter::PreparePetProjectiles() added by ThoriumMod
+[09:35:29.855] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::FreeUpPetsAndMinions(Item) added by ThoriumMod
+[09:35:29.867] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::ItemCheck_StartActualUse(Item) added by ThoriumMod
+[09:35:29.882] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::ApplyDamageToNPC(NPC, int, float, int, bool, DamageClass, bool) added by ThoriumMod
+[09:35:29.890] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::TeleportationPotion() added by ThoriumMod
+[09:35:29.912] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::CheckForGoodTeleportationSpot(ref bool, int, int, int, int, RandomTeleportationAttemptSettings) added by ThoriumMod
+[09:35:29.915] [Main Thread/DEBUG] [tML]: Hook Terraria.Mount::DoesHoverIgnoresFatigue() added by ThoriumMod
+[09:35:29.925] [Main Thread/INFO] [tML]: Adding Content: SerousCommonLib (absoluteAquarian Utilities (SerousCommonLib)) v1.0.7
+[09:35:29.966] [Main Thread/DEBUG] [tML]: ILHook Terraria.UI.UIElement::Recalculate() added by SerousCommonLib
+[09:35:29.971] [Main Thread/DEBUG] [tML]: Hook Terraria.ModLoader.TileLoader::NearbyEffects(int, int, int, bool) added by SerousCommonLib
+[09:35:29.974] [Main Thread/INFO] [tML]: Adding Content: MagicStorage (Magic Storage) v0.7.0.11
+[09:35:30.067] [Main Thread/DEBUG] [tML]: Hook Terraria.Recipe::FindRecipes(bool) added by MagicStorage
+[09:35:30.078] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::QuickSpawnItem(IEntitySource, int, int) added by MagicStorage
+[09:35:30.091] [Main Thread/DEBUG] [tML]: Hook Terraria.Main::DrawInterface_36_Cursor() added by MagicStorage
+[09:35:30.106] [Main Thread/DEBUG] [tML]: ILHook Terraria.GameContent.Achievements.AchievementsHelper::NotifyItemCraft(Recipe) added by MagicStorage
+[09:35:30.119] [Main Thread/DEBUG] [tML]: Hook Terraria.UI.ItemSlot::MouseHover(Item[], int, int) added by MagicStorage
+[09:35:30.157] [Main Thread/DEBUG] [tML]: Hook Terraria.UI.ItemSlot::LeftClick(Item[], int, int) added by MagicStorage
+[09:35:30.180] [Main Thread/DEBUG] [tML]: Hook Terraria.UI.ItemSlot::RightClick(Item[], int, int) added by MagicStorage
+[09:35:30.198] [Main Thread/DEBUG] [tML]: Hook Terraria.UI.ItemSlot::OverrideHover(Item[], int, int) added by MagicStorage
+[09:35:30.209] [Main Thread/DEBUG] [tML]: Hook Terraria.UI.ItemSlot::OverrideLeftClick(Item[], int, int) added by MagicStorage
+[09:35:30.260] [Main Thread/DEBUG] [tML]: ILHook Terraria.UI.ItemSlot::OverrideHover(Item[], int, int) added by MagicStorage
+[09:35:30.281] [Main Thread/DEBUG] [tML]: ILHook Terraria.GameContent.Drawing.ParticleOrchestrator::Spawn_ItemTransfer(ParticleOrchestraSettings) added by MagicStorage
+[09:35:30.332] [Main Thread/DEBUG] [tML]: ILHook Terraria.Player::ItemCheck_ApplyHoldStyle_Inner(float, Item, Rectangle) added by MagicStorage
+[09:35:30.335] [Main Thread/DEBUG] [tML]: Hook Terraria.ModLoader.TileLoader::NearbyEffects(int, int, int, bool) added by MagicStorage
+[09:35:30.364] [Main Thread/DEBUG] [tML]: ILHook Terraria.Main::DoUpdate_HandleChat() added by MagicStorage
+[09:35:30.396] [Main Thread/DEBUG] [tML]: ILHook Terraria.GameContent.Bestiary.BestiaryDatabase::ExtractDropsForNPC(ItemDropDatabase, int) added by MagicStorage
+[09:35:30.405] [Main Thread/DEBUG] [tML]: ILHook Terraria.GameContent.Bestiary.ItemDropBestiaryInfoElement::ProvideUIElement(BestiaryUICollectionInfo) added by MagicStorage
+[09:35:30.430] [Main Thread/DEBUG] [tML]: ILHook Terraria.Player::QuickStackAllChests() added by MagicStorage
+[09:35:30.440] [Main Thread/DEBUG] [tML]: ILHook Terraria.Chest::ServerPlaceItem(int, int) added by MagicStorage
+[09:35:30.455] [Main Thread/DEBUG] [tML]: ILHook Terraria.ModLoader.RecipeLoader::AddRecipes() added by MagicStorage
+[09:35:30.457] [Main Thread/DEBUG] [tML]: ILHook Terraria.ModLoader.RecipeLoader::PostAddRecipes() added by MagicStorage
+[09:35:30.461] [Main Thread/DEBUG] [tML]: ILHook Terraria.ModLoader.RecipeLoader::PostSetupRecipes() added by MagicStorage
+[09:35:30.467] [Main Thread/DEBUG] [tML]: ILHook Terraria.Item::FindDecraftAmount() added by MagicStorage
+[09:35:30.481] [Main Thread/DEBUG] [tML]: ILHook Terraria.Collision::SolidCollision(Vector2, int, int, bool) added by MagicStorage
+[09:35:30.489] [Main Thread/DEBUG] [tML]: ILHook Terraria.Collision::HitTiles(Vector2, Vector2, int, int) added by MagicStorage
+[09:35:30.493] [Main Thread/DEBUG] [tML]: ILHook Terraria.Collision::SolidTiles(int, int, int, int, bool) added by MagicStorage
+[09:35:30.513] [Main Thread/DEBUG] [tML]: ILHook Terraria.Collision::StepUp(ref Vector2, ref Vector2, int, int, ref float, ref float, int, bool, int) added by MagicStorage
+[09:35:30.520] [Main Thread/DEBUG] [tML]: ILHook Terraria.Collision::GetTileRotation(Vector2) added by MagicStorage
+[09:35:30.534] [Main Thread/DEBUG] [tML]: ILHook Terraria.Collision::TileCollision(Vector2, Vector2, int, int, bool, bool, int) added by MagicStorage
+[09:35:30.554] [Main Thread/DEBUG] [tML]: ILHook Terraria.Collision::AdvancedTileCollision(Boolean[], Vector2, Vector2, int, int, bool, bool, int) added by MagicStorage
+[09:35:30.568] [Main Thread/DEBUG] [tML]: ILHook Terraria.Collision::SlopeCollision(Vector2, Vector2, int, int, float, bool) added by MagicStorage
+[09:35:30.576] [Main Thread/DEBUG] [tML]: ILHook Terraria.Collision::noSlopeCollision(Vector2, Vector2, int, int, bool, bool) added by MagicStorage
+[09:35:30.603] [Main Thread/DEBUG] [MagicStorage]: EnvironmentModule "MagicStorage/JourneyInfiniteItems" added by mod "MagicStorage"
+[09:35:30.604] [Main Thread/DEBUG] [MagicStorage]: EnvironmentModule "MagicStorage/UseInventoryModule" added by mod "MagicStorage"
+[09:35:30.604] [Main Thread/DEBUG] [MagicStorage]: EnvironmentModule "MagicStorage/UseInventoryNoFavoritesModule" added by mod "MagicStorage"
+[09:35:30.632] [Main Thread/INFO] [tML]: Adding Content: Levy (Levy) v2.0.15
+[09:35:30.723] [Main Thread/DEBUG] [tML]: Hook Terraria.NPC::TargetClosest(bool) added by Levy
+[09:35:30.732] [Main Thread/DEBUG] [tML]: Hook Terraria.NPC::TargetClosestUpgraded(bool, Nullable`1) added by Levy
+[09:35:30.758] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::Teleport(Vector2, int, int) added by Levy
+[09:35:30.760] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::Spawn(PlayerSpawnContext) added by Levy
+[09:35:30.769] [Main Thread/DEBUG] [tML]: Hook Terraria.Collision::SwitchTiles(Entity, Vector2, int, int, Vector2, int) added by Levy
+[09:35:30.820] [Main Thread/DEBUG] [tML]: Hook Terraria.Projectile::Update(int) added by Levy
+[09:35:30.975] [Main Thread/DEBUG] [tML]: Hook Terraria.NetMessage::SendData(int, int, int, NetworkText, int, float, float, float, int, int, int) added by Levy
+[09:35:30.996] [Main Thread/DEBUG] [tML]: Hook Terraria.Dust::NewDust(Vector2, int, int, int, float, float, int, Color, float) added by Levy
+[09:35:31.015] [Main Thread/DEBUG] [tML]: Hook Terraria.Gore::NewGore(IEntitySource, Vector2, Vector2, int, float) added by Levy
+[09:35:31.052] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::KillMe(PlayerDeathReason, double, int, bool) added by Levy
+[09:35:31.058] [Main Thread/DEBUG] [tML]: Hook Terraria.Netplay::UpdateConnectedClients() added by Levy
+[09:35:31.075] [Main Thread/DEBUG] [tML]: Hook Terraria.WorldGen::Chlorophyte(int, int) added by Levy
+[09:35:31.104] [Main Thread/DEBUG] [tML]: Hook Terraria.NPC::TargetClosest(bool) added by Levy
+[09:35:31.105] [Main Thread/DEBUG] [tML]: Hook Terraria.NPC::TargetClosestUpgraded(bool, Nullable`1) added by Levy
+[09:35:31.113] [Main Thread/DEBUG] [tML]: Hook Terraria.Utilities.NPCUtils::TargetClosestOldOnesInvasion(NPC, bool, Nullable`1) added by Levy
+[09:35:31.118] [Main Thread/DEBUG] [tML]: Hook Terraria.Utilities.NPCUtils::TargetClosestNonBees(NPC, bool, Nullable`1) added by Levy
+[09:35:31.222] [Main Thread/DEBUG] [tML]: Hook Terraria.Projectile::AI() added by Levy
+[09:35:31.228] [Main Thread/DEBUG] [tML]: Hook Terraria.ModLoader.ProjectileLoader::ProjectileAI(Projectile) added by Levy
+[09:35:31.375] [Main Thread/DEBUG] [tML]: Hook Terraria.Projectile::Damage() added by Levy
+[09:35:31.378] [Main Thread/DEBUG] [tML]: Hook Terraria.Projectile::AI() added by Levy
+[09:35:31.384] [Main Thread/DEBUG] [tML]: Hook Terraria.Projectile::Damage() added by Levy
+[09:35:32.042] [Main Thread/DEBUG] [tML]: Hook Terraria.Projectile::Kill() added by Levy
+[09:35:32.044] [Main Thread/DEBUG] [tML]: Hook Terraria.Projectile::Update(int) added by Levy
+[09:35:32.047] [Main Thread/DEBUG] [tML]: Hook Terraria.NetMessage::SendData(int, int, int, NetworkText, int, float, float, float, int, int, int) added by Levy
+[09:35:32.054] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::HealEffect(int, bool) added by Levy
+[09:35:32.054] [Main Thread/INFO] [Levy]: OWNERPUPPET: enabled mask=63 (config)
+[09:35:32.061] [Main Thread/DEBUG] [tML]: Hook Terraria.Projectile::Update(int) added by Levy
+[09:35:32.081] [Main Thread/DEBUG] [tML]: Hook Terraria.NPC::StrikeNPC(HitInfo, bool, bool) added by Levy
+[09:35:32.126] [Main Thread/INFO] [Levy]: Levy/MagicStorage compat: Magic Storage detected - the Armory Heart joins armories to its networks.
+[09:35:32.144] [Main Thread/DEBUG] [tML]: Hook ThoriumMod.Items.BardItem::ApplyEmpowerments(Player, Player) added by Levy
+[09:35:32.169] [Main Thread/DEBUG] [tML]: ILHook ThoriumMod.Utilities.ProjectileHelper::ThoriumHeal(Projectile, int, float, bool, bool, CustomHealing, Func`2, int, bool, bool, bool) added by Levy
+[09:35:32.183] [Main Thread/DEBUG] [tML]: ILHook ThoriumMod.Utilities.ProjectileHelper::CanBeHealed(Projectile, Player, Player, float, Func`2, int, bool) added by Levy
+[09:35:32.183] [Main Thread/INFO] [Levy]: Levy/Thorium compat: ally-heal hooks installed (ThoriumHeal, CanBeHealed) - Thorium heals now reach the player's soldiers.
+[09:35:32.198] [Main Thread/DEBUG] [tML]: ILHook ThoriumMod.ThoriumPlayer::HandleLowestLifeAlly() added by Levy
+[09:35:32.544] [Main Thread/DEBUG] [tML]: Hook ThoriumMod.ThoriumPlayer::PostUpdateEquips() added by Levy
+[09:35:32.552] [Main Thread/DEBUG] [tML]: ILHook ThoriumMod.Projectiles.Healer.HealerSymbol::AI() added by Levy
+[09:35:32.552] [Main Thread/INFO] [Levy]: Levy/Thorium compat: most-wounded-ally hooks installed (HandleLowestLifeAlly, HealerSymbol, Medical Bag) - the Medical Bag points at the commander's wounded soldiers.
+[09:35:32.552] [Main Thread/INFO] [Levy]: Levy/Thorium compat: ThoriumMod detected - registered the Thorium Bard / Healer hooks with Levy.
+[09:35:32.597] [Main Thread/WARN] [Levy]: Levy: Dialogue/en-US.txt line 372: BOSS_SIGHTED is not a vanilla NPC internal name; it only fires for a boss that reports exactly this name.
+[09:35:32.601] [Main Thread/INFO] [Levy]: Levy: dialogue table Dialogue/en-US.txt: 830 lines in 197 pools.
+[09:35:32.606] [Main Thread/INFO] [tML]: Adding Content: Mechanization (Mechanization) v0.9.1
+[09:35:32.640] [Main Thread/INFO] [Mechanization]: Mechanization: cross-mod reference to Levy RESOLVED. Levy.Common.LevyConstants.TilePx=16, MaxSoldierHp=500; Levy.Common.Util.LevyUtil.IsServerOrSingle=True. Companion arm online.
+[09:35:38.870] [.NET TP Worker/INFO] [tML]: JITModsAsync completed in 13198ms
+[09:35:38.871] [Main Thread/INFO] [tML]: Resizing...
+[09:35:39.432] [Main Thread/INFO] [tML]: Configuring Content: ModLoader (tModLoader) v2026.8.3.0
+[09:35:39.443] [Main Thread/INFO] [tML]: Configuring Content: ThoriumMod (Thorium Mod) v1.7.2.8
+[09:35:39.561] [Main Thread/INFO] [tML]: Configuring Content: SerousCommonLib (absoluteAquarian Utilities (SerousCommonLib)) v1.0.7
+[09:35:39.561] [Main Thread/INFO] [tML]: Configuring Content: MagicStorage (Magic Storage) v0.7.0.11
+[09:35:39.569] [Main Thread/INFO] [tML]: Configuring Content: Levy (Levy) v2.0.15
+[09:35:39.574] [Main Thread/INFO] [tML]: Configuring Content: Mechanization (Mechanization) v0.9.1
+[09:35:39.791] [Main Thread/INFO] [tML]: Finalizing Content: ModLoader (tModLoader) v2026.8.3.0
+[09:35:39.792] [Main Thread/INFO] [tML]: Finalizing Content: ThoriumMod (Thorium Mod) v1.7.2.8
+[09:35:39.817] [Main Thread/INFO] [tML]: Finalizing Content: SerousCommonLib (absoluteAquarian Utilities (SerousCommonLib)) v1.0.7
+[09:35:39.817] [Main Thread/INFO] [tML]: Finalizing Content: MagicStorage (Magic Storage) v0.7.0.11
+[09:35:39.848] [Main Thread/INFO] [tML]: Finalizing Content: Levy (Levy) v2.0.15
+[09:35:39.851] [Main Thread/INFO] [Levy]: [MapPick] self-check ok
+[09:35:39.855] [Main Thread/INFO] [Levy]: Levy: officer 'Guide' wields Wooden Bow (shot 1, 9 base damage, every 30 ticks).
+[09:35:39.855] [Main Thread/INFO] [Levy]: Levy: officer 'Pirate' wields Flintlock Pistol (shot 14, 20 base damage, every 16 ticks).
+[09:35:39.855] [Main Thread/INFO] [Levy]: Levy: officer 'Princess' wields Wand of Sparking (shot 954, 14 base damage, every 26 ticks).
+[09:35:39.856] [Main Thread/INFO] [Levy]: Levy: officer 'Dryad' wields Blowpipe (shot 51, 13 base damage, every 25 ticks).
+[09:35:39.856] [Main Thread/INFO] [Levy]: Levy: officer 'ArmsDealer' wields Minishark (shot 14, 13 base damage, every 8 ticks).
+[09:35:39.856] [Main Thread/INFO] [Levy]: Levy: officer 'Painter' wields Paintball Gun (shot 587, 12 base damage, every 9 ticks).
+[09:35:39.856] [Main Thread/INFO] [Levy]: Levy: officer 'Wizard' wields Diamond Staff (shot 126, 23 base damage, every 26 ticks).
+[09:35:39.856] [Main Thread/INFO] [Levy]: Levy: officer 'WitchDoctor' wields Blowgun (shot 267, 37 base damage, every 35 ticks).
+[09:35:39.859] [Main Thread/INFO] [Levy]: [FightRec] self-check ok (frame, event and arena round-trip)
+[09:35:39.862] [Main Thread/INFO] [Levy]: Levy biome-mirror self-check: dummy reads the copied zones OK (ModBiome ThoriumMod/DepthsBiome)
+[09:35:39.868] [Main Thread/DEBUG] [tML]: Hook Terraria.Projectile::ghostHeal(int, Vector2, Entity) added by Levy
+[09:35:39.871] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::NebulaLevelup(int) added by Levy
+[09:35:39.883] [Main Thread/DEBUG] [tML]: Hook Terraria.Player::RefreshInfoAccsFromTeamPlayers() added by Levy
+[09:35:39.888] [Main Thread/DEBUG] [tML]: Hook ThoriumMod.ThoriumPlayer::HandleNearbyPlayers() added by Levy
+[09:35:39.888] [Main Thread/INFO] [Levy]: Levy team items: 1 worn-item auras, 10 projectile auras, 13 mod stat buffs (15 entries added, 9 not present in this load order)
+[09:35:39.892] [Main Thread/INFO] [Levy]: Levy alt-fire policies: 88 rows resolved of 191 (103 skipped: mod not loaded or item absent).
+[09:35:39.892] [Main Thread/INFO] [Levy]: Levy alt-fire policies self check: PASS
+[09:35:39.925] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT total 0
+[09:35:39.926] [Main Thread/INFO] [tML]: Finalizing Content: Mechanization (Mechanization) v0.9.1
+[09:35:39.936] [Main Thread/INFO] [tML]: Mods using the most RAM: ThoriumMod 55.3 MB, Levy 39.9 MB, MagicStorage 27.9 MB
+[09:35:39.951] [Main Thread/INFO] [tML]: RAM physical: tModLoader usage: 732.3 MB, All processes usage: 2.6 GB, Available: 7.4 GB, Total Installed: 10.0 GB
+[09:35:39.951] [Main Thread/INFO] [tML]: RAM virtual: tModLoader usage: 772.0 MB, All processes usage: 7.7 GB
+[09:35:40.081] [Main Thread/DEBUG] [tML]: GlobalItem registration stats. Count: 16, Slots per Entity: 2
+	Instanced: 2, Conditional with slot: 1, Conditional by type: 4, Applies to single type: 1
+	List Permutations: 11, Est Memory Consumption: 888 bytes
+[09:35:40.190] [Main Thread/DEBUG] [tML]: GlobalNPC registration stats. Count: 49, Slots per Entity: 11
+	Instanced: 11, Conditional with slot: 5, Conditional by type: 6, Applies to single type: 6
+	List Permutations: 32, Est Memory Consumption: 3336 bytes
+[09:35:40.251] [Main Thread/DEBUG] [tML]: GlobalProjectile registration stats. Count: 22, Slots per Entity: 8
+	Instanced: 8, Conditional with slot: 3, Conditional by type: 2, Applies to single type: 1
+	List Permutations: 23, Est Memory Consumption: 1992 bytes
+[09:35:40.918] [Main Thread/INFO] [tML]: Adding Recipes...
+[09:35:41.096] [Main Thread/INFO] [Levy]: Levy bard-renown self-check: 96 checks OK (points at 4000, 11314, 20785, 44722, 126492, 357771, 657268 damage; cap 40)
+[09:35:41.096] [Main Thread/INFO] [Levy]: Levy officer dialogue self-check: 17 officers fully voiced across 7 states OK
+[09:35:41.100] [Main Thread/INFO] [Levy]: Levy OOA/tavern self-check: 31 checks OK; main Tavernkeep shop (thorium=True, calamity=False): 40 entries, 37 reserving a slot, full stock 40/40 slots; at boot 8 stocked + 32 reserved + 0 free; overflow=False; Levy wares page: 6 entries now (6 when everything is unlocked) of 40
+[09:35:41.100] [Main Thread/INFO] [Levy]: Levy mobility self-check: OK (double jump, hook path, air paths, fall damage default off)
+[09:35:41.101] [Main Thread/INFO] [Levy]: OFFICERKIT CHECK: OK (17 officers, 17 with a stock attack pose)
+[09:35:41.104] [Main Thread/INFO] [Levy]: Levy ammo-share self-check: 13 cases OK (ammo floor 25, pouch 999; thrown floor 12, cap 60)
+[09:35:41.252] [Main Thread/INFO] [Levy]: Levy progression start 10: levies at start/KS/EoC/EoW/QB/Skel/Deer/WoF = 10/11/12/13/14/15/16/20
+[09:35:41.252] [Main Thread/INFO] [Levy]: Levy progression math: vanilla 4/20/40 (131072 subsets match legacy), +17 modded pre-HM all down=20 diluted=9, post-ML none/5known-0down/2of5/all/max50=40/40/48/60/50
+[09:35:41.252] [Main Thread/INFO] [Levy]: Levy progression self-check: OK
+[09:35:41.257] [Main Thread/INFO] [Levy]: Levy settings self-check: OK
+[09:35:41.258] [Main Thread/INFO] [Levy]: Levy projectile-NPC table: 25:Burning Sphere(life1,noDmg0,imm0,fr0,hostile=1,never=0); 30:Chaos Ball(life1,noDmg0,imm0,fr0,hostile=1,never=0); 33:Water Sphere(life1,noDmg0,imm0,fr0,hostile=1,never=0); 112:Vile Spit(life1,noDmg0,imm0,fr0,hostile=1,never=0); 261:Fungi Spore(life1,noDmg0,imm0,fr0,hostile=1,never=0); 265:Spore(life1,noDmg0,imm0,fr0,hostile=1,never=0); 371:Detonating Bubble(life1,noDmg0,imm0,fr0,hostile=1,never=0); 516:Solar Flare(life1,noDmg0,imm0,fr0,hostile=1,never=0); 519:Solar Fragment(life1,noDmg0,imm0,fr0,hostile=1,never=0); 665:Chaos Ball(life1,noDmg0,imm0,fr0,hostile=1,never=0); 666:Vile Spit(life1,noDmg0,imm0,fr0,hostile=1,never=0); 698:Bat Outa' Hell(life5,noDmg0,imm0,fr0,hostile=1,never=0); 729:Magical Burst(life5,noDmg0,imm0,fr0,hostile=1,never=0); 752:Illusion Glass(life5,noDmg0,imm0,fr0,hostile=1,never=0)
+[09:35:41.259] [Main Thread/INFO] [Levy]: Levy projectile-NPC self-check: 3 damageable orb types targetable OK
+[09:35:41.264] [Main Thread/INFO] [Levy]: Levy team items self-check: 19 checks OK
+[09:35:41.284] [Main Thread/INFO] [Levy]: Levy arsenal self-check: 72 checks OK; 153 of 432 vanilla projectile weapons are drone-mountable
+[09:35:41.298] [Main Thread/INFO] [Levy]: Levy: modded-minion self-check OK: 31/31 modded minion staves run their real minion (vanilla routing intact)
+[09:35:41.300] [Main Thread/INFO] [Levy]: Levy wiring self-check: 17 families OK
+[09:35:41.302] [Main Thread/INFO] [Mechanization]: Mechanization: drone wiring check OK (58 checks): registration, text, battery, loiter and pads, armory link, recall path.
+[09:35:41.303] [Main Thread/INFO] [Mechanization]: Mechanization: turret wiring check OK (42 checks): registration, text, weapon mounts, honest reach, placement guard.
+[09:35:41.304] [Main Thread/INFO] [Mechanization]: Mechanization: armory relay check OK (15 checks): registration, text, 100-tile link, serve radius in/out, nearest, reach cap, pylon fallback, no stacking.
+[09:35:42.248] [Main Thread/INFO] [Levy]: Levy Magic Storage self-check: 21 checks OK
+[09:35:42.295] [Main Thread/INFO] [Levy]: Levy logistics self-check: 100 checks OK
+[09:35:42.462] [Main Thread/INFO] [Levy]: Levy observe self-check: 24 checks OK
+[09:35:42.467] [Main Thread/INFO] [Levy]: Levy potion self-check: 45 checks OK
+[09:35:42.476] [Main Thread/INFO] [Levy]: [ProgCheck] START config: {"LifeCrystalRecipe":false,"LifeFruitRecipe":false,"FallenStarRecipe":false,"FallenStarsPerManaCrystal":5,"ChlorophyteOrePerBar":5,"ChlorophyteOreRecipe":false,"AmmoRecipeYieldMultiplier":1,"EctoplasmDropMultiplier":1.0,"SoulDropMultiplier":1.0,"MobDropMultiplier":1.0,"ChlorophyteGrowthMultiplier":1,"ChlorophyteChunkScale":1.0,"OnceOnlyBossWeaponRepeatPercent":0,"ShimmerDesertShards":false,"EarlyHardmodeCrateOreMultiplier":1,"ChlorophyteArmorCostPercent":100,"HallowedArmorCostPercent":100,"SpiderArmorCostPercent":100,"LevyArmorCostPercent":100,"ArmsDealerBulkAmmo":false,"BulkAmmoUnlockAmount":500,"BulkAmmoPricePercent":100,"ArmyLootPercentPerCp":0.0,"ArmyLootRareChance":false,"DungeonSpiritMultiplier":3.0,"DungeonSpiritPercentPerCp":0.0,"ExtractinatorChlorophyte":false,"ExtractinatorChlorophytePercent":25.0,"JungleChlorophyteDrop":false,"JungleChlorophyteChance":8.0,"EventChlorophyteDrop":false,"EventChlorophyteChance":15.0,"LuminiteDropMultiplier":1.0,"LunarFragmentDropMultiplier":1.0}
+[09:35:42.476] [Main Thread/INFO] [Levy]: [ProgCheck] PASS drop x1 is identity
+[09:35:42.476] [Main Thread/INFO] [Levy]: [ProgCheck] PASS guaranteed 1-2 x2 -> 2-4
+[09:35:42.477] [Main Thread/INFO] [Levy]: [ProgCheck] PASS 1/5 x2 -> 2/5 chance :: (200, 500, 1, 1)
+[09:35:42.477] [Main Thread/INFO] [Levy]: [ProgCheck] PASS 1/3 x5 -> certain, 1-2 items (expected 1.67) :: (1, 1, 2, 2)
+[09:35:42.477] [Main Thread/INFO] [Levy]: [ProgCheck] PASS 1/2 x1.5 -> 3/4 chance :: (150, 200, 3, 4)
+[09:35:42.477] [Main Thread/INFO] [Levy]: [ProgCheck] PASS cost 100% unchanged
+[09:35:42.477] [Main Thread/INFO] [Levy]: [ProgCheck] PASS cost 50% of 12 = 6
+[09:35:42.477] [Main Thread/INFO] [Levy]: [ProgCheck] PASS cost never below 1
+[09:35:42.477] [Main Thread/INFO] [Levy]: [ProgCheck] PASS protected armor ignores every slider
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS chlorophyte 80% x levy 50% = 40%
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS hallowed 70% alone = 70%
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS spider 60% alone = 60%
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS other armor takes only the levy slider
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS defaults leave all armor at 100%
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS factory 10 unicorn horns +25% = 12
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS factory below min batch has no bonus
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS factory 10 crafts x 150 arrows +25%
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS potion 40 brews +30% = 52
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS bonus 0 is exactly crafts x yield
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS affordable crafts limited by scarcest ingredient
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS affordable crafts capped by wanted
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS mana crystal cost: option 2 on a 5-star recipe = 2
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS mana crystal cost: option 5 leaves vanilla 5
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS mana crystal cost: never raised above another mod's cheaper recipe
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS 10 stars at option 2 craft 5 mana crystals
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS 10 stars at vanilla craft 2 mana crystals
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS bulk ammo price 100% = item value
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS army bonus: 10 CP at 1% = 0.10
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS army bonus: 0 CP or 0% = 0
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS rare reroll: p=1/10 bonus 0.1 gives total p x 1.1
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS rare reroll: never above certain, none at bonus 0 or p=1
+[09:35:42.478] [Main Thread/INFO] [Levy]: [ProgCheck] PASS stochastic round: 2.3 -> 3 below .3, 2 above
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS stochastic round keeps the mean (8 + 0.37) :: 8.373
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS spirit x3, vanilla rolled: 2 extra rolls :: (2, 0)
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS spirit x3 with 10 CP at 1%: x3.3 = 2.3 extra rolls :: (2, 0.30000000000000027)
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS spirit, monster fought levies: vanilla roll added (3 rolls) :: (3, 0)
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS spirit x1: no extra rolls (vanilla)
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS chlorophyte caps: scale 1 is vanilla 40/130, scale 4 is 160/520
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS extractinator mud: before mechs the mud comes back
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS extractinator mud: after mechs a roll under the percent gives ore
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS extractinator mud: a roll over the percent gives nothing
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS bulk ammo price 150% of 50 = 75
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS life crystal recipe iff option
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS life fruit recipe iff option
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS fallen star recipe iff option
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS no Levy-added mana crystal recipe (the option edits the vanilla one)
+[09:35:42.480] [Main Thread/INFO] [Levy]: [ProgCheck] PASS chlorophyte ore recipe iff option
+[09:35:42.481] [Main Thread/INFO] [Levy]: [ProgCheck] PASS mana crystal star recipe found :: 1
+[09:35:42.481] [Main Thread/INFO] [Levy]: [ProgCheck] PASS mana crystal costs the option's Fallen Stars (default 5 = vanilla) :: option 5
+[09:35:42.481] [Main Thread/INFO] [Levy]: [ProgCheck] PASS edited mana crystal recipe count matches :: 0
+[09:35:42.481] [Main Thread/INFO] [Levy]: [ProgCheck] PASS chlorophyte bar recipes found :: 1
+[09:35:42.482] [Main Thread/INFO] [Levy]: [ProgCheck] PASS chlorophyte ore per bar = option :: option 5
+[09:35:42.482] [Main Thread/INFO] [Levy]: [ProgCheck] PASS edited bar recipes count matches :: 0
+[09:35:42.486] [Main Thread/INFO] [Levy]: [ProgCheck] PASS ammo recipes match option :: ok=48 bad=0 mult=1
+[09:35:42.486] [Main Thread/INFO] [Levy]: [ProgCheck] PASS armor recipes match options :: ok=385 bad=0
+[09:35:42.486] [Main Thread/INFO] [Levy]: [ProgCheck] PASS Spectre, Shroomite and Spooky recipes never change
+[09:35:42.486] [Main Thread/INFO] [Levy]: [ProgCheck] PASS untouched recipes identical to vanilla :: 4547 recipes
+[09:35:42.486] [Main Thread/INFO] [Levy]: [ProgCheck] PASS defaults: zero vanilla recipes edited
+[09:35:42.486] [Main Thread/INFO] [Levy]: [ProgCheck] PASS drop database exists
+[09:35:42.486] [Main Thread/INFO] [Levy]: [ProgCheck] PASS army loot hook registered on bosses and bags :: 195 material rules
+[09:35:42.486] [Main Thread/INFO] [Levy]: [ProgCheck] PASS rare-chance reroll registered on boss drops :: 262 rules
+[09:35:42.487] [Main Thread/INFO] [Levy]: [ProgCheck] PASS Moon Lord Luminite carries the bonus rule (drop + bag) :: 2 luminite rules
+[09:35:42.487] [Main Thread/INFO] [Levy]: [ProgCheck] PASS each lunar pillar carries the fragment bonus rule :: 8 fragment rules
+[09:35:42.487] [Main Thread/INFO] [Levy]: [ProgCheck] PASS a vanilla boss (Skeletron Prime) has its rare drops rerolled
+[09:35:42.487] [Main Thread/INFO] [Levy]: [ProgCheck] PASS ordinary monsters get no army bonus or reroll
+[09:35:42.487] [Main Thread/INFO] [Levy]: [ProgCheck] PASS Chlorophyte global drop rules registered (jungle + event) :: 2
+[09:35:42.487] [Main Thread/INFO] [Levy]: [ProgCheck] PASS extractinator: mud mode iff option :: mode -1
+[09:35:42.487] [Main Thread/INFO] [Levy]: [ProgCheck] PASS hooks present: dungeon spirit OnKill, extractinator
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS jungle Chlorophyte condition follows the option
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS jungle Chlorophyte condition needs the jungle
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS jungle Chlorophyte condition needs Plantera down
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS event Chlorophyte condition follows the option (Pumpkin Moon)
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS event Chlorophyte condition: lunar event enemy yes :: value 0 life 600 friendly False town False statue False boss False
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS event Chlorophyte condition: ordinary zombie no (no event running) :: pumpkin False snow False
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS event Chlorophyte condition excludes bosses
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS army CP of a player with no soldiers is 0
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS luminite bonus = multiplier - 1 (no army) :: x1
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS fragment bonus = multiplier - 1 (no army)
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS ore, bar and fragment are boss materials; boss mask and coin are not :: ore True bar True frag True sword False coin False
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS chlorophyte density cap follows config :: scale 1, growth x1
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS shimmer off: shards and fragment have no shimmer result (vanilla)
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS every progression string has text
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS bulk ammo fills free slots, skips stocked ammo
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS bulk ammo price uses percent of item value
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS bulk ammo does nothing in a full shop
+[09:35:42.488] [Main Thread/INFO] [Levy]: [ProgCheck] PASS bulk ammo is capped
+[09:35:42.490] [Main Thread/INFO] [Levy]: [ProgCheck] PASS below threshold: not unlocked
+[09:35:42.493] [Main Thread/INFO] [Levy]: [ProgCheck] PASS at threshold: unlocked
+[09:35:42.493] [Main Thread/INFO] [Levy]: [ProgCheck] PASS non-ammo is never counted
+[09:35:42.493] [Main Thread/INFO] [Levy]: [ProgCheck] PASS ammo key round-trips
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Wooden Arrow x25 <= 1 Wood + 1 Stone Block
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Spider Mask x1 <= 8 Spider Fang
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Spider Breastplate x1 <= 16 Spider Fang
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Spider Greaves x1 <= 12 Spider Fang
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Hallowed Mask x1 <= 12 Hallowed Bar
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Hallowed Helmet x1 <= 12 Hallowed Bar
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Hallowed Headgear x1 <= 12 Hallowed Bar
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Hallowed Plate Mail x1 <= 24 Hallowed Bar
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Hallowed Greaves x1 <= 18 Hallowed Bar
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Chlorophyte Bar x1 <= 5 Chlorophyte Ore
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Chlorophyte Helmet x1 <= 12 Chlorophyte Bar
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Chlorophyte Mask x1 <= 12 Chlorophyte Bar
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Chlorophyte Headgear x1 <= 12 Chlorophyte Bar
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Chlorophyte Plate Mail x1 <= 24 Chlorophyte Bar
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Chlorophyte Greaves x1 <= 18 Chlorophyte Bar
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Mana Crystal x1 <= 5 Fallen Star
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Life Crystal x1 <= 10 Life Quartz
+[09:35:42.494] [Main Thread/INFO] [Levy]: [ProgCheck] VANILLA Chlorophyte Bullet value=50 copper
+[09:35:42.495] [Main Thread/INFO] [Levy]: [ProgCheck] SUMMARY pass=90 fail=0
+[09:35:42.663] [Main Thread/INFO] [Levy]: Levy reforge and vanity self-check: 69 checks OK.
+[09:35:42.664] [Main Thread/INFO] [Levy]: Levy armory filter view self-check: 9 checks OK
+[09:35:42.664] [Main Thread/INFO] [Levy]: [GuideCheck] pages=30 lines=141
+[09:35:42.664] [Main Thread/INFO] [Levy]: [GuideCheck] SUMMARY pass=363 fail=0
+[09:35:42.682] [Main Thread/INFO] [Levy]: Levy talking self-check: 84 checks OK
+[09:35:42.705] [Main Thread/INFO] [Levy]: Levy material cost: 3578 craftable items from 4998 recipes in 18 passes, 23 ms
+[09:35:42.715] [Main Thread/INFO] [Levy]: Levy armory intake/spread self-check: 100 checks OK
+[09:35:42.785] [Main Thread/INFO] [Levy]: Levy armory rules self-check: 72 checks OK. Tags over 1160 issuable weapons (56 ms): categories [boomerang 32, bow 61, flail 9, gun 66, held 11, launcher 53, minion 52, repeater 12, sentry 38, shortsword 12, spear 42, staff 158, sword 219, thrown 44, tome 11, wand 296, whip 10, yoyo 34], none 0; classes [bard 127, healer 89, magic 188, melee 374, none 38, ranged 244, summon 100]; class ids [melee, ranged, magic, summon, bard, healer].
+[09:35:42.803] [Main Thread/INFO] [Levy]: Levy gear floor self-check: 12 checks OK
+[09:35:42.827] [Main Thread/INFO] [Levy]: Levy weapon allocator self-check: 591 checks OK
+[09:35:42.839] [Main Thread/INFO] [Levy]: Levy weapon ranking self-check: 322 checks OK (material cost: 4998 recipes, 18 passes, 23 ms)
+[09:35:42.839] [Main Thread/INFO] [Levy]: [SetBonusCheck] PASS full Vortex set recognised on a bare Player
+[09:35:42.839] [Main Thread/INFO] [Levy]: [SetBonusCheck] PASS KeyDoubleTap switches Vortex stealth on
+[09:35:42.839] [Main Thread/INFO] [Levy]: [SetBonusCheck] PASS KeyDoubleTap switches Vortex stealth off
+[09:35:42.839] [Main Thread/INFO] [Levy]: [SetBonusCheck] DONE pass=3 fail=0
+[09:35:42.841] [Main Thread/INFO] [Mechanization]: Mechanization boss hold-fire self-check: 9 checks OK
+[09:35:42.990] [Main Thread/INFO] [tML]: Mod Load Completed in 18333ms

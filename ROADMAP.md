@@ -109,6 +109,16 @@
   - spec-calfix: Spectator P% is 0 in 36/36 Rev/Death fights; creepers 49% → 0%.
   - Root cause: Calamity resets npc.target 255 → 0 every tick, and Compete then kept the closer commander because the hide was released before Compete ran.
 - **boss-anoms (building):** KS Expert timeouts (adds vs boss priority), QB Expert wipes, true melee vs fliers (weapon-choice fix, no nerfs).
+- **boss-anoms DONE (merged 20507a8):**
+  - **KS Expert 0/6 was a HARNESS artifact.** With cmd=far, KS hops beside the parked commander outside the arena. cmd=near: 10/10 wins. The lab's KS row is invalid.
+  - **QB Expert:** 92–97% of damage is charge contact. **FEAR is the dominant factor**: 85% of levy samples are Shaken/Routed. With FearMultiplier=0 on the same seeds: 4/6 wins (vs 1/6), mean 75 s.
+    - Fear gain is 0.02×terror/tick whenever a boss is within 80 tiles; it drains only with no boss in view. So any boss fight over ~25 s routs the army.
+    - The Guide to Autonomy makes levies fear-immune, but the lab didn't give it.
+    - **DESIGN CALL FOR EVE** (tenet #1: a de facto cap).
+  - **Dud weapons:** UrchinMace (0 dmg in 131 fights) and SaharaSlicers (0 in 290) are Magic-classified and deal no damage. → builder `dud-weapons`.
+  - **Contact blades do ~nothing to bosses** because of the no-suicide standoff (22–34 dmg/fight vs 195–462 for projectile blades). **SHIPPED fix:** a contact-melee main swaps to a ranged sidearm vs bosses and out-of-reach fliers. With a sidearm, a broadsword levy does 10× more damage to the Eye; ~2× vs QB.
+  - The "boss outranks adds" PickTarget change was tested worse (KS) and reverted.
+- **Levy 2.0.15** = the sidearm swap. Shipping boot clean.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

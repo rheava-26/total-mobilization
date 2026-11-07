@@ -10,6 +10,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Systems;
 using Levy.Content.NPCs;
+using Levy.Common.Globals;
 
 namespace Levy.Common.Testing
 {
@@ -104,7 +105,9 @@ namespace Levy.Common.Testing
 			{
 				NPC n = Main.npc[i];
 				if (!n.active || !(n.type == st.BossType || st.PartTypes.Contains(n.type))) continue;
-				parts++; life += n.life; lmax += n.lifeMax; n.timeLeft = 99999;
+				parts++; n.timeLeft = 99999;
+				bool linked = n.realLife >= 0 && n.realLife != n.whoAmI && n.realLife < Main.maxNPCs && Main.npc[n.realLife].active; // Calamity worms: segments share the head's life (realLife); counting them would multiply it
+				if (!linked) { life += n.life; lmax += n.lifeMax; }
 				if (n.type == st.BossType && head == null) head = n;
 			}
 			st.MaxParts = Math.Max(st.MaxParts, parts);
@@ -172,9 +175,9 @@ namespace Levy.Common.Testing
 			{
 				int alv = st.Levies.Count(l => !l.Dead);
 				float near = 1e9f; foreach (var l in st.Levies) if (!l.Dead) { var n = Main.npc[l.Idx]; if (n.active) near = Math.Min(near, Vector2.Distance(n.Center, e.Center)); }
-				string line = string.Format(CultureInfo.InvariantCulture, "{0}\t{1}\t{2}\t{3}\t{4}\t{5}/{6}\t{7:0.0},{8:0.0}\t{9:0.0},{10:0.0}\tai={11:0.##},{12:0.##},{13:0.##},{14:0.##}\tlai={15:0.##},{16:0.##},{17:0.##},{18:0.##}\ttgt={19}({20})\tenr={21}\talive={22}\tadds={23}\tnearLevy={24:0.0}t\tdtd={25}",
+				string line = string.Format(CultureInfo.InvariantCulture, "{0}\t{1}\t{2}\t{3}\t{4}\t{5}/{6}\t{7:0.0},{8:0.0}\t{9:0.0},{10:0.0}\tai={11:0.##},{12:0.##},{13:0.##},{14:0.##}\tlai={15:0.##},{16:0.##},{17:0.##},{18:0.##}\ttgt={19}({20})\tenr={21}\talive={22}\tadds={23}\tnearLevy={24:0.0}t\tdtd={25}\tlock={26}\tcmdDist={27:0.0}t",
 					st.Run.Key, st.Tick, e.active ? 1 : 0, e.type, e.target, e.life, e.lifeMax, e.Center.X / 16f, e.Center.Y / 16f, e.velocity.X, e.velocity.Y, e.ai[0], e.ai[1], e.ai[2], e.ai[3], e.localAI[0], e.localAI[1], e.localAI[2], e.localAI[3],
-					e.target, CrTgtClass(e) == 0 ? "levy" : CrTgtClass(e) == 1 ? "player" : "none", CrEnraged(e) ? 1 : 0, alv, adds, near / 16f, e.dontTakeDamage ? 1 : 0);
+					e.target, CrTgtClass(e) == 0 ? "levy" : CrTgtClass(e) == 1 ? "player" : "none", CrEnraged(e) ? 1 : 0, alv, adds, near / 16f, e.dontTakeDamage ? 1 : 0, LevyNpcData.Of(e).SoldierTarget, Vector2.Distance(Main.player[0].Center, e.Center) / 16f);
 				try { File.AppendAllText(_crOut + ".dbg.tsv", line + "\n"); } catch { }
 			}
 		}

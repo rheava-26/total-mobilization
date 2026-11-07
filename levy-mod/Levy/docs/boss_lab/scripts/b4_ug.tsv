@@ -1,0 +1,12 @@
+fight	eow	exp	1	36000	gear=mod	n=cp	arena=ug	dbg=1
+fight	eow	rev	1	36000	gear=mod	n=cp	arena=ug	dbg=1
+fight	ds	exp	1	36000	gear=mod	n=cp	arena=ug	dbg=1
+fight	ds	rev	1	36000	gear=mod	n=cp	arena=ug	dbg=1
+fight	eow	exp	2	36000	gear=mod	n=cp	arena=ug	dbg=0
+fight	eow	rev	2	36000	gear=mod	n=cp	arena=ug	dbg=0
+fight	ds	exp	2	36000	gear=mod	n=cp	arena=ug	dbg=0
+fight	ds	rev	2	36000	gear=mod	n=cp	arena=ug	dbg=0
+fight	eow	exp	3	36000	gear=mod	n=cp	arena=ug	dbg=0
+fight	eow	rev	3	36000	gear=mod	n=cp	arena=ug	dbg=0
+fight	ds	exp	3	36000	gear=mod	n=cp	arena=ug	dbg=0
+fight	ds	rev	3	36000	gear=mod	n=cp	arena=ug	dbg=0

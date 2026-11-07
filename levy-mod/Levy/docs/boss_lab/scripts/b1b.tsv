@@ -1,0 +1,27 @@
+fight	brain	exp	1	36000	gear=mod	n=cp	dbg=1
+fight	brain	rev	1	36000	gear=mod	n=cp	dbg=1
+fight	brain	death	1	36000	gear=mod	n=cp	dbg=1
+fight	qb	exp	1	36000	gear=mod	n=cp	dbg=1
+fight	qb	rev	1	36000	gear=mod	n=cp	dbg=1
+fight	eow	exp	1	36000	gear=mod	n=cp	arena=surf	dbg=1
+fight	eow	rev	1	36000	gear=mod	n=cp	arena=surf	dbg=1
+fight	ds	exp	1	36000	gear=mod	n=cp	arena=surf	dbg=1
+fight	ds	rev	1	36000	gear=mod	n=cp	arena=surf	dbg=1
+fight	brain	exp	2	36000	gear=mod	n=cp	dbg=0
+fight	brain	rev	2	36000	gear=mod	n=cp	dbg=0
+fight	brain	death	2	36000	gear=mod	n=cp	dbg=0
+fight	qb	exp	2	36000	gear=mod	n=cp	dbg=0
+fight	qb	rev	2	36000	gear=mod	n=cp	dbg=0
+fight	eow	exp	2	36000	gear=mod	n=cp	arena=surf	dbg=0
+fight	eow	rev	2	36000	gear=mod	n=cp	arena=surf	dbg=0
+fight	ds	exp	2	36000	gear=mod	n=cp	arena=surf	dbg=0
+fight	ds	rev	2	36000	gear=mod	n=cp	arena=surf	dbg=0
+fight	brain	exp	3	36000	gear=mod	n=cp	dbg=0
+fight	brain	rev	3	36000	gear=mod	n=cp	dbg=0
+fight	brain	death	3	36000	gear=mod	n=cp	dbg=0
+fight	qb	exp	3	36000	gear=mod	n=cp	dbg=0
+fight	qb	rev	3	36000	gear=mod	n=cp	dbg=0
+fight	eow	exp	3	36000	gear=mod	n=cp	arena=surf	dbg=0
+fight	eow	rev	3	36000	gear=mod	n=cp	arena=surf	dbg=0
+fight	ds	exp	3	36000	gear=mod	n=cp	arena=surf	dbg=0
+fight	ds	rev	3	36000	gear=mod	n=cp	arena=surf	dbg=0

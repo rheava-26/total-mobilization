@@ -7,6 +7,8 @@ namespace Levy.Common
 		{
 			// ---- speeds (a town NPC walks ~1 px/tick, a player runs 3, 6 with Hermes Boots) ----
 			public const float WalkSpeedPx = 1.2f;
+			// ---- fight zone: while the commander is in a boss fight, a levy with no explicit order stays inside this radius of the commander ----
+			public const float FightZoneTiles = 46f, FightZoneBossTiles = 90f, FightZoneEdgeFrac = 0.8f;
 			public const float WalkAccel = 0.12f;
 			public const float RunAccel = 0.2f;
 			public const float StopDecel = 0.8f;

@@ -265,6 +265,7 @@ namespace Levy.Content.NPCs
 					break;
 			}
 
+			if (State != SoldierState.Dead && State != SoldierState.Desert) ApplyFightZone(now);
 			HangWatch.Brain(-1, 0); // this think finished (a stall after this point is not in the brain)
 			if (!NPC.active) return; // despawned this think
 			if (State != prevState) StateTimer = 0;

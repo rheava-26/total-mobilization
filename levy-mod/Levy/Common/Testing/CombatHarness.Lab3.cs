@@ -236,6 +236,15 @@ namespace Levy.Common.Testing
 			if (h > L3RowGap * 5 + 2.5f) lv = 7; else for (int k = 0; k <= 5; k++) if (Math.Abs(h - L3RowGap * k) <= 1.5f) { lv = k; break; }
 			_l3Lv[lv]++; _l3HSum += h; _l3HSq += h * h; _l3HN++;
 		}
+		private static double _l3DCmdSum, _l3DCmdMax, _l3DCtrSum, _l3DCtrMax, _l3DBossSum; private static int _l3DN;
+		/// <summary>Fight-zone telemetry: distance (tiles) of a living levy from the commander, from the arena centre and from the boss, sampled every 30 ticks.</summary>
+		private void L3Dist(NPC n, CrState st)
+		{
+			Vector2 cmd = _crCmdPos; var cp = Main.player[0]; if (cp.active) cmd = cp.Center;
+			double dc = Vector2.Distance(n.Center, cmd) / 16f, dz = Math.Abs(n.Center.X - _crCx * 16f) / 16f;
+			NPC b = Main.npc[st.BossIdx]; double db = b.active ? Vector2.Distance(n.Center, b.Center) / 16f : 0;
+			_l3DN++; _l3DCmdSum += dc; _l3DCtrSum += dz; _l3DBossSum += db; _l3DCmdMax = Math.Max(_l3DCmdMax, dc); _l3DCtrMax = Math.Max(_l3DCtrMax, dz);
+		}
 		private static int _l3ChainN, _l3ChainBad; private static double _l3ChainMax, _l3NaiveSum;
 		/// <summary>Asserts the chain origin the vanilla draw would use (owner slot MountedCenter under the draw swap) sits on the levy; also records where the unswapped owner slot would have drawn it (the old bug).</summary>
 		private static void L3ChainCheck()
@@ -256,7 +265,7 @@ namespace Levy.Common.Testing
 		{
 			Array.Clear(_l3Lv, 0, _l3Lv.Length); _l3HSum = _l3HSq = _l3BossH = 0; _l3HN = _l3BossHN = 0; CombatHarnessFloor = CrF;
 			L3LogAmmo();
-			SoldierNPC.RowEvalsS = SoldierNPC.RowClimbsS = SoldierNPC.RowArriveS = SoldierNPC.RowStayS = SoldierNPC.RowDropsS = SoldierNPC.RowThreatEvalsS = 0; SoldierNPC.JumpFxCounts.Clear(); SoldierNPC.JumpFxProj = 0; SoldierNPC.JumpFxDmg = 0; SoldierNPC.JumpFxFailed = 0; _l3JumpKit.Clear(); _l3ChainN = _l3ChainBad = 0; _l3ChainMax = _l3NaiveSum = 0;
+			SoldierNPC.RowEvalsS = SoldierNPC.RowClimbsS = SoldierNPC.RowArriveS = SoldierNPC.RowStayS = SoldierNPC.RowDropsS = SoldierNPC.RowThreatEvalsS = 0; SoldierNPC.JumpFxCounts.Clear(); SoldierNPC.JumpFxProj = 0; SoldierNPC.JumpFxDmg = 0; SoldierNPC.JumpFxFailed = 0; _l3JumpKit.Clear(); _l3ChainN = _l3ChainBad = 0; _l3ChainMax = _l3NaiveSum = 0; SoldierNPC.ZoneClampsS = SoldierNPC.ZoneReturnsS = 0; _l3DN = 0; _l3DCmdSum = _l3DCmdMax = _l3DCtrSum = _l3DCtrMax = _l3DBossSum = 0;
 			_l3Tick = -1; _l3Poison = 0; _l3Irr = 0; _l3Flags.Clear(); _l3Buffs.Clear(); _l3Sampled = 0; _l3SulphSet = 0; _l3DefSum = 0; _l3Hazard = 0;
 			_l3Ammo = string.Join(",", s.Levies.Select(l => l.Spec.Weapon.Replace("CalamityMod/", "C:") + (string.IsNullOrEmpty(l.Spec.Ammo) ? "" : "/" + l.Spec.Ammo)));
 			if (run.Hazard) Lab3Hazard(run, s);
@@ -316,7 +325,7 @@ namespace Levy.Common.Testing
 				if (b.active) { if (b.HasBuff(BuffID.Poisoned)) _l3Poison++; if (L3IrrType > 0 && b.HasBuff(L3IrrType)) _l3Irr++; }
 				if (run.Food >= 1 && st.Tick % 3000 == 0) foreach (var lv in st.Levies) { var nn = Main.npc[lv.Idx]; if (nn.active) nn.AddBuff(run.Food >= 2 ? BuffID.WellFed2 : BuffID.WellFed, 60 * 60 * 30); }
 			}
-			if (st.Tick % 30 == 0 && !l.Dead) L3Vert(n);
+			if (st.Tick % 30 == 0 && !l.Dead) { L3Vert(n); L3Dist(n, st); }
 			if (st.Tick == 600 && !l.Dead)
 			{
 				_l3Sampled++;
@@ -333,11 +342,11 @@ namespace Levy.Common.Testing
 			try
 			{
 				string path = _crOut + ".l3.tsv";
-				if (!File.Exists(path)) File.WriteAllText(path, "key\tboss\tseed\tresult\tavgHp\tavgMaxMana\tstations\tsampled\tstationFlags\tnpcBuffs\tavgDef10s\tsulphSetLevies\tpoisonSec\tirradSec\thazardCopper\thazardPaid\tfood\tweapons\tvFloorPct\tvPlatPct\tvAirPct\tvAbovePct\thMean\thStd\tvLevels\tbossHMean\tgaps\trowEvals\trowClimbs\trowArrive\trowStay\trowDrops\trowThreat\trowGap\tjumpKit\tjumpsFired\tjumpProj\tjumpFail\thookChainN\thookChainMaxErrPx\thookChainBad\thookChainNaiveMeanPx\n");
+				if (!File.Exists(path)) File.WriteAllText(path, "key\tboss\tseed\tresult\tavgHp\tavgMaxMana\tstations\tsampled\tstationFlags\tnpcBuffs\tavgDef10s\tsulphSetLevies\tpoisonSec\tirradSec\thazardCopper\thazardPaid\tfood\tweapons\tvFloorPct\tvPlatPct\tvAirPct\tvAbovePct\thMean\thStd\tvLevels\tbossHMean\tgaps\trowEvals\trowClimbs\trowArrive\trowStay\trowDrops\trowThreat\trowGap\tjumpKit\tjumpsFired\tjumpProj\tjumpFail\thookChainN\thookChainMaxErrPx\thookChainBad\thookChainNaiveMeanPx\tzoneClamps\tzoneReturns\tdCmdMean\tdCmdMax\tdCtrMean\tdCtrMax\tdBossMean\n");
 				string P(int c) => (_l3HN == 0 ? 0 : 100.0 * c / _l3HN).ToString("0", CultureInfo.InvariantCulture);
 				string F(Dictionary<string, int> d) => string.Join(" ", d.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + "=" + kv.Value));
 				File.AppendAllText(path, string.Join("\t", new object[] { run.Key, run.Boss, run.Seed, st.Result, st.Levies.Average(l => l.MaxHp).ToString("0", CultureInfo.InvariantCulture), st.Levies.Average(l => l.Rec.MaxMana).ToString("0", CultureInfo.InvariantCulture), _l3StationNote, _l3Sampled, F(_l3Flags), F(_l3Buffs),
-					(_l3Sampled == 0 ? 0 : _l3DefSum / _l3Sampled).ToString("0.0", CultureInfo.InvariantCulture), _l3SulphSet, (_l3Poison / 60.0).ToString("0.0", CultureInfo.InvariantCulture), (_l3Irr / 60.0).ToString("0.0", CultureInfo.InvariantCulture), _l3Hazard, st.Levies.Count(l => l.Rec.HazardPaid), run.Food, _l3Ammo, P(_l3Lv[0]), P(_l3Lv[1] + _l3Lv[2] + _l3Lv[3] + _l3Lv[4] + _l3Lv[5]), P(_l3Lv[6]), P(_l3Lv[7]), (_l3HN == 0 ? 0 : _l3HSum / _l3HN).ToString("0.0", CultureInfo.InvariantCulture), (_l3HN == 0 ? 0 : Math.Sqrt(Math.Max(0, _l3HSq / _l3HN - Math.Pow(_l3HSum / _l3HN, 2)))).ToString("0.0", CultureInfo.InvariantCulture), string.Join(",", _l3Lv.Take(6).Select(P)), (_l3BossHN == 0 ? 0 : _l3BossH / _l3BossHN).ToString("0.0", CultureInfo.InvariantCulture), _l3HN, SoldierNPC.RowEvalsS, SoldierNPC.RowClimbsS, SoldierNPC.RowArriveS, SoldierNPC.RowStayS, SoldierNPC.RowDropsS, SoldierNPC.RowThreatEvalsS, L3RowGap, F(_l3JumpKit), string.Join(" ", SoldierNPC.JumpFxCounts.Select(kv => kv.Key + "=" + kv.Value)), SoldierNPC.JumpFxProj + "/" + SoldierNPC.JumpFxDmg, SoldierNPC.JumpFxFailed, _l3ChainN, _l3ChainMax.ToString("0.0", CultureInfo.InvariantCulture), _l3ChainBad, (_l3ChainN == 0 ? 0 : _l3NaiveSum / _l3ChainN).ToString("0", CultureInfo.InvariantCulture) }) + "\n");
+					(_l3Sampled == 0 ? 0 : _l3DefSum / _l3Sampled).ToString("0.0", CultureInfo.InvariantCulture), _l3SulphSet, (_l3Poison / 60.0).ToString("0.0", CultureInfo.InvariantCulture), (_l3Irr / 60.0).ToString("0.0", CultureInfo.InvariantCulture), _l3Hazard, st.Levies.Count(l => l.Rec.HazardPaid), run.Food, _l3Ammo, P(_l3Lv[0]), P(_l3Lv[1] + _l3Lv[2] + _l3Lv[3] + _l3Lv[4] + _l3Lv[5]), P(_l3Lv[6]), P(_l3Lv[7]), (_l3HN == 0 ? 0 : _l3HSum / _l3HN).ToString("0.0", CultureInfo.InvariantCulture), (_l3HN == 0 ? 0 : Math.Sqrt(Math.Max(0, _l3HSq / _l3HN - Math.Pow(_l3HSum / _l3HN, 2)))).ToString("0.0", CultureInfo.InvariantCulture), string.Join(",", _l3Lv.Take(6).Select(P)), (_l3BossHN == 0 ? 0 : _l3BossH / _l3BossHN).ToString("0.0", CultureInfo.InvariantCulture), _l3HN, SoldierNPC.RowEvalsS, SoldierNPC.RowClimbsS, SoldierNPC.RowArriveS, SoldierNPC.RowStayS, SoldierNPC.RowDropsS, SoldierNPC.RowThreatEvalsS, L3RowGap, F(_l3JumpKit), string.Join(" ", SoldierNPC.JumpFxCounts.Select(kv => kv.Key + "=" + kv.Value)), SoldierNPC.JumpFxProj + "/" + SoldierNPC.JumpFxDmg, SoldierNPC.JumpFxFailed, _l3ChainN, _l3ChainMax.ToString("0.0", CultureInfo.InvariantCulture), _l3ChainBad, (_l3ChainN == 0 ? 0 : _l3NaiveSum / _l3ChainN).ToString("0", CultureInfo.InvariantCulture), SoldierNPC.ZoneClampsS, SoldierNPC.ZoneReturnsS, (_l3DN == 0 ? 0 : _l3DCmdSum / _l3DN).ToString("0.0", CultureInfo.InvariantCulture), _l3DCmdMax.ToString("0.0", CultureInfo.InvariantCulture), (_l3DN == 0 ? 0 : _l3DCtrSum / _l3DN).ToString("0.0", CultureInfo.InvariantCulture), _l3DCtrMax.ToString("0.0", CultureInfo.InvariantCulture), (_l3DN == 0 ? 0 : _l3DBossSum / _l3DN).ToString("0.0", CultureInfo.InvariantCulture) }) + "\n");
 			}
 			catch (Exception e) { Mod.Logger.Warn(L3Log + "finish row failed: " + e.Message); }
 		}

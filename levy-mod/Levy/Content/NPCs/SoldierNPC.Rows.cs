@@ -150,6 +150,7 @@ namespace Levy.Content.NPCs
 					if (dy > 0 && !(onPlatform && Math.Abs(dx) <= RowDropColumns)) continue;   // a lower lane is reached by dropping through where it stands
 					if (Math.Abs(dy) < 2 && Math.Abs(dx) < 3) continue;
 					if (!TileNav.InBounds(x, y) || !TileNav.IsStandable(x, y)) continue;
+					if (!InFightZone(now, new Vector2(x * 16f + 8f, y * 16f))) continue;
 					if (dy > 0 && TileNav.IsStandable(x, y - 1)) continue;
 					if (Math.Abs(dy) >= 2 && TileNav.IsStandable(x, y - 1)) continue; // the tile just above a floor is the same footing
 					int alt = BandAlt(x, y);

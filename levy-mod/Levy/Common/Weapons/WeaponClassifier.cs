@@ -159,6 +159,16 @@ namespace Levy.Common.Weapons
 				return sample.aiStyle == ProjAIStyleID.HeldProjectile && realClass ? WeaponFamily.HeldWeapon : WeaponFamily.Unsupported;
 			}
 
+			// Modded owner-anchored shots (see ModShotKinds): a holdout that reads its owner's button is HELD like a player would; a held stab / spun flail is fought as Levy's own thrust / flail at its real reach.
+			if (item.type >= ItemID.Count)
+			{
+				switch (ModShotKinds.Of(item))
+				{
+					case ModShotKind.Holdout: return WeaponFamily.HeldWeapon;
+					case ModShotKind.Shortsword: return WeaponFamily.Shortsword;
+				}
+			}
+
 			// Soldier-anchored families (SoldierMinion / SoldierWhip / SoldierBoomerang): whips first, since whips are Summon-class items.
 			if (sample != null && !sample.sentry)
 			{

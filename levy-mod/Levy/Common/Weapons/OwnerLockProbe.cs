@@ -20,6 +20,8 @@ namespace Levy.Common.Weapons
 		private static readonly Dictionary<int, bool> _cache = new();
 		private static FieldInfo _heldProj, _itemAnimation, _itemTime, _controlUseItem, _channel;
 		private static Dictionary<short, OpCode> _opcodes;
+		/// <summary>While a cursor probe runs: every method name called and every Terraria.Main field read by the scanned IL.</summary>
+		private static HashSet<string> _sink;
 
 		/// <summary>True when the projectile type's modded AI pins the owner's item-use state without releasing it when the owner stops using an item.</summary>
 		public static bool LocksOwner(int projType)
@@ -54,6 +56,144 @@ namespace Levy.Common.Weapons
 			bool pins = found.Contains(_heldProj) || found.Contains(_itemAnimation) || found.Contains(_itemTime);
 			bool releases = found.Contains(_controlUseItem) || found.Contains(_channel);
 			return pins && !releases;
+		}
+
+		/// <summary>True when the modded projectile class chain overrides <c>OnKill</c>: a charge-and-release holdout fires its shot when it ends (Coral Spout, Calamity's charge staffs).</summary>
+		public static bool FiresOnKill(int projType)
+		{
+			ModProjectile mod = WeaponClassifier.ProjectileSample(projType)?.ModProjectile;
+			if (mod == null) return false;
+			for (Type t = mod.GetType(); t != null && t != typeof(ModProjectile) && t != typeof(object); t = t.BaseType)
+				if (t.GetMethod("OnKill", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly, null, new[] { typeof(int) }, null) != null) return true;
+			return false;
+		}
+
+		private static readonly Dictionary<int, bool> _cursorCache = new();
+		/// <summary>True when the projectile's own modded AI reads the owner's cursor: <c>Main.MouseWorld</c> / <c>Main.mouseX</c>, Calamity's per-player <c>mouseWorld</c> or <c>ClampedMouseWorld</c>. A commander-owned
+		/// copy would read the COMMANDER's cursor (wherever it last was), so such a shot flies off at nothing: the soldier puts the cursor on its target for the span of that projectile's AI.</summary>
+		public static bool ReadsCursor(int projType)
+		{
+			if (_cursorCache.TryGetValue(projType, out bool cached)) return cached;
+			bool result = false;
+			try
+			{
+				ModProjectile mod = WeaponClassifier.ProjectileSample(projType)?.ModProjectile;
+				if (mod != null)
+				{
+					EnsureReflection();
+					var sink = new HashSet<string>(); _sink = sink;
+					var visited = new HashSet<MethodBase>(); var found = new HashSet<FieldInfo>();
+					try
+					{
+						for (Type t = mod.GetType(); t != null && t != typeof(ModProjectile) && t != typeof(object); t = t.BaseType)
+						{
+							const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+							foreach (string hook in new[] { "PreAI", "AI", "PostAI" })
+							{
+								MethodInfo m = t.GetMethod(hook, flags, null, Type.EmptyTypes, null);
+								if (m != null) Scan(m, 0, visited, found);
+							}
+						}
+					}
+					finally { _sink = null; }
+					result = sink.Contains("get_MouseWorld") || sink.Contains("get_mouseWorld") || sink.Contains("ClampedMouseWorld") || sink.Contains("mouseX") || sink.Contains("mouseY") || sink.Contains("get_mouseWorldDeltaFromPlayer");
+				}
+			}
+			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: cursor probe failed for projectile {projType}: {e.Message}"); }
+			_cursorCache[projType] = result;
+			return result;
+		}
+
+		private static readonly Dictionary<int, bool> _channelCache = new();
+		/// <summary>True when the projectile's own modded AI reads its owner's use button (<c>Player.channel</c> / <c>controlUseItem</c>, or Calamity's <c>CantUseHoldout</c>): a held / charge-and-release
+		/// "holdout" that only lives, charges and fires while its owner holds the button. A commander-owned copy never sees the button held, so it expires uncharged and shoots wherever the commander's stale cursor was.</summary>
+		public static bool ReadsOwnerButton(int projType)
+		{
+			if (_channelCache.TryGetValue(projType, out bool cached)) return cached;
+			bool result = false;
+			try
+			{
+				ModProjectile mod = WeaponClassifier.ProjectileSample(projType)?.ModProjectile;
+				if (mod != null)
+				{
+					EnsureReflection();
+					var visited = new HashSet<MethodBase>(); var found = new HashSet<FieldInfo>();
+					for (Type t = mod.GetType(); t != null && t != typeof(ModProjectile) && t != typeof(object); t = t.BaseType)
+					{
+						const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+						foreach (string hook in new[] { "PreAI", "AI", "PostAI" })
+						{
+							MethodInfo m = t.GetMethod(hook, flags, null, Type.EmptyTypes, null);
+							if (m != null) Scan(m, 0, visited, found);
+						}
+					}
+					result = found.Contains(_channel) || found.Contains(_controlUseItem);
+				}
+			}
+			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: owner-button probe failed for projectile {projType}: {e.Message}"); }
+			_channelCache[projType] = result;
+			return result;
+		}
+
+		/// <summary>The modded projectile types a modded item's own code names (<c>ModContent.ProjectileType&lt;T&gt;()</c> inside Shoot / ModifyShootStats / UseItem / HoldItem / CanUseItem), in addition to <c>item.shoot</c>.
+		/// An item whose Shoot hook spawns its real shot by type (Sahara Slicers: its blades) hides that shot from <c>item.shoot</c>.</summary>
+		public static List<Type> NamedProjectileTypes(Item item)
+		{
+			var list = new List<Type>();
+			try
+			{
+				ModItem mi = item?.ModItem;
+				if (mi == null) return list;
+				EnsureReflection();
+				const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+				for (Type t = mi.GetType(); t != null && t != typeof(ModItem) && t != typeof(object); t = t.BaseType)
+					foreach (string hook in new[] { "Shoot", "ModifyShootStats", "UseItem", "HoldItem", "CanUseItem" })
+						foreach (MethodInfo m in t.GetMethods(flags))
+							if (m.Name == hook) ScanProjectileTypes(m, list);
+			}
+			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: shot-type probe failed for {item?.Name}: {e.Message}"); }
+			return list;
+		}
+
+		private static void ScanProjectileTypes(MethodBase method, List<Type> into)
+		{
+			byte[] il = method.GetMethodBody()?.GetILAsByteArray();
+			if (il == null) return;
+			Module module = method.Module;
+			Type[] typeArgs = method.DeclaringType != null && method.DeclaringType.IsGenericType ? method.DeclaringType.GetGenericArguments() : null;
+			int i = 0;
+			while (i < il.Length)
+			{
+				short code = il[i++];
+				if (code == 0xFE && i < il.Length) code = (short)(0xFE00 | il[i++]);
+				if (!_opcodes.TryGetValue(code, out OpCode op)) return;
+				int operandAt = i;
+				switch (op.OperandType)
+				{
+					case OperandType.InlineNone: break;
+					case OperandType.ShortInlineBrTarget:
+					case OperandType.ShortInlineI:
+					case OperandType.ShortInlineVar: i += 1; break;
+					case OperandType.InlineVar: i += 2; break;
+					case OperandType.InlineI8:
+					case OperandType.InlineR: i += 8; break;
+					case OperandType.InlineSwitch: i += 4 + 4 * BitConverter.ToInt32(il, i); break;
+					case OperandType.InlineMethod:
+						i += 4;
+						try
+						{
+							MethodBase callee = module.ResolveMethod(BitConverter.ToInt32(il, operandAt), typeArgs, null);
+							if (callee != null && callee.IsGenericMethod && callee.Name == "ProjectileType" && callee.GetGenericArguments().Length == 1)
+							{
+								Type pt = callee.GetGenericArguments()[0];
+								if (typeof(ModProjectile).IsAssignableFrom(pt) && !into.Contains(pt)) into.Add(pt);
+							}
+						}
+						catch (Exception) { }
+						break;
+					default: i += 4; break;
+				}
+			}
 		}
 
 		private static void EnsureReflection()
@@ -105,10 +245,13 @@ namespace Levy.Common.Weapons
 							{
 								FieldInfo fi = module.ResolveField(token, typeArgs, null);
 								if (fi != null && fi.DeclaringType == typeof(Player) && (op == OpCodes.Stfld || op == OpCodes.Ldfld)) AddFieldUse(fi, op == OpCodes.Stfld, found);
+								if (fi != null && _sink != null && fi.DeclaringType == typeof(Main)) _sink.Add(fi.Name);
 							}
 							else
 							{
 								MethodBase callee = module.ResolveMethod(token, typeArgs, null);
+								if (callee != null) _sink?.Add(callee.Name);
+								if (callee != null && callee.Name == "CantUseHoldout") found.Add(_channel); // Calamity's PlayerUtils.CantUseHoldout reads Player.channel for the projectile
 								if (callee != null && callee.DeclaringType != null && callee.DeclaringType.IsAssignableFrom(method.DeclaringType)
 									&& callee.DeclaringType != typeof(ModProjectile) && callee.DeclaringType != typeof(object))
 									Scan(callee, depth + 1, visited, found);

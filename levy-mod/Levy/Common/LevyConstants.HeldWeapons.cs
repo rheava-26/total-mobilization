@@ -12,6 +12,8 @@ namespace Levy.Common
 		public const int HeldIdleKillTicks = 120;
 		/// <summary>Minimum ticks between two holder spawns for one soldier, so a weapon that cannot fire does not spawn and die every tick.</summary>
 		public const int HeldRespawnMinTicks = 20;
+		/// <summary>A modded charge-and-release holdout (its shot is made when the projectile ends) is held this many ticks, then let go: the release fires the charged shot at the target. Charge staffs top out around 50-75 ticks.</summary>
+		public const int HeldModHoldTicks = 100;
 		/// <summary>How often (ticks) the grade-based aim wobble is re-rolled while a holder is aiming.</summary>
 		public const int HeldAimJitterRefreshTicks = 24;
 		/// <summary>The soldier's raised-weapon pose is kept at least this many ticks while it feeds a holder.</summary>

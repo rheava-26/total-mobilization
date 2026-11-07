@@ -602,6 +602,12 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Plus the short-reach melee fix (Blade of Grass etc.).
 - **Boots:** Thorium+MS and Calamity, 0 exceptions.
 
+## 🎥 Eve videos (2026-11-07 01:20): the Spectator targeting bug REPRODUCES in real play
+- King Slime (beaten) and the Eye (night) both sit on top of the spectating player for the whole fight while levies die on the platform rows.
+- Real SP client + Calamity. NOT reproducible in the DS/emulated-SP harness.
+- Calamity's summary: the player dealt 170 damage while spectating (holding a Hefty Wulfrum Knife). Rogue bypass? CanHitNPC only arrived in 2.0.9.
+- Evidence sent to spectator2. Priority: the in-game /levyspec diagnostic + a read of Calamity's KS/EoC AI targeting paths.
+
 ## 🧭 Eve round (2026-11-07 01:15)
 - King Slime STILL targets her with Spectator (boss beaten, config on) → `spectator2` builds an in-game `/levyspec` diagnostic for Eve to run.
 - Spectator must NOT work vs bosses not yet beaten (first kill solo; reverses my override). The per-boss rule is being implemented; confirm with Eve whether she meant a global gate.

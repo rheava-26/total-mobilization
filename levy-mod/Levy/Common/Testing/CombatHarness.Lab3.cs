@@ -112,7 +112,10 @@ namespace Levy.Common.Testing
 			float n = Main.maxTilesX / 4200f; n *= n;
 			int band = (int)(60f + 10f * n + Main.worldSurface / 6.0) + 2;
 			_crCx = _cx; int cx = _cx, half = 110, fy;
-			if (kind == "a3e")
+			// arena token: a3 | a3e (sealed), optional rN suffix = rows N tiles apart (a3r6, a3er5); default 7 (lab 3)
+			int rowGap = 7; var rm = System.Text.RegularExpressions.Regex.Match(kind, @"r(\d+)$"); if (rm.Success) rowGap = Math.Clamp(int.Parse(rm.Groups[1].Value), 3, 12); L3RowGap = rowGap;
+			bool sealedBox = kind.StartsWith("a3e");
+			if (sealedBox)
 			{
 				fy = Math.Clamp((int)Main.rockLayer + 80, 100, Main.maxTilesY - 260);
 				FaFill(cx - half - 25, fy - 100, cx + half + 25, fy + 35, true);
@@ -129,7 +132,7 @@ namespace Levy.Common.Testing
 			CrF = fy;
 			for (int k = 1; k <= 5; k++)
 			{
-				int py = fy - 7 * k; int gap0 = cx - half + 10 + (k * 41) % 150;
+				int py = fy - rowGap * k; int gap0 = cx - half + 10 + (k * 41) % 150;
 				for (int x = cx - half + 6; x <= cx + half - 6; x++)
 				{
 					if (x >= gap0 && x < gap0 + 14) continue; // a gap per row, staggered, so the rows are connected vertically
@@ -221,7 +224,7 @@ namespace Levy.Common.Testing
 
 		private static int _l3Tick = -1, _l3Poison, _l3Irr;
 		private static readonly Dictionary<string, int> _l3Flags = new(), _l3Buffs = new();
-		private static int _l3Sampled, _l3SulphSet;
+		private static int _l3Sampled, _l3SulphSet; private static readonly Dictionary<string, int> _l3JumpKit = new();
 		private static float _l3DefSum; private static long _l3Hazard;
 		private static string _l3Ammo = "";
 		private static readonly int[] _l3Lv = new int[8]; // floor, row1..row5, air, above the top row
@@ -230,15 +233,30 @@ namespace Levy.Common.Testing
 		{
 			float h = (CombatHarnessFloor * 16f - n.Bottom.Y) / 16f; // tiles above the floor
 			int lv = 6;
-			if (h > 7 * 5 + 2.5f) lv = 7; else for (int k = 0; k <= 5; k++) if (Math.Abs(h - 7 * k) <= 1.5f) { lv = k; break; }
+			if (h > L3RowGap * 5 + 2.5f) lv = 7; else for (int k = 0; k <= 5; k++) if (Math.Abs(h - L3RowGap * k) <= 1.5f) { lv = k; break; }
 			_l3Lv[lv]++; _l3HSum += h; _l3HSq += h * h; _l3HN++;
 		}
-		internal static int CombatHarnessFloor;
+		private static int _l3ChainN, _l3ChainBad; private static double _l3ChainMax, _l3NaiveSum;
+		/// <summary>Asserts the chain origin the vanilla draw would use (owner slot MountedCenter under the draw swap) sits on the levy; also records where the unswapped owner slot would have drawn it (the old bug).</summary>
+		private static void L3ChainCheck()
+		{
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (!p.active || p.type >= Main.projHook.Length || !Main.projHook[p.type] || !p.TryGetGlobalProjectile(out global::Levy.Common.Movement.HookTag tag) || tag.Soldier < 0) continue;
+				float err = tag.SwapError(p, out _);
+				if (err == float.MaxValue) continue;
+				_l3ChainN++; _l3ChainMax = Math.Max(_l3ChainMax, err); if (err > 3f) _l3ChainBad++;
+				_l3NaiveSum += Vector2.Distance(Main.player[p.owner].MountedCenter, Main.npc[tag.Soldier].Center);
+			}
+		}
+		internal static int CombatHarnessFloor; internal static int L3RowGap = 7;
 
 		private void Lab3Begin(CrRun run, CrState s)
 		{
 			Array.Clear(_l3Lv, 0, _l3Lv.Length); _l3HSum = _l3HSq = _l3BossH = 0; _l3HN = _l3BossHN = 0; CombatHarnessFloor = CrF;
 			L3LogAmmo();
+			SoldierNPC.RowEvalsS = SoldierNPC.RowClimbsS = SoldierNPC.RowArriveS = SoldierNPC.RowStayS = SoldierNPC.RowDropsS = SoldierNPC.RowThreatEvalsS = 0; SoldierNPC.JumpFxCounts.Clear(); SoldierNPC.JumpFxProj = 0; SoldierNPC.JumpFxDmg = 0; SoldierNPC.JumpFxFailed = 0; _l3JumpKit.Clear(); _l3ChainN = _l3ChainBad = 0; _l3ChainMax = _l3NaiveSum = 0;
 			_l3Tick = -1; _l3Poison = 0; _l3Irr = 0; _l3Flags.Clear(); _l3Buffs.Clear(); _l3Sampled = 0; _l3SulphSet = 0; _l3DefSum = 0; _l3Hazard = 0;
 			_l3Ammo = string.Join(",", s.Levies.Select(l => l.Spec.Weapon.Replace("CalamityMod/", "C:") + (string.IsNullOrEmpty(l.Spec.Ammo) ? "" : "/" + l.Spec.Ammo)));
 			if (run.Hazard) Lab3Hazard(run, s);
@@ -293,6 +311,7 @@ namespace Levy.Common.Testing
 				_l3Tick = st.Tick;
 				NPC b = Main.npc[st.BossIdx];
 				if (run.Dbg && (st.Tick % 120 == 0 || (st.Tick < 100 && st.Tick % 6 == 0))) for (int q = 0; q < Main.maxNPCs; q++) { NPC pn = Main.npc[q]; if (pn.active && st.PartTypes.Contains(pn.type)) Mod.Logger.Info($"{L3Log}part t{st.Tick} {pn.FullName} life {pn.life}/{pn.lifeMax} pos {pn.Center.X / 16:0},{(CrF * 16f - pn.Bottom.Y) / 16:0}h vel {pn.velocity.X:0.0},{pn.velocity.Y:0.0} ai {pn.ai[0]:0},{pn.ai[1]:0},{pn.ai[2]:0},{pn.ai[3]:0} dtd {pn.dontTakeDamage} tgt {pn.target} p0 act {Main.player[0].active} dead {Main.player[0].dead} name {Main.player[0].name} dist {Vector2.Distance(Main.player[0].Center, pn.Center) / 16:0}t timeLeft {pn.timeLeft}"); }
+				if (st.Tick % 10 == 0) L3ChainCheck();
 				if (b.active && st.Tick % 30 == 0) { _l3BossH += (CrF * 16f - b.Bottom.Y) / 16f; _l3BossHN++; }
 				if (b.active) { if (b.HasBuff(BuffID.Poisoned)) _l3Poison++; if (L3IrrType > 0 && b.HasBuff(L3IrrType)) _l3Irr++; }
 				if (run.Food >= 1 && st.Tick % 3000 == 0) foreach (var lv in st.Levies) { var nn = Main.npc[lv.Idx]; if (nn.active) nn.AddBuff(run.Food >= 2 ? BuffID.WellFed2 : BuffID.WellFed, 60 * 60 * 30); }
@@ -304,6 +323,7 @@ namespace Levy.Common.Testing
 				foreach (StationFlags f in Enum.GetValues(typeof(StationFlags))) { if (f == StationFlags.None || f == StationFlags.All) continue; if ((sn.Stations & f) != 0) { _l3Flags.TryGetValue(f.ToString(), out int c); _l3Flags[f.ToString()] = c + 1; } }
 				for (int i = 0; i < NPC.maxBuffs; i++) if (n.buffType[i] > 0 && n.buffTime[i] > 0) { string bn = n.buffType[i] < BuffID.Count ? Lang.GetBuffName(n.buffType[i]) : (BuffLoader.GetBuff(n.buffType[i])?.Name ?? "b" + n.buffType[i]); _l3Buffs.TryGetValue(bn, out int c); _l3Buffs[bn] = c + 1; }
 				_l3DefSum += n.defense;
+				{ string jk = sn.EnabledJumpNames(); if (jk == "") jk = "none"; _l3JumpKit.TryGetValue(jk, out int jc); _l3JumpKit[jk] = jc + 1; }
 				try { foreach (var mp in sn.Dummy.ModPlayers) if (mp.GetType().Name == "CalamityPlayer") { var f = mp.GetType().GetField("sulphurSet"); if (f != null && (bool)f.GetValue(mp)) _l3SulphSet++; } } catch { }
 			}
 		}
@@ -313,11 +333,11 @@ namespace Levy.Common.Testing
 			try
 			{
 				string path = _crOut + ".l3.tsv";
-				if (!File.Exists(path)) File.WriteAllText(path, "key\tboss\tseed\tresult\tavgHp\tavgMaxMana\tstations\tsampled\tstationFlags\tnpcBuffs\tavgDef10s\tsulphSetLevies\tpoisonSec\tirradSec\thazardCopper\thazardPaid\tfood\tweapons\tvFloorPct\tvPlatPct\tvAirPct\tvAbovePct\thMean\thStd\tvLevels\tbossHMean\tgaps\n");
+				if (!File.Exists(path)) File.WriteAllText(path, "key\tboss\tseed\tresult\tavgHp\tavgMaxMana\tstations\tsampled\tstationFlags\tnpcBuffs\tavgDef10s\tsulphSetLevies\tpoisonSec\tirradSec\thazardCopper\thazardPaid\tfood\tweapons\tvFloorPct\tvPlatPct\tvAirPct\tvAbovePct\thMean\thStd\tvLevels\tbossHMean\tgaps\trowEvals\trowClimbs\trowArrive\trowStay\trowDrops\trowThreat\trowGap\tjumpKit\tjumpsFired\tjumpProj\tjumpFail\thookChainN\thookChainMaxErrPx\thookChainBad\thookChainNaiveMeanPx\n");
 				string P(int c) => (_l3HN == 0 ? 0 : 100.0 * c / _l3HN).ToString("0", CultureInfo.InvariantCulture);
 				string F(Dictionary<string, int> d) => string.Join(" ", d.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + "=" + kv.Value));
 				File.AppendAllText(path, string.Join("\t", new object[] { run.Key, run.Boss, run.Seed, st.Result, st.Levies.Average(l => l.MaxHp).ToString("0", CultureInfo.InvariantCulture), st.Levies.Average(l => l.Rec.MaxMana).ToString("0", CultureInfo.InvariantCulture), _l3StationNote, _l3Sampled, F(_l3Flags), F(_l3Buffs),
-					(_l3Sampled == 0 ? 0 : _l3DefSum / _l3Sampled).ToString("0.0", CultureInfo.InvariantCulture), _l3SulphSet, (_l3Poison / 60.0).ToString("0.0", CultureInfo.InvariantCulture), (_l3Irr / 60.0).ToString("0.0", CultureInfo.InvariantCulture), _l3Hazard, st.Levies.Count(l => l.Rec.HazardPaid), run.Food, _l3Ammo, P(_l3Lv[0]), P(_l3Lv[1] + _l3Lv[2] + _l3Lv[3] + _l3Lv[4] + _l3Lv[5]), P(_l3Lv[6]), P(_l3Lv[7]), (_l3HN == 0 ? 0 : _l3HSum / _l3HN).ToString("0.0", CultureInfo.InvariantCulture), (_l3HN == 0 ? 0 : Math.Sqrt(Math.Max(0, _l3HSq / _l3HN - Math.Pow(_l3HSum / _l3HN, 2)))).ToString("0.0", CultureInfo.InvariantCulture), string.Join(",", _l3Lv.Take(6).Select(P)), (_l3BossHN == 0 ? 0 : _l3BossH / _l3BossHN).ToString("0.0", CultureInfo.InvariantCulture), _l3HN }) + "\n");
+					(_l3Sampled == 0 ? 0 : _l3DefSum / _l3Sampled).ToString("0.0", CultureInfo.InvariantCulture), _l3SulphSet, (_l3Poison / 60.0).ToString("0.0", CultureInfo.InvariantCulture), (_l3Irr / 60.0).ToString("0.0", CultureInfo.InvariantCulture), _l3Hazard, st.Levies.Count(l => l.Rec.HazardPaid), run.Food, _l3Ammo, P(_l3Lv[0]), P(_l3Lv[1] + _l3Lv[2] + _l3Lv[3] + _l3Lv[4] + _l3Lv[5]), P(_l3Lv[6]), P(_l3Lv[7]), (_l3HN == 0 ? 0 : _l3HSum / _l3HN).ToString("0.0", CultureInfo.InvariantCulture), (_l3HN == 0 ? 0 : Math.Sqrt(Math.Max(0, _l3HSq / _l3HN - Math.Pow(_l3HSum / _l3HN, 2)))).ToString("0.0", CultureInfo.InvariantCulture), string.Join(",", _l3Lv.Take(6).Select(P)), (_l3BossHN == 0 ? 0 : _l3BossH / _l3BossHN).ToString("0.0", CultureInfo.InvariantCulture), _l3HN, SoldierNPC.RowEvalsS, SoldierNPC.RowClimbsS, SoldierNPC.RowArriveS, SoldierNPC.RowStayS, SoldierNPC.RowDropsS, SoldierNPC.RowThreatEvalsS, L3RowGap, F(_l3JumpKit), string.Join(" ", SoldierNPC.JumpFxCounts.Select(kv => kv.Key + "=" + kv.Value)), SoldierNPC.JumpFxProj + "/" + SoldierNPC.JumpFxDmg, SoldierNPC.JumpFxFailed, _l3ChainN, _l3ChainMax.ToString("0.0", CultureInfo.InvariantCulture), _l3ChainBad, (_l3ChainN == 0 ? 0 : _l3NaiveSum / _l3ChainN).ToString("0", CultureInfo.InvariantCulture) }) + "\n");
 			}
 			catch (Exception e) { Mod.Logger.Warn(L3Log + "finish row failed: " + e.Message); }
 		}

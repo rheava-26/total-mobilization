@@ -1088,7 +1088,7 @@ namespace Levy.Content.NPCs
 					}
 					aloft = WantsAltitude || _aerial;
 				}
-				else if (!aloft && TryPerch(target, seg, range, standoff, now)) { WhyB = Why.BPerch; return true; }
+				else if (!aloft && !RowHolding(now) && TryPerch(target, seg, range, standoff, now)) { WhyB = Why.BPerch; return true; }
 				if (_engMode == EngageMode.Approach) ClearGoal();
 				_engMode = EngageMode.Hold;
 				if (!aloft && _crowdCount > 0 && now >= _nudgeNextTick && TryDisperseStep(seg, range, standoff, now)) return true;

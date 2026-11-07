@@ -443,10 +443,20 @@ namespace Levy.Content.NPCs
 			if (_platActive)
 			{
 				bool arrived = Math.Abs(NPC.Bottom.Y - _platGoal.Y) < 20f && Math.Abs(NPC.Bottom.X - _platGoal.X) < 40f;
-				if (arrived || now - _platStart > 300) { _platActive = false; if (PlatMode >= 1) _platNext = Math.Max(_platNext, now + PlatformLaneDwellTicks); return false; }
+				if (arrived || now - _platStart > 300)
+				{
+					_platActive = false; if (PlatMode >= 1) _platNext = Math.Max(_platNext, now + PlatformLaneDwellTicks);
+					if (RowsMode >= 1)
+					{
+						if (arrived) { RowArriveS++; _rowHoldUntil = now + RowHoldTicks * 2; _rowNext = Math.Max(_rowNext, now + RowEvalTicks); }
+						else { MarkBadPerch(TileNav.FeetTile(_platGoal), now); _rowHoldUntil = 0; _rowNext = now + 20; }
+					}
+					return false;
+				}
 				SetGoal(_platGoal);
 				return true;
 			}
+			if (PlatMode >= 1 && RowsMode >= 1 && !PositionsAsMelee) { RowThreatPoke(now); return TickRowSpread(now); }
 			if (PlatMode >= 1) return TickPlatformLane(now);
 			if (now < _platNext || NPC.velocity.Y != 0f) return false;
 			_platNext = now + 200 + (int)(SlotFrac(SlotSaltPhase) * 200f);

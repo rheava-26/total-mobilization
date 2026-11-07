@@ -438,6 +438,7 @@ namespace Levy.Content.NPCs
 			Fear_Update();
 			MindControl_Drive();
 			Movement_Update();
+			TickJumpEffects(); // the real OnStarted of every non-vanilla extra jump spent (SoldierNPC.JumpFx.cs)
 			TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs); a dedicated server returns at once
 			Combat_Update();
 			MindControl_Act();

@@ -131,7 +131,7 @@ namespace Levy.Common.Testing
 		{
 			var r = _crRunCur; if (r == null) return;
 			p.ZoneCrimson = r.Boss == "brain" || r.Boss == "perf"; p.ZoneCorrupt = r.Boss == "eow" || r.Boss == "hive"; p.ZoneJungle = r.Jungle; p.ZoneDesert = r.Boss == "ds"; p.ZoneUndergroundDesert = r.Boss == "ds" && r.Arena == "ug";
-			p.ZoneOverworldHeight = r.Arena != "ug" && r.Arena != "a3e"; p.ZoneRockLayerHeight = r.Arena == "ug" || r.Arena == "a3e"; p.ZoneDirtLayerHeight = false; p.ZoneSkyHeight = false; p.ZoneUnderworldHeight = false;
+			p.ZoneOverworldHeight = r.Arena != "ug" && !r.Arena.StartsWith("a3e"); p.ZoneRockLayerHeight = r.Arena == "ug" || r.Arena.StartsWith("a3e"); p.ZoneDirtLayerHeight = false; p.ZoneSkyHeight = false; p.ZoneUnderworldHeight = false;
 		}
 
 		private static string CrPct(long a, long b) => b <= 0 ? "-" : (100.0 * a / b).ToString("0", CultureInfo.InvariantCulture);

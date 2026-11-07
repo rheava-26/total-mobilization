@@ -10,9 +10,9 @@ namespace Levy.Content.NPCs
 			public static readonly string[] MNames = { "moving", "hook", "dodge-hold", "dodge-hop-wait", "no-goal", "arrived", "path-blocked", "air-apex" };
 			// brain-side codes
 			public const byte BUnk = 0, BFlee = 1, BRouted = 2, BFallBack = 3, BTalk = 4, BGrace = 5, BRetreat = 6, BStandoffNoStrafe = 7, BLedgeNoStep = 8, BOddThink = 9, BStrafe = 10, BNoLos = 11, BNoRoute = 12, BDeferred = 13,
-				BMeleeAvoid = 14, BMeleeContact = 15, BPlatform = 16, BNoTarget = 17, BResupply = 18, BUnarmed = 19, BPerchSettle = 20, BAirStrafe = 21, BCantFight = 22, BPerch = 23, BApproach = 24, BHopWait = 25, BHoldSlot = 26;
+				BMeleeAvoid = 14, BMeleeContact = 15, BPlatform = 16, BNoTarget = 17, BResupply = 18, BUnarmed = 19, BPerchSettle = 20, BAirStrafe = 21, BCantFight = 22, BPerch = 23, BApproach = 24, BHopWait = 25, BHoldSlot = 26, BRow = 27;
 			public static readonly string[] BNames = { "unknown", "flee", "routed", "autonomy-fallback", "talk-hold", "spawn-grace", "retreat", "strafe-suppressed-standoff", "strafe-no-safe-step", "strafe-odd-think", "strafe-goal", "no-line-debounce", "no-route-hold", "path-deferred",
-				"melee-avoid-boss-hold", "melee-in-contact", "platform-climb", "no-target-order", "resupply", "unarmed", "perch-settle", "air-strafe", "cant-fight", "perch", "approach", "hop-wait", "hold-slot" };
+				"melee-avoid-boss-hold", "melee-in-contact", "platform-climb", "no-target-order", "resupply", "unarmed", "perch-settle", "air-strafe", "cant-fight", "perch", "approach", "hop-wait", "hold-slot", "row-climb" };
 		}
 		internal byte WhyB, WhyM, BlockWhy;
 		private static readonly string[] BlockNames = { "?", "goal-above", "door", "lava", "water", "overhang", "wall", "void-gap", "deep-drop" };

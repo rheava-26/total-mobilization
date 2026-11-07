@@ -47,6 +47,9 @@ namespace Levy.Common.Recording
 		private static Dictionary<string, string> _meta;
 		private static string _fileBase;
 		private static int _bossGoneTick, _primaryWho = -1, _primarySerial;
+		/// <summary>Highest spawn serial alive when the recording started. A boss-like NPC with a HIGHER serial was spawned afterwards by someone other than this fight (the next trial); serial 0 (a worm segment that became a head: SetDefaults resets its tag) and a lower one belong to this fight.</summary>
+		private static int _startMaxSerial;
+		private static bool IsNewFightSerial(NPC n) { int sr = FightRecSpawnTag.SerialOf(n); return sr > _startMaxSerial; }
 		private static int _tkNone, _tkPlayer, _tkLevy, _lastTk = -1, _lastTl = int.MinValue, _levyHits, _levyDeaths;
 		private sealed class LTrack { public int Life, Max; public float X, Y; public int Who; public bool Seen; }
 		private static readonly Dictionary<int, LTrack> _lt = new();
@@ -129,6 +132,7 @@ namespace Levy.Common.Recording
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
 				_startTick = (int)Main.GameUpdateCount;
+				_startMaxSerial = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) _startMaxSerial = Math.Max(_startMaxSerial, FightRecSpawnTag.SerialOf(Main.npc[i]));
 				string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 				NPC nearest = null; float bd = float.MaxValue;
 				for (int i = 0; i < Main.maxNPCs; i++)
@@ -309,11 +313,11 @@ namespace Levy.Common.Recording
 			{
 				// a harness that clears the arena and spawns the next trial's boss in the same step leaves no gap: the boss we follow is gone and a boss with a newer spawn serial stands in the world
 				NPC pn = Main.npc[_primaryWho];
-				if (!(pn.active && IsFightBoss(pn) && FightRecSpawnTag.SerialOf(pn) == _primarySerial))
+				if (!(pn.active && IsFightBoss(pn) && !IsNewFightSerial(pn)))
 					for (int i = 0; i < Main.maxNPCs; i++)
 					{
 						NPC n = Main.npc[i];
-						if (n.active && IsFightBoss(n) && !n.friendly && !n.townNPC && !(n.ModNPC is SoldierNPC) && FightRecSpawnTag.SerialOf(n) != _primarySerial) { Stop("next fight started"); return; }
+						if (n.active && IsFightBoss(n) && !n.friendly && !n.townNPC && !(n.ModNPC is SoldierNPC) && IsNewFightSerial(n)) { Stop("next fight started"); return; }
 					}
 			}
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -322,7 +326,7 @@ namespace Levy.Common.Recording
 				if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC) continue;
 				if (!IsBossOrPart(n)) continue;
 				bool isBoss = IsFightBoss(n);
-				if (isBoss) { anyBoss = true; if (_primaryWho >= 0 && FightRecSpawnTag.SerialOf(n) != _primarySerial) otherSerial = true; }
+				if (isBoss) { anyBoss = true; if (_primaryWho >= 0 && IsNewFightSerial(n)) otherSerial = true; }
 				bool part = !isBoss;
 				if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
 				if (isBoss && _bossIdsSeen.Add(n.whoAmI)) { _bossesSeen++; Ev("boss", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString())); if (_bossNameSeen == null) _bossNameSeen = n.FullName; }

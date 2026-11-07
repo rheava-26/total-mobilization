@@ -306,9 +306,13 @@ namespace Levy.Content.TileEntities
 		/// Empty when this armory is not on the network, on a multiplayer client (the server owns item movement), or when no other armory is live.
 		/// Issue-side only: callers read their Storage and must remove through <see cref="TakeSlot"/> on THAT armory.
 		/// </summary>
+		/// <summary>Test seam (harness only): a fixed list of networked armories, standing in for the pylon network.</summary>
+		internal static List<ArmoryTE> TestOthers;
+
 		private List<ArmoryTE> OtherNetworked()
 		{
 			if (Main.netMode == NetmodeID.MultiplayerClient) return NoOthers;
+			if (TestOthers != null) return TestOthers;
 			var sys = SettlementSystem.Instance;
 			if (sys == null) return NoOthers;
 			var all = sys.NetworkedArmories(this);
@@ -329,20 +333,60 @@ namespace Levy.Content.TileEntities
 			return Remove(arr, idx);
 		}
 
-		/// <summary>Issue slots first (indices issueFrom..issueTo step issueStep), bulk storage second; best-first within each.</summary>
+		/// <summary>Test seam (harness only): true restores the old pick order (the armory's own shelves, then the networked armories, and a Magic Storage network only as a last resort, whatever any of them holds).</summary>
+		internal static bool LegacySourceOrder;
+
+		/// <summary>
+		/// The best-scoring item passing <paramref name="userPred"/> across everything this armory can reach: the issue slots (indices issueFrom..issueTo step issueStep), bulk storage, the networked armories' storage and a connected
+		/// Magic Storage network, ranked TOGETHER by <paramref name="score"/>. A strictly better item wins wherever it sits; on a tie the earlier source keeps it (issue slots, storage, networked armories, Magic Storage).
+		/// An armor / accessory issue row is the player's own pick and still comes first. Magic Storage is read and withdrawn exactly as before (<see cref="MsTakeBest"/>).
+		/// </summary>
 		private Item TakeBest(Item[] issue, int issueFrom, int issueTo, int issueStep, Func<Item, bool> userPred, Func<Item, float> score)
 		{
 			// Items a Re-arm just pulled off a soldier with a hand-assigned slot are held for that soldier until the same tick ends.
 			Func<Item, bool> pred = it => !IsReservedRef(it) && userPred(it);
-			if (issue != null && TryBest(issue, pred, score, out int idx, issueFrom, issueTo, issueStep)) return Remove(issue, idx);
-			if (TryBest(Storage, pred, score, out idx)) return Remove(Storage, idx);
-			// Spill over into pylon-networked armories' storage; each honours its OWN re-arm reservations and loses the item from its OWN slot.
+			int idx;
+			if (LegacySourceOrder) {
+				if (issue != null && TryBest(issue, pred, score, out idx, issueFrom, issueTo, issueStep)) return Remove(issue, idx);
+				if (TryBest(Storage, pred, score, out idx)) return Remove(Storage, idx);
+				foreach (var o in OtherNetworked()) {
+					var src = o;
+					Func<Item, bool> opred = it => !src.IsReservedRef(it) && userPred(it);
+					if (TryBest(src.Storage, opred, score, out idx)) { var taken = src.TakeSlot(src.Storage, idx); if (taken != null) return taken; }
+				}
+				return MsTakeBest(userPred, score);
+			}
+			// The weapon rack is ranked with everything else (a better weapon in storage beats a worse one on the rack, as in TakeVaried); an armor row is the player's chosen set and goes first.
+			bool rankIssue = issue != null && ReferenceEquals(issue, IssueWeapons);
+			if (issue != null && !rankIssue && TryBest(issue, pred, score, out idx, issueFrom, issueTo, issueStep)) return Remove(issue, idx);
+			ArmoryTE bestOwner = null; Item[] bestArr = null; int bestIdx = -1; float best = float.NegativeInfinity;
+			void Consider(ArmoryTE owner, Item[] arr, Func<Item, bool> p, int from = 0, int to = -1, int step = 1)
+			{
+				if (arr == null || !TryBest(arr, p, score, out int i, from, to, step)) return;
+				float s = score(arr[i]);
+				if (s > best) { best = s; bestOwner = owner; bestArr = arr; bestIdx = i; }
+			}
+			if (rankIssue) Consider(this, issue, pred, issueFrom, issueTo, issueStep);
+			Consider(this, Storage, pred);
 			foreach (var o in OtherNetworked()) {
 				var src = o;
-				Func<Item, bool> opred = it => !src.IsReservedRef(it) && userPred(it);
-				if (TryBest(src.Storage, opred, score, out idx)) { var taken = src.TakeSlot(src.Storage, idx); if (taken != null) return taken; }
+				Consider(src, src.Storage, it => !src.IsReservedRef(it) && userPred(it));
 			}
-			return MsTakeBest(userPred, score); // last resort: a connected Magic Storage network
+			Item msCand = null; float msScore = float.NegativeInfinity;
+			var heart = MsHeart();
+			if (heart != null) {
+				foreach (var it in MagicStorageBridge.Snapshot(heart)) {
+					if (IsAir(it) || !userPred(it)) continue;
+					float s = score(it);
+					if (msCand == null || s > msScore) { msCand = it; msScore = s; }
+				}
+			}
+			if (msCand != null && msScore > best) {
+				if (MagicStorageBridge.TryWithdrawExact(heart, msCand, 1, out var got) && !IsAir(got)) return got;
+				// Magic Storage handed nothing back (the item moved, a security rule): fall through to the best the armories hold.
+			}
+			if (bestArr != null) return bestOwner.TakeSlot(bestArr, bestIdx);
+			return null;
 		}
 
 		/// <summary>Tier first, defense second: rarity tier and value outweigh a few points of flat defense, so progression gear (Crimtane) beats flat-defense metal (Platinum).</summary>
@@ -521,9 +565,9 @@ namespace Levy.Content.TileEntities
 		/// non-summoner is never handed one; (2) a summoner leads with his hard summon — while a minion staff is available his primary is a staff, never a whip or a
 		/// sentry (both move to the off-hand / fallback), and with no staff he may lead with any summon weapon; (3) a ranged helmet's ammo subtype (<see cref="RangedSteer"/>).
 		/// </summary>
-		private Func<Item, bool> PrimaryRule(SoldierRecord who)
+		private Func<Item, bool> PrimaryRule(SoldierRecord who, bool asSummoner = false)
 		{
-			bool summoner = IsSummonerSoldier(who);
+			bool summoner = asSummoner || IsSummonerSoldier(who); // asSummoner: the army's class balance has made him a summoner although no summon armor is on his back yet
 			bool staffFirst = summoner && StaffAvailableFor(who); // a summoner with a minion staff in reach takes the staff, not a whip or a sentry
 			var steer = RangedSteer(who);
 			if (summoner && !staffFirst && steer == null) return null; // a summoner with no staff may lead with any weapon; nothing else to restrict
@@ -732,16 +776,22 @@ namespace Levy.Content.TileEntities
 		/// so a better weapon in storage beats a weaker one on the rack. The rack (then storage, then the networked armories) is only a tie preference between equal scores. A connected Magic
 		/// Storage network is the last resort.
 		/// </summary>
-		private Item TakeVaried(SoldierRecord who, Func<Item, bool> userPred)
+		private Item TakeVaried(SoldierRecord who, Func<Item, bool> userPred, bool noMs = false)
 		{
 			var segs = new List<(ArmoryTE owner, Item[] arr, int to)> { (this, IssueWeapons, SidearmSlot), (this, Storage, Storage.Length) };
 			foreach (var o in OtherNetworked()) segs.Add((o, o.Storage, o.Storage.Length));
+			// A connected Magic Storage network is one more source in the same ranking (owner null), so the best staff the player owns anywhere wins, not just the best one on the armory's own shelves.
+			object msHeart = null;
+			if (!noMs && !LegacySourceOrder) {
+				msHeart = MsHeart();
+				if (msHeart != null) { var msArr = MagicStorageBridge.Snapshot(msHeart).ToArray(); if (msArr.Length > 0) segs.Add((null, msArr, msArr.Length)); else msHeart = null; }
+			}
 			var byType = new Dictionary<int, (int seg, int idx, float score)>();
 			for (int s = 0; s < segs.Count; s++) {
 				var (owner, arr, to) = segs[s];
 				for (int i = 0; i < to && i < arr.Length; i++) {
 					var it = arr[i];
-					if (IsAir(it) || owner.IsReservedRef(it) || !userPred(it)) continue;
+					if (IsAir(it) || (owner != null && owner.IsReservedRef(it)) || !userPred(it)) continue;
 					float sc = WeaponRank.Of(it);
 					if (!byType.TryGetValue(it.type, out var cur) || sc > cur.score) byType[it.type] = (s, i, sc); // strict >: on a tie the earlier source (rack first) stays
 				}
@@ -754,10 +804,14 @@ namespace Levy.Content.TileEntities
 				while (tier < list.Count && tier < LevyConstants.WeaponVarietyMaxTypes && list[tier].score >= cutoff) tier++;
 				var pick = list[(int)((uint)(who?.Id ?? 0) % (uint)tier)];
 				var (powner, parr, _) = segs[pick.seg];
+				if (powner == null) {
+					if (MagicStorageBridge.TryWithdrawExact(msHeart, parr[pick.idx], 1, out var got) && !IsAir(got)) return got;
+					return TakeVaried(who, userPred, noMs: true); // Magic Storage handed nothing back: pick again among the armories' own
+				}
 				var taken = powner.TakeSlot(parr, pick.idx);
 				if (taken != null) return taken;
 			}
-			return MsTakeVaried(userPred, who); // last resort: a connected Magic Storage network
+			return LegacySourceOrder ? MsTakeVaried(userPred, who) : null; // legacy: a connected Magic Storage network only as a last resort
 		}
 
 		/// <summary>

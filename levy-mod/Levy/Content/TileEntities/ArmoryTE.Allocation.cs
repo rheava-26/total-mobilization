@@ -4,6 +4,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
+using Levy.Common.Integrations;
 using Levy.Common.Soldiers;
 using Levy.Common.Weapons;
 using Levy.Content.NPCs;
@@ -23,7 +24,8 @@ namespace Levy.Content.TileEntities
 		/// <summary>Memo for <see cref="ArmorableClasses"/> within one plan (the answer depends only on the three worn pieces, their locks and the view); null outside a plan.</summary>
 		private Dictionary<(int, int, int, int, bool), HashSet<DamageClass>> _armorableMemo;
 
-		private sealed class ShelfSrc { public ArmoryTE Owner; public Item[] Arr; }
+		/// <summary>Where a shelf candidate physically is: a slot array of an armory (<see cref="Owner"/> + <see cref="Arr"/>), or a Magic Storage network (<see cref="Heart"/>, withdrawn through <see cref="MagicStorageBridge"/>).</summary>
+		private sealed class ShelfSrc { public ArmoryTE Owner; public Item[] Arr; public object Heart; }
 
 		private sealed class AllocPlan
 		{
@@ -62,6 +64,7 @@ namespace Levy.Content.TileEntities
 					if (lev.Cls == null && !classMatch) lev.Flex = ArmorableClasses(rec, hasW);
 					if (classMatch && hasW) lev.ClassLock = WeaponClassifier.ItemDamageClass(g.Weapon);
 					var rule = PrimaryRule(rec);
+					Func<Item, bool> summonRule = null; // the rule once the class balance has made him a summoner (an armorless levy drafted onto the summon class may be dealt a staff)
 					var pouch = g.Ammo;
 					bool pouchFixed = g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(pouch); // a hand-assigned pouch is never swapped: the weapon must fire it
 					var self = rec;
@@ -71,7 +74,9 @@ namespace Levy.Content.TileEntities
 						if (ModWeaponGates.Locked(it)) return false; // its own use gate is shut in this world
 						if (!WeaponUse.CanEverPay(it, (int)lev.Mana)) return false; // a cast dearer than his whole mana pool (crystals + what his gear adds) would never fire
 						if (it.maxStack > 1 && (hasW || WeaponClassifier.GetProfile(it).Family != WeaponFamily.Thrown)) return false; // a bare-handed levy may be dealt a thrown stack; a stack is never a swap
-						if (rule != null && !rule(it)) return false;
+						var useRule = rule;
+						if (lev.Virtual && lev.Cls == DamageClass.Summon) useRule = summonRule ??= PrimaryRule(rec, true);
+						if (useRule != null && !useRule(it)) return false;
 						if (pouchFixed && it.useAmmo > 0 && pouch.ammo != it.useAmmo) return false;
 						if (!hasW) return true;
 						if (!HasAmmoFor(it, self, onHand) && !(it.useAmmo > 0 && g.Weapon.useAmmo == it.useAmmo)) return false; // a dry gun may trade up to a better gun of the same ammo
@@ -112,10 +117,30 @@ namespace Levy.Content.TileEntities
 					AddShelf(this, Storage, Storage.Length, 1);
 					int pref = 2;
 					foreach (var o in OtherNetworked()) AddShelf(o, o.Storage, o.Storage.Length, pref++);
+					// A connected Magic Storage network is part of the same pool: its weapons are dealt on rank like the armory's own, never only after the armory runs dry.
+					if (!LegacySourceOrder) AddMsShelf(plan, pref, ref seq);
 				}
 			}
 			finally { _armorableMemo = null; }
 			return plan;
+		}
+
+		/// <summary>Adds the issuable weapons of the connected Magic Storage network as shelf candidates (at most one per levy of each type and prefix: a stack of identical staves is not offered a thousand times).</summary>
+		private void AddMsShelf(AllocPlan plan, int pref, ref int seq)
+		{
+			var heart = MsHeart();
+			if (heart == null) return;
+			var src = new ShelfSrc { Heart = heart };
+			var perKind = new Dictionary<(int, int), int>();
+			int cap = Math.Max(1, plan.Levies.Count);
+			foreach (var it in MagicStorageBridge.Snapshot(heart)) {
+				if (IsAir(it) || it.maxStack > 1 || !IsIssuable(it)) continue;
+				var key = (it.type, (int)it.prefix);
+				perKind.TryGetValue(key, out int n);
+				if (n >= cap) continue;
+				perKind[key] = n + 1;
+				plan.Cands.Add(WeaponAllocator.MakeCand(it, pref, seq++, AllocSlot.Shelf, null, src));
+			}
 		}
 
 		/// <summary>
@@ -156,8 +181,14 @@ namespace Levy.Content.TileEntities
 				}
 				else if (c.Slot == AllocSlot.Shelf) {
 					var src = (ShelfSrc)c.Src;
-					int idx = IndexOfRef(src.Arr, c.It);
-					if (idx >= 0) it = src.Owner.TakeSlot(src.Arr, idx);
+					if (src.Heart != null) {
+						// Magic Storage: ask the network for exactly this weapon (type + prefix); what it hands back is what the levy holds. Nothing handed back = he keeps what he has.
+						if (MagicStorageBridge.TryWithdrawExact(src.Heart, c.It, 1, out var got) && !IsAir(got)) it = got;
+					}
+					else {
+						int idx = IndexOfRef(src.Arr, c.It);
+						if (idx >= 0) it = src.Owner.TakeSlot(src.Arr, idx);
+					}
 				}
 				else {
 					var holder = (SoldierRecord)c.Phys.Tag; var hg = holder.Gear;

@@ -291,6 +291,7 @@
   - Slime God may be biome-specific (→ ammo-slimegod).
   - BUG: King Slime phase-2 crystal (Calamity jewel) targets ONLY the player in real play (→ ammo-slimegod, minion retarget).
   - Double jump: "they should double jump!" Lab 3's "levies don't double jump" was unverified. vert1 to verify all gear double jumps (incl. Sulphurous set jump bubble) and their effects.
+- **BUG (Eve video 15:39):** levy hook CHAINS drawn from far offscreen (likely from the owner player's MountedCenter) → vert1 builder.
 - **Launched:**
   - vert1: levies use platform rows;
   - ammo-slimegod: best-ammo armory rule + Slime God despawn.
@@ -298,6 +299,7 @@
   - Slime God may be biome-specific (→ ammo-slimegod).
   - BUG: King Slime phase-2 crystal (Calamity jewel) targets ONLY the player in real play (→ ammo-slimegod, minion retarget).
   - Double jump: "they should double jump!" Lab 3's "levies don't double jump" was unverified. vert1 to verify all gear double jumps (incl. Sulphurous set jump bubble) and their effects.
+- **BUG (Eve video 15:39):** levy hook CHAINS drawn from far offscreen (likely from the owner player's MountedCenter) → vert1 builder.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

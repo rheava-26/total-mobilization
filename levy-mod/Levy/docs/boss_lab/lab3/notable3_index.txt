@@ -1,0 +1,22 @@
+Lab 3 notable fights. Eve: open these on the replay page. Arms: baseline = realistic 220-tile arena with 5 platform rows, real stations, supplied HP/mana, tier gear and ammo, event fear + formation. food1 = Well Fed, food2 = Plenty Satisfied, hz = hazard pay, rg2 = two rogue levies. Files 01-11 and 12-19 were recorded with the adds recorder (format 5) except the last line.
+
+01_close_e_Brain_of_Cthulhu_a3_s2_mrev_mod_n13_32.jsonl	ROGUE ARM, Brain Revengeance, close win: 6 of 13 levies dead, 110 s. Sulphurous-set rogue levies (Wulfrum Knife / Mycoroot) among the army.
+02_close_b_Brain_of_Cthulhu_a3_s3_mrev_mod_n13_33.jsonl	CLOSE WIN, Brain Rev, Well Fed arm: 168 s, 7 dead; long creeper grind.
+03_close_d_Brain_of_Cthulhu_a3_s4_mrev_mod_n13_34.jsonl	WIPE, Brain Rev, hazard-pay arm: all 13 dead in 97 s, Brain untouched behind its creeper shield.
+04_close_c_Brain_of_Cthulhu_a3_s3_mrev_mod_n13_33.jsonl	WEIRD / TIMEOUT, Brain Rev, Plenty Satisfied arm: 12 dead, Brain at 738/4144 HP when the 300 s cap hit.
+05_ammo_ab_Brain_of_Cthulhu_a3e_s1_mrev_mod_n13_19.jsonl	AMMO A/B, enclosed arena, plain ammo (Flaming Arrow / Silver Bullet): WIPE in 114 s. Pair with the next file (same seed, best ammo).
+06_ammo_ab_Brain_of_Cthulhu_a3e_s1_mrev_mod_n13_25.jsonl	AMMO A/B, same seed with best tier-legal ammo (Jester arrows): WIN in 88 s, 4 dead.
+07_ammo_ab_Brain_of_Cthulhu_a3e_s2_mrev_mod_n13_32.jsonl	AMMO A/B, Meteor Shot what-if (NOT tier-legal at Brain): WIPE in 76 s.
+08_close_b_Desert_Scourge_a3_s6_mexp_mod_n11_12.jsonl	CLOSE WIN, Desert Scourge Expert (the only win of 6 seeds in this arm): 76 s, 6 of 11 dead.
+09_close_b_Desert_Scourge_a3_s5_mexp_mod_n11_11.jsonl	WIPE, Desert Scourge Expert: all 11 dead in 23 s.
+10_close_b_Eater_of_Worlds_a3_s3_mrev_mod_n13_27.jsonl	WIPE, Eater of Worlds Revengeance: 13 dead in 82 s, the worm still at about 32 percent.
+11_close_e_Eater_of_Worlds_a3_s5_mexp_mod_n13_23.jsonl	EoW Expert, rogue arm: clean win, 33 s, no deaths.
+12_newboss_The_Hive_Mind_a3_s1_mrev_mod_n13_01.jsonl	NEW BOSS, Hive Mind Revengeance (corruption zone, 13 levies).
+13_newboss_The_Hive_Mind_a3_s3_mexp_mod_n13_05.jsonl	NEW BOSS, Hive Mind Expert.
+14_newboss_The_Perforator_Hive_a3_s1_mexp_mod_n13_02.jsonl	NEW BOSS, Perforators Expert (crimson zone, 13 levies): worms and cysts.
+15_newboss_The_Perforator_Hive_a3_s2_mrev_mod_n13_03.jsonl	NEW BOSS, Perforators Revengeance.
+16_newboss_The_Slime_God_a3_s1_mexp_mod_n16_04.jsonl	ANOMALY / NEW BOSS, Slime God Expert: the two Paladins flip into their despawn state (ai0 = 4 / 3) within 6 ticks and fall out of the world; the Core stays invulnerable. 0 wins, a harness/targeting bug, not a balance result.
+17_van_a_King_Slime_a3_s5_mexp_mod_n10_05.jsonl	VANILLA (no Calamity), King Slime Expert: the only non-win of 36 vanilla fights; 7 of 10 dead, TIMEOUT at 1125/2800 HP.
+18_van_a_Skeletron_a3_s1_mexp_mod_n14_31.jsonl	VANILLA, Skeletron Expert, 14 levies.
+19_close_c_Queen_Bee_a3_s2_mexp_mod_n15_38.jsonl	Queen Bee Expert, Plenty Satisfied arm (jungle zone).
+20_cal_a2_Skeletron_a3_s4_mexp_mod_n16_34.jsonl	Skeletron Expert, baseline arm (recorded before the adds recorder merge: no adds).

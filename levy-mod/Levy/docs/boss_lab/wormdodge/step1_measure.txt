@@ -1,0 +1,115 @@
+
+== eve_solo / cmd (all passes)  (n=12 passes)
+  dmin med 96.85 | disp med 143.5 | path med 213.7 | head px/tick med 15.7
+  along med -12.15 | perp(with-turn +) med 98.3 mean 128.87 | toward-head med 27.4 mean -4.7
+  WITH the turn (perp>20px) 75% | AWAY from turn (perp<-20) 8% | toward head (>20) 50% | away from head (<-20) 25%
+  ends on turn side 58% | t50 med 0.35 s | late-share med 0.69 | rise med 4.8 px | still (disp<24px) 8%
+  commit impulse: found 100% | time before closest med 0.1 s | dv along-head med -0.7 | dv outward(from head line) med 9.9 | dv up med 0.95 | |dv| med 13.55
+  HORIZONTAL vs head vx: window dx AGAINST head 42% / WITH 33% (|dx|>20px) | commit dvx against 25% / with 42% (|dv|>2) | last-0.5s mean vx against 42% / with 42% | median dx_with -7.5
+  head-to-body distance at the commit: med 154.0 px | body speed px/tick in the first 0.9 s of the window (hold/approach): med 0.65
+  last 0.5s: cos(body velocity, head heading) mean 0.02 (+1 = running WITH the head) | lateral-outward speed px/tick mean 1.49
+  jump/dash in the pass window: jumped 50% | double-jumped (2+ kicks) 17% | dashed 75%
+  HIT within 0.5s of closest approach: 25% (head 17%, body part 8%) | dmin<40px: 8%
+
+  dmin med 96.85 | disp med 143.5 | path med 213.7 | head px/tick med 15.7
+  along med -12.15 | perp(with-turn +) med 98.3 mean 128.87 | toward-head med 27.4 mean -4.7
+  WITH the turn (perp>20px) 75% | AWAY from turn (perp<-20) 8% | toward head (>20) 50% | away from head (<-20) 25%
+  ends on turn side 58% | t50 med 0.35 s | late-share med 0.69 | rise med 4.8 px | still (disp<24px) 8%
+  commit impulse: found 100% | time before closest med 0.1 s | dv along-head med -0.7 | dv outward(from head line) med 9.9 | dv up med 0.95 | |dv| med 13.55
+  HORIZONTAL vs head vx: window dx AGAINST head 42% / WITH 33% (|dx|>20px) | commit dvx against 25% / with 42% (|dv|>2) | last-0.5s mean vx against 42% / with 42% | median dx_with -7.5
+  head-to-body distance at the commit: med 154.0 px | body speed px/tick in the first 0.9 s of the window (hold/approach): med 0.65
+  last 0.5s: cos(body velocity, head heading) mean 0.02 (+1 = running WITH the head) | lateral-outward speed px/tick mean 1.49
+  jump/dash in the pass window: jumped 50% | double-jumped (2+ kicks) 17% | dashed 75%
+  HIT within 0.5s of closest approach: 25% (head 17%, body part 8%) | dmin<40px: 8%
+
+== eve_team / cmd (all passes)  (n=4 passes)
+  dmin med 85.55 | disp med 258.1 | path med 354.45 | head px/tick med 14.25
+  along med -47.95 | perp(with-turn +) med 208.8 mean 154.65 | toward-head med 53.2 mean 34.02
+  WITH the turn (perp>20px) 75% | AWAY from turn (perp<-20) 25% | toward head (>20) 50% | away from head (<-20) 25%
+  ends on turn side 75% | t50 med 0.8 s | late-share med 0.55 | rise med 0.0 px | still (disp<24px) 0%
+  commit impulse: found 100% | time before closest med 0.35 s | dv along-head med 5.65 | dv outward(from head line) med 6.1 | dv up med 1.8 | |dv| med 13.35
+  HORIZONTAL vs head vx: window dx AGAINST head 75% / WITH 25% (|dx|>20px) | commit dvx against 25% / with 50% (|dv|>2) | last-0.5s mean vx against 50% / with 50% | median dx_with -101.55
+  head-to-body distance at the commit: med 321.0 px | body speed px/tick in the first 0.9 s of the window (hold/approach): med 1.9
+  last 0.5s: cos(body velocity, head heading) mean 0.14 (+1 = running WITH the head) | lateral-outward speed px/tick mean 4.46
+  jump/dash in the pass window: jumped 25% | double-jumped (2+ kicks) 0% | dashed 75%
+  HIT within 0.5s of closest approach: 50% (head 50%, body part 0%) | dmin<40px: 25%
+
+  dmin med 85.55 | disp med 258.1 | path med 354.45 | head px/tick med 14.25
+  along med -47.95 | perp(with-turn +) med 208.8 mean 154.65 | toward-head med 53.2 mean 34.02
+  WITH the turn (perp>20px) 75% | AWAY from turn (perp<-20) 25% | toward head (>20) 50% | away from head (<-20) 25%
+  ends on turn side 75% | t50 med 0.8 s | late-share med 0.55 | rise med 0.0 px | still (disp<24px) 0%
+  commit impulse: found 100% | time before closest med 0.35 s | dv along-head med 5.65 | dv outward(from head line) med 6.1 | dv up med 1.8 | |dv| med 13.35
+  HORIZONTAL vs head vx: window dx AGAINST head 75% / WITH 25% (|dx|>20px) | commit dvx against 25% / with 50% (|dv|>2) | last-0.5s mean vx against 50% / with 50% | median dx_with -101.55
+  head-to-body distance at the commit: med 321.0 px | body speed px/tick in the first 0.9 s of the window (hold/approach): med 1.9
+  last 0.5s: cos(body velocity, head heading) mean 0.14 (+1 = running WITH the head) | lateral-outward speed px/tick mean 4.46
+  jump/dash in the pass window: jumped 25% | double-jumped (2+ kicks) 0% | dashed 75%
+  HIT within 0.5s of closest approach: 50% (head 50%, body part 0%) | dmin<40px: 25%
+
+== eve_team / levy (all passes)  (n=13 passes)
+  dmin med 94.0 | disp med 321.4 | path med 546.1 | head px/tick med 15.8
+  along med 61.6 | perp(with-turn +) med -53.7 mean -45.72 | toward-head med 17.7 mean -4.87
+  WITH the turn (perp>20px) 31% | AWAY from turn (perp<-20) 62% | toward head (>20) 46% | away from head (<-20) 46%
+  ends on turn side 92% | t50 med 0.93 s | late-share med 0.28 | rise med 64.8 px | still (disp<24px) 0%
+  commit impulse: found 100% | time before closest med 0.67 s | dv along-head med 3.0 | dv outward(from head line) med -4.7 | dv up med 7.8 | |dv| med 10.0
+  HORIZONTAL vs head vx: window dx AGAINST head 38% / WITH 62% (|dx|>20px) | commit dvx against 15% / with 31% (|dv|>2) | last-0.5s mean vx against 38% / with 46% | median dx_with 133.2
+  head-to-body distance at the commit: med 375 px | body speed px/tick in the first 0.9 s of the window (hold/approach): med 6.4
+  last 0.5s: cos(body velocity, head heading) mean 0.23 (+1 = running WITH the head) | lateral-outward speed px/tick mean 1.2
+  jump/dash in the pass window: jumped 85% | double-jumped (2+ kicks) 0% | dashed 8%
+  HIT within 0.5s of closest approach: 69% (head 69%, body part 0%) | dmin<40px: 0%
+
+  dmin med 94.0 | disp med 346.8 | path med 559.3 | head px/tick med 15.8
+  along med 17.4 | perp(with-turn +) med -47.65 mean -40.36 | toward-head med 19.7 mean -0.6
+  WITH the turn (perp>20px) 33% | AWAY from turn (perp<-20) 58% | toward head (>20) 50% | away from head (<-20) 42%
+  ends on turn side 92% | t50 med 0.88 s | late-share med 0.29 | rise med 58.5 px | still (disp<24px) 0%
+  commit impulse: found 100% | time before closest med 0.6 s | dv along-head med 4.5 | dv outward(from head line) med -4.45 | dv up med 7.3 | |dv| med 10.0
+  HORIZONTAL vs head vx: window dx AGAINST head 42% / WITH 58% (|dx|>20px) | commit dvx against 17% / with 33% (|dv|>2) | last-0.5s mean vx against 42% / with 50% | median dx_with 149.2
+  head-to-body distance at the commit: med 371.5 px | body speed px/tick in the first 0.9 s of the window (hold/approach): med 6.45
+  last 0.5s: cos(body velocity, head heading) mean 0.26 (+1 = running WITH the head) | lateral-outward speed px/tick mean 1.26
+  jump/dash in the pass window: jumped 83% | double-jumped (2+ kicks) 0% | dashed 8%
+  HIT within 0.5s of closest approach: 75% (head 75%, body part 0%) | dmin<40px: 0%
+
+== lab_old / cmd (all passes)  (n=88 passes)
+  dmin med 68.95 | disp med 0.0 | path med 0.0 | head px/tick med 12.55
+  along med 0.0 | perp(with-turn +) med -0.0 mean 0.0 | toward-head med 0.0 mean 0.0
+  WITH the turn (perp>20px) 0% | AWAY from turn (perp<-20) 0% | toward head (>20) 0% | away from head (<-20) 0%
+  ends on turn side 50% | t50 med nan s | late-share med 0.0 | rise med 0.0 px | still (disp<24px) 100%
+  commit impulse: found 0% | time before closest med nan s | dv along-head med nan | dv outward(from head line) med nan | dv up med nan | |dv| med nan
+  HORIZONTAL vs head vx: window dx AGAINST head 0% / WITH 0% (|dx|>20px) | commit dvx against 0% / with 0% (|dv|>2) | last-0.5s mean vx against 0% / with 0% | median dx_with 0.0
+  head-to-body distance at the commit: med nan px | body speed px/tick in the first 0.9 s of the window (hold/approach): med 0.0
+  last 0.5s: cos(body velocity, head heading) mean nan (+1 = running WITH the head) | lateral-outward speed px/tick mean 0.0
+  jump/dash in the pass window: jumped 0% | double-jumped (2+ kicks) 0% | dashed 0%
+  HIT within 0.5s of closest approach: 0% (head 0%, body part 0%) | dmin<40px: 26%
+
+  dmin med 76.9 | disp med 0.0 | path med 0.0 | head px/tick med 14.4
+  along med -0.0 | perp(with-turn +) med 0.0 mean 0.0 | toward-head med 0.0 mean 0.0
+  WITH the turn (perp>20px) 0% | AWAY from turn (perp<-20) 0% | toward head (>20) 0% | away from head (<-20) 0%
+  ends on turn side 100% | t50 med nan s | late-share med 0.0 | rise med 0 px | still (disp<24px) 100%
+  commit impulse: found 0% | time before closest med nan s | dv along-head med nan | dv outward(from head line) med nan | dv up med nan | |dv| med nan
+  HORIZONTAL vs head vx: window dx AGAINST head 0% / WITH 0% (|dx|>20px) | commit dvx against 0% / with 0% (|dv|>2) | last-0.5s mean vx against 0% / with 0% | median dx_with -0.0
+  head-to-body distance at the commit: med nan px | body speed px/tick in the first 0.9 s of the window (hold/approach): med 0.0
+  last 0.5s: cos(body velocity, head heading) mean nan (+1 = running WITH the head) | lateral-outward speed px/tick mean 0.0
+  jump/dash in the pass window: jumped 0% | double-jumped (2+ kicks) 0% | dashed 0%
+  HIT within 0.5s of closest approach: 0% (head 0%, body part 0%) | dmin<40px: 0%
+
+== lab_old / levy (all passes)  (n=579 passes)
+  dmin med 64.2 | disp med 156.8 | path med 304.5 | head px/tick med 12.5
+  along med 46.5 | perp(with-turn +) med 49.1 mean 40.8 | toward-head med -28.0 mean -43.74
+  WITH the turn (perp>20px) 61% | AWAY from turn (perp<-20) 25% | toward head (>20) 28% | away from head (<-20) 53%
+  ends on turn side 64% | t50 med 0.83 s | late-share med 0.28 | rise med 51.5 px | still (disp<24px) 4%
+  commit impulse: found 98% | time before closest med 0.67 s | dv along-head med 0.6 | dv outward(from head line) med 2.45 | dv up med 7.05 | |dv| med 7.8
+  HORIZONTAL vs head vx: window dx AGAINST head 35% / WITH 58% (|dx|>20px) | commit dvx against 28% / with 26% (|dv|>2) | last-0.5s mean vx against 44% / with 40% | median dx_with 50.5
+  head-to-body distance at the commit: med 462.0 px | body speed px/tick in the first 0.9 s of the window (hold/approach): med 3.0
+  last 0.5s: cos(body velocity, head heading) mean 0.06 (+1 = running WITH the head) | lateral-outward speed px/tick mean 1.2
+  jump/dash in the pass window: jumped 66% | double-jumped (2+ kicks) 12% | dashed 8%
+  HIT within 0.5s of closest approach: 77% (head 70%, body part 8%) | dmin<40px: 37%
+
+  dmin med 59.9 | disp med 137.1 | path med 285.8 | head px/tick med 12.8
+  along med 36.7 | perp(with-turn +) med 46.5 mean 38.14 | toward-head med -11.7 mean -26.57
+  WITH the turn (perp>20px) 61% | AWAY from turn (perp<-20) 26% | toward head (>20) 31% | away from head (<-20) 47%
+  ends on turn side 71% | t50 med 0.83 s | late-share med 0.3 | rise med 47.7 px | still (disp<24px) 4%
+  commit impulse: found 98% | time before closest med 0.63 s | dv along-head med 1.3 | dv outward(from head line) med 3.15 | dv up med 7.05 | |dv| med 7.8
+  HORIZONTAL vs head vx: window dx AGAINST head 36% / WITH 55% (|dx|>20px) | commit dvx against 28% / with 25% (|dv|>2) | last-0.5s mean vx against 48% / with 34% | median dx_with 39.8
+  head-to-body distance at the commit: med 458.0 px | body speed px/tick in the first 0.9 s of the window (hold/approach): med 2.7
+  last 0.5s: cos(body velocity, head heading) mean 0.01 (+1 = running WITH the head) | lateral-outward speed px/tick mean 1.45
+  jump/dash in the pass window: jumped 65% | double-jumped (2+ kicks) 11% | dashed 7%
+  HIT within 0.5s of closest approach: 86% (head 78%, body part 7%) | dmin<40px: 41%

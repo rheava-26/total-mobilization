@@ -18,6 +18,17 @@ namespace Levy.Common.Weapons
 	/// </summary>
 	public enum ModShotKind { None, Holdout, Shortsword }
 
+	/// <summary>How long a charge-by-button holdout is held before the button is let go, and how long it lingers after the release.</summary>
+	public sealed class ChargePlan { public readonly int HoldTicks, LingerTicks; public ChargePlan(int hold, int linger) { HoldTicks = hold; LingerTicks = linger; } }
+
+	/// <summary>A circle the held cursor traces around the target: radius in px and radians per tick. The phase is the world tick, so a holdout and the children it spawns trace the same circle.</summary>
+	public sealed class CursorScript
+	{
+		public readonly float Radius, Step;
+		public CursorScript(float radius, float step) { Radius = radius; Step = step; }
+		public Microsoft.Xna.Framework.Vector2 At(Microsoft.Xna.Framework.Vector2 center, uint tick) { float a = tick * Step; return center + new Microsoft.Xna.Framework.Vector2((float)System.Math.Cos(a), (float)System.Math.Sin(a)) * Radius; }
+	}
+
 	public static class ModShotKinds
 	{
 		private static readonly Dictionary<int, ModShotKind> _cache = new();
@@ -38,7 +49,54 @@ namespace Levy.Common.Weapons
 			"Riftburst", "Roxcalibur", "ScorchedEarth", "Scorpio", "Seadragon", "ShiftingSands", "SlagfireDouser", "SnowstormStaff", "SparklingEmpress", "SpectralstormCannon", "SpineOfThanatos",
 			"StreamGouge", "SuperradiantSlaughterer", "Sylvestaff", "TauCannon", "Teslastaff", "TheCauldron", "TheHive", "TheMaelstrom", "Ultima", "UnstableCastersGauntlet", "Violence", "Voidragon",
 			"Vulcan", "WildfireBloom", "Wingman",
+			// dud2 (2026-11-07, mp=200 so the cast cost is payable: plain -> held dmg/s per levy vs a x40 Eye, SP emulation): GloriousEnd 1.6 -> 102, Volterion 0 -> 648, VitriolicViper 448 -> 1704, HeliumFlash 5135 -> 1218 (seed spread; plain was 0 at the lab pool: see the mana note), NebulousCataclysm, RainbowPartyCannon, StaffofBlushie 0 -> 561.
+			"GloriousEnd", "HeliumFlash", "NebulousCataclysm", "RainbowPartyCannon", "StaffofBlushie", "VitriolicViper", "Volterion",
+			// dud2, the holdouts the plain shot cannot run at all (the commander never holds the button, so the holdout ends on its first tick) and that a held chain now carries (children bound to the holdout stay in the chain, the dummy's owned-projectile counts are real, charge / cursor / start-mana tables below):
+			// ArtAttack 0 -> ~170 (cursor circle), Rancor 0 -> ~80 (full-pool start, bound circle), TitaniumRailgun 5 -> ~40 (charge, release), GrandDad 0 -> ~70 (melee holdout; the plain one throws NaN from a zero cursor), Basher (same NaN).
+			"ArtAttack", "Rancor", "TitaniumRailgun", "GrandDad", "Basher",
+			// the UUID-bound holdouts (their children find the holdout through Projectile.GetByUUID, which refuses owner 255): the chain lives in the slot below 255 (HeldWeapons.OwnerSlotFor): Yharim's Crystal 0 -> ~290, Starmageddon 0 -> ~840.
+			"YharimsCrystal", "Starmageddon",
 		};
+
+		/// <summary>Measurement switch (env LEVY_HOLD_FORCE=Name1,Name2 or "all"): routes these Calamity holdouts through the held path as if they were in <see cref="HoldoutRouted"/> (A/B runs of a weapon that is not routed yet).</summary>
+		private static readonly string _force = Environment.GetEnvironmentVariable("LEVY_HOLD_FORCE");
+		private static bool ForceHold(string name) => !string.IsNullOrEmpty(_force) && (_force == "all" || ("," + _force + ",").Contains("," + name + ","));
+
+		/// <summary>
+		/// Held modded weapons whose damage comes from children bound to the holdout, which the held chain must carry: the dummy's owned-projectile counts are kept real for them (Rancor's circle ends when it counts no holdout), children that read
+		/// the button or find the holdout by UUID stay in the chain (<see cref="OwnerLockProbe.BoundToHolder"/>), and a UUID-bound holdout gets the chain slot below 255. Every other routed weapon keeps the chain exactly as it was measured:
+		/// its children are handed to the commander like ordinary shots (an earlier all-weapons version of this rule changed Roxcalibur from 5853 to 60 dmg/s per levy).
+		/// </summary>
+		private static readonly HashSet<string> ChainExtraNames = new() { "ArtAttack", "Rancor", "Starmageddon", "YharimsCrystal" };
+		internal static bool ChainExtras(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && ChainExtraNames.Contains(item.ModItem.Name);
+
+		/// <summary>A held modded weapon that deals its damage only when the button is LET GO after a charge: hold for <see cref="HoldTicks"/>, release, and end the holdout <see cref="LingerTicks"/> later so the next one is cast.</summary>
+		private static readonly Dictionary<string, ChargePlan> ChargeReleaseTable = new()
+		{
+			// TitaniumRailgun: the scope charges while the button is down (ai1 = 60 ticks to full charge, 18 minimum) and fires on the release; held without a release it never fires (4.97 dmg/s per levy vs a x40 Eye).
+			["TitaniumRailgun"] = new ChargePlan(66, 20),
+		};
+		internal static ChargePlan ChargeRelease(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && ChargeReleaseTable.TryGetValue(item.ModItem.Name, out ChargePlan p) ? p : null;
+
+		/// <summary>
+		/// Held modded weapons whose holdout pays its mana INSIDE its own AI at a rate far above the pool (Rancor: 25 per 12 ticks, Yharim's Crystal: 15 every 5-15 ticks): started the moment one payment is affordable they end at their
+		/// second payment, before their damage starts (the circle charges 180 ticks, the prism 30), and are cast again in a loop (Rancor holdouts ended at ticks 20-29 in 82 of 101 casts, Yharim's at 10-19 in 172 of 207).
+		/// The soldier starts them with a full pool, like a player, so the hold lasts as long as the pool can carry it. Value = fraction of the soldier's maximum mana needed to start.
+		/// </summary>
+		private static readonly Dictionary<string, float> StartFractionTable = new() { ["Rancor"] = 1f, ["YharimsCrystal"] = 1f };
+		internal static bool StartWait(Item item, int mana, int maxMana)
+		{
+			if (item?.ModItem == null || item.ModItem.Mod.Name != "CalamityMod" || !StartFractionTable.TryGetValue(item.ModItem.Name, out float f)) return false;
+			return mana < Math.Min(maxMana, (int)Math.Ceiling(maxMana * f)) - 1; // one point of slack
+		}
+
+		/// <summary>A held modded weapon whose damage depends on WHERE the cursor goes, not only on what it points at: the cursor follows a path around the target.</summary>
+		private static readonly Dictionary<string, CursorScript> CursorScripts = new()
+		{
+			// ArtAttack: the stars follow the cursor and the weapon strikes every enemy inside the closed shape their path draws; a fixed cursor never closes a shape (0 dmg/s per levy). A circle of 140 px closes in about 30 ticks.
+			["ArtAttack"] = new CursorScript(140f, 0.22f),
+		};
+		internal static CursorScript CursorScriptOf(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && CursorScripts.TryGetValue(item.ModItem.Name, out CursorScript c) ? c : null;
 
 		/// <summary>Class-chain names of the Calamity base projectiles whose AI is a held melee stab (matched by name: no compile-time reference to Calamity).</summary>
 		private const string ShortswordBase = "BaseShortswordProjectile", MaceFlailBase = "BaseMaceFlailProjectile", FlailBase = "BaseFlailProjectile";
@@ -74,7 +132,7 @@ namespace Levy.Common.Weapons
 			if (mace) return ModShotKind.None; // thrown at the cursor, not held (see the class summary)
 			// A held / charge-and-release holdout reads its owner's button (and is the weapon's own shot).
 			// Only holdouts measured as duds as plain shots are routed (see HoldoutRouted); everything else keeps the plain shot, which already works for it.
-			if (item.ModItem?.Mod.Name == "CalamityMod" && HoldoutRouted.Contains(item.ModItem.Name) && item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
+			if (item.ModItem?.Mod.Name == "CalamityMod" && (HoldoutRouted.Contains(item.ModItem.Name) || ForceHold(item.ModItem.Name)) && item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
 				&& (item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)))
 				return ModShotKind.Holdout;
 			return ModShotKind.None;

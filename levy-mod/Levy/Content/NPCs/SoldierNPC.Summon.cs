@@ -223,6 +223,8 @@ namespace Levy.Content.NPCs
 		// Player.Update (LevyPlayer.PreUpdate/PostUpdate -> SoldierProjectileTag.Park/RestoreSoldierSentries): the commander's cap sees only the
 		// commander's towers, soldier towers never count against it and are never culled by it.
 		// ------------------------------------------------------------------------------------------------------------
+		/// <summary>Measurement switch (env LEVY_SENTRY_OLD=1): the previous sentry behaviour (timeLeft pinned every tick), for A/B runs.</summary>
+		internal static readonly bool SentryOld = Environment.GetEnvironmentVariable("LEVY_SENTRY_OLD") == "1";
 		private int _sentryTick, _sentryCd, _sentryProj = -1, _sentryBorn;
 		private readonly List<int> _sentryScratch = new();
 
@@ -258,11 +260,12 @@ namespace Levy.Content.NPCs
 		private void MaintainSentries()
 		{
 			if (_sentryCd > 0) _sentryCd--;
-			// Lifetime is driven by us, every tick: a sentry never times out while its soldier lives.
+			// A sentry never times out while its soldier lives: its lifetime is topped up when it runs low. It is NOT pinned every tick: many modded sentries pace themselves on their own
+			// timeLeft (a pulse when timeLeft % N == 1, a bob from sin(timeLeft)), and a timeLeft held at one value every tick makes such a tower fire every tick or never (Rusty Beacon: never).
 			if (_sentryProj >= 0)
 			{
 				Projectile q = Main.projectile[_sentryProj];
-				if (IsMySentry(q)) { if (q.timeLeft < Projectile.SentryLifeTime) q.timeLeft = Projectile.SentryLifeTime; }
+				if (IsMySentry(q)) { if (q.timeLeft < (SentryOld ? Projectile.SentryLifeTime : LevyConstants.SentryRefreshBelowTicks)) q.timeLeft = Projectile.SentryLifeTime; }
 				else _sentryProj = -1;
 			}
 			if (++_sentryTick < LevyConstants.SentryMaintainIntervalTicks) return;
@@ -339,13 +342,15 @@ namespace Levy.Content.NPCs
 		{
 			if (!PlanSentry(weapon, out Vector2 pos, out Vector2 vel, out float ai0, out float ai1, out float localAi0))
 			{
+				DudTrace.Note(weapon, "sentry-plan-failed");
 				_sentryCd = LevyConstants.SentryRetryTicks;
 				return false;
 			}
+			DudTrace.Note(weapon, replacing != null ? "sentry-replant" : "sentry-plant");
 			replacing?.Kill();
 			_sentryProj = -1;
 			Projectile p = WeaponUse.Spawn(this, pos, vel, weapon.shoot, SentryDamage(weapon), weapon.knockBack, DamageClass.Summon, ai0, ai1, 0f);
-			if (p == null) { _sentryCd = LevyConstants.SentryRetryTicks; return false; }
+			if (p == null) { DudTrace.Note(weapon, "sentry-spawn-null"); _sentryCd = LevyConstants.SentryRetryTicks; return false; }
 			if (localAi0 != 0f) p.localAI[0] = localAi0;
 			p.timeLeft = Projectile.SentryLifeTime;
 			p.netUpdate = true;

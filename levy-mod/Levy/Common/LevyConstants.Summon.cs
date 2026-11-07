@@ -69,6 +69,8 @@ namespace Levy.Common
 		public const int RangeSentry = 36;
 		/// <summary>Sentries one soldier keeps standing at once.</summary>
 		public const int SentryMaxPerSoldier = 1;
+		/// <summary>A planted sentry's timeLeft is reset to the full vanilla life once it falls under this many ticks (never every tick: see SoldierNPC.MaintainSentries).</summary>
+		public const int SentryRefreshBelowTicks = 600;
 		/// <summary>How often a soldier recounts its sentry and decides whether to plant a new one (ticks). The standing sentry's lifetime is refreshed every tick.</summary>
 		public const int SentryMaintainIntervalTicks = 20;
 		/// <summary>Minimum wait after a sentry is planted before the next one may be (ticks), and the wait after a failed placement (no ground in reach, blocked spot).</summary>

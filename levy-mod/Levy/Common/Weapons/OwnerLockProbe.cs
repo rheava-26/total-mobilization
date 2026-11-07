@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using Terraria;
 using Terraria.ModLoader;
+using Levy.Content.NPCs;
 
 namespace Levy.Common.Weapons
 {
@@ -101,6 +102,44 @@ namespace Levy.Common.Weapons
 			}
 			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: cursor probe failed for projectile {projType}: {e.Message}"); }
 			_cursorCache[projType] = result;
+			return result;
+		}
+
+		private static readonly Dictionary<int, bool> _boundCache = new();
+		/// <summary>
+		/// True for a modded projectile a held modded weapon's holdout spawns whose own AI stays bound to that holder: it reads its owner's use button (Rancor's magic circle dies the moment the owner lets go) or finds its parent
+		/// through the owner's projectile-UUID table (<c>Projectile.GetByUUID(owner, ...)</c>: Starmageddon's stars, Yharim's Crystal beams, Calamity's <c>FindProjectileByIdentity</c> lookups). Such a child cannot be handed to the
+		/// commander like an ordinary shot (the button it reads is never down for the commander, and a UUID table lookup under another owner finds nothing): it stays in the holder's chain, owned by the dummy slot and run under
+		/// the same dummy swap, button and cursor as the holdout itself.
+		/// </summary>
+		public static bool BoundToHolder(Projectile child)
+		{
+			if (child == null || child.ModProjectile == null || !HeldWeapons.IsChainOwner(child.owner)) return false;
+			int t = child.type;
+			if (_boundCache.TryGetValue(t, out bool cached)) return cached;
+			bool result = false;
+			try
+			{
+				EnsureReflection();
+				var sink = new HashSet<string>(); _sink = sink;
+				var visited = new HashSet<MethodBase>(); var found = new HashSet<FieldInfo>();
+				try
+				{
+					for (Type ty = child.ModProjectile.GetType(); ty != null && ty != typeof(ModProjectile) && ty != typeof(object); ty = ty.BaseType)
+					{
+						const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+						foreach (string hook in new[] { "PreAI", "AI", "PostAI" })
+						{
+							MethodInfo m = ty.GetMethod(hook, flags, null, Type.EmptyTypes, null);
+							if (m != null) Scan(m, 0, visited, found);
+						}
+					}
+				}
+				finally { _sink = null; }
+				result = found.Contains(_channel) || found.Contains(_controlUseItem) || sink.Contains("GetByUUID") || sink.Contains("FindProjectileByIdentity") || sink.Contains("FindByIdentity");
+			}
+			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: holder-bound probe failed for projectile {t}: {e.Message}"); }
+			_boundCache[t] = result;
 			return result;
 		}
 

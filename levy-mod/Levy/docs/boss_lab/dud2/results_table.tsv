@@ -1,0 +1,130 @@
+# default lab mana pool (gear mana now counted), Eye x40, n=4 invulnerable levies, 30 s, LEVY_CR_SP=1: before = shipped 2.0.17 behaviour (same seeds), after = this branch
+weapon	boss	pool	before	after
+ArtAttack	eye	default	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+Basher	eye	default	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+Eternity	eye	default	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+GloriousEnd	eye	default	0.3 (n=2: 0/1)	48.8 (n=2: 0/98)
+GrandDad	eye	default	0.0 (n=2: 0/0)	127.7 (n=2: 255/0)
+HeliumFlash	eye	default	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+Murasama	eye	default	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+NebulousCataclysm	eye	default	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+RainbowPartyCannon	eye	default	0.0 (n=2: 0/0)	593.5 (n=2: 1187/0)
+Rancor	eye	default	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+SanguineFlare	eye	default	171.4 (n=2: 83/259)	217.1 (n=2: 90/344)
+StaffofBlushie	eye	default	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+Starmageddon	eye	default	0.0 (n=2: 0/0)	922.5 (n=2: 915/930)
+TitaniumRailgun	eye	default	0.0 (n=2: 0/0)	60.4 (n=2: 68/52)
+VitriolicViper	eye	default	48.5 (n=2: 0/97)	747.8 (n=2: 0/1496)
+Volterion	eye	default	0.0 (n=2: 0/0)	54.6 (n=2: 0/109)
+YharimsCrystal	eye	default	0.0 (n=2: 0/0)	39.0 (n=2: 0/78)
+
+# mana pool 200 (mp=200: the weapon's cost is payable). before = shipped behaviour (plain shot), after = this branch
+weapon	boss	pool	before	after
+ArtAttack	eye	mp200	0.0 (n=2: 0/0)	132.5 (n=2: 167/98)
+Basher	kslime	mp200	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+Eternity	eye	mp200	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+GloriousEnd	eye	mp200	1.6 (n=2: 1/2)	103.4 (n=2: 87/120)
+GrandDad	kslime	mp200	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+HeliumFlash	eye	mp200	0.0 (n=2: 0/0)	5865.0 (n=2: 6348/5382)
+Murasama	kslime	mp200	0.0 (n=2: 0/0)	-
+NebulousCataclysm	eye	mp200	0.0 (n=2: 0/0)	716.4 (n=2: 731/702)
+RainbowPartyCannon	eye	mp200	0.0 (n=2: 0/0)	1465.5 (n=2: 1957/974)
+Rancor	eye	mp200	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+SanguineFlare	eye	mp200	738.3 (n=2: 753/724)	759.7 (n=2: 694/825)
+StaffofBlushie	eye	mp200	0.0 (n=2: 0/0)	517.9 (n=2: 321/715)
+Starmageddon	eye	mp200	0.0 (n=2: 0/0)	805.2 (n=4: 1096/881/689/554)
+TitaniumRailgun	eye	mp200	0.0 (n=2: 0/0)	64.3 (n=2: 35/94)
+VitriolicViper	eye	mp200	380.2 (n=2: 448/313)	1631.1 (n=2: 1899/1363)
+Volterion	eye	mp200	0.0 (n=2: 0/0)	633.8 (n=2: 598/670)
+YharimsCrystal	eye	mp200	0.0 (n=2: 0/0)	319.6 (n=4: 316/252/358/352)
+
+# sentries / summons: before = LEVY_SENTRY_OLD=1 (timeLeft pinned every tick, no owner target), after = this branch
+weapon	boss	pool	before	after
+AquasScepter	eye	default	117.4 (n=5: 104/124/132/126/102)	103.0 (n=6: 99/114/92/108/108/96)
+AquasScepter	kslime	default	105.3 (n=5: 126/98/95/47/160)	135.8 (n=6: 96/160/107/123/175/154)
+AtlasMunitionsBeacon	eye	default	1153.3 (n=5: 1162/1104/1085/1446/971)	1057.5 (n=6: 1160/1112/989/1068/1176/839)
+AtlasMunitionsBeacon	kslime	default	1249.2 (n=5: 1261/1266/878/1440/1402)	1358.2 (n=6: 954/1310/1462/1521/1351/1551)
+CadaverousCarrion	eye	default	403.6 (n=5: 316/239/410/630/423)	432.4 (n=6: 527/397/476/450/307/438)
+CadaverousCarrion	kslime	default	448.0 (n=5: 430/384/618/491/317)	535.8 (n=6: 614/506/477/495/460/663)
+CausticCroakerStaff	eye	default	0.3 (n=2: 0/0)	0.2 (n=2: 0/0)
+CausticCroakerStaff	kslime	default	0.6 (n=2: 0/1)	0.4 (n=2: 0/0)
+CryogenicStaff	eye	default	6.2 (n=2: 6/7)	-
+CryogenicStaff	kslime	default	21.1 (n=2: 24/18)	-
+DeathstareRod	eye	default	0.0 (n=2: 0/0)	1.0 (n=2: 1/1)
+DeathstareRod	kslime	default	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+DreadmineStaff	eye	default	51.2 (n=5: 80/40/25/55/56)	51.1 (n=6: 27/55/52/42/83/48)
+DreadmineStaff	kslime	default	93.3 (n=5: 112/98/111/78/67)	95.6 (n=6: 59/125/42/94/137/117)
+GuidelightofOblivion	eye	default	107.2 (n=5: 94/93/97/118/134)	101.3 (n=6: 78/89/119/107/87/128)
+GuidelightofOblivion	kslime	default	130.2 (n=5: 122/134/160/89/147)	165.6 (n=6: 132/150/183/192/174/162)
+HivePod	eye	default	49.0 (n=5: 51/45/46/64/40)	49.0 (n=6: 52/39/42/58/48/56)
+HivePod	kslime	default	73.2 (n=5: 87/55/78/73/74)	79.2 (n=6: 81/78/76/72/86/82)
+Perdition	eye	default	0.0 (n=2: 0/0)	95.4 (n=2: 60/131)
+Perdition	kslime	default	0.0 (n=2: 0/0)	162.0 (n=2: 280/44)
+PolypLauncher	eye	default	0.2 (n=2: 0/0)	0.4 (n=2: 0/0)
+PolypLauncher	kslime	default	0.9 (n=2: 1/1)	1.1 (n=2: 1/1)
+PulseTurretRemote	eye	default	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+PulseTurretRemote	kslime	default	0.0 (n=2: 0/0)	0.0 (n=2: 0/0)
+RustyBeaconPrototype	eye	default	0.0 (n=2: 0/0)	0.1 (n=2: 0/0)
+RustyBeaconPrototype	kslime	default	0.0 (n=2: 0/0)	0.1 (n=2: 0/0)
+SanctifiedSpark	eye	default	177.7 (n=5: 187/167/175/182/177)	160.4 (n=6: 162/161/154/169/130/187)
+SanctifiedSpark	kslime	default	195.0 (n=5: 198/210/185/167/214)	230.5 (n=6: 232/259/268/220/169/235)
+SpikecragStaff	eye	default	4.9 (n=2: 5/5)	-
+SpikecragStaff	kslime	default	7.4 (n=2: 5/10)	-
+SquirrelSquireStaff	eye	default	0.3 (n=2: 0/0)	0.6 (n=2: 1/1)
+SquirrelSquireStaff	kslime	default	1.1 (n=2: 1/1)	0.9 (n=2: 1/1)
+
+# PlasmaRod / SparklingEmpress: before = base1 (shipped), after = wP (default pool, then mp200)
+weapon	boss	pool	before	after
+ArtAttack	eye	default	0.0 (n=2: 0/0)	-
+Basher	eye	default	0.0 (n=1: 0)	-
+CausticCroakerStaff	eye	default	0.6 (n=1: 1)	-
+DeathstareRod	eye	default	1.0 (n=1: 1)	-
+Eternity	eye	default	0.0 (n=1: 0)	-
+GloriousEnd	eye	default	0.0 (n=1: 0)	-
+GrandDad	eye	default	0.0 (n=1: 0)	-
+HeliumFlash	eye	default	0.0 (n=1: 0)	-
+Murasama	eye	default	0.0 (n=1: 0)	-
+NebulousCataclysm	eye	default	0.0 (n=1: 0)	-
+PlasmaRod	eye	default	1.2 (n=1: 1)	1.3 (n=3: 1/1/2)
+PlasmaRod	eye	mp200	-	2.0 (n=3: 3/2/2)
+PolypLauncher	eye	default	0.1 (n=1: 0)	-
+RainbowPartyCannon	eye	default	0.0 (n=1: 0)	-
+Rancor	eye	default	0.0 (n=1: 0)	-
+RustyBeaconPrototype	eye	default	0.0 (n=1: 0)	-
+SanguineFlare	eye	default	92.0 (n=1: 92)	-
+SparklingEmpress	eye	default	0.1 (n=1: 0)	0.5 (n=3: 0/1/1)
+SparklingEmpress	eye	mp200	-	0.8 (n=3: 1/1/1)
+SquirrelSquireStaff	eye	default	0.4 (n=1: 0)	-
+StaffofBlushie	eye	default	0.0 (n=1: 0)	-
+Starmageddon	eye	default	0.0 (n=1: 0)	-
+TitaniumRailgun	eye	default	0.0 (n=1: 0)	-
+VitriolicViper	eye	default	0.0 (n=1: 0)	-
+Volterion	eye	default	0.0 (n=1: 0)	-
+YharimsCrystal	eye	default	0.0 (n=1: 0)	-
+
+# bdef0 rows: boss defense held at 0 (token bdef=0), same build as the after column
+weapon	boss	pool	before	after
+ArtAttack	eye	default	0.0 (n=2: 0/0)	-
+Basher	eye	default	0.0 (n=1: 0)	-
+CausticCroakerStaff	eye	default	0.6 (n=1: 1)	2.6 (n=2: 2/3)
+DeathstareRod	eye	default	1.0 (n=1: 1)	-
+Eternity	eye	default	0.0 (n=1: 0)	-
+GloriousEnd	eye	default	0.0 (n=1: 0)	-
+GrandDad	eye	default	0.0 (n=1: 0)	-
+HeliumFlash	eye	default	0.0 (n=1: 0)	-
+Murasama	eye	default	0.0 (n=1: 0)	-
+NebulousCataclysm	eye	default	0.0 (n=1: 0)	-
+PlasmaRod	eye	default	1.2 (n=1: 1)	6.9 (n=2: 3/11)
+PolypLauncher	eye	default	0.1 (n=1: 0)	0.9 (n=2: 1/1)
+RainbowPartyCannon	eye	default	0.0 (n=1: 0)	-
+Rancor	eye	default	0.0 (n=1: 0)	-
+RustyBeaconPrototype	eye	default	0.0 (n=1: 0)	0.5 (n=2: 1/0)
+SanguineFlare	eye	default	92.0 (n=1: 92)	-
+SparklingEmpress	eye	default	0.1 (n=1: 0)	1.9 (n=2: 0/4)
+SquirrelSquireStaff	eye	default	0.4 (n=1: 0)	3.5 (n=2: 4/3)
+StaffofBlushie	eye	default	0.0 (n=1: 0)	-
+Starmageddon	eye	default	0.0 (n=1: 0)	-
+TitaniumRailgun	eye	default	0.0 (n=1: 0)	-
+VitriolicViper	eye	default	0.0 (n=1: 0)	-
+Volterion	eye	default	0.0 (n=1: 0)	-
+YharimsCrystal	eye	default	0.0 (n=1: 0)	-

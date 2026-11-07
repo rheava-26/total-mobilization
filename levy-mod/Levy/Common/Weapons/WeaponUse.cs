@@ -46,6 +46,7 @@ namespace Levy.Common.Weapons
 			WeaponProfile profile = s.Weapon;
 			if (profile == null || profile.ItemType != item.type) { profile = WeaponClassifier.GetProfile(item); s.Weapon = profile.Supported ? profile : null; }
 			if (profile == null || !profile.Supported) return false;
+			DudTrace.Call(item, profile);
 			NPC seg = Aiming.NearestSegment(target, s.NPC.Center) ?? target;
 			// Companion per-shot veto (a resource gate, or a role weapon that must not fire at this target). False = hold this tick; retry shortly.
 			if (PreFireGate != null)
@@ -67,6 +68,7 @@ namespace Levy.Common.Weapons
 					if (hold) return false; // a caster saving mana for the alt holds fire for a moment
 				}
 				bool primary = Dispatch(s, item, profile, seg);
+				DudTrace.Result(item, primary);
 				if (primary) AltPolicies.NotePrimary(s, item);
 				return primary;
 			}
@@ -185,10 +187,10 @@ namespace Levy.Common.Weapons
 				bool can = true;
 				try { can = ItemLoader.CanUseItem(item, d); } catch (Exception) { can = false; }
 				if (!can) soft = true; // the weapon's own gate (alt on its own cooldown, a projectile already out): primary now, retry shortly
-				else if ((profile.Family == WeaponFamily.Magic || item.mana > 0) && s.Record.Mana < Math.Max(0, item.mana))
+				else if ((profile.Family == WeaponFamily.Magic || item.mana > 0) && s.Record.Mana < ManaCostOf(s, item))
 				{
 					soft = true;
-					int missing = Math.Max(0, item.mana) - s.Record.Mana;
+					int missing = ManaCostOf(s, item) - s.Record.Mana;
 					if (LevyConstants.AltSaveManaTicks > 0 && s.ManaWaitTicks(missing) <= LevyConstants.AltSaveManaTicks)
 					{
 						if (s.AltHoldSince == 0) s.AltHoldSince = now;
@@ -247,7 +249,7 @@ namespace Levy.Common.Weapons
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, -1);
 			if (!TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack)) return false;
-			if (item.mana > 0) s.Record.Mana = Math.Max(0, s.Record.Mana - item.mana);
+			if (item.mana > 0) s.Record.Mana = Math.Max(0, s.Record.Mana - ManaCostOf(s, item));
 			FinishUse(s, item, vel);
 			return true;
 		}
@@ -288,6 +290,7 @@ namespace Levy.Common.Weapons
 		public static bool HasResources(SoldierNPC s, Item item, WeaponProfile profile)
 		{
 			if (s?.Record == null || item == null || item.IsAir || profile == null || !profile.Supported) return false;
+			if (ModWeaponGates.Locked(item)) return false; // the weapon's own use gate is shut in this world (Murasama before the Devourer of Gods): the sidearm takes the hand
 			switch (profile.Family)
 			{
 				case WeaponFamily.Gun:
@@ -295,15 +298,39 @@ namespace Levy.Common.Weapons
 					var pouch = s.Record.Gear.Ammo;
 					return pouch != null && !pouch.IsAir && pouch.stack > 0 && pouch.ammo == profile.UseAmmo && (pouch.shoot > 0 || item.shoot > 0);
 				case WeaponFamily.Magic:
-					return s.Record.Mana >= Math.Max(0, item.mana);
+					return s.Record.Mana >= ManaCostOf(s, item);
 				case WeaponFamily.HeldWeapon:
 					if (profile.UseAmmo > 0) { var hp = s.Record.Gear.Ammo; return hp != null && !hp.IsAir && hp.stack > 0 && hp.ammo == profile.UseAmmo; }
-					return s.Record.Mana >= Math.Max(0, item.mana);
+					return s.Record.Mana >= ManaCostOf(s, item);
 				case WeaponFamily.Thrown:
 					return item.stack > 0; // a stack of throwables is the weapon: out of them, out of that weapon
 				default:
 					return true;
 			}
+		}
+
+		/// <summary>
+		/// Whether a levy whose mana pool holds at most <paramref name="poolMax"/> can ever pay for one cast of <paramref name="item"/>. A mana-fed weapon (a staff, a mana-fed held weapon) that costs more than the whole pool is
+		/// never cast: the soldier stands holding it (Calamity's 60-mana ArtAttack in a 40-mana pool, Eternity at 300 against the 200 cap). Weapons that spend no mana, or that are not mana-fed here, always pass.
+		/// </summary>
+		public static bool CanEverPay(Item item, int poolMax)
+		{
+			if (item == null || item.IsAir || item.mana <= 0) return true;
+			WeaponProfile p = WeaponClassifier.GetProfile(item);
+			bool manaFed = p != null && p.Supported && (p.Family == WeaponFamily.Magic || (p.Family == WeaponFamily.HeldWeapon && p.UseAmmo <= 0));
+			return !manaFed || item.mana <= poolMax;
+		}
+
+		/// <summary>
+		/// What one use of <paramref name="item"/> costs this soldier in mana: the item's cost run through the dummy's own mana-cost pipeline (<c>Player.GetManaCost</c>: the gear's mana-cost multiplier,
+		/// Arcane Flower / Mana Cloak style reductions, and every mod's ModifyManaCost hook), exactly what a player pays. The plain item cost when the dummy cannot say.
+		/// </summary>
+		public static int ManaCostOf(SoldierNPC s, Item item)
+		{
+			int raw = Math.Max(0, item?.mana ?? 0);
+			if (raw == 0 || s?.Dummy == null) return raw;
+			try { return Math.Max(0, s.Dummy.GetManaCost(item)); }
+			catch (Exception) { return raw; }
 		}
 
 		/// <summary>Muzzle in world space: a little in front of the chest on the facing side.</summary>
@@ -406,8 +433,8 @@ namespace Levy.Common.Weapons
 
 		private static bool FireMagic(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
 		{
-			int cost = Math.Max(0, item.mana);
-			if (s.Record.Mana < cost) return false;
+			int cost = ManaCostOf(s, item);
+			if (s.Record.Mana < cost) { DudTrace.Note(item, "mana-short"); return false; }
 			int projType = item.shoot;
 			if (projType <= 0) return Dud(s, item);
 			// Flying Knife: one per soldier. While it is out the soldier just keeps aiming, like a player holding the knife at the cursor.
@@ -419,7 +446,8 @@ namespace Levy.Common.Weapons
 			ItemShots.PreShoot(s, projType); // vanilla's kill-the-previous-one rule (Rainbow Gun) runs before any shot path spawns
 			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack);
 			if (!fired && !_altActive) fired = FirePlain(s, item, profile, target, muzzle, vel, projType, damage, item.knockBack);
-			if (!fired) return Dud(s, item); // nothing came out: keep the mana, hold
+			if (!fired) { DudTrace.Note(item, "magic-nothing-spawned"); return Dud(s, item); } // nothing came out: keep the mana, hold
+			DudTrace.Note(item, "magic-fired");
 			s.Record.Mana -= cost;
 			FinishUse(s, item, vel);
 			return true;
@@ -443,6 +471,7 @@ namespace Levy.Common.Weapons
 				Vector2 v = deg == 0f ? vel : vel.RotatedBy(MathHelper.ToRadians(deg));
 				if (Spawn(s, muzzle, v, projType, damage, knockback, profile.DamageType) != null) spawned++;
 			}
+			if (spawned == 0 && DudTrace.On) DudTrace.NoteType(projType, "spread-0");
 			return spawned;
 		}
 
@@ -549,10 +578,12 @@ namespace Levy.Common.Weapons
 				Projectile p = Main.projectile[i];
 				if (!p.active || before[i]) continue;
 				TagSoldierProjectile(s, p, dmgType);
+				DudTrace.Spawned(item, p);
 				adopted++;
 			}
 			// A hook that threw may already have fired: keep what it spawned rather than firing a second shot on top of it.
-			if (threw) return adopted > 0;
+			if (threw) { DudTrace.Note(item, "hooks-threw"); return adopted > 0; }
+			if (adopted == 0) DudTrace.Note(item, useDefault ? "hooks-0-default" : "hooks-0-nodefault");
 			if (!useDefault) return adopted > 0;
 
 			DefaultShoot(s, item, profile, target, pos, v, type, dmg, kb);

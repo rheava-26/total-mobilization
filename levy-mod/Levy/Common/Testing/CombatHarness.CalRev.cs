@@ -52,9 +52,9 @@ namespace Levy.Common.Testing
 
 		internal sealed class CrRun
 		{
-			public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public bool Dbg, Diag; public List<CrLevySpec> Specs; public string Desc = "";
+			public int Mp, BossDef = -1; public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public bool Dbg, Diag; public List<CrLevySpec> Specs; public string Desc = "";
 			public string Key => $"{Kind}|{Boss}|{Mode}|{Order}|{Seed}|{Cap}" + (N != 10 ? "|n" + N : "") + (HpX != 1f ? "|hp" + HpX.ToString(CultureInfo.InvariantCulture) : "") + (Dr != 0f ? "|dr" + Dr.ToString(CultureInfo.InvariantCulture) : "")
-				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "") + (Fear >= 0f ? "|fe" + Fear.ToString(CultureInfo.InvariantCulture) : "");
+				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (Mp > 0 ? "|mp" + Mp : "") + (BossDef >= 0 ? "|bdef" + BossDef : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "") + (Fear >= 0f ? "|fe" + Fear.ToString(CultureInfo.InvariantCulture) : "");
 		}
 		/// <summary>The plainest ammo item for an ammo type (cw= runs and fallbacks): the lowest-damage vanilla item with that ammo type, else the first modded one.</summary>
 		private static string CrDefaultAmmo(int useAmmo)
@@ -98,12 +98,12 @@ namespace Levy.Common.Testing
 						string k = f[x].Substring(0, eq), v = f[x].Substring(eq + 1);
 						if (k == "order") r.Order = v; else if (k == "n") r.N = v == "cp" ? CrRealMax(r.Boss) : int.Parse(v); else if (k == "hpx") r.HpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "dr") r.Dr = float.Parse(v, CultureInfo.InvariantCulture);
 						else if (k == "clone") r.Clone = v[0]; else if (k == "cmd") r.Cmd = v; else if (k == "arena") r.Arena = v; else if (k == "gear") r.Gear = v; else if (k == "grade") r.Grade = v;
-						else if (k == "cw") r.CloneWeapon = v; else if (k == "side") r.Side = v; else if (k == "jungle") r.Jungle = v == "1"; else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fear") r.Fear = float.Parse(v, CultureInfo.InvariantCulture);
+						else if (k == "mp") r.Mp = int.Parse(v); else if (k == "bdef") r.BossDef = int.Parse(v); else if (k == "cw") r.CloneWeapon = v; else if (k == "side") r.Side = v; else if (k == "jungle") r.Jungle = v == "1"; else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fear") r.Fear = float.Parse(v, CultureInfo.InvariantCulture);
 					}
 					if (r.Gear == "mod" && r.Grade == "mix") r.Grade = "lv";
 					r.Specs = r.Gear == "mod" ? CrRollTier(r.Boss, r.Seed, r.N, r.HpX, r.Grade == "lv") : CrRoll(r.Boss, r.Seed, r.N, r.HpX);
 					if (r.Clone != 0) { var proto = CrRollTier(r.Boss, r.Seed, 40, r.HpX, true).First(x => x.Cls == r.Clone); r.Specs = Enumerable.Range(0, r.N).Select(_ => proto).ToList(); }
-					if (!string.IsNullOrEmpty(r.CloneWeapon)) r.Specs = r.Specs.Select(sp => new CrLevySpec { Cls = sp.Cls, Weapon = r.CloneWeapon, Ammo = "", Armor = sp.Armor, Acc = sp.Acc, LifeCrystals = sp.LifeCrystals, ManaCrystals = sp.ManaCrystals, Potions = sp.Potions, Potion = sp.Potion, ManAtArms = sp.ManAtArms }).ToList(); // cw=<item>: every levy carries this weapon (no random roll)
+					if (!string.IsNullOrEmpty(r.CloneWeapon)) r.Specs = r.Specs.Select(sp => new CrLevySpec { Cls = sp.Cls, Weapon = r.CloneWeapon, Ammo = "", Armor = sp.Armor, Acc = sp.Acc, LifeCrystals = sp.LifeCrystals, ManaCrystals = r.Mp > 0 ? Math.Max(0, (r.Mp - 20) / 20) : sp.ManaCrystals, Potions = sp.Potions, Potion = sp.Potion, ManAtArms = sp.ManAtArms }).ToList(); // cw=<item>: every levy carries this weapon (no random roll)
 					r.Desc = string.Join(" ; ", r.Specs.Select(sp => sp.Describe()));
 				}
 				else if (f[0] == "probe" && f.Length >= 3)
@@ -245,6 +245,7 @@ namespace Levy.Common.Testing
 			}
 			CrSp = Environment.GetEnvironmentVariable("LEVY_CR_SP") == "1";
 			global::Levy.Common.Util.LevyUtil.SpEmulation = CrSp;
+			global::Levy.Common.Weapons.ModWeaponGates.LabSetFlags(Environment.GetEnvironmentVariable("LEVY_CR_DOWNED")); // e.g. downedDoG: measure a milestone-gated weapon as the unlocked weapon it becomes
 			Mod.Logger.Info("HARNESS-CR: single-player owner emulation " + (CrSp ? "ON (Main.myPlayer = 0)" : "off (dedicated server, owner 255)"));
 			_crI = 0; _crStarted = false;
 			return true;
@@ -279,6 +280,12 @@ namespace Levy.Common.Testing
 
 		private static void CrNpcUpdateDetour(On_NPC.orig_UpdateNPC orig, NPC self, int i)
 		{
+			if (_cr != null && _cr.Run.BossDef >= 0 && !(self.ModNPC is SoldierNPC) && CrIsBossOrAdd(self.type)) // bdef=N: the boss and its parts hold defense N (measurement of low-damage weapons without the defense floor)
+			{
+				self.defense = _cr.Run.BossDef; self.defDefense = _cr.Run.BossDef;
+				try { orig(self, i); } finally { self.defense = _cr.Run.BossDef; self.defDefense = _cr.Run.BossDef; }
+				return;
+			}
 			if (_cr == null || !(self.ModNPC is SoldierNPC)) { orig(self, i); return; }
 			int prev = _crNpcCtx; _crNpcCtx = self.whoAmI;
 			try { orig(self, i); } finally { _crNpcCtx = prev; }

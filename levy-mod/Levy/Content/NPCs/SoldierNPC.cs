@@ -283,7 +283,7 @@ namespace Levy.Content.NPCs
 			Dummy.inventory[0] = UsingSidearm && g.HasSidearm ? g.Sidearm : (g.HasWeapon ? g.Weapon : (_blankSlot ??= new Item()));
 			Dummy.selectedItem = 0;
 			Dummy.statLifeMax = Dummy.statLifeMax2 = Math.Max(1, Record.MaxHp);
-			Dummy.statManaMax = Dummy.statManaMax2 = Record.MaxMana;
+			Dummy.statManaMax = Dummy.statManaMax2 = Record.BaseMaxMana; // the stat pipeline adds the gear's mana on top (Record.GearMana); SyncDummyMana then holds the pool at the record's total
 			SyncDummyMana();
 		}
 

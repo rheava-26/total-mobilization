@@ -58,7 +58,7 @@ namespace Levy.Content.TileEntities
 					bool hasW = !IsAir(g.Weapon);
 					if (hasW && (g.Weapon.maxStack > 1 || WeaponClassifier.GetProfile(g.Weapon).Family == WeaponFamily.Thrown)) continue; // thrown stacks are restocked, never swapped
 					if (hasW && !ReferenceEquals(rec, requester) && IsBusy(rec)) continue;
-					var lev = new AllocLevy { Tag = rec, Id = rec.Id, Cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs), Current = hasW ? g.Weapon : null, Mana = rec.MaxMana + ArmorDoctrine.GearManaBonus(g.Head, g.Body, g.Legs) + ArmorDoctrine.GearManaBonus(g.Accessories) };
+					var lev = new AllocLevy { Tag = rec, Id = rec.Id, Cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs), Current = hasW ? g.Weapon : null, Mana = rec.MaxMana }; // crystals plus what his armor and open accessory slots add
 					if (lev.Cls == null && !classMatch) lev.Flex = ArmorableClasses(rec, hasW);
 					if (classMatch && hasW) lev.ClassLock = WeaponClassifier.ItemDamageClass(g.Weapon);
 					var rule = PrimaryRule(rec);
@@ -68,6 +68,8 @@ namespace Levy.Content.TileEntities
 					lev.Ok = it =>
 					{
 						if (!IsIssuable(it)) return false;
+						if (ModWeaponGates.Locked(it)) return false; // its own use gate is shut in this world
+						if (!WeaponUse.CanEverPay(it, (int)lev.Mana)) return false; // a cast dearer than his whole mana pool (crystals + what his gear adds) would never fire
 						if (it.maxStack > 1 && (hasW || WeaponClassifier.GetProfile(it).Family != WeaponFamily.Thrown)) return false; // a bare-handed levy may be dealt a thrown stack; a stack is never a swap
 						if (rule != null && !rule(it)) return false;
 						if (pouchFixed && it.useAmmo > 0 && pouch.ammo != it.useAmmo) return false;

@@ -244,6 +244,7 @@ namespace Levy.Common.Testing
 				On_Player.Update += CrPlayerUpdate;
 			}
 			CrSp = Environment.GetEnvironmentVariable("LEVY_CR_SP") == "1";
+			global::Levy.Common.Util.LevyUtil.SpEmulation = CrSp;
 			Mod.Logger.Info("HARNESS-CR: single-player owner emulation " + (CrSp ? "ON (Main.myPlayer = 0)" : "off (dedicated server, owner 255)"));
 			_crI = 0; _crStarted = false;
 			return true;

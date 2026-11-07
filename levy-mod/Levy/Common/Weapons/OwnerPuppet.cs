@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Reflection;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -271,14 +270,11 @@ namespace Levy.Common.Weapons
 		}
 		private static void KillDetour(On_Projectile.orig_Kill orig, Projectile self)
 		{
-			if (WeaponUse._dbgTrace && self.ModProjectile != null && self.friendly) { var pl = self.owner < 255 ? Main.player[self.owner] : null; ModContent.GetInstance<Levy>()?.Logger.Info($"DBGKILL {self.ModProjectile.Name} ai={self.ai[0]},{self.ai[1]} tl={self.timeLeft} pos={self.Center} owner={self.owner} act={pl?.active} dead={pl?.dead} noI={pl?.noItems} cc={pl?.CCed} pdist={(pl == null ? -1 : Vector2.Distance(pl.Center, self.Center))}\n{new System.Diagnostics.StackTrace(1, false).ToString().Split('\n').Take(5).Aggregate((a, b) => a + '|' + b)}"); }
 			if (Mask == 0 || !Enter(self, 2)) { orig(self); return; }
 			try { orig(self); } finally { Exit(); }
 		}
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
-			bool tr = WeaponUse._dbgTrace && self.ModProjectile != null && self.friendly && self.owner < 255;
-			if (tr) ModContent.GetInstance<Levy>()?.Logger.Info($"DBGUPD {self.ModProjectile.Name} ai={self.ai[0]},{self.ai[1]} pos={self.Center} soldierTag={self.TryGetGlobalProjectile(out SoldierProjectileTag tg0) && tg0.IsSoldierShot} owner={self.owner} act={Main.player[self.owner].active}");
 			if (Mask == 0 || !Enter(self, 4)) { orig(self, i); return; }
 			try { orig(self, i); } finally { Exit(); }
 		}

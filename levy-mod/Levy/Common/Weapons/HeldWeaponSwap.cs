@@ -205,7 +205,6 @@ namespace Levy.Common.Weapons
 				before = _before ??= new bool[Main.maxProjectiles];
 				for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
 				orig(p);
-				if (WeaponUse._dbgTrace && g.ModHolder && (Main.GameUpdateCount % 3) == 0) ModContent.GetInstance<Levy>()?.Logger.Info($"DBGHOLD mana={d.statMana}/{d.statManaMax2} rec={body.Record.Mana} since={since} {p.ModProjectile?.Name} ai={p.ai[0]} pos={p.Center} dummy={d.Center} mounted={d.MountedCenter} body={body.NPC.Center} slot={Main.player[255].Center} same={ReferenceEquals(Main.player[255], d)} ch={d.channel} act={d.active} tl={p.timeLeft} heldTicks={g.HeldTicks} rel={g.ReleaseOnKill} feed={feed} cal={AltPolicies.CalamityPlayerOf(d) != null}");
 				if (release && p.active) { g.HeldTicks = 0; p.Kill(); } // the release: the charged shot is made while the soldier is still the owner (dummy swapped in, cursor on the target)
 			}
 			finally

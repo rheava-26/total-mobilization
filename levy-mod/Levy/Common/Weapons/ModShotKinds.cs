@@ -21,13 +21,15 @@ namespace Levy.Common.Weapons
 	public static class ModShotKinds
 	{
 		private static readonly Dictionary<int, ModShotKind> _cache = new();
+		/// <summary>Measurement switch (harness A/B, env LEVY_NO_MODSHOT=1): behave as before this feature (no holdout / blade routing and no cursor steer for modded shots).</summary>
+		internal static readonly bool Off = Environment.GetEnvironmentVariable("LEVY_NO_MODSHOT") == "1";
 
 		/// <summary>Class-chain names of the Calamity base projectiles whose AI is a held melee stab (matched by name: no compile-time reference to Calamity).</summary>
 		private const string ShortswordBase = "BaseShortswordProjectile", MaceFlailBase = "BaseMaceFlailProjectile", FlailBase = "BaseFlailProjectile";
 
 		public static ModShotKind Of(Item item)
 		{
-			if (item == null || item.IsAir || item.type < ItemID.Count) return ModShotKind.None;
+			if (Off || item == null || item.IsAir || item.type < ItemID.Count) return ModShotKind.None;
 			if (_cache.TryGetValue(item.type, out ModShotKind k)) return k;
 			k = ModShotKind.None;
 			try { k = Decide(item); }
@@ -59,6 +61,31 @@ namespace Levy.Common.Weapons
 				&& (item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)))
 				return ModShotKind.Holdout;
 			return ModShotKind.None;
+		}
+	}
+
+	/// <summary>Measurement only (env LEVY_MODSHOT_AUDIT=1): after all content is set up, logs every modded weapon whose shot kind is not None, with the family it gets, so a content mod's whole catalogue can be reviewed for misrouting.</summary>
+	public class ModShotAudit : ModSystem
+	{
+		public override void PostSetupContent()
+		{
+			if (Environment.GetEnvironmentVariable("LEVY_MODSHOT_AUDIT") != "1") return;
+			try
+			{
+				int n = 0;
+				for (int t = ItemID.Count; t < ItemLoader.ItemCount; t++)
+				{
+					Item it = ContentSamples.ItemsByType.TryGetValue(t, out var smp) ? smp : null;
+					if (it == null || it.IsAir || it.damage <= 0) continue;
+					ModShotKind k = ModShotKinds.Of(it);
+					if (k == ModShotKind.None) continue;
+					WeaponProfile p = WeaponClassifier.GetProfile(it);
+					Mod.Logger.Info($"MODSHOT-AUDIT {it.ModItem?.Mod.Name}/{it.ModItem?.Name} kind={k} family={p.Family} range={p.RangeTiles} class={it.DamageType?.Name} channel={it.channel} shoot={(it.shoot > 0 ? WeaponClassifier.ProjectileSample(it.shoot)?.ModProjectile?.GetType().Name : "-")}");
+					n++;
+				}
+				Mod.Logger.Info($"MODSHOT-AUDIT total {n}");
+			}
+			catch (Exception e) { Mod.Logger.Warn("MODSHOT-AUDIT failed: " + e.Message); }
 		}
 	}
 }

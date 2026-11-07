@@ -59,7 +59,7 @@ namespace Levy.Common.Weapons
 				NPC.HitInfo hit = mods.ToHitInfo(damage, crit, knockback, true, 0f);
 				struck = true; // from here a throw must not trigger the fallback strike: the damage may already be applied
 				done = n.StrikeNPC(hit, false, true);
-				if (Main.netMode != NetmodeID.SinglePlayer) NetMessage.SendStrikeNPC(n, in hit);
+				if (!Util.LevyUtil.SinglePlayerLike) NetMessage.SendStrikeNPC(n, in hit);
 				sourceDamage = Math.Max(1, hit.SourceDamage);
 				try { CombinedHooks.OnPlayerHitNPCWithItem(d, item, n, in hit, done); } catch (Exception) { }
 			}

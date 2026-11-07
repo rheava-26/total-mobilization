@@ -745,7 +745,7 @@ namespace Levy.Common.Weapons
 			Item held = WeaponUse.HeldItem(s);
 			bool rowSteer = held != null && !held.IsAir && AltPolicies.AnySteer && AltPolicies.For(held.type).P.Steer && AltPolicies.HasRow(held.type);
 			// Any modded soldier shot whose own AI reads the owner's cursor (Calamity's FlareBolt, charge bolts, vortexes...) gets the cursor on the soldier's target too: without it the shot flies at the commander's last cursor spot.
-			if (!rowSteer && !(p.ModProjectile != null && p.owner < Main.maxPlayers && OwnerLockProbe.ReadsCursor(p.type))) return true;
+			if (!rowSteer && !(p.ModProjectile != null && !ModShotKinds.Off && p.owner < Main.maxPlayers && OwnerLockProbe.ReadsCursor(p.type))) return true;
 			int ti = s.TargetIndex;
 			if (ti < 0 || ti >= Main.maxNPCs || !Main.npc[ti].active) return true;
 			Vector2 at = Main.npc[ti].Center;

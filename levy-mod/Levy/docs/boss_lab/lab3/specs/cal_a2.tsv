@@ -1,0 +1,48 @@
+fight	hive	exp	1	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	hive	exp	2	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	hive	exp	3	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	hive	exp	4	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	hive	exp	5	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	hive	exp	6	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	hive	rev	1	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	hive	rev	2	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	hive	rev	3	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	hive	rev	4	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	hive	rev	5	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	hive	rev	6	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	exp	1	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	exp	2	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	exp	3	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	exp	4	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	exp	5	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	exp	6	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	rev	1	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	rev	2	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	rev	3	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	rev	4	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	rev	5	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	rev	6	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	qb	exp	1	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1	jungle=1
+fight	qb	exp	2	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1	jungle=1
+fight	qb	exp	3	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1	jungle=1
+fight	qb	exp	4	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1	jungle=1
+fight	qb	exp	5	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1	jungle=1
+fight	qb	exp	6	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1	jungle=1
+fight	skel	exp	1	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	skel	exp	2	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	skel	exp	3	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	skel	exp	4	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	skel	exp	5	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	skel	exp	6	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	exp	1	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	exp	2	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	exp	3	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	exp	4	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	exp	5	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	exp	6	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	rev	1	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	rev	2	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	rev	3	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	rev	4	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	rev	5	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	rev	6	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1

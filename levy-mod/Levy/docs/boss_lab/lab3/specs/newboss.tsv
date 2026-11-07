@@ -1,0 +1,5 @@
+fight	hive	rev	1	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	exp	1	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	perf	rev	2	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	sg	exp	1	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1
+fight	hive	exp	3	18000	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1

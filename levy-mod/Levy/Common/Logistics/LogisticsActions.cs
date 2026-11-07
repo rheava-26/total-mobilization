@@ -195,7 +195,7 @@ namespace Levy.Common.Logistics
 			var set = new SortedSet<int>();
 			try { var net = NetworkStocks.ItemTypes?.Invoke(armory); if (net != null) foreach (int t in net) set.Add(t); } catch (Exception) { }
 			if (armory?.Storage != null) foreach (var it in armory.Storage) if (it != null && !it.IsAir) set.Add(it.type);
-			foreach (int t in Levy.Common.Potions.SeekerMatcher.AllCandidates()) set.Add(t); // every item can be sought, stocked or not: placed tiles and chests holding it glow
+			foreach (int t in global::Levy.Common.Potions.SeekerMatcher.AllCandidates()) set.Add(t); // every item can be sought, stocked or not: placed tiles and chests holding it glow
 			return set.ToList();
 		}
 

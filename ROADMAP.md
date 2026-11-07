@@ -259,7 +259,7 @@
   - many more fights on the page (~150–200, in batches).
   - Full-screen was hot-patched into the published page (v2).
 - **SHIPPED 2.0.20** (+ Mechanization 0.9.1 resent; booted clean on both toolchains).
-- **2.0.21 (building):** armor-fx (Ninja afterimage, shadows/outlines, armor lights; Ninja 9 def / +20% speed / 13% crit vs Platinum 20 def) + recorder format 6 (commander and levy gear baselines).
+- **SHIPPED 2.0.21** (booted clean on both toolchains; ArmorFxCheck 3 PASS): armor-fx (Ninja afterimage, shadows/outlines, armor lights; Ninja 9 def / +20% speed / 13% crit vs Platinum 20 def) + recorder format 6 (commander and levy gear baselines).
 - 2.0.20 details: merged rec2. Recorder format 5: adds/minions, levy buffs, terrain growth, Static Camera view, bdeath/bdespawn. Viewer: adds, levy tracking, death explosion, Call-it mode.
 - **Eve will record her own fights** (solo control vs levies; DS, Slime God, maybe EoW) with /levyrec → put them on the replay page as "Eve's fights".
 - **armor-fx builder:** Ninja afterimage and other armor visuals on levies, plus Ninja vs Platinum stats.

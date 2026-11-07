@@ -108,6 +108,7 @@
   - Booted clean on both toolchains (Calamity compat hook installed).
   - spec-calfix: Spectator P% is 0 in 36/36 Rev/Death fights; creepers 49% → 0%.
   - Root cause: Calamity resets npc.target 255 → 0 every tick, and Compete then kept the closer commander because the hide was released before Compete ran.
+- **boss-anoms (building):** KS Expert timeouts (adds vs boss priority), QB Expert wipes, true melee vs fliers (weapon-choice fix, no nerfs).
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

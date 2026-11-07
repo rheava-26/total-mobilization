@@ -24,9 +24,11 @@ namespace Levy.Common.Options
 			pass = fail = 0;
 			try
 			{
-				var c = new LevyConfig();
+				var c = LevyConfig.Get; // the loaded instance (tModLoader applies the DefaultValue attributes on load)
 				Check("config default fear model is Events", c.FearModel == FearModelSetting.Events);
 				Check("config default formation defense is on", c.FormationDefense);
+				if (System.Environment.GetEnvironmentVariable("LEVY_FEARMODEL") == null) Check("shipped fear model in force is Events", LevyOptions.Fear == FearModel.Events, LevyOptions.Fear.ToString());
+				if (System.Environment.GetEnvironmentVariable("LEVY_SURV") == null) Check("shipped survivability in force is formation only", LevyOptions.Surv == SurvMode.Formation, LevyOptions.Surv.ToString());
 				Check("formation: 0 allies = 0%", LevyOptions.DrFor(0) == 0f);
 				Check("formation: 3 allies = 6%", System.Math.Abs(LevyOptions.DrFor(3) - 0.06f) < 1e-5f, LevyOptions.DrFor(3).ToString());
 				Check("formation: caps at 20%", System.Math.Abs(LevyOptions.DrFor(40) - 0.20f) < 1e-5f, LevyOptions.DrFor(40).ToString());

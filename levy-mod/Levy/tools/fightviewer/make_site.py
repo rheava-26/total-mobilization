@@ -122,6 +122,9 @@ def summarize(rows):
     # format 4 records the boss's end explicitly (bdeath: it died, bdespawn: it left alive); older files are inferred from the frames
     bend = [e for e in ev if e.get("e") in ("bdeath", "bdespawn")]
     fin = ([e for e in bend if e.get("final", 1) != 0] or bend or [None])[-1]
+    # recordings made before the worm-kill fix logged a worm that died to a body-segment blow as bdespawn: a leave with <=1% life and a hit within ~1 s is a kill
+    if fin is not None and fin["e"] == "bdespawn" and fin.get("max", 0) > 0 and fin.get("life", 1) <= 0.01 * fin["max"] and fin.get("ht") is not None and fin["t"] - fin["ht"] <= 60:
+        fin = dict(fin, e="bdeath", inferred=True)
     if fin is not None and fin["e"] == "bdeath":
         result = "win"
     elif fin is not None and n_levies and deaths >= n_levies:

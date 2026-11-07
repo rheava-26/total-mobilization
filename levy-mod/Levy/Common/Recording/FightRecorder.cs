@@ -603,14 +603,16 @@ namespace Levy.Common.Recording
 		/// <summary>GlobalNPC hook: a fight boss was struck (damage from NPC.HitEffect).</summary>
 		public static void NoteBossHit(NPC n, int dmg)
 		{
-			if (!On || !IsFightBoss(n)) return;
+			n = BossRoot(n);
+			if (!On || n == null) return;
 			_bhook[n.whoAmI] = (Elapsed, dmg, "other", -1, "");
 		}
 
 		/// <summary>GlobalNPC hook: names what struck the boss (a player item or a projectile), called right after the hit.</summary>
 		public static void NoteBossSource(NPC n, string src, int type, string name)
 		{
-			if (!On || !IsFightBoss(n)) return;
+			n = BossRoot(n);
+			if (!On || n == null) return;
 			if (_bhook.TryGetValue(n.whoAmI, out var h) && Elapsed - h.tick <= 1) _bhook[n.whoAmI] = (h.tick, h.dmg, src, type, name ?? "");
 			else _bhook[n.whoAmI] = (Elapsed, 0, src, type, name ?? "");
 		}
@@ -618,8 +620,29 @@ namespace Levy.Common.Recording
 		/// <summary>GlobalNPC.OnKill of a fight boss: it died (as opposed to leaving).</summary>
 		public static void NoteBossKill(NPC n)
 		{
-			if (!On || !IsFightBoss(n)) return;
-			_bkilled.Add(n.whoAmI);
+			if (!On) return;
+			NPC r = BossRoot(n);
+			if (r == null) return;
+			_bkilled.Add(r.whoAmI);
+		}
+
+		/// <summary>The fight boss a struck or killed NPC belongs to: itself, or for a worm segment the head that owns its life (realLife). Null when neither is a fight boss.
+		/// A worm's final blow can land on a body segment, so hits and kills on any part count for the head.</summary>
+		internal static NPC BossRoot(NPC n)
+		{
+			if (n == null) return null;
+			if (IsFightBoss(n)) return n;
+			if (n.realLife >= 0 && n.realLife < Main.maxNPCs && n.realLife != n.whoAmI) { NPC r = Main.npc[n.realLife]; if (IsFightBoss(r)) return r; }
+			return null;
+		}
+
+		/// <summary>True when a boss that left the world was killed: the game said so (OnKill on any part), its last life was 0, or it vanished within ~1 s of a hit that took it to a sliver
+		/// (the kill came through Calamity's own death path, or on a segment, after the last poll).</summary>
+		internal static bool LooksKilled(int life, int max, int lastHitTick, int lastHitDmg, int el, bool onKill)
+		{
+			if (onKill || life <= 0) return true;
+			if (lastHitTick < 0 || el - lastHitTick > 60) return false;
+			return life <= Math.Max(1, lastHitDmg) || life <= max * 0.01;
 		}
 
 		private static void PollBosses(int el)
@@ -659,9 +682,10 @@ namespace Levy.Common.Recording
 		private static void BossGone(BTrack t, int el)
 		{
 			// killed: the game's OnKill fired for that slot, or its last seen life was already 0
-			bool killed = t.Life <= 0 || _bkilled.Contains(t.Slot);
+			// or it vanished right after a hit that took it to a sliver of life (worms: the final blow lands on a segment, or Calamity ends the fight itself)
 			// the lethal blow lands after the last poll: take the hook's note, if any
 			if (_bhook.TryGetValue(t.Slot, out var h) && h.tick >= t.HitT) { t.HitT = h.tick; t.HitDmg = h.dmg > 0 ? h.dmg : t.HitDmg; t.HitSrc = h.src; t.HitType = h.type; t.HitName = h.name; }
+			bool killed = LooksKilled(t.Life, t.Max, t.HitT, t.HitDmg, el, _bkilled.Contains(t.Slot));
 			_bpend.Add((t, killed, el));
 		}
 

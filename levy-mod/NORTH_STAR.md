@@ -2,7 +2,7 @@
 
 Re-read this after every context compaction. It exists because compactions keep dragging the coordinating model back into old habits. Rules are in Eve's own words where possible, with the date (2026-MM-DD). Weight follows importance: the first sections are the ones Eve repeated or was frustrated about.
 
-Eve's pronouns are not stated in any of their messages: use they/them.
+Eve goes by she/her (confirmed 11-07).
 
 ---
 
@@ -25,7 +25,7 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 - Separate OBSERVED from INFERRED in every report.
 - When corrected, widen the search. Do not narrow to the corrected item.
 
-**Reproduce Eve's setup before calling a bug fixed or "not a bug".** Eve plays a real world with real mod lists, and a harness that doesn't match it hasn't tested the report. Example: Magic Storage was OFF in their world, so a Magic Storage fix was not their cause (ROADMAP, 11-07).
+**Reproduce Eve's setup before calling a bug fixed or "not a bug".** Eve plays a real world with real mod lists, and a harness that doesn't match it hasn't tested the report. Example: Magic Storage was OFF in her world, so a Magic Storage fix was not their cause (ROADMAP, 11-07).
 
 **Fix the underlying issue, not the example.** "I want you to fix everything in the underlying issue there, not just fix that one weapon." (11-04) "That was me saying an example." (11-06) Eve's examples (Dark Gate, Painter, heart wand, portal staff, hooks) stand for a whole class. Do not turn an example into the full scope, and do not turn it into a hard rule either. Eve's remark that levies might hook onto a platform and die meant "use hooks correctly". It did not mean "never hook".
 
@@ -47,7 +47,7 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 
 **Use the existing systems.** "use the existing systems as much as you possibly can." (10-27) Levies should hold and use the real item the way a player or town NPC does: real item-use code, real projectiles, no hail of bullets from nowhere, no single bolted-on projectile standing in for a class. Eve expects an architecture rewrite of the weapon-use layer eventually and wants sustainable code, not patches over patches. Do not reverse-engineer every weapon by hand: "should we have to reverse engineer every single weapon in the entire game... No." (11-04)
 
-**Every weapon, armor set and accessory works as it does for a player.** "Every single weapon should emulate how you as a player would function." (11-05) If a levy deals damage, its own set bonus and accessory procs fire. If Eve does, theirs do. Levies must know how a weapon is meant to be used (when to charge, release, alt-fire, wait, or skip a utility weapon), not just how to fire it.
+**Every weapon, armor set and accessory works as it does for a player.** "Every single weapon should emulate how you as a player would function." (11-05) If a levy deals damage, its own set bonus and accessory procs fire. If Eve does, hers do. Levies must know how a weapon is meant to be used (when to charge, release, alt-fire, wait, or skip a utility weapon), not just how to fire it.
 
 **Buffs and heals work both ways.** "if a player can do something thats buffs or heals, it should affect levies, and vice versa. that should be the primary goal." (11-05) Likewise "Levies should be targetted by all enemies and vice versa." (11-07)
 
@@ -67,7 +67,7 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 
 ## 4. How to investigate and verify
 
-- Reproduce first: Eve's exact setup, mods, armory contents and boss. Check the ROADMAP for what they reported and what their world has enabled.
+- Reproduce first: Eve's exact setup, mods, armory contents and boss. Check the ROADMAP for what they reported and what her world has enabled.
 - Labs are arena-only. "stop running flat ground tests and just do arena tests." (11-07) Arenas should be large and have platforms. Use tier-appropriate base placeables (campfires, heart lanterns, bast statue, star in a bottle, etc.), and use best-for-tier ammo and gear.
 - Always run a control group, with several seeds, and keep notable fights so Eve can watch them. "we're trying to run a lab, and the lab is Terraria modding." (11-06)
 - Keep vanilla and Calamity tests separate: "keep those tests separate of vanilla." (11-07) Run vanilla alone, then vanilla plus Calamity, then Thorium plus Calamity, to see what a mod already fills.
@@ -79,7 +79,7 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 
 ## 5. How to work and ship
 
-- **Never merge to `main`.** The integration branch is `worktree-levy-stardust`. (Listed as a core rule in the CLAUDE.md header and ROADMAP: "Nothing merges to main until she confirms". Eve did not say it in their own messages that I could find.)
+- **Never merge Levy into `main`.** `main` is Total Mobilization's branch; Levy work never goes into Total Mobilization (Eve 11-07: "don't put levy mod stuff into total mobilization"). The integration branch is `worktree-levy-stardust`.
 - **Sonnet subagents do the coding, in isolated worktrees.** The coordinating model directs, discusses design, and verifies. (From the CLAUDE.md working style, which the ROADMAP says still applies.)
 - **Restart any builder Eve's interrupt stops.** "If they did get stopped, restart them." (11-06) An interrupt stopped all four builders on 11-06, and each was restarted with its full accumulated brief. Say so when it happens.
 - **Push often.** Eve's sessions and the container can die: "just commit very frequently." (10-25) Builders push about every 30 minutes.

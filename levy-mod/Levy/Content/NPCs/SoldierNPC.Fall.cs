@@ -24,10 +24,12 @@ namespace Levy.Content.NPCs
 			get
 			{
 				if (FallDamageOverride >= 0) return FallDamageOverride == 1;
-				try { return LevyConfig.Get.SoldiersTakeFallDamage; } catch (Exception) { return true; }
+				try { return LevyConfig.Get.SoldiersTakeFallDamage; } catch (Exception) { return false; }
 			}
 		}
 		private int _fallStartRow = int.MinValue;
+		/// <summary>Ticks left after a teleport in which no fall counts; ends early on landing.</summary>
+		private int _fallImmuneTicks;
 		private int _fallPlanRetry;
 		internal int FallHits, FallDamageTotal, LastFallTiles, FallCatches;
 
@@ -45,6 +47,12 @@ namespace Levy.Content.NPCs
 			if (OfficerMode) return;
 			NPC npc = NPC;
 			int row = (int)(npc.position.Y / 16f);
+			if (_fallImmuneTicks > 0)
+			{
+				_fallImmuneTicks--; _fallStartRow = row;
+				if (npc.velocity.Y == 0f && _fallImmuneTicks < LevyConstants.Movement.TeleportFallImmunityTicks - 2) _fallImmuneTicks = 0; // landed
+				return;
+			}
 			if (_fallStartRow == int.MinValue || !FallDamageOn) { _fallStartRow = row; return; }
 			if (npc.velocity.Y == 0f)
 			{

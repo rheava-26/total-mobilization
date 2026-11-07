@@ -66,7 +66,9 @@ namespace Levy.Content.NPCs
 			NPC npc = NPC;
 			if (!_stepInit) { npc.stepSpeed = StepSpeed; _stepInit = true; }
 			TickReturnHomeProgress();
-			bool grounded = npc.velocity.Y == 0f && !(_wasAirborne && HeadOnCeiling());
+			// on a slope the body keeps a small downward velocity as it walks: with solid ground within a few pixels under the feet and no real fall under way it is standing, not airborne (jumping, dodging and strafing all need that)
+			bool onSlope = MobilityMode >= 1 && npc.velocity.Y > 0f && npc.velocity.Y < 2.2f && !npc.wet && Collision.SolidCollision(new Vector2(npc.position.X, npc.Bottom.Y), npc.width, 4);
+			bool grounded = (npc.velocity.Y == 0f || onSlope) && !(_wasAirborne && HeadOnCeiling());
 			RefreshKit();
 			if (grounded)
 			{
@@ -173,6 +175,7 @@ namespace Levy.Content.NPCs
 				if (horizontal)
 				{
 					if (_blocked) npc.velocity.X *= BlockedDecel;
+					else if (MobilityMode >= 1 && LavaAhead(dir)) npc.velocity.X *= 0.5f;   // never run or drift toward lava, on the ground or in the air
 					else Accelerate(dir, maxSpeed, accel);
 				}
 				else Decelerate();
@@ -205,6 +208,7 @@ namespace Levy.Content.NPCs
 			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0; _dodgeHold = 0; _dashTicks = 0; _fallStartRow = int.MinValue;
 			NPC.velocity = Vector2.Zero;
 			_stuckPos = NPC.position;
+			_fallImmuneTicks = TeleportFallImmunityTicks; _fallStartRow = int.MinValue; // a teleport never starts a fall that counts
 			NPC.netUpdate = true;
 		}
 
@@ -465,6 +469,7 @@ namespace Levy.Content.NPCs
 		/// <summary>The next <see cref="DashLaneTiles"/> columns are level with the feet, open to head height, floored and free of lava and deep water.</summary>
 		private bool DashLaneClear(int dir)
 		{
+			if (MobilityMode >= 1) return SurfaceLane(dir, DashLaneTiles, true);
 			Point feet = TileNav.FeetTile(NPC.Bottom);
 			for (int i = 1; i <= DashLaneTiles; i++)
 			{
@@ -1003,7 +1008,7 @@ namespace Levy.Content.NPCs
 				if (TeleportHome()) return;
 			}
 			if (_stuckTicks < LevyConstants.StuckTicks || _blockedHard) return; // a deliberate refusal (lava, drop, wall) is not a wedge
-			if (!_stuckJumped) { _stuckJumped = true; TryJump(Abilities.JumpTiles); return; }
+			if (!_stuckJumped) { _stuckJumped = true; if (!(MobilityMode >= 1 && LavaAhead(NPC.direction >= 0 ? 1 : -1))) TryJump(Abilities.JumpTiles); return; }
 			if (_stuckTicks >= LevyConstants.StuckTicks + StuckReverseAfterExtraTicks && _reverseTicks == 0) { _reverseTicks = ReverseTicks; _sinceReverse = 0; }
 		}
 
@@ -1050,6 +1055,20 @@ namespace Levy.Content.NPCs
 			if (_path.Count > 0 && Vector2.DistanceSquared(_pathGoal, MoveGoal) > moved * moved) { _path.Clear(); _pathTimer = PathRecalcTicks; }
 			while (_path.Count > 0 && Vector2.DistanceSquared(_path[0], NPC.Bottom) <= WaypointReachPx * WaypointReachPx) _path.RemoveAt(0);
 			return _path.Count > 0 ? _path[0] : MoveGoal;
+		}
+
+		/// <summary>Lava (or a drop onto lava) in the columns the body is about to cover: the next few tiles at body height and the floor under them, further out the faster it moves.</summary>
+		private bool LavaAhead(int dir)
+		{
+			Point feet = TileNav.FeetTile(NPC.Bottom);
+			int reach = 2 + (int)(Math.Abs(NPC.velocity.X) * 10f / 16f) + 1;
+			for (int i = 0; i <= reach; i++)
+			{
+				int x = feet.X + dir * i;
+				for (int y = feet.Y - 1; y <= feet.Y + 2; y++) if (TileNav.HasLava(x, y)) return true;
+				if (TileNav.DropDepth(x, feet.Y) == -2) return true;
+			}
+			return false;
 		}
 
 		/// <summary>Searches when the direct walk is blocked, and refreshes a live path every 30 ticks.</summary>

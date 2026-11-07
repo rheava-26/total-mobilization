@@ -265,8 +265,13 @@ namespace Levy.Common
 			// ---- enemy-body dodging (worm segments, wyverns, chargers) ----
 			/// <summary>A hostile NPC body is only dodged if its contact damage is at least this (filters harmless fliers).</summary>
 			public const int DodgeNpcMinDamage = 20;
+			/// <summary>A body that hits for less than this is not worth a dodge. A boss at 15 contact damage is still 6% of a young levy's life, per tick of overlap.</summary>
+			public const int DodgeNpcMinDamageMobile = 6;
 			/// <summary>...and only if it is moving at least this fast (px/tick). The key filter: walkers being meleed are far below it.</summary>
 			public const float DodgeNpcMinSpeed = 4.5f;
+			/// <summary>A boss, or a body with at least <see cref="DodgeHeavyDamage"/> contact damage, counts as a threat from this speed (px/tick) up.</summary>
+			public const float DodgeHeavyMinSpeed = 1.4f;
+			public const int DodgeHeavyDamage = 40;
 			/// <summary>Hostile bodies farther than this are ignored (bigger and faster than a projectile, so a wider scan).</summary>
 			public const float DodgeNpcRadiusTiles = 17f;
 			/// <summary>Only bodies that would arrive within this many ticks matter.</summary>
@@ -315,6 +320,10 @@ namespace Levy.Common
 			public const int StandingSpotRadiusTiles = 12;
 			public const int ScreenEdgeExtraPx = 100;
 			public const int SpotColumnClearTiles = 3;
+			/// <summary>A catch-up teleport that finds no standing spot in the ordinary radius widens to this many columns either side and this many rows down / up (ground under a commander on a ceiling, over a chasm, in a sky house).</summary>
+			public const int SafeGroundColumns = 30, SafeGroundRowsDown = 110, SafeGroundRowsUp = 40;
+			/// <summary>After any teleport a body takes no fall damage and starts no fall count for this long (ticks) or until it lands.</summary>
+			public const int TeleportFallImmunityTicks = 240;
 		}
 	}
 }

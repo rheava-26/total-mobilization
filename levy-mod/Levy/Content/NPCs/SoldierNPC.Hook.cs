@@ -120,6 +120,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Back to Idle with everything released: death, teleport, config off, a lost hook item.</summary>
 		private void HookReset(bool cooldown)
 		{
+			_hkChain = false; _hkChainFlight = false;
 			if (_hkPhase == HookPhase.Idle && _hkProj.Count == 0 && !_hkNetOn) return;
 			HookKillAll();
 			NPC.noGravity = false;
@@ -181,8 +182,73 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>The commander is swinging on a hook and has left the soldier behind: a following soldier with a hook of its own goes after them the same way.</summary>
+		/// <summary>0 = hooks only for blocked walks, falls and a commander on a hook; 1 = also for a goal up a cliff or a long way round. The harness flips it for before/after.</summary>
+		internal static int HookShortcutMode = 1;
+		private bool _hkChain, _hkChainFlight, _hkChainUsed; private int _hkChainCount;
+		internal int HkChains;
+
+		/// <summary>
+		/// Chain climbing, as a player spams the hook up a cliff: on arrival at a wall anchor that is not yet the top, the hook comes off and the next one goes out higher while the body hangs. The last
+		/// link is an ordinary plan to the goal. False when no higher anchor is found (the climb ends with the usual release).
+		/// </summary>
+		private bool TryChain(Vector2 centroid)
+		{
+			if (_hkChainCount >= 8) return false;
+			Vector2 goal = _hkTrigGoalUsed; Vector2 bottom = NPC.Bottom;
+			HookInfo info = HookInfo.Of(Record.Gear.Hook);
+			HookParams hp = HookParams.For(info, NPC.width, NPC.height, Math.Max(5.01f, Player.jumpSpeed), Gravity());
+			float remain = bottom.Y - goal.Y, nd = Vector2.Distance(bottom, goal) + Math.Abs(bottom.Y - goal.Y) * 0.5f;
+			HookPlan np = null; bool final = false;
+			if (remain <= info.ReachPx * 0.75f)
+			{
+				np = HookPlanner.Plan(TileHookWorld.Instance, bottom, hp, goal, HookGoalKind.Ground, nd);
+				final = np != null && np.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f);
+			}
+			if (!final)
+			{
+				Vector2 alt = new Vector2(goal.X, bottom.Y - (info.ReachPx - 4f * 16f));
+				np = HookPlanner.Plan(TileHookWorld.Instance, bottom, hp, alt, HookGoalKind.Altitude, Vector2.Distance(bottom, alt) + Math.Abs(bottom.Y - alt.Y) * 0.5f);
+				if (np == null || np.Anchors.Count == 0 || np.Anchors[0].Y > centroid.Y - 3f * 16f) return false;
+				_hkAltX = alt.X; _hkAltY = alt.Y;
+			}
+			HookKillAll();
+			_hkPlan = np; _hkPhase = HookPhase.InFlight; _hkTicks = 0; _hkCasted = 0; _hkStall = 0; _hkLost = 0; _hkFirstLatch = -1; _hkHang = 0; _hkBestDist = float.MaxValue;
+			_hkChainCount++; HkChains++; _hkChainUsed = true; if (final) _hkChain = false; _hkChainFlight = true;
+			NPC.velocity = Vector2.Zero; NPC.noGravity = true;
+			HookDbg($"chain {_hkChainCount}: " + (final ? "final plan to the goal" : $"next anchor {np.Anchors[0].X / 16f:0.0},{np.Anchors[0].Y / 16f:0.0}"));
+			if (!HookCast(np.Aims[0])) { _hkChain = false; _hkChainFlight = false; HookLetGo(false, true); return true; }
+			_hkCasted = 1;
+			return true;
+		}
+
+		private float PathLengthPx()
+		{
+			float len = 0f; Vector2 p = NPC.Bottom;
+			for (int i = 0; i < _path.Count; i++) { len += Vector2.Distance(p, _path[i]); p = _path[i]; }
+			return len;
+		}
+
+		/// <summary>
+		/// A player goes UP a cliff with the hook and does not take the long way round. A goal well above that jumping cannot reach, or a goal whose walking path is much longer than the straight line, becomes a trigger.
+		/// Gentle slopes never trigger (the rise has to be steep against the distance), and the planner still has to find a line that lands closer.
+		/// </summary>
+		private void HookShortcut()
+		{
+			if (HookShortcutMode < 1 || !HasMoveGoal || NPC.velocity.Y != 0f || NPC.wet) return;
+			if (State != SoldierState.Follow && State != SoldierState.SearchDestroy && State != SoldierState.FreeRein && State != SoldierState.Engage) return;
+			Vector2 goal = MoveGoal;
+			float dxPx = Math.Abs(goal.X - NPC.Center.X), upPx = NPC.Bottom.Y - goal.Y, direct = Vector2.Distance(NPC.Bottom, goal);
+			if (direct > 46f * 16f || direct < 6f * 16f) return;
+			bool steepUp = upPx >= 6f * 16f && upPx >= 0.45f * dxPx && upPx > Abilities.JumpTiles * 16f + 16f;
+			bool longWay = _path.Count > 0 && upPx > 2f * 16f && PathLengthPx() > Math.Max(30f * 16f, 2.5f * direct);
+			if (!steepUp && !longWay) return;
+			if (steepUp && _path.Count > 0 && !longWay) return;   // a path up exists and is not long: walk it
+			_hkGoalNow = goal; HookTrigger(HookReason.Follow);
+		}
+
 		private void HookFollowCommander()
 		{
+			if (_hkPhase == HookPhase.Idle && HookUsable && !Abilities.HasWings) HookShortcut();
 			if (State != SoldierState.Follow || !HookUsable || Abilities.HasWings || _hkPhase != HookPhase.Idle) return;
 			Player c = Commander;
 			if (c == null || c.dead || c.grapCount <= 0) return;
@@ -239,6 +305,7 @@ namespace Levy.Content.NPCs
 			_hkStepSkip = false;
 			SoldierHooks.PlansFound++;
 			_hkPlan = plan; _hkReason = reason; _hkTrigGoalUsed = goalBottom;
+			_hkChain = HookShortcutMode >= 1 && !altitude && (reason == HookReason.Follow || reason == HookReason.GoalAbove || reason == HookReason.Wall) && bottom.Y - goalBottom.Y > info.ReachPx * 0.6f; _hkChainCount = 0; _hkChainFlight = false;
 			_hkPhase = HookPhase.InFlight; _hkTicks = 0; _hkCasted = 0; _hkStall = 0; _hkLost = 0; _hkFirstLatch = -1; _hkHang = 0; _hkBestDist = float.MaxValue; _hkNetTick = 0;
 			_hkProj.Clear();
 			if (!HookCast(plan.Aims[0])) { HookReset(false); HookBackoff(); SoldierHooks.Aborts++; HkAborts++; return; }
@@ -369,6 +436,7 @@ namespace Levy.Content.NPCs
 		private bool TickInFlight()
 		{
 			NPC npc = NPC;
+			if (_hkChainFlight) { npc.noGravity = true; npc.velocity = Vector2.Zero; }
 			HookGather(out int alive, out int latched);
 			if (latched > 0 && _hkFirstLatch < 0) { _hkFirstLatch = _hkTicks; SoldierHooks.Latches++; HkLatches++; }
 			if (_hkCasted < _hkPlan.Anchors.Count && (_hkTicks % H.CastSpacingTicks) == 0)
@@ -381,10 +449,10 @@ namespace Levy.Content.NPCs
 			{
 				HookDbg($"latched={latched}/{alive} casts={_hkCasted}/{_hkPlan.Anchors.Count} {HookProjInfo()}");
 				if (!HookReplanFromLatch()) return false;
-				_hkPhase = HookPhase.Reel; _hkTicks = 0; _hkStall = 0; _hkLost = 0; _hkBestDist = float.MaxValue;
+				_hkPhase = HookPhase.Reel; _hkTicks = 0; _hkStall = 0; _hkLost = 0; _hkBestDist = float.MaxValue; _hkChainFlight = false;
 				return TickReel();
 			}
-			if (_hkTicks >= H.LatchTimeoutTicks || (alive == 0 && allCast)) { SoldierHooks.Aborts++; HkAborts++; HookKillAll(); HookBackoff(); _hkPhase = HookPhase.Cooldown; _hkNextAllowed = Math.Max(_hkNextAllowed, Main.GameUpdateCount + (uint)H.CooldownTicks / 3); return false; }
+			if (_hkTicks >= H.LatchTimeoutTicks || (alive == 0 && allCast)) { SoldierHooks.Aborts++; HkAborts++; HookKillAll(); HookBackoff(); npc.noGravity = false; _hkChain = false; _hkChainFlight = false; _hkPhase = HookPhase.Cooldown; _hkNextAllowed = Math.Max(_hkNextAllowed, Main.GameUpdateCount + (uint)H.CooldownTicks / 3); return false; }
 			npc.velocity.X *= LevyConstants.Movement.StopDecel;           // stand while the hook flies
 			if (Math.Abs(npc.velocity.X) < LevyConstants.Movement.StopBelowPx) npc.velocity.X = 0f;
 			return true;
@@ -405,7 +473,7 @@ namespace Levy.Content.NPCs
 			HookParams hp = HookParams.For(info, NPC.width, NPC.height, Math.Max(5.01f, Player.jumpSpeed), Gravity());
 			HookPlan np = HookPlanner.Replan(TileHookWorld.Instance, NPC.Bottom, hp, real, goalBottom, _hkPlan.Kind, nowDist);
 			HookDbg($"replan from real anchors ({real.Count}): " + (np == null ? "none" : $"relDist={np.ReleaseDist:0} goalDist={np.GoalDist / 16f:0.0}T gain={np.Gain / 16f:0.0}T"));
-			if (np == null || !(_hkReason == HookReason.Rescue ? np.Landed : np.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f))) { SoldierHooks.Aborts++; HkAborts++; HookKillAll(); HookBackoff(); _hkPhase = HookPhase.Cooldown; _hkNextAllowed = Math.Max(_hkNextAllowed, Main.GameUpdateCount + (uint)H.CooldownTicks / 3); return false; }
+			if (np == null || !(_hkReason == HookReason.Rescue ? np.Landed : np.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f))) { SoldierHooks.Aborts++; HkAborts++; HookKillAll(); HookBackoff(); NPC.noGravity = false; _hkChain = false; _hkChainFlight = false; _hkPhase = HookPhase.Cooldown; _hkNextAllowed = Math.Max(_hkNextAllowed, Main.GameUpdateCount + (uint)H.CooldownTicks / 3); return false; }
 			_hkPlan = np;
 			return true;
 		}
@@ -424,6 +492,7 @@ namespace Levy.Content.NPCs
 			float dist = Vector2.Distance(npc.Center, centroid);
 			if (dist > _hkBestDist - H.ReelProgressPx) _hkStall++; else { _hkStall = 0; _hkBestDist = dist; }
 			bool arrived = dist < 28f || _hkStall >= 6;
+			if (_hkChain && (arrived || dist <= _hkPlan.ReleaseDist + H.ReleaseDistSlackPx) && TryChain(centroid)) return true;
 			bool release;
 			if (_hkPlan.Hang)
 			{
@@ -478,11 +547,17 @@ namespace Levy.Content.NPCs
 			bool floor = _hkTicks >= 3 && npc.velocity.Y == 0f && FloorUnderfoot();
 			if (floor || npc.wet || _hkTicks > H.BallisticMaxTicks)
 			{
-				SoldierHooks.Landings++; HkLandings++; HookDbg($"landed at {NPC.Bottom.X / 16f:0.0},{NPC.Bottom.Y / 16f:0.0}");
+				_hkChainUsed = false; SoldierHooks.Landings++; HkLandings++; HookDbg($"landed at {NPC.Bottom.X / 16f:0.0},{NPC.Bottom.Y / 16f:0.0}");
 				_hkFailStreak = 0;
 				_hkPhase = HookPhase.Cooldown; _hkNextAllowed = Main.GameUpdateCount + (uint)H.CooldownTicks;
 				ResetStuck(); npc.netUpdate = true;
 				return false;
+			}
+			if (_hkChainUsed && _hkTrigGoalUsed != Vector2.Zero)
+			{
+				// a climber who lets go at the lip holds the direction key toward the ledge: without it the wall zeroes the sideways speed and the body drops back down
+				float gx = _hkTrigGoalUsed.X - npc.Center.X;
+				if (Math.Abs(gx) > 20f && npc.Bottom.Y - _hkTrigGoalUsed.Y < 12f * 16f) { npc.velocity.X = Math.Sign(gx) * Math.Min(3.4f, Math.Max(1.5f, Math.Abs(gx) / 8f)); npc.direction = npc.spriteDirection = Math.Sign(gx); return true; }
 			}
 			float v = npc.velocity.X;                                      // a player in the air with no input loses runSlowdown * 0.5 of x each tick
 			npc.velocity.X = Math.Abs(v) > H.AirDragPx ? v - Math.Sign(v) * H.AirDragPx : 0f;

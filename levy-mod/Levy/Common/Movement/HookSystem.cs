@@ -28,23 +28,54 @@ namespace Levy.Common.Movement
 			c.HookNoteSpawn(projectile.whoAmI);
 		}
 
-		// Single player draws the real hook projectile, whose chain starts at Main.player[owner].MountedCenter: stand the soldier's dummy in the slot for the draw.
-		public override bool PreDraw(Projectile projectile, ref Color lightColor)
+		// Single player draws the real hook projectile, whose chain starts at Main.player[owner].MountedCenter. tML draws the chain in the extras pass BEFORE PreDraw, so the soldier's dummy
+		// stands in the owner slot from PreDrawExtras on (PreDraw re-checks, PostDraw restores, and the frame-end systems below restore if another mod skipped the sprite).
+		public override bool PreDrawExtras(Projectile projectile)
 		{
-			if (Soldier < 0 || Main.dedServ || _drawBackup != null) return true;
-			NPC n = Main.npc[Soldier];
-			if (!n.active || n.ModNPC is not SoldierNPC sn || sn.Dummy == null) return true;
-			Player d = sn.Dummy;
-			d.position = n.position; d.velocity = n.velocity; d.direction = n.direction == 0 ? 1 : n.direction; d.active = true;
-			_drawSlot = projectile.owner; _drawBackup = Main.player[_drawSlot]; Main.player[_drawSlot] = d;
+			BeginDrawSwap(projectile);
 			return true;
 		}
 
-		public override void PostDraw(Projectile projectile, Color lightColor)
+		public override bool PreDraw(Projectile projectile, ref Color lightColor)
+		{
+			BeginDrawSwap(projectile);
+			return true;
+		}
+
+		private void BeginDrawSwap(Projectile projectile)
+		{
+			if (Soldier < 0 || Main.dedServ || _drawBackup != null) return;
+			NPC n = Main.npc[Soldier];
+			if (!n.active || n.ModNPC is not SoldierNPC sn || sn.Dummy == null) return;
+			Player d = sn.Dummy;
+			d.position = n.position; d.velocity = n.velocity; d.direction = n.direction == 0 ? 1 : n.direction; d.active = true;
+			_drawSlot = projectile.owner; _drawBackup = Main.player[_drawSlot]; Main.player[_drawSlot] = d;
+		}
+
+		public override void PostDraw(Projectile projectile, Color lightColor) => EndDrawSwap();
+
+		internal static void EndDrawSwap()
 		{
 			if (_drawBackup == null) return;
 			Main.player[_drawSlot] = _drawBackup; _drawBackup = null; _drawSlot = -1;
 		}
+
+		/// <summary>Self-check helper: after the extras-pass swap the owner slot's MountedCenter must sit on the soldier. Returns the distance in px (always restores).</summary>
+		internal float SwapError(Projectile projectile)
+		{
+			if (Soldier < 0 || Main.dedServ) return 0f;
+			BeginDrawSwap(projectile);
+			float err = _drawBackup == null ? float.MaxValue : Vector2.Distance(Main.player[projectile.owner].MountedCenter, Main.npc[Soldier].Center);
+			EndDrawSwap();
+			return err;
+		}
+	}
+
+	/// <summary>Puts the owner slot back if a hook's sprite draw was skipped by another mod after its chain was drawn.</summary>
+	public class HookDrawRestore : ModSystem
+	{
+		public override void PostDrawInterface(Microsoft.Xna.Framework.Graphics.SpriteBatch spriteBatch) => HookTag.EndDrawSwap();
+		public override void PostUpdateEverything() => HookTag.EndDrawSwap();
 	}
 
 	/// <summary>

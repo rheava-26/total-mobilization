@@ -1073,12 +1073,17 @@ namespace Levy.Content.NPCs
 				_engMode = EngageMode.Hold;
 				if (!aloft && _crowdCount > 0 && now >= _nudgeNextTick && TryDisperseStep(seg, range, standoff, now)) return true;
 				// In the pocket: a small lateral shuffle every other think, only with room to spare past the standoff.
-				if ((_thinkCount & 1) != 0 || _threatTiles < standoff + LevyConstants.StrafeMarginTiles) return true;
-				float side = ((_thinkCount >> 1) & 1) == 0 ? 1f : -1f;
+				// Against a boss or a hard hitter a player never stands still: the strafe runs on every think, with longer steps and the odd short hop. Aim and fire rate are untouched.
+				bool danger = SoldierNPC.MobilityMode >= 1 && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage);
+				if (danger && !aloft && TickPlatformPerch(now)) return true;
+				if ((!danger && (_thinkCount & 1) != 0) || _threatTiles < standoff + LevyConstants.StrafeMarginTiles) return true;
+				float side = danger ? ((_thinkCount / 3) & 1) == 0 ? 1f : -1f : ((_thinkCount >> 1) & 1) == 0 ? 1f : -1f;
+				int strafeTiles = danger ? LevyConstants.StrafeTiles * 2 : LevyConstants.StrafeTiles;
+				if (danger && !aloft && NPC.velocity.Y == 0f && (_thinkCount % 5) == 0 && !LavaAhead((int)side)) TryJump(2);
 				Vector2 shuffle;
-				if (aloft) shuffle = new Vector2(NPC.Center.X + side * LevyConstants.StrafeTiles * LevyConstants.TilePx, NPC.Center.Y);
-				else if (!FindSafeStep((int)side, LevyConstants.StrafeTiles, seg.Center, range, standoff, false, out shuffle)
-					&& !FindSafeStep(-(int)side, LevyConstants.StrafeTiles, seg.Center, range, standoff, false, out shuffle)) return true; // a ledge edge: stay put
+				if (aloft) shuffle = new Vector2(NPC.Center.X + side * strafeTiles * LevyConstants.TilePx, NPC.Center.Y);
+				else if (!FindSafeStep((int)side, strafeTiles, seg.Center, range, standoff, false, out shuffle)
+					&& !FindSafeStep(-(int)side, strafeTiles, seg.Center, range, standoff, false, out shuffle)) return true; // a ledge edge: stay put
 				ApplyChaseClamp(ref shuffle);
 				SetGoal(shuffle);
 				return true;
@@ -2178,8 +2183,10 @@ namespace Levy.Content.NPCs
 				slotTiles = Math.Min(LevyConstants.CloseUpFollowStartTiles + (slotIdx / 2) * LevyConstants.CloseUpFollowStepTiles, LevyConstants.CloseUpFollowMaxTiles);
 				slotSide = (slotIdx & 1) == 0 ? -facing : facing;
 			}
-			Vector2 slot = cmd.Bottom + new Vector2(slotSide * slotTiles * LevyConstants.TilePx, 0f);
-			if (cmd.Center.Y / 16f > Main.worldSurface) slot = KeepSlotOutOfRock(cmd.Bottom, slot); // underground only: surface slots are untouched
+			Vector2 cmdBase = cmd.Bottom;
+			if (cmd.gravDir < 0f && FollowerTravel.FindGroundBelow(cmd.Center, out Vector2 under)) cmdBase = under; // a commander walking on a ceiling (Gravitation Potion): wait on the ground beneath them, never path up to the ceiling
+			Vector2 slot = cmdBase + new Vector2(slotSide * slotTiles * LevyConstants.TilePx, 0f);
+			if (cmd.Center.Y / 16f > Main.worldSurface) slot = KeepSlotOutOfRock(cmdBase, slot); // underground only: surface slots are untouched
 			float dSlot = LevyUtil.TileDistance(NPC.Bottom, slot);
 			// Close up also tightens how close to the slot a soldier must stand before it stops: the normal 4 / 6 tile slack is what lets a squad sprawl.
 			float stopTiles = Record.CloseUp ? LevyConstants.CloseUpFollowStopTiles : LevyConstants.FollowDistance / 3f;
@@ -2241,8 +2248,9 @@ namespace Levy.Content.NPCs
 			Vector2 behind = cmd.Center + new Vector2(-facing * (hx - LevyConstants.TeleportOffscreenMarginPx + LevyConstants.TeleportBehindExtraPx), 0f);
 			Vector2 spot;
 			if (!FollowerTravel.FindStandingSpot(behind, LevyConstants.TeleportSpotSearchTiles, out spot)
-				&& !FollowerTravel.FindStandingSpot(cmd.Center, LevyConstants.TeleportSpotSearchTiles, out spot))
-				spot = cmd.Bottom;
+				&& !FollowerTravel.FindSafeGround(cmd.Center, LevyConstants.TeleportSpotSearchTiles, out spot))
+				return; // no ground anywhere near the commander (they are over the void): stay put rather than land in the air
+			spot = RosterSystem.SafeSpawnPosition(spot); // not into a boss's dash
 			NPC.Bottom = spot;
 			NPC.velocity = Vector2.Zero;
 			NPC.netUpdate = true;

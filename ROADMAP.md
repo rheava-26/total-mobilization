@@ -243,6 +243,7 @@
   - **Replays:** the gallery HTML "didn't work" on her side → publish as a hosted page.
 - **Tier corrections (Eve):** Crystal Ball, Bewitching Table and Ammo Box are post-Skeletron (some Hardmode); lab 3 places each placeable only from its real first tier (wiki-checked). Meteor Shot only AFTER EoW/BoC are beaten (Eve saw no meteor after smashing an orb).
 - **Ammo (Eve):** labs used plain ammo. Lab 3 now gives the best ammo for the tier, boss and arena: Meteor Shot (bounces + pierces) from the EoW/BoC fights on, enclosed arena; piercing arrows vs worms. Lab 3 also reports how the real armory picks a levy's ammo.
+- **REPLAY SITE PUBLISHED:** https://claude.ai/artifact/Q6aYA45u8MSxyB7VZxHSEH (63 fights). Rebuild with `tools/fightviewer/make_site.py <out> lab1=... lab2=... worm=... options=... lab3=...`, then republish the same file path.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

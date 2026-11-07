@@ -281,7 +281,7 @@ namespace Levy.Common.Testing
 		{
 			public CrRun Run; public List<CrLevy> Levies = new();
 			public int BossType, BodyType = -1, TailType = -1; public HashSet<int> AddTypes = new(), PartTypes = new(); public bool Worm => PartTypes.Count > 0;
-			public long DtdTicks, LastDmgSum, AddKills; public int PrevAdds; public SortedDictionary<int, (long ticks, long dmg)> Phase = new(); public long TgtLevy, TgtPlayer, TgtNone, AddTgtLevy, AddTgtPlayer, AddTgtNone, HitsBoss, DmgHead, DmgBody, DmgTail, DmgAdd, EnragedTicks, BossAliveTicks; public double Moved; public Vector2 LastPos; public bool HavePos; public int FirstHitTick = -1, MaxParts, MaxAdds; public long BossLifeMaxSum;
+			public Dictionary<string, long> Srcs = new(); public void Src(string k, long d) { Srcs.TryGetValue(k, out long v); Srcs[k] = v + d; } public long DtdTicks, LastDmgSum, AddKills; public int PrevAdds; public SortedDictionary<int, (long ticks, long dmg)> Phase = new(); public long TgtLevy, TgtPlayer, TgtNone, AddTgtLevy, AddTgtPlayer, AddTgtNone, HitsBoss, DmgHead, DmgBody, DmgTail, DmgAdd, EnragedTicks, BossAliveTicks; public double Moved; public Vector2 LastPos; public bool HavePos; public int FirstHitTick = -1, MaxParts, MaxAdds; public long BossLifeMaxSum;
 			public int Tick; public int BossIdx = -1; public int BossLifeMax; public int BossLife; public int BossDamage, BossDefense;
 			public int AddsPeak; public int HalfTick = -1; public bool BossGone; public int EndTick = -1; public string Result = "";
 			public long DmgUnattributed, ProjDmg, MeleeDmg;
@@ -516,7 +516,7 @@ namespace Levy.Common.Testing
 					{
 						l.Hits++;
 						int at = sn.LastAttackerType;
-						if (at == st.BossType) l.TakenBoss += drop; else if (st.AddTypes.Contains(at)) l.TakenAdd += drop; else l.TakenOther += drop;
+						if (at == st.BossType || st.PartTypes.Contains(at)) { l.TakenBoss += drop; st.Src("boss:" + CrNpcName(at), drop); } else if (st.AddTypes.Contains(at)) { l.TakenAdd += drop; st.Src("add:" + CrNpcName(at), drop); } else { l.TakenOther += drop; st.Src("other:" + CrNpcName(at), drop); }
 					}
 					l.LastLife = n.life; l.LastAttackerType = sn.LastAttackerType; l.LifeMin = Math.Min(l.LifeMin, n.life);
 					l.ManaMin = Math.Min(l.ManaMin, l.Rec.Mana);
@@ -538,7 +538,7 @@ namespace Levy.Common.Testing
 				{
 					l.Dead = true; l.DeathTick = st.Tick;
 					int at = l.LastAttackerType;
-					if (at == st.BossType) l.TakenBoss += l.LastLife; else if (st.AddTypes.Contains(at)) l.TakenAdd += l.LastLife; else l.TakenOther += l.LastLife;
+					if (at == st.BossType || st.PartTypes.Contains(at)) { l.TakenBoss += l.LastLife; st.Src("boss:" + CrNpcName(at), l.LastLife); } else if (st.AddTypes.Contains(at)) { l.TakenAdd += l.LastLife; st.Src("add:" + CrNpcName(at), l.LastLife); } else { l.TakenOther += l.LastLife; st.Src("other:" + CrNpcName(at), l.LastLife); }
 				}
 			}
 			if (st.Result == "" && alive == 0) { st.Result = "LOSS"; st.EndTick = st.Tick; }
@@ -551,7 +551,7 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !(n.ModNPC is SoldierNPC) && !n.townNPC) n.active = false; }
 		}
 
-		private const string CrHeader = "key\tkind\tboss\tmode\torder\tseed\tresult\tticks\tsec\tbossMax\tbossLeft\tbossDmg\tbossDef\tdmgBoss\tdmgR\tdmgM\tdmgE\tdmgS\tdmgUnattr\tdmgProj\tdmgMelee\tdeaths\tdeathsR\tdeathsM\tdeathsE\tdeathsS\tavgSurvSec\ttakenBoss\ttakenAdd\ttakenOther\taddsPeak\thalfSec\tavgHp\tpotionsDrunk\trageAct\tadrAct\tdrCuts\tadrLost\tpeakRageAvg\tpeakAdrAvg\trageSec\tadrSec\thitsTaken\tgear\tarena\tn\ttgtLevyPct\ttgtPlayerPct\ttgtNonePct\taddTgtLevyPct\taddTgtPlayerPct\thitsBoss\thitsPerSec\tdmgPerSec\tdmgHead\tdmgBody\tdmgTail\tdmgAdd\tbossMoved\tenragedSec\tfirstHitSec\tpartsMax\tdtdPct\tdpsHittable\taddKills\taddKillsPerSec\tphases\tperLevy";
+		private const string CrHeader = "key\tkind\tboss\tmode\torder\tseed\tresult\tticks\tsec\tbossMax\tbossLeft\tbossDmg\tbossDef\tdmgBoss\tdmgR\tdmgM\tdmgE\tdmgS\tdmgUnattr\tdmgProj\tdmgMelee\tdeaths\tdeathsR\tdeathsM\tdeathsE\tdeathsS\tavgSurvSec\ttakenBoss\ttakenAdd\ttakenOther\taddsPeak\thalfSec\tavgHp\tpotionsDrunk\trageAct\tadrAct\tdrCuts\tadrLost\tpeakRageAvg\tpeakAdrAvg\trageSec\tadrSec\thitsTaken\tgear\tarena\tn\ttgtLevyPct\ttgtPlayerPct\ttgtNonePct\taddTgtLevyPct\taddTgtPlayerPct\thitsBoss\thitsPerSec\tdmgPerSec\tdmgHead\tdmgBody\tdmgTail\tdmgAdd\tbossMoved\tenragedSec\tfirstHitSec\tpartsMax\tdtdPct\tdpsHittable\taddKills\taddKillsPerSec\tphases\tdmgSources\tperLevy";
 
 		private void CrFinishFight(CrRun run, CrState st)
 		{
@@ -575,7 +575,7 @@ namespace Levy.Common.Testing
 				CrPct(st.AddTgtLevy, st.AddTgtLevy + st.AddTgtPlayer + st.AddTgtNone), CrPct(st.AddTgtPlayer, st.AddTgtLevy + st.AddTgtPlayer + st.AddTgtNone), st.HitsBoss, f1(st.HitsBoss / Math.Max(1.0, end / 60.0)), f1(dmgBoss / Math.Max(1.0, end / 60.0)),
 				st.DmgHead, st.DmgBody, st.DmgTail, st.DmgAdd, f1(st.Moved / 16.0), f1(st.EnragedTicks / 60.0), st.FirstHitTick < 0 ? "-" : f1(st.FirstHitTick / 60.0), st.MaxParts,
 				CrPct(st.DtdTicks, st.BossAliveTicks), f1(dmgBoss / Math.Max(1.0, (st.BossAliveTicks - st.DtdTicks) / 60.0)), st.AddKills, f1(st.AddKills / Math.Max(1.0, end / 60.0)),
-				string.Join(" ", st.Phase.Select(kv => $"a{kv.Key}:{kv.Value.ticks / 60.0:0}s/{kv.Value.dmg}d={(kv.Value.dmg / Math.Max(1.0, kv.Value.ticks / 60.0)):0}")), per }));
+				string.Join(" ", st.Phase.Select(kv => $"a{kv.Key}:{kv.Value.ticks / 60.0:0}s/{kv.Value.dmg}d={(kv.Value.dmg / Math.Max(1.0, kv.Value.ticks / 60.0)):0}")), string.Join(" ", st.Srcs.OrderByDescending(kv => kv.Value).Take(8).Select(kv => kv.Key + "=" + kv.Value)), per }));
 			File.AppendAllText(_crOut, sb + "\n");
 			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} rageAct={LevyRippers.RageActivations - st.Rage0} adrAct={LevyRippers.AdrenalineActivations - st.Adr0}");
 			if (Main.npc[st.BossIdx].active && Main.npc[st.BossIdx].type == st.BossType) Main.npc[st.BossIdx].active = false;

@@ -147,6 +147,8 @@ namespace Levy.Common.Testing
 			catch { return false; }
 		}
 
+		private static string CrNpcName(int type) => type < 0 ? "none(" + type + ")" : type < NPCID.Count ? Lang.GetNPCNameValue(type).Replace(" ", "_") : (NPCLoader.GetNPC(type)?.Name ?? ("t" + type));
+
 		private static int CrTgtClass(NPC n) => n.target == SoldierNPC.DummySlot || n.target >= 300 ? 0 : n.target >= 0 && n.target < Main.maxPlayers ? 1 : 2;
 
 		private void CrSampleTick(CrState st, NPC e, bool alive, int adds)

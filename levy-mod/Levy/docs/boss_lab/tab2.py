@@ -66,7 +66,7 @@ def main():
                 d = G1.get((b, m, cm, str(CP[b])))
                 return (d['wl'], f"{d['deaths']} / {d['ttk'].replace('nan', '-')}") if d else ('-', '-')
             a, ad = l1('far'); bb, bd = l1('near')
-            print(f"| {NAME[b]} | {MODE[m]} | {c['ncp']} | {wl(c)} | {c['deaths']:.1f} | {f1(c['ttk'])} | {f1(c['fd'], 1)} | {f1(c['tL'])}/{f1(c['tP'])} | {f1(c['aL'])}/{f1(c['aP'])} | {a} | {ad} | {bb} | {bd} |")
+            print(f"| {NAME[b]} | {MODE[m]} | {c['ncp']} | {wl(c)} | {c['deaths']:.1f} | {f1(c['ttk'])} | {f1(c['fd'], 1)} | {f1(c['tL'])}/{f1(c['tP'])} | {'-' if b in ('ds', 'eow') else f1(c['aL']) + '/' + f1(c['aP'])} | {a} | {ad} | {bb} | {bd} |")
 def pair(a_files, b_files, la, lb, extra_key=None):
     A = collections.defaultdict(list); B = collections.defaultdict(list)
     for r in dedup(load(a_files)): A[(r['boss'], r['mode'])].append(r)

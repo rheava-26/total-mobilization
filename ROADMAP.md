@@ -311,6 +311,7 @@
   - Contrast with KS: levies HELP vs DS (worm spread + many targets), but HURT vs KS (KS chases levies away).
   - **Recorder bug:** DS kills are logged as bdespawn with 4–80 HP left (worm realLife death not caught). Needs a fix in Common/Recording.
   - ks_team_2 may be missing (Eve: "might be an extra one").
+- **rec-wormkill MERGED (827a034):** worm kills logged as bdeath (BossRoot via realLife; LooksKilled). make_site treats old near-zero bdespawn plus a recent hit as a kill. Eve's 7 DS fights now read as 7 wins on the page. Not yet run against a live DS kill.
 - **Launched:**
   - vert1: levies use platform rows;
   - ammo-slimegod: best-ammo armory rule + Slime God despawn.
@@ -320,6 +321,7 @@
   - Double jump: "they should double jump!" Lab 3's "levies don't double jump" was unverified. vert1 to verify all gear double jumps (incl. Sulphurous set jump bubble) and their effects.
 - **BUG (Eve video 15:39):** levy hook CHAINS drawn from far offscreen (likely from the owner player's MountedCenter) → vert1 builder.
 - **sound-throttle MERGED (for the next release):** one new file, Common/Audio/ArmySoundThrottle.cs. Client-only detour of SoundEngine.PlaySound, scoped to Levy/Mechanization NPC and projectile AI. Limits: 3 per style and 10 total per 12 ticks; drops sounds far off-screen; stacking sounds get quieter; the player's sounds are never touched. Modelled 142 → 50 sounds/s. UNVERIFIED in real audio; Eve to retest the goblin fight.
+- **rec-wormkill MERGED (827a034):** worm kills logged as bdeath (BossRoot via realLife; LooksKilled). make_site treats old near-zero bdespawn plus a recent hit as a kill. Eve's 7 DS fights now read as 7 wins on the page. Not yet run against a live DS kill.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

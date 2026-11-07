@@ -290,7 +290,7 @@ namespace Levy.Common.Testing
 		private void Lab3Begin(CrRun run, CrState s)
 		{
 			Array.Clear(_l3Lv, 0, _l3Lv.Length); _l3HSum = _l3HSq = _l3BossH = 0; _l3HN = _l3BossHN = 0; CombatHarnessFloor = CrF;
-			L3LogAmmo();
+			L3LogAmmo(); global::Levy.Common.Util.LevyProf.Reset(); SoldierNPC.WmThinks = SoldierNPC.WmHolds = SoldierNPC.WmShifts = SoldierNPC.WmAims = SoldierNPC.WmAimCalls = SoldierNPC.WmPierce = 0;
 			SoldierNPC.RowEvalsS = SoldierNPC.RowClimbsS = SoldierNPC.RowArriveS = SoldierNPC.RowStayS = SoldierNPC.RowDropsS = SoldierNPC.RowThreatEvalsS = 0; SoldierNPC.JumpFxCounts.Clear(); SoldierNPC.JumpFxProj = 0; SoldierNPC.JumpFxDmg = 0; SoldierNPC.JumpFxFailed = 0; _l3JumpKit.Clear(); _l3ChainN = _l3ChainBad = 0; _l3ChainMax = _l3NaiveSum = 0; SoldierNPC.ZoneClampsS = SoldierNPC.ZoneReturnsS = 0; _l3DN = 0; _l3DCmdSum = _l3DCmdMax = _l3DCtrSum = _l3DCtrMax = _l3DBossSum = 0;
 			_l3Tick = -1; _l3Poison = 0; _l3Irr = 0; _l3Flags.Clear(); _l3Buffs.Clear(); _l3Sampled = 0; _l3SulphSet = 0; _l3DefSum = 0; _l3Hazard = 0;
 			_l3Ammo = string.Join(",", s.Levies.Select(l => l.Spec.Weapon.Replace("CalamityMod/", "C:") + (string.IsNullOrEmpty(l.Spec.Ammo) ? "" : "/" + l.Spec.Ammo)));

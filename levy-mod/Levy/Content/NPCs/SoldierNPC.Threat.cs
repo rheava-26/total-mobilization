@@ -52,7 +52,7 @@ namespace Levy.Content.NPCs
 			if (DodgeDebug && (_dodgePend > 0 || !grounded)) Levy.Instance?.Logger.Info($"DODGEDBG-TRK t={Main.GameUpdateCount} y={NPC.Bottom.Y:0} vy={NPC.velocity.Y:0.00} pend={_dodgePend}");
 			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
 			try { return DodgeMode == 1 ? TickDodgeLegacy(grounded, air) : TickThreatDodge(grounded, air); }
-			finally { DodgeTs += System.Diagnostics.Stopwatch.GetTimestamp() - t0; }
+			finally { long e = System.Diagnostics.Stopwatch.GetTimestamp() - t0; DodgeTs += e; if (global::Levy.Common.Util.LevyProf.On) global::Levy.Common.Util.LevyProf.Add(global::Levy.Common.Util.LevyProf.Dodge, e); }
 		}
 
 		private bool TickThreatDodge(bool grounded, bool air)
@@ -98,7 +98,7 @@ namespace Levy.Content.NPCs
 			if (all.Count == 0) return HoldStep(holding);
 			Vector2 c0 = npc.Center;
 			int horizon = MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon;
-			ThreatField.Near(all, c0, 128f, horizon, _thrNear);
+			{ long pn = global::Levy.Common.Util.LevyProf.Begin(); ThreatField.Near(all, c0, 128f, horizon, _thrNear); global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Near, pn); }
 			if (_thrNear.Count == 0) return HoldStep(holding);
 			DodgeNearScans++;
 
@@ -220,11 +220,16 @@ namespace Levy.Content.NPCs
 
 		/// <summary>Moves a player has beyond a step and a hop: a double jump from the apex of the first, a dash combined with a jump or a platform drop, a hook up to a ledge out of the line.</summary>
 		private static readonly List<Threat> _thrHeads = new(4);
+		private static uint _thrHeadsTick = uint.MaxValue; private static int _thrHeadsWho = -1;
 		/// <summary>A carry hop is dropped when, over its whole flight, it crosses a worm head's predicted arc (head margin included).</summary>
 		private bool CarryClearsHead(in Maneuver m, Vector2 c0, float g)
 		{
-			_thrHeads.Clear();
-			for (int i = 0; i < _thrNear.Count; i++) if (_thrNear[i].Head) _thrHeads.Add(_thrNear[i]);
+			if (!ThreatField.FastOn || _thrHeadsTick != Main.GameUpdateCount || _thrHeadsWho != NPC.whoAmI)
+			{
+				_thrHeadsTick = Main.GameUpdateCount; _thrHeadsWho = NPC.whoAmI;
+				_thrHeads.Clear();
+				for (int i = 0; i < _thrNear.Count; i++) if (_thrNear[i].Head) _thrHeads.Add(_thrNear[i]);
+			}
 			if (_thrHeads.Count == 0) return true;
 			return ThreatField.Hits(_thrHeads, c0, NPC.width, NPC.height, m, g, m.Dur + 14, out _, out _, LevyConstants.WormDodge.MarginPx) == 0;
 		}
@@ -487,7 +492,8 @@ namespace Levy.Content.NPCs
 		/// A player fights a boss from the platform rows: up out of the dash lane, down through them to dodge. Standing on plain ground with a platform in jump (or hook, or double-jump) reach, a levy in a boss fight walks / jumps / hooks up onto it,
 		/// at most once every few seconds; once up it strafes there. True while the climb is under way (the goal is set).
 		/// </summary>
-		private bool TickPlatformPerch(int now)
+		private bool TickPlatformPerch(int now) { long pt = global::Levy.Common.Util.LevyProf.Begin(); try { return TickPlatformPerchBody(now); } finally { global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Perch, pt); } }
+		private bool TickPlatformPerchBody(int now)
 		{
 			if (_platActive)
 			{

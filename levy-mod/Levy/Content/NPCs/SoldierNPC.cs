@@ -398,11 +398,19 @@ namespace Levy.Content.NPCs
 
 		public override void AI()
 		{
+			long pt = global::Levy.Common.Util.LevyProf.Begin();
+			try { AIBody(); } finally { global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.AI, pt); }
+		}
+
+		private void AIBody()
+		{
 			if (Record == null) { if (LevyUtil.IsServerOrSingle) { NPC.active = false; NPC.netUpdate = true; } return; }
+			long pd = global::Levy.Common.Util.LevyProf.Begin();
 			EnsureDummy();
 			if (!_buffImmunityFixed) { _buffImmunityFixed = true; AllowFriendlyBuffs(); }
 			PinLifeMax(); // before anything reads lifeMax (the dummy's life stats just below, damage, fear): a max another mod raised since last tick is put back first
 			SyncDummyTransform();
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Dummy, pd);
 			if (LevyUtil.IsClient)
 			{
 				// clients only animate; the server owns the brain. Mirror the held-item animation countdown so swings look smooth
@@ -429,21 +437,36 @@ namespace Levy.Content.NPCs
 				SyncDummyTransform();
 				return;
 			}
+			pd = global::Levy.Common.Util.LevyProf.Begin();
 			if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; RefreshStats(); }
 			else if (_upkeepGear) GearTick(); // per-tick gear upkeep (SoldierNPC.GearUpkeep.cs); RefreshStats ran the same frame this tick when it was due
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Stats, pd);
+			pd = global::Levy.Common.Util.LevyProf.Begin();
 			Rippers_Tick(); // Calamity's Rage and Adrenaline (SoldierNPC.Rippers.cs)
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Rip, pd);
+			long pq = global::Levy.Common.Util.LevyProf.Begin();
 			Damage_Update();
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Dmg, pq);
 			if (!IsAlive) return;
 			if ((int)Main.GameUpdateCount % LevyConstants.ThinkIntervalTicks == ThinkOffset && !MindControlled) Brain_Think(); // a mind-controlled body takes orders from its player (Common/Observe)
+			pq = global::Levy.Common.Util.LevyProf.Begin();
 			Fear_Update();
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Fear, pq);
 			MindControl_Drive();
+			pq = global::Levy.Common.Util.LevyProf.Begin();
 			Movement_Update();
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Move, pq);
 			TickJumpEffects(); // the real OnStarted of every non-vanilla extra jump spent (SoldierNPC.JumpFx.cs)
 			TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs); a dedicated server returns at once
-			Combat_Update();
+			pq = global::Levy.Common.Util.LevyProf.Begin();
+			WormAimBegin((int)Main.GameUpdateCount);
+			try { Combat_Update(); } finally { global::Levy.Common.Weapons.Aiming.Prefer = null; }
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Combat, pq);
 			MindControl_Act();
 			Record.CurrentHp = NPC.life;
+			pd = global::Levy.Common.Util.LevyProf.Begin();
 			SyncDummyTransform();
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Dummy, pd);
 		}
 
 		public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers)

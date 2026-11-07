@@ -49,7 +49,8 @@ namespace Levy.Content.NPCs
 		private bool InFightZone(int now, Vector2 p) => !FightZone(now, out Vector2 c) || Vector2.DistanceSquared(p, c) <= FightZoneTiles * FightZoneTiles * LevyConstants.TilePx * LevyConstants.TilePx;
 
 		/// <summary>End of a think: pull the goal into the zone, or send a body that has left it back to the edge.</summary>
-		private void ApplyFightZone(int now)
+		private void ApplyFightZone(int now) { long pt = global::Levy.Common.Util.LevyProf.Begin(); try { ApplyFightZoneBody(now); } finally { global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Zone, pt); } }
+		private void ApplyFightZoneBody(int now)
 		{
 			if (!FightZone(now, out Vector2 c)) return;
 			float R = FightZoneTiles * LevyConstants.TilePx;

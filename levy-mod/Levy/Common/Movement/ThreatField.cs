@@ -29,9 +29,14 @@ namespace Levy.Common.Movement
 		public bool Boss; public float Gy, Floor;
 		/// <summary>A worm segment (or a chain head): its path is a table of <see cref="TrajN"/> points, 2 ticks apart, starting at <see cref="TrajOff"/> in the field's shared trajectory store (see ThreatField.BuildChain).</summary>
 		public int TrajOff, TrajN;
+		/// <summary>Axis-aligned box around every sample of the path table (set with it): a quick reject for 'can this threat come near here at all'.</summary>
+		public Vector2 BbMin, BbMax;
 		/// <summary>A worm chain's head (set only while the worm dodge is on). <see cref="Turn"/> is its turn rate (rad per tick) and <see cref="TurnT"/> the ticks that turn is assumed to last (a body threat bends on an arc, then flies straight).</summary>
 		public bool Head; public float Turn, TurnT;
 	}
+
+	/// <summary>A worm head the field tracks this tick: where it is, how fast it flies, and how fast its heading is turning (rad per tick).</summary>
+	public struct HeadInfo { public int Idx; public Vector2 P, V; public float Omega; }
 
 	/// <summary>A dodge candidate: horizontal velocity for Dur ticks, an optional jump (Delay ticks from now: a hop timed to land after a charge has passed under it), an optional platform drop.</summary>
 	public struct Maneuver
@@ -59,6 +64,7 @@ namespace Levy.Common.Movement
 		private static readonly uint[] PrevAngTick = new uint[Main.maxProjectiles];
 		private static readonly Vector2[] PrevVel = new Vector2[Main.maxNPCs + 1];
 		private static readonly uint[] PrevVelTick = new uint[Main.maxNPCs + 1];
+		internal static bool FastOn = Environment.GetEnvironmentVariable("LEVY_PERFOPT") != "0";
 		public static long BuildTs, EvalTs; public static int Builds, Evals, EvalSamples;
 
 		public static float BodyMarginPx = 10f, BossBodyMarginPx = 22f;
@@ -75,17 +81,23 @@ namespace Levy.Common.Movement
 		private static readonly int[] _childOf = new int[Main.maxNPCs + 1];
 		private static readonly bool[] _follower = new bool[Main.maxNPCs + 1];
 		private static readonly int[] _snapOf = new int[Main.maxNPCs + 1];
+		private static readonly int[] _chainOf = new int[Main.maxNPCs + 1];
+		/// <summary>The head of the chain this NPC is a segment of this tick (the head itself included), -1 when it is in none.</summary>
+		public static int ChainHeadOf(int npc) => (uint)npc < (uint)_chainOf.Length ? _chainOf[npc] : -1;
 		private static readonly float[] _omega = new float[Main.maxNPCs + 1];
 		private static Vector2[] _traj = new Vector2[4096];
 		private static int _trajN;
 		private static readonly int[] _chainSegs = new int[512];
 		private static readonly float[] _chainD = new float[512];
+		private static readonly Vector2[] _bp = new Vector2[96];
 		private static readonly Vector2[] _hPath = new Vector2[ChainSamples];
 		private static readonly float[] _hLen = new float[ChainSamples];
 		/// <summary>Chains and chain segments the field modelled this tick (harness / diagnostics).</summary>
 		public static int ChainsThisTick, ChainSegsThisTick;
 		/// <summary>NPC indices of the heads of the chains modelled this tick.</summary>
 		public static readonly List<int> ChainHeads = new();
+		/// <summary>The heads of the chains modelled this tick, with their motion (read by the worm momentum rule).</summary>
+		public static readonly List<HeadInfo> Heads = new();
 		/// <summary>Harness switch (LEVY_CHAIN=1): model worm chains (OFF by default: the A/B runs showed no gain, and Eater of Worlds fared worse) or fall back to treating each segment as its own body.</summary>
 		internal static bool ChainBossBody = Environment.GetEnvironmentVariable("LEVY_CHAINBOSS") == "1";
 		internal static bool ChainOn = Environment.GetEnvironmentVariable("LEVY_CHAIN") == "1" || Environment.GetEnvironmentVariable("LEVY_WORMBODY") != "0";
@@ -112,8 +124,8 @@ namespace Levy.Common.Movement
 			if (_tick == now) return Snap;
 			_tick = now;
 			long t0 = Stopwatch.GetTimestamp();
-			Snap.Clear(); BossBodies = 0; _trajN = 0; ChainsThisTick = 0; ChainSegsThisTick = 0; ChainHeads.Clear();
-			for (int i = 0; i < _childOf.Length; i++) { _childOf[i] = -1; _follower[i] = false; _snapOf[i] = -1; }
+			Snap.Clear(); BossBodies = 0; _trajN = 0; ChainsThisTick = 0; ChainSegsThisTick = 0; ChainHeads.Clear(); Heads.Clear();
+			for (int i = 0; i < _childOf.Length; i++) { _childOf[i] = -1; _follower[i] = false; _snapOf[i] = -1; _chainOf[i] = -1; }
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
@@ -179,7 +191,8 @@ namespace Levy.Common.Movement
 					Snap[_snapOf[i]] = h;
 				}
 			}
-			BuildTs += Stopwatch.GetTimestamp() - t0; Builds++;
+			for (int hi = 0; hi < ChainHeads.Count; hi++) { int ix = ChainHeads[hi]; NPC hn = Main.npc[ix]; Heads.Add(new HeadInfo { Idx = ix, P = hn.Center, V = hn.velocity, Omega = _omega[ix] }); }
+			long tb = Stopwatch.GetTimestamp() - t0; BuildTs += tb; Builds++; if (Util.LevyProf.On) Util.LevyProf.Add(Util.LevyProf.Snap, tb);
 			return Snap;
 		}
 
@@ -217,24 +230,40 @@ namespace Levy.Common.Movement
 				if ((t & 1) == 0) { _hPath[t >> 1] = pos; _hLen[t >> 1] = len; }
 			}
 			ChainsThisTick++; ChainHeads.Add(head);
+			for (int k = 0; k < n; k++) _chainOf[_chainSegs[k]] = head;
 			bool dm = Content.NPCs.SoldierNPC.DanceMode >= 1 && Content.NPCs.SoldierNPC.DOn(1);
+			for (int i = 0; i < ChainSamples; i++) _tp[i] = 1;
 			for (int k = 0; k < n; k++)
 			{
 				NPC seg = Main.npc[_chainSegs[k]];
 				if (_trajN + ChainSamples > _traj.Length) Array.Resize(ref _traj, _traj.Length * 2);
 				int off = _trajN; _trajN += ChainSamples;
 				float dk = _chainD[k];
+				Vector2 bmin = new Vector2(float.MaxValue), bmax = new Vector2(float.MinValue);
 				for (int i = 0; i < ChainSamples; i++)
 				{
 					float s = dk - _hLen[i];
-					_traj[off + i] = s >= 0f ? OnTrail(n, s) : OnHeadPath(-s);
+					Vector2 q = s >= 0f ? (FastOn ? OnTrailFrom(n, s, ref _tp[i]) : OnTrail(n, s)) : OnHeadPath(-s);
+					_traj[off + i] = q;
+					if (q.X < bmin.X) bmin.X = q.X; if (q.X > bmax.X) bmax.X = q.X;
+					if (q.Y < bmin.Y) bmin.Y = q.Y; if (q.Y > bmax.Y) bmax.Y = q.Y;
 				}
 				bool boss = dm && (k == 0 || ChainBossBody) && LevyUtil.IsBossNpc(seg);
 				if (boss) BossBodies++;
 				ChainSegsThisTick++;
-				var th = new Threat { P = seg.Center, Half = new Vector2(seg.width, seg.height) * 0.5f, Weight = k == 0 ? th0.Weight : Math.Max(seg.damage, 1), Body = true, Boss = boss, TrajOff = off, TrajN = ChainSamples };
+				var th = new Threat { P = seg.Center, Half = new Vector2(seg.width, seg.height) * 0.5f, Weight = k == 0 ? th0.Weight : Math.Max(seg.damage, 1), Body = true, Boss = boss, TrajOff = off, TrajN = ChainSamples, BbMin = bmin, BbMax = bmax };
 				if (k == 0) Snap[idx] = th; else Snap.Add(th);
 			}
+		}
+
+		private static readonly int[] _tp = new int[ChainSamples];
+		/// <summary>OnTrail with the search resumed at <paramref name="k"/>: along one sample column the distance only grows from one segment to the next, so the search never has to restart.</summary>
+		private static Vector2 OnTrailFrom(int n, float s, ref int k)
+		{
+			while (k < n - 1 && _chainD[k] < s) k++;
+			float d0 = _chainD[k - 1], d1 = _chainD[k];
+			float u = d1 - d0 > 1e-3f ? MathHelper.Clamp((s - d0) / (d1 - d0), 0f, 1f) : 0f;
+			return Vector2.Lerp(Main.npc[_chainSegs[k - 1]].Center, Main.npc[_chainSegs[k]].Center, u);
 		}
 
 		/// <summary>The point <paramref name="s"/> px behind the head's start along the polyline through the segment centres.</summary>
@@ -276,6 +305,18 @@ namespace Levy.Common.Movement
 		/// <summary>Keeps the threats that can come within <paramref name="reach"/> px of <paramref name="c"/> inside <paramref name="horizon"/> ticks.</summary>
 		public static void Near(List<Threat> all, Vector2 c, float reach, int horizon, List<Threat> into)
 		{
+			NearCore(all, c, reach, horizon, into, FastOn);
+			if (!PerfChk) return;
+			_chkNear.Clear(); NearCore(all, c, reach, horizon, _chkNear, !FastOn);
+			ChkN++; bool bad = _chkNear.Count != into.Count;
+			for (int i = 0; !bad && i < into.Count; i++) if (into[i].P != _chkNear[i].P || into[i].TrajOff != _chkNear[i].TrajOff) bad = true;
+			if (bad) ChkBad++;
+		}
+		private static readonly List<Threat> _chkNear = new(64);
+		public static bool PerfChk = Environment.GetEnvironmentVariable("LEVY_PERFCHK") == "1"; public static int ChkN, ChkBad;
+
+		private static void NearCore(List<Threat> all, Vector2 c, float reach, int horizon, List<Threat> into, bool fast)
+		{
 			into.Clear();
 			for (int i = 0; i < all.Count; i++)
 			{
@@ -283,7 +324,9 @@ namespace Levy.Common.Movement
 				if (t.Line) { if (Vector2.DistanceSquared(t.P, c) <= (t.Len + reach) * (t.Len + reach)) into.Add(t); continue; }
 				if (t.TrajN > 0)
 				{
-					float rt = reach + Math.Max(t.Half.X, t.Half.Y); rt *= rt;
+					float rr = reach + Math.Max(t.Half.X, t.Half.Y);
+					if (fast && (c.X < t.BbMin.X - rr || c.X > t.BbMax.X + rr || c.Y < t.BbMin.Y - rr || c.Y > t.BbMax.Y + rr)) continue;   // outside the box around the whole path: no segment can be within reach
+					float rt = rr * rr;
 					int last = Math.Min(t.TrajN - 1, (horizon + 1) >> 1);
 					for (int k = 0; k < last; k++) if (SegDistSq(_traj[t.TrajOff + k], _traj[t.TrajOff + k + 1], c) <= rt) { into.Add(t); break; }
 					continue;
@@ -426,15 +469,67 @@ namespace Levy.Common.Movement
 		/// <summary>Where this threat is <paramref name="t"/> ticks from now.</summary>
 		public static Vector2 PosAt(in Threat th, int t) => ThreatAt(th, t);
 
+		/// <summary>
+		/// Ticks until this head can fly through <paramref name="c"/> again. A head keeps its speed and bends at a bounded turn rate, so a point is reached along the shortest of the two turn-circle routes: an arc
+		/// around the circle on that side, then a straight leg along the tangent. A point inside a turn circle cannot be reached by that side at all (the head must leave and loop back: a half turn plus the distance).
+		/// A head already turning one way pays <paramref name="reverseTicks"/> to start turning the other. Pure geometry: no name, no tile.
+		/// </summary>
+		public static float RecallTicks(in HeadInfo h, Vector2 c, float turnRate, float minSpeed, float reverseTicks)
+		{
+			float s = Math.Max(h.V.Length(), minSpeed);
+			float w = Math.Max(turnRate, Math.Abs(h.Omega) * 1.2f);
+			Vector2 d = c - h.P;
+			Vector2 u = h.V.LengthSquared() > 1e-4f ? Vector2.Normalize(h.V) : new Vector2(1f, 0f);
+			float x = d.X * u.X + d.Y * u.Y, y = d.X * -u.Y + d.Y * u.X;     // x along the heading, y toward the side positive omega turns to
+			float r = s / w, best = float.MaxValue;
+			bool committed = Math.Abs(h.Omega) > 0.015f;
+			for (int sg = -1; sg <= 1; sg += 2)
+			{
+				float cy = sg * r, dx = x, dy = y - cy, D = (float)Math.Sqrt(dx * dx + dy * dy), t;
+				if (D <= r) t = MathHelper.Pi / w + Math.Max(0f, (float)Math.Sqrt(x * x + y * y)) / s;
+				else
+				{
+					float a0 = -sg * MathHelper.PiOver2, aT = (float)Math.Atan2(dy, dx), beta = (float)Math.Acos(r / D);
+					float arc = sg > 0 ? aT - beta - a0 : a0 - (aT + beta);
+					arc = arc % MathHelper.TwoPi; if (arc < 0f) arc += MathHelper.TwoPi;
+					if (arc > MathHelper.TwoPi - 1e-3f) arc = 0f;
+					t = arc / w + (float)Math.Sqrt(D * D - r * r) / s;
+				}
+				if (committed && Math.Sign(h.Omega) != sg) t += reverseTicks;
+				if (t < best) best = t;
+			}
+			return best;
+		}
+
 		/// <summary>True when one of these threats is a worm head.</summary>
 		public static bool HasHead(List<Threat> l) { for (int i = 0; i < l.Count; i++) if (l[i].Head) return true; return false; }
 
 		/// <summary>Counts the threats that overlap the body on this manoeuvre inside the horizon. <paramref name="lastHit"/> is the tick of the latest overlap.</summary>
 		public static int Hits(List<Threat> near, Vector2 c0, float bw, float bh, in Maneuver m, float g, int horizon, out int firstHit, out int lastHit, float extraMargin = 0f, int immune = 0)
 		{
+			if (!PerfChk) return HitsCore(near, c0, bw, bh, m, g, horizon, out firstHit, out lastHit, extraMargin, immune, FastOn);
+			int a = HitsCore(near, c0, bw, bh, m, g, horizon, out firstHit, out lastHit, extraMargin, immune, true);
+			int b = HitsCore(near, c0, bw, bh, m, g, horizon, out int f2, out int l2, extraMargin, immune, false);
+			ChkN++; if (a != b || firstHit != f2 || lastHit != l2) ChkBad++;
+			return a;
+		}
+
+		private static int HitsCore(List<Threat> near, Vector2 c0, float bw, float bh, in Maneuver m, float g, int horizon, out int firstHit, out int lastHit, float extraMargin, int immune, bool fast)
+		{
 			long t0 = Stopwatch.GetTimestamp();
 			int hits = 0; firstHit = int.MaxValue; lastHit = -1;
 			Vector2 bHalf = new Vector2(bw, bh) * 0.5f;
+			// the body's path is the same for every threat: sample it once (2-tick steps from the first even tick), with the box around it
+			int bt0 = immune - (immune & 1), bn = horizon >= bt0 ? ((horizon - bt0) >> 1) + 1 : 0;
+			bool haveBp = fast && bn > 0 && bn <= _bp.Length;
+			Vector2 bbMin = new Vector2(float.MaxValue), bbMax = new Vector2(float.MinValue);
+			if (haveBp)
+				for (int i = 0; i < bn; i++)
+				{
+					Vector2 q = BodyAt(c0, m, g, bt0 + 2 * i); _bp[i] = q;
+					if (q.X < bbMin.X) bbMin.X = q.X; if (q.X > bbMax.X) bbMax.X = q.X;
+					if (q.Y < bbMin.Y) bbMin.Y = q.Y; if (q.Y > bbMax.Y) bbMax.Y = q.Y;
+				}
 			for (int k = 0; k < near.Count; k++)
 			{
 				Threat th = near[k];
@@ -454,11 +549,12 @@ namespace Levy.Common.Movement
 					float marg = th.Boss ? BossBodyMarginPx : BodyMarginPx;
 					Vector2 half = th.Half + bHalf + (th.Body ? new Vector2(marg, marg) : new Vector2(2f)) + new Vector2(extraMargin, extraMargin);   // a prediction of a charging body is never exact: keep a margin around it
 					int t0i = immune - (immune & 1);
-					Vector2 prev = ThreatAt(th, t0i) - BodyAt(c0, m, g, t0i);
+					if (haveBp && th.TrajN > 0 && (th.BbMin.X - half.X > bbMax.X || th.BbMax.X + half.X < bbMin.X || th.BbMin.Y - half.Y > bbMax.Y || th.BbMax.Y + half.Y < bbMin.Y)) continue;   // the two paths' boxes never meet: no hit
+					Vector2 prev = ThreatAt(th, t0i) - (haveBp ? _bp[0] : BodyAt(c0, m, g, t0i));
 					if (immune == 0 && Math.Abs(prev.X) <= half.X && Math.Abs(prev.Y) <= half.Y) hit = 0;
 					for (int t = t0i + 2; t <= horizon && hit < 0; t += 2)
 					{
-						Vector2 cur = ThreatAt(th, t) - BodyAt(c0, m, g, t);
+						Vector2 cur = ThreatAt(th, t) - (haveBp ? _bp[(t - bt0) >> 1] : BodyAt(c0, m, g, t));
 						EvalSamples++;
 						if (SegHitsBox(prev, cur, half)) hit = t;
 						prev = cur;
@@ -466,7 +562,7 @@ namespace Levy.Common.Movement
 				}
 				if (hit >= 0) { hits += (th.Boss ? BossHitWeight : 1) + lineTicks / 12; if (hit < firstHit) firstHit = hit; if (hit > lastHit) lastHit = hit; if (lineLast > lastHit) lastHit = lineLast; }
 			}
-			EvalTs += Stopwatch.GetTimestamp() - t0; Evals++;
+			long te = Stopwatch.GetTimestamp() - t0; EvalTs += te; Evals++; if (Util.LevyProf.On) Util.LevyProf.Add(Util.LevyProf.Hits, te);
 			return hits;
 		}
 

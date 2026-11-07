@@ -101,9 +101,13 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>Nearest damageable segment of a multi-part enemy (same realLife), else the NPC itself.</summary>
+		/// <summary>Set around a soldier's firing code by a rule that wants a different segment than the nearest (worm momentum); null = the nearest.</summary>
+		public static System.Func<NPC, Vector2, NPC> Prefer;
+
 		public static NPC NearestSegment(NPC npc, Vector2 from)
 		{
 			if (npc == null) return null;
+			if (Prefer != null) { NPC pick = Prefer(npc, from); if (pick != null) return pick; }
 			if (npc.realLife < 0 && !npc.boss) return npc; // single-part ordinary enemy: no segment scan needed
 			int root = npc.realLife >= 0 && npc.realLife < Main.maxNPCs ? npc.realLife : npc.whoAmI;
 			NPC best = npc;

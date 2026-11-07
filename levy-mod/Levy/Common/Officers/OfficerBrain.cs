@@ -252,17 +252,7 @@ namespace Levy.Common.Officers
 
 		private static bool TileNavDoor(int x, int y) => TileNav.InBounds(x, y) && TileNav.IsClosedDoor(Main.tile[x, y]);
 
-		private static void TryOpenDoor(int x, int y, int dir)
-		{
-			Tile t = Framing.GetTileSafely(x, y);
-			if (t.TileType == TileID.TallGateClosed)
-			{
-				if (WorldGen.ShiftTallGate(x, y, closing: false) && Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 4, x, y);
-				return;
-			}
-			if (WorldGen.OpenDoor(x, y, dir)) { if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 0, x, y, dir); }
-			else if (WorldGen.OpenDoor(x, y, -dir)) { if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 0, x, y, -dir); }
-		}
+		private static void TryOpenDoor(int x, int y, int dir) => DoorCustodian.TryOpen(x, y, dir); // registered with the door custodian, which shuts it again
 
 		// =====================================================================================================
 		// Placement

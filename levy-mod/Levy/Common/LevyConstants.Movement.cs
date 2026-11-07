@@ -127,8 +127,12 @@ namespace Levy.Common
 			public const int DeepWaterLiquid = 128;
 			public const int PlatformDropBelowPx = 32;
 			public const int PlatformDropTicks = 10;
-			public const int DoorCloseDistanceTiles = 3;
-			public const int DoorGiveUpDistanceTiles = 6;
+			/// <summary>The door custodian keeps trying to shut a door a levy or officer opened for this long (30 s), checks every DoorCustodianIntervalTicks, and in the last DoorCustodianStrictTicks closes it even with someone beside it (only a body in the doorway holds it then).</summary>
+			public const int DoorCustodianTicks = 1800, DoorCustodianIntervalTicks = 10, DoorCustodianStrictTicks = 300;
+			/// <summary>Tiles around the doorway column that keep a registered door open while a player, officer, town NPC or levy stands in them.</summary>
+			public const int DoorCustodianMarginTiles = 1;
+			/// <summary>A levy that just opened a door does not dash or hop for this long (a dash would carry it back into the leaf).</summary>
+			public const int DoorBusyTicks = 90;
 
 			// ---- stuck handling ----
 			public const int StuckSampleTicks = 10;

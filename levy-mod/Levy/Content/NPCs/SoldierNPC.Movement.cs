@@ -25,7 +25,7 @@ namespace Levy.Content.NPCs
 		private int _wingTime; private bool _flying; private int _jumpsUsed; private bool _stepInit;
 		private int _flyRampTicks; private float _flyPeakMult = 1f; // hold-to-accelerate: ticks of continuous flight, and the wings' peak speed multiple
 		private int _fallThroughTicks;
-		private bool _closeDoor; private int _doorX, _doorY;
+		private int _doorBusy; // ticks left of the short no-dash / no-hop spell after this body opened a door (the door custodian shuts it, DoorCustodian.cs)
 		private Vector2 _stuckPos; private int _stuckSampleTimer, _stuckTicks, _stuckTotal, _reverseTicks, _sinceReverse = 100000; private bool _stuckJumped;
 		private readonly List<Vector2> _path = new();
 		private int _pathTimer, _pathFailTimer; private Vector2 _pathGoal;
@@ -84,7 +84,7 @@ namespace Levy.Content.NPCs
 			bool air = UpdateAerial(grounded);
 			if (_gapAssist > 0 && !air) TickGapAssist(grounded);
 
-			CloseDoorBehind();
+			if (_doorBusy > 0) _doorBusy--;
 			NudgeOffPlayers();
 			// The brain's drop request (SetGoal: goal well below) is read here, then the flag is rewritten from the armed ticks alone: the request does not drop him by itself,
 			// it only stands in for the goal-below test of the platform-drop block below, which still checks the floor and lava under him before arming.
@@ -209,7 +209,7 @@ namespace Levy.Content.NPCs
 			_wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _flyRampTicks = 0; _jumpsUsed = 0;
 			_rocketTime = _kitRocketMax; _aerial = false; _aerialSpent = false; _aerialClimbed = false; _gapAssist = 0; _wasAirborne = false; _drainAcc = 0f;
 			_fallThroughTicks = 0; WantsToFallThrough = false;
-			_closeDoor = false; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0; _dodgeHold = 0; _dashTicks = 0; _fallStartRow = int.MinValue;
+			_doorBusy = 0; _reverseTicks = 0; _blocked = false; _blockedHard = false; _dodgeTicks = 0; _dodgeHold = 0; _dashTicks = 0; _fallStartRow = int.MinValue;
 			NPC.velocity = Vector2.Zero;
 			_stuckPos = NPC.position;
 			_fallImmuneTicks = TeleportFallImmunityTicks; _fallStartRow = int.MinValue; // a teleport never starts a fall that counts
@@ -453,7 +453,7 @@ namespace Levy.Content.NPCs
 				if (_dashTicks == 0) npc.netUpdate = true;
 				return true;
 			}
-			if (_dashCooldown > 0 || Abilities == null || !Abilities.HasDash || !grounded || air || npc.wet || _closeDoor) return false;
+			if (_dashCooldown > 0 || Abilities == null || !Abilities.HasDash || !grounded || air || npc.wet || _doorBusy > 0) return false;
 			if (!(State == SoldierState.Follow || State == SoldierState.SearchDestroy || State == SoldierState.FreeRein
 				|| (State == SoldierState.Engage && _engMode == EngageMode.Approach))) return false;
 			if (Retreating) return false;
@@ -560,7 +560,7 @@ namespace Levy.Content.NPCs
 			if (!(State == SoldierState.Follow || State == SoldierState.ReturnHome || State == SoldierState.SearchDestroy
 				|| State == SoldierState.FreeRein || State == SoldierState.Engage || State == SoldierState.Resupply)) return;
 			NPC npc = NPC;
-			if (npc.wet || Retreating || _closeDoor || Math.Abs(dx) < HopMinGoalDistTiles * 16f) return;
+			if (npc.wet || Retreating || _doorBusy > 0 || Math.Abs(dx) < HopMinGoalDistTiles * 16f) return;
 			if (Math.Abs(npc.velocity.X) < HopMinSpeedPx || Math.Sign(npc.velocity.X) != dir) return;
 			if (!HopLandingClear(dir)) return;
 			_hopTimer = Main.rand.Next(HopIntervalMinTicks, HopIntervalMaxTicks + 1);
@@ -836,60 +836,12 @@ namespace Levy.Content.NPCs
 		// doors
 		// =====================================================================================================
 
+		/// <summary>Opens the door and hands it to the door custodian, which shuts it once the doorway is clear (whoever opened it, wherever they are by then).</summary>
 		private bool TryOpenDoor(int x, int y, int dir)
 		{
-			if (Main.netMode == NetmodeID.MultiplayerClient) return false;
-			Tile t = Framing.GetTileSafely(x, y);
-			if (t.TileType == TileID.TallGateClosed)
-			{
-				if (!WorldGen.ShiftTallGate(x, y, closing: false)) return false;
-				if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 4, x, y);
-				RememberDoor(x, y);
-				return true;
-			}
-			if (WorldGen.OpenDoor(x, y, dir))
-			{
-				if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 0, x, y, dir);
-				RememberDoor(x, y);
-				return true;
-			}
-			if (WorldGen.OpenDoor(x, y, -dir))
-			{
-				if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 0, x, y, -dir);
-				RememberDoor(x, y);
-				return true;
-			}
-			return false;
-		}
-
-		private void RememberDoor(int x, int y) { _closeDoor = true; _doorX = x; _doorY = y; NPC.netUpdate = true; }
-
-		/// <summary>Closes the door once the body is three tiles past it; gives up when far away or when someone stands in it for too long.</summary>
-		private void CloseDoorBehind()
-		{
-			if (!_closeDoor) return;
-			float tx = NPC.Center.X / 16f, ty = NPC.Center.Y / 16f;
-			if (Math.Abs(tx - (_doorX + 0.5f)) < DoorCloseDistanceTiles) return;
-			bool done = false;
-			Tile t = Framing.GetTileSafely(_doorX, _doorY);
-			if (TileLoader.CloseDoorID(t) >= 0)
-			{
-				if (WorldGen.CloseDoor(_doorX, _doorY))
-				{
-					done = true;
-					if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 1, _doorX, _doorY, NPC.direction);
-				}
-			}
-			else if (t.TileType == TileID.TallGateOpen)
-			{
-				if (WorldGen.ShiftTallGate(_doorX, _doorY, closing: true))
-				{
-					done = true;
-					if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.ToggleDoorState, -1, -1, null, 5, _doorX, _doorY);
-				}
-			}
-			else done = true; // already closed by someone else, or gone
-			if (done || Math.Abs(tx - _doorX) > DoorGiveUpDistanceTiles || Math.Abs(ty - _doorY) > DoorGiveUpDistanceTiles) _closeDoor = false;
+			if (!DoorCustodian.TryOpen(x, y, dir)) return false;
+			_doorBusy = DoorBusyTicks;
+			return true;
 		}
 
 		// =====================================================================================================

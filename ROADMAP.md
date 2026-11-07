@@ -276,6 +276,7 @@
   - Placeable buffs are now scene-scanned. Commander station buffs (Sharpening, Ammo Box, Crystal Ball, Bewitching, War Table) reach all levies. Honey regen added.
   - A/B: wins 12/24 shipped vs 15/24 at formation 1%/10% vs **0/24 proximity**. The formation size is within noise.
 - **BUG still open (Eve video 15:14):** AlchemistNPCLite 1.9.9 "Shops Changer" NPC button does nothing (mod name now known) → added to the maporder-fix builder (UI click/close). Spectator potions are CRAFTED only (Shiverthorn + Blinkroot + Lens + Invisibility + Bottled Water @ Bottle).
+- **maporder-fix DONE (merged ba73c78 → 2.0.22):** root cause: on the full-screen map vanilla sets mouseInterface=true before mod map layers draw, and RadioMapLayer only picked when !mouseInterface, so the click NEVER registered (both the Barracks and Radio paths). Fixed with IsPickClick. A Barracks pick closes the map and reopens Barracks. Chat: "N levies sent to <depth band>." Headless maporder harness: 18/18 pass. The same builder is now on the Shops Changer bug.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

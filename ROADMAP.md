@@ -269,6 +269,12 @@
   - The lab's KS Death (Expert+Death, 10 tier-0 levies) won in ~180–200 s with 5–8 deaths. So 10 levies ≈ 0.45 of Eve, i.e. one Eve ≈ 20+ levies, vs the target of 5–8.
   - Caveats: her gear is stronger, Master is harder, n=1.
   - Published on the replay page as "Eve's fights". Barracks button = the map-order path.
+- **fear-events DONE (merged → 2.0.22, building):**
+  - Event fear is the default (FearModel config: Events/Proximity).
+  - Formation defense on: 2%/ally within 15 tiles, cap 20% (toggle).
+  - Sunflower halves fear gain.
+  - Placeable buffs are now scene-scanned. Commander station buffs (Sharpening, Ammo Box, Crystal Ball, Bewitching, War Table) reach all levies. Honey regen added.
+  - A/B: wins 12/24 shipped vs 15/24 at formation 1%/10% vs **0/24 proximity**. The formation size is within noise.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

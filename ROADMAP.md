@@ -132,6 +132,13 @@
     - Brain p2 harness;
     - Skeletron spin fidelity.
   - Matrix ALL (Spectator): hits 35.2 → 31.7, deaths/min 0.5 → 0.3, minions 100% on levies.
+- **Lab rerun on 2.0.16, partial (09:13, 5 seeds, cmd=near):**
+  - KS: Expert 5/5 (the commander-placement artifact is gone), Rev 4/5, Death 3/5.
+  - DS: 0/15. Eye: Expert 5/5, Rev 1/5, Death 0/5.
+  - EoW: Expert 1/5 (first worm win), Rev/Death 0. Brain: Expert 4/4, Rev/Death 0.
+  - QB: Expert 1/4 but Rev 4/4 and Death 3/4 (ANOMALY, asked the lab). Skeletron Expert 1/4 (3 timeouts).
+  - Boss-on-player is 0% everywhere.
+  - dud-weapons: Calamity holdout routing (Thorium channel weapons already worked).
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

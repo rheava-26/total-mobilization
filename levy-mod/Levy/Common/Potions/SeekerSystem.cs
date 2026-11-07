@@ -63,7 +63,7 @@ namespace Levy.Common.Potions
 				finally { if (!panelOpen) FindTarget.Chooser = prev; }
 				return;
 			}
-			SeekerChooser.Open(SeekerMatcher.FallbackCandidates(), t => { FindTarget.Set(t); SeekerMatcher.ClearCache(); _lastScan = -1000; });
+			SeekerChooser.Open(SeekerMatcher.AllCandidates(), t => { FindTarget.Set(t); SeekerMatcher.ClearCache(); _lastScan = -1000; });
 		}
 
 		// ------------------------------------------------------------------ scan

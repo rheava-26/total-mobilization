@@ -21,5 +21,4 @@ Remobilized: "{0} returns to active duty."
 InReserve: "{0} is in reserve. Recall them first."
 ReserveFull: The reserve is full ({0} soldiers).
 ReserveMutinous: "{0} is in mutiny and refuses the order."
-
 TooFar: "{0} soldiers are too far away to hear that order. Orders by key and radio reach {1} tiles; the barracks panel reaches everyone."

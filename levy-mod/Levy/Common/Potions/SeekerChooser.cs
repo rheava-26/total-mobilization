@@ -93,12 +93,17 @@ namespace Levy.Common.Potions
 				Recalculate();
 			}
 
+			private const int MaxCells = 400; // a full item list is ~9000 cells: cap the grid, the search narrows it
+
 			private void Fill()
 			{
 				_grid.Clear();
+				int shown = 0;
 				foreach (int t in _all)
 				{
 					if (_term.Length > 0 && !Lang.GetItemNameValue(t).ToLowerInvariant().Contains(_term)) continue;
+					if (_term.Length == 0 && !SeekerMatcher.IsTreasure(t)) continue; // an empty search lists ores, gems and treasure; typing searches every item
+					if (++shown > MaxCells) break;
 					int tt = t;
 					_grid.Add(new TypeCell(t, () => _pick?.Invoke(tt)));
 				}

@@ -481,9 +481,13 @@ namespace Levy.Common.UI
 			_findGrid.Clear();
 			if (Te == null) return;
 			if (_findAll.Count == 0 || _findDirty) _findAll = FindTarget.Candidates(Te);
+			int shown = 0;
+			var stocked = new HashSet<int>(); if (Te.Storage != null) foreach (var it in Te.Storage) if (it != null && !it.IsAir) stocked.Add(it.type);
 			foreach (int t in _findAll)
 			{
 				if (!_findFilter.Matches(ItemName(t), ContentSamples.ItemsByType[t])) continue;
+				if (!_findFilter.Active && !stocked.Contains(t) && !Levy.Common.Potions.SeekerMatcher.IsTreasure(t)) continue; // no search: stocked items plus ores, gems and treasure; a search covers every item
+				if (++shown > 400) break; // ~9000 items in all: cap the grid, the search narrows it
 				int tt = t;
 				_findGrid.Add(new TypeCell(t, () => { if (_findPick != null) { var cb = _findPick; _findPick = null; FindTarget.Set(tt); cb(tt); } else FindTarget.Set(tt); }));
 			}

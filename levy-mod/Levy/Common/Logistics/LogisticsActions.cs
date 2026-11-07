@@ -189,12 +189,13 @@ namespace Levy.Common.Logistics
 
 		public static void Set(int type) { Target = type; Chosen?.Invoke(type); }
 
-		/// <summary>Candidate item types for the chooser: the Magic Storage network's items when <paramref name="armory"/> is linked to one, else what the armory's storage holds.</summary>
+		/// <summary>Candidate item types for the chooser: every item in the game (stocked items first come from the armory and its Magic Storage network).</summary>
 		public static List<int> Candidates(ArmoryTE armory)
 		{
 			var set = new SortedSet<int>();
 			try { var net = NetworkStocks.ItemTypes?.Invoke(armory); if (net != null) foreach (int t in net) set.Add(t); } catch (Exception) { }
 			if (armory?.Storage != null) foreach (var it in armory.Storage) if (it != null && !it.IsAir) set.Add(it.type);
+			foreach (int t in Levy.Common.Potions.SeekerMatcher.AllCandidates()) set.Add(t); // every item can be sought, stocked or not: placed tiles and chests holding it glow
 			return set.ToList();
 		}
 

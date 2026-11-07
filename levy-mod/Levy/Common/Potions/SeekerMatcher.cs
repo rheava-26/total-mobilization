@@ -72,6 +72,21 @@ namespace Levy.Common.Potions
 			return _fallback = set.ToList();
 		}
 
-		public static void Unload() { _cache = null; _fallback = null; }
+		private static HashSet<int> _treasure;
+		/// <summary>True for the ores, gems and Spelunker treasure an empty Seeker search lists.</summary>
+		public static bool IsTreasure(int type) => (_treasure ??= new HashSet<int>(FallbackCandidates())).Contains(type);
+
+		private static List<int> _all;
+
+		/// <summary>Every real item type (deprecated ones left out): the Seeker can look for anything, in tiles and in chests.</summary>
+		public static List<int> AllCandidates()
+		{
+			if (_all != null) return _all;
+			var list = new List<int>();
+			for (int i = 1; i < ItemLoader.ItemCount; i++) if (!ItemID.Sets.Deprecated[i]) list.Add(i);
+			return _all = list;
+		}
+
+		public static void Unload() { _cache = null; _fallback = null; _all = null; _treasure = null; }
 	}
 }

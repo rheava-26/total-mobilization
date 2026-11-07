@@ -3679,3 +3679,5 @@ WAVES (Brain.cs is the serialization point): A (PARALLEL, no Brain) = A1 Weapons
 - **Solution:** a SECOND SHOP PAGE `Terraria/DD2Bartender/LevyWares` (6 entries: Rod always, Cane after a mech boss, Staff after Golem, plus Ale/Stout/Rum for coins). Opened by the Bartender's second chat button (vanilla help text still shows; label gets " / Levy Wares" via reflection on `UI.BartenderHelp`). GlobalNPC cannot add a chat button in tML 1.4.4, hence the reuse.
 - Levies per sentry 1/2/3; Etherian Mana per sentry 5/8/12 (`LevyConstants.OoaEtherianManaPerTier`; Eve said "5 per sentry" - flat 5 is a one-constant change if wanted).
 - Unverified headless: the actual chat button/shop panel UI, planting a sentry in a live OOA wave, MP.
+
+- orders (Levy): Return and map orders were overridden by Engage whenever an enemy was in reach (boss near the commander = levies never left). Fixed: MarchingOrder keeps the walk and fires on the way. Spread Out follow slack tightened. Repro: LEVY_HARNESS_SCENARIO=orderrepro (LEVY_OR_N=squad size). Open: Spread Out has no effect on spacing while engaged with a boss.

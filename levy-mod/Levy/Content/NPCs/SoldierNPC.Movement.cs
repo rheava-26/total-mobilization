@@ -958,7 +958,7 @@ namespace Levy.Content.NPCs
 				_stuckTotal = 0;
 				if (FollowerTravel.TeleportNearCommander(this)) return;
 			}
-			if (State == SoldierState.ReturnHome && _stuckTotal >= ReturnHomeStuckTeleportTicks)
+			if ((State == SoldierState.ReturnHome || (State == SoldierState.Engage && MarchingOrder && Record.Order == SoldierOrder.ReturnToBarracks)) && _stuckTotal >= ReturnHomeStuckTeleportTicks)
 			{
 				_stuckTotal = 0;
 				if (TeleportHome()) return;

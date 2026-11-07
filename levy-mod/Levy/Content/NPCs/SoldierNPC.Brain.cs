@@ -255,7 +255,12 @@ namespace Levy.Content.NPCs
 					else if (Autonomy_FallBack(now, nearestHostileTiles)) { WhyB = Why.BFallBack; } // Autonomous levy below the fall-back threshold: retreat and heal
 					else if (ThinkTalk(now)) { WhyB = Why.BTalk; } // a player has the chat window open (or called this soldier over): walk to them and hold, keep shooting
 					else if (now < _spawnGraceUntil) { WhyB = Why.BGrace; ThinkSpawnGrace(); }
-					else if (!TryEngage(now))
+					else if (TryEngage(now))
+					{
+						// Return / a map order outrank a fight: the body keeps walking its order and shoots what is in reach on the way (State stays Engage so the weapon fires)
+						if (MarchingOrder) MarchWhileEngaged(now, nearestHostileTiles);
+					}
+					else
 					{
 						// resupply outranks the unarmed fallback (a dry soldier heads for the armory); a soldier with nothing to fight with stays out of it
 						WhyB = CanFight(now) ? Why.BNoTarget : Why.BCantFight;
@@ -544,6 +549,19 @@ namespace Levy.Content.NPCs
 				}
 			}
 			return SoldierState.Idle;
+		}
+
+		/// <summary>A regular under Return (not yet home) or a map order: it leaves the fight rather than standing in it.</summary>
+		private bool MarchingOrder => IsRegular && Record != null && (Record.Order == SoldierOrder.GoTo || (Record.Order == SoldierOrder.ReturnToBarracks && Home != null && !NearHome()));
+
+		private void MarchWhileEngaged(int now, float nearestHostileTiles)
+		{
+			_engMode = EngageMode.None; _engPathOk = true; /* the order walks the path planner */ _perchActive = false; WantsAltitude = false; _altHeld = false; _focusBare = false;
+			int tgt = TargetIndex;
+			ThinkOrder(now, nearestHostileTiles); // sets the goal toward the muster point / map point (and may change State)
+			if (!MarchingOrder) return; // arrived: the next think engages normally
+			TargetIndex = tgt;
+			State = SoldierState.Engage; // keep firing at the held target while walking
 		}
 
 		private bool NearHome()
@@ -2188,6 +2206,18 @@ namespace Levy.Content.NPCs
 			return idx;
 		}
 
+		/// <summary>
+		/// Distance (tiles) of the n-th pair's follow slot: start + n * step out to perSide slots, then the next ring repeats them shifted in by a van der Corput fraction of a step,
+		/// so a big army fills in between the first ring's slots instead of piling on the last one.
+		/// </summary>
+		private static float RingedSlot(int n, float start, float step, int perSide)
+		{
+			perSide = Math.Max(1, perSide);
+			int ring = n / perSide, j = n % perSide;
+			float back = 0f, bit = 0.5f; for (int r = ring; r > 0; r >>= 1, bit *= 0.5f) if ((r & 1) != 0) back += bit; // van der Corput: ring 1 sits half a step in, ring 2 a quarter, ring 3 three quarters, ...
+			return Math.Max(start * 0.5f, start + j * step - back * step);
+		}
+
 		private void ThinkFollow(int now)
 		{
 			var cmd = Commander;
@@ -2207,13 +2237,13 @@ namespace Levy.Content.NPCs
 			if (Record.SpreadOut)
 			{
 				// wide stance: alternate behind / ahead of the commander, a long stride apart per rank
-				slotTiles = Math.Min((slotIdx / 2 + 1) * LevyConstants.SpreadOutFollowSpacingTiles, LevyConstants.SpreadOutFollowMaxTiles);
+				slotTiles = RingedSlot(slotIdx / 2, LevyConstants.SpreadOutFollowSpacingTiles, LevyConstants.SpreadOutFollowSpacingTiles, (int)(LevyConstants.SpreadOutFollowMaxTiles / LevyConstants.SpreadOutFollowSpacingTiles));
 				slotSide = (slotIdx & 1) == 0 ? -facing : facing;
 			}
 			else if (Record.CloseUp)
 			{
 				// tight stance: alternate sides in narrow columns right at the commander's heels; several soldiers share a column
-				slotTiles = Math.Min(LevyConstants.CloseUpFollowStartTiles + (slotIdx / 2) * LevyConstants.CloseUpFollowStepTiles, LevyConstants.CloseUpFollowMaxTiles);
+				slotTiles = RingedSlot(slotIdx / 2, LevyConstants.CloseUpFollowStartTiles, LevyConstants.CloseUpFollowStepTiles, (int)((LevyConstants.CloseUpFollowMaxTiles - LevyConstants.CloseUpFollowStartTiles) / LevyConstants.CloseUpFollowStepTiles) + 1);
 				slotSide = (slotIdx & 1) == 0 ? -facing : facing;
 			}
 			Vector2 cmdBase = cmd.Bottom;
@@ -2222,8 +2252,9 @@ namespace Levy.Content.NPCs
 			if (cmd.Center.Y / 16f > Main.worldSurface) slot = KeepSlotOutOfRock(cmdBase, slot); // underground only: surface slots are untouched
 			float dSlot = LevyUtil.TileDistance(NPC.Bottom, slot);
 			// Close up also tightens how close to the slot a soldier must stand before it stops: the normal 4 / 6 tile slack is what lets a squad sprawl.
-			float stopTiles = Record.CloseUp ? LevyConstants.CloseUpFollowStopTiles : LevyConstants.FollowDistance / 3f;
-			float startTiles = Record.CloseUp ? LevyConstants.CloseUpFollowStartMoveTiles : LevyConstants.FollowDistance / 2f;
+			// Spread out needs the same: slots are 6 tiles apart, so a 4 / 6 tile slack would let neighbours stop on one spot.
+			float stopTiles = Record.CloseUp ? LevyConstants.CloseUpFollowStopTiles : Record.SpreadOut ? LevyConstants.SpreadOutFollowStopTiles : LevyConstants.FollowDistance / 3f;
+			float startTiles = Record.CloseUp ? LevyConstants.CloseUpFollowStartMoveTiles : Record.SpreadOut ? LevyConstants.SpreadOutFollowStartMoveTiles : LevyConstants.FollowDistance / 2f;
 			if (HasMoveGoal)
 			{
 				if (dSlot < stopTiles) ClearGoal();

@@ -592,6 +592,45 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 📦 SHIPPED Levy 2.0.9, at scratchpad/ship-2.0.9
+- spectator-fix f93d606:
+  - Creepers retarget to levies (ai 55 allowlisted while spectating).
+  - Boss keep-alive under Spectator.
+  - No player damage while spectating (CanHitNPC).
+  - Teleport ≥100 tiles ends Spectator; shorter re-anchors.
+- **Eve's "boss targets me" NOT reproduced** (DS harness + emulated SP + Calamity, all modes). It reverts only when all levies are dead.
+- Plus the short-reach melee fix (Blade of Grass etc.).
+- **Boots:** Thorium+MS and Calamity, 0 exceptions.
+
+## 🧭 Eve (2026-11-07 ~01:45)
+- Frustrated midair mobility wasn't already there (fair: airborne levies skipped dodge/strafe/jump entirely; air-mobility is fixing it).
+- Relay link range → 1000 tiles (done, 896c689); serve radius stays 25.
+- **BUG:** menus close instantly. The Barracks "Send to map point" map flashes open and closes; another mod's NPC-chat "Shops Changer" doesn't stay open → branch `ui-close`. (Seen on an earlier 2.0.x.)
+- Desert Scourge enrages outside the desert → it explains the "DS shreds levies" matrix rows. Told air-mobility to set biome zones for biome bosses.
+- Eve's usage window is tight (5h): builders push every ~15 min; keep concurrency low.
+- **Eve's terminal log:**
+  - Levy's hang watchdog fired once: the stall was OUTSIDE Levy, likely a world save.
+  - "gear upkeep dropped CalamityMod/ScionsCurioMini": a Calamity accessory minion that can't live while soldier shots are commander-owned. Known limitation; harmless.
+
+## ✅ MERGED (next Mechanization build): armory-relay 3e14573
+- An Armory Relay (Mechanization, Content/Relay). It links to the nearest Armory ≤600 tiles, or to the pylon network. Turrets and drones ≤25 tiles of it treat that Armory as in reach. Recipe: 8 iron/lead bars + 20 wire + chest @ Work Bench.
+- NOTE: turret armory reach was ALREADY 240 tiles, and turrets copy any ranged/magic weapon in the armory (no melee/summon/rogue). If Eve's near-base turrets are empty, the likely cause is no ranged/magic stock, not range.
+- The sprite reads a bit like a goblet; another art pass is possible. Levy's own reach checks don't use relays (not shared).
+
+## 🎥 Eve videos (2026-11-07 01:20): the Spectator targeting bug REPRODUCES in real play
+- King Slime (beaten) and the Eye (night) both sit on top of the spectating player for the whole fight while levies die on the platform rows.
+- Real SP client + Calamity. NOT reproducible in the DS/emulated-SP harness.
+- Calamity's summary: the player dealt 170 damage while spectating (holding a Hefty Wulfrum Knife). Rogue bypass? CanHitNPC only arrived in 2.0.9.
+- Evidence sent to spectator2. Priority: the in-game /levyspec diagnostic + a read of Calamity's KS/EoC AI targeting paths.
+
+## 🧭 Eve round (2026-11-07 01:15)
+- King Slime STILL targets her with Spectator (boss beaten, config on) → `spectator2` builds an in-game `/levyspec` diagnostic for Eve to run.
+- Spectator must NOT work vs bosses not yet beaten (first kill solo; reverses my override). The per-boss rule is being implemented; confirm with Eve whether she meant a global gate.
+- Spectator/Seeker must be formatted like real vanilla potions.
+- Midair dodging/strafing + platform use → `air-mobility` (3 seeds this time).
+- NEW: an ARMORY RELAY placeable that extends the turret/drone armory reach → `armory-relay`.
+- The results HTML rendered as source in Eve's viewer → sent as PDF.
+
 ## ✅ MERGED (next build): boss-trials d8d3e8a, the short-reach projectile melee fix
 - **Cause:** Blade of Grass etc. were classified as beam swords (40-tile reach), so levies stood off ~28 tiles while the shot dies within a few tiles → 0 damage.
 - **Fix:** a ShortShot table (Blade of Grass, Light's Bane, Chlorophyte Saber/Claymore, Ice/Death Sickle, Christmas Tree Sword, Waffle's Iron) now positions like a blade. Sweep: all 0% → 98–317% of expected.

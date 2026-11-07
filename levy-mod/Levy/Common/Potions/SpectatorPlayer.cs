@@ -12,7 +12,7 @@ namespace Levy.Common.Potions
 	/// <summary>
 	/// The Spectator potion's rules.
 	///  * Targeting. Vanilla picks targets in NPC.TargetClosest / TargetClosestUpgraded, which skip a player that is <c>!active || dead || ghost</c>, and boss/enemy AIs re-pick when
-	///    <c>Main.player[npc.target].dead</c>. aggro only biases the distance, so it cannot exclude the only player. So around each hostile NPC's AI (<see cref="SpectatorNpcHide"/>: PreAI to PostAI; levies are skipped so they still see a living commander) a spectator is set dead+ghost, exactly what every enemy and boss AI already handles. Only NPCs the soldier swap cannot serve use this (see SpectatorNpcHide); for the rest EnemyTargeting excludes spectators from its search and the levies are the target (a spectator also unlocks boss aggro on soldiers).
+	///    <c>Main.player[npc.target].dead</c>. aggro only biases the distance, so it cannot exclude the only player. So around each hostile NPC's AI (<see cref="SpectatorNpcHide"/>: PreAI to PostAI; levies are skipped so they still see a living commander) a spectator is set dead+ghost, exactly what every enemy and boss AI already handles. Only NPCs the soldier swap cannot serve use this (see SpectatorNpcHide); for the rest EnemyTargeting excludes spectators from its search and the levies are the target (a spectator also unlocks boss aggro on soldiers for a boss already beaten in this world; an unbeaten boss is never affected: the buff cannot be drunk while one is alive and ends the moment one appears).
 	///    The flags are restored right after, and again in PreUpdate as a safety net, so the player's own update never sees them.
 	///  * Damage. Contact and projectile hits are refused (CanBeHitByNPC / CanBeHitByProjectile). Any damage that still lands (lava, fall, drowning) ends the buff.
 	///  * Items. <see cref="CanUseItem"/> refuses damage items, summons, sentries and anything that touches the world (see <see cref="Blocked"/>), except the Observe items.
@@ -75,6 +75,13 @@ namespace Levy.Common.Potions
 			if (on && !_was) Anchor = Player.Center;
 			_was = on;
 			if (!on || Player.whoAmI != Main.myPlayer) return;
+			// The first kill of every boss is solo: an unbeaten boss in the world ends the buff at once.
+			if (!Main.dedServ && global::Levy.Common.Targeting.EnemyTargeting.FindUndownedBoss() != null)
+			{
+				Player.ClearBuff(ModContent.BuffType<SpectatorBuff>());
+				CombatText.NewText(Player.getRect(), new Color(255, 120, 100), global::Levy.Common.Util.LevyUtil.T("Potions.SpectatorBossEnds"));
+				return;
+			}
 			// no tile interaction except a Static Camera under the cursor
 			if (Player.controlUseTile && !OverStaticCamera()) Player.controlUseTile = false;
 		}
@@ -97,6 +104,11 @@ namespace Levy.Common.Potions
 
 		public override bool CanBeHitByNPC(NPC npc, ref int cooldownSlot) => !Active;
 		public override bool CanBeHitByProjectile(Projectile proj) => !Active;
+
+		// A Spectator deals no damage by any means. Player.ApplyDamageToNPC (every dash - Shield of Cthulhu, Solar flare, Calamity rams -, contact-damage mounts, auras and thorns-type
+		// effects) exits early when CanHitNPC is false, and item swings ask CanHitNPCWithItem. Movement is untouched; only the damage is refused.
+		public override bool CanHitNPC(NPC target) => !Active;
+		public override bool? CanHitNPCWithItem(Item item, NPC target) => Active ? false : null;
 
 		public override void PostHurt(Player.HurtInfo info)
 		{
@@ -135,14 +147,36 @@ namespace Levy.Common.Potions
 
 		// ------------------------------------------------------------------ tether
 
+		private Vector2 _lastCenter; private bool _haveLast;
+
 		public override void PostUpdate()
 		{
-			if (!Active || Player.whoAmI != Main.myPlayer || Player.dead) return;
+			if (!Active || Player.whoAmI != Main.myPlayer || Player.dead) { _haveLast = false; return; }
+			// A teleport (Recall, Magic/Ice Mirror, Cell Phone, pylon, Wormhole, Teleportation Potion, Rod of Discord, a mod's own) is a one-tick jump no movement can make.
+			// A short hop moves the tether anchor to where the Spectator now stands; a long one (see PotionConstants.TeleportEndTiles) ends the buff.
+			if (_haveLast && TeleportResponse(_lastCenter, Player.Center, ref Anchor, out bool end))
+			{
+				if (end) { Player.ClearBuff(ModContent.BuffType<SpectatorBuff>()); _haveLast = false; return; }
+			}
+			_lastCenter = Player.Center; _haveLast = true;
 			Vector2 v = Player.velocity;
 			Vector2 c = Player.Center;
 			Tether(Anchor, ref c, ref v, out Vector2 pull);
 			Player.velocity = v;
 			if (pull != Vector2.Zero) { Player.velocity += pull; Player.fallStart = (int)(Player.position.Y / 16f); } // being pulled back must not count as a fall
+		}
+
+		/// <summary>
+		/// What a move from <paramref name="from"/> to <paramref name="to"/> in one tick means for the tether. Returns true when it was a teleport (at least <see cref="PotionConstants.TeleportDetectTiles"/>):
+		/// <paramref name="end"/> is true when it covered <see cref="PotionConstants.TeleportEndTiles"/> or more (the buff ends); otherwise the anchor is moved to <paramref name="to"/>.
+		/// </summary>
+		public static bool TeleportResponse(Vector2 from, Vector2 to, ref Vector2 anchor, out bool end)
+		{
+			end = false;
+			float tiles = Vector2.Distance(from, to) / 16f;
+			if (tiles < PotionConstants.TeleportDetectTiles) return false;
+			if (tiles >= PotionConstants.TeleportEndTiles) end = true; else anchor = to;
+			return true;
 		}
 
 		/// <summary>
@@ -193,7 +227,9 @@ namespace Levy.Common.Potions
 			// An NPC the soldier swap can serve gets its targets through EnemyTargeting (spectators are excluded from its search and the army fights instead).
 			// Only the rest (swap-unsafe styles, no levies out) fall back to seeing the spectator as dead.
 			if (global::Levy.Common.Targeting.EnemyTargeting.IsAllowlisted(npc) && global::Levy.Common.Targeting.EnemyTargeting.Bodies.Count > 0) return true;
+			if (!global::Levy.Common.Targeting.EnemyTargeting.HidesSpectatorFrom(npc)) return true; // an unbeaten boss sees a spectator like any player
 			if (!_hiding.Add(npc.whoAmI)) return true;
+			if (global::Levy.Common.Targeting.EnemyTargeting.DiagOn) SpectatorDiagnostic.NoteHidden(npc);
 			SpectatorPlayer.HideAll();
 			return true;
 		}

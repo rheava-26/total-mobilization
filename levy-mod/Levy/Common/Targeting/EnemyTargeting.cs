@@ -125,11 +125,41 @@ namespace Levy.Common.Targeting
 			int style = npc.aiStyle;
 			if (UsesNativeTargeting(npc)) return _nativeStyles.Contains(style) || ConfigAllows(style);
 			if (_swapIncompatible.Contains(style) || _swapExcludedTypes.Contains(type)) return false;
-			return _swapStyles.Contains(style) || ConfigAllows(style);
+			// A Spectator also sends the minions of a boss at the army: Brain of Cthulhu's Creepers (style 55; TargetClosest, then Main.player[target] only, so swap-safe).
+			return _swapStyles.Contains(style) || ConfigAllows(style) || (style == 55 && Potions.SpectatorPlayer.AnyActive);
 		}
 
 		/// <summary>Opt-in: BossesTargetSoldiers is on and this boss (or the boss it belongs to) has been defeated in this world.</summary>
-		public static bool BossAggroUnlocked(NPC npc) => Potions.SpectatorPlayer.AnyActive || ((_cfg ??= LevyConfig.Get) != null && _cfg.BossesTargetSoldiers && BossDownedSystem.IsBossDowned(npc)); // a Spectator overrides the config and the downed check
+		public static bool BossAggroUnlocked(NPC npc)
+		{
+			if (!BossDownedSystem.IsBossDowned(npc)) return false; // the first kill of every boss is solo, spectating or not
+			return Potions.SpectatorPlayer.AnyActive || ((_cfg ??= LevyConfig.Get) != null && _cfg.BossesTargetSoldiers); // a Spectator overrides the config for a downed boss
+		}
+
+		/// <summary>True for a boss that this world has not seen die yet (a boss-class NPC the first-kill rule applies to). Lunar Pillars are not bosses for this rule.</summary>
+		public static bool IsUndownedBoss(NPC npc)
+		{
+			if (npc == null || !npc.active || npc.friendly || npc.townNPC) return false;
+			int type = npc.type;
+			if (type < 0 || type >= NPCID.Sets.ShouldBeCountedAsBoss.Length) return false;
+			if (_eventTowers.Contains(type)) return false;
+			if (!npc.boss && !NPCID.Sets.ShouldBeCountedAsBoss[type]) return false;
+			return !BossDownedSystem.IsBossDowned(npc);
+		}
+
+		/// <summary>The first active undowned boss, or null. Used to refuse a Spectator potion and to end the buff.</summary>
+		public static NPC FindUndownedBoss()
+		{
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (n.active && (n.boss || NPCID.Sets.ShouldBeCountedAsBoss[n.type]) && IsUndownedBoss(n)) return n;
+			}
+			return null;
+		}
+
+		/// <summary>True when a Spectator should be hidden from this NPC's search: never from an undowned boss.</summary>
+		internal static bool HidesSpectatorFrom(NPC npc) => !IsUndownedBoss(npc);
 
 		/// <summary>
 		/// A boss, boss part or boss segment (the four exclusion guards of <see cref="IsAllowlisted"/>) that the army may draw. Needs the unlock; then any AI style
@@ -177,7 +207,9 @@ namespace Levy.Common.Targeting
 		private static void TargetClosest_Detour(On_NPC.orig_TargetClosest orig, NPC self, bool faceTarget)
 		{
 			bool netBefore = self.netUpdate;
-			Potions.SpectatorPlayer.HideAll(); // a Spectator is not a candidate
+			if (DiagOn) Potions.SpectatorDiagnostic.NoteDetour(self, "TargetClosest");
+			bool hid = HidesSpectatorFrom(self);
+			if (hid) Potions.SpectatorPlayer.HideAll(); // a Spectator is not a candidate
 			try
 			{
 				orig(self, faceTarget);
@@ -186,45 +218,67 @@ namespace Levy.Common.Targeting
 					&& self.target == self.oldTarget && self.direction == self.oldDirection && self.directionY == self.oldDirectionY)
 					self.netUpdate = netBefore; // vanilla flagged a sync only because its interim player pick differed from the soldier we kept
 			}
-			finally { Potions.SpectatorPlayer.ReleaseAll(); }
+			finally { if (hid) Potions.SpectatorPlayer.ReleaseAll(); }
 		}
 
 		private static void TargetClosestUpgraded_Detour(On_NPC.orig_TargetClosestUpgraded orig, NPC self, bool faceTarget, Vector2? checkPosition)
 		{
-			Potions.SpectatorPlayer.HideAll();
+			if (DiagOn) Potions.SpectatorDiagnostic.NoteDetour(self, "TargetClosestUpgraded");
+			bool hid = HidesSpectatorFrom(self);
+			if (hid) Potions.SpectatorPlayer.HideAll();
 			try { orig(self, faceTarget, checkPosition); Compete(self, faceTarget, checkPosition ?? self.Center, manhattan: false, float.PositiveInfinity); }
-			finally { Potions.SpectatorPlayer.ReleaseAll(); }
+			finally { if (hid) Potions.SpectatorPlayer.ReleaseAll(); }
 		}
 
 		private static void TargetClosestOldOnes_Detour(On_NPCUtils.orig_TargetClosestOldOnesInvasion orig, NPC searcher, bool faceTarget, Vector2? checkPosition)
 		{
-			Potions.SpectatorPlayer.HideAll();
+			if (DiagOn) Potions.SpectatorDiagnostic.NoteDetour(searcher, "OldOnes");
+			bool hid = HidesSpectatorFrom(searcher);
+			if (hid) Potions.SpectatorPlayer.HideAll();
 			try
 			{
 				orig(searcher, faceTarget, checkPosition);
 				// Vanilla only lets players within 200 px distract an Old One's Army enemy from the crystal; soldiers get the same rule.
 				Compete(searcher, faceTarget, searcher.Center, manhattan: false, LevyConstants.Targeting.OldOnesSoldierRangePx);
 			}
-			finally { Potions.SpectatorPlayer.ReleaseAll(); }
+			finally { if (hid) Potions.SpectatorPlayer.ReleaseAll(); }
 		}
 
 		private static void TargetClosestNonBees_Detour(On_NPCUtils.orig_TargetClosestNonBees orig, NPC searcher, bool faceTarget, Vector2? checkPosition)
 		{
-			Potions.SpectatorPlayer.HideAll();
+			if (DiagOn) Potions.SpectatorDiagnostic.NoteDetour(searcher, "NonBees");
+			bool hid = HidesSpectatorFrom(searcher);
+			if (hid) Potions.SpectatorPlayer.HideAll();
 			try { orig(searcher, faceTarget, checkPosition); Compete(searcher, faceTarget, searcher.Center, manhattan: false, float.PositiveInfinity); }
-			finally { Potions.SpectatorPlayer.ReleaseAll(); }
+			finally { if (hid) Potions.SpectatorPlayer.ReleaseAll(); }
 		}
 
 		/// <summary>
 		/// After a vanilla search: decide army or commander, then which soldier, and point the enemy at the chosen soldier. Returns true when a soldier was chosen.
 		/// Step 1 compares the best soldier's weighted distance with vanilla's pick; step 2 (<see cref="AggroSpread.Pick"/>) takes the least crowded of the soldiers close to that best one.
 		/// </summary>
+		/// <summary>Diagnostic switch (/levyspec on). When false none of the diagnostic notes run.</summary>
+		internal static bool DiagOn;
+		private static string _why = "";
+
 		private static bool Compete(NPC npc, bool faceTarget, Vector2 center, bool manhattan, float maxSoldierDist)
 		{
+			bool r = CompeteCore(npc, faceTarget, center, manhattan, maxSoldierDist);
+			if (DiagOn) Potions.SpectatorDiagnostic.NoteCompete(npc, r, _why);
+			return r;
+		}
+
+		/// <summary>After an external search that bypasses NPC.TargetClosest (Calamity's own targeting): the levies compete with the player it chose. Manhattan metric, like vanilla's.</summary>
+		internal static void CompeteAfterExternalSearch(NPC npc) => Compete(npc, true, npc.Center, manhattan: true, float.PositiveInfinity);
+
+		private static bool CompeteCore(NPC npc, bool faceTarget, Vector2 center, bool manhattan, float maxSoldierDist)
+		{
+			_why = "inactive";
 			if (!npc.active) return false;
+			_why = "boss-dash swap owns the slot";
 			if (BossRuleGlobalNPC.IsDashSwapping(npc)) return false; // the boss rule is aiming this boss's dash at its spite target through the same slot
 			LevyNpcData data = LevyNpcData.Of(npc);
-			if (Bodies.Count == 0 || !IsAllowlisted(npc)) { SetLock(npc, data, -1); return false; }
+			if (Bodies.Count == 0 || !IsAllowlisted(npc)) { _why = Bodies.Count == 0 ? "no live levy bodies" : "not allowlisted"; SetLock(npc, data, -1); return false; }
 
 			float vanillaDist = float.PositiveInfinity;
 			bool vanillaIsPlayer = false;
@@ -273,14 +327,14 @@ namespace Levy.Common.Targeting
 				if (d < dMin) { dMin = d; nearest = n; }
 				n++;
 			}
-			if (n == 0) { SetLock(npc, data, -1); return false; }
+			if (n == 0) { _why = "no levy within reach"; SetLock(npc, data, -1); return false; }
 			if (vanillaIsPlayer) vanillaDist += Math.Min(nearSoldiers, LevyConstants.Targeting.ArmyPullMaxSoldiers) * LevyConstants.Targeting.ArmyPullPerSoldierPx;
-			if (dMin >= vanillaDist) { SetLock(npc, data, -1); return false; }
+			if (dMin >= vanillaDist) { _why = $"vanilla pick (player {npc.target}) closer: levy {dMin:0} >= player {vanillaDist:0}"; SetLock(npc, data, -1); return false; }
 
 			// STEP 2 — which soldier: among the ones close to the best, the least crowded (see AggroSpread). A worm's trailing segment is not an attacker of its own (it follows
 			// the segment ahead), so it takes the plain nearest, as before, and stays out of the tally.
 			int pick = CountsAsEnemy(npc) ? AggroSpread.Pick(_candD, _candNpc, n, dMin, ownLock) : nearest;
-			if (pick < 0) { SetLock(npc, data, -1); return false; }
+			if (pick < 0) { _why = "spread pick found nobody"; SetLock(npc, data, -1); return false; }
 			ITargetBody best = Bodies[_candSlot[pick]];
 
 			npc.target = UsesNativeTargeting(npc) ? best.NPC.WhoAmIToTargettingIndex : SoldierNPC.DummySlot;
@@ -300,6 +354,7 @@ namespace Levy.Common.Targeting
 			// target far away" and bolts into its flee/despawn state the instant it is redirected to a soldier. Swap the dummy in now so
 			// the live soldier is visible for the remainder of this AI call; PostAI / EnsureSlotRestored clears it as usual.
 			if (!UsesNativeTargeting(npc) && !_swapped) Swap(best);
+			_why = "levy chosen";
 			return true;
 		}
 
@@ -548,17 +603,31 @@ namespace Levy.Common.Targeting
 	{
 		public override bool PreAI(NPC npc)
 		{
-			if (!EnemyTargeting.Enabled) return true;
+			if (EnemyTargeting.DiagOn) Potions.SpectatorDiagnostic.NotePreAI(npc);
+			Prepare(npc);
+			return true;
+		}
+
+		/// <summary>
+		/// Picks this tick's soldier lock and puts its dummy in slot 255. Called from PreAI, and also before Calamity's vanilla-AI override (which runs in a mod that loads before Levy,
+		/// so its whole AI would otherwise run with the commander as target); runs once per NPC per tick.
+		/// </summary>
+		internal static void Prepare(NPC npc)
+		{
+			if (!EnemyTargeting.Enabled) return;
+			LevyNpcData stamp = LevyNpcData.Of(npc);
+			if (stamp.PreparedTick == Main.GameUpdateCount && EnemyTargeting.IsSwapped) return;
+			stamp.PreparedTick = Main.GameUpdateCount;
 			// Both this class and the boss rule's dash use Main.player[255] for one AI call; a boss mid-dash (or about to dash) keeps the boss rule's dummy.
-			if (BossRuleGlobalNPC.IsDashSwapping(npc) || BossRuleGlobalNPC.DashSwapDue(npc)) return true;
+			if (BossRuleGlobalNPC.IsDashSwapping(npc) || BossRuleGlobalNPC.DashSwapDue(npc)) return;
 			LevyNpcData data = LevyNpcData.Of(npc);
 			if (data.SoldierTarget < 0)
 			{
 				// Not locked on a soldier: give the army a chance once a second. Without this a Wyvern/worm/piranha/jellyfish whose first search
 				// went to the player never searches again (their AIs only re-search on target == 255 or a dead target).
-				if (!EnemyTargeting.ShouldPollForSoldier(npc)) return true;
+				if (!EnemyTargeting.ShouldPollForSoldier(npc)) return;
 				EnemyTargeting.Retarget(npc);
-				if (data.SoldierTarget < 0) return true;
+				if (data.SoldierTarget < 0) return;
 			}
 
 			bool native = EnemyTargeting.UsesNativeTargeting(npc);
@@ -571,7 +640,7 @@ namespace Levy.Common.Targeting
 				EnemyTargeting.SetLock(npc, data, -1);
 				if (npc.target == staleTarget) EnemyTargeting.Retarget(npc);
 				body = EnemyTargeting.LiveTarget(data.SoldierTarget);
-				if (body == null) return true;
+				if (body == null) return;
 			}
 			else if (++data.RetargetTimer >= LevyConstants.Targeting.RetargetIntervalTicks)
 			{
@@ -579,13 +648,13 @@ namespace Levy.Common.Targeting
 				data.RetargetTimer = 0;
 				EnemyTargeting.Retarget(npc);
 				body = EnemyTargeting.LiveTarget(data.SoldierTarget);
-				if (body == null) return true;
+				if (body == null) return;
 			}
 
-			if (native) return true; // GetTargetData() resolves the 300+ index itself
+			if (native) return; // GetTargetData() resolves the 300+ index itself
 			if (npc.target != SoldierNPC.DummySlot) npc.target = SoldierNPC.DummySlot;
 			EnemyTargeting.Swap(body);
-			return true;
+			return;
 		}
 
 		public override void PostAI(NPC npc) => EnemyTargeting.Unswap();

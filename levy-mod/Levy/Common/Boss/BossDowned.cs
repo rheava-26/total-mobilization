@@ -109,6 +109,8 @@ namespace Levy.Common.Boss
 
 		/// <summary>Probe seam (the boss trials): forgets every recorded kill.</summary>
 		internal static void ClearForTest() => _downed.Clear();
+		/// <summary>Probe seam (potion self-checks): marks or unmarks one boss type as beaten.</summary>
+		internal static void SetDownedForTest(int type, bool downed) { if (downed) _downed.Add(KeyOfType(type)); else _downed.Remove(KeyOfType(type)); }
 
 		// Runs after ClearWorld and after vanilla NPC.downedX flags are populated, so already-beaten bosses are allowlisted immediately.
 		public override void OnWorldLoad() => BackfillFromVanillaFlags();

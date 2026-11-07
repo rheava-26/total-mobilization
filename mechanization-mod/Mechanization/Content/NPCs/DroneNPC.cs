@@ -509,13 +509,16 @@ namespace Mechanization.Content.NPCs
 		// =====================================================================================================
 		// Geometry: the pad, the loiter box and its leash
 		// =====================================================================================================
-		/// <summary>True when the tile can be stood on (solid ground or a platform).</summary>
+		/// <summary>True when the tile can be landed on: solid ground only. Drones fly straight through platforms (designer: they got caught on arena rows), so a platform is never a pad.</summary>
 		private static bool Standable(int tx, int ty)
 		{
 			if (!WorldGen.InWorld(tx, ty, 4)) return false;
 			Tile t = Main.tile[tx, ty];
-			return t.HasTile && !t.IsActuated && (Main.tileSolid[t.TileType] || Main.tileSolidTop[t.TileType]);
+			return t.HasTile && !t.IsActuated && Main.tileSolid[t.TileType] && !Main.tileSolidTop[t.TileType];
 		}
+
+		/// <summary>Drones pass through platforms in every direction.</summary>
+		public override bool? CanFallThroughPlatforms() => true;
 
 		private static bool SolidAt(int tx, int ty) => WorldGen.InWorld(tx, ty, 4) && WorldGen.SolidTile(tx, ty);
 

@@ -57,6 +57,13 @@
     - with HP scale off, Eye Expert kill time keeps falling (n12 ~34 s, n24 ~18 s);
     - with it on, very noisy;
     - fixed-window dmg/s plateaus ~55 past n12, which contradicts hpscale0. Asked the lab to measure per-levy DPS while the boss is hittable.
+- **Check-in 05:44:**
+  - **Worms 24/24 LOST** (EoW and DS × surface/ug × Expert/Rev), plus Death EoW/DS. Surface vs underground made no difference.
+    - Most damage is `takenOther`, not the boss. Example: DS Expert surface tb 71 vs to 1505; one levy dead at 2.5 s with 0 boss damage.
+    - Suspects: unattributed body segments, sand/suffocation, a harness cause. The lab is logging damage sources.
+  - **Rev Brain:** levies deal thousands to creepers but ~0 to the Brain (brain_new). Death KS: 2/3 wins.
+  - **Death Eye:** 1 win, 2 timeouts at n11; target-player 3–87%, so the Calamity compat leak again.
+  - mobility4 pushed its minion retarget fix (4d324e6).
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

@@ -592,6 +592,26 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 🔬 BOSS TRIALS, corrected (boss-trials c3529bc, MERGED; docs/BOSS_TRIALS.md)
+- **Fidelity:**
+  - Boss AI, stats and targeting are real. The Brain wins in THIS harness were real kills (ZoneCrimson was set).
+  - **Creepers target the spectating player** (mod bug → spectator-fix).
+  - Stations (campfire/lantern) never applied in A–G (fixed via a seam; effect small).
+  - **Levies use platforms 0% of the time** (→ field-ai-3).
+  - Natural terrain is 4–5× slower.
+- **Real-play Spectator in VANILLA on a DEDICATED SERVER:** the boss targets levies 100%. Eve's bug is likely SP-specific and/or Calamity → spectator-fix told.
+- **Minimum to win (3/3 seeds):**
+  - Classic Eye: 1 ranger or 1 mage.
+  - Expert Eye: 1 ranger (mages need 6).
+  - King Slime: 6 mixed.
+  - Brain: 1 (inflated by the creeper bug).
+  - **Early bosses are easy for levies when the boss targets them.**
+- **Levy:player DPS (target 5–8×):** guns/bows ~5–6× ✓; staffs 6–7× ✓; Minishark 10×, Boomstick 13–16×, Wand of Sparking 18–29× (weak); projectile melee 2–3× and summoners 3–5× (STRONG).
+- **Count curve:** boss HP +1.8%/levy. Kill time flattens past ~10–12 levies; extra levies buy SURVIVAL, not speed. 20 vs 25 at WoF makes no measurable difference.
+- **What matters most:** creeper bug > terrain > gear tier > count ≤12 > class mix. Autonomy ≈ 1/3 of DPS. HP/potions/stations ~noise for these bosses.
+- **Part C:** pure-contact blades ×0.15 rank (beam boost removed). 4 Enchanted Sword levies beat the Eye; broadswords never do.
+- **Bug:** Blade of Grass deals ~0 (sent back for a fix plus a projectile-melee sweep).
+
 ## ✅ MERGED (next build): calbugs b3fbeb1 + calrev 2d2d3d2
 - **calbugs:** the time-based no-hit give-up was REMOVED. Fallback only on: throw / flood / self-kill within 10 ticks ×3.
   - Wulfrum, Herring, Plantation and vanilla Slime run real.

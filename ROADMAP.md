@@ -263,6 +263,8 @@
 - 2.0.20 details: merged rec2. Recorder format 5: adds/minions, levy buffs, terrain growth, Static Camera view, bdeath/bdespawn. Viewer: adds, levy tracking, death explosion, Call-it mode.
 - **Eve will record her own fights** (solo control vs levies; DS, Slime God, maybe EoW) with /levyrec → put them on the replay page as "Eve's fights".
 - **armor-fx builder:** Ninja afterimage and other armor visuals on levies, plus Ninja vs Platinum stats.
+- **Replay page v4 published:** 161 fights (two batches) with adds, levy tracking, gear panels, death explosion, Call-it mode and auto-hiding full screen.
+- **BUG (Eve video):** the map "send levies here" order does nothing. The pick UI shows; the click closes the map; no confirmation; levies stay. → maporder-fix builder.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

@@ -317,6 +317,14 @@
   - **Slime God:** the Paladins are non-boss minions with no valid target (hidden from the Spectator, not allowlisted), so they despawn. Fix: LevyNpcData.BossOwner on spawn; modded boss-spawned NPCs follow their boss's allowlist. Expert now 1/4 (a real fight) vs 0/3 before. Biome ruled out.
   - **KS Ruby Jewel:** 100% → 81% on levies (visible commander + bosses-target-soldiers).
   - Spectator exception REMOVED: hidden from everything but undowned bosses, as before.
+- **vert1 DONE (origin/vert1 6f53892; merge after 2.0.23 ships → 2.0.24):**
+  - **Hook chains FIXED** (owner slot swapped around DrawProjDirect): 400 checks, 0 px error. Vanilla hook only; modded hooks share the path, unrun.
+  - **Double jumps VERIFIED:** levies fire every extra jump their gear grants (Cloud 131, Sandstorm 151, Blizzard 194 jumps / 15 levies). Sulphurous set jump spawns its bubbles (11 jumps → 11 projectiles, 254 dmg). Cloud puff is client dust, unverified headless.
+  - **Why lab 3 showed 2% rows:** the a3 arena's rows are 7 tiles apart; a levy with no bottle/wings/hook jumps 6. With a hook rows = 20–34% of time; with a bottle 21–39%.
+  - **HEADLINE: a Grappling Hook takes Queen Bee Expert from 1/6 to 5–6/6.** Mobility gear matters more than any AI tweak measured.
+  - **Row spread:** no measured gain (5-tile rows already reached by the old lane rule).
+  - **Fight zone** (Follow, no Hold, boss within 90 tiles → goals clamped to 46 tiles of the commander; LEVY_ZONE=0): no measurable effect in the walled harness (engaged ≤12 times). Eve's KS run-off NOT reproduced. Ships as the only thing aimed at it; Eve's real play is the test.
+  - Harness: `mdeath`, `acc=`, `hook=`, zone/distance telemetry. 10 replays in scratchpad/replays/vert1.
 - **Launched:**
   - vert1: levies use platform rows;
   - ammo-slimegod: best-ammo armory rule + Slime God despawn.

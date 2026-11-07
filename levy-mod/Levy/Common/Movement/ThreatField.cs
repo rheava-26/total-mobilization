@@ -82,6 +82,9 @@ namespace Levy.Common.Movement
 		private static readonly float[] _hLen = new float[ChainSamples];
 		/// <summary>Chains and chain segments the field modelled this tick (harness / diagnostics).</summary>
 		public static int ChainsThisTick, ChainSegsThisTick;
+		/// <summary>Harness switch (LEVY_CHAIN=0): model worm chains (default) or fall back to treating each segment as its own body.</summary>
+		internal static bool ChainBossBody = Environment.GetEnvironmentVariable("LEVY_CHAINBOSS") == "1";
+		internal static bool ChainOn = Environment.GetEnvironmentVariable("LEVY_CHAIN") != "0";
 
 		/// <summary>
 		/// True when this NPC is a follower in a segmented body: it takes the segment ahead of it (ai[1]) as its parent and is dragged along by it (its own velocity is zeroed every tick).
@@ -130,7 +133,7 @@ namespace Levy.Common.Movement
 				NPC n = Main.npc[i];
 				if (!n.active || n.friendly || n.townNPC || n.ModNPC is Content.NPCs.SoldierNPC) continue;
 				// a follower in a worm's body is dragged along by the segment ahead (its velocity reads zero): its path comes from the chain, built below
-				if (IsChainFollower(n, out int par)) { _follower[i] = true; if (_childOf[par] < 0) _childOf[par] = i; continue; }
+				if (ChainOn && IsChainFollower(n, out int par)) { _follower[i] = true; if (_childOf[par] < 0) _childOf[par] = i; continue; }
 				if (n.damage < (Content.NPCs.SoldierNPC.MobilityMode >= 1 ? LevyConstants.Movement.DodgeNpcMinDamageMobile : LevyConstants.Movement.DodgeNpcMinDamage)) continue;
 				Vector2 v = n.velocity; float v2 = v.LengthSquared();
 				// the acceleration it is showing: how its velocity changed since the last time the field looked (NPC.oldVelocity is not kept for every NPC)
@@ -209,7 +212,7 @@ namespace Levy.Common.Movement
 					float s = dk - _hLen[i];
 					_traj[off + i] = s >= 0f ? OnTrail(n, s) : OnHeadPath(-s);
 				}
-				bool boss = dm && LevyUtil.IsBossNpc(seg);
+				bool boss = dm && (k == 0 || ChainBossBody) && LevyUtil.IsBossNpc(seg);
 				if (boss) BossBodies++;
 				ChainSegsThisTick++;
 				var th = new Threat { P = seg.Center, Half = new Vector2(seg.width, seg.height) * 0.5f, Weight = k == 0 ? th0.Weight : Math.Max(seg.damage, 1), Body = true, Boss = boss, TrajOff = off, TrajN = ChainSamples };

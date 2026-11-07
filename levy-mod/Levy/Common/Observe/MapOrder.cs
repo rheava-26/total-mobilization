@@ -43,9 +43,20 @@ namespace Levy.Common.Observe
 		{
 			if (Main.dedServ) return;
 			if (!Potions.AutonomySystem.Studied) { Main.NewText(LevyUtil.T("Potions.NeedAutonomy"), 255, 180, 120); return; }
+			var me = Main.LocalPlayer;
+			ReopenBarracks = Common.UI.UISystem.CurrentBarracks;
+			// Open the map the way vanilla's own map button does (Player.TryOpeningFullscreenMap): with the inventory or a chat still open, Main.Draw calls ToggleInv()
+			// the very next frame, which closes the map again (one black frame, then the panel is back).
+			Main.playerInventory = false; me.SetTalkNPC(-1); me.sign = -1; Main.editSign = false; Main.npcChatCornerItem = 0;
+			me.releaseInventory = false;
+			Main.mapFullscreenScale = 2.5f;
 			PickMode = true; Main.mapFullscreen = true; Main.resetMapFull = true;
+			PickGate.Reset();
 			Main.NewText(LevyUtil.T("Observe.PickPrompt"), 190, 220, 255);
 		}
+
+		/// <summary>The Barracks that opened the map pick; it is reopened when the map closes.</summary>
+		public static Content.TileEntities.BarracksTE ReopenBarracks;
 
 		public static bool TryGoal(SoldierRecord r, out int tx, out int ty)
 		{
@@ -154,12 +165,12 @@ namespace Levy.Common.Observe
 
 		public override void Draw(ref MapOverlayDrawContext context, ref string text)
 		{
-			if (Main.dedServ || !Main.mapFullscreen) { MapOrder.PickMode = false; _wasLeft = Main.mouseLeft; return; }
+			if (Main.dedServ || !Main.mapFullscreen) { _wasLeft = Main.mouseLeft; return; }
 			var me = Main.LocalPlayer;
 			bool radio = CommandRadio.Has(me), pick = MapOrder.PickMode;
 			bool shift = Main.keyState.IsKeyDown(Keys.LeftShift) || Main.keyState.IsKeyDown(Keys.RightShift);
 			bool armed = (radio && shift) || pick;
-			bool click = Main.mouseLeft && !_wasLeft;
+			bool click = PickGate.Click(Main.mouseLeft, _wasLeft);
 			_wasLeft = Main.mouseLeft;
 
 			// the last ordered point stays on the map for a while so the player can watch the levies go
@@ -185,6 +196,51 @@ namespace Levy.Common.Observe
 			var tex = TextureAssets.MagicPixel.Value;
 			float s = Math.Max(5f, 7f * c.DrawScale);
 			c.Draw(tex, new Vector2(tx, ty), col, new SpriteFrame(1, 1), s, s, Alignment.Center);
+		}
+	}
+
+	/// <summary>A pick click counts only after the button that opened the map has been released (the opening click is still held on the first map frame).</summary>
+	public static class PickGate
+	{
+		private static bool _released;
+		public static void Reset() => _released = false;
+		/// <summary>True on a fresh press, once the mouse has been seen up since <see cref="Reset"/>.</summary>
+		public static bool Click(bool left, bool wasLeft)
+		{
+			if (!left) _released = true;
+			return left && !wasLeft && _released;
+		}
+		/// <summary>Boot check: the opening press never picks; the first press after a release does.</summary>
+		public static bool SelfCheck()
+		{
+			Reset();
+			bool a = Click(true, false);   // opening click still down
+			bool b = Click(true, true);    // held
+			Click(false, true);            // released
+			bool c = Click(true, false);   // new press
+			Reset();
+			return !a && !b && c;
+		}
+	}
+
+	/// <summary>Reopens the Barracks panel after a map pick, and drops a stale pick when the map was closed some other way.</summary>
+	public class MapPickSystem : ModSystem
+	{
+		private uint _since;
+		public override void PostSetupContent()
+		{
+			if (PickGate.SelfCheck()) Mod.Logger.Info("[MapPick] self-check ok"); else Mod.Logger.Error("[MapPick] self-check FAILED (the opening click would pick)");
+		}
+
+		public override void PostUpdateEverything()
+		{
+			if (Main.dedServ) return;
+			if (Main.mapFullscreen) { _since = Main.GameUpdateCount; return; }
+			if (!MapOrder.PickMode && MapOrder.ReopenBarracks == null) return;
+			if (Main.GameUpdateCount - _since < 2u) return; // the map opens on the same tick the button is pressed
+			MapOrder.PickMode = false;
+			var te = MapOrder.ReopenBarracks; MapOrder.ReopenBarracks = null;
+			if (te != null && Common.UI.UISystem.Instance != null && Common.UI.UIActions.IsLive(te)) Common.UI.UISystem.Instance.OpenBarracks(te);
 		}
 	}
 }

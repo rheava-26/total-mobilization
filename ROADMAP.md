@@ -592,6 +592,13 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## ✅ MERGED (next build): calbugs b3fbeb1 + calrev 2d2d3d2
+- **calbugs:** the time-based no-hit give-up was REMOVED. Fallback only on: throw / flood / self-kill within 10 ticks ×3.
+  - Wulfrum, Herring, Plantation and vanilla Slime run real.
+  - Endogenesis → stand-in (companion part); Void Concentration → stand-in (flood).
+  - **Open:** Lilies of Finality cycles spawn/die (lives >10 ticks), 0 dmg at 32 tiles. Test up close before touching the threshold.
+- **calrev:** Rage/Adrenaline for levies (auto in boss fights, Rev only). The calrev harness's Brain is fixed (ZoneCrimson).
+
 ## 🧯 Eve's real-play Spectator bugs (2026-11-07) → branch `spectator-fix`
 1. An UNBEATEN boss still targets the spectating player. This is likely why real fights differ from the harness: the boss sits on the static, unhittable player while levies die around it.
 2. Shield of Cthulhu dash deals damage while spectating (chip damage).

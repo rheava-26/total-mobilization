@@ -1743,6 +1743,13 @@ namespace Levy.Content.NPCs
 			{
 				_engMode = EngageMode.Hold; _engPathOk = false; WhyB = Why.BMeleeAvoid;
 				WantsAltitude = false; _altHeld = false;
+				// a blade that will not charge a boss still moves like a player under it: long strafe legs, hops, a hover when it can fly
+				if (DanceMode >= 1 && SoldierNPC.MobilityMode >= 1 && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage))
+				{
+					NPC dseg = Aiming.NearestSegment(target, NPC.Center) ?? target;
+					DanceLift(dseg);
+					if (BossDance(dseg, 80f, LevyConstants.MeleeCautionTiles, now)) return;
+				}
 				ClearGoal();
 				return;
 			}

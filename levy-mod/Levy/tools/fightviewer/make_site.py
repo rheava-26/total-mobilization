@@ -23,8 +23,8 @@ The whole <outdir> is what gets published (static files, relative URLs only). Ol
 import argparse, glob, gzip, json, os, re, shutil, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TITLES = {"eve": "Eve's fights", "rec2": "Recorder test", "lab1": "Lab 1", "lab2": "Lab 2", "lab3": "Lab 3", "worm": "Worm round", "worm5": "Worm round", "options": "Options"}
-MODES = {"exp": "Expert", "rev": "Rev", "death": "Death", "revoff": "Rev, rage off"}
+TITLES = {"eve": "Eve's fights", "rec2": "Recorder test", "lab1": "Lab 1", "lab2": "Lab 2", "lab3": "Lab 3", "worm": "Worm round", "worm5": "Worm round", "options": "Options", "vert1": "Movement lab", "moblab": "Mobility gear lab"}
+MODES = {"exp": "Expert", "rev": "Rev", "death": "Death", "revoff": "Rev, rage off", "mdeath": "Master+Death"}
 ARENAS = {"surf": "Surface", "ug": "Underground"}
 FLED_PX = 50000          # a boss that ends this far from where it began has left the fight
 MAX_FILE = 14 * 1048576  # hard limit is 15 MB per data file

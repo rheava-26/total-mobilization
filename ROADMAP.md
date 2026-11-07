@@ -37,6 +37,12 @@
   - 60 s, 162 cells: hits 34.0 → 26.4, deaths/min 1.0 → 0.6, still 19% → 11%. With no gear: 45.8 → 31.7 hits, deaths 1.5 → 0.5/min. The wings regression was mostly window noise (22.3 → 21.1), but wings are still worse vs fliers and worms (DS 61 → 72, QB 36 → 44).
   - DS hits: body 72%, head 24%, tail 3%, no adds (Eve's read confirmed). DS and QB are unimproved.
   - The harness under-exercises Skeletron hands/spin (7 AI transitions); Brain p2 spawn is an artifact.
+- **mobility4 (branch `mobility4`, building):**
+  - minion retarget in the live EnemyTargeting path;
+  - worm-chain avoidance (general, all worms);
+  - charge-lane sidestep (QB/EoC);
+  - harness fidelity: Skeletron hands, Brain p2, BossTrial "WIN t=0";
+  - rerun with replays.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

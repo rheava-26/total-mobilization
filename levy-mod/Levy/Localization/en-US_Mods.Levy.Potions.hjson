@@ -1,18 +1,12 @@
 # Spectator and Seeker potions, the Guide to Autonomy and their buffs. Keys are relative to Mods.Levy.Potions.
 SpectatorPotion: {
 	DisplayName: Spectator Potion
-	Tooltip:
-		'''
-		Enemies ignore you, but you cannot fight or build. Has no effect against a boss you have not beaten.
-		'''
+	Tooltip: Enemies ignore you, but you cannot fight or build. Has no effect against a boss you have not beaten.
 }
 
 SeekerPotion: {
 	DisplayName: Seeker Potion
-	Tooltip:
-		'''
-		Choose one item. Tiles and chests that hold it glow.
-		'''
+	Tooltip: Choose one item. Tiles and chests that hold it glow.
 }
 
 GuideToAutonomy: {

@@ -170,6 +170,11 @@ namespace Levy.Common.Testing
 				if (st.HavePos) st.Moved += Vector2.Distance(st.LastPos, e.Center);
 				st.LastPos = e.Center; st.HavePos = true;
 				if (CrEnraged(e)) st.EnragedTicks++;
+				if (e.dontTakeDamage) st.DtdTicks++;
+				long sum = st.Levies.Sum(l => l.DmgBoss); int ph = (int)e.ai[0];
+				st.Phase.TryGetValue(ph, out var pv); st.Phase[ph] = (pv.ticks + 1, pv.dmg + (sum - st.LastDmgSum)); st.LastDmgSum = sum;
+				if (adds < st.PrevAdds) st.AddKills += st.PrevAdds - adds;
+				st.PrevAdds = adds;
 			}
 			if ((st.Run.Dbg || Environment.GetEnvironmentVariable("LEVY_CR_DEBUG") == "1") && st.Tick % 30 == 0)
 			{

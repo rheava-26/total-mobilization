@@ -18,6 +18,7 @@ namespace Levy.Common.Config
 			global::Levy.Common.Weapons.OwnerPuppet.SetConfig(SoldierEffectsAtSoldier);
 			global::Levy.Common.Weapons.WeaponRank.SetConfig(WeaponRanking, SkipArmoredWeapons);
 			global::Levy.Common.Weapons.WeaponUse.SetAimAccuracy(AimAccuracy);
+			global::Levy.Common.Options.LevyOptions.SetConfig(FearModel == FearModelSetting.Events, FormationDefense);
 		}
 
 		// ---- Potions ----------------------------------------------------------------------------------------
@@ -37,6 +38,7 @@ namespace Levy.Common.Config
 		[Range(0, 10)] [DefaultValue(2)] public int BossHpScalingPercentPerCp;
 		[Range(0, 200)] [DefaultValue(80)] public int BossHpScalingCapPercent;
 		[Range(0f, 3f)] [DefaultValue(1f)] public float FearMultiplier;
+		[DefaultValue(FearModelSetting.Events)] [DrawTicks] public FearModelSetting FearModel;
 		[DefaultValue(true)] public bool EnemiesTargetSoldiers;
 		public List<int> ExtraTargetingAiStyles = new();
 		/// <summary>Enemies the militia will never attack, by exact display name (case-insensitive). For boss-summoning
@@ -88,6 +90,7 @@ namespace Levy.Common.Config
 		[Range(0f, 5f)] [DefaultValue(1f)] public float SoldierDamageMultiplier;
 		[DefaultValue(TombstoneMode.Vanilla)] [DrawTicks] public TombstoneMode Tombstones;
 		[DefaultValue(false)] public bool SoldiersTriggerPressurePlates;
+		[DefaultValue(true)] public bool FormationDefense;
 
 		// ---- Economy ----------------------------------------------------------------------------------------
 		[Header("Economy")]
@@ -106,6 +109,9 @@ namespace Levy.Common.Config
 		[DefaultValue(MilitiaDeathMessageMode.Count)] [DrawTicks] public MilitiaDeathMessageMode MilitiaDeathMessages;
 		[DefaultValue(true)] public bool RegularDeathMessages;
 	}
+
+	/// <summary>What frightens levies during a boss fight.</summary>
+	public enum FearModelSetting { Events, Proximity }
 
 	/// <summary>One boss milestone: once <see cref="Boss"/> is beaten, every levy gains <see cref="AccessorySlots"/> accessory slots and the world gains <see cref="Levies"/> levies.</summary>
 	public class MilestoneReward

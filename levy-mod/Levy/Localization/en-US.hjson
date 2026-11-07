@@ -253,6 +253,24 @@ Mods: {
 				Tooltip: ""
 			}
 
+			FearModelSetting: {
+				Events: {
+					Label: Events
+					Tooltip:
+						'''
+						Levies become afraid when one hit takes 30% of a levy's health, when a levy dies within 40 tiles, and when a boss changes phase.
+						Fear drains after 3 seconds without being hit.
+						'''
+				}
+
+				Proximity: {
+					Label: Proximity
+					Tooltip: Levies become afraid steadily while a boss is in view, and more so when hit or when a levy dies.
+				}
+
+				Tooltip: ""
+			}
+
 			LevyConfig: {
 				DisplayName: Levy
 
@@ -299,6 +317,21 @@ Mods: {
 				FearMultiplier: {
 					Label: Fear multiplier
 					Tooltip: Scales every fear gain during boss fights.
+				}
+
+				FearModel: {
+					Label: Fear model
+					Tooltip:
+						'''
+						Events: levies fear hits that take 30% of their health, nearby deaths and boss phase changes.
+						Proximity: levies fear a boss steadily while it is in view.
+						Levies with the Happy! buff, or near a Sunflower, gain fear at half speed.
+						'''
+				}
+
+				FormationDefense: {
+					Label: Formation defense
+					Tooltip: A levy takes 2% less damage for each other levy within 15 tiles that is not routed, up to 20%.
 				}
 
 				SoldierDamageMultiplier: {

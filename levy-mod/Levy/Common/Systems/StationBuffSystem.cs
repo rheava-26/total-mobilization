@@ -26,7 +26,10 @@ namespace Levy.Common.Systems
 		Bewitching = 1 << 8,      // TileID.BewitchingTable: Bewitched (+1 minion)
 		SliceOfCake = 1 << 9,     // TileID.SliceOfCake: Sugar Rush
 		WarTable = 1 << 10,       // TileID.WarTable: War Table (+1 sentry slot)
-		All = (1 << 11) - 1,
+		Honey = 1 << 11,          // standing in honey: Honey (+2 life regen); never from a tile scan
+		All = (1 << 12) - 1,
+		/// <summary>The stations vanilla reads from the scene scan (a 169x124 tile box centred on the player): a placed tile within that box is the buff.</summary>
+		Scene = Campfire | HeartLantern | StarInBottle | Sunflower | CatBast,
 	}
 
 	/// <summary>
@@ -39,19 +42,28 @@ namespace Levy.Common.Systems
 	{
 		private struct Entry { public Vector2 Center; public StationFlags Flags; }
 
+		/// <summary>Armory-side stations (every kind), cached per armory; a soldier within StationBenefitRadiusTiles of the armory gets them.</summary>
 		private static readonly List<Entry> _cache = new();
+		/// <summary>Scene stations (campfire, heart lantern, star in a bottle, sunflower, bast statue) found around every armory and every player, as tile-centre positions per flag bit.</summary>
+		private static readonly List<Vector2>[] _scene = MakeScene();
+		private static List<Vector2>[] MakeScene() { var a = new List<Vector2>[12]; for (int i = 0; i < a.Length; i++) a[i] = new List<Vector2>(); return a; }
+		private static readonly HashSet<long> _sceneSeen = new();
 		private static uint _stamp = uint.MaxValue;
 
 		public override void OnWorldLoad() => Reset();
 		public override void OnWorldUnload() => Reset();
 		public override void ClearWorld() => Reset();
-		private static void Reset() { _cache.Clear(); _stamp = uint.MaxValue; }
+		private static void Reset() { _cache.Clear(); foreach (var l in _scene) l.Clear(); _sceneSeen.Clear(); _stamp = uint.MaxValue; }
 
-		/// <summary>Union of the stations beside every armory within benefit range of <paramref name="pos"/> (cached; cheap per call).</summary>
 		/// <summary>Probe seam (the combat harness): when set, every soldier counts as standing beside exactly these stations.</summary>
 		internal static StationFlags? ForceFlags;
 
-		public static StationFlags For(Vector2 pos)
+		/// <summary>
+		/// Every station a soldier at <paramref name="pos"/> benefits from (cached; cheap per call): the stations beside an armory within benefit range,
+		/// the scene stations within vanilla's 169x124 tile scan box of the soldier (what a player standing there would get), and the station buffs
+		/// the commander has activated himself (Sharpened, Ammo Box, Clairvoyance, Bewitched, War Table, Sugar Rush).
+		/// </summary>
+		public static StationFlags For(Vector2 pos, Player commander = null)
 		{
 			if (ForceFlags.HasValue) return ForceFlags.Value;
 			if (!LevyUtil.IsServerOrSingle) return StationFlags.None;
@@ -60,7 +72,50 @@ namespace Levy.Common.Systems
 			float r = LevyConstants.StationBenefitRadiusTiles * LevyConstants.TilePx; r *= r;
 			for (int i = 0; i < _cache.Count; i++)
 				if (_cache[i].Flags != StationFlags.None && Vector2.DistanceSquared(_cache[i].Center, pos) <= r) f |= _cache[i].Flags;
+			f |= SceneFlags(pos);
+			if (InHoney(pos)) f |= StationFlags.Honey;
+			if (commander != null) f |= CommanderFlags(commander);
 			return f;
+		}
+
+		/// <summary>Scene stations within vanilla's scan box of a point: |dx| <= 84 and |dy| <= 62 tiles (Main.buffScanAreaWidth/Height halved).</summary>
+		public static StationFlags SceneFlags(Vector2 pos)
+		{
+			float hx = Main.buffScanAreaWidth / 2 * LevyConstants.TilePx, hy = Main.buffScanAreaHeight / 2 * LevyConstants.TilePx;
+			StationFlags f = StationFlags.None;
+			for (int bit = 0; bit < _scene.Length; bit++)
+			{
+				List<Vector2> l = _scene[bit];
+				for (int i = 0; i < l.Count; i++)
+				{
+					Vector2 t = l[i];
+					if (Math.Abs(t.X - pos.X) <= hx && Math.Abs(t.Y - pos.Y) <= hy) { f |= (StationFlags)(1 << bit); break; }
+				}
+			}
+			return f;
+		}
+
+		/// <summary>The station buffs a player has switched on by using a station (30 minutes in vanilla). They reach all of his levies wherever they are.</summary>
+		public static StationFlags CommanderFlags(Player p)
+		{
+			StationFlags f = StationFlags.None;
+			if (p == null || !p.active) return f;
+			if (p.HasBuff(BuffID.Sharpened)) f |= StationFlags.Sharpening;
+			if (p.HasBuff(BuffID.AmmoBox)) f |= StationFlags.AmmoBox;
+			if (p.HasBuff(BuffID.Clairvoyance)) f |= StationFlags.CrystalBall;
+			if (p.HasBuff(BuffID.Bewitched)) f |= StationFlags.Bewitching;
+			if (p.HasBuff(BuffID.WarTable)) f |= StationFlags.WarTable;
+			if (p.HasBuff(BuffID.SugarRush)) f |= StationFlags.SliceOfCake;
+			return f;
+		}
+
+		/// <summary>True if a soldier standing at <paramref name="pos"/> is in liquid honey (vanilla gives a player the Honey buff there).</summary>
+		public static bool InHoney(Vector2 pos)
+		{
+			Point c = pos.ToTileCoordinates();
+			if (!WorldGen.InWorld(c.X, c.Y, 2)) return false;
+			Tile t = Main.tile[c.X, c.Y];
+			return t.LiquidAmount > 0 && t.LiquidType == LiquidID.Honey;
 		}
 
 		private static void Refresh()
@@ -69,11 +124,53 @@ namespace Levy.Common.Systems
 			if (_stamp != uint.MaxValue && now - _stamp < (uint)LevyConstants.StationScanIntervalTicks) return;
 			_stamp = now;
 			_cache.Clear();
+			foreach (var l in _scene) l.Clear();
+			_sceneSeen.Clear();
 			foreach (var te in TileEntity.ByID.Values)
 			{
 				if (te is not ArmoryTE a) continue;
-				try { _cache.Add(new Entry { Center = a.Center, Flags = Scan(a.Center) }); } catch (Exception) { }
+				try { _cache.Add(new Entry { Center = a.Center, Flags = Scan(a.Center) }); ScanScene(a.Center); } catch (Exception) { }
 			}
+			for (int i = 0; i < Main.maxPlayers; i++)
+			{
+				Player p = Main.player[i];
+				if (p == null || !p.active || p.dead) continue;
+				try { ScanScene(p.Center); } catch (Exception) { }
+			}
+		}
+
+		/// <summary>
+		/// Records the scene stations in the box around a source (the scan box plus a margin, so soldiers up to that far from the source are exact).
+		/// Tile tests are the ones in SceneMetrics.ScanAndExportToMain (the Sunflower is any tile of type Sunflower).
+		/// </summary>
+		private static void ScanScene(Vector2 center)
+		{
+			Point c = center.ToTileCoordinates();
+			int rx = Main.buffScanAreaWidth / 2 + LevyConstants.StationSceneMarginTiles, ry = Main.buffScanAreaHeight / 2 + LevyConstants.StationSceneMarginTiles;
+			int x0 = Math.Max(1, c.X - rx), x1 = Math.Min(Main.maxTilesX - 2, c.X + rx);
+			int y0 = Math.Max(1, c.Y - ry), y1 = Math.Min(Main.maxTilesY - 2, c.Y + ry);
+			for (int x = x0; x <= x1; x++)
+				for (int y = y0; y <= y1; y++)
+				{
+					Tile t = Main.tile[x, y];
+					if (!t.HasTile) continue;
+					StationFlags f = StationFlags.None;
+					switch (t.TileType)
+					{
+						case TileID.Campfire: if (t.TileFrameY < 36) f = StationFlags.Campfire; break;
+						case TileID.Fireplace: if (t.TileFrameX < 54) f = StationFlags.Campfire; break;
+						case TileID.CatBast: if (t.TileFrameX < 72) f = StationFlags.CatBast; break;
+						case TileID.HangingLanterns:
+							if (t.TileFrameY >= 324 && t.TileFrameY <= 358) f = StationFlags.HeartLantern;
+							else if (t.TileFrameY >= 252 && t.TileFrameY <= 286) f = StationFlags.StarInBottle;
+							break;
+						case TileID.Sunflower: f = StationFlags.Sunflower; break;
+					}
+					if (f == StationFlags.None) continue;
+					if (!_sceneSeen.Add(((long)x << 32) | (uint)y)) continue;
+					int bit = 0; while (((int)f >> bit) != 1) bit++;
+					_scene[bit].Add(new Vector2(x * LevyConstants.TilePx + 8f, y * LevyConstants.TilePx + 8f));
+				}
 		}
 
 		/// <summary>Scans the box around an armory for station tiles. Stops early once every station has been seen.</summary>
@@ -117,6 +214,7 @@ namespace Levy.Common.Systems
 		{
 			int r = 0;
 			if ((f & StationFlags.Campfire) != 0) r += LevyConstants.StationCampfireLifeRegen;
+			if ((f & StationFlags.Honey) != 0) r += LevyConstants.StationHoneyLifeRegen;
 			if ((f & StationFlags.HeartLantern) != 0) r += LevyConstants.StationHeartLanternLifeRegen;
 			return r;
 		}

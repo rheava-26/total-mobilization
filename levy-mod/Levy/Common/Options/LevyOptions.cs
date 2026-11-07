@@ -13,21 +13,48 @@ namespace Levy.Common.Options
 	[Flags] public enum SurvMode : byte { None = 0, Parity = 1, Veteran = 2, Formation = 4 }
 
 	/// <summary>
-	/// DESIGN OPTIONS LAB. Every option here is OFF by default and chosen by an env switch (or, in the lab harness, by a spec token that overrides the env for one fight):
-	///   LEVY_FEARMODEL = default | events | proximity_slow | rally
+	/// Fear and survivability options. Shipped defaults come from the config (Events fear, formation defense on); a dev env switch, or in the lab harness a spec token, overrides them for one run:
+	///   LEVY_FEARMODEL = default (proximity) | proximity | events | proximity_slow | rally
 	///   LEVY_SURV      = off | parity | veteran | formation   (comma list: parity,formation)
-	/// With neither set, nothing in this file changes any number the game computes (every hook starts with a cheap static check).
+	///   LEVY_FORMATION = perAlly:cap  (e.g. 0.01:0.10; dev tuning of the formation numbers)
+	/// Parity and veteran are dev switches only; they are never config options.
 	/// </summary>
 	public static class LevyOptions
 	{
-		public static FearModel Fear = ParseFear(Environment.GetEnvironmentVariable("LEVY_FEARMODEL"));
-		public static SurvMode Surv = ParseSurv(Environment.GetEnvironmentVariable("LEVY_SURV"));
+		private static FearModel? _fearOverride = ParseFearEnv(Environment.GetEnvironmentVariable("LEVY_FEARMODEL"));
+		private static SurvMode? _survOverride = ParseSurvEnv(Environment.GetEnvironmentVariable("LEVY_SURV"));
+		private static FearModel _fearConfig = FearModel.Events;
+		private static bool _formationConfig = true;
+
+		/// <summary>Formation numbers (per ally, cap). Constants unless the dev env LEVY_FORMATION overrides them.</summary>
+		public static float FormationPerAlly = LevyConstants.Formation.DrPerAlly, FormationMax = LevyConstants.Formation.MaxDr;
+		static LevyOptions()
+		{
+			string f = Environment.GetEnvironmentVariable("LEVY_FORMATION");
+			if (!string.IsNullOrWhiteSpace(f))
+			{
+				string[] t = f.Split(':');
+				if (t.Length == 2 && float.TryParse(t[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float a) && float.TryParse(t[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float c)) { FormationPerAlly = a; FormationMax = c; }
+			}
+		}
+
+		/// <summary>The fear model in force: an env/harness override, else the config's. <see cref="FearModel.Default"/> is the proximity model.</summary>
+		public static FearModel Fear { get => _fearOverride ?? _fearConfig; set => _fearOverride = value; }
+		/// <summary>The survivability flags in force: an env/harness override, else formation when the config has it on.</summary>
+		public static SurvMode Surv { get => _survOverride ?? (_formationConfig ? SurvMode.Formation : SurvMode.None); set => _survOverride = value; }
+
+		/// <summary>Called from the config's Apply: the player's choices.</summary>
+		public static void SetConfig(bool eventsFear, bool formation) { _fearConfig = eventsFear ? FearModel.Events : FearModel.Default; _formationConfig = formation; }
+
+		private static FearModel? ParseFearEnv(string s) => string.IsNullOrWhiteSpace(s) ? null : ParseFear(s);
+		private static SurvMode? ParseSurvEnv(string s) => string.IsNullOrWhiteSpace(s) ? null : ParseSurv(s);
 
 		public static FearModel ParseFear(string s)
 		{
 			switch ((s ?? "").Trim().ToLowerInvariant().Replace("-", "_"))
 			{
 				case "events": return FearModel.Events;
+				case "proximity": return FearModel.Default;
 				case "proximity_slow": case "slow": return FearModel.ProximitySlow;
 				case "rally": return FearModel.Rally;
 				default: return FearModel.Default;
@@ -48,6 +75,8 @@ namespace Levy.Common.Options
 		}
 
 		public static bool SurvOn => Surv != SurvMode.None;
+		/// <summary>True when parity or veteran is on (they change max HP and defense; formation does not).</summary>
+		public static bool StatsOn => (Surv & (SurvMode.Parity | SurvMode.Veteran)) != 0;
 
 		// ================================================================================================= fear
 		/// <summary>Scale on the per-tick boss-in-view fear gain (1 = shipped).</summary>
@@ -100,20 +129,23 @@ namespace Levy.Common.Options
 			return f;
 		}
 
-		/// <summary>Formation: damage reduction fraction for a soldier with other living, un-routed levies close by (1% per neighbour, capped).</summary>
+		/// <summary>Formation: damage reduction fraction for a soldier with other living, un-routed levies close by (per ally, capped).</summary>
 		public static float FormationDr(SoldierNPC s)
 		{
 			if ((Surv & SurvMode.Formation) == 0 || s.Record == null) return 0f;
 			var roster = global::Levy.Common.Systems.RosterSystem.Instance;
 			if (roster == null) return 0f;
-			float r2 = LevyConstants.Lab.FormationTiles * LevyConstants.TilePx; r2 *= r2;
+			float r2 = LevyConstants.Formation.Tiles * LevyConstants.TilePx; r2 *= r2;
 			int n = 0;
 			foreach (SoldierNPC b in roster.ActiveBodies())
 			{
 				if (b == null || b.Record == null || ReferenceEquals(b, s) || !b.IsAlive || b.State == SoldierState.Routed) continue;
 				if (Vector2.DistanceSquared(b.NPC.Center, s.NPC.Center) <= r2) n++;
 			}
-			return Math.Min(LevyConstants.Lab.FormationMaxDr, n * LevyConstants.Lab.FormationDrPerNeighbour);
+			return DrFor(n);
 		}
+
+		/// <summary>Formation damage reduction for a levy with <paramref name="allies"/> other levies close by.</summary>
+		public static float DrFor(int allies) => Math.Min(FormationMax, allies * FormationPerAlly);
 	}
 }

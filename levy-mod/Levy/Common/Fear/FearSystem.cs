@@ -188,8 +188,12 @@ namespace Levy.Common.Fear
 			if (r.HazardPaid) m *= LevyConstants.HazardPayFearMult;
 			m *= LevyConfig.Get.FearMultiplier;
 			if (PlayerNear(s.NPC.Center)) m *= FearK.PlayerNearMult;
+			if (Calm(s)) m *= LevyConstants.SunflowerFearMult;
 			return m;
 		}
+
+		/// <summary>Happy!: the levy has the vanilla Happy! buff, or a placed Sunflower is within the vanilla scene scan box of it. Fear gain is halved.</summary>
+		public static bool Calm(SoldierNPC s) => s.NPC.HasBuff(Terraria.ID.BuffID.Sunflower) || (s.Stations & StationFlags.Sunflower) != 0;
 
 		/// <summary>True if any living player is within <see cref="FearK.PlayerNearTiles"/> tiles of the point (not only the commander).</summary>
 		public static bool PlayerNear(Vector2 pos)

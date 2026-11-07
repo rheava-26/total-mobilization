@@ -184,6 +184,16 @@
     - Multiplayer needs a dummy swap for owner-255 modded shots.
     - Sentries are weak (0.3–0.5 dmg/s).
   - The RunDamage freeze fix (1.3.2) was verified intact.
+- **worm5 DONE (merged 204cc42 → 2.0.18):**
+  - **I-frame hypothesis CONFIRMED:** levies got 20 ticks of immunity after a hit, a player gets 40 (80 with Cross Necklace/Star Veil, plus Calamity extras). Levies now use player parity (HitImmuneTicks + the dummy's real Player.Hurt immuneTime; `LEVY_IFRAMES=0` turns it off). Worm hit gaps ≤20 ticks: 142 → 0 (DS Expert).
+  - **…but worms are still lost.** DS 0/6, EoW Expert 1/6. A levy has 100–200 HP vs DS head ~124 and body 25–40, so ~3 hits kill one regardless of spacing.
+    - Remaining levers: levy HP/armor or boss damage. **Design call for Eve** (tenet: make the levy's survivability real, don't nerf the boss?).
+  - **Skeletron "flee" fixed:** 4 fled → 0; wins 4/10 → 6/10. Three causes:
+    - a stale dummy after a re-lock in CompeteCore;
+    - the BossRule spite-dash aimed at a far levy (now leashed to 1500 px);
+    - routed levies running 130–190 tiles off (now leashed to 60 tiles of the anchor, still shooting).
+  - **Recorder:** EoW fights now record (IsFightBoss; spawn serial inherited across head conversion).
+  - **Harness:** worms spawn 80 tiles out (live-like).
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

@@ -28,6 +28,9 @@
   - Lead watched the King Slime spec replay: KS targets a levy 100% of the time but gets 0 hits in 90 s. The data shows levies kite at 35–79 tiles (p5–p95), never overlap, and KS teleports once. That's real kiting, not a bug.
   - Matrix bosses run at 2M HP by design (survival window).
   - mobility3 has added targeting telemetry (2398698).
+- **rec-harness MERGED** (5b57781 → levy-stardust): `LEVY_REC_DIR` headless recording via FightRecAuto, format 3 (hitboxes, lhit/ldeath with source, per-sample boss target), radar viewer, `make_gallery.py`. Booted clean.
+  - Its 8 fieldai replays: spec mode = boss on a levy 100%; cmd mode = on the commander 100%. Hits: EoC 122, Deerclops 217 (4 deaths), DS 155, Skeletron 37, KS 0 (kited), Brain 1.
+  - **Open:** the BossTrial harness now reports "WIN t=0.0s" on every fight (boss inactive on tick 1), with or without recording. Not diagnosed. Worm segments are not tagged as segments in the recordings.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

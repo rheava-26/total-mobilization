@@ -1,0 +1,2 @@
+fight	brain	rev	1	3600	cmd=near	n=cp	arena=a3e	gear=mod	l3=1	dbg=1
+fight	eye	exp	1	3600	cmd=near	n=cp	arena=a3	gear=mod	l3=1	hazard=1	food=2	rogue=2

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Lab 3 tables. Usage: tab3.py <outdir with *.tsv and *.tsv.l3.tsv> main|arms|vert [spec names...]
 Joins <spec>.tsv (calrev row) with <spec>.tsv.l3.tsv (lab 3 row) on the key.
-Result labels: WIN = kill; a TIMEOUT whose boss travelled > FLED_TILES is reported as FLED (an unrecorded despawn).
+Result labels: WIN = kill; a Skeletron/Queen Bee TIMEOUT whose boss travelled > FLED_TILES is reported as FLED (an unrecorded despawn).
 arms usage: tab3.py <dir> arms a=cal_a1,cal_a2 b=cal_b ..."""
 import sys, os, csv, collections, statistics as st
 
@@ -38,7 +38,7 @@ def fl(x, d=0.0):
 
 def label(r):
     res = r['result']
-    if res == 'TIMEOUT' and fl(r.get('bossMoved')) > FLED_TILES:
+    if res == 'TIMEOUT' and r['key'].split('|')[1] in ('skel', 'qb') and fl(r.get('bossMoved')) > FLED_TILES:
         return 'FLED'
     return res
 

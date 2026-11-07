@@ -292,6 +292,14 @@
   - BUG: King Slime phase-2 crystal (Calamity jewel) targets ONLY the player in real play (→ ammo-slimegod, minion retarget).
   - Double jump: "they should double jump!" Lab 3's "levies don't double jump" was unverified. vert1 to verify all gear double jumps (incl. Sulphurous set jump bubble) and their effects.
 - **BUG (Eve video 15:39):** levy hook CHAINS drawn from far offscreen (likely from the owner player's MountedCenter) → vert1 builder.
+- **EVE'S KING SLIME SET (Master+Death, real play, Levy 2.0.20–21):**
+  - Solo ×4: 79–97 s (mean ~89), 4–12 hits taken.
+  - **With 13 levies ×2: 113 s and 102 s (SLOWER), 11 of 13 levies dead each time** (several in the first 4–8 s), mostly to ONE King Slime body hit each. Eve took MORE damage (611 vs ~200) despite the boss being on levies 64–88% of the time.
+  - Levy gear: Mana Rose, Wulfrum Knife, Slime Staff, Minishark, Boomstick, Antlion Skewer, Stormjaw.
+  - KS max HP 5355 both ways (no visible scaling).
+  - Ruby Jewel hits levies with its shots but targets Eve.
+  - Goblin army: 25 levies, 1 death; Eve's "surprise" was not in the recording. **Audio cut out (only music left):** possible sound-voice exhaustion from many levies, uninvestigated.
+  - **Verdict:** in real Master+Death, an early army is a net NEGATIVE vs KS. Durability (one-shot) + low damage + it pulls the boss's attention so Eve's own hits land less.
 - **Launched:**
   - vert1: levies use platform rows;
   - ammo-slimegod: best-ammo armory rule + Slime God despawn.

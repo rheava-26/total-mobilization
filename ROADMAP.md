@@ -317,6 +317,8 @@
   - **Slime God:** the Paladins are non-boss minions with no valid target (hidden from the Spectator, not allowlisted), so they despawn. Fix: LevyNpcData.BossOwner on spawn; modded boss-spawned NPCs follow their boss's allowlist. Expert now 1/4 (a real fight) vs 0/3 before. Biome ruled out.
   - **KS Ruby Jewel:** 100% → 81% on levies (visible commander + bosses-target-soldiers).
   - Spectator exception REMOVED: hidden from everything but undowned bosses, as before.
+- **2.0.24 SHIPPED** (16:55): vert1 (hook chains, gear jumps + effects, fight zone, row spread). Both toolchains clean.
+- **BUG (Eve 16:55, screenshot): levies leave DOORS OPEN → her pump/water area flooded the base ("multilevel door").** Code read: each levy remembers ONE door (a 2nd door overwrites it); gives up closing after 6 tiles; close test is horizontal-only; followers never remember a door; OFFICERS NEVER CLOSE doors at all. → `doors` builder: world-level door custodian (every door a levy/officer opens gets closed once the doorway is clear, retry ~30 s) + headless before/after door count.
 - **2.0.23 SHIPPED** (16:41): best ammo, Slime God/boss-spawned NPCs target levies, sound throttle, worm-kill recording. Both toolchains clean (exc=0, fail=0; Calamity failN=0 compat=1). Mechanization 0.9.1 resent.
 - **vert1 MERGED (48fb7f1) → 2.0.24 building** (conflicts in CalRev harness combined: Zone/Bts + HookItem/AccItem; a3e StartsWith + zone=).
 - **Replay site v10:** "Movement lab" set (10 vert1 fights) + Master+Death label.

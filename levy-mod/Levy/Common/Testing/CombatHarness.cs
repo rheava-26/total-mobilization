@@ -194,7 +194,7 @@ namespace Levy.Common.Testing
 		}
 		internal static string VampireProbeState => $"vampireHeal calls={_vhCalls} last[{_vhLast}] boltsGone={_vbGone} avgLastDistPx={(_vbGone > 0 ? _vbLastDist / _vbGone : 0):0} avgLastTimeLeft={(_vbGone > 0 ? _vbLastTime / _vbGone : 0):0}";
 
-		public override void Unload() { try { Main.OnTickForThirdPartySoftwareOnly -= DriveServer; } catch { } try { On_Projectile.Update -= OnProjUpdate; On_Projectile.vampireHeal -= VampireHealProbe; On_Projectile.Kill -= OrbKillProbe; On_NPC.UpdateNPC -= OnNpcUpdate; On_NetMessage.SendStrikeNPC -= OnSendStrike; On_NetMessage.SendData -= OnSendData; On_Player.KillMe -= OnPlayerKillMe; } catch { } Enabled = false; _capture?.Detach(); _capture = null; _filter = null; }
+		public override void Unload() { try { Main.OnTickForThirdPartySoftwareOnly -= DriveServer; } catch { } try { On_Projectile.Update -= OnProjUpdate; On_Projectile.vampireHeal -= VampireHealProbe; On_Projectile.Kill -= OrbKillProbe; On_NPC.UpdateNPC -= OnNpcUpdate; On_NetMessage.SendStrikeNPC -= OnSendStrike; On_NetMessage.SendData -= OnSendData; On_Player.KillMe -= OnPlayerKillMe; } catch { } try { BtUnhook(); } catch { } Enabled = false; _capture?.Detach(); _capture = null; _filter = null; }
 
 		public override void OnWorldLoad()
 		{
@@ -813,6 +813,12 @@ namespace Levy.Common.Testing
 			if (h != null && h._ph == Ph.Scenario && global::Levy.Common.Team.TeamItems.HarnessLocal) { Main.player[0].active = true; Main.player[0].dead = false; } // team scenario: the stand-in blinks inactive during the server's player pass; a projectile that homes on a player must not see that
 			// the stand-in player's own projectiles AND Thorium's heal projectiles (which are not "friendly" but only act when Main.myPlayer == owner); with SPSWAP the soldier window does the same, as single player would
 			bool thor = self.owner == 0 && ((self.ModProjectile != null && (self.ModProjectile.Mod.Name == "ThoriumMod" || self.ModProjectile.Mod.Name == "CalamityMod")) || (_vanProbe && self.type == ProjectileID.VampireHeal));
+			if (h != null && _btRefPlayer && h._ph == Ph.Scenario && self.owner == 0 && self.friendly)
+			{
+				int savedBt = Main.myPlayer; Main.myPlayer = 0; Main.player[0].active = true; // boss-trial player reference: the stand-in's own projectiles update as a connected client's do
+				try { orig(self, i); } finally { Main.myPlayer = savedBt; }
+				return;
+			}
 			if (h != null && h._ph == Ph.Run && self.owner == 0 && ((h._stage == 1 && (self.friendly || thor)) || (_spSwap && h._stage == 0 && thor)))
 			{
 				int saved = Main.myPlayer;
@@ -830,6 +836,7 @@ namespace Levy.Common.Testing
 		private static void OnSendStrike(On_NetMessage.orig_SendStrikeNPC orig, NPC npc, ref NPC.HitInfo hit, int ignoreClient)
 		{
 			var h = Enabled ? Instance : null;
+			if (h != null && _btRefPlayer && h._ph == Ph.Scenario && Main.myPlayer == 0 && npc != null && npc.active) { npc.StrikeNPC(hit, true); return; } // boss-trial player reference: apply the strike as the server would a client's
 			if (h != null && h._stage == 1 && h._ph == Ph.Run && Main.myPlayer == 0 && npc != null && npc.active)
 			{
 				h._cur.StrikePackets++;

@@ -251,6 +251,13 @@
   - "did they really win?" The Eye had 13/7534 HP in the last sample, then vanished. The harness logged a kill, but the recorder has no boss-death event.
 - **rec2 builder:** terrain grows with the fight; Static Camera region; bdeath/bdespawn events; "levies alive N of M".
 - **lab3 resumed** after Eve's interrupt stopped it (from WIP dbbc19d): realistic 150–250 tile multi-row arenas, levies spawn inside, vertical-space report.
+- **Eve viewer asks (→ rec2):**
+  - record and draw boss ADDS (creepers, Perforator worms, Desert Nuisances…);
+  - track one levy (weapon, ammo, HP, state, buffs, hits);
+  - an Asteroids-style boss death explosion;
+  - a "Call it" hidden-result guessing mode;
+  - many more fights on the page (~150–200, in batches).
+  - Full-screen was hot-patched into the published page (v2).
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

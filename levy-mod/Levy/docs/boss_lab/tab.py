@@ -1,6 +1,7 @@
 import csv, sys, collections
 # usage: tab.py file.tsv [file2.tsv ...]   -> grouped table (boss mode gear arena n)
 rows = []
+_seen = {}
 for f in sys.argv[1:]:
     try:
         rows += [r for r in csv.DictReader(open(f), delimiter='\t') if r.get('kind') == 'fight']
@@ -9,6 +10,7 @@ for f in sys.argv[1:]:
 def num(r, k, d=0.0):
     try: return float(r[k])
     except Exception: return d
+rows = list({r['key']: r for r in rows}.values())
 g = collections.OrderedDict()
 for r in rows:
     key = (r['boss'], r['mode'], r.get('gear', 'van'), r.get('arena', 'surf') + ('/far' if '|cfar' in r.get('key','') else ''), r.get('n', '10'), r.get('key', '').split('|bhp')[1].split('|')[0] if '|bhp' in r.get('key', '') else '', r.get('key', '').split('|hs')[1].split('|')[0] if '|hs' in r.get('key', '') else '')

@@ -269,7 +269,7 @@
   - The lab's KS Death (Expert+Death, 10 tier-0 levies) won in ~180–200 s with 5–8 deaths. So 10 levies ≈ 0.45 of Eve, i.e. one Eve ≈ 20+ levies, vs the target of 5–8.
   - Caveats: her gear is stronger, Master is harder, n=1.
   - Published on the replay page as "Eve's fights". Barracks button = the map-order path.
-- **fear-events DONE (merged → 2.0.22, building):**
+- **SHIPPED 2.0.22** (event fear, formation, base buffs, map-order fix; booted clean on both toolchains). fear-events DONE:
   - Event fear is the default (FearModel config: Events/Proximity).
   - Formation defense on: 2%/ally within 15 tiles, cap 20% (toggle).
   - Sunflower halves fear gain.
@@ -278,6 +278,36 @@
 - **BUG still open (Eve video 15:14):** AlchemistNPCLite 1.9.9 "Shops Changer" NPC button does nothing (mod name now known) → added to the maporder-fix builder (UI click/close). Spectator potions are CRAFTED only (Shiverthorn + Blinkroot + Lens + Invisibility + Bottled Water @ Bottle).
 - **maporder-fix DONE (merged ba73c78 → 2.0.22):** root cause: on the full-screen map vanilla sets mouseInterface=true before mod map layers draw, and RadioMapLayer only picked when !mouseInterface, so the click NEVER registered (both the Barracks and Radio paths). Fixed with IsPickClick. A Barracks pick closes the map and reopens Barracks. Chat: "N levies sent to <depth band>." Headless maporder harness: 18/18 pass. The same builder is now on the Shops Changer bug.
 - **Shops Changer (AlchemistNPCLite Brewer):** Levy code audited clean. Nothing closes talkNPC, swallows clicks or touches chat for that NPC. Brewer flow: ShopChangeUI.visible; it hides when talkNPC == -1. Unproven. Next: Eve tests with Levy disabled and says whether the Brewer is a Levy officer; client.log.
+- **LAB 3 DONE (origin/lab3 779de7b; docs/boss_lab/lab3/RESULTS3.md; 20 replays published as "Lab 3"):**
+  - Realistic arenas, crystal-fed HP (140→380 by tier), event fear + formation.
+  - **Expert 6/6 everywhere except DS (2/6).** Rev: Eye/Hive/Perfs 6/6, Brain 3/6, EoW 0/6. Vanilla 35/36. Much kinder than lab 2 (several changes at once, no ablation).
+  - **Arms:** food and hazard pay have no effect; rogue levies help (Brain Rev 3/6 → 6/6).
+  - **Ammo:** the armory takes the first stack, no ranking. Brain Rev wins: plain 1/6, best 4/6, Meteor 5/6.
+  - **Vertical:** levies are 69% on the floor, 2% on platform rows.
+  - **Hive Mind and Perforators** are easy (6/6).
+  - **Slime God is BROKEN:** both Paladins despawn within 6 ticks of spawn (likely an inactive target player); may affect real play.
+  - Eve's "Irradiated" rogue set = Sulphurous (its bonus is Poisoned; Irradiated comes from the bubble double jump and Urchin Stinger).
+- **Eve (15:35):**
+  - Slime God may be biome-specific (→ ammo-slimegod).
+  - BUG: King Slime phase-2 crystal (Calamity jewel) targets ONLY the player in real play (→ ammo-slimegod, minion retarget).
+  - Double jump: "they should double jump!" Lab 3's "levies don't double jump" was unverified. vert1 to verify all gear double jumps (incl. Sulphurous set jump bubble) and their effects.
+- **BUG (Eve video 15:39):** levy hook CHAINS drawn from far offscreen (likely from the owner player's MountedCenter) → vert1 builder.
+- **EVE'S KING SLIME SET (Master+Death, real play, Levy 2.0.20–21):**
+  - Solo ×4: 79–97 s (mean ~89), 4–12 hits taken.
+  - **With 13 levies ×2: 113 s and 102 s (SLOWER), 11 of 13 levies dead each time** (several in the first 4–8 s), mostly to ONE King Slime body hit each. Eve took MORE damage (611 vs ~200) despite the boss being on levies 64–88% of the time.
+  - Levy gear: Mana Rose, Wulfrum Knife, Slime Staff, Minishark, Boomstick, Antlion Skewer, Stormjaw.
+  - KS max HP 5355 both ways (no visible scaling).
+  - Ruby Jewel hits levies with its shots but targets Eve.
+  - Goblin army: 25 levies, 1 death; Eve's "surprise" was not in the recording. **Audio cut out (only music left):** possible sound-voice exhaustion from many levies, uninvestigated.
+  - **Verdict:** in real Master+Death, an early army is a net NEGATIVE vs KS. Durability (one-shot) + low damage + it pulls the boss's attention so Eve's own hits land less.
+- **Launched:**
+  - vert1: levies use platform rows;
+  - ammo-slimegod: best-ammo armory rule + Slime God despawn.
+- **Eve (15:35):**
+  - Slime God may be biome-specific (→ ammo-slimegod).
+  - BUG: King Slime phase-2 crystal (Calamity jewel) targets ONLY the player in real play (→ ammo-slimegod, minion retarget).
+  - Double jump: "they should double jump!" Lab 3's "levies don't double jump" was unverified. vert1 to verify all gear double jumps (incl. Sulphurous set jump bubble) and their effects.
+- **BUG (Eve video 15:39):** levy hook CHAINS drawn from far offscreen (likely from the owner player's MountedCenter) → vert1 builder.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

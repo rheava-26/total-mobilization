@@ -17,7 +17,9 @@ namespace Levy.Common.Options
 			Mod.Logger.Info($"[FearCheck] {(ok ? "PASS" : "FAIL")} {name}{(detail.Length > 0 ? " :: " + detail : "")}");
 		}
 
-		public override void PostSetupRecipes()
+		public override void PostSetupRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostSetupRecipesCore);
+
+		private void PostSetupRecipesCore()
 		{
 			string env = System.Environment.GetEnvironmentVariable("LEVY_FEARCHECK");
 			if (env == "0" || (!Main.dedServ && env != "1")) return;

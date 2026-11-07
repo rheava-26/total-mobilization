@@ -24,7 +24,9 @@ namespace Levy.Common.Logistics
 		private static long Held(ArmoryTE a, int type) => a.CountInStorage(type);
 		private static int PerCraft(int outType, int ingIndex = 0) { var r = Crafting.RecipesFor(outType)[0]; return Crafting.Ingredients(r)[ingIndex].Count; }
 
-		public override void PostSetupRecipes()
+		public override void PostSetupRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostSetupRecipesCore);
+
+		private void PostSetupRecipesCore()
 		{
 			var failures = new List<string>(); int ok = 0;
 			void Check(bool cond, string what) { if (cond) ok++; else failures.Add(what); }

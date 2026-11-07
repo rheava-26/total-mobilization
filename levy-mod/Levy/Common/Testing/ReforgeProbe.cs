@@ -20,7 +20,9 @@ namespace Levy.Common.Testing
 	{
 		private const long Treasury = 2_000_000;
 
-		public override void PostSetupRecipes()
+		public override void PostSetupRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostSetupRecipesCore);
+
+		private void PostSetupRecipesCore()
 		{
 			if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_REFORGEPROBE"))) return;
 			var sb = new StringBuilder();

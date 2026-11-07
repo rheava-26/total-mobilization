@@ -84,7 +84,9 @@ namespace Levy.Common.UI
 	{
 		private static readonly string[] Banned = { "no longer", "used to", "instead of", "unlike", "previously", "formerly" };
 
-		public override void PostSetupRecipes()
+		public override void PostSetupRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostSetupRecipesCore);
+
+		private void PostSetupRecipesCore()
 		{
 			string env = Environment.GetEnvironmentVariable("LEVY_GUIDECHECK");
 			if (env == "0" || (!Main.dedServ && env != "1")) return;

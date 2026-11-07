@@ -12,7 +12,9 @@ namespace Levy.Common.Dialogue
 	/// </summary>
 	public class OfficerDialogueCheck : ModSystem
 	{
-		public override void PostAddRecipes()
+		public override void PostAddRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostAddRecipesCore);
+
+		private void PostAddRecipesCore()
 		{
 			var failures = new List<string>();
 			int voiced = 0;

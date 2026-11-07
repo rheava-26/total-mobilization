@@ -9,7 +9,9 @@ namespace Levy.Common.Compat.MagicStorageLink
 	/// </summary>
 	public class MagicStorageCheck : ModSystem
 	{
-		public override void PostSetupRecipes()
+		public override void PostSetupRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostSetupRecipesCore);
+
+		private void PostSetupRecipesCore()
 		{
 			if (!ModLoader.HasMod("MagicStorage") || !MagicStorageCompatSystem.Active) return;
 			try { Run(); }

@@ -6,7 +6,9 @@ namespace Levy.Common.Targeting
 	/// <summary>Boot self-check: a scratch Player in ZoneCrimson/ZoneJungle/Underworld (+ the first loaded ModBiome, if any) is copied onto a scratch dummy by BiomeMirror and must read back the same zones.</summary>
 	public class BiomeMirrorCheck : ModSystem
 	{
-		public override void PostSetupContent()
+		public override void PostSetupContent() => global::Levy.Common.Util.LoadSafe.Run(PostSetupContentCore);
+
+		private void PostSetupContentCore()
 		{
 			var fails = new System.Collections.Generic.List<string>();
 			string modBiomeNote = "no ModBiome loaded";

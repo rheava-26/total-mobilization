@@ -17,7 +17,9 @@ namespace Levy.Common.UI
 		private static Item Make(int type) { var it = new Item(); it.SetDefaults(type); return it; }
 		private static bool IsAirItem(Item it) => it == null || it.IsAir || it.stack <= 0;
 
-		public override void PostSetupRecipes()
+		public override void PostSetupRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostSetupRecipesCore);
+
+		private void PostSetupRecipesCore()
 		{
 			var failures = new List<string>();
 			int ok = 0;

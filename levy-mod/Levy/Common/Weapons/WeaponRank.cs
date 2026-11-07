@@ -102,6 +102,7 @@ namespace Levy.Common.Weapons
 			else
 			{
 				double key = Math.Max(0, it.value);
+				if (mode == WeaponRankMode.Balanced && p.Family == WeaponFamily.Summon && it.damage > 0) key = WeaponClassifier.Score(it) * (double)LevyConstants.SummonRankCopperPerScore; // a minion staff ranks on what its minions deal: the Slime Staff's 100 000-copper price (8 damage) must not outrank a 25-damage staff
 				if (mode == WeaponRankMode.SellPricePlusMaterials) key += MaterialCost.Of(it.type);
 				r = (float)Math.Pow(Math.Max(1d, key), PriceExponent); // at least 1: a worthless item is the cheapest of the real weapons
 				if (explain) { bd.Key = key; bd.Base = r; }

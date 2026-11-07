@@ -298,6 +298,17 @@ namespace Levy.Common.Weapons
 				WeaponRank.ForceProgress = 2f;
 				var slimeStaff = Make(ItemID.SlimeStaff); var impStaff = Make(ItemID.ImpStaff); var hornetStaff = Make(ItemID.HornetStaff); var frogStaff = Make(ItemID.VampireFrogStaff);
 				check(WeaponRank.Of(slimeStaff) < WeaponRank.Of(impStaff) && WeaponRank.Of(slimeStaff) < WeaponRank.Of(hornetStaff) && WeaponRank.Of(slimeStaff) < WeaponRank.Of(frogStaff), "a minion staff ranks on its damage, so the Slime Staff (8 damage, 100000 copper) does not outrank the Imp, Hornet or Vampire Frog staff");
+				// sentries and whips rank on their damage too (flat tier prices, priced drops): see docs/RANK_AUDIT.md
+				var bal3 = Make(ItemID.DD2BallistraTowerT3Popper); var aura3 = Make(ItemID.DD2LightningAuraT3Popper); var flame3 = Make(ItemID.DD2FlameburstTowerT3Popper);
+				check(bal3.value == aura3.value && WeaponRank.Of(bal3) > WeaponRank.Of(aura3) * 1.15f && WeaponRank.Of(flame3) > WeaponRank.Of(aura3) * 1.15f, "equally priced DD2 tier-3 sentries rank on damage: Ballistra (156) and Flameburst (88) clearly over Lightning Aura (34)");
+				var rainbowCrystal = Make(ItemID.RainbowCrystalStaff); var frostHydra = Make(ItemID.StaffoftheFrostHydra); var queenSpider = Make(ItemID.QueenSpiderStaff);
+				check(WeaponRank.Of(rainbowCrystal) > WeaponRank.Of(frostHydra) * 1.15f, "a 130-damage sentry (Rainbow Crystal Staff, 500000 copper) outranks a 100-damage one priced twice as high (Frost Hydra, 1000000)");
+				check(WeaponRank.Of(bal3) > WeaponRank.Of(queenSpider), "a 156-damage tier-3 tower outranks a 26-damage sentry priced a third lower");
+				var leather = Make(ItemID.BlandWhip); var bone = Make(ItemID.BoneWhip); var thorn = Make(ItemID.ThornWhip);
+				check(leather.value > bone.value && WeaponRank.Of(bone) > WeaponRank.Of(leather) * 1.15f && WeaponRank.Of(bone) > WeaponRank.Of(thorn), "whips rank on damage: the Bone Whip (27) outranks the Leather Whip (14, priced higher) and the Thorn Whip (18)");
+				WeaponRank.Force(WeaponRankMode.SellPrice, false);
+				check(Math.Abs(WeaponRank.Of(leather) - price(leather)) < 0.01f && Math.Abs(WeaponRank.Of(aura3) - price(aura3)) < 0.01f && WeaponRank.Of(leather) > WeaponRank.Of(bone), "the price modes still rank whips and sentries on the shop price");
+				WeaponRank.Force(WeaponRankMode.Balanced, false);
 				WeaponRank.ForceProgress = 13f; // after Golem
 				check(WeaponRank.Of(mini) < 0.1f * price(mini) && WeaponRank.Of(copper) >= 1f, "a Minishark after Golem is heavily discounted, and no rank is below 1");
 				// recency

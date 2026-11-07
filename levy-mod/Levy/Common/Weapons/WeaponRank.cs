@@ -60,6 +60,18 @@ namespace Levy.Common.Weapons
 		internal static void Force(WeaponRankMode mode, bool skipArmored) { _forced = true; _forcedMode = mode; _forcedSkip = skipArmored; }
 		internal static void Release() { _forced = false; }
 
+		/// <summary>Families whose shop price says nothing about their strength (flat-priced towers, drops priced like staffs, whips in fixed price bands): in Balanced mode they rank on <see cref="WeaponClassifier.Score"/> times this many copper per point.</summary>
+		public static bool ScoreRanked(WeaponFamily f, out float copperPerScore)
+		{
+			switch (f)
+			{
+				case WeaponFamily.Summon: copperPerScore = LevyConstants.SummonRankCopperPerScore; return true;
+				case WeaponFamily.Sentry: copperPerScore = LevyConstants.SentryRankCopperPerScore; return true;
+				case WeaponFamily.Whip: copperPerScore = LevyConstants.WhipRankCopperPerScore; return true;
+				default: copperPerScore = 0f; return false;
+			}
+		}
+
 		/// <summary>The rank of a weapon under the current mode: higher is better, 0 for an item that is not a supported weapon (or one the current armory's rules exclude).</summary>
 		public static float Of(Item it) => Core(it, false, out _);
 
@@ -102,7 +114,7 @@ namespace Levy.Common.Weapons
 			else
 			{
 				double key = Math.Max(0, it.value);
-				if (mode == WeaponRankMode.Balanced && p.Family == WeaponFamily.Summon && it.damage > 0) key = WeaponClassifier.Score(it) * (double)LevyConstants.SummonRankCopperPerScore; // a minion staff ranks on what its minions deal: the Slime Staff's 100 000-copper price (8 damage) must not outrank a 25-damage staff
+				if (mode == WeaponRankMode.Balanced && it.damage > 0 && ScoreRanked(p.Family, out float copperPerScore)) key = WeaponClassifier.Score(it) * (double)copperPerScore; // a minion staff, sentry or whip ranks on what it deals: the Slime Staff's 100 000-copper price (8 damage) must not outrank a 25-damage staff, nor a flat-priced DD2 tower outrank a stronger one
 				if (mode == WeaponRankMode.SellPricePlusMaterials) key += MaterialCost.Of(it.type);
 				r = (float)Math.Pow(Math.Max(1d, key), PriceExponent); // at least 1: a worthless item is the cheapest of the real weapons
 				if (explain) { bd.Key = key; bd.Base = r; }

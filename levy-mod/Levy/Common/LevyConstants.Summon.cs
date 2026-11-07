@@ -143,6 +143,8 @@ namespace Levy.Common
 		public const float SummonScoreBaseSlots = 1.5f, SummonScoreSlotsPerTier = 0.2f, SummonScoreMaxSlots = 4f;
 		/// <summary>A minion staff's Balanced rank is priced from its damage score, not its shop price (a drop's price says nothing about its minions): copper per point of the staff's score. About what a crafted staff of the same strength sells for, so staves rank on the same footing as the other classes.</summary>
 		public const float SummonRankCopperPerScore = 800f;
+		/// <summary>Balanced rank of a sentry and of a whip: copper per point of Score, the same 800 as a minion staff, which is also the median shop price per point of Score of crafted guns (873) and magic weapons (831), so a summoner's staff, sentry and whip sit on one footing with the other classes. Sentries are flat-priced by tier (all three DD2 tier-3 towers cost 750 000 whatever they deal) and drops are priced like staffs (Spikecrag Staff 600 000 for 25 damage); whips sit in fixed price bands (Leather Whip 100 000 for 14 damage over the Bone Whip's 75 000 for 27).</summary>
+		public const float SentryRankCopperPerScore = 800f, WhipRankCopperPerScore = 800f;
 		/// <summary>Armor doctrine: each extra minion slot (maxMinions above the bare 1) counts like this much damage bonus.</summary>
 		public const float MinionDoctrineWeight = 0.06f;
 		/// <summary>Standoff reach (tiles) the brain assumes for a soldier holding only a summon weapon.</summary>

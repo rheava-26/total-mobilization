@@ -10,7 +10,7 @@ using Levy.Common.Weapons;
 namespace Levy.Common.Testing
 {
 	/// <summary>
-	/// TEST-ONLY dump for docs/RANK_AUDIT.md (changes no game behaviour; does nothing unless LEVY_RANKAUDIT=&lt;output path&gt; is set). At PostSetupRecipes writes one TSV row per issuable weapon of vanilla and of the mods named
+	/// TEST-ONLY dump for docs/RANK_AUDIT.md (changes no game behaviour; does nothing unless LEVY_RANKAUDIT=&lt;output path&gt; is set). Once a world is loaded (the progression tiers need it) writes one TSV row per issuable weapon of vanilla and of the mods named
 	/// in LEVY_RANKAUDIT_MODS (default CalamityMod): family, damage class, damage, rarity, value, Score, tier, found flag, and the Balanced rank at world progress 0 / 2 / 5 / 7 / 12 / 18
 	/// (before any boss, after Eye, after Skeletron, early Hardmode, after Plantera, after Moon Lord). Ranks are taken with the armory rules and deposit recency out of the picture.
 	/// </summary>
@@ -18,10 +18,17 @@ namespace Levy.Common.Testing
 	{
 		public static readonly float[] Stages = { 0f, 2f, 5f, 7f, 12f, 18f };
 
-		public override void PostSetupRecipes()
+		private static bool _ran, _enabled; private static int _ticks; private static RankAuditDump _inst;
+		public override void Load() { _enabled = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_RANKAUDIT")); _inst = this; if (_enabled) Main.OnTickForThirdPartySoftwareOnly += Tick; }
+		public override void Unload() { try { Main.OnTickForThirdPartySoftwareOnly -= Tick; } catch { } _enabled = false; _inst = null; }
+		private static void Tick() { _inst?.Run(); }
+
+		private void Run()
 		{
+			if (!_enabled || _ran || Main.netMode == NetmodeID.MultiplayerClient || !Main.dedServ || ++_ticks < 600) return;
+			_ran = true;
+			ProgressionTier.EnsureBuilt();
 			string outp = Environment.GetEnvironmentVariable("LEVY_RANKAUDIT");
-			if (string.IsNullOrEmpty(outp)) return;
 			try
 			{
 				var sb = new StringBuilder();

@@ -104,6 +104,12 @@ namespace Levy.Common.Dialogue
 			return PickFromPool(PoolFor(trigger, ctx), rec, ctx, body, ignoreRepeat, avoidId, out picked, mark);
 		}
 
+		/// <summary>Self-check hook: the filled text of one line for this speaker, or null when its conditions or placeholders do not resolve.</summary>
+		internal static string RenderOne(DialogueLine line, SoldierRecord rec)
+		{
+			return PickFromPool(new List<DialogueLine> { line }, rec, null, null, true, -1, out _, false);
+		}
+
 		/// <summary>The shared picker: filter, placeholders and repeat cooldown over an explicit pool (a trigger's, a boss's or an officer's).</summary>
 		private static string PickFromPool(List<DialogueLine> pool, SoldierRecord rec, DialogueContext ctx, SoldierNPC body, bool ignoreRepeat, int avoidId, out DialogueLine picked, bool mark)
 		{
@@ -121,6 +127,7 @@ namespace Levy.Common.Dialogue
 				if (line.Id == avoidId) continue;
 				if (!ignoreRepeat && LineUsed.TryGetValue(line.Id, out int last) && Within(last, now, LevyConstants.LineRepeatCooldownTicks)) continue;
 				if (!NpcsAlive(line)) continue;
+				if (line.Cond != LineCond.None && !RosterFacts.Matches(line.Cond, rec)) continue;
 				if (!Fill.Can(line.Needs)) continue;
 				Candidates.Add(line);
 				totalWeight += line.Filter == LineFilter.Any ? 1 : LevyConstants.DialoguePersonalityWeight;
@@ -207,6 +214,7 @@ namespace Levy.Common.Dialogue
 			private SoldierNPC _body;
 			private LineNeeds _resolved;
 			private string _name, _comrade, _boss, _killer, _town, _wage;
+			private SoldierRecord _tank, _glutton;
 			private string _player;
 
 			public void Begin(SoldierRecord rec, DialogueContext ctx, SoldierNPC body)
@@ -214,12 +222,13 @@ namespace Levy.Common.Dialogue
 				_rec = rec; _ctx = ctx; _body = body ?? BodyOf(rec);
 				_resolved = LineNeeds.None;
 				_name = _comrade = _boss = _killer = _town = _wage = _player = null;
+				_tank = _glutton = null;
 			}
 
 			public bool Can(LineNeeds needs)
 			{
 				if (needs == LineNeeds.None) return true;
-				for (int bit = 1; bit <= (int)LineNeeds.Wage; bit <<= 1)
+				for (int bit = 1; bit <= (int)LineNeeds.Glutton; bit <<= 1)
 					if (((int)needs & bit) != 0 && Value((LineNeeds)bit) == null) return false;
 				return true;
 			}
@@ -239,6 +248,8 @@ namespace Levy.Common.Dialogue
 							case LineNeeds.Killer: _killer = NonEmpty(_ctx?.Killer) ?? NonEmpty(_body?.LastAttackerName); break;
 							case LineNeeds.Town: _town = NonEmpty(_ctx?.Town) ?? NonEmpty(HomeTown()); break;
 							case LineNeeds.Wage: _wage = NonEmpty(_ctx?.Wage) ?? WageText(); break;
+							case LineNeeds.Tank: _tank = RosterFacts.DeathLeader(_rec); break;
+							case LineNeeds.Glutton: _glutton = RosterFacts.KillLeader(_rec); break;
 						}
 					}
 					catch (Exception)
@@ -254,6 +265,8 @@ namespace Levy.Common.Dialogue
 					case LineNeeds.Boss: return _boss;
 					case LineNeeds.Killer: return _killer;
 					case LineNeeds.Town: return _town;
+					case LineNeeds.Tank: return _tank?.Name;
+					case LineNeeds.Glutton: return _glutton?.Name;
 					default: return _wage;
 				}
 			}
@@ -301,6 +314,11 @@ namespace Levy.Common.Dialogue
 						case PlaceholderKind.Killer: Scratch.Append(Value(LineNeeds.Killer)); break;
 						case PlaceholderKind.Town: Scratch.Append(Value(LineNeeds.Town)); break;
 						case PlaceholderKind.Wage: Scratch.Append(Value(LineNeeds.Wage)); break;
+						case PlaceholderKind.Tank: Scratch.Append(Value(LineNeeds.Tank)); break;
+						case PlaceholderKind.TankDeaths: Scratch.Append(_tank?.Deaths ?? 0); break;
+						case PlaceholderKind.TankHe: Scratch.Append(_tank == null ? "" : _tank.Male ? "he's" : "she's"); break;
+						case PlaceholderKind.Glutton: Scratch.Append(Value(LineNeeds.Glutton)); break;
+						case PlaceholderKind.GluttonKills: Scratch.Append(_glutton?.Kills ?? 0); break;
 						case PlaceholderKind.TownNpc:
 						{
 							int idx = NPC.FindFirstNPC(p.NpcType);

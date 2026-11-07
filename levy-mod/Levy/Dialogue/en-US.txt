@@ -44,6 +44,10 @@
 #              (only when the game names one; otherwise the line is skipped, never shown with a gap)
 #   {Killer}   what killed the soldier                 {Town}     the settlement
 #   {Wage}     the soldier's daily wage
+#   {Tank} {TankHe} {TankDeaths}        the levy with the most deaths ("he's"/"she's"); only 3 or more, never the speaker
+#   {Glutton} {GluttonKills}            the levy with the most kills; only 25 or more, never the speaker
+#   A line may start with a [condition]: [summoner] (the speaker is one), [non-summoner] (the speaker is not, and the army has one),
+#   [fragile] (most levies have under 200 max HP).
 #   Town NPCs (the line only fires while that NPC lives in the world):
 #   {Guide} {Nurse} {ArmsDealer} {Demolitionist} {Merchant} {Dryad} {Clothier} {PartyGirl} {Tavernkeep} {TaxCollector}
 #   {Mechanic} {GoblinTinkerer} {Wizard} {Steampunker} {Cyborg} {Pirate} {Truffle} {Stylist} {Angler} {DyeTrader}
@@ -137,6 +141,20 @@ IDLE | Any | All quiet. I hate it when it's quiet.
 IDLE | Any | Nothing to report. Don't make me make something up.
 IDLE | Any | Just standing here. It's most of the job.
 IDLE | Any | The sky is still up there. Good for the sky.
+IDLE | Any | Man, this would be even scarier if we could actually feel pain.
+IDLE | Any | When we finally get the ability to sleep, I'm going to use every piece of silk on the planet.
+IDLE | Any | Do we get to keep the money we find lying around?
+IDLE | Any | [fragile] What's even the point of this armor? Most of us die in one hit anyway!
+IDLE | Any | [summoner] W-what? No, I'm not a summoner! You must be imagining things!
+IDLE | Any | [non-summoner] Can't believe we have to work with... summoners.
+IDLE | Any | {Tank} is really good at tanking hits. I mean, {TankHe} already died {TankDeaths} times. What a badass!
+IDLE | Any | Can't believe {Glutton} is so greedy! They've already killed {GluttonKills} monsters! Leave some for the rest of us!
+IDLE | Any | [non-summoner] A summoner told me their minions are a lot of work. I watched. They waved a stick.
+IDLE | Any | [non-summoner] I'm not saying summoners are lazy. I'm saying I have never seen one carry anything.
+IDLE | Any | [non-summoner] If a summoner's minion kills something, who gets the credit? Don't answer. I'll get angry.
+IDLE | Any | [summoner] The others go quiet when I walk past. I assume that's respect.
+IDLE | Any | [summoner] I do my own fighting. Mostly. By proxy. Don't look at me like that.
+IDLE | Any | {Tank} treats dying like a hobby. I'm starting to respect it.
 
 # ---------------------------------------------------------------- IDLE_NIGHT
 IDLE_NIGHT | Any | Night shift. Again. Did I enlist, or get sentenced?

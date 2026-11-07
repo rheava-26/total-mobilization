@@ -993,7 +993,7 @@ namespace Levy.Common.Systems
 				Town = SettlementSystem.Instance.TownName(home),
 			};
 
-			rec.Dead = true; rec.BodyIndex = -1; rec.CurrentHp = 0; rec.Fear = 0f;
+			rec.Dead = true; rec.BodyIndex = -1; rec.CurrentHp = 0; rec.Fear = 0f; rec.Deaths++;
 			rec.LastDeathTick = (int)Main.GameUpdateCount;
 			if (rec.Kind == SoldierKind.Regular)
 			{

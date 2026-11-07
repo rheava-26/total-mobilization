@@ -49,7 +49,7 @@ namespace Levy.Common.Testing
 		{
 			switch (run.Boss)
 			{
-				case "kslime": foreach (int t in new[] { NPCID.BlueSlime, NPCID.SlimeSpiked, NPCID.GreenSlime, NPCID.PurpleSlime, NPCID.RedSlime, NPCID.YellowSlime, NPCID.IceSlime, NPCID.JungleSlime, NPCID.BlackSlime }) s.AddTypes.Add(t); break;
+				case "kslime": foreach (int t in new[] { NPCID.BlueSlime, NPCID.SlimeSpiked, NPCID.GreenSlime, NPCID.PurpleSlime, NPCID.RedSlime, NPCID.YellowSlime, NPCID.IceSlime, NPCID.JungleSlime, NPCID.BlackSlime }) s.AddTypes.Add(t); { int jw = CrCalNpc("KingSlimeJewelRuby"); if (jw > 0) s.AddTypes.Add(jw); } break;
 				case "brain": s.AddTypes.Add(NPCID.Creeper); break;
 				case "eow": s.BodyType = NPCID.EaterofWorldsBody; s.TailType = NPCID.EaterofWorldsTail; s.PartTypes.Add(NPCID.EaterofWorldsHead); s.PartTypes.Add(NPCID.EaterofWorldsBody); s.PartTypes.Add(NPCID.EaterofWorldsTail); break;
 				case "ds":

@@ -394,6 +394,7 @@ namespace Levy.Common.Testing
 
 		// -------------------------------------------------------------------------------------------------- step
 		private CrState _crS;
+		private static readonly int[] _ksJewel = new int[3];
 		private bool _crBrainRun;
 		private int _crTickInRun;
 		private void StepCalRev()
@@ -557,6 +558,16 @@ namespace Levy.Common.Testing
 			int adds = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && st.AddTypes.Contains(Main.npc[i].type)) adds++;
 			st.AddsPeak = Math.Max(st.AddsPeak, adds); st.MaxAdds = st.AddsPeak;
 			CrSampleTick(st, e, bossAlive, adds);
+			if (run.Boss == "kslime" && st.Tick % 30 == 0)
+			{
+				// king slime probe: the crystal (Calamity's jewel) target class each half second: 0 levy, 1 player, 2 none. Totals go to the log at the end of the run through the counters below.
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC q = Main.npc[i]; if (!q.active || q.ModNPC == null || q.ModNPC.Name != "KingSlimeJewelRuby") continue;
+					int c = CrTgtClass(q); _ksJewel[c]++;
+				}
+				if (st.Tick % 600 == 0) Mod.Logger.Info($"HARNESS-KS: tick {st.Tick} jewel samples levy/player/none = {_ksJewel[0]}/{_ksJewel[1]}/{_ksJewel[2]}");
+			}
 			if (run.Boss == "sg" && (st.Tick == 6 || st.Tick == 60 || st.Tick % 600 == 0))
 			{
 				// slime-god probe: the Paladins' AI state. ai[0] 3/4 is the despawn state (no valid target); Core hp shows whether the shield is down.
@@ -564,7 +575,7 @@ namespace Levy.Common.Testing
 				for (int i = 0; i < Main.maxNPCs; i++)
 				{
 					NPC q = Main.npc[i]; if (!q.active || q.ModNPC == null || q.ModNPC.Mod.Name != "CalamityMod" || !(q.ModNPC.Name.Contains("Paladin") || q.ModNPC.Name.Contains("SlimeGod"))) continue;
-					sb.Append($" {q.ModNPC.Name}#{i}[hp {q.life}/{q.lifeMax} ai0={q.ai[0]} tgt={q.target} inv={q.dontTakeDamage} opac={q.Opacity:0.0} kin={(global::Levy.Common.Globals.LevyNpcData.Of(q).BossKin)}]");
+					sb.Append($" {q.ModNPC.Name}#{i}[hp {q.life}/{q.lifeMax} ai0={q.ai[0]} tgt={q.target} inv={q.dontTakeDamage} opac={q.Opacity:0.0} owner={(global::Levy.Common.Globals.LevyNpcData.Of(q).BossOwner)}]");
 				}
 				Mod.Logger.Info($"HARNESS-SG: tick {st.Tick}{sb}");
 			}

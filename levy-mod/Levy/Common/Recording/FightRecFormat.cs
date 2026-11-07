@@ -15,6 +15,10 @@ namespace Levy.Common.Recording
 	///         Format 2 adds: lhit (levy id, dmg, src body|minion|proj|other, by boss|minion|world, npc type, proj type, life after, x, y, kill), ldeath (id, x, y, npc, by),
 	///         tgt (boss target changed: kind 0 none / 1 player / 2 levy, levy id, boss slot). Format 2 also adds B[14] tkind, B[15] tlevy, L[10] lifeMax, hdr.meta, end.target.
 	///         Format 3 adds the hitbox width and height in pixels (the game's own NPC / Projectile width and height, centred on x,y): B[16],B[17], J[6],J[7], L[11],L[12].
+	///         Format 4 adds: several arena records (the first is the 200x120 start area; later ones are non-overlapping strips written when the commander, a boss part or a levy leaves the captured area, plus the Static Camera view when one stands near the fight;
+	///         together they tile the covered terrain), a cam record (id, name, x,y view centre tile, x0,y0,w,h view rectangle in tiles, zoom), and boss outcome events:
+	///         bdeath (the boss died) / bdespawn (it left alive): tick t, npc, name, id, x,y last position px, life, max, final (1 = the fight's end), and the last hit ht (tick), hd (damage), hs (item|proj|other), hy (item / projectile type), hn (name). end gains outcome (killed|despawn|none) and arenaChunks.
+	///         Format 5 adds the frame key a (hostile adds and minions that are not boss parts: creepers, servants, worms, bees, slimes; schema SchemaA) and the event lbuf (id, b = [[buffType,timeLeft],..]: a levy's buffs, written when they change).
 	///         Older files stay readable: every new field is appended or optional.
 	///   names type id to name tables (items, npcs, projectiles, buffs, soldiers), written at the end
 	///   end   stop reason and counts
@@ -31,15 +35,18 @@ namespace Levy.Common.Recording
 		public List<double[]> J = new();
 		/// <summary>[recordId,x,y,vx,vy,flags,life,stateIndex,heldType,wingTime]</summary>
 		public List<double[]> L = new();
+		/// <summary>[type,whoAmI,x,y,vx,vy,life,lifeMax,tkind,tlevy,w,h]</summary>
+		public List<double[]> A = new();
 	}
 
 	internal static class FightRecFormat
 	{
-		public const int Version = 3;
+		public const int Version = 5;
 		public const string SchemaP = "x,y,vx,vy,dir,flags,life,mana,immune,wingTime,rocketTime,held,mount,hookX,hookY,dashDelay";
 		public const string SchemaPFlags = "1 grounded,2 flying,4 hookOut,8 hookAttached,16 left,32 right,64 jump,128 down,256 up,512 grapple,1024 useItem,2048 dashing,4096 mounted,8192 dead";
 		public const string SchemaB = "type,id,x,y,vx,vy,life,lifeMax,ai0,ai1,ai2,ai3,target,isPart,tkind,tlevy,w,h";
 		public const string TKinds = "0 none,1 player,2 levy (tlevy = levy record id)";
+		public const string SchemaA = "type,id,x,y,vx,vy,life,lifeMax,tkind,tlevy,w,h";
 		public const string SchemaJ = "type,x,y,vx,vy,damage,w,h";
 		public const string SchemaL = "id,x,y,vx,vy,flags,life,state,held,wingTime,lifeMax,w,h";
 		public const string SchemaLFlags = "1 grounded,2 flying,4 aerial,8 hooking,16 blocked";
@@ -92,7 +99,7 @@ namespace Levy.Common.Recording
 		{
 			var sb = new StringBuilder(256);
 			sb.Append("{\"k\":\"f\",\"t\":").Append(f.T).Append(",\"p\":"); Arr(sb, f.P);
-			Rows(sb, "b", f.B); Rows(sb, "j", f.J); Rows(sb, "l", f.L);
+			Rows(sb, "b", f.B); Rows(sb, "j", f.J); Rows(sb, "l", f.L); Rows(sb, "a", f.A);
 			return sb.Append('}').ToString();
 		}
 
@@ -142,6 +149,7 @@ namespace Levy.Common.Recording
 				f.B.Add(new double[] { 4, 7, 5000, 3000.5, 1.5, -2, 2800, 3000, 1, 0, 0, 0, 0, 0, 2, 12 });
 				f.J.Add(new double[] { 83, 5100, 3050, 4, 4, 30 });
 				f.L.Add(new double[] { 12, 4900, 3100, 0, 0, 1, 500, 2, 757, 0, 600 });
+				f.A.Add(new double[] { 267, 30, 5200, 3000, 1, 2, 40, 40, 2, 12, 20, 20 });
 				string line = Frame(f);
 				using (var d = JsonDocument.Parse(line))
 				{
@@ -152,12 +160,16 @@ namespace Levy.Common.Recording
 					if (r.GetProperty("b")[0][1].GetInt32() != 7 || Math.Abs(r.GetProperty("b")[0][3].GetDouble() - 3000.5) > 0.051) return "boss array";
 					if (r.GetProperty("j")[0][5].GetInt32() != 30) return "projectile array";
 					if (r.GetProperty("l")[0][8].GetInt32() != 757) return "levy array";
+					if (r.GetProperty("a")[0][1].GetInt32() != 30 || r.GetProperty("a")[0][9].GetInt32() != 12) return "adds array";
 				}
 				string ev = Event(99, "use", ("item", "757"), ("name", Esc("Sword \"X\"\n")));
 				using (var d = JsonDocument.Parse(ev))
 					if (d.RootElement.GetProperty("e").GetString() != "use" || d.RootElement.GetProperty("item").GetInt32() != 757 || d.RootElement.GetProperty("name").GetString() != "Sword \"X\" ") return "event";
 				var codes = new List<int> { 0, 0, 0, 1, 1, 2, 3, 3, 0 };
 				var rle = RleEncode(codes);
+				string bd = Event(77, "bdeath", ("npc", "4"), ("name", Esc("Eye of Cthulhu")), ("x", N(100.4)), ("y", N(200)), ("life", "0"), ("final", "1"), ("hs", Esc("proj")));
+				using (var d = JsonDocument.Parse(bd))
+					if (d.RootElement.GetProperty("e").GetString() != "bdeath" || d.RootElement.GetProperty("final").GetInt32() != 1 || d.RootElement.GetProperty("hs").GetString() != "proj") return "boss end event";
 				string a = Arena(10, 20, 9, 1, new List<int[]> { rle.ToArray() });
 				using (var d = JsonDocument.Parse(a))
 				{

@@ -5,7 +5,7 @@ usage: make_site.py <outdir> <set-name>=<dir> [<set-name>=<dir> ...] [--hz 15] [
 
   make_site.py /tmp/replay-site lab1=replays/notable lab2=replays/notable2 worm=replays/worm5 options=replays/options lab3=replays/lab3
 
-For every set directory it reads the recordings (*.jsonl or *.jsonl.gz, FightRecorder format 1-3), the optional index.txt
+For every set directory it reads the recordings (*.jsonl or *.jsonl.gz, FightRecorder format 1-4), the optional index.txt
 ("why it's notable" notes) and each recording's header meta, and writes
 
   <outdir>/index.html            copy of site/index.html (the page, no data inside)
@@ -19,7 +19,7 @@ The whole <outdir> is what gets published (static files, relative URLs only). Ol
 import argparse, glob, gzip, json, os, re, shutil, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TITLES = {"lab1": "Lab 1", "lab2": "Lab 2", "lab3": "Lab 3", "worm": "Worm round", "worm5": "Worm round", "options": "Options"}
+TITLES = {"rec2": "Recorder test", "lab1": "Lab 1", "lab2": "Lab 2", "lab3": "Lab 3", "worm": "Worm round", "worm5": "Worm round", "options": "Options"}
 MODES = {"exp": "Expert", "rev": "Rev", "death": "Death", "revoff": "Rev, rage off"}
 ARENAS = {"surf": "Surface", "ug": "Underground"}
 FLED_PX = 50000          # a boss that ends this far from where it began has left the fight
@@ -115,7 +115,16 @@ def summarize(rows):
         if mb is not None:
             life = mb[6] / max(1, mb[7])
             break
-    if far > FLED_PX and not gone:
+    # format 4 records the boss's end explicitly (bdeath: it died, bdespawn: it left alive); older files are inferred from the frames
+    bend = [e for e in ev if e.get("e") in ("bdeath", "bdespawn")]
+    fin = ([e for e in bend if e.get("final", 1) != 0] or bend or [None])[-1]
+    if fin is not None and fin["e"] == "bdeath":
+        result = "win"
+    elif fin is not None and n_levies and deaths >= n_levies:
+        result = "loss"
+    elif fin is not None:
+        result = "despawn"
+    elif far > FLED_PX and not gone:
         result = "fled"
     elif n_levies and deaths >= n_levies:
         result = "loss"
@@ -133,6 +142,7 @@ def summarize(rows):
         "pl": round(100.0 * tally[2] / n, 1), "pp": round(100.0 * tally[1] / n, 1),
         "hits": len(lhit), "dmg": sum(e.get("dmg", 0) for e in lhit), "deaths": deaths,
         "dur": round(dur, 1), "hasT": any(len(b) > 14 for f in frames for b in (f.get("b") or [])[:1]),
+        "bossEnd": ({"kind": "killed" if fin["e"] == "bdeath" else "despawn", "t": round(fin["t"] / 60.0, 1)} if fin else None),
         "format": hdr.get("format", 1), "seed": meta.get("seed"), "gear": meta.get("gear"),
     }
 
@@ -166,6 +176,8 @@ def shrink_frame(f):
         o["l"] = [row(l, ints=(1, 2)) for l in f["l"]]
     if f.get("b"):
         o["b"] = [row(b, ints=(2, 3), ones=(8, 9, 10, 11)) for b in f["b"]]
+    if f.get("a"):
+        o["a"] = [row(a, ints=(2, 3)) for a in f["a"]]
     if f.get("j"):
         o["j"] = [row(j, ints=(1, 2)) for j in f["j"]]
     return o
@@ -206,24 +218,30 @@ def convert(rows, factor):
         keep.append(frames[-1])
     hz = hdr.get("hz", 30)
     out = {
-        "v": 2,
+        "v": 3,
         "hdr": {k: hdr[k] for k in ("format", "meta", "mode", "boss", "stateNames", "levy", "date") if k in hdr},
         "frames": [],
         "events": [shrink_event(e) for e in rows if e.get("k") == "e"],
     }
-    lastL, lastB = {}, {}
+    lastL, lastB, lastA = {}, {}, {}
     for f in keep:
         o = shrink_frame(f)
         if "l" in o:
             o["l"] = enc_rows(o["l"], lastL, 0, (1, 2))
         if "b" in o:
             o["b"] = enc_rows(o["b"], lastB, 1, (2, 3))
+        if "a" in o:
+            o["a"] = enc_rows(o["a"], lastA, 1, (2, 3))
         out["frames"].append(o)
     out["hdr"]["hz"] = max(1, hz // factor)
-    for k in ("arena", "names", "end"):
+    for k in ("names", "end", "cam"):
         r = next((x for x in rows if x.get("k") == k), None)
         if r:
             out[k] = {kk: vv for kk, vv in r.items() if kk != "k"}
+    # terrain: format 4 writes several arena records (start area, growth strips, camera view); the page merges them. Older files have one.
+    arenas = [{kk: vv for kk, vv in r.items() if kk != "k"} for r in rows if r.get("k") == "arena"]
+    if arenas:
+        out["arenas"] = arenas
     return out
 
 

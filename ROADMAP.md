@@ -118,7 +118,7 @@
   - **Dud weapons:** UrchinMace (0 dmg in 131 fights) and SaharaSlicers (0 in 290) are Magic-classified and deal no damage. → builder `dud-weapons`.
   - **Contact blades do ~nothing to bosses** because of the no-suicide standoff (22–34 dmg/fight vs 195–462 for projectile blades). **SHIPPED fix:** a contact-melee main swaps to a ranged sidearm vs bosses and out-of-reach fliers. With a sidearm, a broadsword levy does 10× more damage to the Eye; ~2× vs QB.
   - The "boss outranks adds" PickTarget change was tested worse (KS) and reverted.
-- **Levy 2.0.15** = the sidearm swap. Shipping boot clean.
+- **SHIPPED Levy 2.0.15** (sidearm swap). Booted clean on both toolchains; sent to Eve.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

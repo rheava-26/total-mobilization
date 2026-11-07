@@ -213,7 +213,8 @@ namespace Levy.Content.NPCs
 			_lastSeenState = State;
 		}
 
-		partial void Brain_Think()
+		partial void Brain_Think() { long pt = global::Levy.Common.Util.LevyProf.Begin(); try { Brain_ThinkBody(); } finally { global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Brain, pt); } }
+		private void Brain_ThinkBody()
 		{
 			if (Record == null || !NPC.active) return;
 			_altHeld &= WantsAltitude; // the exit latch only carries over a think that was actually aloft
@@ -1046,6 +1047,7 @@ namespace Levy.Content.NPCs
 			float standoff = flame ? LevyConstants.FlameStandoffTiles : StandoffTiles(range); // a flamethrower never backs off to a gunner's standoff: it wants contact range
 			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
 			UpdateAltitudeIntent(seg, range, standoff, false); // independent of the horizontal plan below: climb, retreat and shoot compose
+			if (TryWormWindow(seg, range, standoff, now)) return true; // a worm head that has just passed cannot come back at once: hold the ground and shoot
 			if (TrySpreadFromWormTarget(now)) { WhyB = Why.BRetreat; return true; } // a worm's trail sweeps around its target: bystanders keep clear of him, he runs a long leg
 			if (DanceMode >= 1 && SoldierNPC.MobilityMode >= 1 && !flame && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage)) DanceLift(seg);
 

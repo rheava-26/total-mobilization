@@ -64,7 +64,8 @@ namespace Levy.Content.NPCs
 		/// <summary>
 		/// One look at the footing around this body: returns true when a climb or a drop to a better row was started (the platform goal is set and <see cref="TickPlatformPerch"/> drives it).
 		/// </summary>
-		private bool TickRowSpread(int now)
+		private bool TickRowSpread(int now) { long pt = global::Levy.Common.Util.LevyProf.Begin(); try { return TickRowSpreadBody(now); } finally { global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Rows, pt); } }
+		private bool TickRowSpreadBody(int now)
 		{
 			if (now < _rowNext || NPC.velocity.Y != 0f) return false;
 			if (TargetIndex < 0 || TargetIndex >= Main.maxNPCs) return false;

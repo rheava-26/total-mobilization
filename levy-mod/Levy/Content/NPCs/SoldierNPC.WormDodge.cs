@@ -37,6 +37,10 @@ namespace Levy.Content.NPCs
 		/// <summary>Would this manoeuvre still clear the head if it started SlackTicks later (the body holds still meanwhile)? Then wait.</summary>
 		private bool WormCanWait(in Maneuver best, Vector2 c0, float g, int horizon, bool airScan)
 		{
+			long pt = global::Levy.Common.Util.LevyProf.Begin(); try { return WormCanWaitBody(best, c0, g, horizon, airScan); } finally { global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Worm, pt); }
+		}
+		private bool WormCanWaitBody(in Maneuver best, Vector2 c0, float g, int horizon, bool airScan)
+		{
 			int slack = LevyConstants.WormDodge.SlackTicks;
 			ThreatField.Aged(_thrNear, slack, _thrAged);
 			int imm = DanceMode >= 1 && DOn(4) && DashIFrameTicks > 0 && (best.Kind == 4 || best.Kind == 8 || best.Kind == 10) ? DashIFrameTicks : 0;

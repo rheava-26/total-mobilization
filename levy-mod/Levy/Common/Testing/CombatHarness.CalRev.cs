@@ -562,6 +562,7 @@ namespace Levy.Common.Testing
 				CrResetDowned();
 				if (run.L3) Lab3Stations(run);
 				int total = run.Specs.Count, slot = 0;
+				if (total > global::Levy.Common.Config.LevyConfig.Get.RenderCap) global::Levy.Common.Config.LevyConfig.Get.RenderCap = total;
 				foreach (var sp in run.Specs) s.Levies.Add(CrSpawnLevy(sp, run, slot++, total, _crCmdPos));
 				if (run.Stock != "") CrStockArmory(s, run);
 				if (probe) { for (int k = 0; k < s.Levies.Count; k++) s.Levies[k].Upkeep = k >= 2; }
@@ -703,6 +704,7 @@ namespace Levy.Common.Testing
 				global::Levy.Common.Options.LevyOptions.Fear, global::Levy.Common.Options.LevyOptions.Surv, per }));
 			File.AppendAllText(_crOut, sb + "\n");
 			if (run.L3) Lab3Finish(run, st);
+			if (global::Levy.Common.Util.LevyProf.On) { string pl = global::Levy.Common.Util.LevyProf.Dump(end) + $" wm={SoldierNPC.WmThinks}/{SoldierNPC.WmHolds}/{SoldierNPC.WmShifts}/{SoldierNPC.WmAims}/{SoldierNPC.WmAimCalls}/{SoldierNPC.WmPierce} chk=" + global::Levy.Common.Movement.ThreatField.ChkBad + "/" + global::Levy.Common.Movement.ThreatField.ChkN; Mod.Logger.Info("PROF " + run.Key + " ms/tick " + pl); try { File.AppendAllText(_crOut + ".prof.tsv", run.Key + "\t" + pl + "\n"); } catch { } }
 			if (SoldierNPC.HitDbg != null) { try { File.AppendAllText(_crOut + ".hit.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitDbg.OrderByDescending(kv => kv.Value.dmg).Select(kv => $"{kv.Key}={kv.Value.dmg}/{kv.Value.n}")) + "\n"); } catch { } SoldierNPC.HitDbg = new(); }
 			if (SoldierNPC.HitGapDbg != null) { try { File.AppendAllText(_crOut + ".gap.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitGapDbg.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}:{kv.Value}")) + "\n"); } catch { } SoldierNPC.HitGapDbg = new(); }
 			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} rageAct={LevyRippers.RageActivations - st.Rage0} adrAct={LevyRippers.AdrenalineActivations - st.Adr0}");

@@ -1,0 +1,16 @@
+fight	kslime	exp	1	18000	gear=mod	n=cp	cmd=near	order=free
+fight	kslime	exp	2	18000	gear=mod	n=cp	cmd=near	order=free
+fight	kslime	exp	3	18000	gear=mod	n=cp	cmd=near	order=free
+fight	kslime	exp	4	18000	gear=mod	n=cp	cmd=near	order=free
+fight	kslime	exp	5	18000	gear=mod	n=cp	cmd=near	order=free
+fight	kslime	exp	6	18000	gear=mod	n=cp	cmd=near	order=free
+fight	kslime	rev	1	18000	gear=mod	n=cp	cmd=near	order=follow
+fight	kslime	rev	2	18000	gear=mod	n=cp	cmd=near	order=follow
+fight	kslime	rev	3	18000	gear=mod	n=cp	cmd=near	order=follow
+fight	kslime	rev	4	18000	gear=mod	n=cp	cmd=near	order=follow
+fight	eye	exp	1	18000	gear=mod	n=cp	cmd=far
+fight	eye	exp	2	18000	gear=mod	n=cp	cmd=far
+fight	eye	exp	3	18000	gear=mod	n=cp	cmd=far
+fight	eye	exp	4	18000	gear=mod	n=cp	cmd=far
+fight	eye	exp	5	18000	gear=mod	n=cp	cmd=far
+fight	eye	exp	6	18000	gear=mod	n=cp	cmd=far

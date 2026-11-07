@@ -1,0 +1,9 @@
+fight	kslime	exp	1	18000	gear=mod	n=cp	cmd=near	order=follow	dbg=1
+fight	kslime	exp	1	18000	gear=mod	n=cp	cmd=near	order=free	dbg=1
+fight	kslime	rev	1	18000	gear=mod	n=cp	cmd=near	order=follow	dbg=1
+fight	kslime	exp	2	18000	gear=mod	n=cp	cmd=near	order=follow	dbg=1
+fight	kslime	exp	2	18000	gear=mod	n=cp	cmd=near	order=free	dbg=1
+fight	kslime	rev	2	18000	gear=mod	n=cp	cmd=near	order=follow	dbg=1
+fight	kslime	exp	3	18000	gear=mod	n=cp	cmd=near	order=follow	dbg=1
+fight	kslime	exp	3	18000	gear=mod	n=cp	cmd=near	order=free	dbg=1
+fight	kslime	rev	3	18000	gear=mod	n=cp	cmd=near	order=follow	dbg=1

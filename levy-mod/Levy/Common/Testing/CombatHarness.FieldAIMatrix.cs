@@ -168,7 +168,7 @@ namespace Levy.Common.Testing
 			var lastGrY = new float[N]; var peakVy = new float[N]; var inAir = new bool[N]; var lastHitTick = new int[N]; int stillTicks = 0, aliveTicks = 0, edgeFalls = 0, aboveTicks = 0, climbs = 0, rowTicks = 0, airTicks = 0, airDodge = 0, airScan = 0, airKick = 0, airFall = 0, pEv = 0, pNo = 0, pOk = 0;
 			int dCorner = 0, dOver = 0, dLegs = 0, dHops = 0, dFlights = 0, dFlips = 0; var why = new Dictionary<string, int>(); int still5 = 0, still5Air = 0, aliveAirKit = 0;
 			long tgL = 0, tgP = 0, tgN = 0, bgL = 0, bgP = 0, bgN = 0, tgSamples = 0, bSamples = 0; double dLevySum = 0, dCmdSum = 0; long dSamples = 0; int aiTrans = 0, newProj = 0, fastStarts = 0; float prevSp = 0f; int prevA0 = -999, prevA1 = -999; var aiHist = new Dictionary<string, int>(); var projSeen = new HashSet<int>(); var projSeenId = new Dictionary<int, int>(); bool logT = arena == "flat" && gear == "none" && seed == 1;
-			int hHead = 0, hBody = 0, hTail = 0, hMinion = 0; var tgType = new Dictionary<string, int[]>(); var tgWhy = new Dictionary<string, int>();
+			int hHead = 0, hBody = 0, hTail = 0, hMinion = 0, hOther = 0, firstDeath = -1; var tgType = new Dictionary<string, int[]>(); var tgWhy = new Dictionary<string, int>();
 			int dNear = 0, dBase = 0, dNoBetter = 0, dBusy = 0, dDJ = 0, dDash = 0, dHook = 0, dJump = 0, dStep = 0;
 			void Acc(SoldierNPC b) { dCorner += b.DanceCorners; dOver += b.DanceOvers; dLegs += b.DanceLegs; dHops += b.DanceHops; dFlights += b.DanceFlights; dFlips += b.DanceFlips; climbs += b.PlatformClimbs; airDodge += b.DodgeAirManeuvers; airScan += b.DodgeAirScans; airKick += b.DodgeAirKicks; pEv += b.PlatEvals; pNo += b.PlatNoCand; pOk += b.PlatSepOk; airFall += b.DodgeAirFalls; hookCasts += b.HkCasts; maneuvers += b.DodgeManeuvers; dNear += b.DodgeNearScans; dBase += b.DodgeBaseHitScans; dNoBetter += b.DodgeNoBetter; dBusy += b.DodgeSkippedBusy; dDJ += b.DodgeDoubleJumps; dDash += b.DodgeDashes; dHook += b.DodgeHooks; dJump += b.DodgeJumps; dStep += b.DodgeSteps; }
 			return new FaTrial
@@ -203,7 +203,7 @@ namespace Levy.Common.Testing
 				},
 				Step = t =>
 				{
-					{ Player zp = Main.player[0]; zp.ZoneDesert = rb.Key == "desertscourge"; zp.ZoneJungle = rb.Key == "queenbee"; zp.ZoneSnow = rb.Key == "deerclops"; zp.ZoneGlowshroom = rb.Key == "crabulon"; zp.ZoneCorrupt = rb.Key == "hivemind"; zp.ZoneCrimson = rb.Key == "brain" || rb.Key == "perforator"; }   // biome-tied bosses enrage or flee from a target outside their home
+					{ Player zp = Main.player[0]; zp.ZoneDesert = rb.Key == "desertscourge"; zp.ZoneJungle = rb.Key == "queenbee"; zp.ZoneSnow = rb.Key == "deerclops"; zp.ZoneGlowshroom = rb.Key == "crabulon"; zp.ZoneCorrupt = rb.Key == "hivemind" || rb.Key == "eow"; zp.ZoneCrimson = rb.Key == "brain" || rb.Key == "perforator"; }   // biome-tied bosses enrage or flee from a target outside their home
 					if (target == "spec") { Player sp0 = Main.player[0]; if (!sp0.HasBuff(specBuff)) sp0.AddBuff(specBuff, 600); }
 					foreach (var hb in _faSol) if (hb.NPC.active && hb.PotionSickness == 0 && hb.NPC.life * 100 < hb.NPC.lifeMax * LevyConstants.PotionDrinkBelowPercent) { hb.NPC.life = Math.Min(hb.NPC.lifeMax, hb.NPC.life + (lesser ? 50 : 100)); hb.PotionSickness = LevyConstants.PotionSicknessTicks; }
 					if (cmdMove && target != "spec") { float mx = cmdBaseX + (float)Math.Sin(t / 110.0) * 9f * 16f; _faCmdPos = new Vector2(mx, FaGroundRow(mx) * 16f - Main.player[0].height); }
@@ -246,6 +246,8 @@ namespace Levy.Common.Testing
 						}
 						for (int pi = 0; pi < Main.maxProjectiles; pi++) { Projectile hp1 = Main.projectile[pi]; if (hp1.active && hp1.hostile && hp1.damage > 0) { if (!projSeenId.TryGetValue(pi, out int idv) || idv != hp1.identity) { projSeenId[pi] = hp1.identity; newProj++; } } else projSeenId.Remove(pi); }
 					}
+					if ((t == 200 || t == 205) && Environment.GetEnvironmentVariable("LEVY_REAL_WORMDBG") == "1" && bossIdx >= 0)
+						for (int i = 0; i < Main.maxNPCs; i++) { NPC wn = Main.npc[i]; if (wn.active && !wn.friendly && !(wn.ModNPC is SoldierNPC) && (i == bossIdx || wn.realLife == bossIdx || wn.aiStyle == NPCAIStyleID.Worm || (wn.ModNPC != null && wn.ModNPC.Name.Contains("Scourge")))) Mod.Logger.Info($"WORMDBG t={t} i={i} {(wn.ModNPC != null ? wn.ModNPC.Name : wn.TypeName)} style={wn.aiStyle} realLife={wn.realLife} ai=[{wn.ai[0]:0},{wn.ai[1]:0},{wn.ai[2]:0},{wn.ai[3]:0}] v={wn.velocity.X:0.0},{wn.velocity.Y:0.0} pos={wn.Center.X / 16f:0.0},{wn.Center.Y / 16f:0.0} dmg={wn.damage} w={wn.width} h={wn.height} noTile={wn.noTileCollide}"); }
 					bool exposed = false;
 					for (int i = 0; i < Main.maxNPCs && !exposed; i++) { NPC n = Main.npc[i]; if (!n.active || n.friendly || n.townNPC || n.damage <= 0 || n.ModNPC is SoldierNPC) continue; foreach (var b in _faSol) if (b.NPC.active && Vector2.Distance(n.Center, b.NPC.Center) < 300f) { exposed = true; break; } }
 					if (exposed) exposure++;
@@ -255,7 +257,7 @@ namespace Levy.Common.Testing
 						bool alive = nn.active && nn.life > 0 && b.IsAlive;
 						if (!alive)
 						{
-							if (deadAt[k] == 0) { deadAt[k] = t + 1; deaths++; lifeSum += t - born[k]; lives++; Acc(b); }
+							if (deadAt[k] == 0) { deadAt[k] = t + 1; deaths++; if (firstDeath < 0) firstDeath = t + 1; lifeSum += t - born[k]; lives++; Acc(b); }
 							else if (t + 1 - deadAt[k] >= 45) { FaSpawnSlot(k, RealSpawnX(k), FaGroundRow(RealSpawnX(k)) * 16f, r => RealGear(r, gear)).RefreshStats(); lastHits[k] = 0; born[k] = t; deadAt[k] = 0; lastPos[k] = _faSol[k].NPC.Center; }
 							continue;
 						}
@@ -274,6 +276,12 @@ namespace Levy.Common.Testing
 							Rectangle me = nn.Hitbox; me.Inflate(6, 6);
 							NPC contact = null;
 							for (int i = 0; i < Main.maxNPCs && contact == null; i++) { NPC a = Main.npc[i]; if (a.active && !a.friendly && !a.townNPC && a.damage > 0 && !(a.ModNPC is SoldierNPC) && a.Hitbox.Intersects(me)) contact = a; }
+							if (contact != null && Environment.GetEnvironmentVariable("LEVY_REAL_HITDBG2") == "1")
+							{
+								NPC hd = bossIdx >= 0 ? Main.npc[bossIdx] : contact; var tm = b.DodgeTimers; var near = new List<Threat>(); ThreatField.Near(ThreatField.Snapshot(), nn.Center, 128f, 56, near);
+								int seen = 0; foreach (var th in near) if (th.TrajN > 0) seen++;
+								Mod.Logger.Info($"HITB t={t} lv={k} lvPos={nn.Center.X / 16f:0},{nn.Center.Y / 16f:0} lvV={nn.velocity.X:0.0},{nn.velocity.Y:0.0} contact={(contact.ModNPC != null ? contact.ModNPC.Name : contact.TypeName)}#{contact.whoAmI} cPos={contact.Center.X / 16f:0},{contact.Center.Y / 16f:0} head={hd.Center.X / 16f:0},{hd.Center.Y / 16f:0} headV={hd.velocity.X:0.0},{hd.velocity.Y:0.0} nearThreats={near.Count} chainNear={seen} snap={ThreatField.Snapshot().Count} chains={ThreatField.ChainsThisTick} cd={tm.cooldown} hold={tm.hold} pend={tm.pend} step={tm.stepTicks} air={(nn.velocity.Y != 0f ? 1 : 0)} dmgBlock=");
+							}
 							if (contact != null) { contactHits += nh; { string cn = contact.ModNPC != null ? contact.ModNPC.Name : NPCID.Search.GetName(contact.type); if (cn.Contains("Nuisance")) hMinion += nh; else if (contact.whoAmI == bossIdx) hHead += nh; else if (bossIdx >= 0 && cn.Contains("Tail")) hTail += nh; else if (bossIdx >= 0 && (cn.Contains("Body") || (contact.realLife == bossIdx && bossIdx >= 0))) hBody += nh; else hMinion += nh; } string key = "contact:" + contact.GivenOrTypeName + "#" + (contact.ModNPC != null ? contact.ModNPC.Name : contact.type.ToString()); byKind[key] = byKind.GetValueOrDefault(key) + nh; }
 							else if (nn.lavaWet) { byKind["lava"] = byKind.GetValueOrDefault("lava") + nh; }
 							else
@@ -281,6 +289,7 @@ namespace Levy.Common.Testing
 								projHits += nh; Projectile hp = null; Rectangle me2 = nn.Hitbox; me2.Inflate(48, 48);
 								for (int pi = 0; pi < Main.maxProjectiles && hp == null; pi++) { Projectile pj = Main.projectile[pi]; if (pj.active && pj.hostile && pj.damage > 0 && pj.Hitbox.Intersects(me2)) hp = pj; }
 								if (hp != null && Environment.GetEnvironmentVariable("LEVY_REAL_HITDBG") == "1") Mod.Logger.Info($"HITDBG t={t} {hp.Name} w={hp.width} h={hp.height} dmg={hp.damage} tl={hp.timeLeft} v={hp.velocity} ai0={hp.ai[0]:0.0} ai1={hp.ai[1]:0.0} rot={hp.rotation:0.00} dist={Vector2.Distance(hp.Center, nn.Center):0}  inField={ThreatField.Snapshot().Count} lvl={nn.Center - hp.Center}");
+								if (hp == null) hOther += nh;
 								string key = "proj:" + (b.LastAttackerName ?? "?") + (hp != null ? "/" + hp.Name + "@" + hp.velocity.Length().ToString("0.0", CultureInfo.InvariantCulture) : "/?"); byKind[key] = byKind.GetValueOrDefault(key) + nh;
 							}
 						}
@@ -293,7 +302,7 @@ namespace Levy.Common.Testing
 					double surv = lives > 0 ? lifeSum / (double)lives / 60.0 : 0, dpm = deaths * 3600.0 / ticks;
 					var sb = new StringBuilder();
 					sb.Append($"REALM|boss={rb.Key}|arena={arena}|gear={gear}|order={Environment.GetEnvironmentVariable("LEVY_REAL_ORDER") ?? "freerein"}|auto={(auto ? 1 : 0)}|target={target}|mode={(before ? "before" : "after")}{mode}|seed={seed}|survSec={surv:0.0}|deaths={deaths}|deathsPerMin={dpm:0.00}|bossDmg={bossDmg}|hits={hitsTotal}|contact={contactHits}|proj={projHits}|lavaTicks={lavaTicks}|exposed={exposure}|tele={teleports}|hookCasts={hookCasts}|maneuvers={maneuvers}|bossAlive={bossAlive}|abovePct={(aliveTicks > 0 ? 100.0 * aboveTicks / aliveTicks : 0):0}|climbs={climbs}|rowPct={(aliveTicks > 0 ? 100.0 * rowTicks / aliveTicks : 0):0}|airPct={(aliveTicks > 0 ? 100.0 * airTicks / aliveTicks : 0):0}|airDodge={airDodge}|airScan={airScan}|platEv={pEv}|platNoCand={pNo}|platSepOk={pOk}|airKick={airKick}|airFall={airFall}|airmode={SoldierNPC.AirMode}|platmode={SoldierNPC.PlatMode}|stillPct={(aliveTicks > 0 ? 100.0 * stillTicks / aliveTicks : 0):0}|still5Pct={(aliveTicks > 0 ? 100.0 * still5 / aliveTicks : 0):0.0}|aliveTicks={aliveTicks}|danceLegs={dLegs}|danceHops={dHops}|danceFlights={dFlights}|danceFlips={dFlips}|corners={dCorner}|overs={dOver}|dance={SoldierNPC.DanceMode}|edgeFalls={edgeFalls}|dNear={dNear}|dBase={dBase}|dNoBetter={dNoBetter}|dBusy={dBusy}|dStep={dStep}|dJump={dJump}|dDJ={dDJ}|dDash={dDash}|dHook={dHook}|fieldSeesBoss={fieldSeesBoss}|bossFast={bossFastTicks}|bossPeakV={bossPeakV:0.0}|bossDamageStat={(bossIdx >= 0 ? Main.npc[bossIdx].damage : 0)}|");
-					sb.Append($"tgtLevyPct={(tgSamples > 0 ? 100.0 * tgL / tgSamples : 0):0.0}|tgtPlayerPct={(tgSamples > 0 ? 100.0 * tgP / tgSamples : 0):0.0}|tgtNonePct={(tgSamples > 0 ? 100.0 * tgN / tgSamples : 0):0.0}|bTgtLevyPct={(bSamples > 0 ? 100.0 * bgL / bSamples : 0):0.0}|bTgtPlayerPct={(bSamples > 0 ? 100.0 * bgP / bSamples : 0):0.0}|bTgtNonePct={(bSamples > 0 ? 100.0 * bgN / bSamples : 0):0.0}|bossToLevyTiles={(dSamples > 0 ? dLevySum / dSamples : 0):0.0}|bossToCmdTiles={(bSamples > 0 ? dCmdSum / bSamples : 0):0.0}|hHead={hHead}|hBody={hBody}|hTail={hTail}|hMinion={hMinion}|tgType={string.Join(",", tgType.OrderByDescending(kv => kv.Value[0] + kv.Value[1] + kv.Value[2]).Take(6).Select(kv => kv.Key + ":" + kv.Value[0] + "/" + kv.Value[1] + "/" + kv.Value[2]))}|tgWhy={string.Join(",", tgWhy.OrderByDescending(kv => kv.Value).Take(5).Select(kv => kv.Key + "=" + kv.Value))}|aiTrans={aiTrans}|newProj={newProj}|fastStarts={fastStarts}|aiHist={string.Join(",", aiHist.OrderByDescending(kv => kv.Value).Take(5).Select(kv => kv.Key + ":" + kv.Value))}|src=");
+					sb.Append($"tgtLevyPct={(tgSamples > 0 ? 100.0 * tgL / tgSamples : 0):0.0}|tgtPlayerPct={(tgSamples > 0 ? 100.0 * tgP / tgSamples : 0):0.0}|tgtNonePct={(tgSamples > 0 ? 100.0 * tgN / tgSamples : 0):0.0}|bTgtLevyPct={(bSamples > 0 ? 100.0 * bgL / bSamples : 0):0.0}|bTgtPlayerPct={(bSamples > 0 ? 100.0 * bgP / bSamples : 0):0.0}|bTgtNonePct={(bSamples > 0 ? 100.0 * bgN / bSamples : 0):0.0}|bossToLevyTiles={(dSamples > 0 ? dLevySum / dSamples : 0):0.0}|bossToCmdTiles={(bSamples > 0 ? dCmdSum / bSamples : 0):0.0}|hHead={hHead}|hBody={hBody}|hTail={hTail}|hMinion={hMinion}|hOther={hOther}|firstDeathSec={(firstDeath >= 0 ? firstDeath / 60.0 : ticks / 60.0):0.0}|noDeath={(firstDeath < 0 ? 1 : 0)}|tgType={string.Join(",", tgType.OrderByDescending(kv => kv.Value[0] + kv.Value[1] + kv.Value[2]).Take(6).Select(kv => kv.Key + ":" + kv.Value[0] + "/" + kv.Value[1] + "/" + kv.Value[2]))}|tgWhy={string.Join(",", tgWhy.OrderByDescending(kv => kv.Value).Take(5).Select(kv => kv.Key + "=" + kv.Value))}|aiTrans={aiTrans}|newProj={newProj}|fastStarts={fastStarts}|aiHist={string.Join(",", aiHist.OrderByDescending(kv => kv.Value).Take(5).Select(kv => kv.Key + ":" + kv.Value))}|src=");
 					sb.Append(string.Join(";", byKind.OrderByDescending(kv => kv.Value).Take(10).Select(kv => $"{kv.Key}={kv.Value}")));
 					sb.Append("|hookDrawOk=" + _hookDrawOk); Mod.Logger.Info(sb.ToString());
 					Mod.Logger.Info($"REALW|boss={rb.Key}|arena={arena}|gear={gear}|mode={(before ? "before" : "after")}{mode}|seed={seed}|aliveTicks={aliveTicks}|still5={still5}|still5Air={still5Air}|why=" + string.Join(";", why.OrderByDescending(kv => kv.Value).Take(12).Select(kv => $"{kv.Key}={kv.Value}")));

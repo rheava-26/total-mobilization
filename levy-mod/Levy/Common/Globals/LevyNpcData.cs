@@ -17,6 +17,8 @@ namespace Levy.Common.Globals
 		// ---- enemy -> soldier targeting ----
 		public int SoldierTarget = -1;
 		public int RetargetTimer;
+		/// <summary>Game tick of the last EnemyTargeting.Prepare for this NPC (once per tick even when Calamity's AI override asks first).</summary>
+		public uint PreparedTick = uint.MaxValue;
 
 		// ---- boss rule ----
 		public int EngagedCp;

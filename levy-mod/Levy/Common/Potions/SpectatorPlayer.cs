@@ -12,7 +12,7 @@ namespace Levy.Common.Potions
 	/// <summary>
 	/// The Spectator potion's rules.
 	///  * Targeting. Vanilla picks targets in NPC.TargetClosest / TargetClosestUpgraded, which skip a player that is <c>!active || dead || ghost</c>, and boss/enemy AIs re-pick when
-	///    <c>Main.player[npc.target].dead</c>. aggro only biases the distance, so it cannot exclude the only player. So around each hostile NPC's AI (<see cref="SpectatorNpcHide"/>: PreAI to PostAI; levies are skipped so they still see a living commander) a spectator is set dead+ghost, exactly what every enemy and boss AI already handles. Only NPCs the soldier swap cannot serve use this (see SpectatorNpcHide); for the rest EnemyTargeting excludes spectators from its search and the levies are the target (a spectator also unlocks boss aggro on soldiers).
+	///    <c>Main.player[npc.target].dead</c>. aggro only biases the distance, so it cannot exclude the only player. So around each hostile NPC's AI (<see cref="SpectatorNpcHide"/>: PreAI to PostAI; levies are skipped so they still see a living commander) a spectator is set dead+ghost, exactly what every enemy and boss AI already handles. Only NPCs the soldier swap cannot serve use this (see SpectatorNpcHide); for the rest EnemyTargeting excludes spectators from its search and the levies are the target (a spectator also unlocks boss aggro on soldiers for a boss already beaten in this world; an unbeaten boss is never affected: the buff cannot be drunk while one is alive and ends the moment one appears).
 	///    The flags are restored right after, and again in PreUpdate as a safety net, so the player's own update never sees them.
 	///  * Damage. Contact and projectile hits are refused (CanBeHitByNPC / CanBeHitByProjectile). Any damage that still lands (lava, fall, drowning) ends the buff.
 	///  * Items. <see cref="CanUseItem"/> refuses damage items, summons, sentries and anything that touches the world (see <see cref="Blocked"/>), except the Observe items.
@@ -75,6 +75,13 @@ namespace Levy.Common.Potions
 			if (on && !_was) Anchor = Player.Center;
 			_was = on;
 			if (!on || Player.whoAmI != Main.myPlayer) return;
+			// The first kill of every boss is solo: an unbeaten boss in the world ends the buff at once.
+			if (!Main.dedServ && global::Levy.Common.Targeting.EnemyTargeting.FindUndownedBoss() != null)
+			{
+				Player.ClearBuff(ModContent.BuffType<SpectatorBuff>());
+				CombatText.NewText(Player.getRect(), new Color(255, 120, 100), global::Levy.Common.Util.LevyUtil.T("Potions.SpectatorBossEnds"));
+				return;
+			}
 			// no tile interaction except a Static Camera under the cursor
 			if (Player.controlUseTile && !OverStaticCamera()) Player.controlUseTile = false;
 		}
@@ -220,7 +227,9 @@ namespace Levy.Common.Potions
 			// An NPC the soldier swap can serve gets its targets through EnemyTargeting (spectators are excluded from its search and the army fights instead).
 			// Only the rest (swap-unsafe styles, no levies out) fall back to seeing the spectator as dead.
 			if (global::Levy.Common.Targeting.EnemyTargeting.IsAllowlisted(npc) && global::Levy.Common.Targeting.EnemyTargeting.Bodies.Count > 0) return true;
+			if (!global::Levy.Common.Targeting.EnemyTargeting.HidesSpectatorFrom(npc)) return true; // an unbeaten boss sees a spectator like any player
 			if (!_hiding.Add(npc.whoAmI)) return true;
+			if (global::Levy.Common.Targeting.EnemyTargeting.DiagOn) SpectatorDiagnostic.NoteHidden(npc);
 			SpectatorPlayer.HideAll();
 			return true;
 		}

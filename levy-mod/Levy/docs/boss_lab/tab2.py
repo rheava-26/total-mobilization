@@ -1,5 +1,6 @@
 import csv, sys, os, glob, collections, statistics, re
 # lab 2 tables. usage: tab2.py main|fear|spread   (reads /home/user/lab/out2/*.tsv for lab 2 and docs/boss_lab/raw/*.tsv for lab 1)
+MAINS = sorted(glob.glob('/home/user/lab/out2/main_?.tsv'))
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT2 = '/home/user/lab/out2'
 def load(files):
@@ -51,7 +52,7 @@ def lab1():
 CP = dict(kslime=10, ds=11, eye=11, eow=13, brain=13, qb=15, skel=16)
 def main():
     G1 = lab1()
-    new = dedup(load([OUT2 + '/main_a.tsv', OUT2 + '/main_b.tsv']))
+    new = dedup(load(MAINS))
     G2 = collections.defaultdict(list)
     for r in new: G2[(r['boss'], r['mode'])].append(r)
     print('| boss | mode | n | lab2 near: kill/desp/timeout/loss (seeds) | deaths | kill time s | first death s | boss tgt L/P % | add tgt L/P % | lab1 far | lab1 far deaths / ttk | lab1 near | lab1 near deaths / ttk |')
@@ -84,9 +85,8 @@ def pair(a_files, b_files, la, lb, extra_key=None):
             print(f"| {NAME[b]} | {MODE[m]} | {wl(ca)} | {ca['deaths']:.1f} | {f1(ca['ttk'])} | {f1(ca['fd'],1)} | {f1(ca['tL'])}/{f1(ca['tP'])} | {wl(cb)} | {cb['deaths']:.1f} | {f1(cb['ttk'])} | {f1(cb['fd'],1)} | {f1(cb['tL'])}/{f1(cb['tP'])} | {f1(ca['dps'],1)} / {f1(cb['dps'],1)} |")
 if __name__ == '__main__':
     w = sys.argv[1]
-    mains = [OUT2 + '/main_a.tsv', OUT2 + '/main_b.tsv']
     if w == 'main': main()
-    elif w == 'fear': pair(mains, [OUT2 + '/fearoff_a.tsv', OUT2 + '/fearoff_b.tsv'], 'fear on', 'fear off')
-    elif w == 'spread': pair(mains, [OUT2 + '/spreadoff.tsv'], 'spread on', 'spread off')
+    elif w == 'fear': pair(MAINS, sorted(glob.glob(OUT2 + '/fearoff_*.tsv')), 'fear on', 'fear off')
+    elif w == 'spread': pair(MAINS + [OUT2 + '/spreadon_x.tsv'], sorted(glob.glob(OUT2 + '/spreadoff*.tsv')), 'spread on', 'spread off')
     elif w == 'seeds':
         for r in sorted(dedup(load(sorted(glob.glob(OUT2 + '/*.tsv')))), key=lambda r: r['key']): print(r['key'], r['result'], r['sec'], r['deaths'])

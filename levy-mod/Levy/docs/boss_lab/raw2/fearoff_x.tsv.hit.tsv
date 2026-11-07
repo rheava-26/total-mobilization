@@ -1,0 +1,30 @@
+fight|qb|exp|free|7|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=2225/56 proj:Queen Bee's Stinger<-Queen Bee=68/8
+fight|qb|rev|free|7|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=2801/70 proj:Queen Bee's Stinger<-Queen Bee=106/12
+fight|qb|death|free|7|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=2981/74 proj:Queen Bee's Stinger<-Queen Bee=115/14
+fight|eye|rev|free|7|18000|n11|gmod|grlv|fe0	contact:Eye of Cthulhu=1488/42 contact:Servant of Cthulhu=62/5
+fight|eow|exp|free|7|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=1080/98
+fight|qb|exp|sd|8|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=698/17 proj:Queen Bee's Stinger<-Queen Bee=62/6 contact:Bee=14/1
+fight|qb|rev|sd|8|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=659/16 proj:Queen Bee's Stinger<-Queen Bee=155/17
+fight|qb|death|sd|8|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=904/22 proj:Queen Bee's Stinger<-Queen Bee=99/10
+fight|eye|rev|sd|8|18000|n11|gmod|grlv|fe0	contact:Eye of Cthulhu=1570/45 contact:Servant of Cthulhu=138/13
+fight|eow|exp|sd|8|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2390/189 contact:Vile Spit=45/1
+fight|qb|exp|free|9|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=3289/84 proj:Queen Bee's Stinger<-Queen Bee=100/11
+fight|qb|rev|free|9|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=3182/81 proj:Queen Bee's Stinger<-Queen Bee=30/4
+fight|qb|death|free|9|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=3007/77 proj:Queen Bee's Stinger<-Queen Bee=145/15
+fight|eye|rev|free|9|18000|n11|gmod|grlv|fe0	contact:Eye of Cthulhu=1429/36 contact:Servant of Cthulhu=52/4
+fight|eow|exp|free|9|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=1843/222
+fight|qb|exp|sd|10|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=4281/108 contact:Bee=174/23 proj:Queen Bee's Stinger<-Queen Bee=100/12
+fight|qb|rev|sd|10|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=1919/48 proj:Queen Bee's Stinger<-Queen Bee=155/19 contact:Bee=2/1
+fight|qb|death|sd|10|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=3373/84 proj:Queen Bee's Stinger<-Queen Bee=193/22 contact:Bee=3/1
+fight|eye|rev|sd|10|18000|n11|gmod|grlv|fe0	contact:Eye of Cthulhu=1479/40 contact:Servant of Cthulhu=68/5
+fight|eow|exp|sd|10|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=1991/150
+fight|qb|exp|free|11|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=1087/28 proj:Queen Bee's Stinger<-Queen Bee=128/16 contact:Bee=1/1
+fight|qb|rev|free|11|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=3423/90 proj:Queen Bee's Stinger<-Queen Bee=182/33
+fight|qb|death|free|11|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=3916/102 proj:Queen Bee's Stinger<-Queen Bee=291/34
+fight|eye|rev|free|11|18000|n11|gmod|grlv|fe0	contact:Eye of Cthulhu=318/9
+fight|eow|exp|free|11|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2431/201
+fight|qb|exp|sd|12|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=1399/34 proj:Queen Bee's Stinger<-Queen Bee=57/7 contact:Bee=11/1
+fight|qb|rev|sd|12|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=1886/45 proj:Queen Bee's Stinger<-Queen Bee=211/21
+fight|qb|death|sd|12|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=2192/52 proj:Queen Bee's Stinger<-Queen Bee=105/11
+fight|eye|rev|sd|12|18000|n11|gmod|grlv|fe0	contact:Eye of Cthulhu=1657/45 contact:Servant of Cthulhu=67/4
+fight|eow|exp|sd|12|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2364/233

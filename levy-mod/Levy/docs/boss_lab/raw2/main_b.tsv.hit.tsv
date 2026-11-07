@@ -1,0 +1,60 @@
+fight|eow|exp|free|1|18000|n13|gmod|grlv	contact:Eater of Worlds=2880/218
+fight|eow|rev|free|1|18000|n13|gmod|grlv	contact:Eater of Worlds=2477/131
+fight|eow|death|free|1|18000|n13|gmod|grlv	contact:Eater of Worlds=2453/125
+fight|brain|exp|free|1|18000|n13|gmod|grlv	
+fight|brain|rev|free|1|18000|n13|gmod|grlv	contact:Brain of Cthulhu=2005/38 contact:Creeper=598/12 proj:Blood Shot<-Creeper=12/1
+fight|brain|death|free|1|18000|n13|gmod|grlv	contact:Brain of Cthulhu=1541/30 contact:Creeper=980/19
+fight|qb|exp|free|1|18000|n15|gmod|grlv|jg	contact:Queen Bee=4512/115 contact:Bee=114/12 proj:Queen Bee's Stinger<-Queen Bee=44/8
+fight|qb|rev|free|1|18000|n15|gmod|grlv|jg	contact:Queen Bee=4264/109 proj:Queen Bee's Stinger<-Queen Bee=337/38 contact:Bee=8/1
+fight|qb|death|free|1|18000|n15|gmod|grlv|jg	contact:Queen Bee=5179/131 proj:Queen Bee's Stinger<-Queen Bee=79/10
+fight|skel|exp|free|1|18000|n16|gmod|grlv	contact:Skeletron=3522/64 proj:Skull<-Skeletron=197/10
+fight|eow|exp|sd|2|18000|n13|gmod|grlv	contact:Eater of Worlds=2670/239
+fight|eow|rev|sd|2|18000|n13|gmod|grlv	contact:Eater of Worlds=2516/146
+fight|eow|death|sd|2|18000|n13|gmod|grlv	contact:Eater of Worlds=2466/109
+fight|brain|exp|sd|2|18000|n13|gmod|grlv	contact:Brain of Cthulhu=41/1
+fight|brain|rev|sd|2|18000|n13|gmod|grlv	contact:Creeper=1740/35 contact:Brain of Cthulhu=668/13 proj:Blood Shot<-Creeper=54/6 proj:Golden Shower<-Brain of Cthulhu=23/2
+fight|brain|death|sd|2|18000|n13|gmod|grlv	contact:Creeper=2538/51 contact:Brain of Cthulhu=549/11 proj:Blood Shot<-Creeper=45/5 proj:Golden Shower<-Brain of Cthulhu=40/5 proj:Telekinetic Enemy Grab<-Brain of Cthulhu=15/2
+fight|qb|exp|sd|2|18000|n15|gmod|grlv|jg	contact:Queen Bee=3030/75 proj:Queen Bee's Stinger<-Queen Bee=55/6 contact:Bee=10/1
+fight|qb|rev|sd|2|18000|n15|gmod|grlv|jg	contact:Queen Bee=1095/27 proj:Queen Bee's Stinger<-Queen Bee=180/20 contact:Bee=9/1
+fight|qb|death|sd|2|18000|n15|gmod|grlv|jg	contact:Queen Bee=1990/49 proj:Queen Bee's Stinger<-Queen Bee=151/14
+fight|skel|exp|sd|2|18000|n16|gmod|grlv	contact:Skeletron=2431/47 proj:Skull<-Skeletron=571/28
+fight|eow|exp|free|3|18000|n13|gmod|grlv	contact:Eater of Worlds=2727/247 contact:Vile Spit=48/1
+fight|eow|rev|free|3|18000|n13|gmod|grlv	contact:Eater of Worlds=2332/119
+fight|eow|death|free|3|18000|n13|gmod|grlv	contact:Eater of Worlds=2448/112
+fight|brain|exp|free|3|18000|n13|gmod|grlv	
+fight|brain|rev|free|3|18000|n13|gmod|grlv	contact:Creeper=1711/34 contact:Brain of Cthulhu=714/14
+fight|brain|death|free|3|18000|n13|gmod|grlv	contact:Creeper=954/19 proj:Telekinetic Enemy Grab<-Brain of Cthulhu=485/59 contact:Brain of Cthulhu=467/9 proj:Golden Shower<-Brain of Cthulhu=54/6
+fight|qb|exp|free|3|18000|n15|gmod|grlv|jg	contact:Queen Bee=4810/124 proj:Queen Bee's Stinger<-Queen Bee=39/6
+fight|qb|rev|free|3|18000|n15|gmod|grlv|jg	contact:Queen Bee=2047/52 proj:Queen Bee's Stinger<-Queen Bee=252/32
+fight|qb|death|free|3|18000|n15|gmod|grlv|jg	contact:Queen Bee=2501/64 proj:Queen Bee's Stinger<-Queen Bee=155/21
+fight|skel|exp|free|3|18000|n16|gmod|grlv	contact:Skeletron=3326/61 proj:Skull<-Skeletron=441/21
+fight|eow|exp|sd|4|18000|n13|gmod|grlv	contact:Eater of Worlds=2868/283
+fight|eow|rev|sd|4|18000|n13|gmod|grlv	contact:Eater of Worlds=2513/138
+fight|eow|death|sd|4|18000|n13|gmod|grlv	contact:Eater of Worlds=2346/116
+fight|brain|exp|sd|4|18000|n13|gmod|grlv	contact:Creeper=352/16 contact:Brain of Cthulhu=80/2
+fight|brain|rev|sd|4|18000|n13|gmod|grlv	contact:Brain of Cthulhu=1240/25 contact:Creeper=1219/25
+fight|brain|death|sd|4|18000|n13|gmod|grlv	contact:Brain of Cthulhu=1290/26 contact:Creeper=1224/25 proj:Golden Shower<-Brain of Cthulhu=10/1
+fight|qb|exp|sd|4|18000|n15|gmod|grlv|jg	contact:Queen Bee=4626/116 proj:Queen Bee's Stinger<-Queen Bee=172/20 contact:Bee=37/5
+fight|qb|rev|sd|4|18000|n15|gmod|grlv|jg	contact:Queen Bee=2524/63 proj:Queen Bee's Stinger<-Queen Bee=195/21
+fight|qb|death|sd|4|18000|n15|gmod|grlv|jg	contact:Queen Bee=4142/104 proj:Queen Bee's Stinger<-Queen Bee=198/22 contact:Bee=10/1
+fight|skel|exp|sd|4|18000|n16|gmod|grlv	contact:Skeletron=3880/81 proj:Skull<-Skeletron=266/13
+fight|eow|exp|free|5|18000|n13|gmod|grlv	contact:Eater of Worlds=3417/347
+fight|eow|rev|free|5|18000|n13|gmod|grlv	contact:Eater of Worlds=2692/163
+fight|eow|death|free|5|18000|n13|gmod|grlv	contact:Eater of Worlds=2500/145
+fight|brain|exp|free|5|18000|n13|gmod|grlv	contact:Brain of Cthulhu=234/6 contact:Creeper=20/1
+fight|brain|rev|free|5|18000|n13|gmod|grlv	contact:Creeper=1381/28 contact:Brain of Cthulhu=1348/28 proj:Golden Shower<-Brain of Cthulhu=55/5 proj:Blood Shot<-Creeper=14/1 proj:Telekinetic Enemy Grab<-Brain of Cthulhu=9/2
+fight|brain|death|free|5|18000|n13|gmod|grlv	contact:Creeper=1720/35 contact:Brain of Cthulhu=710/15 proj:Golden Shower<-Brain of Cthulhu=69/7 proj:Blood Shot<-Creeper=5/1
+fight|qb|exp|free|5|18000|n15|gmod|grlv|jg	contact:Queen Bee=3814/102 contact:Bee=345/53 proj:Queen Bee's Stinger<-Queen Bee=82/16
+fight|qb|rev|free|5|18000|n15|gmod|grlv|jg	contact:Queen Bee=2361/63 proj:Queen Bee's Stinger<-Queen Bee=252/40 contact:Bee=21/3
+fight|qb|death|free|5|18000|n15|gmod|grlv|jg	contact:Queen Bee=1482/39 proj:Queen Bee's Stinger<-Queen Bee=241/40
+fight|skel|exp|free|5|18000|n16|gmod|grlv	contact:Skeletron=2725/64 proj:Skull<-Skeletron=92/5
+fight|eow|exp|sd|6|18000|n13|gmod|grlv	contact:Eater of Worlds=2898/270
+fight|eow|rev|sd|6|18000|n13|gmod|grlv	contact:Eater of Worlds=2449/143
+fight|eow|death|sd|6|18000|n13|gmod|grlv	contact:Eater of Worlds=2330/123
+fight|brain|exp|sd|6|18000|n13|gmod|grlv	
+fight|brain|rev|sd|6|18000|n13|gmod|grlv	contact:Creeper=1283/26 contact:Brain of Cthulhu=1264/26
+fight|brain|death|sd|6|18000|n13|gmod|grlv	contact:Brain of Cthulhu=1242/25 contact:Creeper=1126/23 proj:Golden Shower<-Brain of Cthulhu=55/5
+fight|qb|exp|sd|6|18000|n15|gmod|grlv|jg	contact:Queen Bee=5739/148 contact:Bee=599/106 proj:Queen Bee's Stinger<-Queen Bee=156/27
+fight|qb|rev|sd|6|18000|n15|gmod|grlv|jg	contact:Queen Bee=3570/90 proj:Queen Bee's Stinger<-Queen Bee=95/14 contact:Bee=13/2
+fight|qb|death|sd|6|18000|n15|gmod|grlv|jg	contact:Queen Bee=2955/75 proj:Queen Bee's Stinger<-Queen Bee=227/33
+fight|skel|exp|sd|6|18000|n16|gmod|grlv	contact:Skeletron=2306/51 proj:Skull<-Skeletron=211/10

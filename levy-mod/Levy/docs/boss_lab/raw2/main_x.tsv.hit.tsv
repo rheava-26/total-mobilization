@@ -1,0 +1,48 @@
+fight|eye|rev|free|7|18000|n11|gmod|grlv	contact:Eye of Cthulhu=1919/56 contact:Servant of Cthulhu=359/29 proj:Blood Shot<-Eye of Cthulhu=9/1
+fight|eow|exp|free|7|18000|n13|gmod|grlv	contact:Eater of Worlds=2446/206
+fight|skel|exp|free|7|18000|n16|gmod|grlv	contact:Skeletron=3492/68 proj:Skull<-Skeletron=812/39
+fight|qb|exp|free|7|18000|n15|gmod|grlv|jg	contact:Queen Bee=4520/113 contact:Bee=188/18 proj:Queen Bee's Stinger<-Queen Bee=69/9
+fight|qb|rev|free|7|18000|n15|gmod|grlv|jg	contact:Queen Bee=2098/52 proj:Queen Bee's Stinger<-Queen Bee=343/36
+fight|qb|death|free|7|18000|n15|gmod|grlv|jg	contact:Queen Bee=2434/60 proj:Queen Bee's Stinger<-Queen Bee=350/37
+fight|kslime|rev|free|7|18000|gmod|grlv	contact:King Slime=998/19 contact:Yellow Slime=39/3 contact:Blue Slime=8/4 contact:Purple Slime=8/1 contact:Pinky=1/1
+fight|kslime|death|free|7|18000|gmod|grlv	contact:King Slime=1284/24 contact:Red Slime=10/1
+fight|eye|rev|sd|8|18000|n11|gmod|grlv	contact:Eye of Cthulhu=1569/45 contact:Servant of Cthulhu=403/34
+fight|eow|exp|sd|8|18000|n13|gmod|grlv	contact:Eater of Worlds=2559/222
+fight|skel|exp|sd|8|18000|n16|gmod|grlv	contact:Skeletron=2792/57 proj:Skull<-Skeletron=307/16
+fight|qb|exp|sd|8|18000|n15|gmod|grlv|jg	contact:Queen Bee=2099/52 proj:Queen Bee's Stinger<-Queen Bee=52/5 contact:Bee=7/1
+fight|qb|rev|sd|8|18000|n15|gmod|grlv|jg	contact:Queen Bee=1333/33 proj:Queen Bee's Stinger<-Queen Bee=137/13 contact:Bee=17/3
+fight|qb|death|sd|8|18000|n15|gmod|grlv|jg	contact:Queen Bee=1004/24 proj:Queen Bee's Stinger<-Queen Bee=261/27 contact:Bee=13/1
+fight|kslime|rev|sd|8|18000|gmod|grlv	contact:King Slime=1044/20 contact:Red Slime=25/2 contact:Purple Slime=17/1 proj:Slime Spike<-Spiked Slime=5/1
+fight|kslime|death|sd|8|18000|gmod|grlv	contact:King Slime=1135/21 contact:Blue Slime=10/3
+fight|eye|rev|free|9|18000|n11|gmod|grlv	contact:Eye of Cthulhu=2635/76 contact:Servant of Cthulhu=292/23
+fight|eow|exp|free|9|18000|n13|gmod|grlv	contact:Eater of Worlds=2650/234
+fight|skel|exp|free|9|18000|n16|gmod|grlv	contact:Skeletron=1191/38
+fight|qb|exp|free|9|18000|n15|gmod|grlv|jg	contact:Queen Bee=3902/99 proj:Queen Bee's Stinger<-Queen Bee=53/7
+fight|qb|rev|free|9|18000|n15|gmod|grlv|jg	contact:Queen Bee=4173/107 proj:Queen Bee's Stinger<-Queen Bee=260/27
+fight|qb|death|free|9|18000|n15|gmod|grlv|jg	contact:Queen Bee=3076/78 proj:Queen Bee's Stinger<-Queen Bee=262/32 contact:Bee=1/1
+fight|kslime|rev|free|9|18000|gmod|grlv	contact:King Slime=1149/21 contact:Red Slime=48/3 contact:Purple Slime=42/2 contact:Yellow Slime=34/2 contact:Blue Slime=21/2 contact:Pinky=17/4
+fight|kslime|death|free|9|18000|gmod|grlv	contact:King Slime=1121/20 contact:Red Slime=45/3 contact:Blue Slime=11/1
+fight|eye|rev|sd|10|18000|n11|gmod|grlv	contact:Eye of Cthulhu=2079/60 contact:Servant of Cthulhu=206/18
+fight|eow|exp|sd|10|18000|n13|gmod|grlv	contact:Eater of Worlds=2440/227
+fight|skel|exp|sd|10|18000|n16|gmod|grlv	contact:Skeletron=2429/56 proj:Skull<-Skeletron=359/16
+fight|qb|exp|sd|10|18000|n15|gmod|grlv|jg	contact:Queen Bee=4296/108 contact:Bee=433/58 proj:Queen Bee's Stinger<-Queen Bee=109/14
+fight|qb|rev|sd|10|18000|n15|gmod|grlv|jg	contact:Queen Bee=3575/90 proj:Queen Bee's Stinger<-Queen Bee=311/41
+fight|qb|death|sd|10|18000|n15|gmod|grlv|jg	contact:Queen Bee=2696/69 proj:Queen Bee's Stinger<-Queen Bee=260/32
+fight|kslime|rev|sd|10|18000|gmod|grlv	contact:King Slime=1600/30
+fight|kslime|death|sd|10|18000|gmod|grlv	contact:King Slime=1112/20 contact:Red Slime=98/5 contact:Purple Slime=44/2 contact:Green Slime=18/2 contact:Blue Slime=14/2
+fight|eye|rev|free|11|18000|n11|gmod|grlv	contact:Eye of Cthulhu=751/23 contact:Servant of Cthulhu=139/11
+fight|eow|exp|free|11|18000|n13|gmod|grlv	contact:Eater of Worlds=3359/226
+fight|skel|exp|free|11|18000|n16|gmod|grlv	contact:Skeletron=1693/34 proj:Skull<-Skeletron=283/13
+fight|qb|exp|free|11|18000|n15|gmod|grlv|jg	contact:Queen Bee=4978/129 contact:Bee=164/37 proj:Queen Bee's Stinger<-Queen Bee=38/6
+fight|qb|rev|free|11|18000|n15|gmod|grlv|jg	contact:Queen Bee=3557/94 proj:Queen Bee's Stinger<-Queen Bee=198/24
+fight|qb|death|free|11|18000|n15|gmod|grlv|jg	contact:Queen Bee=2868/74 proj:Queen Bee's Stinger<-Queen Bee=212/29
+fight|kslime|rev|free|11|18000|gmod|grlv	contact:King Slime=1402/28 contact:Blue Slime=42/16 contact:Red Slime=39/4 contact:Yellow Slime=14/1 contact:Pinky=7/1
+fight|kslime|death|free|11|18000|gmod|grlv	contact:King Slime=1575/31 contact:Spiked Slime=32/2 contact:Yellow Slime=14/1 contact:Blue Slime=2/1
+fight|eye|rev|sd|12|18000|n11|gmod|grlv	contact:Eye of Cthulhu=1625/57 contact:Servant of Cthulhu=279/26 proj:Blood Shot<-Eye of Cthulhu=2/1
+fight|eow|exp|sd|12|18000|n13|gmod|grlv	contact:Eater of Worlds=2784/243
+fight|skel|exp|sd|12|18000|n16|gmod|grlv	contact:Skeletron=2340/51 proj:Skull<-Skeletron=281/14
+fight|qb|exp|sd|12|18000|n15|gmod|grlv|jg	contact:Queen Bee=4614/112 proj:Queen Bee's Stinger<-Queen Bee=123/14 contact:Bee=49/9
+fight|qb|rev|sd|12|18000|n15|gmod|grlv|jg	contact:Queen Bee=2430/57 proj:Queen Bee's Stinger<-Queen Bee=89/10
+fight|qb|death|sd|12|18000|n15|gmod|grlv|jg	contact:Queen Bee=3201/77 proj:Queen Bee's Stinger<-Queen Bee=93/11
+fight|kslime|rev|sd|12|18000|gmod|grlv	contact:King Slime=809/16 proj:Slime Spike<-Spiked Slime=26/5 contact:Purple Slime=8/1 contact:Blue Slime=7/1
+fight|kslime|death|sd|12|18000|gmod|grlv	contact:King Slime=1230/25 contact:Blue Slime=24/4 contact:Yellow Slime=19/1 contact:Red Slime=11/1 proj:Slime Spike<-Spiked Slime=9/2

@@ -1,0 +1,30 @@
+fight|ds|exp|free|1|18000|n11|gmod|grlv|fe0	contact:Desert Scourge=1368/34
+fight|ds|rev|free|1|18000|n11|gmod|grlv|fe0	contact:Desert Scourge=1519/54 proj:Scourge Spit<-Desert Scourge=46/5
+fight|eye|rev|free|1|18000|n11|gmod|grlv|fe0	contact:Eye of Cthulhu=1390/43 contact:Servant of Cthulhu=79/6
+fight|eow|exp|free|1|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=682/58
+fight|eow|rev|free|1|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2525/116
+fight|ds|exp|sd|2|18000|n11|gmod|grlv|fe0	contact:Desert Scourge=1225/34
+fight|ds|rev|sd|2|18000|n11|gmod|grlv|fe0	contact:Desert Scourge=1267/35 contact:Desert Nuisance=17/1 proj:Scourge Spit<-Desert Scourge=16/1
+fight|eye|rev|sd|2|18000|n11|gmod|grlv|fe0	contact:Eye of Cthulhu=1179/36 contact:Servant of Cthulhu=49/5
+fight|eow|exp|sd|2|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2501/199
+fight|eow|rev|sd|2|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2377/120
+fight|ds|exp|free|3|18000|n11|gmod|grlv|fe0	contact:Desert Scourge=1493/48
+fight|ds|rev|free|3|18000|n11|gmod|grlv|fe0	contact:Desert Scourge=1504/54
+fight|eye|rev|free|3|18000|n11|gmod|grlv|fe0	contact:Eye of Cthulhu=1877/58 contact:Servant of Cthulhu=177/14
+fight|eow|exp|free|3|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2254/149
+fight|eow|rev|free|3|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2447/119
+fight|ds|exp|sd|4|18000|n11|gmod|grlv|fe0	contact:Desert Scourge=1485/47
+fight|ds|rev|sd|4|18000|n11|gmod|grlv|fe0	contact:Desert Scourge=1388/43 proj:Scourge Spit<-Desert Scourge=22/3
+fight|eye|rev|sd|4|18000|n11|gmod|grlv|fe0	contact:Eye of Cthulhu=860/24 contact:Servant of Cthulhu=131/9 proj:Blood Shot<-Eye of Cthulhu=6/1
+fight|eow|exp|sd|4|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2489/240
+fight|eow|rev|sd|4|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2405/125
+fight|ds|exp|free|5|18000|n11|gmod|grlv|fe0	contact:Desert Scourge=1334/46 proj:Scourge Spit<-Desert Scourge=17/1
+fight|ds|rev|free|5|18000|n11|gmod|grlv|fe0	contact:Desert Scourge=1218/40 proj:Scourge Spit<-Desert Scourge=16/2
+fight|eye|rev|free|5|18000|n11|gmod|grlv|fe0	contact:Eye of Cthulhu=1738/48 contact:Servant of Cthulhu=71/6
+fight|eow|exp|free|5|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2390/281 contact:Vile Spit=52/1
+fight|eow|rev|free|5|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2544/136
+fight|ds|exp|sd|6|18000|n11|gmod|grlv|fe0	contact:Desert Scourge=1494/46
+fight|ds|rev|sd|6|18000|n11|gmod|grlv|fe0	contact:Desert Scourge=1633/56 proj:Scourge Spit<-Desert Scourge=30/3
+fight|eye|rev|sd|6|18000|n11|gmod|grlv|fe0	contact:Eye of Cthulhu=1101/27 contact:Servant of Cthulhu=167/10
+fight|eow|exp|sd|6|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=507/34
+fight|eow|rev|sd|6|18000|n13|gmod|grlv|fe0	contact:Eater of Worlds=2411/141

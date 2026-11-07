@@ -1,6 +1,6 @@
 import sys
 # generates spec TSVs in /home/user/lab/specs
-CAP = 36000  # 10 min of game time
+CAP = 18000  # 5 min of game time
 def line(boss, mode, seed, **kw):
     cap = kw.pop('cap', CAP)
     kw.setdefault('cmd', 'far')  # commander parked outside the arena so the boss is never drawn to him (see RESULTS: Spectator targeting)

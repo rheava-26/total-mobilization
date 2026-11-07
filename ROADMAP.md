@@ -234,6 +234,39 @@
 
   - Events drops Shaken/Routed from 52–96% to 2–16%. Brain dmg/s 1 → 26.
   - **Builder recommendation:** ship events + parity; drop proximity_slow and veteran; keep formation as a knob. DS and Eye Rev stay hard.
+- **EVE'S DECISIONS (11-07 midday):**
+  - **Fear:** event fear YES (make it the default). Sunflowers slow fear. Formation defense YES (make it matter). Autonomy = fearless while spectating (verify).
+  - **Survivability:** HP/def parity NO. "Levy health and defense can stay minimal… supplying crystals isn't instant progress by intent."
+  - **Lab realism:** HP +40–60 per boss tier, 240–340 by Skeletron, cap 500. Mana: mages max, others 60–120, all max by BoC.
+  - **Targeting:** enemies of all kinds target levies and vice versa ("why would I not be okay").
+  - **Labs:** arenas only (no flat ground). Base placeables/stations by EoW/BoC. Food buffs (Well Fed, Plenty Satisfied). Hazard pay arm. Piercing for BoC/EoW/DS. Team-buff accessories. Rogue levies (Calamity only; the Acid Rain rogue set with Irradiated). New bosses: Hive Mind, Perforators, Slime God. Keep vanilla and Calamity separate.
+  - **Replays:** the gallery HTML "didn't work" on her side → publish as a hosted page.
+- **Tier corrections (Eve):** Crystal Ball, Bewitching Table and Ammo Box are post-Skeletron (some Hardmode); lab 3 places each placeable only from its real first tier (wiki-checked). Meteor Shot only AFTER EoW/BoC are beaten (Eve saw no meteor after smashing an orb).
+- **Ammo (Eve):** labs used plain ammo. Lab 3 now gives the best ammo for the tier, boss and arena: Meteor Shot (bounces + pierces) from the EoW/BoC fights on, enclosed arena; piercing arrows vs worms. Lab 3 also reports how the real armory picks a levy's ammo.
+- **REPLAY SITE PUBLISHED:** https://claude.ai/artifact/Q6aYA45u8MSxyB7VZxHSEH (63 fights). Rebuild with `tools/fightviewer/make_site.py <out> lab1=... lab2=... worm=... options=... lab3=...`, then republish the same file path.
+- **Eve on the replay page:** "OH THIS IS SO COOL". Feedback:
+  - the arena is tiny (platforms ~16 tiles);
+  - levies clump on the ground;
+  - a void beside the arena (terrain only snapshotted once);
+  - "did they really win?" The Eye had 13/7534 HP in the last sample, then vanished. The harness logged a kill, but the recorder has no boss-death event.
+- **rec2 builder:** terrain grows with the fight; Static Camera region; bdeath/bdespawn events; "levies alive N of M".
+- **lab3 resumed** after Eve's interrupt stopped it (from WIP dbbc19d): realistic 150–250 tile multi-row arenas, levies spawn inside, vertical-space report.
+- **Eve viewer asks (→ rec2):**
+  - record and draw boss ADDS (creepers, Perforator worms, Desert Nuisances…);
+  - track one levy (weapon, ammo, HP, state, buffs, hits);
+  - an Asteroids-style boss death explosion;
+  - a "Call it" hidden-result guessing mode;
+  - many more fights on the page (~150–200, in batches).
+  - Full-screen was hot-patched into the published page (v2).
+- **SHIPPED 2.0.20** (+ Mechanization 0.9.1 resent; booted clean on both toolchains).
+- **2.0.21 (building):** armor-fx (Ninja afterimage, shadows/outlines, armor lights; Ninja 9 def / +20% speed / 13% crit vs Platinum 20 def) + recorder format 6 (commander and levy gear baselines).
+- 2.0.20 details: merged rec2. Recorder format 5: adds/minions, levy buffs, terrain growth, Static Camera view, bdeath/bdespawn. Viewer: adds, levy tracking, death explosion, Call-it mode.
+- **Eve will record her own fights** (solo control vs levies; DS, Slime God, maybe EoW) with /levyrec → put them on the replay page as "Eve's fights".
+- **armor-fx builder:** Ninja afterimage and other armor visuals on levies, plus Ninja vs Platinum stats.
+- **Launched:**
+  - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
+  - lab3;
+  - replay-site.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

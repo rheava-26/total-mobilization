@@ -82,6 +82,8 @@ namespace Levy.Common.Movement
 		private static readonly float[] _hLen = new float[ChainSamples];
 		/// <summary>Chains and chain segments the field modelled this tick (harness / diagnostics).</summary>
 		public static int ChainsThisTick, ChainSegsThisTick;
+		/// <summary>NPC indices of the heads of the chains modelled this tick.</summary>
+		public static readonly List<int> ChainHeads = new();
 		/// <summary>Harness switch (LEVY_CHAIN=0): model worm chains (default) or fall back to treating each segment as its own body.</summary>
 		internal static bool ChainBossBody = Environment.GetEnvironmentVariable("LEVY_CHAINBOSS") == "1";
 		internal static bool ChainOn = Environment.GetEnvironmentVariable("LEVY_CHAIN") != "0";
@@ -108,7 +110,7 @@ namespace Levy.Common.Movement
 			if (_tick == now) return Snap;
 			_tick = now;
 			long t0 = Stopwatch.GetTimestamp();
-			Snap.Clear(); BossBodies = 0; _trajN = 0; ChainsThisTick = 0; ChainSegsThisTick = 0;
+			Snap.Clear(); BossBodies = 0; _trajN = 0; ChainsThisTick = 0; ChainSegsThisTick = 0; ChainHeads.Clear();
 			for (int i = 0; i < _childOf.Length; i++) { _childOf[i] = -1; _follower[i] = false; _snapOf[i] = -1; }
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
@@ -199,7 +201,7 @@ namespace Levy.Common.Movement
 				pos += new Vector2((float)Math.Cos(ang0 + theta), (float)Math.Sin(ang0 + theta)) * step; len += step;
 				if ((t & 1) == 0) { _hPath[t >> 1] = pos; _hLen[t >> 1] = len; }
 			}
-			ChainsThisTick++;
+			ChainsThisTick++; ChainHeads.Add(head);
 			bool dm = Content.NPCs.SoldierNPC.DanceMode >= 1 && Content.NPCs.SoldierNPC.DOn(1);
 			for (int k = 0; k < n; k++)
 			{

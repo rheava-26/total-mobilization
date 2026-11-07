@@ -1035,6 +1035,7 @@ namespace Levy.Content.NPCs
 			float standoff = flame ? LevyConstants.FlameStandoffTiles : StandoffTiles(range); // a flamethrower never backs off to a gunner's standoff: it wants contact range
 			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
 			UpdateAltitudeIntent(seg, range, standoff, false); // independent of the horizontal plan below: climb, retreat and shoot compose
+			if (TrySpreadFromWormTarget(now)) { WhyB = Why.BRetreat; return true; } // a worm's trail sweeps around its target: bystanders keep clear of him, he runs a long leg
 			if (DanceMode >= 1 && SoldierNPC.MobilityMode >= 1 && !flame && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage)) DanceLift(seg);
 
 			// leaving a retreat takes a little extra room (hysteresis), so the body does not stutter on the standoff line

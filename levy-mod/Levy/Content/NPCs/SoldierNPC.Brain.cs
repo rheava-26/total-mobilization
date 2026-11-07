@@ -463,7 +463,7 @@ namespace Levy.Content.NPCs
 			float threatBest = LevyConstants.ThreatScanTiles * LevyConstants.ThreatScanTiles * tileSq; int threatIdx = -1;
 			float threatPrefilterSq = (LevyConstants.ThreatScanTiles + 30f) * (LevyConstants.ThreatScanTiles + 30f) * tileSq;
 			// a melee soldier also tracks the nearest hostile it will not charge (boss / lethal contact damage)
-			bool meleeCare = Weapon != null && Weapon.IsMelee && !Weapon.FiresProjectileMelee; // a beam-firing swordsman positions like a gunner
+			bool meleeCare = PositionsAsMelee; // a beam-firing swordsman positions like a gunner
 			float dangerBest = LevyConstants.ThreatScanTiles * LevyConstants.ThreatScanTiles * tileSq; int dangerIdx = -1;
 			float mimicBest = float.MaxValue; _mimicNearValid = false;
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -695,10 +695,10 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>True for a blade / spear / whip that closes to contact. A sword that fires a real projectile (FiresProjectileMelee) stands off at beam range like a gunner.</summary>
-		private bool PositionsAsMelee => Weapon != null && Weapon.IsMelee && !Weapon.FiresProjectileMelee;
+		private bool PositionsAsMelee => Weapon != null && Weapon.IsMelee && (!Weapon.FiresProjectileMelee || Weapon.ShortShot);
 
 		/// <summary>A sword that throws its own projectile: it stands off like a gunner but picks the NEAREST enemy rather than the one attacking us.</summary>
-		private bool FiresBeamMelee => Weapon != null && Weapon.FiresProjectileMelee;
+		private bool FiresBeamMelee => Weapon != null && Weapon.FiresProjectileMelee && !Weapon.ShortShot;
 
 		private float AcquireRangeTiles() => PositionsAsMelee ? LevyConstants.MeleeAcquireRangeTiles : Weapon.RangeTiles * FireBuffer;
 

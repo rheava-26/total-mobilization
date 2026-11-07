@@ -20,6 +20,8 @@ namespace Levy.Common.Weapons
 		public int MeleeReachTiles = LevyConstants.RangeMelee;
 		/// <summary>A melee swing that also launches a real friendly projectile (Enchanted Sword, Ice Blade, Beam Sword, Starfury, Terra Blade...). The soldier swings from out to <see cref="RangeTiles"/>.</summary>
 		public bool FiresProjectileMelee;
+		/// <summary>A projectile sword whose shot only works close in (a vine, a spore cloud, a crescent): the soldier closes to blade range like a plain blade and its swings launch the shot there.</summary>
+		public bool ShortShot;
 		/// <summary>The projectile type a <see cref="FiresProjectileMelee"/> swing launches (0 otherwise).</summary>
 		public int BeamProjType;
 		public bool Gravity; public bool Homing;
@@ -360,6 +362,13 @@ namespace Levy.Common.Weapons
 		/// melee reach, capped at ProjectileMeleeReachCapTiles). Held slashes drawn around the body (Night's Edge family) do not count; Terra Blade's
 		/// flown beam comes from the SwordBeams table.
 		/// </summary>
+		/// <summary>Projectile swords whose shot does not fly out to the cap: a vine, a spore cloud or a homing crescent that only finds a target nearby. The soldier fights these at blade range (WeaponProfile.ShortShot); the listed reach is only the weapon's stated range.</summary>
+		private static readonly Dictionary<int, int> ShortReachShots = new()
+		{
+			[ItemID.BladeofGrass] = 6, [ItemID.LightsBane] = 6, [ItemID.ChlorophyteSaber] = 9, [ItemID.ChlorophyteClaymore] = 9,
+			[ItemID.IceSickle] = 10, [ItemID.DeathSickle] = 10, [ItemID.ChristmasTreeSword] = 12, [ItemID.WaffleIron] = 12,
+		};
+
 		private static void ApplyProjectileMelee(Item src, WeaponProfile p)
 		{
 			// Zenith is a long-range weapon: its homing swords strike from across the screen, so the soldier stands off at full-camera
@@ -388,6 +397,7 @@ namespace Levy.Common.Weapons
 				float tiles = speed * Math.Max(1, sample.timeLeft) / LevyConstants.TilePx * LevyConstants.ShortShotReachFraction;
 				reach = Math.Clamp((int)Math.Round(tiles), LevyConstants.ShortShotRangeMinTiles, LevyConstants.ProjectileMeleeReachCapTiles);
 			}
+			if (ShortReachShots.TryGetValue(src.type, out int shortReach)) { reach = shortReach; p.ShortShot = true; }
 			p.FiresProjectileMelee = true;
 			p.BeamProjType = beam;
 			p.RangeTiles = Math.Max(p.MeleeReachTiles, reach);

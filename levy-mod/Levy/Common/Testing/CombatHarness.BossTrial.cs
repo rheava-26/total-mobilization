@@ -84,7 +84,20 @@ namespace Levy.Common.Testing
 				int cap = int.Parse(f[9]) > 0 ? int.Parse(f[9]) : 18000;
 				string cleanExtra = string.Join(";", kv.Where(k => k.Key.Contains(':')).Select(k => k.Key + "=" + k.Value));
 				Action<BtRun> add = r => { if (done.Contains(r.Key)) skipped++; else _btRuns.Add(r); };
-				if (f[0] == "roll")
+				if (f[0] == "sweep")
+				{
+					// every vanilla melee weapon that launches a projectile, one levy-only reference window each (LEVY_BT sweep)
+					for (int t = 1; t < ItemID.Count; t++)
+					{
+						Item it = new Item(); try { it.SetDefaults(t); } catch { continue; }
+						if (it.damage <= 0 || it.shoot <= 0 || !it.CountsAsClass(Terraria.ModLoader.DamageClass.Melee) || it.noMelee && it.useStyle != ItemUseStyleID.Swing) continue;
+						string nm = Lang.GetItemNameValue(t); if (string.IsNullOrEmpty(nm) || BtItemId(nm) != t) continue;
+						WeaponProfile pr; try { pr = WeaponClassifier.GetProfile(it); } catch { continue; }
+						if (!pr.Supported || !pr.IsMelee || pr.IsTethered && !pr.IsWhip) continue;
+						add(new BtRun { Mode = "ref", Boss = "eye", Diff = f[1], Order = f[2], Auto = true, Arena = arena, Camp = camp, Comp = "E1", Stats = "best", Tier = "opt", Grade = "levy", Trial = 1, Seed = t, Cap = 0, Extra = "only=levy;w:E=" + nm, CfgId = "sweep-" + nm });
+					}
+				}
+				else if (f[0] == "roll")
 				{
 					int trials = int.Parse(kv.GetValueOrDefault("trials", "3"));
 					for (int cfg = s0; cfg <= s1; cfg++)
@@ -816,6 +829,13 @@ namespace Levy.Common.Testing
 			{
 				BtRefPin(false);
 				if (run.Auto && _btRefTick % 30 == 0) BtAutonomyOne(_btRefLevy);
+				if (run.Extra.Contains("dbg:x=1") && _btRefTick % 20 == 0 && _btRefTick > 200 && _btRefTick < 700)
+				{
+					var sb2 = new StringBuilder(); NPC lv = Main.npc[_btRefLevy.Idx];
+					sb2.Append($"HARNESS-BT-REFDBG t{_btRefTick} levy@{(lv.Center.X - d.Center.X) / 16f:0.0},{(lv.Center.Y - d.Center.Y) / 16f:0.0} dummyLife={d.life} projs:");
+					for (int q = 0; q < Main.maxProjectiles; q++) { Projectile pj = Main.projectile[q]; if (pj.active && pj.friendly) sb2.Append($" [{pj.type} dmg{pj.damage} d{Vector2.Distance(pj.Center, d.Center) / 16f:0.0} tc{(pj.tileCollide ? 1 : 0)} pen{pj.penetrate} ai{pj.ai[0]:0.##}/{pj.ai[1]:0.##} tl{pj.timeLeft} imm{(pj.usesLocalNPCImmunity ? 1 : 0)}]"); }
+					Mod.Logger.Info(sb2.ToString());
+				}
 				BtPinStrays(_btRefDummy);
 				if (_btRefTick == BtRefWarm) _btRefStartLife = d.life;
 				if (_btRefTick >= BtRefWarm + BtRefMeasure || !_btRefLevy.Rec.HasBody)
@@ -886,6 +906,7 @@ namespace Levy.Common.Testing
 			_btRefPlayerNote = $"player {p.statLifeMax2}hp/{p.statManaMax2}mana";
 		}
 
+		private static int _btPrevAnim; private static bool _btRefSwingEmulated;
 		private static System.Reflection.MethodInfo _btItemCheck; private static bool _btItemCheckInt;
 		/// <summary>Tiles west of the dummy the player stands at: a contact blade has to be in reach, everything else shoots from range.</summary>
 		private static int BtRefStand(char cls) => cls == 'E' && !WeaponClassifier.GetProfile(BtMake(_btRefStandWeapon ?? "Copper Shortsword")).FiresProjectileMelee ? 2 : 14;
@@ -924,7 +945,16 @@ namespace Levy.Common.Testing
 						if (m.Name == "ItemCheck") { var ps = m.GetParameters(); if (ps.Length == 0) { _btItemCheck = m; _btItemCheckInt = false; break; } if (ps.Length == 1 && ps[0].ParameterType == typeof(int)) { _btItemCheck = m; _btItemCheckInt = true; } }
 					if (_btItemCheck == null) throw new Exception("Player.ItemCheck not found");
 				}
+				int prevAnim = _btPrevAnim;
 				_btItemCheck.Invoke(p, _btItemCheckInt ? new object[] { 0 } : null);
+				// A headless server never sizes a held blade's hitbox, so a plain swing connects with nothing. A contact blade (no projectile) therefore lands its hit by hand once per swing: the weapon damage and crit the equip pass produced, struck at the dummy, which stands within reach.
+				if (w.damage > 0 && w.useStyle == ItemUseStyleID.Swing && !w.noMelee && w.shoot <= 0 && w.CountsAsClass(DamageClass.Melee) && p.itemAnimation > prevAnim && Vector2.Distance(p.Center, d.Center) < 7 * 16f)
+				{
+					int dmgHit = p.GetWeaponDamage(w); bool crit = Main.rand.Next(100) < p.GetWeaponCrit(w);
+					d.StrikeNPC(d.CalculateHitInfo(dmgHit, p.direction, crit, w.knockBack, DamageClass.Melee, false, 0f));
+					_btRefSwingEmulated = true;
+				}
+				_btPrevAnim = p.itemAnimation;
 			}
 			catch (Exception e) { var ie = (e is System.Reflection.TargetInvocationException && e.InnerException != null) ? e.InnerException : e; if (!_btRefPlayerNote.Contains("itemcheck")) { _btRefPlayerNote += " itemcheck:" + ie.GetType().Name + ":" + ie.Message; Mod.Logger.Info("HARNESS-BT: itemcheck exception: " + ie); } }
 			finally { Main.myPlayer = savedMy; }
@@ -936,15 +966,16 @@ namespace Levy.Common.Testing
 			double levyDps = run.Extra.Contains("only=player") ? 0 : _btRefLevyDmg / secs, playerDps = run.Extra.Contains("only=levy") ? 0 : _btRefPlayerDmg / secs;
 			string load = BtLoadFor(cls, run.Tier).Weapon;
 			var sb = new StringBuilder();
-			string res = $"levy={levyDps.ToString("0.0", CultureInfo.InvariantCulture)} player={playerDps.ToString("0.0", CultureInfo.InvariantCulture)} ratio={(levyDps > 0 ? (playerDps / levyDps).ToString("0.00", CultureInfo.InvariantCulture) : "-")}";
+			string res = (_btRefSwingEmulated ? "swing-emulated " : "") + $"levy={levyDps.ToString("0.0", CultureInfo.InvariantCulture)} player={playerDps.ToString("0.0", CultureInfo.InvariantCulture)} ratio={(levyDps > 0 ? (playerDps / levyDps).ToString("0.00", CultureInfo.InvariantCulture) : "-")}";
 			// reuse the fight columns: dmgEye = levy window damage, dmgEyeR = player window damage, sec = window seconds
 			var cols = BtHeader.Split('\t').Length; var v = new string[cols]; for (int i = 0; i < cols; i++) v[i] = "0";
 			v[0] = run.Key; v[1] = run.Mode; v[2] = run.Boss; v[3] = run.Diff; v[4] = run.Order; v[5] = run.Auto ? "1" : "0"; v[6] = run.Arena; v[7] = run.Camp ? "1" : "0"; v[8] = run.Comp; v[9] = run.CfgId; v[10] = run.Trial.ToString(); v[11] = run.Tier; v[12] = "REF"; v[13] = BtRefMeasure.ToString(); v[14] = secs.ToString("0.0", CultureInfo.InvariantCulture);
-			v[17] = _btRefLevyDmg.ToString(); v[18] = _btRefPlayerDmg.ToString(); v[cols - 2] = load.Replace(' ', '_'); v[cols - 1] = res + " " + _btRefPlayerNote;
+			string info = ""; try { var wi = BtMake(load); var pr = WeaponClassifier.GetProfile(wi); float exp = Math.Max(0f, wi.damage - 6f) * 60f / Math.Max(1, wi.useAnimation); info = $" | dmg={wi.damage} anim={wi.useAnimation} shoot={wi.shoot} fires={pr.FiresProjectileMelee} beamProj={pr.BeamProjType} range={pr.RangeTiles} reach={pr.MeleeReachTiles} expectedSwingDps={exp:0.0} levyOverExpected={(exp > 0 ? levyDps / exp : 0):0.00}"; } catch { }
+			v[17] = _btRefLevyDmg.ToString(); v[18] = _btRefPlayerDmg.ToString(); v[cols - 2] = load.Replace(' ', '_'); v[cols - 1] = res + " " + _btRefPlayerNote + info;
 			sb.Append(string.Join("\t", v));
 			File.AppendAllText(_btOut, sb + "\n");
 			Mod.Logger.Info($"HARNESS-BT: REF {run.Key} weapon={load}: {res} {_btRefPlayerNote}");
-			_btRefPlayer = false; _btRefStarted = false; _btI++;
+			_btRefPlayer = false; _btRefStarted = false; _btRefSwingEmulated = false; _btI++;
 			ClearAll(); BtPurgeNpcs();
 		}
 

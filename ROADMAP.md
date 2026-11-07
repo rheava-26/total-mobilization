@@ -602,6 +602,20 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Plus the short-reach melee fix (Blade of Grass etc.).
 - **Boots:** Thorium+MS and Calamity, 0 exceptions.
 
+## 📦 SHIPPED Levy 2.0.10 + Mechanization 0.9.0, at scratchpad/ship-2.0.10
+- **spectator2 5dd850f:**
+  - **LIKELY ROOT CAUSE of "boss targets the spectator":** in Rev/Death, Calamity's vanilla-boss AI overrides pick targets with CalamityUtils.CalamityTargeting (its own player scan), bypassing Levy's TargetClosest detours. Fix: an IL hook hides spectators from it, and Calamity's PreAI gets a levy prepared in slot 255 (CalamityTargetingCompat; LEVY_CALCOMPAT=0 disables).
+  - Not proven in a real client → Eve to run `/levyspec on` and send client.log if it persists.
+  - Spectator is GATED per boss (no effect vs undowned bosses; can't drink / the buff ends).
+  - Potions match vanilla (rarity, size, drink particles, one-line tooltips).
+- **ui-close 8ba82f7:** "Send to map point" flash-close fixed. The map now opens like vanilla (inventory/talkNPC closed first; otherwise Main.Draw's ToggleInv closes the map). The opening click is ignored; the Barracks reopens after.
+  - The other mod's "Shops Changer" closing: nothing in Levy found; need the mod name.
+- **Mechanization 0.9.0:**
+  - Armory Relay (link 1000 tiles, serve 25).
+  - Drones fly through platforms and never land on them.
+- **Boots:** Thorium+MS+Mech and Calamity+Mech, 0 exceptions, all checks OK (Calamity compat hooks installed).
+- A container restart killed air-mobility. WIP saved on origin (559f5a9); resumed.
+
 ## 🧭 Eve (2026-11-07 ~01:45)
 - Frustrated midair mobility wasn't already there (fair: airborne levies skipped dodge/strafe/jump entirely; air-mobility is fixing it).
 - Relay link range → 1000 tiles (done, 896c689); serve radius stays 25.

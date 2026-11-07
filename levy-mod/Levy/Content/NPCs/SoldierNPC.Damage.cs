@@ -92,6 +92,7 @@ namespace Levy.Content.NPCs
 				PendingContactScale = IncomingSetScale() * global::Levy.Common.Util.BannerBuffs.Defense(CommanderIndex, a); // Solar shield / Beetle orbs / Paladin's Shield share, folded into the strike by SoldierSetHitScale
 				try { done = NPC.SimpleStrikeNPC(raw, dir, false, 0f, null, false, 0f, true); } // ModifyIncomingHit applies the player defense formula; the server broadcasts the strike
 				finally { _contactStriking = false; PendingContactScale = 1f; }
+				if (HitDbg != null) HitDbgAdd("contact:" + a.TypeName, done);
 				AfterHit(done, i);
 				return; // one contact hit per tick; immune frames gate the rest
 			}
@@ -99,6 +100,9 @@ namespace Levy.Content.NPCs
 
 		/// <summary>Shared bookkeeping after any attributed hit (contact or hostile projectile).</summary>
 		internal int HitsTaken;
+		/// <summary>Harness telemetry (null = off): damage a levy took by source, "contact:Queen Bee" or "proj:Stinger&lt;-Queen Bee" mapped to (damage, hits).</summary>
+		internal static System.Collections.Generic.Dictionary<string, (long dmg, int n)> HitDbg;
+		internal static void HitDbgAdd(string k, int d) { if (HitDbg == null) return; HitDbg.TryGetValue(k, out var v); HitDbg[k] = (v.dmg + d, v.n + 1); }
 		private void AfterHit(int damageDone, int attackerIndex)
 		{
 			HitsTaken++;
@@ -140,6 +144,7 @@ namespace Levy.Content.NPCs
 			_projectileStriking = false;
 			if (!projectile.hostile || LevyUtil.IsClient) return;
 			RecordProjectileAttacker(projectile);
+			if (HitDbg != null) HitDbgAdd("proj:" + projectile.Name + "<-" + LastAttackerName, damageDone);
 			AfterHit(damageDone, LastAttackerIndex);
 		}
 

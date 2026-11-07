@@ -1,0 +1,9 @@
+fight|kslime|exp|follow|1|18000|gmod|grlv	contact:King Slime=1010/19 contact:Spiked Slime=119/7 proj:Slime Spike<-Spiked Slime=84/11
+fight|kslime|exp|free|1|18000|gmod|grlv	contact:King Slime=650/13 proj:Slime Spike<-Spiked Slime=68/8 contact:Blue Slime=6/6
+fight|kslime|rev|follow|1|18000|gmod|grlv	contact:King Slime=1712/33 contact:Red Slime=9/1 contact:Blue Slime=8/2
+fight|kslime|exp|follow|2|18000|gmod|grlv	contact:King Slime=707/12 contact:Spiked Slime=76/3 contact:Blue Slime=21/2 proj:Slime Spike<-Spiked Slime=19/3
+fight|kslime|exp|free|2|18000|gmod|grlv	contact:King Slime=601/11 contact:Spiked Slime=24/1 proj:Slime Spike<-Spiked Slime=15/1 contact:Blue Slime=1/1
+fight|kslime|rev|follow|2|18000|gmod|grlv	contact:King Slime=1281/23 contact:Red Slime=106/5 contact:Yellow Slime=28/1 contact:Spiked Slime=12/1 proj:Slime Spike<-Spiked Slime=3/1
+fight|kslime|exp|follow|3|18000|gmod|grlv	contact:King Slime=1487/28 contact:Spiked Slime=13/1
+fight|kslime|exp|free|3|18000|gmod|grlv	contact:King Slime=991/18 contact:Spiked Slime=42/2 proj:Slime Spike<-Spiked Slime=5/1
+fight|kslime|rev|follow|3|18000|gmod|grlv	contact:King Slime=1224/23 contact:Purple Slime=10/1

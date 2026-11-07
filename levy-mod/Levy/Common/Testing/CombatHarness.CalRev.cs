@@ -43,9 +43,9 @@ namespace Levy.Common.Testing
 
 		internal sealed class CrRun
 		{
-			public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f; public bool Dbg, Diag; public List<CrLevySpec> Specs; public string Desc = "";
+			public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f; public bool Dbg, Diag; public List<CrLevySpec> Specs; public string Desc = "";
 			public string Key => $"{Kind}|{Boss}|{Mode}|{Order}|{Seed}|{Cap}" + (N != 10 ? "|n" + N : "") + (HpX != 1f ? "|hp" + HpX.ToString(CultureInfo.InvariantCulture) : "") + (Dr != 0f ? "|dr" + Dr.ToString(CultureInfo.InvariantCulture) : "")
-				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "");
+				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "");
 		}
 		private readonly List<CrRun> _crRuns = new();
 		private int _crI = -1; private bool _crStarted;
@@ -71,11 +71,13 @@ namespace Levy.Common.Testing
 						string k = f[x].Substring(0, eq), v = f[x].Substring(eq + 1);
 						if (k == "order") r.Order = v; else if (k == "n") r.N = v == "cp" ? CrRealMax(r.Boss) : int.Parse(v); else if (k == "hpx") r.HpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "dr") r.Dr = float.Parse(v, CultureInfo.InvariantCulture);
 						else if (k == "clone") r.Clone = v[0]; else if (k == "cmd") r.Cmd = v; else if (k == "arena") r.Arena = v; else if (k == "gear") r.Gear = v; else if (k == "grade") r.Grade = v;
-						else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture);
+						else if (k == "cw") r.CloneWeapon = v; else if (k == "side") r.Side = v; else if (k == "jungle") r.Jungle = v == "1"; else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture);
 					}
 					if (r.Gear == "mod" && r.Grade == "mix") r.Grade = "lv";
 					r.Specs = r.Gear == "mod" ? CrRollTier(r.Boss, r.Seed, r.N, r.HpX, r.Grade == "lv") : CrRoll(r.Boss, r.Seed, r.N, r.HpX);
-					if (r.Clone != 0) { var proto = CrRollTier(r.Boss, r.Seed, 40, r.HpX, true).First(x => x.Cls == r.Clone); r.Specs = Enumerable.Range(0, r.N).Select(_ => proto).ToList(); } r.Desc = string.Join(" ; ", r.Specs.Select(sp => sp.Describe()));
+					if (r.Clone != 0) { var proto = CrRollTier(r.Boss, r.Seed, 40, r.HpX, true).First(x => x.Cls == r.Clone); r.Specs = Enumerable.Range(0, r.N).Select(_ => proto).ToList(); }
+					if (!string.IsNullOrEmpty(r.CloneWeapon)) r.Specs = r.Specs.Select(sp => new CrLevySpec { Cls = sp.Cls, Weapon = r.CloneWeapon, Ammo = "", Armor = sp.Armor, Acc = sp.Acc, LifeCrystals = sp.LifeCrystals, ManaCrystals = sp.ManaCrystals, Potions = sp.Potions, Potion = sp.Potion, ManAtArms = sp.ManAtArms }).ToList(); // cw=<item>: every levy carries this weapon (no random roll)
+					r.Desc = string.Join(" ; ", r.Specs.Select(sp => sp.Describe()));
 				}
 				else if (f[0] == "probe" && f.Length >= 3)
 				{
@@ -383,6 +385,7 @@ namespace Levy.Common.Testing
 			}
 		}
 
+		private static readonly HashSet<string> _crLogged = new();
 		private CrLevy CrSpawnLevy(CrLevySpec spec, CrRun run, int slot, int count, Vector2 center)
 		{
 			var rec = MakeRecord($"{spec.Cls}{slot}");
@@ -395,6 +398,16 @@ namespace Levy.Common.Testing
 			Item w = CrMake(spec.Weapon);
 			if (!gear.CanHold(SoldierGear.SlotWeapon, w)) { Mod.Logger.Warn($"HARNESS-CR: levy cannot hold {spec.Weapon}; fallback {CrFallbackWeapon(spec.Cls)}"); spec.Weapon = CrFallbackWeapon(spec.Cls); spec.Ammo = spec.Cls == 'R' ? "Silver Bullet" : ""; w = CrMake(spec.Weapon); }
 			gear.Weapon = w; gear.SetLocked(SoldierGear.SlotWeapon, true);
+			if (!string.IsNullOrEmpty(run.Side) && spec.Cls == 'E')
+			{
+				Item sd = CrMake(run.Side);
+				if (gear.CanHold(SoldierGear.SlotSidearm, sd)) { gear.Sidearm = sd; gear.SetLocked(SoldierGear.SlotSidearm, true); } else Mod.Logger.Warn($"HARNESS-CR: levy cannot hold sidearm {run.Side}");
+			}
+			if (_crLogged.Add(spec.Weapon) || (!string.IsNullOrEmpty(run.Side) && _crLogged.Add("side:" + run.Side)))
+			{
+				var wp = global::Levy.Common.Weapons.WeaponClassifier.GetProfile(w); var sp2 = gear.HasSidearm ? global::Levy.Common.Weapons.WeaponClassifier.GetProfile(gear.Sidearm) : null;
+				Mod.Logger.Info($"HARNESS-CR: weapon {spec.Weapon}: family={wp.Family} supported={wp.Supported} melee={wp.IsMelee} projMelee={wp.FiresProjectileMelee} shortShot={wp.ShortShot} pureContact={wp.IsPureContactBlade} range={wp.RangeTiles} meleeReach={wp.MeleeReachTiles}" + (sp2 == null ? "" : $" | side {run.Side}: family={sp2.Family} supported={sp2.Supported} range={sp2.RangeTiles} deployer={sp2.IsDeployer}"));
+			}
 			if (!string.IsNullOrEmpty(spec.Ammo))
 			{
 				Item am = CrMake(spec.Ammo, LevyConstants.AmmoPouchMax);
@@ -477,7 +490,7 @@ namespace Levy.Common.Testing
 				s.BossLifeMax = boss.lifeMax; s.BossLife = boss.life; s.BossDamage = boss.damage; s.BossDefense = boss.defense;
 				boss.timeLeft = 99999;
 				s.Rage0 = LevyRippers.RageActivations; s.Adr0 = LevyRippers.AdrenalineActivations; s.Dr0 = LevyRippers.DrCuts; s.Lost0 = LevyRippers.AdrenalineLost;
-				_crS = s; _cr = s; _crStarted = true; _crTickInRun = 0;
+				_crS = s; _cr = s; _crStarted = true; _crTickInRun = 0; SoldierNPC.HitDbg = new();
 				if (run.Diag) global::Levy.Common.Potions.SpectatorDiagnostic.Set(true);
 				global::Levy.Common.Recording.FightRecAuto.Tag(("arena", run.Arena), ("seed", run.Seed), ("mode", run.Mode), ("gear", run.Gear + "_n" + run.N), ("cellkey", run.Key));
 				if (probe && !File.Exists(_crOut + ".probe.tsv")) File.WriteAllText(_crOut + ".probe.tsv", "mode\ttick\tlevy\tgear\tupkeep\trage\tadr\trageMode\tadrMode\thp\tboss\n");
@@ -577,6 +590,7 @@ namespace Levy.Common.Testing
 				CrPct(st.DtdTicks, st.BossAliveTicks), f1(dmgBoss / Math.Max(1.0, (st.BossAliveTicks - st.DtdTicks) / 60.0)), st.AddKills, f1(st.AddKills / Math.Max(1.0, end / 60.0)),
 				string.Join(" ", st.Phase.Select(kv => $"a{kv.Key}:{kv.Value.ticks / 60.0:0}s/{kv.Value.dmg}d={(kv.Value.dmg / Math.Max(1.0, kv.Value.ticks / 60.0)):0}")), string.Join(" ", st.Srcs.OrderByDescending(kv => kv.Value).Take(8).Select(kv => kv.Key + "=" + kv.Value)), per }));
 			File.AppendAllText(_crOut, sb + "\n");
+			if (SoldierNPC.HitDbg != null) { try { File.AppendAllText(_crOut + ".hit.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitDbg.OrderByDescending(kv => kv.Value.dmg).Select(kv => $"{kv.Key}={kv.Value.dmg}/{kv.Value.n}")) + "\n"); } catch { } SoldierNPC.HitDbg = new(); }
 			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} rageAct={LevyRippers.RageActivations - st.Rage0} adrAct={LevyRippers.AdrenalineActivations - st.Adr0}");
 			if (Main.npc[st.BossIdx].active && Main.npc[st.BossIdx].type == st.BossType) Main.npc[st.BossIdx].active = false;
 			_cr = null; _crS = null; _crStarted = false; _crI++;

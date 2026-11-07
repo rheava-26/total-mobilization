@@ -592,6 +592,21 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 🧯 Eve's real-play Spectator bugs (2026-11-07) → branch `spectator-fix`
+1. An UNBEATEN boss still targets the spectating player. This is likely why real fights differ from the harness: the boss sits on the static, unhittable player while levies die around it.
+2. Shield of Cthulhu dash deals damage while spectating (chip damage).
+3. A Recall potion while tethered drags you across the map → end on a long teleport, re-anchor on short hops.
+
+## 🔬 Trial results snapshot → docs/boss_trials/results_snapshot_2026-11-07.html (sent to Eve)
+- **Levy ÷ player DPS:** ~10–15× (Minishark 10.2×, Boomstick 14.4×). Eve's target is 5–8×, so levies are WEAKER per weapon than intended.
+- **Brain "wins" <20 s = DESPAWNS** (flees outside the Crimson; BiomeMirror copies the commander's zones). Flagged and being re-run.
+- **calrev (Crimson fixed):**
+  - 10 levies, Expert: KS 2/3, Eye 2/3 (7 deaths), Brain 3/3.
+  - Rev + rippers: KS 3/3, Brain 0/3 (7.7 deaths). The Eye in Rev looked AI-stuck.
+  - Brain Rev: n=12 5/6, n=16 6/6, n14+hp1.5 8/9; DR scales worst.
+  - **Proposal:** LeviesAtStart 14 under Rev / 16 under Death; HP ×1.25 a secondary knob; make the Adrenaline full-bar DR usable; force ZoneCrimson for Brain fights.
+- Rage/Adrenaline for levies verified (calrev 2d2d3d2, NOT yet merged).
+
 ## ⚖️ Eve (2026-11-07): the minion "no hit" rule is flawed + the boss results look too rosy
 - **Minions:** REMOVE the time-based no-hit give-up (and any hit-based death rule). Keep only throws / the flood guard / immediate self-kill by lifetime. Sent to calbugs.
 - **Boss trials:** Eve is surprised the levies always won and is running her own Spectator test. Sent boss-trials a FIDELITY AUDIT:

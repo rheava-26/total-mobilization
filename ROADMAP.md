@@ -300,6 +300,9 @@
   - Ruby Jewel hits levies with its shots but targets Eve.
   - Goblin army: 25 levies, 1 death; Eve's "surprise" was not in the recording. **Audio cut out (only music left):** possible sound-voice exhaustion from many levies, uninvestigated.
   - **Verdict:** in real Master+Death, an early army is a net NEGATIVE vs KS. Durability (one-shot) + low damage + it pulls the boss's attention so Eve's own hits land less.
+- **Eve (15:50):** in her KS team runs the levies ran OFF from the boss area and KS chased them; she walled it off and closed doors. "Not harder, a King Slime issue." She was fighting, not spectating. Goblin army = a random invasion. AUDIO cut in/out with drones + levies during the goblin fight → sound-throttle builder.
+- **Interrupt stopped vert1 + ammo-slimegod again.** Both had pushed (479f696; ac1529f). RESUMED. vert1 now also does the fight-zone leash (levies stay near the commander in boss fights without an order).
+- **CAUTION (review before ship):** ammo-slimegod 67c0a8b un-hides the Spectator from boss-class NPCs the army can't target. That conflicts with the Spectator promise; it must be minimal and justified.
 - **Launched:**
   - vert1: levies use platform rows;
   - ammo-slimegod: best-ammo armory rule + Slime God despawn.

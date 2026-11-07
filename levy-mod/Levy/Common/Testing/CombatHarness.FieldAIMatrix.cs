@@ -28,7 +28,7 @@ namespace Levy.Common.Testing
 	/// </summary>
 	public partial class CombatHarness
 	{
-		private bool _faReal;
+		private bool _faReal; private int _hookDrawOk;
 		internal static bool RealOn;
 
 		private sealed class RealBoss { public string Key, Label; public Func<int> Type; public float Frac = 1f; public bool Mob; public int MobCount; public int SpawnUpTiles; public int SpawnAcross = 30; }
@@ -203,6 +203,7 @@ namespace Levy.Common.Testing
 						}
 					}
 					else if (t % 90 == 0) { for (int m = 0; m < mobs.Count; m++) if (!Main.npc[mobs[m]].active || Main.npc[mobs[m]].type != rb.Type()) FaSpawnMob(rb, mobs, m); }
+					if (t % 30 == 0) for (int pi = 0; pi < Main.maxProjectiles; pi++) { Projectile hp0 = Main.projectile[pi]; if (hp0.active && hp0.TryGetGlobalProjectile(out HookTag ht) && ht.Soldier >= 0) { float err = ht.SwapError(hp0); if (err > 6f) Mod.Logger.Error($"HOOKDRAW-CHECK FAILED: chain origin {err:0}px from the soldier"); else _hookDrawOk++; break; } }
 					bool exposed = false;
 					for (int i = 0; i < Main.maxNPCs && !exposed; i++) { NPC n = Main.npc[i]; if (!n.active || n.friendly || n.townNPC || n.damage <= 0 || n.ModNPC is SoldierNPC) continue; foreach (var b in _faSol) if (b.NPC.active && Vector2.Distance(n.Center, b.NPC.Center) < 300f) { exposed = true; break; } }
 					if (exposed) exposure++;
@@ -249,7 +250,7 @@ namespace Levy.Common.Testing
 					var sb = new StringBuilder();
 					sb.Append($"REALM|boss={rb.Key}|arena={arena}|gear={gear}|order={Environment.GetEnvironmentVariable("LEVY_REAL_ORDER") ?? "freerein"}|auto={(auto ? 1 : 0)}|target={target}|mode={(before ? "before" : "after")}{mode}|seed={seed}|survSec={surv:0.0}|deaths={deaths}|deathsPerMin={dpm:0.00}|bossDmg={bossDmg}|hits={hitsTotal}|contact={contactHits}|proj={projHits}|lavaTicks={lavaTicks}|exposed={exposure}|tele={teleports}|hookCasts={hookCasts}|maneuvers={maneuvers}|bossAlive={bossAlive}|stillPct={(aliveTicks > 0 ? 100.0 * stillTicks / aliveTicks : 0):0}|edgeFalls={edgeFalls}|dNear={dNear}|dBase={dBase}|dNoBetter={dNoBetter}|dBusy={dBusy}|dStep={dStep}|dJump={dJump}|dDJ={dDJ}|dDash={dDash}|dHook={dHook}|fieldSeesBoss={fieldSeesBoss}|bossFast={bossFastTicks}|bossPeakV={bossPeakV:0.0}|bossDamageStat={(bossIdx >= 0 ? Main.npc[bossIdx].damage : 0)}|src=");
 					sb.Append(string.Join(";", byKind.OrderByDescending(kv => kv.Value).Take(5).Select(kv => $"{kv.Key}={kv.Value}")));
-					Mod.Logger.Info(sb.ToString());
+					sb.Append("|hookDrawOk=" + _hookDrawOk); Mod.Logger.Info(sb.ToString());
 					return $"{rb.Key}/{arena}/{gear}: surv={surv:0.0}s deaths={deaths} bossDmg={bossDmg}";
 				},
 			};

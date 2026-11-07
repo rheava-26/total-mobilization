@@ -592,6 +592,17 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## ⚖️ Eve (2026-11-07): the minion "no hit" rule is flawed + the boss results look too rosy
+- **Minions:** REMOVE the time-based no-hit give-up (and any hit-based death rule). Keep only throws / the flood guard / immediate self-kill by lifetime. Sent to calbugs.
+- **Boss trials:** Eve is surprised the levies always won and is running her own Spectator test. Sent boss-trials a FIDELITY AUDIT:
+  - real boss AI phases (Eye phase 2, KS teleports, Brain creepers);
+  - real stats and scaling;
+  - Spectator targeting;
+  - harness-only levy advantages;
+  - arena exploits;
+  - then a re-run.
+- **Until then the partial results are NOT trusted.**
+
 ## 📦 SHIPPED Levy 2.0.7, at scratchpad/ship-2.0.7
 - Contents:
   - drops 2a0f354: all options OFF except Dungeon Spirit ×3. NEW: levy kills now roll Dungeon Spirits (vanilla required a player target, so levy kills never rolled).

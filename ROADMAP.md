@@ -258,6 +258,9 @@
   - a "Call it" hidden-result guessing mode;
   - many more fights on the page (~150–200, in batches).
   - Full-screen was hot-patched into the published page (v2).
+- **2.0.20 (building/booting):** merged rec2. Recorder format 5: adds/minions, levy buffs, terrain growth, Static Camera view, bdeath/bdespawn. Viewer: adds, levy tracking, death explosion, Call-it mode.
+- **Eve will record her own fights** (solo control vs levies; DS, Slime God, maybe EoW) with /levyrec → put them on the replay page as "Eve's fights".
+- **armor-fx builder:** Ninja afterimage and other armor visuals on levies, plus Ninja vs Platinum stats.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

@@ -66,6 +66,15 @@ namespace Levy.Common.Testing
 			c.BossHpScalingPercentPerCp = run != null && run.HpScale >= 0f ? (int)run.HpScale : _crDefHpScale;
 		}
 
+		private static float _crDefFear = float.NaN;
+		/// <summary>fear=<multiplier> spec token: LevyConfig.FearMultiplier for this fight (0 = fear off); restored afterwards.</summary>
+		private static void CrSetFear(CrRun run)
+		{
+			var c = global::Levy.Common.Config.LevyConfig.Get;
+			if (float.IsNaN(_crDefFear)) _crDefFear = c.FearMultiplier;
+			c.FearMultiplier = run != null && run.Fear >= 0f ? run.Fear : _crDefFear;
+		}
+
 		private static Type _crDownedType;
 		private static void CrResetDowned()
 		{
@@ -319,6 +328,7 @@ namespace Levy.Common.Testing
 			return ts.First(t => t.Index == idx);
 		}
 
+		private static readonly HashSet<string> CrExcluded = new((Environment.GetEnvironmentVariable("LEVY_CR_EXCLUDE") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 		internal static List<CrLevySpec> CrRollTier(string boss, int seed, int total, float hpx, bool allLevy)
 		{
 			var T = CrTierOf(boss); bool post = T.Post;
@@ -330,6 +340,8 @@ namespace Levy.Common.Testing
 				{
 					var pool = T.Weapons[cls]; int sum = pool.Sum(x => x.wt), pick = rng.Next(sum), acc0 = 0; var chosen = pool[0];
 					foreach (var x in pool) { acc0 += x.wt; if (pick < acc0) { chosen = x; break; } }
+					// LEVY_CR_EXCLUDE=<comma list of full item names>: a rolled excluded weapon is swapped for the heaviest non-excluded pool entry; the RNG stream is untouched, so the rest of the army is the same as without it.
+					if (CrExcluded.Contains(chosen.w)) { var alt = pool.Where(x => !CrExcluded.Contains(x.w)).OrderByDescending(x => x.wt).FirstOrDefault(); if (alt.w != null) chosen = alt; }
 					string ammo = ""; if (!string.IsNullOrEmpty(chosen.ammo)) { var ao = chosen.ammo.Split('|').Where(a => CrTryItemId(a, out _)).ToArray(); if (ao.Length > 0) ammo = ao[rng.Next(ao.Length)]; }
 					var armor = T.Armor[cls][rng.Next(T.Armor[cls].Count)];
 					bool maa = !allLevy && rng.NextDouble() < 0.35;

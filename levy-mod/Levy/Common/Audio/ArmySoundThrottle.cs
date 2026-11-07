@@ -41,6 +41,18 @@ namespace Levy.Common.Audio
 		static readonly Dictionary<string, int> perStyle = new Dictionary<string, int>();
 		static readonly Dictionary<string, float> nearest = new Dictionary<string, float>();
 
+		static readonly List<(SoundStyle, Vector2?)> _held = new List<(SoundStyle, Vector2?)>();
+		public static long HeldCount, ReplayedCount;
+
+		public override void PostUpdateEverything()
+		{
+			if (Main.dedServ || _held.Count == 0 || global::Levy.Common.Owner.SoldierOwner.Depth > 0) return;
+			var list = _held.ToArray(); _held.Clear();
+			bool was = inArmy; inArmy = true;
+			try { foreach (var (st, pos) in list) { var x = st; Terraria.Audio.SoundEngine.PlaySound(ref x, pos); ReplayedCount++; } }
+			finally { inArmy = was; }
+		}
+
 		static bool IsArmy(Mod m) => m != null && (m.Name == "Levy" || m.Name == "Mechanization");
 
 		public override void Load()
@@ -75,7 +87,15 @@ namespace Levy.Common.Audio
 
 		static SlotId Play(On_SoundEngine.orig_PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback orig, ref SoundStyle style, Vector2? position, SoundUpdateCallback cb)
 		{
-			if (!inArmy || Main.gameMenu) return orig(ref style, position, cb);
+			if (Main.gameMenu) return orig(ref style, position, cb);
+			// An owner frame (grapple throws and the like) runs with Main.dedServ set and the volume at 0, so vanilla would drop the sound. Keep it and replay it after the frame, through the throttle below.
+			if (global::Levy.Common.Owner.SoldierOwner.Depth > 0)
+			{
+				if (_held.Count < 32) _held.Add((style, position));
+				HeldCount++;
+				return SlotId.Invalid;
+			}
+			if (!inArmy) return orig(ref style, position, cb);
 			int now = (int)Main.GameUpdateCount;
 			if (now - windowStart >= WindowTicks || now < windowStart) { windowStart = now; total = 0; perStyle.Clear(); nearest.Clear(); }
 			string key = style.SoundPath ?? "";

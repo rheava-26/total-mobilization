@@ -1004,6 +1004,7 @@ namespace Levy.Common.Weapons
 				if (Math.Abs(aimVel.X) > 0.01f) s.NPC.direction = aimVel.X < 0f ? -1 : 1;
 			}
 			SoundStyle? useSound = SoundOf(item);
+			global::Levy.Common.Audio.FireSoundTrace.Note(useSound.HasValue, global::Levy.Common.Owner.SoldierOwner.Depth > 0, global::Levy.Content.NPCs.GearUpkeep.Body != null);
 			if (useSound.HasValue) SoundEngine.PlaySound(useSound.Value, s.NPC.Center);
 			s.NPC.netUpdate = true;
 		}

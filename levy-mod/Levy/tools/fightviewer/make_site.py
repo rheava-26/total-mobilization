@@ -176,6 +176,8 @@ def shrink_frame(f):
         o["l"] = [row(l, ints=(1, 2)) for l in f["l"]]
     if f.get("b"):
         o["b"] = [row(b, ints=(2, 3), ones=(8, 9, 10, 11)) for b in f["b"]]
+    if f.get("a"):
+        o["a"] = [row(a, ints=(2, 3)) for a in f["a"]]
     if f.get("j"):
         o["j"] = [row(j, ints=(1, 2)) for j in f["j"]]
     return o
@@ -221,13 +223,15 @@ def convert(rows, factor):
         "frames": [],
         "events": [shrink_event(e) for e in rows if e.get("k") == "e"],
     }
-    lastL, lastB = {}, {}
+    lastL, lastB, lastA = {}, {}, {}
     for f in keep:
         o = shrink_frame(f)
         if "l" in o:
             o["l"] = enc_rows(o["l"], lastL, 0, (1, 2))
         if "b" in o:
             o["b"] = enc_rows(o["b"], lastB, 1, (2, 3))
+        if "a" in o:
+            o["a"] = enc_rows(o["a"], lastA, 1, (2, 3))
         out["frames"].append(o)
     out["hdr"]["hz"] = max(1, hz // factor)
     for k in ("names", "end", "cam"):

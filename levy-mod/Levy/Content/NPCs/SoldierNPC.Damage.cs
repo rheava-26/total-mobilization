@@ -220,8 +220,19 @@ namespace Levy.Content.NPCs
 		private int _stationLifeCount, _stationManaTick;
 
 		/// <summary>
+		/// Puts the vanilla buffs a levy's surroundings stand for on the NPC itself, as a player would have them: Happy! near a Sunflower, Honey in honey.
+		/// They are markers (the fear rule and anything reading the buff list see them); their stats come from the station flag.
+		/// </summary>
+		private void MarkStationBuffs()
+		{
+			if (LevyUtil.IsClient || NPC == null || !NPC.active) return;
+			if ((Stations & StationFlags.Sunflower) != 0) NPC.AddBuff(BuffID.Sunflower, LevyConstants.StationMarkerBuffTicks);
+			if ((Stations & StationFlags.Honey) != 0) NPC.AddBuff(BuffID.Honey, LevyConstants.StationMarkerBuffTicks);
+		}
+
+		/// <summary>
 		/// Potion buffs live on the NPC (NPC.AddBuff), but the stat pipeline reads the dummy Player, which never runs UpdateBuffs, so each active buff's
-		/// stat effect is applied to the dummy by hand (like StationBuffSystem.Apply; stations are flags, never NPC buffs, so nothing is applied twice).
+		/// stat effect is applied to the dummy by hand (like StationBuffSystem.Apply; a station's stats come from its flag; the Happy! and Honey buffs it also puts on the NPC are markers with no stat case here, so nothing is applied twice).
 		/// Returns the life-regen units to feed StationRegen. Call after UpdateEquips/UpdateArmorSets, before the stats are read.
 		/// </summary>
 		private int ApplyPotionBuffs(Player d)

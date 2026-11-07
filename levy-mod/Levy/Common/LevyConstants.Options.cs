@@ -1,8 +1,19 @@
 namespace Levy.Common
 {
-	/// <summary>Numbers of the design options (LEVY_FEARMODEL / LEVY_SURV). Nothing here is read unless an option is switched on.</summary>
 	public static partial class LevyConstants
 	{
+		/// <summary>Formation defense (config FormationDefense): each other living, un-routed levy within <see cref="Tiles"/> tiles cuts the damage a levy takes by <see cref="DrPerAlly"/>, up to <see cref="MaxDr"/>.</summary>
+		public static class Formation
+		{
+			public const int Tiles = 15;
+			public const float DrPerAlly = 0.02f;
+			public const float MaxDr = 0.20f;
+		}
+
+		/// <summary>Sunflowers (the Happy! buff, or a placed Sunflower within the vanilla scene radius) slow fear gain to this fraction.</summary>
+		public const float SunflowerFearMult = 0.5f;
+
+		/// <summary>Numbers of the design options (LEVY_FEARMODEL / LEVY_SURV). Nothing here is read unless an option is switched on.</summary>
 		public static class Lab
 		{
 			// ---- fear: events ----
@@ -32,11 +43,6 @@ namespace Levy.Common
 			public const float VetHpPerFight = 0.06f;
 			public const int VetFightsPerDefense = 2;
 			public const float VetManAtArmsHp = 0.10f, VetChampionHp = 0.20f;
-
-			// ---- survivability: formation ----
-			public const int FormationTiles = 15;
-			public const float FormationDrPerNeighbour = 0.01f;
-			public const float FormationMaxDr = 0.10f;
 		}
 	}
 }

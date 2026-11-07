@@ -302,7 +302,8 @@ namespace Levy.Content.NPCs
 			if (OfficerMode) { Officer_RefreshStats(); return; } // officers take their HP/defense from constants + the combat books, not from gear
 			if (Record == null) return;
 			EquipDummy();
-			Stations = StationBuffSystem.For(NPC.Center);
+			Stations = StationBuffSystem.For(NPC.Center, Commander);
+			MarkStationBuffs();
 			_upkeepGear = ComputeUpkeepNeed();
 			bool ok = false;
 			if (PipelineOk)
@@ -349,7 +350,7 @@ namespace Levy.Content.NPCs
 				Defense = def; MoveSpeedMult = 1f; Aggro = 0; Endurance = 0f; _buffLifeRegen = 0; Abilities = new Common.Movement.MovementAbilities();
 			}
 			if (ExtraDefense != null) { try { Defense += ExtraDefense(this); } catch { } }
-			if (Common.Options.LevyOptions.SurvOn) Defense = Common.Options.LevyOptions.AdjustDefense(this, Defense); // design option (LEVY_SURV); off by default
+			if (Common.Options.LevyOptions.StatsOn) Defense = Common.Options.LevyOptions.AdjustDefense(this, Defense); // dev switch (LEVY_SURV=parity/veteran); off by default
 			NPC.defense = Defense;
 			PinLifeMax(); // HP comes from the record, not from gear
 		}
@@ -451,7 +452,7 @@ namespace Levy.Content.NPCs
 			modifiers.DefenseEffectiveness *= LevyUtil.ModeDefenseEffectiveness() / 0.5f;
 			if (Endurance > 0f) modifiers.FinalDamage *= 1f - Endurance; // Player.Hurt applies endurance the same way (Endurance potion, Worm Scarf, Brain of Confusion)
 			modifiers.FinalDamage *= Rippers_IncomingMult(); // a full Calamity adrenaline bar halves the hit
-			if (Common.Options.LevyOptions.SurvOn) modifiers.FinalDamage *= 1f - Common.Options.LevyOptions.FormationDr(this); // design option (LEVY_SURV=formation); off by default
+			if (Common.Options.LevyOptions.SurvOn) modifiers.FinalDamage *= 1f - Common.Options.LevyOptions.FormationDr(this); // formation defense (config FormationDefense)
 		}
 
 		public override bool CheckDead()

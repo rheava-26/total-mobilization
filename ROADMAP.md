@@ -48,6 +48,15 @@
   - Real CP counts per fight: KS 10, DS 11, Eye 11, EoW/Brain 13, QB 14, Skeletron 14.
   - **Smoke ANOMALY:** Eye Rev targets the PLAYER ~50% of ticks even with CalamityTargetingCompat. The lab is investigating; this matters for Eve's Calamity Spectator play.
 - Check-in 05:21: boss-lab on 2.0.13 since 05:09 (Eye Rev, DPS curve, HP-scale-off, underground and worm batches running); mobility4 not pushed yet. 6 servers up, 11 GB free.
+- **Check-in 05:33, first lab rows** (2–6 seeds, NOT final; lead's read):
+  - **Expert, Calamity tier gear:** Eye and Brain are wins from n8 up; n4 is marginal.
+  - **Rev Eye:** n4/n8 lose; n12+ mostly win, noisily, with heavy deaths.
+  - **Rev Brain = ANOMALY.** At the real count (13), 1 win in 12. Boss dmg/s is **0.0** in most losses, so levies never damage the Brain at all. Target-player is 5–85%: the Calamity compat leaks for the Rev Brain/Eye. Sent to the lab to explain (creeper phase? dontTakeDamage? the target path).
+  - **Underground worms wipe:** EoW Expert 1/3, DS 1/6, all levies dead in 12–70 s. Surface comparison pending.
+  - **Count curve:**
+    - with HP scale off, Eye Expert kill time keeps falling (n12 ~34 s, n24 ~18 s);
+    - with it on, very noisy;
+    - fixed-window dmg/s plateaus ~55 past n12, which contradicts hpscale0. Asked the lab to measure per-levy DPS while the boss is hittable.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

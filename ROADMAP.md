@@ -64,6 +64,7 @@
   - **Rev Brain:** levies deal thousands to creepers but ~0 to the Brain (brain_new). Death KS: 2/3 wins.
   - **Death Eye:** 1 win, 2 timeouts at n11; target-player 3–87%, so the Calamity compat leak again.
   - mobility4 pushed its minion retarget fix (4d324e6).
+- Check-in 05:55: the worm "other" damage was attribution; the lab fixed it (worms_fix). Now ~all damage is the boss (segments), and still 24/24 LOST. Expert EoW is left at 16–38% HP when the army dies, DS Expert at 27–76%. A real dodging problem, handed to mobility4 (worm-chain avoidance).
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

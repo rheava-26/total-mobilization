@@ -213,6 +213,27 @@
     - Murasama/GrandDad/Basher weak vs bosses because levy melee stands off 8–16 tiles BY DESIGN;
     - PulseTurretRemote.
   - **Design question for Eve:** should levy mana pools grow with progression like a player's (crystals to 200 + gear)?
+- **OPTIONS LAB DONE (merged, all DEFAULT-OFF; docs/boss_lab/OPTIONS.md). ⏳ AWAITING EVE'S DECISION.**
+  - Switches: `LEVY_FEARMODEL=events|proximity_slow|rally`, `LEVY_SURV=parity|veteran|formation` (env only; a config field is needed to ship).
+  - **Parity finding:**
+    - The HP formula = the player's (100 + 20/crystal + 5/fruit). Defense is at parity.
+    - But levies get no HP from progression, only from donated crystals: 137–141 HP at the Eye and 200 from EoW on, vs a player's ~240–400. So levies sit 30–50% under the player.
+  - **Wins /36** (6 cells × 6 seeds):
+
+    | Arm | Wins |
+    |---|---|
+    | base | 5 |
+    | events | 18 |
+    | rally | 15 |
+    | parity | 15 (the ONLY option that moves DS: 0 → 4/6) |
+    | proximity_slow | 7 |
+    | veteran | 7 |
+    | formation | 4 |
+    | events + parity | 24 |
+    | events + parity + formation | 28 (formation's add is within noise) |
+
+  - Events drops Shaken/Routed from 52–96% to 2–16%. Brain dmg/s 1 → 26.
+  - **Builder recommendation:** ship events + parity; drop proximity_slow and veteran; keep formation as a knob. DS and Eye Rev stay hard.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

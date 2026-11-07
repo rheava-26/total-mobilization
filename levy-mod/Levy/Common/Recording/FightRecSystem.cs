@@ -49,6 +49,17 @@ namespace Levy.Common.Recording
 		}
 	}
 
+	/// <summary>Gives every NPC a spawn serial while LEVY_REC_DIR is set, so headless recording can tell one trial's boss from the next even when it reuses the same slot. Absent entirely when the variable is unset.</summary>
+	public class FightRecSpawnTag : GlobalNPC
+	{
+		private static int _counter;
+		public int Serial;
+		public override bool InstancePerEntity => true;
+		public override bool AppliesToEntity(NPC entity, bool lateInstantiation) => !string.IsNullOrEmpty(FightRecAuto.Dir);
+		public override void OnSpawn(NPC npc, Terraria.DataStructures.IEntitySource source) { Serial = ++_counter; }
+		public static int SerialOf(NPC n) => n.TryGetGlobalNPC(out FightRecSpawnTag t) ? t.Serial : 0;
+	}
+
 	public class FightRecPlayer : ModPlayer
 	{
 		public override void OnHurt(Player.HurtInfo info)

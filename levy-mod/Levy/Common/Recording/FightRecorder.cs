@@ -46,7 +46,7 @@ namespace Levy.Common.Recording
 		public static bool Headless;
 		private static Dictionary<string, string> _meta;
 		private static string _fileBase;
-		private static int _bossGoneTick, _primaryWho = -1;
+		private static int _bossGoneTick, _primaryWho = -1, _primarySerial;
 		private static int _tkNone, _tkPlayer, _tkLevy, _lastTk = -1, _lastTl = int.MinValue, _levyHits, _levyDeaths;
 		private sealed class LTrack { public int Life, Max; public float X, Y; public int Who; public bool Seen; }
 		private static readonly Dictionary<int, LTrack> _lt = new();
@@ -295,6 +295,17 @@ namespace Levy.Common.Recording
 
 			// bosses and parts
 			bool anyBoss = false;
+			if (Headless && _primaryWho >= 0)
+			{
+				// a harness that clears the arena and spawns the next trial's boss in the same step leaves no gap: the boss we follow is gone and a boss with a newer spawn serial stands in the world
+				NPC pn = Main.npc[_primaryWho];
+				if (!(pn.active && pn.boss && FightRecSpawnTag.SerialOf(pn) == _primarySerial))
+					for (int i = 0; i < Main.maxNPCs; i++)
+					{
+						NPC n = Main.npc[i];
+						if (n.active && n.boss && !n.friendly && !n.townNPC && !(n.ModNPC is SoldierNPC) && FightRecSpawnTag.SerialOf(n) != _primarySerial) { Stop("next fight started"); return; }
+					}
+			}
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
@@ -309,8 +320,8 @@ namespace Levy.Common.Recording
 				f.B.Add(new double[] { n.type, n.whoAmI, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, n.life, n.lifeMax, n.ai[0], n.ai[1], n.ai[2], n.ai[3], n.target, part ? 1 : 0, tk, tl });
 				if (n.boss)
 				{
-					if (_primaryWho < 0) _primaryWho = n.whoAmI;
-					if (n.whoAmI == _primaryWho)
+					if (_primaryWho < 0) { _primaryWho = n.whoAmI; _primarySerial = FightRecSpawnTag.SerialOf(n); }
+					if (n.whoAmI == _primaryWho && FightRecSpawnTag.SerialOf(n) == _primarySerial)
 					{
 						if (tk == 2) _tkLevy++; else if (tk == 1) _tkPlayer++; else _tkNone++;
 						if (tk != _lastTk || tl != _lastTl) { _lastTk = tk; _lastTl = tl; Ev("tgt", ("kind", tk.ToString()), ("levy", tl.ToString()), ("boss", n.whoAmI.ToString())); }

@@ -29,6 +29,8 @@ namespace Levy.Common.Movement
 		public bool Boss; public float Gy, Floor;
 		/// <summary>A worm segment (or a chain head): its path is a table of <see cref="TrajN"/> points, 2 ticks apart, starting at <see cref="TrajOff"/> in the field's shared trajectory store (see ThreatField.BuildChain).</summary>
 		public int TrajOff, TrajN;
+		/// <summary>A worm chain's head (set only while the worm dodge is on). <see cref="Turn"/> is its turn rate (rad per tick) and <see cref="TurnT"/> the ticks that turn is assumed to last (a body threat bends on an arc, then flies straight).</summary>
+		public bool Head; public float Turn, TurnT;
 	}
 
 	/// <summary>A dodge candidate: horizontal velocity for Dur ticks, an optional jump (Delay ticks from now: a hop timed to land after a charge has passed under it), an optional platform drop.</summary>
@@ -163,7 +165,20 @@ namespace Levy.Common.Movement
 				Snap.Add(new Threat { P = n.Center, V = v, A = building ? a : Vector2.Zero, Half = new Vector2(n.width, n.height) * 0.5f, Weight = n.damage, Body = true, Boss = isBoss, Gy = gy, Floor = floor });
 			}
 			// every worm whose head the field is tracking: the whole chain is one moving curve (the body follows the head's path with a lag)
-			for (int i = 0; i < Main.maxNPCs; i++) if (_childOf[i] >= 0 && !_follower[i] && _snapOf[i] >= 0) { if (ChainOn) BuildChain(i); else ChainHeads.Add(i); }
+			for (int i = 0; i < Main.maxNPCs; i++) if (_childOf[i] >= 0 && !_follower[i] && _snapOf[i] >= 0)
+			{
+				if (ChainOn) BuildChain(i); else ChainHeads.Add(i);
+				if (Content.NPCs.SoldierNPC.WormDodgeOn)
+				{
+					Threat h = Snap[_snapOf[i]]; h.Head = true;
+					if (h.TrajN == 0)
+					{
+						float w = MathHelper.Clamp(_omega[i], -LevyConstants.WormDodge.MaxTurnPerTick, LevyConstants.WormDodge.MaxTurnPerTick);
+						if (Math.Abs(w) > 1e-4f) { h.Turn = w; h.TurnT = LevyConstants.WormDodge.TurnCapRad / Math.Abs(w); }
+					}
+					Snap[_snapOf[i]] = h;
+				}
+			}
 			BuildTs += Stopwatch.GetTimestamp() - t0; Builds++;
 			return Snap;
 		}
@@ -359,6 +374,7 @@ namespace Levy.Common.Movement
 				if (i0 >= th.TrajN - 1) return _traj[th.TrajOff + th.TrajN - 1];
 				return Vector2.Lerp(_traj[th.TrajOff + i0], _traj[th.TrajOff + i0 + 1], f - i0);
 			}
+			if (th.Turn != 0f && th.Gy <= 0f) return TurnedAt(th, t);
 			Vector2 p = th.P + th.V * t;
 			if (th.Gy > 0f)
 			{
@@ -376,6 +392,39 @@ namespace Levy.Common.Movement
 			}
 			return p;
 		}
+
+		/// <summary>A head on an arc: it keeps its speed and bends at its turn rate for <see cref="Threat.TurnT"/> ticks, then flies straight along the heading it has reached.</summary>
+		private static Vector2 TurnedAt(in Threat th, int t)
+		{
+			float s = th.V.Length(); if (s < 1e-3f) return th.P;
+			float w = th.Turn, th0 = (float)Math.Atan2(th.V.Y, th.V.X), tau = Math.Min(t, th.TurnT);
+			float a1 = th0 + w * tau;
+			float dx = s / w * ((float)Math.Sin(a1) - (float)Math.Sin(th0)), dy = -s / w * ((float)Math.Cos(a1) - (float)Math.Cos(th0));
+			float rest = t - tau;
+			return th.P + new Vector2(dx + rest * s * (float)Math.Cos(a1), dy + rest * s * (float)Math.Sin(a1));
+		}
+
+		/// <summary>The threats as they will be <paramref name="ticks"/> from now (what a dodge started that much later would face). A path-table threat (the chain model) cannot be aged and is copied as it is.</summary>
+		public static void Aged(List<Threat> src, int ticks, List<Threat> into)
+		{
+			into.Clear();
+			for (int i = 0; i < src.Count; i++)
+			{
+				Threat th = src[i];
+				if (th.Line) { th.Ang += th.Omega * ticks; into.Add(th); continue; }
+				if (th.TrajN > 0) { into.Add(th); continue; }
+				Vector2 p = ThreatAt(th, ticks);
+				if (th.Turn != 0f && th.Gy <= 0f)
+				{
+					float tau = Math.Min(ticks, th.TurnT), rot = th.Turn * tau, c = (float)Math.Cos(rot), sn = (float)Math.Sin(rot);
+					th.V = new Vector2(th.V.X * c - th.V.Y * sn, th.V.X * sn + th.V.Y * c); th.TurnT = Math.Max(0f, th.TurnT - ticks);
+				}
+				th.P = p; into.Add(th);
+			}
+		}
+
+		/// <summary>True when one of these threats is a worm head.</summary>
+		public static bool HasHead(List<Threat> l) { for (int i = 0; i < l.Count; i++) if (l[i].Head) return true; return false; }
 
 		/// <summary>Counts the threats that overlap the body on this manoeuvre inside the horizon. <paramref name="lastHit"/> is the tick of the latest overlap.</summary>
 		public static int Hits(List<Threat> near, Vector2 c0, float bw, float bh, in Maneuver m, float g, int horizon, out int firstHit, out int lastHit, float extraMargin = 0f, int immune = 0)

@@ -148,7 +148,12 @@ def measure(tr, hp, i0, ic, dt):
         if sp > 0.5:
             cs.append(bv[0] * ux + bv[1] * uy)
         lat.append((tr[q][3] * nx + tr[q][4] * ny) * side)
-    return dict(c_mag=round(cm, 1) if cm >= 3 else 0, c_t=round((ic - cq) * dt, 2) if cm >= 3 else '',
+    # horizontal rule: head's horizontal heading just before closest approach vs the body's horizontal motion (+ = WITH the head's horizontal direction)
+    hsx = 1.0 if (hp[b][0] - hp[a][0]) >= 0 else -1.0
+    hx_with = Dx * hsx
+    cvx_with = dvx * hsx
+    lastvx = sum(tr[q][3] for q in range(max(i0, ic - int(0.5 / dt)), ic + 1)) / max(1, len(range(max(i0, ic - int(0.5 / dt)), ic + 1))) * hsx
+    return dict(hx_with=round(hx_with, 1), cvx_with=round(cvx_with, 1), lastvx_with=round(lastvx, 2), c_mag=round(cm, 1) if cm >= 3 else 0, c_t=round((ic - cq) * dt, 2) if cm >= 3 else '',
                 c_dist=round(math.hypot(tr[cq][0] - hp[cq][0], tr[cq][1] - hp[cq][1])) if cm >= 3 else '', hold=round(sum(math.hypot(tr[q][3], tr[q][4]) for q in range(i0, max(i0 + 1, ic - int(0.6 / dt)))) / max(1, len(range(i0, max(i0 + 1, ic - int(0.6 / dt))))), 1),
                 c_along=round(dvx * ux + dvy * uy, 1), c_out=round((dvx * nx + dvy * ny) * side, 1), c_up=round(-dvy, 1),
                 cos_head=round(sum(cs) / len(cs), 2) if cs else '', lat_out=round(sum(lat) / len(lat), 2),
@@ -183,6 +188,10 @@ def summarize(recs, title):
     cr = [r for r in recs if r['c_mag']]
     print('  commit impulse: found %.0f%% | time before closest med %s s | dv along-head med %s | dv outward(from head line) med %s | dv up med %s | |dv| med %s' % (
         100 * len(cr) / n, med([r['c_t'] for r in cr]), med([r['c_along'] for r in cr]), med([r['c_out'] for r in cr]), med([r['c_up'] for r in cr]), med([r['c_mag'] for r in cr])))
+    print('  HORIZONTAL vs head vx: window dx AGAINST head %.0f%% / WITH %.0f%% (|dx|>20px) | commit dvx against %.0f%% / with %.0f%% (|dv|>2) | last-0.5s mean vx against %.0f%% / with %.0f%% | median dx_with %s' % (
+        100 * sum(r['hx_with'] < -20 for r in recs) / n, 100 * sum(r['hx_with'] > 20 for r in recs) / n,
+        100 * sum(r['cvx_with'] < -2 for r in cr) / max(1, len(cr)), 100 * sum(r['cvx_with'] > 2 for r in cr) / max(1, len(cr)),
+        100 * sum(r['lastvx_with'] < -0.5 for r in recs) / n, 100 * sum(r['lastvx_with'] > 0.5 for r in recs) / n, pr('hx_with')))
     print('  head-to-body distance at the commit: med %s px | body speed px/tick in the first 0.9 s of the window (hold/approach): med %s' % (med([r['c_dist'] for r in cr]), pr('hold')))
     print('  last 0.5s: cos(body velocity, head heading) mean %s (+1 = running WITH the head) | lateral-outward speed px/tick mean %s' % (mean([r['cos_head'] for r in recs]), mean([r['lat_out'] for r in recs])))
     print('  HIT within 0.5s of closest approach: %.0f%% (head %.0f%%, body part %.0f%%) | dmin<40px: %.0f%%' % (

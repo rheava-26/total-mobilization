@@ -287,9 +287,17 @@
   - **Hive Mind and Perforators** are easy (6/6).
   - **Slime God is BROKEN:** both Paladins despawn within 6 ticks of spawn (likely an inactive target player); may affect real play.
   - Eve's "Irradiated" rogue set = Sulphurous (its bonus is Poisoned; Irradiated comes from the bubble double jump and Urchin Stinger).
+- **Eve (15:35):**
+  - Slime God may be biome-specific (→ ammo-slimegod).
+  - BUG: King Slime phase-2 crystal (Calamity jewel) targets ONLY the player in real play (→ ammo-slimegod, minion retarget).
+  - Double jump: "they should double jump!" Lab 3's "levies don't double jump" was unverified. vert1 to verify all gear double jumps (incl. Sulphurous set jump bubble) and their effects.
 - **Launched:**
   - vert1: levies use platform rows;
   - ammo-slimegod: best-ammo armory rule + Slime God despawn.
+- **Eve (15:35):**
+  - Slime God may be biome-specific (→ ammo-slimegod).
+  - BUG: King Slime phase-2 crystal (Calamity jewel) targets ONLY the player in real play (→ ammo-slimegod, minion retarget).
+  - Double jump: "they should double jump!" Lab 3's "levies don't double jump" was unverified. vert1 to verify all gear double jumps (incl. Sulphurous set jump bubble) and their effects.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

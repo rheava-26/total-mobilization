@@ -139,6 +139,38 @@
   - QB: Expert 1/4 but Rev 4/4 and Death 3/4 (ANOMALY, asked the lab). Skeletron Expert 1/4 (3 timeouts).
   - Boss-on-player is 0% everywhere.
   - dud-weapons: Calamity holdout routing (Thorium channel weapons already worked).
+- **LAB 2 DONE (2.0.16, 282 fights, cmd=near, merged; docs/boss_lab/RESULTS2.md):**
+  - Spectator: the boss targets the commander 0% of the time in all 282 fights.
+  - **Wins (kill / total):**
+
+    | Boss | Expert | Rev | Death |
+    |---|---|---|---|
+    | KS | 6/6 | 9/12 | 6/12 |
+    | DS | 0/6 | 0/6 | 0/6 |
+    | Eye | 6/6 | 2/12 | 0/6 |
+    | EoW | 4/12 | 0 | 0 |
+    | Brain | 6/6 | 0/6 | 0/6 |
+    | QB | 2/12 | 8/12 | 9/12 |
+
+    Skeletron Expert: 2 kills, 10 FLED.
+  - **QB Rev easier than Expert = Calamity's Rev AI.** No bees and no ai0=2 phase; ~14 vs 36 contact dmg/s. Not rippers, not the zone.
+  - **FEAR OFF (paired seeds):**
+
+    | Cell | Fear on | Fear off |
+    |---|---|---|
+    | Eye Rev | 2/12 | 7/12 |
+    | EoW Expert | 4/12 | 8/12 |
+    | Brain Rev | 0/6 | 3/6 |
+    | QB Expert | 2/12 | 7/12 |
+
+    Boss dmg/s 2–3× higher with fear off. DS is unchanged.
+  - **Spread:** EoW 4/12 vs 1/12 off; DS only +4 s to first death.
+  - **Skeletron fled:** leave state ai[1]=3 with levies 150–200 tiles away (why? → worm5).
+  - The recorder makes no file for EoW.
+  - Gallery notable2 (16 fights) sent.
+- **worm5 (building):**
+  - The lead's replay read: a DS body hits a stationary levy every ~10–20 ticks, while a player gets 40 i-frames. Hypothesis: levy i-frames are shorter than a player's, so worm bodies shred them → test and fix to player parity.
+  - Also: spawn-in hits, Skeletron flee cause, EoW recorder gap.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

@@ -567,6 +567,7 @@ namespace Levy.Common.Testing
 				boss.timeLeft = 99999;
 				_btS = s; _bt = s; _btStarted = true; _btTickInRun = 0;
 				if (run.Auto) BtAutonomy(s);
+				global::Levy.Common.Recording.FightRecAuto.Tag(("arena", run.Arena), ("seed", run.Seed), ("mode", run.Diff), ("order", run.Order), ("cfg", run.CfgId)); // fight recorder labels (no-op unless LEVY_REC_DIR is set)
 				var vanilla = new NPC(); vanilla.SetDefaults(s.BossType);
 				Mod.Logger.Info($"HARNESS-BT: fight start {run.Key}: {run.Boss} {boss.life}/{boss.lifeMax} def {boss.defense} dmg {boss.damage} (fresh SetDefaults in {Main.GameMode}: {vanilla.lifeMax} hp, def {vanilla.defense}, dmg {vanilla.damage}; CP scale x{(boss.lifeMax / (double)Math.Max(1, vanilla.lifeMax)):0.000}); {run.Desc}");
 				try { File.AppendAllText(_btOut + ".bossstats.txt", $"{run.Boss}\t{run.Diff}\t{run.Comp}\t{vanilla.lifeMax}\t{boss.lifeMax}\t{vanilla.defense}\t{boss.defense}\t{vanilla.damage}\t{boss.damage}\n"); } catch { }

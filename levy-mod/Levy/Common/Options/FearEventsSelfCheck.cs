@@ -46,6 +46,12 @@ namespace Levy.Common.Options
 				d.ResetEffects();
 				StationBuffSystem.Apply(d, StationFlags.Sharpening | StationFlags.WarTable | StationFlags.Bewitching | StationFlags.CrystalBall | StationFlags.CatBast);
 				Check("station flags change the stat pipeline", d.maxTurrets > 1 && d.maxMinions > 1 && d.statDefense >= LevyConstants.CatBastDefense && d.GetArmorPenetration(DamageClass.Melee) >= LevyConstants.SharpenedArmorPen);
+				var h = new Player();
+				h.ResetEffects();
+				StationBuffSystem.Apply(h, StationFlags.Sunflower);
+				Check("happy: sunflower flag speeds the levy up", h.moveSpeed > 1.05f && h.sunflower, h.moveSpeed.ToString());
+				Check("campfire + heart lantern regen is 3 units", StationBuffSystem.LifeRegen(StationFlags.Campfire | StationFlags.HeartLantern) == 3);
+				Check("sunflowers halve fear gain", System.Math.Abs(LevyConstants.SunflowerFearMult - 0.5f) < 1e-5f);
 				Check("honey regen is 2 units", StationBuffSystem.LifeRegen(StationFlags.Honey) == 2);
 			}
 			catch (System.Exception e) { Check("no exception", false, e.ToString()); }

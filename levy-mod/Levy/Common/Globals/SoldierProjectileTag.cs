@@ -131,7 +131,7 @@ namespace Levy.Common.Globals
 
 		public override void OnKill(Projectile projectile, int timeLeft)
 		{
-			if (Cast && !Dismissed && SoldierIndex >= 0 && projectile.minion && projectile.type >= ProjectileID.Count && LevyUtil.IsServerOrSingle) SoldierMinions.NoteModdedDeath(projectile, Age, Hits);
+			if (Cast && !Dismissed && SoldierIndex >= 0 && projectile.minion && projectile.type >= ProjectileID.Count && LevyUtil.IsServerOrSingle) SoldierMinions.NoteModdedDeath(projectile, Age);
 		}
 
 		/// <summary>Set while this soldier sentry is parked (Projectile.sentry cleared) for the commander's Player.Update.</summary>

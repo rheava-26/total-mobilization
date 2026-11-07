@@ -226,35 +226,24 @@ namespace Levy.Common.Weapons
 			if (BadTypes.Add(root)) ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: real minion type " + p.type + " (" + (p.ModProjectile?.FullName ?? "vanilla") + ") threw while driven for a soldier; its staff falls back to the stand-in minion: " + e);
 		}
 
-		/// <summary>Consecutive short, harmless lives per staff shot (a modded cast that died young without hitting anything).</summary>
+		/// <summary>Consecutive immediate self-kills per staff shot (a modded cast that died within a few ticks of spawning).</summary>
 		private static readonly Dictionary<int, int> ShortLives = new();
 
 		/// <summary>
-		/// A modded cast just died by itself (not dismissed by the upkeep). Three in a row that lived under <see cref="LevyConstants.ModdedMinionShortLifeTicks"/> ticks without a single hit mean the minion
-		/// cannot live under a dummy owner (it needs a companion part its staff's Shoot makes, an owner state the dummy lacks...): its staff uses the stand-in from then on. A minion that dies by design
-		/// after doing its job (a bomber that crashes into a target, a summoner that finishes its spawn) hits something or lives longer, and resets the count.
+		/// A modded cast just died by itself (not dismissed by the upkeep). Judged by LIFETIME ONLY, never by hits (a minion with nothing in its range hits nothing and is fine): three in a row that died
+		/// within <see cref="LevyConstants.ModdedMinionShortLifeTicks"/> ticks of spawning mean the minion cannot live under a dummy owner (it needs a companion part its staff's Shoot makes, an owner state
+		/// the dummy lacks...), so its staff uses the stand-in from then on. Any longer life resets the count.
 		/// </summary>
-		internal static void NoteModdedDeath(Projectile p, int age, int hits)
+		internal static void NoteModdedDeath(Projectile p, int age)
 		{
 			Item staff = MiscProjSwap.BodyOf(p)?.SummonWeapon();
 			if (staff == null || staff.shoot <= 0) return; // the soldier gave the staff back (rearm), left, or fell: a death with no staff in hand is not evidence about the staff
 			int root = staff.shoot;
-			if (age >= LevyConstants.ModdedMinionShortLifeTicks || hits > 0) { ShortLives[root] = 0; return; }
+			if (age >= LevyConstants.ModdedMinionShortLifeTicks) { ShortLives[root] = 0; return; }
 			int n = ShortLives.GetValueOrDefault(root) + 1;
 			ShortLives[root] = n;
 			if (n >= LevyConstants.ModdedMinionMaxShortLives && BadTypes.Add(root))
-				ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: modded minion " + (p.ModProjectile?.FullName ?? p.type.ToString()) + " keeps dying right after it is cast for a soldier; its staff falls back to the stand-in minion.");
-		}
-
-		/// <summary>
-		/// A modded flock that has landed no hit for <see cref="LevyConstants.ModdedMinionIdleTicks"/> ticks of the soldier fighting (an enemy inside the leash the whole time) is not working under a dummy owner
-		/// (it wants ammo in its owner's pack, a cursor, a held item...): its staff uses the stand-in from then on, logged once. Called from the upkeep after it has tallied the idle time.
-		/// </summary>
-		internal static void GiveUp(SoldierNPC s, Item weapon)
-		{
-			if (BadTypes.Add(weapon.shoot))
-				ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: modded minion of " + weapon.Name + " landed no hit in " + (LevyConstants.ModdedMinionIdleTicks / 60) + " seconds of fighting for a soldier; its staff falls back to the stand-in minion.");
-			KillAll(s);
+				ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: modded minion " + (p.ModProjectile?.FullName ?? p.type.ToString()) + " died within " + LevyConstants.ModdedMinionShortLifeTicks + " ticks of spawning " + n + " times in a row for a soldier; its staff falls back to the stand-in minion.");
 		}
 
 		/// <summary>

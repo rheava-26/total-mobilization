@@ -292,6 +292,7 @@ namespace Levy.Common.Testing
 			{
 				_l3Tick = st.Tick;
 				NPC b = Main.npc[st.BossIdx];
+				if (run.Dbg && (st.Tick % 120 == 0 || (st.Tick < 100 && st.Tick % 6 == 0))) for (int q = 0; q < Main.maxNPCs; q++) { NPC pn = Main.npc[q]; if (pn.active && st.PartTypes.Contains(pn.type)) Mod.Logger.Info($"{L3Log}part t{st.Tick} {pn.FullName} life {pn.life}/{pn.lifeMax} pos {pn.Center.X / 16:0},{(CrF * 16f - pn.Bottom.Y) / 16:0}h vel {pn.velocity.X:0.0},{pn.velocity.Y:0.0} ai {pn.ai[0]:0},{pn.ai[1]:0},{pn.ai[2]:0},{pn.ai[3]:0} dtd {pn.dontTakeDamage} tgt {pn.target} p0 act {Main.player[0].active} dead {Main.player[0].dead} name {Main.player[0].name} dist {Vector2.Distance(Main.player[0].Center, pn.Center) / 16:0}t timeLeft {pn.timeLeft}"); }
 				if (b.active && st.Tick % 30 == 0) { _l3BossH += (CrF * 16f - b.Bottom.Y) / 16f; _l3BossHN++; }
 				if (b.active) { if (b.HasBuff(BuffID.Poisoned)) _l3Poison++; if (L3IrrType > 0 && b.HasBuff(L3IrrType)) _l3Irr++; }
 				if (run.Food >= 1 && st.Tick % 3000 == 0) foreach (var lv in st.Levies) { var nn = Main.npc[lv.Idx]; if (nn.active) nn.AddBuff(run.Food >= 2 ? BuffID.WellFed2 : BuffID.WellFed, 60 * 60 * 30); }

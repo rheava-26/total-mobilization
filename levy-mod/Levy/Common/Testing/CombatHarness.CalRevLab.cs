@@ -91,7 +91,7 @@ namespace Levy.Common.Testing
 		private static void CrApplyZones(Player p)
 		{
 			var r = _crRunCur; if (r == null) return;
-			p.ZoneCrimson = r.Boss == "brain"; p.ZoneCorrupt = r.Boss == "eow"; p.ZoneDesert = r.Boss == "ds"; p.ZoneUndergroundDesert = r.Boss == "ds" && r.Arena == "ug";
+			p.ZoneCrimson = r.Boss == "brain"; p.ZoneCorrupt = r.Boss == "eow"; p.ZoneJungle = r.Jungle; p.ZoneDesert = r.Boss == "ds"; p.ZoneUndergroundDesert = r.Boss == "ds" && r.Arena == "ug";
 			p.ZoneOverworldHeight = r.Arena != "ug"; p.ZoneRockLayerHeight = r.Arena == "ug"; p.ZoneDirtLayerHeight = false; p.ZoneSkyHeight = false; p.ZoneUnderworldHeight = false;
 		}
 
@@ -186,6 +186,22 @@ namespace Levy.Common.Testing
 					st.Run.Key, st.Tick, e.active ? 1 : 0, e.type, e.target, e.life, e.lifeMax, e.Center.X / 16f, e.Center.Y / 16f, e.velocity.X, e.velocity.Y, e.ai[0], e.ai[1], e.ai[2], e.ai[3], e.localAI[0], e.localAI[1], e.localAI[2], e.localAI[3],
 					e.target, CrTgtClass(e) == 0 ? "levy" : CrTgtClass(e) == 1 ? "player" : "none", CrEnraged(e) ? 1 : 0, alv, adds, near / 16f, e.dontTakeDamage ? 1 : 0, LevyNpcData.Of(e).SoldierTarget, Vector2.Distance(Main.player[0].Center, e.Center) / 16f);
 				try { File.AppendAllText(_crOut + ".dbg.tsv", line + "\n"); } catch { }
+				if (st.Tick % 150 == 0 && Environment.GetEnvironmentVariable("LEVY_CR_LEVYDBG") == "1")
+				{
+					// per-levy state: what each levy is doing (target, state, why it stands still, distance to boss)
+					var sb = new System.Text.StringBuilder();
+					int k = 0;
+					foreach (var l in st.Levies)
+					{
+						k++;
+						var n = Main.npc[l.Idx];
+						if (l.Dead || !n.active || !(n.ModNPC is SoldierNPC sn)) { sb.Append($"L{k}:{l.Cls}:dead\t"); continue; }
+						string tt = "-"; float td = -1f;
+						if (sn.TargetIndex >= 0 && sn.TargetIndex < Main.maxNPCs && Main.npc[sn.TargetIndex].active) { var t = Main.npc[sn.TargetIndex]; tt = t.type == st.BossType ? "BOSS" : st.AddTypes.Contains(t.type) ? "add:" + CrNpcName(t.type) : CrNpcName(t.type); td = Vector2.Distance(n.Center, t.Center) / 16f; }
+						sb.Append(string.Format(CultureInfo.InvariantCulture, "L{0}:{1}:{2}:hp{3}:{4}:tgt={5}@{6:0}t:boss@{7:0}t:{8}\t", k, l.Cls, l.Weapon, n.life, sn.State, tt, td, Vector2.Distance(n.Center, e.Center) / 16f, sn.StillReason()));
+					}
+					try { File.AppendAllText(_crOut + ".levy.tsv", st.Run.Key + "\t" + st.Tick + "\t" + sb + "\n"); } catch { }
+				}
 			}
 		}
 

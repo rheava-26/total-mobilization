@@ -278,6 +278,18 @@
 - **BUG still open (Eve video 15:14):** AlchemistNPCLite 1.9.9 "Shops Changer" NPC button does nothing (mod name now known) → added to the maporder-fix builder (UI click/close). Spectator potions are CRAFTED only (Shiverthorn + Blinkroot + Lens + Invisibility + Bottled Water @ Bottle).
 - **maporder-fix DONE (merged ba73c78 → 2.0.22):** root cause: on the full-screen map vanilla sets mouseInterface=true before mod map layers draw, and RadioMapLayer only picked when !mouseInterface, so the click NEVER registered (both the Barracks and Radio paths). Fixed with IsPickClick. A Barracks pick closes the map and reopens Barracks. Chat: "N levies sent to <depth band>." Headless maporder harness: 18/18 pass. The same builder is now on the Shops Changer bug.
 - **Shops Changer (AlchemistNPCLite Brewer):** Levy code audited clean. Nothing closes talkNPC, swallows clicks or touches chat for that NPC. Brewer flow: ShopChangeUI.visible; it hides when talkNPC == -1. Unproven. Next: Eve tests with Levy disabled and says whether the Brewer is a Levy officer; client.log.
+- **LAB 3 DONE (origin/lab3 779de7b; docs/boss_lab/lab3/RESULTS3.md; 20 replays published as "Lab 3"):**
+  - Realistic arenas, crystal-fed HP (140→380 by tier), event fear + formation.
+  - **Expert 6/6 everywhere except DS (2/6).** Rev: Eye/Hive/Perfs 6/6, Brain 3/6, EoW 0/6. Vanilla 35/36. Much kinder than lab 2 (several changes at once, no ablation).
+  - **Arms:** food and hazard pay have no effect; rogue levies help (Brain Rev 3/6 → 6/6).
+  - **Ammo:** the armory takes the first stack, no ranking. Brain Rev wins: plain 1/6, best 4/6, Meteor 5/6.
+  - **Vertical:** levies are 69% on the floor, 2% on platform rows.
+  - **Hive Mind and Perforators** are easy (6/6).
+  - **Slime God is BROKEN:** both Paladins despawn within 6 ticks of spawn (likely an inactive target player); may affect real play.
+  - Eve's "Irradiated" rogue set = Sulphurous (its bonus is Poisoned; Irradiated comes from the bubble double jump and Urchin Stinger).
+- **Launched:**
+  - vert1: levies use platform rows;
+  - ammo-slimegod: best-ammo armory rule + Slime God despawn.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

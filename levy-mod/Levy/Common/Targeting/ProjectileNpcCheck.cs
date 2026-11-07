@@ -14,7 +14,9 @@ namespace Levy.Common.Targeting
 	{
 		private static readonly int[] Orbs = { NPCID.ChaosBall, NPCID.WaterSphere, NPCID.BurningSphere, NPCID.ShadowFlameApparition };
 
-		public override void PostAddRecipes()
+		public override void PostAddRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostAddRecipesCore);
+
+		private void PostAddRecipesCore()
 		{
 			var failures = new List<string>();
 			int asserted = 0;

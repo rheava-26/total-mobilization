@@ -11,7 +11,9 @@ namespace Levy.Content.NPCs
 	/// </summary>
 	public class SetBonusKeyCheck : ModSystem
 	{
-		public override void PostSetupRecipes()
+		public override void PostSetupRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostSetupRecipesCore);
+
+		private void PostSetupRecipesCore()
 		{
 			if (!Main.dedServ) return;
 			int pass = 0, fail = 0;

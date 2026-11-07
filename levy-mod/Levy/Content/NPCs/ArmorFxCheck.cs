@@ -33,7 +33,9 @@ namespace Levy.Content.NPCs
 				+ $"crit(all)={p.GetCritChance(all):0}% ranged={p.GetCritChance(DamageClass.Ranged):0}% moveSpeed={p.moveSpeed:0.00} maxRunSpeed={p.maxRunSpeed:0.0} noThrowCost={p.ammoCost80 || p.ammoCost75}/{p.ammoCost80} aggro={p.aggro} endurance={p.endurance:0.00}";
 		}
 
-		public override void PostSetupRecipes()
+		public override void PostSetupRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostSetupRecipesCore);
+
+		private void PostSetupRecipesCore()
 		{
 			if (!Main.dedServ) return;
 			int pass = 0, fail = 0;

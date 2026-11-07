@@ -20,7 +20,9 @@ namespace Levy.Common.Events
 	/// </summary>
 	public class OoaCheck : ModSystem
 	{
-		public override void PostAddRecipes()
+		public override void PostAddRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostAddRecipesCore);
+
+		private void PostAddRecipesCore()
 		{
 			var failures = new List<string>();
 			int ok = 0;

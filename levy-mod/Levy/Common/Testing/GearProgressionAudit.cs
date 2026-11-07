@@ -95,7 +95,9 @@ namespace Levy.Common.Testing
 		private static readonly Grade[] StartGrades = { Grade.Levy, Grade.Levy, Grade.Levy, Grade.Levy, Grade.ManAtArms, Grade.ManAtArms, Grade.ManAtArms, Grade.ManAtArms, Grade.Champion, Grade.Champion };
 		private static readonly string[] StartAccs = { "Aglet", "Aglet", "Shackle", "ShinyRedBalloon", "BandofRegeneration" };
 
-		public override void PostSetupRecipes()
+		public override void PostSetupRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostSetupRecipesCore);
+
+		private void PostSetupRecipesCore()
 		{
 			string outp = Environment.GetEnvironmentVariable("LEVY_GEARAUDIT");
 			if (string.IsNullOrEmpty(outp)) return;

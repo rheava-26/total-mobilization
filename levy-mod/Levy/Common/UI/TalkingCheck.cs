@@ -21,7 +21,9 @@ namespace Levy.Common.UI
 	{
 		private static Item Make(int type) { var it = new Item(); it.SetDefaults(type); return it; }
 
-		public override void PostSetupRecipes()
+		public override void PostSetupRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostSetupRecipesCore);
+
+		private void PostSetupRecipesCore()
 		{
 			var failures = new List<string>();
 			int ok = 0;

@@ -19,7 +19,9 @@ namespace Levy.Common.Observe
 	/// </summary>
 	public class ObserveChecks : ModSystem
 	{
-		public override void PostSetupRecipes()
+		public override void PostSetupRecipes() => global::Levy.Common.Util.LoadSafe.Run(PostSetupRecipesCore);
+
+		private void PostSetupRecipesCore()
 		{
 			var failures = new List<string>(); int ok = 0;
 			void Check(bool cond, string what) { if (cond) ok++; else failures.Add(what); }

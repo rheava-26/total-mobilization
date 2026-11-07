@@ -26,6 +26,11 @@ namespace Levy.Content.Items.Potions
 		public override bool CanUseItem(Player player)
 		{
 			if (player.dead) return false;
+			if (global::Levy.Common.Targeting.EnemyTargeting.FindUndownedBoss() != null)
+			{
+				if (player.whoAmI == Main.myPlayer && !Main.dedServ) CombatText.NewText(player.getRect(), new Color(255, 120, 100), LevyUtil.T("Potions.SpectatorBossRefused"));
+				return false;
+			}
 			if (player.TryGetModPlayer(out SpectatorPlayer sp) && sp.RecentlyHurt)
 			{
 				if (player.whoAmI == Main.myPlayer && !Main.dedServ) CombatText.NewText(player.getRect(), new Color(255, 120, 100), LevyUtil.T("Potions.SpectatorRefused"));

@@ -15,7 +15,7 @@ namespace Levy.Common.Potions
 		{
 			Player saved = Main.player[0];
 			SpectatorPlayer.InvalidateCache();
-			var boss = new NPC(); boss.SetDefaults(NPCID.EyeofCthulhu);
+			var boss = new NPC(); boss.SetDefaults(NPCID.EyeofCthulhu); boss.active = true;
 			bool before = global::Levy.Common.Targeting.EnemyTargeting.BossAggroUnlocked(boss);
 			try
 			{
@@ -24,7 +24,18 @@ namespace Levy.Common.Potions
 				Main.player[0] = p;
 				SpectatorPlayer.InvalidateCache();
 				Check(SpectatorPlayer.IsSpectator(p) && SpectatorPlayer.AnyActive, "spectator: detected as a spectator");
-				Check(global::Levy.Common.Targeting.EnemyTargeting.BossAggroUnlocked(boss), "spectator: boss aggro on soldiers unlocked for a not-downed boss while a commander spectates");
+				Check(!global::Levy.Common.Targeting.EnemyTargeting.BossAggroUnlocked(boss), "spectator: no boss aggro unlock for a boss not downed in this world (the first kill is solo)");
+				Check(global::Levy.Common.Targeting.EnemyTargeting.IsUndownedBoss(boss) && !global::Levy.Common.Targeting.EnemyTargeting.HidesSpectatorFrom(boss), "spectator: an undowned boss is flagged and the spectator is not hidden from it");
+				var pillar = new NPC(); pillar.SetDefaults(NPCID.LunarTowerSolar); pillar.active = true;
+				Check(!global::Levy.Common.Targeting.EnemyTargeting.IsUndownedBoss(pillar), "spectator: Lunar Pillars are not bosses for the first-kill rule");
+				Check(!global::Levy.Common.Targeting.EnemyTargeting.IsUndownedBoss(new NPC()), "spectator: an empty NPC is not an undowned boss");
+				global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(NPCID.EyeofCthulhu, true);
+				try
+				{
+					Check(global::Levy.Common.Targeting.EnemyTargeting.BossAggroUnlocked(boss), "spectator: a downed boss unlocks levy targeting while a commander spectates, whatever the config");
+					Check(!global::Levy.Common.Targeting.EnemyTargeting.IsUndownedBoss(boss) && global::Levy.Common.Targeting.EnemyTargeting.HidesSpectatorFrom(boss), "spectator: a downed boss is not flagged and a spectator is hidden from it");
+				}
+				finally { global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(NPCID.EyeofCthulhu, false); }
 				var z = new NPC(); z.SetDefaults(NPCID.Zombie); z.Center = p.Center; z.target = 0;
 				SpectatorPlayer.HideAll();
 				Check(p.dead && p.ghost, "spectator: hidden from the candidate search (dead+ghost, which vanilla's search skips)");
@@ -38,6 +49,43 @@ namespace Levy.Common.Potions
 			}
 			finally { Main.player[0] = saved; SpectatorPlayer.InvalidateCache(); }
 			Check(global::Levy.Common.Targeting.EnemyTargeting.BossAggroUnlocked(boss) == before, "spectator: boss aggro override ends with the buff");
+		}
+
+		/// <summary>
+		/// Vanilla-potion parity. Reads the vanilla Ironskin potion from ContentSamples and requires our two potions to carry the same use animation, sound, stack, consume flag and every ItemID.Sets flag
+		/// that both vanilla Ironskin and Spelunker share. Sprite size must equal the item's width and height.
+		/// </summary>
+		private static void ParityChecks(Action<bool, string> Check, Action<string> Info)
+		{
+			Item iron = ContentSamples.ItemsByType[ItemID.IronskinPotion];
+			bool dump = Environment.GetEnvironmentVariable("LEVY_POTION_DUMP") == "1";
+			if (dump)
+				foreach (int vt in new[] { ItemID.IronskinPotion, ItemID.SpelunkerPotion, ItemID.RegenerationPotion, ItemID.SwiftnessPotion, ItemID.InvisibilityPotion, ItemID.NightOwlPotion, ItemID.HunterPotion, ItemID.GravitationPotion })
+				{
+					Item v = ContentSamples.ItemsByType[vt];
+					Info($"vanilla {ItemID.Search.GetName(vt)}: useStyle={v.useStyle} useAnim={v.useAnimation} useTime={v.useTime} useTurn={v.useTurn} sound={v.UseSound?.SoundPath} consumable={v.consumable} maxStack={v.maxStack} {v.width}x{v.height} rare={v.rare} value={v.value} buffType={v.buffType} buffTime={v.buffTime} researchCount={v.ResearchUnlockCount}");
+				}
+			foreach (int type in new[] { ModContent.ItemType<SpectatorPotion>(), ModContent.ItemType<SeekerPotion>() })
+			{
+				Item it = ContentSamples.ItemsByType[type];
+				string n = it.ModItem.Name;
+				if (dump) Info($"ours {n}: useStyle={it.useStyle} useAnim={it.useAnimation} useTime={it.useTime} useTurn={it.useTurn} sound={it.UseSound?.SoundPath} consumable={it.consumable} maxStack={it.maxStack} {it.width}x{it.height} rare={it.rare} value={it.value} buffType={it.buffType} buffTime={it.buffTime} researchCount={it.ResearchUnlockCount}");
+				Check(it.useStyle == iron.useStyle && it.useAnimation == iron.useAnimation && it.useTime == iron.useTime && it.useTurn == iron.useTurn, n + ": use style, animation, time and turn as vanilla potions");
+				Check(it.UseSound.HasValue && iron.UseSound.HasValue && it.UseSound.Value == iron.UseSound.Value, n + ": drink sound as vanilla potions");
+				Check(it.consumable && it.maxStack == iron.maxStack && it.buffType > 0 && it.buffTime > 0, n + ": consumable, stack " + iron.maxStack + ", buff and duration set");
+				Check(it.ResearchUnlockCount == iron.ResearchUnlockCount, n + ": research count as vanilla potions");
+				Check(it.damage <= 0 && !it.accessory && !it.questItem, n + ": no weapon, accessory or quest flags");
+				foreach (var f in typeof(ItemID.Sets).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+				{
+					if (f.GetValue(null) is not bool[] arr || arr.Length <= type) continue;
+					if (arr[ItemID.IronskinPotion] && arr[ItemID.SpelunkerPotion]) Check(arr[type], n + ": ItemID.Sets." + f.Name + " (set on vanilla potions)");
+					else if (dump && (arr[ItemID.IronskinPotion] || arr[ItemID.SpelunkerPotion])) Info("set differs between Ironskin/Spelunker: " + f.Name);
+				}
+				if (dump)
+					foreach (var f in typeof(ItemID.Sets).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+						if (f.GetValue(null) is Array a && a.Length > type && a.Length > ItemID.IronskinPotion && f.FieldType != typeof(bool[]) && !Equals(a.GetValue(ItemID.IronskinPotion), a.GetValue(type)) && a.GetValue(ItemID.IronskinPotion) != null)
+							Info($"set {f.Name}: Ironskin={a.GetValue(ItemID.IronskinPotion)} ours={a.GetValue(type)}");
+			}
 		}
 
 		public override void PostSetupRecipes()
@@ -66,6 +114,7 @@ namespace Levy.Common.Potions
 				Check(PotionConstants.AutonomousFallbackFrac < PotionConstants.AutonomousReengageFrac, "autonomy: re-engage threshold above fall-back threshold");
 				Check(Array.IndexOf(Flavor.GuideSystem.Keys, "Autonomy") >= 0, "autonomy: guide key registered");
 				Check(ModContent.ItemType<SeekerPotion>() > 0 && ModContent.ItemType<SpectatorPotion>() > 0, "potion items registered");
+				try { ParityChecks(Check, m => Mod.Logger.Info("potion parity: " + m)); } catch (Exception e) { failures.Add("potion parity checks threw " + e.GetType().Name + ": " + e.Message); }
 				try { SpectatorTargetingChecks(Check); } catch (Exception e) { failures.Add("spectator targeting checks threw " + e.GetType().Name + ": " + e.Message); }
 			}
 			catch (Exception e) { failures.Add("potion checks threw " + e.GetType().Name + ": " + e.Message); }

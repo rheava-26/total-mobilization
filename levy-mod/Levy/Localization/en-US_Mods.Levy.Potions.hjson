@@ -3,9 +3,7 @@ SpectatorPotion: {
 	DisplayName: Spectator Potion
 	Tooltip:
 		'''
-		Lasts 20 minutes. Enemies and bosses ignore you, and your weapons, summons and building tools stop working.
-		You stay within 60 tiles of where you drank it. Cannot be drunk within 5 seconds of taking damage.
-		Taking damage ends it. Cameras and observing items still work.
+		Enemies ignore you, but you cannot fight or build. Has no effect against a boss you have not beaten.
 		'''
 }
 
@@ -13,8 +11,7 @@ SeekerPotion: {
 	DisplayName: Seeker Potion
 	Tooltip:
 		'''
-		Lasts 12 minutes. Choose one item when you drink it.
-		Tiles and chests that hold it glow, and an arrow points to the nearest.
+		Choose one item. Tiles and chests that hold it glow.
 		'''
 }
 
@@ -29,7 +26,7 @@ GuideToAutonomy: {
 
 SpectatorBuff: {
 	DisplayName: Spectator
-	Description: Enemies ignore you. Your weapons and building tools are off. You cannot leave the area.
+	Description: Enemies ignore you. Your weapons and building tools are off. You cannot leave the area. A boss you have not beaten ends it.
 }
 
 SeekerBuff: {
@@ -43,6 +40,8 @@ AutonomousBuff: {
 }
 
 SpectatorRefused: Too soon after damage.
+SpectatorBossRefused: Beat this boss first.
+SpectatorBossEnds: A boss you have not beaten ends it.
 SeekerPrompt: Choose an item to find.
 SeekerClose: Close
 DropSlimeRain: Drops during Slime Rain.

@@ -301,6 +301,7 @@ Pages: {
 			'''
 			Spectator lasts 20 minutes. Enemies ignore you, and your weapons, summons and building tools stop working.
 			You stay within 60 tiles of where you drank it. Taking damage ends it.
+			It does nothing against a boss you have not beaten: it cannot be drunk while one is alive, and one appearing ends it.
 			With A Guide to Autonomy, your levies act on their own while you watch: fearless, falling back to heal, and going for the biggest threat.
 			Seeker lasts 12 minutes. Choose one item and tiles and chests that hold it glow, with an arrow to the nearest.
 			'''

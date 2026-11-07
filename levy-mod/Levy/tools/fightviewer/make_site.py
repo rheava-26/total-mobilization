@@ -8,6 +8,10 @@ usage: make_site.py <outdir> <set-name>=<dir> [<set-name>=<dir> ...] [--hz 15] [
 For every set directory it reads the recordings (*.jsonl or *.jsonl.gz, FightRecorder format 1-4), the optional index.txt
 ("why it's notable" notes) and each recording's header meta, and writes
 
+  make_site.py <outdir> <sets...> --auto <dir> [--auto <dir2> ...] [--per-cell 2] [--max-auto 110] [--batches 55] [--cache scan.json]
+  adds an even spread of fights from every recording under the --auto folders (one set per boss, notes generated from the recording)
+  and, with --batches MB, writes <outdir>/b01, b02 ... each a complete publishable page (see batches.txt for the order).
+
   <outdir>/index.html            copy of site/index.html (the page, no data inside)
   <outdir>/data/manifest.json    the fight list: one row per fight with boss, mode, levies, arena, result, targeting %, hits, deaths, note
   <outdir>/data/<id>.json        one plain-JSON file per fight (frames downsampled to --hz, coordinates rounded, levy and boss rows delta-coded), loaded lazily by the page
@@ -254,22 +258,150 @@ def slug(s):
     return re.sub(r"[^A-Za-z0-9]+", "-", s).strip("-").lower()
 
 
+def walk_recordings(dirs):
+    out = []
+    for d in dirs:
+        for root, _dn, fn in os.walk(d):
+            for f in fn:
+                if f.endswith(".jsonl") or f.endswith(".jsonl.gz"):
+                    out.append(os.path.join(root, f))
+    return sorted(out)
+
+
+def prescan(paths, cache_path):
+    """summaries of many recordings, cached on disk (path + size + mtime) so a re-run is fast."""
+    cache = {}
+    if cache_path and os.path.isfile(cache_path):
+        try:
+            cache = json.load(open(cache_path))
+        except ValueError:
+            cache = {}
+    res, dirty = {}, 0
+    for i, p in enumerate(paths):
+        st = os.stat(p)
+        key = "%s|%d|%d" % (p, st.st_size, int(st.st_mtime))
+        if key in cache:
+            res[p] = cache[key]
+            continue
+        rows = load(p)
+        if any(r.get("k") == "f" for r in rows):
+            res[p] = cache[key] = summarize(rows)
+            res[p]["bytes_raw"] = st.st_size
+        del rows
+        dirty += 1
+        if dirty % 40 == 0:
+            print("  scanned %d / %d" % (i + 1, len(paths)), file=sys.stderr)
+    if cache_path and dirty:
+        json.dump(cache, open(cache_path, "w"), separators=(",", ":"))
+    return res
+
+
+def dkey(s):
+    return (s["boss"], s["mode"], s.get("seed"), s.get("gear"), round(s["dur"]))
+
+
+def pick_auto(sums, seen_keys, per_cell, max_n):
+    """one pass over every candidate: drop duplicates and tiny/odd files, group by boss x mode x result, then take the cells
+    round-robin (first pick of every cell, then the second, ...) so the spread is even and the cap cuts the deepest picks."""
+    cells, dup = {}, set(seen_keys)
+    for p, s in sorted(sums.items(), key=lambda kv: (kv[1]["bytes_raw"], kv[0])):
+        if s["dur"] < 15 or s["boss"] in ("?", ""):
+            continue
+        k = dkey(s)
+        if k in dup:
+            continue
+        dup.add(k)
+        cells.setdefault((s["boss"], s["mode"], s["result"]), []).append((p, s))
+    order = sorted(cells)
+    chosen = []
+    for rnd in range(per_cell):
+        for c in order:
+            lst = cells[c]
+            # prefer a seed not yet taken in this cell
+            taken = {x[1].get("seed") for x in chosen if (x[1]["boss"], x[1]["mode"], x[1]["result"]) == c}
+            cand = [x for x in lst if x not in chosen]
+            fresh = [x for x in cand if x[1].get("seed") not in taken]
+            pickx = (fresh or cand or [None])[0]
+            if pickx is not None:
+                chosen.append(pickx)
+            if len(chosen) >= max_n:
+                return chosen
+    return chosen
+
+
+RES_TXT = {"win": "boss killed", "loss": "every levy fell", "timeout": "time ran out", "fled": "the boss flew off", "despawn": "the boss left", "ended": "recording ended"}
+
+
+def auto_note(s):
+    bits = ["%s, %d levies, %s%s." % (s["mode"], s["levies"], s["arena"].lower(), (", seed " + str(s["seed"])) if s.get("seed") else "")]
+    bits.append("%s after %.0f s." % (RES_TXT.get(s["result"], s["result"]).capitalize(), s["dur"]))
+    if s["levies"]:
+        bits.append("%d of %d levies fell." % (min(s["deaths"], s["levies"]), s["levies"]))
+    if s.get("hasT"):
+        bits.append("Boss aimed at levies %.0f%% of the time." % s["pl"])
+    return " ".join(bits)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Build the hosted Levy fight-replay site.")
     ap.add_argument("outdir")
-    ap.add_argument("sets", nargs="+", metavar="name=dir")
+    ap.add_argument("sets", nargs="*", metavar="name=dir")
     ap.add_argument("--hz", type=int, default=15, help="sample rate of the data files (recordings are 30 Hz); default 15")
+    ap.add_argument("--auto", action="append", default=[], metavar="dir", help="add a spread of fights from every recording under this folder (repeatable): one set per boss, up to --per-cell per boss x mode x result")
+    ap.add_argument("--per-cell", type=int, default=2)
+    ap.add_argument("--max-auto", type=int, default=110, help="cap on the number of auto-picked fights")
+    ap.add_argument("--cache", default=None, help="file that caches the summaries of the --auto candidates")
+    ap.add_argument("--batches", type=float, default=0, metavar="MB", help="split the site into publishable batches of at most MB megabytes of data (and 250 files): <outdir>/b01, b02, ...; each holds index.html, the manifest of everything up to that batch and only its own data files, so publishing them in order to the same URL builds the full page")
     a = ap.parse_args()
 
     out = os.path.abspath(a.outdir)
-    data = os.path.join(out, "data")
-    os.makedirs(data, exist_ok=True)
-    for old in glob.glob(os.path.join(data, "*.json")):
-        os.remove(old)
+    shutil.rmtree(out, ignore_errors=True)
+    os.makedirs(out, exist_ok=True)
 
-    manifest_sets, seen, all_fights = [], set(), []
+    manifest_sets, seen, all_fights, seen_keys = [], set(), [], set()
     blobs = {}   # fight id -> encoded bytes
     paths = {}   # fight id -> recording path (re-read if the budget forces a coarser rate)
+    by_set = {}
+
+    def add_fight(setname, setid, settitle, path, fights, note=None, auto=False, s=None):
+        fn = os.path.basename(path)
+        rows = load(path)
+        if not any(r.get("k") == "f" for r in rows):
+            print("skip (no frames):", fn, file=sys.stderr)
+            return
+        s = summarize(rows)
+        hdr = next((r for r in rows if r.get("k") == "hdr"), {})
+        hz0 = hdr.get("hz", 30)
+        factor = max(1, -(-hz0 // a.hz))
+        while True:
+            blob = dump(convert(rows, factor))
+            if len(blob) <= MAX_FILE or factor >= 8:
+                break
+            factor += 1
+        del rows
+        base = re.sub(r"\.jsonl(\.gz)?$", "", fn)
+        fid = slug(setname) + "__" + slug(base)
+        n = 2
+        while fid in seen:
+            fid = "%s__%s-%d" % (slug(setname), slug(base), n)
+            n += 1
+        seen.add(fid)
+        text = None
+        if auto:
+            text = auto_note(s)
+        elif note:
+            text = note.get("note")
+            if note["names"][0] != fn:       # 'a + b' entries: the note and result describe the first file
+                text = "Another run of the same cell as: " + (text or "")
+            elif note["result"] and note["result"] != s["result"]:
+                print("note: %s computed %s, index says %s" % (fn, s["result"], note["result"]), file=sys.stderr)
+                text = (text or "") + " (Viewer verdict for this recording: %s.)" % s["result"]
+        blobs[fid] = blob
+        paths[fid] = (path, factor, hz0)
+        s.update({"id": fid, "file": "data/%s.json" % fid, "bytes": len(blob), "hz": max(1, hz0 // factor), "note": text, "src": fn})
+        fights.append(s)
+        seen_keys.add(dkey(s))
+
     for spec in a.sets:
         if "=" not in spec:
             sys.exit("set must look like name=dir, got: " + spec)
@@ -283,77 +415,97 @@ def main():
         ordered += [f for f in files if f not in ordered]
         fights = []
         for fn in ordered:
-            rows = load(os.path.join(d, fn))
-            if not any(r.get("k") == "f" for r in rows):
-                print("skip (no frames):", fn, file=sys.stderr)
-                continue
-            s = summarize(rows)
-            hdr = next((r for r in rows if r.get("k") == "hdr"), {})
-            hz0 = hdr.get("hz", 30)
-            factor = max(1, -(-hz0 // a.hz))
-            while True:
-                blob = dump(convert(rows, factor))
-                if len(blob) <= MAX_FILE or factor >= 8:
-                    break
-                factor += 1
-            del rows
-            base = re.sub(r"\.jsonl(\.gz)?$", "", fn)
-            fid = slug(name) + "__" + slug(base)
-            n = 2
-            while fid in seen:
-                fid = "%s__%s-%d" % (slug(name), slug(base), n)
-                n += 1
-            seen.add(fid)
-            note = idx.get(fn)
-            text = (note or {}).get("note")
-            if note and note["names"][0] != fn:       # 'a + b' entries: the note and result describe the first file
-                text = "Another run of the same cell as: " + (text or "")
-            elif note and note["result"] and note["result"] != s["result"]:
-                print("note: %s computed %s, index says %s" % (fn, s["result"], note["result"]), file=sys.stderr)
-                text = (text or "") + " (Viewer verdict for this recording: %s.)" % s["result"]
-            blobs[fid] = blob
-            paths[fid] = (os.path.join(d, fn), factor, hz0)
-            s.update({"id": fid, "file": "data/%s.json" % fid, "bytes": len(blob), "hz": max(1, hz0 // factor),
-                      "note": text, "src": fn})
-            fights.append(s)
+            add_fight(name, slug(name), TITLES.get(name.lower(), name.replace("_", " ")), os.path.join(d, fn), fights, note=idx.get(fn))
         if fights:
             manifest_sets.append({"id": slug(name), "title": TITLES.get(name.lower(), name.replace("_", " ")), "fights": fights})
             all_fights += fights
         print("%-10s %3d fights" % (name, len(fights)), file=sys.stderr)
 
-    # keep the site under the host's size limit: thin the biggest recordings one step at a time (15 Hz -> 10 -> 7.5 Hz)
-    fixed = os.path.getsize(os.path.join(HERE, "site", "index.html")) + 400 * len(all_fights)
-    while sum(len(b) for b in blobs.values()) + fixed > MAX_TOTAL:
-        cand = [f for f in all_fights if paths[f["id"]][1] < 4]
-        if not cand:
-            break
-        f = max(cand, key=lambda f: f["bytes"])
-        path, factor, hz0 = paths[f["id"]]
-        blob = dump(convert(load(path), factor + 1))
-        blobs[f["id"]] = blob
-        paths[f["id"]] = (path, factor + 1, hz0)
-        f["bytes"] = len(blob)
-        f["hz"] = max(1, hz0 // (factor + 1))
-        print("thinned %s to %d Hz (site was over budget)" % (f["src"], f["hz"]), file=sys.stderr)
-    total = 0
-    for fid, blob in blobs.items():
-        with open(os.path.join(data, fid + ".json"), "wb") as fh:
-            fh.write(blob)
-        total += len(blob)
-    nfiles = len(blobs)
+    if a.auto:
+        cands = walk_recordings(a.auto)
+        print("auto: scanning %d recordings" % len(cands), file=sys.stderr)
+        sums = prescan(cands, a.cache)
+        chosen = pick_auto(sums, seen_keys, a.per_cell, a.max_auto)
+        print("auto: picked %d fights" % len(chosen), file=sys.stderr)
+        chosen.sort(key=lambda x: (x[1]["boss"], x[1]["mode"], x[1]["result"], x[1].get("seed") or ""))
+        bysets = {}
+        for p, s0 in chosen:
+            bysets.setdefault(s0["boss"], []).append(p)
+        for boss in sorted(bysets):
+            fights = []
+            for p in bysets[boss]:
+                add_fight("more " + boss, "more-" + slug(boss), boss + " (more)", p, fights, auto=True)
+            if fights:
+                manifest_sets.append({"id": "more-" + slug(boss), "title": boss + " (more)", "fights": fights})
+                all_fights += fights
+            print("more %-24s %3d fights" % (boss, len(fights)), file=sys.stderr)
 
-    # default: the closest win (most levies dead without losing them all), shortest on ties
-    wins = [f for f in all_fights if f["result"] == "win" and f["levies"] and f["hasT"]]
+    fixed = os.path.getsize(os.path.join(HERE, "site", "index.html")) + 400 * len(all_fights)
+    if not a.batches:
+        # keep the site under the host's size limit: thin the biggest recordings one step at a time (15 Hz -> 10 -> 7.5 Hz)
+        while sum(len(b) for b in blobs.values()) + fixed > MAX_TOTAL:
+            cand = [f for f in all_fights if paths[f["id"]][1] < 4]
+            if not cand:
+                break
+            f = max(cand, key=lambda f: f["bytes"])
+            path, factor, hz0 = paths[f["id"]]
+            blob = dump(convert(load(path), factor + 1))
+            blobs[f["id"]] = blob
+            paths[f["id"]] = (path, factor + 1, hz0)
+            f["bytes"] = len(blob)
+            f["hz"] = max(1, hz0 // (factor + 1))
+            print("thinned %s to %d Hz (site was over budget)" % (f["src"], f["hz"]), file=sys.stderr)
+
+    # batches: pack the fights in page order; batch k carries the manifest of everything up to k, so each publish is a complete, working page
+    if a.batches:
+        limit = int(a.batches * 1048576)
+        batch_of, cur_b, cur_bytes, cur_n = {}, 1, 0, 0
+        for f in all_fights:
+            if cur_n and (cur_bytes + f["bytes"] > limit or cur_n >= 250):
+                cur_b += 1; cur_bytes = 0; cur_n = 0
+            batch_of[f["id"]] = cur_b; cur_bytes += f["bytes"]; cur_n += 1
+        nb = cur_b
+    else:
+        batch_of, nb = {f["id"]: 0 for f in all_fights}, 0
+
+    first = [f for f in all_fights if batch_of[f["id"]] <= 1]
+    wins = [f for f in first if f["result"] == "win" and f["levies"] and f["hasT"]]
     wins.sort(key=lambda f: (-(f["deaths"] / f["levies"] if f["deaths"] < f["levies"] else 0), f["dur"]))
-    default = wins[0]["id"] if wins else (all_fights[0]["id"] if all_fights else None)
-    with open(os.path.join(data, "manifest.json"), "w", encoding="utf-8") as f:
-        json.dump({"version": 1, "default": default, "sets": manifest_sets}, f, separators=(",", ":"))
-    shutil.copyfile(os.path.join(HERE, "site", "index.html"), os.path.join(out, "index.html"))
-    size = total + os.path.getsize(os.path.join(data, "manifest.json")) + os.path.getsize(os.path.join(out, "index.html"))
-    print("wrote %s: %d fights, %d files, %.2f MB (largest data file %.2f MB)" % (
-        out, nfiles, nfiles + 2, size / 1048576, max([f["bytes"] for f in all_fights] or [0]) / 1048576), file=sys.stderr)
-    if size > MAX_TOTAL:
-        print("WARNING: site is over %d MB even after thinning; the host limit is 60 MB. Publish fewer fights." % (MAX_TOTAL // 1048576), file=sys.stderr)
+    default = wins[0]["id"] if wins else (first[0]["id"] if first else None)
+
+    def write_site(root, upto):
+        data = os.path.join(root, "data")
+        os.makedirs(data, exist_ok=True)
+        total, count = 0, 0
+        for fid, blob in blobs.items():
+            if (batch_of[fid] == upto) if nb else True:
+                with open(os.path.join(data, fid + ".json"), "wb") as fh:
+                    fh.write(blob)
+                total += len(blob); count += 1
+        sets = []
+        for st in manifest_sets:
+            fl = [f for f in st["fights"] if (not nb) or batch_of[f["id"]] <= upto]
+            if fl:
+                sets.append({"id": st["id"], "title": st["title"], "fights": fl})
+        with open(os.path.join(data, "manifest.json"), "w", encoding="utf-8") as f:
+            json.dump({"version": 1, "default": default, "sets": sets}, f, separators=(",", ":"))
+        shutil.copyfile(os.path.join(HERE, "site", "index.html"), os.path.join(root, "index.html"))
+        size = total + os.path.getsize(os.path.join(data, "manifest.json")) + os.path.getsize(os.path.join(root, "index.html"))
+        return count + 2, size, sum(len(s["fights"]) for s in sets)
+
+    if not nb:
+        n_files, size, n_f = write_site(out, 0)
+        print("wrote %s: %d fights, %d files, %.2f MB (largest data file %.2f MB)" % (out, n_f, n_files, size / 1048576, max([f["bytes"] for f in all_fights] or [0]) / 1048576), file=sys.stderr)
+        if size > MAX_TOTAL:
+            print("WARNING: site is over %d MB even after thinning; the host limit is 60 MB. Use --batches 55." % (MAX_TOTAL // 1048576), file=sys.stderr)
+    else:
+        lines = []
+        for b in range(1, nb + 1):
+            root = os.path.join(out, "b%02d" % b)
+            n_files, size, n_f = write_site(root, b)
+            lines.append("b%02d: %d files, %.1f MB, manifest lists %d fights (%d new)" % (b, n_files, size / 1048576, n_f, sum(1 for f in all_fights if batch_of[f["id"]] == b)))
+        open(os.path.join(out, "batches.txt"), "w").write("\n".join(lines) + "\nPublish in order to the same URL: each batch adds its data files and replaces index.html and data/manifest.json.\n")
+        print("\n".join(lines), file=sys.stderr)
 
 
 if __name__ == "__main__":

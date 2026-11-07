@@ -312,6 +312,7 @@ function build(R){
   if(pk>=0)R.band.push([ps,R.tmax+R.dt,pk]); R.tally=tl;
   R.trA=new Map(); R.hasAdds=false;
   for(const f of R.frames) for(const a of (f.a||[])){R.hasAdds=true;let t=R.trA.get(a[1]);if(!t)R.trA.set(a[1],t=[]);t.push([f.t,a[2],a[3]]);}
+  R.gearCmd=R.events.filter(e=>e.e==="gear"); R.lgear=new Map(); for(const e of R.events) if(e.e==="lgear"){let a=R.lgear.get(e.id);if(!a)R.lgear.set(e.id,a=[]);a.push(e);}
   R.lbuf=new Map(); for(const e of R.events) if(e.e==="lbuf"){let a=R.lbuf.get(e.id);if(!a)R.lbuf.set(e.id,a=[]);a.push(e);}
   R.lhitBy=new Map(); for(const e of R.lhit){let a=R.lhitBy.get(e.id);if(!a)R.lhitBy.set(e.id,a=[]);a.push(e);}
   R.fellBy=new Map(); for(const e of R.ldeath) if(!R.fellBy.has(e.id)) R.fellBy.set(e.id,e);
@@ -684,6 +685,13 @@ function bendText(e){
   if(e.ht!=null&&e.ht>=0){o+="\nlast hit "+e.hd+" damage at "+(e.ht/TPS).toFixed(1)+" s, "+(e.hs==="item"?"item ":e.hs==="proj"?"projectile ":"other source")+(e.hn?e.hn:"");}
   return o;
 }
+function cmdGearHtml(){
+  if(!D.gearCmd.length) return `<section><h2>Commander gear</h2><div class="small">Not recorded (needs format 6).</div></section>`;
+  const e=D.gearCmd[0], row=(l,a)=>a.length?`<span>${l}</span><span>${esc(a.join(", "))}</span>`:"";
+  const arm=e.arm||[], inv=e.inv||[], T3=(g)=>itemTxt(g[1],g[2]);
+  const html=row("armor",arm.filter(g=>g[0]<3).map(T3))+row("accessories",arm.filter(g=>g[0]>=3&&g[0]<10).map(T3))+row("hotbar",inv.filter(g=>g[0]<10).map(g=>T3(g)+(g[3]>1?" x"+g[3]:"")))+row("ammo",inv.filter(g=>g[0]>=54).map(g=>T3(g)+" x"+g[3]))+row("vanity",arm.filter(g=>g[0]>=10).map(T3));
+  return `<section><h2>Commander gear</h2><div class="kv">${html||"<span>-</span><span>empty</span>"}</div>${D.gearCmd.length>1?`<div class="small" style="margin-top:6px">Changed ${D.gearCmd.length-1} time${D.gearCmd.length>2?"s":""} during the fight; the list is the start.</div>`:""}</section>`;
+}
 function renderInfo(){
   const s=summary(D),m=(D.hdr&&D.hdr.meta)||{},h=D.hdr||{},e=D.end||{};
   const mb=D.frames.map(mainBoss).filter(Boolean); const hp0=mb.length?mb[0][6]/Math.max(1,mb[0][7]):0, hp1=mb.length?mb[mb.length-1][6]/Math.max(1,mb[mb.length-1][7]):0;
@@ -717,7 +725,7 @@ function renderInfo(){
   let h4=`<section><details><summary>Commander and levy movement</summary><table style="margin-top:8px"><tr><th></th><th>commander</th><th>levies</th></tr>`+
     [["airborne %","air"],["standing still %","still"],["avg speed (tiles/s)","avg"],["max speed (tiles/s)","max"],["avg distance to boss (tiles)","dist"],["closest to boss (tiles)","distMin"]].map(([l,k])=>`<tr><td>${l}</td><td>${f1(S.ps&&S.ps[k])}</td><td>${f1(S.ls&&S.ls[k])}</td></tr>`).join("")+`</table>`+
     `<div class="small" style="margin-top:6px">Commander actions: ${["jump","xjump","dash","hook","use","hit"].map(k=>k+" "+S.ev[k]).join(", ")}</div></details></section>`;
-  $("info").innerHTML=`<section style="grid-column:1/-1"><h2>Levies</h2><div id="roster" class="roster"></div><div id="lsel"></div></section><section style="grid-column:1/-1"><h2>Boss parts now (life and ai[0..3] from the game)</h2><div style="max-height:220px;overflow:auto"><table id="parts"></table></div><div class="small" style="margin-top:6px">ai values are the NPC's own ai[] slots: they show which attack or phase each part is in. Hover or tap a part on the radar for the same numbers.</div></section>`+h1+h2+h3+h4; partsAt=-1; buildRoster(); rosterAt=-1; updateRoster();
+  $("info").innerHTML=`<section style="grid-column:1/-1"><h2>Levies</h2><div id="roster" class="roster"></div><div id="lsel"></div></section><section style="grid-column:1/-1"><h2>Boss parts now (life and ai[0..3] from the game)</h2><div style="max-height:220px;overflow:auto"><table id="parts"></table></div><div class="small" style="margin-top:6px">ai values are the NPC's own ai[] slots: they show which attack or phase each part is in. Hover or tap a part on the radar for the same numbers.</div></section>`+h1+cmdGearHtml()+h2+h3+h4; partsAt=-1; buildRoster(); rosterAt=-1; updateRoster();
 }
 // ---- levy roster and the tracked levy
 function selectLevy(id,keep){
@@ -731,6 +739,13 @@ function buildRoster(){
   for(const id of D.order){const b=document.createElement("button");b.dataset.id=id;b.innerHTML=`<b>${esc(D.lbl.get(id)||"#"+id)}</b> <span class="small">${esc((D.names.soldiers&&D.names.soldiers[id])||"")}</span><div class="rb"><i></i></div><div class="rs"></div>`;b.onclick=()=>selectLevy(id);box.appendChild(b);}
 }
 function levyRowAt(id,f){return (f.l||[]).find(l=>l[0]===id)||null;}
+const itemTxt=(t,pre)=>{const pn=pre>0&&D.names.prefixes&&D.names.prefixes[pre];return (pn?pn+" ":"")+nm("items",t);};
+const LSLOT=["weapon","sidearm","head","body","legs","accessory","accessory","accessory","accessory","accessory","accessory","ammo","hook"];
+function levyGearHtml(id){
+  let ev=null; for(const e of (D.lgear.get(id)||[])){if(e.t<=cur)ev=e;else break;} if(!ev) ev=(D.lgear.get(id)||[])[0]; if(!ev) return "";
+  const by={}; for(const g of ev.g){const k=LSLOT[g[0]]||"slot"+g[0];(by[k]=by[k]||[]).push(itemTxt(g[1],g[2])+(g[0]===11&&g[3]>1?" x"+g[3]:""));}
+  return ["weapon","sidearm","head","body","legs","accessory","ammo","hook"].filter(k=>by[k]).map(k=>`<span>${k==="accessory"?"accessories":k}</span><span>${esc(by[k].join(", "))}</span>`).join("");
+}
 function updateRoster(){
   if(!D||!$("roster")||performance.now()-rosterAt<120) return; rosterAt=performance.now();
   const {f0}=interp(), states=(D.hdr&&D.hdr.stateNames||"").split(",");
@@ -752,7 +767,7 @@ function updateRoster(){
   if(fell){const lk=(D.lhitBy.get(id)||[]).filter(e=>e.kill).pop(); death=`fell at ${(fe.t/TPS).toFixed(1)} s to ${fe.npc>0?esc(nm("npcs",fe.npc)):esc(fe.by||"?")}${lk?` (${esc(lk.src)} hit, ${lk.dmg} damage${lk.proj>0?", "+esc(nm("projectiles",lk.proj)):""})`:""}`;}
   else if(!l) death="alive, out of recorded range or not yet in the fight";
   box.innerHTML=`<h2 style="margin:0">${esc(lname(id))} <span class="small">(following; tap again to release)</span></h2><div class="kv">`+
-    `<span>weapon</span><span>${held?esc(nm("items",held)):"-"}</span><span>ammo</span><span class="small">not recorded</span>`+
+    `<span>held</span><span>${held?esc(nm("items",held)):"-"}</span>`+(D.lgear.has(id)?levyGearHtml(id):`<span>ammo</span><span class="small">not recorded</span>`)+
     `<span>HP</span><span>${l?l[6]+" / "+(l[10]||mx):fell?"0":"-"}</span><span>state</span><span>${l?esc(states[l[7]]||l[7]):"-"}</span>`+
     `<span>buffs</span><span>${esc(buffs)}</span><span>hits taken</span><span>${hits.length} (${dmg} damage${Object.keys(bySrc).length?": "+Object.entries(bySrc).map(([k,v])=>k+" "+v).join(", "):""})</span><span>fate</span><span>${death}</span></div>`;
 }

@@ -119,6 +119,19 @@
   - **Contact blades do ~nothing to bosses** because of the no-suicide standoff (22–34 dmg/fight vs 195–462 for projectile blades). **SHIPPED fix:** a contact-melee main swaps to a ranged sidearm vs bosses and out-of-reach fliers. With a sidearm, a broadsword levy does 10× more damage to the Eye; ~2× vs QB.
   - The "boss outranks adds" PickTarget change was tested worse (KS) and reverted.
 - **SHIPPED Levy 2.0.15** (sidearm swap). Booted clean on both toolchains; sent to Eve.
+- **mobility4 DONE (merged 956a1f1 → 2.0.16):**
+  - **Worm spread** (bystanders keep 26 tiles from the targeted levy; the target runs a 16-tile leg away; `LEVY_SPREAD=0` turns it off). 24-cell A/B:
+    - DS deaths/min 3.2 → 1.5, hits 117 → 73;
+    - EoW deaths/min 0.6 → 0.3, hits 146 → 112;
+    - bystander hits drop 63% (DS); the targeted levy is not helped.
+  - The worm chain-trajectory model was no gain (EoW worse), so it's opt-in (`LEVY_CHAIN=1`). Follower segments have velocity 0, which is why the threat field never saw them.
+  - **Minions retarget:** a boss's minions are allowlisted exactly when their boss is. Style-5 fliers (Servants, Eater of Souls, hornets) target levies via the empty "flyer slot" 254. NEW live behaviour, untested in real play.
+  - **BossTrial t=0 fixed:** with no connected player, the boss despawned in CheckActive on its first update.
+  - **Not done:**
+    - charger lanes (QB head hits are only ~10 of 46 per 60 s; bees are ~30);
+    - Brain p2 harness;
+    - Skeletron spin fidelity.
+  - Matrix ALL (Spectator): hits 35.2 → 31.7, deaths/min 0.5 → 0.3, minions 100% on levies.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

@@ -500,13 +500,13 @@ namespace Levy.Common.Testing
 
 		private static readonly string[] CrStockPool = { "Obsidian Shield", "Charm of Myths", "Band of Regeneration", "Magma Stone", "Hermes Boots", "Worm Scarf", "Shackle", "Anklet of the Wind", "Shiny Stone", "Philosopher's Stone", "Lucky Horseshoe", "Feral Claws", "Band of Starpower" };
 
-		/// <summary>stock=1: the levies spawn with empty accessory slots; a detached Armory stocked with one Cloud in a Bottle per five levies plus one tier-legal ordinary accessory per levy fills them through its real pick (IssueGear, then the upgrade pass). stock=2 stocks no bottles. Logs how many levies end up with a mobility accessory.</summary>
+		/// <summary>stock=1: the levies spawn with empty accessory slots; a detached Armory stocked with one Cloud in a Bottle per five levies plus two tier-legal ordinary accessories per levy fills them through its real pick (IssueGear, then the upgrade pass). stock=2 stocks no bottles. Logs how many levies end up with a mobility accessory.</summary>
 		private void CrStockArmory(CrState s, CrRun run)
 		{
 			var te = new ArmoryTE();
 			int n = s.Levies.Count, clouds = run.Stock == "2" ? 0 : (n + 4) / 5;
 			for (int i = 0; i < clouds; i++) te.Deposit(CrMake("Cloud in a Bottle"));
-			for (int i = 0; i < n; i++) te.Deposit(CrMake(CrStockPool[i % CrStockPool.Length]));
+			for (int i = 0; i < n * 2; i++) te.Deposit(CrMake(CrStockPool[i % CrStockPool.Length])); // twice as many ordinary accessories as levies
 			var recs = s.Levies.Select(l => l.Rec).ToList();
 			ArmoryTE.TestServed = recs;
 			try

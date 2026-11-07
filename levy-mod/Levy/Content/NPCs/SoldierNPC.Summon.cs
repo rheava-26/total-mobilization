@@ -30,8 +30,7 @@ namespace Levy.Content.NPCs
 		internal int MinionHits;
 		/// <summary>Projectiles this soldier's minions have created (flood guard tally), the value the last upkeep pass saw, and the live count that pass found.</summary>
 		internal int ChildSpawns;
-		private int _childSpawnsSeen, _childrenAlive, _lastTi = -1, _lastTiLife;
-		private int _minionHitsSeen, _minionIdleTicks;
+		private int _childSpawnsSeen, _childrenAlive;
 
 		/// <summary>The summon weapon this soldier maintains a flock for, or null: the primary if it summons, else a summon staff carried as the sidearm.</summary>
 		public Item SummonWeapon()
@@ -149,16 +148,6 @@ namespace Levy.Content.NPCs
 			}
 		}
 
-		/// <summary>True when the soldier's attack target is close enough that a working modded flock would have hit it by now (see <see cref="LevyConstants.ModdedMinionIdleRangePx"/>).</summary>
-		private bool IdleTargetInReach()
-		{
-			int t = SoldierMinions.AttackTarget(this);
-			return t >= 0 && Vector2.DistanceSquared(Main.npc[t].Center, NPC.Center) <= Sq(LevyConstants.ModdedMinionIdleRangePx);
-		}
-
-		/// <summary>A new kit (rearm, promotion, hand-issued weapon) starts the flock's liveness clock afresh.</summary>
-		internal void ResetMinionLiveness() { _minionIdleTicks = 0; _minionHitsSeen = MinionHits; _lastTi = -1; }
-
 		/// <summary>
 		/// The real-minion flock (already collected into <c>_minionScratch</c>): retunes every minion's damage, dismisses any overflow (by slot total, so a half-slot pair counts right),
 		/// keeps a controller staff's companion (Desert Tiger, Abigail) right, and casts one more when a whole cast still fits.
@@ -170,19 +159,6 @@ namespace Levy.Content.NPCs
 				int spawned = ChildSpawns - _childSpawnsSeen; _childSpawnsSeen = ChildSpawns;
 				if (spawned > LevyConstants.ModdedMinionMaxChildSpawnsPerPass || _childrenAlive > LevyConstants.ModdedMinionMaxChildrenAlive) { SoldierMinions.FloodGuard(this, weapon, spawned, _childrenAlive); return; }
 			}
-			if (weapon.shoot >= ProjectileID.Count && _minionScratch.Count > 0)
-			{
-				// progress also counts the target losing life (a field that damages without a projectile hit, like the Universe Splitter's)
-				int ti = TargetIndex;
-				if (ti >= 0 && ti < Main.maxNPCs) { NPC tn = Main.npc[ti]; if (ti == _lastTi && tn.life < _lastTiLife) MinionHits++; _lastTi = ti; _lastTiLife = tn.life; } else _lastTi = -1;
-				if (MinionHits != _minionHitsSeen) { _minionHitsSeen = MinionHits; _minionIdleTicks = 0; }
-				else if (IdleTargetInReach())
-				{
-					_minionIdleTicks += LevyConstants.MinionMaintainIntervalTicks;
-					if (_minionIdleTicks >= LevyConstants.ModdedMinionIdleTicks) { _minionIdleTicks = 0; SoldierMinions.GiveUp(this, weapon); return; }
-				}
-			}
-			else _minionIdleTicks = 0;
 			int desired = SoldierMinions.Capacity(this, weapon);
 			float perCast = SlotsPerMinion(weapon), want = desired * perCast, have = 0f;
 			bool dragon = weapon.shoot == ProjectileID.StardustDragon1;

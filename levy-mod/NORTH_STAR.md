@@ -121,6 +121,7 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
   - Rangers are just rangers (homing bullets are their quiet scandal).
   - Zealots are religious or corporate suck-ups ("the boss said we'd get paid more if we did better"), and they microaggress summoners.
 - HP inversion: the lowest-HP levy is the bravest; the highest-HP one is getting lazy.
+- **The gods (Eve 11-07):** invented, terrifying ancient deities (K'Or'Arath, Rigroth the Undying, Vorrath of the Thousand Teeth, Ul'Thazhra the Unblinking, Mother Gnash, Ixxethra the Star-Eater, the Drowned One) cited as AGREEING with the speaker's petty in-game opinion: "Rigroth the Undying would NOT support sentry staves." The joke is the appeal to authority ("if you're not carpooling, you're driving with Hitler"), not gods with quirky habits.
 - Meme and reaction-GIF references are welcome ("that one scene from the bird movie when everything explodes").
 - Show line lists as plain text, never code blocks: Eve listens with TTS, which skips code blocks.
 - Lists of lines can be blocks; worldbuilding talk is prose. When Eve says "maybe not" or "I'm iffy", she's thinking out loud, not vetoing.

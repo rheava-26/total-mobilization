@@ -30,11 +30,15 @@ namespace Levy.Common.Testing
 		/// beaten before it (King Slime 1, Desert Scourge 1.6, Eye 2, Crabulon 2.7, Eater/Brain 3, Hive Mind 3.98, Perforators 3.99, Queen Bee 4, Skeletron 5).</summary>
 		internal static int CrRealMax(string boss)
 		{
-			float furthest = boss switch { "kslime" => 0f, "ds" => 1f, "eye" => 1.6f, "eow" => 2.7f, "brain" => 2.7f, "qb" => 3.99f, "skel" => 4f, _ => 0f };
+			bool cal = ModLoader.HasMod("CalamityMod");
+			// Calamity world: bosses beaten before the fight, in Boss Checklist order. Vanilla-only world: vanilla bosses only.
+			float furthest = cal
+				? boss switch { "kslime" => 0f, "ds" => 1f, "eye" => 1.6f, "eow" => 2.7f, "brain" => 2.7f, "hive" => 3f, "perf" => 3f, "qb" => 3.99f, "skel" => 4f, "sg" => 5f, _ => 0f }
+				: boss switch { "kslime" => 0f, "eye" => 1f, "eow" => 2f, "brain" => 2f, "qb" => 3f, "skel" => 4f, _ => 0f };
 			float[] prog = { 1, 2, 3, 4, 5, 6, 7 }; int[] w = { 1, 2, 2, 1, 2, 1, 7 };
 			var l = new List<TierBoss>();
 			for (int i = 0; i < 7; i++) l.Add(new TierBoss(0, w[i], prog[i] <= furthest, prog[i]));
-			foreach (float mp in new[] { 1.6f, 2.7f, 3.98f, 3.99f, 6.7f }) l.Add(new TierBoss(0, 0f, mp <= furthest, mp));
+			if (cal) foreach (float mp in new[] { 1.6f, 2.7f, 3.98f, 3.99f, 6.7f }) l.Add(new TierBoss(0, 0f, mp <= furthest, mp));
 			return LevyTierMath.Compute(l, 10, 20, 40, 60, 60);
 		}
 
@@ -45,13 +49,19 @@ namespace Levy.Common.Testing
 		{
 			switch (run.Boss)
 			{
-				case "kslime": foreach (int t in new[] { NPCID.BlueSlime, NPCID.SlimeSpiked, NPCID.GreenSlime, NPCID.PurpleSlime, NPCID.RedSlime, NPCID.YellowSlime, NPCID.IceSlime, NPCID.JungleSlime, NPCID.BlackSlime }) s.AddTypes.Add(t); break;
+				case "kslime": foreach (int t in new[] { NPCID.BlueSlime, NPCID.SlimeSpiked, NPCID.GreenSlime, NPCID.PurpleSlime, NPCID.RedSlime, NPCID.YellowSlime, NPCID.IceSlime, NPCID.JungleSlime, NPCID.BlackSlime }) s.AddTypes.Add(t); { int jw = CrCalNpc("KingSlimeJewelRuby"); if (jw > 0) s.AddTypes.Add(jw); } break;
 				case "brain": s.AddTypes.Add(NPCID.Creeper); break;
 				case "eow": s.BodyType = NPCID.EaterofWorldsBody; s.TailType = NPCID.EaterofWorldsTail; s.PartTypes.Add(NPCID.EaterofWorldsHead); s.PartTypes.Add(NPCID.EaterofWorldsBody); s.PartTypes.Add(NPCID.EaterofWorldsTail); break;
 				case "ds":
 					s.BodyType = CrCalNpc("DesertScourgeBody"); s.TailType = CrCalNpc("DesertScourgeTail");
 					foreach (int t in new[] { s.BossType, s.BodyType, s.TailType }) if (t > 0) s.PartTypes.Add(t);
 					foreach (string n in new[] { "DesertNuisanceHead", "DesertNuisanceBody", "DesertNuisanceTail", "DesertNuisanceHeadYoung", "DesertNuisanceBodyYoung", "DesertNuisanceTailYoung" }) { int t = CrCalNpc(n); if (t > 0) s.AddTypes.Add(t); else global::Levy.Levy.Instance.Logger.Warn("HARNESS-CR: unknown Calamity NPC " + n); }
+					break;
+				case "hive": foreach (string n in new[] { "HiveBlob", "HiveBlob2", "DankCreeper", "DarkHeart", "HiveTumor" }) { int t = CrCalNpc(n); if (t > 0) s.AddTypes.Add(t); } s.AddTypes.Add(NPCID.EaterofSouls); s.AddTypes.Add(NPCID.DevourerHead); s.AddTypes.Add(NPCID.DevourerBody); s.AddTypes.Add(NPCID.DevourerTail); break;
+				case "perf": foreach (string n in new[] { "PerforatorHeadSmall", "PerforatorBodySmall", "PerforatorTailSmall", "PerforatorHeadMedium", "PerforatorBodyMedium", "PerforatorTailMedium", "PerforatorHeadLarge", "PerforatorBodyLarge", "PerforatorTailLarge", "PerforatorCyst" }) { int t = CrCalNpc(n); if (t > 0) s.AddTypes.Add(t); } break;
+				case "sg":
+					foreach (string n in new[] { "SlimeGodCore", "EbonianPaladin", "CrimulanPaladin", "SplitEbonianPaladin", "SplitCrimulanPaladin" }) { int t = CrCalNpc(n); if (t > 0) s.PartTypes.Add(t); }
+					foreach (string n in new[] { "CorruptSlimeSpawn", "CorruptSlimeSpawn2", "CrimsonSlimeSpawn", "CrimsonSlimeSpawn2" }) { int t = CrCalNpc(n); if (t > 0) s.AddTypes.Add(t); }
 					break;
 				case "qb": s.AddTypes.Add(NPCID.Bee); s.AddTypes.Add(NPCID.BeeSmall); break;
 				case "skel": s.AddTypes.Add(NPCID.SkeletronHand); break;
@@ -83,11 +93,16 @@ namespace Levy.Common.Testing
 		/// <summary>Boss fights a campaign army has survived by this boss (veteran option): bosses before it in Boss Checklist order.</summary>
 		private static int CrVetDefault(string boss) => boss switch { "kslime" => 0, "ds" => 1, "eye" => 2, "eow" => 3, "brain" => 3, "qb" => 4, "skel" => 5, _ => 0 };
 		private static int CrVetFights(CrRun run) => run.Vet >= 0 ? run.Vet : (global::Levy.Common.Options.LevyOptions.Surv & global::Levy.Common.Options.SurvMode.Veteran) != 0 ? CrVetDefault(run.Boss) : 0;
+		private static bool _crBtsSaved, _crDefBts, _crAmmoSaved, _crDefAmmoOff;
 		private static void CrSetOptions(CrRun run)
 		{
 			if (!_crOptSaved) { _crDefFm = global::Levy.Common.Options.LevyOptions.Fear; _crDefSurv = global::Levy.Common.Options.LevyOptions.Surv; _crOptSaved = true; }
 			global::Levy.Common.Options.LevyOptions.Fear = run != null && run.Fm != "" ? global::Levy.Common.Options.LevyOptions.ParseFear(run.Fm) : _crDefFm;
 			global::Levy.Common.Options.LevyOptions.Surv = run != null && run.Surv != "" ? global::Levy.Common.Options.LevyOptions.ParseSurv(run.Surv) : _crDefSurv;
+			if (!_crAmmoSaved) { _crDefAmmoOff = global::Levy.Common.Soldiers.AmmoRank.Off; _crAmmoSaved = true; }
+			global::Levy.Common.Soldiers.AmmoRank.Off = run != null ? run.OldAmmo || _crDefAmmoOff : _crDefAmmoOff;
+			var lc = global::Levy.Common.Config.LevyConfig.Get;
+			if (lc != null) { if (!_crBtsSaved) { _crDefBts = lc.BossesTargetSoldiers; _crBtsSaved = true; } lc.BossesTargetSoldiers = run != null && run.Bts >= 0 ? run.Bts == 1 : _crDefBts; global::Levy.Common.Targeting.EnemyTargeting.RefreshConfig(); }
 			global::Levy.Common.Options.LevyOptions.HarnessParity = run != null && (global::Levy.Common.Options.LevyOptions.Surv & global::Levy.Common.Options.SurvMode.Parity) != 0 ? CrParityTable(run.Boss) : null;
 		}
 
@@ -102,22 +117,27 @@ namespace Levy.Common.Testing
 			try
 			{
 				if (_crDownedType == null && ModLoader.TryGetMod("CalamityMod", out Mod cal)) _crDownedType = cal.Code.GetType("CalamityMod.DownedBossSystem");
-				var p = _crDownedType?.GetProperty("downedDesertScourge", BindingFlags.Public | BindingFlags.Static);
-				if (p != null) p.SetValue(null, v); else _crDownedType?.GetField("downedDesertScourge", BindingFlags.Public | BindingFlags.Static)?.SetValue(null, v);
+				foreach (string fn in new[] { "downedDesertScourge", "downedHiveMind", "downedPerforator", "downedSlimeGod" })
+				{
+					var p = _crDownedType?.GetProperty(fn, BindingFlags.Public | BindingFlags.Static);
+					if (p != null) p.SetValue(null, v); else _crDownedType?.GetField(fn, BindingFlags.Public | BindingFlags.Static)?.SetValue(null, v);
+				}
 			}
 			catch { }
 		}
-		private static bool CrCalDowned()
+		private static bool CrCalDowned(string boss = "ds")
 		{
-			try { var p = _crDownedType?.GetProperty("downedDesertScourge", BindingFlags.Public | BindingFlags.Static); return p != null && (bool)p.GetValue(null); } catch { return false; }
+			string fn = boss == "hive" ? "downedHiveMind" : boss == "perf" ? "downedPerforator" : boss == "sg" ? "downedSlimeGod" : "downedDesertScourge";
+			try { var p = _crDownedType?.GetProperty(fn, BindingFlags.Public | BindingFlags.Static); if (p != null) return (bool)p.GetValue(null); var f = _crDownedType?.GetField(fn, BindingFlags.Public | BindingFlags.Static); return f != null && (bool)f.GetValue(null); } catch { return false; }
 		}
 		private static bool CrDeathOn() { try { return _crDeathField != null && (bool)_crDeathField.GetValue(null); } catch { return false; } }
 
 		private static void CrApplyZones(Player p)
 		{
 			var r = _crRunCur; if (r == null) return;
-			p.ZoneCrimson = r.Boss == "brain"; p.ZoneCorrupt = r.Boss == "eow"; p.ZoneJungle = r.Jungle; p.ZoneDesert = r.Boss == "ds"; p.ZoneUndergroundDesert = r.Boss == "ds" && r.Arena == "ug";
-			p.ZoneOverworldHeight = r.Arena != "ug"; p.ZoneRockLayerHeight = r.Arena == "ug"; p.ZoneDirtLayerHeight = false; p.ZoneSkyHeight = false; p.ZoneUnderworldHeight = false;
+			p.ZoneCrimson = r.Boss == "brain" || r.Boss == "perf"; p.ZoneCorrupt = r.Boss == "eow" || r.Boss == "hive"; p.ZoneJungle = r.Jungle; p.ZoneDesert = r.Boss == "ds"; p.ZoneUndergroundDesert = r.Boss == "ds" && r.Arena == "ug";
+			if (r.Zone == "corrupt") { p.ZoneCorrupt = true; p.ZoneCrimson = false; } else if (r.Zone == "crimson") { p.ZoneCrimson = true; p.ZoneCorrupt = false; } else if (r.Zone == "none") { p.ZoneCorrupt = false; p.ZoneCrimson = false; } // zone=: the commander (and the levy dummy that mirrors it) stands in this evil biome
+			p.ZoneOverworldHeight = r.Arena != "ug" && r.Arena != "a3e"; p.ZoneRockLayerHeight = r.Arena == "ug" || r.Arena == "a3e"; p.ZoneDirtLayerHeight = false; p.ZoneSkyHeight = false; p.ZoneUnderworldHeight = false;
 		}
 
 		private static string CrPct(long a, long b) => b <= 0 ? "-" : (100.0 * a / b).ToString("0", CultureInfo.InvariantCulture);
@@ -147,7 +167,7 @@ namespace Levy.Common.Testing
 			{
 				st.BossGone = true; st.EndTick = st.Tick; st.BossLife = 0;
 				long dmg = st.Levies.Sum(l => l.DmgBoss);
-				bool flag = st.Run.Boss == "eow" ? NPC.downedBoss2 : CrCalDowned();
+				bool flag = st.Run.Boss == "eow" ? NPC.downedBoss2 : CrCalDowned(st.Run.Boss);
 				st.Result = flag || (st.BossLifeMaxSum > 0 && dmg >= 0.9 * st.BossLifeMaxSum) ? "WIN" : "DESPAWN";
 			}
 			return alive;
@@ -361,7 +381,7 @@ namespace Levy.Common.Testing
 		private static CrTierDef CrTierOf(string boss)
 		{
 			var ts = CrTiers();
-			int idx = boss switch { "kslime" => 0, "ds" => 0, "eye" => 2, "eow" => 3, "brain" => 3, "qb" => 4, "skel" => 5, _ => 2 };
+			int idx = boss switch { "kslime" => 0, "ds" => 0, "eye" => 2, "eow" => 3, "brain" => 3, "hive" => 3, "perf" => 3, "qb" => 4, "skel" => 5, "sg" => 5, _ => 2 };
 			return ts.First(t => t.Index == idx);
 		}
 

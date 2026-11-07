@@ -1,0 +1,6 @@
+fight	sg	exp	1	1800	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1	dbg=1
+fight	hive	rev	1	1800	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1	food=1
+fight	perf	exp	1	1800	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1	hazard=1
+fight	qb	exp	1	1800	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1	jungle=1	rogue=2
+fight	eow	exp	1	1800	cmd=near	n=cp	arena=a3e	gear=mod	grade=lv	l3=1
+fight	ds	exp	1	1800	cmd=near	n=cp	arena=a3	gear=mod	grade=lv	l3=1	rogue=2

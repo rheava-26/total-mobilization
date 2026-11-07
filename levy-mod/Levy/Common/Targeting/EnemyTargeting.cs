@@ -148,9 +148,15 @@ namespace Levy.Common.Targeting
 			return _swapStyles.Contains(style) || ConfigAllows(style);
 		}
 
-		/// <summary>The boss a minion belongs to while that boss is alive: Creepers to the Brain of Cthulhu (NPC.crimsonBoss), Servants of Cthulhu to the Eye of Cthulhu. Null for everything else.</summary>
+		/// <summary>LEVY_KINTARGET=0 turns the boss-owner rule off (A/B switch for measuring).</summary>
+		internal static readonly bool KinOn = Environment.GetEnvironmentVariable("LEVY_KINTARGET") != "0";
+		/// <summary>The boss a minion belongs to while that boss is alive: any modded NPC a live boss spawned (<see cref="LevyNpcData.BossOwner"/>), Creepers to the Brain of Cthulhu (NPC.crimsonBoss), Servants of Cthulhu to the Eye of Cthulhu. Null for everything else.</summary>
 		internal static NPC MinionBoss(NPC npc)
 		{
+			// A modded NPC a live boss spawned (Calamity's King Slime jewel, the Slime God Paladins and their splits): its AI picks targets its own way and no AI-style table can vouch for it, so it follows its boss's rule and the army draws it exactly when it draws the boss.
+			// Vanilla minions keep the verified-style route below.
+			int ow = KinOn && npc.ModNPC != null ? LevyNpcData.Of(npc).BossOwner : -1;
+			if (ow >= 0 && ow < Main.maxNPCs) { NPC o = Main.npc[ow]; if (o.active && (o.boss || NPCID.Sets.ShouldBeCountedAsBoss[o.type])) return o; }
 			if (npc.type == NPCID.Creeper)
 			{
 				int b = NPC.crimsonBoss;
@@ -195,8 +201,22 @@ namespace Levy.Common.Targeting
 			return null;
 		}
 
-		/// <summary>True when a Spectator should be hidden from this NPC's search: never from an undowned boss.</summary>
+		/// <summary>True when a Spectator should be hidden from this NPC's search: never from an undowned boss (it sees the commander like any player). Every other NPC, boss minions included, never sees a Spectator; a boss minion follows its boss's targeting rule through <see cref="LevyNpcData.BossOwner"/> (<see cref="MinionBoss"/>), so it finds levies to target instead of an empty world.</summary>
 		internal static bool HidesSpectatorFrom(NPC npc) => !IsUndownedBoss(npc);
+
+		/// <summary>
+		/// A boss, a boss part or segment, or something a boss spawned (its minions and their children: <see cref="LevyNpcData.BossOwner"/>, marked on spawn). Unlike <see cref="IsAllowlisted"/>'s guards this is
+		/// a plain classification: it says nothing about whether the army may target it.
+		/// </summary>
+		internal static bool IsBossClass(NPC npc)
+		{
+			if (npc == null || !npc.active || npc.friendly || npc.townNPC) return false;
+			int type = npc.type;
+			if (type < 0 || type >= NPCID.Sets.ShouldBeCountedAsBoss.Length) return false;
+			if (npc.boss || NPCID.Sets.ShouldBeCountedAsBoss[type] || _bossParts.Contains(type)) return true;
+			if (npc.realLife >= 0 && npc.realLife < Main.maxNPCs && Main.npc[npc.realLife].active && Main.npc[npc.realLife].boss) return true;
+			return LevyNpcData.Of(npc).BossOwner >= 0;
+		}
 
 		/// <summary>
 		/// A boss, boss part or boss segment (the four exclusion guards of <see cref="IsAllowlisted"/>) that the army may draw. Needs the unlock; then any AI style
@@ -660,6 +680,12 @@ namespace Levy.Common.Targeting
 	/// <summary>Puts the targeted soldier's dummy into Main.player[255] for exactly one AI call of the enemy that targets it.</summary>
 	public class EnemyTargetingGlobalNPC : GlobalNPC
 	{
+		/// <summary>Marks what a boss-class NPC spawns (Calamity's Slime God Core spawns the Paladins, a Paladin its split slimes) so <see cref="EnemyTargeting.IsBossClass"/> knows the family.</summary>
+		public override void OnSpawn(NPC npc, Terraria.DataStructures.IEntitySource source)
+		{
+			if (source is Terraria.DataStructures.EntitySource_Parent p && p.Entity is NPC parent && parent.whoAmI != npc.whoAmI && EnemyTargeting.IsBossClass(parent)) { int po = LevyNpcData.Of(parent).BossOwner; LevyNpcData.Of(npc).BossOwner = po >= 0 ? po : parent.whoAmI; }
+		}
+
 		public override bool PreAI(NPC npc)
 		{
 			if (EnemyTargeting.DiagOn) Potions.SpectatorDiagnostic.NotePreAI(npc);

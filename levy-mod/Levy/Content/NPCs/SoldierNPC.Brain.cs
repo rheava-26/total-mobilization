@@ -610,6 +610,7 @@ namespace Levy.Content.NPCs
 			{
 				NPC threat = Main.npc[_threatIdx];
 				float away = AwayDir(threat.Center);
+				if (LevyUtil.IsBossNpc(threat) || threat.damage >= LevyConstants.StrafeDangerDamage) away = EscapeDir(away, threat, now);
 				if (hasAnchor && !anchorArrived && Math.Sign(anchor.X - NPC.Center.X) == (int)away) SetGoal(anchor);
 				else SetGoal(new Vector2(NPC.Center.X + away * LevyConstants.RoutedRetreatTiles * LevyConstants.TilePx, NPC.Center.Y));
 				return;
@@ -1034,12 +1035,14 @@ namespace Levy.Content.NPCs
 			float standoff = flame ? LevyConstants.FlameStandoffTiles : StandoffTiles(range); // a flamethrower never backs off to a gunner's standoff: it wants contact range
 			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
 			UpdateAltitudeIntent(seg, range, standoff, false); // independent of the horizontal plan below: climb, retreat and shoot compose
+			if (DanceMode >= 1 && SoldierNPC.MobilityMode >= 1 && !flame && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage)) DanceLift(seg);
 
 			// leaving a retreat takes a little extra room (hysteresis), so the body does not stutter on the standoff line
 			float standoffNow = KeepAwayFor(_threatIdx, standoff) + (_engMode == EngageMode.Retreat ? LevyConstants.StandoffHysteresisTiles : 0f);
 			if (_threatIdx >= 0 && _threatTiles < standoffNow)
 			{
 				float away = AwayDir(Main.npc[_threatIdx].Center);
+				if (LevyUtil.IsBossNpc(Main.npc[_threatIdx]) || Main.npc[_threatIdx].damage >= LevyConstants.StrafeDangerDamage) away = EscapeDir(away, Main.npc[_threatIdx], now);
 				Vector2 step = new Vector2(NPC.Center.X + away * LevyConstants.KiteStepAwayTiles * LevyConstants.TilePx, NPC.Center.Y);
 				ApplyChaseClamp(ref step);
 				_engMode = EngageMode.Retreat; WhyB = Why.BRetreat;
@@ -1082,6 +1085,7 @@ namespace Levy.Content.NPCs
 				// Against a boss or a hard hitter a player never stands still: the strafe runs on every think, with longer steps and the odd short hop. Aim and fire rate are untouched.
 				bool danger = SoldierNPC.MobilityMode >= 1 && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage);
 				if (danger && !aloft && TickPlatformPerch(now)) { WhyB = Why.BPlatform; return true; }
+				if (danger && DanceMode >= 1 && BossDance(seg, range, standoff, now)) return true;
 				if (!danger && (_thinkCount & 1) != 0) { WhyB = Why.BOddThink; return true; }
 				if (_threatTiles < standoff + LevyConstants.StrafeMarginTiles) { WhyB = Why.BStandoffNoStrafe; return true; }
 				float side = danger ? ((_thinkCount / 3) & 1) == 0 ? 1f : -1f : ((_thinkCount >> 1) & 1) == 0 ? 1f : -1f;

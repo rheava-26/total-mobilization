@@ -161,7 +161,7 @@ namespace Levy.Content.NPCs
 					if (jt > jumpTiles && GoalJumpAllowed()) { jumpTiles = jt; goalJump = true; }
 				}
 				else if (Abilities.HasWings) wantFly = true;
-				else { _blocked = true; _blockedHard = true; HookTrigger(HookReason.GoalAbove); }
+				else { _blocked = true; _blockedHard = true; BlockWhy = 1; HookTrigger(HookReason.GoalAbove); }
 			}
 			// goal well below while standing on a platform: drop through it when the floor below is safe
 			if (!air && grounded && (dy > PlatformDropBelowPx || brainDropRequest) && PlatformDropIsSafe()) { _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; }
@@ -192,7 +192,7 @@ namespace Levy.Content.NPCs
 				if (air) ApplyAltitude(grounded); else Glide(grounded);
 			}
 
-			if (_blocked) WhyM = Why.MBlocked;
+			if (_blocked) { WhyM = Why.MBlocked; }
 			TrackStuck();
 			UpdatePathRequest();
 			MirrorDummyControls();
@@ -228,7 +228,7 @@ namespace Levy.Content.NPCs
 			{
 				Tile t = Framing.GetTileSafely(ax, ty);
 				if (!TileNav.IsClosedDoor(t)) continue;
-				if (!TryOpenDoor(ax, ty, dir)) _blocked = true;
+				if (!TryOpenDoor(ax, ty, dir)) { _blocked = true; BlockWhy = 2; }
 				return;
 			}
 			// lava in the next two columns, from head height to the floor under the next step
@@ -236,10 +236,10 @@ namespace Levy.Content.NPCs
 			{
 				int tx = ax + dir * i;
 				for (int ty = fy - 2; ty <= fy + 1; ty++)
-					if (TileNav.HasLava(tx, ty)) { _blocked = true; _blockedHard = true; return; }
+					if (TileNav.HasLava(tx, ty)) { _blocked = true; _blockedHard = true; BlockWhy = 3; return; }
 			}
 			// deep water at head height ahead, unless already swimming
-			if (!NPC.wet && TileNav.IsDeepWater(ax, fy - 2)) { _blocked = true; _blockedHard = true; return; }
+			if (!NPC.wet && TileNav.IsDeepWater(ax, fy - 2)) { _blocked = true; _blockedHard = true; BlockWhy = 4; return; }
 
 			// wall ahead: count solid tiles upward from feet level
 			int h = 0;
@@ -247,7 +247,7 @@ namespace Levy.Content.NPCs
 			if (h == 0 && (TileNav.IsSolid(ax, fy - 1) || TileNav.IsSolid(ax, fy - 2)))
 			{
 				// an overhang at chest or head height: the body cannot duck under it and cannot jump onto it
-				_blocked = true; _blockedHard = true;
+				_blocked = true; _blockedHard = true; BlockWhy = 5;
 				if (Abilities.HasWings) { wantFly = true; flyUp = true; } else HookTrigger(HookReason.Wall);
 				return;
 			}
@@ -257,7 +257,7 @@ namespace Levy.Content.NPCs
 				bool headroom = true;
 				for (int k = 1; k <= h && headroom; k++) if (TileNav.IsSolid(feetX, fy - 2 - k)) headroom = false;
 				if (h <= Abilities.JumpTiles && clearAbove && headroom) { if (h > jumpTiles) jumpTiles = h; }
-				else { _blocked = true; _blockedHard = true; if (Abilities.HasWings) { wantFly = true; flyUp = true; } else HookTrigger(HookReason.Wall); }
+				else { _blocked = true; _blockedHard = true; BlockWhy = 6; if (Abilities.HasWings) { wantFly = true; flyUp = true; } else HookTrigger(HookReason.Wall); }
 				return;
 			}
 			if (h == 1) return; // a single step: Collision.StepUp carries the body over it
@@ -268,11 +268,11 @@ namespace Levy.Content.NPCs
 				int depth = TileNav.DropDepth(ax, fy);
 				// a narrow gap with floor on the far side: jump it rather than drop into a pit that cannot be climbed back out of
 				if ((depth < 0 || depth >= GapJumpMinDepthTiles) && TryGapJump(ax, fy, dir, dyPx, ref jumpTiles)) return;
-				if (depth < 0) { _blocked = true; _blockedHard = true; if (dyPx <= 2f * 16f) HookTrigger(HookReason.Gap); return; } // a gap wider than a jump: a hook may span it
+				if (depth < 0) { _blocked = true; _blockedHard = true; BlockWhy = 7; if (dyPx <= 2f * 16f) HookTrigger(HookReason.Gap); return; } // a gap wider than a jump: a hook may span it
 				if (depth > Abilities.JumpTiles + DropMarginTiles)
 				{
 					if (Abilities.HasWings) wantFly = true;
-					else { _blocked = true; _blockedHard = true; if (dyPx <= 2f * 16f) HookTrigger(HookReason.Gap); }
+					else { _blocked = true; _blockedHard = true; BlockWhy = 8; if (dyPx <= 2f * 16f) HookTrigger(HookReason.Gap); }
 				}
 			}
 		}

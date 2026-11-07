@@ -14,12 +14,14 @@ namespace Levy.Content.NPCs
 			public static readonly string[] BNames = { "unknown", "flee", "routed", "autonomy-fallback", "talk-hold", "spawn-grace", "retreat", "strafe-suppressed-standoff", "strafe-no-safe-step", "strafe-odd-think", "strafe-goal", "no-line-debounce", "no-route-hold", "path-deferred",
 				"melee-avoid-boss-hold", "melee-in-contact", "platform-climb", "no-target-order", "resupply", "unarmed", "perch-settle", "air-strafe", "cant-fight", "perch", "approach", "hop-wait", "hold-slot" };
 		}
-		internal byte WhyB, WhyM;
+		internal byte WhyB, WhyM, BlockWhy;
+		private static readonly string[] BlockNames = { "?", "goal-above", "door", "lava", "water", "overhang", "wall", "void-gap", "deep-drop" };
 		/// <summary>Reason label for a near-stationary tick (harness telemetry).</summary>
 		internal string StillReason()
 		{
 			byte m = WhyM, b = WhyB;
 			string mn = m < Why.MNames.Length ? Why.MNames[m] : "m" + m, bn = b < Why.BNames.Length ? Why.BNames[b] : "b" + b;
+			if (m == Why.MBlocked) mn += ":" + (BlockWhy < BlockNames.Length ? BlockNames[BlockWhy] : "?");
 			return m == Why.MNone || m == Why.MNoGoal || m == Why.MArrived || m == Why.MBlocked || m == Why.MBusyAir ? mn + "/" + bn : mn;
 		}
 	}

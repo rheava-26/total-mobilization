@@ -83,7 +83,7 @@ namespace Levy.Content.NPCs
 			if ((!grounded && !air && !airScan) || _flying || npc.wet) { _dodgeHold = 0; DodgeSkippedBusy++; return false; }
 			bool holding = _dodgeHold > 0;
 			if (_dodgeCooldown > 0) { _dodgeCooldown--; return HoldStep(holding); }
-			if ((int)((Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)(airScan ? AirScanInterval : ThreatScanInterval)) != 0) return HoldStep(holding);
+			if ((int)((Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)(airScan || (DanceMode >= 1 && ThreatField.BossBodies > 0) ? AirScanInterval : ThreatScanInterval)) != 0) return HoldStep(holding);
 			uint now = Main.GameUpdateCount;
 			if (_thrBudgetTick != now) { _thrBudgetTick = now; _thrBudget = ThreatBudgetPerTick; }
 			if (_thrBudget <= 0) return HoldStep(holding);
@@ -158,15 +158,15 @@ namespace Levy.Content.NPCs
 				case 2: if (best.Delay > 0) { _dodgePend = best.Delay; _dodgePendTiles = hopTiles; } else { DodgeJumps++; TryJump(hopTiles); } break;
 				case 6: if (best.Delay > 0) { _dodgePend = best.Delay; _dodgePendTiles = Abilities.JumpTiles; } else { DodgeJumps++; TryJump(Abilities.JumpTiles); } break;
 				case 3: DodgeJumps++; TryJump(hopTiles); Begin(best.Vx, best.Dur); break;
-				case 4: DodgeDashes++; _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); Begin(best.Vx, best.Dur); break;
+				case 4: DodgeDashes++; DashIFrames(); _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); Begin(best.Vx, best.Dur); break;
 				case 5: DodgeDrops++; _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; break;
 				case 7:
 					DodgeDoubleJumps++; TryJump(Abilities.JumpTiles);
 					_air2Ready = Main.GameUpdateCount + (uint)Math.Max(1, best.J2At);
 					if (best.Dur > 0) Begin(best.Vx, best.Dur);
 					break;
-				case 8: DodgeDashJumps++; DodgeDashes++; _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); TryJump(Abilities.JumpTiles); Begin(best.Vx, best.Dur); break;
-				case 10: DodgeDashes++; DodgeDrops++; _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; Begin(best.Vx, best.Dur); break;
+				case 8: DodgeDashJumps++; DodgeDashes++; DashIFrames(); _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); TryJump(Abilities.JumpTiles); Begin(best.Vx, best.Dur); break;
+				case 10: DodgeDashes++; DodgeDrops++; DashIFrames(); _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; Begin(best.Vx, best.Dur); break;
 				case 9:
 					DodgeHooks++; if (airScan) DodgeAirManeuvers += 0;
 					if (SoldierHooks.TakePlanBudget()) { try { HookStart(HookReason.Rescue, best.HookTarget + new Vector2(0f, NPC.height * 0.5f)); } catch (Exception) { try { HookReset(true); } catch (Exception) { } } }
@@ -367,6 +367,9 @@ namespace Levy.Content.NPCs
 
 		private static Vector2 ThreatField_BodyAt(Vector2 c0, in Maneuver m, float g, int t) => ThreatField.PathAt(c0, m, g, t);
 
+		/// <summary>The dash burst is a window the body cannot be struck in (the contact and projectile gates read ImmuneTime).</summary>
+		private void DashIFrames() { if (DodgeMode >= 2 && DanceMode >= 1) ImmuneTime = Math.Max(ImmuneTime, DashIFrameTicks); }
+
 		private void Begin(float vx, int dur, float acc = 0f) { _dodgeVx = vx; _dodgeTicks = dur; _dodgeAcc = acc; if (acc <= 0f) NPC.velocity.X = vx; }
 
 		/// <summary>While the danger the last dodge answered is still passing, stand still (decelerating) instead of walking back into it.</summary>
@@ -382,7 +385,8 @@ namespace Levy.Content.NPCs
 		private void Consider(Maneuver m, Vector2 c0, float g, ref Maneuver best, ref int bestHits, ref float bestScore, ref int bestLast)
 		{
 			if (_dAir && !m.Hook) { m.Air = true; m.V0x = _dV0x; m.V0y = _dV0y; m.FloorY = m.Kind == 13 ? _dSolidFloorY : _dFloorY; }
-			int h = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int last);
+			int imm = DanceMode >= 1 && DashIFrameTicks > 0 && (m.Kind == 4 || m.Kind == 8 || m.Kind == 10) ? DashIFrameTicks : 0;
+			int h = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int last, 0f, imm);
 			if (MobilityMode >= 1 && h == 0 && m.Kind != 0 && !(m.Air ? AirLandingSafe(c0, m, g) : LandingSafe(c0, m, g))) return;
 			float score = h * 100f + m.Penalty;
 			if (score < bestScore) { best = m; bestHits = h; bestScore = score; bestLast = last; }

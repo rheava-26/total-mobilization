@@ -109,8 +109,28 @@ namespace Levy.Common.Soldiers
 		/// </summary>
 		public int MaxHp => Math.Clamp(RawHp, 1, LevyConstants.MaxSoldierHp);
 
-		/// <summary>Max mana: <see cref="RawMana"/> held under the hard ceiling of every soldier, <see cref="LevyConstants.MaxMana"/> (the vanilla player's 200), and never below 0.</summary>
-		public int MaxMana => Math.Clamp(RawMana, 0, LevyConstants.MaxMana);
+		/// <summary>The mana pool the crystals (or the guides, for a militiaman) give: <see cref="RawMana"/> held under the ceiling of <see cref="LevyConstants.MaxMana"/> (the vanilla player's 200 from crystals), and never below 0.</summary>
+		public int BaseMaxMana => Math.Clamp(RawMana, 0, LevyConstants.MaxMana);
+
+		/// <summary>
+		/// Maximum mana the worn gear adds on top of the crystal pool, as on a player (vanilla's 200 is the crystal ceiling; Magic Cuffs, Celestial Cuffs, mana armor and the like add above it): each worn armor piece and
+		/// open accessory slot is read through a scratch player's own stat pipeline (<see cref="Levy.Common.Weapons.ArmorDoctrine.GearManaBonus"/>, cached per item type; set bonuses are not counted). 0 with no gear.
+		/// </summary>
+		public int GearMana
+		{
+			get
+			{
+				SoldierGear g = Gear;
+				if (g == null) return 0;
+				int open = Math.Min(AccessorySlots, g.Accessories?.Length ?? 0);
+				float bonus = global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Head, g.Body, g.Legs);
+				for (int i = 0; i < open; i++) bonus += global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Accessories[i]);
+				return Math.Max(0, (int)bonus);
+			}
+		}
+
+		/// <summary>Max mana: the crystal pool (<see cref="BaseMaxMana"/>, never above the vanilla player's 200) plus what the worn gear adds (<see cref="GearMana"/>), the same way a player's pool is built.</summary>
+		public int MaxMana => BaseMaxMana + GearMana;
 
 		/// <summary>Accessory slots a soldier of this grade opens: the grade's, plus the Guide to Expertise's, never more than a soldier can carry.</summary>
 		public static int AccessorySlotsFor(Grade grade)

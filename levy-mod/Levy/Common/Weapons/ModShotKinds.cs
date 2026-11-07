@@ -18,6 +18,17 @@ namespace Levy.Common.Weapons
 	/// </summary>
 	public enum ModShotKind { None, Holdout, Shortsword }
 
+	/// <summary>How long a charge-by-button holdout is held before the button is let go, and how long it lingers after the release.</summary>
+	public sealed class ChargePlan { public readonly int HoldTicks, LingerTicks; public ChargePlan(int hold, int linger) { HoldTicks = hold; LingerTicks = linger; } }
+
+	/// <summary>A circle the held cursor traces around the target: radius in px and radians per tick. The phase is the world tick, so a holdout and the children it spawns trace the same circle.</summary>
+	public sealed class CursorScript
+	{
+		public readonly float Radius, Step;
+		public CursorScript(float radius, float step) { Radius = radius; Step = step; }
+		public Microsoft.Xna.Framework.Vector2 At(Microsoft.Xna.Framework.Vector2 center, uint tick) { float a = tick * Step; return center + new Microsoft.Xna.Framework.Vector2((float)System.Math.Cos(a), (float)System.Math.Sin(a)) * Radius; }
+	}
+
 	public static class ModShotKinds
 	{
 		private static readonly Dictionary<int, ModShotKind> _cache = new();
@@ -38,11 +49,29 @@ namespace Levy.Common.Weapons
 			"Riftburst", "Roxcalibur", "ScorchedEarth", "Scorpio", "Seadragon", "ShiftingSands", "SlagfireDouser", "SnowstormStaff", "SparklingEmpress", "SpectralstormCannon", "SpineOfThanatos",
 			"StreamGouge", "SuperradiantSlaughterer", "Sylvestaff", "TauCannon", "Teslastaff", "TheCauldron", "TheHive", "TheMaelstrom", "Ultima", "UnstableCastersGauntlet", "Violence", "Voidragon",
 			"Vulcan", "WildfireBloom", "Wingman",
+			// dud2 (2026-11-07, mp=200 so the cast cost is payable: plain -> held dmg/s per levy vs a x40 Eye, SP emulation): GloriousEnd 1.6 -> 102, Volterion 0 -> 648, VitriolicViper 448 -> 1704, HeliumFlash 5135 -> 1218 (seed spread; plain was 0 at the lab pool: see the mana note), NebulousCataclysm, RainbowPartyCannon, StaffofBlushie 0 -> 561.
+			"GloriousEnd", "HeliumFlash", "NebulousCataclysm", "RainbowPartyCannon", "StaffofBlushie", "VitriolicViper", "Volterion",
 		};
 
 		/// <summary>Measurement switch (env LEVY_HOLD_FORCE=Name1,Name2 or "all"): routes these Calamity holdouts through the held path as if they were in <see cref="HoldoutRouted"/> (A/B runs of a weapon that is not routed yet).</summary>
 		private static readonly string _force = Environment.GetEnvironmentVariable("LEVY_HOLD_FORCE");
 		private static bool ForceHold(string name) => !string.IsNullOrEmpty(_force) && (_force == "all" || ("," + _force + ",").Contains("," + name + ","));
+
+		/// <summary>A held modded weapon that deals its damage only when the button is LET GO after a charge: hold for <see cref="HoldTicks"/>, release, and end the holdout <see cref="LingerTicks"/> later so the next one is cast.</summary>
+		private static readonly Dictionary<string, ChargePlan> ChargeReleaseTable = new()
+		{
+			// TitaniumRailgun: the scope charges while the button is down (ai1 = 60 ticks to full charge, 18 minimum) and fires on the release; held without a release it never fires (4.97 dmg/s per levy vs a x40 Eye).
+			["TitaniumRailgun"] = new ChargePlan(66, 20),
+		};
+		internal static ChargePlan ChargeRelease(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && ChargeReleaseTable.TryGetValue(item.ModItem.Name, out ChargePlan p) ? p : null;
+
+		/// <summary>A held modded weapon whose damage depends on WHERE the cursor goes, not only on what it points at: the cursor follows a path around the target.</summary>
+		private static readonly Dictionary<string, CursorScript> CursorScripts = new()
+		{
+			// ArtAttack: the stars follow the cursor and the weapon strikes every enemy inside the closed shape their path draws; a fixed cursor never closes a shape (0 dmg/s per levy). A circle of 140 px closes in about 30 ticks.
+			["ArtAttack"] = new CursorScript(140f, 0.22f),
+		};
+		internal static CursorScript CursorScriptOf(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && CursorScripts.TryGetValue(item.ModItem.Name, out CursorScript c) ? c : null;
 
 		/// <summary>Class-chain names of the Calamity base projectiles whose AI is a held melee stab (matched by name: no compile-time reference to Calamity).</summary>
 		private const string ShortswordBase = "BaseShortswordProjectile", MaceFlailBase = "BaseMaceFlailProjectile", FlailBase = "BaseFlailProjectile";

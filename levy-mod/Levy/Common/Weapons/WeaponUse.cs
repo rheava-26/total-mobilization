@@ -308,6 +308,18 @@ namespace Levy.Common.Weapons
 			}
 		}
 
+		/// <summary>
+		/// Whether a levy whose mana pool holds at most <paramref name="poolMax"/> can ever pay for one cast of <paramref name="item"/>. A mana-fed weapon (a staff, a mana-fed held weapon) that costs more than the whole pool is
+		/// never cast: the soldier stands holding it (Calamity's 60-mana ArtAttack in a 40-mana pool, Eternity at 300 against the 200 cap). Weapons that spend no mana, or that are not mana-fed here, always pass.
+		/// </summary>
+		public static bool CanEverPay(Item item, int poolMax)
+		{
+			if (item == null || item.IsAir || item.mana <= 0) return true;
+			WeaponProfile p = WeaponClassifier.GetProfile(item);
+			bool manaFed = p != null && p.Supported && (p.Family == WeaponFamily.Magic || (p.Family == WeaponFamily.HeldWeapon && p.UseAmmo <= 0));
+			return !manaFed || item.mana <= poolMax;
+		}
+
 		/// <summary>Muzzle in world space: a little in front of the chest on the facing side.</summary>
 		public static Vector2 Muzzle(SoldierNPC s)
 		{

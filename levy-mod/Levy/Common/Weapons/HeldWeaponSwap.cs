@@ -42,7 +42,24 @@ namespace Levy.Common.Weapons
 		private static readonly Dictionary<int, uint> _fed = new(), _spawned = new();
 		private static bool[] _before;
 
-		internal static void Reset() { _holder.Clear(); _fed.Clear(); _spawned.Clear(); }
+		internal static void Reset() { _holder.Clear(); _fed.Clear(); _spawned.Clear(); _countStamp.Clear(); }
+
+		private static readonly Dictionary<int, uint> _countStamp = new();
+		/// <summary>Once a tick per soldier: the dummy's <c>ownedProjectileCounts</c> recounted from the projectiles tagged to this soldier (what Player.Update does for a real player).</summary>
+		private static void CountOwned(SoldierNPC body)
+		{
+			uint now = Main.GameUpdateCount; int idx = body.NPC.whoAmI;
+			if (_countStamp.TryGetValue(idx, out uint st) && st == now) return;
+			_countStamp[idx] = now;
+			int[] c = body.Dummy.ownedProjectileCounts;
+			Array.Clear(c, 0, c.Length);
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile q = Main.projectile[i];
+				if (!q.active || q.type >= c.Length || !q.TryGetGlobalProjectile(out SoldierProjectileTag t) || t.SoldierIndex != idx) continue;
+				c[q.type]++;
+			}
+		}
 
 		// =====================================================================================================
 		// Combat side: spawn the holder once, then just keep feeding it.
@@ -84,7 +101,12 @@ namespace Levy.Common.Weapons
 			if (!p.active || p.type != item.shoot) { DudTrace.Note(item, "held-spawn-dud"); return WeaponUse.Dud(s, item); }
 			DudTrace.Note(item, "held-spawn");
 			JoinChain(s, p, item);
-			if (p.TryGetGlobalProjectile(out HeldWeaponProjectile hg)) { hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(item.shoot); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0; }
+			if (p.TryGetGlobalProjectile(out HeldWeaponProjectile hg))
+			{
+				hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(item.shoot); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0;
+				if (hg.ModHolder && ModShotKinds.ChargeRelease(item) is ChargePlan cp) { hg.CycleRelease = true; hg.ReleaseOnKill = false; hg.HoldMax = cp.HoldTicks; hg.Linger = cp.LingerTicks; }
+				if (hg.ModHolder && ModShotKinds.CursorScriptOf(item) is CursorScript cs) hg.Script = cs;
+			}
 			p.direction = dir.X < 0f ? -1 : 1;
 			_holder[idx] = i;
 			return true;
@@ -233,6 +255,14 @@ namespace Levy.Common.Weapons
 				d.inventory[0] = item;
 				// a modded charge-and-release holdout is held for a charge, then let go (its shot is made when it ends)
 				release = g.ReleaseOnKill && feed && ++g.HeldTicks > g.HoldMax;
+				// a charge-by-button holdout (ModShotKinds.ChargeRelease) is held for its charge, the button is let go for the rest of its life (it fires on the release and keeps its recoil pose), and it is ended after the linger so the next one is cast
+				if (g.CycleRelease && feed)
+				{
+					++g.HeldTicks;
+					release = g.HeldTicks > g.HoldMax;
+					if (g.HeldTicks > g.HoldMax + g.Linger) { p.Kill(); return; }
+				}
+				CountOwned(body); // vanilla counts a player's own projectiles in Player.Update; the dummy never runs it, and holdouts and their children test ownedProjectileCounts (Rancor's circle ends when it sees no holdout)
 				d.channel = feed && !release;
 				d.controlUseItem = feed && !release;
 				d.itemAnimationMax = Math.Max(1, CombinedHooks.TotalAnimationTime(Math.Max(1, item.useAnimation), d, item));
@@ -248,6 +278,7 @@ namespace Levy.Common.Weapons
 				body.AimRotation = dir.ToRotation();
 				p.direction = dir.X < 0f ? -1 : 1;
 				Vector2 cursor = body.NPC.Center + dir * Math.Max(LevyConstants.HeldAimMinDistPx, AimDistance(body));
+				if (g.Script != null && TargetOf(body) is NPC scriptTarget) cursor = g.Script.At(scriptTarget.Center, Main.GameUpdateCount);
 				Main.mouseX = (int)(cursor.X - Main.screenPosition.X);
 				Main.mouseY = (int)(cursor.Y - Main.screenPosition.Y);
 				Main.myPlayer = Slot; // the holder only fires for owner == Main.myPlayer
@@ -262,7 +293,7 @@ namespace Levy.Common.Weapons
 				before = _before ??= new bool[Main.maxProjectiles];
 				for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
 				orig(p);
-				if (release && p.active) { g.HeldTicks = 0; p.Kill(); } // the release: the charged shot is made while the soldier is still the owner (dummy swapped in, cursor on the target)
+				if (release && p.active && !g.CycleRelease) { g.HeldTicks = 0; p.Kill(); } // the release: the charged shot is made while the soldier is still the owner (dummy swapped in, cursor on the target)
 			}
 			finally
 			{
@@ -332,6 +363,7 @@ namespace Levy.Common.Weapons
 				Projectile c = Main.projectile[i];
 				if (!c.active || before[i] || i == holder.whoAmI) continue;
 				if (c.aiStyle == ProjAIStyleID.HeldProjectile || c.aiStyle == ProjAIStyleID.ThickLaser) JoinChain(body, c, item);
+				else if (item.type >= ItemID.Count && OwnerLockProbe.BoundToHolder(c)) { JoinChain(body, c, item); if (c.TryGetGlobalProjectile(out HeldWeaponProjectile cg)) { cg.ModHolder = true; if (holder.TryGetGlobalProjectile(out HeldWeaponProjectile hh)) cg.Script = hh.Script; } DudTrace.Note(item, "child-in-chain:" + (c.ModProjectile?.Name ?? c.type.ToString())); }
 				else WeaponUse.TagSoldierProjectile(body, c, cls);
 			}
 		}
@@ -402,7 +434,11 @@ namespace Levy.Common.Weapons
 		public int ItemType;
 		/// <summary>A modded holdout run as the holder (server side only; see ModShotKinds). ReleaseOnKill: it makes its shot when it ends, so it is held for HeldModHoldTicks and then released.</summary>
 		public bool ModHolder, ReleaseOnKill;
-		public int HeldTicks, HoldMax;
+		/// <summary>A charge-by-button holdout (see ModShotKinds.ChargeRelease): held HoldMax ticks, released, ended Linger ticks later.</summary>
+		public bool CycleRelease;
+		public int HeldTicks, HoldMax, Linger;
+		/// <summary>A scripted cursor path (see ModShotKinds.CursorScriptOf) this holdout and its bound children follow instead of the plain aim point.</summary>
+		public CursorScript Script;
 		/// <summary>Server-side identity of the soldier record that fired this (guards NPC-slot reuse). Never synced.</summary>
 		public SoldierRecord Record;
 		public Vector2 AimDir;

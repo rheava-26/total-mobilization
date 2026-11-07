@@ -3,6 +3,7 @@ import sys
 CAP = 36000  # 10 min of game time
 def line(boss, mode, seed, **kw):
     cap = kw.pop('cap', CAP)
+    kw.setdefault('cmd', 'far')  # commander parked outside the arena so the boss is never drawn to him (see RESULTS: Spectator targeting)
     toks = ''.join(f"\t{k}={v}" for k, v in kw.items())
     return f"fight\t{boss}\t{mode}\t{seed}\t{cap}{toks}"
 def write(name, lines):
@@ -13,11 +14,11 @@ b1a, b1b = [], []
 for seed in (1, 2, 3):
     for boss, modes in [('eye', ['exp', 'rev', 'death']), ('brain', ['exp', 'rev', 'death']), ('kslime', ['exp', 'rev']), ('qb', ['exp', 'rev'])]:
         for m in modes:
-            (b1a if boss in ('eye', 'kslime') else b1b).append(line(boss, m, seed, gear='mod', n='cp', dbg='1' if seed == 1 else '0'))
+            (b1a if boss in ('eye', 'kslime') else b1b).append(line(boss, m, seed, gear='mod', n='cp', dbg='1' if seed == 1 else '0', **({'cmd': 'near'} if boss in ('eye', 'kslime') else {})))
     for boss, modes in [('eow', ['exp', 'rev']), ('ds', ['exp', 'rev'])]:
         for m in modes:
             b1b.append(line(boss, m, seed, gear='mod', n='cp', arena='surf', dbg='1' if seed == 1 else '0'))
-    b1a.append(line('skel', 'exp', seed, gear='mod', n='cp'))
+    b1a.append(line('skel', 'exp', seed, gear='mod', n='cp', cmd='near'))
 write('b1a', b1a); write('b1b', b1b)
 
 # B2: count sweep eye / brain, exp / rev
@@ -56,3 +57,11 @@ for seed in range(1, 7):
         for mode in ('rev', 'exp'):
             L.append(line('brain', mode, seed, gear='mod', n='cp', arena=arena, dbg='1' if seed <= 2 else '0'))
 write('b5_brain', L)
+
+# far-commander counterparts of the near cells in b1a that s1_main does not already have
+L = []
+for seed in (1, 2, 3):
+    L.append(line('eye', 'exp', seed, gear='mod', n='cp'))
+    L.append(line('kslime', 'exp', seed, gear='mod', n='cp')); L.append(line('kslime', 'rev', seed, gear='mod', n='cp'))
+    L.append(line('skel', 'exp', seed, gear='mod', n='cp'))
+write('b1a_far', L)

@@ -1,24 +1,24 @@
-fight	brain	rev	1	36000	gear=mod	n=cp	arena=surf	dbg=1
-fight	brain	exp	1	36000	gear=mod	n=cp	arena=surf	dbg=1
-fight	brain	rev	1	36000	gear=mod	n=cp	arena=ug	dbg=1
-fight	brain	exp	1	36000	gear=mod	n=cp	arena=ug	dbg=1
-fight	brain	rev	2	36000	gear=mod	n=cp	arena=surf	dbg=1
-fight	brain	exp	2	36000	gear=mod	n=cp	arena=surf	dbg=1
-fight	brain	rev	2	36000	gear=mod	n=cp	arena=ug	dbg=1
-fight	brain	exp	2	36000	gear=mod	n=cp	arena=ug	dbg=1
-fight	brain	rev	3	36000	gear=mod	n=cp	arena=surf	dbg=0
-fight	brain	exp	3	36000	gear=mod	n=cp	arena=surf	dbg=0
-fight	brain	rev	3	36000	gear=mod	n=cp	arena=ug	dbg=0
-fight	brain	exp	3	36000	gear=mod	n=cp	arena=ug	dbg=0
-fight	brain	rev	4	36000	gear=mod	n=cp	arena=surf	dbg=0
-fight	brain	exp	4	36000	gear=mod	n=cp	arena=surf	dbg=0
-fight	brain	rev	4	36000	gear=mod	n=cp	arena=ug	dbg=0
-fight	brain	exp	4	36000	gear=mod	n=cp	arena=ug	dbg=0
-fight	brain	rev	5	36000	gear=mod	n=cp	arena=surf	dbg=0
-fight	brain	exp	5	36000	gear=mod	n=cp	arena=surf	dbg=0
-fight	brain	rev	5	36000	gear=mod	n=cp	arena=ug	dbg=0
-fight	brain	exp	5	36000	gear=mod	n=cp	arena=ug	dbg=0
-fight	brain	rev	6	36000	gear=mod	n=cp	arena=surf	dbg=0
-fight	brain	exp	6	36000	gear=mod	n=cp	arena=surf	dbg=0
-fight	brain	rev	6	36000	gear=mod	n=cp	arena=ug	dbg=0
-fight	brain	exp	6	36000	gear=mod	n=cp	arena=ug	dbg=0
+fight	brain	rev	1	36000	gear=mod	n=cp	arena=surf	dbg=1	cmd=far
+fight	brain	exp	1	36000	gear=mod	n=cp	arena=surf	dbg=1	cmd=far
+fight	brain	rev	1	36000	gear=mod	n=cp	arena=ug	dbg=1	cmd=far
+fight	brain	exp	1	36000	gear=mod	n=cp	arena=ug	dbg=1	cmd=far
+fight	brain	rev	2	36000	gear=mod	n=cp	arena=surf	dbg=1	cmd=far
+fight	brain	exp	2	36000	gear=mod	n=cp	arena=surf	dbg=1	cmd=far
+fight	brain	rev	2	36000	gear=mod	n=cp	arena=ug	dbg=1	cmd=far
+fight	brain	exp	2	36000	gear=mod	n=cp	arena=ug	dbg=1	cmd=far
+fight	brain	rev	3	36000	gear=mod	n=cp	arena=surf	dbg=0	cmd=far
+fight	brain	exp	3	36000	gear=mod	n=cp	arena=surf	dbg=0	cmd=far
+fight	brain	rev	3	36000	gear=mod	n=cp	arena=ug	dbg=0	cmd=far
+fight	brain	exp	3	36000	gear=mod	n=cp	arena=ug	dbg=0	cmd=far
+fight	brain	rev	4	36000	gear=mod	n=cp	arena=surf	dbg=0	cmd=far
+fight	brain	exp	4	36000	gear=mod	n=cp	arena=surf	dbg=0	cmd=far
+fight	brain	rev	4	36000	gear=mod	n=cp	arena=ug	dbg=0	cmd=far
+fight	brain	exp	4	36000	gear=mod	n=cp	arena=ug	dbg=0	cmd=far
+fight	brain	rev	5	36000	gear=mod	n=cp	arena=surf	dbg=0	cmd=far
+fight	brain	exp	5	36000	gear=mod	n=cp	arena=surf	dbg=0	cmd=far
+fight	brain	rev	5	36000	gear=mod	n=cp	arena=ug	dbg=0	cmd=far
+fight	brain	exp	5	36000	gear=mod	n=cp	arena=ug	dbg=0	cmd=far
+fight	brain	rev	6	36000	gear=mod	n=cp	arena=surf	dbg=0	cmd=far
+fight	brain	exp	6	36000	gear=mod	n=cp	arena=surf	dbg=0	cmd=far
+fight	brain	rev	6	36000	gear=mod	n=cp	arena=ug	dbg=0	cmd=far
+fight	brain	exp	6	36000	gear=mod	n=cp	arena=ug	dbg=0	cmd=far

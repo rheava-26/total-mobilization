@@ -1,36 +1,36 @@
-fight	eye	exp	1	36000	gear=mod	n=4
-fight	eye	exp	1	36000	gear=mod	n=8
-fight	eye	exp	1	36000	gear=mod	n=12
-fight	eye	exp	1	36000	gear=mod	n=16
-fight	eye	exp	1	36000	gear=mod	n=19
-fight	eye	exp	1	36000	gear=mod	n=24
-fight	eye	rev	1	36000	gear=mod	n=4
-fight	eye	rev	1	36000	gear=mod	n=8
-fight	eye	rev	1	36000	gear=mod	n=12
-fight	eye	rev	1	36000	gear=mod	n=16
-fight	eye	rev	1	36000	gear=mod	n=19
-fight	eye	rev	1	36000	gear=mod	n=24
-fight	eye	exp	2	36000	gear=mod	n=4
-fight	eye	exp	2	36000	gear=mod	n=8
-fight	eye	exp	2	36000	gear=mod	n=12
-fight	eye	exp	2	36000	gear=mod	n=16
-fight	eye	exp	2	36000	gear=mod	n=19
-fight	eye	exp	2	36000	gear=mod	n=24
-fight	eye	rev	2	36000	gear=mod	n=4
-fight	eye	rev	2	36000	gear=mod	n=8
-fight	eye	rev	2	36000	gear=mod	n=12
-fight	eye	rev	2	36000	gear=mod	n=16
-fight	eye	rev	2	36000	gear=mod	n=19
-fight	eye	rev	2	36000	gear=mod	n=24
-fight	eye	exp	3	36000	gear=mod	n=4
-fight	eye	exp	3	36000	gear=mod	n=8
-fight	eye	exp	3	36000	gear=mod	n=12
-fight	eye	exp	3	36000	gear=mod	n=16
-fight	eye	exp	3	36000	gear=mod	n=19
-fight	eye	exp	3	36000	gear=mod	n=24
-fight	eye	rev	3	36000	gear=mod	n=4
-fight	eye	rev	3	36000	gear=mod	n=8
-fight	eye	rev	3	36000	gear=mod	n=12
-fight	eye	rev	3	36000	gear=mod	n=16
-fight	eye	rev	3	36000	gear=mod	n=19
-fight	eye	rev	3	36000	gear=mod	n=24
+fight	eye	exp	1	36000	gear=mod	n=4	cmd=far
+fight	eye	exp	1	36000	gear=mod	n=8	cmd=far
+fight	eye	exp	1	36000	gear=mod	n=12	cmd=far
+fight	eye	exp	1	36000	gear=mod	n=16	cmd=far
+fight	eye	exp	1	36000	gear=mod	n=19	cmd=far
+fight	eye	exp	1	36000	gear=mod	n=24	cmd=far
+fight	eye	rev	1	36000	gear=mod	n=4	cmd=far
+fight	eye	rev	1	36000	gear=mod	n=8	cmd=far
+fight	eye	rev	1	36000	gear=mod	n=12	cmd=far
+fight	eye	rev	1	36000	gear=mod	n=16	cmd=far
+fight	eye	rev	1	36000	gear=mod	n=19	cmd=far
+fight	eye	rev	1	36000	gear=mod	n=24	cmd=far
+fight	eye	exp	2	36000	gear=mod	n=4	cmd=far
+fight	eye	exp	2	36000	gear=mod	n=8	cmd=far
+fight	eye	exp	2	36000	gear=mod	n=12	cmd=far
+fight	eye	exp	2	36000	gear=mod	n=16	cmd=far
+fight	eye	exp	2	36000	gear=mod	n=19	cmd=far
+fight	eye	exp	2	36000	gear=mod	n=24	cmd=far
+fight	eye	rev	2	36000	gear=mod	n=4	cmd=far
+fight	eye	rev	2	36000	gear=mod	n=8	cmd=far
+fight	eye	rev	2	36000	gear=mod	n=12	cmd=far
+fight	eye	rev	2	36000	gear=mod	n=16	cmd=far
+fight	eye	rev	2	36000	gear=mod	n=19	cmd=far
+fight	eye	rev	2	36000	gear=mod	n=24	cmd=far
+fight	eye	exp	3	36000	gear=mod	n=4	cmd=far
+fight	eye	exp	3	36000	gear=mod	n=8	cmd=far
+fight	eye	exp	3	36000	gear=mod	n=12	cmd=far
+fight	eye	exp	3	36000	gear=mod	n=16	cmd=far
+fight	eye	exp	3	36000	gear=mod	n=19	cmd=far
+fight	eye	exp	3	36000	gear=mod	n=24	cmd=far
+fight	eye	rev	3	36000	gear=mod	n=4	cmd=far
+fight	eye	rev	3	36000	gear=mod	n=8	cmd=far
+fight	eye	rev	3	36000	gear=mod	n=12	cmd=far
+fight	eye	rev	3	36000	gear=mod	n=16	cmd=far
+fight	eye	rev	3	36000	gear=mod	n=19	cmd=far
+fight	eye	rev	3	36000	gear=mod	n=24	cmd=far

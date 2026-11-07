@@ -61,7 +61,8 @@ namespace Levy.Common.Movement
 			if (dummy.moonLordLegs) boost += LevyConstants.Movement.MoonLordLegsBoost;
 			int extra = (int)Math.Round(boost / LevyConstants.Movement.JumpBoostPerTile);
 			if (dummy.jumpBoost) extra += LevyConstants.Movement.BalloonJumpTiles;
-			a.JumpTiles = Math.Clamp(LevyConstants.Movement.BaseJumpTiles + extra, LevyConstants.Movement.BaseJumpTiles, LevyConstants.Movement.MaxJumpTiles);
+			int baseJump = Content.NPCs.SoldierNPC.PlatMode >= 1 ? LevyConstants.Movement.PlayerBaseJumpTiles : LevyConstants.Movement.BaseJumpTiles;
+			a.JumpTiles = Math.Clamp(baseJump + extra, baseJump, LevyConstants.Movement.MaxJumpTiles);
 
 			int jumps = 0;
 			var ordered = ExtraJumpLoader.OrderedJumps;

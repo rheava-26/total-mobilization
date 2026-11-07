@@ -98,6 +98,11 @@
     - UrchinMace (melee) does 0 damage to the hovering Eye.
     - QB Expert wipes 15 levies (not investigated).
     - A 5–11% residual of worm damage has no attacker.
+- mobility4 WIP a1e1bed:
+  - Minions are now 100% on levies (was 36–65%).
+  - The worm chain model shows no clear gain (±15% noise): worms home on one levy, and the lane is wider than run speed.
+  - Lead suggested "spread from the TARGETED levy + target kites straight" as the general fix for homing big-body bosses.
+  - Notable gallery (41 fights) sent to Eve.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

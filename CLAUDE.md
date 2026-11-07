@@ -1,3 +1,18 @@
+# READ FIRST: THIS BRANCH IS LEVY, NOT TOTAL MOBILIZATION
+
+**Levy** (a tModLoader Terraria mod: an AI soldier army, plus its companion mod **Mechanization**) is its own project. It only lives in this repository (`rheava-26/total-mobilization`, branch `worktree-levy-stardust`, code under `levy-mod/` and `mechanization-mod/`) because the designer, Eve, didn't want to make a new GitHub repo. We are camping in Total Mobilization's backyard; we are not part of its family. Everything below the next rule about Total Mobilization (`title.html`, its tenet, its working style) is about that other game and does NOT govern Levy, except where `levy-mod/NORTH_STAR.md` adopts it.
+
+**Before anything else, read `levy-mod/NORTH_STAR.md`.** It holds Eve's standing rules for Levy, in her own words where possible. Re-read it after every context compaction: past compactions made us drift back into old habits (jumping on one hypothesis, merging to main, wordy replies).
+
+Core rules (the full list is in the North Star):
+- Never merge to `main`. The integration branch is `worktree-levy-stardust`.
+- Eve's pronouns are not stated: use they/them for Eve in writing.
+- Never jump to one hypothesis. List the candidates, test them, and separate OBSERVED from INFERRED. Eve's reports describe her real world; a harness that doesn't reproduce her setup hasn't tested her bug.
+- Use structured prose with proportional weight: a one-line handoff gets one line, a deep topic gets headings. Don't give a small note and a big finding the same weight.
+- Mind Eve's session usage: keep subagent briefs and reports lean.
+
+---
+
 # TOTAL MOBILIZATION (v1) — complete reference
 
 ## WORKING STYLE (standing instruction from the designer)

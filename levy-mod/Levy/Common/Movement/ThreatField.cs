@@ -36,6 +36,8 @@ namespace Levy.Common.Movement
 		public float J2Vy; public int J2At;
 		/// <summary>A hook to a ledge: after a cast delay the body moves in a line to <see cref="HookTarget"/> over <see cref="HookDur"/> ticks.</summary>
 		public bool Hook; public Vector2 HookTarget; public int HookDur;
+		/// <summary>An airborne start: the body already moves at (<see cref="V0x"/>, <see cref="V0y"/>) and falls until <see cref="FloorY"/> (centre Y of the landing). <see cref="J2Vy"/> (up negative, down positive) is a kick taken <see cref="J2At"/> ticks from now; Kind 11 = air jump / wing flap, 12 = wing or rocket thrust, 13 = fast fall.</summary>
+		public bool Air; public float V0x, V0y, FloorY, AirAcc;
 	}
 
 	/// <summary>
@@ -135,6 +137,7 @@ namespace Levy.Common.Movement
 		private static Vector2 BodyAt(Vector2 c0, in Maneuver m, float g, int t)
 		{
 			if (m.Hook) return Vector2.Lerp(c0, m.HookTarget, MathHelper.Clamp((t - 8) / (float)Math.Max(1, m.HookDur), 0f, 1f));
+			if (m.Air) return AirBodyAt(c0, m, g, t);
 			float x = c0.X + m.Vx * Math.Min(t, m.Dur), y = c0.Y;
 			if (m.JumpVy < 0f)
 			{
@@ -148,6 +151,49 @@ namespace Levy.Common.Movement
 				}
 			}
 			else if (m.Drop && t > 3) y += 0.5f * g * (t - 3) * (t - 3);
+			return new Vector2(x, y);
+		}
+
+		/// <summary>Distance fallen in t ticks from vertical speed v0 under gravity g, with the terminal speed a falling body has.</summary>
+		private static float FallDist(float v0, float g, float t)
+		{
+			if (t <= 0f) return 0f;
+			const float term = 10f;
+			if (g <= 0f) return v0 * t;
+			float tc = v0 >= term ? 0f : (term - v0) / g;
+			if (t <= tc) return v0 * t + 0.5f * g * t * t;
+			float yc = v0 * tc + 0.5f * g * tc * tc;
+			return yc + Math.Max(v0, term) * (t - tc);
+		}
+
+		/// <summary>Distance covered in t ticks while the horizontal speed moves from v0 toward v1 at a (px/tick per tick); a = 0 is an instant change.</summary>
+		private static float RampX(float v0, float v1, float a, float t)
+		{
+			if (a <= 0f) return v1 * t;
+			float d = Math.Abs(v1 - v0), tr = d / a, sg = v1 >= v0 ? 1f : -1f;
+			if (t <= tr) return v0 * t + sg * 0.5f * a * t * t;
+			return v0 * tr + sg * 0.5f * a * tr * tr + v1 * (t - tr);
+		}
+
+		/// <summary>The path of a body that is already in the air: its own velocity, a horizontal air move (a step, a dash), one kick (second jump, flap, thrust, fast fall), and the floor it lands on.</summary>
+		private static Vector2 AirBodyAt(Vector2 c0, in Maneuver m, float g, int t)
+		{
+			float x = m.Dur > 0 ? c0.X + RampX(m.V0x, m.Vx, m.AirAcc, Math.Min(t, m.Dur)) : c0.X + m.V0x * t;
+			float y;
+			if (m.J2Vy != 0f && t > m.J2At)
+			{
+				float y1 = FallDist(m.V0y, g, m.J2At);
+				float v1 = Math.Min(10f, m.V0y + g * m.J2At);
+				if (m.Kind == 12)
+				{
+					int th = Math.Min(t - m.J2At, Math.Max(1, m.HookDur)); float yT = m.J2Vy * th;
+					y = y1 + yT + FallDist(m.J2Vy * 0.3f, g, t - m.J2At - th);
+				}
+				else y = y1 + FallDist(m.J2Vy, g, t - m.J2At);
+			}
+			else y = FallDist(m.V0y, g, t);
+			y += c0.Y;
+			if (y > m.FloorY) y = m.FloorY;
 			return new Vector2(x, y);
 		}
 

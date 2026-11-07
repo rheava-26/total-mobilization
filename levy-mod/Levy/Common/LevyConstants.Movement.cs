@@ -21,6 +21,14 @@ namespace Levy.Common
 			// ---- jumping (NPC gravity 0.3/tick, terminal 10; verified in NPC.UpdateNPC_UpdateGravity) ----
 			public const float DefaultGravity = 0.3f;
 			public const int BaseJumpTiles = 3;
+			/// <summary>A player with no gear clears about this many tiles in one jump.</summary>
+			public const int PlayerBaseJumpTiles = 5;
+			/// <summary>Tiles a second jump (a bottle, a jar) adds to the reach of a goal jump.</summary>
+			public const int ExtraJumpReachTiles = 3;
+			/// <summary>A lane is judged by how many tiles it sits above or below the boss; past this many it is as safe as it gets.</summary>
+			public const int PlatformLaneSepCap = 8, PlatformLaneNeedGain = 3, PlatformLaneColumns = 10, PlatformLaneDrop = 12;
+			public const int PlatformLaneLowTiles = 5, PlatformLaneRowTiles = 3;
+			public const int PlatformLaneEvalTicks = 80, PlatformLaneDwellTicks = 120;
 			public const float JumpBoostPerTile = 0.75f;       // Player.jumpSpeedBoost per extra tile of reach
 			public const int BalloonJumpTiles = 2;              // Player.jumpBoost (Shiny Red Balloon family)
 			public const float FrogLegBoost = 2.4f, EmpressBroochBoost = 1.8f, MoonLordLegsBoost = 1.8f; // added in Player.UpdateJumpHeight, not UpdateEquips

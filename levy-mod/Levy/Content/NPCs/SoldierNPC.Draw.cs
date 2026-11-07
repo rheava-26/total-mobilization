@@ -63,6 +63,7 @@ namespace Levy.Content.NPCs
 				{
 					_drawAnimTick = tick;
 					AnimateDummy();
+					ArmorFxTick(); // SoldierNPC.ArmorFx.cs: armor afterimage flags + history, head lights (after PlayerFrame resolved head/body/legs)
 				}
 				DrawDummy(spriteBatch, screenPos);
 				drawn = true;
@@ -225,7 +226,8 @@ namespace Levy.Content.NPCs
 				{
 					if (Shaken || State == SoldierState.Shaken) DrawShakenTint(sb, screenPos);
 					if (Record != null && Record.Mutinous && LevyConfig.Get.WageMutiny) DrawMutinyTint(sb, screenPos);
-					DrawDashShadows(); // dash afterimages behind the body (SoldierNPC.MovementFx.cs)
+					if (!ArmorDrawsTrail) DrawDashShadows(); // dash afterimages behind the body (SoldierNPC.MovementFx.cs); armor with its own trail draws it below
+					DrawArmorFx(new Vector2(Dummy.position.X, Dummy.position.Y + NPC.gfxOffY)); // SoldierNPC.ArmorFx.cs
 					var pos = new Vector2(Dummy.position.X, Dummy.position.Y + NPC.gfxOffY);
 					global::Levy.Common.Util.HangWatch.DrawEnter(2); // watchdog breadcrumb: a frame stall here = this soldier's player-render (incl. its modded gear draw layers)
 					try { Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, Dummy.fullRotation, Dummy.fullRotationOrigin, 0f, 1f); }

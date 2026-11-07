@@ -152,6 +152,7 @@ namespace Levy.Content.NPCs
 			{
 				int tiles = (int)Math.Ceiling(-dy / 16f);
 				int reachBonus = State == SoldierState.Engage ? EngageJumpReachBonusTiles : 0; // a weapon covers the last stretch
+				if (PlatMode >= 1) reachBonus += Abilities.ExtraJumps > 0 ? ExtraJumpReachTiles * Math.Min(2, Abilities.ExtraJumps) : 0; // a second jump at the apex carries the rest
 				if (tiles <= Abilities.JumpTiles + reachBonus)
 				{
 					int jt = Math.Min(tiles, Abilities.JumpTiles);

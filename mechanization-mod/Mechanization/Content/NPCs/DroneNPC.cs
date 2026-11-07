@@ -209,6 +209,11 @@ namespace Mechanization.Content.NPCs
 			EnsureDummy();
 			NPC.noTileCollide = IsBound && (Phase == DronePhase.Refuel || Phase == DronePhase.Recall); // the run home ignores blocks; everything else collides again
 			SyncDummyTransform();
+			if (!Main.dedServ && IsBound) // a real glow (designer: drones should be visible); tinted like the status LED
+			{
+				Vector3 glow = Phase switch { DronePhase.Refuel or DronePhase.Charging => new Vector3(0.55f, 0.38f, 0.12f), DronePhase.Recall => new Vector3(0.2f, 0.35f, 0.6f), _ => new Vector3(0.25f, 0.5f, 0.3f) };
+				Lighting.AddLight(NPC.Center, glow);
+			}
 			if (_recoil > 0f) _recoil = Math.Max(0f, _recoil - D.RecoilReturnPx);
 			if (!IsBound) return; // not yet bound / synced
 			if (LevyUtil.IsClient) { ClientTick(); return; }

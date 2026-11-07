@@ -1046,6 +1046,9 @@ namespace Levy.Content.NPCs
 			}
 			if (_engMode == EngageMode.Retreat) ClearGoal();
 
+			// Against a boss or a hard hitter a player works the platform rows: up out of a ground charge, down out of a sweep (in reach or not)
+			if (SoldierNPC.PlatMode >= 1 && SoldierNPC.MobilityMode >= 1 && !(WantsAltitude || _aerial) && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage) && TickPlatformPerch(now)) return true;
+
 			float dT = Aiming.TilesToHitbox(NPC.Center, seg);
 			bool los = HasFiringLine(seg);
 			// the same buffered reach the fire gate uses; a flamethrower holds only once inside its close-in range (no open-fire buffer), otherwise it keeps walking in

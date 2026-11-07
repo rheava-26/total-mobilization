@@ -139,6 +139,51 @@
   - QB: Expert 1/4 but Rev 4/4 and Death 3/4 (ANOMALY, asked the lab). Skeletron Expert 1/4 (3 timeouts).
   - Boss-on-player is 0% everywhere.
   - dud-weapons: Calamity holdout routing (Thorium channel weapons already worked).
+- **LAB 2 DONE (2.0.16, 282 fights, cmd=near, merged; docs/boss_lab/RESULTS2.md):**
+  - Spectator: the boss targets the commander 0% of the time in all 282 fights.
+  - **Wins (kill / total):**
+
+    | Boss | Expert | Rev | Death |
+    |---|---|---|---|
+    | KS | 6/6 | 9/12 | 6/12 |
+    | DS | 0/6 | 0/6 | 0/6 |
+    | Eye | 6/6 | 2/12 | 0/6 |
+    | EoW | 4/12 | 0 | 0 |
+    | Brain | 6/6 | 0/6 | 0/6 |
+    | QB | 2/12 | 8/12 | 9/12 |
+
+    Skeletron Expert: 2 kills, 10 FLED.
+  - **QB Rev easier than Expert = Calamity's Rev AI.** No bees and no ai0=2 phase; ~14 vs 36 contact dmg/s. Not rippers, not the zone.
+  - **FEAR OFF (paired seeds):**
+
+    | Cell | Fear on | Fear off |
+    |---|---|---|
+    | Eye Rev | 2/12 | 7/12 |
+    | EoW Expert | 4/12 | 8/12 |
+    | Brain Rev | 0/6 | 3/6 |
+    | QB Expert | 2/12 | 7/12 |
+
+    Boss dmg/s 2–3× higher with fear off. DS is unchanged.
+  - **Spread:** EoW 4/12 vs 1/12 off; DS only +4 s to first death.
+  - **Skeletron fled:** leave state ai[1]=3 with levies 150–200 tiles away (why? → worm5).
+  - The recorder makes no file for EoW.
+  - Gallery notable2 (16 fights) sent.
+- **worm5 (building):**
+  - The lead's replay read: a DS body hits a stationary levy every ~10–20 ticks, while a player gets 40 i-frames. Hypothesis: levy i-frames are shorter than a player's, so worm bodies shred them → test and fix to player parity.
+  - Also: spawn-in hits, Skeletron flee cause, EoW recorder gap.
+- **dud-weapons DONE (merged 5b839f0 → 2.0.17):**
+  - **LAB CAVEAT:** every lab ran on a dedicated server, where Main.myPlayer=255, so soldier shots are owned by an inactive slot. Flail/mace AIs kill themselves at once, so the lab zeros were partly a harness artifact. New `LEVY_CR_SP=1` emulates single player.
+  - **Real single-player bugs fixed:**
+    - Cursor-reading modded projectiles (UrchinMace, BallOFugu, YateveoBloom, FlareBolt, Pumpkaboom, MeteorFist…) aimed at the commander's cursor. Now steered to the target (IL probe ReadsCursor).
+    - Calamity holdouts (CoralSpout + 70 post-HM) need a held button. Now held via the dummy-255 path through a ProjectileLoader.ProjectileAI hook.
+    - The routed table (HoldoutRouted, 71 items) was measured: 80 of 105 up, 0 down. Exoblade 406 → 2654; DragonsBreath 0 → 6719.
+    - SaharaSlicers-type held shortswords are now classed Shortsword.
+  - **Open:**
+    - Basher ~0.
+    - 17 post-HM holdouts are 0 both ways (YharimsCrystal, Murasama, Eternity…) and need an in-game check.
+    - Multiplayer needs a dummy swap for owner-255 modded shots.
+    - Sentries are weak (0.3–0.5 dmg/s).
+  - The RunDamage freeze fix (1.3.2) was verified intact.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

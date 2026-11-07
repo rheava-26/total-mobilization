@@ -32,6 +32,15 @@ namespace Levy.Common.Testing
 	{
 		internal static bool CrOn => string.Equals(Scenario, "calrev", StringComparison.OrdinalIgnoreCase);
 		private static bool _crHooked;
+		/// <summary>LEVY_CR_SP=1: single-player owner emulation. A dedicated server has Main.myPlayer = 255, so soldier shots are owned by the inactive null player and every Calamity projectile that reads Main.player[owner]
+		/// (flails, held shortswords, anything anchored to its owner) kills itself on its first tick: a measurement artifact, never what a single-player game does. With this on, Main.myPlayer is 0 (the stand-in commander)
+		/// around each Main.Update, and 255 around the commander's own Player.Update, exactly as HarnessOnHit's emulation does.</summary>
+		internal static bool CrSp;
+		private static void CrPlayerUpdate(On_Player.orig_Update orig, Player self, int i)
+		{
+			if (CrSp && self.whoAmI == 0 && Main.myPlayer == 0) { Main.myPlayer = 255; try { orig(self, i); } finally { Main.myPlayer = 0; } }
+			else orig(self, i);
+		}
 
 		internal sealed class CrLevySpec
 		{
@@ -46,6 +55,24 @@ namespace Levy.Common.Testing
 			public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public bool Dbg, Diag; public List<CrLevySpec> Specs; public string Desc = "";
 			public string Key => $"{Kind}|{Boss}|{Mode}|{Order}|{Seed}|{Cap}" + (N != 10 ? "|n" + N : "") + (HpX != 1f ? "|hp" + HpX.ToString(CultureInfo.InvariantCulture) : "") + (Dr != 0f ? "|dr" + Dr.ToString(CultureInfo.InvariantCulture) : "")
 				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "") + (Fear >= 0f ? "|fe" + Fear.ToString(CultureInfo.InvariantCulture) : "");
+		}
+		/// <summary>The plainest ammo item for an ammo type (cw= runs and fallbacks): the lowest-damage vanilla item with that ammo type, else the first modded one.</summary>
+		private static string CrDefaultAmmo(int useAmmo)
+		{
+			if (useAmmo == AmmoID.Bullet) return "Musket Ball";
+			if (useAmmo == AmmoID.Arrow) return "Wooden Arrow";
+			if (useAmmo == AmmoID.Rocket) return "Rocket I";
+			if (useAmmo == AmmoID.Dart) return "Poison Dart";
+			if (useAmmo == AmmoID.Gel) return "Gel";
+			Item best = null;
+			for (int k = 1; k < ItemLoader.ItemCount; k++)
+			{
+				var it = ContentSamples.ItemsByType.TryGetValue(k, out var smp) ? smp : null;
+				if (it == null || it.ammo != useAmmo || it.IsAir) continue;
+				if (best == null || (k < ItemID.Count && best.type >= ItemID.Count) || (k < ItemID.Count == best.type < ItemID.Count && it.damage < best.damage)) best = it;
+			}
+			if (best == null) return "";
+			return best.type < ItemID.Count ? Lang.GetItemNameValue(best.type) : best.ModItem.Mod.Name + "/" + best.ModItem.Name;
 		}
 		private readonly List<CrRun> _crRuns = new();
 		private int _crI = -1; private bool _crStarted;
@@ -214,7 +241,11 @@ namespace Levy.Common.Testing
 				On_NPC.StrikeNPC_HitInfo_bool_bool += CrStrikeDetour;
 				On_NPC.UpdateNPC += CrNpcUpdateDetour;
 				On_Projectile.Update += CrProjUpdateDetour;
+				On_Player.Update += CrPlayerUpdate;
 			}
+			CrSp = Environment.GetEnvironmentVariable("LEVY_CR_SP") == "1";
+			global::Levy.Common.Util.LevyUtil.SpEmulation = CrSp;
+			Mod.Logger.Info("HARNESS-CR: single-player owner emulation " + (CrSp ? "ON (Main.myPlayer = 0)" : "off (dedicated server, owner 255)"));
 			_crI = 0; _crStarted = false;
 			return true;
 		}
@@ -223,7 +254,7 @@ namespace Levy.Common.Testing
 		{
 			if (!_crHooked) return;
 			_crHooked = false;
-			try { On_NPC.StrikeNPC_HitInfo_bool_bool -= CrStrikeDetour; On_NPC.UpdateNPC -= CrNpcUpdateDetour; On_Projectile.Update -= CrProjUpdateDetour; } catch { }
+			try { On_NPC.StrikeNPC_HitInfo_bool_bool -= CrStrikeDetour; On_NPC.UpdateNPC -= CrNpcUpdateDetour; On_Projectile.Update -= CrProjUpdateDetour; On_Player.Update -= CrPlayerUpdate; } catch { }
 		}
 
 		// -------------------------------------------------------------------------------------------------- Calamity switches
@@ -397,6 +428,7 @@ namespace Levy.Common.Testing
 			var gear = rec.Gear;
 			Item w = CrMake(spec.Weapon);
 			if (!gear.CanHold(SoldierGear.SlotWeapon, w)) { Mod.Logger.Warn($"HARNESS-CR: levy cannot hold {spec.Weapon}; fallback {CrFallbackWeapon(spec.Cls)}"); spec.Weapon = CrFallbackWeapon(spec.Cls); spec.Ammo = spec.Cls == 'R' ? "Silver Bullet" : ""; w = CrMake(spec.Weapon); }
+			if (string.IsNullOrEmpty(spec.Ammo) && w.useAmmo != AmmoID.None) spec.Ammo = CrDefaultAmmo(w.useAmmo); // cw=<ammo weapon>: the levy gets a pouch the weapon can use
 			gear.Weapon = w; gear.SetLocked(SoldierGear.SlotWeapon, true);
 			if (!string.IsNullOrEmpty(run.Side) && spec.Cls == 'E')
 			{

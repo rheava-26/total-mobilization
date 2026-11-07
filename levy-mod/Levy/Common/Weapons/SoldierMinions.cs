@@ -601,7 +601,7 @@ namespace Levy.Common.Weapons
 		/// <summary>A projectile created inside a driven minion's Update (a stinger, a spear, a fireball) is owned by 255 there; in single player it is handed to the real owner so Projectile.Damage processes it.</summary>
 		internal static void ReownChild(Projectile parent, Projectile child)
 		{
-			if (Main.netMode != NetmodeID.SinglePlayer || parent.owner != Slot || !parent.minion || child.owner != Slot) return;
+			if (!Util.LevyUtil.SinglePlayerLike || parent.owner != Slot || !parent.minion || child.owner != Slot) return;
 			child.owner = TrueMyPlayer;
 		}
 

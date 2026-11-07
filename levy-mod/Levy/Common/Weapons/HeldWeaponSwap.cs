@@ -1,8 +1,10 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
@@ -70,14 +72,68 @@ namespace Levy.Common.Weapons
 			Vector2 dir = Vector2.Normalize(toTarget);
 			AltPolicies.OnHoldoutSpawn(s, item, target); // the held right button (variant) is set before the holdout exists
 			// owner 255 is deliberate (see class summary); the holder's real owner-gated code runs under the wrapper's Main.myPlayer swap.
-			int i = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), s.NPC.Center, dir * Math.Max(1f, item.shootSpeed), item.shoot, damage, item.knockBack, Slot);
-			if (i < 0 || i >= Main.maxProjectiles) return WeaponUse.Dud(s, item);
-			Projectile p = Main.projectile[i];
+			// A MODDED holdout is made by its item's own Shoot hook (Calamity's guns pass the holdout its gun type / mode in ai[], and some fire real shots from the hook itself): run the hook, with the dummy as the player.
+			Projectile p = item.type >= ItemID.Count ? SpawnViaHooks(s, item, dir * Math.Max(1f, item.shootSpeed), damage) : null;
+			int i = p?.whoAmI ?? -1;
+			if (p == null)
+			{
+				i = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), s.NPC.Center, dir * Math.Max(1f, item.shootSpeed), item.shoot, damage, item.knockBack, Slot);
+				if (i < 0 || i >= Main.maxProjectiles) return WeaponUse.Dud(s, item);
+				p = Main.projectile[i];
+			}
 			if (!p.active || p.type != item.shoot) return WeaponUse.Dud(s, item);
 			JoinChain(s, p, item);
+			if (p.TryGetGlobalProjectile(out HeldWeaponProjectile hg)) { hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(item.shoot); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0; }
 			p.direction = dir.X < 0f ? -1 : 1;
 			_holder[idx] = i;
 			return true;
+		}
+
+		/// <summary>
+		/// Runs a modded item's ModifyShootStats + Shoot hooks with the soldier's dummy as the player (slot 255 swapped to it, Main.myPlayer = 255 so the spawn keeps its ai[] and owner) and returns the projectile of the
+		/// item's own shoot type the hook made (the holdout), or null when the hook made none (the caller then spawns the plain holder). A hook that returns true leaves the default shot to us: spawned the same way.
+		/// </summary>
+		private static Projectile SpawnViaHooks(SoldierNPC s, Item item, Vector2 vel, int damage)
+		{
+			Player d = s.Dummy;
+			if (d == null || item.shoot <= 0) return null;
+			bool[] before = _before ??= new bool[Main.maxProjectiles];
+			for (int k = 0; k < Main.maxProjectiles; k++) before[k] = Main.projectile[k].active;
+			int savedWho = d.whoAmI, savedMy = Main.myPlayer, savedSel = d.selectedItem, savedMana = d.statMana, savedManaMax = d.statManaMax2;
+			Item saved0 = d.inventory[0]; bool savedUse = d.controlUseItem, savedChannel = d.channel;
+			Vector2 pos = s.NPC.Center, v = vel; int type = item.shoot, dmg = damage; float kb = item.knockBack;
+			bool swapped = false, threw = false;
+			try
+			{
+				EnemyTargeting.Swap(s); // dummy -> Main.player[255], at the soldier
+				swapped = true;
+				d.whoAmI = Slot; Main.myPlayer = Slot;
+				d.inventory[0] = item; d.selectedItem = 0;
+				d.statManaMax2 = Math.Max(1, s.Record.MaxMana); d.statMana = Math.Clamp(s.Record.Mana, 0, d.statManaMax2);
+				d.controlUseItem = true; d.channel = true;
+				CombinedHooks.ModifyShootStats(d, item, ref pos, ref v, ref type, ref dmg, ref kb);
+				var source = new EntitySource_ItemUse_WithAmmo(d, item, 0);
+				if (CombinedHooks.Shoot(d, item, source, pos, v, type, dmg, kb)) Projectile.NewProjectile(source, pos, v, type, dmg, kb, Slot);
+			}
+			catch (Exception) { threw = true; }
+			finally
+			{
+				d.whoAmI = savedWho; Main.myPlayer = savedMy; d.selectedItem = savedSel; d.inventory[0] = saved0; d.controlUseItem = savedUse; d.channel = savedChannel;
+				if (item.mana > 0) s.Record.Mana = Math.Clamp(d.statMana, 0, Math.Max(0, s.Record.MaxMana));
+				d.statMana = savedMana; d.statManaMax2 = savedManaMax;
+				if (swapped) EnemyTargeting.Unswap();
+				EnemyTargeting.EnsureSlotRestored();
+			}
+			Projectile holder = null;
+			for (int k = 0; k < Main.maxProjectiles; k++)
+			{
+				Projectile c = Main.projectile[k];
+				if (!c.active || before[k]) continue;
+				if (c.type == item.shoot && c.owner == Slot && holder == null) holder = c; // the holdout joins the chain in TryFire
+				else WeaponUse.TagSoldierProjectile(s, c, item.DamageType ?? DamageClass.Default); // anything else the hook fired is an ordinary soldier shot
+			}
+			if (threw && holder != null) holder.Kill();
+			return threw ? null : holder;
 		}
 
 		/// <summary>This soldier's live holder for <paramref name="item"/>, or null (one per soldier).</summary>
@@ -123,7 +179,7 @@ namespace Levy.Common.Weapons
 			return s;
 		}
 
-		internal static void RunAi(On_Projectile.orig_AI orig, Projectile p, HeldWeaponProjectile g)
+		internal static void RunAi(Action<Projectile> orig, Projectile p, HeldWeaponProjectile g)
 		{
 			bool authority = LevyUtil.IsServerOrSingle;
 			SoldierNPC body = BodyOf(p, g);
@@ -136,7 +192,7 @@ namespace Levy.Common.Weapons
 			}
 			if (body == null) { p.timeLeft = Math.Max(p.timeLeft, 2); return; } // client that has not met the body yet: no AI against the null player
 
-			bool holder = p.aiStyle == ProjAIStyleID.HeldProjectile;
+			bool holder = p.aiStyle == ProjAIStyleID.HeldProjectile || g.ModHolder;
 			Player d = body.Dummy;
 			bool swapped = false;
 			bool touched = false;
@@ -148,7 +204,9 @@ namespace Levy.Common.Weapons
 			Item pouch = null;
 			int pouchStackBefore = 0;
 			bool[] before = null;
-			bool manaWeapon = false;
+			bool manaWeapon = false, release = false;
+			object calPlayer = null; Vector2 savedDelta = default; float savedRot = 0f;
+			bool savedMouseLeft = false, mouseSet = false;
 			try
 			{
 				EnemyTargeting.Swap(body); // dummy -> Main.player[255]
@@ -169,10 +227,13 @@ namespace Levy.Common.Weapons
 				touched = true;
 
 				d.noItems = false;
+				d.miscCounter = (int)(Main.GameUpdateCount % 7200u); // a held AI's "every 10 ticks" costs and cadences read the owner's miscCounter, which a never-updated dummy leaves frozen (a beam then drained its mana every tick)
 				d.selectedItem = 0;
 				d.inventory[0] = item;
-				d.channel = feed;
-				d.controlUseItem = feed;
+				// a modded charge-and-release holdout is held for a charge, then let go (its shot is made when it ends)
+				release = g.ReleaseOnKill && feed && ++g.HeldTicks > g.HoldMax;
+				d.channel = feed && !release;
+				d.controlUseItem = feed && !release;
 				d.itemAnimationMax = Math.Max(1, CombinedHooks.TotalAnimationTime(Math.Max(1, item.useAnimation), d, item));
 				manaWeapon = item.mana > 0;
 				d.statManaMax2 = Math.Max(1, body.Record.MaxMana);
@@ -189,14 +250,24 @@ namespace Levy.Common.Weapons
 				Main.mouseX = (int)(cursor.X - Main.screenPosition.X);
 				Main.mouseY = (int)(cursor.Y - Main.screenPosition.Y);
 				Main.myPlayer = Slot; // the holder only fires for owner == Main.myPlayer
+				if (g.ModHolder) { savedMouseLeft = Main.mouseLeft; Main.mouseLeft = feed && !release; mouseSet = true; } // some holdouts read the raw left button as "still held"
+				if (g.ModHolder)
+				{
+					// Calamity reads the cursor from the owner's own CalamityPlayer (MountedCenter + stored delta), not from Main.mouse: put it on the aim point for this call
+					calPlayer = AltPolicies.CalamityPlayerOf(d);
+					if (calPlayer != null) { (savedDelta, savedRot) = AltPolicies.GetCalAimPublic(calPlayer); AltPolicies.SetCalAimPublic(calPlayer, cursor - d.MountedCenter); }
+				}
 
 				before = _before ??= new bool[Main.maxProjectiles];
 				for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
 				orig(p);
+				if (release && p.active) { g.HeldTicks = 0; p.Kill(); } // the release: the charged shot is made while the soldier is still the owner (dummy swapped in, cursor on the target)
 			}
 			finally
 			{
 				Main.myPlayer = savedMyPlayer; Main.mouseX = savedMouseX; Main.mouseY = savedMouseY;
+				if (calPlayer != null) AltPolicies.SetCalAimPublic(calPlayer, savedDelta, savedRot);
+				if (mouseSet) Main.mouseLeft = savedMouseLeft;
 				try
 				{
 					if (touched)
@@ -328,6 +399,9 @@ namespace Levy.Common.Weapons
 		public override bool InstancePerEntity => true;
 		public bool Chain;
 		public int ItemType;
+		/// <summary>A modded holdout run as the holder (server side only; see ModShotKinds). ReleaseOnKill: it makes its shot when it ends, so it is held for HeldModHoldTicks and then released.</summary>
+		public bool ModHolder, ReleaseOnKill;
+		public int HeldTicks, HoldMax;
 		/// <summary>Server-side identity of the soldier record that fired this (guards NPC-slot reuse). Never synced.</summary>
 		public SoldierRecord Record;
 		public Vector2 AimDir;
@@ -365,6 +439,14 @@ namespace Levy.Common.Weapons
 		public override void Load()
 		{
 			On_Projectile.AI += AiDetour;
+			// A MODDED projectile's AI (PreAI / AI / PostAI) is run by ProjectileLoader.ProjectileAI, not by Projectile.AI(): a modded holder (ModShotKinds.Holdout) is wrapped there.
+			try
+			{
+				var mi = typeof(ProjectileLoader).GetMethod("ProjectileAI", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, new[] { typeof(Projectile) }, null);
+				if (mi != null) MonoModHooks.Add(mi, (Action<Action<Projectile>, Projectile>)LoaderAiDetour);
+				else Mod.Logger.Warn("Levy: ProjectileLoader.ProjectileAI not found: modded holdouts are not held");
+			}
+			catch (Exception e) { Mod.Logger.Warn("Levy: could not hook ProjectileLoader.ProjectileAI: " + e.Message); }
 			On_Projectile.Damage += DamageDetour;
 		}
 
@@ -407,11 +489,19 @@ namespace Levy.Common.Weapons
 			return p.owner == SoldierNPC.DummySlot && _wrapDepth == 0 && p.TryGetGlobalProjectile(out g) && g.Chain;
 		}
 
+		private static void LoaderAiDetour(Action<Projectile> orig, Projectile self)
+		{
+			if (self.owner != SoldierNPC.DummySlot || _wrapDepth != 0 || self.ModProjectile == null || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain || !g.ModHolder) { orig(self); return; }
+			_wrapDepth++;
+			try { HeldWeapons.RunAi(orig, self, g); }
+			finally { _wrapDepth--; }
+		}
+
 		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)
 		{
 			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
 			_wrapDepth++;
-			try { HeldWeapons.RunAi(orig, self, g); }
+			try { HeldWeapons.RunAi(pp => orig(pp), self, g); }
 			finally { _wrapDepth--; }
 		}
 

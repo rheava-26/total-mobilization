@@ -20,6 +20,9 @@ namespace Levy.Common.Globals
 		/// <summary>Game tick of the last EnemyTargeting.Prepare for this NPC (once per tick even when Calamity's AI override asks first).</summary>
 		public uint PreparedTick = uint.MaxValue;
 
+		/// <summary>Spawned by a boss-class NPC (a minion or a minion's child). Set in EnemyTargetingGlobalNPC.OnSpawn.</summary>
+		public bool BossKin;
+
 		// ---- boss rule ----
 		public int EngagedCp;
 		public readonly HashSet<int> EngagedSoldierIds = new();

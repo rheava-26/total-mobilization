@@ -93,11 +93,16 @@ namespace Levy.Common.Testing
 		/// <summary>Boss fights a campaign army has survived by this boss (veteran option): bosses before it in Boss Checklist order.</summary>
 		private static int CrVetDefault(string boss) => boss switch { "kslime" => 0, "ds" => 1, "eye" => 2, "eow" => 3, "brain" => 3, "qb" => 4, "skel" => 5, _ => 0 };
 		private static int CrVetFights(CrRun run) => run.Vet >= 0 ? run.Vet : (global::Levy.Common.Options.LevyOptions.Surv & global::Levy.Common.Options.SurvMode.Veteran) != 0 ? CrVetDefault(run.Boss) : 0;
+		private static bool _crBtsSaved, _crDefBts, _crAmmoSaved, _crDefAmmoOff;
 		private static void CrSetOptions(CrRun run)
 		{
 			if (!_crOptSaved) { _crDefFm = global::Levy.Common.Options.LevyOptions.Fear; _crDefSurv = global::Levy.Common.Options.LevyOptions.Surv; _crOptSaved = true; }
 			global::Levy.Common.Options.LevyOptions.Fear = run != null && run.Fm != "" ? global::Levy.Common.Options.LevyOptions.ParseFear(run.Fm) : _crDefFm;
 			global::Levy.Common.Options.LevyOptions.Surv = run != null && run.Surv != "" ? global::Levy.Common.Options.LevyOptions.ParseSurv(run.Surv) : _crDefSurv;
+			if (!_crAmmoSaved) { _crDefAmmoOff = global::Levy.Common.Soldiers.AmmoRank.Off; _crAmmoSaved = true; }
+			global::Levy.Common.Soldiers.AmmoRank.Off = run != null ? run.OldAmmo || _crDefAmmoOff : _crDefAmmoOff;
+			var lc = global::Levy.Common.Config.LevyConfig.Get;
+			if (lc != null) { if (!_crBtsSaved) { _crDefBts = lc.BossesTargetSoldiers; _crBtsSaved = true; } lc.BossesTargetSoldiers = run != null && run.Bts >= 0 ? run.Bts == 1 : _crDefBts; global::Levy.Common.Targeting.EnemyTargeting.RefreshConfig(); }
 			global::Levy.Common.Options.LevyOptions.HarnessParity = run != null && (global::Levy.Common.Options.LevyOptions.Surv & global::Levy.Common.Options.SurvMode.Parity) != 0 ? CrParityTable(run.Boss) : null;
 		}
 

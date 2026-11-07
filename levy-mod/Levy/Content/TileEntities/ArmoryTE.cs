@@ -243,7 +243,7 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>Tops the pouch up from the MS network. Withdraws only what fits, then adds exactly the withdrawn count (any surplus or mismatch is dropped at the armory, never destroyed). Returns the amount added to the pouch.</summary>
-		private int MsTakeAmmo(int ammoId, Item pouch, int max)
+		private int MsTakeAmmo(int ammoId, Item pouch, int max, int onlyType = -1)
 		{
 			var heart = MsHeart();
 			if (heart == null) return 0;
@@ -251,6 +251,7 @@ namespace Levy.Content.TileEntities
 			Item cand = null;
 			foreach (var it in MagicStorageBridge.Snapshot(heart)) {
 				if (IsAir(it) || it.ammo != ammoId || it.IsACoin) continue;
+				if (onlyType >= 0 && it.type != onlyType) continue;
 				if (!IsAir(pouch) && pouch.type != it.type) continue;
 				if (cand == null || it.stack > cand.stack) cand = it;
 			}
@@ -613,10 +614,27 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>The most a soldier may hold of this ammo class right now: <see cref="AmmoShare.Limit"/> over (reachable stock + what the users already carry) and the soldiers whose weapon fires it. A Magic Storage network holding it counts as plenty.</summary>
-		private int FairAmmoLimit(int ammoId, int max)
+		/// <remarks>With a non-negative <paramref name="type"/> the share is of that one ammo type: its stock, split among the users who hold it or have an empty pouch (the others carry something else and do not draw on it).</remarks>
+		private int FairAmmoLimit(int ammoId, int max, int type = -1)
 		{
 			var ms = MsHeart();
 			if (ms != null && MagicStorageBridge.AmmoIds(ms).Contains(ammoId)) return max;
+			if (type >= 0)
+			{
+				long tpool = 0;
+				foreach (var it in IssueAmmo) if (!IsAir(it) && it.type == type) tpool += it.stack;
+				foreach (var it in Storage) if (!IsAir(it) && it.type == type) tpool += it.stack;
+				foreach (var o in OtherNetworked()) foreach (var it in o.Storage) if (!IsAir(it) && it.type == type) tpool += it.stack;
+				int tusers = 0;
+				foreach (var s in ServedSoldiers()) {
+					var g = s.Gear;
+					if (g == null || !g.HasWeapon || g.Weapon.useAmmo != ammoId) continue;
+					if (IsAir(g.Ammo)) { tusers++; continue; }
+					if (g.Ammo.type != type) continue;
+					tusers++; tpool += g.Ammo.stack;
+				}
+				return AmmoShare.Limit(tpool, tusers, max, LevyConstants.AmmoFairShareFloor);
+			}
 			long pool = 0;
 			foreach (var it in IssueAmmo) if (!IsAir(it) && it.ammo == ammoId) pool += it.stack;
 			foreach (var it in Storage) if (!IsAir(it) && it.ammo == ammoId) pool += it.stack;
@@ -1099,25 +1117,108 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>Fills the pouch with ammo of <paramref name="ammoId"/> (AmmoID.Bullet/Arrow) from issue slots in priority order, then storage. Returns the amount taken.</summary>
-		public virtual int TakeAmmo(int ammoId, Item pouch, int max)
+		/// <remarks>
+		/// An empty pouch is filled with the BEST ammo of the class for <paramref name="weapon"/> (<see cref="AmmoRank"/>; with no weapon, by the round alone), not the first stack in slot order;
+		/// the fair share of scarce stock is then taken per ammo type, so the best type is split evenly and the army moves on to the next best once it is gone. A pouch that already holds a type is only
+		/// topped up with that type. <see cref="TakeAmmoFor"/> also swaps a lesser type for a clearly better one.
+		/// </remarks>
+		public virtual int TakeAmmo(int ammoId, Item pouch, int max, Item weapon = null)
 		{
 			if (pouch == null || ammoId <= 0 || max <= 0) return 0;
+			if (weapon == null && !AmmoRank.Off)
+			{
+				// A caller that only knows the pouch (a levy walking in to resupply): find whose it is among the soldiers this armory serves, so his weapon steers the pick and a lesser type can be upgraded.
+				foreach (var s in ServedSoldiers()) if (s?.Gear != null && ReferenceEquals(s.Gear.Ammo, pouch)) return TakeAmmoFor(s.Gear, ammoId, max);
+			}
+			return TakeAmmoCore(ammoId, pouch, max, weapon);
+		}
+
+		private int TakeAmmoCore(int ammoId, Item pouch, int max, Item weapon)
+		{
 			if (!IsAir(pouch) && pouch.ammo != ammoId) return 0;
+			if (IsAir(pouch) && !AmmoRank.Off)
+			{
+				foreach (var c in RankedAmmo(ammoId, weapon)) {
+					int got = TakeAmmoOfType(ammoId, c.Type, pouch, max);
+					if (got > 0) return got;
+					if (!IsAir(pouch)) return 0;
+				}
+				return 0;
+			}
+			return TakeAmmoOfType(ammoId, IsAir(pouch) ? -1 : pouch.type, pouch, max);
+		}
+
+		/// <summary>
+		/// Soldier-aware refill: the weapon he really fires the ammo from (his primary, else his sidearm) steers the pick, and an unlocked pouch holding clearly worse ammo than the armory has
+		/// (<see cref="AmmoRank.UpgradeMargin"/>) goes back to storage for the better type. A hand-assigned (locked) pouch is only topped up with what it holds. Returns the rounds moved into the pouch.
+		/// </summary>
+		public int TakeAmmoFor(SoldierGear g, int ammoId, int max)
+		{
+			if (g == null || ammoId <= 0 || max <= 0) return 0;
+			g.Ammo ??= new Item();
+			Item weapon = g.HasWeapon && g.Weapon.useAmmo == ammoId ? g.Weapon : g.HasSidearm && g.Sidearm.useAmmo == ammoId ? g.Sidearm : null;
+			int moved = 0;
+			if (!AmmoRank.Off && !g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(g.Ammo) && g.Ammo.ammo == ammoId) moved += UpgradeAmmo(g.Ammo, ammoId, max, weapon);
+			return moved + TakeAmmoCore(ammoId, g.Ammo, max, weapon);
+		}
+
+		private struct AmmoCand { public int Type; public float Score; }
+
+		/// <summary>The distinct ammo types of this class the armory network can hand out (issue slots, storage, networked armories, Magic Storage), best first; equal scores keep source order (issue slots first).</summary>
+		private List<AmmoCand> RankedAmmo(int ammoId, Item weapon)
+		{
+			var list = new List<AmmoCand>();
+			var seen = new HashSet<int>();
+			void Add(Item it) { if (!IsAir(it) && it.ammo == ammoId && !it.IsACoin && seen.Add(it.type)) list.Add(new AmmoCand { Type = it.type, Score = AmmoRank.Score(weapon, it) }); }
+			foreach (var it in IssueAmmo) Add(it);
+			foreach (var it in Storage) Add(it);
+			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) Add(it);
+			if (MagicStorageBridge.Enabled) { var heart = MsHeart(); if (heart != null) foreach (var it in MagicStorageBridge.Snapshot(heart)) Add(it); }
+			// stable, descending
+			for (int i = 1; i < list.Count; i++) { var k = list[i]; int j = i - 1; while (j >= 0 && list[j].Score < k.Score) { list[j + 1] = list[j]; j--; } list[j + 1] = k; }
+			return list;
+		}
+
+		/// <summary>Swaps an unlocked pouch of a lesser type for the best clearly better type in stock. The old rounds go back to storage first; if they do not all fit, or the better type cannot be drawn, nothing changes.</summary>
+		private int UpgradeAmmo(Item pouch, int ammoId, int max, Item weapon)
+		{
+			float cur = AmmoRank.Score(weapon, pouch);
+			int want = -1;
+			foreach (var c in RankedAmmo(ammoId, weapon)) {
+				if (c.Score < cur * AmmoRank.UpgradeMargin) break; // sorted: nothing further down is better enough
+				if (c.Type != pouch.type) { want = c.Type; break; }
+			}
+			if (want < 0) return 0;
+			var old = pouch.Clone();
+			var rest = Deposit(old.Clone());
+			if (!IsAir(rest)) { pouch.stack = rest.stack; return 0; } // storage is full: the part that did not fit stays in the pouch, type unchanged
+			pouch.TurnToAir();
+			int got = TakeAmmoOfType(ammoId, want, pouch, max);
+			if (got > 0) return got;
+			// the better ammo could not be drawn (fair share, a race): take the old rounds back exactly as they were
+			Drain(Storage, ammoId, pouch, old.stack, old.type);
+			Drain(IssueAmmo, ammoId, pouch, old.stack, old.type);
+			return 0;
+		}
+
+		/// <summary>The legacy fill for one ammo class, narrowed to <paramref name="type"/> when it is not negative (and to the pouch's own type once it has one).</summary>
+		private int TakeAmmoOfType(int ammoId, int type, Item pouch, int max)
+		{
 			if (!FairShareOff)
 			{
-				int fair = FairAmmoLimit(ammoId, max);
-				if (fair < max) ReclaimExcessAmmo(ammoId, pouch, fair); // scarce stock: the levy who filled his pouch first does not keep the army's whole stock
+				int fair = FairAmmoLimit(ammoId, max, type);
+				if (fair < max) ReclaimExcessAmmo(ammoId, pouch, fair, type); // scarce stock: the levy who filled his pouch first does not keep the army's whole stock
 				max = Math.Min(max, fair); // scarce stock is split evenly; the asker's own pouch above the share is simply not topped up (Drain never takes back)
 			}
-			int moved = Drain(IssueAmmo, ammoId, pouch, max);
-			moved += Drain(Storage, ammoId, pouch, max);
+			int moved = Drain(IssueAmmo, ammoId, pouch, max, type);
+			moved += Drain(Storage, ammoId, pouch, max, type);
 			if (moved > 0) MarkDirty();
 			// Networked armories top the pouch up; Drain only moves what it removes, and only a source that lost ammo is marked dirty.
 			foreach (var o in OtherNetworked()) {
-				int n = Drain(o.Storage, ammoId, pouch, max);
+				int n = Drain(o.Storage, ammoId, pouch, max, type);
 				if (n > 0) { o.MarkDirty(); moved += n; }
 			}
-			if (MagicStorageBridge.Enabled) moved += MsTakeAmmo(ammoId, pouch, max); // then a connected Magic Storage network
+			if (MagicStorageBridge.Enabled) moved += MsTakeAmmo(ammoId, pouch, max, type); // then a connected Magic Storage network
 			return moved;
 		}
 
@@ -1126,12 +1227,12 @@ namespace Levy.Content.TileEntities
 		/// pouch while he was the only user cannot leave the rest of the army with none (and with nothing to upgrade onto: the allocation never plans a gun the levy has no ammo for).
 		/// A hand-assigned pouch is the player's call and is left alone; if storage is full the excess stays where it was.
 		/// </summary>
-		private void ReclaimExcessAmmo(int ammoId, Item asker, int fair)
+		private void ReclaimExcessAmmo(int ammoId, Item asker, int fair, int type = -1)
 		{
 			foreach (var s in ServedSoldiers()) {
 				var g = s?.Gear;
 				var p = g?.Ammo;
-				if (g == null || ReferenceEquals(p, asker) || IsAir(p) || p.ammo != ammoId || p.stack <= fair || g.IsLocked(SoldierGear.SlotAmmo)) continue;
+				if (g == null || ReferenceEquals(p, asker) || IsAir(p) || p.ammo != ammoId || (type >= 0 && p.type != type) || p.stack <= fair || g.IsLocked(SoldierGear.SlotAmmo)) continue;
 				var back = p.Clone();
 				int excess = p.stack - fair;
 				back.stack = excess;
@@ -1144,12 +1245,13 @@ namespace Levy.Content.TileEntities
 			}
 		}
 
-		private static int Drain(Item[] arr, int ammoId, Item pouch, int max)
+		private static int Drain(Item[] arr, int ammoId, Item pouch, int max, int onlyType = -1)
 		{
 			int moved = 0;
 			for (int i = 0; i < arr.Length; i++) {
 				var it = arr[i];
 				if (IsAir(it) || it.ammo != ammoId) continue;
+				if (onlyType >= 0 && it.type != onlyType) continue;
 				if (!IsAir(pouch) && pouch.type != it.type) continue;
 				if (IsAir(pouch)) { pouch.SetDefaults(it.type); pouch.stack = 0; }
 				int room = Math.Min(max, pouch.maxStack) - pouch.stack;
@@ -1824,7 +1926,7 @@ namespace Levy.Content.TileEntities
 					}
 					if (IsAir(g.Ammo) || g.Ammo.ammo == ammoId) {
 						if (IsAir(g.Ammo)) g.Ammo = new Item();
-						if (TakeAmmo(ammoId, g.Ammo, LevyConstants.AmmoPouchMax) > 0) changed = true;
+						if (TakeAmmoFor(g, ammoId, LevyConstants.AmmoPouchMax) > 0) changed = true;
 					}
 				}
 				else if (g.HasWeapon && !IsAir(g.Ammo)) {

@@ -195,8 +195,27 @@ namespace Levy.Common.Targeting
 			return null;
 		}
 
-		/// <summary>True when a Spectator should be hidden from this NPC's search: never from an undowned boss.</summary>
-		internal static bool HidesSpectatorFrom(NPC npc) => !IsUndownedBoss(npc);
+		/// <summary>
+		/// True when a Spectator should be hidden from this NPC's search: never from an undowned boss, and never from a boss-class NPC the army cannot take over (<see cref="IsBossClass"/> but not
+		/// <see cref="IsAllowlisted"/>). Hiding the only player from such an NPC leaves it with "no valid target", and boss AIs answer that by leaving: Calamity's Slime God Paladins entered their despawn
+		/// state (ai[0] 3/4) within six ticks of spawning and fell out of the world whenever the commander was a Spectator, so the Core stayed invulnerable and the fight could not happen.
+		/// An NPC that is not hidden from simply sees the spectator as any player (who takes no damage), exactly as it would see the commander without the potion.
+		/// </summary>
+		internal static bool HidesSpectatorFrom(NPC npc) => !IsUndownedBoss(npc) && !(IsBossClass(npc) && !IsAllowlisted(npc));
+
+		/// <summary>
+		/// A boss, a boss part or segment, or something a boss spawned (its minions and their children: <see cref="LevyNpcData.BossKin"/>, marked on spawn). Unlike <see cref="IsAllowlisted"/>'s guards this is
+		/// a plain classification: it says nothing about whether the army may target it.
+		/// </summary>
+		internal static bool IsBossClass(NPC npc)
+		{
+			if (npc == null || !npc.active || npc.friendly || npc.townNPC) return false;
+			int type = npc.type;
+			if (type < 0 || type >= NPCID.Sets.ShouldBeCountedAsBoss.Length) return false;
+			if (npc.boss || NPCID.Sets.ShouldBeCountedAsBoss[type] || _bossParts.Contains(type)) return true;
+			if (npc.realLife >= 0 && npc.realLife < Main.maxNPCs && Main.npc[npc.realLife].active && Main.npc[npc.realLife].boss) return true;
+			return LevyNpcData.Of(npc).BossKin;
+		}
 
 		/// <summary>
 		/// A boss, boss part or boss segment (the four exclusion guards of <see cref="IsAllowlisted"/>) that the army may draw. Needs the unlock; then any AI style
@@ -660,6 +679,12 @@ namespace Levy.Common.Targeting
 	/// <summary>Puts the targeted soldier's dummy into Main.player[255] for exactly one AI call of the enemy that targets it.</summary>
 	public class EnemyTargetingGlobalNPC : GlobalNPC
 	{
+		/// <summary>Marks what a boss-class NPC spawns (Calamity's Slime God Core spawns the Paladins, a Paladin its split slimes) so <see cref="EnemyTargeting.IsBossClass"/> knows the family.</summary>
+		public override void OnSpawn(NPC npc, Terraria.DataStructures.IEntitySource source)
+		{
+			if (source is Terraria.DataStructures.EntitySource_Parent p && p.Entity is NPC parent && parent.whoAmI != npc.whoAmI && EnemyTargeting.IsBossClass(parent)) LevyNpcData.Of(npc).BossKin = true;
+		}
+
 		public override bool PreAI(NPC npc)
 		{
 			if (EnemyTargeting.DiagOn) Potions.SpectatorDiagnostic.NotePreAI(npc);

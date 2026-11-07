@@ -65,6 +65,31 @@ namespace Levy.Common.Testing
 			return "";
 		}
 
+		/// <summary>ammo=mixed / mixedm: the armory holds a mixed hoard in the order a player collects it (plain first), levies carry no hand-assigned pouch and are served by the armory. mixedm adds the not-tier-legal Meteor Shot and Hellfire Arrow.</summary>
+		private static readonly string[] L3MixedLegal = { "Musket Ball", "Wooden Arrow", "Silver Bullet", "Flaming Arrow", "Bone Arrow", "Unholy Arrow", "Jester's Arrow" };
+		private static readonly string[] L3MixedExtra = { "Meteor Shot", "Hellfire Arrow" };
+		private void L3StockMixed(CrRun run)
+		{
+			var names = L3MixedLegal.Concat(run.AmmoMode == "mixedm" ? L3MixedExtra : new string[0]).Where(n => CrTryItemId(n, out _)).ToList();
+			foreach (var te in TileEntity.ByID.Values.OfType<ArmoryTE>())
+			{
+				Array.Clear(te.Storage, 0, te.Storage.Length); for (int i = 0; i < te.Storage.Length; i++) te.Storage[i] = new Item();
+				for (int i = 0; i < te.IssueAmmo.Length; i++) te.IssueAmmo[i] = new Item();
+				for (int i = 0; i < names.Count; i++) te.Storage[i] = CrMake(names[i], 4000);
+			}
+			Mod.Logger.Info($"{L3Log}mixed ammo armory: {string.Join(", ", names)} (4000 each, storage order)");
+		}
+
+		private void Lab3MixedPouch(SoldierRecord rec, CrLevySpec spec, Item w)
+		{
+			if (w.useAmmo <= 0 || w.useAmmo == AmmoID.None) return;
+			var te = TileEntity.ByID.Values.OfType<ArmoryTE>().FirstOrDefault(); if (te == null) { Mod.Logger.Warn(L3Log + "mixed: no armory"); return; }
+			rec.Gear.Ammo ??= new Item();
+			int got = te.TakeAmmoFor(rec.Gear, w.useAmmo, LevyConstants.AmmoPouchMax);
+			spec.Ammo = rec.Gear.Ammo.IsAir ? "" : rec.Gear.Ammo.Name;
+			Mod.Logger.Info($"{L3Log}mixed pouch: {spec.Weapon} gets {rec.Gear.Ammo.stack}x {(rec.Gear.Ammo.IsAir ? "nothing" : rec.Gear.Ammo.Name)} (took {got}, best-ammo {(global::Levy.Common.Soldiers.AmmoRank.Off ? "OFF" : "on")})");
+		}
+
 		private static readonly string[] L3Sulph = { "CalamityMod/SulphurousHelmet", "CalamityMod/SulphurousBreastplate", "CalamityMod/SulphurousLeggings" };
 
 		/// <summary>The lab-3 army: the tier tables of lab 2, piercing weapons weighted x3 for worms/creepers, class accessory, chosen ammo, supply targets, optional rogue levies.</summary>
@@ -102,7 +127,7 @@ namespace Levy.Common.Testing
 					list[idx] = new CrLevySpec { Cls = 'T', Weapon = wn, Ammo = "", Armor = armor.All(a => CrTryItemId(a, out _)) ? armor : CrWulfrum, Acc = new string[0], LifeCrystals = old.LifeCrystals, ManaCrystals = old.ManaCrystals, Potions = old.Potions, Potion = old.Potion };
 				}
 			}
-			foreach (var sp in list) { if (sp.Cls == 'R') { try { Item w = CrMake(sp.Weapon); sp.Ammo = L3Ammo(w, r, tier); if (sp.Ammo == "" && w.useAmmo != AmmoID.None) sp.Ammo = CrDefaultAmmo(w.useAmmo); } catch { } } }
+			foreach (var sp in list) { if (sp.Cls == 'R') { try { Item w = CrMake(sp.Weapon); if (r.Mixed) { sp.Ammo = ""; continue; } sp.Ammo = L3Ammo(w, r, tier); if (sp.Ammo == "" && w.useAmmo != AmmoID.None) sp.Ammo = CrDefaultAmmo(w.useAmmo); } catch { } } }
 			return list;
 		}
 
@@ -196,6 +221,7 @@ namespace Levy.Common.Testing
 			int arm = TileEntity.ByID.Values.Count(t => t is ArmoryTE);
 			Mod.Logger.Info($"{L3Log}stations (level {level}) armories={arm} placed={placed.Count} [{string.Join(",", placed.Distinct())}] failed=[{string.Join(",", failed.Distinct())}]");
 			_l3StationNote = $"L{level}:arm{arm}:ok{placed.Count}:fail{failed.Count}";
+			if (run.Mixed) L3StockMixed(run);
 		}
 
 		private static void StationBuffSystemReset()

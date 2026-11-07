@@ -52,9 +52,9 @@ namespace Levy.Common.Testing
 
 		internal sealed class CrRun
 		{
-			public int Mp, BossDef = -1; public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public string Fm = "", Surv = ""; public int Vet = -1; public bool Dbg, Diag; public bool L3; public int Food, RogueN; public bool Hazard; public string AmmoMode = "best", Mods = ""; public List<CrLevySpec> Specs; public string Desc = "";
+			public int Mp, BossDef = -1; public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public string Fm = "", Surv = ""; public int Vet = -1; public bool Dbg, Diag; public bool L3; public int Food, RogueN; public bool Hazard; public string AmmoMode = "best", Mods = ""; public bool NoSpec, OldAmmo; public int Bts = -1; public bool Mixed => AmmoMode == "mixed" || AmmoMode == "mixedm"; public List<CrLevySpec> Specs; public string Desc = "";
 			public string Key => $"{Kind}|{Boss}|{Mode}|{Order}|{Seed}|{Cap}" + (N != 10 ? "|n" + N : "") + (HpX != 1f ? "|hp" + HpX.ToString(CultureInfo.InvariantCulture) : "") + (Dr != 0f ? "|dr" + Dr.ToString(CultureInfo.InvariantCulture) : "")
-				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (Mp > 0 ? "|mp" + Mp : "") + (BossDef >= 0 ? "|bdef" + BossDef : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "") + (Fear >= 0f ? "|fe" + Fear.ToString(CultureInfo.InvariantCulture) : "") + (Fm != "" ? "|fm" + Fm : "") + (Surv != "" ? "|sv" + Surv : "") + (Vet >= 0 ? "|vt" + Vet : "") + (L3 ? "|L3" : "") + (Food > 0 ? "|food" + Food : "") + (Hazard ? "|hz" : "") + (RogueN > 0 ? "|rg" + RogueN : "") + (L3 && AmmoMode != "best" ? "|am" + AmmoMode : "");
+				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (Mp > 0 ? "|mp" + Mp : "") + (BossDef >= 0 ? "|bdef" + BossDef : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "") + (Fear >= 0f ? "|fe" + Fear.ToString(CultureInfo.InvariantCulture) : "") + (Fm != "" ? "|fm" + Fm : "") + (Surv != "" ? "|sv" + Surv : "") + (Vet >= 0 ? "|vt" + Vet : "") + (L3 ? "|L3" : "") + (Food > 0 ? "|food" + Food : "") + (Hazard ? "|hz" : "") + (RogueN > 0 ? "|rg" + RogueN : "") + (L3 && AmmoMode != "best" ? "|am" + AmmoMode : "") + (OldAmmo ? "|oldammo" : "") + (NoSpec ? "|nospec" : "") + (Bts >= 0 ? "|bts" + Bts : "");
 		}
 		/// <summary>The plainest ammo item for an ammo type (cw= runs and fallbacks): the lowest-damage vanilla item with that ammo type, else the first modded one.</summary>
 		private static string CrDefaultAmmo(int useAmmo)
@@ -98,7 +98,7 @@ namespace Levy.Common.Testing
 						string k = f[x].Substring(0, eq), v = f[x].Substring(eq + 1);
 						if (k == "order") r.Order = v; else if (k == "n") r.N = v == "cp" ? CrRealMax(r.Boss) : int.Parse(v); else if (k == "hpx") r.HpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "dr") r.Dr = float.Parse(v, CultureInfo.InvariantCulture);
 						else if (k == "clone") r.Clone = v[0]; else if (k == "cmd") r.Cmd = v; else if (k == "arena") r.Arena = v; else if (k == "gear") r.Gear = v; else if (k == "grade") r.Grade = v;
-						else if (k == "mp") r.Mp = int.Parse(v); else if (k == "bdef") r.BossDef = int.Parse(v); else if (k == "cw") r.CloneWeapon = v; else if (k == "side") r.Side = v; else if (k == "jungle") r.Jungle = v == "1"; else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fear") r.Fear = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fm") r.Fm = v; else if (k == "surv") r.Surv = v; else if (k == "vet") r.Vet = int.Parse(v); else if (k == "l3") r.L3 = v == "1"; else if (k == "food") r.Food = int.Parse(v); else if (k == "hazard") r.Hazard = v == "1"; else if (k == "rogue") r.RogueN = int.Parse(v); else if (k == "ammo") r.AmmoMode = v;
+						else if (k == "mp") r.Mp = int.Parse(v); else if (k == "bdef") r.BossDef = int.Parse(v); else if (k == "cw") r.CloneWeapon = v; else if (k == "side") r.Side = v; else if (k == "jungle") r.Jungle = v == "1"; else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fear") r.Fear = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fm") r.Fm = v; else if (k == "surv") r.Surv = v; else if (k == "vet") r.Vet = int.Parse(v); else if (k == "l3") r.L3 = v == "1"; else if (k == "food") r.Food = int.Parse(v); else if (k == "hazard") r.Hazard = v == "1"; else if (k == "rogue") r.RogueN = int.Parse(v); else if (k == "ammo") r.AmmoMode = v; else if (k == "spec") r.NoSpec = v == "0"; else if (k == "oldammo") r.OldAmmo = v == "1"; else if (k == "bts") r.Bts = int.Parse(v);
 					}
 					if (r.Gear == "mod" && r.Grade == "mix") r.Grade = "lv";
 					r.Specs = r.L3 ? Lab3Roll(r) : r.Gear == "mod" ? CrRollTier(r.Boss, r.Seed, r.N, r.HpX, r.Grade == "lv") : CrRoll(r.Boss, r.Seed, r.N, r.HpX);
@@ -388,7 +388,8 @@ namespace Levy.Common.Testing
 			p.velocity = Vector2.Zero; p.immune = true; p.immuneTime = 30;
 			CrApplyZones(p); // Brain of Cthulhu flees a target outside the Crimson, Desert Scourge enrages outside the desert; the dummy copies the commander's zones (BiomeMirror)
 			int bt = ModContent.BuffType<SpectatorBuff>();
-			if (!p.HasBuff(bt)) { p.AddBuff(bt, 600000); if (p.TryGetModPlayer(out SpectatorPlayer sp)) sp.Anchor = p.Center; }
+			if (_crRunCur != null && _crRunCur.NoSpec) { if (p.HasBuff(bt)) p.ClearBuff(bt); } // spec=0: the commander is an ordinary visible player
+			else if (!p.HasBuff(bt)) { p.AddBuff(bt, 600000); if (p.TryGetModPlayer(out SpectatorPlayer sp)) sp.Anchor = p.Center; }
 		}
 
 		// -------------------------------------------------------------------------------------------------- step
@@ -438,7 +439,7 @@ namespace Levy.Common.Testing
 			var gear = rec.Gear;
 			Item w = CrMake(spec.Weapon);
 			if (!gear.CanHold(SoldierGear.SlotWeapon, w)) { Mod.Logger.Warn($"HARNESS-CR: levy cannot hold {spec.Weapon}; fallback {CrFallbackWeapon(spec.Cls)}"); spec.Weapon = CrFallbackWeapon(spec.Cls); spec.Ammo = spec.Cls == 'R' ? "Silver Bullet" : ""; w = CrMake(spec.Weapon); }
-			if (string.IsNullOrEmpty(spec.Ammo) && w.useAmmo != AmmoID.None) spec.Ammo = CrDefaultAmmo(w.useAmmo); // cw=<ammo weapon>: the levy gets a pouch the weapon can use
+			if (string.IsNullOrEmpty(spec.Ammo) && w.useAmmo != AmmoID.None && !run.Mixed) spec.Ammo = CrDefaultAmmo(w.useAmmo); // cw=<ammo weapon>: the levy gets a pouch the weapon can use
 			gear.Weapon = w; gear.SetLocked(SoldierGear.SlotWeapon, true);
 			if (!string.IsNullOrEmpty(run.Side) && spec.Cls == 'E')
 			{
@@ -474,6 +475,7 @@ namespace Levy.Common.Testing
 			}
 			RosterSystem.Instance.Regulars.Add(rec);
 			if (run.L3) Lab3Supply(rec, spec);
+			if (run.Mixed) Lab3MixedPouch(rec, spec, w);
 			float off = (slot - (count - 1) / 2f) * 3f * 16f;
 			Vector2 at = new Vector2(center.X + off, center.Y);
 			int idx = RosterSystem.Instance.SpawnBody(rec, at);
@@ -555,6 +557,17 @@ namespace Levy.Common.Testing
 			int adds = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && st.AddTypes.Contains(Main.npc[i].type)) adds++;
 			st.AddsPeak = Math.Max(st.AddsPeak, adds); st.MaxAdds = st.AddsPeak;
 			CrSampleTick(st, e, bossAlive, adds);
+			if (run.Boss == "sg" && (st.Tick == 6 || st.Tick == 60 || st.Tick % 600 == 0))
+			{
+				// slime-god probe: the Paladins' AI state. ai[0] 3/4 is the despawn state (no valid target); Core hp shows whether the shield is down.
+				var sb = new System.Text.StringBuilder();
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC q = Main.npc[i]; if (!q.active || q.ModNPC == null || q.ModNPC.Mod.Name != "CalamityMod" || !(q.ModNPC.Name.Contains("Paladin") || q.ModNPC.Name.Contains("SlimeGod"))) continue;
+					sb.Append($" {q.ModNPC.Name}#{i}[hp {q.life}/{q.lifeMax} ai0={q.ai[0]} tgt={q.target} inv={q.dontTakeDamage} opac={q.Opacity:0.0} kin={(global::Levy.Common.Globals.LevyNpcData.Of(q).BossKin)}]");
+				}
+				Mod.Logger.Info($"HARNESS-SG: tick {st.Tick}{sb}");
+			}
 			int alive = 0;
 			foreach (var l in st.Levies)
 			{

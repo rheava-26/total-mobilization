@@ -69,6 +69,35 @@
   - 40+ notable replays in scratchpad/replays/notable (with index.txt).
   - Lead watched the Rev Brain n13 replay: the Brain stays at 4144/4144 the whole fight while its ai0 cycles 1/2/5/6 and it targets levies. Creepers are not recorded (boss parts only), so the creeper phase is invisible in replays. Asked the lab whether creepers respawn or the levies are just too slow.
   - Quirk: the index shows DS max HP 121600 in one cell (segment lifeMax summed: 19 × 6400). Reporting only.
+- **BOSS LAB DONE (~500 fights, merged 48154d7 → levy-stardust; docs/boss_lab/RESULTS.md, LOADOUTS.md; 30 notable replays in scratchpad/replays/notable).** Calamity tier gear, 613 lookups, 0 unknown names.
+  - **Real CP counts:** KS 10, DS 11, Eye 11, EoW/Brain 13, QB 15, Skeletron 16.
+  - **Results at the real count** (wins, commander far):
+
+    | Boss | Expert | Rev | Death |
+    |---|---|---|---|
+    | KS | 0/6 (timeouts; slimes distract) | 5/6 | 2/3 |
+    | DS | 0 | 0 | 0 |
+    | Eye | 3/3 | 2/9 | 2/9 |
+    | EoW | 0 | 0 | 0 |
+    | Brain | 6/6 | 1/9 | 0/3 |
+    | QB | 0/6 | 0/6 | 1/3 |
+
+    Skeletron Expert 4/6. Skeletron Rev/Death not run: Calamity overrides Skeletron only in single player.
+  - **16 vs 19 (Eye):** Expert kill time −12%, deaths the same; Rev wins 9/14 → 14/14; Death 4/6 → 6/6. Extra levies buy survival in Rev/Death, not speed.
+  - **Flattening = boss HP scaling** (+2%/levy). Predicted 16→19 speedup 0.88; measured 0.88.
+    - NOT shared i-frames or projectile caps: Boomstick dmg/s scales ~linearly to n24, ~25 hits/s.
+    - Crowding/approach costs a one-time ~2× from 1 to 8 levies.
+  - **Worms:** EoW is as lethal as DS. Surface = underground. 70–85% of levy hits land on body segments. Wipes in 15–70 s.
+  - **Rev Brain:** NO enrage flag (Calamity source). Its ~0 damage taken is a creeper-shield race: dontTakeDamage 91–100% in wipes; levies kill 0–0.4 creepers/s; creepers respawn to 18 until the Brain's 70% gate.
+  - **SPECTATOR LEAK ROOT CAUSE:**
+    - Calamity only re-searches on an invalid target, and Levy's soft weighting keeps a closer commander.
+    - The "hidden-window" was never used.
+    - Near-commander cells over-protect levies.
+    - → builder `spec-calfix` launched (based on mobility4).
+  - **Other anomalies:**
+    - UrchinMace (melee) does 0 damage to the hovering Eye.
+    - QB Expert wipes 15 levies (not investigated).
+    - A 5–11% residual of worm damage has no attacker.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

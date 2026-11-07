@@ -16,7 +16,7 @@ namespace Mechanization.Common
 		public static class Relay
 		{
 			/// <summary>How far a relay looks for the Armory it links to, in tiles. Wider than a turret's own Armory reach, so a relay can bridge a frontier turret back to a far base.</summary>
-			public const float LinkReachTiles = 600f;
+			public const float LinkReachTiles = 1000f;
 			/// <summary>Turrets and drones within this many tiles of a relay treat its linked Armory as in reach.</summary>
 			public const float ServeRadiusTiles = 25f;
 			/// <summary>Pulse period of the relay's lamp, in ticks.</summary>

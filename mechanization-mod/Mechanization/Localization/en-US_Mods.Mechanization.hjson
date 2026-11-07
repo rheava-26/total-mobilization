@@ -5,7 +5,7 @@ Items: {
 		DisplayName: Armory Relay
 		Tooltip:
 			'''
-			Links to the nearest armory within 600 tiles, or to your pylon network.
+			Links to the nearest armory within 1000 tiles, or to your pylon network.
 			Turrets and drones within 25 tiles of it draw from that armory.
 			'''
 	}

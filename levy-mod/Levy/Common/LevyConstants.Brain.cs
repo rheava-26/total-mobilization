@@ -251,6 +251,8 @@ namespace Levy.Common
 		public const float SpreadOutFollowSpacingTiles = 6f;
 		/// <summary>... never farther than this from the commander (tiles); keeps it inside FollowChaseLimit.</summary>
 		public const float SpreadOutFollowMaxTiles = 24f;
+		/// <summary>A spread-out follower stops within this many tiles of its slot and walks again past the second (slots are SpreadOutFollowSpacingTiles apart).</summary>
+		public const float SpreadOutFollowStopTiles = 1.2f, SpreadOutFollowStartMoveTiles = 2.5f;
 
 		// ---------- Combat orders: Search & Destroy ----------
 		/// <summary>A searching soldier never strays farther than this from its search anchor (the settlement muster point, or where the order found it).</summary>

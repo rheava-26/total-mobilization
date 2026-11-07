@@ -31,7 +31,7 @@ namespace Levy.Common.Testing
 		private bool _faReal; private int _hookDrawOk;
 		internal static bool RealOn;
 
-		private sealed class RealBoss { public string Key, Label; public Func<int> Type; public float Frac = 1f; public bool Mob; public int MobCount; public int SpawnUpTiles; public int SpawnAcross = 30; }
+		private sealed class RealBoss { public string Key, Label; public Func<int> Type; public float Frac = 1f; public bool Mob; public int MobCount; public int SpawnUpTiles; public int SpawnAcross = 30; /* phase-2 cells start at full life in phase 1 and drop to Frac at this tick, so the boss makes its own transition */ public int PhaseAt; }
 
 		private static int ModNpc(string mod, string name) { try { return ModLoader.TryGetMod(mod, out Mod m) && m.TryFind(name, out ModNPC n) ? n.Type : -1; } catch { return -1; } }
 
@@ -39,13 +39,13 @@ namespace Levy.Common.Testing
 		{
 			new RealBoss { Key = "kingslime", Label = "King Slime", Type = () => NPCID.KingSlime, SpawnUpTiles = 4 },
 			new RealBoss { Key = "eoc", Label = "Eye of Cthulhu p1", Type = () => NPCID.EyeofCthulhu, SpawnUpTiles = 9 },
-			new RealBoss { Key = "eoc2", Label = "Eye of Cthulhu p2", Type = () => NPCID.EyeofCthulhu, Frac = 0.4f, SpawnUpTiles = 9 },
+			new RealBoss { Key = "eoc2", Label = "Eye of Cthulhu p2", Type = () => NPCID.EyeofCthulhu, Frac = 0.4f, PhaseAt = 120, SpawnUpTiles = 9 },
 			new RealBoss { Key = "brain", Label = "Brain of Cthulhu", Type = () => NPCID.BrainofCthulhu, SpawnUpTiles = 14 },
-			new RealBoss { Key = "brain2", Label = "Brain of Cthulhu p2", Type = () => NPCID.BrainofCthulhu, Frac = 0.4f, SpawnUpTiles = 14 },
+			new RealBoss { Key = "brain2", Label = "Brain of Cthulhu p2", Type = () => NPCID.BrainofCthulhu, Frac = 0.4f, PhaseAt = 120, SpawnUpTiles = 14 },
 			new RealBoss { Key = "eow", Label = "Eater of Worlds", Type = () => NPCID.EaterofWorldsHead, SpawnUpTiles = 10 },
 			new RealBoss { Key = "queenbee", Label = "Queen Bee", Type = () => NPCID.QueenBee, SpawnUpTiles = 14 },
 			new RealBoss { Key = "skeletron", Label = "Skeletron", Type = () => NPCID.SkeletronHead, SpawnUpTiles = 14 },
-			new RealBoss { Key = "skeletron2", Label = "Skeletron spinning", Type = () => NPCID.SkeletronHead, Frac = 0.3f, SpawnUpTiles = 14 },
+			new RealBoss { Key = "skeletron2", Label = "Skeletron spinning", Type = () => NPCID.SkeletronHead, Frac = 0.3f, PhaseAt = 120, SpawnUpTiles = 14 },
 			new RealBoss { Key = "deerclops", Label = "Deerclops", Type = () => NPCID.Deerclops, SpawnUpTiles = 4 },
 			new RealBoss { Key = "desertscourge", Label = "Desert Scourge", Type = () => ModNpc("CalamityMod", "DesertScourgeHead"), SpawnUpTiles = 3, SpawnAcross = 40 },
 			new RealBoss { Key = "crabulon", Label = "Crabulon", Type = () => ModNpc("CalamityMod", "Crabulon"), SpawnUpTiles = 4 },
@@ -197,7 +197,7 @@ namespace Levy.Common.Testing
 						if (i < 0 || i >= Main.maxNPCs) throw new Exception("boss spawn failed " + rb.Key);
 						bossIdx = i; _faStandin = i;
 						NPC n = Main.npc[i]; n.dontTakeDamage = false; n.defense = 0; n.value = 0f;
-						n.lifeMax = 2_000_000; n.life = (int)(n.lifeMax * rb.Frac); prevBossLife = n.life;
+						n.lifeMax = 2_000_000; n.life = (int)(n.lifeMax * (rb.PhaseAt > 0 ? 1f : rb.Frac)); prevBossLife = n.life;
 					}
 					else for (int m = 0; m < rb.MobCount; m++) FaSpawnMob(rb, mobs, m);
 				},
@@ -216,7 +216,11 @@ namespace Levy.Common.Testing
 						{
 							bn.timeLeft = 3000; bn.dontTakeDamage = false;
 							if (prevBossLife > 0 && bn.life < prevBossLife) bossDmg += prevBossLife - bn.life;
-							if (bn.life < bn.lifeMax * (rb.Frac - 0.08f)) bn.life = (int)(bn.lifeMax * rb.Frac);
+							float keepFrac = rb.PhaseAt > 0 && t < rb.PhaseAt ? 1f : rb.Frac;
+							if (rb.PhaseAt > 0 && t == rb.PhaseAt) bn.life = (int)(bn.lifeMax * rb.Frac);   // the transition: the boss's own AI reacts to the drop
+							else if (bn.life < bn.lifeMax * (keepFrac - 0.08f)) bn.life = (int)(bn.lifeMax * keepFrac);
+							// Skeletron's chase phase lasts 800 ticks of its own counter and then spins; compress it so a 60 s cell sees hands, chase AND spin repeatedly, as a long real fight does
+							if (rb.Key.StartsWith("skeletron") && bn.ai[1] == 0f && bn.ai[2] > 450f) bn.ai[2] = 801f;
 							prevBossLife = bn.life;
 							float sp = bn.velocity.Length(); bossPeakV = Math.Max(bossPeakV, sp); if (sp > 4.5f) bossFastTicks++;
 							foreach (var th in ThreatField.Snapshot()) if (th.Body && Vector2.Distance(th.P, bn.Center) < 30f) { fieldSeesBoss++; break; }
@@ -344,13 +348,13 @@ namespace Levy.Common.Testing
 	{
 		public override void PreUpdateNPCs()
 		{
-			if (!CombatHarness.RealOn) return;
+			if (!CombatHarness.RealOn && !CombatHarness.BtOn) return;   // boss trials need it too: with no active player a dedicated server despawns the boss in its first NPC update (CheckActive)
 			Player p = Main.player[0]; p.active = true; p.dead = false; p.ghost = false;
 		}
 	}
 
 	public class RealFightWatch : GlobalNPC
 	{
-		public override bool CheckActive(NPC npc) => !(CombatHarness.RealOn && !npc.friendly && !npc.townNPC && !(npc.ModNPC is SoldierNPC));
+		public override bool CheckActive(NPC npc) => !((CombatHarness.RealOn || CombatHarness.BtOn) && !npc.friendly && !npc.townNPC && !(npc.ModNPC is SoldierNPC));
 	}
 }

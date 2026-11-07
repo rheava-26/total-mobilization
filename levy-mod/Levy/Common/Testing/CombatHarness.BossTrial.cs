@@ -565,6 +565,7 @@ namespace Levy.Common.Testing
 				if (ei < 0 || ei >= Main.maxNPCs) throw new Exception("boss spawn failed");
 				NPC boss = Main.npc[ei]; s.BossIdx = ei; s.BossLifeMax = boss.lifeMax; s.BossLife = boss.life;
 				boss.timeLeft = 99999;
+				Mod.Logger.Info($"HARNESS-BT-DBG0 spawn idx={ei} active={boss.active} life={boss.life}/{boss.lifeMax} aiStyle={boss.aiStyle} pos={boss.Center / 16f} tileSolid={Terraria.WorldGen.SolidTile((int)(boss.Center.X / 16f), (int)(boss.Center.Y / 16f))}");
 				_btS = s; _bt = s; _btStarted = true; _btTickInRun = 0;
 				if (run.Auto) BtAutonomy(s);
 				global::Levy.Common.Recording.FightRecAuto.Tag(("arena", run.Arena), ("seed", run.Seed), ("mode", run.Diff), ("order", run.Order), ("cfg", run.CfgId)); // fight recorder labels (no-op unless LEVY_REC_DIR is set)
@@ -574,13 +575,15 @@ namespace Levy.Common.Testing
 				return;
 			}
 			var st = _btS; st.Tick = ++_btTickInRun;
+			if (st.Tick <= 2) { NPC e0 = Main.npc[st.BossIdx]; Mod.Logger.Info($"HARNESS-BT-DBG0 pre t{st.Tick} active={e0.active} life={e0.life}"); }
 			BtPinCommander(run.Spec && !run.Real);
 			if (run.Auto && st.Tick % PotionConstants.AutonomousPulseTicks == 0) BtAutonomy(st);
 			BtPinStrays(st.BossIdx);
 			NPC e = Main.npc[st.BossIdx];
 			bool bossAlive = e.active && e.type == st.BossType;
+			if (st.Tick <= 3) Mod.Logger.Info($"HARNESS-BT-DBG0 t{st.Tick} idx={st.BossIdx} active={e.active} type={e.type} want={st.BossType} life={e.life}/{e.lifeMax} day={Main.dayTime} time={Main.time:0} timeLeft={e.timeLeft} dontTake={e.dontTakeDamage} players={Main.player[0].active}/{Main.player[0].dead}");
 			if (bossAlive) { st.BossLife = e.life; st.BossLifeMax = Math.Max(st.BossLifeMax, e.lifeMax); e.timeLeft = 99999; if (st.HalfTick < 0 && e.life * 2 <= e.lifeMax) st.HalfTick = st.Tick; }
-			else if (!st.BossGone) { st.BossGone = true; st.EndTick = st.Tick; st.Result = e.life <= 0 ? "WIN" : "DESPAWN"; st.BossLife = Math.Max(0, e.life); }
+			else if (!st.BossGone) { st.BossGone = true; st.EndTick = st.Tick; st.Result = st.Tick <= 5 ? "INVALID-DESPAWN-ON-SPAWN" : e.life <= 0 ? "WIN" : "DESPAWN"; st.BossLife = Math.Max(0, e.life); }
 			if (run.Boss == "brain" && (st.Tick % 60 == 0 || !bossAlive && st.Tick == st.EndTick)) Mod.Logger.Info($"HARNESS-BT-DBG t{st.Tick} brain active={e.active} type={e.type} life={e.life}/{e.lifeMax} pos={e.Center / 16f} ai={e.ai[0]}/{e.ai[1]}/{e.ai[2]}/{e.ai[3]} target={e.target} dontTake={e.dontTakeDamage} timeLeft={e.timeLeft} creepers={Main.npc.Count(q => q.active && q.type == NPCID.Creeper)}");
 			if (run.Audit && st.Tick == 120) BtAuditLevies(run, st);
 			BtAuditTick(run, st, e, bossAlive);
@@ -1034,4 +1037,18 @@ public class BtProjWatch : GlobalProjectile
 		}
 	}
 
+}
+
+namespace Levy.Common.Testing
+{
+	/// <summary>Boss-trial diagnostic: logs the first updates of the fight boss (life, activity, who ended it) so a boss that vanishes on tick 1 is explained, not just reported as a win.</summary>
+	public class BtBossProbe : Terraria.ModLoader.GlobalNPC
+	{
+		private static int _n;
+		private static bool Is(Terraria.NPC npc) => CombatHarness.BtLive != null && npc.whoAmI == CombatHarness.BtLive.BossIdx && _n < 14;
+		public override bool PreAI(Terraria.NPC npc) { if (Is(npc)) { _n++; Levy.Instance?.Logger.Info($"BTPROBE PreAI life={npc.life} active={npc.active} target={npc.target} timeLeft={npc.timeLeft}"); } return true; }
+		public override void PostAI(Terraria.NPC npc) { if (Is(npc)) Levy.Instance?.Logger.Info($"BTPROBE PostAI life={npc.life} active={npc.active} ai={npc.ai[0]}/{npc.ai[1]}/{npc.ai[2]}/{npc.ai[3]}"); }
+		public override bool CheckActive(Terraria.NPC npc) { if (Is(npc)) Levy.Instance?.Logger.Info($"BTPROBE CheckActive timeLeft={npc.timeLeft} p0active={Terraria.Main.player[0].active} hitbox={Terraria.Main.player[0].Hitbox} npc={npc.position} boss={npc.boss} netMode={Terraria.Main.netMode}"); return true; }
+		public override bool CheckDead(Terraria.NPC npc) { if (Is(npc)) Levy.Instance?.Logger.Info("BTPROBE CheckDead life=" + npc.life + "\n" + System.Environment.StackTrace); return true; }
+	}
 }

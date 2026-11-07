@@ -23,9 +23,13 @@ namespace Levy.Common.Audio
 		public const float MinVolume = 0.45f;
 
 		/// <summary>Pure decision: returns the volume scale to play at (0 = drop). Counts are sounds already played this window.</summary>
-		public static float Decide(int sameInWindow, int totalInWindow, float distance)
+		public static float Decide(int sameInWindow, int totalInWindow, float distance, float nearestSame = 0f)
 		{
 			if (distance > DropDistance) return 0f;
+			// Every style is guaranteed one audible play per window, whatever the total budget: a fast weapon (Minishark, every 8 ticks) is never silenced by other styles filling the window.
+			if (sameInWindow == 0) return 1f;
+			// Closest first: a sound well nearer than any already played this window may exceed the style cap by up to two plays, at the floor volume.
+			if (sameInWindow >= PerStyleMax && sameInWindow < PerStyleMax + 2 && distance < nearestSame * 0.5f) return MinVolume;
 			if (sameInWindow >= PerStyleMax || totalInWindow >= TotalMax) return 0f;
 			if (distance > BusyDistance && totalInWindow >= TotalMax / 2) return 0f;
 			float v = 1f / (float)Math.Sqrt(1 + sameInWindow);
@@ -35,6 +39,7 @@ namespace Levy.Common.Audio
 		static bool inArmy;
 		static int windowStart = int.MinValue, total;
 		static readonly Dictionary<string, int> perStyle = new Dictionary<string, int>();
+		static readonly Dictionary<string, float> nearest = new Dictionary<string, float>();
 
 		static bool IsArmy(Mod m) => m != null && (m.Name == "Levy" || m.Name == "Mechanization");
 
@@ -72,13 +77,14 @@ namespace Levy.Common.Audio
 		{
 			if (!inArmy || Main.gameMenu) return orig(ref style, position, cb);
 			int now = (int)Main.GameUpdateCount;
-			if (now - windowStart >= WindowTicks || now < windowStart) { windowStart = now; total = 0; perStyle.Clear(); }
+			if (now - windowStart >= WindowTicks || now < windowStart) { windowStart = now; total = 0; perStyle.Clear(); nearest.Clear(); }
 			string key = style.SoundPath ?? "";
 			perStyle.TryGetValue(key, out int same);
 			float dist = position.HasValue ? Vector2.Distance(position.Value, Main.screenPosition + new Vector2(Main.screenWidth, Main.screenHeight) * 0.5f) : 0f;
-			float vol = Decide(same, total, dist);
+			float near = nearest.TryGetValue(key, out float nv) ? nv : float.MaxValue;
+			float vol = Decide(same, total, dist, near);
 			if (vol <= 0f) return SlotId.Invalid;
-			total++; perStyle[key] = same + 1;
+			total++; perStyle[key] = same + 1; nearest[key] = Math.Min(near, dist);
 			if (vol < 0.999f) { var quieter = style.WithVolumeScale(vol); return orig(ref quieter, position, cb); }
 			return orig(ref style, position, cb);
 		}
@@ -90,9 +96,10 @@ namespace Levy.Common.Audio
 			if (Decide(0, 0, 0f) != 1f) return "first sound is not full volume";
 			if (!(Decide(2, 2, 0f) < Decide(1, 1, 0f))) return "stacked sounds do not get quieter";
 			if (Decide(PerStyleMax, PerStyleMax, 0f) != 0f) return "per-style cap not enforced";
-			if (Decide(0, TotalMax, 0f) != 0f) return "total cap not enforced";
+			if (Decide(1, TotalMax, 0f) != 0f) return "total cap not enforced";
+			if (Decide(0, TotalMax, 0f) != 1f) return "first sound of a style not guaranteed";
 			if (Decide(0, 0, DropDistance + 1) != 0f) return "far sound not dropped";
-			if (Decide(0, TotalMax / 2, BusyDistance + 1) != 0f) return "far sound kept in busy window";
+			if (Decide(1, TotalMax / 2, BusyDistance + 1) != 0f) return "far sound kept in busy window";
 			if (Decide(0, 0, BusyDistance + 1) <= 0f) return "far sound dropped in quiet window";
 			if (Decide(PerStyleMax - 1, 0, 0f) < MinVolume) return "volume under floor";
 			// model: each shooter fires every useTime ticks (staggered), 4 distinct styles, 10 s
@@ -110,7 +117,31 @@ namespace Levy.Common.Audio
 					if (Decide(per[st], tot, d) > 0f) { after++; per[st]++; tot++; }
 				}
 			}
-			numbers = $"modelled {shooters} shooters: {before / (float)secs:0.0}/s unthrottled -> {after / (float)secs:0.0}/s throttled";
+			// model: 6 Minishark levies (useTime 8, one style) beside 30 other shooters of 3 other styles that fill the window budget; the Minishark style must stay audible
+			{
+				int ws2 = -999, tot2 = 0, mini = 0, minisPlayed = 0, minisOld = 0, oldTot = 0, oldWs = -999, oldMini = 0;
+				var per2 = new int[4]; var near2 = new float[4]; var oldPer = new int[4];
+				for (int t = 0; t < 600; t++)
+				{
+					if (t - ws2 >= WindowTicks) { ws2 = t; tot2 = 0; Array.Clear(per2, 0, 4); for (int i = 0; i < 4; i++) near2[i] = float.MaxValue; }
+					if (t - oldWs >= WindowTicks) { oldWs = t; oldTot = 0; Array.Clear(oldPer, 0, 4); }
+					for (int s = 0; s < 36; s++)
+					{
+						bool isMini = s < 6; int useTime = isMini ? 8 : 10 + (s % 7);
+						if ((t + s) % useTime != 0) continue;
+						int st = isMini ? 0 : 1 + s % 3; float d = isMini ? 300f + s * 150f : (s % 5) * 300f;
+						if (isMini) mini++;
+						// previous rule (no guarantee): style cap and total cap only
+						if (oldPer[st] < PerStyleMax && oldTot < TotalMax) { oldPer[st]++; oldTot++; if (isMini) oldMini++; }
+						if (Decide(per2[st], tot2, d, near2[st]) > 0f) { per2[st]++; tot2++; near2[st] = Math.Min(near2[st], d); if (isMini) minisPlayed++; }
+					}
+				}
+				minisOld = oldMini;
+				numbers += $"minishark squad: {mini / 10f:0.0}/s fired -> {minisPlayed / 10f:0.0}/s audible (previous rule {minisOld / 10f:0.0}/s); ";
+				if (minisPlayed <= 0) return "a modelled minishark squad produced no audible plays";
+				if (minisPlayed / 10f < 4f) return "minishark squad under 4 audible plays per second";
+			}
+			numbers += $"modelled {shooters} shooters: {before / (float)secs:0.0}/s unthrottled -> {after / (float)secs:0.0}/s throttled";
 			if (after >= before) return "throttle removed nothing in a big fight";
 			if (after / (float)secs > TotalMax * 60f / WindowTicks) return "throttled rate above the total cap";
 			return null;

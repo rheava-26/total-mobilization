@@ -1,6 +1,6 @@
 displayName = Mechanization
 author = Eve
-version = 0.8.1
+version = 0.9.0
 homepage =
 side = Both
 hideCode = false

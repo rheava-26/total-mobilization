@@ -25,6 +25,8 @@ namespace Levy.Common.Movement
 		public float Weight;
 		public bool Line; public float Ang, Omega, Len, Width;
 		public bool Body;
+		/// <summary>A boss body: its hits count several times over, its margin is wider, and a hopper in the air keeps falling (<see cref="Gy"/>) until the floor (<see cref="Floor"/>, px, 0 = none).</summary>
+		public bool Boss; public float Gy, Floor;
 	}
 
 	/// <summary>A dodge candidate: horizontal velocity for Dur ticks, an optional jump (Delay ticks from now: a hop timed to land after a charge has passed under it), an optional platform drop.</summary>
@@ -55,7 +57,10 @@ namespace Levy.Common.Movement
 		private static readonly uint[] PrevVelTick = new uint[Main.maxNPCs + 1];
 		public static long BuildTs, EvalTs; public static int Builds, Evals, EvalSamples;
 
-		public static float BodyMarginPx = 10f;
+		public static float BodyMarginPx = 10f, BossBodyMarginPx = 22f;
+		public const int BossHitWeight = 3;
+		/// <summary>Number of boss bodies the field saw this tick (a fight is on).</summary>
+		public static int BossBodies;
 		public const float ChargeMinSpeed = 4.5f, ChargeAccel = 0.25f, ChargeTopSpeed = 20f, MaxBuildTicks = 60f;
 
 		public static List<Threat> Snapshot()
@@ -64,7 +69,7 @@ namespace Levy.Common.Movement
 			if (_tick == now) return Snap;
 			_tick = now;
 			long t0 = Stopwatch.GetTimestamp();
-			Snap.Clear();
+			Snap.Clear(); BossBodies = 0;
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
@@ -97,10 +102,23 @@ namespace Levy.Common.Movement
 				// a boss or a hard hitter that merely walks at a levy is still a body to step out of (a player does not stand and trade with a Deerclops); ordinary walkers stay below the filter
 				bool heavy = Content.NPCs.SoldierNPC.MobilityMode >= 1 && (n.damage >= LevyConstants.Movement.DodgeHeavyDamage || LevyUtil.IsBossNpc(n));
 				if (v2 < (heavy ? heavyMinSq : minSq) && !building) continue;
-				Snap.Add(new Threat { P = n.Center, V = v, A = building ? a : Vector2.Zero, Half = new Vector2(n.width, n.height) * 0.5f, Weight = n.damage, Body = true });
+				bool isBoss = Content.NPCs.SoldierNPC.DanceMode >= 1 && Content.NPCs.SoldierNPC.DOn(1) && LevyUtil.IsBossNpc(n);
+				float gy = 0f, floor = 0f;
+				if (isBoss) BossBodies++;
+				// a boss that hops (a slime) is in a ballistic arc: it keeps falling until the floor, so the landing spot is where it will be
+				if (isBoss && !n.noGravity && !n.noTileCollide && n.velocity.Y != 0f && !building) { gy = 0.3f; floor = FloorBelow(n); a = Vector2.Zero; }
+				Snap.Add(new Threat { P = n.Center, V = v, A = building ? a : Vector2.Zero, Half = new Vector2(n.width, n.height) * 0.5f, Weight = n.damage, Body = true, Boss = isBoss, Gy = gy, Floor = floor });
 			}
 			BuildTs += Stopwatch.GetTimestamp() - t0; Builds++;
 			return Snap;
+		}
+
+		/// <summary>Y (px) of the first solid tile under the body's centre column, 0 when there is none within 40 tiles.</summary>
+		private static float FloorBelow(NPC n)
+		{
+			int x = (int)(n.Center.X / 16f), y0 = (int)(n.Bottom.Y / 16f);
+			for (int r = y0; r <= y0 + 40; r++) if (TileNav.IsSolid(x, r)) return r * 16f;
+			return 0f;
 		}
 
 		private static bool BeamOf(Projectile p, out float len, out float width)
@@ -200,6 +218,12 @@ namespace Levy.Common.Movement
 		private static Vector2 ThreatAt(in Threat th, int t)
 		{
 			Vector2 p = th.P + th.V * t;
+			if (th.Gy > 0f)
+			{
+				p.Y += 0.5f * th.Gy * t * t;
+				if (th.Floor > 0f && p.Y > th.Floor - th.Half.Y) p.Y = th.Floor - th.Half.Y;
+				return p;
+			}
 			if (th.A != Vector2.Zero)
 			{
 				// a charge that is still building speed keeps building it until it reaches a charging body's top speed (it is not known; ChargeTopSpeed is a pessimistic one)
@@ -212,7 +236,7 @@ namespace Levy.Common.Movement
 		}
 
 		/// <summary>Counts the threats that overlap the body on this manoeuvre inside the horizon. <paramref name="lastHit"/> is the tick of the latest overlap.</summary>
-		public static int Hits(List<Threat> near, Vector2 c0, float bw, float bh, in Maneuver m, float g, int horizon, out int firstHit, out int lastHit, float extraMargin = 0f)
+		public static int Hits(List<Threat> near, Vector2 c0, float bw, float bh, in Maneuver m, float g, int horizon, out int firstHit, out int lastHit, float extraMargin = 0f, int immune = 0)
 		{
 			long t0 = Stopwatch.GetTimestamp();
 			int hits = 0; firstHit = int.MaxValue; lastHit = -1;
@@ -223,7 +247,7 @@ namespace Levy.Common.Movement
 				int hit = -1, lineTicks = 0, lineLast = -1;
 				if (th.Line)
 				{
-					for (int t = 0; t <= horizon; t++)
+					for (int t = immune; t <= horizon; t++)
 					{
 						Vector2 b = BodyAt(c0, m, g, t); float ang = th.Ang + th.Omega * t;
 						Vector2 end = th.P + ang.ToRotationVector2() * th.Len; float f = 0f;
@@ -233,10 +257,12 @@ namespace Levy.Common.Movement
 				}
 				else
 				{
-					Vector2 half = th.Half + bHalf + (th.Body ? new Vector2(BodyMarginPx, BodyMarginPx) : new Vector2(2f)) + new Vector2(extraMargin, extraMargin);   // a prediction of a charging body is never exact: keep a margin around it
-					Vector2 prev = ThreatAt(th, 0) - BodyAt(c0, m, g, 0);
-					if (Math.Abs(prev.X) <= half.X && Math.Abs(prev.Y) <= half.Y) hit = 0;
-					for (int t = 2; t <= horizon && hit < 0; t += 2)
+					float marg = th.Boss ? BossBodyMarginPx : BodyMarginPx;
+					Vector2 half = th.Half + bHalf + (th.Body ? new Vector2(marg, marg) : new Vector2(2f)) + new Vector2(extraMargin, extraMargin);   // a prediction of a charging body is never exact: keep a margin around it
+					int t0i = immune - (immune & 1);
+					Vector2 prev = ThreatAt(th, t0i) - BodyAt(c0, m, g, t0i);
+					if (immune == 0 && Math.Abs(prev.X) <= half.X && Math.Abs(prev.Y) <= half.Y) hit = 0;
+					for (int t = t0i + 2; t <= horizon && hit < 0; t += 2)
 					{
 						Vector2 cur = ThreatAt(th, t) - BodyAt(c0, m, g, t);
 						EvalSamples++;
@@ -244,7 +270,7 @@ namespace Levy.Common.Movement
 						prev = cur;
 					}
 				}
-				if (hit >= 0) { hits += 1 + lineTicks / 12; if (hit < firstHit) firstHit = hit; if (hit > lastHit) lastHit = hit; if (lineLast > lastHit) lastHit = lineLast; }
+				if (hit >= 0) { hits += (th.Boss ? BossHitWeight : 1) + lineTicks / 12; if (hit < firstHit) firstHit = hit; if (hit > lastHit) lastHit = hit; if (lineLast > lastHit) lastHit = lineLast; }
 			}
 			EvalTs += Stopwatch.GetTimestamp() - t0; Evals++;
 			return hits;

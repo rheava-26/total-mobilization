@@ -293,6 +293,8 @@ namespace Levy.Common
 			// A dash only ever speeds up a walk the soldier is already making along a flat, safe lane; it never picks a new destination.
 			public const float DashSpeedPx = 8.5f;
 			public const int DashBurstTicks = 9;
+			/// <summary>A dodge dash carries the body through a hit like a player's dash does: invulnerable for the burst and a moment after (0 turns it off).</summary>
+			public const int DashIFrameTicks = 12;
 			public const int DashCooldownTicks = 60 * 6, DashCooldownJitterTicks = 60 * 3;
 			/// <summary>The goal (or next waypoint) must be at least this far across to be worth a dash, and no farther than the max.</summary>
 			public const int DashMinGoalTiles = 9, DashMaxGoalTiles = 45;

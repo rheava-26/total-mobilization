@@ -220,7 +220,7 @@ namespace Levy.Content.NPCs
 			WantsAltitude = false; // re-asserted below by TryEngage when there is still an airborne target worth climbing to
 			int now = (int)Main.GameUpdateCount;
 			SoldierState prevState = State; int prevTarget = TargetIndex;
-			_thinkCount++;
+			_thinkCount++; WhyB = Why.BUnk;
 			_focusBare = false; // re-asserted by TryEngage when this think engages the bare focus position
 			RefreshCommanderIndex(now);
 
@@ -242,22 +242,25 @@ namespace Levy.Content.NPCs
 				case SoldierState.Dead:
 					break;
 				case SoldierState.Desert:
-					ThinkDesert();
+					WhyB = Why.BFlee; ThinkDesert();
 					break;
 				case SoldierState.Routed:
-					ThinkRouted(nearestHostileTiles, now);
+					WhyB = Why.BRouted; ThinkRouted(nearestHostileTiles, now);
 					break;
 				default:
 					// Shaken is driven here too: it engages like Engage (Combat applies the penalties) and never hauls.
 					if (MutinySystem.IsMutinous(Record)) ThinkMutiny(now); // Wage Mutiny: no orders, no enemies, only the back pay
-					else if (fleeIdx >= 0) ThinkFlee(fleeIdx);
-					else if (Autonomy_FallBack(now, nearestHostileTiles)) { } // Autonomous levy below the fall-back threshold: retreat and heal
-					else if (ThinkTalk(now)) { } // a player has the chat window open (or called this soldier over): walk to them and hold, keep shooting
-					else if (now < _spawnGraceUntil) ThinkSpawnGrace();
+					else if (fleeIdx >= 0) { WhyB = Why.BFlee; ThinkFlee(fleeIdx); }
+					else if (Autonomy_FallBack(now, nearestHostileTiles)) { WhyB = Why.BFallBack; } // Autonomous levy below the fall-back threshold: retreat and heal
+					else if (ThinkTalk(now)) { WhyB = Why.BTalk; } // a player has the chat window open (or called this soldier over): walk to them and hold, keep shooting
+					else if (now < _spawnGraceUntil) { WhyB = Why.BGrace; ThinkSpawnGrace(); }
 					else if (!TryEngage(now))
 					{
 						// resupply outranks the unarmed fallback (a dry soldier heads for the armory); a soldier with nothing to fight with stays out of it
-						if (!TryResupply(now) && !ThinkUnarmed(now)) ThinkOrder(now, nearestHostileTiles);
+						WhyB = CanFight(now) ? Why.BNoTarget : Why.BCantFight;
+						if (TryResupply(now)) WhyB = Why.BResupply;
+						else if (ThinkUnarmed(now)) WhyB = Why.BUnarmed;
+						else ThinkOrder(now, nearestHostileTiles);
 					}
 					break;
 			}
@@ -607,6 +610,7 @@ namespace Levy.Content.NPCs
 			{
 				NPC threat = Main.npc[_threatIdx];
 				float away = AwayDir(threat.Center);
+				if (LevyUtil.IsBossNpc(threat) || threat.damage >= LevyConstants.StrafeDangerDamage) away = EscapeDir(away, threat, now);
 				if (hasAnchor && !anchorArrived && Math.Sign(anchor.X - NPC.Center.X) == (int)away) SetGoal(anchor);
 				else SetGoal(new Vector2(NPC.Center.X + away * LevyConstants.RoutedRetreatTiles * LevyConstants.TilePx, NPC.Center.Y));
 				return;
@@ -1031,15 +1035,17 @@ namespace Levy.Content.NPCs
 			float standoff = flame ? LevyConstants.FlameStandoffTiles : StandoffTiles(range); // a flamethrower never backs off to a gunner's standoff: it wants contact range
 			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
 			UpdateAltitudeIntent(seg, range, standoff, false); // independent of the horizontal plan below: climb, retreat and shoot compose
+			if (DanceMode >= 1 && SoldierNPC.MobilityMode >= 1 && !flame && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage)) DanceLift(seg);
 
 			// leaving a retreat takes a little extra room (hysteresis), so the body does not stutter on the standoff line
 			float standoffNow = KeepAwayFor(_threatIdx, standoff) + (_engMode == EngageMode.Retreat ? LevyConstants.StandoffHysteresisTiles : 0f);
 			if (_threatIdx >= 0 && _threatTiles < standoffNow)
 			{
 				float away = AwayDir(Main.npc[_threatIdx].Center);
+				if (LevyUtil.IsBossNpc(Main.npc[_threatIdx]) || Main.npc[_threatIdx].damage >= LevyConstants.StrafeDangerDamage) away = EscapeDir(away, Main.npc[_threatIdx], now);
 				Vector2 step = new Vector2(NPC.Center.X + away * LevyConstants.KiteStepAwayTiles * LevyConstants.TilePx, NPC.Center.Y);
 				ApplyChaseClamp(ref step);
-				_engMode = EngageMode.Retreat;
+				_engMode = EngageMode.Retreat; WhyB = Why.BRetreat;
 				if (_perchActive) AbandonPerch(now); // the standoff outranks the climb to a better spot
 				SetGoal(step);
 				return true;
@@ -1047,7 +1053,7 @@ namespace Levy.Content.NPCs
 			if (_engMode == EngageMode.Retreat) ClearGoal();
 
 			// Against a boss or a hard hitter a player works the platform rows: up out of a ground charge, down out of a sweep (in reach or not)
-			if (SoldierNPC.PlatMode >= 1 && SoldierNPC.MobilityMode >= 1 && !(WantsAltitude || _aerial) && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage) && TickPlatformPerch(now)) return true;
+			if (SoldierNPC.PlatMode >= 1 && SoldierNPC.MobilityMode >= 1 && !(WantsAltitude || _aerial) && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage) && TickPlatformPerch(now)) { WhyB = Why.BPlatform; return true; }
 
 			float dT = Aiming.TilesToHitbox(NPC.Center, seg);
 			bool los = HasFiringLine(seg);
@@ -1065,28 +1071,31 @@ namespace Levy.Content.NPCs
 					if (WantsAltitude) AbandonPerch(now);
 					else
 					{
-						if (TryPerch(target, seg, range, standoff, now)) return true;
+						if (TryPerch(target, seg, range, standoff, now)) { WhyB = Why.BPerch; return true; }
 						// arrived (or abandoned) while still airborne: let it settle onto the perch rather than strafe in mid-air
-						if (NPC.velocity.Y != 0f) { _engMode = EngageMode.Hold; ClearGoal(); return true; }
+						if (NPC.velocity.Y != 0f) { _engMode = EngageMode.Hold; WhyB = Why.BPerchSettle; ClearGoal(); return true; }
 					}
 					aloft = WantsAltitude || _aerial;
 				}
-				else if (!aloft && TryPerch(target, seg, range, standoff, now)) return true;
+				else if (!aloft && TryPerch(target, seg, range, standoff, now)) { WhyB = Why.BPerch; return true; }
 				if (_engMode == EngageMode.Approach) ClearGoal();
 				_engMode = EngageMode.Hold;
 				if (!aloft && _crowdCount > 0 && now >= _nudgeNextTick && TryDisperseStep(seg, range, standoff, now)) return true;
 				// In the pocket: a small lateral shuffle every other think, only with room to spare past the standoff.
 				// Against a boss or a hard hitter a player never stands still: the strafe runs on every think, with longer steps and the odd short hop. Aim and fire rate are untouched.
 				bool danger = SoldierNPC.MobilityMode >= 1 && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage);
-				if (danger && !aloft && TickPlatformPerch(now)) return true;
-				if ((!danger && (_thinkCount & 1) != 0) || _threatTiles < standoff + LevyConstants.StrafeMarginTiles) return true;
+				if (danger && !aloft && TickPlatformPerch(now)) { WhyB = Why.BPlatform; return true; }
+				if (danger && DanceMode >= 1 && DOn(16) && BossDance(seg, range, standoff, now)) return true;   // a flier keeps the air strafe below: the ground dance's long legs ran wing users into the boss
+				if (!danger && (_thinkCount & 1) != 0) { WhyB = Why.BOddThink; return true; }
+				if (_threatTiles < standoff + LevyConstants.StrafeMarginTiles) { WhyB = Why.BStandoffNoStrafe; return true; }
 				float side = danger ? ((_thinkCount / 3) & 1) == 0 ? 1f : -1f : ((_thinkCount >> 1) & 1) == 0 ? 1f : -1f;
 				int strafeTiles = danger ? LevyConstants.StrafeTiles * 2 : LevyConstants.StrafeTiles;
 				if (danger && !aloft && NPC.velocity.Y == 0f && (_thinkCount % 5) == 0 && !LavaAhead((int)side)) TryJump(2);
 				Vector2 shuffle;
 				if (aloft) shuffle = new Vector2(NPC.Center.X + side * strafeTiles * LevyConstants.TilePx, NPC.Center.Y);
 				else if (!FindSafeStep((int)side, strafeTiles, seg.Center, range, standoff, false, out shuffle)
-					&& !FindSafeStep(-(int)side, strafeTiles, seg.Center, range, standoff, false, out shuffle)) return true; // a ledge edge: stay put
+					&& !FindSafeStep(-(int)side, strafeTiles, seg.Center, range, standoff, false, out shuffle)) { WhyB = Why.BLedgeNoStep; return true; } // a ledge edge: stay put
+				WhyB = aloft ? Why.BAirStrafe : Why.BStrafe;
 				ApplyChaseClamp(ref shuffle);
 				SetGoal(shuffle);
 				return true;
@@ -1104,10 +1113,10 @@ namespace Levy.Content.NPCs
 					if (!debounced && !_perchActive)
 					{
 						if (_engMode == EngageMode.Approach) return true; // already walking somewhere: let it finish; a blink of lost line changes nothing
-						_engMode = EngageMode.Hold;
+						_engMode = EngageMode.Hold; WhyB = Why.BNoLos;
 						return true; // wait out the debounce on the spot (the line often comes back as the target moves)
 					}
-					if (TryPerch(target, seg, range, standoff, now, true)) return true;
+					if (TryPerch(target, seg, range, standoff, now, true)) { WhyB = Why.BPerch; return true; }
 				}
 			}
 
@@ -1120,7 +1129,7 @@ namespace Levy.Content.NPCs
 			if (FindEngageSpot(target, seg, range, standoff, now, out Vector2 spot))
 			{
 				ApplyChaseClamp(ref spot);
-				_engMode = EngageMode.Approach; _engPathOk = true;
+				_engMode = EngageMode.Approach; _engPathOk = true; WhyB = Why.BApproach;
 				SetGoal(spot);
 				return true;
 			}
@@ -1129,11 +1138,11 @@ namespace Levy.Content.NPCs
 			if (_spotDeferred)
 			{
 				if (_engMode != EngageMode.Approach) _engMode = EngageMode.Hold;
-				return true;
+				WhyB = Why.BDeferred; return true;
 			}
 			// No route to a firing line (or the target is across a gap out of reach): stand here rather than walk into the gap.
 			if (_engMode == EngageMode.Approach) ClearGoal();
-			_engMode = EngageMode.Hold;
+			_engMode = EngageMode.Hold; WhyB = Why.BNoRoute;
 			return false;
 		}
 
@@ -1725,15 +1734,22 @@ namespace Levy.Content.NPCs
 				float away = AwayDir(Main.npc[_dangerIdx].Center);
 				Vector2 step = new Vector2(NPC.Center.X + away * LevyConstants.KiteStepAwayTiles * LevyConstants.TilePx, NPC.Center.Y);
 				ApplyChaseClamp(ref step);
-				_engMode = EngageMode.Retreat; _engPathOk = false;
+				_engMode = EngageMode.Retreat; _engPathOk = false; WhyB = Why.BRetreat;
 				WantsAltitude = false; _altHeld = false;
 				SetGoal(step);
 				return;
 			}
 			if (MeleeAvoids(target))
 			{
-				_engMode = EngageMode.Hold; _engPathOk = false;
+				_engMode = EngageMode.Hold; _engPathOk = false; WhyB = Why.BMeleeAvoid;
 				WantsAltitude = false; _altHeld = false;
+				// a blade that will not charge a boss still moves like a player under it: long strafe legs, hops, a hover when it can fly
+				if (DanceMode >= 1 && SoldierNPC.MobilityMode >= 1 && (LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage))
+				{
+					NPC dseg = Aiming.NearestSegment(target, NPC.Center) ?? target;
+					DanceLift(dseg);
+					if (BossDance(dseg, 80f, LevyConstants.MeleeCautionTiles, now)) return;
+				}
 				ClearGoal();
 				return;
 			}
@@ -1758,7 +1774,7 @@ namespace Levy.Content.NPCs
 				goal = target.Center + new Vector2(SlotOffsetTiles(SlotSaltMelee, LevyConstants.DispersionMeleeSpreadTiles * (Record.SpreadOut ? LevyConstants.SpreadOutMult : 1f)) * LevyConstants.TilePx, 0f);
 				_engMode = EngageMode.Approach; _engPathOk = true;
 			}
-			else { _engMode = EngageMode.Hold; ClearGoal(); return; }
+			else { _engMode = EngageMode.Hold; WhyB = Why.BMeleeContact; ClearGoal(); return; }
 			ApplyChaseClamp(ref goal);
 			SetGoal(goal);
 		}

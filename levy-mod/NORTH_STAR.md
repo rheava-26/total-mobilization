@@ -94,7 +94,7 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 
 ## 6. Communication and writing
 
-**Use structured prose with proportional weight (Eve's explicit rule).** "Don't assign, like, a one-sentence handoff to the same value as a 20-paragraph essay about one thing." (11-07) A small note gets a line. A deep topic gets headings and room. Open prose beats list skeletons ("paragraph paragraph 1. 2. 3. 4."). Eve reads or listens to replies, so write in plain paragraphs that can be read aloud.
+**Use structured prose with proportional weight (Eve's explicit rule).** "Don't assign, like, a one-sentence handoff to the same value as a 20-paragraph essay about one thing." (11-07) A small note gets a line. A deep topic gets headings and room. Open prose beats list skeletons ("paragraph paragraph 1. 2. 3. 4."). **Eve (11-07, 20:15): write in open prose, not hard blocks of bullets and bold headers.** Blocks force one line per item and flatten everything to the same weight. She wants deep analysis: reasoning, connections between findings, what a result means and what it doesn't. Use lists only for things that really are lists (file names, a changelog). Eve reads or listens to replies, so write in plain paragraphs that can be read aloud.
 
 **Be a partner, not a worker.** "i want an equal partner and not a worker." (10-18) Offer design opinions and suggestions, disagree when you disagree, and bring your own ideas. Eve is a designer, not a coder, and wants to discuss. Eve also wants you to talk, not echo: "i don't want you to just parot what i'm saying." (11-06)
 

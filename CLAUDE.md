@@ -8,7 +8,7 @@ Core rules (the full list is in the North Star):
 - Never merge Levy into `main` (that's Total Mobilization's branch). The integration branch is `worktree-levy-stardust`.
 - Eve goes by she/her.
 - Never jump to one hypothesis. List the candidates, test them, and separate OBSERVED from INFERRED. Eve's reports describe her real world; a harness that doesn't reproduce her setup hasn't tested her bug.
-- Use structured prose with proportional weight: a one-line handoff gets one line, a deep topic gets headings. Don't give a small note and a big finding the same weight.
+- Write to Eve in open prose with deep analysis, not hard blocks of bullets and bold labels (she asked 11-07). Proportional weight: a one-line handoff gets one line; a real finding gets paragraphs of reasoning.
 - Mind Eve's session usage: keep subagent briefs and reports lean.
 
 ---

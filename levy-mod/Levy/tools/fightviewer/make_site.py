@@ -143,7 +143,9 @@ def summarize(rows):
         result = "ended"
     mode = MODES.get(meta.get("mode")) or (hdr.get("mode") or "?").replace("Expert+Revengeance", "Rev")
     arena = ARENAS.get(meta.get("arena"), meta.get("arena") or "?")
-    boss = meta.get("bossName") or (hdr.get("boss") or "?").replace("_", " ")
+    # a hand-made recording (/levyrec start <name>) carries its file name in hdr.boss: name the fight after the boss it actually met, or "Other fights" when none
+    named = [e.get("name") for e in ev if e.get("e") == "boss" and e.get("name")]
+    boss = meta.get("bossName") or (named[0] if named and not meta else None) or ("Other fights" if not meta else (hdr.get("boss") or "?").replace("_", " "))
     return {
         "boss": boss, "mode": mode, "arena": arena, "levies": max(n_levies, len(ids)), "result": result,
         "pl": round(100.0 * tally[2] / n, 1), "pp": round(100.0 * tally[1] / n, 1),

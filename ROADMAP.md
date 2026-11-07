@@ -194,7 +194,7 @@
     - routed levies running 130–190 tiles off (now leashed to 60 tiles of the anchor, still shooting).
   - **Recorder:** EoW fights now record (IsFightBoss; spawn serial inherited across head conversion).
   - **Harness:** worms spawn 80 tiles out (live-like).
-- **dud2 DONE (merged 8f2f525 → 2.0.19):**
+- **SHIPPED Levy 2.0.19** (booted clean on both toolchains; sent to Eve). dud2 DONE (merged 8f2f525):
   - Eight of the "0-dmg" post-HM weapons were MANA-SHORT: the lab levy pool was 40, below their cost.
   - **Fixes:**
     - The armory never issues a mana weapon whose cost exceeds the levy's pool (`CanEverPay`).

@@ -8,6 +8,7 @@ using Terraria.ModLoader;
 using Levy.Common;
 using Levy.Common.Boss;
 using Levy.Common.Dialogue;
+using Levy.Common.Movement;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
 using Levy.Common.Weapons;
@@ -76,12 +77,68 @@ namespace Levy.Content.NPCs
 			if (!sideUsable) return false;
 			if (_mainProfile == null || !g.HasWeapon) return true;
 			if (_mainProfile.IsDeployer) return true; // a summon weapon or sentry is not swung: the sidearm is the hand weapon
+			if (SidearmHitsAtRange(_sideProfile) && ContactMeleeCannotEngage()) return true; // a contact blade facing a boss (never charged) or a flier out of reach: the sidearm that can actually hit takes the hand
 			if (WeaponUse.HasResources(this, g.Weapon, _mainProfile)) return false;
 			if (!UsingSidearm && ManaFed(_mainProfile))
 			{
 				int missing = Math.Max(0, g.Weapon.mana) - Record.Mana;
 				if (missing > 0 && missing * ManaTicksPerPoint() <= LevyConstants.ManaWaitForPrimaryTicks) return false; // a moment from the next cast: keep the primary up
 			}
+			return true;
+		}
+
+		/// <summary>A sidearm that hurts from a distance: not a summon / sentry (those never take the hand) and not another contact weapon (a projectile blade, a boomerang, a thrown or ranged piece all qualify).</summary>
+		private static bool SidearmHitsAtRange(WeaponProfile p) => p != null && p.Supported && !p.IsDeployer && !(p.IsMelee && (!p.FiresProjectileMelee || p.ShortShot));
+
+		/// <summary>Harness A/B switch: LEVY_BLOCKED_SIDEARM=0 turns the blocked-blade sidearm swap off.</summary>
+		internal static bool BlockedSidearmOff = Environment.GetEnvironmentVariable("LEVY_BLOCKED_SIDEARM") == "0";
+		private int _meleeBlockedUntil; // tick until which a blocked contact blade keeps its ranged sidearm in hand (no flicker as the boss swoops in and out of reach)
+		private int _meleeBlockedScan = -1000; private bool _meleeBlockedCached;
+
+		/// <summary>
+		/// The main weapon is a contact blade (positions as melee: plain broadsword / shortsword / spear / whip / yoyo / flail / short-shot blade) and it will not or cannot hit what the fight is about:
+		/// a boss is alive and in the sidearm's boss reach (the brain never closes on a boss, so a blade deals nothing to one), the target it holds is one it avoids on contact, or the target is an airborne
+		/// flier hanging out of blade reach with no flight kit to climb to it. Held for <see cref="LevyConstants.BlockedSidearmHoldTicks"/> after the last time it was true.
+		/// </summary>
+		private bool ContactMeleeCannotEngage()
+		{
+			var m = _mainProfile;
+			if (BlockedSidearmOff || m == null || !m.IsMelee || (m.FiresProjectileMelee && !m.ShortShot)) return false; // a projectile blade fights at range anyway
+			int now = (int)Main.GameUpdateCount;
+			if (now < _meleeBlockedUntil) return true;
+			if (now - _meleeBlockedScan < LevyConstants.SidearmCheckIntervalTicks) return _meleeBlockedCached;
+			_meleeBlockedScan = now;
+			bool blocked = false;
+			if (TargetIndex >= 0 && TargetIndex < Main.maxNPCs && Main.npc[TargetIndex].active)
+			{
+				NPC t = Main.npc[TargetIndex];
+				if (MeleeAvoids(t)) blocked = true;
+				else if (FlierOutOfBladeReach(t, m)) blocked = true;
+			}
+			if (!blocked && _sideProfile != null && SoldierTargeting.AnyBossNpcActive())
+			{
+				float reachPx = _sideProfile.RangeTiles * Math.Max(1f, _sideProfile.BossReachMult) * LevyConstants.TilePx;
+				float reachSq = reachPx * reachPx;
+				for (int i = 0; i < Main.maxNPCs && !blocked; i++)
+				{
+					NPC n = Main.npc[i];
+					if (n.active && !n.dontTakeDamage && LevyUtil.IsBossNpc(n) && Vector2.DistanceSquared(NPC.Center, n.Center) <= reachSq) blocked = true;
+				}
+			}
+			_meleeBlockedCached = blocked;
+			if (blocked) _meleeBlockedUntil = now + LevyConstants.BlockedSidearmHoldTicks;
+			return blocked;
+		}
+
+		/// <summary>An airborne target (no floor within FlyPursuitMinAirTiles under it) hanging higher than the blade's reach plus a jump above the body's top, and this body cannot sustain flight to meet it.</summary>
+		private bool FlierOutOfBladeReach(NPC t, WeaponProfile m)
+		{
+			if (!t.noGravity && t.velocity.Y == 0f) return false;
+			if (HasFlightKit && AerialSustained) return false;
+			float aboveTiles = (NPC.Top.Y - t.Center.Y) / LevyConstants.TilePx;
+			if (aboveTiles <= m.MeleeReachTiles + LevyConstants.BladeJumpAllowanceTiles) return false;
+			int x = (int)(t.Center.X / 16f), y = (int)(t.Bottom.Y / 16f);
+			for (int i = 0; i <= LevyConstants.FlyPursuitMinAirTiles; i++) if (TileNav.IsFloor(x, y + i)) return false;
 			return true;
 		}
 

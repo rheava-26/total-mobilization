@@ -33,12 +33,15 @@ namespace Levy.Common.Targeting
 			return LevyUtil.WithinTiles(s.NPC.Center, Main.npc[idx].Center, rangeTiles * s.BossRangeMult(Main.npc[idx]) * LevyConstants.FocusRangeMult) ? idx : -1;
 		}
 
+		/// <summary>Harness A/B switch: LEVY_BOSS_FIRST=0 restores plain attacker-then-nearest ordering.</summary>
+		internal static bool BossFirst = Environment.GetEnvironmentVariable("LEVY_BOSS_FIRST") != "0";
+
 		/// <summary>
 		/// Best enemy within <paramref name="rangeTiles"/> with line of sight, or -1. With <paramref name="useFocus"/> the commander's focus
 		/// target (see <see cref="FocusTargetFor"/>) beats everything else.
 		/// <paramref name="excludeIdx"/> (an NPC index, or -1) and every index in <paramref name="alsoExclude"/> are never returned and never beat a reachable enemy: they are skipped before the
 		/// line-of-sight test, so targets the soldier found unreachable do not blank the pick while others stand in reach.
-		/// With <paramref name="preferNearest"/> the attacker priority is ignored and the closest legal enemy in sight wins (every other filter still applies).
+		/// With <paramref name="preferNearest"/> the attacker priority is ignored and the closest legal enemy in sight wins (every other filter still applies). Otherwise a damageable boss in reach with line of sight outranks any non-boss (its adds, spawn, bees), then attacker, then nearest.
 		/// COST: one pass over the NPC slots. The range cut runs FIRST (a few float ops) so the never-target test and the attacker lookup are only paid for the handful of slots that are
 		/// actually in reach; the line-of-sight test (the expensive one) only for a candidate that would beat the best so far. Callers pace how often they scan at all (see the brain's acquisition interval).
 		/// </summary>
@@ -50,7 +53,7 @@ namespace Levy.Common.Targeting
 			float rangePx = rangeTiles * LevyConstants.TilePx;
 			float rangeSq = rangePx * rangePx;
 			int self = s.NPC.whoAmI;
-			int best = -1; float bestDistSq = float.MaxValue; bool bestAttacking = false;
+			int best = -1; float bestDistSq = float.MaxValue; bool bestAttacking = false, bestBoss = false;
 			bool auto = Potions.AutonomySystem.IsAutonomous(s); int bestTier = -1; // Autonomous levies rank the most dangerous enemy in reach first
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
@@ -63,13 +66,18 @@ namespace Levy.Common.Targeting
 				int tier = auto ? Potions.AutonomySystem.ThreatTier(npc) : 0;
 				if (tier < bestTier) continue;
 				bool attacking = !preferNearest && (IsAttackingUs(npc) || LevyUtil.IsProjectileNpc(npc.type)); // an orb in reach is a threat to the line: priority 1 // nearest-only: every candidate ranks as priority 2, so distance alone decides
+				bool boss = BossFirst && !preferNearest && LevyUtil.IsBossNpc(npc); // a damageable boss in reach outranks its adds, spawn and bees: they are shot after it (nothing is capped, only ordered)
 				if (tier == bestTier)
 				{
-					if (bestAttacking && !attacking) continue;                 // a priority-1 target already beats every priority-2 one
-					if (attacking == bestAttacking && distSq >= bestDistSq) continue;
+					if (bestBoss && !boss) continue;                           // a boss already beats every non-boss
+					if (boss == bestBoss)
+					{
+						if (bestAttacking && !attacking) continue;             // a priority-1 target already beats every priority-2 one
+						if (attacking == bestAttacking && distSq >= bestDistSq) continue;
+					}
 				}
 				if (!Collision.CanHitLine(from, 1, 1, npc.Center, 1, 1)) continue; // LOS only for candidates that would win (it is the expensive check)
-				best = i; bestDistSq = distSq; bestAttacking = attacking; bestTier = tier;
+				best = i; bestDistSq = distSq; bestAttacking = attacking; bestTier = tier; bestBoss = boss;
 			}
 			return best;
 		}

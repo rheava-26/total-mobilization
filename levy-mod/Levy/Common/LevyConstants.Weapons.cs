@@ -67,6 +67,10 @@ namespace Levy.Common
 		public const float SwordBeamSpeedFallback = 8f;
 		/// <summary>How often the held weapon is re-evaluated for ammo/mana (ticks).</summary>
 		public const int SidearmCheckIntervalTicks = 30;
+		/// <summary>A contact blade that took its ranged sidearm because it cannot engage (boss / flier out of reach) keeps it this long after the last time that held.</summary>
+		public const int BlockedSidearmHoldTicks = 180;
+		/// <summary>Tiles a grounded body adds to its blade reach for a jump when judging whether an airborne target is out of reach.</summary>
+		public const int BladeJumpAllowanceTiles = 6;
 
 		// ---------- Mana ----------
 		/// <summary>Mana per second: the larger of the floor and the pool fraction (a bigger pool refills faster, as in vanilla). In combat / out of combat.</summary>

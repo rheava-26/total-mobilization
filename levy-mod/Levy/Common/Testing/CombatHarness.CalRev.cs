@@ -398,7 +398,7 @@ namespace Levy.Common.Testing
 			Item w = CrMake(spec.Weapon);
 			if (!gear.CanHold(SoldierGear.SlotWeapon, w)) { Mod.Logger.Warn($"HARNESS-CR: levy cannot hold {spec.Weapon}; fallback {CrFallbackWeapon(spec.Cls)}"); spec.Weapon = CrFallbackWeapon(spec.Cls); spec.Ammo = spec.Cls == 'R' ? "Silver Bullet" : ""; w = CrMake(spec.Weapon); }
 			gear.Weapon = w; gear.SetLocked(SoldierGear.SlotWeapon, true);
-			if (!string.IsNullOrEmpty(run.Side))
+			if (!string.IsNullOrEmpty(run.Side) && spec.Cls == 'E')
 			{
 				Item sd = CrMake(run.Side);
 				if (gear.CanHold(SoldierGear.SlotSidearm, sd)) { gear.Sidearm = sd; gear.SetLocked(SoldierGear.SlotSidearm, true); } else Mod.Logger.Warn($"HARNESS-CR: levy cannot hold sidearm {run.Side}");

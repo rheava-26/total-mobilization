@@ -24,8 +24,21 @@ namespace Levy.Common.Weapons
 		/// <summary>Measurement switch (harness A/B, env LEVY_NO_MODSHOT=1): behave as before this feature (no holdout / blade routing and no cursor steer for modded shots).</summary>
 		internal static readonly bool Off = Environment.GetEnvironmentVariable("LEVY_NO_MODSHOT") == "1";
 
-		/// <summary>Mods whose channel-reading holdouts are held like a player would (Calamity: measured 0 damage as plain shots, see docs/boss_lab/dud). Add a mod here only after measuring its holdouts both ways.</summary>
-		private static readonly HashSet<string> HoldoutMods = new() { "CalamityMod" };
+		/// <summary>
+		/// Calamity holdouts that were measured as DUDS (or far weaker) as plain shots and gain from being held (boss lab, docs/boss_lab/dud/holdout_routes.tsv: dmg/s per levy against a x40 Eye, single-player emulation, plain vs held).
+		/// A holdout NOT in this table keeps the plain shot: for those the item's Shoot hook / the holdout's first tick already delivers the damage (it fires from the commander's mana pool at full rate), and holding them
+		/// measured lower (Nidhogg, Phalanx Surge, Apoctosis Array, Ion Blaster, Ontological Despoiler, Fetid Emesis...), which would be a nerf. Later Calamity weapons default to the plain shot until they are measured.
+		/// </summary>
+		private static readonly HashSet<string> HoldoutRouted = new()
+		{
+			"AdamantiteParticleAccelerator", "AetherfluxCannon", "Auger", "BlissfulBombardier", "BurningSea", "Buzzkill", "ChickenCannon", "ChromaticEruption", "ChronomancersScythe", "ClockworkBow",
+			"Contagion", "CoralSpout", "CountermeasureMitt", "CrescentMoon", "DaemonsFlame", "DarkSpark", "DeathsAscension", "DevilsSunrise", "DragonRage", "DragonsBreath", "Drataliornus",
+			"Exoblade", "FirestormCannon", "FlakKraken", "FlakToxicannon", "FlurrystormCannon", "FreedomStar", "Genesis", "GhastlyVisage", "GruesomeEminence", "HadalUrn", "Hellborn", "Heresy",
+			"HolofibreImmolator", "Kingsbane", "Lightspeed", "Megalodon", "MineralMortar", "NanoPurge", "Omicron", "OmniGun", "Omniblade", "Phaseslayer", "Photoviscerator", "PrismaticBreaker",
+			"Riftburst", "Roxcalibur", "ScorchedEarth", "Scorpio", "Seadragon", "ShiftingSands", "SlagfireDouser", "SnowstormStaff", "SparklingEmpress", "SpectralstormCannon", "SpineOfThanatos",
+			"StreamGouge", "SuperradiantSlaughterer", "Sylvestaff", "TauCannon", "Teslastaff", "TheCauldron", "TheHive", "TheMaelstrom", "Ultima", "UnstableCastersGauntlet", "Violence", "Voidragon",
+			"Vulcan", "WildfireBloom", "Wingman",
+		};
 
 		/// <summary>Class-chain names of the Calamity base projectiles whose AI is a held melee stab (matched by name: no compile-time reference to Calamity).</summary>
 		private const string ShortswordBase = "BaseShortswordProjectile", MaceFlailBase = "BaseMaceFlailProjectile", FlailBase = "BaseFlailProjectile";
@@ -60,8 +73,8 @@ namespace Levy.Common.Weapons
 			if (shortsword && item.CountsAsClass(DamageClass.Melee)) return ModShotKind.Shortsword;
 			if (mace) return ModShotKind.None; // thrown at the cursor, not held (see the class summary)
 			// A held / charge-and-release holdout reads its owner's button (and is the weapon's own shot).
-			// Only mods whose holdouts were measured as duds as plain shots are routed (Thorium's channelled weapons already work through the plain route and its compat; the audit shows what a mod would gain).
-			if (HoldoutMods.Contains(item.ModItem?.Mod.Name ?? "") && item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
+			// Only holdouts measured as duds as plain shots are routed (see HoldoutRouted); everything else keeps the plain shot, which already works for it.
+			if (item.ModItem?.Mod.Name == "CalamityMod" && HoldoutRouted.Contains(item.ModItem.Name) && item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
 				&& (item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)))
 				return ModShotKind.Holdout;
 			return ModShotKind.None;

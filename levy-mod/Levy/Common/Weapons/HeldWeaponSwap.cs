@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
@@ -71,15 +72,68 @@ namespace Levy.Common.Weapons
 			Vector2 dir = Vector2.Normalize(toTarget);
 			AltPolicies.OnHoldoutSpawn(s, item, target); // the held right button (variant) is set before the holdout exists
 			// owner 255 is deliberate (see class summary); the holder's real owner-gated code runs under the wrapper's Main.myPlayer swap.
-			int i = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), s.NPC.Center, dir * Math.Max(1f, item.shootSpeed), item.shoot, damage, item.knockBack, Slot);
-			if (i < 0 || i >= Main.maxProjectiles) return WeaponUse.Dud(s, item);
-			Projectile p = Main.projectile[i];
+			// A MODDED holdout is made by its item's own Shoot hook (Calamity's guns pass the holdout its gun type / mode in ai[], and some fire real shots from the hook itself): run the hook, with the dummy as the player.
+			Projectile p = item.type >= ItemID.Count ? SpawnViaHooks(s, item, dir * Math.Max(1f, item.shootSpeed), damage) : null;
+			int i = p?.whoAmI ?? -1;
+			if (p == null)
+			{
+				i = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), s.NPC.Center, dir * Math.Max(1f, item.shootSpeed), item.shoot, damage, item.knockBack, Slot);
+				if (i < 0 || i >= Main.maxProjectiles) return WeaponUse.Dud(s, item);
+				p = Main.projectile[i];
+			}
 			if (!p.active || p.type != item.shoot) return WeaponUse.Dud(s, item);
 			JoinChain(s, p, item);
 			if (p.TryGetGlobalProjectile(out HeldWeaponProjectile hg)) { hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(item.shoot); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0; }
 			p.direction = dir.X < 0f ? -1 : 1;
 			_holder[idx] = i;
 			return true;
+		}
+
+		/// <summary>
+		/// Runs a modded item's ModifyShootStats + Shoot hooks with the soldier's dummy as the player (slot 255 swapped to it, Main.myPlayer = 255 so the spawn keeps its ai[] and owner) and returns the projectile of the
+		/// item's own shoot type the hook made (the holdout), or null when the hook made none (the caller then spawns the plain holder). A hook that returns true leaves the default shot to us: spawned the same way.
+		/// </summary>
+		private static Projectile SpawnViaHooks(SoldierNPC s, Item item, Vector2 vel, int damage)
+		{
+			Player d = s.Dummy;
+			if (d == null || item.shoot <= 0) return null;
+			bool[] before = _before ??= new bool[Main.maxProjectiles];
+			for (int k = 0; k < Main.maxProjectiles; k++) before[k] = Main.projectile[k].active;
+			int savedWho = d.whoAmI, savedMy = Main.myPlayer, savedSel = d.selectedItem, savedMana = d.statMana, savedManaMax = d.statManaMax2;
+			Item saved0 = d.inventory[0]; bool savedUse = d.controlUseItem, savedChannel = d.channel;
+			Vector2 pos = s.NPC.Center, v = vel; int type = item.shoot, dmg = damage; float kb = item.knockBack;
+			bool swapped = false, threw = false;
+			try
+			{
+				EnemyTargeting.Swap(s); // dummy -> Main.player[255], at the soldier
+				swapped = true;
+				d.whoAmI = Slot; Main.myPlayer = Slot;
+				d.inventory[0] = item; d.selectedItem = 0;
+				d.statManaMax2 = Math.Max(1, s.Record.MaxMana); d.statMana = Math.Clamp(s.Record.Mana, 0, d.statManaMax2);
+				d.controlUseItem = true; d.channel = true;
+				CombinedHooks.ModifyShootStats(d, item, ref pos, ref v, ref type, ref dmg, ref kb);
+				var source = new EntitySource_ItemUse_WithAmmo(d, item, 0);
+				if (CombinedHooks.Shoot(d, item, source, pos, v, type, dmg, kb)) Projectile.NewProjectile(source, pos, v, type, dmg, kb, Slot);
+			}
+			catch (Exception) { threw = true; }
+			finally
+			{
+				d.whoAmI = savedWho; Main.myPlayer = savedMy; d.selectedItem = savedSel; d.inventory[0] = saved0; d.controlUseItem = savedUse; d.channel = savedChannel;
+				if (item.mana > 0) s.Record.Mana = Math.Clamp(d.statMana, 0, Math.Max(0, s.Record.MaxMana));
+				d.statMana = savedMana; d.statManaMax2 = savedManaMax;
+				if (swapped) EnemyTargeting.Unswap();
+				EnemyTargeting.EnsureSlotRestored();
+			}
+			Projectile holder = null;
+			for (int k = 0; k < Main.maxProjectiles; k++)
+			{
+				Projectile c = Main.projectile[k];
+				if (!c.active || before[k]) continue;
+				if (c.type == item.shoot && c.owner == Slot && holder == null) holder = c; // the holdout joins the chain in TryFire
+				else WeaponUse.TagSoldierProjectile(s, c, item.DamageType ?? DamageClass.Default); // anything else the hook fired is an ordinary soldier shot
+			}
+			if (threw && holder != null) holder.Kill();
+			return threw ? null : holder;
 		}
 
 		/// <summary>This soldier's live holder for <paramref name="item"/>, or null (one per soldier).</summary>
@@ -152,6 +206,7 @@ namespace Levy.Common.Weapons
 			bool[] before = null;
 			bool manaWeapon = false, release = false;
 			object calPlayer = null; Vector2 savedDelta = default; float savedRot = 0f;
+			bool savedMouseLeft = false, mouseSet = false;
 			try
 			{
 				EnemyTargeting.Swap(body); // dummy -> Main.player[255]
@@ -195,6 +250,7 @@ namespace Levy.Common.Weapons
 				Main.mouseX = (int)(cursor.X - Main.screenPosition.X);
 				Main.mouseY = (int)(cursor.Y - Main.screenPosition.Y);
 				Main.myPlayer = Slot; // the holder only fires for owner == Main.myPlayer
+				if (g.ModHolder) { savedMouseLeft = Main.mouseLeft; Main.mouseLeft = feed && !release; mouseSet = true; } // some holdouts read the raw left button as "still held"
 				if (g.ModHolder)
 				{
 					// Calamity reads the cursor from the owner's own CalamityPlayer (MountedCenter + stored delta), not from Main.mouse: put it on the aim point for this call
@@ -211,6 +267,7 @@ namespace Levy.Common.Weapons
 			{
 				Main.myPlayer = savedMyPlayer; Main.mouseX = savedMouseX; Main.mouseY = savedMouseY;
 				if (calPlayer != null) AltPolicies.SetCalAimPublic(calPlayer, savedDelta, savedRot);
+				if (mouseSet) Main.mouseLeft = savedMouseLeft;
 				try
 				{
 					if (touched)

@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.ID;
 using Levy.Common;
 using Levy.Common.Movement;
 using static Levy.Common.LevyConstants.Movement;
@@ -82,6 +83,7 @@ namespace Levy.Content.NPCs
 		private void DanceLift(NPC seg)
 		{
 			NPC npc = NPC;
+			if (seg != null && (seg.noGravity || seg.aiStyle == NPCAIStyleID.Worm)) return;   // a flyer or a worm owns the air: hovering at its height puts the body in its lane, so on wings the body keeps its floor and strafes
 			if (!(AerialSustained && HasFlightKit && !WantsAltitude && !_aerialSpent && AerialMaxReachTiles >= LevyConstants.Movement.AerialClimbBenefitTiles && !RoofOverhead())) return;
 			float groundY = AerialGroundY == float.MinValue ? npc.Bottom.Y : AerialGroundY;
 			float hoverPx = (DanceHoverMinTiles + SlotFrac(SlotSaltAltitude) * DanceHoverSpreadTiles) * LevyConstants.TilePx;

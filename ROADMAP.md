@@ -6,6 +6,15 @@
 
 ---
 
+## 🥊 BOSS FIGHT STATUS (2026-11-07 morning, Eve asked "progress of the bossfights?")
+- **mobility3 (agent ad664ee1175974eb2, branch `mobility3`, head 8a079a2) — MEASURED, not merged yet.** 7 bosses x flat/natural/plat4, 30s survival windows, 420 cells per mode.
+  - Spectator, no mobility gear (before -> after): hits 19.1 -> 14.8, deaths/min 0.7 -> 0.2, standing still 23.4% -> 7.7%, airborne 38% -> 54%.
+  - Big wins: Deerclops hits 41.5 -> 20.7 (stand-still 55% -> 7%), King Slime 13.7 -> 6.8 hits and 2.9 -> 0.6 deaths/min, EoC 6.2 -> 3.2.
+  - No change: Desert Scourge (~40 contact hits, 1.1 deaths/min; the worst boss by far), Queen Bee (~19).
+  - Remaining still-time is mostly spawn grace and "no target order", not stuck pathing.
+  - Regression being bisected: WITH wings, several bosses got worse (Deerclops 8.4 -> ~20 hits, Desert Scourge 28 -> ~38). Builder is sweeping a dodge-off parameter (dx0..dx32) to find it.
+- **Not started:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
+
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart
 - **Built (all but the potions):** Command Radio shift-click map order + barracks "Send to map point"; static cameras (placeable 2x3 tile + tile entity, right-click to connect, Left/Right switch, wheel zooms, Esc exits); GoPro (accessory the Armory issues to a levy; use it to watch the next GoPro levy; indicator drawn over carriers); mind control (while dead until respawn, or any time with the Mind Link item); the zoomed-out arena view (config 1x to 3x per side, default 2x); MP section/position streaming for remote views. Code: `Common/Observe/`, `Content/Items/Observe/`, `Content/Tiles/StaticCamera*`. Art: placeholders from art2 (camera variant B, GoPro variant A, radio variant B scaled 24x36 to 17x26 inside the old 28x26 canvas) at stable paths, to be replaced by the redraws.
 - **Map order:** `SoldierOrder.GoTo` + goal tile in `SoldierRecord.Ext` (saves, no new field). Brain hook = one line at the top of `ThinkOrder`; the soldier marches in 30-tile legs (`MapOrder.LegGoal`), still fights through `TryEngage`, becomes Hold at the spot on arrival, gives up (Hold) after a minute without progress. Spread offsets fan the squad out.

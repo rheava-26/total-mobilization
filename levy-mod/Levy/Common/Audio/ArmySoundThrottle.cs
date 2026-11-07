@@ -77,7 +77,8 @@ namespace Levy.Common.Audio
 		{
 			if (!inArmy || Main.gameMenu) return orig(ref style, position, cb);
 			int now = (int)Main.GameUpdateCount;
-			if ((long)now - windowStart >= WindowTicks || now < windowStart) // long: the first window starts at int.MinValue, and an int subtraction overflows negative and never resets { windowStart = now; total = 0; perStyle.Clear(); nearest.Clear(); }
+			// long: the first window starts at int.MinValue, and an int subtraction overflows negative and never resets
+			if ((long)now - windowStart >= WindowTicks || now < windowStart) { windowStart = now; total = 0; perStyle.Clear(); nearest.Clear(); }
 			string key = style.SoundPath ?? "";
 			perStyle.TryGetValue(key, out int same);
 			float dist = position.HasValue ? Vector2.Distance(position.Value, Main.screenPosition + new Vector2(Main.screenWidth, Main.screenHeight) * 0.5f) : 0f;

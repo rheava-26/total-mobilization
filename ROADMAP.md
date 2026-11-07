@@ -317,6 +317,10 @@
   - **Slime God:** the Paladins are non-boss minions with no valid target (hidden from the Spectator, not allowlisted), so they despawn. Fix: LevyNpcData.BossOwner on spawn; modded boss-spawned NPCs follow their boss's allowlist. Expert now 1/4 (a real fight) vs 0/3 before. Biome ruled out.
   - **KS Ruby Jewel:** 100% → 81% on levies (visible commander + bosses-target-soldiers).
   - Spectator exception REMOVED: hidden from everything but undowned bosses, as before.
+- **2.0.23 SHIPPED** (16:41): best ammo, Slime God/boss-spawned NPCs target levies, sound throttle, worm-kill recording. Both toolchains clean (exc=0, fail=0; Calamity failN=0 compat=1). Mechanization 0.9.1 resent.
+- **vert1 MERGED (48fb7f1) → 2.0.24 building** (conflicts in CalRev harness combined: Zone/Bts + HookItem/AccItem; a3e StartsWith + zone=).
+- **Replay site v10:** "Movement lab" set (10 vert1 fights) + Master+Death label.
+- **moblab LAUNCHED** (branch moblab): hook / cloud bottle / both / none × KS M+D, KS Exp, DS Exp, QB Exp, Brain Rev, EoW Rev, Skeletron Exp, 6 seeds. Question: does mobility gear flip the hard cells; should the Armory prefer issuing hooks?
 - **vert1 DONE (origin/vert1 6f53892; merge after 2.0.23 ships → 2.0.24):**
   - **Hook chains FIXED** (owner slot swapped around DrawProjDirect): 400 checks, 0 px error. Vanilla hook only; modded hooks share the path, unrun.
   - **Double jumps VERIFIED:** levies fire every extra jump their gear grants (Cloud 131, Sandstorm 151, Blizzard 194 jumps / 15 levies). Sulphurous set jump spawns its bubbles (11 jumps → 11 projectiles, 254 dmg). Cloud puff is client dust, unverified headless.

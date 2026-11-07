@@ -1,0 +1,11 @@
+fight|qb|exp|free|1|18000|n15|gmod|grlv|jg	contact:Queen Bee=4723/120 proj:Queen Bee's Stinger<-Queen Bee=73/9 contact:Bee=72/10
+fight|qb|exp|sd|2|18000|n15|gmod|grlv|jg	contact:Queen Bee=3793/94 contact:Bee=217/24 proj:Queen Bee's Stinger<-Queen Bee=163/18
+fight|qb|exp|free|3|18000|n15|gmod|grlv|jg	contact:Queen Bee=4670/120 proj:Queen Bee's Stinger<-Queen Bee=107/15 contact:Bee=50/10
+fight|qb|rev|free|1|18000|n15|gmod|grlv|jg	contact:Queen Bee=4022/102 proj:Queen Bee's Stinger<-Queen Bee=173/25
+fight|qb|rev|free|1|18000|n15|gmod|grlv	contact:Queen Bee=4407/112 proj:Queen Bee's Stinger<-Queen Bee=70/9
+fight|skel|exp|free|1|18000|n16|gmod|grlv	contact:Skeletron=3617/72 proj:Skull<-Skeletron=364/19
+fight|skel|exp|free|3|18000|n16|gmod|grlv	contact:Skeletron=3386/67 proj:Skull<-Skeletron=696/35
+fight|skel|exp|free|5|18000|n16|gmod|grlv	contact:Skeletron=2022/48
+fight|ds|exp|free|1|18000|n11|gmod|grlv	contact:Desert Scourge=1485/46 proj:Scourge Spit<-Desert Scourge=3/1
+fight|eow|rev|free|1|18000|n13|gmod|grlv	contact:Eater of Worlds=2551/126
+fight|eow|exp|sd|2|18000|n13|gmod|grlv	contact:Eater of Worlds=3130/306 contact:Vile Spit=52/1

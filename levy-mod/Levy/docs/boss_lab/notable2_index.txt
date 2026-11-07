@@ -1,0 +1,66 @@
+Notable replays, lab 2 (Levy 2.0.16, Calamity 2.2.2). jsonl.gz, FightRecorder format; open with levy-mod/Levy/tools/fightviewer.
+Cell key, spec file and seed are in each file header; the spec the fight came from is in the "src" column.
+
+main_a__calrev_King_Slime_surf_s1_mrev_mod_n10_02.jsonl.gz
+    closest win: kslime rev, 9/10 levies dead, kill at 255.6 s
+    key fight|kslime|rev|free|1|18000|gmod|grlv  result WIN  src main_a
+
+main_b__calrev_Queen_Bee_surf_s1_mrev_mod_n15_05.jsonl.gz
+    closest win: qb rev, 12/15 levies dead, kill at 260.0 s
+    key fight|qb|rev|free|1|18000|n15|gmod|grlv|jg  result WIN  src main_b
+
+main_a__calrev_King_Slime_surf_s4_mexp_mod_n10_28.jsonl.gz
+    closest win: kslime exp, 8/10 levies dead, kill at 231.4 s
+    key fight|kslime|exp|sd|4|18000|gmod|grlv  result WIN  src main_a
+
+main_a__calrev_Desert_Scourge_surf_s4_mexp_mod_n11_31.jsonl.gz
+    typical DS Expert wipe, spread ON: 11/11 dead at 79.3 s
+    key fight|ds|exp|sd|4|18000|n11|gmod|grlv  result LOSS  src main_a
+
+main_a__calrev_Desert_Scourge_surf_s1_mexp_mod_n11_04.jsonl.gz
+    DS Expert, spread ON: longest fight 105.4 s
+    key fight|ds|exp|free|1|18000|n11|gmod|grlv  result LOSS  src main_a
+
+main_a__calrev_Desert_Scourge_surf_s5_mrev_mod_n11_41.jsonl.gz
+    DS Rev, spread ON: typical wipe 59.4 s
+    key fight|ds|rev|free|5|18000|n11|gmod|grlv  result LOSS  src main_a
+
+spreadoff__calrev_Desert_Scourge_surf_s3_mexp_mod_n11_03.jsonl.gz
+    DS Expert, spread OFF: first-seen fastest wipe 7.9 s
+    key fight|ds|exp|free|3|18000|n11|gmod|grlv  result LOSS  src spreadoff
+
+main_b__calrev_Skeletron_surf_s5_mexp_mod_n16_35.jsonl.gz
+    WEIRD: Skeletron flies away (moved 545854 px), counted TIMEOUT, 8 dead, boss left 6714/8800
+    key fight|skel|exp|free|5|18000|n16|gmod|grlv  result TIMEOUT  src main_b
+
+main_x__calrev_Skeletron_surf_s9_mexp_mod_n16_16.jsonl.gz
+    WEIRD: Skeletron flies away (moved 924216 px), counted TIMEOUT, 0 dead, boss left 10940/8800
+    key fight|skel|exp|free|9|18000|n16|gmod|grlv  result TIMEOUT  src main_x
+
+main_x__calrev_Queen_Bee_surf_s12_mexp_mod_n15_38.jsonl.gz
+    QB Expert wipe (all 15 dead): 15/15 dead at 168.0 s
+    key fight|qb|exp|sd|12|18000|n15|gmod|grlv|jg  result LOSS  src main_x
+
+main_x__calrev_Queen_Bee_surf_s9_mrev_mod_n15_18.jsonl.gz
+    QB Rev win, few deaths: 6/15 dead at 238.0 s
+    key fight|qb|rev|free|9|18000|n15|gmod|grlv|jg  result WIN  src main_x
+
+main_x__calrev_Eye_of_Cthulhu_surf_s8_mrev_mod_n11_08.jsonl.gz
+    Eye Rev wipe, boss targets levies 100%: 11/11 dead at 232.6 s
+    key fight|eye|rev|sd|8|18000|n11|gmod|grlv  result LOSS  src main_x
+
+main_b__calrev_Brain_of_Cthulhu_surf_s3_mrev_mod_n13_16.jsonl.gz
+    Brain Rev wipe behind the creeper shield (0 damage to the Brain): 13/13 dead at 62.4 s
+    key fight|brain|rev|free|3|18000|n13|gmod|grlv  result LOSS  src main_b
+
+main_a__calrev_King_Slime_surf_s1_mdeath_mod_n10_03.jsonl.gz
+    King Slime Death wipe: 10/10 dead at 191.7 s
+    key fight|kslime|death|free|1|18000|gmod|grlv  result LOSS  src main_a
+
+main_a__calrev_Eye_of_Cthulhu_surf_s4_mrev_mod_n11_35.jsonl.gz
+    Eye Rev win: 2/11 dead at 166.7 s
+    key fight|eye|rev|sd|4|18000|n11|gmod|grlv  result WIN  src main_a
+
+revoff__calrev_Queen_Bee_surf_s1_mrevoff_mod_n15_01.jsonl.gz
+    QB Rev with levy Rage/Adrenaline OFF: TIMEOUT 300.0 s, 5 dead
+    key fight|qb|revoff|free|1|18000|n15|gmod|grlv|jg  result TIMEOUT  src revoff

@@ -1,0 +1,54 @@
+fight|kslime|exp|free|1|18000|gmod|grlv	contact:King Slime=859/16 contact:Spiked Slime=118/7 proj:Slime Spike<-Spiked Slime=3/1 contact:Blue Slime=1/1
+fight|kslime|rev|free|1|18000|gmod|grlv	contact:King Slime=1579/30 contact:Purple Slime=28/2 contact:Red Slime=22/2 contact:Blue Slime=11/3
+fight|kslime|death|free|1|18000|gmod|grlv	contact:King Slime=1993/38 contact:Red Slime=43/3 contact:Blue Slime=17/4
+fight|ds|exp|free|1|18000|n11|gmod|grlv	contact:Desert Scourge=1809/57 proj:Scourge Spit<-Desert Scourge=15/2
+fight|ds|rev|free|1|18000|n11|gmod|grlv	contact:Desert Scourge=1738/57 proj:Scourge Spit<-Desert Scourge=4/1
+fight|ds|death|free|1|18000|n11|gmod|grlv	contact:Desert Scourge=1453/47 proj:Scourge Spit<-Desert Scourge=13/1
+fight|eye|exp|free|1|18000|n11|gmod|grlv	contact:Eye of Cthulhu=924/39 contact:Servant of Cthulhu=35/3
+fight|eye|rev|free|1|18000|n11|gmod|grlv	contact:Eye of Cthulhu=2275/68 contact:Servant of Cthulhu=281/25
+fight|eye|death|free|1|18000|n11|gmod|grlv	contact:Eye of Cthulhu=1724/55 contact:Servant of Cthulhu=377/36
+fight|kslime|exp|sd|2|18000|gmod|grlv	contact:King Slime=610/11 contact:Spiked Slime=83/5 contact:Blue Slime=36/6 proj:Slime Spike<-Spiked Slime=10/3
+fight|kslime|rev|sd|2|18000|gmod|grlv	contact:King Slime=869/16 contact:Red Slime=42/2 contact:Yellow Slime=25/1 contact:Purple Slime=19/2 contact:Blue Slime=11/1
+fight|kslime|death|sd|2|18000|gmod|grlv	contact:King Slime=808/15 proj:Slime Spike<-Spiked Slime=31/3 contact:Red Slime=22/1 contact:Purple Slime=21/1
+fight|ds|exp|sd|2|18000|n11|gmod|grlv	contact:Desert Scourge=1613/51 contact:Desert Nuisance=16/2 proj:Scourge Spit<-Desert Scourge=10/2
+fight|ds|rev|sd|2|18000|n11|gmod|grlv	contact:Desert Scourge=1312/44
+fight|ds|death|sd|2|18000|n11|gmod|grlv	contact:Desert Scourge=1282/40 proj:Scourge Spit<-Desert Scourge=9/2
+fight|eye|exp|sd|2|18000|n11|gmod|grlv	contact:Eye of Cthulhu=429/19
+fight|eye|rev|sd|2|18000|n11|gmod|grlv	contact:Eye of Cthulhu=2051/67 contact:Servant of Cthulhu=206/18
+fight|eye|death|sd|2|18000|n11|gmod|grlv	contact:Eye of Cthulhu=1893/54 contact:Servant of Cthulhu=142/14
+fight|kslime|exp|free|3|18000|gmod|grlv	contact:King Slime=787/15 contact:Blue Slime=23/2 proj:Slime Spike<-Spiked Slime=7/1
+fight|kslime|rev|free|3|18000|gmod|grlv	contact:King Slime=1018/19 contact:Blue Slime=1/1
+fight|kslime|death|free|3|18000|gmod|grlv	contact:King Slime=1500/29 contact:Blue Slime=103/11 contact:Red Slime=8/1
+fight|ds|exp|free|3|18000|n11|gmod|grlv	contact:Desert Scourge=1717/58
+fight|ds|rev|free|3|18000|n11|gmod|grlv	contact:Desert Scourge=1440/49
+fight|ds|death|free|3|18000|n11|gmod|grlv	contact:Desert Scourge=1479/46
+fight|eye|exp|free|3|18000|n11|gmod|grlv	contact:Eye of Cthulhu=933/43 contact:Servant of Cthulhu=47/4
+fight|eye|rev|free|3|18000|n11|gmod|grlv	contact:Eye of Cthulhu=2820/82 contact:Servant of Cthulhu=255/20
+fight|eye|death|free|3|18000|n11|gmod|grlv	contact:Eye of Cthulhu=2214/70 contact:Servant of Cthulhu=526/42
+fight|kslime|exp|sd|4|18000|gmod|grlv	contact:King Slime=1413/28 contact:Spiked Slime=22/2 contact:Blue Slime=15/5 proj:Slime Spike<-Spiked Slime=8/3
+fight|kslime|rev|sd|4|18000|gmod|grlv	contact:King Slime=898/17 contact:Red Slime=22/1 contact:Purple Slime=22/1
+fight|kslime|death|sd|4|18000|gmod|grlv	contact:King Slime=1378/27 contact:Yellow Slime=70/3 proj:Slime Spike<-Spiked Slime=55/5 contact:Purple Slime=35/2 contact:Spiked Slime=24/1 contact:Green Slime=17/4
+fight|ds|exp|sd|4|18000|n11|gmod|grlv	contact:Desert Scourge=1495/47
+fight|ds|rev|sd|4|18000|n11|gmod|grlv	contact:Desert Scourge=1454/49 proj:Scourge Spit<-Desert Scourge=27/4
+fight|ds|death|sd|4|18000|n11|gmod|grlv	contact:Desert Scourge=1415/45
+fight|eye|exp|sd|4|18000|n11|gmod|grlv	contact:Eye of Cthulhu=825/31
+fight|eye|rev|sd|4|18000|n11|gmod|grlv	contact:Eye of Cthulhu=1272/36 contact:Servant of Cthulhu=29/2
+fight|eye|death|sd|4|18000|n11|gmod|grlv	contact:Eye of Cthulhu=1880/53 contact:Servant of Cthulhu=178/11
+fight|kslime|exp|free|5|18000|gmod|grlv	contact:King Slime=787/15 contact:Blue Slime=46/4 contact:Spiked Slime=24/1 proj:Slime Spike<-Spiked Slime=5/1
+fight|kslime|rev|free|5|18000|gmod|grlv	contact:King Slime=1018/19 contact:Blue Slime=68/7 contact:Purple Slime=55/4 contact:Red Slime=55/3 contact:Yellow Slime=11/1
+fight|kslime|death|free|5|18000|gmod|grlv	contact:King Slime=916/17 proj:Slime Spike<-Spiked Slime=60/8 contact:Blue Slime=22/2 contact:Purple Slime=20/1 contact:Spiked Slime=14/1
+fight|ds|exp|free|5|18000|n11|gmod|grlv	contact:Desert Scourge=1017/29
+fight|ds|rev|free|5|18000|n11|gmod|grlv	contact:Desert Scourge=1166/37 proj:Scourge Spit<-Desert Scourge=25/2
+fight|ds|death|free|5|18000|n11|gmod|grlv	contact:Desert Scourge=1159/36
+fight|eye|exp|free|5|18000|n11|gmod|grlv	contact:Eye of Cthulhu=157/6
+fight|eye|rev|free|5|18000|n11|gmod|grlv	contact:Eye of Cthulhu=1941/62 contact:Servant of Cthulhu=519/41
+fight|eye|death|free|5|18000|n11|gmod|grlv	contact:Eye of Cthulhu=2334/72 contact:Servant of Cthulhu=213/20 proj:Blood Shot<-Eye of Cthulhu=1/1
+fight|kslime|exp|sd|6|18000|gmod|grlv	contact:King Slime=600/12 contact:Blue Slime=29/7 proj:Slime Spike<-Spiked Slime=25/5 contact:Spiked Slime=14/1
+fight|kslime|rev|sd|6|18000|gmod|grlv	contact:King Slime=1127/23 contact:Red Slime=61/7 contact:Purple Slime=42/2 contact:Yellow Slime=14/1 contact:Spiked Slime=12/1 contact:Blue Slime=2/2
+fight|kslime|death|sd|6|18000|gmod|grlv	contact:King Slime=1087/22 contact:Purple Slime=97/8 contact:Red Slime=51/5 contact:Yellow Slime=28/2 contact:Spiked Slime=25/2 proj:Slime Spike<-Spiked Slime=5/2 contact:Green Slime=2/2
+fight|ds|exp|sd|6|18000|n11|gmod|grlv	contact:Desert Scourge=1451/46 proj:Scourge Spit<-Desert Scourge=18/1
+fight|ds|rev|sd|6|18000|n11|gmod|grlv	contact:Desert Scourge=1360/47
+fight|ds|death|sd|6|18000|n11|gmod|grlv	contact:Desert Scourge=1619/57 proj:Scourge Spit<-Desert Scourge=3/1
+fight|eye|exp|sd|6|18000|n11|gmod|grlv	contact:Eye of Cthulhu=887/34 contact:Servant of Cthulhu=41/3
+fight|eye|rev|sd|6|18000|n11|gmod|grlv	contact:Eye of Cthulhu=1377/39 contact:Servant of Cthulhu=441/25
+fight|eye|death|sd|6|18000|n11|gmod|grlv	contact:Eye of Cthulhu=2026/50 contact:Servant of Cthulhu=123/6

@@ -1,0 +1,24 @@
+fight|qb|exp|free|1|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=2922/74 contact:Bee=115/22 proj:Queen Bee's Stinger<-Queen Bee=87/11
+fight|qb|rev|free|1|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=3540/91 proj:Queen Bee's Stinger<-Queen Bee=77/10
+fight|qb|death|free|1|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=4276/110 proj:Queen Bee's Stinger<-Queen Bee=178/23
+fight|brain|rev|free|1|18000|n13|gmod|grlv|fe0	contact:Brain of Cthulhu=1900/37 contact:Creeper=599/12 proj:Blood Shot<-Brain of Cthulhu=59/6 proj:Ichor Shower<-Brain of Cthulhu=37/4 proj:Blood Scythe<-Brain of Cthulhu=32/3 proj:Golden Shower<-Brain of Cthulhu=10/1 proj:Telekinetic Enemy Grab<-Brain of Cthulhu=9/1 proj:Blood Shot<-Creeper=8/1
+fight|qb|exp|sd|2|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=3502/86 proj:Queen Bee's Stinger<-Queen Bee=87/8 contact:Bee=77/8
+fight|qb|rev|sd|2|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=520/13 proj:Queen Bee's Stinger<-Queen Bee=62/8 contact:Bee=9/1
+fight|qb|death|sd|2|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=1392/34 proj:Queen Bee's Stinger<-Queen Bee=27/3
+fight|brain|rev|sd|2|18000|n13|gmod|grlv|fe0	contact:Brain of Cthulhu=1692/34 contact:Creeper=999/20 proj:Golden Shower<-Brain of Cthulhu=67/8 proj:Blood Shot<-Brain of Cthulhu=54/4 proj:Blood Shot<-Creeper=46/4 proj:Ichor Shower<-Brain of Cthulhu=23/2 proj:Blood Scythe<-Brain of Cthulhu=14/1 proj:Telekinetic Enemy Grab<-Brain of Cthulhu=11/1
+fight|qb|exp|free|3|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=2968/76 proj:Queen Bee's Stinger<-Queen Bee=62/8
+fight|qb|rev|free|3|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=3167/80 proj:Queen Bee's Stinger<-Queen Bee=163/22
+fight|qb|death|free|3|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=3136/80 proj:Queen Bee's Stinger<-Queen Bee=171/22 contact:Bee=13/1
+fight|brain|rev|free|3|18000|n13|gmod|grlv|fe0	contact:Brain of Cthulhu=830/16 contact:Creeper=631/13 proj:Blood Shot<-Brain of Cthulhu=112/9 proj:Ichor Shower<-Brain of Cthulhu=70/5 proj:Golden Shower<-Brain of Cthulhu=15/1
+fight|qb|exp|sd|4|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=2531/62 proj:Queen Bee's Stinger<-Queen Bee=87/9 contact:Bee=11/1
+fight|qb|rev|sd|4|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=2897/73 proj:Queen Bee's Stinger<-Queen Bee=89/13
+fight|qb|death|sd|4|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=2257/57 proj:Queen Bee's Stinger<-Queen Bee=56/7
+fight|brain|rev|sd|4|18000|n13|gmod|grlv|fe0	contact:Creeper=1297/26 contact:Brain of Cthulhu=1068/21 proj:Golden Shower<-Brain of Cthulhu=84/9 proj:Blood Shot<-Creeper=29/3
+fight|qb|exp|free|5|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=2074/56 proj:Queen Bee's Stinger<-Queen Bee=56/11 contact:Bee=34/4
+fight|qb|rev|free|5|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=1781/47 proj:Queen Bee's Stinger<-Queen Bee=122/20 contact:Bee=4/2
+fight|qb|death|free|5|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=2421/65 proj:Queen Bee's Stinger<-Queen Bee=77/15
+fight|brain|rev|free|5|18000|n13|gmod|grlv|fe0	contact:Creeper=1399/29 contact:Brain of Cthulhu=1053/21 proj:Golden Shower<-Brain of Cthulhu=43/3 proj:Blood Shot<-Creeper=34/5 proj:Telekinetic Enemy Grab<-Brain of Cthulhu=6/2
+fight|qb|exp|sd|6|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=4918/127 contact:Bee=76/17 proj:Queen Bee's Stinger<-Queen Bee=56/12
+fight|qb|rev|sd|6|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=4942/126 proj:Queen Bee's Stinger<-Queen Bee=92/14
+fight|qb|death|sd|6|18000|n15|gmod|grlv|jg|fe0	contact:Queen Bee=3831/98 proj:Queen Bee's Stinger<-Queen Bee=126/22 contact:Bee=1/1
+fight|brain|rev|sd|6|18000|n13|gmod|grlv|fe0	contact:Brain of Cthulhu=847/18 contact:Creeper=505/10 proj:Blood Shot<-Brain of Cthulhu=133/12 proj:Golden Shower<-Brain of Cthulhu=37/4

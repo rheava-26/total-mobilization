@@ -122,12 +122,17 @@ namespace Levy.Common.Soldiers
 			{
 				SoldierGear g = Gear;
 				if (g == null) return 0;
+				// read a few times a tick by every mana user: recomputed at most twice a second (a gear change shows within 30 ticks)
+				uint now = Terraria.Main.GameUpdateCount;
+				if (_gearManaStamp != 0 && now - _gearManaStamp < 30u && now >= _gearManaStamp) return _gearMana;
 				int open = Math.Min(AccessorySlots, g.Accessories?.Length ?? 0);
 				float bonus = global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Head, g.Body, g.Legs);
 				for (int i = 0; i < open; i++) bonus += global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Accessories[i]);
-				return Math.Max(0, (int)bonus);
+				_gearMana = Math.Max(0, (int)bonus); _gearManaStamp = now == 0 ? 1u : now;
+				return _gearMana;
 			}
 		}
+		private int _gearMana; private uint _gearManaStamp;
 
 		/// <summary>Max mana: the crystal pool (<see cref="BaseMaxMana"/>, never above the vanilla player's 200) plus what the worn gear adds (<see cref="GearMana"/>), the same way a player's pool is built.</summary>
 		public int MaxMana => BaseMaxMana + GearMana;

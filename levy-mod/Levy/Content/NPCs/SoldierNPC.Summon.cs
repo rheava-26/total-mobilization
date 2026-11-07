@@ -223,7 +223,7 @@ namespace Levy.Content.NPCs
 		// Player.Update (LevyPlayer.PreUpdate/PostUpdate -> SoldierProjectileTag.Park/RestoreSoldierSentries): the commander's cap sees only the
 		// commander's towers, soldier towers never count against it and are never culled by it.
 		// ------------------------------------------------------------------------------------------------------------
-		/// <summary>Measurement switch (env LEVY_SENTRY_OLD=1): the previous sentry behaviour (timeLeft pinned every tick, tower planted at the soldier's feet), for A/B runs.</summary>
+		/// <summary>Measurement switch (env LEVY_SENTRY_OLD=1): the previous sentry behaviour (timeLeft pinned every tick), for A/B runs.</summary>
 		internal static readonly bool SentryOld = Environment.GetEnvironmentVariable("LEVY_SENTRY_OLD") == "1";
 		private int _sentryTick, _sentryCd, _sentryProj = -1, _sentryBorn;
 		private readonly List<int> _sentryScratch = new();
@@ -399,24 +399,15 @@ namespace Levy.Content.NPCs
 			if (staffDrop) vel = new Vector2(0f, 15f);
 
 			var half = new Vector2(sample.width * 0.5f, sample.height * 0.5f);
-			// The tower goes down AHEAD of the soldier, toward the enemy, the way a player plants one at the front: a soldier stands off at his weapon's range (36 tiles for a sentry)
-			// and most towers reach 15-25 tiles, so a tower at his feet never sees what he is fighting. Falls back to his feet when there is no enemy or no ground ahead.
-			float aheadPx = SentryAdvancePx();
 			if (air)
 			{
-				pos = new Vector2(NPC.Center.X + aheadPx, NPC.Center.Y - 24f);
-				if (aheadPx != 0f && Collision.SolidCollision(pos - half, sample.width, sample.height)) pos.X = NPC.Center.X;
+				pos = new Vector2(NPC.Center.X, NPC.Center.Y - 24f);
 				return !Collision.SolidCollision(pos - half, sample.width, sample.height);
 			}
 
-			int tx = (int)((NPC.Center.X + aheadPx) / LevyConstants.TilePx);
+			int tx = (int)(NPC.Center.X / LevyConstants.TilePx);
 			int startRow = (int)((NPC.Bottom.Y - 2f) / LevyConstants.TilePx);
-			if (!FindStandRow(tx, startRow, out int row))
-			{
-				tx = (int)(NPC.Center.X / LevyConstants.TilePx);
-				aheadPx = 0f;
-				if (!FindStandRow(tx, startRow, out row)) return false;
-			}
+			if (!FindStandRow(tx, startRow, out int row)) return false;
 			if (dd2)
 			{
 				int worldX = tx * 16 + 8, push = 41;
@@ -435,22 +426,8 @@ namespace Levy.Content.NPCs
 				return aura ? !Collision.SolidTiles(cx, cx, cy - 2, cy) : !WorldGen.SolidTile(cx, cy);
 			}
 			float y = staffDrop ? row * 16 - 40 : row * 16 - (float)Math.Ceiling(sample.height / 2f);
-			pos = new Vector2(aheadPx != 0f ? tx * (float)LevyConstants.TilePx + 8f : NPC.Center.X, y);
+			pos = new Vector2(NPC.Center.X, y);
 			return !Collision.SolidCollision(pos - half, sample.width, sample.height);
-		}
-
-		/// <summary>How far toward the current target (px, signed in X) a new sentry is planted ahead of this soldier: up to <see cref="LevyConstants.SentryAdvanceMaxTiles"/>, stopping <see cref="LevyConstants.SentryTargetGapTiles"/> short of the target. 0 without a live target.</summary>
-		private float SentryAdvancePx()
-		{
-			if (SentryOld) return 0f;
-			int ti = TargetIndex;
-			if (ti < 0 || ti >= Main.maxNPCs) return 0f;
-			NPC t = Main.npc[ti];
-			if (!t.active || t.life <= 0) return 0f;
-			float dx = t.Center.X - NPC.Center.X;
-			float gapPx = LevyConstants.SentryTargetGapTiles * LevyConstants.TilePx;
-			float adv = Math.Min(Math.Abs(dx) - gapPx, LevyConstants.SentryAdvanceMaxTiles * LevyConstants.TilePx);
-			return adv > 0f ? Math.Sign(dx) * adv : 0f;
 		}
 
 		/// <summary>The first row at or below <paramref name="startRow"/> that a sentry can rest on in the three columns around <paramref name="tx"/> (solid tiles and platforms), within the search depth.</summary>

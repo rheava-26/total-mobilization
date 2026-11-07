@@ -71,10 +71,27 @@ namespace Levy.Common.Weapons
 			DudTrace.NoteType(projectile.type, "dmg+" + Math.Min(damageDone, 99999) / 100 * 100);
 		}
 
+		public override bool PreAI(Projectile projectile)
+		{
+			if (DudTrace.On && projectile.ModProjectile != null && (projectile.ModProjectile.Name == "YharimsCrystalBeam" || projectile.ModProjectile.Name == "StarmageddonBinaryStarCenter") && projectile.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.SoldierIndex >= 0)
+			{
+				int ai = (int)projectile.ai[projectile.ModProjectile.Name == "YharimsCrystalBeam" ? 1 : 0];
+				string host = ai >= 0 && ai < Main.maxProjectiles ? (Main.projectile[ai].active ? (Main.projectile[ai].ModProjectile?.Name ?? Main.projectile[ai].type.ToString()) + "@" + Main.projectile[ai].owner : "inactive") : "badindex";
+				DudTrace.NoteType(projectile.type, "preAI ai=" + ai + " host=" + host + " myOwner=" + projectile.owner);
+			}
+			return true;
+		}
+
 		public override void OnKill(Projectile projectile, int timeLeft)
 		{
+			if (DudTrace.On && projectile.ModProjectile != null && (projectile.ModProjectile.Name == "YharimsCrystalPrism" || projectile.ModProjectile.Name == "StarmageddonHeld" || projectile.ModProjectile.Name == "MurasamaSlash"))
+			{
+				var st = new System.Diagnostics.StackTrace(1, false); var sb = new System.Text.StringBuilder();
+				for (int i = 0; i < st.FrameCount && i < 9; i++) { var m = st.GetFrame(i).GetMethod(); sb.Append(m?.DeclaringType?.Name).Append('.').Append(m?.Name).Append('>'); }
+				DudTrace.NoteType(projectile.type, "killedBy " + sb);
+			}
 			if (!DudTrace.On || !projectile.TryGetGlobalProjectile(out SoldierProjectileTag t) || t.SoldierIndex < 0) return;
-			DudTrace.NoteType(projectile.type, "end@ai0=" + (int)(projectile.ai[0] / 10f) * 10);
+			DudTrace.NoteType(projectile.type, "end@ai0=" + (int)(projectile.ai[0] / 10f) * 10 + " tl=" + Math.Min(timeLeft, 99) + " ch=" + (projectile.owner >= 0 && projectile.owner < Main.maxPlayers && Main.player[projectile.owner] != null && Main.player[projectile.owner].channel ? 1 : 0) + " own=" + projectile.owner + " mp=" + Main.myPlayer);
 		}
 	}
 }

@@ -51,11 +51,24 @@ namespace Levy.Common.Weapons
 			"Vulcan", "WildfireBloom", "Wingman",
 			// dud2 (2026-11-07, mp=200 so the cast cost is payable: plain -> held dmg/s per levy vs a x40 Eye, SP emulation): GloriousEnd 1.6 -> 102, Volterion 0 -> 648, VitriolicViper 448 -> 1704, HeliumFlash 5135 -> 1218 (seed spread; plain was 0 at the lab pool: see the mana note), NebulousCataclysm, RainbowPartyCannon, StaffofBlushie 0 -> 561.
 			"GloriousEnd", "HeliumFlash", "NebulousCataclysm", "RainbowPartyCannon", "StaffofBlushie", "VitriolicViper", "Volterion",
+			// dud2, the holdouts the plain shot cannot run at all (the commander never holds the button, so the holdout ends on its first tick) and that a held chain now carries (children bound to the holdout stay in the chain, the dummy's owned-projectile counts are real, charge / cursor / start-mana tables below):
+			// ArtAttack 0 -> ~170 (cursor circle), Rancor 0 -> ~80 (full-pool start, bound circle), TitaniumRailgun 5 -> ~40 (charge, release), GrandDad 0 -> ~70 (melee holdout; the plain one throws NaN from a zero cursor), Basher (same NaN).
+			"ArtAttack", "Rancor", "TitaniumRailgun", "GrandDad", "Basher",
+			// the UUID-bound holdouts (their children find the holdout through Projectile.GetByUUID, which refuses owner 255): the chain lives in the slot below 255 (HeldWeapons.OwnerSlotFor): Yharim's Crystal 0 -> ~290, Starmageddon 0 -> ~840.
+			"YharimsCrystal", "Starmageddon",
 		};
 
 		/// <summary>Measurement switch (env LEVY_HOLD_FORCE=Name1,Name2 or "all"): routes these Calamity holdouts through the held path as if they were in <see cref="HoldoutRouted"/> (A/B runs of a weapon that is not routed yet).</summary>
 		private static readonly string _force = Environment.GetEnvironmentVariable("LEVY_HOLD_FORCE");
 		private static bool ForceHold(string name) => !string.IsNullOrEmpty(_force) && (_force == "all" || ("," + _force + ",").Contains("," + name + ","));
+
+		/// <summary>
+		/// Held modded weapons whose damage comes from children bound to the holdout, which the held chain must carry: the dummy's owned-projectile counts are kept real for them (Rancor's circle ends when it counts no holdout), children that read
+		/// the button or find the holdout by UUID stay in the chain (<see cref="OwnerLockProbe.BoundToHolder"/>), and a UUID-bound holdout gets the chain slot below 255. Every other routed weapon keeps the chain exactly as it was measured:
+		/// its children are handed to the commander like ordinary shots (an earlier all-weapons version of this rule changed Roxcalibur from 5853 to 60 dmg/s per levy).
+		/// </summary>
+		private static readonly HashSet<string> ChainExtraNames = new() { "ArtAttack", "Rancor", "Starmageddon", "YharimsCrystal" };
+		internal static bool ChainExtras(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && ChainExtraNames.Contains(item.ModItem.Name);
 
 		/// <summary>A held modded weapon that deals its damage only when the button is LET GO after a charge: hold for <see cref="HoldTicks"/>, release, and end the holdout <see cref="LingerTicks"/> later so the next one is cast.</summary>
 		private static readonly Dictionary<string, ChargePlan> ChargeReleaseTable = new()

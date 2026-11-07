@@ -64,6 +64,8 @@ namespace Levy.Common.Weapons
 		private static readonly int ParkedOwner = Main.maxPlayers - 1;
 		/// <summary>The owner slot of every Stardust Dragon segment of every soldier (vanilla's UUID lookup refuses owner 255, so the dragon cannot live on the shared minion owner). Never a real player in practice.</summary>
 		private static readonly int DragonOwner = Main.maxPlayers - 2;
+		/// <summary>The slot a held modded weapon whose holdout is found through the owner's projectile-UUID table lives in (Projectile.GetByUUID refuses owner 255): the same throwaway slot the dragons use.</summary>
+		internal static int UuidOwnerSlot => DragonOwner;
 		/// <summary>Where the OTHER soldiers' dragon segments sit for the length of one segment's Update, so owner scans see only that soldier's chain.</summary>
 		private static readonly int DragonParkOwner = Main.maxPlayers - 3;
 
@@ -803,7 +805,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>Puts the soldier's dummy into <c>Main.player[slot]</c> (a dragon segment's owner slot), remembering the Player that stood there. Paired with <see cref="EnsureAliasRestored"/>.</summary>
-		private static void AliasDummy(int slot, Player dummy)
+		internal static void AliasDummy(int slot, Player dummy)
 		{
 			if (_aliased) EnsureAliasRestored();
 			_aliasBackup = Main.player[slot];

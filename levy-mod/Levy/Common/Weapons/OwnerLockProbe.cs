@@ -114,7 +114,7 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		public static bool BoundToHolder(Projectile child)
 		{
-			if (child == null || child.ModProjectile == null || child.owner != SoldierNPC.DummySlot) return false;
+			if (child == null || child.ModProjectile == null || !HeldWeapons.IsChainOwner(child.owner)) return false;
 			int t = child.type;
 			if (_boundCache.TryGetValue(t, out bool cached)) return cached;
 			bool result = false;

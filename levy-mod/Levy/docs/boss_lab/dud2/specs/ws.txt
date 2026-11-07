@@ -1,0 +1,16 @@
+RustyBeaconPrototype S
+CausticCroakerStaff S
+PolypLauncher S
+SquirrelSquireStaff S
+AquasScepter S
+AtlasMunitionsBeacon S
+CadaverousCarrion S
+CryogenicStaff S
+DreadmineStaff S
+GuidelightofOblivion S
+HivePod S
+Perdition S
+PulseTurretRemote S
+SanctifiedSpark S
+SpikecragStaff S
+DeathstareRod S

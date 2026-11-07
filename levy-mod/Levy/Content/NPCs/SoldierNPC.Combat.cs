@@ -81,7 +81,7 @@ namespace Levy.Content.NPCs
 			if (WeaponUse.HasResources(this, g.Weapon, _mainProfile)) return false;
 			if (!UsingSidearm && ManaFed(_mainProfile))
 			{
-				int missing = Math.Max(0, g.Weapon.mana) - Record.Mana;
+				int missing = WeaponUse.ManaCostOf(this, g.Weapon) - Record.Mana;
 				if (missing > 0 && missing * ManaTicksPerPoint() <= LevyConstants.ManaWaitForPrimaryTicks) return false; // a moment from the next cast: keep the primary up
 			}
 			return true;

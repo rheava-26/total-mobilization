@@ -92,17 +92,20 @@ namespace Levy.Common.Weapons
 			AltPolicies.OnHoldoutSpawn(s, item, target); // the held right button (variant) is set before the holdout exists
 			// owner 255 is deliberate (see class summary); the holder's real owner-gated code runs under the wrapper's Main.myPlayer swap.
 			// A MODDED holdout is made by its item's own Shoot hook (Calamity's guns pass the holdout its gun type / mode in ai[], and some fire real shots from the hook itself): run the hook, with the dummy as the player.
-			Projectile p = item.type >= ItemID.Count ? SpawnViaHooks(s, item, dir * Math.Max(1f, item.shootSpeed), damage) : null;
+			int ownerSlot = OwnerSlotFor(item);
+			Projectile p = item.type >= ItemID.Count ? SpawnViaHooks(s, item, dir * Math.Max(1f, item.shootSpeed), damage, ownerSlot) : null;
 			int i = p?.whoAmI ?? -1;
 			if (p == null)
 			{
-				i = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), s.NPC.Center, dir * Math.Max(1f, item.shootSpeed), item.shoot, damage, item.knockBack, Slot);
+				i = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), s.NPC.Center, dir * Math.Max(1f, item.shootSpeed), item.shoot, damage, item.knockBack, ownerSlot);
 				if (i < 0 || i >= Main.maxProjectiles) return WeaponUse.Dud(s, item);
 				p = Main.projectile[i];
 			}
 			if (!p.active || p.type != item.shoot) { DudTrace.Note(item, "held-spawn-dud"); return WeaponUse.Dud(s, item); }
 			DudTrace.Note(item, "held-spawn");
 			JoinChain(s, p, item);
+			if (ModShotKinds.ChainExtras(item)) FixIdentity(p);
+			if (DudTrace.On && ProjectileID.Sets.NeedsUUID[p.type]) DudTrace.Note(item, "uuid who=" + p.whoAmI + " id=" + p.identity + " uuid=" + p.projUUID + " lookup=" + Projectile.GetByUUID(p.owner, p.whoAmI) + " owner=" + p.owner);
 			if (p.TryGetGlobalProjectile(out HeldWeaponProjectile hg))
 			{
 				hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(item.shoot); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0;
@@ -118,7 +121,7 @@ namespace Levy.Common.Weapons
 		/// Runs a modded item's ModifyShootStats + Shoot hooks with the soldier's dummy as the player (slot 255 swapped to it, Main.myPlayer = 255 so the spawn keeps its ai[] and owner) and returns the projectile of the
 		/// item's own shoot type the hook made (the holdout), or null when the hook made none (the caller then spawns the plain holder). A hook that returns true leaves the default shot to us: spawned the same way.
 		/// </summary>
-		private static Projectile SpawnViaHooks(SoldierNPC s, Item item, Vector2 vel, int damage)
+		private static Projectile SpawnViaHooks(SoldierNPC s, Item item, Vector2 vel, int damage, int ownerSlot)
 		{
 			Player d = s.Dummy;
 			if (d == null || item.shoot <= 0) return null;
@@ -132,13 +135,14 @@ namespace Levy.Common.Weapons
 			{
 				EnemyTargeting.Swap(s); // dummy -> Main.player[255], at the soldier
 				swapped = true;
-				d.whoAmI = Slot; Main.myPlayer = Slot;
+				if (ownerSlot != Slot) SoldierMinions.AliasDummy(ownerSlot, d); // a UUID-bound holdout lives in the throwaway slot below 255 (see OwnerSlotFor)
+				d.whoAmI = ownerSlot; Main.myPlayer = ownerSlot;
 				d.inventory[0] = item; d.selectedItem = 0;
 				d.statManaMax2 = Math.Max(1, s.Record.MaxMana); d.statMana = Math.Clamp(s.Record.Mana, 0, d.statManaMax2);
 				d.controlUseItem = true; d.channel = true;
 				CombinedHooks.ModifyShootStats(d, item, ref pos, ref v, ref type, ref dmg, ref kb);
 				var source = new EntitySource_ItemUse_WithAmmo(d, item, 0);
-				if (CombinedHooks.Shoot(d, item, source, pos, v, type, dmg, kb)) Projectile.NewProjectile(source, pos, v, type, dmg, kb, Slot);
+				if (CombinedHooks.Shoot(d, item, source, pos, v, type, dmg, kb)) Projectile.NewProjectile(source, pos, v, type, dmg, kb, ownerSlot);
 			}
 			catch (Exception) { threw = true; }
 			finally
@@ -147,6 +151,7 @@ namespace Levy.Common.Weapons
 				if (item.mana > 0) s.Record.Mana = Math.Clamp(d.statMana, 0, Math.Max(0, s.Record.MaxMana));
 				d.statMana = savedMana; d.statManaMax2 = savedManaMax;
 				if (swapped) EnemyTargeting.Unswap();
+				SoldierMinions.EnsureAliasRestored();
 				EnemyTargeting.EnsureSlotRestored();
 			}
 			Projectile holder = null;
@@ -154,12 +159,34 @@ namespace Levy.Common.Weapons
 			{
 				Projectile c = Main.projectile[k];
 				if (!c.active || before[k]) continue;
-				if (c.type == item.shoot && c.owner == Slot && holder == null) holder = c; // the holdout joins the chain in TryFire
+				if (c.type == item.shoot && c.owner == ownerSlot && holder == null) holder = c; // the holdout joins the chain in TryFire
 				else WeaponUse.TagSoldierProjectile(s, c, item.DamageType ?? DamageClass.Default); // anything else the hook fired is an ordinary soldier shot
 			}
 			if (threw && holder != null) holder.Kill();
 			return threw ? null : holder;
 		}
+
+		/// <summary>
+		/// The owner slot of a soldier's held chain for this item: 255 (the dummy slot), except for a modded weapon whose holdout needs a projectile UUID (<c>ProjectileID.Sets.NeedsUUID</c>): its children find it
+		/// through <c>Projectile.GetByUUID(owner, ...)</c>, which answers -1 for owner 255 (it only accepts owners below 255), so Yharim's Crystal beams and Starmageddon's stars read <c>Main.projectile[-1]</c> and die.
+		/// Those chains live in <see cref="SoldierMinions.UuidOwnerSlot"/> (the slot the Stardust Dragons use), with the dummy aliased into it for each AI call.
+		/// </summary>
+		internal static int OwnerSlotFor(Item item) => ModShotKinds.ChainExtras(item) && item.shoot > 0 && item.shoot < ProjectileID.Sets.NeedsUUID.Length && ProjectileID.Sets.NeedsUUID[item.shoot] ? SoldierMinions.UuidOwnerSlot : Slot;
+		/// <summary>
+		/// Vanilla hands every projectile <c>identity = index</c> and registers it in <c>Main.projectileIdentity[owner, index]</c>; <c>Projectile.GetByUUID(owner, uuid)</c> reads that table and Calamity's holdouts pass their own
+		/// <c>whoAmI</c> as the uuid. Observed in the lab: a chain holdout had identity 1 at index 0, so the lookup answered -1 and its children (Yharim's Crystal beams, Starmageddon's stars) read Main.projectile[-1]. A chain projectile
+		/// that needs a UUID is put back to identity = index with its table entry and projUUID.
+		/// </summary>
+		internal static void FixIdentity(Projectile p)
+		{
+			if (p == null || !p.active || p.type <= 0 || p.type >= ProjectileID.Sets.NeedsUUID.Length || !ProjectileID.Sets.NeedsUUID[p.type] || p.owner < 0 || p.owner >= 255) return;
+			p.identity = p.whoAmI;
+			p.projUUID = p.whoAmI;
+			Main.projectileIdentity[p.owner, p.whoAmI] = p.whoAmI;
+		}
+
+		/// <summary>True for a projectile owned by one of the two chain slots.</summary>
+		internal static bool IsChainOwner(int owner) => owner == Slot || owner == SoldierMinions.UuidOwnerSlot;
 
 		/// <summary>This soldier's live holder for <paramref name="item"/>, or null (one per soldier).</summary>
 		internal static Projectile LiveHolder(SoldierNPC s, Item item)
@@ -172,6 +199,7 @@ namespace Levy.Common.Weapons
 				if (p.active && p.type == item.shoot && p.TryGetGlobalProjectile(out HeldWeaponProjectile g) && g.Chain && g.ItemType == item.type
 					&& ReferenceEquals(g.Record, s.Record) && p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex == idx)
 					return p;
+				if (DudTrace.On) DudTrace.Note(item, "livecheck-fail active=" + p.active + " type=" + (p.type == item.shoot) + " chain=" + (p.TryGetGlobalProjectile(out HeldWeaponProjectile g2) && g2.Chain) + " itemT=" + (g2 != null && g2.ItemType == item.type) + " rec=" + (g2 != null && ReferenceEquals(g2.Record, s.Record)) + " tag=" + (p.TryGetGlobalProjectile(out SoldierProjectileTag tg2) && tg2.SoldierIndex == idx));
 			}
 			_holder.Remove(idx);
 			return null;
@@ -229,7 +257,7 @@ namespace Levy.Common.Weapons
 			Item pouch = null;
 			int pouchStackBefore = 0;
 			bool[] before = null;
-			bool manaWeapon = false, release = false;
+			bool manaWeapon = false, release = false, aliased = false; int aliasWho = Slot;
 			object calPlayer = null; Vector2 savedDelta = default; float savedRot = 0f;
 			bool savedMouseLeft = false, mouseSet = false;
 			try
@@ -264,7 +292,7 @@ namespace Levy.Common.Weapons
 					release = g.HeldTicks > g.HoldMax;
 					if (g.HeldTicks > g.HoldMax + g.Linger) { p.Kill(); return; }
 				}
-				CountOwned(body); // vanilla counts a player's own projectiles in Player.Update; the dummy never runs it, and holdouts and their children test ownedProjectileCounts (Rancor's circle ends when it sees no holdout)
+				if (ModShotKinds.ChainExtras(item)) CountOwned(body); // vanilla counts a player's own projectiles in Player.Update; the dummy never runs it, and holdouts and their children test ownedProjectileCounts (Rancor's circle ends when it sees no holdout)
 				d.channel = feed && !release;
 				d.controlUseItem = feed && !release;
 				d.itemAnimationMax = Math.Max(1, CombinedHooks.TotalAnimationTime(Math.Max(1, item.useAnimation), d, item));
@@ -283,7 +311,8 @@ namespace Levy.Common.Weapons
 				if (g.Script != null && TargetOf(body) is NPC scriptTarget) cursor = g.Script.At(scriptTarget.Center, Main.GameUpdateCount);
 				Main.mouseX = (int)(cursor.X - Main.screenPosition.X);
 				Main.mouseY = (int)(cursor.Y - Main.screenPosition.Y);
-				Main.myPlayer = Slot; // the holder only fires for owner == Main.myPlayer
+				if (p.owner != Slot && !ReferenceEquals(Main.player[p.owner], d)) { SoldierMinions.AliasDummy(p.owner, d); aliasWho = d.whoAmI; d.whoAmI = p.owner; aliased = true; } // a UUID-bound chain: the dummy also stands in the chain's own slot
+				Main.myPlayer = p.owner; // the holder only fires for owner == Main.myPlayer
 				if (g.ModHolder) { savedMouseLeft = Main.mouseLeft; Main.mouseLeft = feed && !release; mouseSet = true; } // some holdouts read the raw left button as "still held"
 				if (g.ModHolder)
 				{
@@ -300,6 +329,7 @@ namespace Levy.Common.Weapons
 			finally
 			{
 				Main.myPlayer = savedMyPlayer; Main.mouseX = savedMouseX; Main.mouseY = savedMouseY;
+				if (aliased) { d.whoAmI = aliasWho; SoldierMinions.EnsureAliasRestored(); }
 				if (calPlayer != null) AltPolicies.SetCalAimPublic(calPlayer, savedDelta, savedRot);
 				if (mouseSet) Main.mouseLeft = savedMouseLeft;
 				try
@@ -366,10 +396,11 @@ namespace Levy.Common.Weapons
 				if (!c.active || before[i] || i == holder.whoAmI) continue;
 				if (DudTrace.On) DudTrace.NoteType(c.type, "adopted@" + c.owner + (c.friendly ? "+f" : "-f") + "+dmg" + (c.damage > 0 ? "1" : "0"));
 				if (c.aiStyle == ProjAIStyleID.HeldProjectile || c.aiStyle == ProjAIStyleID.ThickLaser) JoinChain(body, c, item);
-				else if (item.type >= ItemID.Count && c.ModProjectile != null && ((holder.TryGetGlobalProjectile(out HeldWeaponProjectile pg) && pg.BoundChild) || OwnerLockProbe.BoundToHolder(c)))
+				else if (ModShotKinds.ChainExtras(item) && c.ModProjectile != null && ((holder.TryGetGlobalProjectile(out HeldWeaponProjectile pg) && pg.BoundChild) || OwnerLockProbe.BoundToHolder(c)))
 				{
 					// bound to its holder (reads the button / finds its parent by UUID) or made by a bound child (Starmageddon's stars, made by the star centre): stays in the chain, same owner, dummy and button as the holdout
 					JoinChain(body, c, item);
+					FixIdentity(c);
 					if (c.TryGetGlobalProjectile(out HeldWeaponProjectile cg)) { cg.ModHolder = true; cg.BoundChild = true; if (holder.TryGetGlobalProjectile(out HeldWeaponProjectile hh)) cg.Script = hh.Script; }
 					DudTrace.Note(item, "child-in-chain:" + (c.ModProjectile?.Name ?? c.type.ToString()));
 				}
@@ -496,12 +527,14 @@ namespace Levy.Common.Weapons
 			}
 			catch (Exception e) { Mod.Logger.Warn("Levy: could not hook ProjectileLoader.ProjectileAI: " + e.Message); }
 			On_Projectile.Damage += DamageDetour;
+			On_Projectile.Update += ChainUpdateDetour;
 		}
 
 		public override void Unload()
 		{
 			On_Projectile.AI -= AiDetour;
 			On_Projectile.Damage -= DamageDetour;
+			On_Projectile.Update -= ChainUpdateDetour;
 			HeldWeapons.Reset();
 		}
 
@@ -534,15 +567,33 @@ namespace Levy.Common.Weapons
 		private static bool ShouldWrap(Projectile p, out HeldWeaponProjectile g)
 		{
 			g = null;
-			return p.owner == SoldierNPC.DummySlot && _wrapDepth == 0 && p.TryGetGlobalProjectile(out g) && g.Chain;
+			return HeldWeapons.IsChainOwner(p.owner) && _wrapDepth == 0 && p.TryGetGlobalProjectile(out g) && g.Chain;
 		}
 
 		private static void LoaderAiDetour(Action<Projectile> orig, Projectile self)
 		{
-			if (self.owner != SoldierNPC.DummySlot || _wrapDepth != 0 || self.ModProjectile == null || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain || !g.ModHolder) { orig(self); return; }
+			if (!HeldWeapons.IsChainOwner(self.owner) || _wrapDepth != 0 || self.ModProjectile == null || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain || !g.ModHolder) { orig(self); return; }
 			_wrapDepth++;
 			try { HeldWeapons.RunAi(orig, self, g); }
 			finally { _wrapDepth--; }
+		}
+
+		/// <summary>
+		/// Projectile.Update ends with <c>if (owner &lt; 255 &amp;&amp; !Main.player[owner].active) Kill();</c>: a chain that lives in the throwaway slot below 255 (a UUID-bound holdout, see <see cref="HeldWeapons.OwnerSlotFor"/>) would be
+		/// killed by that line every tick, because the slot's Player is only the soldier's dummy while the AI runs. Its whole Update runs with the dummy standing in the slot (what the dragons' Update wrapper does).
+		/// </summary>
+		private static void ChainUpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
+		{
+			if (self.owner == SoldierNPC.DummySlot || !self.active || !HeldWeapons.IsChainOwner(self.owner) || !LevyUtil.IsServerOrSingle || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain
+				|| !self.TryGetGlobalProjectile(out SoldierProjectileTag tag) || tag.SoldierIndex < 0 || tag.SoldierIndex >= Main.maxNPCs || Main.npc[tag.SoldierIndex].ModNPC is not SoldierNPC s || s.Dummy == null || !s.IsAlive)
+			{ orig(self, i); return; }
+			bool aliased = false;
+			try
+			{
+				if (!ReferenceEquals(Main.player[self.owner], s.Dummy)) { SoldierMinions.AliasDummy(self.owner, s.Dummy); aliased = true; }
+				orig(self, i);
+			}
+			finally { if (aliased) SoldierMinions.EnsureAliasRestored(); }
 		}
 
 		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)

@@ -115,6 +115,12 @@ namespace Levy.Common.Globals
 			// Credit the officer's / summon's commander with the enemy BEFORE StrikeNPC runs checkDead -> NPCLoot, so a killing blow counts for banners and the "defeated by" line.
 			if (CommanderIndex >= 0 && CommanderIndex < Main.maxPlayers && LevyUtil.IsServerOrSingle && Main.player[CommanderIndex].active)
 				target.PlayerInteraction(CommanderIndex);
+			if (SoldierIndex >= 0 && LevyUtil.IsServerOrSingle && Compat.Calamity.LevyRippers.Active)
+			{
+				// Calamity's Rage / Adrenaline damage for the levy that fired this: the shot is owned by the commander, whose own modes Calamity's player hook reads.
+				SoldierNPC firer = EnemyTargeting.LiveBody(SoldierIndex);
+				if (firer != null) { float m = firer.Rippers_DamageMult(); if (m > 1f) modifiers.SourceDamage *= m; }
+			}
 			if (SoldierIndex < 0 || !(projectile.minion || (projectile.type > 0 && projectile.type < ProjectileID.Sets.MinionShot.Length && ProjectileID.Sets.MinionShot[projectile.type]))) return;
 			if (LevyNpcData.IsNpcTagged(target)) modifiers.SourceDamage += LevyConstants.TagMinionDamageBonus;
 		}

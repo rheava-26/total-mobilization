@@ -40,6 +40,10 @@ namespace Levy.Common.Weapons
 			"Vulcan", "WildfireBloom", "Wingman",
 		};
 
+		/// <summary>Measurement switch (env LEVY_HOLD_FORCE=Name1,Name2 or "all"): routes these Calamity holdouts through the held path as if they were in <see cref="HoldoutRouted"/> (A/B runs of a weapon that is not routed yet).</summary>
+		private static readonly string _force = Environment.GetEnvironmentVariable("LEVY_HOLD_FORCE");
+		private static bool ForceHold(string name) => !string.IsNullOrEmpty(_force) && (_force == "all" || ("," + _force + ",").Contains("," + name + ","));
+
 		/// <summary>Class-chain names of the Calamity base projectiles whose AI is a held melee stab (matched by name: no compile-time reference to Calamity).</summary>
 		private const string ShortswordBase = "BaseShortswordProjectile", MaceFlailBase = "BaseMaceFlailProjectile", FlailBase = "BaseFlailProjectile";
 
@@ -74,7 +78,7 @@ namespace Levy.Common.Weapons
 			if (mace) return ModShotKind.None; // thrown at the cursor, not held (see the class summary)
 			// A held / charge-and-release holdout reads its owner's button (and is the weapon's own shot).
 			// Only holdouts measured as duds as plain shots are routed (see HoldoutRouted); everything else keeps the plain shot, which already works for it.
-			if (item.ModItem?.Mod.Name == "CalamityMod" && HoldoutRouted.Contains(item.ModItem.Name) && item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
+			if (item.ModItem?.Mod.Name == "CalamityMod" && (HoldoutRouted.Contains(item.ModItem.Name) || ForceHold(item.ModItem.Name)) && item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
 				&& (item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)))
 				return ModShotKind.Holdout;
 			return ModShotKind.None;

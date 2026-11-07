@@ -46,6 +46,7 @@ namespace Levy.Common.Weapons
 			WeaponProfile profile = s.Weapon;
 			if (profile == null || profile.ItemType != item.type) { profile = WeaponClassifier.GetProfile(item); s.Weapon = profile.Supported ? profile : null; }
 			if (profile == null || !profile.Supported) return false;
+			DudTrace.Call(item, profile);
 			NPC seg = Aiming.NearestSegment(target, s.NPC.Center) ?? target;
 			// Companion per-shot veto (a resource gate, or a role weapon that must not fire at this target). False = hold this tick; retry shortly.
 			if (PreFireGate != null)
@@ -67,6 +68,7 @@ namespace Levy.Common.Weapons
 					if (hold) return false; // a caster saving mana for the alt holds fire for a moment
 				}
 				bool primary = Dispatch(s, item, profile, seg);
+				DudTrace.Result(item, primary);
 				if (primary) AltPolicies.NotePrimary(s, item);
 				return primary;
 			}
@@ -407,7 +409,7 @@ namespace Levy.Common.Weapons
 		private static bool FireMagic(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
 		{
 			int cost = Math.Max(0, item.mana);
-			if (s.Record.Mana < cost) return false;
+			if (s.Record.Mana < cost) { DudTrace.Note(item, "mana-short"); return false; }
 			int projType = item.shoot;
 			if (projType <= 0) return Dud(s, item);
 			// Flying Knife: one per soldier. While it is out the soldier just keeps aiming, like a player holding the knife at the cursor.
@@ -419,7 +421,8 @@ namespace Levy.Common.Weapons
 			ItemShots.PreShoot(s, projType); // vanilla's kill-the-previous-one rule (Rainbow Gun) runs before any shot path spawns
 			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack);
 			if (!fired && !_altActive) fired = FirePlain(s, item, profile, target, muzzle, vel, projType, damage, item.knockBack);
-			if (!fired) return Dud(s, item); // nothing came out: keep the mana, hold
+			if (!fired) { DudTrace.Note(item, "magic-nothing-spawned"); return Dud(s, item); } // nothing came out: keep the mana, hold
+			DudTrace.Note(item, "magic-fired");
 			s.Record.Mana -= cost;
 			FinishUse(s, item, vel);
 			return true;
@@ -443,6 +446,7 @@ namespace Levy.Common.Weapons
 				Vector2 v = deg == 0f ? vel : vel.RotatedBy(MathHelper.ToRadians(deg));
 				if (Spawn(s, muzzle, v, projType, damage, knockback, profile.DamageType) != null) spawned++;
 			}
+			if (spawned == 0 && DudTrace.On) DudTrace.NoteType(projType, "spread-0");
 			return spawned;
 		}
 
@@ -549,10 +553,12 @@ namespace Levy.Common.Weapons
 				Projectile p = Main.projectile[i];
 				if (!p.active || before[i]) continue;
 				TagSoldierProjectile(s, p, dmgType);
+				DudTrace.Spawned(item, p);
 				adopted++;
 			}
 			// A hook that threw may already have fired: keep what it spawned rather than firing a second shot on top of it.
-			if (threw) return adopted > 0;
+			if (threw) { DudTrace.Note(item, "hooks-threw"); return adopted > 0; }
+			if (adopted == 0) DudTrace.Note(item, useDefault ? "hooks-0-default" : "hooks-0-nodefault");
 			if (!useDefault) return adopted > 0;
 
 			DefaultShoot(s, item, profile, target, pos, v, type, dmg, kb);

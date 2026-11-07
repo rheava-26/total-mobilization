@@ -51,7 +51,7 @@ namespace Levy.Common.Weapons
 		internal static bool TryFire(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
 		{
 			if (item.shoot <= 0) return WeaponUse.Dud(s, item);
-			if (!WeaponUse.HasResources(s, item, profile)) return false;
+			if (!WeaponUse.HasResources(s, item, profile)) { DudTrace.Note(item, "held-nores"); return false; }
 			int idx = s.NPC.whoAmI;
 			uint now = Main.GameUpdateCount;
 			_fed[idx] = now;
@@ -81,7 +81,8 @@ namespace Levy.Common.Weapons
 				if (i < 0 || i >= Main.maxProjectiles) return WeaponUse.Dud(s, item);
 				p = Main.projectile[i];
 			}
-			if (!p.active || p.type != item.shoot) return WeaponUse.Dud(s, item);
+			if (!p.active || p.type != item.shoot) { DudTrace.Note(item, "held-spawn-dud"); return WeaponUse.Dud(s, item); }
+			DudTrace.Note(item, "held-spawn");
 			JoinChain(s, p, item);
 			if (p.TryGetGlobalProjectile(out HeldWeaponProjectile hg)) { hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(item.shoot); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0; }
 			p.direction = dir.X < 0f ? -1 : 1;

@@ -148,9 +148,9 @@ namespace Levy.Common.Targeting
 			return _swapStyles.Contains(style) || ConfigAllows(style);
 		}
 
-		/// <summary>The boss a minion belongs to while that boss is alive: Creepers to the Brain of Cthulhu (NPC.crimsonBoss), Servants of Cthulhu to the Eye of Cthulhu. Null for everything else.</summary>
 		/// <summary>LEVY_KINTARGET=0 turns the boss-owner rule off (A/B switch for measuring).</summary>
 		internal static readonly bool KinOn = Environment.GetEnvironmentVariable("LEVY_KINTARGET") != "0";
+		/// <summary>The boss a minion belongs to while that boss is alive: anything a live boss spawned (<see cref="LevyNpcData.BossOwner"/>), Creepers to the Brain of Cthulhu (NPC.crimsonBoss), Servants of Cthulhu to the Eye of Cthulhu. Null for everything else.</summary>
 		internal static NPC MinionBoss(NPC npc)
 		{
 			// Anything a live boss spawned, however its own AI picks targets (Calamity's King Slime jewel, the Slime God Paladins and their splits): it follows its boss's rule, so the army draws it exactly when it draws the boss.
@@ -200,13 +200,8 @@ namespace Levy.Common.Targeting
 			return null;
 		}
 
-		/// <summary>
-		/// True when a Spectator should be hidden from this NPC's search: never from an undowned boss, and never from a boss-class NPC the army cannot take over (<see cref="IsBossClass"/> but not
-		/// <see cref="IsAllowlisted"/>). Hiding the only player from such an NPC leaves it with "no valid target", and boss AIs answer that by leaving: Calamity's Slime God Paladins entered their despawn
-		/// state (ai[0] 3/4) within six ticks of spawning and fell out of the world whenever the commander was a Spectator, so the Core stayed invulnerable and the fight could not happen.
-		/// An NPC that is not hidden from simply sees the spectator as any player (who takes no damage), exactly as it would see the commander without the potion.
-		/// </summary>
-		internal static bool HidesSpectatorFrom(NPC npc) => !IsUndownedBoss(npc) && !(IsBossClass(npc) && !IsAllowlisted(npc));
+		/// <summary>True when a Spectator should be hidden from this NPC's search: never from an undowned boss (it sees the commander like any player). Every other NPC, boss minions included, never sees a Spectator; a boss minion follows its boss's targeting rule through <see cref="LevyNpcData.BossOwner"/> (<see cref="MinionBoss"/>), so it finds levies to target instead of an empty world.</summary>
+		internal static bool HidesSpectatorFrom(NPC npc) => !IsUndownedBoss(npc);
 
 		/// <summary>
 		/// A boss, a boss part or segment, or something a boss spawned (its minions and their children: <see cref="LevyNpcData.BossOwner"/>, marked on spawn). Unlike <see cref="IsAllowlisted"/>'s guards this is

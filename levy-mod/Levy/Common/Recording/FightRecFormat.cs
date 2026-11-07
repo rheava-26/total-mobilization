@@ -23,6 +23,8 @@ namespace Levy.Common.Recording
 	///         gear (the commander): arm = [[slot,type,prefix],..] over Player.armor (0-2 armor, 3-9 accessories, 10-19 vanity), inv = [[slot,type,prefix,stack],..] over the hotbar (0-9) and ammo slots (54-57); air slots are left out.
 	///         lgear (one levy): id, g = [[slot,type,prefix,stack],..] with slot 0 weapon, 1 sidearm, 2 head, 3 body, 4 legs, 5-10 accessories, 11 ammo pouch, 12 hook.
 	///         names gains prefixes (id to name). Item names are in names.items.
+	///         Format 7 adds the frame key s: the hitbox of EVERY other hostile NPC within 140 tiles of the commander that b and a do not carry (the segments of secondary worms, damage-0 adds), SchemaS, integer pixels.
+	///         A row is full (8 numbers) the first time an NPC slot is seen or when its type, size, realLife or flags change, and just [id,x,y] after that. Hostile projectile hitboxes (j: w,h) were already there since format 3.
 	///         Older files stay readable: every new field is appended or optional.
 	///   names type id to name tables (items, npcs, projectiles, buffs, soldiers), written at the end
 	///   end   stop reason and counts
@@ -41,16 +43,20 @@ namespace Levy.Common.Recording
 		public List<double[]> L = new();
 		/// <summary>[type,whoAmI,x,y,vx,vy,life,lifeMax,tkind,tlevy,w,h]</summary>
 		public List<double[]> A = new();
+		/// <summary>Format 7 hitboxes of other hostile NPCs, integer pixels: full [type,id,x,y,w,h,realLife,flags] when the NPC is new or its shape changed, else the short [id,x,y].</summary>
+		public List<double[]> S = new();
 	}
 
 	internal static class FightRecFormat
 	{
-		public const int Version = 6;
+		public const int Version = 7;
 		public const string SchemaP = "x,y,vx,vy,dir,flags,life,mana,immune,wingTime,rocketTime,held,mount,hookX,hookY,dashDelay";
 		public const string SchemaPFlags = "1 grounded,2 flying,4 hookOut,8 hookAttached,16 left,32 right,64 jump,128 down,256 up,512 grapple,1024 useItem,2048 dashing,4096 mounted,8192 dead";
 		public const string SchemaB = "type,id,x,y,vx,vy,life,lifeMax,ai0,ai1,ai2,ai3,target,isPart,tkind,tlevy,w,h";
 		public const string TKinds = "0 none,1 player,2 levy (tlevy = levy record id)";
 		public const string SchemaA = "type,id,x,y,vx,vy,life,lifeMax,tkind,tlevy,w,h";
+		public const string SchemaS = "type,id,x,y,w,h,realLife,flags  (a row of 3 = id,x,y: same type, size, realLife and flags as that id's last full row)";
+		public const string SFlags = "1 deals contact damage,2 does not take damage,4 body segment (realLife = the head that owns its life)";
 		public const string SchemaJ = "type,x,y,vx,vy,damage,w,h";
 		public const string SchemaL = "id,x,y,vx,vy,flags,life,state,held,wingTime,lifeMax,w,h";
 		public const string SchemaLFlags = "1 grounded,2 flying,4 aerial,8 hooking,16 blocked";
@@ -103,7 +109,7 @@ namespace Levy.Common.Recording
 		{
 			var sb = new StringBuilder(256);
 			sb.Append("{\"k\":\"f\",\"t\":").Append(f.T).Append(",\"p\":"); Arr(sb, f.P);
-			Rows(sb, "b", f.B); Rows(sb, "j", f.J); Rows(sb, "l", f.L); Rows(sb, "a", f.A);
+			Rows(sb, "b", f.B); Rows(sb, "j", f.J); Rows(sb, "l", f.L); Rows(sb, "a", f.A); Rows(sb, "s", f.S);
 			return sb.Append('}').ToString();
 		}
 
@@ -154,6 +160,8 @@ namespace Levy.Common.Recording
 				f.J.Add(new double[] { 83, 5100, 3050, 4, 4, 30 });
 				f.L.Add(new double[] { 12, 4900, 3100, 0, 0, 1, 500, 2, 757, 0, 600 });
 				f.A.Add(new double[] { 267, 30, 5200, 3000, 1, 2, 40, 40, 2, 12, 20, 20 });
+				f.S.Add(new double[] { 1234, 77, 5300, 3100, 38, 40, 70, 5 });
+				f.S.Add(new double[] { 77, 5305, 3104 });
 				string line = Frame(f);
 				using (var d = JsonDocument.Parse(line))
 				{
@@ -165,6 +173,7 @@ namespace Levy.Common.Recording
 					if (r.GetProperty("j")[0][5].GetInt32() != 30) return "projectile array";
 					if (r.GetProperty("l")[0][8].GetInt32() != 757) return "levy array";
 					if (r.GetProperty("a")[0][1].GetInt32() != 30 || r.GetProperty("a")[0][9].GetInt32() != 12) return "adds array";
+					if (r.GetProperty("s")[0][1].GetInt32() != 77 || r.GetProperty("s")[0][4].GetInt32() != 38 || r.GetProperty("s")[0][6].GetInt32() != 70 || r.GetProperty("s")[1].GetArrayLength() != 3 || r.GetProperty("s")[1][1].GetInt32() != 5305) return "hitbox array";
 				}
 				string ev = Event(99, "use", ("item", "757"), ("name", Esc("Sword \"X\"\n")));
 				using (var d = JsonDocument.Parse(ev))

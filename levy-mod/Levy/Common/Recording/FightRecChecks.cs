@@ -24,6 +24,10 @@ namespace Levy.Common.Recording
 				Check(!FightRecorder.LooksKilled(8000, 10200, 100, 40, 110, false), "leaving healthy right after a hit is a despawn");
 				Check(!FightRecorder.LooksKilled(45, 10200, 100, 10, 400, false), "leaving at low life with no recent hit is a despawn");
 				Check(!FightRecorder.LooksKilled(45, 10200, -1, 0, 400, false), "leaving at low life that was never hit is a despawn");
+				// format 7: the hitbox rows (full and short) of other hostile NPCs round-trip, and the format self-check passes
+				Check(FightRecFormat.Version >= 7, "format version is 7 or later");
+				string fmt = FightRecFormat.SelfCheck();
+				Check(fmt == null, "format self-check incl. hitbox rows: " + fmt);
 				// a body segment resolves to the head that owns its life
 				int hi = Main.maxNPCs - 1, bi = Main.maxNPCs - 2;
 				NPC saveH = Main.npc[hi], saveB = Main.npc[bi];

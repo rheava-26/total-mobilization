@@ -643,11 +643,25 @@ namespace Levy.Common.Testing
 			{
 				int addN = Main.npc.Count(q => q.active && st.AddTypes.Contains(q.type));
 				int crN = Main.npc.Count(q => q.active && q.type == NPCID.Creeper);
-				try { File.AppendAllText(_btOut + ".audit.txt", $"{run.Key} t{st.Tick} {run.Boss} hp{e.life}/{e.lifeMax} def{e.defense} dmg{e.damage} ai[{e.ai[0]:0},{e.ai[1]:0},{e.ai[2]:0},{e.ai[3]:0}] tgt{tg} invuln{(e.dontTakeDamage ? 1 : 0)} pos({e.Center.X / 16f:0},{e.Center.Y / 16f:0}) nearLevy{best / 16f:0.0}t adds{addN} creepers{crN} levies{st.Levies.Count(x => !x.Dead)}\n"); } catch { }
+				try { File.AppendAllText(_btOut + ".audit.txt", $"{run.Key} t{st.Tick} {run.Boss} hp{e.life}/{e.lifeMax} def{e.defense} dmg{e.damage} ai[{e.ai[0]:0},{e.ai[1]:0},{e.ai[2]:0},{e.ai[3]:0}] tgt{tg} invuln{(e.dontTakeDamage ? 1 : 0)} pos({e.Center.X / 16f:0},{e.Center.Y / 16f:0}) nearLevy{best / 16f:0.0}t adds{addN} creepers{crN} levies{st.Levies.Count(x => !x.Dead)}{BtCreeperProbe(st)}\n"); } catch { }
 			}
 		}
 
 		/// <summary>Once per run (audit=1): everything a levy carries that could differ from a real-play levy.</summary>
+		private static string BtCreeperProbe(BtState st)
+		{
+			float best = 1e9f; int tgt = -9, n = 0, tgtLevy = 0, tgtPlayer = 0, tgtNone = 0;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC c = Main.npc[i];
+				if (!c.active || c.type != NPCID.Creeper) continue;
+				n++; tgt = c.target;
+				if (c.target == SoldierNPC.DummySlot || c.target >= 300) tgtLevy++; else if (c.target >= 0 && c.target < Main.maxPlayers) tgtPlayer++; else tgtNone++;
+				foreach (var l in st.Levies) if (!l.Dead && l.Rec.HasBody) best = Math.Min(best, Vector2.Distance(c.Center, Main.npc[l.Idx].Center));
+			}
+			return n == 0 ? "" : $" creeperNearestLevy{best / 16f:0.0}t creeperTgt(levy{tgtLevy}/player{tgtPlayer}/none{tgtNone})";
+		}
+
 		private void BtAuditLevies(BtRun run, BtState st)
 		{
 			try
@@ -670,6 +684,7 @@ namespace Levy.Common.Testing
 			return $"ph2={st.Phase2Tick};ai0chg={st.Ai0Changes};dash={st.DashEvents};spawns={st.SeenSpawns};tp={st.Teleports};invuln={st.InvulnTicks * 100 / t:0}%;tgtLevy={st.TargLevyTicks * 100 / t:0}%;tgtPlayer={st.TargPlayerTicks * 100 / t:0}%;tgtNone={st.TargNoneTicks * 100 / t:0}%;nearT={(st.NearDistN > 0 ? st.NearDistSum / st.NearDistN : 0):0.0};platform={st.PlatformTicks * 100 / Math.Max(1, st.PlatformTicks + st.GroundTicks)}%;maxCreepers={st.CreeperTicksMax};specLost={st.SpecLostTicks * 100 / t:0}%;real={(st.Run.Real ? 1 : 0)};{(st.Phases.Length > 200 ? st.Phases.Substring(0, 200) : st.Phases)}";
 		}
 
+		private static Item BtSpectatorPotion() { var it = new Item(); it.SetDefaults(ModContent.ItemType<global::Levy.Content.Items.Potions.SpectatorPotion>()); return it; }
 		private static void ClearCommanderBuffs() { Player p = Main.player[0]; for (int b = 0; b < p.buffType.Length; b++) { p.buffType[b] = 0; p.buffTime[b] = 0; } }
 
 		/// <summary>REAL-PLAY condition: the commander drinks the actual Spectator Potion item through Player.ItemCheck (the path a click takes) before the levies and the boss exist; the buff is never re-applied afterwards. True when done.</summary>
@@ -690,13 +705,13 @@ namespace Levy.Common.Testing
 			int bt = ModContent.BuffType<SpectatorBuff>();
 			if (p.HasBuff(bt)) { _btRefPlayer = false; _btDrunk = true; Mod.Logger.Info($"HARNESS-BT: Spectator Potion drunk through the item path after {_btDrinkTicks} ticks"); return true; }
 			if (_btDrinkTicks++ > 600) { _btRefPlayer = false; Mod.Logger.Warn("HARNESS-BT: the potion was not drunk in 600 ticks; adding the buff directly"); p.AddBuff(bt, 600000); return false; }
-			if (_btDrinkTicks == 1) { p.inventory[0] = BtMake("Spectator Potion"); p.selectedItem = 0; _btRefPlayer = true; SetKeepAlive(true); }
+			if (_btDrinkTicks == 1) { p.inventory[0] = BtSpectatorPotion(); p.selectedItem = 0; _btRefPlayer = true; SetKeepAlive(true); }
 			int savedMy = Main.myPlayer;
 			try
 			{
 				Main.myPlayer = 0;
 				p.noItems = false; p.selectedItem = 0;
-				if (p.inventory[0] == null || p.inventory[0].IsAir) p.inventory[0] = BtMake("Spectator Potion");
+				if (p.inventory[0] == null || p.inventory[0].IsAir) p.inventory[0] = BtSpectatorPotion();
 				p.controlUseItem = true; Main.mouseLeft = true; Main.mouseLeftRelease = _btDrinkTicks % 2 == 0; p.releaseUseItem = true;
 				try { Terraria.GameInput.PlayerInput.Triggers.Current.MouseLeft = true; } catch { }
 				if (_btItemCheck == null)

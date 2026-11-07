@@ -44,6 +44,14 @@ namespace Levy.Common
 		/// <summary>Accessory score = rarity tier x Rarity + defense x Defense + log10(1 + value) x Value + prefix + class fit (damage fraction for the soldier's class) x ClassFit.</summary>
 		public const float AccessoryRarityWeight = 1000f, AccessoryDefenseWeight = 50f, AccessoryValueWeight = 30f, AccessoryPrefixBonus = 10f, AccessoryClassFitWeight = 3000f;
 
+		/// <summary>Mobility accessories (extra jumps, wings): value per kind, how many jumps count, and the small score bonus a second mobility accessory earns. Every levy takes one first.</summary>
+		public static class Armory
+		{
+			public const float MobilityJumpValue = 1f, MobilityWingsValue = 4f;
+			public const int MobilityMaxJumpsCounted = 3;
+			public const float MobilityStackBonus = 150f;
+		}
+
 		// ---------- HP / mana ----------
 		// A REGULAR mirrors the vanilla player exactly and no guide touches him: base HP + 20 per Life Crystal (15) + 5 per Life Fruit (20) = 500, and
 		// base mana + 20 per Mana Crystal (9) = 200. MILITIA take no crystals; their whole ladder is the three progression guides (numbers in LevyConstants.Guides.cs).

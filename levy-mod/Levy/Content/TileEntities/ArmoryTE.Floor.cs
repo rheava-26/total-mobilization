@@ -4,6 +4,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
+using Levy.Common.Movement;
 using Levy.Common.Soldiers;
 using Levy.Common.Weapons;
 using Levy.Content.NPCs;
@@ -157,18 +158,43 @@ namespace Levy.Content.TileEntities
 			if (n == 0 || LevyIsClosed(w)) return false;
 			var cls = AccClassOf(w);
 			int target = -1; float tScore = float.MaxValue; bool empty = false;
+			// Mobility: a levy with none takes one into his weakest unlocked slot; his only mobility accessory is never swapped for a non-mobility one, only for a better mobility one.
+			float bestMob = MobilityFirst ? AccessoryMobility.Best(g.Accessories, -1) : 0f;
+			int mobSlot = -1;
+			if (bestMob > 0f) for (int i = 0; i < n; i++) if (!IsAir(g.Accessories[i]) && AccessoryMobility.Value(g.Accessories[i]) >= bestMob) { mobSlot = i; break; }
+			bool soleMob = mobSlot >= 0 && AccessoryMobility.Best(g.Accessories, mobSlot) <= 0f;
 			for (int i = 0; i < n; i++) {
 				if (g.IsLocked(SoldierGear.SlotAcc0 + i)) continue;
 				if (IsAir(g.Accessories[i])) { target = i; tScore = 0f; empty = true; break; }
+				if (soleMob && i == mobSlot) continue;
 				float sc = AccessoryScore(g.Accessories[i], cls);
 				if (sc < tScore) { target = i; tScore = sc; }
 			}
-			if (target < 0) return false;
-			var wornEx = (Item[])g.Accessories.Clone();
-			wornEx[target] = new Item();
-			float need = empty ? 0f : Math.Max(tScore * LevyConstants.AutoUpgradeScoreMargin, tScore + 1f);
-			bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && (empty || AccessoryScore(it, cls) >= need) && !ClassReserved(it, w, cls, all);
-			var a = TakeBest(null, 0, 0, 1, Pred, it => AccessoryScore(it, cls));
+			Item a = null;
+			// a better mobility accessory may replace his only one
+			if (soleMob && !g.IsLocked(SoldierGear.SlotAcc0 + mobSlot) && !empty) {
+				var wm = (Item[])g.Accessories.Clone(); wm[mobSlot] = new Item();
+				bool UPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wm, it) && AccessoryMobility.Value(it) > bestMob && !ClassReserved(it, w, cls, all);
+				a = TakeBest(null, 0, 0, 1, UPred, it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
+				if (a != null) target = mobSlot;
+			}
+			if (a == null) {
+				if (target < 0) return false;
+				var wornEx = (Item[])g.Accessories.Clone();
+				wornEx[target] = new Item();
+				float stack = MobilityFirst && AccessoryMobility.Best(wornEx) > 0f ? LevyConstants.Armory.MobilityStackBonus : 0f;
+				float need = empty ? 0f : Math.Max(tScore * LevyConstants.AutoUpgradeScoreMargin, tScore + 1f);
+				float Sc(Item it) => AccessoryScore(it, cls) + (stack > 0f && AccessoryMobility.Is(it) ? stack : 0f);
+				// a levy with no mobility accessory takes the best one stocked into this slot before anything else
+				if (MobilityFirst && bestMob <= 0f) {
+					bool MPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && AccessoryMobility.Is(it) && !ClassReserved(it, w, cls, all);
+					a = TakeBest(null, 0, 0, 1, MPred, it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
+				}
+				if (a == null) {
+					bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && (empty || Sc(it) >= need) && !ClassReserved(it, w, cls, all);
+					a = TakeBest(null, 0, 0, 1, Pred, Sc);
+				}
+			}
 			if (a == null) return false;
 			var old = g.Accessories[target];
 			g.Accessories[target] = a;

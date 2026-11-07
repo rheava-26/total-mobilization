@@ -602,6 +602,11 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Plus the short-reach melee fix (Blade of Grass etc.).
 - **Boots:** Thorium+MS and Calamity, 0 exceptions.
 
+## ✅ MERGED (next Mechanization build): armory-relay 3e14573
+- An Armory Relay (Mechanization, Content/Relay). It links to the nearest Armory ≤600 tiles, or to the pylon network. Turrets and drones ≤25 tiles of it treat that Armory as in reach. Recipe: 8 iron/lead bars + 20 wire + chest @ Work Bench.
+- NOTE: turret armory reach was ALREADY 240 tiles, and turrets copy any ranged/magic weapon in the armory (no melee/summon/rogue). If Eve's near-base turrets are empty, the likely cause is no ranged/magic stock, not range.
+- The sprite reads a bit like a goblet; another art pass is possible. Levy's own reach checks don't use relays (not shared).
+
 ## 🎥 Eve videos (2026-11-07 01:20): the Spectator targeting bug REPRODUCES in real play
 - King Slime (beaten) and the Eye (night) both sit on top of the spectating player for the whole fight while levies die on the platform rows.
 - Real SP client + Calamity. NOT reproducible in the DS/emulated-SP harness.

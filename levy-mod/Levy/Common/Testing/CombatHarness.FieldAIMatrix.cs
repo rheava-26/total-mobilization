@@ -196,6 +196,7 @@ namespace Levy.Common.Testing
 				},
 				Step = t =>
 				{
+					{ Player zp = Main.player[0]; zp.ZoneDesert = rb.Key == "desertscourge"; zp.ZoneJungle = rb.Key == "queenbee"; zp.ZoneSnow = rb.Key == "deerclops"; zp.ZoneGlowshroom = rb.Key == "crabulon"; zp.ZoneCorrupt = rb.Key == "hivemind"; zp.ZoneCrimson = rb.Key == "brain" || rb.Key == "perforator"; }   // biome-tied bosses enrage or flee from a target outside their home
 					if (target == "spec") { Player sp0 = Main.player[0]; if (!sp0.HasBuff(specBuff)) sp0.AddBuff(specBuff, 600); }
 					foreach (var hb in _faSol) if (hb.NPC.active && hb.PotionSickness == 0 && hb.NPC.life * 100 < hb.NPC.lifeMax * LevyConstants.PotionDrinkBelowPercent) { hb.NPC.life = Math.Min(hb.NPC.lifeMax, hb.NPC.life + (lesser ? 50 : 100)); hb.PotionSickness = LevyConstants.PotionSicknessTicks; }
 					if (cmdMove && target != "spec") { float mx = cmdBaseX + (float)Math.Sin(t / 110.0) * 9f * 16f; _faCmdPos = new Vector2(mx, FaGroundRow(mx) * 16f - Main.player[0].height); }

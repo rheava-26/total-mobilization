@@ -592,6 +592,24 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## 📦 SHIPPED Levy 2.0.8 (Mechanization 0.8.1), at scratchpad/ship-2.0.8
+- Contents:
+  - setbonus: activated abilities.
+  - calbugs: no-hit rule removed.
+  - calrev: Rage/Adrenaline.
+  - boss-trials: pure-contact blade ×0.15.
+  - field-ai-3 32eb438: mobility, the hook-chain draw fix, slope grounding.
+- **Mobility matrix (336 cells, single seed, honest):**
+  - Overall gains are MODEST: deaths/min 1.10→1.06, contact hits 15.5→14.5, standing still 35→32%.
+  - Clear wins: the natural-terrain "grounded" bug (levies counted airborne ~35% of ticks on slopes → no dodge/strafe; deaths 1.2→0.2 on the natural subset, Queen Bee hits 81→35); dash gear deaths 1.00→0.71; platform climbing with gear (bottle 10–52% above the floor, hook 71–92%).
+  - Gearless levies physically can't reach 6-tile rows.
+- **Still weak:**
+  - Desert Scourge shreds levies (7+ deaths/min).
+  - Deerclops ice spikes are untelegraphed.
+  - Standing still is high vs out-of-reach bosses.
+  - Single-seed noise.
+- **Boots:** Thorium+MS and Calamity, 0 exceptions, all checks OK.
+
 ## 🔬 BOSS TRIALS, corrected (boss-trials c3529bc, MERGED; docs/BOSS_TRIALS.md)
 - **Fidelity:**
   - Boss AI, stats and targeting are real. The Brain wins in THIS harness were real kills (ZoneCrimson was set).

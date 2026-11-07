@@ -106,6 +106,15 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 
 **Player-facing text must not echo the request.** When Eve says "drones should put weapons back when they land", the UI must not say "returns weapon when landed" (11-04). Describe what a thing is and does. (The ROADMAP carries over Total Mobilization's 1-to-4 short declarative sentences rule for tooltips.)
 
+**Levy dialogue voice (Eve, 11-07 20:40):**
+- Messy, run-on, exclamation marks, people talking over themselves. Lines are AIMED at someone: the commander, or another levy by name. No neat setup-and-punchline, and no "man, this guy, am I right?"
+- Levies mention each other often, so the army feels alive.
+- Invert good traits into complaints. The levy with the most deaths is a "badass tank". The one with the most kills is "greedy" for stealing all the money. The best-geared levy is showing off. The worst-geared one is guilt-tripping everyone.
+- Make fun of the LEVIES and how the mechanics look from the inside: homing bullets are a scandal nobody admits to using; melee troops are cowards who swing sword beams from forty feet away; summoners are "summon slop" and the Zealots' religious problem. Use the mechanics in-world. Never lampshade or criticize the game ("lamp, don't lampshade"); keep fourth-wall jokes light (the background music is fine; floating damage numbers are too on the nose).
+- Lore: brain chips and implants are normal. Death and respawning are mentioned offhandedly as ordinary, never the focus. Mages are nice and friendly (NOT nerds, no studying). Summoners are an AI-debate satire; use in-game words ("master summoner", not "artist"). Drones are treated like pets. Random real countries come up with no connection to the biome ("just like that trip to Norway" in a mushroom cave); Terraria has a Sweden via the Party Girl, but don't name Sweden.
+- Lines must still make sense to someone from outside the joke.
+- Lists of lines can be blocks; worldbuilding talk is prose. When Eve says "maybe not" or "I'm iffy", she's thinking out loud, not vetoing.
+
 **Dialogue should read like vanilla Terraria NPCs.** Eve found early dialogue "a little bit AI". Rate lines and replace anything below a B (10-22). Silly death messages are liked. Use gender-neutral language (10-22; scope unclear, probably mod text).
 
 **Videos:** Eve can't paste long clips. Review them frame by frame with the screenshot tool ("take a screenshot of EVERY frame", 10-25).

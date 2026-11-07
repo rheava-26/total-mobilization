@@ -31,6 +31,12 @@
 - **rec-harness MERGED** (5b57781 → levy-stardust): `LEVY_REC_DIR` headless recording via FightRecAuto, format 3 (hitboxes, lhit/ldeath with source, per-sample boss target), radar viewer, `make_gallery.py`. Booted clean.
   - Its 8 fieldai replays: spec mode = boss on a levy 100%; cmd mode = on the commander 100%. Hits: EoC 122, Deerclops 217 (4 deaths), DS 155, Skeletron 37, KS 0 (kited), Brain 1.
   - **Open:** the BossTrial harness now reports "WIN t=0.0s" on every fight (boss inactive on tick 1), with or without recording. Not diagnosed. Worm segments are not tagged as segments in the recordings.
+- **SHIPPED Levy 2.0.13 (mobility3 merged, 48fa2a8)**: boss dance, corner escape, dash i-frames, boss-body threat weighting, no hover in flier/worm lanes, StillWhy telemetry. Booted clean on both toolchains (Calamity and shipping).
+  - **Targeting verified:** the boss head targets a levy 100% of the time (DS 99.97%). Eve's worry is resolved.
+  - **Minions don't retarget:** EoC servants (57% on the player in p1) and Brain creepers (38–46%) chase the player. A live gap: check EnemyTargeting's allowlist.
+  - 60 s, 162 cells: hits 34.0 → 26.4, deaths/min 1.0 → 0.6, still 19% → 11%. With no gear: 45.8 → 31.7 hits, deaths 1.5 → 0.5/min. The wings regression was mostly window noise (22.3 → 21.1), but wings are still worse vs fliers and worms (DS 61 → 72, QB 36 → 44).
+  - DS hits: body 72%, head 24%, tail 3%, no adds (Eve's read confirmed). DS and QB are unimproved.
+  - The harness under-exercises Skeletron hands/spin (7 AI transitions); Brain p2 spawn is an artifact.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

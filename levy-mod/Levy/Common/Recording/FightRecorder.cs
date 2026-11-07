@@ -62,6 +62,9 @@ namespace Levy.Common.Recording
 		private static readonly Dictionary<int, (uint tick, int proj)> _projHit = new();
 		private static readonly List<int> _gone = new();
 		private static readonly Dictionary<int, string> _lbuf = new();
+		private static readonly Dictionary<int, int> _lgear = new();
+		private static readonly Dictionary<int, string> _prefixes = new();
+		private static int _cmdGear = int.MinValue;
 		public const int AddRangePx = 140 * 16, MaxAdds = 160;
 
 		// ---- format 4: terrain that follows the fight, static camera view, boss death / despawn
@@ -152,7 +155,7 @@ namespace Levy.Common.Recording
 				_items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
-				_lbuf.Clear(); _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1;
+				_lbuf.Clear(); _lgear.Clear(); _prefixes.Clear(); _cmdGear = int.MinValue; _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1;
 				_startTick = (int)Main.GameUpdateCount;
 				_startMaxSerial = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) _startMaxSerial = Math.Max(_startMaxSerial, FightRecSpawnTag.SerialOf(Main.npc[i]));
 				string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -204,7 +207,7 @@ namespace Levy.Common.Recording
 			try
 			{
 				FlushBossEnd(true);
-				_w.WriteLine("{\"k\":\"names\",\"items\":" + Names(_items) + ",\"npcs\":" + Names(_npcs) + ",\"projectiles\":" + Names(_projs) + ",\"buffs\":" + Names(_buffs) + ",\"soldiers\":" + Names(_soldiers) + "}");
+				_w.WriteLine("{\"k\":\"names\",\"items\":" + Names(_items) + ",\"npcs\":" + Names(_npcs) + ",\"projectiles\":" + Names(_projs) + ",\"buffs\":" + Names(_buffs) + ",\"soldiers\":" + Names(_soldiers) + ",\"prefixes\":" + Names(_prefixes) + "}");
 				_w.WriteLine("{\"k\":\"end\",\"reason\":" + FightRecFormat.Esc(reason) + ",\"ticks\":" + Elapsed + ",\"frames\":" + _frames + ",\"events\":" + _events
 					+ ",\"target\":{\"none\":" + _tkNone + ",\"player\":" + _tkPlayer + ",\"levy\":" + _tkLevy + "},\"levyHits\":" + _levyHits + ",\"levyDeaths\":" + _levyDeaths + ",\"outcome\":" + FightRecFormat.Esc(_outcome) + ",\"arenaChunks\":" + _chunks + "}");
 				_w.Dispose(); _w = null;
@@ -404,7 +407,7 @@ namespace Levy.Common.Recording
 			_pHookOut = hookOut; _pHookAtt = hookAtt;
 			if (p.itemAnimation > _pAnim && held != null && !held.IsAir) Ev("use", ("item", ItemName(held)), ("mana", p.statMana.ToString()));
 			_pAnim = p.itemAnimation;
-			if (el % 60 == 0) { WriteBuffs(p, el); }
+			if (el % 60 == 0) { WriteBuffs(p, el); CommanderGear(p); }
 			AccessoryEvents(p);
 
 			// bosses and parts
@@ -483,6 +486,7 @@ namespace Levy.Common.Recording
 				if (s.Record != null && !_soldiers.ContainsKey(id)) _soldiers[id] = s.Record.Name;
 				SeeEntity(n.Center.X, n.Center.Y);
 				if (el % 30 == 0) LevyBuffs(n, id, el);
+				if (el % 60 == 0) LevyGear(s, id);
 				Item lh = s.Dummy?.HeldItem;
 				int lflags = (Grounded(n) ? 1 : 0) | (s.IsFlying ? 2 : 0) | (s.IsAerial ? 4 : 0) | (s.IsHooking ? 8 : 0) | (s.MoveBlocked ? 16 : 0);
 				if (lh != null && !lh.IsAir && !_items.ContainsKey(lh.type)) _items[lh.type] = lh.Name;
@@ -690,6 +694,50 @@ namespace Levy.Common.Recording
 				("life", Math.Max(0, t.Life).ToString()), ("max", t.Max.ToString()), ("final", final ? "1" : "0") };
 			if (t.HitT >= 0) { ex.Add(("ht", t.HitT.ToString())); ex.Add(("hd", t.HitDmg.ToString())); ex.Add(("hs", FightRecFormat.Esc(t.HitSrc))); ex.Add(("hy", t.HitType.ToString())); ex.Add(("hn", FightRecFormat.Esc(t.HitName ?? ""))); }
 			Line(FightRecFormat.Event(tick, killed ? "bdeath" : "bdespawn", ex.ToArray())); _events++;
+		}
+
+		private static string GearItem(Item it, int slot, bool stack)
+		{
+			if (it == null || it.IsAir) return null;
+			if (!_items.ContainsKey(it.type)) _items[it.type] = it.Name;
+			if (it.prefix > 0 && !_prefixes.ContainsKey(it.prefix)) { try { _prefixes[it.prefix] = Lang.prefix[it.prefix].Value; } catch { } }
+			return stack ? "[" + slot + "," + it.type + "," + it.prefix + "," + it.stack + "]" : "[" + slot + "," + it.type + "," + it.prefix + "]";
+		}
+
+		private static int GearHash(Item it, int h) => it == null || it.IsAir ? h * 31 + 7 : (h * 31 + it.type) * 31 + it.prefix * 7;
+
+		/// <summary>The commander's equipment: armor, accessories, vanity, hotbar and ammo. Written when it changes.</summary>
+		private static void CommanderGear(Player p)
+		{
+			int h = 17;
+			for (int i = 0; i < 20; i++) h = GearHash(p.armor[i], h);
+			for (int i = 0; i < 10; i++) h = GearHash(p.inventory[i], h);
+			for (int i = 54; i < 58; i++) h = GearHash(p.inventory[i], h);
+			if (h == _cmdGear) return;
+			_cmdGear = h;
+			var arm = new List<string>(); var inv = new List<string>();
+			for (int i = 0; i < 20; i++) { string g = GearItem(p.armor[i], i, false); if (g != null) arm.Add(g); }
+			for (int i = 0; i < 10; i++) { string g = GearItem(p.inventory[i], i, true); if (g != null) inv.Add(g); }
+			for (int i = 54; i < 58; i++) { string g = GearItem(p.inventory[i], i, true); if (g != null) inv.Add(g); }
+			Ev("gear", ("who", "\"cmd\""), ("arm", "[" + string.Join(",", arm) + "]"), ("inv", "[" + string.Join(",", inv) + "]"));
+		}
+
+		/// <summary>One levy's gear (weapon, sidearm, armor, accessories, ammo pouch, hook), written at first sight and when it changes.</summary>
+		private static void LevyGear(SoldierNPC s, int id)
+		{
+			var g = s.Record?.Gear; if (g == null) return;
+			int h = 17;
+			h = GearHash(g.Weapon, h); h = GearHash(g.Sidearm, h); h = GearHash(g.Head, h); h = GearHash(g.Body, h); h = GearHash(g.Legs, h);
+			for (int i = 0; i < g.Accessories.Length; i++) h = GearHash(g.Accessories[i], h);
+			h = GearHash(g.Ammo, h); h = GearHash(g.Hook, h);
+			if (_lgear.TryGetValue(id, out int was) && was == h) return;
+			_lgear[id] = h;
+			var l = new List<string>();
+			void Add(Item it, int slot) { string x = GearItem(it, slot, true); if (x != null) l.Add(x); }
+			Add(g.Weapon, 0); Add(g.Sidearm, 1); Add(g.Head, 2); Add(g.Body, 3); Add(g.Legs, 4);
+			for (int i = 0; i < g.Accessories.Length; i++) Add(g.Accessories[i], 5 + i);
+			Add(g.Ammo, 11); Add(g.Hook, 12);
+			Ev("lgear", ("id", id.ToString()), ("g", "[" + string.Join(",", l) + "]"));
 		}
 
 		/// <summary>A levy's buffs, written when the set changes (checked twice a second).</summary>

@@ -24,6 +24,9 @@ namespace Levy.Common.Weapons
 		/// <summary>Measurement switch (harness A/B, env LEVY_NO_MODSHOT=1): behave as before this feature (no holdout / blade routing and no cursor steer for modded shots).</summary>
 		internal static readonly bool Off = Environment.GetEnvironmentVariable("LEVY_NO_MODSHOT") == "1";
 
+		/// <summary>Mods whose channel-reading holdouts are held like a player would (Calamity: measured 0 damage as plain shots, see docs/boss_lab/dud). Add a mod here only after measuring its holdouts both ways.</summary>
+		private static readonly HashSet<string> HoldoutMods = new() { "CalamityMod" };
+
 		/// <summary>Class-chain names of the Calamity base projectiles whose AI is a held melee stab (matched by name: no compile-time reference to Calamity).</summary>
 		private const string ShortswordBase = "BaseShortswordProjectile", MaceFlailBase = "BaseMaceFlailProjectile", FlailBase = "BaseFlailProjectile";
 
@@ -57,7 +60,8 @@ namespace Levy.Common.Weapons
 			if (shortsword && item.CountsAsClass(DamageClass.Melee)) return ModShotKind.Shortsword;
 			if (mace) return ModShotKind.None; // thrown at the cursor, not held (see the class summary)
 			// A held / charge-and-release holdout reads its owner's button (and is the weapon's own shot).
-			if (item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
+			// Only mods whose holdouts were measured as duds as plain shots are routed (Thorium's channelled weapons already work through the plain route and its compat; the audit shows what a mod would gain).
+			if (HoldoutMods.Contains(item.ModItem?.Mod.Name ?? "") && item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
 				&& (item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)))
 				return ModShotKind.Holdout;
 			return ModShotKind.None;

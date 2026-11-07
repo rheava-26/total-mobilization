@@ -431,7 +431,7 @@ namespace Levy.Common.Testing
 		{
 			var rec = MakeRecord($"{spec.Cls}{slot}");
 			rec.Grade = spec.ManAtArms ? Grade.ManAtArms : Grade.Levy;
-			if (!run.L3) { rec.LifeCrystals = spec.LifeCrystals; rec.ManaCrystals = spec.ManaCrystals; } if (CrVetFights(run) > 0) rec.BossFightsSurvived = CrVetFights(run);
+			if (!run.L3) { rec.LifeCrystals = spec.LifeCrystals; rec.ManaCrystals = spec.ManaCrystals; } else { rec.LifeCrystals = 0; rec.ManaCrystals = 0; } // lab 3: MakeRecord starts at 15/9 crystals; zero them and let the real supply path (FeedCrystal) grow the levy if (CrVetFights(run) > 0) rec.BossFightsSurvived = CrVetFights(run);
 			rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana;
 			rec.LoadoutLocked = true;
 			rec.Order = run.Order == "sd" ? SoldierOrder.SearchDestroy : run.Order == "follow" ? SoldierOrder.Follow : SoldierOrder.FreeRein;

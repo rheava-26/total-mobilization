@@ -306,9 +306,13 @@ namespace Levy.Content.TileEntities
 		/// Empty when this armory is not on the network, on a multiplayer client (the server owns item movement), or when no other armory is live.
 		/// Issue-side only: callers read their Storage and must remove through <see cref="TakeSlot"/> on THAT armory.
 		/// </summary>
+		/// <summary>Test seam (harness only): a fixed list of networked armories, standing in for the pylon network.</summary>
+		internal static List<ArmoryTE> TestOthers;
+
 		private List<ArmoryTE> OtherNetworked()
 		{
 			if (Main.netMode == NetmodeID.MultiplayerClient) return NoOthers;
+			if (TestOthers != null) return TestOthers;
 			var sys = SettlementSystem.Instance;
 			if (sys == null) return NoOthers;
 			var all = sys.NetworkedArmories(this);

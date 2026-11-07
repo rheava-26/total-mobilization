@@ -150,11 +150,12 @@ namespace Levy.Common.Targeting
 
 		/// <summary>LEVY_KINTARGET=0 turns the boss-owner rule off (A/B switch for measuring).</summary>
 		internal static readonly bool KinOn = Environment.GetEnvironmentVariable("LEVY_KINTARGET") != "0";
-		/// <summary>The boss a minion belongs to while that boss is alive: anything a live boss spawned (<see cref="LevyNpcData.BossOwner"/>), Creepers to the Brain of Cthulhu (NPC.crimsonBoss), Servants of Cthulhu to the Eye of Cthulhu. Null for everything else.</summary>
+		/// <summary>The boss a minion belongs to while that boss is alive: any modded NPC a live boss spawned (<see cref="LevyNpcData.BossOwner"/>), Creepers to the Brain of Cthulhu (NPC.crimsonBoss), Servants of Cthulhu to the Eye of Cthulhu. Null for everything else.</summary>
 		internal static NPC MinionBoss(NPC npc)
 		{
-			// Anything a live boss spawned, however its own AI picks targets (Calamity's King Slime jewel, the Slime God Paladins and their splits): it follows its boss's rule, so the army draws it exactly when it draws the boss.
-			int ow = KinOn ? LevyNpcData.Of(npc).BossOwner : -1;
+			// A modded NPC a live boss spawned (Calamity's King Slime jewel, the Slime God Paladins and their splits): its AI picks targets its own way and no AI-style table can vouch for it, so it follows its boss's rule and the army draws it exactly when it draws the boss.
+			// Vanilla minions keep the verified-style route below.
+			int ow = KinOn && npc.ModNPC != null ? LevyNpcData.Of(npc).BossOwner : -1;
 			if (ow >= 0 && ow < Main.maxNPCs) { NPC o = Main.npc[ow]; if (o.active && (o.boss || NPCID.Sets.ShouldBeCountedAsBoss[o.type])) return o; }
 			if (npc.type == NPCID.Creeper)
 			{

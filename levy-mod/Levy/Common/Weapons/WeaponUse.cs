@@ -290,6 +290,7 @@ namespace Levy.Common.Weapons
 		public static bool HasResources(SoldierNPC s, Item item, WeaponProfile profile)
 		{
 			if (s?.Record == null || item == null || item.IsAir || profile == null || !profile.Supported) return false;
+			if (ModWeaponGates.Locked(item)) return false; // the weapon's own use gate is shut in this world (Murasama before the Devourer of Gods): the sidearm takes the hand
 			switch (profile.Family)
 			{
 				case WeaponFamily.Gun:

@@ -65,6 +65,18 @@ namespace Levy.Common.Weapons
 		};
 		internal static ChargePlan ChargeRelease(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && ChargeReleaseTable.TryGetValue(item.ModItem.Name, out ChargePlan p) ? p : null;
 
+		/// <summary>
+		/// Held modded weapons whose holdout pays its mana INSIDE its own AI at a rate far above the pool (Rancor: 25 per 12 ticks, Yharim's Crystal: 15 every 5-15 ticks): started the moment one payment is affordable they end at their
+		/// second payment, before their damage starts (the circle charges 180 ticks, the prism 30), and are cast again in a loop (Rancor holdouts ended at ticks 20-29 in 82 of 101 casts, Yharim's at 10-19 in 172 of 207).
+		/// The soldier starts them with a full pool, like a player, so the hold lasts as long as the pool can carry it. Value = fraction of the soldier's maximum mana needed to start.
+		/// </summary>
+		private static readonly Dictionary<string, float> StartFractionTable = new() { ["Rancor"] = 1f, ["YharimsCrystal"] = 1f };
+		internal static bool StartWait(Item item, int mana, int maxMana)
+		{
+			if (item?.ModItem == null || item.ModItem.Mod.Name != "CalamityMod" || !StartFractionTable.TryGetValue(item.ModItem.Name, out float f)) return false;
+			return mana < Math.Min(maxMana, (int)Math.Ceiling(maxMana * f)) - 1; // one point of slack
+		}
+
 		/// <summary>A held modded weapon whose damage depends on WHERE the cursor goes, not only on what it points at: the cursor follows a path around the target.</summary>
 		private static readonly Dictionary<string, CursorScript> CursorScripts = new()
 		{

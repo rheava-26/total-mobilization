@@ -68,6 +68,7 @@ namespace Levy.Content.TileEntities
 					lev.Ok = it =>
 					{
 						if (!IsIssuable(it)) return false;
+						if (ModWeaponGates.Locked(it)) return false; // its own use gate is shut in this world
 						if (!WeaponUse.CanEverPay(it, (int)lev.Mana)) return false; // a cast dearer than his whole mana pool (crystals + what his gear adds) would never fire
 						if (it.maxStack > 1 && (hasW || WeaponClassifier.GetProfile(it).Family != WeaponFamily.Thrown)) return false; // a bare-handed levy may be dealt a thrown stack; a stack is never a swap
 						if (rule != null && !rule(it)) return false;

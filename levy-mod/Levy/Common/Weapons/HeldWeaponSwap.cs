@@ -72,6 +72,7 @@ namespace Levy.Common.Weapons
 			int idx = s.NPC.whoAmI;
 			uint now = Main.GameUpdateCount;
 			_fed[idx] = now;
+			if (DudTrace.On) { float dt = Aiming.TilesToHitbox(s.NPC.Center, target); DudTrace.Note(item, dt < 4 ? "fed-dist<4" : dt < 8 ? "fed-dist4-8" : dt < 16 ? "fed-dist8-16" : "fed-dist>16"); }
 
 			Vector2 toTarget = target.Center - s.NPC.Center;
 			if (toTarget == Vector2.Zero) toTarget = Vector2.UnitX * (s.NPC.direction == 0 ? 1 : s.NPC.direction);
@@ -83,6 +84,7 @@ namespace Levy.Common.Weapons
 
 			if (LiveHolder(s, item) != null) return true;
 			if (_spawned.TryGetValue(idx, out uint last) && now - last < (uint)LevyConstants.HeldRespawnMinTicks) return false;
+			if (ModShotKinds.StartWait(item, s.Record.Mana, s.Record.MaxMana)) { DudTrace.Note(item, "held-start-wait"); return false; } // a drain-in-AI holdout starts on a full pool (ModShotKinds.StartFractionTable)
 			_spawned[idx] = now;
 
 			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
@@ -362,8 +364,15 @@ namespace Levy.Common.Weapons
 			{
 				Projectile c = Main.projectile[i];
 				if (!c.active || before[i] || i == holder.whoAmI) continue;
+				if (DudTrace.On) DudTrace.NoteType(c.type, "adopted@" + c.owner + (c.friendly ? "+f" : "-f") + "+dmg" + (c.damage > 0 ? "1" : "0"));
 				if (c.aiStyle == ProjAIStyleID.HeldProjectile || c.aiStyle == ProjAIStyleID.ThickLaser) JoinChain(body, c, item);
-				else if (item.type >= ItemID.Count && OwnerLockProbe.BoundToHolder(c)) { JoinChain(body, c, item); if (c.TryGetGlobalProjectile(out HeldWeaponProjectile cg)) { cg.ModHolder = true; if (holder.TryGetGlobalProjectile(out HeldWeaponProjectile hh)) cg.Script = hh.Script; } DudTrace.Note(item, "child-in-chain:" + (c.ModProjectile?.Name ?? c.type.ToString())); }
+				else if (item.type >= ItemID.Count && c.ModProjectile != null && ((holder.TryGetGlobalProjectile(out HeldWeaponProjectile pg) && pg.BoundChild) || OwnerLockProbe.BoundToHolder(c)))
+				{
+					// bound to its holder (reads the button / finds its parent by UUID) or made by a bound child (Starmageddon's stars, made by the star centre): stays in the chain, same owner, dummy and button as the holdout
+					JoinChain(body, c, item);
+					if (c.TryGetGlobalProjectile(out HeldWeaponProjectile cg)) { cg.ModHolder = true; cg.BoundChild = true; if (holder.TryGetGlobalProjectile(out HeldWeaponProjectile hh)) cg.Script = hh.Script; }
+					DudTrace.Note(item, "child-in-chain:" + (c.ModProjectile?.Name ?? c.type.ToString()));
+				}
 				else WeaponUse.TagSoldierProjectile(body, c, cls);
 			}
 		}
@@ -436,6 +445,8 @@ namespace Levy.Common.Weapons
 		public bool ModHolder, ReleaseOnKill;
 		/// <summary>A charge-by-button holdout (see ModShotKinds.ChargeRelease): held HoldMax ticks, released, ended Linger ticks later.</summary>
 		public bool CycleRelease;
+		/// <summary>A projectile a holdout's AI made that stays bound to it (see OwnerLockProbe.BoundToHolder): it and what it spawns stay in the chain.</summary>
+		public bool BoundChild;
 		public int HeldTicks, HoldMax, Linger;
 		/// <summary>A scripted cursor path (see ModShotKinds.CursorScriptOf) this holdout and its bound children follow instead of the plain aim point.</summary>
 		public CursorScript Script;

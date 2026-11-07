@@ -342,13 +342,15 @@ namespace Levy.Content.NPCs
 		{
 			if (!PlanSentry(weapon, out Vector2 pos, out Vector2 vel, out float ai0, out float ai1, out float localAi0))
 			{
+				DudTrace.Note(weapon, "sentry-plan-failed");
 				_sentryCd = LevyConstants.SentryRetryTicks;
 				return false;
 			}
+			DudTrace.Note(weapon, replacing != null ? "sentry-replant" : "sentry-plant");
 			replacing?.Kill();
 			_sentryProj = -1;
 			Projectile p = WeaponUse.Spawn(this, pos, vel, weapon.shoot, SentryDamage(weapon), weapon.knockBack, DamageClass.Summon, ai0, ai1, 0f);
-			if (p == null) { _sentryCd = LevyConstants.SentryRetryTicks; return false; }
+			if (p == null) { DudTrace.Note(weapon, "sentry-spawn-null"); _sentryCd = LevyConstants.SentryRetryTicks; return false; }
 			if (localAi0 != 0f) p.localAI[0] = localAi0;
 			p.timeLeft = Projectile.SentryLifeTime;
 			p.netUpdate = true;

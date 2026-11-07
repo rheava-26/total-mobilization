@@ -46,7 +46,7 @@ namespace Levy.Common.Weapons
 			{
 				Projectile p = Main.projectile[i];
 				if (!p.active || !p.TryGetGlobalProjectile(out SoldierProjectileTag t) || t.SoldierIndex < 0) continue;
-				string n = (p.ModProjectile != null ? p.ModProjectile.Name : p.type.ToString()) + "@" + p.owner;
+				string n = (p.ModProjectile != null ? p.ModProjectile.Name : p.type.ToString()) + "@" + p.owner + (p.friendly ? "/f" : "/-") + (p.damage > 0 ? "/d" : "/0") + "/ai=" + (int)p.ai[0] + "," + (int)p.ai[1] + "/v" + (int)p.velocity.Length() + "/tl" + p.timeLeft / 100;
 				live[n] = live.TryGetValue(n, out int c) ? c + 1 : 1;
 			}
 			var sb = new StringBuilder();
@@ -58,6 +58,23 @@ namespace Levy.Common.Weapons
 				Mod.Logger.Info($"DUDTRACE {kv.Key} fam={s.Family} calls={s.Calls} fired={s.Fired} notFired={s.NotFired} spawned={s.Spawned} proj[{pj}] notes[{nt}]");
 			}
 			if (sb.Length > 0) Mod.Logger.Info("DUDTRACE live: " + sb);
+		}
+	}
+
+	/// <summary>Measurement only (LEVY_DUD_TRACE=1): per projectile type, how often a soldier-tagged projectile hit something, how much damage, and how it ended (its first AI value at the end, bucketed by 10).</summary>
+	public class DudTraceProjectiles : GlobalProjectile
+	{
+		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
+		{
+			if (!DudTrace.On || !projectile.TryGetGlobalProjectile(out SoldierProjectileTag t) || t.SoldierIndex < 0) return;
+			DudTrace.NoteType(projectile.type, "hit");
+			DudTrace.NoteType(projectile.type, "dmg+" + Math.Min(damageDone, 99999) / 100 * 100);
+		}
+
+		public override void OnKill(Projectile projectile, int timeLeft)
+		{
+			if (!DudTrace.On || !projectile.TryGetGlobalProjectile(out SoldierProjectileTag t) || t.SoldierIndex < 0) return;
+			DudTrace.NoteType(projectile.type, "end@ai0=" + (int)(projectile.ai[0] / 10f) * 10);
 		}
 	}
 }

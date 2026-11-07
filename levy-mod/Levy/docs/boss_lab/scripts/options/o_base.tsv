@@ -1,0 +1,36 @@
+fight	eye	rev	1	18000	gear=mod	n=cp	cmd=near
+fight	brain	rev	1	18000	gear=mod	n=cp	cmd=near
+fight	qb	exp	1	18000	gear=mod	n=cp	cmd=near	jungle=1
+fight	eow	exp	1	18000	gear=mod	n=cp	cmd=near
+fight	ds	exp	1	18000	gear=mod	n=cp	cmd=near
+fight	skel	exp	1	18000	gear=mod	n=cp	cmd=near
+fight	eye	rev	2	18000	gear=mod	n=cp	cmd=near
+fight	brain	rev	2	18000	gear=mod	n=cp	cmd=near
+fight	qb	exp	2	18000	gear=mod	n=cp	cmd=near	jungle=1
+fight	eow	exp	2	18000	gear=mod	n=cp	cmd=near
+fight	ds	exp	2	18000	gear=mod	n=cp	cmd=near
+fight	skel	exp	2	18000	gear=mod	n=cp	cmd=near
+fight	eye	rev	3	18000	gear=mod	n=cp	cmd=near
+fight	brain	rev	3	18000	gear=mod	n=cp	cmd=near
+fight	qb	exp	3	18000	gear=mod	n=cp	cmd=near	jungle=1
+fight	eow	exp	3	18000	gear=mod	n=cp	cmd=near
+fight	ds	exp	3	18000	gear=mod	n=cp	cmd=near
+fight	skel	exp	3	18000	gear=mod	n=cp	cmd=near
+fight	eye	rev	4	18000	gear=mod	n=cp	cmd=near
+fight	brain	rev	4	18000	gear=mod	n=cp	cmd=near
+fight	qb	exp	4	18000	gear=mod	n=cp	cmd=near	jungle=1
+fight	eow	exp	4	18000	gear=mod	n=cp	cmd=near
+fight	ds	exp	4	18000	gear=mod	n=cp	cmd=near
+fight	skel	exp	4	18000	gear=mod	n=cp	cmd=near
+fight	eye	rev	5	18000	gear=mod	n=cp	cmd=near
+fight	brain	rev	5	18000	gear=mod	n=cp	cmd=near
+fight	qb	exp	5	18000	gear=mod	n=cp	cmd=near	jungle=1
+fight	eow	exp	5	18000	gear=mod	n=cp	cmd=near
+fight	ds	exp	5	18000	gear=mod	n=cp	cmd=near
+fight	skel	exp	5	18000	gear=mod	n=cp	cmd=near
+fight	eye	rev	6	18000	gear=mod	n=cp	cmd=near
+fight	brain	rev	6	18000	gear=mod	n=cp	cmd=near
+fight	qb	exp	6	18000	gear=mod	n=cp	cmd=near	jungle=1
+fight	eow	exp	6	18000	gear=mod	n=cp	cmd=near
+fight	ds	exp	6	18000	gear=mod	n=cp	cmd=near
+fight	skel	exp	6	18000	gear=mod	n=cp	cmd=near

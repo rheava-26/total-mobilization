@@ -11,6 +11,7 @@ using Terraria.ModLoader;
 using Levy.Common.Systems;
 using Levy.Content.NPCs;
 using Levy.Common.Globals;
+using Levy.Common.Targeting;
 
 namespace Levy.Common.Testing
 {
@@ -202,13 +203,19 @@ namespace Levy.Common.Testing
 					shown++;
 				}
 			}
+			if (e.type == NPCID.SkeletronHead && e.ai[1] == 3f && !st.FleeLogged && EnemyTargetingGlobalNPC.FleeProbeOn)
+			{
+				st.FleeLogged = true;
+				try { File.AppendAllText(_crOut + ".flee.tsv", st.Run.Key + "\tfightTick=" + st.Tick + "\t" + EnemyTargetingGlobalNPC.FleeProbe + "\t" + global::Levy.Common.Boss.BossRuleGlobalNPC.DashProbe + "\tnearLevy=" + (Main.npc.Where(n => n.active && n.ModNPC is SoldierNPC).Select(n => Vector2.Distance(n.Center, e.Center) / 16f).DefaultIfEmpty(-1f).Min()).ToString("0") + "t\n"); } catch { }
+			}
 			if ((st.Run.Dbg || Environment.GetEnvironmentVariable("LEVY_CR_DEBUG") == "1") && st.Tick % 30 == 0)
 			{
 				int alv = st.Levies.Count(l => !l.Dead);
 				float near = 1e9f; foreach (var l in st.Levies) if (!l.Dead) { var n = Main.npc[l.Idx]; if (n.active) near = Math.Min(near, Vector2.Distance(n.Center, e.Center)); }
-				string line = string.Format(CultureInfo.InvariantCulture, "{0}\t{1}\t{2}\t{3}\t{4}\t{5}/{6}\t{7:0.0},{8:0.0}\t{9:0.0},{10:0.0}\tai={11:0.##},{12:0.##},{13:0.##},{14:0.##}\tlai={15:0.##},{16:0.##},{17:0.##},{18:0.##}\ttgt={19}({20})\tenr={21}\talive={22}\tadds={23}\tnearLevy={24:0.0}t\tdtd={25}\tlock={26}\tcmdDist={27:0.0}t",
+				string line = string.Format(CultureInfo.InvariantCulture, "{0}\t{1}\t{2}\t{3}\t{4}\t{5}/{6}\t{7:0.0},{8:0.0}\t{9:0.0},{10:0.0}\tai={11:0.##},{12:0.##},{13:0.##},{14:0.##}\tlai={15:0.##},{16:0.##},{17:0.##},{18:0.##}\ttgt={19}({20})\tenr={21}\talive={22}\tadds={23}\tnearLevy={24:0.0}t\tdtd={25}\tlock={26}\tcmdDist={27:0.0}t\tlockDist={28:0.0}t\tlockState={29}",
 					st.Run.Key, st.Tick, e.active ? 1 : 0, e.type, e.target, e.life, e.lifeMax, e.Center.X / 16f, e.Center.Y / 16f, e.velocity.X, e.velocity.Y, e.ai[0], e.ai[1], e.ai[2], e.ai[3], e.localAI[0], e.localAI[1], e.localAI[2], e.localAI[3],
-					e.target, CrTgtClass(e) == 0 ? "levy" : CrTgtClass(e) == 1 ? "player" : "none", CrEnraged(e) ? 1 : 0, alv, adds, near / 16f, e.dontTakeDamage ? 1 : 0, LevyNpcData.Of(e).SoldierTarget, Vector2.Distance(Main.player[0].Center, e.Center) / 16f);
+					e.target, CrTgtClass(e) == 0 ? "levy" : CrTgtClass(e) == 1 ? "player" : "none", CrEnraged(e) ? 1 : 0, alv, adds, near / 16f, e.dontTakeDamage ? 1 : 0, LevyNpcData.Of(e).SoldierTarget, Vector2.Distance(Main.player[0].Center, e.Center) / 16f,
+					LockDist(e), LockState(e));
 				try { File.AppendAllText(_crOut + ".dbg.tsv", line + "\n"); } catch { }
 				if (st.Tick % 150 == 0 && Environment.GetEnvironmentVariable("LEVY_CR_LEVYDBG") == "1")
 				{
@@ -395,5 +402,8 @@ namespace Levy.Common.Testing
 			}
 			File.WriteAllText(path, sb.ToString());
 		}
-	}
+	
+		private static float LockDist(NPC e) { int k = LevyNpcData.Of(e).SoldierTarget; return k >= 0 && k < Main.maxNPCs && Main.npc[k].active ? Vector2.Distance(Main.npc[k].Center, e.Center) / 16f : -1f; }
+		private static string LockState(NPC e) { int k = LevyNpcData.Of(e).SoldierTarget; return k >= 0 && k < Main.maxNPCs && Main.npc[k].active && Main.npc[k].ModNPC is SoldierNPC sn ? sn.State.ToString() : "-"; }
+}
 }

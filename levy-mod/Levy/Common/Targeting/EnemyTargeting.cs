@@ -399,7 +399,9 @@ namespace Levy.Common.Targeting
 			// the rest of this AI call reads Main.player[255] as the inactive vanilla null player: a boss then sees "no valid target /
 			// target far away" and bolts into its flee/despawn state the instant it is redirected to a soldier. Swap the dummy in now so
 			// the live soldier is visible for the remainder of this AI call; PostAI / EnsureSlotRestored clears it as usual.
-			if (!UsesNativeTargeting(npc) && !_swapped) Swap(best, slot);
+			// A re-lock inside the AI call must hand the NEW soldier's dummy to the rest of that call: PreAI had already swapped the OLD lock's dummy in, and a boss whose old lock stood more than 2000 px away
+			// (Skeletron's leash) re-ran TargetClosest, was given a near soldier, then read the stale far dummy on the next line and bolted into its leave state (ai[1] = 3).
+			if (!UsesNativeTargeting(npc) && (!_swapped || (SwapFixOn && (_swapSlot != slot || !ReferenceEquals(Main.player[slot], best.Dummy))))) Swap(best, slot);
 			_why = "levy chosen";
 			return true;
 		}
@@ -509,6 +511,9 @@ namespace Levy.Common.Targeting
 		// =====================================================================================================
 		/// <summary>True while a soldier's dummy stands in Main.player[255] for an enemy's AI call.</summary>
 		internal static bool IsSwapped => _swapped;
+		internal static string WhyLast => _why;
+		/// <summary>LEVY_SWAPFIX=0 restores the old behaviour (a re-lock inside an AI call keeps the previous soldier's dummy in slot 255). A/B switch.</summary>
+		internal static readonly bool SwapFixOn = Environment.GetEnvironmentVariable("LEVY_SWAPFIX") != "0";
 
 		internal static void Swap(ITargetBody body, int slot = SoldierNPC.DummySlot)
 		{
@@ -712,8 +717,19 @@ namespace Levy.Common.Targeting
 			return;
 		}
 
+		/// <summary>Harness telemetry (LEVY_CR_FLEEPROBE=1): what Skeletron's AI call saw in Main.player[target] on its last tick, to catch the tick it enters its leave state.</summary>
+		internal static string FleeProbe = "";
+		internal static readonly bool FleeProbeOn = Environment.GetEnvironmentVariable("LEVY_CR_FLEEPROBE") == "1";
+
 		public override void PostAI(NPC npc)
 		{
+			if (FleeProbeOn && npc.type == NPCID.SkeletronHead)
+			{
+				int tg = npc.target; Player pl = tg >= 0 && tg < Main.maxPlayers + 1 ? Main.player[tg] : null;
+				var d = LevyNpcData.Of(npc);
+				FleeProbe = pl == null ? $"tick={Main.GameUpdateCount} target={tg} noPlayer ai1={npc.ai[1]}" :
+					$"tick={Main.GameUpdateCount} target={tg} lock={d.SoldierTarget} swapped={EnemyTargeting.IsSwapped} plActive={pl.active} plDead={pl.dead} dx={(pl.position.X - npc.position.X) / 16f:0}t dy={(pl.position.Y - npc.position.Y) / 16f:0}t ai1={npc.ai[1]} ai2={npc.ai[2]} why={EnemyTargeting.WhyLast}";
+			}
 			EnemyTargeting.Unswap();
 			// A flyer was aimed through the flyer slot for this AI call only; outside it, "locked on a soldier" reads as 255 like every other swapped enemy.
 			if (npc.target == EnemyTargeting.FlyerSlot && npc.aiStyle == NPCAIStyleID.Flying && LevyNpcData.Of(npc).SoldierTarget >= 0) npc.target = SoldierNPC.DummySlot;

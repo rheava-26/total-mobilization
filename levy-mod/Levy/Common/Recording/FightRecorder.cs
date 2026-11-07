@@ -47,6 +47,9 @@ namespace Levy.Common.Recording
 		private static Dictionary<string, string> _meta;
 		private static string _fileBase;
 		private static int _bossGoneTick, _primaryWho = -1, _primarySerial;
+		/// <summary>Highest spawn serial alive when the recording started. A boss-like NPC with a HIGHER serial was spawned afterwards by someone other than this fight (the next trial); serial 0 (a worm segment that became a head: SetDefaults resets its tag) and a lower one belong to this fight.</summary>
+		private static int _startMaxSerial;
+		private static bool IsNewFightSerial(NPC n) { int sr = FightRecSpawnTag.SerialOf(n); return sr > _startMaxSerial; }
 		private static int _tkNone, _tkPlayer, _tkLevy, _lastTk = -1, _lastTl = int.MinValue, _levyHits, _levyDeaths;
 		private sealed class LTrack { public int Life, Max; public float X, Y; public int Who; public bool Seen; }
 		private static readonly Dictionary<int, LTrack> _lt = new();
@@ -63,6 +66,16 @@ namespace Levy.Common.Recording
 			var sb = new StringBuilder("{"); bool first = true;
 			foreach (var kv in d) { if (!first) sb.Append(','); first = false; sb.Append('"').Append(kv.Key).Append("\":").Append(FightRecFormat.Esc(kv.Value)); }
 			return sb.Append('}').ToString();
+		}
+
+		/// <summary>
+		/// A boss for recording purposes. Vanilla Eater of Worlds never has NPC.boss set while it lives (the flag is raised only on the last segment's death, NPC.DropEoWLoot),
+		/// so the head is recognised by NPCID.Sets.ShouldBeCountedAsBoss / the main-boss list; a modded worm head that owns its segments' life (realLife == itself) and has a boss map icon counts too.
+		/// </summary>
+		internal static bool IsFightBoss(NPC n)
+		{
+			if (n.boss || NPCID.Sets.ShouldBeCountedAsBoss[n.type] || BossRule.IsMainBossType(n.type)) return true;
+			return n.realLife == n.whoAmI && NPCID.Sets.BossHeadTextures[n.type] >= 0;
 		}
 
 		private static bool IsBossOrPart(NPC n)
@@ -119,12 +132,13 @@ namespace Levy.Common.Recording
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
 				_startTick = (int)Main.GameUpdateCount;
+				_startMaxSerial = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) _startMaxSerial = Math.Max(_startMaxSerial, FightRecSpawnTag.SerialOf(Main.npc[i]));
 				string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 				NPC nearest = null; float bd = float.MaxValue;
 				for (int i = 0; i < Main.maxNPCs; i++)
 				{
 					NPC n = Main.npc[i];
-					if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC || !n.boss) continue;
+					if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC || !IsFightBoss(n)) continue;
 					float d = Vector2.DistanceSquared(n.Center, cmd.Center);
 					if (d < bd) { bd = d; nearest = n; }
 				}
@@ -294,16 +308,16 @@ namespace Levy.Common.Recording
 			AccessoryEvents(p);
 
 			// bosses and parts
-			bool anyBoss = false;
+			bool anyBoss = false, otherSerial = false;
 			if (Headless && _primaryWho >= 0)
 			{
 				// a harness that clears the arena and spawns the next trial's boss in the same step leaves no gap: the boss we follow is gone and a boss with a newer spawn serial stands in the world
 				NPC pn = Main.npc[_primaryWho];
-				if (!(pn.active && pn.boss && FightRecSpawnTag.SerialOf(pn) == _primarySerial))
+				if (!(pn.active && IsFightBoss(pn) && !IsNewFightSerial(pn)))
 					for (int i = 0; i < Main.maxNPCs; i++)
 					{
 						NPC n = Main.npc[i];
-						if (n.active && n.boss && !n.friendly && !n.townNPC && !(n.ModNPC is SoldierNPC) && FightRecSpawnTag.SerialOf(n) != _primarySerial) { Stop("next fight started"); return; }
+						if (n.active && IsFightBoss(n) && !n.friendly && !n.townNPC && !(n.ModNPC is SoldierNPC) && IsNewFightSerial(n)) { Stop("next fight started"); return; }
 					}
 			}
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -311,14 +325,15 @@ namespace Levy.Common.Recording
 				NPC n = Main.npc[i];
 				if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC) continue;
 				if (!IsBossOrPart(n)) continue;
-				if (n.boss) anyBoss = true;
-				bool part = !n.boss;
+				bool isBoss = IsFightBoss(n);
+				if (isBoss) { anyBoss = true; if (_primaryWho >= 0 && IsNewFightSerial(n)) otherSerial = true; }
+				bool part = !isBoss;
 				if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
-				if (n.boss && _bossIdsSeen.Add(n.whoAmI)) { _bossesSeen++; Ev("boss", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString())); if (_bossNameSeen == null) _bossNameSeen = n.FullName; }
+				if (isBoss && _bossIdsSeen.Add(n.whoAmI)) { _bossesSeen++; Ev("boss", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString())); if (_bossNameSeen == null) _bossNameSeen = n.FullName; }
 				_bossTypes.Add(n.type);
 				TargetOf(n, out int tk, out int tl);
 				f.B.Add(new double[] { n.type, n.whoAmI, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, n.life, n.lifeMax, n.ai[0], n.ai[1], n.ai[2], n.ai[3], n.target, part ? 1 : 0, tk, tl, n.width, n.height });
-				if (n.boss)
+				if (isBoss)
 				{
 					if (_primaryWho < 0) { _primaryWho = n.whoAmI; _primarySerial = FightRecSpawnTag.SerialOf(n); }
 					if (n.whoAmI == _primaryWho && FightRecSpawnTag.SerialOf(n) == _primarySerial)
@@ -331,7 +346,12 @@ namespace Levy.Common.Recording
 			int grace = Headless ? HeadlessGraceTicks : GraceTicks;
 			if (anyBoss)
 			{
-				if (Headless && _bossGoneTick > 0) { Stop("next fight started"); return; } // the boss slot filled again after a gap: a new trial, which gets its own file
+				if (Headless && _bossGoneTick > 0)
+				{
+					// the boss slot filled again after a gap: a new trial (a different spawn serial) gets its own file. The same serial is the same fight (Eater of Worlds: when its head dies a body segment becomes the head a few ticks later).
+					if (otherSerial) { Stop("next fight started"); return; }
+					_bossGoneTick = 0;
+				}
 				_bossSeen = true; _lastBossSeen = el;
 			}
 			else if (_bossSeen)

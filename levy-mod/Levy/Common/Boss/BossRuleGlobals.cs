@@ -213,14 +213,23 @@ namespace Levy.Common.Boss
 			if (!BossRule.DashSet.Contains(npc.type) || !LevyConfig.Get.BossesPunishSoldiers) return false;
 			var data = LevyNpcData.Of(npc);
 			if (data.SpiteTimer <= 0 || !BossRule.IsLiveBody(data.SpiteTarget, out body)) return false;
-			return body.Dummy != null && IsDashAimTick(npc, body);
+			if (body.Dummy == null) return false;
+			// a spite body farther than the leash margin is not offered to the dash: Skeletron's AI reads Main.player[target] and leaves for good (ai[1] = 3) when it is 2000 px away, and a long-range levy that tagged it from afar made it do exactly that
+			if (SpiteLeashOn && Vector2.DistanceSquared(body.NPC.Center, npc.Center) > DashSpiteMaxPx * DashSpiteMaxPx) return false;
+			return IsDashAimTick(npc, body);
 		}
+
+		internal static string DashProbe = "";
+		/// <summary>The dash is aimed only at a spite body this close (px, under every vanilla boss leash of 2000). LEVY_SPITELEASH=0 switches it off (A/B).</summary>
+		private const float DashSpiteMaxPx = 1500f;
+		private static readonly bool SpiteLeashOn = Environment.GetEnvironmentVariable("LEVY_SPITELEASH") != "0";
 
 		private static void TryBeginDashSwap(NPC npc)
 		{
 			if (_swapped || EnemyTargeting.IsSwapped || !TryGetDashBody(npc, out var body)) return;
 
 			body.SyncDummyTransform();
+			if (EnemyTargetingGlobalNPC.FleeProbeOn && npc.type == NPCID.SkeletronHead) DashProbe = $"dashSwap tick={Main.GameUpdateCount} spite={body.NPC.whoAmI} state={body.State} dx={(body.NPC.position.X - npc.position.X) / 16f:0}t dy={(body.NPC.position.Y - npc.position.Y) / 16f:0}t lock={LevyNpcData.Of(npc).SoldierTarget}";
 			_backup = Main.player[SoldierNPC.DummySlot];
 			_dummy = body.Dummy;
 			_swapNpc = npc.whoAmI;

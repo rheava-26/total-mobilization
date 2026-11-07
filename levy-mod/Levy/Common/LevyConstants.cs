@@ -66,6 +66,8 @@ namespace Levy.Common
 		public const int RegenDelayTicks = 60 * 5;
 		public const int RegenIntervalTicks = 60;
 		public const int ImmuneTicksOnHit = 20;
+		/// <summary>Player parity: a body hit grants the post-hit window Player.Hurt would (40 ticks, 20 for a 1-damage hit, doubled by Cross Necklace / Star Veil). LEVY_IFRAMES=0 restores the flat <see cref="ImmuneTicksOnHit"/> (A/B switch, harness only).</summary>
+		public static readonly bool PlayerParityIFrames = System.Environment.GetEnvironmentVariable("LEVY_IFRAMES") != "0";
 
 		// ---------- Economy ----------
 		/// <summary>

@@ -312,6 +312,7 @@ namespace Levy.Common.Testing
 
 		internal sealed class CrState
 		{
+			public bool FleeLogged;
 			public CrRun Run; public List<CrLevy> Levies = new();
 			public int BossType, BodyType = -1, TailType = -1; public HashSet<int> AddTypes = new(), PartTypes = new(); public bool Worm => PartTypes.Count > 0;
 			public Dictionary<string, long> Srcs = new(); public void Src(string k, long d) { Srcs.TryGetValue(k, out long v); Srcs[k] = v + d; } public long DtdTicks, LastDmgSum, AddKills; public int PrevAdds; public SortedDictionary<int, (long ticks, long dmg)> Phase = new(); public long TgtLevy, TgtPlayer, TgtNone, AddTgtLevy, AddTgtPlayer, AddTgtNone, HitsBoss, DmgHead, DmgBody, DmgTail, DmgAdd, EnragedTicks, BossAliveTicks; public double Moved; public Vector2 LastPos; public bool HavePos; public int FirstHitTick = -1, MaxParts, MaxAdds; public long BossLifeMaxSum;
@@ -513,7 +514,9 @@ namespace Levy.Common.Testing
 				int total = run.Specs.Count, slot = 0;
 				foreach (var sp in run.Specs) s.Levies.Add(CrSpawnLevy(sp, run, slot++, total, _crCmdPos));
 				if (probe) { for (int k = 0; k < s.Levies.Count; k++) s.Levies[k].Upkeep = k >= 2; }
-				int bx = (int)((_crCx + 30) * 16f), by = run.Boss == "kslime" ? (int)((CrF - 6) * 16f) : (int)((CrF - 38) * 16f);
+				float spawnDx = 30f; // tiles right of the commander; a worm spawns off-screen like NPC.SpawnOnPlayer does (~70-100 tiles away), not 43 tiles from the army: LEVY_CR_WORMDIST overrides (30 = the old harness position)
+				if (s.Worm) spawnDx = float.TryParse(Environment.GetEnvironmentVariable("LEVY_CR_WORMDIST"), NumberStyles.Float, CultureInfo.InvariantCulture, out float wd) ? wd : 80f;
+				int bx = (int)((_crCx + spawnDx) * 16f), by = run.Boss == "kslime" ? (int)((CrF - 6) * 16f) : (int)((CrF - 38) * 16f);
 				global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(s.BossType, Environment.GetEnvironmentVariable("LEVY_CR_DOWNED") != "0"); // a rematch: the first kill of a boss is solo
 				int ei = NPC.NewNPC(new EntitySource_WorldEvent("LevyCalRev"), bx, by, s.BossType);
 				if (ei < 0 || ei >= Main.maxNPCs) throw new Exception("boss spawn failed");
@@ -522,7 +525,7 @@ namespace Levy.Common.Testing
 				s.BossLifeMax = boss.lifeMax; s.BossLife = boss.life; s.BossDamage = boss.damage; s.BossDefense = boss.defense;
 				boss.timeLeft = 99999;
 				s.Rage0 = LevyRippers.RageActivations; s.Adr0 = LevyRippers.AdrenalineActivations; s.Dr0 = LevyRippers.DrCuts; s.Lost0 = LevyRippers.AdrenalineLost;
-				_crS = s; _cr = s; _crStarted = true; _crTickInRun = 0; SoldierNPC.HitDbg = new();
+				_crS = s; _cr = s; _crStarted = true; _crTickInRun = 0; SoldierNPC.HitDbg = new(); SoldierNPC.HitGapDbg = new();
 				if (run.Diag) global::Levy.Common.Potions.SpectatorDiagnostic.Set(true);
 				global::Levy.Common.Recording.FightRecAuto.Tag(("arena", run.Arena), ("seed", run.Seed), ("mode", run.Mode), ("gear", run.Gear + "_n" + run.N), ("cellkey", run.Key));
 				if (probe && !File.Exists(_crOut + ".probe.tsv")) File.WriteAllText(_crOut + ".probe.tsv", "mode\ttick\tlevy\tgear\tupkeep\trage\tadr\trageMode\tadrMode\thp\tboss\n");
@@ -623,6 +626,7 @@ namespace Levy.Common.Testing
 				string.Join(" ", st.Phase.Select(kv => $"a{kv.Key}:{kv.Value.ticks / 60.0:0}s/{kv.Value.dmg}d={(kv.Value.dmg / Math.Max(1.0, kv.Value.ticks / 60.0)):0}")), string.Join(" ", st.Srcs.OrderByDescending(kv => kv.Value).Take(8).Select(kv => kv.Key + "=" + kv.Value)), per }));
 			File.AppendAllText(_crOut, sb + "\n");
 			if (SoldierNPC.HitDbg != null) { try { File.AppendAllText(_crOut + ".hit.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitDbg.OrderByDescending(kv => kv.Value.dmg).Select(kv => $"{kv.Key}={kv.Value.dmg}/{kv.Value.n}")) + "\n"); } catch { } SoldierNPC.HitDbg = new(); }
+			if (SoldierNPC.HitGapDbg != null) { try { File.AppendAllText(_crOut + ".gap.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitGapDbg.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}:{kv.Value}")) + "\n"); } catch { } SoldierNPC.HitGapDbg = new(); }
 			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} rageAct={LevyRippers.RageActivations - st.Rage0} adrAct={LevyRippers.AdrenalineActivations - st.Adr0}");
 			if (Main.npc[st.BossIdx].active && Main.npc[st.BossIdx].type == st.BossType) Main.npc[st.BossIdx].active = false;
 			_cr = null; _crS = null; _crStarted = false; _crI++;

@@ -909,11 +909,15 @@ namespace Levy.Content.NPCs
 			else if (_wedgeWindows >= WedgeTeleportWindows)
 			{
 				_wedgeWindows = 0;
-				if (State == SoldierState.Follow && FollowerTravel.TeleportNearCommander(this)) return;
+				if (State == SoldierState.Follow && !OnMapMarch && FollowerTravel.TeleportNearCommander(this)) return;
 			}
 		}
 
 		/// <summary>Snaps the body onto its barracks muster point (server/single player). The brain then sees it arrived and stands it down.</summary>
+		/// <summary>A map-point march runs in State Follow; the catch-up teleports toward the commander must not fire on it (it is meant to leave the commander far behind).</summary>
+		private static readonly bool GoToTeleportsOld = Environment.GetEnvironmentVariable("LEVY_GOTO_TELE") == "1"; // harness: restore the old behaviour for before/after
+		private bool OnMapMarch => !GoToTeleportsOld && Record != null && Record.Order == SoldierOrder.GoTo;
+
 		private bool TeleportHome()
 		{
 			var home = Home;
@@ -953,7 +957,7 @@ namespace Levy.Content.NPCs
 				_stuckTicks = 0; _stuckJumped = false;
 				if (moved >= StuckProgressPx && _reverseTicks == 0 && _sinceReverse >= ReverseSettleTicks) _stuckTotal = 0; // real walking, not the reverse shuffle
 			}
-			if (State == SoldierState.Follow && _stuckTotal >= LevyConstants.StuckTeleportTicks)
+			if (State == SoldierState.Follow && !OnMapMarch && _stuckTotal >= LevyConstants.StuckTeleportTicks)
 			{
 				_stuckTotal = 0;
 				if (FollowerTravel.TeleportNearCommander(this)) return;

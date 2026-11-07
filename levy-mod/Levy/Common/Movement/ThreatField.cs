@@ -84,9 +84,9 @@ namespace Levy.Common.Movement
 		public static int ChainsThisTick, ChainSegsThisTick;
 		/// <summary>NPC indices of the heads of the chains modelled this tick.</summary>
 		public static readonly List<int> ChainHeads = new();
-		/// <summary>Harness switch (LEVY_CHAIN=0): model worm chains (default) or fall back to treating each segment as its own body.</summary>
+		/// <summary>Harness switch (LEVY_CHAIN=1): model worm chains (OFF by default: the A/B runs showed no gain, and Eater of Worlds fared worse) or fall back to treating each segment as its own body.</summary>
 		internal static bool ChainBossBody = Environment.GetEnvironmentVariable("LEVY_CHAINBOSS") == "1";
-		internal static bool ChainOn = Environment.GetEnvironmentVariable("LEVY_CHAIN") != "0";
+		internal static bool ChainOn = Environment.GetEnvironmentVariable("LEVY_CHAIN") == "1";
 
 		/// <summary>
 		/// True when this NPC is a follower in a segmented body: it takes the segment ahead of it (ai[1]) as its parent and is dragged along by it (its own velocity is zeroed every tick).
@@ -135,7 +135,7 @@ namespace Levy.Common.Movement
 				NPC n = Main.npc[i];
 				if (!n.active || n.friendly || n.townNPC || n.ModNPC is Content.NPCs.SoldierNPC) continue;
 				// a follower in a worm's body is dragged along by the segment ahead (its velocity reads zero): its path comes from the chain, built below
-				if (ChainOn && IsChainFollower(n, out int par)) { _follower[i] = true; if (_childOf[par] < 0) _childOf[par] = i; continue; }
+				if (IsChainFollower(n, out int par)) { _follower[i] = true; if (_childOf[par] < 0) _childOf[par] = i; if (ChainOn) continue; }
 				if (n.damage < (Content.NPCs.SoldierNPC.MobilityMode >= 1 ? LevyConstants.Movement.DodgeNpcMinDamageMobile : LevyConstants.Movement.DodgeNpcMinDamage)) continue;
 				Vector2 v = n.velocity; float v2 = v.LengthSquared();
 				// the acceleration it is showing: how its velocity changed since the last time the field looked (NPC.oldVelocity is not kept for every NPC)
@@ -163,7 +163,7 @@ namespace Levy.Common.Movement
 				Snap.Add(new Threat { P = n.Center, V = v, A = building ? a : Vector2.Zero, Half = new Vector2(n.width, n.height) * 0.5f, Weight = n.damage, Body = true, Boss = isBoss, Gy = gy, Floor = floor });
 			}
 			// every worm whose head the field is tracking: the whole chain is one moving curve (the body follows the head's path with a lag)
-			for (int i = 0; i < Main.maxNPCs; i++) if (_childOf[i] >= 0 && !_follower[i] && _snapOf[i] >= 0) BuildChain(i);
+			for (int i = 0; i < Main.maxNPCs; i++) if (_childOf[i] >= 0 && !_follower[i] && _snapOf[i] >= 0) { if (ChainOn) BuildChain(i); else ChainHeads.Add(i); }
 			BuildTs += Stopwatch.GetTimestamp() - t0; Builds++;
 			return Snap;
 		}

@@ -103,6 +103,7 @@
   - The worm chain model shows no clear gain (±15% noise): worms home on one levy, and the lane is wider than run speed.
   - Lead suggested "spread from the TARGETED levy + target kites straight" as the general fix for homing big-body bosses.
   - Notable gallery (41 fights) sent to Eve.
+- Check-in 06:56, spec-calfix 618f082 + data 17b6df5 (lead aggregated): boss-on-player % goes 12–53% → **0%** in every Rev/Death cell (near and far), minions 0% too. Outcomes now show the true lethality (Eye Rev n11 near 0/3, Brain Rev n13 0/3). Awaiting the builder's boot checks before merge.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

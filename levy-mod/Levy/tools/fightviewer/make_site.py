@@ -23,7 +23,7 @@ The whole <outdir> is what gets published (static files, relative URLs only). Ol
 import argparse, glob, gzip, json, os, re, shutil, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TITLES = {"rec2": "Recorder test", "lab1": "Lab 1", "lab2": "Lab 2", "lab3": "Lab 3", "worm": "Worm round", "worm5": "Worm round", "options": "Options"}
+TITLES = {"eve": "Eve's fights", "rec2": "Recorder test", "lab1": "Lab 1", "lab2": "Lab 2", "lab3": "Lab 3", "worm": "Worm round", "worm5": "Worm round", "options": "Options"}
 MODES = {"exp": "Expert", "rev": "Rev", "death": "Death", "revoff": "Rev, rage off"}
 ARENAS = {"surf": "Surface", "ug": "Underground"}
 FLED_PX = 50000          # a boss that ends this far from where it began has left the fight

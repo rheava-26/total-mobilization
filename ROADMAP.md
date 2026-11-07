@@ -265,6 +265,10 @@
 - **armor-fx builder:** Ninja afterimage and other armor visuals on levies, plus Ninja vs Platinum stats.
 - **Replay page v4 published:** 161 fights (two batches) with adds, levy tracking, gear panels, death explosion, Call-it mode and auto-hiding full screen.
 - **BUG (Eve video):** the map "send levies here" order does nothing. The pick UI shows; the click closes the map; no confirmation; levies stay. → maporder-fix builder.
+- **EVE'S FIGHTS (control group):** ks_solo_1_death: King Slime, **Master+Death**, solo, killed in **85.6 s**, 4 hits taken (83 dmg); Fishbone Boomerang (rogue, stealth); 400 HP.
+  - The lab's KS Death (Expert+Death, 10 tier-0 levies) won in ~180–200 s with 5–8 deaths. So 10 levies ≈ 0.45 of Eve, i.e. one Eve ≈ 20+ levies, vs the target of 5–8.
+  - Caveats: her gear is stronger, Master is harder, n=1.
+  - Published on the replay page as "Eve's fights". Barracks button = the map-order path.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

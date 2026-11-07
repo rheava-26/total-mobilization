@@ -108,13 +108,36 @@ namespace Levy.Common.Observe
 			if (Main.netMode == NetmodeID.SinglePlayer)
 			{
 				int n = Issue(Main.LocalPlayer, tx, ty);
-				Main.NewText(LevyUtil.T(n > 0 ? "Observe.MapSent" : "Observe.MapNone", n), 190, 220, 255);
+				Main.NewText(n > 0 ? LevyUtil.T("Observe.MapSent", n, LevyUtil.T("Observe.Place" + PlaceOf(ty))) : LevyUtil.T("Observe.MapNone"), 190, 220, 255);
 			}
 			else
 			{
 				var p = LevyPackets.New(LevyPacket.MapOrder); p.Write(tx); p.Write(ty); p.Send();
 			}
 		}
+
+		/// <summary>Which depth band a map tile is in (the suffix of the Observe.Place* strings), for the confirmation line.</summary>
+		public static string PlaceOf(int ty)
+		{
+			if (ty < Main.worldSurface * 0.35) return "Space";
+			if (ty < Main.worldSurface * 0.8) return "Sky";
+			if (ty < Main.worldSurface) return "Surface";
+			if (ty < Main.rockLayer) return "Underground";
+			if (ty < Main.maxTilesY - 200) return "Caverns";
+			return "Underworld";
+		}
+
+		/// <summary>
+		/// Whether this frame's mouse state is a pick click on the full map. Vanilla's DrawMap sets <c>Player.mouseInterface = true</c> for the whole of the full-screen map
+		/// BEFORE the map layers draw, so <c>mouseInterface</c> can never be the "a UI element is under the cursor" test here: with it, no click ever picked (Eve's bug).
+		/// The only vanilla UI on the full map is the close/style button at the bottom-left, which is excluded by rectangle.
+		/// </summary>
+		public static bool IsPickClick(bool click, int mouseX, int mouseY, int screenHeight)
+			=> click && !OverMapCloseButton(mouseX, mouseY, screenHeight);
+
+		/// <summary>The vanilla "close map" button (32x30 at (10, screenHeight - 40), a little more with the FPS counter showing).</summary>
+		public static bool OverMapCloseButton(int mouseX, int mouseY, int screenHeight)
+			=> mouseX >= 10 && mouseX <= 42 && mouseY >= screenHeight - 60 && mouseY <= screenHeight - 8;
 
 		public static void Register() => LevyPackets.Register(LevyPacket.MapOrder, OnPacket);
 
@@ -184,10 +207,12 @@ namespace Levy.Common.Observe
 			if (!MapOrder.ValidTile(tx, ty)) return;
 			Mark(ref context, tx, ty, new Color(255, 230, 90));
 			text = LevyUtil.T("Observe.MapSendHint");
-			if (click && !me.mouseInterface)
+			if (MapOrder.IsPickClick(click, Main.mouseX, Main.mouseY, Main.screenHeight))
 			{
+				bool wasPick = MapOrder.PickMode;
 				MapOrder.Send(tx, ty);
 				MapOrder.PickMode = false;
+				if (wasPick) { Main.mapFullscreen = false; Terraria.Audio.SoundEngine.PlaySound(SoundID.MenuClose); } // the barracks pick is one click: back to the world (MapPickSystem reopens the panel)
 			}
 		}
 
@@ -229,7 +254,8 @@ namespace Levy.Common.Observe
 		private uint _since;
 		public override void PostSetupContent()
 		{
-			if (PickGate.SelfCheck()) Mod.Logger.Info("[MapPick] self-check ok"); else Mod.Logger.Error("[MapPick] self-check FAILED (the opening click would pick)");
+			bool clickOk = MapOrder.IsPickClick(true, 600, 400, 1080) && !MapOrder.IsPickClick(false, 600, 400, 1080) && !MapOrder.IsPickClick(true, 20, 1050, 1080);
+			if (PickGate.SelfCheck() && clickOk) Mod.Logger.Info("[MapPick] self-check ok"); else Mod.Logger.Error("[MapPick] self-check FAILED (the opening click would pick)");
 		}
 
 		public override void PostUpdateEverything()

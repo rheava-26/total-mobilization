@@ -30,6 +30,7 @@ namespace Levy.Common.Testing
 		private bool BeginScenario()
 		{
 			if (string.Equals(Scenario, "ammo", StringComparison.OrdinalIgnoreCase)) { _scTrial = int.MaxValue; _scTick = -1; return true; }
+			if (string.Equals(Scenario, "maporder", StringComparison.OrdinalIgnoreCase)) return BeginMapOrder();
 			if (string.Equals(Scenario, "calrev", StringComparison.OrdinalIgnoreCase)) return BeginCalRev();
 			if (string.Equals(Scenario, "lifesteal", StringComparison.OrdinalIgnoreCase)) return BeginLifeSteal();
 			if (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase)) return BeginSpeed();
@@ -78,6 +79,7 @@ namespace Levy.Common.Testing
 		private void StepScenario()
 		{
 			if (string.Equals(Scenario, "ammo", StringComparison.OrdinalIgnoreCase)) { RunAmmoScenario(); Finish("ammo scenario complete"); return; }
+			if (string.Equals(Scenario, "maporder", StringComparison.OrdinalIgnoreCase)) { StepMapOrder(); return; }
 			if (string.Equals(Scenario, "calrev", StringComparison.OrdinalIgnoreCase)) { StepCalRev(); return; }
 			if (string.Equals(Scenario, "lifesteal", StringComparison.OrdinalIgnoreCase)) { StepLifeSteal(); return; }
 			if (string.Equals(Scenario, "speed", StringComparison.OrdinalIgnoreCase)) { StepSpeed(); return; }

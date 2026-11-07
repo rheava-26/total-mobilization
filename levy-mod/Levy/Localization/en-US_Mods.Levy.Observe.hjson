@@ -3,7 +3,13 @@ SendToPoint: Send to map point
 SendToPointHint: Opens the map. Click a point and every Regular marches there, fights what is in reach, then holds the spot.
 PickPrompt: Click the map to send your army there. Esc cancels.
 MapSendHint: Send levies here
-MapSent: "{0} levies are on their way."
+MapSent: "{0} levies sent to {1}."
+PlaceSpace: space
+PlaceSky: the sky
+PlaceSurface: the surface
+PlaceUnderground: the underground
+PlaceCaverns: the caverns
+PlaceUnderworld: the underworld
 MapNone: You have no levies to send.
 CameraName: Camera {0}
 Connected: Connected to {0}.

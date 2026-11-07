@@ -323,10 +323,14 @@ namespace Levy.Common.Targeting
 
 			float vanillaDist = float.PositiveInfinity;
 			bool vanillaIsPlayer = false;
+			bool heldSpectator = false;
 			if (npc.target >= 0 && npc.target < Main.maxPlayers)
 			{
 				Player p = Main.player[npc.target];
-				if (p.active && !p.dead && !p.ghost)
+				// A Spectator is never a candidate (HidesSpectatorFrom). When one still holds the pick here - Calamity's own search runs with the spectator hidden but leaves (or resets to) player 0, and the hide is
+				// released before this compare - it must not out-weigh the army by being closer: it only stays the pick when no levy is in reach (n == 0 below).
+				heldSpectator = CalamityTargetingCompat.Installed && HidesSpectatorFrom(npc) && Potions.SpectatorPlayer.IsSpectator(p);
+				if (p.active && !p.dead && !p.ghost && !heldSpectator)
 				{
 					// targetRect is the player's hitbox, or the tank pet's when vanilla chose that
 					Vector2 point = npc.targetRect.Width > 0 ? npc.targetRect.Center.ToVector2() : p.Center;

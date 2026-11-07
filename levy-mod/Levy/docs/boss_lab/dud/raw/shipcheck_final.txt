@@ -2,7 +2,7 @@
 Building: Levy
 Compiling Levy.dll
 Compilation finished with 0 errors and 42 warnings
--rw-r--r-- 1 root root 5490316 Nov  7 09:35 /home/user/lab/savehf/Mods/Levy.tmod
+-rw-r--r-- 1 root root 5603602 Nov  7 09:41 /home/user/lab/savehf/Mods/Levy.tmod
 [
   "ThoriumMod",
   "SerousCommonLib",
@@ -14,9 +14,9 @@ Compilation finished with 0 errors and 42 warnings
 boot exit=124 (124 = reached the world prompt)
 exception-ish lines (excluding proc/): 0
 --- self checks
-[09:35:39.892] [Main Thread/INFO] [Levy]: Levy alt-fire policies self check: PASS
-[09:35:42.495] [Main Thread/INFO] [Levy]: [ProgCheck] SUMMARY pass=90 fail=0
-[09:35:42.664] [Main Thread/INFO] [Levy]: [GuideCheck] SUMMARY pass=363 fail=0
-[09:35:42.839] [Main Thread/INFO] [Levy]: [SetBonusCheck] DONE pass=3 fail=0
+[09:41:21.189] [Main Thread/INFO] [Levy]: Levy alt-fire policies self check: PASS
+[09:41:23.705] [Main Thread/INFO] [Levy]: [ProgCheck] SUMMARY pass=90 fail=0
+[09:41:23.809] [Main Thread/INFO] [Levy]: [GuideCheck] SUMMARY pass=363 fail=0
+[09:41:23.989] [Main Thread/INFO] [Levy]: [SetBonusCheck] DONE pass=3 fail=0
 --- audit
-[09:35:39.925] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT total 0
+[09:41:21.226] [Main Thread/INFO] [Levy]: MODSHOT-AUDIT total 0

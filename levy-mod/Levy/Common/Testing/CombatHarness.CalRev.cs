@@ -43,8 +43,9 @@ namespace Levy.Common.Testing
 
 		internal sealed class CrRun
 		{
-			public string Kind, Boss = "eye", Mode = "exp", Order = "free"; public int Seed, Cap, N = 10; public float HpX = 1f, Dr; public List<CrLevySpec> Specs; public string Desc = "";
-			public string Key => $"{Kind}|{Boss}|{Mode}|{Order}|{Seed}|{Cap}" + (N != 10 ? "|n" + N : "") + (HpX != 1f ? "|hp" + HpX.ToString(CultureInfo.InvariantCulture) : "") + (Dr != 0f ? "|dr" + Dr.ToString(CultureInfo.InvariantCulture) : "");
+			public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f; public bool Dbg, Diag; public List<CrLevySpec> Specs; public string Desc = "";
+			public string Key => $"{Kind}|{Boss}|{Mode}|{Order}|{Seed}|{Cap}" + (N != 10 ? "|n" + N : "") + (HpX != 1f ? "|hp" + HpX.ToString(CultureInfo.InvariantCulture) : "") + (Dr != 0f ? "|dr" + Dr.ToString(CultureInfo.InvariantCulture) : "")
+				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "");
 		}
 		private readonly List<CrRun> _crRuns = new();
 		private int _crI = -1; private bool _crStarted;
@@ -68,9 +69,13 @@ namespace Levy.Common.Testing
 					{
 						int eq = f[x].IndexOf('='); if (eq < 0) continue;
 						string k = f[x].Substring(0, eq), v = f[x].Substring(eq + 1);
-						if (k == "order") r.Order = v; else if (k == "n") r.N = int.Parse(v); else if (k == "hpx") r.HpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "dr") r.Dr = float.Parse(v, CultureInfo.InvariantCulture);
+						if (k == "order") r.Order = v; else if (k == "n") r.N = v == "cp" ? CrRealMax(r.Boss) : int.Parse(v); else if (k == "hpx") r.HpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "dr") r.Dr = float.Parse(v, CultureInfo.InvariantCulture);
+						else if (k == "clone") r.Clone = v[0]; else if (k == "cmd") r.Cmd = v; else if (k == "arena") r.Arena = v; else if (k == "gear") r.Gear = v; else if (k == "grade") r.Grade = v;
+						else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture);
 					}
-					r.Specs = CrRoll(r.Boss, r.Seed, r.N, r.HpX); r.Desc = string.Join(" ; ", r.Specs.Select(sp => sp.Describe()));
+					if (r.Gear == "mod" && r.Grade == "mix") r.Grade = "lv";
+					r.Specs = r.Gear == "mod" ? CrRollTier(r.Boss, r.Seed, r.N, r.HpX, r.Grade == "lv") : CrRoll(r.Boss, r.Seed, r.N, r.HpX);
+					if (r.Clone != 0) { var proto = CrRollTier(r.Boss, r.Seed, 40, r.HpX, true).First(x => x.Cls == r.Clone); r.Specs = Enumerable.Range(0, r.N).Select(_ => proto).ToList(); } r.Desc = string.Join(" ; ", r.Specs.Select(sp => sp.Describe()));
 				}
 				else if (f[0] == "probe" && f.Length >= 3)
 				{
@@ -199,6 +204,7 @@ namespace Levy.Common.Testing
 			if (!File.Exists(_crOut)) File.WriteAllText(_crOut, CrHeader + "\n");
 			string spec = Environment.GetEnvironmentVariable("LEVY_CR_SPEC");
 			if (string.IsNullOrEmpty(spec) || !File.Exists(spec)) { Mod.Logger.Warn("HARNESS-CR: LEVY_CR_SPEC missing"); return false; }
+			try { CrTiers(); CrDumpTierDoc(); } catch (Exception e) { Mod.Logger.Warn("HARNESS-CR: tier tables failed: " + e); }
 			CrParseSpec(spec);
 			if (!_crHooked)
 			{
@@ -220,7 +226,7 @@ namespace Levy.Common.Testing
 
 		// -------------------------------------------------------------------------------------------------- Calamity switches
 		private static System.Reflection.FieldInfo _crRevField, _crDeathField;
-		private static void CrSetRevenge(bool on)
+		private static void CrSetRevenge(bool on, bool death = false)
 		{
 			if (_crRevField == null)
 			{
@@ -229,14 +235,14 @@ namespace Levy.Common.Testing
 				_crDeathField = w.GetField("death", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
 			}
 			_crRevField.SetValue(null, on);
-			_crDeathField?.SetValue(null, false);
+			_crDeathField?.SetValue(null, death);
 		}
 
 		// -------------------------------------------------------------------------------------------------- attribution hooks
 		private static int _crNpcCtx = -1, _crProjDepth;
 		private static CrState _cr;
 		internal static CrState CrLive => _cr;
-		internal static bool CrIsBossOrAdd(int type) => _cr != null && (type == _cr.BossType || _cr.AddTypes.Contains(type));
+		internal static bool CrIsBossOrAdd(int type) => _cr != null && (type == _cr.BossType || _cr.PartTypes.Contains(type) || _cr.AddTypes.Contains(type));
 
 		private static void CrNpcUpdateDetour(On_NPC.orig_UpdateNPC orig, NPC self, int i)
 		{
@@ -274,7 +280,8 @@ namespace Levy.Common.Testing
 		internal sealed class CrState
 		{
 			public CrRun Run; public List<CrLevy> Levies = new();
-			public int BossType; public HashSet<int> AddTypes = new();
+			public int BossType, BodyType = -1, TailType = -1; public HashSet<int> AddTypes = new(), PartTypes = new(); public bool Worm => PartTypes.Count > 0;
+			public Dictionary<string, long> Srcs = new(); public void Src(string k, long d) { Srcs.TryGetValue(k, out long v); Srcs[k] = v + d; } public long DtdTicks, LastDmgSum, AddKills; public int PrevAdds; public SortedDictionary<int, (long ticks, long dmg)> Phase = new(); public long TgtLevy, TgtPlayer, TgtNone, AddTgtLevy, AddTgtPlayer, AddTgtNone, HitsBoss, DmgHead, DmgBody, DmgTail, DmgAdd, EnragedTicks, BossAliveTicks; public double Moved; public Vector2 LastPos; public bool HavePos; public int FirstHitTick = -1, MaxParts, MaxAdds; public long BossLifeMaxSum;
 			public int Tick; public int BossIdx = -1; public int BossLifeMax; public int BossLife; public int BossDamage, BossDefense;
 			public int AddsPeak; public int HalfTick = -1; public bool BossGone; public int EndTick = -1; public string Result = "";
 			public long DmgUnattributed, ProjDmg, MeleeDmg;
@@ -284,24 +291,36 @@ namespace Levy.Common.Testing
 				if (dmg <= 0) return;
 				var l = soldierIdx >= 0 ? Levies.FirstOrDefault(x => x.Idx == soldierIdx) : null;
 				if (l == null) { DmgUnattributed += dmg; return; }
-				if (npcType == BossType) l.DmgBoss += dmg; else l.DmgAdd += dmg;
+				bool part = npcType == BossType || PartTypes.Contains(npcType);
+				if (part) { l.DmgBoss += dmg; HitsBoss++; if (FirstHitTick < 0) FirstHitTick = Tick; if (npcType == BossType) DmgHead += dmg; else if (npcType == BodyType) DmgBody += dmg; else if (npcType == TailType) DmgTail += dmg; } else { l.DmgAdd += dmg; DmgAdd += dmg; }
 				if (how == "melee") MeleeDmg += dmg; else ProjDmg += dmg;
 			}
 		}
 
 		// -------------------------------------------------------------------------------------------------- arena
 		private int CrF, _crCx; private string _crArenaBuilt = "";
-		private void CrBuildArena()
+		private void CrBuildArena(string kind)
 		{
 			float n = Main.maxTilesX / 4200f; n *= n;
 			int band = (int)(60f + 10f * n + Main.worldSurface / 6.0) + 2;
-			CrF = Math.Clamp(band + 75, 100, Main.maxTilesY - 120);
 			_crCx = _cx;
-			int cx = _cx, fy = CrF, half = 110;
-			FaFill(cx - 130, fy - 90, cx + 130, fy - 1, false);
-			FaFill(cx - 130, fy, cx + 130, fy + 25, true);
-			FaFill(cx - half - 1, fy - 90, cx - half - 1, fy + 25, true);
-			FaFill(cx + half + 1, fy - 90, cx + half + 1, fy + 25, true);
+			int cx = _cx, half = 110, fy;
+			if (kind == "ug")
+			{
+				// enclosed chamber in the cavern layer: 220 wide x 90 tall, solid shell all round (10 ceiling, 25 walls, 35 floor)
+				fy = Math.Clamp((int)Main.rockLayer + 80, 100, Main.maxTilesY - 260);
+				FaFill(cx - half - 25, fy - 100, cx + half + 25, fy + 35, true);
+				FaFill(cx - half, fy - 90, cx + half, fy - 1, false);
+			}
+			else
+			{
+				fy = Math.Clamp(band + 75, 100, Main.maxTilesY - 120);
+				FaFill(cx - 130, fy - 90, cx + 130, fy - 1, false);
+				FaFill(cx - 130, fy, cx + 130, fy + 25, true);
+				FaFill(cx - half - 1, fy - 90, cx - half - 1, fy + 25, true);
+				FaFill(cx + half + 1, fy - 90, cx + half + 1, fy + 25, true);
+			}
+			CrF = fy;
 			for (int k = 1; k <= 4; k++)
 			{
 				int py = fy - 7 * k;
@@ -311,8 +330,8 @@ namespace Levy.Common.Testing
 					t.HasTile = true; t.TileType = TileID.Platforms; t.TileFrameX = 0; t.TileFrameY = 0; t.BlockType = Terraria.ID.BlockType.Solid; t.WallType = 0;
 				}
 			}
-			_crArenaBuilt = "big";
-			Mod.Logger.Info($"HARNESS-CR: arena built: floor row {fy}, half-width {half}, 4 platform rows");
+			_crArenaBuilt = kind;
+			Mod.Logger.Info($"HARNESS-CR: arena '{kind}' built: floor row {fy}, half-width {half}, 4 platform rows; world {Main.maxTilesX}x{Main.maxTilesY} worldSurface {Main.worldSurface:0} rockLayer {Main.rockLayer:0} => arena is {(fy < Main.worldSurface ? "ABOVE" : "BELOW")} worldSurface, {(fy > Main.rockLayer ? "in" : "above")} the cavern layer");
 		}
 
 		private Vector2 _crCmdPos;
@@ -321,9 +340,10 @@ namespace Levy.Common.Testing
 			Player p = Main.player[0];
 			p.active = true; p.dead = false; p.name = CommanderName; p.team = 0;
 			p.statLifeMax = p.statLifeMax2 = 500; p.statLife = 500; p.statManaMax = p.statManaMax2 = 200; p.statMana = 200;
-			p.position = new Vector2(_crCmdPos.X - p.width / 2f, _crCmdPos.Y - p.height);
+			Vector2 pin = _crRunCur != null && _crRunCur.Cmd == "far" ? new Vector2((_crCx + 121) * 16f, CrF * 16f) : _crCmdPos; // cmd=far: the commander stands outside the arena, so he is never the closer target
+			p.position = new Vector2(pin.X - p.width / 2f, pin.Y - p.height);
 			p.velocity = Vector2.Zero; p.immune = true; p.immuneTime = 30;
-			if (_crS != null && _crS.Run.Boss == "brain" || _crBrainRun) p.ZoneCrimson = true; // Brain of Cthulhu flees a target outside the Crimson; the dummy copies the commander's zones (BiomeMirror)
+			CrApplyZones(p); // Brain of Cthulhu flees a target outside the Crimson, Desert Scourge enrages outside the desert; the dummy copies the commander's zones (BiomeMirror)
 			int bt = ModContent.BuffType<SpectatorBuff>();
 			if (!p.HasBuff(bt)) { p.AddBuff(bt, 600000); if (p.TryGetModPlayer(out SpectatorPlayer sp)) sp.Anchor = p.Center; }
 		}
@@ -340,7 +360,7 @@ namespace Levy.Common.Testing
 			Main.dayTime = false; Main.time = 16200; Main.raining = false; Main.bloodMoon = false; Main.eclipse = false;
 			try
 			{
-				if (_crArenaBuilt == "" && !_crStarted) CrBuildArena();
+				if (!_crStarted && _crArenaBuilt != run.Arena) CrBuildArena(run.Arena);
 				StepCrFight(run);
 			}
 			catch (Exception e)
@@ -358,7 +378,7 @@ namespace Levy.Common.Testing
 			{
 				NPC n = Main.npc[i];
 				if (!n.active || n.ModNPC is SoldierNPC || n.townNPC || n.friendly) continue;
-				if (i == keep || (_cr != null && _cr.AddTypes.Contains(n.type)) || (n.TryGetGlobalNPC(out HarnessTarget ht) && ht.IsTarget)) continue;
+				if (i == keep || (_cr != null && (_cr.AddTypes.Contains(n.type) || _cr.PartTypes.Contains(n.type) || n.type == _cr.BossType)) || (n.TryGetGlobalNPC(out HarnessTarget ht) && ht.IsTarget)) continue;
 				n.active = false;
 			}
 		}
@@ -373,7 +393,7 @@ namespace Levy.Common.Testing
 			rec.Order = run.Order == "sd" ? SoldierOrder.SearchDestroy : run.Order == "follow" ? SoldierOrder.Follow : SoldierOrder.FreeRein;
 			var gear = rec.Gear;
 			Item w = CrMake(spec.Weapon);
-			if (!gear.CanHold(SoldierGear.SlotWeapon, w)) throw new Exception("levy cannot hold " + spec.Weapon);
+			if (!gear.CanHold(SoldierGear.SlotWeapon, w)) { Mod.Logger.Warn($"HARNESS-CR: levy cannot hold {spec.Weapon}; fallback {CrFallbackWeapon(spec.Cls)}"); spec.Weapon = CrFallbackWeapon(spec.Cls); spec.Ammo = spec.Cls == 'R' ? "Silver Bullet" : ""; w = CrMake(spec.Weapon); }
 			gear.Weapon = w; gear.SetLocked(SoldierGear.SlotWeapon, true);
 			if (!string.IsNullOrEmpty(spec.Ammo))
 			{
@@ -411,14 +431,15 @@ namespace Levy.Common.Testing
 			return new CrLevy { Cls = spec.Cls, Rec = rec, Idx = idx, Id = rec.Id, Spec = spec, LastLife = n.life, MaxHp = rec.MaxHp, Weapon = spec.Weapon, PotionsLeft = spec.Potions };
 		}
 
-		private static int CrBossNpcType(string boss) => boss switch { "kslime" => NPCID.KingSlime, "brain" => NPCID.BrainofCthulhu, "eow" => NPCID.EaterofWorldsHead, _ => NPCID.EyeofCthulhu };
+		private static int CrBossNpcType(string boss) => boss switch { "kslime" => NPCID.KingSlime, "brain" => NPCID.BrainofCthulhu, "eow" => NPCID.EaterofWorldsHead, "qb" => NPCID.QueenBee, "skel" => NPCID.SkeletronHead, "ds" => CrCalNpc("DesertScourgeHead"), _ => NPCID.EyeofCthulhu };
 
 		private static void CrApplyMode(string mode)
 		{
 			Main.GameMode = GameModeID.Expert;
-			bool rev = mode == "rev" || mode == "revoff";
-			CrSetRevenge(rev);
-			LevyRippers.Disabled = mode != "rev";
+			bool death = mode == "death";
+			bool rev = mode == "rev" || mode == "revoff" || death;
+			CrSetRevenge(rev, death);
+			LevyRippers.Disabled = !(mode == "rev" || death);
 			CrDrGlobal.Dr = 0f;
 		}
 
@@ -435,15 +456,15 @@ namespace Levy.Common.Testing
 			if (!_crStarted)
 			{
 				ClearAll(); CrPurgeNpcs();
-				CrApplyMode(run.Mode); CrDrGlobal.Dr = run.Dr; _crBrainRun = run.Boss == "brain";
+				CrApplyMode(run.Mode); CrDrGlobal.Dr = run.Dr; _crBrainRun = run.Boss == "brain"; _crRunCur = run;
 				Main.rand = new Terraria.Utilities.UnifiedRandom(run.Seed * 7919 + 13);
 				NPC.downedBoss1 = false; NPC.downedBoss2 = false; NPC.downedSlimeKing = false;
 				_crCmdPos = new Vector2((_crCx - 6) * 16f, CrF * 16f);
 				CrPinCommander();
 				var s = new CrState { Run = run, BossType = CrBossNpcType(run.Boss) };
-				if (run.Boss == "kslime") { foreach (int t in new[] { NPCID.BlueSlime, NPCID.SlimeSpiked, NPCID.GreenSlime, NPCID.PurpleSlime, NPCID.RedSlime, NPCID.YellowSlime, NPCID.IceSlime, NPCID.JungleSlime, NPCID.BlackSlime }) s.AddTypes.Add(t); }
-				else if (run.Boss == "brain") s.AddTypes.Add(NPCID.Creeper);
-				else s.AddTypes.Add(NPCID.ServantofCthulhu);
+				CrSetupBoss(s, run);
+				CrSetHpScale(run);
+				CrResetDowned();
 				int total = run.Specs.Count, slot = 0;
 				foreach (var sp in run.Specs) s.Levies.Add(CrSpawnLevy(sp, run, slot++, total, _crCmdPos));
 				if (probe) { for (int k = 0; k < s.Levies.Count; k++) s.Levies[k].Upkeep = k >= 2; }
@@ -452,13 +473,15 @@ namespace Levy.Common.Testing
 				int ei = NPC.NewNPC(new EntitySource_WorldEvent("LevyCalRev"), bx, by, s.BossType);
 				if (ei < 0 || ei >= Main.maxNPCs) throw new Exception("boss spawn failed");
 				NPC boss = Main.npc[ei]; s.BossIdx = ei;
-				if (probe) { boss.lifeMax *= 40; boss.life = boss.lifeMax; }
+				if ((probe || run.BossHpX != 1f) && !s.Worm) { boss.lifeMax = (int)(boss.lifeMax * (probe ? 40f : run.BossHpX)); boss.life = boss.lifeMax; }
 				s.BossLifeMax = boss.lifeMax; s.BossLife = boss.life; s.BossDamage = boss.damage; s.BossDefense = boss.defense;
 				boss.timeLeft = 99999;
 				s.Rage0 = LevyRippers.RageActivations; s.Adr0 = LevyRippers.AdrenalineActivations; s.Dr0 = LevyRippers.DrCuts; s.Lost0 = LevyRippers.AdrenalineLost;
 				_crS = s; _cr = s; _crStarted = true; _crTickInRun = 0;
+				if (run.Diag) global::Levy.Common.Potions.SpectatorDiagnostic.Set(true);
+				global::Levy.Common.Recording.FightRecAuto.Tag(("arena", run.Arena), ("seed", run.Seed), ("mode", run.Mode), ("gear", run.Gear + "_n" + run.N), ("cellkey", run.Key));
 				if (probe && !File.Exists(_crOut + ".probe.tsv")) File.WriteAllText(_crOut + ".probe.tsv", "mode\ttick\tlevy\tgear\tupkeep\trage\tadr\trageMode\tadrMode\thp\tboss\n");
-				Mod.Logger.Info($"HARNESS-CR: start {run.Key}: {run.Boss} {boss.life}/{boss.lifeMax} def {boss.defense} dmg {boss.damage} revenge={LevyRippers.RevengeanceOn} expert={Main.expertMode} rippersOff={LevyRippers.Disabled}; {run.Desc}");
+				Mod.Logger.Info($"HARNESS-CR: start {run.Key}: {run.Boss} {boss.life}/{boss.lifeMax} def {boss.defense} dmg {boss.damage} revenge={LevyRippers.RevengeanceOn} death={CrDeathOn()} expert={Main.expertMode} rippersOff={LevyRippers.Disabled} arena={run.Arena} gear={run.Gear} n={run.N} hpscale%/cp={(global::Levy.Common.Config.LevyConfig.Get.BossHpScalingPercentPerCp)}; {run.Desc}");
 				return;
 			}
 			var st = _crS; st.Tick = ++_crTickInRun;
@@ -466,11 +489,12 @@ namespace Levy.Common.Testing
 			CrPinStrays(st.BossIdx);
 			NPC e = Main.npc[st.BossIdx];
 			bool bossAlive = e.active && e.type == st.BossType;
-			if (Environment.GetEnvironmentVariable("LEVY_CR_DEBUG") == "1" && st.Tick % 30 == 0) Mod.Logger.Info($"HARNESS-CR-DBG t={st.Tick} boss active={e.active} type={e.type} life={e.life}/{e.lifeMax} pos={e.Center / 16f} dontTakeDamage={e.dontTakeDamage} ai0={e.ai[0]} target={e.target}");
-			if (bossAlive) { st.BossLife = e.life; e.timeLeft = 99999; if (st.HalfTick < 0 && e.life * 2 <= st.BossLifeMax) st.HalfTick = st.Tick; }
+			if (st.Worm) bossAlive = CrWormTick(st, ref e);
+			else if (bossAlive) { st.BossLife = e.life; e.timeLeft = 99999; if (st.HalfTick < 0 && e.life * 2 <= st.BossLifeMax) st.HalfTick = st.Tick; }
 			else if (!st.BossGone) { st.BossGone = true; st.EndTick = st.Tick; st.Result = e.life <= 0 ? "WIN" : "DESPAWN"; st.BossLife = Math.Max(0, e.life); }
 			int adds = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && st.AddTypes.Contains(Main.npc[i].type)) adds++;
-			st.AddsPeak = Math.Max(st.AddsPeak, adds);
+			st.AddsPeak = Math.Max(st.AddsPeak, adds); st.MaxAdds = st.AddsPeak;
+			CrSampleTick(st, e, bossAlive, adds);
 			int alive = 0;
 			foreach (var l in st.Levies)
 			{
@@ -492,7 +516,7 @@ namespace Levy.Common.Testing
 					{
 						l.Hits++;
 						int at = sn.LastAttackerType;
-						if (at == st.BossType) l.TakenBoss += drop; else if (st.AddTypes.Contains(at)) l.TakenAdd += drop; else l.TakenOther += drop;
+						if (at == st.BossType || st.PartTypes.Contains(at)) { l.TakenBoss += drop; st.Src("boss:" + CrNpcName(at), drop); } else if (st.AddTypes.Contains(at)) { l.TakenAdd += drop; st.Src("add:" + CrNpcName(at), drop); } else { l.TakenOther += drop; st.Src("other:" + CrNpcName(at), drop); }
 					}
 					l.LastLife = n.life; l.LastAttackerType = sn.LastAttackerType; l.LifeMin = Math.Min(l.LifeMin, n.life);
 					l.ManaMin = Math.Min(l.ManaMin, l.Rec.Mana);
@@ -514,7 +538,7 @@ namespace Levy.Common.Testing
 				{
 					l.Dead = true; l.DeathTick = st.Tick;
 					int at = l.LastAttackerType;
-					if (at == st.BossType) l.TakenBoss += l.LastLife; else if (st.AddTypes.Contains(at)) l.TakenAdd += l.LastLife; else l.TakenOther += l.LastLife;
+					if (at == st.BossType || st.PartTypes.Contains(at)) { l.TakenBoss += l.LastLife; st.Src("boss:" + CrNpcName(at), l.LastLife); } else if (st.AddTypes.Contains(at)) { l.TakenAdd += l.LastLife; st.Src("add:" + CrNpcName(at), l.LastLife); } else { l.TakenOther += l.LastLife; st.Src("other:" + CrNpcName(at), l.LastLife); }
 				}
 			}
 			if (st.Result == "" && alive == 0) { st.Result = "LOSS"; st.EndTick = st.Tick; }
@@ -527,7 +551,7 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !(n.ModNPC is SoldierNPC) && !n.townNPC) n.active = false; }
 		}
 
-		private const string CrHeader = "key\tkind\tboss\tmode\torder\tseed\tresult\tticks\tsec\tbossMax\tbossLeft\tbossDmg\tbossDef\tdmgBoss\tdmgR\tdmgM\tdmgE\tdmgS\tdmgUnattr\tdmgProj\tdmgMelee\tdeaths\tdeathsR\tdeathsM\tdeathsE\tdeathsS\tavgSurvSec\ttakenBoss\ttakenAdd\ttakenOther\taddsPeak\thalfSec\tavgHp\tpotionsDrunk\trageAct\tadrAct\tdrCuts\tadrLost\tpeakRageAvg\tpeakAdrAvg\trageSec\tadrSec\thitsTaken\tperLevy";
+		private const string CrHeader = "key\tkind\tboss\tmode\torder\tseed\tresult\tticks\tsec\tbossMax\tbossLeft\tbossDmg\tbossDef\tdmgBoss\tdmgR\tdmgM\tdmgE\tdmgS\tdmgUnattr\tdmgProj\tdmgMelee\tdeaths\tdeathsR\tdeathsM\tdeathsE\tdeathsS\tavgSurvSec\ttakenBoss\ttakenAdd\ttakenOther\taddsPeak\thalfSec\tavgHp\tpotionsDrunk\trageAct\tadrAct\tdrCuts\tadrLost\tpeakRageAvg\tpeakAdrAvg\trageSec\tadrSec\thitsTaken\tgear\tarena\tn\ttgtLevyPct\ttgtPlayerPct\ttgtNonePct\taddTgtLevyPct\taddTgtPlayerPct\thitsBoss\thitsPerSec\tdmgPerSec\tdmgHead\tdmgBody\tdmgTail\tdmgAdd\tbossMoved\tenragedSec\tfirstHitSec\tpartsMax\tdtdPct\tdpsHittable\taddKills\taddKillsPerSec\tphases\tdmgSources\tperLevy";
 
 		private void CrFinishFight(CrRun run, CrState st)
 		{
@@ -540,18 +564,24 @@ namespace Levy.Common.Testing
 			long tB = st.Levies.Sum(l => l.TakenBoss), tA = st.Levies.Sum(l => l.TakenAdd), tO = st.Levies.Sum(l => l.TakenOther);
 			Func<double, string> f1 = v => v.ToString("0.0", CultureInfo.InvariantCulture);
 			string per = string.Join(";", st.Levies.Select(l => $"{l.Cls}:{l.Weapon.Replace(' ', '_')}:dmg{l.DmgBoss}:surv{f1((l.Dead ? l.DeathTick : end) / 60.0)}:{(l.Dead ? "dead" : "alive")}:hp{l.MaxHp}:tb{l.TakenBoss}:ta{l.TakenAdd}:to{l.TakenOther}:pot{l.PotionsDrunk}:rg{l.PeakRage:0}:ad{l.PeakAdr:0}"));
-			int bossLeft = st.BossGone ? st.BossLife : Main.npc[st.BossIdx].active ? Main.npc[st.BossIdx].life : st.BossLife;
+			int bossLeft = st.Worm || st.BossGone ? st.BossLife : Main.npc[st.BossIdx].active ? Main.npc[st.BossIdx].life : st.BossLife;
 			var sb = new StringBuilder();
 			sb.Append(run.Key).Append('\t').Append(string.Join("\t", new object[] { run.Kind, run.Boss, run.Mode, run.Order, run.Seed, st.Result, end, f1(end / 60.0),
 				st.BossLifeMax, bossLeft, st.BossDamage, st.BossDefense, dmgBoss, dmg('R'), dmg('M'), dmg('E'), dmg('S'), st.DmgUnattributed, st.ProjDmg, st.MeleeDmg, deaths, dc('R'), dc('M'), dc('E'), dc('S'), f1(avgSurv), tB, tA, tO, st.AddsPeak,
 				st.HalfTick < 0 ? "-" : f1(st.HalfTick / 60.0), f1(st.Levies.Average(l => l.MaxHp)), st.Levies.Sum(l => l.PotionsDrunk),
 				LevyRippers.RageActivations - st.Rage0, LevyRippers.AdrenalineActivations - st.Adr0, LevyRippers.DrCuts - st.Dr0, LevyRippers.AdrenalineLost - st.Lost0,
-				f1(st.Levies.Average(l => l.PeakRage)), f1(st.Levies.Average(l => l.PeakAdr)), f1(st.Levies.Sum(l => l.RageModeTicks) / 60.0), f1(st.Levies.Sum(l => l.AdrModeTicks) / 60.0), st.Levies.Sum(l => l.Hits), per }));
+				f1(st.Levies.Average(l => l.PeakRage)), f1(st.Levies.Average(l => l.PeakAdr)), f1(st.Levies.Sum(l => l.RageModeTicks) / 60.0), f1(st.Levies.Sum(l => l.AdrModeTicks) / 60.0), st.Levies.Sum(l => l.Hits),
+				run.Gear, run.Arena, st.Levies.Count, CrPct(st.TgtLevy, st.TgtLevy + st.TgtPlayer + st.TgtNone), CrPct(st.TgtPlayer, st.TgtLevy + st.TgtPlayer + st.TgtNone), CrPct(st.TgtNone, st.TgtLevy + st.TgtPlayer + st.TgtNone),
+				CrPct(st.AddTgtLevy, st.AddTgtLevy + st.AddTgtPlayer + st.AddTgtNone), CrPct(st.AddTgtPlayer, st.AddTgtLevy + st.AddTgtPlayer + st.AddTgtNone), st.HitsBoss, f1(st.HitsBoss / Math.Max(1.0, end / 60.0)), f1(dmgBoss / Math.Max(1.0, end / 60.0)),
+				st.DmgHead, st.DmgBody, st.DmgTail, st.DmgAdd, f1(st.Moved / 16.0), f1(st.EnragedTicks / 60.0), st.FirstHitTick < 0 ? "-" : f1(st.FirstHitTick / 60.0), st.MaxParts,
+				CrPct(st.DtdTicks, st.BossAliveTicks), f1(dmgBoss / Math.Max(1.0, (st.BossAliveTicks - st.DtdTicks) / 60.0)), st.AddKills, f1(st.AddKills / Math.Max(1.0, end / 60.0)),
+				string.Join(" ", st.Phase.Select(kv => $"a{kv.Key}:{kv.Value.ticks / 60.0:0}s/{kv.Value.dmg}d={(kv.Value.dmg / Math.Max(1.0, kv.Value.ticks / 60.0)):0}")), string.Join(" ", st.Srcs.OrderByDescending(kv => kv.Value).Take(8).Select(kv => kv.Key + "=" + kv.Value)), per }));
 			File.AppendAllText(_crOut, sb + "\n");
 			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} rageAct={LevyRippers.RageActivations - st.Rage0} adrAct={LevyRippers.AdrenalineActivations - st.Adr0}");
 			if (Main.npc[st.BossIdx].active && Main.npc[st.BossIdx].type == st.BossType) Main.npc[st.BossIdx].active = false;
 			_cr = null; _crS = null; _crStarted = false; _crI++;
-			NPC.downedBoss1 = false; NPC.downedBoss2 = false; NPC.downedSlimeKing = false;
+			CrResetDowned(); CrSetHpScale(null);
+			if (run.Diag) global::Levy.Common.Potions.SpectatorDiagnostic.Set(false);
 			ClearAll(); CrPurgeNpcs();
 		}
 

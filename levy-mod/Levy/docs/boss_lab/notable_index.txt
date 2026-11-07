@@ -1,0 +1,122 @@
+Notable replays (jsonl.gz, FightRecorder format; open with levy-mod/Levy/tools/fightviewer, gallery: make_gallery.py <out.html> <files>).
+Mode/arena/seed/gear are in each file name; the full cell key is below.
+
+calrev_Eye_of_Cthulhu_surf_s9_mdeath_mod_n19_36.jsonl.gz
+    closest win: 18/19 levies dead, kill at 224.9s
+    cell fight|eye|death|free|9|18000|n19|gmod|grlv|cfar: WIN at 224.9s, boss left 0/5460, deaths 18/19, boss target L95/P5%
+
+calrev_Eye_of_Cthulhu_surf_s1_mrev_mod_n12_09.jsonl.gz
+    closest win: 11/12 levies dead, kill at 268.4s
+    cell fight|eye|rev|free|1|18000|n12|gmod|grlv|cfar: WIN at 268.4s, boss left 0/5460, deaths 11/12, boss target L89/P11%
+
+calrev_Skeletron_surf_s4_mexp_mod_n16_06.jsonl.gz
+    closest win: 15/16 levies dead, kill at 194.2s
+    cell fight|skel|exp|sd|4|18000|n16|gmod|grlv|cfar: WIN at 194.2s, boss left 0/8800, deaths 15/16, boss target L100/P0%
+
+calrev_Eye_of_Cthulhu_surf_s5_mrev_mod_n11_07.jsonl.gz
+    closest win: 10/11 levies dead, kill at 230.6s
+    cell fight|eye|rev|free|5|18000|n11|gmod|grlv|cfar: WIN at 230.6s, boss left 0/5460, deaths 10/11, boss target L94/P6%
+
+calrev_Eye_of_Cthulhu_surf_s7_mrev_mod_n16_03.jsonl.gz + calrev_Eye_of_Cthulhu_surf_s7_mrev_mod_n16_20.jsonl.gz
+    closest win: 14/16 levies dead, kill at 277.8s
+    cell fight|eye|rev|free|7|18000|n16|gmod|grlv|cfar: WIN at 277.8s, boss left 0/5460, deaths 14/16, boss target L89/P11%
+
+calrev_Desert_Scourge_surf_s4_mrev_mod_n11_03.jsonl.gz
+    fast wipe: all 11 levies dead in 9.1s (boss ds rev surf)
+    cell fight|ds|rev|sd|4|18000|n11|gmod|grlv|cfar: LOSS at 9.1s, boss left 6852/8000, deaths 11/11, boss target L100/P0%
+
+calrev_Desert_Scourge_ug_s3_mexp_mod_n11_05.jsonl.gz + calrev_Desert_Scourge_ug_s3_mexp_mod_n11_10.jsonl.gz
+    fast wipe: all 11 levies dead in 11.8s (boss ds exp ug)
+    cell fight|ds|exp|free|3|18000|n11|aug|gmod|grlv|cfar: LOSS at 11.8s, boss left 5080/6400, deaths 11/11, boss target L100/P0%
+
+calrev_Desert_Scourge_ug_s2_mrev_mod_n11_04.jsonl.gz + calrev_Desert_Scourge_ug_s2_mrev_mod_n11_08.jsonl.gz
+    fast wipe: all 11 levies dead in 12.3s (boss ds rev ug)
+    cell fight|ds|rev|sd|2|18000|n11|aug|gmod|grlv|cfar: LOSS at 12.3s, boss left 5783/8000, deaths 11/11, boss target L100/P0%
+
+calrev_Brain_of_Cthulhu_surf_s1_mdeath_mod_n13_03.jsonl.gz
+    typical brain death surf (cell n=3, median 54s): LOSS 53.7s deaths 13/13
+    cell fight|brain|death|free|1|18000|n13|gmod|grlv|cfar: LOSS at 53.7s, boss left 4144/4144, deaths 13/13, boss target L94/P6%
+
+calrev_Brain_of_Cthulhu_surf_s1_mexp_mod_n19_05.jsonl.gz
+    typical brain exp surf (cell n=24, median 49s): WIN 47.4s deaths 0/19
+    cell fight|brain|exp|free|1|18000|n19|gmod|grlv|cfar: WIN at 47.4s, boss left 0/2125, deaths 0/19, boss target L100/P0%
+
+calrev_Brain_of_Cthulhu_ug_s1_mexp_mod_n13_04.jsonl.gz
+    typical brain exp ug (cell n=6, median 56s): WIN 33.5s deaths 0/13
+    cell fight|brain|exp|free|1|18000|n13|aug|gmod|grlv|cfar: WIN at 33.5s, boss left 0/2125, deaths 0/13, boss target L100/P0%
+
+calrev_Brain_of_Cthulhu_surf_s2_mrev_mod_n19_06.jsonl.gz + calrev_Brain_of_Cthulhu_surf_s2_mrev_mod_n19_23.jsonl.gz
+    typical brain rev surf (cell n=46, median 94s): LOSS 94.3s deaths 19/19
+    cell fight|brain|rev|sd|2|18000|n19|gmod|grlv|cfar: LOSS at 94.3s, boss left 4144/4144, deaths 19/19, boss target L93/P7%
+
+calrev_Brain_of_Cthulhu_ug_s6_mrev_mod_n13_23.jsonl.gz
+    typical brain rev ug (cell n=15, median 200s): WIN 200.5s deaths 8/13
+    cell fight|brain|rev|sd|6|18000|n13|aug|gmod|grlv|cfar: WIN at 200.5s, boss left 0/4144, deaths 8/13, boss target L54/P46%
+
+calrev_Desert_Scourge_surf_s3_mdeath_mod_n11_06.jsonl.gz
+    typical ds death surf (cell n=3, median 54s): LOSS 54.1s deaths 11/11
+    cell fight|ds|death|free|3|18000|n11|gmod|grlv|cfar: LOSS at 54.1s, boss left 3813/8000, deaths 11/11, boss target L100/P0%
+
+calrev_Desert_Scourge_surf_s1_mexp_mod_n11_01.jsonl.gz + calrev_Desert_Scourge_surf_s1_mexp_mod_n11_06.jsonl.gz
+    typical ds exp surf (cell n=6, median 45s): LOSS 41.2s deaths 11/11
+    cell fight|ds|exp|free|1|18000|n11|gmod|grlv|cfar: LOSS at 41.2s, boss left 3441/6400, deaths 11/11, boss target L100/P0%
+
+calrev_Desert_Scourge_ug_s1_mexp_mod_n11_01.jsonl.gz + calrev_Desert_Scourge_ug_s1_mexp_mod_n11_02.jsonl.gz
+    typical ds exp ug (cell n=6, median 40s): LOSS 43.3s deaths 11/11
+    cell fight|ds|exp|free|1|18000|n11|aug|gmod|grlv|cfar: LOSS at 43.3s, boss left 3158/6400, deaths 11/11, boss target L100/P0%
+
+calrev_Desert_Scourge_surf_s2_mrev_mod_n11_01.jsonl.gz + calrev_Desert_Scourge_surf_s2_mrev_mod_n11_07.jsonl.gz + calrev_Desert_Scourge_surf_s2_mrev_mod_n11_14.jsonl.gz
+    typical ds rev surf (cell n=6, median 48s): LOSS 61.4s deaths 11/11
+    cell fight|ds|rev|sd|2|18000|n11|gmod|grlv|cfar: LOSS at 61.4s, boss left 952/8000, deaths 11/11, boss target L100/P0%
+
+calrev_Desert_Scourge_ug_s3_mrev_mod_n11_06.jsonl.gz + calrev_Desert_Scourge_ug_s3_mrev_mod_n11_12.jsonl.gz
+    typical ds rev ug (cell n=6, median 39s): LOSS 52.2s deaths 11/11
+    cell fight|ds|rev|free|3|18000|n11|aug|gmod|grlv|cfar: LOSS at 52.2s, boss left 2823/8000, deaths 11/11, boss target L100/P0%
+
+calrev_Eye_of_Cthulhu_surf_s3_mdeath_mod_n11_26.jsonl.gz
+    typical eye death surf (cell n=21, median 204s): LOSS 203.9s deaths 11/11
+    cell fight|eye|death|free|3|36000|n11|gmod|grlv|cfar: LOSS at 203.9s, boss left 1032/5460, deaths 11/11, boss target L96/P4%
+
+calrev_Eye_of_Cthulhu_surf_s1_mexp_mod_n12_03.jsonl.gz + calrev_Eye_of_Cthulhu_surf_s1_mexp_mod_n12_03.jsonl.gz
+    typical eye exp surf (cell n=55, median 51s): WIN 50.7s deaths 1/12
+    cell fight|eye|exp|free|1|18000|n12|gmod|grlv|cfar: WIN at 50.7s, boss left 0/3640, deaths 1/12, boss target L100/P0%
+
+calrev_Eye_of_Cthulhu_surf_s3_mrev_mod_n8_32.jsonl.gz
+    typical eye rev surf (cell n=49, median 186s): LOSS 186.1s deaths 8/8
+    cell fight|eye|rev|free|3|18000|n8|gmod|grlv|cfar: LOSS at 186.1s, boss left 4339/5460, deaths 8/8, boss target L100/P0%
+
+calrev_King_Slime_surf_s3_mdeath_mod_n10_05.jsonl.gz
+    typical kslime death surf (cell n=3, median 225s): WIN 225.1s deaths 6/10
+    cell fight|kslime|death|free|3|18000|gmod|grlv|cfar: WIN at 225.1s, boss left 0/4200, deaths 6/10, boss target L100/P0%
+
+calrev_King_Slime_surf_s4_mexp_mod_n10_01.jsonl.gz
+    typical kslime exp surf (cell n=6, median 300s): TIMEOUT 300.0s deaths 4/10
+    cell fight|kslime|exp|sd|4|18000|gmod|grlv|cfar: TIMEOUT at 300.0s, boss left 1492/2800, deaths 4/10, boss target L100/P0%
+
+calrev_King_Slime_surf_s3_mrev_mod_n10_11.jsonl.gz + calrev_King_Slime_surf_s3_mrev_mod_n10_32.jsonl.gz
+    typical kslime rev surf (cell n=6, median 186s): WIN 174.7s deaths 4/10
+    cell fight|kslime|rev|free|3|18000|gmod|grlv|cfar: WIN at 174.7s, boss left 0/4200, deaths 4/10, boss target L100/P0%
+
+calrev_Queen_Bee_surf_s5_mdeath_mod_n15_11.jsonl.gz
+    typical qb death surf (cell n=3, median 249s): WIN 248.8s deaths 5/15
+    cell fight|qb|death|free|5|18000|n15|gmod|grlv|cfar: WIN at 248.8s, boss left 0/8568, deaths 5/15, boss target L99/P1%
+
+calrev_Queen_Bee_surf_s4_mexp_mod_n15_03.jsonl.gz
+    typical qb exp surf (cell n=6, median 70s): LOSS 68.5s deaths 15/15
+    cell fight|qb|exp|sd|4|18000|n15|gmod|grlv|cfar: LOSS at 68.5s, boss left 4629/4760, deaths 15/15, boss target L100/P0%
+
+calrev_Queen_Bee_surf_s1_mrev_mod_n15_05.jsonl.gz
+    typical qb rev surf (cell n=6, median 268s): LOSS 271.1s deaths 15/15
+    cell fight|qb|rev|free|1|18000|n15|gmod|grlv|cfar: LOSS at 271.1s, boss left 3462/8568, deaths 15/15, boss target L98/P2%
+
+calrev_Eye_of_Cthulhu_surf_s1_mrev_mod_n11_02.jsonl.gz
+    ANOMALY targeting: Eye Rev with the commander near the levies; boss target is the Spectator commander ~54% of ticks and hovers over him (timeout, 0 hits on levies in those spans)
+    cell fight|eye|rev|free|1|18000|n11|gmod|grlv: TIMEOUT at 300.0s, boss left 1447/5460, deaths 6/11, boss target L49/P51%
+
+calrev_Brain_of_Cthulhu_surf_s1_mrev_mod_n13_01.jsonl.gz
+    ANOMALY targeting + shield: Brain Rev, diag run; target = commander while its lock is -1 (Compete: vanilla pick closer), dontTakeDamage ~100%, creepers 18
+    cell fight|brain|rev|free|1|7200|n13|gmod|grlv|cfar: LOSS at 70.3s, boss left 4144/4144, deaths 13/13, boss target L65/P35%
+
+calrev_Queen_Bee_surf_s1_mexp_mod_n15_03.jsonl.gz + calrev_Queen_Bee_surf_s1_mexp_mod_n15_04.jsonl.gz
+    Queen Bee Expert: 15 levies wiped in 40 s
+    cell fight|qb|exp|free|1|18000|n15|gmod|grlv|cfar: LOSS at 95.0s, boss left 2087/4760, deaths 15/15, boss target L100/P0%

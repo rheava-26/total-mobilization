@@ -307,7 +307,9 @@ namespace Levy.Common.Weapons
 				var leather = Make(ItemID.BlandWhip); var bone = Make(ItemID.BoneWhip); var thorn = Make(ItemID.ThornWhip);
 				check(leather.value > bone.value && WeaponRank.Of(bone) > WeaponRank.Of(leather) * 1.15f && WeaponRank.Of(bone) > WeaponRank.Of(thorn), "whips rank on damage: the Bone Whip (27) outranks the Leather Whip (14, priced higher) and the Thorn Whip (18)");
 				WeaponRank.Force(WeaponRankMode.SellPrice, false);
-				check(Math.Abs(WeaponRank.Of(leather) - price(leather)) < 0.01f && Math.Abs(WeaponRank.Of(aura3) - price(aura3)) < 0.01f && WeaponRank.Of(leather) > WeaponRank.Of(bone), "the price modes still rank whips and sentries on the shop price");
+				check(WeaponRank.Of(bone) > WeaponRank.Of(leather) * 1.15f && WeaponRank.Of(bal3) > WeaponRank.Of(aura3) * 1.15f && WeaponRank.Of(impStaff) > WeaponRank.Of(slimeStaff) && WeaponRank.Of(hornetStaff) > WeaponRank.Of(slimeStaff), "SellPrice ranks whips, sentries and minion staves on damage too (the Slime Staff never beats the Imp or Hornet staff, whatever the stored mode)");
+				WeaponRank.Force(WeaponRankMode.SellPricePlusMaterials, false);
+				check(WeaponRank.Of(impStaff) > WeaponRank.Of(slimeStaff) && WeaponRank.Of(hornetStaff) > WeaponRank.Of(slimeStaff), "SellPricePlusMaterials: the Slime Staff never beats the Imp or Hornet staff");
 				WeaponRank.Force(WeaponRankMode.Balanced, false);
 				WeaponRank.ForceProgress = 13f; // after Golem
 				check(WeaponRank.Of(mini) < 0.1f * price(mini) && WeaponRank.Of(copper) >= 1f, "a Minishark after Golem is heavily discounted, and no rank is below 1");

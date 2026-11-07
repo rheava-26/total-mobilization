@@ -75,6 +75,7 @@ namespace Levy.Content.NPCs
 				if (--_dodgePend == 0 && grounded && !npc.wet) { DodgeJumps++; TryJump(_dodgePendTiles); npc.netUpdate = true; _dodgeCooldown = ThreatCooldown; }
 				else if (!grounded && !air) _dodgePend = 0;
 				else { npc.velocity.X *= StopDecel; if (Math.Abs(npc.velocity.X) < StopBelowPx) npc.velocity.X = 0f; }
+				if (_dodgePend > 0) WhyM = Why.MDodgePend;
 				return _dodgePend > 0;
 			}
 			if (_hkPhase != HookPhase.Idle && _hkPhase != HookPhase.Cooldown) return false;
@@ -372,7 +373,7 @@ namespace Levy.Content.NPCs
 		private bool HoldStep(bool holding)
 		{
 			if (!holding || _dodgeHold <= 0) return false;
-			_dodgeHold--;
+			_dodgeHold--; WhyM = Why.MDodgeHold;
 			NPC.velocity.X *= StopDecel;
 			if (Math.Abs(NPC.velocity.X) < StopBelowPx) NPC.velocity.X = 0f;
 			return true;

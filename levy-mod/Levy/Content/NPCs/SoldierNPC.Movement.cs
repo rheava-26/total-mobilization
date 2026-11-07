@@ -63,7 +63,7 @@ namespace Levy.Content.NPCs
 
 		partial void Movement_Update()
 		{
-			NPC npc = NPC;
+			NPC npc = NPC; WhyM = Why.MNone;
 			if (!_stepInit) { npc.stepSpeed = StepSpeed; _stepInit = true; }
 			TickReturnHomeProgress();
 			// on a slope the body keeps a small downward velocity as it walks: with solid ground within a few pixels under the feet and no real fall under way it is standing, not airborne (jumping, dodging and strafing all need that)
@@ -94,13 +94,14 @@ namespace Levy.Content.NPCs
 			if (_dashCooldown > 0) _dashCooldown--;
 			if (_hkPhase == HookPhase.Idle && _hkTrigTicks > 0) HookEvaluate(); // a trigger that held long enough becomes a plan and a cast (SoldierNPC.Hook.cs)
 			if (_hkPhase == HookPhase.Idle) { FallCatchCheck(); HookFollowCommander(); }
-			if (_hkStepUntil != 0 && HookStepBackTick(grounded)) { _dashTicks = 0; MirrorDummyControls(); return; }
+			if (_hkStepUntil != 0 && HookStepBackTick(grounded)) { WhyM = Why.MHook; _dashTicks = 0; MirrorDummyControls(); return; }
 			if (TickDodge(grounded, air)) { _dashTicks = 0; if (air) ApplyAltitude(grounded); MirrorDummyControls(); return; }
-			if (_hkPhase != HookPhase.Idle && TickHook(grounded)) { _dashTicks = 0; MirrorDummyControls(); return; } // in flight, reeling or ballistic: the hook owns the tick
+			if (_hkPhase != HookPhase.Idle && TickHook(grounded)) { WhyM = Why.MHook; _dashTicks = 0; MirrorDummyControls(); return; } // in flight, reeling or ballistic: the hook owns the tick
 			if (_hkAltSeen != 0 && _hkPhase == HookPhase.Idle && Main.GameUpdateCount - _hkAltSeen <= 12u) { _hkGoalNow = new Vector2(_hkAltX, _hkAltY); HookTrigger(HookReason.Altitude); }
 
 			if (!HasMoveGoal)
 			{
+				WhyM = air || !grounded ? Why.MBusyAir : Why.MNoGoal;
 				Decelerate();
 				_blocked = false; _blockedHard = false; _flying = false; _flyRampTicks = 0;
 				if (_path.Count > 0) _path.Clear();
@@ -116,6 +117,7 @@ namespace Levy.Content.NPCs
 			float dy = goal.Y - npc.Bottom.Y; // > 0: goal below the feet
 			if (Math.Abs(dx) < ArriveXPx && (air || Math.Abs(dy) < ArriveYPx)) // aloft the goal's Y is the ground spot below: only X counts
 			{
+				WhyM = Why.MArrived;
 				Decelerate();
 				_blocked = false; _blockedHard = false; _flying = false; _flyRampTicks = 0;
 				ResetStuck();
@@ -190,6 +192,7 @@ namespace Levy.Content.NPCs
 				if (air) ApplyAltitude(grounded); else Glide(grounded);
 			}
 
+			if (_blocked) WhyM = Why.MBlocked;
 			TrackStuck();
 			UpdatePathRequest();
 			MirrorDummyControls();

@@ -11,9 +11,13 @@ namespace Levy.Common.Dialogue
 
 	/// <summary>Context placeholders a line needs before it can be spoken. {Player} is always satisfiable and not listed.</summary>
 	[Flags]
-	public enum LineNeeds : byte { None = 0, Name = 1, Comrade = 2, Boss = 4, Killer = 8, Town = 16, Wage = 32 }
+	public enum LineNeeds : byte { None = 0, Name = 1, Comrade = 2, Boss = 4, Killer = 8, Town = 16, Wage = 32, Tank = 64, Glutton = 128 }
 
-	public enum PlaceholderKind : byte { Literal = 0, Player, Name, Comrade, Boss, Killer, Town, Wage, TownNpc }
+	/// <summary>Roster conditions a line can demand, written as a [tag] at the start of its text: [summoner] [non-summoner] [fragile].</summary>
+	[Flags]
+	public enum LineCond : byte { None = 0, Summoner = 1, NonSummonerWithSummoner = 2, Fragile = 4 }
+
+	public enum PlaceholderKind : byte { Literal = 0, Player, Name, Comrade, Boss, Killer, Town, Wage, TownNpc, Tank, TankDeaths, TankHe, Glutton, GluttonKills }
 
 	/// <summary>One literal run or one placeholder of a parsed line.</summary>
 	public struct LinePart
@@ -36,6 +40,7 @@ namespace Levy.Common.Dialogue
 		/// <summary>Every town NPC the line names. All of them must be alive in the world.</summary>
 		public int[] NpcTypes = Array.Empty<int>();
 		public LineNeeds Needs;
+		public LineCond Cond;
 		public LinePart[] Parts = Array.Empty<LinePart>();
 		/// <summary>1-based line number in the source file.</summary>
 		public int SourceLine;
@@ -167,13 +172,22 @@ namespace Levy.Common.Dialogue
 				if (!TryParseFilter(temp, out var filter)) { Warn(mod, source, n, "unknown temperament '" + temp + "' (use Greenhorn, Sellsword, Zealot, Cynic, Veteran or Any)"); rejected++; continue; }
 				if (!TryParseKey(trig, out string key, out string keyProblem)) { Warn(mod, source, n, keyProblem); rejected++; continue; }
 
+				LineCond cond = LineCond.None;
+				if (body[0] == '[')
+				{
+					int close = body.IndexOf(']');
+					if (close < 0 || !TryParseCond(body.Substring(1, close - 1), out cond)) { Warn(mod, source, n, "unknown or unclosed [condition] tag (use summoner, non-summoner, fragile)"); rejected++; continue; }
+					body = body.Substring(close + 1).Trim();
+					if (body.Length == 0) { Warn(mod, source, n, "empty text"); rejected++; continue; }
+				}
+
 				parts.Clear(); npcs.Clear();
 				if (!Tokenize(body, sb, parts, npcs, out var needs, out string tokenProblem)) { Warn(mod, source, n, tokenProblem); rejected++; continue; }
 
 				if (!textIds.TryGetValue(body, out int id)) { id = textIds.Count; textIds[body] = id; }
 				var line = new DialogueLine
 				{
-					Id = id, Filter = filter, Text = body, SourceLine = n, Needs = needs,
+					Id = id, Filter = filter, Text = body, SourceLine = n, Needs = needs, Cond = cond,
 					Parts = parts.ToArray(), NpcTypes = npcs.ToArray(), NamedropNpcType = npcs.Count > 0 ? npcs[0] : null,
 				};
 				if (!target.TryGetValue(key, out var list))
@@ -186,6 +200,18 @@ namespace Levy.Common.Dialogue
 				if (into == null) LineCount++;
 			}
 			return rejected;
+		}
+
+		private static bool TryParseCond(string s, out LineCond cond)
+		{
+			switch (s.Trim().ToLowerInvariant())
+			{
+				case "summoner": cond = LineCond.Summoner; return true;
+				case "non-summoner": cond = LineCond.NonSummonerWithSummoner; return true;
+				case "fragile": cond = LineCond.Fragile; return true;
+			}
+			cond = LineCond.None;
+			return false;
 		}
 
 		private static void Warn(Mod mod, string source, int line, string problem)
@@ -265,6 +291,8 @@ namespace Levy.Common.Dialogue
 						case PlaceholderKind.Killer: needs |= LineNeeds.Killer; break;
 						case PlaceholderKind.Town: needs |= LineNeeds.Town; break;
 						case PlaceholderKind.Wage: needs |= LineNeeds.Wage; break;
+						case PlaceholderKind.Tank: case PlaceholderKind.TankDeaths: case PlaceholderKind.TankHe: needs |= LineNeeds.Tank; break;
+						case PlaceholderKind.Glutton: case PlaceholderKind.GluttonKills: needs |= LineNeeds.Glutton; break;
 						case PlaceholderKind.TownNpc: if (!npcs.Contains(npcType)) npcs.Add(npcType); break;
 					}
 					i = close + 1;
@@ -289,6 +317,11 @@ namespace Levy.Common.Dialogue
 				case "killer": kind = PlaceholderKind.Killer; return true;
 				case "town": kind = PlaceholderKind.Town; return true;
 				case "wage": kind = PlaceholderKind.Wage; return true;
+				case "tank": kind = PlaceholderKind.Tank; return true;
+				case "tankdeaths": kind = PlaceholderKind.TankDeaths; return true;
+				case "tankhe": kind = PlaceholderKind.TankHe; return true;
+				case "glutton": kind = PlaceholderKind.Glutton; return true;
+				case "gluttonkills": kind = PlaceholderKind.GluttonKills; return true;
 			}
 			if (TownNpcByName.TryGetValue(name, out npcType)) { kind = PlaceholderKind.TownNpc; return true; }
 			kind = PlaceholderKind.Literal;

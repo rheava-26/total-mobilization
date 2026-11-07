@@ -28,6 +28,8 @@ namespace Levy.Common.Soldiers
 		public int CurrentHp = LevyConstants.BaseHp;
 		public int Mana = LevyConstants.BaseMana;
 		public int Kills, BossFightsSurvived;
+		/// <summary>Times this soldier has fallen in battle (never reset; saved and synced). Feeds the roster-aware chatter.</summary>
+		public int Deaths;
 
 		// ---- gear ----
 		public SoldierGear Gear = new SoldierGear();
@@ -163,6 +165,7 @@ namespace Levy.Common.Soldiers
 			w.WriteRGB(HairColor); w.WriteRGB(SkinColor); w.WriteRGB(EyeColor); w.WriteRGB(ShirtColor); w.WriteRGB(UnderShirtColor); w.WriteRGB(PantsColor); w.WriteRGB(ShoeColor);
 			Gear.WriteVisual(w);
 			w.Write(CloseUp); // appended last so the earlier layout is unchanged
+			w.Write(Deaths);
 		}
 
 		public static SoldierRecord ReadSnapshot(System.IO.BinaryReader r)
@@ -177,6 +180,7 @@ namespace Levy.Common.Soldiers
 			s.HairColor = r.ReadRGB(); s.SkinColor = r.ReadRGB(); s.EyeColor = r.ReadRGB(); s.ShirtColor = r.ReadRGB(); s.UnderShirtColor = r.ReadRGB(); s.PantsColor = r.ReadRGB(); s.ShoeColor = r.ReadRGB();
 			s.Gear.ReadVisual(r);
 			s.CloseUp = r.ReadBoolean();
+			s.Deaths = r.ReadInt32();
 			return s;
 		}
 
@@ -185,7 +189,7 @@ namespace Levy.Common.Soldiers
 			return new TagCompound
 			{
 				["id"] = Id, ["name"] = Name, ["kind"] = (byte)Kind, ["grade"] = (byte)Grade, ["temp"] = (byte)Temperament, ["vet"] = Veteran,
-				["lc"] = LifeCrystals, ["lf"] = LifeFruit, ["mc"] = ManaCrystals, ["hp"] = CurrentHp, ["mana"] = Mana, ["kills"] = Kills, ["bosses"] = BossFightsSurvived,
+				["lc"] = LifeCrystals, ["lf"] = LifeFruit, ["mc"] = ManaCrystals, ["hp"] = CurrentHp, ["mana"] = Mana, ["kills"] = Kills, ["deaths"] = Deaths, ["bosses"] = BossFightsSurvived,
 				["gear"] = Gear.Save(), ["home"] = HomeBarracksId, ["homeX"] = (int)HomePos.X, ["homeY"] = (int)HomePos.Y, ["cmd"] = CommanderName ?? "",
 				["unpaid"] = DaysUnpaid, ["stood"] = StoodDown, ["hazard"] = HazardPaid, ["reserve"] = Reserve,
 				["mutiny"] = Mutinous, ["owed"] = WageOwed, ["looted"] = WageLooted,
@@ -211,7 +215,7 @@ namespace Levy.Common.Soldiers
 				Id = t.GetInt("id"), Name = t.GetString("name"), Kind = (SoldierKind)t.GetByte("kind"), Grade = (Grade)t.GetByte("grade"),
 				Temperament = (Temperament)t.GetByte("temp"), Veteran = t.GetBool("vet"),
 				LifeCrystals = t.GetInt("lc"), LifeFruit = t.GetInt("lf"), ManaCrystals = t.GetInt("mc"), CurrentHp = t.GetInt("hp"), Mana = t.GetInt("mana"),
-				Kills = t.GetInt("kills"), BossFightsSurvived = t.GetInt("bosses"),
+				Kills = t.GetInt("kills"), Deaths = t.GetInt("deaths"), BossFightsSurvived = t.GetInt("bosses"),
 				Gear = SoldierGear.Load(t.GetCompound("gear")), HomeBarracksId = t.GetInt("home"), HomePos = new Point16(t.GetInt("homeX"), t.GetInt("homeY")),
 				CommanderName = t.GetString("cmd"), DaysUnpaid = t.GetInt("unpaid"), StoodDown = t.GetBool("stood"), HazardPaid = t.GetBool("hazard"), Reserve = t.GetBool("reserve"),
 				Mutinous = t.GetBool("mutiny"), WageOwed = t.GetLong("owed"), WageLooted = t.GetLong("looted"),

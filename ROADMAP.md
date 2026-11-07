@@ -275,6 +275,7 @@
   - Sunflower halves fear gain.
   - Placeable buffs are now scene-scanned. Commander station buffs (Sharpening, Ammo Box, Crystal Ball, Bewitching, War Table) reach all levies. Honey regen added.
   - A/B: wins 12/24 shipped vs 15/24 at formation 1%/10% vs **0/24 proximity**. The formation size is within noise.
+- **BUG still open (Eve video 15:14):** AlchemistNPCLite 1.9.9 "Shops Changer" NPC button does nothing (mod name now known) → added to the maporder-fix builder (UI click/close). Spectator potions are CRAFTED only (Shiverthorn + Blinkroot + Lens + Invisibility + Bottled Water @ Bottle).
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

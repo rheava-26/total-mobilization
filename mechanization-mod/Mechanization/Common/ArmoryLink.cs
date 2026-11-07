@@ -6,6 +6,7 @@ using Terraria.ModLoader;
 using Levy.Common;                  // LevyConstants.PylonShareRadius / TilePx
 using Levy.Common.Systems;          // SettlementSystem.NearestArmory / NetworkedArmories
 using Levy.Content.TileEntities;    // ArmoryTE, BarracksTE
+using Mechanization.Content.Relay;  // ArmoryRelays
 using T = Mechanization.Common.MechConstants.Turret;
 
 namespace Mechanization.Common
@@ -28,6 +29,9 @@ namespace Mechanization.Common
 			ArmoryTE local = settle.NearestArmory(pos, T.ArmoryReachTiles);
 			if (local != null) AddNetwork(settle, local, pool);
 
+			// Armory Relays standing within their serve radius lend their linked Armory (and its pylon network), however far away it is.
+			foreach (ArmoryTE linked in ArmoryRelays.LinkedFor(pos)) AddNetwork(settle, linked, pool);
+
 			var pylons = Main.PylonSystem?.Pylons;
 			if (pylons != null && pylons.Count > 0 && NearPylon(pos, pylons))
 			{
@@ -46,7 +50,11 @@ namespace Mechanization.Common
 		/// The one Armory a Barracks' drones borrow from: the Armory Levy links to that Barracks (the nearest within its link radius). A drone's weapon lives on THAT Armory's lend ledger and goes back to
 		/// it, so unlike the turret's read-only pool this is a single, stable Armory. Null when the Barracks has none (or is null).
 		/// </summary>
-		public static ArmoryTE OfBarracks(BarracksTE barracks) => barracks == null ? null : SettlementSystem.Instance?.LinkedArmory(barracks);
+		public static ArmoryTE OfBarracks(BarracksTE barracks)
+		{
+			if (barracks == null) return null;
+			return SettlementSystem.Instance?.LinkedArmory(barracks) ?? ArmoryRelays.FirstLinkedFor(barracks.Center); // no Armory in link range: borrow through a relay beside the Barracks
+		}
 
 		private static void AddNetwork(SettlementSystem settle, ArmoryTE seed, List<ArmoryTE> pool)
 		{
@@ -55,7 +63,7 @@ namespace Mechanization.Common
 		}
 
 		/// <summary>True when a vanilla pylon stands within Levy's pylon-share radius of <paramref name="c"/> (the same test Levy uses to put an Armory on the network).</summary>
-		private static bool NearPylon(Vector2 c, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons)
+		internal static bool NearPylon(Vector2 c, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons)
 		{
 			float limit = LevyConstants.PylonShareRadius * LevyConstants.TilePx; limit *= limit;
 			for (int i = 0; i < pylons.Count; i++)

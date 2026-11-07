@@ -1,6 +1,15 @@
 # Mechanization — player-facing strings. Keys are relative to Mods.Mechanization (prefix comes from the file name).
 # Style: 1-4 short declarative sentences. What it is, reach, the numbers that matter, one special rule.
 Items: {
+	ArmoryRelayItem: {
+		DisplayName: Armory Relay
+		Tooltip:
+			'''
+			Links to the nearest armory within 600 tiles, or to your pylon network.
+			Turrets and drones within 25 tiles of it draw from that armory.
+			'''
+	}
+
 	TurretItem: {
 		DisplayName: Automatic Turret
 		Tooltip:
@@ -10,6 +19,8 @@ Items: {
 			'''
 	}
 }
+
+Tiles.ArmoryRelayTile.MapEntry: Armory Relay
 
 NPCs: {
 	TurretNPC.DisplayName: Automatic Turret
@@ -30,6 +41,8 @@ Configs: {
 }
 
 UI: {
+	RelayLinked: Armory at {0}, {1}. {2} tiles away. Serves turrets and drones within {3} tiles.
+	RelayUnlinked: No armory within {0} tiles. Place the relay by a pylon on your network.
 	TurretDismantle: Dismantle
 	TurretChatMounted: Weapon: {0}. Reach {2} tiles. Armories: {1}.
 	TurretChatNoWeapon: No weapon. Plain bullet, reach {0} tiles. No spare ranged weapon.

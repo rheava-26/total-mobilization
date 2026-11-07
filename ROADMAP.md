@@ -24,6 +24,10 @@
   - anomaly reruns, notable replays kept.
 - **CAVEAT:** the old calrev Rev Brain wins (12→5/6, 16→6/6) predate CalamityTargetingCompat, so the boss may have been on the stand-in. Being rerun with a target log.
 - Eve on count scaling: she floated compounding 2%/levy, then leaned against it (early game shouldn't get stronger). Destroyer feeling harder with more levies (HP soak) is fine by her. Discuss after the count data.
+- **Check-in 04:40:** the rec-harness gallery works (8 fieldai replays: hitboxes, trails, target line, ai readout).
+  - Lead watched the King Slime spec replay: KS targets a levy 100% of the time but gets 0 hits in 90 s. The data shows levies kite at 35–79 tiles (p5–p95), never overlap, and KS teleports once. That's real kiting, not a bug.
+  - Matrix bosses run at 2M HP by design (survival window).
+  - mobility3 has added targeting telemetry (2398698).
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

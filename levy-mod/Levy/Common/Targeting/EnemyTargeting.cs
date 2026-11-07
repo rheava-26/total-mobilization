@@ -65,6 +65,19 @@ namespace Levy.Common.Targeting
 		// ---- the slot-255 swap ----
 		private static Player _backup;
 		private static bool _swapped;
+		private static int _swapSlot = SoldierNPC.DummySlot;
+		/// <summary>
+		/// The slot a Flying-AI enemy's target is swapped into. GetTargetData() (all of AI_005) treats target 255 as "no target", so those enemies get the soldier's dummy in the LAST REAL player slot
+		/// for the one AI call instead (and target 254). The slot is only used while it is empty (no 255th player online). Vanilla's own search would see the dummy there, so it is pulled out
+		/// before every search (<see cref="PreSearch"/>); PostAI hands the enemy back target 255 so everything outside the AI call still reads "locked on a soldier".
+		/// </summary>
+		internal const int FlyerSlot = SoldierNPC.DummySlot - 1;
+		private static Player _null254;
+		internal static bool FlyerSlotUsable => (_swapped && _swapSlot == FlyerSlot) || (Main.player[FlyerSlot] != null && !Main.player[FlyerSlot].active);
+		/// <summary>The slot this enemy's soldier target is swapped into.</summary>
+		internal static int SlotFor(NPC npc) => npc.aiStyle == NPCAIStyleID.Flying && !UsesNativeTargeting(npc) && FlyerSlotUsable ? FlyerSlot : SoldierNPC.DummySlot;
+		/// <summary>Before any vanilla target search: a dummy parked in the flyer slot would be found as a real player.</summary>
+		private static void PreSearch() { if (_swapped && _swapSlot != SoldierNPC.DummySlot) Unswap(); }
 		/// <summary>The Player instance that legitimately lives in Main.player[255] (vanilla null player). Captured whenever the slot is in its normal state.</summary>
 		private static Player _nullPlayer;
 		private static LevyConfig _cfg;
@@ -124,10 +137,34 @@ namespace Levy.Common.Targeting
 			if (BossRule.IsMainBoss(LevyUtil.RootNpc(npc))) return BossAllowlisted(npc);
 			int style = npc.aiStyle;
 			if (UsesNativeTargeting(npc)) return _nativeStyles.Contains(style) || ConfigAllows(style);
-			if (_swapIncompatible.Contains(style) || _swapExcludedTypes.Contains(type)) return false;
-			// A Spectator also sends the minions of a boss at the army: Brain of Cthulhu's Creepers (style 55; TargetClosest, then Main.player[target] only, so swap-safe).
-			return _swapStyles.Contains(style) || ConfigAllows(style) || (style == 55 && Potions.SpectatorPlayer.AnyActive);
+			if (_swapExcludedTypes.Contains(type)) return false;
+			// A boss's own minions (Servants of Cthulhu, Brain's Creepers) go after the army exactly when their boss does (config + boss already beaten, or a Spectator on a beaten boss), never earlier:
+			// the first kill of every boss is solo. Their AIs read Main.player[target] only, so they take the swap (Servants through the flyer slot, see <see cref="FlyerSlot"/>).
+			NPC owner = MinionBoss(npc);
+			if (owner != null) return BossAllowlisted(owner) && (style != NPCAIStyleID.Flying || FlyerSlotUsable);
+			// Flying AI (Eater of Souls, hornets, meteor heads, probes, moths...) reads its target through GetTargetData(), which rejects slot 255, so it takes the flyer slot instead.
+			if (style == NPCAIStyleID.Flying) return FlyerSlotUsable;
+			if (_swapIncompatible.Contains(style)) return false;
+			return _swapStyles.Contains(style) || ConfigAllows(style);
 		}
+
+		/// <summary>The boss a minion belongs to while that boss is alive: Creepers to the Brain of Cthulhu (NPC.crimsonBoss), Servants of Cthulhu to the Eye of Cthulhu. Null for everything else.</summary>
+		internal static NPC MinionBoss(NPC npc)
+		{
+			if (npc.type == NPCID.Creeper)
+			{
+				int b = NPC.crimsonBoss;
+				return b >= 0 && b < Main.maxNPCs && Main.npc[b].active && Main.npc[b].type == NPCID.BrainofCthulhu ? Main.npc[b] : null;
+			}
+			if (npc.type != NPCID.ServantofCthulhu) return null;
+			if (_eocStamp != Main.GameUpdateCount)
+			{
+				_eocStamp = Main.GameUpdateCount; _eocIdx = -1;
+				for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].type == NPCID.EyeofCthulhu) { _eocIdx = i; break; }
+			}
+			return _eocIdx >= 0 && Main.npc[_eocIdx].active && Main.npc[_eocIdx].type == NPCID.EyeofCthulhu ? Main.npc[_eocIdx] : null;
+		}
+		private static uint _eocStamp = uint.MaxValue; private static int _eocIdx = -1;
 
 		/// <summary>Opt-in: BossesTargetSoldiers is on and this boss (or the boss it belongs to) has been defeated in this world.</summary>
 		public static bool BossAggroUnlocked(NPC npc)
@@ -207,6 +244,7 @@ namespace Levy.Common.Targeting
 		private static void TargetClosest_Detour(On_NPC.orig_TargetClosest orig, NPC self, bool faceTarget)
 		{
 			bool netBefore = self.netUpdate;
+			PreSearch();
 			if (DiagOn) Potions.SpectatorDiagnostic.NoteDetour(self, "TargetClosest");
 			bool hid = HidesSpectatorFrom(self);
 			if (hid) Potions.SpectatorPlayer.HideAll(); // a Spectator is not a candidate
@@ -223,6 +261,7 @@ namespace Levy.Common.Targeting
 
 		private static void TargetClosestUpgraded_Detour(On_NPC.orig_TargetClosestUpgraded orig, NPC self, bool faceTarget, Vector2? checkPosition)
 		{
+			PreSearch();
 			if (DiagOn) Potions.SpectatorDiagnostic.NoteDetour(self, "TargetClosestUpgraded");
 			bool hid = HidesSpectatorFrom(self);
 			if (hid) Potions.SpectatorPlayer.HideAll();
@@ -232,6 +271,7 @@ namespace Levy.Common.Targeting
 
 		private static void TargetClosestOldOnes_Detour(On_NPCUtils.orig_TargetClosestOldOnesInvasion orig, NPC searcher, bool faceTarget, Vector2? checkPosition)
 		{
+			PreSearch();
 			if (DiagOn) Potions.SpectatorDiagnostic.NoteDetour(searcher, "OldOnes");
 			bool hid = HidesSpectatorFrom(searcher);
 			if (hid) Potions.SpectatorPlayer.HideAll();
@@ -246,6 +286,7 @@ namespace Levy.Common.Targeting
 
 		private static void TargetClosestNonBees_Detour(On_NPCUtils.orig_TargetClosestNonBees orig, NPC searcher, bool faceTarget, Vector2? checkPosition)
 		{
+			PreSearch();
 			if (DiagOn) Potions.SpectatorDiagnostic.NoteDetour(searcher, "NonBees");
 			bool hid = HidesSpectatorFrom(searcher);
 			if (hid) Potions.SpectatorPlayer.HideAll();
@@ -337,7 +378,8 @@ namespace Levy.Common.Targeting
 			if (pick < 0) { _why = "spread pick found nobody"; SetLock(npc, data, -1); return false; }
 			ITargetBody best = Bodies[_candSlot[pick]];
 
-			npc.target = UsesNativeTargeting(npc) ? best.NPC.WhoAmIToTargettingIndex : SoldierNPC.DummySlot;
+			int slot = SlotFor(npc);
+			npc.target = UsesNativeTargeting(npc) ? best.NPC.WhoAmIToTargettingIndex : slot;
 			npc.targetRect = best.NPC.Hitbox;
 			if (faceTarget)
 			{
@@ -353,7 +395,7 @@ namespace Levy.Common.Targeting
 			// the rest of this AI call reads Main.player[255] as the inactive vanilla null player: a boss then sees "no valid target /
 			// target far away" and bolts into its flee/despawn state the instant it is redirected to a soldier. Swap the dummy in now so
 			// the live soldier is visible for the remainder of this AI call; PostAI / EnsureSlotRestored clears it as usual.
-			if (!UsesNativeTargeting(npc) && !_swapped) Swap(best);
+			if (!UsesNativeTargeting(npc) && !_swapped) Swap(best, slot);
 			_why = "levy chosen";
 			return true;
 		}
@@ -464,27 +506,34 @@ namespace Levy.Common.Targeting
 		/// <summary>True while a soldier's dummy stands in Main.player[255] for an enemy's AI call.</summary>
 		internal static bool IsSwapped => _swapped;
 
-		internal static void Swap(ITargetBody body)
+		internal static void Swap(ITargetBody body, int slot = SoldierNPC.DummySlot)
 		{
 			if (_swapped) Unswap();
 			body.SyncDummyTransform(); // active, !dead, !ghost, position/velocity of the body, whoAmI 255
-			_backup = Main.player[SoldierNPC.DummySlot];
-			Main.player[SoldierNPC.DummySlot] = body.Dummy;
+			_swapSlot = slot;
+			_backup = Main.player[slot];
+			Main.player[slot] = body.Dummy;
 			_swapped = true;
 		}
 
 		internal static void Unswap()
 		{
 			if (!_swapped) return;
-			Main.player[SoldierNPC.DummySlot] = _backup ?? _nullPlayer ?? new Player();
+			Main.player[_swapSlot] = _backup ?? (_swapSlot == SoldierNPC.DummySlot ? _nullPlayer : _null254) ?? new Player();
 			_backup = null;
 			_swapped = false;
+			_swapSlot = SoldierNPC.DummySlot;
 		}
 
 		/// <summary>Never leave a soldier's dummy in the array: restore the real null player if anything (an exception mid-AI) skipped PostAI.</summary>
 		internal static void EnsureSlotRestored()
 		{
 			if (_swapped) Unswap();
+			Player fly = Main.player[FlyerSlot];
+			if (fly == null) Main.player[FlyerSlot] = _null254 ?? new Player();
+			else if (_null254 == null || ReferenceEquals(fly, _null254)) _null254 = fly;
+			else if (IsAnyDummy(fly)) Main.player[FlyerSlot] = _null254;
+			else _null254 = fly; // a real 255th player joined
 			Player cur = Main.player[SoldierNPC.DummySlot];
 			if (cur == null) { Main.player[SoldierNPC.DummySlot] = _nullPlayer ?? new Player(); return; }
 			if (_nullPlayer == null || ReferenceEquals(cur, _nullPlayer)) { _nullPlayer = cur; return; }
@@ -503,6 +552,7 @@ namespace Levy.Common.Targeting
 		{
 			_swapped = false; _backup = null; Bodies.Clear(); AggroSpread.Clear();
 			_nullPlayer = Main.player[SoldierNPC.DummySlot];
+			_null254 = Main.player[FlyerSlot]; _swapSlot = SoldierNPC.DummySlot;
 		}
 	}
 
@@ -636,7 +686,7 @@ namespace Levy.Common.Targeting
 			{
 				// The soldier died, despawned or the slot now holds another NPC: pick again right now so the enemy never
 				// chases the null player at (0,0) or a stranger that inherited the index.
-				int staleTarget = native ? data.SoldierTarget + 300 : SoldierNPC.DummySlot;
+				int staleTarget = native ? data.SoldierTarget + 300 : EnemyTargeting.SlotFor(npc);
 				EnemyTargeting.SetLock(npc, data, -1);
 				if (npc.target == staleTarget) EnemyTargeting.Retarget(npc);
 				body = EnemyTargeting.LiveTarget(data.SoldierTarget);
@@ -652,11 +702,17 @@ namespace Levy.Common.Targeting
 			}
 
 			if (native) return; // GetTargetData() resolves the 300+ index itself
-			if (npc.target != SoldierNPC.DummySlot) npc.target = SoldierNPC.DummySlot;
-			EnemyTargeting.Swap(body);
+			int slot = EnemyTargeting.SlotFor(npc);
+			if (npc.target != slot) npc.target = slot;
+			EnemyTargeting.Swap(body, slot);
 			return;
 		}
 
-		public override void PostAI(NPC npc) => EnemyTargeting.Unswap();
+		public override void PostAI(NPC npc)
+		{
+			EnemyTargeting.Unswap();
+			// A flyer was aimed through the flyer slot for this AI call only; outside it, "locked on a soldier" reads as 255 like every other swapped enemy.
+			if (npc.target == EnemyTargeting.FlyerSlot && npc.aiStyle == NPCAIStyleID.Flying && LevyNpcData.Of(npc).SoldierTarget >= 0) npc.target = SoldierNPC.DummySlot;
+		}
 	}
 }

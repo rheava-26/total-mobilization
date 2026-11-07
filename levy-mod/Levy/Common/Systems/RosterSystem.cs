@@ -1430,6 +1430,7 @@ namespace Levy.Common.Systems
 			// Defer crediting until the whole fight is over: the Twins are two main-boss roots and the Eater of Worlds' head
 			// whoAmI shifts as it splits, so crediting per boss NPC would double-count the Twins and miss the Eater.
 			if (Common.Fear.FearSystem.AnotherMainBossAlive(boss)) return;
+			Common.Dialogue.RosterFacts.BossEndTick = (int)Main.GameUpdateCount;
 			int veterans = 0;
 			foreach (var r in Regulars) if (r.Veteran) veterans++;
 			bool changed = false;

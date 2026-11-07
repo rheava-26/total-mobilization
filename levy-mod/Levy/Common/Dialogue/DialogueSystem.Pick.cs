@@ -215,6 +215,7 @@ namespace Levy.Common.Dialogue
 			private LineNeeds _resolved;
 			private string _name, _comrade, _boss, _killer, _town, _wage;
 			private SoldierRecord _tank, _glutton;
+			private string _world, _officer;
 			private string _player;
 
 			public void Begin(SoldierRecord rec, DialogueContext ctx, SoldierNPC body)
@@ -222,13 +223,13 @@ namespace Levy.Common.Dialogue
 				_rec = rec; _ctx = ctx; _body = body ?? BodyOf(rec);
 				_resolved = LineNeeds.None;
 				_name = _comrade = _boss = _killer = _town = _wage = _player = null;
-				_tank = _glutton = null;
+				_tank = _glutton = null; _world = _officer = null;
 			}
 
 			public bool Can(LineNeeds needs)
 			{
 				if (needs == LineNeeds.None) return true;
-				for (int bit = 1; bit <= (int)LineNeeds.Glutton; bit <<= 1)
+				for (int bit = 1; bit <= (int)LineNeeds.Officer; bit <<= 1)
 					if (((int)needs & bit) != 0 && Value((LineNeeds)bit) == null) return false;
 				return true;
 			}
@@ -250,6 +251,8 @@ namespace Levy.Common.Dialogue
 							case LineNeeds.Wage: _wage = NonEmpty(_ctx?.Wage) ?? WageText(); break;
 							case LineNeeds.Tank: _tank = RosterFacts.DeathLeader(_rec); break;
 							case LineNeeds.Glutton: _glutton = RosterFacts.KillLeader(_rec); break;
+							case LineNeeds.WorldName: _world = NonEmpty(RosterFacts.WorldName()); break;
+							case LineNeeds.Officer: _officer = NonEmpty(RosterFacts.OfficerName()); break;
 						}
 					}
 					catch (Exception)
@@ -267,6 +270,8 @@ namespace Levy.Common.Dialogue
 					case LineNeeds.Town: return _town;
 					case LineNeeds.Tank: return _tank?.Name;
 					case LineNeeds.Glutton: return _glutton?.Name;
+					case LineNeeds.WorldName: return _world;
+					case LineNeeds.Officer: return _officer;
 					default: return _wage;
 				}
 			}
@@ -317,6 +322,8 @@ namespace Levy.Common.Dialogue
 						case PlaceholderKind.Tank: Scratch.Append(Value(LineNeeds.Tank)); break;
 						case PlaceholderKind.TankDeaths: Scratch.Append(_tank?.Deaths ?? 0); break;
 						case PlaceholderKind.TankHe: Scratch.Append(_tank == null ? "" : _tank.Male ? "he's" : "she's"); break;
+						case PlaceholderKind.WorldName: Scratch.Append(Value(LineNeeds.WorldName)); break;
+						case PlaceholderKind.Officer: Scratch.Append(Value(LineNeeds.Officer)); break;
 						case PlaceholderKind.Glutton: Scratch.Append(Value(LineNeeds.Glutton)); break;
 						case PlaceholderKind.GluttonKills: Scratch.Append(_glutton?.Kills ?? 0); break;
 						case PlaceholderKind.TownNpc:

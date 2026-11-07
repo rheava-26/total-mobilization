@@ -11,13 +11,13 @@ namespace Levy.Common.Dialogue
 
 	/// <summary>Context placeholders a line needs before it can be spoken. {Player} is always satisfiable and not listed.</summary>
 	[Flags]
-	public enum LineNeeds : byte { None = 0, Name = 1, Comrade = 2, Boss = 4, Killer = 8, Town = 16, Wage = 32, Tank = 64, Glutton = 128 }
+	public enum LineNeeds : ushort { None = 0, Name = 1, Comrade = 2, Boss = 4, Killer = 8, Town = 16, Wage = 32, Tank = 64, Glutton = 128, WorldName = 256, Officer = 512 }
 
 	/// <summary>Roster conditions a line can demand, written as a [tag] at the start of its text: [summoner] [non-summoner] [fragile].</summary>
 	[Flags]
-	public enum LineCond : byte { None = 0, Summoner = 1, NonSummonerWithSummoner = 2, Fragile = 4 }
+	public enum LineCond : ushort { None = 0, Summoner = 1, NonSummonerWithSummoner = 2, Fragile = 4, Mage = 8, NonMageWithMage = 16, HardmodeOfficer = 32, Goblin = 64, LowHp = 128, BossFight = 256 }
 
-	public enum PlaceholderKind : byte { Literal = 0, Player, Name, Comrade, Boss, Killer, Town, Wage, TownNpc, Tank, TankDeaths, TankHe, Glutton, GluttonKills }
+	public enum PlaceholderKind : byte { Literal = 0, Player, Name, Comrade, Boss, Killer, Town, Wage, TownNpc, Tank, TankDeaths, TankHe, Glutton, GluttonKills, WorldName, Officer }
 
 	/// <summary>One literal run or one placeholder of a parsed line.</summary>
 	public struct LinePart
@@ -176,7 +176,7 @@ namespace Levy.Common.Dialogue
 				if (body[0] == '[')
 				{
 					int close = body.IndexOf(']');
-					if (close < 0 || !TryParseCond(body.Substring(1, close - 1), out cond)) { Warn(mod, source, n, "unknown or unclosed [condition] tag (use summoner, non-summoner, fragile)"); rejected++; continue; }
+					if (close < 0 || !TryParseCond(body.Substring(1, close - 1), out cond)) { Warn(mod, source, n, "unknown or unclosed [condition] tag (use summoner, non-summoner, mage, non-mage, fragile, hardmode+officer, goblin, lowhp, boss)"); rejected++; continue; }
 					body = body.Substring(close + 1).Trim();
 					if (body.Length == 0) { Warn(mod, source, n, "empty text"); rejected++; continue; }
 				}
@@ -209,6 +209,12 @@ namespace Levy.Common.Dialogue
 				case "summoner": cond = LineCond.Summoner; return true;
 				case "non-summoner": cond = LineCond.NonSummonerWithSummoner; return true;
 				case "fragile": cond = LineCond.Fragile; return true;
+				case "mage": cond = LineCond.Mage; return true;
+				case "non-mage": cond = LineCond.NonMageWithMage; return true;
+				case "hardmode+officer": cond = LineCond.HardmodeOfficer; return true;
+				case "goblin": cond = LineCond.Goblin; return true;
+				case "lowhp": cond = LineCond.LowHp; return true;
+				case "boss": cond = LineCond.BossFight; return true;
 			}
 			cond = LineCond.None;
 			return false;
@@ -293,6 +299,8 @@ namespace Levy.Common.Dialogue
 						case PlaceholderKind.Wage: needs |= LineNeeds.Wage; break;
 						case PlaceholderKind.Tank: case PlaceholderKind.TankDeaths: case PlaceholderKind.TankHe: needs |= LineNeeds.Tank; break;
 						case PlaceholderKind.Glutton: case PlaceholderKind.GluttonKills: needs |= LineNeeds.Glutton; break;
+						case PlaceholderKind.WorldName: needs |= LineNeeds.WorldName; break;
+						case PlaceholderKind.Officer: needs |= LineNeeds.Officer; break;
 						case PlaceholderKind.TownNpc: if (!npcs.Contains(npcType)) npcs.Add(npcType); break;
 					}
 					i = close + 1;
@@ -320,6 +328,8 @@ namespace Levy.Common.Dialogue
 				case "tank": kind = PlaceholderKind.Tank; return true;
 				case "tankdeaths": kind = PlaceholderKind.TankDeaths; return true;
 				case "tankhe": kind = PlaceholderKind.TankHe; return true;
+				case "worldname": kind = PlaceholderKind.WorldName; return true;
+				case "officer": kind = PlaceholderKind.Officer; return true;
 				case "glutton": kind = PlaceholderKind.Glutton; return true;
 				case "gluttonkills": kind = PlaceholderKind.GluttonKills; return true;
 			}

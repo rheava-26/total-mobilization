@@ -606,13 +606,22 @@ namespace Levy.Content.NPCs
 
 			bool hasAnchor = RoutedAnchor(out Vector2 anchor);
 			bool anchorArrived = hasAnchor && LevyUtil.WithinTiles(NPC.Center, anchor, LevyConstants.RoutedAnchorArriveTiles);
+			bool leashed = hasAnchor && LevyConstants.RoutedLeashOn;
+			float leashPx = LevyConstants.RoutedLeashTiles * LevyConstants.TilePx;
+			if (leashed && Math.Abs(NPC.Center.X - anchor.X) > leashPx && !anchorArrived) { SetGoal(anchor); return; } // out past the leash: back to the anchor, still shooting
 			if (_threatIdx >= 0 && _threatTiles < LevyConstants.ThreatScanTiles)
 			{
 				NPC threat = Main.npc[_threatIdx];
 				float away = AwayDir(threat.Center);
 				if (LevyUtil.IsBossNpc(threat) || threat.damage >= LevyConstants.StrafeDangerDamage) away = EscapeDir(away, threat, now);
 				if (hasAnchor && !anchorArrived && Math.Sign(anchor.X - NPC.Center.X) == (int)away) SetGoal(anchor);
-				else SetGoal(new Vector2(NPC.Center.X + away * LevyConstants.RoutedRetreatTiles * LevyConstants.TilePx, NPC.Center.Y));
+				else
+				{
+					float goalX = NPC.Center.X + away * LevyConstants.RoutedRetreatTiles * LevyConstants.TilePx;
+					// the run stops at the leash: a goal that lies beyond it (and farther from the anchor than we already are) becomes a stand
+					if (leashed && Math.Abs(goalX - anchor.X) > leashPx && Math.Abs(goalX - anchor.X) > Math.Abs(NPC.Center.X - anchor.X)) goalX = Math.Clamp(goalX, anchor.X - leashPx, anchor.X + leashPx);
+					SetGoal(new Vector2(goalX, NPC.Center.Y));
+				}
 				return;
 			}
 			if (hasAnchor && !anchorArrived) SetGoal(anchor);
@@ -638,6 +647,7 @@ namespace Levy.Content.NPCs
 			}
 			var home = Home;
 			if (home != null) { anchor = home.MusterPoint; return true; }
+			if (LevyConstants.RoutedLeashOn) { var cmd2 = Commander; if (cmd2 != null && !cmd2.dead) { anchor = cmd2.Bottom; return true; } } // free-roaming levies with no home still have a rally point: their commander
 			anchor = default; return false;
 		}
 

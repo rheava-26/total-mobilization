@@ -23,5 +23,8 @@ namespace Levy.Common
 		public const int RoutedRetreatTiles = 30;
 		/// <summary>Within this of its anchor (home muster point / commander) a retreating soldier stops running.</summary>
 		public const float RoutedAnchorArriveTiles = 3f;
+		/// <summary>A routed soldier never runs farther than this from its anchor (commander / home muster point): past it, it holds or walks back and keeps shooting. A rout that ran 130+ tiles from the boss made Skeletron's 2000 px leash fire (it left the fight). LEVY_ROUTLEASH=0 switches it off (A/B).</summary>
+		public const float RoutedLeashTiles = 60f;
+		public static readonly bool RoutedLeashOn = System.Environment.GetEnvironmentVariable("LEVY_ROUTLEASH") != "0";
 	}
 }

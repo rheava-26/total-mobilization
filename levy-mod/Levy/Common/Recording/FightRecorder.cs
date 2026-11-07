@@ -304,7 +304,7 @@ namespace Levy.Common.Recording
 			AccessoryEvents(p);
 
 			// bosses and parts
-			bool anyBoss = false;
+			bool anyBoss = false, otherSerial = false;
 			if (Headless && _primaryWho >= 0)
 			{
 				// a harness that clears the arena and spawns the next trial's boss in the same step leaves no gap: the boss we follow is gone and a boss with a newer spawn serial stands in the world
@@ -322,7 +322,7 @@ namespace Levy.Common.Recording
 				if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC) continue;
 				if (!IsBossOrPart(n)) continue;
 				bool isBoss = IsFightBoss(n);
-				if (isBoss) anyBoss = true;
+				if (isBoss) { anyBoss = true; if (_primaryWho >= 0 && FightRecSpawnTag.SerialOf(n) != _primarySerial) otherSerial = true; }
 				bool part = !isBoss;
 				if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
 				if (isBoss && _bossIdsSeen.Add(n.whoAmI)) { _bossesSeen++; Ev("boss", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString())); if (_bossNameSeen == null) _bossNameSeen = n.FullName; }
@@ -342,7 +342,12 @@ namespace Levy.Common.Recording
 			int grace = Headless ? HeadlessGraceTicks : GraceTicks;
 			if (anyBoss)
 			{
-				if (Headless && _bossGoneTick > 0) { Stop("next fight started"); return; } // the boss slot filled again after a gap: a new trial, which gets its own file
+				if (Headless && _bossGoneTick > 0)
+				{
+					// the boss slot filled again after a gap: a new trial (a different spawn serial) gets its own file. The same serial is the same fight (Eater of Worlds: when its head dies a body segment becomes the head a few ticks later).
+					if (otherSerial) { Stop("next fight started"); return; }
+					_bossGoneTick = 0;
+				}
 				_bossSeen = true; _lastBossSeen = el;
 			}
 			else if (_bossSeen)

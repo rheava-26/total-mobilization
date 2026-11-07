@@ -1,0 +1,27 @@
+fight	eye	exp	1	36000	gear=mod	n=cp	dbg=1
+fight	eye	rev	1	36000	gear=mod	n=cp	dbg=1
+fight	eye	death	1	36000	gear=mod	n=cp	dbg=1
+fight	kslime	exp	1	36000	gear=mod	n=cp	dbg=1
+fight	kslime	rev	1	36000	gear=mod	n=cp	dbg=1
+fight	skel	exp	1	36000	gear=mod	n=cp
+fight	eye	exp	2	36000	gear=mod	n=cp	dbg=0
+fight	eye	rev	2	36000	gear=mod	n=cp	dbg=0
+fight	eye	death	2	36000	gear=mod	n=cp	dbg=0
+fight	kslime	exp	2	36000	gear=mod	n=cp	dbg=0
+fight	kslime	rev	2	36000	gear=mod	n=cp	dbg=0
+fight	skel	exp	2	36000	gear=mod	n=cp
+fight	eye	exp	3	36000	gear=mod	n=cp	dbg=0
+fight	eye	rev	3	36000	gear=mod	n=cp	dbg=0
+fight	eye	death	3	36000	gear=mod	n=cp	dbg=0
+fight	kslime	exp	3	36000	gear=mod	n=cp	dbg=0
+fight	kslime	rev	3	36000	gear=mod	n=cp	dbg=0
+fight	skel	exp	3	36000	gear=mod	n=cp
+fight	eye	rev	1	36000	gear=mod	n=cp	cmd=far
+fight	eye	death	1	36000	gear=mod	n=cp	cmd=far
+fight	brain	rev	1	36000	gear=mod	n=cp	cmd=far
+fight	eye	rev	2	36000	gear=mod	n=cp	cmd=far
+fight	eye	death	2	36000	gear=mod	n=cp	cmd=far
+fight	brain	rev	2	36000	gear=mod	n=cp	cmd=far
+fight	eye	rev	3	36000	gear=mod	n=cp	cmd=far
+fight	eye	death	3	36000	gear=mod	n=cp	cmd=far
+fight	brain	rev	3	36000	gear=mod	n=cp	cmd=far

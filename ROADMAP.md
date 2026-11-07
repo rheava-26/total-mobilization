@@ -43,6 +43,72 @@
   - charge-lane sidestep (QB/EoC);
   - harness fidelity: Skeletron hands, Brain p2, BossTrial "WIN t=0";
   - rerun with replays.
+- **Check-in 05:10, boss-lab:**
+  - Uses its own installs/saves under /home/user/lab.
+  - Real CP counts per fight: KS 10, DS 11, Eye 11, EoW/Brain 13, QB 14, Skeletron 14.
+  - **Smoke ANOMALY:** Eye Rev targets the PLAYER ~50% of ticks even with CalamityTargetingCompat. The lab is investigating; this matters for Eve's Calamity Spectator play.
+- Check-in 05:21: boss-lab on 2.0.13 since 05:09 (Eye Rev, DPS curve, HP-scale-off, underground and worm batches running); mobility4 not pushed yet. 6 servers up, 11 GB free.
+- **Check-in 05:33, first lab rows** (2–6 seeds, NOT final; lead's read):
+  - **Expert, Calamity tier gear:** Eye and Brain are wins from n8 up; n4 is marginal.
+  - **Rev Eye:** n4/n8 lose; n12+ mostly win, noisily, with heavy deaths.
+  - **Rev Brain = ANOMALY.** At the real count (13), 1 win in 12. Boss dmg/s is **0.0** in most losses, so levies never damage the Brain at all. Target-player is 5–85%: the Calamity compat leaks for the Rev Brain/Eye. Sent to the lab to explain (creeper phase? dontTakeDamage? the target path).
+  - **Underground worms wipe:** EoW Expert 1/3, DS 1/6, all levies dead in 12–70 s. Surface comparison pending.
+  - **Count curve:**
+    - with HP scale off, Eye Expert kill time keeps falling (n12 ~34 s, n24 ~18 s);
+    - with it on, very noisy;
+    - fixed-window dmg/s plateaus ~55 past n12, which contradicts hpscale0. Asked the lab to measure per-levy DPS while the boss is hittable.
+- **Check-in 05:44:**
+  - **Worms 24/24 LOST** (EoW and DS × surface/ug × Expert/Rev), plus Death EoW/DS. Surface vs underground made no difference.
+    - Most damage is `takenOther`, not the boss. Example: DS Expert surface tb 71 vs to 1505; one levy dead at 2.5 s with 0 boss damage.
+    - Suspects: unattributed body segments, sand/suffocation, a harness cause. The lab is logging damage sources.
+  - **Rev Brain:** levies deal thousands to creepers but ~0 to the Brain (brain_new). Death KS: 2/3 wins.
+  - **Death Eye:** 1 win, 2 timeouts at n11; target-player 3–87%, so the Calamity compat leak again.
+  - mobility4 pushed its minion retarget fix (4d324e6).
+- Check-in 05:55: the worm "other" damage was attribution; the lab fixed it (worms_fix). Now ~all damage is the boss (segments), and still 24/24 LOST. Expert EoW is left at 16–38% HP when the army dies, DS Expert at 27–76%. A real dodging problem, handed to mobility4 (worm-chain avoidance).
+- Check-in 06:07:
+  - 40+ notable replays in scratchpad/replays/notable (with index.txt).
+  - Lead watched the Rev Brain n13 replay: the Brain stays at 4144/4144 the whole fight while its ai0 cycles 1/2/5/6 and it targets levies. Creepers are not recorded (boss parts only), so the creeper phase is invisible in replays. Asked the lab whether creepers respawn or the levies are just too slow.
+  - Quirk: the index shows DS max HP 121600 in one cell (segment lifeMax summed: 19 × 6400). Reporting only.
+- **BOSS LAB DONE (~500 fights, merged 48154d7 → levy-stardust; docs/boss_lab/RESULTS.md, LOADOUTS.md; 30 notable replays in scratchpad/replays/notable).** Calamity tier gear, 613 lookups, 0 unknown names.
+  - **Real CP counts:** KS 10, DS 11, Eye 11, EoW/Brain 13, QB 15, Skeletron 16.
+  - **Results at the real count** (wins, commander far):
+
+    | Boss | Expert | Rev | Death |
+    |---|---|---|---|
+    | KS | 0/6 (timeouts; slimes distract) | 5/6 | 2/3 |
+    | DS | 0 | 0 | 0 |
+    | Eye | 3/3 | 2/9 | 2/9 |
+    | EoW | 0 | 0 | 0 |
+    | Brain | 6/6 | 1/9 | 0/3 |
+    | QB | 0/6 | 0/6 | 1/3 |
+
+    Skeletron Expert 4/6. Skeletron Rev/Death not run: Calamity overrides Skeletron only in single player.
+  - **16 vs 19 (Eye):** Expert kill time −12%, deaths the same; Rev wins 9/14 → 14/14; Death 4/6 → 6/6. Extra levies buy survival in Rev/Death, not speed.
+  - **Flattening = boss HP scaling** (+2%/levy). Predicted 16→19 speedup 0.88; measured 0.88.
+    - NOT shared i-frames or projectile caps: Boomstick dmg/s scales ~linearly to n24, ~25 hits/s.
+    - Crowding/approach costs a one-time ~2× from 1 to 8 levies.
+  - **Worms:** EoW is as lethal as DS. Surface = underground. 70–85% of levy hits land on body segments. Wipes in 15–70 s.
+  - **Rev Brain:** NO enrage flag (Calamity source). Its ~0 damage taken is a creeper-shield race: dontTakeDamage 91–100% in wipes; levies kill 0–0.4 creepers/s; creepers respawn to 18 until the Brain's 70% gate.
+  - **SPECTATOR LEAK ROOT CAUSE:**
+    - Calamity only re-searches on an invalid target, and Levy's soft weighting keeps a closer commander.
+    - The "hidden-window" was never used.
+    - Near-commander cells over-protect levies.
+    - → builder `spec-calfix` launched (based on mobility4).
+  - **Other anomalies:**
+    - UrchinMace (melee) does 0 damage to the hovering Eye.
+    - QB Expert wipes 15 levies (not investigated).
+    - A 5–11% residual of worm damage has no attacker.
+- mobility4 WIP a1e1bed:
+  - Minions are now 100% on levies (was 36–65%).
+  - The worm chain model shows no clear gain (±15% noise): worms home on one levy, and the lane is wider than run speed.
+  - Lead suggested "spread from the TARGETED levy + target kites straight" as the general fix for homing big-body bosses.
+  - Notable gallery (41 fights) sent to Eve.
+- Check-in 06:56, spec-calfix 618f082 + data 17b6df5 (lead aggregated): boss-on-player % goes 12–53% → **0%** in every Rev/Death cell (near and far), minions 0% too. Outcomes now show the true lethality (Eye Rev n11 near 0/3, Brain Rev n13 0/3). Awaiting the builder's boot checks before merge.
+- **SHIPPED Levy 2.0.14**: cherry-picked minion retarget 4d324e6 and the spec-calfix Compete hunk 618f082 (the worm WIP left out).
+  - Booted clean on both toolchains (Calamity compat hook installed).
+  - spec-calfix: Spectator P% is 0 in 36/36 Rev/Death fights; creepers 49% → 0%.
+  - Root cause: Calamity resets npc.target 255 → 0 every tick, and Compete then kept the closer commander because the hide was released before Compete ran.
+- **boss-anoms (building):** KS Expert timeouts (adds vs boss priority), QB Expert wipes, true melee vs fliers (weapon-choice fix, no nerfs).
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

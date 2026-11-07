@@ -1,0 +1,243 @@
+# Boss lab loadouts: what each class gets per boss and why
+
+Generated from the harness tier data block (`CombatHarness.CalRevLab.cs`, `CrTiers()`) by `gen_loadouts.py`; the table below is what the harness prints at boot (`LEVY_CR_TIERDOC`).
+Tier = what is obtainable BEFORE that boss in Boss Checklist order with Calamity: King Slime 1, Desert Scourge 1.6, Eye 2, Crabulon 2.7, Eater/Brain 3, Hive Mind 3.98, Perforators 3.99, Queen Bee 4, Skeletron 5.
+Every Calamity name was verified with `ModContent.TryFind` at boot (`613 lookups OK, 0 unknown`). Unknown names would be logged and dropped, never fatal.
+
+## Which tier each boss gets
+
+- King Slime, Desert Scourge: tier 0
+- Eye of Cthulhu: tier 2
+- Eater of Worlds, Brain of Cthulhu: tier 3
+- Queen Bee: tier 4
+- Skeletron: tier 5
+
+## How a levy is rolled
+
+- Same seed gives the same army in every mode (boss and mode are not in the roll; the tier is).
+- Class split of N levies: 30% ranger (R), 30% mage (M), 20% melee (E), 20% summoner (S).
+- Weapon: weighted pick from the tier pool (vanilla options weight 1 each, the tier's best Calamity items weight 2-3). Duplicates allowed (crafted or farmed). Armor: uniform over the class's sets (class-specific Victide/Aerospec helmets). One accessory slot per Levy-grade levy (`grade=lv`, the default for `gear=mod`; the old `gear=van` rolls 35% Man-at-Arms with 3 slots at no command-point cost). Life crystals: tiers 0-2 roll 0-5, tiers 3+ have 5 (200 hp). Healing potions as before.
+- Weapon "why" columns: `score` = Levy `WeaponClassifier.Score` (from the gear-audit table), `acquisition` = wiki drop table (curl `?action=raw`) or Levy route source. Items with `unknown:rarity` route evidence were not used.
+
+## Tier 0: pre-DS
+- why: nothing beaten yet but King Slime: vanilla early gear plus Wulfrum (surface Wulfrum Drones; WulfrumKnife/Prosthesis/Controller score 71/55/47)
+- life crystals: rolled 0-5; potion: Lesser Healing
+- **R weapons**
+  - Minishark (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - Boomstick (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - Demon Bow (w1; ammo Flaming Arrow|Wooden Arrow): vanilla
+  - Tendon Bow (w1; ammo Flaming Arrow|Wooden Arrow): vanilla
+  - Musket (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - Flintlock Pistol (w1; ammo Musket Ball): vanilla
+- **R armor**: Fossil Helmet, Gold Helmet, Iron Helmet, Ninja Hood, Platinum Helmet, Shadow Helmet, WulfrumHat
+- **M weapons**
+  - Diamond Staff (w1): vanilla
+  - Ruby Staff (w1): vanilla
+  - Wand of Sparking (w1): vanilla
+  - Vilethorn (w1): vanilla
+  - Space Gun (w1): vanilla
+  - Sapphire Staff (w1): vanilla
+  - WulfrumProsthesis (w2): score 55; Wulfrum enemies (surface), route 0.5
+- **M armor**: Gold Helmet, Jungle Hat, Meteor Helmet, Platinum Helmet, WulfrumHat
+- **E weapons**
+  - Enchanted Sword (w1): vanilla
+  - Starfury (w1): vanilla
+  - Blade of Grass (w1): vanilla
+  - Platinum Broadsword (w1): vanilla
+  - Gold Broadsword (w1): vanilla
+  - Katana (w1): vanilla
+  - WulfrumScrewdriver (w1): score 29; Wulfrum Metal crafting
+- **E armor**: Crimson Helmet, Gold Helmet, Iron Helmet, Platinum Helmet, Shadow Helmet, WulfrumHat
+- **S weapons**
+  - Slime Staff (w1): vanilla
+  - Finch Staff (w1): vanilla
+  - Flinx Staff (w1): vanilla
+  - WulfrumController (w2): score 47; Wulfrum enemies (surface), route 0.5
+- **S armor**: Crimson Helmet, Gold Helmet, Iron Helmet, Platinum Helmet, WulfrumHat
+- **accessory pool** (one slot): , Hermes Boots, Cloud in a Bottle, Band of Regeneration, Shackle, Anklet of the Wind
+
+## Tier 2: post-DS
+- why: KS + Desert Scourge beaten: DS drops (SaharaSlicers 129, SandstreamScepter 62, Barinade, BrittleStarStaff), Sea Prism/Navystone gear (StormSurge 78, AquamarineStaff 60, SeashineSword), Victide armor, Wulfrum
+- life crystals: rolled 0-5; potion: Lesser Healing
+- **R weapons**
+  - Minishark (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - Boomstick (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - Demon Bow (w1; ammo Flaming Arrow|Wooden Arrow): vanilla
+  - Tendon Bow (w1; ammo Flaming Arrow|Wooden Arrow): vanilla
+  - Musket (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - Flintlock Pistol (w1; ammo Musket Ball): vanilla
+  - StormSurge (w3): score 78; Sea Prism/Navystone crafting (Sunken Sea), route 1.61
+  - Barinade (w2; ammo Flaming Arrow|Wooden Arrow): score 48; Desert Scourge drop (wiki: one of 5 weapons, 25-33% each)
+- **R armor**: Fossil Helmet, Gold Helmet, Iron Helmet, Ninja Hood, Platinum Helmet, Shadow Helmet, VictideHeadRanged, WulfrumHat
+- **M weapons**
+  - Diamond Staff (w1): vanilla
+  - Ruby Staff (w1): vanilla
+  - Wand of Sparking (w1): vanilla
+  - Vilethorn (w1): vanilla
+  - Space Gun (w1): vanilla
+  - Sapphire Staff (w1): vanilla
+  - SandstreamScepter (w3): score 62; Desert Scourge drop
+  - AquamarineStaff (w3): score 60; Navystone/Sea Prism crafting, route 1.61
+- **M armor**: Gold Helmet, Jungle Hat, Meteor Helmet, Platinum Helmet, VictideHeadMagic, WulfrumHat
+- **E weapons**
+  - Enchanted Sword (w1): vanilla
+  - Starfury (w1): vanilla
+  - Blade of Grass (w1): vanilla
+  - Platinum Broadsword (w1): vanilla
+  - Gold Broadsword (w1): vanilla
+  - Katana (w1): vanilla
+  - SaharaSlicers (w3): score 129; Desert Scourge drop
+  - SeashineSword (w2): score 43; Navystone crafting, route 1.61
+  - UrchinMace (w1): score 61; Sea Remains crafting, route 1.6
+- **E armor**: Crimson Helmet, Gold Helmet, Iron Helmet, Platinum Helmet, Shadow Helmet, VictideHeadMelee, WulfrumHat
+- **S weapons**
+  - Slime Staff (w1): vanilla
+  - Finch Staff (w1): vanilla
+  - Flinx Staff (w1): vanilla
+  - BrittleStarStaff (w2): score 30; Desert Scourge drop
+  - WulfrumController (w1): score 47; Wulfrum enemies (surface), route 0.5
+- **S armor**: Crimson Helmet, Gold Helmet, Iron Helmet, Platinum Helmet, VictideHeadSummon, WulfrumHat
+- **accessory pool** (one slot): , Hermes Boots, Cloud in a Bottle, Band of Regeneration, Shackle, Anklet of the Wind, SandCloak
+
+## Tier 3: post-Crabulon
+- why: Eye + Crabulon beaten: Eye drops (TeardropCleaver, DeathstareRod), Crabulon drops (MycelialClaws, Fungicide, HyphaeRod, PuffShroom), DS drops, Victide, Molten/Crimson/Shadow
+- life crystals: 5 (200 hp); potion: Healing
+- **R weapons**
+  - Minishark (w1; ammo Silver Bullet): vanilla
+  - Phoenix Blaster (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - Handgun (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - The Undertaker (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - Musket (w1; ammo Silver Bullet): vanilla
+  - Demon Bow (w1; ammo Hellfire Arrow|Flaming Arrow): vanilla
+  - Fungicide (w3; ammo Silver Bullet|Musket Ball): score 102; Crabulon drop (wiki: one of 6, 25-33%)
+  - StormSurge (w2): score 78; Sea Prism/Navystone crafting (Sunken Sea), route 1.61
+  - Barinade (w1; ammo Hellfire Arrow|Flaming Arrow): score 48; Desert Scourge drop (wiki: one of 5 weapons, 25-33% each)
+- **R armor**: Crimson Helmet, Fossil Helmet, Molten Helmet, Platinum Helmet, Shadow Helmet, VictideHeadRanged
+- **M weapons**
+  - Aqua Scepter (w1): vanilla
+  - Magic Missile (w1): vanilla
+  - Flamelash (w1): vanilla
+  - Crimson Rod (w1): vanilla
+  - Diamond Staff (w1): vanilla
+  - Space Gun (w1): vanilla
+  - HyphaeRod (w3): score 71; Crabulon drop
+  - SandstreamScepter (w2): score 62; Desert Scourge drop
+  - AquamarineStaff (w2): score 60; Navystone/Sea Prism crafting, route 1.61
+- **M armor**: Crimson Helmet, Jungle Hat, Meteor Helmet, Shadow Helmet, VictideHeadMagic
+- **E weapons**
+  - Muramasa (w1): vanilla
+  - Blade of Grass (w1): vanilla
+  - Starfury (w1): vanilla
+  - Blood Butcherer (w1): vanilla
+  - Light's Bane (w1): vanilla
+  - Enchanted Sword (w1): vanilla
+  - MycelialClaws (w3): score 310; Crabulon drop
+  - TeardropCleaver (w3): score 107; Eye of Cthulhu drop (route 2.0)
+  - SaharaSlicers (w2): score 129; Desert Scourge drop
+- **E armor**: Crimson Helmet, Molten Helmet, Platinum Helmet, Shadow Helmet, VictideHeadMelee
+- **S weapons**
+  - Imp Staff (w1): vanilla
+  - Slime Staff (w1): vanilla
+  - Flinx Staff (w1): vanilla
+  - DeathstareRod (w3): score 59; Eye of Cthulhu drop (route 2.0)
+  - PuffShroom (w2): score 41; Crabulon drop
+  - BrittleStarStaff (w1): score 30; Desert Scourge drop
+- **S armor**: Crimson Helmet, Gold Helmet, Molten Helmet, VictideHeadSummon
+- **accessory pool** (one slot): , Hermes Boots, Cloud in a Bottle, Band of Regeneration, Shackle, Anklet of the Wind, SandCloak
+
+## Tier 4: post-HiveMind/Perforators
+- why: Hive Mind or Perforators beaten: their drops (Shadethrower, Eviscerator, BloodBath, ShaderainStaff, SausageMaker, Aorta, FleshOfInfidelity, DankStaff) plus every earlier tier
+- life crystals: 5 (200 hp); potion: Healing
+- **R weapons**
+  - Minishark (w1; ammo Silver Bullet): vanilla
+  - Phoenix Blaster (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - Handgun (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - The Undertaker (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - Musket (w1; ammo Silver Bullet): vanilla
+  - Demon Bow (w1; ammo Hellfire Arrow|Flaming Arrow): vanilla
+  - Shadethrower (w3; ammo Gel): score 103; Hive Mind drop (wiki: one of 3-4)
+  - Eviscerator (w3; ammo Silver Bullet|Musket Ball): score 96; The Perforators drop
+  - Fungicide (w2; ammo Silver Bullet|Musket Ball): score 102; Crabulon drop (wiki: one of 6, 25-33%)
+- **R armor**: Crimson Helmet, Fossil Helmet, Molten Helmet, Platinum Helmet, Shadow Helmet, VictideHeadRanged
+- **M weapons**
+  - Aqua Scepter (w1): vanilla
+  - Magic Missile (w1): vanilla
+  - Flamelash (w1): vanilla
+  - Crimson Rod (w1): vanilla
+  - Diamond Staff (w1): vanilla
+  - Space Gun (w1): vanilla
+  - BloodBath (w3): score 131; The Perforators drop
+  - ShaderainStaff (w2): score 46; Hive Mind drop
+  - HyphaeRod (w2): score 71; Crabulon drop
+- **M armor**: Crimson Helmet, Jungle Hat, Meteor Helmet, Shadow Helmet, VictideHeadMagic
+- **E weapons**
+  - Muramasa (w1): vanilla
+  - Blade of Grass (w1): vanilla
+  - Starfury (w1): vanilla
+  - Blood Butcherer (w1): vanilla
+  - Light's Bane (w1): vanilla
+  - Enchanted Sword (w1): vanilla
+  - SausageMaker (w3): score 111; The Perforators drop
+  - Aorta (w2): score 92; The Perforators drop
+  - MycelialClaws (w3): score 310; Crabulon drop
+  - TeardropCleaver (w2): score 107; Eye of Cthulhu drop (route 2.0)
+- **E armor**: Crimson Helmet, Molten Helmet, Platinum Helmet, Shadow Helmet, VictideHeadMelee
+- **S weapons**
+  - Imp Staff (w1): vanilla
+  - Slime Staff (w1): vanilla
+  - Flinx Staff (w1): vanilla
+  - FleshOfInfidelity (w2): score 48; The Perforators drop
+  - DeathstareRod (w3): score 59; Eye of Cthulhu drop (route 2.0)
+  - DankStaff (w1): score 34; Hive Mind drop
+  - PuffShroom (w1): score 41; Crabulon drop
+- **S armor**: Crimson Helmet, Gold Helmet, Molten Helmet, VictideHeadSummon
+- **accessory pool** (one slot): , Hermes Boots, Cloud in a Bottle, Band of Regeneration, Shackle, Anklet of the Wind, SandCloak
+
+## Tier 5: post-QueenBee
+- why: Queen Bee beaten: Bee armor/weapons, Aerialite gear (Tradewinds, WindBlade, Galeforce, Aerospec armor) plus every earlier tier
+- life crystals: 5 (200 hp); potion: Healing
+- **R weapons**
+  - Minishark (w1; ammo Silver Bullet): vanilla
+  - Phoenix Blaster (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - Handgun (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - The Undertaker (w1; ammo Silver Bullet|Musket Ball): vanilla
+  - Musket (w1; ammo Silver Bullet): vanilla
+  - Demon Bow (w1; ammo Hellfire Arrow|Flaming Arrow): vanilla
+  - Galeforce (w3; ammo Flaming Arrow|Hellfire Arrow): score 94; Aerialite Bar crafting (route 4.5)
+  - Shadethrower (w2; ammo Gel): score 103; Hive Mind drop (wiki: one of 3-4)
+  - Eviscerator (w3; ammo Silver Bullet|Musket Ball): score 96; The Perforators drop
+  - Bee Gun (w1): vanilla
+- **R armor**: AerospecHeadRanged, Bee Headgear, Crimson Helmet, Fossil Helmet, Molten Helmet, Platinum Helmet, Shadow Helmet, VictideHeadRanged
+- **M weapons**
+  - Aqua Scepter (w1): vanilla
+  - Magic Missile (w1): vanilla
+  - Flamelash (w1): vanilla
+  - Crimson Rod (w1): vanilla
+  - Diamond Staff (w1): vanilla
+  - Space Gun (w1): vanilla
+  - Tradewinds (w3): score 126; Aerialite Bar crafting
+  - BloodBath (w3): score 131; The Perforators drop
+  - ShaderainStaff (w1): score 46; Hive Mind drop
+- **M armor**: AerospecHeadMagic, Bee Headgear, Crimson Helmet, Jungle Hat, Meteor Helmet, Shadow Helmet, VictideHeadMagic
+- **E weapons**
+  - Muramasa (w1): vanilla
+  - Blade of Grass (w1): vanilla
+  - Starfury (w1): vanilla
+  - Blood Butcherer (w1): vanilla
+  - Light's Bane (w1): vanilla
+  - Enchanted Sword (w1): vanilla
+  - WindBlade (w3): score 112; Aerialite Bar crafting
+  - SausageMaker (w3): score 111; The Perforators drop
+  - MycelialClaws (w2): score 310; Crabulon drop
+  - Bee Keeper (w1): vanilla
+- **E armor**: AerospecHeadMelee, Bee Headgear, Crimson Helmet, Molten Helmet, Platinum Helmet, Shadow Helmet, VictideHeadMelee
+- **S weapons**
+  - Imp Staff (w1): vanilla
+  - Slime Staff (w1): vanilla
+  - Flinx Staff (w1): vanilla
+  - Hornet Staff (w3): vanilla
+  - FleshOfInfidelity (w2): score 48; The Perforators drop
+  - DeathstareRod (w2): score 59; Eye of Cthulhu drop (route 2.0)
+- **S armor**: AerospecHeadSummon, Bee Headgear, Crimson Helmet, Gold Helmet, Molten Helmet, VictideHeadSummon
+- **accessory pool** (one slot): , Hermes Boots, Cloud in a Bottle, Band of Regeneration, Shackle, Anklet of the Wind, SandCloak
+

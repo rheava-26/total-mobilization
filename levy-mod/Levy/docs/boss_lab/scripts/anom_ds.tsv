@@ -1,0 +1,3 @@
+fight	ds	rev	2	18000	gear=mod	n=cp	cmd=far	dbg=1
+fight	ds	exp	2	18000	gear=mod	n=cp	cmd=far	dbg=1
+fight	eow	exp	2	18000	gear=mod	n=cp	cmd=far	dbg=1

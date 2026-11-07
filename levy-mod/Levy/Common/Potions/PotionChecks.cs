@@ -32,6 +32,7 @@ namespace Levy.Common.Potions
 				Check(p.dead, "spectator: hide is re-entrant (inner release keeps it hidden)");
 				SpectatorPlayer.ReleaseAll();
 				Check(!p.dead && !p.ghost, "spectator: released after the search");
+				Check(p.TryGetModPlayer(out SpectatorPlayer spp) && !spp.CanHitNPC(z) && spp.CanHitNPCWithItem(new Item(ItemID.CopperShortsword), z) == false, "spectator: deals no damage by dash, contact or item");
 				z.target = 0;
 				Check(global::Levy.Common.Targeting.EnemyTargeting.TargetsSpectator(z), "spectator: an enemy whose target is a spectator is flagged for an immediate re-search");
 			}
@@ -52,6 +53,12 @@ namespace Levy.Common.Potions
 				v = new Vector2(5f, 0f); c = new Vector2(100f, 0f);
 				SpectatorPlayer.Tether(Vector2.Zero, ref c, ref v, out pull);
 				Check(v.X == 5f && pull == Vector2.Zero, "tether: free movement near the anchor");
+				Vector2 anc = Vector2.Zero;
+				Check(!SpectatorPlayer.TeleportResponse(Vector2.Zero, new Vector2(5 * 16f, 0f), ref anc, out bool endA) && !endA && anc == Vector2.Zero, "spectator teleport: a normal step is not a teleport");
+				Vector2 hop = new Vector2(30 * 16f, 0f);
+				Check(SpectatorPlayer.TeleportResponse(Vector2.Zero, hop, ref anc, out bool endB) && !endB && anc == hop, "spectator teleport: a short hop moves the tether anchor to the landing spot");
+				anc = Vector2.Zero;
+				Check(SpectatorPlayer.TeleportResponse(Vector2.Zero, new Vector2(400 * 16f, 0f), ref anc, out bool endC) && endC && anc == Vector2.Zero, "spectator teleport: a long teleport ends the buff");
 				Check(SpectatorPlayer.Blocked(new Item(ItemID.CopperShortsword)), "spectator: weapons blocked");
 				Check(SpectatorPlayer.Blocked(new Item(ItemID.CopperPickaxe)), "spectator: pickaxes blocked");
 				Check(SpectatorPlayer.Blocked(new Item(ItemID.StoneBlock)), "spectator: blocks blocked");

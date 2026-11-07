@@ -12,6 +12,8 @@ namespace Levy.Common.Potions
 		public const int TetherTiles = 60;
 		/// <summary>Outward speed is damped over the last this-many tiles before the edge.</summary>
 		public const int TetherSoftTiles = 8;
+		/// <summary>A one-tick jump of at least this many tiles is a teleport; from <see cref="TeleportEndTiles"/> the Spectator buff ends, a shorter hop moves the tether anchor to the landing spot.</summary>
+		public const int TeleportDetectTiles = 10, TeleportEndTiles = 100;
 		/// <summary>Past the edge the spectator is pushed back by excess pixels times this, at most <see cref="TetherMaxPull"/> px per tick.</summary>
 		public const float TetherPullPerPx = 0.04f, TetherMaxPull = 5f;
 

@@ -125,7 +125,8 @@ namespace Levy.Common.Targeting
 			int style = npc.aiStyle;
 			if (UsesNativeTargeting(npc)) return _nativeStyles.Contains(style) || ConfigAllows(style);
 			if (_swapIncompatible.Contains(style) || _swapExcludedTypes.Contains(type)) return false;
-			return _swapStyles.Contains(style) || ConfigAllows(style);
+			// A Spectator also sends the minions of a boss at the army: Brain of Cthulhu's Creepers (style 55; TargetClosest, then Main.player[target] only, so swap-safe).
+			return _swapStyles.Contains(style) || ConfigAllows(style) || (style == 55 && Potions.SpectatorPlayer.AnyActive);
 		}
 
 		/// <summary>Opt-in: BossesTargetSoldiers is on and this boss (or the boss it belongs to) has been defeated in this world.</summary>

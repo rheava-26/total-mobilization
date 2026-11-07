@@ -44,7 +44,7 @@ namespace Levy.Common.Boss
 			// timeLeft / active are server-authoritative (CheckActive runs server side; clients mirror the despawn through the net).
 			if (!LevyUtil.IsServerOrSingle || !EnemyTargeting.Enabled) return;
 			LevyConfig cfg = LevyConfig.Get;
-			if (cfg == null || !cfg.BossesTargetSoldiers) return;
+			if (cfg == null || !(cfg.BossesTargetSoldiers || Potions.SpectatorPlayer.AnyActive)) return; // a Spectator opts the bosses in, so the keep-alive follows
 			if (!IsBossLike(npc) || IsDaytimeExcluded(npc)) return;
 			// Only while the boss is validly locked on a live soldier/officer body. If the lock is gone (soldier died, no army left),
 			// we do nothing and vanilla's despawn resumes — the fight is genuinely over.

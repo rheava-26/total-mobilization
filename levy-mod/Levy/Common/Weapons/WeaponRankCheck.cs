@@ -295,6 +295,9 @@ namespace Levy.Common.Weapons
 				check(WeaponRank.Of(cobalt) == price(cobalt) && WeaponRank.Of(mythril) == price(mythril), "on-tier weapons rank by price alone");
 				WeaponRank.ForceProgress = 0f;
 				check(WeaponRank.Of(mini) == price(mini) && WeaponRank.Of(copper) == price(copper), "before the first boss nothing is discounted");
+				WeaponRank.ForceProgress = 2f;
+				var slimeStaff = Make(ItemID.SlimeStaff); var impStaff = Make(ItemID.ImpStaff); var hornetStaff = Make(ItemID.HornetStaff); var frogStaff = Make(ItemID.VampireFrogStaff);
+				check(WeaponRank.Of(slimeStaff) < WeaponRank.Of(impStaff) && WeaponRank.Of(slimeStaff) < WeaponRank.Of(hornetStaff) && WeaponRank.Of(slimeStaff) < WeaponRank.Of(frogStaff), "a minion staff ranks on its damage, so the Slime Staff (8 damage, 100000 copper) does not outrank the Imp, Hornet or Vampire Frog staff");
 				WeaponRank.ForceProgress = 13f; // after Golem
 				check(WeaponRank.Of(mini) < 0.1f * price(mini) && WeaponRank.Of(copper) >= 1f, "a Minishark after Golem is heavily discounted, and no rank is below 1");
 				// recency

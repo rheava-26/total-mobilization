@@ -141,6 +141,8 @@ namespace Levy.Common
 		/// so an early staff stays modest while a late staff is valued as a real flock. The score depends only on the item, so a swap can never flip-flop.
 		/// </summary>
 		public const float SummonScoreBaseSlots = 1.5f, SummonScoreSlotsPerTier = 0.2f, SummonScoreMaxSlots = 4f;
+		/// <summary>A minion staff's Balanced rank is priced from its damage score, not its shop price (a drop's price says nothing about its minions): copper per point of the staff's score. About what a crafted staff of the same strength sells for, so staves rank on the same footing as the other classes.</summary>
+		public const float SummonRankCopperPerScore = 800f;
 		/// <summary>Armor doctrine: each extra minion slot (maxMinions above the bare 1) counts like this much damage bonus.</summary>
 		public const float MinionDoctrineWeight = 0.06f;
 		/// <summary>Standoff reach (tiles) the brain assumes for a soldier holding only a summon weapon.</summary>

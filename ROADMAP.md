@@ -303,6 +303,7 @@
 - **Eve (15:50):** in her KS team runs the levies ran OFF from the boss area and KS chased them; she walled it off and closed doors. "Not harder, a King Slime issue." She was fighting, not spectating. Goblin army = a random invasion. AUDIO cut in/out with drones + levies during the goblin fight → sound-throttle builder.
 - **Interrupt stopped vert1 + ammo-slimegod again.** Both had pushed (479f696; ac1529f). RESUMED. vert1 now also does the fight-zone leash (levies stay near the commander in boss fights without an order).
 - **CAUTION (review before ship):** ammo-slimegod 67c0a8b un-hides the Spectator from boss-class NPCs the army can't target. That conflicts with the Spectator promise; it must be minimal and justified.
+- **sound-throttle MERGED (for the next release):** one new file, Common/Audio/ArmySoundThrottle.cs. Client-only detour of SoundEngine.PlaySound, scoped to Levy/Mechanization NPC and projectile AI. Limits: 3 per style and 10 total per 12 ticks; drops sounds far off-screen; stacking sounds get quieter; the player's sounds are never touched. Modelled 142 → 50 sounds/s. UNVERIFIED in real audio; Eve to retest the goblin fight.
 - **Launched:**
   - vert1: levies use platform rows;
   - ammo-slimegod: best-ammo armory rule + Slime God despawn.
@@ -311,6 +312,7 @@
   - BUG: King Slime phase-2 crystal (Calamity jewel) targets ONLY the player in real play (→ ammo-slimegod, minion retarget).
   - Double jump: "they should double jump!" Lab 3's "levies don't double jump" was unverified. vert1 to verify all gear double jumps (incl. Sulphurous set jump bubble) and their effects.
 - **BUG (Eve video 15:39):** levy hook CHAINS drawn from far offscreen (likely from the owner player's MountedCenter) → vert1 builder.
+- **sound-throttle MERGED (for the next release):** one new file, Common/Audio/ArmySoundThrottle.cs. Client-only detour of SoundEngine.PlaySound, scoped to Levy/Mechanization NPC and projectile AI. Limits: 3 per style and 10 total per 12 ticks; drops sounds far off-screen; stacking sounds get quieter; the player's sounds are never touched. Modelled 142 → 50 sounds/s. UNVERIFIED in real audio; Eve to retest the goblin fight.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ModLoader;
+using Levy.Content.NPCs;
 
 namespace Levy.Common.Recording
 {
@@ -16,6 +17,7 @@ namespace Levy.Common.Recording
 
 		public override void PostUpdateEverything()
 		{
+			if (!FightRecorder.On) FightRecAuto.Update(); // LEVY_REC_DIR unset: one string test and nothing else
 			if (FightRecorder.On) FightRecorder.Tick();
 		}
 
@@ -27,6 +29,23 @@ namespace Levy.Common.Recording
 		public override void Unload()
 		{
 			if (FightRecorder.On) FightRecorder.Stop("unloaded");
+		}
+	}
+
+	/// <summary>Levy-side hooks for the recorder: names the hostile projectile before it strikes a levy and logs the lethal blow. Does nothing while the recorder is off.</summary>
+	public class FightRecLevyHooks : GlobalNPC
+	{
+		public override bool AppliesToEntity(NPC entity, bool lateInstantiation) => lateInstantiation && entity.ModNPC is SoldierNPC;
+
+		public override void ModifyHitByProjectile(NPC npc, Projectile projectile, ref NPC.HitModifiers modifiers)
+		{
+			if (FightRecorder.On && projectile.hostile) FightRecorder.NoteLevyProjectile(npc, projectile);
+		}
+
+		public override bool CheckDead(NPC npc)
+		{
+			if (FightRecorder.On) FightRecorder.NoteLevyDeath(npc);
+			return true;
 		}
 	}
 

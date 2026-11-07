@@ -94,8 +94,8 @@ namespace Levy.Common.Testing
 
 		private static void Bump(uint n)
 		{
-			var pr = typeof(Main).GetProperty("GameUpdateCount");
-			pr.GetSetMethod(true).Invoke(null, new object[] { Main.GameUpdateCount + n });
+			var f = typeof(Main).GetField("_gameUpdateCount", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+			f.SetValue(null, Main.GameUpdateCount + n);
 		}
 
 		private static string[] Names(IEnumerable<Item> items) => items.Select(Nm).ToArray();

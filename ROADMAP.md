@@ -241,6 +241,7 @@
   - **Targeting:** enemies of all kinds target levies and vice versa ("why would I not be okay").
   - **Labs:** arenas only (no flat ground). Base placeables/stations by EoW/BoC. Food buffs (Well Fed, Plenty Satisfied). Hazard pay arm. Piercing for BoC/EoW/DS. Team-buff accessories. Rogue levies (Calamity only; the Acid Rain rogue set with Irradiated). New bosses: Hive Mind, Perforators, Slime God. Keep vanilla and Calamity separate.
   - **Replays:** the gallery HTML "didn't work" on her side → publish as a hosted page.
+- **Ammo (Eve):** labs used plain ammo. Lab 3 now gives the best ammo for the tier, boss and arena: Meteor Shot (bounces + pierces) from the EoW/BoC fights on, enclosed arena; piercing arrows vs worms. Lab 3 also reports how the real armory picks a levy's ammo.
 - **Launched:**
   - fear-events: event-fear default + config, sunflower, formation, placeable/station buffs to levies;
   - lab3;

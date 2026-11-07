@@ -65,6 +65,10 @@
   - **Death Eye:** 1 win, 2 timeouts at n11; target-player 3–87%, so the Calamity compat leak again.
   - mobility4 pushed its minion retarget fix (4d324e6).
 - Check-in 05:55: the worm "other" damage was attribution; the lab fixed it (worms_fix). Now ~all damage is the boss (segments), and still 24/24 LOST. Expert EoW is left at 16–38% HP when the army dies, DS Expert at 27–76%. A real dodging problem, handed to mobility4 (worm-chain avoidance).
+- Check-in 06:07:
+  - 40+ notable replays in scratchpad/replays/notable (with index.txt).
+  - Lead watched the Rev Brain n13 replay: the Brain stays at 4144/4144 the whole fight while its ai0 cycles 1/2/5/6 and it targets levies. Creepers are not recorded (boss parts only), so the creeper phase is invisible in replays. Asked the lab whether creepers respawn or the levies are just too slow.
+  - Quirk: the index shows DS max HP 121600 in one cell (segment lifeMax summed: 19 × 6400). Reporting only.
 - **Superseded by boss lab:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

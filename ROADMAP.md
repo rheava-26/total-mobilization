@@ -592,6 +592,13 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
     - UNSEEN in a real client.
     - The book doesn't mention shift-click because the armory has none yet; armory-alloc must update the Items pages when it adds it.
 
+## ✅ MERGED (next build): boss-trials d8d3e8a, the short-reach projectile melee fix
+- **Cause:** Blade of Grass etc. were classified as beam swords (40-tile reach), so levies stood off ~28 tiles while the shot dies within a few tiles → 0 damage.
+- **Fix:** a ShortShot table (Blade of Grass, Light's Bane, Chlorophyte Saber/Claymore, Ice/Death Sickle, Christmas Tree Sword, Waffle's Iron) now positions like a blade. Sweep: all 0% → 98–317% of expected.
+- **Still 0:** ZENITH (no sword spawns; suspected client-side profile setup; unverified).
+- **Low:** Ice Blade 26%, Enchanted Sword 32%, Beam Sword 42%.
+- **Broadsword player refs (swing emulated):** Muramasa 2.5×, Gold 3.6–3.9×, Platinum 4.0×, Copper 10.5–11.4×.
+
 ## 📦 SHIPPED Levy 2.0.8 (Mechanization 0.8.1), at scratchpad/ship-2.0.8
 - Contents:
   - setbonus: activated abilities.

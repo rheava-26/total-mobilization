@@ -13,6 +13,8 @@
   - No change: Desert Scourge (~40 contact hits, 1.1 deaths/min; the worst boss by far), Queen Bee (~19).
   - Remaining still-time is mostly spawn grace and "no target order", not stuck pathing.
   - Regression being bisected: WITH wings, several bosses got worse (Deerclops 8.4 -> ~20 hits, Desert Scourge 28 -> ~38). Builder is sweeping a dodge-off parameter (dx0..dx32) to find it.
+- **Eve (11-07): bosses probably aren't attacking the levies in the matrix**, so low hits may mean being ignored, not dodging. UNVERIFIED. The matrix has no targeting metric. mobility3 told to add tgtLevy/tgtPlayer/tgtNone%, check causes a–f, fix the harness (not the AI), and rerun. The wings regression gets re-judged after. Desert Scourge hits get split by head/body/tail/adds (Eve: worm area coverage, not targeting).
+- **Replays (branch `rec-harness`, building):** headless `LEVY_REC_DIR` recording in harness fights, with boss-target lines. A radar-blip gallery page, shareable with Eve.
 - **Not started:** boss-trials rerun with real targeting (post-Spectator fix) for Expert + Rev/Death. Plan: launch right after mobility3 merges so kill times reflect the new movement.
 
 ## 📡 COMMAND & OBSERVE (branch `command-observe`, off worktree-levy-stardust 1.8.0; build.txt NOT bumped; unreleased) — OBSERVED vs UNVERIFIED kept apart

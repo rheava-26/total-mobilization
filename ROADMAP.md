@@ -602,6 +602,16 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 - Plus the short-reach melee fix (Blade of Grass etc.).
 - **Boots:** Thorium+MS and Calamity, 0 exceptions.
 
+## 🧭 Eve (2026-11-07 ~01:45)
+- Frustrated midair mobility wasn't already there (fair: airborne levies skipped dodge/strafe/jump entirely; air-mobility is fixing it).
+- Relay link range → 1000 tiles (done, 896c689); serve radius stays 25.
+- **BUG:** menus close instantly. The Barracks "Send to map point" map flashes open and closes; another mod's NPC-chat "Shops Changer" doesn't stay open → branch `ui-close`. (Seen on an earlier 2.0.x.)
+- Desert Scourge enrages outside the desert → it explains the "DS shreds levies" matrix rows. Told air-mobility to set biome zones for biome bosses.
+- Eve's usage window is tight (5h): builders push every ~15 min; keep concurrency low.
+- **Eve's terminal log:**
+  - Levy's hang watchdog fired once: the stall was OUTSIDE Levy, likely a world save.
+  - "gear upkeep dropped CalamityMod/ScionsCurioMini": a Calamity accessory minion that can't live while soldier shots are commander-owned. Known limitation; harmless.
+
 ## ✅ MERGED (next Mechanization build): armory-relay 3e14573
 - An Armory Relay (Mechanization, Content/Relay). It links to the nearest Armory ≤600 tiles, or to the pylon network. Turrets and drones ≤25 tiles of it treat that Armory as in reach. Recipe: 8 iron/lead bars + 20 wire + chest @ Work Bench.
 - NOTE: turret armory reach was ALREADY 240 tiles, and turrets copy any ranged/magic weapon in the armory (no melee/summon/rogue). If Eve's near-base turrets are empty, the likely cause is no ranged/magic stock, not range.

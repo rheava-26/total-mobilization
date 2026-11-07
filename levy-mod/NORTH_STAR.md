@@ -153,6 +153,6 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 
 ## 8. Usage and check-ins
 
-- **Eve's SESSION limit is the constraint.** Keep builder tokens and replies lean, keep concurrency low, batch work. Earlier "use it all up" requests (10-19, 11-04) are superseded: "5 hour limit is low. make sure they frequently update." (11-07), and ROADMAP 11-07 18:35 adds that it is the session limit that matters.
+- **Eve's usage limit is the constraint.** Keep builder briefs, builder reports and replies lean, and batch work. Don't spend thousands of tokens on a trivial nudge such as "restart the test run". The earlier "use it all up" requests (10-19, 11-04) are superseded. On 11-07 (18:35) Eve said it is the session limit that matters, not the 5-hour one, so work and check-ins continue.
 - **Check-ins are on at 30-minute intervals.** Eve likes reading them. The earlier "check in every 5 to 10 minutes" request (11-07 overnight) is superseded.
 - Eve often plays while builders run and reports from the game. Expect interrupts; handle them per section 5.

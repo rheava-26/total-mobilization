@@ -121,11 +121,11 @@ let blips=[], arenaCanvas=null, gallery=null, galleryIdx=-1;
 
 // ================================================================ parsing
 function parseRec(text){
-  const R={hdr:null,arena:null,frames:[],events:[],names:{items:{},npcs:{},projectiles:{},buffs:{},soldiers:{}},end:null};
+  const R={sdef:new Map(),hdr:null,arena:null,frames:[],events:[],names:{items:{},npcs:{},projectiles:{},buffs:{},soldiers:{}},end:null};
   for(const line of text.split("\n")){
     const s=line.trim(); if(!s) continue;
     let o; try{o=JSON.parse(s);}catch(e){continue;}
-    switch(o.k){case "hdr":R.hdr=o;break;case "arena":R.arena=o;break;case "f":R.frames.push(o);break;case "e":R.events.push(o);break;case "names":R.names=o;break;case "end":R.end=o;break;}
+    switch(o.k){case "hdr":R.hdr=o;break;case "arena":R.arena=o;break;case "f":if(o.s){const o2=[];for(const q of o.s){if(q.length>=8){R.sdef.set(q[1],q);o2.push(q);}else{const d=R.sdef.get(q[0]);if(d)o2.push([d[0],q[0],q[1],q[2],d[4],d[5],d[6],d[7]]);}}o.s=o2;}R.frames.push(o);break;case "e":R.events.push(o);break;case "names":R.names=o;break;case "end":R.end=o;break;}
   }
   if(!R.frames.length) throw new Error("no frames in file");
   return R;
@@ -338,6 +338,24 @@ function draw(){
     if(tx!=null){const a=sc(bx,by),b=sc(tx,ty);g.strokeStyle=col;g.lineWidth=1.6*dpr;g.setLineDash([7*dpr,5*dpr]);g.lineDashOffset=-cur*0.6*dpr;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();g.setLineDash([]);g.lineDashOffset=0;
       g.strokeStyle=col;g.beginPath();g.arc(b[0],b[1],11*dpr,0,6.2832);g.stroke();}
   }
+  // hostile adds (format 5, a) and every other hostile hitbox (format 7, s: worm segments, damage-0 adds); the dashed ones deal no contact damage
+  const hbx=(x,y,w,h,col,dash,info)=>{const [sx,sy]=sc(x,y),pw=Math.max(w*cam.z*dpr,3*dpr),ph=Math.max(h*cam.z*dpr,3*dpr);
+    if(showHit){g.fillStyle=col+(dash?"0d":"22");g.fillRect(sx-pw/2,sy-ph/2,pw,ph);g.strokeStyle=col;g.lineWidth=1*dpr;if(dash)g.setLineDash([3*dpr,3*dpr]);g.strokeRect(sx-pw/2,sy-ph/2,pw,ph);g.setLineDash([]);}
+    else{g.fillStyle=col;g.fillRect(sx-1.5*dpr,sy-1.5*dpr,3*dpr,3*dpr);}
+    blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,Math.max(w,h)*cam.z/2+2),info});};
+  {const byA=new Map((f1.a||[]).map(q=>[q[1],q]));
+   for(const a0 of (f0.a||[])){const a1=byA.get(a0[1])||a0;hbx(lerp(a0[2],a1[2],u),lerp(a0[3],a1[3],u),a0[10]||8,a0[11]||8,"#ffb020",false,`add ${nm("npcs",a0[0])}  slot ${a0[1]}\nlife ${a0[6]}/${a0[7]}\ntarget ${a0[8]===2?"levy "+(D.lbl.get(a0[9])||a0[9]):a0[8]===1?"commander":"none"}\nhitbox ${a0[10]} x ${a0[11]} px`);}
+   const byS=new Map((f1.s||[]).map(q=>[q[1],q]));
+   for(const s0 of (f0.s||[])){const s1=byS.get(s0[1])||s0;hbx(lerp(s0[2],s1[2],u),lerp(s0[3],s1[3],u),s0[4],s0[5],"#ffb020",!(s0[7]&1),`${s0[7]&4?"segment":"hostile"} ${nm("npcs",s0[0])}  slot ${s0[1]}\nhitbox ${s0[4]} x ${s0[5]} px\n${s0[7]&1?"deals contact damage":"no contact damage"}`);}}
+  // hostiles outside the view (recorded at any distance): a marker on the frame edge pointing at each, so something firing from off-screen is never invisible
+  {let off=0; const mark=(x,y,col,info)=>{const [sx,sy]=sc(x,y); if(sx>=0&&sx<=W&&sy>=0&&sy<=H) return; off++;
+      const ex=Math.max(10*dpr,Math.min(W-10*dpr,sx)), ey=Math.max(10*dpr,Math.min(H-10*dpr,sy)), ang=Math.atan2(sy-ey,sx-ex), r=6*dpr;
+      g.fillStyle=col; g.globalAlpha=.85; g.beginPath(); g.moveTo(ex+Math.cos(ang)*r,ey+Math.sin(ang)*r); g.lineTo(ex+Math.cos(ang+2.5)*r,ey+Math.sin(ang+2.5)*r); g.lineTo(ex+Math.cos(ang-2.5)*r,ey+Math.sin(ang-2.5)*r); g.closePath(); g.fill(); g.globalAlpha=1;
+      blips.push({x:ex/dpr,y:ey/dpr,r:10,info:info+"\n(off-screen, "+(Math.hypot(sx-ex,sy-ey)/(16*cam.z*dpr)).toFixed(0)+" tiles away)"});};
+    for(const a0 of (f0.a||[])) mark(a0[2],a0[3],"#ffb020",`add ${nm("npcs",a0[0])}`);
+    for(const s0 of (f0.s||[])) mark(s0[2],s0[3],"#ffb020",`hostile ${nm("npcs",s0[0])}`);
+    for(const j of (f0.j||[])) mark(j[1],j[2],"#ff9f2e",`projectile ${nm("projectiles",j[0])}  damage ${j[5]}`);
+    }
   // levies
   const states=(D.hdr&&D.hdr.stateNames||"").split(",");
   for(const l0 of (f0.l||[])){

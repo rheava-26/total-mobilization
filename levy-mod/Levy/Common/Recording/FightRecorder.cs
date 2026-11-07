@@ -21,7 +21,7 @@ namespace Levy.Common.Recording
 	internal static class FightRecorder
 	{
 		public static bool On;
-		public const int SampleEvery = 2, MaxTicks = 10 * 60 * 60, GraceTicks = 90, HeadlessGraceTicks = 40, ProjRangePx = 80 * 16, LevyRangePx = 120 * 16, MaxProj = 250;
+		public const int SampleEvery = 2, MaxTicks = 10 * 60 * 60, GraceTicks = 90, HeadlessGraceTicks = 40, ProjRangePx = 400 * 16, LevyRangePx = 120 * 16, MaxProj = 500;
 		public const int ArenaW = 200, ArenaH = 120;
 		/// <summary>Format 4 terrain growth: tiles around any recorded entity that get captured, the step the captured area grows in, and the largest area one recording may cover.</summary>
 		public const int GrowMargin = 24, GrowStep = 20, MaxCoverW = 1600, MaxCoverH = 700, MaxCoverTiles = 600000, EntityReachX = 400, EntityReachY = 250, EndGapTicks = 20;
@@ -65,7 +65,10 @@ namespace Levy.Common.Recording
 		private static readonly Dictionary<int, int> _lgear = new();
 		private static readonly Dictionary<int, string> _prefixes = new();
 		private static int _cmdGear = int.MinValue;
-		public const int AddRangePx = 140 * 16, MaxAdds = 160;
+		public const int AddRangePx = 600 * 16, MaxAdds = 400, MaxHitboxes = 900;
+		/// <summary>Format 7 hitbox rows: whoAmI -> hash of the definition (type, width, height, realLife, flags) last written in full; a row for an unchanged NPC is just [id,x,y].</summary>
+		private static readonly Dictionary<int, long> _hbDef = new();
+		private static readonly HashSet<int> _inA = new();
 
 		// ---- format 4: terrain that follows the fight, static camera view, boss death / despawn
 		private static int _cx0, _cy0, _cx1, _cy1, _chunks, _coverTiles, _startCx, _startCy;
@@ -151,7 +154,7 @@ namespace Levy.Common.Recording
 			try
 			{
 				Directory.CreateDirectory(Dir());
-				_cmd = cmd; _frames = 0; _events = 0; _bossSeen = false; _bossesSeen = 0; _bossIdsSeen.Clear(); _lastBossSeen = 0;
+				_cmd = cmd; _frames = 0; _events = 0; _bossSeen = false; _bossesSeen = 0; _bossIdsSeen.Clear(); _hbDef.Clear(); _lastBossSeen = 0;
 				_items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
@@ -504,8 +507,27 @@ namespace Levy.Common.Recording
 				TargetOf(n, out int atk, out int atl);
 				SeeEntity(n.Center.X, n.Center.Y);
 				f.A.Add(new double[] { n.type, n.whoAmI, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, n.life, n.lifeMax, atk, atl, n.width, n.height });
+				_inA.Add(n.whoAmI);
 				ac++;
 			}
+			// format 7: the hitbox of every other hostile NPC in range that b and a do not carry: worm segments of the adds (Perforator, Desert Nuisance, Devourer ...), damage-0 adds, boss helpers
+			int hc = 0;
+			for (int i = 0; i < Main.maxNPCs && hc < MaxHitboxes; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC || n.type <= 0 || _inA.Contains(i)) continue;
+				if (Math.Abs(n.Center.X - p.Center.X) > AddRangePx || Math.Abs(n.Center.Y - p.Center.Y) > AddRangePx) continue;
+				if (IsBossOrPart(n)) continue;
+				int fl = (n.damage > 0 ? 1 : 0) | (n.dontTakeDamage ? 2 : 0) | (n.realLife >= 0 && n.realLife != n.whoAmI ? 4 : 0);
+				int rl = n.realLife >= 0 && n.realLife != n.whoAmI ? n.realLife : -1;
+				long def = ((((long)n.type * 4099 + n.width) * 4099 + n.height) * 4099 + (rl + 1)) * 8 + fl;
+				int ix = (int)Math.Round(n.Center.X), iy = (int)Math.Round(n.Center.Y);
+				if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
+				if (_hbDef.TryGetValue(i, out long old) && old == def) f.S.Add(new double[] { i, ix, iy });
+				else { _hbDef[i] = def; f.S.Add(new double[] { n.type, i, ix, iy, n.width, n.height, rl, fl }); }
+				hc++;
+			}
+			_inA.Clear();
 			GrowTerrain();
 			Line(FightRecFormat.Frame(f));
 			_frames++;

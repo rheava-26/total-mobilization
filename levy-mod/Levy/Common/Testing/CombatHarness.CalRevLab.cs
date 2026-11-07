@@ -33,7 +33,7 @@ namespace Levy.Common.Testing
 			bool cal = ModLoader.HasMod("CalamityMod");
 			// Calamity world: bosses beaten before the fight, in Boss Checklist order. Vanilla-only world: vanilla bosses only.
 			float furthest = cal
-				? boss switch { "kslime" => 0f, "ds" => 1f, "eye" => 1.6f, "eow" => 2.7f, "brain" => 2.7f, "hive" => 3f, "perf" => 3f, "qb" => 3.99f, "skel" => 4f, "sg" => 5f, _ => 0f }
+				? boss switch { "kslime" => 0f, "ds" => 1f, "eye" => 1.6f, "eow" => 2.7f, "brain" => 2.7f, "hive" => 3f, "perf" => 3f, "qb" => 3.99f, "skel" => 4f, "sg" => 5f, "crab" => 2f, _ => 0f }
 				: boss switch { "kslime" => 0f, "eye" => 1f, "eow" => 2f, "brain" => 2f, "qb" => 3f, "skel" => 4f, _ => 0f };
 			float[] prog = { 1, 2, 3, 4, 5, 6, 7 }; int[] w = { 1, 2, 2, 1, 2, 1, 7 };
 			var l = new List<TierBoss>();
@@ -63,6 +63,7 @@ namespace Levy.Common.Testing
 					foreach (string n in new[] { "SlimeGodCore", "EbonianPaladin", "CrimulanPaladin", "SplitEbonianPaladin", "SplitCrimulanPaladin" }) { int t = CrCalNpc(n); if (t > 0) s.PartTypes.Add(t); }
 					foreach (string n in new[] { "CorruptSlimeSpawn", "CorruptSlimeSpawn2", "CrimsonSlimeSpawn", "CrimsonSlimeSpawn2" }) { int t = CrCalNpc(n); if (t > 0) s.AddTypes.Add(t); }
 					break;
+				case "crab": { int t = CrCalNpc("CrabShroom"); if (t > 0) s.AddTypes.Add(t); } break;
 				case "qb": s.AddTypes.Add(NPCID.Bee); s.AddTypes.Add(NPCID.BeeSmall); break;
 				case "skel": s.AddTypes.Add(NPCID.SkeletronHand); break;
 				default: s.AddTypes.Add(NPCID.ServantofCthulhu); break;
@@ -135,7 +136,7 @@ namespace Levy.Common.Testing
 		private static void CrApplyZones(Player p)
 		{
 			var r = _crRunCur; if (r == null) return;
-			p.ZoneCrimson = r.Boss == "brain" || r.Boss == "perf"; p.ZoneCorrupt = r.Boss == "eow" || r.Boss == "hive"; p.ZoneJungle = r.Jungle; p.ZoneDesert = r.Boss == "ds"; p.ZoneUndergroundDesert = r.Boss == "ds" && r.Arena == "ug";
+			p.ZoneCrimson = r.Boss == "brain" || r.Boss == "perf"; p.ZoneCorrupt = r.Boss == "eow" || r.Boss == "hive"; p.ZoneJungle = r.Jungle; p.ZoneDesert = r.Boss == "ds"; p.ZoneGlowshroom = r.Boss == "crab"; p.ZoneUndergroundDesert = r.Boss == "ds" && r.Arena == "ug";
 			if (r.Zone == "corrupt") { p.ZoneCorrupt = true; p.ZoneCrimson = false; } else if (r.Zone == "crimson") { p.ZoneCrimson = true; p.ZoneCorrupt = false; } else if (r.Zone == "none") { p.ZoneCorrupt = false; p.ZoneCrimson = false; } // zone=: the commander (and the levy dummy that mirrors it) stands in this evil biome
 			p.ZoneOverworldHeight = r.Arena != "ug" && !r.Arena.StartsWith("a3e"); p.ZoneRockLayerHeight = r.Arena == "ug" || r.Arena.StartsWith("a3e"); p.ZoneDirtLayerHeight = false; p.ZoneSkyHeight = false; p.ZoneUnderworldHeight = false;
 		}

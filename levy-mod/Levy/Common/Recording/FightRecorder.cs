@@ -8,6 +8,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Boss;
 using Levy.Common.Globals;
+using Levy.Common.Observe;
 using Levy.Common.Util;
 using Levy.Content.NPCs;
 
@@ -22,6 +23,9 @@ namespace Levy.Common.Recording
 		public static bool On;
 		public const int SampleEvery = 2, MaxTicks = 10 * 60 * 60, GraceTicks = 90, HeadlessGraceTicks = 40, ProjRangePx = 80 * 16, LevyRangePx = 120 * 16, MaxProj = 250;
 		public const int ArenaW = 200, ArenaH = 120;
+		/// <summary>Format 4 terrain growth: tiles around any recorded entity that get captured, the step the captured area grows in, and the largest area one recording may cover.</summary>
+		public const int GrowMargin = 24, GrowStep = 20, MaxCoverW = 1600, MaxCoverH = 700, MaxCoverTiles = 600000, EntityReachX = 400, EntityReachY = 250, EndGapTicks = 20;
+		public const int CamMaxW = 420, CamMaxH = 260, CamNearTiles = 160;
 
 		/// <summary>Override for the output folder (synthetic test). Null = the tModLoader save folder.</summary>
 		public static string OutDirOverride;
@@ -57,6 +61,21 @@ namespace Levy.Common.Recording
 		private static readonly HashSet<int> _bossTypes = new();
 		private static readonly Dictionary<int, (uint tick, int proj)> _projHit = new();
 		private static readonly List<int> _gone = new();
+
+		// ---- format 4: terrain that follows the fight, static camera view, boss death / despawn
+		private static int _cx0, _cy0, _cx1, _cy1, _chunks, _coverTiles, _startCx, _startCy;
+		private static bool _hasCover;
+		private static int _ex0, _ey0, _ex1, _ey1;
+		private static string _camName;
+		private static int _camId = -1;
+		private sealed class BTrack { public int Slot, Type, Serial, Life, Max; public float X, Y; public bool Seen; public string Name; public int HitT = -1, HitDmg, HitType = -1; public string HitSrc = "other", HitName = ""; }
+		private static readonly Dictionary<int, BTrack> _bt = new();
+		private static readonly Dictionary<int, (int tick, int dmg, string src, int type, string name)> _bhook = new();
+		private static readonly HashSet<int> _bkilled = new();
+		private static readonly List<(BTrack t, bool killed, int tick)> _bpend = new();
+		private static readonly List<int> _bgone = new();
+		private static bool _bAlive;
+		private static string _outcome = "none";
 
 		public static string Path => _path;
 		public static int Elapsed => (int)(Main.GameUpdateCount - (uint)_startTick);
@@ -131,6 +150,7 @@ namespace Levy.Common.Recording
 				_items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
+				_bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1;
 				_startTick = (int)Main.GameUpdateCount;
 				_startMaxSerial = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) _startMaxSerial = Math.Max(_startMaxSerial, FightRecSpawnTag.SerialOf(Main.npc[i]));
 				string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -181,9 +201,10 @@ namespace Levy.Common.Recording
 			string final = _path;
 			try
 			{
+				FlushBossEnd(true);
 				_w.WriteLine("{\"k\":\"names\",\"items\":" + Names(_items) + ",\"npcs\":" + Names(_npcs) + ",\"projectiles\":" + Names(_projs) + ",\"buffs\":" + Names(_buffs) + ",\"soldiers\":" + Names(_soldiers) + "}");
 				_w.WriteLine("{\"k\":\"end\",\"reason\":" + FightRecFormat.Esc(reason) + ",\"ticks\":" + Elapsed + ",\"frames\":" + _frames + ",\"events\":" + _events
-					+ ",\"target\":{\"none\":" + _tkNone + ",\"player\":" + _tkPlayer + ",\"levy\":" + _tkLevy + "},\"levyHits\":" + _levyHits + ",\"levyDeaths\":" + _levyDeaths + "}");
+					+ ",\"target\":{\"none\":" + _tkNone + ",\"player\":" + _tkPlayer + ",\"levy\":" + _tkLevy + "},\"levyHits\":" + _levyHits + ",\"levyDeaths\":" + _levyDeaths + ",\"outcome\":" + FightRecFormat.Esc(_outcome) + ",\"arenaChunks\":" + _chunks + "}");
 				_w.Dispose(); _w = null;
 				if (Headless && _frames < 90) { File.Delete(_path); Levy.Instance?.Logger.Info("[FightRec] discarded a " + _frames + "-sample recording (" + reason + ")"); _path = null; _cmd = null; _bossNameSeen = null; return null; }
 				if (Headless) Levy.Instance?.Logger.Info("[FightRec] saved " + _path + " (" + reason + ", " + _frames + " samples, levy hits " + _levyHits + ", deaths " + _levyDeaths + ", target none/player/levy " + _tkNone + "/" + _tkPlayer + "/" + _tkLevy + ")");
@@ -228,8 +249,63 @@ namespace Levy.Common.Recording
 		private static void WriteArena(Player p)
 		{
 			int cx = (int)(p.Center.X / 16f), cy = (int)(p.Center.Y / 16f);
+			_startCx = cx; _startCy = cy;
 			int x0 = Math.Max(0, Math.Min(Main.maxTilesX - ArenaW, cx - ArenaW / 2)), y0 = Math.Max(0, Math.Min(Main.maxTilesY - ArenaH, cy - ArenaH / 2));
-			int w = Math.Min(ArenaW, Main.maxTilesX), h = Math.Min(ArenaH, Main.maxTilesY);
+			Cover(x0, y0, x0 + Math.Min(ArenaW, Main.maxTilesX), y0 + Math.Min(ArenaH, Main.maxTilesY));
+			try { CoverCamera(p); } catch (Exception e) { Levy.Instance?.Logger.Warn("[FightRec] static camera terrain failed: " + e.Message); }
+		}
+
+		/// <summary>A Static Camera placed near the commander (or the boss) gives the player's own arena: capture the terrain its view shows. Falls back to the plain arena growth when there is none.</summary>
+		private static void CoverCamera(Player p)
+		{
+			StaticCameraTE best = null; float bd = float.MaxValue;
+			Vector2 boss = Vector2.Zero; bool haveBoss = false;
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !n.friendly && !n.townNPC && !(n.ModNPC is SoldierNPC) && IsFightBoss(n)) { boss = n.Center; haveBoss = true; break; } }
+			foreach (var te in StaticCameraTE.All())
+			{
+				float d = Vector2.Distance(te.ViewCenter, p.Center);
+				if (haveBoss) d = Math.Min(d, Vector2.Distance(te.ViewCenter, boss));
+				if (d <= CamNearTiles * 16f && d < bd) { bd = d; best = te; }
+			}
+			if (best == null) return;
+			float f = 2f; try { f = ObserveSystem.MaxZoom; } catch { }
+			if (!(f >= 1f)) f = 2f;
+			int sw = Main.dedServ ? 1920 : Math.Max(800, Main.screenWidth), sh = Main.dedServ ? 1080 : Math.Max(600, Main.screenHeight);
+			int wt = Math.Min(CamMaxW, (int)Math.Ceiling(sw * f / 16f)), ht = Math.Min(CamMaxH, (int)Math.Ceiling(sh * f / 16f));
+			int vx = (int)(best.ViewCenter.X / 16f), vy = (int)(best.ViewCenter.Y / 16f);
+			int x0 = vx - wt / 2, y0 = vy - ht / 2;
+			_camName = best.Display; _camId = best.ID;
+			Line("{\"k\":\"cam\",\"id\":" + best.ID + ",\"name\":" + FightRecFormat.Esc(best.Display) + ",\"x\":" + vx + ",\"y\":" + vy + ",\"x0\":" + Math.Max(0, x0) + ",\"y0\":" + Math.Max(0, y0)
+				+ ",\"w\":" + wt + ",\"h\":" + ht + ",\"zoom\":" + FightRecFormat.N(f) + "}");
+			Cover(x0, y0, x0 + wt, y0 + ht);
+		}
+
+		/// <summary>Captures the tiles of [x0,x1) x [y0,y1) that are not covered yet (as non-overlapping strips) and grows the covered area to the union. Returns false when nothing was added.</summary>
+		private static bool Cover(int x0, int y0, int x1, int y1)
+		{
+			x0 = Math.Max(0, x0); y0 = Math.Max(0, y0); x1 = Math.Min(Main.maxTilesX, x1); y1 = Math.Min(Main.maxTilesY, y1);
+			if (x1 <= x0 || y1 <= y0) return false;
+			if (!_hasCover)
+			{
+				EmitChunk(x0, y0, x1, y1);
+				_cx0 = x0; _cy0 = y0; _cx1 = x1; _cy1 = y1; _hasCover = true; _coverTiles = (x1 - x0) * (y1 - y0);
+				return true;
+			}
+			if (x0 >= _cx0 && y0 >= _cy0 && x1 <= _cx1 && y1 <= _cy1) return false;
+			int vx0 = Math.Min(_cx0, x0), vy0 = Math.Min(_cy0, y0), vx1 = Math.Max(_cx1, x1), vy1 = Math.Max(_cy1, y1);
+			if (vx1 - vx0 > MaxCoverW || vy1 - vy0 > MaxCoverH || (long)(vx1 - vx0) * (vy1 - vy0) > MaxCoverTiles) return false;
+			EmitChunk(vx0, vy0, _cx0, vy1);      // left of the old area, full height
+			EmitChunk(_cx1, vy0, vx1, vy1);      // right
+			EmitChunk(_cx0, vy0, _cx1, _cy0);    // above
+			EmitChunk(_cx0, _cy1, _cx1, vy1);    // below
+			_cx0 = vx0; _cy0 = vy0; _cx1 = vx1; _cy1 = vy1; _coverTiles = (vx1 - vx0) * (vy1 - vy0);
+			return true;
+		}
+
+		private static void EmitChunk(int x0, int y0, int x1, int y1)
+		{
+			int w = x1 - x0, h = y1 - y0;
+			if (w <= 0 || h <= 0) return;
 			var rows = new List<int[]>(h); var codes = new int[w];
 			for (int y = 0; y < h; y++)
 			{
@@ -245,6 +321,26 @@ namespace Levy.Common.Recording
 				rows.Add(FightRecFormat.RleEncode(codes).ToArray());
 			}
 			Line(FightRecFormat.Arena(x0, y0, w, h, rows));
+			_chunks++;
+		}
+
+		private static void SeeEntity(float px, float py)
+		{
+			int tx = (int)(px / 16f), ty = (int)(py / 16f);
+			if (Math.Abs(tx - _startCx) > EntityReachX || Math.Abs(ty - _startCy) > EntityReachY) return;
+			if (tx < _ex0) _ex0 = tx; if (tx > _ex1) _ex1 = tx; if (ty < _ey0) _ey0 = ty; if (ty > _ey1) _ey1 = ty;
+		}
+
+		private static int FloorStep(int v) => (int)Math.Floor(v / (double)GrowStep) * GrowStep;
+		private static int CeilStep(int v) => (int)Math.Ceiling(v / (double)GrowStep) * GrowStep;
+
+		/// <summary>After each sample: when the commander, a boss part or a levy went outside the captured terrain (plus a margin), capture the missing tiles.</summary>
+		private static void GrowTerrain()
+		{
+			if (!_hasCover || _ex1 < _ex0) return;
+			int m = GrowMargin;
+			if (_ex0 - m >= _cx0 && _ex1 + m < _cx1 && _ey0 - m >= _cy0 && _ey1 + m < _cy1) return;
+			Cover(FloorStep(_ex0 - m), FloorStep(_ey0 - m), CeilStep(_ex1 + m + 1), CeilStep(_ey1 + m + 1));
 		}
 
 		// ------------------------------------------------------------------------------------------ sampling
@@ -259,6 +355,7 @@ namespace Levy.Common.Recording
 				if (_cmd == null || (!_cmd.active && !IgnoreInactive && !Headless)) { Stop("player gone"); return; }
 				int el = Elapsed;
 				PollLevies(el);
+				PollBosses(el);
 				if (el >= MaxTicks) { Stop("10 minute limit"); return; }
 				if (el % SampleEvery != 0) return;
 				Sample(el);
@@ -270,6 +367,7 @@ namespace Levy.Common.Recording
 		{
 			Player p = _cmd;
 			var f = new RecFrame { T = el };
+			_ex0 = _ey0 = int.MaxValue; _ex1 = _ey1 = int.MinValue; SeeEntity(p.Center.X, p.Center.Y);
 			bool grounded = Grounded(p) || p.sliding;
 			// hook
 			bool hookOut = false, hookAtt = false; Vector2 hookPos = Vector2.Zero;
@@ -328,6 +426,7 @@ namespace Levy.Common.Recording
 				bool isBoss = IsFightBoss(n);
 				if (isBoss) { anyBoss = true; if (_primaryWho >= 0 && IsNewFightSerial(n)) otherSerial = true; }
 				bool part = !isBoss;
+				SeeEntity(n.Center.X, n.Center.Y);
 				if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
 				if (isBoss && _bossIdsSeen.Add(n.whoAmI)) { _bossesSeen++; Ev("boss", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString())); if (_bossNameSeen == null) _bossNameSeen = n.FullName; }
 				_bossTypes.Add(n.type);
@@ -380,11 +479,13 @@ namespace Levy.Common.Recording
 				if (Math.Abs(n.Center.X - p.Center.X) > LevyRangePx || Math.Abs(n.Center.Y - p.Center.Y) > LevyRangePx) continue;
 				int id = s.Record != null ? s.Record.Id : -n.whoAmI;
 				if (s.Record != null && !_soldiers.ContainsKey(id)) _soldiers[id] = s.Record.Name;
+				SeeEntity(n.Center.X, n.Center.Y);
 				Item lh = s.Dummy?.HeldItem;
 				int lflags = (Grounded(n) ? 1 : 0) | (s.IsFlying ? 2 : 0) | (s.IsAerial ? 4 : 0) | (s.IsHooking ? 8 : 0) | (s.MoveBlocked ? 16 : 0);
 				if (lh != null && !lh.IsAir && !_items.ContainsKey(lh.type)) _items[lh.type] = lh.Name;
 				f.L.Add(new double[] { id, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, lflags, n.life, (int)s.State, lh != null && !lh.IsAir ? lh.type : 0, s.WingTime, n.lifeMax, n.width, n.height });
 			}
+			GrowTerrain();
 			Line(FightRecFormat.Frame(f));
 			_frames++;
 		}
@@ -475,6 +576,103 @@ namespace Levy.Common.Recording
 			_gone.Clear();
 			foreach (var kv in _lt) if (!kv.Value.Seen) _gone.Add(kv.Key);
 			foreach (int id in _gone) _lt.Remove(id);
+		}
+
+		// ------------------------------------------------------------------------------------------ boss death / despawn (format 4)
+		/// <summary>GlobalNPC hook: a fight boss was struck (damage from NPC.HitEffect).</summary>
+		public static void NoteBossHit(NPC n, int dmg)
+		{
+			if (!On || !IsFightBoss(n)) return;
+			_bhook[n.whoAmI] = (Elapsed, dmg, "other", -1, "");
+		}
+
+		/// <summary>GlobalNPC hook: names what struck the boss (a player item or a projectile), called right after the hit.</summary>
+		public static void NoteBossSource(NPC n, string src, int type, string name)
+		{
+			if (!On || !IsFightBoss(n)) return;
+			if (_bhook.TryGetValue(n.whoAmI, out var h) && Elapsed - h.tick <= 1) _bhook[n.whoAmI] = (h.tick, h.dmg, src, type, name ?? "");
+			else _bhook[n.whoAmI] = (Elapsed, 0, src, type, name ?? "");
+		}
+
+		/// <summary>GlobalNPC.OnKill of a fight boss: it died (as opposed to leaving).</summary>
+		public static void NoteBossKill(NPC n)
+		{
+			if (!On || !IsFightBoss(n)) return;
+			_bkilled.Add(n.whoAmI);
+		}
+
+		private static void PollBosses(int el)
+		{
+			foreach (var t in _bt.Values) t.Seen = false;
+			bool alive = false;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC || !IsFightBoss(n)) continue;
+				int serial = FightRecSpawnTag.SerialOf(n);
+				if (_bt.TryGetValue(i, out var t) && (t.Type != n.type || (serial != t.Serial && serial > 0 && t.Serial > 0)))
+				{
+					// the slot now holds a different NPC: the old one left
+					_bt.Remove(i); BossGone(t, el); _bkilled.Remove(i); _bhook.Remove(i); t = null;
+				}
+				if (t == null)
+				{
+					t = new BTrack { Slot = i, Type = n.type, Serial = serial, Life = n.life, Name = n.FullName };
+					_bt[i] = t;
+				}
+				if (n.life < t.Life)
+				{
+					if (_bhook.TryGetValue(i, out var h) && el - h.tick <= 2) { t.HitT = h.tick; t.HitDmg = h.dmg > 0 ? h.dmg : t.Life - n.life; t.HitSrc = h.src; t.HitType = h.type; t.HitName = h.name; }
+					else { t.HitT = el; t.HitDmg = t.Life - n.life; t.HitSrc = "other"; t.HitType = -1; t.HitName = ""; }
+				}
+				t.Life = n.life; t.Max = n.lifeMax; t.X = n.Center.X; t.Y = n.Center.Y; t.Seen = true;
+				if (!(Headless && IsNewFightSerial(n))) alive = true;
+			}
+			_bgone.Clear();
+			foreach (var kv in _bt) if (!kv.Value.Seen) _bgone.Add(kv.Key);
+			foreach (int id in _bgone) { var t = _bt[id]; _bt.Remove(id); BossGone(t, el); _bkilled.Remove(id); _bhook.Remove(id); }
+			_bAlive = alive;
+			FlushBossEnd(false);
+		}
+
+		private static void BossGone(BTrack t, int el)
+		{
+			// killed: the game's OnKill fired for that slot, or its last seen life was already 0
+			bool killed = t.Life <= 0 || _bkilled.Contains(t.Slot);
+			// the lethal blow lands after the last poll: take the hook's note, if any
+			if (_bhook.TryGetValue(t.Slot, out var h) && h.tick >= t.HitT) { t.HitT = h.tick; t.HitDmg = h.dmg > 0 ? h.dmg : t.HitDmg; t.HitSrc = h.src; t.HitType = h.type; t.HitName = h.name; }
+			_bpend.Add((t, killed, el));
+		}
+
+		/// <summary>Writes bdeath / bdespawn once the boss has been gone for a few ticks (a worm's head is replaced by a segment within a few ticks; that is not an end).</summary>
+		private static void FlushBossEnd(bool force)
+		{
+			if (_bpend.Count == 0) return;
+			int el = Elapsed;
+			if (!force && el - _bpend[_bpend.Count - 1].tick < EndGapTicks) return;
+			if (_bAlive)
+			{
+				// others still stand: a different boss type that ended is an event of its own (Twins), a same-type successor is a handoff
+				foreach (var p in _bpend)
+				{
+					bool successor = false; foreach (var o in _bt.Values) if (o.Type == p.t.Type) successor = true;
+					if (!successor) WriteBossEnd(p.t, p.killed, p.tick, false);
+				}
+				_bpend.Clear();
+				return;
+			}
+			var last = _bpend[_bpend.Count - 1];
+			WriteBossEnd(last.t, last.killed, last.tick, true); // earlier worm heads that died one after another are dropped; the final one is the outcome
+			_bpend.Clear();
+		}
+
+		private static void WriteBossEnd(BTrack t, bool killed, int tick, bool final)
+		{
+			if (final) _outcome = killed ? "killed" : "despawn";
+			var ex = new List<(string, string)> { ("npc", t.Type.ToString()), ("name", FightRecFormat.Esc(t.Name)), ("id", t.Slot.ToString()), ("x", FightRecFormat.N(t.X)), ("y", FightRecFormat.N(t.Y)),
+				("life", Math.Max(0, t.Life).ToString()), ("max", t.Max.ToString()), ("final", final ? "1" : "0") };
+			if (t.HitT >= 0) { ex.Add(("ht", t.HitT.ToString())); ex.Add(("hd", t.HitDmg.ToString())); ex.Add(("hs", FightRecFormat.Esc(t.HitSrc))); ex.Add(("hy", t.HitType.ToString())); ex.Add(("hn", FightRecFormat.Esc(t.HitName ?? ""))); }
+			Line(FightRecFormat.Event(tick, killed ? "bdeath" : "bdespawn", ex.ToArray())); _events++;
 		}
 
 		private static void ExtraJumpEvents(Player p)

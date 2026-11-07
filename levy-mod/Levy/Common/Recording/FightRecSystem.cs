@@ -49,6 +49,32 @@ namespace Levy.Common.Recording
 		}
 	}
 
+	/// <summary>Tells the recorder how a fight boss was hit and that it died (format 4 bdeath / bdespawn). Does nothing while the recorder is off.</summary>
+	public class FightRecBossHooks : GlobalNPC
+	{
+		public override bool AppliesToEntity(NPC entity, bool lateInstantiation) => lateInstantiation && !(entity.ModNPC is SoldierNPC) && !entity.friendly && !entity.townNPC;
+
+		public override void HitEffect(NPC npc, NPC.HitInfo hit)
+		{
+			if (FightRecorder.On) FightRecorder.NoteBossHit(npc, hit.Damage);
+		}
+
+		public override void OnHitByItem(NPC npc, Player player, Item item, NPC.HitInfo hit, int damageDone)
+		{
+			if (FightRecorder.On) FightRecorder.NoteBossSource(npc, "item", item.type, item.Name);
+		}
+
+		public override void OnHitByProjectile(NPC npc, Projectile projectile, NPC.HitInfo hit, int damageDone)
+		{
+			if (FightRecorder.On) FightRecorder.NoteBossSource(npc, "proj", projectile.type, Terraria.Lang.GetProjectileName(projectile.type).Value);
+		}
+
+		public override void OnKill(NPC npc)
+		{
+			if (FightRecorder.On) FightRecorder.NoteBossKill(npc);
+		}
+	}
+
 	/// <summary>Gives every NPC a spawn serial while LEVY_REC_DIR is set, so headless recording can tell one trial's boss from the next even when it reuses the same slot. Absent entirely when the variable is unset.</summary>
 	public class FightRecSpawnTag : GlobalNPC
 	{

@@ -565,9 +565,9 @@ namespace Levy.Content.TileEntities
 		/// non-summoner is never handed one; (2) a summoner leads with his hard summon — while a minion staff is available his primary is a staff, never a whip or a
 		/// sentry (both move to the off-hand / fallback), and with no staff he may lead with any summon weapon; (3) a ranged helmet's ammo subtype (<see cref="RangedSteer"/>).
 		/// </summary>
-		private Func<Item, bool> PrimaryRule(SoldierRecord who)
+		private Func<Item, bool> PrimaryRule(SoldierRecord who, bool asSummoner = false)
 		{
-			bool summoner = IsSummonerSoldier(who);
+			bool summoner = asSummoner || IsSummonerSoldier(who); // asSummoner: the army's class balance has made him a summoner although no summon armor is on his back yet
 			bool staffFirst = summoner && StaffAvailableFor(who); // a summoner with a minion staff in reach takes the staff, not a whip or a sentry
 			var steer = RangedSteer(who);
 			if (summoner && !staffFirst && steer == null) return null; // a summoner with no staff may lead with any weapon; nothing else to restrict

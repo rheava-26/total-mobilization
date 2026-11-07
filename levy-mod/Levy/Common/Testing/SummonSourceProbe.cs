@@ -153,7 +153,7 @@ namespace Levy.Common.Testing
 				foreach (var c in cases)
 				{
 					if (c.where.StartsWith("ms") && !ms) { sb.AppendLine("\n# " + c.name + ": skipped (no Magic Storage)"); continue; }
-					try { RunCase(sb, c.name, c.slimeInArmory, c.where, better, ms); }
+					try { RunCase(sb, c.name + " [summoner armor worn]", c.slimeInArmory, c.where, better, ms, false); if (c.where == "ms" || c.where == "armory") RunCase(sb, c.name + " [NO armor, class-balance minimum only]", c.slimeInArmory, c.where, better, ms, true); }
 					catch (Exception e) { sb.AppendLine("\n# " + c.name + " THREW " + e); }
 				}
 			}
@@ -173,7 +173,7 @@ namespace Levy.Common.Testing
 			rules.Rev++;
 		}
 
-		private static void RunCase(StringBuilder sb, string name, bool slimeInArmory, string where, List<Item> better, bool ms)
+		private static void RunCase(StringBuilder sb, string name, bool slimeInArmory, string where, List<Item> better, bool ms, bool armorless)
 		{
 			sb.AppendLine("\n################ " + name);
 			ArmoryTE.TestOthers = null;
@@ -194,7 +194,11 @@ namespace Levy.Common.Testing
 					case "ms": case "ms1": msScope.Put(copies); break;
 				}
 				var levies = new List<SoldierRecord>();
-				for (int i = 0; i < 12; i++) levies.Add(new SoldierRecord { Id = i + 1, Name = "L" + (i + 1) });
+				for (int i = 0; i < 12; i++) {
+					var r = new SoldierRecord { Id = i + 1, Name = "L" + (i + 1) };
+					if (i < 4 && !armorless) { r.Gear.Head = Make("BeeHeadgear"); r.Gear.Body = Make("BeeBreastplate"); r.Gear.Legs = Make("BeeGreaves"); } // four levies already wear summoner armor
+					levies.Add(r);
+				}
 				ArmoryTE.TestServed = levies;
 				Bump(200);
 				foreach (var l in levies) { Bump(1); te.IssueGear(l); }

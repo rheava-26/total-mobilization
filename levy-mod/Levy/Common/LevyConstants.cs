@@ -132,7 +132,7 @@ namespace Levy.Common
 		public const int AmmoPouchMax = 999;
 		/// <summary>When ammo is scarce each soldier's pouch is capped at an equal share of the reachable stock, but never below this (a short fight) and never above AmmoPouchMax.</summary>
 		public const int AmmoFairShareFloor = 25;
-		public const int OrderRadius = 40;
+		public const int OrderRadius = 150; // order hotkeys reach every levy within about a screen and a half; the Command Radio and the barracks panel reach all of them
 		public const int RallyRadius = 30;
 		public const int RallyCooldownTicks = 60 * 60;
 		public const int RoutRallyOutOfSightTicks = 60 * 20;

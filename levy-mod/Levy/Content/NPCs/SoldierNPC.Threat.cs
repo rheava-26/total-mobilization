@@ -114,8 +114,17 @@ namespace Levy.Content.NPCs
 			float jv = -JumpSpeedFor(Math.Min(hopTiles, Abilities.JumpTiles));
 			int goalSide = HasMoveGoal ? (MoveGoal.X >= c0.X ? 1 : -1) : 0;
 			int baseHits = 0, firstHit = 0, lastHit = 0, bestHits = 0, bestLast = 0; float baseScore = 0f, bestScore = 0f; Maneuver best = stay;
+			bool jerked = false;
+			if (_wormScan && WormPickOn)
+			{
+				// the worm rule is hard: it picks the manoeuvre itself (against the head's travel, late, dash + jump) and nothing else gets a vote
+				int wj = WormPick(grounded, airScan, c0, g, horizon, sp, goalSide, out Maneuver jm);
+				if (wj < 0) return HoldStep(holding);
+				if (wj == 1) return WormHoldStill();
+				if (wj == 2) { best = jm; bestHits = 0; bestLast = 0; baseHits = 1; jerked = true; WormJerks++; }
+			}
 			// a worm head is judged twice: first with a wide margin (a dodge that leaves room), then, if nothing can leave that much, by the field's own margin
-			for (int wpass = 0; wpass < (_wormScan ? 2 : 1); wpass++)
+			for (int wpass = 0; wpass < (jerked ? 0 : _wormScan ? 2 : 1); wpass++)
 			{
 			_wormMargin = _wormScan && wpass == 0 ? LevyConstants.WormDodge.MarginPx : 0f;
 			baseHits = ThreatField.Hits(_thrNear, c0, npc.width, npc.height, stay, g, horizon, out firstHit, out lastHit, _wormMargin);
@@ -153,7 +162,8 @@ namespace Levy.Content.NPCs
 
 			if (!_wormScan || bestHits == 0) break;
 			}
-			if (_wormScan && best.Kind != 0 && bestHits == 0 && WormCanWait(best, c0, g, horizon, airScan)) return WormHoldStill();
+			if (!jerked && _wormScan && best.Kind != 0 && bestHits == 0 && WormCanWait(best, c0, g, horizon, airScan)) return WormHoldStill();
+			if (_wormScan && DodgeDebug) Levy.Instance?.Logger.Info($"WORMDBG t={Main.GameUpdateCount} {SoldierName} margin={_wormMargin} base={baseHits}@{firstHit} best=k{best.Kind}/d{best.Delay} hits={bestHits} grounded={grounded}");
 			_dodgeCooldown = airScan ? AirCooldown : ThreatCooldown;
 			if (DodgeDebug) Levy.Instance?.Logger.Info($"DODGEDBG t={Main.GameUpdateCount} {SoldierName} threats={_thrNear.Count} base={baseHits}@{firstHit}..{lastHit} best=kind{best.Kind} delay={best.Delay} hits={bestHits} vx={NPC.velocity.X:0.0} grounded={grounded}");
 			if (best.Kind == 0 || bestHits >= baseHits) { DodgeStays++; DodgeNoBetter++; if (!grounded && air && AirBlip()) npc.netUpdate = true; return HoldStep(holding); }

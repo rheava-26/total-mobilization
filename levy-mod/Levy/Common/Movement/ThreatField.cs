@@ -423,6 +423,9 @@ namespace Levy.Common.Movement
 			}
 		}
 
+		/// <summary>Where this threat is <paramref name="t"/> ticks from now.</summary>
+		public static Vector2 PosAt(in Threat th, int t) => ThreatAt(th, t);
+
 		/// <summary>True when one of these threats is a worm head.</summary>
 		public static bool HasHead(List<Threat> l) { for (int i = 0; i < l.Count; i++) if (l[i].Head) return true; return false; }
 

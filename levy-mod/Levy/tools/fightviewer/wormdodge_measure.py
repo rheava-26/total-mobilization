@@ -153,7 +153,25 @@ def measure(tr, hp, i0, ic, dt):
     hx_with = Dx * hsx
     cvx_with = dvx * hsx
     lastvx = sum(tr[q][3] for q in range(max(i0, ic - int(0.5 / dt)), ic + 1)) / max(1, len(range(max(i0, ic - int(0.5 / dt)), ic + 1))) * hsx
-    return dict(hx_with=round(hx_with, 1), cvx_with=round(cvx_with, 1), lastvx_with=round(lastvx, 2), c_mag=round(cm, 1) if cm >= 3 else 0, c_t=round((ic - cq) * dt, 2) if cm >= 3 else '',
+    # jump / dash usage in the pass window [-0.7 s, +0.15 s] (velocity impulses: up kick >= 4 px/tick = jump or air jump, |dvx| >= 8 = dash)
+    ups = 0; dash = 0; q0 = max(i0 + 1, ic - int(0.7 / dt)); q1 = min(max(tr), ic + int(0.15 / dt))
+    prev_up = -99
+    for q in range(q0, q1 + 1):
+        if q in tr and (q - 1) in tr:
+            ddy = tr[q][4] - tr[q - 1][4]; ddx = tr[q][3] - tr[q - 1][3]
+            if ddy <= -4 and q - prev_up > 4: ups += 1; prev_up = q
+            if abs(ddx) >= 8: dash += 1
+    # claim test: the last 1.0 s before closest approach
+    w1 = [q for q in range(max(i0, ic - int(1.0 / dt)), ic + 1)]
+    vs1 = sum(tr[q][3] for q in w1) / len(w1) * hsx
+    ups1 = 0; pu = -99
+    for q in w1:
+        if q - 1 in tr and tr[q][4] - tr[q - 1][4] <= -4 and q - pu > 4: ups1 += 1; pu = q
+    jflag = int(any(int(tr[q][2]) & 64 for q in w1))
+    st0 = None
+    for q in w1:
+        if math.hypot(tr[q][3] - tr[w1[0]][3], tr[q][4] - tr[w1[0]][4]) > 3.0: st0 = (ic - q) * dt; break
+    return dict(vs1=round(vs1, 2), ups1=ups1, jflag=jflag, mstart=(round(st0, 2) if st0 is not None else ''), ups=ups, dash=int(dash > 0), hx_with=round(hx_with, 1), cvx_with=round(cvx_with, 1), lastvx_with=round(lastvx, 2), c_mag=round(cm, 1) if cm >= 3 else 0, c_t=round((ic - cq) * dt, 2) if cm >= 3 else '',
                 c_dist=round(math.hypot(tr[cq][0] - hp[cq][0], tr[cq][1] - hp[cq][1])) if cm >= 3 else '', hold=round(sum(math.hypot(tr[q][3], tr[q][4]) for q in range(i0, max(i0 + 1, ic - int(0.6 / dt)))) / max(1, len(range(i0, max(i0 + 1, ic - int(0.6 / dt))))), 1),
                 c_along=round(dvx * ux + dvy * uy, 1), c_out=round((dvx * nx + dvy * ny) * side, 1), c_up=round(-dvy, 1),
                 cos_head=round(sum(cs) / len(cs), 2) if cs else '', lat_out=round(sum(lat) / len(lat), 2),
@@ -194,6 +212,7 @@ def summarize(recs, title):
         100 * sum(r['lastvx_with'] < -0.5 for r in recs) / n, 100 * sum(r['lastvx_with'] > 0.5 for r in recs) / n, pr('hx_with')))
     print('  head-to-body distance at the commit: med %s px | body speed px/tick in the first 0.9 s of the window (hold/approach): med %s' % (med([r['c_dist'] for r in cr]), pr('hold')))
     print('  last 0.5s: cos(body velocity, head heading) mean %s (+1 = running WITH the head) | lateral-outward speed px/tick mean %s' % (mean([r['cos_head'] for r in recs]), mean([r['lat_out'] for r in recs])))
+    print('  jump/dash in the pass window: jumped %.0f%% | double-jumped (2+ kicks) %.0f%% | dashed %.0f%%' % (100 * sum(r['ups'] >= 1 for r in recs) / n, 100 * sum(r['ups'] >= 2 for r in recs) / n, 100 * sum(r['dash'] for r in recs) / n))
     print('  HIT within 0.5s of closest approach: %.0f%% (head %.0f%%, body part %.0f%%) | dmin<40px: %.0f%%' % (
         100 * sum(r['hit'] for r in recs) / n, 100 * sum(r['hit_head'] for r in recs) / n,
         100 * sum(r['hit_body'] for r in recs) / n, 100 * sum(r['dmin'] < 40 for r in recs) / n))

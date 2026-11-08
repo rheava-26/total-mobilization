@@ -1,0 +1,118 @@
+world mode: X0=2700 world=6400x1800 surface=493
+t=2575 Pvt. Tv6(boots) FALL 10 tiles at 796 (w3450)
+t=2576 Pvt. Tv7(boots) FALL 10 tiles at 796 (w3450)
+t=2580 Pvt. Tv5(boots) FALL 10 tiles at 796 (w3450)
+MAP around Pvt. Tv8 (@ levy feet tile; # solid, / slope, = platform, ~ water, t other tile; x from -24 to +40, y from -14 to +10):
+###############/.................................................
+################t................................................
+/################........ttt.....................................
+.t..tt..#.tt####/......t/###/ttttttt.....tt.ttt.ttttttt..........
+.t..tt..t.tttt.t.....t/##############/tt/##############..........
+.t..tt..t.tttt.t.....##################################/.........
+....tt..t..tt..t....../#################################.........
+....t...t...t..t.......#################################.........
+....t...t...t..t.......tttttt###########################.........
+....t...t...t..t.......ttt..tt##########################/........
+....t...t...............tt..tt.##########################........
+....t...................tt..tt.t.tt/#####################........
+ttt.....................tt..tt.t.tt.tt/##################........
+ttttt...................tt..tt.t.tt.tt./#################/.......
+#####/t...............tt@t..tt.t.tt.tt...tt/##############..t....
+#######/tttttt.tttttt/##/t...t...tt.tt...tt..#############t/#....
+##########################/t.....tt.t....t.../###############t...
+############################/t..ttt.t....t....tt/#############t..
+##############################/tttt.t....t.....t.t/############/t
+##################################/tt..........t.t..#############
+####################################/tt........t.t..tt/##########
+#######################################/tt.....t.t..tt.ttt#######
+##########################################.....t.t..tt.tttt######
+###################################/tt#t.t.....t.t..tt.tttt######
+##################################..t..t.t.......t...t.tttt######
+
+t=2624 Pvt. Tv8(boots) STUCK at 798 (w3450) state=Follow order=GoTo blocked=True why=path-blocked:goal-above/cant-fight hasPath=False route=Partial idx=37/38 replans=5 fromRoute=False pathN=0 goal=(3504,429) next=(0,0) v=0.0,0.0 tiles[feet=3497,289: +0=./2s/2/ +1=382/3/2/ +2=././2s/ +3=././185/] elev=-289
+t=3903 Pvt. Tv8(boots) ORDER ENDED away from goal at 798 (w3450) now=Hold
+t=4803 Pvt. Tv11(wings) FALL 10 tiles at 773 (w3450)
+t=4850 Pvt. Tv10(wings) FALL 10 tiles at 773 (w3450)
+t=4905 Pvt. Tv9(wings) FALL 9 tiles at 770 (w3450)
+pathfinder: calls=170 fails=159 nodes=31268 maxNodes=224 ms=91.9 ; planner: routes=54 found=10 partial=44 failed=0 nodes=27394 ms=92.4 maxSliceMs=3.51 queued=0 ; wall ms for run 6032
+END MAP Pvt. Tv8(boots) at 797,{X:0 Y:0} state=Idle order=Hold why=no-goal/cant-fight route=none
+################/................................................
+#################t...............................................
+./################........ttt....................................
+..t.tttt.#.tt####/......t/###/ttttttt.....tt.ttt.ttttttt.........
+..t..tt..t.tttttt.....t/##############/tt/##############.........
+..t..tt..t.tttt.t.....##################################/........
+.....tt..t..tt..t....../#################################........
+.....t...t...t..t.......#################################........
+.....t...t...t..t.......tttttt###########################........
+.....t...t...t..t.......ttt..tt##########################/.......
+.....t...t...............tt..tt.##########################.......
+.....t...t...............tt..tt.tttt/#####################.......
+tttt.....................tt..tt.tttt.tt/##################.......
+tttttt...................tt..tt.t.tt.tt./#################/......
+######/t...............t@tt..tt.t.tt.tt...tt/##############..t...
+########/tttttt.tttttt/##/t..tt...tt.tt...tt..#############t/#...
+###########################/t.....tt.t....t.../###############t..
+#############################/t..ttt.t....t....tt/#############t.
+###############################/tttt.t....t.....t.t/############/
+###################################/tt..........t.t..############
+#####################################/tt........t.t..tt/#########
+########################################/tt.....t.t..tt.ttt######
+###########################################.....t.t..tt.tttt#####
+####################################/tt#t.t.....t.t..tt.tttt#####
+###################################..t..t.t.......t...t.tttt#####
+
+route Partial jump=6 wings=False v=0 from=(2682,425) to=(3497,427) nodes=979 pts=289 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=0 from=(2677,428) to=(3501,427) nodes=985 pts=267 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=0 from=(2693,426) to=(3497,427) nodes=969 pts=285 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=0 from=(2694,426) to=(3498,427) nodes=968 pts=285 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=0 from=(2677,428) to=(3503,428) nodes=985 pts=247 end=(3497,439) status=Partial
+route Partial jump=6 wings=False v=0 from=(2694,426) to=(3499,427) nodes=968 pts=285 end=(3489,426) status=Partial
+route Ready jump=6 wings=True v=0 from=(2689,425) to=(3497,427) nodes=1189 pts=534 end=(3497,427) status=Found
+route Partial jump=6 wings=False v=0 from=(2684,426) to=(3498,427) nodes=978 pts=288 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=0 from=(2679,427) to=(3499,427) nodes=983 pts=265 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=1 from=(3176,432) to=(3501,427) nodes=486 pts=95 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=1 from=(3176,430) to=(3501,427) nodes=488 pts=95 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=1 from=(3176,432) to=(3499,427) nodes=486 pts=95 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=1 from=(3176,432) to=(3503,428) nodes=486 pts=75 end=(3497,439) status=Partial
+route Partial jump=6 wings=False v=2 from=(3185,432) to=(3501,427) nodes=477 pts=95 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=2 from=(3185,432) to=(3499,427) nodes=477 pts=95 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=2 from=(3185,432) to=(3503,428) nodes=477 pts=75 end=(3497,439) status=Partial
+route Partial jump=6 wings=False v=3 from=(3194,432) to=(3501,427) nodes=468 pts=95 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=3 from=(3194,431) to=(3499,427) nodes=469 pts=95 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=3 from=(3194,432) to=(3503,428) nodes=468 pts=75 end=(3497,439) status=Partial
+route Partial jump=6 wings=False v=4 from=(3376,431) to=(3501,427) nodes=286 pts=58 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=4 from=(3376,430) to=(3499,427) nodes=287 pts=58 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=4 from=(3376,431) to=(3503,428) nodes=286 pts=38 end=(3497,439) status=Partial
+route Partial jump=6 wings=False v=5 from=(3385,431) to=(3501,427) nodes=277 pts=58 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=5 from=(3385,431) to=(3499,427) nodes=277 pts=58 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=5 from=(3385,431) to=(3503,428) nodes=277 pts=38 end=(3497,439) status=Partial
+route Partial jump=6 wings=False v=1 from=(3174,432) to=(3499,427) nodes=488 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=1 from=(3174,432) to=(3497,427) nodes=488 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=1 from=(3174,432) to=(3498,427) nodes=488 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=2 from=(3178,432) to=(3499,427) nodes=484 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=2 from=(3178,432) to=(3497,427) nodes=484 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=2 from=(3178,432) to=(3498,427) nodes=484 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=3 from=(3183,432) to=(3499,427) nodes=479 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=1 from=(3174,430) to=(3497,427) nodes=490 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=3 from=(3183,432) to=(3497,427) nodes=479 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=3 from=(3183,432) to=(3498,427) nodes=479 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=4 from=(3187,432) to=(3499,427) nodes=475 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=4 from=(3187,432) to=(3497,427) nodes=475 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=4 from=(3187,430) to=(3498,427) nodes=477 pts=99 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=4 from=(3187,432) to=(3498,427) nodes=475 pts=99 end=(3489,426) status=Partial
+route Ready jump=6 wings=True v=1 from=(3174,432) to=(3497,427) nodes=496 pts=199 end=(3497,427) status=Found
+route Ready jump=6 wings=True v=2 from=(3179,432) to=(3497,427) nodes=491 pts=199 end=(3497,427) status=Found
+route Ready jump=6 wings=True v=1 from=(3174,430) to=(3497,427) nodes=498 pts=199 end=(3497,427) status=Found
+route Ready jump=6 wings=True v=3 from=(3183,432) to=(3497,427) nodes=487 pts=199 end=(3497,427) status=Found
+route Ready jump=6 wings=True v=4 from=(3188,431) to=(3497,427) nodes=483 pts=199 end=(3497,427) status=Found
+route Ready jump=6 wings=True v=3 from=(3183,430) to=(3497,427) nodes=489 pts=199 end=(3497,427) status=Found
+route Ready jump=6 wings=True v=4 from=(3188,432) to=(3497,427) nodes=482 pts=199 end=(3497,427) status=Found
+route Partial jump=6 wings=False v=5 from=(3375,431) to=(3499,427) nodes=287 pts=58 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=5 from=(3375,431) to=(3497,427) nodes=287 pts=58 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=5 from=(3375,431) to=(3498,427) nodes=287 pts=58 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=6 from=(3380,431) to=(3499,427) nodes=282 pts=58 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=6 from=(3380,431) to=(3497,427) nodes=282 pts=58 end=(3489,426) status=Partial
+route Partial jump=6 wings=False v=6 from=(3380,431) to=(3498,427) nodes=282 pts=58 end=(3489,426) status=Partial
+route Ready jump=6 wings=True v=0 from=(3481,439) to=(3497,427) nodes=17 pts=17 end=(3497,427) status=Found
+route Ready jump=6 wings=True v=0 from=(3474,438) to=(3497,427) nodes=23 pts=20 end=(3497,427) status=Found

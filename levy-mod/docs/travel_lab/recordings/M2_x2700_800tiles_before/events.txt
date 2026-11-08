@@ -1,0 +1,78 @@
+world mode: X0=2700 world=6400x1800 surface=493
+bridge tile @720: active=False type=0 solidTop=False solid=True slope=Solid half=False actuated=False
+t=2559 Pvt. Tv5(boots) STUCK at 793 (w3450) state=Follow order=GoTo blocked=True why=path-blocked:goal-above/cant-fight hasPath=False tiles[feet=3493,290: +0=73/2/0/ +1=2/2/0/ +2=2/0/0/ +3=2/0/0/] elev=-289
+t=2563 Pvt. Tv7(boots) STUCK at 796 (w3450) state=Follow order=GoTo blocked=True why=path-blocked:goal-above/cant-fight hasPath=False tiles[feet=3495,289: +0=73/2/0/ +1=73/2/0/ +2=./2s/2/ +3=382/3/2/] elev=-289
+t=2568 Pvt. Tv6(boots) STUCK at 796 (w3450) state=Follow order=GoTo blocked=True why=path-blocked:goal-above/cant-fight hasPath=False tiles[feet=3495,289: +0=73/2/0/ +1=73/2/0/ +2=./2s/2/ +3=382/3/2/] elev=-289
+t=2569 Pvt. Tv8(boots) STUCK at 798 (w3450) state=Follow order=GoTo blocked=True why=path-blocked:goal-above/cant-fight hasPath=False tiles[feet=3497,289: +0=./2s/2/ +1=382/3/2/ +2=././2s/ +3=././185/] elev=-289
+t=4401 Pvt. Tv13(hook) FALL 9 tiles at 784 (w3450)
+t=4405 Pvt. Tv12(hook) FALL 10 tiles at 784 (w3450)
+t=4488 Pvt. Tv11(wings) FALL 10 tiles at 790 (w3450)
+t=4530 Pvt. Tv10(wings) STUCK at 795 (w3450) state=Idle order=Hold blocked=False why=no-goal/cant-fight hasPath=False tiles[feet=3495,279: +0=2/2/2s/ +1=2/0/2/ +2=2/0/0/ +3=0/0/0/] elev=-278
+t=4610 Pvt. Tv12(hook) FALL 10 tiles at 793 (w3450)
+t=4611 Pvt. Tv9(wings) STUCK at 799 (w3450) state=Idle order=Hold blocked=False why=no-goal/cant-fight hasPath=False tiles[feet=3499,277: +0=73/2/0/ +1=3/2/0/ +2=./2s/2/ +3=./73/2/] elev=-277
+t=4644 Pvt. Tv0(none) STUCK at 791 (w3450) state=Follow order=GoTo blocked=True why=path-blocked:goal-above/cant-fight hasPath=False tiles[feet=3491,290: +0=73/2/0/ +1=3/2/0/ +2=73/2/0/ +3=2/2/0/] elev=-290
+t=4644 Pvt. Tv3(none) STUCK at 791 (w3450) state=Follow order=GoTo blocked=True why=path-blocked:goal-above/cant-fight hasPath=False tiles[feet=3491,290: +0=73/2/0/ +1=3/2/0/ +2=73/2/0/ +3=2/2/0/] elev=-290
+t=4644 Pvt. Tv4(none) STUCK at 792 (w3450) state=Follow order=GoTo blocked=True why=path-blocked:goal-above/cant-fight hasPath=False tiles[feet=3492,290: +0=3/2/0/ +1=73/2/0/ +2=2/2/0/ +3=2/0/0/] elev=-290
+t=4648 Pvt. Tv1(none) STUCK at 791 (w3450) state=Follow order=GoTo blocked=True why=path-blocked:goal-above/cant-fight hasPath=False tiles[feet=3491,290: +0=73/2/0/ +1=3/2/0/ +2=73/2/0/ +3=2/2/0/] elev=-290
+t=4650 Pvt. Tv2(none) STUCK at 791 (w3450) state=Follow order=GoTo blocked=True why=path-blocked:goal-above/cant-fight hasPath=False tiles[feet=3491,290: +0=73/2/0/ +1=3/2/0/ +2=73/2/0/ +3=2/2/0/] elev=-290
+t=4667 Pvt. Tv11(wings) STUCK at 790 (w3450) state=Idle order=Hold blocked=False why=no-goal/cant-fight hasPath=False tiles[feet=3490,290: +0=73/2/0/ +1=73/2/0/ +2=3/2/0/ +3=73/2/0/] elev=-290
+t=4816 Pvt. Tv13(hook) FALL 9 tiles at 797 (w3450)
+t=4820 Pvt. Tv9(wings) STUCK at 799 (w3450) state=Idle order=Hold blocked=False why=no-goal/cant-fight hasPath=False tiles[feet=3499,277: +0=./2/0/ +1=./2/0/ +2=./2s/2/ +3=./73/2/] elev=-277
+t=4851 Pvt. Tv14(hook) FALL 9 tiles at 797 (w3450)
+t=4873 Pvt. Tv12(hook) FALL 10 tiles at 793 (w3450)
+t=5060 Pvt. Tv13(hook) FALL 12 tiles at 793 (w3450)
+t=5092 Pvt. Tv12(hook) FALL 8 tiles at 796 (w3450)
+t=5095 Pvt. Tv14(hook) FALL 12 tiles at 793 (w3450)
+t=5260 Pvt. Tv13(hook) FALL 8 tiles at 797 (w3450)
+t=5295 Pvt. Tv14(hook) FALL 8 tiles at 797 (w3450)
+t=5342 Pvt. Tv12(hook) FALL 11 tiles at 793 (w3450)
+t=5512 Pvt. Tv13(hook) FALL 15 tiles at 793 (w3450)
+t=5547 Pvt. Tv14(hook) FALL 15 tiles at 793 (w3450)
+t=5605 Pvt. Tv12(hook) FALL 10 tiles at 793 (w3450)
+t=5712 Pvt. Tv13(hook) FALL 8 tiles at 797 (w3450)
+t=5747 Pvt. Tv14(hook) FALL 8 tiles at 797 (w3450)
+t=5824 Pvt. Tv12(hook) FALL 8 tiles at 796 (w3450)
+t=5964 Pvt. Tv13(hook) FALL 15 tiles at 793 (w3450)
+t=5999 Pvt. Tv14(hook) FALL 15 tiles at 793 (w3450)
+t=6061 Pvt. Tv6(boots) ORDER ENDED away from goal at 796 (w3450) now=Hold
+t=6062 Pvt. Tv7(boots) ORDER ENDED away from goal at 796 (w3450) now=Hold
+t=6063 Pvt. Tv8(boots) ORDER ENDED away from goal at 798 (w3450) now=Hold
+t=6066 Pvt. Tv5(boots) ORDER ENDED away from goal at 793 (w3450) now=Hold
+t=6074 Pvt. Tv12(hook) FALL 11 tiles at 793 (w3450)
+t=6164 Pvt. Tv13(hook) FALL 8 tiles at 797 (w3450)
+t=6199 Pvt. Tv14(hook) FALL 8 tiles at 797 (w3450)
+t=6328 Pvt. Tv8(boots) STUCK at 795 (w3450) state=Idle order=Hold blocked=False why=no-goal/cant-fight hasPath=False tiles[feet=3494,289: +0=./2/2/ +1=73/2/0/ +2=73/2/0/ +3=./2s/2/] elev=-289
+t=6331 Pvt. Tv7(boots) STUCK at 799 (w3450) state=Idle order=Hold blocked=False why=no-goal/cant-fight hasPath=False tiles[feet=3499,290: +0=./2s/2/ +1=./185/2/ +2=382/./2s/ +3=382/./185/] elev=-290
+t=6337 Pvt. Tv12(hook) FALL 10 tiles at 793 (w3450)
+t=6346 Pvt. Tv5(boots) STUCK at 797 (w3450) state=Idle order=Hold blocked=False why=no-goal/cant-fight hasPath=False tiles[feet=3496,289: +0=73/2/0/ +1=./2s/2/ +2=382/3/2/ +3=././2s/] elev=-289
+t=6402 Pvt. Tv6(boots) STUCK at 786 (w3450) state=Idle order=Hold blocked=False why=no-goal/cant-fight hasPath=False tiles[feet=3486,290: +0=3/2/0/ +1=./2/0/ +2=73/2/0/ +3=73/2/0/] elev=-290
+t=6416 Pvt. Tv13(hook) FALL 15 tiles at 793 (w3450)
+t=6451 Pvt. Tv14(hook) FALL 15 tiles at 793 (w3450)
+t=6556 Pvt. Tv12(hook) FALL 8 tiles at 796 (w3450)
+t=6616 Pvt. Tv13(hook) FALL 8 tiles at 797 (w3450)
+t=6651 Pvt. Tv14(hook) FALL 8 tiles at 797 (w3450)
+t=6806 Pvt. Tv12(hook) FALL 11 tiles at 793 (w3450)
+t=6868 Pvt. Tv13(hook) FALL 15 tiles at 793 (w3450)
+t=6903 Pvt. Tv14(hook) FALL 15 tiles at 793 (w3450)
+t=7068 Pvt. Tv13(hook) FALL 8 tiles at 797 (w3450)
+t=7069 Pvt. Tv12(hook) FALL 10 tiles at 793 (w3450)
+t=7103 Pvt. Tv14(hook) FALL 8 tiles at 797 (w3450)
+t=7288 Pvt. Tv12(hook) FALL 8 tiles at 796 (w3450)
+t=7320 Pvt. Tv13(hook) FALL 15 tiles at 793 (w3450)
+t=7355 Pvt. Tv14(hook) FALL 15 tiles at 793 (w3450)
+t=7521 Pvt. Tv13(hook) FALL 8 tiles at 797 (w3450)
+t=7538 Pvt. Tv12(hook) FALL 11 tiles at 793 (w3450)
+t=7555 Pvt. Tv14(hook) FALL 8 tiles at 797 (w3450)
+t=7773 Pvt. Tv13(hook) FALL 15 tiles at 793 (w3450)
+t=7801 Pvt. Tv12(hook) FALL 10 tiles at 793 (w3450)
+t=7807 Pvt. Tv14(hook) FALL 15 tiles at 793 (w3450)
+t=7973 Pvt. Tv13(hook) FALL 8 tiles at 797 (w3450)
+t=8007 Pvt. Tv14(hook) FALL 8 tiles at 797 (w3450)
+t=8020 Pvt. Tv12(hook) FALL 8 tiles at 796 (w3450)
+t=8221 Pvt. Tv0(none) ORDER ENDED away from goal at 791 (w3450) now=Hold
+t=8222 Pvt. Tv1(none) ORDER ENDED away from goal at 791 (w3450) now=Hold
+t=8223 Pvt. Tv2(none) ORDER ENDED away from goal at 791 (w3450) now=Hold
+t=8224 Pvt. Tv3(none) ORDER ENDED away from goal at 791 (w3450) now=Hold
+t=8225 Pvt. Tv4(none) ORDER ENDED away from goal at 792 (w3450) now=Hold
+t=8225 Pvt. Tv13(hook) FALL 15 tiles at 793 (w3450)
+pathfinder: calls=875 fails=875 nodes=180170 maxNodes=208 ms=657.7 ; wall ms for run 11434

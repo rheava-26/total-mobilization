@@ -1,0 +1,65 @@
+world mode: X0=700 world=6400x1800 surface=414
+bridge tile @720: active=False type=0 solidTop=False solid=True slope=Solid half=False actuated=False
+t=763 Pvt. Tv6(boots) FALL 18 tiles at 126 (w800)
+t=777 Pvt. Tv11(wings) FALL 14 tiles at 117 (w800)
+t=788 Pvt. Tv10(wings) FALL 14 tiles at 117 (w800)
+t=794 Pvt. Tv7(boots) FALL 18 tiles at 126 (w800)
+t=795 Pvt. Tv8(boots) FALL 18 tiles at 126 (w800)
+t=806 Pvt. Tv5(boots) FALL 18 tiles at 126 (w800)
+t=854 Pvt. Tv6(boots) FALL 11 tiles at 145 (w800)
+t=885 Pvt. Tv7(boots) FALL 11 tiles at 145 (w800)
+t=886 Pvt. Tv8(boots) FALL 11 tiles at 145 (w800)
+t=889 Pvt. Tv9(wings) FALL 14 tiles at 117 (w800)
+t=897 Pvt. Tv5(boots) FALL 11 tiles at 145 (w800)
+t=946 Pvt. Tv14(hook) FALL 14 tiles at 117 (w800)
+t=947 Pvt. Tv12(hook) FALL 14 tiles at 117 (w800)
+t=950 Pvt. Tv13(hook) FALL 14 tiles at 117 (w800)
+t=1020 Pvt. Tv4(none) FALL 14 tiles at 117 (w800)
+t=1038 Pvt. Tv3(none) FALL 14 tiles at 117 (w800)
+t=1041 Pvt. Tv1(none) FALL 14 tiles at 117 (w800)
+t=1050 Pvt. Tv2(none) FALL 14 tiles at 117 (w800)
+t=1075 Pvt. Tv0(none) FALL 14 tiles at 117 (w800)
+t=1099 Pvt. Tv14(hook) FALL 12 tiles at 141 (w800)
+t=1100 Pvt. Tv12(hook) FALL 12 tiles at 141 (w800)
+t=1103 Pvt. Tv13(hook) FALL 12 tiles at 141 (w800)
+t=1173 Pvt. Tv4(none) FALL 12 tiles at 141 (w800)
+t=1191 Pvt. Tv3(none) FALL 12 tiles at 141 (w800)
+t=1194 Pvt. Tv1(none) FALL 12 tiles at 141 (w800)
+t=1203 Pvt. Tv2(none) FALL 12 tiles at 141 (w800)
+t=1228 Pvt. Tv0(none) FALL 12 tiles at 141 (w800)
+t=1674 Pvt. Tv6(boots) STUCK at 267 (w950) state=Follow order=GoTo blocked=True why=path-blocked:wall/cant-fight hasPath=False tiles[feet=967,170: +0=2s/2/2/ +1=2/0/0/ +2=0/0/0/ +3=0/0/0/] elev=-169
+t=1705 Pvt. Tv7(boots) STUCK at 267 (w950) state=Follow order=GoTo blocked=True why=path-blocked:wall/cant-fight hasPath=False tiles[feet=967,170: +0=2s/2/2/ +1=2/0/0/ +2=0/0/0/ +3=0/0/0/] elev=-169
+t=1706 Pvt. Tv8(boots) STUCK at 267 (w950) state=Follow order=GoTo blocked=True why=path-blocked:wall/cant-fight hasPath=False tiles[feet=967,170: +0=2s/2/2/ +1=2/0/0/ +2=0/0/0/ +3=0/0/0/] elev=-169
+t=1717 Pvt. Tv5(boots) STUCK at 267 (w950) state=Follow order=GoTo blocked=True why=path-blocked:wall/cant-fight hasPath=False tiles[feet=967,170: +0=2s/2/2/ +1=2/0/0/ +2=0/0/0/ +3=0/0/0/] elev=-169
+t=2526 Pvt. Tv4(none) STUCK at 267 (w950) state=Follow order=GoTo blocked=True why=path-blocked:wall/cant-fight hasPath=False tiles[feet=967,170: +0=2s/2/2/ +1=2/0/0/ +2=0/0/0/ +3=0/0/0/] elev=-169
+t=2535 Pvt. Tv1(none) STUCK at 267 (w950) state=Follow order=GoTo blocked=True why=path-blocked:wall/cant-fight hasPath=False tiles[feet=967,170: +0=2s/2/2/ +1=2/0/0/ +2=0/0/0/ +3=0/0/0/] elev=-169
+t=2546 Pvt. Tv2(none) STUCK at 267 (w950) state=Follow order=GoTo blocked=True why=path-blocked:wall/cant-fight hasPath=False tiles[feet=967,170: +0=2s/2/2/ +1=2/0/0/ +2=0/0/0/ +3=0/0/0/] elev=-169
+t=2547 Pvt. Tv3(none) STUCK at 267 (w950) state=Follow order=GoTo blocked=True why=path-blocked:wall/cant-fight hasPath=False tiles[feet=967,170: +0=2s/2/2/ +1=2/0/0/ +2=0/0/0/ +3=0/0/0/] elev=-169
+t=2579 Pvt. Tv0(none) STUCK at 267 (w950) state=Follow order=GoTo blocked=True why=path-blocked:wall/cant-fight hasPath=False tiles[feet=967,170: +0=2s/2/2/ +1=2/0/0/ +2=0/0/0/ +3=0/0/0/] elev=-169
+t=2685 Pvt. Tv10(wings) FALL 17 tiles at 328 (w1000)
+t=2686 Pvt. Tv11(wings) FALL 17 tiles at 328 (w1000)
+t=2810 Pvt. Tv9(wings) FALL 17 tiles at 328 (w1000)
+t=3401 Pvt. Tv10(wings) FALL 9 tiles at 470 (w1150)
+t=3402 Pvt. Tv11(wings) FALL 9 tiles at 470 (w1150)
+t=3526 Pvt. Tv9(wings) FALL 9 tiles at 470 (w1150)
+t=3595 Pvt. Tv10(wings) STUCK at 472 (w1150) state=Follow order=GoTo blocked=False why=arrived/cant-fight hasPath=True tiles[feet=1172,146: +0=./234s/234/ +1=203/203/234/ +2=203/203/203/ +3=203/203s/203/] elev=-146
+t=3596 Pvt. Tv11(wings) STUCK at 472 (w1150) state=Follow order=GoTo blocked=False why=arrived/cant-fight hasPath=True tiles[feet=1172,146: +0=./234s/234/ +1=203/203/234/ +2=203/203/203/ +3=203/203s/203/] elev=-146
+t=3720 Pvt. Tv9(wings) STUCK at 472 (w1150) state=Follow order=GoTo blocked=False why=arrived/cant-fight hasPath=True tiles[feet=1172,146: +0=./234s/234/ +1=203/203/234/ +2=203/203/203/ +3=203/203s/203/] elev=-146
+t=5161 Pvt. Tv6(boots) ORDER ENDED away from goal at 267 (w950) now=Hold
+t=5162 Pvt. Tv7(boots) ORDER ENDED away from goal at 267 (w950) now=Hold
+t=5163 Pvt. Tv8(boots) ORDER ENDED away from goal at 267 (w950) now=Hold
+t=5166 Pvt. Tv5(boots) ORDER ENDED away from goal at 267 (w950) now=Hold
+t=5413 Pvt. Tv6(boots) STUCK at 266 (w950) state=Idle order=Hold blocked=False why=no-goal/cant-fight hasPath=False tiles[feet=965,172: +0=././2s/ +1=3/2/2/ +2=2/2/0/ +3=0/0/0/] elev=-172
+t=6061 Pvt. Tv0(none) ORDER ENDED away from goal at 267 (w950) now=Hold
+t=6062 Pvt. Tv1(none) ORDER ENDED away from goal at 267 (w950) now=Hold
+t=6063 Pvt. Tv2(none) ORDER ENDED away from goal at 267 (w950) now=Hold
+t=6064 Pvt. Tv3(none) ORDER ENDED away from goal at 267 (w950) now=Hold
+t=6065 Pvt. Tv4(none) ORDER ENDED away from goal at 267 (w950) now=Hold
+t=6284 Pvt. Tv8(boots) STUCK at 266 (w950) state=Idle order=Hold blocked=False why=no-goal/cant-fight hasPath=False tiles[feet=965,172: +0=././2s/ +1=3/2/2/ +2=2/2/0/ +3=0/0/0/] elev=-172
+t=6322 Pvt. Tv6(boots) STUCK at 261 (w950) state=Idle order=Hold blocked=False why=arrived/cant-fight hasPath=False tiles[feet=960,175: +0=./2/2/ +1=185/2/0/ +2=185/2/0/ +3=2/2/0/] elev=-175
+t=6360 Pvt. Tv3(none) STUCK at 264 (w950) state=Idle order=Hold blocked=False why=arrived/cant-fight hasPath=False tiles[feet=963,174: +0=./2/2/ +1=73/2/0/ +2=2s/2/0/ +3=2/0/0/] elev=-174
+t=7144 Pvt. Tv9(wings) ORDER ENDED away from goal at 472 (w1150) now=Hold
+t=7145 Pvt. Tv10(wings) ORDER ENDED away from goal at 472 (w1150) now=Hold
+t=7146 Pvt. Tv11(wings) ORDER ENDED away from goal at 472 (w1150) now=Hold
+t=7403 Pvt. Tv11(wings) STUCK at 471 (w1150) state=Idle order=Hold blocked=False why=no-goal/cant-fight hasPath=False tiles[feet=1170,147: +0=./234s/234/ +1=./234/234/ +2=234s/234/234/ +3=203/234/203/] elev=-147
+pathfinder: calls=1034 fails=1031 nodes=116509 maxNodes=2500 ms=309.0 ; wall ms for run 10204

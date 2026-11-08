@@ -166,7 +166,7 @@ namespace Levy.Common.Weapons
 						p.selectedItem = 0;
 						p.ResetEffects();
 						int baseMana = p.statManaMax2;
-						p.UpdateEquips(SoldierNPC.DummySlot);
+						SafeUpdateEquips(p);
 						v = Math.Max(0, p.statManaMax2 - baseMana);
 					}
 					for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
@@ -226,7 +226,7 @@ namespace Levy.Common.Weapons
 			p.inventory[0] = new Item();
 			p.selectedItem = 0;
 			p.ResetEffects();
-			p.UpdateEquips(SoldierNPC.DummySlot);
+			SafeUpdateEquips(p);
 			p.UpdateArmorSets(SoldierNPC.DummySlot);
 			var r = new float[6];
 			r[0] = p.maxTurrets; r[1] = p.maxMinions;
@@ -292,6 +292,18 @@ namespace Levy.Common.Weapons
 			_scratch.selectedItem = 0;
 		}
 
+		/// <summary>Runs the dummy's equip update for a stat reading. Some accessories act while equipped (Spore Sac rolls 1 in 15 to spawn spores and can throw on this dummy):
+		/// the reading continues past a throw, and any projectile the dummy spawned is removed so a measurement never leaves anything in the world.</summary>
+		private static void SafeUpdateEquips(Player p)
+		{
+			var wasActive = new bool[Main.maxProjectiles];
+			for (int i = 0; i < Main.maxProjectiles; i++) wasActive[i] = Main.projectile[i].active;
+			var pos = p.position; p.Center = new Microsoft.Xna.Framework.Vector2(Main.maxTilesX * 8f, Main.maxTilesY * 8f); // at (0,0) Spore Sac reads tiles at negative coordinates
+			try { p.UpdateEquips(SoldierNPC.DummySlot); } catch (Exception) { }
+			finally { p.position = pos; }
+			for (int i = 0; i < Main.maxProjectiles; i++) if (!wasActive[i] && Main.projectile[i].active && Main.projectile[i].owner == SoldierNPC.DummySlot) Main.projectile[i].active = false;
+		}
+
 		/// <summary>Per-class bonus after equipping the three pieces; <paramref name="baseline"/> (the bare-player reading) is subtracted so default crit cancels.</summary>
 		/// <remarks>
 		/// <paramref name="includeGeneric"/> (accessory path) reads GetTotalDamage/GetTotalCritChance so an all-class bonus (Avenger Emblem, Celestial Shell...) counts for the class;
@@ -309,7 +321,7 @@ namespace Levy.Common.Weapons
 			p.inventory[0] = new Item();
 			p.selectedItem = 0;
 			p.ResetEffects();
-			p.UpdateEquips(SoldierNPC.DummySlot);
+			SafeUpdateEquips(p);
 			p.UpdateArmorSets(SoldierNPC.DummySlot);
 
 			// Trailing extra element: bonus minion slots the armor grants (index Classes.Length); callers indexing by class never see it.

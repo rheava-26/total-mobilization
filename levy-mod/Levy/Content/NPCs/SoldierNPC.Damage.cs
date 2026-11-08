@@ -52,7 +52,7 @@ namespace Levy.Content.NPCs
 			if (_buffPotionCooldown > 0) _buffPotionCooldown--;
 			if (_armoryRetry > 0) _armoryRetry--;
 			_projectileStriking = false;
-			_hitPaladin = null; // a share picked for a hit that never landed (SoldierNPC.ArmorSets.cs)
+			_hitPaladins.Clear(); // a share picked for a hit that never landed (SoldierNPC.ArmorSets.cs)
 			if (!IsAlive) return;
 			Fall_Update();
 			if (!IsAlive) return;

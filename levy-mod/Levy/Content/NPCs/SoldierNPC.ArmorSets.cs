@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
@@ -54,7 +55,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Scale the next contact hit takes (set around the strike, read by <see cref="SoldierSetHitScale"/>); 1 otherwise.</summary>
 		internal float PendingContactScale = 1f;
 		/// <summary>The Paladin's Shield wearer that will take a share of the hit now being resolved, and the guard against a soak chain.</summary>
-		private SoldierNPC _hitPaladin;
+		private readonly List<SoldierNPC> _hitPaladins = new();
 		private Player _hitPaladinPlayer;
 		private bool _soaking;
 
@@ -517,18 +518,17 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		internal float IncomingSetScale(bool allowPaladin = true)
 		{
-			_hitPaladin = null; _hitPaladinPlayer = null;
+			_hitPaladins.Clear(); _hitPaladinPlayer = null;
 			float s = 1f;
 			if (_setKind == KindSolar && _setOrbs > 0) s *= LevyConstants.SolarHitScale;
 			if (_setKind == KindDefense && _setOrbs > 0) s *= 1f - LevyConstants.BeetleDefenseReductionPerOrb * _setOrbs;
 			if (allowPaladin && !_soaking)
 			{
-				SoldierNPC p = FindPaladin();
+				// every eligible wearer in reach (squadmates and the commander) shares the hit evenly (see SetsOnHurt)
+				FindPaladins(_hitPaladins);
 				Player cp = FindPaladinPlayer();
-				// the NEAREST wearer shares the hit (Player.OnHurt_Part2), whether a squadmate or the commander himself
-				if (p != null && cp != null) { if (Vector2.Distance(cp.Center, NPC.Center) < Vector2.Distance(p.NPC.Center, NPC.Center)) p = null; else cp = null; }
-				if (p != null) { s *= LevyConstants.PaladinAllyScale; _hitPaladin = p; }
-				else if (cp != null) { s *= LevyConstants.PaladinAllyScale; _hitPaladinPlayer = cp; }
+				if (_hitPaladins.Count > 0 || cp != null) s *= LevyConstants.PaladinAllyScale;
+				_hitPaladinPlayer = cp;
 			}
 			return s;
 		}
@@ -545,11 +545,11 @@ namespace Levy.Content.NPCs
 		/// <summary>True when this soldier could take a Paladin's share now: alive, wearing a shield, above a quarter of his life, out of immunity and not already taking one.</summary>
 		internal bool CanSoak => IsAlive && ImmuneTime <= 0 && !_soaking && !Record.Mutinous && NPC.life > NPC.lifeMax * LevyConstants.PaladinHealthFloor && WearsPaladinShield;
 
-		/// <summary>The nearest other Paladin's Shield wearer of this soldier's commander within 800 px, above a quarter health and out of immune time (Player.OnHurt_Part2's pick).</summary>
-		private SoldierNPC FindPaladin()
+		/// <summary>Every other Paladin's Shield wearer of this soldier's commander within 800 px, above a quarter health and out of immune time (the pool a hit is shared across).</summary>
+		private void FindPaladins(List<SoldierNPC> into)
 		{
-			if (Record == null || Record.Mutinous) return null;
-			SoldierNPC best = null; float bestDist = LevyConstants.PaladinRangePx;
+			into.Clear();
+			if (Record == null || Record.Mutinous) return;
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
@@ -557,10 +557,8 @@ namespace Levy.Content.NPCs
 				if (p.Record == null || p.Record.Mutinous || !p.IsAlive || p.ImmuneTime > 0 || p._soaking) continue;
 				if (p.Record.CommanderName != Record.CommanderName) continue;
 				if (p.NPC.life <= p.NPC.lifeMax * LevyConstants.PaladinHealthFloor || !p.WearsPaladinShield) continue;
-				float dist = Vector2.Distance(p.NPC.Center, NPC.Center);
-				if (dist < bestDist) { bestDist = dist; best = p; }
+				if (Vector2.Distance(p.NPC.Center, NPC.Center) < LevyConstants.PaladinRangePx) into.Add(p);
 			}
-			return best;
 		}
 
 		/// <summary>Hallowed armor's dodge (Player.ShadowDodge): if it is ready the hit is avoided, 80 ticks of immunity follow and the next one is 30 s away.</summary>
@@ -606,19 +604,24 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private void SetsOnHurt(int damageDone, int attackerIndex)
 		{
-			SoldierNPC paladin = _hitPaladin; _hitPaladin = null;
 			Player paladinPlayer = _hitPaladinPlayer; _hitPaladinPlayer = null;
-			if (paladin != null && damageDone > 0)
+			int holders = _hitPaladins.Count + (paladinPlayer != null ? 1 : 0);
+			if (holders > 0 && damageDone > 0)
 			{
-				try { paladin.TakeSoak(Math.Max(1, (int)(damageDone * LevyConstants.PaladinShareFraction)), attackerIndex, this); }
-				catch (Exception e) { if (_accessoryProcWarned.Add(ItemID.PaladinsShield)) Levy.Instance?.Logger.Warn("Levy: Paladin's Shield share failed: " + e.Message); }
+				// one third of the hit leaves the victim; with several wearers it is split evenly between them (the total stays a third)
+				int total = Math.Max(holders, (int)(damageDone * LevyConstants.PaladinShareFraction)), each = total / holders, extra = total % holders, k = 0;
+				Common.Team.TeamPlayer.PaladinRawShared += total;
+				var payers = _hitPaladins.ToArray(); _hitPaladins.Clear();
+				foreach (var paladin in payers)
+				{
+					try { paladin.TakeSoak(each + (k++ < extra ? 1 : 0), attackerIndex, this); }
+					catch (Exception e) { if (_accessoryProcWarned.Add(ItemID.PaladinsShield)) Levy.Instance?.Logger.Warn("Levy: Paladin's Shield share failed: " + e.Message); }
+				}
+				if (paladinPlayer != null)
+					try { Common.Team.TeamNet.ShareToPlayer(paladinPlayer, each + (k++ < extra ? 1 : 0), attackerIndex); }
+					catch (Exception e) { if (_accessoryProcWarned.Add(ItemID.PaladinsShield)) Levy.Instance?.Logger.Warn("Levy: Paladin's Shield share to the commander failed: " + e.Message); }
 			}
-			if (paladinPlayer != null && damageDone > 0)
-			{
-				// the commander wears the shield: he takes a third through his own defense (vanilla: Hurt with the empty legacy reason)
-				try { Common.Team.TeamNet.ShareToPlayer(paladinPlayer, Math.Max(1, (int)(damageDone * LevyConstants.PaladinShareFraction)), attackerIndex); }
-				catch (Exception e) { if (_accessoryProcWarned.Add(ItemID.PaladinsShield)) Levy.Instance?.Logger.Warn("Levy: Paladin's Shield share to the commander failed: " + e.Message); }
-			}
+			_hitPaladins.Clear();
 			if (_setKind == KindSolar && _setOrbs > 0)
 			{
 				SetOrbs(_setOrbs - 1);

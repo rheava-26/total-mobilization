@@ -19,7 +19,7 @@ namespace Levy.Common.Team
 	public static class TeamAccessory
 	{
 		/// <summary>Score added while the effect is unclaimed (an accessory tier is worth 1000), enough to beat any normal pick.</summary>
-		public const float UnclaimedBonus = 6000f;
+		public const float UnclaimedBonus = 30000f;
 
 		private static readonly Dictionary<int, string[]> _cache = new();
 		private static Player _scratch;

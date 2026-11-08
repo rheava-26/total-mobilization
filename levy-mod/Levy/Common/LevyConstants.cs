@@ -42,7 +42,10 @@ namespace Levy.Common
 		/// <summary>Cross-family (set-bonus verified) set search considers only the top N pieces of each slot.</summary>
 		public const int ArmorSetCrossSearchTop = 6;
 		/// <summary>Accessory score = rarity tier x Rarity + defense x Defense + log10(1 + value) x Value + prefix + class fit (damage fraction for the soldier's class) x ClassFit.</summary>
-		public const float AccessoryRarityWeight = 1000f, AccessoryDefenseWeight = 50f, AccessoryValueWeight = 30f, AccessoryPrefixBonus = 10f, AccessoryClassFitWeight = 3000f;
+		public const float AccessoryRarityWeight = 100f, AccessoryDefenseWeight = 50f, AccessoryValueWeight = 30f, AccessoryPrefixBonus = 10f, AccessoryClassFitWeight = 3000f;
+
+		/// <summary>Survival effects read off a dummy wearing the accessory (see AccessoryEffect): points per regen unit, per 100% damage reduction, per extra life point, and the total cap. Rarity is only a small tie-break; what the item does decides.</summary>
+		public const float AccessoryRegenWeight = 60f, AccessoryEnduranceWeight = 3000f, AccessoryLifeWeight = 3f, AccessoryEffectCap = 1200f;
 
 		/// <summary>Mobility accessories (extra jumps, wings): value per kind, how many jumps count, and the small score bonus a second mobility accessory earns. Every levy takes one first.</summary>
 		public static class Armory

@@ -92,6 +92,7 @@ namespace Levy.Content.NPCs
 			if (_fallThroughTicks > 0) { _fallThroughTicks--; WantsToFallThrough = _fallThroughTicks > 0; }
 			else WantsToFallThrough = false;
 			if (_dashCooldown > 0) _dashCooldown--;
+			if (_hkPhase == HookPhase.Idle && _rtHookWant) RouteHookTick(grounded);
 			if (_hkPhase == HookPhase.Idle && _hkTrigTicks > 0) HookEvaluate(); // a trigger that held long enough becomes a plan and a cast (SoldierNPC.Hook.cs)
 			if (_hkPhase == HookPhase.Idle) { FallCatchCheck(); HookFollowCommander(); }
 			if (_hkStepUntil != 0 && HookStepBackTick(grounded)) { WhyM = Why.MHook; _dashTicks = 0; MirrorDummyControls(); return; }
@@ -115,6 +116,7 @@ namespace Levy.Content.NPCs
 			_hkGoalNow = goal;
 			float dx = goal.X - npc.Center.X;
 			float dy = goal.Y - npc.Bottom.Y; // > 0: goal below the feet
+			if (!TravelLegacy.On) SwimAssist(dy, air);
 			if (Math.Abs(dx) < ArriveXPx && (air || Math.Abs(dy) < ArriveYPx)) // aloft the goal's Y is the ground spot below: only X counts
 			{
 				WhyM = Why.MArrived;
@@ -202,6 +204,21 @@ namespace Levy.Content.NPCs
 			MirrorDummyControls();
 		}
 
+		/// <summary>
+		/// Swimming, as a player does it: in deep water a body with no input only sinks (an NPC has no buoyancy: gravity 0.2, half-speed movement), so a levy that waded into a lake could stand on its floor and never climb out.
+		/// Holding jump in water swims up; this does it while the goal is above the feet. A goal level with or below the feet is left to sink to (the lake floor is walkable, and the route may cross it).
+		/// </summary>
+		private void SwimAssist(float dy, bool air)
+		{
+			NPC npc = NPC;
+			if (!npc.wet || npc.lavaWet || air || _flying || _hkPhase != HookPhase.Idle) return;
+			if (dy >= -SwimUpDyPx) return;
+			float cap = npc.honeyWet ? SwimMaxUp * 0.5f : SwimMaxUp;
+			if (npc.velocity.Y > -cap) npc.velocity.Y = Math.Max(-cap, npc.velocity.Y - SwimAccel);
+			SwimTicks++;
+		}
+		internal int SwimTicks;
+
 		partial void Movement_ClientAnimate() => MirrorDummyControls();
 
 		partial void Movement_OnTeleported()
@@ -279,7 +296,7 @@ namespace Levy.Content.NPCs
 				}
 				// a hole too deep to climb back out of (deeper than a jump) is not stepped into when the goal is level or above and no planned route asks for it: that is how a body ends up trapped in a pit
 				if (!TravelLegacy.On && depth > Abilities.JumpTiles && !Abilities.HasWings && dyPx <= 2f * 16f && !_pathFromRoute) { _blocked = true; _blockedHard = true; BlockWhy = 8; HookTrigger(HookReason.Gap); return; }
-				if (depth > Abilities.JumpTiles + DropMarginTiles)
+				if (depth > Abilities.JumpTiles + DropMarginTiles && !(!TravelLegacy.On && _pathFromRoute && !Abilities.HasWings && depth <= FallScanTiles)) // a planned route may go down a safe fall (the far side was checked for a way out)
 				{
 					if (Abilities.HasWings) wantFly = true;
 					else { _blocked = true; _blockedHard = true; BlockWhy = 8; if (dyPx <= 2f * 16f) HookTrigger(HookReason.Gap); }

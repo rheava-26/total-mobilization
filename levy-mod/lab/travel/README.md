@@ -11,6 +11,7 @@ teleports (a jump of more than 6 tiles in one tick), falls of 8+ tiles, seconds 
 ## Courses (`LEVY_TRAVEL_COURSE`)
 - `walk` (default): carved 960-tile surface course. Hills with slopes, a 3-tile ledge, a 14-wide 12-deep dip with a stair out, a forest, a pond, a house with two doors, a mountain with a tunnel, a 62-wide 7-deep lake, a 20-wide chasm with a platform bridge, rough hills. Camps (flat) at offsets 20, 170, 320 ... 920 so a 150-tile leg starts and ends on flat ground.
 - `zoo`: one obstacle per 150-tile leg, mostly impassable on foot on purpose: 10-high cliff, 6-wide crack, 14-wide and 20-wide chasms, 12-deep lake, 20-high cliff. Shows what each gear can do.
+- `corrupt`: the corruption route, flat camps every 150 from 20 and one obstacle per leg: C0 three sheer holes 4 wide (3, 5, 8 deep), C1 a cave mouth under a rock lid, C2 an 8-wide 60-deep chasm with ledges every 10 rows, C3 a 4-deep hole, C4 a 6-wide 14-deep pit with a sheer near wall and 3-high steps up the far wall.
 - `world`: the REAL generated terrain of a world file (`LEVY_TRAVEL_X0` = start column, `FROM`/`TO` are offsets from it, negative goes left). This is the one that reproduced the report; use generated worlds (`gen.sh`), not only carved courses.
 
 ## Run
@@ -24,5 +25,7 @@ LEGACY=1 ./run.sh ...                                 # the same build with the 
 python3 analyze.py TAG [--gear]                       # one table
 python3 plot_svg.py out.svg title run_dir [run_dir ...]
 ```
+`LEVY_TRAVEL_CMDFAR` (tiles, default 400) is how far behind the start the commander stands in a map order. A levy spawns in Follow, so with the commander more than 400 tiles from the start it is pulled back to the commander before the order lands (a leg starting past offset 420 of the zoo or corrupt course starts 400 back); the round 2 runs set it to 20.
+`round2/` holds the scripts of the second round (`r1.sh` one run, `runall.sh TMOD TAG P SET` the sets, `tab.py TAG...` the before/after table, `sum.py` one line per run); their paths are the lab's own.
 Gear (`mixed`, 15 levies): 5 bare, 4 Hermes Boots, 3 Angel Wings, 3 Grappling Hook. `LEVY_TRAVEL_FOES=1` adds day-time monsters ahead of the army and gives them handguns; `LEVY_TRAVEL_PLAN=1` also prints what the route planner finds for each ability class.
 The headless server runs the sim far faster than real time (3000 ticks in about 4 s); one run costs the 20 s boot plus a few seconds.

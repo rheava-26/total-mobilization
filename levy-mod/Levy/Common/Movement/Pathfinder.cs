@@ -40,10 +40,13 @@ namespace Levy.Common.Movement
 	public sealed class PathSearch
 	{
 		public enum State : byte { Idle, Running, Found, Partial, Failed }
-		private const byte KindWalk = 0, KindStep = 1, KindFall = 2, KindJump = 3, KindFly = 4;
+		public const byte KindWalk = 0, KindStep = 1, KindFall = 2, KindJump = 3, KindFly = 4, KindHook = 5, KindChain = 6;
 
 		private readonly int _maxW, _maxH;
 		private readonly ushort[] _fl;   // consecutive flight steps on the best way to the cell (wings only run for WingTimeMax ticks)
+		private readonly int[] _trap;    // row (+1) the body fell from on the best way to the cell when that drop was deeper than a jump and it has not climbed back to that row yet (0 = not in a pit); such a cell is never a best-effort end
+		private bool _hook; private float _hookReachPx; private HashSet<long> _ban;
+		public static long StatHookScans, StatHookEdges;
 		private readonly float[] _g; private readonly int[] _from; private readonly int[] _stamp; private readonly bool[] _closed; private readonly byte[] _kind;
 		private int _gen = 1;
 		private float[] _heapF; private int[] _heapI; private int _heapN;
@@ -60,7 +63,7 @@ namespace Levy.Common.Movement
 		public PathSearch(int maxW, int maxH)
 		{
 			_maxW = maxW; _maxH = maxH; int cells = maxW * maxH;
-			_fl = new ushort[cells]; _g = new float[cells]; _from = new int[cells]; _stamp = new int[cells]; _closed = new bool[cells]; _kind = new byte[cells];
+			_fl = new ushort[cells]; _trap = new int[cells]; _g = new float[cells]; _from = new int[cells]; _stamp = new int[cells]; _closed = new bool[cells]; _kind = new byte[cells];
 			_heapF = new float[Math.Min(cells * 2, 1 << 16)]; _heapI = new int[_heapF.Length];
 		}
 
@@ -68,7 +71,7 @@ namespace Levy.Common.Movement
 		/// Starts a search. <paramref name="centred"/>: the window is centred on the start (the short search). Otherwise it is the bounding box of start and goal plus a margin, clipped to the buffer
 		/// (a goal outside the window fails the search). <paramref name="hWeight"/> above 1 trades route optimality for far fewer expanded nodes.
 		/// </summary>
-		public bool Begin(Vector2 fromWorld, Vector2 toWorld, MovementAbilities abilities, bool centred, float hWeight, int padX = 60, int padUp = 90, int padDown = 150)
+		public bool Begin(Vector2 fromWorld, Vector2 toWorld, MovementAbilities abilities, bool centred, float hWeight, int padX = 60, int padUp = 90, int padDown = 150, HashSet<long> hookBan = null, bool allowHooks = true)
 		{
 			Status = State.Failed; Expanded = 0; _bestIdx = -1;
 			abilities ??= new MovementAbilities();
@@ -90,16 +93,18 @@ namespace Levy.Common.Movement
 			if (!InWindow(t.X, t.Y) || !InWindow(s.X, s.Y)) return false;
 			_wings = abilities.HasWings;
 			_jumpTiles = Math.Max(1, abilities.JumpTiles);
-			_maxFall = _wings ? FallScanTiles : Math.Min(FallScanTiles, _jumpTiles + DropMarginTiles);
+			_maxFall = _wings ? FallScanTiles : (TravelLegacy.On || centred ? Math.Min(FallScanTiles, _jumpTiles + DropMarginTiles) : FallScanTiles); // a route may go down into a pit (a safe fall) when the far side lets it climb out
 			_gapTiles = abilities.GapTiles;
 			_maxFlight = TravelLegacy.On ? ushort.MaxValue : Math.Max(6, (int)(abilities.WingTimeMax * FlySpeed / 16f * FlightRangeShare)); // tiles of flight one tank of wing time covers, with room for the climb
 			_hWeight = Math.Max(1f, hWeight);
+			_hook = allowHooks && !TravelLegacy.On && !centred && !_wings && abilities.HasHook && abilities.HookReachPx >= HookMinReachTiles * 16f;
+			_hookReachPx = _hook ? abilities.HookReachPx : 0f; _ban = hookBan;
 			_goalTile = t;
 			if (++_gen == int.MaxValue) { Array.Clear(_stamp, 0, _stamp.Length); _gen = 1; }
 			_heapN = 0;
 			_startIdx = Idx(s.X, s.Y); _goalIdx = Idx(t.X, t.Y);
 			_bestIdx = _startIdx; _bestH = Heur(s.X, s.Y);
-			Open(_startIdx, -1, 0f, Heur(s.X, s.Y), KindWalk); _fl[_startIdx] = 0;
+			Open(_startIdx, -1, 0f, Heur(s.X, s.Y), KindWalk); _fl[_startIdx] = 0; _trap[_startIdx] = 0;
 			Status = State.Running;
 			return true;
 		}
@@ -117,7 +122,7 @@ namespace Levy.Common.Movement
 				int cx = _ox + cur % _w, cy = _oy + cur / _w;
 				if (cur == _goalIdx) { Status = State.Found; return Status; }
 				float hc = Heur(cx, cy);
-				if (hc < _bestH) { _bestH = hc; _bestIdx = cur; }
+				if (hc < _bestH && _trap[cur] == 0) { _bestH = hc; _bestIdx = cur; }
 				Expand(cx, cy, cur, _g[cur]);
 				Expanded++;
 				if (++n >= budget) { return Status; } // Running: the budget slice is spent (the caller decides whether the search has its total allowance)
@@ -130,9 +135,12 @@ namespace Levy.Common.Movement
 		public void Abandon() { if (Status == State.Running) Status = HasPartial ? State.Partial : State.Failed; }
 
 		/// <summary>World-space waypoints (bottom-centre) of the found path, or of the best-effort path to the closest node for a Partial search. First entry = next step.</summary>
-		public bool BuildPath(List<Vector2> path)
+		public bool BuildPath(List<Vector2> path) => BuildPath(path, null);
+
+		/// <summary>As above; <paramref name="kinds"/> (when given) gets one byte per waypoint: 0 = reached by walking, jumping or falling, 1 = reached by one grappling hook cast from the previous waypoint, 2 = by a chain of casts up a wall.</summary>
+		public bool BuildPath(List<Vector2> path, List<byte> kinds)
 		{
-			path.Clear();
+			path.Clear(); kinds?.Clear();
 			int end = Status == State.Found ? _goalIdx : (Status == State.Partial ? _bestIdx : -1);
 			if (end < 0) return false;
 			_rev.Clear();
@@ -148,6 +156,7 @@ namespace Levy.Common.Movement
 					if (_oy + m / _w == y && _kind[m] == KindWalk && _kind[n] == KindWalk) continue;
 				}
 				path.Add(TileNav.BottomCentre(x, y));
+				kinds?.Add(_kind[n] == KindHook ? (byte)1 : _kind[n] == KindChain ? (byte)2 : (byte)0);
 			}
 			return path.Count > 0;
 		}
@@ -201,6 +210,7 @@ namespace Levy.Common.Movement
 					}
 				}
 			}
+			if (standing && _hook) ExpandHooks(x, y, cur, g);
 			if (_wings)
 			{
 				for (int dy = -1; dy <= 1; dy++)
@@ -215,6 +225,122 @@ namespace Levy.Common.Movement
 					}
 				}
 			}
+		}
+
+
+		// ---- grappling hook edges ----
+		private bool HookBanned(int tx, int ty) => _ban != null && _ban.Contains(((long)tx << 24) | (uint)ty);
+		public static long HookKey(int tx, int ty) => ((long)tx << 24) | (uint)ty;
+
+		// the anchors a cast from the current cell could latch onto (the HookPlanner fan: rays across the upper half-plane, the first latchable tile on each)
+		private readonly int[] _anX = new int[HookFanRays], _anY = new int[HookFanRays]; private int _anN;
+		private static bool Latchable(int x, int y)
+		{
+			if (!TileNav.InBounds(x, y)) return false;
+			Terraria.Tile t = Terraria.Main.tile[x, y];
+			return t.HasUnactuatedTile && Terraria.Main.tileSolid[t.TileType];
+		}
+
+		private void HookFan(int x, int y, float reachPx)
+		{
+			_anN = 0;
+			float cx = x * 16f + 8f, cy = (y + 1) * 16f - 21f;
+			for (int k = 0; k < HookFanRays; k++)
+			{
+				float th = -MathHelper.Pi + (k + 0.5f) * MathHelper.Pi / HookFanRays, dx = (float)Math.Cos(th), dy = (float)Math.Sin(th);
+				for (float t = 10f; t <= reachPx; t += 8f)
+				{
+					float px = cx + dx * t, py = cy + dy * t;
+					int bx0 = (int)Math.Floor((px - 5f) / 16f), bx1 = (int)Math.Floor((px + 5f) / 16f), by0 = (int)Math.Floor((py - 5f) / 16f), by1 = (int)Math.Floor((py + 5f) / 16f);
+					bool hit = false; int hx = 0, hy = 0;
+					for (int tx = bx0; tx <= bx1 && !hit; tx++) for (int ty = by0; ty <= by1; ty++) if (Latchable(tx, ty)) { hit = true; hx = tx; hy = ty; break; }
+					if (!hit) continue;
+					_anX[_anN] = hx; _anY[_anN] = hy; _anN++;
+					break;
+				}
+			}
+		}
+
+		/// <summary>A fan anchor within three columns of the target and up to ten rows above it (or at its floor): a hook latched there carries the body to the target.</summary>
+		private bool HookAnchorNear(int tx, int ty)
+		{
+			for (int i = 0; i < _anN; i++)
+				if (Math.Abs(_anX[i] - tx) <= HookAnchorNearCols && _anY[i] >= ty - 10 && _anY[i] <= ty + 1) return true;
+			return false;
+		}
+
+		/// <summary>
+		/// Hook edges from a standing cell that has a wall or an open edge beside it: to the highest standable cell in each column within the hook's reach (a ledge above the wall, the far lip of a gap) that has
+		/// a fan anchor near it; and a chain of casts up a tall wall face. The three nearest-the-goal targets per side are kept. The executor fires the real hook planner at the
+		/// edge's start (a plan that fails bans the target and the route is searched again).
+		/// </summary>
+		private void ExpandHooks(int x, int y, int cur, float g)
+		{
+			if (TileNav.HasLiquid(x, y) || TileNav.HasLiquid(x, y - 1)) return;   // a soldier does not cast from the water
+			StatHookScans++; bool fanned = false;
+			float reachT = _hookReachPx / 16f;
+			int dmax = (int)(reachT * HookDirectShare), riseMax = (int)(reachT * HookRiseShare);
+			for (int side = -1; side <= 1; side += 2)
+			{
+				int nx = x + side;
+				bool wall = TileNav.IsSolid(nx, y - 1) && TileNav.IsSolid(nx, y - 2);
+				bool open = !TileNav.IsFloor(nx, y + 1) && !TileNav.IsSolid(nx, y - 1);
+				if (!wall && !open) continue;
+				int b0x = -1, b0y = 0, b1x = -1, b1y = 0, b2x = -1, b2y = 0; float h0 = float.MaxValue, h1 = float.MaxValue, h2 = float.MaxValue; int nb = 0;
+				for (int dx = 1; dx <= dmax; dx++)
+				{
+					int tx = x + side * dx;
+					if (!InWindow(tx, y)) break;
+					// highest standable cell of the column within the rise, down to a little below the feet
+					int ty = int.MinValue;
+					for (int r = y - riseMax; r <= y + 1; r++) { if (TileNav.IsStandable(tx, r)) { ty = r; break; } }
+					if (ty == int.MinValue || !InWindow(tx, ty)) continue;
+					int rise = y - ty;
+					if (rise < 2 && !open) continue;                                  // level or lower: only across an open edge
+					if (rise <= _jumpTiles && dx <= 2) continue;                      // plain jumping gets there
+					if (rise < 2 && dx <= 1) continue;
+					float dist = (float)Math.Sqrt(dx * dx + rise * rise);
+					if (dist > reachT * HookDirectShare || dist < 3f) continue;
+					if (HookBanned(tx, ty)) continue;
+					if (!fanned) { HookFan(x, y, _hookReachPx); fanned = true; }
+					if (!HookAnchorNear(tx, ty)) continue;
+					float h = Heur(tx, ty);
+					nb++;
+					if (h < h0) { b2x = b1x; b2y = b1y; h2 = h1; b1x = b0x; b1y = b0y; h1 = h0; b0x = tx; b0y = ty; h0 = h; }
+					else if (h < h1) { b2x = b1x; b2y = b1y; h2 = h1; b1x = tx; b1y = ty; h1 = h; }
+					else if (h < h2) { b2x = tx; b2y = ty; h2 = h; }
+				}
+				if (b0x >= 0) { HookRelax(x, y, b0x, b0y, cur, g, KindHook); }
+				if (b1x >= 0) { HookRelax(x, y, b1x, b1y, cur, g, KindHook); }
+				if (b2x >= 0) { HookRelax(x, y, b2x, b2y, cur, g, KindHook); }
+				// a wall face beside us: reel up it (one cast when it is within the reach, a chain of casts when it is taller)
+				if (wall)
+				{
+					int top = y - 1;
+					int lim = y - (int)(reachT * HookChainShare);
+					while (top > lim && TileNav.IsSolid(nx, top - 1)) top--;
+					int hgt = y - top;
+					if (hgt > _jumpTiles && top > lim)
+					{
+						bool single = hgt <= riseMax;
+						for (int dx = 0; dx <= 3; dx++)
+						{
+							int tx = nx + side * dx, found = int.MinValue;
+							for (int ty = top - 2; ty <= top + 1 && found == int.MinValue; ty++) if (InWindow(tx, ty) && TileNav.IsStandable(tx, ty)) found = ty;
+							if (found == int.MinValue || HookBanned(tx, found)) continue;
+							HookRelax(x, y, tx, found, cur, single ? g : g + 10f + hgt * 0.8f, single ? KindHook : KindChain); break;
+						}
+					}
+				}
+			}
+		}
+
+		private void HookRelax(int x, int y, int tx, int ty, int cur, float g, byte kind)
+		{
+			StatHookEdges++;
+			float dx = tx - x, dy = ty - y;
+			float c = kind == KindChain ? 0f : HookEdgeCost + (float)Math.Sqrt(dx * dx + dy * dy) * HookEdgeDistCost;
+			Relax(tx, ty, cur, g + c, kind);
 		}
 
 		private void RelaxGap(int x, int y, int side, int cur, float g)
@@ -258,6 +384,10 @@ namespace Levy.Common.Movement
 			if (_stamp[idx] == _gen && (_closed[idx] || g >= _g[idx])) return;
 			Open(idx, from, g, Heur(x, y), kind);
 			_fl[idx] = (ushort)fl;
+			int tr = _trap[from];
+			if (kind == KindFall) { if (tr == 0 && !_wings && y - (_oy + from / _w) > _jumpTiles) tr = _oy + from / _w + 1; }
+			else if (tr != 0 && y <= tr - 1) tr = 0;   // climbed back to the row it fell from
+			_trap[idx] = tr;
 		}
 
 		private void Open(int idx, int from, float g, float h, byte kind)

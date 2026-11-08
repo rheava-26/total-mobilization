@@ -53,6 +53,8 @@ namespace Levy.Common.Movement
 		public float ReachPx, PullPx; public int Count; public HookKind Kind;
 		public float BodyW, BodyH, JumpSpeed, Gravity;
 		public int Rays, ReleaseCandidates, MaxAnchors, MaxHooks;
+		/// <summary>After the release the body holds the direction key toward the goal (a route edge: the climber who lets go at a lip steps onto it) instead of drifting with air drag.</summary>
+		public bool AirSteer;
 		public static HookParams For(HookInfo info, float bodyW, float bodyH, float jumpSpeed, float gravity) => new()
 		{
 			ReachPx = info.ReachPx, PullPx = info.PullPx, Count = info.Count, Kind = info.Kind, BodyW = bodyW, BodyH = bodyH, JumpSpeed = jumpSpeed, Gravity = gravity,
@@ -384,7 +386,9 @@ namespace Levy.Common.Movement
 			{
 				ticks = t + 1;
 				vy = Math.Min(LevyConstants.Hooks.TerminalVelocityPx, vy + p.Gravity);
-				if (MathF.Abs(vx) > LevyConstants.Hooks.AirDragPx) vx -= MathF.Sign(vx) * LevyConstants.Hooks.AirDragPx; else vx = 0f;
+				float steerDx = goalBottom.X - (x + bw / 2f);
+				if (p.AirSteer && MathF.Abs(steerDx) > 20f && (y + bh) - goalBottom.Y < 12f * 16f) vx = MathF.Sign(steerDx) * MathF.Min(3.4f, MathF.Max(1.5f, MathF.Abs(steerDx) / 8f));   // same rule as SoldierNPC.TickBallistic
+				else if (MathF.Abs(vx) > LevyConstants.Hooks.AirDragPx) vx -= MathF.Sign(vx) * LevyConstants.Hooks.AirDragPx; else vx = 0f;
 				bool rest = Move(w, ref x, ref y, ref vx, ref vy, bw, bh);
 				fl?.Add(new Vector2(x + bw / 2f, y + bh));
 				if (TouchesLava(w, x, y, bw, bh)) { DLava++; if (Trace) DiagLog.Add($"a={anchors[0].X / 16f:0.0},{anchors[0].Y / 16f:0.0} rel={idx} v={s.DesVx:0.0},{s.DesVy:0.0} lava"); return null; }

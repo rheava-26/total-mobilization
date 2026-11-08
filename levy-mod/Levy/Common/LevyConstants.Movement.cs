@@ -125,6 +125,8 @@ namespace Levy.Common
 			public const int FallScanTiles = 20;
 			public const int DropMarginTiles = 6;               // refuse drops deeper than JumpTiles + this (unless winged)
 			public const int DeepWaterLiquid = 128;
+			/// <summary>Swimming up (see SoldierNPC.SwimAssist): upward acceleration and top speed in px per tick, and how far above the feet the goal must be (px).</summary>
+			public const float SwimAccel = 0.35f, SwimMaxUp = 3f, SwimUpDyPx = 16f;
 			public const int PlatformDropBelowPx = 32;
 			public const int PlatformDropTicks = 10;
 			/// <summary>The door custodian keeps trying to shut a door a levy or officer opened for this long (30 s), checks every DoorCustodianIntervalTicks, and in the last DoorCustodianStrictTicks closes it even with someone beside it (only a body in the doorway holds it then).</summary>
@@ -178,6 +180,8 @@ namespace Levy.Common
 			public const int RouteWindowW = 1500, RouteWindowH = 460;
 			/// <summary>Nodes expanded per game tick by the planner (about 2 microseconds a node: 1.4 ms) and the most one route may use before it settles for the closest point it reached.</summary>
 			public const int RouteNodesPerTick = 700, RouteMaxNodes = 220000;
+			/// <summary>A planner slice also stops after this many ms (checked every RouteChunkNodes nodes).</summary>
+			public const float RouteSliceMs = 1.6f; public const int RouteChunkNodes = 25;
 			/// <summary>Weight on the heuristic: above 1 the search commits toward the goal and expands far fewer tiles (routes are a little longer than optimal).</summary>
 			public const float RouteHWeight = 1.7f;
 			/// <summary>Soldiers within the same bucket (tiles) of one another share a route; routes are kept this long (ticks) and at most this many are cached.</summary>
@@ -188,9 +192,18 @@ namespace Levy.Common
 			public const int RouteLookaheadTiles = 26, RouteOffRouteTiles = 12;
 			/// <summary>No progress for this many ticks while following a route: ask for a fresh route from here (at most RouteReplanMax times per order), then fall back to the old hop-toward-the-goal walk.</summary>
 			public const int RouteStallTicks = 60 * 8, RouteReplanMax = 3;
-			/// <summary>A trip is routed when the goal is farther than this (tiles) in x, or this much above or below the feet.</summary>
+			/// <summary>A planned route climbs by wing when the next waypoint is this far above (px).</summary>
 			public const float RouteFlyRisePx = 40f;
+			/// <summary>A trip is routed when the goal is farther than this (tiles) in x, or this much above or below the feet; a trip wider than RouteMaxHopTiles is routed in hops.</summary>
 			public const int RouteMinTripTiles = 24, RouteMinTripRise = 10, RouteMaxHopTiles = 1100;
+			// ---- hooks in routes ----
+			/// <summary>A route uses a hook only when the item reaches at least this many tiles. A hook edge reaches up to HookDirectShare of the reach (HookRiseShare of it straight up); a chain of casts climbs a wall face up to HookChainShare of the reach tall.</summary>
+			public const float HookMinReachTiles = 8f, HookDirectShare = 0.88f, HookRiseShare = 0.75f, HookChainShare = 3.2f;
+			/// <summary>Fan rays the route search casts from a cell to find anchors, how many columns from a target an anchor may be, and the search cost of a cast (plus per tile of reach).</summary>
+			public const int HookFanRays = 24, HookAnchorNearCols = 3;
+			public const float HookEdgeCost = 7f, HookEdgeDistCost = 0.5f;
+			/// <summary>Failed hook targets remembered per soldier (each is banned from the route search), ticks the executor waits at the cast point for the hook planner before it gives the edge up, and the spacing of its tries (three per edge).</summary>
+			public const int RouteHookBanMax = 6, RouteHookWaitTicks = 420, RouteHookRetryTicks = 45;
 
 			// ---- wings ----
 			public const float FlySpeed = 6f;

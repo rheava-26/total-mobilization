@@ -43,7 +43,7 @@ Pages: {
 		Body:
 			'''
 			Command points limit how many Regulars you can field. You start with 4, and each boss you beat adds more.
-			A Levy costs 1 point, a Man-at-Arms 3 and a Champion 7. Man-at-Arms unlocks after any mechanical boss and Champion after Golem.
+			A Levy costs 1 point, a Man-at-Arms 3 and a Champion 7. Every grade is available from the start. The only cost is command points.
 			A Regular costs a muster fee up front and a wage at dawn. Both are paid from the Barracks treasury, so deposit coins there.
 			Regulars who go unpaid for days begin to desert.
 			Reserve takes a Regular off active duty: no body in the field, no wage and no command points.
@@ -325,7 +325,7 @@ Pages: {
 			The Levy Rod, Levy Cane and Levy Staff plant a levy sentry at your cursor during the Old One's Army.
 			Each sentry costs 5 Etherian Mana and must be within 40 tiles of you. The Rod calls up 1 levy, the Cane 2 and the Staff 3.
 			The Tavernkeep sells them for Defender Medals: 10, 25 and 50. The Cane is stocked after a mechanical boss and the Staff after Golem.
-			He also sells Barracks Ale, Black Stout and Spiced Rum. Levies within 60 tiles gain defense, damage or attack speed for 5 minutes, and aim worse while drunk.
+			He also sells Barracks Ale, Black Stout and Spiced Rum. Levies within 60 tiles gain 8 defense, 15% damage or 10% critical chance for 5 minutes, and have 60% more aim error while drunk. Each costs 4 or 5 silver.
 			'''
 	}
 

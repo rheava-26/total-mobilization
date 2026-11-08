@@ -87,8 +87,8 @@ namespace Levy.Common.Systems
 		public virtual bool GradeUnlocked(Grade g) => g switch
 		{
 			Grade.Levy => true,
-			Grade.ManAtArms => AnyMechDown,
-			Grade.Champion => NPC.downedGolemBoss,
+			Grade.ManAtArms => true,
+			Grade.Champion => true,
 			_ => false,
 		};
 

@@ -20,7 +20,8 @@ namespace Levy.Common
 		public const int DrinkDurationTicks = 60 * 60 * 5;
 		public const int AleDefense = 8;
 		public const float StoutDamage = 0.15f;
-		public const float RumAttackSpeed = 0.2f;
+		/// <summary>Spiced Rum: percentage points of critical strike chance (the Rage Potion's number).</summary>
+		public const float RumCrit = 10f;
 		/// <summary>Tipsy: a drunk levy's aim error is multiplied by this (all three drinks).</summary>
 		public const float DrunkAimErrorMult = 1.6f;
 	}

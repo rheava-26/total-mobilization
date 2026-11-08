@@ -26,15 +26,15 @@ PaintedBuff: {
 
 AleBuff: {
 	DisplayName: Ale
-	Description: Drunk. More defense, wider aim error.
+	Description: Increases defense by 8. Aim error is 60% wider.
 }
 
 StoutBuff: {
 	DisplayName: Stout
-	Description: Drunk. More damage, wider aim error.
+	Description: Increases damage by 15%. Aim error is 60% wider.
 }
 
 RumBuff: {
 	DisplayName: Rum
-	Description: Drunk. Attacks faster, wider aim error.
+	Description: Increases critical strike chance by 10%. Aim error is 60% wider.
 }

@@ -130,7 +130,7 @@ namespace Levy.Common.Weapons
 		private static readonly System.Collections.Generic.HashSet<int> _altDudItems = new();
 
 		/// <summary>Every family the soldier fires can try its right-click: the shoot-pipeline families fire it through their own attack, the rest through the item's own Shoot (<see cref="AltShoot"/>).</summary>
-		private static bool AltEligible(WeaponProfile profile) => LevyConstants.AltFireEnabled && FiredFamilies.Contains(profile.Family);
+		private static bool AltEligible(WeaponProfile profile) => LevyConstants.AltFireEnabled && FiredFamilies.Contains(profile.Family) && !(profile.Family == WeaponFamily.HeldWeapon && ModShotKinds.Of(ContentSamples.ItemsByType.TryGetValue(profile.ItemType, out Item smp) ? smp : null) == ModShotKind.ArkSwing); // an Ark parries on its own terms (ArkSwings)
 
 		private static bool ShootPipelineFamily(WeaponFamily f) => f == WeaponFamily.Gun || f == WeaponFamily.Bow || f == WeaponFamily.Magic;
 
@@ -987,7 +987,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>Cooldown, animation, aim rotation, facing and use sound shared by every family.</summary>
-		private static void FinishUse(SoldierNPC s, Item item, Vector2 aimVel)
+		internal static void FinishUse(SoldierNPC s, Item item, Vector2 aimVel)
 		{
 			// A running animation keeps going (burst weapons fire several shots per animation, one every useTime); a new use starts a fresh one.
 			if (s.ItemAnimation <= 0) { s.ItemAnimation = s.ItemAnimationMax = Math.Max(1, item.useAnimation); s.UsesThisAnimation = 0; }

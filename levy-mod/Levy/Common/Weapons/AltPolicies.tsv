@@ -24,15 +24,15 @@ CalamityMod	VeeringWind	ALT_MIX	p=0.6	alt +14% boss / +23% pack (tiny absolute d
 CalamityMod	Vesuvius	ALT_ALWAYS		left-click 0 damage vs the pinned target, alt 2.4k (both scenarios)
 CalamityMod	WulfrumProsthesis	MANA_REFILL	manaBelow=0.3;maxDist=10	
 CalamityMod	AegisBlade	ALT_FAR	minDist=6	
-CalamityMod	ArkoftheCosmos	GUARD	near=7;hpBelow=0.6	
-CalamityMod	ArkoftheElements	GUARD	near=7;hpBelow=0.6	
+CalamityMod	ArkoftheCosmos	NEVER		parried and empowered by ArkSwings
+CalamityMod	ArkoftheElements	NEVER		parried and empowered by ArkSwings
 CalamityMod	BrimstoneSword	ALT_FAR	minDist=5	
 CalamityMod	BrinyBaron	ALT_FAR	minDist=5	
 CalamityMod	BrokenBiomeBlade	NEVER		
 CalamityMod	DeathsAscension	NEVER		area alt measured -21% in a pack
 CalamityMod	Exoblade	DASH_CLOSE	minDist=14	
 CalamityMod	FourSeasonsGalaxia	NEVER		
-CalamityMod	FracturedArk	GUARD	near=7;hpBelow=0.6	
+CalamityMod	FracturedArk	NEVER		parried and empowered by ArkSwings
 CalamityMod	GalileoGladius	METER_READY	meter=AvailableStarburst;min=10;tough=1	
 CalamityMod	GildedProboscis	NEVER		dash alt measured -47%/-50% (boss/pack)
 CalamityMod	Hellkite	HOLD_VARIANT	cond=heavy;minDist=0;maxDist=8	
@@ -46,7 +46,7 @@ CalamityMod	PhotonRipper	NEVER
 CalamityMod	SaharaSlicers	METER_READY	meter=saharaSlicersBolts;min=1;tough=0	
 CalamityMod	StygianShield	ALT_FAR	minDist=4	
 CalamityMod	TheDarkMaster	PLACE	proj=DarkMasterClone;maxOut=1;maxDist=12;tough=1	
-CalamityMod	TrueArkoftheAncients	GUARD	near=7;hpBelow=0.6	
+CalamityMod	TrueArkoftheAncients	NEVER		parried and empowered by ArkSwings
 CalamityMod	TrueBiomeBlade	NEVER		
 CalamityMod	Violence	ALT_HEAVY	tough=1;minDist=4;maxDist=30	
 CalamityMod	WulfrumScrewdriver	NEVER		banked-screw alt measured -27% (boss)

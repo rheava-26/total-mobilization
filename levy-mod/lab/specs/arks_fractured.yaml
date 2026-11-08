@@ -1,0 +1,14 @@
+# Each Ark (parry on, the shipped behaviour) against a comparable sword, every levy carrying the one weapon, Master+Death boss. Counters: ARKS-FIGHT in server.log.gz.
+name: arks_fractured
+boss: skel
+gear: postskel.best
+seeds: 3
+cap: 120
+env: {LEVY_ARK_STATS: 1}
+cells:
+  - {name: excalibur, cw: Excalibur}
+  - {name: fractured, cw: CalamityMod/FracturedArk}
+  - {name: terrablade, cw: Terra Blade}
+  - {name: true_ark, cw: CalamityMod/TrueArkoftheAncients}
+  - {name: elements, cw: CalamityMod/ArkoftheElements}
+  - {name: cosmos, cw: CalamityMod/ArkoftheCosmos}

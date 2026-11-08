@@ -166,6 +166,7 @@ namespace Levy.Common.Weapons
 				{
 					case ModShotKind.Holdout: return WeaponFamily.HeldWeapon;
 					case ModShotKind.Shortsword: return WeaponFamily.Shortsword;
+					case ModShotKind.ArkSwing: return WeaponFamily.HeldWeapon; // swung and parried by ArkSwings, fought as a melee weapon
 				}
 			}
 
@@ -354,7 +355,7 @@ namespace Levy.Common.Weapons
 					break;
 				case WeaponFamily.HeldWeapon:
 					p.HeldMelee = src.CountsAsClass(DamageClass.Melee) && !src.CountsAsClass(DamageClass.Ranged) && !src.CountsAsClass(DamageClass.Magic);
-					p.RangeTiles = p.HeldMelee ? LevyConstants.HeldMeleeReachTiles
+					p.RangeTiles = p.HeldMelee ? (ArkSwings.IsArkItem(src) ? ArkSwings.BlowTiles(src) : LevyConstants.HeldMeleeReachTiles)
 						: src.useAmmo == AmmoID.Arrow ? LevyConstants.RangeBow : src.useAmmo == AmmoID.Bullet ? BumpedRange(LevyConstants.RangeGun) : BumpedRange(LevyConstants.RangeMagic);
 					break;
 				default: p.RangeTiles = LevyConstants.RangeMelee; break;
@@ -685,6 +686,7 @@ namespace Levy.Common.Weapons
 			else if (p.Family == WeaponFamily.Yoyo) dps *= LevyConstants.YoyoScoreFactor;
 			else if (p.Family == WeaponFamily.Flail) dps *= LevyConstants.FlailScoreFactor;
 			else if (p.Family == WeaponFamily.Thrown) dps *= LevyConstants.ThrownScoreFactor;
+			else if (p.Family == WeaponFamily.HeldWeapon && ArkSwings.IsArkItem(item)) dps = ArkSwings.SustainedDps(item); // an Ark's real cadence is its use time, and its parry adds what the lab measured
 			else if (p.Family == WeaponFamily.HeldWeapon && !heldKnown) dps *= LevyConstants.HeldScoreFactor;
 			// Short-legged extended weapons (flamethrowers) are worth less than their raw DPS: they only work at point-blank.
 			if (p.Extended && p.IsRanged) dps *= Math.Clamp(p.RangeTiles / (float)LevyConstants.RangeMagic, 0.4f, 1f);

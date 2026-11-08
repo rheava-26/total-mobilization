@@ -1,0 +1,25 @@
+# Sustained damage of each Ark against a comparable sword, every levy carrying the one weapon, commander out of the fight.
+# King Slime (low defense, plain body) has far more life than the army deals in the cap, so damage dealt in 40 s is sustained output.
+# Read weaponDmg / (n x avgSurvSec) in results.csv; counters: ARKS-FIGHT in server.log.gz; ranking numbers: ARKCHECK at boot.
+name: arks_dps
+boss: kslime
+gear: postskel.best
+seeds: 3
+cap: 40
+bhp: 100
+hp: 3000
+cmd: far
+env: {LEVY_ARK_STATS: 1}
+cells:
+  - {name: excalibur, cw: Excalibur}
+  - {name: fractured, cw: CalamityMod/FracturedArk}
+  - {name: fractured_noparry, cw: CalamityMod/FracturedArk, env: {LEVY_ARK_NOPARRY: 1}}
+  - {name: terrablade, cw: Terra Blade}
+  - {name: true_ark, cw: CalamityMod/TrueArkoftheAncients}
+  - {name: true_ark_noparry, cw: CalamityMod/TrueArkoftheAncients, env: {LEVY_ARK_NOPARRY: 1}}
+  - {name: exoblade, cw: CalamityMod/Exoblade}
+  - {name: elements, cw: CalamityMod/ArkoftheElements}
+  - {name: elements_noparry, cw: CalamityMod/ArkoftheElements, env: {LEVY_ARK_NOPARRY: 1}}
+  - {name: cosmos, cw: CalamityMod/ArkoftheCosmos}
+  - {name: cosmos_noparry, cw: CalamityMod/ArkoftheCosmos, env: {LEVY_ARK_NOPARRY: 1}}
+  - {name: cosmos_blast, cw: CalamityMod/ArkoftheCosmos, env: {LEVY_ARK_BLASTALL: 1}}

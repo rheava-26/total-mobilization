@@ -24,7 +24,7 @@ namespace Levy.Content.NPCs
 			LevyRippers.Announce(this, LevyRippers.SoundKind(cp, adrenaline));
 			int now = (int)Main.GameUpdateCount;
 			if (now - _fxStamp > 30) { _fxStamp = now; _fxCount = 0; }
-			if (++_fxCount <= 4) global::Levy.Common.Dialogue.DialogueSystem.FloatingText(this, adrenaline ? "ADRENALINE!" : "RAGE!");
+			if (++_fxCount <= 4) global::Levy.Common.Dialogue.DialogueSystem.FloatingText(this, adrenaline ? "Adrenaline!" : "Rage!");
 		}
 
 		private object RippersPlayer()

@@ -1,0 +1,10 @@
+# Fractured Ark plain swing vs Excalibur, every levy carrying the one weapon.
+name: arks_fractured
+boss: skel
+gear: postskel.best
+seeds: 3
+cap: 150
+env: {LEVY_ARK_STATS: 1}
+vs:
+  excalibur: {cw: Excalibur}
+  fractured: {cw: CalamityMod/FracturedArk}

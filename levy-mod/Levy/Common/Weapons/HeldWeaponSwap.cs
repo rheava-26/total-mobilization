@@ -42,7 +42,7 @@ namespace Levy.Common.Weapons
 		private static readonly Dictionary<int, uint> _fed = new(), _spawned = new();
 		private static bool[] _before;
 
-		internal static void Reset() { _holder.Clear(); _fed.Clear(); _spawned.Clear(); _countStamp.Clear(); }
+		internal static void Reset() { _holder.Clear(); _fed.Clear(); _spawned.Clear(); _countStamp.Clear(); ArkSwings.Reset(); }
 
 		private static readonly Dictionary<int, uint> _countStamp = new();
 		/// <summary>Once a tick per soldier: the dummy's <c>ownedProjectileCounts</c> recounted from the projectiles tagged to this soldier (what Player.Update does for a real player).</summary>
@@ -67,6 +67,7 @@ namespace Levy.Common.Weapons
 		/// <summary>Called by WeaponUse every tick the soldier wants to fire a held weapon (range and line of sight already passed in Combat).</summary>
 		internal static bool TryFire(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
 		{
+			if (ModShotKinds.Of(item) == ModShotKind.ArkSwing) return ArkSwings.TryFire(s, item, profile, target); // an Ark is swung and parried use by use, not held
 			if (item.shoot <= 0) return WeaponUse.Dud(s, item);
 			if (!WeaponUse.HasResources(s, item, profile)) { DudTrace.Note(item, "held-nores"); return false; }
 			int idx = s.NPC.whoAmI;
@@ -123,14 +124,35 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		private static Projectile SpawnViaHooks(SoldierNPC s, Item item, Vector2 vel, int damage, int ownerSlot)
 		{
+			if (s.Dummy == null || item.shoot <= 0) return null;
+			List<Projectile> made = ShootHooks(s, item, vel, damage, ownerSlot, false, null, out bool threw);
+			Projectile holder = null;
+			foreach (Projectile c in made)
+			{
+				if (c.type == item.shoot && c.owner == ownerSlot && holder == null) holder = c; // the holdout joins the chain in TryFire
+				else WeaponUse.TagSoldierProjectile(s, c, item.DamageType ?? DamageClass.Default); // anything else the hook fired is an ordinary soldier shot
+			}
+			if (threw && holder != null) holder.Kill();
+			return threw ? null : holder;
+		}
+
+		/// <summary>
+		/// The projectiles an item's own use makes for a soldier: ModifyShootStats then Shoot (what Player.ItemCheck_Shoot calls) run with the dummy swapped into slot 255 as the player holding the item (Main.myPlayer = the owner slot so
+		/// the spawns keep their ai[] and owner, the use button down, the right button when <paramref name="alt"/>). When <paramref name="custom"/> is given it makes the projectiles instead of the item's hooks (an Ark's parry, which the hook
+		/// refuses while any other soldier's parry is out: they all share owner 255). Returns every projectile made, ascending by slot, and whether a hook threw; they are still owned by the owner slot and untagged.
+		/// </summary>
+		internal static List<Projectile> ShootHooks(SoldierNPC s, Item item, Vector2 vel, int damage, int ownerSlot, bool alt, Action<IEntitySource, Vector2> custom, out bool threw)
+		{
+			threw = false;
+			var made = new List<Projectile>();
 			Player d = s.Dummy;
-			if (d == null || item.shoot <= 0) return null;
+			if (d == null) return made;
 			bool[] before = _before ??= new bool[Main.maxProjectiles];
 			for (int k = 0; k < Main.maxProjectiles; k++) before[k] = Main.projectile[k].active;
-			int savedWho = d.whoAmI, savedMy = Main.myPlayer, savedSel = d.selectedItem, savedMana = d.statMana, savedManaMax = d.statManaMax2;
+			int savedWho = d.whoAmI, savedMy = Main.myPlayer, savedSel = d.selectedItem, savedMana = d.statMana, savedManaMax = d.statManaMax2, savedAlt = d.altFunctionUse;
 			Item saved0 = d.inventory[0]; bool savedUse = d.controlUseItem, savedChannel = d.channel;
 			Vector2 pos = s.NPC.Center, v = vel; int type = item.shoot, dmg = damage; float kb = item.knockBack;
-			bool swapped = false, threw = false;
+			bool swapped = false;
 			try
 			{
 				EnemyTargeting.Swap(s); // dummy -> Main.player[255], at the soldier
@@ -140,30 +162,31 @@ namespace Levy.Common.Weapons
 				d.inventory[0] = item; d.selectedItem = 0;
 				d.statManaMax2 = Math.Max(1, s.Record.MaxMana); d.statMana = Math.Clamp(s.Record.Mana, 0, d.statManaMax2);
 				d.controlUseItem = true; d.channel = true;
-				CombinedHooks.ModifyShootStats(d, item, ref pos, ref v, ref type, ref dmg, ref kb);
-				var source = new EntitySource_ItemUse_WithAmmo(d, item, 0);
-				if (CombinedHooks.Shoot(d, item, source, pos, v, type, dmg, kb)) Projectile.NewProjectile(source, pos, v, type, dmg, kb, ownerSlot);
+				d.altFunctionUse = alt ? 2 : 0;
+				if (custom != null) custom(new EntitySource_ItemUse_WithAmmo(d, item, 0), v);
+				else
+				{
+					CombinedHooks.ModifyShootStats(d, item, ref pos, ref v, ref type, ref dmg, ref kb);
+					var source = new EntitySource_ItemUse_WithAmmo(d, item, 0);
+					if (CombinedHooks.Shoot(d, item, source, pos, v, type, dmg, kb)) Projectile.NewProjectile(source, pos, v, type, dmg, kb, ownerSlot);
+				}
 			}
 			catch (Exception) { threw = true; }
 			finally
 			{
-				d.whoAmI = savedWho; Main.myPlayer = savedMy; d.selectedItem = savedSel; d.inventory[0] = saved0; d.controlUseItem = savedUse; d.channel = savedChannel;
+				d.whoAmI = savedWho; Main.myPlayer = savedMy; d.selectedItem = savedSel; d.inventory[0] = saved0; d.controlUseItem = savedUse; d.channel = savedChannel; d.altFunctionUse = savedAlt;
 				if (item.mana > 0) s.Record.Mana = Math.Clamp(d.statMana, 0, Math.Max(0, s.Record.MaxMana));
 				d.statMana = savedMana; d.statManaMax2 = savedManaMax;
 				if (swapped) EnemyTargeting.Unswap();
 				SoldierMinions.EnsureAliasRestored();
 				EnemyTargeting.EnsureSlotRestored();
 			}
-			Projectile holder = null;
 			for (int k = 0; k < Main.maxProjectiles; k++)
 			{
 				Projectile c = Main.projectile[k];
-				if (!c.active || before[k]) continue;
-				if (c.type == item.shoot && c.owner == ownerSlot && holder == null) holder = c; // the holdout joins the chain in TryFire
-				else WeaponUse.TagSoldierProjectile(s, c, item.DamageType ?? DamageClass.Default); // anything else the hook fired is an ordinary soldier shot
+				if (c.active && !before[k]) made.Add(c);
 			}
-			if (threw && holder != null) holder.Kill();
-			return threw ? null : holder;
+			return made;
 		}
 
 		/// <summary>
@@ -206,7 +229,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>Marks a projectile as part of this soldier's held-weapon chain: soldier tag, chain flag, item, record. Owner is left alone (255).</summary>
-		private static void JoinChain(SoldierNPC s, Projectile p, Item item)
+		internal static void JoinChain(SoldierNPC s, Projectile p, Item item)
 		{
 			p.npcProj = true;
 			p.noDropItem = true;
@@ -221,7 +244,7 @@ namespace Levy.Common.Weapons
 		// =====================================================================================================
 		// Projectile.AI / Projectile.Damage wrappers.
 		// =====================================================================================================
-		private static SoldierNPC BodyOf(Projectile p, HeldWeaponProjectile g)
+		internal static SoldierNPC BodyOf(Projectile p, HeldWeaponProjectile g)
 		{
 			if (!p.TryGetGlobalProjectile(out SoldierProjectileTag tag)) return null;
 			int idx = tag.SoldierIndex;
@@ -270,8 +293,9 @@ namespace Levy.Common.Weapons
 				uint now = Main.GameUpdateCount;
 				int idx = body.NPC.whoAmI;
 				uint since = _fed.TryGetValue(idx, out uint f) ? now - f : uint.MaxValue;
-				if (since > (uint)LevyConstants.HeldIdleKillTicks) { p.Kill(); return; }
-				bool feed = since <= (uint)LevyConstants.HeldFeedGraceTicks;
+				bool ark = g.Ark != ArkRole.None; // an Ark's blade or parry lives its own life (a swing, a 340-tick parry cooldown): it is not fed, and it is not cut when combat pauses
+				if (!ark && since > (uint)LevyConstants.HeldIdleKillTicks) { p.Kill(); return; }
+				bool feed = ark || since <= (uint)LevyConstants.HeldFeedGraceTicks;
 
 				savedChannel = d.channel; savedUse = d.controlUseItem; savedNoItems = d.noItems; savedAnimMax = d.itemAnimationMax;
 				savedMana = d.statMana; savedManaMax = d.statManaMax2; savedSelected = d.selectedItem;
@@ -293,8 +317,9 @@ namespace Levy.Common.Weapons
 					if (g.HeldTicks > g.HoldMax + g.Linger) { p.Kill(); return; }
 				}
 				if (ModShotKinds.ChainExtras(item)) CountOwned(body); // vanilla counts a player's own projectiles in Player.Update; the dummy never runs it, and holdouts and their children test ownedProjectileCounts (Rancor's circle ends when it sees no holdout)
-				d.channel = feed && !release;
-				d.controlUseItem = feed && !release;
+				bool button = ark ? ArkSwings.WantsButton(p, g) : feed && !release; // the thrown scissors read the use button: held until the snap window opens, then let go
+				d.channel = button;
+				d.controlUseItem = button;
 				d.itemAnimationMax = Math.Max(1, CombinedHooks.TotalAnimationTime(Math.Max(1, item.useAnimation), d, item));
 				manaWeapon = item.mana > 0;
 				d.statManaMax2 = Math.Max(1, body.Record.MaxMana);
@@ -313,7 +338,7 @@ namespace Levy.Common.Weapons
 				Main.mouseY = (int)(cursor.Y - Main.screenPosition.Y);
 				if (p.owner != Slot && !ReferenceEquals(Main.player[p.owner], d)) { SoldierMinions.AliasDummy(p.owner, d); aliasWho = d.whoAmI; d.whoAmI = p.owner; aliased = true; } // a UUID-bound chain: the dummy also stands in the chain's own slot
 				Main.myPlayer = p.owner; // the holder only fires for owner == Main.myPlayer
-				if (g.ModHolder) { savedMouseLeft = Main.mouseLeft; Main.mouseLeft = feed && !release; mouseSet = true; } // some holdouts read the raw left button as "still held"
+				if (g.ModHolder) { savedMouseLeft = Main.mouseLeft; Main.mouseLeft = button; mouseSet = true; } // some holdouts read the raw left button as "still held"
 				if (g.ModHolder)
 				{
 					// Calamity reads the cursor from the owner's own CalamityPlayer (MountedCenter + stored delta), not from Main.mouse: put it on the aim point for this call
@@ -374,6 +399,7 @@ namespace Levy.Common.Weapons
 			SoldierNPC body = BodyOf(p, g);
 			if (body == null || !LevyUtil.IsServerOrSingle) { orig(p); return; }
 			int savedOwner = p.owner, savedType = p.type;
+			ArkSwings.DamageScope ark = g.Ark != ArkRole.None ? new ArkSwings.DamageScope(body, p, g) : default; // an Ark's blade reads its owner's centre: the real player stands at the soldier for the call
 			try
 			{
 				p.owner = SoldierMinions.TrueMyPlayer;
@@ -382,6 +408,7 @@ namespace Levy.Common.Weapons
 			finally
 			{
 				if (p.type == savedType) p.owner = savedOwner; // undo only our own edit: if the cascade killed p and recycled its slot, the new projectile keeps its owner
+				ark.Dispose();
 				EnemyTargeting.EnsureSlotRestored(); // never leave a dummy in Main.player[255]
 			}
 		}
@@ -396,6 +423,7 @@ namespace Levy.Common.Weapons
 				if (!c.active || before[i] || i == holder.whoAmI) continue;
 				if (DudTrace.On) DudTrace.NoteType(c.type, "adopted@" + c.owner + (c.friendly ? "+f" : "-f") + "+dmg" + (c.damage > 0 ? "1" : "0"));
 				if (c.aiStyle == ProjAIStyleID.HeldProjectile || c.aiStyle == ProjAIStyleID.ThickLaser) JoinChain(body, c, item);
+				else if (ArkSwings.AdoptChild(body, holder, c, item)) { }
 				else if (ModShotKinds.ChainExtras(item) && c.ModProjectile != null && ((holder.TryGetGlobalProjectile(out HeldWeaponProjectile pg) && pg.BoundChild) || OwnerLockProbe.BoundToHolder(c)))
 				{
 					// bound to its holder (reads the button / finds its parent by UUID) or made by a bound child (Starmageddon's stars, made by the star centre): stays in the chain, same owner, dummy and button as the holdout
@@ -479,6 +507,12 @@ namespace Levy.Common.Weapons
 		/// <summary>A projectile a holdout's AI made that stays bound to it (see OwnerLockProbe.BoundToHolder): it and what it spawns stay in the chain.</summary>
 		public bool BoundChild;
 		public int HeldTicks, HoldMax, Linger;
+		/// <summary>An Ark's swung blade or parry holdout (or a child bound to the blade): see <see cref="ArkSwings"/>.</summary>
+		public ArkRole Ark;
+		/// <summary>The Ark's reach and throw numbers, for its blade (server side only).</summary>
+		internal ArkSpec ArkSpec;
+		/// <summary>The parry has struck an enemy (it empowers once); and whether that enemy could hurt the soldier by touch (the parry's immunity window needs it).</summary>
+		public bool ParryHit, ParryContact, SnapCounted;
 		/// <summary>A scripted cursor path (see ModShotKinds.CursorScriptOf) this holdout and its bound children follow instead of the plain aim point.</summary>
 		public CursorScript Script;
 		/// <summary>Server-side identity of the soldier record that fired this (guards NPC-slot reuse). Never synced.</summary>
@@ -497,6 +531,12 @@ namespace Levy.Common.Weapons
 		{
 			Chain = binaryReader.ReadBoolean();
 			if (Chain) ItemType = binaryReader.ReadInt32();
+		}
+
+		/// <summary>An Ark's parry stab connected: remembers whether the enemy has contact damage (the parry's immunity window is only granted against that).</summary>
+		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
+		{
+			if (Chain && Ark == ArkRole.Parry && !ParryHit) { ParryHit = true; ParryContact = target.damage > 0; }
 		}
 
 		/// <summary>The soldier's dummy must not keep pointing at a dead holder (the dummy's held-projectile layer would draw whatever reuses that slot).</summary>

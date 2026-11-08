@@ -1,0 +1,8 @@
+# Re-run of the deathladder cell C best (Master+Death Eater of Worlds, post-Skeletron best gear, 16 levies at 400 HP).
+# Earlier result (docs/boss_lab/deathladder/RESULTS.md): 6/6 wins, kill 24-36 s, 1-2 levy deaths.
+name: deathladder_c
+boss: eow
+mode: mdeath
+gear: postskel.best
+vs:
+  legacy_c: {gear: legacy.dlC}     # the original C# roll, as a cross-check of the data presets

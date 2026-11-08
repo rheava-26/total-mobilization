@@ -137,6 +137,7 @@ def roll_army(gear, potions, stations, n, hp, seed):
 
 # ------------------------------------------------------------------------------------------------------------ spec -> cells
 def parse_seeds(s):
+    if isinstance(s, str) and s.strip().isdigit(): s = int(s)
     if isinstance(s, int): return list(range(1, s + 1))
     if isinstance(s, str):
         m = re.fullmatch(r"(\d+)-(\d+)", s.strip())
@@ -234,20 +235,23 @@ def lock(path):
     path.parent.mkdir(parents=True, exist_ok=True); f = open(path, "w"); fcntl.flock(f, fcntl.LOCK_EX); return f
 
 def ensure_install():
-    if (HOME / "tml" / "tModLoader.dll").exists(): return
-    print("levylab: first use, creating the private install in", HOME, file=sys.stderr)
-    (HOME / "tml").mkdir(parents=True, exist_ok=True)
-    for f in SRC_TML.iterdir():
-        if f.name == "tModLoader-Logs": continue
-        (shutil.copytree if f.is_dir() else shutil.copy2)(f, HOME / "tml" / f.name, symlinks=True)
-    (HOME / "tml" / "tModLoader-Logs").mkdir(exist_ok=True)
+    """one persistent private install (tML + mods + test world + build save dir), created on first use from /home/user/lab/tmlv + savev; later runs only reset per-run state."""
+    if not (HOME / "tml" / "tModLoader.dll").exists():
+        print("levylab: first use, creating the private install in", HOME, file=sys.stderr)
+        (HOME / "tml").mkdir(parents=True, exist_ok=True)
+        for f in SRC_TML.iterdir():
+            if f.name == "tModLoader-Logs": continue
+            (shutil.copytree if f.is_dir() else shutil.copy2)(f, HOME / "tml" / f.name, symlinks=True)
+        (HOME / "tml" / "tModLoader-Logs").mkdir(exist_ok=True)
     save = HOME / "build" / "save"; (save / "ModSources").mkdir(parents=True, exist_ok=True); (save / "Mods").mkdir(exist_ok=True)
     for m in (SRC_SAVE / "Mods").iterdir():
-        if m.suffix == ".tmod" and m.name != "Levy.tmod": (save / "Mods" / m.name).unlink(missing_ok=True); os.symlink(os.path.realpath(m), save / "Mods" / m.name)
-    (save / "ModSources" / "tModLoader.targets").write_text(f'<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">\n  <Import Project="{HOME}/tml/tMLMod.targets" />\n</Project>')
-    (HOME / "world").mkdir(exist_ok=True)
-    w = WORLD_SRC if WORLD_SRC.exists() else die("test world LevyTest.wld not found")
-    shutil.copy2(w, HOME / "world" / "W.wld"); shutil.copy2(w.with_suffix(".twld"), HOME / "world" / "W.twld")
+        if m.suffix == ".tmod" and m.name != "Levy.tmod" and not (save / "Mods" / m.name).exists(): os.symlink(os.path.realpath(m), save / "Mods" / m.name)
+    tg = save / "ModSources" / "tModLoader.targets"
+    if not tg.exists(): tg.write_text(f'<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">\n  <Import Project="{HOME}/tml/tMLMod.targets" />\n</Project>')
+    if not (HOME / "world" / "W.wld").exists():
+        (HOME / "world").mkdir(exist_ok=True)
+        w = WORLD_SRC if WORLD_SRC.exists() else die("test world LevyTest.wld not found")
+        shutil.copy2(w, HOME / "world" / "W.wld"); shutil.copy2(w.with_suffix(".twld"), HOME / "world" / "W.twld")
 
 def build(rev, force=False):
     """-> path of the cached .tmod for this git revision (built once; the cache key is the commit, plus a hash of uncommitted changes)."""
@@ -398,7 +402,7 @@ def cmd_run(a):
     cenv = {c["id"]: {k: str(v) for k, v in (c.get("env") or {}).items()} for c in cells if "raw" not in c}
     groups = {}
     for f in fights: groups.setdefault((json.dumps(cenv.get(f[0], {}), sort_keys=True), f[3]), []).append(f)
-    nj = max(1, a.jobs); nf = len(fights)
+    nf = len(fights); nj = max(1, min(a.jobs, round(nf / a.per_proc)))   # a server process costs ~55-100 s to boot: keep >= per_proc fights on each
     alloc = {g: max(1, int(nj * len(fs) / nf)) for g, fs in groups.items()}
     for g in sorted(groups, key=lambda g: -(nj * len(groups[g]) / nf - alloc[g])):   # largest remainder first
         if sum(alloc.values()) < nj and alloc[g] < len(groups[g]): alloc[g] += 1
@@ -409,7 +413,7 @@ def cmd_run(a):
             jobs.append(dict(id=f"j{len(jobs)}", fights=[(x[0], x[1], x[2]) for x in fs[p::parts]], rec=rec, env=json.loads(ek)))
     ctx = dict(rundir=rundir, tmod=tmod, mods=next(iter(mods)), steps=a.steps, env={})
     t0 = time.time()
-    print(f"levylab: {nf} fights = {len(meta_cells)} cells x seeds, {len(jobs)} server processes, up to {nj} parallel, build {bid}{' (cached)' if not built else ''}, run dir {rundir}", file=sys.stderr)
+    print(f"levylab: {nf} fights = {len(meta_cells)} cells x seeds, {len(jobs)} server processes, {nj} in parallel, build {bid}{' (cached)' if not built else ''}, run dir {rundir}", file=sys.stderr)
     (rundir / "cells.json").write_text(json.dumps(dict(cells=meta_cells, build=bid, spec=a.spec, jobs=nj, steps=a.steps, rec=a.rec), indent=1))
     shutil.copy2(a.spec, rundir / ("spec" + Path(a.spec).suffix))
     with cf.ThreadPoolExecutor(max_workers=nj) as ex:
@@ -567,7 +571,7 @@ def main():
     sp = ap.add_subparsers(dest="cmd", required=True)
     r = sp.add_parser("run", help="build once per revision, run every cell x seed headless in parallel, print the table")
     r.add_argument("spec"); r.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1)); r.add_argument("--rec", type=int, default=0, help="record K seeds per cell (default 0: none)")
-    r.add_argument("--seeds", help="override the spec's seeds"); r.add_argument("--rev", help="build this git revision instead of the working tree"); r.add_argument("--steps", type=int, default=120, help="game ticks per server turn")
+    r.add_argument("--per-proc", type=int, default=8, help="min fights per server process (boot is ~55 s each)"); r.add_argument("--seeds", help="override the spec's seeds"); r.add_argument("--rev", help="build this git revision instead of the working tree"); r.add_argument("--steps", type=int, default=120, help="game ticks per server turn")
     r.add_argument("--out"); r.add_argument("--rebuild", action="store_true"); r.add_argument("--quiet", action="store_true", help="skip the table at the end")
     t = sp.add_parser("table", help="markdown summary of a run dir"); t.add_argument("run_dir"); t.add_argument("--cols", help="extra results.csv columns (mean over fights), comma list"); t.add_argument("--wide", action="store_true", help="also top weapons per cell")
     sp.add_parser("list", help="every spec field, token, env toggle and preset")

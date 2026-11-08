@@ -130,9 +130,9 @@ presets:
     extends: postskel.best
     desc: "post-Skeletron best gear at 300 HP"
     hp: 300
-  legacy.dlA:   {tokens: ["dl=A"],          levies: 13, desc: "the original C# deathladder roll, tier A (exact reproduction; ignores hp/potions/stations)"}
-  legacy.dlB:   {tokens: ["dl=B"],          levies: 13, desc: "the original C# deathladder roll, tier B"}
-  legacy.dlC:   {tokens: ["dl=C"],          levies: 16, desc: "the original C# deathladder roll, tier C"}
-  legacy.dlD:   {tokens: ["dl=D"],          levies: 20, desc: "the original C# deathladder roll, tier D"}
-  legacy.dlBok: {tokens: ["dl=B", "dlok=1"], levies: 13, desc: "the original C# deathladder okay-ish roll, tier B"}
-  legacy.dlCok: {tokens: ["dl=C", "dlok=1"], levies: 16, desc: "the original C# deathladder okay-ish roll, tier C"}
+  legacy.dlA:   {tokens: ["dl=A"],          levies: 13, cost: {per_levy: 7, per_100hp: 2, per_rank_1000: 2, flat: 20}, desc: "the original C# deathladder roll, tier A (exact reproduction; hp, potions and stations come from the C# roll; cost is the best-arm equivalent)"}
+  legacy.dlB:   {tokens: ["dl=B"],          levies: 13, cost: {per_levy: 7, per_100hp: 2, per_rank_1000: 2, flat: 25}, desc: "the original C# deathladder roll, tier B"}
+  legacy.dlC:   {tokens: ["dl=C"],          levies: 16, cost: {per_levy: 7, per_100hp: 2, per_rank_1000: 2, flat: 35}, desc: "the original C# deathladder roll, tier C"}
+  legacy.dlD:   {tokens: ["dl=D"],          levies: 20, cost: {per_levy: 7, per_100hp: 2, per_rank_1000: 2, flat: 45}, desc: "the original C# deathladder roll, tier D"}
+  legacy.dlBok: {tokens: ["dl=B", "dlok=1"], levies: 13, hp: 240, cost: {per_levy: 5, per_100hp: 2, per_rank_1000: 2, flat: 25}, desc: "the original C# deathladder okay-ish roll, tier B"}
+  legacy.dlCok: {tokens: ["dl=C", "dlok=1"], levies: 16, hp: 340, cost: {per_levy: 5, per_100hp: 2, per_rank_1000: 2, flat: 35}, desc: "the original C# deathladder okay-ish roll, tier C"}

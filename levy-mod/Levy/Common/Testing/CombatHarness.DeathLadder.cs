@@ -124,7 +124,7 @@ namespace Levy.Common.Testing
 
 		private static string[] DlAcc(char cls, int t, bool ok)
 		{
-			string classAcc = cls == 'E' ? "Feral Claws" : cls == 'M' ? "Band of Starpower" : cls == 'R' ? (t >= 1 ? "Molten Quiver" : "Lightning Boots") : "Hermes Boots";
+			string classAcc = cls == 'E' ? "Feral Claws" : cls == 'M' ? "Band of Starpower" : cls == 'R' ? (t >= 1 ? "Molten Quiver" : "Anklet of the Wind") : "Hermes Boots";
 			string[] l;
 			if (ok) l = new[] { "Hermes Boots", "Band of Regeneration", "Shackle", classAcc };
 			else if (t == 0) l = new[] { "Cloud in a Bottle", "Shield of Cthulhu", classAcc, "Band of Regeneration", "Hermes Boots", "CalamityMod/SandCloak" };

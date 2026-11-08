@@ -7,7 +7,7 @@ Fail: {
 	NoDef: This townsperson cannot serve as an officer.
 	AlreadyOfficer: Already an officer.
 	NoSlot: Every command slot is filled. Dismiss an officer first.
-	NotHoused: Only townsfolk housed in this settlement can be commissioned from this Barracks.
+	NotHoused: Only townsfolk housed in this settlement or one linked by pylon can be commissioned from this Barracks.
 	TooFar: Stand closer to the Barracks.
 	NoMoney: No treasury or stored coin in this settlement can cover the commission fee.
 }
@@ -37,7 +37,8 @@ UI: {
 	CommissionHint: Costs {0} now and {1} a day.
 	Cost: Fee {0}. Wage {1} a day.
 	Available: Townsfolk who can serve
-	NoneAvailable: No one housed in this settlement can serve as an officer yet.
+	NoneAvailable: No one housed in this settlement or its pylon-linked settlements can serve as an officer yet.
+	TownHeader: "{0} (pylon-linked)"
 	Hint: Officers fight beside the army. If one falls they are gone until rehoused.
 	SlotsHeader: Command slots
 	SlotRole: Slot {0}: {1}

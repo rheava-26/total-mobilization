@@ -226,6 +226,12 @@ namespace Levy.Common.Systems
 			return best;
 		}
 
+		/// <summary>Test seam (boot self-check only): replaces the world's pylon list. Null in play.</summary>
+		internal static IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> PylonListOverride { get => _pylonOverride; set { _pylonOverride = value; Instance?._netStamp_Reset(); } }
+		private static IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> _pylonOverride;
+		private void _netStamp_Reset() => _netStamp = uint.MaxValue;
+		private static IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> Pylons() => _pylonOverride ?? Main.PylonSystem?.Pylons;
+
 		// ---- pylon-networked armories share issue-side gear ----
 		private readonly List<ArmoryTE> _netArmories = new();
 		private uint _netStamp = uint.MaxValue;
@@ -240,7 +246,7 @@ namespace Levy.Common.Systems
 			var res = new List<ArmoryTE>(4);
 			if (from == null) return res;
 			res.Add(from);
-			var pylons = Main.PylonSystem?.Pylons;
+			var pylons = Pylons();
 			if (pylons == null || pylons.Count == 0) return res;
 
 			uint now = Main.GameUpdateCount;
@@ -267,7 +273,7 @@ namespace Levy.Common.Systems
 		private static bool NearPylon(ArmoryTE a, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons) => NearPylon(a.Center, pylons);
 
 		/// <summary>True when a world position is within <see cref="LevyConstants.PylonShareRadius"/> tiles of any pylon (the pylon network the logistics screen trades over).</summary>
-		public static bool OnPylonNet(Vector2 c) { var p = Main.PylonSystem?.Pylons; return p != null && p.Count > 0 && NearPylon(c, p); }
+		public static bool OnPylonNet(Vector2 c) { var p = Pylons(); return p != null && p.Count > 0 && NearPylon(c, p); }
 
 		private static bool NearPylon(Vector2 c, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons)
 		{
@@ -338,7 +344,7 @@ namespace Levy.Common.Systems
 			var res = new List<BarracksTE>(4);
 			if (from == null) return res;
 			res.Add(from);
-			var pylons = Main.PylonSystem?.Pylons;
+			var pylons = Pylons();
 			bool fromOnNet = pylons != null && pylons.Count > 0 && NearPylon(from.Center, pylons);
 			foreach (var te in TileEntity.ByID.Values)
 			{
@@ -353,6 +359,25 @@ namespace Levy.Common.Systems
 				return d != 0 ? d : x.ID.CompareTo(y.ID);
 			}));
 			return res;
+		}
+
+		/// <summary>One townsperson on the pylon network and the barracks (town) that houses them.</summary>
+		public struct NetTownsperson { public NPC Npc; public BarracksTE Town; }
+
+		/// <summary>Every town NPC housed in any settlement on <paramref name="from"/>'s pylon network (its own settlement first, then the rest nearest-first). Read-only use.</summary>
+		public virtual List<NetTownsperson> NetworkTownNpcs(BarracksTE from)
+		{
+			var res = new List<NetTownsperson>();
+			foreach (var b in NetworkedBarracks(from)) foreach (var n in TownNpcsOf(b)) res.Add(new NetTownsperson { Npc = n, Town = b });
+			return res;
+		}
+
+		/// <summary>True when <paramref name="npc"/> is housed in <paramref name="from"/>'s settlement or any settlement linked to it by the pylon network.</summary>
+		public virtual bool IsHousedOnNetwork(BarracksTE from, NPC npc)
+		{
+			if (from == null || npc == null) return false;
+			foreach (var b in NetworkedBarracks(from)) if (TownNpcsOf(b).Contains(npc)) return true;
+			return false;
 		}
 
 		public virtual ArmoryTE LinkedArmory(BarracksTE barracks) => barracks == null ? null : NearestArmory(barracks.Center, LevyConstants.ArmoryLinkRadius);

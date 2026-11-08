@@ -453,7 +453,7 @@ namespace Levy.Common.Testing
 	/// <summary>Harness stand-in for a charging boss: a hostile body with no AI of its own; the scenario sets its velocity.</summary>
 	public class HarnessCharger : ModNPC
 	{
-		public override string Texture => "Terraria/Images/NPC_" + NPCID.GreenSlime;
+		public override string Texture => "Terraria/Images/NPC_" + NPCID.BlueSlime; // a texture needs a real NPC type: GreenSlime is netID -3 (no "NPC_-3" file)
 		public override void SetDefaults() { NPC.width = 80; NPC.height = 80; NPC.damage = 0; NPC.defense = 0; NPC.lifeMax = 1_000_000; NPC.life = 1_000_000; NPC.aiStyle = -1; NPC.noGravity = true; NPC.noTileCollide = true; NPC.knockBackResist = 0f; NPC.friendly = false; NPC.value = 0f; NPC.dontTakeDamage = false; }
 		public override bool CheckActive() => false;
 		public override bool CheckDead() => false;

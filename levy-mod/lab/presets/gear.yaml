@@ -1,0 +1,138 @@
+# GEAR PRESETS for levylab. A preset name is "<tier>.<quality>" (tiers x qualities below), plus the explicit entries under `presets:`.
+# levylab rolls a preset into a levy list per seed (same seed = same army in every arm) and hands it to the harness as a JSON file (lv=). No C# change for new data.
+# Item names: vanilla English names, or "CalamityMod/InternalName". Unknown names are dropped by the harness and reported by `levylab table` (missing: ...).
+# Weapon entry:  "Name[:ammo][*]"   ammo = bul | arr | gel | - (no ammo item)   '*' = rolled at triple weight (pierces, explodes or burns).
+# Tier-keyed maps pick the highest key <= the tier index (0 preevil, 1 posteow, 2 postskel, 3 postwof); `weapons` are cumulative, `armor` / `acc` / `ammo` are not.
+
+sets:    # armor sets; {c} = Ranged | Magic | Melee | Summon by class
+  plat:      [Platinum Helmet, Platinum Chainmail, Platinum Greaves]
+  gold:      [Gold Helmet, Gold Chainmail, Gold Greaves]
+  ninja:     [Ninja Hood, Ninja Shirt, Ninja Pants]
+  fossil:    [Fossil Helmet, Fossil Plate, Fossil Greaves]
+  jungle:    [Jungle Hat, Jungle Shirt, Jungle Pants]
+  meteor:    [Meteor Helmet, Meteor Suit, Meteor Leggings]
+  shadow:    [Shadow Helmet, Shadow Scalemail, Shadow Greaves]
+  crimson:   [Crimson Helmet, Crimson Scalemail, Crimson Greaves]
+  molten:    [Molten Helmet, Molten Breastplate, Molten Greaves]
+  iron:      [Iron Helmet, Iron Chainmail, Iron Greaves]
+  bee:       [Bee Headgear, Bee Breastplate, Bee Greaves]
+  necro:     [Necro Helmet, Necro Breastplate, Necro Greaves]
+  victide:   ["CalamityMod/VictideHead{c}", CalamityMod/VictideBreastplate, CalamityMod/VictideGreaves]
+  aerospec:  ["CalamityMod/AerospecHead{c}", CalamityMod/AerospecBreastplate, CalamityMod/AerospecLeggings]
+  mythril_r: [Mythril Hood, Mythril Chainmail, Mythril Greaves]
+  mythril_m: [Mythril Hat, Mythril Chainmail, Mythril Greaves]
+  mythril_e: [Mythril Helmet, Mythril Chainmail, Mythril Greaves]
+  orich_r:   [Orichalcum Mask, Orichalcum Breastplate, Orichalcum Leggings]
+  orich_m:   [Orichalcum Headgear, Orichalcum Breastplate, Orichalcum Leggings]
+  orich_e:   [Orichalcum Helmet, Orichalcum Breastplate, Orichalcum Leggings]
+  pall_r:    [Palladium Mask, Palladium Breastplate, Palladium Leggings]
+  pall_e:    [Palladium Helmet, Palladium Breastplate, Palladium Leggings]
+  cobalt_m:  [Cobalt Hat, Cobalt Breastplate, Cobalt Leggings]
+
+tiers:
+  preevil:  {idx: 0, levies: 13, stations: preevil,  desc: "before the Eater of Worlds / Brain: King Slime, Eye, Desert Scourge, Crabulon beaten"}
+  posteow:  {idx: 1, levies: 13, stations: posteow,  desc: "after Eater of Worlds / Brain of Cthulhu (meteor ammo exists)"}
+  postskel: {idx: 2, levies: 16, stations: postskel, desc: "after Skeletron (Hive Mind, Perforators, Queen Bee, dungeon)"}
+  postwof:  {idx: 3, levies: 20, stations: postwof,  desc: "early Hardmode, just after the Wall of Flesh (levy cap 20)"}
+
+qualities:
+  best:
+    desc: "everything: 400 HP, 5 accessory slots (mobility first), best legal ammo, 8 potions, piercing/explosive/burning weapons at x3 weight"
+    mix: {R: 0.4, M: 0.4, E: 0.1, S: 0.1}
+    hp: 400
+    mana_crystals: 9
+    acc_slots: 5
+    potions: best
+    stations_suffix: ""
+    chi: true            # the first mage carries the Trinket of Chi in its last slot
+    cost: {per_levy: 4, per_100hp: 2, per_rank_1000: 2}
+    ammo:
+      bul: {0: Silver Bullet, 1: Meteor Shot}
+      arr: {0: "Jester's Arrow", 1: "Hellfire Arrow|Jester's Arrow"}     # '|' alternates by ranged-levy index (even = first)
+      gel: {0: Gel}
+    class_acc: {E: Feral Claws, M: Band of Starpower, S: Hermes Boots, R: {0: Anklet of the Wind, 1: Molten Quiver}}
+    acc:
+      0: [Cloud in a Bottle, Shield of Cthulhu, "{class}", Band of Regeneration, Hermes Boots, CalamityMod/SandCloak]
+      1: [Cloud in a Bottle, Shield of Cthulhu, "{class}", Band of Regeneration, Hermes Boots, CalamityMod/SandCloak, CalamityMod/FungalClump]
+      2: [Cloud in a Bottle, Shield of Cthulhu, "{class}", Cobalt Shield, Band of Regeneration, Hermes Boots, CalamityMod/SandCloak]
+      3: [Angel Wings, Cloud in a Bottle, Shield of Cthulhu, "{class}", Cobalt Shield, Band of Regeneration, Hermes Boots]
+    weapons:
+      R:
+        0: ["Minishark:bul", "Phoenix Blaster:bul", "Boomstick:bul", "Demon Bow:arr*", "CalamityMod/Fungicide:bul*", "CalamityMod/StormSurge:-", "CalamityMod/Barinade:arr*"]
+        1: ["The Undertaker:bul", "Handgun:bul", "Space Gun:-*"]
+        2: ["CalamityMod/Shadethrower:gel*", "CalamityMod/Eviscerator:bul*", "CalamityMod/Galeforce:arr*", "Molten Fury:arr*", "Bee Gun:-*"]
+        3: ["Cobalt Repeater:arr*", "Palladium Repeater:arr*", "Mythril Repeater:arr*", "Orichalcum Repeater:arr*", "Clockwork Assault Rifle:bul", "CalamityMod/OverloadedBlaster:bul"]
+      M:
+        0: ["Flamelash:-*", "Magic Missile:-*", "Aqua Scepter:-*", "CalamityMod/HyphaeRod:-*", "CalamityMod/SandstreamScepter:-", "CalamityMod/AquamarineStaff:-"]
+        1: ["Vilethorn:-*", "Space Gun:-*"]
+        2: ["CalamityMod/BloodBath:-*", "CalamityMod/ShaderainStaff:-*", "CalamityMod/Tradewinds:-"]
+        3: ["Cursed Flames:-*", "Crystal Storm:-", "Magic Dagger:-", "CalamityMod/AbyssalTome:-", "CalamityMod/EldritchTome:-"]
+      E:
+        0: ["CalamityMod/MycelialClaws:-", "CalamityMod/TeardropCleaver:-", "Blade of Grass:-*", "CalamityMod/SeashineSword:-", "Starfury:-"]
+        1: ["Light's Bane:-", "Blood Butcherer:-"]
+        2: ["Muramasa:-", "CalamityMod/SausageMaker:-", "CalamityMod/Aorta:-*", "CalamityMod/WindBlade:-", "Night's Edge:-*"]
+      S:
+        0: ["CalamityMod/BrittleStarStaff:-*", "CalamityMod/DeathstareRod:-*", "CalamityMod/WulfrumController:-*", "Imp Staff:-*"]
+        2: ["CalamityMod/FleshOfInfidelity:-*", "Hornet Staff:-*", "CalamityMod/DankStaff:-*"]
+    armor:
+      R: {0: [victide, victide, fossil, ninja], 1: [victide, shadow, crimson, molten, fossil, plat], 2: [aerospec, aerospec, bee, necro, shadow, crimson, molten, fossil, plat], 3: [mythril_r, orich_r, pall_r, aerospec]}
+      M: {0: [victide, victide, jungle], 1: [victide, jungle, meteor, shadow, crimson, meteor], 2: [aerospec, aerospec, bee, jungle, meteor, shadow, crimson], 3: [mythril_m, orich_m, cobalt_m, aerospec]}
+      E: {0: [victide, victide, plat], 1: [victide, molten, shadow, crimson, plat], 2: [aerospec, aerospec, bee, molten, shadow, crimson, plat], 3: [mythril_e, orich_e, pall_e, aerospec]}
+      S: {0: [victide, victide, plat], 1: [victide, crimson, molten, gold], 2: [aerospec, aerospec, bee, crimson, molten, gold], 3: [mythril_e, orich_e, pall_e, aerospec]}
+
+  okish:
+    desc: "what a normal player has: plain vanilla weapons at equal weight, plain ammo, 2 accessories, 240-340 HP, 3-5 potions"
+    mix: {R: 0.3, M: 0.3, E: 0.2, S: 0.2}
+    hp: {0: 340, 1: 240, 2: 340, 3: 340}
+    mana_crystals: 9
+    acc_slots: 2
+    potions: okish
+    stations_suffix: ".plain"
+    chi: false
+    cost: {per_levy: 4, per_100hp: 2, per_rank_1000: 2}
+    ammo:
+      bul: {0: Silver Bullet}
+      arr: {0: Flaming Arrow, 2: Hellfire Arrow}
+    class_acc: {E: Feral Claws, M: Band of Starpower, S: Hermes Boots, R: {0: Anklet of the Wind, 1: Molten Quiver}}
+    acc:
+      0: [Hermes Boots, Band of Regeneration, Shackle, "{class}"]
+    weapons:
+      R:
+        0: ["Minishark:bul", "Boomstick:bul", "Demon Bow:arr", "Tendon Bow:arr", "Musket:bul", "Flintlock Pistol:bul"]
+        1: ["Phoenix Blaster:bul", "Handgun:bul", "The Undertaker:bul"]
+        2: ["Bee Gun:-"]
+      M:
+        0: ["Diamond Staff:-", "Ruby Staff:-", "Wand of Sparking:-", "Vilethorn:-", "Space Gun:-", "Sapphire Staff:-"]
+        1: ["Aqua Scepter:-", "Magic Missile:-", "Flamelash:-", "Crimson Rod:-"]
+        2: ["Water Bolt:-"]
+      E:
+        0: ["Enchanted Sword:-", "Starfury:-", "Blade of Grass:-", "Platinum Broadsword:-", "Gold Broadsword:-", "Katana:-"]
+        1: ["Muramasa:-", "Blood Butcherer:-", "Light's Bane:-"]
+        2: ["Bee Keeper:-"]
+      S:
+        0: ["Slime Staff:-", "Finch Staff:-", "Flinx Staff:-"]
+        1: ["Imp Staff:-"]
+        2: ["Hornet Staff:-"]
+    armor:
+      R: {0: [plat, gold, fossil, shadow, ninja, iron], 1: [shadow, crimson, molten, fossil, plat], 2: [shadow, crimson, molten, fossil, plat, bee], 3: [shadow, crimson, molten, fossil, plat, bee]}
+      M: {0: [jungle, meteor, plat, gold], 1: [jungle, meteor, shadow, crimson], 2: [jungle, meteor, shadow, crimson, bee], 3: [jungle, meteor, shadow, crimson, bee]}
+      E: {0: [plat, gold, shadow, crimson, iron], 1: [molten, shadow, crimson, plat], 2: [molten, shadow, crimson, plat, bee], 3: [molten, shadow, crimson, plat, bee]}
+      S: {0: [gold, plat, crimson, iron], 1: [crimson, molten, gold], 2: [crimson, molten, gold, bee], 3: [crimson, molten, gold, bee]}
+
+# Explicit presets (data only): `extends` another preset and override any quality field, or name a legacy C# token roll.
+presets:
+  postskel.best_nomob:
+    extends: postskel.best
+    desc: "post-Skeletron best gear without Cloud in a Bottle or wings (3 accessory slots, no mobility pieces)"
+    acc: {0: [Shield of Cthulhu, "{class}", Band of Regeneration, Hermes Boots]}
+    acc_slots: 3
+  postskel.best_hp300:
+    extends: postskel.best
+    desc: "post-Skeletron best gear at 300 HP"
+    hp: 300
+  legacy.dlA:   {tokens: ["dl=A"],          levies: 13, desc: "the original C# deathladder roll, tier A (exact reproduction; ignores hp/potions/stations)"}
+  legacy.dlB:   {tokens: ["dl=B"],          levies: 13, desc: "the original C# deathladder roll, tier B"}
+  legacy.dlC:   {tokens: ["dl=C"],          levies: 16, desc: "the original C# deathladder roll, tier C"}
+  legacy.dlD:   {tokens: ["dl=D"],          levies: 20, desc: "the original C# deathladder roll, tier D"}
+  legacy.dlBok: {tokens: ["dl=B", "dlok=1"], levies: 13, desc: "the original C# deathladder okay-ish roll, tier B"}
+  legacy.dlCok: {tokens: ["dl=C", "dlok=1"], levies: 16, desc: "the original C# deathladder okay-ish roll, tier C"}

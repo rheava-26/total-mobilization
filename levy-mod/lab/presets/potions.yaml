@@ -1,0 +1,27 @@
+# POTION PRESETS for levylab: the healing potion each levy drinks below the HP threshold, how many it carries, and the buffs held on every levy.
+# `heal` is keyed by tier index (highest key <= tier). `buffs` are BuffID field names (Ironskin, Regeneration, ...) or Mod/BuffName.
+# `cost.per_levy` is army points per levy (see presets/gear.yaml for the other point terms).
+best:
+  desc: "8 healing potions (Lesser / Healing / Greater by tier) and the full buff set: Ironskin, Regeneration, Endurance, Swiftness, Wrath, Rage, Magic Power, Archery, Plenty Satisfied, Ammo Reservation, Mana Regeneration"
+  heal: {0: Lesser Healing Potion, 1: Healing Potion, 3: Greater Healing Potion}
+  count: 8
+  buffs: [Ironskin, Regeneration, Endurance, Swiftness, Wrath, Rage, MagicPower, Archery, WellFed2, AmmoReservation, ManaRegeneration]
+  cost: {per_levy: 3}
+okish:
+  desc: "3-5 healing potions (Lesser before Skeletron, Healing after) and Ironskin, Regeneration, Well Fed"
+  heal: {0: Lesser Healing Potion, 2: Healing Potion}
+  count: [3, 5]
+  buffs: [Ironskin, Regeneration, WellFed]
+  cost: {per_levy: 1}
+food:
+  desc: "no potions carried; only Ironskin, Regeneration and Well Fed held"
+  heal: {0: Healing Potion}
+  count: 0
+  buffs: [Ironskin, Regeneration, WellFed]
+  cost: {per_levy: 0}
+none:
+  desc: "nothing: no healing potions, no buffs"
+  heal: {0: Healing Potion}
+  count: 0
+  buffs: []
+  cost: {per_levy: 0}

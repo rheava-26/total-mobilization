@@ -33,7 +33,7 @@ namespace Levy.Common.Testing
 			return LevyTierMath.Compute(l, 10, 20, 40, 60, 60);
 		}
 
-		private static int DlStationLevel(CrRun r) { _dlTier = DlIdx(r.Dl); return _dlTier switch { 0 => 1, 1 => 2, _ => 3 }; }
+		private static int DlStationLevel(CrRun r) { if (r.Lv != null) { _dlTier = 0; _kitSt = r.Lv.stations == null ? null : new HashSet<string>(r.Lv.stations.Select(x => x.ToLowerInvariant())); return r.Lv.stationLevel; } _kitSt = null; _dlTier = DlIdx(r.Dl); return _dlTier switch { 0 => 1, 1 => 2, _ => 3 }; }
 
 		private static readonly HashSet<string> DlExplosive = new() { "Rocket Launcher", "Grenade Launcher", "Magic Missile", "Flamelash", "Space Gun", "CalamityMod/Eviscerator", "CalamityMod/Galeforce", "CalamityMod/Aorta", "CalamityMod/BloodBath" };
 		private static readonly HashSet<string> DlDot = new() { "Flamelash", "Fiery Greatsword", "Blade of Grass", "Cursed Flames", "Golden Shower", "CalamityMod/HyphaeRod", "CalamityMod/Fungicide", "CalamityMod/Shadethrower", "Vilethorn", "Night's Edge", "Molten Fury", "Hellwing Bow", "Bee Gun", "CalamityMod/ShaderainStaff" };
@@ -149,6 +149,7 @@ namespace Levy.Common.Testing
 
 		internal static List<CrLevySpec> DlRoll(CrRun r)
 		{
+			if (r.Lv != null) return KitSpecs(r.Lv);
 			int t = DlIdx(r.Dl); bool ok = r.DlOk;
 			var rng = new Random(r.Seed * 7919 + 9100 + t * 31 + (ok ? 7 : 0));
 			var list = new List<CrLevySpec>(); int total = r.N;
@@ -183,14 +184,14 @@ namespace Levy.Common.Testing
 
 		private static readonly int[] DlBestBuffs = { BuffID.Ironskin, BuffID.Regeneration, BuffID.Endurance, BuffID.Swiftness, BuffID.Wrath, BuffID.Rage, BuffID.MagicPower, BuffID.Archery, BuffID.WellFed2, BuffID.AmmoReservation, BuffID.ManaRegeneration };
 		private static readonly int[] DlOkBuffs = { BuffID.Ironskin, BuffID.Regeneration, BuffID.WellFed };
-		private static void DlBuffs(CrRun run, NPC n) { foreach (int b in run.DlOk ? DlOkBuffs : DlBestBuffs) n.AddBuff(b, 60 * 60 * 30); if (!_dlBuffLogged) { _dlBuffLogged = true; var names = new List<string>(); for (int i = 0; i < NPC.maxBuffs; i++) if (n.buffType[i] > 0) names.Add(n.buffType[i] + ":" + n.buffTime[i]); global::Levy.Levy.Instance.Logger.Info("HARNESS-DL: buffs after AddBuff: " + string.Join(",", names)); } }
+		private static void DlBuffs(CrRun run, NPC n) { foreach (int b in run.Lv != null ? run.Lv.BuffIds : run.DlOk ? DlOkBuffs : DlBestBuffs) n.AddBuff(b, 60 * 60 * 30); if (!_dlBuffLogged) { _dlBuffLogged = true; var names = new List<string>(); for (int i = 0; i < NPC.maxBuffs; i++) if (n.buffType[i] > 0) names.Add(n.buffType[i] + ":" + n.buffTime[i]); global::Levy.Levy.Instance.Logger.Info("HARNESS-DL: buffs after AddBuff: " + string.Join(",", names)); } }
 		private static bool _dlBuffLogged;
 
 		private void DlBegin(CrRun run)
 		{
 			var c = global::Levy.Common.Config.LevyConfig.Get;
 			if (_dlSavedSlots < 0) _dlSavedSlots = c.LevyAccessorySlots;
-			c.LevyAccessorySlots = run.DlOk ? 2 : 5;
+			c.LevyAccessorySlots = run.Lv != null ? run.Lv.accSlots : run.DlOk ? 2 : 5;
 			Mod.Logger.Info("HARNESS-DL: missing item names so far: " + string.Join(", ", DlMissing));
 			Mod.Logger.Info($"HARNESS-DL: begin {run.Key} tier {run.Dl} ok={run.DlOk} n={run.N} accSlots={c.LevyAccessorySlots} stations level {DlStationLevel(run)} ; classes {string.Join(",", run.Specs.Select(sp => sp.Cls + ":" + sp.Weapon.Replace("CalamityMod/", "C:") + "/" + sp.Ammo + "[" + DlClass(sp.Weapon, sp.Ammo) + "]"))}");
 		}

@@ -41,6 +41,9 @@ namespace Levy.Content.Buffs
 			return false;
 		}
 
+		/// <summary>True if the buff type is one of the three drinks.</summary>
+		public static bool IsDrinkBuff(int type) => type == ModContent.BuffType<AleBuff>() || type == ModContent.BuffType<StoutBuff>() || type == ModContent.BuffType<RumBuff>();
+
 		/// <summary>True if the NPC carries any drink.</summary>
 		public static bool IsDrunk(NPC n)
 		{
@@ -60,6 +63,7 @@ namespace Levy.Content.Buffs
 		{
 			int type = TypeOf(drink);
 			int n = 0;
+			var served = new System.Collections.Generic.List<SoldierNPC>();
 			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
 			{
 				if (s == null || !s.IsAlive || s.Record == null) continue;
@@ -67,8 +71,10 @@ namespace Levy.Content.Buffs
 				if (!InReach(centre, s.NPC.Center)) continue;
 				s.NPC.AddBuff(type, LevyConstants.DrinkDurationTicks);
 				s.StatsDirty = true;
+				served.Add(s);
 				n++;
 			}
+			DrinkCheers.Begin(served, commander);
 			return n;
 		}
 	}

@@ -230,7 +230,9 @@ namespace Levy.Content.NPCs
 					DrawArmorFx(new Vector2(Dummy.position.X, Dummy.position.Y + NPC.gfxOffY)); // SoldierNPC.ArmorFx.cs
 					var pos = new Vector2(Dummy.position.X, Dummy.position.Y + NPC.gfxOffY);
 					global::Levy.Common.Util.HangWatch.DrawEnter(2); // watchdog breadcrumb: a frame stall here = this soldier's player-render (incl. its modded gear draw layers)
-					try { Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, Dummy.fullRotation, Dummy.fullRotationOrigin, 0f, 1f); }
+					float bodyRot = Dummy.fullRotation; Vector2 bodyOrigin = Dummy.fullRotationOrigin;
+					DrunkPose(ref pos, ref bodyRot, ref bodyOrigin); // SoldierNPC.Drunk.cs: hop, sway and a raised arm under a drink (draw only)
+					try { Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, bodyRot, bodyOrigin, 0f, 1f); }
 					finally { global::Levy.Common.Util.HangWatch.DrawExit(); }
 					DrawSwordSlash(sb);
 				}

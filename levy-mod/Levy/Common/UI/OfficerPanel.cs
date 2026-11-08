@@ -88,16 +88,18 @@ namespace Levy.Common.UI
 		}
 
 		// ------------------------------------------------------------------ rows
-		private sealed class Candidate { public NPC Npc; public OfficerDef Def; public OfficerCheck Check; }
+		private sealed class Candidate { public NPC Npc; public OfficerDef Def; public OfficerCheck Check; public BarracksTE Town; }
 
 		private List<Candidate> Candidates()
 		{
 			var list = new List<Candidate>();
 			var player = Main.LocalPlayer;
-			foreach (NPC n in SettlementSystem.Instance.TownNpcsOf(_te))
+			// every town on this barracks's pylon network, this one first (NetworkTownNpcs is grouped by town in network order)
+			foreach (var t in SettlementSystem.Instance.NetworkTownNpcs(_te))
 			{
+				NPC n = t.Npc;
 				if (!OfficerRegistry.TryGet(n.type, out OfficerDef def) || OfficerSystem.Instance.IsEnrolled(n)) continue;
-				list.Add(new Candidate { Npc = n, Def = def, Check = OfficerSystem.Instance.CanCommission(player, _te, n) });
+				list.Add(new Candidate { Npc = n, Def = def, Town = t.Town, Check = OfficerSystem.Instance.CanCommission(player, _te, n) });
 			}
 			return list;
 		}
@@ -119,7 +121,7 @@ namespace Levy.Common.UI
 				sb.Append('|').Append(slotNpcs[s] == null ? "-" : slotNpcs[s].whoAmI + ":" + slotNpcs[s].GivenName + ":" + g?.DaysUnpaid);
 			}
 			var cands = Candidates();
-			foreach (var c in cands) sb.Append('|').Append(c.Npc.whoAmI).Append(':').Append((int)c.Check).Append(':').Append(c.Npc.GivenName);
+			foreach (var c in cands) sb.Append('|').Append(c.Town?.ID).Append('/').Append(c.Npc.whoAmI).Append(':').Append((int)c.Check).Append(':').Append(c.Npc.GivenName);
 			string sig = sb.ToString();
 			if (sig == _sig) return;
 			_sig = sig;
@@ -152,7 +154,20 @@ namespace Levy.Common.UI
 				none.TextColor = Dim;
 				y += 28;
 			}
-			foreach (var c in cands) y = AddCandidateCard(c, Pad, y, cardW) + CardGap;
+			BarracksTE lastTown = null; bool multiTown = false;
+			foreach (var c in cands) if (!ReferenceEquals(c.Town, _te)) { multiTown = true; break; }
+			foreach (var c in cands)
+			{
+				if (multiTown && !ReferenceEquals(c.Town, lastTown))
+				{
+					lastTown = c.Town;
+					string tn = SettlementSystem.Instance.TownName(c.Town);
+					var th = PutDyn(new Label(ReferenceEquals(c.Town, _te) ? tn : LevyUtil.T("Officers.UI.TownHeader", tn), SubScale), Pad, y);
+					th.TextColor = ReferenceEquals(c.Town, _te) ? Gold : Dim;
+					y += 22;
+				}
+				y = AddCandidateCard(c, Pad, y, cardW) + CardGap;
+			}
 
 			var hint = PutDyn(new Label(LevyUtil.T("Officers.UI.Hint"), 0.62f), Pad, y + 2);
 			hint.TextColor = Faint;

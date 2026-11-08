@@ -608,18 +608,27 @@ namespace Levy.Content.NPCs
 			int holders = _hitPaladins.Count + (paladinPlayer != null ? 1 : 0);
 			if (holders > 0 && damageDone > 0)
 			{
-				// one third of the hit leaves the victim; with several wearers it is split evenly between them (the total stays a third)
-				int total = Math.Max(holders, (int)(damageDone * LevyConstants.PaladinShareFraction)), each = total / holders, extra = total % holders, k = 0;
+				// one third of the hit leaves the victim, split evenly across the nearest wearers (at most PaladinMaxSplit, and never more payers than whole points of
+				// damage): the total stays exactly a third, so a crowd of shields never turns one hit into many 1-damage shares (that cost +40% damage taken, paladin lab 11-08)
+				int total = Math.Max(1, (int)(damageDone * LevyConstants.PaladinShareFraction));
+				var cands = new List<(SoldierNPC lev, Player pl, float d)>();
+				foreach (var pal in _hitPaladins) cands.Add((pal, null, Vector2.DistanceSquared(pal.NPC.Center, NPC.Center)));
+				if (paladinPlayer != null) cands.Add((null, paladinPlayer, Vector2.DistanceSquared(paladinPlayer.Center, NPC.Center)));
+				_hitPaladins.Clear();
+				cands.Sort((a, b) => a.d.CompareTo(b.d));
+				int n = Math.Min(Math.Min(cands.Count, total), LevyConstants.PaladinMaxSplit), each = total / n, extra = total % n;
 				Common.Team.TeamPlayer.PaladinRawShared += total;
-				var payers = _hitPaladins.ToArray(); _hitPaladins.Clear();
-				foreach (var paladin in payers)
+				for (int k = 0; k < n; k++)
 				{
-					try { paladin.TakeSoak(each + (k++ < extra ? 1 : 0), attackerIndex, this); }
-					catch (Exception e) { if (_accessoryProcWarned.Add(ItemID.PaladinsShield)) Levy.Instance?.Logger.Warn("Levy: Paladin's Shield share failed: " + e.Message); }
+					int share = each + (k < extra ? 1 : 0);
+					var c = cands[k];
+					if (c.lev != null)
+						try { c.lev.TakeSoak(share, attackerIndex, this); }
+						catch (Exception e) { if (_accessoryProcWarned.Add(ItemID.PaladinsShield)) Levy.Instance?.Logger.Warn("Levy: Paladin's Shield share failed: " + e.Message); }
+					else
+						try { Common.Team.TeamNet.ShareToPlayer(c.pl, share, attackerIndex); }
+						catch (Exception e) { if (_accessoryProcWarned.Add(ItemID.PaladinsShield)) Levy.Instance?.Logger.Warn("Levy: Paladin's Shield share to the commander failed: " + e.Message); }
 				}
-				if (paladinPlayer != null)
-					try { Common.Team.TeamNet.ShareToPlayer(paladinPlayer, each + (k++ < extra ? 1 : 0), attackerIndex); }
-					catch (Exception e) { if (_accessoryProcWarned.Add(ItemID.PaladinsShield)) Levy.Instance?.Logger.Warn("Levy: Paladin's Shield share to the commander failed: " + e.Message); }
 			}
 			_hitPaladins.Clear();
 			if (_setKind == KindSolar && _setOrbs > 0)

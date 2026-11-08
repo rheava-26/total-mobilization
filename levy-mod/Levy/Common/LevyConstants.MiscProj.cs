@@ -88,6 +88,8 @@ namespace Levy.Common
 		public const float ThornsKnockback = 10f;
 		/// <summary>Paladin's Shield: wearers within 800 px draw a third of the damage dealt to an ally (the ally takes 25% less); the nearest one above 25% health and out of immune time takes it.</summary>
 		public const float PaladinRangePx = 800f, PaladinHealthFloor = 0.25f, PaladinAllyScale = 0.75f, PaladinShareFraction = 1f / 3f;
+		/// <summary>A Paladin's Shield share is split across at most this many of the nearest wearers.</summary>
+		public const int PaladinMaxSplit = 3;
 		public const int PaladinBeamDust = 12;
 	}
 }

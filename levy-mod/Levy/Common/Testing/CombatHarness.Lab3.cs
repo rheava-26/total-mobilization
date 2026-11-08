@@ -179,6 +179,7 @@ namespace Levy.Common.Testing
 			if (level >= 1) A("BastStatue", L3ItemByTile(TileID.CatBast));
 			if (level >= 2) A("SharpeningStation", ItemID.SharpeningStation);
 			if (level >= 3) { A("WarTable", ItemID.WarTable); A("BewitchingTable", ItemID.BewitchingTable); }
+			if (_dlTier >= 3) { A("AmmoBox", ItemID.AmmoBox); A("CrystalBall", ItemID.CrystalBall); }
 			return res;
 		}
 
@@ -192,7 +193,7 @@ namespace Levy.Common.Testing
 		private string _l3StationNote = "";
 		private void Lab3Stations(CrRun run)
 		{
-			int cx = _crCx, fy = CrF; int level = L3Level(run.Boss); bool full = level >= 2;
+			int cx = _crCx, fy = CrF; int level = run.Dl != "" ? DlStationLevel(run) : L3Level(run.Boss); bool full = level >= 2;
 			L3ClearTEs();
 			for (int x = cx - 110; x <= cx + 110; x++)
 				for (int y = fy - 6; y <= fy - 1; y++) { Tile t = Main.tile[x, y]; if (t.HasTile) { t.HasTile = false; t.TileType = 0; } }
@@ -351,6 +352,8 @@ namespace Levy.Common.Testing
 				if (b.active) { if (b.HasBuff(BuffID.Poisoned)) _l3Poison++; if (L3IrrType > 0 && b.HasBuff(L3IrrType)) _l3Irr++; }
 				if (run.Food >= 1 && st.Tick % 3000 == 0) foreach (var lv in st.Levies) { var nn = Main.npc[lv.Idx]; if (nn.active) nn.AddBuff(run.Food >= 2 ? BuffID.WellFed2 : BuffID.WellFed, 60 * 60 * 30); }
 			}
+			if (run.Dl != "" && (st.Tick == 6 || st.Tick % 3000 == 0) && !l.Dead) { DlBuffs(run, n); sn.StatsDirty = true; } // buffImmune clears on the first update, so the potions go on a few ticks in
+			if (run.Dl != "" && !run.DlOk) sn.Stations |= StationFlags.Honey; // honey pool emulated by the station flag (never from a tile scan)
 			if (st.Tick % 30 == 0 && !l.Dead) { L3Vert(n); L3Dist(n, st); }
 			if (st.Tick == 600 && !l.Dead)
 			{

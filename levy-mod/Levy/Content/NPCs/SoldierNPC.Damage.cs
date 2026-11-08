@@ -92,7 +92,7 @@ namespace Levy.Content.NPCs
 				PendingContactScale = IncomingSetScale() * global::Levy.Common.Util.BannerBuffs.Defense(CommanderIndex, a); // Solar shield / Beetle orbs / Paladin's Shield share, folded into the strike by SoldierSetHitScale
 				try { done = NPC.SimpleStrikeNPC(raw, dir, false, 0f, null, false, 0f, true); } // ModifyIncomingHit applies the player defense formula; the server broadcasts the strike
 				finally { _contactStriking = false; PendingContactScale = 1f; }
-				if (HitDbg != null) HitDbgAdd("contact:" + a.TypeName, done);
+				if (HitDbg != null) HitDbgAdd("contact:" + a.TypeName + "/" + a.type, done);
 				AfterHit(done, i);
 				return; // one contact hit per tick; immune frames gate the rest
 			}

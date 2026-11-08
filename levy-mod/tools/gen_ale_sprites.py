@@ -21,69 +21,82 @@ def render(rows, pal, shade, seed, noise=0.4):
             for dy in (0, 1): im.putpixel((x * 2 + dx, y * 2 + dy), c)
     return im
 
-# ---- Barracks Keg: upright oak barrel, 14x15 art ----
-KEG = ["....OOOOOO....",
-       "..OOLLLLLLOO..",
-       ".OLLLLDLLLLLO.",
-       ".OHHHHHHHHHHO.",
-       "OWWWWWWWWWWWWO",
-       "OWWWWWWWWWWWWO",
-       "OWWWWWWWWWWWWO",
-       "OWWWWWWWWWWWWO",
-       "OWWWOBBBBOWWWO",
-       "OWWWWOBBOWWWWO",
-       "OWWWWWOaOWWWWO",
-       "OWWWWWWWWWWWWO",
-       ".OHHHHHHHHHHO.",
-       ".OWWWWWWWWWWO.",
-       "..OOOOOOOOOO.."]
+def outline(rows):
+    """Adds a one-cell dark outline ('O') around every filled cell of a '.'-padded grid."""
+    h = len(rows); w = len(rows[0]); g = [list(r) for r in rows]
+    for y in range(h):
+        for x in range(w):
+            if rows[y][x] != '.': continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < w and 0 <= ny < h and rows[ny][nx] not in '.O': g[y][x] = 'O'; break
+    return [''.join(r) for r in g]
+# ---- Barracks Keg: oak barrel lying on its side, end cap and tap facing right, 18x15 art ----
+def _keg():
+    W, H = 19, 15; g = [['.'] * W for _ in range(H)]
+    for y in range(1, 12):
+        for x in range(1, 12):
+            if y in (1, 11) and (x < 3 or x > 10): continue
+            g[y][x] = 'W'
+    for y in range(1, 12):
+        for x in (3, 4, 8, 9):
+            if g[y][x] == 'W': g[y][x] = 'H'
+    for y in range(1, 12):
+        for x in range(9, 16):
+            dx = (x - 12.0) / 3.1; dy = (y - 6.0) / 5.4; d = dx * dx + dy * dy
+            if d <= 1.0: g[y][x] = 'R' if d > 0.7 else 'E'
+    for x in (15, 16, 17):
+        g[6][x] = 'B'; g[7][x] = 'B'
+    g[8][17] = 'B'; g[9][17] = 'a'
+    g[5][16] = 'B'; g[4][16] = 'B'; g[3][16] = 'B'; g[3][15] = 'B'
+    for x in (3, 4, 5, 9, 10, 11): g[12][x] = 'C'
+    for x in (4, 10): g[13][x] = 'C'
+    return outline([''.join(r) for r in g])
+KEG = _keg()
 def keg_shade(ch, x, y):
-    if ch == 'L': return 'wood', 5 if x < 7 else 4
-    if ch == 'H': return 'iron', 4 if x < 4 else 3 if x < 8 else 2 if x < 11 else 1
-    if ch == 'B': return 'brass', 4 if y == 8 and x < 7 else 3 if y == 8 else 2
-    if ch == 'a': return 'beer', 1 if y == 10 else 2
-    if ch == 'D': return 'wood', 0
-    lv = 5 if x <= 2 else 4 if x <= 4 else 3 if x <= 7 else 2 if x <= 10 else 1
-    if x in (5, 8, 11): lv -= 1   # stave seams
-    if y >= 11: lv -= 1
+    if ch == 'E': return 'wood', 6 if (x + y) % 3 else 5
+    if ch == 'R': return 'iron', 4 if y < 6 else 2
+    if ch == 'H': return 'iron', 4 if y < 5 else 3 if y < 8 else 2
+    if ch == 'B': return 'brass', 4 if y == 6 else 3 if y == 7 else 2
+    if ch == 'a': return 'beer', 2
+    if ch == 'C': return 'wood', 1
+    lv = 5 if y <= 2 else 4 if y <= 4 else 3 if y <= 7 else 2 if y <= 9 else 1
+    if y in (4, 7, 9): lv -= 1   # stave seams run along the barrel
     return 'wood', lv
 KEGP = dict(O='1c1008', wood=['2e1a0c', '4a2c12', '633c18', '7e4f22', '9a6530', 'b57d3e', 'cf9a58'],
             iron=['22262c', '38404a', '505b68', '6c7a8a', '8d9eb0', 'b4c4d4'], brass=['5a3e08', '8a6410', 'b88a1c', 'e0b030', 'f8dc6a'], beer=['a87802', 'e0aa02', 'f0d058'])
-# ---- Case of Stout: cardboard case with four cans showing, 13x13 art ----
-DIG = {'2': ["ccc", "..c", "ccc", "c..", "ccc"], '4': ["c.c", "c.c", "ccc", "..c", "..c"]}
-CASE_ROWS = [".OO.OO.OO.OO.",
-             "OsSOsSOsSOsSO",
-             "OxzOxzOxzOxzO",
-             "OxzOxzOxzOxzO",
-             "OKKKKKKKKKKKO",
-             "OKBBBBBBBBBKO",
-             "OKBBBBBBBBBKO",
-             "OKBBBBBBBBBKO",
-             "OKBBBBBBBBBKO",
-             "OKBBBBBBBBBKO",
-             "OKBBBBBBBBBKO",
-             "OKBBBBBBBBBKO",
-             "OKKGGGGGGGKKO",
-             "OKKKKKKKKKKKO",
-             ".OOOOOOOOOOO."]
-CASE = [list(r) for r in CASE_ROWS]
-for ox, d in ((3, '2'), (7, '4')):
-    for dy, row in enumerate(DIG[d]):
-        for dx, c in enumerate(row):
-            if c == 'c': CASE[6 + dy][ox + dx] = 'c'
-CASE = [''.join(r) for r in CASE]
+# ---- Case of Stout: shallow cardboard crate lying wide, four bottles standing out of it, 17x12 art ----
+def _case():
+    W, H = 19, 13; g = [['.'] * W for _ in range(H)]
+    for i in range(4):
+        x0 = i * 5
+        g[0][x0 + 1] = 'g'; g[0][x0 + 2] = 'g'                 # cap
+        for y in (1, 2): g[y][x0 + 1] = 'n'; g[y][x0 + 2] = 'n'  # neck
+        g[3][x0 + 1] = 'v'; g[3][x0 + 2] = 'v'
+        for y in range(4, 9):
+            for x in range(x0, x0 + 4): g[y][x] = 'v'
+        for y in (6, 7):
+            for x in (x0 + 1, x0 + 2): g[y][x] = 'l'            # label
+    for y in range(9, 13):
+        for x in range(0, 19): g[y][x] = 'K'
+    for x in range(0, 19): g[9][x] = 'k'          # lit rim
+    for x in range(0, 19): g[11][x] = 'B'         # black band
+    return outline([''.join(r) for r in g])
+CASE = _case()
 def case_shade(ch, x, y):
-    if ch in 'sS': return 'tin', 4 if ch == 'S' else 3
-    if ch == 'G': return 'gold', 3 if x < 6 else 2
-    if ch in 'xz': return 'ink', 4 if ch == 'x' else 2
-    if ch == 'B': return 'ink', 1 if x < 6 else 0
-    if ch == 'c': return 'cream', 2 if x in (3, 7) else 1
-    lv = 4 if x <= 2 else 3 if x <= 5 else 2 if x <= 9 else 1
-    if y == 3: lv += 1
-    if y >= 13: lv -= 1
+    if ch == 'g': return 'gold', 3 if x % 5 == 1 else 2
+    if ch == 'n': return 'glass', 3 if x % 5 == 1 else 2
+    if ch == 'v':
+        c = x % 5
+        return 'glass', 4 if c == 0 else 3 if c == 1 else 2 if c == 2 else 1
+    if ch == 'l': return 'cream', 2 if y == 6 and x % 5 == 1 else 1
+    if ch == 'k': return 'card', 5
+    if ch == 'B': return 'ink', 2 if x % 5 else 3
+    lv = 4 if y == 10 else 3
+    if y == 12: lv -= 1
     return 'card', lv
-CASEP = dict(O='160d07', tin=['3a4048', '5a626e', '8a94a2', 'b8c2cc', 'e0e8f0'], card=['5a4020', '7a5a30', '9a7644', 'b8935a', 'd2ae74', 'e6c892'],
-             gold=['6a4a10', 'b8861c', 'e8b830', 'f8d868'], ink=['0e0a08', '1a120e', '2a1c14', '3e2a1e', '5a4434', '78604a'], cream=['b09450', 'e6c888', 'f6e4b4'])
+CASEP = dict(O='160d07', gold=['6a4a10', 'b8861c', 'e8b830', 'f8d868'], glass=['2a1a12', '48301f', '6e4a2e', '94683c', 'bc8a4c'],
+             card=['5a4020', '7a5a30', '9a7644', 'b8935a', 'd2ae74', 'e6c892'], ink=['0e0a08', '1a120e', '2a1c14', '3e2a1e'], cream=['b09450', 'e6c888', 'f6e4b4'])
 # ---- Rum Cooler: red body, white lid, brass latches, 14x13 art ----
 COOL = ["....OOOOOO....",
         "...OHHHHHHO...",

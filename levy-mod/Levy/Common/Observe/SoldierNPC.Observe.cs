@@ -20,7 +20,7 @@ namespace Levy.Content.NPCs
 	{
 		// ---- map march ----
 		private Point _goStand; private int _goStandFor = int.MinValue; private Vector2 _goProgPos; private int _goProgTick, _goNoProgress;
-		private const int GoLegTiles = 30, GoArriveXTiles = 3, GoArriveYTiles = 6, GoProgressTicks = 180, GoGiveUpWindows = 20;
+		private const int GoLegTiles = 30, GoArriveXTiles = 3, GoArriveYTiles = 6, GoProgressTicks = 180, GoGiveUpWindows = 20, GoGiveUpWindowsAfterRoute = 8;
 
 		/// <summary>Brain hook: marches toward the order's map point. True when it set the goal this think (the brain stops here).</summary>
 		internal bool ThinkMapOrder(int now)
@@ -28,7 +28,7 @@ namespace Levy.Content.NPCs
 			if (Record == null) return false;
 			if (!MapOrder.TryGoal(Record, out int tx, out int ty)) { MapArrive(); return true; }
 			int key = tx * 100003 + ty;
-			if (_goStandFor != key) { _goStand = MapOrder.ResolveStand(tx, ty); _goStandFor = key; _goProgPos = NPC.Center; _goProgTick = now; _goNoProgress = 0; }
+			if (_goStandFor != key) { _goStand = MapOrder.ResolveStand(tx, ty); _goStandFor = key; _goProgPos = NPC.Center; _goProgTick = now; _goNoProgress = 0; RouteReset(); }
 			SetState(SoldierState.Follow); // runs rather than strolls; combat still takes over through TryEngage before this is reached
 			Vector2 goal = TileNav.BottomCentre(_goStand.X, _goStand.Y);
 			float dx = goal.X - NPC.Center.X, dy = goal.Y - NPC.Bottom.Y;
@@ -37,8 +37,14 @@ namespace Levy.Content.NPCs
 			{
 				_goNoProgress = Vector2.DistanceSquared(NPC.Center, _goProgPos) < 24f * 24f ? _goNoProgress + 1 : 0;
 				_goProgPos = NPC.Center; _goProgTick = now;
-				if (_goNoProgress >= GoGiveUpWindows) { MapArrive(); return true; } // a minute of no progress: stop where he stands
+				if (_goNoProgress >= (RouteExhausted ? GoGiveUpWindowsAfterRoute : GoGiveUpWindows))
+				{
+					if (RouteExhausted) MapOrder.NoteUnreachable(Record, NPC.Center); // no way found, and the closest point of the best route is where it stopped
+					MapArrive(); return true; // a minute of no progress (30 s once the planned route has run out): stop where he stands
+				}
 			}
+			// a long or awkward trip follows a planned route (RoutePlanner); while the plan is still being searched, or when there is none, aim by the old rule: a point one leg on toward the goal
+			if (RouteLeg(now, goal, out Vector2 leg)) { SetGoal(leg); return true; }
 			SetGoal(MapOrder.LegGoal(NPC.Center, NPC.Bottom, goal));
 			return true;
 		}
@@ -48,7 +54,7 @@ namespace Levy.Content.NPCs
 		{
 			MapOrder.ClearGoal(Record);
 			Record.Order = SoldierOrder.Hold; HoldPosition = true; Record.HoldPos = NPC.Center;
-			ClearGoal(); SetState(SoldierState.Idle); _goStandFor = int.MinValue;
+			ClearGoal(); SetState(SoldierState.Idle); _goStandFor = int.MinValue; RouteReset();
 			NPC.netUpdate = true; MapOrder.SnapshotDue = true;
 		}
 

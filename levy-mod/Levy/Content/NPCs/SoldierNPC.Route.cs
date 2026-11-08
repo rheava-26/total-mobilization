@@ -1,0 +1,141 @@
+using System;
+using System.Collections.Generic;
+using Microsoft.Xna.Framework;
+using Terraria;
+using Levy.Common.Movement;
+using static Levy.Common.LevyConstants.Movement;
+
+namespace Levy.Content.NPCs
+{
+	/// <summary>
+	/// Following a planned long route (see <see cref="RoutePlanner"/>). The brain asks <see cref="RouteLeg"/> once per think for the point to aim at: the route waypoint about
+	/// RouteLookaheadTiles on from where the soldier is, with the waypoints in between handed to the movement code as its path. While the plan is still being searched, or when none can be had,
+	/// the caller falls back to the old hop toward the goal. Cost per think: a dictionary lookup and a scan of at most 60 waypoints.
+	/// </summary>
+	public partial class SoldierNPC
+	{
+		private Route _rt; private int _rtIdx; private Point _rtGoal; private uint _rtAsked; private int _rtVariant, _rtReplans;
+		private Vector2 _rtProgPos; private int _rtProgTick; private Vector2 _rtLegSent = new Vector2(float.MinValue);
+		private readonly List<Vector2> _rtLeg = new();
+		private bool _pathFromRoute;
+		/// <summary>The route's last waypoint is where this soldier stands and the goal is farther: nothing it can do gets it closer.</summary>
+		internal bool RouteEndedShort { get; private set; }
+		/// <summary>The best-effort route ran out: from here the soldier aims by the old rule (the planner's picture of the ground can be stricter than what the body manages), and gives up sooner if that gets nowhere.</summary>
+		internal bool RouteExhausted { get; private set; }
+		internal bool RouteActive => _rt != null && _rt.Usable;
+
+		internal void RouteReset() { RouteExhausted = false; _rt = null; _rtIdx = 0; _rtVariant = 0; _rtReplans = 0; _rtLegSent = new Vector2(float.MinValue); RouteEndedShort = false; _pathFromRoute = false; }
+
+		/// <summary>Hands the movement code the waypoints of the current leg as its path (no search): the same list a local A* would have produced.</summary>
+		private void FeedPath(List<Vector2> pts, Vector2 goal)
+		{
+			_path.Clear(); _path.AddRange(pts); _pathGoal = goal; _pathTimer = 0; _pathFailTimer = 0; _pathFromRoute = true;
+		}
+
+		/// <summary>
+		/// The point to aim at on the way to <paramref name="goalBottom"/>. False = no usable route yet (still being planned, none found, or the trip is short enough to walk directly): the caller aims by its own rule.
+		/// Sets <see cref="RouteEndedShort"/> when the soldier has followed a best-effort route to its end.
+		/// </summary>
+		internal bool RouteLeg(int now, Vector2 goalBottom, out Vector2 leg)
+		{
+			leg = goalBottom; RouteEndedShort = false;
+			if (TravelLegacy.On || !LevyUtilIsServerOrSingle() || RouteExhausted) return false;
+			Vector2 me = NPC.Bottom;
+			float dxT = Math.Abs(goalBottom.X - me.X) / 16f, dyT = (goalBottom.Y - me.Y) / 16f;
+			if (dxT <= RouteMinTripTiles && Math.Abs(dyT) <= RouteMinTripRise) { if (_rt != null) RouteReset(); return false; }
+			// a trip wider than the planner's window is routed in hops: the far side of a floor column RouteMaxHopTiles on toward the goal
+			if (dxT > RouteMaxHopTiles)
+			{
+				int hx = (int)(me.X / 16f) + (int)Math.Sign(goalBottom.X - me.X) * RouteMaxHopTiles, hy = TileNav.FeetTile(me).Y, found = -1;
+				for (int d = 0; d <= 80 && found < 0; d++)
+					for (int sgn = -1; sgn <= 1 && found < 0; sgn += 2)
+						if (TileNav.InBounds(hx, hy + sgn * d) && TileNav.IsStandable(hx, hy + sgn * d)) found = hy + sgn * d;
+				if (found < 0) return false;
+				goalBottom = TileNav.BottomCentre(hx, found);
+			}
+			Point g = TileNav.FeetTile(goalBottom);
+
+			// progress watch: a soldier that stops getting anywhere along the route asks for a fresh one from where it stands
+			if (now - _rtProgTick >= RouteStallTicks)
+			{
+				bool stalled = Vector2.DistanceSquared(NPC.Center, _rtProgPos) < 40f * 40f;
+				_rtProgPos = NPC.Center; _rtProgTick = now;
+				if (stalled && _rt != null && _rt.Usable && _rtReplans < RouteReplanMax) { _rtReplans++; _rtVariant = (_rtVariant + 1) & 7; _rt = null; }
+			}
+
+			if (_rt == null || _rtGoal != g)
+			{
+				if (_rt != null && _rtGoal != g) RouteReset();
+				if ((uint)now - _rtAsked < 20u && _rt == null) return false;
+				_rtAsked = (uint)now;
+				_rt = RoutePlanner.Get(me, goalBottom, Abilities, _rtVariant);
+				_rtGoal = g; _rtIdx = 0; _rtLegSent = new Vector2(float.MinValue);
+				if (_rt == null) return false;
+			}
+			if (_rt.State == Route.S.Pending) return false;
+			if (_rt.State == Route.S.Failed)
+			{
+				if (Main.GameUpdateCount - _rt.Born > (uint)RouteRetryTicks) _rt = null;
+				return false;
+			}
+			var pts = _rt.Pts;
+			int n = pts.Count;
+			if (n == 0) return false;
+
+			// nearest waypoint in the window ahead of the last one reached
+			int lo = Math.Max(0, _rtIdx - 3), hi = Math.Min(n - 1, _rtIdx + 70);
+			int best = -1; float bestD = float.MaxValue;
+			for (int i = lo; i <= hi; i++)
+			{
+				float d = Vector2.DistanceSquared(pts[i], me) - i * 0.5f;
+				if (d < bestD) { bestD = d; best = i; }
+			}
+			if (best < 0) return false;
+			float offTiles = Vector2.Distance(pts[best], me) / 16f;
+			if (offTiles > RouteOffRouteTiles)
+			{
+				// off the route (knocked away, a fight, a fall): plan again from here, at most a few times
+				if (_rtReplans < RouteReplanMax + 3) { _rtReplans++; _rtVariant = (_rtVariant + 1) & 7; _rt = null; _rtLegSent = new Vector2(float.MinValue); }
+				return false;
+			}
+			_rtIdx = Math.Max(_rtIdx, best);
+			while (_rtIdx < n - 1 && Vector2.DistanceSquared(pts[_rtIdx], me) < 36f * 36f) _rtIdx++;
+
+			if (Vector2.DistanceSquared(pts[n - 1], me) < 56f * 56f)
+			{
+				if (_rt.State == Route.S.Partial) { RouteEndedShort = true; RouteExhausted = true; _path.Clear(); return false; }
+				leg = goalBottom; return true; // the last stretch: the goal itself
+			}
+
+			// the leg: waypoints up to RouteLookaheadTiles of polyline ahead
+			float acc = 0f; int j = _rtIdx; Vector2 prev = me;
+			for (; j < n; j++)
+			{
+				acc += Vector2.Distance(prev, pts[j]) / 16f; prev = pts[j];
+				if (acc >= RouteLookaheadTiles) break;
+			}
+			if (j >= n) j = n - 1;
+			leg = pts[j];
+			if (j == n - 1 && _rt.State == Route.S.Ready) leg = goalBottom;
+			if (Vector2.DistanceSquared(leg, _rtLegSent) > 16f * 16f || _path.Count == 0)
+			{
+				_rtLeg.Clear();
+				for (int i = _rtIdx; i <= j; i++) _rtLeg.Add(pts[i]);
+				FeedPath(_rtLeg, leg);
+				_rtLegSent = leg;
+			}
+			return true;
+		}
+
+		/// <summary>Harness telemetry: the route state and where the soldier is on it.</summary>
+		internal string DebugRoute()
+		{
+			if (_rt == null) return "route=none";
+			string nx = "";
+			for (int i = _rtIdx; i < Math.Min(_rt.Pts.Count, _rtIdx + 6); i++) { var q = TileNav.FeetTile(_rt.Pts[i]); nx += $"({q.X - TileNav.FeetTile(NPC.Bottom).X},{q.Y - TileNav.FeetTile(NPC.Bottom).Y})"; }
+			return $"route={_rt.State} idx={_rtIdx}/{_rt.Pts.Count} replans={_rtReplans} fromRoute={_pathFromRoute} pathN={_path.Count} goal=({MoveGoal.X / 16f:0},{MoveGoal.Y / 16f:0}) next={nx}";
+		}
+
+		private static bool LevyUtilIsServerOrSingle() => global::Levy.Common.Util.LevyUtil.IsServerOrSingle;
+	}
+}

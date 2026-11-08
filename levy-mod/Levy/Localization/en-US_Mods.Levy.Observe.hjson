@@ -4,6 +4,7 @@ SendToPointHint: Opens the map. Click a point and every Regular marches there, f
 PickPrompt: Click the map to send your army there. Esc cancels.
 MapSendHint: Send levies here
 MapSent: "{0} levies sent to {1}."
+MapUnreachable: "{0} levies could not find a way to that point and stopped as close as they could get."
 PlaceSpace: space
 PlaceSky: the sky
 PlaceSurface: the surface

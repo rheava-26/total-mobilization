@@ -20,6 +20,11 @@ namespace Levy.Common.Movement
 		public bool NoFallDamage; public int ExtraFall;
 		/// <summary>A dash accessory is equipped (Player.dashType: Tabi / Master Ninja Gear, Shield of Cthulhu, Solar Flare, Crystal Assassin).</summary>
 		public bool HasDash;
+		/// <summary>
+		/// The widest gap (tiles of missing floor) a running jump clears on level ground: a plain jump covers GapJumpMaxTiles; speed carries further (flight time of the jump times the run speed, kept at 60% of that), and an extra jump mid-air adds AirGapBonusTiles.
+		/// </summary>
+		public int GapTiles => Math.Max(LevyConstants.Movement.GapJumpMaxTiles, (int)(MaxRunSpeed * LevyConstants.Movement.GapTilesPerRunSpeed)) + (ExtraJumps > 0 ? LevyConstants.Movement.AirGapBonusTiles : 0);
+
 		/// <summary>A usable grappling hook is in the dummy's hook slot (miscEquips[4]); its reach and reel speed in px, and how many hooks it holds.</summary>
 		public bool HasHook; public float HookReachPx, HookPullPx; public int HookCount;
 

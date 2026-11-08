@@ -168,7 +168,29 @@ namespace Levy.Common
 			public const float JumpEdgeCost = 1.5f;
 			public const float FallEdgeCost = 0.5f;
 			public const float FlightCostMult = 1.3f;
+			/// <summary>Share of the straight-line range of a full wing tank (WingTimeMax ticks at FlySpeed) a planned flight may use before it must touch down (the climb and the wind-up take the rest).</summary>
+			public const float FlightRangeShare = 0.8f;
 			public const int PathFailRetryTicks = 45;
+
+			// ---- long routes (RoutePlanner / SoldierNPC.Route.cs) ----
+			// One shared, sliced A* over the whole trip (start..goal bounding box) per (goal, ability class, start bucket); soldiers follow its waypoints with the usual local reflexes.
+			/// <summary>Search buffer: the widest and tallest trip window (tiles). A trip wider than this is walked in hops toward the goal (the far end is out of the window).</summary>
+			public const int RouteWindowW = 1500, RouteWindowH = 460;
+			/// <summary>Nodes expanded per game tick by the planner (about 2 microseconds a node: 1.4 ms) and the most one route may use before it settles for the closest point it reached.</summary>
+			public const int RouteNodesPerTick = 700, RouteMaxNodes = 220000;
+			/// <summary>Weight on the heuristic: above 1 the search commits toward the goal and expands far fewer tiles (routes are a little longer than optimal).</summary>
+			public const float RouteHWeight = 1.7f;
+			/// <summary>Soldiers within the same bucket (tiles) of one another share a route; routes are kept this long (ticks) and at most this many are cached.</summary>
+			public const int RouteStartBucketTiles = 12, RouteTtlTicks = 60 * 240, RouteCacheMax = 48, RouteQueueMax = 24;
+			/// <summary>A failed or partial route is searched again after this long (ticks) when somebody asks again.</summary>
+			public const int RouteRetryTicks = 60 * 6;
+			/// <summary>How far ahead along the route (tiles of waypoint length) a soldier aims, and how far off the route (tiles) it may be before it asks for a fresh route from where it stands.</summary>
+			public const int RouteLookaheadTiles = 26, RouteOffRouteTiles = 12;
+			/// <summary>No progress for this many ticks while following a route: ask for a fresh route from here (at most RouteReplanMax times per order), then fall back to the old hop-toward-the-goal walk.</summary>
+			public const int RouteStallTicks = 60 * 8, RouteReplanMax = 3;
+			/// <summary>A trip is routed when the goal is farther than this (tiles) in x, or this much above or below the feet.</summary>
+			public const float RouteFlyRisePx = 40f;
+			public const int RouteMinTripTiles = 24, RouteMinTripRise = 10, RouteMaxHopTiles = 1100;
 
 			// ---- wings ----
 			public const float FlySpeed = 6f;
@@ -257,6 +279,8 @@ namespace Levy.Common
 			// ---- gaps ----
 			/// <summary>Widest gap (tiles with no floor) a body will jump across instead of falling into.</summary>
 			public const int GapJumpMaxTiles = 3;
+			/// <summary>Gap tiles a running jump gains per px/tick of run speed (Hermes Boots 6.75 px/tick: 8 tiles; bare feet 3 px/tick: 3).</summary>
+			public const float GapTilesPerRunSpeed = 1.2f;
 			/// <summary>Jump height (tiles) used to clear a gap: sets the airtime, so 3 carries about 40 ticks.</summary>
 			public const int GapJumpTiles = 4;
 			/// <summary>Rows above the feet that must be clear over the gap and the far edge.</summary>

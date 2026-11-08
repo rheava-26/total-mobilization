@@ -139,7 +139,7 @@ namespace Levy.Content.NPCs
 			{
 				int face = FacingWhileMoving(dir);
 				npc.direction = face; npc.spriteDirection = face;
-				bool close = Math.Abs(dx) < WalkWithinTiles * 16 && !Retreating; // a retreat always runs, however short the step
+				bool close = Math.Abs(_pathFromRoute && !TravelLegacy.On && HasMoveGoal ? MoveGoal.X - npc.Center.X : dx) < WalkWithinTiles * 16 && !Retreating; // a retreat always runs, however short the step; on a planned route the waypoints are close together, the leg end is what counts
 				bool walk = reversing || close || State == SoldierState.Idle || State == SoldierState.Patrol;
 				maxSpeed = walk ? WalkSpeedPx * Abilities.WalkSpeed : Abilities.MaxRunSpeed; // MaxRunSpeed already carries moveSpeed the way Player.Update applies it (not on the sprint)
 				if (State == SoldierState.Routed && !walk) maxSpeed *= LevyConstants.RoutedSpeedMult;
@@ -150,8 +150,11 @@ namespace Levy.Content.NPCs
 			}
 
 			// goal above and close: jump to it, fly to it, or admit it is out of reach
-			if (!air && !_blocked && dy < -JumpUpAbovePx && Math.Abs(dx) <= GoalJumpReachPx())
+			// A planned route asks for the climb itself: the look-ahead refusal of an overhang or a wall (ScanAhead is conservative about a tight pocket under a ledge) does not veto a jump the route's next waypoint calls for.
+			bool routeClimb = !TravelLegacy.On && _blocked && _pathFromRoute && _path.Count > 0 && (BlockWhy == 5 || BlockWhy == 6) && !Abilities.HasWings;
+			if (!air && (!_blocked || routeClimb) && dy < -JumpUpAbovePx && Math.Abs(dx) <= GoalJumpReachPx())
 			{
+				if (routeClimb) { _blocked = false; _blockedHard = false; }
 				int tiles = (int)Math.Ceiling(-dy / 16f);
 				int reachBonus = State == SoldierState.Engage ? EngageJumpReachBonusTiles : 0; // a weapon covers the last stretch
 				if (PlatMode >= 1) reachBonus += Abilities.ExtraJumps > 0 ? ExtraJumpReachTiles * Math.Min(2, Abilities.ExtraJumps) : 0; // a second jump at the apex carries the rest
@@ -166,6 +169,7 @@ namespace Levy.Content.NPCs
 			// goal well below while standing on a platform: drop through it when the floor below is safe
 			if (!air && grounded && (dy > PlatformDropBelowPx || brainDropRequest) && PlatformDropIsSafe()) { _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; }
 			if (Abilities.HasWings && dy < -(Abilities.JumpTiles * 16f)) wantFly = true;
+			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && _wingTime > 0 && dy < -RouteFlyRisePx) wantFly = true; // a planned route climbs by wing (a flight edge), not by hopping at the foot of the climb
 			if (air) { jumpTiles = 0; wantFly = false; flyUp = false; } // aerial mode owns the vertical axis
 
 			if (!air && Abilities.HasWings && _wingTime > 0 && (wantFly || (_flying && dy < -FlyArriveYPx)))
@@ -268,7 +272,13 @@ namespace Levy.Content.NPCs
 				int depth = TileNav.DropDepth(ax, fy);
 				// a narrow gap with floor on the far side: jump it rather than drop into a pit that cannot be climbed back out of
 				if ((depth < 0 || depth >= GapJumpMinDepthTiles) && TryGapJump(ax, fy, dir, dyPx, ref jumpTiles)) return;
-				if (depth < 0) { _blocked = true; _blockedHard = true; BlockWhy = 7; if (dyPx <= 2f * 16f) HookTrigger(HookReason.Gap); return; } // a gap wider than a jump: a hook may span it
+				if (depth < 0)
+				{
+					if (!TravelLegacy.On && Abilities.HasWings && _wingTime > 0) { wantFly = true; return; } // a gap wider than a jump: wings fly it
+					_blocked = true; _blockedHard = true; BlockWhy = 7; if (dyPx <= 2f * 16f) HookTrigger(HookReason.Gap); return; // a hook may span it
+				}
+				// a hole too deep to climb back out of (deeper than a jump) is not stepped into when the goal is level or above and no planned route asks for it: that is how a body ends up trapped in a pit
+				if (!TravelLegacy.On && depth > Abilities.JumpTiles && !Abilities.HasWings && dyPx <= 2f * 16f && !_pathFromRoute) { _blocked = true; _blockedHard = true; BlockWhy = 8; HookTrigger(HookReason.Gap); return; }
 				if (depth > Abilities.JumpTiles + DropMarginTiles)
 				{
 					if (Abilities.HasWings) wantFly = true;
@@ -284,7 +294,7 @@ namespace Levy.Content.NPCs
 		private bool TryGapJump(int ax, int fy, int dir, float dyPx, ref int jumpTiles)
 		{
 			if (dyPx > 2f * 16f) return false;
-			int maxW = GapJumpMaxTiles + (Abilities.ExtraJumps > 0 ? AirGapBonusTiles : 0); // an extra jump mid-air carries a wider gap
+			int maxW = TravelLegacy.On ? GapJumpMaxTiles + (Abilities.ExtraJumps > 0 ? AirGapBonusTiles : 0) : Abilities.GapTiles; // run speed and an extra jump mid-air carry a wider gap
 			for (int w = 0; w <= maxW; w++)
 			{
 				int cx = ax + dir * w;
@@ -1013,8 +1023,23 @@ namespace Levy.Content.NPCs
 			}
 			float moved = PathGoalMovedTiles * 16f;
 			if (_path.Count > 0 && Vector2.DistanceSquared(_pathGoal, MoveGoal) > moved * moved) { _path.Clear(); _pathTimer = PathRecalcTicks; }
-			while (_path.Count > 0 && Vector2.DistanceSquared(_path[0], NPC.Bottom) <= WaypointReachPx * WaypointReachPx) _path.RemoveAt(0);
-			return _path.Count > 0 ? _path[0] : MoveGoal;
+			// A waypoint counts as reached inside the circle of WaypointReachPx, and also inside the arrival box the walk logic itself stops in (|dx| < ArriveXPx, |dy| < ArriveYPx): on a slope or a half block the feet sit up to
+			// 16 px off the waypoint's flat height, which is outside the circle but inside the box, and the body used to stand "arrived" at a waypoint it never dropped.
+			while (_path.Count > 0)
+			{
+				Vector2 wp = _path[0]; float wdx = wp.X - NPC.Center.X, wdy = wp.Y - NPC.Bottom.Y;
+				if (wdx * wdx + wdy * wdy <= WaypointReachPx * WaypointReachPx || (!TravelLegacy.On && Math.Abs(wdx) < ArriveXPx && Math.Abs(wdy) < ArriveYPx)) _path.RemoveAt(0); else break;
+			}
+			if (_path.Count == 0) return MoveGoal;
+			Vector2 next = _path[0];
+			// A drop waypoint sits in the landing column, so a body whose centre is already over it (balanced on the lip, still held up by the edge of its box) has no sideways error left to walk off with.
+			// Aim a little past it, in the direction the route goes on, until the body is in the air.
+			if (!TravelLegacy.On && next.Y - NPC.Bottom.Y > 32f && Math.Abs(next.X - NPC.Center.X) < 14f && NPC.velocity.Y == 0f)
+			{
+				float onward = _path.Count > 1 ? _path[1].X : MoveGoal.X;
+				next.X += (onward >= NPC.Center.X ? 1f : -1f) * 24f;
+			}
+			return next;
 		}
 
 		/// <summary>Lava (or a drop onto lava) in the columns the body is about to cover: the next few tiles at body height and the floor under them, further out the faster it moves.</summary>
@@ -1039,7 +1064,8 @@ namespace Levy.Content.NPCs
 			if (_pathFailTimer > 0) { _pathFailTimer--; return; }
 			bool want = (_blockedHard || _wedgeForcePath) && _path.Count == 0;
 			_wedgeForcePath = false; // one request per wedge, whatever it finds
-			bool refresh = _path.Count > 0 && _pathTimer >= PathRecalcTicks;
+			if (_path.Count == 0) _pathFromRoute = false;
+			bool refresh = _path.Count > 0 && _pathTimer >= PathRecalcTicks && !_pathFromRoute; // a leg handed over by the route planner is not searched again every half second
 			if (!want && !refresh) return;
 			_pathTimer = 0;
 			_pathGoal = MoveGoal;

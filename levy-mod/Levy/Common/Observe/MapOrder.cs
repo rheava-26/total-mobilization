@@ -157,6 +157,21 @@ namespace Levy.Common.Observe
 			return new Point(tx, ty);
 		}
 
+		private static uint _unreachableTick; private static int _unreachableCount;
+		/// <summary>A soldier followed its route to the closest point it could reach and stopped: tell the commander (one line per few seconds, with the count).</summary>
+		public static void NoteUnreachable(SoldierRecord rec, Vector2 at)
+		{
+			if (rec == null || LevyUtil.IsClient) return;
+			_unreachableCount++;
+			if (Main.GameUpdateCount - _unreachableTick < 60u * 6u) return;
+			_unreachableTick = Main.GameUpdateCount;
+			int ci = LevyUtil.FindPlayerByName(rec.CommanderName);
+			var commander = ci >= 0 ? Main.player[ci] : null;
+			try { if (commander != null) RosterSystem.SendToPlayer(commander, LevyUtil.T("Observe.MapUnreachable", _unreachableCount), new Color(255, 200, 120)); }
+			catch (System.Exception) { } // a chat line is a nicety: no client socket (a headless test) must never cost a soldier its think
+			_unreachableCount = 0;
+		}
+
 		public const int LegTiles = 30;
 
 		/// <summary>

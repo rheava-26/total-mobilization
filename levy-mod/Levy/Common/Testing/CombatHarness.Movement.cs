@@ -46,6 +46,7 @@ namespace Levy.Common.Testing
 			if (string.Equals(Scenario, "bosstrial", StringComparison.OrdinalIgnoreCase)) return BeginBossTrial();
 			if (string.Equals(Scenario, "spectator", StringComparison.OrdinalIgnoreCase)) return BeginSpectator();
 			if (string.Equals(Scenario, "doors", StringComparison.OrdinalIgnoreCase)) return BeginDoors();
+			if (string.Equals(Scenario, "travel", StringComparison.OrdinalIgnoreCase)) return BeginTravel();
 			if (!string.Equals(Scenario, "platform", StringComparison.OrdinalIgnoreCase)) return false;
 			_scTrial = 0; _scTick = -1;
 			Mod.Logger.Info($"HARNESS-MOVE: platform scenario; platform row y={FloorY - PlatformHeightTiles} ({PlatformHeightTiles} tiles above the floor); trials={Trials.Length}; max {ScenarioMaxTicks} ticks");
@@ -98,6 +99,7 @@ namespace Levy.Common.Testing
 			if (string.Equals(Scenario, "bosstrial", StringComparison.OrdinalIgnoreCase)) { StepBossTrial(); return; }
 			if (string.Equals(Scenario, "spectator", StringComparison.OrdinalIgnoreCase)) { StepSpectator(); return; }
 			if (string.Equals(Scenario, "doors", StringComparison.OrdinalIgnoreCase)) { StepDoors(); return; }
+			if (string.Equals(Scenario, "travel", StringComparison.OrdinalIgnoreCase)) { StepTravel(); return; }
 			if (_scTrial >= Trials.Length) { Finish("platform scenario complete"); return; }
 			if (_scTick < 0)
 			{

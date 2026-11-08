@@ -36,7 +36,7 @@ namespace Levy.Common.Testing
 		private static int DlStationLevel(CrRun r) { _dlTier = DlIdx(r.Dl); return _dlTier switch { 0 => 1, 1 => 2, _ => 3 }; }
 
 		private static readonly HashSet<string> DlExplosive = new() { "Rocket Launcher", "Grenade Launcher", "Magic Missile", "Flamelash", "Space Gun", "CalamityMod/Eviscerator", "CalamityMod/Galeforce", "CalamityMod/Aorta", "CalamityMod/BloodBath" };
-		private static readonly HashSet<string> DlDot = new() { "Flamelash", "Fiery Greatsword", "Blade of Grass", "Cursed Flames", "Golden Shower", "CalamityMod/HyphaeRod", "CalamityMod/Fungicide", "CalamityMod/Shadethrower", "CalamityMod/PlagueStaff", "Vilethorn", "Night's Edge", "Molten Fury", "Hellwing Bow", "Bee Gun", "CalamityMod/ShaderainStaff" };
+		private static readonly HashSet<string> DlDot = new() { "Flamelash", "Fiery Greatsword", "Blade of Grass", "Cursed Flames", "Golden Shower", "CalamityMod/HyphaeRod", "CalamityMod/Fungicide", "CalamityMod/Shadethrower", "Vilethorn", "Night's Edge", "Molten Fury", "Hellwing Bow", "Bee Gun", "CalamityMod/ShaderainStaff" };
 		/// <summary>Reporting class of a weapon+ammo (INFERRED labels: pierce from the projectile sample, explosive/DoT from these hand lists and the ammo).</summary>
 		internal static string DlClass(string weapon, string ammo)
 		{
@@ -66,7 +66,7 @@ namespace Levy.Common.Testing
 			{
 				W("Flamelash"); W("Magic Missile"); W("Aqua Scepter"); W("CalamityMod/HyphaeRod"); W("CalamityMod/SandstreamScepter"); W("CalamityMod/AquamarineStaff");
 				if (t >= 1) { W("Vilethorn"); W("Space Gun"); }
-				if (t >= 2) { W("CalamityMod/BloodBath"); W("CalamityMod/ShaderainStaff"); W("CalamityMod/Tradewinds"); W("CalamityMod/PlagueStaff"); }
+				if (t >= 2) { W("CalamityMod/BloodBath"); W("CalamityMod/ShaderainStaff"); W("CalamityMod/Tradewinds"); }
 				if (t >= 3) { W("Cursed Flames"); W("Crystal Storm"); W("Magic Dagger"); W("CalamityMod/AbyssalTome"); W("CalamityMod/EldritchTome"); }
 			}
 			else if (cls == 'E')
@@ -124,7 +124,7 @@ namespace Levy.Common.Testing
 
 		private static string[] DlAcc(char cls, int t, bool ok)
 		{
-			string classAcc = cls == 'E' ? "Feral Claws" : cls == 'M' ? "Band of Starpower" : cls == 'R' ? "Magic Quiver" : "Hermes Boots";
+			string classAcc = cls == 'E' ? "Feral Claws" : cls == 'M' ? "Band of Starpower" : cls == 'R' ? (t >= 1 ? "Molten Quiver" : "Lightning Boots") : "Hermes Boots";
 			string[] l;
 			if (ok) l = new[] { "Hermes Boots", "Band of Regeneration", "Shackle", classAcc };
 			else if (t == 0) l = new[] { "Cloud in a Bottle", "Shield of Cthulhu", classAcc, "Band of Regeneration", "Hermes Boots", "CalamityMod/SandCloak" };

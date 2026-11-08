@@ -19,6 +19,8 @@ namespace Levy.Common.Team
 		private readonly List<int> _palNpcs = new();
 		/// <summary>Self-check counters.</summary>
 		public static int PaladinCuts, PaladinShares, PaladinRawShared;
+		/// <summary>Lab counters: shares actually struck on levies, life they really lost (after their own defense), hits that had holders, damage of those hits, and shares that spawned a further split (must stay 0).</summary>
+		public static int PaladinSoaks, PaladinHits, PaladinNested; public static long PaladinSoakDone, PaladinHitDmg;
 
 		/// <summary>Vanilla's own test (Player.TeammateHasPalidinShieldAndCanTakeDamage): another Player on the team wears a shield above a quarter of his life, and is not in immunity.</summary>
 		public static bool PlayerTeammateShields(Player p)

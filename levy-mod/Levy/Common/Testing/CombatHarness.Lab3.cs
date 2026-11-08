@@ -353,6 +353,7 @@ namespace Levy.Common.Testing
 				if (run.Food >= 1 && st.Tick % 3000 == 0) foreach (var lv in st.Levies) { var nn = Main.npc[lv.Idx]; if (nn.active) nn.AddBuff(run.Food >= 2 ? BuffID.WellFed2 : BuffID.WellFed, 60 * 60 * 30); }
 			}
 			if (run.Dl != "" && (st.Tick == 6 || st.Tick % 3000 == 0) && !l.Dead) { DlBuffs(run, n); sn.StatsDirty = true; } // buffImmune clears on the first update, so the potions go on a few ticks in
+			if (run.Pl != "" && (st.Tick == 6 || st.Tick % 3000 == 0) && !l.Dead) { PlBuffs(l, n); sn.StatsDirty = true; }
 			if (run.Dl != "" && !run.DlOk) sn.Stations |= StationFlags.Honey; // honey pool emulated by the station flag (never from a tile scan)
 			if (st.Tick % 30 == 0 && !l.Dead) { L3Vert(n); L3Dist(n, st); }
 			if (st.Tick == 600 && !l.Dead)

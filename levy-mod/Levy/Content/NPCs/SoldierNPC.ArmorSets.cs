@@ -56,6 +56,7 @@ namespace Levy.Content.NPCs
 		internal float PendingContactScale = 1f;
 		/// <summary>The Paladin's Shield wearer that will take a share of the hit now being resolved, and the guard against a soak chain.</summary>
 		private readonly List<SoldierNPC> _hitPaladins = new();
+		private bool _soakAfter;
 		private Player _hitPaladinPlayer;
 		private bool _soaking;
 
@@ -617,7 +618,8 @@ namespace Levy.Content.NPCs
 				_hitPaladins.Clear();
 				cands.Sort((a, b) => a.d.CompareTo(b.d));
 				int n = Math.Min(Math.Min(cands.Count, total), LevyConstants.PaladinMaxSplit), each = total / n, extra = total % n;
-				Common.Team.TeamPlayer.PaladinRawShared += total;
+				Common.Team.TeamPlayer.PaladinRawShared += total; Common.Team.TeamPlayer.PaladinHits++; Common.Team.TeamPlayer.PaladinHitDmg += damageDone;
+				if (_soakAfter) Common.Team.TeamPlayer.PaladinNested++; // a payer's own wound found holders: would be a cascade
 				for (int k = 0; k < n; k++)
 				{
 					int share = each + (k < extra ? 1 : 0);
@@ -698,7 +700,9 @@ namespace Levy.Content.NPCs
 			PendingContactScale = IncomingSetScale(false);
 			try { done = NPC.SimpleStrikeNPC(amount, 0, false, 0f, null, false, 0f, true); }
 			finally { PendingContactScale = 1f; _contactStriking = false; _soaking = false; }
-			AfterHit(done, attackerIndex);
+			Common.Team.TeamPlayer.PaladinSoaks++; Common.Team.TeamPlayer.PaladinSoakDone += Math.Max(0, done);
+			_soakAfter = true;
+			try { AfterHit(done, attackerIndex); } finally { _soakAfter = false; }
 			if (Main.dedServ) return;
 			// a gold thread from the shield to the soldier it is covering
 			Vector2 from = NPC.Center, to = ally.NPC.Center;

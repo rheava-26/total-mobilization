@@ -3725,3 +3725,5 @@ WAVES (Brain.cs is the serialization point): A (PARALLEL, no Brain) = A1 Weapons
 - orders (Levy): Return and map orders were overridden by Engage whenever an enemy was in reach (boss near the commander = levies never left). Fixed: MarchingOrder keeps the walk and fires on the way. Spread Out follow slack tightened. Repro: LEVY_HARNESS_SCENARIO=orderrepro (LEVY_OR_N=squad size). Open: Spread Out has no effect on spacing while engaged with a boss.
 
 - spread2/orders2 (Levy): GoTo no longer catch-up-teleports to the commander when stuck (it runs in State Follow). Orders: bodyless levies take key/radio orders; out-of-range (40t) levies now reported in chat; map-order mutiny refusals are loud. Repros: orderrepro, ordermix. Open: Spread Out in combat is bound by the weapon reach window; Fear (Shaken/Routed) still defers an order silently.
+
+- Paladin lab (branch paladinlab): 45 shields vs none, tank kit, cascade and Calamity Adrenaline checked; see levy-mod/docs/boss_lab/paladin/RESULTS.md. Open: Paladin share floor total=max(holders, hit/3) makes big shield groups take about 1.3x the hit instead of a third (unarmored).

@@ -1,0 +1,17 @@
+key	pl	seed	result	sec	n	deaths	firstDeathSec	takenTotal	takenBoss	rawShared	soakLifeLost	soaks	shieldedHits	shieldedHitDmg	nested	tankDead	tankDeathSec	tankTaken	tankHits	tankDef	tankEndurance	holdersDead
+fight|eow|exp|follow|1|18000|n45|aa3|gmod|grlv|L3|plshield	shield	1	WIN	35.0	45	3	25.9	3431	3431	1112	1087	1087	60	760	0	-	-	-	-	-1.0	-1.0	3
+fight|eow|exp|follow|2|18000|n45|aa3|gmod|grlv|L3|plshield	shield	2	WIN	32.1	45	1	22.6	3064	3064	864	857	857	50	666	0	-	-	-	-	-1.0	-1.0	1
+fight|eow|exp|follow|3|18000|n45|aa3|gmod|grlv|L3|plshield	shield	3	WIN	33.1	45	6	12.5	5470	5066	1526	1485	1485	87	1182	0	-	-	-	-	-1.0	-1.0	6
+fight|eow|exp|follow|4|18000|n45|aa3|gmod|grlv|L3|plshield	shield	4	WIN	33.2	45	5	15.4	3603	3603	1044	1015	1015	49	834	0	-	-	-	-	-1.0	-1.0	5
+fight|eow|exp|follow|1|18000|n45|aa3|gmod|grlv|L3|plnone	none	1	WIN	37.0	45	3	14.4	4229	4229	0	0	0	0	0	0	-	-	-	-	-1.0	-1.0	0
+fight|eow|exp|follow|2|18000|n45|aa3|gmod|grlv|L3|plnone	none	2	WIN	95.0	45	0	-	1628	1628	0	0	0	0	0	0	-	-	-	-	-1.0	-1.0	0
+fight|eow|exp|follow|3|18000|n45|aa3|gmod|grlv|L3|plnone	none	3	WIN	43.4	45	7	12.9	3547	3547	0	0	0	0	0	0	-	-	-	-	-1.0	-1.0	0
+fight|eow|exp|follow|4|18000|n45|aa3|gmod|grlv|L3|plnone	none	4	WIN	35.6	45	2	12.8	1726	1726	0	0	0	0	0	0	-	-	-	-	-1.0	-1.0	0
+fight|eow|exp|follow|1|18000|n45|aa3|gmod|grlv|L3|pltankA	tankA	1	WIN	47.1	45	0	-	1309	1309	137	110	110	69	178	0	0	-	127	104	98.0	0.3	0
+fight|eow|exp|follow|2|18000|n45|aa3|gmod|grlv|L3|pltankA	tankA	2	WIN	41.2	45	1	16.9	1443	1443	88	72	72	47	103	0	0	-	105	82	98.0	0.3	0
+fight|eow|exp|follow|3|18000|n45|aa3|gmod|grlv|L3|pltankA	tankA	3	WIN	48.8	45	0	-	1377	1377	108	88	88	64	139	0	0	-	126	105	98.0	0.3	0
+fight|eow|exp|follow|4|18000|n45|aa3|gmod|grlv|L3|pltankA	tankA	4	WIN	41.2	45	0	-	1516	1516	100	52	52	42	213	0	0	-	92	73	98.0	0.3	0
+fight|eow|exp|follow|1|18000|n45|aa3|gmod|grlv|L3|pltankB	tankB	1	WIN	41.4	45	5	9.8	3434	3434	176	37	37	28	562	0	-	-	-	-	-1.0	-1.0	1
+fight|eow|exp|follow|2|18000|n45|aa3|gmod|grlv|L3|pltankB	tankB	2	WIN	34.8	45	2	31.7	2465	2465	74	19	19	12	235	0	-	-	-	-	-1.0	-1.0	0
+fight|eow|exp|follow|3|18000|n45|aa3|gmod|grlv|L3|pltankB	tankB	3	WIN	42.0	45	7	16.9	3895	3895	146	31	31	24	464	0	-	-	-	-	-1.0	-1.0	2
+fight|eow|exp|follow|4|18000|n45|aa3|gmod|grlv|L3|pltankB	tankB	4	WIN	30.5	45	0	-	223	223	27	5	5	3	85	0	-	-	-	-	-1.0	-1.0	0

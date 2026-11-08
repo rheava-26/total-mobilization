@@ -24,7 +24,12 @@ namespace Levy.Content.NPCs
 		internal bool RouteExhausted { get; private set; }
 		internal bool RouteActive => _rt != null && _rt.Usable;
 
-		internal void RouteReset() { RouteExhausted = false; _rt = null; _rtIdx = 0; _rtVariant = 0; _rtReplans = 0; _rtLegSent = new Vector2(float.MinValue); RouteEndedShort = false; _pathFromRoute = false; }
+		// ---- hook edges: stand at the cast point, fire the hook planner at the edge's target, ban the target when it comes to nothing ----
+		private readonly List<long> _rtBan = new();
+		private bool _rtHookWant; private Point _rtHookT; private Vector2 _rtHookGoal; private uint _rtHookSince, _rtHookLastTry; private int _rtHookTries;
+		internal int RouteHookCasts, RouteHookBans;
+
+		internal void RouteReset() { _rtBan.Clear(); _rtHookWant = false; RouteExhausted = false; _rt = null; _rtIdx = 0; _rtVariant = 0; _rtReplans = 0; _rtLegSent = new Vector2(float.MinValue); RouteEndedShort = false; _pathFromRoute = false; }
 
 		/// <summary>Hands the movement code the waypoints of the current leg as its path (no search): the same list a local A* would have produced.</summary>
 		private void FeedPath(List<Vector2> pts, Vector2 goal)
@@ -60,7 +65,7 @@ namespace Levy.Content.NPCs
 			{
 				bool stalled = Vector2.DistanceSquared(NPC.Center, _rtProgPos) < 40f * 40f;
 				_rtProgPos = NPC.Center; _rtProgTick = now;
-				if (stalled && _rt != null && _rt.Usable && _rtReplans < RouteReplanMax) { _rtReplans++; _rtVariant = (_rtVariant + 1) & 7; _rt = null; }
+				if (stalled && !_rtHookWant && _rt != null && _rt.Usable && _rtReplans < RouteReplanMax) { _rtReplans++; _rtVariant = (_rtVariant + 1) & 7; _rt = null; }
 			}
 
 			if (_rt == null || _rtGoal != g)
@@ -68,7 +73,7 @@ namespace Levy.Content.NPCs
 				if (_rt != null && _rtGoal != g) RouteReset();
 				if ((uint)now - _rtAsked < 20u && _rt == null) return false;
 				_rtAsked = (uint)now;
-				_rt = RoutePlanner.Get(me, goalBottom, Abilities, _rtVariant);
+				_rt = RoutePlanner.Get(me, goalBottom, Abilities, _rtVariant, _rtBan);
 				_rtGoal = g; _rtIdx = 0; _rtLegSent = new Vector2(float.MinValue);
 				if (_rt == null) return false;
 			}
@@ -78,9 +83,10 @@ namespace Levy.Content.NPCs
 				if (Main.GameUpdateCount - _rt.Born > (uint)RouteRetryTicks) _rt = null;
 				return false;
 			}
-			var pts = _rt.Pts;
+			var pts = _rt.Pts; var kinds = _rt.Kinds;
 			int n = pts.Count;
 			if (n == 0) return false;
+			bool hasKinds = kinds.Count == n;
 
 			// nearest waypoint in the window ahead of the last one reached
 			int lo = Math.Max(0, _rtIdx - 3), hi = Math.Min(n - 1, _rtIdx + 70);
@@ -101,6 +107,20 @@ namespace Levy.Content.NPCs
 			_rtIdx = Math.Max(_rtIdx, best);
 			while (_rtIdx < n - 1 && Vector2.DistanceSquared(pts[_rtIdx], me) < 36f * 36f) _rtIdx++;
 
+			// the next step is a hook cast from the previous waypoint: walk to it, then cast at the edge's target
+			if (hasKinds && kinds[_rtIdx] != 0 && _rtIdx > 0)
+			{
+				Vector2 cast = pts[_rtIdx - 1];
+				Point tile = TileNav.FeetTile(pts[_rtIdx]);
+				if (!_rtHookWant || _rtHookT != tile) { _rtHookWant = false; _rtHookT = tile; _rtHookGoal = pts[_rtIdx]; _rtHookSince = Main.GameUpdateCount; _rtHookTries = 0; }
+				bool atCast = Math.Abs(cast.X - me.X) < 40f && Math.Abs(cast.Y - me.Y) < 56f;
+				if (atCast) { if (!_rtHookWant) _rtHookSince = Main.GameUpdateCount; _rtHookWant = true; }
+				if (_rtHookWant && (_rtHookTries >= 3 || Main.GameUpdateCount - _rtHookSince > (uint)RouteHookWaitTicks)) { RouteHookGiveUp(tile); return false; }
+				if (_rtLegSent != cast || _path.Count == 0) { _rtLeg.Clear(); _rtLeg.Add(cast); FeedPath(_rtLeg, cast); _rtLegSent = cast; }
+				leg = cast; return true;
+			}
+			_rtHookWant = false;
+
 			if (Vector2.DistanceSquared(pts[n - 1], me) < 56f * 56f)
 			{
 				if (_rt.State == Route.S.Partial) { RouteEndedShort = true; RouteExhausted = true; _path.Clear(); return false; }
@@ -113,6 +133,7 @@ namespace Levy.Content.NPCs
 			{
 				acc += Vector2.Distance(prev, pts[j]) / 16f; prev = pts[j];
 				if (acc >= RouteLookaheadTiles) break;
+				if (hasKinds && j + 1 < n && kinds[j + 1] != 0) break;   // the leg ends at a hook cast point
 			}
 			if (j >= n) j = n - 1;
 			leg = pts[j];
@@ -127,13 +148,40 @@ namespace Levy.Content.NPCs
 			return true;
 		}
 
+		/// <summary>Movement tick: a route edge asked for a hook and the soldier stands at the cast point. Starts the real hook planner at the edge's target (SoldierNPC.Hook.cs).</summary>
+		private void RouteHookTick(bool grounded)
+		{
+			if (!_rtHookWant || _hkPhase != HookPhase.Idle || _hkStepUntil != 0) return;
+			if (!HookUsable) { RouteHookGiveUp(_rtHookT); return; }
+			if (Main.GameUpdateCount < _rtHookLastTry + (uint)RouteHookRetryTicks || !grounded || NPC.velocity.Y > 2.2f || NPC.wet || _flying) return;   // the edge's own retry spacing replaces the general back-off of the local triggers
+			if (!SoldierHooks.TakePlanBudget()) return;
+			_rtHookTries++; _rtHookLastTry = Main.GameUpdateCount;
+			try { HookStart(HookReason.Route, _rtHookGoal); }
+			catch (Exception e)
+			{
+				if (GearUpkeep.WarnOnce(e)) Levy.Instance?.Logger.Warn("Levy: route hook failed on soldier '" + SoldierName + "': " + e);
+				try { HookReset(true); } catch (Exception) { }
+				HookBackoff();
+			}
+			if (_hkPhase != HookPhase.Idle) RouteHookCasts++;
+		}
+
+		/// <summary>The hook edge came to nothing: the target is banned from the next search and the route is asked for again from here.</summary>
+		private void RouteHookGiveUp(Point target)
+		{
+			_rtHookWant = false; RouteHookBans++;
+			if (_rtBan.Count < RouteHookBanMax) _rtBan.Add(PathSearch.HookKey(target.X, target.Y));
+			_rt = null; _rtLegSent = new Vector2(float.MinValue); _path.Clear();
+			if (_rtBan.Count >= RouteHookBanMax) { RouteExhausted = true; RouteEndedShort = true; }
+		}
+
 		/// <summary>Harness telemetry: the route state and where the soldier is on it.</summary>
 		internal string DebugRoute()
 		{
 			if (_rt == null) return "route=none";
 			string nx = "";
 			for (int i = _rtIdx; i < Math.Min(_rt.Pts.Count, _rtIdx + 6); i++) { var q = TileNav.FeetTile(_rt.Pts[i]); nx += $"({q.X - TileNav.FeetTile(NPC.Bottom).X},{q.Y - TileNav.FeetTile(NPC.Bottom).Y})"; }
-			return $"route={_rt.State} idx={_rtIdx}/{_rt.Pts.Count} replans={_rtReplans} fromRoute={_pathFromRoute} pathN={_path.Count} goal=({MoveGoal.X / 16f:0},{MoveGoal.Y / 16f:0}) next={nx}";
+			return $"route={_rt.State} hookWant={_rtHookWant}/{_rtHookTries} bans={_rtBan.Count} idx={_rtIdx}/{_rt.Pts.Count} replans={_rtReplans} fromRoute={_pathFromRoute} pathN={_path.Count} goal=({MoveGoal.X / 16f:0},{MoveGoal.Y / 16f:0}) next={nx}";
 		}
 
 		private static bool LevyUtilIsServerOrSingle() => global::Levy.Common.Util.LevyUtil.IsServerOrSingle;

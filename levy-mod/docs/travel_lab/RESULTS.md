@@ -33,5 +33,59 @@ Two generated medium worlds (seeds 11111, 22222), five start points each, map or
 | Follow, 800 real tiles | 49% | 49% (teleports unchanged) |
 Cost: planner 33 ms per whole run on average (about 1.4 ms per slice, one 25 ms outlier under load); local searches unchanged.
 
-## Still open (OBSERVED)
+## Open after round 1 (OBSERVED, closed or narrowed in round 2 below)
 Ground levies (bare, boots, hook) cannot pass faces taller than 6 tiles or chasms: the hook is not part of routing. Levies that wade into a deep lake along a slope float mid-water and do not get out (a swim-up change did not fix it and was dropped). 12 of 14 failing zoo legs and most remaining real-world failures are these.
+
+# Round 2: hooks in routes, pits, water
+
+Lab, worlds and seeds as above (M1 11111, M2 22222, `lab/travel/round2/` has the scripts). Before = branch head after round 1 (`worktree-levy-stardust`), after = `travel2`. Commander 20 tiles behind the start (`LEVY_TRAVEL_CMDFAR=20`; the default 400 pulls a levy that spawns in Follow back to the commander, so a leg starting past offset 420 started 400 tiles earlier than its name). Arrival = within 12 tiles in x and 10 in y of the point. One run per row, 15 levies (5 bare, 4 boots, 3 wings, 3 hook).
+
+## OBSERVED (before this round)
+- Ground levies: a face above their jump or a chasm has no route (Partial route, they stop at the lip, which is right), and the hook never entered a route: the local triggers need a blocked walk and "no path", and a levy following a route always has a path.
+- A levy that wades into a lake **sinks to the floor and stays**. An NPC with `aiStyle -1` has no buoyancy: in water vanilla gives it gravity 0.2, max fall 7 and halves its movement (`NPC.UpdateNPC_UpdateGravity`, `Collision_MoveWhileWet`), and the movement code never swam. A jump from the floor is half height, so a steep shore (the lake of M1 at x 1700: 11 deep, a narrow pocket at the bottom, steep far wall) is not climbable. Bare/boots/hook in that lake: 0 of 12 arrive in 61 s, 144 s wet in the 800-tile run.
+- The "float mid-water" state was NOT seen with the head code. It was produced by the first fix tried here (swim up whenever the head is under water and the goal is not clearly below): the goal 2 to 3 tiles below pulled the body down and the swim pushed it up, a balance. The final rule swims only when the goal is above the feet.
+- Falls: the route search refused a drop deeper than jump + 6 (11 tiles for boots), the executor refused it too (`BlockWhy 8`), so a pit with steps up the far side was never entered.
+
+## What changed
+1. **Hook edges in `PathSearch`** (`ExpandHooks`). Only for a levy with a usable hook (`MovementAbilities.HookReachPx`), not for wings. A walking route is searched first; only when it does not reach the goal does the search run again with hook edges (so a levy still walks where it can). From a standing cell with a wall or an open edge beside it: to the highest standable cell of each column within 0.88 of the reach (3 nearest the goal per side) that has a fan anchor (24 rays across the upper half plane, first latchable tile, as `HookPlanner.FanAnchors`) within 3 columns; up a wall face (one cast when it is within 0.75 of the reach, a chain of casts up to 3.2 times the reach). Not from water. Cost 7 + 0.5 per tile.
+2. **Executor** (`SoldierNPC.Route.cs`): the route leg ends at the cast point; there `RouteHookTick` calls the real `HookStart(HookReason.Route, target)` (the usual planner: fan, reel simulation, release, step-back off the wall, chain climbing), up to 3 tries 45 ticks apart. An edge that comes to nothing in 420 ticks or 3 tries bans its target (kept per soldier, up to 6) and asks for a new route; the ban list is part of the route cache key. After the release the body holds the direction key toward the target (`HookParams.AirSteer`, the same rule `TickBallistic` already used for a chain), in the planner's simulation and in the flight; without it the wall zeroes the sideways speed and a single cast cannot climb a cliff.
+3. **Pits**: the route search lets a ground levy fall up to `FallScanTiles` (20, inside the 25 free tiles) and climb out by the usual step/jump edges; a cell reached by a fall deeper than a jump is never the best-effort end of a Partial route until the body is back at the row it fell from (so a goal beyond a pit that cannot be left stops at the lip, as before). The executor lets a route's descent happen (`ScanAhead`).
+4. **Water** (`SoldierNPC.SwimAssist`): in water, with the goal more than 1 tile above the feet, upward acceleration 0.35 to a top of 3 px/tick (half in honey), as a player holds jump. A goal level with or below the feet is left to sink to; the planner's rule (floor walk, enter deep water only from a wet cell) is unchanged.
+5. Not done: **wall climbing gear** (Shoe Spikes, Climbing Claws, Tiger Climbing Gear). `MovementAbilities` does not read `spikedBoots`, no lab levy carries them, and I did not measure what a levy with them does, so there is no wall edge for them. Without that gear the lip stays the end (no wall jump, no teleport).
+
+## After (final build `n7`, same worlds and seeds, before = head)
+| set (gears: bare / boots / wings / hook) | before | after |
+|---|---|---|
+| real worlds, 150 tiles (30 runs) | 215/450 (47%): 58/150, 46/120, 76/90, 35/90 | 274/450 (61%): 82/150, 66/120, 73/90, 53/90; wings 76 to 73 is noise |
+| real worlds, 800 tiles (10 runs) | 24/150 (16%): 5/50, 3/40, 13/30, 3/30 | 24/150 (16%): 5/50, 3/40, 13/30, 3/30 |
+| real worlds, Follow 800 (10 runs) | 75/150: 34/50, 21/40, 10/30, 10/30 | 73/150: 35/50, 24/40, 4/30, 10/30 (noise, see below) |
+| 150-tile starts that are on a lake (M1 x1700 med1 and med3, M1 x3700 med1) | 3/15 each (wings only) | 15/15 each |
+| obstacle zoo, map (6 legs) | 34/90: 5/30, 8/24, 18/18, 3/18 | 40/90: 5/30, 8/24, 18/18, 9/18 (cliff10 and chasm14: hook 0/3 to 3/3) |
+| obstacle zoo, Follow | 51/90 | 50/90 |
+| corruption C0: 4-wide holes 3, 5, 8 deep | 7/15: 0/5, 4/4, 3/3, 0/3 | 10/15: 0/5, 4/4, 3/3, 3/3 |
+| corruption C1: cave mouth under a rock lid | 15/15 | 15/15 |
+| corruption C2: 8-wide 60-deep chasm | 3/15: 0/5, 0/4, 3/3, 0/3 | 6/15: 0/5, 0/4, 3/3, 3/3 |
+| corruption C3: 4-deep hole | 15/15 | 15/15 |
+| corruption C4: 6-wide 14-deep pit, steps up the far wall (new) | 3/15: 0/5, 0/4, 3/3, 0/3 | 15/15: 5/5, 4/4, 3/3, 3/3 |
+| carved 920, six 150 legs, full, map | 90/90, 15/15 (same time) | 90/90, 15/15 |
+| carved 920, Follow | 10/15 loaded; 7/15 and 7/15 on an idle machine | 9/15 loaded; 9/15 and 9/15 idle (all 15 reach the last 20 tiles in every run) |
+
+Cost, idle machine, one run at a time (planner ms over the whole run; slices are 700 nodes or 1.6 ms, whichever ends first):
+
+| run | before: ms, routes, nodes, max slice | after: ms, routes, nodes, slices, max slice |
+|---|---|---|
+| M1 800 tiles | 42.8, 20, 30.8k, 4.45 ms | 135.2, 36, 40.1k, 127, 2.73 ms |
+| M2 150 tiles | 11.0, 13, 2.0k, 3.78 ms | 9.4, 13, 2.1k, 14, 1.88 ms |
+| corruption C0 | 48.7, 99, 15.1k, 4.52 ms | 94.0, 105, 18.8k, 128, 5.52 ms |
+| corruption C2 | 40.3, 97, 13.6k, 3.17 ms | 56.7, 108, 17.8k, 131, 3.13 ms |
+| carved 920 | 225.6, 100, 96.0k, 3.29 ms | 337.8, 105, 99.4k, 268, 2.91 ms |
+
+Per slice the planner averages 0.4 to 1.3 ms and tops out at 5.5 ms (before: 3.2 to 4.5 ms). A node costs 3.4 us on the carved course (2.35 us before: the pit bookkeeping); a node at a wall or an open edge costs about 100 us with a hook (the anchor fan: 24 rays, plus the columns), 5.7k such scans in the 800-tile run. The 800-tile run uses 3 times the planner time: 20 routes became 36 and the hook levies search twice (walking first, then with hooks) (INFERRED: the extra routes are replans after a banned edge). Averaged over the full set with three runs at once: 2.09 before and 3.15 after ms per 700 nodes; the worst slice 71.5 ms before (a loaded machine) and 20.8 ms after. The swim rule is one tile read and a compare per tick in water.
+
+## Reading it
+- 150-tile real-world trips: 47% to 61%; bare 39% to 55%, boots 38% to 55%, hook 39% to 59%. Most of the gain is water (the lake starts 3/15 to 15/15; 8 of 30 runs had a levy swimming 15 s or more without arriving, now 3) and pits and shores a hook can climb.
+- 800-tile real-world trips do not move (24/150 both). OBSERVED, bare levies' stuck lines in those runs: wall 16, overhang 10, void gap 5, deep drop 5, goal above 4, all with a Partial route. INFERRED: the far ends are walls and cliffs beyond a hook's reach, and several starts have the goal 140 to 170 rows below (a fall of that depth is damage, so the lip is the correct end). Wings are unchanged (13 of 30), hook levies too (3 of 30).
+- Follow is noisy at the 12-tile arrival line. Carved course: before 10/15 once (loaded), 7/15 twice (idle); after 9/15 three times; all 15 levies reach the last 20 tiles in every run. Real worlds, Follow 800: 75/150 before, then 75, 74, 80, 73, 73 over five builds of this branch (wings between 4 and 10 of 30 with no code path in common); teleports 1079 before, 978 after.
+- Z5 (20-high cliff, 40-wide mesa, 20-deep drop): hooks climb the face (chain) but the chain is flaky and they stop on the mesa; open.
+- Z1, Z3 (crack, 20-wide chasm): hooks stop at the lip: the far lip has no anchor above it within reach, so no hook edge exists; correct, not a miss.
+- Remaining failures with a hook route (real worlds, OBSERVED in the stuck lines): `hookWant` at the cast point with no line found by the planner or the retries not yet spent, a cast point in a wet cell on a replan, and routes whose terrain gives many short hook edges in a row where one of them fails. Verifying every edge on `HookPlanner.Plan` at route time (tried, `D`/`E` builds) gave no more arrivals (55 of 90 vs 54 of 90 for hooks) and cost up to 150 ms in one tick under load, so it was dropped.

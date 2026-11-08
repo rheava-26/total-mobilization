@@ -16,7 +16,7 @@ using H = Levy.Common.LevyConstants.Hooks;
 namespace Levy.Content.NPCs
 {
 	/// <summary>Why a soldier is thinking about a hook. The reason sets how long the blockage must hold first.</summary>
-	public enum HookReason : byte { None, GoalAbove, Wall, Gap, Flee, Altitude, Rescue, Follow }
+	public enum HookReason : byte { None, GoalAbove, Wall, Gap, Flee, Altitude, Rescue, Follow, Route }
 
 	/// <summary>
 	/// GRAPPLING HOOKS. A levy carries a real hook item (SoldierGear.Hook, the dummy's miscEquips[4]) and casts it with the vanilla <c>Player.QuickGrapple</c> inside an owner frame
@@ -196,7 +196,7 @@ namespace Levy.Content.NPCs
 			if (_hkChainCount >= 8) return false;
 			Vector2 goal = _hkTrigGoalUsed; Vector2 bottom = NPC.Bottom;
 			HookInfo info = HookInfo.Of(Record.Gear.Hook);
-			HookParams hp = HookParams.For(info, NPC.width, NPC.height, Math.Max(5.01f, Player.jumpSpeed), Gravity());
+			HookParams hp = HookParams.For(info, NPC.width, NPC.height, Math.Max(5.01f, Player.jumpSpeed), Gravity()); hp.AirSteer = _hkReason == HookReason.Route;
 			float remain = bottom.Y - goal.Y, nd = Vector2.Distance(bottom, goal) + Math.Abs(bottom.Y - goal.Y) * 0.5f;
 			HookPlan np = null; bool final = false;
 			if (remain <= info.ReachPx * 0.75f)
@@ -288,14 +288,14 @@ namespace Levy.Content.NPCs
 			Vector2 bottom = NPC.Bottom;
 			float nowDist = Vector2.Distance(bottom, goalBottom) + Math.Abs(bottom.Y - goalBottom.Y) * 0.5f;
 			float js = Math.Max(5.01f, Player.jumpSpeed);
-			HookParams hp = HookParams.For(info, NPC.width, NPC.height, js, Gravity());
+			HookParams hp = HookParams.For(info, NPC.width, NPC.height, js, Gravity()); hp.AirSteer = reason == HookReason.Route;
 			HookPlan plan = HookPlanner.Plan(TileHookWorld.Instance, bottom, hp, goalBottom, altitude ? HookGoalKind.Altitude : HookGoalKind.Ground, nowDist);
 			SoldierHooks.PlanTs += Stopwatch.GetTimestamp() - t0; SoldierHooks.Plans++;
 			if (SoldierHooks.Debug && plan == null || (SoldierHooks.Debug && Environment.GetEnvironmentVariable("LEVY_HOOKDBG2") == "1")) foreach (var l in HookPlanner.DiagLog.Take(60)) Levy.Instance?.Logger.Info("HOOKDBG2 " + l);
 			if (SoldierHooks.Debug) Levy.Instance?.Logger.Info($"HOOKDBG {SoldierName} {reason} from {bottom.X / 16f:0.0},{bottom.Y / 16f:0.0} goal {goalBottom.X / 16f:0.0},{goalBottom.Y / 16f:0.0} nowDist {nowDist / 16f:0.0}T: " + (plan == null ? "no plan" : $"anchors={plan.Anchors.Count} first={plan.Anchors[0].X / 16f:0.0},{plan.Anchors[0].Y / 16f:0.0} relTick={plan.ReleaseTick} relDist={plan.ReleaseDist:0} land={plan.Landing.X / 16f:0.0},{plan.Landing.Y / 16f:0.0} goalDist={plan.GoalDist / 16f:0.0}T gain={plan.Gain / 16f:0.0}T score={plan.Score:0}") + " " + HookPlanner.Describe() + (plan?.Path != null ? " path: " + string.Join(" ", plan.Path.Where((v, i) => i % 4 == 0).Select(v => $"{v.X / 16f:0.0},{v.Y / 16f:0.0}")) : ""));
 			if (plan == null || !(reason == HookReason.Rescue ? plan.Landed : plan.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f)))
 			{
-				if (reason == HookReason.Wall || reason == HookReason.GoalAbove || reason == HookReason.Follow)
+				if (reason == HookReason.Wall || reason == HookReason.GoalAbove || reason == HookReason.Follow || reason == HookReason.Route)
 				{
 					if (!_hkStepSkip && TryStepBack(reason, goalBottom, hp)) return;   // a player backs off from the wall to get a diagonal line over the lip
 				}
@@ -305,7 +305,7 @@ namespace Levy.Content.NPCs
 			_hkStepSkip = false;
 			SoldierHooks.PlansFound++;
 			_hkPlan = plan; _hkReason = reason; _hkTrigGoalUsed = goalBottom;
-			_hkChain = HookShortcutMode >= 1 && !altitude && (reason == HookReason.Follow || reason == HookReason.GoalAbove || reason == HookReason.Wall) && bottom.Y - goalBottom.Y > info.ReachPx * 0.6f; _hkChainCount = 0; _hkChainFlight = false;
+			_hkChain = HookShortcutMode >= 1 && !altitude && (reason == HookReason.Follow || reason == HookReason.GoalAbove || reason == HookReason.Wall || reason == HookReason.Route) && bottom.Y - goalBottom.Y > info.ReachPx * 0.6f; _hkChainCount = 0; _hkChainFlight = false;
 			_hkPhase = HookPhase.InFlight; _hkTicks = 0; _hkCasted = 0; _hkStall = 0; _hkLost = 0; _hkFirstLatch = -1; _hkHang = 0; _hkBestDist = float.MaxValue; _hkNetTick = 0;
 			_hkProj.Clear();
 			if (!HookCast(plan.Aims[0])) { HookReset(false); HookBackoff(); SoldierHooks.Aborts++; HkAborts++; return; }
@@ -470,7 +470,7 @@ namespace Levy.Content.NPCs
 			Vector2 goalBottom = altitude ? new Vector2(_hkAltX, _hkAltY) : _hkTrigGoalUsed;
 			float nowDist = Vector2.Distance(NPC.Bottom, goalBottom) + Math.Abs(NPC.Bottom.Y - goalBottom.Y) * 0.5f;
 			HookInfo info = HookInfo.Of(Record.Gear.Hook);
-			HookParams hp = HookParams.For(info, NPC.width, NPC.height, Math.Max(5.01f, Player.jumpSpeed), Gravity());
+			HookParams hp = HookParams.For(info, NPC.width, NPC.height, Math.Max(5.01f, Player.jumpSpeed), Gravity()); hp.AirSteer = _hkReason == HookReason.Route;
 			HookPlan np = HookPlanner.Replan(TileHookWorld.Instance, NPC.Bottom, hp, real, goalBottom, _hkPlan.Kind, nowDist);
 			HookDbg($"replan from real anchors ({real.Count}): " + (np == null ? "none" : $"relDist={np.ReleaseDist:0} goalDist={np.GoalDist / 16f:0.0}T gain={np.Gain / 16f:0.0}T"));
 			if (np == null || !(_hkReason == HookReason.Rescue ? np.Landed : np.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f))) { SoldierHooks.Aborts++; HkAborts++; HookKillAll(); HookBackoff(); NPC.noGravity = false; _hkChain = false; _hkChainFlight = false; _hkPhase = HookPhase.Cooldown; _hkNextAllowed = Math.Max(_hkNextAllowed, Main.GameUpdateCount + (uint)H.CooldownTicks / 3); return false; }
@@ -553,7 +553,7 @@ namespace Levy.Content.NPCs
 				ResetStuck(); npc.netUpdate = true;
 				return false;
 			}
-			if (_hkChainUsed && _hkTrigGoalUsed != Vector2.Zero)
+			if ((_hkChainUsed || _hkReason == HookReason.Route) && _hkTrigGoalUsed != Vector2.Zero)
 			{
 				// a climber who lets go at the lip holds the direction key toward the ledge: without it the wall zeroes the sideways speed and the body drops back down
 				float gx = _hkTrigGoalUsed.X - npc.Center.X;

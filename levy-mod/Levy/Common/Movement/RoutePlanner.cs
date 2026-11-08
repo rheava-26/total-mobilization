@@ -15,8 +15,10 @@ namespace Levy.Common.Movement
 		public enum S : byte { Pending, Ready, Partial, Failed }
 		public S State = S.Pending;
 		public readonly List<Vector2> Pts = new();
+		/// <summary>One per waypoint: 0 = reached on foot or by wing, 1 = by one grappling-hook cast from the previous waypoint, 2 = by a chain of casts up a wall.</summary>
+		public readonly List<byte> Kinds = new();
 		public Point Start, Goal; public int Variant; public uint Born;
-		public int NodesUsed; public double Ms; public int Jump; public bool Wings;
+		public int NodesUsed; public double Ms; public int Jump; public bool Wings; public int HookTiles; public int HookEdges; public bool HookPass;
 		public bool Usable => State == S.Ready || State == S.Partial;
 	}
 
@@ -31,28 +33,30 @@ namespace Levy.Common.Movement
 		private static readonly Dictionary<long, Route> _routes = new();
 		private static readonly Queue<Route> _queue = new();
 		private static PathSearch _big;
-		private static Route _active;
+		private static int _hookBase; private static Route _active; private static Vector2 _aFrom, _aTo; private static MovementAbilities _aAb; private static HashSet<long> _aBan;
 		private static readonly List<long> _evict = new();
 		public static long Planned, PlannedNodes, PlannedFound, PlannedPartial, PlannedFailed, SliceTicks, SlicesRun; public static double PlannedMs, MaxSliceMs;
 
 		public static readonly List<string> Log = new();
-		public static void StatReset() { Log.Clear(); Planned = PlannedNodes = PlannedFound = PlannedPartial = PlannedFailed = SliceTicks = SlicesRun = 0; PlannedMs = 0; MaxSliceMs = 0; }
-		public static string StatSummary() => $"routes={Planned} found={PlannedFound} partial={PlannedPartial} failed={PlannedFailed} nodes={PlannedNodes} ms={PlannedMs:0.0} maxSliceMs={MaxSliceMs:0.00} queued={_queue.Count}";
+		public static void StatReset() { PathSearch.StatHookScans = PathSearch.StatHookEdges = 0; Log.Clear(); Planned = PlannedNodes = PlannedFound = PlannedPartial = PlannedFailed = SliceTicks = SlicesRun = 0; PlannedMs = 0; MaxSliceMs = 0; }
+		public static string StatSummary() => $"routes={Planned} found={PlannedFound} partial={PlannedPartial} failed={PlannedFailed} nodes={PlannedNodes} ms={PlannedMs:0.0} maxSliceMs={MaxSliceMs:0.00} slices={SlicesRun} hookScans={PathSearch.StatHookScans} hookEdges={PathSearch.StatHookEdges} queued={_queue.Count}";
 
-		private static long Key(Point goal, Point start, int jump, bool wings, int variant)
+		private static long Key(Point goal, Point start, int jump, bool wings, int variant, int hookTiles, int banHash)
 		{
 			long k = goal.X; k = k * 4001 + goal.Y; k = k * 1009 + (start.X / RouteStartBucketTiles); k = k * 401 + (start.Y / RouteStartBucketTiles);
-			k = k * 17 + Math.Clamp(jump, 0, 15); k = k * 2 + (wings ? 1 : 0); k = k * 8 + (variant & 7);
+			k = k * 17 + Math.Clamp(jump, 0, 15); k = k * 2 + (wings ? 1 : 0); k = k * 8 + (variant & 7); k = k * 33 + hookTiles; k = k * 1000003 + banHash;
 			return k;
 		}
 
 		/// <summary>The route for this trip: an existing one (any state) or a new Pending one queued for the planner. Null when the planner is full.</summary>
-		public static Route Get(Vector2 fromBottom, Vector2 toBottom, MovementAbilities ab, int variant = 0)
+		public static Route Get(Vector2 fromBottom, Vector2 toBottom, MovementAbilities ab, int variant = 0, List<long> hookBan = null)
 		{
 			if (LevyUtil.IsClient) return null;
 			ab ??= new MovementAbilities();
 			Point s = TileNav.FeetTile(fromBottom), t = TileNav.FeetTile(toBottom);
-			long key = Key(t, s, ab.JumpTiles, ab.HasWings, variant);
+			int hookTiles = !TravelLegacy.On && !ab.HasWings && ab.HasHook && ab.HookReachPx >= HookMinReachTiles * 16f ? Math.Min(31, (int)(ab.HookReachPx / 16f)) : 0;
+			int banHash = 0; if (hookTiles > 0 && hookBan != null) foreach (long b in hookBan) banHash = banHash * 31 + (int)(b ^ (b >> 29));
+			long key = Key(t, s, ab.JumpTiles, ab.HasWings, variant, hookTiles, banHash & 0xFFFF);
 			uint now = Main.GameUpdateCount;
 			if (_routes.TryGetValue(key, out var r))
 			{
@@ -63,7 +67,8 @@ namespace Levy.Common.Movement
 			}
 			if (_queue.Count >= RouteQueueMax) return null;
 			if (_routes.Count >= RouteCacheMax) Evict(now);
-			r = new Route { Start = s, Goal = t, Variant = variant, Born = now, Jump = ab.JumpTiles, Wings = ab.HasWings };
+			r = new Route { Start = s, Goal = t, Variant = variant, Born = now, Jump = ab.JumpTiles, Wings = ab.HasWings, HookTiles = hookTiles };
+			if (hookTiles > 0 && hookBan != null && hookBan.Count > 0) _pendingBan[r] = new HashSet<long>(hookBan);
 			_routes[key] = r;
 			r.State = Route.S.Pending;
 			_pendingAbilities[r] = ab; _pendingFrom[r] = fromBottom; _pendingTo[r] = toBottom;
@@ -72,6 +77,7 @@ namespace Levy.Common.Movement
 		}
 
 		private static readonly Dictionary<Route, MovementAbilities> _pendingAbilities = new();
+		private static readonly Dictionary<Route, HashSet<long>> _pendingBan = new();
 		private static readonly Dictionary<Route, Vector2> _pendingFrom = new(), _pendingTo = new();
 
 		private static void Evict(uint now)
@@ -96,34 +102,47 @@ namespace Levy.Common.Movement
 					if (!_pendingAbilities.TryGetValue(r, out var ab)) continue;
 					Vector2 from = _pendingFrom[r], to = _pendingTo[r];
 					_pendingAbilities.Remove(r); _pendingFrom.Remove(r); _pendingTo.Remove(r);
-					if (_big.Begin(from, to, ab, centred: false, hWeight: RouteHWeight)) { _active = r; r.NodesUsed = 0; r.Ms = 0; Planned++; }
+					_pendingBan.TryGetValue(r, out var ban); _pendingBan.Remove(r);
+					if (_big.Begin(from, to, ab, centred: false, hWeight: RouteHWeight, hookBan: ban, allowHooks: false)) { _active = r; _hookBase = 0; _aFrom = from; _aTo = to; _aAb = ab; _aBan = ban; r.NodesUsed = 0; r.Ms = 0; Planned++; }
 					else { r.State = Route.S.Failed; PlannedFailed++; Planned++; }
 				}
 			}
 			if (_active != null)
 			{
 				var r = _active;
-				var st = _big.Step(RouteNodesPerTick);
-				r.NodesUsed = _big.Expanded;
+				// a slice is RouteNodesPerTick nodes at most, and at most RouteSliceMs of time: a hook-carrying search spends far longer on a node at a wall or an edge (the anchor fan), so the node budget alone would spike
+				var st = PathSearch.State.Running; int spent = 0;
+				while (st == PathSearch.State.Running && spent < RouteNodesPerTick && (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency < RouteSliceMs) { st = _big.Step(RouteChunkNodes); spent += RouteChunkNodes; }
+				r.NodesUsed = _hookBase + _big.Expanded;
 				if (st == PathSearch.State.Running && _big.Expanded >= RouteMaxNodes) { _big.Abandon(); st = _big.Status; }
-				if (st != PathSearch.State.Running)
+				// a route on foot comes first: only when none reaches the goal does the search run again with the grappling hook's edges (a levy walks where it can)
+				if (st != PathSearch.State.Running && st != PathSearch.State.Found && r.HookTiles > 0 && !r.HookPass)
 				{
-					if (st == PathSearch.State.Found || st == PathSearch.State.Partial)
-					{
-						if (_big.BuildPath(r.Pts)) { r.State = st == PathSearch.State.Found ? Route.S.Ready : Route.S.Partial; if (st == PathSearch.State.Found) PlannedFound++; else PlannedPartial++; }
-						else { r.State = Route.S.Failed; PlannedFailed++; }
-					}
-					else { r.State = Route.S.Failed; PlannedFailed++; }
-					PlannedNodes += r.NodesUsed;
-					if (Log.Count < 400) { Point e = r.Pts.Count > 0 ? TileNav.FeetTile(r.Pts[r.Pts.Count - 1]) : r.Start; Log.Add($"route {r.State} jump={r.Jump} wings={r.Wings} v={r.Variant} from=({r.Start.X},{r.Start.Y}) to=({r.Goal.X},{r.Goal.Y}) nodes={r.NodesUsed} pts={r.Pts.Count} end=({e.X},{e.Y}) status={st}"); }
-					r.Born = Main.GameUpdateCount;
-					_active = null;
+					r.HookPass = true; int used = r.NodesUsed;
+					if (_big.Begin(_aFrom, _aTo, _aAb, centred: false, hWeight: RouteHWeight, hookBan: _aBan, allowHooks: true)) { _hookBase = used; st = PathSearch.State.Running; r.NodesUsed = used; }
+					else st = _big.Status;
 				}
+				if (st != PathSearch.State.Running) Finish(r, st);
 			}
 			double ms = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
 			PlannedMs += ms; SlicesRun++; if (ms > MaxSliceMs) MaxSliceMs = ms;
 		}
 
-		public override void OnWorldUnload() { _routes.Clear(); _queue.Clear(); _pendingAbilities.Clear(); _pendingFrom.Clear(); _pendingTo.Clear(); _active = null; }
+
+		private static void Finish(Route r, PathSearch.State st)
+		{
+			if (st == PathSearch.State.Found || st == PathSearch.State.Partial)
+			{
+				if (_big.BuildPath(r.Pts, r.Kinds)) { r.State = st == PathSearch.State.Found ? Route.S.Ready : Route.S.Partial; if (st == PathSearch.State.Found) PlannedFound++; else PlannedPartial++; }
+				else { r.State = Route.S.Failed; PlannedFailed++; }
+			}
+			else { r.State = Route.S.Failed; PlannedFailed++; }
+			PlannedNodes += r.NodesUsed;
+			if (Log.Count < 400) { Point e = r.Pts.Count > 0 ? TileNav.FeetTile(r.Pts[r.Pts.Count - 1]) : r.Start; Log.Add($"route {r.State} jump={r.Jump} wings={r.Wings} hook={r.HookTiles} hooks={r.Kinds.FindAll(k => k != 0).Count} v={r.Variant} from=({r.Start.X},{r.Start.Y}) to=({r.Goal.X},{r.Goal.Y}) nodes={r.NodesUsed} pts={r.Pts.Count} end=({e.X},{e.Y}) status={st}"); }
+			r.Born = Main.GameUpdateCount;
+			_active = null;
+		}
+
+		public override void OnWorldUnload() { _routes.Clear(); _queue.Clear(); _pendingAbilities.Clear(); _pendingBan.Clear(); _pendingFrom.Clear(); _pendingTo.Clear(); _active = null; }
 	}
 }

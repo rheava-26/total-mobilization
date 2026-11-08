@@ -51,7 +51,7 @@ namespace Levy.Common.Testing
 		private static string TvFeature(float off)
 		{
 			if (TvWorld) return "w" + ((int)(off + TvX0) / 50 * 50);
-			if (TvCorrupt) { int leg2 = (int)Math.Floor((off - 20) / 150f); string[] nm2 = { "holes3-5-8", "cavemouth", "chasm60", "hole4" }; return leg2 >= 0 && leg2 < nm2.Length ? "c" + leg2 + "-" + nm2[leg2] : "camp"; }
+			if (TvCorrupt) { int leg2 = (int)Math.Floor((off - 20) / 150f); string[] nm2 = { "holes3-5-8", "cavemouth", "chasm60", "hole4", "pitstairs", "lakesteep" }; return leg2 >= 0 && leg2 < nm2.Length ? "c" + leg2 + "-" + nm2[leg2] : "camp"; }
 			if (TvZoo) { int leg = (int)Math.Floor((off - 20) / 150f); string[] nm = { "cliff10", "crack6", "chasm14", "chasm20", "lake12", "cliff20" }; return leg >= 0 && leg < nm.Length ? "z" + leg + "-" + nm[leg] : "camp"; }
 			if (off < 40) return "camp0"; if (off < 100) return "hills1"; if (off < 140) return "ledge"; if (off < 165) return "camp1";
 			if (off < 200) return "pre-chasmA"; if (off < 216) return "chasmA"; if (off < 256) return "stairsA"; if (off < 315) return "forest"; if (off < 335) return "camp2";
@@ -112,6 +112,9 @@ namespace Levy.Common.Testing
 			for (int i = 232; i < 244; i++) TvElev[i] = -(244 - i);            // ... 12 up
 			for (int i = 400; i < 408; i++) TvElev[i] = -60;                   // the chasm (ledges added in TvBuild)
 			for (int i = 560; i < 566; i++) TvElev[i] = -4;                    // a shallow hole on the far side
+			// leg 4 (620..770): a 6-wide pit 14 deep with a sheer near wall and 3-high, 2-wide steps up the far wall (down and up again is the only way across on foot)
+			for (int i = 690; i < 696; i++) TvElev[i] = -14;
+			for (int i = 696; i < 716; i++) TvElev[i] = Math.Min(0, -14 + ((i - 696) / 2 + 1) * 3);
 		}
 
 		private static void TvDefineCourse()
@@ -431,7 +434,7 @@ namespace Levy.Common.Testing
 					l.InStuck = true; l.StuckEps++;
 					if (l.StuckWhere.Length < 200) l.StuckWhere += TvFeature(offNow) + "@" + (int)offNow + " ";
 					if (_tvAscii < 6) { _tvAscii++; _tvEvents.AppendLine("MAP around " + rec.Name + " (@ levy feet tile; # solid, / slope, = platform, ~ water, t other tile; x from -24 to +40, y from -14 to +10):\n" + TvAscii((int)(c.X / 16f), (int)((n.Bottom.Y - 1f) / 16f), 1)); }
-					_tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) STUCK at {offNow:0} ({TvFeature(offNow)}) state={sn.State} order={rec.Order} blocked={sn.MoveBlocked} why={sn.StillReason()} hasPath={sn.HasPath} {sn.DebugRoute()} v={n.velocity.X:0.0},{n.velocity.Y:0.0} {TvTiles(n)} elev={(TvG - c.Y / 16f):0}");
+					_tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) STUCK at {offNow:0} ({TvFeature(offNow)}) state={sn.State} order={rec.Order} blocked={sn.MoveBlocked} why={sn.StillReason()} hasPath={sn.HasPath} {sn.DebugRoute()} v={n.velocity.X:0.0},{n.velocity.Y:0.0} noGrav={n.noGravity} wet={n.wet} hookSt={sn.HookState} fly={sn.IsFlying} {TvTiles(n)} elev={(TvG - c.Y / 16f):0}");
 				}
 				// global stall: best progress toward the goal has not improved for 600 ticks
 				float prog = _tvTo >= _tvFrom ? offNow - _tvFrom : _tvFrom - offNow;

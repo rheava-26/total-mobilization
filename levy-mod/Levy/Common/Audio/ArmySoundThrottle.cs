@@ -41,6 +41,14 @@ namespace Levy.Common.Audio
 		static readonly Dictionary<string, int> perStyle = new Dictionary<string, int>();
 		static readonly Dictionary<string, float> nearest = new Dictionary<string, float>();
 
+		/// <summary>Plays a sound as if an army NPC's AI had made it, so it goes through the budget, distance drop and stacking volume. Client only.</summary>
+		public static void PlayAsArmy(SoundStyle style, Vector2 pos)
+		{
+			if (Main.dedServ) return;
+			bool was = inArmy; inArmy = true;
+			try { SoundEngine.PlaySound(style, pos); } finally { inArmy = was; }
+		}
+
 		static bool IsArmy(Mod m) => m != null && (m.Name == "Levy" || m.Name == "Mechanization");
 
 		public override void Load()

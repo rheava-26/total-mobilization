@@ -31,6 +31,13 @@ namespace Levy.Common.Testing
 	/// </summary>
 	public partial class CombatHarness
 	{
+		/// <summary>Harness: how many of the six permanent upgrades each levy's dummy carries, as "min-max".</summary>
+		private static string CrLevyBoosters()
+		{
+			int lo = 99, hi = -1;
+			foreach (var n in Main.npc) if (n.active && n.ModNPC is SoldierNPC sn && sn.Dummy != null) { int c = LevyRippers.BoosterCount(LevyRippers.Of(sn.Dummy)); lo = Math.Min(lo, c); hi = Math.Max(hi, c); }
+			return hi < 0 ? "none" : lo + "-" + hi;
+		}
 		internal static bool CrOn => string.Equals(Scenario, "calrev", StringComparison.OrdinalIgnoreCase);
 		private static bool _crHooked;
 		/// <summary>LEVY_CR_SP=1: single-player owner emulation. A dedicated server has Main.myPlayer = 255, so soldier shots are owned by the inactive null player and every Calamity projectile that reads Main.player[owner]
@@ -585,6 +592,8 @@ namespace Levy.Common.Testing
 				if ((probe || run.BossHpX != 1f) && !s.Worm) { boss.lifeMax = (int)(boss.lifeMax * (probe ? 40f : run.BossHpX)); boss.life = boss.lifeMax; }
 				s.BossLifeMax = boss.lifeMax; s.BossLife = boss.life; s.BossDamage = boss.damage; s.BossDefense = boss.defense;
 				boss.timeLeft = 99999;
+				if (Environment.GetEnvironmentVariable("LEVY_CR_BOOST") == "1") LevyRippers.GrantBoosters(Main.player[Main.myPlayer]); // harness commander has eaten all six permanent Rage / Adrenaline upgrades
+				LevyRippers.RogueAligned = LevyRippers.RogueTimeouts = LevyRippers.Strikes = LevyRippers.StrikesBoosted = LevyRippers.FxRequests = LevyRippers.BoosterCopies = 0;
 				s.Rage0 = LevyRippers.RageActivations; s.Adr0 = LevyRippers.AdrenalineActivations; s.Dr0 = LevyRippers.DrCuts; s.Lost0 = LevyRippers.AdrenalineLost;
 				if (run.L3) Lab3Begin(run, s);
 				_crS = s; _cr = s; _crStarted = true; _crTickInRun = 0; SoldierNPC.HitDbg = new(); SoldierNPC.HitGapDbg = new();
@@ -716,7 +725,7 @@ namespace Levy.Common.Testing
 			if (global::Levy.Common.Util.LevyProf.On) { string pl = global::Levy.Common.Util.LevyProf.Dump(end) + $" wm={SoldierNPC.WmThinks}/{SoldierNPC.WmHolds}/{SoldierNPC.WmShifts}/{SoldierNPC.WmAims}/{SoldierNPC.WmAimCalls}/{SoldierNPC.WmPierce} chk=" + global::Levy.Common.Movement.ThreatField.ChkBad + "/" + global::Levy.Common.Movement.ThreatField.ChkN; Mod.Logger.Info("PROF " + run.Key + " ms/tick " + pl); try { File.AppendAllText(_crOut + ".prof.tsv", run.Key + "\t" + pl + "\n"); } catch { } }
 			if (SoldierNPC.HitDbg != null) { try { File.AppendAllText(_crOut + ".hit.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitDbg.OrderByDescending(kv => kv.Value.dmg).Select(kv => $"{kv.Key}={kv.Value.dmg}/{kv.Value.n}")) + "\n"); } catch { } SoldierNPC.HitDbg = new(); }
 			if (SoldierNPC.HitGapDbg != null) { try { File.AppendAllText(_crOut + ".gap.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitGapDbg.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}:{kv.Value}")) + "\n"); } catch { } SoldierNPC.HitGapDbg = new(); }
-			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} rageAct={LevyRippers.RageActivations - st.Rage0} adrAct={LevyRippers.AdrenalineActivations - st.Adr0}");
+			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} rageAct={LevyRippers.RageActivations - st.Rage0} adrAct={LevyRippers.AdrenalineActivations - st.Adr0} rogueAligned={LevyRippers.RogueAligned} rogueTimeouts={LevyRippers.RogueTimeouts} strikes={LevyRippers.Strikes} strikesBoosted={LevyRippers.StrikesBoosted} fx={LevyRippers.FxRequests} boosterCopies={LevyRippers.BoosterCopies} levyBoosters={CrLevyBoosters()}");
 			if (Main.npc[st.BossIdx].active && Main.npc[st.BossIdx].type == st.BossType) Main.npc[st.BossIdx].active = false;
 			_cr = null; _crS = null; _crStarted = false; _crI++;
 			CrResetDowned(); CrSetHpScale(null); CrSetFear(null); CrSetOptions(null);

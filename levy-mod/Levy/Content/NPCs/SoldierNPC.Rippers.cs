@@ -15,6 +15,17 @@ namespace Levy.Content.NPCs
 		/// <summary>Rage Mode / Adrenaline Mode are burning on this levy right now.</summary>
 		public bool RageOn, AdrOn;
 		private object _rippersPlayer; private bool _rippersLooked;
+		private int _boostTimer, _rogueHold; private float _prevStealth; private bool _stealthWasReady;
+		private static int _fxStamp, _fxCount;
+
+		/// <summary>Calamity's activation sound at the levy (client side, through the army throttle) and a small floating text, itself capped so 90 levies filling together do not paper the screen.</summary>
+		private void Rippers_Announce(object cp, bool adrenaline)
+		{
+			LevyRippers.Announce(this, LevyRippers.SoundKind(cp, adrenaline));
+			int now = (int)Main.GameUpdateCount;
+			if (now - _fxStamp > 30) { _fxStamp = now; _fxCount = 0; }
+			if (++_fxCount <= 4) global::Levy.Common.Dialogue.DialogueSystem.FloatingText(this, adrenaline ? "ADRENALINE!" : "RAGE!");
+		}
 
 		private object RippersPlayer()
 		{
@@ -51,15 +62,40 @@ namespace Levy.Content.NPCs
 				if (RageOn || AdrOn) { RageOn = AdrOn = false; LevyRippers.SetModes(cp, false, false); }
 				return;
 			}
+			if (--_boostTimer <= 0) { _boostTimer = 30; LevyRippers.CopyBoosters(Commander, cp); } // the commander's permanent Rage / Adrenaline upgrades, re-read twice a second
 			LevyRippers.SetModes(cp, RageOn, AdrOn);
 			if (!UpkeepActive) LevyRippers.RunStep(cp); // the gear frame runs Calamity's PostUpdateMiscEffects (and so this step) itself
+			bool rogue = LevyRippers.IsRogue(cp);
+			if (rogue)
+			{
+				// a stealth strike spends the bar: a drop from "strike ready" is one, and it counts as aligned when a mode is burning
+				float st = LevyRippers.Stealth(cp);
+				if (_stealthWasReady && st < _prevStealth - 0.01f) { LevyRippers.Strikes++; if (RageOn || AdrOn) LevyRippers.StrikesBoosted++; }
+				_prevStealth = st; _stealthWasReady = LevyRippers.StealthStrikeReady(cp);
+			}
 			bool rageFull = rageEn && !RageOn && LevyRippers.Rage(cp) >= LevyRippers.RageMax(cp);
 			bool adrFull = adrEn && !AdrOn && LevyRippers.Adrenaline(cp) >= LevyRippers.AdrenalineMax(cp);
-			if ((rageFull || adrFull) && LevyRippers.BossAlive && BossNear())
+			bool bossNear = (rageFull || adrFull) && LevyRippers.BossAlive && BossNear();
+			bool rageReady = rageFull && (bossNear || KeyTarget() != null); // Rage: any fight. Adrenaline: a boss near.
+			bool adrReady = adrFull && bossNear;
+			if (rageReady || adrReady)
 			{
-				if (rageFull) { RageOn = true; LevyRippers.RageActivations++; }
-				if (adrFull) { AdrOn = true; LevyRippers.AdrenalineActivations++; }
+				bool go = true;
+				if (rogue)
+				{
+					// hold the full bar until the next throw is a stealth strike, so the whole boosted window starts with it; never forever
+					bool aligned = LevyRippers.StealthStrikeReady(cp);
+					go = aligned || ++_rogueHold > LevyRippers.RogueHoldTicks;
+					if (go) { if (aligned) LevyRippers.RogueAligned++; else LevyRippers.RogueTimeouts++; }
+				}
+				if (go)
+				{
+					_rogueHold = 0;
+					if (rageReady) { RageOn = true; LevyRippers.RageActivations++; Rippers_Announce(cp, false); }
+					if (adrReady) { AdrOn = true; LevyRippers.AdrenalineActivations++; Rippers_Announce(cp, true); }
+				}
 			}
+			else _rogueHold = 0;
 			if (RageOn && LevyRippers.Rage(cp) <= 0f) RageOn = false;
 			if (AdrOn && LevyRippers.Adrenaline(cp) <= 0f) AdrOn = false;
 			LevyRippers.SetModes(cp, RageOn, AdrOn);

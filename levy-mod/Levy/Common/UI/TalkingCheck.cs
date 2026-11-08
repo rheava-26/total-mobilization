@@ -322,7 +322,7 @@ namespace Levy.Common.UI
 			}
 
 			// every spoken group is present, and the mutineers' lines match the strings they used to be
-			foreach (var key in new[] { "IDLE", "NAMEDROP", "ENGAGE", "KILL", "HURT", "BOSS_SIGHTED", "COMRADE_DOWN", "ROUTED", "DEATH_MESSAGE", "OFFICER_MARCH", "NURSE_MARCH", "OFFICER_CHAT_FIGHT", "OFFICER_Nurse_FIGHT", "MUTINY", "MUTINY_BEGIN", "MUTINY_REFUSE", "MUTINY_CALM" })
+			foreach (var key in new[] { "IDLE", "NAMEDROP", "ENGAGE", "KILL", "HURT", "BOSS_SIGHTED", "COMRADE_DOWN", "ROUTED", "DEATH_MESSAGE", "OFFICER_MARCH", "NURSE_MARCH", "OFFICER_CHAT_FIGHT", "OFFICER_Nurse_FIGHT", "MUTINY", "MUTINY_BEGIN", "MUTINY_REFUSE", "MUTINY_CALM", "DRINK" })
 				check(DialogueTable.Get(key) != null, "the dialogue file has a group for " + key);
 			string[] cries = { "Mutiny.Cry1", "Mutiny.Cry2", "Mutiny.Cry3", "Mutiny.Cry4" };
 			var mut = DialogueTable.Get("MUTINY");

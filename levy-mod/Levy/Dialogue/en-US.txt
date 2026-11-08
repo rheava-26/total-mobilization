@@ -23,6 +23,7 @@
 #                               MoonLordCore)
 #               COMRADE_HIT COMRADE_DOWN SHAKEN ROUTED RALLIED VICTORY PROMOTED VETERAN DEATH_MESSAGE
 #               MUTINY MUTINY_BEGIN MUTINY_REFUSE MUTINY_CALM   (soldiers in revolt over unpaid wages)
+#               DRINK   (the army is served a round from a keg, case or cooler; floating lines, a few levies each time)
 #               OFFICER_MARCH NURSE_MARCH   (officers talking on the march)
 #               OFFICER_<Officer>_<STATE>   (an officer's own voice; STATE is IDLE MARCH HOLD FIGHT BOSS HURT VICTORY)
 #               OFFICER_CHAT_<STATE>        (the officer voice used when an officer has no lines of his own for that STATE)
@@ -584,6 +585,25 @@ MUTINY | Any | No coin, no orders!
 MUTINY | Any | Your gold or your head!
 MUTINY_REFUSE | Any | No orders! Not until we're paid!
 MUTINY_CALM | Any | Paid. Back to work.
+
+# ============================================================================================================
+# DRINK  (the army is served a round: a floating line over a few of the levies a moment after the cheer)
+#   Only some of the levies who receive the round speak, and each speaks once. {Comrade} is another levy who got the round.
+# ============================================================================================================
+DRINK | Any | To {Player}! Best commander I've had in this particular life!
+DRINK | Any | To the commander! And to whoever paid for this, who is also the commander!
+DRINK | Any | {Comrade}, that's your third one! Sit down! No, keep going!
+DRINK | Any | I can feel my implant getting fuzzy! Best thing that ever happened to my brain!
+DRINK | Any | Nobody tell the officer! {Comrade}, you tell the officer! No, don't tell the officer!
+DRINK | Any | {Player}, I love you, I love this wall, and I love {Comrade}, and I mean all of it!
+DRINK | Any | I'd say a few words but my words went somewhere! Cheers!
+DRINK | Any | Hold my gun, {Comrade}. No, give it back. Hold my other gun.
+DRINK | Any | {Comrade} spilled some on me and I'm not even mad! I'm a little mad!
+DRINK | Any | I'm not drunk! {Comrade}, am I drunk? Don't lie to me!
+DRINK | Any | A toast! To the hole! To the dirt! To {Player}, who found the hole!
+DRINK | Any | Is this hazard pay? Because it feels like hazard pay!
+DRINK | Zealot | The boss said we'd get paid more if we cheered louder! Cheers! Louder!
+DRINK | Cynic | Free drinks. Something's coming. Cheers anyway!
 
 # ============================================================================================================
 # OFFICER ON-THE-MOVE CHATTER  (a floating line over an officer avatar while it marches with the army)

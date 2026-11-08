@@ -170,13 +170,13 @@ Mods: {
 			}
 
 			BarracksAle: {
-				DisplayName: Barracks Ale
-				Tooltip: Increases defense by {2} for your levies within {0} tiles for {1} minutes. Drunk levies have {3}% more aim error.
+				DisplayName: Barracks Keg
+				Tooltip: A keg for the whole army. Increases defense by {2} for your levies within {0} tiles for {1} minutes. They cheer, then stagger: drunk levies have {3}% more aim error.
 			}
 
 			BlackStout: {
-				DisplayName: Black Stout
-				Tooltip: Increases damage by {2}% for your levies within {0} tiles for {1} minutes. Drunk levies have {3}% more aim error.
+				DisplayName: Case of Stout
+				Tooltip: Twenty-four cans for the whole army. Increases damage by {2}% for your levies within {0} tiles for {1} minutes. They cheer, then stagger: drunk levies have {3}% more aim error.
 			}
 
 			MeteorBeacon: {
@@ -185,8 +185,8 @@ Mods: {
 			}
 
 			SpicedRum: {
-				DisplayName: Spiced Rum
-				Tooltip: Increases critical strike chance by {2}% for your levies within {0} tiles for {1} minutes. Drunk levies have {3}% more aim error.
+				DisplayName: Rum Cooler
+				Tooltip: A cooler for the whole army. Increases critical strike chance by {2}% for your levies within {0} tiles for {1} minutes. They cheer, then stagger: drunk levies have {3}% more aim error.
 			}
 		}
 

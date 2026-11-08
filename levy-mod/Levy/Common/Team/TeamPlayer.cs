@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
@@ -15,9 +16,9 @@ namespace Levy.Common.Team
 	/// </summary>
 	public sealed class TeamPlayer : ModPlayer
 	{
-		private int _palNpc = -1;
+		private readonly List<int> _palNpcs = new();
 		/// <summary>Self-check counters.</summary>
-		public static int PaladinCuts, PaladinShares;
+		public static int PaladinCuts, PaladinShares, PaladinRawShared;
 
 		/// <summary>Vanilla's own test (Player.TeammateHasPalidinShieldAndCanTakeDamage): another Player on the team wears a shield above a quarter of his life, and is not in immunity.</summary>
 		public static bool PlayerTeammateShields(Player p)
@@ -30,17 +31,16 @@ namespace Levy.Common.Team
 			return false;
 		}
 
-		/// <summary>The nearest of this commander's levies wearing a Paladin's Shield within 800 px, above a quarter of his life and out of immunity; null when none.</summary>
-		public static SoldierNPC FindLevyPaladin(Player p)
+		/// <summary>Every one of this commander's levies wearing a Paladin's Shield within 800 px, above a quarter of his life and out of immunity (the pool the commander's hit is shared across).</summary>
+		public static List<SoldierNPC> FindLevyPaladins(Player p)
 		{
-			SoldierNPC best = null; float bestDist = LevyConstants.PaladinRangePx;
+			var res = new List<SoldierNPC>();
 			foreach (SoldierNPC s in TeamItems.Levies(p))
 			{
 				if (!s.CanSoak) continue;
-				float d = Vector2.Distance(s.NPC.Center, p.Center);
-				if (d < bestDist) { bestDist = d; best = s; }
+				if (Vector2.Distance(s.NPC.Center, p.Center) < LevyConstants.PaladinRangePx) res.Add(s);
 			}
-			return best;
+			return res;
 		}
 
 		public override void PostUpdateEquips()
@@ -55,22 +55,22 @@ namespace Levy.Common.Team
 
 		public override void ModifyHurt(ref Player.HurtModifiers modifiers)
 		{
-			_palNpc = -1;
+			_palNpcs.Clear();
 			if (TeamNet.InShare || !TeamItems.IsLocal(Player) || !Player.defendedByPaladin || PlayerTeammateShields(Player)) return;
-			SoldierNPC pal = FindLevyPaladin(Player);
-			if (pal == null) return;
+			var pals = FindLevyPaladins(Player);
+			if (pals.Count == 0) return;
 			modifiers.FinalDamage *= LevyConstants.PaladinAllyScale;
-			_palNpc = pal.NPC.whoAmI;
+			foreach (var pal in pals) _palNpcs.Add(pal.NPC.whoAmI);
 			PaladinCuts++;
 		}
 
 		public override void OnHurt(Player.HurtInfo info)
 		{
-			int idx = _palNpc; _palNpc = -1;
-			if (idx < 0 || TeamNet.InShare) return;
-			int share = Math.Max(1, (int)(info.Damage * LevyConstants.PaladinShareFraction));
-			TeamNet.RequestPaladinShare(Player, idx, share, info.DamageSource.SourceNPCIndex);
-			PaladinShares++;
+			if (_palNpcs.Count == 0 || TeamNet.InShare) { _palNpcs.Clear(); return; }
+			var idx = _palNpcs.ToArray(); _palNpcs.Clear();
+			int total = Math.Max(idx.Length, (int)(info.Damage * LevyConstants.PaladinShareFraction)), each = total / idx.Length, extra = total % idx.Length; // split evenly: the total stays a third
+			PaladinRawShared += total;
+			for (int k = 0; k < idx.Length; k++) { TeamNet.RequestPaladinShare(Player, idx[k], each + (k < extra ? 1 : 0), info.DamageSource.SourceNPCIndex); PaladinShares++; }
 		}
 	}
 }

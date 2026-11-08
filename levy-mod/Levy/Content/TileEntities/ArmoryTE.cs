@@ -395,12 +395,14 @@ namespace Levy.Content.TileEntities
 			+ it.defense * LevyConstants.ArmorDefenseWeight
 			+ (float)Math.Log10(1.0 + Math.Max(0, it.value)) * LevyConstants.ArmorValueWeight;
 
-		/// <summary>Strength of an accessory: rarity tier first, then defense, value (which carries the prefix's worth), a flat bonus for any prefix, and how much damage it adds to the soldier's class.</summary>
+		/// <summary>Strength of an accessory: what it does (defense, regen / damage-reduction read, class fit, upgrade chain), with rarity only a small tie-break. Older note: rarity tier first, then defense, value (which carries the prefix's worth), a flat bonus for any prefix, and how much damage it adds to the soldier's class.</summary>
 		private static float AccessoryScore(Item it, DamageClass cls) =>
 			WeaponClassifier.RarityTier(it.rare) * LevyConstants.AccessoryRarityWeight
 			+ it.defense * LevyConstants.AccessoryDefenseWeight
 			+ (float)Math.Log10(1.0 + Math.Max(0, it.value)) * LevyConstants.AccessoryValueWeight
 			+ (it.prefix > 0 ? LevyConstants.AccessoryPrefixBonus : 0f)
+			+ AccessoryEffect.Value(it)
+			+ AccessoryProgression.Bonus(it) // a direct upgrade always outranks what it was made from
 			+ ArmorDoctrine.AccessoryClassFit(it, cls) * LevyConstants.AccessoryClassFitWeight
 			+ Math.Max(0, AccessoryAggro.Of(it)) * LevyConstants.Targeting.AccessoryAggroWeight; // taunt gear leans toward the soldiers who tank for the player
 
@@ -956,12 +958,15 @@ namespace Levy.Content.TileEntities
 			// Every levy takes one mobility accessory (wings, then the most extra jumps) before anything else; a second one is only a mild plus.
 			bool hasMob = MobilityFirst && AccessoryMobility.Best(worn) > 0f;
 			if (MobilityFirst && !hasMob) {
-				var m = TakeBest(null, 0, 0, 1, it => Pred(it) && AccessoryMobility.Is(it), it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
+				var m = TakeBest(null, 0, 0, 1, it => Pred(it) && AccessoryMobility.Is(it) && !AccessoryProgression.Redundant(worn, it), it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
 				if (m != null) return m;
 			}
 			var claimed = Common.Team.TeamAccessory.Claimed(ServedSoldiers(), forSoldier);
-			return TakeBest(null, 0, 0, 1, Pred, it => AccessoryScore(it, cls) + (hasMob && AccessoryMobility.Is(it) ? LevyConstants.Armory.MobilityStackBonus : 0f) + Common.Team.TeamAccessory.Bonus(it, claimed));
+			return TakeBest(null, 0, 0, 1, Pred, it => AccessoryScore(it, cls) + (hasMob && AccessoryMobility.Is(it) ? LevyConstants.Armory.MobilityStackBonus : 0f) + Common.Team.TeamAccessory.Bonus(it, claimed) - (AccessoryProgression.Redundant(worn, it) ? RedundantPenalty : 0f));
 		}
+
+		/// <summary>An item (or its upgrade, or its ingredient) the soldier already wears is only issued when nothing else is stocked.</summary>
+		internal const float RedundantPenalty = 1e6f;
 
 		/// <summary>Armory picks give each levy one mobility accessory (extra jumps or wings) first. Harness-only switch for before/after runs.</summary>
 		internal static bool MobilityFirst = Environment.GetEnvironmentVariable("LEVY_ARMORY_MOBILITY") != "0";

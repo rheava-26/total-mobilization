@@ -202,10 +202,11 @@ namespace Levy.Common.Testing
 						var bf = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
 						var on = typeof(SoldierNPC).GetMethod("SetsOnHurt", bf);
 						// levy victim: the real code path (the scale, then the share after the hit lands)
-						int[] h0 = holders.Select(h => h.NPC.life).ToArray(); int a0 = _tmA.NPC.life;
+						int[] h0 = holders.Select(h => h.NPC.life).ToArray(); int a0 = _tmA.NPC.life; int raw0 = TeamPlayer.PaladinRawShared;
 						float scale = _tmA.IncomingSetScale();
 						int taken = (int)(100 * scale);
 						on.Invoke(_tmA, new object[] { taken, -1 });
+						int rawLevy = TeamPlayer.PaladinRawShared - raw0; raw0 = TeamPlayer.PaladinRawShared;
 						string lv = string.Join("/", holders.Select((h, i) => h0[i] - h.NPC.life));
 						int sharers = holders.Where((h, i) => h0[i] - h.NPC.life > 0).Count();
 						// commander victim (a holder that just paid is in immune frames and is skipped, as in vanilla; clear them so each stage is measured clean)
@@ -214,6 +215,7 @@ namespace Levy.Common.Testing
 						int[] h1 = holders.Select(h => h.NPC.life).ToArray(); int c0 = TmCmd.statLife;
 						int saveMy = Main.myPlayer; Main.myPlayer = 0; double dealt;
 						try { dealt = TmCmd.Hurt(PlayerDeathReason.LegacyEmpty(), 100, 0); } finally { Main.myPlayer = saveMy; }
+						int rawCmd = TeamPlayer.PaladinRawShared - raw0; raw0 = TeamPlayer.PaladinRawShared;
 						string cv = string.Join("/", holders.Select((h, i) => h1[i] - h.NPC.life));
 						int csharers = holders.Where((h, i) => h1[i] - h.NPC.life > 0).Count();
 						// burst: a second hit on the commander right away, the payer still in immune frames
@@ -222,11 +224,14 @@ namespace Levy.Common.Testing
 						Main.myPlayer = 0;
 						try { dealt2 = TmCmd.Hurt(PlayerDeathReason.LegacyEmpty(), 100, 0); } finally { Main.myPlayer = saveMy; }
 						string bv = string.Join("/", holders.Select((h, i) => h2[i] - h.NPC.life));
-						_tmInfo = $"LEVY victim: scale {scale:0.00}, victim takes {taken} of 100, holders lose [{lv}] ({sharers} paid); COMMANDER victim: takes {dealt:0} of 100, holders lose [{cv}] ({csharers} paid); BURST 2nd commander hit: takes {dealt2:0}, holders lose [{bv}]";
+						_tmInfo = $"LEVY victim: scale {scale:0.00}, victim takes {taken} of 100, holders lose [{lv}] ({sharers} paid); COMMANDER victim: takes {dealt:0} of 100, holders lose [{cv}] ({csharers} paid); BURST 2nd commander hit: takes {dealt2:0}, holders lose [{bv}]; raw shared (before holders' defense) levy victim {rawLevy}, commander victim {rawCmd} (a quarter of 100 = 25)";
 						if (n == 0) return Math.Abs(scale - 1f) < 0.001f && dealt >= 99 && sharers == 0 && csharers == 0 ? null : "with no holder nothing should be cut or shared";
 						if (Math.Abs(scale - 0.75f) > 0.001f) return "levy victim not cut to 0.75";
 						if (dealt > 80) return "commander victim not cut";
-						return sharers == 1 && csharers == 1 ? null : $"expected exactly one holder to pay each time, got {sharers} / {csharers}";
+						if (sharers != n || csharers != n) return $"expected all {n} holder(s) to pay each time, got {sharers} / {csharers}";
+						if (rawLevy != 25 || rawCmd != 25) return $"the shared total must stay 25 of 100 raw, got {rawLevy} / {rawCmd}";
+						int burstPayers = holders.Where((h, i) => h2[i] - h.NPC.life > 0).Count();
+						return burstPayers == 0 ? null : $"burst: every holder just paid and is in immune frames, none should pay a second hit at once, got {burstPayers}"; // the whole pool paid the first hit together, so an instant second hit finds nobody free (as in vanilla)
 					} });
 			}
 			// 3 Calamity: Rampart of Deities both ways

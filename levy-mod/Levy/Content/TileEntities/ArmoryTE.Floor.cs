@@ -179,6 +179,18 @@ namespace Levy.Content.TileEntities
 				a = TakeBest(null, 0, 0, 1, UPred, it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
 				if (a != null) target = mobSlot;
 			}
+			// a direct upgrade of something he wears takes that slot (Lightning Boots over Hermes), never a second slot beside it
+			if (a == null && !empty) {
+				bool UpPred(Item it) {
+					if (!WeaponClassifier.IsUsefulAccessory(it) || ClassReserved(it, w, cls, all)) return false;
+					int slot = AccessoryProgression.ReplacesSlot(g.Accessories, it, i => !g.IsLocked(SoldierGear.SlotAcc0 + i));
+					if (slot < 0) return false;
+					var ex = (Item[])g.Accessories.Clone(); ex[slot] = new Item();
+					return CanWearWith(ex, it) && !AccessoryProgression.Redundant(ex, it);
+				}
+				a = TakeBest(null, 0, 0, 1, UpPred, it => AccessoryScore(it, cls));
+				if (a != null) target = AccessoryProgression.ReplacesSlot(g.Accessories, a, i => !g.IsLocked(SoldierGear.SlotAcc0 + i));
+			}
 			if (a == null) {
 				if (target < 0) return false;
 				var wornEx = (Item[])g.Accessories.Clone();
@@ -189,11 +201,11 @@ namespace Levy.Content.TileEntities
 				float Sc(Item it) => AccessoryScore(it, cls) + (stack > 0f && AccessoryMobility.Is(it) ? stack : 0f) + Common.Team.TeamAccessory.Bonus(it, claimed);
 				// a levy with no mobility accessory takes the best one stocked into this slot before anything else
 				if (MobilityFirst && bestMob <= 0f) {
-					bool MPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && AccessoryMobility.Is(it) && !ClassReserved(it, w, cls, all);
+					bool MPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && !AccessoryProgression.Redundant(wornEx, it) && AccessoryMobility.Is(it) && !ClassReserved(it, w, cls, all);
 					a = TakeBest(null, 0, 0, 1, MPred, it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
 				}
 				if (a == null) {
-					bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && (empty || Sc(it) >= need) && !ClassReserved(it, w, cls, all);
+					bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && !AccessoryProgression.Redundant(wornEx, it) && (empty || Sc(it) >= need) && !ClassReserved(it, w, cls, all);
 					a = TakeBest(null, 0, 0, 1, Pred, Sc);
 				}
 			}

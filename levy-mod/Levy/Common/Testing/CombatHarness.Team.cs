@@ -181,6 +181,54 @@ namespace Levy.Common.Testing
 					if (TeamPlayer.PaladinCuts == cuts0 || dealt >= 90) return "commander took " + dealt + " (cut hook ran: " + (TeamPlayer.PaladinCuts != cuts0) + "), wanted about 75";
 					return la1 < la0 ? null : "the shield levy took no share";
 				} });
+			// 2b Paladin's Shield with 0 / 1 / 3 holders: who takes the third? Victim A (levy, dx 4) is hit for 100 raw, then the commander (dx 0) is hit for 100 raw. Holders stand at dx 6, 9, 12.
+			foreach (int nHold in new[] { 0, 1, 3 })
+			{
+				int n = nHold;
+				var holders = new List<SoldierNPC>();
+				_tmCases.Add(new TmCase { Id = $"paladin split: {n} holder(s), levy victim and commander victim", Ticks = 70,
+					Setup = () =>
+					{
+						TmScene(); holders.Clear();
+						for (int h = 0; h < n; h++)
+						{
+							var hs = TmLevy("Pvt. Shield " + (h + 1), 6f + 3f * h, g => TmAcc(g, 0, pal));
+							hs.Record.Order = SoldierOrder.Hold;
+							holders.Add(hs);
+						}
+					},
+					Eval = () =>
+					{
+						var bf = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+						var on = typeof(SoldierNPC).GetMethod("SetsOnHurt", bf);
+						// levy victim: the real code path (the scale, then the share after the hit lands)
+						int[] h0 = holders.Select(h => h.NPC.life).ToArray(); int a0 = _tmA.NPC.life;
+						float scale = _tmA.IncomingSetScale();
+						int taken = (int)(100 * scale);
+						on.Invoke(_tmA, new object[] { taken, -1 });
+						string lv = string.Join("/", holders.Select((h, i) => h0[i] - h.NPC.life));
+						int sharers = holders.Where((h, i) => h0[i] - h.NPC.life > 0).Count();
+						// commander victim (a holder that just paid is in immune frames and is skipped, as in vanilla; clear them so each stage is measured clean)
+						foreach (var h in holders) h.ImmuneTime = 0;
+						TmCmd.immune = false; TmCmd.immuneTime = 0; TmCmd.ResetEffects(); TmCmd.UpdateBuffs(0);
+						int[] h1 = holders.Select(h => h.NPC.life).ToArray(); int c0 = TmCmd.statLife;
+						int saveMy = Main.myPlayer; Main.myPlayer = 0; double dealt;
+						try { dealt = TmCmd.Hurt(PlayerDeathReason.LegacyEmpty(), 100, 0); } finally { Main.myPlayer = saveMy; }
+						string cv = string.Join("/", holders.Select((h, i) => h1[i] - h.NPC.life));
+						int csharers = holders.Where((h, i) => h1[i] - h.NPC.life > 0).Count();
+						// burst: a second hit on the commander right away, the payer still in immune frames
+						TmCmd.immune = false; TmCmd.immuneTime = 0; TmCmd.ResetEffects(); TmCmd.UpdateBuffs(0);
+						int[] h2 = holders.Select(h => h.NPC.life).ToArray(); double dealt2;
+						Main.myPlayer = 0;
+						try { dealt2 = TmCmd.Hurt(PlayerDeathReason.LegacyEmpty(), 100, 0); } finally { Main.myPlayer = saveMy; }
+						string bv = string.Join("/", holders.Select((h, i) => h2[i] - h.NPC.life));
+						_tmInfo = $"LEVY victim: scale {scale:0.00}, victim takes {taken} of 100, holders lose [{lv}] ({sharers} paid); COMMANDER victim: takes {dealt:0} of 100, holders lose [{cv}] ({csharers} paid); BURST 2nd commander hit: takes {dealt2:0}, holders lose [{bv}]";
+						if (n == 0) return Math.Abs(scale - 1f) < 0.001f && dealt >= 99 && sharers == 0 && csharers == 0 ? null : "with no holder nothing should be cut or shared";
+						if (Math.Abs(scale - 0.75f) > 0.001f) return "levy victim not cut to 0.75";
+						if (dealt > 80) return "commander victim not cut";
+						return sharers == 1 && csharers == 1 ? null : $"expected exactly one holder to pay each time, got {sharers} / {csharers}";
+					} });
+			}
 			// 3 Calamity: Rampart of Deities both ways
 			int rampart = TmItem("CalamityMod/RampartofDeities");
 			_tmCases.Add(new TmCase { Id = "calamity rampart of deities: commander -> levy shield buff", Cal = true, Ticks = 70,

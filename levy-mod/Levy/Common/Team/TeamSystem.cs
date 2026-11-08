@@ -34,7 +34,7 @@ namespace Levy.Common.Team
 		}
 
 		/// <summary>After every mod's content and recipes exist: the boot self-check (a throw-away Player runs a mod buff through the dummy path).</summary>
-		public override void PostAddRecipes() => global::Levy.Common.Util.LoadSafe.Run(() => TeamCheck.Run(Mod));
+		public override void PostAddRecipes() => global::Levy.Common.Util.LoadSafe.Run(() => { TeamCheck.Run(Mod); TeamAccessory.SelfCheck(Mod); });
 
 		public override void PostUpdateNPCs()
 		{

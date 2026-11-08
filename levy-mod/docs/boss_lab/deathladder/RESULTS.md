@@ -17,7 +17,7 @@ Eve's question: Calamity Death EoW (4 worms) vs levies given "everything", tier 
 | A pre-evil best | 13 / 400 | **2/6** | 53, 64 s | 4.1, 14.4, 11.9, 2.0 k | 9-24 s | 13,13,13,10,13,12 |
 | B post-EoW/BoC best | 13 / 400 | **4/6** | 40, 48, 63, 102 s | 5.5, 2.6 k | 9-24 s | 10,13,6,13,4,7 |
 | C post-Skeletron best | 16 / 400 | **6/6** | 24-36 s | none | 11-25 s | 2,1,2,1,2,1 |
-| D early-Hardmode best | 20 / 400 | **6/6** | 17-22 s | none | none (no levy died in 5 of 6; the sixth lost none either) | 0 in all six |
+| D early-Hardmode best | 20 / 400 | **6/6** | 17-22 s | none | none | 0 in all six |
 | B okay-ish | 13 / 240 | 0/6 | none | 22.7-27.1 k | 5-12 s | 13 each |
 | C okay-ish | 16 / 340 | 0/6 | none | 8.8-25.5 k | 7-18 s | 16 each |
 | Control: C best vs Rev 1-worm | 16 / 400 | 4/4 | 22-37 s | none | 15-18 s (one fight none) | 1,0,2,1 |
@@ -28,12 +28,12 @@ Noise warning: the sim is chaotic. A rerun of cell A with one accessory changed 
 ## Where the damage comes from
 - OBSERVED: damage taken is contact damage from the worm. Head 72-88% of it, body 11-26%, tail 0-2%. Projectile/other damage (Vile Spit, shadowflame) is **under 1%** of all damage taken (takenOther 1.3k of 202k in the first full run). The recorder labels worm parts only by NPC id, so heads vs bodies come from NPC ids 13/14/15 in `raw/bulk.tsv.hit.tsv`.
 - OBSERVED: every levy death, in every cell, was credited to the Eater of Worlds (head or body contact). Nothing else killed a levy.
-- Damage dealt, by weapon behaviour (INFERRED class labels: P = projectile can pierce per the projectile sample, X = explosive and D = burn/poison from hand lists plus Hellfire ammo): piercing weapons do 80-90% of boss damage in every best cell (P alone 35-54%). Pure explosive-only is 6-25%. Damage-over-time that is not credited to a levy (poison, burning, Cursed Flames ticks) is 19-21% of boss damage at A and B, 29-32% at C and D, 7-8% in the okay-ish arms. Top damage dealers: Magic Missile, Aqua Scepter, Flamelash, Sandstream Scepter and Space Gun at A/B; Magic Missile, Blood Bath, Space Gun, Flesh of Infidelity and Vilethorn at C; Cursed Flames, Magic Missile, Cobalt Repeater, Aqua Scepter and Orichalcum Repeater at D. Magic dominates because 40% of the best army is mages.
+- Damage dealt, by weapon behaviour (INFERRED class labels: P = projectile can pierce per the projectile sample, X = explosive and D = burn/poison from hand lists plus Hellfire ammo): weapons that can pierce account for 60% (A), 86% (B), 77% (C) and 88% (D) of credited boss damage (P alone 35-54%). Pure explosive-only is 6-25%. Damage-over-time that is not credited to a levy (poison, burning, Cursed Flames ticks) is 19-21% of boss damage at A and B, 29-32% at C and D, 7-8% in the okay-ish arms. Top damage dealers: Magic Missile, Aqua Scepter, Flamelash, Sandstream Scepter and Space Gun at A/B; Magic Missile, Blood Bath, Space Gun, Flesh of Infidelity and Vilethorn at C; Cursed Flames, Magic Missile, Cobalt Repeater, Aqua Scepter and Orichalcum Repeater at D. Magic dominates because 40% of the best army is mages.
 
 ## What it means
 1. **They can win.** Yes, with real gear: 4/6 at post-EoW/BoC, 6/6 at post-Skeletron and early Hardmode, against a boss that took 5+ minutes by hand. That beats Eve's prediction (1/6 at Skeletron). It is not a "real problem" at early Hardmode: D is a clean 6/6 with zero levy deaths.
 2. **The win needs everything.** The okay-ish arms (normal vanilla kit, 240-340 HP, three potions) lose 12 of 12, with every levy dead 5-18 s after the worms arrive, even at the post-Skeletron count of 16. The gap between "everything" and "what a normal player has" is the whole result.
-3. **First deaths come at 6-25 s in the losses** and the army collapses within another 20-40 s (head contact does ~70% of it). Defense and HP, not firepower, decide it: the best arms that lose still do the same damage as those that win, they die before the worms are dead.
+3. **First deaths come at 6-25 s in the losses** and the army collapses within another 20-40 s (head contact does ~70-80% of the damage). INFERRED: survival, not firepower, decides the close cells; the losing best-arm fights get the boss to 2-14k of 30k before the last levy falls.
 4. Caveats: best-arm numbers combine 400 HP, 5 slots, class mix 40/40/10/10, 11 potions and honey; no single factor was isolated except levy count. N=6 per cell, and the sim varies a lot between runs. The Rev control (1 worm) at C also wins 4/4, so at C the 4-worm split is not what decides it.
 
 ## Recordings

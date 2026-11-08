@@ -959,7 +959,8 @@ namespace Levy.Content.TileEntities
 				var m = TakeBest(null, 0, 0, 1, it => Pred(it) && AccessoryMobility.Is(it), it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
 				if (m != null) return m;
 			}
-			return TakeBest(null, 0, 0, 1, Pred, it => AccessoryScore(it, cls) + (hasMob && AccessoryMobility.Is(it) ? LevyConstants.Armory.MobilityStackBonus : 0f));
+			var claimed = Common.Team.TeamAccessory.Claimed(ServedSoldiers(), forSoldier);
+			return TakeBest(null, 0, 0, 1, Pred, it => AccessoryScore(it, cls) + (hasMob && AccessoryMobility.Is(it) ? LevyConstants.Armory.MobilityStackBonus : 0f) + Common.Team.TeamAccessory.Bonus(it, claimed));
 		}
 
 		/// <summary>Armory picks give each levy one mobility accessory (extra jumps or wings) first. Harness-only switch for before/after runs.</summary>

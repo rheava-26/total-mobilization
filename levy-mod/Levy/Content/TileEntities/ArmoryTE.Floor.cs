@@ -162,12 +162,13 @@ namespace Levy.Content.TileEntities
 			float bestMob = MobilityFirst ? AccessoryMobility.Best(g.Accessories, -1) : 0f;
 			int mobSlot = -1;
 			if (bestMob > 0f) for (int i = 0; i < n; i++) if (!IsAir(g.Accessories[i]) && AccessoryMobility.Value(g.Accessories[i]) >= bestMob) { mobSlot = i; break; }
+			var teamClaimed = Common.Team.TeamAccessory.Claimed(all, w); // team effects the rest of the army (or the commander) already wears
 			bool soleMob = mobSlot >= 0 && AccessoryMobility.Best(g.Accessories, mobSlot) <= 0f;
 			for (int i = 0; i < n; i++) {
 				if (g.IsLocked(SoldierGear.SlotAcc0 + i)) continue;
 				if (IsAir(g.Accessories[i])) { target = i; tScore = 0f; empty = true; break; }
 				if (soleMob && i == mobSlot) continue;
-				float sc = AccessoryScore(g.Accessories[i], cls);
+				float sc = AccessoryScore(g.Accessories[i], cls) + Common.Team.TeamAccessory.Bonus(g.Accessories[i], teamClaimed);
 				if (sc < tScore) { target = i; tScore = sc; }
 			}
 			Item a = null;
@@ -184,7 +185,8 @@ namespace Levy.Content.TileEntities
 				wornEx[target] = new Item();
 				float stack = MobilityFirst && AccessoryMobility.Best(wornEx) > 0f ? LevyConstants.Armory.MobilityStackBonus : 0f;
 				float need = empty ? 0f : Math.Max(tScore * LevyConstants.AutoUpgradeScoreMargin, tScore + 1f);
-				float Sc(Item it) => AccessoryScore(it, cls) + (stack > 0f && AccessoryMobility.Is(it) ? stack : 0f);
+				var claimed = Common.Team.TeamAccessory.Claimed(all, w);
+				float Sc(Item it) => AccessoryScore(it, cls) + (stack > 0f && AccessoryMobility.Is(it) ? stack : 0f) + Common.Team.TeamAccessory.Bonus(it, claimed);
 				// a levy with no mobility accessory takes the best one stocked into this slot before anything else
 				if (MobilityFirst && bestMob <= 0f) {
 					bool MPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && AccessoryMobility.Is(it) && !ClassReserved(it, w, cls, all);

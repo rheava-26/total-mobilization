@@ -23,7 +23,7 @@ namespace Levy.Common.Testing
 		// OnWorldLoad, not a tick: an idle dedicated server (no client) does not step the world, and the check builds its own fixtures anyway.
 		public override void OnWorldLoad()
 		{
-			if (!Main.dedServ) return;
+			if (!Main.dedServ || Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") != "1") return; // test boots only: the check plants fixtures in the loaded world, never in a player's server
 			global::Levy.Common.Util.LoadSafe.Run(Run);
 		}
 

@@ -1,0 +1,16 @@
+fight	eow	exp	1	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=shield
+fight	eow	exp	2	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=shield
+fight	eow	exp	3	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=shield
+fight	eow	exp	4	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=shield
+fight	eow	exp	1	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=none
+fight	eow	exp	2	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=none
+fight	eow	exp	3	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=none
+fight	eow	exp	4	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=none
+fight	eow	exp	1	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=tankA
+fight	eow	exp	2	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=tankA
+fight	eow	exp	3	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=tankA
+fight	eow	exp	4	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=tankA
+fight	eow	exp	1	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=tankB
+fight	eow	exp	2	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=tankB
+fight	eow	exp	3	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=tankB
+fight	eow	exp	4	18000	cmd=near	n=45	gear=mod	grade=lv	l3=1	order=follow	arena=a3	pl=tankB

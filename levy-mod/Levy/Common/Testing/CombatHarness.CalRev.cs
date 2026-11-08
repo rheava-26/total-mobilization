@@ -570,7 +570,16 @@ namespace Levy.Common.Testing
 				if (s.Worm && run.Boss != "sg") spawnDx = float.TryParse(Environment.GetEnvironmentVariable("LEVY_CR_WORMDIST"), NumberStyles.Float, CultureInfo.InvariantCulture, out float wd) ? wd : 80f;
 				int bx = (int)((_crCx + spawnDx) * 16f), by = run.Boss == "kslime" ? (int)((CrF - 6) * 16f) : (int)((CrF - 38) * 16f);
 				global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(s.BossType, Environment.GetEnvironmentVariable("LEVY_CR_DOWNED") != "0"); // a rematch: the first kill of a boss is solo
-				int ei = NPC.NewNPC(new EntitySource_WorldEvent("LevyCalRev"), bx, by, s.BossType);
+				int ei;
+				if (Environment.GetEnvironmentVariable("LEVY_CR_SOP") == "0") ei = NPC.NewNPC(new EntitySource_WorldEvent("LevyCalRev"), bx, by, s.BossType); // the old direct spawn (comparison only)
+				else
+				{
+					// the path every Calamity summon item takes (CalamityUtils.SpawnBossUsingItem -> NPC.SpawnOnPlayer); the boss is then moved to the lab's fixed spot so arenas stay comparable. LEVY_CR_SOPPOS=1 keeps the game's own spawn position.
+					for (int q = 0; q < Main.maxNPCs; q++) if (Main.npc[q].active && Main.npc[q].type == s.BossType) Main.npc[q].active = false;
+					NPC.SpawnOnPlayer(0, s.BossType); ei = -1;
+					for (int q = 0; q < Main.maxNPCs; q++) if (Main.npc[q].active && Main.npc[q].type == s.BossType) { ei = q; break; }
+					if (ei >= 0 && Environment.GetEnvironmentVariable("LEVY_CR_SOPPOS") != "1") { Main.npc[ei].position = new Vector2(bx, by) - Main.npc[ei].Size / 2f; Main.npc[ei].velocity = Vector2.Zero; }
+				}
 				if (ei < 0 || ei >= Main.maxNPCs) throw new Exception("boss spawn failed");
 				NPC boss = Main.npc[ei]; s.BossIdx = ei;
 				if ((probe || run.BossHpX != 1f) && !s.Worm) { boss.lifeMax = (int)(boss.lifeMax * (probe ? 40f : run.BossHpX)); boss.life = boss.lifeMax; }

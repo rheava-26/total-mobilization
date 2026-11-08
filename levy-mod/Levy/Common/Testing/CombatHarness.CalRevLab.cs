@@ -163,6 +163,11 @@ namespace Levy.Common.Testing
 				if (st.HalfTick < 0 && st.Tick > 40 && life * 2 <= st.BossLifeMaxSum) st.HalfTick = st.Tick;
 			}
 			if (head != null) e = head;
+			if (st.Tick == 5 || st.Tick == 200)
+			{
+				int hh = 0, bb = 0, tt = 0; for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (!n.active) continue; if (n.type == st.BossType) hh++; else if (n.type == st.BodyType) bb++; else if (n.type == st.TailType) tt++; }
+				Mod.Logger.Info($"HARNESS-CR: worm census {st.Run.Key} tick {st.Tick}: heads={hh} bodies={bb} tails={tt} death={CrDeathOn()}");
+			}
 			bool alive = parts > 0 || st.Tick < 60;
 			if (!alive && !st.BossGone)
 			{

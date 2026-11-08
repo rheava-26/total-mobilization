@@ -68,6 +68,7 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 ## 4. How to investigate and verify
 
 - Reproduce first: Eve's exact setup, mods, armory contents and boss. Check the ROADMAP for what they reported and what her world has enabled.
+- Labs use the lab kit: write a short spec and run `levy-mod/lab/levylab run SPEC.yaml` (see `levy-mod/lab/README.md`); do not re-discover the harness or hand-write run/table scripts.
 - Labs are arena-only. "stop running flat ground tests and just do arena tests." (11-07) Arenas should be large and have platforms. Use tier-appropriate base placeables (campfires, heart lanterns, bast statue, star in a bottle, etc.), and use best-for-tier ammo and gear.
 - Always run a control group, with several seeds, and keep notable fights so Eve can watch them. "we're trying to run a lab, and the lab is Terraria modding." (11-06)
 - Keep vanilla and Calamity tests separate: "keep those tests separate of vanilla." (11-07) Run vanilla alone, then vanilla plus Calamity, then Thorium plus Calamity, to see what a mod already fills.

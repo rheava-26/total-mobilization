@@ -1,0 +1,582 @@
+#!/usr/bin/env python3
+"""levylab: cheap, repeatable Levy boss-lab runs.   levylab run SPEC.yaml | levylab table RUN_DIR | levylab list
+A lab = a short spec file + one command; results read back as one markdown table. See levy-mod/lab/README.md."""
+import argparse, concurrent.futures as cf, csv, fcntl, gzip, hashlib, itertools, json, math, os, random, re, shutil, statistics, subprocess, sys, tempfile, threading, time
+from pathlib import Path
+
+try:
+    import yaml
+except ImportError:
+    sys.exit("levylab needs PyYAML (pip install pyyaml)")
+
+LAB = Path(__file__).resolve().parent
+PRESETS = LAB / "presets"
+HOME = Path(os.environ.get("LEVYLAB_HOME", "/home/user/lab/kit"))
+SRC_TML, SRC_SAVE = Path("/home/user/lab/tmlv"), Path("/home/user/lab/savev")
+WORLD_SRC = Path("/root/.local/share/Terraria/tModLoader/Worlds/LevyTest.wld")
+DOTNET = "/home/user/dotnet"
+MAX_SLOTS = 8
+TICKS = 60
+
+# ------------------------------------------------------------------------------------------------------------ vocabulary (what `list` prints)
+FIELDS = [  # name, default, description
+    ("name", "file stem", "label of the run (and the run dir)"),
+    ("boss", "eow", "boss line: kslime ds eye crab eow brain hive perf qb skel sg (Calamity world; vanilla world: kslime eye eow brain qb skel)"),
+    ("mode", "mdeath", "exp | rev | revoff | death | mdeath (Master+Death) | mrev (Master+Revengeance)"),
+    ("arena", "a3", "surf (flat, 4 rows) | ug (enclosed cavern) | a3 (big, 5 platform rows with gaps; the lab standard) | a3e (a3 enclosed)"),
+    ("gear", "postskel.best", "gear preset <tier>.<quality>; see `levylab list` (preevil|posteow|postskel|postwof . best|okish, variants, legacy.dl*)"),
+    ("potions", "gear's own", "potion preset: best | okish | food | none (healing potion, count, buffs held on every levy)"),
+    ("stations", "gear's tier", "station preset: preevil | posteow | postskel | postwof | none; add .plain for no honey"),
+    ("levies", "gear's tier count", "army size N (the real progression count: A13 B13 C16 D20)"),
+    ("hp", "gear's", "max HP of every levy (100 + 20 per life crystal; 400 = 15 crystals)"),
+    ("cmd", "near", "near (commander beside the army) | far (commander outside the arena, never the closer target)"),
+    ("order", "follow", "follow | free | sd  (army order)"),
+    ("cap", "180", "fight cap in game seconds; a fight ends early on a win or a wipe"),
+    ("seeds", "6", "int N (seeds 1..N) | list [3,5,9] | range '1-12'"),
+    ("mods", "calamity", "calamity (Calamity world) | vanilla"),
+    ("cost", "presets'", "army-point override, e.g. {per_levy: 5, per_100hp: 2, per_rank_1000: 2, flat: 0}; presets carry their own cost: blocks"),
+    ("tokens", "[]", "extra raw harness tokens, e.g. [bhp=0.5, dr=0.2]; the known ones are listed below"),
+    ("env", "{}", "env toggles for A/B, e.g. {LEVY_WORMDODGE: 0}; the known ones are listed below"),
+    ("vs", "-", "A/B arms. Mapping armname: {any field above} (or a list of {name:..}). The base spec is arm `ctl`; each arm = base + overrides (env/tokens merge)"),
+    ("grid", "-", "cross product, e.g. {hp: [200, 300, 400], levies: [10, 16]}; every combination is a cell (applied on every arm)"),
+    ("cells", "-", "explicit list of override dicts (each with a name:), one cell per entry, on top of the base"),
+]
+# any field below is also accepted as a top-level spec key and becomes a harness token k=v
+TOKENS = {
+    "n": "levy count override for the C# rolls (use `levies:` for data presets)", "bhp": "boss life multiplier (bhp=0.5 halves it)", "bdef": "boss defense forced to N",
+    "dr": "every hit on a levy cut by this fraction (a stand-in for a dodge patch)", "hpx": "levy life multiplier (C# rolls)", "hpscale": "HP scale knob", "fear": "fear multiplier",
+    "fm": "fear model override", "surv": "survivability model override", "vet": "veterancy level", "mp": "mana points for every levy", "food": "1 Well Fed | 2 Plenty Satisfied on every levy",
+    "hazard": "1 = real hazard pay", "zone": "1 = commander stands in the boss's biome zone", "side": "fight side", "rogue": "N rogue levies (Calamity)", "jungle": "1 = jungle arena biome",
+    "stock": "1|2 = stock an armory so levies pick accessories themselves", "spec": "0 = the commander is an ordinary visible player", "bts": "boss tick scale", "dbg": "1 = debug logging", "diag": "1 = spectator diagnostic",
+    "hook": "grappling hook item for every levy", "acc": "accessory item every levy gets", "cw": "every levy carries this weapon (clone weapon)", "clone": "R|M|E|S clone one rolled levy",
+}
+ENVS = {
+    "LEVY_WORMDODGE": "0 = worm-dodge steering off", "LEVY_WORMPICK": "1 = worm target-pick mode on", "LEVY_WORMMOMENTUM": "0 = worm momentum reading off", "LEVY_WORMHOLD": "0 = worm hold-position off",
+    "LEVY_WORMBODY": "0 = worm body-height avoidance off", "LEVY_SPREAD": "0 = worm spread behaviour off", "LEVY_ROWS": "0 = row formation off", "LEVY_ZONE": "0 = fight zone off",
+    "LEVY_ROUTLEASH": "0 = routed-levy leash off", "LEVY_SPITELEASH": "0 = spite leash off", "LEVY_IFRAMES": "0 = player-parity i-frames off", "LEVY_JUMPFX": "0 = jump effects off",
+    "LEVY_AMMOBEST": "0 = best-ammo pick off", "LEVY_SWAPFIX": "0 = target-swap fix off", "LEVY_NO_MODSHOT": "1 = modded-shot kinds off", "LEVY_RIPPERS": "0 = Calamity rage/adrenaline rippers off",
+    "LEVY_FEARMODEL": "fear model (events is the shipped one)", "LEVY_SURV": "survivability mode (formation is the shipped one)", "LEVY_UPKEEP": "0-3 gear upkeep mode",
+    "LEVY_CR_EXCLUDE": "comma list of weapons never rolled by the C# pools (default UrchinMace,SaharaSlicers)", "LEVY_CR_DOWNED": "milestone flags for gated weapons, e.g. downedDoG",
+    "LEVY_CR_WORMDIST": "tiles between the worm's spawn and the commander (default 80)", "LEVY_CR_STEPS": "game ticks stepped per server turn (kit sets 120; lower = slower)",
+}
+BOSSES = "kslime ds eye crab eow brain hive perf qb skel sg".split()
+SPEC_KEYS = {f[0] for f in FIELDS} | set(TOKENS)
+DEFAULT_ENV = {"LEVY_FEARMODEL": "events", "LEVY_SURV": "formation", "LEVY_CR_EXCLUDE": "CalamityMod/UrchinMace,CalamityMod/SaharaSlicers", "LEVY_ROWDBG": "0"}
+DEFAULTS = dict(boss="eow", mode="mdeath", arena="a3", gear="postskel.best", cmd="near", order="follow", cap=180, seeds=6, mods="calamity")
+
+def die(msg): sys.exit("levylab: " + msg)
+def sh(cmd, **kw): return subprocess.run(cmd, capture_output=True, text=True, **kw)
+
+# ------------------------------------------------------------------------------------------------------------ presets
+def tier_pick(m, t, default=None):
+    """highest key <= t of a tier-keyed map (or the scalar itself)."""
+    if not isinstance(m, dict): return m
+    ks = [k for k in m if int(k) <= t]
+    return m[max(ks, key=int)] if ks else default
+
+def load_gear():
+    g = yaml.safe_load((PRESETS / "gear.yaml").read_text())
+    out = {}
+    for tn, t in g["tiers"].items():
+        for qn, q in g["qualities"].items():
+            out[f"{tn}.{qn}"] = dict(q, name=f"{tn}.{qn}", tier=t["idx"], tier_name=tn, levies=t["levies"], stations=t["stations"] + q.get("stations_suffix", ""),
+                                     desc=f"{t['desc']}; {q['desc']}", sets=g["sets"])
+    for pn, p in (g.get("presets") or {}).items():
+        if "extends" in p:
+            base = dict(out[p["extends"]]); base.update({k: v for k, v in p.items() if k != "extends"}); base["name"] = pn; out[pn] = base
+        else:
+            out[pn] = dict(p, name=pn, tier=2, sets=g["sets"], legacy=True)
+    return out
+
+def load_simple(fn):
+    d = yaml.safe_load((PRESETS / fn).read_text())
+    if fn == "stations.yaml":
+        for k, v in list(d.items()):
+            d[k + ".plain"] = dict(v, honey=False, desc=v["desc"] + " (no honey)")
+    return d
+
+def parse_weapon(s):
+    heavy = s.endswith("*"); s = s.rstrip("*"); w, _, kind = s.rpartition(":")
+    return w, kind if kind != "-" else "", 3 if heavy else 1
+
+def roll_army(gear, potions, stations, n, hp, seed):
+    """Python port of the deathladder roll, driven by preset data. Same (gear, seed, n) = same army in every arm."""
+    t = gear["tier"]; rng = random.Random(f"{gear['name']}:{seed}:{n}")
+    fr = gear["mix"]; counts = {c: round(n * fr[c]) for c in "RMES"}
+    counts["S"] = max(0, n - counts["R"] - counts["M"] - counts["E"])
+    lc = max(0, round((hp - 100) / 20)); slots = gear["acc_slots"]; levies = []; ridx = 0
+    heal = tier_pick(potions["heal"], t); cnt = potions["count"]
+    for cls in "RMES":
+        for _ in range(counts[cls]):
+            pool = []
+            for tk, ws in gear["weapons"].get(cls, {}).items():
+                if int(tk) <= t: pool += [parse_weapon(w) for w in ws]
+            pick = rng.randrange(sum(w[2] for w in pool)); a = 0; chosen = pool[0]
+            for w in pool:
+                a += w[2]
+                if pick < a: chosen = w; break
+            sets = tier_pick(gear["armor"][cls], t); armor = gear["sets"][rng.choice(sets)]
+            armor = [x.replace("{c}", {"R": "Ranged", "M": "Magic", "E": "Melee", "S": "Summon"}[cls]) for x in armor]
+            ca = gear["class_acc"][cls]; ca = tier_pick(ca, t) if isinstance(ca, dict) else ca
+            acc = []
+            for x in tier_pick(gear["acc"], t):
+                x = ca if x == "{class}" else x
+                if x not in acc: acc.append(x)
+            acc = acc[:slots]
+            ammo = ""
+            if chosen[1]:
+                a_opt = str(tier_pick(gear["ammo"][chosen[1]], t)).split("|")
+                ammo = a_opt[ridx % 2 % len(a_opt)] if chosen[1] == "arr" else a_opt[0]
+                ridx += 1
+            nl = rng.randint(cnt[0], cnt[1]) if isinstance(cnt, list) else cnt
+            levies.append(dict(cls=cls, weapon=chosen[0], ammo=ammo, armor=armor, acc=acc, lc=lc, mc=gear["mana_crystals"], potions=nl, potion=heal))
+    if gear.get("chi"):
+        for l in levies:
+            if l["cls"] == "M": l["acc"] = l["acc"][:max(0, slots - 1)] + ["CalamityMod/TrinketofChi"]; break
+    return dict(accSlots=slots, honey=bool(stations["honey"]), stations=stations["stations"], stationLevel=2, buffs=potions["buffs"], levies=levies)
+
+# ------------------------------------------------------------------------------------------------------------ spec -> cells
+def parse_seeds(s):
+    if isinstance(s, str) and s.strip().isdigit(): s = int(s)
+    if isinstance(s, int): return list(range(1, s + 1))
+    if isinstance(s, str):
+        m = re.fullmatch(r"(\d+)-(\d+)", s.strip())
+        if m: return list(range(int(m[1]), int(m[2]) + 1))
+        return [int(x) for x in re.split(r"[ ,]+", s.strip()) if x]
+    return [int(x) for x in s]
+
+def merge(base, over):
+    r = dict(base)
+    for k, v in over.items():
+        if k == "env": r["env"] = {**base.get("env", {}), **(v or {})}
+        elif k == "tokens": r["tokens"] = list(base.get("tokens") or []) + list(v or [])
+        elif k == "cost": r["cost"] = {**(base.get("cost") or {}), **(v or {})}
+        else: r[k] = v
+    return r
+
+def load_spec(path):
+    p = Path(path)
+    if not p.exists(): die(f"no such spec {path}")
+    text = p.read_text()
+    if p.suffix in (".yaml", ".yml"):
+        spec = yaml.safe_load(text) or {}
+    else:  # tsv: raw harness `fight` lines (passthrough), or a table: header of spec fields, one row per cell
+        rows = [l.split("\t") for l in text.splitlines() if l.strip() and not l.startswith("#")]
+        if rows and rows[0][0] == "fight":
+            spec = {"raw": rows}
+        else:
+            hdr = rows[0]; cells = []
+            for r in rows[1:]:
+                c = {h: yaml.safe_load(v) if v != "" else None for h, v in zip(hdr, r)}
+                cells.append({k: v for k, v in c.items() if v is not None})
+            spec = {"cells": cells}
+    spec.setdefault("name", p.stem)
+    return spec
+
+def expand(spec):
+    """-> list of cells (dict with resolved fields, name, id)."""
+    if "raw" in spec:
+        groups = {}
+        for r in spec["raw"]:
+            key = tuple(r[1:3] + r[4:]); groups.setdefault(key, []).append(r)
+        cells = []
+        for i, (key, rs) in enumerate(groups.items()):
+            cells.append(dict(id=f"c{i}", name=f"{rs[0][1]}.{rs[0][2]}" + (f" {' '.join(rs[0][5:])}" if len(rs[0]) > 5 else ""), raw=rs, seeds=[int(x[3]) for x in rs]))
+        return cells
+    base = {k: v for k, v in spec.items() if k not in ("vs", "grid", "cells", "name")}
+    arms = [("ctl", base)]
+    vs = spec.get("vs")
+    if isinstance(vs, dict): arms += [(str(k), merge(base, v or {})) for k, v in vs.items()]
+    elif isinstance(vs, list): arms += [(str(a.get("name", f"arm{i}")), merge(base, {k: v for k, v in a.items() if k != "name"})) for i, a in enumerate(vs)]
+    if spec.get("cells"):
+        arms = [(str(c.get("name", f"cell{i}")), merge(base, {k: v for k, v in c.items() if k != "name"})) for i, c in enumerate(spec["cells"])] + (arms[1:] if vs else [])
+    cells = []
+    for an, a in arms:
+        grid = a.pop("grid", None) or spec.get("grid")
+        combos = [dict()] if not grid else [dict(zip(grid, vals)) for vals in itertools.product(*[v if isinstance(v, list) else [v] for v in grid.values()])]
+        for cb in combos:
+            c = merge(a, cb); nm = an + ("" if not cb else " " + " ".join(f"{k}={v}" for k, v in cb.items()))
+            if len(arms) == 1 and not cb: nm = spec.get("name", "cell")
+            cells.append(dict(c, name=nm))
+    for i, c in enumerate(cells): c["id"] = f"c{i}"
+    return cells
+
+def resolve(c, G, P, S):
+    r = {**DEFAULTS, **{k: v for k, v in c.items() if v is not None}}
+    for k in r:
+        if k not in SPEC_KEYS and k not in ("id", "name", "raw"): die(f"unknown spec field '{k}' (see `levylab list`)")
+    if r["boss"] not in BOSSES: print(f"levylab: warning: boss '{r['boss']}' is not a known boss line", file=sys.stderr)
+    g = G.get(r["gear"]) or die(f"unknown gear preset '{r['gear']}' (levylab list)")
+    pn = r.get("potions") or g.get("potions", "best"); sn = r.get("stations") or g.get("stations", "none")
+    if not g.get("legacy"):
+        if pn not in P: die(f"unknown potions preset '{pn}'")
+        if sn not in S: die(f"unknown stations preset '{sn}'")
+    r["_gear"], r["_pn"], r["_sn"] = g, pn, sn
+    r["seeds"] = parse_seeds(r["seeds"])
+    r["levies"] = r.get("levies") or g["levies"]
+    hp = r.get("hp"); gh = g.get("hp", 400); r["hp"] = hp if hp is not None else tier_pick(gh, g["tier"])
+    r["cap_ticks"] = int(float(r["cap"]) * TICKS)
+    return r
+
+def cost_params(r, P, S):
+    g = r["_gear"]; cp = dict(g.get("cost") or {})
+    if not g.get("legacy"):
+        cp["pot_per_levy"] = (P[r["_pn"]].get("cost") or {}).get("per_levy", 0); cp["flat"] = (S[r["_sn"]].get("cost") or {}).get("flat", 0)
+    cp.update(r.get("cost") or {})
+    return cp
+
+# ------------------------------------------------------------------------------------------------------------ build + install
+def repo_root():
+    o = sh(["git", "-C", str(LAB), "rev-parse", "--show-toplevel"])
+    if o.returncode: die("not inside a git checkout")
+    return Path(o.stdout.strip())
+
+def lock(path):
+    path.parent.mkdir(parents=True, exist_ok=True); f = open(path, "w"); fcntl.flock(f, fcntl.LOCK_EX); return f
+
+def ensure_install():
+    """one persistent private install (tML + mods + test world + build save dir), created on first use from /home/user/lab/tmlv + savev; later runs only reset per-run state."""
+    if not (HOME / "tml" / "tModLoader.dll").exists():
+        print("levylab: first use, creating the private install in", HOME, file=sys.stderr)
+        (HOME / "tml").mkdir(parents=True, exist_ok=True)
+        for f in SRC_TML.iterdir():
+            if f.name == "tModLoader-Logs": continue
+            (shutil.copytree if f.is_dir() else shutil.copy2)(f, HOME / "tml" / f.name, symlinks=True)
+        (HOME / "tml" / "tModLoader-Logs").mkdir(exist_ok=True)
+    save = HOME / "build" / "save"; (save / "ModSources").mkdir(parents=True, exist_ok=True); (save / "Mods").mkdir(exist_ok=True)
+    for m in (SRC_SAVE / "Mods").iterdir():
+        if m.suffix == ".tmod" and m.name != "Levy.tmod" and not (save / "Mods" / m.name).exists(): os.symlink(os.path.realpath(m), save / "Mods" / m.name)
+    tg = save / "ModSources" / "tModLoader.targets"
+    if not tg.exists(): tg.write_text(f'<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">\n  <Import Project="{HOME}/tml/tMLMod.targets" />\n</Project>')
+    if not (HOME / "world" / "W.wld").exists():
+        (HOME / "world").mkdir(exist_ok=True)
+        w = WORLD_SRC if WORLD_SRC.exists() else die("test world LevyTest.wld not found")
+        shutil.copy2(w, HOME / "world" / "W.wld"); shutil.copy2(w.with_suffix(".twld"), HOME / "world" / "W.twld")
+
+def build(rev, force=False):
+    """-> path of the cached .tmod for this git revision (built once; the cache key is the commit, plus a hash of uncommitted changes)."""
+    root = repo_root(); ensure_install()
+    if rev:
+        sha = sh(["git", "-C", str(root), "rev-parse", rev]).stdout.strip() or die(f"unknown rev {rev}"); bid = sha[:12]
+    else:
+        sha = sh(["git", "-C", str(root), "rev-parse", "HEAD"]).stdout.strip(); bid = sha[:12]
+        dirty = sh(["git", "-C", str(root), "diff", "HEAD", "--", "levy-mod/Levy"]).stdout
+        untracked = sorted(sh(["git", "-C", str(root), "ls-files", "-o", "--exclude-standard", "levy-mod/Levy"]).stdout.split())
+        if dirty or untracked:
+            h = hashlib.sha1(dirty.encode())
+            for f in untracked: h.update(f.encode()); h.update((root / f).read_bytes())
+            bid += "-" + h.hexdigest()[:8]
+    tmod = HOME / "cache" / f"{bid}.tmod"
+    if tmod.exists() and not force: return tmod, bid, False
+    with lock(HOME / "build" / ".lock"):
+        if tmod.exists() and not force: return tmod, bid, False
+        t0 = time.time(); print(f"levylab: building Levy @ {bid} ...", file=sys.stderr)
+        tmp = None; src = root / "levy-mod" / "Levy"
+        if rev:
+            tmp = Path(tempfile.mkdtemp(prefix="levylab-src-")); subprocess.run(f"git -C {root} archive {sha} levy-mod/Levy | tar -x -C {tmp}", shell=True, check=True); src = tmp / "levy-mod" / "Levy"
+        save = HOME / "build" / "save"; ms = save / "ModSources" / "Levy"
+        shutil.rmtree(ms, ignore_errors=True); shutil.copytree(src, ms, ignore=shutil.ignore_patterns("bin", "obj", "docs"))
+        (save / "Mods" / "Levy.tmod").unlink(missing_ok=True)
+        env = {**os.environ, "DOTNET_ROOT": DOTNET, "PATH": DOTNET + ":" + os.environ["PATH"], "DOTNET_NOLOGO": "1", "DOTNET_CLI_TELEMETRY_OPTOUT": "1"}
+        log = HOME / "build" / "last_build.log"
+        with open(log, "w") as lf:
+            subprocess.run(["dotnet", "tModLoader.dll", "-server", "-nosteam", "-tmlsavedirectory", str(save), "-build", str(ms)], cwd=HOME / "tml", env=env, stdout=lf, stderr=subprocess.STDOUT, timeout=1500)
+        if tmp: shutil.rmtree(tmp, ignore_errors=True)
+        out = save / "Mods" / "Levy.tmod"
+        if not out.exists():
+            errs = [l for l in log.read_text().splitlines() if " error " in l][:8]
+            die("build failed:\n" + "\n".join(errs) + f"\n(full log {log})")
+        (HOME / "cache").mkdir(exist_ok=True); shutil.copy2(out, tmod)
+        print(f"levylab: built in {time.time() - t0:.0f}s -> {tmod.name}", file=sys.stderr)
+    return tmod, bid, True
+
+def ensure_slot(i):
+    s = HOME / "slots" / str(i); tml = s / "tml"
+    if not (tml / "tModLoader.dll").exists():
+        tml.mkdir(parents=True, exist_ok=True)
+        for f in (HOME / "tml").iterdir():   # files are copied (tML puts its logs next to the real dll path), directories are linked
+            if f.name == "tModLoader-Logs": continue
+            d = tml / f.name
+            if f.is_dir(): d.unlink(missing_ok=True); os.symlink(f, d)
+            else: shutil.copy2(f, d)
+        (tml / "tModLoader-Logs").mkdir(exist_ok=True)
+    mods = s / "save" / "Mods"; mods.mkdir(parents=True, exist_ok=True)
+    for m in (HOME / "build" / "save" / "Mods").glob("*.tmod"):
+        if m.name != "Levy.tmod" and not (mods / m.name).exists(): os.symlink(os.path.realpath(m), mods / m.name)
+    return s
+
+class Slot:
+    def __init__(self):
+        self.f = None; self.i = None
+    def __enter__(self):
+        while True:
+            for i in range(MAX_SLOTS):
+                (HOME / "slots").mkdir(parents=True, exist_ok=True); f = open(HOME / "slots" / f".lock{i}", "w")
+                try: fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB); self.f, self.i = f, i; return self
+                except OSError: f.close()
+            time.sleep(2)
+    def __exit__(self, *a): fcntl.flock(self.f, fcntl.LOCK_UN); self.f.close()
+
+# ------------------------------------------------------------------------------------------------------------ running
+def fight_line(cell, seed, rundir):
+    t = ["cmd=" + str(cell["cmd"]), "order=" + str(cell["order"]), "arena=" + str(cell["arena"]), "tag=" + cell["id"]]
+    g = cell["_gear"]
+    if g.get("legacy"): t += ["gear=mod", "grade=lv", "l3=1", "n=cp"] + g["tokens"]
+    else: t += ["lv=" + str(rundir / "armies" / f"{cell['id']}_{seed}.json")]
+    for k in TOKENS:
+        if k in cell and cell[k] is not None: t.append(f"{k}={cell[k]}")
+    t += [str(x) for x in (cell.get("tokens") or [])]
+    return "\t".join(["fight", str(cell["boss"]), str(cell["mode"]), str(seed), str(cell["cap_ticks"])] + t)
+
+def run_proc(job, ctx):
+    """one server process running job['fights'] sequentially; retries the unfinished ones after a crash. -> list of out dirs."""
+    with Slot() as sl:
+        s = ensure_slot(sl.i); out = ctx["rundir"] / "jobs" / job["id"]; out.mkdir(parents=True, exist_ok=True)
+        todo = list(job["fights"]); outs = []
+        for attempt in range(3):
+            if not todo: break
+            a = out / f"try{attempt}"; a.mkdir(exist_ok=True); outs.append(a)
+            save = s / "save"; shutil.rmtree(save / "Worlds", ignore_errors=True); (save / "Worlds").mkdir(); shutil.rmtree(save / "ModConfigs", ignore_errors=True)
+            shutil.copy2(HOME / "world" / "W.wld", save / "Worlds" / "W.wld"); shutil.copy2(HOME / "world" / "W.twld", save / "Worlds" / "W.twld")
+            lm = save / "Mods" / "Levy.tmod"; lm.unlink(missing_ok=True); os.symlink(ctx["tmod"], lm)
+            (save / "Mods" / "enabled.json").write_text(json.dumps(["CalamityModMusic", "CalamityMod", "Levy", "Mechanization"] if ctx["mods"] == "calamity" else ["Levy", "Mechanization"]))
+            logs = s / "tml" / "tModLoader-Logs"; shutil.rmtree(logs, ignore_errors=True); logs.mkdir()
+            spec = a / "spec.tsv"; spec.write_text("\n".join(l for _, _, l in todo) + "\n")
+            env = {**os.environ, "DOTNET_ROOT": DOTNET, "PATH": DOTNET + ":" + os.environ["PATH"], **DEFAULT_ENV, "LEVY_CR_STEPS": str(ctx["steps"]),
+                   "LEVY_HARNESS": "1", "LEVY_HARNESS_OUT": str(a / "h.tsv"), "LEVY_HARNESS_MOD": "CalamityMod", "LEVY_HARNESS_SCENARIO": "calrev",
+                   "LEVY_CR_SPEC": str(spec), "LEVY_CR_OUT": str(a / "out.tsv"), "LEVY_CR_SP": "1"}
+            if ctx["mods"] != "calamity": env["LEVY_CR_VANILLA"] = "1"
+            env.update({k: str(v) for k, v in ctx["env"].items()}); env.update(job.get("env", {}))
+            env.pop("LEVY_REC_DIR", None)
+            if job["rec"]: env["LEVY_REC_DIR"] = str(ctx["rundir"] / "rec" / job["id"]); Path(env["LEVY_REC_DIR"]).mkdir(parents=True, exist_ok=True)
+            with open(a / "console.log", "w") as cl:
+                try: subprocess.run(["dotnet", "tModLoader.dll", "-server", "-nosteam", "-tmlsavedirectory", str(save), "-port", str(7800 + sl.i), "-world", str(save / "Worlds" / "W.wld")],
+                                    cwd=s / "tml", env=env, stdout=cl, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, timeout=900 + 120 * len(todo))
+                except subprocess.TimeoutExpired: pass
+            lg = logs / "server.log"
+            if lg.exists():
+                txt = lg.read_text(errors="replace")
+                (a / "harness.log").write_text("\n".join(l for l in txt.splitlines() if "HARNESS-KIT" in l or "HARNESS-CR: RESULT" in l or "/WARN]" in l and "HARNESS" in l or "/ERROR]" in l))
+                with gzip.open(a / "server.log.gz", "wt") as z: z.write(txt)
+            done = done_set(a / "out.tsv")
+            todo = [f for f in todo if (f[0], f[1]) not in done]
+        job["left"] = todo
+        return outs
+
+def done_set(path):
+    d = set()
+    if path.exists():
+        for r in csv.DictReader(open(path, errors="replace"), delimiter="\t"):
+            m = re.search(r"\|t(c\d+)(?:\||$)", r["key"])
+            if m: d.add((m[1], int(r["seed"])))
+    return d
+
+def cmd_run(a):
+    G, P, S = load_gear(), load_simple("potions.yaml"), load_simple("stations.yaml")
+    spec = load_spec(a.spec); cells = expand(spec)
+    if a.seeds:
+        for c in cells: c["seeds"] = parse_seeds(a.seeds)
+    cells = [c if "raw" in c else resolve(c, G, P, S) for c in cells]
+    if a.seeds:
+        for c in cells: c["seeds"] = parse_seeds(a.seeds)
+    mods = {c.get("mods", "calamity") for c in cells if "raw" not in c} or {"calamity"}
+    if len(mods) > 1: die("one run = one `mods:` value; split vanilla and Calamity runs (NORTH_STAR keeps them separate)")
+    name = spec.get("name"); rundir = Path(a.out) if a.out else HOME / "runs" / f"{name}-{time.strftime('%Y%m%d-%H%M%S')}"
+    rundir.mkdir(parents=True, exist_ok=True); (rundir / "armies").mkdir(exist_ok=True)
+    tmod, bid, built = build(a.rev, a.rebuild)
+    # fights: (cell id, seed, line)
+    fights = []; meta_cells = []
+    for c in cells:
+        if "raw" in c:
+            for r in c["raw"]: fights.append((c["id"], int(r[3]), "\t".join(r + [f"tag={c['id']}"]), c["seeds"].index(int(r[3])) < a.rec))
+            meta_cells.append(dict(id=c["id"], name=c["name"], seeds=c["seeds"], raw=True)); continue
+        gear = c["_gear"]; cp = cost_params(c, P, S)
+        for k, sd in enumerate(c["seeds"]):
+            if not gear.get("legacy"):
+                army = roll_army(gear, P[c["_pn"]], S[c["_sn"]], int(c["levies"]), int(c["hp"]), sd)
+                (rundir / "armies" / f"{c['id']}_{sd}.json").write_text(json.dumps(army))
+            fights.append((c["id"], sd, fight_line(c, sd, rundir), k < a.rec))
+        meta_cells.append(dict(id=c["id"], name=c["name"], boss=c["boss"], mode=c["mode"], gear=c["gear"], potions=c["_pn"], stations=c["_sn"], levies=c["levies"], hp=c["hp"], arena=c["arena"],
+                               cap=c["cap"], seeds=c["seeds"], cost=cp, env=c.get("env") or {}, tokens=c.get("tokens") or []))
+    # cells with different env toggles run in different processes (env is process-wide); recorded fights get their own processes
+    cenv = {c["id"]: {k: str(v) for k, v in (c.get("env") or {}).items()} for c in cells if "raw" not in c}
+    groups = {}
+    for f in fights: groups.setdefault((json.dumps(cenv.get(f[0], {}), sort_keys=True), f[3]), []).append(f)
+    nf = len(fights); nj = max(1, min(a.jobs, round(nf / a.per_proc)))   # a server process costs ~55-100 s to boot: keep >= per_proc fights on each
+    alloc = {g: max(1, int(nj * len(fs) / nf)) for g, fs in groups.items()}
+    for g in sorted(groups, key=lambda g: -(nj * len(groups[g]) / nf - alloc[g])):   # largest remainder first
+        if sum(alloc.values()) < nj and alloc[g] < len(groups[g]): alloc[g] += 1
+    jobs = []
+    for (ek, rec), fs in groups.items():
+        parts = min(alloc[(ek, rec)], len(fs))
+        for p in range(parts):
+            jobs.append(dict(id=f"j{len(jobs)}", fights=[(x[0], x[1], x[2]) for x in fs[p::parts]], rec=rec, env=json.loads(ek)))
+    ctx = dict(rundir=rundir, tmod=tmod, mods=next(iter(mods)), steps=a.steps, env={})
+    t0 = time.time()
+    print(f"levylab: {nf} fights = {len(meta_cells)} cells x seeds, {len(jobs)} server processes, {nj} in parallel, build {bid}{' (cached)' if not built else ''}, run dir {rundir}", file=sys.stderr)
+    (rundir / "cells.json").write_text(json.dumps(dict(cells=meta_cells, build=bid, spec=a.spec, jobs=nj, steps=a.steps, rec=a.rec), indent=1))
+    shutil.copy2(a.spec, rundir / ("spec" + Path(a.spec).suffix))
+    with cf.ThreadPoolExecutor(max_workers=nj) as ex:
+        outs = list(ex.map(lambda j: run_proc(j, ctx), jobs))
+    wall = time.time() - t0
+    collect(rundir, [o for os_ in outs for o in os_], wall, nf, jobs)
+    if not a.quiet: cmd_table(argparse.Namespace(run_dir=str(rundir), cols=None, wide=False, quiet=False))
+
+# ------------------------------------------------------------------------------------------------------------ collecting
+HIT_RE = re.compile(r"(contact|proj):(.*?)/(-?\d+)=(\d+)/(\d+)")
+def read_tsv(p):
+    return list(csv.DictReader(open(p, errors="replace"), delimiter="\t")) if Path(p).exists() else []
+
+def collect(rundir, outs, wall, nf, jobs):
+    rows = []
+    for o in outs:
+        main = read_tsv(o / "out.tsv"); kit = {r["key"]: r for r in read_tsv(o / "out.tsv.kit.tsv")}
+        hits = {}
+        if (o / "out.tsv.hit.tsv").exists():
+            for l in open(o / "out.tsv.hit.tsv", errors="replace"):
+                k, _, v = l.rstrip("\n").partition("\t"); hits[k] = v
+        for r in main:
+            m = re.search(r"\|t(c\d+)(?:\||$)", r["key"])
+            if not m: continue
+            k = kit.get(r["key"], {}); head = body = tail = prj = oth = 0
+            for kind, nm, ident, dmg, n in HIT_RE.findall(hits.get(r["key"], "")):
+                d = int(dmg)
+                if kind == "proj": prj += d
+                elif ident == "13" or nm.endswith("Head"): head += d
+                elif ident == "14" or nm.endswith("Body"): body += d
+                elif ident == "15" or nm.endswith("Tail"): tail += d
+                else: oth += d
+            row = {"cell": m[1], "seed": r["seed"], "result": r["result"], "sec": r["sec"], "n": r.get("n", ""), "deaths": r["deaths"], "firstDeathSec": r.get("firstDeathSec", ""),
+                   "bossMax": r["bossMax"], "bossLeft": r["bossLeft"], "takenHead": head, "takenBody": body, "takenTail": tail, "takenProj": prj, "takenOtherContact": oth}
+            for c in ("dmgBoss", "dmgR", "dmgM", "dmgE", "dmgS", "dmgUnattr", "dmgHead", "dmgBody", "dmgTail", "takenBoss", "takenAdd", "takenOther", "avgHp", "potionsDrunk", "rageAct", "adrAct", "drCuts",
+                      "addsPeak", "addKills", "enragedSec", "avgSurvSec", "halfSec", "hitsTaken", "avgDef", "dpsHittable"):
+                if c in r: row[c] = r[c]
+            row.update(rankSum=k.get("rankSum", ""), weaponDmg=k.get("weaponDmg", ""), classDmg=k.get("classDmg", ""), deathTimes=k.get("deathTimes", ""), job=o.parent.name)
+            if r["result"] == "ERROR": row["note"] = r.get("perLevy", "")
+            rows.append(row)
+    want = {(c["id"], int(s)) for c in json.loads((rundir / "cells.json").read_text())["cells"] for s in c["seeds"]}
+    have = {(r["cell"], int(r["seed"])) for r in rows}
+    for cid, sd in sorted(want - have): rows.append({"cell": cid, "seed": sd, "result": "MISSING"})
+    keys = []
+    for r in rows:
+        for k in r:
+            if k not in keys: keys.append(k)
+    with open(rundir / "results.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=keys); w.writeheader(); w.writerows(rows)
+    miss = []
+    for o in outs:
+        hl = o / "harness.log"
+        if hl.exists():
+            for l in hl.read_text().splitlines():
+                m = re.search(r"HARNESS-KIT: missing (.*)", l)
+                if m: miss.append(m[1])
+    meta = json.loads((rundir / "cells.json").read_text()); meta.update(wall_s=round(wall, 1), fights=nf, finished=len(have), fights_per_min=round(60 * len(have) / max(wall, 1), 2), processes=len(jobs), missing_items=sorted(set(", ".join(miss).split(", "))) if miss else [])
+    (rundir / "cells.json").write_text(json.dumps(meta, indent=1))
+
+# ------------------------------------------------------------------------------------------------------------ table
+def fnum(x):
+    try: return float(x)
+    except (TypeError, ValueError): return None
+
+def med(xs): return statistics.median(xs) if xs else None
+def f0(x, d=0): return "-" if x is None else f"{x:.{d}f}"
+
+def fisher(w1, n1, w2, n2):
+    """two-sided Fisher exact p for wins w1/n1 vs w2/n2."""
+    k = w1 + w2; N = n1 + n2
+    if N == 0: return 1.0
+    pr = lambda a: math.comb(n1, a) * math.comb(n2, k - a) / math.comb(N, k)
+    p0 = pr(w1)
+    return min(1.0, sum(pr(a) for a in range(max(0, k - n2), min(n1, k) + 1) if pr(a) <= p0 + 1e-12))
+
+def points(cp, n, sumhp, rank):
+    return n * (cp.get("per_levy", 0) + cp.get("pot_per_levy", 0)) + sumhp / 100.0 * cp.get("per_100hp", 0) + rank / 1000.0 * cp.get("per_rank_1000", 0) + cp.get("flat", 0)
+
+def cmd_table(a):
+    rd = Path(a.run_dir); meta = json.loads((rd / "cells.json").read_text()); rows = read_tsv_csv(rd / "results.csv")
+    by = {}
+    for r in rows: by.setdefault(r["cell"], []).append(r)
+    extra = (a.cols or "").split(",") if a.cols else []
+    hdr = ["cell", "levies", "pts", "wins", "kill s (med)", "levy deaths", "1st death s", "boss left", "taken head/body/proj %", "dealt R/M/E/S %"] + extra
+    out = []; base = None
+    for c in meta["cells"]:
+        rs = by.get(c["id"], []); fin = [r for r in rs if r["result"] not in ("MISSING", "ERROR")]
+        n = len(rs); wins = [r for r in fin if r["result"] == "WIN"]
+        if base is None: base = (len(wins), n)
+        ks = [fnum(r["sec"]) for r in wins]
+        n_lev = [fnum(r.get("n")) or 0 for r in fin]
+        dths = [fnum(r["deaths"]) or 0 for r in fin]
+        fd = [fnum(r["firstDeathSec"]) for r in fin if fnum(r.get("firstDeathSec")) is not None]
+        left = [fnum(r["bossLeft"]) for r in fin if r["result"] != "WIN" and fnum(r["bossLeft"]) is not None]
+        mx = [fnum(r["bossMax"]) for r in fin if r["result"] != "WIN" and fnum(r["bossMax"])]
+        tk = [sum(fnum(r.get(k)) or 0 for k in ("takenHead", "takenBody", "takenTail", "takenProj", "takenOtherContact")) for r in fin]
+        th, tb, tp = (sum(fnum(r.get(k)) or 0 for r in fin) for k in ("takenHead", "takenBody", "takenProj"))
+        tt = sum(tk) or 1
+        dm = [sum(fnum(r.get(k)) or 0 for r in fin) for k in ("dmgR", "dmgM", "dmgE", "dmgS")]; dtot = sum(dm) or 1
+        pts = [points(c.get("cost") or {}, fnum(r.get("n")) or 0, (fnum(r.get("n")) or 0) * (fnum(r.get("avgHp")) or 0), fnum(r.get("rankSum")) or 0) for r in fin if r.get("n")]
+        nl = statistics.mean(n_lev) if n_lev else None
+        lev = f"{nl:.0f} x {c.get('hp', '')}hp" if nl and c.get("hp") else (f0(nl) if nl else "-")
+        wcell = f"**{len(wins)}/{n}**" + (f" ({len(rs) - len(fin)} bad)" if len(rs) - len(fin) else "")
+        if base and c is not meta["cells"][0] and n: wcell += f" p={fisher(len(wins), n, *base):.2f}"
+        row = [c["name"], lev, f0(statistics.mean(pts)) if pts else "-", wcell,
+               (f"{med(ks):.0f} ({min(ks):.0f}-{max(ks):.0f})" if ks else "-"),
+               f"{statistics.mean(dths):.1f}/{nl:.0f}" if nl and dths else "-", f0(med(fd), 0) if fd else "none",
+               (f"{statistics.mean(left) / 1000:.1f}k ({100 * statistics.mean(left) / (statistics.mean(mx) or 1):.0f}%)" if left and mx else "-"),
+               f"{100 * th / tt:.0f}/{100 * tb / tt:.0f}/{100 * tp / tt:.0f}", "/".join(f"{100 * x / dtot:.0f}" for x in dm)]
+        for e in extra:
+            v = [fnum(r.get(e)) for r in fin if fnum(r.get(e)) is not None]
+            row.append(f"{statistics.mean(v):.1f}" if v else "-")
+        out.append(row)
+    print("| " + " | ".join(hdr) + " |"); print("|" + "---|" * len(hdr))
+    for r in out: print("| " + " | ".join(r) + " |")
+    if a.wide:
+        print("\nTop weapons by boss damage (summed over seeds):")
+        for c in meta["cells"]:
+            tot = {}
+            for r in by.get(c["id"], []):
+                for tok in (r.get("weaponDmg") or "").split():
+                    k, _, v = tok.rpartition("=")
+                    if v.isdigit(): tot[k] = tot.get(k, 0) + int(v)
+            print(f"- {c['name']}: " + ", ".join(f"{k} {v}" for k, v in sorted(tot.items(), key=lambda kv: -kv[1])[:5]))
+    notes = [f"{meta.get('fights', '?')} fights in {meta.get('wall_s', '?')}s ({meta.get('fights_per_min', '?')}/min, {meta.get('processes', '?')} server processes), build {meta.get('build')}, run dir {rd}"]
+    if meta.get("missing_items"): notes.append("MISSING ITEM NAMES (dropped by the harness): " + ", ".join(meta["missing_items"]))
+    errs = [r for r in rows if r["result"] in ("MISSING", "ERROR")]
+    if errs: notes.append(f"{len(errs)} fights did not finish (MISSING/ERROR rows in results.csv; logs in jobs/*/try*/)")
+    print("\n" + "\n".join(notes))
+    print("pts = army points (levies + HP + WeaponRank + potions + stations; weights in the presets' cost: blocks). Columns: taken = damage received by head/body/projectile; dealt = ranged/magic/melee/summon share.")
+
+def read_tsv_csv(p): return list(csv.DictReader(open(p)))
+
+# ------------------------------------------------------------------------------------------------------------ list
+def cmd_list(a):
+    G, P, S = load_gear(), load_simple("potions.yaml"), load_simple("stations.yaml")
+    print("SPEC FIELDS (yaml, top level; `vs:` arms and `cells:` entries may override any of them)")
+    for n, d, desc in FIELDS: print(f"  {n:<9} [{d}]  {desc}")
+    print("\nEXTRA TOKEN FIELDS (any of these as a top-level key becomes a harness token k=v)")
+    for k, v in TOKENS.items(): print(f"  {k:<8} {v}")
+    print("\nENV TOGGLES (env: {NAME: value}; default env already sets LEVY_FEARMODEL=events LEVY_SURV=formation, LEVY_CR_SP=1)")
+    for k, v in ENVS.items(): print(f"  {k:<18} {v}")
+    print("\nGEAR PRESETS (gear:)")
+    for k, g in G.items(): print(f"  {k:<20} {g.get('levies', '?'):>2} levies  {g['desc']}")
+    print("\nPOTION PRESETS (potions:)")
+    for k, p in P.items(): print(f"  {k:<10} {p['desc']}")
+    print("\nSTATION PRESETS (stations:; every name also exists as <name>.plain with no honey)")
+    for k, s in S.items():
+        if not k.endswith(".plain"): print(f"  {k:<10} {s['desc']}")
+    print("\nBOSSES:", " ".join(BOSSES), "\nSEEDS: 6 | [1,4,9] | '1-12'   CLI: run SPEC [--jobs N] [--rec K] [--seeds S] [--rev GITREV] [--steps T] [--out DIR]   table RUN_DIR [--cols a,b] [--wide]")
+    print("RESULT COLUMNS for --cols (results.csv): " + "result sec n deaths firstDeathSec bossMax bossLeft takenHead takenBody takenTail takenProj dmgR dmgM dmgE dmgS dmgHead dmgBody dmgTail avgHp potionsDrunk rageAct adrAct drCuts addsPeak addKills enragedSec avgSurvSec avgDef rankSum")
+
+def main():
+    ap = argparse.ArgumentParser(prog="levylab", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sp = ap.add_subparsers(dest="cmd", required=True)
+    r = sp.add_parser("run", help="build once per revision, run every cell x seed headless in parallel, print the table")
+    r.add_argument("spec"); r.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1)); r.add_argument("--rec", type=int, default=0, help="record K seeds per cell (default 0: none)")
+    r.add_argument("--per-proc", type=int, default=8, help="min fights per server process (boot is ~55 s each)"); r.add_argument("--seeds", help="override the spec's seeds"); r.add_argument("--rev", help="build this git revision instead of the working tree"); r.add_argument("--steps", type=int, default=120, help="game ticks per server turn")
+    r.add_argument("--out"); r.add_argument("--rebuild", action="store_true"); r.add_argument("--quiet", action="store_true", help="skip the table at the end")
+    t = sp.add_parser("table", help="markdown summary of a run dir"); t.add_argument("run_dir"); t.add_argument("--cols", help="extra results.csv columns (mean over fights), comma list"); t.add_argument("--wide", action="store_true", help="also top weapons per cell")
+    sp.add_parser("list", help="every spec field, token, env toggle and preset")
+    a = ap.parse_args()
+    {"run": cmd_run, "table": cmd_table, "list": cmd_list}[a.cmd](a)
+
+if __name__ == "__main__":
+    main()

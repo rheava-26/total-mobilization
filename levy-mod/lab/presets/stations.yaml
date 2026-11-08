@@ -1,0 +1,29 @@
+# STATION PRESETS for levylab: real station tiles placed beside real armories in the arena (the game's own station scan decides each levy's buffs).
+# `stations` names: campfire, sunflower, heartlantern, starinabottle, bast, sharpening, wartable, bewitching, ammobox, crystalball.
+# `honey: true` sets the Honey station flag on every levy (levies have no honey-pool support, so it is emulated by the flag).
+# `cost.flat` is army points for the whole base.
+preevil:
+  desc: "campfire, heart lantern, star in a bottle, sunflower, bast statue, honey"
+  stations: [campfire, heartlantern, starinabottle, sunflower, bast]
+  honey: true
+  cost: {flat: 20}
+posteow:
+  desc: "pre-evil set + sharpening station"
+  stations: [campfire, heartlantern, starinabottle, sunflower, bast, sharpening]
+  honey: true
+  cost: {flat: 25}
+postskel:
+  desc: "post-EoW set + war table and bewitching table"
+  stations: [campfire, heartlantern, starinabottle, sunflower, bast, sharpening, wartable, bewitching]
+  honey: true
+  cost: {flat: 35}
+postwof:
+  desc: "post-Skeletron set + ammo box and crystal ball"
+  stations: [campfire, heartlantern, starinabottle, sunflower, bast, sharpening, wartable, bewitching, ammobox, crystalball]
+  honey: true
+  cost: {flat: 45}
+none:
+  desc: "no stations at all (no campfire, no lanterns)"
+  stations: []
+  honey: false
+  cost: {flat: 0}

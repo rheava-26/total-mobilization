@@ -1,0 +1,9 @@
+# Demo A/B: how much does levy HP and gear quality matter against Master+Death Eater of Worlds with a 10-levy post-Skeletron army?
+# 3 cells x 6 seeds = 18 fights, one command, one table; `pts` shows what each army costs.
+name: demo_hp_gear
+boss: eow
+gear: postskel.best
+levies: 10
+vs:
+  hp250:  {hp: 250}                  # same gear, 250 HP instead of 400
+  okish:  {gear: postskel.okish}     # a normal player's kit at 340 HP

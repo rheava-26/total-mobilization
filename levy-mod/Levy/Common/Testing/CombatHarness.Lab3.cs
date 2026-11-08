@@ -175,11 +175,11 @@ namespace Levy.Common.Testing
 		{
 			var res = new List<(string, int, int)>();
 			void A(string name, int itemId) { var it = ContentSamples.ItemsByType[itemId]; res.Add((name, it.createTile, it.placeStyle)); }
-			A("Campfire", ItemID.Campfire); A("Sunflower", ItemID.Sunflower);
-			if (level >= 1) A("BastStatue", L3ItemByTile(TileID.CatBast));
-			if (level >= 2) A("SharpeningStation", ItemID.SharpeningStation);
-			if (level >= 3) { A("WarTable", ItemID.WarTable); A("BewitchingTable", ItemID.BewitchingTable); }
-			if (_dlTier >= 3) { A("AmmoBox", ItemID.AmmoBox); A("CrystalBall", ItemID.CrystalBall); }
+			if (KitWant("campfire", true)) A("Campfire", ItemID.Campfire); if (KitWant("sunflower", true)) A("Sunflower", ItemID.Sunflower);
+			if (KitWant("bast", level >= 1)) A("BastStatue", L3ItemByTile(TileID.CatBast));
+			if (KitWant("sharpening", level >= 2)) A("SharpeningStation", ItemID.SharpeningStation);
+			if (KitWant("wartable", level >= 3)) A("WarTable", ItemID.WarTable); if (KitWant("bewitching", level >= 3)) A("BewitchingTable", ItemID.BewitchingTable);
+			if (KitWant("ammobox", _dlTier >= 3)) A("AmmoBox", ItemID.AmmoBox); if (KitWant("crystalball", _dlTier >= 3)) A("CrystalBall", ItemID.CrystalBall);
 			return res;
 		}
 
@@ -215,6 +215,7 @@ namespace Levy.Common.Testing
 				int py = fy - 7;
 				foreach (var (name, itemId, dx) in new[] { ("HeartLantern", ItemID.HeartLantern, -4), ("StarInBottle", ItemID.StarinaBottle, 4) })
 				{
+					if (!KitWant(name == "HeartLantern" ? "heartlantern" : "starinabottle", true)) continue;
 					var it = ContentSamples.ItemsByType[itemId];
 					Tile pt = Main.tile[x0 + dx, py]; if (!pt.HasTile) { pt.HasTile = true; pt.TileType = TileID.Platforms; pt.BlockType = Terraria.ID.BlockType.Solid; }
 					bool ok = WorldGen.PlaceObject(x0 + dx, py + 1, it.createTile, true, it.placeStyle);
@@ -354,7 +355,7 @@ namespace Levy.Common.Testing
 			}
 			if (run.Dl != "" && (st.Tick == 6 || st.Tick % 3000 == 0) && !l.Dead) { DlBuffs(run, n); sn.StatsDirty = true; } // buffImmune clears on the first update, so the potions go on a few ticks in
 			if (run.Pl != "" && (st.Tick == 6 || st.Tick % 3000 == 0) && !l.Dead) { PlBuffs(l, n); sn.StatsDirty = true; }
-			if (run.Dl != "" && !run.DlOk) sn.Stations |= StationFlags.Honey; // honey pool emulated by the station flag (never from a tile scan)
+			if (run.Dl != "" && (run.Lv != null ? run.Lv.honey : !run.DlOk)) sn.Stations |= StationFlags.Honey; // honey pool emulated by the station flag (never from a tile scan)
 			if (st.Tick % 30 == 0 && !l.Dead) { L3Vert(n); L3Dist(n, st); }
 			if (st.Tick == 600 && !l.Dead)
 			{

@@ -1,0 +1,72 @@
+== B  n_levies=13  wins 4/6
+  kill s (wins): ['102', '63', '40', '48'] ; boss left (losses) k: ['5.5', '2.6']
+  first levy death s: ['10.0', '24.1', '9.1', '18.4', '21.2', '23.5'] ; deaths: [10, 13, 6, 13, 4, 7]/13
+  hits taken dmg: head 20940 body 4491 tail 335 proj 0  (head% 81 body% 17 tail% 1 proj% 0.0)
+  proj by name: []
+  class dmg share (P pierce,X explosive,D DoT-weapon): {'P': '54%', 'PD': '12%', 'PX': '10%', 'PXD': '10%', 'X': '6%', 'D': '5%', '-': '3%'}  uncredited(DoT/etc) share of boss dmg 20%
+  top weapons: [('Aqua_Scepter', 26421), ('C:SandstreamScepter', 15055), ('Space_Gun', 14130), ('C:Fungicide', 8473), ('Demon_Bow', 7817), ('Magic_Missile', 7802)]
+  killers: {'Eater_of_Worlds/Eater_of_Worlds': 53}
+== C  n_levies=16  wins 6/6
+  kill s (wins): ['30', '28', '35', '24', '25', '36'] ; boss left (losses) k: []
+  first levy death s: ['23.9', '25.3', '17.7', '20.9', '11.3', '18.3'] ; deaths: [2, 1, 2, 1, 2, 1]/16
+  hits taken dmg: head 11875 body 2474 tail 131 proj 0  (head% 82 body% 17 tail% 1 proj% 0.0)
+  proj by name: []
+  class dmg share (P pierce,X explosive,D DoT-weapon): {'P': '35%', 'PX': '19%', 'PD': '16%', 'X': '12%', 'PXD': '7%', '-': '6%', 'D': '4%'}  uncredited(DoT/etc) share of boss dmg 31%
+  top weapons: [('Magic_Missile', 16173), ('C:BloodBath', 10070), ('Space_Gun', 7536), ('C:FleshOfInfidelity', 6953), ('Vilethorn', 6264), ('C:Fungicide', 5136)]
+  killers: {'Eater_of_Worlds/Eater_of_Worlds': 9}
+== D  n_levies=20  wins 6/6
+  kill s (wins): ['22', '18', '18', '20', '17', '17'] ; boss left (losses) k: []
+  first levy death s: [] ; deaths: [0, 0, 0, 0, 0, 0]/20
+  hits taken dmg: head 6714 body 850 tail 38 proj 0  (head% 88 body% 11 tail% 0 proj% 0.0)
+  proj by name: []
+  class dmg share (P pierce,X explosive,D DoT-weapon): {'P': '47%', 'PD': '20%', 'PXD': '15%', 'X': '9%', 'PX': '6%', '-': '3%', 'D': '1%'}  uncredited(DoT/etc) share of boss dmg 29%
+  top weapons: [('Cursed_Flames', 12749), ('Magic_Missile', 12225), ('Cobalt_Repeater', 9721), ('Aqua_Scepter', 9227), ('Orichalcum_Repeater', 7060), ('Clockwork_Assault_Rifle', 6202)]
+  killers: {}
+== Rev1w-C  n_levies=16  wins 4/4
+  kill s (wins): ['26', '22', '37', '22'] ; boss left (losses) k: []
+  first levy death s: ['15.8', '18.4', '15.0'] ; deaths: [1, 0, 2, 1]/16
+  hits taken dmg: head 6375 body 1544 tail 88 proj 0  (head% 80 body% 19 tail% 1 proj% 0.0)
+  proj by name: []
+  class dmg share (P pierce,X explosive,D DoT-weapon): {'P': '39%', 'PX': '21%', 'PXD': '11%', 'PD': '10%', '-': '8%', 'X': '7%', 'D': '5%'}  uncredited(DoT/etc) share of boss dmg 32%
+  top weapons: [('C:BloodBath', 10489), ('Magic_Missile', 5644), ('Space_Gun', 5050), ('Aqua_Scepter', 4581), ('Imp_Staff', 4490), ('Flamelash', 3900)]
+  killers: {'Eater_of_Worlds/Eater_of_Worlds': 4}
+== Bok  n_levies=13  wins 0/6
+  kill s (wins): [] ; boss left (losses) k: ['26.0', '25.5', '24.3', '22.7', '27.1', '26.2']
+  first levy death s: ['6.0', '7.7', '4.9', '11.7', '6.4', '7.3'] ; deaths: [13, 13, 13, 13, 13, 13]/13
+  hits taken dmg: head 9032 body 4122 tail 207 proj 0  (head% 68 body% 31 tail% 2 proj% 0.0)
+  proj by name: []
+  class dmg share (P pierce,X explosive,D DoT-weapon): {'P': '47%', 'X': '18%', '-': '17%', 'PXD': '12%', 'PD': '4%', 'PX': '2%'}  uncredited(DoT/etc) share of boss dmg 7%
+  top weapons: [('Aqua_Scepter', 5601), ('Magic_Missile', 4689), ('Flamelash', 3292), ('Starfury', 2346), ('Imp_Staff', 1754), ('Muramasa', 1376)]
+  killers: {'Eater_of_Worlds/Eater_of_Worlds': 78}
+== Cok  n_levies=16  wins 0/6
+  kill s (wins): [] ; boss left (losses) k: ['21.7', '24.7', '25.5', '25.3', '21.0', '8.8']
+  first levy death s: ['7.6', '6.7', '8.0', '9.5', '15.6', '17.9'] ; deaths: [16, 16, 16, 16, 16, 16]/16
+  hits taken dmg: head 15327 body 8752 tail 417 proj 0  (head% 63 body% 36 tail% 2 proj% 0.0)
+  proj by name: []
+  class dmg share (P pierce,X explosive,D DoT-weapon): {'P': '51%', '-': '27%', 'PXD': '10%', 'PX': '5%', 'X': '5%', 'PD': '2%'}  uncredited(DoT/etc) share of boss dmg 8%
+  top weapons: [('Aqua_Scepter', 9966), ('Starfury', 5780), ('Flamelash', 4514), ('Muramasa', 4163), ('Imp_Staff', 3961), ('Space_Gun', 2933)]
+  killers: {'Eater_of_Worlds/Eater_of_Worlds': 96}
+== Cn13  n_levies=13  wins 6/6
+  kill s (wins): ['37', '37', '23', '33', '40', '36'] ; boss left (losses) k: []
+  first levy death s: ['16.8', '6.0', '13.7', '19.6', '12.5', '26.4'] ; deaths: [2, 4, 1, 3, 1, 2]/13
+  hits taken dmg: head 11347 body 2538 tail 157 proj 0  (head% 81 body% 18 tail% 1 proj% 0.0)
+  proj by name: []
+  class dmg share (P pierce,X explosive,D DoT-weapon): {'P': '40%', 'PD': '18%', 'PX': '17%', 'PXD': '12%', 'X': '7%', 'D': '5%', '-': '1%'}  uncredited(DoT/etc) share of boss dmg 32%
+  top weapons: [('Aqua_Scepter', 13440), ('Flamelash', 10690), ('Magic_Missile', 8561), ('Space_Gun', 8193), ('C:Shadethrower', 7224), ('C:Fungicide', 6447)]
+  killers: {'Eater_of_Worlds/Eater_of_Worlds': 13}
+== Bn16  n_levies=16  wins 6/6
+  kill s (wins): ['36', '63', '51', '39', '30', '38'] ; boss left (losses) k: []
+  first levy death s: ['9.7', '21.4', '17.4', '14.0', '22.4', '18.8'] ; deaths: [2, 13, 3, 2, 2, 2]/16
+  hits taken dmg: head 17212 body 4730 tail 439 proj 0  (head% 77 body% 21 tail% 2 proj% 0.0)
+  proj by name: []
+  class dmg share (P pierce,X explosive,D DoT-weapon): {'P': '45%', 'PX': '13%', 'X': '13%', 'PXD': '10%', 'PD': '9%', 'D': '7%', '-': '4%'}  uncredited(DoT/etc) share of boss dmg 22%
+  top weapons: [('Space_Gun', 19180), ('Magic_Missile', 18795), ('Aqua_Scepter', 17971), ('C:SandstreamScepter', 16219), ('C:HyphaeRod', 10922), ('Flamelash', 7927)]
+  killers: {'Eater_of_Worlds/Eater_of_Worlds': 24}
+== A  n_levies=13  wins 2/6
+  kill s (wins): ['53', '64'] ; boss left (losses) k: ['4.1', '14.4', '11.9', '2.0']
+  first levy death s: ['16.7', '24.4', '9.2', '16.3', '12.2', '11.1'] ; deaths: [13, 13, 13, 10, 13, 12]/13
+  hits taken dmg: head 16940 body 5707 tail 476 proj 0  (head% 73 body% 25 tail% 2 proj% 0.0)
+  proj by name: []
+  class dmg share (P pierce,X explosive,D DoT-weapon): {'P': '45%', 'X': '24%', 'PXD': '14%', '-': '12%', 'D': '5%', 'PD': '1%'}  uncredited(DoT/etc) share of boss dmg 19%
+  top weapons: [('Magic_Missile', 28566), ('Aqua_Scepter', 23835), ('Flamelash', 16456), ('C:SandstreamScepter', 9288), ('Imp_Staff', 7310), ('Boomstick', 4463)]
+  killers: {'Eater_of_Worlds/Eater_of_Worlds': 74}

@@ -55,9 +55,9 @@ namespace Levy.Content.Items.OOA
 	}
 
 	/// <summary>Barracks Keg (class keeps its old name): defense.</summary>
-	public class BarracksAle : DrinkItem { public override int Drink => 0; public override int PriceCopper => Item.buyPrice(silver: 4); public override int Amount => LevyConstants.AleDefense; protected override (int w, int h) Size => (28, 30); }
+	public class BarracksAle : DrinkItem { public override int Drink => 0; public override int PriceCopper => Item.buyPrice(silver: 4); public override int Amount => LevyConstants.AleDefense; protected override (int w, int h) Size => (38, 30); }
 	/// <summary>Case of Stout (class keeps its old name): damage.</summary>
-	public class BlackStout : DrinkItem { public override int Drink => 1; public override int PriceCopper => Item.buyPrice(silver: 5); public override int Amount => (int)System.Math.Round(LevyConstants.StoutDamage * 100f); protected override (int w, int h) Size => (26, 30); }
+	public class BlackStout : DrinkItem { public override int Drink => 1; public override int PriceCopper => Item.buyPrice(silver: 5); public override int Amount => (int)System.Math.Round(LevyConstants.StoutDamage * 100f); protected override (int w, int h) Size => (38, 26); }
 	/// <summary>Rum Cooler (class keeps its old name): critical strike chance.</summary>
 	public class SpicedRum : DrinkItem { public override int Drink => 2; public override int PriceCopper => Item.buyPrice(silver: 5); public override int Amount => (int)System.Math.Round(LevyConstants.RumCrit); protected override (int w, int h) Size => (28, 26); }
 

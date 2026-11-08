@@ -383,7 +383,7 @@ namespace Levy.Common.Logistics
 			// find-this-item picker candidates: the armory's own storage
 			var a = new ArmoryTE(); a.Storage[3] = Make(ItemID.ChlorophyteOre, 10); a.Storage[9] = Make(ItemID.IronBar, 4);
 			var cand = FindTarget.Candidates(a);
-			Check(cand.Contains(ItemID.ChlorophyteOre) && cand.Contains(ItemID.IronBar) && cand.Count == 2, "the find-this-item chooser lists the armory's items when no network is linked");
+			Check(cand.Contains(ItemID.ChlorophyteOre) && cand.Contains(ItemID.IronBar) && cand.Contains(ItemID.LifeCrystal) && cand.Count > 2, "the find-this-item chooser lists the armory's items plus every other item when no network is linked");
 		}
 	}
 }

@@ -21,10 +21,10 @@ namespace Levy.Common
 
 		public static readonly Dictionary<string, ArkNumbers> ArkTable = new()
 		{
-			["ArkoftheAncientsSwungBlade"] = new ArkNumbers(9f, 5f, 0f, 0, 0f),
-			["TrueArkoftheAncientsSwungBlade"] = new ArkNumbers(11f, 6f, 0f, 0, 0f),
-			["ArkoftheElementsSwungBlade"] = new ArkNumbers(13f, 8f, 0f, 80, 0.25f),
-			["ArkoftheCosmosSwungBlade"] = new ArkNumbers(15f, 8f, 19f, 140, 0.35f),
+			["ArkoftheAncientsSwungBlade"] = new ArkNumbers(9f, 4f, 0f, 0, 0f),
+			["TrueArkoftheAncientsSwungBlade"] = new ArkNumbers(11f, 5f, 0f, 0, 0f),
+			["ArkoftheElementsSwungBlade"] = new ArkNumbers(13f, 6f, 0f, 80, 0.25f),
+			["ArkoftheCosmosSwungBlade"] = new ArkNumbers(15f, 6f, 19f, 140, 0.35f),
 		};
 
 		/// <summary>Fallback numbers for an Ark-shaped weapon from another build that is not in <see cref="ArkTable"/>.</summary>

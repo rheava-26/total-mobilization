@@ -141,10 +141,10 @@ namespace Levy.Common.Events
 			Guard("drinks", () =>
 			{
 				var d = new Player(); d.statDefense = new Player.DefenseStat();
-				int def0 = d.statDefense; float dmg0 = d.GetDamage(DamageClass.Generic).Additive, spd0 = d.GetAttackSpeed(DamageClass.Generic);
+				int def0 = d.statDefense; float dmg0 = d.GetDamage(DamageClass.Generic).Additive, spd0 = d.GetCritChance(DamageClass.Generic);
 				Check(DrinkBuffs.Apply(d, ModContent.BuffType<AleBuff>()) && d.statDefense > def0, "Ale adds defense");
 				Check(DrinkBuffs.Apply(d, ModContent.BuffType<StoutBuff>()) && d.GetDamage(DamageClass.Generic).Additive > dmg0, "Stout adds damage");
-				Check(DrinkBuffs.Apply(d, ModContent.BuffType<RumBuff>()) && d.GetAttackSpeed(DamageClass.Generic) > spd0, "Rum adds attack speed");
+				Check(DrinkBuffs.Apply(d, ModContent.BuffType<RumBuff>()) && d.GetCritChance(DamageClass.Generic) > spd0, "Rum adds crit chance");
 				Check(!DrinkBuffs.Apply(d, BuffID.Ironskin), "other buffs are not claimed");
 				var c = new Vector2(1000, 1000);
 				Check(DrinkBuffs.InReach(c, c + new Vector2(LevyConstants.DrinkRadiusTiles * 16f - 8f, 0)) && !DrinkBuffs.InReach(c, c + new Vector2(LevyConstants.DrinkRadiusTiles * 16f + 8f, 0)), "a round reaches the drink radius and no further");

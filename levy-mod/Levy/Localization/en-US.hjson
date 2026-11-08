@@ -171,17 +171,22 @@ Mods: {
 
 			BarracksAle: {
 				DisplayName: Barracks Ale
-				Tooltip: Your levies within {0} tiles gain defense for {1} minutes. They aim worse while drunk.
+				Tooltip: Increases defense by {2} for your levies within {0} tiles for {1} minutes. Drunk levies have {3}% more aim error.
 			}
 
 			BlackStout: {
 				DisplayName: Black Stout
-				Tooltip: Your levies within {0} tiles deal more damage for {1} minutes. They aim worse while drunk.
+				Tooltip: Increases damage by {2}% for your levies within {0} tiles for {1} minutes. Drunk levies have {3}% more aim error.
+			}
+
+			MeteorBeacon: {
+				DisplayName: Meteor Beacon
+				Tooltip: Calls down a meteor when used at night. Needs the Eater of Worlds or Brain of Cthulhu defeated to craft.
 			}
 
 			SpicedRum: {
 				DisplayName: Spiced Rum
-				Tooltip: Your levies within {0} tiles attack faster for {1} minutes. They aim worse while drunk.
+				Tooltip: Increases critical strike chance by {2}% for your levies within {0} tiles for {1} minutes. Drunk levies have {3}% more aim error.
 			}
 		}
 

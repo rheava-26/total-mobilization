@@ -253,7 +253,7 @@ namespace Levy.Content.NPCs
 		{
 			// The mod's own buffs: their types are assigned at load, so they cannot be switch cases and are matched by type here, ahead of the vanilla switch.
 			if (buffType == ModContent.BuffType<MoraleBuff>()) { MoraleBuff.Apply(d); return 0; }                      // Princess / Guide / Merchant: damage + defense + crit
-			if (global::Levy.Content.Buffs.DrinkBuffs.Apply(d, buffType)) return 0;                                            // Tavernkeep drinks: defense / damage / attack speed
+			if (global::Levy.Content.Buffs.DrinkBuffs.Apply(d, buffType)) return 0;                                            // Tavernkeep drinks: defense / damage / crit
 			if (buffType == ModContent.BuffType<DryadsBlessingBuff>()) return DryadsBlessingBuff.Apply(d);              // Dryad: defense + thorns + regeneration
 			if (buffType >= BuffID.Count && Common.Team.TeamItems.ApplyStatBuff(d, buffType)) return 0;                 // a team item's mod buff (Calamity Chi / Affliction / healing auras): the mod's own Update on the dummy
 

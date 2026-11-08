@@ -9,13 +9,15 @@ using Levy.Content.Buffs;
 namespace Levy.Content.Items.OOA
 {
 	/// <summary>
-	/// A round for the army: using a drink buffs every levy of yours within <see cref="LevyConstants.DrinkRadiusTiles"/> tiles for five minutes, and they aim worse for it.
+	/// A round for the army: using a drink buffs every levy of yours within <see cref="LevyConstants.DrinkRadiusTiles"/> tiles for five minutes, and they aim worse for it. Each drink states its exact effect in its tooltip.
 	/// Sold by the Tavernkeep for coins. Single player serves the round directly; a client asks the server (the soldiers' stats live there).
 	/// </summary>
 	public abstract class DrinkItem : ModItem
 	{
 		public abstract int Drink { get; }
 		public abstract int PriceCopper { get; }
+		/// <summary>The drink's number as the tooltip shows it (8 defense, 15% damage, 10% critical strike chance).</summary>
+		public abstract int Amount { get; }
 
 		public override void SetStaticDefaults() { Item.ResearchUnlockCount = 1; }
 
@@ -25,7 +27,7 @@ namespace Levy.Content.Items.OOA
 			Item.UseSound = SoundID.Item3; Item.consumable = true; Item.maxStack = 30; Item.rare = ItemRarityID.Blue; Item.value = PriceCopper;
 		}
 
-		public override Terraria.Localization.LocalizedText Tooltip => base.Tooltip.WithFormatArgs(LevyConstants.DrinkRadiusTiles, LevyConstants.DrinkDurationTicks / 3600);
+		public override Terraria.Localization.LocalizedText Tooltip => base.Tooltip.WithFormatArgs(LevyConstants.DrinkRadiusTiles, LevyConstants.DrinkDurationTicks / 3600, Amount, (int)System.Math.Round((LevyConstants.DrunkAimErrorMult - 1f) * 100f));
 
 		public override bool? UseItem(Player player)
 		{
@@ -49,9 +51,9 @@ namespace Levy.Content.Items.OOA
 		}
 	}
 
-	public class BarracksAle : DrinkItem { public override int Drink => 0; public override int PriceCopper => Item.buyPrice(silver: 40); }
-	public class BlackStout : DrinkItem { public override int Drink => 1; public override int PriceCopper => Item.buyPrice(silver: 60); }
-	public class SpicedRum : DrinkItem { public override int Drink => 2; public override int PriceCopper => Item.buyPrice(silver: 80); }
+	public class BarracksAle : DrinkItem { public override int Drink => 0; public override int PriceCopper => Item.buyPrice(silver: 4); public override int Amount => LevyConstants.AleDefense; }
+	public class BlackStout : DrinkItem { public override int Drink => 1; public override int PriceCopper => Item.buyPrice(silver: 5); public override int Amount => (int)System.Math.Round(LevyConstants.StoutDamage * 100f); }
+	public class SpicedRum : DrinkItem { public override int Drink => 2; public override int PriceCopper => Item.buyPrice(silver: 5); public override int Amount => (int)System.Math.Round(LevyConstants.RumCrit); }
 
 	public class DrinkNet : ModSystem
 	{

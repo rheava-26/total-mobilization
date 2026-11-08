@@ -12,7 +12,7 @@ namespace Levy.Content.Buffs
 	public class AleBuff : DrinkBuff { public override int IconBuff => BuffID.Ironskin; }
 	/// <summary>Black Stout: +damage.</summary>
 	public class StoutBuff : DrinkBuff { public override int IconBuff => BuffID.Wrath; }
-	/// <summary>Spiced Rum: faster attacks.</summary>
+	/// <summary>Spiced Rum: +critical strike chance.</summary>
 	public class RumBuff : DrinkBuff { public override int IconBuff => BuffID.Swiftness; }
 
 	public abstract class DrinkBuff : ModBuff
@@ -37,7 +37,7 @@ namespace Levy.Content.Buffs
 		{
 			if (buffType == ModContent.BuffType<AleBuff>()) { d.statDefense += LevyConstants.AleDefense; return true; }
 			if (buffType == ModContent.BuffType<StoutBuff>()) { d.GetDamage(DamageClass.Generic) += LevyConstants.StoutDamage; return true; }
-			if (buffType == ModContent.BuffType<RumBuff>()) { d.GetAttackSpeed(DamageClass.Generic) += LevyConstants.RumAttackSpeed; return true; }
+			if (buffType == ModContent.BuffType<RumBuff>()) { d.GetCritChance(DamageClass.Generic) += LevyConstants.RumCrit; return true; }
 			return false;
 		}
 
@@ -70,19 +70,6 @@ namespace Levy.Content.Buffs
 				n++;
 			}
 			return n;
-		}
-	}
-
-	/// <summary>Spiced Rum's quicker attacks: the soldier's attack cooldown is shaved a tick now and then (the same trick the Thorium driver uses for bard haste).</summary>
-	public class DrinkSystem : ModSystem
-	{
-		public override void PostUpdateNPCs()
-		{
-			if (global::Levy.Common.Util.LevyUtil.IsClient) return;
-			int rum = ModContent.BuffType<RumBuff>();
-			float chance = LevyConstants.RumAttackSpeed / (1f + LevyConstants.RumAttackSpeed);
-			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
-				if (s.AttackCooldown > 1 && s.NPC.HasBuff(rum) && Main.rand.NextFloat() < chance) s.AttackCooldown--;
 		}
 	}
 }

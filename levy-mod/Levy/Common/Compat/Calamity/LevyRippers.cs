@@ -1,7 +1,11 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using System.IO;
+using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.Audio;
+using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace Levy.Common.Compat.Calamity
@@ -22,6 +26,13 @@ namespace Levy.Common.Compat.Calamity
 		public static bool Disabled = Environment.GetEnvironmentVariable("LEVY_RIPPERS") == "0";
 		/// <summary>Counters for the harness: how many times a levy switched Rage / Adrenaline on, how many hits the full-bar reduction cut, how many hits cost adrenaline.</summary>
 		public static int RageActivations, AdrenalineActivations, DrCuts, AdrenalineLost;
+		/// <summary>Rogue alignment counters: activations fired on a full stealth bar, fired by the hold timeout, stealth strikes seen, and how many of those landed inside a burning mode. Plus sound/text requests and booster copies.</summary>
+		public static int RogueAligned, RogueTimeouts, Strikes, StrikesBoosted, FxRequests, BoosterCopies;
+		/// <summary>A rogue holds a full bar this long (ticks) for its stealth to fill; then it fires anyway.</summary>
+		public const int RogueHoldTicks = 10 * 60;
+		/// <summary>The six permanent Rage / Adrenaline upgrades (Mushroom Plasma Root, Infernal Blood, Red Lightning Container, Electrolyte Gel Pack, Starlight Fuel Cell, Ectoheart).</summary>
+		private static readonly string[] BoosterNames = { "rageBoostOne", "rageBoostTwo", "rageBoostThree", "adrenalineBoostOne", "adrenalineBoostTwo", "adrenalineBoostThree" };
+		private static FieldInfo[] _boosters; private static FieldInfo _stealth, _stealthMax, _draedon, _rageSnd, _adrSnd, _nanoSnd; private static MethodInfo _strikeAvail;
 
 		/// <summary>A boss must be alive within this many pixels of a levy for it to switch a full bar on.</summary>
 		public const float ActivateRangePx = 70f * 16f;
@@ -57,6 +68,11 @@ namespace Levy.Common.Compat.Calamity
 				_bossesAlive = _cpT.GetField("areThereAnyDamnBosses", S);
 				_revenge = world.GetField("revenge", S);
 				_rageEnabled = _cpT.GetProperty("RageEnabled", I); _adrEnabled = _cpT.GetProperty("AdrenalineEnabled", I); _shielding = _cpT.GetProperty("TotalEnergyShielding", I);
+				_boosters = new FieldInfo[BoosterNames.Length];
+				for (int i = 0; i < BoosterNames.Length; i++) _boosters[i] = _cpT.GetField(BoosterNames[i], I);
+				_stealth = _cpT.GetField("rogueStealth", I); _stealthMax = _cpT.GetField("rogueStealthMax", I); _draedon = _cpT.GetField("draedonsHeart", I);
+				_strikeAvail = _cpT.GetMethod("StealthStrikeAvailable", I, null, Type.EmptyTypes, null);
+				_rageSnd = _cpT.GetField("RageActivationSound", S); _adrSnd = _cpT.GetField("AdrenalineActivationSound", S); _nanoSnd = _cpT.GetField("NanomachinesActivationSound", S);
 				_updateRippers = _cpT.GetMethod("UpdateRippers", I, null, Type.EmptyTypes, null);
 				_loseAdrenaline = _cpT.GetMethod("LoseAdrenalineOnHurt", I);
 				_applyRippers = util.GetMethod("ApplyRippersToDamage", S);
@@ -129,7 +145,81 @@ namespace Levy.Common.Compat.Calamity
 			catch (Exception) { return 1f; }
 		}
 
+		/// <summary>The commander's permanent upgrades, copied onto a levy's dummy (Calamity keeps them out of ResetEffects, so a set value stays). Returns true when something changed.</summary>
+		public static bool CopyBoosters(Player commander, object levyCp)
+		{
+			Init(); if (!_ok || levyCp == null || commander == null || _boosters == null) return false;
+			object src = Of(commander); if (src == null || ReferenceEquals(src, levyCp)) return false;
+			bool changed = false;
+			try
+			{
+				foreach (FieldInfo f in _boosters)
+				{
+					if (f == null) continue;
+					bool v = (bool)f.GetValue(src);
+					if ((bool)f.GetValue(levyCp) != v) { f.SetValue(levyCp, v); changed = true; }
+				}
+			}
+			catch (Exception e) { Warn("CopyBoosters", e); }
+			if (changed) BoosterCopies++;
+			return changed;
+		}
+
+		/// <summary>Harness: set all six upgrades on a player. How many of the six a CalamityPlayer carries.</summary>
+		public static void GrantBoosters(Player p) { Init(); object cp = Of(p); if (cp == null || _boosters == null) return; foreach (FieldInfo f in _boosters) f?.SetValue(cp, true); }
+		public static int BoosterCount(object cp) { int n = 0; if (cp != null && _boosters != null) foreach (FieldInfo f in _boosters) if (f != null && (bool)f.GetValue(cp)) n++; return n; }
+
+		/// <summary>A rogue (Calamity gave the dummy a stealth bar): max stealth above zero.</summary>
+		public static bool IsRogue(object cp) { try { return cp != null && _stealthMax != null && (float)_stealthMax.GetValue(cp) > 0f; } catch (Exception) { return false; } }
+		public static float Stealth(object cp) { try { return _stealth == null ? 0f : (float)_stealth.GetValue(cp); } catch (Exception) { return 0f; } }
+		/// <summary>Calamity's own test: the bar holds enough for the next throw to be a stealth strike.</summary>
+		public static bool StealthStrikeReady(object cp) { try { return _strikeAvail != null && (bool)_strikeAvail.Invoke(cp, null); } catch (Exception) { return false; } }
+
+		/// <summary>Calamity's activation sound for the mode (kind 0 Rage, 1 Adrenaline, 2 Nanomachines with Draedon's Heart).</summary>
+		public static byte SoundKind(object cp, bool adrenaline)
+		{
+			if (!adrenaline) return 0;
+			try { return (byte)(_draedon != null && (bool)_draedon.GetValue(cp) ? 2 : 1); } catch (Exception) { return 1; }
+		}
+
+		/// <summary>Client: play that sound at the position through the army throttle.</summary>
+		public static void PlaySound(byte kind, Vector2 pos)
+		{
+			Init(); if (!_ok || Main.dedServ) return;
+			try
+			{
+				FieldInfo f = kind == 0 ? _rageSnd : kind == 2 ? _nanoSnd : _adrSnd;
+				if (f == null) return;
+				global::Levy.Common.Audio.ArmySoundThrottle.PlayAsArmy((SoundStyle)f.GetValue(null), pos);
+			}
+			catch (Exception e) { Warn("PlaySound", e); }
+		}
+
+		/// <summary>Server / single player: tell every client (or play here in single player) that this levy just switched a mode on.</summary>
+		public static void Announce(global::Levy.Content.NPCs.SoldierNPC s, byte kind)
+		{
+			FxRequests++;
+			if (Main.netMode == NetmodeID.SinglePlayer) PlaySound(kind, s.NPC.Center);
+			else if (Main.netMode == NetmodeID.Server)
+			{
+				ModPacket p = global::Levy.Common.Net.LevyPackets.New(global::Levy.Common.Net.LevyPacket.RipperFx);
+				p.Write((short)s.NPC.whoAmI); p.Write(kind); p.Send();
+			}
+		}
+
+		internal static void OnFxPacket(BinaryReader r, int from)
+		{
+			short idx = r.ReadInt16(); byte kind = r.ReadByte();
+			if (Main.netMode != NetmodeID.MultiplayerClient || idx < 0 || idx >= Main.maxNPCs || !Main.npc[idx].active) return;
+			PlaySound(kind, Main.npc[idx].Center);
+		}
+
 		private static bool _warned;
 		private static void Warn(string what, Exception e) { if (_warned) return; _warned = true; Levy.Instance?.Logger.Warn("LEVYRIPPERS: " + what + " threw (once): " + e.Message); }
+	}
+
+	public class LevyRippersNet : ModSystem
+	{
+		public override void Load() { if (ModLoader.HasMod("CalamityMod")) global::Levy.Common.Net.LevyPackets.Register(global::Levy.Common.Net.LevyPacket.RipperFx, LevyRippers.OnFxPacket); }
 	}
 }

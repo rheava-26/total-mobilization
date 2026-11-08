@@ -86,6 +86,7 @@ namespace Levy.Common.Net
 		ObserveList, ObservePos, // server -> one client: Command & Observe (camera list, followed-levy position)
 		LogisticsCraft, // client -> server: craft one recipe now from the sender's inventory, nearby chests and the armory stock (see LogisticsActions)
 		TeamEffect, TeamRequest, // server -> one client / client -> server: team items (Common/Team, see TeamNet); appended so no existing value moves
+		RipperFx, // server -> clients: short npcIndex, byte kind (0 Rage, 1 Adrenaline, 2 Nanomachines): Calamity's activation sound at that levy, through the army sound throttle (LevyRippers)
 	}
 
 	public static class LevyPackets

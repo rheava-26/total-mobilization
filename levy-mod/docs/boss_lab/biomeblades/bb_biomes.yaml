@@ -1,0 +1,37 @@
+# Each Biome Blade the way the shipped behaviour uses it: the commander stands in a biome and the levies attune to it (no bb= forcing), against comparable swords.
+# King Slime x100 life, 16 levies each carrying the one weapon, commander out of the fight. Counters (attunedTo / by) in BB-FIGHT lines of server.log.gz.
+# zswap: the commander walks into a second biome 15 s in; the levies re-attune and the previous attunement stays as the secondary.
+name: bb_biomes
+boss: kslime
+gear: postskel.best
+seeds: 3
+cap: 40
+bhp: 100
+hp: 3000
+cmd: far
+env: {LEVY_BB_STATS: 1}
+cells:
+  - {name: broken_surface, cw: CalamityMod/BrokenBiomeBlade}
+  - {name: broken_jungle, cw: CalamityMod/BrokenBiomeBlade, zone: jungle}
+  - {name: broken_hell, cw: CalamityMod/BrokenBiomeBlade, zone: hell}
+  - {name: broken_snow, cw: CalamityMod/BrokenBiomeBlade, zone: snow}
+  - {name: broken_snow_then_hell, cw: CalamityMod/BrokenBiomeBlade, zone: snow, zswap: "hell@15"}
+  - {name: biome_surface, cw: CalamityMod/TrueBiomeBlade}
+  - {name: biome_jungle, cw: CalamityMod/TrueBiomeBlade, zone: jungle}
+  - {name: biome_hell, cw: CalamityMod/TrueBiomeBlade, zone: hell}
+  - {name: biome_snow, cw: CalamityMod/TrueBiomeBlade, zone: snow}
+  - {name: biome_jungle_then_hallow, cw: CalamityMod/TrueBiomeBlade, zone: jungle, zswap: "hallow@15"}
+  - {name: omega_surface, cw: CalamityMod/OmegaBiomeBlade}
+  - {name: omega_jungle, cw: CalamityMod/OmegaBiomeBlade, zone: jungle}
+  - {name: omega_hell, cw: CalamityMod/OmegaBiomeBlade, zone: hell}
+  - {name: omega_hallow, cw: CalamityMod/OmegaBiomeBlade, zone: hallow}
+  - {name: omega_jungle_then_hell, cw: CalamityMod/OmegaBiomeBlade, zone: jungle, zswap: "hell@15"}
+  - {name: galaxia_surface, cw: CalamityMod/FourSeasonsGalaxia}
+  - {name: galaxia_hell, cw: CalamityMod/FourSeasonsGalaxia, zone: hell}
+  - {name: galaxia_snow, cw: CalamityMod/FourSeasonsGalaxia, zone: snow}
+  - {name: galaxia_hallow, cw: CalamityMod/FourSeasonsGalaxia, zone: hallow}
+  - {name: excalibur, cw: Excalibur}
+  - {name: terrablade, cw: Terra Blade}
+  - {name: muramasa, cw: Muramasa}
+  - {name: true_ark, cw: CalamityMod/TrueArkoftheAncients}
+  - {name: exoblade, cw: CalamityMod/Exoblade}

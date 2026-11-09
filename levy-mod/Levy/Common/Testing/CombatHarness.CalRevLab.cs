@@ -133,12 +133,18 @@ namespace Levy.Common.Testing
 		}
 		private static bool CrDeathOn() { try { return _crDeathField != null && (bool)_crDeathField.GetValue(null); } catch { return false; } }
 
-		private static void CrApplyZones(Player p)
+		private static void CrApplyZones(Player p, int tick)
 		{
 			var r = _crRunCur; if (r == null) return;
+			string zone = r.Zone; // zswap=<zone>@<seconds>: the commander walks into this biome that many seconds into the fight (Biome Blade re-attunement lab)
+			if (!string.IsNullOrEmpty(r.ZSwap) && r.ZSwap.Contains('@') && int.TryParse(r.ZSwap.Substring(r.ZSwap.IndexOf('@') + 1), out int swapSec) && tick >= swapSec * 60) zone = r.ZSwap.Substring(0, r.ZSwap.IndexOf('@'));
+			global::Levy.Common.Weapons.BiomeBlades.ForcedName = string.IsNullOrEmpty(r.Bb) ? null : r.Bb; // bb=: every Biome Blade holds this attunement (lab)
 			p.ZoneCrimson = r.Boss == "brain" || r.Boss == "perf"; p.ZoneCorrupt = r.Boss == "eow" || r.Boss == "hive"; p.ZoneJungle = r.Jungle; p.ZoneDesert = r.Boss == "ds"; p.ZoneGlowshroom = r.Boss == "crab"; p.ZoneUndergroundDesert = r.Boss == "ds" && r.Arena == "ug";
-			if (r.Zone == "corrupt") { p.ZoneCorrupt = true; p.ZoneCrimson = false; } else if (r.Zone == "crimson") { p.ZoneCrimson = true; p.ZoneCorrupt = false; } else if (r.Zone == "none") { p.ZoneCorrupt = false; p.ZoneCrimson = false; } // zone=: the commander (and the levy dummy that mirrors it) stands in this evil biome
+			if (zone == "corrupt") { p.ZoneCorrupt = true; p.ZoneCrimson = false; } else if (zone == "crimson") { p.ZoneCrimson = true; p.ZoneCorrupt = false; } else if (zone == "none") { p.ZoneCorrupt = false; p.ZoneCrimson = false; } // zone=: the commander (and the levy dummy that mirrors it) stands in this evil biome
+			p.ZoneSnow = false; p.ZoneHallow = false;
+			if (zone == "snow") { p.ZoneSnow = true; } else if (zone == "desert") { p.ZoneDesert = true; } else if (zone == "jungle") { p.ZoneJungle = true; } else if (zone == "hallow") { p.ZoneHallow = true; } // zone=: the commander (and the levy dummy that mirrors it) stands in this biome (Biome Blade labs)
 			p.ZoneOverworldHeight = r.Arena != "ug" && !r.Arena.StartsWith("a3e"); p.ZoneRockLayerHeight = r.Arena == "ug" || r.Arena.StartsWith("a3e"); p.ZoneDirtLayerHeight = false; p.ZoneSkyHeight = false; p.ZoneUnderworldHeight = false;
+			if (zone == "hell") { p.ZoneUnderworldHeight = true; p.ZoneOverworldHeight = false; } else if (zone == "sky") { p.ZoneSkyHeight = true; p.ZoneOverworldHeight = false; }
 		}
 
 		private static string CrPct(long a, long b) => b <= 0 ? "-" : (100.0 * a / b).ToString("0", CultureInfo.InvariantCulture);

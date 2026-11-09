@@ -28,10 +28,10 @@ CalamityMod	ArkoftheCosmos	NEVER		parried and empowered by ArkSwings
 CalamityMod	ArkoftheElements	NEVER		parried and empowered by ArkSwings
 CalamityMod	BrimstoneSword	ALT_FAR	minDist=5	
 CalamityMod	BrinyBaron	ALT_FAR	minDist=5	
-CalamityMod	BrokenBiomeBlade	NEVER		
+CalamityMod	BrokenBiomeBlade	NEVER		attuned and driven by BiomeBlades
 CalamityMod	DeathsAscension	NEVER		area alt measured -21% in a pack
 CalamityMod	Exoblade	DASH_CLOSE	minDist=14	
-CalamityMod	FourSeasonsGalaxia	NEVER		
+CalamityMod	FourSeasonsGalaxia	NEVER		attuned and driven by BiomeBlades
 CalamityMod	FracturedArk	NEVER		parried and empowered by ArkSwings
 CalamityMod	GalileoGladius	METER_READY	meter=AvailableStarburst;min=10;tough=1	
 CalamityMod	GildedProboscis	NEVER		dash alt measured -47%/-50% (boss/pack)
@@ -41,13 +41,13 @@ CalamityMod	LionHeart	GUARD	near=8;hpBelow=0.6;enemies=3
 CalamityMod	Lucrecia	METER_READY	meter=darklightEnergy;min=full;tough=1	
 CalamityMod	MantisClaws	ALT_AOE	minEnemies=2;radius=6;maxDist=6	
 CalamityMod	MirrorBlade	GUARD	near=10;hpBelow=0.7	
-CalamityMod	OmegaBiomeBlade	NEVER		
+CalamityMod	OmegaBiomeBlade	NEVER		attuned and driven by BiomeBlades
 CalamityMod	PhotonRipper	NEVER		
 CalamityMod	SaharaSlicers	METER_READY	meter=saharaSlicersBolts;min=1;tough=0	
 CalamityMod	StygianShield	ALT_FAR	minDist=4	
 CalamityMod	TheDarkMaster	PLACE	proj=DarkMasterClone;maxOut=1;maxDist=12;tough=1	
 CalamityMod	TrueArkoftheAncients	NEVER		parried and empowered by ArkSwings
-CalamityMod	TrueBiomeBlade	NEVER		
+CalamityMod	TrueBiomeBlade	NEVER		attuned and driven by BiomeBlades
 CalamityMod	Violence	ALT_HEAVY	tough=1;minDist=4;maxDist=30	
 CalamityMod	WulfrumScrewdriver	NEVER		banked-screw alt measured -27% (boss)
 CalamityMod	YateveoBloom	ALT_HEAVY	tough=1;minDist=0;maxDist=9	

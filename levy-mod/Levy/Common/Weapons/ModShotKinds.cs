@@ -14,10 +14,11 @@ namespace Levy.Common.Weapons
 	///  * <see cref="ModShotKind.Holdout"/>: a modded projectile that reads <c>Player.channel</c>. The soldier HOLDS it like a player (<see cref="HeldWeapons"/>, dummy in slot 255, cursor on the target) and lets go after a charge.
 	///  * <see cref="ModShotKind.Shortsword"/>: a Calamity <c>BaseShortswordProjectile</c> blade (a stab that exists for 12 ticks next to its owner): the soldier stabs with Levy's own thrust at blade reach.
 	///  * <see cref="ModShotKind.ArkSwing"/>: a Calamity Ark (Fractured Ark ... Ark of the Cosmos): the item's shot is a placeholder and its Shoot hook spawns a swung blade anchored to its owner, or (right button) a parry holdout. The soldier swings, parries and empowers the next swings like a player (<see cref="ArkSwings"/>).
+	///  * <see cref="ModShotKind.BiomeBlade"/>: a Calamity Biome Blade (Broken, Biome, Omega, Four Seasons Galaxia): the item carries attunements and its Shoot hook spawns the attunement's blade. The soldier attunes to the biome and uses the attunement's real attacks (<see cref="BiomeBlades"/>).
 	///  Not a kind: a Calamity mace flail (<c>BaseMaceFlailProjectile</c> / <c>BaseFlailProjectile</c>: spun by its owner, thrown at the cursor when the button is let go) also reads the owner's button but is NOT held. The commander never holds the button,
 	///  so a plain shot spins through its windup and throws at once; with the cursor on the target (<see cref="SteerToTargetProjectile"/>) the throw lands. Holding it as a melee holdout was measured worse (it stood at 7 tiles, below the throw's reach).
 	/// </summary>
-	public enum ModShotKind { None, Holdout, Shortsword, ArkSwing }
+	public enum ModShotKind { None, Holdout, Shortsword, ArkSwing, BiomeBlade }
 
 	/// <summary>How long a charge-by-button holdout is held before the button is let go, and how long it lingers after the release.</summary>
 	public sealed class ChargePlan { public readonly int HoldTicks, LingerTicks; public ChargePlan(int hold, int linger) { HoldTicks = hold; LingerTicks = linger; } }
@@ -130,6 +131,8 @@ namespace Levy.Common.Weapons
 				}
 			// An Ark: a melee item whose Shoot hook spawns an owner-anchored swung blade and a parry holdout (found from the hook's own code, not from a name).
 			if (item.ModItem?.Mod.Name == "CalamityMod" && item.CountsAsClass(DamageClass.Melee) && ArkSwings.IsArk(item)) return ModShotKind.ArkSwing;
+			// A Biome Blade: a melee item that carries attunements (found from the item's own fields).
+			if (item.ModItem?.Mod.Name == "CalamityMod" && item.CountsAsClass(DamageClass.Melee) && BiomeBlades.IsBiomeBlade(item)) return ModShotKind.BiomeBlade;
 			// A melee weapon whose shot is a held stab is a melee weapon: it fights at blade reach with Levy's own stab.
 			if (shortsword && item.CountsAsClass(DamageClass.Melee)) return ModShotKind.Shortsword;
 			if (mace) return ModShotKind.None; // thrown at the cursor, not held (see the class summary)

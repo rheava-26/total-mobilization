@@ -64,11 +64,17 @@ namespace Levy.Common.Logistics
 			var res = new List<Reach>();
 			bool via = viaPylons ?? PylonReachOn;
 			pylons ??= SettlementSystem.PylonPoints();
+			Vector2 anchor = a.Center;
+			if (via && SettlementSystem.NearestValidPylon(anchor, pylons) < 0) // armory off to the side of the pylon: its settlement's linking pylon stands in for it
+			{
+				var home = a.LinkedBarracks(); var link = home == null ? default : SettlementSystem.Instance.LinkOf(home);
+				if (link.Linked) anchor = new Vector2((link.Pylon.X + 1.5f) * LevyConstants.TilePx, (link.Pylon.Y + 2f) * LevyConstants.TilePx);
+			}
 			foreach (var n in Main.npc)
 			{
 				if (n == null || !n.active || !n.townNPC || n.ModNPC is SoldierNPC) continue;
 				bool inBox = Math.Abs(n.Center.X / 16f - a.Position.X) <= LevyConstants.SettlementRadiusX && Math.Abs(n.Center.Y / 16f - a.Position.Y) <= LevyConstants.SettlementRadiusY;
-				var (ok, py) = via ? ReachOf(a.Center, n.Center, inBox, pylons, true) : (LegacyReach(a.Center, n.Center, inBox, pylons), (string)null);
+				var (ok, py) = via ? ReachOf(anchor, n.Center, inBox, pylons, true) : (LegacyReach(a.Center, n.Center, inBox, pylons), (string)null);
 				if (ok) res.Add(new Reach { Keeper = n, Pylon = py });
 			}
 			return res;

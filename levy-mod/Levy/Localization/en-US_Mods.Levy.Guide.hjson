@@ -243,7 +243,7 @@ Pages: {
 			Connect the heart to a Storage Heart with connectors.
 			Orders and buying draw from the network, and overflow goes into it.
 			An Armory near a Storage Heart, Storage Access or Remote Access can issue gear from that network.
-			Armories near a pylon pool their stored gear with each other.
+			Armories in a settlement with a pylon pool their stored gear with each other.
 			'''
 	}
 

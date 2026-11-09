@@ -1,0 +1,3 @@
+# Pylon network strings. Keys are relative to Mods.Levy.Pylon.
+Linked: Pylon network: {0}, {1} tiles away.
+NotLinked: No pylon links this settlement. One must stand within {0} x {1} tiles of the Barracks.

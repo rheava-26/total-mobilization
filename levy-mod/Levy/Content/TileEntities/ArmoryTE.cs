@@ -393,7 +393,8 @@ namespace Levy.Content.TileEntities
 		internal static float ArmorScore(Item it) =>
 			WeaponClassifier.RarityTier(it.rare) * LevyConstants.ArmorRarityWeight
 			+ it.defense * LevyConstants.ArmorDefenseWeight
-			+ (float)Math.Log10(1.0 + Math.Max(0, it.value)) * LevyConstants.ArmorValueWeight;
+			+ (float)Math.Log10(1.0 + Math.Max(0, it.value)) * LevyConstants.ArmorValueWeight
+			+ (GearPreferred(it) ? ArmoryRules.GearPreferBonus : 0f); // a piece (or set) the player marked as preferred is dealt first
 
 		/// <summary>Strength of an accessory: what it does (defense, regen / damage-reduction read, class fit, upgrade chain), with rarity only a small tie-break. Older note: rarity tier first, then defense, value (which carries the prefix's worth), a flat bonus for any prefix, and how much damage it adds to the soldier's class.</summary>
 		private static float AccessoryScore(Item it, DamageClass cls) =>
@@ -404,7 +405,8 @@ namespace Levy.Content.TileEntities
 			+ AccessoryEffect.Value(it)
 			+ AccessoryProgression.Bonus(it) // a direct upgrade always outranks what it was made from
 			+ ArmorDoctrine.AccessoryClassFit(it, cls) * LevyConstants.AccessoryClassFitWeight
-			+ Math.Max(0, AccessoryAggro.Of(it)) * LevyConstants.Targeting.AccessoryAggroWeight; // taunt gear leans toward the soldiers who tank for the player
+			+ Math.Max(0, AccessoryAggro.Of(it)) * LevyConstants.Targeting.AccessoryAggroWeight // taunt gear leans toward the soldiers who tank for the player
+			+ (GearPreferred(it) ? ArmoryRules.GearPreferBonus : 0f); // an accessory the player marked as preferred is dealt first
 
 		/// <summary>Vanilla accessory rules: never two of one type, never two pairs of wings, and whatever the mods forbid pairing.</summary>
 		private static bool CanWearWith(Item[] worn, Item it)
@@ -954,7 +956,10 @@ namespace Levy.Content.TileEntities
 			DamageClass cls = null;
 			if (g != null && g.HasWeapon) cls = WeaponClassifier.ItemDamageClass(g.Weapon);
 			if (cls == null && g != null) cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
-			bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(worn, it);
+			int nSlots = Math.Clamp(forSoldier?.AccessorySlots ?? SoldierGear.AccessorySlots, 0, worn?.Length ?? 0);
+			// the last free slot is kept for a non-mobility accessory: a mobility one only goes in while one more slot would still be left for it
+			bool mobRoom = !MobilityFirst || MobilityRoom(worn, nSlots);
+			bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(worn, it) && (mobRoom || !AccessoryMobility.Is(it));
 			// Every levy takes one mobility accessory (wings, then the most extra jumps) before anything else; a second one is only a mild plus.
 			bool hasMob = MobilityFirst && AccessoryMobility.Best(worn) > 0f;
 			if (MobilityFirst && !hasMob) {
@@ -962,7 +967,11 @@ namespace Levy.Content.TileEntities
 				if (m != null) return m;
 			}
 			var claimed = Common.Team.TeamAccessory.Claimed(ServedSoldiers(), forSoldier);
-			return TakeBest(null, 0, 0, 1, Pred, it => AccessoryScore(it, cls) + (hasMob && AccessoryMobility.Is(it) ? LevyConstants.Armory.MobilityStackBonus : 0f) + Common.Team.TeamAccessory.Bonus(it, claimed) - (AccessoryProgression.Redundant(worn, it) ? RedundantPenalty : 0f));
+			float Score(Item it) => AccessoryScore(it, cls) + (hasMob && AccessoryMobility.Is(it) ? LevyConstants.Armory.MobilityStackBonus : 0f) + Common.Team.TeamAccessory.Bonus(it, claimed) - (AccessoryProgression.Redundant(worn, it) ? RedundantPenalty : 0f);
+			var best = TakeBest(null, 0, 0, 1, Pred, Score);
+			if (best != null || mobRoom) return best;
+			// nothing but mobility accessories is stocked: a second one beats an empty slot (a non-mobility one replaces it when it arrives, see AccessoryStep)
+			return TakeBest(null, 0, 0, 1, it => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(worn, it), Score);
 		}
 
 		/// <summary>An item (or its upgrade, or its ingredient) the soldier already wears is only issued when nothing else is stocked.</summary>
@@ -1979,7 +1988,7 @@ namespace Levy.Content.TileEntities
 				changed = true;
 			}
 
-			if (FillSidearm(soldier, g, summoner, primaryFam, primaryMelee)) changed = true;
+			if (FillSidearms(soldier, g, summoner, primaryFam, primaryMelee)) changed = true;
 
 			g.Ammo ??= new Item();
 			if (g.IsLocked(SoldierGear.SlotAmmo)) {
@@ -2010,27 +2019,6 @@ namespace Levy.Content.TileEntities
 			return changed;
 		}
 
-		/// <summary>Gives an empty, unlocked sidearm slot its item: a summoner's complement, a staff or sentry from the armory's sidearm slot, else (ranged / magic primaries) a lesser blade. True if he took one.</summary>
-		private bool FillSidearm(SoldierRecord soldier, SoldierGear g, bool summoner, WeaponFamily primaryFam, bool primaryMelee)
-		{
-			if (g.IsLocked(SoldierGear.SlotSidearm) || g.HasSidearm) return false;
-			Item s = summoner ? TakeSummonerComplement(soldier, primaryFam)
-				: TakeDeployerFromSidearmSlot() // a staff or sentry the player put in the armory's sidearm slot: any class fields it beside his primary
-				?? (primaryMelee ? null // a melee-type primary carries no fallback blade
-				: TakeSidearm(soldier)); // ranged / magic: a lesser blade
-			if (s == null) return false;
-			g.Sidearm = s;
-			return true;
-		}
-
-		/// <summary>The periodic look at an empty sidearm slot (the auto-upgrade never filled one, so a levy enlisted before blades were stocked, or while the plan had claimed them all, stayed without).</summary>
-		private bool FillEmptySidearm(SoldierRecord soldier)
-		{
-			var g = soldier.Gear;
-			if (!g.HasWeapon || g.IsLocked(SoldierGear.SlotSidearm) || g.HasSidearm) return false;
-			var fam = WeaponClassifier.Classify(g.Weapon);
-			return FillSidearm(soldier, g, IsSummonerSoldier(soldier), fam, IsMeleeTypeFamily(fam));
-		}
 
 		/// <summary>Arms an empty, unlocked primary slot: in fixed-class mode a weapon of the worn armor's class first; otherwise the strongest weapon of a class he can armor (<see cref="ArmorableClasses"/>; any class when none is constrained). The fallback is the strongest weapon he can use. True if he took one.</summary>
 		private bool IssuePrimary(SoldierRecord soldier, SoldierGear g)
@@ -2221,7 +2209,9 @@ namespace Levy.Content.TileEntities
 			if (ReconcileWeaponToArmor(soldier)) changed = true; // the armor may not have followed (margin, locks, stock): a class mismatch is corrected, never upgraded into
 			if (UpgradeAccessories(soldier)) changed = true;
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && UpgradeSidearm(soldier)) changed = true;
-			if (FillEmptySidearm(soldier)) changed = true;
+			if (TidySidearms(g)) changed = true; // a second sword, a second whip, a gun beside a melee primary: back to the shelf
+			if (UpgradeExtraSidearms(soldier)) changed = true;
+			if (FillEmptySidearms(soldier)) changed = true;
 			// The new weapon may fire other ammo (or none): IssueGear returns the wrong pouch and draws the right one (it only fills what is empty otherwise).
 			if (changed) IssueGear(soldier);
 			return changed;
@@ -2242,6 +2232,12 @@ namespace Levy.Content.TileEntities
 
 		/// <summary>After a primary swap: a melee-type primary of a new class carries no fallback blade, and a summon-staff primary keeps the only flock (a sentry sidearm stays). The sidearm goes back to the shelf; IssueGear then picks a fitting one.</summary>
 		private void ShelveSidearmForPrimary(SoldierGear g, Item neu, bool classChanged)
+		{
+			ShelveSidearmForPrimaryCore(g, neu, classChanged);
+			TidySidearms(g);
+		}
+
+		private void ShelveSidearmForPrimaryCore(SoldierGear g, Item neu, bool classChanged)
 		{
 			if (g.IsLocked(SoldierGear.SlotSidearm) || IsAir(g.Sidearm)) return;
 			var nf = WeaponClassifier.GetProfile(neu).Family;

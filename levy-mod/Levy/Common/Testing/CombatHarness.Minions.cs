@@ -55,6 +55,18 @@ namespace Levy.Common.Testing
 			return true;
 		}
 
+		private readonly Dictionary<string, int> _mnPerType = new();
+		private static Item MnFindItem(string name)
+		{
+			for (int t = 1; t < ItemLoader.ItemCount; t++)
+			{
+				var c = new Item(); try { c.SetDefaults(t); } catch { continue; }
+				if (c.IsAir) continue;
+				if (c.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || (c.ModItem != null && c.ModItem.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) || (c.ModItem == null && ItemID.Search.TryGetName(t, out string idn) && idn.Equals(name, StringComparison.OrdinalIgnoreCase))) return c;
+			}
+			return null;
+		}
+
 		private bool MnListOnly() { _mnI = int.MaxValue; return true; }
 
 		private static string MnClassify(int type)
@@ -183,6 +195,24 @@ namespace Levy.Common.Testing
 				var gear = rec.Gear;
 				if (gear.CanHold(SoldierGear.SlotWeapon, w)) { gear.Weapon = w; gear.SetLocked(SoldierGear.SlotWeapon, true); }
 				else { Mod.Logger.Warn("HARNESS-MINION: CanHold false for " + w.Name); _mnI++; return; }
+				// LEVY_HARNESS_MNEXTRA = comma list of more staffs carried as sidearms (hand sidearm, then the extra slots); LEVY_HARNESS_MNACC = accessories worn (more minion slots)
+				_mnPerType.Clear();
+				{
+					int sideI = 0;
+					foreach (string n in (Environment.GetEnvironmentVariable("LEVY_HARNESS_MNEXTRA") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+					{
+						Item x = MnFindItem(n); if (x == null || sideI >= LevyConstants.MaxSidearms) { Mod.Logger.Warn("HARNESS-MINION: extra staff not placed: " + n); continue; }
+						int sl = SoldierGear.SidearmSlotAt(sideI++);
+						if (gear.CanHold(sl, x)) { gear.Set(sl, x); gear.SetLocked(sl, true); } else Mod.Logger.Warn("HARNESS-MINION: cannot hold " + n + " in slot " + sl);
+					}
+					int accI = 0;
+					foreach (string n in (Environment.GetEnvironmentVariable("LEVY_HARNESS_MNACC") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+					{
+						Item x = MnFindItem(n); if (x == null || accI >= SoldierGear.AccessorySlots) continue;
+						rec.Grade = Grade.Champion; gear.Accessories[accI] = x; gear.SetLocked(SoldierGear.SlotAcc0 + accI, true); accI++;
+					}
+					Mod.Logger.Info($"HARNESS-MINION: kit primary={w.Name} sidearms={string.Join("|", gear.Sidearms().Select(a => a.IsAir ? "-" : a.Name))} accessories={string.Join("|", gear.Accessories.Where(a => !a.IsAir).Select(a => a.Name))}");
+				}
 				rec.LoadoutLocked = true; rec.Order = Environment.GetEnvironmentVariable("LEVY_HARNESS_MNHOLD") != null ? SoldierOrder.Hold : SoldierOrder.Follow; rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana;
 				RosterSystem.Instance.Regulars.Add(rec);
 				Vector2 at = SoldierX0Bottom;
@@ -201,17 +231,20 @@ namespace Levy.Common.Testing
 			if (_mnTick % 60 == 0) { _mnPeakRate = Math.Max(_mnPeakRate, _mnWinSec); _mnWinSec = 0; }
 			int standType = ModContent.ProjectileType<SoldierMinion>();
 			int real = 0, stand = 0, nKids = 0;
+			var perTick = new Dictionary<string, int>();
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
 				if (!p.active) continue;
 				if (p.TryGetGlobalProjectile(out SoldierProjectileTag kt) && kt.SoldierIndex == _mnBody && !p.minion && p.type != standType) nKids++;
 				if (p.type == standType && (int)p.ai[0] == _mnBody) { stand++; _mnIdentStand.Add(p.identity); }
-				else if (SoldierMinions.OwnedBy(p, _mnBody)) { real++; _mnIdentReal.Add(p.identity); _mnRealTypes.Add((p.ModProjectile?.Name ?? ("v" + p.type)) + (SoldierMinions.IsCast(p) ? "" : "(child)")); }
+				else if (SoldierMinions.OwnedBy(p, _mnBody)) { real++; _mnIdentReal.Add(p.identity); string tn = p.ModProjectile?.Name ?? ("v" + p.type); perTick[tn] = perTick.GetValueOrDefault(tn) + 1; _mnRealTypes.Add((p.ModProjectile?.Name ?? ("v" + p.type)) + (SoldierMinions.IsCast(p) ? "" : "(child)")); }
 			}
 			if (_mnPrevReal > 0 && real == 0 && _mnKillLogs++ < 6) Mod.Logger.Info($"HARNESS-MINION-DBG vanished at t{_mnTick}: last={_mnPrevDesc}");
 			_mnPrevReal = real; _mnPrevDesc = "";
 			for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && SoldierMinions.OwnedBy(q, _mnBody)) _mnPrevDesc += $"[{q.ModProjectile?.Name ?? q.type.ToString()} slot={i} timeLeft={q.timeLeft} ai={q.ai[0]}/{q.ai[1]}/{q.ai[2]} dmg={q.damage} slots={q.minionSlots} pos={(q.Center - Main.npc[_mnBody].Center)} vel={q.velocity} friendly={q.friendly}]"; }
+			foreach (var kv in perTick) _mnPerType[kv.Key] = Math.Max(_mnPerType.GetValueOrDefault(kv.Key), kv.Value);
+			if (_mnTick % 300 == 0) Mod.Logger.Info($"HARNESS-MINION-OUT t{_mnTick}: {string.Join(", ", perTick.Select(kv => kv.Key + " x" + kv.Value))} (total {real})");
 			_mnPeakKids = Math.Max(_mnPeakKids, nKids); _mnMaxReal = Math.Max(_mnMaxReal, real); _mnMaxStand = Math.Max(_mnMaxStand, stand);
 			if (real > 0 && _mnFirstReal < 0) _mnFirstReal = _mnTick;
 			if (stand > 0 && _mnFirstStand < 0) _mnFirstStand = _mnTick;
@@ -224,6 +257,7 @@ namespace Levy.Common.Testing
 			var prof = WeaponClassifier.GetProfile(it);
 			string path = _mnMaxReal > 0 ? "REAL" : _mnMaxStand > 0 ? "STAND-IN" : "NONE";
 			string kids = _mnChildren.Count == 0 ? "-" : string.Join(",", _mnChildren.Select(kv => kv.Key + "x" + kv.Value));
+			Mod.Logger.Info($"HARNESS-MINION-PERTYPE: peak concurrent minions by type [{string.Join(", ", _mnPerType.Select(kv => kv.Key + " x" + kv.Value))}] total peak {_mnMaxReal} maxMinions={(Main.npc[_mnBody].ModNPC is SoldierNPC sx && sx.Dummy != null ? sx.Dummy.maxMinions : -1)}");
 			Mod.Logger.Info($"HARNESS-MINION: item={it.Name} family={prof.Family} canDrive={SoldierMinions.CanDrive(it.shoot)} path={path} firstReal=t{_mnFirstReal} firstStand=t{_mnFirstStand} maxReal={_mnMaxReal} maxStand={_mnMaxStand} castSpawns={_mnSpawns} peakKids={_mnPeakKids} peakPerSec={_mnPeakRate} peakPer20={_mnPeakPass} realTypes=[{string.Join("/", _mnRealTypes)}] samples=[{_mnSamples.Trim()}] targetDamage={dmg} childProjectiles=[{kids}]");
 			_mnI++; _mnStarted = false;
 		}

@@ -60,6 +60,20 @@ namespace Levy.Content.TileEntities
 			return s / n;
 		}
 
+		/// <summary>Mobility accessories among the first <paramref name="n"/> slots.</summary>
+		private static int MobilityWorn(Item[] worn, int n)
+		{
+			int c = 0;
+			if (worn != null) for (int i = 0; i < n && i < worn.Length; i++) if (!IsAir(worn[i]) && AccessoryMobility.Is(worn[i])) c++;
+			return c;
+		}
+
+		/// <summary>True when one more mobility accessory can join <paramref name="worn"/> and still leave a slot for a non-mobility one (every levy keeps one of each; a single slot is not split).</summary>
+		private static bool MobilityRoom(Item[] worn, int n) => !ReserveSlots || n < 2 || MobilityWorn(worn, n) + 1 <= n - 1;
+
+		/// <summary>Every levy keeps one slot for mobility and one for the rest (default on). Test seam: the loadout check turns it off to show the old fill.</summary>
+		internal static bool ReserveSlots = true;
+
 		private bool FloorEligible(SoldierRecord r) => r?.Gear != null && !r.LoadoutLocked && !IsBusy(r);
 
 		/// <summary>The levies this armory serves that may be re-equipped now.</summary>
@@ -141,6 +155,7 @@ namespace Levy.Content.TileEntities
 		public virtual bool UpgradeAccessories(SoldierRecord soldier)
 		{
 			if (!FloorFirst || soldier?.Gear == null || Main.netMode == NetmodeID.MultiplayerClient) return false;
+			using var _rs = ArmoryRules.Enter(Rules); // the player's preferred pieces count in every score below
 			bool changed = false;
 			var all = FloorLevies();
 			for (int i = 0, n = AccSlotsOf(soldier); i < n; i++) if (AccessoryStep(soldier, all)) changed = true; else break;
@@ -164,10 +179,13 @@ namespace Levy.Content.TileEntities
 			if (bestMob > 0f) for (int i = 0; i < n; i++) if (!IsAir(g.Accessories[i]) && AccessoryMobility.Value(g.Accessories[i]) >= bestMob) { mobSlot = i; break; }
 			var teamClaimed = Common.Team.TeamAccessory.Claimed(all, w); // team effects the rest of the army (or the commander) already wears
 			bool soleMob = mobSlot >= 0 && AccessoryMobility.Best(g.Accessories, mobSlot) <= 0f;
+			// every slot holds mobility (an older kit, or nothing else was stocked): the weakest of the extra ones is given up as soon as a non-mobility accessory is stocked
+			bool allMob = MobilityFirst && ReserveSlots && n >= 2 && !AnyEmpty(g, n) && MobilityWorn(g.Accessories, n) >= n;
 			for (int i = 0; i < n; i++) {
 				if (g.IsLocked(SoldierGear.SlotAcc0 + i)) continue;
 				if (IsAir(g.Accessories[i])) { target = i; tScore = 0f; empty = true; break; }
 				if (soleMob && i == mobSlot) continue;
+				if (allMob && i == mobSlot) continue; // the best mobility accessory stays
 				float sc = AccessoryScore(g.Accessories[i], cls) + Common.Team.TeamAccessory.Bonus(g.Accessories[i], teamClaimed);
 				if (sc < tScore) { target = i; tScore = sc; }
 			}
@@ -175,7 +193,7 @@ namespace Levy.Content.TileEntities
 			// a better mobility accessory may replace his only one
 			if (soleMob && !g.IsLocked(SoldierGear.SlotAcc0 + mobSlot) && !empty) {
 				var wm = (Item[])g.Accessories.Clone(); wm[mobSlot] = new Item();
-				bool UPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wm, it) && AccessoryMobility.Value(it) > bestMob && !ClassReserved(it, w, cls, all);
+				bool UPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wm, it) && AccessoryMobility.Value(it) > bestMob && !ClassReserved(it, w, cls, all) && (!MobilityFirst || MobilityRoom(wm, n)) && !Preferred(g.Accessories[mobSlot], it);
 				a = TakeBest(null, 0, 0, 1, UPred, it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
 				if (a != null) target = mobSlot;
 			}
@@ -184,7 +202,7 @@ namespace Levy.Content.TileEntities
 				bool UpPred(Item it) {
 					if (!WeaponClassifier.IsUsefulAccessory(it) || ClassReserved(it, w, cls, all)) return false;
 					int slot = AccessoryProgression.ReplacesSlot(g.Accessories, it, i => !g.IsLocked(SoldierGear.SlotAcc0 + i));
-					if (slot < 0) return false;
+					if (slot < 0 || Preferred(g.Accessories[slot], it)) return false;
 					var ex = (Item[])g.Accessories.Clone(); ex[slot] = new Item();
 					return CanWearWith(ex, it) && !AccessoryProgression.Redundant(ex, it);
 				}
@@ -196,16 +214,18 @@ namespace Levy.Content.TileEntities
 				var wornEx = (Item[])g.Accessories.Clone();
 				wornEx[target] = new Item();
 				float stack = MobilityFirst && AccessoryMobility.Best(wornEx) > 0f ? LevyConstants.Armory.MobilityStackBonus : 0f;
-				float need = empty ? 0f : Math.Max(tScore * LevyConstants.AutoUpgradeScoreMargin, tScore + 1f);
+				float need = empty || (allMob && target >= 0) ? 0f : Math.Max(tScore * LevyConstants.AutoUpgradeScoreMargin, tScore + 1f);
+				bool mobRoom = !MobilityFirst || MobilityRoom(wornEx, n);
 				var claimed = Common.Team.TeamAccessory.Claimed(all, w);
 				float Sc(Item it) => AccessoryScore(it, cls) + (stack > 0f && AccessoryMobility.Is(it) ? stack : 0f) + Common.Team.TeamAccessory.Bonus(it, claimed);
 				// a levy with no mobility accessory takes the best one stocked into this slot before anything else
 				if (MobilityFirst && bestMob <= 0f) {
-					bool MPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && !AccessoryProgression.Redundant(wornEx, it) && AccessoryMobility.Is(it) && !ClassReserved(it, w, cls, all);
+					bool MPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && !AccessoryProgression.Redundant(wornEx, it) && AccessoryMobility.Is(it) && mobRoom && !ClassReserved(it, w, cls, all);
 					a = TakeBest(null, 0, 0, 1, MPred, it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
 				}
 				if (a == null) {
-					bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && !AccessoryProgression.Redundant(wornEx, it) && (empty || Sc(it) >= need) && !ClassReserved(it, w, cls, all);
+					bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && !AccessoryProgression.Redundant(wornEx, it) && (empty || Sc(it) >= need) && !ClassReserved(it, w, cls, all)
+						&& (mobRoom || !AccessoryMobility.Is(it)) && (!allMob || !AccessoryMobility.Is(it));
 					a = TakeBest(null, 0, 0, 1, Pred, Sc);
 				}
 			}
@@ -218,6 +238,14 @@ namespace Levy.Content.TileEntities
 		}
 
 		private static bool LevyIsClosed(SoldierRecord w) => w.LoadoutLocked;
+
+		private static bool AnyEmpty(SoldierGear g, int n) { for (int i = 0; i < n; i++) if (IsAir(g.Accessories[i])) return true; return false; }
+
+		/// <summary>True when the player marked <paramref name="worn"/> as preferred and <paramref name="cand"/> is not: a preferred piece is never swapped out for an ordinary one.</summary>
+		private static bool Preferred(Item worn, Item cand) => !IsAir(worn) && GearPreferred(worn) && !GearPreferred(cand);
+
+		/// <summary>True when the current armory's rules mark this armor piece or accessory as preferred.</summary>
+		internal static bool GearPreferred(Item it) => it != null && !it.IsAir && ArmoryRules.Current?.OverrideOf(it.type) is { Rank: RankOverrideMode.Prefer };
 
 		/// <summary>True when <paramref name="it"/> adds damage for some class other than the taker's and a levy of that class would put it on (a free slot or a clearly weaker one), so it is left for him.</summary>
 		private bool ClassReserved(Item it, SoldierRecord taker, DamageClass takerCls, List<SoldierRecord> all)

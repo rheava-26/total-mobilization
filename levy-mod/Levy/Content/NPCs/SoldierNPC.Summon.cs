@@ -32,14 +32,33 @@ namespace Levy.Content.NPCs
 		internal int ChildSpawns;
 		private int _childSpawnsSeen, _childrenAlive;
 
-		/// <summary>The summon weapon this soldier maintains a flock for, or null: the primary if it summons, else a summon staff carried as the sidearm.</summary>
+		/// <summary>The summon weapon this soldier maintains a flock for, or null: the primary if it summons, else the first summon staff carried as a sidearm. See <see cref="SummonWeapons"/> for all of them.</summary>
 		public Item SummonWeapon()
 		{
+			var l = SummonWeapons();
+			return l.Count > 0 ? l[0] : null;
+		}
+
+		private readonly List<Item> _summonList = new();
+		/// <summary>Every minion staff he carries (primary first, then the sidearms in order), one per item type. The list is reused: read it, do not keep it.</summary>
+		public List<Item> SummonWeapons()
+		{
+			_summonList.Clear();
 			var g = Record?.Gear;
-			if (g == null) return null;
-			if (g.HasWeapon && _mainProfile != null && _mainProfile.IsSummon && _mainProfile.ItemType == g.Weapon.type) return g.Weapon;
-			if (g.HasSidearm && _sideProfile != null && _sideProfile.IsSummon && _sideProfile.ItemType == g.Sidearm.type) return g.Sidearm;
-			return null;
+			if (g == null) return _summonList;
+			void Add(Item it) { if (it == null || it.IsAir || it.shoot <= 0) return; for (int i = 0; i < _summonList.Count; i++) if (_summonList[i].type == it.type) return; _summonList.Add(it); }
+			if (g.HasWeapon && _mainProfile != null && _mainProfile.IsSummon && _mainProfile.ItemType == g.Weapon.type) Add(g.Weapon);
+			if (g.HasSidearm && _sideProfile != null && _sideProfile.IsSummon && _sideProfile.ItemType == g.Sidearm.type) Add(g.Sidearm);
+			foreach (var x in g.ExtraSidearms) if (x != null && !x.IsAir && WeaponClassifier.GetProfile(x).IsSummon) Add(x);
+			return _summonList;
+		}
+
+		/// <summary>The carried staff a minion of <paramref name="projType"/> belongs to (its own shot or one of its variants), else the first staff.</summary>
+		public Item SummonWeaponFor(int projType)
+		{
+			var l = SummonWeapons();
+			for (int i = 0; i < l.Count; i++) if (l[i].shoot == projType || SoldierMinions.InFamily(l[i].shoot, projType)) return l[i];
+			return l.Count > 0 ? l[0] : null;
 		}
 
 		/// <summary>Minion slots one minion of this weapon takes.</summary>
@@ -54,6 +73,13 @@ namespace Levy.Content.NPCs
 			}
 			return slots > 0.01f ? slots : LevyConstants.MinionDefaultSlots;
 		}
+
+		/// <summary>
+		/// How many casts of each carried staff he keeps out. One staff gets what its slot cost fits in his minion capacity (never past its own limit, see <see cref="SummonCap"/>). With several, a staff with a limit of its
+		/// own takes only the slots its minions really use and the first unlimited staff takes the rest, so a summoner carrying three one-minion staves keeps all three minions out; the first staff always gets at least one.
+		/// </summary>
+		internal int[] AllotCasts(List<Item> weapons) =>
+			SummonCap.Allot(weapons, Dummy != null ? Math.Max(1, Dummy.maxMinions) : 1f, SlotsPerMinion, w => SoldierMinions.Capacity(this, w));
 
 		/// <summary>How many minions this soldier's gear supports: the dummy's maxMinions (read after the stat pipeline) over the weapon's slot cost, clamped to [1, cap].</summary>
 		public int MinionCapacity(Item weapon)
@@ -94,6 +120,7 @@ namespace Levy.Content.NPCs
 		/// Called every combat tick: tops the flock up to capacity (one summon per cooldown), retunes its damage, and dismisses it when the summon weapon is gone.
 		/// A vanilla minion staff fields the staff's real projectiles (<see cref="SoldierMinions"/>); anything else keeps the <see cref="SoldierMinion"/> stand-in.
 		/// </summary>
+		private readonly List<List<int>> _flocks = new();
 		private void MaintainMinions()
 		{
 			if (_minionSpawnCd > 0) _minionSpawnCd--;
@@ -101,11 +128,21 @@ namespace Levy.Content.NPCs
 			_minionTick = 0;
 			try
 			{
-				Item weapon = SummonWeapon();
-				bool has = weapon != null && weapon.shoot > 0;
-				bool driven = has && SoldierMinions.CanDrive(weapon.shoot);
+				var weapons = SummonWeapons();
+				int n = weapons.Count;
+				bool has = n > 0;
+				var driven = new bool[n];
+				int childOwner = -1; // the first driven modded staff: the minion-flagged children its minions make count toward its flock
+				for (int k = 0; k < n; k++)
+				{
+					driven[k] = weapons[k].shoot > 0 && SoldierMinions.CanDrive(weapons[k].shoot);
+					if (driven[k] && childOwner < 0 && weapons[k].shoot >= ProjectileID.Count) childOwner = k;
+				}
+				int firstStandIn = -1;
+				for (int k = 0; k < n && firstStandIn < 0; k++) if (!driven[k]) firstStandIn = k;
+				while (_flocks.Count < n) _flocks.Add(new List<int>());
+				for (int k = 0; k < n; k++) _flocks[k].Clear();
 				int standIn = ModContent.ProjectileType<SoldierMinion>(), me = NPC.whoAmI;
-				_minionScratch.Clear();
 				_childrenAlive = 0;
 				for (int i = 0; i < Main.maxProjectiles; i++)
 				{
@@ -113,33 +150,32 @@ namespace Levy.Content.NPCs
 					if (!p.active) continue;
 					bool fake = p.type == standIn && (int)p.ai[0] == me;
 					bool real = !fake && SoldierMinions.OwnedBy(p, me);
-					if (!fake && !real) { if (driven && weapon.shoot >= ProjectileID.Count && !p.minion && p.TryGetGlobalProjectile(out SoldierProjectileTag kt) && kt.SoldierIndex == me) _childrenAlive++; continue; }
+					if (!fake && !real) { if (childOwner >= 0 && !p.minion && p.TryGetGlobalProjectile(out SoldierProjectileTag kt) && kt.SoldierIndex == me) _childrenAlive++; continue; }
 					// a minion-flagged child a modded minion's own AI made (a summoner's babies, a beacon's UFOs): driven, and part of the flock only through the slots it takes
-					if (real && !SoldierMinions.IsCast(p) && !(driven && p.minionSlots > SoldierMinions.ChildSlotMin)) continue;
-					// no summon weapon any more, or a flock of the other kind / of a staff this soldier no longer carries: dismissed
-					if (!has || (fake && driven) || (real && !(driven && (SoldierMinions.InFamily(weapon.shoot, p.type) || !SoldierMinions.IsCast(p))))) { if (real) SoldierMinions.Dismiss(p); else p.Kill(); continue; }
-					_minionScratch.Add(i);
+					if (real && !SoldierMinions.IsCast(p) && !(childOwner >= 0 && p.minionSlots > SoldierMinions.ChildSlotMin)) continue;
+					if (!has) { if (real) SoldierMinions.Dismiss(p); else p.Kill(); continue; } // no summon weapon any more: dismissed
+					int owner = -1;
+					if (fake) { for (int k = 0; k < n && owner < 0; k++) if (!driven[k] && (int)p.ai[1] == weapons[k].shoot) owner = k; if (owner < 0) owner = firstStandIn; } // a stand-in of a staff he no longer carries is adopted by the first stand-in staff
+					else if (!SoldierMinions.IsCast(p)) owner = childOwner;
+					else for (int k = 0; k < n && owner < 0; k++) if (driven[k] && SoldierMinions.InFamily(weapons[k].shoot, p.type)) owner = k;
+					if (owner < 0) { if (real) SoldierMinions.Dismiss(p); else p.Kill(); continue; } // a flock of a staff this soldier no longer carries, or of the other kind: dismissed
+					_flocks[owner].Add(i);
 				}
 				if (!has) return;
 
-				Item held = Dummy != null ? Dummy.inventory[0] : null; // WeaponDamage parks the weapon in the dummy's hand: put the real hand item back (matters for a sidearm staff)
-				int damage = Math.Max(1, (int)Math.Round(WeaponDamage(weapon) * DamageMultiplier));
-				if (Dummy != null && held != null) Dummy.inventory[0] = held;
-
-				if (driven) { MaintainRealMinions(weapon, damage); return; }
-
-				int desired = MinionCapacity(weapon);
-				for (int k = 0; k < _minionScratch.Count; k++)
+				int[] desired = AllotCasts(weapons);
+				for (int k = 0; k < n; k++)
 				{
-					Projectile p = Main.projectile[_minionScratch[k]];
-					if (k >= desired) { p.Kill(); continue; }
-					p.damage = damage;
-					p.knockBack = weapon.knockBack;
-					if ((int)p.ai[1] != weapon.shoot) { p.ai[1] = weapon.shoot; p.netUpdate = true; }
+					Item weapon = weapons[k];
+					if (weapon.shoot <= 0) continue;
+					Item held = Dummy != null ? Dummy.inventory[0] : null; // WeaponDamage parks the weapon in the dummy's hand: put the real hand item back (matters for a sidearm staff)
+					int damage = Math.Max(1, (int)Math.Round(WeaponDamage(weapon) * DamageMultiplier));
+					if (Dummy != null && held != null) Dummy.inventory[0] = held;
+					_minionScratch.Clear();
+					_minionScratch.AddRange(_flocks[k]);
+					if (driven[k]) { MaintainRealMinions(weapon, damage, desired[k]); continue; }
+					MaintainStandIns(weapon, damage, desired[k]);
 				}
-				if (_minionScratch.Count >= desired || _minionSpawnCd > 0) return;
-
-				SpawnMinion(weapon, damage);
 			}
 			catch (Exception e)
 			{
@@ -148,18 +184,32 @@ namespace Levy.Content.NPCs
 			}
 		}
 
+		/// <summary>The stand-in flock of one staff (a minion that cannot be driven as a real projectile): retuned, trimmed to <paramref name="desired"/>, and topped up one per cooldown.</summary>
+		private void MaintainStandIns(Item weapon, int damage, int desired)
+		{
+			for (int k = 0; k < _minionScratch.Count; k++)
+			{
+				Projectile p = Main.projectile[_minionScratch[k]];
+				if (k >= desired) { p.Kill(); continue; }
+				p.damage = damage;
+				p.knockBack = weapon.knockBack;
+				if ((int)p.ai[1] != weapon.shoot) { p.ai[1] = weapon.shoot; p.netUpdate = true; }
+			}
+			if (_minionScratch.Count >= desired || _minionSpawnCd > 0) return;
+			SpawnMinion(weapon, damage);
+		}
+
 		/// <summary>
 		/// The real-minion flock (already collected into <c>_minionScratch</c>): retunes every minion's damage, dismisses any overflow (by slot total, so a half-slot pair counts right),
 		/// keeps a controller staff's companion (Desert Tiger, Abigail) right, and casts one more when a whole cast still fits.
 		/// </summary>
-		private void MaintainRealMinions(Item weapon, int damage)
+		private void MaintainRealMinions(Item weapon, int damage, int desired)
 		{
 			if (weapon.shoot >= ProjectileID.Count)
 			{
 				int spawned = ChildSpawns - _childSpawnsSeen; _childSpawnsSeen = ChildSpawns;
 				if (spawned > LevyConstants.ModdedMinionMaxChildSpawnsPerPass || _childrenAlive > LevyConstants.ModdedMinionMaxChildrenAlive) { SoldierMinions.FloodGuard(this, weapon, spawned, _childrenAlive); return; }
 			}
-			int desired = SoldierMinions.Capacity(this, weapon);
 			float perCast = SlotsPerMinion(weapon), want = desired * perCast, have = 0f;
 			bool dragon = weapon.shoot == ProjectileID.StardustDragon1;
 			// A Stardust Dragon is ONE chain (head, 2 bodies per cast, tail): a segment killed by anything else leaves the rest following a dead link, so a broken chain is torn down and recast whole.

@@ -96,6 +96,12 @@ namespace Levy.Content.TileEntities
 					if (lev.Own != null) plan.Cands.Add(lev.Own);
 					if (!g.IsLocked(SoldierGear.SlotSidearm) && IsIssuableMelee(g.Sidearm) && g.Sidearm.maxStack <= 1)
 						plan.Cands.Add(WeaponAllocator.MakeCand(g.Sidearm, 9, seq++, AllocSlot.Sidearm, lev, null)); // a blade carried as a sidearm: any primary outranks it
+					// A minion staff a levy who is not a summoner carries as his secondary is spare stock too: a summoner who needs a primary staff may have it, and the levy is dealt another later.
+					for (int si = 0; si < LevyConstants.MaxSidearms && !IsSummonerSoldier(rec); si++) {
+						int sslot = SoldierGear.SidearmSlotAt(si); var sit = g.Get(sslot);
+						if (g.IsLocked(sslot) || IsAir(sit) || sit.maxStack > 1 || !IsIssuableSummonStaff(sit)) continue;
+						plan.Cands.Add(WeaponAllocator.MakeCand(sit, 9, seq++, AllocSlot.Sidearm, lev, null));
+					}
 				}
 				void AddShelf(ArmoryTE owner, Item[] arr, int to, int pref)
 				{
@@ -193,7 +199,7 @@ namespace Levy.Content.TileEntities
 				else {
 					var holder = (SoldierRecord)c.Phys.Tag; var hg = holder.Gear;
 					if (c.Slot == AllocSlot.Primary && ReferenceEquals(hg.Weapon, c.It)) { it = c.It; hg.Weapon = new Item(); hg.ThrownRestockType = 0; Touch(holder); }
-					else if (c.Slot == AllocSlot.Sidearm && ReferenceEquals(hg.Sidearm, c.It)) { it = c.It; hg.Sidearm = new Item(); Touch(holder); }
+					else if (c.Slot == AllocSlot.Sidearm && TakeSidearmRef(hg, c.It)) { it = c.It; Touch(holder); }
 				}
 				picked[l] = it;
 			}

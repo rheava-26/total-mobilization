@@ -144,7 +144,8 @@ namespace Levy.Common.Soldiers
 		{
 			int gradeSlots = LevyConstants.GradeSlots[(int)grade];
 			try { gradeSlots = LevySlotMath.GradeSlots(LevyConfig.Get, grade); } catch (Exception) { }
-			return LevySlotMath.Compute(gradeSlots, LevySlotMath.ExpertiseSlots, GuideSystem.ExpertiseRead, LevyProgressionSystem.MilestoneSlots, SoldierGear.AccessorySlots);
+			// every levy has at least two: one for his best mobility accessory, one for his best non-mobility accessory (higher grades keep their extra slots)
+			return Math.Max(LevyConstants.MinAccessorySlots, LevySlotMath.Compute(gradeSlots, LevySlotMath.ExpertiseSlots, GuideSystem.ExpertiseRead, LevyProgressionSystem.MilestoneSlots, SoldierGear.AccessorySlots));
 		}
 		/// <summary>Accessory slots: the grade's, plus the Guide to Expertise's, never more than a soldier can carry.</summary>
 		public int AccessorySlots => AccessorySlotsFor(Grade);

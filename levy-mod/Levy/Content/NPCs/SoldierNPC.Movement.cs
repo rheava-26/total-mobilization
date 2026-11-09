@@ -288,6 +288,7 @@ namespace Levy.Content.NPCs
 			if (grounded && !TileNav.IsFloor(ax, fy + 1))
 			{
 				int depth = TileNav.DropDepth(ax, fy);
+				if (depth < 0 && !TravelLegacy.On && _pathFromRoute && !Abilities.HasWings && TileNav.IsFloor(ax, fy + FallScanTiles + 1) && !TileNav.HasLava(ax, fy + FallScanTiles + 1)) depth = FallScanTiles;   // the route search takes a fall of exactly FallScanTiles; the scan above stops one row short
 				// a narrow gap with floor on the far side: jump it rather than drop into a pit that cannot be climbed back out of
 				if ((depth < 0 || depth >= GapJumpMinDepthTiles) && TryGapJump(ax, fy, dir, dyPx, ref jumpTiles)) return;
 				if (depth < 0)

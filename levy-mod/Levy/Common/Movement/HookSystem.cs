@@ -76,7 +76,7 @@ namespace Levy.Common.Movement
 		/// <summary>The soldier whose QuickGrapple is running (tags the hook it spawns).</summary>
 		internal static SoldierNPC Casting;
 		/// <summary>HARNESS: one line per hook event (cast, plan, latch, release, chain, landing) while on.</summary>
-		public static bool LogCasts; public static readonly System.Collections.Generic.List<string> CastLog = new(); internal static void Log(string s) { if (CastLog.Count < 20000) CastLog.Add(s); }
+		public static bool LogCasts; public static readonly bool TraceReel = Environment.GetEnvironmentVariable("LEVY_HOOKTRACE") == "1"; public static readonly System.Collections.Generic.List<string> CastLog = new(); internal static void Log(string s) { if (CastLog.Count < 20000) CastLog.Add(s); }
 		public static long TickTs, PlanTs, ProjTs; public static int TickCalls, Plans, PlansFound, ProjCalls, Casts, CastsOk, Latches, Releases, Landings, Aborts, Teleports, NetSuppressed, OrphanKills;
 		private static uint _enabledTick = uint.MaxValue; private static bool _enabled = true;
 		private static uint _budgetTick; private static int _budget;

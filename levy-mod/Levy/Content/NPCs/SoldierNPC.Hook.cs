@@ -189,7 +189,7 @@ namespace Levy.Content.NPCs
 		/// <summary>The commander is swinging on a hook and has left the soldier behind: a following soldier with a hook of its own goes after them the same way.</summary>
 		/// <summary>0 = hooks only for blocked walks, falls and a commander on a hook; 1 = also for a goal up a cliff or a long way round. The harness flips it for before/after.</summary>
 		internal static int HookShortcutMode = 1;
-		private bool _hkChain, _hkChainFlight, _hkChainUsed, _hkClimb, _hkJumpKick; private int _hkChainCount, _hkJumpTries; private uint _hkChainStart, _hkAirTry;
+		private bool _hkChain, _hkChainFlight, _hkChainUsed, _hkClimb, _hkJumpKick, _hkFinalLink, _hkAirHop; private int _hkChainCount, _hkJumpTries; private uint _hkChainStart, _hkAirTry;
 		internal int HkChains;
 
 		/// <summary>
@@ -228,7 +228,7 @@ namespace Levy.Content.NPCs
 		{
 			HookKillAll();
 			_hkPlan = np; _hkPhase = HookPhase.InFlight; _hkTicks = 0; _hkCasted = 0; _hkStall = 0; _hkLost = 0; _hkFirstLatch = -1; _hkHang = 0; _hkBestDist = float.MaxValue;
-			_hkChainCount++; HkChains++; _hkChainUsed = true; _hkClimb = !final; if (final) _hkChain = false; _hkChainFlight = true;
+			_hkChainCount++; HkChains++; _hkChainUsed = true; _hkClimb = !final; _hkFinalLink = final; _hkAirHop = false; _hkChainFlight = true;
 			NPC.velocity = Vector2.Zero; NPC.noGravity = true;
 			HookLog($"chain {_hkChainCount} " + (final ? "final" : $"anchor={np.Anchors[0].X / 16f:0},{np.Anchors[0].Y / 16f:0}"));
 			if (!HookCast(np.Aims[0])) { _hkChain = false; _hkChainFlight = false; HookLetGo(false, true); return; }
@@ -250,7 +250,7 @@ namespace Levy.Content.NPCs
 			_hkReason = reason; _hkTrigGoalUsed = goalBottom; _hkChain = true; _hkClimb = true; _hkJumpKick = true; _hkChainCount = 0; _hkJumpTries = 1; _hkChainStart = Main.GameUpdateCount; _hkChainUsed = true; _hkChainFlight = false;
 			_hkPlan = null; _hkProj.Clear(); _hkAirTry = Main.GameUpdateCount;
 			NPC.velocity.X = side * Math.Min(Abilities.MaxRunSpeed, 3.6f); NPC.velocity.Y = -HookJumpSpeed; NPC.direction = NPC.spriteDirection = side;
-			_jumpsUsed = 0; _hkPhase = HookPhase.Ballistic; _hkTicks = 0; NPC.netUpdate = true;
+			_jumpsUsed = 0; _hkAirHop = true; _hkPhase = HookPhase.Ballistic; _hkTicks = 0; NPC.netUpdate = true;
 			HookLog($"jump-cast over a gap of {gap / 16f:0} tiles");
 			return true;
 		}
@@ -264,7 +264,7 @@ namespace Levy.Content.NPCs
 			float gx = _hkTrigGoalUsed.X - NPC.Center.X;
 			NPC.velocity.Y = -HookJumpSpeed;
 			NPC.velocity.X = Math.Abs(gx) > 20f ? Math.Sign(gx) * 1.5f : 0f;
-			_jumpsUsed = 0; _hkAirTry = Main.GameUpdateCount;
+			_jumpsUsed = 0; _hkAirTry = Main.GameUpdateCount; _hkAirHop = true;
 			SoldierHooks.Releases++; HkReleases++;
 			_hkPhase = HookPhase.Ballistic; _hkTicks = 0; _hkChainUsed = true;
 			HookLog($"hook-jump {_hkJumpTries}");
@@ -369,7 +369,7 @@ namespace Levy.Content.NPCs
 			SoldierHooks.PlansFound++;
 			_hkPlan = plan; _hkReason = reason; _hkTrigGoalUsed = goalBottom;
 			_hkChain = climbStart || (HookShortcutMode >= 1 && !altitude && (reason == HookReason.Follow || reason == HookReason.GoalAbove || reason == HookReason.Wall || reason == HookReason.Route) && bottom.Y - goalBottom.Y > info.ReachPx * 0.6f); _hkChainCount = 0; _hkChainFlight = false;
-			_hkClimb = climbStart; _hkJumpKick = climbReason; _hkJumpTries = 0; _hkChainStart = Main.GameUpdateCount;
+			_hkClimb = climbStart; _hkFinalLink = false; _hkJumpKick = climbReason; _hkJumpTries = 0; _hkChainStart = Main.GameUpdateCount;
 			_hkPhase = HookPhase.InFlight; _hkTicks = 0; _hkCasted = 0; _hkStall = 0; _hkLost = 0; _hkFirstLatch = -1; _hkHang = 0; _hkBestDist = float.MaxValue; _hkNetTick = 0;
 			_hkProj.Clear();
 			if (!HookCast(plan.Aims[0])) { HookReset(false); HookBackoff(); SoldierHooks.Aborts++; HkAborts++; return; }
@@ -503,7 +503,7 @@ namespace Levy.Content.NPCs
 			NPC npc = NPC;
 			if (_hkChainFlight) { npc.noGravity = true; npc.velocity = Vector2.Zero; }
 			HookGather(out int alive, out int latched);
-			if (latched > 0 && _hkFirstLatch < 0) { HookLog($"latch after {_hkTicks} ticks"); _hkFirstLatch = _hkTicks; SoldierHooks.Latches++; HkLatches++; }
+			if (latched > 0 && _hkFirstLatch < 0) { { string al = ""; for (int q = 0; q < _hkProj.Count; q++) { Projectile pp = Main.projectile[_hkProj[q]]; if (pp.active && pp.ai[0] == 2f) al += $" [{pp.Center.X / 16f:0.0},{pp.Center.Y / 16f:0.0}]"; } HookLog($"latch after {_hkTicks} ticks at" + al); } _hkFirstLatch = _hkTicks; SoldierHooks.Latches++; HkLatches++; }
 			if (_hkCasted < _hkPlan.Anchors.Count && (_hkTicks % H.CastSpacingTicks) == 0)
 			{
 				if (HookCast(_hkPlan.Aims[_hkCasted])) _hkCasted++;
@@ -554,10 +554,11 @@ namespace Levy.Content.NPCs
 			}
 			_hkLost = 0;
 			_hkNetOn = true; _hkNetAnchor = centroid;
+			if (SoldierHooks.TraceReel && (_hkTicks & 3) == 0) HookLog($"reel t={_hkTicks} anchor={centroid.X / 16f:0.0},{centroid.Y / 16f:0.0}");
 			float dist = Vector2.Distance(npc.Center, centroid);
 			if (dist > _hkBestDist - H.ReelProgressPx) _hkStall++; else { _hkStall = 0; _hkBestDist = dist; }
 			bool arrived = dist < 28f || _hkStall >= 6;
-			if (_hkChain && (arrived || dist <= _hkPlan.ReleaseDist + H.ReleaseDistSlackPx) && TryChain(centroid)) return true;
+			if (_hkChain && !_hkFinalLink && (arrived || dist <= _hkPlan.ReleaseDist + H.ReleaseDistSlackPx) && TryChain(centroid)) return true;
 			bool release;
 			if (_hkPlan.Hang)
 			{
@@ -621,7 +622,7 @@ namespace Levy.Content.NPCs
 				ResetStuck(); npc.netUpdate = true;
 				return false;
 			}
-			if (_hkChain && _hkChainUsed && _hkTicks >= 3 && Main.GameUpdateCount - _hkAirTry >= (uint)H.AirRecastSpacing && SoldierHooks.TakePlanBudget())
+			if (_hkChain && _hkChainUsed && _hkTicks >= 3 && (_hkAirHop || (npc.velocity.Y > 1f && npc.Bottom.Y > _hkTrigGoalUsed.Y + 32f)) && Main.GameUpdateCount - _hkAirTry >= (uint)H.AirRecastSpacing && SoldierHooks.TakePlanBudget())   // falling short of the goal: cast again, as a player does
 			{
 				_hkAirTry = Main.GameUpdateCount;
 				if (PlanChainLink(out HookPlan ap, out bool af)) { HookLog("air recast"); StartChainLink(ap, af); return true; }

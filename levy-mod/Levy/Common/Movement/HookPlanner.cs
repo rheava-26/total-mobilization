@@ -138,7 +138,7 @@ namespace Levy.Common.Movement
 				if (cand != null && cand.Score < best.Score) best = cand;
 			}
 			// pairs for a multi-hook item: the two nearest-to-best singles around the winner
-			if (p.MaxHooks >= 2 && p.Count >= 2 && best != null)
+			if (p.MaxHooks >= 2 && p.Count >= 2 && best != null && !p.Climb)   // a climb casts one hook at a time (a pair that does not both latch strands the body)
 			{
 				var chosen = (best.Anchors[0], best.Aims[0]);
 				for (int i = 0; i < anchors.Count; i++)

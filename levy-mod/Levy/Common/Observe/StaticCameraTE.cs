@@ -32,8 +32,9 @@ namespace Levy.Common.Observe
 
 		public override int Hook_AfterPlacement(int i, int j, int type, int style, int direction, int alternate)
 		{
-			Point16 origin = TileObjectData.GetTileData(type, style, alternate).Origin;
-			int left = i - origin.X, top = j - origin.Y;
+			// The tile registers this hook with processedCoordinates: true, so (i, j) is already the camera's top-left. Subtracting the origin again put the entity two tiles above the camera,
+			// where no tile entity belongs: right-click found nothing, and the entity was orphaned.
+			int left = i, top = j;
 			if (Main.netMode == NetmodeID.MultiplayerClient)
 			{
 				NetMessage.SendTileSquare(Main.myPlayer, left, top, TilesWide, TilesHigh);

@@ -16,7 +16,10 @@ using Levy.Common.Weapons;              // DroneArsenal / DroneShot
 using Levy.Content.NPCs;                // SoldierNPC.DummySlot
 using Levy.Content.TileEntities;        // ArmoryTE / BarracksTE
 using Mechanization.Common;
+using System.Collections.Generic;
 using D = Mechanization.Common.MechConstants.Drone;
+using FD = Mechanization.Common.MechConstants.FieldDrone;
+using TU = Mechanization.Common.MechConstants.Turret;
 
 namespace Mechanization.Content.NPCs
 {
@@ -60,12 +63,16 @@ namespace Mechanization.Content.NPCs
 		public int Slot;
 		/// <summary>True when the player ordered this drone parked: the garrison leaves it alone until a launch order. A drone that stood down on its own (its weapon was taken) is re-armed by the garrison.</summary>
 		public bool Held;
+		/// <summary>Id of this drone's saved record in <see cref="FieldDroneSystem"/> (server / single player; -1 for a garrison drone). A player-built drone has no Barracks: it patrols around its home point.</summary>
+		public int RecordId = -1;
 
 		/// <summary>Free-standing Player swapped into Main.player[255] for one enemy AI call so the enemy chases this body (never in Main.player[] otherwise).</summary>
 		public Player Dummy { get; private set; }
 
-		/// <summary>Bound to a Barracks (ai[3], so a client knows too).</summary>
+		/// <summary>Bound to a Barracks, or set down by the player (ai[3], so a client knows too).</summary>
 		public bool IsBound => NPC.ai[3] > 0.5f;
+		/// <summary>A player-built drone (ai[3] = 2): patrols around where it was set down, mounts from the Armories in reach without a loan, and is packed up rather than recalled.</summary>
+		public bool IsField => NPC.ai[3] > 1.5f;
 		public DronePhase Phase
 		{
 			get => (DronePhase)(int)NPC.ai[1];
@@ -74,7 +81,7 @@ namespace Mechanization.Content.NPCs
 		/// <summary>On its pad with the rotors still (charging armed, or parked unarmed).</summary>
 		public bool Landed => Phase == DronePhase.Charging || Phase == DronePhase.Parked;
 		/// <summary>Carrying a weapon it can fire (server).</summary>
-		public bool Armed => Weapon != null && _shot != null && _shot.Valid;
+		public bool Armed => (Weapon != null || IsField) && _shot != null && _shot.Valid;
 		/// <summary>Battery as a fraction of capacity, 0..1 (every netmode: it rides ai[2]).</summary>
 		public float BatteryFraction => Math.Clamp(NPC.ai[2], 0f, 1f);
 		/// <summary>The drone's battery, in seconds of flight (server).</summary>
@@ -89,6 +96,10 @@ namespace Mechanization.Content.NPCs
 		private Vector2 _pad;
 		private Vector2 _wp;
 		private bool _hasWp;
+		// ---- player-built drone (server unless noted) ----
+		private Vector2 _home;
+		private int _fieldScan;
+		private readonly List<ArmoryTE> _pool = new();
 		/// <summary>The drawn aim of the mounted weapon (radians), eased toward the wanted one; on a client it eases toward the synced ai[0].</summary>
 		private float _aim;
 		/// <summary>Counts shots fired. Rides the extra-AI sync so a remote client hears each volley and kicks the weapon back.</summary>
@@ -146,6 +157,73 @@ namespace Mechanization.Content.NPCs
 			NPC.life = NPC.lifeMax; _lastLife = NPC.life;
 			NPC.netUpdate = true;
 			return true;
+		}
+
+		/// <summary>
+		/// Binds a freshly spawned drone as a player-built one: its home is <paramref name="pad"/> (the body centre, resting on the ground below where it was set down), it mounts the best spare weapon
+		/// from the Armories in reach (or the plain bullet) and takes off. Call once right after NPC.NewNPC, then sync.
+		/// </summary>
+		public void BindField(int recordId, Vector2 pad)
+		{
+			RecordId = recordId; BarracksId = -1; ArmoryId = -1; Slot = Math.Abs(recordId) % Math.Max(1, D.PerBarracksCap);
+			_home = pad;
+			CommanderIndex = ShotKit.PickCommander(pad);
+			NPC.ai[3] = 2f;
+			RefreshBase(null);
+			NPC.Center = _pad;
+			NPC.velocity = Vector2.Zero;
+			NPC.direction = Slot % 2 == 0 ? 1 : -1; NPC.spriteDirection = NPC.direction;
+			_battery = DroneBattery.Capacity;
+			_age = 0; _immuneTime = 0; _scan = 0; _target = -1; _validate = 0; _sinceHit = 0; _regenTimer = 0; _padClock = 0;
+			_stuck = 0; _farTicks = 0; _dwell = -1; _hasWp = false; _aim = 0f; _fieldScan = 0;
+			_shot = FallbackShot(); WeaponType = 0;
+			RefreshFieldWeapon();
+			NPC.life = NPC.lifeMax; _lastLife = NPC.life;
+			Held = false;
+			Phase = DronePhase.Loiter; _takeoff = D.TakeoffTicks;   // it unfolds on the spot and climbs out
+			NPC.netUpdate = true;
+		}
+
+		/// <summary>The plain bullet a player-built drone fires with no spare weapon in reach: the turret's fixed round.</summary>
+		private static DroneShot FallbackShot() => new DroneShot
+		{
+			Projectile = TU.ProjectileType, Speed = TU.ShotSpeed, Knockback = TU.ShotKnockback, BaseDamage = TU.ShotDamage,
+			IntervalTicks = TU.FireIntervalTicks, Count = 1, Class = DamageClass.Ranged, RangePx = TU.RangePx,
+		};
+
+		/// <summary>
+		/// Re-picks the mounted weapon from the best of the Armories in reach: the turret's own non-consuming read (<see cref="TurretNPC.BestSurplus"/>), so the weapon never leaves the Armory and the soldiers keep it.
+		/// With none, or one that yields no shot, the plain bullet.
+		/// </summary>
+		public void RefreshFieldWeapon()
+		{
+			ArmoryLink.Find(_home, _pool);
+			DroneShot shot = null; int type = 0;
+			Item weapon = _pool.Count > 0 ? TurretNPC.BestSurplus(_pool) : null;
+			if (weapon != null)
+			{
+				Item ammo = DroneArsenal.TakesAmmo(weapon) ? TurretNPC.BestAmmoFor(_pool, weapon.useAmmo) : null;
+				shot = DroneArsenal.BuildShot(weapon, ammo);
+				if (shot != null && shot.Valid) type = weapon.type; else shot = null;
+			}
+			if (shot == null) shot = FallbackShot();
+			bool changed = type != WeaponType;
+			_shot = shot;
+			if (!changed) return;
+			WeaponType = type;
+			ApplyWeaponStats();
+			_cooldown = Math.Min(_cooldown, shot.IntervalTicks);
+			NPC.netUpdate = true;
+		}
+
+		/// <summary>The item type of the weapon a player-built drone has mounted (0 = the plain bullet). For the self-check.</summary>
+		public int FieldWeaponType => WeaponType;
+
+		/// <summary>The Armories a player-built drone reads (for its chat panel); on a client the read is from where the drone flies.</summary>
+		private int ArmoriesInReach()
+		{
+			ArmoryLink.Find(_home != Vector2.Zero ? _home : NPC.Center, _pool);
+			return _pool.Count;
 		}
 
 		/// <summary>
@@ -272,6 +350,13 @@ namespace Mechanization.Content.NPCs
 		/// </summary>
 		private bool Validate()
 		{
+			if (IsField)
+			{
+				if (_age == 1 || ++_padClock >= 10) { _padClock = 0; RefreshBase(null); }
+				if (--_fieldScan <= 0) { _fieldScan = FD.WeaponRefreshValidates; RefreshFieldWeapon(); }
+				if (CommanderIndex < 0 || CommanderIndex >= Main.maxPlayers || !Main.player[CommanderIndex].active) CommanderIndex = ShotKit.PickCommander(NPC.Center);
+				return true;
+			}
 			if (!(TileEntity.ByID.TryGetValue(BarracksId, out TileEntity te) && te is BarracksTE barracks)) { Dismantle(); return false; }
 			if (_age == 1 || ++_padClock >= 10) { _padClock = 0; RefreshBase(barracks); }
 			if (Weapon != null)
@@ -288,6 +373,13 @@ namespace Mechanization.Content.NPCs
 		/// <summary>Where the drone's base geometry sits: the loiter box's centre and roof line, and this slot's pad.</summary>
 		private void RefreshBase(BarracksTE barracks)
 		{
+			if (IsField)
+			{
+				_baseX = _home.X;
+				_roofY = _home.Y + D.BodyHeight * 0.5f + 1f;   // the ground under the pad: the patrol band is measured up from it
+				_pad = _home;
+				return;
+			}
 			_baseX = barracks.Center.X;
 			_roofY = barracks.Position.Y * MechConstants.TilePx;
 			_pad = PadFor(barracks, ArmoryOrNull() ?? ArmoryLink.OfBarracks(barracks), Slot);
@@ -348,7 +440,7 @@ namespace Mechanization.Content.NPCs
 		/// <summary>Recall: fly home, land, file the weapon back, and stay parked until launched. A drone already parked is simply held. False when not bound.</summary>
 		public bool OrderRecall()
 		{
-			if (!IsBound || !NPC.active) return false;
+			if (!IsBound || !NPC.active || IsField) return false;
 			Held = true;
 			if (Phase == DronePhase.Parked) return true;
 			_target = -1;
@@ -477,8 +569,11 @@ namespace Mechanization.Content.NPCs
 		private void Fire(NPC target)
 		{
 			DroneShot shot = _shot;
-			ArmoryTE armory = ArmoryOrNull();
-			if (armory == null || !armory.IsLent(Weapon)) { _validate = D.ValidateIntervalTicks; return; } // the weapon was recalled this tick: the next upkeep stands the drone down
+			if (!IsField) // a player-built drone mirrors a weapon and never holds a loan
+			{
+				ArmoryTE armory = ArmoryOrNull();
+				if (armory == null || !armory.IsLent(Weapon)) { _validate = D.ValidateIntervalTicks; return; } // the weapon was recalled this tick: the next upkeep stands the drone down
+			}
 
 			Vector2 from = NPC.Center + new Vector2(0f, D.MuzzleDropPx);
 			Vector2 vel = ShotKit.AimVelocity(shot, from, target, D.AimJitterDeg);
@@ -568,21 +663,24 @@ namespace Mechanization.Content.NPCs
 
 		private Vector2 ClampToLeash(Vector2 p)
 		{
-			float hx = (D.LoiterHalfWidthTiles + D.LeashTiles) * MechConstants.TilePx;
-			float top = Math.Max(MinFlightY, _roofY - (D.LoiterMaxAltTiles + D.LeashTiles) * MechConstants.TilePx), bottom = _roofY + D.LeashDownTiles * MechConstants.TilePx;
+			bool f = IsField;
+			float hx = ((f ? FD.LoiterHalfWidthTiles : D.LoiterHalfWidthTiles) + (f ? FD.LeashTiles : D.LeashTiles)) * MechConstants.TilePx;
+			float top = Math.Max(MinFlightY, _roofY - ((f ? FD.LoiterMaxAltTiles : D.LoiterMaxAltTiles) + (f ? FD.LeashTiles : D.LeashTiles)) * MechConstants.TilePx), bottom = _roofY + D.LeashDownTiles * MechConstants.TilePx;
 			return new Vector2(MathHelper.Clamp(p.X, _baseX - hx, _baseX + hx), MathHelper.Clamp(p.Y, top, bottom));
 		}
 
 		/// <summary>A random loiter waypoint in this slot's sector and altitude row, lifted out of any terrain; a column that is solid all the way up falls back to a point over the Barracks.</summary>
 		private Vector2 PickWaypoint()
 		{
-			DroneFlight.PickWaypointTiles(Slot, Main.rand, out float dx, out float alt);
+			float dx, alt;
+			if (IsField) { dx = (Main.rand.NextFloat() * 2f - 1f) * FD.LoiterHalfWidthTiles; alt = FD.LoiterMinAltTiles + Main.rand.NextFloat() * (FD.LoiterMaxAltTiles - FD.LoiterMinAltTiles); }
+			else DroneFlight.PickWaypointTiles(Slot, Main.rand, out dx, out alt);
 			float x = _baseX + dx * MechConstants.TilePx;
 			int tx = (int)(x / MechConstants.TilePx);
 			int ty = Math.Max((int)(MinFlightY / MechConstants.TilePx) + 1, (int)((_roofY - alt * MechConstants.TilePx) / MechConstants.TilePx));
 			int lifted = 0;
 			while (lifted < 24 && (SolidAt(tx, ty) || SolidAt(tx, ty - 1) || SolidAt(tx, ty + 1))) { ty--; lifted++; }
-			if (lifted >= 24) return new Vector2(_baseX, _roofY - D.LoiterMinAltTiles * MechConstants.TilePx);
+			if (lifted >= 24) return new Vector2(_baseX, _roofY - (IsField ? FD.LoiterMinAltTiles : D.LoiterMinAltTiles) * MechConstants.TilePx);
 			return new Vector2(x, ty * MechConstants.TilePx + MechConstants.TilePx * 0.5f);
 		}
 
@@ -706,7 +804,7 @@ namespace Mechanization.Content.NPCs
 				if (++_farTicks >= D.SetBackAfterTicks)
 				{
 					_farTicks = 0;
-					NPC.Center = new Vector2(_baseX, _roofY - D.LoiterMinAltTiles * MechConstants.TilePx);
+					NPC.Center = new Vector2(_baseX, _roofY - (IsField ? FD.LoiterMinAltTiles : D.LoiterMinAltTiles) * MechConstants.TilePx);
 					NPC.oldPosition = NPC.position; NPC.velocity = Vector2.Zero; _hasWp = false;
 					NPC.netUpdate = true;
 					if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, number: NPC.whoAmI);
@@ -743,6 +841,12 @@ namespace Mechanization.Content.NPCs
 
 		public override string GetChat()
 		{
+			if (IsField)
+			{
+				int n = ArmoriesInReach(), fpct = (int)Math.Round(BatteryFraction * 100f);
+				if (WeaponType > 0 && WeaponType < ItemLoader.ItemCount) return Language.GetTextValue("Mods.Mechanization.UI.DroneFieldMounted", Lang.GetItemNameValue(WeaponType), fpct, n);
+				return Language.GetTextValue(n > 0 ? "Mods.Mechanization.UI.DroneFieldNoWeapon" : "Mods.Mechanization.UI.DroneFieldNoArmory", fpct);
+			}
 			int pct = (int)Math.Round(BatteryFraction * 100f);
 			string weapon = WeaponType > 0 && WeaponType < ItemLoader.ItemCount ? Lang.GetItemNameValue(WeaponType) : "";
 			return Phase switch
@@ -757,6 +861,7 @@ namespace Mechanization.Content.NPCs
 
 		public override void SetChatButtons(ref string button, ref string button2)
 		{
+			if (IsField) { button = Language.GetTextValue("Mods.Mechanization.UI.DronePackUp"); button2 = ""; return; }
 			bool parked = Phase == DronePhase.Parked;
 			button = Language.GetTextValue(parked ? "Mods.Mechanization.UI.DroneLaunch" : "Mods.Mechanization.UI.DroneRecall");
 			button2 = Language.GetTextValue(parked ? "Mods.Mechanization.UI.DroneLaunchAll" : "Mods.Mechanization.UI.DroneRecallAll");
@@ -765,6 +870,15 @@ namespace Mechanization.Content.NPCs
 		public override void OnChatButtonClicked(bool firstButton, ref string shopName)
 		{
 			Player me = Main.LocalPlayer;
+			if (IsField)
+			{
+				if (!firstButton) return;
+				if (LevyUtil.IsClient) MechPackets.SendDismantle(NPC.whoAmI);   // the server owns the registry and the drop
+				else FieldDroneSystem.Instance?.Pack(NPC, me);
+				me.SetTalkNPC(-1);
+				Main.npcChatText = "";
+				return;
+			}
 			bool parked = Phase == DronePhase.Parked;
 			DroneOrder order = parked ? (firstButton ? DroneOrder.Launch : DroneOrder.LaunchAll) : (firstButton ? DroneOrder.Recall : DroneOrder.RecallAll);
 			if (LevyUtil.IsClient) MechPackets.SendDroneOrder(order, NPC.whoAmI);   // the server owns the garrison and the Armory ledger
@@ -857,7 +971,11 @@ namespace Mechanization.Content.NPCs
 		/// <summary>The mounted weapon, hung under the body (<paramref name="hang"/> is the hang point on the tilted hull) and turned to its aim (kept upright when aiming left), kicking back on a shot. An animated item sheet draws one frame.</summary>
 		private void DrawWeapon(SpriteBatch spriteBatch, Vector2 hang, Color light)
 		{
-			if (WeaponType <= 0 || WeaponType >= ItemLoader.ItemCount) return;
+			if (WeaponType <= 0 || WeaponType >= ItemLoader.ItemCount)
+			{
+				if (IsField) DrawPlainGun(spriteBatch, hang, light);
+				return;
+			}
 			Main.instance.LoadItem(WeaponType);
 			Texture2D wt = TextureAssets.Item[WeaponType]?.Value;
 			if (wt == null || wt.Width <= 0 || wt.Height <= 0) return;
@@ -872,6 +990,17 @@ namespace Mechanization.Content.NPCs
 			SpriteEffects fx = Math.Cos(_aim) < 0.0 ? SpriteEffects.FlipVertically : SpriteEffects.None;
 			Vector2 kick = new Vector2((float)-Math.Cos(_aim), (float)-Math.Sin(_aim)) * _recoil;
 			spriteBatch.Draw(wt, hang + kick, src, light, _aim, new Vector2(fw, fh) * 0.5f, scale, fx, 0f);
+		}
+
+		/// <summary>The small barrel a player-built drone carries when it has no weapon mounted: the plain bullet it fires.</summary>
+		private void DrawPlainGun(SpriteBatch spriteBatch, Vector2 hang, Color light)
+		{
+			Texture2D px = TextureAssets.MagicPixel.Value;
+			Vector2 kick = new Vector2((float)-Math.Cos(_aim), (float)-Math.Sin(_aim)) * _recoil;
+			Vector2 dir = new Vector2((float)Math.Cos(_aim), (float)Math.Sin(_aim));
+			Vector2 mid = hang + kick + dir * 5f;
+			spriteBatch.Draw(px, mid, new Rectangle(0, 0, 1, 1), Lit(new Color(58, 58, 62), light), _aim, new Vector2(0.5f, 0.5f), new Vector2(12f, 4f), SpriteEffects.None, 0f);
+			spriteBatch.Draw(px, mid - new Vector2(-dir.Y, dir.X), new Rectangle(0, 0, 1, 1), Lit(new Color(148, 148, 156), light), _aim, new Vector2(0.5f, 0.5f), new Vector2(10f, 1f), SpriteEffects.None, 0f);
 		}
 
 		public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)

@@ -10,6 +10,16 @@ Items: {
 			'''
 	}
 
+	DroneItem: {
+		DisplayName: Combat Drone
+		Tooltip:
+			'''
+			Sets a combat drone down at the cursor. It patrols 36 tiles either side of that spot and shoots hostiles within reach of its weapon.
+			Mounts the best spare ranged weapon from armories within 240 tiles or on your pylon network. With none it fires a plain bullet, reach 32 tiles.
+			Right-click the drone and choose Pack up to take it back.
+			'''
+	}
+
 	TurretItem: {
 		DisplayName: Automatic Turret
 		Tooltip:
@@ -67,4 +77,9 @@ UI: {
 	DroneNoSpare: No spare weapon in the armory.
 	DroneKeyNoBarracks: No Barracks within reach.
 	DroneNone: This Barracks has no drones.
+	DronePackUp: Pack up
+	DroneNoRoom: No room for a drone there.
+	DroneFieldMounted: Weapon: {0}. Battery {1}%. Armories: {2}.
+	DroneFieldNoWeapon: No weapon. Plain bullet. Battery {0}%. No spare ranged weapon.
+	DroneFieldNoArmory: No weapon. Plain bullet. Battery {0}%. No armory in reach.
 }

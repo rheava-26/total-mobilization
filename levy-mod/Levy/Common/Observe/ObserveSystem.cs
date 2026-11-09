@@ -56,14 +56,19 @@ namespace Levy.Common.Observe
 
 		public static float MaxZoom => ArenaView.ClampFactor(ObserveConfig.Get?.ArenaZoomPerSide ?? 2f);
 
+		/// <summary>Set only by the world self-check ([CameraWorld]) so a dedicated server can run the connect path it would otherwise skip; never set in play.</summary>
+		internal static bool CheckMode;
+		internal static bool IsConnectedTo(int cameraId) => Kind == ViewKind.Camera && TargetId == cameraId;
+		internal static void ResetForCheck() { Kind = ViewKind.None; TargetId = -1; }
+
 		public static void ConnectCamera(int id)
 		{
-			if (Main.dedServ) return;
+			if (Main.dedServ && !CheckMode) return;
 			if (MindControl.LocalSoldierId >= 0) MindControl.RequestEnd();
 			Kind = ViewKind.Camera; TargetId = id; Zoom = MaxZoom; _haveLast = false; _remoteTick = uint.MaxValue;
 			ObserveNet.SendRequest(1, id);
 			ObserveNet.SendRequest(3, 0);
-			Main.NewText(LevyUtil.T("Observe.Connected", CameraName(id)), 160, 220, 255);
+			if (!Main.dedServ) Main.NewText(LevyUtil.T("Observe.Connected", CameraName(id)), 160, 220, 255);
 		}
 
 		/// <summary>Watch a GoPro levy: the next one after the current target (or the first).</summary>

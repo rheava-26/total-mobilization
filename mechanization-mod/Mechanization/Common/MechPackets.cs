@@ -10,7 +10,7 @@ namespace Mechanization.Common
 	/// <summary>Mechanization's few client-to-server requests. A packet is a type byte then its payload; the server validates everything.</summary>
 	public enum MechPacket : byte
 	{
-		/// <summary>Client asks the server to dismantle a turret. Payload: int NPC slot.</summary>
+		/// <summary>Client asks the server to dismantle a turret, or pack up a player-built drone. Payload: int NPC slot.</summary>
 		Dismantle = 0,
 		/// <summary>Client asks the server to set a turret down. Payload: float x, float y (the cursor spot).</summary>
 		Place = 1,
@@ -18,6 +18,8 @@ namespace Mechanization.Common
 		DroneCommand = 2,
 		/// <summary>Client pressed the recall / launch key: the server acts on the Barracks nearest that player. No payload.</summary>
 		DroneKey = 3,
+		/// <summary>Client asks the server to set a player-built drone down. Payload: float x, float y (the cursor spot).</summary>
+		PlaceDrone = 4,
 	}
 
 	/// <summary>What a drone order asks for.</summary>
@@ -56,6 +58,17 @@ namespace Mechanization.Common
 			p.Send();
 		}
 
+		/// <summary>Client: ask the server to set a player-built drone down at world position <paramref name="spot"/> (it validates, places it, and refunds the item if there is no room).</summary>
+		public static void SendPlaceDrone(Vector2 spot)
+		{
+			if (Main.netMode != NetmodeID.MultiplayerClient) return;
+			ModPacket p = Mechanization.Instance.GetPacket();
+			p.Write((byte)MechPacket.PlaceDrone);
+			p.Write(spot.X);
+			p.Write(spot.Y);
+			p.Send();
+		}
+
 		/// <summary>Client: ask the server to carry out a drone order on the drone in NPC slot <paramref name="npcIndex"/> (or on its whole Barracks).</summary>
 		public static void SendDroneOrder(DroneOrder order, int npcIndex)
 		{
@@ -86,12 +99,18 @@ namespace Mechanization.Common
 					int idx = reader.ReadInt32();
 					if (Main.netMode != NetmodeID.Server || whoAmI < 0 || whoAmI >= Main.maxPlayers) return;
 					if (idx < 0 || idx >= Main.maxNPCs) return;
-					TurretSystem.Instance?.Dismantle(Main.npc[idx], Main.player[whoAmI]);
+					if (Main.npc[idx].active && Main.npc[idx].ModNPC is DroneNPC) FieldDroneSystem.Instance?.Pack(Main.npc[idx], Main.player[whoAmI]); // a player-built drone's "Pack up"
+					else TurretSystem.Instance?.Dismantle(Main.npc[idx], Main.player[whoAmI]);
 					break;
 				case MechPacket.Place:
 					float x = reader.ReadSingle(), y = reader.ReadSingle();
 					if (Main.netMode != NetmodeID.Server || whoAmI < 0 || whoAmI >= Main.maxPlayers) return;
 					TurretSystem.Instance?.PlaceFor(Main.player[whoAmI], new Vector2(x, y));
+					break;
+				case MechPacket.PlaceDrone:
+					float dx = reader.ReadSingle(), dy = reader.ReadSingle();
+					if (Main.netMode != NetmodeID.Server || whoAmI < 0 || whoAmI >= Main.maxPlayers) return;
+					FieldDroneSystem.Instance?.PlaceFor(Main.player[whoAmI], new Vector2(dx, dy));
 					break;
 				case MechPacket.DroneCommand:
 					byte order = reader.ReadByte();

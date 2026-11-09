@@ -87,6 +87,16 @@ These are the proven, public Levy symbols Mechanization already consumes or will
 
 ---
 
+## 1.9 BUILT (v0.10.0): player-built drones
+
+`DroneItem` ("Combat Drone"): 15 Wire + 8 iron/lead bars + 2 Lens at a Tinkerer's Workshop (the Mechanic sells the wire, so he is the gate). Using it sets a drone down at the cursor: single player places directly,
+a multiplayer client sends `MechPacket.PlaceDrone` and the server validates and refunds the item when there is no room. It is `DroneNPC` bound as a field drone (`ai[3] = 2`): no Barracks, a home pad (the ground under the cursor, or the
+cursor itself with no ground within 120 tiles), a 36-tile patrol box 6 to 18 tiles up, the same battery and refuel trips. It arms itself with the turret's non-consuming read of the Armories in reach (`ArmoryLink.Find`, so the pylon
+network and the Armory Relay work), re-read every 90 ticks, and fires the turret's plain bullet when nothing is mountable. No loan, no hold, outside every garrison and its cap. `FieldDroneSystem` saves home pad and HP in the world and
+re-spawns on load; a destroyed drone is dropped. Right-click the drone, "Pack up" returns the item (`MechPacket.Dismantle` serves both turret and drone). Boot and world self-check: `[DroneItem] self-check`.
+
+---
+
 ## 2. WORK ITEM 1 — DRONE MIGRATION + PATROL BEHAVIOR (the first concrete slice)
 
 > **STATUS (Mechanization 0.6.0 / Levy 1.6.7): BUILT, with these deliberate departures from the plan below.** The drone moved to Mechanization (`Content/NPCs/DroneNPC.cs`, `DroneSystem.cs`, `DroneControls.cs`, `DroneWiringCheck.cs`; `Common/DroneMath.cs`, `ShotKit.cs`, `MechConstants.Drone`). `DroneArsenal` and the Armory ledger stayed in Levy, public. **A Guide to Engineering stayed in Levy** as the unlock (item + `GuideSystem.Engineering` world flag; no item save-compat loss). The patrol-banner design in §2.4 was REPLACED by a **loiter box** above the Barracks (no banners), plus **recall/launch** orders (drone right-click panel + a keybind, packets `DroneCommand`/`DroneKey`) and a **battery** (a cost, never a cap). Not built from this section: the ore-chassis cost (§2.5) and the Engineering-unlock redesign.

@@ -68,7 +68,7 @@ namespace Mechanization.Content.NPCs
 			if (me == null || !me.active || me.dead || Main.mapFullscreen || me.mouseInterface || me.talkNPC >= 0) return;
 			string text = null; Color color = Color.White;
 
-			if (me.HeldItem != null && me.HeldItem.type == ModContent.ItemType<TurretItem>() && !Main.playerInventory)
+			if (me.HeldItem != null && (me.HeldItem.type == ModContent.ItemType<TurretItem>() || me.HeldItem.type == ModContent.ItemType<DroneItem>()) && !Main.playerInventory)
 			{
 				Vector2 at = Main.MouseWorld;
 				uint now = Main.GameUpdateCount;

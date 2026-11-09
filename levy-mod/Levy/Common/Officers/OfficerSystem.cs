@@ -266,7 +266,7 @@ namespace Levy.Common.Officers
 			foreach (SoldierNPC avatar in _avatars.Values)
 			{
 				if (avatar == null || !avatar.NPC.active || avatar.Record == null || !string.Equals(avatar.Record.CommanderName, commander.name, StringComparison.Ordinal)) continue;
-				if (!atBarracks && !LevyUtil.WithinTiles(avatar.NPC.Center, commander.Center, LevyConstants.OrderRadius)) continue;
+				if (!atBarracks && !global::Levy.Content.Items.CommandRadio.Has(commander) && !LevyUtil.WithinTiles(avatar.NPC.Center, commander.Center, LevyConstants.OrderRadius)) continue;
 				avatar.Officer_ReceiveOrder(order);
 			}
 		}
@@ -323,7 +323,7 @@ namespace Levy.Common.Officers
 
 		private static bool OwnedInReach(SoldierNPC avatar, Player commander, bool atBarracks) =>
 			avatar != null && avatar.NPC.active && avatar.Record != null && string.Equals(avatar.Record.CommanderName, commander.name, StringComparison.Ordinal)
-			&& (atBarracks || LevyUtil.WithinTiles(avatar.NPC.Center, commander.Center, LevyConstants.OrderRadius));
+			&& (atBarracks || global::Levy.Content.Items.CommandRadio.Has(commander) || LevyUtil.WithinTiles(avatar.NPC.Center, commander.Center, LevyConstants.OrderRadius));
 
 		/// <summary>Sends an officer back to town life. Only his own commander may (no refund). False when he is not that player's officer.</summary>
 		public bool Dismiss(Player commander, NPC npc)

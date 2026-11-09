@@ -117,7 +117,7 @@ namespace Levy.Common.UI
 			_buttons[7].Set(LevyUtil.T(focusOn ? "UI.FocusClear" : "UI.FocusAttack"), true, LevyUtil.T(focusOn ? "UI2.FocusClearHint" : "UI2.FocusAttackHint"));
 			if (_nearest == null) _buttons[8].Set(LevyUtil.T("UI.Mobilize"), false, LevyUtil.T("UI2.NoBarracksNearby"));
 			else _buttons[8].Set(LevyUtil.T(_nearest.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(_nearest.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint") + " " + _nearest.TownName);
-			_buttons[9].Set(LevyUtil.T("UI.Rally"), true, LevyUtil.T("UI2.RallyHint"));
+			_buttons[9].Set(LevyUtil.T("UI.Rally"), true, LevyUtil.T(_radio ? "UI2.RallyHintRadio" : "UI2.RallyHint"));
 			_buttons[10].Set(LevyUtil.T("UI.Rearm"), true, LevyUtil.T("UI.RearmHint"));
 			_buttons[11].Set(LevyUtil.T(UISystem.NameplatesForced ? "UI.NamesOff" : "UI.NamesOn"), true, LevyUtil.T("UI.NamesHint"));
 		}

@@ -192,6 +192,33 @@ namespace Levy.Common.Fear
 			return m;
 		}
 
+		/// <summary>True while the levy's commander has the Spectator potion buff active: such a levy is fearless (no gain from any source, Shaken and Routed end). Otherwise fear works as configured.</summary>
+		public static bool Immune(SoldierNPC s) => s != null && ImmuneCommander(s.Commander);
+
+		/// <summary>The rule on its own: the player drank a Spectator potion and the buff is still running.</summary>
+		public static bool ImmuneCommander(Player commander) => global::Levy.Common.Potions.SpectatorPlayer.IsSpectator(commander);
+
+		/// <summary>
+		/// A world event just began (an invasion, Blood Moon, Eclipse, Pumpkin or Frost Moon, the Old One's Army, the Lunar Events) or a boss arrived: every levy gets a jolt of fear
+		/// of <paramref name="amount"/> (scaled like any fear input), lifted no higher than <see cref="LevyConstants.EventFearCap"/>, so an event unnerves the army without breaking it alone.
+		/// Only under the Events fear model; levies of a Spectator are skipped. Server / single player.
+		/// </summary>
+		public static void OnWorldEvent(float amount)
+		{
+			if (LevyUtil.IsClient || amount <= 0f || LevyOptions.Fear != FearModel.Events) return;
+			RosterSystem roster = RosterSystem.Instance;
+			if (roster == null) return;
+			foreach (SoldierNPC b in roster.ActiveBodies())
+			{
+				if (b == null || b.Record == null || !b.IsAlive || Immune(b)) continue;
+				b.Fear = EventFear(b.Fear, amount, GainMultiplier(b));
+			}
+		}
+
+		/// <summary>One jolt: the meter plus the amount times the gain, held under the event cap (a meter already above the cap is left alone).</summary>
+		public static float EventFear(float current, float amount, float gain)
+			=> current >= LevyConstants.EventFearCap ? current : System.Math.Min(LevyConstants.EventFearCap, current + amount * gain);
+
 		/// <summary>Happy!: the levy has the vanilla Happy! buff, or a placed Sunflower is within the vanilla scene scan box of it. Fear gain is halved.</summary>
 		public static bool Calm(SoldierNPC s) => s.NPC.HasBuff(Terraria.ID.BuffID.Sunflower) || (s.Stations & StationFlags.Sunflower) != 0;
 

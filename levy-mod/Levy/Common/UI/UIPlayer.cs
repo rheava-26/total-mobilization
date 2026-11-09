@@ -88,7 +88,7 @@ namespace Levy.Common.UI
 			if (UISystem.ArmyStripKey?.JustPressed == true) UISystem.Instance.ToggleArmyStrip();
 			if (UISystem.MobilizeKey?.JustPressed == true)
 			{
-				var te = UIActions.NearestBarracks(Player.Center, LevyConstants.UI.MobilizeKeyRadiusTiles);
+				var te = UIActions.NearestBarracks(Player.Center, global::Levy.Content.Items.CommandRadio.Has(Player) ? float.MaxValue : LevyConstants.UI.MobilizeKeyRadiusTiles); // a Command Radio reaches the nearest barracks anywhere
 				if (te == null) Main.NewText(LevyUtil.T("UI2.NoBarracksNearby"), 200, 160, 120);
 				else UIActions.ToggleMobilize(te);
 			}

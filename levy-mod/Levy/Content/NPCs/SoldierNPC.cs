@@ -97,7 +97,7 @@ namespace Levy.Content.NPCs
 		private int _buffLifeRegen;
 
 		// ---- fear (meter on the record; helpers here) ----
-		public float Fear { get => Record?.Fear ?? 0f; set { if (Record != null) Record.Fear = MathHelper.Clamp(value, 0f, 100f); } }
+		public float Fear { get => Record?.Fear ?? 0f; set { if (Record == null) return; float v = MathHelper.Clamp(value, 0f, 100f); if (v > Record.Fear && global::Levy.Common.Fear.FearSystem.Immune(this)) return; Record.Fear = v; } } // a levy whose commander has the Spectator potion active gains no fear from any source
 		public bool Shaken => Fear >= LevyConstants.Fear.ShakenThreshold;
 		public bool IsRouted => State == SoldierState.Routed;
 
@@ -454,7 +454,7 @@ namespace Levy.Content.NPCs
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Fear, pq);
 			MindControl_Drive();
 			pq = global::Levy.Common.Util.LevyProf.Begin();
-			Movement_Update();
+			if (!Sit_Hold()) Movement_Update(); // a seated levy stays on its seat (SoldierNPC.Sit.cs)
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Move, pq);
 			TickJumpEffects(); // the real OnStarted of every non-vanilla extra jump spent (SoldierNPC.JumpFx.cs)
 			TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs); a dedicated server returns at once
@@ -614,6 +614,7 @@ namespace Levy.Content.NPCs
 			writer.Write(OfficerMode);
 			if (OfficerMode) { writer.Write(OfficerTownIndex); writer.Write(OfficerTownType); }
 			HookWriteNet(writer); // grappled: clients draw the chain
+			writer.Write(Sit_NetFlag()); // seated: clients draw the sitting pose
 		}
 
 		public override void ReceiveExtraAI(BinaryReader reader)
@@ -636,6 +637,7 @@ namespace Levy.Content.NPCs
 			if (OfficerMode) { OfficerTownIndex = reader.ReadInt32(); OfficerTownType = reader.ReadInt32(); if (!wasOfficer) _offDef = null; }
 			else { OfficerTownIndex = -1; OfficerTownType = -1; }
 			HookReadNet(reader);
+			Sit_ReadNet(reader.ReadBoolean());
 			Record.BodyIndex = NPC.whoAmI; Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 			NPC.GivenName = Record.Name;
 			EnsureDummy(); ApplyLooks(); EquipDummy();

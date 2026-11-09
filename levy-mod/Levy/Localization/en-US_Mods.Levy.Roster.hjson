@@ -1,6 +1,7 @@
 # Roster strings. Keys are relative to Mods.Levy.Roster (prefix comes from the file name).
 Nothing: nothing
 KillerFall: the fall
+KillerHazard: the spikes
 KillerLava: lava
 KillerDrowning: the water
 KillerUnknown: misadventure

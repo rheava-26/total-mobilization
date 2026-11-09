@@ -216,7 +216,7 @@ namespace Levy.Common.Boss
 		public static void OnSoldierDamagedNpc(NPC target, SoldierNPC soldier, int damage)
 		{
 			if (!LevyUtil.IsServerOrSingle || target == null || soldier == null || soldier.Record == null) return;
-			if (!TryGetRoot(target, out var root, out int rootType)) return;
+			if (!TryGetScalingRoot(target, out var root, out int rootType)) return;
 			var rec = soldier.Record;
 			var data = LevyNpcData.Of(root);
 			bool eow = rootType == NPCID.EaterofWorldsHead;
@@ -243,6 +243,24 @@ namespace Levy.Common.Boss
 			if (damage > 0 && cfg.BossesPunishSoldiers && soldier.NPC != null) RecordDamage(data, soldier.NPC.whoAmI, damage);
 		}
 
+		/// <summary>
+		/// The NPC whose life the army's engagement scales: a vanilla main boss or part resolves through <see cref="TryGetRoot"/>; any other boss (a modded one such as Calamity's, which the vanilla list does not
+		/// know) is its own root, or the head its segments point at through realLife. Without this fallback a modded boss was never scaled at all.
+		/// </summary>
+		internal static bool TryGetScalingRoot(NPC target, out NPC root, out int rootType)
+		{
+			if (TryGetRoot(target, out root, out rootType)) return true;
+			root = null; rootType = -1;
+			if (target == null || !target.active || target.friendly) return false;
+			NPC n = target.realLife >= 0 && target.realLife < Main.maxNPCs && target.realLife != target.whoAmI && Main.npc[target.realLife].active ? Main.npc[target.realLife] : target;
+			if (!n.boss || n.friendly || n.townNPC) return false;
+			root = n; rootType = n.type;
+			return true;
+		}
+
+		/// <summary>The life an engagement adds to a boss of <paramref name="baseLifeMax"/>: engaged command points times the per-CP share, held under the cap (both fractions).</summary>
+		internal static int ScaledAdd(int baseLifeMax, int engagedCp, float perCp, float cap) => (int)(Math.Max(1, baseLifeMax) * Math.Min(engagedCp * perCp, Math.Max(0f, cap)));
+
 		/// <summary>Regulars dedupe by record Id; a record without an Id (transient militia) dedupes by object identity in the negative range.</summary>
 		private static int EngagementKey(Soldiers.SoldierRecord rec)
 			=> rec.Id > 0 ? rec.Id : -1 - (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(rec) & 0x3FFFFFFF);
@@ -252,7 +270,7 @@ namespace Levy.Common.Boss
 		/// <summary>Same NPC for scaling purposes. Eater of Worlds segments turn into heads/tails with a bare type change (NPC.cs 45852/45866) and keep their life.</summary>
 		private static bool SameScalingKind(int a, int b) => a == b || (IsEowSegment(a) && IsEowSegment(b));
 
-		private static void ApplyScaling(NPC npc, float fraction)
+		internal static void ApplyScaling(NPC npc, float fraction)
 		{
 			if (npc == null || !npc.active || fraction <= 0f) return;
 			if (!_scale.TryGetValue(npc.whoAmI, out var st) || !SameScalingKind(st.Type, npc.type) || npc.lifeMax < st.BaseLifeMax + st.AppliedAdd)

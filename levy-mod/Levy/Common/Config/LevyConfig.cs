@@ -78,6 +78,8 @@ namespace Levy.Common.Config
 		[Header("Hooks")]
 		[DefaultValue(true)] public bool SoldiersUseHooks;
 		[DefaultValue(false)] public bool SoldiersTakeFallDamage;
+		[DefaultValue(false)] public bool SoldiersTakeTileHazards;
+		[DefaultValue(true)] public bool LeviesSitWhenIdle;
 
 		// ---- Gear upkeep ------------------------------------------------------------------------------------
 		[Header("GearUpkeep")]

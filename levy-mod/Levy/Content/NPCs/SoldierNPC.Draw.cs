@@ -59,6 +59,7 @@ namespace Levy.Content.NPCs
 				Dummy.gfxOffY = NPC.gfxOffY;
 				Dummy.lastVisualizedSelectedItem = Dummy.inventory[0]; // the renderer draws this, not inventory[selectedItem]
 				PoseDummy();
+				Sit_PoseDummy(); // SoldierNPC.Sit.cs: the seated pose
 				if (newTick)
 				{
 					_drawAnimTick = tick;
@@ -224,17 +225,18 @@ namespace Levy.Content.NPCs
 				sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
 				try
 				{
-					if (Shaken || State == SoldierState.Shaken) DrawShakenTint(sb, screenPos);
-					if (Record != null && Record.Mutinous && LevyConfig.Get.WageMutiny) DrawMutinyTint(sb, screenPos);
-					if (!ArmorDrawsTrail) DrawDashShadows(); // dash afterimages behind the body (SoldierNPC.MovementFx.cs); armor with its own trail draws it below
-					DrawArmorFx(new Vector2(Dummy.position.X, Dummy.position.Y + NPC.gfxOffY)); // SoldierNPC.ArmorFx.cs
+					bool lens = global::Levy.Common.Vanity.LensDraw.Active; // Spectral Lens: the body is faint, so its full-strength tints, trails and slash are left out
+					if (!lens && (Shaken || State == SoldierState.Shaken)) DrawShakenTint(sb, screenPos);
+					if (!lens && Record != null && Record.Mutinous && LevyConfig.Get.WageMutiny) DrawMutinyTint(sb, screenPos);
+					if (!lens && !ArmorDrawsTrail) DrawDashShadows(); // dash afterimages behind the body (SoldierNPC.MovementFx.cs); armor with its own trail draws it below
+					if (!lens) DrawArmorFx(new Vector2(Dummy.position.X, Dummy.position.Y + NPC.gfxOffY)); // SoldierNPC.ArmorFx.cs
 					var pos = new Vector2(Dummy.position.X, Dummy.position.Y + NPC.gfxOffY);
 					global::Levy.Common.Util.HangWatch.DrawEnter(2); // watchdog breadcrumb: a frame stall here = this soldier's player-render (incl. its modded gear draw layers)
 					float bodyRot = Dummy.fullRotation; Vector2 bodyOrigin = Dummy.fullRotationOrigin;
 					DrunkPose(ref pos, ref bodyRot, ref bodyOrigin); // SoldierNPC.Drunk.cs: hop, sway and a raised arm under a drink (draw only)
 					try { Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, bodyRot, bodyOrigin, 0f, 1f); }
 					finally { global::Levy.Common.Util.HangWatch.DrawExit(); }
-					DrawSwordSlash(sb);
+					if (!lens) DrawSwordSlash(sb);
 				}
 				finally { sb.End(); }
 			}

@@ -101,23 +101,24 @@ NoBarracksNearby: No barracks within 120 tiles.
 MobilizeHint: Call up the militia of the nearest settlement.
 StandDownHint: Send the militia home.
 RallyHint: Steady every Regular within 30 tiles. Once a minute.
+RallyHintRadio: Steady every Regular, anywhere. Once a minute.
 ResetLoadouts: Reset loadouts
 ResetLoadoutsHint: Every Regular returns their whole kit to the Armory and unlocks every hand-set slot. Then each draws a fresh loadout. Nothing is destroyed.
 HoldFireHint: Soldiers stop shooting until told otherwise.
 FireAtWillHint: Soldiers engage anything hostile in reach.
-FollowHint: Regulars within 40 tiles follow you.
-FollowHintRadio: Every Regular, anywhere, follows you.
-HoldHint: Regulars within 40 tiles hold where they stand.
+FollowHint: Regulars within 150 tiles follow you. Any that fall more than 60 tiles behind and out of sight teleport to you.
+FollowHintRadio: Every Regular, anywhere, follows you. Any that fall more than 60 tiles behind and out of sight teleport to you.
+HoldHint: Regulars within 150 tiles hold where they stand.
 HoldHintRadio: Every Regular, anywhere, holds where it stands.
-ReturnHint: Regulars within 40 tiles walk back to their barracks.
+ReturnHint: Regulars within 150 tiles walk back to their barracks.
 ReturnHintRadio: Every Regular, anywhere, walks back to its barracks.
 SpreadOutHint: Soldiers keep far wider gaps, even while idle. Blunts area attacks.
 CloseUpHint: Soldiers pack tight around you and keep fights within 14 tiles of you.
 NormalRanksHint: Soldiers return to the normal formation.
-SearchDestroyHint: Regulars within 40 tiles roam outward from the settlement hunting enemies, keeping their standoff.
-SearchDestroyHintRadio: Every Regular, anywhere, roams outward from the settlement hunting enemies, keeping their standoff.
-FreeReinHint: Regulars within 40 tiles act fully on their own. They roam far from you and the settlement, follow the fighting, and still keep their standoff.
-FreeReinHintRadio: Every Regular, anywhere, acts fully on its own. They roam far from you and the settlement, follow the fighting, and still keep their standoff.
+SearchDestroyHint: Regulars within 150 tiles roam outward from the settlement hunting enemies, keeping their standoff. Any that end up more than 60 tiles from you and out of sight teleport to you.
+SearchDestroyHintRadio: Every Regular, anywhere, roams outward from the settlement hunting enemies, keeping their standoff. Any that end up more than 60 tiles from you and out of sight teleport to you.
+FreeReinHint: Regulars within 150 tiles act fully on their own. They roam far from you and the settlement, follow the fighting, and keep their standoff. They never teleport to you.
+FreeReinHintRadio: Every Regular, anywhere, acts fully on its own. They roam far from you and the settlement, follow the fighting, and keep their standoff. They never teleport to you.
 FocusDesignate: Click an enemy, a critter, or a spot to attack. Right-click or press Escape to cancel.
 FocusCursorHint: Click a target or a spot to attack
 FocusCancelled: Focus attack cancelled.

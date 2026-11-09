@@ -95,9 +95,10 @@ namespace Levy.Content.NPCs
 		// the saving throw
 		// ---------------------------------------------------------------------------------------------
 		/// <summary>Where the current fall ends: ticks to the end, and what is there (lava, void, floor depth).</summary>
+		private bool _predLava;
 		private bool PredictFall(out int ticks, out bool bad)
 		{
-			NPC npc = NPC; ticks = 0; bad = false;
+			NPC npc = NPC; ticks = 0; bad = false; _predLava = false;
 			float y = npc.position.Y, vy = npc.velocity.Y, x = npc.position.X, vx = npc.velocity.X, g = Gravity();
 			int w = npc.width, h = npc.height;
 			int startRow = (int)(y / 16f);
@@ -109,7 +110,7 @@ namespace Levy.Content.NPCs
 				if (!TileNav.InBounds(bx0, fr) || !TileNav.InBounds(bx1, fr)) { ticks = t; bad = true; return true; }
 				for (int tx = bx0; tx <= bx1; tx++)
 				{
-					for (int ty = by0; ty <= by1; ty++) if (TileNav.HasLava(tx, ty)) { ticks = t; bad = true; return true; }
+					for (int ty = by0; ty <= by1; ty++) if (TileNav.HasLava(tx, ty)) { ticks = t; bad = true; _predLava = true; return true; }
 					if (TileNav.IsDeepWater(tx, by1)) { ticks = t; return true; }
 				}
 				for (int tx = bx0; tx <= bx1; tx++)
@@ -126,11 +127,73 @@ namespace Levy.Content.NPCs
 			ticks = 120; return false;
 		}
 
+		/// <summary>
+		/// A fall (or a knock) toward lava, with no hook to catch it: steer to the side with less lava under it and spend whatever a body has in the air (extra jump, wing flap, rocket pulse) so the arc clears the pool or
+		/// the body flies out of it. Runs only while the prediction says lava.
+		/// </summary>
+		private void AirLavaGuard()
+		{
+			NPC npc = NPC;
+			if (_hkPhase != HookPhase.Idle || npc.velocity.Y == 0f || npc.wet || npc.lavaWet || _clmOn || _flying || Abilities.HasWings) return;   // wings have their own flight logic (a flap from here made them worse)
+			if ((int)((Main.GameUpdateCount + (uint)npc.whoAmI) % 2u) != 0) return;
+			if (!PredictFall(out int ticks, out bool bad) || !bad || !_predLava) return;
+			Point feet = TileNav.FeetTile(npc.Bottom);
+			int dir = LavaFreeSide(feet);
+			LavaGuardTicks++;
+			if (dir != 0 && !Abilities.HasWings)   // wings flap out instead (steering would fight the flight logic)
+			{
+				float top = Math.Max(2f, Abilities.MaxRunSpeed);
+				npc.velocity.X = MathHelper.Clamp(npc.velocity.X + dir * LevyConstants.Movement.AirSteerAccelPx, -top, top);
+				npc.direction = npc.spriteDirection = dir;
+			}
+			if (ticks <= LevyConstants.Movement.AirLavaKickTicks && npc.velocity.Y > 0f)
+				if (AirKick(JumpSpeedFor(Math.Min(Abilities.JumpTiles, LevyConstants.Movement.BaseJumpTiles)) * LevyConstants.Movement.ExtraJumpSpeedMult)) LavaKicks++;
+		}
+		internal static int LavaGuardTicks, LavaKicks;
+
+		/// <summary>Which way (-1, 1) has less lava under the next columns out: the first floor ends a look.</summary>
+		private int LavaFreeSide(Point feet)
+		{
+			int best = 0, bestScore = int.MaxValue;
+			for (int dir = -1; dir <= 1; dir += 2)
+			{
+				int score = 0;
+				for (int k = 1; k <= 14; k++)
+				{
+					int x = feet.X + dir * k; bool hit = false;
+					for (int y = feet.Y; y <= feet.Y + 60 && TileNav.InBounds(x, y); y++)
+					{
+						if (TileNav.HasLava(x, y)) { score += 2; hit = true; break; }
+						if (TileNav.IsFloor(x, y)) break;
+					}
+					if (!hit) score -= 1;
+				}
+				if (score < bestScore || (score == bestScore && Math.Sign(NPC.velocity.X) == dir)) { bestScore = score; best = dir; }
+			}
+			return best;
+		}
+
+		/// <summary>The saving throw's second try: no landing is reachable, so hang on the nearest anchor that stops the fall (a player casts at the wall beside him) and climb out from there as any chain does.</summary>
+		private bool TryFallHang(Vector2 goal)
+		{
+			HookInfo info = HookInfo.Of(Record.Gear.Hook);
+			if (!info.Usable) return false;
+			Vector2 bottom = NPC.Bottom;
+			HookParams hp = HookParams.For(info, NPC.width, NPC.height, HookJumpSpeed, Gravity()); hp.Climb = true; hp.KickSpeed = HookJumpSpeed;
+			HookPlan cp = HookPlanner.PlanClimb(TileHookWorld.Instance, bottom, hp, goal, HookPlanner.ClimbDist(bottom, goal), 8f);
+			if (cp == null) return false;
+			_hkReason = HookReason.Rescue; _hkTrigGoalUsed = goal; _hkChain = true; _hkClimb = true; _hkJumpKick = true; _hkChainCount = 0; _hkJumpTries = 0; _hkChainStart = Main.GameUpdateCount;
+			_hkChainBest = float.MaxValue; _hkChainNoProg = 0; _hkStartPos = bottom; _hkAltSeen = 0;
+			StartChainLink(cp, false);
+			return _hkPhase != HookPhase.Idle;
+		}
+
 		/// <summary>Called every movement tick: a falling soldier whose fall ends badly looks for something to grab.</summary>
 		private void FallCatchCheck()
 		{
 			NPC npc = NPC;
-			if (_hkPhase != HookPhase.Idle || !HookUsable || npc.velocity.Y < 2f || npc.wet || _flying) return;
+			if (!HookUsable) { AirLavaGuard(); return; }
+			if (_hkPhase != HookPhase.Idle || npc.velocity.Y < 2f || npc.wet || _flying) return;
 			if (_fallPlanRetry > 0) { _fallPlanRetry--; return; }
 			if (Main.GameUpdateCount < _hkNextAllowed && _hkFailStreak > 0) return;
 			if ((int)((Main.GameUpdateCount + (uint)npc.whoAmI) % 3u) != 0) return;
@@ -138,10 +201,10 @@ namespace Levy.Content.NPCs
 			if (!SoldierHooks.TakePlanBudget()) return;
 			Point feet = TileNav.FeetTile(npc.Bottom);
 			// something to stand on that is not below the start of the fall: a ledge, a platform, the far side
-			if (!TileNav.NearestStandable(feet.X, feet.Y, 18, out Point found) || found.Y > feet.Y + 3) { _fallPlanRetry = 20; return; }
-			Vector2 goal = TileNav.BottomCentre(found.X, found.Y);
+			bool haveLanding = TileNav.NearestStandable(feet.X, feet.Y, 18, out Point found) && found.Y <= feet.Y + 3;
+			Vector2 goal = haveLanding ? TileNav.BottomCentre(found.X, found.Y) : new Vector2(npc.Bottom.X, npc.Bottom.Y - 14f * 16f);
 			_fallPlanRetry = 12;
-			try { HookStart(HookReason.Rescue, goal); if (_hkPhase != HookPhase.Idle) FallCatches++; }
+			try { if (haveLanding) HookStart(HookReason.Rescue, goal); if (_hkPhase == HookPhase.Idle) TryFallHang(goal); if (_hkPhase != HookPhase.Idle) { FallCatches++; HookLog("fall catch"); } else AirLavaGuard(); }
 			catch (Exception e)
 			{
 				if (GearUpkeep.WarnOnce(e)) Levy.Instance?.Logger.Warn("Levy: fall-catch failed on soldier '" + SoldierName + "': " + e);

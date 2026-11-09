@@ -226,6 +226,11 @@ namespace Levy.Common
 			// ---- off-screen catch-up for map-point orders ----
 			/// <summary>A map-order levy that no player can see and that has stayed within CatchUpStuckTiles of one spot for this many ticks hops ahead along its route.</summary>
 			public const int CatchUpStuckTicks = 60 * 6; public const float CatchUpStuckTiles = 5f;
+			/// <summary>Or has not got this many tiles nearer the goal (best straight distance) in this many ticks: a body looping casts in a pit moves, but is stuck all the same.</summary>
+			/// <summary>A body falling toward lava steers in the air by this much per tick, and spends an extra jump or a flap once the lava is this many ticks away.</summary>
+			public const float LavaSwimAccel = 0.7f, LavaSwimMaxUp = 5f;
+			public const float AirSteerAccelPx = 0.3f; public const int AirLavaKickTicks = 40;
+			public const int CatchUpNoProgressTicks = 60 * 15; public const float CatchUpProgressTiles = 8f;
 			/// <summary>Nobody may see the levy, or the place it lands: the box around each active player (px, full width and height).</summary>
 			public const float CatchUpBoxW = 2400f, CatchUpBoxH = 1400f;
 			/// <summary>A hop lands at least this far ahead (tiles of straight line) or is not made; a spot at the goal is searched this many tiles around it.</summary>

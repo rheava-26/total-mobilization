@@ -67,3 +67,20 @@ elif st == 'hmed':
     worlds('CMDFAR=20 LEVY_TRAVEL_NOHOP=1 GEAR=hooks N=13', prefix='hmed_')
 elif st == 'mixednh':
     e = 'CMDFAR=20 LEVY_TRAVEL_NOHOP=1'; worlds(e, prefix='nh_'); courses(e, prefix='nh_')
+elif st == 'rwq':
+    for (w, x) in (('M2', 3700), ('M2', 1700), ('M1', 1700)):
+        job('CMDFAR=600 HOLD=1 GEAR=hooks N=13', f'hfar_{w}_x{x}_long', 'world', w, 'map', 0, 800, x, 9000)
+    for (w, x) in (('M1', 700), ('M2', 700), ('M2', 3700)):
+        job('CMDFAR=0 HOLD=1 CMDTRACK=1 LEVY_TRAVEL_NOHOP=1 GEAR=hooks N=13', f'hnear_{w}_x{x}_long', 'world', w, 'map', 0, 800, x, 9000)
+elif st == 'lava':
+    e = 'CMDFAR=20 LEVY_TRAVEL_NOHOP=1'
+    for k in range(6):
+        f = 20 + 150 * k
+        job(e, f'lava_V{k}', 'lava', 'LevyTest', 'map', f, f + 150, 0, 6000)
+    for k in (1, 3, 5):
+        f = 20 + 150 * k
+        job(e + ' LEVY_LAVA_KNOCK=1', f'lavak_V{k}', 'lava', 'LevyTest', 'map', f, f + 150, 0, 6000)
+    job(e + ' LEVY_LAVA_DROP=1', 'lavad_V4', 'lava', 'LevyTest', 'map', 620, 770, 0, 6000)
+    job(e + ' LEVY_LAVA_DROP=1 GEAR=hooks N=13', 'lavad_hooks', 'lava', 'LevyTest', 'map', 620, 770, 0, 6000)
+    job(e + ' GEAR=hooks N=13', 'lavah_V1', 'lava', 'LevyTest', 'map', 170, 320, 0, 6000)
+    job(e + ' GEAR=hooks N=13', 'lavah_V5', 'lava', 'LevyTest', 'map', 770, 920, 0, 6000)

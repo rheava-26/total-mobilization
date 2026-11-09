@@ -429,9 +429,13 @@ namespace Levy.Common.Movement
 			}
 		}
 
+		/// <summary>Lava in the column beside the feet, or beside or under the floor: a body that lands here and is knocked, or steps wrong, is in it.</summary>
+		private static bool LavaBeside(int x, int y) => TileNav.HasLava(x - 1, y) || TileNav.HasLava(x + 1, y) || TileNav.HasLava(x - 1, y - 1) || TileNav.HasLava(x + 1, y - 1) || TileNav.HasLava(x - 1, y + 1) || TileNav.HasLava(x + 1, y + 1);
+
 		private void Relax(int x, int y, int from, float g, byte kind)
 		{
 			if (!InWindow(x, y)) return;
+			if (kind >= KindFall && kind != KindFly && !_wings && !TravelLegacy.On && LavaBeside(x, y)) return;   // no planned landing (fall, jump, hook, climb) beside lava
 			int idx = Idx(x, y);
 			int fl = 0;
 			if (kind == KindFly)

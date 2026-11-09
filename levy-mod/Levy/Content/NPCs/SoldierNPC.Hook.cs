@@ -625,7 +625,7 @@ namespace Levy.Content.NPCs
 			if (floor || npc.wet || _hkTicks > H.BallisticMaxTicks)
 			{
 				HookLog(floor ? "landed" : npc.wet ? "landed wet" : "ballistic timeout"); _hkChainUsed = false; SoldierHooks.Landings++; HkLandings++; HookDbg($"landed at {NPC.Bottom.X / 16f:0.0},{NPC.Bottom.Y / 16f:0.0}");
-				bool looped = Vector2.DistanceSquared(NPC.Bottom, _hkStartPos) < 128f * 128f;
+				bool looped = Vector2.DistanceSquared(NPC.Bottom, _hkStartPos) < 64f * 64f;
 				if (looped) HookBackoff(); else _hkFailStreak = 0;   // came down where it started: the same cast again is a loop, so each repeat waits longer
 				_hkPhase = HookPhase.Cooldown; _hkNextAllowed = looped ? Math.Max(_hkNextAllowed, Main.GameUpdateCount + (uint)H.CooldownTicks) : Main.GameUpdateCount + (uint)H.CooldownTicks;
 				ResetStuck(); npc.netUpdate = true;

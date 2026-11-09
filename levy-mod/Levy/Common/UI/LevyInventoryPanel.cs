@@ -110,7 +110,7 @@ namespace Levy.Common.UI
 		private readonly FrameBox[] _frames = new FrameBox[SoldierGear.SlotCount];
 		private int _statusTimer, _refreshTimer;
 
-		private const int W = 372, H = 352;
+		private const int W = 372, H = 418;
 		private const float SlotScale = 0.85f, DyeScale = 0.7f;
 		private const int Pitch = 50, DyePitch = 40, SlotSize = 44, DySize = 36;
 		private static readonly Color Gold = new(255, 215, 80);
@@ -139,7 +139,8 @@ namespace Levy.Common.UI
 			Put(new Label(LevyUtil.T("Loadout.Arms"), 0.75f), 12, 56);
 			Put(new Label(LevyUtil.T("Loadout.Armor"), 0.75f), 210, 56);
 			Put(new Label(LevyUtil.T("Loadout.Accessories"), 0.75f), 12, 142);
-			Put(new Label(LevyUtil.T("Talk.Vanity"), 0.75f), 12, 214);
+			Put(new Label(LevyUtil.T("Loadout.ExtraSidearms"), 0.75f), 12, 214);
+			Put(new Label(LevyUtil.T("Talk.Vanity"), 0.75f), 12, 280);
 
 			AddSlot(SoldierGear.SlotWeapon, "Loadout.Weapon", 12, 74);
 			AddSlot(SoldierGear.SlotSidearm, "Loadout.Sidearm", 62, 74);
@@ -149,11 +150,12 @@ namespace Levy.Common.UI
 			AddSlot(SoldierGear.SlotBody, "Loadout.Body", 260, 74);
 			AddSlot(SoldierGear.SlotLegs, "Loadout.Legs", 310, 74);
 			for (int i = 0; i < SoldierGear.AccessorySlots; i++) AddSlot(SoldierGear.SlotAcc0 + i, "Loadout.Accessory", 12 + i * Pitch, 160, remove: true);
-			for (int d = 0; d < SoldierGear.DyeSlots; d++) AddDye(d, 12 + d * DyePitch, 232);
+			for (int x = 0; x < LevyConstants.ExtraSidearms; x++) AddSlot(SoldierGear.SlotSide2 + x, "Loadout.ExtraSidearm", 12 + x * Pitch, 232);
+			for (int d = 0; d < SoldierGear.DyeSlots; d++) AddDye(d, 12 + d * DyePitch, 298);
 
-			_status = Put(new Label("", 0.75f), 12, 286);
-			_takeAll = Put(new LevyButton(LevyUtil.T("Talk.TakeAll"), 0.8f, 110, 26, TakeAll, LevyUtil.T("Talk.TakeAllHint")), 12, 312);
-			var hint = Put(new Label(LevyUtil.T("Talk.LockHint"), 0.62f), 130, 312);
+			_status = Put(new Label("", 0.75f), 12, 352);
+			_takeAll = Put(new LevyButton(LevyUtil.T("Talk.TakeAll"), 0.8f, 110, 26, TakeAll, LevyUtil.T("Talk.TakeAllHint")), 12, 378);
+			var hint = Put(new Label(LevyUtil.T("Talk.LockHint"), 0.62f), 130, 378);
 			hint.TextColor = new Color(200, 205, 225);
 			Append(_panel);
 		}

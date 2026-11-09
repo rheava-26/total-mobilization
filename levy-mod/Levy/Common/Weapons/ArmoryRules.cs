@@ -95,6 +95,8 @@ namespace Levy.Common.Weapons
 		public const int MaxBlocks = 32, MaxItemsPerList = 64, MaxOverrides = 512, MaxWireBytes = 96 * 1024, FormatVersion = 1;
 		/// <summary>Rank given to an "always prefer" item, on top of its own rank: above every real rank, so a preferred item is used first.</summary>
 		public const float PreferBase = 1e7f;
+		/// <summary>Score added to an armor piece or accessory the player marked "prefer": above every ordinary score term (including an upgrade chain), so it is dealt first.</summary>
+		public const float GearPreferBonus = 4e6f;
 
 		public List<RuleBlock> Blocks = new();
 		public readonly Dictionary<string, ItemOverride> Overrides = new();

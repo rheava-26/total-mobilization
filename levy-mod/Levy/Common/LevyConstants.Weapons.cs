@@ -69,6 +69,10 @@ namespace Levy.Common
 		public const int SidearmCheckIntervalTicks = 30;
 		/// <summary>A contact blade that took its ranged sidearm because it cannot engage (boss / flier out of reach) keeps it this long after the last time that held.</summary>
 		public const int BlockedSidearmHoldTicks = 180;
+		/// <summary>Weapons a levy carries besides his primary: the hand sidearm and <see cref="ExtraSidearms"/> more. The extra ones hold minion staves, which run without being in hand.</summary>
+		public const int MaxSidearms = 3, ExtraSidearms = MaxSidearms - 1;
+		/// <summary>Accessory slots every levy has at least, whatever his grade: one reserved for the best mobility accessory, one for the best non-mobility accessory.</summary>
+		public const int MinAccessorySlots = 2;
 		/// <summary>Tiles a grounded body adds to its blade reach for a jump when judging whether an airborne target is out of reach.</summary>
 		public const int BladeJumpAllowanceTiles = 6;
 

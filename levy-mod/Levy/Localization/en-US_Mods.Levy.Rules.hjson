@@ -74,6 +74,17 @@ RemoveCategoryHint: Removes this category from the item in this armory.
 ResetItem: Reset item
 ResetItemHint: Clears the rank and tag edits for this item.
 ItemNote: Edits apply to this armory.
+GearPreferOff: Prefer: Off
+GearPreferOn: Prefer: On
+GearPreferHint: A preferred piece is issued before any other of its kind.
+GearPreferSet: Prefer set
+GearPreferSetClear: Clear set
+GearPreferSetHint: Marks every piece of this armor set.
+GearNote: Preferences apply to this armory.
+GearKindArmor: Armor. Defense {0}.
+GearKindAccessory: Accessory. Defense {0}.
+GearPreferred: Preferred. Issued first.
+GearNotPreferred: Not preferred. Issued by score.
 ClassAuto: Auto
 ClassNone: None
 ClassEditHint: Sets the class this item counts as in this armory.

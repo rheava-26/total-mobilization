@@ -223,7 +223,7 @@ namespace Levy.Common.Weapons
 		private static void MarkBad(Projectile p, Exception e)
 		{
 			int root = FamilyRoot(p.type);
-			Item staff = MiscProjSwap.BodyOf(p)?.SummonWeapon();
+			Item staff = MiscProjSwap.BodyOf(p)?.SummonWeaponFor(p.type);
 			if (p.type >= ProjectileID.Count && staff != null && staff.shoot > 0) root = staff.shoot; // a modded child that throws takes its staff back to the stand-in
 			if (BadTypes.Add(root)) ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: real minion type " + p.type + " (" + (p.ModProjectile?.FullName ?? "vanilla") + ") threw while driven for a soldier; its staff falls back to the stand-in minion: " + e);
 		}
@@ -238,7 +238,7 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		internal static void NoteModdedDeath(Projectile p, int age)
 		{
-			Item staff = MiscProjSwap.BodyOf(p)?.SummonWeapon();
+			Item staff = MiscProjSwap.BodyOf(p)?.SummonWeaponFor(p.type);
 			if (staff == null || staff.shoot <= 0) return; // the soldier gave the staff back (rearm), left, or fell: a death with no staff in hand is not evidence about the staff
 			int root = staff.shoot;
 			if (age >= LevyConstants.ModdedMinionShortLifeTicks) { ShortLives[root] = 0; return; }
@@ -634,7 +634,7 @@ namespace Levy.Common.Weapons
 
 		private static void ApplyModdedBuff(SoldierNPC body, Projectile p)
 		{
-			Item staff = body.SummonWeapon();
+			Item staff = body.SummonWeaponFor(p.type);
 			int bt = staff != null && staff.buffType > 0 ? staff.buffType : LearnedBuff.GetValueOrDefault(p.type); // a staff that sets no Item.buffType: the buff the minion's own AI was seen adding to its owner
 			ModBuff mb = bt > 0 ? ModContent.GetModBuff(bt) : null;
 			if (mb == null) return;

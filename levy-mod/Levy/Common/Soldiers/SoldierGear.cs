@@ -17,6 +17,8 @@ namespace Levy.Common.Soldiers
 
 		public Item Weapon = new Item();
 		public Item Sidearm = new Item();
+		/// <summary>The sidearms beyond the first (<see cref="LevyConstants.ExtraSidearms"/> of them): minion staves, which run without being in hand.</summary>
+		public Item[] ExtraSidearms = NewArray(LevyConstants.ExtraSidearms);
 		public Item Head = new Item();
 		public Item Body = new Item();
 		public Item Legs = new Item();
@@ -32,7 +34,9 @@ namespace Levy.Common.Soldiers
 		public const int SlotWeapon = 0, SlotSidearm = 1, SlotHead = 2, SlotBody = 3, SlotLegs = 4, SlotAcc0 = 5;
 		public const int SlotAmmo = SlotAcc0 + AccessorySlots;
 		public const int SlotHook = SlotAmmo + 1;
-		public const int SlotCount = SlotHook + 1;
+		/// <summary>The extra sidearm slots follow the hook so every older lock bit keeps its place.</summary>
+		public const int SlotSide2 = SlotHook + 1;
+		public const int SlotCount = SlotSide2 + LevyConstants.ExtraSidearms;
 
 		/// <summary>One bit per slot (see Slot*): set while the player hand-placed the item there. Auto-issue never replaces a locked slot.</summary>
 		public int LockMask;
@@ -67,6 +71,8 @@ namespace Levy.Common.Soldiers
 			if (slot == SlotHook) return Hook ??= new Item();
 			int a = slot - SlotAcc0;
 			if (a >= 0 && a < AccessorySlots) return Accessories[a] ??= new Item();
+			int x = slot - SlotSide2;
+			if (x >= 0 && x < ExtraSidearms.Length) return ExtraSidearms[x] ??= new Item();
 			return null;
 		}
 
@@ -81,7 +87,7 @@ namespace Levy.Common.Soldiers
 			else if (slot == SlotLegs) Legs = item;
 			else if (slot == SlotAmmo) Ammo = item;
 			else if (slot == SlotHook) Hook = item;
-			else { int a = slot - SlotAcc0; if (a >= 0 && a < AccessorySlots) Accessories[a] = item; }
+			else { int a = slot - SlotAcc0; if (a >= 0 && a < AccessorySlots) Accessories[a] = item; else { int x = slot - SlotSide2; if (x >= 0 && x < ExtraSidearms.Length) ExtraSidearms[x] = item; } }
 		}
 
 		private static bool Empty(Item it) => it == null || it.IsAir || it.stack <= 0;
@@ -101,6 +107,7 @@ namespace Levy.Common.Soldiers
 			if (item.stack > 1 && !(slot == SlotWeapon && WeaponClassifier.Classify(item) == WeaponFamily.Thrown)) return false;
 			if (slot == SlotWeapon) return WeaponClassifier.IsIssuableWeapon(item) && IsSupportedFamily(WeaponClassifier.Classify(item));
 			if (slot == SlotSidearm) return WeaponClassifier.IsIssuableWeapon(item) && IsSidearmFamily(WeaponClassifier.Classify(item));
+			if (slot >= SlotSide2) return slot < SlotCount && WeaponClassifier.IsIssuableWeapon(item) && WeaponClassifier.Classify(item) == WeaponFamily.Summon; // an extra sidearm is a minion staff: it runs without being in hand
 			if (slot == SlotHead) return WeaponClassifier.IsArmorPiece(item, 0) && !item.vanity;
 			if (slot == SlotBody) return WeaponClassifier.IsArmorPiece(item, 1) && !item.vanity;
 			if (slot == SlotLegs) return WeaponClassifier.IsArmorPiece(item, 2) && !item.vanity;
@@ -181,6 +188,17 @@ namespace Levy.Common.Soldiers
 
 		public bool HasWeapon => Weapon != null && !Weapon.IsAir;
 		public bool HasSidearm => Sidearm != null && !Sidearm.IsAir;
+
+		/// <summary>The slot number (for <see cref="Get"/>) of sidearm <paramref name="i"/>: 0 is the hand sidearm, then the extras.</summary>
+		public static int SidearmSlotAt(int i) => i == 0 ? SlotSidearm : SlotSide2 + i - 1;
+		/// <summary>Every sidearm slot's item, hand sidearm first, never null (air when empty).</summary>
+		public IEnumerable<Item> Sidearms()
+		{
+			yield return Sidearm ??= new Item();
+			for (int i = 0; i < ExtraSidearms.Length; i++) yield return ExtraSidearms[i] ??= new Item();
+		}
+		/// <summary>How many weapons he carries besides his primary.</summary>
+		public int SidearmCount { get { int n = 0; foreach (var s in Sidearms()) if (!Empty(s)) n++; return n; } }
 		public bool HasAmmo => Ammo != null && !Ammo.IsAir && Ammo.stack > 0;
 		public bool HasHook => Hook != null && !Hook.IsAir;
 
@@ -189,6 +207,7 @@ namespace Levy.Common.Soldiers
 		{
 			if (!Weapon.IsAir) yield return Weapon;
 			if (!Sidearm.IsAir) yield return Sidearm;
+			foreach (var x in ExtraSidearms) if (x != null && !x.IsAir) yield return x;
 			if (!Head.IsAir) yield return Head;
 			if (!Body.IsAir) yield return Body;
 			if (!Legs.IsAir) yield return Legs;
@@ -202,7 +221,7 @@ namespace Levy.Common.Soldiers
 		{
 			LockMask = 0; Reserved = null; ThrownRestockType = 0;
 			Weapon = new Item(); Sidearm = new Item(); Head = new Item(); Body = new Item(); Legs = new Item(); Ammo = new Item(); Hook = new Item();
-			Accessories = NewArray(AccessorySlots); Dyes = NewArray(DyeSlots);
+			Accessories = NewArray(AccessorySlots); Dyes = NewArray(DyeSlots); ExtraSidearms = NewArray(LevyConstants.ExtraSidearms);
 		}
 
 		public SoldierGear Clone()
@@ -214,6 +233,7 @@ namespace Levy.Common.Soldiers
 			};
 			for (int i = 0; i < AccessorySlots; i++) g.Accessories[i] = Accessories[i].Clone();
 			for (int i = 0; i < DyeSlots; i++) g.Dyes[i] = Dyes[i].Clone();
+			for (int i = 0; i < ExtraSidearms.Length; i++) g.ExtraSidearms[i] = (ExtraSidearms[i] ?? new Item()).Clone();
 			return g;
 		}
 
@@ -225,6 +245,8 @@ namespace Levy.Common.Soldiers
 				["legs"] = ItemIO.Save(Legs), ["ammo"] = ItemIO.Save(Ammo),
 			};
 			if (HasHook) tag["hook"] = ItemIO.Save(Hook);
+			bool anyExtra = false; foreach (var x in ExtraSidearms) if (!Empty(x)) anyExtra = true;
+			if (anyExtra) { var ex = new List<TagCompound>(); foreach (var x in ExtraSidearms) ex.Add(ItemIO.Save(x ?? new Item())); tag["sides"] = ex; } // absent in older saves: loads empty
 			var acc = new List<TagCompound>(); foreach (var a in Accessories) acc.Add(ItemIO.Save(a)); tag["acc"] = acc;
 			var dyes = new List<TagCompound>(); foreach (var d in Dyes) dyes.Add(ItemIO.Save(d)); tag["dyes"] = dyes;
 			if (ThrownRestockType > 0) tag["thrownType"] = ThrownRestockType;
@@ -241,6 +263,7 @@ namespace Levy.Common.Soldiers
 			g.Head = ItemIO.Load(tag.GetCompound("head")); g.Body = ItemIO.Load(tag.GetCompound("body")); g.Legs = ItemIO.Load(tag.GetCompound("legs"));
 			g.Ammo = ItemIO.Load(tag.GetCompound("ammo"));
 			if (tag.ContainsKey("hook")) g.Hook = ItemIO.Load(tag.GetCompound("hook"));
+			if (tag.ContainsKey("sides")) { var ex = tag.GetList<TagCompound>("sides"); for (int i = 0; i < g.ExtraSidearms.Length && i < ex.Count; i++) g.ExtraSidearms[i] = ItemIO.Load(ex[i]); }
 			var acc = tag.GetList<TagCompound>("acc"); for (int i = 0; i < AccessorySlots && i < acc.Count; i++) g.Accessories[i] = ItemIO.Load(acc[i]);
 			var dyes = tag.GetList<TagCompound>("dyes"); for (int i = 0; i < DyeSlots && i < dyes.Count; i++) g.Dyes[i] = ItemIO.Load(dyes[i]);
 			g.ThrownRestockType = tag.GetInt("thrownType");
@@ -265,6 +288,7 @@ namespace Levy.Common.Soldiers
 			foreach (var d in Dyes) W(d);
 			w.Write(Ammo.type); w.Write(Ammo.stack);
 			w.Write((ushort)LockMask);
+			foreach (var x in ExtraSidearms) W(x ?? new Item()); // appended last so the earlier layout is unchanged
 		}
 
 		public void ReadVisual(BinaryReader r)
@@ -275,6 +299,7 @@ namespace Levy.Common.Soldiers
 			for (int i = 0; i < DyeSlots; i++) Dyes[i] = R();
 			int at = r.ReadInt32(); int ast = r.ReadInt32(); Ammo = new Item(); if (at > 0) { Ammo.SetDefaults(at); Ammo.stack = ast; }
 			LockMask = r.ReadUInt16();
+			for (int i = 0; i < ExtraSidearms.Length; i++) ExtraSidearms[i] = R();
 		}
 	}
 }

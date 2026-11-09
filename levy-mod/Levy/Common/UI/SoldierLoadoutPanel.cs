@@ -30,7 +30,7 @@ namespace Levy.Common.UI
 		private readonly Label[] _captions = new Label[SoldierGear.SlotCount];
 		private int _refreshTimer, _statusTimer;
 
-		private const int W = 372, H = 266;
+		private const int W = 372, H = 332;
 		private const float SlotScale = 0.85f;
 		private const int Pitch = 50, SlotSize = 44;
 		private static readonly Color Gold = new(255, 215, 80);
@@ -68,9 +68,11 @@ namespace Levy.Common.UI
 			AddSlot(SoldierGear.SlotBody, "Loadout.Body", 260, 74);
 			AddSlot(SoldierGear.SlotLegs, "Loadout.Legs", 310, 74);
 			for (int i = 0; i < SoldierGear.AccessorySlots; i++) AddSlot(SoldierGear.SlotAcc0 + i, "Loadout.Accessory", 12 + i * Pitch, 160, remove: true);
+			Put(new Label(LevyUtil.T("Loadout.ExtraSidearms"), 0.75f), 12, 214);
+			for (int x = 0; x < LevyConstants.ExtraSidearms; x++) AddSlot(SoldierGear.SlotSide2 + x, "Loadout.ExtraSidearm", 12 + x * Pitch, 232);
 
-			_status = Put(new Label("", 0.75f), 12, 214);
-			_hint = Put(new Label(LevyUtil.T("Loadout.Hint"), 0.65f), 12, 238);
+			_status = Put(new Label("", 0.75f), 12, 280);
+			_hint = Put(new Label(LevyUtil.T("Loadout.Hint"), 0.65f), 12, 304);
 			_hint.TextColor = new Color(200, 205, 225);
 
 			Append(_panel);

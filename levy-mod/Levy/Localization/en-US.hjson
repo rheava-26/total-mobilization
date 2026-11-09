@@ -510,17 +510,17 @@ Mods: {
 
 				LevyAccessorySlots: {
 					Label: Levy accessory slots
-					Tooltip: Accessory slots a Levy opens. At most 6.
+					Tooltip: Accessory slots a Levy opens. Every levy has at least 2: one for the best mobility accessory, one for the best other accessory. At most 6.
 				}
 
 				ManAtArmsAccessorySlots: {
 					Label: Man-at-Arms accessory slots
-					Tooltip: Accessory slots a Man-at-Arms opens. At most 6.
+					Tooltip: Accessory slots a Man-at-Arms opens. Every levy has at least 2. At most 6.
 				}
 
 				ChampionAccessorySlots: {
 					Label: Champion accessory slots
-					Tooltip: Accessory slots a Champion opens. At most 6.
+					Tooltip: Accessory slots a Champion opens. Every levy has at least 2. At most 6.
 				}
 
 				ExpertiseGuideSlots: {
@@ -754,6 +754,8 @@ Mods: {
 			Accessories: Accessories
 			Weapon: Weapon
 			Sidearm: Sidearm
+			ExtraSidearms: Minion staves
+			ExtraSidearm: Minion staff
 			Ammo: Ammo
 			Head: Head
 			Body: Body

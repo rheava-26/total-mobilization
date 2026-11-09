@@ -26,7 +26,9 @@ namespace Levy.Common.UI
 
 		private readonly ArmoryPanel _owner;
 		private readonly TextBody _body = new();
-		private readonly LevyButton _rankMode, _addCat, _reset, _close;
+		private readonly LevyButton _rankMode, _addCat, _reset, _close, _prefer, _preferSet;
+		private readonly Label _gearNote;
+		private bool _gearShown;
 		private readonly NumberField _rankValue;
 		private readonly DropButton _classDrop;
 		private readonly Label _rankLabel, _classLabel, _catLabel, _note;
@@ -73,6 +75,63 @@ namespace Levy.Common.UI
 			_reset = new LevyButton(LevyUtil.T("Rules.ResetItem"), LevyConstants.UI.ButtonTextScale, 100, 24, ResetItem, LevyUtil.T("Rules.ResetItemHint"));
 			_reset.Left.Set(PanelWidth - 110, 0f); _reset.Top.Set(ControlsTop + 146, 0f); Append(_reset);
 			_note = Lbl(LevyUtil.T("Rules.ItemNote"), 10, ControlsTop + 178);
+
+			// armor and accessories: one switch for the piece and one for its whole set (swapped in for the weapon controls while such an item is shown)
+			_prefer = new LevyButton("", LevyConstants.UI.ButtonTextScale, 110, 24, TogglePrefer, LevyUtil.T("Rules.GearPreferHint"));
+			_prefer.Left.Set(10, 0f); _prefer.Top.Set(ControlsTop, 0f);
+			_preferSet = new LevyButton("", LevyConstants.UI.ButtonTextScale, 110, 24, TogglePreferSet, LevyUtil.T("Rules.GearPreferSetHint"));
+			_preferSet.Left.Set(PanelWidth - 120, 0f); _preferSet.Top.Set(ControlsTop, 0f);
+			_gearNote = new Label(LevyUtil.T("Rules.GearNote"), 0.8f);
+			_gearNote.Left.Set(10, 0f); _gearNote.Top.Set(ControlsTop + 36, 0f);
+		}
+
+		/// <summary>True for an armor piece or accessory the armory can issue (and not a weapon).</summary>
+		internal static bool IsGear(Item it)
+		{
+			if (it == null || it.IsAir || it.vanity) return false;
+			if (WeaponClassifier.GetProfile(it).Supported) return false;
+			return WeaponClassifier.IsArmorPiece(it, 0) || WeaponClassifier.IsArmorPiece(it, 1) || WeaponClassifier.IsArmorPiece(it, 2) || (it.accessory && WeaponClassifier.IsUsefulAccessory(it));
+		}
+
+		private bool IsArmor => _item != null && (WeaponClassifier.IsArmorPiece(_item, 0) || WeaponClassifier.IsArmorPiece(_item, 1) || WeaponClassifier.IsArmorPiece(_item, 2));
+		private bool GearPreferred => Ov(false)?.Rank == RankOverrideMode.Prefer;
+
+		private void TogglePrefer()
+		{
+			var o = Ov(true); if (o == null) return;
+			o.Rank = o.Rank == RankOverrideMode.Prefer ? RankOverrideMode.Auto : RankOverrideMode.Prefer;
+			Changed();
+		}
+
+		/// <summary>Marks (or clears) every armor piece of this item's set: all pieces that share its name stem.</summary>
+		private void TogglePreferSet()
+		{
+			var r = Rules; if (r == null || _item == null || !IsArmor) return;
+			bool on = !GearPreferred;
+			string stem = ArmoryTE.StemOf(_item);
+			foreach (var kv in ContentSamples.ItemsByType)
+			{
+				var s = kv.Value;
+				if (s.vanity || !(WeaponClassifier.IsArmorPiece(s, 0) || WeaponClassifier.IsArmorPiece(s, 1) || WeaponClassifier.IsArmorPiece(s, 2))) continue;
+				if (ArmoryTE.StemOf(s) != stem) continue;
+				var o = r.OverrideFor(s.type, on);
+				if (o == null) continue;
+				o.Rank = on ? RankOverrideMode.Prefer : (o.Rank == RankOverrideMode.Prefer ? RankOverrideMode.Auto : o.Rank);
+			}
+			Changed();
+		}
+
+		/// <summary>Swaps the weapon controls for the gear ones (or back) when the shown item changes kind.</summary>
+		private void SyncGearMode()
+		{
+			bool gear = IsGear(_item);
+			if (gear == _gearShown) return;
+			_gearShown = gear;
+			UIElement[] weaponOnly = { _rankLabel, _rankMode, _classLabel, _classDrop, _catLabel, _addCat, _reset, _note };
+			UIElement[] gearOnly = { _prefer, _preferSet, _gearNote };
+			foreach (var e in weaponOnly) { if (gear) { if (HasChild(e)) RemoveChild(e); } else if (!HasChild(e)) Append(e); }
+			foreach (var e in gearOnly) { if (!gear) { if (HasChild(e)) RemoveChild(e); } else if (!HasChild(e)) Append(e); }
+			if (gear) { if (HasChild(_rankValue)) RemoveChild(_rankValue); foreach (var c in _chips) c.Remove(); _chips.Clear(); _catSig = ""; }
 		}
 
 		private Label Lbl(string text, float x, float y)
@@ -210,6 +269,15 @@ namespace Levy.Common.UI
 			string cat = r.CatsOf(it).Length > 0 ? string.Join(", ", Array.ConvertAll(r.CatsOf(it), c => WeaponTags.DisplayName(c))) : LevyUtil.T("Rules.NoCategory");
 			string cls = r.ClassKeyOf(it);
 			lines.Add((LevyUtil.T("Rules.InfoKind", cat, cls == null ? LevyUtil.T("Rules.ClassNone") : WeaponTags.DisplayName(cls)), dim));
+			if (IsGear(it))
+			{
+				lines.Clear();
+				lines.Add((it.Name, rare));
+				lines.Add((LevyUtil.T(IsArmor ? "Rules.GearKindArmor" : "Rules.GearKindAccessory", it.defense), dim));
+				lines.Add((LevyUtil.T(GearPreferred ? "Rules.GearPreferred" : "Rules.GearNotPreferred"), GearPreferred ? warn : white));
+				_body.Lines = lines;
+				return;
+			}
 			if (!p.Supported) { lines.Add((LevyUtil.T("Rules.InfoUnsupported"), warn)); _body.Lines = lines; return; }
 			lines.Add((LevyUtil.T("Rules.InfoStats", it.damage, it.useTime, it.crit + 4), white));
 			if (it.mana > 0) lines.Add((LevyUtil.T("Rules.InfoMana", it.mana), white));
@@ -242,7 +310,7 @@ namespace Levy.Common.UI
 		/// <summary>Rebuilds the category chips when the item's tags changed.</summary>
 		private void SyncChips()
 		{
-			var r = Rules; if (r == null || _item == null) return;
+			var r = Rules; if (r == null || _item == null || _gearShown) return;
 			var cats = r.CatsOf(_item);
 			string sig = _item.type + ":" + string.Join(",", cats);
 			if (sig == _catSig) return;
@@ -262,8 +330,18 @@ namespace Levy.Common.UI
 		{
 			base.Update(gameTime);
 			if (ContainsPoint(Main.MouseScreen)) Main.LocalPlayer.mouseInterface = true;
+			SyncGearMode();
 			var o = Ov(false);
 			var mode = o?.Rank ?? RankOverrideMode.Auto;
+			if (_gearShown)
+			{
+				_prefer.Set(LevyUtil.T(GearPreferred ? "Rules.GearPreferOn" : "Rules.GearPreferOff"), true);
+				_prefer.Lit = GearPreferred;
+				_preferSet.Set(LevyUtil.T(GearPreferred ? "Rules.GearPreferSetClear" : "Rules.GearPreferSet"), true);
+				_preferSet.Enabled = IsArmor;
+				if (--_tick <= 0) { _tick = 15; Compose(); }
+				return;
+			}
 			_rankMode.Set(LevyUtil.T("Rules.RankMode_" + mode), true);
 			_rankMode.Lit = mode != RankOverrideMode.Auto;
 			bool showValue = mode == RankOverrideMode.Set;

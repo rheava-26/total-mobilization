@@ -160,6 +160,9 @@ namespace Levy.Common.Movement
 			return true;
 		}
 
+		/// <summary>The off-screen catch-up hop of a map-point order: the same placement Follow's catch-up uses (never into a boss's reach, no velocity, no fall damage from it, synced).</summary>
+		public static void HopTo(SoldierNPC body, Vector2 bottom) => Place(body, bottom);
+
 		private static void Place(SoldierNPC body, Vector2 bottom)
 		{
 			NPC npc = body.NPC;

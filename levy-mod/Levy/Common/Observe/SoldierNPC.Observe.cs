@@ -32,7 +32,9 @@ namespace Levy.Content.NPCs
 			SetState(SoldierState.Follow); // runs rather than strolls; combat still takes over through TryEngage before this is reached
 			Vector2 goal = TileNav.BottomCentre(_goStand.X, _goStand.Y);
 			float dx = goal.X - NPC.Center.X, dy = goal.Y - NPC.Bottom.Y;
-			if (Math.Abs(dx) <= GoArriveXTiles * 16f && Math.Abs(dy) <= GoArriveYTiles * 16f) { MapArrive(); return true; }
+			if (Math.Abs(dx) <= GoArriveXTiles * 16f && Math.Abs(dy) <= GoArriveYTiles * 16f && !ClimbActive) { MapArrive(); return true; }
+			// out of every player's sight and stuck for six seconds: hop ahead (SoldierNPC.CatchUp.cs); it then goes on from the new spot
+			if (CatchUpTick(now, goal)) { _goProgPos = NPC.Center; _goProgTick = now; _goNoProgress = 0; return true; }
 			if (now - _goProgTick >= GoProgressTicks)
 			{
 				_goNoProgress = Vector2.DistanceSquared(NPC.Center, _goProgPos) < 24f * 24f ? _goNoProgress + 1 : 0;

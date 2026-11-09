@@ -40,12 +40,12 @@ namespace Levy.Common.Movement
 	public sealed class PathSearch
 	{
 		public enum State : byte { Idle, Running, Found, Partial, Failed }
-		public const byte KindWalk = 0, KindStep = 1, KindFall = 2, KindJump = 3, KindFly = 4, KindHook = 5, KindChain = 6;
+		public const byte KindWalk = 0, KindStep = 1, KindFall = 2, KindJump = 3, KindFly = 4, KindHook = 5, KindChain = 6, KindClimb = 7;
 
 		private readonly int _maxW, _maxH;
 		private readonly ushort[] _fl;   // consecutive flight steps on the best way to the cell (wings only run for WingTimeMax ticks)
 		private readonly int[] _trap;    // row (+1) the body fell from on the best way to the cell when that drop was deeper than a jump and it has not climbed back to that row yet (0 = not in a pit); such a cell is never a best-effort end
-		private bool _hook; private float _hookReachPx; private HashSet<long> _ban;
+		private bool _hook, _climb; private float _hookReachPx; private HashSet<long> _ban;
 		public static long StatHookScans, StatHookEdges;
 		private readonly float[] _g; private readonly int[] _from; private readonly int[] _stamp; private readonly bool[] _closed; private readonly byte[] _kind;
 		private int _gen = 1;
@@ -98,6 +98,7 @@ namespace Levy.Common.Movement
 			_maxFlight = TravelLegacy.On ? ushort.MaxValue : Math.Max(6, (int)(abilities.WingTimeMax * FlySpeed / 16f * FlightRangeShare)); // tiles of flight one tank of wing time covers, with room for the climb
 			_hWeight = Math.Max(1f, hWeight);
 			_hook = allowHooks && !TravelLegacy.On && !centred && !_wings && abilities.HasHook && abilities.HookReachPx >= HookMinReachTiles * 16f;
+			_climb = !TravelLegacy.On && !centred && abilities.CanWallClimb;
 			_hookReachPx = _hook ? abilities.HookReachPx : 0f; _ban = hookBan;
 			_goalTile = t;
 			if (++_gen == int.MaxValue) { Array.Clear(_stamp, 0, _stamp.Length); _gen = 1; }
@@ -137,7 +138,7 @@ namespace Levy.Common.Movement
 		/// <summary>World-space waypoints (bottom-centre) of the found path, or of the best-effort path to the closest node for a Partial search. First entry = next step.</summary>
 		public bool BuildPath(List<Vector2> path) => BuildPath(path, null);
 
-		/// <summary>As above; <paramref name="kinds"/> (when given) gets one byte per waypoint: 0 = reached by walking, jumping or falling, 1 = reached by one grappling hook cast from the previous waypoint, 2 = by a chain of casts up a wall.</summary>
+		/// <summary>As above; <paramref name="kinds"/> (when given) gets one byte per waypoint: 0 = reached by walking, jumping or falling, 1 = reached by one grappling hook cast from the previous waypoint, 2 = by a chain of casts up a wall, 3 = by wall climbing up a face from the previous waypoint.</summary>
 		public bool BuildPath(List<Vector2> path, List<byte> kinds)
 		{
 			path.Clear(); kinds?.Clear();
@@ -156,7 +157,7 @@ namespace Levy.Common.Movement
 					if (_oy + m / _w == y && _kind[m] == KindWalk && _kind[n] == KindWalk) continue;
 				}
 				path.Add(TileNav.BottomCentre(x, y));
-				kinds?.Add(_kind[n] == KindHook ? (byte)1 : _kind[n] == KindChain ? (byte)2 : (byte)0);
+				kinds?.Add(_kind[n] == KindHook ? (byte)1 : _kind[n] == KindChain ? (byte)2 : _kind[n] == KindClimb ? (byte)3 : (byte)0);
 			}
 			return path.Count > 0;
 		}
@@ -211,6 +212,7 @@ namespace Levy.Common.Movement
 				}
 			}
 			if (standing && _hook) ExpandHooks(x, y, cur, g);
+			if (standing && _climb) ExpandClimb(x, y, cur, g);
 			if (_wings)
 			{
 				for (int dy = -1; dy <= 1; dy++)
@@ -227,6 +229,30 @@ namespace Levy.Common.Movement
 			}
 		}
 
+
+		/// <summary>
+		/// Wall climbing (Player.spikedBoots): from a standing cell with a wall beside it, up the face to the cell on top of it, however tall (a wall jump gains a jump of height each time, and the
+		/// body hangs on the wall between). Needs the column the body climbs in to be open up to the lip. A face a plain jump clears gets no edge. A target the executor failed on is banned like a hook target.
+		/// </summary>
+		private void ExpandClimb(int x, int y, int cur, float g)
+		{
+			if (TileNav.HasLiquid(x, y) || TileNav.HasLiquid(x, y - 1)) return;
+			for (int side = -1; side <= 1; side += 2)
+			{
+				int nx = x + side;
+				if (!TileNav.IsSolid(nx, y - 1) || !TileNav.IsSolid(nx, y - 2)) continue;
+				int top = y - 1, lim = Math.Max(_oy + 3, y - ClimbMaxFaceTiles);
+				while (top > lim && TileNav.IsSolid(nx, top - 1)) top--;
+				int hgt = y - top;
+				if (hgt <= _jumpTiles || top <= lim) continue;       // a jump gets over it / taller than the window
+				int ty = top - 1;
+				if (!InWindow(nx, ty) || !TileNav.IsStandable(nx, ty) || HookBanned(nx, ty)) continue;
+				bool open = true;                                    // the body climbs in column x: clear from its head up to a body-height over the lip, no lava
+				for (int r = ty - 2; r <= y - 3 && open; r++) if (TileNav.IsSolid(x, r) || TileNav.HasLava(x, r)) open = false;
+				if (!open) continue;
+				Relax(nx, ty, cur, g + ClimbEdgeCost + hgt * ClimbTileCost, KindClimb);
+			}
+		}
 
 		// ---- grappling hook edges ----
 		private bool HookBanned(int tx, int ty) => _ban != null && _ban.Contains(((long)tx << 24) | (uint)ty);

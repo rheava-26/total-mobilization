@@ -36,7 +36,7 @@ namespace Levy.Common.Testing
 		{
 			public string Gear; public SoldierRecord Rec; public int Idx = -1;
 			public Vector2 Start, Last; public float Straight, Path; public int ArriveTick = -1, GaveUp = -1, Teleports, Falls, WetTicks, DeepTicks, Gone, StuckTicks, StuckEps, StallTicks, StallEps, Frames;
-			public float FallTiles, BestProg; public int BestProgTick;
+			public float FallTiles, BestProg; public int BestProgTick; public int VisTele, Hops, ClimbDone;
 			public Vector2 Anchor; public int AnchorTick; public bool InStuck;
 			public string StuckWhere = "";
 			public bool StallOpen; public int StallFrom;
@@ -285,6 +285,7 @@ namespace Levy.Common.Testing
 		// ---------------- run ----------------
 		private string TvGearOf(int i)
 		{
+			if (_tvGear == "climb") { int c3 = i % 3; return c3 == 0 ? "spikes" : c3 == 1 ? "claws" : "tiger"; } // wall-climb gear arm: Shoe Spikes, Climbing Claws, Tiger Climbing Gear
 			if (_tvGear != "mixed") return _tvGear;
 			int k = i % 15; // 15: 5 none, 4 boots, 3 wings, 3 hook
 			if (k < 5) return "none"; if (k < 9) return "boots"; if (k < 12) return "wings"; return "hook";
@@ -306,11 +307,13 @@ namespace Levy.Common.Testing
 				}
 				if (g == "boots") { var it = new Item(); it.SetDefaults(ItemID.HermesBoots); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
 				if (g == "wings") { var it = new Item(); it.SetDefaults(ItemID.AngelWings); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
+				if (g == "spikes" || g == "claws" || g == "tiger" || g == "ninja") { var it = new Item(); it.SetDefaults(g == "spikes" ? ItemID.ShoeSpikes : g == "claws" ? ItemID.ClimbingClaws : g == "tiger" ? ItemID.TigerClimbingGear : ItemID.MasterNinjaGear); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
 				if (g == "hook") { var it = new Item(); it.SetDefaults(ItemID.GrapplingHook); rec.Gear.Hook = it; rec.Gear.SetLocked(SoldierGear.SlotHook, true); }
 				RosterSystem.Instance.Regulars.Add(rec);
 				int off = _tvFrom + (i - _tvN / 2);
 				Vector2 at = new Vector2((TvX0 + off) * 16f + 8f, TvRow(off) * 16f);
 				int idx = RosterSystem.Instance.SpawnBody(rec, at);
+				if (_tvMode == "map" && Environment.GetEnvironmentVariable("LEVY_TRAVEL_HOLD") == "1") { rec.Order = SoldierOrder.Hold; rec.HoldPos = at; if (rec.HasBody && Main.npc[rec.BodyIndex].ModNPC is SoldierNPC hb) hb.HoldPosition = true; } // far commander: the levies wait where they are (a Follow levy 400+ tiles from the commander is pulled back to them before the order lands)
 				var lv = new TvLevy { Gear = g, Rec = rec, Idx = idx };
 				if (idx >= 0 && rec.HasBody) { var b = (SoldierNPC)Main.npc[idx].ModNPC; b.NPC.Bottom = at; b.NPC.velocity = Vector2.Zero; lv.Start = lv.Last = lv.Anchor = b.NPC.Center; }
 				_tv.Add(lv);
@@ -343,6 +346,12 @@ namespace Levy.Common.Testing
 				int far = int.TryParse(Environment.GetEnvironmentVariable("LEVY_TRAVEL_CMDFAR"), out int cf) ? cf : 400;
 				float px = Math.Clamp(fromX - far * 16f, 40 * 16f, (Main.maxTilesX - 40) * 16f);
 				int prow = TvWorld ? TvRow(_tvFrom) : TvRow(_tvFrom);
+				if (Environment.GetEnvironmentVariable("LEVY_TRAVEL_CMDTRACK") == "1" && _tvTick >= 120)
+				{
+					// the commander travels with the army: stands at the middle levy (by x) that has a body, so the army is on screen around them
+					var xs = new List<TvLevy>(); foreach (var l in _tv) if (l.Rec.HasBody && l.ArriveTick < 0) xs.Add(l);
+					if (xs.Count > 0) { xs.Sort((a, b) => Main.npc[a.Rec.BodyIndex].Center.X.CompareTo(Main.npc[b.Rec.BodyIndex].Center.X)); NPC m = Main.npc[xs[xs.Count / 2].Rec.BodyIndex]; float cur = Main.player[0].Center.X; px = cur + Math.Clamp(m.Center.X - cur, -14f, 14f); prow = (int)((m.Bottom.Y - 1f) / 16f) + 1; }   // walks after the army at up to 14 px/tick, never jumps
+				}
 				p.position = new Vector2(px - p.width / 2f, prow * 16f - p.height); p.velocity = Vector2.Zero;
 			}
 			if (!_tvFoes) for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !(n.ModNPC is SoldierNPC) && !n.townNPC && !n.friendly) n.active = false; }
@@ -376,6 +385,7 @@ namespace Levy.Common.Testing
 				_tvStarted = true; _tvTick = 0; _tvWatch.Restart();
 				TvPinCommander();
 				Pathfinder.StatReset(); RoutePlanner.StatReset();
+				SoldierNPC.CatchUpHops = 0; SoldierNPC.CatchUpHopsSeen = 0; SoldierNPC.CatchUpTicks = 0; //HOP
 				if (Environment.GetEnvironmentVariable("LEVY_TRAVEL_PLAN") == "1")
 				{
 					// what the planner finds for each ability class between the two ends, searched to the end in one go (cost and end point)
@@ -393,6 +403,8 @@ namespace Levy.Common.Testing
 				return;
 			}
 			_tvTick++;
+			_tvPrevPl = Main.player[0].Center;
+			OffscreenHop.LabViewers = new List<Vector2> { Main.player[0].Center }; //HOP
 			TvPinCommander();
 			if (_tvTick == 120 && _tvMode == "map")
 			{
@@ -412,9 +424,10 @@ namespace Levy.Common.Testing
 				NPC n = Main.npc[rec.BodyIndex]; var sn = (SoldierNPC)n.ModNPC;
 				Vector2 c = n.Center; l.Idx = rec.BodyIndex;
 				l.Frames++;
+				l.ClimbDone = sn.ClimbEdges; //HOP
 				float step = Vector2.Distance(c, l.Last);
 				float offNow = c.X / 16f - TvX0;
-				if (step > 6 * 16f) { l.Teleports++; _tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) TELEPORT {l.Last.X / 16f - TvX0:0} -> {offNow:0} ({TvFeature(l.Last.X / 16f - TvX0)})"); }
+				if (step > 6 * 16f) { l.Teleports++; l.Hops += _tvMode == "map" ? 1 : 0; if (TvSeen(l.Last) || TvSeen(c)) { l.VisTele++; _tvEvents.AppendLine($"t={_tvTick} VISIBLE hop {rec.Name} from {l.Last.X / 16f:0},{l.Last.Y / 16f:0} to {c.X / 16f:0},{c.Y / 16f:0} player now {Main.player[0].Center.X / 16f:0},{Main.player[0].Center.Y / 16f:0} prev {_tvPrevPl.X / 16f:0},{_tvPrevPl.Y / 16f:0}"); } _tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) TELEPORT {l.Last.X / 16f - TvX0:0} -> {offNow:0} ({TvFeature(l.Last.X / 16f - TvX0)})"); }
 				else l.Path += step;
 				l.Last = c;
 				bool grounded = n.velocity.Y == 0f;
@@ -454,6 +467,15 @@ namespace Levy.Common.Testing
 			if ((allDone && _tvTick > 300) || _tvTick >= _tvCap + 120) TvFinish();
 		}
 
+		/// <summary>Is this point inside the 2400x1400 px box around any active player (the harness's own test, not the mod's).</summary>
+		private static Vector2 _tvPrevPl;
+		private static bool TvSeen(Vector2 pt)
+		{
+			if (Math.Abs(pt.X - _tvPrevPl.X) <= 1200f && Math.Abs(pt.Y - _tvPrevPl.Y) <= 700f) return true;   // the player where he stood when the levies moved this tick
+			for (int i = 0; i < Main.maxPlayers; i++) { Player p = Main.player[i]; if (p.active && Math.Abs(pt.X - p.Center.X) <= 1200f && Math.Abs(pt.Y - p.Center.Y) <= 700f) return true; }
+			return false;
+		}
+
 		private string TvTiles(NPC n)
 		{
 			var f = Terraria.Utils.ToTileCoordinates(n.Bottom - new Vector2(0, 1)); var sb = new StringBuilder("tiles[feet=" + f.X + "," + (f.Y - TvG) + ":");
@@ -468,9 +490,10 @@ namespace Levy.Common.Testing
 
 		private void TvFinish()
 		{
+			OffscreenHop.LabViewers = null; //HOP
 			double ms = _tvWatch.Elapsed.TotalMilliseconds;
 			var sb = new StringBuilder();
-			sb.AppendLine("name,gear,arrived,arriveSec,gaveUpSec,straightTiles,pathTiles,ratio,stuckSec,stuckEps,stallSec,stallEps,teleports,falls,fallTiles,wetSec,deepSec,bodyGone,endOffset,endFeature,endState,endOrder,stuckWhere,stallWhere");
+			sb.AppendLine("name,gear,arrived,arriveSec,gaveUpSec,straightTiles,pathTiles,ratio,stuckSec,stuckEps,stallSec,stallEps,teleports,falls,fallTiles,wetSec,deepSec,bodyGone,endOffset,endFeature,endState,endOrder,stuckWhere,stallWhere,visTele,climbEdges");
 			foreach (var l in _tv)
 			{
 				if (l.InStuck) l.StuckTicks += _tvTick - l.AnchorTick;
@@ -478,7 +501,7 @@ namespace Levy.Common.Testing
 				float straight = Vector2.Distance(l.Start, new Vector2(_tvGx * 16f + 8f, _tvGy * 16f)) / 16f;
 				float pathT = l.Path / 16f; float endOff = l.Last.X / 16f - TvX0;
 				string st = ""; if (l.Rec.HasBody) st = ((SoldierNPC)Main.npc[l.Rec.BodyIndex].ModNPC).State.ToString();
-				sb.AppendLine(string.Join(",", l.Rec.Name, l.Gear, l.ArriveTick >= 0 ? 1 : 0, l.ArriveTick >= 0 ? (l.ArriveTick / 60f).ToString("0.0") : "", l.GaveUp >= 0 ? (l.GaveUp / 60f).ToString("0.0") : "", straight.ToString("0"), pathT.ToString("0"), (pathT / Math.Max(1f, straight)).ToString("0.00"), (l.StuckTicks / 60f).ToString("0.0"), l.StuckEps, (l.StallTicks / 60f).ToString("0.0"), l.StallEps, l.Teleports, l.Falls, l.FallTiles.ToString("0"), (l.WetTicks / 60f).ToString("0.0"), (l.DeepTicks / 60f).ToString("0.0"), l.Gone, endOff.ToString("0"), TvFeature(endOff), st, l.Rec.Order.ToString(), "\"" + l.StuckWhere.Trim() + "\"", "\"" + l.StallWhere.Trim() + "\""));
+				sb.AppendLine(string.Join(",", l.Rec.Name, l.Gear, l.ArriveTick >= 0 ? 1 : 0, l.ArriveTick >= 0 ? (l.ArriveTick / 60f).ToString("0.0") : "", l.GaveUp >= 0 ? (l.GaveUp / 60f).ToString("0.0") : "", straight.ToString("0"), pathT.ToString("0"), (pathT / Math.Max(1f, straight)).ToString("0.00"), (l.StuckTicks / 60f).ToString("0.0"), l.StuckEps, (l.StallTicks / 60f).ToString("0.0"), l.StallEps, l.Teleports, l.Falls, l.FallTiles.ToString("0"), (l.WetTicks / 60f).ToString("0.0"), (l.DeepTicks / 60f).ToString("0.0"), l.Gone, endOff.ToString("0"), TvFeature(endOff), st, l.Rec.Order.ToString(), "\"" + l.StuckWhere.Trim() + "\"", "\"" + l.StallWhere.Trim() + "\"", l.VisTele, l.ClimbDone));
 			}
 			File.WriteAllText(Path.Combine(_tvOut, "levies.csv"), sb.ToString());
 			File.WriteAllText(Path.Combine(_tvOut, "trace.csv"), "tick,name,gear,x,elevation,state\n" + _tvTrace);
@@ -491,6 +514,7 @@ namespace Levy.Common.Testing
 				dumped++; NPC n = Main.npc[l.Rec.BodyIndex]; var sn = (SoldierNPC)n.ModNPC;
 				_tvEvents.AppendLine($"END MAP {l.Rec.Name}({l.Gear}) at {n.Center.X / 16f - TvX0:0},{n.velocity} state={sn.State} order={l.Rec.Order} why={sn.StillReason()} {sn.DebugRoute()}\n" + TvAscii((int)(n.Center.X / 16f), (int)((n.Bottom.Y - 1f) / 16f), 1));
 			}
+			_tvEvents.AppendLine($"hops: total={SoldierNPC.CatchUpHops} seenByMod={SoldierNPC.CatchUpHopsSeen} ms={SoldierNPC.CatchUpTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.00} tries={SoldierNPC.CatchUpTries} last={SoldierNPC.CatchUpLast}"); //HOP
 			foreach (string rl in RoutePlanner.Log) _tvEvents.AppendLine(rl);
 			File.WriteAllText(Path.Combine(_tvOut, "events.txt"), _tvEvents.ToString());
 			int arrived = _tv.FindAll(l => l.ArriveTick >= 0).Count;

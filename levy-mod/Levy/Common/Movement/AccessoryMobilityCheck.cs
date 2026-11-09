@@ -46,6 +46,18 @@ namespace Levy.Common.Movement
 				Check("Rocket Boots, Frog Leg, Amphibian are about a bottle", Math.Abs(AccessoryMobility.Value(rocket) - AccessoryMobility.Value(cloud)) <= 0.6f && Math.Abs(AccessoryMobility.Value(frog) - AccessoryMobility.Value(cloud)) <= 0.6f && Math.Abs(AccessoryMobility.Value(amph) - AccessoryMobility.Value(cloud)) <= 0.6f);
 				Check("Hermes Boots (sprint only) rank below a bottle", AccessoryMobility.Value(hermes) < AccessoryMobility.Value(cloud));
 
+				// wall climb gear (Player.spikedBoots) is mobility, strong spikes more than weak, wings more than either
+				var spikes = Make(ItemID.ShoeSpikes); var claws = Make(ItemID.ClimbingClaws); var tiger = Make(ItemID.TigerClimbingGear); var ninja = Make(ItemID.MasterNinjaGear);
+				Check("Shoe Spikes, Climbing Claws, Tiger Climbing Gear, Master Ninja Gear are mobility", AccessoryMobility.Is(spikes) && AccessoryMobility.Is(claws) && AccessoryMobility.Is(tiger) && AccessoryMobility.Is(ninja),
+					$"{AccessoryMobility.Value(spikes):0.00} {AccessoryMobility.Value(claws):0.00} {AccessoryMobility.Value(tiger):0.00} {AccessoryMobility.Value(ninja):0.00}");
+				Check("a dummy in those reads spikedBoots 1, 1, 2, 2", AccessoryMobility.Spikes(spikes) == 1 && AccessoryMobility.Spikes(claws) == 1 && AccessoryMobility.Spikes(tiger) == 2 && AccessoryMobility.Spikes(ninja) == 2,
+					$"{AccessoryMobility.Spikes(spikes)} {AccessoryMobility.Spikes(claws)} {AccessoryMobility.Spikes(tiger)} {AccessoryMobility.Spikes(ninja)}");
+				Check("Tiger Climbing Gear outranks Shoe Spikes, Angel Wings outrank both", AccessoryMobility.Value(tiger) > AccessoryMobility.Value(spikes) && AccessoryMobility.Value(wings) > AccessoryMobility.Value(ninja) && AccessoryMobility.Value(wings) > AccessoryMobility.Value(tiger));
+
+				var teS = new ArmoryTE(); teS.Deposit(Make(ItemID.BandofRegeneration)); teS.Deposit(Make(ItemID.ShoeSpikes));
+				var gotS = teS.TakeAccessory(new SoldierRecord { Id = 3, Grade = Grade.Levy });
+				Check("armory hands a levy Shoe Spikes first when nothing else in stock moves", gotS != null && gotS.type == ItemID.ShoeSpikes, gotS?.Name ?? "null");
+
 				var te = new ArmoryTE();
 				te.Deposit(Make(ItemID.BandofRegeneration)); te.Deposit(Make(ItemID.CloudinaBottle)); te.Deposit(Make(ItemID.ObsidianShield));
 				var rec = new SoldierRecord { Id = 1, Grade = Grade.Levy };

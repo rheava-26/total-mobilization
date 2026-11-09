@@ -300,7 +300,7 @@ namespace Mechanization.Content.NPCs
 			if (Main.netMode == NetmodeID.MultiplayerClient || player == null || !player.active || player.dead) return false;
 			if (npcIndex < 0 || npcIndex >= Main.maxNPCs) return false;
 			NPC npc = Main.npc[npcIndex];
-			if (!npc.active || npc.ModNPC is not DroneNPC drone || !drone.IsBound) return false;
+			if (!npc.active || npc.ModNPC is not DroneNPC drone || !drone.IsBound || drone.IsField) return false; // a player-built drone has no Barracks to order (it is packed up instead)
 			if (Vector2.DistanceSquared(player.Center, npc.Center) > D.OrderReachPx * D.OrderReachPx) return false;
 			if (!OrderGap(player)) return false;
 

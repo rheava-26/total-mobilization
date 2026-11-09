@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.Enums;
+using Terraria.GameContent.ObjectInteractions;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ObjectData;
@@ -19,6 +20,7 @@ namespace Levy.Content.Tiles
 			Main.tileNoAttach[Type] = true;
 			Main.tileLavaDeath[Type] = true;
 			TileID.Sets.DisableSmartCursor[Type] = true;
+			TileID.Sets.HasOutlines[Type] = true; // the interaction highlight (StaticCameraTile_Highlight.png) is drawn over a tile smart interact has picked
 
 			TileObjectData.newTile.CopyFrom(TileObjectData.Style2xX);
 			TileObjectData.newTile.Width = StaticCameraTE.TilesWide;
@@ -35,6 +37,8 @@ namespace Levy.Content.Tiles
 			RegisterItemDrop(ModContent.ItemType<StaticCameraItem>());
 			AddMapEntry(new Color(80, 110, 150), CreateMapEntryName());
 		}
+
+		public override bool HasSmartInteract(int i, int j, SmartInteractScanSettings settings) => true;
 
 		public override void KillMultiTile(int i, int j, int frameX, int frameY) => ModContent.GetInstance<StaticCameraTE>().Kill(i, j);
 

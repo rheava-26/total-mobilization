@@ -134,6 +134,38 @@ namespace Mechanization.Common
 		}
 
 		/// <summary>
+		/// The player-built drone (<c>DroneItem</c>): a combat drone the player sets down anywhere. It is the garrison drone's body and brain over a home point instead of a Barracks, arming itself from
+		/// the Armories in reach exactly as a turret does (a non-consuming read, so no loan and no hold). It is outside every Barracks garrison and its cap.
+		/// </summary>
+		public static class FieldDrone
+		{
+			// ---- the recipe (Tinkerer's Workshop; the wire is the Mechanic's) ----
+			public const int RecipeWire = 15, RecipeBars = 8, RecipeLenses = 2;
+
+			// ---- placement (mirrors the turret's) ----
+			/// <summary>How far (px) from the placing player the server accepts a drone being set down.</summary>
+			public const float PlaceReachPx = 90f * TilePx;
+			/// <summary>A spot buried in the ground is lifted up to this many tiles to the first open space; with none the item is not used up.</summary>
+			public const int PlaceLiftTiles = 8;
+			/// <summary>The landing pad is the ground below the spot, searched down this many tiles; with none the drone hangs at the spot itself.</summary>
+			public const int PlaceDropTiles = 120;
+			public const int PlaceMinGapTicks = 10;
+			/// <summary>No drone is set down while fewer than this many NPC slots are free.</summary>
+			public const int NpcSlotReserve = 30;
+			/// <summary>How close (px) a player must be for the server to accept a pack-up request (a flying drone patrols above the ground).</summary>
+			public const float PackReachPx = 30f * TilePx;
+
+			// ---- patrol: a box around the home point ----
+			/// <summary>Half the width (tiles) of the box the drone patrols, centred on where it was set down, and its altitude band in tiles above the ground there.</summary>
+			public const float LoiterHalfWidthTiles = 36f;
+			public const int LoiterMinAltTiles = 6, LoiterMaxAltTiles = 18;
+			/// <summary>While chasing, the drone strays at most this many tiles outside the box.</summary>
+			public const float LeashTiles = 24f;
+			/// <summary>How many validate passes (each <see cref="Drone.ValidateIntervalTicks"/> ticks) pass between two reads of the Armories in reach: 3 x 30 ticks = the turret's 90.</summary>
+			public const int WeaponRefreshValidates = 3;
+		}
+
+		/// <summary>
 		/// The combat drone: a flying machine a Barracks launches, one per spare ranged or magic weapon in its Armory. It loiters over its base, chases what comes in reach
 		/// (leashed so the line holds), can be recalled to land and hand its weapon back, and flies on a battery that costs a refuel trip, never a penalty.
 		/// </summary>

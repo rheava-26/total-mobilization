@@ -329,7 +329,7 @@ namespace Mechanization.Content.NPCs
 		/// read — the weapon stays the army's; the turret only mirrors its projectile. Melee, summon, whip and sentry are excluded by
 		/// <see cref="DroneArsenal.IsMountable"/>. A caster just fires its projectile — a turret keeps no mana economy (generous by design).
 		/// </summary>
-		private static Item BestSurplus(List<ArmoryTE> armories)
+		internal static Item BestSurplus(List<ArmoryTE> armories)
 		{
 			Item best = null; float bestScore = float.NegativeInfinity;
 			void Consider(Item it)
@@ -350,7 +350,7 @@ namespace Mechanization.Content.NPCs
 		}
 
 		/// <summary>The best stocked round of a given ammo kind (highest damage, then rarity, as the drone's ammo loan ranks it), or null to let the shot builder use the default round. Non-consuming.</summary>
-		private static Item BestAmmoFor(List<ArmoryTE> armories, int ammoId)
+		internal static Item BestAmmoFor(List<ArmoryTE> armories, int ammoId)
 		{
 			if (ammoId <= 0) return null;
 			Item best = null; float bestScore = float.NegativeInfinity;

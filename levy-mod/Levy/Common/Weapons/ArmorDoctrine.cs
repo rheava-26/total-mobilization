@@ -294,15 +294,8 @@ namespace Levy.Common.Weapons
 
 		/// <summary>Runs the dummy's equip update for a stat reading. Some accessories act while equipped (Spore Sac rolls 1 in 15 to spawn spores and can throw on this dummy):
 		/// the reading continues past a throw, and any projectile the dummy spawned is removed so a measurement never leaves anything in the world.</summary>
-		private static void SafeUpdateEquips(Player p)
-		{
-			var wasActive = new bool[Main.maxProjectiles];
-			for (int i = 0; i < Main.maxProjectiles; i++) wasActive[i] = Main.projectile[i].active;
-			var pos = p.position; p.Center = new Microsoft.Xna.Framework.Vector2(Main.maxTilesX * 8f, Main.maxTilesY * 8f); // at (0,0) Spore Sac reads tiles at negative coordinates
-			try { p.UpdateEquips(SoldierNPC.DummySlot); } catch (Exception) { }
-			finally { p.position = pos; }
-			for (int i = 0; i < Main.maxProjectiles; i++) if (!wasActive[i] && Main.projectile[i].active && Main.projectile[i].owner == SoldierNPC.DummySlot) Main.projectile[i].active = false;
-		}
+		private static void SafeUpdateEquips(Player p) => global::Levy.Common.Util.DummyEquip.SafeUpdateEquips(p, SoldierNPC.DummySlot);
+
 
 		/// <summary>Per-class bonus after equipping the three pieces; <paramref name="baseline"/> (the bare-player reading) is subtracted so default crit cancels.</summary>
 		/// <remarks>

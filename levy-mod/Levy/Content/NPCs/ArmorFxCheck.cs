@@ -26,7 +26,7 @@ namespace Levy.Content.NPCs
 		{
 			p.ResetEffects();
 			p.head = p.armor[0].headSlot; p.body = p.armor[1].bodySlot; p.legs = p.armor[2].legSlot;
-			p.UpdateEquips(250);
+			global::Levy.Common.Util.DummyEquip.SafeUpdateEquips(p, 250);
 			p.UpdateArmorSets(250);
 			var all = DamageClass.Generic;
 			return $"defense={p.statDefense} setBonus='{p.setBonus}' dmg(all)={p.GetDamage(all).Additive:0.00}x melee={p.GetDamage(DamageClass.Melee).Additive:0.00}x ranged={p.GetDamage(DamageClass.Ranged).Additive:0.00}x magic={p.GetDamage(DamageClass.Magic).Additive:0.00}x "

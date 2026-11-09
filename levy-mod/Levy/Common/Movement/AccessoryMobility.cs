@@ -22,7 +22,7 @@ namespace Levy.Common.Movement
 			p.maxRunSpeed = 3f; p.accRunSpeed = 3f; p.runAcceleration = 0.08f; p.runSlowdown = 0.2f; // ResetEffects leaves the sprint fields from the last item worn
 			for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
 			if (worn != null) p.armor[3] = worn;
-			p.UpdateEquips(250);
+			global::Levy.Common.Util.DummyEquip.SafeUpdateEquips(p, 250);
 			var ab = MovementAbilities.FromDummy(p);
 			var r = (ab, p.rocketBoots, p.rocketTimeMax, JumpQuality(p));
 			p.armor[3] = new Item();
@@ -124,7 +124,7 @@ namespace Levy.Common.Movement
 			p.ResetEffects();
 			for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
 			if (worn != null) p.armor[3] = worn;
-			p.UpdateEquips(250);
+			global::Levy.Common.Util.DummyEquip.SafeUpdateEquips(p, 250);
 			var r = ((float)p.lifeRegen, p.endurance, p.statDefense, p.statLifeMax2);
 			p.armor[3] = new Item();
 			p.ResetEffects();

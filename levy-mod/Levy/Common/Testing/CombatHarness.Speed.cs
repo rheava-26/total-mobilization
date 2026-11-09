@@ -98,7 +98,7 @@ namespace Levy.Common.Testing
 			bool swift = Array.IndexOf(boots, -1) >= 0; int ai = 0;
 			for (int bi = 0; bi < boots.Length; bi++) { if (boots[bi] < 0) continue; var it = new Item(); it.SetDefaults(boots[bi]); p.armor[3 + ai++] = it; }
 			p.ResetEffects();
-			p.UpdateEquips(SoldierNPC.DummySlot);
+			global::Levy.Common.Util.DummyEquip.SafeUpdateEquips(p, SoldierNPC.DummySlot);
 			if (swift) p.moveSpeed += 0.25f; // vanilla Swiftness buff
 			float accBeforeScale = p.accRunSpeed, maxBefore = p.maxRunSpeed, ms = p.moveSpeed, ra = p.runAcceleration;
 			// the run-speed part of Player.Update that follows UpdateEquips (Player.cs ~23009 and ~23440-23574): moveSpeed scaling, then the flag multipliers, then the mod hook

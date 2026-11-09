@@ -143,7 +143,7 @@ namespace Levy.Common.Testing
 					p.setBonus = "";
 					if (v >= 6) { p.head = p.armor[0].headSlot; p.body = p.armor[1].bodySlot; p.legs = p.armor[2].legSlot; }
 					if (v >= 1) { p.ResetEffects(); }
-					if (v >= 2) { p.UpdateEquips(SoldierNPC.DummySlot); }
+					if (v >= 2) { global::Levy.Common.Util.DummyEquip.SafeUpdateEquips(p, SoldierNPC.DummySlot); }
 					p.UpdateArmorSets(SoldierNPC.DummySlot);
 					sb.AppendLine($"DEBUG {set[0]} variant {v}: setBonus='{p.setBonus}' dedServ={Main.dedServ} netMode={Main.netMode} lang={Terraria.Localization.Language.GetTextValue("ArmorSetBonus.MetalTier1")} def={p.statDefense}");
 					} catch (Exception e) { sb.AppendLine("DEBUG variant " + v + " threw " + e.GetType().Name + ": " + e.Message); }

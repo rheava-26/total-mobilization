@@ -1,0 +1,5 @@
+name: ordersfix_hpscale
+boss: ds
+mode: exp
+seeds: [1, 2]
+cap: 60

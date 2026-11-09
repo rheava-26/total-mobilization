@@ -93,7 +93,7 @@ namespace Levy.Common.Movement
 			if (!InWindow(t.X, t.Y) || !InWindow(s.X, s.Y)) return false;
 			_wings = abilities.HasWings;
 			_jumpTiles = Math.Max(1, abilities.JumpTiles);
-			_maxFall = _wings ? FallScanTiles : (TravelLegacy.On || centred ? Math.Min(FallScanTiles, _jumpTiles + DropMarginTiles) : FallScanTiles); // a route may go down into a pit (a safe fall) when the far side lets it climb out
+			_maxFall = _wings ? FallScanTiles : (TravelLegacy.On || centred ? Math.Min(FallScanTiles, _jumpTiles + DropMarginTiles) : FallScanTiles - 1); // -1: the executor's drop scan (TileNav) sees at most FallScanTiles - 1 below a lip, so never plan a drop it would refuse // a route may go down into a pit (a safe fall) when the far side lets it climb out
 			_gapTiles = abilities.GapTiles;
 			_maxFlight = TravelLegacy.On ? ushort.MaxValue : Math.Max(6, (int)(abilities.WingTimeMax * FlySpeed / 16f * FlightRangeShare)); // tiles of flight one tank of wing time covers, with room for the climb
 			_hWeight = Math.Max(1f, hWeight);

@@ -129,3 +129,41 @@ Cost (planner ms over the whole run; slices are 700 nodes or 1.6 ms): real 800 1
 - OBSERVED, not fixed: the route search accepts a fall of exactly `FallScanTiles` (20) but `TileNav.DropDepth` in the executor sees 19 below the lip, so a plan that drops 20 is refused at the edge (zoo Z5 mesa, `void-gap`). Climbers stop on the mesa until a hop.
 - INFERRED: Shoe Spikes and Climbing Claws climb like Tiger Climbing Gear here because the levy jumps off the wall 3 ticks after it catches whatever the gear.
 - Harness note: a headless server resets `Player.active` every tick for a slot nobody is connected on, so the lab lists its stand-in commander in `OffscreenHop.LabViewers`; on a real server connected players are active.
+
+# Round 4: hook levies climb like a player
+
+Lab: `lab/travel/round4/`. Before = branch head `worktree-levy-stardust` plus the harness only (`h1`), after = `travel4`. Commander on screen means `LEVY_TRAVEL_NOHOP=1` (no catch-up hop exists); "far" is 600 tiles behind with the levies holding (hops on). 13 hook levies per run, one per vanilla hook (Grappling, Amethyst, Sapphire, Emerald, Diamond, Ivy Whip, Web Slinger, Skeletron Hand, Slime Hook, Fish Hook, Dual Hook, Lunar Hook, Static Hook). New course `wall`: flat ground, a sheer face H tiles tall with a plateau on top (goal 150 tiles on), or a chasm W wide and 60 deep.
+
+## OBSERVED (before), per cast logs (`HK` lines in events.txt)
+- A face above 20 tiles was never tried by a route: the chain edge stopped at 3.2 x the hook's reach (58 tiles for the Grappling Hook), and the executor's `HookStart` only cast when ONE cast "beats" the walk, so a 40-tile face gave `plan Route ... gain 0.2T beats=False` three times and a ban (zoo and wall40: 0/13).
+- A chain that did start broke at the top: `TryChain` asked for the highest anchor, but a body hanging against a face latches only about half way up the fan's steepest rays (the hook's 10 px box touches the face half way), the fan has 24 rays 7.5 degrees apart, and the lip tile itself is never hit. "No higher anchor" ended the chain with a release that fell the whole way (wall20: 11 falls of 20 tiles, 9/13 arrive). The chain was also capped at 8 links, and its progress test was straight-line distance to a goal that is 150 tiles down the road, so a link that gains 2 tiles up looks like nothing.
+- Two-hook items (Dual Hook, Skeletron Hand) cast a pair whose second hook missed and stood stranded (zoo Z1: 0/13).
+- No edge crosses a gap wider than a cast (chasm 14/20/30: 0 casts, 0/13). The far lip has no anchor above it, but the far wall below the lip has plenty.
+- The route search accepted a fall of 19 tiles and the executor 19 (a 20-tile drop is inside the 25 free tiles): a mesa with a 20-tile drop was a dead end (Z5).
+- Wall climbing is slow in clock time only because the casts are: a link is about 40 ticks (cast flight 10 to 30, reel 10), and gains about half the reach.
+
+## What changed
+1. `HookPlanner.PlanClimb` (one link of a climb) and `DirectedAnchors`: rays aimed at the exposed latchable tiles around the body that lie nearest the goal (up to 48), the way a player aims at the lip, plus the fan. A hanging link needs no safe drop (a body 80 tiles up a face has none). Progress is `ClimbDist` (height still to make up plus 0.3 x the way across, capped), so a far goal does not hide a gain in height. A climb never casts at the wall behind it, and casts one hook at a time (a pair that does not both latch strands the body).
+2. Chain climbing (`SoldierNPC.Hook.cs`): `HookStart` falls back to a climb when no single plan beats; each arrival casts the next link at once (up to 160 links or 150 s, ended early after 8 links without getting nearer); within reach of the goal the link is a landing plan. HOOK-JUMP: when no anchor gains ground the body jumps off the hook (the full jump this body makes from the ground, extra jumps refreshed as vanilla does on release), and casts again in the air once it falls short of the goal. An arrived release is also a full jump. An extra jump (cloud in a bottle) is spent at the top of the arc when the ledge is still above. A cast that came down where it started waits longer each time.
+3. Planner (`PathSearch`): the chain edge up a face has no height limit (cost 8 + 1.3 per tile), `GapChain` crosses a gap by casting at the far wall below its lip and climbing it (a far wall up to 4 tiles beyond the cast's reach is allowed: the executor jumps out over the gap first, `TryJumpCast`), and a route may take a fall of exactly 20 tiles (executor too).
+4. Lab: `wall` course, `hooks` gear, `LEVY_TRAVEL_NOHOP`, per-levy hook counters, `HK` event lines, `hookstats`.
+
+## After (arrivals; time = mean seconds of those that arrived)
+| set (13 hook levies per run) | before | after |
+|---|---|---|
+| wall 10 / 20 / 40 / 80 / 150 tiles | 12 / 9 / 0 / 0 / 0 of 13 (28 s, 25 s) | 13 / 13 / 13 / 13 / 13 (20, 19, 22, 24, 27 s), falls 0 to 1 |
+| chasm 14 / 20 / 30 wide, 60 deep | 0 / 0 / 0 of 13 | 13 / 13 / 13 (22, 22, 19 s) |
+| zoo Z0 / Z1 / Z2 / Z3 / Z5 (cliff 10, crack 6, chasm 14, chasm 20, cliff 20 and drop 20) | 12 / 0 / 12 / 0 / 0 | 13 / 12 / 13 / 13 / 13 |
+| corruption C0 / C1 / C2 / C3 / C4 | 12 / 13 / 0 / 13 / 13 | 12 / 13 / 11 / 13 / 13 |
+| real worlds 800, commander on screen (10 runs) | 11/130 (8%) | 20/130 (15%) |
+| real worlds 150, commander on screen (30 runs) | 251/520 (48%) | 281/520 (54%) |
+| real worlds 800, commander far (hops) | 117/130 (90%) | 111/130 (85%) |
+| mixed gear, commander on screen, worlds + courses (58 runs): bare / boots / wings / Grappling Hook | 142/290, 121/232, 139/174, 100/174 | 142/290, 123/232, 139/174, 120/174 |
+
+Cost (whole runs, route planner slices of 700 nodes or 1.6 ms): 800-tile on-screen set 1.55 to 1.67 ms per slice (slowest 9.7 to 12.9 ms, loaded machine); 150-tile set 1.43 to 1.54 ms (13.0 to 18.5 ms); the mixed set 0.87 to 0.94 ms (13.1 to 24.6 ms). A hook plan costs 0.87 ms before and 0.55 ms after on average (more plans, 5.3k to 7.9k, because every climb link plans; INFERRED: a link simulates only the hang, not the ballistic releases). Hook tick and projectile time over the 800-tile set: 1.2 s to 2.6 s for ten runs of 13 levies (about 0.02 ms per hook levy-tick).
+
+## Reading it
+- OBSERVED: any wall height and chasms up to 30 wide are crossed by every vanilla hook, with the commander on screen and no hops, in 19 to 27 s and with no falls. Z5 (cliff 20 then a 20-tile drop) is 13/13.
+- OBSERVED: real worlds with the commander on screen improve modestly (8% to 15% at 800, 48% to 54% at 150). The levies now reach the next obstacle and climb it, then meet the next one; a failed edge in a long chain of edges still ends the trip (route bans, a pocket the climb cannot top). Stuck lines of the 800-tile runs: a 70-tile shaft where the local wall trigger repeats a 21-tile cast that lands lower than it started (waits longer each time since the last fix, not solved), and pits whose only way out is a ledge no anchor tops.
+- OBSERVED, a regression: with the commander far, hook levies arrive 111/130 where hops alone gave 117/130. The three worst runs are levies that keep casting inside a pit (they move more than 5 tiles each time, so the catch-up hop never counts them as stuck). INFERRED: letting the hop see a levy that has gone 20 s without getting nearer would give the arrivals back; not done.
+- Static Hook (steered, 6 px/tick) climbs and crosses like the others after the planner stopped refusing it, and pairs are not cast in a climb.

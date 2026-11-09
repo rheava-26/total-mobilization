@@ -403,7 +403,7 @@ namespace Levy.Common.Testing
 				_tvGx = TvX0 + _tvTo; _tvGy = TvRow(_tvTo) - 3;
 				_tvStarted = true; _tvTick = 0; _tvWatch.Restart();
 				TvPinCommander();
-				Pathfinder.StatReset(); RoutePlanner.StatReset();
+				Pathfinder.StatReset(); RoutePlanner.StatReset(); SoldierHooks.ResetCounters(); PathSearch.StatHookScans = PathSearch.StatHookEdges = 0;
 				SoldierNPC.CatchUpHops = 0; SoldierNPC.CatchUpHopsSeen = 0; SoldierNPC.CatchUpTicks = 0; //HOP
 				if (Environment.GetEnvironmentVariable("LEVY_TRAVEL_PLAN") == "1")
 				{
@@ -536,6 +536,7 @@ namespace Levy.Common.Testing
 			}
 			_tvEvents.AppendLine($"hops: total={SoldierNPC.CatchUpHops} seenByMod={SoldierNPC.CatchUpHopsSeen} ms={SoldierNPC.CatchUpTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.00} tries={SoldierNPC.CatchUpTries} last={SoldierNPC.CatchUpLast}"); //HOP
 			foreach (string rl in RoutePlanner.Log) _tvEvents.AppendLine(rl);
+			_tvEvents.AppendLine($"hookstats: plans={SoldierHooks.Plans} found={SoldierHooks.PlansFound} planMs={SoldierHooks.PlanTs * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} tickCalls={SoldierHooks.TickCalls} tickMs={SoldierHooks.TickTs * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} projMs={SoldierHooks.ProjTs * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} casts={SoldierHooks.Casts} ok={SoldierHooks.CastsOk} latches={SoldierHooks.Latches} releases={SoldierHooks.Releases} landings={SoldierHooks.Landings} aborts={SoldierHooks.Aborts} scans={PathSearch.StatHookScans} edges={PathSearch.StatHookEdges}");
 			foreach (string hl in SoldierHooks.CastLog) _tvEvents.AppendLine(hl);
 			File.WriteAllText(Path.Combine(_tvOut, "events.txt"), _tvEvents.ToString());
 			int arrived = _tv.FindAll(l => l.ArriveTick >= 0).Count;

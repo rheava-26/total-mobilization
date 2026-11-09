@@ -23,12 +23,13 @@ namespace Levy.Common.Testing
 	/// </summary>
 	public partial class CombatHarness
 	{
-		private const int TvG = 150;                 // ground row at elevation 0 (top solid row)
+		private static int TvG = 150;                // ground row at elevation 0 (top solid row); the wall course raises it so a 150-tile face fits
 		private static int TvX0;                     // world tile x of course offset 0
 		private static readonly int[] TvElev = new int[1100];   // elevation (tiles above TvG) of the top solid row at each course offset
 		private static readonly bool[] TvWater = new bool[1100];
 		private const int TvLen = 960;
-		private static int TvDepthA = 12; private static bool TvBridgeB = true, TvZoo, TvWorld, TvCorrupt;
+		private static int TvDepthA = 12; private static bool TvBridgeB = true, TvZoo, TvWorld, TvCorrupt, TvWall, TvLavaC; private static int TvWallH = 20;
+		private static readonly int[] TvLavaLvl = new int[1100];   // lava course: elevation of the lava surface (int.MinValue = none)
 		private static int[] TvSurf;                 // world mode: feet row of the standing surface for every world column (-1 = none)
 		private string _tvMode = "map", _tvOut = "", _tvGear = "mixed";
 		private int _tvFrom, _tvTo, _tvN = 15, _tvCap = 12000, _tvTick; private bool _tvStarted;
@@ -36,13 +37,13 @@ namespace Levy.Common.Testing
 		{
 			public string Gear; public SoldierRecord Rec; public int Idx = -1;
 			public Vector2 Start, Last; public float Straight, Path; public int ArriveTick = -1, GaveUp = -1, Teleports, Falls, WetTicks, DeepTicks, Gone, StuckTicks, StuckEps, StallTicks, StallEps, Frames;
-			public float FallTiles, BestProg; public int BestProgTick; public int VisTele, Hops, ClimbDone;
+			public int LavaTicks, LavaEntries, LavaDeaths; public bool InLava; public int LavaLastTick; public int HkCasts, HkLatches, HkChains, HkAborts, HkReleases, HkLandings, RtCasts, RtBans, StepBacks; public float EndElev; public float FallTiles, BestProg; public int BestProgTick; public int VisTele, Hops, ClimbDone;
 			public Vector2 Anchor; public int AnchorTick; public bool InStuck;
 			public string StuckWhere = "";
 			public bool StallOpen; public int StallFrom;
 			public float FallStartY = float.NaN; public bool Falling; public string StallWhere = ""; public int LastHasBody = 1;
 		}
-		private bool _tvGun, _tvFoes; private int _tvAscii;
+		private bool _tvGun, _tvFoes; private int _tvAscii; private readonly Dictionary<string, int> _tvKnockTick = new Dictionary<string, int>();
 		private readonly List<TvLevy> _tv = new List<TvLevy>();
 		private StringBuilder _tvTrace = new StringBuilder(), _tvEvents = new StringBuilder();
 		private int _tvGx, _tvGy; private float _tvCmdX;
@@ -51,6 +52,8 @@ namespace Levy.Common.Testing
 		private static string TvFeature(float off)
 		{
 			if (TvWorld) return "w" + ((int)(off + TvX0) / 50 * 50);
+			if (TvLavaC) { int lg = (int)Math.Floor((off - 20) / 150f); string[] ln = { "lavalake", "lavagap8", "lavapit", "lavapool3", "lavashaft", "lavaledge" }; return lg >= 0 && lg < ln.Length ? "v" + lg + "-" + ln[lg] : "camp"; }
+			if (TvWall) return off < 100 ? "foot" : off < 300 ? (TvWallH > 0 ? "plateau" : "far") : "end";
 			if (TvCorrupt) { int leg2 = (int)Math.Floor((off - 20) / 150f); string[] nm2 = { "holes3-5-8", "cavemouth", "chasm60", "hole4", "pitstairs", "lakesteep" }; return leg2 >= 0 && leg2 < nm2.Length ? "c" + leg2 + "-" + nm2[leg2] : "camp"; }
 			if (TvZoo) { int leg = (int)Math.Floor((off - 20) / 150f); string[] nm = { "cliff10", "crack6", "chasm14", "chasm20", "lake12", "cliff20" }; return leg >= 0 && leg < nm.Length ? "z" + leg + "-" + nm[leg] : "camp"; }
 			if (off < 40) return "camp0"; if (off < 100) return "hills1"; if (off < 140) return "ledge"; if (off < 165) return "camp1";
@@ -77,6 +80,11 @@ namespace Levy.Common.Testing
 			TvZoo = string.Equals(course, "zoo", StringComparison.OrdinalIgnoreCase);
 			TvWorld = string.Equals(course, "world", StringComparison.OrdinalIgnoreCase);
 			TvCorrupt = string.Equals(course, "corrupt", StringComparison.OrdinalIgnoreCase);
+			TvWall = string.Equals(course, "wall", StringComparison.OrdinalIgnoreCase);
+			TvLavaC = string.Equals(course, "lava", StringComparison.OrdinalIgnoreCase);
+			TvG = 150; if (TvWall) { TvG = 300; int.TryParse(Environment.GetEnvironmentVariable("LEVY_TRAVEL_WALLH"), out TvWallH); if (TvWallH == 0) TvWallH = 20; }
+			SoldierHooks.LogCasts = Environment.GetEnvironmentVariable("LEVY_TRAVEL_HOOKLOG") != "0"; SoldierHooks.CastLog.Clear();
+			OffscreenHop.LabNoHop = Environment.GetEnvironmentVariable("LEVY_TRAVEL_NOHOP") == "1";
 			TvDepthA = 12; TvBridgeB = true;
 			_tvTick = 0; _tvStarted = false; _tv.Clear(); _tvTrace.Clear(); _tvEvents.Clear();
 			return true;
@@ -117,8 +125,31 @@ namespace Levy.Common.Testing
 			for (int i = 696; i < 716; i++) TvElev[i] = Math.Min(0, -14 + ((i - 696) / 2 + 1) * 3);
 		}
 
+		/// <summary>The wall course: flat ground to 100, then (WALLH &gt; 0) a sheer face WALLH tall with a plateau on top to 300 and a ramp down, or (WALLH &lt; 0) a chasm |WALLH| wide and 60 deep with ground on the far side. Start 40, goal 250 (the harness sets From/To).</summary>
+		private static void TvDefineWall()
+		{
+			Array.Clear(TvElev, 0, TvElev.Length); Array.Clear(TvWater, 0, TvWater.Length);
+			if (TvWallH > 0) { for (int i = 100; i < 320; i++) TvElev[i] = TvWallH; for (int i = 320; i < 320 + TvWallH && i < TvElev.Length; i++) TvElev[i] = TvWallH - (i - 319); }
+			else for (int i = 100; i < 100 - TvWallH; i++) TvElev[i] = -60;
+		}
+
+		/// <summary>The lava course: camps every 150 from 20 and one lava hazard per leg. V0 a lava lake 40 wide (shores 1:1, 14 deep, full), V1 a sheer gap 8 wide and 25 deep with 6 rows of lava at the bottom, V2 a 12-wide 20-deep pit with 4 rows of lava (sheer), V3 a 3-wide 3-deep lava pool in the road, V4 a 10-wide 40-deep shaft with 8 rows of lava (levies are dropped into it in the air), V5 an island ledge over a 30-wide lava sea.</summary>
+		private static void TvDefineLava()
+		{
+			Array.Clear(TvElev, 0, TvElev.Length); Array.Clear(TvWater, 0, TvWater.Length); Array.Fill(TvLavaLvl, int.MinValue);
+			for (int i = 80; i < 120; i++) { int d = Math.Min(14, Math.Min(i - 79, 120 - i)); TvElev[i] = -d; TvLavaLvl[i] = 0; }
+			for (int i = 230; i < 238; i++) { TvElev[i] = -25; TvLavaLvl[i] = -19; }
+			for (int i = 380; i < 392; i++) { TvElev[i] = -20; TvLavaLvl[i] = -16; }
+			for (int i = 530; i < 533; i++) { TvElev[i] = -3; TvLavaLvl[i] = 0; }
+			for (int i = 680; i < 690; i++) { TvElev[i] = -40; TvLavaLvl[i] = -32; }
+			for (int i = 830; i < 860; i++) { TvElev[i] = -30; TvLavaLvl[i] = -10; }
+			for (int i = 843; i < 847; i++) TvElev[i] = -8;   // an island 4 wide, 8 rows below the road
+		}
+
 		private static void TvDefineCourse()
 		{
+			if (TvLavaC) { TvDefineLava(); return; }
+			if (TvWall) { TvDefineWall(); return; }
 			if (TvCorrupt) { TvDefineCorrupt(); return; }
 			if (TvZoo) { TvDefineZoo(); return; }
 			Array.Clear(TvElev, 0, TvElev.Length); Array.Clear(TvWater, 0, TvWater.Length);
@@ -224,6 +255,8 @@ namespace Levy.Common.Testing
 					if (y < top) TvAir(x, y);
 					else { TvSet(x, y, y == top ? TileID.Grass : (y < top + 4 ? TileID.Dirt : TileID.Stone)); Main.tile[x, y].WallType = 0; Main.tile[x, y].LiquidAmount = 0; }
 				}
+				if (TvLavaC && off >= 0 && off < TvLen && TvLavaLvl[off] != int.MinValue)
+					for (int y = TvG - TvLavaLvl[off]; y < top; y++) { Tile t = Main.tile[x, y]; t.LiquidAmount = 255; t.LiquidType = LiquidID.Lava; }
 				if (off >= 0 && off < TvLen && TvWater[off])
 					for (int y = TvG; y < top; y++) { Tile t = Main.tile[x, y]; t.LiquidAmount = 255; t.LiquidType = LiquidID.Water; }
 			}
@@ -286,10 +319,14 @@ namespace Levy.Common.Testing
 		private string TvGearOf(int i)
 		{
 			if (_tvGear == "climb") { int c3 = i % 3; return c3 == 0 ? "spikes" : c3 == 1 ? "claws" : "tiger"; } // wall-climb gear arm: Shoe Spikes, Climbing Claws, Tiger Climbing Gear
+			if (_tvGear == "hooks") return "hook:" + TvHookNames[i % TvHookNames.Length];
 			if (_tvGear != "mixed") return _tvGear;
 			int k = i % 15; // 15: 5 none, 4 boots, 3 wings, 3 hook
 			if (k < 5) return "none"; if (k < 9) return "boots"; if (k < 12) return "wings"; return "hook";
 		}
+
+		private static readonly string[] TvHookNames = { "GrapplingHook", "AmethystHook", "SapphireHook", "EmeraldHook", "DiamondHook", "IvyWhip", "WebSlinger", "SkeletronHand", "SlimeHook", "FishHook", "DualHook", "LunarHook", "StaticHook" };
+		private static int TvHookId(string name) { var f = typeof(ItemID).GetField(name); return f == null ? ItemID.GrapplingHook : (int)(short)f.GetValue(null); }
 
 		private void TvSpawn()
 		{
@@ -308,6 +345,7 @@ namespace Levy.Common.Testing
 				if (g == "boots") { var it = new Item(); it.SetDefaults(ItemID.HermesBoots); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
 				if (g == "wings") { var it = new Item(); it.SetDefaults(ItemID.AngelWings); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
 				if (g == "spikes" || g == "claws" || g == "tiger" || g == "ninja") { var it = new Item(); it.SetDefaults(g == "spikes" ? ItemID.ShoeSpikes : g == "claws" ? ItemID.ClimbingClaws : g == "tiger" ? ItemID.TigerClimbingGear : ItemID.MasterNinjaGear); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
+				if (g.StartsWith("hook:")) { var it = new Item(); it.SetDefaults(TvHookId(g.Substring(5))); rec.Gear.Hook = it; rec.Gear.SetLocked(SoldierGear.SlotHook, true); }
 				if (g == "hook") { var it = new Item(); it.SetDefaults(ItemID.GrapplingHook); rec.Gear.Hook = it; rec.Gear.SetLocked(SoldierGear.SlotHook, true); }
 				RosterSystem.Instance.Regulars.Add(rec);
 				int off = _tvFrom + (i - _tvN / 2);
@@ -384,7 +422,7 @@ namespace Levy.Common.Testing
 				_tvGx = TvX0 + _tvTo; _tvGy = TvRow(_tvTo) - 3;
 				_tvStarted = true; _tvTick = 0; _tvWatch.Restart();
 				TvPinCommander();
-				Pathfinder.StatReset(); RoutePlanner.StatReset();
+				Pathfinder.StatReset(); RoutePlanner.StatReset(); SoldierHooks.ResetCounters(); PathSearch.StatHookScans = PathSearch.StatHookEdges = 0;
 				SoldierNPC.CatchUpHops = 0; SoldierNPC.CatchUpHopsSeen = 0; SoldierNPC.CatchUpTicks = 0; //HOP
 				if (Environment.GetEnvironmentVariable("LEVY_TRAVEL_PLAN") == "1")
 				{
@@ -414,6 +452,7 @@ namespace Levy.Common.Testing
 			if (_tvTick == 120) foreach (var l in _tv) if (l.Rec.HasBody) TvReset(l);
 			if (_tvTick < 120) return;
 			if (_tvFoes && _tvTick % 360 == 0) TvSpawnFoe();
+			if (Environment.GetEnvironmentVariable("LEVY_LAVA_DROP") == "1" && _tvTick == 200) foreach (var l in _tv) if (l.Rec.HasBody) { NPC dn = Main.npc[l.Rec.BodyIndex]; dn.position = new Vector2((TvX0 + 685) * 16f + l.Idx % 5 * 8f, (TvG + 40 - 16 - 32) * 16f); dn.velocity = Vector2.Zero; dn.netUpdate = true; _tvEvents.AppendLine($"t={_tvTick} dropped {l.Rec.Name}({l.Gear}) into the shaft"); }   // 16 tiles above the top of a 40-deep shaft (row TvG+40 is its floor)
 			float goalPx = _tvGx * 16f + 8f; float goalY = _tvGy * 16f;
 			bool allDone = true;
 			foreach (var l in _tv)
@@ -425,6 +464,7 @@ namespace Levy.Common.Testing
 				Vector2 c = n.Center; l.Idx = rec.BodyIndex;
 				l.Frames++;
 				l.ClimbDone = sn.ClimbEdges; //HOP
+				l.HkCasts = sn.HkCasts; l.HkLatches = sn.HkLatches; l.HkChains = sn.HkChains; l.HkAborts = sn.HkAborts; l.HkReleases = sn.HkReleases; l.HkLandings = sn.HkLandings; l.RtCasts = sn.RouteHookCasts; l.RtBans = sn.RouteHookBans; l.StepBacks = sn.HkStepBacks; l.EndElev = TvG - n.Bottom.Y / 16f;
 				float step = Vector2.Distance(c, l.Last);
 				float offNow = c.X / 16f - TvX0;
 				if (step > 6 * 16f) { l.Teleports++; l.Hops += _tvMode == "map" ? 1 : 0; if (TvSeen(l.Last) || TvSeen(c)) { l.VisTele++; _tvEvents.AppendLine($"t={_tvTick} VISIBLE hop {rec.Name} from {l.Last.X / 16f:0},{l.Last.Y / 16f:0} to {c.X / 16f:0},{c.Y / 16f:0} player now {Main.player[0].Center.X / 16f:0},{Main.player[0].Center.Y / 16f:0} prev {_tvPrevPl.X / 16f:0},{_tvPrevPl.Y / 16f:0}"); } _tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) TELEPORT {l.Last.X / 16f - TvX0:0} -> {offNow:0} ({TvFeature(l.Last.X / 16f - TvX0)})"); }
@@ -435,6 +475,23 @@ namespace Levy.Common.Testing
 				if (l.Falling && grounded) { float drop = (c.Y - l.FallStartY) / 16f; if (drop >= 8f) { l.Falls++; l.FallTiles += drop; _tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) FALL {drop:0} tiles at {offNow:0} ({TvFeature(offNow)})"); } l.Falling = false; }
 				if (n.wet) { l.WetTicks++; int tx = (int)(c.X / 16f), ty = (int)(c.Y / 16f) - 1; if (Main.tile[tx, ty].LiquidAmount > 0) l.DeepTicks++; }
 				// stuck: no 4-tile exit from the anchor for >180 ticks (only while still travelling: not once arrived, and in Follow only while more than 15 tiles from the commander)
+				if (n.lavaWet)
+				{
+					l.LavaTicks++; l.LavaLastTick = _tvTick;
+					if (!l.InLava)
+					{
+						l.InLava = true; l.LavaEntries++;
+						_tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) ENTERED LAVA at {offNow:0} ({TvFeature(offNow)}) v={n.velocity.X:0.0},{n.velocity.Y:0.0} state={sn.State} blockWhy={sn.MoveBlocked} hook={sn.HookState} why={sn.StillReason()} knock={_tvKnockTick.GetValueOrDefault(rec.Name, -999)} {sn.DebugRoute()}");
+					}
+				}
+				else l.InLava = false;
+				if (Environment.GetEnvironmentVariable("LEVY_LAVA_KNOCK") == "1" && _tvTick > 150 && _tvTick % 90 == 0 && l.ArriveTick < 0 && n.velocity.Y == 0f)
+				{
+					// a hit: a shove of 7 px/tick toward the nearest lava column within 10 tiles, and a small hop
+					int cx = (int)(c.X / 16f), best = 0, bd = 99;
+					for (int dx = -10; dx <= 10; dx++) { int o = cx - TvX0 + dx; if (o < 0 || o >= TvLen || TvLavaLvl[o] == int.MinValue) continue; if (Math.Abs(dx) < bd) { bd = Math.Abs(dx); best = Math.Sign(dx); } }
+					if (bd < 99) { n.velocity.X = best * 7f; n.velocity.Y = -3f; _tvKnockTick[rec.Name] = _tvTick; n.netUpdate = true; }
+				}
 				bool tracking = l.ArriveTick < 0 && (_tvMode != "follow" || Math.Abs(c.X - Main.player[0].Center.X) > 15 * 16f);
 				if (!tracking) { if (l.InStuck) { l.StuckTicks += _tvTick - l.AnchorTick; l.InStuck = false; } l.Anchor = c; l.AnchorTick = _tvTick; l.BestProgTick = _tvTick; if (l.StallOpen) { l.StallTicks += _tvTick - l.StallFrom; l.StallOpen = false; } }
 				else if (Vector2.Distance(c, l.Anchor) >= 64f)
@@ -490,10 +547,10 @@ namespace Levy.Common.Testing
 
 		private void TvFinish()
 		{
-			OffscreenHop.LabViewers = null; //HOP
+			OffscreenHop.LabViewers = null; OffscreenHop.LabNoHop = false; //HOP
 			double ms = _tvWatch.Elapsed.TotalMilliseconds;
 			var sb = new StringBuilder();
-			sb.AppendLine("name,gear,arrived,arriveSec,gaveUpSec,straightTiles,pathTiles,ratio,stuckSec,stuckEps,stallSec,stallEps,teleports,falls,fallTiles,wetSec,deepSec,bodyGone,endOffset,endFeature,endState,endOrder,stuckWhere,stallWhere,visTele,climbEdges");
+			sb.AppendLine("name,gear,arrived,arriveSec,gaveUpSec,straightTiles,pathTiles,ratio,stuckSec,stuckEps,stallSec,stallEps,teleports,falls,fallTiles,wetSec,deepSec,bodyGone,endOffset,endFeature,endState,endOrder,stuckWhere,stallWhere,visTele,climbEdges,hkCasts,hkLatches,hkChains,hkAborts,hkReleases,hkLandings,rtCasts,rtBans,stepBacks,endElev,lavaSec,lavaEntries");
 			foreach (var l in _tv)
 			{
 				if (l.InStuck) l.StuckTicks += _tvTick - l.AnchorTick;
@@ -501,7 +558,7 @@ namespace Levy.Common.Testing
 				float straight = Vector2.Distance(l.Start, new Vector2(_tvGx * 16f + 8f, _tvGy * 16f)) / 16f;
 				float pathT = l.Path / 16f; float endOff = l.Last.X / 16f - TvX0;
 				string st = ""; if (l.Rec.HasBody) st = ((SoldierNPC)Main.npc[l.Rec.BodyIndex].ModNPC).State.ToString();
-				sb.AppendLine(string.Join(",", l.Rec.Name, l.Gear, l.ArriveTick >= 0 ? 1 : 0, l.ArriveTick >= 0 ? (l.ArriveTick / 60f).ToString("0.0") : "", l.GaveUp >= 0 ? (l.GaveUp / 60f).ToString("0.0") : "", straight.ToString("0"), pathT.ToString("0"), (pathT / Math.Max(1f, straight)).ToString("0.00"), (l.StuckTicks / 60f).ToString("0.0"), l.StuckEps, (l.StallTicks / 60f).ToString("0.0"), l.StallEps, l.Teleports, l.Falls, l.FallTiles.ToString("0"), (l.WetTicks / 60f).ToString("0.0"), (l.DeepTicks / 60f).ToString("0.0"), l.Gone, endOff.ToString("0"), TvFeature(endOff), st, l.Rec.Order.ToString(), "\"" + l.StuckWhere.Trim() + "\"", "\"" + l.StallWhere.Trim() + "\"", l.VisTele, l.ClimbDone));
+				sb.AppendLine(string.Join(",", l.Rec.Name, l.Gear, l.ArriveTick >= 0 ? 1 : 0, l.ArriveTick >= 0 ? (l.ArriveTick / 60f).ToString("0.0") : "", l.GaveUp >= 0 ? (l.GaveUp / 60f).ToString("0.0") : "", straight.ToString("0"), pathT.ToString("0"), (pathT / Math.Max(1f, straight)).ToString("0.00"), (l.StuckTicks / 60f).ToString("0.0"), l.StuckEps, (l.StallTicks / 60f).ToString("0.0"), l.StallEps, l.Teleports, l.Falls, l.FallTiles.ToString("0"), (l.WetTicks / 60f).ToString("0.0"), (l.DeepTicks / 60f).ToString("0.0"), l.Gone, endOff.ToString("0"), TvFeature(endOff), st, l.Rec.Order.ToString(), "\"" + l.StuckWhere.Trim() + "\"", "\"" + l.StallWhere.Trim() + "\"", l.VisTele, l.ClimbDone, l.HkCasts, l.HkLatches, l.HkChains, l.HkAborts, l.HkReleases, l.HkLandings, l.RtCasts, l.RtBans, l.StepBacks, l.EndElev.ToString("0"), (l.LavaTicks / 60f).ToString("0.0"), l.LavaEntries));
 			}
 			File.WriteAllText(Path.Combine(_tvOut, "levies.csv"), sb.ToString());
 			File.WriteAllText(Path.Combine(_tvOut, "trace.csv"), "tick,name,gear,x,elevation,state\n" + _tvTrace);
@@ -516,6 +573,9 @@ namespace Levy.Common.Testing
 			}
 			_tvEvents.AppendLine($"hops: total={SoldierNPC.CatchUpHops} seenByMod={SoldierNPC.CatchUpHopsSeen} ms={SoldierNPC.CatchUpTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.00} tries={SoldierNPC.CatchUpTries} last={SoldierNPC.CatchUpLast}"); //HOP
 			foreach (string rl in RoutePlanner.Log) _tvEvents.AppendLine(rl);
+			_tvEvents.AppendLine($"lavaguard: ticks={SoldierNPC.LavaGuardTicks} kicks={SoldierNPC.LavaKicks} escapeTicks={SoldierNPC.LavaEscapeTicks}");
+			_tvEvents.AppendLine($"hookstats: plans={SoldierHooks.Plans} found={SoldierHooks.PlansFound} planMs={SoldierHooks.PlanTs * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} tickCalls={SoldierHooks.TickCalls} tickMs={SoldierHooks.TickTs * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} projMs={SoldierHooks.ProjTs * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} casts={SoldierHooks.Casts} ok={SoldierHooks.CastsOk} latches={SoldierHooks.Latches} releases={SoldierHooks.Releases} landings={SoldierHooks.Landings} aborts={SoldierHooks.Aborts} scans={PathSearch.StatHookScans} edges={PathSearch.StatHookEdges}");
+			foreach (string hl in SoldierHooks.CastLog) _tvEvents.AppendLine(hl);
 			File.WriteAllText(Path.Combine(_tvOut, "events.txt"), _tvEvents.ToString());
 			int arrived = _tv.FindAll(l => l.ArriveTick >= 0).Count;
 			Mod.Logger.Info($"HARNESS-TRAVEL: RESULT mode={_tvMode} from={_tvFrom} to={_tvTo} arrived={arrived}/{_tv.Count} ticks={_tvTick} pathfinder[{Pathfinder.StatSummary()}] planner[{RoutePlanner.StatSummary()}] out={_tvOut}");

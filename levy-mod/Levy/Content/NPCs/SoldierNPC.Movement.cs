@@ -70,6 +70,7 @@ namespace Levy.Content.NPCs
 			bool onSlope = MobilityMode >= 1 && npc.velocity.Y > 0f && npc.velocity.Y < 2.2f && !npc.wet && Collision.SolidCollision(new Vector2(npc.position.X, npc.Bottom.Y), npc.width, 4);
 			bool grounded = (npc.velocity.Y == 0f || onSlope) && !(_wasAirborne && HeadOnCeiling());
 			RefreshKit();
+			if (npc.lavaWet) LavaEscape();
 			if (grounded)
 			{
 				_jumpsUsed = 0; _wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _flyRampTicks = 0;
@@ -220,6 +221,23 @@ namespace Levy.Content.NPCs
 		}
 		internal int SwimTicks;
 
+		/// <summary>
+		/// In lava: out, at once. A player in lava holds jump and a direction: this swims up hard (spending a wing flap, a rocket pulse or an extra jump when the body has one) and leans toward the nearer bank
+		/// (the side with less lava under the next columns). No planned route is followed in lava; the hook and the walking AI take over again on the bank.
+		/// </summary>
+		private void LavaEscape()
+		{
+			NPC npc = NPC;
+			LavaEscapeTicks++;
+			if (_hkPhase != HookPhase.Idle) return;     // a reel is already pulling it out
+			npc.velocity.Y = Math.Max(-LavaSwimMaxUp, npc.velocity.Y - LavaSwimAccel);
+			int dir = LavaFreeSide(TileNav.FeetTile(npc.Bottom));
+			if (dir != 0) { npc.velocity.X = MathHelper.Clamp(npc.velocity.X + dir * 0.5f, -3f, 3f); npc.direction = npc.spriteDirection = dir; }
+			if (npc.velocity.Y > -1f && !npc.collideY) AirKick(JumpSpeedFor(Math.Min(Abilities.JumpTiles, BaseJumpTiles)) * ExtraJumpSpeedMult);
+			npc.netUpdate = true;
+		}
+		internal static int LavaEscapeTicks;
+
 		partial void Movement_ClientAnimate() => MirrorDummyControls();
 
 		partial void Movement_OnTeleported()
@@ -288,6 +306,7 @@ namespace Levy.Content.NPCs
 			if (grounded && !TileNav.IsFloor(ax, fy + 1))
 			{
 				int depth = TileNav.DropDepth(ax, fy);
+				if (depth < 0 && !TravelLegacy.On && _pathFromRoute && !Abilities.HasWings && TileNav.IsFloor(ax, fy + FallScanTiles + 1) && !TileNav.HasLava(ax, fy + FallScanTiles + 1)) depth = FallScanTiles;   // the route search takes a fall of exactly FallScanTiles; the scan above stops one row short
 				// a narrow gap with floor on the far side: jump it rather than drop into a pit that cannot be climbed back out of
 				if ((depth < 0 || depth >= GapJumpMinDepthTiles) && TryGapJump(ax, fy, dir, dyPx, ref jumpTiles)) return;
 				if (depth < 0)

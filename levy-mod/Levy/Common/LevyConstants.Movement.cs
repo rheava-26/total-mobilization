@@ -202,6 +202,10 @@ namespace Levy.Common
 			/// <summary>Fan rays the route search casts from a cell to find anchors, how many columns from a target an anchor may be, and the search cost of a cast (plus per tile of reach).</summary>
 			public const int HookFanRays = 24, HookAnchorNearCols = 3;
 			public const float HookEdgeCost = 7f, HookEdgeDistCost = 0.5f;
+			/// <summary>A chain of casts up a face or across a gap: the base cost and the cost per tile of face (a link gains about half the reach in about 40 ticks, a little slower than a run).</summary>
+			public const float HookChainBaseCost = 8f, HookChainTileCost = 1.3f;
+			/// <summary>How much farther than the cast reaches (px) a far wall may be when the body jumps out over the gap first (the arc carries it about this far before the cast from the air).</summary>
+			public const float HookJumpCastPx = 64f;
 			/// <summary>Failed hook targets remembered per soldier (each is banned from the route search), ticks the executor waits at the cast point for the hook planner before it gives the edge up, and the spacing of its tries (three per edge).</summary>
 			public const int RouteHookBanMax = 6, RouteHookWaitTicks = 420, RouteHookRetryTicks = 45;
 
@@ -222,6 +226,11 @@ namespace Levy.Common
 			// ---- off-screen catch-up for map-point orders ----
 			/// <summary>A map-order levy that no player can see and that has stayed within CatchUpStuckTiles of one spot for this many ticks hops ahead along its route.</summary>
 			public const int CatchUpStuckTicks = 60 * 6; public const float CatchUpStuckTiles = 5f;
+			/// <summary>Or has not got this many tiles nearer the goal (best straight distance) in this many ticks: a body looping casts in a pit moves, but is stuck all the same.</summary>
+			/// <summary>A body falling toward lava steers in the air by this much per tick, and spends an extra jump or a flap once the lava is this many ticks away.</summary>
+			public const float LavaSwimAccel = 0.7f, LavaSwimMaxUp = 5f;
+			public const float AirSteerAccelPx = 0.3f; public const int AirLavaKickTicks = 40;
+			public const int CatchUpNoProgressTicks = 60 * 15; public const float CatchUpProgressTiles = 8f;
 			/// <summary>Nobody may see the levy, or the place it lands: the box around each active player (px, full width and height).</summary>
 			public const float CatchUpBoxW = 2400f, CatchUpBoxH = 1400f;
 			/// <summary>A hop lands at least this far ahead (tiles of straight line) or is not made; a spot at the goal is searched this many tiles around it.</summary>

@@ -18,6 +18,8 @@ namespace Levy.Content.NPCs
 	public partial class SoldierNPC
 	{
 		private Vector2 _cuAnchor; private int _cuTick, _cuLastThink = int.MinValue;
+		/// <summary>Progress watch: the nearest the body has been to the goal (tiles) and when that last improved by CatchUpProgressTiles. A body looping casts in a pit moves a lot and gets nowhere.</summary>
+		private float _cuBestDist = float.MaxValue; private int _cuBestTick; private Vector2 _cuGoalSeen;
 		/// <summary>Hops made by this body; and over all bodies: hops, hops whose origin or landing a player could see (always 0), and the time they cost (ticks of Stopwatch).</summary>
 		internal int CatchUpHopCount;
 		internal static string CatchUpLast = ""; internal static int CatchUpTries;
@@ -27,19 +29,29 @@ namespace Levy.Content.NPCs
 		internal bool CatchUpTick(int now, Vector2 goalBottom)
 		{
 			if (TravelLegacy.On || !LevyUtil.IsServerOrSingle || OfficerMode) return false;
-			if (_cuLastThink == int.MinValue || now - _cuLastThink > 90 || Vector2.DistanceSquared(NPC.Center, _cuAnchor) > CatchUpStuckTiles * 16f * CatchUpStuckTiles * 16f)
-			{ _cuAnchor = NPC.Center; _cuTick = now; _cuLastThink = now; return false; }   // moving, or the march was interrupted (a fight): start counting again
+			bool interrupted = _cuLastThink == int.MinValue || now - _cuLastThink > 90;
+			if (interrupted) { _cuBestDist = float.MaxValue; _cuBestTick = now; }
+			if (interrupted || Vector2.DistanceSquared(NPC.Center, _cuAnchor) > CatchUpStuckTiles * 16f * CatchUpStuckTiles * 16f)
+			{
+				_cuAnchor = NPC.Center; _cuTick = now;
+				if (interrupted) { _cuLastThink = now; return false; }
+			}   // moving, or the march was interrupted (a fight): start counting again
 			_cuLastThink = now;
-			if (now - _cuTick < CatchUpStuckTicks) return false;
-			_cuTick = now - CatchUpStuckTicks + 120;                                        // nothing found this time: look again in two seconds
-			if (_hkPhase != HookPhase.Idle || _hkStepUntil != 0 || ClimbActive || NPC.wet) return false;
+			// progress toward the goal: a body that moves about (casts and falls inside a pit) stays 'unstuck' by the spot test but is going nowhere
+			float distT = Vector2.Distance(NPC.Center, goalBottom) / 16f;
+			if (Vector2.DistanceSquared(goalBottom, _cuGoalSeen) > 8f * 16f * 8f * 16f) { _cuGoalSeen = goalBottom; _cuBestDist = float.MaxValue; }
+			if (distT < _cuBestDist - CatchUpProgressTiles) { _cuBestDist = distT; _cuBestTick = now; }
+			bool noProgress = now - _cuBestTick >= CatchUpNoProgressTicks;
+			if (now - _cuTick < CatchUpStuckTicks && !noProgress) return false;
+			_cuTick = now - CatchUpStuckTicks + 120; if (noProgress) _cuBestTick = now - CatchUpNoProgressTicks + 120;   // nothing found this time: look again in two seconds
+			if ((_hkPhase != HookPhase.Idle && _hkPhase != HookPhase.Cooldown) || _hkStepUntil != 0 || ClimbActive || NPC.wet) return false;
 			if (OffscreenHop.Seen(NPC.Center)) return false;
 			long t0 = Stopwatch.GetTimestamp();
 			if (!ChooseHop(goalBottom, out Vector2 spot, out int pick)) { CatchUpTicks += Stopwatch.GetTimestamp() - t0; return false; }
 			bool seenBefore = OffscreenHop.Seen(NPC.Center), seenAfter = OffscreenHop.Seen(spot);
 			FollowerTravel.HopTo(this, spot);
 			CatchUpHopCount++; CatchUpHops++; if (seenBefore || seenAfter) CatchUpHopsSeen++;
-			_cuAnchor = NPC.Center; _cuTick = now;
+			_cuAnchor = NPC.Center; _cuTick = now; _cuBestDist = float.MaxValue; _cuBestTick = now;
 			if (pick >= 0 && _rt != null && _rt.Usable && pick < _rt.Pts.Count) { _rtIdx = pick; _rtLegSent = new Vector2(float.MinValue); _path.Clear(); _rtProgPos = NPC.Center; _rtProgTick = now; }
 			else RouteReset();
 			CatchUpTicks += Stopwatch.GetTimestamp() - t0;

@@ -32,7 +32,7 @@ namespace Levy.Common.UI
 		private static readonly Color Gold = new(255, 215, 80), Dim = new(170, 175, 195), Faint = new(120, 127, 152), Unpaid = new(255, 150, 120);
 
 		private DraggablePanel _panel;
-		private Label _title, _sub;
+		private Label _title, _sub, _link;
 		private LevyButton _close;
 		private readonly List<UIElement> _dyn = new();
 		private BarracksTE _te;
@@ -54,6 +54,7 @@ namespace Levy.Common.UI
 			_close = Put(new LevyButton("X", LevyConstants.UI.ButtonTextScale, 26, 26, () => UISystem.Instance.CloseOfficers(), LevyUtil.T("UI2.Close")), W - 36, 8);
 			_sub = Put(new Label("", SubScale), Pad, 40);
 			_sub.TextColor = Dim;
+			_link = Put(new Label("", SmallScale), Pad, 58);
 			Append(_panel);
 		}
 
@@ -113,7 +114,7 @@ namespace Levy.Common.UI
 			int max = sys.SlotCap(me);  // dynamic cap, floored at officers already serving so none is ever hidden
 			var slotNpcs = new NPC[max];
 			var sb = new System.Text.StringBuilder();
-			sb.Append(SettlementSystem.Instance.TownName(_te)).Append('|').Append(sys.UsedSlots(me));
+			sb.Append(SettlementSystem.Instance.TownName(_te)).Append('|').Append(SettlementSystem.Instance.LinkLine(_te)).Append('|').Append(sys.UsedSlots(me));
 			for (int s = 0; s < max; s++)
 			{
 				slotNpcs[s] = sys.InSlot(me, s);
@@ -132,7 +133,10 @@ namespace Levy.Common.UI
 			_sub.SetText(LevyUtil.T("Officers.UI.Sub", sys.UsedSlots(me), max));
 
 			float cardW = W - 2 * Pad;
-			float y = 66;
+			var lk = SettlementSystem.Instance.LinkOf(_te);
+			_link.SetText(SettlementSystem.Instance.LinkLine(_te));
+			_link.TextColor = lk.Linked ? Dim : Unpaid;
+			float y = 84;
 			var slotsHdr = PutDyn(new Label(LevyUtil.T("Officers.UI.SlotsHeader"), HeaderScale), Pad, y);
 			slotsHdr.TextColor = Gold;
 			y += 24;

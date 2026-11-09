@@ -234,7 +234,9 @@ namespace Levy.Common.Systems
 
 		// ---- pylon-networked armories share issue-side gear ----
 		private readonly List<ArmoryTE> _netArmories = new();
-		private uint _netStamp = uint.MaxValue;
+		private uint _netStamp = uint.MaxValue; private int _netKey;
+		private uint _linkStamp = uint.MaxValue; private int _linkKey;
+		private readonly Dictionary<int, PylonLink> _links = new();
 
 		/// <summary>
 		/// The armories that pool their stored gear for issuing. An armory with a vanilla pylon (any type, any team) within
@@ -250,12 +252,18 @@ namespace Levy.Common.Systems
 			if (pylons == null || pylons.Count == 0) return res;
 
 			uint now = Main.GameUpdateCount;
-			if (_netStamp != now)
+			int key = PylonKey(pylons);
+			if (_netStamp != now || _netKey != key)
 			{
-				_netStamp = now;
+				_netStamp = now; _netKey = key;
 				_netArmories.Clear();
 				foreach (var te in TileEntity.ByID.Values)
-					if (te is ArmoryTE a && NearPylon(a, pylons)) _netArmories.Add(a);
+				{
+					if (te is not ArmoryTE a) continue;
+					if (NearPylon(a, pylons)) { _netArmories.Add(a); continue; }
+					var home = a.LinkedBarracks(); // an armory belongs to its barracks's settlement: when that settlement has a pylon, so does the armory
+					if (home != null && LinkOf(home).Linked) _netArmories.Add(a);
+				}
 			}
 			if (!_netArmories.Contains(from)) return res;
 
@@ -344,13 +352,12 @@ namespace Levy.Common.Systems
 			var res = new List<BarracksTE>(4);
 			if (from == null) return res;
 			res.Add(from);
-			var pylons = Pylons();
-			bool fromOnNet = pylons != null && pylons.Count > 0 && NearPylon(from.Center, pylons);
+			bool fromOnNet = LinkOf(from).Linked;
 			foreach (var te in TileEntity.ByID.Values)
 			{
 				if (te is not BarracksTE b || ReferenceEquals(b, from)) continue;
 				bool near = Math.Abs(b.Position.X - from.Position.X) <= LevyConstants.SettlementRadiusX && Math.Abs(b.Position.Y - from.Position.Y) <= LevyConstants.SettlementRadiusY;
-				if (near || (fromOnNet && NearPylon(b.Center, pylons))) res.Add(b);
+				if (near || (fromOnNet && LinkOf(b).Linked)) res.Add(b);
 			}
 			Vector2 c = from.Center;
 			res.Sort(1, res.Count - 1, Comparer<BarracksTE>.Create((x, y) =>
@@ -359,6 +366,61 @@ namespace Levy.Common.Systems
 				return d != 0 ? d : x.ID.CompareTo(y.ID);
 			}));
 			return res;
+		}
+
+		/// <summary>Changes whenever a pylon, barracks or armory is added, moved or removed, so a per-tick cache never outlives a rebuild that happened inside the same tick.</summary>
+		private static int PylonKey(IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons)
+		{
+			int h = TileEntity.ByID.Count;
+			for (int i = 0; i < pylons.Count; i++) h = h * 31 + pylons[i].PositionInTiles.X * 7919 + pylons[i].PositionInTiles.Y;
+			return h;
+		}
+
+		/// <summary>Forget the cached housing lists (a world edit or test that re-homes townsfolk inside one tick).</summary>
+		public void InvalidateTownNpcs() { foreach (var rt in _rt.Values) rt.HasNpcs = false; _linkStamp = uint.MaxValue; _netStamp = uint.MaxValue; }
+
+		/// <summary>Which pylon puts a settlement on the network, and how far it is from the Barracks. <see cref="Linked"/> is false when no pylon reaches the settlement.</summary>
+		public struct PylonLink { public bool Linked; public Point16 Pylon; public int Tiles; public string Name; }
+
+		private static Vector2 PylonCenter(Terraria.GameContent.TeleportPylonInfo p) => new Vector2((p.PositionInTiles.X + 1.5f) * LevyConstants.TilePx, (p.PositionInTiles.Y + 2f) * LevyConstants.TilePx);
+
+		/// <summary>
+		/// A settlement is on the pylon network when any pylon stands inside its settlement area (<see cref="LevyConstants.SettlementRadiusX"/> x <see cref="LevyConstants.SettlementRadiusY"/> tiles around the Barracks)
+		/// or within <see cref="LevyConstants.PylonShareRadius"/> tiles of the Barracks, its armory or the home of any townsperson it houses. Returns the nearest such pylon. Cached per tick.
+		/// </summary>
+		public virtual PylonLink LinkOf(BarracksTE b)
+		{
+			var none = default(PylonLink);
+			var pylons = Pylons();
+			if (b == null || pylons == null || pylons.Count == 0) return none;
+			uint now = Main.GameUpdateCount; int key = PylonKey(pylons);
+			if (_linkStamp != now || _linkKey != key) { _linkStamp = now; _linkKey = key; _links.Clear(); }
+			if (_links.TryGetValue(b.ID, out var hit)) return hit;
+
+			float px = LevyConstants.TilePx, lim = LevyConstants.PylonShareRadius * px; lim *= lim;
+			var anchors = new List<Vector2> { b.Center };
+			var arm = LinkedArmory(b); if (arm != null) anchors.Add(arm.Center);
+			foreach (var n in TownNpcsOf(b)) anchors.Add(new Vector2((n.homeTileX + 0.5f) * px, (n.homeTileY + 0.5f) * px));
+
+			PylonLink best = none; float bestD = float.MaxValue;
+			for (int i = 0; i < pylons.Count; i++)
+			{
+				var pc = PylonCenter(pylons[i]);
+				bool reach = Math.Abs(pc.X / px - (b.Position.X + 1)) <= LevyConstants.SettlementRadiusX && Math.Abs(pc.Y / px - (b.Position.Y + 1)) <= LevyConstants.SettlementRadiusY;
+				if (!reach) foreach (var a in anchors) if (Vector2.DistanceSquared(a, pc) <= lim) { reach = true; break; }
+				if (!reach) continue;
+				float d = Vector2.DistanceSquared(b.Center, pc);
+				if (d < bestD) { bestD = d; best = new PylonLink { Linked = true, Pylon = pylons[i].PositionInTiles, Tiles = (int)Math.Round(Math.Sqrt(d) / px), Name = PylonName(pylons[i]) }; }
+			}
+			_links[b.ID] = best;
+			return best;
+		}
+
+		/// <summary>One short line for the Barracks and Officers panels: the pylon that links this settlement, or why none does.</summary>
+		public string LinkLine(BarracksTE b)
+		{
+			var l = LinkOf(b);
+			return l.Linked ? LevyUtil.T("Pylon.Linked", l.Name, l.Tiles) : LevyUtil.T("Pylon.NotLinked", LevyConstants.SettlementRadiusX, LevyConstants.SettlementRadiusY);
 		}
 
 		/// <summary>One townsperson on the pylon network and the barracks (town) that houses them.</summary>

@@ -79,7 +79,7 @@ GearPreferOn: Prefer: On
 GearPreferHint: A preferred piece is issued before any other of its kind.
 GearPreferSet: Prefer set
 GearPreferSetClear: Clear set
-GearPreferSetHint: Marks every piece of this armor set. A levy keeps a preferred piece until he is given another preferred one.
+GearPreferSetHint: Marks every piece of this armor set.
 GearNote: Preferences apply to this armory.
 GearKindArmor: Armor. Defense {0}.
 GearKindAccessory: Accessory. Defense {0}.

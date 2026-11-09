@@ -23,10 +23,13 @@ namespace Levy.Common.Movement
 		private static readonly List<Vector2> _viewers = new();
 		/// <summary>Test seam for the travel lab: a headless server resets Player.active every tick for a slot nobody is connected on, so the lab lists its stand-in commander here.</summary>
 		public static List<Vector2> LabViewers;
+		/// <summary>Test seam: every point counts as seen, so no levy ever hops (the wall ladder of the travel lab).</summary>
+		public static bool LabNoHop;
 
 		/// <summary>True when any active player (every player in multiplayer, dead or alive: they watch the respawn screen) could see the point.</summary>
 		public static bool Seen(Vector2 p)
 		{
+			if (LabNoHop) return true;
 			_viewers.Clear();
 			for (int i = 0; i < Main.maxPlayers; i++) { Player pl = Main.player[i]; if (pl != null && pl.active) _viewers.Add(pl.Center); }
 			if (LabViewers != null) _viewers.AddRange(LabViewers);

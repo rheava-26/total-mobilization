@@ -202,6 +202,10 @@ namespace Levy.Common
 			/// <summary>Fan rays the route search casts from a cell to find anchors, how many columns from a target an anchor may be, and the search cost of a cast (plus per tile of reach).</summary>
 			public const int HookFanRays = 24, HookAnchorNearCols = 3;
 			public const float HookEdgeCost = 7f, HookEdgeDistCost = 0.5f;
+			/// <summary>A chain of casts up a face or across a gap: the base cost and the cost per tile of face (a link gains about half the reach in about 40 ticks, a little slower than a run).</summary>
+			public const float HookChainBaseCost = 8f, HookChainTileCost = 1.3f;
+			/// <summary>How much farther than the cast reaches (px) a far wall may be when the body jumps out over the gap first (the arc carries it about this far before the cast from the air).</summary>
+			public const float HookJumpCastPx = 64f;
 			/// <summary>Failed hook targets remembered per soldier (each is banned from the route search), ticks the executor waits at the cast point for the hook planner before it gives the edge up, and the spacing of its tries (three per edge).</summary>
 			public const int RouteHookBanMax = 6, RouteHookWaitTicks = 420, RouteHookRetryTicks = 45;
 

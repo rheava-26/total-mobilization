@@ -55,6 +55,10 @@ namespace Levy.Common.Movement
 		public int Rays, ReleaseCandidates, MaxAnchors, MaxHooks;
 		/// <summary>After the release the body holds the direction key toward the goal (a route edge: the climber who lets go at a lip steps onto it) instead of drifting with air drag.</summary>
 		public bool AirSteer;
+		/// <summary>A climbing plan (route edge, wall, goal above): the fan is joined by rays aimed at the exposed tiles around the body (so the lip of a wall is found, not only what a coarse fan happens to hit), a hang is not checked for a safe drop, and a release at the anchor is a hook-jump (a full jump kick).</summary>
+		public bool Climb;
+		/// <summary>The upward speed of a hook-jump (px/tick) for a climbing plan; 0 = JumpSpeed.</summary>
+		public float KickSpeed;
 		public static HookParams For(HookInfo info, float bodyW, float bodyH, float jumpSpeed, float gravity) => new()
 		{
 			ReachPx = info.ReachPx, PullPx = info.PullPx, Count = info.Count, Kind = info.Kind, BodyW = bodyW, BodyH = bodyH, JumpSpeed = jumpSpeed, Gravity = gravity,
@@ -191,20 +195,101 @@ namespace Levy.Common.Movement
 					if (seen.Add(key))
 					{
 						Vector2 a = new(tx * 16f + 8f, ty * 16f + 8f);
-						if (Vector2.Distance(a, c0) <= p.ReachPx + 8f) found.Add((a, pt, Heuristic(a, goal, c0, kind)));
+						if (Vector2.Distance(a, c0) <= p.ReachPx + 8f) found.Add((a, pt, Heuristic(a, goal, c0, kind, p.Climb)));
 					}
 					break; // the first latchable tile on the ray is where the hook sticks
 				}
 			}
+			if (p.Climb) DirectedAnchors(w, c0, p, goal, kind, found, seen);
+			if (p.Climb && kind == HookGoalKind.Altitude && Math.Abs(goal.X - c0.X) > 64f) { float sg = Math.Sign(goal.X - c0.X); found.RemoveAll(f => (f.a.X - c0.X) * sg < -12f); }   // a climb toward a goal across the way never casts at the wall behind it
 			found.Sort((x, y) => x.h.CompareTo(y.h));
 			var res = new List<(Vector2 a, Vector2 aim)>(Math.Min(found.Count, p.MaxAnchors));
 			for (int i = 0; i < found.Count && res.Count < p.MaxAnchors; i++) res.Add((found[i].a, found[i].aim));
 			return res;
 		}
 
-		private static float Heuristic(Vector2 a, Vector2 goal, Vector2 c0, HookGoalKind kind)
+		/// <summary>The first latchable tile along a ray from <paramref name="c0"/> (the hook flies the straight line and sticks where its 10 px box first overlaps a tile). False when nothing is hit within the reach.</summary>
+		private static bool FirstLatch(IHookWorld w, Vector2 c0, Vector2 dir, float reach, out int tx, out int ty, out Vector2 pt)
 		{
-			if (kind == HookGoalKind.Altitude) return Vector2.Distance(a, goal);
+			tx = ty = 0; pt = c0;
+			for (float t = 10f; t <= reach; t += 6f)
+			{
+				pt = c0 + dir * t;
+				int bx0 = (int)MathF.Floor((pt.X - 5f) / 16f), bx1 = (int)MathF.Floor((pt.X + 5f) / 16f), by0 = (int)MathF.Floor((pt.Y - 5f) / 16f), by1 = (int)MathF.Floor((pt.Y + 5f) / 16f);
+				float bd = float.MaxValue; bool hit = false;
+				for (int x = bx0; x <= bx1; x++) for (int y = by0; y <= by1; y++)
+				{
+					if (!w.Latchable(x, y)) continue;
+					float d2 = Vector2.DistanceSquared(pt, new Vector2(x * 16f + 8f, y * 16f + 8f));
+					if (d2 < bd) { bd = d2; tx = x; ty = y; hit = true; }
+				}
+				if (hit) return true;
+			}
+			return false;
+		}
+
+		/// <summary>Max rays aimed at exposed tiles per plan (a wall face in reach has a few dozen).</summary>
+		private const int DirectedMax = 48;
+		/// <summary>
+		/// Rays aimed at the exposed latchable tiles around the body that lie nearest the goal (by the plan's own heuristic): what a player does, aiming the cursor at the lip or the next ledge.
+		/// A coarse fan misses a tile 5 degrees off its rays, and against a wall the body hangs so close to the face that the fan's steepest rays latch only a couple of tiles up.
+		/// </summary>
+		private static void DirectedAnchors(IHookWorld w, Vector2 c0, in HookParams p, Vector2 goal, HookGoalKind kind, List<(Vector2 a, Vector2 aim, float h)> found, HashSet<long> seen)
+		{
+			int R = (int)(p.ReachPx / 16f) + 1, cx = (int)MathF.Floor(c0.X / 16f), cy = (int)MathF.Floor(c0.Y / 16f);
+			var cand = new List<(float h, int x, int y)>(128);
+			float r2 = (p.ReachPx + 8f) * (p.ReachPx + 8f);
+			for (int tx = cx - R; tx <= cx + R; tx++) for (int ty = cy - R; ty <= cy + R; ty++)
+			{
+				if (!w.Latchable(tx, ty)) continue;
+				Vector2 a = new(tx * 16f + 8f, ty * 16f + 8f);
+				if (Vector2.DistanceSquared(a, c0) > r2) continue;
+				if (w.Latchable(tx - 1, ty) && w.Latchable(tx + 1, ty) && w.Latchable(tx, ty - 1) && w.Latchable(tx, ty + 1)) continue;   // buried
+				cand.Add((Heuristic(a, goal, c0, kind, p.Climb), tx, ty));
+			}
+			cand.Sort((x, y) => x.h.CompareTo(y.h));
+			for (int i = 0; i < cand.Count && i < DirectedMax; i++)
+			{
+				// aim at the exposed side of the tile that faces the body (the corner of a lip is reached from below and beside)
+				Vector2 tgt = new(cand[i].x * 16f + 8f, cand[i].y * 16f + 8f);
+				Vector2 dir = tgt - c0; float len = dir.Length(); if (len < 24f) continue;
+				dir /= len;
+				if (!FirstLatch(w, c0, dir, p.ReachPx, out int hx, out int hy, out Vector2 pt)) continue;
+				long key = ((long)hx << 32) ^ (uint)hy;
+				if (!seen.Add(key)) continue;
+				Vector2 an = new(hx * 16f + 8f, hy * 16f + 8f);
+				if (Vector2.Distance(an, c0) <= p.ReachPx + 8f) found.Add((an, pt, Heuristic(an, goal, c0, kind, p.Climb)));
+			}
+		}
+
+		/// <summary>
+		/// One link of a climb: the cast that carries the body nearest the goal while it hangs on the anchor (no landing needed: a body halfway up a 100-tile face has no safe drop and does not need one).
+		/// Null when no anchor in reach gets the body at least <paramref name="minGainPx"/> closer.
+		/// </summary>
+		public static HookPlan PlanClimb(IHookWorld w, Vector2 bottom, HookParams p, Vector2 goalBottom, float goalDistNow, float minGainPx)
+		{
+			if (p.ReachPx < 64f || p.PullPx <= 0f || p.Kind == HookKind.StandOff || p.Kind == HookKind.Spring) return null;
+			p.Climb = true;
+			DiagLog.Clear(); LastSteps = 0; DAnchors = DSims = DReleases = DNoLand = DLava = DDeep = DUnstand = DReelShort = 0;
+			Vector2 c0 = bottom - new Vector2(0f, p.BodyH * 0.5f);
+			var anchors = FanAnchors(w, c0, p, goalBottom, HookGoalKind.Altitude);
+			DAnchors = anchors.Count;
+			HookPlan best = null;
+			for (int i = 0; i < anchors.Count; i++)
+			{
+				var one = new List<(Vector2, Vector2)>(1) { anchors[i] };
+				var cand = Simulate(w, bottom, p, one, goalBottom, HookGoalKind.Altitude, goalDistNow);
+				if (cand != null && (best == null || cand.Score < best.Score)) best = cand;
+			}
+			return best != null && best.Gain >= minGainPx ? best : null;
+		}
+
+		/// <summary>How far a climber at <paramref name="p"/> is from the goal: the height still to make up (or overshoot) plus a share of the way across, capped. A goal far down the road must not make a climb that gains height look like no progress.</summary>
+		public static float ClimbDist(Vector2 p, Vector2 goal) => (p.Y >= goal.Y ? p.Y - goal.Y : 0.25f * (goal.Y - p.Y)) + 0.3f * Math.Min(Math.Abs(p.X - goal.X), 640f);
+
+		private static float Heuristic(Vector2 a, Vector2 goal, Vector2 c0, HookGoalKind kind, bool climb = false)
+		{
+			if (kind == HookGoalKind.Altitude) return climb ? ClimbDist(a, goal) : Vector2.Distance(a, goal);
 			// An anchor that carries the body to the goal hangs over it: near the goal in x, and no lower than just above the goal's level (a ledge face or a wall below the goal only drags the body along it).
 			float above = goal.Y - 40f - a.Y;                    // > 0: the anchor is higher than the goal's standing height
 			return MathF.Abs(a.X - goal.X) + (above < 0f ? -above : above * 0.1f);
@@ -378,7 +463,7 @@ namespace Levy.Common.Movement
 		{
 			float bw = p.BodyW, bh = p.BodyH;
 			float x = s.X, y = s.Y, vx = s.DesVx, vy = s.DesVy; // the release hands the body the reel's full velocity (Player.GrappleMovement sets it before it lets go)
-			if (MathF.Abs(s.DesVy) < 1e-4f) vy = -p.JumpSpeed; // vanilla: a level reel gives the jump kick on release
+			if (MathF.Abs(s.DesVy) < 1e-4f || (p.Climb && s.Dist < 24f)) vy = Math.Min(vy, -(p.Climb && p.KickSpeed > 0f ? p.KickSpeed : p.JumpSpeed)); // vanilla: a level reel gives the jump kick on release; a climber who has arrived hangs still and jumps off the hook
 			Vector2 relPos = new(x + bw / 2f, y + bh);
 			bool landed = false; int ticks = 0;
 			float startRow = start.Y; List<Vector2> fl = reelPath != null ? new List<Vector2>(reelPath.GetRange(0, Math.Min(idx + 1, reelPath.Count))) : null;
@@ -417,10 +502,11 @@ namespace Levy.Common.Movement
 				vy = Math.Min(LevyConstants.Hooks.TerminalVelocityPx, vy + p.Gravity);
 				if (Move(w, ref x, ref y, ref vx, ref vy, bw, bh)) { landed = true; break; }
 				if (TouchesLava(w, x, y, bw, bh)) return null;
+				if (p.Climb) break;   // a climb link hangs where it arrives: no drop is simulated
 			}
-			if (!landed || !StandableAt(w, x, y, bw, bh)) return null;
+			if (!p.Climb && (!landed || !StandableAt(w, x, y, bw, bh))) return null;
 			Vector2 land = new(x + bw / 2f, y + bh);
-			float gd = Vector2.Distance(hangBottom, goalBottom);
+			float gd = p.Climb ? ClimbDist(hangBottom, goalBottom) : Vector2.Distance(hangBottom, goalBottom);
 			var plan = new HookPlan { Kind = HookGoalKind.Altitude, ReleaseTick = idx, ReleaseDist = Math.Max(0f, e.Dist), ReleasePos = hangBottom, Landing = land, Landed = true, Hang = true, GoalDist = gd, Gain = goalDistNow - gd, ReelTicks = idx, FlightTicks = idx };
 			plan.Anchors.AddRange(anchors); foreach (var c in cands) plan.Aims.Add(c.aim);
 			plan.SlopeTicks = e.Slope; plan.Score = gd + 0.2f * idx + SlopeDragCost * e.Slope;

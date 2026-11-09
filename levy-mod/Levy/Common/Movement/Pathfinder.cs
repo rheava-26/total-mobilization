@@ -343,7 +343,7 @@ namespace Levy.Common.Movement
 				if (wall)
 				{
 					int top = y - 1;
-					int lim = y - (int)(reachT * HookChainShare);
+					int lim = Math.Max(_oy + 3, y - ClimbMaxFaceTiles);   // any height: the executor casts again from the anchor it hangs on, link after link
 					while (top > lim && TileNav.IsSolid(nx, top - 1)) top--;
 					int hgt = y - top;
 					if (hgt > _jumpTiles && top > lim)
@@ -354,9 +354,41 @@ namespace Levy.Common.Movement
 							int tx = nx + side * dx, found = int.MinValue;
 							for (int ty = top - 2; ty <= top + 1 && found == int.MinValue; ty++) if (InWindow(tx, ty) && TileNav.IsStandable(tx, ty)) found = ty;
 							if (found == int.MinValue || HookBanned(tx, found)) continue;
-							HookRelax(x, y, tx, found, cur, single ? g : g + 10f + hgt * 0.8f, single ? KindHook : KindChain); break;
+							HookRelax(x, y, tx, found, cur, single ? g : g + HookChainBaseCost + hgt * HookChainTileCost, single ? KindHook : KindChain); break;
 						}
 					}
+				}
+				if (open && !wall) GapChain(x, y, side, cur, g, reachT);
+			}
+		}
+
+		/// <summary>
+		/// Across a gap wider than one cast reaches: cast onto the far wall (below its lip), hang there, climb it. An edge to the far lip's standing cell when a face tile of the far wall is within the first cast's reach
+		/// and the line to it is clear. The executor does the casts (chain climbing); the cost is a cast, the span and the short climb.
+		/// </summary>
+		private void GapChain(int x, int y, int side, int cur, float g, float reachT)
+		{
+			float cx0 = x * 16f + 8f, cy0 = (y + 1) * 16f - 21f;
+			int maxDx = (int)(reachT * 1.0f) + 12;
+			for (int dx = 3; dx <= maxDx; dx++)
+			{
+				int fx = x + side * dx;
+				if (!InWindow(fx, y)) return;
+				if (TileNav.IsSolid(fx - side, y - 1) || TileNav.IsSolid(fx - side, y - 2)) return;    // a wall in the span: not a gap
+				int ty = int.MinValue;
+				for (int r = y - 3; r <= y + 1; r++) if (TileNav.IsStandable(fx, r) && !TileNav.IsFloor(fx - side, r + 1)) { ty = r; break; }
+				if (ty == int.MinValue || HookBanned(fx, ty)) continue;
+				// a face tile of the far wall, below the lip, in reach of the first cast with a clear line
+				for (int r = ty + 1; r <= ty + 7; r++)
+				{
+					if (!Latchable(fx, r) || Latchable(fx - side, r)) continue;
+					float tcx = fx * 16f + 8f - side * 8f, tcy = r * 16f + 8f, ddx = tcx - cx0, ddy = tcy - cy0, dl = (float)Math.Sqrt(ddx * ddx + ddy * ddy);
+					if (dl > _hookReachPx * 0.93f + HookJumpCastPx) break;      // beyond the cast: a jump out over the gap first, then the cast from the air
+					bool clear = true;
+					for (float t = 12f; t < dl - 6f && clear; t += 8f) { int px = (int)Math.Floor((cx0 + ddx * t / dl) / 16f), py = (int)Math.Floor((cy0 + ddy * t / dl) / 16f); if (TileNav.IsSolid(px, py)) clear = false; }
+					if (!clear) continue;
+					HookRelax(x, y, fx, ty, cur, g + HookChainBaseCost + dx * 0.8f + (dl > _hookReachPx * 0.93f ? 6f : 0f), KindChain);
+					return;
 				}
 			}
 		}

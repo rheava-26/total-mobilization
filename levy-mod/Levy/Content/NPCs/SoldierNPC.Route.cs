@@ -48,6 +48,8 @@ namespace Levy.Content.NPCs
 			// up a wall face: the climb owns the body; a climb that came to nothing bans its lip and the route is asked for again
 			if (_clmFailed) { _clmFailed = false; RouteHookGiveUp(_clmTile); return false; }
 			if (_clmOn) { _rtProgPos = NPC.Center; _rtProgTick = now; leg = _clmTarget; return true; }
+			// hanging on a chain of casts up a face: the climb owns the body, the route waits for it to land
+			if (_hkPhase != HookPhase.Idle && _hkPhase != HookPhase.Cooldown && _rt != null && _rtHookWant) { _rtProgPos = NPC.Center; _rtProgTick = now; leg = _rtHookGoal; return true; }
 			Vector2 me = NPC.Bottom;
 			float dxT = Math.Abs(goalBottom.X - me.X) / 16f, dyT = (goalBottom.Y - me.Y) / 16f;
 			if (dxT <= RouteMinTripTiles && Math.Abs(dyT) <= RouteMinTripRise) { if (_rt != null) RouteReset(); return false; }
@@ -173,7 +175,7 @@ namespace Levy.Content.NPCs
 			if (!HookUsable) { RouteHookGiveUp(_rtHookT); return; }
 			if (Main.GameUpdateCount < _rtHookLastTry + (uint)RouteHookRetryTicks || !grounded || NPC.velocity.Y > 2.2f || NPC.wet || _flying) return;   // the edge's own retry spacing replaces the general back-off of the local triggers
 			if (!SoldierHooks.TakePlanBudget()) return;
-			_rtHookTries++; _rtHookLastTry = Main.GameUpdateCount;
+			_rtHookTries++; _rtHookLastTry = Main.GameUpdateCount; HookLog($"route try {_rtHookTries} target={_rtHookT.X},{_rtHookT.Y}");
 			try { HookStart(HookReason.Route, _rtHookGoal); }
 			catch (Exception e)
 			{
@@ -187,7 +189,7 @@ namespace Levy.Content.NPCs
 		/// <summary>The hook edge came to nothing: the target is banned from the next search and the route is asked for again from here.</summary>
 		private void RouteHookGiveUp(Point target)
 		{
-			_rtHookWant = false; RouteHookBans++;
+			HookLog($"route ban target={target.X},{target.Y} tries={_rtHookTries}"); _rtHookWant = false; RouteHookBans++;
 			if (_rtBan.Count < RouteHookBanMax) _rtBan.Add(PathSearch.HookKey(target.X, target.Y));
 			_rt = null; _rtLegSent = new Vector2(float.MinValue); _path.Clear();
 			if (_rtBan.Count >= RouteHookBanMax) { RouteExhausted = true; RouteEndedShort = true; }

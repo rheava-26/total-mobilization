@@ -51,6 +51,9 @@ namespace Levy.Common
 			/// <summary>Distances (tiles) a soldier backs off from a wall to look for a diagonal line over its lip, and how long it may take.</summary>
 			public static readonly int[] StepBackTiles = { 3, 5, 8, 11 };
 			public const int StepBackMaxTicks = 120;
+			/// <summary>Chain climbing: links per climb (a 150-tile face takes about 20), the longest a climb may take, the least a link must gain (px), jumps off the hook per climb, and the spacing of casts tried in the air after a hook-jump.</summary>
+			public const int ChainMaxLinks = 160, ChainMaxTicks = 60 * 150, HookJumpMax = 4, AirRecastSpacing = 5;
+			public const float ChainMinGainPx = 24f;
 		}
 	}
 }

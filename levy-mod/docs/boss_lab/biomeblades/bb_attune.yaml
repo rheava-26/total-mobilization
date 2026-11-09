@@ -1,0 +1,37 @@
+# Each Biome Blade attunement held by itself (bb=) against comparable swords, every levy carrying the one weapon, commander out of the fight.
+# King Slime (low defense, plain body) has far more life than the army deals in the cap, so damage dealt in 40 s is sustained output.
+# Read weaponDmg / (n x avgSurvSec) in results.csv; counters: BB-FIGHT in server.log.gz.
+name: bb_attune
+boss: kslime
+gear: postskel.best
+seeds: 3
+cap: 40
+bhp: 100
+hp: 3000
+cmd: far
+env: {LEVY_BB_STATS: 1}
+cells:
+  - {name: broke_default, cw: CalamityMod/BrokenBiomeBlade, bb: Default}
+  - {name: broke_hot, cw: CalamityMod/BrokenBiomeBlade, bb: Hot}
+  - {name: broke_cold, cw: CalamityMod/BrokenBiomeBlade, bb: Cold}
+  - {name: broke_evil, cw: CalamityMod/BrokenBiomeBlade, bb: Evil}
+  - {name: trueb_truedefault, cw: CalamityMod/TrueBiomeBlade, bb: TrueDefault}
+  - {name: trueb_truehot, cw: CalamityMod/TrueBiomeBlade, bb: TrueHot}
+  - {name: trueb_truecold, cw: CalamityMod/TrueBiomeBlade, bb: TrueCold}
+  - {name: trueb_truetropical, cw: CalamityMod/TrueBiomeBlade, bb: TrueTropical}
+  - {name: trueb_trueevil, cw: CalamityMod/TrueBiomeBlade, bb: TrueEvil}
+  - {name: trueb_holy, cw: CalamityMod/TrueBiomeBlade, bb: Holy}
+  - {name: omega_whirlwind, cw: CalamityMod/OmegaBiomeBlade, bb: Whirlwind}
+  - {name: omega_flailblade, cw: CalamityMod/OmegaBiomeBlade, bb: FlailBlade}
+  - {name: omega_superpogo, cw: CalamityMod/OmegaBiomeBlade, bb: SuperPogo}
+  - {name: omega_shockwave, cw: CalamityMod/OmegaBiomeBlade, bb: Shockwave}
+  - {name: fours_phoenix, cw: CalamityMod/FourSeasonsGalaxia, bb: Phoenix}
+  - {name: fours_aries, cw: CalamityMod/FourSeasonsGalaxia, bb: Aries}
+  - {name: fours_polaris, cw: CalamityMod/FourSeasonsGalaxia, bb: Polaris}
+  - {name: fours_andromeda, cw: CalamityMod/FourSeasonsGalaxia, bb: Andromeda}
+  - {name: excalibur, cw: Excalibur}
+  - {name: terrablade, cw: Terra Blade}
+  - {name: muramasa, cw: Muramasa}
+  - {name: exoblade, cw: CalamityMod/Exoblade}
+  - {name: true_ark, cw: CalamityMod/TrueArkoftheAncients}
+  - {name: cosmos, cw: CalamityMod/ArkoftheCosmos}

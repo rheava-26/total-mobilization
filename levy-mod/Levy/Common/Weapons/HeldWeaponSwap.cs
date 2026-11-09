@@ -42,7 +42,7 @@ namespace Levy.Common.Weapons
 		private static readonly Dictionary<int, uint> _fed = new(), _spawned = new();
 		private static bool[] _before;
 
-		internal static void Reset() { _holder.Clear(); _fed.Clear(); _spawned.Clear(); _countStamp.Clear(); ArkSwings.Reset(); }
+		internal static void Reset() { _holder.Clear(); _fed.Clear(); _spawned.Clear(); _countStamp.Clear(); ArkSwings.Reset(); BiomeBlades.Reset(); }
 
 		private static readonly Dictionary<int, uint> _countStamp = new();
 		/// <summary>Once a tick per soldier: the dummy's <c>ownedProjectileCounts</c> recounted from the projectiles tagged to this soldier (what Player.Update does for a real player).</summary>
@@ -68,6 +68,7 @@ namespace Levy.Common.Weapons
 		internal static bool TryFire(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
 		{
 			if (ModShotKinds.Of(item) == ModShotKind.ArkSwing) return ArkSwings.TryFire(s, item, profile, target); // an Ark is swung and parried use by use, not held
+			if (ModShotKinds.Of(item) == ModShotKind.BiomeBlade) return BiomeBlades.TryFire(s, item, profile, target); // a Biome Blade attunes to the biome and uses that attunement's blade (BiomeBlades)
 			if (item.shoot <= 0) return WeaponUse.Dud(s, item);
 			if (!WeaponUse.HasResources(s, item, profile)) { DudTrace.Note(item, "held-nores"); return false; }
 			int idx = s.NPC.whoAmI;
@@ -293,7 +294,7 @@ namespace Levy.Common.Weapons
 				uint now = Main.GameUpdateCount;
 				int idx = body.NPC.whoAmI;
 				uint since = _fed.TryGetValue(idx, out uint f) ? now - f : uint.MaxValue;
-				bool ark = g.Ark != ArkRole.None; // an Ark's blade or parry lives its own life (a swing, a 340-tick parry cooldown): it is not fed, and it is not cut when combat pauses
+				bool ark = g.Ark != ArkRole.None || g.Biome != 0; // an Ark's blade or parry lives its own life (a swing, a 340-tick parry cooldown): it is not fed, and it is not cut when combat pauses
 				if (!ark && since > (uint)LevyConstants.HeldIdleKillTicks) { p.Kill(); return; }
 				bool feed = ark || since <= (uint)LevyConstants.HeldFeedGraceTicks;
 
@@ -317,7 +318,7 @@ namespace Levy.Common.Weapons
 					if (g.HeldTicks > g.HoldMax + g.Linger) { p.Kill(); return; }
 				}
 				if (ModShotKinds.ChainExtras(item)) CountOwned(body); // vanilla counts a player's own projectiles in Player.Update; the dummy never runs it, and holdouts and their children test ownedProjectileCounts (Rancor's circle ends when it sees no holdout)
-				bool button = ark ? ArkSwings.WantsButton(p, g) : feed && !release; // the thrown scissors read the use button: held until the snap window opens, then let go
+				bool button = g.Biome != 0 ? BiomeBlades.WantsButton(body, p, g) : ark ? ArkSwings.WantsButton(p, g) : feed && !release; // the thrown scissors read the use button: held until the snap window opens, then let go
 				d.channel = button;
 				d.controlUseItem = button;
 				d.itemAnimationMax = Math.Max(1, CombinedHooks.TotalAnimationTime(Math.Max(1, item.useAnimation), d, item));
@@ -346,6 +347,7 @@ namespace Levy.Common.Weapons
 					if (calPlayer != null) { (savedDelta, savedRot) = AltPolicies.GetCalAimPublic(calPlayer); AltPolicies.SetCalAimPublic(calPlayer, cursor - d.MountedCenter); }
 				}
 
+				if (g.Biome != 0) BiomeBlades.PreAi(body, p, g, button);
 				before = _before ??= new bool[Main.maxProjectiles];
 				for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
 				orig(p);
@@ -373,6 +375,7 @@ namespace Levy.Common.Weapons
 							body.NPC.netUpdate = true;
 						}
 						else if (pouch != null && pouch.stack != pouchStackBefore) body.NPC.netUpdate = true;
+						if (g.Biome != 0) BiomeBlades.PostAi(body, p, g);
 						if (before != null) AdoptChildren(body, p, item, before);
 					}
 				}
@@ -400,6 +403,7 @@ namespace Levy.Common.Weapons
 			if (body == null || !LevyUtil.IsServerOrSingle) { orig(p); return; }
 			int savedOwner = p.owner, savedType = p.type;
 			ArkSwings.DamageScope ark = g.Ark != ArkRole.None ? new ArkSwings.DamageScope(body, p, g) : default; // an Ark's blade reads its owner's centre: the real player stands at the soldier for the call
+			BiomeBlades.DamageScope bb = g.Biome != 0 ? new BiomeBlades.DamageScope(body, p, g) : default; // a Biome Blade's too, with the soldier's blade in the real player's hand
 			try
 			{
 				p.owner = SoldierMinions.TrueMyPlayer;
@@ -409,6 +413,7 @@ namespace Levy.Common.Weapons
 			{
 				if (p.type == savedType) p.owner = savedOwner; // undo only our own edit: if the cascade killed p and recycled its slot, the new projectile keeps its owner
 				ark.Dispose();
+				bb.Dispose();
 				EnemyTargeting.EnsureSlotRestored(); // never leave a dummy in Main.player[255]
 			}
 		}
@@ -424,6 +429,7 @@ namespace Levy.Common.Weapons
 				if (DudTrace.On) DudTrace.NoteType(c.type, "adopted@" + c.owner + (c.friendly ? "+f" : "-f") + "+dmg" + (c.damage > 0 ? "1" : "0"));
 				if (c.aiStyle == ProjAIStyleID.HeldProjectile || c.aiStyle == ProjAIStyleID.ThickLaser) JoinChain(body, c, item);
 				else if (ArkSwings.AdoptChild(body, holder, c, item)) { }
+				else if (BiomeBlades.AdoptChild(body, holder, c, item)) { }
 				else if (ModShotKinds.ChainExtras(item) && c.ModProjectile != null && ((holder.TryGetGlobalProjectile(out HeldWeaponProjectile pg) && pg.BoundChild) || OwnerLockProbe.BoundToHolder(c)))
 				{
 					// bound to its holder (reads the button / finds its parent by UUID) or made by a bound child (Starmageddon's stars, made by the star centre): stays in the chain, same owner, dummy and button as the holdout
@@ -509,6 +515,8 @@ namespace Levy.Common.Weapons
 		public int HeldTicks, HoldMax, Linger;
 		/// <summary>An Ark's swung blade or parry holdout (or a child bound to the blade): see <see cref="ArkSwings"/>.</summary>
 		public ArkRole Ark;
+		/// <summary>A Biome Blade's attunement blade (1) or a child bound to it (2): see <see cref="BiomeBlades"/>. Server side only.</summary>
+		public byte Biome;
 		/// <summary>The Ark's reach and throw numbers, for its blade (server side only).</summary>
 		internal ArkSpec ArkSpec;
 		/// <summary>The parry has struck an enemy (it empowers once); and whether that enemy could hurt the soldier by touch (the parry's immunity window needs it).</summary>

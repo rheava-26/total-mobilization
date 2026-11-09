@@ -326,6 +326,7 @@
   - ARMY FOOD: buy or cook a big feast (a huge turkey, cooked fish or apples) for levy-wide food buffs;
   - PUNCH BOWL: put 2-5 potions into one bowl, then use it to give every levy those effects for a while (bought from the Party Girl during a party); this fixes buff-slot pain;
   - MORE ALCOHOL: Vodka → endurance, a Mojito; Calamity's alcohols as inspiration.
+- **Eve corrected me (11-09):** she had asked for wire-crafted drones long ago (ROADMAP "later ideas": player-built drones via wires, Mechanic gate, works with turrets — never built); the Static Camera right-click does nothing, no hover highlight (a bug, not usage). North Star rule added: assume she uses the mod correctly. Biome Blades auto-attune APPROVED. Builders: `dronecam` (wire drone item deployed at cursor, arms from Armory like turrets, pack up, Mechanization 0.10.0 + camera hover/right-click fix) and `biomeblades` (attune to the fight's biome, real attunement attacks, fair score).
 - **Eve's 25-item list (11-09 21:00) + Spectral Lens.** Dispatched:
   - `travel4` (resumed after the weekly limit): hop regression fix + lava: hook to catch a fall into lava, never path/step/dodge into lava.
   - `pylon2`: "pylon networks still won't connect, assume I did everything right" — real placed pylons, SP + server, every read site, widen the link rule if too strict, show which pylon links a town.

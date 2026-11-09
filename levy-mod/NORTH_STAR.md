@@ -127,6 +127,7 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 - Show line lists as plain text, never code blocks: Eve listens with TTS, which skips code blocks.
 - Lists of lines can be blocks; worldbuilding talk is prose. When Eve says "maybe not" or "I'm iffy", she's thinking out loud, not vetoing.
 - A question is not an instruction. When Eve asks "why does X take so long?" or "how does X work?", answer it and change nothing. Never cut scope, cancel or redirect work because of a question (2026-11-08: "why did this take an hour" was read as "cut the parry" and the builder was redirected; she said "questions are not confirmation, please stop doing that").
+- Assume Eve knows how the mod works and is using it correctly. When she says something does not work, treat it as a bug and reproduce it; never answer with "how to use it" or guess user error (2026-11-09: told her how to use the Static Camera and that drones are not placeable; she had asked for wire-crafted drones long ago and the camera right-click really does nothing). Check ROADMAP "later ideas" for her past requests before saying a feature does not exist.
 
 **Dialogue should read like vanilla Terraria NPCs.** Eve found early dialogue "a little bit AI". Rate lines and replace anything below a B (10-22). Silly death messages are liked. Use gender-neutral language (10-22; scope unclear, probably mod text).
 

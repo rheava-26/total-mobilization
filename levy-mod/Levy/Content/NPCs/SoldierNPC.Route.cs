@@ -29,7 +29,7 @@ namespace Levy.Content.NPCs
 		private bool _rtHookWant; private Point _rtHookT; private Vector2 _rtHookGoal; private uint _rtHookSince, _rtHookLastTry; private int _rtHookTries;
 		internal int RouteHookCasts, RouteHookBans;
 
-		internal void RouteReset() { _rtBan.Clear(); _rtHookWant = false; RouteExhausted = false; _rt = null; _rtIdx = 0; _rtVariant = 0; _rtReplans = 0; _rtLegSent = new Vector2(float.MinValue); RouteEndedShort = false; _pathFromRoute = false; }
+		internal void RouteReset() { ClimbCancel(); _rtBan.Clear(); _rtHookWant = false; RouteExhausted = false; _rt = null; _rtIdx = 0; _rtVariant = 0; _rtReplans = 0; _rtLegSent = new Vector2(float.MinValue); RouteEndedShort = false; _pathFromRoute = false; }
 
 		/// <summary>Hands the movement code the waypoints of the current leg as its path (no search): the same list a local A* would have produced.</summary>
 		private void FeedPath(List<Vector2> pts, Vector2 goal)
@@ -45,6 +45,9 @@ namespace Levy.Content.NPCs
 		{
 			leg = goalBottom; RouteEndedShort = false;
 			if (TravelLegacy.On || !LevyUtilIsServerOrSingle() || RouteExhausted) return false;
+			// up a wall face: the climb owns the body; a climb that came to nothing bans its lip and the route is asked for again
+			if (_clmFailed) { _clmFailed = false; RouteHookGiveUp(_clmTile); return false; }
+			if (_clmOn) { _rtProgPos = NPC.Center; _rtProgTick = now; leg = _clmTarget; return true; }
 			Vector2 me = NPC.Bottom;
 			float dxT = Math.Abs(goalBottom.X - me.X) / 16f, dyT = (goalBottom.Y - me.Y) / 16f;
 			if (dxT <= RouteMinTripTiles && Math.Abs(dyT) <= RouteMinTripRise) { if (_rt != null) RouteReset(); return false; }
@@ -107,8 +110,23 @@ namespace Levy.Content.NPCs
 			_rtIdx = Math.Max(_rtIdx, best);
 			while (_rtIdx < n - 1 && Vector2.DistanceSquared(pts[_rtIdx], me) < 36f * 36f) _rtIdx++;
 
+			// the next step is a wall climb from the previous waypoint (the foot of the face): walk to the foot, then climb
+			if (hasKinds && kinds[_rtIdx] == 3 && _rtIdx > 0)
+			{
+				Vector2 foot = pts[_rtIdx - 1];
+				_rtHookWant = false;
+				bool atFoot = Math.Abs(foot.X - me.X) < 40f && Math.Abs(foot.Y - me.Y) < 56f;
+				if (atFoot)
+				{
+					if (ClimbStart(pts[_rtIdx], foot)) { leg = pts[_rtIdx]; return true; }
+					RouteHookGiveUp(TileNav.FeetTile(pts[_rtIdx])); return false;
+				}
+				if (_rtLegSent != foot || _path.Count == 0) { _rtLeg.Clear(); _rtLeg.Add(foot); FeedPath(_rtLeg, foot); _rtLegSent = foot; }
+				leg = foot; return true;
+			}
+
 			// the next step is a hook cast from the previous waypoint: walk to it, then cast at the edge's target
-			if (hasKinds && kinds[_rtIdx] != 0 && _rtIdx > 0)
+			if (hasKinds && (kinds[_rtIdx] == 1 || kinds[_rtIdx] == 2) && _rtIdx > 0)
 			{
 				Vector2 cast = pts[_rtIdx - 1];
 				Point tile = TileNav.FeetTile(pts[_rtIdx]);

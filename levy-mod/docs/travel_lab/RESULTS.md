@@ -89,3 +89,43 @@ Per slice the planner averages 0.4 to 1.3 ms and tops out at 5.5 ms (before: 3.2
 - Z5 (20-high cliff, 40-wide mesa, 20-deep drop): hooks climb the face (chain) but the chain is flaky and they stop on the mesa; open.
 - Z1, Z3 (crack, 20-wide chasm): hooks stop at the lip: the far lip has no anchor above it within reach, so no hook edge exists; correct, not a miss.
 - Remaining failures with a hook route (real worlds, OBSERVED in the stuck lines): `hookWant` at the cast point with no line found by the planner or the retries not yet spent, a cast point in a wet cell on a replan, and routes whose terrain gives many short hook edges in a row where one of them fails. Verifying every edge on `HookPlanner.Plan` at route time (tried, `D`/`E` builds) gave no more arrivals (55 of 90 vs 54 of 90 for hooks) and cost up to 150 ms in one tick under load, so it was dropped.
+
+# Round 3: wall-climb gear and off-screen catch-up
+
+Lab: `lab/travel/round3/` (`jobs.py` lists the runs, `run_all.sh TMOD TAG sets`, `tabr.py`, `costs.py`, `summary.csv` = every levy of the numbers below). Before = branch head `worktree-levy-stardust` plus the harness changes only (`bf`), after = `travel3` (`ag`). Same worlds and seeds (M1 11111, M2 22222), 15 levies per run. "far" = commander 600 tiles behind the start and the levies waiting where they stand (`LEVY_TRAVEL_HOLD=1`; a Follow levy 400+ tiles from the commander is pulled back to them before the order lands); "near" = the commander walks after the army (at most 14 px per tick, at the middle levy) so the army is on screen. Hops are counted by the harness itself: any move of more than 6 tiles in one tick whose start or end is inside 2400x1400 px around a player.
+Gear arms: mixed = 5 bare / 4 Hermes Boots / 3 Angel Wings / 3 hook; climb = 5 Shoe Spikes / 5 Climbing Claws / 5 Tiger Climbing Gear.
+
+## OBSERVED (before)
+- No levy with `spikedBoots` climbs: `MovementAbilities` did not read it, so spiked levies are bare levies (zoo with the climb arm: 0/15 on the 10-high and the 20-high cliff).
+- Real 800-tile trips: 24/150 arrive (16%) with the commander far or leaving. Stuck lines: walls, overhangs, drops deeper than the search, sealed pockets.
+- A zoo or corruption obstacle that cannot be crossed on foot ends the order as Hold at the lip.
+
+## What changed
+1. **Wall climb gear.** `MovementAbilities.SpikedBoots` is the dummy's `Player.spikedBoots` (1 Shoe Spikes or Climbing Claws, 2 both, Tiger Climbing Gear, Master Ninja Gear, any mod that sets it). `PathSearch.ExpandClimb`: from a standing cell with a wall beside it, up the whole face (any height up to 380 tiles; a face a jump clears gets no edge) to the cell on its top, when the column the body climbs in is open; cost 3 + 1.1 per tile; route kind 3; part of the route cache key. `SoldierNPC.Climb.cs` performs it as `Player.WallslideMovement` does: caught on the wall while falling (strong spikes hold the body still, weak ones slide at 0.5 px/tick), 3 ticks later a jump with a 3 px/tick kick off the wall, then held toward the wall again; at the lip it steps onto the top. A climb that gains no tile in 150 ticks bans its lip like a failed hook and the route is asked for again. `AccessoryMobility` values the gear (1.0, 1.3 for spikedBoots 2, plus the dash bonus on Master Ninja Gear), so the Armory hands it out as a levy's mobility accessory (wings 4 and bundles 3.9 stay above).
+2. **Off-screen catch-up** (`SoldierNPC.CatchUp.cs`, `OffscreenHop.cs`, `FollowerTravel.HopTo` = the placement Follow's catch-up uses: no velocity, no fall damage for 240 ticks, `netUpdate`). A map-point levy that no active player can see (outside 2400x1400 px around every one) and has stayed within 5 tiles of one spot for 6 s hops: along its route to the furthest waypoint that has a standing spot (floor, three clear rows, no liquid, line of sight) out of everyone's sight; with a route that ran out short, or none, to a standing spot within 5 tiles of the goal; if a player can see that, to the nearest unseen standing spot on the straight way (at least 10 tiles on, in a region of 240 walkable cells or 40 columns, so not a sealed pocket). The "unreachable" notice only fires for a levy that did not hop. Constants: `LevyConstants.Movement.CatchUp*`, `Climb*`.
+
+## After (arrivals, same sets)
+| set | before | after |
+|---|---|---|
+| real 800, commander far (600), mixed | 24/150 (16%): 5/50, 3/40, 13/30, 3/30 | 134/150 (89%): 46/50, 39/40, 22/30, 27/30; 145 hops, 0 seen, mean 43 s (before 83 s) |
+| real 800, commander leaving (20 tiles), mixed | 24/150 (16%) | 117/150 (78%), 129 hops, 0 seen |
+| real 800, commander with the army (near), mixed | 21/150 (14%) | 59/150 (39%), 43 hops, 0 seen |
+| real 800, far, climb gear | 14/150 (9%) | 142/150 (94%): 47/50, 47/50, 48/50 |
+| real 800, near, climb gear | 3/150 (2%) | 11/150 (7%), 10 hops, 0 seen, 4 wall climbs |
+| real 150 (30 runs), mixed | 272/450 (60%) | 358/450 (79%) |
+| real 150, climb gear | 245/450 (54%) | 348/450 (77%) |
+| zoo, 6 legs, mixed | 40/90 | 90/90 |
+| corruption C0-C4, mixed | 61/75 | 75/75 |
+| carved 920 and six 150 legs, mixed | 105/105, 86 s | 105/105, 86 s |
+| zoo + corruption, climb gear, commander on screen (no hops possible) | Z0 0/15, Z5 0/15, C0 7/15 | Z0 15/15, Z5 7/15, C0 15/15 (15 climbs each) |
+| Follow 800 (4 runs) and carved Follow | 23% / 53% and 9/15 | 26% / 46% and 10/15 (noise, Follow code untouched) |
+
+Cost (planner ms over the whole run; slices are 700 nodes or 1.6 ms): real 800 1.15 ms/slice before, 1.24 after (1740 vs 1382 slices, 2007 vs 1719 ms in all); far runs 1.03 vs 1.11. Slowest slice 10.3 ms in both (a loaded machine; 4.9 vs 4.4 ms on the far set). A hop costs 0.05 to 0.08 ms (choosing the spot, once per hop; a levy that cannot hop retries every 2 s). The climb edge adds one column scan per standing cell beside a wall, only for levies with spiked gear.
+
+## Reading it
+- OBSERVED: the arrivals come from the hop. With the commander far, wings and hook go from 13/30 and 3/30 to 22/30 and 27/30; the misses left are levies still walking at the cap or wings with no standing spot on the way.
+- OBSERVED: with the commander on screen nobody hops and the army does not get there (39%). Eve's case (the player elsewhere) is the far row; the near row is the price of "never on screen" and the baseline for the next fix.
+- OBSERVED: climbing is used where a wall blocks the route (zoo Z0 and Z5, C0 holes, 15 climbs each) and rarely in the real worlds (0 to 15 climbs in 10 runs); the real-world failures are mostly drops and pits, which the hop covers.
+- OBSERVED, not fixed: the route search accepts a fall of exactly `FallScanTiles` (20) but `TileNav.DropDepth` in the executor sees 19 below the lip, so a plan that drops 20 is refused at the edge (zoo Z5 mesa, `void-gap`). Climbers stop on the mesa until a hop.
+- INFERRED: Shoe Spikes and Climbing Claws climb like Tiger Climbing Gear here because the levy jumps off the wall 3 ticks after it catches whatever the gear.
+- Harness note: a headless server resets `Player.active` every tick for a slot nobody is connected on, so the lab lists its stand-in commander in `OffscreenHop.LabViewers`; on a real server connected players are active.

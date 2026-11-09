@@ -51,6 +51,8 @@ namespace Levy.Common
 		public static class Armory
 		{
 			public const float MobilityJumpValue = 1f, MobilityWingsValue = 4f;
+			/// <summary>Wall climb gear (Player.spikedBoots): this much, plus the bonus for the kind that holds the body on the wall (spikedBoots 2).</summary>
+			public const float MobilityClimbValue = 1f, MobilityClimbHoldBonus = 0.3f;
 			public const int MobilityMaxJumpsCounted = 3;
 			public const float MobilityStackBonus = 150f;
 		}

@@ -205,6 +205,28 @@ namespace Levy.Common
 			/// <summary>Failed hook targets remembered per soldier (each is banned from the route search), ticks the executor waits at the cast point for the hook planner before it gives the edge up, and the spacing of its tries (three per edge).</summary>
 			public const int RouteHookBanMax = 6, RouteHookWaitTicks = 420, RouteHookRetryTicks = 45;
 
+			// ---- wall climb gear (Shoe Spikes, Climbing Claws, Tiger Climbing Gear, Master Ninja Gear: Player.spikedBoots) ----
+			/// <summary>A climb edge in the route search: the base cost plus this per tile of face (a wall-jump cycle gains about a jump of height every 25 ticks, about the pace of a run).</summary>
+			public const float ClimbEdgeCost = 3f, ClimbTileCost = 1.1f;
+			/// <summary>Tallest face a climb edge looks up (tiles).</summary>
+			public const int ClimbMaxFaceTiles = 380;
+			/// <summary>The kick off the wall when a wall jump starts (px/tick, Player: 3), the acceleration back toward the wall, and the speed pressed into it.</summary>
+			public const float ClimbKickPx = 3f, ClimbReturnAccel = 0.28f, ClimbPressPx = 1.6f;
+			/// <summary>A climb that has not gained a tile of height in this many ticks, or takes longer than ClimbMaxTicks in all, is given up (the edge is banned and the route searched again).</summary>
+			public const int ClimbStallTicks = 150, ClimbMaxTicks = 60 * 90;
+			/// <summary>Slide speed on a wall with weak spikes (spikedBoots 1); stronger spikes (2: Tiger Climbing Gear, Master Ninja Gear) hold the body still.</summary>
+			public const float ClimbSlideSpeedPx = 0.5f;
+			/// <summary>Ticks the body hangs on the wall after a catch before it jumps off (a player releases and presses jump).</summary>
+			public const int ClimbCatchTicks = 3;
+
+			// ---- off-screen catch-up for map-point orders ----
+			/// <summary>A map-order levy that no player can see and that has stayed within CatchUpStuckTiles of one spot for this many ticks hops ahead along its route.</summary>
+			public const int CatchUpStuckTicks = 60 * 6; public const float CatchUpStuckTiles = 5f;
+			/// <summary>Nobody may see the levy, or the place it lands: the box around each active player (px, full width and height).</summary>
+			public const float CatchUpBoxW = 2400f, CatchUpBoxH = 1400f;
+			/// <summary>A hop lands at least this far ahead (tiles of straight line) or is not made; a spot at the goal is searched this many tiles around it.</summary>
+			public const int CatchUpMinHopTiles = 10, CatchUpGoalSpotTiles = 5, CatchUpWaySpotTiles = 6;
+
 			// ---- wings ----
 			public const float FlySpeed = 6f;
 			public const float FlyAccel = 0.3f;

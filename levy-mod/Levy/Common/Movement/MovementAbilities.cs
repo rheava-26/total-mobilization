@@ -20,6 +20,8 @@ namespace Levy.Common.Movement
 		public bool NoFallDamage; public int ExtraFall;
 		/// <summary>A dash accessory is equipped (Player.dashType: Tabi / Master Ninja Gear, Shield of Cthulhu, Solar Flare, Crystal Assassin).</summary>
 		public bool HasDash;
+		/// <summary>Player.spikedBoots: 1 = Shoe Spikes / Climbing Claws (wall slide and wall jump), 2 = both, Tiger Climbing Gear, Master Ninja Gear (also holds the body still on the wall). Any gear that sets it, modded too.</summary>
+		public int SpikedBoots; public bool CanWallClimb => SpikedBoots > 0;
 		/// <summary>
 		/// The widest gap (tiles of missing floor) a running jump clears on level ground: a plain jump covers GapJumpMaxTiles; speed carries further (flight time of the jump times the run speed, kept at 60% of that), and an extra jump mid-air adds AirGapBonusTiles.
 		/// </summary>
@@ -86,6 +88,7 @@ namespace Levy.Common.Movement
 			a.CanGlide = a.HasWings;
 			a.NoFallDamage = dummy.noFallDmg || dummy.equippedWings != null; a.ExtraFall = dummy.extraFall;
 			a.HasDash = dummy.dashType > 0;
+			a.SpikedBoots = Math.Clamp(dummy.spikedBoots, 0, 2);
 			var hook = HookInfo.Of(dummy.miscEquips != null && dummy.miscEquips.Length > 4 ? dummy.miscEquips[4] : null);
 			if (hook.Usable) { a.HasHook = true; a.HookReachPx = hook.ReachPx; a.HookPullPx = hook.PullPx; a.HookCount = hook.Count; }
 			return a;

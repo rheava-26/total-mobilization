@@ -6,7 +6,7 @@ using Terraria.ModLoader;
 namespace Levy.Common.Movement
 {
 	/// <summary>
-	/// How much movement an accessory gives a soldier: extra jumps, wings, rocket flight, sprint speed, jump height, dash. Read generically as the delta of <see cref="MovementAbilities.FromDummy"/> on a dummy wearing it vs bare; cached per item type. The armory uses it to give every levy one mobility accessory first.
+	/// How much movement an accessory gives a soldier: extra jumps, wings, rocket flight, sprint speed, jump height, dash, wall climbing. Read generically as the delta of <see cref="MovementAbilities.FromDummy"/> on a dummy wearing it vs bare; cached per item type. The armory uses it to give every levy one mobility accessory first.
 	/// </summary>
 	public static class AccessoryMobility
 	{
@@ -54,6 +54,9 @@ namespace Levy.Common.Movement
 
 		internal static string Dbg(Item it) { var b = Snap(_dummy ??= new Player(), null); var c = new Item(); c.SetDefaults(it.type); var w = Snap(_dummy, c); return $"run {b.ab.MaxRunSpeed}->{w.ab.MaxRunSpeed} jump {b.ab.JumpTiles}->{w.ab.JumpTiles} rocket {b.rocketTier}/{b.rocketTime}->{w.rocketTier}/{w.rocketTime} dash {w.ab.HasDash} nofall {w.ab.NoFallDamage}"; }
 
+		/// <summary>The wall-climb strength (Player.spikedBoots) a dummy gets wearing the item: 0 none, 1 weak, 2 strong.</summary>
+		internal static int Spikes(Item it) { var c = new Item(); c.SetDefaults(it.type); return Snap(_dummy ??= new Player(), c).ab.SpikedBoots; }
+
 		static (int jumps, bool wings, float value) ReadAll(Item it)
 		{
 			if (it == null || it.IsAir || !it.accessory || it.vanity) return (0, false, 0f);
@@ -77,6 +80,8 @@ namespace Levy.Common.Movement
 					// jump height (Frog Leg, balloons, Amphibian Boots)
 					float dJump = w.ab.JumpTiles - bare.ab.JumpTiles; if (dJump > 0f) v += Math.Min(dJump, 6f) * 0.25f;
 					if (w.ab.HasDash && !bare.ab.HasDash) v += 0.3f;
+					// wall climb gear (Player.spikedBoots: Shoe Spikes, Climbing Claws, Tiger Climbing Gear, Master Ninja Gear, mods): a levy with it climbs any wall on a long trip
+					if (w.ab.SpikedBoots > bare.ab.SpikedBoots) v += LevyConstants.Armory.MobilityClimbValue + (w.ab.SpikedBoots >= 2 ? LevyConstants.Armory.MobilityClimbHoldBonus : 0f);
 					if (v > 0f && ((w.ab.NoFallDamage && !bare.ab.NoFallDamage) || w.ab.ExtraFall > bare.ab.ExtraFall)) v += 0.1f;
 					v = Math.Min(v, LevyConstants.Armory.MobilityWingsValue - 0.1f);
 				}

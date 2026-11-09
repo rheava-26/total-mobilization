@@ -73,7 +73,7 @@ namespace Levy.Content.NPCs
 			}
 			bool web = Collision.StickyTiles(npc.position, npc.velocity, npc.width, npc.height).Y != -1f;
 			bool hooked = _hkPhase == HookPhase.InFlight || _hkPhase == HookPhase.Reel || _hkPhase == HookPhase.Cast;
-			if (npc.velocity.Y < 0f || npc.wet || npc.honeyWet || npc.lavaWet || web || hooked || _flying || (Dummy != null && Dummy.slowFall) || ThinAir(npc.position.Y)) _fallStartRow = row;
+			if (npc.velocity.Y < 0f || npc.wet || npc.honeyWet || npc.lavaWet || web || hooked || _flying || _clmOn || (Dummy != null && Dummy.slowFall) || ThinAir(npc.position.Y)) _fallStartRow = row;
 		}
 
 		private void TakeFallDamage(int damage, int tiles)

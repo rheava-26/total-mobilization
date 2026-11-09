@@ -57,6 +57,7 @@ namespace Levy.Content.NPCs
 			Fall_Update();
 			if (!IsAlive) return;
 			if (ImmuneTime == 0) ContactDamage();
+			if (IsAlive && ImmuneTime == 0) TileHazards(); // spikes, thorns, meteorite and the like, when the setting is on (SoldierNPC.TileHazards.cs)
 			if (!IsAlive) return;
 			Regen();
 			Potions();
@@ -112,7 +113,7 @@ namespace Levy.Content.NPCs
 		{
 			if (!LevyConstants.PlayerParityIFrames) return LevyConstants.ImmuneTicksOnHit;
 			bool longI = Dummy != null && Dummy.longInvince;
-			return damageDone <= 1 ? (longI ? 40 : 20) : (longI ? 80 : 40);
+			return LevyConstants.ScaledImmune(damageDone <= 1 ? (longI ? 40 : 20) : (longI ? 80 : 40));
 		}
 
 		/// <summary>Harness telemetry (null = off): per levy, the game tick of the previous body hit; gaps between consecutive hits go into <see cref="HitGapDbg"/> (gap in ticks to count).</summary>
@@ -129,6 +130,7 @@ namespace Levy.Content.NPCs
 			HitsTaken++;
 			if (DodgeDebug) Levy.Instance?.Logger.Info($"DODGEDBG-HIT t={Main.GameUpdateCount} {SoldierName} dmg={damageDone} vy={NPC.velocity.Y:0.0} yAboveFloorPx={(int)(NPC.Bottom.Y)} pend={_dodgePend}");
 			ImmuneTime = HitImmuneTicks(damageDone);
+			Sit_Stop(); // a hit stands a seated levy up
 			if (HitGapDbg != null) HitGapAdd(damageDone);
 			TicksSinceDamaged = 0;
 			_regenCounter = 0;

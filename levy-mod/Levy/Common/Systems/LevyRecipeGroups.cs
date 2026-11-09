@@ -33,6 +33,10 @@ namespace Levy.Common.Systems
 			// LegacyMisc.37 is the vanilla "Any" prefix used by every recipe group name.
 			RecipeGroup.RegisterGroup(LevyConstants.RecipeGroupAnyBanner,
 				new RecipeGroup(() => Language.GetTextValue("LegacyMisc.37") + " " + Language.GetTextValue("MapObject.Banner"), banners.ToArray()));
+			RecipeGroup.RegisterGroup(LevyConstants.RecipeGroupAnyGrave,
+				new RecipeGroup(() => Language.GetTextValue("LegacyMisc.37") + " " + Lang.GetItemNameValue(ItemID.GraveMarker),
+					ItemID.Tombstone, ItemID.GraveMarker, ItemID.CrossGraveMarker, ItemID.Headstone, ItemID.Gravestone, ItemID.Obelisk,
+					ItemID.RichGravestone1, ItemID.RichGravestone2, ItemID.RichGravestone3, ItemID.RichGravestone4, ItemID.RichGravestone5));
 			RecipeGroup.RegisterGroup(LevyConstants.RecipeGroupAnyChest,
 				new RecipeGroup(() => Language.GetTextValue("LegacyMisc.37") + " " + Lang.GetItemNameValue(ItemID.Chest), chests.ToArray()));
 		}

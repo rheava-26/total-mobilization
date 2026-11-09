@@ -44,12 +44,21 @@ Mods: {
 					'''
 			}
 
+			SpectralLens: {
+				DisplayName: Spectral Lens
+				Tooltip:
+					'''
+					Vanity accessory. Draws your levies, their weapons, their projectiles and their summoned units 85% transparent.
+					Only you see the effect.
+					'''
+			}
+
 			CommandRadio: {
 				DisplayName: Command Radio
 				Tooltip:
 					'''
 					A field set tuned to every soldier you command.
-					Carry it to give orders from the radial to your whole army, anywhere. Click it to open the radial.
+					Orders and Rally from the radial reach your whole army, anywhere in the world. Click it to open the radial.
 					Shift-click the full map to send every levy to that point.
 					'''
 			}
@@ -263,7 +272,7 @@ Mods: {
 					Label: Events
 					Tooltip:
 						'''
-						Levies become afraid when one hit takes 30% of a levy's health, when a levy dies within 40 tiles, and when a boss changes phase.
+						Levies become afraid when a world event or a boss arrives, when one hit takes 30% of a levy's health, when a levy dies within 40 tiles, and when a boss changes phase. Levies are fearless while you have the Spectator potion active.
 						Fear drains after 3 seconds without being hit.
 						'''
 				}
@@ -427,6 +436,16 @@ Mods: {
 				SoldiersTakeFallDamage: {
 					Label: Levies take fall damage
 					Tooltip: Levies take fall damage by the player's rules. Wings, a Lucky Horseshoe and water landings spare them.
+				}
+
+				LeviesSitWhenIdle: {
+					Label: Levies sit when idle
+					Tooltip: A levy with nothing to do sits on a nearby chair, bench or throne and chats with the levies beside it. It stands up at once for a fight, a threat or an order.
+				}
+
+				SoldiersTakeTileHazards: {
+					Label: Levies take tile hazards
+					Tooltip: Spikes, wooden spikes, thorns, cactus, meteorite and hellstone hurt levies the way they hurt players. Off by default.
 				}
 
 				ExtraTargetingAiStyles: {

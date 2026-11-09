@@ -41,7 +41,9 @@ namespace Levy.Common
 		// ---------- Roster: environmental killers ----------
 		// CONTRACT-REQUEST: SoldierNPC.LastAttackerType codes for deaths without an attacker (Damage agent): -1 fall, -2 lava, -3 drowning.
 		// The roster reads these to pick the "killed by" text; any other non-positive value reads as misadventure.
-		public const int EnvKillerFall = -1, EnvKillerLava = -2, EnvKillerDrowning = -3;
+		public const int EnvKillerFall = -1, EnvKillerLava = -2, EnvKillerDrowning = -3, EnvKillerHazard = -4;
+		/// <summary>Tile hazards (SoldiersTakeTileHazards): how often a levy checks the tiles it touches (ticks), how long a hot tile burns it, and how long a bleeding tile makes it bleed (ticks).</summary>
+		public const int TileHazardCheckTicks = 4, TileHazardBurnTicks = 180, TileHazardBleedMinTicks = 240, TileHazardBleedMaxTicks = 600;
 
 		// ---------- Roster: looks rolled at enlistment ----------
 		/// <summary>Hair styles available at character creation (the stylist's extra styles are not used).</summary>

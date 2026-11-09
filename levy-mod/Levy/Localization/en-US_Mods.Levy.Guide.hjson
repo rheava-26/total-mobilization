@@ -68,7 +68,7 @@ Pages: {
 			'''
 			Right-click the War Horn to open the orders radial. Pick an order and your Regulars carry it out.
 			The Command Radio opens the same radial when you click it.
-			With the War Horn, orders reach Regulars within 40 tiles. Carry a Command Radio anywhere in your pack and every order reaches every Regular, wherever they are.
+			With the War Horn, orders reach Regulars within 150 tiles. Carry a Command Radio anywhere in your pack and every order, and Rally, reaches every Regular in the world.
 			Keys: Y follow, U hold, I return, O hold fire, P mobilize, K rally and N army overview.
 			Rebind them under Settings, Controls.
 			'''
@@ -81,9 +81,9 @@ Pages: {
 			Follow me and Hold here move the line. Return to barracks sends Regulars home.
 			Hold fire stops all shooting. Fire at will turns it back on.
 			Spread out keeps wide gaps against area attacks. Close up packs the line tight around you.
-			Search & destroy hunts outward from the settlement. Free rein lets Regulars roam the whole region and follow the fighting.
+			Search & destroy hunts outward from the settlement, and Regulars more than 60 tiles from you and out of sight teleport to you. Free rein lets Regulars roam the whole region and follow the fighting, and they never teleport.
 			Focus attack: click an enemy, a critter or a spot, and the squad attacks it until it is clear.
-			Rally steadies every Regular within 30 tiles, once a minute.
+			Rally steadies every Regular within 30 tiles, once a minute. With a Command Radio it steadies every Regular in the world.
 			'''
 	}
 

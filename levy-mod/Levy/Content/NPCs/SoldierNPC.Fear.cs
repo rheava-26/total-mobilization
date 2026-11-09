@@ -36,7 +36,7 @@ namespace Levy.Content.NPCs
 		partial void Fear_Update()
 		{
 			if (Record == null || LevyUtil.IsClient || !IsAlive) return;
-			if (global::Levy.Common.Potions.AutonomySystem.IsAutonomous(this)) { if (Record.Fear > 0f || State is SoldierState.Shaken or SoldierState.Routed) Fear_Rally(false); Record.Fear = 0f; return; } // Autonomous: immune to fear
+			if (FearSystem.Immune(this)) { if (Record.Fear > 0f || State is SoldierState.Shaken or SoldierState.Routed) Fear_Rally(false); Record.Fear = 0f; return; } // the commander has the Spectator potion active: immune to fear
 
 			NPC boss = Fear_BossInView();
 			FearModel fm = LevyOptions.Fear;
@@ -79,7 +79,7 @@ namespace Levy.Content.NPCs
 
 		partial void Fear_OnDamaged(int damage, int attackerIndex)
 		{
-			if (Record == null || damage <= 0 || LevyUtil.IsClient || !IsAlive || global::Levy.Common.Potions.AutonomySystem.IsAutonomous(this)) return;
+			if (Record == null || damage <= 0 || LevyUtil.IsClient || !IsAlive || FearSystem.Immune(this)) return;
 			if (Fear_BossInView() == null) return; // fear only exists during a main-boss fight
 
 			bool wasShaken = State == SoldierState.Shaken; // shaken BEFORE this hit
@@ -168,7 +168,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Routs this body: it backs away from the threat but keeps its target and keeps shooting (badly). Returns false if it could not rout.</summary>
 		internal bool Fear_Rout(DialogueContext ctx, bool bark)
 		{
-			if (Record == null || State == SoldierState.Routed || State == SoldierState.Dead || State == SoldierState.Desert || global::Levy.Common.Potions.AutonomySystem.IsAutonomous(this)) return false;
+			if (Record == null || State == SoldierState.Routed || State == SoldierState.Dead || State == SoldierState.Desert || FearSystem.Immune(this)) return false;
 			if (Record.Fear < FearK.ShakenThreshold) Record.Fear = FearK.ShakenThreshold; // a routed soldier reads as afraid everywhere
 			State = SoldierState.Routed; StateTimer = 0;
 			// the target is kept: a routed body retreats (Brain) and keeps firing at what chases it (Combat)

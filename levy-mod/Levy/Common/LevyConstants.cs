@@ -79,6 +79,10 @@ namespace Levy.Common
 		public const int RegenDelayTicks = 60 * 5;
 		public const int RegenIntervalTicks = 60;
 		public const int ImmuneTicksOnHit = 20;
+		/// <summary>Every post-hit immunity window a levy gets (the player-parity 40 / 20 / 80 ticks and the real Player.Hurt window of its gear) is scaled by this: 0.4 s to 0.3 s in Eve's words, so 40 ticks becomes 30.</summary>
+		public const float HitImmuneScale = 0.75f;
+		/// <summary>A post-hit immunity window after <see cref="HitImmuneScale"/> (never below 1 tick).</summary>
+		public static int ScaledImmune(int ticks) => ticks <= 0 ? 0 : System.Math.Max(1, (int)System.Math.Round(ticks * HitImmuneScale));
 		/// <summary>Player parity: a body hit grants the post-hit window Player.Hurt would (40 ticks, 20 for a 1-damage hit, doubled by Cross Necklace / Star Veil). LEVY_IFRAMES=0 restores the flat <see cref="ImmuneTicksOnHit"/> (A/B switch, harness only).</summary>
 		public static readonly bool PlayerParityIFrames = System.Environment.GetEnvironmentVariable("LEVY_IFRAMES") != "0";
 
@@ -139,6 +143,8 @@ namespace Levy.Common
 		public const int AmmoFairShareFloor = 25;
 		public const int OrderRadius = 150; // order hotkeys reach every levy within about a screen and a half; the Command Radio and the barracks panel reach all of them
 		public const int RallyRadius = 30;
+		/// <summary>Rally with a Command Radio in the pack: wider than any world (tiles), so every Regular is steadied.</summary>
+		public const int RadioRallyRadius = 100000;
 		public const int RallyCooldownTicks = 60 * 60;
 		public const int RoutRallyOutOfSightTicks = 60 * 20;
 		public const int PatrolPauseTicks = 120;

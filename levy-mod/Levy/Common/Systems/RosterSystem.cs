@@ -1033,6 +1033,7 @@ namespace Levy.Common.Systems
 				LevyConstants.EnvKillerLava => LevyUtil.T("Roster.KillerLava"),
 				LevyConstants.EnvKillerDrowning => LevyUtil.T("Roster.KillerDrowning"),
 				LevyConstants.EnvKillerFall => LevyUtil.T("Roster.KillerFall"),
+				LevyConstants.EnvKillerHazard => LevyUtil.T("Roster.KillerHazard"),
 				_ => LevyUtil.T("Roster.KillerUnknown"),
 			};
 		}
@@ -1193,11 +1194,14 @@ namespace Levy.Common.Systems
 			if (rec.Reserve) return false; // a soldier in reserve takes no orders (and must not be left Following: that would hold a formation slot open)
 			body = BodyOf(rec);
 			bool near = body != null && LevyUtil.WithinTiles(body.NPC.Center, commander.Center, LevyConstants.OrderRadius);
-			bool picked = atBarracks || near || body == null; // a soldier on the books with no live body (waiting to respawn, under the render cap) still takes the order, or he would walk out Following
+			bool picked = OrderReaches(atBarracks, near, body == null, global::Levy.Content.Items.CommandRadio.Has(commander)); // a Command Radio in the commander's pack reaches every levy in the world, whatever the packet said (the server reads the pack, not the client's claim); a soldier on the books with no live body (waiting to respawn, under the render cap) still takes the order, or he would walk out Following
 			if (!picked && !MutinySystem.IsMutinous(rec)) _farOrders++; // out of earshot: said so after the order, never silent
 			if (picked && MutinySystem.IsMutinous(rec)) { _refusedOrders++; body?.MutinyRefuse(); return false; } // Wage Mutiny: no orders until paid
 			return picked;
 		}
+
+		/// <summary>Whether an order reaches one levy: from a barracks, within earshot, with no live body to ask (the record takes it), or with a Command Radio in the commander's pack (every levy in the world).</summary>
+		internal static bool OrderReaches(bool atBarracks, bool inEarshot, bool noBody, bool commanderHasRadio) => atBarracks || inEarshot || noBody || commanderHasRadio;
 
 		/// <summary>Soldiers that refused the order being issued (Wage Mutiny); reset at the start of each order, reported once at its end.</summary>
 		private int _refusedOrders, _farOrders;
@@ -1350,7 +1354,7 @@ namespace Levy.Common.Systems
 		{
 			if (LevyUtil.IsClient || commander == null) return;
 			if (RallyCooldown > 0) { SendToPlayer(commander, LevyUtil.T("Roster.RallyCooldown", (RallyCooldown + 59) / 60)); return; }
-			FearSystem.Rally(commander.Center, LevyConstants.RallyRadius);
+			FearSystem.Rally(commander.Center, global::Levy.Content.Items.CommandRadio.Has(commander) ? LevyConstants.RadioRallyRadius : LevyConstants.RallyRadius);
 			RallyCooldown = LevyConstants.RallyCooldownTicks;
 			LevyUtil.Chat(LevyUtil.T("Chat.Rallied"));
 		}

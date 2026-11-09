@@ -14,6 +14,17 @@ namespace Levy.Common
 		/// <summary>Fear changes of this size trigger a network refresh of the body so clients see the meter.</summary>
 		public const float FearNetStep = 10f;
 
+		// ---------- Event fear (FearEventSystem): a jolt to every levy when a world event begins or a boss arrives; levies of a Spectator are skipped ----------
+		/// <summary>The world is scanned for a new event this often (ticks).</summary>
+		public const int EventFearScanTicks = 10;
+		/// <summary>An event never lifts the meter above this (the Shaken threshold is 50): it unnerves the army, and a fight on top of it breaks it.</summary>
+		public const float EventFearCap = 45f;
+		/// <summary>Fear gained when each event begins (before the levy's own temperament and the config multiplier).</summary>
+		public const float EventFearBloodMoon = 25f, EventFearEclipse = 35f, EventFearPumpkinMoon = 35f, EventFearFrostMoon = 35f, EventFearOldOnesArmy = 30f, EventFearLunarEvent = 40f;
+		public const float EventFearGoblins = 20f, EventFearFrostLegion = 25f, EventFearPirates = 25f, EventFearMartians = 40f;
+		/// <summary>Fear gained when a boss appears anywhere in the world.</summary>
+		public const float EventFearBossArrival = 20f;
+
 		// ---------- Fighting retreat (Routed) ----------
 		/// <summary>Hostiles within this many tiles (hitbox distance) count as threats: ranged standoff checks them, a routed soldier runs from them. With none about, a routed soldier walks to its anchor.</summary>
 		public const int ThreatScanTiles = 60;

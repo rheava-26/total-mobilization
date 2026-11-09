@@ -512,6 +512,7 @@ namespace Levy.Content.NPCs
 				int sdir = NPC.direction == 0 ? 1 : NPC.direction;
 				SpriteEffects fx = sdir == 1 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 				Color c = Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor);
+				if (global::Levy.Common.Vanity.LensDraw.Active) c = global::Levy.Common.Vanity.LensDraw.Fade(c); // Spectral Lens
 				if (k.Flying)
 				{
 					// A flier hangs in the air: the sprite is centred on the hitbox and leans into its motion (every machine derives the lean from the streamed velocity).

@@ -185,6 +185,7 @@ namespace Levy.Content.NPCs
 
 		partial void Brain_OnOrder(SoldierOrder order)
 		{
+			Sit_Stop(); // an order from the commander puts a seated levy on its feet
 			TargetIndex = -1;
 			_acquireNextTick = 0; // a new order from the commander is acted on at the next think, not after the idle-scan pacing
 			HasMoveGoal = false; WantsToFallThrough = false;
@@ -237,6 +238,7 @@ namespace Levy.Content.NPCs
 			HangWatch.Brain(NPC.whoAmI, 2); // diagnostic breadcrumbs (see HangWatch): which soldier's brain is where
 			ScanNpcs(out int fleeIdx, out float nearestHostileTiles);
 			HangWatch.Brain(NPC.whoAmI, 3);
+			Sit_Guard(now, fleeIdx, nearestHostileTiles); // a seated levy stands for a fight, a threat, a talk or an order (SoldierNPC.Sit.cs)
 
 			switch (State)
 			{
@@ -266,6 +268,7 @@ namespace Levy.Content.NPCs
 						WhyB = CanFight(now) ? Why.BNoTarget : Why.BCantFight;
 						if (TryResupply(now)) WhyB = Why.BResupply;
 						else if (ThinkUnarmed(now)) WhyB = Why.BUnarmed;
+						else if (Sit_Think(now, nearestHostileTiles)) { } // calm and idle: sit on a seat nearby and chat
 						else ThinkOrder(now, nearestHostileTiles);
 					}
 					break;
@@ -2593,6 +2596,7 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private void ThinkSearch(int now)
 		{
+			if (SearchCatchUp(now)) return; // Search & Destroy only: far from the commander and unseen, hop to them (SoldierNPC.SearchCatchUp.cs)
 			if (!CanFight(now)) { ClearGoal(); return; } // holding fire / nothing to shoot with: stand here rather than roam
 			Vector2 anchor = RoamAnchor();
 			bool free = FreeReining;

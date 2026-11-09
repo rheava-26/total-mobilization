@@ -42,7 +42,7 @@ namespace Levy.Common.Targeting
 		/// COST: one pass over the NPC slots. The range cut runs FIRST (a few float ops) so the never-target test and the attacker lookup are only paid for the handful of slots that are
 		/// actually in reach; the line-of-sight test (the expensive one) only for a candidate that would beat the best so far. Callers pace how often they scan at all (see the brain's acquisition interval).
 		/// </summary>
-		public static int PickTarget(SoldierNPC s, float rangeTiles, bool useFocus = true, int excludeIdx = -1, bool bossesOnly = false, bool preferNearest = false, ReadOnlySpan<int> alsoExclude = default)
+		public static int PickTarget(SoldierNPC s, float rangeTiles, bool useFocus = true, int excludeIdx = -1, bool bossesOnly = false, bool preferNearest = false, ReadOnlySpan<int> alsoExclude = default, bool noLos = false)
 		{
 			if (s == null || s.NPC == null || !s.NPC.active) return -1;
 			if (useFocus) { int focus = FocusTargetFor(s, rangeTiles); if (focus >= 0) return focus; }
@@ -52,6 +52,7 @@ namespace Levy.Common.Targeting
 			int self = s.NPC.whoAmI;
 			int best = -1; float bestDistSq = float.MaxValue; bool bestAttacking = false;
 			bool auto = Potions.AutonomySystem.IsAutonomous(s); int bestTier = -1; // Autonomous levies rank the most dangerous enemy in reach first
+			bool needLos = !noLos && !(Weapons.CombatFix.On(Weapons.CombatFix.Through) && s.ShotsPassTiles); // a shot that flies through tiles needs no line of sight: the pick may be behind a wall
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC npc = Main.npc[i];
@@ -68,7 +69,7 @@ namespace Levy.Common.Targeting
 					if (bestAttacking && !attacking) continue;                 // a priority-1 target already beats every priority-2 one
 					if (attacking == bestAttacking && distSq >= bestDistSq) continue;
 				}
-				if (!Collision.CanHitLine(from, 1, 1, npc.Center, 1, 1)) continue; // LOS only for candidates that would win (it is the expensive check)
+				if (needLos && !Collision.CanHitLine(from, 1, 1, npc.Center, 1, 1)) continue; // LOS only for candidates that would win (it is the expensive check)
 				best = i; bestDistSq = distSq; bestAttacking = attacking; bestTier = tier;
 			}
 			return best;

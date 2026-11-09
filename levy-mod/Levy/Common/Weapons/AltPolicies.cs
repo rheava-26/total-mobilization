@@ -736,6 +736,8 @@ namespace Levy.Common.Weapons
 	public class SteerToTargetProjectile : GlobalProjectile
 	{
 		private static bool _on; private static Vector2 _screen; private static int _mx, _my; private static object _cal; private static Vector2 _delta; private static float _rot;
+		/// <summary>Lab counter: ticks a cursor-reading soldier shot ran with no target (before the fix it read the commander's cursor on every one of them).</summary>
+		internal static int SteerNoTarget;
 
 		public override bool PreAI(Projectile p)
 		{
@@ -747,8 +749,13 @@ namespace Levy.Common.Weapons
 			// Any modded soldier shot whose own AI reads the owner's cursor (Calamity's FlareBolt, charge bolts, vortexes...) gets the cursor on the soldier's target too: without it the shot flies at the commander's last cursor spot.
 			if (!rowSteer && !(p.ModProjectile != null && !ModShotKinds.Off && p.owner < Main.maxPlayers && OwnerLockProbe.ReadsCursor(p.type))) return true;
 			int ti = s.TargetIndex;
-			if (ti < 0 || ti >= Main.maxNPCs || !Main.npc[ti].active) return true;
-			Vector2 at = Main.npc[ti].Center;
+			Vector2 at;
+			if (CombatFix.On(CombatFix.Cursor)) at = s.AimCursor(); // no target this tick: the last point he fought at, never the commander's cursor
+			else
+			{
+				if (ti < 0 || ti >= Main.maxNPCs || !Main.npc[ti].active) { SteerNoTarget++; return true; }
+				at = Main.npc[ti].Center;
+			}
 			_on = true;
 			_screen = Main.screenPosition; _mx = Main.mouseX; _my = Main.mouseY;
 			Main.screenPosition = Vector2.Zero; Main.mouseX = (int)at.X; Main.mouseY = (int)at.Y;

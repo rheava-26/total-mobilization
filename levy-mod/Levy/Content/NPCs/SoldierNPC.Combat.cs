@@ -301,7 +301,6 @@ namespace Levy.Content.NPCs
 		/// <summary>The projectile the weapon in hand would fire passes through tiles (no line-of-sight check needed).</summary>
 		private bool ShotIgnoresTiles()
 		{
-			if (Weapon.IsHeld) return false; // the holder itself ignores tiles, but the arrows / beam it fires do not
 			int projType = 0;
 			if (Weapon.UsesAmmo)
 			{
@@ -310,9 +309,20 @@ namespace Levy.Content.NPCs
 				else if (pouch != null && !pouch.IsAir) projType = pouch.shoot;
 			}
 			if (projType <= 0) projType = Weapon.BeamProjType > 0 ? Weapon.BeamProjType : Weapon.Shoot;
+			Item shotItem = WeaponUse.HeldItem(this);
+			if (CombatFix.On(CombatFix.Through))
+			{
+				var heldPouch = Record.Gear.Ammo;
+				int ammoShot = Weapon.IsHeld && shotItem != null && !shotItem.IsAir && shotItem.useAmmo > 0 && heldPouch != null && !heldPouch.IsAir ? heldPouch.shoot : 0;
+				return ShotTiles.Passes(shotItem, projType, Weapon.IsHeld, ammoShot);
+			}
+			if (Weapon.IsHeld) return false; // the holder itself ignores tiles, but the arrows / beam it fires do not
 			var sample = WeaponClassifier.ProjectileSample(projType);
 			return sample != null && !sample.tileCollide;
 		}
+
+		/// <summary>The weapon in hand fires something that passes through tiles (so it needs no line of sight to fire and the soldier may pick a target behind a wall). Targeting reads it through here.</summary>
+		internal bool ShotsPassTiles => Weapon != null && Weapon.Supported && ShotIgnoresTiles();
 
 		private void RegenMana()
 		{

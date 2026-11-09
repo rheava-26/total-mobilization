@@ -533,6 +533,48 @@ namespace Levy.Common.Weapons
 			if (Chain) ItemType = binaryReader.ReadInt32();
 		}
 
+		private bool _drawSwapped;
+		/// <summary>
+		/// A chain projectile is owned by slot 255, and Calamity's Arks (and other holdouts) DRAW from <c>Main.player[owner].Center</c>: at draw time that slot holds the null player, so the blade and the parry were
+		/// drawn where it stands (the world's corner), not on the soldier. The soldier's dummy stands in the slot for the length of this one draw (at the soldier, like every AI call), so the sprite is drawn on him.
+		/// Draw-time only; the slot is put back in PostDraw (and by EnsureSlotRestored every frame).
+		/// </summary>
+		public override bool PreDraw(Projectile projectile, ref Color lightColor) => BeginDraw(projectile, false);
+
+		private bool BeginDraw(Projectile projectile, bool lab)
+		{
+			_drawSwapped = false;
+			if (!Chain || (Main.dedServ && !lab) || !CombatFix.On(CombatFix.Draw) || projectile.owner != SoldierNPC.DummySlot || EnemyTargeting.IsSwapped) return true;
+			if (!projectile.TryGetGlobalProjectile(out SoldierProjectileTag tag) || tag.SoldierIndex < 0 || tag.SoldierIndex >= Main.maxNPCs) return true;
+			if (Main.npc[tag.SoldierIndex].ModNPC is not SoldierNPC s || s.Dummy == null || !s.IsAlive) return true;
+			try { EnemyTargeting.Swap(s); _drawSwapped = true; CombatFix.DrawSwaps++; }
+			catch (Exception) { EnemyTargeting.EnsureSlotRestored(); }
+			return true;
+		}
+
+		/// <summary>Lab only (a dedicated server never draws): runs the draw swap on this chain projectile exactly as PreDraw / PostDraw do, and reports where the projectile's owner slot stands during the draw (distance to its soldier in px) and whether the slot was put back.</summary>
+		internal static bool ProbeDraw(Projectile projectile, out float ownerToSoldierPx, out bool restored)
+		{
+			ownerToSoldierPx = -1f; restored = true;
+			if (!projectile.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain) return false;
+			Player before = Main.player[projectile.owner];
+			g.BeginDraw(projectile, true);
+			bool swapped = g._drawSwapped;
+			if (projectile.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex >= 0 && tag.SoldierIndex < Main.maxNPCs)
+				ownerToSoldierPx = Vector2.Distance(Main.player[projectile.owner].Center, Main.npc[tag.SoldierIndex].Center);
+			g.PostDraw(projectile, default);
+			restored = ReferenceEquals(Main.player[projectile.owner], before);
+			return swapped;
+		}
+
+		public override void PostDraw(Projectile projectile, Color lightColor)
+		{
+			if (!_drawSwapped) return;
+			_drawSwapped = false;
+			EnemyTargeting.Unswap();
+			EnemyTargeting.EnsureSlotRestored();
+		}
+
 		/// <summary>An Ark's parry stab connected: remembers whether the enemy has contact damage (the parry's immunity window is only granted against that).</summary>
 		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
 		{

@@ -841,6 +841,8 @@ namespace Levy.Content.NPCs
 			if (!CanFight(now)) { TargetIndex = -1; _engMode = EngageMode.None; _perchActive = false; return false; }
 			float range = AcquireRangeTiles();
 			if (Roaming) range *= FreeReining ? LevyConstants.FreeReinAcquireRangeMult : LevyConstants.SearchAcquireRangeMult; // hunters run enemies down
+			bool seekBoss = MeleeSeeksBoss(now); // a melee levy that has landed nothing for a few seconds looks for the boss across the field
+			if (seekBoss) range = Math.Max(range, MeleeSeekTiles);
 			NPC target = null;
 			int focus = FocusTargetIndex(range, now);
 			// Focus Attack (the commander designated a position): a real hostile inside the focus radius outranks normal target choice;
@@ -871,7 +873,8 @@ namespace Levy.Content.NPCs
 				{
 					HangWatch.Brain(NPC.whoAmI, 4);
 					// every target found unreachable (not just the last) is skipped here, so the next-nearest enemy that CAN be reached is picked instead of going idle
-					int pick = SoldierTargeting.PickTarget(this, range, useFocus: false, preferNearest: FiresBeamMelee, alsoExclude: UnreachableNow(now));
+					int pick = seekBoss ? SoldierTargeting.PickTarget(this, range, useFocus: false, bossesOnly: true, alsoExclude: UnreachableNow(now), noLos: true) : -1; // a boss to walk to needs no clear line from here
+					if (pick < 0) pick = SoldierTargeting.PickTarget(this, range, useFocus: false, preferNearest: FiresBeamMelee, alsoExclude: UnreachableNow(now));
 					if (ValidNpc(pick) && Main.npc[pick].life > 0 && !SoldierTargeting.IsNeverTarget(Main.npc[pick]) && WithinChaseBounds(Main.npc[pick], range))
 					{
 						TargetIndex = pick; target = Main.npc[pick];
@@ -1764,7 +1767,7 @@ namespace Levy.Content.NPCs
 			// Caution first: anything we will not charge (boss / lethal contact) that is inside the caution distance is stepped away from,
 			// exactly like the ranged standoff; a target of that kind is never approached, only watched from a distance.
 			float cautionNow = KeepAwayFor(_dangerIdx, LevyConstants.MeleeCautionTiles) + (_engMode == EngageMode.Retreat ? LevyConstants.StandoffHysteresisTiles : 0f);
-			if (_dangerIdx >= 0 && ValidNpc(_dangerIdx) && _dangerTiles < cautionNow)
+			if (_dangerIdx >= 0 && ValidNpc(_dangerIdx) && _dangerTiles < cautionNow && !(MeleeCommitted && _dangerIdx == target.whoAmI))
 			{
 				float away = AwayDir(Main.npc[_dangerIdx].Center);
 				Vector2 step = new Vector2(NPC.Center.X + away * LevyConstants.KiteStepAwayTiles * LevyConstants.TilePx, NPC.Center.Y);
@@ -1843,7 +1846,7 @@ namespace Levy.Content.NPCs
 			=> ValidNpc(idx) && IsDisguisedMimicNpc(Main.npc[idx]) ? Math.Max(baseTiles, LevyConstants.MimicKeepAwayTiles) : baseTiles;
 
 		/// <summary>A melee soldier will not close on this target.</summary>
-		private bool MeleeAvoids(NPC target) => target != null && IsMeleeLethal(target);
+		private bool MeleeAvoids(NPC target) => target != null && IsMeleeLethal(target) && !MeleeStalled(target);
 
 		/// <summary>The nearest hostile in reach a melee soldier is willing to charge (inside its chase bounds); -1 if none.</summary>
 		private int FindSafeMeleeTarget(float rangeTiles, int now)

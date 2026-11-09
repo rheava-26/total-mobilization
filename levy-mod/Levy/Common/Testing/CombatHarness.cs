@@ -352,6 +352,14 @@ namespace Levy.Common.Testing
 					t.TileFrameX = 0; t.TileFrameY = 0;
 				}
 			}
+			// LEVY_HARNESS_WALL=1: a solid two-tile wall, floor to ceiling, between the soldier (x = _cx) and every target (right of it): only a shot that passes tiles can reach
+			if (Environment.GetEnvironmentVariable("LEVY_HARNESS_WALL") == "1")
+				foreach (int x in new[] { _cx + 2, _cx + 3 })
+					for (int y = ClearTop; y < FloorY; y++)
+					{
+						Tile t = Main.tile[x, y];
+						t.HasTile = true; t.TileType = TileID.GrayBrick; t.BlockType = Terraria.ID.BlockType.Solid;
+					}
 			// side walls so nothing wanders off the range
 			foreach (int x in new[] { x0 - 3, x1 + 3 })
 				for (int y = ClearTop; y < FloorY + 4; y++)

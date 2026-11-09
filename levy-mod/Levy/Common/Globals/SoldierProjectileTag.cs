@@ -131,7 +131,7 @@ namespace Levy.Common.Globals
 			if (SoldierIndex >= 0) Hits++;
 			if (SoldierIndex < 0 || LevyUtil.IsClient) return;
 			SoldierNPC hitter = EnemyTargeting.LiveBody(SoldierIndex);
-			if (hitter != null) hitter.MinionHits++;
+			if (hitter != null) { hitter.MinionHits++; hitter.ProjHitTick = (int)Main.GameUpdateCount; }
 			hitter?.OnProjectileHit(projectile, target, damageDone);
 		}
 

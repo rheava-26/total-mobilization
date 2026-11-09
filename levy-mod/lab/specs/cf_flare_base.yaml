@@ -1,0 +1,13 @@
+# combatfix: flare weapons, Calamity SP emulation, probe lines FIXPROBE-* in server.log.gz
+name: cf_flare_base
+boss: skel
+gear: postskel.best
+levies: 6
+seeds: 1
+cap: 60
+env: {LEVY_FIXPROBE: 1}
+cells:
+  - {name: flarebolt, cw: CalamityMod/FlareBolt}
+  - {name: sanguine, cw: CalamityMod/SanguineFlare}
+  - {name: firestorm, cw: CalamityMod/FirestormCannon}
+  - {name: frostyflare, cw: CalamityMod/FrostyFlare}

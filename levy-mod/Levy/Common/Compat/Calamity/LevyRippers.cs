@@ -32,7 +32,7 @@ namespace Levy.Common.Compat.Calamity
 		public const int RogueHoldTicks = 10 * 60;
 		/// <summary>The six permanent Rage / Adrenaline upgrades (Mushroom Plasma Root, Infernal Blood, Red Lightning Container, Electrolyte Gel Pack, Starlight Fuel Cell, Ectoheart).</summary>
 		private static readonly string[] BoosterNames = { "rageBoostOne", "rageBoostTwo", "rageBoostThree", "adrenalineBoostOne", "adrenalineBoostTwo", "adrenalineBoostThree" };
-		private static FieldInfo[] _boosters; private static FieldInfo _stealth, _stealthMax, _draedon, _rageSnd, _adrSnd, _nanoSnd; private static MethodInfo _strikeAvail;
+		private static FieldInfo[] _boosters; private static FieldInfo _genStand, _genMove; private static FieldInfo _stealth, _stealthMax, _draedon, _rageSnd, _adrSnd, _nanoSnd; private static MethodInfo _strikeAvail;
 
 		/// <summary>A boss must be alive within this many pixels of a levy for it to switch a full bar on.</summary>
 		public const float ActivateRangePx = 70f * 16f;
@@ -70,7 +70,7 @@ namespace Levy.Common.Compat.Calamity
 				_rageEnabled = _cpT.GetProperty("RageEnabled", I); _adrEnabled = _cpT.GetProperty("AdrenalineEnabled", I); _shielding = _cpT.GetProperty("TotalEnergyShielding", I);
 				_boosters = new FieldInfo[BoosterNames.Length];
 				for (int i = 0; i < BoosterNames.Length; i++) _boosters[i] = _cpT.GetField(BoosterNames[i], I);
-				_stealth = _cpT.GetField("rogueStealth", I); _stealthMax = _cpT.GetField("rogueStealthMax", I); _draedon = _cpT.GetField("draedonsHeart", I);
+				_stealth = _cpT.GetField("rogueStealth", I); _stealthMax = _cpT.GetField("rogueStealthMax", I); _draedon = _cpT.GetField("draedonsHeart", I); _genStand = _cpT.GetField("stealthGenStandstill", I); _genMove = _cpT.GetField("stealthGenMoving", I);
 				_strikeAvail = _cpT.GetMethod("StealthStrikeAvailable", I, null, Type.EmptyTypes, null);
 				_rageSnd = _cpT.GetField("RageActivationSound", S); _adrSnd = _cpT.GetField("AdrenalineActivationSound", S); _nanoSnd = _cpT.GetField("NanomachinesActivationSound", S);
 				_updateRippers = _cpT.GetMethod("UpdateRippers", I, null, Type.EmptyTypes, null);
@@ -172,6 +172,18 @@ namespace Levy.Common.Compat.Calamity
 		/// <summary>A rogue (Calamity gave the dummy a stealth bar): max stealth above zero.</summary>
 		public static bool IsRogue(object cp) { try { return cp != null && _stealthMax != null && (float)_stealthMax.GetValue(cp) > 0f; } catch (Exception) { return false; } }
 		public static float Stealth(object cp) { try { return _stealth == null ? 0f : (float)_stealth.GetValue(cp); } catch (Exception) { return 0f; } }
+		public static float StealthMax(object cp) { try { return _stealthMax == null ? 0f : (float)_stealthMax.GetValue(cp); } catch (Exception) { return 0f; } }
+		/// <summary>Calamity's stealth regeneration speed for the player's gear: 1 fills the bar in two seconds standing still; moving it is halved (BalancingConstants.MovingStealthGenRatio) before the move multiplier.</summary>
+		public static float StealthGen(object cp, bool moving)
+		{
+			try
+			{
+				FieldInfo f = moving ? _genMove : _genStand;
+				float g = f == null ? 1f : (float)f.GetValue(cp);
+				return Math.Max(0.05f, moving ? g * 0.5f : g);
+			}
+			catch (Exception) { return moving ? 0.5f : 1f; }
+		}
 		/// <summary>Calamity's own test: the bar holds enough for the next throw to be a stealth strike.</summary>
 		public static bool StealthStrikeReady(object cp) { try { return _strikeAvail != null && (bool)_strikeAvail.Invoke(cp, null); } catch (Exception) { return false; } }
 

@@ -1,0 +1,17 @@
+# combatfix item 1: weapons whose projectiles read the owner's cursor. Cursor puppet off (LEVY_CF_OFF=1, the old behaviour: only the PreAI steer) vs on. steerNoTarget = ticks a cursor-reading shot ran with no target and read the commander's cursor; cursorFallbacks = the same ticks after the fix (held point instead).
+name: cf_cursor
+boss: eye
+gear: postskel.best
+mode: exp
+levies: 8
+seeds: 3
+cap: 60
+bhp: 4
+env: {LEVY_FIXPROBE: 1}
+cells:
+  - {name: flarebolt_on, cw: CalamityMod/FlareBolt}
+  - {name: flarebolt_off, cw: CalamityMod/FlareBolt, env: {LEVY_CF_OFF: 1}}
+  - {name: sanguine_on, cw: CalamityMod/SanguineFlare}
+  - {name: sanguine_off, cw: CalamityMod/SanguineFlare, env: {LEVY_CF_OFF: 1}}
+  - {name: frigid_on, cw: CalamityMod/FrigidflashBolt}
+  - {name: frigid_off, cw: CalamityMod/FrigidflashBolt, env: {LEVY_CF_OFF: 1}}

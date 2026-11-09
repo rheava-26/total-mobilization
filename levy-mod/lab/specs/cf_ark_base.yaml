@@ -1,0 +1,17 @@
+# combatfix item 2: where is an Ark drawn and where do its projectiles start? Commander far away (cmd far). FIXPROBE-SHOT: dSoldMean = distance from the levy at the projectile's first tick (Ark shots all start on the levy).
+# FIXPROBE-CURSOR drawProbes / atSoldier: every live chain projectile (the swung blade, the parry) run through the draw swap as the draw does it; atSoldier = the projectile's owner slot stood ON the soldier for the draw.
+# Draw swap off (LEVY_CF_OFF=2, the old behaviour) leaves the slot holding the null player, which Calamity's Arks draw from.
+name: cf_ark_base
+boss: skel
+gear: postskel.best
+levies: 4
+seeds: 1
+cap: 90
+cmd: far
+env: {LEVY_FIXPROBE: 1, LEVY_ARK_STATS: 1}
+cells:
+  - {name: fractured, cw: CalamityMod/FracturedArk}
+  - {name: fractured_drawoff, cw: CalamityMod/FracturedArk, env: {LEVY_CF_OFF: 2}}
+  - {name: true_ark, cw: CalamityMod/TrueArkoftheAncients}
+  - {name: elements, cw: CalamityMod/ArkoftheElements}
+  - {name: cosmos, cw: CalamityMod/ArkoftheCosmos}

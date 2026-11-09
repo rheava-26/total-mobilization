@@ -1,0 +1,14 @@
+# combatfix item 5: 20 levies all carrying the Firestorm Cannon (its flares linger five seconds). Live projectile count (soldierMax = most soldier shots alive at once, the board has 1000 slots) and damage, budget off (LEVY_CF_OFF=16, the old behaviour) vs on.
+name: cf_flood
+boss: eye
+gear: postskel.best
+mode: exp
+levies: 20
+seeds: 3
+cap: 60
+bhp: 10
+cw: CalamityMod/FirestormCannon
+env: {LEVY_FIXPROBE: 1}
+cells:
+  - {name: budget_off, env: {LEVY_CF_OFF: 16}}
+  - {name: budget_on}

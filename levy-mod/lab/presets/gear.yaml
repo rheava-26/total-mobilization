@@ -28,6 +28,8 @@ sets:    # armor sets; {c} = Ranged | Magic | Melee | Summon by class
   pall_r:    [Palladium Mask, Palladium Breastplate, Palladium Leggings]
   pall_e:    [Palladium Helmet, Palladium Breastplate, Palladium Leggings]
   cobalt_m:  [Cobalt Hat, Cobalt Breastplate, Cobalt Leggings]
+  wulfrum:   [CalamityMod/WulfrumHat, CalamityMod/WulfrumJacket, CalamityMod/WulfrumOveralls]   # Calamity rogue armor: gives the wearer a stealth bar
+  sulph:     [CalamityMod/SulphurousHelmet, CalamityMod/SulphurousBreastplate, CalamityMod/SulphurousLeggings]
 
 tiers:
   preevil:  {idx: 0, levies: 13, stations: preevil,  desc: "before the Eater of Worlds / Brain: King Slime, Eye, Desert Scourge, Crabulon beaten"}
@@ -121,6 +123,12 @@ qualities:
 
 # Explicit presets (data only): `extends` another preset and override any quality field, or name a legacy C# token roll.
 presets:
+  posteow.rogue:
+    extends: posteow.best
+    desc: "an all-rogue army (the E slot): Calamity rogue armor (a stealth bar) and rogue weapons, post-Eater of Worlds"
+    mix: {R: 0, M: 0, E: 1.0, S: 0}
+    weapons: {E: {0: ["CalamityMod/WulfrumKnife:-", "CalamityMod/Mycoroot:-", "CalamityMod/UrchinStinger:-"], 1: ["CalamityMod/WulfrumKnife:-", "CalamityMod/Mycoroot:-"]}}
+    armor: {E: {0: [wulfrum], 1: [wulfrum, sulph]}}
   postskel.best_nomob:
     extends: postskel.best
     desc: "post-Skeletron best gear without Cloud in a Bottle or wings (3 accessory slots, no mobility pieces)"

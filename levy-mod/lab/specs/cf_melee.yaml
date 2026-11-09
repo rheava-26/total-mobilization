@@ -1,0 +1,16 @@
+# combatfix item 4: an all-melee army (every levy carries Excalibur, a plain blade) against bosses. Charge off (LEVY_CF_OFF=8, the old behaviour) vs on. FIXPROBE-MELEE: share of melee samples with no hit landed for 4 s, share holding off the boss, mean distance to the boss.
+name: cf_melee
+gear: postskel.best
+mode: exp
+levies: 10
+seeds: 3
+cap: 120
+cw: Excalibur
+env: {LEVY_FIXPROBE: 1}
+cells:
+  - {name: eye_on, boss: eye}
+  - {name: eye_off, boss: eye, env: {LEVY_CF_OFF: 8}}
+  - {name: qb_on, boss: qb}
+  - {name: qb_off, boss: qb, env: {LEVY_CF_OFF: 8}}
+  - {name: skel_on, boss: skel}
+  - {name: skel_off, boss: skel, env: {LEVY_CF_OFF: 8}}

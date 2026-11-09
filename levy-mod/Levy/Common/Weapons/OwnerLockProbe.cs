@@ -89,11 +89,9 @@ namespace Levy.Common.Weapons
 						for (Type t = mod.GetType(); t != null && t != typeof(ModProjectile) && t != typeof(object); t = t.BaseType)
 						{
 							const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-							foreach (string hook in new[] { "PreAI", "AI", "PostAI" })
-							{
-								MethodInfo m = t.GetMethod(hook, flags, null, Type.EmptyTypes, null);
-								if (m != null) Scan(m, 0, visited, found);
-							}
+							foreach (MethodInfo m in t.GetMethods(flags))
+								if (m.Name == "PreAI" || m.Name == "AI" || m.Name == "PostAI" || m.Name == "HoldoutAI" || m.Name == "OnKill" || m.Name == "PreKill" || m.Name == "OnSpawn" || m.Name == "OnHitNPC" || m.Name == "ModifyHitNPC")
+									Scan(m, 0, visited, found);
 						}
 					}
 					finally { _sink = null; }
@@ -172,6 +170,56 @@ namespace Levy.Common.Weapons
 			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: owner-button probe failed for projectile {projType}: {e.Message}"); }
 			_channelCache[projType] = result;
 			return result;
+		}
+
+		private static readonly Dictionary<int, bool> _tileCache = new();
+		/// <summary>True when the projectile's own modded AI turns tile collision ON (<c>tileCollide = true</c>): its SetDefaults value is not the whole story (Calamity's Flare Bolt starts tile-free and collides once launched).</summary>
+		public static bool SetsTileCollide(int projType)
+		{
+			if (_tileCache.TryGetValue(projType, out bool cached)) return cached;
+			bool result = false;
+			try
+			{
+				ModProjectile mod = WeaponClassifier.ProjectileSample(projType)?.ModProjectile;
+				if (mod != null)
+				{
+					EnsureReflection();
+					var visited = new HashSet<MethodBase>(); var found = new HashSet<FieldInfo>();
+					for (Type t = mod.GetType(); t != null && t != typeof(ModProjectile) && t != typeof(object); t = t.BaseType)
+					{
+						const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+						foreach (MethodInfo m in t.GetMethods(flags))
+							if (m.Name == "PreAI" || m.Name == "AI" || m.Name == "PostAI" || m.Name == "OnSpawn") Scan(m, 0, visited, found);
+					}
+					foreach (FieldInfo f in found) if (f.DeclaringType == typeof(Projectile) && f.Name == "tileCollide") result = true;
+				}
+			}
+			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: tile-collide probe failed for projectile {projType}: {e.Message}"); }
+			_tileCache[projType] = result;
+			return result;
+		}
+
+		private static readonly Dictionary<int, List<Type>> _childCache = new();
+		/// <summary>The modded projectile types this projectile's own AI / hit / kill hooks name (<c>ProjectileType&lt;T&gt;()</c>): what a holdout spawns by itself.</summary>
+		public static List<Type> NamedChildTypes(int projType)
+		{
+			if (_childCache.TryGetValue(projType, out var cached)) return cached;
+			var list = new List<Type>();
+			try
+			{
+				ModProjectile mod = WeaponClassifier.ProjectileSample(projType)?.ModProjectile;
+				if (mod != null)
+				{
+					EnsureReflection();
+					const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+					for (Type t = mod.GetType(); t != null && t != typeof(ModProjectile) && t != typeof(object); t = t.BaseType)
+						foreach (MethodInfo m in t.GetMethods(flags))
+							if (m.Name == "PreAI" || m.Name == "AI" || m.Name == "PostAI" || m.Name == "HoldoutAI" || m.Name == "OnKill" || m.Name == "OnHitNPC" || m.Name == "OnSpawn") ScanProjectileTypes(m, list);
+				}
+			}
+			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: child-shot probe failed for projectile {projType}: {e.Message}"); }
+			_childCache[projType] = list;
+			return list;
 		}
 
 		/// <summary>The modded projectile types a modded item's own code names (<c>ModContent.ProjectileType&lt;T&gt;()</c> inside Shoot / ModifyShootStats / UseItem / HoldItem / CanUseItem), in addition to <c>item.shoot</c>.
@@ -258,12 +306,14 @@ namespace Levy.Common.Weapons
 			Module module = method.Module;
 			Type[] typeArgs = method.DeclaringType != null && method.DeclaringType.IsGenericType ? method.DeclaringType.GetGenericArguments() : null;
 			int i = 0;
+			OpCode prevOp = OpCodes.Nop;
 			while (i < il.Length)
 			{
 				short code = il[i++];
 				if (code == 0xFE && i < il.Length) code = (short)(0xFE00 | il[i++]);
 				if (!_opcodes.TryGetValue(code, out OpCode op)) return;
 				int operandAt = i;
+				OpCode before = prevOp; prevOp = op;
 				switch (op.OperandType)
 				{
 					case OperandType.InlineNone: break;
@@ -284,6 +334,7 @@ namespace Levy.Common.Weapons
 							{
 								FieldInfo fi = module.ResolveField(token, typeArgs, null);
 								if (fi != null && fi.DeclaringType == typeof(Player) && (op == OpCodes.Stfld || op == OpCodes.Ldfld)) AddFieldUse(fi, op == OpCodes.Stfld, found);
+								if (fi != null && fi.DeclaringType == typeof(Projectile) && op == OpCodes.Stfld && fi.Name == "tileCollide" && before == OpCodes.Ldc_I4_1) found.Add(fi); // the AI switches tile collision ON (Calamity's Flare Bolt does at launch)
 								if (fi != null && _sink != null && fi.DeclaringType == typeof(Main)) _sink.Add(fi.Name);
 							}
 							else

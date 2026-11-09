@@ -48,6 +48,8 @@ namespace Levy.Common.Weapons
 			if (profile == null || !profile.Supported) return false;
 			DudTrace.Call(item, profile);
 			NPC seg = Aiming.NearestSegment(target, s.NPC.Center) ?? target;
+			// A rogue lets its stealth bar fill and throws the strike the moment it is full (Calamity empties the bar on every other throw)
+			if (StealthPolicy.Hold(s, item, target)) { s.AttackCooldown = 2; return false; }
 			// Companion per-shot veto (a resource gate, or a role weapon that must not fire at this target). False = hold this tick; retry shortly.
 			if (PreFireGate != null)
 			{

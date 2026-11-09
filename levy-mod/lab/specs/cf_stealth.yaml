@@ -1,0 +1,15 @@
+# combatfix item 6: an all-rogue army (Calamity rogue armor with a stealth bar, rogue weapons), Eater of Worlds. Stealth strikes per rogue levy-minute and damage:
+# patience off (LEVY_STEALTH_WAIT=0, the old behaviour) vs the waits (ticks of fill time worth waiting for; 130 = from empty standing still).
+name: cf_stealth
+boss: eow
+gear: posteow.rogue
+levies: 8
+mode: exp
+seeds: 3
+cap: 120
+bhp: 3
+env: {LEVY_FIXPROBE: 1}
+cells:
+  - {name: wait0, env: {LEVY_STEALTH_WAIT: 0}}
+  - {name: wait130, env: {LEVY_STEALTH_WAIT: 130}}
+  - {name: wait70, env: {LEVY_STEALTH_WAIT: 70}}

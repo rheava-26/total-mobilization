@@ -78,7 +78,9 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>One open swap: what the owner's transform and the Thorium cache were when this call entered.</summary>
-		private struct Frame { public bool Moved; public Player P; public Vector2 Pos, Vel, Old; public int Dir; public object Th; public SoldierNPC PrevCtx; public bool Route; public int Life, LifeMax, SolLife, Allow; public SoldierNPC Body; public float Pool, MyPool; public Player MyP; public SoldierNPC Outer; }
+		private struct Frame { public bool Moved; public Player P; public Vector2 Pos, Vel, Old; public int Dir; public object Th; public SoldierNPC PrevCtx; public bool Route; public int Life, LifeMax, SolLife, Allow; public SoldierNPC Body; public float Pool, MyPool; public Player MyP; public SoldierNPC Outer;
+			/// <summary>The cursor puppet (CombatFix.Cursor): the commander's cursor and Calamity's per-player cursor offset as this pass found them.</summary>
+			public bool Cur; public Vector2 CurScreen, CurDelta; public int CurMx, CurMy; public float CurRot; public object CurCal; }
 
 		private const int MaxFrames = 32;
 		private static readonly Frame[] _stack = new Frame[MaxFrames];
@@ -106,6 +108,16 @@ namespace Levy.Common.Weapons
 			_depth++; if (_depth > MaxDepth) MaxDepth = _depth;
 			Context = body;
 			if (moveTransform) { Swaps++; p.Center = body.NPC.Center; p.oldPosition = p.position; p.velocity = body.NPC.velocity; p.direction = body.NPC.direction == 0 ? 1 : body.NPC.direction; }
+			// the commander's CURSOR is the soldier's target for any hook of a shot whose own code reads a cursor (its AI, its hit and kill hooks): without it the shot reads wherever the commander's mouse is
+			if (CombatFix.On(CombatFix.Cursor) && self.ModProjectile != null && !ModShotKinds.Off && OwnerLockProbe.ReadsCursor(self.type))
+			{
+				Vector2 at = body.AimCursor();
+				f.Cur = true; f.CurScreen = Main.screenPosition; f.CurMx = Main.mouseX; f.CurMy = Main.mouseY;
+				Main.screenPosition = Vector2.Zero; Main.mouseX = (int)at.X; Main.mouseY = (int)at.Y;
+				f.CurCal = AltPolicies.CalamityPlayerOf(p);
+				if (f.CurCal != null) { (f.CurDelta, f.CurRot) = AltPolicies.GetCalAimPublic(f.CurCal); AltPolicies.SetCalAimPublic(f.CurCal, at - p.MountedCenter); }
+				SoldierNPC.CursorPuppets++;
+			}
 			return true;
 		}
 
@@ -115,6 +127,11 @@ namespace Levy.Common.Weapons
 			ref Frame f = ref _stack[--_depth];
 			try
 			{
+				if (f.Cur)
+				{
+					Main.screenPosition = f.CurScreen; Main.mouseX = f.CurMx; Main.mouseY = f.CurMy;
+					if (f.CurCal != null) AltPolicies.SetCalAimPublic(f.CurCal, f.CurDelta, f.CurRot);
+				}
 				if (f.Moved) { f.P.position = f.Pos; f.P.velocity = f.Vel; f.P.oldPosition = f.Old; f.P.direction = f.Dir; Restores++; }
 				if (f.Route) CloseRoute(ref f);
 			}

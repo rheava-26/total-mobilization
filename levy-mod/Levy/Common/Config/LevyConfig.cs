@@ -52,6 +52,7 @@ namespace Levy.Common.Config
 		[Range(4, 200)] [DefaultValue(40)] public int LeviesByEndOfHardmode;
 		[Range(4, 200)] [DefaultValue(60)] public int LeviesByEndOfPostMoonLord;
 		[Range(4, 200)] [DefaultValue(60)] public int MaxLevies;
+		[DefaultValue(true)] public bool CapLeviesByStage;
 		[Range(1, 40)] [DefaultValue(10)] public int MilitiaFieldCap;
 		[Range(5, 100)] [DefaultValue(40)] public int RenderCap;
 		/// <summary>Boss milestones. The boss is a vanilla boss id (KingSlime, EyeOfCthulhu, EaterOrBrain, QueenBee, Skeletron, Deerclops, WallOfFlesh, QueenSlime, Destroyer, Twins,

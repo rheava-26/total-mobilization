@@ -22,6 +22,7 @@ namespace Levy.Common.Officers
 		public override void OnKill(NPC npc)
 		{
 			if (!LevyUtil.IsServerOrSingle) return;
+			var cfg = Progression.LevyProgressionConfig.Get; if (cfg != null && !cfg.TaxCollectorBounty) return;
 			if (!npc.HasBuff(MarkSystem.BuffType)) return;              // only a marked corpse is taxed
 
 			// The nearest commissioned Tax Collector whose avatar is on the field within bounty reach of the kill.

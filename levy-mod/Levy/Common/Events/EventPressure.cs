@@ -25,6 +25,11 @@ namespace Levy.Common.Events
 		/// <summary>An invasion's size multiplier (its reinforcement waves) for an army of <paramref name="cp"/> command points: base plus per-CP, capped. Vanilla is 1.</summary>
 		public static float InvasionSizeMult(int cp) => Math.Min(LevyConstants.InvasionSizeCap, LevyConstants.InvasionSizeBase + LevyConstants.InvasionSizePerCp * Math.Max(0, cp));
 
+		/// <summary>The "Events spawn more with an army" option (Levy: Progression assistance).</summary>
+		public static bool SpawnBoostOn { get { var c = Progression.LevyProgressionConfig.Get; return c == null || c.EventSpawnBoost; } }
+		/// <summary>The "Bigger invasions with an army" option.</summary>
+		public static bool InvasionBoostOn { get { var c = Progression.LevyProgressionConfig.Get; return c == null || c.EventInvasionBoost; } }
+
 		/// <summary>The event-active rule: the militia's own list of events (<see cref="LevyUtil.IsEventActive"/>).</summary>
 		public static bool Active => LevyUtil.IsEventActive();
 
@@ -48,7 +53,7 @@ namespace Levy.Common.Events
 	{
 		public override void EditSpawnRate(Player player, ref int spawnRate, ref int maxSpawns)
 		{
-			if (!LevyUtil.IsServerOrSingle || !EventPressure.Active) return;
+			if (!LevyUtil.IsServerOrSingle || !EventPressure.Active || !EventPressure.SpawnBoostOn) return;
 			float mult = EventPressure.SpawnRateMult(EventPressure.ArmyCp);
 			spawnRate = EventPressure.SpawnRate(spawnRate, mult);
 			maxSpawns = EventPressure.MaxSpawns(maxSpawns, mult);
@@ -67,9 +72,10 @@ namespace Levy.Common.Events
 		public override void PostUpdateInvasions()
 		{
 			if (!LevyUtil.IsServerOrSingle) return;
+			bool boost = EventPressure.InvasionBoostOn;
 			int type = Main.invasionType > 0 && Main.invasionSize > 0 ? Main.invasionType : 0;
 			if (!_primed) { _lastType = type; _primed = true; return; } // an invasion already under way when the world loads keeps its size
-			if (type != 0 && type != _lastType && Main.invasionSizeStart > 0 && Main.invasionSize >= Main.invasionSizeStart)
+			if (boost && type != 0 && type != _lastType && Main.invasionSizeStart > 0 && Main.invasionSize >= Main.invasionSizeStart)
 			{
 				float mult = EventPressure.InvasionSizeMult(EventPressure.ArmyCp);
 				Main.invasionSize = (int)(Main.invasionSize * mult);

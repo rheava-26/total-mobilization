@@ -485,17 +485,22 @@ Mods: {
 
 				LeviesByEndOfPreHardmode: {
 					Label: Levies by the Wall of Flesh
-					Tooltip: Levies you can field once every pre-hardmode boss is beaten. Recommended 12 to 30. Each boss beaten adds its share. Modded bosses count by their Boss Checklist position.
+					Tooltip: Levies you can field once every pre-hardmode boss is beaten, and the most you can field before the Wall of Flesh falls. Recommended 12 to 30. Each boss beaten adds only its own share.
 				}
 
 				LeviesByEndOfHardmode: {
 					Label: Levies by Moon Lord
-					Tooltip: Levies you can field once Moon Lord and every boss before him is beaten. Recommended 28 to 60. The bosses in between are worth points automatically.
+					Tooltip: Levies you can field once Moon Lord and every boss before him is beaten, and the most until Moon Lord falls. Recommended 28 to 60. Each boss beaten adds only its own share.
 				}
 
 				LeviesByEndOfPostMoonLord: {
 					Label: Levies by the end of post-Moon Lord
-					Tooltip: Levies you can field once the final boss is beaten. Recommended 40 to 90. Every boss after Moon Lord adds its share of the last stretch.
+					Tooltip: The most levies you can field after Moon Lord. Recommended 40 to 90. Each boss beaten adds only its own share.
+				}
+
+				CapLeviesByStage: {
+					Label: Cap levies by stage
+					Tooltip: Before the Wall of Flesh falls the levy count stops at the Wall of Flesh number, before Moon Lord falls at the Moon Lord number, and after that at the final number. Off leaves only Maximum levies.
 				}
 
 				MaxLevies: {

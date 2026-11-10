@@ -59,6 +59,33 @@ namespace Levy.Common.Systems
 			return Math.Clamp((int)Math.Floor(levies + 0.5f + 1e-3f), 1, Math.Max(1, max));
 		}
 
+		/// <summary>
+		/// Own-value count: <paramref name="start"/> plus, for every boss actually beaten, that boss's own worth. A vanilla boss is worth its classic weight scaled so the whole tier sums to that tier's span
+		/// (pre-hardmode span x/16, hardmode x/20); any other boss is worth the mean of its tier's vanilla bosses (post-Moon Lord uses the hardmode mean). A boss beaten out of order, or a late boss beaten
+		/// early, is worth only itself: no boss implies another, and no position implies the bosses before it. <paramref name="stageCap"/> (0 = none) is the ceiling of the world's current stage.
+		/// </summary>
+		public static int Own(IEnumerable<TierBoss> bosses, int start, int preTarget, int hmTarget, int postTarget, int stageCap, int max)
+		{
+			var all = bosses as IList<TierBoss> ?? new List<TierBoss>(bosses);
+			float[] wsum = new float[TierCount]; int[] wn = new int[TierCount];
+			foreach (var b in all) if (b.Weight > 0f) { int t = Math.Clamp(b.Tier, 0, TierCount - 1); wsum[t] += b.Weight; wn[t]++; }
+			float t0 = start, t1 = Math.Max(preTarget, t0), t2 = Math.Max(hmTarget, t1), t3 = Math.Max(postTarget, t2);
+			float[] span = { t1 - t0, t2 - t1, t3 - t2 };
+			float[] mean = new float[TierCount]; float[] factor = new float[TierCount];
+			for (int t = 0; t < 2; t++) { mean[t] = wn[t] > 0 ? wsum[t] / wn[t] : 1f; factor[t] = wsum[t] > 0f ? span[t] / wsum[t] : 0f; }
+			mean[2] = mean[1]; factor[2] = factor[1];
+			float v = start;
+			foreach (var b in all)
+			{
+				if (!b.Downed) continue;
+				int t = Math.Clamp(b.Tier, 0, TierCount - 1);
+				v += (b.Weight > 0f ? b.Weight : mean[t]) * factor[t];
+			}
+			int r = (int)Math.Floor(v + 0.5f + 1e-3f);
+			if (stageCap > 0) r = Math.Min(r, Math.Max(stageCap, start));
+			return Math.Clamp(Math.Min(r, Math.Max(1, max)), 1, 65535);
+		}
+
 		/// <summary>Pre-hardmode share from the furthest boss beaten: the vanilla bosses' cumulative weight, read at that boss's progression and interpolated between vanilla bosses.</summary>
 		public static float PositionShare(IList<TierBoss> bosses)
 		{
@@ -162,6 +189,9 @@ namespace Levy.Common.Systems
 			new("LunaticCultist", 1, LevyConstants.CpCultist, () => NPC.downedAncientCultist, NPCID.CultistBoss),
 			new("MoonLord", 1, LevyConstants.CpMoonLord, () => NPC.downedMoonlord, NPCID.MoonLordCore),
 		};
+
+		private static int CpKs() => LevyConstants.CpKingSlime;
+		private static int CpEoc() => LevyConstants.CpEyeOfCthulhu;
 
 		private static bool IsVanillaType(int type)
 		{
@@ -279,7 +309,9 @@ namespace Levy.Common.Systems
 			if (!LevyUtil.IsServerOrSingle) return;
 			LevyConfig cfg = null; try { cfg = LevyConfig.Get; } catch { }
 			int pre = cfg?.LeviesByEndOfPreHardmode ?? 20, hm = cfg?.LeviesByEndOfHardmode ?? 40, post = cfg?.LeviesByEndOfPostMoonLord ?? 60, max = cfg?.MaxLevies ?? 60;
-			int value = LevyTierMath.Compute(BuildBosses(), cfg?.LeviesAtStart ?? LevyConstants.DefaultLeviesAtStart, pre, hm, post, max);
+			int stage = CurrentWorldTier();
+			int stageCap = cfg != null && !cfg.CapLeviesByStage ? 0 : stage == 0 ? pre : stage == 1 ? hm : post;
+			int value = LevyTierMath.Own(BuildBosses(), cfg?.LeviesAtStart ?? LevyConstants.DefaultLeviesAtStart, pre, hm, post, stageCap, max);
 			int mSlots = 0, mLevies = 0;
 			if (cfg?.MilestoneRewards != null) MilestoneMath.Apply(cfg.MilestoneRewards, BossReached, out mSlots, out mLevies);
 			value = Math.Clamp(value + mLevies, 1, 65535); // milestone levies come on top of the maximum
@@ -384,6 +416,33 @@ namespace Levy.Common.Systems
 					var onlyMod = Pos(0, false, true); onlyMod[onlyMod.Count - 5] = new TierBoss(0, 0f, true, 1.6f);
 					if (LevyTierMath.Compute(onlyMod, S, 20, 40, 60, 60) <= S) fails.Add("a modded pre-HM boss beaten alone must add levies");
 					Mod.Logger.Info($"Levy progression start {S}: levies at start/KS/EoC/EoW/QB/Skel/Deer/WoF = {row}");
+				}
+				{
+					// own-value count: each boss is worth only itself
+					int S = 10;
+					List<TierBoss> Van(Func<int, bool> down) { var l = new List<TierBoss>(); for (int i = 0; i < Vanilla.Length; i++) l.Add(new TierBoss(tier[i], w[i], down(i))); return l; }
+					int none = LevyTierMath.Own(Van(i => false), S, 20, 40, 60, 0, 60), allv = LevyTierMath.Own(Van(i => true), S, 20, 40, 60, 0, 60);
+					if (none != S || allv != 40) fails.Add($"own-value: vanilla none/all expected 10/40, got {none}/{allv}");
+					{
+						// the reported case: a modded pre-hardmode boss (Slime God) beaten first, nothing else down, start 10
+						float[] pg = { 1, 2, 3, 4, 5, 6, 7 }; int sgOld, sgBc, sgNew;
+						var oldLearned = new List<TierBoss>(); var oldBc = new List<TierBoss>(); var nu = new List<TierBoss>();
+						for (int i = 0; i < Vanilla.Length; i++) { oldLearned.Add(new TierBoss(tier[i], w[i], false)); oldBc.Add(new TierBoss(tier[i], w[i], false, tier[i] == 0 ? pg[i] : 0f)); nu.Add(new TierBoss(tier[i], w[i], false)); }
+						oldLearned.Add(new TierBoss(0, 0f, true)); oldBc.Add(new TierBoss(0, 0f, true, 6.7f)); nu.Add(new TierBoss(0, 0f, true, 6.7f));
+						sgOld = LevyTierMath.Compute(oldLearned, S, 20, 40, 60, 60); sgBc = LevyTierMath.Compute(oldBc, S, 20, 40, 60, 60); sgNew = LevyTierMath.Own(nu, S, 20, 40, 60, 20, 60);
+						// and a post-Moon Lord boss beaten first with Moon Lord down (learned tier)
+						var oldLate = Van(i => i >= 0 && tier[i] <= 1); oldLate.Add(new TierBoss(2, 0f, true)); var newLate = Van(i => i >= 0 && tier[i] <= 1); newLate.Add(new TierBoss(2, 0f, true));
+						Mod.Logger.Info($"Levy progression Slime God beaten first in pre-hardmode (start {S}, nothing else down): OLD {sgOld} (no Boss Checklist) / {sgBc} (Boss Checklist loaded), NEW {sgNew}. A post-Moon Lord boss beaten after every vanilla boss: OLD {LevyTierMath.Compute(oldLate, S, 20, 40, 60, 60)}, NEW {LevyTierMath.Own(newLate, S, 20, 40, 60, 0, 60)}");
+					}
+					var slimeGod = Van(i => false); slimeGod.Add(new TierBoss(0, 0f, true, 6.7f));
+					int sg = LevyTierMath.Own(slimeGod, S, 20, 40, 60, 20, 60);
+					if (sg < S + 1 || sg > S + 2) fails.Add($"own-value: a modded pre-hardmode boss beaten first should add about one boss (1-2 levies), got {sg - S}");
+					var late = Van(i => false); late.Add(new TierBoss(2, 0f, true));
+					int lt = LevyTierMath.Own(late, S, 20, 40, 60, 0, 60);
+					if (lt > S + 3) fails.Add($"own-value: a post-Moon Lord boss beaten first should add only its own worth, got {lt - S}");
+					var kill2 = Van(i => i == 0 || i == 1);
+					if (LevyTierMath.Own(kill2, S, 20, 40, 60, 0, 60) != 10 + (int)Math.Floor((CpKs() + CpEoc()) * 10f / 16f + 0.5f + 1e-3f)) fails.Add("own-value: King Slime + Eye of Cthulhu expected their own 3/16 of the pre-hardmode span");
+					if (LevyTierMath.Own(Van(i => true), S, 20, 40, 60, 20, 60) != 20) fails.Add("own-value: the stage cap must hold");
 				}
 				Mod.Logger.Info($"Levy progression math: vanilla 4/20/40 ({subsets} subsets match legacy), +17 modded pre-HM all down={modAll} diluted={modSkip}, post-ML none/5known-0down/2of5/all/max50={a}/{e0}/{b}/{c}/{d2}");
 			}

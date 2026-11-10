@@ -9,7 +9,7 @@ namespace Levy.Common.Testing
 		public override void PostUpdateEquips()
 		{
 			if (!CombatHarness.Enabled || (Player.name != "LevyTester" && Player.name != "LevyTester2")) return;
-			Player.statLifeMax2 = 500; Player.statManaMax2 = 200;
+			Player.statLifeMax2 = CombatHarness.HlActive ? CombatHarness.HlBigLife : 500; Player.statManaMax2 = 200;
 		}
 	}
 

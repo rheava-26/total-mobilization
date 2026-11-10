@@ -1,0 +1,13 @@
+# Travel 5, the dodge hold made safe: a hook cast to dodge only hangs on its anchor when the threat field says nothing reaches the anchor spot (first version held anywhere: 7/24 wins and 6.2 levy deaths against 10/24 and 4.2 without).
+# Skeletron, Master+Death, boss life x3, every levy has a Grappling Hook, 24 seeds. base = LEVY_HOOKMORE off; ctl = everything on; nohold = all but the hold (LEVY_HM_HOLD=0).
+name: travel5_skel3
+mods: vanilla
+boss: skel
+gear: postskel.best
+hook: Grappling_Hook
+bhp: 3
+seeds: 24
+cap: 150
+vs:
+  base:   {env: {LEVY_HOOKMORE: 0}}
+  nohold: {env: {LEVY_HM_HOLD: 0}}

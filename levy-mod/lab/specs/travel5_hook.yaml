@@ -1,0 +1,17 @@
+# Travel 5, grapple more and hold: every levy carries a Grappling Hook. Arms: ctl = everything on; base = LEVY_HOOKMORE off (the old triggers, hangs and dodge hook);
+# trig / hang / dodge = only that third of the change on (LEVY_HM_TRIG shorter triggers and the shortcut, LEVY_HM_HANG longer hangs, LEVY_HM_DODGE hook dodge for every body and held while the danger lasts).
+# Vanilla world, Master+Death, boss life x3 so the fights last. Columns hkCasts / hookedSec / hangSec are per fight (all levies); takenProj is projectile damage taken.
+name: travel5_hook
+mods: vanilla
+gear: postskel.best
+hook: Grappling_Hook
+bhp: 3
+seeds: 10
+cap: 150
+grid:
+  boss: [eye, eow, skel]
+vs:
+  base:  {env: {LEVY_HOOKMORE: 0}}
+  trig:  {env: {LEVY_HM_HANG: 0, LEVY_HM_DODGE: 0}}
+  hang:  {env: {LEVY_HM_TRIG: 0, LEVY_HM_DODGE: 0}}
+  dodge: {env: {LEVY_HM_TRIG: 0, LEVY_HM_HANG: 0}}

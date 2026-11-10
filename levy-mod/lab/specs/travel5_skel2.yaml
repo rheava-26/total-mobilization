@@ -1,0 +1,15 @@
+# Travel 5, which part of "grapple more" costs lives against Skeletron? 24 seeds, Master+Death, boss life x3, every levy has a Grappling Hook.
+# base = LEVY_HOOKMORE off; ctl = everything on; nohold = all but the dodge hold (LEVY_HM_HOLD=0); trig = only the shorter triggers; dodge = only the dodge hook for every body (no hold, no triggers, no longer hangs).
+name: travel5_skel2
+mods: vanilla
+boss: skel
+gear: postskel.best
+hook: Grappling_Hook
+bhp: 3
+seeds: 24
+cap: 150
+vs:
+  base:   {env: {LEVY_HOOKMORE: 0}}
+  nohold: {env: {LEVY_HM_HOLD: 0}}
+  trig:   {env: {LEVY_HM_HOLD: 0, LEVY_HM_DODGE: 0, LEVY_HM_HANG: 0}}
+  dodge:  {env: {LEVY_HM_HOLD: 0, LEVY_HM_TRIG: 0, LEVY_HM_HANG: 0}}

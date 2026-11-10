@@ -41,7 +41,7 @@ namespace Levy.Content.NPCs
 		internal int DodgeDoubleJumps, DodgeDashJumps, DodgeHooks, DodgeNearScans, DodgeBaseHitScans, DodgeNoBetter, DodgeSkippedBusy;
 		private uint _air2Ready;
 		// airborne dodging (AirMode >= 1): the stamp every candidate gets, a kick queued for later, and a wing / rocket thrust under way
-		private bool _dAir; private float _dV0x, _dV0y, _dFloorY, _dSolidFloorY; private uint _airKickAt; private int _airThrustTicks; private float _dodgeAcc;
+		private float _dGlideCap; private bool _dAir; private float _dV0x, _dV0y, _dFloorY, _dSolidFloorY; private uint _airKickAt; private int _airThrustTicks; private float _dodgeAcc;
 		private const float AirThrustVy = 4.5f, AirFastFallVy = 7f; private const int AirThrustTicks = 14, AirScanInterval = 2, AirCooldown = 4;
 		/// <summary>Harness: the dodge layer's internal timers (cooldown, hold, queued hop, walking sidestep ticks left).</summary>
 		internal (int cooldown, int hold, int pend, int stepTicks) DodgeTimers => (_dodgeCooldown, _dodgeHold, _dodgePend, _dodgeTicks);
@@ -107,7 +107,7 @@ namespace Levy.Content.NPCs
 			if (airScan) { DodgeAirScans++; _dV0x = npc.velocity.X; _dV0y = npc.velocity.Y; AirFloors(out _dFloorY, out _dSolidFloorY); }
 			_thrNearChain = false; for (int ci = 0; ci < _thrNear.Count; ci++) if (_thrNear[ci].TrajN > 0) { _thrNearChain = true; break; }
 			var stay = new Maneuver { Kind = 0 };
-			if (airScan) { stay.Air = true; stay.V0x = _dV0x; stay.V0y = _dV0y; stay.FloorY = _dFloorY; }
+			if (airScan) { stay.Air = true; stay.V0x = _dV0x; stay.V0y = _dV0y; stay.FloorY = _dFloorY; _dGlideCap = PredictedGlideCap; stay.VyCap = _dGlideCap; }
 			_wormScan = WormDodgeOn && ThreatField.HasHead(_thrNear);
 			float sp = Math.Max(DodgeSidestepSpeedPx, Math.Min(Abilities.MaxRunSpeed, MobilityMode >= 1 ? 9f : 5.5f));
 			int hopTiles = DodgeHopTiles + (_kitAny ? FlightDodgeHopBonusTiles : 0);
@@ -193,7 +193,8 @@ namespace Levy.Content.NPCs
 					_airThrustTicks = Math.Max(1, best.HookDur); DodgeAirKicks++;
 					if (best.Dur > 0) Begin(best.Vx, best.Dur, RunAccel);
 					break;
-				case 13: DodgeAirFalls++; _fallThroughTicks = 12; WantsToFallThrough = true; if (npc.velocity.Y < AirFastFallVy) npc.velocity.Y = AirFastFallVy; break;
+				case 13: DodgeAirFalls++; _fallThroughTicks = 12; WantsToFallThrough = true; if (npc.velocity.Y < AirFastFallVy) npc.velocity.Y = AirFastFallVy; WingDodgeBegin(false); break;
+				case 15: DodgeAirKicks += 0; WingDodgeBegin(true); break;
 				case 2: if (best.Delay > 0) { _dodgePend = best.Delay; _dodgePendTiles = hopTiles; } else { DodgeJumps++; TryJump(hopTiles); } break;
 				case 6: if (best.Delay > 0) { _dodgePend = best.Delay; _dodgePendTiles = Abilities.JumpTiles; } else { DodgeJumps++; TryJump(Abilities.JumpTiles); } break;
 				case 3: DodgeJumps++; TryJump(hopTiles); Begin(best.Vx, best.Dur); break;
@@ -208,8 +209,16 @@ namespace Levy.Content.NPCs
 				case 8: DodgeDashJumps++; DodgeDashes++; DashIFrames(); _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); TryJump(Abilities.JumpTiles); Begin(best.Vx, best.Dur); break;
 				case 10: DodgeDashes++; DodgeDrops++; DashIFrames(); _dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1); _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; Begin(best.Vx, best.Dur); break;
 				case 9:
-					DodgeHooks++; if (WormBodyHigh && _thrNearChain) Levy.Instance?.Logger.Info("WORMHOOK " + SoldierName); if (airScan) DodgeAirManeuvers += 0;
+					DodgeHooks++; HookHoldUntil = 0; if (WormBodyHigh && _thrNearChain) Levy.Instance?.Logger.Info("WORMHOOK " + SoldierName); if (airScan) DodgeAirManeuvers += 0;
 					if (SoldierHooks.TakePlanBudget()) { try { HookStart(HookReason.Rescue, best.HookTarget + new Vector2(0f, NPC.height * 0.5f)); } catch (Exception) { try { HookReset(true); } catch (Exception) { } } }
+					// HOLD: hang on the anchor while the danger lasts, but only when the anchor itself is a spot the threat field says nothing reaches (a hang is not the landing the dodge was judged on)
+					if (HmHold && _hkPhase == HookPhase.InFlight && _hkPlan != null && _hkPlan.Anchors.Count > 0)
+					{
+						Vector2 anc = _hkPlan.Anchors[0]; bool calm = true;
+						for (int ox = -1; ox <= 1 && calm; ox++)
+							if (ThreatField.Hits(_thrNear, anc + new Vector2(ox * 24f, 20f), npc.width, npc.height, new Maneuver { Kind = 0 }, g, horizon, out _, out _, 0f) > 0) calm = false;
+						if (calm) HookHoldUntil = Main.GameUpdateCount + (uint)Math.Clamp(bestLast + 14, 40, 150);
+					}
 					break;
 			}
 			// hold the safe spot until the danger that sent us here has gone by
@@ -260,7 +269,7 @@ namespace Levy.Content.NPCs
 					if (drop) Consider(new Maneuver { Kind = 10, Vx = dir * DashSpeedPx, Dur = DashBurstTicks, Drop = true, Penalty = 10f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 				}
 			}
-			if (HookUsable && !Abilities.HasWings && _hkPhase == HookPhase.Idle && Main.GameUpdateCount >= _hkNextAllowed)
+			if (HookUsable && (!Abilities.HasWings || HmDodge) && _hkPhase == HookPhase.Idle && Main.GameUpdateCount >= _hkNextAllowed)
 			{
 				HookInfo info = HookInfo.Of(Record.Gear.Hook);
 				Point feet = TileNav.FeetTile(npc.Bottom);
@@ -277,7 +286,7 @@ namespace Levy.Content.NPCs
 						Vector2 tgtBottom = TileNav.BottomCentre(x, y);
 						Vector2 tgt = tgtBottom - new Vector2(0f, npc.height * 0.5f);
 						float dist = Vector2.Distance(c0, tgt);
-						Consider(new Maneuver { Kind = 9, Hook = true, HookTarget = tgt, HookDur = (int)Math.Max(6f, dist / Math.Max(4f, info.PullPx)), Penalty = 12f + up * 0.2f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+						Consider(new Maneuver { Kind = 9, Hook = true, HookTarget = tgt, HookDur = (int)Math.Max(6f, dist / Math.Max(4f, info.PullPx)), Penalty = (HmDodge ? 7f : 12f) + up * 0.2f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 						break;
 					}
 				}
@@ -365,9 +374,11 @@ namespace Levy.Content.NPCs
 					Consider(new Maneuver { Kind = 11, Vx = dir * sp, Dur = dir == 0 ? 0 : airDur, AirAcc = RunAccel, J2Vy = up, J2At = dl, Penalty = 6f + dl * 0.1f + (dir != 0 ? 1f : 0f) + pen }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 				if (thrust) Consider(new Maneuver { Kind = 12, Vx = dir * sp, Dur = dir == 0 ? 0 : airDur, AirAcc = RunAccel, J2Vy = -AirThrustVy, J2At = 0, HookDur = AirThrustTicks, Penalty = 8f + (dir != 0 ? 1f : 0f) + pen }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 			}
+			// a held wing: the fall slows to the glide while the danger goes by underneath (costs flight time)
+			if (WingCtlOn && Abilities.HasWings && _wingTime > WingBudgetReserveTicks + WingHoldTicks && _wingRelTicks <= 0 && !_flying) Consider(new Maneuver { Kind = 15, Penalty = 4f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 			// dropping out of the line: a fast fall (and through any platform on the way) when a safe floor lies below
 			if (_dSolidFloorY < c0.Y + 40f * 16f) Consider(new Maneuver { Kind = 13, J2Vy = AirFastFallVy, J2At = 0, Penalty = 5f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
-			if (HookUsable && !Abilities.HasWings && _hkPhase == HookPhase.Idle && Main.GameUpdateCount >= _hkNextAllowed)
+			if (HookUsable && (!Abilities.HasWings || HmDodge) && _hkPhase == HookPhase.Idle && Main.GameUpdateCount >= _hkNextAllowed)
 			{
 				HookInfo info = HookInfo.Of(Record.Gear.Hook);
 				Point feet = TileNav.FeetTile(npc.Bottom);
@@ -383,7 +394,7 @@ namespace Levy.Content.NPCs
 						if (upT > 6 && TileNav.IsStandable(x, y + 1)) continue;
 						Vector2 tgt = TileNav.BottomCentre(x, y) - new Vector2(0f, npc.height * 0.5f);
 						float dist = Vector2.Distance(c0, tgt);
-						Consider(new Maneuver { Kind = 9, Hook = true, HookTarget = tgt, HookDur = (int)Math.Max(6f, dist / Math.Max(4f, info.PullPx)), Penalty = 12f + upT * 0.2f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
+						Consider(new Maneuver { Kind = 9, Hook = true, HookTarget = tgt, HookDur = (int)Math.Max(6f, dist / Math.Max(4f, info.PullPx)), Penalty = (HmDodge ? 7f : 12f) + upT * 0.2f }, c0, g, ref best, ref bestHits, ref bestScore, ref bestLast);
 						break;
 					}
 				}
@@ -444,7 +455,7 @@ namespace Levy.Content.NPCs
 
 		private void Consider(Maneuver m, Vector2 c0, float g, ref Maneuver best, ref int bestHits, ref float bestScore, ref int bestLast)
 		{
-			if (_dAir && !m.Hook) { m.Air = true; m.V0x = _dV0x; m.V0y = _dV0y; m.FloorY = m.Kind == 13 ? _dSolidFloorY : _dFloorY; }
+			if (_dAir && !m.Hook) { m.Air = true; m.V0x = _dV0x; m.V0y = _dV0y; m.FloorY = m.Kind == 13 ? _dSolidFloorY : _dFloorY; m.VyCap = m.Kind == 13 ? 0f : m.Kind == 15 ? GlideFallSpeed : _dGlideCap; }
 			int imm = DanceMode >= 1 && DOn(4) && DashIFrameTicks > 0 && (m.Kind == 4 || m.Kind == 8 || m.Kind == 10) ? DashIFrameTicks : 0;
 			int h = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int last, _wormMargin, imm);
 			if (MobilityMode >= 1 && h == 0 && m.Kind != 0 && !(m.Air ? AirLandingSafe(c0, m, g) : LandingSafe(c0, m, g))) return;

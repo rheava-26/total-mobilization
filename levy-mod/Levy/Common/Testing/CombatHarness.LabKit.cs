@@ -8,6 +8,8 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Weapons;
+using Levy.Common.Movement;
+using Levy.Content.NPCs;
 
 namespace Levy.Common.Testing
 {
@@ -66,12 +68,13 @@ namespace Levy.Common.Testing
 		/// <summary>Station object wanted by name (null list = the level-based default).</summary>
 		private static bool KitWant(string name, bool byLevel) => _kitSt == null ? byLevel : _kitSt.Contains(name);
 
+		private static int _kitCasts0; private static long _kitHooked0, _kitHang0, _kitWh0, _kitWr0, _kitLava0;
 		private void KitFinish(CrRun run, CrState st)
 		{
 			try
 			{
 				string path = _crOut + ".kit.tsv";
-				if (!File.Exists(path)) File.WriteAllText(path, "key\ttag\tn\tavgHp\trankSum\tweaponDmg\tclassDmg\tdeathTimes\n");
+				if (!File.Exists(path)) File.WriteAllText(path, "key\ttag\tn\tavgHp\trankSum\tweaponDmg\tclassDmg\tdeathTimes\thkCasts\thookedSec\thangSec\twingHoldSec\twingRelSec\tlavaCatches\n");
 				var cd = new Dictionary<string, long>(); var wd = new Dictionary<string, long>(); double rank = 0;
 				foreach (var l in st.Levies)
 				{
@@ -83,7 +86,9 @@ namespace Levy.Common.Testing
 				File.AppendAllText(path, string.Join("\t", new object[] { run.Key, run.Tag, st.Levies.Count, f1(st.Levies.Average(l => l.MaxHp)), f1(rank),
 					string.Join(" ", wd.OrderByDescending(kv => kv.Value).Select(kv => kv.Key.Replace("CalamityMod/", "C:").Replace(' ', '_') + "=" + kv.Value)),
 					string.Join(" ", cd.Select(kv => kv.Key + "=" + kv.Value)),
-					string.Join(",", st.Levies.Where(l => l.Dead).Select(l => l.DeathTick / 60.0).OrderBy(x => x).Select(f1)) }) + "\n");
+					string.Join(",", st.Levies.Where(l => l.Dead).Select(l => l.DeathTick / 60.0).OrderBy(x => x).Select(f1)),
+					SoldierHooks.Casts - _kitCasts0, f1((SoldierNPC.StatHookedTicks - _kitHooked0) / 60.0), f1((SoldierNPC.StatHangTicks - _kitHang0) / 60.0), f1((SoldierNPC.StatWingHoldTicks - _kitWh0) / 60.0), f1((SoldierNPC.StatWingRelTicks - _kitWr0) / 60.0), SoldierNPC.StatLavaCatches - _kitLava0 }) + "\n");
+				_kitCasts0 = SoldierHooks.Casts; _kitHooked0 = SoldierNPC.StatHookedTicks; _kitHang0 = SoldierNPC.StatHangTicks; _kitWh0 = SoldierNPC.StatWingHoldTicks; _kitWr0 = SoldierNPC.StatWingRelTicks; _kitLava0 = SoldierNPC.StatLavaCatches;
 			}
 			catch (Exception e) { Mod.Logger.Warn("HARNESS-KIT: finish row failed: " + e.Message); }
 		}

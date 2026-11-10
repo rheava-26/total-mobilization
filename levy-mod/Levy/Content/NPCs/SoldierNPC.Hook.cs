@@ -161,7 +161,11 @@ namespace Levy.Content.NPCs
 			_hkTrigLast = now; _hkTrigGoal = _hkGoalNow;
 		}
 
-		private static int TriggerTicksFor(HookReason r) => r switch
+		private static int TriggerTicksFor(HookReason r) => HmTrig ? r switch
+		{
+			HookReason.GoalAbove => H.TriggerGoalAboveTicks / 3, HookReason.Wall => H.TriggerWallTicks / 3, HookReason.Gap => H.TriggerGapTicks / 3,
+			HookReason.Flee => H.TriggerFleeTicks, HookReason.Follow => 6, HookReason.Altitude => H.TriggerAltitudeTicks / 2, _ => int.MaxValue,
+		} : r switch
 		{
 			HookReason.GoalAbove => H.TriggerGoalAboveTicks, HookReason.Wall => H.TriggerWallTicks, HookReason.Gap => H.TriggerGapTicks,
 			HookReason.Flee => H.TriggerFleeTicks, HookReason.Follow => H.TriggerFollowTicks, HookReason.Altitude => H.TriggerAltitudeTicks, _ => int.MaxValue,
@@ -295,8 +299,8 @@ namespace Levy.Content.NPCs
 			Vector2 goal = MoveGoal;
 			float dxPx = Math.Abs(goal.X - NPC.Center.X), upPx = NPC.Bottom.Y - goal.Y, direct = Vector2.Distance(NPC.Bottom, goal);
 			if (direct > 46f * 16f || direct < 6f * 16f) return;
-			bool steepUp = upPx >= 6f * 16f && upPx >= 0.45f * dxPx && upPx > Abilities.JumpTiles * 16f + 16f;
-			bool longWay = _path.Count > 0 && upPx > 2f * 16f && PathLengthPx() > Math.Max(30f * 16f, 2.5f * direct);
+			bool steepUp = HmTrig ? upPx >= 4f * 16f && upPx >= 0.3f * dxPx && upPx > Abilities.JumpTiles * 16f + 16f : upPx >= 6f * 16f && upPx >= 0.45f * dxPx && upPx > Abilities.JumpTiles * 16f + 16f;
+			bool longWay = _path.Count > 0 && upPx > 2f * 16f && PathLengthPx() > (HmTrig ? Math.Max(16f * 16f, 1.7f * direct) : Math.Max(30f * 16f, 2.5f * direct));
 			if (!steepUp && !longWay) return;
 			if (steepUp && _path.Count > 0 && !longWay) return;   // a path up exists and is not long: walk it
 			_hkGoalNow = goal; HookTrigger(HookReason.Follow);
@@ -321,7 +325,7 @@ namespace Levy.Content.NPCs
 			if (!HookUsable || HasFlightKit) { _hkAltSeen = 0; return; }
 			float tilePx = LevyConstants.TilePx;
 			float sepTiles = (NPC.Center.Y - seg.Center.Y) / tilePx;
-			if (sepTiles < H.AltitudeMinTiles) { _hkAltSeen = 0; return; }
+			if (sepTiles < (HmTrig ? 4 : H.AltitudeMinTiles)) { _hkAltSeen = 0; return; }
 			if (!melee && Aiming.TilesToHitbox(NPC.Center, seg) > rangeTiles * LevyConstants.ShootableRangeFrac * LevyConstants.Movement.AerialHoldRangeMult) { if (SoldierHooks.Debug && (Main.GameUpdateCount & 63) == 0) HookDbg($"altitude intent: target out of reach ({Aiming.TilesToHitbox(NPC.Center, seg):0.0}T > {rangeTiles * LevyConstants.ShootableRangeFrac * LevyConstants.Movement.AerialHoldRangeMult:0.0}T)"); _hkAltSeen = 0; return; }
 			if (!IsHooking && RoofOverhead()) { _hkAltSeen = 0; return; }   // on the hook the ceiling above IS the anchor
 			_hkAltSeen = Main.GameUpdateCount;
@@ -572,10 +576,15 @@ namespace Levy.Content.NPCs
 			{
 				if (arrived) _hkHang++;
 				bool keep = Main.GameUpdateCount - _hkAltSeen <= 20u;
-				release = (_hkHang > 0 && !keep) || _hkHang > H.HangMaxTicks || _hkTicks > H.ReelMaxTicks + H.HangMaxTicks;
+				release = (_hkHang > 0 && !keep) || _hkHang > H.HangMaxTicks * (HmHang ? 4 : 1) || _hkTicks > H.ReelMaxTicks + H.HangMaxTicks;
 			}
-			else release = dist <= _hkPlan.ReleaseDist + H.ReleaseDistSlackPx || _hkTicks >= _hkPlan.ReleaseTick + 14 || _hkStall >= H.ReelStallTicks || _hkTicks > H.ReelMaxTicks;
-			if (_hkTicks > H.ReelMaxTicks + 40 + (_hkPlan.Hang ? H.HangMaxTicks : 0)) release = true;
+			else
+			{
+				release = dist <= _hkPlan.ReleaseDist + H.ReleaseDistSlackPx || _hkTicks >= _hkPlan.ReleaseTick + 14 || _hkStall >= H.ReelStallTicks || _hkTicks > H.ReelMaxTicks;
+				// HOLD: a hook cast to get out of a danger hangs on the anchor while the danger lasts, and a body hanging above lava does not let go over it
+				if (release && _hkTicks <= H.ReelMaxTicks && !_hkChain && ((HmHold && Main.GameUpdateCount < HookHoldUntil) || (AirLavaOn && arrived && LavaAhead(out _)))) release = false;
+			}
+			if (_hkTicks > H.ReelMaxTicks + 40 + (_hkPlan.Hang ? H.HangMaxTicks * (HmHang ? 4 : 1) : 0) + (Main.GameUpdateCount < HookHoldUntil ? 160 : 0)) release = true;
 
 			if (!HookReelFrame(release, centroid)) { HookLetGo(false, true); return true; }
 			if (release && _hkJumpKick && dist < 24f) npc.velocity.Y = Math.Min(npc.velocity.Y, -HookJumpSpeed);   // arrived: the hook-jump, a full jump off the hook

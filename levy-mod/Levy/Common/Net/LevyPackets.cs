@@ -76,7 +76,7 @@ namespace Levy.Common.Net
 		ArmoryReforgePlan, // client -> server: run a targeted reforge (see ReforgePlan.ToBytes)
 		ArmoryVanitySet, // client -> server: the armory's whole vanity list (see ArmoryVanity.ToBytes)
 		MapOrder, ObserveRequest, MindControlSet, MindInput, // client -> server: Command & Observe (Common/Observe)
-		DrinkRound, // client -> server: byte drink(0 Ale,1 Stout,2 Rum) - the server serves the round to the sender's levies in range
+		DrinkRound, // client -> server: byte drink(0 Ale,1 Stout,2 Rum,3 Fizz Tank,4 Magma Crucible,5..8 meals) - the server serves the round to the sender's levies in range
 		MeteorBeacon, // client -> server: no payload - the server drops a meteor if it is night and the sender holds a beacon use
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
 		CompanionEffect, // server -> one client: an effect a companion mod (Thorium compat) lays on a player; its own handler decodes the payload

@@ -91,7 +91,7 @@ namespace Levy.Content.NPCs
 				int done;
 				_contactStriking = true;
 				PendingContactScale = IncomingSetScale() * global::Levy.Common.Util.BannerBuffs.Defense(CommanderIndex, a); // Solar shield / Beetle orbs / Paladin's Shield share, folded into the strike by SoldierSetHitScale
-				try { done = NPC.SimpleStrikeNPC(raw, dir, false, 0f, null, false, 0f, true); } // ModifyIncomingHit applies the player defense formula; the server broadcasts the strike
+				try { done = NPC.SimpleStrikeNPC(raw, dir, false, NPC.knockBackResist > 0f ? LevyConstants.FizzContactKnockback : 0f, null, false, 0f, true); } // ModifyIncomingHit applies the player defense formula; the server broadcasts the strike (a Fizzy body, the only one with knockback resistance above 0, is knocked back)
 				finally { _contactStriking = false; PendingContactScale = 1f; }
 				if (HitDbg != null) HitDbgAdd("contact:" + a.TypeName + "/" + a.type, done);
 				AfterHit(done, i);

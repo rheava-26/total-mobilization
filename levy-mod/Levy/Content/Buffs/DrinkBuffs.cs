@@ -38,6 +38,8 @@ namespace Levy.Content.Buffs
 			if (buffType == ModContent.BuffType<AleBuff>()) { d.statDefense += LevyConstants.AleDefense; return true; }
 			if (buffType == ModContent.BuffType<StoutBuff>()) { d.GetDamage(DamageClass.Generic) += LevyConstants.StoutDamage; return true; }
 			if (buffType == ModContent.BuffType<RumBuff>()) { d.GetCritChance(DamageClass.Generic) += LevyConstants.RumCrit; return true; }
+			if (buffType == ModContent.BuffType<FizzyBuff>()) { ProvisionRules.ApplyFizzy(d); return true; }       // Provisions: no Tipsy, a double jump and a price in defense
+			if (buffType == ModContent.BuffType<LavaShotBuff>()) return true;                                   // lava immunity lives on the body (ProvisionsBody)
 			return false;
 		}
 
@@ -61,6 +63,7 @@ namespace Levy.Content.Buffs
 		/// <summary>Serves a round: every levy within the drink radius of <paramref name="centre"/> (the commander's own, plus militia) gets the drink. Returns how many.</summary>
 		public static int Serve(Vector2 centre, int drink, string commander)
 		{
+			if (drink > 2) return ProvisionRules.Serve(centre, drink, commander); // Fizz Tank, Magma Crucible and the meals (Provisions)
 			int type = TypeOf(drink);
 			int n = 0;
 			var served = new System.Collections.Generic.List<SoldierNPC>();

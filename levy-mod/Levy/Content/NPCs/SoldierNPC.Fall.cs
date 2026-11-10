@@ -134,7 +134,7 @@ namespace Levy.Content.NPCs
 		private void AirLavaGuard()
 		{
 			NPC npc = NPC;
-			if (_hkPhase != HookPhase.Idle || npc.velocity.Y == 0f || npc.wet || npc.lavaWet || _clmOn || _flying || Abilities.HasWings) return;   // wings have their own flight logic (a flap from here made them worse)
+			if (_hkPhase != HookPhase.Idle || npc.velocity.Y == 0f || npc.wet || npc.lavaWet || npc.lavaImmune || _clmOn || _flying || Abilities.HasWings) return;   // wings have their own flight logic (a flap from here made them worse)
 			if ((int)((Main.GameUpdateCount + (uint)npc.whoAmI) % 2u) != 0) return;
 			if (!PredictFall(out int ticks, out bool bad) || !bad || !_predLava) return;
 			Point feet = TileNav.FeetTile(npc.Bottom);

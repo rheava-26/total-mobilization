@@ -49,7 +49,7 @@ namespace Levy.Content.Items.OOA
 		internal static void OnPacket(BinaryReader r, int whoAmI)
 		{
 			int drink = r.ReadByte();
-			if (whoAmI < 0 || whoAmI >= Main.maxPlayers || !Main.player[whoAmI].active || drink > 2) return;
+			if (whoAmI < 0 || whoAmI >= Main.maxPlayers || !Main.player[whoAmI].active || drink > ProvisionRules.MaxServeId) return;
 			DrinkBuffs.Serve(Main.player[whoAmI].Center, drink, Main.player[whoAmI].name);
 		}
 	}

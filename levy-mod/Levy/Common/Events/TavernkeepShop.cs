@@ -12,7 +12,7 @@ namespace Levy.Common.Events
 	/// <summary>
 	/// The Tavernkeep (DD2 Bartender) sells the three levy sentry staves for Defender Medals (tier 1 always, tier 2 after any mechanical boss, tier 3 after Golem) and the three
 	/// drinks for coins. His vanilla shop already fills all 40 slots once Golem is down (3 plain entries + 37 slot-reserving ones), so nothing can be added to it. The Levy wares
-	/// live on a SECOND SHOP PAGE (<see cref="PageName"/>, 6 entries, never near the 40-slot limit): the Bartender's second chat button (vanilla "Help") also opens that page.
+	/// live on a SECOND SHOP PAGE (<see cref="PageName"/>, 7 entries, never near the 40-slot limit): the Bartender's second chat button (vanilla "Help") also opens that page.
 	/// </summary>
 	public class TavernkeepShop : GlobalNPC
 	{
@@ -32,6 +32,7 @@ namespace Levy.Common.Events
 			shop.Add(ModContent.ItemType<BarracksAle>());
 			shop.Add(ModContent.ItemType<BlackStout>());
 			shop.Add(ModContent.ItemType<SpicedRum>());
+			shop.Add(ModContent.ItemType<Content.Items.Provisions.FizzTank>());
 			return shop;
 		}
 

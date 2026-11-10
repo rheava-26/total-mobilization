@@ -71,7 +71,7 @@ namespace Levy.Common.Team
 			p.armor[3].SetDefaults(type);
 			p.statLife = p.statLifeMax2 = p.statLifeMax = 500; // Paladin's Shield only raises its flag above a quarter life
 			p.ResetEffects();
-			p.UpdateEquips(SoldierNPC.DummySlot);
+			global::Levy.Common.Util.DummyEquip.SafeUpdateEquips(p, SoldierNPC.DummySlot);
 			try { PlayerLoader.PostUpdateEquips(p); } catch (Exception) { }
 			List<string> keys = null;
 			foreach (var a in TeamItems.Auras)

@@ -59,7 +59,7 @@ namespace Levy.Common.Targeting
 			p.inventory[0] = new Item();
 			p.selectedItem = 0;
 			p.ResetEffects();
-			p.UpdateEquips(SoldierNPC.DummySlot);
+			global::Levy.Common.Util.DummyEquip.SafeUpdateEquips(p, SoldierNPC.DummySlot);
 			p.UpdateArmorSets(SoldierNPC.DummySlot);
 			int aggro = p.aggro;
 			for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item(); // leave the scratch player clean

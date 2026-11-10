@@ -51,9 +51,37 @@ namespace Levy.Common.Audio
 
 		static bool IsArmy(Mod m) => m != null && (m.Name == "Levy" || m.Name == "Mechanization");
 
+		/// <summary>LEVY_AUDIOCAP=1: the detour also runs on a dedicated server (lab harness) and logs the PlaySound stream per second as [AudioCap] lines. Never set in play.</summary>
+		static readonly bool Diag = Environment.GetEnvironmentVariable("LEVY_AUDIOCAP") == "1";
+		static int dCalls, dArmy, dAdmit, dDrop, dLastAdmit = -1, dMaxGap, dLogAt, dLastArmy = -1, dMaxRaw, dGaps12, dGapsRaw12;
+		static readonly Dictionary<string, int> dStyle = new Dictionary<string, int>();
+		static readonly Dictionary<string, int> dOther = new Dictionary<string, int>();
+		static int dInFrame;
+		/// <summary>Set by the diag log: true while an owner frame is open (such sounds are dropped on a real client because the frame forces dedServ).</summary>
+		public static Func<bool> InFrame = () => global::Levy.Common.Owner.SoldierOwner.Depth > 0;
+
+		static void DiagTick(int now, string key, bool army, bool admitted)
+		{
+			dCalls++;
+			if (!army) { if (InFrame()) dInFrame++; else { dOther.TryGetValue(key, out int o); dOther[key] = o + 1; } }
+			if (army) { dArmy++; if (dLastArmy >= 0) { int g = now - dLastArmy; if (g > dMaxRaw) dMaxRaw = g; if (g >= 12) dGapsRaw12++; } dLastArmy = now; dStyle.TryGetValue(key, out int c); dStyle[key] = c + 1; if (admitted) { dAdmit++; if (dLastAdmit >= 0) { int g = now - dLastAdmit; if (g > dMaxGap) dMaxGap = g; if (g >= 12) dGaps12++; } dLastAdmit = now; } else dDrop++; }
+			if (dLogAt == 0) dLogAt = now + 120;
+			if (now >= dLogAt)
+			{
+				var top = new List<KeyValuePair<string, int>>(dStyle); top.Sort((a, b) => b.Value.CompareTo(a.Value));
+				string t = ""; for (int i = 0; i < top.Count && i < 4; i++) t += (i > 0 ? "," : "") + top[i].Key.Substring(top[i].Key.LastIndexOf('/') + 1) + "=" + top[i].Value;
+				var oth = new List<KeyValuePair<string, int>>(dOther); oth.Sort((a, b) => b.Value.CompareTo(a.Value));
+				string ot = ""; for (int i = 0; i < oth.Count && i < 5; i++) ot += (i > 0 ? "," : "") + oth[i].Key.Substring(oth[i].Key.LastIndexOf('/') + 1) + "=" + oth[i].Value;
+				Levy.Instance?.Logger.Info($"[AudioCap] nonArmyInFrame={dInFrame} nonArmyOutside={dOther.Count} otherTop={ot}");
+				dInFrame = 0; dOther.Clear();
+				Levy.Instance?.Logger.Info($"[AudioCap] tick={now} calls={dCalls} army={dArmy} admitted={dAdmit} dropped={dDrop} styles={dStyle.Count} maxAdmitGapTicks={dMaxGap} maxRawGapTicks={dMaxRaw} admitGaps12={dGaps12} rawGaps12={dGapsRaw12} top={t}");
+				dCalls = dArmy = dAdmit = dDrop = dMaxGap = dMaxRaw = dGaps12 = dGapsRaw12 = 0; dStyle.Clear(); dLogAt = now + 120;
+			}
+		}
+
 		public override void Load()
 		{
-			if (Main.dedServ) return;
+			if (Main.dedServ && !Diag) return;
 			On_NPC.AI += NpcAI;
 			On_Projectile.AI += ProjAI;
 			On_SoundEngine.PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback += Play;
@@ -61,7 +89,7 @@ namespace Levy.Common.Audio
 
 		public override void Unload()
 		{
-			if (Main.dedServ) return;
+			if (Main.dedServ && !Diag) return;
 			On_NPC.AI -= NpcAI;
 			On_Projectile.AI -= ProjAI;
 			On_SoundEngine.PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback -= Play;
@@ -83,19 +111,68 @@ namespace Levy.Common.Audio
 
 		static SlotId Play(On_SoundEngine.orig_PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback orig, ref SoundStyle style, Vector2? position, SoundUpdateCallback cb)
 		{
+			if (Diag && Main.dedServ) { int n0 = (int)Main.GameUpdateCount; bool a0 = inArmy; bool ok = !a0 || Admit(ref style, position, n0, true) > 0f; DiagTick(n0, style.SoundPath ?? "", a0, ok); return SlotId.Invalid; }
 			if (!inArmy || Main.gameMenu) return orig(ref style, position, cb);
 			int now = (int)Main.GameUpdateCount;
-			// long: the first window starts at int.MinValue, and an int subtraction overflows negative and never resets
-			if ((long)now - windowStart >= WindowTicks || now < windowStart) { windowStart = now; total = 0; perStyle.Clear(); nearest.Clear(); }
-			string key = style.SoundPath ?? "";
-			perStyle.TryGetValue(key, out int same);
-			float dist = position.HasValue ? Vector2.Distance(position.Value, Main.screenPosition + new Vector2(Main.screenWidth, Main.screenHeight) * 0.5f) : 0f;
-			float near = nearest.TryGetValue(key, out float nv) ? nv : float.MaxValue;
-			float vol = Decide(same, total, dist, near);
+			float vol = Admit(ref style, position, now, false);
 			if (vol <= 0f) return SlotId.Invalid;
-			total++; perStyle[key] = same + 1; nearest[key] = Math.Min(near, dist);
 			if (vol < 0.999f) { var quieter = style.WithVolumeScale(vol); return orig(ref quieter, position, cb); }
 			return orig(ref style, position, cb);
+		}
+
+		/// <summary>Window bookkeeping plus <see cref="Decide"/> for one army sound; returns the volume scale (0 = drop) and records the play when admitted.</summary>
+		static float Admit(ref SoundStyle style, Vector2? position, int now, bool ignoreDistance)
+		{
+			float dist = !ignoreDistance && position.HasValue ? Vector2.Distance(position.Value, Main.screenPosition + new Vector2(Main.screenWidth, Main.screenHeight) * 0.5f) : 0f;
+			return AdmitKey(style.SoundPath ?? "", dist, now);
+		}
+
+		/// <summary>The stateful part (window reset, per-style counts), separated from SoundStyle so the boot check can drive it.</summary>
+		static float AdmitKey(string key, float dist, int now)
+		{
+			// long: the first window starts at int.MinValue, and an int subtraction overflows negative and never resets
+			if ((long)now - windowStart >= WindowTicks || now < windowStart) { windowStart = now; total = 0; perStyle.Clear(); nearest.Clear(); }
+			perStyle.TryGetValue(key, out int same);
+			float near = nearest.TryGetValue(key, out float nv) ? nv : float.MaxValue;
+			float vol = Decide(same, total, dist, near);
+			if (vol <= 0f) return 0f;
+			total++; perStyle[key] = same + 1; nearest[key] = Math.Min(near, dist);
+			return vol;
+		}
+
+		/// <summary>[AudioCap] boot check of the stateful path (what Play() runs), unlike <see cref="SelfCheck"/> which only exercises the pure Decide. Drives AdmitKey with a modelled 40-shooter fight from the
+		/// session-start state at three tick counters (0, 1,000,000, near int.MaxValue); every style that fires at least once per window must be audible within two windows, and the admitted rate must stay
+		/// under the cap plus the one-per-style guarantee. Returns failure text or null.</summary>
+		public static string StatefulCheck(out string numbers)
+		{
+			numbers = "";
+			int sw0 = windowStart, t0 = total; var ps = new Dictionary<string, int>(perStyle); var nr = new Dictionary<string, float>(nearest);
+			try
+			{
+				foreach (int start in new[] { 0, 1000000, int.MaxValue - 300 })
+				{
+					windowStart = int.MinValue; total = 0; perStyle.Clear(); nearest.Clear();
+					const int styles = 15, shooters = 40, ticks = 1200; // 20 s
+					var last = new int[styles]; var maxGap = new int[styles]; int admitted = 0, calls = 0;
+					for (int k = 0; k < ticks; k++)
+					{
+						int now = unchecked(start + k);
+						for (int sh = 0; sh < shooters; sh++)
+						{
+							int useTime = 8 + (sh * 5) % 17; if ((k + sh) % useTime != 0) continue;
+							int st = sh % styles; calls++;
+							if (AdmitKey("style" + st, (sh % 7) * 300f, now) > 0f) { admitted++; int g = k - last[st]; if (g > maxGap[st]) maxGap[st] = g; last[st] = k; }
+						}
+					}
+					int worst = 0; for (int i = 0; i < styles; i++) if (maxGap[i] > worst) worst = maxGap[i];
+					numbers += $"start {start}: {calls} calls -> {admitted} admitted, worst per-style gap {worst} ticks; ";
+					if (admitted == 0) return "stateful throttle admitted nothing (window never reset?)";
+					if (worst > 2 * WindowTicks + 30) return $"a style went {worst} ticks without an audible play from start {start}";
+					if (admitted / (ticks / 60f) > (TotalMax + styles) * 60f / WindowTicks) return "admitted rate above the cap plus one-per-style guarantee";
+				}
+			}
+			finally { windowStart = sw0; total = t0; perStyle.Clear(); foreach (var kv in ps) perStyle[kv.Key] = kv.Value; nearest.Clear(); foreach (var kv in nr) nearest[kv.Key] = kv.Value; }
+			return null;
 		}
 
 		/// <summary>Boot self-check of the pure logic plus a modelled big fight (25 levies + 10 drones). Returns failure text or null.</summary>
@@ -161,6 +238,9 @@ namespace Levy.Common.Audio
 			string fail = SelfCheck(out string nums);
 			if (fail == null) Mod.Logger.Info("[SoundThrottle] self-check ok :: " + nums);
 			else Mod.Logger.Error("[SoundThrottle] self-check FAILED: " + fail);
+			string f2 = StatefulCheck(out string n2);
+			if (f2 == null) Mod.Logger.Info("[AudioCap] self-check ok fail=0 :: " + n2);
+			else Mod.Logger.Error("[AudioCap] self-check FAILED fail=1: " + f2);
 		}
 	}
 }

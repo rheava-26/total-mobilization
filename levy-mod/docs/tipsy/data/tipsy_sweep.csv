@@ -1,0 +1,793 @@
+cellname,seed,tp_w,tp_a,tp_c,tp_d,tp_m,tp_z,tp_b,tp_x,dps,dmg,shots,projHits,hits,firstHit,avgDist,alivePct
+Minishark 25t static small x1,1,Minishark,,R,25,static,small,none,1,18.3,366,153,73,73,0.033,25.086,100
+Minishark 25t static small x1.6,1,Minishark,,R,25,static,small,none,1.6,14.3,286,156,56,56,0.15,25.086,100
+Minishark 25t static small x2.5,1,Minishark,,R,25,static,small,none,2.5,8.45,169,155,36,36,1.067,25.086,100
+Minishark 25t static small x4,1,Minishark,,R,25,static,small,none,4,4.15,83,158,16,16,0.783,25.086,100
+Minishark 25t static small x6,1,Minishark,,R,25,static,small,none,6,4,80,156,15,15,1.833,25.086,100
+Minishark 25t static small x10,1,Minishark,,R,25,static,small,none,10,0.95,19,158,4,4,3.917,25.086,100
+Minishark 25t static boss x1,1,Minishark,,R,25,static,boss,none,1,38,760,151,150,150,0.133,25.168,100
+Minishark 25t static boss x1.6,1,Minishark,,R,25,static,boss,none,1.6,35.9,718,152,140,140,0.117,25.168,100
+Minishark 25t static boss x2.5,1,Minishark,,R,25,static,boss,none,2.5,23.95,479,154,93,93,0.1,25.168,100
+Minishark 25t static boss x4,1,Minishark,,R,25,static,boss,none,4,12.35,247,154,50,50,0.217,25.168,100
+Minishark 25t static boss x6,1,Minishark,,R,25,static,boss,none,6,9.1,182,158,36,36,0.733,25.168,100
+Minishark 25t static boss x10,1,Minishark,,R,25,static,boss,none,10,5.5,110,156,21,21,0.283,25.168,100
+Minishark 25t strafe small x1,1,Minishark,,R,25,strafe,small,none,1,19.85,397,152,78,78,0.25,25.384,100
+Minishark 25t strafe small x1.6,1,Minishark,,R,25,strafe,small,none,1.6,12.7,254,153,51,51,0.1,25.391,100
+Minishark 25t strafe small x2.5,1,Minishark,,R,25,strafe,small,none,2.5,6.35,127,155,25,25,0.067,25.39,100
+Minishark 25t strafe small x4,1,Minishark,,R,25,strafe,small,none,4,4.95,99,155,20,20,0.933,25.388,100
+Minishark 25t strafe small x6,1,Minishark,,R,25,strafe,small,none,6,5.2,104,157,20,20,3.467,25.387,100
+Minishark 25t strafe small x10,1,Minishark,,R,25,strafe,small,none,10,1.2,24,154,5,5,2.4,25.386,100
+Minishark 25t strafe boss x1,1,Minishark,,R,25,strafe,boss,none,1,37.55,751,151,147,147,0.083,25.327,100
+Minishark 25t strafe boss x1.6,1,Minishark,,R,25,strafe,boss,none,1.6,33.3,666,152,133,133,0.05,25.334,100
+Minishark 25t strafe boss x2.5,1,Minishark,,R,25,strafe,boss,none,2.5,23.05,461,152,90,90,0.05,25.333,100
+Minishark 25t strafe boss x4,1,Minishark,,R,25,strafe,boss,none,4,14.8,296,154,59,59,0.167,25.331,100
+Minishark 25t strafe boss x6,1,Minishark,,R,25,strafe,boss,none,6,9.75,195,156,38,38,0.883,25.33,100
+Minishark 25t strafe boss x10,1,Minishark,,R,25,strafe,boss,none,10,5.75,115,158,22,22,0.833,25.328,100
+Minishark 25t static small x1,1,Minishark,,R,25,static,small,none,1,39.45,789,153,86,86,0.217,25.086,100
+Minishark 25t static small x1.6,1,Minishark,,R,25,static,small,none,1.6,20.55,411,154,47,47,0.067,25.086,100
+Minishark 25t static small x2.5,1,Minishark,,R,25,static,small,none,2.5,14.4,288,152,31,31,0.317,25.086,100
+Minishark 25t static small x4,1,Minishark,,R,25,static,small,none,4,11.5,230,151,25,25,2.033,25.086,100
+Minishark 25t static small x6,1,Minishark,,R,25,static,small,none,6,2.1,42,152,4,4,3.883,25.086,100
+Minishark 25t static small x10,1,Minishark,,R,25,static,small,none,10,3.2,64,153,7,7,2.233,25.086,100
+Minishark 25t static boss x1,1,Minishark,,R,25,static,boss,none,1,67.45,1349,153,150,150,0.067,25.168,100
+Minishark 25t static boss x1.6,1,Minishark,,R,25,static,boss,none,1.6,62.45,1249,154,140,140,0.05,25.168,100
+Minishark 25t static boss x2.5,1,Minishark,,R,25,static,boss,none,2.5,43.6,872,152,96,96,0.033,25.168,100
+Minishark 25t static boss x4,1,Minishark,,R,25,static,boss,none,4,30.9,618,152,66,66,0.15,25.168,100
+Minishark 25t static boss x6,1,Minishark,,R,25,static,boss,none,6,17.15,343,152,38,38,1.2,25.168,100
+Minishark 25t static boss x10,1,Minishark,,R,25,static,boss,none,10,7.75,155,154,16,16,0.35,25.168,100
+Minishark 25t strafe small x1,1,Minishark,,R,25,strafe,small,none,1,32.45,649,153,73,73,0.067,25.384,100
+Minishark 25t strafe small x1.6,1,Minishark,,R,25,strafe,small,none,1.6,18.95,379,153,43,43,0.2,25.391,100
+Minishark 25t strafe small x2.5,1,Minishark,,R,25,strafe,small,none,2.5,15.15,303,154,34,34,0.033,25.39,100
+Minishark 25t strafe small x4,1,Minishark,,R,25,strafe,small,none,4,10.7,214,152,24,24,2.183,25.388,100
+Minishark 25t strafe small x6,1,Minishark,,R,25,strafe,small,none,6,4.8,96,152,11,11,1.9,25.387,100
+Minishark 25t strafe small x10,1,Minishark,,R,25,strafe,small,none,10,4.4,88,152,10,10,0.9,25.386,100
+Minishark 25t strafe boss x1,1,Minishark,,R,25,strafe,boss,none,1,65.6,1312,153,150,150,0.05,25.327,100
+Minishark 25t strafe boss x1.6,1,Minishark,,R,25,strafe,boss,none,1.6,61.3,1226,154,134,134,0.033,25.334,100
+Minishark 25t strafe boss x2.5,1,Minishark,,R,25,strafe,boss,none,2.5,43.75,875,153,97,97,0.017,25.333,100
+Minishark 25t strafe boss x4,1,Minishark,,R,25,strafe,boss,none,4,28.3,566,154,64,64,0.017,25.331,100
+Minishark 25t strafe boss x6,1,Minishark,,R,25,strafe,boss,none,6,22.15,443,151,48,48,0.267,25.33,100
+Minishark 25t strafe boss x10,1,Minishark,,R,25,strafe,boss,none,10,8.75,175,152,20,20,0.083,25.328,100
+Sniper Rifle 25t static small x1,1,Sniper_Rifle,,R,25,static,small,none,1,134.7,2694,34,18,18,0.467,25.086,100
+Sniper Rifle 25t static small x1.6,1,Sniper_Rifle,,R,25,static,small,none,1.6,89,1780,34,12,12,1.05,25.086,100
+Sniper Rifle 25t static small x2.5,1,Sniper_Rifle,,R,25,static,small,none,2.5,65.3,1306,34,9,9,4.017,25.086,100
+Sniper Rifle 25t static small x4,1,Sniper_Rifle,,R,25,static,small,none,4,29.3,586,33,4,4,8.8,25.086,100
+Sniper Rifle 25t static small x6,1,Sniper_Rifle,,R,25,static,small,none,6,6.5,130,33,1,1,1,25.086,100
+Sniper Rifle 25t static small x10,1,Sniper_Rifle,,R,25,static,small,none,10,14.55,291,34,2,2,4.683,25.086,100
+Sniper Rifle 25t static boss x1,1,Sniper_Rifle,,R,25,static,boss,none,1,251.3,5026,34,33,33,0.45,25.168,100
+Sniper Rifle 25t static boss x1.6,1,Sniper_Rifle,,R,25,static,boss,none,1.6,245.75,4915,34,32,32,0.433,25.168,100
+Sniper Rifle 25t static boss x2.5,1,Sniper_Rifle,,R,25,static,boss,none,2.5,188.9,3778,33,25,25,0.417,25.168,100
+Sniper Rifle 25t static boss x4,1,Sniper_Rifle,,R,25,static,boss,none,4,76.4,1528,33,10,10,1,25.168,100
+Sniper Rifle 25t static boss x6,1,Sniper_Rifle,,R,25,static,boss,none,6,70.6,1412,34,9,9,0.983,25.168,100
+Sniper Rifle 25t static boss x10,1,Sniper_Rifle,,R,25,static,boss,none,10,51.55,1031,34,7,7,1.667,25.168,100
+Sniper Rifle 25t strafe small x1,1,Sniper_Rifle,,R,25,strafe,small,none,1,117,2340,34,15,15,2.283,25.384,100
+Sniper Rifle 25t strafe small x1.6,1,Sniper_Rifle,,R,25,strafe,small,none,1.6,71.5,1430,34,9,9,3.45,25.391,100
+Sniper Rifle 25t strafe small x2.5,1,Sniper_Rifle,,R,25,strafe,small,none,2.5,61,1220,34,8,8,2.833,25.39,100
+Sniper Rifle 25t strafe small x4,1,Sniper_Rifle,,R,25,strafe,small,none,4,20.2,404,34,3,3,9.417,25.388,100
+Sniper Rifle 25t strafe small x6,1,Sniper_Rifle,,R,25,strafe,small,none,6,46.95,939,34,6,6,1,25.387,100
+Sniper Rifle 25t strafe small x10,1,Sniper_Rifle,,R,25,strafe,small,none,10,7.15,143,33,1,1,17.867,25.386,100
+Sniper Rifle 25t strafe boss x1,1,Sniper_Rifle,,R,25,strafe,boss,none,1,256.25,5125,34,33,33,0.45,25.327,100
+Sniper Rifle 25t strafe boss x1.6,1,Sniper_Rifle,,R,25,strafe,boss,none,1.6,216.05,4321,34,28,28,0.433,25.334,100
+Sniper Rifle 25t strafe boss x2.5,1,Sniper_Rifle,,R,25,strafe,boss,none,2.5,182.55,3651,34,24,24,0.417,25.333,100
+Sniper Rifle 25t strafe boss x4,1,Sniper_Rifle,,R,25,strafe,boss,none,4,93.7,1874,34,12,12,3.417,25.331,100
+Sniper Rifle 25t strafe boss x6,1,Sniper_Rifle,,R,25,strafe,boss,none,6,100.95,2019,33,13,13,2.2,25.33,100
+Sniper Rifle 25t strafe boss x10,1,Sniper_Rifle,,R,25,strafe,boss,none,10,6.6,132,34,1,1,10.65,25.328,100
+Boomstick 25t static small x1,1,Boomstick,,R,25,static,small,none,1,12,240,95,20,20,0.483,25.086,100
+Boomstick 25t static small x1.6,1,Boomstick,,R,25,static,small,none,1.6,13.2,264,95,22,22,0.467,25.086,100
+Boomstick 25t static small x2.5,1,Boomstick,,R,25,static,small,none,2.5,11.65,233,94,20,20,1.117,25.086,100
+Boomstick 25t static small x4,1,Boomstick,,R,25,static,small,none,4,7.35,147,96,12,12,1.1,25.086,100
+Boomstick 25t static small x6,1,Boomstick,,R,25,static,small,none,6,6.5,130,99,11,11,1.75,25.086,100
+Boomstick 25t static small x10,1,Boomstick,,R,25,static,small,none,10,1.2,24,100,2,2,1.167,25.086,100
+Boomstick 25t static boss x1,1,Boomstick,,R,25,static,boss,none,1,35.1,702,91,56,56,0.45,25.168,100
+Boomstick 25t static boss x1.6,1,Boomstick,,R,25,static,boss,none,1.6,32.5,650,92,56,56,0.433,25.168,100
+Boomstick 25t static boss x2.5,1,Boomstick,,R,25,static,boss,none,2.5,31.15,623,94,52,52,0.417,25.168,100
+Boomstick 25t static boss x4,1,Boomstick,,R,25,static,boss,none,4,25.6,512,90,42,42,0.4,25.168,100
+Boomstick 25t static boss x6,1,Boomstick,,R,25,static,boss,none,6,14.7,294,91,25,25,0.383,25.168,100
+Boomstick 25t static boss x10,1,Boomstick,,R,25,static,boss,none,10,10.65,213,93,18,18,0.467,25.168,100
+Boomstick 25t strafe small x1,1,Boomstick,,R,25,strafe,small,none,1,9.35,187,91,16,16,0.45,25.384,100
+Boomstick 25t strafe small x1.6,1,Boomstick,,R,25,strafe,small,none,1.6,12,240,92,21,21,0.45,25.391,100
+Boomstick 25t strafe small x2.5,1,Boomstick,,R,25,strafe,small,none,2.5,14.1,282,92,24,24,0.4,25.39,100
+Boomstick 25t strafe small x4,1,Boomstick,,R,25,strafe,small,none,4,7.85,157,91,13,13,0.383,25.388,100
+Boomstick 25t strafe small x6,1,Boomstick,,R,25,strafe,small,none,6,3.1,62,96,5,5,3.75,25.387,100
+Boomstick 25t strafe small x10,1,Boomstick,,R,25,strafe,small,none,10,1.7,34,95,3,3,5.733,25.386,100
+Boomstick 25t strafe boss x1,1,Boomstick,,R,25,strafe,boss,none,1,33.35,667,90,56,56,0.4,25.327,100
+Boomstick 25t strafe boss x1.6,1,Boomstick,,R,25,strafe,boss,none,1.6,32.15,643,91,53,53,0.383,25.334,100
+Boomstick 25t strafe boss x2.5,1,Boomstick,,R,25,strafe,boss,none,2.5,25.65,513,94,43,43,0.367,25.333,100
+Boomstick 25t strafe boss x4,1,Boomstick,,R,25,strafe,boss,none,4,21.05,421,93,35,35,0.35,25.331,100
+Boomstick 25t strafe boss x6,1,Boomstick,,R,25,strafe,boss,none,6,13.8,276,93,23,23,1.083,25.33,100
+Boomstick 25t strafe boss x10,1,Boomstick,,R,25,strafe,boss,none,10,9.35,187,95,16,16,2.583,25.328,100
+Demon Bow 25t static small x1,1,Demon_Bow,,R,25,static,small,none,1,17.5,350,50,36,36,0.2,25.104,100
+Demon Bow 25t static small x1.6,1,Demon_Bow,,R,25,static,small,none,1.6,9.7,194,51,20,20,0.617,25.104,100
+Demon Bow 25t static small x2.5,1,Demon_Bow,,R,25,static,small,none,2.5,3.45,69,50,7,7,2.267,25.104,100
+Demon Bow 25t static small x4,1,Demon_Bow,,R,25,static,small,none,4,4.25,85,52,9,9,0.583,25.104,100
+Demon Bow 25t static small x6,1,Demon_Bow,,R,25,static,small,none,6,2.4,48,51,5,5,3.9,25.104,100
+Demon Bow 25t static small x10,1,Demon_Bow,,R,25,static,small,none,10,1.55,31,52,3,3,15.217,25.104,100
+Demon Bow 25t static boss x1,1,Demon_Bow,,R,25,static,boss,none,1,23.45,469,50,48,48,0.15,25.202,100
+Demon Bow 25t static boss x1.6,1,Demon_Bow,,R,25,static,boss,none,1.6,24.2,484,50,48,48,0.117,25.202,100
+Demon Bow 25t static boss x2.5,1,Demon_Bow,,R,25,static,boss,none,2.5,17.25,345,50,35,35,0.133,25.202,100
+Demon Bow 25t static boss x4,1,Demon_Bow,,R,25,static,boss,none,4,7.6,152,50,15,15,0.517,25.202,100
+Demon Bow 25t static boss x6,1,Demon_Bow,,R,25,static,boss,none,6,7,140,50,14,14,1.333,25.202,100
+Demon Bow 25t static boss x10,1,Demon_Bow,,R,25,static,boss,none,10,3.2,64,52,7,7,4.333,25.202,100
+Demon Bow 25t strafe small x1,1,Demon_Bow,,R,25,strafe,small,none,1,13.55,271,50,27,27,0.05,25.372,100
+Demon Bow 25t strafe small x1.6,1,Demon_Bow,,R,25,strafe,small,none,1.6,7.55,151,50,15,15,0.033,25.399,100
+Demon Bow 25t strafe small x2.5,1,Demon_Bow,,R,25,strafe,small,none,2.5,8.05,161,51,16,16,0.017,25.403,100
+Demon Bow 25t strafe small x4,1,Demon_Bow,,R,25,strafe,small,none,4,3.8,76,49,8,8,1.583,25.407,100
+Demon Bow 25t strafe small x6,1,Demon_Bow,,R,25,strafe,small,none,6,4.3,86,52,9,9,3.183,25.411,100
+Demon Bow 25t strafe small x10,1,Demon_Bow,,R,25,strafe,small,none,10,1.45,29,51,3,3,4.283,25.368,100
+Demon Bow 25t strafe boss x1,1,Demon_Bow,,R,25,strafe,boss,none,1,24.15,483,49,47,47,0.5,25.356,100
+Demon Bow 25t strafe boss x1.6,1,Demon_Bow,,R,25,strafe,boss,none,1.6,20.55,411,49,40,40,2,25.374,100
+Demon Bow 25t strafe boss x2.5,1,Demon_Bow,,R,25,strafe,boss,none,2.5,13.85,277,49,28,28,0.483,25.373,100
+Demon Bow 25t strafe boss x4,1,Demon_Bow,,R,25,strafe,boss,none,4,9.6,192,50,20,20,2.783,25.372,100
+Demon Bow 25t strafe boss x6,1,Demon_Bow,,R,25,strafe,boss,none,6,7.9,158,51,16,16,0.45,25.37,100
+Demon Bow 25t strafe boss x10,1,Demon_Bow,,R,25,strafe,boss,none,10,4.95,99,51,9,9,2.067,25.369,100
+Molten Fury 25t static small x1,1,Molten_Fury,,R,25,static,small,none,1,48.75,975,56,33,33,0.417,25.104,100
+Molten Fury 25t static small x1.6,1,Molten_Fury,,R,25,static,small,none,1.6,36.1,722,57,24,24,0.4,25.104,100
+Molten Fury 25t static small x2.5,1,Molten_Fury,,R,25,static,small,none,2.5,21.9,438,57,14,14,1.85,25.104,100
+Molten Fury 25t static small x4,1,Molten_Fury,,R,25,static,small,none,4,15.8,316,58,11,11,0.733,25.104,100
+Molten Fury 25t static small x6,1,Molten_Fury,,R,25,static,small,none,6,16.05,321,56,11,11,0.333,25.104,100
+Molten Fury 25t static small x10,1,Molten_Fury,,R,25,static,small,none,10,2.7,54,56,2,2,3.733,25.104,100
+Molten Fury 25t static boss x1,1,Molten_Fury,,R,25,static,boss,none,1,81.2,1624,55,54,54,0.367,25.202,100
+Molten Fury 25t static boss x1.6,1,Molten_Fury,,R,25,static,boss,none,1.6,82.35,1647,55,54,54,0.35,25.202,100
+Molten Fury 25t static boss x2.5,1,Molten_Fury,,R,25,static,boss,none,2.5,57.55,1151,56,38,38,0.333,25.202,100
+Molten Fury 25t static boss x4,1,Molten_Fury,,R,25,static,boss,none,4,33.35,667,56,22,22,1.05,25.202,100
+Molten Fury 25t static boss x6,1,Molten_Fury,,R,25,static,boss,none,6,23.65,473,57,16,16,0.3,25.202,100
+Molten Fury 25t static boss x10,1,Molten_Fury,,R,25,static,boss,none,10,18.25,365,60,12,12,0.017,25.202,100
+Molten Fury 25t strafe small x1,1,Molten_Fury,,R,25,strafe,small,none,1,45.65,913,55,31,31,0.367,25.372,100
+Molten Fury 25t strafe small x1.6,1,Molten_Fury,,R,25,strafe,small,none,1.6,36.4,728,55,24,24,0.35,25.399,100
+Molten Fury 25t strafe small x2.5,1,Molten_Fury,,R,25,strafe,small,none,2.5,17.65,353,56,12,12,0.75,25.403,100
+Molten Fury 25t strafe small x4,1,Molten_Fury,,R,25,strafe,small,none,4,3.35,67,56,2,2,13.7,25.407,100
+Molten Fury 25t strafe small x6,1,Molten_Fury,,R,25,strafe,small,none,6,7.3,146,57,5,5,5.733,25.411,100
+Molten Fury 25t strafe small x10,1,Molten_Fury,,R,25,strafe,small,none,10,10.4,208,59,7,7,5.45,25.368,100
+Molten Fury 25t strafe boss x1,1,Molten_Fury,,R,25,strafe,boss,none,1,78.35,1567,55,52,52,0.317,25.356,100
+Molten Fury 25t strafe boss x1.6,1,Molten_Fury,,R,25,strafe,boss,none,1.6,73.1,1462,55,49,49,0.283,25.374,100
+Molten Fury 25t strafe boss x2.5,1,Molten_Fury,,R,25,strafe,boss,none,2.5,49.95,999,55,34,34,0.25,25.373,100
+Molten Fury 25t strafe boss x4,1,Molten_Fury,,R,25,strafe,boss,none,4,44.6,892,55,29,29,0.667,25.372,100
+Molten Fury 25t strafe boss x6,1,Molten_Fury,,R,25,strafe,boss,none,6,20.35,407,58,14,14,3.933,25.37,100
+Molten Fury 25t strafe boss x10,1,Molten_Fury,,R,25,strafe,boss,none,10,12.1,242,57,8,8,3.067,25.369,100
+Ruby Staff 25t static small x1,1,Ruby_Staff,,M,25,static,small,none,1,20.7,414,50,35,35,0.367,25.104,100
+Ruby Staff 25t static small x1.6,1,Ruby_Staff,,M,25,static,small,none,1.6,8.3,166,49,14,14,5.483,25.104,100
+Ruby Staff 25t static small x2.5,1,Ruby_Staff,,M,25,static,small,none,2.5,5.95,119,51,11,11,1.733,25.104,100
+Ruby Staff 25t static small x4,1,Ruby_Staff,,M,25,static,small,none,4,5.25,105,47,9,9,1.25,25.104,100
+Ruby Staff 25t static small x6,1,Ruby_Staff,,M,25,static,small,none,6,3,60,46,5,5,2.167,25.104,100
+Ruby Staff 25t static small x10,1,Ruby_Staff,,M,25,static,small,none,10,1.45,29,50,2,2,2.717,25.104,100
+Ruby Staff 25t static boss x1,1,Ruby_Staff,,M,25,static,boss,none,1,50.6,1012,44,43,85,0.3,25.175,100
+Ruby Staff 25t static boss x1.6,1,Ruby_Staff,,M,25,static,boss,none,1.6,47,940,44,43,78,0.283,25.174,100
+Ruby Staff 25t static boss x2.5,1,Ruby_Staff,,M,25,static,boss,none,2.5,37.7,754,46,34,62,0.283,25.174,100
+Ruby Staff 25t static boss x4,1,Ruby_Staff,,M,25,static,boss,none,4,20,400,45,18,34,0.25,25.174,100
+Ruby Staff 25t static boss x6,1,Ruby_Staff,,M,25,static,boss,none,6,13.55,271,48,12,22,2.55,25.174,100
+Ruby Staff 25t static boss x10,1,Ruby_Staff,,M,25,static,boss,none,10,-99994.2,-1999884,48,5,10,-1,25.175,100
+Ruby Staff 25t strafe small x1,1,Ruby_Staff,,M,25,strafe,small,none,1,13.25,265,49,22,22,2.883,25.372,100
+Ruby Staff 25t strafe small x1.6,1,Ruby_Staff,,M,25,strafe,small,none,1.6,8.65,173,49,14,14,1.433,25.399,100
+Ruby Staff 25t strafe small x2.5,1,Ruby_Staff,,M,25,strafe,small,none,2.5,6.55,131,50,12,12,4.383,25.403,100
+Ruby Staff 25t strafe small x4,1,Ruby_Staff,,M,25,strafe,small,none,4,3.8,76,48,6,6,4,25.407,100
+Ruby Staff 25t strafe small x6,1,Ruby_Staff,,M,25,strafe,small,none,6,3.4,68,48,6,6,6.867,25.411,100
+Ruby Staff 25t strafe small x10,1,Ruby_Staff,,M,25,strafe,small,none,10,1.65,33,48,3,3,3.683,25.368,100
+Ruby Staff 25t strafe boss x1,1,Ruby_Staff,,M,25,strafe,boss,none,1,43.9,878,45,40,74,0.167,25.347,100
+Ruby Staff 25t strafe boss x1.6,1,Ruby_Staff,,M,25,strafe,boss,none,1.6,39.55,791,45,34,65,0.133,25.348,100
+Ruby Staff 25t strafe boss x2.5,1,Ruby_Staff,,M,25,strafe,boss,none,2.5,29.15,583,47,30,49,0.133,25.349,100
+Ruby Staff 25t strafe boss x4,1,Ruby_Staff,,M,25,strafe,boss,none,4,20.25,405,46,19,33,3.933,25.349,100
+Ruby Staff 25t strafe boss x6,1,Ruby_Staff,,M,25,strafe,boss,none,6,8.75,175,45,9,15,4.3,25.35,100
+Ruby Staff 25t strafe boss x10,1,Ruby_Staff,,M,25,strafe,boss,none,10,7.85,157,50,7,13,0.167,25.347,100
+Space Gun 25t static small x1,1,Space_Gun,,M,25,static,small,none,1,16.1,322,72,36,36,0.367,25.104,100
+Space Gun 25t static small x1.6,1,Space_Gun,,M,25,static,small,none,1.6,12.1,242,73,27,27,0.067,25.104,100
+Space Gun 25t static small x2.5,1,Space_Gun,,M,25,static,small,none,2.5,5.35,107,73,12,12,3.45,25.104,100
+Space Gun 25t static small x4,1,Space_Gun,,M,25,static,small,none,4,2.8,56,74,6,6,0.883,25.104,100
+Space Gun 25t static small x6,1,Space_Gun,,M,25,static,small,none,6,2.85,57,72,7,7,4.833,25.104,100
+Space Gun 25t static small x10,1,Space_Gun,,M,25,static,small,none,10,2.4,48,74,5,5,2.083,25.104,100
+Space Gun 25t static boss x1,1,Space_Gun,,M,25,static,boss,none,1,55.15,1103,75,71,119,0.067,25.175,100
+Space Gun 25t static boss x1.6,1,Space_Gun,,M,25,static,boss,none,1.6,45.95,919,75,68,102,0.05,25.174,100
+Space Gun 25t static boss x2.5,1,Space_Gun,,M,25,static,boss,none,2.5,27.7,554,75,45,62,0.033,25.174,100
+Space Gun 25t static boss x4,1,Space_Gun,,M,25,static,boss,none,4,20.65,413,73,26,46,0.017,25.174,100
+Space Gun 25t static boss x6,1,Space_Gun,,M,25,static,boss,none,6,11.1,222,73,17,24,3.4,25.174,100
+Space Gun 25t static boss x10,1,Space_Gun,,M,25,static,boss,none,10,11.7,234,73,19,26,0.083,25.175,100
+Space Gun 25t strafe small x1,1,Space_Gun,,M,25,strafe,small,none,1,17.9,358,73,39,39,1.25,25.372,100
+Space Gun 25t strafe small x1.6,1,Space_Gun,,M,25,strafe,small,none,1.6,7.35,147,73,16,16,1.533,25.399,100
+Space Gun 25t strafe small x2.5,1,Space_Gun,,M,25,strafe,small,none,2.5,9.8,196,75,22,22,0.3,25.403,100
+Space Gun 25t strafe small x4,1,Space_Gun,,M,25,strafe,small,none,4,5.05,101,73,11,11,1.5,25.407,100
+Space Gun 25t strafe small x6,1,Space_Gun,,M,25,strafe,small,none,6,1.55,31,73,4,4,6.833,25.411,100
+Space Gun 25t strafe small x10,1,Space_Gun,,M,25,strafe,small,none,10,2.05,41,73,5,5,2.433,25.368,100
+Space Gun 25t strafe boss x1,1,Space_Gun,,M,25,strafe,boss,none,1,46.9,938,75,70,105,0.017,25.347,100
+Space Gun 25t strafe boss x1.6,1,Space_Gun,,M,25,strafe,boss,none,1.6,40.45,809,75,65,91,0.05,25.348,100
+Space Gun 25t strafe boss x2.5,1,Space_Gun,,M,25,strafe,boss,none,2.5,25.1,502,75,40,55,0.283,25.349,100
+Space Gun 25t strafe boss x4,1,Space_Gun,,M,25,strafe,boss,none,4,14.6,292,74,25,32,0.017,25.349,100
+Space Gun 25t strafe boss x6,1,Space_Gun,,M,25,strafe,boss,none,6,14.8,296,74,24,32,1.467,25.35,100
+Space Gun 25t strafe boss x10,1,Space_Gun,,M,25,strafe,boss,none,10,4.1,82,76,6,9,5.4,25.347,100
+Water Bolt 25t static small x1,1,Water_Bolt,,M,25,static,small,none,1,23.95,479,104,47,47,0.133,25.104,100
+Water Bolt 25t static small x1.6,1,Water_Bolt,,M,25,static,small,none,1.6,16.35,327,104,33,33,0.117,25.104,100
+Water Bolt 25t static small x2.5,1,Water_Bolt,,M,25,static,small,none,2.5,18.75,375,104,39,39,0.1,25.104,100
+Water Bolt 25t static small x4,1,Water_Bolt,,M,25,static,small,none,4,12.75,255,104,25,25,0.75,25.104,100
+Water Bolt 25t static small x6,1,Water_Bolt,,M,25,static,small,none,6,7.7,154,104,15,15,1.767,25.104,100
+Water Bolt 25t static small x10,1,Water_Bolt,,M,25,static,small,none,10,8.05,161,103,16,16,1.85,25.104,100
+Water Bolt 25t static boss x1,1,Water_Bolt,,M,25,static,boss,none,1,107.35,2147,104,72,212,0.033,25.175,100
+Water Bolt 25t static boss x1.6,1,Water_Bolt,,M,25,static,boss,none,1.6,103.25,2065,104,72,210,0.017,25.174,100
+Water Bolt 25t static boss x2.5,1,Water_Bolt,,M,25,static,boss,none,2.5,87.55,1751,104,65,175,0.017,25.174,100
+Water Bolt 25t static boss x4,1,Water_Bolt,,M,25,static,boss,none,4,78.25,1565,104,55,156,0.1,25.174,100
+Water Bolt 25t static boss x6,1,Water_Bolt,,M,25,static,boss,none,6,61.55,1231,104,46,126,0.1,25.174,100
+Water Bolt 25t static boss x10,1,Water_Bolt,,M,25,static,boss,none,10,27.75,555,103,19,55,0.017,25.175,100
+Water Bolt 25t strafe small x1,1,Water_Bolt,,M,25,strafe,small,none,1,14.4,288,104,23,29,0.1,25.372,100
+Water Bolt 25t strafe small x1.6,1,Water_Bolt,,M,25,strafe,small,none,1.6,11.75,235,104,21,24,2.783,25.399,100
+Water Bolt 25t strafe small x2.5,1,Water_Bolt,,M,25,strafe,small,none,2.5,12.5,250,104,23,25,2.533,25.403,100
+Water Bolt 25t strafe small x4,1,Water_Bolt,,M,25,strafe,small,none,4,11.4,228,104,20,23,0.4,25.407,100
+Water Bolt 25t strafe small x6,1,Water_Bolt,,M,25,strafe,small,none,6,9.2,184,104,14,19,0.017,25.411,100
+Water Bolt 25t strafe small x10,1,Water_Bolt,,M,25,strafe,small,none,10,7.75,155,103,14,16,3.45,25.368,100
+Water Bolt 25t strafe boss x1,1,Water_Bolt,,M,25,strafe,boss,none,1,69.55,1391,104,55,140,0.033,25.347,100
+Water Bolt 25t strafe boss x1.6,1,Water_Bolt,,M,25,strafe,boss,none,1.6,61.5,1230,104,50,124,0.017,25.348,100
+Water Bolt 25t strafe boss x2.5,1,Water_Bolt,,M,25,strafe,boss,none,2.5,70.95,1419,104,54,141,0.067,25.349,100
+Water Bolt 25t strafe boss x4,1,Water_Bolt,,M,25,strafe,boss,none,4,54.25,1085,104,40,107,0.017,25.349,100
+Water Bolt 25t strafe boss x6,1,Water_Bolt,,M,25,strafe,boss,none,6,53.15,1063,104,38,107,0.017,25.35,100
+Water Bolt 25t strafe boss x10,1,Water_Bolt,,M,25,strafe,boss,none,10,25.8,516,103,21,51,0.05,25.347,100
+Enchanted Sword 25t static small x1,1,Enchanted_Sword,,E,25,static,small,none,1,17.85,357,27,27,27,0.483,25.104,100
+Enchanted Sword 25t static small x1.6,1,Enchanted_Sword,,E,25,static,small,none,1.6,17.4,348,27,27,27,0.467,25.104,100
+Enchanted Sword 25t static small x2.5,1,Enchanted_Sword,,E,25,static,small,none,2.5,16.95,339,27,27,27,0.45,25.104,100
+Enchanted Sword 25t static small x4,1,Enchanted_Sword,,E,25,static,small,none,4,17.5,350,27,27,27,0.433,25.104,100
+Enchanted Sword 25t static small x6,1,Enchanted_Sword,,E,25,static,small,none,6,17.65,353,28,27,27,0.417,25.104,100
+Enchanted Sword 25t static small x10,1,Enchanted_Sword,,E,25,static,small,none,10,17.05,341,27,27,27,0.5,25.104,100
+Enchanted Sword 25t static boss x1,1,Enchanted_Sword,,E,25,static,boss,none,1,17.5,350,27,27,27,0.417,25.175,100
+Enchanted Sword 25t static boss x1.6,1,Enchanted_Sword,,E,25,static,boss,none,1.6,17.85,357,27,27,27,0.4,25.174,100
+Enchanted Sword 25t static boss x2.5,1,Enchanted_Sword,,E,25,static,boss,none,2.5,17,340,27,27,27,0.383,25.174,100
+Enchanted Sword 25t static boss x4,1,Enchanted_Sword,,E,25,static,boss,none,4,17.55,351,27,27,27,0.367,25.174,100
+Enchanted Sword 25t static boss x6,1,Enchanted_Sword,,E,25,static,boss,none,6,17.35,347,28,27,27,0.35,25.174,100
+Enchanted Sword 25t static boss x10,1,Enchanted_Sword,,E,25,static,boss,none,10,17.55,351,27,27,27,0.433,25.175,100
+Enchanted Sword 25t strafe small x1,1,Enchanted_Sword,,E,25,strafe,small,none,1,8.45,169,28,13,13,1.367,25.372,100
+Enchanted Sword 25t strafe small x1.6,1,Enchanted_Sword,,E,25,strafe,small,none,1.6,8.4,168,28,13,13,1.35,25.399,100
+Enchanted Sword 25t strafe small x2.5,1,Enchanted_Sword,,E,25,strafe,small,none,2.5,8.75,175,28,13,13,1.317,25.403,100
+Enchanted Sword 25t strafe small x4,1,Enchanted_Sword,,E,25,strafe,small,none,4,8.8,176,28,13,13,1.3,25.407,100
+Enchanted Sword 25t strafe small x6,1,Enchanted_Sword,,E,25,strafe,small,none,6,10.7,214,29,17,17,0.333,25.411,100
+Enchanted Sword 25t strafe small x10,1,Enchanted_Sword,,E,25,strafe,small,none,10,8.1,162,28,13,13,1.383,25.368,100
+Enchanted Sword 25t strafe boss x1,1,Enchanted_Sword,,E,25,strafe,boss,none,1,16.25,325,27,26,26,0.333,25.347,100
+Enchanted Sword 25t strafe boss x1.6,1,Enchanted_Sword,,E,25,strafe,boss,none,1.6,17.55,351,27,26,26,0.3,25.348,100
+Enchanted Sword 25t strafe boss x2.5,1,Enchanted_Sword,,E,25,strafe,boss,none,2.5,17.15,343,27,26,26,0.283,25.349,100
+Enchanted Sword 25t strafe boss x4,1,Enchanted_Sword,,E,25,strafe,boss,none,4,15.65,313,27,26,26,0.267,25.349,100
+Enchanted Sword 25t strafe boss x6,1,Enchanted_Sword,,E,25,strafe,boss,none,6,17,340,28,26,26,0.25,25.35,100
+Enchanted Sword 25t strafe boss x10,1,Enchanted_Sword,,E,25,strafe,boss,none,10,16.9,338,27,26,26,0.35,25.347,100
+Terra Blade 25t static small x1,1,Terra_Blade,,E,25,static,small,none,1,212.35,4247,68,67,67,0.2,25.104,100
+Terra Blade 25t static small x1.6,1,Terra_Blade,,E,25,static,small,none,1.6,195.35,3907,68,63,63,0.183,25.104,100
+Terra Blade 25t static small x2.5,1,Terra_Blade,,E,25,static,small,none,2.5,171,3420,68,54,54,0.167,25.104,100
+Terra Blade 25t static small x4,1,Terra_Blade,,E,25,static,small,none,4,102.95,2059,68,34,34,0.75,25.104,100
+Terra Blade 25t static small x6,1,Terra_Blade,,E,25,static,small,none,6,86.75,1735,68,28,28,0.433,25.104,100
+Terra Blade 25t static small x10,1,Terra_Blade,,E,25,static,small,none,10,52.05,1041,68,16,16,0.217,25.104,100
+Terra Blade 25t static boss x1,1,Terra_Blade,,E,25,static,boss,none,1,207.1,4142,69,66,66,0.183,25.175,100
+Terra Blade 25t static boss x1.6,1,Terra_Blade,,E,25,static,boss,none,1.6,209.05,4181,69,67,67,0.167,25.174,100
+Terra Blade 25t static boss x2.5,1,Terra_Blade,,E,25,static,boss,none,2.5,177.9,3558,69,57,57,0.183,25.174,100
+Terra Blade 25t static boss x4,1,Terra_Blade,,E,25,static,boss,none,4,180.05,3601,68,57,57,0.133,25.174,100
+Terra Blade 25t static boss x6,1,Terra_Blade,,E,25,static,boss,none,6,112.5,2250,67,36,36,0.717,25.174,100
+Terra Blade 25t static boss x10,1,Terra_Blade,,E,25,static,boss,none,10,61.9,1238,68,20,20,0.2,25.175,100
+Terra Blade 25t strafe small x1,1,Terra_Blade,,E,25,strafe,small,none,1,198.85,3977,68,64,64,0.183,25.372,100
+Terra Blade 25t strafe small x1.6,1,Terra_Blade,,E,25,strafe,small,none,1.6,187.6,3752,68,60,60,0.15,25.399,100
+Terra Blade 25t strafe small x2.5,1,Terra_Blade,,E,25,strafe,small,none,2.5,157.7,3154,68,50,50,0.133,25.403,100
+Terra Blade 25t strafe small x4,1,Terra_Blade,,E,25,strafe,small,none,4,103.65,2073,69,34,34,0.117,25.407,100
+Terra Blade 25t strafe small x6,1,Terra_Blade,,E,25,strafe,small,none,6,82.25,1645,68,26,26,0.733,25.411,100
+Terra Blade 25t strafe small x10,1,Terra_Blade,,E,25,strafe,small,none,10,31.15,623,68,10,10,3.817,25.368,100
+Terra Blade 25t strafe boss x1,1,Terra_Blade,,E,25,strafe,boss,none,1,206.25,4125,69,66,66,0.15,25.347,100
+Terra Blade 25t strafe boss x1.6,1,Terra_Blade,,E,25,strafe,boss,none,1.6,198.45,3969,69,63,63,0.183,25.348,100
+Terra Blade 25t strafe boss x2.5,1,Terra_Blade,,E,25,strafe,boss,none,2.5,190.95,3819,69,61,61,0.133,25.349,100
+Terra Blade 25t strafe boss x4,1,Terra_Blade,,E,25,strafe,boss,none,4,148.6,2972,68,47,47,0.1,25.349,100
+Terra Blade 25t strafe boss x6,1,Terra_Blade,,E,25,strafe,boss,none,6,112.55,2251,68,36,36,1.35,25.35,100
+Terra Blade 25t strafe boss x10,1,Terra_Blade,,E,25,strafe,boss,none,10,68.65,1373,69,21,21,0.183,25.347,100
+Minishark 25t static small x1,2,Minishark,,R,25,static,small,none,1,19.3,386,155,78,78,0.033,25.086,100
+Minishark 25t static small x1.6,2,Minishark,,R,25,static,small,none,1.6,11.45,229,156,44,44,0.15,25.086,100
+Minishark 25t static small x2.5,2,Minishark,,R,25,static,small,none,2.5,9.9,198,158,39,39,0.133,25.086,100
+Minishark 25t static small x4,2,Minishark,,R,25,static,small,none,4,5.3,106,156,23,23,0.383,25.086,100
+Minishark 25t static small x6,2,Minishark,,R,25,static,small,none,6,3.6,72,160,14,14,1.3,25.086,100
+Minishark 25t static small x10,2,Minishark,,R,25,static,small,none,10,1.75,35,159,7,7,1.25,25.086,100
+Minishark 25t static boss x1,2,Minishark,,R,25,static,boss,none,1,37.75,755,151,150,150,0.133,25.168,100
+Minishark 25t static boss x1.6,2,Minishark,,R,25,static,boss,none,1.6,36.3,726,152,145,145,0.117,25.168,100
+Minishark 25t static boss x2.5,2,Minishark,,R,25,static,boss,none,2.5,26.5,530,153,105,105,0.1,25.168,100
+Minishark 25t static boss x4,2,Minishark,,R,25,static,boss,none,4,13.95,279,153,56,56,0.083,25.168,100
+Minishark 25t static boss x6,2,Minishark,,R,25,static,boss,none,6,8.75,175,160,34,34,0.733,25.168,100
+Minishark 25t static boss x10,2,Minishark,,R,25,static,boss,none,10,5.65,113,159,23,23,1.217,25.168,100
+Minishark 25t strafe small x1,2,Minishark,,R,25,strafe,small,none,1,22.45,449,159,89,89,0.033,25.86,100
+Minishark 25t strafe small x1.6,2,Minishark,,R,25,strafe,small,none,1.6,12.45,249,159,48,48,0.067,25.762,100
+Minishark 25t strafe small x2.5,2,Minishark,,R,25,strafe,small,none,2.5,7.25,145,156,29,29,1.083,25.868,100
+Minishark 25t strafe small x4,2,Minishark,,R,25,strafe,small,none,4,5.55,111,158,22,22,0.233,25.866,100
+Minishark 25t strafe small x6,2,Minishark,,R,25,strafe,small,none,6,3.9,78,159,16,16,1.933,25.864,100
+Minishark 25t strafe small x10,2,Minishark,,R,25,strafe,small,none,10,2.45,49,161,10,10,4.05,25.862,100
+Minishark 25t strafe boss x1,2,Minishark,,R,25,strafe,boss,none,1,36.5,730,152,148,148,0.05,25.822,100
+Minishark 25t strafe boss x1.6,2,Minishark,,R,25,strafe,boss,none,1.6,34.6,692,155,137,137,0.033,25.821,100
+Minishark 25t strafe boss x2.5,2,Minishark,,R,25,strafe,boss,none,2.5,21.2,424,156,86,86,0.017,25.821,100
+Minishark 25t strafe boss x4,2,Minishark,,R,25,strafe,boss,none,4,14.5,290,155,58,58,0.717,25.824,100
+Minishark 25t strafe boss x6,2,Minishark,,R,25,strafe,boss,none,6,13.3,266,158,51,51,1.233,25.824,100
+Minishark 25t strafe boss x10,2,Minishark,,R,25,strafe,boss,none,10,6.05,121,159,24,24,1.433,25.823,100
+Minishark 25t static small x1,2,Minishark,,R,25,static,small,none,1,34.4,688,153,76,76,0.083,25.086,100
+Minishark 25t static small x1.6,2,Minishark,,R,25,static,small,none,1.6,22.25,445,154,51,51,0.067,25.086,100
+Minishark 25t static small x2.5,2,Minishark,,R,25,static,small,none,2.5,13.35,267,152,29,29,0.583,25.086,100
+Minishark 25t static small x4,2,Minishark,,R,25,static,small,none,4,6.7,134,152,15,15,2.567,25.086,100
+Minishark 25t static small x6,2,Minishark,,R,25,static,small,none,6,5.65,113,153,12,12,0.017,25.086,100
+Minishark 25t static small x10,2,Minishark,,R,25,static,small,none,10,4.6,92,152,10,10,3.967,25.086,100
+Minishark 25t static boss x1,2,Minishark,,R,25,static,boss,none,1,69,1380,153,150,150,0.067,25.168,100
+Minishark 25t static boss x1.6,2,Minishark,,R,25,static,boss,none,1.6,64.3,1286,154,140,140,0.067,25.168,100
+Minishark 25t static boss x2.5,2,Minishark,,R,25,static,boss,none,2.5,43.5,870,153,97,97,0.167,25.168,100
+Minishark 25t static boss x4,2,Minishark,,R,25,static,boss,none,4,29.1,582,153,65,65,0.15,25.168,100
+Minishark 25t static boss x6,2,Minishark,,R,25,static,boss,none,6,19.4,388,152,43,43,0.4,25.168,100
+Minishark 25t static boss x10,2,Minishark,,R,25,static,boss,none,10,11.35,227,151,25,25,0.217,25.168,100
+Minishark 25t strafe small x1,2,Minishark,,R,25,strafe,small,none,1,34.65,693,153,77,77,0.183,25.86,100
+Minishark 25t strafe small x1.6,2,Minishark,,R,25,strafe,small,none,1.6,22.3,446,152,49,49,0.083,25.762,100
+Minishark 25t strafe small x2.5,2,Minishark,,R,25,strafe,small,none,2.5,12.75,255,153,28,28,0.117,25.868,100
+Minishark 25t strafe small x4,2,Minishark,,R,25,strafe,small,none,4,8.55,171,152,19,19,0.5,25.866,100
+Minishark 25t strafe small x6,2,Minishark,,R,25,strafe,small,none,6,5.65,113,153,12,12,2.2,25.864,100
+Minishark 25t strafe small x10,2,Minishark,,R,25,strafe,small,none,10,3.35,67,153,8,8,0.2,25.862,100
+Minishark 25t strafe boss x1,2,Minishark,,R,25,strafe,boss,none,1,68.85,1377,152,149,149,0.083,25.822,100
+Minishark 25t strafe boss x1.6,2,Minishark,,R,25,strafe,boss,none,1.6,54,1080,154,121,121,0.067,25.821,100
+Minishark 25t strafe boss x2.5,2,Minishark,,R,25,strafe,boss,none,2.5,43.6,872,154,96,96,0.05,25.821,100
+Minishark 25t strafe boss x4,2,Minishark,,R,25,strafe,boss,none,4,29.55,591,151,64,64,0.033,25.824,100
+Minishark 25t strafe boss x6,2,Minishark,,R,25,strafe,boss,none,6,18.75,375,152,42,42,0.433,25.824,100
+Minishark 25t strafe boss x10,2,Minishark,,R,25,strafe,boss,none,10,11.85,237,151,25,25,1.05,25.823,100
+Sniper Rifle 25t static small x1,2,Sniper_Rifle,,R,25,static,small,none,1,179,3580,34,23,23,0.467,25.086,100
+Sniper Rifle 25t static small x1.6,2,Sniper_Rifle,,R,25,static,small,none,1.6,96.9,1938,34,13,13,1.05,25.086,100
+Sniper Rifle 25t static small x2.5,2,Sniper_Rifle,,R,25,static,small,none,2.5,29.8,596,34,4,4,1.033,25.086,100
+Sniper Rifle 25t static small x4,2,Sniper_Rifle,,R,25,static,small,none,4,37.85,757,33,5,5,0.417,25.086,100
+Sniper Rifle 25t static small x6,2,Sniper_Rifle,,R,25,static,small,none,6,15.5,310,33,2,2,7.6,25.086,100
+Sniper Rifle 25t static small x10,2,Sniper_Rifle,,R,25,static,small,none,10,6.75,135,33,1,1,18.483,25.086,100
+Sniper Rifle 25t static boss x1,2,Sniper_Rifle,,R,25,static,boss,none,1,259.8,5196,34,33,33,0.45,25.168,100
+Sniper Rifle 25t static boss x1.6,2,Sniper_Rifle,,R,25,static,boss,none,1.6,211.65,4233,34,28,28,0.433,25.168,100
+Sniper Rifle 25t static boss x2.5,2,Sniper_Rifle,,R,25,static,boss,none,2.5,143.7,2874,34,19,19,1.017,25.168,100
+Sniper Rifle 25t static boss x4,2,Sniper_Rifle,,R,25,static,boss,none,4,73.85,1477,33,10,10,0.4,25.168,100
+Sniper Rifle 25t static boss x6,2,Sniper_Rifle,,R,25,static,boss,none,6,71.35,1427,33,9,9,7.583,25.168,100
+Sniper Rifle 25t static boss x10,2,Sniper_Rifle,,R,25,static,boss,none,10,49.3,986,34,6,6,3.467,25.168,100
+Sniper Rifle 25t strafe small x1,2,Sniper_Rifle,,R,25,strafe,small,none,1,116.3,2326,34,16,16,2.267,25.86,100
+Sniper Rifle 25t strafe small x1.6,2,Sniper_Rifle,,R,25,strafe,small,none,1.6,103.45,2069,33,14,14,0.45,25.762,100
+Sniper Rifle 25t strafe small x2.5,2,Sniper_Rifle,,R,25,strafe,small,none,2.5,51.45,1029,34,7,7,5.217,25.868,100
+Sniper Rifle 25t strafe small x4,2,Sniper_Rifle,,R,25,strafe,small,none,4,23.8,476,34,3,3,2.217,25.866,100
+Sniper Rifle 25t strafe small x6,2,Sniper_Rifle,,R,25,strafe,small,none,6,22.25,445,33,3,3,9.967,25.864,100
+Sniper Rifle 25t strafe small x10,2,Sniper_Rifle,,R,25,strafe,small,none,10,48.1,962,33,6,6,1.1,25.862,100
+Sniper Rifle 25t strafe boss x1,2,Sniper_Rifle,,R,25,strafe,boss,none,1,255.1,5102,34,33,33,0.467,25.822,100
+Sniper Rifle 25t strafe boss x1.6,2,Sniper_Rifle,,R,25,strafe,boss,none,1.6,193.7,3874,34,26,26,1.65,25.821,100
+Sniper Rifle 25t strafe boss x2.5,2,Sniper_Rifle,,R,25,strafe,boss,none,2.5,147.6,2952,33,20,20,0.433,25.821,100
+Sniper Rifle 25t strafe boss x4,2,Sniper_Rifle,,R,25,strafe,boss,none,4,115.9,2318,34,15,15,0.417,25.824,100
+Sniper Rifle 25t strafe boss x6,2,Sniper_Rifle,,R,25,strafe,boss,none,6,52.85,1057,34,7,7,2.2,25.824,100
+Sniper Rifle 25t strafe boss x10,2,Sniper_Rifle,,R,25,strafe,boss,none,10,54.1,1082,34,7,7,3.45,25.823,100
+Boomstick 25t static small x1,2,Boomstick,,R,25,static,small,none,1,9.35,187,93,16,16,0.483,25.086,100
+Boomstick 25t static small x1.6,2,Boomstick,,R,25,static,small,none,1.6,8.05,161,94,13,13,0.467,25.086,100
+Boomstick 25t static small x2.5,2,Boomstick,,R,25,static,small,none,2.5,9.95,199,95,16,16,0.45,25.086,100
+Boomstick 25t static small x4,2,Boomstick,,R,25,static,small,none,4,7.6,152,93,13,13,0.433,25.086,100
+Boomstick 25t static small x6,2,Boomstick,,R,25,static,small,none,6,1.75,35,93,3,3,12.417,25.086,100
+Boomstick 25t static small x10,2,Boomstick,,R,25,static,small,none,10,2.4,48,93,4,4,10.5,25.086,100
+Boomstick 25t static boss x1,2,Boomstick,,R,25,static,boss,none,1,34.45,689,92,57,57,0.45,25.168,100
+Boomstick 25t static boss x1.6,2,Boomstick,,R,25,static,boss,none,1.6,32.55,651,91,55,55,0.433,25.168,100
+Boomstick 25t static boss x2.5,2,Boomstick,,R,25,static,boss,none,2.5,26.65,533,91,45,45,0.417,25.168,100
+Boomstick 25t static boss x4,2,Boomstick,,R,25,static,boss,none,4,22.25,445,96,38,38,2.4,25.168,100
+Boomstick 25t static boss x6,2,Boomstick,,R,25,static,boss,none,6,13.65,273,92,23,23,5.05,25.168,100
+Boomstick 25t static boss x10,2,Boomstick,,R,25,static,boss,none,10,10.6,212,97,17,17,0.467,25.168,100
+Boomstick 25t strafe small x1,2,Boomstick,,R,25,strafe,small,none,1,9.7,194,95,16,16,1.25,25.86,100
+Boomstick 25t strafe small x1.6,2,Boomstick,,R,25,strafe,small,none,1.6,10.8,216,93,18,18,1.25,25.762,100
+Boomstick 25t strafe small x2.5,2,Boomstick,,R,25,strafe,small,none,2.5,9.75,195,96,16,16,0.55,25.868,100
+Boomstick 25t strafe small x4,2,Boomstick,,R,25,strafe,small,none,4,7.5,150,94,13,13,3.05,25.866,100
+Boomstick 25t strafe small x6,2,Boomstick,,R,25,strafe,small,none,6,3.4,68,93,5,5,4.3,25.864,100
+Boomstick 25t strafe small x10,2,Boomstick,,R,25,strafe,small,none,10,3.1,62,95,5,5,2.5,25.862,100
+Boomstick 25t strafe boss x1,2,Boomstick,,R,25,strafe,boss,none,1,33.6,672,93,55,55,0.55,25.822,100
+Boomstick 25t strafe boss x1.6,2,Boomstick,,R,25,strafe,boss,none,1.6,34.55,691,91,57,57,0.533,25.821,100
+Boomstick 25t strafe boss x2.5,2,Boomstick,,R,25,strafe,boss,none,2.5,27.55,551,92,46,46,0.5,25.821,100
+Boomstick 25t strafe boss x4,2,Boomstick,,R,25,strafe,boss,none,4,24.4,488,91,40,40,0.483,25.824,100
+Boomstick 25t strafe boss x6,2,Boomstick,,R,25,strafe,boss,none,6,13.15,263,93,22,22,1.8,25.824,100
+Boomstick 25t strafe boss x10,2,Boomstick,,R,25,strafe,boss,none,10,13.25,265,100,22,22,0.567,25.823,100
+Demon Bow 25t static small x1,2,Demon_Bow,,R,25,static,small,none,1,15.6,312,50,32,32,0.633,25.104,100
+Demon Bow 25t static small x1.6,2,Demon_Bow,,R,25,static,small,none,1.6,9.85,197,50,19,19,1.45,25.104,100
+Demon Bow 25t static small x2.5,2,Demon_Bow,,R,25,static,small,none,2.5,6.75,135,50,14,14,0.167,25.104,100
+Demon Bow 25t static small x4,2,Demon_Bow,,R,25,static,small,none,4,4.2,84,50,8,8,3.083,25.104,100
+Demon Bow 25t static small x6,2,Demon_Bow,,R,25,static,small,none,6,2.65,53,51,5,5,3.9,25.104,100
+Demon Bow 25t static small x10,2,Demon_Bow,,R,25,static,small,none,10,1,20,52,2,2,0.217,25.104,100
+Demon Bow 25t static boss x1,2,Demon_Bow,,R,25,static,boss,none,1,24.4,488,50,48,48,0.167,25.202,100
+Demon Bow 25t static boss x1.6,2,Demon_Bow,,R,25,static,boss,none,1.6,24.2,484,50,48,48,0.133,25.202,100
+Demon Bow 25t static boss x2.5,2,Demon_Bow,,R,25,static,boss,none,2.5,14.65,293,50,28,28,0.117,25.202,100
+Demon Bow 25t static boss x4,2,Demon_Bow,,R,25,static,boss,none,4,10,200,51,20,20,0.533,25.202,100
+Demon Bow 25t static boss x6,2,Demon_Bow,,R,25,static,boss,none,6,4.85,97,51,10,10,1.333,25.202,100
+Demon Bow 25t static boss x10,2,Demon_Bow,,R,25,static,boss,none,10,3,60,52,6,6,0.183,25.202,100
+Demon Bow 25t strafe small x1,2,Demon_Bow,,R,25,strafe,small,none,1,11.5,230,51,23,23,2.333,25.755,100
+Demon Bow 25t strafe small x1.6,2,Demon_Bow,,R,25,strafe,small,none,1.6,8.1,162,53,17,17,0.35,25.719,100
+Demon Bow 25t strafe small x2.5,2,Demon_Bow,,R,25,strafe,small,none,2.5,4.5,90,51,9,9,4.117,25.718,100
+Demon Bow 25t strafe small x4,2,Demon_Bow,,R,25,strafe,small,none,4,4.5,90,51,9,9,1.967,25.718,100
+Demon Bow 25t strafe small x6,2,Demon_Bow,,R,25,strafe,small,none,6,1.85,37,50,4,4,1.967,25.717,100
+Demon Bow 25t strafe small x10,2,Demon_Bow,,R,25,strafe,small,none,10,0.85,17,50,2,2,2.033,25.752,100
+Demon Bow 25t strafe boss x1,2,Demon_Bow,,R,25,strafe,boss,none,1,22.95,459,50,48,48,0.333,25.839,100
+Demon Bow 25t strafe boss x1.6,2,Demon_Bow,,R,25,strafe,boss,none,1.6,21.9,438,50,44,44,0.283,25.838,100
+Demon Bow 25t strafe boss x2.5,2,Demon_Bow,,R,25,strafe,boss,none,2.5,16.6,332,52,33,33,0.25,25.839,100
+Demon Bow 25t strafe boss x4,2,Demon_Bow,,R,25,strafe,boss,none,4,10.2,204,50,20,20,0.733,25.843,100
+Demon Bow 25t strafe boss x6,2,Demon_Bow,,R,25,strafe,boss,none,6,5,100,49,10,10,1.117,25.841,100
+Demon Bow 25t strafe boss x10,2,Demon_Bow,,R,25,strafe,boss,none,10,4.65,93,52,10,10,4.117,25.84,100
+Molten Fury 25t static small x1,2,Molten_Fury,,R,25,static,small,none,1,46.7,934,56,31,31,0.417,25.104,100
+Molten Fury 25t static small x1.6,2,Molten_Fury,,R,25,static,small,none,1.6,33.3,666,57,22,22,0.033,25.104,100
+Molten Fury 25t static small x2.5,2,Molten_Fury,,R,25,static,small,none,2.5,27.7,554,57,18,18,0.75,25.104,100
+Molten Fury 25t static small x4,2,Molten_Fury,,R,25,static,small,none,4,9.55,191,56,6,6,0.733,25.104,100
+Molten Fury 25t static small x6,2,Molten_Fury,,R,25,static,small,none,6,21.4,428,58,15,15,0.717,25.104,100
+Molten Fury 25t static small x10,2,Molten_Fury,,R,25,static,small,none,10,8.55,171,59,6,6,2.633,25.104,100
+Molten Fury 25t static boss x1,2,Molten_Fury,,R,25,static,boss,none,1,80.65,1613,55,54,54,0.367,25.202,100
+Molten Fury 25t static boss x1.6,2,Molten_Fury,,R,25,static,boss,none,1.6,80.3,1606,55,54,54,0.35,25.202,100
+Molten Fury 25t static boss x2.5,2,Molten_Fury,,R,25,static,boss,none,2.5,62.4,1248,56,41,41,0.35,25.202,100
+Molten Fury 25t static boss x4,2,Molten_Fury,,R,25,static,boss,none,4,32.55,651,56,22,22,0.683,25.202,100
+Molten Fury 25t static boss x6,2,Molten_Fury,,R,25,static,boss,none,6,34.05,681,58,23,23,0.667,25.202,100
+Molten Fury 25t static boss x10,2,Molten_Fury,,R,25,static,boss,none,10,12.5,250,59,8,8,3.333,25.202,100
+Molten Fury 25t strafe small x1,2,Molten_Fury,,R,25,strafe,small,none,1,43.55,871,57,29,29,0.133,25.755,100
+Molten Fury 25t strafe small x1.6,2,Molten_Fury,,R,25,strafe,small,none,1.6,26.4,528,58,18,18,1.617,25.719,100
+Molten Fury 25t strafe small x2.5,2,Molten_Fury,,R,25,strafe,small,none,2.5,13.3,266,56,9,9,2.567,25.718,100
+Molten Fury 25t strafe small x4,2,Molten_Fury,,R,25,strafe,small,none,4,10.9,218,57,7,7,2.55,25.718,100
+Molten Fury 25t strafe small x6,2,Molten_Fury,,R,25,strafe,small,none,6,9.1,182,56,6,6,3.483,25.717,100
+Molten Fury 25t strafe small x10,2,Molten_Fury,,R,25,strafe,small,none,10,7.9,158,62,5,5,3.95,25.752,100
+Molten Fury 25t strafe boss x1,2,Molten_Fury,,R,25,strafe,boss,none,1,82.6,1652,56,55,55,0.083,25.839,100
+Molten Fury 25t strafe boss x1.6,2,Molten_Fury,,R,25,strafe,boss,none,1.6,75.9,1518,56,50,50,0.867,25.838,100
+Molten Fury 25t strafe boss x2.5,2,Molten_Fury,,R,25,strafe,boss,none,2.5,58.1,1162,56,38,38,0.033,25.839,100
+Molten Fury 25t strafe boss x4,2,Molten_Fury,,R,25,strafe,boss,none,4,31.05,621,56,20,20,2.833,25.843,100
+Molten Fury 25t strafe boss x6,2,Molten_Fury,,R,25,strafe,boss,none,6,22.6,452,58,15,15,2.5,25.841,100
+Molten Fury 25t strafe boss x10,2,Molten_Fury,,R,25,strafe,boss,none,10,18.6,372,57,12,12,2.567,25.84,100
+Ruby Staff 25t static small x1,2,Ruby_Staff,,M,25,static,small,none,1,18,360,51,31,31,0.367,25.104,100
+Ruby Staff 25t static small x1.6,2,Ruby_Staff,,M,25,static,small,none,1.6,9.1,182,51,15,15,0.35,25.104,100
+Ruby Staff 25t static small x2.5,2,Ruby_Staff,,M,25,static,small,none,2.5,5.9,118,50,10,10,0.333,25.104,100
+Ruby Staff 25t static small x4,2,Ruby_Staff,,M,25,static,small,none,4,5.3,106,50,9,9,0.783,25.104,100
+Ruby Staff 25t static small x6,2,Ruby_Staff,,M,25,static,small,none,6,2.15,43,48,4,4,10.1,25.104,100
+Ruby Staff 25t static small x10,2,Ruby_Staff,,M,25,static,small,none,10,3.85,77,50,6,6,3.65,25.104,100
+Ruby Staff 25t static boss x1,2,Ruby_Staff,,M,25,static,boss,none,1,51.05,1021,44,43,85,0.283,25.175,100
+Ruby Staff 25t static boss x1.6,2,Ruby_Staff,,M,25,static,boss,none,1.6,46.35,927,44,43,78,0.283,25.174,100
+Ruby Staff 25t static boss x2.5,2,Ruby_Staff,,M,25,static,boss,none,2.5,34.1,682,44,32,56,0.283,25.174,100
+Ruby Staff 25t static boss x4,2,Ruby_Staff,,M,25,static,boss,none,4,22.75,455,45,20,39,0.717,25.174,100
+Ruby Staff 25t static boss x6,2,Ruby_Staff,,M,25,static,boss,none,6,15.7,314,47,15,27,0.217,25.174,100
+Ruby Staff 25t static boss x10,2,Ruby_Staff,,M,25,static,boss,none,10,10.4,208,46,9,17,0.3,25.175,100
+Ruby Staff 25t strafe small x1,2,Ruby_Staff,,M,25,strafe,small,none,1,11.7,234,49,19,19,1.917,25.728,100
+Ruby Staff 25t strafe small x1.6,2,Ruby_Staff,,M,25,strafe,small,none,1.6,7.95,159,50,13,13,2.65,25.719,100
+Ruby Staff 25t strafe small x2.5,2,Ruby_Staff,,M,25,strafe,small,none,2.5,7.1,142,48,11,11,0.533,25.718,100
+Ruby Staff 25t strafe small x4,2,Ruby_Staff,,M,25,strafe,small,none,4,2.4,48,48,4,4,2.267,25.718,100
+Ruby Staff 25t strafe small x6,2,Ruby_Staff,,M,25,strafe,small,none,6,1.1,22,50,2,2,5.417,25.717,100
+Ruby Staff 25t strafe small x10,2,Ruby_Staff,,M,25,strafe,small,none,10,1.55,31,50,3,3,7.983,25.729,100
+Ruby Staff 25t strafe boss x1,2,Ruby_Staff,,M,25,strafe,boss,none,1,45.9,918,47,41,76,0.1,25.84,100
+Ruby Staff 25t strafe boss x1.6,2,Ruby_Staff,,M,25,strafe,boss,none,1.6,41.65,833,46,39,71,0.067,25.837,100
+Ruby Staff 25t strafe boss x2.5,2,Ruby_Staff,,M,25,strafe,boss,none,2.5,31.3,626,46,31,52,0.05,25.838,100
+Ruby Staff 25t strafe boss x4,2,Ruby_Staff,,M,25,strafe,boss,none,4,22.8,456,47,24,38,0.017,25.839,100
+Ruby Staff 25t strafe boss x6,2,Ruby_Staff,,M,25,strafe,boss,none,6,10.6,212,46,10,18,0.933,25.838,100
+Ruby Staff 25t strafe boss x10,2,Ruby_Staff,,M,25,strafe,boss,none,10,5.55,111,46,5,9,1,25.839,100
+Space Gun 25t static small x1,2,Space_Gun,,M,25,static,small,none,1,15.4,308,74,35,35,0.083,25.104,100
+Space Gun 25t static small x1.6,2,Space_Gun,,M,25,static,small,none,1.6,9.7,194,72,21,21,0.067,25.104,100
+Space Gun 25t static small x2.5,2,Space_Gun,,M,25,static,small,none,2.5,7.05,141,74,16,16,1.183,25.104,100
+Space Gun 25t static small x4,2,Space_Gun,,M,25,static,small,none,4,4.45,89,72,9,9,3.717,25.104,100
+Space Gun 25t static small x6,2,Space_Gun,,M,25,static,small,none,6,2.2,44,73,5,5,5.967,25.104,100
+Space Gun 25t static small x10,2,Space_Gun,,M,25,static,small,none,10,2.45,49,73,6,6,1.233,25.104,100
+Space Gun 25t static boss x1,2,Space_Gun,,M,25,static,boss,none,1,52.05,1041,74,71,116,0.067,25.175,100
+Space Gun 25t static boss x1.6,2,Space_Gun,,M,25,static,boss,none,1.6,45.45,909,73,70,103,0.05,25.174,100
+Space Gun 25t static boss x2.5,2,Space_Gun,,M,25,static,boss,none,2.5,29.65,593,72,42,65,0.317,25.174,100
+Space Gun 25t static boss x4,2,Space_Gun,,M,25,static,boss,none,4,21.1,422,73,29,45,0.017,25.174,100
+Space Gun 25t static boss x6,2,Space_Gun,,M,25,static,boss,none,6,12.5,250,74,20,29,0.85,25.174,100
+Space Gun 25t static boss x10,2,Space_Gun,,M,25,static,boss,none,10,10.45,209,74,17,24,1.217,25.175,100
+Space Gun 25t strafe small x1,2,Space_Gun,,M,25,strafe,small,none,1,16.75,335,74,38,38,0.133,25.728,100
+Space Gun 25t strafe small x1.6,2,Space_Gun,,M,25,strafe,small,none,1.6,10,200,75,23,23,0.117,25.719,100
+Space Gun 25t strafe small x2.5,2,Space_Gun,,M,25,strafe,small,none,2.5,5.5,110,72,12,12,0.683,25.718,100
+Space Gun 25t strafe small x4,2,Space_Gun,,M,25,strafe,small,none,4,4.8,96,75,10,10,1.783,25.718,100
+Space Gun 25t strafe small x6,2,Space_Gun,,M,25,strafe,small,none,6,0.55,11,73,1,1,6.3,25.717,100
+Space Gun 25t strafe small x10,2,Space_Gun,,M,25,strafe,small,none,10,1.15,23,73,3,3,6.383,25.729,100
+Space Gun 25t strafe boss x1,2,Space_Gun,,M,25,strafe,boss,none,1,44.6,892,75,70,99,0.1,25.84,100
+Space Gun 25t strafe boss x1.6,2,Space_Gun,,M,25,strafe,boss,none,1.6,39.6,792,75,66,88,0.083,25.837,100
+Space Gun 25t strafe boss x2.5,2,Space_Gun,,M,25,strafe,boss,none,2.5,28.8,576,76,45,64,0.367,25.838,100
+Space Gun 25t strafe boss x4,2,Space_Gun,,M,25,strafe,boss,none,4,16.4,328,74,26,37,0.35,25.839,100
+Space Gun 25t strafe boss x6,2,Space_Gun,,M,25,strafe,boss,none,6,10.1,202,75,16,23,2.017,25.838,100
+Space Gun 25t strafe boss x10,2,Space_Gun,,M,25,strafe,boss,none,10,7.45,149,75,12,16,2.1,25.839,100
+Water Bolt 25t static small x1,2,Water_Bolt,,M,25,static,small,none,1,24.7,494,104,50,50,0.133,25.104,100
+Water Bolt 25t static small x1.6,2,Water_Bolt,,M,25,static,small,none,1.6,17.1,342,104,35,35,0.117,25.104,100
+Water Bolt 25t static small x2.5,2,Water_Bolt,,M,25,static,small,none,2.5,16.4,328,104,33,33,0.1,25.104,100
+Water Bolt 25t static small x4,2,Water_Bolt,,M,25,static,small,none,4,11.95,239,104,24,24,1.233,25.104,100
+Water Bolt 25t static small x6,2,Water_Bolt,,M,25,static,small,none,6,8.15,163,104,16,16,1.2,25.104,100
+Water Bolt 25t static small x10,2,Water_Bolt,,M,25,static,small,none,10,7.3,146,103,14,14,3.283,25.104,100
+Water Bolt 25t static boss x1,2,Water_Bolt,,M,25,static,boss,none,1,105.1,2102,104,72,212,0.033,25.175,100
+Water Bolt 25t static boss x1.6,2,Water_Bolt,,M,25,static,boss,none,1.6,102.3,2046,104,71,201,0.167,25.174,100
+Water Bolt 25t static boss x2.5,2,Water_Bolt,,M,25,static,boss,none,2.5,82.45,1649,104,59,166,0.1,25.174,100
+Water Bolt 25t static boss x4,2,Water_Bolt,,M,25,static,boss,none,4,63.95,1279,104,46,130,0.1,25.174,100
+Water Bolt 25t static boss x6,2,Water_Bolt,,M,25,static,boss,none,6,55.2,1104,104,41,109,0.5,25.174,100
+Water Bolt 25t static boss x10,2,Water_Bolt,,M,25,static,boss,none,10,39.95,799,103,29,80,0.167,25.175,100
+Water Bolt 25t strafe small x1,2,Water_Bolt,,M,25,strafe,small,none,1,8,160,104,16,17,3.467,25.728,100
+Water Bolt 25t strafe small x1.6,2,Water_Bolt,,M,25,strafe,small,none,1.6,7.35,147,104,15,16,2.067,25.719,100
+Water Bolt 25t strafe small x2.5,2,Water_Bolt,,M,25,strafe,small,none,2.5,14.7,294,104,26,28,0.9,25.718,100
+Water Bolt 25t strafe small x4,2,Water_Bolt,,M,25,strafe,small,none,4,13.75,275,104,22,27,3.2,25.718,100
+Water Bolt 25t strafe small x6,2,Water_Bolt,,M,25,strafe,small,none,6,9.45,189,104,17,19,0.017,25.717,100
+Water Bolt 25t strafe small x10,2,Water_Bolt,,M,25,strafe,small,none,10,3.85,77,103,7,8,2.833,25.729,100
+Water Bolt 25t strafe boss x1,2,Water_Bolt,,M,25,strafe,boss,none,1,70.75,1415,104,56,144,0.083,25.84,100
+Water Bolt 25t strafe boss x1.6,2,Water_Bolt,,M,25,strafe,boss,none,1.6,72.35,1447,104,56,145,0.167,25.837,100
+Water Bolt 25t strafe boss x2.5,2,Water_Bolt,,M,25,strafe,boss,none,2.5,67.1,1342,104,52,134,0.667,25.838,100
+Water Bolt 25t strafe boss x4,2,Water_Bolt,,M,25,strafe,boss,none,4,51.8,1036,104,43,103,0.083,25.839,100
+Water Bolt 25t strafe boss x6,2,Water_Bolt,,M,25,strafe,boss,none,6,39.5,790,104,30,80,0.083,25.838,100
+Water Bolt 25t strafe boss x10,2,Water_Bolt,,M,25,strafe,boss,none,10,28.85,577,103,21,59,0.75,25.839,100
+Enchanted Sword 25t static small x1,2,Enchanted_Sword,,E,25,static,small,none,1,18.3,366,27,27,27,0.483,25.104,100
+Enchanted Sword 25t static small x1.6,2,Enchanted_Sword,,E,25,static,small,none,1.6,17.2,344,27,27,27,0.467,25.104,100
+Enchanted Sword 25t static small x2.5,2,Enchanted_Sword,,E,25,static,small,none,2.5,17.45,349,27,27,27,0.45,25.104,100
+Enchanted Sword 25t static small x4,2,Enchanted_Sword,,E,25,static,small,none,4,17.15,343,27,27,27,0.433,25.104,100
+Enchanted Sword 25t static small x6,2,Enchanted_Sword,,E,25,static,small,none,6,17.55,351,28,27,27,0.417,25.104,100
+Enchanted Sword 25t static small x10,2,Enchanted_Sword,,E,25,static,small,none,10,17.5,350,27,27,27,0.5,25.104,100
+Enchanted Sword 25t static boss x1,2,Enchanted_Sword,,E,25,static,boss,none,1,17.3,346,27,27,27,0.417,25.175,100
+Enchanted Sword 25t static boss x1.6,2,Enchanted_Sword,,E,25,static,boss,none,1.6,17.4,348,27,27,27,0.4,25.174,100
+Enchanted Sword 25t static boss x2.5,2,Enchanted_Sword,,E,25,static,boss,none,2.5,17.4,348,27,27,27,0.383,25.174,100
+Enchanted Sword 25t static boss x4,2,Enchanted_Sword,,E,25,static,boss,none,4,17.6,352,27,27,27,0.367,25.174,100
+Enchanted Sword 25t static boss x6,2,Enchanted_Sword,,E,25,static,boss,none,6,17.85,357,28,27,27,0.35,25.174,100
+Enchanted Sword 25t static boss x10,2,Enchanted_Sword,,E,25,static,boss,none,10,18.5,370,27,27,27,0.433,25.175,100
+Enchanted Sword 25t strafe small x1,2,Enchanted_Sword,,E,25,strafe,small,none,1,8.2,164,29,12,12,2.1,25.728,100
+Enchanted Sword 25t strafe small x1.6,2,Enchanted_Sword,,E,25,strafe,small,none,1.6,7.65,153,28,12,12,2.083,25.719,100
+Enchanted Sword 25t strafe small x2.5,2,Enchanted_Sword,,E,25,strafe,small,none,2.5,6.25,125,28,9,9,2.067,25.718,100
+Enchanted Sword 25t strafe small x4,2,Enchanted_Sword,,E,25,strafe,small,none,4,6.2,124,28,9,9,2.05,25.718,100
+Enchanted Sword 25t strafe small x6,2,Enchanted_Sword,,E,25,strafe,small,none,6,5.8,116,29,9,9,2.033,25.717,100
+Enchanted Sword 25t strafe small x10,2,Enchanted_Sword,,E,25,strafe,small,none,10,7.75,155,29,12,12,2.1,25.729,100
+Enchanted Sword 25t strafe boss x1,2,Enchanted_Sword,,E,25,strafe,boss,none,1,16.55,331,27,26,26,0.617,25.84,100
+Enchanted Sword 25t strafe boss x1.6,2,Enchanted_Sword,,E,25,strafe,boss,none,1.6,17.55,351,27,26,26,0.6,25.837,100
+Enchanted Sword 25t strafe boss x2.5,2,Enchanted_Sword,,E,25,strafe,boss,none,2.5,17.5,350,27,27,27,0.583,25.838,100
+Enchanted Sword 25t strafe boss x4,2,Enchanted_Sword,,E,25,strafe,boss,none,4,18.35,367,27,27,27,0.55,25.839,100
+Enchanted Sword 25t strafe boss x6,2,Enchanted_Sword,,E,25,strafe,boss,none,6,17.35,347,28,27,27,0.533,25.838,100
+Enchanted Sword 25t strafe boss x10,2,Enchanted_Sword,,E,25,strafe,boss,none,10,17.6,352,27,26,26,0.633,25.839,100
+Terra Blade 25t static small x1,2,Terra_Blade,,E,25,static,small,none,1,213.5,4270,69,67,67,0.2,25.104,100
+Terra Blade 25t static small x1.6,2,Terra_Blade,,E,25,static,small,none,1.6,196.3,3926,69,63,63,0.183,25.104,100
+Terra Blade 25t static small x2.5,2,Terra_Blade,,E,25,static,small,none,2.5,175.9,3518,68,56,56,0.167,25.104,100
+Terra Blade 25t static small x4,2,Terra_Blade,,E,25,static,small,none,4,121.45,2429,68,39,39,0.75,25.104,100
+Terra Blade 25t static small x6,2,Terra_Blade,,E,25,static,small,none,6,91.8,1836,68,29,29,0.133,25.104,100
+Terra Blade 25t static small x10,2,Terra_Blade,,E,25,static,small,none,10,50,1000,69,16,16,1.717,25.104,100
+Terra Blade 25t static boss x1,2,Terra_Blade,,E,25,static,boss,none,1,209.8,4196,68,67,67,0.183,25.175,100
+Terra Blade 25t static boss x1.6,2,Terra_Blade,,E,25,static,boss,none,1.6,215.2,4304,69,67,67,0.167,25.174,100
+Terra Blade 25t static boss x2.5,2,Terra_Blade,,E,25,static,boss,none,2.5,194,3880,68,61,61,0.15,25.174,100
+Terra Blade 25t static boss x4,2,Terra_Blade,,E,25,static,boss,none,4,159.65,3193,68,52,52,0.15,25.174,100
+Terra Blade 25t static boss x6,2,Terra_Blade,,E,25,static,boss,none,6,112.35,2247,67,36,36,0.417,25.174,100
+Terra Blade 25t static boss x10,2,Terra_Blade,,E,25,static,boss,none,10,69.25,1385,69,21,21,0.2,25.175,100
+Terra Blade 25t strafe small x1,2,Terra_Blade,,E,25,strafe,small,none,1,195.95,3919,68,62,62,0.233,25.728,100
+Terra Blade 25t strafe small x1.6,2,Terra_Blade,,E,25,strafe,small,none,1.6,193.05,3861,69,60,60,0.533,25.719,100
+Terra Blade 25t strafe small x2.5,2,Terra_Blade,,E,25,strafe,small,none,2.5,148.6,2972,68,47,47,0.2,25.718,100
+Terra Blade 25t strafe small x4,2,Terra_Blade,,E,25,strafe,small,none,4,130.9,2618,69,41,41,0.5,25.718,100
+Terra Blade 25t strafe small x6,2,Terra_Blade,,E,25,strafe,small,none,6,59.35,1187,68,19,19,3.383,25.717,100
+Terra Blade 25t strafe small x10,2,Terra_Blade,,E,25,strafe,small,none,10,53.75,1075,69,17,17,1.767,25.729,100
+Terra Blade 25t strafe boss x1,2,Terra_Blade,,E,25,strafe,boss,none,1,206.45,4129,69,66,66,0.217,25.84,100
+Terra Blade 25t strafe boss x1.6,2,Terra_Blade,,E,25,strafe,boss,none,1.6,207.65,4153,69,66,66,0.2,25.837,100
+Terra Blade 25t strafe boss x2.5,2,Terra_Blade,,E,25,strafe,boss,none,2.5,187.75,3755,69,61,61,0.483,25.838,100
+Terra Blade 25t strafe boss x4,2,Terra_Blade,,E,25,strafe,boss,none,4,144.85,2897,67,47,47,0.183,25.839,100
+Terra Blade 25t strafe boss x6,2,Terra_Blade,,E,25,strafe,boss,none,6,101.35,2027,68,32,32,1.983,25.838,100
+Terra Blade 25t strafe boss x10,2,Terra_Blade,,E,25,strafe,boss,none,10,64.05,1281,69,21,21,0.567,25.839,100
+Minishark 25t static small x1,3,Minishark,,R,25,static,small,none,1,21.6,432,153,88,88,0.033,25.086,100
+Minishark 25t static small x1.6,3,Minishark,,R,25,static,small,none,1.6,12.15,243,158,49,49,0.55,25.086,100
+Minishark 25t static small x2.5,3,Minishark,,R,25,static,small,none,2.5,9.25,185,156,37,37,0.4,25.086,100
+Minishark 25t static small x4,3,Minishark,,R,25,static,small,none,4,3.75,75,158,15,15,0.117,25.086,100
+Minishark 25t static small x6,3,Minishark,,R,25,static,small,none,6,2.25,45,152,8,8,3.567,25.086,100
+Minishark 25t static small x10,3,Minishark,,R,25,static,small,none,10,1.2,24,160,5,5,8.317,25.086,100
+Minishark 25t static boss x1,3,Minishark,,R,25,static,boss,none,1,37.7,754,151,150,150,0.133,25.168,100
+Minishark 25t static boss x1.6,3,Minishark,,R,25,static,boss,none,1.6,36.05,721,152,146,146,0.117,25.168,100
+Minishark 25t static boss x2.5,3,Minishark,,R,25,static,boss,none,2.5,22.05,441,152,86,86,0.1,25.168,100
+Minishark 25t static boss x4,3,Minishark,,R,25,static,boss,none,4,17.25,345,156,71,71,0.083,25.168,100
+Minishark 25t static boss x6,3,Minishark,,R,25,static,boss,none,6,10.25,205,159,39,39,0.6,25.168,100
+Minishark 25t static boss x10,3,Minishark,,R,25,static,boss,none,10,4.75,95,155,20,20,0.15,25.168,100
+Minishark 25t strafe small x1,3,Minishark,,R,25,strafe,small,none,1,19.65,393,157,77,77,0.2,25.382,100
+Minishark 25t strafe small x1.6,3,Minishark,,R,25,strafe,small,none,1.6,13.1,262,155,51,51,0.083,25.361,100
+Minishark 25t strafe small x2.5,3,Minishark,,R,25,strafe,small,none,2.5,6.5,130,159,27,27,0.883,25.28,100
+Minishark 25t strafe small x4,3,Minishark,,R,25,strafe,small,none,4,5.65,113,158,21,21,1.717,25.278,100
+Minishark 25t strafe small x6,3,Minishark,,R,25,strafe,small,none,6,1.5,30,157,6,6,0.983,25.387,100
+Minishark 25t strafe small x10,3,Minishark,,R,25,strafe,small,none,10,2.5,50,158,10,10,2.2,25.385,100
+Minishark 25t strafe boss x1,3,Minishark,,R,25,strafe,boss,none,1,36.75,735,152,150,150,0.083,25.352,100
+Minishark 25t strafe boss x1.6,3,Minishark,,R,25,strafe,boss,none,1.6,34.3,686,152,137,137,0.583,25.352,100
+Minishark 25t strafe boss x2.5,3,Minishark,,R,25,strafe,boss,none,2.5,24.3,486,157,99,99,0.05,25.352,100
+Minishark 25t strafe boss x4,3,Minishark,,R,25,strafe,boss,none,4,16.1,322,159,68,68,0.3,25.351,100
+Minishark 25t strafe boss x6,3,Minishark,,R,25,strafe,boss,none,6,9.8,196,157,40,40,0.15,25.351,100
+Minishark 25t strafe boss x10,3,Minishark,,R,25,strafe,boss,none,10,6.5,130,157,25,25,1.35,25.351,100
+Minishark 25t static small x1,3,Minishark,,R,25,static,small,none,1,36.95,739,152,81,81,0.083,25.086,100
+Minishark 25t static small x1.6,3,Minishark,,R,25,static,small,none,1.6,20.85,417,153,46,46,0.2,25.086,100
+Minishark 25t static small x2.5,3,Minishark,,R,25,static,small,none,2.5,11.35,227,151,26,26,1.65,25.086,100
+Minishark 25t static small x4,3,Minishark,,R,25,static,small,none,4,7.6,152,153,18,18,1.233,25.086,100
+Minishark 25t static small x6,3,Minishark,,R,25,static,small,none,6,6.2,124,153,14,14,1.883,25.086,100
+Minishark 25t static small x10,3,Minishark,,R,25,static,small,none,10,2.95,59,151,6,6,2.367,25.086,100
+Minishark 25t static boss x1,3,Minishark,,R,25,static,boss,none,1,66.7,1334,153,150,150,0.067,25.168,100
+Minishark 25t static boss x1.6,3,Minishark,,R,25,static,boss,none,1.6,62.05,1241,154,136,136,0.05,25.168,100
+Minishark 25t static boss x2.5,3,Minishark,,R,25,static,boss,none,2.5,44.65,893,153,99,99,0.033,25.168,100
+Minishark 25t static boss x4,3,Minishark,,R,25,static,boss,none,4,24.05,481,152,52,52,0.283,25.168,100
+Minishark 25t static boss x6,3,Minishark,,R,25,static,boss,none,6,17,340,152,39,39,0.267,25.168,100
+Minishark 25t static boss x10,3,Minishark,,R,25,static,boss,none,10,10.7,214,155,23,23,0.35,25.168,100
+Minishark 25t strafe small x1,3,Minishark,,R,25,strafe,small,none,1,34.8,696,152,79,79,0.183,25.382,100
+Minishark 25t strafe small x1.6,3,Minishark,,R,25,strafe,small,none,1.6,20.8,416,153,46,46,0.733,25.361,100
+Minishark 25t strafe small x2.5,3,Minishark,,R,25,strafe,small,none,2.5,14.95,299,151,33,33,0.783,25.28,100
+Minishark 25t strafe small x4,3,Minishark,,R,25,strafe,small,none,4,7.55,151,153,17,17,0.1,25.278,100
+Minishark 25t strafe small x6,3,Minishark,,R,25,strafe,small,none,6,4.4,88,153,10,10,2.05,25.387,100
+Minishark 25t strafe small x10,3,Minishark,,R,25,strafe,small,none,10,4.4,88,155,10,10,0.067,25.385,100
+Minishark 25t strafe boss x1,3,Minishark,,R,25,strafe,boss,none,1,65.5,1310,153,149,149,0.1,25.352,100
+Minishark 25t strafe boss x1.6,3,Minishark,,R,25,strafe,boss,none,1.6,60.25,1205,153,134,134,0.083,25.352,100
+Minishark 25t strafe boss x2.5,3,Minishark,,R,25,strafe,boss,none,2.5,47,940,152,108,108,0.067,25.352,100
+Minishark 25t strafe boss x4,3,Minishark,,R,25,strafe,boss,none,4,20.6,412,151,45,45,0.317,25.351,100
+Minishark 25t strafe boss x6,3,Minishark,,R,25,strafe,boss,none,6,17.75,355,151,41,41,0.433,25.351,100
+Minishark 25t strafe boss x10,3,Minishark,,R,25,strafe,boss,none,10,8.35,167,151,18,18,0.633,25.351,100
+Sniper Rifle 25t static small x1,3,Sniper_Rifle,,R,25,static,small,none,1,169.8,3396,34,22,22,0.467,25.086,100
+Sniper Rifle 25t static small x1.6,3,Sniper_Rifle,,R,25,static,small,none,1.6,77.15,1543,34,10,10,0.45,25.086,100
+Sniper Rifle 25t static small x2.5,3,Sniper_Rifle,,R,25,static,small,none,2.5,65.3,1306,33,9,9,1.033,25.086,100
+Sniper Rifle 25t static small x4,3,Sniper_Rifle,,R,25,static,small,none,4,36.5,730,34,5,5,3.417,25.086,100
+Sniper Rifle 25t static small x6,3,Sniper_Rifle,,R,25,static,small,none,6,23.6,472,34,3,3,2.8,25.086,100
+Sniper Rifle 25t static small x10,3,Sniper_Rifle,,R,25,static,small,none,10,22.7,454,34,3,3,9.483,25.086,100
+Sniper Rifle 25t static boss x1,3,Sniper_Rifle,,R,25,static,boss,none,1,243.75,4875,34,33,33,0.45,25.168,100
+Sniper Rifle 25t static boss x1.6,3,Sniper_Rifle,,R,25,static,boss,none,1.6,252.25,5045,34,33,33,0.433,25.168,100
+Sniper Rifle 25t static boss x2.5,3,Sniper_Rifle,,R,25,static,boss,none,2.5,141.85,2837,33,19,19,0.417,25.168,100
+Sniper Rifle 25t static boss x4,3,Sniper_Rifle,,R,25,static,boss,none,4,119.9,2398,34,16,16,0.4,25.168,100
+Sniper Rifle 25t static boss x6,3,Sniper_Rifle,,R,25,static,boss,none,6,68.35,1367,34,9,9,0.383,25.168,100
+Sniper Rifle 25t static boss x10,3,Sniper_Rifle,,R,25,static,boss,none,10,54.9,1098,34,7,7,2.267,25.168,100
+Sniper Rifle 25t strafe small x1,3,Sniper_Rifle,,R,25,strafe,small,none,1,168.9,3378,33,22,22,0.467,25.382,100
+Sniper Rifle 25t strafe small x1.6,3,Sniper_Rifle,,R,25,strafe,small,none,1.6,53.5,1070,34,7,7,2.833,25.361,100
+Sniper Rifle 25t strafe small x2.5,3,Sniper_Rifle,,R,25,strafe,small,none,2.5,58.1,1162,34,8,8,1.033,25.28,100
+Sniper Rifle 25t strafe small x4,3,Sniper_Rifle,,R,25,strafe,small,none,4,32.4,648,33,4,4,0.417,25.278,100
+Sniper Rifle 25t strafe small x6,3,Sniper_Rifle,,R,25,strafe,small,none,6,6.5,130,33,1,1,14.783,25.387,100
+Sniper Rifle 25t strafe small x10,3,Sniper_Rifle,,R,25,strafe,small,none,10,23.6,472,34,3,3,8.85,25.385,100
+Sniper Rifle 25t strafe boss x1,3,Sniper_Rifle,,R,25,strafe,boss,none,1,251.15,5023,34,33,33,0.467,25.352,100
+Sniper Rifle 25t strafe boss x1.6,3,Sniper_Rifle,,R,25,strafe,boss,none,1.6,247.6,4952,34,32,32,0.45,25.352,100
+Sniper Rifle 25t strafe boss x2.5,3,Sniper_Rifle,,R,25,strafe,boss,none,2.5,174.6,3492,34,23,23,0.433,25.352,100
+Sniper Rifle 25t strafe boss x4,3,Sniper_Rifle,,R,25,strafe,boss,none,4,114.1,2282,34,15,15,0.417,25.351,100
+Sniper Rifle 25t strafe boss x6,3,Sniper_Rifle,,R,25,strafe,boss,none,6,54.45,1089,34,7,7,1.583,25.351,100
+Sniper Rifle 25t strafe boss x10,3,Sniper_Rifle,,R,25,strafe,boss,none,10,46.65,933,34,6,6,0.483,25.351,100
+Boomstick 25t static small x1,3,Boomstick,,R,25,static,small,none,1,11.25,225,94,18,18,1.15,25.086,100
+Boomstick 25t static small x1.6,3,Boomstick,,R,25,static,small,none,1.6,10,200,93,17,17,0.467,25.086,100
+Boomstick 25t static small x2.5,3,Boomstick,,R,25,static,small,none,2.5,11.6,232,95,19,19,0.45,25.086,100
+Boomstick 25t static small x4,3,Boomstick,,R,25,static,small,none,4,4.75,95,95,8,8,0.433,25.086,100
+Boomstick 25t static small x6,3,Boomstick,,R,25,static,small,none,6,5.5,110,93,9,9,2.417,25.086,100
+Boomstick 25t static small x10,3,Boomstick,,R,25,static,small,none,10,1.8,36,99,3,3,9.167,25.086,100
+Boomstick 25t static boss x1,3,Boomstick,,R,25,static,boss,none,1,32.1,642,92,54,54,0.45,25.168,100
+Boomstick 25t static boss x1.6,3,Boomstick,,R,25,static,boss,none,1.6,33.2,664,90,55,55,0.433,25.168,100
+Boomstick 25t static boss x2.5,3,Boomstick,,R,25,static,boss,none,2.5,27.35,547,95,45,45,0.417,25.168,100
+Boomstick 25t static boss x4,3,Boomstick,,R,25,static,boss,none,4,20.45,409,91,34,34,0.4,25.168,100
+Boomstick 25t static boss x6,3,Boomstick,,R,25,static,boss,none,6,11.7,234,92,20,20,1.05,25.168,100
+Boomstick 25t static boss x10,3,Boomstick,,R,25,static,boss,none,10,5.2,104,94,9,9,7.133,25.168,100
+Boomstick 25t strafe small x1,3,Boomstick,,R,25,strafe,small,none,1,9.6,192,95,17,17,1.767,25.382,100
+Boomstick 25t strafe small x1.6,3,Boomstick,,R,25,strafe,small,none,1.6,11.45,229,95,19,19,0.55,25.361,100
+Boomstick 25t strafe small x2.5,3,Boomstick,,R,25,strafe,small,none,2.5,12.6,252,93,21,21,0.533,25.28,100
+Boomstick 25t strafe small x4,3,Boomstick,,R,25,strafe,small,none,4,6.4,128,95,11,11,2.333,25.278,100
+Boomstick 25t strafe small x6,3,Boomstick,,R,25,strafe,small,none,6,4.8,96,97,8,8,1.7,25.387,100
+Boomstick 25t strafe small x10,3,Boomstick,,R,25,strafe,small,none,10,2.9,58,99,5,5,1.783,25.385,100
+Boomstick 25t strafe boss x1,3,Boomstick,,R,25,strafe,boss,none,1,36.5,730,91,62,62,0.533,25.352,100
+Boomstick 25t strafe boss x1.6,3,Boomstick,,R,25,strafe,boss,none,1.6,33.85,677,91,56,56,0.517,25.352,100
+Boomstick 25t strafe boss x2.5,3,Boomstick,,R,25,strafe,boss,none,2.5,29.9,598,93,49,49,0.5,25.352,100
+Boomstick 25t strafe boss x4,3,Boomstick,,R,25,strafe,boss,none,4,19.35,387,94,33,33,0.483,25.351,100
+Boomstick 25t strafe boss x6,3,Boomstick,,R,25,strafe,boss,none,6,13.75,275,92,24,24,0.467,25.351,100
+Boomstick 25t strafe boss x10,3,Boomstick,,R,25,strafe,boss,none,10,7.45,149,90,12,12,1.15,25.351,100
+Demon Bow 25t static small x1,3,Demon_Bow,,R,25,static,small,none,1,13,260,50,26,26,0.633,25.104,100
+Demon Bow 25t static small x1.6,3,Demon_Bow,,R,25,static,small,none,1.6,8.1,162,50,16,16,0.183,25.104,100
+Demon Bow 25t static small x2.5,3,Demon_Bow,,R,25,static,small,none,2.5,5.65,113,51,12,12,3.517,25.104,100
+Demon Bow 25t static small x4,3,Demon_Bow,,R,25,static,small,none,4,3.75,75,50,8,8,1,25.104,100
+Demon Bow 25t static small x6,3,Demon_Bow,,R,25,static,small,none,6,2.1,42,52,4,4,1.817,25.104,100
+Demon Bow 25t static small x10,3,Demon_Bow,,R,25,static,small,none,10,1.5,30,53,3,3,5.65,25.104,100
+Demon Bow 25t static boss x1,3,Demon_Bow,,R,25,static,boss,none,1,24.1,482,50,48,48,0.15,25.202,100
+Demon Bow 25t static boss x1.6,3,Demon_Bow,,R,25,static,boss,none,1.6,23.5,470,50,48,48,0.117,25.202,100
+Demon Bow 25t static boss x2.5,3,Demon_Bow,,R,25,static,boss,none,2.5,14.15,283,50,28,28,1.383,25.202,100
+Demon Bow 25t static boss x4,3,Demon_Bow,,R,25,static,boss,none,4,10.95,219,52,21,21,0.083,25.202,100
+Demon Bow 25t static boss x6,3,Demon_Bow,,R,25,static,boss,none,6,6.1,122,51,12,12,1.35,25.202,100
+Demon Bow 25t static boss x10,3,Demon_Bow,,R,25,static,boss,none,10,5.8,116,49,12,12,0.6,25.202,100
+Demon Bow 25t strafe small x1,3,Demon_Bow,,R,25,strafe,small,none,1,10.85,217,50,21,21,1.433,25.322,100
+Demon Bow 25t strafe small x1.6,3,Demon_Bow,,R,25,strafe,small,none,1.6,11.1,222,50,21,21,0.383,25.351,100
+Demon Bow 25t strafe small x2.5,3,Demon_Bow,,R,25,strafe,small,none,2.5,3.35,67,50,7,7,1.75,25.306,100
+Demon Bow 25t strafe small x4,3,Demon_Bow,,R,25,strafe,small,none,4,3.8,76,50,8,8,3.8,25.31,100
+Demon Bow 25t strafe small x6,3,Demon_Bow,,R,25,strafe,small,none,6,4.2,84,51,9,9,1.717,25.314,100
+Demon Bow 25t strafe small x10,3,Demon_Bow,,R,25,strafe,small,none,10,1.5,30,54,3,3,6.967,25.318,100
+Demon Bow 25t strafe boss x1,3,Demon_Bow,,R,25,strafe,boss,none,1,24.6,492,50,48,48,0.35,25.354,100
+Demon Bow 25t strafe boss x1.6,3,Demon_Bow,,R,25,strafe,boss,none,1.6,21.15,423,50,42,42,0.333,25.373,100
+Demon Bow 25t strafe boss x2.5,3,Demon_Bow,,R,25,strafe,boss,none,2.5,17.15,343,51,34,34,0.333,25.374,100
+Demon Bow 25t strafe boss x4,3,Demon_Bow,,R,25,strafe,boss,none,4,9.15,183,51,18,18,1.667,25.374,100
+Demon Bow 25t strafe boss x6,3,Demon_Bow,,R,25,strafe,boss,none,6,5.15,103,51,10,10,2.017,25.375,100
+Demon Bow 25t strafe boss x10,3,Demon_Bow,,R,25,strafe,boss,none,10,2.95,59,52,6,6,3.817,25.377,100
+Molten Fury 25t static small x1,3,Molten_Fury,,R,25,static,small,none,1,48.3,966,56,33,33,0.05,25.104,100
+Molten Fury 25t static small x1.6,3,Molten_Fury,,R,25,static,small,none,1.6,40.55,811,57,27,27,0.033,25.104,100
+Molten Fury 25t static small x2.5,3,Molten_Fury,,R,25,static,small,none,2.5,19.2,384,57,13,13,0.383,25.104,100
+Molten Fury 25t static small x4,3,Molten_Fury,,R,25,static,small,none,4,16.55,331,59,11,11,3.3,25.104,100
+Molten Fury 25t static small x6,3,Molten_Fury,,R,25,static,small,none,6,12.7,254,60,9,9,0.717,25.104,100
+Molten Fury 25t static small x10,3,Molten_Fury,,R,25,static,small,none,10,7,140,59,5,5,4.083,25.104,100
+Molten Fury 25t static boss x1,3,Molten_Fury,,R,25,static,boss,none,1,81.1,1622,55,54,54,0.367,25.202,100
+Molten Fury 25t static boss x1.6,3,Molten_Fury,,R,25,static,boss,none,1.6,81.1,1622,55,54,54,0.35,25.202,100
+Molten Fury 25t static boss x2.5,3,Molten_Fury,,R,25,static,boss,none,2.5,50.05,1001,55,33,33,0.7,25.202,100
+Molten Fury 25t static boss x4,3,Molten_Fury,,R,25,static,boss,none,4,31.1,622,57,21,21,1.417,25.202,100
+Molten Fury 25t static boss x6,3,Molten_Fury,,R,25,static,boss,none,6,32,640,60,21,21,2.15,25.202,100
+Molten Fury 25t static boss x10,3,Molten_Fury,,R,25,static,boss,none,10,15.2,304,61,10,10,1.117,25.202,100
+Molten Fury 25t strafe small x1,3,Molten_Fury,,R,25,strafe,small,none,1,50.55,1011,56,34,34,0.15,25.322,100
+Molten Fury 25t strafe small x1.6,3,Molten_Fury,,R,25,strafe,small,none,1.6,25.3,506,56,17,17,0.5,25.351,100
+Molten Fury 25t strafe small x2.5,3,Molten_Fury,,R,25,strafe,small,none,2.5,17.6,352,56,12,12,0.817,25.306,100
+Molten Fury 25t strafe small x4,3,Molten_Fury,,R,25,strafe,small,none,4,13.9,278,58,9,9,0.133,25.31,100
+Molten Fury 25t strafe small x6,3,Molten_Fury,,R,25,strafe,small,none,6,7.65,153,54,5,5,7.933,25.314,100
+Molten Fury 25t strafe small x10,3,Molten_Fury,,R,25,strafe,small,none,10,6.2,124,59,4,4,1.167,25.318,100
+Molten Fury 25t strafe boss x1,3,Molten_Fury,,R,25,strafe,boss,none,1,81.35,1627,56,54,54,0.133,25.354,100
+Molten Fury 25t strafe boss x1.6,3,Molten_Fury,,R,25,strafe,boss,none,1.6,72.55,1451,57,50,50,0.117,25.373,100
+Molten Fury 25t strafe boss x2.5,3,Molten_Fury,,R,25,strafe,boss,none,2.5,63.25,1265,57,42,42,0.1,25.374,100
+Molten Fury 25t strafe boss x4,3,Molten_Fury,,R,25,strafe,boss,none,4,31.45,629,57,22,22,1.083,25.374,100
+Molten Fury 25t strafe boss x6,3,Molten_Fury,,R,25,strafe,boss,none,6,21.4,428,59,14,14,1.7,25.375,100
+Molten Fury 25t strafe boss x10,3,Molten_Fury,,R,25,strafe,boss,none,10,19,380,61,12,12,2.8,25.377,100
+Ruby Staff 25t static small x1,3,Ruby_Staff,,M,25,static,small,none,1,20.4,408,51,34,34,0.367,25.104,100
+Ruby Staff 25t static small x1.6,3,Ruby_Staff,,M,25,static,small,none,1.6,12.6,252,50,22,22,0.35,25.104,100
+Ruby Staff 25t static small x2.5,3,Ruby_Staff,,M,25,static,small,none,2.5,4.55,91,46,8,8,4.533,25.104,100
+Ruby Staff 25t static small x4,3,Ruby_Staff,,M,25,static,small,none,4,5.45,109,46,9,9,0.783,25.104,100
+Ruby Staff 25t static small x6,3,Ruby_Staff,,M,25,static,small,none,6,2.9,58,45,5,5,7.767,25.104,100
+Ruby Staff 25t static small x10,3,Ruby_Staff,,M,25,static,small,none,10,1.2,24,46,2,2,3.65,25.104,100
+Ruby Staff 25t static boss x1,3,Ruby_Staff,,M,25,static,boss,none,1,51.25,1025,44,43,85,0.283,25.175,100
+Ruby Staff 25t static boss x1.6,3,Ruby_Staff,,M,25,static,boss,none,1.6,49.9,998,45,43,83,0.267,25.174,100
+Ruby Staff 25t static boss x2.5,3,Ruby_Staff,,M,25,static,boss,none,2.5,26.35,527,44,26,43,0.283,25.174,100
+Ruby Staff 25t static boss x4,3,Ruby_Staff,,M,25,static,boss,none,4,25.35,507,49,22,42,0.25,25.174,100
+Ruby Staff 25t static boss x6,3,Ruby_Staff,,M,25,static,boss,none,6,13.8,276,46,12,23,0.7,25.174,100
+Ruby Staff 25t static boss x10,3,Ruby_Staff,,M,25,static,boss,none,10,12,240,45,13,21,0.317,25.175,100
+Ruby Staff 25t strafe small x1,3,Ruby_Staff,,M,25,strafe,small,none,1,13.55,271,47,22,22,1.3,25.421,100
+Ruby Staff 25t strafe small x1.6,3,Ruby_Staff,,M,25,strafe,small,none,1.6,7.55,151,47,13,13,0.917,25.402,100
+Ruby Staff 25t strafe small x2.5,3,Ruby_Staff,,M,25,strafe,small,none,2.5,8.75,175,49,15,15,1.283,25.406,100
+Ruby Staff 25t strafe small x4,3,Ruby_Staff,,M,25,strafe,small,none,4,3.35,67,49,6,6,0.9,25.41,100
+Ruby Staff 25t strafe small x6,3,Ruby_Staff,,M,25,strafe,small,none,6,3,60,49,5,5,5.167,25.414,100
+Ruby Staff 25t strafe small x10,3,Ruby_Staff,,M,25,strafe,small,none,10,2.35,47,46,4,4,3.483,25.417,100
+Ruby Staff 25t strafe boss x1,3,Ruby_Staff,,M,25,strafe,boss,none,1,50.75,1015,45,44,84,0.05,25.388,100
+Ruby Staff 25t strafe boss x1.6,3,Ruby_Staff,,M,25,strafe,boss,none,1.6,43.5,870,45,40,72,0.033,25.383,100
+Ruby Staff 25t strafe boss x2.5,3,Ruby_Staff,,M,25,strafe,boss,none,2.5,36.6,732,46,34,59,0.017,25.384,100
+Ruby Staff 25t strafe boss x4,3,Ruby_Staff,,M,25,strafe,boss,none,4,21.2,424,47,21,35,1.2,25.386,100
+Ruby Staff 25t strafe boss x6,3,Ruby_Staff,,M,25,strafe,boss,none,6,14.35,287,49,14,25,0.833,25.387,100
+Ruby Staff 25t strafe boss x10,3,Ruby_Staff,,M,25,strafe,boss,none,10,5.5,110,47,5,9,2.033,25.388,100
+Space Gun 25t static small x1,3,Space_Gun,,M,25,static,small,none,1,15.45,309,74,33,33,0.65,25.104,100
+Space Gun 25t static small x1.6,3,Space_Gun,,M,25,static,small,none,1.6,9.9,198,74,22,22,1.2,25.104,100
+Space Gun 25t static small x2.5,3,Space_Gun,,M,25,static,small,none,2.5,6.5,130,74,14,14,3.45,25.104,100
+Space Gun 25t static small x4,3,Space_Gun,,M,25,static,small,none,4,2.55,51,73,5,5,8.817,25.104,100
+Space Gun 25t static small x6,3,Space_Gun,,M,25,static,small,none,6,2.35,47,74,5,5,0.867,25.104,100
+Space Gun 25t static small x10,3,Space_Gun,,M,25,static,small,none,10,0.4,8,72,1,1,18.517,25.104,100
+Space Gun 25t static boss x1,3,Space_Gun,,M,25,static,boss,none,1,49.35,987,73,71,109,0.067,25.175,100
+Space Gun 25t static boss x1.6,3,Space_Gun,,M,25,static,boss,none,1.6,46.65,933,73,67,106,0.05,25.174,100
+Space Gun 25t static boss x2.5,3,Space_Gun,,M,25,static,boss,none,2.5,24.15,483,75,37,55,0.033,25.174,100
+Space Gun 25t static boss x4,3,Space_Gun,,M,25,static,boss,none,4,19.2,384,74,27,42,0.017,25.174,100
+Space Gun 25t static boss x6,3,Space_Gun,,M,25,static,boss,none,6,18.8,376,73,25,41,0.05,25.174,100
+Space Gun 25t static boss x10,3,Space_Gun,,M,25,static,boss,none,10,9.45,189,74,13,21,1.783,25.175,100
+Space Gun 25t strafe small x1,3,Space_Gun,,M,25,strafe,small,none,1,19.5,390,72,43,43,0.183,25.421,100
+Space Gun 25t strafe small x1.6,3,Space_Gun,,M,25,strafe,small,none,1.6,9.05,181,73,20,20,1.733,25.402,100
+Space Gun 25t strafe small x2.5,3,Space_Gun,,M,25,strafe,small,none,2.5,5.75,115,73,13,13,0.4,25.406,100
+Space Gun 25t strafe small x4,3,Space_Gun,,M,25,strafe,small,none,4,5.25,105,72,12,12,2.25,25.41,100
+Space Gun 25t strafe small x6,3,Space_Gun,,M,25,strafe,small,none,6,3.75,75,72,9,9,1.683,25.414,100
+Space Gun 25t strafe small x10,3,Space_Gun,,M,25,strafe,small,none,10,2.8,56,72,6,6,1.017,25.417,100
+Space Gun 25t strafe boss x1,3,Space_Gun,,M,25,strafe,boss,none,1,43.45,869,75,71,96,0.133,25.388,100
+Space Gun 25t strafe boss x1.6,3,Space_Gun,,M,25,strafe,boss,none,1.6,39.05,781,75,63,86,0.117,25.383,100
+Space Gun 25t strafe boss x2.5,3,Space_Gun,,M,25,strafe,boss,none,2.5,25.35,507,74,43,56,0.1,25.384,100
+Space Gun 25t strafe boss x4,3,Space_Gun,,M,25,strafe,boss,none,4,17.1,342,74,28,38,1.683,25.386,100
+Space Gun 25t strafe boss x6,3,Space_Gun,,M,25,strafe,boss,none,6,11,220,74,19,24,0.067,25.387,100
+Space Gun 25t strafe boss x10,3,Space_Gun,,M,25,strafe,boss,none,10,7.2,144,74,14,16,1.217,25.388,100
+Water Bolt 25t static small x1,3,Water_Bolt,,M,25,static,small,none,1,22.3,446,104,45,45,0.133,25.104,100
+Water Bolt 25t static small x1.6,3,Water_Bolt,,M,25,static,small,none,1.6,12.7,254,104,26,26,0.117,25.104,100
+Water Bolt 25t static small x2.5,3,Water_Bolt,,M,25,static,small,none,2.5,19.7,394,104,40,40,0.383,25.104,100
+Water Bolt 25t static small x4,3,Water_Bolt,,M,25,static,small,none,4,10.6,212,104,21,21,0.667,25.104,100
+Water Bolt 25t static small x6,3,Water_Bolt,,M,25,static,small,none,6,13.9,278,104,27,27,0.35,25.104,100
+Water Bolt 25t static small x10,3,Water_Bolt,,M,25,static,small,none,10,4.7,94,103,9,9,2.417,25.104,100
+Water Bolt 25t static boss x1,3,Water_Bolt,,M,25,static,boss,none,1,106.85,2137,104,72,212,0.033,25.175,100
+Water Bolt 25t static boss x1.6,3,Water_Bolt,,M,25,static,boss,none,1.6,101.5,2030,104,72,204,0.05,25.174,100
+Water Bolt 25t static boss x2.5,3,Water_Bolt,,M,25,static,boss,none,2.5,87.45,1749,104,65,176,0.017,25.174,100
+Water Bolt 25t static boss x4,3,Water_Bolt,,M,25,static,boss,none,4,82.3,1646,104,58,162,0.117,25.174,100
+Water Bolt 25t static boss x6,3,Water_Bolt,,M,25,static,boss,none,6,49.75,995,104,39,100,0.017,25.174,100
+Water Bolt 25t static boss x10,3,Water_Bolt,,M,25,static,boss,none,10,27.85,557,103,21,56,0.05,25.175,100
+Water Bolt 25t strafe small x1,3,Water_Bolt,,M,25,strafe,small,none,1,15.05,301,103,28,30,0.05,25.421,100
+Water Bolt 25t strafe small x1.6,3,Water_Bolt,,M,25,strafe,small,none,1.6,15.35,307,104,26,30,0.25,25.402,100
+Water Bolt 25t strafe small x2.5,3,Water_Bolt,,M,25,strafe,small,none,2.5,13.15,263,104,23,27,0.233,25.406,100
+Water Bolt 25t strafe small x4,3,Water_Bolt,,M,25,strafe,small,none,4,15,300,104,26,31,1.083,25.41,100
+Water Bolt 25t strafe small x6,3,Water_Bolt,,M,25,strafe,small,none,6,7,140,104,10,13,2.7,25.414,100
+Water Bolt 25t strafe small x10,3,Water_Bolt,,M,25,strafe,small,none,10,4.9,98,103,10,10,0.75,25.417,100
+Water Bolt 25t strafe boss x1,3,Water_Bolt,,M,25,strafe,boss,none,1,74.95,1499,104,57,146,0.05,25.388,100
+Water Bolt 25t strafe boss x1.6,3,Water_Bolt,,M,25,strafe,boss,none,1.6,72.7,1454,104,58,147,0.033,25.383,100
+Water Bolt 25t strafe boss x2.5,3,Water_Bolt,,M,25,strafe,boss,none,2.5,76.85,1537,104,58,152,0.017,25.384,100
+Water Bolt 25t strafe boss x4,3,Water_Bolt,,M,25,strafe,boss,none,4,70.25,1405,104,51,141,0.333,25.386,100
+Water Bolt 25t strafe boss x6,3,Water_Bolt,,M,25,strafe,boss,none,6,55.55,1111,104,45,112,0.167,25.387,100
+Water Bolt 25t strafe boss x10,3,Water_Bolt,,M,25,strafe,boss,none,10,24.15,483,103,20,49,1,25.388,100
+Enchanted Sword 25t static small x1,3,Enchanted_Sword,,E,25,static,small,none,1,16.95,339,27,27,27,0.483,25.104,100
+Enchanted Sword 25t static small x1.6,3,Enchanted_Sword,,E,25,static,small,none,1.6,16.95,339,27,27,27,0.467,25.104,100
+Enchanted Sword 25t static small x2.5,3,Enchanted_Sword,,E,25,static,small,none,2.5,17.55,351,27,27,27,0.45,25.104,100
+Enchanted Sword 25t static small x4,3,Enchanted_Sword,,E,25,static,small,none,4,17.2,344,27,27,27,0.433,25.104,100
+Enchanted Sword 25t static small x6,3,Enchanted_Sword,,E,25,static,small,none,6,16.4,328,28,27,27,0.417,25.104,100
+Enchanted Sword 25t static small x10,3,Enchanted_Sword,,E,25,static,small,none,10,17.1,342,27,27,27,0.5,25.104,100
+Enchanted Sword 25t static boss x1,3,Enchanted_Sword,,E,25,static,boss,none,1,17.4,348,27,27,27,0.417,25.175,100
+Enchanted Sword 25t static boss x1.6,3,Enchanted_Sword,,E,25,static,boss,none,1.6,17.6,352,27,27,27,0.4,25.174,100
+Enchanted Sword 25t static boss x2.5,3,Enchanted_Sword,,E,25,static,boss,none,2.5,17.6,352,27,27,27,0.383,25.174,100
+Enchanted Sword 25t static boss x4,3,Enchanted_Sword,,E,25,static,boss,none,4,17.4,348,27,27,27,0.367,25.174,100
+Enchanted Sword 25t static boss x6,3,Enchanted_Sword,,E,25,static,boss,none,6,18.75,375,28,27,27,0.35,25.174,100
+Enchanted Sword 25t static boss x10,3,Enchanted_Sword,,E,25,static,boss,none,10,17.15,343,27,27,27,0.433,25.175,100
+Enchanted Sword 25t strafe small x1,3,Enchanted_Sword,,E,25,strafe,small,none,1,7.2,144,29,11,11,0.617,25.421,100
+Enchanted Sword 25t strafe small x1.6,3,Enchanted_Sword,,E,25,strafe,small,none,1.6,6.25,125,28,10,10,1.85,25.402,100
+Enchanted Sword 25t strafe small x2.5,3,Enchanted_Sword,,E,25,strafe,small,none,2.5,6.8,136,28,10,10,1.833,25.406,100
+Enchanted Sword 25t strafe small x4,3,Enchanted_Sword,,E,25,strafe,small,none,4,6.6,132,28,10,10,1.817,25.41,100
+Enchanted Sword 25t strafe small x6,3,Enchanted_Sword,,E,25,strafe,small,none,6,8.55,171,29,13,13,1.8,25.414,100
+Enchanted Sword 25t strafe small x10,3,Enchanted_Sword,,E,25,strafe,small,none,10,8.95,179,28,14,14,0.633,25.417,100
+Enchanted Sword 25t strafe boss x1,3,Enchanted_Sword,,E,25,strafe,boss,none,1,17.3,346,27,27,27,0.567,25.388,100
+Enchanted Sword 25t strafe boss x1.6,3,Enchanted_Sword,,E,25,strafe,boss,none,1.6,17.1,342,27,27,27,0.55,25.383,100
+Enchanted Sword 25t strafe boss x2.5,3,Enchanted_Sword,,E,25,strafe,boss,none,2.5,17.35,347,27,27,27,0.533,25.384,100
+Enchanted Sword 25t strafe boss x4,3,Enchanted_Sword,,E,25,strafe,boss,none,4,17.2,344,27,27,27,0.517,25.386,100
+Enchanted Sword 25t strafe boss x6,3,Enchanted_Sword,,E,25,strafe,boss,none,6,17.55,351,28,27,27,0.5,25.387,100
+Enchanted Sword 25t strafe boss x10,3,Enchanted_Sword,,E,25,strafe,boss,none,10,18.2,364,27,27,27,0.583,25.388,100
+Terra Blade 25t static small x1,3,Terra_Blade,,E,25,static,small,none,1,213.35,4267,68,67,67,0.2,25.104,100
+Terra Blade 25t static small x1.6,3,Terra_Blade,,E,25,static,small,none,1.6,205.2,4104,68,66,66,0.183,25.104,100
+Terra Blade 25t static small x2.5,3,Terra_Blade,,E,25,static,small,none,2.5,182.25,3645,69,57,57,0.167,25.104,100
+Terra Blade 25t static small x4,3,Terra_Blade,,E,25,static,small,none,4,88.65,1773,69,28,28,1.65,25.104,100
+Terra Blade 25t static small x6,3,Terra_Blade,,E,25,static,small,none,6,89.25,1785,67,28,28,0.133,25.104,100
+Terra Blade 25t static small x10,3,Terra_Blade,,E,25,static,small,none,10,43.2,864,68,14,14,2.317,25.104,100
+Terra Blade 25t static boss x1,3,Terra_Blade,,E,25,static,boss,none,1,207.45,4149,69,67,67,0.183,25.175,100
+Terra Blade 25t static boss x1.6,3,Terra_Blade,,E,25,static,boss,none,1.6,212.85,4257,68,67,67,0.167,25.174,100
+Terra Blade 25t static boss x2.5,3,Terra_Blade,,E,25,static,boss,none,2.5,189.95,3799,69,60,60,0.15,25.174,100
+Terra Blade 25t static boss x4,3,Terra_Blade,,E,25,static,boss,none,4,163.05,3261,68,51,51,0.133,25.174,100
+Terra Blade 25t static boss x6,3,Terra_Blade,,E,25,static,boss,none,6,108.8,2176,68,34,34,1.017,25.174,100
+Terra Blade 25t static boss x10,3,Terra_Blade,,E,25,static,boss,none,10,48.2,964,69,16,16,0.8,25.175,100
+Terra Blade 25t strafe small x1,3,Terra_Blade,,E,25,strafe,small,none,1,204.9,4098,68,65,65,0.25,25.421,100
+Terra Blade 25t strafe small x1.6,3,Terra_Blade,,E,25,strafe,small,none,1.6,202.6,4052,69,65,65,0.233,25.402,100
+Terra Blade 25t strafe small x2.5,3,Terra_Blade,,E,25,strafe,small,none,2.5,165.5,3310,68,54,54,0.217,25.406,100
+Terra Blade 25t strafe small x4,3,Terra_Blade,,E,25,strafe,small,none,4,125.6,2512,68,40,40,1.35,25.41,100
+Terra Blade 25t strafe small x6,3,Terra_Blade,,E,25,strafe,small,none,6,97.5,1950,68,31,31,0.183,25.414,100
+Terra Blade 25t strafe small x10,3,Terra_Blade,,E,25,strafe,small,none,10,38.45,769,68,12,12,2.567,25.417,100
+Terra Blade 25t strafe boss x1,3,Terra_Blade,,E,25,strafe,boss,none,1,212.2,4244,69,67,67,0.217,25.388,100
+Terra Blade 25t strafe boss x1.6,3,Terra_Blade,,E,25,strafe,boss,none,1.6,205.9,4118,68,66,66,0.217,25.383,100
+Terra Blade 25t strafe boss x2.5,3,Terra_Blade,,E,25,strafe,boss,none,2.5,189.45,3789,69,60,60,0.25,25.384,100
+Terra Blade 25t strafe boss x4,3,Terra_Blade,,E,25,strafe,boss,none,4,148.7,2974,67,48,48,0.183,25.386,100
+Terra Blade 25t strafe boss x6,3,Terra_Blade,,E,25,strafe,boss,none,6,142.6,2852,68,45,45,0.733,25.387,100
+Terra Blade 25t strafe boss x10,3,Terra_Blade,,E,25,strafe,boss,none,10,55.8,1116,69,18,18,0.817,25.388,100

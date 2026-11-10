@@ -1545,9 +1545,12 @@ namespace Levy.Common.Testing
 		public override bool InstancePerEntity => true;
 		public bool IsTarget;
 		public Vector2 Pin;
+		/// <summary>Lab hook: when set, the dummy follows this path (its centre at tick t) instead of standing at Pin, with its per-tick velocity set so a lead solver sees the real motion.</summary>
+		public System.Func<int, Vector2> Path; public int PathT;
 		public override bool PreAI(NPC npc)
 		{
 			if (!IsTarget) return true;
+			if (Path != null) { Vector2 p0 = Path(PathT), p1 = Path(PathT + 1); npc.Center = p0; npc.velocity = p1 - p0; PathT++; npc.timeLeft = 3600; npc.noGravity = true; return false; }
 			npc.velocity = Vector2.Zero; npc.position = Pin; npc.timeLeft = 3600; npc.noGravity = true;
 			return false;
 		}

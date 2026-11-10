@@ -1,0 +1,31 @@
+# Tipsy lab, run 1: damage per levy-second of one levy, sober vs Tipsy (real Barracks Ale buff: aim error x1.6, +8 defense, nothing that changes damage),
+# at close / medium / far range, on a still and a strafing target, with a zombie-sized and a boss-sized hitbox. 3 seeds. Vanilla world, no Calamity.
+# levy: no armor, no accessories, 15 life crystals / 9 mana crystals, Levy grade (6 deg angle jitter, 25% lead error before the Tipsy multiplier).
+name: tipsy_main
+mods: vanilla
+arena: a3
+seeds: 3
+tipsy:
+  warm: 600     # 10 s: summons and melee walk-ups settle before the 20 s window
+  win: 1200
+  dist: [8, 25, 45]
+  motion: [static, strafe]
+  size: [small, boss]
+  arms: {sober: {}, tipsy: {b: ale}}
+  weapons:
+    - {name: Minishark, cls: R, ammo: Musket Ball, kind: gun}
+    - {name: Minishark, cls: R, ammo: High Velocity Bullet, kind: gun-hv, every: {}}
+    - {name: Sniper Rifle, cls: R, ammo: High Velocity Bullet, kind: gun-hv}
+    - {name: Boomstick, cls: R, ammo: Musket Ball, kind: shotgun}
+    - {name: Demon Bow, cls: R, ammo: Wooden Arrow, kind: bow}
+    - {name: Molten Fury, cls: R, ammo: Hellfire Arrow, kind: bow}
+    - {name: Ruby Staff, cls: M, kind: magic, dist: [8, 25, 38]}
+    - {name: Space Gun, cls: M, kind: magic, dist: [8, 25, 38]}
+    - {name: Water Bolt, cls: M, kind: magic, dist: [8, 25, 38]}
+    - {name: Enchanted Sword, cls: E, kind: beam}
+    - {name: Terra Blade, cls: E, kind: beam}
+    - {name: Muramasa, cls: E, kind: melee, every: {pin: 0}}
+    - {name: Night's Edge, cls: E, kind: melee, every: {pin: 0}}
+    - {name: Slime Staff, cls: S, kind: summon}
+    - {name: Hornet Staff, cls: S, kind: summon}
+    - {name: Imp Staff, cls: S, kind: summon}

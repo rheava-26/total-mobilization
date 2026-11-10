@@ -1,0 +1,13 @@
+# smoke test of the tipsy lab hook: one gun and one beam sword, sober vs Barracks Ale, 2 seeds
+name: tipsy_smoke
+mods: vanilla
+arena: a3
+seeds: 2
+tipsy:
+  dist: [25]
+  motion: [static, strafe]
+  size: [small]
+  arms: {sober: {}, ale: {b: ale}}
+  weapons:
+    - {name: Minishark, cls: R, ammo: Musket Ball, kind: gun}
+    - {name: Enchanted Sword, cls: E, kind: beam}

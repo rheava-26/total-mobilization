@@ -135,6 +135,23 @@ def roll_army(gear, potions, stations, n, hp, seed):
             if l["cls"] == "M": l["acc"] = l["acc"][:max(0, slots - 1)] + ["CalamityMod/TrinketofChi"]; break
     return dict(accSlots=slots, honey=bool(stations["honey"]), stations=stations["stations"], stationLevel=2, buffs=potions["buffs"], levies=levies)
 
+# ------------------------------------------------------------------------------------------------------------ tipsy lab (aim / drink damage measurements)
+def tipsy_cells(spec):
+    """`tipsy:` spec -> raw cells. One cell = weapon x distance x motion x size x arm; its rows are the seeds. Needs the harness `tp=` hook (CombatHarness.TipsyLab.cs)."""
+    t = spec["tipsy"]; seeds = parse_seeds(spec.get("seeds", 3)); warm = int(t.get("warm", 600)); win = int(t.get("win", 1200)); cells = []
+    arms = t.get("arms") or {"sober": {}, "tipsy": {"b": "ale"}}
+    for w in t["weapons"]:
+        w = dict(w) if isinstance(w, dict) else {"name": w}
+        for d in (w.get("dist") or t.get("dist") or [8, 25, 45]):
+            for m in (w.get("motion") or t.get("motion") or ["static"]):
+                for z in (w.get("size") or t.get("size") or ["small"]):
+                    for an, ao in arms.items():
+                        kv = {"w": w["name"], "a": w.get("ammo", ""), "c": w.get("cls", "R"), "d": d, "m": m, "z": z, "warm": warm, "win": win, **{k: v for k, v in (t.get("every") or {}).items()}, **{k: v for k, v in (w.get("every") or {}).items()}, **ao}
+                        tp = ";".join(f"{k}={str(v).replace(' ', '_') if k in ('w', 'a') else v}" for k, v in kv.items() if v != "")
+                        rows = [["fight", "tipsy", "exp", str(sd), str(warm + win + 120), "cmd=near", "order=free", "arena=" + str(spec.get("arena", "a3")), "tp=" + tp] for sd in seeds]
+                        cells.append(dict(id=f"c{len(cells)}", name=f"{w['name']} {d}t {m} {z} {an}", raw=rows, seeds=seeds, tp=dict(kv, arm=an, kind=w.get("kind", "")), mods=spec.get("mods", "vanilla")))
+    return cells
+
 # ------------------------------------------------------------------------------------------------------------ spec -> cells
 def parse_seeds(s):
     if isinstance(s, str) and s.strip().isdigit(): s = int(s)
@@ -241,7 +258,7 @@ def ensure_install():
         (HOME / "tml").mkdir(parents=True, exist_ok=True)
         for f in SRC_TML.iterdir():
             if f.name == "tModLoader-Logs": continue
-            (shutil.copytree if f.is_dir() else shutil.copy2)(f, HOME / "tml" / f.name, symlinks=True)
+            (shutil.copytree(f, HOME / "tml" / f.name, symlinks=True) if f.is_dir() else shutil.copy2(f, HOME / "tml" / f.name))
         (HOME / "tml" / "tModLoader-Logs").mkdir(exist_ok=True)
     save = HOME / "build" / "save"; (save / "ModSources").mkdir(parents=True, exist_ok=True); (save / "Mods").mkdir(exist_ok=True)
     for m in (SRC_SAVE / "Mods").iterdir():
@@ -373,13 +390,13 @@ def done_set(path):
 
 def cmd_run(a):
     G, P, S = load_gear(), load_simple("potions.yaml"), load_simple("stations.yaml")
-    spec = load_spec(a.spec); cells = expand(spec)
-    if a.seeds:
+    spec = load_spec(a.spec); cells = tipsy_cells(spec) if spec.get("tipsy") else expand(spec)
+    if a.seeds and not spec.get("tipsy"):
         for c in cells: c["seeds"] = parse_seeds(a.seeds)
     cells = [c if "raw" in c else resolve(c, G, P, S) for c in cells]
-    if a.seeds:
+    if a.seeds and not spec.get("tipsy"):
         for c in cells: c["seeds"] = parse_seeds(a.seeds)
-    mods = {c.get("mods", "calamity") for c in cells if "raw" not in c} or {"calamity"}
+    mods = {c.get("mods", "calamity") for c in cells if "raw" not in c} or {spec.get("mods", "calamity")}
     if len(mods) > 1: die("one run = one `mods:` value; split vanilla and Calamity runs (NORTH_STAR keeps them separate)")
     name = spec.get("name"); rundir = Path(a.out) if a.out else HOME / "runs" / f"{name}-{time.strftime('%Y%m%d-%H%M%S')}"
     rundir.mkdir(parents=True, exist_ok=True); (rundir / "armies").mkdir(exist_ok=True)
@@ -389,7 +406,7 @@ def cmd_run(a):
     for c in cells:
         if "raw" in c:
             for r in c["raw"]: fights.append((c["id"], int(r[3]), "\t".join(r + [f"tag={c['id']}"]), c["seeds"].index(int(r[3])) < a.rec))
-            meta_cells.append(dict(id=c["id"], name=c["name"], seeds=c["seeds"], raw=True)); continue
+            meta_cells.append(dict(id=c["id"], name=c["name"], seeds=c["seeds"], raw=True, **({"tp": c["tp"]} if c.get("tp") else {}))); continue
         gear = c["_gear"]; cp = cost_params(c, P, S)
         for k, sd in enumerate(c["seeds"]):
             if not gear.get("legacy"):
@@ -430,7 +447,7 @@ def read_tsv(p):
 def collect(rundir, outs, wall, nf, jobs):
     rows = []
     for o in outs:
-        main = read_tsv(o / "out.tsv"); kit = {r["key"]: r for r in read_tsv(o / "out.tsv.kit.tsv")}
+        main = read_tsv(o / "out.tsv"); kit = {r["key"]: r for r in read_tsv(o / "out.tsv.kit.tsv")}; tipsy = {r["key"]: r for r in read_tsv(o / "out.tsv.tipsy.tsv")}
         hits = {}
         if (o / "out.tsv.hit.tsv").exists():
             for l in open(o / "out.tsv.hit.tsv", errors="replace"):
@@ -451,6 +468,8 @@ def collect(rundir, outs, wall, nf, jobs):
             for c in ("dmgBoss", "dmgR", "dmgM", "dmgE", "dmgS", "dmgUnattr", "dmgHead", "dmgBody", "dmgTail", "takenBoss", "takenAdd", "takenOther", "avgHp", "potionsDrunk", "rageAct", "adrAct", "drCuts",
                       "addsPeak", "addKills", "enragedSec", "avgSurvSec", "halfSec", "hitsTaken", "avgDef", "dpsHittable"):
                 if c in r: row[c] = r[c]
+            for tk, tv in (tipsy.get(r["key"]) or {}).items():
+                if tk not in ("key", "tag", "seed"): row["tp_" + tk if tk in ("w", "c", "d", "m", "z", "b", "x") else tk] = tv
             row.update(rankSum=k.get("rankSum", ""), weaponDmg=k.get("weaponDmg", ""), classDmg=k.get("classDmg", ""), deathTimes=k.get("deathTimes", ""), job=o.parent.name)
             if r["result"] == "ERROR": row["note"] = r.get("perLevy", "")
             rows.append(row)
@@ -492,8 +511,38 @@ def fisher(w1, n1, w2, n2):
 def points(cp, n, sumhp, rank):
     return n * (cp.get("per_levy", 0) + cp.get("pot_per_levy", 0)) + sumhp / 100.0 * cp.get("per_100hp", 0) + rank / 1000.0 * cp.get("per_rank_1000", 0) + cp.get("flat", 0)
 
+def tipsy_table(meta, rows):
+    """aim / drink lab: per (size, motion) one table, a row per weapon x distance, a column per arm: mean damage per levy-second, % of the first arm (sober), projectile hit %."""
+    cells = {c["id"]: c for c in meta["cells"] if c.get("tp")}; by = {}
+    for r in rows:
+        c = cells.get(r["cell"])
+        if c and fnum(r.get("dps")) is not None: by.setdefault(r["cell"], []).append(r)
+    arms = []
+    for c in cells.values():
+        if c["tp"]["arm"] not in arms: arms.append(c["tp"]["arm"])
+    groups = {}
+    for cid, c in cells.items():
+        t = c["tp"]; groups.setdefault((t["z"], t["m"]), {}).setdefault((t.get("kind", ""), t["w"], str(t["d"])), {})[t["arm"]] = by.get(cid, [])
+    out = []
+    for (z, m), g in groups.items():
+        out.append(f"\n**{z} hitbox, {m} target** (damage per levy-second, mean of seeds; % = of {arms[0]}; hit = share of fired projectiles that hit)\n")
+        out.append("| class | weapon | tiles | " + " | ".join(f"{a} dps (%, hit)" for a in arms) + " |"); out.append("|---|---|---|" + "---|" * len(arms))
+        for (kind, w, d), am in g.items():
+            base = statistics.mean([fnum(r["dps"]) for r in am.get(arms[0], [])]) if am.get(arms[0]) else None; cols = []
+            for a_ in arms:
+                rs = am.get(a_, [])
+                if not rs: cols.append("-"); continue
+                dps = statistics.mean([fnum(r["dps"]) for r in rs]); sh = sum(fnum(r.get("shots")) or 0 for r in rs); ph = sum(fnum(r.get("projHits")) or 0 for r in rs)
+                hit = f"{100 * ph / sh:.0f}%" if sh > 0 else "n/a"
+                if a_ == arms[0]: cols.append(f"{dps:.1f} (hit {hit})")
+                else: cols.append(f"{dps:.1f} ({100 * dps / base:.0f}%, {hit})" if base else f"{dps:.1f}")
+            out.append(f"| {kind} | {w} | {d} | " + " | ".join(cols) + " |")
+    print("\n".join(out))
+
 def cmd_table(a):
     rd = Path(a.run_dir); meta = json.loads((rd / "cells.json").read_text()); rows = read_tsv_csv(rd / "results.csv")
+    if any(c.get("tp") for c in meta["cells"]):
+        tipsy_table(meta, rows); print(f"\n{meta.get('fights', '?')} fights in {meta.get('wall_s', '?')}s, build {meta.get('build')}, run dir {rd}"); return
     by = {}
     for r in rows: by.setdefault(r["cell"], []).append(r)
     extra = (a.cols or "").split(",") if a.cols else []

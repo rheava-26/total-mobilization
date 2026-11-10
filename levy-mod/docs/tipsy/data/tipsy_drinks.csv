@@ -1,0 +1,193 @@
+cellname,seed,tp_w,tp_a,tp_c,tp_d,tp_m,tp_z,tp_b,tp_x,dps,dmg,shots,projHits,hits,firstHit,avgDist,alivePct
+Minishark 25t static small sober,1,Minishark,,R,25,static,small,none,1,20.3,406,155,83,83,0.033,25.086,100
+Minishark 25t static small ale,1,Minishark,,R,25,static,small,ale,1,10.85,217,156,44,44,0.017,25.086,100
+Minishark 25t static small stout,1,Minishark,,R,25,static,small,stout,1,10.9,218,155,43,43,0.133,25.086,100
+Minishark 25t static small rum,1,Minishark,,R,25,static,small,rum,1,12.95,259,156,51,51,0.25,25.086,100
+Minishark 25t static small sober,1,Minishark,,R,25,static,small,none,1,35.1,702,153,78,78,0.017,25.086,100
+Minishark 25t static small ale,1,Minishark,,R,25,static,small,ale,1,19.8,396,153,46,46,1.433,25.086,100
+Minishark 25t static small stout,1,Minishark,,R,25,static,small,stout,1,25.65,513,153,56,56,0.35,25.086,100
+Minishark 25t static small rum,1,Minishark,,R,25,static,small,rum,1,19.6,392,154,45,45,0.2,25.086,100
+Sniper Rifle 25t static small sober,1,Sniper_Rifle,,R,25,static,small,none,1,133.15,2663,34,18,18,1.033,25.086,100
+Sniper Rifle 25t static small ale,1,Sniper_Rifle,,R,25,static,small,ale,1,110.6,2212,34,14,14,1.017,25.086,100
+Sniper Rifle 25t static small stout,1,Sniper_Rifle,,R,25,static,small,stout,1,85.25,1705,33,10,10,1,25.086,100
+Sniper Rifle 25t static small rum,1,Sniper_Rifle,,R,25,static,small,rum,1,85,1700,33,11,11,2.283,25.086,100
+Boomstick 25t static small sober,1,Boomstick,,R,25,static,small,none,1,8.8,176,94,14,14,4.483,25.086,100
+Boomstick 25t static small ale,1,Boomstick,,R,25,static,small,ale,1,5.95,119,92,11,11,4.467,25.086,100
+Boomstick 25t static small stout,1,Boomstick,,R,25,static,small,stout,1,12.8,256,94,20,20,0.45,25.086,100
+Boomstick 25t static small rum,1,Boomstick,,R,25,static,small,rum,1,13.75,275,93,23,23,0.433,25.086,100
+Demon Bow 25t static small sober,1,Demon_Bow,,R,25,static,small,none,1,14.4,288,50,29,29,0.133,25.104,100
+Demon Bow 25t static small ale,1,Demon_Bow,,R,25,static,small,ale,1,8.4,168,50,18,18,0.217,25.104,100
+Demon Bow 25t static small stout,1,Demon_Bow,,R,25,static,small,stout,1,10.6,212,50,18,18,1.883,25.104,100
+Demon Bow 25t static small rum,1,Demon_Bow,,R,25,static,small,rum,1,7.9,158,50,16,16,0.2,25.104,100
+Molten Fury 25t static small sober,1,Molten_Fury,,R,25,static,small,none,1,55.25,1105,56,38,38,0.75,25.104,100
+Molten Fury 25t static small ale,1,Molten_Fury,,R,25,static,small,ale,1,35.65,713,56,24,24,0.733,25.104,100
+Molten Fury 25t static small stout,1,Molten_Fury,,R,25,static,small,stout,1,44.85,897,56,26,26,1.083,25.104,100
+Molten Fury 25t static small rum,1,Molten_Fury,,R,25,static,small,rum,1,40.9,818,57,27,27,1.9,25.104,100
+Ruby Staff 25t static small sober,1,Ruby_Staff,,M,25,static,small,none,1,18.6,372,51,31,31,1.3,25.104,100
+Ruby Staff 25t static small ale,1,Ruby_Staff,,M,25,static,small,ale,1,8.05,161,49,13,13,0.35,25.104,100
+Ruby Staff 25t static small stout,1,Ruby_Staff,,M,25,static,small,stout,1,15.95,319,51,23,23,1.267,25.104,100
+Ruby Staff 25t static small rum,1,Ruby_Staff,,M,25,static,small,rum,1,12.65,253,49,21,21,1.717,25.104,100
+Space Gun 25t static small sober,1,Space_Gun,,M,25,static,small,none,1,19.05,381,74,44,44,0.017,25.104,100
+Space Gun 25t static small ale,1,Space_Gun,,M,25,static,small,ale,1,13.1,262,73,30,30,0.383,25.104,100
+Space Gun 25t static small stout,1,Space_Gun,,M,25,static,small,stout,1,12.9,258,75,26,26,0.65,25.104,100
+Space Gun 25t static small rum,1,Space_Gun,,M,25,static,small,rum,1,13.8,276,73,29,29,2.333,25.104,100
+Water Bolt 25t static small sober,1,Water_Bolt,,M,25,static,small,none,1,27.05,541,104,54,54,0.1,25.104,100
+Water Bolt 25t static small ale,1,Water_Bolt,,M,25,static,small,ale,1,16.1,322,104,32,32,0.933,25.104,100
+Water Bolt 25t static small stout,1,Water_Bolt,,M,25,static,small,stout,1,24.95,499,104,41,41,0.417,25.104,100
+Water Bolt 25t static small rum,1,Water_Bolt,,M,25,static,small,rum,1,18.2,364,103,35,35,0.15,25.104,100
+Enchanted Sword 25t static small sober,1,Enchanted_Sword,,E,25,static,small,none,1,17.55,351,27,27,27,0.483,25.104,100
+Enchanted Sword 25t static small ale,1,Enchanted_Sword,,E,25,static,small,ale,1,17.7,354,27,27,27,0.467,25.104,100
+Enchanted Sword 25t static small stout,1,Enchanted_Sword,,E,25,static,small,stout,1,21.3,426,27,27,27,0.45,25.104,100
+Enchanted Sword 25t static small rum,1,Enchanted_Sword,,E,25,static,small,rum,1,18.25,365,27,27,27,0.433,25.104,100
+Terra Blade 25t static small sober,1,Terra_Blade,,E,25,static,small,none,1,212.3,4246,68,67,67,0.133,25.104,100
+Terra Blade 25t static small ale,1,Terra_Blade,,E,25,static,small,ale,1,190.2,3804,69,62,62,0.217,25.104,100
+Terra Blade 25t static small stout,1,Terra_Blade,,E,25,static,small,stout,1,236.8,4736,69,65,65,0.2,25.104,100
+Terra Blade 25t static small rum,1,Terra_Blade,,E,25,static,small,rum,1,207.6,4152,69,65,65,0.183,25.104,100
+Muramasa 25t static small sober,1,Muramasa,,E,25,static,small,none,1,67.35,1347,67,67,67,0.117,2.224,100
+Muramasa 25t static small ale,1,Muramasa,,E,25,static,small,ale,1,66.8,1336,67,67,67,0.1,2.224,100
+Muramasa 25t static small stout,1,Muramasa,,E,25,static,small,stout,1,80.55,1611,67,67,67,0.083,2.224,100
+Muramasa 25t static small rum,1,Muramasa,,E,25,static,small,rum,1,71.8,1436,67,66,66,0.167,2.224,100
+Night's Edge 25t static small sober,1,Night's_Edge,,E,25,static,small,none,1,63.5,1270,0,0,0,0.15,2.224,100
+Night's Edge 25t static small ale,1,Night's_Edge,,E,25,static,small,ale,1,65.15,1303,0,0,0,0.133,2.224,100
+Night's Edge 25t static small stout,1,Night's_Edge,,E,25,static,small,stout,1,81.25,1625,0,0,0,0.117,2.224,100
+Night's Edge 25t static small rum,1,Night's_Edge,,E,25,static,small,rum,1,67.75,1355,0,0,0,0.1,2.224,100
+Slime Staff 25t static small sober,1,Slime_Staff,,S,25,static,small,none,1,3.1,62,0,1,52,0.2,25.104,100
+Slime Staff 25t static small ale,1,Slime_Staff,,S,25,static,small,ale,1,3.5,70,0,1,55,0.433,25.104,100
+Slime Staff 25t static small stout,1,Slime_Staff,,S,25,static,small,stout,1,3.7,74,0,1,59,0.433,25.104,100
+Slime Staff 25t static small rum,1,Slime_Staff,,S,25,static,small,rum,1,3.45,69,0,1,56,0.25,25.104,100
+Hornet Staff 25t static small sober,1,Hornet_Staff,,S,25,static,small,none,1,13.05,261,27,27,27,0.133,25.104,100
+Hornet Staff 25t static small ale,1,Hornet_Staff,,S,25,static,small,ale,1,12.3,246,26,26,26,0.033,25.104,100
+Hornet Staff 25t static small stout,1,Hornet_Staff,,S,25,static,small,stout,1,12.6,252,27,26,26,0.033,25.104,100
+Hornet Staff 25t static small rum,1,Hornet_Staff,,S,25,static,small,rum,1,12.7,254,27,27,27,0.117,25.104,100
+Imp Staff 25t static small sober,1,Imp_Staff,,S,25,static,small,none,1,12.05,241,20,18,18,0.1,25.104,100
+Imp Staff 25t static small ale,1,Imp_Staff,,S,25,static,small,ale,1,11.9,238,19,18,18,0.033,25.104,100
+Imp Staff 25t static small stout,1,Imp_Staff,,S,25,static,small,stout,1,12.3,246,19,18,18,0.05,25.104,100
+Imp Staff 25t static small rum,1,Imp_Staff,,S,25,static,small,rum,1,11.9,238,19,17,17,0.033,25.104,100
+Minishark 25t static small sober,2,Minishark,,R,25,static,small,none,1,19.6,392,153,78,78,0.033,25.086,100
+Minishark 25t static small ale,2,Minishark,,R,25,static,small,ale,1,11.5,230,157,48,48,0.417,25.086,100
+Minishark 25t static small stout,2,Minishark,,R,25,static,small,stout,1,14.35,287,157,58,58,0.133,25.086,100
+Minishark 25t static small rum,2,Minishark,,R,25,static,small,rum,1,11.75,235,153,45,45,1.717,25.086,100
+Minishark 25t static small sober,2,Minishark,,R,25,static,small,none,1,31.15,623,153,70,70,1.75,25.086,100
+Minishark 25t static small ale,2,Minishark,,R,25,static,small,ale,1,23.2,464,152,52,52,0.1,25.086,100
+Minishark 25t static small stout,2,Minishark,,R,25,static,small,stout,1,28.3,566,152,61,61,0.75,25.086,100
+Minishark 25t static small rum,2,Minishark,,R,25,static,small,rum,1,21.3,426,154,48,48,0.467,25.086,100
+Sniper Rifle 25t static small sober,2,Sniper_Rifle,,R,25,static,small,none,1,152.55,3051,34,20,20,0.433,25.086,100
+Sniper Rifle 25t static small ale,2,Sniper_Rifle,,R,25,static,small,ale,1,77.35,1547,34,10,10,0.417,25.086,100
+Sniper Rifle 25t static small stout,2,Sniper_Rifle,,R,25,static,small,stout,1,58.05,1161,33,7,7,2.8,25.086,100
+Sniper Rifle 25t static small rum,2,Sniper_Rifle,,R,25,static,small,rum,1,96.25,1925,34,13,13,1.083,25.086,100
+Boomstick 25t static small sober,2,Boomstick,,R,25,static,small,none,1,8.2,164,94,13,13,0.483,25.086,100
+Boomstick 25t static small ale,2,Boomstick,,R,25,static,small,ale,1,12.75,255,95,21,21,0.467,25.086,100
+Boomstick 25t static small stout,2,Boomstick,,R,25,static,small,stout,1,12.85,257,94,20,20,0.45,25.086,100
+Boomstick 25t static small rum,2,Boomstick,,R,25,static,small,rum,1,9.55,191,93,16,16,0.433,25.086,100
+Demon Bow 25t static small sober,2,Demon_Bow,,R,25,static,small,none,1,14.75,295,50,30,30,1.817,25.104,100
+Demon Bow 25t static small ale,2,Demon_Bow,,R,25,static,small,ale,1,8.95,179,50,17,17,1.067,25.104,100
+Demon Bow 25t static small stout,2,Demon_Bow,,R,25,static,small,stout,1,14.05,281,50,24,24,0.633,25.104,100
+Demon Bow 25t static small rum,2,Demon_Bow,,R,25,static,small,rum,1,12.3,246,50,24,24,3.533,25.104,100
+Molten Fury 25t static small sober,2,Molten_Fury,,R,25,static,small,none,1,48.45,969,56,33,33,0.383,25.104,100
+Molten Fury 25t static small ale,2,Molten_Fury,,R,25,static,small,ale,1,37.4,748,56,25,25,0.35,25.104,100
+Molten Fury 25t static small stout,2,Molten_Fury,,R,25,static,small,stout,1,33.85,677,55,20,20,0.717,25.104,100
+Molten Fury 25t static small rum,2,Molten_Fury,,R,25,static,small,rum,1,35.5,710,56,23,23,0.083,25.104,100
+Ruby Staff 25t static small sober,2,Ruby_Staff,,M,25,static,small,none,1,16.45,329,49,27,27,0.833,25.104,100
+Ruby Staff 25t static small ale,2,Ruby_Staff,,M,25,static,small,ale,1,12.8,256,48,21,21,0.35,25.104,100
+Ruby Staff 25t static small stout,2,Ruby_Staff,,M,25,static,small,stout,1,15.75,315,49,22,22,0.333,25.104,100
+Ruby Staff 25t static small rum,2,Ruby_Staff,,M,25,static,small,rum,1,9.15,183,50,16,16,1.25,25.104,100
+Space Gun 25t static small sober,2,Space_Gun,,M,25,static,small,none,1,16.3,326,73,36,36,0.583,25.104,100
+Space Gun 25t static small ale,2,Space_Gun,,M,25,static,small,ale,1,10.25,205,72,22,22,0.383,25.104,100
+Space Gun 25t static small stout,2,Space_Gun,,M,25,static,small,stout,1,14.6,292,73,29,29,0.083,25.104,100
+Space Gun 25t static small rum,2,Space_Gun,,M,25,static,small,rum,1,10.75,215,73,23,23,1.483,25.104,100
+Water Bolt 25t static small sober,2,Water_Bolt,,M,25,static,small,none,1,23.85,477,104,48,48,0.717,25.104,100
+Water Bolt 25t static small ale,2,Water_Bolt,,M,25,static,small,ale,1,17.55,351,104,35,35,0.183,25.104,100
+Water Bolt 25t static small stout,2,Water_Bolt,,M,25,static,small,stout,1,16.4,328,104,27,27,0.917,25.104,100
+Water Bolt 25t static small rum,2,Water_Bolt,,M,25,static,small,rum,1,15.85,317,103,32,32,0.767,25.104,100
+Enchanted Sword 25t static small sober,2,Enchanted_Sword,,E,25,static,small,none,1,18.1,362,27,27,27,0.483,25.104,100
+Enchanted Sword 25t static small ale,2,Enchanted_Sword,,E,25,static,small,ale,1,17.2,344,27,27,27,0.467,25.104,100
+Enchanted Sword 25t static small stout,2,Enchanted_Sword,,E,25,static,small,stout,1,21.6,432,27,27,27,0.45,25.104,100
+Enchanted Sword 25t static small rum,2,Enchanted_Sword,,E,25,static,small,rum,1,17.4,348,27,27,27,0.433,25.104,100
+Terra Blade 25t static small sober,2,Terra_Blade,,E,25,static,small,none,1,210.2,4204,68,67,67,0.133,25.104,100
+Terra Blade 25t static small ale,2,Terra_Blade,,E,25,static,small,ale,1,192.6,3852,68,62,62,0.217,25.104,100
+Terra Blade 25t static small stout,2,Terra_Blade,,E,25,static,small,stout,1,232.15,4643,69,63,63,0.2,25.104,100
+Terra Blade 25t static small rum,2,Terra_Blade,,E,25,static,small,rum,1,209.4,4188,69,65,65,0.183,25.104,100
+Muramasa 25t static small sober,2,Muramasa,,E,25,static,small,none,1,69.4,1388,67,67,67,0.117,2.224,100
+Muramasa 25t static small ale,2,Muramasa,,E,25,static,small,ale,1,67.85,1357,67,67,67,0.1,2.224,100
+Muramasa 25t static small stout,2,Muramasa,,E,25,static,small,stout,1,79,1580,67,67,67,0.083,2.224,100
+Muramasa 25t static small rum,2,Muramasa,,E,25,static,small,rum,1,70.15,1403,67,66,66,0.167,2.224,100
+Night's Edge 25t static small sober,2,Night's_Edge,,E,25,static,small,none,1,68.3,1366,0,0,0,0.15,2.224,100
+Night's Edge 25t static small ale,2,Night's_Edge,,E,25,static,small,ale,1,64.15,1283,0,0,0,0.133,2.224,100
+Night's Edge 25t static small stout,2,Night's_Edge,,E,25,static,small,stout,1,74.1,1482,0,0,0,0.117,2.224,100
+Night's Edge 25t static small rum,2,Night's_Edge,,E,25,static,small,rum,1,72.35,1447,0,0,0,0.1,2.224,100
+Slime Staff 25t static small sober,2,Slime_Staff,,S,25,static,small,none,1,3.6,72,0,1,60,0.017,25.104,100
+Slime Staff 25t static small ale,2,Slime_Staff,,S,25,static,small,ale,1,3.6,72,0,1,57,0.133,25.104,100
+Slime Staff 25t static small stout,2,Slime_Staff,,S,25,static,small,stout,1,3.7,74,0,1,57,0.217,25.104,100
+Slime Staff 25t static small rum,2,Slime_Staff,,S,25,static,small,rum,1,3.8,76,0,1,61,0.133,25.104,100
+Hornet Staff 25t static small sober,2,Hornet_Staff,,S,25,static,small,none,1,12.75,255,27,27,27,0.133,25.104,100
+Hornet Staff 25t static small ale,2,Hornet_Staff,,S,25,static,small,ale,1,12.5,250,27,27,27,0.067,25.104,100
+Hornet Staff 25t static small stout,2,Hornet_Staff,,S,25,static,small,stout,1,12.7,254,27,27,27,0.017,25.104,100
+Hornet Staff 25t static small rum,2,Hornet_Staff,,S,25,static,small,rum,1,12.5,250,27,27,27,0.067,25.104,100
+Imp Staff 25t static small sober,2,Imp_Staff,,S,25,static,small,none,1,12.4,248,19,18,18,0.25,25.104,100
+Imp Staff 25t static small ale,2,Imp_Staff,,S,25,static,small,ale,1,11.25,225,18,17,17,0.067,25.104,100
+Imp Staff 25t static small stout,2,Imp_Staff,,S,25,static,small,stout,1,12.25,245,19,18,18,0.017,25.104,100
+Imp Staff 25t static small rum,2,Imp_Staff,,S,25,static,small,rum,1,11.7,234,19,17,17,0.167,25.104,100
+Minishark 25t static small sober,3,Minishark,,R,25,static,small,none,1,20.3,406,153,83,83,0.167,25.086,100
+Minishark 25t static small ale,3,Minishark,,R,25,static,small,ale,1,10.7,214,155,43,43,0.15,25.086,100
+Minishark 25t static small stout,3,Minishark,,R,25,static,small,stout,1,13.2,264,156,52,52,0.267,25.086,100
+Minishark 25t static small rum,3,Minishark,,R,25,static,small,rum,1,11.35,227,155,46,46,0.65,25.086,100
+Minishark 25t static small sober,3,Minishark,,R,25,static,small,none,1,37.85,757,153,85,85,0.15,25.086,100
+Minishark 25t static small ale,3,Minishark,,R,25,static,small,ale,1,25.45,509,153,56,56,0.1,25.086,100
+Minishark 25t static small stout,3,Minishark,,R,25,static,small,stout,1,21.5,430,152,48,48,0.083,25.086,100
+Minishark 25t static small rum,3,Minishark,,R,25,static,small,rum,1,16.9,338,154,39,39,0.6,25.086,100
+Sniper Rifle 25t static small sober,3,Sniper_Rifle,,R,25,static,small,none,1,114.6,2292,34,15,15,0.433,25.086,100
+Sniper Rifle 25t static small ale,3,Sniper_Rifle,,R,25,static,small,ale,1,89.85,1797,34,12,12,0.417,25.086,100
+Sniper Rifle 25t static small stout,3,Sniper_Rifle,,R,25,static,small,stout,1,93.95,1879,34,11,11,2.8,25.086,100
+Sniper Rifle 25t static small rum,3,Sniper_Rifle,,R,25,static,small,rum,1,81.8,1636,34,11,11,4.083,25.086,100
+Boomstick 25t static small sober,3,Boomstick,,R,25,static,small,none,1,7.25,145,93,12,12,1.817,25.086,100
+Boomstick 25t static small ale,3,Boomstick,,R,25,static,small,ale,1,9.85,197,93,18,18,0.467,25.086,100
+Boomstick 25t static small stout,3,Boomstick,,R,25,static,small,stout,1,12.8,256,94,20,20,0.45,25.086,100
+Boomstick 25t static small rum,3,Boomstick,,R,25,static,small,rum,1,13.5,270,97,23,23,0.433,25.086,100
+Demon Bow 25t static small sober,3,Demon_Bow,,R,25,static,small,none,1,14.65,293,50,30,30,0.167,25.104,100
+Demon Bow 25t static small ale,3,Demon_Bow,,R,25,static,small,ale,1,10.1,202,51,20,20,2.317,25.104,100
+Demon Bow 25t static small stout,3,Demon_Bow,,R,25,static,small,stout,1,11.05,221,51,18,18,0.633,25.104,100
+Demon Bow 25t static small rum,3,Demon_Bow,,R,25,static,small,rum,1,9.95,199,50,20,20,0.183,25.104,100
+Molten Fury 25t static small sober,3,Molten_Fury,,R,25,static,small,none,1,43.2,864,55,29,29,0.75,25.104,100
+Molten Fury 25t static small ale,3,Molten_Fury,,R,25,static,small,ale,1,44.8,896,56,30,30,1.1,25.104,100
+Molten Fury 25t static small stout,3,Molten_Fury,,R,25,static,small,stout,1,37.05,741,56,23,23,1.45,25.104,100
+Molten Fury 25t static small rum,3,Molten_Fury,,R,25,static,small,rum,1,38,760,57,26,26,0.433,25.104,100
+Ruby Staff 25t static small sober,3,Ruby_Staff,,M,25,static,small,none,1,14.95,299,50,25,25,0.833,25.104,100
+Ruby Staff 25t static small ale,3,Ruby_Staff,,M,25,static,small,ale,1,13.95,279,49,23,23,1.283,25.104,100
+Ruby Staff 25t static small stout,3,Ruby_Staff,,M,25,static,small,stout,1,12.45,249,48,18,18,0.8,25.104,100
+Ruby Staff 25t static small rum,3,Ruby_Staff,,M,25,static,small,rum,1,11.7,234,50,21,21,0.783,25.104,100
+Space Gun 25t static small sober,3,Space_Gun,,M,25,static,small,none,1,16.2,324,73,36,36,0.017,25.104,100
+Space Gun 25t static small ale,3,Space_Gun,,M,25,static,small,ale,1,13.25,265,73,29,29,0.1,25.104,100
+Space Gun 25t static small stout,3,Space_Gun,,M,25,static,small,stout,1,12.55,251,74,25,25,0.65,25.104,100
+Space Gun 25t static small rum,3,Space_Gun,,M,25,static,small,rum,1,10.15,203,72,24,24,0.067,25.104,100
+Water Bolt 25t static small sober,3,Water_Bolt,,M,25,static,small,none,1,24.8,496,104,51,51,0.1,25.104,100
+Water Bolt 25t static small ale,3,Water_Bolt,,M,25,static,small,ale,1,23.1,462,104,46,46,0.367,25.104,100
+Water Bolt 25t static small stout,3,Water_Bolt,,M,25,static,small,stout,1,20.25,405,104,35,35,1.2,25.104,100
+Water Bolt 25t static small rum,3,Water_Bolt,,M,25,static,small,rum,1,17.4,348,103,34,34,0.15,25.104,100
+Enchanted Sword 25t static small sober,3,Enchanted_Sword,,E,25,static,small,none,1,17.6,352,27,27,27,0.483,25.104,100
+Enchanted Sword 25t static small ale,3,Enchanted_Sword,,E,25,static,small,ale,1,17.7,354,27,27,27,0.467,25.104,100
+Enchanted Sword 25t static small stout,3,Enchanted_Sword,,E,25,static,small,stout,1,22.35,447,27,27,27,0.45,25.104,100
+Enchanted Sword 25t static small rum,3,Enchanted_Sword,,E,25,static,small,rum,1,17.6,352,27,27,27,0.433,25.104,100
+Terra Blade 25t static small sober,3,Terra_Blade,,E,25,static,small,none,1,213.05,4261,68,67,67,0.133,25.104,100
+Terra Blade 25t static small ale,3,Terra_Blade,,E,25,static,small,ale,1,203.9,4078,68,65,65,0.217,25.104,100
+Terra Blade 25t static small stout,3,Terra_Blade,,E,25,static,small,stout,1,237.95,4759,68,65,65,0.2,25.104,100
+Terra Blade 25t static small rum,3,Terra_Blade,,E,25,static,small,rum,1,188.1,3762,68,61,61,0.183,25.104,100
+Muramasa 25t static small sober,3,Muramasa,,E,25,static,small,none,1,67.3,1346,67,67,67,0.117,2.224,100
+Muramasa 25t static small ale,3,Muramasa,,E,25,static,small,ale,1,69.7,1394,67,67,67,0.1,2.224,100
+Muramasa 25t static small stout,3,Muramasa,,E,25,static,small,stout,1,80.4,1608,67,67,67,0.083,2.224,100
+Muramasa 25t static small rum,3,Muramasa,,E,25,static,small,rum,1,74.2,1484,67,66,66,0.167,2.224,100
+Night's Edge 25t static small sober,3,Night's_Edge,,E,25,static,small,none,1,67.4,1348,0,0,0,0.15,2.224,100
+Night's Edge 25t static small ale,3,Night's_Edge,,E,25,static,small,ale,1,68.35,1367,0,0,0,0.133,2.224,100
+Night's Edge 25t static small stout,3,Night's_Edge,,E,25,static,small,stout,1,77.3,1546,0,0,0,0.117,2.224,100
+Night's Edge 25t static small rum,3,Night's_Edge,,E,25,static,small,rum,1,73.6,1472,0,0,0,0.1,2.224,100
+Slime Staff 25t static small sober,3,Slime_Staff,,S,25,static,small,none,1,3.55,71,0,1,60,0.05,25.104,100
+Slime Staff 25t static small ale,3,Slime_Staff,,S,25,static,small,ale,1,4.05,81,0,1,66,0.133,25.104,100
+Slime Staff 25t static small stout,3,Slime_Staff,,S,25,static,small,stout,1,4.65,93,0,1,76,0.117,25.104,100
+Slime Staff 25t static small rum,3,Slime_Staff,,S,25,static,small,rum,1,4.65,93,0,1,76,0.183,25.104,100
+Hornet Staff 25t static small sober,3,Hornet_Staff,,S,25,static,small,none,1,12.6,252,27,26,26,0.133,25.104,100
+Hornet Staff 25t static small ale,3,Hornet_Staff,,S,25,static,small,ale,1,12.45,249,27,26,26,0.017,25.104,100
+Hornet Staff 25t static small stout,3,Hornet_Staff,,S,25,static,small,stout,1,12.4,248,27,26,26,0.067,25.104,100
+Hornet Staff 25t static small rum,3,Hornet_Staff,,S,25,static,small,rum,1,12.75,255,27,27,27,0.067,25.104,100
+Imp Staff 25t static small sober,3,Imp_Staff,,S,25,static,small,none,1,12.3,246,19,18,18,0.017,25.104,100
+Imp Staff 25t static small ale,3,Imp_Staff,,S,25,static,small,ale,1,11.85,237,19,18,18,0.067,25.104,100
+Imp Staff 25t static small stout,3,Imp_Staff,,S,25,static,small,stout,1,11.7,234,19,18,18,0.083,25.104,100
+Imp Staff 25t static small rum,3,Imp_Staff,,S,25,static,small,rum,1,11.85,237,19,17,17,0.133,25.104,100

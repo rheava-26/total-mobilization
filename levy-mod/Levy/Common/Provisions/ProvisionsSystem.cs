@@ -217,6 +217,13 @@ namespace Levy.Common.Provisions
 
 				var n = new NPC(); n.SetDefaults(ModContent.NPCType<SoldierNPC>());
 				var body = n.ModNPC as SoldierNPC;
+				// A levy acts like a town NPC and Calamity makes such NPCs immune to every regular buff at SetDefaults; the real body lifts that on its first update (SoldierNPC.AllowFriendlyBuffs), a detached test body never updates, so do it here.
+				if (body != null)
+				{
+					bool refused = n.buffImmune[ModContent.BuffType<LavaShotBuff>()] || n.buffImmune[BuffID.WellFed];
+					body.AllowFriendlyBuffs();
+					info += $" | fresh body buff-immune={refused}, after AllowFriendlyBuffs={n.buffImmune[ModContent.BuffType<LavaShotBuff>()] || n.buffImmune[BuffID.WellFed]}";
+				}
 				Check(body != null && n.TryGetGlobalNPC(out ProvisionsBody pb), "a soldier body carries the Provisions state");
 				if (body != null && n.TryGetGlobalNPC(out ProvisionsBody g))
 				{

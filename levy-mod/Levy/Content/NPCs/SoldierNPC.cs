@@ -159,7 +159,7 @@ namespace Levy.Content.NPCs
 		/// A levy acts like a town NPC, and Calamity makes every such NPC immune to regular buffs (NPCStats.SetDebuffImmunities), so a potion, a drink or a teammate's aura buff would be refused (NPC.AddBuff returns at
 		/// buffImmune). Good buffs are the point of an ally: once per body, after every mod's SetDefaults has run, he stops resisting any buff that is not a debuff. Debuffs keep whatever immunity the load gave him.
 		/// </summary>
-		private void AllowFriendlyBuffs()
+		internal void AllowFriendlyBuffs()
 		{
 			for (int i = 1; i < NPC.buffImmune.Length; i++) if (!Main.debuff[i]) NPC.buffImmune[i] = false;
 		}

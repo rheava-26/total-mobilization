@@ -186,6 +186,14 @@ namespace Levy.Common.UI
 			else LevyPackets.New(LevyPacket.Rearm).Send();
 		}
 
+		/// <summary>Strips one levy's kit back to his Armory (issue false) or issues him a kit again (issue true). Server authoritative.</summary>
+		public static void SetKit(SoldierRecord rec, bool issue)
+		{
+			if (rec == null) return;
+			if (Single) RosterSystem.Instance.SetKit(rec, issue);
+			else { var p = LevyPackets.New(LevyPacket.StripKit); p.Write(rec.Id); p.Write(issue); p.Send(); }
+		}
+
 		/// <summary>Full loadout reset for every Regular: kit returned, every hand lock cleared, fresh issue. Server authoritative.</summary>
 		public static void ResetLoadouts()
 		{

@@ -23,7 +23,7 @@ namespace Levy.Common.UI
 
 		private DraggablePanel _panel;
 		private Label _title, _sub, _status, _hint;
-		private LevyButton _close;
+		private LevyButton _close, _kit;
 		private readonly Item[] _view = new Item[SoldierGear.SlotCount];
 		private readonly ItemSlotElement[] _slots = new ItemSlotElement[SoldierGear.SlotCount];
 		private readonly LockFrame[] _frames = new LockFrame[SoldierGear.SlotCount];
@@ -71,6 +71,7 @@ namespace Levy.Common.UI
 			Put(new Label(LevyUtil.T("Loadout.ExtraSidearms"), 0.75f), 12, 214);
 			for (int x = 0; x < LevyConstants.ExtraSidearms; x++) AddSlot(SoldierGear.SlotSide2 + x, "Loadout.ExtraSidearm", 12 + x * Pitch, 232);
 
+			_kit = Put(new LevyButton(LevyUtil.T("Loadout.ReturnKit"), 0.8f, 150, 26, ToggleKit, LevyUtil.T("Loadout.ReturnKitHint")), 210, 238);
 			_status = Put(new Label("", 0.75f), 12, 280);
 			_hint = Put(new Label(LevyUtil.T("Loadout.Hint"), 0.65f), 12, 304);
 			_hint.TextColor = new Color(200, 205, 225);
@@ -157,6 +158,14 @@ namespace Levy.Common.UI
 				if (i < allowed) AppendSlot(s); else RemoveSlot(s);
 			}
 			for (int s = 0; s < SoldierGear.SlotCount; s++) if (_captions[s] != null) _captions[s].TextColor = rec.Gear.IsLocked(s) ? Gold : Color.White;
+			_kit.Set(LevyUtil.T(rec.Disarmed ? "Loadout.IssueKit" : "Loadout.ReturnKit"), true); _kit.Lit = rec.Disarmed;
+		}
+
+		private void ToggleKit()
+		{
+			var rec = Rec; if (rec == null) return;
+			UIActions.SetKit(rec, rec.Disarmed);
+			_refreshTimer = 0;
 		}
 
 		private void SetStatus(string text, Color color)

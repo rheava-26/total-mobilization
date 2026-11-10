@@ -106,6 +106,8 @@ namespace Levy.Common.UI
 			var r = Rules;
 			if (r == null) return;
 			for (int i = 0; i < r.Blocks.Count; i++) _list.Add(BuildCard(r, i));
+			_list.Add(BuildLimitsCard(r));
+			_list.Add(BuildHandSetCard(r));
 			_list.Recalculate();
 			Refresh();
 		}
@@ -142,6 +144,59 @@ namespace Levy.Common.UI
 			var pv = new Label("", 0.72f);
 			pv.Left.Set(Pad + 2, 0f); pv.Top.Set(HeaderH + Pad + bodyH + 3, 0f); card.Append(pv);
 			_previews.Add((index, pv));
+			return card;
+		}
+
+		/// <summary>The loadout limits card: the sidearms a levy who is not a summoner may carry, and whether he may carry summon weapons at all.</summary>
+		private UIElement BuildLimitsCard(ArmoryRules rules)
+		{
+			var card = new UIPanel();
+			card.SetPadding(0);
+			card.Width.Set(CardWidth, 0f); card.Height.Set(HeaderH + 56 + Pad, 0f);
+			card.BackgroundColor = new Color(30, 44, 72) * 0.92f;
+			var title = new Label(LevyUtil.T("Rules.LimitsTitle"), 0.9f); title.Left.Set(Pad + 4, 0f); title.Top.Set(Pad + 3, 0f); card.Append(title);
+			float y = HeaderH + Pad - 2;
+			var l1 = new Label(LevyUtil.T("Rules.SidearmLimit"), 0.85f); l1.Left.Set(Pad + 4, 0f); l1.Top.Set(y + 4, 0f); card.Append(l1);
+			Field(card, 300, y, 112, 0, LevyConstants.MaxSidearms, 1, true, () => rules.SidearmLimit, v => { rules.SidearmLimit = (int)v; rules.Changed(); });
+			var n1 = new Label(LevyUtil.T("Rules.SidearmLimitNote"), 0.7f); n1.Left.Set(420, 0f); n1.Top.Set(y + 6, 0f); card.Append(n1);
+			y += 28;
+			var l2 = new Label(LevyUtil.T("Rules.SummonsForOthers"), 0.85f); l2.Left.Set(Pad + 4, 0f); l2.Top.Set(y + 4, 0f); card.Append(l2);
+			var on = new LevyButton(LevyUtil.T(rules.SummonsForOthers ? "Rules.On" : "Rules.Off"), LevyConstants.UI.ButtonTextScale, 112, 24, () => { rules.SummonsForOthers = !rules.SummonsForOthers; Reshape(); }, LevyUtil.T("Rules.SummonsForOthersHint")) { Lit = rules.SummonsForOthers };
+			on.Left.Set(300, 0f); on.Top.Set(y, 0f); card.Append(on);
+			return card;
+		}
+
+		/// <summary>Every item the player marked Preferred, Never or a set rank, listed here so it can be cleared without the item being in the armory.</summary>
+		private UIElement BuildHandSetCard(ArmoryRules rules)
+		{
+			var shown = new List<(string key, ItemOverride o)>();
+			foreach (var kv in rules.Overrides) if (kv.Value.Rank != RankOverrideMode.Auto) shown.Add((kv.Key, kv.Value));
+			int rows = Math.Max(1, (shown.Count + 12) / 13);
+			var card = new UIPanel();
+			card.SetPadding(0);
+			card.Width.Set(CardWidth, 0f); card.Height.Set(HeaderH + 18 + rows * 40 + Pad + 4, 0f);
+			card.BackgroundColor = new Color(30, 44, 72) * 0.92f;
+			var title = new Label(LevyUtil.T("Rules.HandSetTitle"), 0.9f); title.Left.Set(Pad + 4, 0f); title.Top.Set(Pad + 3, 0f); card.Append(title);
+			if (shown.Count > 0)
+			{
+				var all = new LevyButton(LevyUtil.T("Rules.HandSetClear"), LevyConstants.UI.ButtonTextScale, 90, 22, () =>
+				{
+					foreach (var (_, o) in shown) o.Rank = RankOverrideMode.Auto;
+					rules.Prune(); Reshape();
+				}, LevyUtil.T("Rules.HandSetClearHint"));
+				all.Left.Set(CardWidth - 90 - Pad, 0f); all.Top.Set(Pad, 0f); card.Append(all);
+			}
+			var note = new Label(LevyUtil.T(shown.Count > 0 ? "Rules.HandSetNote" : "Rules.HandSetNone"), 0.72f); note.Left.Set(Pad + 4, 0f); note.Top.Set(HeaderH + 2, 0f); card.Append(note);
+			for (int i = 0; i < shown.Count; i++)
+			{
+				var (key, o) = shown[i];
+				int type = ArmoryRules.TypeOf(key);
+				string badge = o.Rank == RankOverrideMode.Prefer ? "P" : o.Rank == RankOverrideMode.Never ? "N" : o.Value.ToString("0.#");
+				string what = LevyUtil.T(o.Rank == RankOverrideMode.Prefer ? "Rules.HandSetPrefer" : o.Rank == RankOverrideMode.Never ? "Rules.HandSetNever" : "Rules.HandSetSet", o.Value.ToString("0.#"));
+				var cell = new HandSetCell(type, badge, what, () => { o.Rank = RankOverrideMode.Auto; rules.Prune(); Reshape(); });
+				cell.Left.Set(Pad + 4 + (i % 13) * 38, 0f); cell.Top.Set(HeaderH + 18 + (i / 13) * 40, 0f);
+				card.Append(cell);
+			}
 			return card;
 		}
 

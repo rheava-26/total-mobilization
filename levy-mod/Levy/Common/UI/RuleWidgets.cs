@@ -213,6 +213,47 @@ namespace Levy.Common.UI
 	}
 
 	/// <summary>
+	/// One hand-set item in the Rules tab's list: its icon with a one-letter badge for what was set (P preferred, N never, a number for a set rank). Hover shows the item and what is set; click clears the setting.
+	/// </summary>
+	public class HandSetCell : UIElement
+	{
+		private readonly int _type;
+		private readonly string _badge, _what;
+		private Item _item;
+
+		public HandSetCell(int type, string badge, string what, Action clear)
+		{
+			_type = type; _badge = badge; _what = what;
+			Width.Set(36, 0f); Height.Set(36, 0f);
+			OnLeftClick += (e, el) => { SoundEngine.PlaySound(SoundID.MenuTick); clear?.Invoke(); };
+			OnRightClick += (e, el) => { SoundEngine.PlaySound(SoundID.MenuTick); clear?.Invoke(); };
+		}
+
+		protected override void DrawSelf(SpriteBatch spriteBatch)
+		{
+			var r = GetDimensions().ToRectangle();
+			var pixel = TextureAssets.MagicPixel.Value;
+			bool hot = IsMouseHovering;
+			spriteBatch.Draw(pixel, r, hot ? new Color(93, 118, 200) * 0.9f : new Color(20, 26, 52) * 0.9f);
+			if (_item == null) { _item = new Item(); _item.SetDefaults(_type); }
+			if (_type > 0 && _type < TextureAssets.Item.Length)
+			{
+				Main.instance.LoadItem(_type);
+				var tex = TextureAssets.Item[_type].Value;
+				float scale = Math.Min(1f, 28f / Math.Max(tex.Width, tex.Height));
+				spriteBatch.Draw(tex, r.Center.ToVector2(), null, Color.White, 0f, tex.Size() * 0.5f, scale, SpriteEffects.None, 0f);
+			}
+			Utils.DrawBorderString(spriteBatch, _badge, new Vector2(r.X + 3, r.Y + 1), new Color(255, 214, 110), 0.7f);
+			if (hot)
+			{
+				Main.LocalPlayer.mouseInterface = true;
+				Main.HoverItem = _item.Clone();
+				Main.hoverItemName = _item.Name + " - " + _what;
+			}
+		}
+	}
+
+	/// <summary>
 	/// The "+" cell of an item list: with an item on the cursor, a click adds that item's type to the list (the item stays in the hand). Empty-handed it only shows a hint.
 	/// </summary>
 	public class AddTypeCell : UIElement

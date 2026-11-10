@@ -74,7 +74,7 @@ namespace Levy.Content.TileEntities
 		/// <summary>Every levy keeps one slot for mobility and one for the rest (default on). Test seam: the loadout check turns it off to show the old fill.</summary>
 		internal static bool ReserveSlots = true;
 
-		private bool FloorEligible(SoldierRecord r) => r?.Gear != null && !r.LoadoutLocked && !IsBusy(r);
+		private bool FloorEligible(SoldierRecord r) => r?.Gear != null && !r.LoadoutLocked && !r.Disarmed && !IsBusy(r);
 
 		/// <summary>The levies this armory serves that may be re-equipped now.</summary>
 		private List<SoldierRecord> FloorLevies()

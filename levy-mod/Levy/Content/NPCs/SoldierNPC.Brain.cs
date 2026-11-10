@@ -260,17 +260,19 @@ namespace Levy.Content.NPCs
 					else if (now < _spawnGraceUntil) { WhyB = Why.BGrace; ThinkSpawnGrace(); }
 					else if (TryEngage(now))
 					{
+						Chatter_Note(true, now);
 						// Return / a map order outrank a fight: the body keeps walking its order and shoots what is in reach on the way (State stays Engage so the weapon fires)
 						if (MarchingOrder) MarchWhileEngaged(now, nearestHostileTiles);
 					}
 					else
 					{
 						// resupply outranks the unarmed fallback (a dry soldier heads for the armory); a soldier with nothing to fight with stays out of it
+						Chatter_Note(false, now);
 						WhyB = CanFight(now) ? Why.BNoTarget : Why.BCantFight;
 						if (TryResupply(now)) WhyB = Why.BResupply;
 						else if (ThinkUnarmed(now)) WhyB = Why.BUnarmed;
 						else if (Sit_Think(now, nearestHostileTiles)) { } // calm and idle: sit on a seat nearby and chat
-						else ThinkOrder(now, nearestHostileTiles);
+						else { Chatter_Think(now, nearestHostileTiles); ThinkOrder(now, nearestHostileTiles); } // a calm standing levy murmurs to a comrade now and then
 					}
 					break;
 			}

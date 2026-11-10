@@ -54,7 +54,7 @@ namespace Levy.Content.Items.Provisions
 		}
 	}
 
-	/// <summary>Fizz Tank: a bulk fizzy round. Also sold by the Tavernkeep.</summary>
+	/// <summary>Case of Fizz (class keeps its old name): a bulk fizzy round, crafted from cans. Also sold by the Tavernkeep.</summary>
 	public class FizzTank : ProvisionContainer
 	{
 		public override int RoundId => ProvisionRules.FizzId;
@@ -63,18 +63,18 @@ namespace Levy.Content.Items.Provisions
 		public override LocalizedText Tooltip => base.Tooltip.WithFormatArgs(LevyConstants.DrinkRadiusTiles, LevyConstants.DrinkDurationTicks / 3600, ProvisionRules.FizzJumpTiles, LevyConstants.FizzDefense, (int)System.Math.Round(LevyConstants.FizzKnockbackResist * 100f));
 
 		public override void AddRecipes()
-			=> CreateRecipe().AddIngredient(ModContent.ItemType<FizzPop>(), LevyConstants.FizzTankPops).AddRecipeGroup(RecipeGroupID.IronBar, 6).AddTile(TileID.Anvils).Register();
+			=> CreateRecipe().AddIngredient(ModContent.ItemType<FizzPop>(), LevyConstants.FizzTankPops).AddTile(TileID.WorkBenches).Register();
 	}
 
-	/// <summary>Magma Crucible: a bulk lava round, crafted only.</summary>
+	/// <summary>Iceberg Tray (class keeps its old name): a bulk round of Iceberg Shots, crafted only.</summary>
 	public class MagmaCrucible : ProvisionContainer
 	{
 		public override int RoundId => ProvisionRules.LavaId;
 		protected override (int w, int h) Size => (38, 32);
-		public override LocalizedText Tooltip => base.Tooltip.WithFormatArgs(LevyConstants.DrinkRadiusTiles, LevyConstants.LavaShotDurationTicks / 3600);
+		public override LocalizedText Tooltip => base.Tooltip.WithFormatArgs(LevyConstants.DrinkRadiusTiles, LevyConstants.LavaShotDurationTicks / 3600, (int)System.Math.Round((LevyConstants.DrunkAimErrorMult - 1f) * 100f));
 
 		public override void AddRecipes()
-			=> CreateRecipe().AddIngredient(ModContent.ItemType<MagmaShot>(), LevyConstants.CrucibleShots).AddRecipeGroup(RecipeGroupID.IronBar, 6).AddIngredient(ItemID.Obsidian, 5).AddTile(TileID.Anvils).Register();
+			=> CreateRecipe().AddIngredient(ModContent.ItemType<MagmaShot>(), LevyConstants.CrucibleShots).AddRecipeGroup(RecipeGroupID.IronBar, 4).AddTile(TileID.Anvils).Register();
 	}
 
 	/// <summary>A single drink: a buff potion the player can drink, which the Armory also issues to a levy from a buff slot.</summary>
@@ -96,7 +96,7 @@ namespace Levy.Content.Items.Provisions
 		}
 	}
 
-	/// <summary>Fizz Pop: a non-alcoholic bubbly drink. Brewed in bulk (four per batch).</summary>
+	/// <summary>Fizz Can (class keeps its old name): a non-alcoholic bubbly drink in a soda can. Brewed in bulk (four per batch).</summary>
 	public class FizzPop : SingleDrink
 	{
 		protected override int BuffType => ModContent.BuffType<FizzyBuff>();
@@ -114,7 +114,7 @@ namespace Levy.Content.Items.Provisions
 			=> CreateRecipe(LevyConstants.FizzPopsPerBrew).AddIngredient(ItemID.BottledWater, LevyConstants.FizzPopsPerBrew).AddIngredient(ItemID.Cloud).AddIngredient(ItemID.Daybloom).AddTile(TileID.Bottles).Register();
 	}
 
-	/// <summary>Magma Shot: lava immunity and lava swimming in a shot glass. Brewed in bulk (five per batch) from the Obsidian Skin Potion's own ingredients.</summary>
+	/// <summary>Iceberg Shot (class keeps its old name): ice-cold vodka, so numb that lava means nothing: lava immunity and lava swimming. Brewed in bulk (five per batch) from the Obsidian Skin Potion's own ingredients plus an Ice Block.</summary>
 	public class MagmaShot : SingleDrink
 	{
 		protected override int BuffType => ModContent.BuffType<LavaShotBuff>();

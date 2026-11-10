@@ -5,7 +5,8 @@ using Terraria.ModLoader.Config;
 namespace Levy.Common.Progression
 {
 	/// <summary>
-	/// PROGRESSION ASSISTANCE. Every option defaults to the vanilla behaviour (toggle off, multiplier 1, percent 100).
+	/// PROGRESSION ASSISTANCE. Every loot option defaults to the vanilla behaviour (toggle off, multiplier 1, percent 100). The four EventsAndOfficers toggles are the army's own
+	/// features (events that grow with the army, the Merchant's and Tax Collector's coin extras) and default on; turning them off leaves vanilla event spawns and no extra coins.
 	/// The mod is designed around vanilla progression; these only ease hard-to-get items so a levy army can be equipped in bulk.
 	/// Options that change recipes, loot tables or item sets are [ReloadRequired] (they are applied while the mod loads).
 	/// </summary>
@@ -63,8 +64,15 @@ namespace Levy.Common.Progression
 
 		// ---- Dungeon Spirits -----------------------------------------------------------------------------------
 		[Header("DungeonSpirits")]
-		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(3f)] public float DungeonSpiritMultiplier;
+		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float DungeonSpiritMultiplier;
 		[Range(0f, 10f)] [Increment(0.25f)] [DefaultValue(0f)] public float DungeonSpiritPercentPerCp;
+
+		// ---- Events and officer extras -------------------------------------------------------------------------
+		[Header("EventsAndOfficers")]
+		[DefaultValue(true)] public bool EventSpawnBoost;
+		[DefaultValue(true)] public bool EventInvasionBoost;
+		[DefaultValue(true)] public bool MerchantFenceCoins;
+		[DefaultValue(true)] public bool TaxCollectorBounty;
 
 		// ---- Chlorophyte sources -------------------------------------------------------------------------------
 		[Header("ChlorophyteSources")]

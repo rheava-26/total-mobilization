@@ -148,7 +148,7 @@ namespace Levy.Common.Globals
 
 		public override void EditSpawnRate(Player player, ref int spawnRate, ref int maxSpawns)
 		{
-			if (!LevyUtil.IsServerOrSingle) return;
+			if (!LevyUtil.IsServerOrSingle || !Events.EventPressure.SpawnBoostOn) return;
 			float best = 1f;
 			for (int i = 0; i < 4; i++)
 				if (PlayerInZone(player, i)) best = Math.Max(best, SpawnMult(ArmyCp(i)));

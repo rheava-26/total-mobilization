@@ -21,6 +21,7 @@ namespace Levy.Common.Officers
 		public override void OnKill(NPC npc)
 		{
 			if (!LevyUtil.IsServerOrSingle) return;
+			var cfg = Progression.LevyProgressionConfig.Get; if (cfg != null && !cfg.MerchantFenceCoins) return;
 			if (npc.value <= 0f || npc.friendly || npc.townNPC || npc.SpawnedFromStatue || npc.lifeMax <= 5 || NPCID.Sets.CountsAsCritter[npc.type]) return; // nothing worth fencing
 
 			var officers = OfficerSystem.Instance.ActiveBodies;

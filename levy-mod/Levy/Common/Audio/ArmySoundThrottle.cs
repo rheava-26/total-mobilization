@@ -53,6 +53,7 @@ namespace Levy.Common.Audio
 
 		/// <summary>LEVY_AUDIOCAP=1: the detour also runs on a dedicated server (lab harness) and logs the PlaySound stream per second as [AudioCap] lines. Never set in play.</summary>
 		static readonly bool Diag = Environment.GetEnvironmentVariable("LEVY_AUDIOCAP") == "1";
+		static bool isServer; // Main.dedServ at load: owner frames flip Main.dedServ on a client, which must not look like a server
 		static int dCalls, dArmy, dAdmit, dDrop, dLastAdmit = -1, dMaxGap, dLogAt, dLastArmy = -1, dMaxRaw, dGaps12, dGapsRaw12;
 		static readonly Dictionary<string, int> dStyle = new Dictionary<string, int>();
 		static readonly Dictionary<string, int> dOther = new Dictionary<string, int>();
@@ -81,6 +82,7 @@ namespace Levy.Common.Audio
 
 		public override void Load()
 		{
+			isServer = Main.dedServ;
 			if (Main.dedServ && !Diag) return;
 			On_NPC.AI += NpcAI;
 			On_Projectile.AI += ProjAI;
@@ -111,7 +113,8 @@ namespace Levy.Common.Audio
 
 		static SlotId Play(On_SoundEngine.orig_PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback orig, ref SoundStyle style, Vector2? position, SoundUpdateCallback cb)
 		{
-			if (Diag && Main.dedServ) { int n0 = (int)Main.GameUpdateCount; bool a0 = inArmy; bool ok = !a0 || Admit(ref style, position, n0, true) > 0f; DiagTick(n0, style.SoundPath ?? "", a0, ok); return SlotId.Invalid; }
+			if (Diag && isServer) { AudioCapLog.OnPlay(ref style, position, inArmy); int n0 = (int)Main.GameUpdateCount; bool a0 = inArmy; bool ok = !a0 || Admit(ref style, position, n0, true) > 0f; DiagTick(n0, style.SoundPath ?? "", a0, ok); return SlotId.Invalid; }
+			if (AudioCapLog.On && !isServer) AudioCapLog.OnPlay(ref style, position, inArmy);
 			if (!inArmy || Main.gameMenu) return orig(ref style, position, cb);
 			int now = (int)Main.GameUpdateCount;
 			float vol = Admit(ref style, position, now, false);

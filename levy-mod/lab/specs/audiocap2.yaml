@@ -1,0 +1,11 @@
+# audiobug round 2: PlaySound calls made while Main.myPlayer / screenPosition / soundVolume differ from the tick's start (swap counts), army with Arks and guns.
+name: audiocap2
+gear: postwof.best
+mode: exp
+mods: calamity
+levies: 20
+seeds: 1
+cap: 90
+boss: ds
+cw: CalamityMod/ArkoftheAncients
+env: {LEVY_AUDIOCAP: 1}

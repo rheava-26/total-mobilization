@@ -106,7 +106,7 @@ namespace Levy.Content.NPCs
 			bool calm = Sit_Calm(now, nearestHostileTiles, out Vector2 anchor, out int radius);
 			if (!calm)
 			{
-				_sitCalmSince = now;
+				if (!_sitSoft) _sitCalmSince = now; // a levy that is only walking (an idle bob, a step into his follow slot) keeps the time he has been out of a fight
 				if (_sitMode != 0) Sit_Stop();
 				return false;
 			}
@@ -125,33 +125,43 @@ namespace Levy.Content.NPCs
 		/// <summary>Calm, with the anchor and radius to look for a seat around.</summary>
 		private bool Sit_Calm(int now, float nearestHostileTiles, out Vector2 anchor, out int radius)
 		{
-			anchor = NPC.Bottom; radius = LevyConstants.SitIdleRadiusTiles;
-			if (Record == null || MutinySystem.IsMutinous(Record) || Shaken || State == SoldierState.Shaken || State == SoldierState.Routed) return false;
-			if (TargetIndex >= 0 || nearestHostileTiles < LevyConstants.SitWakeEnemyTiles || now - _sitBusyTick < LevyConstants.SitQuietTicks || TicksSinceDamaged < LevyConstants.SitQuietTicks) return false;
-			if (BeingTalkedTo || Record.Order == SoldierOrder.GoTo || Record.Order == SoldierOrder.Patrol) return false;
-			if (_sitMode != 2 && (NPC.velocity.Y != 0f || NPC.wet || ClimbActive || _hkPhase != HookPhase.Idle)) return false;
+			anchor = NPC.Bottom; radius = LevyConstants.SitIdleRadiusTiles; _sitSoft = false;
+			if (Record == null || MutinySystem.IsMutinous(Record) || Shaken || State == SoldierState.Shaken || State == SoldierState.Routed) return SitNo("mutiny/shaken");
+			if (TargetIndex >= 0) return SitNo("target");
+			if (nearestHostileTiles < LevyConstants.SitWakeEnemyTiles) return SitNo("hostile near");
+			if (now - _sitBusyTick < LevyConstants.SitQuietTicks) return SitNo("recent fight");
+			if (TicksSinceDamaged < LevyConstants.SitQuietTicks) return SitNo("recent hit");
+			if (BeingTalkedTo || Record.Order == SoldierOrder.GoTo || Record.Order == SoldierOrder.Patrol) return SitNo("talk/goto/patrol");
+			if (_sitMode != 2 && (NPC.velocity.Y != 0f || NPC.wet || ClimbActive || _hkPhase != HookPhase.Idle)) return SitNo("airborne/wet/climb", true);
 			SoldierState os = OrderState();
 			if (os == SoldierState.Idle)
 			{
-				if (_sitMode != 2 && HasMoveGoal && !(_sitMode == 1 && MoveGoal == _seatBottom)) return false;
+				if (_sitMode != 2 && HasMoveGoal && !(_sitMode == 1 && MoveGoal == _seatBottom)) return SitNo("idle but walking", true);
 				if (Record.Order == SoldierOrder.Hold) { anchor = Record.HoldPos; radius = LevyConstants.SitHoldRadiusTiles; }
-				return true;
+				SitWhy = "calm idle"; return true;
 			}
 			if (os == SoldierState.Follow)
 			{
 				Player cmd = Commander;
-				if (cmd == null || cmd.dead) return false;
-				if (_sitMode == 2) { if (LevyUtil.TileDistance(NPC.Bottom, cmd.Bottom) > LevyConstants.SitFollowLeaveTiles) return false; } // seated: up only when the commander walks well away
+				if (cmd == null || cmd.dead) return SitNo("no commander");
+				if (_sitMode == 2) { if (LevyUtil.TileDistance(NPC.Bottom, cmd.Bottom) > LevyConstants.SitFollowLeaveTiles) return SitNo("commander left"); } // seated: up only when the commander walks well away
 				else
 				{
-					if (cmd.velocity.LengthSquared() > 0.25f || cmd.velocity.Y != 0f || LevyUtil.TileDistance(NPC.Bottom, cmd.Bottom) > LevyConstants.SitFollowMaxTiles) return false;
-					if (_sitMode == 0 && HasMoveGoal) return false;
+					if (cmd.velocity.LengthSquared() > LevyConstants.SitCommanderStillSpeed * LevyConstants.SitCommanderStillSpeed) return SitNo("commander moving");
+					if (LevyUtil.TileDistance(NPC.Bottom, cmd.Bottom) > LevyConstants.SitFollowMaxTiles) return SitNo("commander far");
+					if (_sitMode == 0 && HasMoveGoal) return SitNo("follow but walking", true);
 				}
 				anchor = cmd.Bottom; radius = LevyConstants.SitFollowRadiusTiles;
-				return true;
+				SitWhy = "calm follow"; return true;
 			}
-			return false;
+			return SitNo("state " + os);
 		}
+
+		/// <summary>Why the last calm check said no (diagnostics for the idle-sitting probe and the harness).</summary>
+		internal string SitWhy = "";
+		internal int SitModeForProbe => _sitMode;
+		private bool _sitSoft;
+		private bool SitNo(string why, bool soft = false) { SitWhy = why; _sitSoft = soft; return false; }
 
 		private bool Sit_Walk(int now)
 		{
@@ -230,10 +240,11 @@ namespace Levy.Content.NPCs
 				float d = Vector2.Distance(n.Center, NPC.Center) / 16f;
 				if (d < best && d <= LevyConstants.SitChatTiles) { best = d; partner = s; }
 			}
+			if (partner == null) partner = NearbyCalmRegular(LevyConstants.SitChatTiles); // nobody else is seated: a standing comrade hears it
 			if (partner == null) return;
 			var ctx = new DialogueContext { Comrade = partner.SoldierName, Player = Record.CommanderName };
 			string line = DialogueSystem.PickLine(Main.dayTime ? DialogueTrigger.IDLE : DialogueTrigger.IDLE_NIGHT, Record, ctx) ?? DialogueSystem.PickLine(DialogueTrigger.IDLE, Record, ctx);
-			if (!string.IsNullOrEmpty(line)) DialogueSystem.FloatingText(this, line, DialogueTrigger.IDLE);
+			if (!string.IsNullOrEmpty(line)) { DialogueSystem.FloatingText(this, line, DialogueTrigger.IDLE); ChatterLines++; }
 			DialogueSystem.Emote(partner, SitEmotes[Main.rand.Next(SitEmotes.Length)]);
 			partner._sitChatAt = Math.Max(partner._sitChatAt, now + LevyConstants.SitChatMinTicks / 2); // the listener answers later, not at once
 		}

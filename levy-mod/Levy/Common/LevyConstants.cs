@@ -14,7 +14,9 @@ namespace Levy.Common
 		// ---------- Command points ----------
 		/// <summary>The old fixed start. Kept only so the boot self-check can prove the boss-by-boss math still reproduces the original numbers.</summary>
 		public const int CommandPointsBase = 4;
-		public const int DefaultLeviesAtStart = 10;
+		public const int DefaultLeviesAtStart = 14;
+		/// <summary>Default levy caps by stage: Wall of Flesh, Moon Lord, end of post-Moon Lord. A flat curve: most of the growth comes before hardmode.</summary>
+		public const int DefaultLeviesPre = 28, DefaultLeviesHm = 34, DefaultLeviesPost = 40;
 		public const int CpKingSlime = 1, CpEyeOfCthulhu = 2, CpEaterOrBrain = 2, CpQueenBee = 1, CpSkeletron = 2, CpDeerclops = 1,
 			CpWallOfFlesh = 7, CpQueenSlime = 1, CpEachMech = 2, CpPlantera = 3, CpGolem = 3, CpEmpress = 1, CpFishron = 1, CpCultist = 2, CpMoonLord = 3;
 
@@ -201,8 +203,8 @@ namespace Levy.Common
 		};
 
 		// ---------- Dialogue budget ----------
-		public const int FloatingLineIntervalTicks = 60 * 4;
-		public const int EmotePerSoldierTicks = 60 * 8;
+		public const int FloatingLineIntervalTicks = 150;
+		public const int EmotePerSoldierTicks = 60 * 5;
 		public const int LineRepeatCooldownTicks = 60 * 120;
 		public const int NameplateHideAbove = 20;
 		public const int IdleChatCooldownTicks = 60 * 20;

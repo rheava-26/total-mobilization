@@ -1421,13 +1421,30 @@ namespace Levy.Common.Systems
 			if (batch.Count > 0) SendRosterSnapshot();
 		}
 
+		/// <summary>
+		/// Strips one levy's whole kit back to his home Armory (server / single player) and keeps the Armory from issuing him anything until he is issued a kit again (<paramref name="issue"/> true) or loadouts are reset.
+		/// Hand locks are dropped; nothing is destroyed: <see cref="ArmoryTE.ReturnGear"/> files every item and spills protected if storage is full. A levy with no Armory keeps his kit.
+		/// </summary>
+		public virtual bool SetKit(SoldierRecord rec, bool issue)
+		{
+			if (LevyUtil.IsClient || rec == null || rec.Kind != SoldierKind.Regular || rec.Dead) return false;
+			var armory = ArmoryOf(HomeOf(rec));
+			if (armory == null) return false;
+			rec.LoadoutLocked = false; rec.Gear.LockMask = 0; rec.Gear.Reserved = null;
+			if (issue) { rec.Disarmed = false; armory.IssueGear(rec); }
+			else { rec.Disarmed = true; armory.ReturnGear(rec.Gear); }
+			RebindBody(BodyOf(rec), rec);
+			SendRosterSnapshot();
+			return true;
+		}
+
 		/// <summary>Every living Regular of this commander on active duty, paired with the Armory it draws from; soldiers with no reachable Armory are left out, and a soldier in reserve keeps his kit untouched.</summary>
-		private List<(ArmoryTE armory, SoldierRecord rec)> ArmedRegulars(Player commander)
+		private List<(ArmoryTE armory, SoldierRecord rec)> ArmedRegulars(Player commander, bool includeDisarmed = false)
 		{
 			var batch = new List<(ArmoryTE armory, SoldierRecord rec)>();
 			foreach (var rec in Regulars)
 			{
-				if (rec.CommanderName != commander.name || rec.Dead || rec.Reserve) continue;
+				if (rec.CommanderName != commander.name || rec.Dead || rec.Reserve || (rec.Disarmed && !includeDisarmed)) continue;
 				var armory = ArmoryOf(HomeOf(rec));
 				if (armory != null) batch.Add((armory, rec));
 			}
@@ -1443,10 +1460,10 @@ namespace Levy.Common.Systems
 		public virtual void ResetLoadouts(Player commander)
 		{
 			if (LevyUtil.IsClient || commander == null) return;
-			var batch = ArmedRegulars(commander);
+			var batch = ArmedRegulars(commander, true);
 			foreach (var (armory, rec) in batch)
 			{
-				rec.LoadoutLocked = false;
+				rec.LoadoutLocked = false; rec.Disarmed = false;
 				rec.Gear.LockMask = 0;
 				rec.Gear.Reserved = null;
 				armory.ReturnGear(rec.Gear);

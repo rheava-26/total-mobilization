@@ -101,7 +101,7 @@ namespace Levy.Common.UI
 
 		private DraggablePanel _panel;
 		private Label _title, _sub, _status;
-		private LevyButton _close, _takeAll;
+		private LevyButton _close, _takeAll, _kit;
 		private readonly Item[] _view = new Item[SoldierGear.SlotCount];
 		private readonly Item[] _dyeView = new Item[SoldierGear.DyeSlots];
 		private readonly ItemSlotElement[] _slots = new ItemSlotElement[SoldierGear.SlotCount];
@@ -155,7 +155,8 @@ namespace Levy.Common.UI
 
 			_status = Put(new Label("", 0.75f), 12, 352);
 			_takeAll = Put(new LevyButton(LevyUtil.T("Talk.TakeAll"), 0.8f, 110, 26, TakeAll, LevyUtil.T("Talk.TakeAllHint")), 12, 378);
-			var hint = Put(new Label(LevyUtil.T("Talk.LockHint"), 0.62f), 130, 378);
+			_kit = Put(new LevyButton(LevyUtil.T("Loadout.ReturnKit"), 0.8f, 150, 26, ToggleKit, LevyUtil.T("Loadout.ReturnKitHint")), 128, 378);
+			var hint = Put(new Label(LevyUtil.T("Talk.LockHint"), 0.62f), 12, 406);
 			hint.TextColor = new Color(200, 205, 225);
 			Append(_panel);
 		}
@@ -258,6 +259,7 @@ namespace Levy.Common.UI
 				if (i < allowed) { if (dye.Parent == null) _panel.Append(dye); } else if (dye.Parent != null) dye.Remove();
 			}
 			for (int s = 0; s < SoldierGear.SlotCount; s++) if (_captions[s] != null) _captions[s].TextColor = rec.Gear.IsLocked(s) ? Gold : Color.White;
+			_kit.Set(LevyUtil.T(rec.Disarmed ? "Loadout.IssueKit" : "Loadout.ReturnKit"), true); _kit.Lit = rec.Disarmed;
 		}
 
 		private void SetStatus(string text, Color color) { _status.SetText(text); _status.TextColor = color; _statusTimer = 150; }
@@ -276,6 +278,13 @@ namespace Levy.Common.UI
 			var rec = Rec; if (rec == null) return;
 			if (!UIActions.SetDyeSlot(rec, d, _dyeView[d])) { SetStatus(LevyUtil.T("Talk.NotADye"), new Color(255, 150, 120)); return; }
 			SetStatus(LevyUtil.T(rec.Gear.Dyes[d].IsAir ? "Talk.DyeTaken" : "Talk.DyeSet"), new Color(190, 200, 230));
+		}
+
+		private void ToggleKit()
+		{
+			var rec = Rec; if (rec == null) return;
+			UIActions.SetKit(rec, rec.Disarmed);
+			_refreshTimer = 0;
 		}
 
 		private void TakeAll()

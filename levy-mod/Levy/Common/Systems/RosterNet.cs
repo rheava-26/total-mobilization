@@ -34,6 +34,7 @@ namespace Levy.Common.Systems
 			LevyPackets.Register(LevyPacket.Rally, OnRally);
 			LevyPackets.Register(LevyPacket.Rearm, OnRearm);
 			LevyPackets.Register(LevyPacket.ResetLoadouts, OnResetLoadouts);
+			LevyPackets.Register(LevyPacket.StripKit, OnStripKit);
 			LevyPackets.Register(LevyPacket.Deposit, OnDeposit);
 			LevyPackets.Register(LevyPacket.Withdraw, OnWithdraw);
 			LevyPackets.Register(LevyPacket.HandAmmo, OnHandAmmo);
@@ -176,6 +177,14 @@ namespace Levy.Common.Systems
 			if (!LevyUtil.IsServer) return;
 			var sender = Sender(whoAmI);
 			if (sender != null) Roster.Rearm(sender);
+		}
+
+		private static void OnStripKit(BinaryReader r, int whoAmI)
+		{
+			int soldierId = r.ReadInt32(); bool issue = r.ReadBoolean();
+			if (!LevyUtil.IsServer) return;
+			var rec = Owned(soldierId, Sender(whoAmI));
+			if (rec != null) Roster.SetKit(rec, issue);
 		}
 
 		private static void OnResetLoadouts(BinaryReader r, int whoAmI)

@@ -1,8 +1,9 @@
 # Command and Observe strings. Keys are relative to Mods.Levy.Observe.
 SendToPoint: Send to map point
-SendToPointHint: Opens the map. Click a point and every Regular marches there, fights what is in reach, then holds the spot.
-PickPrompt: Click the map to send your army there. Esc cancels.
-MapSendHint: Send levies here
+SendToPointHint: Opens the map. Click a point, then click it again, and every Regular marches there, fights what is in reach, then holds the spot.
+PickPrompt: Click a spot on the map, then click it again to send your army. Drag to move the map. Esc cancels.
+MapSendHint: Click, then click again to send levies here
+MapConfirmHint: Click again to send levies here
 MapSent: "{0} levies sent to {1}."
 MapUnreachable: "{0} levies could not find a way to that point and stopped as close as they could get."
 PlaceSpace: space

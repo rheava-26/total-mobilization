@@ -56,7 +56,7 @@ namespace Levy.Content.TileEntities
 			try {
 				foreach (var rec in served) {
 					var g = rec?.Gear;
-					if (g == null || rec.LoadoutLocked || g.IsLocked(SoldierGear.SlotWeapon)) continue;
+					if (g == null || rec.LoadoutLocked || rec.Disarmed || g.IsLocked(SoldierGear.SlotWeapon)) continue;
 					bool hasW = !IsAir(g.Weapon);
 					if (hasW && (g.Weapon.maxStack > 1 || WeaponClassifier.GetProfile(g.Weapon).Family == WeaponFamily.Thrown)) continue; // thrown stacks are restocked, never swapped
 					if (hasW && !ReferenceEquals(rec, requester) && IsBusy(rec)) continue;

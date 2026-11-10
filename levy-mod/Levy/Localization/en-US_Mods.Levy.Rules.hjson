@@ -12,6 +12,19 @@ AddList: + Item list
 AddListHint: Names items that are never used, or the only items used.
 Reset: Reset
 ResetHint: Replaces the list with the default. Item overrides stay.
+LimitsTitle: Loadout limits
+SidearmLimit: Sidearms per levy
+SidearmLimitNote: Summoners are not limited. 3 is no limit.
+SummonsForOthers: Summon weapons for other levies
+SummonsForOthersHint: Off keeps sentry and minion staves for summoners. Levies who carry them return them to the Armory.
+HandSetTitle: Hand-set items
+HandSetNote: Click an item to clear it. P is preferred, N is never, a number is a set rank.
+HandSetNone: Nothing is hand-set. Preferred, never and set ranks are made from the item panel and listed here.
+HandSetClear: Clear all
+HandSetClearHint: Clears every preferred, never and set rank in this list.
+HandSetPrefer: Preferred
+HandSetNever: Never issued
+HandSetSet: Set rank {0}
 OrderNote: Rules apply from the top. When two disagree, the upper one wins.
 On: On
 Off: Off
@@ -76,7 +89,7 @@ ResetItemHint: Clears the rank and tag edits for this item.
 ItemNote: Edits apply to this armory.
 GearPreferOff: Prefer: Off
 GearPreferOn: Prefer: On
-GearPreferHint: A preferred piece is issued before any other of its kind.
+GearPreferHint: A preferred piece is issued before any other of its kind. Clear it from the Rules tab.
 GearPreferSet: Prefer set
 GearPreferSetClear: Clear set
 GearPreferSetHint: Marks every piece of this armor set.

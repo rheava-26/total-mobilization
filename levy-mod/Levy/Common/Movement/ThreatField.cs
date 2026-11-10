@@ -49,6 +49,8 @@ namespace Levy.Common.Movement
 		public bool Hook; public Vector2 HookTarget; public int HookDur;
 		/// <summary>An airborne start: the body already moves at (<see cref="V0x"/>, <see cref="V0y"/>) and falls until <see cref="FloorY"/> (centre Y of the landing). <see cref="J2Vy"/> (up negative, down positive) is a kick taken <see cref="J2At"/> ticks from now; Kind 11 = air jump / wing flap, 12 = wing or rocket thrust, 13 = fast fall.</summary>
 		public bool Air; public float V0x, V0y, FloorY, AirAcc;
+		/// <summary>A winged body's held fall: its downward speed never passes this (0 = no cap). Kind 15 is the wing hold.</summary>
+		public float VyCap;
 	}
 
 	/// <summary>
@@ -404,6 +406,7 @@ namespace Levy.Common.Movement
 				else y = y1 + FallDist(m.J2Vy, g, t - m.J2At);
 			}
 			else y = FallDist(m.V0y, g, t);
+			if (m.VyCap > 0f && y > m.VyCap * t) y = m.VyCap * t;
 			y += c0.Y;
 			if (y > m.FloorY) y = m.FloorY;
 			return new Vector2(x, y);

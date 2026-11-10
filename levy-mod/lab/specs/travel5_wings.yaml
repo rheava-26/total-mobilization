@@ -1,0 +1,16 @@
+# Travel 5, wing control: every levy carries Angel Wings and a Grappling Hook; Skeletron (skulls, hands) and Queen Bee (stingers, charges).
+# ctl = all the new air control on; base = LEVY_WINGCTL / LEVY_HOOKMORE / LEVY_AIRLAVA off; wing = only the wing hold and release on.
+# Columns: hitsTaken, wingHoldSec / wingRelSec (body-seconds per fight), deaths. Boss life x2.
+name: travel5_wings
+mods: vanilla
+gear: postskel.best
+hook: Grappling_Hook
+acc: Angel_Wings
+bhp: 2
+seeds: 24
+cap: 150
+grid:
+  boss: [skel, qb]
+vs:
+  base: {env: {LEVY_WINGCTL: 0, LEVY_HOOKMORE: 0, LEVY_AIRLAVA: 0}}
+  wing: {env: {LEVY_HOOKMORE: 0, LEVY_AIRLAVA: 0}}

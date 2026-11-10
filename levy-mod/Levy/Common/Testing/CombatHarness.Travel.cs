@@ -137,7 +137,8 @@ namespace Levy.Common.Testing
 		private static void TvDefineLava()
 		{
 			Array.Clear(TvElev, 0, TvElev.Length); Array.Clear(TvWater, 0, TvWater.Length); Array.Fill(TvLavaLvl, int.MinValue);
-			for (int i = 80; i < 120; i++) { int d = Math.Min(14, Math.Min(i - 79, 120 - i)); TvElev[i] = -d; TvLavaLvl[i] = 0; }
+			if (Environment.GetEnvironmentVariable("LEVY_LAVA_CLIFF") == "1") for (int i = 80; i < 114; i++) { TvElev[i] = -36; TvLavaLvl[i] = -16; }   // a sheer-walled basin 34 wide, 20 rows of lava under a 16-tile drop
+			else for (int i = 80; i < 120; i++) { int d = Math.Min(14, Math.Min(i - 79, 120 - i)); TvElev[i] = -d; TvLavaLvl[i] = 0; }
 			for (int i = 230; i < 238; i++) { TvElev[i] = -25; TvLavaLvl[i] = -19; }
 			for (int i = 380; i < 392; i++) { TvElev[i] = -20; TvLavaLvl[i] = -16; }
 			for (int i = 530; i < 533; i++) { TvElev[i] = -3; TvLavaLvl[i] = 0; }
@@ -320,6 +321,7 @@ namespace Levy.Common.Testing
 		{
 			if (_tvGear == "climb") { int c3 = i % 3; return c3 == 0 ? "spikes" : c3 == 1 ? "claws" : "tiger"; } // wall-climb gear arm: Shoe Spikes, Climbing Claws, Tiger Climbing Gear
 			if (_tvGear == "hooks") return "hook:" + TvHookNames[i % TvHookNames.Length];
+			if (_tvGear == "lavamix") { int c4 = i % 4; return c4 == 0 ? "none" : c4 == 1 ? "wings" : c4 == 2 ? "hook" : "wh"; }   // the lava lab: bare, wings, hook, wings + hook
 			if (_tvGear != "mixed") return _tvGear;
 			int k = i % 15; // 15: 5 none, 4 boots, 3 wings, 3 hook
 			if (k < 5) return "none"; if (k < 9) return "boots"; if (k < 12) return "wings"; return "hook";
@@ -343,10 +345,10 @@ namespace Levy.Common.Testing
 					Item ammo = FindAmmo(w, ""); if (ammo != null && rec.Gear.CanHold(SoldierGear.SlotAmmo, ammo)) { rec.Gear.Ammo = ammo; rec.Gear.SetLocked(SoldierGear.SlotAmmo, true); }
 				}
 				if (g == "boots") { var it = new Item(); it.SetDefaults(ItemID.HermesBoots); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
-				if (g == "wings") { var it = new Item(); it.SetDefaults(ItemID.AngelWings); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
+				if (g == "wings" || g == "wh") { var it = new Item(); it.SetDefaults(ItemID.AngelWings); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
 				if (g == "spikes" || g == "claws" || g == "tiger" || g == "ninja") { var it = new Item(); it.SetDefaults(g == "spikes" ? ItemID.ShoeSpikes : g == "claws" ? ItemID.ClimbingClaws : g == "tiger" ? ItemID.TigerClimbingGear : ItemID.MasterNinjaGear); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
 				if (g.StartsWith("hook:")) { var it = new Item(); it.SetDefaults(TvHookId(g.Substring(5))); rec.Gear.Hook = it; rec.Gear.SetLocked(SoldierGear.SlotHook, true); }
-				if (g == "hook") { var it = new Item(); it.SetDefaults(ItemID.GrapplingHook); rec.Gear.Hook = it; rec.Gear.SetLocked(SoldierGear.SlotHook, true); }
+				if (g == "hook" || g == "wh") { var it = new Item(); it.SetDefaults(ItemID.GrapplingHook); rec.Gear.Hook = it; rec.Gear.SetLocked(SoldierGear.SlotHook, true); }
 				RosterSystem.Instance.Regulars.Add(rec);
 				int off = _tvFrom + (i - _tvN / 2);
 				Vector2 at = new Vector2((TvX0 + off) * 16f + 8f, TvRow(off) * 16f);
@@ -453,6 +455,18 @@ namespace Levy.Common.Testing
 			if (_tvTick < 120) return;
 			if (_tvFoes && _tvTick % 360 == 0) TvSpawnFoe();
 			if (Environment.GetEnvironmentVariable("LEVY_LAVA_DROP") == "1" && _tvTick == 200) foreach (var l in _tv) if (l.Rec.HasBody) { NPC dn = Main.npc[l.Rec.BodyIndex]; dn.position = new Vector2((TvX0 + 685) * 16f + l.Idx % 5 * 8f, (TvG + 40 - 16 - 32) * 16f); dn.velocity = Vector2.Zero; dn.netUpdate = true; _tvEvents.AppendLine($"t={_tvTick} dropped {l.Rec.Name}({l.Gear}) into the shaft"); }   // 16 tiles above the top of a 40-deep shaft (row TvG+40 is its floor)
+			if (Environment.GetEnvironmentVariable("LEVY_LAVA_GLIDE") == "1" && _tvTick == 200)
+			{
+				// over the basin, off the cliff: half of them with their wings already spent (a glide), the rest with flight left; walking off the edge toward the middle
+				int gi = 0;
+				foreach (var l in _tv) if (l.Rec.HasBody)
+				{
+					NPC gn = Main.npc[l.Rec.BodyIndex]; int off = 83 + (gi * 5) % 28; gi++;
+					gn.position = new Vector2((TvX0 + off) * 16f, (TvG - 6) * 16f); gn.velocity = new Vector2(off < 97 ? 1.2f : -1.2f, 0.5f); gn.netUpdate = true;
+					if (gn.ModNPC is SoldierNPC gs) { gs.NotifyTeleported(); gn.position = new Vector2((TvX0 + off) * 16f, (TvG - 6) * 16f); gn.velocity = new Vector2(off < 97 ? 1.2f : -1.2f, 0.5f); if (((gi - 1) / 4) % 2 == 0) gs.LabDrainWings(); }
+					_tvEvents.AppendLine($"t={_tvTick} placed {l.Rec.Name}({l.Gear}) over the lava basin at {off}");
+				}
+			}
 			float goalPx = _tvGx * 16f + 8f; float goalY = _tvGy * 16f;
 			bool allDone = true;
 			foreach (var l in _tv)
@@ -574,6 +588,7 @@ namespace Levy.Common.Testing
 			_tvEvents.AppendLine($"hops: total={SoldierNPC.CatchUpHops} seenByMod={SoldierNPC.CatchUpHopsSeen} ms={SoldierNPC.CatchUpTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.00} tries={SoldierNPC.CatchUpTries} last={SoldierNPC.CatchUpLast}"); //HOP
 			foreach (string rl in RoutePlanner.Log) _tvEvents.AppendLine(rl);
 			_tvEvents.AppendLine($"lavaguard: ticks={SoldierNPC.LavaGuardTicks} kicks={SoldierNPC.LavaKicks} escapeTicks={SoldierNPC.LavaEscapeTicks}");
+			_tvEvents.AppendLine($"airctl: dangerTicks={SoldierNPC.StatLavaDangerTicks} lavaCatches={SoldierNPC.StatLavaCatches} hookedTicks={SoldierNPC.StatHookedTicks} hangTicks={SoldierNPC.StatHangTicks} wingHold={SoldierNPC.StatWingHoldTicks} wingRel={SoldierNPC.StatWingRelTicks} escapeFlight={SoldierNPC.StatEscapeTicks}");
 			_tvEvents.AppendLine($"hookstats: plans={SoldierHooks.Plans} found={SoldierHooks.PlansFound} planMs={SoldierHooks.PlanTs * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} tickCalls={SoldierHooks.TickCalls} tickMs={SoldierHooks.TickTs * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} projMs={SoldierHooks.ProjTs * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} casts={SoldierHooks.Casts} ok={SoldierHooks.CastsOk} latches={SoldierHooks.Latches} releases={SoldierHooks.Releases} landings={SoldierHooks.Landings} aborts={SoldierHooks.Aborts} scans={PathSearch.StatHookScans} edges={PathSearch.StatHookEdges}");
 			foreach (string hl in SoldierHooks.CastLog) _tvEvents.AppendLine(hl);
 			File.WriteAllText(Path.Combine(_tvOut, "events.txt"), _tvEvents.ToString());

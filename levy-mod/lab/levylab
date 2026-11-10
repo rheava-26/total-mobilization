@@ -440,7 +440,7 @@ def cmd_run(a):
     if not a.quiet: cmd_table(argparse.Namespace(run_dir=str(rundir), cols=None, wide=False, quiet=False))
 
 # ------------------------------------------------------------------------------------------------------------ collecting
-HIT_RE = re.compile(r"(contact|proj):(.*?)/(-?\d+)=(\d+)/(\d+)")
+HIT_RE = re.compile(r"(contact|proj):(.*?)(?:/(-?\d+))?=(\d+)/(\d+)")
 def read_tsv(p):
     return list(csv.DictReader(open(p, errors="replace"), delimiter="\t")) if Path(p).exists() else []
 
@@ -455,22 +455,22 @@ def collect(rundir, outs, wall, nf, jobs):
         for r in main:
             m = re.search(r"\|t(c\d+)(?:\||$)", r["key"])
             if not m: continue
-            k = kit.get(r["key"], {}); head = body = tail = prj = oth = 0
+            k = kit.get(r["key"], {}); head = body = tail = prj = oth = prjn = 0
             for kind, nm, ident, dmg, n in HIT_RE.findall(hits.get(r["key"], "")):
                 d = int(dmg)
-                if kind == "proj": prj += d
+                if kind == "proj": prj += d; prjn += int(n)
                 elif ident == "13" or nm.endswith("Head"): head += d
                 elif ident == "14" or nm.endswith("Body"): body += d
                 elif ident == "15" or nm.endswith("Tail"): tail += d
                 else: oth += d
             row = {"cell": m[1], "seed": r["seed"], "result": r["result"], "sec": r["sec"], "n": r.get("n", ""), "deaths": r["deaths"], "firstDeathSec": r.get("firstDeathSec", ""),
-                   "bossMax": r["bossMax"], "bossLeft": r["bossLeft"], "takenHead": head, "takenBody": body, "takenTail": tail, "takenProj": prj, "takenOtherContact": oth}
+                   "bossMax": r["bossMax"], "bossLeft": r["bossLeft"], "takenHead": head, "takenBody": body, "takenTail": tail, "takenProj": prj, "takenProjHits": prjn, "takenOtherContact": oth}
             for c in ("dmgBoss", "dmgR", "dmgM", "dmgE", "dmgS", "dmgUnattr", "dmgHead", "dmgBody", "dmgTail", "takenBoss", "takenAdd", "takenOther", "avgHp", "potionsDrunk", "rageAct", "adrAct", "drCuts",
                       "addsPeak", "addKills", "enragedSec", "avgSurvSec", "halfSec", "hitsTaken", "avgDef", "dpsHittable"):
                 if c in r: row[c] = r[c]
             for tk, tv in (tipsy.get(r["key"]) or {}).items():
                 if tk not in ("key", "tag", "seed"): row["tp_" + tk if tk in ("w", "c", "d", "m", "z", "b", "x") else tk] = tv
-            row.update(rankSum=k.get("rankSum", ""), weaponDmg=k.get("weaponDmg", ""), classDmg=k.get("classDmg", ""), deathTimes=k.get("deathTimes", ""), job=o.parent.name)
+            row.update(**{c: k.get(c, "") for c in ("hkCasts", "hookedSec", "hangSec", "wingHoldSec", "wingRelSec", "lavaCatches")}, rankSum=k.get("rankSum", ""), weaponDmg=k.get("weaponDmg", ""), classDmg=k.get("classDmg", ""), deathTimes=k.get("deathTimes", ""), job=o.parent.name)
             if r["result"] == "ERROR": row["note"] = r.get("perLevy", "")
             rows.append(row)
     want = {(c["id"], int(s)) for c in json.loads((rundir / "cells.json").read_text())["cells"] for s in c["seeds"]}

@@ -63,6 +63,12 @@ namespace Levy.Content.NPCs
 
 		partial void Movement_Update()
 		{
+			Movement_UpdateCore();
+			AirPost();   // SoldierNPC.AirCtl.cs: lava catch, wing hold / release, telemetry (last word on the air velocity)
+		}
+
+		private void Movement_UpdateCore()
+		{
 			NPC npc = NPC; WhyM = Why.MNone;
 			if (!_stepInit) { npc.stepSpeed = StepSpeed; _stepInit = true; }
 			TickReturnHomeProgress();
@@ -230,7 +236,17 @@ namespace Levy.Content.NPCs
 		{
 			NPC npc = NPC;
 			LavaEscapeTicks++;
-			if (_hkPhase != HookPhase.Idle) return;     // a reel is already pulling it out
+			if (_hkPhase != HookPhase.Idle && _hkPhase != HookPhase.Cooldown) return;     // a reel is already pulling it out
+			if (AirLavaOn && HookUsable && Main.GameUpdateCount >= _lavaCatchAt)
+			{
+				// a player in lava casts at the nearest wall and is pulled out
+				_lavaCatchAt = Main.GameUpdateCount + 10;
+				if (SoldierHooks.TakePlanBudget())
+				{
+					try { _hkPhase = HookPhase.Idle; if (TryFallHang(new Vector2(npc.Bottom.X, npc.Bottom.Y - 14f * 16f))) { LavaCatches++; StatLavaCatches++; HookLog("lava catch (in lava)"); return; } }
+					catch (Exception) { try { HookReset(true); } catch (Exception) { } }
+				}
+			}
 			npc.velocity.Y = Math.Max(-LavaSwimMaxUp, npc.velocity.Y - LavaSwimAccel);
 			int dir = LavaFreeSide(TileNav.FeetTile(npc.Bottom));
 			if (dir != 0) { npc.velocity.X = MathHelper.Clamp(npc.velocity.X + dir * 0.5f, -3f, 3f); npc.direction = npc.spriteDirection = dir; }

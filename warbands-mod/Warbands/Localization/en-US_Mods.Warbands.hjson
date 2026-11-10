@@ -2,19 +2,13 @@
 # Style: 1-4 short declarative sentences. What it is, reach, the numbers that matter, one special rule.
 Chat: {
 	Arrive: "{0} are on the road."
-	Beaten: "The {0} are beaten. Their bounty lies where the last one fell."
+	Beaten: The {0} are beaten. Their bounty lies where the last one fell.
 }
 
 NPCs: {
-	BandSoldier: {
-		DisplayName: Warband Soldier
-	}
-	BandLevyNPC: {
-		DisplayName: Band Soldier
-	}
-	PlayerStandIn: {
-		DisplayName: Player Stand-In
-	}
+	BandSoldier.DisplayName: Warband Soldier
+	BandLevyNPC.DisplayName: Band Soldier
+	PlayerStandIn.DisplayName: Player Stand-In
 }
 
 Configs: {
@@ -25,49 +19,264 @@ Configs: {
 			Label: Hostile bands
 			Tooltip: Armed bands form near you in the open and fight you and your levies.
 		}
+
 		FirstStage: {
 			Label: First stage
 			Tooltip: No bands before this point. 0 pre-boss, 1 after the Eater of Worlds or Brain of Cthulhu, 2 after Skeletron, 3 early Hardmode, 4 after the mechanical bosses, 5 after Plantera, 6 after Golem.
 		}
+
 		SpawnChancePercentPerMinute: {
 			Label: Chance per minute
 			Tooltip: Percent chance each real minute that a band forms near a player in the open.
 		}
+
 		BandSizeMin: {
 			Label: Smallest band
 			Tooltip: Fewest soldiers in a band.
 		}
+
 		BandSizeMax: {
 			Label: Largest band
 			Tooltip: Most soldiers in a band.
 		}
+
 		MaxActiveBands: {
 			Label: Bands at once
 			Tooltip: Most bands out across the world at one time.
 		}
+
 		LootSharePercent: {
 			Label: Loot share
 			Tooltip: Percent chance each piece of a fallen soldier's gear drops.
 		}
+
 		LifeScale: {
 			Label: Life scale
 			Tooltip: Multiplies every soldier's life.
 		}
+
 		DamageScale: {
 			Label: Damage scale
 			Tooltip: Multiplies every soldier's damage.
 		}
+
 		LevyBrain: {
 			Label: Levy brain
 			Tooltip: Band soldiers move, hook, fly, dodge and use their weapons the way your levies do.
 		}
+
 		SummonedBandSize: {
 			Label: Summoned band size
 			Tooltip: Soldiers a summoning item calls. One more per ten active levies, at most 8.
 		}
+
 		CultistBand: {
 			Label: Cultist band
 			Tooltip: Cultist Archers fight as a band. Lunatic Devotees cast while they chant.
 		}
 	}
 }
+
+Items: {
+	Band_ForestDeserters: {
+		DisplayName: Deserters' Wanted Poster
+		Tooltip:
+			'''
+			Calls the Forest Deserters to 24 to 34 tiles away, four soldiers with bows and guns.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_IronBrigands: {
+		DisplayName: Brigands' Wanted Poster
+		Tooltip:
+			'''
+			Calls the Iron Brigands to 24 to 34 tiles away, four soldiers with bows and guns.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_DuneRaiders: {
+		DisplayName: Raiders' Challenge Flag
+		Tooltip:
+			'''
+			Calls the Dune Raiders to 24 to 34 tiles away, four soldiers with bows and guns.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_SnowRangers: {
+		DisplayName: Rangers' Challenge Flag
+		Tooltip:
+			'''
+			Calls the Snow Rangers to 24 to 34 tiles away, four soldiers with bows and guns.
+			They warn you off and attack only if you stay.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_CorruptZealots: {
+		DisplayName: Zealots' Effigy
+		Tooltip:
+			'''
+			Calls the Corrupt Zealots to 24 to 34 tiles away, four soldiers with staves and blades.
+			They warn you off and attack only if you stay.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_CrimsonFleshCult: {
+		DisplayName: Flesh-Cult Effigy
+		Tooltip:
+			'''
+			Calls the Crimson Flesh-Cult to 24 to 34 tiles away, four soldiers with staves and blades.
+			They warn you off and attack only if you stay.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_JunglePoachers: {
+		DisplayName: Poachers' Wanted Poster
+		Tooltip:
+			'''
+			Calls the Jungle Poachers to 24 to 34 tiles away, four soldiers with bows and guns.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_MeteorMarauders: {
+		DisplayName: Marauders' Battle Standard
+		Tooltip:
+			'''
+			Calls the Meteor Marauders to 24 to 34 tiles away, four soldiers with bows and guns.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_AshScavengers: {
+		DisplayName: Scavengers' Battle Standard
+		Tooltip:
+			'''
+			Calls the Ashland Scavengers to 24 to 34 tiles away, four soldiers with bows and guns.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_DungeonWardens: {
+		DisplayName: Wardens' Challenge Flag
+		Tooltip:
+			'''
+			Calls the Dungeon Wardens to 24 to 34 tiles away, four soldiers with staves and blades.
+			They warn you off and attack only if you stay.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_HiveRaiders: {
+		DisplayName: Hive Raiders' Challenge Flag
+		Tooltip:
+			'''
+			Calls the Hive Raiders to 24 to 34 tiles away, four soldiers with staves and blades.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_HallowPaladins: {
+		DisplayName: Paladins' Effigy
+		Tooltip:
+			'''
+			Calls the Hallow Paladins to 24 to 34 tiles away, four soldiers with bows and guns.
+			They warn you off and attack only if you stay.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_MythrilMercenaries: {
+		DisplayName: Mercenaries' Wanted Poster
+		Tooltip:
+			'''
+			Calls the Mythril Mercenaries to 24 to 34 tiles away, four soldiers with bows and guns.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_HellfireLegion: {
+		DisplayName: Hellfire Legion Standard
+		Tooltip:
+			'''
+			Calls the Hellfire Legion to 24 to 34 tiles away, four soldiers with bows and guns.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_TitaniumLegion: {
+		DisplayName: Titanium Legion Flag
+		Tooltip:
+			'''
+			Calls the Titanium Legion to 24 to 34 tiles away, four soldiers with bows and guns.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_ChlorophyteWardens: {
+		DisplayName: Wardens' Battle Standard
+		Tooltip:
+			'''
+			Calls the Chlorophyte Wardens to 24 to 34 tiles away, four soldiers with bows and guns.
+			They warn you off and attack only if you stay.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_ShroomiteRaiders: {
+		DisplayName: Shroomite Raiders' Standard
+		Tooltip:
+			'''
+			Calls the Shroomite Raiders to 24 to 34 tiles away, four soldiers with bows and guns.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_FrostLegion: {
+		DisplayName: Frost Legion Flag
+		Tooltip:
+			'''
+			Calls the Frost Legion to 24 to 34 tiles away, four soldiers with bows and guns.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_DungeonRitualists: {
+		DisplayName: Ritualists' Effigy
+		Tooltip:
+			'''
+			Calls the Dungeon Ritualists to 24 to 34 tiles away, four soldiers with staves and blades.
+			They warn you off and attack only if you stay.
+			Beating the whole band pays a bounty.
+			'''
+	}
+
+	Band_CultistArchers: {
+		DisplayName: Cultist Archers' Sigil
+		Tooltip:
+			'''
+			Calls the Cultist Archers to 24 to 34 tiles away, four soldiers with bows and guns.
+			They fight you and your levies at once.
+			Beating the whole band pays a bounty.
+			'''
+	}
+}
+
+Projectiles.DevoteOrb.DisplayName: Devote Orb

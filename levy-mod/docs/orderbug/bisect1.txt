@@ -1,0 +1,154 @@
+##### m_pylon2 (8bb0062)
+--- m_pylon2 fight
+RESULT pass=193 fail=2 mode=radio round=fight
+STEP Follow: pass=14 fail=1;STEP Follow: pass=14 fail=1;
+      1 Follow fresh;      1 Follow holdsit;
+REC-IGNORED lines: 0
+      3 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:20:43.136] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:20:43.136] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+--- m_pylon2 calm
+RESULT pass=229 fail=5 mode=radio round=calm
+STEP Follow: pass=16 fail=2;STEP Follow: pass=17 fail=1;STEP Follow: pass=17 fail=1;STEP Follow: pass=17 fail=1;
+      1 Follow folsit;      3 Follow reload;      1 Follow respawned;
+REC-IGNORED lines: 0
+      3 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:21:12.981] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:21:12.981] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+##### m_dummy (080cf5e)
+--- m_dummy fight
+RESULT pass=194 fail=1 mode=radio round=fight
+STEP Follow: pass=14 fail=1;
+      1 Follow holdsit;
+REC-IGNORED lines: 0
+      2 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:22:04.268] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:22:04.268] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+--- m_dummy calm
+RESULT pass=227 fail=7 mode=radio round=calm
+STEP Follow: pass=15 fail=3;STEP Follow: pass=17 fail=1;STEP Follow: pass=16 fail=2;STEP Follow: pass=17 fail=1;
+      1 Follow folsit;      1 Follow fresh;      1 Follow holdsit;      3 Follow reload;      1 Follow respawned;
+REC-IGNORED lines: 0
+      2 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:22:33.119] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+      1 [06:22:33.120] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+##### m_dronecam (49835ec)
+--- m_dronecam fight
+RESULT pass=195 fail=0 mode=radio round=fight
+
+
+REC-IGNORED lines: 0
+      3 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:23:14.545] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+      1 [06:23:14.546] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+--- m_dronecam calm
+RESULT pass=231 fail=3 mode=radio round=calm
+STEP Follow: pass=17 fail=1;STEP Follow: pass=16 fail=2;
+      1 Follow folsit;      1 Follow reload;      1 Follow respawned;
+REC-IGNORED lines: 0
+      3 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:23:45.116] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:23:45.116] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+##### m_ordersfix (654ada5)
+--- m_ordersfix fight
+RESULT pass=194 fail=1 mode=radio round=fight
+STEP Follow: pass=14 fail=1;
+      1 Follow fresh;
+REC-IGNORED lines: 0
+      3 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:24:33.269] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:24:33.269] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+--- m_ordersfix calm
+RESULT pass=232 fail=2 mode=radio round=calm
+STEP Follow: pass=17 fail=1;STEP Follow: pass=17 fail=1;
+      1 Follow folsit;      1 Follow reload;
+REC-IGNORED lines: 0
+      1    at System.Linq.ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument argument)
+      1 System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')
+      2 System.NullReferenceException: Object reference not set to an instance of an object.
+##### m_loadout (ffad88f)
+--- m_loadout fight
+RESULT pass=193 fail=2 mode=radio round=fight
+STEP Follow: pass=14 fail=1;STEP Follow: pass=14 fail=1;
+      1 Follow fresh;      1 Follow reload;
+REC-IGNORED lines: 0
+      1    at System.Linq.ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument argument)
+      1 System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. (Parameter 'index')
+      2 System.NullReferenceException: Object reference not set to an instance of an object.
+--- m_loadout calm
+RESULT pass=228 fail=6 mode=radio round=calm
+STEP Follow: pass=16 fail=2;STEP Follow: pass=17 fail=1;STEP Follow: pass=16 fail=2;STEP Follow: pass=17 fail=1;
+      1 Follow folsit;      2 Follow fresh;      2 Follow reload;      1 Follow respawned;
+REC-IGNORED lines: 0
+      3 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:26:19.274] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:26:19.274] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+##### m_combatfix (8e5c82f)
+--- m_combatfix fight
+RESULT pass=192 fail=3 mode=radio round=fight
+STEP Follow: pass=14 fail=1;STEP Follow: pass=13 fail=2;
+      2 Follow fresh;      1 Follow respawned;
+REC-IGNORED lines: 0
+      3 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:27:05.887] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:27:05.887] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+--- m_combatfix calm
+RESULT pass=231 fail=3 mode=radio round=calm
+STEP Follow: pass=17 fail=1;STEP Follow: pass=16 fail=2;
+      1 Follow holdsit;      2 Follow reload;
+REC-IGNORED lines: 0
+      2 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:27:41.778] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:27:41.778] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+##### m_biomeblades (1e69c7b)
+--- m_biomeblades fight
+RESULT pass=194 fail=1 mode=radio round=fight
+STEP Follow: pass=14 fail=1;
+      1 Follow respawned;
+REC-IGNORED lines: 0
+      3 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:28:27.514] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+      1 [06:28:27.515] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+--- m_biomeblades calm
+RESULT pass=229 fail=5 mode=radio round=calm
+STEP Follow: pass=13 fail=5;
+      1 Follow folsit;      1 Follow holdsit;      2 Follow reload;      1 Follow respawned;
+REC-IGNORED lines: 0
+      3 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:28:50.758] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:28:50.758] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+##### m_travel4 (0adfad3)
+--- m_travel4 fight
+RESULT pass=193 fail=2 mode=radio round=fight
+STEP Follow: pass=14 fail=1;STEP Follow: pass=14 fail=1;
+      1 Follow fresh;      1 Follow respawned;
+REC-IGNORED lines: 0
+      2 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:29:39.983] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:29:39.983] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+--- m_travel4 calm
+RESULT pass=229 fail=5 mode=radio round=calm
+STEP Follow: pass=17 fail=1;STEP Follow: pass=17 fail=1;STEP Follow: pass=17 fail=1;STEP Follow: pass=16 fail=2;
+      3 Follow reload;      2 Follow respawned;
+REC-IGNORED lines: 0
+      3 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:30:03.222] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:30:03.222] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+##### m_r38 (564129b)
+--- m_r38 fight
+RESULT pass=190 fail=5 mode=radio round=fight
+STEP Follow: pass=14 fail=1;STEP Follow: pass=13 fail=2;STEP Follow: pass=13 fail=2;
+      1 Follow fresh;      2 Follow holdsit;      2 Follow respawned;
+REC-IGNORED lines: 0
+      2 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:30:52.242] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:30:52.242] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+--- m_r38 calm
+RESULT pass=230 fail=4 mode=radio round=calm
+STEP Follow: pass=15 fail=3;STEP Follow: pass=17 fail=1;
+      2 Follow fresh;      2 Follow reload;
+REC-IGNORED lines: 0
+      3 System.NullReferenceException: Object reference not set to an instance of an object.
+      1 [06:31:15.650] [Main Thread/WARN] [Terraria]:    Exception normal: Tried to send data to a client after losing connection
+      1 [06:31:15.650] [Main Thread/WARN] [tML]: Silently Caught Exception: 
+DONE

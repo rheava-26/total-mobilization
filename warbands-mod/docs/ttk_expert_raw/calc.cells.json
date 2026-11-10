@@ -1,0 +1,222 @@
+{
+ "cells": [
+  {
+   "id": "c0",
+   "name": "npcdef 16t strafe small base",
+   "seeds": [
+    1
+   ],
+   "raw": true,
+   "tp": {
+    "w": "npcdef",
+    "a": "",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1800,
+    "hl": 1,
+    "k": "npcdef",
+    "s": 0,
+    "arm": "base",
+    "kind": ""
+   }
+  },
+  {
+   "id": "c1",
+   "name": "pvp 16t strafe small base",
+   "seeds": [
+    1
+   ],
+   "raw": true,
+   "tp": {
+    "w": "pvp",
+    "a": "",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1800,
+    "hl": 1,
+    "k": "pvp",
+    "s": 0,
+    "arm": "base",
+    "kind": ""
+   }
+  },
+  {
+   "id": "c2",
+   "name": "npcdef 16t strafe small base",
+   "seeds": [
+    1
+   ],
+   "raw": true,
+   "tp": {
+    "w": "npcdef",
+    "a": "",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1800,
+    "hl": 1,
+    "k": "npcdef",
+    "s": 1,
+    "arm": "base",
+    "kind": ""
+   }
+  },
+  {
+   "id": "c3",
+   "name": "pvp 16t strafe small base",
+   "seeds": [
+    1
+   ],
+   "raw": true,
+   "tp": {
+    "w": "pvp",
+    "a": "",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1800,
+    "hl": 1,
+    "k": "pvp",
+    "s": 1,
+    "arm": "base",
+    "kind": ""
+   }
+  },
+  {
+   "id": "c4",
+   "name": "npcdef 16t strafe small base",
+   "seeds": [
+    1
+   ],
+   "raw": true,
+   "tp": {
+    "w": "npcdef",
+    "a": "",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1800,
+    "hl": 1,
+    "k": "npcdef",
+    "s": 3,
+    "arm": "base",
+    "kind": ""
+   }
+  },
+  {
+   "id": "c5",
+   "name": "pvp 16t strafe small base",
+   "seeds": [
+    1
+   ],
+   "raw": true,
+   "tp": {
+    "w": "pvp",
+    "a": "",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1800,
+    "hl": 1,
+    "k": "pvp",
+    "s": 3,
+    "arm": "base",
+    "kind": ""
+   }
+  },
+  {
+   "id": "c6",
+   "name": "npcdef 16t strafe small base",
+   "seeds": [
+    1
+   ],
+   "raw": true,
+   "tp": {
+    "w": "npcdef",
+    "a": "",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1800,
+    "hl": 1,
+    "k": "npcdef",
+    "s": 5,
+    "arm": "base",
+    "kind": ""
+   }
+  },
+  {
+   "id": "c7",
+   "name": "pvp 16t strafe small base",
+   "seeds": [
+    1
+   ],
+   "raw": true,
+   "tp": {
+    "w": "pvp",
+    "a": "",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1800,
+    "hl": 1,
+    "k": "pvp",
+    "s": 5,
+    "arm": "base",
+    "kind": ""
+   }
+  },
+  {
+   "id": "c8",
+   "name": "calib 16t strafe small base",
+   "seeds": [
+    1
+   ],
+   "raw": true,
+   "tp": {
+    "w": "calib",
+    "a": "",
+    "c": "R",
+    "d": 16,
+    "m": "static",
+    "z": "small",
+    "warm": 240,
+    "win": 1500,
+    "hl": 1,
+    "k": "calib",
+    "s": 0,
+    "arm": "base",
+    "kind": ""
+   }
+  }
+ ],
+ "build": "197ebf416b02-6106e740",
+ "spec": "levy-mod/lab/specs/ttk_expert_calc.yaml",
+ "jobs": 1,
+ "steps": 120,
+ "rec": 0,
+ "wall_s": 50.5,
+ "fights": 9,
+ "finished": 9,
+ "fights_per_min": 10.69,
+ "processes": 1,
+ "missing_items": []
+}

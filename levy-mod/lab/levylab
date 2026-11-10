@@ -367,7 +367,7 @@ def run_proc(job, ctx):
             env.pop("LEVY_REC_DIR", None)
             if job["rec"]: env["LEVY_REC_DIR"] = str(ctx["rundir"] / "rec" / job["id"]); Path(env["LEVY_REC_DIR"]).mkdir(parents=True, exist_ok=True)
             with open(a / "console.log", "w") as cl:
-                try: subprocess.run(["dotnet", "tModLoader.dll", "-server", "-nosteam", "-tmlsavedirectory", str(save), "-port", str(7800 + sl.i), "-world", str(save / "Worlds" / "W.wld")],
+                try: subprocess.run(["dotnet", "tModLoader.dll", "-server", "-nosteam", "-tmlsavedirectory", str(save), "-port", str(int(os.environ.get("LEVYLAB_PORT", "7800")) + sl.i), "-world", str(save / "Worlds" / "W.wld")],
                                     cwd=s / "tml", env=env, stdout=cl, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, timeout=900 + 120 * len(todo))
                 except subprocess.TimeoutExpired: pass
             lg = logs / "server.log"

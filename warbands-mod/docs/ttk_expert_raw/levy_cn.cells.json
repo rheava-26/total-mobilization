@@ -1,0 +1,271 @@
+{
+ "cells": [
+  {
+   "id": "c0",
+   "name": "Minishark 16t strafe small cn",
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "raw": true,
+   "tp": {
+    "w": "Minishark",
+    "a": "Silver Bullet",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1200,
+    "hl": 1,
+    "k": "levy",
+    "s": 0,
+    "n": 3,
+    "pc": "Cross_Necklace",
+    "arm": "cn",
+    "kind": "gun"
+   }
+  },
+  {
+   "id": "c1",
+   "name": "Musket 16t strafe small cn",
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "raw": true,
+   "tp": {
+    "w": "Musket",
+    "a": "Silver Bullet",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1200,
+    "hl": 1,
+    "k": "levy",
+    "s": 0,
+    "n": 3,
+    "pc": "Cross_Necklace",
+    "arm": "cn",
+    "kind": "sniper"
+   }
+  },
+  {
+   "id": "c2",
+   "name": "Phoenix Blaster 16t strafe small cn",
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "raw": true,
+   "tp": {
+    "w": "Phoenix Blaster",
+    "a": "Meteor Shot",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1200,
+    "hl": 1,
+    "k": "levy",
+    "s": 1,
+    "n": 3,
+    "pc": "Cross_Necklace",
+    "arm": "cn",
+    "kind": "gun"
+   }
+  },
+  {
+   "id": "c3",
+   "name": "Musket 16t strafe small cn",
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "raw": true,
+   "tp": {
+    "w": "Musket",
+    "a": "Meteor Shot",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1200,
+    "hl": 1,
+    "k": "levy",
+    "s": 1,
+    "n": 3,
+    "pc": "Cross_Necklace",
+    "arm": "cn",
+    "kind": "sniper"
+   }
+  },
+  {
+   "id": "c4",
+   "name": "Clockwork Assault Rifle 16t strafe small cn",
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "raw": true,
+   "tp": {
+    "w": "Clockwork Assault Rifle",
+    "a": "Silver Bullet",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1200,
+    "hl": 1,
+    "k": "levy",
+    "s": 3,
+    "n": 3,
+    "pc": "Cross_Necklace",
+    "arm": "cn",
+    "kind": "gun"
+   }
+  },
+  {
+   "id": "c5",
+   "name": "Musket 16t strafe small cn",
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "raw": true,
+   "tp": {
+    "w": "Musket",
+    "a": "High Velocity Bullet",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1200,
+    "hl": 1,
+    "k": "levy",
+    "s": 3,
+    "n": 3,
+    "pc": "Cross_Necklace",
+    "arm": "cn",
+    "kind": "sniper"
+   }
+  },
+  {
+   "id": "c6",
+   "name": "Megashark 16t strafe small cn",
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "raw": true,
+   "tp": {
+    "w": "Megashark",
+    "a": "Chlorophyte Bullet",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1200,
+    "hl": 1,
+    "k": "levy",
+    "s": 5,
+    "n": 3,
+    "pc": "Cross_Necklace",
+    "arm": "cn",
+    "kind": "gun"
+   }
+  },
+  {
+   "id": "c7",
+   "name": "Sniper Rifle 16t strafe small cn",
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "raw": true,
+   "tp": {
+    "w": "Sniper Rifle",
+    "a": "High Velocity Bullet",
+    "c": "R",
+    "d": 16,
+    "m": "strafe",
+    "z": "small",
+    "warm": 240,
+    "win": 1200,
+    "hl": 1,
+    "k": "levy",
+    "s": 5,
+    "n": 3,
+    "pc": "Cross_Necklace",
+    "arm": "cn",
+    "kind": "sniper"
+   }
+  }
+ ],
+ "build": "197ebf416b02-6106e740",
+ "spec": "levy-mod/lab/specs/ttk_expert_levy_cn.yaml",
+ "jobs": 3,
+ "steps": 120,
+ "rec": 0,
+ "wall_s": 95.1,
+ "fights": 64,
+ "finished": 64,
+ "fights_per_min": 40.37,
+ "processes": 3,
+ "missing_items": []
+}

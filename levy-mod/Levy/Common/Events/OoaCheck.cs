@@ -114,7 +114,7 @@ namespace Levy.Common.Events
 					var items = new Item[Chest.maxItems];
 					var npc = new NPC(); npc.SetDefaults(NPCID.DD2Bartender);
 					page.FillShop(items, npc, out bool overflow);
-					Check(!overflow && pageTotal == 6 && pageTotal <= Chest.maxItems, $"the wares page holds 6 entries, well under 40 (has {pageTotal})");
+					Check(!overflow && pageTotal == 7 && pageTotal <= Chest.maxItems, $"the wares page holds 7 entries, well under 40 (has {pageTotal})");
 					// gating: tier 1 always (plus 3 drinks); tier 2 after a mech boss; tier 3 after Golem
 					bool mech = Condition.DownedMechBossAny.IsMet(), golem = Condition.DownedGolem.IsMet();
 					int rod = ModContent.ItemType<LevyRod>(), cane = ModContent.ItemType<LevyCane>(), staff = ModContent.ItemType<LevyStaff>();
@@ -126,12 +126,12 @@ namespace Levy.Common.Events
 						if (it.type == rod) { hasRod = true; medals &= it.shopSpecialCurrency == CustomCurrencyID.DefenderMedals && it.shopCustomPrice == LevyConstants.OoaMedalPricePerTier[0]; }
 						if (it.type == cane) { hasCane = true; medals &= it.shopSpecialCurrency == CustomCurrencyID.DefenderMedals && it.shopCustomPrice == LevyConstants.OoaMedalPricePerTier[1]; }
 						if (it.type == staff) { hasStaff = true; medals &= it.shopSpecialCurrency == CustomCurrencyID.DefenderMedals && it.shopCustomPrice == LevyConstants.OoaMedalPricePerTier[2]; }
-						if (it.type == ModContent.ItemType<BarracksAle>() || it.type == ModContent.ItemType<BlackStout>() || it.type == ModContent.ItemType<SpicedRum>()) { drinkCount++; medals &= it.shopSpecialCurrency != CustomCurrencyID.DefenderMedals && it.value > 0; }
+						if (it.type == ModContent.ItemType<BarracksAle>() || it.type == ModContent.ItemType<BlackStout>() || it.type == ModContent.ItemType<SpicedRum>() || it.type == ModContent.ItemType<Content.Items.Provisions.FizzTank>()) { drinkCount++; medals &= it.shopSpecialCurrency != CustomCurrencyID.DefenderMedals && it.value > 0; }
 					}
-					Check(hasRod && hasCane == mech && hasStaff == golem && drinkCount == 3 && medals, $"wares gating at this progression (mech={mech}, golem={golem}): Rod always, Cane={hasCane}, Staff={hasStaff}, 3 drinks for coins, staves in Defender Medals");
+					Check(hasRod && hasCane == mech && hasStaff == golem && drinkCount == 4 && medals, $"wares gating at this progression (mech={mech}, golem={golem}): Rod always, Cane={hasCane}, Staff={hasStaff}, 4 drinks for coins, staves in Defender Medals");
 					// a world with everything beaten: every entry listed unconditionally
 					int unlocked = ((NPCShop)page).Entries.Count;
-					Check(unlocked == 6, "all six wares exist once everything is unlocked");
+					Check(unlocked == 7, "all seven wares exist once everything is unlocked");
 					shopInfo += $"; Levy wares page: {pageTotal} entries now ({unlocked} when everything is unlocked) of 40";
 				}
 				Check(ModContent.GetInstance<TavernkeepShopSystem>() != null, "the shop system is loaded");

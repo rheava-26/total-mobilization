@@ -1,0 +1,56 @@
+# Army meals, Fizz Pop and Magma Shot, with their buffs. Keys are relative to Mods.Levy.Provisions.
+NobodyInReach: No levies within {0} tiles.
+GroupFish: Any Fish
+GroupWellFed: Any Well Fed Dish
+GroupPlenty: Any Plenty Satisfied Dish
+GroupStuffed: Any Exquisitely Stuffed Dish
+
+FizzPop: {
+	DisplayName: Fizz Pop
+	Tooltip: A bubbly, non-alcoholic soda. Gives a double jump and {0} tiles of extra jump height for {1} minutes. Lowers defense by {2}.
+}
+
+FizzTank: {
+	DisplayName: Fizz Tank
+	Tooltip: A tank of fizz for the whole army. Gives your levies within {0} tiles a double jump and {2} tiles of extra jump height for {1} minutes. Lowers their defense by {3}, and hits knock them back at {4}% strength.
+}
+
+MagmaShot: {
+	DisplayName: Magma Shot
+	Tooltip: A shot of liquid fire. Makes you immune to lava and fire for {0} minutes.
+}
+
+MagmaCrucible: {
+	DisplayName: Magma Crucible
+	Tooltip: A crucible of magma shots for the whole army. Makes your levies within {0} tiles immune to lava and burning for {1} minutes. They swim through lava as if it were water.
+}
+
+FishFryPlatter: {
+	DisplayName: Fish Fry Platter
+	Tooltip: A platter of fried fish. Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale for {4} minutes.
+}
+
+FruitBasket: {
+	DisplayName: Fruit Basket
+	Tooltip: A basket of fresh fruit. Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale for {4} minutes.
+}
+
+BurgerBox: {
+	DisplayName: Happy Burger Box
+	Tooltip: A box of burgers and fries. Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale for {4} minutes.
+}
+
+GrandFeast: {
+	DisplayName: Grand Feast
+	Tooltip: A banquet for a whole army. Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale for {4} minutes.
+}
+
+FizzyBuff: {
+	DisplayName: Fizzy
+	Description: Gives a double jump and {0} tiles of extra jump height. Lowers defense by {1}.
+}
+
+LavaShotBuff: {
+	DisplayName: Lava Shot
+	Description: Immune to lava and burning. Swims through lava.
+}

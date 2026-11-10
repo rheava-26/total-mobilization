@@ -20,7 +20,7 @@ namespace Levy.Content.Buffs
 	/// </summary>
 	public class DrinkCheers : ModSystem
 	{
-		private struct Cue { public int Npc, RecordId, At; public bool Speak; public string Text; }
+		private struct Cue { public int Npc, RecordId, At, Emote; public bool Speak; public string Text; } // Emote is the emote id + 1 (0 = the default cheer)
 
 		private const int MaxSpeakers = 5, SpeakFirstTicks = 30, SpeakStepTicks = 18, HiccupEveryTicks = 45;
 		private static readonly List<Cue> Queue = new();
@@ -33,10 +33,16 @@ namespace Levy.Content.Buffs
 		public override void OnWorldUnload() => Queue.Clear();
 
 		/// <summary>Queues the cheers and lines for the levies a round just reached.</summary>
-		public static void Begin(List<SoldierNPC> served, string commander)
+		public static void Begin(List<SoldierNPC> served, string commander, bool meal = false)
 		{
 			if (LevyUtil.IsClient || served == null || served.Count == 0) return;
 			int now = (int)Main.GameUpdateCount;
+			if (meal)
+			{
+				// a meal is eaten, not toasted: a happy bubble each, no lines
+				foreach (SoldierNPC s in served) Queue.Add(new Cue { Npc = s.NPC.whoAmI, RecordId = s.Record.Id, At = now + CheerDelay(s.NPC.whoAmI), Emote = MealEmote() + 1 });
+				return;
+			}
 			int speakers = Math.Min(MaxSpeakers, 1 + served.Count / 3);
 			// a random set of speakers, each in its own slot in the order drawn
 			var order = new List<int>(served.Count);
@@ -72,7 +78,7 @@ namespace Levy.Content.Buffs
 				SoldierNPC s = Body(c.Npc, c.RecordId);
 				if (s == null) continue;
 				if (c.Speak) DialogueSystem.FloatingText(s, c.Text, DialogueTrigger.DRINK);
-				else DialogueSystem.Emote(s, CheerEmote());
+				else DialogueSystem.Emote(s, c.Emote > 0 ? c.Emote - 1 : CheerEmote());
 			}
 			if (now % HiccupEveryTicks == 0 && Main.rand.NextBool() && RosterSystem.Instance != null) Hiccup();
 		}
@@ -87,6 +93,12 @@ namespace Levy.Content.Buffs
 			Scratch.Clear();
 			int[] bubbles = { EmoteID.EmoteConfused, EmoteID.EmoteSilly, EmoteID.EmoteLaugh, EmoteID.EmoteSleep };
 			DialogueSystem.Emote(pick, bubbles[Main.rand.Next(bubbles.Length)]);
+		}
+
+		private static int MealEmote()
+		{
+			int r = Main.rand.Next(3);
+			return r == 0 ? EmoteID.EmoteHappiness : r == 1 ? EmoteID.EmoteLaugh : EmoteID.EmoteEating;
 		}
 
 		private static int CheerEmote()

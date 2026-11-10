@@ -70,7 +70,7 @@ namespace Levy.Content.NPCs
 			bool onSlope = MobilityMode >= 1 && npc.velocity.Y > 0f && npc.velocity.Y < 2.2f && !npc.wet && Collision.SolidCollision(new Vector2(npc.position.X, npc.Bottom.Y), npc.width, 4);
 			bool grounded = (npc.velocity.Y == 0f || onSlope) && !(_wasAirborne && HeadOnCeiling());
 			RefreshKit();
-			if (npc.lavaWet) LavaEscape();
+			if (npc.lavaWet && !npc.lavaImmune) LavaEscape(); // a Magma Shot body swims it instead (SwimAssist)
 			if (grounded)
 			{
 				_jumpsUsed = 0; _wingTime = Abilities?.WingTimeMax ?? 0; _flying = false; _flyRampTicks = 0;
@@ -213,7 +213,8 @@ namespace Levy.Content.NPCs
 		private void SwimAssist(float dy, bool air)
 		{
 			NPC npc = NPC;
-			if (!npc.wet || npc.lavaWet || air || _flying || _hkPhase != HookPhase.Idle) return;
+			bool lavaSwim = npc.lavaWet && npc.lavaImmune; // lava is water to a body with a Magma Shot in it
+			if ((!npc.wet && !lavaSwim) || (npc.lavaWet && !lavaSwim) || air || _flying || _hkPhase != HookPhase.Idle) return;
 			if (dy >= -SwimUpDyPx) return;
 			float cap = npc.honeyWet ? SwimMaxUp * 0.5f : SwimMaxUp;
 			if (npc.velocity.Y > -cap) npc.velocity.Y = Math.Max(-cap, npc.velocity.Y - SwimAccel);
@@ -272,7 +273,7 @@ namespace Levy.Content.NPCs
 				return;
 			}
 			// lava in the next two columns, from head height to the floor under the next step
-			for (int i = 0; i < 2; i++)
+			for (int i = 0; i < 2 && !NPC.lavaImmune; i++)
 			{
 				int tx = ax + dir * i;
 				for (int ty = fy - 2; ty <= fy + 1; ty++)

@@ -641,6 +641,7 @@ namespace Levy.Common.Testing
 				}
 				Mod.Logger.Info($"HARNESS-SG: tick {st.Tick}{sb}");
 			}
+			CrOrderProbe(st);
 			int alive = 0;
 			foreach (var l in st.Levies)
 			{

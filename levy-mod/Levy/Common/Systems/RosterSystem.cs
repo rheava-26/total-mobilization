@@ -106,7 +106,7 @@ namespace Levy.Common.Systems
 		{
 			if (player == null || string.IsNullOrEmpty(text)) return;
 			Color c = color ?? new Color(255, 240, 20);
-			if (Main.netMode == NetmodeID.Server) ChatHelper.SendChatMessageToClient(NetworkText.FromLiteral(text), c, player.whoAmI);
+			if (Main.netMode == NetmodeID.Server) { if (player.whoAmI >= 0 && player.whoAmI < Netplay.Clients.Length && Netplay.Clients[player.whoAmI].IsConnected()) ChatHelper.SendChatMessageToClient(NetworkText.FromLiteral(text), c, player.whoAmI); }
 			else if (Main.netMode == NetmodeID.SinglePlayer) Main.NewText(text, c);
 		}
 
@@ -1203,6 +1203,14 @@ namespace Levy.Common.Systems
 		/// <summary>Whether an order reaches one levy: from a barracks, within earshot, with no live body to ask (the record takes it), or with a Command Radio in the commander's pack (every levy in the world).</summary>
 		internal static bool OrderReaches(bool atBarracks, bool inEarshot, bool noBody, bool commanderHasRadio) => atBarracks || inEarshot || noBody || commanderHasRadio;
 
+		private static readonly HashSet<string> _orderFaults = new();
+		/// <summary>An exception while one levy took an order: logged once per kind, and the order goes on to the next levy.</summary>
+		internal static void OrderFault(SoldierRecord rec, string what, Exception e)
+		{
+			if (!_orderFaults.Add(e.GetType().Name + "@" + (e.StackTrace ?? "").Split('\n')[0].Trim())) return;
+			Levy.Instance?.Logger.Warn($"[OrderObey] {what} threw on {rec?.Name ?? "-"}; the other levies still took it (logged once per kind): {e}");
+		}
+
 		/// <summary>Soldiers that refused the order being issued (Wage Mutiny); reset at the start of each order, reported once at its end.</summary>
 		private int _refusedOrders, _farOrders;
 
@@ -1218,16 +1226,24 @@ namespace Levy.Common.Systems
 			if (LevyUtil.IsClient || commander == null) return;
 			bool any = false;
 			_refusedOrders = 0; _farOrders = 0;
-			foreach (var rec in Regulars)
+			var picked = new List<SoldierRecord>();
+			for (int i = 0; i < Regulars.Count; i++)
 			{
-				if (!Selected(rec, commander, atBarracks, out var body)) continue;
-				rec.Order = order;
-				rec.StoodDown = order == SoldierOrder.ReturnToBarracks;
-				if (order == SoldierOrder.Hold && body == null) rec.HoldPos = commander.Center;
-				body?.ReceiveOrder(order);
-				any = true;
+				var rec = Regulars[i];
+				// one levy that throws (a stale body, a gear hook of another mod) must never stop the order reaching the rest of the army
+				try
+				{
+					if (!Selected(rec, commander, atBarracks, out var body)) continue;
+					rec.Order = order;
+					rec.StoodDown = order == SoldierOrder.ReturnToBarracks;
+					if (order == SoldierOrder.Hold && body == null) rec.HoldPos = commander.Center;
+					any = true; picked.Add(rec);
+					body?.ReceiveOrder(order);
+				}
+				catch (Exception e) { OrderFault(rec, "order " + order, e); }
 			}
-			OfficerSystem.Instance.IssueOrder(commander, order, atBarracks); // his officers obey the same order, by their posture
+			OrderAudit.Schedule(commander.name, order, picked);
+			try { OfficerSystem.Instance.IssueOrder(commander, order, atBarracks); } catch (Exception e) { OrderFault(null, "officers' order " + order, e); } // his officers obey the same order, by their posture
 			ReportRefusals(commander);
 			if (any) SendRosterSnapshot();
 		}
@@ -1241,11 +1257,16 @@ namespace Levy.Common.Systems
 			OfficerSystem.Instance.CountStance(commander, atBarracks, spread: false, ref total, ref holding); // his officers vote with the soldiers
 			if (total == 0) { ReportRefusals(commander); return; }
 			bool set = holding * 2 <= total; // majority holding fire → release; otherwise hold
-			foreach (var rec in Regulars)
+			for (int i = 0; i < Regulars.Count; i++)
 			{
-				if (!Selected(rec, commander, atBarracks, out var body)) continue;
-				rec.HoldFire = set;
-				if (body != null) { body.NPC.netUpdate = true; if (set) DialogueSystem.Bark(body, DialogueTrigger.HOLD_FIRE); }
+				var rec = Regulars[i];
+				try
+				{
+					if (!Selected(rec, commander, atBarracks, out var body)) continue;
+					rec.HoldFire = set;
+					if (body != null) { body.NPC.netUpdate = true; if (set) DialogueSystem.Bark(body, DialogueTrigger.HOLD_FIRE); }
+				}
+				catch (Exception e) { OrderFault(rec, "hold fire", e); }
 			}
 			OfficerSystem.Instance.SetStance(commander, atBarracks, spread: false, set);
 			SendToPlayer(commander, LevyUtil.T(set ? "UI.HoldFire" : "UI.FireAtWill"));
@@ -1264,11 +1285,16 @@ namespace Levy.Common.Systems
 			if (total == 0) { ReportRefusals(commander); return; }
 			// one button cycles the squad's majority stance: Normal -> Spread out -> Close up -> Normal
 			FormationMode next = Formation.Next(Formation.Majority(total, spread, close));
-			foreach (var rec in Regulars)
+			for (int i = 0; i < Regulars.Count; i++)
 			{
-				if (!Selected(rec, commander, atBarracks, out var body)) continue;
-				Formation.Apply(rec, next);
-				if (body != null) body.NPC.netUpdate = true;
+				var rec = Regulars[i];
+				try
+				{
+					if (!Selected(rec, commander, atBarracks, out var body)) continue;
+					Formation.Apply(rec, next);
+					if (body != null) body.NPC.netUpdate = true;
+				}
+				catch (Exception e) { OrderFault(rec, "spread out", e); }
 			}
 			OfficerSystem.Instance.ApplyFormation(commander, atBarracks, next);
 			SendToPlayer(commander, LevyUtil.T(next == FormationMode.Spread ? "UI.SpreadOut" : next == FormationMode.CloseUp ? "UI.CloseUp" : "UI.NormalRanks"));

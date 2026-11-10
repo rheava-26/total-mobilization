@@ -252,7 +252,9 @@ namespace Levy.Content.NPCs
 					Projectile p = Main.projectile[idx];
 					if (!p.active) continue;
 					if (GearUpkeep.CoveredByHandMade(p) || (churnCheck && GearUpkeep.OwnerBound(p.type, NPC.whoAmI))) { GearUpkeep.Dropped[p.type] = GearUpkeep.Dropped.TryGetValue(p.type, out int n) ? n + 1 : 1; p.active = false; p.timeLeft = 0; continue; }
-					WeaponUse.TagSoldierProjectile(this, p, p.DamageType);
+					// A helper MINION an accessory casts (Calamity's Elemental in a Bottle, any mod's "summons a minion while worn"): its AI reads the owner Player's flags and buffs, so it is adopted as a DRIVEN minion
+					// (owner 255, the soldier's dummy stands there for its Update; SoldierMinions) and never given to the commander, whose flags are not set and who would end it on its first tick.
+					if (!(p.minion && SoldierMinions.AdoptAccessoryMinion(this, p))) WeaponUse.TagSoldierProjectile(this, p, p.DamageType);
 					GearUpkeep.AdoptedByType[p.type] = GearUpkeep.AdoptedByType.TryGetValue(p.type, out int c) ? c + 1 : 1;
 					GearUpkeep.Adopted++;
 				}

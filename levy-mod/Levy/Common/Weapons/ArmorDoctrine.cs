@@ -17,7 +17,7 @@ namespace Levy.Common.Weapons
 	/// Equips the three pieces on a private scratch Player, runs the vanilla equip pass, and compares the per-class damage/crit bonuses.
 	/// Results are cached by the three armor item types.
 	/// </summary>
-	public static class ArmorDoctrine
+	public static partial class ArmorDoctrine
 	{
 		/// <summary>Minimum bonus (damage fraction + crit points x 0.005) the leading class needs.</summary>
 		public const float MinBonus = 0.03f;
@@ -31,16 +31,14 @@ namespace Levy.Common.Weapons
 		private static DamageClass[] Classes => _classes ??= new[] { DamageClass.Melee, DamageClass.Ranged, DamageClass.Magic, DamageClass.Summon }.Concat(ExtraDamageClasses.All).ToArray();
 		private static readonly Dictionary<(int, int, int), int> _cache = new(); // value: index into Classes, or -1 for no preference
 		private static readonly Dictionary<(int, int, int), bool> _setCache = new();
-		private static readonly Dictionary<int, float[]> _accCache = new();
-		private static Player _scratch;
+				private static Player _scratch;
 		private static float[] _baseline;
-		private static float[] _accBaseline; // bare-player reading in the accessory (Generic-inclusive) measurement mode
 		private static bool _broken;
 		/// <summary>How many times the vanilla equip pass actually ran (cache misses); for diagnostics.</summary>
 		public static int PipelineRuns { get; private set; }
 
 		/// <summary>Drop cached state (world load / mod unload).</summary>
-		public static void Reset() { _classes = null; _cache.Clear(); _setCache.Clear(); _accCache.Clear(); _leanCache.Clear(); _manaCache.Clear(); _leanBaseline = null; _scratch = null; _baseline = null; _accBaseline = null; _broken = false; }
+		public static void Reset() { _classes = null; _cache.Clear(); _setCache.Clear(); ResetAccessoryProfiles(); _leanCache.Clear(); _manaCache.Clear(); _leanBaseline = null; _scratch = null; _baseline = null; _broken = false; }
 
 		/// <summary>The damage class the given armor favours, or null when none stands out (no armor, generic armor, hybrids, or any failure).</summary>
 		public static DamageClass PreferredClass(Item head, Item body, Item legs)
@@ -109,27 +107,6 @@ namespace Levy.Common.Weapons
 			}
 			_setCache[key] = ok;
 			return ok;
-		}
-
-		/// <summary>The damage bonus (fraction, as <see cref="PreferredClass"/> measures it) an accessory gives the given class; 0 when it gives none or the read fails. Cached per item type.</summary>
-		public static float AccessoryClassFit(Item acc, DamageClass cls)
-		{
-			if (acc == null || acc.IsAir || cls == null || _broken) return 0f;
-			int ci = Array.IndexOf(Classes, cls);
-			if (ci < 0) return 0f;
-			if (!_accCache.TryGetValue(acc.type, out var fit)) {
-				fit = new float[Classes.Length];
-				try {
-					if (LevyConfig.Get.UseVanillaStatPipeline) {
-						EnsureScratch();
-						_accBaseline ??= Measure(0, 0, 0, null, 0, true);
-						fit = Measure(0, 0, 0, _accBaseline, acc.type, true);
-					}
-				}
-				catch (Exception) { fit = new float[Classes.Length]; }
-				_accCache[acc.type] = fit;
-			}
-			return Math.Max(0f, fit[ci]);
 		}
 
 		// Summon/sentry lean of accessories. A sentry-capacity point is the strongest signal; minion slots and summon-ONLY damage (damage the three martial classes do not share) add the rest.

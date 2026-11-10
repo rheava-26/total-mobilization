@@ -353,6 +353,23 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>
+		/// Adopts a helper minion a worn ACCESSORY cast during the gear upkeep frame (see SoldierNPC.GearFrame): it is owned by 255 and tagged with the soldier, exactly as <see cref="NewMinion"/> leaves a staff's minion, so every
+		/// Update of it runs under the soldier's dummy (its Calamity / mod flags, buffs, position, target). It is not a cast of a staff (<c>Cast</c> false), so the staff's flock upkeep leaves it alone; it ends when the accessory
+		/// stops being worn (its own AI sees the dummy's flag drop) or the soldier is gone. False for a hostile soldier's, a sentry or a non-minion, which keep the ordinary adoption.
+		/// </summary>
+		internal static bool AdoptAccessoryMinion(SoldierNPC s, Projectile p)
+		{
+			if (s == null || p == null || !p.active || !p.minion || p.sentry || s.Hostile || !p.TryGetGlobalProjectile(out SoldierProjectileTag tag)) return false;
+			p.owner = Slot;
+			p.npcProj = true; // the commander's on-hit effects and item drops never run for a soldier's minion
+			p.noDropItem = true;
+			p.friendly = true; p.hostile = false;
+			tag.SoldierIndex = s.NPC.whoAmI; tag.Cast = false;
+			p.netUpdate = true;
+			return true;
+		}
+
+		/// <summary>
 		/// Vanilla re-derives a minion's damage every tick as <c>owner.GetTotalDamage(Summon).ApplyTo(originalDamage)</c>; the owner here is the dummy, so its own summon ratio is divided
 		/// back out and the soldier's weapon damage x grade (<paramref name="desiredDamage"/>) is what the minion deals. Also keeps the staff's knockback.
 		/// </summary>

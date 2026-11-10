@@ -28,10 +28,14 @@ namespace Levy.Common.Testing
 		private readonly Dictionary<string, int> _mnChildren = new(); private readonly HashSet<string> _mnRealTypes = new();
 		private string _mnSamples = ""; private int _mnFirstReal = -1, _mnFirstStand = -1;
 		private static bool _mnHooked; private static CombatHarness _mnSelf;
+		/// <summary>LEVY_HARNESS_MNSP=1: single-player owner emulation for the minions scenario (Main.myPlayer = 0 around each Main.Update), as the calrev scenario's LEVY_CR_SP does.</summary>
+		internal static bool MnSp;
 
 		private bool BeginMinions()
 		{
 			try { MonoModHooks.Add(typeof(Netplay).GetMethod("UpdateConnectedClients", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic), new HookUpdateConnectedClients(KeepStandinDetour)); _spHooked = true; } catch (Exception e) { Mod.Logger.Warn("minions: hook failed " + e.Message); }
+			MnSp = Environment.GetEnvironmentVariable("LEVY_HARNESS_MNSP") == "1";
+			global::Levy.Common.Util.LevyUtil.SpEmulation = MnSp;
 			string v = Environment.GetEnvironmentVariable("LEVY_HARNESS_MINIONS") ?? "list";
 			_mnList = v.Equals("list", StringComparison.OrdinalIgnoreCase); bool all = v.Equals("all", StringComparison.OrdinalIgnoreCase);
 			_mnNames = v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -193,7 +197,8 @@ namespace Levy.Common.Testing
 				var rec = MakeRecord("Pvt. Summoner");
 				Item w = new Item(); w.SetDefaults(type);
 				var gear = rec.Gear;
-				if (gear.CanHold(SoldierGear.SlotWeapon, w)) { gear.Weapon = w; gear.SetLocked(SoldierGear.SlotWeapon, true); }
+				if (Environment.GetEnvironmentVariable("LEVY_HARNESS_MNACCONLY") != null) { } // accessory-minion lab: no primary at all, so every hit on the target is the accessory's helper
+				else if (gear.CanHold(SoldierGear.SlotWeapon, w)) { gear.Weapon = w; gear.SetLocked(SoldierGear.SlotWeapon, true); }
 				else { Mod.Logger.Warn("HARNESS-MINION: CanHold false for " + w.Name); _mnI++; return; }
 				// LEVY_HARNESS_MNEXTRA = comma list of more staffs carried as sidearms (hand sidearm, then the extra slots); LEVY_HARNESS_MNACC = accessories worn (more minion slots)
 				_mnPerType.Clear();
@@ -250,6 +255,19 @@ namespace Levy.Common.Testing
 			if (real > 0 && _mnFirstReal < 0) _mnFirstReal = _mnTick;
 			if (stand > 0 && _mnFirstStand < 0) _mnFirstStand = _mnTick;
 			if (_mnTick == 60 || _mnTick == 180 || _mnTick == 360 || _mnTick == 300 || _mnTick == 450 || _mnTick == 600 || _mnTick == 750 || _mnTick == 900 || _mnTick == 1500 || _mnTick == 1900) _mnSamples += $"t{_mnTick}:r{real}/s{stand}/d{_mnTargetLife0 - Main.npc[_mnTarget].life} ";
+			if (_mnTick % 120 == 0 && Environment.GetEnvironmentVariable("LEVY_HARNESS_MNWATCH") is string watch)
+			{
+				var sb = new System.Text.StringBuilder();
+				var names = watch.Split(',');
+				for (int i = 0; i < Main.maxProjectiles; i++)
+				{
+					Projectile q = Main.projectile[i];
+					if (!q.active || q.ModProjectile == null || Array.IndexOf(names, q.ModProjectile.Name) < 0) continue;
+					q.TryGetGlobalProjectile(out SoldierProjectileTag tg2);
+					sb.Append($"[{q.ModProjectile.Name} slot={i} owner={q.owner} tag={tg2?.SoldierIndex} dmg={q.damage} timeLeft={q.timeLeft} pos={(q.Center - Main.npc[_mnBody].Center)}] ");
+				}
+				Mod.Logger.Info($"HARNESS-ACCMIN t{_mnTick}: watched={(sb.Length == 0 ? "NONE" : sb.ToString())} targetDamage={_mnTargetLife0 - Main.npc[_mnTarget].life} body={_mnBody}");
+			}
 			if (_mnTick == 200 || _mnTick == 500 || _mnTick == 850) Mod.Logger.Info($"HARNESS-MINION-DBG state t{_mnTick} target@{(Main.npc[_mnTarget].Center - Main.npc[_mnBody].Center)} {_mnPrevDesc}");
 			if (_mnTick < (int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_MNTICKS"), out int mt) ? mt : 900)) return;
 			NPC tg = Main.npc[_mnTarget];

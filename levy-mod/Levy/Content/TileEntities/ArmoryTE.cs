@@ -405,6 +405,7 @@ namespace Levy.Content.TileEntities
 			+ AccessoryEffect.Value(it)
 			+ AccessoryProgression.Bonus(it) // a direct upgrade always outranks what it was made from
 			+ ArmorDoctrine.AccessoryClassFit(it, cls) * LevyConstants.AccessoryClassFitWeight
+			- (cls != null && !GearPreferred(it) && ArmorDoctrine.AccessoryMismatch(it, cls) ? LevyConstants.AccessoryMismatchPenalty : 0f) // another class's accessory (Mana Flower on a swordsman): last resort, below every fitting or generic one
 			+ Math.Max(0, AccessoryAggro.Of(it)) * LevyConstants.Targeting.AccessoryAggroWeight // taunt gear leans toward the soldiers who tank for the player
 			+ (GearPreferred(it) ? ArmoryRules.GearPreferBonus : 0f); // an accessory the player marked as preferred is dealt first
 
@@ -2225,6 +2226,7 @@ namespace Levy.Content.TileEntities
 			if (UpgradeAccessories(soldier)) changed = true;
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && UpgradeSidearm(soldier)) changed = true;
 			if (TidySidearms(g)) changed = true; // a second sword, a second whip, a gun beside a melee primary: back to the shelf
+			if (ReclaimSummonWeapons(soldier)) changed = true; // summoners first: a staff a summoner could still use goes from a non-summoner to him
 			if (UpgradeExtraSidearms(soldier)) changed = true;
 			if (FillEmptySidearms(soldier)) changed = true;
 			// The new weapon may fire other ammo (or none): IssueGear returns the wrong pouch and draws the right one (it only fills what is empty otherwise).

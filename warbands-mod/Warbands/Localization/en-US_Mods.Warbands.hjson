@@ -287,6 +287,11 @@ Items: {
 			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
+
+	BountyNotice: {
+		DisplayName: Bounty Notice
+		Tooltip: ""
+	}
 }
 
 Projectiles.DevoteOrb.DisplayName: Devote Orb

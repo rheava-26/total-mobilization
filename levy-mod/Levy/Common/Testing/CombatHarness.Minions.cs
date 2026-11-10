@@ -230,13 +230,14 @@ namespace Levy.Common.Testing
 			if (_mnTick % 20 == 0) { _mnPeakPass = Math.Max(_mnPeakPass, _mnWin - _mnPass); _mnPass = _mnWin; }
 			if (_mnTick % 60 == 0) { _mnPeakRate = Math.Max(_mnPeakRate, _mnWinSec); _mnWinSec = 0; }
 			int standType = ModContent.ProjectileType<SoldierMinion>();
-			int real = 0, stand = 0, nKids = 0;
+			int real = 0, stand = 0, nKids = 0, sentries = 0;
 			var perTick = new Dictionary<string, int>();
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
 				if (!p.active) continue;
 				if (p.TryGetGlobalProjectile(out SoldierProjectileTag kt) && kt.SoldierIndex == _mnBody && !p.minion && p.type != standType) nKids++;
+				if (p.sentry && p.TryGetGlobalProjectile(out SoldierProjectileTag stg) && stg.SoldierIndex == _mnBody) sentries++;
 				if (p.type == standType && (int)p.ai[0] == _mnBody) { stand++; _mnIdentStand.Add(p.identity); }
 				else if (SoldierMinions.OwnedBy(p, _mnBody)) { real++; _mnIdentReal.Add(p.identity); string tn = p.ModProjectile?.Name ?? ("v" + p.type); perTick[tn] = perTick.GetValueOrDefault(tn) + 1; _mnRealTypes.Add((p.ModProjectile?.Name ?? ("v" + p.type)) + (SoldierMinions.IsCast(p) ? "" : "(child)")); }
 			}
@@ -244,7 +245,7 @@ namespace Levy.Common.Testing
 			_mnPrevReal = real; _mnPrevDesc = "";
 			for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && SoldierMinions.OwnedBy(q, _mnBody)) _mnPrevDesc += $"[{q.ModProjectile?.Name ?? q.type.ToString()} slot={i} timeLeft={q.timeLeft} ai={q.ai[0]}/{q.ai[1]}/{q.ai[2]} dmg={q.damage} slots={q.minionSlots} pos={(q.Center - Main.npc[_mnBody].Center)} vel={q.velocity} friendly={q.friendly}]"; }
 			foreach (var kv in perTick) _mnPerType[kv.Key] = Math.Max(_mnPerType.GetValueOrDefault(kv.Key), kv.Value);
-			if (_mnTick % 300 == 0) Mod.Logger.Info($"HARNESS-MINION-OUT t{_mnTick}: {string.Join(", ", perTick.Select(kv => kv.Key + " x" + kv.Value))} (total {real})");
+			if (_mnTick % 300 == 0) Mod.Logger.Info($"HARNESS-MINION-OUT t{_mnTick}: {string.Join(", ", perTick.Select(kv => kv.Key + " x" + kv.Value))} (total {real}) sentries {sentries} slots {(Main.npc[_mnBody].ModNPC is SoldierNPC sq ? sq.SentrySlots() : 0)}");
 			_mnPeakKids = Math.Max(_mnPeakKids, nKids); _mnMaxReal = Math.Max(_mnMaxReal, real); _mnMaxStand = Math.Max(_mnMaxStand, stand);
 			if (real > 0 && _mnFirstReal < 0) _mnFirstReal = _mnTick;
 			if (stand > 0 && _mnFirstStand < 0) _mnFirstStand = _mnTick;

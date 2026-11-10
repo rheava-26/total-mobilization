@@ -538,7 +538,17 @@ namespace Levy.Content.TileEntities
 			if (ms != null) foreach (var it in MagicStorageBridge.Snapshot(ms)) Consider(it);
 		}
 
-		/// <summary>True when a summon staff is stocked, or already in the soldier's hand: a whip is then only ever a sidearm, never a summoner's primary.</summary>
+		/// <summary>True when a whip is stocked, or already in the soldier's hand: a summoner then leads with it, and his staff and sentry ride in the sidearm slots.</summary>
+		private bool WhipAvailableFor(SoldierRecord who)
+		{
+			var held = who?.Gear?.Weapon;
+			if (!IsAir(held) && IsIssuableWhip(held)) return true;
+			bool any = false;
+			ForEachShelfItem(it => { if (!any && IsIssuableWhip(it)) any = true; });
+			return any;
+		}
+
+		/// <summary>True when a summon staff is stocked, or already in the soldier's hand: with no whip to lead with, a summoner's primary is the staff, never a sentry.</summary>
 		private bool StaffAvailableFor(SoldierRecord who)
 		{
 			var held = who?.Gear?.Weapon;
@@ -572,15 +582,17 @@ namespace Levy.Content.TileEntities
 		private Func<Item, bool> PrimaryRule(SoldierRecord who, bool asSummoner = false)
 		{
 			bool summoner = asSummoner || IsSummonerSoldier(who); // asSummoner: the army's class balance has made him a summoner although no summon armor is on his back yet
-			bool staffFirst = summoner && StaffAvailableFor(who); // a summoner with a minion staff in reach takes the staff, not a whip or a sentry
+			bool whipFirst = summoner && WhipAvailableFor(who); // a summoner with a whip in reach leads with it; the staff and the sentry ride as sidearms
+			bool staffFirst = summoner && !whipFirst && StaffAvailableFor(who); // no whip: he leads with the minion staff, never a sentry
 			var steer = RangedSteer(who);
-			if (summoner && !staffFirst && steer == null) return null; // a summoner with no staff may lead with any weapon; nothing else to restrict
+			if (summoner && !whipFirst && !staffFirst && steer == null) return null; // a summoner with neither may lead with any weapon; nothing else to restrict
 			return it =>
 			{
 				var fam = WeaponClassifier.GetProfile(it).Family;
 				bool summonWeapon = fam == WeaponFamily.Whip || fam == WeaponFamily.Summon || fam == WeaponFamily.Sentry;
 				if (summonWeapon && !summoner) return false; // reservation: summon weapons for summoners only
-				if (staffFirst && (fam == WeaponFamily.Whip || fam == WeaponFamily.Sentry)) return false; // hard summon first
+				if (whipFirst && (fam == WeaponFamily.Summon || fam == WeaponFamily.Sentry)) return false; // the whip leads
+				if (staffFirst && (fam == WeaponFamily.Whip || fam == WeaponFamily.Sentry)) return false; // no whip: the staff leads
 				return steer == null || steer(it);
 			};
 		}
@@ -767,11 +779,11 @@ namespace Levy.Content.TileEntities
 		{
 			if (cls == null) return null;
 			var onHand = AmmoIdsOnHand();
-			// Summoners want the summon weapon itself as primary; their whip comes through the sidearm slot.
+			// A summoner leads with his whip, else a minion staff, else a sentry: PrimaryRule picks which; any other summon-class weapon is not a primary.
 			bool needSummon = cls == DamageClass.Summon;
 			var rule = PrimaryRule(forSoldier); // a Shroomite helmet's ammo subtype (Ranged only); whips are already out for Summon (staves only)
 			bool Pred(Item it) => IsIssuable(it) && WeaponClassifier.ItemDamageClass(it) == cls && HasAmmoFor(it, forSoldier, onHand) && (extra == null || extra(it)) && (rule == null || rule(it))
-				&& (!needSummon || WeaponClassifier.GetProfile(it).Family == WeaponFamily.Summon);
+				&& (!needSummon || IsSummonFamily(WeaponClassifier.GetProfile(it).Family));
 			return CapThrown(TakeVaried(forSoldier, Pred));
 		}
 
@@ -880,6 +892,8 @@ namespace Levy.Content.TileEntities
 			return it => IsIssuableMelee(it) && WeaponRank.Of(it) <= cap;
 		}
 
+		private static bool IsSummonFamily(WeaponFamily f) => f == WeaponFamily.Summon || f == WeaponFamily.Whip || f == WeaponFamily.Sentry;
+
 		private static bool IsIssuableWhip(Item it) => IsIssuable(it) && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Whip;
 
 		private static bool IsIssuableSummonStaff(Item it) => IsIssuable(it) && it.shoot > 0 && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Summon;
@@ -897,7 +911,8 @@ namespace Levy.Content.TileEntities
 		private Item TakeSummonStaffSidearm()
 		{
 			if (IsIssuableSummonStaff(IssueWeapons[SidearmSlot]) && !IsReservedRef(IssueWeapons[SidearmSlot])) return Remove(IssueWeapons, SidearmSlot);
-			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSummonStaff, WeaponRank.Of);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => IsIssuableSummonStaff(it) && !SummonCap.IsCapped(it), WeaponRank.Of) // the staff that fills his minion slots first
+				?? TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSummonStaff, WeaponRank.Of);
 		}
 
 		/// <summary>
@@ -2275,7 +2290,7 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>
-		/// The weapon already has the armor's class; refines WHICH weapon of it: a summoner's whip or sentry yields to a minion staff (it becomes the sidearm), and a Shroomite
+		/// The weapon already has the armor's class; refines WHICH weapon of it: a summoner's staff or sentry yields to a whip, and a sentry to a staff when there is no whip (it becomes a sidearm), and a Shroomite
 		/// helmet's ranged subtype (<see cref="RangedSteer"/>) swaps an off-subtype gun / bow / launcher for the best of the favoured one. Nothing in stock = untouched. True if swapped.
 		/// </summary>
 		private bool ReconcileWithinClass(SoldierRecord soldier, DamageClass armorCls)
@@ -2287,8 +2302,8 @@ namespace Levy.Content.TileEntities
 			Func<Item, bool> pouchOk = pouchFixed ? (it => it.useAmmo <= 0 || pouch.ammo == it.useAmmo) : null;
 			Item neu = null;
 			var oldFam = WeaponClassifier.GetProfile(old).Family;
-			if (armorCls == DamageClass.Summon && (oldFam == WeaponFamily.Whip || oldFam == WeaponFamily.Sentry))
-				neu = TakeBestWeaponOfClass(soldier, DamageClass.Summon, pouchOk); // a minion staff supersedes a whip or a sentry in the primary slot; the old one is filed and re-picked as the off-hand
+			if (armorCls == DamageClass.Summon && (oldFam == WeaponFamily.Sentry || (oldFam == WeaponFamily.Summon && WhipAvailableFor(soldier))))
+				neu = TakeBestWeaponOfClass(soldier, DamageClass.Summon, pouchOk); // a whip supersedes a staff or a sentry in the primary slot (no whip: a staff supersedes a sentry); the old one is filed and re-picked as a sidearm
 			else if (armorCls == DamageClass.Ranged)
 			{
 				var steer = RangedSteer(soldier);

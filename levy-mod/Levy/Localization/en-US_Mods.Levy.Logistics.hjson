@@ -157,3 +157,45 @@ FindNone: Click an item to find it.
 HeartNoNetwork: The Armory Heart reaches no storage network. Connect it to a Storage Heart with connectors.
 HeartNetworked: Joined to the storage network. {0}
 HeartNoArmory: No Armory is within reach of this heart.
+
+PageClear: Clear out
+PageClearHint: Sell or take apart every weapon, armor piece and accessory below a tier.
+ClearHeader: Clear out below a tier
+ClearTierBtn: "Below tier {0}: {1}"
+ClearTierHint: Lists everything made before that boss. Click to step through the bosses.
+ClearModeSell: Sell for coin
+ClearModeDecraft: Take apart
+ClearModeHint: Selling pays the best shopkeeper in reach. Taking apart returns materials to storage and needs a Decrafting Interface on the Magic Storage network.
+ClearPreview: Preview
+ClearPreviewHint: List what would be cleared. Nothing is removed yet.
+ClearConfirmHint: Carry out the clear-out shown in the list.
+ClearConfirmNone: Confirm
+ClearConfirmSell: "Confirm: sell {0} for {1}"
+ClearConfirmDecraft: "Confirm: take apart {0}"
+ClearPreviewFirst: Press Preview to see the list.
+ClearNone: Nothing is below that tier.
+ClearSources: "{0} items: {1} in the armory, {2} in chests, {3} in the network."
+ClearBuyer: "{0} pays {1}."
+ClearDecraftNote: Materials go back to storage.
+ClearTip: Favourited items, vanity, preferred gear and gear reserved for a levy stay.
+ClearStale: The stock changed. Review the list and confirm again.
+ClearNoBuyer: No shopkeeper is in reach.
+ClearNothing: Nothing was cleared.
+ClearMore: "{0} more kinds of item are not shown."
+ClearTier1: King Slime
+ClearTier2: Eye of Cthulhu
+ClearTier3: Eater of Worlds or Brain of Cthulhu
+ClearTier4: Queen Bee
+ClearTier5: Skeletron
+ClearTier6: Deerclops
+ClearTier7: Wall of Flesh
+ClearTier8: Queen Slime
+ClearTier9: The Twins
+ClearTier10: The Destroyer
+ClearTier11: Skeletron Prime
+ClearTier12: Plantera
+ClearTier13: Golem
+ClearTier14: Duke Fishron
+ClearTier15: Empress of Light
+ClearTier17: Lunatic Cultist
+ClearTier18: Moon Lord

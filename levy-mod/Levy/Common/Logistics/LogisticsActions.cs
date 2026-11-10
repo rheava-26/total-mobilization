@@ -19,6 +19,8 @@ namespace Levy.Common.Logistics
 	/// Wire layouts (after the packet byte), all client -> server:
 	///  LogisticsOrderEdit: byte action(0 save,1 delete,2 pause,3 resume), int orderId (0 = new); action 0 then LogisticsOrder.Write(false)
 	///  LogisticsSell: int armoryId, bool shimmerBack, byte kind(0 slots,1 filter), then kind 0: ushort count, ushort[] storage indices; kind 1: byte category (0 none), sbyte tierIndex (-1 none)
+	///  LogisticsClearOut: int armoryId, byte mode(0 preview,1 confirm), float tier, bool decraft, int expectHash (confirm: the fingerprint of the list the player saw)
+	///  LogisticsClearOutPreview (server -> client): ClearOut.Preview.Write
 	///  LogisticsCraft: int armoryId, int recipeIndex (Main.recipe), int crafts
 	///  LogisticsBuy: int armoryId, byte kind, int type, int count, long budget   (one standing rule, run once now)
 	/// </summary>
@@ -117,6 +119,48 @@ namespace Levy.Common.Logistics
 			Tell(who, res.Items + res.Shimmered == 0 ? LevyUtil.T("Logistics.SoldNothing") :
 				res.Coin > 0 ? LevyUtil.T("Logistics.Sold", res.Items, LevyUtil.Coins(res.Coin), res.Buyer) + (res.Shimmered > 0 ? " " + LevyUtil.T("Logistics.ShimmeredN", res.Shimmered) : "") : LevyUtil.T("Logistics.ShimmeredN", res.Shimmered));
 			a.Sync();
+		}
+
+		// ---------------------------------------------------------------- clear out below a tier
+		/// <summary>Asks for the list a clear-out below <paramref name="tier"/> would take. The answer lands in <see cref="ClearOut.Latest"/> (single player at once, multiplayer when the server replies).</summary>
+		public static void ClearOutPreview(ArmoryTE a, float tier, bool decraft)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) { var p = LevyPackets.New(LevyPacket.LogisticsClearOut); p.Write(a.ID); p.Write((byte)0); p.Write(tier); p.Write(decraft); p.Write(0); p.Send(); }
+			else DoClearOut(Main.myPlayer, a, 0, tier, decraft, 0);
+		}
+
+		/// <summary>Carries out the clear-out the player confirmed. <paramref name="expectHash"/> is the fingerprint of the list shown; the server refuses (and re-sends the list) when the stock no longer matches it.</summary>
+		public static void ClearOutConfirm(ArmoryTE a, float tier, bool decraft, int expectHash)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) { var p = LevyPackets.New(LevyPacket.LogisticsClearOut); p.Write(a.ID); p.Write((byte)1); p.Write(tier); p.Write(decraft); p.Write(expectHash); p.Send(); }
+			else DoClearOut(Main.myPlayer, a, 1, tier, decraft, expectHash);
+		}
+
+		internal static void OnClearOut(BinaryReader r, int who)
+		{
+			int id = r.ReadInt32(); byte mode = r.ReadByte(); float tier = r.ReadSingle(); bool decraft = r.ReadBoolean(); int hash = r.ReadInt32();
+			if (Main.netMode != NetmodeID.Server) return;
+			var a = Armory(id); if (a == null || !Near(who, a) || float.IsNaN(tier) || tier < 0f || tier > 100f) return;
+			DoClearOut(who, a, mode, tier, decraft, hash);
+		}
+
+		private static void DoClearOut(int who, ArmoryTE a, byte mode, float tier, bool decraft, int hash)
+		{
+			if (mode == 1)
+			{
+				var res = ClearOut.Execute(a, tier, decraft, hash);
+				if (res.Stale) Tell(who, LevyUtil.T("Logistics.ClearStale"));
+				else if (res.NoBuyer) Tell(who, LevyUtil.T("Logistics.ClearNoBuyer"));
+				else Tell(who, res.Items + res.Decrafted == 0 ? LevyUtil.T("Logistics.ClearNothing") :
+					res.Coin > 0 ? LevyUtil.T("Logistics.Sold", res.Items, LevyUtil.Coins(res.Coin), res.Buyer) : LevyUtil.T("Logistics.ShimmeredN", res.Decrafted));
+				a.Sync();
+				foreach (var o in SettlementSystem.Instance?.NetworkedArmories(a) ?? new List<ArmoryTE>()) if (!ReferenceEquals(o, a)) o.Sync();
+			}
+			// the list as it stands now: after a confirm that went through it is empty, after a stale one it is the new list
+			var prev = ClearOut.Preview.Of(a, ClearOut.Build(a, tier, decraft));
+			if (mode == 1) prev.Stale = false;
+			if (Main.netMode == NetmodeID.Server && who >= 0 && who < Main.maxPlayers) { var p = LevyPackets.New(LevyPacket.LogisticsClearOutPreview); prev.Write(p); p.Send(who); }
+			else ClearOut.SetLatest(prev);
 		}
 
 		// ---------------------------------------------------------------- craft now

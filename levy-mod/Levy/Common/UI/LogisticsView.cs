@@ -27,12 +27,12 @@ namespace Levy.Common.UI
 	public class LogisticsView : UIElement
 	{
 		private static string L(string key, params object[] a) => LevyUtil.T("Logistics." + key, a);
-		private const int PageTop = 32, ColL = 232, ColR = 244;
+		private const int PageTop = 32, ColL = 232, ColR = 244, Pages = 5;
 
 		private readonly ArmoryPanel _owner;
 		private ArmoryTE Te => _owner.Te;
-		private readonly LevyButton[] _pageBtn = new LevyButton[4];
-		private readonly UIElement[] _page = new UIElement[4];
+		private readonly LevyButton[] _pageBtn = new LevyButton[Pages];
+		private readonly UIElement[] _page = new UIElement[Pages];
 		private int _cur;
 		private readonly ChoicePopup _popup = new();
 		public readonly ChecklistPanel Checklist = new();
@@ -74,16 +74,16 @@ namespace Levy.Common.UI
 		{
 			_owner = owner;
 			Width.Set(LevyConstants.UI.ArmoryPanelWidth - 20, 0f); Height.Set(LevyConstants.UI.ArmoryBarTop - 36 - 4, 0f);
-			string[] keys = { "PageOrders", "PageBuy", "PageSell", "PageFind" };
-			for (int i = 0; i < 4; i++)
+			string[] keys = { "PageOrders", "PageBuy", "PageSell", "PageFind", "PageClear" };
+			for (int i = 0; i < Pages; i++)
 			{
 				int p = i;
-				_pageBtn[i] = new LevyButton(L(keys[i]), LevyConstants.UI.ButtonTextScale, 110, 24, () => ShowPage(p), L(keys[i] + "Hint"));
-				_pageBtn[i].Left.Set(i * 116, 0f); Append(_pageBtn[i]);
+				_pageBtn[i] = new LevyButton(L(keys[i]), LevyConstants.UI.ButtonTextScale, 100, 24, () => ShowPage(p), L(keys[i] + "Hint"));
+				_pageBtn[i].Left.Set(i * 106, 0f); Append(_pageBtn[i]);
 				_page[i] = new UIElement(); _page[i].Top.Set(PageTop, 0f); _page[i].Width.Set(Width.Pixels, 0f); _page[i].Height.Set(Height.Pixels - PageTop, 0f);
 			}
-			_note = new Label(L("Rule"), 0.7f); _note.Left.Set(4 * 116 + 6, 0f); _note.Top.Set(4, 0f); Append(_note);
-			BuildOrders(); BuildBuy(); BuildSell(); BuildFind();
+			_note = new Label(L("Rule"), 0.7f); _note.Left.Set(Pages * 106 + 6, 0f); _note.Top.Set(4, 0f); Append(_note);
+			BuildOrders(); BuildBuy(); BuildSell(); BuildFind(); BuildClear();
 			FindTarget.Chooser = (cb, cands) => { ShowPage(3); _findPick = cb; };
 			ShowPage(0);
 		}
@@ -94,11 +94,12 @@ namespace Levy.Common.UI
 		{
 			if (_popup.Open) _popup.Remove();
 			StopTyping();
-			for (int i = 0; i < 4; i++) { if (HasChild(_page[i])) RemoveChild(_page[i]); _pageBtn[i].Lit = i == p; }
+			for (int i = 0; i < Pages; i++) { if (HasChild(_page[i])) RemoveChild(_page[i]); _pageBtn[i].Lit = i == p; }
 			_cur = p; Append(_page[p]);
 			if (p == 1) _offerTick = -1000;
 			if (p == 2) _sellDirty = true;
 			if (p == 3) _findDirty = true;
+			if (p == 4) _clearRows = true;
 			Recalculate();
 		}
 
@@ -464,6 +465,68 @@ namespace Levy.Common.UI
 			_grid.Clear(); _sellDirty = true; SoundEngine.PlaySound(SoundID.Coins);
 		}
 
+		// ====================================================================================== CLEAR OUT
+		private LevyButton _clearTierBtn, _clearModeBtn, _clearPreviewBtn, _clearGoBtn; private Label _clearInfo, _clearInfo2, _clearTip;
+		private readonly UIList _clearList = new(); private readonly UIScrollbar _clearBar = new();
+		private int _clearTier = ClearOut.DefaultMilestone; private bool _clearDecraft, _clearRows = true; private int _clearSeen = -1;
+
+		private float ClearTierValue => ClearOut.Milestones[Math.Clamp(_clearTier, 0, ClearOut.Milestones.Length - 1)];
+		private bool _decraftSeen; // multiplayer: what the last list from the server said about the Decrafting Interface
+		private bool CanDecraftKnown => Main.netMode == NetmodeID.SinglePlayer ? Te != null && ClearOut.CanDecraft(Te) : _decraftSeen;
+		/// <summary>The preview the page holds, when it is for this armory, this tier and this mode; null otherwise (the Confirm button stays off until a fresh Preview).</summary>
+		private ClearOut.Preview CurrentPreview { get { var p = ClearOut.Latest; return p != null && Te != null && p.ArmoryId == Te.ID && Math.Abs(p.Tier - ClearTierValue) < 0.001f && p.Decraft == _clearDecraft ? p : null; } }
+
+		private void BuildClear()
+		{
+			var pg = _page[4];
+			float x = 0;
+			var hl = new Label(L("ClearHeader"), 0.8f); pg.Append(hl);
+			_clearTierBtn = new LevyButton("", LevyConstants.UI.ButtonTextScale, 230, 24, () => { _clearTier = (_clearTier + 1) % ClearOut.Milestones.Length; ClearOut.SetLatest(null); }, L("ClearTierHint")); _clearTierBtn.Left.Set(x, 0f); _clearTierBtn.Top.Set(22, 0f); pg.Append(_clearTierBtn);
+			_clearModeBtn = new LevyButton("", LevyConstants.UI.ButtonTextScale, 230, 24, () => { if (CanDecraftKnown) { _clearDecraft = !_clearDecraft; ClearOut.SetLatest(null); } }, L("ClearModeHint")); _clearModeBtn.Left.Set(x, 0f); _clearModeBtn.Top.Set(50, 0f); pg.Append(_clearModeBtn);
+			_clearPreviewBtn = new LevyButton(L("ClearPreview"), LevyConstants.UI.ButtonTextScale, 230, 26, () => { if (Te != null) LogisticsActions.ClearOutPreview(Te, ClearTierValue, _clearDecraft); }, L("ClearPreviewHint")); _clearPreviewBtn.Left.Set(x, 0f); _clearPreviewBtn.Top.Set(82, 0f); pg.Append(_clearPreviewBtn);
+			_clearGoBtn = new LevyButton("", LevyConstants.UI.ButtonTextScale, 230, 30, ClearConfirm, L("ClearConfirmHint")); _clearGoBtn.Left.Set(x, 0f); _clearGoBtn.Top.Set(114, 0f); pg.Append(_clearGoBtn);
+			_clearInfo = new Label("", 0.72f); _clearInfo.Left.Set(x, 0f); _clearInfo.Top.Set(152, 0f); pg.Append(_clearInfo);
+			_clearInfo2 = new Label("", 0.72f); _clearInfo2.Left.Set(x, 0f); _clearInfo2.Top.Set(176, 0f); pg.Append(_clearInfo2);
+			_clearTip = new Label(L("ClearTip"), 0.66f); _clearTip.Left.Set(x, 0f); _clearTip.Top.Set(210, 0f); pg.Append(_clearTip);
+			float lx = 244;
+			_clearList.Left.Set(lx, 0f); _clearList.Top.Set(22, 0f); _clearList.Width.Set(400, 0f); _clearList.Height.Set(300, 0f); _clearList.ListPadding = 2f;
+			_clearBar.Left.Set(lx + 406, 0f); _clearBar.Top.Set(22, 0f); _clearBar.Height.Set(300, 0f); _clearList.SetScrollbar(_clearBar);
+			pg.Append(_clearList); pg.Append(_clearBar);
+		}
+
+		private void ClearConfirm()
+		{
+			var p = CurrentPreview; if (Te == null || p == null || p.Empty || p.NoBuyer) return;
+			LogisticsActions.ClearOutConfirm(Te, p.Tier, p.Decraft, p.Hash);
+			SoundEngine.PlaySound(p.Decraft ? SoundID.Item37 : SoundID.Coins);
+		}
+
+		private static string TierName(int idx) => L("ClearTier" + (int)ClearOut.Milestones[idx]);
+
+		private void TickClear()
+		{
+			if (ClearOut.Latest != null && Te != null && ClearOut.Latest.ArmoryId == Te.ID) _decraftSeen = ClearOut.Latest.CanDecraft;
+			if (!CanDecraftKnown) _clearDecraft = false;
+			var p = CurrentPreview;
+			_clearTierBtn.SetText(L("ClearTierBtn", (int)ClearTierValue, TierName(_clearTier)));
+			_clearModeBtn.SetText(_clearDecraft ? L("ClearModeDecraft") : L("ClearModeSell")); _clearModeBtn.Lit = _clearDecraft; _clearModeBtn.Enabled = CanDecraftKnown;
+			if (p == null) { _clearGoBtn.SetText(L("ClearConfirmNone")); _clearGoBtn.Enabled = false; _clearInfo.SetText(L("ClearPreviewFirst")); _clearInfo2.SetText(""); }
+			else if (p.Empty) { _clearGoBtn.SetText(L("ClearConfirmNone")); _clearGoBtn.Enabled = false; _clearInfo.SetText(L("ClearNone")); _clearInfo2.SetText(""); }
+			else
+			{
+				_clearGoBtn.Enabled = !p.NoBuyer;
+				_clearGoBtn.SetText(p.Decraft ? L("ClearConfirmDecraft", p.Items) : L("ClearConfirmSell", p.Items, LevyUtil.Coins(p.Value)));
+				_clearInfo.SetText(L("ClearSources", p.Items, p.FromArmory, p.FromChests, p.FromNetwork));
+				_clearInfo2.SetText(p.NoBuyer ? L("SellNoBuyer", p.Items) : p.Decraft ? L("ClearDecraftNote") : L("ClearBuyer", p.Buyer, LevyUtil.Coins(p.Value)));
+			}
+			if (_clearRows || _clearSeen != ClearOut.Version)
+			{
+				_clearRows = false; _clearSeen = ClearOut.Version;
+				_clearList.Clear();
+				if (p != null) { foreach (var r in p.Rows) _clearList.Add(new ClearRowEl(r, p.Decraft)); if (p.RowTotal > p.Rows.Count) _clearList.Add(new Label(L("ClearMore", p.RowTotal - p.Rows.Count), 0.7f)); }
+			}
+		}
+
 		// ====================================================================================== FIND
 		private void BuildFind()
 		{
@@ -531,6 +594,7 @@ namespace Levy.Common.UI
 			}
 			if (_cur == 1 && (Main.GameUpdateCount - (uint)_offerTick) > 120) { _offerTick = (int)Main.GameUpdateCount; RefreshOffers(); }
 			if (_cur == 2 && (_sellDirty || ++_sellTick > 60)) { _sellTick = 0; _sellDirty = false; UpdateSellInfo(); }
+			if (_cur == 4) TickClear();
 			if (_cur == 3) { _findLbl.SetText(FindTarget.Target > 0 ? L("FindCurrent", ItemName(FindTarget.Target)) : L("FindNone")); if (_findDirty) RefreshFind(); }
 		}
 
@@ -566,6 +630,32 @@ namespace Levy.Common.UI
 		}
 
 		public bool Typing => (_craftFilter?.Typing ?? false) || (_buyFilter?.Typing ?? false) || (_sellFilter?.Typing ?? false) || (_findFilter?.Typing ?? false);
+	}
+
+	/// <summary>One line of a clear-out preview: the item's icon, its name (with prefix), how many, and what it fetches.</summary>
+	internal class ClearRowEl : UIElement
+	{
+		private readonly ClearOut.Row _r; private readonly bool _decraft; private Item _item;
+		public ClearRowEl(ClearOut.Row r, bool decraft) { _r = r; _decraft = decraft; Width.Set(400, 0f); Height.Set(24, 0f); }
+		protected override void DrawSelf(SpriteBatch sb)
+		{
+			var d = GetDimensions().ToRectangle();
+			var bg = new Color(40, 54, 100) * 0.7f;
+			if (IsMouseHovering) { bg = Color.Lerp(bg, Color.White, 0.15f); Main.LocalPlayer.mouseInterface = true; }
+			sb.Draw(TextureAssets.MagicPixel.Value, d, bg);
+			if (_item == null) { _item = new Item(); _item.SetDefaults(_r.Type); if (_r.Prefix > 0) _item.Prefix(_r.Prefix); }
+			if (_r.Type > 0 && _r.Type < TextureAssets.Item.Length)
+			{
+				Main.instance.LoadItem(_r.Type); var tex = TextureAssets.Item[_r.Type].Value;
+				float sc = Math.Min(1f, 18f / Math.Max(tex.Width, tex.Height));
+				sb.Draw(tex, new Vector2(d.X + 13, d.Y + 12), null, Color.White, 0f, tex.Size() * 0.5f, sc, SpriteEffects.None, 0f);
+			}
+			string name = _item.Name + (_r.Count > 1 ? " x" + _r.Count : "");
+			if (name.Length > 34) name = name.Substring(0, 33) + ".";
+			Utils.DrawBorderString(sb, name, new Vector2(d.X + 28, d.Y + 3), Color.White, 0.78f);
+			if (!_decraft && _r.Value > 0) { string v = LevyUtil.Coins(_r.Value); var sz = FontAssets.MouseText.Value.MeasureString(v) * 0.72f; Utils.DrawBorderString(sb, v, new Vector2(d.Right - 6 - sz.X, d.Y + 4), new Color(255, 225, 120), 0.72f); }
+			if (IsMouseHovering) { Main.HoverItem = _item.Clone(); Main.hoverItemName = _item.Name; }
+		}
 	}
 
 	/// <summary>One recipe of the browser: result icon, name, and how many can be made now. Green when it can be crafted now, dim when a station or condition blocks it.</summary>

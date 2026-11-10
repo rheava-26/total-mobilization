@@ -86,8 +86,8 @@ namespace Levy.Content.TileEntities
 						if (!stockOk.TryGetValue(it.useAmmo, out bool enough)) stockOk[it.useAmmo] = enough = AmmoStockAtLeast(it.useAmmo, LevyConstants.AutoUpgradeMinAmmoStock);
 						return enough;
 					};
-					if (hasW && WeaponClassifier.GetProfile(g.Weapon).Family == WeaponFamily.Whip)
-						lev.Yields = c => WeaponClassifier.GetProfile(c.It).Family == WeaponFamily.Summon; // a whip in hand yields to any minion staff regardless of score (the whip becomes the off-hand)
+					if (hasW && IsSummonerSoldier(rec) && WeaponClassifier.GetProfile(g.Weapon).Family is WeaponFamily.Summon or WeaponFamily.Sentry)
+						lev.Yields = c => WeaponClassifier.GetProfile(c.It).Family == WeaponFamily.Whip; // a staff or sentry in a summoner's hand yields to any whip regardless of score (it becomes a sidearm)
 					lev.Fires = it => HasAmmoFor(it, self, onHand) || (hasW && it.useAmmo > 0 && g.Weapon.useAmmo == it.useAmmo);
 					lev.AllowDry = !hasW; // an issue falls back to a gun with no bullets before it crosses class; an upgrade never trades onto one
 					plan.Levies.Add(lev);
@@ -96,10 +96,10 @@ namespace Levy.Content.TileEntities
 					if (lev.Own != null) plan.Cands.Add(lev.Own);
 					if (!g.IsLocked(SoldierGear.SlotSidearm) && IsIssuableMelee(g.Sidearm) && g.Sidearm.maxStack <= 1)
 						plan.Cands.Add(WeaponAllocator.MakeCand(g.Sidearm, 9, seq++, AllocSlot.Sidearm, lev, null)); // a blade carried as a sidearm: any primary outranks it
-					// A minion staff a levy who is not a summoner carries as his secondary is spare stock too: a summoner who needs a primary staff may have it, and the levy is dealt another later.
+					// A minion staff or sentry a levy who is not a summoner carries as a sidearm is spare stock too: a summoner who needs a primary staff may have it, and the levy is dealt another later.
 					for (int si = 0; si < LevyConstants.MaxSidearms && !IsSummonerSoldier(rec); si++) {
 						int sslot = SoldierGear.SidearmSlotAt(si); var sit = g.Get(sslot);
-						if (g.IsLocked(sslot) || IsAir(sit) || sit.maxStack > 1 || !IsIssuableSummonStaff(sit)) continue;
+						if (g.IsLocked(sslot) || IsAir(sit) || sit.maxStack > 1 || !(IsIssuableSummonStaff(sit) || IsIssuableSentry(sit))) continue;
 						plan.Cands.Add(WeaponAllocator.MakeCand(sit, 9, seq++, AllocSlot.Sidearm, lev, null));
 					}
 				}

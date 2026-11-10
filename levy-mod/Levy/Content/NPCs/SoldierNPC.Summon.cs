@@ -275,18 +275,23 @@ namespace Levy.Content.NPCs
 		// ------------------------------------------------------------------------------------------------------------
 		/// <summary>Measurement switch (env LEVY_SENTRY_OLD=1): the previous sentry behaviour (timeLeft pinned every tick), for A/B runs.</summary>
 		internal static readonly bool SentryOld = Environment.GetEnvironmentVariable("LEVY_SENTRY_OLD") == "1";
-		private int _sentryTick, _sentryCd, _sentryProj = -1, _sentryBorn;
+		private int _sentryTick, _sentryCd, _sentryBorn;
+		private readonly List<int> _sentryIds = new();
 		private readonly List<int> _sentryScratch = new();
 
-		/// <summary>The sentry weapon this soldier keeps a tower for, or null: the primary if it is a sentry, else a sentry carried as the sidearm.</summary>
+		/// <summary>The sentry weapon this soldier keeps towers for, or null: the primary if it is a sentry, else the first sentry carried in any sidearm slot (the hand slot, then the two extra ones).</summary>
 		public Item SentryWeapon()
 		{
 			var g = Record?.Gear;
 			if (g == null) return null;
 			if (g.HasWeapon && _mainProfile != null && _mainProfile.IsSentry && _mainProfile.ItemType == g.Weapon.type) return g.Weapon;
 			if (g.HasSidearm && _sideProfile != null && _sideProfile.IsSentry && _sideProfile.ItemType == g.Sidearm.type) return g.Sidearm;
+			foreach (var x in g.ExtraSidearms) if (x != null && !x.IsAir && x.shoot > 0 && WeaponClassifier.GetProfile(x).IsSentry) return x;
 			return null;
 		}
+
+		/// <summary>How many towers of his sentry staff he keeps standing: one, plus every extra sentry slot his gear gives (the dummy's maxTurrets, as for a player), never past <see cref="LevyConstants.SentryMaxPerSoldier"/>.</summary>
+		public int SentrySlots() => Math.Clamp(Dummy != null ? Dummy.maxTurrets : 1, 1, LevyConstants.SentryMaxPerSoldier);
 
 		/// <summary>A live sentry projectile planted by this soldier.</summary>
 		private bool IsMySentry(Projectile p) => p.active && p.sentry && p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex == NPC.whoAmI;
@@ -300,23 +305,23 @@ namespace Levy.Content.NPCs
 				Projectile p = Main.projectile[i];
 				if (IsMySentry(p)) p.Kill();
 			}
-			_sentryProj = -1;
+			_sentryIds.Clear();
 		}
 
 		/// <summary>Fighting now, or within the grace after the last engagement.</summary>
 		private bool SentryInCombat() => State == SoldierState.Engage || State == SoldierState.Shaken || (int)Main.GameUpdateCount - _lastEngageTick < LevyConstants.SentryCombatGraceTicks;
 
-		/// <summary>Called every combat tick: keeps the standing sentry alive, and (on the maintain interval) plants one when there is none, or a fresh one when the soldier has moved far from it.</summary>
+		/// <summary>Called every combat tick: keeps the standing sentries alive, and (on the maintain interval) plants one when a slot is free, or a fresh one when the soldier has moved far from the farthest.</summary>
 		private void MaintainSentries()
 		{
 			if (_sentryCd > 0) _sentryCd--;
 			// A sentry never times out while its soldier lives: its lifetime is topped up when it runs low. It is NOT pinned every tick: many modded sentries pace themselves on their own
 			// timeLeft (a pulse when timeLeft % N == 1, a bob from sin(timeLeft)), and a timeLeft held at one value every tick makes such a tower fire every tick or never (Rusty Beacon: never).
-			if (_sentryProj >= 0)
+			for (int k = _sentryIds.Count - 1; k >= 0; k--)
 			{
-				Projectile q = Main.projectile[_sentryProj];
+				Projectile q = Main.projectile[_sentryIds[k]];
 				if (IsMySentry(q)) { if (q.timeLeft < (SentryOld ? Projectile.SentryLifeTime : LevyConstants.SentryRefreshBelowTicks)) q.timeLeft = Projectile.SentryLifeTime; }
-				else _sentryProj = -1;
+				else _sentryIds.RemoveAt(k);
 			}
 			if (++_sentryTick < LevyConstants.SentryMaintainIntervalTicks) return;
 			_sentryTick = 0;
@@ -329,37 +334,32 @@ namespace Levy.Content.NPCs
 				if (weapon == null || weapon.shoot <= 0)
 				{
 					foreach (int i in _sentryScratch) Main.projectile[i].Kill();
-					_sentryProj = -1;
+					_sentryIds.Clear();
 					return;
 				}
 
-				// Keep the first sentry of the weapon's type; anything else (a swapped weapon's old tower, a duplicate) goes.
-				Projectile keep = null;
-				int kept = 0;
+				// Keep the towers of the weapon's type up to his sentry slots; anything else (a swapped weapon's old tower, a surplus one) goes.
+				int slots = SentrySlots(), kept = 0;
+				_sentryIds.Clear();
+				Projectile farthest = null; float farD = -1f;
 				foreach (int i in _sentryScratch)
 				{
 					Projectile p = Main.projectile[i];
-					if (p.type != weapon.shoot || kept >= LevyConstants.SentryMaxPerSoldier) { p.Kill(); continue; }
+					if (p.type != weapon.shoot || kept >= slots) { p.Kill(); continue; }
 					kept++;
-					keep ??= p;
+					_sentryIds.Add(i);
+					p.originalDamage = SentryDamage(weapon);
+					p.knockBack = weapon.knockBack;
+					float d = Vector2.DistanceSquared(p.Center, NPC.Center);
+					if (d > farD) { farD = d; farthest = p; }
 				}
 
 				bool inCombat = SentryInCombat();
-				if (keep != null)
-				{
-					_sentryProj = keep.whoAmI;
-					keep.originalDamage = SentryDamage(weapon);
-					keep.knockBack = weapon.knockBack;
-					bool far = Vector2.DistanceSquared(keep.Center, NPC.Center) > Sq(LevyConstants.SentryReplaceDistTiles * LevyConstants.TilePx);
-					bool stale = !Common.Util.LevyUtil.SinglePlayerLike && (int)Main.GameUpdateCount - _sentryBorn > LevyConstants.SentryMpRefreshTicks;
-					if (!((far || stale) && inCombat && _sentryCd <= 0)) return;
-					DeploySentry(weapon, keep);
-					return;
-				}
-
-				_sentryProj = -1;
 				if (_sentryCd > 0 || !inCombat || Record.HoldFire) return;
-				DeploySentry(weapon, null);
+				if (kept < slots) { DeploySentry(weapon, null, kept); return; }
+				bool far = farD > Sq(LevyConstants.SentryReplaceDistTiles * LevyConstants.TilePx);
+				bool stale = !Common.Util.LevyUtil.SinglePlayerLike && (int)Main.GameUpdateCount - _sentryBorn > LevyConstants.SentryMpRefreshTicks;
+				if (far || stale) DeploySentry(weapon, farthest, kept - 1);
 			}
 			catch (Exception e)
 			{
@@ -388,9 +388,9 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>Plants the sentry where the soldier stands (the old one is removed only once the new spot is known to work). Returns false and backs off when no spot was found.</summary>
-		private bool DeploySentry(Item weapon, Projectile replacing)
+		private bool DeploySentry(Item weapon, Projectile replacing, int index)
 		{
-			if (!PlanSentry(weapon, out Vector2 pos, out Vector2 vel, out float ai0, out float ai1, out float localAi0))
+			if (!PlanSentry(weapon, index, out Vector2 pos, out Vector2 vel, out float ai0, out float ai1, out float localAi0))
 			{
 				DudTrace.Note(weapon, "sentry-plan-failed");
 				_sentryCd = LevyConstants.SentryRetryTicks;
@@ -398,13 +398,12 @@ namespace Levy.Content.NPCs
 			}
 			DudTrace.Note(weapon, replacing != null ? "sentry-replant" : "sentry-plant");
 			replacing?.Kill();
-			_sentryProj = -1;
 			Projectile p = WeaponUse.Spawn(this, pos, vel, weapon.shoot, SentryDamage(weapon), weapon.knockBack, DamageClass.Summon, ai0, ai1, 0f);
 			if (p == null) { DudTrace.Note(weapon, "sentry-spawn-null"); _sentryCd = LevyConstants.SentryRetryTicks; return false; }
 			if (localAi0 != 0f) p.localAI[0] = localAi0;
 			p.timeLeft = Projectile.SentryLifeTime;
 			p.netUpdate = true;
-			_sentryProj = p.whoAmI;
+			_sentryIds.Add(p.whoAmI);
 			_sentryBorn = (int)Main.GameUpdateCount;
 			_sentryCd = LevyConstants.SentryReplaceCooldownTicks;
 			// a short cast animation when the sentry weapon is the item in hand
@@ -419,9 +418,10 @@ namespace Levy.Content.NPCs
 		/// ground, the Rainbow Crystal / Lunar Portal staffs hover beside the soldier; any other (modded) sentry rests on the ground below, centred on its own hitbox.
 		/// Returns false when there is no ground in reach or the spot is blocked.
 		/// </summary>
-		private bool PlanSentry(Item weapon, out Vector2 pos, out Vector2 vel, out float ai0, out float ai1, out float localAi0)
+		private bool PlanSentry(Item weapon, int index, out Vector2 pos, out Vector2 vel, out float ai0, out float ai1, out float localAi0)
 		{
 			pos = NPC.Center; vel = Vector2.Zero; ai0 = ai1 = localAi0 = 0f;
+			float cxPx = NPC.Center.X + (index <= 0 ? 0f : ((index + 1) / 2) * LevyConstants.SentrySpreadPx * ((index & 1) == 1 ? 1 : -1)); // a second tower stands beside the first, the next on the other side
 			int shoot = weapon.shoot;
 			Projectile sample = WeaponClassifier.ProjectileSample(shoot);
 			if (sample == null) return false;
@@ -451,11 +451,11 @@ namespace Levy.Content.NPCs
 			var half = new Vector2(sample.width * 0.5f, sample.height * 0.5f);
 			if (air)
 			{
-				pos = new Vector2(NPC.Center.X, NPC.Center.Y - 24f);
+				pos = new Vector2(cxPx, NPC.Center.Y - 24f);
 				return !Collision.SolidCollision(pos - half, sample.width, sample.height);
 			}
 
-			int tx = (int)(NPC.Center.X / LevyConstants.TilePx);
+			int tx = (int)(cxPx / LevyConstants.TilePx);
 			int startRow = (int)((NPC.Bottom.Y - 2f) / LevyConstants.TilePx);
 			if (!FindStandRow(tx, startRow, out int row)) return false;
 			if (dd2)
@@ -476,7 +476,7 @@ namespace Levy.Content.NPCs
 				return aura ? !Collision.SolidTiles(cx, cx, cy - 2, cy) : !WorldGen.SolidTile(cx, cy);
 			}
 			float y = staffDrop ? row * 16 - 40 : row * 16 - (float)Math.Ceiling(sample.height / 2f);
-			pos = new Vector2(NPC.Center.X, y);
+			pos = new Vector2(cxPx, y);
 			return !Collision.SolidCollision(pos - half, sample.width, sample.height);
 		}
 

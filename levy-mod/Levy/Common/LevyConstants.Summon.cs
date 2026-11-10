@@ -67,8 +67,10 @@ namespace Levy.Common
 		// ---------- Sentries ----------
 		/// <summary>Standoff reach (tiles) the brain assumes for a soldier holding only a sentry.</summary>
 		public const int RangeSentry = 36;
-		/// <summary>Sentries one soldier keeps standing at once.</summary>
-		public const int SentryMaxPerSoldier = 1;
+		/// <summary>The most sentries one soldier keeps standing at once (his sentry slots: 1, plus what his gear adds; vanilla gear tops out at 7).</summary>
+		public const int SentryMaxPerSoldier = 8;
+		/// <summary>Horizontal gap in pixels between a soldier's towers when he keeps more than one.</summary>
+		public const float SentrySpreadPx = 56f;
 		/// <summary>A planted sentry's timeLeft is reset to the full vanilla life once it falls under this many ticks (never every tick: see SoldierNPC.MaintainSentries).</summary>
 		public const int SentryRefreshBelowTicks = 600;
 		/// <summary>How often a soldier recounts its sentry and decides whether to plant a new one (ticks). The standing sentry's lifetime is refreshed every tick.</summary>

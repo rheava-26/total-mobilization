@@ -85,13 +85,16 @@ namespace Levy.Common.Logistics
 		}
 
 		/// <summary>The shopkeeper who pays the most for these slots (ties go to the nearer one), and what he pays. Null buyer when no shopkeeper is in reach.</summary>
-		public static (NPC buyer, long total) BestBuyer(ArmoryTE a, IList<int> slots)
+		public static (NPC buyer, long total) BestBuyer(ArmoryTE a, IList<int> slots) => BestBuyer(a, slots.Select(i => a.Storage[i]).ToList());
+
+		/// <summary>The same for a list of items from anywhere (a clear-out's chests and network, not only storage slots).</summary>
+		public static (NPC buyer, long total) BestBuyer(ArmoryTE a, IList<Item> items)
 		{
 			var payer = Shopping.Payer(a); NPC best = null; long bestTotal = -1;
 			if (payer == null) return (null, 0);
 			foreach (var k in Shopping.Keepers(a))
 			{
-				long t = 0; foreach (int i in slots) t += SellValue(payer, k, a.Storage[i]);
+				long t = 0; foreach (var it in items) t += SellValue(payer, k, it);
 				if (t > bestTotal || t == bestTotal && best != null && Math.Abs(k.Center.X - a.Center.X) < Math.Abs(best.Center.X - a.Center.X)) { best = k; bestTotal = t; }
 			}
 			return (best, Math.Max(0, bestTotal));
@@ -142,7 +145,7 @@ namespace Levy.Common.Logistics
 			}
 		}
 
-		private static void Pay(ArmoryTE a, long copper)
+		internal static void Pay(ArmoryTE a, long copper)
 		{
 			var b = a.LinkedBarracks();
 			if (b != null) { EconomySystem.Deposit(b, copper); RosterSystem.SyncBarracks(b); return; }

@@ -25,6 +25,14 @@ namespace Warbands.Common
 			try
 			{
 				string text = System.Text.Encoding.UTF8.GetString(mod.GetFileBytes("Dialogue.txt"));
+				// Player-editable copy: <tModLoader save folder>/Warbands/Dialogue.txt. Written with the default lines on first run; if present, it replaces the built-in lines.
+				try
+				{
+					string dir = System.IO.Path.Combine(Terraria.Main.SavePath, "Warbands"), path = System.IO.Path.Combine(dir, "Dialogue.txt");
+					if (System.IO.File.Exists(path)) { text = System.IO.File.ReadAllText(path, System.Text.Encoding.UTF8); mod.Logger.Info("[Warbands] using your dialogue file: " + path); }
+					else { System.IO.Directory.CreateDirectory(dir); System.IO.File.WriteAllText(path, text, System.Text.Encoding.UTF8); }
+				}
+				catch (Exception e) { mod.Logger.Warn("[Warbands] could not use the editable dialogue file: " + e.Message); }
 				List<string> cur = null;
 				foreach (var raw in text.Split('\n'))
 				{

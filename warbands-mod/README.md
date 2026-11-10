@@ -22,7 +22,9 @@ Eve approved hostile levy bands as a sub-mod: enemy groups you can fight for par
 
 ## Editing the dialogue
 
-Everything a band says is in one plain text file, `Warbands/Dialogue.txt`. Open it in any text editor. `[SPOTTED]`, `[WARNING]`, `[PANIC]`, `[RETREAT]`, `[VICTORY]`, `[DEFEAT]`, `[CHIP_DAMAGE]`, `[LEVY_BANTER]` and the others are situations; each line under one is something a soldier can say, one per row. `{mate}`, `{who}`, `{armor}` and `{n}` are filled in (another soldier's name, your name, your armor set, a number). `[SPOTTED Zealots]` or `[WARNING CorruptZealots]` is a variant for one band style or band type. Lines starting with `#` are notes. Rebuild the mod after editing.
+Everything a band says is in one plain text file, `Warbands/Dialogue.txt`. Open it in any text editor. `[SPOTTED]`, `[WARNING]`, `[PANIC]`, `[RETREAT]`, `[VICTORY]`, `[DEFEAT]`, `[CHIP_DAMAGE]`, `[LEVY_BANTER]` and the others are situations; each line under one is something a soldier can say, one per row. `{mate}`, `{who}`, `{armor}` and `{n}` are filled in (another soldier's name, your name, your armor set, a number). `[SPOTTED Zealots]` or `[WARNING CorruptZealots]` is a variant for one band style or band type. Lines starting with `#` are notes.
+
+You do not need to rebuild the mod: on its first run Warbands copies the file to your tModLoader folder (`Documents/My Games/Terraria/tModLoader/Warbands/Dialogue.txt` on Windows). Edit that copy and restart the game; Warbands reads it instead of the built-in lines. Delete it to get the defaults back.
 
 ## Not done
 

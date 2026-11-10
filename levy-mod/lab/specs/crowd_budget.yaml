@@ -1,0 +1,15 @@
+# crowd budget: the same 36-levy army (sentry + staff on every non-summoner) with the entity budget off and on. The reserve is raised to 700 free projectile slots so the budget has to work at this army size
+# (the shipped reserve is 150; a 36-levy army alone peaks near 450 projectiles). Compare projectile mean/peak, retired counts, and the fight result.
+name: crowd_budget
+boss: hive
+mode: exp
+gear: postwof.best
+levies: 36
+seeds: 1
+bhp: 60
+cap: 100
+xs: "CalamityMod/CausticCroakerStaff+CalamityMod/CausticStaff"
+env: {LEVY_CROWD: 1, LEVY_AUDIOCAP: 1}
+vs:
+  budget_off: {env: {LEVY_CROWD_BUDGET: 0}}
+  budget_on: {env: {LEVY_CROWD_RESERVE: 700}}

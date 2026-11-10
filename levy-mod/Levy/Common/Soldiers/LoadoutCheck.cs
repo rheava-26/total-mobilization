@@ -259,8 +259,26 @@ namespace Levy.Common.Soldiers
 				ArmoryTE.TestServed = new List<SoldierRecord> { melee };
 				te.IssueGear(melee);
 				info("case 1, melee levy, 2 staves + 2 sentries in stock: " + Kit(melee));
-				check("a melee levy carries one sentry staff and one minion staff", Count(melee, SidearmPolicy.IsSentry) == 1 && Count(melee, SidearmPolicy.IsStaff) == 1 && melee.Gear.SidearmCount == 2 && SidearmPolicy.IsSentry(melee.Gear.ExtraSidearms[0]) && SidearmPolicy.IsStaff(melee.Gear.ExtraSidearms[1]), Kit(melee));
-				check("his sentry is the better of the two sentries", melee.Gear.ExtraSidearms[0].type == ItemID.QueenSpiderStaff || melee.Gear.ExtraSidearms[0].type == ItemID.StaffoftheFrostHydra, N(melee.Gear.ExtraSidearms[0]));
+				check("a melee levy carries ONE summon item (a staff or a sentry), not both", melee.Gear.SidearmCount == 1 && Count(melee, SidearmPolicy.IsDeployer) == 1, Kit(melee));
+				check("it is the best summon item in stock", melee.Gear.Sidearms().First(s => !s.IsAir).type == ItemID.QueenSpiderStaff || melee.Gear.Sidearms().First(s => !s.IsAir).type == ItemID.StaffoftheFrostHydra || melee.Gear.Sidearms().First(s => !s.IsAir).type == ItemID.HornetStaff, N(melee.Gear.Sidearms().First(s => !s.IsAir)));
+				// an older kit with both is trimmed to the better one, the other goes back to the shelf
+				var old = new SoldierRecord { Id = 191 };
+				Armor(old, ItemID.SolarFlareHelmet, ItemID.SolarFlareBreastplate, ItemID.SolarFlareLeggings);
+				old.Gear.Weapon = Make(ItemID.TerraBlade); old.Gear.ExtraSidearms[0] = Make(ItemID.StaffoftheFrostHydra); old.Gear.ExtraSidearms[1] = Make(ItemID.ImpStaff);
+				ArmoryTE.TestServed = new List<SoldierRecord> { old };
+				te.UpgradeWeapons(old);
+				check("an older melee kit with a sentry and a staff keeps one of them", Count(old, SidearmPolicy.IsDeployer) == 1, Kit(old));
+				SidearmPolicy.NonSummonersOverride = false;
+				try
+				{
+					var none = new SoldierRecord { Id = 192 };
+					Armor(none, ItemID.SolarFlareHelmet, ItemID.SolarFlareBreastplate, ItemID.SolarFlareLeggings);
+					none.Gear.Weapon = Make(ItemID.TerraBlade); none.Gear.ExtraSidearms[0] = Make(ItemID.HornetStaff);
+					ArmoryTE.TestServed = new List<SoldierRecord> { none };
+					te.UpgradeWeapons(none);
+					check("with the config off a non-summoner carries no summon item", Count(none, SidearmPolicy.IsDeployer) == 0, Kit(none));
+				}
+				finally { SidearmPolicy.NonSummonersOverride = null; }
 			}
 			{ // 2. a gunner: his lesser blade in hand, a sentry and a minion staff in the extra slots
 				var te = Armory(Make(ItemID.Musket), Make(ItemID.MusketBall, 300), Make(ItemID.IronBroadsword)); foreach (var it in Staves()) te.Deposit(it);
@@ -269,7 +287,7 @@ namespace Levy.Common.Soldiers
 				ArmoryTE.TestServed = new List<SoldierRecord> { gun };
 				te.IssueGear(gun);
 				info("case 2, ranged levy: " + Kit(gun));
-				check("a ranged levy carries a gun, a lesser blade, a sentry staff and a minion staff", gun.Gear.Weapon.type == ItemID.Musket && gun.Gear.Sidearm.type == ItemID.IronBroadsword && Count(gun, SidearmPolicy.IsSentry) == 1 && Count(gun, SidearmPolicy.IsStaff) == 1 && WeaponsCarried(gun) == 4, Kit(gun));
+				check("a ranged levy carries a gun, a lesser blade and ONE summon item", gun.Gear.Weapon.type == ItemID.Musket && gun.Gear.Sidearm.type == ItemID.IronBroadsword && Count(gun, SidearmPolicy.IsDeployer) == 1 && WeaponsCarried(gun) == 3, Kit(gun));
 			}
 			{ // 3. a summoner with a whip in stock: whip primary, minion staff + sentry + a one-minion staff
 				var te = Armory(Make(ItemID.ThornWhip), Make(ItemID.PygmyStaff)); foreach (var it in Staves()) te.Deposit(it);

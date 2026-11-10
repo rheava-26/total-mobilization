@@ -95,7 +95,7 @@ namespace Mechanization.Content.NPCs
 			if (!FindPad(spot, out Vector2 pad)) return -1;
 			int active = 0;
 			for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) active++;
-			if (Main.maxNPCs - active < F.NpcSlotReserve) return -1;
+			if (Main.maxNPCs - active < (Levy.Common.Budget.CrowdBudget.On ? System.Math.Min(F.NpcSlotReserve, Levy.Common.Budget.CrowdBudget.ReservedNpc) : F.NpcSlotReserve)) { Levy.Common.Budget.CrowdBudget.NoteDroneGate(); return -1; }
 			return PlaceNew(source, pad);
 		}
 

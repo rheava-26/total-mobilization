@@ -301,6 +301,32 @@ Mods: {
 					Economy: Economy
 					Events: Events
 					Interface: Interface
+					Crowd: Crowd
+				}
+
+				NonSummonersCarrySummonItem: {
+					Label: Non-summoners carry a summon item
+					Tooltip: A levy who is not a summoner carries one minion staff or one sentry, never both. Turn off to give non-summoners none.
+				}
+
+				ArmyEntityBudget: {
+					Label: Army entity budget
+					Tooltip: The army's minions, sentries, lingering shots and drones stand down, oldest first, so the game keeps free projectile and NPC slots for you and the enemy.
+				}
+
+				ReservedProjectileSlots: {
+					Label: Projectile slots kept free
+					Tooltip: The army never takes the game below this many free projectile slots.
+				}
+
+				ReservedNpcSlots: {
+					Label: NPC slots kept free
+					Tooltip: Drones never take the game below this many free NPC slots.
+				}
+
+				ArmySoundVolume: {
+					Label: Army sound volume
+					Tooltip: Volume of every sound the army makes. Lower it to keep the music audible in a big fight.
 				}
 
 				BossHpScalingPercentPerCp: {

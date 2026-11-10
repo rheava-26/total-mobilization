@@ -190,7 +190,7 @@ namespace Levy.Content.TileEntities
 		private static bool IsMeleeTypeFamily(WeaponFamily f) => IsMeleeFamily(f) || f == WeaponFamily.Boomerang || f == WeaponFamily.Whip || f == WeaponFamily.Yoyo || f == WeaponFamily.Flail || f == WeaponFamily.ThrownMelee;
 
 		/// <summary>A weapon the armory may hand out: the classifier accepts it (cached per item type, so scanning a 1000-slot hoard stays cheap).</summary>
-		private static bool IsIssuable(Item it) => !IsAir(it) && WeaponClassifier.IsIssuableWeapon(it) && !(ArmoryRules.Current?.Excluded(it) ?? false); // the armory's own rules (never-use, only-these) bar an item from being issued
+		private static bool IsIssuable(Item it) => !IsAir(it) && WeaponClassifier.IsIssuableWeapon(it) && !ModWeaponGates.Locked(it) && !(ArmoryRules.Current?.Excluded(it) ?? false); // a weapon whose own use gate is shut (Murasama before the Devourer of Gods) is never issued // the armory's own rules (never-use, only-these) bar an item from being issued
 
 		private static bool IsIssuableMelee(Item it) => IsIssuable(it) && IsMeleeFamily(WeaponClassifier.GetProfile(it).Family);
 
@@ -2230,7 +2230,7 @@ namespace Levy.Content.TileEntities
 			if (ReconcileWeaponToArmor(soldier)) changed = true; // the armor may not have followed (margin, locks, stock): a class mismatch is corrected, never upgraded into
 			if (UpgradeAccessories(soldier)) changed = true;
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && UpgradeSidearm(soldier)) changed = true;
-			if (TidySidearms(g)) changed = true; // a second sword, a second whip, a gun beside a melee primary: back to the shelf
+			if (TidySidearms(g, soldier)) changed = true; // a second sword, a second whip, a gun beside a melee primary: back to the shelf
 			if (ReclaimSummonWeapons(soldier)) changed = true; // summoners first: a staff a summoner could still use goes from a non-summoner to him
 			if (UpgradeExtraSidearms(soldier)) changed = true;
 			if (FillEmptySidearms(soldier)) changed = true;

@@ -87,10 +87,11 @@ namespace Mechanization.Content.Relay
 
 		private static bool LivePylonNear(Vector2 c)
 		{
-			var pylons = Main.PylonSystem?.Pylons;
+			var pylons = ArmoryLink.Pylons();
 			return pylons != null && pylons.Count > 0 && ArmoryLink.NearPylon(c, pylons);
 		}
 
-		private static bool LiveOnNetwork(ArmoryTE a) => LivePylonNear(a.Center);
+		/// <summary>On the pylon network by Levy's own rule (a pylon near the armory, or a pylon linking its barracks' settlement), not just "a pylon within 60 tiles of the armory".</summary>
+		private static bool LiveOnNetwork(ArmoryTE a) => Levy.Common.Systems.SettlementSystem.Instance?.IsArmoryOnNetwork(a) ?? LivePylonNear(a.Center);
 	}
 }

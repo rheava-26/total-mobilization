@@ -85,7 +85,7 @@ namespace Levy.Common.Weapons
 			s.AttackCooldown = 1; // fed every tick; the weapon's own cadence lives in the held AI
 
 			if (LiveHolder(s, item) != null) return true;
-			if (_spawned.TryGetValue(idx, out uint last) && now - last < (uint)LevyConstants.HeldRespawnMinTicks) return false;
+			if (_spawned.TryGetValue(idx, out uint last) && now - last < (uint)Math.Max(LevyConstants.HeldRespawnMinTicks, WeaponUse.SwingFloor(item))) return false;
 			if (ModShotKinds.StartWait(item, s.Record.Mana, s.Record.MaxMana)) { DudTrace.Note(item, "held-start-wait"); return false; } // a drain-in-AI holdout starts on a full pool (ModShotKinds.StartFractionTable)
 			_spawned[idx] = now;
 

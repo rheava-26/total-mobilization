@@ -44,6 +44,10 @@ namespace Levy.Common.Globals
 		/// <summary>Ticks a modded minion has been driven, hits it landed, and whether the upkeep ended it on purpose (see SoldierMinions.NoteModdedDeath). Server / single player.</summary>
 		public int Age, Hits;
 		public bool Dismissed;
+		/// <summary>Lab counter: minions / towers the OnSpawn safety net took from the commander for a levy.</summary>
+		public static int SafetyNetAdopted;
+		/// <summary>The game tick this projectile was created on (the budget retires the oldest first). Not synced.</summary>
+		public uint SpawnTick = Main.GameUpdateCount;
 
 		public bool IsSoldierShot => SoldierIndex >= 0;
 		/// <summary>Set once a reflected soldier shot has been re-aimed at its firing soldier (so the bounce-back hits the unit, not the commander).</summary>
@@ -60,6 +64,19 @@ namespace Levy.Common.Globals
 				Cast = true;
 				projectile.npcProj = true;
 				projectile.noDropItem = true;
+			}
+			// SAFETY NET: a minion or tower a levy's gear makes OUTSIDE the gear-upkeep frame (an on-hit, on-hurt or use hook running on his dummy: Calamity's clams and other "summons while worn" effects) names the dummy as its
+			// source. It belongs to that levy, never to the commander: tagged to him and adopted as a driven minion, so it is counted in his flock and does not take the commander's minion slots.
+			if (SoldierIndex < 0 && (projectile.minion || projectile.sentry) && LevyUtil.IsServerOrSingle && GearUpkeep.Body == null && source is EntitySource_Parent { Entity: Player srcPlayer } && Owner.SoldierOwner.IsDummy(srcPlayer))
+			{
+				SoldierNPC frameBody = Owner.SoldierOwner.CurrentBody;
+				if (frameBody != null && !frameBody.Hostile && frameBody.NPC.active)
+				{
+					SoldierIndex = frameBody.NPC.whoAmI;
+					projectile.npcProj = true; projectile.noDropItem = true;
+					if (projectile.minion && !projectile.sentry) { projectile.owner = SoldierNPC.DummySlot; projectile.friendly = true; projectile.hostile = false; Cast = false; }
+					SafetyNetAdopted++;
+				}
 			}
 			if (source is EntitySource_Parent { Entity: NPC npc })
 			{

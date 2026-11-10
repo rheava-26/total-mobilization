@@ -111,6 +111,14 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool Nameplates;
 		[DefaultValue(MilitiaDeathMessageMode.Count)] [DrawTicks] public MilitiaDeathMessageMode MilitiaDeathMessages;
 		[DefaultValue(true)] public bool RegularDeathMessages;
+
+		// ---- Crowd ------------------------------------------------------------------------------------------
+		[Header("Crowd")]
+		[DefaultValue(true)] public bool NonSummonersCarrySummonItem;
+		[DefaultValue(true)] public bool ArmyEntityBudget;
+		[Range(50, 400)] [DefaultValue(150)] public int ReservedProjectileSlots;
+		[Range(10, 100)] [DefaultValue(40)] public int ReservedNpcSlots;
+		[Range(0.1f, 1f)] [Increment(0.05f)] [DefaultValue(0.6f)] public float ArmySoundVolume;
 	}
 
 	/// <summary>What frightens levies during a boss fight.</summary>

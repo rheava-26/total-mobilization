@@ -227,7 +227,7 @@ namespace Levy.Common.Systems
 		}
 
 		/// <summary>Test seam (boot self-check only): replaces the world's pylon list. Null in play.</summary>
-		internal static IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> PylonListOverride { get => _pylonOverride; set { _pylonOverride = value; Instance?._netStamp_Reset(); } }
+		public static IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> PylonListOverride { get => _pylonOverride; set { _pylonOverride = value; Instance?._netStamp_Reset(); } }
 		private static IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> _pylonOverride;
 		private void _netStamp_Reset() => _netStamp = uint.MaxValue;
 		private static IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> Pylons() => _pylonOverride ?? Main.PylonSystem?.Pylons;
@@ -279,6 +279,20 @@ namespace Levy.Common.Systems
 		}
 
 		private static bool NearPylon(ArmoryTE a, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons) => NearPylon(a.Center, pylons);
+
+		/// <summary>
+		/// True when this armory is on the pylon network by the same rule <see cref="NetworkedArmories"/> uses: a pylon within <see cref="LevyConstants.PylonShareRadius"/> tiles of the armory itself, OR the armory belongs to a
+		/// barracks whose settlement is linked by a pylon (a pylon in the settlement area, or near the barracks, the armory or a housed townsperson's home). Companion mods ask this instead of re-deriving the distance test.
+		/// </summary>
+		public virtual bool IsArmoryOnNetwork(ArmoryTE a)
+		{
+			if (a == null) return false;
+			var pylons = Pylons();
+			if (pylons == null || pylons.Count == 0) return false;
+			if (NearPylon(a, pylons)) return true;
+			var home = a.LinkedBarracks();
+			return home != null && LinkOf(home).Linked;
+		}
 
 		/// <summary>True when a world position is within <see cref="LevyConstants.PylonShareRadius"/> tiles of any pylon (the pylon network the logistics screen trades over).</summary>
 		public static bool OnPylonNet(Vector2 c) { var p = Pylons(); return p != null && p.Count > 0 && NearPylon(c, p); }

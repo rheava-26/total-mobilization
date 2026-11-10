@@ -1,27 +1,31 @@
-# Warbands (v0.1.0): hostile levy bands, a Levy sub-mod
+# Warbands (v0.2.0): hostile levy bands, a Levy sub-mod
 
-Eve approved hostile levy bands as a sub-mod: enemy groups you can fight for part of their loot, biome-specific, and the Lunatic Cultist's circle fighting as a group that juke-flies. This folder is phase 1: the numbers, the rules, and a working skeleton. Design tenet from `levy-mod/NORTH_STAR.md`: difficulty comes from a scarier enemy, never from nerfing the player's army.
+Eve approved hostile levy bands as a sub-mod: enemy groups you can fight for part of their loot, biome-specific, running Levy's real soldier brain. Design tenet from `levy-mod/NORTH_STAR.md`: difficulty comes from a scarier enemy, never from nerfing the player's army.
 
-- `docs/TTK.md`: the time-to-kill lab (4 stages, Master and Classic), what it says and the proposed rules.
-- `SEAMS.md`: every Levy symbol Warbands touches, and what Levy needs before the real soldier brain can run a hostile body (phase 2).
+- `docs/TTK.md`: the time-to-kill lab (phase 1) and the proposed stat rules.
+- `docs/FIGHT_LAB.md`: phase 2 fight comparison (Levy-AI band vs Fighter-AI band vs ordinary enemies, Expert).
+- `docs/item_preview_4x.png`: the 20 summoning items at 4x. `tools/make_art.py` redraws them.
+- `docs/LORE_FACTIONS.md`: Calamity factions used for names and chatter when Calamity is loaded.
+- `SEAMS.md`: every Levy symbol Warbands touches and the Levy edits (the HOSTILE SEAM).
 - `Warbands/`: the mod. Build exactly like Mechanization (`modReferences = Levy`).
 
 ## What exists
 
-- **Spawner** (`BandSpawner`): once a minute per player in the open, 4% by default, one band at a time, nothing before the first stage (default post-EoW/BoC), no bands during invasions, blood moons or eclipses. Band of 3 to 5. A band appears 40 to 70 tiles to one side on solid ground. All of it is in `WarbandsConfig`.
-- **Rosters** (`BandData`): 9 biomes (Forest, Underground, Corruption, Crimson, Desert, Snow, Jungle, Hallow, Underworld) x 4 stages (pre-boss, post-EoW, early Hardmode, post-Plantera); the stages in between use the nearest earlier roster. Real vanilla weapons, ammo and armor from the same tiers Levy's gear presets use (Forest deserters carry wooden bows and copper swords before the first boss). The self-check holds every item to Levy's own progression tier for its stage.
-- **Soldiers** (`BandSoldier`): a hostile NPC drawn through the player renderer in its real armor and weapon. Vanilla's Fighter AI (which Levy's targeting already points at levies as well as the player) plus a shooter layer: archers and mages hold at range, step back when closed on, jump to juke, and fire real hostile arrows, bullets or bolts at the nearest of the player and the levies. Members of a band share an attack token (2 attackers at once up to 4 members). Stats from `BandStats`. On death each piece of gear drops with the configured chance (35%).
-- **Cultist circle** (`CultistBandGlobal`): Cultist Archers and Lunatic Devotees within 60 tiles of a player or levy fly, strafe, weave and fire at the nearest target, with damage from the same stage cap.
-- **Self-check**: `[Warbands] self-check done pass=N fail=0` on a dedicated server boot (`WARBANDS_CHECK=0` skips).
-- **TTK lab**: `WARBANDS_TTK=1 WARBANDS_OUT=out.tsv` on a headless boot.
+- **Levy brain on the enemy side** (`BandLevyNPC : SoldierNPC`): Levy's movement (hooks, wings, double jumps, dodging), weapon use, firing-spot search and standoff run on a hostile body. Targets are the player (through an invisible `PlayerStandIn` NPC on each player), the player's levies, officers, summoned units, drones and turrets, and levies shoot them back. Shots are hostile-owned with the halving rule; damage intake is a normal enemy's (vanilla hit immunity, no player i-frames); life, defense and damage come from `BandStats`; the loadout is a record built from the roster that never enters Levy's roster.
+- **20 band types** (`BandTypes`), each with a Work Bench summoning item (wood plus a few cheap materials): Forest Deserters, Iron Brigands, Dune Raiders, Snow Rangers, Corrupt Zealots, Crimson Flesh-Cult, Jungle Poachers, Meteor Marauders, Ashland Scavengers, Dungeon Wardens, Hive Raiders, Hallow Paladins, Mythril Mercenaries, Hellfire Legion, Titanium Legion, Chlorophyte Wardens, Shroomite Raiders, Frost Legion, Dungeon Ritualists, Cultist Archers. Beating a whole band pays a bounty; members drop a share of their gear (35% per weapon, 25% per armor piece).
+- **Obviously enemies:** red nameplate and red life bar, a red pennant and sash, their own name list (rank + first name).
+- **Brains:** morale (chip damage on an armoured player, comrades one-tapped, low life) makes a member panic and run, and 60% carry a Recall potion; band chatter over their heads in Levy's dialogue voice; class-adaptive tactics (keep range from a melee foe, close in on a gunner or caster, flank a summoner); rotating aggro for ranged bands (the attacked side falls back while the other fires); warning bands ("Turn back.") attack only if you stay or close in.
+- **Cultists:** Lunatic Devotees keep chanting and cast slow homing orbs; Cultist Archers become a levy-AI band.
+- **Spawner:** natural bands as before (4% per minute, post-EoW by default); band size is the config range plus one per ten active levies, at most 8.
+- **Self-check:** `[Warbands] self-check done pass=N fail=0` on a dedicated server boot. `WARBANDS_LIVE=check` runs 32 scripted scenarios (Levy brain, both-way damage, no i-frames, warning, tactics, rotation, morale and Recall, chatter, all 20 items, bounty, cultists, recipes); `WARBANDS_LIVE=fight WARBANDS_OUT=f.tsv WARBANDS_SEEDS=6` runs the fight comparison.
 
-## Not done (needs Levy, see SEAMS.md)
+## Not done
 
-The band does not run Levy's soldier brain (weapon use, hooks, formations, fear). The soldiers are visually unverified (the check ran headless; the player-renderer path falls back to a placeholder sprite if it throws). The spawner's timed roll is not exercised headless (a dedicated server with nobody online does not tick the world); the spawn, stats, shooting and Cultist AI are exercised directly by the self-check.
+Summon staves and sentries on hostile bodies; the draw path is unverified headless (red plate, pennant, player-renderer body); multiplayer is exercised only through the packet path, not with a real client.
 
 ## Testing
 
 ```
-build:  dotnet tModLoader.dll -server -build <abs path to warbands-mod/Warbands> -tmlsavedirectory <copy of the save dir with Levy.tmod>   (Levy built first; enabled.json empty while building)
+build:  dotnet tModLoader.dll -server -build <abs path to the mod> -tmlsavedirectory <copy of the save dir>   (Levy first, then Warbands; enabled.json empty while building)
 boot:   enabled.json ["Levy","Warbands"], -world <any world>, read tModLoader-Logs/server.log for "[Warbands]"
 ```

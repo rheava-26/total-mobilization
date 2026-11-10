@@ -74,7 +74,7 @@ namespace Warbands.Content.NPCs
 			Player p = Who;
 			if (!IsAlive || Main.netMode == NetmodeID.MultiplayerClient) return;
 			var reason = PlayerDeathReason.ByNPC(attacker.whoAmI);
-			if (Main.netMode == NetmodeID.Server) { p.Hurt(reason, damage, dir, out Player.HurtInfo info); NetMessage.SendPlayerHurt(p.whoAmI, info); }
+			if (Main.netMode == NetmodeID.Server) { p.Hurt(reason, damage, dir, out Player.HurtInfo info); if (Netplay.Clients[p.whoAmI].State == 10) NetMessage.SendPlayerHurt(p.whoAmI, info); }
 			else p.Hurt(reason, damage, dir);
 		}
 	}

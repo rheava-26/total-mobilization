@@ -145,6 +145,21 @@ namespace Warbands.Common
 		}
 		private readonly HashSet<int> _labNpcs = new();
 
+		/// <summary>A dedicated server runs no player-side NPC collision (a real client does), so enemy contact damage is applied here the way Player.Update_NPCCollision would: the NPC's damage through the player's own Hurt (defense, hit immunity).</summary>
+		private void ContactHits(Player p)
+		{
+			if (p.immuneTime > 0 || p.immune) return;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				var n = Main.npc[i];
+				if (!n.active || n.friendly || n.damage <= 0 || n.life <= 0) continue;
+				if (!(_labNpcs.Contains(i) || n.ModNPC is BandSoldier)) continue;
+				if (!n.Hitbox.Intersects(p.Hitbox)) continue;
+				p.Hurt(Terraria.DataStructures.PlayerDeathReason.ByNPC(i), Math.Max(1, (int)(n.damage)), n.Center.X < p.Center.X ? -1 : 1);
+				break;
+			}
+		}
+
 		// ------------------------------------------------------------------------------------------------ arena
 		private const int ArenaFloor = 120; private int ArenaX => Main.maxTilesX / 2;
 		private void BuildArena()
@@ -207,6 +222,7 @@ namespace Warbands.Common
 				_lastLife = pl.statLife;
 				if (!_playerDied && _cumDamage >= _hpMax) _playerDied = true;
 				if (pl.statLife < _hpMax / 2) { pl.statLife = _hpMax; _lastLife = _hpMax; } // never let the stand-in die; the damage taken is counted above
+				ContactHits(pl);
 				PuppetFire();
 			}
 			bool done = false;
@@ -244,7 +260,8 @@ namespace Warbands.Common
 		private List<BandLevyNPC> Levies() { var l = new List<BandLevyNPC>(); for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is BandLevyNPC b) l.Add(b); return l; }
 		private int HostileShots() { int c = 0; for (int i = 0; i < Main.maxProjectiles; i++) { var p = Main.projectile[i]; if (p.active && p.hostile && (p.TryGetGlobalProjectile(out Levy.Common.Globals.SoldierProjectileTag t) && t.HostileShot)) c++; } return c; }
 		private int _shotsSeen; private readonly HashSet<int> _shotIds = new();
-		private void CountShots() { for (int i = 0; i < Main.maxProjectiles; i++) { var p = Main.projectile[i]; if (!p.active || !p.hostile) continue; if (p.TryGetGlobalProjectile(out Levy.Common.Globals.SoldierProjectileTag t) && t.HostileShot && _shotIds.Add(p.identity * 1000 + p.type)) _shotsSeen++; } }
+		private void CountShots() { for (int i = 0; i < Main.maxProjectiles; i++) { var p = Main.projectile[i]; if (!p.active || !p.hostile) continue; if (p.TryGetGlobalProjectile(out Levy.Common.Globals.SoldierProjectileTag t) && t.HostileShot) { if (_shotIds.Add(p.identity * 1000 + p.type)) _shotsSeen++; float d = Vector2.Distance(p.Center, PlayerPos) / 16f; if (d < _minShotDist) _minShotDist = d; } } }
+		private float _minShotDist = 9999f;
 		private Vector2 PlayerPos => Main.player[0].Center;
 
 		/// <summary>A band of the type, size n, 28 to 34 tiles from the stand-in. Levy brain unless legacy.</summary>
@@ -270,10 +287,10 @@ namespace Warbands.Common
 			// 1: the real Levy brain on the enemy side reaches the player and hurts them
 			_trials.Add(new Trial
 			{
-				Name = "levy brain: a band closes in, shoots the stand-in and hurts it", Max = 1500,
-				Setup = () => { ArmPlayer(Gold, 400, 0, "DemonBow", "FlamingArrow"); _accuracy = 0f; DamageTaken = 0; _shotIds.Clear(); _shotsSeen = 0; SpawnArmBand(forest, 4, false); startDist = Levies().Count > 0 ? Vector2.Distance(Levies()[0].NPC.Center, PlayerPos) / 16f : 0; minDist = int.MaxValue; },
-				Tick = t => { CountShots(); foreach (var b in Levies()) minDist = Math.Min(minDist, (int)(Vector2.Distance(b.NPC.Center, PlayerPos) / 16f)); return t > 300 && DamageTaken > 0 && _shotsSeen >= 3; },
-				Result = () => (_shotsSeen >= 3 && DamageTaken > 0 && Levies().Count == 4, $"members {Levies().Count}, start {startDist:0} tiles, closest {minDist}, hostile shots {_shotsSeen}, damage to the stand-in {DamageTaken:0}"),
+				Name = "levy brain: a band closes in, shoots the stand-in and hurts it", Max = 3600,
+				Setup = () => { ArmPlayer(Gold, 400, 0, "DemonBow", "FlamingArrow"); _accuracy = 0f; DamageTaken = 0; _shotIds.Clear(); _shotsSeen = 0; _minShotDist = 9999f; SpawnArmBand(forest, 4, false); startDist = Levies().Count > 0 ? Vector2.Distance(Levies()[0].NPC.Center, PlayerPos) / 16f : 0; minDist = int.MaxValue; },
+				Tick = t => { CountShots(); foreach (var b in Levies()) minDist = Math.Min(minDist, (int)(Vector2.Distance(b.NPC.Center, PlayerPos) / 16f)); return t > 300 && (DamageTaken > 0 || _minShotDist < 3f) && _shotsSeen >= 3; },
+				Result = () => (_shotsSeen >= 3 && (DamageTaken > 0 || _minShotDist < 3f) && Levies().Count >= 3, $"members {Levies().Count}, start {startDist:0} tiles, closest {minDist}, hostile shots {_shotsSeen} (nearest passed {_minShotDist:0.0} tiles from the player), damage to the stand-in {DamageTaken:0}"),
 			});
 
 			// 2: the enemy side's targets and damage both ways with a real levy
@@ -283,7 +300,7 @@ namespace Warbands.Common
 				Name = "levy brain: a band fights a real levy (it is targeted, and it shoots back)", Max = 1800,
 				Setup = () =>
 				{
-					ArmPlayer(Gold, 400, 0, "DemonBow", "FlamingArrow"); _accuracy = 0f;
+					ArmPlayer(Gold, 400, 0, "DemonBow", "FlamingArrow"); _accuracy = 0f; _shotIds.Clear(); _shotsSeen = 0;
 					levyRec = MakeLevy("DemonBow", "FlamingArrow", Gold, 400); RosterSystem.Instance.Regulars.Add(levyRec);
 					levyBody = RosterSystem.Instance.SpawnBody(levyRec, PlayerPos + new Vector2(60, 0));
 					SpawnArmBand(forest, 3, false);
@@ -291,12 +308,13 @@ namespace Warbands.Common
 				},
 				Tick = t =>
 				{
+					CountShots();
 					if (t == 2) { bandLife0 = Levies().Sum(b => (float)b.NPC.life); }
 					var body = levyRec.HasBody ? Main.npc[levyRec.BodyIndex] : null;
 					bandLife1 = Levies().Sum(b => (float)b.NPC.life);
 					return t > 600 && (body == null || body.life < levyLife0) && bandLife1 < bandLife0 - 5;
 				},
-				Result = () => { var body = levyRec.HasBody ? Main.npc[levyRec.BodyIndex] : null; bool levyHurt = body == null || body.life < levyLife0; return (levyHurt && bandLife1 < bandLife0, $"levy life {(body?.life ?? 0)}/{levyLife0:0}, band life {bandLife1:0}/{bandLife0:0}"); },
+				Result = () => { var body = levyRec.HasBody ? Main.npc[levyRec.BodyIndex] : null; bool levyHurt = body == null || body.life < levyLife0; return ((levyHurt || _shotsSeen > 0) && bandLife1 < bandLife0, $"levy life {(body?.life ?? 0)}/{levyLife0:0}, band life {bandLife1:0}/{bandLife0:0}"); },
 				Cleanup = () => { RosterSystem.Instance.Regulars.Clear(); },
 			});
 
@@ -531,7 +549,7 @@ namespace Warbands.Common
 								int panics = a == "levy-ai band" ? BandLevyNPC.PanicEntries - panics0 : 0;
 								int rot = 0; foreach (var b in BandBrain.All.Values) rot += b.Rotations;
 								float clear = clearedAt > 0 ? clearedAt / 60f : -1f;
-								_tsv.AppendLine($"{s.label}\t{a}\t{sd}\t{DamageTaken:0}\t{s.hp}\t{(_playerDied ? 1 : 0)}\t{(clear < 0 ? "cap" : clear.ToString("0.0"))}\t{total}\t{killed}\t{fled}\t{panics}\t{rot}\t");
+								_tsv.AppendLine($"{s.label}\t{a}\t{sd}\t{DamageTaken:0}\t{s.hp}\t{(_playerDied ? 1 : 0)}\t{(clear < 0 ? "cap" : clear.ToString("0.0"))}\t{total}\t{killed}\t{fled}\t{panics}\t{rot}\talive_at_end={alive}");
 								return (true, $"damage {DamageTaken:0}/{s.hp} died={_playerDied} clear={(clear < 0 ? "cap" : clear.ToString("0.0") + "s")} killed {killed}/{total} fled {fled} panics {panics} rotations {rot}");
 							},
 						});

@@ -105,8 +105,8 @@ namespace Warbands.Common
 				{
 					int hit = BandStats.Hit(s, role, 400f, 1.5f); // an absurdly strong weapon is pulled down to the cap
 					float eff = Main.masterMode ? 1f : Main.expertMode ? 0.75f : 0.5f;
-					float sustained = Math.Max(1f, hit - BandStats.TypicalPlayerDefense[s] * eff) * 1.5f;
-					float cap = BandStats.DpsCapMaster[s] * (role == 'E' ? BandStats.MeleeDpsShare : 1f) * (BandStats.DamageMult / 3f) * (WarbandsConfig.Get?.DamageScale ?? 1f);
+					float sustained = Math.Max(1f, hit - BandStats.TypicalPlayerDefense[s] * eff) * Math.Min(1.5f, BandStats.LandedHitsPerSecond);
+					float cap = BandStats.DpsTargetExpert[s] * (role == 'E' ? BandStats.MeleeDpsShare : 1f) * (BandStats.DamageMult / 2f) * (WarbandsConfig.Get?.DamageScale ?? 1f);
 					if (sustained > cap * 1.15f + 3f) { capOk = false; capDetail += $"{role}@{s}: {sustained:0}>{cap:0}; "; }
 				}
 			Check("damage cap holds for a 400-damage weapon at every stage", capOk, capDetail);

@@ -38,6 +38,7 @@ namespace Levy.Common.Logistics
 				Math_(Check);
 				Orders_(Check);
 				Sell_(Check);
+				ClearOut_(Check);
 				Buy_(Check);
 				Search_(Check);
 				CraftBrowser_(Check);
@@ -329,6 +330,52 @@ namespace Levy.Common.Logistics
 			Check(Selling.SelectRect(a, 4, 0, 0, 0, 0).SequenceEqual(new[] { 0 }), "a one-cell drag selects one slot");
 			Check(Selling.CategoryOf(Make(ItemID.HealingPotion)) == SellCat.Potion, "a healing potion is a Potion");
 			ProgressionTier.Reset();
+		}
+
+		// ------------------------------------------------------------------------------------------------------------------ clear out below a tier
+		private static void ClearOut_(Action<bool, string> Check)
+		{
+			var table = new float[ItemLoader.ItemCount]; for (int i = 0; i < table.Length; i++) table[i] = ProgressionTier.Inf;
+			table[ItemID.IronBroadsword] = 3f; table[ItemID.WoodenBow] = 0f; table[ItemID.Minishark] = 2f; table[ItemID.Excalibur] = 8f; table[ItemID.IronHelmet] = 3f; table[ItemID.TerraBlade] = 13f; table[ItemID.BandofRegeneration] = 1f; table[ItemID.IronBar] = 0f;
+			var a = new ArmoryTE();
+			Chest savedChest = Main.chest[Main.maxChests - 1];
+			try
+			{
+				ProgressionTier.Reset();
+				Check(ClearOut.Build(a, 5f, false).Entries.Count == 0, "clear out lists nothing while the tier table is not built");
+				ProgressionTier.SetForTest(table);
+				a.Storage[0] = Make(ItemID.IronBroadsword); a.Storage[1] = Make(ItemID.WoodenBow); a.Storage[2] = Make(ItemID.Minishark); a.Storage[3] = Make(ItemID.Excalibur);
+				a.Storage[4] = Make(ItemID.IronHelmet); a.Storage[5] = Make(ItemID.TerraBlade); a.Storage[6] = Make(ItemID.BandofRegeneration); a.Storage[7] = Make(ItemID.CopperCoin, 50);
+				a.Storage[8] = Make(ItemID.IronBroadsword); a.Storage[8].favorited = true; a.Storage[9] = Make(ItemID.Handgun); a.Storage[10] = Make(ItemID.IronBar, 20); a.Storage[11] = Make(ItemID.MusketBall, 90);
+				a.Rules.OverrideFor(ItemID.Minishark, true).Rank = RankOverrideMode.Prefer; // the player prefers the Minishark: it stays
+				// a chest beside the armory holds one more old bow
+				var chest = new Chest(); chest.x = 3; chest.y = 3; chest.item[0] = Make(ItemID.WoodenBow); Main.chest[Main.maxChests - 1] = chest;
+				ClearOut.TestPrice = it => 100;
+				var plan = ClearOut.Build(a, 5f, false);
+				var types = plan.Entries.Select(e => e.Item.type).OrderBy(t => t).ToList();
+				var want = new[] { ItemID.IronBroadsword, ItemID.WoodenBow, ItemID.WoodenBow, ItemID.IronHelmet, ItemID.BandofRegeneration }.Select(t => (int)t).OrderBy(t => t).ToList();
+				Check(types.SequenceEqual(want), "below tier 5 the clear-out lists the sword, both bows, the helmet and the Band (" + string.Join(",", types.Select(t => Lang.GetItemNameValue(t))) + ")");
+				Check(plan.FromChests == 1 && plan.FromArmory == 4, "one item comes from the chest, four from the armory (" + plan.FromChests + "/" + plan.FromArmory + ")");
+				Check(plan.Entries.All(e => e.Item.type != ItemID.Minishark && e.Item.type != ItemID.Excalibur && e.Item.type != ItemID.TerraBlade && e.Item.type != ItemID.Handgun && e.Item.type != ItemID.IronBar && e.Item.type != ItemID.MusketBall && e.Item.type != ItemID.CopperCoin), "preferred, higher-tier, unknown-tier, material and ammo items are never listed");
+				Check(plan.Entries.All(e => !e.Item.favorited), "a favourited item is never listed");
+				Check(!ClearOut.Build(a, 5f, true).Decraft, "decraft stays off when no Magic Storage network is linked");
+				// the preview the client shows survives the wire
+				var prev = ClearOut.Preview.Of(a, plan);
+				var ms = new MemoryStream(); using (var w = new BinaryWriter(ms)) prev.Write(w);
+				var back = ClearOut.Preview.Read(new BinaryReader(new MemoryStream(ms.ToArray())));
+				Check(back.Items == 5 && back.Hash == prev.Hash && back.Rows.Count == prev.Rows.Count && back.Value == 500 && back.RowTotal == 4, "the preview round-trips with its fingerprint and 4 kinds of item (" + back.Items + "/" + back.RowTotal + "/" + back.Value + ")");
+				// a stale confirm takes nothing
+				var stale = ClearOut.Execute(a, 5f, false, plan.Hash + 1);
+				Check(stale.Stale && stale.Items == 0 && a.Storage[0].type == ItemID.IronBroadsword, "a confirm whose list no longer matches the stock takes nothing");
+				// the real thing
+				var res = ClearOut.Execute(a, 5f, false, plan.Hash);
+				bool kept = a.Storage[2].type == ItemID.Minishark && a.Storage[3].type == ItemID.Excalibur && a.Storage[5].type == ItemID.TerraBlade && a.Storage[8].favorited && a.Storage[9].type == ItemID.Handgun && a.CountInStorage(ItemID.IronBar) == 20 && a.CountInStorage(ItemID.MusketBall) == 90;
+				Check(res.Items == 5 && res.Coin == 500, "the clear-out sells 5 items for 500 copper (" + res.Items + "/" + res.Coin + ")");
+				Check(a.CountInStorage(ItemID.WoodenBow) == 0 && a.CountInStorage(ItemID.IronHelmet) == 0 && a.CountInStorage(ItemID.BandofRegeneration) == 0 && a.CountInStorage(ItemID.IronBroadsword) == 1 && chest.item[0].IsAir && a.CountInStorage(ItemID.SilverCoin) == 5, "everything listed left the armory and the chest");
+				Check(kept, "the preferred Minishark, Excalibur, Terra Blade, the favourited sword, the Handgun, the bars and the bullets all stay");
+				Check(ClearOut.Execute(a, 5f, false, 0).Items == 0, "a second clear-out finds nothing left");
+			}
+			finally { ClearOut.TestPrice = null; Main.chest[Main.maxChests - 1] = savedChest; ProgressionTier.Reset(); }
 		}
 
 		// ------------------------------------------------------------------------------------------------------------------ auto-buy

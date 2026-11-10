@@ -23,9 +23,18 @@ namespace Levy.Common.Compat.MagicStorageLink
 			NetworkStocks.Provider = ProviderFor;
 			NetworkStocks.HasStation = HasStation;
 			NetworkStocks.ItemTypes = ItemTypes;
+			NetworkStocks.CanDecraft = CanDecraft;
 		}
 
-		public static void Unregister() { NetworkStocks.Provider = null; NetworkStocks.HasStation = null; NetworkStocks.ItemTypes = null; }
+		public static void Unregister() { NetworkStocks.Provider = null; NetworkStocks.HasStation = null; NetworkStocks.ItemTypes = null; NetworkStocks.CanDecraft = null; }
+
+		/// <summary>True when a Decrafting Interface (Magic Storage's shimmer module) is joined to the armory's network.</summary>
+		private static bool CanDecraft(ArmoryTE a)
+		{
+			var heart = HeartFor(a); if (heart == null) return false;
+			foreach (var _ in heart.ComponentManager.GetDecraftingAccessEntities()) return true;
+			return false;
+		}
 
 		/// <summary>The storage heart of the network that an Armory Heart serving <paramref name="a"/> is joined to, or null.</summary>
 		public static TEStorageHeart HeartFor(ArmoryTE a)
@@ -57,7 +66,7 @@ namespace Levy.Common.Compat.MagicStorageLink
 
 	/// <summary>A Magic Storage network as a stock: counts, withdraws and deposits through the storage heart, so Magic Storage does its own netcode, sorting and security.</summary>
 	[JITWhenModsEnabled("MagicStorage")]
-	public sealed class MsNetworkStock : IStock
+	public sealed class MsNetworkStock : IStockItems
 	{
 		private readonly TEStorageHeart _heart;
 		public MsNetworkStock(TEStorageHeart heart) { _heart = heart; }
@@ -89,5 +98,23 @@ namespace Levy.Common.Compat.MagicStorageLink
 			_heart.TryDeposit(item);
 			return item.IsAir ? null : item;
 		}
+
+		public IEnumerable<Item> Items() => _heart.GetStoredItems().Where(i => i != null && !i.IsAir).ToList();
+
+		/// <summary>Withdraws through the heart by exact type and prefix, so a prefixed weapon comes out whole and Magic Storage keeps its own sorting and security.</summary>
+		public long TakeExact(Item like, long n)
+		{
+			long taken = 0;
+			while (taken < n)
+			{
+				var want = like.Clone(); want.stack = (int)Math.Min(n - taken, Math.Max(1, want.maxStack));
+				var got = _heart.TryWithdraw(want, true);
+				if (got == null || got.IsAir || got.type != like.type) break;
+				taken += got.stack;
+			}
+			return taken;
+		}
+
+		public bool Protected(Item it) => false;
 	}
 }

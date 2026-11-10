@@ -754,8 +754,8 @@ Mods: {
 			Accessories: Accessories
 			Weapon: Weapon
 			Sidearm: Sidearm
-			ExtraSidearms: Minion staves
-			ExtraSidearm: Minion staff
+			ExtraSidearms: Summon weapons
+			ExtraSidearm: Summon weapon
 			Ammo: Ammo
 			Head: Head
 			Body: Body

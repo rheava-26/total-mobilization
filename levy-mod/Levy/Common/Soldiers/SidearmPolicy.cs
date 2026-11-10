@@ -7,7 +7,7 @@ namespace Levy.Common.Soldiers
 {
 	/// <summary>
 	/// What a levy may carry besides his primary. A levy holds up to <see cref="LevyConstants.MaxSidearms"/> sidearms: the hand sidearm (a fallback weapon, or a staff / sentry that is kept up without being in hand) and
-	/// <see cref="LevyConstants.ExtraSidearms"/> more, which hold minion staves. Two rules decide whether a weapon fits beside the others:
+	/// <see cref="LevyConstants.ExtraSidearms"/> more, which hold the summon weapons (a sentry staff and a minion staff). Two rules decide whether a weapon fits beside the others:
 	///  * NO SECOND OF A ROLE. A melee weapon beside a melee primary, a second whip, a second sentry, a second unlimited minion staff or the same staff twice duplicate what he already has. A staff with a limit of its own
 	///    (see <see cref="SummonCap"/>) only takes the slots its minions use, so it fits beside an unlimited staff and beside other limited ones.
 	///  * NOTHING OFF-CLASS. A melee primary carries only a summon weapon beside it, never a gun, a bow or a second sword.

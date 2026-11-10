@@ -20,7 +20,7 @@ namespace Levy.Common.Logistics
 		Item Put(Item item);
 	}
 
-	public sealed class ArmoryStock : IStock
+	public sealed class ArmoryStock : IStockItems
 	{
 		public readonly ArmoryTE Te;
 		public ArmoryStock(ArmoryTE te) { Te = te; }
@@ -28,10 +28,13 @@ namespace Levy.Common.Logistics
 		public long Count(int type) => Te.CountInStorage(type);
 		public long Take(int type, long n) => Te.TakeUpTo(type, (int)Math.Min(n, int.MaxValue));
 		public Item Put(Item item) => Te.Deposit(item);
+		public IEnumerable<Item> Items() { foreach (var it in Te.Storage) if (it != null && !it.IsAir) yield return it; }
+		public long TakeExact(Item like, long n) => StockItemsEx.TakeFromArray(Te.Storage, like, n, null);
+		public bool Protected(Item it) => Te.ClearOutProtected(it);
 	}
 
 	/// <summary>A vanilla chest (by <c>Main.chest</c> index). Every change is sent to clients slot by slot.</summary>
-	public sealed class ChestStock : IStock
+	public sealed class ChestStock : IStockItems
 	{
 		public readonly int Index;
 		public ChestStock(int index) { Index = index; }
@@ -70,6 +73,9 @@ namespace Levy.Common.Logistics
 			return item.IsAir ? null : item;
 		}
 		private void Sync(int slot) { if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncChestItem, -1, -1, null, Index, slot); }
+		public IEnumerable<Item> Items() { var c = C; if (c != null) foreach (var it in c.item) if (it != null && !it.IsAir) yield return it; }
+		public long TakeExact(Item like, long n) => StockItemsEx.TakeFromArray(C?.item, like, n, Sync);
+		public bool Protected(Item it) => false;
 	}
 
 	/// <summary>
@@ -83,6 +89,8 @@ namespace Levy.Common.Logistics
 		public static Func<ArmoryTE, int, bool> HasStation;
 		/// <summary>The network's item types, for the "find this item" picker (the Magic Storage item list). Null when absent.</summary>
 		public static Func<ArmoryTE, IEnumerable<int>> ItemTypes;
+		/// <summary>True when the armory's network has a Decrafting Interface (Magic Storage's shimmer module), so a clear-out can take items apart. Null when Magic Storage is absent.</summary>
+		public static Func<ArmoryTE, bool> CanDecraft;
 		public static bool Present => Provider != null;
 		public static IStock For(ArmoryTE a) { try { return Provider?.Invoke(a); } catch (Exception e) { Levy.Instance?.Logger.Warn("Levy/Logistics: network provider failed: " + e.Message); return null; } }
 	}

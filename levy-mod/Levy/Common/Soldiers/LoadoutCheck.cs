@@ -38,6 +38,7 @@ namespace Levy.Common.Soldiers
 				Sidearms(Check, Info);
 				CappedSummons(Check, Info);
 				MeleeSecondary(Check, Info);
+				SummonSlots(Check, Info);
 				PreferredGear(Check, Info);
 				RoundTrips(Check);
 			}
@@ -241,6 +242,68 @@ namespace Levy.Common.Soldiers
 				check("a second sword is put back on the shelf and a minion staff taken in its place", !melee.Gear.Sidearms().Any(s => s.type == ItemID.Muramasa) && melee.Gear.Sidearms().Any(SidearmPolicy.IsStaff), Kit(melee));
 				bool onShelf = false; foreach (var it in te.Storage) if (it.type == ItemID.Muramasa) onShelf = true; foreach (var it in te.IssueWeapons) if (it.type == ItemID.Muramasa) onShelf = true;
 				check("the sword went back to the armory, not lost", onShelf);
+			}
+		}
+
+		// ------------------------------------------------------------------ D2. the two summon slots: a sentry and a minion staff; a summoner leads with a whip
+		private static void SummonSlots(CheckFn check, Action<string> info)
+		{
+			SummonCap.Reset();
+			SummonCap.Force(ItemID.PygmyStaff, 1);
+			int Count(SoldierRecord r, Func<Item, bool> f) => r.Gear.Sidearms().Count(s => !s.IsAir && f(s));
+			Item[] Staves() => new[] { Make(ItemID.HornetStaff), Make(ItemID.ImpStaff), Make(ItemID.StaffoftheFrostHydra), Make(ItemID.QueenSpiderStaff) };
+			{ // 1. a melee levy: one sentry and one minion staff, no second blade
+				var te = Armory(Make(ItemID.TerraBlade), Make(ItemID.Muramasa)); foreach (var it in Staves()) te.Deposit(it);
+				var melee = new SoldierRecord { Id = 91 };
+				Armor(melee, ItemID.SolarFlareHelmet, ItemID.SolarFlareBreastplate, ItemID.SolarFlareLeggings);
+				ArmoryTE.TestServed = new List<SoldierRecord> { melee };
+				te.IssueGear(melee);
+				info("case 1, melee levy, 2 staves + 2 sentries in stock: " + Kit(melee));
+				check("a melee levy carries one sentry staff and one minion staff", Count(melee, SidearmPolicy.IsSentry) == 1 && Count(melee, SidearmPolicy.IsStaff) == 1 && melee.Gear.SidearmCount == 2 && SidearmPolicy.IsSentry(melee.Gear.ExtraSidearms[0]) && SidearmPolicy.IsStaff(melee.Gear.ExtraSidearms[1]), Kit(melee));
+				check("his sentry is the better of the two sentries", melee.Gear.ExtraSidearms[0].type == ItemID.QueenSpiderStaff || melee.Gear.ExtraSidearms[0].type == ItemID.StaffoftheFrostHydra, N(melee.Gear.ExtraSidearms[0]));
+			}
+			{ // 2. a gunner: his lesser blade in hand, a sentry and a minion staff in the extra slots
+				var te = Armory(Make(ItemID.Musket), Make(ItemID.MusketBall, 300), Make(ItemID.IronBroadsword)); foreach (var it in Staves()) te.Deposit(it);
+				var gun = new SoldierRecord { Id = 92 };
+				Armor(gun, ItemID.VortexHelmet, ItemID.VortexBreastplate, ItemID.VortexLeggings);
+				ArmoryTE.TestServed = new List<SoldierRecord> { gun };
+				te.IssueGear(gun);
+				info("case 2, ranged levy: " + Kit(gun));
+				check("a ranged levy carries a gun, a lesser blade, a sentry staff and a minion staff", gun.Gear.Weapon.type == ItemID.Musket && gun.Gear.Sidearm.type == ItemID.IronBroadsword && Count(gun, SidearmPolicy.IsSentry) == 1 && Count(gun, SidearmPolicy.IsStaff) == 1 && WeaponsCarried(gun) == 4, Kit(gun));
+			}
+			{ // 3. a summoner with a whip in stock: whip primary, minion staff + sentry + a one-minion staff
+				var te = Armory(Make(ItemID.ThornWhip), Make(ItemID.PygmyStaff)); foreach (var it in Staves()) te.Deposit(it);
+				var sum = new SoldierRecord { Id = 93, Grade = Grade.ManAtArms };
+				Armor(sum, ItemID.StardustHelmet, ItemID.StardustBreastplate, ItemID.StardustLeggings);
+				ArmoryTE.TestServed = new List<SoldierRecord> { sum };
+				te.IssueGear(sum);
+				info("case 3, summoner with a whip in stock: " + Kit(sum));
+				var held = sum.Gear.Sidearms().Where(s => !s.IsAir).ToList();
+				check("a summoner leads with the whip", sum.Gear.Weapon.type == ItemID.ThornWhip, Kit(sum));
+				check("he carries an unlimited minion staff, a sentry staff and a one-minion staff", held.Count(SidearmPolicy.IsSentry) == 1 && held.Count(s => SidearmPolicy.IsStaff(s) && !SummonCap.IsCapped(s)) == 1 && held.Count(s => SidearmPolicy.IsStaff(s) && SummonCap.IsCapped(s)) == 1, Kit(sum));
+			}
+			{ // 4. a summoner with no whip: the staff leads, the sentry rides as a sidearm
+				var te = Armory(Make(ItemID.PygmyStaff)); foreach (var it in Staves()) te.Deposit(it);
+				var sum = new SoldierRecord { Id = 94, Grade = Grade.ManAtArms };
+				Armor(sum, ItemID.StardustHelmet, ItemID.StardustBreastplate, ItemID.StardustLeggings);
+				ArmoryTE.TestServed = new List<SoldierRecord> { sum };
+				te.IssueGear(sum);
+				info("case 4, summoner, no whip in stock: " + Kit(sum));
+				check("with no whip a summoner leads with a minion staff and carries a sentry staff", SidearmPolicy.IsStaff(sum.Gear.Weapon) && Count(sum, SidearmPolicy.IsSentry) == 1, Kit(sum));
+			}
+			{ // a staff-led summoner swaps to the whip when one arrives, and keeps the staff as a sidearm
+				var te = Armory(Make(ItemID.ThornWhip)); te.Deposit(Make(ItemID.StaffoftheFrostHydra));
+				var sum = new SoldierRecord { Id = 95, Grade = Grade.ManAtArms };
+				Armor(sum, ItemID.StardustHelmet, ItemID.StardustBreastplate, ItemID.StardustLeggings);
+				sum.Gear.Weapon = Make(ItemID.HornetStaff);
+				ArmoryTE.TestServed = new List<SoldierRecord> { sum };
+				te.UpgradeWeapons(sum);
+				info("case 4b, a whip arrives for a staff-led summoner: " + Kit(sum));
+				check("the whip becomes his primary and the staff a sidearm", sum.Gear.Weapon.type == ItemID.ThornWhip && Count(sum, SidearmPolicy.IsStaff) == 1, Kit(sum));
+			}
+			{ // extra slots take a sentry from the hand, and the wire format keeps it
+				var g = new SoldierGear();
+				check("an extra slot holds a sentry staff by hand", g.CanHold(SoldierGear.SlotSide2, Make(ItemID.QueenSpiderStaff)) && !g.CanHold(SoldierGear.SlotSide2, Make(ItemID.IronBroadsword)));
 			}
 		}
 

@@ -163,6 +163,7 @@ Pages: {
 			The other potion slots hold buff potions for the whole army.
 			Consumable throwables, such as grenades and throwing knives, go in storage. A levy refills a thrown stack from the Armory when it runs low.
 			The last weapon slot is the sidearm. A minion staff or sentry there goes to a levy who is not a summoner.
+			Two more slots hold summon weapons: a sentry staff and a minion staff, and a summoner leads with a whip. A sentry staff keeps one sentry up, plus one for each sentry slot the levy's gear gives.
 			'''
 	}
 
@@ -210,6 +211,7 @@ Pages: {
 			Sell mass-sells Armory items to the best-paying shopkeeper in reach.
 			Pick a kind and a tier and press Select matching, or drag over slots to select a block.
 			Shimmer back returns the materials of items that shimmer apart.
+			Clear out lists every weapon, armor piece and accessory below a tier, from the Armory, nearby chests and the Magic Storage network. Preview the list, then confirm to sell it, or to take it apart when a Decrafting Interface is linked. Favourited and preferred items stay.
 			'''
 	}
 

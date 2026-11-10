@@ -17,7 +17,7 @@ namespace Levy.Common.Soldiers
 
 		public Item Weapon = new Item();
 		public Item Sidearm = new Item();
-		/// <summary>The sidearms beyond the first (<see cref="LevyConstants.ExtraSidearms"/> of them): minion staves, which run without being in hand.</summary>
+		/// <summary>The sidearms beyond the first (<see cref="LevyConstants.ExtraSidearms"/> of them): minion staves and sentry staves, which run without being in hand.</summary>
 		public Item[] ExtraSidearms = NewArray(LevyConstants.ExtraSidearms);
 		public Item Head = new Item();
 		public Item Body = new Item();
@@ -107,7 +107,7 @@ namespace Levy.Common.Soldiers
 			if (item.stack > 1 && !(slot == SlotWeapon && WeaponClassifier.Classify(item) == WeaponFamily.Thrown)) return false;
 			if (slot == SlotWeapon) return WeaponClassifier.IsIssuableWeapon(item) && IsSupportedFamily(WeaponClassifier.Classify(item));
 			if (slot == SlotSidearm) return WeaponClassifier.IsIssuableWeapon(item) && IsSidearmFamily(WeaponClassifier.Classify(item));
-			if (slot >= SlotSide2) return slot < SlotCount && WeaponClassifier.IsIssuableWeapon(item) && WeaponClassifier.Classify(item) == WeaponFamily.Summon; // an extra sidearm is a minion staff: it runs without being in hand
+			if (slot >= SlotSide2) return slot < SlotCount && WeaponClassifier.IsIssuableWeapon(item) && WeaponClassifier.Classify(item) is WeaponFamily.Summon or WeaponFamily.Sentry; // an extra sidearm is a minion staff or a sentry staff: it runs without being in hand
 			if (slot == SlotHead) return WeaponClassifier.IsArmorPiece(item, 0) && !item.vanity;
 			if (slot == SlotBody) return WeaponClassifier.IsArmorPiece(item, 1) && !item.vanity;
 			if (slot == SlotLegs) return WeaponClassifier.IsArmorPiece(item, 2) && !item.vanity;

@@ -268,17 +268,6 @@ namespace Levy.Common.Soldiers
 				ArmoryTE.TestServed = new List<SoldierRecord> { old };
 				te.UpgradeWeapons(old);
 				check("an older melee kit with a sentry and a staff keeps one of them", Count(old, SidearmPolicy.IsDeployer) == 1, Kit(old));
-				SidearmPolicy.NonSummonersOverride = false;
-				try
-				{
-					var none = new SoldierRecord { Id = 192 };
-					Armor(none, ItemID.SolarFlareHelmet, ItemID.SolarFlareBreastplate, ItemID.SolarFlareLeggings);
-					none.Gear.Weapon = Make(ItemID.TerraBlade); none.Gear.ExtraSidearms[0] = Make(ItemID.HornetStaff);
-					ArmoryTE.TestServed = new List<SoldierRecord> { none };
-					te.UpgradeWeapons(none);
-					check("with the config off a non-summoner carries no summon item", Count(none, SidearmPolicy.IsDeployer) == 0, Kit(none));
-				}
-				finally { SidearmPolicy.NonSummonersOverride = null; }
 			}
 			{ // 2. a gunner: his lesser blade in hand, a sentry and a minion staff in the extra slots
 				var te = Armory(Make(ItemID.Musket), Make(ItemID.MusketBall, 300), Make(ItemID.IronBroadsword)); foreach (var it in Staves()) te.Deposit(it);

@@ -1950,7 +1950,7 @@ namespace Levy.Content.TileEntities
 		{
 			using var _rs = ArmoryRules.Enter(Rules);
 			var g = soldier?.Gear;
-			if (g == null) return false;
+			if (g == null || soldier.Disarmed) return false; // a levy whose kit the player stripped is issued nothing until he is issued a kit again
 			bool changed = false;
 
 			// A Re-arm in this very tick parked this soldier's hand-assigned items: take exactly those back first.
@@ -2222,7 +2222,7 @@ namespace Levy.Content.TileEntities
 		{
 			using var _rs = ArmoryRules.Enter(Rules);
 			var g = soldier?.Gear;
-			if (g == null || soldier.LoadoutLocked || Main.netMode == NetmodeID.MultiplayerClient) return false;
+			if (g == null || soldier.LoadoutLocked || soldier.Disarmed || Main.netMode == NetmodeID.MultiplayerClient) return false;
 			bool changed = false;
 			FloorSweep(); // new armor and accessories go to the worst-equipped levies first, whoever asks
 			if (!g.IsLocked(SoldierGear.SlotWeapon) && UpgradePrimary(soldier)) changed = true;

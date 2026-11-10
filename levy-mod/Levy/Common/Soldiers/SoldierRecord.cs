@@ -66,6 +66,8 @@ namespace Levy.Common.Soldiers
 		public bool CloseUp;
 		/// <summary>Loadout lock: while set, the soldier keeps his weapons and is skipped by automatic weapon and armor upgrade. Saved and synced; off (auto-upgrade on) for old saves.</summary>
 		public bool LoadoutLocked;
+		/// <summary>Kit stripped by hand: the Armory issues this levy nothing until he is issued a kit again or loadouts are reset. Saved and synced; off for old saves.</summary>
+		public bool Disarmed;
 		public Vector2 HoldPos;
 		public Point16 PatrolA = Point16.NegativeOne, PatrolB = Point16.NegativeOne;
 
@@ -167,6 +169,7 @@ namespace Levy.Common.Soldiers
 			Gear.WriteVisual(w);
 			w.Write(CloseUp); // appended last so the earlier layout is unchanged
 			w.Write(Deaths);
+			w.Write(Disarmed);
 		}
 
 		public static SoldierRecord ReadSnapshot(System.IO.BinaryReader r)
@@ -182,6 +185,7 @@ namespace Levy.Common.Soldiers
 			s.Gear.ReadVisual(r);
 			s.CloseUp = r.ReadBoolean();
 			s.Deaths = r.ReadInt32();
+			s.Disarmed = r.ReadBoolean();
 			return s;
 		}
 
@@ -194,7 +198,7 @@ namespace Levy.Common.Soldiers
 				["gear"] = Gear.Save(), ["home"] = HomeBarracksId, ["homeX"] = (int)HomePos.X, ["homeY"] = (int)HomePos.Y, ["cmd"] = CommanderName ?? "",
 				["unpaid"] = DaysUnpaid, ["stood"] = StoodDown, ["hazard"] = HazardPaid, ["reserve"] = Reserve,
 				["mutiny"] = Mutinous, ["owed"] = WageOwed, ["looted"] = WageLooted,
-				["order"] = (byte)Order, ["holdFire"] = HoldFire, ["spread"] = SpreadOut, ["closeUp"] = CloseUp, ["loadoutLock"] = LoadoutLocked, ["holdX"] = HoldPos.X, ["holdY"] = HoldPos.Y,
+				["order"] = (byte)Order, ["holdFire"] = HoldFire, ["spread"] = SpreadOut, ["closeUp"] = CloseUp, ["loadoutLock"] = LoadoutLocked, ["disarmed"] = Disarmed, ["holdX"] = HoldPos.X, ["holdY"] = HoldPos.Y,
 				["pAX"] = (int)PatrolA.X, ["pAY"] = (int)PatrolA.Y, ["pBX"] = (int)PatrolB.X, ["pBY"] = (int)PatrolB.Y,
 				["hair"] = Hair, ["skinVar"] = SkinVariant, ["male"] = Male,
 				["ext"] = SaveExt(),
@@ -220,7 +224,7 @@ namespace Levy.Common.Soldiers
 				Gear = SoldierGear.Load(t.GetCompound("gear")), HomeBarracksId = t.GetInt("home"), HomePos = new Point16(t.GetInt("homeX"), t.GetInt("homeY")),
 				CommanderName = t.GetString("cmd"), DaysUnpaid = t.GetInt("unpaid"), StoodDown = t.GetBool("stood"), HazardPaid = t.GetBool("hazard"), Reserve = t.GetBool("reserve"),
 				Mutinous = t.GetBool("mutiny"), WageOwed = t.GetLong("owed"), WageLooted = t.GetLong("looted"),
-				Order = (SoldierOrder)t.GetByte("order"), HoldFire = t.GetBool("holdFire"), SpreadOut = t.GetBool("spread"), CloseUp = t.GetBool("closeUp"), LoadoutLocked = t.GetBool("loadoutLock"), HoldPos = new Vector2(t.GetFloat("holdX"), t.GetFloat("holdY")),
+				Order = (SoldierOrder)t.GetByte("order"), HoldFire = t.GetBool("holdFire"), SpreadOut = t.GetBool("spread"), CloseUp = t.GetBool("closeUp"), LoadoutLocked = t.GetBool("loadoutLock"), Disarmed = t.GetBool("disarmed"), HoldPos = new Vector2(t.GetFloat("holdX"), t.GetFloat("holdY")),
 				PatrolA = new Point16(t.GetInt("pAX"), t.GetInt("pAY")), PatrolB = new Point16(t.GetInt("pBX"), t.GetInt("pBY")),
 				Hair = t.GetInt("hair"), SkinVariant = t.GetInt("skinVar"), Male = t.GetBool("male"),
 			};

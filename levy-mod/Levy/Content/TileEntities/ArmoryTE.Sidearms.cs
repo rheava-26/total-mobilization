@@ -138,16 +138,18 @@ namespace Levy.Content.TileEntities
 		private bool FillSidearms(SoldierRecord soldier, SoldierGear g, bool summoner, WeaponFamily primaryFam, bool primaryMelee)
 		{
 			bool changed = TidySidearms(g, soldier);
+			if (EnforceSidearmRules(g, summoner)) changed = true;
 			HashSet<object> claimed = null; bool claimedRead = false;
 			bool Free(Item it) { if (!claimedRead) { claimed = ClaimedWeapons(soldier); claimedRead = true; } return claimed == null || !claimed.Contains(it); }
 			bool meleeRole = g.HasWeapon && SidearmPolicy.IsMeleeRole(g.Weapon);
+			bool noSummons = !summoner && !Rules.SummonsForOthers;
 
-			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm)
+			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm && SidearmRoom(g, summoner))
 			{
 				Item s;
 				if (summoner && !meleeRole) s = TakeSummonerComplement(soldier, primaryFam);
 				else if (summoner) s = TakeDeployerFromSidearmSlot() ?? TakeSummonSecondary(Free); // a whip-leading summoner: a staff, never a blade
-				else s = TakeDeployerFromSidearmSlot()
+				else s = (noSummons ? null : TakeDeployerFromSidearmSlot())
 					?? (meleeRole || primaryMelee ? null // a melee levy's summon weapons ride in the extra slots, never a sword here
 					: TakeSidearm(soldier)); // ranged / magic: a lesser blade
 				if (s != null)
@@ -162,6 +164,7 @@ namespace Levy.Content.TileEntities
 			{
 				int slot = SoldierGear.SlotSide2 + x;
 				if (g.IsLocked(slot) || !IsAir(g.ExtraSidearms[x])) continue;
+				if (!SidearmRoom(g, summoner)) break;
 				var pick = NextDeployer(g, summoner, CarriedWeapons(g), Free, soldier);
 				if (pick == null) break;
 				g.ExtraSidearms[x] = pick; changed = true;
@@ -187,8 +190,8 @@ namespace Levy.Content.TileEntities
 			Item TakeSentry() => TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => IsIssuableSentry(it) && Fits(it), WeaponRank.Of);
 			if (!summoner)
 			{
-				// ONE SUMMON ITEM: a levy who is not a summoner carries a single minion staff OR a single sentry (the better one in stock), or none when the config says so.
-				if (!SidearmPolicy.NonSummonersMayCarry || hasSentry || hasStaff) return null;
+				// ONE SUMMON ITEM: a levy who is not a summoner carries a single minion staff OR a single sentry (the better one in stock); none when the armory's rules keep summon weapons for summoners.
+				if (!Rules.SummonsForOthers || hasSentry || hasStaff) return null;
 				// SUMMONERS FIRST: a levy who is not a summoner is dealt only the staves no summoner could still use (see SummonerWants), the leftovers.
 				var wants = SummonerWantList(who);
 				return TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => (IsIssuableSentry(it) || IsIssuableSummonStaff(it)) && Fits(it) && !SummonerWants(wants, it), WeaponRank.Of);
@@ -198,6 +201,34 @@ namespace Levy.Content.TileEntities
 			if (p == null && !hasSentry) p = TakeSentry();
 			p ??= TakeStaff(it => SummonCap.IsCapped(it));
 			return p;
+		}
+
+		/// <summary>True when this armory's sidearm limit still lets the levy carry one more sidearm. Summoners are not limited.</summary>
+		private bool SidearmRoom(SoldierGear g, bool summoner)
+		{
+			if (summoner) return true;
+			int n = 0; foreach (var s in g.Sidearms()) if (!IsAir(s)) n++;
+			return n < Rules.SidearmLimit;
+		}
+
+		/// <summary>Gives back to the shelf the sidearms a levy who is not a summoner carries beyond this armory's limit (extra slots first), and the summon weapons the rules keep for summoners. Locked slots stay. True if anything went back.</summary>
+		private bool EnforceSidearmRules(SoldierGear g, bool summoner)
+		{
+			if (summoner || !Rules.LimitsLoadouts) return false;
+			bool any = false;
+			int count = 0; foreach (var s in g.Sidearms()) if (!IsAir(s)) count++;
+			for (int i = LevyConstants.MaxSidearms - 1; i >= 0; i--)
+			{
+				int slot = SoldierGear.SidearmSlotAt(i); var cur = g.Get(slot);
+				if (g.IsLocked(slot) || IsAir(cur)) continue;
+				bool denied = !Rules.SummonsForOthers && SidearmPolicy.IsDeployer(cur);
+				if (!denied && count <= Rules.SidearmLimit) continue;
+				var rem = DepositOld(cur);
+				if (!IsAir(rem)) Spill(rem, protect: true);
+				g.Set(slot, new Item()); count--; any = true;
+			}
+			if (any) MarkDirty();
+			return any;
 		}
 
 		/// <summary>The periodic look at the sidearm slots (a levy enlisted before staves were stocked, or while the plan had claimed them all, stayed without).</summary>

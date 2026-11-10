@@ -62,6 +62,13 @@ namespace Levy.Content.NPCs
 		/// <summary>The side flag. False for every Levy body. A hostile subclass overrides it with true.</summary>
 		public virtual bool Hostile => false;
 
+		/// <summary>True while this hostile body must not be targeted by the player's side (a neutral band that has not been provoked). Levies, minions and turrets leave it alone.</summary>
+		public virtual bool HostilePassive => false;
+		/// <summary>The vanity (social armor) a hostile body is drawn in, or null for its real gear. Client draw path only.</summary>
+		public virtual global::Levy.Common.Vanity.VanityLook HostileVanity() => null;
+		/// <summary>Colour of the name and life bar of a hostile body.</summary>
+		public virtual Color HostilePlateColor => HostilePlateRed;
+
 		/// <summary>Ceiling for this body's defense (a hostile soldier's gear defense is held to the stage line, see Warbands BandStats). Applied after the stat pass.</summary>
 		public int HostileDefenseCap = int.MaxValue;
 		/// <summary>Multiplies the brain's standoff distance (below 1 closes in, above 1 keeps its distance). 1 = Levy's own.</summary>
@@ -227,7 +234,8 @@ namespace Levy.Content.NPCs
 			float scale = LevyConstants.UI.NameplateTextScale;
 			float y = top.Y - LevyConstants.UI.NameplateOffsetY;
 			string name = Record.Name ?? "";
-			Utils.DrawBorderString(sb, name, new Vector2(top.X, y), HostilePlateRed, scale, 0.5f, 0.5f);
+			Color plate = HostilePlateColor;
+			Utils.DrawBorderString(sb, name, new Vector2(top.X, y), plate, scale, 0.5f, 0.5f);
 			string tag = HostilePlateTag;
 			if (!string.IsNullOrEmpty(tag)) Utils.DrawBorderString(sb, tag, new Vector2(top.X, y - 14f * scale), new Color(190, 70, 60), scale * 0.8f, 0.5f, 0.5f);
 			int w = LevyConstants.UI.NameplateHpBarWidth, h = LevyConstants.UI.NameplateHpBarHeight;
@@ -235,7 +243,7 @@ namespace Levy.Content.NPCs
 			var pixel = TextureAssets.MagicPixel.Value;
 			int bx = (int)(top.X - w * 0.5f), by = (int)(y + 8f);
 			sb.Draw(pixel, new Rectangle(bx - 1, by - 1, w + 2, h + 2), new Color(20, 6, 6, 230));
-			sb.Draw(pixel, new Rectangle(bx, by, (int)(w * frac), h), new Color(200, 36, 30));
+			sb.Draw(pixel, new Rectangle(bx, by, (int)(w * frac), h), new Color((int)(plate.R * 0.84f), (int)(plate.G * 0.5f), (int)(plate.B * 0.5f)));
 			var weapon = Record.Gear?.Weapon;
 			if (weapon != null && !weapon.IsAir)
 				Utils.DrawBorderString(sb, weapon.Name, new Vector2(top.X, by + h + 6f), new Color(200, 150, 140), scale * LevyConstants.UI.NameplateWeaponScale, 0.5f, 0f);

@@ -59,7 +59,7 @@ Mods: {
 					'''
 					A field set tuned to every soldier you command.
 					Orders and Rally from the radial reach your whole army, anywhere in the world. Click it to open the radial.
-					Shift-click the full map to send every levy to that point.
+					Pick Send to map point on the radial, click a spot on the full map, then click it again to send every levy there.
 					'''
 			}
 
@@ -304,11 +304,6 @@ Mods: {
 					Crowd: Crowd
 				}
 
-				NonSummonersCarrySummonItem: {
-					Label: Non-summoners carry a summon item
-					Tooltip: A levy who is not a summoner carries one minion staff or one sentry, never both. Turn off to give non-summoners none.
-				}
-
 				ArmyEntityBudget: {
 					Label: Army entity budget
 					Tooltip: The army's minions, sentries, lingering shots and drones stand down, oldest first, so the game keeps free projectile and NPC slots for you and the enemy.
@@ -464,6 +459,11 @@ Mods: {
 					Tooltip: Levies take fall damage by the player's rules. Wings, a Lucky Horseshoe and water landings spare them.
 				}
 
+				AmbientChatter: {
+					Label: Idle chatter
+					Tooltip: A levy with nothing to do says a line to a comrade nearby every 18 to 45 seconds, and every 5 to 14 seconds for half a minute after a fight. Needs a player within 70 tiles.
+				}
+
 				LeviesSitWhenIdle: {
 					Label: Levies sit when idle
 					Tooltip: A levy with nothing to do sits on a nearby chair, bench or throne and chats with the levies beside it. It stands up at once for a fight, a threat or an order.
@@ -511,17 +511,17 @@ Mods: {
 
 				LeviesByEndOfPreHardmode: {
 					Label: Levies by the Wall of Flesh
-					Tooltip: Levies you can field once every pre-hardmode boss is beaten, and the most you can field before the Wall of Flesh falls. Recommended 12 to 30. Each boss beaten adds only its own share.
+					Tooltip: Levies you can field once every pre-hardmode boss is beaten, and the most you can field before the Wall of Flesh falls. Recommended 12 to 40. Each boss beaten adds only its own share.
 				}
 
 				LeviesByEndOfHardmode: {
 					Label: Levies by Moon Lord
-					Tooltip: Levies you can field once Moon Lord and every boss before him is beaten, and the most until Moon Lord falls. Recommended 28 to 60. Each boss beaten adds only its own share.
+					Tooltip: Levies you can field once Moon Lord and every boss before him is beaten, and the most until Moon Lord falls. Recommended 24 to 60. Each boss beaten adds only its own share.
 				}
 
 				LeviesByEndOfPostMoonLord: {
 					Label: Levies by the end of post-Moon Lord
-					Tooltip: The most levies you can field after Moon Lord. Recommended 40 to 90. Each boss beaten adds only its own share.
+					Tooltip: The most levies you can field after Moon Lord. Recommended 32 to 90. Each boss beaten adds only its own share.
 				}
 
 				CapLeviesByStage: {
@@ -794,6 +794,9 @@ Mods: {
 			Accessory: Accessory
 			EmptyHint: Place a {0} item here to assign it.
 			Hint: Items you place stay on this soldier. Take one out and the Armory chooses again.
+			ReturnKit: Return kit
+			ReturnKitHint: Sends everything this levy carries back to the Armory. The Armory issues them nothing until you press Issue kit.
+			IssueKit: Issue kit
 			Rejected: That does not fit the {0} slot.
 			Assigned: "{0} assigned."
 			Released: "{0} cleared. The Armory may refill it."

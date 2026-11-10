@@ -25,8 +25,14 @@ namespace Warbands.Common
 		/// <summary>Bands out at once across the world.</summary>
 		[Range(1, 6)] [DefaultValue(1)] public int MaxActiveBands;
 
-		/// <summary>Chance, in percent, that each piece of a dead band member's real gear (weapon, ammo, armor) drops.</summary>
+		/// <summary>Band members drop their own gear (weapon, ammo, armor, hook). Off by default: the reward is the bounty notice.</summary>
+		[DefaultValue(false)] public bool GearDrops;
+
+		/// <summary>With gear drops on: chance, in percent, that each piece of a dead band member's real gear (weapon, ammo, armor) drops.</summary>
 		[Range(0f, 100f)] [DefaultValue(35f)] public float LootSharePercent;
+
+		/// <summary>Chance, in percent, that a naturally forming band is a neutral one: it ignores you and your levies until one of you hits it. Summoned bands are always hostile.</summary>
+		[Range(0f, 100f)] [DefaultValue(35f)] public float NeutralBandPercent;
 
 		/// <summary>Multiplies every band member's life. 1 is the stage table in BandStats.</summary>
 		[Range(0.25f, 4f)] [DefaultValue(1f)] public float LifeScale;

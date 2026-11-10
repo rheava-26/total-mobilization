@@ -1,0 +1,168 @@
+# WARBANDS DIALOGUE
+#
+# Everything the bands say over their heads lives in this one file. Edit it with any text editor.
+#
+#   * A line starting with # is a comment and is ignored. Blank lines are ignored.
+#   * [NAME] starts a group. Every line under it, one per row, is one thing a soldier can say; the game picks one at random.
+#   * [NAME Something] is a variant of the group for one band type or band style (see the list at the bottom). When the band has one, it is used about half the time.
+#   * You can use these in a line: {mate} = the first name of another soldier in the band, {who} = the player's name, {armor} = the armor set the player wears, {n} = a number.
+#   * Keep a line to one or two sentences. Run-ons and panic are in the voice, so are very sincere threats.
+#   * After editing, rebuild the mod (or ask whoever builds it). If a group is empty or missing the soldiers just stay quiet for that situation.
+
+# ---------------------------------------------------------------- they see you
+[SPOTTED]
+Everyone stay behind {mate}, he's got the most armor and the least sense!
+{mate} you take the left and I'll take the right, which is the left from here, no, your left!
+If I die in this one I'm haunting {mate} specifically!
+Wait is that {who}?! Nobody told me it was THE {who}!
+Okay, okay, okay, nobody panic, {mate} is panicking enough for all of us!
+Spread out, spread out, nobody stand next to {mate}, he attracts attention!
+Higher ground, {mate}, get up high, I read somewhere that high is good!
+Don't bunch up! Who bunched up?! {mate}, that was you, wasn't it!
+
+[SPOTTED Zealots]
+The Mind wants you, {who}, and the Mind is patient!
+{mate}, say it with me, flesh is temporary, and so is HE!
+Pray, {mate}, and then aim!
+
+[SPOTTED Wardens]
+This is private property, {who}, and {mate} has the deed!
+We've held this ground for years, {mate}, we're not stopping for a stranger!
+
+[SPOTTED Paladins]
+In the name of whoever's in charge of this, STOP, {who}!
+Hold the line, {mate}, the light will provide, and if it doesn't, {mate}, run!
+
+[SPOTTED Rangers]
+Quiet now, {mate}, he hasn't seen us, no, he's seen us, shoot!
+Keep your distance, keep your distance, {mate}, that's the whole job!
+
+[SPOTTED_ARMOR]
+We're picking on the guy in {armor}?! Who approved this, {mate}?!
+He's in full {armor}, {mate}, I can see my own face in it, and I look scared!
+Nobody said anything about {armor}, {mate}, I would've stayed home!
+Why are you even wearing {armor} to a skirmish, {who}, that's cheating with extra steps!
+
+[SPOTTED_LEVIES]
+Are those all HIS?! {mate}, count them, no, don't count them!
+He brought the whole barracks! Who brings the whole barracks to a skirmish!
+Since when do people have little guys with guns, {mate}, who gave him little guys!
+
+[SPOTTED_SUMMONER]
+It's the summon guy! Get in close, {mate}, the summons turn around slow!
+Don't look at the minions, {mate}, look at him, he's the only one doing real work!
+
+[SPOTTED_MELEE]
+He's got a sword! Back, {mate}, BACK, keep the range, a sword can't reach!
+Stay away from the pointy end, {mate}, and shoot from way over here!
+
+[SPOTTED_GUNNER]
+He's got a gun too?! Get close, {mate}, guns hate it up close!
+Everybody in, {mate}, if he wants to shoot he has to shoot all of us!
+
+[SPOTTED_CASTER]
+A mage! {mate}, rush him, they run out of mana, they always run out of mana!
+
+# ---------------------------------------------------------------- the warning (bands that warn before they fight)
+[WARNING]
+Turn back.
+
+[WARNING SnowRangers]
+Turn back.
+
+[WARNING CorruptZealots]
+Turn back. The Mind hears you.
+
+[WARNING CrimsonFleshCult]
+Turn back. The flesh remembers.
+
+[WARNING DungeonWardens]
+Turn back. These halls are not yours.
+
+[WARNING HallowPaladins]
+Turn back, heathen.
+
+[WARNING ChlorophyteWardens]
+Turn back. The grove is closed.
+
+[WARNING DungeonRitualists]
+Turn back. The rite is not finished.
+
+[WARNING_FINAL]
+That's far enough. I mean it, {mate}, tell them I mean it!
+One more step and we're doing this the loud way, and I hate the loud way!
+Okay that's the line, {who}, the line is right there, do you see the line, {mate} show them the line!
+
+[WARNING_BROKEN]
+That's it, that's it, weapons up, {mate} weapons UP!
+I said turn back! Why does nobody ever turn back!
+
+# ---------------------------------------------------------------- it goes badly for them
+[CHIP_DAMAGE]
+I hit him! I definitely hit him! Why is he still standing, {mate}!
+{mate} my arrows are doing nothing, are we sure these are real arrows?!
+That's the third time I've hit him and he didn't even blink, he BLINKED at {mate}!
+Is he wearing the whole mountain?! My sword is bouncing, {mate}, it's bouncing!
+
+[ONE_HIT]
+{mate} just fell over and nobody even touched him, that guy touched him ONCE!
+One hit! ONE! He had a name, and now it's just a pile!
+I've known {mate} nine years and he lasted four seconds, FOUR!
+
+[MATE_DIED]
+{mate}! Oh no, {mate}, I borrowed money from him!
+Somebody go tell {mate}'s mother, no, not me, she scares me!
+There's fewer of us now and I want it noted that I wanted to leave earlier!
+
+[LOW_LIFE]
+I'm at like three percent, {mate}, somebody tell me the healer's on a break and not gone!
+Everything's red, {mate}, why is everything red!
+Everyone keeps saying "walk it off" and I'm walking, I'm walking so hard!
+
+[HURT]
+Ow! Who did that, {mate}, was that you?!
+That was MY leg, {mate}, that leg was mine!
+This would hurt so much more if we could feel pain!
+Ow, well, not ow, this would hurt so much more if we could feel pain, {mate}!
+
+# ---------------------------------------------------------------- they break
+[PANIC]
+Nope nope nope, I'm retiring, {mate} you're in charge now!
+I can't feel my courage, {mate}, did you take it?!
+Tell my mother I'm... actually don't tell her, she'll make me come back!
+This isn't what the poster said, {mate}, the poster said a nice job!
+
+[RETREAT]
+Recall potion! I bought two for exactly this, {mate}, you should've bought two!
+I'm so sorry, it's just that I have a recall potion and you don't!
+Drinking it, drinking it, tell {mate} I'll write!
+
+[DEFEAT]
+It's just me, isn't it, {mate}? {mate}? Okay. Okay, this is fine, I'll just leave very casually.
+I'd like to formally say we were a good band and we were all very brave until about a minute ago.
+
+# ---------------------------------------------------------------- they win
+[VICTORY]
+We... won? {mate}, did we actually win?!
+Nobody tell the others it was this easy, {mate}, they'll want a cut!
+He's down! {mate}, I did a thing, look at it, look how good the thing is!
+
+# ---------------------------------------------------------------- the band and the player's levies
+[LEVY_BANTER]
+Something small just shot me, {mate}, something small with a gun!
+The little guy hit me, {mate}, do the little guys get paid, how do I get a little guy!
+{mate}, there's a whole lined-up row of little guys and they all look so serious!
+Why is the little one aiming at ME, {mate}, I was in the back!
+Got one! Wait, that was one of his, it still counts, {mate} it counts!
+He's dead! {mate} look, I did a thing, look at it!
+
+# ---------------------------------------------------------------- bands that do not want a fight
+[NEUTRAL]
+Just passing through, {who}. Nobody hit anybody, that's the whole plan.
+We're not here for you, {who}, honest, {mate} tell them we're not here for them.
+Oh good, a stranger. Nobody say anything weird, {mate}.
+
+[PROVOKED]
+Hey! We were being NICE, {who}, {mate} tell them we were being nice!
+Okay, fine, FINE, that's it, now we're doing this, {mate}!
+That's what we get for being polite!

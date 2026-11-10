@@ -31,16 +31,16 @@ namespace Warbands.Common
 		public BandRoster Type;
 		public Vector2 Anchor;
 		public readonly List<BandLevyNPC> Members = new();
-		public bool Aggro, Warns; public int WarnLevel; public uint WarnTick; public int StayTicks;
+		public string AggroWhy; public bool Aggro, Warns, Neutral, Provoked, WonSaid, LastSaid; public int WarnLevel; public uint WarnTick; public int StayTicks;
 		public int Killed, Fled; public Vector2 LastDeathPos; public bool Paid; public uint Born;
 		public int ActiveGroup, RetreatGroup = -1; public uint RetreatUntil, FlipAt;
 		public uint LastOneTapTick, LastDeathTick; public int FarTicks, FarAggroless;
 		public uint LastHitTick;
 		public bool RaisedAlarm; public readonly HashSet<FoeClass> ClassRemarked = new();
 
-		public static BandBrain Create(BandRoster type, int stage, int startSize, Vector2 anchor, int id = 0)
+		public static BandBrain Create(BandRoster type, int stage, int startSize, Vector2 anchor, int id = 0, bool neutral = false)
 		{
-			var b = new BandBrain { Id = id > 0 ? id : NextId(), Type = type, Stage = stage, StartSize = startSize, Anchor = anchor, Warns = type.Warns, Aggro = !type.Warns, Born = Main.GameUpdateCount };
+			var b = new BandBrain { Id = id > 0 ? id : NextId(), Type = type, Stage = stage, StartSize = startSize, Anchor = anchor, Neutral = neutral, Warns = type.Warns && !neutral, Aggro = !type.Warns && !neutral, Born = Main.GameUpdateCount };
 			All[b.Id] = b; Counted++;
 			return b;
 		}
@@ -63,7 +63,7 @@ namespace Warbands.Common
 		public void OnMemberHit(BandLevyNPC m, int damage)
 		{
 			LastHitTick = Main.GameUpdateCount;
-			if (!Aggro) { Aggro = true; Chat(m, "SNAP"); }
+			if (!Aggro) { Aggro = true; AggroWhy = "member hit"; if (Neutral) Provoked = true; Chat(m, Neutral ? "PROVOKED" : "WARNING_BROKEN", force: true); }
 			if (m.Role == 'E' || damage < Math.Max(3, m.NPC.lifeMax / 40)) return;
 			// the retreat rotation only makes sense when the other side has shooters to keep up the fire
 			bool otherHasShooter = false;
@@ -76,14 +76,14 @@ namespace Warbands.Common
 		public void OnMemberDied(BandLevyNPC m, bool oneTap)
 		{
 			Killed++; LastDeathPos = m.NPC.Center; LastDeathTick = Main.GameUpdateCount; if (oneTap) { LastOneTapTick = Main.GameUpdateCount; OneTaps++; }
-			if (!Aggro) Aggro = true;
+			if (!Aggro) { Aggro = true; if (Neutral) Provoked = true; }
 			foreach (var o in Members)
 			{
 				if (o == m || !o.NPC.active) continue;
 				o.Morale -= oneTap ? 30f : 12f;
 			}
 			var talker = PickTalker(m);
-			if (talker != null) Chat(talker, oneTap ? "ONETAP" : "MATEDIED");
+			if (talker != null) Chat(talker, oneTap ? "ONE_HIT" : "MATE_DIED");
 		}
 		public int OneTaps;
 
@@ -181,12 +181,18 @@ namespace Warbands.Common
 				Player who = foe.ModNPC is PlayerStandIn si ? si.Who : null;
 				string armor = BandChatter.ArmorSetName(who);
 				int levies = CountLevies();
-				if (Type.Warns && !Aggro) { }
-				else if (levies >= 6) Chat(talker, "LEVYMASS", who, armor, levies);
-				else if (armor != null && who != null && who.statDefense >= 40) Chat(talker, "ARMOR", who, armor);
-				else Chat(talker, "ENGAGE", who);
+				if (Neutral && !Provoked) Chat(talker, "NEUTRAL", who, force: true);
+				else if (Type.Warns && !Aggro) { }
+				else if (levies >= 6) Chat(talker, "SPOTTED_LEVIES", who, armor, levies);
+				else if (armor != null && who != null && who.statDefense >= 40) Chat(talker, "SPOTTED_ARMOR", who, armor);
+				else Chat(talker, "SPOTTED", who);
 			}
 			if (Warns && !Aggro) WarnTick_(foe, tiles, now);
+			if (Aggro && !WonSaid)
+			{
+				for (int i = 0; i < Main.maxPlayers; i++) { var p = Main.player[i]; if (p.active && p.dead && Vector2.DistanceSquared(p.Center, c) < 70f * 16f * 70f * 16f) { WonSaid = true; Chat(Members[Main.rand.Next(Members.Count)], "VICTORY", p, force: true); break; } }
+			}
+			if (Aggro && !LastSaid && Members.Count == 1 && Killed >= 2) { LastSaid = true; Chat(Members[0], "DEFEAT", force: true); }
 		}
 
 		private void WarnTick_(NPC foe, float tiles, uint now)
@@ -194,11 +200,13 @@ namespace Warbands.Common
 			if (foe == null) return;
 			var talker = Members[0];
 			Player who = foe.ModNPC is PlayerStandIn si ? si.Who : null;
-			if (tiles < 55f && WarnLevel == 0) { WarnLevel = 1; WarnTick = now; BandChatter.Say(talker, "WARN", literal: (BandRoster.Calamity ? Type.CalWarn : null) ?? Type.WarnLine ?? "Turn back.", force: true); }
-			else if (tiles < 34f && WarnLevel == 1 && now - WarnTick > 150) { WarnLevel = 2; WarnTick = now; BandChatter.Say(talker, "WARN2", who?.name, force: true); }
+			if (tiles < 55f && WarnLevel == 0) { WarnLevel = 1; WarnTick = now; BandChatter.Say(talker, "WARNING", force: true); }
+			else if (tiles < 34f && WarnLevel == 1 && now - WarnTick > 150) { WarnLevel = 2; WarnTick = now; BandChatter.Say(talker, "WARNING_FINAL", who?.name, force: true); }
 			if (WarnLevel >= 1 && tiles < 30f) StayTicks++; else StayTicks = Math.Max(0, StayTicks - 2);
 			bool hurt = false; foreach (var m in Members) if (m.NPC.life < m.NPC.lifeMax) hurt = true;
-			if (tiles < 13f || StayTicks > 60 * 9 || hurt) { Aggro = true; BandChatter.Say(talker, "SNAP", who?.name, force: true); }
+			float closest = float.MaxValue; foreach (var m in Members) closest = Math.Min(closest, Vector2.Distance(m.NPC.Center, foe.Center) / 16f);
+			// the band spreads out around the player while it warns, so the trigger is the nearest member, not the middle of the band
+			if (closest < 11f || StayTicks > 60 * 9 || hurt) { Aggro = true; AggroWhy = $"closest {closest:0.0} stay {StayTicks} hurt {hurt}"; BandChatter.Say(talker, "WARNING_BROKEN", who?.name, force: true); }
 		}
 
 		public static int CountLevies()
@@ -211,24 +219,17 @@ namespace Warbands.Common
 		/// <summary>The band is over (every member dead, fled or despawned): pay the bounty for those beaten.</summary>
 		private void Finish()
 		{
-			if (Paid || Killed == 0 || Type?.Bounty == null) return;
+			if (Paid || Killed == 0 || Type?.Bounty == null || Neutral) return; // a neutral band is no outlaw band: nothing to claim
 			Paid = true; BountiesPaid++;
 			int total = Math.Max(1, StartSize);
 			float share = Math.Min(1f, Killed / (float)total);
 			var src = new EntitySource_Misc("Warbands:Bounty");
-			foreach (var (item, min, max) in Type.Bounty)
+			int idx = global::Warbands.Common.BandTypes.IndexOf(Type);
+			int it = Item.NewItem(src, LastDeathPos, ModContent.ItemType<global::Warbands.Content.Items.BountyNotice>(), 1, true);
+			if (it >= 0 && it < Main.maxItems && Main.item[it].ModItem is global::Warbands.Content.Items.BountyNotice bn)
 			{
-				int t = BandData.ItemType(item); if (t <= 0) continue;
-				int stack = Math.Max(1, (int)Math.Round(Main.rand.Next(min, max + 1) * share));
-				Item.NewItem(src, LastDeathPos, t, stack);
-			}
-			int copper = (int)(Type.BountyCopper * share);
-			while (copper > 0)
-			{
-				int plat = copper / 1000000; if (plat > 0) { Item.NewItem(src, LastDeathPos, ItemID.PlatinumCoin, plat); copper -= plat * 1000000; continue; }
-				int gold = copper / 10000; if (gold > 0) { Item.NewItem(src, LastDeathPos, ItemID.GoldCoin, gold); copper -= gold * 10000; continue; }
-				int silver = copper / 100; if (silver > 0) { Item.NewItem(src, LastDeathPos, ItemID.SilverCoin, silver); copper -= silver * 100; continue; }
-				Item.NewItem(src, LastDeathPos, ItemID.CopperCoin, copper); copper = 0;
+				bn.SetBand(idx, Math.Max(1, (int)Math.Round(share * 100f)));
+				if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncItem, -1, -1, null, it);
 			}
 			string line = Terraria.Localization.Language.GetTextValue("Mods.Warbands.Chat.Beaten", Type.DisplayName);
 			if (Main.netMode == NetmodeID.Server) Terraria.Chat.ChatHelper.BroadcastChatMessage(Terraria.Localization.NetworkText.FromLiteral(line), new Color(230, 190, 90));

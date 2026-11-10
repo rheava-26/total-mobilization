@@ -26,5 +26,16 @@ namespace Levy.Common
 		public const float DialogueFloatingRiseDecay = 0.92f;
 		/// <summary>Most rows that may be stacked above one speaker's head.</summary>
 		public const int DialogueFloatingMaxStackRows = 6;
+
+		// ---- ambient chatter (Content/NPCs/SoldierNPC.Chatter.cs): a calm levy says a line to a comrade now and then ----
+		/// <summary>The first line after a levy turns calm, then the gap between lines (ticks, random in range). Only while a player is within <see cref="ChatterPlayerTiles"/>.</summary>
+		public const int ChatterFirstMinTicks = 60 * 4, ChatterFirstMaxTicks = 60 * 14, ChatterMinTicks = 60 * 18, ChatterMaxTicks = 60 * 45;
+		/// <summary>After a fight ends the gap shortens to this range for <see cref="ChatterAfterFightWindowTicks"/>.</summary>
+		public const int ChatterAfterFightMinTicks = 60 * 5, ChatterAfterFightMaxTicks = 60 * 14, ChatterAfterFightWindowTicks = 60 * 30;
+		/// <summary>A levy hit this recently stays quiet. A squad (one commander's levies) shares a minimum gap between ambient lines.</summary>
+		public const int ChatterQuietTicks = 60 * 3, ChatterSquadGapTicks = 150;
+		public const float ChatterPlayerTiles = 70f, ChatterComradeTiles = 14f;
+		/// <summary>Chance that an ambient line is a name-drop (an aimed line about a town NPC) instead of plain idle talk.</summary>
+		public const float ChatterNamedropChance = 0.25f;
 	}
 }

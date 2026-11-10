@@ -308,7 +308,7 @@ namespace Levy.Common.Systems
 		{
 			if (!LevyUtil.IsServerOrSingle) return;
 			LevyConfig cfg = null; try { cfg = LevyConfig.Get; } catch { }
-			int pre = cfg?.LeviesByEndOfPreHardmode ?? 20, hm = cfg?.LeviesByEndOfHardmode ?? 40, post = cfg?.LeviesByEndOfPostMoonLord ?? 60, max = cfg?.MaxLevies ?? 60;
+			int pre = cfg?.LeviesByEndOfPreHardmode ?? LevyConstants.DefaultLeviesPre, hm = cfg?.LeviesByEndOfHardmode ?? LevyConstants.DefaultLeviesHm, post = cfg?.LeviesByEndOfPostMoonLord ?? LevyConstants.DefaultLeviesPost, max = cfg?.MaxLevies ?? 60;
 			int stage = CurrentWorldTier();
 			int stageCap = cfg != null && !cfg.CapLeviesByStage ? 0 : stage == 0 ? pre : stage == 1 ? hm : post;
 			int value = LevyTierMath.Own(BuildBosses(), cfg?.LeviesAtStart ?? LevyConstants.DefaultLeviesAtStart, pre, hm, post, stageCap, max);

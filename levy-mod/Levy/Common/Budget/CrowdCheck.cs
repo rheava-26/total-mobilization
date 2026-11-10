@@ -53,8 +53,6 @@ namespace Levy.Common.Budget
 					var bad = SidearmPolicy.Misfits(g, false);
 					Check(bad.Count == 1, "a non-summoner with a sentry and a staff gives one back, got " + bad.Count);
 					Check(SidearmPolicy.Misfits(g, true).Count == 0 && SidearmPolicy.Misfits(g).Count == 0, "a summoner (or no class given) keeps both");
-					SidearmPolicy.NonSummonersOverride = false;
-					try { Check(SidearmPolicy.Misfits(g, false).Count == 2, "with the config off a non-summoner keeps none"); } finally { SidearmPolicy.NonSummonersOverride = null; }
 					nums.Add("non-summoner kit: sentry + staff -> " + (2 - bad.Count) + " summon item");
 				}
 

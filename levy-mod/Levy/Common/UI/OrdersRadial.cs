@@ -11,14 +11,14 @@ using Levy.Content.TileEntities;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// Twelve buttons on an ellipse around the cursor, clockwise from the top: Follow / Hold / Return / Search &amp; destroy (orders),
-	/// Hold fire–Fire at will / Spread out–Close up / Focus attack (combat), Mobilize–Stand down / Rally / Re-arm / Nameplates (muster).
+	/// Thirteen buttons on an ellipse around the cursor, clockwise from the top: Follow / Hold / Return / Search &amp; destroy (orders),
+	/// Hold fire–Fire at will / Spread out–Close up / Focus attack (combat), Mobilize–Stand down / Rally / Re-arm / Nameplates (muster) and Send to map point.
 	/// The ellipse is grown at start-up until no two buttons touch, so it stays readable for any button count.
 	/// Opened by the War Horn right-click or the soldier chat button; closes after a click, on Escape or on right-click.
 	/// </summary>
 	public class OrdersRadial : UIState
 	{
-		private const int Count = 12;
+		private const int Count = 13;
 		private const float GrowStep = 1.04f;
 		private const int MaxGrowSteps = 60;
 		private static float _radX, _radY;
@@ -119,6 +119,7 @@ namespace Levy.Common.UI
 			else _buttons[8].Set(LevyUtil.T(_nearest.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(_nearest.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint") + " " + _nearest.TownName);
 			_buttons[9].Set(LevyUtil.T("UI.Rally"), true, LevyUtil.T(_radio ? "UI2.RallyHintRadio" : "UI2.RallyHint"));
 			_buttons[10].Set(LevyUtil.T("UI.Rearm"), true, LevyUtil.T("UI.RearmHint"));
+			_buttons[12].Set(LevyUtil.T("Observe.SendToPoint"), true, LevyUtil.T("Observe.SendToPointHint"));
 			_buttons[11].Set(LevyUtil.T(UISystem.NameplatesForced ? "UI.NamesOff" : "UI.NamesOn"), true, LevyUtil.T("UI.NamesHint"));
 		}
 
@@ -141,6 +142,7 @@ namespace Levy.Common.UI
 				case 9: UIActions.Rally(); break;
 				case 10: UIActions.Rearm(); break;
 				case 11: UISystem.Instance.ToggleNameplates(); break;
+				case 12: UISystem.Instance.CloseRadial(); global::Levy.Common.Observe.MapOrder.BeginPick(false); return;
 			}
 			UISystem.Instance.CloseRadial();
 		}

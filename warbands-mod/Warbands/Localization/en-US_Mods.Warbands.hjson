@@ -2,7 +2,7 @@
 # Style: 1-4 short declarative sentences. What it is, reach, the numbers that matter, one special rule.
 Chat: {
 	Arrive: "{0} are on the road."
-	Beaten: The {0} are beaten. Their bounty lies where the last one fell.
+	Beaten: The {0} are beaten. Their bounty notice lies where the last one fell.
 }
 
 NPCs: {
@@ -45,9 +45,19 @@ Configs: {
 			Tooltip: Most bands out across the world at one time.
 		}
 
+		GearDrops: {
+			Label: Gear drops (not recommended)
+			Tooltip: Fallen soldiers drop their own weapons, ammo and armor. Off by default; the reward is the bounty notice.
+		}
+
 		LootSharePercent: {
-			Label: Loot share
-			Tooltip: Percent chance each piece of a fallen soldier's gear drops.
+			Label: Gear drop chance
+			Tooltip: With gear drops on, percent chance each piece of a fallen soldier's gear drops.
+		}
+
+		NeutralBandPercent: {
+			Label: Neutral bands
+			Tooltip: Percent of naturally forming bands that ignore you and your levies until one of you hits them. Summoned bands are always hostile.
 		}
 
 		LifeScale: {
@@ -84,7 +94,7 @@ Items: {
 			'''
 			Calls the Forest Deserters to 24 to 34 tiles away, four soldiers with bows and guns.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -94,7 +104,7 @@ Items: {
 			'''
 			Calls the Iron Brigands to 24 to 34 tiles away, four soldiers with bows and guns.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -104,7 +114,7 @@ Items: {
 			'''
 			Calls the Dune Raiders to 24 to 34 tiles away, four soldiers with bows and guns.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -114,7 +124,7 @@ Items: {
 			'''
 			Calls the Snow Rangers to 24 to 34 tiles away, four soldiers with bows and guns.
 			They warn you off and attack only if you stay.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -124,7 +134,7 @@ Items: {
 			'''
 			Calls the Corrupt Zealots to 24 to 34 tiles away, four soldiers with staves and blades.
 			They warn you off and attack only if you stay.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -134,7 +144,7 @@ Items: {
 			'''
 			Calls the Crimson Flesh-Cult to 24 to 34 tiles away, four soldiers with staves and blades.
 			They warn you off and attack only if you stay.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -144,7 +154,7 @@ Items: {
 			'''
 			Calls the Jungle Poachers to 24 to 34 tiles away, four soldiers with bows and guns.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -154,7 +164,7 @@ Items: {
 			'''
 			Calls the Meteor Marauders to 24 to 34 tiles away, four soldiers with bows and guns.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -164,7 +174,7 @@ Items: {
 			'''
 			Calls the Ashland Scavengers to 24 to 34 tiles away, four soldiers with bows and guns.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -174,7 +184,7 @@ Items: {
 			'''
 			Calls the Dungeon Wardens to 24 to 34 tiles away, four soldiers with staves and blades.
 			They warn you off and attack only if you stay.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -184,7 +194,7 @@ Items: {
 			'''
 			Calls the Hive Raiders to 24 to 34 tiles away, four soldiers with staves and blades.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -194,7 +204,7 @@ Items: {
 			'''
 			Calls the Hallow Paladins to 24 to 34 tiles away, four soldiers with bows and guns.
 			They warn you off and attack only if you stay.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -204,7 +214,7 @@ Items: {
 			'''
 			Calls the Mythril Mercenaries to 24 to 34 tiles away, four soldiers with bows and guns.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -214,7 +224,7 @@ Items: {
 			'''
 			Calls the Hellfire Legion to 24 to 34 tiles away, four soldiers with bows and guns.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -224,7 +234,7 @@ Items: {
 			'''
 			Calls the Titanium Legion to 24 to 34 tiles away, four soldiers with bows and guns.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -234,7 +244,7 @@ Items: {
 			'''
 			Calls the Chlorophyte Wardens to 24 to 34 tiles away, four soldiers with bows and guns.
 			They warn you off and attack only if you stay.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -244,7 +254,7 @@ Items: {
 			'''
 			Calls the Shroomite Raiders to 24 to 34 tiles away, four soldiers with bows and guns.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -254,7 +264,7 @@ Items: {
 			'''
 			Calls the Frost Legion to 24 to 34 tiles away, four soldiers with bows and guns.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -264,7 +274,7 @@ Items: {
 			'''
 			Calls the Dungeon Ritualists to 24 to 34 tiles away, four soldiers with staves and blades.
 			They warn you off and attack only if you stay.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
 	}
 
@@ -274,8 +284,13 @@ Items: {
 			'''
 			Calls the Cultist Archers to 24 to 34 tiles away, four soldiers with bows and guns.
 			They fight you and your levies at once.
-			Beating the whole band pays a bounty.
+			Beating the whole band drops a bounty notice to turn in.
 			'''
+	}
+
+	BountyNotice: {
+		DisplayName: Bounty Notice
+		Tooltip: ""
 	}
 }
 

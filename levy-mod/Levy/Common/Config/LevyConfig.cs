@@ -47,10 +47,10 @@ namespace Levy.Common.Config
 
 		// ---- Levy & militia counts --------------------------------------------------------------------------
 		[Header("LevyCounts")]
-		[Range(4, 200)] [DefaultValue(10)] public int LeviesAtStart;
-		[Range(4, 200)] [DefaultValue(20)] public int LeviesByEndOfPreHardmode;
-		[Range(4, 200)] [DefaultValue(40)] public int LeviesByEndOfHardmode;
-		[Range(4, 200)] [DefaultValue(60)] public int LeviesByEndOfPostMoonLord;
+		[Range(4, 200)] [DefaultValue(LevyConstants.DefaultLeviesAtStart)] public int LeviesAtStart;
+		[Range(4, 200)] [DefaultValue(LevyConstants.DefaultLeviesPre)] public int LeviesByEndOfPreHardmode;
+		[Range(4, 200)] [DefaultValue(LevyConstants.DefaultLeviesHm)] public int LeviesByEndOfHardmode;
+		[Range(4, 200)] [DefaultValue(LevyConstants.DefaultLeviesPost)] public int LeviesByEndOfPostMoonLord;
 		[Range(4, 200)] [DefaultValue(60)] public int MaxLevies;
 		[DefaultValue(true)] public bool CapLeviesByStage;
 		[Range(1, 40)] [DefaultValue(10)] public int MilitiaFieldCap;
@@ -81,6 +81,7 @@ namespace Levy.Common.Config
 		[DefaultValue(false)] public bool SoldiersTakeFallDamage;
 		[DefaultValue(false)] public bool SoldiersTakeTileHazards;
 		[DefaultValue(true)] public bool LeviesSitWhenIdle;
+		[DefaultValue(true)] public bool AmbientChatter;
 
 		// ---- Gear upkeep ------------------------------------------------------------------------------------
 		[Header("GearUpkeep")]
@@ -114,7 +115,6 @@ namespace Levy.Common.Config
 
 		// ---- Crowd ------------------------------------------------------------------------------------------
 		[Header("Crowd")]
-		[DefaultValue(true)] public bool NonSummonersCarrySummonItem;
 		[DefaultValue(true)] public bool ArmyEntityBudget;
 		[Range(50, 400)] [DefaultValue(150)] public int ReservedProjectileSlots;
 		[Range(10, 100)] [DefaultValue(40)] public int ReservedNpcSlots;

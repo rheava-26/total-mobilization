@@ -16,10 +16,10 @@ namespace Levy.Common.Systems
 	public static class LevyAnchors
 	{
 		/// <summary>Inclusive recommended range of the end-of-tier count: pre-hardmode (Wall of Flesh), hardmode (Moon Lord), post-Moon Lord (the final boss).</summary>
-		public static readonly int[] RecommendedLow = { 12, 28, 40 };
+		public static readonly int[] RecommendedLow = { 12, 24, 32 };
 		/// <summary>Recommended range of the starting count.</summary>
 		public const int StartLow = 6, StartHigh = 20;
-		public static readonly int[] RecommendedHigh = { 30, 60, 90 };
+		public static readonly int[] RecommendedHigh = { 40, 60, 90 };
 		public static readonly string[] TierKeys = { "Pre", "Hardmode", "Post" };
 
 		/// <summary>Localization keys (under Mods.Levy) of every note that applies, in tier order. Empty when everything sits inside the recommended ranges.</summary>
@@ -105,9 +105,9 @@ namespace Levy.Common.Systems
 
 		public static Values Of(SetupPreset p) => p switch
 		{
-			SetupPreset.Relaxed => new Values(14, 30, 60, 90, 90, false, false),
-			SetupPreset.Hardcore => new Values(6, 14, 30, 45, 45, true, true),
-			_ => new Values(10, 20, 40, 60, 60, false, true),
+			SetupPreset.Relaxed => new Values(18, 36, 50, 64, 64, false, false),
+			SetupPreset.Hardcore => new Values(8, 18, 26, 32, 32, true, true),
+			_ => new Values(LevyConstants.DefaultLeviesAtStart, LevyConstants.DefaultLeviesPre, LevyConstants.DefaultLeviesHm, LevyConstants.DefaultLeviesPost, 60, false, true),
 		};
 
 		public static void Apply(LevyConfig c, Values v)
@@ -218,7 +218,7 @@ namespace Levy.Common.Systems
 			"ArmoryTurnsStarsIntoMana", "SoldiersTriggerPressurePlates", "SoldierEffectsAtSoldier", "RealGearUpkeep", "SoldiersUseHooks", "ExtraTargetingAiStyles",
 			"DoNotAttackNpcNames", "WageMultiplier", "AutoMusterDefault", "MilitiaFieldCap", "WageMutiny", "NurseHealsSoldiers", "Spoils", "MagicStorageSupply", "LeviesAtStart", "LeviesByEndOfPreHardmode",
 			"LeviesByEndOfHardmode", "LeviesByEndOfPostMoonLord", "MaxLevies", "Nameplates", "MilitiaDeathMessages", "RegularDeathMessages",
-			"NonSummonersCarrySummonItem", "ArmyEntityBudget", "ReservedProjectileSlots", "ReservedNpcSlots", "ArmySoundVolume",
+			"ArmyEntityBudget", "ReservedProjectileSlots", "ReservedNpcSlots", "ArmySoundVolume",
 		};
 
 		public override void PostAddRecipes()
@@ -293,9 +293,9 @@ namespace Levy.Common.Systems
 				if (SetupState.Read(tag2, out _, out _) != SetupState.Skipped) fails.Add("skipped did not round-trip");
 				// preset application on a bare config object
 				var bare = new LevyConfig(); SetupPresets.Apply(bare, SetupPreset.Hardcore);
-				if (bare.LeviesAtStart != 6 || bare.LeviesByEndOfPreHardmode != 14 || !bare.BossesTargetSoldiers || bare.MaxLevies < bare.LeviesByEndOfPostMoonLord) fails.Add("Hardcore preset did not apply");
+				if (bare.LeviesAtStart != 8 || bare.LeviesByEndOfPreHardmode != 18 || !bare.BossesTargetSoldiers || bare.MaxLevies < bare.LeviesByEndOfPostMoonLord) fails.Add("Hardcore preset did not apply");
 				SetupPresets.Apply(bare, SetupPreset.Relaxed);
-				if (bare.BossesTargetSoldiers || bare.BossesPunishSoldiers || bare.LeviesByEndOfPostMoonLord != 90 || bare.LeviesAtStart != 14) fails.Add("Relaxed preset did not apply");
+				if (bare.BossesTargetSoldiers || bare.BossesPunishSoldiers || bare.LeviesByEndOfPostMoonLord != 64 || bare.LeviesAtStart != 18) fails.Add("Relaxed preset did not apply");
 				if (SetupPresets.Of(SetupPreset.Default).Start != LevyConstants.DefaultLeviesAtStart) fails.Add("Default preset start must equal the config default");
 			}
 			catch (Exception e) { fails.Add("threw " + e.GetType().Name + ": " + e.Message); }

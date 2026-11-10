@@ -236,7 +236,7 @@ namespace Levy.Common.Targeting
 		private static bool ComputeNeverTarget(NPC npc)
 		{
 			if (!LevyUtil.IsHostileTarget(npc)) return true;          // friendly, townNPC, critter, dontTakeDamage, immortal, lifeMax <= 5
-			if (npc.ModNPC is SoldierNPC sn && !sn.Hostile) return true; // a levy never shoots a levy; a hostile soldier is a legal target
+			if (npc.ModNPC is SoldierNPC sn && (!sn.Hostile || sn.HostilePassive)) return true; // a levy never shoots a levy; a hostile soldier is a legal target unless it is a neutral band nobody has provoked (HOSTILE SEAM)
 			int type = npc.type;
 			if (type < 0) return true;
 			// Projectile-NPCs (the orbs casters throw) are damageable and shootable: they are legal targets. Undamageable ones were already rejected by IsHostileTarget above.

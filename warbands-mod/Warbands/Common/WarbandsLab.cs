@@ -343,13 +343,13 @@ namespace Warbands.Common
 				Tick = t =>
 				{
 					CountShots();
-					var b = BandBrain.All.Values.FirstOrDefault();
+					var b = BandBrain.All.Values.FirstOrDefault(x => x.Type == snow);
 					if (b == null) return false;
-					if (t == 400) { shotsWarn = _shotsSeen; aggroEarly = b.Aggro; warnSaid = BandChatter.Log.Lines.FirstOrDefault(l => l.StartsWith("WARN")); _pin = false; Main.player[0].position += new Vector2(Math.Sign(Levies().First().NPC.Center.X - PlayerPos.X) * 34 * 16, 0); _pin = true; _pinAt = Main.player[0].position; }
+					if (t == 400) { shotsWarn = _shotsSeen; aggroEarly = b.Aggro; warnSaid = BandChatter.Log.Lines.FirstOrDefault(l => l.StartsWith("WARNING")); _pin = false; Main.player[0].position += new Vector2(Math.Sign(Levies().First().NPC.Center.X - PlayerPos.X) * 34 * 16, 0); _pin = true; _pinAt = Main.player[0].position; }
 					if (t > 400 && b.Aggro && aggroAt < 0) aggroAt = t;
 					return t > 800 && b.Aggro;
 				},
-				Result = () => (!aggroEarly && shotsWarn == 0 && warnSaid != null && warnSaid.Contains("Turn back") && aggroAt > 0, $"before the player moved: fire={shotsWarn} aggro={aggroEarly} said='{warnSaid}'; aggro at tick {aggroAt}"),
+				Result = () => (!aggroEarly && shotsWarn == 0 && warnSaid != null && warnSaid.Contains("Turn back") && aggroAt > 0, $"before the player moved: fire={shotsWarn} aggro={aggroEarly} said='{warnSaid}'; aggro at tick {aggroAt} why {BandBrain.All.Values.FirstOrDefault(x => x.Type == snow)?.AggroWhy}"),
 			});
 
 			// 5: tactics by the foe's class
@@ -415,8 +415,8 @@ namespace Warbands.Common
 				{
 					var l = Levies(); var talker = l.FirstOrDefault();
 					string armor = BandChatter.ArmorSetName(Main.player[0]);
-					string line = BandChatter.Pick("ARMOR", talker, null, "Tester", armor, 0);
-					return (armor == "Shroomite" && line != null && line.Contains("Shroomite") && !line.Contains("{"), $"armor set '{armor}', line '{line}', pool {BandChatter.Pool.Values.Sum(v => v.Length)} lines");
+					string line = BandChatter.Pick("SPOTTED_ARMOR", talker, "Tester", armor, 0);
+					return (armor == "Shroomite" && line != null && line.Contains("Shroomite") && !line.Contains("{"), $"armor set '{armor}', line '{line}', pool {BandChatter.Lines.Values.Sum(v => v.Count)} lines");
 				},
 			});
 
@@ -438,11 +438,11 @@ namespace Warbands.Common
 				});
 			}
 
-			// 10: the bounty: beating the whole band pays out, members drop a share of their gear
-			int itemsBefore = 0; int bandSize = 0;
+			// 10: the bounty: beating the whole band leaves a notice (not loot), gear drops are off, the notice pays when turned in
+			int bandSize = 0;
 			_trials.Add(new Trial
 			{
-				Name = "bounty: beating the whole Chlorophyte Wardens band pays Chlorophyte Ore and coins; members drop a share of their gear", Max = 600,
+				Name = "bounty: beating the whole Chlorophyte Wardens band leaves one bounty notice and no gear; turning it in pays ore and coins", Max = 600,
 				Setup = () => { ArmPlayer(Gold, 400, 0, "DemonBow", "FlamingArrow"); _accuracy = 0f; SpawnArmBand(BandTypes.ById("ChlorophyteWardens"), 4, false); bandSize = Levies().Count; },
 				Tick = t =>
 				{
@@ -451,9 +451,44 @@ namespace Warbands.Common
 				},
 				Result = () =>
 				{
-					int ore = 0, coins = 0, gear = 0;
-					for (int i = 0; i < Main.maxItems; i++) { var it = Main.item[i]; if (!it.active) continue; if (it.type == ItemID.ChlorophyteOre) ore += it.stack; else if (it.type >= ItemID.CopperCoin && it.type <= ItemID.PlatinumCoin) coins += it.stack; else gear++; }
-					return (ore >= 30 && coins > 0 && BandBrain.BountiesPaid > 0, $"band of {bandSize}: ore {ore}, coin stacks value {coins}, gear drops {gear}, bounties paid {BandBrain.BountiesPaid}");
+					int notices = 0, gear = 0, share = 0, bandIdx = -1;
+					for (int i = 0; i < Main.maxItems; i++) { var it = Main.item[i]; if (!it.active) continue; if (it.ModItem is Content.Items.BountyNotice bn) { notices += it.stack; share = bn.SharePct; bandIdx = bn.Band; } else gear++; }
+					bool idOk = bandIdx == BandTypes.IndexOf(BandTypes.ById("ChlorophyteWardens"));
+					return (notices == 1 && gear == 0 && share == 100 && idOk && BandBrain.BountiesPaid > 0, $"band of {bandSize}: notices {notices} (band {bandIdx}, {share}%), gear drops {gear}, bounties issued {BandBrain.BountiesPaid}");
+				},
+			});
+
+			// 10b: a neutral band ignores the player until it is hit, then fights
+			BandBrain neutralBand = null; int neutralShots0 = 0; bool wasPassive = false; float dmg0 = 0;
+			_trials.Add(new Trial
+			{
+				Name = "neutral band: unprovoked it neither shoots nor is targeted; one hit makes it hostile", Max = 900,
+				Setup = () =>
+				{
+					ArmPlayer(Gold, 400, 0, "DemonBow", "FlamingArrow"); _accuracy = 0f; DamageTaken = 0; _shotIds.Clear(); _shotsSeen = 0; wasPassive = false;
+					BandSpawner.SpawnBand(Main.player[0], BandTypes.ById("MeteorMarauders"), 3, 28, 34, false, false, true);
+					neutralBand = null; foreach (var b in BandBrain.All.Values) neutralBand = b;
+				},
+				Tick = t =>
+				{
+					CountShots();
+					if (t == 400) { wasPassive = Levies().Count > 0 && Levies().All(m => m.HostilePassive && !m.NPC.chaseable) && _shotsSeen == 0 && DamageTaken == 0; neutralShots0 = _shotsSeen; Levies()[0].NPC.SimpleStrikeNPC(5, 1, false, 0f, DamageClass.Ranged, false, 0f, true); }
+					return t > 460 && neutralBand != null && neutralBand.Provoked;
+				},
+				Result = () => (wasPassive && neutralBand != null && neutralBand.Neutral && neutralBand.Provoked && neutralBand.Aggro, $"passive and silent for 400 ticks: {wasPassive}, provoked after one hit: {neutralBand?.Provoked}"),
+			});
+
+			// 10c: a band that has spotted its foe spreads out: no two members share a spot, and the shooters look for higher ground
+			_trials.Add(new Trial
+			{
+				Name = "positioning: a band spreads out on contact (own spots, no clump)", Max = 700,
+				Setup = () => { ArmPlayer(Gold, 400, 0, "DemonBow", "FlamingArrow"); _accuracy = 0f; SpawnArmBand(BandTypes.ById("MythrilMercenaries"), 4, false); },
+				Tick = t => t >= 360,
+				Result = () =>
+				{
+					var l = Levies(); int withSpot = l.Count(m => m.PostureSpot != default); float minPair = float.MaxValue;
+					for (int i = 0; i < l.Count; i++) for (int j = i + 1; j < l.Count; j++) if (l[i].PostureSpot != default && l[j].PostureSpot != default) minPair = Math.Min(minPair, Vector2.Distance(l[i].PostureSpot, l[j].PostureSpot) / 16f);
+					return (l.Count >= 3 && withSpot >= 2 && minPair >= 4f, $"members {l.Count}, with a spot {withSpot}, nearest two spots {(minPair > 1e5f ? 0 : minPair):0.0} tiles apart");
 				},
 			});
 

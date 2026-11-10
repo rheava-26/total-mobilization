@@ -20,7 +20,7 @@ namespace Levy.Content.NPCs
 			uint now = Main.GameUpdateCount;
 			if (_vanityTick != 0 && now - _vanityTick < 30) return;
 			_vanityTick = now == 0 ? 1 : now;
-			_vanityLook = VanityLookup.LookFor(Record);
+			_vanityLook = Hostile ? HostileVanity() : VanityLookup.LookFor(Record); // HOSTILE SEAM: a band's own vanity
 			_vanityHash = _vanityLook?.Hash() ?? 0;
 		}
 

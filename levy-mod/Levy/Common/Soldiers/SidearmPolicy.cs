@@ -62,13 +62,8 @@ namespace Levy.Common.Soldiers
 		/// <summary>True when the weapon may sit beside this primary and these other sidearms.</summary>
 		public static bool Fits(Item primary, Item side, IEnumerable<Item> others) => !OffClass(primary, side) && !Duplicates(primary, side, others);
 
-		/// <summary>True when a levy who is not a summoner may carry a summon item at all (config; default yes).</summary>
-		/// <summary>Test seam: forces the config answer.</summary>
-		internal static bool? NonSummonersOverride;
-		public static bool NonSummonersMayCarry { get { if (NonSummonersOverride.HasValue) return NonSummonersOverride.Value; try { return global::Levy.Common.Config.LevyConfig.Get?.NonSummonersCarrySummonItem ?? true; } catch (System.Exception) { return true; } } }
-
 		/// <summary>The sidearms (hand first) that do not fit beside the primary and the ones kept before them: what a tidy-up gives back to the shelf. Locked slots are never listed.
-		/// <paramref name="summoner"/> false adds the one-summon-item rule: a levy who is not a summoner keeps ONE minion staff or sentry (a locked one first, else the best), or none when the config says so.</summary>
+		/// <paramref name="summoner"/> false adds the one-summon-item rule: a levy who is not a summoner keeps ONE minion staff or sentry (a locked one first, else the best), </summary>
 		public static List<int> Misfits(SoldierGear g, bool? summoner = null)
 		{
 			var res = new List<int>();
@@ -90,7 +85,7 @@ namespace Levy.Common.Soldiers
 		private static void AddExtraSummonItems(SoldierGear g, List<int> res)
 		{
 			int keepSlot = -1; float keepRank = -1f;
-			bool allow = NonSummonersMayCarry;
+			bool allow = true;
 			var slots = new List<int>();
 			for (int i = 0; i < LevyConstants.MaxSidearms; i++)
 			{

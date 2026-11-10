@@ -105,8 +105,8 @@ Pages: {
 			'''
 			Map orders send your Regulars to a point on the full map. They march there, fight what is in reach and hold the spot.
 			They need A Guide to Autonomy, studied once in the world.
-			With a Command Radio in your pack, open the full map, hold Shift and click a point.
-			Without a radio, press Send to map point on the Barracks panel and click the map. Esc cancels.
+			Pick Send to map point on the orders radial or the Barracks panel. Click a spot on the full map, then click it again to send the army. Dragging moves the map and never sends. Esc cancels.
+			With a Command Radio in your pack, holding Shift on the full map does the same.
 			'''
 	}
 
@@ -362,7 +362,7 @@ Pages: {
 			A setup popup opens in a new single player world. Type /levysetup, or press Setup on the Barracks panel, to open it again.
 			Pick a preset. Default is the standard army. Relaxed gives more levies and bosses never target them. Hardcore gives fewer levies and bosses you have beaten target them.
 			Customize sets how many levies you have at the start, by the Wall of Flesh, by Moon Lord and by the final boss, and how bosses treat them.
-			New worlds start with 10 levies. Pre-hardmode growth follows how far along you are, so extra modded bosses do not slow it.
+			New worlds start with 14 levies. Pre-hardmode growth follows how far along you are, so extra modded bosses do not slow it.
 			Skip keeps the current settings. Multiplayer hosts use the mod config.
 			Every other option is under Settings, Mod Configuration, Levy, with progression assistance on its own page: loot, Dungeon Spirits, Chlorophyte and Luminite.
 			'''

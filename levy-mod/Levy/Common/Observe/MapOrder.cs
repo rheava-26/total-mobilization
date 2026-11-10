@@ -39,19 +39,22 @@ namespace Levy.Common.Observe
 		public static Point LastPoint; public static uint LastPointTick;
 
 		/// <summary>Barracks button: opens the full map; the next left-click is the destination for every Regular.</summary>
-		public static void BeginPick()
+		public static void BeginPick() => BeginPick(true);
+
+		/// <summary>Opens the map for a pick. <paramref name="fromBarracks"/> true reopens the open Barracks panel afterwards; the radial's button passes false.</summary>
+		public static void BeginPick(bool fromBarracks)
 		{
 			if (Main.dedServ) return;
 			if (!Potions.AutonomySystem.Studied) { Main.NewText(LevyUtil.T("Potions.NeedAutonomy"), 255, 180, 120); return; }
 			var me = Main.LocalPlayer;
-			ReopenBarracks = Common.UI.UISystem.CurrentBarracks;
+			ReopenBarracks = fromBarracks ? Common.UI.UISystem.CurrentBarracks : null;
 			// Open the map the way vanilla's own map button does (Player.TryOpeningFullscreenMap): with the inventory or a chat still open, Main.Draw calls ToggleInv()
 			// the very next frame, which closes the map again (one black frame, then the panel is back).
 			Main.playerInventory = false; me.SetTalkNPC(-1); me.sign = -1; Main.editSign = false; Main.npcChatCornerItem = 0;
 			me.releaseInventory = false;
 			Main.mapFullscreenScale = 2.5f;
 			PickMode = true; Main.mapFullscreen = true; Main.resetMapFull = true;
-			PickGate.Reset();
+			PickGate.Reset(); MapClicks.Reset();
 			Main.NewText(LevyUtil.T("Observe.PickPrompt"), 190, 220, 255);
 		}
 
@@ -205,32 +208,35 @@ namespace Levy.Common.Observe
 
 		public override void Draw(ref MapOverlayDrawContext context, ref string text)
 		{
-			if (Main.dedServ || !Main.mapFullscreen) { _wasLeft = Main.mouseLeft; return; }
+			if (Main.dedServ || !Main.mapFullscreen) { _wasLeft = Main.mouseLeft; MapClicks.Reset(); return; }
 			var me = Main.LocalPlayer;
 			bool radio = CommandRadio.Has(me), pick = MapOrder.PickMode;
 			bool shift = Main.keyState.IsKeyDown(Keys.LeftShift) || Main.keyState.IsKeyDown(Keys.RightShift);
 			bool armed = (radio && shift) || pick;
-			bool click = PickGate.Click(Main.mouseLeft, _wasLeft);
 			_wasLeft = Main.mouseLeft;
 
 			// the last ordered point stays on the map for a while so the player can watch the levies go
 			if (Main.GameUpdateCount - MapOrder.LastPointTick < 60u * 30u)
 				Mark(ref context, MapOrder.LastPoint.X, MapOrder.LastPoint.Y, new Color(120, 255, 160));
 
-			if (pick && Main.keyState.IsKeyDown(Keys.Escape)) { MapOrder.PickMode = false; return; }
-			if (!armed) return;
+			if (pick && Main.keyState.IsKeyDown(Keys.Escape)) { MapOrder.PickMode = false; MapClicks.Reset(); return; }
+			if (!armed) { MapClicks.Reset(); return; }
 			Vector2 t = MapOrder.MouseTile(in context);
 			int tx = (int)t.X, ty = (int)t.Y;
+			bool overUi = MapOrder.OverMapCloseButton(Main.mouseX, Main.mouseY, Main.screenHeight);
+			var step = MapClicks.Step(Main.mouseLeft, Main.MouseScreen, tx, ty, context.MapScale, Main.GameUpdateCount, overUi);
+			if (MapClicks.Pending) Mark(ref context, MapClicks.PendingX, MapClicks.PendingY, new Color(255, 140, 60));
 			if (!MapOrder.ValidTile(tx, ty)) return;
 			Mark(ref context, tx, ty, new Color(255, 230, 90));
-			text = LevyUtil.T("Observe.MapSendHint");
-			if (MapOrder.IsPickClick(click, Main.mouseX, Main.mouseY, Main.screenHeight))
+			text = LevyUtil.T(MapClicks.Pending ? "Observe.MapConfirmHint" : "Observe.MapSendHint");
+			if (step == MapClicks.Result.Confirmed)
 			{
 				bool wasPick = MapOrder.PickMode;
-				MapOrder.Send(tx, ty);
+				MapOrder.Send(MapClicks.SentX, MapClicks.SentY);
 				MapOrder.PickMode = false;
 				if (wasPick) { Main.mapFullscreen = false; Terraria.Audio.SoundEngine.PlaySound(SoundID.MenuClose); } // the barracks pick is one click: back to the world (MapPickSystem reopens the panel)
 			}
+			else if (step == MapClicks.Result.Placed) Terraria.Audio.SoundEngine.PlaySound(SoundID.MenuTick);
 		}
 
 		private static void Mark(ref MapOverlayDrawContext c, int tx, int ty, Color col)
@@ -238,6 +244,66 @@ namespace Levy.Common.Observe
 			var tex = TextureAssets.MagicPixel.Value;
 			float s = Math.Max(5f, 7f * c.DrawScale);
 			c.Draw(tex, new Vector2(tx, ty), col, new SpriteFrame(1, 1), s, s, Alignment.Center);
+		}
+	}
+
+	/// <summary>
+	/// Map-order clicking. A click is a press and a release that stay within <see cref="DragPx"/> pixels, so dragging the map never counts. The first click puts a pending marker on the map;
+	/// a second click on the same spot (within <see cref="SlopPx"/> pixels, inside <see cref="WindowTicks"/>) confirms and sends. A click anywhere else moves the marker. Pure state, driven once a frame.
+	/// </summary>
+	public static class MapClicks
+	{
+		public enum Result : byte { None, Placed, Confirmed }
+		public const float DragPx = 6f, SlopPx = 16f;
+		public const uint WindowTicks = 60u * 12u;
+		public static bool Pending; public static int PendingX, PendingY; public static int SentX, SentY;
+		private static uint _pendingTick; private static bool _wasLeft, _down, _gate; private static Vector2 _downAt;
+
+		public static void Reset() { Pending = false; _down = false; _gate = false; _wasLeft = !Main.dedServ && Main.mouseLeft; }
+
+		/// <summary>One frame. <paramref name="left"/> is the mouse button, <paramref name="mouse"/> its screen position, (tx, ty) the map tile under it, <paramref name="mapScale"/> the map's pixels per tile.</summary>
+		public static Result Step(bool left, Vector2 mouse, int tx, int ty, float mapScale, uint now, bool overUi)
+		{
+			var res = Result.None;
+			if (Pending && now - _pendingTick > WindowTicks) Pending = false;
+			if (!left) _gate = true; // the press that opened the map is not a click
+			if (left && !_wasLeft && _gate && !overUi) { _down = true; _downAt = mouse; }
+			else if (left && _down && Vector2.Distance(mouse, _downAt) > DragPx) _down = false; // the map is being dragged
+			else if (!left && _wasLeft && _down)
+			{
+				_down = false;
+				if (Pending && Vector2.Distance(new Vector2(tx, ty) * mapScale, new Vector2(PendingX, PendingY) * mapScale) <= SlopPx)
+				{
+					SentX = PendingX; SentY = PendingY; Pending = false; res = Result.Confirmed;
+				}
+				else { Pending = true; PendingX = tx; PendingY = ty; _pendingTick = now; res = Result.Placed; }
+			}
+			_wasLeft = left;
+			return res;
+		}
+
+		/// <summary>Boot check: the opening press never places, a drag never places, a click places, a second click on the spot confirms, a click elsewhere moves the marker, an old marker expires.</summary>
+		public static bool SelfCheck(out string why)
+		{
+			why = "";
+			bool was = _wasLeft, wp = Pending, wd = _down, wg = _gate; int px = PendingX, py = PendingY;
+			try
+			{
+				Pending = false; _down = false; _gate = false; _wasLeft = true; // the opening press is still down
+				uint t = 1000;
+				Result Click(int x, int y, uint at) { Step(true, new Vector2(x * 2, y * 2), x, y, 2f, at, false); return Step(false, new Vector2(x * 2, y * 2), x, y, 2f, at + 2, false); }
+				var r0 = Step(false, Vector2.Zero, 0, 0, 2f, t, false);
+				if (r0 != Result.None || Pending) { why = "the press that opened the map placed a point"; return false; }
+				Step(true, new Vector2(100, 100), 50, 50, 2f, t + 5, false); Step(true, new Vector2(160, 100), 80, 50, 2f, t + 6, false);
+				var r1 = Step(false, new Vector2(160, 100), 80, 50, 2f, t + 7, false);
+				if (r1 != Result.None || Pending) { why = "a drag placed a point"; return false; }
+				var r2 = Click(300, 300, t + 20); if (r2 != Result.Placed || !Pending) { why = "a click did not place a point"; return false; }
+				var r3 = Click(400, 400, t + 40); if (r3 != Result.Placed || PendingX != 400) { why = "a click elsewhere did not move the point"; return false; }
+				var r4 = Click(401, 400, t + 60); if (r4 != Result.Confirmed || SentX != 400 || Pending) { why = "the second click did not confirm"; return false; }
+				Click(10, 10, t + 80); var r5 = Click(10, 10, t + WindowTicks + 200); if (r5 != Result.Placed) { why = "an old point did not expire"; return false; }
+				return true;
+			}
+			finally { _wasLeft = was; Pending = wp; _down = wd; _gate = wg; PendingX = px; PendingY = py; }
 		}
 	}
 
@@ -272,7 +338,7 @@ namespace Levy.Common.Observe
 		public override void PostSetupContent()
 		{
 			bool clickOk = MapOrder.IsPickClick(true, 600, 400, 1080) && !MapOrder.IsPickClick(false, 600, 400, 1080) && !MapOrder.IsPickClick(true, 20, 1050, 1080);
-			if (PickGate.SelfCheck() && clickOk) Mod.Logger.Info("[MapPick] self-check ok"); else Mod.Logger.Error("[MapPick] self-check FAILED (the opening click would pick)");
+			string why = ""; if (PickGate.SelfCheck() && clickOk && MapClicks.SelfCheck(out why)) Mod.Logger.Info("[MapPick] self-check ok (a click places, a second click on it sends, a drag never does)"); else Mod.Logger.Error("[MapPick] self-check FAILED " + why);
 		}
 
 		public override void PostUpdateEverything()

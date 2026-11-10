@@ -100,6 +100,12 @@ namespace Levy.Common.Weapons
 
 		public List<RuleBlock> Blocks = new();
 		public readonly Dictionary<string, ItemOverride> Overrides = new();
+		/// <summary>Most sidearms a levy who is not a summoner carries (0 to <see cref="LevyConstants.MaxSidearms"/>). The top value is no limit.</summary>
+		public int SidearmLimit = LevyConstants.MaxSidearms;
+		/// <summary>Whether a levy who is not a summoner may carry sentry and minion staves as sidearms.</summary>
+		public bool SummonsForOthers = true;
+		/// <summary>True when the sidearm rules limit anything.</summary>
+		public bool LimitsLoadouts => SidearmLimit < LevyConstants.MaxSidearms || !SummonsForOthers;
 		/// <summary>Bumped on every edit; the UI and the compiled cache compare it.</summary>
 		public int Rev;
 
@@ -128,7 +134,7 @@ namespace Levy.Common.Weapons
 
 		public ArmoryRules Clone()
 		{
-			var r = new ArmoryRules { Blocks = Blocks.ConvertAll(b => b.Clone()), Rev = Rev };
+			var r = new ArmoryRules { Blocks = Blocks.ConvertAll(b => b.Clone()), Rev = Rev, SidearmLimit = SidearmLimit, SummonsForOthers = SummonsForOthers };
 			foreach (var kv in Overrides) r.Overrides[kv.Key] = kv.Value.Clone();
 			return r;
 		}
@@ -139,6 +145,7 @@ namespace Levy.Common.Weapons
 			Blocks = o.Blocks.ConvertAll(b => b.Clone());
 			Overrides.Clear();
 			foreach (var kv in o.Overrides) Overrides[kv.Key] = kv.Value.Clone();
+			SidearmLimit = o.SidearmLimit; SummonsForOthers = o.SummonsForOthers;
 			Rev = o.Rev;
 			Changed(false);
 		}
@@ -155,7 +162,7 @@ namespace Levy.Common.Weapons
 		{
 			get
 			{
-				if (Overrides.Count > 0) return false;
+				if (Overrides.Count > 0 || LimitsLoadouts) return false;
 				foreach (var b in Blocks)
 				{
 					if (!b.On) continue;
@@ -411,6 +418,7 @@ namespace Levy.Common.Weapons
 					w.Write((byte)Math.Min(o.CatAdd.Count, 16)); int a = 0; foreach (var s in o.CatAdd) { if (a++ >= 16) break; w.Write(s); }
 					w.Write((byte)Math.Min(o.CatRemove.Count, 16)); a = 0; foreach (var s in o.CatRemove) { if (a++ >= 16) break; w.Write(s); }
 				}
+				w.Write((byte)Math.Clamp(SidearmLimit, 0, LevyConstants.MaxSidearms)); w.Write(SummonsForOthers); // appended last: data written before these existed ends above and reads as no limit
 			}
 			return ms.ToArray();
 		}
@@ -463,6 +471,7 @@ namespace Levy.Common.Weapons
 					int nr = Math.Min((int)r.ReadByte(), 16); for (int k = 0; k < nr; k++) { string s = Id(r.ReadString()); if (s.Length > 0) o.CatRemove.Add(s); }
 					if (key.Length > 0 && key.Length <= 96 && !o.IsEmpty) res.Overrides[key] = o;
 				}
+				if (ms.Position + 2 <= ms.Length) { res.SidearmLimit = Math.Clamp((int)r.ReadByte(), 0, LevyConstants.MaxSidearms); res.SummonsForOthers = r.ReadBoolean(); }
 				return res;
 			}
 			catch (Exception) { return Default(); }

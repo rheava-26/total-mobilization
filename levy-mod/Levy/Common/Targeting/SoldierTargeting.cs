@@ -218,6 +218,7 @@ namespace Levy.Common.Targeting
 		public static bool IsNeverTarget(NPC npc)
 		{
 			if (npc == null || !npc.active) return true;
+			if (HostileSide.Active) return !HostileSide.IsEnemy(npc); // HOSTILE SEAM: a hostile soldier's enemies are the player's side, nothing else
 			int i = npc.whoAmI;
 			// only a real slot of Main.npc is cached (the focus stand-in has a negative index; a stray NPC instance never matches the array entry)
 			if ((uint)i < (uint)Main.maxNPCs && ReferenceEquals(Main.npc[i], npc))
@@ -235,7 +236,7 @@ namespace Levy.Common.Targeting
 		private static bool ComputeNeverTarget(NPC npc)
 		{
 			if (!LevyUtil.IsHostileTarget(npc)) return true;          // friendly, townNPC, critter, dontTakeDamage, immortal, lifeMax <= 5
-			if (npc.ModNPC is SoldierNPC) return true;
+			if (npc.ModNPC is SoldierNPC sn && !sn.Hostile) return true; // a levy never shoots a levy; a hostile soldier is a legal target
 			int type = npc.type;
 			if (type < 0) return true;
 			// Projectile-NPCs (the orbs casters throw) are damageable and shootable: they are legal targets. Undamageable ones were already rejected by IsHostileTarget above.

@@ -5,7 +5,7 @@ using Terraria.ID;
 
 namespace Warbands.Common
 {
-	public enum BandBiome : byte { Forest, Underground, Corruption, Crimson, Desert, Snow, Jungle, Hallow, Underworld }
+	public enum BandBiome : byte { Forest, Underground, Corruption, Crimson, Desert, Snow, Jungle, Hallow, Underworld, Dungeon, Mushroom }
 
 	/// <summary>One soldier of a band: a role, the real weapon and ammo it carries, and the armor set it wears. All names are vanilla internal item names (ItemID.Search).</summary>
 	public class BandMember
@@ -20,6 +20,25 @@ namespace Warbands.Common
 	public class BandRoster
 	{
 		public BandBiome Biome; public int Stage; public string Name; public BandMember[] Members;
+		/// <summary>Set for the 20 named band types (BandTypes); null for the legacy biome rosters.</summary>
+		public string Id, Title, ItemName, ItemKind, Emblem, WarnLine, CalWarn;
+		/// <summary>Chatter pool key of the type's own flavour lines (null = none beyond the common pool).</summary>
+		public string Flavor;
+		/// <summary>Calamity's own factions (warbands-mod/docs/LORE_FACTIONS.md): when Calamity is loaded a band takes this name, rank title and chatter pool. Null = none.</summary>
+		public string CalName, CalTitle, CalFlavor;
+		public static bool Calamity => Terraria.ModLoader.ModLoader.HasMod("CalamityMod");
+		public string DisplayName => Calamity && CalName != null ? CalName : Name;
+		public string RankTitle => Calamity && CalTitle != null ? CalTitle : Title;
+		public string FlavorKey => Calamity && CalFlavor != null ? CalFlavor : Flavor;
+		/// <summary>True: the band warns first (BandBrain) and only attacks once the warning is broken.</summary>
+		public bool Warns;
+		/// <summary>Ingredient pairs (item name, count) crafted with wood at a Work Bench into the summon item.</summary>
+		public (string item, int count)[] Mats;
+		/// <summary>The unique payout for beating the whole band: items (min..max each) and a coin purse in copper.</summary>
+		public (string item, int min, int max)[] Bounty;
+		public int BountyCopper;
+		/// <summary>Sash colour of the band (the red of enemies is kept; this is the stripe), and the colour of the summon item.</summary>
+		public int TintR, TintG, TintB;
 	}
 
 	/// <summary>
@@ -104,6 +123,8 @@ namespace Warbands.Common
 		/// <summary>The roster for a biome at a stage: the highest stage at or below it that has one. Null only if the biome has no roster at all.</summary>
 		public static BandRoster For(BandBiome biome, int stage)
 		{
+			if (biome == BandBiome.Dungeon) biome = BandBiome.Underground; // the legacy table has no Dungeon or Mushroom roster; the named types (BandTypes) do
+			if (biome == BandBiome.Mushroom) biome = BandBiome.Forest;
 			BandRoster best = null;
 			foreach (var r in All)
 				if (r.Biome == biome && r.Stage <= stage && (best == null || r.Stage > best.Stage)) best = r;
@@ -117,6 +138,8 @@ namespace Warbands.Common
 		public static BandBiome BiomeOf(Player p)
 		{
 			if (p.ZoneUnderworldHeight) return BandBiome.Underworld;
+			if (p.ZoneDungeon) return BandBiome.Dungeon;
+			if (p.ZoneGlowshroom) return BandBiome.Mushroom;
 			if (p.ZoneCorrupt) return BandBiome.Corruption;
 			if (p.ZoneCrimson) return BandBiome.Crimson;
 			if (p.ZoneHallow) return BandBiome.Hallow;

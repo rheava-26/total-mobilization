@@ -118,6 +118,7 @@ namespace Levy.Common.Util
 
 		public static bool IsHostileTarget(NPC npc)
 		{
+			if (Targeting.HostileSide.Active) return Targeting.HostileSide.IsEnemy(npc); // HOSTILE SEAM
 			// lifeMax <= 5 marks a critter-sized target, except the damageable orbs casters throw (NPCID.Sets.ProjectileNPC, lifeMax 1): those are real, shootable threats.
 			if (!(npc.active && !npc.friendly && !npc.townNPC && (npc.lifeMax > 5 || IsProjectileNpc(npc.type)) && !npc.dontTakeDamage && !npc.immortal && !NPCID.Sets.CountsAsCritter[npc.type]))
 				return false;

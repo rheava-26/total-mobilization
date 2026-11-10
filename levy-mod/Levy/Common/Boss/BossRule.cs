@@ -335,7 +335,7 @@ namespace Levy.Common.Boss
 				var n = Main.npc[i];
 				if (!n.active) continue;
 				if (MainBossSet.Contains(n.type)) LiveBosses.Add(n);
-				else if (n.ModNPC is SoldierNPC s && s.Record != null && s.IsAlive) LiveBodies.Add(s);
+				else if (n.ModNPC is SoldierNPC s && s.Record != null && s.IsAlive && !s.Hostile) LiveBodies.Add(s);
 				if (n.type == NPCID.EaterofWorldsHead || n.type == NPCID.EaterofWorldsBody || n.type == NPCID.EaterofWorldsTail) anyEow = true;
 			}
 			if (!anyEow && (_eowEngagedIds.Count > 0 || _eowEngagedCp != 0)) { _eowEngagedIds.Clear(); _eowEngagedCp = 0; }

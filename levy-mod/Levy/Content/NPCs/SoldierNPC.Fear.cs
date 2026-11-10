@@ -35,7 +35,7 @@ namespace Levy.Content.NPCs
 
 		partial void Fear_Update()
 		{
-			if (Record == null || LevyUtil.IsClient || !IsAlive) return;
+			if (Record == null || LevyUtil.IsClient || !IsAlive || Hostile) return; // a hostile body's morale belongs to its band
 			if (FearSystem.Immune(this)) { if (Record.Fear > 0f || State is SoldierState.Shaken or SoldierState.Routed) Fear_Rally(false); Record.Fear = 0f; return; } // the commander has the Spectator potion active: immune to fear
 
 			NPC boss = Fear_BossInView();

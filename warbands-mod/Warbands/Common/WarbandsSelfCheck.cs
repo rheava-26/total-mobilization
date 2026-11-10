@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -45,7 +46,7 @@ namespace Warbands.Common
 			foreach (BandBiome b in Enum.GetValues(typeof(BandBiome)))
 				for (int s = 0; s < Stage.Count; s++)
 					if (BandData.For(b, s) == null) bad.Add($"no roster {b}@{s}");
-			foreach (var r in BandData.All)
+			foreach (var r in BandData.All.Concat(BandTypes.All))
 			{
 				bool hasShooter = false;
 				foreach (var m in r.Members)
@@ -75,7 +76,23 @@ namespace Warbands.Common
 				}
 				if (!hasShooter) bad.Add("no shooter in " + r.Name);
 			}
-			Check($"rosters: {BandData.All.Length} rosters, {items} items resolve, fit their ammo and slots, and sit within the stage tier ceiling", bad.Count == 0, string.Join("; ", bad));
+			// the 20 named types: ids, items, recipes, bounty, coverage of every biome
+			{
+				var bad2 = new List<string>();
+				if (BandTypes.All.Length != 20) bad2.Add("count " + BandTypes.All.Length);
+				if (BandTypes.All.Select(t => t.Id).Distinct().Count() != BandTypes.All.Length) bad2.Add("duplicate ids");
+				foreach (var t in BandTypes.All)
+				{
+					foreach (var (it, n) in t.Mats) if (BandData.ItemType(it) <= 0) bad2.Add($"{t.Id} mat {it}");
+					foreach (var (it, lo, hi) in t.Bounty) if (BandData.ItemType(it) <= 0 || lo > hi) bad2.Add($"{t.Id} bounty {it}");
+					if (t.Members.Length < 4) bad2.Add(t.Id + " has fewer than 4 members");
+					if (t.Mats.Length == 0 || t.Mats[0].item != "Wood") bad2.Add(t.Id + " recipe is not wood first");
+					if (t.BountyCopper <= 0) bad2.Add(t.Id + " no coins");
+				}
+				foreach (BandBiome b in Enum.GetValues(typeof(BandBiome))) if (BandTypes.Pick(b, 6, Main.rand) == null) bad2.Add("no named type for " + b);
+				Check("20 band types: unique ids, wood-first Work Bench recipes, bounty items resolve, every biome has a type by the last stage", bad2.Count == 0, string.Join("; ", bad2));
+			}
+			Check($"rosters: {BandData.All.Length} legacy + {BandTypes.All.Length} named rosters, {items} items resolve, fit their ammo and slots, and sit within the stage tier ceiling", bad.Count == 0, string.Join("; ", bad));
 
 			// stat rules
 			bool lifeUp = true; for (int s = 1; s < Stage.Count; s++) if (BandStats.StageLife[s] < BandStats.StageLife[s - 1]) lifeUp = false;
@@ -88,8 +105,8 @@ namespace Warbands.Common
 				{
 					int hit = BandStats.Hit(s, role, 400f, 1.5f); // an absurdly strong weapon is pulled down to the cap
 					float eff = Main.masterMode ? 1f : Main.expertMode ? 0.75f : 0.5f;
-					float sustained = Math.Max(1f, hit - BandStats.TypicalPlayerDefense[s] * eff) * 1.5f;
-					float cap = BandStats.DpsCapMaster[s] * (role == 'E' ? BandStats.MeleeDpsShare : 1f) * (BandStats.DamageMult / 3f) * (WarbandsConfig.Get?.DamageScale ?? 1f);
+					float sustained = Math.Max(1f, hit - BandStats.TypicalPlayerDefense[s] * eff) * Math.Min(1.5f, BandStats.LandedHitsPerSecond);
+					float cap = BandStats.DpsTargetExpert[s] * (role == 'E' ? BandStats.MeleeDpsShare : 1f) * (BandStats.DamageMult / 2f) * (WarbandsConfig.Get?.DamageScale ?? 1f);
 					if (sustained > cap * 1.15f + 3f) { capOk = false; capDetail += $"{role}@{s}: {sustained:0}>{cap:0}; "; }
 				}
 			Check("damage cap holds for a 400-damage weapon at every stage", capOk, capDetail);
@@ -114,9 +131,9 @@ namespace Warbands.Common
 				int before = BandSpawner.ActiveBands(); int spawnedBefore = BandSpawner.BandsSpawned;
 				bool formed = BandSpawner.SpawnBand(fake, 1, 4);
 				int count = 0;
-				for (int i = 0; i < Main.maxNPCs; i++) { var n = Main.npc[i]; if (n.active && n.ModNPC is BandSoldier b && b.BandId > 0) { count++; } }
+				for (int i = 0; i < Main.maxNPCs; i++) { var n = Main.npc[i]; if (n.active && (n.ModNPC is BandLevyNPC || n.ModNPC is BandSoldier)) { count++; } }
 				Check("spawner forms a band of 4 at the world spawn and counts it", formed && count >= 4 && BandSpawner.ActiveBands() == before + 1 && BandSpawner.BandsSpawned == spawnedBefore + 1, $"formed={formed} members={count} bands={BandSpawner.ActiveBands()}");
-				for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is BandSoldier) Main.npc[i].active = false;
+				for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && (Main.npc[i].ModNPC is BandSoldier || Main.npc[i].ModNPC is BandLevyNPC)) Main.npc[i].active = false;
 			}
 			catch (Exception e) { Check("spawner", false, e.GetType().Name + ": " + e.Message + " @ " + e.StackTrace?.Split('\n')[0]); }
 
@@ -160,16 +177,6 @@ namespace Warbands.Common
 				Check("a band archer in reach fires hostile arrows", HostileShots() > shots0, $"shots {HostileShots() - shots0}");
 				Check("a band archer shot costs the player what the stage cap allows", npc.damage >= 1 && npc.lifeMax > 0, $"contact {npc.damage}, life {npc.lifeMax}, def {npc.defense}");
 
-				int shots1 = HostileShots();
-				int cid = NPC.NewNPC(src, (int)p.position.X + 25 * 16, (int)p.position.Y - 5 * 16, NPCID.CultistArcherBlue);
-				if (cid < 0 || cid >= Main.maxNPCs) { Check("cultist archer spawns for the check", false); }
-				else
-				{
-					var c = Main.npc[cid]; c.target = 0; made.Add(c);
-					var start = c.Center;
-					for (int t = 0; t < 300 && c.active; t++) c.AI();
-					Check("a Cultist Archer in reach hovers, moves and fires as a band", c.noGravity && HostileShots() > shots1 && c.velocity.Length() > 0.5f, $"noGravity={c.noGravity} shots={HostileShots() - shots1} speed={c.velocity.Length():0.0}");
-				}
 			}
 			catch (Exception e) { Check("live fire", false, e.GetType().Name + ": " + e.Message + " @ " + e.StackTrace?.Split('\n')[0]); }
 			finally

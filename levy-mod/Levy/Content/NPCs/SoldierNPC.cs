@@ -206,7 +206,7 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		public void PinLifeMax()
 		{
-			if (Record == null || OfficerMode) return;
+			if (Record == null || OfficerMode || Hostile) return; // a hostile body keeps the life its band rules gave it
 			if (!LevyUtil.IsServerOrSingle)
 			{
 				if (NPC.lifeMax > LevyConstants.MaxSoldierHp) NPC.lifeMax = LevyConstants.MaxSoldierHp;
@@ -351,7 +351,7 @@ namespace Levy.Content.NPCs
 			}
 			if (ExtraDefense != null) { try { Defense += ExtraDefense(this); } catch { } }
 			if (Common.Options.LevyOptions.StatsOn) Defense = Common.Options.LevyOptions.AdjustDefense(this, Defense); // dev switch (LEVY_SURV=parity/veteran); off by default
-			NPC.defense = Defense;
+			NPC.defense = Hostile ? Math.Min(Defense, HostileDefenseCap) : Defense;
 			PinLifeMax(); // HP comes from the record, not from gear
 		}
 
@@ -399,7 +399,8 @@ namespace Levy.Content.NPCs
 		public override void AI()
 		{
 			long pt = global::Levy.Common.Util.LevyProf.Begin();
-			try { AIBody(); } finally { global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.AI, pt); }
+			bool prevSide = Common.Targeting.HostileSide.Active; Common.Targeting.HostileSide.Active = Hostile; // HOSTILE SEAM: a hostile body asks every "who is my enemy" question for the other side (SoldierNPC.Hostile.cs)
+			try { AIBody(); } finally { Common.Targeting.HostileSide.Active = prevSide; global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.AI, pt); }
 		}
 
 		private void AIBody()

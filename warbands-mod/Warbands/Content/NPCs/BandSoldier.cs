@@ -19,7 +19,7 @@ namespace Warbands.Content.NPCs
 	/// </summary>
 	public class BandSoldier : ModNPC
 	{
-		public byte Biome, StageIdx, MemberIdx; public int BandId;
+		public byte Biome, StageIdx, MemberIdx, RosterIdx = 255; public int BandId;
 		private BandMember _member; private BandRoster _roster;
 		private int _weaponType, _ammoType, _fireInterval = 60, _shotDamage = 1;
 		private int _fireTimer, _engagedUntil, _jukeTimer, _poseUntil; private float _aim;
@@ -53,7 +53,7 @@ namespace Warbands.Content.NPCs
 		/// <summary>Server: dress, arm and size this soldier from its roster entry.</summary>
 		public void Setup(BandRoster roster, int memberIdx, int stage, int bandId)
 		{
-			Biome = (byte)roster.Biome; StageIdx = (byte)stage; MemberIdx = (byte)memberIdx; BandId = bandId;
+			Biome = (byte)roster.Biome; StageIdx = (byte)stage; MemberIdx = (byte)memberIdx; BandId = bandId; RosterIdx = (byte)Math.Max(0, Math.Min(254, BandTypes.IndexOf(roster)));
 			Resolve();
 			if (_member == null) return;
 			int gear = 0;
@@ -67,7 +67,8 @@ namespace Warbands.Content.NPCs
 		private void Resolve()
 		{
 			_roster = null; _member = null;
-			foreach (var r in BandData.All) if ((byte)r.Biome == Biome && r.Stage <= StageIdx && (_roster == null || r.Stage > _roster.Stage)) _roster = r;
+			if (RosterIdx != 255) _roster = BandTypes.FromIndex(RosterIdx);
+			else foreach (var r in BandData.All) if ((byte)r.Biome == Biome && r.Stage <= StageIdx && (_roster == null || r.Stage > _roster.Stage)) _roster = r;
 			if (_roster == null || MemberIdx >= _roster.Members.Length) return;
 			_member = _roster.Members[MemberIdx];
 			_weaponType = BandData.ItemType(_member.Weapon); _ammoType = BandData.ItemType(_member.Ammo);
@@ -87,8 +88,8 @@ namespace Warbands.Content.NPCs
 			_shotDamage = BandStats.Hit(StageIdx, Role, weaponHit, Role == 'E' ? 1.5f : hz);
 		}
 
-		public override void SendExtraAI(BinaryWriter w) { w.Write(Biome); w.Write(StageIdx); w.Write(MemberIdx); w.Write(BandId); }
-		public override void ReceiveExtraAI(BinaryReader r) { Biome = r.ReadByte(); StageIdx = r.ReadByte(); MemberIdx = r.ReadByte(); BandId = r.ReadInt32(); Resolve(); }
+		public override void SendExtraAI(BinaryWriter w) { w.Write(Biome); w.Write(StageIdx); w.Write(MemberIdx); w.Write(BandId); w.Write(RosterIdx); }
+		public override void ReceiveExtraAI(BinaryReader r) { Biome = r.ReadByte(); StageIdx = r.ReadByte(); MemberIdx = r.ReadByte(); BandId = r.ReadInt32(); RosterIdx = r.ReadByte(); Resolve(); }
 
 		// ---------------------------------------------------------------------------------------------------- AI
 		public override bool PreAI()

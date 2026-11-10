@@ -397,7 +397,7 @@ namespace Levy.Content.NPCs
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
-				if (!p.active || !p.hostile || p.damage < DodgeMinDamage) continue;
+				if (!p.active || !IsThreatShot(p) || p.damage < DodgeMinDamage) continue; // a levy steps out of hostile shots, a hostile body out of the player's side's (HOSTILE SEAM)
 				Vector2 rel = c - p.Center;
 				if (rel.LengthSquared() > rSq) continue;
 				Vector2 v = p.velocity; float v2 = v.LengthSquared();

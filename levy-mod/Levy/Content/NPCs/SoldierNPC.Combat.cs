@@ -354,6 +354,7 @@ namespace Levy.Content.NPCs
 			if (item == null || item.IsAir) return;
 			Rectangle box = SwingHitbox(item);
 			if (box.Width <= 0 || box.Height <= 0) return;
+			if (Hostile) { HostileSwing(item, box); return; } // HOSTILE SEAM: the swing hurts the player's side
 			int dmg = Math.Max(1, (int)(WeaponDamage(item) * DamageMultiplier));
 			int critChance = -1;
 			for (int i = 0; i < Main.maxNPCs; i++)

@@ -696,7 +696,7 @@ namespace Levy.Common.Systems
 				var n = Main.npc[i];
 				// Officer avatars are SoldierNPCs too, but their record is synthetic: keep them out of the roster's body cache so they never
 				// count against the render cap, spoils, auto-feed, desertion or the Nurse's heal targets, and never double-register for targeting.
-				if (n.active && n.ModNPC is SoldierNPC s && s.Record != null && !s.OfficerMode) _bodies.Add(s);
+				if (n.active && n.ModNPC is SoldierNPC s && s.Record != null && !s.OfficerMode && !s.Hostile) _bodies.Add(s); // a hostile soldier (Warbands) is nobody's levy
 			}
 		}
 

@@ -67,11 +67,12 @@ namespace Warbands.Common
 			var type = legacy ? BandData.For(biome, stage) : BandTypes.Pick(biome, stage, Main.rand) ?? BandData.For(biome, stage);
 			if (type == null) return false;
 			int n = size ?? Main.rand.Next(Math.Min(cfg.BandSizeMin, cfg.BandSizeMax), Math.Max(cfg.BandSizeMin, cfg.BandSizeMax) + 1);
-			return SpawnBand(p, type, n, 40, 70, legacy);
+			bool neutral = !legacy && Main.rand.NextFloat() * 100f < cfg.NeutralBandPercent;
+			return SpawnBand(p, type, n, 40, 70, legacy, true, neutral);
 		}
 
 		/// <summary>Forms one band of <paramref name="type"/> near <paramref name="p"/>, <paramref name="minTiles"/> to <paramref name="maxTiles"/> to one side. <paramref name="size"/> is the base count; the army bonus is added and the total capped at 8.</summary>
-		public static bool SpawnBand(Player p, BandRoster type, int size, int minTiles, int maxTiles, bool legacy = false, bool armyBonus = true)
+		public static bool SpawnBand(Player p, BandRoster type, int size, int minTiles, int maxTiles, bool legacy = false, bool armyBonus = true, bool neutral = false)
 		{
 			int side = Main.rand.NextBool() ? 1 : -1;
 			Point? foot = FindFooting(p, side, minTiles, maxTiles);
@@ -80,7 +81,7 @@ namespace Warbands.Common
 			int n = Math.Min(MaxBand, Math.Max(1, size) + (armyBonus ? ArmyBonus() : 0));
 			int stage = type.Stage;
 			BandBrain brain = null; int bandId = BandBrain.NextId();
-			if (!legacy) brain = BandBrain.Create(type, stage, n, new Vector2(foot.Value.X * 16, foot.Value.Y * 16), bandId);
+			if (!legacy) brain = BandBrain.Create(type, stage, n, new Vector2(foot.Value.X * 16, foot.Value.Y * 16), bandId, neutral);
 			int made = 0;
 			for (int k = 0; k < n; k++)
 			{

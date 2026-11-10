@@ -115,21 +115,36 @@ namespace Warbands.Common
 				R("ChlorophyteShotbow", "HolyArrow", Cult), R("ChlorophyteShotbow", "HolyArrow", Cult), M("NettleBurst", Cult), R("Megashark", "ChlorophyteBullet", Cult)),
 		};
 
-		private static void Cal(string id, string name, string title, string flavor, string warn = null)
+		/// <summary>Adds the tier material to a type's Work Bench recipe: a band's summoning item needs a material of the band's own stage (the world must already have it).</summary>
+		private static void Gate(string id, string item, int n)
 		{
-			var t = ById(id); if (t == null) return; t.CalName = name; t.CalTitle = title; t.CalFlavor = flavor; if (warn != null && t.Warns) t.CalWarn = warn;
+			var t = ById(id); if (t == null) return;
+			var l = new List<(string, int)>(t.Mats); l.Add((item, n)); t.Mats = l.ToArray(); t.Gate = item;
 		}
+
+		/// <summary>The vanity a band wears (head, body, legs; null keeps the real armor for that slot): masks and sets that read as the band. Mages add a robe.</summary>
+		private static void Dress(string id, string head, string body = null, string legs = null)
+		{
+			var t = ById(id); if (t != null) t.Vanity = new[] { head, body, legs };
+		}
+
 		static BandTypes()
 		{
-			Cal("ForestDeserters", "Wulfrum Rebels", "Rebel", "CalWulfrum");
-			Cal("SnowRangers", "Yharim's Remnants", "Veteran", "CalYharim", "Turn back. We are what remains of the war.");
-			Cal("DuneRaiders", "Ilmerian Survivors", "Survivor", "CalIlmeris");
-			Cal("AshScavengers", "Azafure Warlocks", "Warlock", "CalAzafure");
-			Cal("DungeonWardens", "Onyx Kinsmen", "Kinsman", "CalOnyx", "Turn back. Everything here has a price.");
-			Cal("DungeonRitualists", "Dragon Cult", "Cultist", "CalCult", "Turn back. The dragon must wake.");
-			Cal("CultistArchers", "Dragon Cult Archers", "Cultist", "CalCult");
-			Cal("HellfireLegion", "Profaned Faithful", "Faithful", "CalProfaned");
-			Cal("ChlorophyteWardens", "Vernal Pass Villagers", "Villager", "CalVernal", "Turn back. Silva's grove is closed to you.");
+			Gate("ForestDeserters", "CopperBar", 3); Gate("IronBrigands", "IronBar", 3); Gate("DuneRaiders", "Cactus", 4); Gate("SnowRangers", "BorealWood", 4);
+			Gate("CorruptZealots", "DemoniteBar", 3); Gate("CrimsonFleshCult", "CrimtaneBar", 3); Gate("JunglePoachers", "JungleSpores", 3); Gate("MeteorMarauders", "MeteoriteBar", 3);
+			Gate("AshScavengers", "HellstoneBar", 3); Gate("DungeonWardens", "Bone", 6); Gate("HiveRaiders", "BeeWax", 4);
+			Gate("HallowPaladins", "SoulofLight", 3); Gate("MythrilMercenaries", "MythrilBar", 3); Gate("HellfireLegion", "HellstoneBar", 4);
+			Gate("TitaniumLegion", "TitaniumBar", 3);
+			Gate("ChlorophyteWardens", "ChlorophyteBar", 3); Gate("ShroomiteRaiders", "ShroomiteBar", 3); Gate("FrostLegion", "ChlorophyteBar", 3);
+			Gate("DungeonRitualists", "Ectoplasm", 3); Gate("CultistArchers", "Ectoplasm", 4);
+
+			Dress("ForestDeserters", "GreenCap"); Dress("IronBrigands", "GuyFawkesMask"); Dress("DuneRaiders", "CowboyHat", "CowboyJacket", "CowboyPants");
+			Dress("SnowRangers", "EskimoHood", "EskimoCoat", "EskimoPants"); Dress("CorruptZealots", "EaterMask"); Dress("CrimsonFleshCult", "BrainMask");
+			Dress("JunglePoachers", "TikiMask"); Dress("MeteorMarauders", "SpaceCreatureMask"); Dress("AshScavengers", "DemonHorns");
+			Dress("DungeonWardens", "SkeletronMask"); Dress("HiveRaiders", "BeeMask"); Dress("HallowPaladins", "SquireGreatHelm", "SquirePlating", "SquireGreaves");
+			Dress("MythrilMercenaries", "GangstaHat"); Dress("HellfireLegion", "DevilHorns"); Dress("TitaniumLegion", "GladiatorHelmet", "GladiatorBreastplate", "GladiatorLeggings");
+			Dress("ChlorophyteWardens", "PlanteraMask"); Dress("ShroomiteRaiders", "MushroomCap"); Dress("FrostLegion", "ParkaHood", "ParkaCoat", "ParkaPants");
+			Dress("DungeonRitualists", "ReaperHood", "ReaperRobe"); Dress("CultistArchers", "BlueLunaticHood");
 		}
 		public static BandRoster ById(string id) { foreach (var t in All) if (t.Id == id) return t; return null; }
 

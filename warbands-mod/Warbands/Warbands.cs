@@ -20,6 +20,7 @@ namespace Warbands
 		{
 			// Same proof Mechanization gives: a Levy constant (build time) and a Levy public static (load time).
 			Logger.Info($"Warbands: Levy reference RESOLVED. LevyConstants.TilePx={LevyConstants.TilePx}, MaxSoldierHp={LevyConstants.MaxSoldierHp}, LevyUtil.IsServerOrSingle={LevyUtil.IsServerOrSingle}.");
+			BandChatter.Load(this);
 			for (int i = 0; i < BandTypes.All.Length; i++) AddContent(new BandSummonItem(BandTypes.All[i], i));
 		}
 

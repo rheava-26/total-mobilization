@@ -94,6 +94,32 @@ namespace Warbands.Common
 			}
 			Check($"rosters: {BandData.All.Length} legacy + {BandTypes.All.Length} named rosters, {items} items resolve, fit their ammo and slots, and sit within the stage tier ceiling", bad.Count == 0, string.Join("; ", bad));
 
+			// tier-gated recipes, vanity, dialogue file, neutral and claim rules
+			{
+				var bad3 = new List<string>();
+				foreach (var t in BandTypes.All)
+				{
+					if (t.Gate == null || !t.Mats.Any(m => m.item == t.Gate)) bad3.Add(t.Id + " recipe has no tier material");
+					else if (tiers) { float tg = ProgressionTier.Of(BandData.ItemType(t.Gate)); if (tg > Stage.ItemCeiling[t.Stage] + 3f) bad3.Add($"{t.Id} gate {t.Gate}={tg:0.#} is past its stage"); }
+					if (t.Vanity == null) { bad3.Add(t.Id + " has no vanity"); continue; }
+					for (int i = 0; i < 3; i++)
+					{
+						if (t.Vanity[i] == null) continue;
+						int vt = BandData.ItemType(t.Vanity[i]); if (vt <= 0) { bad3.Add($"{t.Id} vanity {t.Vanity[i]} missing"); continue; }
+						var vi = new Item(); vi.SetDefaults(vt);
+						if (!(i == 0 ? vi.headSlot >= 0 : i == 1 ? vi.bodySlot >= 0 : vi.legSlot >= 0)) bad3.Add($"{t.Id} vanity {t.Vanity[i]} wrong slot");
+					}
+				}
+				Check("every summoning recipe needs a material of the band's stage, and every band has vanity that fits its slots", bad3.Count == 0, string.Join("; ", bad3));
+				var badD = new List<string>();
+				foreach (var k in new[] { "SPOTTED", "SPOTTED_ARMOR", "SPOTTED_LEVIES", "SPOTTED_SUMMONER", "SPOTTED_MELEE", "SPOTTED_GUNNER", "SPOTTED_CASTER", "WARNING", "WARNING_FINAL", "WARNING_BROKEN", "CHIP_DAMAGE", "ONE_HIT", "MATE_DIED", "LOW_LIFE", "HURT", "PANIC", "RETREAT", "DEFEAT", "VICTORY", "LEVY_BANTER", "NEUTRAL", "PROVOKED" })
+					if (!BandChatter.Lines.TryGetValue(k, out var ls) || ls.Count == 0) badD.Add(k);
+				bool cal = BandChatter.Lines.Keys.Any(k => k.StartsWith("Cal")) || BandTypes.All.Any(t => t.Name.Contains("Wulfrum") || t.Name.Contains("Ilmer") || t.Name.Contains("Dragon Cult"));
+				bool pain = BandChatter.Lines["HURT"].Any(l => l.Contains("this would hurt so much more if we could feel pain"));
+				Check("Dialogue.txt: every situation has lines, no faction groups, Eve's pain line is in", badD.Count == 0 && !cal && pain, string.Join(",", badD));
+				Check("gear drops are off and neutral bands are 35% by default", c != null && !c.GearDrops && Math.Abs(c.NeutralBandPercent - 35f) < 1e-3f);
+			}
+
 			// stat rules
 			bool lifeUp = true; for (int s = 1; s < Stage.Count; s++) if (BandStats.StageLife[s] < BandStats.StageLife[s - 1]) lifeUp = false;
 			Check("stage life rises with the stage", lifeUp);

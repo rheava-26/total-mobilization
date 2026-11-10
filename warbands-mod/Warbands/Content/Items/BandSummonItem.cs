@@ -30,7 +30,7 @@ namespace Warbands.Content.Items
 			string kit = b.Members[0].Role == 'R' ? "bows and guns" : "staves and blades";
 			string s = $"Calls the {b.Name} to 24 to 34 tiles away, four soldiers with {kit}.\n";
 			s += b.Warns ? "They warn you off and attack only if you stay.\n" : "They fight you and your levies at once.\n";
-			s += "Beating the whole band pays a bounty.";
+			s += "Beating the whole band drops a bounty notice to turn in.";
 			return s;
 		}
 

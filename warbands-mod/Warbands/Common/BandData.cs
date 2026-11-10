@@ -21,15 +21,16 @@ namespace Warbands.Common
 	{
 		public BandBiome Biome; public int Stage; public string Name; public BandMember[] Members;
 		/// <summary>Set for the 20 named band types (BandTypes); null for the legacy biome rosters.</summary>
-		public string Id, Title, ItemName, ItemKind, Emblem, WarnLine, CalWarn;
+		public string Id, Title, ItemName, ItemKind, Emblem, WarnLine;
+		/// <summary>The tier material in the summoning item's recipe (a bar, ore or drop of the band's stage).</summary>
+		public string Gate;
+		/// <summary>Vanity worn over the gear: head, body, legs (null = the real armor shows).</summary>
+		public string[] Vanity;
+		public string DisplayName => Name;
+		public string RankTitle => Title;
+		public string FlavorKey => Flavor;
 		/// <summary>Chatter pool key of the type's own flavour lines (null = none beyond the common pool).</summary>
 		public string Flavor;
-		/// <summary>Calamity's own factions (warbands-mod/docs/LORE_FACTIONS.md): when Calamity is loaded a band takes this name, rank title and chatter pool. Null = none.</summary>
-		public string CalName, CalTitle, CalFlavor;
-		public static bool Calamity => Terraria.ModLoader.ModLoader.HasMod("CalamityMod");
-		public string DisplayName => Calamity && CalName != null ? CalName : Name;
-		public string RankTitle => Calamity && CalTitle != null ? CalTitle : Title;
-		public string FlavorKey => Calamity && CalFlavor != null ? CalFlavor : Flavor;
 		/// <summary>True: the band warns first (BandBrain) and only attacks once the warning is broken.</summary>
 		public bool Warns;
 		/// <summary>Ingredient pairs (item name, count) crafted with wood at a Work Bench into the summon item.</summary>

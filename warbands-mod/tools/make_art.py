@@ -185,6 +185,20 @@ def pennant():
     return finish(img, (60, 8, 12), 77)
 
 
+def notice():
+    """The bounty notice: a rolled parchment tied with red cord and a gold coin seal."""
+    img = blank()
+    rect(img, 3, 2, 12, 13, PARCH['mid']); rect(img, 3, 2, 12, 3, PARCH['light']); rect(img, 3, 13, 12, 13, PARCH['dark'])
+    put(img, 3, 2, None); put(img, 12, 13, None); put(img, 3, 13, None)
+    rect(img, 5, 5, 10, 5, PARCH['dark']); rect(img, 5, 7, 10, 7, PARCH['dark']); rect(img, 5, 9, 8, 9, PARCH['dark'])
+    rect(img, 2, 1, 13, 1, WOOD['mid']); rect(img, 2, 14, 13, 14, WOOD['mid'])        # the two rollers
+    put(img, 2, 1, WOOD['light']); put(img, 13, 14, WOOD['dark'])
+    rect(img, 9, 10, 12, 12, (210, 170, 60)); rect(img, 9, 10, 12, 10, (246, 220, 110)); rect(img, 9, 12, 12, 12, (150, 110, 30))   # the gold seal
+    put(img, 10, 11, (150, 110, 30))
+    rect(img, 3, 12, 3, 14, (190, 40, 40))                                           # the cord
+    return finish(img, PARCH['darkest'], 4242)
+
+
 def main():
     os.makedirs(ITEMS, exist_ok=True)
     sheet = []
@@ -194,6 +208,8 @@ def main():
         im.save(os.path.join(ITEMS, bid + '.png'))
         sheet.append((bid, im))
     pennant().save(os.path.join(NPCS, 'BandPennant.png'))
+    notice().save(os.path.join(ITEMS, 'BountyNotice.png'))
+    n4 = notice().resize((128, 128), Image.NEAREST); n4.save(os.path.join(HERE, '..', 'docs', 'bounty_notice_4x.png'))
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '..', 'docs', 'item_preview_4x.png')
     cols, cell = 5, 32 * 4 + 40
     rows = (len(sheet) + cols - 1) // cols

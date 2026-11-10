@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -8,6 +9,8 @@ using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
+using Levy.Common.Vanity;
+using Levy.Common.Globals;
 using Levy.Common.Soldiers;
 using Levy.Common.Targeting;
 using Levy.Content.NPCs;
@@ -38,6 +41,33 @@ namespace Warbands.Content.NPCs
 
 		public override bool Hostile => true;
 		public override string HostilePlateTag => Roster?.DisplayName;
+		public Vector2 PostureSpot; private uint _postureAt, _postureUntil, _clumpSince, _loiterAt; private Vector2 _loiterGoal; private bool _bantered, _passiveNet;
+		private BandBrain MyBand => BandBrain.Get(BandId);
+		/// <summary>A neutral band that nobody has provoked: the player's side leaves it alone (Levy's targeting reads this).</summary>
+		public override bool HostilePassive { get { var b = MyBand; return b != null && b.Neutral && !b.Provoked; } }
+		public override Color HostilePlateColor => HostilePassive ? new Color(232, 200, 120) : HostilePlateRed;
+		private static readonly Dictionary<(int, char), VanityLook> _looks = new();
+		/// <summary>The band's vanity over its gear: its mask or set, a robe for mages. Null keeps the real armor.</summary>
+		public override VanityLook HostileVanity()
+		{
+			var r = Roster; if (r?.Vanity == null) return null;
+			var key = (TypeIdx, Role);
+			if (_looks.TryGetValue(key, out var hit)) return hit;
+			var look = new VanityLook();
+			string[] v = r.Vanity;
+			string body = v[1] ?? (Role == 'M' ? "Robe" : null);
+			void Put(int slot, string name, Func<Item, bool> fits)
+			{
+				int t = BandData.ItemType(name); if (t <= 0) return;
+				var it = new Item(); it.SetDefaults(t); if (fits(it)) look.Items[slot] = it;
+			}
+			Put(VanitySet.Head, v[0], i => i.headSlot >= 0);
+			Put(VanitySet.Body, body, i => i.bodySlot >= 0);
+			Put(VanitySet.Legs, v[2], i => i.legSlot >= 0);
+			if (!look.Any) look = null;
+			_looks[key] = look;
+			return look;
+		}
 
 		public override void SetStaticDefaults()
 		{
@@ -65,7 +95,16 @@ namespace Warbands.Content.NPCs
 		public override string GetChat() => "";
 		public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers) { } // an ordinary enemy: vanilla defense, vanilla hit immunity, no player-parity i-frames
 		public override void ModifyHitByProjectile(Projectile projectile, ref NPC.HitModifiers modifiers) { }
-		public override void OnHitByProjectile(Projectile projectile, NPC.HitInfo hit, int damageDone) { }
+		public override void OnHitByProjectile(Projectile projectile, NPC.HitInfo hit, int damageDone)
+		{
+			var band = MyBand; if (band == null || Main.netMode == NetmodeID.MultiplayerClient) return;
+			if (projectile.friendly && !band.Aggro) band.OnMemberHit(this, Math.Max(1, damageDone)); // hit by the player or a levy: a neutral band answers
+			if (projectile.TryGetGlobalProjectile<SoldierProjectileTag>(out var tag) && tag.SoldierIndex >= 0 && !_bantered && Main.rand.NextBool(4)) { _bantered = true; band.Chat(this, "LEVY_BANTER"); }
+		}
+		public override void OnHitByItem(Player player, Item item, NPC.HitInfo hit, int damageDone)
+		{
+			var band = MyBand; if (band != null && !band.Aggro && Main.netMode != NetmodeID.MultiplayerClient) band.OnMemberHit(this, Math.Max(1, damageDone));
+		}
 
 		// ---------------------------------------------------------------------------------------------------- setup
 		private static readonly string[] First = { "Garrick", "Orla", "Brannoc", "Sedge", "Mavis", "Dorren", "Wulfric", "Teague", "Hob", "Ilsa", "Corwin", "Pell", "Radka", "Osk", "Tamsin", "Bryn", "Fenwick", "Lorcan", "Yara", "Maddoc", "Nessa", "Ivo", "Kestrel", "Rook", "Ansel", "Dagny", "Cato", "Odell", "Perrin", "Sorrel" };
@@ -151,6 +190,8 @@ namespace Warbands.Content.NPCs
 			var band = BandBrain.Get(BandId);
 			if (band == null) { base.HostileThink(now); return; }
 			if (Recalling) { HostileStop(); return; }
+			// a neutral band nobody has provoked goes about its business
+			if (band.Neutral && !band.Provoked) { HostileDropTarget(); Loiter(band, now); return; }
 			NPC near = HostileNearestEnemy(120f, out float nearTiles);
 			if (near == null)
 			{
@@ -161,8 +202,9 @@ namespace Warbands.Content.NPCs
 			}
 			if (!band.Aggro)
 			{
-				// the warning: stand, face them, hold fire
-				HostileDropTarget(); HostileIdleState(); HostileStop();
+				// the warning: spread out onto high ground at a distance, face them, hold fire (the band opens up only if they come too close, stay, or hit it)
+				HostileDropTarget(); HostileIdleState();
+				if (nearTiles < 70f) Posture(band, near, 22f, true, (uint)now); else HostileStop();
 				NPC.direction = near.Center.X >= NPC.Center.X ? 1 : -1;
 				return;
 			}
@@ -174,11 +216,94 @@ namespace Warbands.Content.NPCs
 				HostileGoTo(new Vector2(NPC.Center.X + away * 14f * 16f, NPC.Center.Y), false);
 				return;
 			}
+			// first contact: do not walk in as a clump. Shooters take high ground and every member takes its own slot around the foe, then the fight proper begins
+			if (nearTiles > 32f && !Panic)
+			{
+				HostileDropTarget(); HostileIdleState();
+				Posture(band, near, 30f, Role != 'E', (uint)now);
+				return;
+			}
 			bool engaged = HostileEngage();
 			NPC foe = HostileTarget ?? near;
 			FoeClass cls = BandBrain.ClassOf(foe);
 			Tactics(band, cls, foe, engaged, now);
+			if (engaged && !Panic) Spread(band, cls, foe, (uint)now);
 			if (!engaged) { HostileIdleState(); HostileGoTo(near.Bottom); }
+		}
+
+		// ---------------------------------------------------------------------------------------------------- positioning
+		/// <summary>A calm band: stay near where it formed, each member in its own spot, and wander a little.</summary>
+		private void Loiter(BandBrain band, int now)
+		{
+			HostileIdleState();
+			if ((uint)now >= _loiterAt)
+			{
+				_loiterAt = (uint)now + 60u * (4u + (uint)Main.rand.Next(6));
+				float ox = ((MemberIdx % 5) - 2) * 3.5f + Main.rand.NextFloat(-6f, 6f);
+				_loiterGoal = band.Anchor + new Vector2(ox * 16f, 0f);
+			}
+			if (Math.Abs(NPC.Center.X - _loiterGoal.X) > 20f) HostileGoTo(_loiterGoal); else HostileStop();
+		}
+
+		private static bool Standable(int x, int y)
+		{
+			if (x < 10 || x >= Main.maxTilesX - 10 || y < 10 || y >= Main.maxTilesY - 10) return false;
+			Tile f = Main.tile[x, y];
+			if (!f.HasUnactuatedTile || !Main.tileSolid[f.TileType] || f.LiquidAmount > 0) return false;
+			for (int a = 1; a <= 3; a++) { Tile t = Main.tile[x, y - a]; if (t.HasUnactuatedTile && Main.tileSolid[t.TileType] || t.LiquidAmount > 0) return false; }
+			return true;
+		}
+
+		/// <summary>A standing spot for this member around <paramref name="foe"/>: about <paramref name="range"/> tiles out on the side it is on (further out down the line), on the highest ground in view when <paramref name="high"/>, and not within five tiles of another member's spot.</summary>
+		private Vector2? FindSpot(BandBrain band, NPC foe, float range, bool high)
+		{
+			// each member keeps to the side of the foe it is already on (nobody runs through the foe to reach a spot); the line is staggered in depth so spots differ
+			int side = NPC.Center.X >= foe.Center.X ? 1 : -1, rank = MemberIdx;
+			int cx = (int)(foe.Center.X / 16f + side * (range + (rank % 4) * 3.5f)), fy = (int)(foe.Bottom.Y / 16f);
+			Vector2? best = null; float bestScore = float.MaxValue;
+			for (int ox = -6; ox <= 6; ox++)
+			{
+				int x = cx + ox;
+				for (int y = fy - (high ? 16 : 2); y <= fy + 3; y++)
+				{
+					if (!Standable(x, y)) continue;
+					Vector2 head = new Vector2(x * 16f, y * 16f - 36f);
+					if (!Collision.CanHitLine(head, 8, 8, foe.Center - new Vector2(4f, 4f), 8, 8)) continue;
+					Vector2 spot = new Vector2(x * 16f + 8f, y * 16f);
+					float score = (high ? y * 1.0f : Math.Abs(y - fy)) + Math.Abs(ox) * 0.4f;
+					foreach (var o in band.Members) if (o != this && o.PostureSpot != default && Vector2.Distance(o.PostureSpot, spot) < 5f * 16f) score += 40f;
+					if (score < bestScore) { bestScore = score; best = spot; }
+					break; // the first floor from the top of this column that sees the foe is the highest one
+				}
+			}
+			return best;
+		}
+
+		/// <summary>Go to this member's spot around the foe (re-picked every second or two).</summary>
+		private void Posture(BandBrain band, NPC foe, float range, bool high, uint now)
+		{
+			if (now >= _postureAt || PostureSpot == default)
+			{
+				_postureAt = now + 80u + (uint)(NPC.whoAmI % 20);
+				var s = FindSpot(band, foe, range, high); if (s != null) PostureSpot = s.Value;
+			}
+			if (PostureSpot != default && Vector2.Distance(NPC.Bottom, PostureSpot) > 28f) { HostileIdleState(); HostileGoTo(PostureSpot); }
+			else HostileStop();
+		}
+
+		/// <summary>In the fight: a member standing in a clump (another within four tiles for three-quarters of a second) is sent to its own spot, shooters to higher ground, melee members around the foe's other side.</summary>
+		private void Spread(BandBrain band, FoeClass cls, NPC foe, uint now)
+		{
+			bool clumped = false;
+			foreach (var o in band.Members) if (o != this && o.NPC.active && Vector2.Distance(o.NPC.Center, NPC.Center) < 4f * 16f) { clumped = true; break; }
+			if (!clumped) _clumpSince = 0; else if (_clumpSince == 0) _clumpSince = now;
+			if (clumped && now - _clumpSince > 45 && now >= _postureUntil)
+			{
+				_postureUntil = now + 100; _postureAt = 0;
+				float range = Role == 'E' ? 6f : cls == FoeClass.Melee ? 15f : cls == FoeClass.Unknown ? 12f : 9f;
+				var s = FindSpot(band, foe, range, Role != 'E'); if (s != null) PostureSpot = s.Value; else _postureUntil = 0;
+			}
+			if (now < _postureUntil && PostureSpot != default && Vector2.Distance(NPC.Bottom, PostureSpot) > 28f) HostileGoTo(PostureSpot);
 		}
 
 		/// <summary>What the band does about the class of its foe: ranged members keep the maximum range from a melee foe, close in on a gunner or caster, and take flanking positions around a summoner.</summary>
@@ -199,7 +324,7 @@ namespace Warbands.Content.NPCs
 			if (cls != FoeClass.Unknown && (uint)now - _classTalkAt > 60 * 25)
 			{
 				_classTalkAt = (uint)now;
-				string key = cls == FoeClass.Melee ? "MELEE" : cls == FoeClass.Summoner ? "SUMMONER" : cls == FoeClass.Caster ? "CASTER" : "GUNNER";
+				string key = cls == FoeClass.Melee ? "SPOTTED_MELEE" : cls == FoeClass.Summoner ? "SPOTTED_SUMMONER" : cls == FoeClass.Caster ? "SPOTTED_CASTER" : "SPOTTED_GUNNER";
 				if (!band.ClassRemarked.Contains(cls)) { band.ClassRemarked.Add(cls); band.Chat(this, key, foe.ModNPC is PlayerStandIn si ? si.Who : null); }
 			}
 			if (!shooter || !engaged || foe == null) return;
@@ -219,9 +344,12 @@ namespace Warbands.Content.NPCs
 		// ---------------------------------------------------------------------------------------------------- per tick (server)
 		public override void AI()
 		{
-			if (Main.netMode == NetmodeID.MultiplayerClient) { base.AI(); return; }
+			if (Main.netMode == NetmodeID.MultiplayerClient) { NPC.chaseable = !_passiveNet; base.AI(); return; }
 			uint now = Main.GameUpdateCount;
 			var band = BandBrain.Get(BandId);
+			bool passive = band != null && band.Neutral && !band.Provoked;
+			if (passive != _passiveNet) { _passiveNet = passive; NPC.netUpdate = true; }
+			NPC.chaseable = !passive; // a neutral band nobody has provoked is not a minion target
 			TrackDamage(band, now);
 			if (band != null) Morale_(band, now);
 			base.AI();
@@ -240,7 +368,7 @@ namespace Warbands.Content.NPCs
 			if (d > 0)
 			{
 				_lastBlow = d; _lifeBeforeBlow = _lastLife; _lastHitTick = now;
-				if (band != null) { band.OnMemberHit(this, d); if (NPC.life * 4 < NPC.lifeMax && Main.rand.NextBool(3)) band.Chat(this, "LOWHP"); else if (Main.rand.NextBool(7)) band.Chat(this, "HURT"); }
+				if (band != null) { band.OnMemberHit(this, d); if (NPC.life * 4 < NPC.lifeMax && Main.rand.NextBool(3)) band.Chat(this, "LOW_LIFE"); else if (Main.rand.NextBool(7)) band.Chat(this, "HURT"); }
 				Morale -= 100f * d / Math.Max(1, NPC.lifeMax) * 0.9f;
 			}
 			_lastLife = NPC.life;
@@ -256,7 +384,7 @@ namespace Warbands.Content.NPCs
 				Player p = si.Who;
 				float eff = Math.Max(1f, _budgetHit - p.statDefense * Levy.Common.Util.LevyUtil.ModeDefenseEffectiveness());
 				float frac = eff / Math.Max(1f, p.statLifeMax2);
-				if (frac < 0.012f) { Morale -= 0.1f; if (++_chip % 90 == 0) band.Chat(this, "CHIP"); }
+				if (frac < 0.012f) { Morale -= 0.1f; if (++_chip % 90 == 0) band.Chat(this, "CHIP_DAMAGE"); }
 			}
 			if (NPC.life * 4 < NPC.lifeMax) Morale -= 0.05f;
 			else if (!engaged && now - _lastHitTick > 120) Morale = Math.Min(100f, Morale + 0.08f);
@@ -275,7 +403,7 @@ namespace Warbands.Content.NPCs
 				if (Morale >= 55f && n == null) { Panic = false; HostileSetRouted(false); NPC.netUpdate = true; }
 				else if (HasRecall && now >= _recallAt && now - _lastHitTick > 45 && HostileNearestEnemy(8f, out _) == null)
 				{
-					Recalling = true; RecallDrinks++; _recallDone = now + 55; band.Chat(this, "RECALL", force: true);
+					Recalling = true; RecallDrinks++; _recallDone = now + 55; band.Chat(this, "RETREAT", force: true);
 					SoundEngine.PlaySound(SoundID.Item3, NPC.Center);
 				}
 			}
@@ -301,7 +429,7 @@ namespace Warbands.Content.NPCs
 			var band = BandBrain.Get(BandId);
 			bool oneTap = _lifeBeforeBlow >= NPC.lifeMax * 0.6f && _lastBlow >= NPC.lifeMax * 0.55f;
 			band?.OnMemberDied(this, oneTap);
-			var cfg = WarbandsConfig.Get; float share = (cfg?.LootSharePercent ?? 35f) / 100f;
+			var cfg = WarbandsConfig.Get; if (cfg == null || !cfg.GearDrops) return; float share = cfg.LootSharePercent / 100f;
 			void Roll(string name, int stack, float chance) { int t = BandData.ItemType(name); if (t > 0 && Main.rand.NextFloat() < chance) Item.NewItem(NPC.GetSource_Loot(), NPC.Hitbox, t, stack); }
 			Roll(Member.Weapon, 1, share);
 			if (Member.Ammo != null) Roll(Member.Ammo, 15 + Main.rand.Next(26), Math.Min(1f, share * 1.5f));
@@ -313,13 +441,13 @@ namespace Warbands.Content.NPCs
 		public override void SendExtraAI(BinaryWriter writer)
 		{
 			base.SendExtraAI(writer);
-			writer.Write(BandId); writer.Write(TypeIdx); writer.Write(MemberIdx); writer.Write(StageIdx); writer.Write(Panic);
+			writer.Write(BandId); writer.Write(TypeIdx); writer.Write(MemberIdx); writer.Write(StageIdx); writer.Write(Panic); writer.Write(_passiveNet);
 		}
 
 		public override void ReceiveExtraAI(BinaryReader reader)
 		{
 			base.ReceiveExtraAI(reader);
-			BandId = reader.ReadInt32(); TypeIdx = reader.ReadByte(); MemberIdx = reader.ReadByte(); StageIdx = reader.ReadByte(); Panic = reader.ReadBoolean();
+			BandId = reader.ReadInt32(); TypeIdx = reader.ReadByte(); MemberIdx = reader.ReadByte(); StageIdx = reader.ReadByte(); Panic = reader.ReadBoolean(); _passiveNet = reader.ReadBoolean();
 		}
 
 		private static Asset<Texture2D> _pennant;

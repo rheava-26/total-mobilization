@@ -31,3 +31,11 @@ Still Levy's own and unchanged: pathing, hooks, wings, double jumps, platform dr
 - Summon staffs and sentries on a hostile body (rosters carry guns, bows, staves that fire, blades).
 - The Cultist circle's flight is replaced by the levy brain for archers (no `Hover` movement mode was added to Levy).
 - Visuals are unverified headless (the draw path cannot run on a dedicated server).
+
+## Phase 3 (Warbands 0.2.0): three more small seams, all marked HOSTILE SEAM
+
+1. `SoldierNPC.HostilePassive` (virtual, false): a hostile body the player's side must leave alone (a neutral band nobody has provoked). `SoldierTargeting.ComputeNeverTarget` treats it like a levy: levies, officers and turrets do not target it. Warbands also sets `NPC.chaseable` so vanilla minions skip it.
+2. `SoldierNPC.HostileVanity()` (virtual, null): the vanity a hostile body is drawn in. `SoldierNPC.ResolveVanity` asks it instead of the armory for a hostile body (client draw path only).
+3. `SoldierNPC.HostilePlateColor` (virtual): colour of a hostile body's name and bar (Warbands: gold while neutral).
+
+Levy symbols newly used: `SettlementSystem.Instance.NearestBarracks` (the bounty notice turns in at a Barracks), `VanityLook` / `VanitySet`, `SoldierProjectileTag.SoldierIndex` (a levy's shot hit a band member: banter).

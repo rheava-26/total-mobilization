@@ -18,6 +18,9 @@ Defaults give a result from three lines: `boss: eow` + `gear: postskel.best` run
 - **Output** in the run dir: `results.csv` (one row per fight), `cells.json`, `jobs/*/try*/` (harness log, `server.log.gz`, raw sidecars), `rec/`, `armies/`. Never touch /home/user/tml-bin or /home/user/tml-save-*.
 - **New C# knobs**: tokens are listed in `list`; a new token needs a line in `TOKENS` in `levylab` and nothing else.
 
+## Aim / drink lab (`tipsy:` spec)
+`specs/tipsy_main.yaml` is the pattern: a `tipsy:` section (weapons with class and ammo, `dist`, `motion` static|strafe, `size` small|boss, `arms` such as `{sober: {}, tipsy: {b: ale}, x2.5: {x: 2.5}}`) expands to one cell per combination, seeds are the rows. One levy fires at a pinned or strafing dummy; the table is damage per levy-second per arm with the hit rate. `b:` is a real drink buff (ale, stout, rum), `x:` multiplies aim error through the aim-accuracy seam. `tipsy_summary.py main|sweep|drinks RUN_DIR` pools the results by weapon group. See `docs/tipsy/RESULTS.md`.
+
 ## Lab brief template (paste into a builder brief, fill the blanks)
 ```
 Lab: <question in one sentence>.  Use levy-mod/lab/README.md; do NOT read the harness C# or write run scripts.

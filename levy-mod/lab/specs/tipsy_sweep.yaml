@@ -1,0 +1,25 @@
+# Tipsy lab, run 2: what aim-error multiplier costs how much damage. Sober levies (no drink buff) with the aim error multiplied by x through the Levy aim-accuracy seam;
+# x=1.6 is the shipped Tipsy value, so it doubles as a check against run 1. Medium range (25 tiles), still and strafing targets, small and boss-sized hitboxes, 3 seeds.
+name: tipsy_sweep
+mods: vanilla
+arena: a3
+seeds: 3
+tipsy:
+  warm: 600
+  win: 1200
+  dist: [25]
+  motion: [static, strafe]
+  size: [small, boss]
+  arms: {x1: {}, x1.6: {x: 1.6}, x2.5: {x: 2.5}, x4: {x: 4}, x6: {x: 6}, x10: {x: 10}}
+  weapons:
+    - {name: Minishark, cls: R, ammo: Musket Ball, kind: gun}
+    - {name: Minishark, cls: R, ammo: High Velocity Bullet, kind: gun-hv, every: {}}
+    - {name: Sniper Rifle, cls: R, ammo: High Velocity Bullet, kind: gun-hv}
+    - {name: Boomstick, cls: R, ammo: Musket Ball, kind: shotgun}
+    - {name: Demon Bow, cls: R, ammo: Wooden Arrow, kind: bow}
+    - {name: Molten Fury, cls: R, ammo: Hellfire Arrow, kind: bow}
+    - {name: Ruby Staff, cls: M, kind: magic}
+    - {name: Space Gun, cls: M, kind: magic}
+    - {name: Water Bolt, cls: M, kind: magic}
+    - {name: Enchanted Sword, cls: E, kind: beam}
+    - {name: Terra Blade, cls: E, kind: beam}

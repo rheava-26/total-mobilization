@@ -1,0 +1,1153 @@
+cellname,seed,tp_w,tp_a,tp_c,tp_d,tp_m,tp_z,tp_b,tp_x,dps,dmg,shots,projHits,hits,firstHit,avgDist,alivePct
+Minishark 8t static small sober,1,Minishark,,R,8,static,small,none,1,37.55,751,150,150,150,0.1,8.263,100
+Minishark 8t static small tipsy,1,Minishark,,R,8,static,small,ale,1,38.2,764,151,149,149,0.083,8.263,100
+Minishark 8t static boss sober,1,Minishark,,R,8,static,boss,none,1,36.75,735,151,150,150,0.033,8.509,100
+Minishark 8t static boss tipsy,1,Minishark,,R,8,static,boss,ale,1,38.2,764,151,150,150,0.017,8.509,100
+Minishark 8t strafe small sober,1,Minishark,,R,8,strafe,small,none,1,34.3,686,150,138,138,0.117,8.83,100
+Minishark 8t strafe small tipsy,1,Minishark,,R,8,strafe,small,ale,1,30.95,619,150,121,121,0.067,8.838,100
+Minishark 8t strafe boss sober,1,Minishark,,R,8,strafe,boss,none,1,36.75,735,150,149,149,0.017,9.089,100
+Minishark 8t strafe boss tipsy,1,Minishark,,R,8,strafe,boss,ale,1,37.45,749,150,149,149,0.133,9.094,100
+Minishark 25t static small sober,1,Minishark,,R,25,static,small,none,1,18.4,368,155,73,73,0.533,25.086,100
+Minishark 25t static small tipsy,1,Minishark,,R,25,static,small,ale,1,13.5,270,157,55,55,0.25,25.086,100
+Minishark 25t static boss sober,1,Minishark,,R,25,static,boss,none,1,38,760,152,150,150,0.067,25.168,100
+Minishark 25t static boss tipsy,1,Minishark,,R,25,static,boss,ale,1,37.35,747,152,147,147,0.017,25.168,100
+Minishark 25t strafe small sober,1,Minishark,,R,25,strafe,small,none,1,19.05,381,152,74,74,0.1,25.384,100
+Minishark 25t strafe small tipsy,1,Minishark,,R,25,strafe,small,ale,1,10.4,208,152,44,44,0.1,25.391,100
+Minishark 25t strafe boss sober,1,Minishark,,R,25,strafe,boss,none,1,36.3,726,152,147,147,0.033,25.333,100
+Minishark 25t strafe boss tipsy,1,Minishark,,R,25,strafe,boss,ale,1,32.2,644,152,129,129,0.033,25.331,100
+Minishark 45t static small sober,1,Minishark,,R,45,static,small,none,1,15.8,316,157,62,62,0.467,45.058,100
+Minishark 45t static small tipsy,1,Minishark,,R,45,static,small,ale,1,5.2,104,158,20,20,0.683,45.058,100
+Minishark 45t static boss sober,1,Minishark,,R,45,static,boss,none,1,34.05,681,153,134,134,0.1,45.098,100
+Minishark 45t static boss tipsy,1,Minishark,,R,45,static,boss,ale,1,22.7,454,158,93,93,0.083,45.097,100
+Minishark 45t strafe small sober,1,Minishark,,R,45,strafe,small,none,1,12.25,245,158,50,50,0.633,45.293,100
+Minishark 45t strafe small tipsy,1,Minishark,,R,45,strafe,small,ale,1,7.1,142,156,28,28,0.017,45.295,100
+Minishark 45t strafe boss sober,1,Minishark,,R,45,strafe,boss,none,1,30.6,612,153,122,122,0.117,45.299,100
+Minishark 45t strafe boss tipsy,1,Minishark,,R,45,strafe,boss,ale,1,21.15,423,155,84,84,0.2,45.286,100
+Minishark 8t static small sober,1,Minishark,,R,8,static,small,none,1,66.05,1321,153,150,150,0.033,8.263,100
+Minishark 8t static small tipsy,1,Minishark,,R,8,static,small,ale,1,65.75,1315,154,149,149,0.017,8.263,100
+Minishark 8t static boss sober,1,Minishark,,R,8,static,boss,none,1,66.45,1329,154,150,150,0.117,8.509,100
+Minishark 8t static boss tipsy,1,Minishark,,R,8,static,boss,ale,1,68.15,1363,153,150,150,0.1,8.509,100
+Minishark 8t strafe small sober,1,Minishark,,R,8,strafe,small,none,1,62.95,1259,156,140,140,0.083,8.83,100
+Minishark 8t strafe small tipsy,1,Minishark,,R,8,strafe,small,ale,1,53.55,1071,154,118,118,0.033,8.838,100
+Minishark 8t strafe boss sober,1,Minishark,,R,8,strafe,boss,none,1,67.7,1354,154,150,150,0.017,9.089,100
+Minishark 8t strafe boss tipsy,1,Minishark,,R,8,strafe,boss,ale,1,66.55,1331,155,149,149,0.133,9.094,100
+Minishark 25t static small sober,1,Minishark,,R,25,static,small,none,1,33.15,663,153,73,73,0.05,25.086,100
+Minishark 25t static small tipsy,1,Minishark,,R,25,static,small,ale,1,21.65,433,153,48,48,0.033,25.086,100
+Minishark 25t static boss sober,1,Minishark,,R,25,static,boss,none,1,67.75,1355,153,150,150,0.133,25.168,100
+Minishark 25t static boss tipsy,1,Minishark,,R,25,static,boss,ale,1,64.15,1283,152,140,140,0.083,25.168,100
+Minishark 25t strafe small sober,1,Minishark,,R,25,strafe,small,none,1,38.55,771,153,85,85,0.067,25.384,100
+Minishark 25t strafe small tipsy,1,Minishark,,R,25,strafe,small,ale,1,20.65,413,153,47,47,0.067,25.391,100
+Minishark 25t strafe boss sober,1,Minishark,,R,25,strafe,boss,none,1,67.8,1356,154,150,150,0.017,25.333,100
+Minishark 25t strafe boss tipsy,1,Minishark,,R,25,strafe,boss,ale,1,60.35,1207,153,132,132,0.15,25.331,100
+Minishark 45t static small sober,1,Minishark,,R,45,static,small,none,1,22.05,441,153,49,49,0.2,45.058,100
+Minishark 45t static small tipsy,1,Minishark,,R,45,static,small,ale,1,15.85,317,152,35,35,0.283,45.058,100
+Minishark 45t static boss sober,1,Minishark,,R,45,static,boss,none,1,58.25,1165,152,128,128,0.267,45.098,100
+Minishark 45t static boss tipsy,1,Minishark,,R,45,static,boss,ale,1,31.1,622,154,68,68,0.117,45.097,100
+Minishark 45t strafe small sober,1,Minishark,,R,45,strafe,small,none,1,21.1,422,153,47,47,0.1,45.293,100
+Minishark 45t strafe small tipsy,1,Minishark,,R,45,strafe,small,ale,1,13.45,269,153,29,29,0.083,45.295,100
+Minishark 45t strafe boss sober,1,Minishark,,R,45,strafe,boss,none,1,58.95,1179,153,132,132,0.05,45.299,100
+Minishark 45t strafe boss tipsy,1,Minishark,,R,45,strafe,boss,ale,1,31.5,630,152,69,69,0.133,45.286,100
+Sniper Rifle 8t static small sober,1,Sniper_Rifle,,R,8,static,small,none,1,252.5,5050,34,33,33,0.417,8.263,100
+Sniper Rifle 8t static small tipsy,1,Sniper_Rifle,,R,8,static,small,ale,1,255,5100,34,33,33,0.4,8.263,100
+Sniper Rifle 8t static boss sober,1,Sniper_Rifle,,R,8,static,boss,none,1,244.65,4893,34,33,33,0.383,8.509,100
+Sniper Rifle 8t static boss tipsy,1,Sniper_Rifle,,R,8,static,boss,ale,1,256.3,5126,34,33,33,0.367,8.509,100
+Sniper Rifle 8t strafe small sober,1,Sniper_Rifle,,R,8,strafe,small,none,1,242,4840,34,31,31,0.35,8.83,100
+Sniper Rifle 8t strafe small tipsy,1,Sniper_Rifle,,R,8,strafe,small,ale,1,224.85,4497,34,29,29,0.433,8.838,100
+Sniper Rifle 8t strafe boss sober,1,Sniper_Rifle,,R,8,strafe,boss,none,1,251.6,5032,34,33,33,0.417,9.089,100
+Sniper Rifle 8t strafe boss tipsy,1,Sniper_Rifle,,R,8,strafe,boss,ale,1,241.9,4838,34,33,33,0.4,9.094,100
+Sniper Rifle 25t static small sober,1,Sniper_Rifle,,R,25,static,small,none,1,117.65,2353,34,16,16,1.633,25.086,100
+Sniper Rifle 25t static small tipsy,1,Sniper_Rifle,,R,25,static,small,ale,1,101.75,2035,34,13,13,1.017,25.086,100
+Sniper Rifle 25t static boss sober,1,Sniper_Rifle,,R,25,static,boss,none,1,259.4,5188,34,33,33,0.383,25.168,100
+Sniper Rifle 25t static boss tipsy,1,Sniper_Rifle,,R,25,static,boss,ale,1,240.85,4817,34,31,31,0.467,25.168,100
+Sniper Rifle 25t strafe small sober,1,Sniper_Rifle,,R,25,strafe,small,none,1,148.8,2976,34,19,19,0.45,25.384,100
+Sniper Rifle 25t strafe small tipsy,1,Sniper_Rifle,,R,25,strafe,small,ale,1,45.75,915,34,6,6,0.433,25.391,100
+Sniper Rifle 25t strafe boss sober,1,Sniper_Rifle,,R,25,strafe,boss,none,1,250.55,5011,34,33,33,0.417,25.333,100
+Sniper Rifle 25t strafe boss tipsy,1,Sniper_Rifle,,R,25,strafe,boss,ale,1,244.95,4899,34,32,32,0.4,25.331,100
+Sniper Rifle 45t static small sober,1,Sniper_Rifle,,R,45,static,small,none,1,126.2,2524,33,16,16,2.833,45.058,100
+Sniper Rifle 45t static small tipsy,1,Sniper_Rifle,,R,45,static,small,ale,1,82.25,1645,34,11,11,0.517,45.058,100
+Sniper Rifle 45t static boss sober,1,Sniper_Rifle,,R,45,static,boss,none,1,232.8,4656,34,30,30,0.5,45.098,100
+Sniper Rifle 45t static boss tipsy,1,Sniper_Rifle,,R,45,static,boss,ale,1,133.8,2676,34,17,17,1.083,45.097,100
+Sniper Rifle 45t strafe small sober,1,Sniper_Rifle,,R,45,strafe,small,none,1,90.8,1816,34,12,12,0.467,45.293,100
+Sniper Rifle 45t strafe small tipsy,1,Sniper_Rifle,,R,45,strafe,small,ale,1,66.9,1338,34,9,9,0.45,45.295,100
+Sniper Rifle 45t strafe boss sober,1,Sniper_Rifle,,R,45,strafe,boss,none,1,231.55,4631,34,30,30,1.033,45.299,100
+Sniper Rifle 45t strafe boss tipsy,1,Sniper_Rifle,,R,45,strafe,boss,ale,1,165.2,3304,34,22,22,0.5,45.286,100
+Boomstick 8t static small sober,1,Boomstick,,R,8,static,small,none,1,38.3,766,91,63,63,0.233,8.263,100
+Boomstick 8t static small tipsy,1,Boomstick,,R,8,static,small,ale,1,36.35,727,90,61,61,0.217,8.263,100
+Boomstick 8t static boss sober,1,Boomstick,,R,8,static,boss,none,1,53.9,1078,90,90,90,0.167,8.509,100
+Boomstick 8t static boss tipsy,1,Boomstick,,R,8,static,boss,ale,1,54.4,1088,90,90,90,0.15,8.509,100
+Boomstick 8t strafe small sober,1,Boomstick,,R,8,strafe,small,none,1,34.25,685,91,58,58,0.117,8.83,100
+Boomstick 8t strafe small tipsy,1,Boomstick,,R,8,strafe,small,ale,1,35.2,704,90,59,59,0.217,8.838,100
+Boomstick 8t strafe boss sober,1,Boomstick,,R,8,strafe,boss,none,1,53.15,1063,90,88,88,0.15,9.089,100
+Boomstick 8t strafe boss tipsy,1,Boomstick,,R,8,strafe,boss,ale,1,51.55,1031,90,88,88,0.133,9.094,100
+Boomstick 25t static small sober,1,Boomstick,,R,25,static,small,none,1,10.85,217,96,18,18,0.45,25.086,100
+Boomstick 25t static small tipsy,1,Boomstick,,R,25,static,small,ale,1,10.65,213,93,17,17,0.433,25.086,100
+Boomstick 25t static boss sober,1,Boomstick,,R,25,static,boss,none,1,32.55,651,93,56,56,0.383,25.168,100
+Boomstick 25t static boss tipsy,1,Boomstick,,R,25,static,boss,ale,1,33.05,661,92,55,55,0.467,25.168,100
+Boomstick 25t strafe small sober,1,Boomstick,,R,25,strafe,small,none,1,12.05,241,93,20,20,0.45,25.384,100
+Boomstick 25t strafe small tipsy,1,Boomstick,,R,25,strafe,small,ale,1,10,200,92,17,17,0.45,25.391,100
+Boomstick 25t strafe boss sober,1,Boomstick,,R,25,strafe,boss,none,1,33.85,677,91,57,57,0.367,25.333,100
+Boomstick 25t strafe boss tipsy,1,Boomstick,,R,25,strafe,boss,ale,1,34.35,687,91,58,58,0.35,25.331,100
+Boomstick 45t static small sober,1,Boomstick,,R,45,static,small,none,1,2.65,53,94,5,5,3.367,45.058,100
+Boomstick 45t static small tipsy,1,Boomstick,,R,45,static,small,ale,1,4.8,96,96,8,8,2.117,45.058,100
+Boomstick 45t static boss sober,1,Boomstick,,R,45,static,boss,none,1,18.55,371,94,30,30,0.067,45.098,100
+Boomstick 45t static boss tipsy,1,Boomstick,,R,45,static,boss,ale,1,17.25,345,92,30,30,0.05,45.097,100
+Boomstick 45t strafe small sober,1,Boomstick,,R,45,strafe,small,none,1,3.9,78,95,6,6,3.433,45.293,100
+Boomstick 45t strafe small tipsy,1,Boomstick,,R,45,strafe,small,ale,1,2.8,56,94,5,5,4.633,45.295,100
+Boomstick 45t strafe boss sober,1,Boomstick,,R,45,strafe,boss,none,1,17.05,341,93,28,28,0.65,45.299,100
+Boomstick 45t strafe boss tipsy,1,Boomstick,,R,45,strafe,boss,ale,1,17.85,357,93,29,29,0.75,45.286,100
+Demon Bow 8t static small sober,1,Demon_Bow,,R,8,static,small,none,1,24.15,483,49,48,48,0.15,8.263,100
+Demon Bow 8t static small tipsy,1,Demon_Bow,,R,8,static,small,ale,1,23.75,475,49,48,48,0.15,8.263,100
+Demon Bow 8t static boss sober,1,Demon_Bow,,R,8,static,boss,none,1,24.1,482,49,48,48,0.067,8.509,100
+Demon Bow 8t static boss tipsy,1,Demon_Bow,,R,8,static,boss,ale,1,23.8,476,49,48,48,0.033,8.509,100
+Demon Bow 8t strafe small sober,1,Demon_Bow,,R,8,strafe,small,none,1,22.25,445,48,44,44,0.45,8.83,100
+Demon Bow 8t strafe small tipsy,1,Demon_Bow,,R,8,strafe,small,ale,1,21.6,432,48,42,42,0.067,8.838,100
+Demon Bow 8t strafe boss sober,1,Demon_Bow,,R,8,strafe,boss,none,1,23.05,461,48,47,47,0.433,9.089,100
+Demon Bow 8t strafe boss tipsy,1,Demon_Bow,,R,8,strafe,boss,ale,1,23.7,474,48,47,47,0.4,9.094,100
+Demon Bow 25t static small sober,1,Demon_Bow,,R,25,static,small,none,1,14.05,281,50,29,29,1.433,25.104,100
+Demon Bow 25t static small tipsy,1,Demon_Bow,,R,25,static,small,ale,1,11.5,230,52,22,22,0.15,25.104,100
+Demon Bow 25t static boss sober,1,Demon_Bow,,R,25,static,boss,none,1,23.9,478,50,48,48,0.083,25.202,100
+Demon Bow 25t static boss tipsy,1,Demon_Bow,,R,25,static,boss,ale,1,24.4,488,50,48,48,0.167,25.202,100
+Demon Bow 25t strafe small sober,1,Demon_Bow,,R,25,strafe,small,none,1,10.05,201,50,20,20,0.05,25.372,100
+Demon Bow 25t strafe small tipsy,1,Demon_Bow,,R,25,strafe,small,ale,1,11.1,222,50,23,23,0.583,25.399,100
+Demon Bow 25t strafe boss sober,1,Demon_Bow,,R,25,strafe,boss,none,1,22.95,459,49,45,45,0.483,25.373,100
+Demon Bow 25t strafe boss tipsy,1,Demon_Bow,,R,25,strafe,boss,ale,1,21.55,431,49,42,42,0.467,25.372,100
+Demon Bow 45t static small sober,1,Demon_Bow,,R,45,static,small,none,1,13.25,265,51,27,27,0.283,45.058,100
+Demon Bow 45t static small tipsy,1,Demon_Bow,,R,45,static,small,ale,1,5.85,117,51,12,12,1.667,45.058,100
+Demon Bow 45t static boss sober,1,Demon_Bow,,R,45,static,boss,none,1,24.35,487,51,48,48,0.383,45.098,100
+Demon Bow 45t static boss tipsy,1,Demon_Bow,,R,45,static,boss,ale,1,17.75,355,51,35,35,1.6,45.097,100
+Demon Bow 45t strafe small sober,1,Demon_Bow,,R,45,strafe,small,none,1,4,80,51,8,8,0.75,45.293,100
+Demon Bow 45t strafe small tipsy,1,Demon_Bow,,R,45,strafe,small,ale,1,5.9,118,51,12,12,1.8,45.295,100
+Demon Bow 45t strafe boss sober,1,Demon_Bow,,R,45,strafe,boss,none,1,17.8,356,51,36,36,0.067,45.299,100
+Demon Bow 45t strafe boss tipsy,1,Demon_Bow,,R,45,strafe,boss,ale,1,13,260,51,27,27,0.167,45.286,100
+Molten Fury 8t static small sober,1,Molten_Fury,,R,8,static,small,none,1,81.7,1634,55,55,55,0.1,8.263,100
+Molten Fury 8t static small tipsy,1,Molten_Fury,,R,8,static,small,ale,1,82.6,1652,55,55,55,0.083,8.263,100
+Molten Fury 8t static boss sober,1,Molten_Fury,,R,8,static,boss,none,1,81.45,1629,55,55,55,0.017,8.509,100
+Molten Fury 8t static boss tipsy,1,Molten_Fury,,R,8,static,boss,ale,1,81.55,1631,54,54,54,0.367,8.509,100
+Molten Fury 8t strafe small sober,1,Molten_Fury,,R,8,strafe,small,none,1,77.7,1554,54,52,52,0.35,8.83,100
+Molten Fury 8t strafe small tipsy,1,Molten_Fury,,R,8,strafe,small,ale,1,73.05,1461,55,48,48,0.05,8.838,100
+Molten Fury 8t strafe boss sober,1,Molten_Fury,,R,8,strafe,boss,none,1,83.5,1670,54,54,54,0.35,9.089,100
+Molten Fury 8t strafe boss tipsy,1,Molten_Fury,,R,8,strafe,boss,ale,1,80.2,1604,54,54,54,0.333,9.094,100
+Molten Fury 25t static small sober,1,Molten_Fury,,R,25,static,small,none,1,47.6,952,56,31,31,0.383,25.104,100
+Molten Fury 25t static small tipsy,1,Molten_Fury,,R,25,static,small,ale,1,25.45,509,57,17,17,0.367,25.104,100
+Molten Fury 25t static boss sober,1,Molten_Fury,,R,25,static,boss,none,1,81.2,1624,55,54,54,0.3,25.202,100
+Molten Fury 25t static boss tipsy,1,Molten_Fury,,R,25,static,boss,ale,1,81.3,1626,56,55,55,0.033,25.202,100
+Molten Fury 25t strafe small sober,1,Molten_Fury,,R,25,strafe,small,none,1,41.3,826,56,27,27,0.783,25.372,100
+Molten Fury 25t strafe small tipsy,1,Molten_Fury,,R,25,strafe,small,ale,1,37.1,742,56,25,25,0.367,25.399,100
+Molten Fury 25t strafe boss sober,1,Molten_Fury,,R,25,strafe,boss,none,1,82.3,1646,55,54,54,0.267,25.373,100
+Molten Fury 25t strafe boss tipsy,1,Molten_Fury,,R,25,strafe,boss,ale,1,76.15,1523,55,50,50,0.25,25.372,100
+Molten Fury 45t static small sober,1,Molten_Fury,,R,45,static,small,none,1,50.1,1002,56,33,33,0.333,45.058,100
+Molten Fury 45t static small tipsy,1,Molten_Fury,,R,45,static,small,ale,1,20.5,410,58,14,14,0.067,45.058,100
+Molten Fury 45t static boss sober,1,Molten_Fury,,R,45,static,boss,none,1,79.3,1586,56,54,54,0.367,45.098,100
+Molten Fury 45t static boss tipsy,1,Molten_Fury,,R,45,static,boss,ale,1,61.6,1232,58,40,40,0.35,45.097,100
+Molten Fury 45t strafe small sober,1,Molten_Fury,,R,45,strafe,small,none,1,25.9,518,56,17,17,2.017,45.293,100
+Molten Fury 45t strafe small tipsy,1,Molten_Fury,,R,45,strafe,small,ale,1,16.5,330,57,11,11,0.367,45.295,100
+Molten Fury 45t strafe boss sober,1,Molten_Fury,,R,45,strafe,boss,none,1,66.8,1336,56,45,45,0.233,45.299,100
+Molten Fury 45t strafe boss tipsy,1,Molten_Fury,,R,45,strafe,boss,ale,1,49.35,987,57,32,32,2,45.286,100
+Ruby Staff 8t static small sober,1,Ruby_Staff,,M,8,static,small,none,1,26.05,521,50,43,43,0.333,8.263,100
+Ruby Staff 8t static small tipsy,1,Ruby_Staff,,M,8,static,small,ale,1,26.9,538,50,43,43,0.317,8.263,100
+Ruby Staff 8t static boss sober,1,Ruby_Staff,,M,8,static,boss,none,1,51.25,1025,43,43,86,0.233,8.509,100
+Ruby Staff 8t static boss tipsy,1,Ruby_Staff,,M,8,static,boss,ale,1,51.1,1022,43,43,86,0.217,8.509,100
+Ruby Staff 8t strafe small sober,1,Ruby_Staff,,M,8,strafe,small,none,1,21.85,437,50,36,36,0.167,8.829,100
+Ruby Staff 8t strafe small tipsy,1,Ruby_Staff,,M,8,strafe,small,ale,1,21.25,425,50,36,36,0.267,8.827,100
+Ruby Staff 8t strafe boss sober,1,Ruby_Staff,,M,8,strafe,boss,none,1,47.3,946,43,42,79,0.15,9.089,100
+Ruby Staff 8t strafe boss tipsy,1,Ruby_Staff,,M,8,strafe,boss,ale,1,47.8,956,43,42,81,0.15,9.094,100
+Ruby Staff 25t static small sober,1,Ruby_Staff,,M,25,static,small,none,1,16.95,339,49,29,29,0.333,25.104,100
+Ruby Staff 25t static small tipsy,1,Ruby_Staff,,M,25,static,small,ale,1,12.4,248,50,23,23,0.317,25.104,100
+Ruby Staff 25t static boss sober,1,Ruby_Staff,,M,25,static,boss,none,1,52.55,1051,44,43,86,0.217,25.174,100
+Ruby Staff 25t static boss tipsy,1,Ruby_Staff,,M,25,static,boss,ale,1,46.85,937,44,43,79,0.3,25.175,100
+Ruby Staff 25t strafe small sober,1,Ruby_Staff,,M,25,strafe,small,none,1,13.65,273,50,22,22,0.25,25.372,100
+Ruby Staff 25t strafe small tipsy,1,Ruby_Staff,,M,25,strafe,small,ale,1,8.35,167,47,14,14,0.233,25.399,100
+Ruby Staff 25t strafe boss sober,1,Ruby_Staff,,M,25,strafe,boss,none,1,44.9,898,45,39,75,0.117,25.349,100
+Ruby Staff 25t strafe boss tipsy,1,Ruby_Staff,,M,25,strafe,boss,ale,1,44.15,883,45,39,72,0.083,25.349,100
+Ruby Staff 38t static small sober,1,Ruby_Staff,,M,38,static,small,none,1,13.3,266,49,22,22,0.233,38.069,100
+Ruby Staff 38t static small tipsy,1,Ruby_Staff,,M,38,static,small,ale,1,8.25,165,49,13,13,3.567,38.068,100
+Ruby Staff 38t static boss sober,1,Ruby_Staff,,M,38,static,boss,none,1,48.3,966,45,43,82,0.217,38.115,100
+Ruby Staff 38t static boss tipsy,1,Ruby_Staff,,M,38,static,boss,ale,1,36.15,723,46,33,61,0.2,38.115,100
+Ruby Staff 38t strafe small sober,1,Ruby_Staff,,M,38,strafe,small,none,1,4.2,84,50,8,8,4.317,38.317,100
+Ruby Staff 38t strafe small tipsy,1,Ruby_Staff,,M,38,strafe,small,ale,1,8.5,170,48,13,13,3.167,38.32,100
+Ruby Staff 38t strafe boss sober,1,Ruby_Staff,,M,38,strafe,boss,none,1,33.05,661,48,32,55,0.133,38.324,100
+Ruby Staff 38t strafe boss tipsy,1,Ruby_Staff,,M,38,strafe,boss,ale,1,25.75,515,46,24,42,0.083,38.308,100
+Space Gun 8t static small sober,1,Space_Gun,,M,8,static,small,none,1,31.05,621,73,70,70,0.217,8.263,100
+Space Gun 8t static small tipsy,1,Space_Gun,,M,8,static,small,ale,1,30.35,607,74,69,69,0.2,8.263,100
+Space Gun 8t static boss sober,1,Space_Gun,,M,8,static,boss,none,1,62.65,1253,74,71,139,0.167,8.509,100
+Space Gun 8t static boss tipsy,1,Space_Gun,,M,8,static,boss,ale,1,64.4,1288,74,71,141,0.15,8.509,100
+Space Gun 8t strafe small sober,1,Space_Gun,,M,8,strafe,small,none,1,29.1,582,73,65,65,0.133,8.829,100
+Space Gun 8t strafe small tipsy,1,Space_Gun,,M,8,strafe,small,ale,1,24.25,485,72,55,55,0.217,8.827,100
+Space Gun 8t strafe boss sober,1,Space_Gun,,M,8,strafe,boss,none,1,53.55,1071,75,70,119,0.167,9.089,100
+Space Gun 8t strafe boss tipsy,1,Space_Gun,,M,8,strafe,boss,ale,1,52.2,1044,74,70,113,0.15,9.094,100
+Space Gun 25t static small sober,1,Space_Gun,,M,25,static,small,none,1,15.45,309,73,33,33,0.333,25.104,100
+Space Gun 25t static small tipsy,1,Space_Gun,,M,25,static,small,ale,1,9.1,182,74,20,20,0.033,25.104,100
+Space Gun 25t static boss sober,1,Space_Gun,,M,25,static,boss,none,1,50.75,1015,73,70,111,0.283,25.174,100
+Space Gun 25t static boss tipsy,1,Space_Gun,,M,25,static,boss,ale,1,49.75,995,74,69,111,0.083,25.175,100
+Space Gun 25t strafe small sober,1,Space_Gun,,M,25,strafe,small,none,1,15.35,307,73,33,33,1.25,25.372,100
+Space Gun 25t strafe small tipsy,1,Space_Gun,,M,25,strafe,small,ale,1,8.15,163,73,18,18,1.533,25.399,100
+Space Gun 25t strafe boss sober,1,Space_Gun,,M,25,strafe,boss,none,1,47.6,952,75,71,104,0.033,25.349,100
+Space Gun 25t strafe boss tipsy,1,Space_Gun,,M,25,strafe,boss,ale,1,40.6,812,75,60,91,0.017,25.349,100
+Space Gun 38t static small sober,1,Space_Gun,,M,38,static,small,none,1,10.8,216,74,24,24,0.7,38.069,100
+Space Gun 38t static small tipsy,1,Space_Gun,,M,38,static,small,ale,1,10.2,204,75,23,23,0.783,38.068,100
+Space Gun 38t static boss sober,1,Space_Gun,,M,38,static,boss,none,1,49.8,996,75,66,111,0.183,38.115,100
+Space Gun 38t static boss tipsy,1,Space_Gun,,M,38,static,boss,ale,1,32.75,655,75,40,71,0.167,38.115,100
+Space Gun 38t strafe small sober,1,Space_Gun,,M,38,strafe,small,none,1,10.2,204,73,23,23,0.433,38.317,100
+Space Gun 38t strafe small tipsy,1,Space_Gun,,M,38,strafe,small,ale,1,7.5,150,73,16,16,0.717,38.32,100
+Space Gun 38t strafe boss sober,1,Space_Gun,,M,38,strafe,boss,none,1,44.1,882,73,69,100,0.067,38.324,100
+Space Gun 38t strafe boss tipsy,1,Space_Gun,,M,38,strafe,boss,ale,1,25.55,511,72,44,58,0.183,38.308,100
+Water Bolt 8t static small sober,1,Water_Bolt,,M,8,static,small,none,1,35.15,703,104,70,70,0.25,8.263,100
+Water Bolt 8t static small tipsy,1,Water_Bolt,,M,8,static,small,ale,1,34.7,694,104,70,70,0.233,8.263,100
+Water Bolt 8t static boss sober,1,Water_Bolt,,M,8,static,boss,none,1,104.65,2093,104,72,212,0.083,8.509,100
+Water Bolt 8t static boss tipsy,1,Water_Bolt,,M,8,static,boss,ale,1,105.6,2112,104,72,212,0.083,8.509,100
+Water Bolt 8t strafe small sober,1,Water_Bolt,,M,8,strafe,small,none,1,35.55,711,104,57,73,0.117,8.829,100
+Water Bolt 8t strafe small tipsy,1,Water_Bolt,,M,8,strafe,small,ale,1,35.6,712,103,56,71,0.033,8.827,100
+Water Bolt 8t strafe boss sober,1,Water_Bolt,,M,8,strafe,boss,none,1,102.7,2054,104,69,207,0.05,9.089,100
+Water Bolt 8t strafe boss tipsy,1,Water_Bolt,,M,8,strafe,boss,ale,1,99.15,1983,104,69,199,0.033,9.094,100
+Water Bolt 25t static small sober,1,Water_Bolt,,M,25,static,small,none,1,25.15,503,104,51,51,0.1,25.104,100
+Water Bolt 25t static small tipsy,1,Water_Bolt,,M,25,static,small,ale,1,20.5,410,104,40,40,0.083,25.104,100
+Water Bolt 25t static boss sober,1,Water_Bolt,,M,25,static,boss,none,1,105.1,2102,104,71,211,0.1,25.174,100
+Water Bolt 25t static boss tipsy,1,Water_Bolt,,M,25,static,boss,ale,1,101.6,2032,103,71,204,0.167,25.175,100
+Water Bolt 25t strafe small sober,1,Water_Bolt,,M,25,strafe,small,none,1,8.6,172,104,15,17,2.583,25.372,100
+Water Bolt 25t strafe small tipsy,1,Water_Bolt,,M,25,strafe,small,ale,1,10.4,208,104,19,22,3.617,25.399,100
+Water Bolt 25t strafe boss sober,1,Water_Bolt,,M,25,strafe,boss,none,1,71.55,1431,104,53,141,0.033,25.349,100
+Water Bolt 25t strafe boss tipsy,1,Water_Bolt,,M,25,strafe,boss,ale,1,68.65,1373,104,55,135,0.15,25.349,100
+Water Bolt 38t static small sober,1,Water_Bolt,,M,38,static,small,none,1,18.55,371,104,36,36,0.267,38.069,100
+Water Bolt 38t static small tipsy,1,Water_Bolt,,M,38,static,small,ale,1,15.2,304,103,30,30,0.067,38.068,100
+Water Bolt 38t static boss sober,1,Water_Bolt,,M,38,static,boss,none,1,107.45,2149,104,71,209,0.067,38.115,100
+Water Bolt 38t static boss tipsy,1,Water_Bolt,,M,38,static,boss,ale,1,81.45,1629,104,60,163,0.05,38.115,100
+Water Bolt 38t strafe small sober,1,Water_Bolt,,M,38,strafe,small,none,1,15.25,305,104,25,31,0.45,38.317,100
+Water Bolt 38t strafe small tipsy,1,Water_Bolt,,M,38,strafe,small,ale,1,11.95,239,104,19,24,0.433,38.32,100
+Water Bolt 38t strafe boss sober,1,Water_Bolt,,M,38,strafe,boss,none,1,63.7,1274,104,49,126,0.017,38.324,100
+Water Bolt 38t strafe boss tipsy,1,Water_Bolt,,M,38,strafe,boss,ale,1,76.85,1537,103,55,154,0.167,38.308,100
+Enchanted Sword 8t static small sober,1,Enchanted_Sword,,E,8,static,small,none,1,17.7,354,27,27,27,0.017,8.263,100
+Enchanted Sword 8t static small tipsy,1,Enchanted_Sword,,E,8,static,small,ale,1,16.25,325,26,26,26,0.75,8.263,100
+Enchanted Sword 8t static boss sober,1,Enchanted_Sword,,E,8,static,boss,none,1,16.8,336,26,26,26,0.667,8.509,100
+Enchanted Sword 8t static boss tipsy,1,Enchanted_Sword,,E,8,static,boss,ale,1,16.05,321,26,26,26,0.65,8.509,100
+Enchanted Sword 8t strafe small sober,1,Enchanted_Sword,,E,8,strafe,small,none,1,23,460,27,26,26,0.683,8.829,100
+Enchanted Sword 8t strafe small tipsy,1,Enchanted_Sword,,E,8,strafe,small,ale,1,21.3,426,26,24,24,0.783,8.827,100
+Enchanted Sword 8t strafe boss sober,1,Enchanted_Sword,,E,8,strafe,boss,none,1,22.75,455,26,26,26,0.667,9.089,100
+Enchanted Sword 8t strafe boss tipsy,1,Enchanted_Sword,,E,8,strafe,boss,ale,1,22.7,454,26,26,26,0.65,9.094,100
+Enchanted Sword 25t static small sober,1,Enchanted_Sword,,E,25,static,small,none,1,17.05,341,27,27,27,0.45,25.104,100
+Enchanted Sword 25t static small tipsy,1,Enchanted_Sword,,E,25,static,small,ale,1,17.3,346,27,27,27,0.433,25.104,100
+Enchanted Sword 25t static boss sober,1,Enchanted_Sword,,E,25,static,boss,none,1,17.05,341,28,27,27,0.35,25.174,100
+Enchanted Sword 25t static boss tipsy,1,Enchanted_Sword,,E,25,static,boss,ale,1,17.45,349,27,27,27,0.433,25.175,100
+Enchanted Sword 25t strafe small sober,1,Enchanted_Sword,,E,25,strafe,small,none,1,9.1,182,28,13,13,1.367,25.372,100
+Enchanted Sword 25t strafe small tipsy,1,Enchanted_Sword,,E,25,strafe,small,ale,1,8.3,166,28,13,13,1.35,25.399,100
+Enchanted Sword 25t strafe boss sober,1,Enchanted_Sword,,E,25,strafe,boss,none,1,17.15,343,27,26,26,0.283,25.349,100
+Enchanted Sword 25t strafe boss tipsy,1,Enchanted_Sword,,E,25,strafe,boss,ale,1,17.7,354,27,26,26,0.267,25.349,100
+Enchanted Sword 45t static small sober,1,Enchanted_Sword,,E,45,static,small,none,1,0,0,0,0,0,-1,45.058,100
+Enchanted Sword 45t static small tipsy,1,Enchanted_Sword,,E,45,static,small,ale,1,0,0,0,0,0,-1,45.058,100
+Enchanted Sword 45t static boss sober,1,Enchanted_Sword,,E,45,static,boss,none,1,0,0,0,0,0,-1,45.097,100
+Enchanted Sword 45t static boss tipsy,1,Enchanted_Sword,,E,45,static,boss,ale,1,0,0,0,0,0,-1,45.097,100
+Enchanted Sword 45t strafe small sober,1,Enchanted_Sword,,E,45,strafe,small,none,1,2.8,56,11,4,4,0.217,45.269,100
+Enchanted Sword 45t strafe small tipsy,1,Enchanted_Sword,,E,45,strafe,small,ale,1,2.55,51,11,4,4,0.217,45.267,100
+Enchanted Sword 45t strafe boss sober,1,Enchanted_Sword,,E,45,strafe,boss,none,1,9.05,181,14,14,14,0.65,45.26,100
+Enchanted Sword 45t strafe boss tipsy,1,Enchanted_Sword,,E,45,strafe,boss,ale,1,9.3,186,14,14,14,0.65,45.259,100
+Terra Blade 8t static small sober,1,Terra_Blade,,E,8,static,small,none,1,210.6,4212,69,67,67,0.117,8.263,100
+Terra Blade 8t static small tipsy,1,Terra_Blade,,E,8,static,small,ale,1,207.45,4149,69,67,67,0.1,8.263,100
+Terra Blade 8t static boss sober,1,Terra_Blade,,E,8,static,boss,none,1,213.2,4264,69,67,67,0.083,8.509,100
+Terra Blade 8t static boss tipsy,1,Terra_Blade,,E,8,static,boss,ale,1,216.85,4337,69,67,67,0.067,8.509,100
+Terra Blade 8t strafe small sober,1,Terra_Blade,,E,8,strafe,small,none,1,230.7,4614,68,57,57,0.05,8.829,100
+Terra Blade 8t strafe small tipsy,1,Terra_Blade,,E,8,strafe,small,ale,1,244.95,4899,69,61,61,0.133,8.827,100
+Terra Blade 8t strafe boss sober,1,Terra_Blade,,E,8,strafe,boss,none,1,289.1,5782,69,67,67,0.117,9.089,100
+Terra Blade 8t strafe boss tipsy,1,Terra_Blade,,E,8,strafe,boss,ale,1,289.4,5788,69,67,67,0.1,9.094,100
+Terra Blade 25t static small sober,1,Terra_Blade,,E,25,static,small,none,1,209.4,4188,68,67,67,0.167,25.104,100
+Terra Blade 25t static small tipsy,1,Terra_Blade,,E,25,static,small,ale,1,204.45,4089,68,66,66,0.15,25.104,100
+Terra Blade 25t static boss sober,1,Terra_Blade,,E,25,static,boss,none,1,211.95,4239,68,67,67,0.15,25.174,100
+Terra Blade 25t static boss tipsy,1,Terra_Blade,,E,25,static,boss,ale,1,208.35,4167,68,67,67,0.2,25.175,100
+Terra Blade 25t strafe small sober,1,Terra_Blade,,E,25,strafe,small,none,1,192.4,3848,69,62,62,0.167,25.372,100
+Terra Blade 25t strafe small tipsy,1,Terra_Blade,,E,25,strafe,small,ale,1,179.4,3588,69,57,57,0.15,25.399,100
+Terra Blade 25t strafe boss sober,1,Terra_Blade,,E,25,strafe,boss,none,1,206.3,4126,69,66,66,0.15,25.349,100
+Terra Blade 25t strafe boss tipsy,1,Terra_Blade,,E,25,strafe,boss,ale,1,201.05,4021,69,63,63,0.15,25.349,100
+Terra Blade 45t static small sober,1,Terra_Blade,,E,45,static,small,none,1,0,0,0,0,0,-1,45.058,100
+Terra Blade 45t static small tipsy,1,Terra_Blade,,E,45,static,small,ale,1,0,0,0,0,0,-1,45.058,100
+Terra Blade 45t static boss sober,1,Terra_Blade,,E,45,static,boss,none,1,0,0,0,0,0,-1,45.097,100
+Terra Blade 45t static boss tipsy,1,Terra_Blade,,E,45,static,boss,ale,1,0,0,0,0,0,-1,45.097,100
+Terra Blade 45t strafe small sober,1,Terra_Blade,,E,45,strafe,small,none,1,69.8,1396,24,22,22,0.05,45.269,100
+Terra Blade 45t strafe small tipsy,1,Terra_Blade,,E,45,strafe,small,ale,1,51.35,1027,23,16,16,0.05,45.267,100
+Terra Blade 45t strafe boss sober,1,Terra_Blade,,E,45,strafe,boss,none,1,85.75,1715,31,28,28,0.3,45.26,100
+Terra Blade 45t strafe boss tipsy,1,Terra_Blade,,E,45,strafe,boss,ale,1,84.7,1694,30,27,27,0.3,45.259,100
+Muramasa 8t static small sober,1,Muramasa,,E,8,static,small,none,1,68.9,1378,67,67,67,0.117,2.169,100
+Muramasa 8t static small tipsy,1,Muramasa,,E,8,static,small,ale,1,65.6,1312,67,67,67,0.083,2.169,100
+Muramasa 8t static boss sober,1,Muramasa,,E,8,static,boss,none,1,70.35,1407,67,67,67,0.067,4.565,100
+Muramasa 8t static boss tipsy,1,Muramasa,,E,8,static,boss,ale,1,70.2,1404,67,67,67,0.05,4.565,100
+Muramasa 8t strafe small sober,1,Muramasa,,E,8,strafe,small,none,1,32.9,658,32,32,32,0.2,4.356,100
+Muramasa 8t strafe small tipsy,1,Muramasa,,E,8,strafe,small,ale,1,26.45,529,25,25,25,0.3,4.451,100
+Muramasa 8t strafe boss sober,1,Muramasa,,E,8,strafe,boss,none,1,64.25,1285,63,63,63,0.233,5,100
+Muramasa 8t strafe boss tipsy,1,Muramasa,,E,8,strafe,boss,ale,1,64.85,1297,64,64,64,0.133,4.974,100
+Muramasa 25t static small sober,1,Muramasa,,E,25,static,small,none,1,69.75,1395,67,67,67,0.117,2.224,100
+Muramasa 25t static small tipsy,1,Muramasa,,E,25,static,small,ale,1,69.8,1396,67,67,67,0.1,2.224,100
+Muramasa 25t static boss sober,1,Muramasa,,E,25,static,boss,none,1,71,1420,67,67,67,0.15,4.679,100
+Muramasa 25t static boss tipsy,1,Muramasa,,E,25,static,boss,ale,1,68.8,1376,66,66,66,0.233,4.679,100
+Muramasa 25t strafe small sober,1,Muramasa,,E,25,strafe,small,none,1,26.35,527,25,25,25,0.35,4.532,100
+Muramasa 25t strafe small tipsy,1,Muramasa,,E,25,strafe,small,ale,1,29.35,587,29,29,29,0.367,4.466,100
+Muramasa 25t strafe boss sober,1,Muramasa,,E,25,strafe,boss,none,1,66.15,1323,63,63,63,0.233,4.969,100
+Muramasa 25t strafe boss tipsy,1,Muramasa,,E,25,strafe,boss,ale,1,64.2,1284,63,63,63,0.233,4.97,100
+Muramasa 45t static small sober,1,Muramasa,,E,45,static,small,none,1,69.35,1387,67,67,67,0.067,1.977,100
+Muramasa 45t static small tipsy,1,Muramasa,,E,45,static,small,ale,1,67.5,1350,67,66,66,0.15,2.155,100
+Muramasa 45t static boss sober,1,Muramasa,,E,45,static,boss,none,1,68.6,1372,67,66,66,0.2,4.561,100
+Muramasa 45t static boss tipsy,1,Muramasa,,E,45,static,boss,ale,1,70.15,1403,67,67,67,0.183,4.561,100
+Muramasa 45t strafe small sober,1,Muramasa,,E,45,strafe,small,none,1,34,680,33,33,33,0.1,4.929,100
+Muramasa 45t strafe small tipsy,1,Muramasa,,E,45,strafe,small,ale,1,37.3,746,36,36,36,0.1,5.016,100
+Muramasa 45t strafe boss sober,1,Muramasa,,E,45,strafe,boss,none,1,65.55,1311,64,64,64,0.033,4.971,100
+Muramasa 45t strafe boss tipsy,1,Muramasa,,E,45,strafe,boss,ale,1,65.35,1307,64,64,64,0.117,4.949,100
+Night's Edge 8t static small sober,1,Night's_Edge,,E,8,static,small,none,1,63.45,1269,0,0,0,0.35,2.169,100
+Night's Edge 8t static small tipsy,1,Night's_Edge,,E,8,static,small,ale,1,67.45,1349,0,0,0,0.233,2.169,100
+Night's Edge 8t static boss sober,1,Night's_Edge,,E,8,static,boss,none,1,66.15,1323,0,0,0,0.417,4.565,100
+Night's Edge 8t static boss tipsy,1,Night's_Edge,,E,8,static,boss,ale,1,69.9,1398,0,0,0,0.4,4.565,100
+Night's Edge 8t strafe small sober,1,Night's_Edge,,E,8,strafe,small,none,1,30.05,601,0,0,0,0.617,4.356,100
+Night's Edge 8t strafe small tipsy,1,Night's_Edge,,E,8,strafe,small,ale,1,27.6,552,0,0,0,0.3,4.451,100
+Night's Edge 8t strafe boss sober,1,Night's_Edge,,E,8,strafe,boss,none,1,63.4,1268,0,0,0,0.283,5,100
+Night's Edge 8t strafe boss tipsy,1,Night's_Edge,,E,8,strafe,boss,ale,1,63.75,1275,0,0,0,0.183,4.974,100
+Night's Edge 25t static small sober,1,Night's_Edge,,E,25,static,small,none,1,64.8,1296,0,0,0,0.117,2.224,100
+Night's Edge 25t static small tipsy,1,Night's_Edge,,E,25,static,small,ale,1,67.05,1341,0,0,0,0.1,2.224,100
+Night's Edge 25t static boss sober,1,Night's_Edge,,E,25,static,boss,none,1,67.7,1354,0,0,0,0.267,4.679,100
+Night's Edge 25t static boss tipsy,1,Night's_Edge,,E,25,static,boss,ale,1,67.1,1342,0,0,0,0.35,4.679,100
+Night's Edge 25t strafe small sober,1,Night's_Edge,,E,25,strafe,small,none,1,27.55,551,0,0,0,0.367,4.532,100
+Night's Edge 25t strafe small tipsy,1,Night's_Edge,,E,25,strafe,small,ale,1,27.9,558,0,0,0,0.367,4.466,100
+Night's Edge 25t strafe boss sober,1,Night's_Edge,,E,25,strafe,boss,none,1,63.05,1261,0,0,0,0.05,4.969,100
+Night's Edge 25t strafe boss tipsy,1,Night's_Edge,,E,25,strafe,boss,ale,1,65.9,1318,0,0,0,0.05,4.97,100
+Night's Edge 45t static small sober,1,Night's_Edge,,E,45,static,small,none,1,63.45,1269,0,0,0,0.2,2.155,100
+Night's Edge 45t static small tipsy,1,Night's_Edge,,E,45,static,small,ale,1,68.4,1368,0,0,0,0.283,2.155,100
+Night's Edge 45t static boss sober,1,Night's_Edge,,E,45,static,boss,none,1,65.75,1315,0,0,0,0.033,4.561,100
+Night's Edge 45t static boss tipsy,1,Night's_Edge,,E,45,static,boss,ale,1,67.2,1344,0,0,0,0.017,4.561,100
+Night's Edge 45t strafe small sober,1,Night's_Edge,,E,45,strafe,small,none,1,42.15,843,0,0,0,0.033,4.929,100
+Night's Edge 45t strafe small tipsy,1,Night's_Edge,,E,45,strafe,small,ale,1,45.45,909,0,0,0,0.033,5.016,100
+Night's Edge 45t strafe boss sober,1,Night's_Edge,,E,45,strafe,boss,none,1,70.1,1402,0,0,0,0.1,4.971,100
+Night's Edge 45t strafe boss tipsy,1,Night's_Edge,,E,45,strafe,boss,ale,1,66.2,1324,0,0,0,0.183,4.949,100
+Slime Staff 8t static small sober,1,Slime_Staff,,S,8,static,small,none,1,4,80,0,1,67,0.133,8.263,100
+Slime Staff 8t static small tipsy,1,Slime_Staff,,S,8,static,small,ale,1,3.35,67,0,1,57,0.483,8.263,100
+Slime Staff 8t static boss sober,1,Slime_Staff,,S,8,static,boss,none,1,6.25,125,0,1,100,0.017,8.509,100
+Slime Staff 8t static boss tipsy,1,Slime_Staff,,S,8,static,boss,ale,1,5.95,119,0,1,100,0.083,8.509,100
+Slime Staff 8t strafe small sober,1,Slime_Staff,,S,8,strafe,small,none,1,3.2,64,0,1,53,0.933,8.829,100
+Slime Staff 8t strafe small tipsy,1,Slime_Staff,,S,8,strafe,small,ale,1,3.45,69,0,1,57,0.933,8.827,100
+Slime Staff 8t strafe boss sober,1,Slime_Staff,,S,8,strafe,boss,none,1,5.75,115,0,1,93,0.15,9.089,100
+Slime Staff 8t strafe boss tipsy,1,Slime_Staff,,S,8,strafe,boss,ale,1,5.6,112,0,1,92,0.45,9.094,100
+Slime Staff 25t static small sober,1,Slime_Staff,,S,25,static,small,none,1,4.15,83,0,1,67,0.183,25.104,100
+Slime Staff 25t static small tipsy,1,Slime_Staff,,S,25,static,small,ale,1,3.95,79,0,1,62,0.2,25.104,100
+Slime Staff 25t static boss sober,1,Slime_Staff,,S,25,static,boss,none,1,5.8,116,0,1,100,0.133,25.174,100
+Slime Staff 25t static boss tipsy,1,Slime_Staff,,S,25,static,boss,ale,1,5.95,119,0,1,100,0.133,25.175,100
+Slime Staff 25t strafe small sober,1,Slime_Staff,,S,25,strafe,small,none,1,3.4,68,0,1,60,0.617,25.372,100
+Slime Staff 25t strafe small tipsy,1,Slime_Staff,,S,25,strafe,small,ale,1,3.75,75,0,1,60,0.617,25.399,100
+Slime Staff 25t strafe boss sober,1,Slime_Staff,,S,25,strafe,boss,none,1,5.65,113,0,1,93,0.15,25.349,100
+Slime Staff 25t strafe boss tipsy,1,Slime_Staff,,S,25,strafe,boss,ale,1,5.9,118,0,1,93,0.15,25.349,100
+Slime Staff 45t static small sober,1,Slime_Staff,,S,45,static,small,none,1,3.55,71,0,1,60,0.067,45.058,100
+Slime Staff 45t static small tipsy,1,Slime_Staff,,S,45,static,small,ale,1,3.15,63,0,1,57,0.433,45.058,100
+Slime Staff 45t static boss sober,1,Slime_Staff,,S,45,static,boss,none,1,6.05,121,0,1,100,0.083,45.097,100
+Slime Staff 45t static boss tipsy,1,Slime_Staff,,S,45,static,boss,ale,1,6.25,125,0,1,100,0.2,45.097,100
+Slime Staff 45t strafe small sober,1,Slime_Staff,,S,45,strafe,small,none,1,3.2,64,0,1,53,0.9,45.293,100
+Slime Staff 45t strafe small tipsy,1,Slime_Staff,,S,45,strafe,small,ale,1,3.65,73,0,1,60,0.617,45.295,100
+Slime Staff 45t strafe boss sober,1,Slime_Staff,,S,45,strafe,boss,none,1,5.95,119,0,1,94,0.033,45.292,100
+Slime Staff 45t strafe boss tipsy,1,Slime_Staff,,S,45,strafe,boss,ale,1,5.5,110,0,1,94,0.083,45.306,100
+Hornet Staff 8t static small sober,1,Hornet_Staff,,S,8,static,small,none,1,12.75,255,27,27,27,0.15,8.263,100
+Hornet Staff 8t static small tipsy,1,Hornet_Staff,,S,8,static,small,ale,1,12.7,254,27,27,27,0.1,8.263,100
+Hornet Staff 8t static boss sober,1,Hornet_Staff,,S,8,static,boss,none,1,12.9,258,27,27,27,0.083,8.509,100
+Hornet Staff 8t static boss tipsy,1,Hornet_Staff,,S,8,static,boss,ale,1,13.45,269,27,27,27,0.033,8.509,100
+Hornet Staff 8t strafe small sober,1,Hornet_Staff,,S,8,strafe,small,none,1,10.8,216,28,20,20,0.083,8.829,100
+Hornet Staff 8t strafe small tipsy,1,Hornet_Staff,,S,8,strafe,small,ale,1,10.9,218,26,19,19,0.083,8.827,100
+Hornet Staff 8t strafe boss sober,1,Hornet_Staff,,S,8,strafe,boss,none,1,12.7,254,26,26,26,0.15,9.089,100
+Hornet Staff 8t strafe boss tipsy,1,Hornet_Staff,,S,8,strafe,boss,ale,1,13.05,261,26,26,26,0.117,9.094,100
+Hornet Staff 25t static small sober,1,Hornet_Staff,,S,25,static,small,none,1,12.85,257,27,27,27,0.15,25.104,100
+Hornet Staff 25t static small tipsy,1,Hornet_Staff,,S,25,static,small,ale,1,12.6,252,27,27,27,0.15,25.104,100
+Hornet Staff 25t static boss sober,1,Hornet_Staff,,S,25,static,boss,none,1,12.3,246,27,27,27,0.15,25.174,100
+Hornet Staff 25t static boss tipsy,1,Hornet_Staff,,S,25,static,boss,ale,1,12.35,247,26,26,26,0.167,25.175,100
+Hornet Staff 25t strafe small sober,1,Hornet_Staff,,S,25,strafe,small,none,1,9,180,25,11,11,0.083,25.372,100
+Hornet Staff 25t strafe small tipsy,1,Hornet_Staff,,S,25,strafe,small,ale,1,8.25,165,24,9,9,0.033,25.399,100
+Hornet Staff 25t strafe boss sober,1,Hornet_Staff,,S,25,strafe,boss,none,1,12.65,253,27,26,26,0.05,25.349,100
+Hornet Staff 25t strafe boss tipsy,1,Hornet_Staff,,S,25,strafe,boss,ale,1,12.6,252,27,26,26,0.017,25.349,100
+Hornet Staff 45t static small sober,1,Hornet_Staff,,S,45,static,small,none,1,12.8,256,27,26,26,0.1,45.058,100
+Hornet Staff 45t static small tipsy,1,Hornet_Staff,,S,45,static,small,ale,1,12.55,251,26,26,26,0.083,45.058,100
+Hornet Staff 45t static boss sober,1,Hornet_Staff,,S,45,static,boss,none,1,12.85,257,26,26,26,0.067,45.097,100
+Hornet Staff 45t static boss tipsy,1,Hornet_Staff,,S,45,static,boss,ale,1,12.75,255,27,27,27,0.15,45.097,100
+Hornet Staff 45t strafe small sober,1,Hornet_Staff,,S,45,strafe,small,none,1,8.8,176,23,12,12,0.117,45.293,100
+Hornet Staff 45t strafe small tipsy,1,Hornet_Staff,,S,45,strafe,small,ale,1,9.05,181,23,11,11,0.15,45.295,100
+Hornet Staff 45t strafe boss sober,1,Hornet_Staff,,S,45,strafe,boss,none,1,10.55,211,22,20,20,0.117,45.292,100
+Hornet Staff 45t strafe boss tipsy,1,Hornet_Staff,,S,45,strafe,boss,ale,1,11.2,224,22,20,20,0.017,45.306,100
+Imp Staff 8t static small sober,1,Imp_Staff,,S,8,static,small,none,1,11.85,237,19,18,18,0.233,8.263,100
+Imp Staff 8t static small tipsy,1,Imp_Staff,,S,8,static,small,ale,1,11.55,231,20,17,17,0.083,8.263,100
+Imp Staff 8t static boss sober,1,Imp_Staff,,S,8,static,boss,none,1,12.25,245,19,18,18,0.233,8.509,100
+Imp Staff 8t static boss tipsy,1,Imp_Staff,,S,8,static,boss,ale,1,12.25,245,20,18,18,0.117,8.509,100
+Imp Staff 8t strafe small sober,1,Imp_Staff,,S,8,strafe,small,none,1,11.95,239,19,18,18,0.05,8.829,100
+Imp Staff 8t strafe small tipsy,1,Imp_Staff,,S,8,strafe,small,ale,1,12.35,247,19,18,18,0.2,8.827,100
+Imp Staff 8t strafe boss sober,1,Imp_Staff,,S,8,strafe,boss,none,1,11.8,236,19,18,18,0.2,9.089,100
+Imp Staff 8t strafe boss tipsy,1,Imp_Staff,,S,8,strafe,boss,ale,1,13.2,264,19,18,20,0.217,9.094,100
+Imp Staff 25t static small sober,1,Imp_Staff,,S,25,static,small,none,1,11.35,227,18,17,17,0.017,25.104,100
+Imp Staff 25t static small tipsy,1,Imp_Staff,,S,25,static,small,ale,1,12.45,249,19,18,18,0.25,25.104,100
+Imp Staff 25t static boss sober,1,Imp_Staff,,S,25,static,boss,none,1,12.3,246,19,18,18,0.033,25.174,100
+Imp Staff 25t static boss tipsy,1,Imp_Staff,,S,25,static,boss,ale,1,12.1,242,19,17,17,0.233,25.175,100
+Imp Staff 25t strafe small sober,1,Imp_Staff,,S,25,strafe,small,none,1,11.25,225,17,17,17,0.083,25.372,100
+Imp Staff 25t strafe small tipsy,1,Imp_Staff,,S,25,strafe,small,ale,1,12.15,243,19,19,19,0.067,25.399,100
+Imp Staff 25t strafe boss sober,1,Imp_Staff,,S,25,strafe,boss,none,1,13.15,263,18,18,20,0.033,25.349,100
+Imp Staff 25t strafe boss tipsy,1,Imp_Staff,,S,25,strafe,boss,ale,1,12.95,259,18,18,20,0.083,25.349,100
+Imp Staff 45t static small sober,1,Imp_Staff,,S,45,static,small,none,1,12.35,247,19,18,18,0.017,45.058,100
+Imp Staff 45t static small tipsy,1,Imp_Staff,,S,45,static,small,ale,1,12.05,241,19,18,18,0.05,45.058,100
+Imp Staff 45t static boss sober,1,Imp_Staff,,S,45,static,boss,none,1,12.3,246,19,18,18,0.017,45.097,100
+Imp Staff 45t static boss tipsy,1,Imp_Staff,,S,45,static,boss,ale,1,11.55,231,18,17,17,0.25,45.097,100
+Imp Staff 45t strafe small sober,1,Imp_Staff,,S,45,strafe,small,none,1,11.2,224,18,16,16,0.117,45.293,100
+Imp Staff 45t strafe small tipsy,1,Imp_Staff,,S,45,strafe,small,ale,1,10.2,204,18,14,14,0.033,45.295,100
+Imp Staff 45t strafe boss sober,1,Imp_Staff,,S,45,strafe,boss,none,1,13.1,262,18,18,20,0.017,45.292,100
+Imp Staff 45t strafe boss tipsy,1,Imp_Staff,,S,45,strafe,boss,ale,1,12.6,252,18,18,19,0.033,45.306,100
+Minishark 8t static small sober,2,Minishark,,R,8,static,small,none,1,38.15,763,150,150,150,0.1,8.263,100
+Minishark 8t static small tipsy,2,Minishark,,R,8,static,small,ale,1,35.6,712,151,149,149,0.083,8.263,100
+Minishark 8t static boss sober,2,Minishark,,R,8,static,boss,none,1,36.95,739,151,150,150,0.033,8.509,100
+Minishark 8t static boss tipsy,2,Minishark,,R,8,static,boss,ale,1,38.4,768,151,150,150,0.017,8.509,100
+Minishark 8t strafe small sober,2,Minishark,,R,8,strafe,small,none,1,34.9,698,151,140,140,0.083,9.387,100
+Minishark 8t strafe small tipsy,2,Minishark,,R,8,strafe,small,ale,1,29.5,590,151,120,120,0.017,9.387,100
+Minishark 8t strafe boss sober,2,Minishark,,R,8,strafe,boss,none,1,37.2,744,150,150,150,0.117,9.557,100
+Minishark 8t strafe boss tipsy,2,Minishark,,R,8,strafe,boss,ale,1,36.9,738,151,150,150,0.1,9.56,100
+Minishark 25t static small sober,2,Minishark,,R,25,static,small,none,1,18.15,363,155,73,73,0.133,25.086,100
+Minishark 25t static small tipsy,2,Minishark,,R,25,static,small,ale,1,10,200,156,42,42,1.05,25.086,100
+Minishark 25t static boss sober,2,Minishark,,R,25,static,boss,none,1,38.7,774,152,150,150,0.067,25.168,100
+Minishark 25t static boss tipsy,2,Minishark,,R,25,static,boss,ale,1,34.35,687,153,140,140,0.017,25.168,100
+Minishark 25t strafe small sober,2,Minishark,,R,25,strafe,small,none,1,19.8,396,157,78,78,0.033,25.86,100
+Minishark 25t strafe small tipsy,2,Minishark,,R,25,strafe,small,ale,1,12.9,258,160,51,51,0.067,25.762,100
+Minishark 25t strafe boss sober,2,Minishark,,R,25,strafe,boss,none,1,37.7,754,153,147,147,0.017,25.821,100
+Minishark 25t strafe boss tipsy,2,Minishark,,R,25,strafe,boss,ale,1,35,700,152,137,137,0.133,25.824,100
+Minishark 45t static small sober,2,Minishark,,R,45,static,small,none,1,11.75,235,158,48,48,0.333,45.058,100
+Minishark 45t static small tipsy,2,Minishark,,R,45,static,small,ale,1,7.7,154,157,31,31,0.55,45.058,100
+Minishark 45t static boss sober,2,Minishark,,R,45,static,boss,none,1,33.95,679,153,135,135,0.1,45.098,100
+Minishark 45t static boss tipsy,2,Minishark,,R,45,static,boss,ale,1,22.05,441,158,87,87,0.35,45.097,100
+Minishark 45t strafe small sober,2,Minishark,,R,45,strafe,small,none,1,12,240,160,47,47,0.317,45.694,100
+Minishark 45t strafe small tipsy,2,Minishark,,R,45,strafe,small,ale,1,6.5,130,156,24,24,0.283,45.693,100
+Minishark 45t strafe boss sober,2,Minishark,,R,45,strafe,boss,none,1,31.7,634,155,127,127,0.1,45.734,100
+Minishark 45t strafe boss tipsy,2,Minishark,,R,45,strafe,boss,ale,1,18.75,375,157,75,75,0.617,45.739,100
+Minishark 8t static small sober,2,Minishark,,R,8,static,small,none,1,66.95,1339,153,150,150,0.033,8.263,100
+Minishark 8t static small tipsy,2,Minishark,,R,8,static,small,ale,1,67.8,1356,154,149,149,0.017,8.263,100
+Minishark 8t static boss sober,2,Minishark,,R,8,static,boss,none,1,67.5,1350,154,150,150,0.117,8.509,100
+Minishark 8t static boss tipsy,2,Minishark,,R,8,static,boss,ale,1,67.15,1343,154,150,150,0.1,8.509,100
+Minishark 8t strafe small sober,2,Minishark,,R,8,strafe,small,none,1,61.85,1237,154,139,139,0.117,9.387,100
+Minishark 8t strafe small tipsy,2,Minishark,,R,8,strafe,small,ale,1,53.75,1075,153,118,118,0.05,9.387,100
+Minishark 8t strafe boss sober,2,Minishark,,R,8,strafe,boss,none,1,66.7,1334,154,150,150,0.033,9.557,100
+Minishark 8t strafe boss tipsy,2,Minishark,,R,8,strafe,boss,ale,1,66.65,1333,154,150,150,0.017,9.56,100
+Minishark 25t static small sober,2,Minishark,,R,25,static,small,none,1,36.45,729,152,79,79,0.05,25.086,100
+Minishark 25t static small tipsy,2,Minishark,,R,25,static,small,ale,1,20.45,409,152,46,46,0.033,25.086,100
+Minishark 25t static boss sober,2,Minishark,,R,25,static,boss,none,1,68.2,1364,153,150,150,0.133,25.168,100
+Minishark 25t static boss tipsy,2,Minishark,,R,25,static,boss,ale,1,63.95,1279,153,140,140,0.083,25.168,100
+Minishark 25t strafe small sober,2,Minishark,,R,25,strafe,small,none,1,29.95,599,153,69,69,0.05,25.86,100
+Minishark 25t strafe small tipsy,2,Minishark,,R,25,strafe,small,ale,1,22.7,454,153,52,52,0.083,25.762,100
+Minishark 25t strafe boss sober,2,Minishark,,R,25,strafe,boss,none,1,66.25,1325,153,148,148,0.05,25.821,100
+Minishark 25t strafe boss tipsy,2,Minishark,,R,25,strafe,boss,ale,1,58.35,1167,152,131,131,0.033,25.824,100
+Minishark 45t static small sober,2,Minishark,,R,45,static,small,none,1,17.8,356,153,40,40,0.2,45.058,100
+Minishark 45t static small tipsy,2,Minishark,,R,45,static,small,ale,1,12.3,246,153,28,28,0.95,45.058,100
+Minishark 45t static boss sober,2,Minishark,,R,45,static,boss,none,1,60.95,1219,153,133,133,0.133,45.098,100
+Minishark 45t static boss tipsy,2,Minishark,,R,45,static,boss,ale,1,34.9,698,153,77,77,0.25,45.097,100
+Minishark 45t strafe small sober,2,Minishark,,R,45,strafe,small,none,1,26.1,522,152,58,58,0.25,45.694,100
+Minishark 45t strafe small tipsy,2,Minishark,,R,45,strafe,small,ale,1,11.45,229,152,27,27,1.583,45.693,100
+Minishark 45t strafe boss sober,2,Minishark,,R,45,strafe,boss,none,1,63.35,1267,153,141,141,0.083,45.734,100
+Minishark 45t strafe boss tipsy,2,Minishark,,R,45,strafe,boss,ale,1,36.85,737,152,82,82,0.433,45.739,100
+Sniper Rifle 8t static small sober,2,Sniper_Rifle,,R,8,static,small,none,1,248.1,4962,34,33,33,0.417,8.263,100
+Sniper Rifle 8t static small tipsy,2,Sniper_Rifle,,R,8,static,small,ale,1,249.4,4988,34,33,33,0.4,8.263,100
+Sniper Rifle 8t static boss sober,2,Sniper_Rifle,,R,8,static,boss,none,1,242.2,4844,34,33,33,0.383,8.509,100
+Sniper Rifle 8t static boss tipsy,2,Sniper_Rifle,,R,8,static,boss,ale,1,253.05,5061,34,33,33,0.367,8.509,100
+Sniper Rifle 8t strafe small sober,2,Sniper_Rifle,,R,8,strafe,small,none,1,234,4680,34,31,31,0.967,9.387,100
+Sniper Rifle 8t strafe small tipsy,2,Sniper_Rifle,,R,8,strafe,small,ale,1,190.3,3806,34,26,26,0.45,9.387,100
+Sniper Rifle 8t strafe boss sober,2,Sniper_Rifle,,R,8,strafe,boss,none,1,248.75,4975,34,33,33,0.433,9.557,100
+Sniper Rifle 8t strafe boss tipsy,2,Sniper_Rifle,,R,8,strafe,boss,ale,1,248.95,4979,34,33,33,0.417,9.56,100
+Sniper Rifle 25t static small sober,2,Sniper_Rifle,,R,25,static,small,none,1,114.65,2293,34,15,15,1.633,25.086,100
+Sniper Rifle 25t static small tipsy,2,Sniper_Rifle,,R,25,static,small,ale,1,102.55,2051,34,13,13,1.017,25.086,100
+Sniper Rifle 25t static boss sober,2,Sniper_Rifle,,R,25,static,boss,none,1,251,5020,34,33,33,0.383,25.168,100
+Sniper Rifle 25t static boss tipsy,2,Sniper_Rifle,,R,25,static,boss,ale,1,217,4340,34,28,28,0.467,25.168,100
+Sniper Rifle 25t strafe small sober,2,Sniper_Rifle,,R,25,strafe,small,none,1,123.2,2464,34,16,16,2.85,25.86,100
+Sniper Rifle 25t strafe small tipsy,2,Sniper_Rifle,,R,25,strafe,small,ale,1,94.25,1885,33,12,12,2.25,25.762,100
+Sniper Rifle 25t strafe boss sober,2,Sniper_Rifle,,R,25,strafe,boss,none,1,252.2,5044,34,33,33,0.433,25.821,100
+Sniper Rifle 25t strafe boss tipsy,2,Sniper_Rifle,,R,25,strafe,boss,ale,1,232.65,4653,34,30,30,1.017,25.824,100
+Sniper Rifle 45t static small sober,2,Sniper_Rifle,,R,45,static,small,none,1,66.85,1337,34,9,9,0.433,45.058,100
+Sniper Rifle 45t static small tipsy,2,Sniper_Rifle,,R,45,static,small,ale,1,61.3,1226,34,8,8,4.717,45.058,100
+Sniper Rifle 45t static boss sober,2,Sniper_Rifle,,R,45,static,boss,none,1,219.95,4399,34,29,29,0.5,45.098,100
+Sniper Rifle 45t static boss tipsy,2,Sniper_Rifle,,R,45,static,boss,ale,1,175.85,3517,34,23,23,0.483,45.097,100
+Sniper Rifle 45t strafe small sober,2,Sniper_Rifle,,R,45,strafe,small,none,1,76.3,1526,33,10,10,2.867,45.694,100
+Sniper Rifle 45t strafe small tipsy,2,Sniper_Rifle,,R,45,strafe,small,ale,1,53.45,1069,34,7,7,2.25,45.693,100
+Sniper Rifle 45t strafe boss sober,2,Sniper_Rifle,,R,45,strafe,boss,none,1,217.85,4357,34,29,29,0.45,45.734,100
+Sniper Rifle 45t strafe boss tipsy,2,Sniper_Rifle,,R,45,strafe,boss,ale,1,138.9,2778,34,18,18,1.733,45.739,100
+Boomstick 8t static small sober,2,Boomstick,,R,8,static,small,none,1,36.55,731,92,61,61,0.233,8.263,100
+Boomstick 8t static small tipsy,2,Boomstick,,R,8,static,small,ale,1,37,740,92,62,62,0.217,8.263,100
+Boomstick 8t static boss sober,2,Boomstick,,R,8,static,boss,none,1,52.3,1046,90,90,90,0.167,8.509,100
+Boomstick 8t static boss tipsy,2,Boomstick,,R,8,static,boss,ale,1,54.9,1098,90,90,90,0.15,8.509,100
+Boomstick 8t strafe small sober,2,Boomstick,,R,8,strafe,small,none,1,33.65,673,91,58,58,0.25,9.387,100
+Boomstick 8t strafe small tipsy,2,Boomstick,,R,8,strafe,small,ale,1,32.25,645,91,54,54,0.333,9.387,100
+Boomstick 8t strafe boss sober,2,Boomstick,,R,8,strafe,boss,none,1,52.75,1055,90,89,89,0.283,9.557,100
+Boomstick 8t strafe boss tipsy,2,Boomstick,,R,8,strafe,boss,ale,1,52.7,1054,90,86,86,0.267,9.56,100
+Boomstick 25t static small sober,2,Boomstick,,R,25,static,small,none,1,13.85,277,94,23,23,1.117,25.086,100
+Boomstick 25t static small tipsy,2,Boomstick,,R,25,static,small,ale,1,11.8,236,92,19,19,0.433,25.086,100
+Boomstick 25t static boss sober,2,Boomstick,,R,25,static,boss,none,1,33.9,678,92,54,54,0.383,25.168,100
+Boomstick 25t static boss tipsy,2,Boomstick,,R,25,static,boss,ale,1,34.7,694,91,57,57,0.467,25.168,100
+Boomstick 25t strafe small sober,2,Boomstick,,R,25,strafe,small,none,1,12.45,249,96,20,20,0.583,25.86,100
+Boomstick 25t strafe small tipsy,2,Boomstick,,R,25,strafe,small,ale,1,10.8,216,95,18,18,2.467,25.762,100
+Boomstick 25t strafe boss sober,2,Boomstick,,R,25,strafe,boss,none,1,33.6,672,91,57,57,0.517,25.821,100
+Boomstick 25t strafe boss tipsy,2,Boomstick,,R,25,strafe,boss,ale,1,30.8,616,91,53,53,0.483,25.824,100
+Boomstick 45t static small sober,2,Boomstick,,R,45,static,small,none,1,7.3,146,94,12,12,0.033,45.058,100
+Boomstick 45t static small tipsy,2,Boomstick,,R,45,static,small,ale,1,4.4,88,95,7,7,0.117,45.058,100
+Boomstick 45t static boss sober,2,Boomstick,,R,45,static,boss,none,1,15.7,314,95,26,26,0.733,45.098,100
+Boomstick 45t static boss tipsy,2,Boomstick,,R,45,static,boss,ale,1,17.45,349,95,28,28,0.05,45.097,100
+Boomstick 45t strafe small sober,2,Boomstick,,R,45,strafe,small,none,1,4.6,92,97,8,8,2.117,45.694,100
+Boomstick 45t strafe small tipsy,2,Boomstick,,R,45,strafe,small,ale,1,4.55,91,97,8,8,0.117,45.693,100
+Boomstick 45t strafe boss sober,2,Boomstick,,R,45,strafe,boss,none,1,16.45,329,94,28,28,0.05,45.734,100
+Boomstick 45t strafe boss tipsy,2,Boomstick,,R,45,strafe,boss,ale,1,15.4,308,95,27,27,0.15,45.739,100
+Demon Bow 8t static small sober,2,Demon_Bow,,R,8,static,small,none,1,24.2,484,49,48,48,0.167,8.263,100
+Demon Bow 8t static small tipsy,2,Demon_Bow,,R,8,static,small,ale,1,24.2,484,49,48,48,0.15,8.263,100
+Demon Bow 8t static boss sober,2,Demon_Bow,,R,8,static,boss,none,1,23.55,471,49,48,48,0.067,8.509,100
+Demon Bow 8t static boss tipsy,2,Demon_Bow,,R,8,static,boss,ale,1,23.75,475,49,48,48,0.05,8.509,100
+Demon Bow 8t strafe small sober,2,Demon_Bow,,R,8,strafe,small,none,1,22.05,441,49,44,44,0.233,9.387,100
+Demon Bow 8t strafe small tipsy,2,Demon_Bow,,R,8,strafe,small,ale,1,19.9,398,49,39,39,0.333,9.387,100
+Demon Bow 8t strafe boss sober,2,Demon_Bow,,R,8,strafe,boss,none,1,23.65,473,49,48,48,0.233,9.557,100
+Demon Bow 8t strafe boss tipsy,2,Demon_Bow,,R,8,strafe,boss,ale,1,24.55,491,49,48,48,0.217,9.56,100
+Demon Bow 25t static small sober,2,Demon_Bow,,R,25,static,small,none,1,17.1,342,50,33,33,1.017,25.104,100
+Demon Bow 25t static small tipsy,2,Demon_Bow,,R,25,static,small,ale,1,8.4,168,50,17,17,0.15,25.104,100
+Demon Bow 25t static boss sober,2,Demon_Bow,,R,25,static,boss,none,1,23.1,462,50,48,48,0.083,25.202,100
+Demon Bow 25t static boss tipsy,2,Demon_Bow,,R,25,static,boss,ale,1,24.05,481,50,48,48,0.167,25.202,100
+Demon Bow 25t strafe small sober,2,Demon_Bow,,R,25,strafe,small,none,1,12.15,243,51,24,24,0.383,25.755,100
+Demon Bow 25t strafe small tipsy,2,Demon_Bow,,R,25,strafe,small,ale,1,7.75,155,52,16,16,1.65,25.719,100
+Demon Bow 25t strafe boss sober,2,Demon_Bow,,R,25,strafe,boss,none,1,24.5,490,50,48,48,0.267,25.839,100
+Demon Bow 25t strafe boss tipsy,2,Demon_Bow,,R,25,strafe,boss,ale,1,21.2,424,50,43,43,0.25,25.843,100
+Demon Bow 45t static small sober,2,Demon_Bow,,R,45,static,small,none,1,12.05,241,51,24,24,2.4,45.058,100
+Demon Bow 45t static small tipsy,2,Demon_Bow,,R,45,static,small,ale,1,5.25,105,51,11,11,2.5,45.058,100
+Demon Bow 45t static boss sober,2,Demon_Bow,,R,45,static,boss,none,1,24.1,482,51,48,48,0.3,45.098,100
+Demon Bow 45t static boss tipsy,2,Demon_Bow,,R,45,static,boss,ale,1,21.85,437,52,42,42,0.1,45.097,100
+Demon Bow 45t strafe small sober,2,Demon_Bow,,R,45,strafe,small,none,1,3.15,63,52,6,6,0.983,45.694,100
+Demon Bow 45t strafe small tipsy,2,Demon_Bow,,R,45,strafe,small,ale,1,4.6,92,52,9,9,0.5,45.693,100
+Demon Bow 45t strafe boss sober,2,Demon_Bow,,R,45,strafe,boss,none,1,17.45,349,51,35,35,0.467,45.734,100
+Demon Bow 45t strafe boss tipsy,2,Demon_Bow,,R,45,strafe,boss,ale,1,15.1,302,52,30,30,0.5,45.739,100
+Molten Fury 8t static small sober,2,Molten_Fury,,R,8,static,small,none,1,81.5,1630,55,55,55,0.1,8.263,100
+Molten Fury 8t static small tipsy,2,Molten_Fury,,R,8,static,small,ale,1,85.75,1715,55,55,55,0.083,8.263,100
+Molten Fury 8t static boss sober,2,Molten_Fury,,R,8,static,boss,none,1,81.05,1621,55,55,55,0.017,8.509,100
+Molten Fury 8t static boss tipsy,2,Molten_Fury,,R,8,static,boss,ale,1,79.55,1591,55,55,55,0.017,8.509,100
+Molten Fury 8t strafe small sober,2,Molten_Fury,,R,8,strafe,small,none,1,77,1540,55,52,52,0.117,9.387,100
+Molten Fury 8t strafe small tipsy,2,Molten_Fury,,R,8,strafe,small,ale,1,71.9,1438,55,48,48,0.2,9.387,100
+Molten Fury 8t strafe boss sober,2,Molten_Fury,,R,8,strafe,boss,none,1,84.1,1682,55,55,55,0.133,9.557,100
+Molten Fury 8t strafe boss tipsy,2,Molten_Fury,,R,8,strafe,boss,ale,1,81.5,1630,55,55,55,0.117,9.56,100
+Molten Fury 25t static small sober,2,Molten_Fury,,R,25,static,small,none,1,55.25,1105,56,36,36,0.017,25.104,100
+Molten Fury 25t static small tipsy,2,Molten_Fury,,R,25,static,small,ale,1,31.85,637,57,21,21,0.7,25.104,100
+Molten Fury 25t static boss sober,2,Molten_Fury,,R,25,static,boss,none,1,81.55,1631,55,54,54,0.3,25.202,100
+Molten Fury 25t static boss tipsy,2,Molten_Fury,,R,25,static,boss,ale,1,80.8,1616,56,55,55,0.017,25.202,100
+Molten Fury 25t strafe small sober,2,Molten_Fury,,R,25,strafe,small,none,1,53.15,1063,57,34,34,0.133,25.755,100
+Molten Fury 25t strafe small tipsy,2,Molten_Fury,,R,25,strafe,small,ale,1,36.3,726,56,24,24,0.117,25.719,100
+Molten Fury 25t strafe boss sober,2,Molten_Fury,,R,25,strafe,boss,none,1,81.45,1629,56,54,54,0.033,25.839,100
+Molten Fury 25t strafe boss tipsy,2,Molten_Fury,,R,25,strafe,boss,ale,1,77.15,1543,56,52,52,0.017,25.843,100
+Molten Fury 45t static small sober,2,Molten_Fury,,R,45,static,small,none,1,35.5,710,57,24,24,0.35,45.058,100
+Molten Fury 45t static small tipsy,2,Molten_Fury,,R,45,static,small,ale,1,36,720,58,24,24,0.067,45.058,100
+Molten Fury 45t static boss sober,2,Molten_Fury,,R,45,static,boss,none,1,77.7,1554,56,53,53,0.367,45.098,100
+Molten Fury 45t static boss tipsy,2,Molten_Fury,,R,45,static,boss,ale,1,57.65,1153,57,38,38,0.35,45.097,100
+Molten Fury 45t strafe small sober,2,Molten_Fury,,R,45,strafe,small,none,1,29.65,593,57,20,20,2.267,45.694,100
+Molten Fury 45t strafe small tipsy,2,Molten_Fury,,R,45,strafe,small,ale,1,17.9,358,58,12,12,0.067,45.693,100
+Molten Fury 45t strafe boss sober,2,Molten_Fury,,R,45,strafe,boss,none,1,73.25,1465,57,49,49,0.417,45.734,100
+Molten Fury 45t strafe boss tipsy,2,Molten_Fury,,R,45,strafe,boss,ale,1,34.1,682,58,23,23,1.267,45.739,100
+Ruby Staff 8t static small sober,2,Ruby_Staff,,M,8,static,small,none,1,25.9,518,49,43,43,0.333,8.263,100
+Ruby Staff 8t static small tipsy,2,Ruby_Staff,,M,8,static,small,ale,1,25.65,513,51,43,43,0.317,8.263,100
+Ruby Staff 8t static boss sober,2,Ruby_Staff,,M,8,static,boss,none,1,50.8,1016,43,43,86,0.233,8.509,100
+Ruby Staff 8t static boss tipsy,2,Ruby_Staff,,M,8,static,boss,ale,1,51.6,1032,43,43,86,0.217,8.509,100
+Ruby Staff 8t strafe small sober,2,Ruby_Staff,,M,8,strafe,small,none,1,23.6,472,49,40,40,0.467,9.387,100
+Ruby Staff 8t strafe small tipsy,2,Ruby_Staff,,M,8,strafe,small,ale,1,22.05,441,51,36,36,0.55,9.387,100
+Ruby Staff 8t strafe boss sober,2,Ruby_Staff,,M,8,strafe,boss,none,1,48.05,961,45,43,80,0.05,9.557,100
+Ruby Staff 8t strafe boss tipsy,2,Ruby_Staff,,M,8,strafe,boss,ale,1,46.65,933,44,44,78,0.033,9.56,100
+Ruby Staff 25t static small sober,2,Ruby_Staff,,M,25,static,small,none,1,20.7,414,50,33,33,1.267,25.104,100
+Ruby Staff 25t static small tipsy,2,Ruby_Staff,,M,25,static,small,ale,1,10.95,219,50,18,18,0.317,25.104,100
+Ruby Staff 25t static boss sober,2,Ruby_Staff,,M,25,static,boss,none,1,52.85,1057,44,43,86,0.233,25.174,100
+Ruby Staff 25t static boss tipsy,2,Ruby_Staff,,M,25,static,boss,ale,1,48.3,966,46,44,81,0.017,25.175,100
+Ruby Staff 25t strafe small sober,2,Ruby_Staff,,M,25,strafe,small,none,1,11,220,49,18,18,0.583,25.728,100
+Ruby Staff 25t strafe small tipsy,2,Ruby_Staff,,M,25,strafe,small,ale,1,10.1,202,52,16,16,0.017,25.719,100
+Ruby Staff 25t strafe boss sober,2,Ruby_Staff,,M,25,strafe,boss,none,1,47.2,944,45,42,78,0.05,25.838,100
+Ruby Staff 25t strafe boss tipsy,2,Ruby_Staff,,M,25,strafe,boss,ale,1,35.4,708,47,34,59,0.017,25.839,100
+Ruby Staff 38t static small sober,2,Ruby_Staff,,M,38,static,small,none,1,15.75,315,50,26,26,0.233,38.069,100
+Ruby Staff 38t static small tipsy,2,Ruby_Staff,,M,38,static,small,ale,1,5.9,118,49,10,10,1.7,38.068,100
+Ruby Staff 38t static boss sober,2,Ruby_Staff,,M,38,static,boss,none,1,52.1,1042,45,43,86,0.2,38.115,100
+Ruby Staff 38t static boss tipsy,2,Ruby_Staff,,M,38,static,boss,ale,1,33.95,679,47,29,56,0.2,38.115,100
+Ruby Staff 38t strafe small sober,2,Ruby_Staff,,M,38,strafe,small,none,1,3.05,61,48,5,5,5.35,38.699,100
+Ruby Staff 38t strafe small tipsy,2,Ruby_Staff,,M,38,strafe,small,ale,1,5.95,119,49,9,9,0.45,38.699,100
+Ruby Staff 38t strafe boss sober,2,Ruby_Staff,,M,38,strafe,boss,none,1,36.4,728,46,34,61,0.85,38.747,100
+Ruby Staff 38t strafe boss tipsy,2,Ruby_Staff,,M,38,strafe,boss,ale,1,31.25,625,47,29,51,0.933,38.753,100
+Space Gun 8t static small sober,2,Space_Gun,,M,8,static,small,none,1,31.8,636,74,70,70,0.217,8.263,100
+Space Gun 8t static small tipsy,2,Space_Gun,,M,8,static,small,ale,1,32.05,641,74,70,70,0.2,8.263,100
+Space Gun 8t static boss sober,2,Space_Gun,,M,8,static,boss,none,1,62.75,1255,74,71,139,0.167,8.509,100
+Space Gun 8t static boss tipsy,2,Space_Gun,,M,8,static,boss,ale,1,61.65,1233,74,71,140,0.15,8.509,100
+Space Gun 8t strafe small sober,2,Space_Gun,,M,8,strafe,small,none,1,29.8,596,74,67,67,0.2,9.387,100
+Space Gun 8t strafe small tipsy,2,Space_Gun,,M,8,strafe,small,ale,1,24.75,495,74,54,54,1.15,9.387,100
+Space Gun 8t strafe boss sober,2,Space_Gun,,M,8,strafe,boss,none,1,52.05,1041,76,70,115,0.25,9.557,100
+Space Gun 8t strafe boss tipsy,2,Space_Gun,,M,8,strafe,boss,ale,1,48.6,972,75,70,108,0.233,9.56,100
+Space Gun 25t static small sober,2,Space_Gun,,M,25,static,small,none,1,16.05,321,73,35,35,0.05,25.104,100
+Space Gun 25t static small tipsy,2,Space_Gun,,M,25,static,small,ale,1,12.7,254,73,28,28,0.883,25.104,100
+Space Gun 25t static boss sober,2,Space_Gun,,M,25,static,boss,none,1,53.05,1061,74,71,114,0.05,25.174,100
+Space Gun 25t static boss tipsy,2,Space_Gun,,M,25,static,boss,ale,1,48.75,975,74,67,106,0.083,25.175,100
+Space Gun 25t strafe small sober,2,Space_Gun,,M,25,strafe,small,none,1,18.95,379,76,43,43,0.133,25.728,100
+Space Gun 25t strafe small tipsy,2,Space_Gun,,M,25,strafe,small,ale,1,8.75,175,72,19,19,1.55,25.719,100
+Space Gun 25t strafe boss sober,2,Space_Gun,,M,25,strafe,boss,none,1,44.95,899,75,71,101,0.067,25.838,100
+Space Gun 25t strafe boss tipsy,2,Space_Gun,,M,25,strafe,boss,ale,1,38.45,769,75,64,86,0.05,25.839,100
+Space Gun 38t static small sober,2,Space_Gun,,M,38,static,small,none,1,12.35,247,74,28,28,0.133,38.069,100
+Space Gun 38t static small tipsy,2,Space_Gun,,M,38,static,small,ale,1,4.05,81,72,9,9,0.217,38.068,100
+Space Gun 38t static boss sober,2,Space_Gun,,M,38,static,boss,none,1,49.55,991,74,68,110,0.183,38.115,100
+Space Gun 38t static boss tipsy,2,Space_Gun,,M,38,static,boss,ale,1,32,640,75,40,68,0.167,38.115,100
+Space Gun 38t strafe small sober,2,Space_Gun,,M,38,strafe,small,none,1,12.6,252,73,28,28,0.217,38.699,100
+Space Gun 38t strafe small tipsy,2,Space_Gun,,M,38,strafe,small,ale,1,5.4,108,75,12,12,5.233,38.699,100
+Space Gun 38t strafe boss sober,2,Space_Gun,,M,38,strafe,boss,none,1,43.1,862,73,67,94,0.15,38.747,100
+Space Gun 38t strafe boss tipsy,2,Space_Gun,,M,38,strafe,boss,ale,1,29.65,593,73,47,66,0.25,38.753,100
+Water Bolt 8t static small sober,2,Water_Bolt,,M,8,static,small,none,1,34.4,688,104,70,70,0.267,8.263,100
+Water Bolt 8t static small tipsy,2,Water_Bolt,,M,8,static,small,ale,1,34.25,685,104,70,70,0.233,8.263,100
+Water Bolt 8t static boss sober,2,Water_Bolt,,M,8,static,boss,none,1,107.6,2152,104,72,212,0.083,8.509,100
+Water Bolt 8t static boss tipsy,2,Water_Bolt,,M,8,static,boss,ale,1,106.05,2121,104,72,213,0.083,8.509,100
+Water Bolt 8t strafe small sober,2,Water_Bolt,,M,8,strafe,small,none,1,41.65,833,103,65,83,0.217,9.387,100
+Water Bolt 8t strafe small tipsy,2,Water_Bolt,,M,8,strafe,small,ale,1,32.85,657,103,50,65,0.033,9.387,100
+Water Bolt 8t strafe boss sober,2,Water_Bolt,,M,8,strafe,boss,none,1,103.65,2073,104,72,209,0.05,9.557,100
+Water Bolt 8t strafe boss tipsy,2,Water_Bolt,,M,8,strafe,boss,ale,1,102.25,2045,104,72,205,0.05,9.56,100
+Water Bolt 25t static small sober,2,Water_Bolt,,M,25,static,small,none,1,26.95,539,104,54,54,0.1,25.104,100
+Water Bolt 25t static small tipsy,2,Water_Bolt,,M,25,static,small,ale,1,19.75,395,104,39,39,0.083,25.104,100
+Water Bolt 25t static boss sober,2,Water_Bolt,,M,25,static,boss,none,1,108.65,2173,104,71,211,0.083,25.174,100
+Water Bolt 25t static boss tipsy,2,Water_Bolt,,M,25,static,boss,ale,1,101.3,2026,103,71,201,0.033,25.175,100
+Water Bolt 25t strafe small sober,2,Water_Bolt,,M,25,strafe,small,none,1,12.6,252,104,23,25,1.2,25.728,100
+Water Bolt 25t strafe small tipsy,2,Water_Bolt,,M,25,strafe,small,ale,1,14.2,284,104,28,28,1.183,25.719,100
+Water Bolt 25t strafe boss sober,2,Water_Bolt,,M,25,strafe,boss,none,1,67.85,1357,104,51,137,0.7,25.838,100
+Water Bolt 25t strafe boss tipsy,2,Water_Bolt,,M,25,strafe,boss,ale,1,75.6,1512,104,57,151,0.117,25.839,100
+Water Bolt 38t static small sober,2,Water_Bolt,,M,38,static,small,none,1,15.5,310,104,30,30,1.417,38.069,100
+Water Bolt 38t static small tipsy,2,Water_Bolt,,M,38,static,small,ale,1,16.55,331,103,34,34,0.067,38.068,100
+Water Bolt 38t static boss sober,2,Water_Bolt,,M,38,static,boss,none,1,103.35,2067,104,71,209,0.067,38.115,100
+Water Bolt 38t static boss tipsy,2,Water_Bolt,,M,38,static,boss,ale,1,91.4,1828,104,65,183,0.067,38.115,100
+Water Bolt 38t strafe small sober,2,Water_Bolt,,M,38,strafe,small,none,1,11,220,104,19,22,0.1,38.699,100
+Water Bolt 38t strafe small tipsy,2,Water_Bolt,,M,38,strafe,small,ale,1,10.45,209,104,18,21,1.533,38.699,100
+Water Bolt 38t strafe boss sober,2,Water_Bolt,,M,38,strafe,boss,none,1,61.9,1238,104,51,123,0.133,38.747,100
+Water Bolt 38t strafe boss tipsy,2,Water_Bolt,,M,38,strafe,boss,ale,1,66.3,1326,103,48,131,1.467,38.753,100
+Enchanted Sword 8t static small sober,2,Enchanted_Sword,,E,8,static,small,none,1,17.35,347,27,27,27,0.017,8.263,100
+Enchanted Sword 8t static small tipsy,2,Enchanted_Sword,,E,8,static,small,ale,1,16.55,331,26,26,26,0.75,8.263,100
+Enchanted Sword 8t static boss sober,2,Enchanted_Sword,,E,8,static,boss,none,1,16.35,327,26,26,26,0.667,8.509,100
+Enchanted Sword 8t static boss tipsy,2,Enchanted_Sword,,E,8,static,boss,ale,1,17.1,342,26,26,26,0.65,8.509,100
+Enchanted Sword 8t strafe small sober,2,Enchanted_Sword,,E,8,strafe,small,none,1,18.75,375,28,23,23,0.05,9.387,100
+Enchanted Sword 8t strafe small tipsy,2,Enchanted_Sword,,E,8,strafe,small,ale,1,22.5,450,27,27,27,0.167,9.387,100
+Enchanted Sword 8t strafe boss sober,2,Enchanted_Sword,,E,8,strafe,boss,none,1,25.35,507,27,27,27,0.05,9.557,100
+Enchanted Sword 8t strafe boss tipsy,2,Enchanted_Sword,,E,8,strafe,boss,ale,1,25.55,511,27,27,27,0.033,9.56,100
+Enchanted Sword 25t static small sober,2,Enchanted_Sword,,E,25,static,small,none,1,17.65,353,27,27,27,0.45,25.104,100
+Enchanted Sword 25t static small tipsy,2,Enchanted_Sword,,E,25,static,small,ale,1,16.85,337,27,27,27,0.433,25.104,100
+Enchanted Sword 25t static boss sober,2,Enchanted_Sword,,E,25,static,boss,none,1,16.9,338,28,27,27,0.35,25.174,100
+Enchanted Sword 25t static boss tipsy,2,Enchanted_Sword,,E,25,static,boss,ale,1,17.35,347,27,27,27,0.433,25.175,100
+Enchanted Sword 25t strafe small sober,2,Enchanted_Sword,,E,25,strafe,small,none,1,7.3,146,29,12,12,2.1,25.728,100
+Enchanted Sword 25t strafe small tipsy,2,Enchanted_Sword,,E,25,strafe,small,ale,1,7.95,159,28,12,12,2.083,25.719,100
+Enchanted Sword 25t strafe boss sober,2,Enchanted_Sword,,E,25,strafe,boss,none,1,17.95,359,27,27,27,0.583,25.838,100
+Enchanted Sword 25t strafe boss tipsy,2,Enchanted_Sword,,E,25,strafe,boss,ale,1,17.4,348,27,27,27,0.55,25.839,100
+Enchanted Sword 45t static small sober,2,Enchanted_Sword,,E,45,static,small,none,1,0,0,0,0,0,-1,45.058,100
+Enchanted Sword 45t static small tipsy,2,Enchanted_Sword,,E,45,static,small,ale,1,0,0,0,0,0,-1,45.058,100
+Enchanted Sword 45t static boss sober,2,Enchanted_Sword,,E,45,static,boss,none,1,0,0,0,0,0,-1,45.097,100
+Enchanted Sword 45t static boss tipsy,2,Enchanted_Sword,,E,45,static,boss,ale,1,0,0,0,0,0,-1,45.097,100
+Enchanted Sword 45t strafe small sober,2,Enchanted_Sword,,E,45,strafe,small,none,1,0,0,11,0,0,-1,45.742,100
+Enchanted Sword 45t strafe small tipsy,2,Enchanted_Sword,,E,45,strafe,small,ale,1,0,0,11,0,0,-1,45.74,100
+Enchanted Sword 45t strafe boss sober,2,Enchanted_Sword,,E,45,strafe,boss,none,1,8.5,170,13,13,13,0.35,45.768,100
+Enchanted Sword 45t strafe boss tipsy,2,Enchanted_Sword,,E,45,strafe,boss,ale,1,8.6,172,13,13,13,0.35,45.767,100
+Terra Blade 8t static small sober,2,Terra_Blade,,E,8,static,small,none,1,208.35,4167,69,67,67,0.117,8.263,100
+Terra Blade 8t static small tipsy,2,Terra_Blade,,E,8,static,small,ale,1,213.35,4267,69,67,67,0.1,8.263,100
+Terra Blade 8t static boss sober,2,Terra_Blade,,E,8,static,boss,none,1,214.75,4295,69,67,67,0.083,8.509,100
+Terra Blade 8t static boss tipsy,2,Terra_Blade,,E,8,static,boss,ale,1,208.2,4164,69,67,67,0.067,8.509,100
+Terra Blade 8t strafe small sober,2,Terra_Blade,,E,8,strafe,small,none,1,241.3,4826,68,60,60,0.05,9.387,100
+Terra Blade 8t strafe small tipsy,2,Terra_Blade,,E,8,strafe,small,ale,1,252.6,5052,69,61,61,0.15,9.387,100
+Terra Blade 8t strafe boss sober,2,Terra_Blade,,E,8,strafe,boss,none,1,298.4,5968,69,67,67,0.117,9.557,100
+Terra Blade 8t strafe boss tipsy,2,Terra_Blade,,E,8,strafe,boss,ale,1,304.6,6092,69,67,67,0.1,9.56,100
+Terra Blade 25t static small sober,2,Terra_Blade,,E,25,static,small,none,1,209.9,4198,69,67,67,0.167,25.104,100
+Terra Blade 25t static small tipsy,2,Terra_Blade,,E,25,static,small,ale,1,200.3,4006,68,64,64,0.15,25.104,100
+Terra Blade 25t static boss sober,2,Terra_Blade,,E,25,static,boss,none,1,216.35,4327,68,67,67,0.15,25.174,100
+Terra Blade 25t static boss tipsy,2,Terra_Blade,,E,25,static,boss,ale,1,208.4,4168,69,66,66,0.233,25.175,100
+Terra Blade 25t strafe small sober,2,Terra_Blade,,E,25,strafe,small,none,1,195.55,3911,69,63,63,0.233,25.728,100
+Terra Blade 25t strafe small tipsy,2,Terra_Blade,,E,25,strafe,small,ale,1,185.45,3709,69,59,59,0.217,25.719,100
+Terra Blade 25t strafe boss sober,2,Terra_Blade,,E,25,strafe,boss,none,1,208.65,4173,69,67,67,0.183,25.838,100
+Terra Blade 25t strafe boss tipsy,2,Terra_Blade,,E,25,strafe,boss,ale,1,202.05,4041,69,65,65,0.533,25.839,100
+Terra Blade 45t static small sober,2,Terra_Blade,,E,45,static,small,none,1,0,0,0,0,0,-1,45.058,100
+Terra Blade 45t static small tipsy,2,Terra_Blade,,E,45,static,small,ale,1,0,0,0,0,0,-1,45.058,100
+Terra Blade 45t static boss sober,2,Terra_Blade,,E,45,static,boss,none,1,0,0,0,0,0,-1,45.097,100
+Terra Blade 45t static boss tipsy,2,Terra_Blade,,E,45,static,boss,ale,1,0,0,0,0,0,-1,45.097,100
+Terra Blade 45t strafe small sober,2,Terra_Blade,,E,45,strafe,small,none,1,59.15,1183,21,19,19,3.3,45.742,100
+Terra Blade 45t strafe small tipsy,2,Terra_Blade,,E,45,strafe,small,ale,1,45.4,908,21,15,15,3.3,45.74,100
+Terra Blade 45t strafe boss sober,2,Terra_Blade,,E,45,strafe,boss,none,1,85.65,1713,27,27,27,2.95,45.768,100
+Terra Blade 45t strafe boss tipsy,2,Terra_Blade,,E,45,strafe,boss,ale,1,71.8,1436,27,23,23,2.95,45.767,100
+Muramasa 8t static small sober,2,Muramasa,,E,8,static,small,none,1,68.1,1362,67,67,67,0.117,2.169,100
+Muramasa 8t static small tipsy,2,Muramasa,,E,8,static,small,ale,1,67.8,1356,67,67,67,0.067,2.169,100
+Muramasa 8t static boss sober,2,Muramasa,,E,8,static,boss,none,1,71.75,1435,67,67,67,0.067,4.565,100
+Muramasa 8t static boss tipsy,2,Muramasa,,E,8,static,boss,ale,1,69.55,1391,67,67,67,0.05,4.565,100
+Muramasa 8t strafe small sober,2,Muramasa,,E,8,strafe,small,none,1,37.65,753,37,37,37,1.1,4.604,100
+Muramasa 8t strafe small tipsy,2,Muramasa,,E,8,strafe,small,ale,1,40.4,808,39,39,39,0.1,4.73,100
+Muramasa 8t strafe boss sober,2,Muramasa,,E,8,strafe,boss,none,1,64.75,1295,64,64,64,0.083,5.016,100
+Muramasa 8t strafe boss tipsy,2,Muramasa,,E,8,strafe,boss,ale,1,64.65,1293,64,64,64,0.05,5.019,100
+Muramasa 25t static small sober,2,Muramasa,,E,25,static,small,none,1,67.55,1351,67,67,67,0.117,2.224,100
+Muramasa 25t static small tipsy,2,Muramasa,,E,25,static,small,ale,1,69.45,1389,67,67,67,0.1,2.224,100
+Muramasa 25t static boss sober,2,Muramasa,,E,25,static,boss,none,1,66.65,1333,67,67,67,0.15,4.679,100
+Muramasa 25t static boss tipsy,2,Muramasa,,E,25,static,boss,ale,1,65.85,1317,66,66,66,0.233,4.679,100
+Muramasa 25t strafe small sober,2,Muramasa,,E,25,strafe,small,none,1,39.6,792,39,39,39,0.067,4.674,100
+Muramasa 25t strafe small tipsy,2,Muramasa,,E,25,strafe,small,ale,1,37.85,757,37,37,37,0.883,4.682,100
+Muramasa 25t strafe boss sober,2,Muramasa,,E,25,strafe,boss,none,1,64.95,1299,65,65,65,0.05,5.009,100
+Muramasa 25t strafe boss tipsy,2,Muramasa,,E,25,strafe,boss,ale,1,66.55,1331,64,64,64,0.183,4.986,100
+Muramasa 45t static small sober,2,Muramasa,,E,45,static,small,none,1,68.5,1370,67,67,67,0.067,2.155,100
+Muramasa 45t static small tipsy,2,Muramasa,,E,45,static,small,ale,1,67.85,1357,67,66,66,0.15,2.155,100
+Muramasa 45t static boss sober,2,Muramasa,,E,45,static,boss,none,1,67.75,1355,67,66,66,0.2,4.561,100
+Muramasa 45t static boss tipsy,2,Muramasa,,E,45,static,boss,ale,1,67.15,1343,67,66,66,0.183,4.561,100
+Muramasa 45t strafe small sober,2,Muramasa,,E,45,strafe,small,none,1,30.95,619,31,31,31,0.817,4.363,100
+Muramasa 45t strafe small tipsy,2,Muramasa,,E,45,strafe,small,ale,1,34.3,686,33,33,33,1.083,4.339,100
+Muramasa 45t strafe boss sober,2,Muramasa,,E,45,strafe,boss,none,1,65.35,1307,64,64,64,0.033,5.06,100
+Muramasa 45t strafe boss tipsy,2,Muramasa,,E,45,strafe,boss,ale,1,66,1320,65,65,65,0.1,5.022,100
+Night's Edge 8t static small sober,2,Night's_Edge,,E,8,static,small,none,1,65.7,1314,0,0,0,0.35,2.169,100
+Night's Edge 8t static small tipsy,2,Night's_Edge,,E,8,static,small,ale,1,66.4,1328,0,0,0,0.233,2.169,100
+Night's Edge 8t static boss sober,2,Night's_Edge,,E,8,static,boss,none,1,69.15,1383,0,0,0,0.417,4.565,100
+Night's Edge 8t static boss tipsy,2,Night's_Edge,,E,8,static,boss,ale,1,65.25,1305,0,0,0,0.4,4.565,100
+Night's Edge 8t strafe small sober,2,Night's_Edge,,E,8,strafe,small,none,1,45.75,915,0,0,0,1.1,4.604,100
+Night's Edge 8t strafe small tipsy,2,Night's_Edge,,E,8,strafe,small,ale,1,46.55,931,0,0,0,0.85,4.73,100
+Night's Edge 8t strafe boss sober,2,Night's_Edge,,E,8,strafe,boss,none,1,66.7,1334,0,0,0,0.183,5.016,100
+Night's Edge 8t strafe boss tipsy,2,Night's_Edge,,E,8,strafe,boss,ale,1,63,1260,0,0,0,0.1,5.019,100
+Night's Edge 25t static small sober,2,Night's_Edge,,E,25,static,small,none,1,67.05,1341,0,0,0,0.117,2.224,100
+Night's Edge 25t static small tipsy,2,Night's_Edge,,E,25,static,small,ale,1,66.4,1328,0,0,0,0.1,2.224,100
+Night's Edge 25t static boss sober,2,Night's_Edge,,E,25,static,boss,none,1,68.05,1361,0,0,0,0.267,4.679,100
+Night's Edge 25t static boss tipsy,2,Night's_Edge,,E,25,static,boss,ale,1,69.15,1383,0,0,0,0.35,4.679,100
+Night's Edge 25t strafe small sober,2,Night's_Edge,,E,25,strafe,small,none,1,47.2,944,0,0,0,0.9,4.674,100
+Night's Edge 25t strafe small tipsy,2,Night's_Edge,,E,25,strafe,small,ale,1,45.8,916,0,0,0,0.883,4.682,100
+Night's Edge 25t strafe boss sober,2,Night's_Edge,,E,25,strafe,boss,none,1,61.65,1233,0,0,0,0.183,5.009,100
+Night's Edge 25t strafe boss tipsy,2,Night's_Edge,,E,25,strafe,boss,ale,1,64.3,1286,0,0,0,0.167,4.986,100
+Night's Edge 45t static small sober,2,Night's_Edge,,E,45,static,small,none,1,62.9,1258,0,0,0,0.2,2.155,100
+Night's Edge 45t static small tipsy,2,Night's_Edge,,E,45,static,small,ale,1,68.95,1379,0,0,0,0.283,2.155,100
+Night's Edge 45t static boss sober,2,Night's_Edge,,E,45,static,boss,none,1,65.3,1306,0,0,0,0.033,4.561,100
+Night's Edge 45t static boss tipsy,2,Night's_Edge,,E,45,static,boss,ale,1,66.3,1326,0,0,0,0.017,4.561,100
+Night's Edge 45t strafe small sober,2,Night's_Edge,,E,45,strafe,small,none,1,33.05,661,0,0,0,1.1,4.363,100
+Night's Edge 45t strafe small tipsy,2,Night's_Edge,,E,45,strafe,small,ale,1,38.55,771,0,0,0,0.933,4.335,100
+Night's Edge 45t strafe boss sober,2,Night's_Edge,,E,45,strafe,boss,none,1,67.6,1352,0,0,0,0.367,5.06,100
+Night's Edge 45t strafe boss tipsy,2,Night's_Edge,,E,45,strafe,boss,ale,1,69.95,1399,0,0,0,0.05,5.022,100
+Slime Staff 8t static small sober,2,Slime_Staff,,S,8,static,small,none,1,3.8,76,0,1,64,0.267,8.263,100
+Slime Staff 8t static small tipsy,2,Slime_Staff,,S,8,static,small,ale,1,4,80,0,1,67,0.183,8.263,100
+Slime Staff 8t static boss sober,2,Slime_Staff,,S,8,static,boss,none,1,5.85,117,0,1,100,0.117,8.509,100
+Slime Staff 8t static boss tipsy,2,Slime_Staff,,S,8,static,boss,ale,1,6.05,121,0,1,100,0.083,8.509,100
+Slime Staff 8t strafe small sober,2,Slime_Staff,,S,8,strafe,small,none,1,3.45,69,0,1,57,0.117,9.387,100
+Slime Staff 8t strafe small tipsy,2,Slime_Staff,,S,8,strafe,small,ale,1,3.5,70,0,1,57,0.117,9.387,100
+Slime Staff 8t strafe boss sober,2,Slime_Staff,,S,8,strafe,boss,none,1,5.9,118,0,1,94,0.083,9.557,100
+Slime Staff 8t strafe boss tipsy,2,Slime_Staff,,S,8,strafe,boss,ale,1,6.1,122,0,1,94,0.083,9.56,100
+Slime Staff 25t static small sober,2,Slime_Staff,,S,25,static,small,none,1,4.45,89,0,1,78,0.283,25.104,100
+Slime Staff 25t static small tipsy,2,Slime_Staff,,S,25,static,small,ale,1,3.6,72,0,1,59,0.433,25.104,100
+Slime Staff 25t static boss sober,2,Slime_Staff,,S,25,static,boss,none,1,6.35,127,0,1,100,0.2,25.174,100
+Slime Staff 25t static boss tipsy,2,Slime_Staff,,S,25,static,boss,ale,1,6.25,125,0,1,100,0.083,25.175,100
+Slime Staff 25t strafe small sober,2,Slime_Staff,,S,25,strafe,small,none,1,3.7,74,0,1,61,0.117,25.728,100
+Slime Staff 25t strafe small tipsy,2,Slime_Staff,,S,25,strafe,small,ale,1,3.55,71,0,1,60,0.117,25.719,100
+Slime Staff 25t strafe boss sober,2,Slime_Staff,,S,25,strafe,boss,none,1,6,120,0,1,94,0.083,25.838,100
+Slime Staff 25t strafe boss tipsy,2,Slime_Staff,,S,25,strafe,boss,ale,1,5.85,117,0,1,94,0.083,25.839,100
+Slime Staff 45t static small sober,2,Slime_Staff,,S,45,static,small,none,1,3.35,67,0,1,58,0.233,45.058,100
+Slime Staff 45t static small tipsy,2,Slime_Staff,,S,45,static,small,ale,1,4.4,88,0,1,70,0.133,45.058,100
+Slime Staff 45t static boss sober,2,Slime_Staff,,S,45,static,boss,none,1,6.3,126,0,1,100,0.2,45.097,100
+Slime Staff 45t static boss tipsy,2,Slime_Staff,,S,45,static,boss,ale,1,6.2,124,0,1,100,0.083,45.097,100
+Slime Staff 45t strafe small sober,2,Slime_Staff,,S,45,strafe,small,none,1,3.75,75,0,1,61,0.117,45.694,100
+Slime Staff 45t strafe small tipsy,2,Slime_Staff,,S,45,strafe,small,ale,1,3.75,75,0,1,61,0.117,45.693,100
+Slime Staff 45t strafe boss sober,2,Slime_Staff,,S,45,strafe,boss,none,1,5.85,117,0,1,94,0.083,45.792,100
+Slime Staff 45t strafe boss tipsy,2,Slime_Staff,,S,45,strafe,boss,ale,1,5.65,113,0,1,94,0.083,45.786,100
+Hornet Staff 8t static small sober,2,Hornet_Staff,,S,8,static,small,none,1,12.8,256,27,26,26,0.017,8.263,100
+Hornet Staff 8t static small tipsy,2,Hornet_Staff,,S,8,static,small,ale,1,12.7,254,26,26,26,0.05,8.263,100
+Hornet Staff 8t static boss sober,2,Hornet_Staff,,S,8,static,boss,none,1,12.45,249,26,26,26,0.167,8.509,100
+Hornet Staff 8t static boss tipsy,2,Hornet_Staff,,S,8,static,boss,ale,1,12.5,250,26,26,26,0.083,8.509,100
+Hornet Staff 8t strafe small sober,2,Hornet_Staff,,S,8,strafe,small,none,1,11.05,221,28,21,21,0.167,9.387,100
+Hornet Staff 8t strafe small tipsy,2,Hornet_Staff,,S,8,strafe,small,ale,1,10.9,218,27,18,18,0.083,9.387,100
+Hornet Staff 8t strafe boss sober,2,Hornet_Staff,,S,8,strafe,boss,none,1,12,240,26,26,26,0.067,9.557,100
+Hornet Staff 8t strafe boss tipsy,2,Hornet_Staff,,S,8,strafe,boss,ale,1,12.65,253,27,27,27,0.017,9.56,100
+Hornet Staff 25t static small sober,2,Hornet_Staff,,S,25,static,small,none,1,12.65,253,26,26,26,0.067,25.104,100
+Hornet Staff 25t static small tipsy,2,Hornet_Staff,,S,25,static,small,ale,1,12.7,254,26,26,26,0.05,25.104,100
+Hornet Staff 25t static boss sober,2,Hornet_Staff,,S,25,static,boss,none,1,12.55,251,27,27,27,0.15,25.174,100
+Hornet Staff 25t static boss tipsy,2,Hornet_Staff,,S,25,static,boss,ale,1,12.8,256,27,27,27,0.15,25.175,100
+Hornet Staff 25t strafe small sober,2,Hornet_Staff,,S,25,strafe,small,none,1,10.5,210,27,18,18,0.083,25.728,100
+Hornet Staff 25t strafe small tipsy,2,Hornet_Staff,,S,25,strafe,small,ale,1,10.6,212,27,18,18,0.05,25.719,100
+Hornet Staff 25t strafe boss sober,2,Hornet_Staff,,S,25,strafe,boss,none,1,12.5,250,26,26,26,0.15,25.838,100
+Hornet Staff 25t strafe boss tipsy,2,Hornet_Staff,,S,25,strafe,boss,ale,1,12.85,257,27,27,27,0.167,25.839,100
+Hornet Staff 45t static small sober,2,Hornet_Staff,,S,45,static,small,none,1,13.1,262,27,27,27,0.083,45.058,100
+Hornet Staff 45t static small tipsy,2,Hornet_Staff,,S,45,static,small,ale,1,12.05,241,26,26,26,0.05,45.058,100
+Hornet Staff 45t static boss sober,2,Hornet_Staff,,S,45,static,boss,none,1,12.2,244,26,26,26,0.15,45.097,100
+Hornet Staff 45t static boss tipsy,2,Hornet_Staff,,S,45,static,boss,ale,1,12.45,249,26,26,26,0.017,45.097,100
+Hornet Staff 45t strafe small sober,2,Hornet_Staff,,S,45,strafe,small,none,1,7.95,159,23,9,9,0.167,45.694,100
+Hornet Staff 45t strafe small tipsy,2,Hornet_Staff,,S,45,strafe,small,ale,1,7.85,157,24,9,9,0.017,45.693,100
+Hornet Staff 45t strafe boss sober,2,Hornet_Staff,,S,45,strafe,boss,none,1,11.9,238,25,25,25,0.1,45.792,100
+Hornet Staff 45t strafe boss tipsy,2,Hornet_Staff,,S,45,strafe,boss,ale,1,11.75,235,23,23,23,0.067,45.786,100
+Imp Staff 8t static small sober,2,Imp_Staff,,S,8,static,small,none,1,12.65,253,19,18,18,0.083,8.263,100
+Imp Staff 8t static small tipsy,2,Imp_Staff,,S,8,static,small,ale,1,11.65,233,20,17,17,0.217,8.263,100
+Imp Staff 8t static boss sober,2,Imp_Staff,,S,8,static,boss,none,1,12.4,248,20,18,18,0.05,8.509,100
+Imp Staff 8t static boss tipsy,2,Imp_Staff,,S,8,static,boss,ale,1,11.65,233,19,18,18,0.233,8.509,100
+Imp Staff 8t strafe small sober,2,Imp_Staff,,S,8,strafe,small,none,1,12.45,249,20,19,19,0.017,9.387,100
+Imp Staff 8t strafe small tipsy,2,Imp_Staff,,S,8,strafe,small,ale,1,12.95,259,21,20,20,0.033,9.387,100
+Imp Staff 8t strafe boss sober,2,Imp_Staff,,S,8,strafe,boss,none,1,13.5,270,20,18,20,0.217,9.557,100
+Imp Staff 8t strafe boss tipsy,2,Imp_Staff,,S,8,strafe,boss,ale,1,12.3,246,20,18,19,0.033,9.56,100
+Imp Staff 25t static small sober,2,Imp_Staff,,S,25,static,small,none,1,11.85,237,19,18,18,0.1,25.104,100
+Imp Staff 25t static small tipsy,2,Imp_Staff,,S,25,static,small,ale,1,12.05,241,19,18,18,0.117,25.104,100
+Imp Staff 25t static boss sober,2,Imp_Staff,,S,25,static,boss,none,1,12.25,245,19,17,17,0.017,25.174,100
+Imp Staff 25t static boss tipsy,2,Imp_Staff,,S,25,static,boss,ale,1,12.35,247,19,18,18,0.117,25.175,100
+Imp Staff 25t strafe small sober,2,Imp_Staff,,S,25,strafe,small,none,1,12.25,245,20,19,19,0.15,25.728,100
+Imp Staff 25t strafe small tipsy,2,Imp_Staff,,S,25,strafe,small,ale,1,12.15,243,20,19,19,0.017,25.719,100
+Imp Staff 25t strafe boss sober,2,Imp_Staff,,S,25,strafe,boss,none,1,12.15,243,19,18,19,0.2,25.838,100
+Imp Staff 25t strafe boss tipsy,2,Imp_Staff,,S,25,strafe,boss,ale,1,13.2,264,19,18,19,0.017,25.839,100
+Imp Staff 45t static small sober,2,Imp_Staff,,S,45,static,small,none,1,12.45,249,19,18,18,0.017,45.058,100
+Imp Staff 45t static small tipsy,2,Imp_Staff,,S,45,static,small,ale,1,12.15,243,19,18,18,0.133,45.058,100
+Imp Staff 45t static boss sober,2,Imp_Staff,,S,45,static,boss,none,1,11.9,238,19,18,18,0.017,45.097,100
+Imp Staff 45t static boss tipsy,2,Imp_Staff,,S,45,static,boss,ale,1,12.1,242,19,18,18,0.017,45.097,100
+Imp Staff 45t strafe small sober,2,Imp_Staff,,S,45,strafe,small,none,1,11.75,235,19,18,18,0.183,45.694,100
+Imp Staff 45t strafe small tipsy,2,Imp_Staff,,S,45,strafe,small,ale,1,12.05,241,19,18,18,0.25,45.693,100
+Imp Staff 45t strafe boss sober,2,Imp_Staff,,S,45,strafe,boss,none,1,12.1,242,19,18,18,0.25,45.792,100
+Imp Staff 45t strafe boss tipsy,2,Imp_Staff,,S,45,strafe,boss,ale,1,12.05,241,18,17,17,0.117,45.791,100
+Minishark 8t static small sober,3,Minishark,,R,8,static,small,none,1,36.5,730,150,150,150,0.083,8.263,100
+Minishark 8t static small tipsy,3,Minishark,,R,8,static,small,ale,1,36.45,729,151,150,150,0.083,8.263,100
+Minishark 8t static boss sober,3,Minishark,,R,8,static,boss,none,1,37.5,750,151,150,150,0.033,8.509,100
+Minishark 8t static boss tipsy,3,Minishark,,R,8,static,boss,ale,1,38,760,151,150,150,0.017,8.509,100
+Minishark 8t strafe small sober,3,Minishark,,R,8,strafe,small,none,1,34.55,691,151,139,139,0.317,8.814,100
+Minishark 8t strafe small tipsy,3,Minishark,,R,8,strafe,small,ale,1,31.75,635,154,125,125,0.317,8.827,100
+Minishark 8t strafe boss sober,3,Minishark,,R,8,strafe,boss,none,1,37.25,745,151,151,151,0.017,9.079,100
+Minishark 8t strafe boss tipsy,3,Minishark,,R,8,strafe,boss,ale,1,38.5,770,151,151,151,0.133,9.074,100
+Minishark 25t static small sober,3,Minishark,,R,25,static,small,none,1,20.4,408,157,83,83,0.133,25.086,100
+Minishark 25t static small tipsy,3,Minishark,,R,25,static,small,ale,1,12.55,251,154,51,51,0.117,25.086,100
+Minishark 25t static boss sober,3,Minishark,,R,25,static,boss,none,1,37.1,742,152,150,150,0.067,25.168,100
+Minishark 25t static boss tipsy,3,Minishark,,R,25,static,boss,ale,1,37.3,746,152,145,145,0.017,25.168,100
+Minishark 25t strafe small sober,3,Minishark,,R,25,strafe,small,none,1,20.4,408,156,82,82,0.2,25.382,100
+Minishark 25t strafe small tipsy,3,Minishark,,R,25,strafe,small,ale,1,12.05,241,155,47,47,0.217,25.361,100
+Minishark 25t strafe boss sober,3,Minishark,,R,25,strafe,boss,none,1,37.2,744,153,148,148,0.067,25.352,100
+Minishark 25t strafe boss tipsy,3,Minishark,,R,25,strafe,boss,ale,1,33.9,678,153,138,138,0.05,25.351,100
+Minishark 45t static small sober,3,Minishark,,R,45,static,small,none,1,11.95,239,157,47,47,0.067,45.058,100
+Minishark 45t static small tipsy,3,Minishark,,R,45,static,small,ale,1,7.75,155,158,32,32,1.75,45.058,100
+Minishark 45t static boss sober,3,Minishark,,R,45,static,boss,none,1,33.25,665,154,137,137,0.1,45.098,100
+Minishark 45t static boss tipsy,3,Minishark,,R,45,static,boss,ale,1,22.9,458,158,91,91,0.233,45.097,100
+Minishark 45t strafe small sober,3,Minishark,,R,45,strafe,small,none,1,11.35,227,151,46,46,0.183,45.331,100
+Minishark 45t strafe small tipsy,3,Minishark,,R,45,strafe,small,ale,1,9.05,181,150,36,36,0.167,45.331,100
+Minishark 45t strafe boss sober,3,Minishark,,R,45,strafe,boss,none,1,33.25,665,155,135,135,0.133,45.325,100
+Minishark 45t strafe boss tipsy,3,Minishark,,R,45,strafe,boss,ale,1,21.25,425,155,83,83,0.083,45.335,100
+Minishark 8t static small sober,3,Minishark,,R,8,static,small,none,1,67,1340,153,150,150,0.033,8.263,100
+Minishark 8t static small tipsy,3,Minishark,,R,8,static,small,ale,1,67.2,1344,154,149,149,0.017,8.263,100
+Minishark 8t static boss sober,3,Minishark,,R,8,static,boss,none,1,67.4,1348,154,150,150,0.117,8.509,100
+Minishark 8t static boss tipsy,3,Minishark,,R,8,static,boss,ale,1,68.75,1375,153,150,150,0.1,8.509,100
+Minishark 8t strafe small sober,3,Minishark,,R,8,strafe,small,none,1,63.4,1268,151,142,142,0.067,8.814,100
+Minishark 8t strafe small tipsy,3,Minishark,,R,8,strafe,small,ale,1,56.95,1139,150,124,124,0.2,8.827,100
+Minishark 8t strafe boss sober,3,Minishark,,R,8,strafe,boss,none,1,67.75,1355,153,150,150,0.05,9.079,100
+Minishark 8t strafe boss tipsy,3,Minishark,,R,8,strafe,boss,ale,1,66.9,1338,154,151,151,0.033,9.074,100
+Minishark 25t static small sober,3,Minishark,,R,25,static,small,none,1,37.8,756,153,83,83,0.05,25.086,100
+Minishark 25t static small tipsy,3,Minishark,,R,25,static,small,ale,1,22.3,446,152,50,50,0.567,25.086,100
+Minishark 25t static boss sober,3,Minishark,,R,25,static,boss,none,1,66.15,1323,153,150,150,0.133,25.168,100
+Minishark 25t static boss tipsy,3,Minishark,,R,25,static,boss,ale,1,63.4,1268,153,143,143,0.083,25.168,100
+Minishark 25t strafe small sober,3,Minishark,,R,25,strafe,small,none,1,38.5,770,153,85,85,0.45,25.382,100
+Minishark 25t strafe small tipsy,3,Minishark,,R,25,strafe,small,ale,1,25.65,513,152,56,56,0.067,25.361,100
+Minishark 25t strafe boss sober,3,Minishark,,R,25,strafe,boss,none,1,65.95,1319,153,149,149,0.067,25.352,100
+Minishark 25t strafe boss tipsy,3,Minishark,,R,25,strafe,boss,ale,1,61.3,1226,153,136,136,0.05,25.351,100
+Minishark 45t static small sober,3,Minishark,,R,45,static,small,none,1,23.05,461,153,51,51,0.2,45.058,100
+Minishark 45t static small tipsy,3,Minishark,,R,45,static,small,ale,1,15.2,304,151,34,34,0.283,45.058,100
+Minishark 45t static boss sober,3,Minishark,,R,45,static,boss,none,1,61.65,1233,153,136,136,0.267,45.098,100
+Minishark 45t static boss tipsy,3,Minishark,,R,45,static,boss,ale,1,40.65,813,153,89,89,0.25,45.097,100
+Minishark 45t strafe small sober,3,Minishark,,R,45,strafe,small,none,1,21,420,149,46,46,0.117,45.331,100
+Minishark 45t strafe small tipsy,3,Minishark,,R,45,strafe,small,ale,1,13,260,147,31,31,0.1,45.331,100
+Minishark 45t strafe boss sober,3,Minishark,,R,45,strafe,boss,none,1,63,1260,153,138,138,0.083,45.325,100
+Minishark 45t strafe boss tipsy,3,Minishark,,R,45,strafe,boss,ale,1,34.45,689,151,77,77,0.033,45.335,100
+Sniper Rifle 8t static small sober,3,Sniper_Rifle,,R,8,static,small,none,1,250.75,5015,34,33,33,0.417,8.263,100
+Sniper Rifle 8t static small tipsy,3,Sniper_Rifle,,R,8,static,small,ale,1,254.35,5087,34,33,33,0.4,8.263,100
+Sniper Rifle 8t static boss sober,3,Sniper_Rifle,,R,8,static,boss,none,1,250.6,5012,34,33,33,0.383,8.509,100
+Sniper Rifle 8t static boss tipsy,3,Sniper_Rifle,,R,8,static,boss,ale,1,243,4860,34,33,33,0.367,8.509,100
+Sniper Rifle 8t strafe small sober,3,Sniper_Rifle,,R,8,strafe,small,none,1,246.2,4924,33,32,32,0.383,8.814,100
+Sniper Rifle 8t strafe small tipsy,3,Sniper_Rifle,,R,8,strafe,small,ale,1,201.35,4027,34,26,26,1.067,8.827,100
+Sniper Rifle 8t strafe boss sober,3,Sniper_Rifle,,R,8,strafe,boss,none,1,243.35,4867,34,33,33,0.433,9.079,100
+Sniper Rifle 8t strafe boss tipsy,3,Sniper_Rifle,,R,8,strafe,boss,ale,1,253.25,5065,34,33,33,0.417,9.074,100
+Sniper Rifle 25t static small sober,3,Sniper_Rifle,,R,25,static,small,none,1,98.9,1978,33,13,13,4.017,25.086,100
+Sniper Rifle 25t static small tipsy,3,Sniper_Rifle,,R,25,static,small,ale,1,119.75,2395,33,16,16,1.017,25.086,100
+Sniper Rifle 25t static boss sober,3,Sniper_Rifle,,R,25,static,boss,none,1,252.5,5050,34,33,33,0.383,25.168,100
+Sniper Rifle 25t static boss tipsy,3,Sniper_Rifle,,R,25,static,boss,ale,1,242.95,4859,34,32,32,0.467,25.168,100
+Sniper Rifle 25t strafe small sober,3,Sniper_Rifle,,R,25,strafe,small,none,1,128.1,2562,33,17,17,1.65,25.382,100
+Sniper Rifle 25t strafe small tipsy,3,Sniper_Rifle,,R,25,strafe,small,ale,1,101.55,2031,34,13,13,1.05,25.361,100
+Sniper Rifle 25t strafe boss sober,3,Sniper_Rifle,,R,25,strafe,boss,none,1,242.7,4854,34,33,33,0.433,25.352,100
+Sniper Rifle 25t strafe boss tipsy,3,Sniper_Rifle,,R,25,strafe,boss,ale,1,210.25,4205,34,28,28,1,25.351,100
+Sniper Rifle 45t static small sober,3,Sniper_Rifle,,R,45,static,small,none,1,48.85,977,34,7,7,2.233,45.058,100
+Sniper Rifle 45t static small tipsy,3,Sniper_Rifle,,R,45,static,small,ale,1,43.45,869,33,6,6,1.117,45.058,100
+Sniper Rifle 45t static boss sober,3,Sniper_Rifle,,R,45,static,boss,none,1,246.65,4933,34,32,32,0.5,45.098,100
+Sniper Rifle 45t static boss tipsy,3,Sniper_Rifle,,R,45,static,boss,ale,1,147.3,2946,34,19,19,0.483,45.097,100
+Sniper Rifle 45t strafe small sober,3,Sniper_Rifle,,R,45,strafe,small,none,1,84.2,1684,34,11,11,2.25,45.331,100
+Sniper Rifle 45t strafe small tipsy,3,Sniper_Rifle,,R,45,strafe,small,ale,1,36.95,739,33,5,5,3.433,45.331,100
+Sniper Rifle 45t strafe boss sober,3,Sniper_Rifle,,R,45,strafe,boss,none,1,238.9,4778,33,31,31,0.45,45.325,100
+Sniper Rifle 45t strafe boss tipsy,3,Sniper_Rifle,,R,45,strafe,boss,ale,1,129.5,2590,34,17,17,0.533,45.335,100
+Boomstick 8t static small sober,3,Boomstick,,R,8,static,small,none,1,38.45,769,92,64,64,0.233,8.263,100
+Boomstick 8t static small tipsy,3,Boomstick,,R,8,static,small,ale,1,37.7,754,92,63,63,0.217,8.263,100
+Boomstick 8t static boss sober,3,Boomstick,,R,8,static,boss,none,1,54.45,1089,90,90,90,0.167,8.509,100
+Boomstick 8t static boss tipsy,3,Boomstick,,R,8,static,boss,ale,1,54.7,1094,90,90,90,0.15,8.509,100
+Boomstick 8t strafe small sober,3,Boomstick,,R,8,strafe,small,none,1,34.8,696,91,57,57,0.267,8.814,100
+Boomstick 8t strafe small tipsy,3,Boomstick,,R,8,strafe,small,ale,1,34.3,686,93,57,57,0.35,8.827,100
+Boomstick 8t strafe boss sober,3,Boomstick,,R,8,strafe,boss,none,1,53.6,1072,90,90,90,0.3,9.079,100
+Boomstick 8t strafe boss tipsy,3,Boomstick,,R,8,strafe,boss,ale,1,49.95,999,90,84,84,0.283,9.074,100
+Boomstick 25t static small sober,3,Boomstick,,R,25,static,small,none,1,7.55,151,93,12,12,2.45,25.086,100
+Boomstick 25t static small tipsy,3,Boomstick,,R,25,static,small,ale,1,11.05,221,93,18,18,0.433,25.086,100
+Boomstick 25t static boss sober,3,Boomstick,,R,25,static,boss,none,1,34.6,692,91,57,57,0.383,25.168,100
+Boomstick 25t static boss tipsy,3,Boomstick,,R,25,static,boss,ale,1,32.35,647,92,54,54,0.467,25.168,100
+Boomstick 25t strafe small sober,3,Boomstick,,R,25,strafe,small,none,1,12.45,249,93,21,21,0.567,25.382,100
+Boomstick 25t strafe small tipsy,3,Boomstick,,R,25,strafe,small,ale,1,11.65,233,96,20,20,0.55,25.361,100
+Boomstick 25t strafe boss sober,3,Boomstick,,R,25,strafe,boss,none,1,34.1,682,92,57,57,0.5,25.352,100
+Boomstick 25t strafe boss tipsy,3,Boomstick,,R,25,strafe,boss,ale,1,33.35,667,92,57,57,0.483,25.351,100
+Boomstick 45t static small sober,3,Boomstick,,R,45,static,small,none,1,6.55,131,96,11,11,4.7,45.058,100
+Boomstick 45t static small tipsy,3,Boomstick,,R,45,static,small,ale,1,4.45,89,97,7,7,0.117,45.058,100
+Boomstick 45t static boss sober,3,Boomstick,,R,45,static,boss,none,1,16.75,335,94,29,29,0.067,45.098,100
+Boomstick 45t static boss tipsy,3,Boomstick,,R,45,static,boss,ale,1,18,360,95,30,30,0.05,45.097,100
+Boomstick 45t strafe small sober,3,Boomstick,,R,45,strafe,small,none,1,6.85,137,96,11,11,0.167,45.331,100
+Boomstick 45t strafe small tipsy,3,Boomstick,,R,45,strafe,small,ale,1,5.45,109,94,9,9,1.967,45.331,100
+Boomstick 45t strafe boss sober,3,Boomstick,,R,45,strafe,boss,none,1,17.45,349,95,29,29,0.733,45.325,100
+Boomstick 45t strafe boss tipsy,3,Boomstick,,R,45,strafe,boss,ale,1,17.65,353,94,29,29,0.183,45.335,100
+Demon Bow 8t static small sober,3,Demon_Bow,,R,8,static,small,none,1,23.5,470,49,48,48,0.167,8.263,100
+Demon Bow 8t static small tipsy,3,Demon_Bow,,R,8,static,small,ale,1,24.05,481,49,48,48,0.15,8.263,100
+Demon Bow 8t static boss sober,3,Demon_Bow,,R,8,static,boss,none,1,24,480,49,48,48,0.067,8.509,100
+Demon Bow 8t static boss tipsy,3,Demon_Bow,,R,8,static,boss,ale,1,24.7,494,49,48,48,0.05,8.509,100
+Demon Bow 8t strafe small sober,3,Demon_Bow,,R,8,strafe,small,none,1,23.35,467,48,46,46,0.367,8.814,100
+Demon Bow 8t strafe small tipsy,3,Demon_Bow,,R,8,strafe,small,ale,1,22.25,445,50,44,44,0.35,8.827,100
+Demon Bow 8t strafe boss sober,3,Demon_Bow,,R,8,strafe,boss,none,1,25.3,506,49,49,49,0.283,9.079,100
+Demon Bow 8t strafe boss tipsy,3,Demon_Bow,,R,8,strafe,boss,ale,1,24.9,498,49,49,49,0.267,9.074,100
+Demon Bow 25t static small sober,3,Demon_Bow,,R,25,static,small,none,1,15.3,306,50,31,31,0.167,25.104,100
+Demon Bow 25t static small tipsy,3,Demon_Bow,,R,25,static,small,ale,1,9.8,196,50,19,19,0.15,25.104,100
+Demon Bow 25t static boss sober,3,Demon_Bow,,R,25,static,boss,none,1,23.85,477,50,48,48,0.083,25.202,100
+Demon Bow 25t static boss tipsy,3,Demon_Bow,,R,25,static,boss,ale,1,24.95,499,50,48,48,0.15,25.202,100
+Demon Bow 25t strafe small sober,3,Demon_Bow,,R,25,strafe,small,none,1,10.55,211,50,20,20,0.75,25.322,100
+Demon Bow 25t strafe small tipsy,3,Demon_Bow,,R,25,strafe,small,ale,1,8.85,177,50,17,17,1.1,25.351,100
+Demon Bow 25t strafe boss sober,3,Demon_Bow,,R,25,strafe,boss,none,1,24.5,490,50,49,49,0.3,25.374,100
+Demon Bow 25t strafe boss tipsy,3,Demon_Bow,,R,25,strafe,boss,ale,1,21.5,430,50,44,44,0.3,25.374,100
+Demon Bow 45t static small sober,3,Demon_Bow,,R,45,static,small,none,1,9.25,185,51,19,19,0.733,45.058,100
+Demon Bow 45t static small tipsy,3,Demon_Bow,,R,45,static,small,ale,1,7.45,149,52,15,15,0.4,45.058,100
+Demon Bow 45t static boss sober,3,Demon_Bow,,R,45,static,boss,none,1,24.25,485,51,48,48,0.283,45.098,100
+Demon Bow 45t static boss tipsy,3,Demon_Bow,,R,45,static,boss,ale,1,20.35,407,51,41,41,0.25,45.097,100
+Demon Bow 45t strafe small sober,3,Demon_Bow,,R,45,strafe,small,none,1,3.7,74,50,7,7,1.25,45.331,100
+Demon Bow 45t strafe small tipsy,3,Demon_Bow,,R,45,strafe,small,ale,1,3.85,77,50,8,8,1.583,45.331,100
+Demon Bow 45t strafe boss sober,3,Demon_Bow,,R,45,strafe,boss,none,1,18.95,379,51,37,37,0.4,45.325,100
+Demon Bow 45t strafe boss tipsy,3,Demon_Bow,,R,45,strafe,boss,ale,1,16.5,330,52,33,33,0.133,45.335,100
+Molten Fury 8t static small sober,3,Molten_Fury,,R,8,static,small,none,1,79.9,1598,55,55,55,0.1,8.263,100
+Molten Fury 8t static small tipsy,3,Molten_Fury,,R,8,static,small,ale,1,83.35,1667,55,55,55,0.083,8.263,100
+Molten Fury 8t static boss sober,3,Molten_Fury,,R,8,static,boss,none,1,81.85,1637,55,55,55,0.017,8.509,100
+Molten Fury 8t static boss tipsy,3,Molten_Fury,,R,8,static,boss,ale,1,80.65,1613,54,54,54,0.367,8.509,100
+Molten Fury 8t strafe small sober,3,Molten_Fury,,R,8,strafe,small,none,1,75,1500,55,51,51,0.25,8.814,100
+Molten Fury 8t strafe small tipsy,3,Molten_Fury,,R,8,strafe,small,ale,1,70,1400,55,47,47,0.583,8.827,100
+Molten Fury 8t strafe boss sober,3,Molten_Fury,,R,8,strafe,boss,none,1,84,1680,55,55,55,0.183,9.079,100
+Molten Fury 8t strafe boss tipsy,3,Molten_Fury,,R,8,strafe,boss,ale,1,83.45,1669,55,55,55,0.167,9.074,100
+Molten Fury 25t static small sober,3,Molten_Fury,,R,25,static,small,none,1,53.75,1075,55,35,35,0.383,25.104,100
+Molten Fury 25t static small tipsy,3,Molten_Fury,,R,25,static,small,ale,1,31.8,636,56,22,22,0.733,25.104,100
+Molten Fury 25t static boss sober,3,Molten_Fury,,R,25,static,boss,none,1,81,1620,55,54,54,0.3,25.202,100
+Molten Fury 25t static boss tipsy,3,Molten_Fury,,R,25,static,boss,ale,1,81.75,1635,56,55,55,0.017,25.202,100
+Molten Fury 25t strafe small sober,3,Molten_Fury,,R,25,strafe,small,none,1,47.75,955,56,31,31,0.183,25.322,100
+Molten Fury 25t strafe small tipsy,3,Molten_Fury,,R,25,strafe,small,ale,1,34,680,57,22,22,0.833,25.351,100
+Molten Fury 25t strafe boss sober,3,Molten_Fury,,R,25,strafe,boss,none,1,81.4,1628,56,55,55,0.1,25.374,100
+Molten Fury 25t strafe boss tipsy,3,Molten_Fury,,R,25,strafe,boss,ale,1,77.3,1546,57,51,51,0.05,25.374,100
+Molten Fury 45t static small sober,3,Molten_Fury,,R,45,static,small,none,1,40.95,819,57,27,27,1.8,45.058,100
+Molten Fury 45t static small tipsy,3,Molten_Fury,,R,45,static,small,ale,1,27.8,556,58,19,19,1.883,45.058,100
+Molten Fury 45t static boss sober,3,Molten_Fury,,R,45,static,boss,none,1,80.45,1609,56,54,54,0.367,45.098,100
+Molten Fury 45t static boss tipsy,3,Molten_Fury,,R,45,static,boss,ale,1,63,1260,56,41,41,0.35,45.097,100
+Molten Fury 45t strafe small sober,3,Molten_Fury,,R,45,strafe,small,none,1,29.8,596,57,20,20,0.15,45.331,100
+Molten Fury 45t strafe small tipsy,3,Molten_Fury,,R,45,strafe,small,ale,1,22.85,457,57,15,15,0.483,45.331,100
+Molten Fury 45t strafe boss sober,3,Molten_Fury,,R,45,strafe,boss,none,1,71.7,1434,57,47,47,0.067,45.325,100
+Molten Fury 45t strafe boss tipsy,3,Molten_Fury,,R,45,strafe,boss,ale,1,53.4,1068,58,36,36,0.15,45.335,100
+Ruby Staff 8t static small sober,3,Ruby_Staff,,M,8,static,small,none,1,25.8,516,50,43,43,0.333,8.263,100
+Ruby Staff 8t static small tipsy,3,Ruby_Staff,,M,8,static,small,ale,1,26.4,528,51,43,43,0.317,8.263,100
+Ruby Staff 8t static boss sober,3,Ruby_Staff,,M,8,static,boss,none,1,51.55,1031,43,43,86,0.217,8.509,100
+Ruby Staff 8t static boss tipsy,3,Ruby_Staff,,M,8,static,boss,ale,1,51.85,1037,43,43,86,0.217,8.509,100
+Ruby Staff 8t strafe small sober,3,Ruby_Staff,,M,8,strafe,small,none,1,26.65,533,48,44,44,0.017,8.823,100
+Ruby Staff 8t strafe small tipsy,3,Ruby_Staff,,M,8,strafe,small,ale,1,23.45,469,48,40,40,0.1,8.832,100
+Ruby Staff 8t strafe boss sober,3,Ruby_Staff,,M,8,strafe,boss,none,1,52.3,1046,46,44,85,0.017,9.079,100
+Ruby Staff 8t strafe boss tipsy,3,Ruby_Staff,,M,8,strafe,boss,ale,1,50.05,1001,46,44,83,0.167,9.074,100
+Ruby Staff 25t static small sober,3,Ruby_Staff,,M,25,static,small,none,1,18,360,50,30,30,0.8,25.104,100
+Ruby Staff 25t static small tipsy,3,Ruby_Staff,,M,25,static,small,ale,1,10.8,216,51,18,18,1.25,25.104,100
+Ruby Staff 25t static boss sober,3,Ruby_Staff,,M,25,static,boss,none,1,53.1,1062,44,43,86,0.217,25.174,100
+Ruby Staff 25t static boss tipsy,3,Ruby_Staff,,M,25,static,boss,ale,1,48.65,973,45,43,82,0.317,25.175,100
+Ruby Staff 25t strafe small sober,3,Ruby_Staff,,M,25,strafe,small,none,1,14.15,283,48,24,24,0.117,25.421,100
+Ruby Staff 25t strafe small tipsy,3,Ruby_Staff,,M,25,strafe,small,ale,1,11.85,237,45,19,19,0.917,25.402,100
+Ruby Staff 25t strafe boss sober,3,Ruby_Staff,,M,25,strafe,boss,none,1,46.15,923,45,43,77,0.017,25.384,100
+Ruby Staff 25t strafe boss tipsy,3,Ruby_Staff,,M,25,strafe,boss,ale,1,40.2,804,47,39,67,0.167,25.386,100
+Ruby Staff 38t static small sober,3,Ruby_Staff,,M,38,static,small,none,1,9.35,187,50,17,17,0.683,38.069,100
+Ruby Staff 38t static small tipsy,3,Ruby_Staff,,M,38,static,small,ale,1,4.9,98,51,9,9,1.7,38.068,100
+Ruby Staff 38t static boss sober,3,Ruby_Staff,,M,38,static,boss,none,1,48.35,967,46,43,81,0.2,38.115,100
+Ruby Staff 38t static boss tipsy,3,Ruby_Staff,,M,38,static,boss,ale,1,30.3,606,46,28,50,0.667,38.115,100
+Ruby Staff 38t strafe small sober,3,Ruby_Staff,,M,38,strafe,small,none,1,7.5,150,49,12,12,2.383,38.352,100
+Ruby Staff 38t strafe small tipsy,3,Ruby_Staff,,M,38,strafe,small,ale,1,9.05,181,50,15,15,1.217,38.351,100
+Ruby Staff 38t strafe boss sober,3,Ruby_Staff,,M,38,strafe,boss,none,1,37.25,745,46,33,60,0.733,38.351,100
+Ruby Staff 38t strafe boss tipsy,3,Ruby_Staff,,M,38,strafe,boss,ale,1,27.35,547,47,28,46,0.15,38.362,100
+Space Gun 8t static small sober,3,Space_Gun,,M,8,static,small,none,1,31.25,625,73,70,70,0.217,8.263,100
+Space Gun 8t static small tipsy,3,Space_Gun,,M,8,static,small,ale,1,31.95,639,74,69,69,0.2,8.263,100
+Space Gun 8t static boss sober,3,Space_Gun,,M,8,static,boss,none,1,63.4,1268,74,71,141,0.167,8.509,100
+Space Gun 8t static boss tipsy,3,Space_Gun,,M,8,static,boss,ale,1,63.15,1263,74,71,141,0.15,8.509,100
+Space Gun 8t strafe small sober,3,Space_Gun,,M,8,strafe,small,none,1,29.2,584,74,67,67,0.217,8.823,100
+Space Gun 8t strafe small tipsy,3,Space_Gun,,M,8,strafe,small,ale,1,24.7,494,70,56,56,0.833,8.832,100
+Space Gun 8t strafe boss sober,3,Space_Gun,,M,8,strafe,boss,none,1,50.85,1017,73,71,112,0.267,9.079,100
+Space Gun 8t strafe boss tipsy,3,Space_Gun,,M,8,strafe,boss,ale,1,48.25,965,75,72,110,0.017,9.074,100
+Space Gun 25t static small sober,3,Space_Gun,,M,25,static,small,none,1,18.8,376,73,41,41,0.617,25.104,100
+Space Gun 25t static small tipsy,3,Space_Gun,,M,25,static,small,ale,1,9.65,193,73,22,22,0.883,25.104,100
+Space Gun 25t static boss sober,3,Space_Gun,,M,25,static,boss,none,1,49.9,998,73,70,114,0.283,25.174,100
+Space Gun 25t static boss tipsy,3,Space_Gun,,M,25,static,boss,ale,1,48.05,961,72,69,110,0.083,25.175,100
+Space Gun 25t strafe small sober,3,Space_Gun,,M,25,strafe,small,none,1,19.6,392,73,44,44,0.183,25.421,100
+Space Gun 25t strafe small tipsy,3,Space_Gun,,M,25,strafe,small,ale,1,10.35,207,75,23,23,2.55,25.402,100
+Space Gun 25t strafe boss sober,3,Space_Gun,,M,25,strafe,boss,none,1,46.05,921,74,71,103,0.1,25.384,100
+Space Gun 25t strafe boss tipsy,3,Space_Gun,,M,25,strafe,boss,ale,1,39.15,783,74,63,86,0.35,25.386,100
+Space Gun 38t static small sober,3,Space_Gun,,M,38,static,small,none,1,10.25,205,74,22,22,1.55,38.069,100
+Space Gun 38t static small tipsy,3,Space_Gun,,M,38,static,small,ale,1,7.4,148,72,17,17,1.35,38.068,100
+Space Gun 38t static boss sober,3,Space_Gun,,M,38,static,boss,none,1,51.65,1033,74,68,117,0.183,38.115,100
+Space Gun 38t static boss tipsy,3,Space_Gun,,M,38,static,boss,ale,1,36.65,733,72,51,80,0.45,38.115,100
+Space Gun 38t strafe small sober,3,Space_Gun,,M,38,strafe,small,none,1,11.9,238,72,27,27,0.233,38.352,100
+Space Gun 38t strafe small tipsy,3,Space_Gun,,M,38,strafe,small,ale,1,6.9,138,72,15,15,1.55,38.351,100
+Space Gun 38t strafe boss sober,3,Space_Gun,,M,38,strafe,boss,none,1,38.05,761,74,63,86,0.183,38.351,100
+Space Gun 38t strafe boss tipsy,3,Space_Gun,,M,38,strafe,boss,ale,1,25.05,501,73,40,55,0.8,38.362,100
+Water Bolt 8t static small sober,3,Water_Bolt,,M,8,static,small,none,1,33.8,676,104,70,70,0.25,8.263,100
+Water Bolt 8t static small tipsy,3,Water_Bolt,,M,8,static,small,ale,1,34.85,697,104,70,70,0.25,8.263,100
+Water Bolt 8t static boss sober,3,Water_Bolt,,M,8,static,boss,none,1,107.4,2148,104,72,212,0.1,8.509,100
+Water Bolt 8t static boss tipsy,3,Water_Bolt,,M,8,static,boss,ale,1,108.15,2163,104,72,212,0.067,8.509,100
+Water Bolt 8t strafe small sober,3,Water_Bolt,,M,8,strafe,small,none,1,37.15,743,104,59,74,0.1,8.823,100
+Water Bolt 8t strafe small tipsy,3,Water_Bolt,,M,8,strafe,small,ale,1,37.8,756,103,64,76,0.167,8.832,100
+Water Bolt 8t strafe boss sober,3,Water_Bolt,,M,8,strafe,boss,none,1,107.65,2153,104,75,215,0.117,9.079,100
+Water Bolt 8t strafe boss tipsy,3,Water_Bolt,,M,8,strafe,boss,ale,1,107.3,2146,104,75,216,0.117,9.074,100
+Water Bolt 25t static small sober,3,Water_Bolt,,M,25,static,small,none,1,26.65,533,104,52,52,0.4,25.104,100
+Water Bolt 25t static small tipsy,3,Water_Bolt,,M,25,static,small,ale,1,16.2,324,104,33,33,1,25.104,100
+Water Bolt 25t static boss sober,3,Water_Bolt,,M,25,static,boss,none,1,104.45,2089,104,71,211,0.083,25.174,100
+Water Bolt 25t static boss tipsy,3,Water_Bolt,,M,25,static,boss,ale,1,99.1,1982,103,71,198,0.15,25.175,100
+Water Bolt 25t strafe small sober,3,Water_Bolt,,M,25,strafe,small,none,1,11.6,232,103,22,23,0.3,25.421,100
+Water Bolt 25t strafe small tipsy,3,Water_Bolt,,M,25,strafe,small,ale,1,9.45,189,104,17,19,0.05,25.402,100
+Water Bolt 25t strafe boss sober,3,Water_Bolt,,M,25,strafe,boss,none,1,74.9,1498,104,63,150,0.017,25.384,100
+Water Bolt 25t strafe boss tipsy,3,Water_Bolt,,M,25,strafe,boss,ale,1,74.7,1494,104,63,152,0.083,25.386,100
+Water Bolt 38t static small sober,3,Water_Bolt,,M,38,static,small,none,1,18.25,365,104,37,37,0.267,38.069,100
+Water Bolt 38t static small tipsy,3,Water_Bolt,,M,38,static,small,ale,1,19.6,392,103,38,38,0.633,38.068,100
+Water Bolt 38t static boss sober,3,Water_Bolt,,M,38,static,boss,none,1,103.75,2075,104,71,209,0.083,38.115,100
+Water Bolt 38t static boss tipsy,3,Water_Bolt,,M,38,static,boss,ale,1,89,1780,104,63,180,0.083,38.115,100
+Water Bolt 38t strafe small sober,3,Water_Bolt,,M,38,strafe,small,none,1,11.2,224,104,21,23,0.4,38.352,100
+Water Bolt 38t strafe small tipsy,3,Water_Bolt,,M,38,strafe,small,ale,1,5,100,104,10,10,0.383,38.351,100
+Water Bolt 38t strafe boss sober,3,Water_Bolt,,M,38,strafe,boss,none,1,69.6,1392,104,56,137,0.017,38.351,100
+Water Bolt 38t strafe boss tipsy,3,Water_Bolt,,M,38,strafe,boss,ale,1,78.85,1577,103,60,156,0.1,38.362,100
+Enchanted Sword 8t static small sober,3,Enchanted_Sword,,E,8,static,small,none,1,18.75,375,27,27,27,0.017,8.263,100
+Enchanted Sword 8t static small tipsy,3,Enchanted_Sword,,E,8,static,small,ale,1,16.65,333,26,26,26,0.75,8.263,100
+Enchanted Sword 8t static boss sober,3,Enchanted_Sword,,E,8,static,boss,none,1,17.45,349,26,26,26,0.667,8.509,100
+Enchanted Sword 8t static boss tipsy,3,Enchanted_Sword,,E,8,static,boss,ale,1,16.6,332,26,26,26,0.65,8.509,100
+Enchanted Sword 8t strafe small sober,3,Enchanted_Sword,,E,8,strafe,small,none,1,23.55,471,27,27,27,0.167,8.823,100
+Enchanted Sword 8t strafe small tipsy,3,Enchanted_Sword,,E,8,strafe,small,ale,1,19.75,395,27,25,25,0.233,8.832,100
+Enchanted Sword 8t strafe boss sober,3,Enchanted_Sword,,E,8,strafe,boss,none,1,26.35,527,27,27,27,0.15,9.079,100
+Enchanted Sword 8t strafe boss tipsy,3,Enchanted_Sword,,E,8,strafe,boss,ale,1,26.6,532,27,27,27,0.133,9.074,100
+Enchanted Sword 25t static small sober,3,Enchanted_Sword,,E,25,static,small,none,1,18.6,372,27,27,27,0.45,25.104,100
+Enchanted Sword 25t static small tipsy,3,Enchanted_Sword,,E,25,static,small,ale,1,17.55,351,27,27,27,0.433,25.104,100
+Enchanted Sword 25t static boss sober,3,Enchanted_Sword,,E,25,static,boss,none,1,17.6,352,28,27,27,0.35,25.174,100
+Enchanted Sword 25t static boss tipsy,3,Enchanted_Sword,,E,25,static,boss,ale,1,17.1,342,27,27,27,0.433,25.175,100
+Enchanted Sword 25t strafe small sober,3,Enchanted_Sword,,E,25,strafe,small,none,1,6.95,139,29,11,11,0.617,25.421,100
+Enchanted Sword 25t strafe small tipsy,3,Enchanted_Sword,,E,25,strafe,small,ale,1,6.4,128,28,10,10,1.85,25.402,100
+Enchanted Sword 25t strafe boss sober,3,Enchanted_Sword,,E,25,strafe,boss,none,1,18.2,364,27,27,27,0.533,25.384,100
+Enchanted Sword 25t strafe boss tipsy,3,Enchanted_Sword,,E,25,strafe,boss,ale,1,17.6,352,27,27,27,0.517,25.386,100
+Enchanted Sword 45t static small sober,3,Enchanted_Sword,,E,45,static,small,none,1,0,0,0,0,0,-1,45.058,100
+Enchanted Sword 45t static small tipsy,3,Enchanted_Sword,,E,45,static,small,ale,1,0,0,0,0,0,-1,45.058,100
+Enchanted Sword 45t static boss sober,3,Enchanted_Sword,,E,45,static,boss,none,1,0,0,0,0,0,-1,45.097,100
+Enchanted Sword 45t static boss tipsy,3,Enchanted_Sword,,E,45,static,boss,ale,1,0,0,0,0,0,-1,45.097,100
+Enchanted Sword 45t strafe small sober,3,Enchanted_Sword,,E,45,strafe,small,none,1,0,0,11,0,0,-1,45.224,100
+Enchanted Sword 45t strafe small tipsy,3,Enchanted_Sword,,E,45,strafe,small,ale,1,0,0,11,0,0,-1,45.279,100
+Enchanted Sword 45t strafe boss sober,3,Enchanted_Sword,,E,45,strafe,boss,none,1,5.55,111,14,9,9,2.467,45.262,100
+Enchanted Sword 45t strafe boss tipsy,3,Enchanted_Sword,,E,45,strafe,boss,ale,1,5.4,108,14,9,9,2.467,45.261,100
+Terra Blade 8t static small sober,3,Terra_Blade,,E,8,static,small,none,1,211.1,4222,69,67,67,0.117,8.263,100
+Terra Blade 8t static small tipsy,3,Terra_Blade,,E,8,static,small,ale,1,210.3,4206,69,67,67,0.1,8.263,100
+Terra Blade 8t static boss sober,3,Terra_Blade,,E,8,static,boss,none,1,208.8,4176,69,67,67,0.1,8.509,100
+Terra Blade 8t static boss tipsy,3,Terra_Blade,,E,8,static,boss,ale,1,211.15,4223,69,67,67,0.067,8.509,100
+Terra Blade 8t strafe small sober,3,Terra_Blade,,E,8,strafe,small,none,1,244.6,4892,67,61,61,0.083,8.823,100
+Terra Blade 8t strafe small tipsy,3,Terra_Blade,,E,8,strafe,small,ale,1,250.5,5010,68,62,62,0.167,8.832,100
+Terra Blade 8t strafe boss sober,3,Terra_Blade,,E,8,strafe,boss,none,1,314.05,6281,69,67,67,0.167,9.079,100
+Terra Blade 8t strafe boss tipsy,3,Terra_Blade,,E,8,strafe,boss,ale,1,316.75,6335,69,67,67,0.117,9.074,100
+Terra Blade 25t static small sober,3,Terra_Blade,,E,25,static,small,none,1,212.2,4244,69,67,67,0.167,25.104,100
+Terra Blade 25t static small tipsy,3,Terra_Blade,,E,25,static,small,ale,1,192.5,3850,69,61,61,0.15,25.104,100
+Terra Blade 25t static boss sober,3,Terra_Blade,,E,25,static,boss,none,1,215,4300,68,67,67,0.117,25.174,100
+Terra Blade 25t static boss tipsy,3,Terra_Blade,,E,25,static,boss,ale,1,210.65,4213,68,66,66,0.2,25.175,100
+Terra Blade 25t strafe small sober,3,Terra_Blade,,E,25,strafe,small,none,1,197.95,3959,68,62,62,0.25,25.421,100
+Terra Blade 25t strafe small tipsy,3,Terra_Blade,,E,25,strafe,small,ale,1,191.8,3836,68,61,61,0.233,25.402,100
+Terra Blade 25t strafe boss sober,3,Terra_Blade,,E,25,strafe,boss,none,1,210.9,4218,69,67,67,0.2,25.384,100
+Terra Blade 25t strafe boss tipsy,3,Terra_Blade,,E,25,strafe,boss,ale,1,196.4,3928,68,63,63,0.183,25.386,100
+Terra Blade 45t static small sober,3,Terra_Blade,,E,45,static,small,none,1,0,0,0,0,0,-1,45.058,100
+Terra Blade 45t static small tipsy,3,Terra_Blade,,E,45,static,small,ale,1,0,0,0,0,0,-1,45.058,100
+Terra Blade 45t static boss sober,3,Terra_Blade,,E,45,static,boss,none,1,0,0,0,0,0,-1,45.097,100
+Terra Blade 45t static boss tipsy,3,Terra_Blade,,E,45,static,boss,ale,1,0,0,0,0,0,-1,45.097,100
+Terra Blade 45t strafe small sober,3,Terra_Blade,,E,45,strafe,small,none,1,37.6,752,21,12,12,2.35,45.278,100
+Terra Blade 45t strafe small tipsy,3,Terra_Blade,,E,45,strafe,small,ale,1,47.9,958,21,16,16,2.067,45.279,100
+Terra Blade 45t strafe boss sober,3,Terra_Blade,,E,45,strafe,boss,none,1,89.7,1794,29,28,28,1.733,45.262,100
+Terra Blade 45t strafe boss tipsy,3,Terra_Blade,,E,45,strafe,boss,ale,1,77.5,1550,29,24,24,1.717,45.261,100
+Muramasa 8t static small sober,3,Muramasa,,E,8,static,small,none,1,68.05,1361,67,67,67,0.117,2.169,100
+Muramasa 8t static small tipsy,3,Muramasa,,E,8,static,small,ale,1,67,1340,67,67,67,0.067,2.169,100
+Muramasa 8t static boss sober,3,Muramasa,,E,8,static,boss,none,1,68.2,1364,67,67,67,0.067,4.565,100
+Muramasa 8t static boss tipsy,3,Muramasa,,E,8,static,boss,ale,1,67.7,1354,67,67,67,0.05,4.565,100
+Muramasa 8t strafe small sober,3,Muramasa,,E,8,strafe,small,none,1,33.75,675,32,32,32,0.1,4.359,100
+Muramasa 8t strafe small tipsy,3,Muramasa,,E,8,strafe,small,ale,1,34.7,694,34,34,34,0.083,4.364,100
+Muramasa 8t strafe boss sober,3,Muramasa,,E,8,strafe,boss,none,1,65.9,1318,64,64,64,0.133,5.004,100
+Muramasa 8t strafe boss tipsy,3,Muramasa,,E,8,strafe,boss,ale,1,68.8,1376,66,66,66,0.117,5.043,100
+Muramasa 25t static small sober,3,Muramasa,,E,25,static,small,none,1,67.2,1344,67,67,67,0.117,2.224,100
+Muramasa 25t static small tipsy,3,Muramasa,,E,25,static,small,ale,1,70.75,1415,67,67,67,0.1,2.224,100
+Muramasa 25t static boss sober,3,Muramasa,,E,25,static,boss,none,1,69.1,1382,67,67,67,0.15,4.679,100
+Muramasa 25t static boss tipsy,3,Muramasa,,E,25,static,boss,ale,1,67.75,1355,66,66,66,0.233,4.679,100
+Muramasa 25t strafe small sober,3,Muramasa,,E,25,strafe,small,none,1,34.15,683,33,33,33,0.083,4.388,100
+Muramasa 25t strafe small tipsy,3,Muramasa,,E,25,strafe,small,ale,1,32.55,651,30,30,30,0.017,4.43,100
+Muramasa 25t strafe boss sober,3,Muramasa,,E,25,strafe,boss,none,1,68.3,1366,66,66,66,0.067,5.002,100
+Muramasa 25t strafe boss tipsy,3,Muramasa,,E,25,strafe,boss,ale,1,68.35,1367,66,66,66,0.233,4.988,100
+Muramasa 45t static small sober,3,Muramasa,,E,45,static,small,none,1,66.4,1328,67,67,67,0.067,2.155,100
+Muramasa 45t static small tipsy,3,Muramasa,,E,45,static,small,ale,1,68.1,1362,67,66,66,0.15,1.977,100
+Muramasa 45t static boss sober,3,Muramasa,,E,45,static,boss,none,1,69.95,1399,67,66,66,0.2,4.561,100
+Muramasa 45t static boss tipsy,3,Muramasa,,E,45,static,boss,ale,1,68.2,1364,67,66,66,0.183,4.561,100
+Muramasa 45t strafe small sober,3,Muramasa,,E,45,strafe,small,none,1,30.7,614,30,30,30,0.083,4.457,100
+Muramasa 45t strafe small tipsy,3,Muramasa,,E,45,strafe,small,ale,1,30.8,616,31,31,31,0.083,4.421,100
+Muramasa 45t strafe boss sober,3,Muramasa,,E,45,strafe,boss,none,1,72.05,1441,67,66,66,0.017,5.012,100
+Muramasa 45t strafe boss tipsy,3,Muramasa,,E,45,strafe,boss,ale,1,66.8,1336,66,66,66,0.067,4.978,100
+Night's Edge 8t static small sober,3,Night's_Edge,,E,8,static,small,none,1,66.65,1333,0,0,0,0.35,2.169,100
+Night's Edge 8t static small tipsy,3,Night's_Edge,,E,8,static,small,ale,1,69.1,1382,0,0,0,0.233,2.169,100
+Night's Edge 8t static boss sober,3,Night's_Edge,,E,8,static,boss,none,1,64.55,1291,0,0,0,0.417,4.565,100
+Night's Edge 8t static boss tipsy,3,Night's_Edge,,E,8,static,boss,ale,1,65.7,1314,0,0,0,0.4,4.565,100
+Night's Edge 8t strafe small sober,3,Night's_Edge,,E,8,strafe,small,none,1,32.5,650,0,0,0,0.1,4.359,100
+Night's Edge 8t strafe small tipsy,3,Night's_Edge,,E,8,strafe,small,ale,1,38.05,761,0,0,0,0.117,4.364,100
+Night's Edge 8t strafe boss sober,3,Night's_Edge,,E,8,strafe,boss,none,1,66.35,1327,0,0,0,0.417,5.004,100
+Night's Edge 8t strafe boss tipsy,3,Night's_Edge,,E,8,strafe,boss,ale,1,65.15,1303,0,0,0,0.4,5.043,100
+Night's Edge 25t static small sober,3,Night's_Edge,,E,25,static,small,none,1,66.7,1334,0,0,0,0.117,2.224,100
+Night's Edge 25t static small tipsy,3,Night's_Edge,,E,25,static,small,ale,1,66.05,1321,0,0,0,0.1,2.224,100
+Night's Edge 25t static boss sober,3,Night's_Edge,,E,25,static,boss,none,1,68.15,1363,0,0,0,0.267,4.679,100
+Night's Edge 25t static boss tipsy,3,Night's_Edge,,E,25,static,boss,ale,1,69.75,1395,0,0,0,0.35,4.679,100
+Night's Edge 25t strafe small sober,3,Night's_Edge,,E,25,strafe,small,none,1,35.15,703,0,0,0,0.083,4.388,100
+Night's Edge 25t strafe small tipsy,3,Night's_Edge,,E,25,strafe,small,ale,1,31.15,623,0,0,0,0.117,4.43,100
+Night's Edge 25t strafe boss sober,3,Night's_Edge,,E,25,strafe,boss,none,1,69.3,1386,0,0,0,0.25,5.002,100
+Night's Edge 25t strafe boss tipsy,3,Night's_Edge,,E,25,strafe,boss,ale,1,64.75,1295,0,0,0,0.117,4.988,100
+Night's Edge 45t static small sober,3,Night's_Edge,,E,45,static,small,none,1,68.35,1367,0,0,0,0.2,2.155,100
+Night's Edge 45t static small tipsy,3,Night's_Edge,,E,45,static,small,ale,1,68.35,1367,0,0,0,0.283,2.155,100
+Night's Edge 45t static boss sober,3,Night's_Edge,,E,45,static,boss,none,1,69.25,1385,0,0,0,0.033,4.561,100
+Night's Edge 45t static boss tipsy,3,Night's_Edge,,E,45,static,boss,ale,1,64.1,1282,0,0,0,0.017,4.561,100
+Night's Edge 45t strafe small sober,3,Night's_Edge,,E,45,strafe,small,none,1,33.8,676,0,0,0,0.233,4.457,100
+Night's Edge 45t strafe small tipsy,3,Night's_Edge,,E,45,strafe,small,ale,1,40.55,811,0,0,0,0.183,4.291,100
+Night's Edge 45t strafe boss sober,3,Night's_Edge,,E,45,strafe,boss,none,1,69.95,1399,0,0,0,0.033,5.006,100
+Night's Edge 45t strafe boss tipsy,3,Night's_Edge,,E,45,strafe,boss,ale,1,69.15,1383,0,0,0,0.083,4.992,100
+Slime Staff 8t static small sober,3,Slime_Staff,,S,8,static,small,none,1,4.55,91,0,1,72,0.133,8.263,100
+Slime Staff 8t static small tipsy,3,Slime_Staff,,S,8,static,small,ale,1,4.4,88,0,1,71,0.217,8.263,100
+Slime Staff 8t static boss sober,3,Slime_Staff,,S,8,static,boss,none,1,6,120,0,1,100,0.083,8.509,100
+Slime Staff 8t static boss tipsy,3,Slime_Staff,,S,8,static,boss,ale,1,6.05,121,0,1,100,0.083,8.509,100
+Slime Staff 8t strafe small sober,3,Slime_Staff,,S,8,strafe,small,none,1,3.8,76,0,1,57,0.133,8.823,100
+Slime Staff 8t strafe small tipsy,3,Slime_Staff,,S,8,strafe,small,ale,1,3.55,71,0,1,55,0.133,8.832,100
+Slime Staff 8t strafe boss sober,3,Slime_Staff,,S,8,strafe,boss,none,1,5.7,114,0,1,93,0.033,9.079,100
+Slime Staff 8t strafe boss tipsy,3,Slime_Staff,,S,8,strafe,boss,ale,1,5.8,116,0,1,93,0.033,9.074,100
+Slime Staff 25t static small sober,3,Slime_Staff,,S,25,static,small,none,1,3.55,71,0,1,63,0.15,25.104,100
+Slime Staff 25t static small tipsy,3,Slime_Staff,,S,25,static,small,ale,1,3.5,70,0,1,57,0.15,25.104,100
+Slime Staff 25t static boss sober,3,Slime_Staff,,S,25,static,boss,none,1,5.75,115,0,1,100,0.083,25.174,100
+Slime Staff 25t static boss tipsy,3,Slime_Staff,,S,25,static,boss,ale,1,5.9,118,0,1,100,0.017,25.175,100
+Slime Staff 25t strafe small sober,3,Slime_Staff,,S,25,strafe,small,none,1,3.7,74,0,1,59,0.133,25.421,100
+Slime Staff 25t strafe small tipsy,3,Slime_Staff,,S,25,strafe,small,ale,1,3.4,68,0,1,59,0.133,25.402,100
+Slime Staff 25t strafe boss sober,3,Slime_Staff,,S,25,strafe,boss,none,1,5.65,113,0,1,93,0.033,25.384,100
+Slime Staff 25t strafe boss tipsy,3,Slime_Staff,,S,25,strafe,boss,ale,1,6.05,121,0,1,93,0.033,25.386,100
+Slime Staff 45t static small sober,3,Slime_Staff,,S,45,static,small,none,1,3.75,75,0,1,59,0.183,45.058,100
+Slime Staff 45t static small tipsy,3,Slime_Staff,,S,45,static,small,ale,1,3.1,62,0,1,54,0.467,45.058,100
+Slime Staff 45t static boss sober,3,Slime_Staff,,S,45,static,boss,none,1,6.3,126,0,1,100,0.083,45.097,100
+Slime Staff 45t static boss tipsy,3,Slime_Staff,,S,45,static,boss,ale,1,5.7,114,0,1,100,0.083,45.097,100
+Slime Staff 45t strafe small sober,3,Slime_Staff,,S,45,strafe,small,none,1,3.7,74,0,1,59,0.133,45.326,100
+Slime Staff 45t strafe small tipsy,3,Slime_Staff,,S,45,strafe,small,ale,1,3.55,71,0,1,59,0.133,45.325,100
+Slime Staff 45t strafe boss sober,3,Slime_Staff,,S,45,strafe,boss,none,1,5.65,113,0,1,93,0.033,45.323,100
+Slime Staff 45t strafe boss tipsy,3,Slime_Staff,,S,45,strafe,boss,ale,1,5.9,118,0,1,93,0.033,45.333,100
+Hornet Staff 8t static small sober,3,Hornet_Staff,,S,8,static,small,none,1,12.7,254,28,27,27,0.067,8.263,100
+Hornet Staff 8t static small tipsy,3,Hornet_Staff,,S,8,static,small,ale,1,12.55,251,26,26,26,0.1,8.263,100
+Hornet Staff 8t static boss sober,3,Hornet_Staff,,S,8,static,boss,none,1,12.6,252,27,27,27,0.017,8.509,100
+Hornet Staff 8t static boss tipsy,3,Hornet_Staff,,S,8,static,boss,ale,1,12.4,248,27,27,27,0.117,8.509,100
+Hornet Staff 8t strafe small sober,3,Hornet_Staff,,S,8,strafe,small,none,1,10.4,208,27,17,17,0.033,8.823,100
+Hornet Staff 8t strafe small tipsy,3,Hornet_Staff,,S,8,strafe,small,ale,1,9.9,198,26,16,16,0.083,8.832,100
+Hornet Staff 8t strafe boss sober,3,Hornet_Staff,,S,8,strafe,boss,none,1,12.8,256,25,25,25,0.15,9.079,100
+Hornet Staff 8t strafe boss tipsy,3,Hornet_Staff,,S,8,strafe,boss,ale,1,12.05,241,27,26,26,0.083,9.074,100
+Hornet Staff 25t static small sober,3,Hornet_Staff,,S,25,static,small,none,1,12.45,249,27,26,26,0.167,25.104,100
+Hornet Staff 25t static small tipsy,3,Hornet_Staff,,S,25,static,small,ale,1,12.3,246,26,26,26,0.083,25.104,100
+Hornet Staff 25t static boss sober,3,Hornet_Staff,,S,25,static,boss,none,1,12.55,251,26,26,26,0.133,25.174,100
+Hornet Staff 25t static boss tipsy,3,Hornet_Staff,,S,25,static,boss,ale,1,12.55,251,27,27,27,0.1,25.175,100
+Hornet Staff 25t strafe small sober,3,Hornet_Staff,,S,25,strafe,small,none,1,10.7,214,26,18,18,0.133,25.421,100
+Hornet Staff 25t strafe small tipsy,3,Hornet_Staff,,S,25,strafe,small,ale,1,10.5,210,27,17,17,0.067,25.402,100
+Hornet Staff 25t strafe boss sober,3,Hornet_Staff,,S,25,strafe,boss,none,1,12.35,247,26,26,26,0.15,25.384,100
+Hornet Staff 25t strafe boss tipsy,3,Hornet_Staff,,S,25,strafe,boss,ale,1,13.05,261,27,26,26,0.117,25.386,100
+Hornet Staff 45t static small sober,3,Hornet_Staff,,S,45,static,small,none,1,12.7,254,27,26,26,0.083,45.058,100
+Hornet Staff 45t static small tipsy,3,Hornet_Staff,,S,45,static,small,ale,1,12.45,249,27,27,27,0.033,45.058,100
+Hornet Staff 45t static boss sober,3,Hornet_Staff,,S,45,static,boss,none,1,12.5,250,27,26,26,0.033,45.097,100
+Hornet Staff 45t static boss tipsy,3,Hornet_Staff,,S,45,static,boss,ale,1,12.9,258,27,27,27,0.117,45.097,100
+Hornet Staff 45t strafe small sober,3,Hornet_Staff,,S,45,strafe,small,none,1,7.95,159,22,9,9,0.033,45.326,100
+Hornet Staff 45t strafe small tipsy,3,Hornet_Staff,,S,45,strafe,small,ale,1,8.15,163,22,9,9,0.083,45.325,100
+Hornet Staff 45t strafe boss sober,3,Hornet_Staff,,S,45,strafe,boss,none,1,11.15,223,21,21,21,0.067,45.323,100
+Hornet Staff 45t strafe boss tipsy,3,Hornet_Staff,,S,45,strafe,boss,ale,1,11.4,228,21,21,21,0.017,45.333,100
+Imp Staff 8t static small sober,3,Imp_Staff,,S,8,static,small,none,1,12,240,19,18,18,0.2,8.263,100
+Imp Staff 8t static small tipsy,3,Imp_Staff,,S,8,static,small,ale,1,11.75,235,20,17,17,0.033,8.263,100
+Imp Staff 8t static boss sober,3,Imp_Staff,,S,8,static,boss,none,1,12,240,20,18,18,0.233,8.509,100
+Imp Staff 8t static boss tipsy,3,Imp_Staff,,S,8,static,boss,ale,1,12.55,251,20,18,18,0.233,8.509,100
+Imp Staff 8t strafe small sober,3,Imp_Staff,,S,8,strafe,small,none,1,11.6,232,18,17,17,0.15,8.823,100
+Imp Staff 8t strafe small tipsy,3,Imp_Staff,,S,8,strafe,small,ale,1,12.75,255,20,20,20,0.25,8.832,100
+Imp Staff 8t strafe boss sober,3,Imp_Staff,,S,8,strafe,boss,none,1,12.8,256,18,18,19,0.017,9.079,100
+Imp Staff 8t strafe boss tipsy,3,Imp_Staff,,S,8,strafe,boss,ale,1,13.2,264,18,18,19,0.117,9.074,100
+Imp Staff 25t static small sober,3,Imp_Staff,,S,25,static,small,none,1,12.35,247,19,18,18,0.067,25.104,100
+Imp Staff 25t static small tipsy,3,Imp_Staff,,S,25,static,small,ale,1,12.4,248,19,18,18,0.067,25.104,100
+Imp Staff 25t static boss sober,3,Imp_Staff,,S,25,static,boss,none,1,12.15,243,19,18,18,0.083,25.174,100
+Imp Staff 25t static boss tipsy,3,Imp_Staff,,S,25,static,boss,ale,1,12,240,19,18,18,0.033,25.175,100
+Imp Staff 25t strafe small sober,3,Imp_Staff,,S,25,strafe,small,none,1,12.1,242,18,18,18,0.15,25.421,100
+Imp Staff 25t strafe small tipsy,3,Imp_Staff,,S,25,strafe,small,ale,1,12.1,242,18,18,18,0.083,25.402,100
+Imp Staff 25t strafe boss sober,3,Imp_Staff,,S,25,strafe,boss,none,1,12,240,18,18,18,0.083,25.384,100
+Imp Staff 25t strafe boss tipsy,3,Imp_Staff,,S,25,strafe,boss,ale,1,12.45,249,18,18,18,0.25,25.386,100
+Imp Staff 45t static small sober,3,Imp_Staff,,S,45,static,small,none,1,12.5,250,19,18,18,0.067,45.058,100
+Imp Staff 45t static small tipsy,3,Imp_Staff,,S,45,static,small,ale,1,12.15,243,18,17,17,0.083,45.058,100
+Imp Staff 45t static boss sober,3,Imp_Staff,,S,45,static,boss,none,1,12.35,247,19,18,18,0.25,45.097,100
+Imp Staff 45t static boss tipsy,3,Imp_Staff,,S,45,static,boss,ale,1,12.4,248,19,18,18,0.083,45.097,100
+Imp Staff 45t strafe small sober,3,Imp_Staff,,S,45,strafe,small,none,1,12,240,18,18,18,0.25,45.326,100
+Imp Staff 45t strafe small tipsy,3,Imp_Staff,,S,45,strafe,small,ale,1,11.65,233,18,17,17,0.2,45.325,100
+Imp Staff 45t strafe boss sober,3,Imp_Staff,,S,45,strafe,boss,none,1,11.95,239,18,18,18,0.017,45.323,100
+Imp Staff 45t strafe boss tipsy,3,Imp_Staff,,S,45,strafe,boss,ale,1,13.9,278,18,18,21,0.183,45.333,100

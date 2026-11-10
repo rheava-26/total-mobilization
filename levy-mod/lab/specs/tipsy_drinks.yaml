@@ -1,0 +1,29 @@
+# Tipsy lab, run 3: the three real drinks side by side at medium range (25 tiles) on a still small target: Barracks Ale (+8 defense), Black Stout (+15% damage), Spiced Rum (+10% crit), each with the Tipsy aim x1.6.
+name: tipsy_drinks
+mods: vanilla
+arena: a3
+seeds: 3
+tipsy:
+  warm: 600
+  win: 1200
+  dist: [25]
+  motion: [static]
+  size: [small]
+  arms: {sober: {}, ale: {b: ale}, stout: {b: stout}, rum: {b: rum}}
+  weapons:
+    - {name: Minishark, cls: R, ammo: Musket Ball, kind: gun}
+    - {name: Minishark, cls: R, ammo: High Velocity Bullet, kind: gun-hv, every: {}}
+    - {name: Sniper Rifle, cls: R, ammo: High Velocity Bullet, kind: gun-hv}
+    - {name: Boomstick, cls: R, ammo: Musket Ball, kind: shotgun}
+    - {name: Demon Bow, cls: R, ammo: Wooden Arrow, kind: bow}
+    - {name: Molten Fury, cls: R, ammo: Hellfire Arrow, kind: bow}
+    - {name: Ruby Staff, cls: M, kind: magic}
+    - {name: Space Gun, cls: M, kind: magic}
+    - {name: Water Bolt, cls: M, kind: magic}
+    - {name: Enchanted Sword, cls: E, kind: beam}
+    - {name: Terra Blade, cls: E, kind: beam}
+    - {name: Muramasa, cls: E, kind: melee, every: {pin: 0}}
+    - {name: Night's Edge, cls: E, kind: melee, every: {pin: 0}}
+    - {name: Slime Staff, cls: S, kind: summon}
+    - {name: Hornet Staff, cls: S, kind: summon}
+    - {name: Imp Staff, cls: S, kind: summon}

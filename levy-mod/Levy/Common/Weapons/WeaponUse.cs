@@ -50,6 +50,7 @@ namespace Levy.Common.Weapons
 			NPC seg = Aiming.NearestSegment(target, s.NPC.Center) ?? target;
 			// A rogue lets its stealth bar fill and throws the strike the moment it is full (Calamity empties the bar on every other throw)
 			if (StealthPolicy.Hold(s, item, target)) { s.AttackCooldown = 2; return false; }
+			if (s.Hostile && !s.HostileMayFire(seg)) { s.AttackCooldown = 4; return false; } // HOSTILE SEAM: a band's attack token and warning rule (SoldierNPC.Hostile.cs)
 			// Companion per-shot veto (a resource gate, or a role weapon that must not fire at this target). False = hold this tick; retry shortly.
 			if (PreFireGate != null)
 			{
@@ -368,6 +369,7 @@ namespace Levy.Common.Weapons
 		public static void TagSoldierProjectile(SoldierNPC s, Projectile p, DamageClass dmgType)
 		{
 			if (s == null || p == null || !p.active) return;
+			if (s.Hostile) { s.TagHostileShot(p, dmgType); return; } // HOSTILE SEAM: an enemy's shot is hostile-owned (SoldierNPC.Hostile.cs)
 			p.owner = OwnerFor(s);
 			p.npcProj = true;
 			p.noDropItem = true;

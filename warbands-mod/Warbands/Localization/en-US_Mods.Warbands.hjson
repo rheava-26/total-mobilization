@@ -2,11 +2,18 @@
 # Style: 1-4 short declarative sentences. What it is, reach, the numbers that matter, one special rule.
 Chat: {
 	Arrive: "{0} are on the road."
+	Beaten: "The {0} are beaten. Their bounty lies where the last one fell."
 }
 
 NPCs: {
 	BandSoldier: {
 		DisplayName: Warband Soldier
+	}
+	BandLevyNPC: {
+		DisplayName: Band Soldier
+	}
+	PlayerStandIn: {
+		DisplayName: Player Stand-In
 	}
 }
 
@@ -50,9 +57,17 @@ Configs: {
 			Label: Damage scale
 			Tooltip: Multiplies every soldier's damage.
 		}
+		LevyBrain: {
+			Label: Levy brain
+			Tooltip: Band soldiers move, hook, fly, dodge and use their weapons the way your levies do.
+		}
+		SummonedBandSize: {
+			Label: Summoned band size
+			Tooltip: Soldiers a summoning item calls. One more per ten active levies, at most 8.
+		}
 		CultistBand: {
 			Label: Cultist band
-			Tooltip: The Lunatic Cultist's archers and devotees fly, strafe and fire as a group.
+			Tooltip: Cultist Archers fight as a band. Lunatic Devotees cast while they chant.
 		}
 	}
 }

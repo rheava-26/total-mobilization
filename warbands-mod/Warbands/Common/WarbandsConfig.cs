@@ -34,6 +34,12 @@ namespace Warbands.Common
 		/// <summary>Multiplies every band member's damage. 1 is the stage table in BandStats.</summary>
 		[Range(0.25f, 4f)] [DefaultValue(1f)] public float DamageScale;
 
+		/// <summary>Band members run Levy's own soldier brain (movement, hooks, wings, dodging, weapon use). Off: the older Fighter-AI soldiers.</summary>
+		[DefaultValue(true)] public bool LevyBrain;
+
+		/// <summary>Soldiers a summoning item calls before the army bonus (one more per ten active levies, at most 8 in all).</summary>
+		[Range(1, 8)] [DefaultValue(4)] public int SummonedBandSize;
+
 		/// <summary>The Lunatic Cultist's Archers and Devotees fight as a band: archers strafe and hover, devotees close in and cast.</summary>
 		[DefaultValue(true)] public bool CultistBand;
 	}

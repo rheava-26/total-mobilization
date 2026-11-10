@@ -35,6 +35,8 @@ namespace Levy.Common.Globals
 		/// rocket or grenade, like a soldier's, never eats the player's base. Server / single player only: not synced.
 		/// </summary>
 		public bool DroneShot;
+		/// <summary>HOSTILE SEAM: a shot fired by a hostile soldier (Warbands). Synced so clients flip the projectile hostile too (the spawn packet carries only the type's defaults).</summary>
+		public bool HostileShot;
 		/// <summary>Set by the boss rule when this projectile has been redirected at a spite target.</summary>
 		public bool Redirected;
 		/// <summary>Server / single player: this minion is a direct cast of a soldier's staff (not a minion-flagged child its own AI made). Not synced.</summary>
@@ -603,10 +605,13 @@ namespace Levy.Common.Globals
 		public override void SendExtraAI(Projectile projectile, BitWriter bitWriter, BinaryWriter binaryWriter)
 		{
 			binaryWriter.Write((short)SoldierIndex); binaryWriter.Write((short)SourceNpcIndex); binaryWriter.Write((short)CommanderIndex);
+			bitWriter.WriteBit(HostileShot);
 		}
 		public override void ReceiveExtraAI(Projectile projectile, BitReader bitReader, BinaryReader binaryReader)
 		{
 			SoldierIndex = binaryReader.ReadInt16(); SourceNpcIndex = binaryReader.ReadInt16(); CommanderIndex = binaryReader.ReadInt16();
+			HostileShot = bitReader.ReadBit();
+			if (HostileShot) { projectile.friendly = false; projectile.hostile = true; }
 			if (SourceNpcIndex >= 0 && SourceNpcIndex < Main.maxNPCs) SourceNpcType = Main.npc[SourceNpcIndex].type;
 		}
 	}

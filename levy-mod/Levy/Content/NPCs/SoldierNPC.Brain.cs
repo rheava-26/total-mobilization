@@ -252,7 +252,8 @@ namespace Levy.Content.NPCs
 					break;
 				default:
 					// Shaken is driven here too: it engages like Engage (Combat applies the penalties) and never hauls.
-					if (MutinySystem.IsMutinous(Record)) ThinkMutiny(now); // Wage Mutiny: no orders, no enemies, only the back pay
+					if (Hostile) HostileThinkBody(now, fleeIdx, nearestHostileTiles); // HOSTILE SEAM: the band decides (SoldierNPC.Hostile.cs)
+					else if (MutinySystem.IsMutinous(Record)) ThinkMutiny(now); // Wage Mutiny: no orders, no enemies, only the back pay
 					else if (fleeIdx >= 0) { WhyB = Why.BFlee; ThinkFlee(fleeIdx); }
 					else if (Autonomy_FallBack(now, nearestHostileTiles)) { WhyB = Why.BFallBack; } // Autonomous levy below the fall-back threshold: retreat and heal
 					else if (ThinkTalk(now)) { WhyB = Why.BTalk; } // a player has the chat window open (or called this soldier over): walk to them and hold, keep shooting
@@ -484,7 +485,7 @@ namespace Levy.Content.NPCs
 				var n = Main.npc[i];
 				if (!n.active || i == NPC.whoAmI) continue;
 				float dsq = Vector2.DistanceSquared(c, n.Center);
-				if (n.friendly)
+				if (n.friendly != Hostile) // own side: friendly NPCs for a levy, every non-friendly NPC for a hostile body (HOSTILE SEAM)
 				{
 					// Our own side (comrades, town NPCs, pets) is never a flee target, a hostile, a threat, a danger or a mimic: only crowding reads it. Skipping the rest here saves most of the
 					// per-slot work for the army's own bodies, which fill a large part of the NPC array in a big muster.
@@ -1068,7 +1069,7 @@ namespace Levy.Content.NPCs
 		{
 			bool flame = IsFlamethrower;
 			float range = PlanningRange(target); // a boss pushes reach, standoff and approach distance out together; a flamethrower plans inside its real flame reach
-			float standoff = flame ? LevyConstants.FlameStandoffTiles : StandoffTiles(range); // a flamethrower never backs off to a gunner's standoff: it wants contact range
+			float standoff = flame ? LevyConstants.FlameStandoffTiles : Math.Min(StandoffTiles(range) * HostileStandoffMult, range * 0.95f); // a flamethrower never backs off to a gunner's standoff: it wants contact range
 			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
 			UpdateAltitudeIntent(seg, range, standoff, false); // independent of the horizontal plan below: climb, retreat and shoot compose
 			if (TryWormWindow(seg, range, standoff, now)) return true; // a worm head that has just passed cannot come back at once: hold the ground and shoot

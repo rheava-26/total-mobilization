@@ -30,7 +30,7 @@ namespace Levy.Common.Dialogue
 		/// <summary>Deliver a line for a trigger through its default channel, subject to the squad budget.</summary>
 		public static void Bark(SoldierNPC s, DialogueTrigger trigger, DialogueContext ctx = null)
 		{
-			if (s == null || s.Record == null || s.NPC == null || !s.NPC.active) return;
+			if (s == null || s.Record == null || s.NPC == null || !s.NPC.active || s.Hostile) return; // a hostile body speaks through its band, not the levy table
 			if (LevyUtil.IsClient) return; // the server decides and tells the clients
 			SoldierRecord rec = s.Record;
 			if (rec.Kind == SoldierKind.Militia && !MilitiaMayBark(trigger)) return;

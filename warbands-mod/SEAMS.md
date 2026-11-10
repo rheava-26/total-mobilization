@@ -1,33 +1,33 @@
 # Warbands: Levy seams
 
-Warbands is `warbands-mod/Warbands/`, a companion mod of Levy (`build.txt`: `modReferences = Levy`, `sortAfter = Levy`), built the way Mechanization is. Levy source is untouched in this branch. Every place Warbands touches Levy:
+Warbands is `warbands-mod/Warbands/`, a companion mod of Levy (`build.txt`: `modReferences = Levy`, `sortAfter = Levy`), built the way Mechanization is.
 
-## Used today (all already public in Levy)
+## Phase 1: public Levy symbols used (no Levy edits)
 
 | Levy symbol | Used for |
 |---|---|
-| `Levy.Common.Weapons.WeaponRank.Progress()` | The world's stage on the Boss Checklist scale; `Stage.Current` maps it to 0..6, so Calamity and Thorium bosses move the stage exactly as they move Levy's weapon ranking. |
-| `Levy.Common.Weapons.WeaponRank.StageDefense` | The defense line a band member's defense is held to (8, 14, 24, 34, 40, 46, 55). |
-| `Levy.Common.Weapons.ProgressionTier.EnsureBuilt()` / `.Of(itemType)` | The self-check holds every roster item to its stage's tier ceiling, so a "pre-boss" band cannot carry a post-Skeletron weapon. |
-| `Levy.Common.Targeting.EnemyTargeting.Bodies` (`ITargetBody`) | The live levy bodies a band member or the Cultist circle may shoot at, beside the player. |
-| `Levy.Common.LevyConstants.HostileProjectileDamageMult` / `GradeDamageMult` / `MaxSoldierHp` / `TilePx`, `LevyUtil.IsServerOrSingle` | Hostile projectiles are spawned at half damage because Levy's soldiers, like players, take twice a hostile projectile's damage; load-time proof of the reference. |
+| `WeaponRank.Progress()`, `WeaponRank.StageDefense` | The world's stage and the defense line a band member is held to. |
+| `ProgressionTier.EnsureBuilt()` / `.Of(itemType)` | The self-check holds every roster item to its stage's tier ceiling. |
+| `EnemyTargeting.Bodies` (`ITargetBody`) | Live levy bodies the phase-1 Fighter-AI soldiers and the Devotees' orbs aim at. |
+| `LevyConstants.*`, `LevyUtil.*` | Hostile projectile halving rule, constants. |
 
-Passive behaviour Warbands relies on without calling anything: `EnemyTargeting`'s swap points a hostile NPC with a Fighter aiStyle (the band soldier uses vanilla's) at the player's levies as well as the player; `SoldierNPC.ContactDamage` hurts a levy for any hostile NPC with contact damage; `SoldierTargeting.PickTarget` fires levies at any hostile NPC, so levies fight the band with no extra code.
+## Phase 2: the Levy brain for enemies (what was added to Levy)
 
-## Not reused yet: the Levy soldier brain (phase 2)
+A band member is `BandLevyNPC : SoldierNPC` (Warbands). Levy's brain, movement (hooks, wings, dodging), weapon use and drawing run unchanged. The Levy edits, all marked `HOSTILE SEAM` in the source:
 
-Phase 1 band soldiers walk on vanilla's Fighter AI plus a small shooter layer (`BandSoldier.PreAI`: hold at range, step back, jump to juke, fire a hostile projectile). That is not Levy's soldier AI. `SoldierNPC` is a friendly body bound to a `SoldierRecord` (commander, barracks, armory, loadout), and its Brain, Movement, Hook, WeaponUse and Combat partials all assume that and a friendly side. Reusing them for a hostile body needs these seams in Levy, in order of size:
+1. **New file `Content/NPCs/SoldierNPC.Hostile.cs`.** `SoldierNPC.Hostile` (virtual, false for every Levy body); `HostileSide` (static: while a hostile body's AI runs, `LevyUtil.IsHostileTarget` and `SoldierTargeting.IsNeverTarget` answer for the player's side: levies, officers, summoned units, drones and turrets, and the players); `IHostileSideTarget` (the NPC a companion parks on each player; Warbands' `PlayerStandIn`); the public API a band policy uses (`HostileBind`, `HostileEngage`, `HostileGoTo`, `HostileStop`, `HostileSetRouted`, `HostileNearestEnemy`, `HostileThink`, `HostileMayFire`, `HostileShotDamage`, `HostileMeleeDamage`, `HostileStandoffMult`, `HostileDefenseCap`); `TagHostileShot`; `HostileSwing`; `ReceiveHostileMelee`; the red nameplate.
+2. **Side flag and AI scope.** `SoldierNPC.AI` sets `HostileSide.Active = Hostile` around the body. `PinLifeMax` and the defense clamp skip a hostile body (its life and defense come from its band).
+3. **Target selection by side.** `IsNeverTarget` / `IsHostileTarget` first lines; `ComputeNeverTarget` no longer treats a hostile soldier as a levy (so levies shoot it); `ScanNpcs` reads "own side" as `n.friendly != Hostile`.
+4. **Brain decision.** One line in `Brain_ThinkBody`: a hostile body calls `HostileThinkBody` (the subclass's `HostileThink`) instead of the order logic; the standoff reads `HostileStandoffMult`.
+5. **Projectile ownership.** `WeaponUse.TagSoldierProjectile` hands a hostile body's shot to `TagHostileShot`: hostile-owned, damage halved by the player rule through `HostileShotDamage`, tagged with the source NPC (not a soldier index, so a hostile shot is never a levy's). `SoldierProjectileTag.HostileShot` is synced so clients flip the projectile hostile too. `WeaponUse.TryAttack` asks `HostileMayFire` first (the band's attack token and warning rule). `ProcessSwing` hands a blade swing to `HostileSwing` (player through the stand-in, levies through `ReceiveHostileMelee`).
+6. **Damage intake.** A hostile body is an ordinary enemy: its `CanBeHitBy*`, `ModifyIncomingHit`, `CheckDead`, `PreKill` are overridden in the subclass (vanilla hit immunity, no player-parity i-frames). `ContactDamage`, `Potions`, `Fear_Update` and `DialogueSystem.Bark` return early for a hostile body.
+7. **Not a levy anywhere else.** `RosterSystem` and `BossRule` body lists skip it (so it is never in the roster, enemy targeting, or fear); the red `Nameplates` branch; dodging reads `IsThreatShot` (a hostile body steps out of the player's side's shots).
+8. **Record-less loadout.** The subclass builds a `SoldierRecord` from the band roster that is never added to `RosterSystem`; `HostileBind` binds it with the band's life and defense cap.
 
-1. **A side flag on the soldier body** (`SoldierNPC.Hostile`, or an `ISoldierBody` interface): `NPC.friendly` false, no roster death or respawn, no commander, no home barracks, no armory lookups, no dialogue, no mutiny, no officer paths. The loot, banner and death-credit code paths need a null commander.
-2. **Target selection by side.** `SoldierTargeting.PickTarget` is "nearest hostile NPC". A hostile soldier needs "nearest of the players and the levy bodies (`EnemyTargeting.Bodies`)", with the same line-of-sight and unreachable-target rules. A single `Func<SoldierNPC, int>` target provider on the body would do.
-3. **Projectile and contact ownership.** `WeaponUse` fires real item projectiles owned by `SoldierMinions.TrueMyPlayer` with `friendly` set. A hostile soldier needs `hostile = true`, `friendly = false`, damage halved for the player rule (or an `ISoldierShotFilter` hook), and the shot tag (`SoldierProjectileTag`) carrying the band id.
-4. **Damage intake.** `SoldierNPC` returns false from `CanBeHitByItem` and from friendly projectiles. A hostile soldier must be hit by the player's weapons as a normal enemy, with the vanilla NPC rules (no 40-tick player-parity i-frames), and take Levy's formation, fear and shield logic out of the path.
-5. **A loadout without a record.** `SoldierRecord.Gear` is filled from the armory. A hostile soldier needs a `SoldierRecord` built from a roster (weapon, ammo, armor, accessories, HP from `BandStats`) that never enters `RosterSystem`, plus `RefreshStats` accepting a record-less stat budget (life, defense and damage from the caller).
-6. **Mobility.** `Abilities` (double jump, dash, hook, wings) come from the dummy's gear and already work; the Cultist circle's flight can be a `Hover` movement mode on the body rather than the special case in `CultistBand.cs`.
+Still Levy's own and unchanged: pathing, hooks, wings, double jumps, platform drops, the firing-spot search, the standoff, `WeaponUse` per weapon family.
 
-Phase 1 stops here because (1) to (5) touch the heart of `SoldierNPC` that other builders are changing right now (movement, loot, armory, provisions). Suggested minimal change in Levy: a public `HostileSoldierHost` abstraction that the brain asks for "who are my enemies" (`IEnumerable<NPC/Player>`), "what is my side" and "who gets credit", with the default implementation the current behaviour. That keeps the diff in Levy to the target provider, the side flag and the shot filter, and leaves everything else to Warbands.
+## Not done
 
-## Public Levy API Warbands would like
-
-- `SoldierNPC.ExtraBuffStats` already exists (the companion stat hook); a matching `ExtraDefense`-style hook for hostile bodies is not needed.
-- `ProgressionTier.Of` is read-only and fine. A public `WeaponRank.StageOf(float progress)` would replace `Stage.FromProgress`.
+- Summon staffs and sentries on a hostile body (rosters carry guns, bows, staves that fire, blades).
+- The Cultist circle's flight is replaced by the levy brain for archers (no `Hover` movement mode was added to Levy).
+- Visuals are unverified headless (the draw path cannot run on a dedicated server).

@@ -1,6 +1,11 @@
+using System.IO;
+using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
 using Levy.Common.Util;
+using Warbands.Common;
+using Warbands.Content.Items;
 
 namespace Warbands
 {
@@ -15,6 +20,17 @@ namespace Warbands
 		{
 			// Same proof Mechanization gives: a Levy constant (build time) and a Levy public static (load time).
 			Logger.Info($"Warbands: Levy reference RESOLVED. LevyConstants.TilePx={LevyConstants.TilePx}, MaxSoldierHp={LevyConstants.MaxSoldierHp}, LevyUtil.IsServerOrSingle={LevyUtil.IsServerOrSingle}.");
+			for (int i = 0; i < BandTypes.All.Length; i++) AddContent(new BandSummonItem(BandTypes.All[i], i));
+		}
+
+		public override void HandlePacket(BinaryReader reader, int whoAmI)
+		{
+			var kind = (WarbandsPacket)reader.ReadByte();
+			if (kind == WarbandsPacket.SummonBand && Main.netMode == NetmodeID.Server)
+			{
+				int idx = reader.ReadByte();
+				if (whoAmI >= 0 && whoAmI < Main.maxPlayers) BandSpawner.Summon(Main.player[whoAmI], idx);
+			}
 		}
 	}
 }

@@ -56,7 +56,7 @@ namespace Levy.Content.NPCs
 			if (!IsAlive) return;
 			Fall_Update();
 			if (!IsAlive) return;
-			if (ImmuneTime == 0) ContactDamage();
+			if (ImmuneTime == 0 && !Hostile) ContactDamage(); // a hostile body takes no contact damage from the enemy side it belongs to
 			if (IsAlive && ImmuneTime == 0) TileHazards(); // spikes, thorns, meteorite and the like, when the setting is on (SoldierNPC.TileHazards.cs)
 			if (!IsAlive) return;
 			Regen();
@@ -346,7 +346,7 @@ namespace Levy.Content.NPCs
 
 		private void Potions()
 		{
-			if (Record == null || _armoryRetry > 0) return;
+			if (Record == null || _armoryRetry > 0 || Hostile) return; // a hostile body has no armory
 			bool wantHeal = PotionSickness == 0 && NPC.life * 100 < NPC.lifeMax * LevyConstants.PotionDrinkBelowPercent;
 			// Magic/summon soldiers top up an empty mana pool from Mana / Restoration / Super Mana potions.
 			bool wantMana = PotionSickness == 0 && Record.MaxMana > 0 && Record.Mana * 100 < Record.MaxMana * LevyConstants.ManaPotionDrinkBelowPercent;

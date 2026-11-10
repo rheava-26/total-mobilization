@@ -131,7 +131,7 @@ namespace Levy.Common.Soldiers
 				int bad = 0, total = 0; string ex = "";
 				foreach (var kv in AccessoryProgression.EdgesForCheck()) {
 					var up = Make(kv.Key); var lo = Make(kv.Value);
-					foreach (var c in classes) { total++; if (ArmoryTE.AccessoryScoreOf(up, c) <= ArmoryTE.AccessoryScoreOf(lo, c)) { bad++; if (ex.Length < 160) ex += $" {lo.Name}>={up.Name}({c.Name});"; } }
+					foreach (var c in classes) { if (global::Levy.Common.Weapons.ArmorDoctrine.AccessoryMismatch(up, c) && !global::Levy.Common.Weapons.ArmorDoctrine.AccessoryMismatch(lo, c)) continue; /* the upgrade is another class's accessory (Mana Cloak for a swordsman): the generic ingredient rightly wins */ total++; if (ArmoryTE.AccessoryScoreOf(up, c) <= ArmoryTE.AccessoryScoreOf(lo, c)) { bad++; if (ex.Length < 160) ex += $" {lo.Name}>={up.Name}({c.Name});"; } }
 				}
 				Check("every upgrade outscores its ingredient (sampled edges)", bad == 0, $"{bad}/{total} violations{ex}");
 				var cls = DamageClass.Melee;

@@ -30,6 +30,7 @@ namespace Levy.Common.Testing
 		private static bool _mnHooked; private static CombatHarness _mnSelf;
 		/// <summary>LEVY_HARNESS_MNSP=1: single-player owner emulation for the minions scenario (Main.myPlayer = 0 around each Main.Update), as the calrev scenario's LEVY_CR_SP does.</summary>
 		internal static bool MnSp;
+		private int _mnWatchTicks, _mnWatchAlive;
 
 		private bool BeginMinions()
 		{
@@ -266,6 +267,7 @@ namespace Levy.Common.Testing
 					q.TryGetGlobalProjectile(out SoldierProjectileTag tg2);
 					sb.Append($"[{q.ModProjectile.Name} slot={i} owner={q.owner} tag={tg2?.SoldierIndex} dmg={q.damage} timeLeft={q.timeLeft} pos={(q.Center - Main.npc[_mnBody].Center)}] ");
 				}
+				_mnWatchTicks++; if (sb.Length > 0) _mnWatchAlive++;
 				Mod.Logger.Info($"HARNESS-ACCMIN t{_mnTick}: watched={(sb.Length == 0 ? "NONE" : sb.ToString())} targetDamage={_mnTargetLife0 - Main.npc[_mnTarget].life} body={_mnBody}");
 			}
 			if (_mnTick == 200 || _mnTick == 500 || _mnTick == 850) Mod.Logger.Info($"HARNESS-MINION-DBG state t{_mnTick} target@{(Main.npc[_mnTarget].Center - Main.npc[_mnBody].Center)} {_mnPrevDesc}");
@@ -275,6 +277,13 @@ namespace Levy.Common.Testing
 			Item it = new Item(); it.SetDefaults(type);
 			var prof = WeaponClassifier.GetProfile(it);
 			string path = _mnMaxReal > 0 ? "REAL" : _mnMaxStand > 0 ? "STAND-IN" : "NONE";
+			if (Environment.GetEnvironmentVariable("LEVY_HARNESS_MNWATCH") != null && Environment.GetEnvironmentVariable("LEVY_HARNESS_MNACCONLY") != null)
+			{
+				// accessory-minion self-check (single-player owner emulation on: the way a real game runs): the helper must be out at every sample, owned by 255 and tagged, and must have damaged the target
+				bool ok = _mnWatchTicks > 0 && _mnWatchAlive == _mnWatchTicks && _mnMaxReal > 0 && dmg > 0;
+				Mod.Logger.Info($"[Alloc3] accessory minion: sp-emulation={MnSp} aliveSamples={_mnWatchAlive}/{_mnWatchTicks} maxReal={_mnMaxReal} targetDamage={dmg}");
+				Mod.Logger.Info($"[Alloc3] self-check accessory-minion pass={(ok ? 1 : 0)} fail={(ok ? 0 : 1)}");
+			}
 			string kids = _mnChildren.Count == 0 ? "-" : string.Join(",", _mnChildren.Select(kv => kv.Key + "x" + kv.Value));
 			Mod.Logger.Info($"HARNESS-MINION-PERTYPE: peak concurrent minions by type [{string.Join(", ", _mnPerType.Select(kv => kv.Key + " x" + kv.Value))}] total peak {_mnMaxReal} maxMinions={(Main.npc[_mnBody].ModNPC is SoldierNPC sx && sx.Dummy != null ? sx.Dummy.maxMinions : -1)}");
 			Mod.Logger.Info($"HARNESS-MINION: item={it.Name} family={prof.Family} canDrive={SoldierMinions.CanDrive(it.shoot)} path={path} firstReal=t{_mnFirstReal} firstStand=t{_mnFirstStand} maxReal={_mnMaxReal} maxStand={_mnMaxStand} castSpawns={_mnSpawns} peakKids={_mnPeakKids} peakPerSec={_mnPeakRate} peakPer20={_mnPeakPass} realTypes=[{string.Join("/", _mnRealTypes)}] samples=[{_mnSamples.Trim()}] targetDamage={dmg} childProjectiles=[{kids}]");

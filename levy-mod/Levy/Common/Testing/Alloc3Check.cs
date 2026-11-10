@@ -125,11 +125,11 @@ namespace Levy.Common.Testing
 
 		// ------------------------------------------------------------------ 2. accessories by class
 
-		private static readonly string[] MagicOnly = { "CelestialCuffs", "ManaFlower", "ArcaneFlower", "BandofStarpower", "ManaCloak", "SorcererEmblem", "CelestialEmblem", "MagicCuffs", "Calamity/ManaPolarizer", "Calamity/EtherealTalisman" };
-		private static readonly string[] MeleeOnly = { "WarriorEmblem", "FireGauntlet", "MechanicalGlove", "PowerGlove", "BerserkerGlove", "Calamity/ElementalGauntlet" };
-		private static readonly string[] RangedOnly = { "RangerEmblem", "MagicQuiver", "MoltenQuiver", "StalkersQuiver", "ReconScope", "SniperScope", "Calamity/DeadshotBrooch" };
-		private static readonly string[] SummonOnly = { "SummonerEmblem", "HerculesBeetle", "PapyrusScarab", "PygmyNecklace", "NecromanticScroll", "Calamity/GladiatorsLocket" };
-		private static readonly string[] Generic = { "CobaltShield", "ObsidianShield", "AnkhShield", "BandofRegeneration", "CharmofMyths", "PhilosophersStone", "HermesBoots", "CloudinaBottle", "ShinyRedBalloon", "AvengerEmblem", "StarCloak", "PanicNecklace", "LuckyHorseshoe", "Shackle", "FrozenTurtleShell", "CelestialShell", "PutridScent", "FleshKnuckles", "EyeoftheGolem", "SharkToothNecklace", "MoltenCharm", "Calamity/AeroStone", "Calamity/BloodPact", "Calamity/AmidiasPendant", "Calamity/SandCloak", "Calamity/TheCamper" };
+		private static readonly string[] MagicOnly = { "CelestialCuffs", "ManaFlower", "ArcaneFlower", "BandofStarpower", "ManaCloak", "SorcererEmblem", "CelestialEmblem", "MagicCuffs", "CalamityMod/ManaPolarizer", "CalamityMod/EtherealTalisman" };
+		private static readonly string[] MeleeOnly = { "WarriorEmblem", "FireGauntlet", "MechanicalGlove", "PowerGlove", "BerserkerGlove", "CalamityMod/ElementalGauntlet" };
+		private static readonly string[] RangedOnly = { "RangerEmblem", "MagicQuiver", "MoltenQuiver", "StalkersQuiver", "ReconScope", "SniperScope", "CalamityMod/DeadshotBrooch" };
+		private static readonly string[] SummonOnly = { "SummonerEmblem", "HerculesBeetle", "PapyrusScarab", "PygmyNecklace", "NecromanticScroll", "CalamityMod/GladiatorsLocket" };
+		private static readonly string[] Generic = { "CobaltShield", "ObsidianShield", "AnkhShield", "BandofRegeneration", "CharmofMyths", "PhilosophersStone", "HermesBoots", "CloudinaBottle", "ShinyRedBalloon", "AvengerEmblem", "StarCloak", "PanicNecklace", "LuckyHorseshoe", "Shackle", "FrozenTurtleShell", "CelestialShell", "PutridScent", "FleshKnuckles", "EyeoftheGolem", "SharkToothNecklace", "MoltenCharm", "CalamityMod/AeroStone", "CalamityMod/BloodPact", "CalamityMod/AmidiasPendant", "CalamityMod/SandCloak", "CalamityMod/TheCamper" };
 
 		private static string ClassOfList(Item it)
 		{

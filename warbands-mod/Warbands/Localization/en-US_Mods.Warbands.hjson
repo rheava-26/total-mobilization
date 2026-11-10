@@ -1,0 +1,58 @@
+# Warbands: player-facing strings. Keys are relative to Mods.Warbands (prefix comes from the file name).
+# Style: 1-4 short declarative sentences. What it is, reach, the numbers that matter, one special rule.
+Chat: {
+	Arrive: "{0} are on the road."
+}
+
+NPCs: {
+	BandSoldier: {
+		DisplayName: Warband Soldier
+	}
+}
+
+Configs: {
+	WarbandsConfig: {
+		DisplayName: Warbands
+
+		Enabled: {
+			Label: Hostile bands
+			Tooltip: Armed bands form near you in the open and fight you and your levies.
+		}
+		FirstStage: {
+			Label: First stage
+			Tooltip: No bands before this point. 0 pre-boss, 1 after the Eater of Worlds or Brain of Cthulhu, 2 after Skeletron, 3 early Hardmode, 4 after the mechanical bosses, 5 after Plantera, 6 after Golem.
+		}
+		SpawnChancePercentPerMinute: {
+			Label: Chance per minute
+			Tooltip: Percent chance each real minute that a band forms near a player in the open.
+		}
+		BandSizeMin: {
+			Label: Smallest band
+			Tooltip: Fewest soldiers in a band.
+		}
+		BandSizeMax: {
+			Label: Largest band
+			Tooltip: Most soldiers in a band.
+		}
+		MaxActiveBands: {
+			Label: Bands at once
+			Tooltip: Most bands out across the world at one time.
+		}
+		LootSharePercent: {
+			Label: Loot share
+			Tooltip: Percent chance each piece of a fallen soldier's gear drops.
+		}
+		LifeScale: {
+			Label: Life scale
+			Tooltip: Multiplies every soldier's life.
+		}
+		DamageScale: {
+			Label: Damage scale
+			Tooltip: Multiplies every soldier's damage.
+		}
+		CultistBand: {
+			Label: Cultist band
+			Tooltip: The Lunatic Cultist's archers and devotees fly, strafe and fire as a group.
+		}
+	}
+}

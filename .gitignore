@@ -22,6 +22,10 @@
 !levy-mod/
 levy-mod/Levy/obj/
 levy-mod/Levy/bin/
+# Warbands — hostile-levy companion mod
+!warbands-mod/
+warbands-mod/Warbands/obj/
+warbands-mod/Warbands/bin/
 levy-mod/Levy/.vs/
 
 # Mechanization — companion tModLoader mod (depends on Levy), in its own box (mechanization-mod/)

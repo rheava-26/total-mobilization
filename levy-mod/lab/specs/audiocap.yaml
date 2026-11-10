@@ -1,0 +1,11 @@
+# audiobug: counts the PlaySound stream a 20-levy army makes (ArmySoundThrottle diagnostic, LEVY_AUDIOCAP=1): calls, admitted, dropped, styles, longest gap between admitted army sounds.
+name: audiocap
+gear: postwof.best
+mode: exp
+mods: calamity
+levies: 20
+seeds: 1
+cap: 90
+boss: ds
+env: {LEVY_AUDIOCAP: 1}
+bhp: 40

@@ -58,7 +58,7 @@ namespace Levy.Content.Items.Provisions
 	public class FizzTank : ProvisionContainer
 	{
 		public override int RoundId => ProvisionRules.FizzId;
-		protected override (int w, int h) Size => (30, 36);
+		protected override (int w, int h) Size => (38, 28);
 		protected override int PriceCopper => Item.buyPrice(silver: 5);
 		public override LocalizedText Tooltip => base.Tooltip.WithFormatArgs(LevyConstants.DrinkRadiusTiles, LevyConstants.DrinkDurationTicks / 3600, ProvisionRules.FizzJumpTiles, LevyConstants.FizzDefense, (int)System.Math.Round(LevyConstants.FizzKnockbackResist * 100f));
 
@@ -70,7 +70,7 @@ namespace Levy.Content.Items.Provisions
 	public class MagmaCrucible : ProvisionContainer
 	{
 		public override int RoundId => ProvisionRules.LavaId;
-		protected override (int w, int h) Size => (38, 32);
+		protected override (int w, int h) Size => (34, 26);
 		public override LocalizedText Tooltip => base.Tooltip.WithFormatArgs(LevyConstants.DrinkRadiusTiles, LevyConstants.LavaShotDurationTicks / 3600, (int)System.Math.Round((LevyConstants.DrunkAimErrorMult - 1f) * 100f));
 
 		public override void AddRecipes()
@@ -101,7 +101,7 @@ namespace Levy.Content.Items.Provisions
 	{
 		protected override int BuffType => ModContent.BuffType<FizzyBuff>();
 		protected override int BuffTicks => LevyConstants.DrinkDurationTicks;
-		protected override (int w, int h) Size => (20, 30);
+		protected override (int w, int h) Size => (16, 28);
 		public override LocalizedText Tooltip => base.Tooltip.WithFormatArgs(ProvisionRules.FizzJumpTiles, LevyConstants.DrinkDurationTicks / 3600, LevyConstants.FizzDefense);
 
 		public override void SetStaticDefaults()
@@ -119,7 +119,7 @@ namespace Levy.Content.Items.Provisions
 	{
 		protected override int BuffType => ModContent.BuffType<LavaShotBuff>();
 		protected override int BuffTicks => LevyConstants.LavaShotDurationTicks;
-		protected override (int w, int h) Size => (24, 22);
+		protected override (int w, int h) Size => (18, 20);
 		public override LocalizedText Tooltip => base.Tooltip.WithFormatArgs(LevyConstants.LavaShotDurationTicks / 3600);
 
 		public override void SetStaticDefaults()
@@ -142,8 +142,8 @@ namespace Levy.Content.Items.Provisions
 		public override LocalizedText Tooltip => base.Tooltip.WithFormatArgs(LevyConstants.MealFeeds[Meal], LevyConstants.DrinkRadiusTiles, Lang.GetBuffName(ProvisionRules.WellFedBuff(LevyConstants.MealWellFedTier[Meal])), LevyConstants.MealDurationTicks / 3600, LevyConstants.MealMoraleTicks / 3600);
 	}
 
-	public class FishFryPlatter : MealItem { public override int Meal => 0; protected override (int w, int h) Size => (52, 22); }
-	public class FruitBasket : MealItem { public override int Meal => 1; protected override (int w, int h) Size => (42, 32); }
-	public class BurgerBox : MealItem { public override int Meal => 2; protected override (int w, int h) Size => (36, 34); }
-	public class GrandFeast : MealItem { public override int Meal => 3; protected override (int w, int h) Size => (60, 30); protected override int Rarity => ItemRarityID.Orange; }
+	public class FishFryPlatter : MealItem { public override int Meal => 0; protected override (int w, int h) Size => (34, 20); }
+	public class FruitBasket : MealItem { public override int Meal => 1; protected override (int w, int h) Size => (32, 30); }
+	public class BurgerBox : MealItem { public override int Meal => 2; protected override (int w, int h) Size => (30, 30); }
+	public class GrandFeast : MealItem { public override int Meal => 3; protected override (int w, int h) Size => (40, 30); protected override int Rarity => ItemRarityID.Orange; }
 }

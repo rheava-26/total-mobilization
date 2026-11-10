@@ -157,11 +157,10 @@ FindNone: Click an item to find it.
 HeartNoNetwork: The Armory Heart reaches no storage network. Connect it to a Storage Heart with connectors.
 HeartNetworked: Joined to the storage network. {0}
 HeartNoArmory: No Armory is within reach of this heart.
-
 PageClear: Clear out
 PageClearHint: Sell or take apart every weapon, armor piece and accessory below a tier.
 ClearHeader: Clear out below a tier
-ClearTierBtn: "Below tier {0}: {1}"
+ClearTierBtn: Below tier {0}: {1}
 ClearTierHint: Lists everything made before that boss. Click to step through the bosses.
 ClearModeSell: Sell for coin
 ClearModeDecraft: Take apart
@@ -170,8 +169,8 @@ ClearPreview: Preview
 ClearPreviewHint: List what would be cleared. Nothing is removed yet.
 ClearConfirmHint: Carry out the clear-out shown in the list.
 ClearConfirmNone: Confirm
-ClearConfirmSell: "Confirm: sell {0} for {1}"
-ClearConfirmDecraft: "Confirm: take apart {0}"
+ClearConfirmSell: Confirm: sell {0} for {1}
+ClearConfirmDecraft: Confirm: take apart {0}
 ClearPreviewFirst: Press Preview to see the list.
 ClearNone: Nothing is below that tier.
 ClearSources: "{0} items: {1} in the armory, {2} in chests, {3} in the network."

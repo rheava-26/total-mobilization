@@ -396,6 +396,10 @@ namespace Levy.Content.TileEntities
 			+ (float)Math.Log10(1.0 + Math.Max(0, it.value)) * LevyConstants.ArmorValueWeight
 			+ (GearPreferred(it) ? ArmoryRules.GearPreferBonus : 0f); // a piece (or set) the player marked as preferred is dealt first
 
+		/// <summary>Accessories whose cost only pays off for a player standing still or playing a specific way, which a levy never does. Matched by internal name so it works without a hard reference.</summary>
+		private static readonly System.Collections.Generic.HashSet<string> LevyHostileAccessories = new() { "TheCamper" };
+		private static bool LevyHostileAccessory(Item it) => it?.ModItem != null && LevyHostileAccessories.Contains(it.ModItem.Name);
+
 		/// <summary>Strength of an accessory: what it does (defense, regen / damage-reduction read, class fit, upgrade chain), with rarity only a small tie-break. Older note: rarity tier first, then defense, value (which carries the prefix's worth), a flat bonus for any prefix, and how much damage it adds to the soldier's class.</summary>
 		private static float AccessoryScore(Item it, DamageClass cls) =>
 			WeaponClassifier.RarityTier(it.rare) * LevyConstants.AccessoryRarityWeight
@@ -405,6 +409,7 @@ namespace Levy.Content.TileEntities
 			+ AccessoryEffect.Value(it)
 			+ AccessoryProgression.Bonus(it) // a direct upgrade always outranks what it was made from
 			+ ArmorDoctrine.AccessoryClassFit(it, cls) * LevyConstants.AccessoryClassFitWeight
+			- (!GearPreferred(it) && LevyHostileAccessory(it) ? LevyConstants.AccessoryMismatchPenalty : 0f) // works against how a levy fights (The Camper: -50% damage unless standing still): last resort
 			- (cls != null && !GearPreferred(it) && ArmorDoctrine.AccessoryMismatch(it, cls) ? LevyConstants.AccessoryMismatchPenalty : 0f) // another class's accessory (Mana Flower on a swordsman): last resort, below every fitting or generic one
 			+ Math.Max(0, AccessoryAggro.Of(it)) * LevyConstants.Targeting.AccessoryAggroWeight // taunt gear leans toward the soldiers who tank for the player
 			+ (GearPreferred(it) ? ArmoryRules.GearPreferBonus : 0f); // an accessory the player marked as preferred is dealt first

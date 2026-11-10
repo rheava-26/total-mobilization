@@ -1,0 +1,74 @@
+#	MODE	Master	defenseEffectiveness(player/levy)=1	npcDefenseEffectiveness=0.5	levyGradeDamage=0.8	hostileProjMult=2	enemyLifeMult=3	enemyDamageMult=3
+KIT	pre-boss	playerHp=200	levyHp=200	defense=13 (armor 13 + acc 0)
+WEAPON	pre-boss	R	Demon Bow	hit=21	perSec=2.40	raw dps=50
+WEAPON	pre-boss	M	Vilethorn	hit=10	perSec=2.14	raw dps=21
+WEAPON	pre-boss	E	Blade of Grass	hit=18	perSec=3.00	raw dps=54
+FOE	pre-boss	Zombie	life=135	defense=6	damage=42	playerTTK R/M/E=4.5s/12.0s/3.8s	playerTTKavg=5.2s	hitOnPlayer=29	foeDps=44	timeToKillPlayer=4.6s	kind=contact
+FOE	pre-boss	Demon Eye	life=180	defense=2	damage=54	playerTTK R/M/E=5.4s/12.4s/4.4s	playerTTKavg=6.1s	hitOnPlayer=41	foeDps=62	timeToKillPlayer=3.3s	kind=contact
+FOE	pre-boss	Skeleton	life=180	defense=8	damage=60	playerTTK R/M/E=6.3s/18.7s/5.4s	playerTTKavg=7.5s	hitOnPlayer=47	foeDps=70	timeToKillPlayer=2.8s	kind=contact
+LEVY*	pre-boss	mode-scaled levy	life=600	defense=13	damage=weapon x3	playerTTK R/M/E=24.6s/106.7s/21.7s	playerTTKavg=31.3s	levyDpsOnPlayer=32	timeToKillPlayer=6.3s
+LEVY	pre-boss	typical levy	life=200	defense=13	damage=weapon	playerTTK R/M/E=8.2s/35.6s/7.2s	playerTTKavg=10.4s	levyDpsOnPlayer=3	levyRawDps=16	timeToKillPlayer=77.2s	kind=weapon
+KIT	post-EoW	playerHp=300	levyHp=260	defense=21 (armor 19 + acc 2)
+WEAPON	post-EoW	R	Phoenix Blaster	hit=38	perSec=4.29	raw dps=163
+WEAPON	post-EoW	M	Flamelash	hit=32	perSec=2.00	raw dps=64
+WEAPON	post-EoW	E	Light's Bane	hit=16	perSec=3.00	raw dps=48
+FOE	post-EoW	Demon	life=360	defense=8	damage=96	playerTTK R/M/E=3.5s/8.6s/12.5s	playerTTKavg=6.2s	hitOnPlayer=75	foeDps=56	timeToKillPlayer=5.3s	kind=ranged
+FOE	post-EoW	Fire Imp	life=210	defense=16	damage=90	playerTTK R/M/E=2.3s/5.8s/10.9s	playerTTKavg=4.3s	hitOnPlayer=69	foeDps=52	timeToKillPlayer=5.8s	kind=ranged
+FOE	post-EoW	Hornet	life=144	defense=12	damage=78	playerTTK R/M/E=1.5s/3.7s/6.0s	playerTTKavg=2.7s	hitOnPlayer=57	foeDps=57	timeToKillPlayer=5.3s	kind=contact
+LEVY*	post-EoW	mode-scaled levy	life=780	defense=21	damage=weapon x3	playerTTK R/M/E=9.5s/24.2s/59.1s	playerTTKavg=18.3s	levyDpsOnPlayer=84	timeToKillPlayer=3.6s
+LEVY	post-EoW	typical levy	life=260	defense=21	damage=weapon	playerTTK R/M/E=3.2s/8.1s/19.7s	playerTTKavg=6.1s	levyDpsOnPlayer=10	levyRawDps=39	timeToKillPlayer=31.3s	kind=weapon
+KIT	early Hardmode	playerHp=400	levyHp=360	defense=42 (armor 37 + acc 5)
+WEAPON	early Hardmode	R	Mythril Repeater	hit=52	perSec=3.00	raw dps=156
+WEAPON	early Hardmode	M	Crystal Storm	hit=32	perSec=8.57	raw dps=274
+WEAPON	early Hardmode	E	Excalibur	hit=72	perSec=3.00	raw dps=216
+FOE	early Hardmode	Pixie	life=450	defense=20	damage=165	playerTTK R/M/E=5.1s/3.2s/3.0s	playerTTKavg=3.6s	hitOnPlayer=123	foeDps=184	timeToKillPlayer=2.2s	kind=contact
+FOE	early Hardmode	Chaos Elemental	life=1110	defense=30	damage=120	playerTTK R/M/E=14.3s/10.2s/8.1s	playerTTKavg=10.3s	hitOnPlayer=78	foeDps=117	timeToKillPlayer=3.4s	kind=contact
+FOE	early Hardmode	Corruptor	life=690	defense=32	damage=180	playerTTK R/M/E=9.1s/6.7s/5.1s	playerTTKavg=6.6s	hitOnPlayer=138	foeDps=110	timeToKillPlayer=3.6s	kind=ranged
+LEVY*	early Hardmode	mode-scaled levy	life=1080	defense=42	damage=weapon x3	playerTTK R/M/E=16.6s/15.3s/8.8s	playerTTKavg=12.5s	levyDpsOnPlayer=151	timeToKillPlayer=2.6s
+LEVY	early Hardmode	typical levy	life=360	defense=42	damage=weapon	playerTTK R/M/E=5.5s/5.1s/2.9s	playerTTKavg=4.2s	levyDpsOnPlayer=8	levyRawDps=87	timeToKillPlayer=51.8s	kind=weapon
+KIT	post-Plantera	playerHp=500	levyHp=480	defense=75 (armor 65 + acc 10)
+WEAPON	post-Plantera	R	Megashark	hit=34	perSec=8.57	raw dps=291
+WEAPON	post-Plantera	M	Nettle Burst	hit=35	perSec=2.40	raw dps=84
+WEAPON	post-Plantera	E	Terra Blade	hit=85	perSec=3.33	raw dps=567
+FOE	post-Plantera	Blue Armored Bones	life=1500	defense=50	damage=135	playerTTK R/M/E=27.8s/83.3s/4.7s	playerTTKavg=11.5s	hitOnPlayer=60	foeDps=90	timeToKillPlayer=5.6s	kind=contact
+FOE	post-Plantera	Necromancer	life=900	defense=18	damage=150	playerTTK R/M/E=6.0s/19.2s/2.2s	playerTTKavg=4.5s	hitOnPlayer=75	foeDps=38	timeToKillPlayer=13.3s	kind=ranged
+FOE	post-Plantera	Skeleton Sniper	life=1200	defense=28	damage=180	playerTTK R/M/E=10.0s/31.7s/3.2s	playerTTKavg=6.7s	hitOnPlayer=105	foeDps=42	timeToKillPlayer=11.9s	kind=ranged
+LEVY*	post-Plantera	mode-scaled levy	life=1440	defense=75	damage=weapon x3	playerTTK R/M/E=240.0s/800.0s/5.7s	playerTTKavg=16.5s	levyDpsOnPlayer=115	timeToKillPlayer=4.3s
+LEVY	post-Plantera	typical levy	life=480	defense=75	damage=weapon	playerTTK R/M/E=80.0s/266.7s/1.9s	playerTTKavg=5.5s	levyDpsOnPlayer=3	levyRawDps=109	timeToKillPlayer=176.7s	kind=weapon
+#	MODE	Classic	defenseEffectiveness(player/levy)=0.5	npcDefenseEffectiveness=0.5	levyGradeDamage=0.8	hostileProjMult=2	enemyLifeMult=1	enemyDamageMult=1
+KIT	pre-boss	playerHp=200	levyHp=200	defense=13 (armor 13 + acc 0)
+WEAPON	pre-boss	R	Demon Bow	hit=21	perSec=2.40	raw dps=50
+WEAPON	pre-boss	M	Vilethorn	hit=10	perSec=2.14	raw dps=21
+WEAPON	pre-boss	E	Blade of Grass	hit=18	perSec=3.00	raw dps=54
+FOE	pre-boss	Zombie	life=45	defense=6	damage=14	playerTTK R/M/E=1.5s/4.0s/1.2s	playerTTKavg=1.7s	hitOnPlayer=8	foeDps=11	timeToKillPlayer=17.8s	kind=contact
+FOE	pre-boss	Demon Eye	life=60	defense=2	damage=18	playerTTK R/M/E=1.8s/4.1s/1.5s	playerTTKavg=2.0s	hitOnPlayer=12	foeDps=17	timeToKillPlayer=11.6s	kind=contact
+FOE	pre-boss	Skeleton	life=60	defense=8	damage=20	playerTTK R/M/E=2.1s/6.2s/1.8s	playerTTKavg=2.5s	hitOnPlayer=14	foeDps=20	timeToKillPlayer=9.9s	kind=contact
+LEVY*	pre-boss	mode-scaled levy	life=200	defense=13	damage=weapon x1	playerTTK R/M/E=8.2s/35.6s/7.2s	playerTTKavg=10.4s	levyDpsOnPlayer=8	timeToKillPlayer=25.2s
+LEVY	pre-boss	typical levy	life=200	defense=13	damage=weapon	playerTTK R/M/E=8.2s/35.6s/7.2s	playerTTKavg=10.4s	levyDpsOnPlayer=8	levyRawDps=16	timeToKillPlayer=25.2s	kind=weapon
+KIT	post-EoW	playerHp=300	levyHp=260	defense=21 (armor 19 + acc 2)
+WEAPON	post-EoW	R	Phoenix Blaster	hit=38	perSec=4.29	raw dps=163
+WEAPON	post-EoW	M	Flamelash	hit=32	perSec=2.00	raw dps=64
+WEAPON	post-EoW	E	Light's Bane	hit=16	perSec=3.00	raw dps=48
+FOE	post-EoW	Demon	life=120	defense=8	damage=32	playerTTK R/M/E=1.2s/2.9s/4.2s	playerTTKavg=2.1s	hitOnPlayer=22	foeDps=16	timeToKillPlayer=18.6s	kind=ranged
+FOE	post-EoW	Fire Imp	life=70	defense=16	damage=30	playerTTK R/M/E=0.8s/1.9s/3.6s	playerTTKavg=1.4s	hitOnPlayer=20	foeDps=15	timeToKillPlayer=20.5s	kind=ranged
+FOE	post-EoW	Hornet	life=48	defense=12	damage=26	playerTTK R/M/E=0.5s/1.2s/2.0s	playerTTKavg=0.9s	hitOnPlayer=16	foeDps=16	timeToKillPlayer=19.4s	kind=contact
+LEVY*	post-EoW	mode-scaled levy	life=260	defense=21	damage=weapon x1	playerTTK R/M/E=3.2s/8.1s/19.7s	playerTTKavg=6.1s	levyDpsOnPlayer=22	timeToKillPlayer=13.3s
+LEVY	post-EoW	typical levy	life=260	defense=21	damage=weapon	playerTTK R/M/E=3.2s/8.1s/19.7s	playerTTKavg=6.1s	levyDpsOnPlayer=22	levyRawDps=39	timeToKillPlayer=13.3s	kind=weapon
+KIT	early Hardmode	playerHp=400	levyHp=360	defense=42 (armor 37 + acc 5)
+WEAPON	early Hardmode	R	Mythril Repeater	hit=52	perSec=3.00	raw dps=156
+WEAPON	early Hardmode	M	Crystal Storm	hit=32	perSec=8.57	raw dps=274
+WEAPON	early Hardmode	E	Excalibur	hit=72	perSec=3.00	raw dps=216
+FOE	early Hardmode	Pixie	life=150	defense=20	damage=55	playerTTK R/M/E=1.7s/1.1s/1.0s	playerTTKavg=1.2s	hitOnPlayer=34	foeDps=51	timeToKillPlayer=7.8s	kind=contact
+FOE	early Hardmode	Chaos Elemental	life=370	defense=30	damage=40	playerTTK R/M/E=4.8s/3.4s/2.7s	playerTTKavg=3.4s	hitOnPlayer=19	foeDps=28	timeToKillPlayer=14.0s	kind=contact
+FOE	early Hardmode	Corruptor	life=230	defense=32	damage=60	playerTTK R/M/E=3.0s/2.2s/1.7s	playerTTKavg=2.2s	hitOnPlayer=39	foeDps=31	timeToKillPlayer=12.8s	kind=ranged
+LEVY*	early Hardmode	mode-scaled levy	life=360	defense=42	damage=weapon x1	playerTTK R/M/E=5.5s/5.1s/2.9s	playerTTKavg=4.2s	levyDpsOnPlayer=32	timeToKillPlayer=12.5s
+LEVY	early Hardmode	typical levy	life=360	defense=42	damage=weapon	playerTTK R/M/E=5.5s/5.1s/2.9s	playerTTKavg=4.2s	levyDpsOnPlayer=32	levyRawDps=87	timeToKillPlayer=12.5s	kind=weapon
+KIT	post-Plantera	playerHp=500	levyHp=480	defense=75 (armor 65 + acc 10)
+WEAPON	post-Plantera	R	Megashark	hit=34	perSec=8.57	raw dps=291
+WEAPON	post-Plantera	M	Nettle Burst	hit=35	perSec=2.40	raw dps=84
+WEAPON	post-Plantera	E	Terra Blade	hit=85	perSec=3.33	raw dps=567
+FOE	post-Plantera	Blue Armored Bones	life=500	defense=50	damage=45	playerTTK R/M/E=9.3s/27.8s/1.6s	playerTTKavg=3.8s	hitOnPlayer=8	foeDps=11	timeToKillPlayer=44.4s	kind=contact
+FOE	post-Plantera	Necromancer	life=300	defense=18	damage=50	playerTTK R/M/E=2.0s/6.4s/0.7s	playerTTKavg=1.5s	hitOnPlayer=12	foeDps=6	timeToKillPlayer=80.0s	kind=ranged
+FOE	post-Plantera	Skeleton Sniper	life=400	defense=28	damage=60	playerTTK R/M/E=3.3s/10.6s/1.1s	playerTTKavg=2.2s	hitOnPlayer=22	foeDps=9	timeToKillPlayer=55.6s	kind=ranged
+LEVY*	post-Plantera	mode-scaled levy	life=480	defense=75	damage=weapon x1	playerTTK R/M/E=80.0s/266.7s/1.9s	playerTTKavg=5.5s	levyDpsOnPlayer=26	timeToKillPlayer=19.4s
+LEVY	post-Plantera	typical levy	life=480	defense=75	damage=weapon	playerTTK R/M/E=80.0s/266.7s/1.9s	playerTTKavg=5.5s	levyDpsOnPlayer=26	levyRawDps=109	timeToKillPlayer=19.4s	kind=weapon

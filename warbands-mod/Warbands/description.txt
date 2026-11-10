@@ -1,0 +1,3 @@
+Warbands: hostile levy bands. Companion mod for Levy.
+
+Biome-specific bands of armed deserters and raiders turn up on the surface once the world reaches the stage you pick, fight you and your levies, and drop a share of the gear they carry. The Lunatic Cultist's archers and devotees fight as a band. Requires the Levy mod.

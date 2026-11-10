@@ -31,6 +31,7 @@ namespace Levy.Content.NPCs
 			if (Record == null) { why = "no record"; return false; }
 			if (Record.Order != order) { why = "record holds " + Record.Order; return false; }
 			if (State == SoldierState.Shaken || State == SoldierState.Routed || State == SoldierState.Desert || State == SoldierState.Dead || State == SoldierState.Mutiny) return true;
+			if (order == SoldierOrder.ReturnToBarracks && Home == null && Record.HomePos != Terraria.DataStructures.Point16.NegativeOne) { why = "barracks link lost (HomeBarracksId " + Record.HomeBarracksId + " names nothing, HomePos known)"; return false; }
 			if (HoldPosition != (order == SoldierOrder.Hold)) { why = "HoldPosition=" + HoldPosition; return false; }
 			// a calm levy at its Hold post, or following a commander who stands still, sits down again a few seconds after the order stood it up: that is the post, not a missed order
 			bool mayRest = order == SoldierOrder.Hold || (order == SoldierOrder.Follow && Commander != null);

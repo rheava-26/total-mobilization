@@ -31,3 +31,10 @@ a travel/hook latch from travel4, a stale Commander on a client. None reproduced
 - Boot self-check `[OrderObey] self-check pass=12 fail=0` (`OrderObeySelfCheck`): real `IssueOrder` on a real body in 9 calm postures x 5 orders, seated, Shaken/Routed/Desert, order-after-order, hotkey radius vs radio/panel, other commander / reserve, Hold Fire, Spread cycle, the audit rule, packet handlers.
   Mutation test: removing `Sit_Stop()` from `Brain_OnOrder` turns it to `fail=1` ("a seated levy is on its feet ... seated=True -> Follow").
 - Ask Eve for `Logs/client.log` lines containing `[OrderObey]` after clicking the radio again.
+
+## UPDATE: Eve's exact description (first load of a session, Return ignored, levies follow and fight, kill some and they obey)
+OBSERVED (two-process harness: process 1 saves a real world with the army out, process 2 loads it; `LEVY_OO_LOADED=1 LEVY_OO_STALEHOME=1`): when a loaded record's `HomeBarracksId` names nothing (tile-entity ids are renumbered on every load, so the saved id is only valid by luck; my first
+real-load test passed because the id happened to be 0 both times), `OrderState()` for Return has no Home and "falls in behind the commander": record = Return, body = Follow, dx 0 in 2 s, Search/Hold look fine because the levies keep fighting beside her. A killed levy goes through `TickRespawns`, which re-bases the home, so it obeys.
+Without the fix: Return -> body Follow, 0 tiles moved. With it: ReturnHome, 20 tiles in 2 s.
+Fix: `RosterSystem.RepairHome` re-derives the id from the stable `HomePos` on every deploy tick and before every order (`Selected`). The audit now reports "barracks link lost" for a Return levy whose Home is null while HomePos is known. Self-check test 10 (pass=13 fail=0) covers a load that leaves the id -1 or stale.
+Not the cause: militia (not Regulars, never follow), officer avatars, Auto-muster (militia only; `ClearStaleMobilization` runs on load).

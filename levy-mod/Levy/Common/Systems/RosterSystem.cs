@@ -129,6 +129,19 @@ namespace Levy.Common.Systems
 			return i >= 0 ? Main.player[i] : null;
 		}
 
+		/// <summary>
+		/// A record's barracks id is only good for the session that wrote it: tile-entity ids are renumbered on every world load, and a load whose tile entities were not in yet leaves the id stale or -1 (a levy with no home on Return falls in behind the
+		/// commander and never walks home, until a respawn re-bases it). The tile position is stable, so the id is re-derived from it whenever it does not already name the barracks standing there. Cheap; run on the deploy tick and before every order.
+		/// </summary>
+		internal static void RepairHome(SoldierRecord rec)
+		{
+			if (rec == null || rec.Kind != SoldierKind.Regular || rec.HomePos == Terraria.DataStructures.Point16.NegativeOne) return;
+			var cur = SettlementSystem.Instance.GetBarracks(rec.HomeBarracksId);
+			if (cur != null && cur.Position == rec.HomePos) return;
+			var b = SettlementSystem.Instance.BarracksAt(rec.HomePos);
+			if (b != null) rec.HomeBarracksId = b.ID;
+		}
+
 		private static BarracksTE HomeOf(SoldierRecord rec) => SettlementSystem.Instance.GetBarracks(rec?.HomeBarracksId ?? -1);
 		private static ArmoryTE ArmoryOf(BarracksTE home) => home == null ? null : SettlementSystem.Instance.LinkedArmory(home);
 
@@ -715,6 +728,7 @@ namespace Levy.Common.Systems
 			{
 				_deployTimer = 0;
 				ResolveCommanders();
+				foreach (var r0 in Regulars) RepairHome(r0);
 				TickRespawns(LevyConstants.DeployIntervalTicks);
 				Deploy();
 			}
@@ -1191,6 +1205,7 @@ namespace Levy.Common.Systems
 		{
 			body = null;
 			if (rec.CommanderName != commander.name) return false;
+			RepairHome(rec);
 			if (rec.Reserve) return false; // a soldier in reserve takes no orders (and must not be left Following: that would hold a formation slot open)
 			body = BodyOf(rec);
 			bool near = body != null && LevyUtil.WithinTiles(body.NPC.Center, commander.Center, LevyConstants.OrderRadius);

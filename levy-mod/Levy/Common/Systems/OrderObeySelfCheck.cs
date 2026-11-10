@@ -147,6 +147,24 @@ namespace Levy.Common.Systems
 				roster.IssueOrder(cmd, SoldierOrder.Hold, true);
 				Check("8 the audit flags a body that kept its old posture and passes one that took the order", caught && body.ObeysOrder(SoldierOrder.Hold, out _));
 
+				// 10. world load: tile-entity ids are renumbered on load (or not in yet), so the saved barracks id is stale; the levy must still be matched to its barracks by position and obey Return
+				{
+					var te = new Content.TileEntities.BarracksTE { Position = new Terraria.DataStructures.Point16(700, 300) };
+					te.ID = 9001; Terraria.DataStructures.TileEntity.ByID[te.ID] = te; Terraria.DataStructures.TileEntity.ByPosition[te.Position] = te;
+					try
+					{
+						Reset(rec, body, SoldierState.Follow, seated: false);
+						rec.HomePos = te.Position; rec.HomeBarracksId = -1; // as a load leaves it
+						roster.IssueOrder(cmd, SoldierOrder.ReturnToBarracks, true);
+						bool a = rec.HomeBarracksId == te.ID && body.Home == te && Took(rec, body, SoldierOrder.ReturnToBarracks, out _);
+						rec.HomeBarracksId = 4242; // a stale id naming nothing
+						roster.IssueOrder(cmd, SoldierOrder.ReturnToBarracks, true);
+						bool b2 = rec.HomeBarracksId == te.ID && body.Home == te;
+						Check("10 after a world load the levy is matched to its barracks by position and Return reaches it", a && b2, $"homeId={rec.HomeBarracksId} expected {te.ID}");
+					}
+					finally { Terraria.DataStructures.TileEntity.ByID.Remove(te.ID); Terraria.DataStructures.TileEntity.ByPosition.Remove(te.Position); rec.HomePos = Terraria.DataStructures.Point16.NegativeOne; rec.HomeBarracksId = -1; }
+				}
+
 				// 9. the packet handlers are registered
 				Check("9 Order, HoldFire and SpreadOut packets have handlers", Net.LevyPackets.IsRegistered(Net.LevyPacket.Order) && Net.LevyPackets.IsRegistered(Net.LevyPacket.HoldFire) && Net.LevyPackets.IsRegistered(Net.LevyPacket.SpreadOut));
 			}

@@ -31,7 +31,7 @@ namespace Levy.Content.Buffs
 	}
 
 	/// <summary>
-	/// Lava Shot (Magma Shot, Magma Crucible): immunity to lava and to the Burning it sets, and a body that swims through lava the way it swims through water.
+	/// Lava Shot (Iceberg Shot, Iceberg Tray; ice-cold vodka, so numb it ignores lava, and Tipsy like the other spirits): immunity to lava and to the Burning it sets, and a body that swims through lava the way it swims through water.
 	/// A real player gets Obsidian Skin's flags from the buff; a levy gets the flags from <see cref="ProvisionsBody"/> and the swim from SoldierNPC.Movement.
 	/// </summary>
 	public class LavaShotBuff : ModBuff
@@ -44,6 +44,8 @@ namespace Levy.Content.Buffs
 			Main.debuff[Type] = false; Main.pvpBuff[Type] = false;
 			Main.buffNoSave[Type] = true;
 		}
+
+		public override void ModifyBuffText(ref string buffName, ref string tip, ref int rare) => tip = string.Format(tip, (int)Math.Round((LevyConstants.DrunkAimErrorMult - 1f) * 100f));
 
 		public override void Update(Player player, ref int buffIndex)
 		{

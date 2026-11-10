@@ -28,7 +28,7 @@ namespace Levy.Common
 		public const int MealMessCooldownTicks = 60 * 30, MealMessCheckTicks = 60;
 
 		// ---- Recipes ----
-		public const int FizzPopsPerBrew = 4, MagmaShotsPerBrew = 5, FizzTankPops = 10, CrucibleShots = 10;
+		public const int FizzPopsPerBrew = 4, MagmaShotsPerBrew = 5, FizzTankPops = 12, CrucibleShots = 10;
 		public const int FishFryFish = 8, FruitBasketFruit = 10, BurgerBoxDishes = 6, FeastDishes = 3;
 	}
 }

@@ -35,80 +35,73 @@ def render(rows, pal):
 
 S = {}
 
-# FIZZ POP: a green soda bottle with a red cap and a yellow label (20x30)
-S['FizzPop'] = (dict(O='0d2b1c', d='1c6b3d', m='2fa356', l='6fdc72', h='c9ff9c', w='f2ffe0', C='d8402a', c='8f1f1a', k='ff8a63', y='f2d45c', Y='b8902a'), [
-    "...OOOO...",
-    "...OkCO...",
-    "..OOCcOO..",
-    "...OdmO...",
-    "...OdlO...",
-    "..OOdmlO..",
-    ".OdmmlhmdO",
-    ".OdlhllmdO",
-    ".OYyyyyYYO",
-    ".OyywyyyYO",
-    ".OYYyyYYYO",
-    ".OdmlwlmdO",
-    ".OdmmllmdO",
-    ".OddmmmddO",
-    "..OOOOOOO.",
+# FIZZ POP: a blue soda can with a silver top and a yellow label (20x28)
+S['FizzPop'] = (dict(O='0b1d33', d='1d4f8a', m='2f86d6', l='6cc4f5', h='d3f3ff', j='e4ecf2', I='aab6c4', i='6a7686', y='f2d45c', Y='b8902a', w='f6fcff'), [
+    ".OOOOOOOO.",
+    "OjIjjjjIiO",
+    "OOIiOOiIOO",
+    "OdmmlhlmdO",
+    "OdmlhllmmO",
+    "OYyyywyyYO",
+    "OYyywwyyYO",
+    "OYyyyyywYO",
+    "OdmlhllmdO",
+    "OdmlllmmdO",
+    "OddmlmmmdO",
+    "OdddmmmddO",
+    "OiIIiIIiiO",
+    ".OOOOOOOO.",
 ])
 
-# FIZZ TANK: a steel soda cylinder with a brass valve and a tap
-S['FizzTank'] = (dict(O='0b1d33', d='1d4f8a', m='2f86d6', l='6cc4f5', h='d3f3ff', b='c59a2e', B='7d5a14', g='f0d060', r='d8402a', R='8f1f1a', w='f2ffff'), [
-    ".....OOOO......",
-    "....ObgbBO.....",
-    "....OBbBBO.....",
-    "..OOOOBBOOOO...",
-    ".OdmmlhhlmmdO..",
-    ".OdmllhwllmdO..",
-    "OOdmlhwllmmdOO.",
-    "ObOdmlhllmmdOBO",
-    "OBBdmlllmmddOBO",
-    "OOOrrrrrrrrrOOO",
-    ".OdRrwrrrrrRdO.",
-    ".OdRRRRRRRRRdO.",
-    ".OdmlhllmmmddO.",
-    ".OdmlhwlmmmddO.",
-    ".OdmllhlmmmddO.",
-    ".OddmlllmmdddO.",
-    ".OdddmmmmdddO..",
-    ".OOOOOOOOOOOO..",
+# FIZZ TANK (Case of Fizz): a cardboard case with a row of blue cans standing in it (40x26)
+S['FizzTank'] = (dict(O='2a1608', c='c8a064', k='e6c88c', C='8a6030', b='2f86d6', B='1d4f8a', w='f6fcff', j='e4ecf2', I='aab6c4', i='6a7686', d='1d4f8a', m='2f86d6', l='6cc4f5'), [
+    ".OOOOO.OOOOO.OOOOO..",
+    "OjIjiOOjIjiOOjIjiO..",
+    "OdmldOOdmldOOdmldO..",
+    "OdmlmOOdmlmOOdmlmO..",
+    "OkkkkkkkkkkkkkkkkkkO",
+    "OccccccccccccccccccO",
+    "OcBBBBBBBBBBBBBBBBcO",
+    "OcbwbwwbwwbwwbwwbbcO",
+    "OcBBBBBBBBBBBBBBBBcO",
+    "OcccccccccccccccccCO",
+    "OcccCcccccccccCcccCO",
+    "OCCCCCCCCCCCCCCCCCCO",
+    "OOOOOOOOOOOOOOOOOOOO",
 ])
 
-# MAGMA SHOT: a smoked-glass shot of lava
-S['MagmaShot'] = (dict(O='2a0c06', g='b7a6ad', G='6e5e69', r='d9341a', R='8e1b10', o='ff7a1c', y='ffd24a', w='fff0b0'), [
-    "..OOOOOOOO..",
-    ".OgGgggggGgO",
-    ".OgroyyoorGO",
-    ".OGroyyoorGO",
-    ".OgRrooorRGO",
-    "..OGrroorGO.",
-    "..OgRrrrRGO.",
-    "..OGRrorRGO.",
-    "..OGgRRRgGO.",
-    "..OGGGGGGGO.",
-    "...OOOOOOO..",
+# MAGMA SHOT (Iceberg Shot): a frosted shot glass of ice-cold vodka (24x22)
+S['MagmaShot'] = (dict(O='10243a', e='d8f0ff', f='9fd0ee', F='5f98c8', v='aedaf2', w='ffffff'), [
+    "OOOOOOOOOOOO",
+    "OwewwwwwewwO",
+    "OefvvwvvvfFO",
+    "OeFvwvvvvfFO",
+    ".OfvvvvvvFO.",
+    ".OFvvwvvvFO.",
+    "..OFvvvvFO..",
+    "..OFvvvvFO..",
+    "..OFFFFFFO..",
+    "..OFFFFFFO..",
+    "...OOOOOO...",
 ])
 
-# MAGMA CRUCIBLE: an iron pot full of lava with two handles
-S['MagmaCrucible'] = (dict(O='1a0f10', i='4a4146', I='7a6d73', j='b2a5a8', r='d9341a', R='8e1b10', o='ff7a1c', y='ffd24a', w='fff0b0'), [
-    "...OOOOOOOOOOOOO...",
-    "..OjjIIIIIIIIIIIO..",
-    ".OIOOooyyyyooOOIiO.",
-    "OIIOoyyywwyyyooOiiO",
-    "OjIOrooyyyyooroOiiO",
-    ".OIOrRrooooorRrOiO.",
-    "..OIOOrRRRRROOiiO..",
-    "..OjIIIIIIIIIIiiO..",
-    "..OjIIiIIIIIiIiiO..",
-    "..OIIIIIIIIIIIiiO..",
-    "..OIIiIIIIIIIiiiO..",
-    "...OiiiIIIIIiiiO...",
-    "...OOiiiiiiiiiOO...",
-    "..OIIOOOOOOOOOIIO..",
-    "..OiiO.......OiiO..",
-    "..OOOO.......OOOO..",
+# MAGMA CRUCIBLE (Iceberg Tray): a frosted bottle and two shots on a silver tray (38x30)
+S['MagmaCrucible'] = (dict(O='10243a', e='d8f0ff', f='9fd0ee', F='5f98c8', v='aedaf2', w='ffffff', k='5a7a9a', c='2a3f58', j='d8dce6', I='9ca0aa', i='6a6e78'), [
+    "........OOO........",
+    "........OkO........",
+    "........OcO........",
+    ".......OfeFO.......",
+    ".......OfeFO.......",
+    "......OOfeFOO......",
+    ".....OfvvvvvFO.....",
+    ".OOO.OfvwvvvFO.OOO.",
+    "OwveOOfvvvvvFOOwveO",
+    "OFvFOOfvvwvvFOOFvFO",
+    ".OFO.OFFFFFFFO.OFO.",
+    "OjjjjjjjjjjjjjjjjjO",
+    "OIIIIIIIIIIIIIIIIIO",
+    ".OiiiiiiiiiiiiiiiO.",
+    "..OOOOOOOOOOOOOOO..",
 ])
 
 # FISH FRY PLATTER: a white plate with two fried fish, a lemon wedge and parsley

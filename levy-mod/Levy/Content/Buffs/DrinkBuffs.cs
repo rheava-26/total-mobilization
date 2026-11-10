@@ -44,7 +44,7 @@ namespace Levy.Content.Buffs
 		}
 
 		/// <summary>True if the buff type is one of the three drinks.</summary>
-		public static bool IsDrinkBuff(int type) => type == ModContent.BuffType<AleBuff>() || type == ModContent.BuffType<StoutBuff>() || type == ModContent.BuffType<RumBuff>();
+		public static bool IsDrinkBuff(int type) => type == ModContent.BuffType<AleBuff>() || type == ModContent.BuffType<StoutBuff>() || type == ModContent.BuffType<RumBuff>() || type == ModContent.BuffType<LavaShotBuff>(); // the Iceberg vodka is alcohol too
 
 		/// <summary>True if the NPC carries any drink.</summary>
 		public static bool IsDrunk(NPC n)
@@ -52,7 +52,7 @@ namespace Levy.Content.Buffs
 			if (n == null) return false;
 			var t = Types;
 			for (int i = 0; i < t.Length; i++) if (n.HasBuff(t[i])) return true;
-			return false;
+			return n.HasBuff(ModContent.BuffType<LavaShotBuff>()); // the Iceberg vodka: Tipsy too
 		}
 
 		/// <summary>Multiplier on a soldier's aim error: <see cref="LevyConstants.DrunkAimErrorMult"/> while it carries a drink, else exactly 1.</summary>

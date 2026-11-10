@@ -85,6 +85,7 @@ namespace Levy.Common.Provisions
 				foreach (int tile in source.requiredTile) shot.AddTile(tile);
 			}
 			else shot.AddIngredient(ItemID.BottledWater).AddIngredient(ItemID.Daybloom).AddIngredient(ItemID.Obsidian).AddIngredient(ItemID.Fireblossom).AddTile(TileID.Bottles);
+			shot.AddIngredient(ItemID.IceBlock); // the frost
 			shot.Register();
 		}
 
@@ -176,9 +177,9 @@ namespace Levy.Common.Provisions
 				// the Magma Shot batch uses the Obsidian Skin Potion's ingredients
 				Recipe src = null, mine = null;
 				foreach (Recipe r in Main.recipe) { if (r == null || r.createItem == null) continue; if (r.createItem.type == ItemID.ObsidianSkinPotion && src == null) src = r; if (r.createItem.type == ModContent.ItemType<MagmaShot>()) mine = r; }
-				bool same = src != null && mine != null && src.requiredItem.Count == mine.requiredItem.Count;
+				bool same = src != null && mine != null && src.requiredItem.Count + 1 == mine.requiredItem.Count && mine.requiredItem[mine.requiredItem.Count - 1].type == ItemID.IceBlock;
 				if (same) for (int i = 0; i < src.requiredItem.Count; i++) same &= src.requiredItem[i].type == mine.requiredItem[i].type && src.requiredItem[i].stack == mine.requiredItem[i].stack;
-				Check(same, "Magma Shot is brewed from the Obsidian Skin Potion's ingredients");
+				Check(same, "Iceberg Shot is brewed from the Obsidian Skin Potion's ingredients plus an Ice Block");
 				Check(mine != null && mine.createItem.stack == LevyConstants.MagmaShotsPerBrew, "a Magma Shot brew makes " + LevyConstants.MagmaShotsPerBrew);
 			});
 
@@ -213,7 +214,7 @@ namespace Levy.Common.Provisions
 				var ab = Common.Movement.MovementAbilities.FromDummy(d);
 				Check(ab.ExtraJumps >= 1 && ab.JumpTiles >= Common.LevyConstants.Movement.BaseJumpTiles + ProvisionRules.FizzJumpTiles - 1, $"a Fizzy levy reads {ab.ExtraJumps} extra jump and {ab.JumpTiles} jump tiles (+{ProvisionRules.FizzJumpTiles})");
 				Check(DrinkBuffs.Apply(new Player { statDefense = new Player.DefenseStat() }, ModContent.BuffType<LavaShotBuff>()), "Lava Shot is claimed as a levy buff");
-				Check(!DrinkBuffs.IsDrinkBuff(ModContent.BuffType<FizzyBuff>()) && !DrinkBuffs.IsDrinkBuff(ModContent.BuffType<LavaShotBuff>()), "Fizzy and Lava Shot do not make a levy Tipsy");
+				Check(!DrinkBuffs.IsDrinkBuff(ModContent.BuffType<FizzyBuff>()) && DrinkBuffs.IsDrinkBuff(ModContent.BuffType<LavaShotBuff>()), "Fizzy is soda (not Tipsy) and the Iceberg vodka is Tipsy");
 
 				var n = new NPC(); n.SetDefaults(ModContent.NPCType<SoldierNPC>());
 				var body = n.ModNPC as SoldierNPC;
@@ -235,6 +236,7 @@ namespace Levy.Common.Provisions
 					if (!kept) { n.buffType[0] = ModContent.BuffType<LavaShotBuff>(); n.buffTime[0] = 600; n.buffType[1] = ModContent.BuffType<FizzyBuff>(); n.buffTime[1] = 600; }
 					g.Refresh(n);
 					Check(n.lavaImmune && n.buffImmune[BuffID.OnFire], $"a Lava Shot levy is lava and burning immune (AddBuff kept it: {kept})");
+					Check(DrinkBuffs.IsDrunk(n) && Math.Abs(DrinkBuffs.AimErrorFactor(body) - LevyConstants.DrunkAimErrorMult) < 1e-4f, "a Lava Shot levy is Tipsy");
 					Check(Math.Abs(n.knockBackResist - LevyConstants.FizzKnockbackResist) < 1e-4f, "a Fizzy levy takes knockback");
 					for (int i = 0; i < n.buffType.Length; i++) { n.buffType[i] = 0; n.buffTime[i] = 0; }
 					g.Refresh(n);

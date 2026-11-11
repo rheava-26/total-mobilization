@@ -1,0 +1,11 @@
+# perf: one Destroyer (Death mode) vs 36 levies cell, for the EventPipe sampling profile (see docs/perf_destroyer/).
+name: perf_destroyer_army
+boss: destroyer
+mode: death
+gear: postwof.best
+levies: 36
+seeds: 1
+bhp: 8
+dr: 0.9
+cap: 45
+env: {LEVY_CROWD: 1, LEVY_PROF: 1}

@@ -291,7 +291,23 @@ namespace Levy.Common.Testing
 		internal static CrState CrLive => _cr;
 		internal static bool CrIsBossOrAdd(int type) => _cr != null && (type == _cr.BossType || _cr.PartTypes.Contains(type) || _cr.AddTypes.Contains(type));
 
+		/// <summary>LEVY_PROF=1: time and count every NPC update by category (levy / boss parts / boss adds / Mechanization / other) and every projectile update by owner (army / enemy / Mechanization / other).</summary>
 		private static void CrNpcUpdateDetour(On_NPC.orig_UpdateNPC orig, NPC self, int i)
+		{
+			if (!global::Levy.Common.Util.LevyProf.On) { CrNpcUpdateInner(orig, self, i); return; }
+			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+			try { CrNpcUpdateInner(orig, self, i); }
+			finally
+			{
+				int k = self.ModNPC is SoldierNPC ? global::Levy.Common.Util.LevyProf.NpcLevy
+					: _cr != null && (self.type == _cr.BossType || _cr.PartTypes.Contains(self.type)) ? global::Levy.Common.Util.LevyProf.NpcBoss
+					: _cr != null && _cr.AddTypes.Contains(self.type) ? global::Levy.Common.Util.LevyProf.NpcAdd
+					: self.ModNPC != null && self.ModNPC.Mod.Name == "Mechanization" ? global::Levy.Common.Util.LevyProf.NpcMech : global::Levy.Common.Util.LevyProf.NpcOther;
+				global::Levy.Common.Util.LevyProf.Add(k, System.Diagnostics.Stopwatch.GetTimestamp() - t0); global::Levy.Common.Util.LevyProf.Cnt[k]++;
+			}
+		}
+
+		private static void CrNpcUpdateInner(On_NPC.orig_UpdateNPC orig, NPC self, int i)
 		{
 			if (_cr != null && _cr.Run.BossDef >= 0 && !(self.ModNPC is SoldierNPC) && CrIsBossOrAdd(self.type)) // bdef=N: the boss and its parts hold defense N (measurement of low-damage weapons without the defense floor)
 			{
@@ -305,6 +321,20 @@ namespace Levy.Common.Testing
 		}
 
 		private static void CrProjUpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
+		{
+			if (!global::Levy.Common.Util.LevyProf.On) { CrProjUpdateInner(orig, self, i); return; }
+			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+			try { CrProjUpdateInner(orig, self, i); }
+			finally
+			{
+				int k = self.hostile ? global::Levy.Common.Util.LevyProf.ProjEnemy
+					: self.TryGetGlobalProjectile(out SoldierProjectileTag tg) && (tg.SoldierIndex >= 0 || tg.CommanderIndex >= 0) ? global::Levy.Common.Util.LevyProf.ProjArmy
+					: self.ModProjectile != null && self.ModProjectile.Mod.Name == "Mechanization" ? global::Levy.Common.Util.LevyProf.ProjMech : global::Levy.Common.Util.LevyProf.ProjOther;
+				global::Levy.Common.Util.LevyProf.Add(k, System.Diagnostics.Stopwatch.GetTimestamp() - t0); global::Levy.Common.Util.LevyProf.Cnt[k]++;
+			}
+		}
+
+		private static void CrProjUpdateInner(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
 			if (_cr == null) { orig(self, i); return; }
 			_crProjDepth++;
@@ -706,7 +736,7 @@ namespace Levy.Common.Testing
 		private void CrSpawnMech(CrRun run)
 		{
 			if (!ModLoader.TryGetMod("Mechanization", out Mod mech)) { Mod.Logger.Warn("HARNESS-CR: drones= needs Mechanization"); return; }
-			int made = 0;
+			int made = 0, madeDrones = 0;
 			void Place(string sys, int n, float dx0, float dy)
 			{
 				var t = mech.Code.GetType(sys); var inst = t?.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.GetValue(null); var m = t?.GetMethod("TryPlace", BindingFlags.Public | BindingFlags.Instance);
@@ -716,11 +746,12 @@ namespace Levy.Common.Testing
 					Vector2 spot = _crCmdPos + new Vector2((dx0 + (i % 2 == 0 ? 1 : -1) * (2 + i * 1.5f)) * 16f, dy * 16f);
 					object r = m.Invoke(inst, new object[] { new EntitySource_WorldEvent("LevyCalRev"), spot });
 					if (r is int ix && ix >= 0) made++;
+					else Mod.Logger.Info($"HARNESS-CR: mech place {sys} #{i} at {spot / 16f} -> {r}");
 				}
 			}
-			Place("Mechanization.Content.NPCs.FieldDroneSystem", run.Drones, 0f, -3f);
+			Place("Mechanization.Content.NPCs.FieldDroneSystem", run.Drones, 0f, -3f); madeDrones = made;
 			Place("Mechanization.Content.NPCs.TurretSystem", run.Turrets, -4f, 0f);
-			Mod.Logger.Info($"HARNESS-CR: mech placed {made} of {run.Drones} drones + {run.Turrets} turrets");
+			Mod.Logger.Info($"HARNESS-CR: mech placed {madeDrones} of {run.Drones} drones + {made - madeDrones} of {run.Turrets} turrets");
 		}
 
 		private void CrPurgeNpcs()
@@ -761,7 +792,7 @@ namespace Levy.Common.Testing
 			if (run.Dl != "") DlFinish(run, st);
 			if (run.Pl != "") PlFinish(run, st, end);
 			KitFinish(run, st);
-			if (global::Levy.Common.Util.LevyProf.On) { string pl = global::Levy.Common.Util.LevyProf.Dump(end) + $" wm={SoldierNPC.WmThinks}/{SoldierNPC.WmHolds}/{SoldierNPC.WmShifts}/{SoldierNPC.WmAims}/{SoldierNPC.WmAimCalls}/{SoldierNPC.WmPierce} chk=" + global::Levy.Common.Movement.ThreatField.ChkBad + "/" + global::Levy.Common.Movement.ThreatField.ChkN; Mod.Logger.Info("PROF " + run.Key + " ms/tick " + pl); try { File.AppendAllText(_crOut + ".prof.tsv", run.Key + "\t" + pl + "\n"); } catch { } }
+			if (global::Levy.Common.Util.LevyProf.On) { string pl = global::Levy.Common.Util.LevyProf.Dump(end) + $" projTypes={ProjectileLoader.ProjectileCount} npcTypes={NPCLoader.NPCCount} " + $" wm={SoldierNPC.WmThinks}/{SoldierNPC.WmHolds}/{SoldierNPC.WmShifts}/{SoldierNPC.WmAims}/{SoldierNPC.WmAimCalls}/{SoldierNPC.WmPierce} chk=" + global::Levy.Common.Movement.ThreatField.ChkBad + "/" + global::Levy.Common.Movement.ThreatField.ChkN; Mod.Logger.Info("PROF " + run.Key + " ms/tick " + pl); try { File.AppendAllText(_crOut + ".prof.tsv", run.Key + "\t" + pl + "\n"); } catch { } }
 			if (SoldierNPC.HitDbg != null) { try { File.AppendAllText(_crOut + ".hit.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitDbg.OrderByDescending(kv => kv.Value.dmg).Select(kv => $"{kv.Key}={kv.Value.dmg}/{kv.Value.n}")) + "\n"); } catch { } SoldierNPC.HitDbg = new(); }
 			if (SoldierNPC.HitGapDbg != null) { try { File.AppendAllText(_crOut + ".gap.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitGapDbg.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}:{kv.Value}")) + "\n"); } catch { } SoldierNPC.HitGapDbg = new(); }
 			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} rageAct={LevyRippers.RageActivations - st.Rage0} adrAct={LevyRippers.AdrenalineActivations - st.Adr0} rogueAligned={LevyRippers.RogueAligned} rogueTimeouts={LevyRippers.RogueTimeouts} strikes={LevyRippers.Strikes} strikesBoosted={LevyRippers.StrikesBoosted} fx={LevyRippers.FxRequests} boosterCopies={LevyRippers.BoosterCopies} levyBoosters={CrLevyBoosters()}");

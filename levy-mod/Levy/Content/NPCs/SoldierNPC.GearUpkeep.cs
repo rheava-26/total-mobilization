@@ -69,10 +69,36 @@ namespace Levy.Content.NPCs
 		{
 			if (!UpkeepActive || !IsAlive) return;
 			GearUpkeep.PrepareCountsOncePerTick();
-			long t0 = Stopwatch.GetTimestamp();
+			long t0 = GearUpkeep.Timing ? Stopwatch.GetTimestamp() : 0L;
 			try { GearFrame(); _upkeepFails = 0; }
 			catch (Exception e) { UpkeepFailed(e); }
-			GearUpkeep.Ticks += Stopwatch.GetTimestamp() - t0; GearUpkeep.Frames++;
+			if (GearUpkeep.Timing) { GearUpkeep.Ticks += Stopwatch.GetTimestamp() - t0; GearUpkeep.Frames++; }
+		}
+
+		private int[] _nzIdx = new int[32], _nzVal = new int[32];
+
+		/// <summary>Remembers the non-zero entries of <paramref name="counts"/> (indices and values); returns how many.</summary>
+		private int SaveOwnedCounts(int[] counts)
+		{
+			int n = 0, off = 0;
+			var span = new ReadOnlySpan<int>(counts);
+			while (off < span.Length)
+			{
+				int i = span.Slice(off).IndexOfAnyExcept(0);
+				if (i < 0) break;
+				i += off;
+				if (n == _nzIdx.Length) { Array.Resize(ref _nzIdx, n * 2); Array.Resize(ref _nzVal, n * 2); }
+				_nzIdx[n] = i; _nzVal[n] = counts[i]; n++;
+				off = i + 1;
+			}
+			return n;
+		}
+
+		/// <summary>Makes <paramref name="counts"/> hold exactly what <see cref="SaveOwnedCounts"/> saw: everything cleared, then the saved entries put back.</summary>
+		private void RestoreOwnedCounts(int[] counts, int n)
+		{
+			Array.Clear(counts, 0, counts.Length);
+			for (int k = 0; k < n; k++) counts[_nzIdx[k]] = _nzVal[k];
 		}
 
 		private void UpkeepFailed(Exception e)
@@ -102,6 +128,7 @@ namespace Levy.Content.NPCs
 			Vector2 savedScreen = Main.screenPosition; int savedMx = Main.mouseX, savedMy = Main.mouseY; bool frameAimed = false;
 			var prev = GearUpkeep.Body; GearUpkeep.Body = this;
 			int spawnStart = GearUpkeep.Spawned.Count;
+			long pf = global::Levy.Common.Util.LevyProf.Begin();
 			try
 			{
 				d.Center = NPC.Center;
@@ -109,6 +136,7 @@ namespace Levy.Content.NPCs
 				thorium = OwnerPuppet.SwapThorium(d, true);
 				{ NPC aimAt = KeyTarget(); if (aimAt != null) { Main.screenPosition = Vector2.Zero; Main.mouseX = (int)aimAt.Center.X; Main.mouseY = (int)aimAt.Center.Y; frameAimed = true; } } // the cursor is on the enemy (Prismatic lasers and the Forbidden Circlet read it)
 
+				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfSlot, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// The timers Player.Update counts down once a tick.
 				if (d.petalTimer > 0) d.petalTimer--;
 				if (d.shadowDodgeTimer > 0) d.shadowDodgeTimer--;
@@ -116,11 +144,14 @@ namespace Levy.Content.NPCs
 				if (d.crystalLeafCooldown > 0) d.crystalLeafCooldown--;
 
 				// ResetEffects ends in ResetProjectileCaches, which zeroes the owned counts: put them back (PrepareCountsOncePerTick filled them) or the Stardust Guardian is cast every tick.
+				// (The array is one int per projectile type, thousands with Calamity, and all but a few entries are zero: only the non-zero ones are saved and put back; a full-array copy twice per soldier per tick was a measurable slice of the army's tick.)
 				int[] counts = d.ownedProjectileCounts;
-				if (_upkeepCounts == null || _upkeepCounts.Length != counts.Length) _upkeepCounts = new int[counts.Length];
-				Array.Copy(counts, _upkeepCounts, counts.Length);
+				int nz = SaveOwnedCounts(counts);
+				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfCopy, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				d.ResetEffects();
-				Array.Copy(_upkeepCounts, d.ownedProjectileCounts, counts.Length);
+				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfReset, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
+				RestoreOwnedCounts(d.ownedProjectileCounts, nz);
+				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfCopy, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				d.numMinions = savedNum; d.slotsMinions = savedSlots; d.highestStormTigerGemOriginalDamage = hs; d.highestAbigailCounterOriginalDamage = ha;
 
 				// Buffs: only the mod's. A vanilla buff on the dummy comes from a set bonus whose stat side is built by hand (ApplyPotionBuffs / ApplySetStats), which would count twice.
@@ -132,11 +163,13 @@ namespace Levy.Content.NPCs
 					PlayerLoader.PostUpdateBuffs(d);
 				});
 
+				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfBuffs, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// Spore Sac keeps its hand-made trap cap per soldier (AccessoryProc.cs): its real step is held back by lifting the item out of the slot for the call, so nothing is spawned only to be removed.
 				Item sac = null; int sacSlot = -1;
 				if (GearUpkeep.Mode != 3) for (int a = 3; a < 3 + DummyAccessorySlots && a < d.armor.Length; a++) if (d.armor[a] != null && d.armor[a].type == ItemID.SporeSac) { sac = d.armor[a]; sacSlot = a; d.armor[a] = _blankSlot; break; }
 				try { d.UpdateEquips(ownerSlot); }
 				finally { if (sacSlot >= 0) d.armor[sacSlot] = sac; }
+				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfEquips, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				ApplyExtraAccessories(d);
 				// The sets Levy builds by hand (Chlorophyte leaf, Stardust Guardian) run on a slot nobody holds, so vanilla's own cast (a minion bound to the commander) never fires.
 				UpdateDummyArmorSets((WearsChlorophyteSet || WearsStardustSet) && GearUpkeep.Mode != 3 ? DummySlot - 2 : ownerSlot);
@@ -144,12 +177,14 @@ namespace Levy.Content.NPCs
 				try { StationBuffSystem.Apply(d, Stations); } catch (Exception e) { Levy.Instance.Logger.Warn("Levy: station buffs failed on a soldier: " + e.Message); }
 				try { _buffLifeRegen = ApplyPotionBuffs(d); } catch (Exception e) { _buffLifeRegen = 0; Levy.Instance.Logger.Warn("Levy: potion buffs failed on a soldier: " + e.Message); }
 
+				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfSets, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// Player.Update's tail: the mod hooks that read the finished equip pass. Calamity regenerates rogue stealth in the last.
 				// What the mods' PostUpdateEquips add to lifeRegen (Calamity adds the regeneration of its buffs and gear here, a dummy never runs Player.UpdateLifeRegen) is the levy's regeneration, in the same units as the Campfire's.
 				int regen0 = d.lifeRegen;
 				RunHook(() => PlayerLoader.PostUpdateEquips(d));
 				if (d.lifeRegen > regen0) _buffLifeRegen += d.lifeRegen - regen0;
 				Common.Team.TeamItems.LevyThoriumEquips(this, d, ref _buffLifeRegen); // Thorium's Ring of Unity and life recovery for the dummy
+				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfPost, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// The dummy never runs ItemCheck, so it never "uses" its weapon; mod hooks that key off the first frame of an item use (Calamity spends rogue stealth there) see the soldier's use as it begins.
 				int animSaved = d.itemAnimation, animMaxSaved = d.itemAnimationMax, timeSaved = d.itemTime;
 				Item held = d.inventory[d.selectedItem];
@@ -163,6 +198,7 @@ namespace Levy.Content.NPCs
 				Rippers_Restore(); // ResetEffects cleared Calamity's Rage / Adrenaline mode flags; Calamity's fill/burn step (in PostUpdateMiscEffects) reads them
 				RunHook(() => PlayerLoader.PostUpdateMiscEffects(d));
 				d.itemAnimation = animSaved; d.itemAnimationMax = animMaxSaved; d.itemTime = timeSaved;
+				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfMisc, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 			}
 			finally
 			{
@@ -173,6 +209,7 @@ namespace Levy.Content.NPCs
 				GearUpkeep.Body = prev;
 				AdoptUpkeepSpawns(spawnStart);
 				WriteBackVitals(d, life0, mana0);
+				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfExit, pf);
 			}
 		}
 
@@ -342,6 +379,8 @@ namespace Levy.Content.NPCs
 		internal static readonly List<int> Spawned = new();
 
 		// counters (harness)
+		/// <summary>Frame timing is lab-only (LEVY_PROF / LEVY_HARNESS): two clock reads per soldier per tick are not free.</summary>
+		public static readonly bool Timing = Common.Util.LevyProf.On || Environment.GetEnvironmentVariable("LEVY_HARNESS") == "1";
 		public static long Ticks; public static int Frames, Failures, HookFailures, Adopted, LifeWriteBacks, ManaWriteBacks, HurtCalls, UseSignals;
 		public static readonly Dictionary<int, int> Dropped = new(), AdoptedByType = new(), SpawnCounts = new();
 		/// <summary>HARNESS: count every projectile spawn by type (short-lived shots like the leaf's are missed by a once-a-tick sample).</summary>

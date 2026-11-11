@@ -316,10 +316,10 @@ namespace Levy.Content.NPCs
 					{
 						// the per-tick gear frame (SoldierNPC.GearUpkeep.cs) IS the stat pass for these soldiers: same steps, plus the timers, buffs and the mod hooks Player.Update runs
 						GearUpkeep.PrepareCountsOncePerTick();
-						long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+						long t0 = GearUpkeep.Timing ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
 						try { GearFrame(); _upkeepFails = 0; framed = true; }
 						catch (Exception e) { UpkeepFailed(e); }
-						GearUpkeep.Ticks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; GearUpkeep.Frames++;
+						if (GearUpkeep.Timing) { GearUpkeep.Ticks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; GearUpkeep.Frames++; }
 					}
 					if (!framed)
 					{

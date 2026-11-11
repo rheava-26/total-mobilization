@@ -3,7 +3,8 @@
 # The commander is a Spectator (the boss goes for the levies) except in `nospec`.
 #   ctl = 36 levies   alone = the Destroyer with one levy (stand-in)   armymech = + 10 Mechanization field drones and 3 turrets   nospec = the commander a plain visible player
 #   sea = the same army on a shore (arena a3w: 24 tiles of water, a sand island under the spawn)   noxs = no Caustic Staffs (no army minions)   noupkeep = LEVY_UPKEEP=0 (gear frames off: what they cost)
-#   cutchk = LEVY_CUTCHK=1 (every dodge candidate also counted to the end; the dodge cut-off must reach the same verdict: bad=0)   before = LEVY_OPT=0 (the perf-destroyer fixes off)
+#   nocull = LEVY_PAIRCULL=0 (the projectile/NPC pair cull off)   pairchk = LEVY_PAIRCHK=1 (audit: the cull only counts; every refused pair is also asked the real hit test, violations must stay 0)
+#   cutchk (LEVY_CUTCHK=1) counted every dodge candidate to the end beside the cut-off count: bad=0 over 200k candidates   before = LEVY_OPT=0 (every perf-destroyer fix off)
 name: perf_destroyer
 boss: destroyer
 mode: death
@@ -17,8 +18,9 @@ cap: 40
 env: {LEVY_CROWD: 1, LEVY_PROF: 1, LEVY_SPIKE_MS: 22}
 vs:
   alone: {levies: 1}
-  noxs: {xs: ~, seeds: 2}
+  nocull: {env: {LEVY_PAIRCULL: 0}}
+  pairchk: {env: {LEVY_PAIRCHK: 1}, seeds: 2}
   sea: {arena: a3w, seeds: 2}
+  noxs: {xs: ~, seeds: 2}
   noupkeep: {env: {LEVY_UPKEEP: 0}, seeds: 2}
-  cutchk: {env: {LEVY_CUTCHK: 1}, seeds: 2}
   before: {env: {LEVY_OPT: 0}}

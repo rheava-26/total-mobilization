@@ -18,7 +18,7 @@ for job in sorted(glob.glob(os.path.join(run, "jobs", "*", "try*"))):
     if os.path.exists(pf):
         for l in open(pf):
             k, _, v = l.rstrip("\n").partition("\t"); prof[k] = v
-    cur = None; samples = []; skip = 0
+    cur = None; samples = []; skip = 0; spikes = []
     def flush(key, samples):
         if not key or not samples: return
         m = re.search(r"\|tc(\d+)", key); cid = "c" + m[1] if m else "?"
@@ -26,11 +26,17 @@ for job in sorted(glob.glob(os.path.join(run, "jobs", "*", "try*"))):
         d = {k: statistics.mean(s[k] for s in samples) for k in samples[0]}
         d["max"] = max(s["max"] for s in samples)
         d["prof"] = prof.get(key, "")
+        late = [ms for tk, ms in spikes if tk > 600]  # after the first ten seconds (the boss spawn and the army's first reaction are always heavy)
+        d["spikes"] = len(late); d["spikemax"] = max(late) if late else 0.0; spikes.clear()
         rows[cells.get(cid, cid)].append((seed, d))
     for line in gzip.open(lg, "rt", errors="replace"):
         m = re.search(r"HARNESS-CR: start (\S+?):? [a-z]+ \d+/", line)
         if m: flush(cur, samples); cur = m[1]; samples = []; skip = 3; continue
         if "HARNESS-CR: RESULT" in line: flush(cur, samples); cur = None; samples = []; continue
+        if cur is not None and "[Crowd] spike" in line:
+            sp = re.search(r"spike tick=(\d+) ([0-9.]+) ms", line)
+            if sp: spikes.append((int(sp[1]), float(sp[2])))
+            continue
         if cur is None or "[Crowd] census" not in line: continue
         if skip > 0: skip -= 1; continue
         e = re.search(r"ms/tick entities avg=" + F + r" max=" + F + r" npcs=" + F + r" projectiles=" + F, line)
@@ -45,10 +51,10 @@ for job in sorted(glob.glob(os.path.join(run, "jobs", "*", "try*"))):
         samples.append(d)
 
 def med(cell, k): return statistics.median(d[k] for _, d in rows[cell])
-print("| cell | seeds | CPU ms/tick (npc + proj) | wall ms/tick | worst wall tick | levies | drones | enemy NPCs | projectiles (army/hostile) | alloc KB/tick | GC pause ms per 2 s |")
-print("|---|---|---|---|---|---|---|---|---|---|---|")
+print("| cell | seeds | CPU ms/tick (npc + proj) | wall ms/tick | worst wall tick | levies | drones | enemy NPCs | projectiles (army/hostile) | alloc KB/tick | GC pause ms per 2 s | ticks over 22 ms after 10 s (max ms) |")
+print("|---|---|---|---|---|---|---|---|---|---|---|---|")
 for c in rows:
-    print(f"| {c} | {len(rows[c])} | {med(c,'cpu'):.2f} ({med(c,'cpun'):.2f} + {med(c,'cpup'):.2f}) | {med(c,'tick'):.2f} | {med(c,'max'):.1f} | {med(c,'levy'):.0f} | {med(c,'drone'):.0f} | {med(c,'enemy'):.0f} | {med(c,'proj'):.0f} ({med(c,'army'):.0f}/{med(c,'hostile'):.0f}) | {med(c,'alloc'):.0f} | {med(c,'pause'):.1f} |")
+    print(f"| {c} | {len(rows[c])} | {med(c,'cpu'):.2f} ({med(c,'cpun'):.2f} + {med(c,'cpup'):.2f}) | {med(c,'tick'):.2f} | {med(c,'max'):.1f} | {med(c,'levy'):.0f} | {med(c,'drone'):.0f} | {med(c,'enemy'):.0f} | {med(c,'proj'):.0f} ({med(c,'army'):.0f}/{med(c,'hostile'):.0f}) | {med(c,'alloc'):.0f} | {med(c,'pause'):.1f} | {med(c,'spikes'):.0f} ({med(c,'spikemax'):.0f}) |")
 print()
 for c in rows:
     print(f"### {c}: LEVY_PROF buckets (ms per tick, whole fight, per seed)")

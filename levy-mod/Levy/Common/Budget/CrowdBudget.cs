@@ -257,7 +257,7 @@ namespace Levy.Common.Budget
 			if (Log)
 			{
 				_tick.Stop(); double t = _tick.Elapsed.TotalMilliseconds; _allocSum += GC.GetAllocatedBytesForCurrentThread() - _allocStart; _cpuSum += Util.LevyProf.ThreadCpuNs() - _cpuStart; _tickMs += t; _npcMs += _npc.Elapsed.TotalMilliseconds; _projMs += _proj.Elapsed.TotalMilliseconds; _tickN++; if (t > _tickMax) _tickMax = t;
-				if (t > SpikeMs && _spikes++ < 400) Levy.Instance?.Logger.Info($"[Crowd] spike tick={Main.GameUpdateCount} {t:0.0} ms (npcs {_npc.Elapsed.TotalMilliseconds:0.0}, projectiles {_proj.Elapsed.TotalMilliseconds:0.0}, gc {GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2) - _gcBefore}) {(Util.LevyProf.On ? Util.LevyProf.DescribeDelta(_profBefore, 5) : "")}");
+				if (t > SpikeMs && _spikes++ < 120) Levy.Instance?.Logger.Info($"[Crowd] spike tick={Main.GameUpdateCount} {t:0.0} ms (npcs {_npc.Elapsed.TotalMilliseconds:0.0}, projectiles {_proj.Elapsed.TotalMilliseconds:0.0}, gc {GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2) - _gcBefore}) {(Util.LevyProf.On ? Util.LevyProf.DescribeDelta(_profBefore, 5) : "")}");
 			}
 			uint now = Main.GameUpdateCount;
 			bool logNow = Log && now - _lastLog >= 120;
@@ -272,7 +272,7 @@ namespace Levy.Common.Budget
 				var sb = new StringBuilder(); for (int i = 0; i < top.Count && i < 8; i++) sb.Append(i > 0 ? ", " : "").Append(top[i].Key).Append('=').Append(top[i].Value);
 				double n = Math.Max(1, _tickN);
 				Levy.Instance?.Logger.Info($"[Crowd] census tick={now} {CrowdBudget.Describe(c)} | budget on={CrowdBudget.On} retired minions={CrowdBudget.RetiredMinions} sentries={CrowdBudget.RetiredSentries} drones={CrowdBudget.RetiredDrones} gatedCasts={CrowdBudget.GatedCasts} gatedDrones={CrowdBudget.GatedDrones} | ms/tick entities avg={_tickMs / n:0.00} max={_tickMax:0.0} npcs={_npcMs / n:0.00} projectiles={_projMs / n:0.00} | cpu ms/tick entities={_cpuSum / 1e6 / n:0.00} npcs={_cpuNpc / 1e6 / n:0.00} projectiles={_cpuProj / 1e6 / n:0.00} | alloc KB/tick={_allocSum / 1024.0 / n:0.0} gc0/1/2 +{GC.CollectionCount(0) - _gc0}/{GC.CollectionCount(1) - _gc1}/{GC.CollectionCount(2) - _gc2} gcPause ms +{(GC.GetTotalPauseDuration().TotalMilliseconds - _gcPause0):0.0} | top {sb}");
-				_allocSum = _cpuSum = _cpuNpc = _cpuProj = 0; _gc0 = GC.CollectionCount(0); _gc1 = GC.CollectionCount(1); _gc2 = GC.CollectionCount(2); _gcPause0 = GC.GetTotalPauseDuration().TotalMilliseconds;
+				_spikes = 0; _allocSum = _cpuSum = _cpuNpc = _cpuProj = 0; _gc0 = GC.CollectionCount(0); _gc1 = GC.CollectionCount(1); _gc2 = GC.CollectionCount(2); _gcPause0 = GC.GetTotalPauseDuration().TotalMilliseconds;
 				_tickMs = _npcMs = _projMs = _tickMax = 0; _tickN = 0;
 			}
 		}

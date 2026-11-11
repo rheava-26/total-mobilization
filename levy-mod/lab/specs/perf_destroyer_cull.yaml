@@ -1,0 +1,16 @@
+# perf2: the pre-hook pair cull (IL edit of Projectile.Damage) against the Destroyer, 12 seeds per cell, same seeds in every cell (paired).
+#   ctl = cull on (the default)   nocull = LEVY_PAIRCULL=0 (the cull off, everything else identical)
+# Profile line per fight: damage ms/tick = the projectile hit loop (Projectile.Damage), culled/tick, pairs/tick (pairs the mods were still asked about).
+name: perf_destroyer_cull
+boss: destroyer
+mode: death
+gear: postwof.best
+levies: 36
+seeds: 12
+bhp: 8
+dr: 0.9
+xs: "CalamityMod/CausticStaff"
+cap: 40
+env: {LEVY_CROWD: 1, LEVY_PROF: 1, LEVY_SPIKE_MS: 22}
+vs:
+  nocull: {env: {LEVY_PAIRCULL: 0}}

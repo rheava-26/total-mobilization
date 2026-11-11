@@ -71,3 +71,54 @@ paircull[eligible=0 ineligible=25705 refused=0 audited=0 violations=0 maxHitExce
 cutchk[checked=65790 cut=57707 bad=0]
 cutchk[checked=141133 cut=122851 bad=0]
 ```
+
+
+# perf2 (IL pair cull before any hook; branch perf2, build a62f3a0a8812; same spec, same seeds in each arm; profiled CPU ms per tick; the box carried other builders' load, compare arms inside one run)
+
+## Destroyer, 36 levies, Caustic Staffs, Death mode, 12 seeds: cull on (ctl) against `LEVY_PAIRCULL=0` (nocull), `lab/perf_pairs.py RUN nocull ctl`
+| seed | CPU ms/tick nocull / ctl | hit loop ms/tick nocull / ctl | projectiles ms/tick nocull / ctl | ticks > 22 ms nocull / ctl | hits/tick nocull / ctl | pairs asked/tick nocull / ctl | culled/tick nocull / ctl |
+|---|---|---|---|---|---|---|---|
+| 1 | 14.88 / 11.26 | 5.95 / 1.11 | 7.95 / 4.14 | 241 / 50 | 8.70 / 9.30 | 32896 / 517 | 0 / 36842 |
+| 2 | 16.75 / 11.99 | 5.96 / 0.99 | 9.26 / 4.38 | 470 / 34 | 9.40 / 8.50 | 37256 / 425 | 0 / 35843 |
+| 3 | 19.08 / 12.21 | 7.14 / 1.17 | 11.40 / 5.25 | 572 / 68 | 10.70 / 8.40 | 47139 / 217 | 0 / 52551 |
+| 4 | 15.40 / 11.27 | 4.88 / 0.98 | 7.92 / 4.06 | 307 / 63 | 10.00 / 8.60 | 30466 / 1083 | 0 / 30648 |
+| 5 | 15.59 / 11.40 | 4.78 / 1.11 | 7.79 / 4.26 | 283 / 34 | 7.50 / 9.90 | 29063 / 1373 | 0 / 34418 |
+| 6 | 17.50 / 10.91 | 6.05 / 1.08 | 9.50 / 3.97 | 639 / 34 | 8.70 / 8.80 | 34541 / 1123 | 0 / 33534 |
+| 7 | 14.69 / 11.85 | 4.20 / 1.04 | 7.04 / 4.03 | 259 / 37 | 7.10 / 9.20 | 25080 / 1559 | 0 / 26671 |
+| 8 | 18.93 / 13.07 | 6.95 / 1.27 | 11.14 / 5.16 | 707 / 137 | 10.40 / 9.80 | 42934 / 1145 | 0 / 38849 |
+| 9 | 19.89 / 11.13 | 6.80 / 1.02 | 11.06 / 3.92 | 884 / 56 | 10.40 / 9.20 | 37828 / 494 | 0 / 29896 |
+| 10 | 17.87 / 11.27 | 5.63 / 0.86 | 9.50 / 3.81 | 503 / 37 | 9.50 / 9.50 | 33184 / 320 | 0 / 30511 |
+| 11 | 17.90 / 11.83 | 6.00 / 0.96 | 10.11 / 4.27 | 531 / 39 | 9.70 / 8.10 | 36991 / 425 | 0 / 34551 |
+| 12 | 18.19 / 12.25 | 6.37 / 1.21 | 10.41 / 4.46 | 647 / 60 | 8.30 / 10.80 | 39043 / 1384 | 0 / 35871 |
+
+| metric (12 paired seeds) | nocull median | ctl median | ctl - nocull mean | ctl better on |
+|---|---|---|---|---|
+| CPU ms/tick | 17.68 | 11.62 | -5.52 (-32%) | 12/12 |
+| hit loop ms/tick | 5.98 | 1.06 | -4.83 (-82%) | 12/12 |
+| projectiles ms/tick | 9.50 | 4.20 | -5.11 (-54%) | 12/12 |
+| ticks > 22 ms | 517 | 44.5 | -449.5 (-89%) | 12/12 |
+| hits/tick | 9.45 | 9.20 | -0.02 | 6/12 |
+| pairs asked/tick | 35766 | 800 | -34697 (-98%) | 12/12 |
+
+Previous branch head e1e6532 (same spec, 12 seeds, run a few minutes later on the same loaded box): 17.26 ms CPU per tick (7.25 + 9.28), 478 ticks over 22 ms. Bucket comparison nocull / ctl (ms per tick): npc.levy 5.85 / 5.72, ai 4.94 / 4.80, stats 3.27 / 3.20, npc.boss 1.21 / 1.19, proj.army 9.15 / 4.02, damage 5.98 / 1.06.
+
+An earlier run of the same comparison with the first version of the edit (margin 160 px plus the shot's speed, whole-struct call per pair; build aade616be568): CPU 16.00 -> 12.66 (-24%), hit loop 5.58 -> 1.82, pairs asked 32 800 -> 4 070.
+
+## Audit (`LEVY_PAIRCHK=1`: nothing culled, every classified pair asked vanilla's Colliding): `lab/specs/perf_destroyer_audit.yaml`, 12 seeds
+checked 976 936 071 pairs, 968 809 712 of them would be skipped, violations 0, maxHitExcessPx 0.0 (no hit ever landed outside the plain rectangle). Left alone as not plain (about 3% of army projectile ticks): CalamityMod/ShadeFire, StormSurgeTornado, SandstreamScepterExplosion (all override Colliding), vanilla 974. Vanilla Skeletron, 20 seeds: 46 779 485 checked, 45 735 005 would be skipped, 0 violations.
+
+## Vanilla boss (Skeletron, vanilla world, Master+Death, 8 levies after the harness drops the Calamity items), 100 seeds (41-140) per arm
+| | cull on | cull off |
+|---|---|---|
+| wins | 57 / 100 | 60 / 100 (p 0.77) |
+| mean damage dealt to the boss | 10 152 | 10 527 |
+| mean damage per second | 232.2 | 233.7 |
+| CPU ms per tick (median) | 1.45 | 1.53 |
+| hit loop ms per tick (median) | 0.10 | 0.15 |
+| hits per tick (median) | 0.35 | 0.40 |
+| pairs asked per tick | 14 | 724 |
+
+The fights are chaotic (identical arms differ): seeds 1-10 and 1-40 earlier showed 17/30 and 20/40 wins against 24/30 and 28/40 for the cull-off arm; the 100 fresh seeds above and the audit (0 violations, the same hit test on every skipped pair) say it was noise.
+
+## Boots
+Both headless boots (Calamity Destroyer world, vanilla Skeletron world) of every run above: 0 exceptions from Levy. Calamity's `DeathstareBeam.AI` NullReferenceException (tML "Silently Caught", Calamity code, also in the previous builder's logs) appears twice per Calamity process. All self-checks pass (Provisions, Crowd, OOA/tavern, bard renown, mobility, summon-staff pick in the Calamity world); the vanilla world shows the known summon-staff pick failure (2 failures, unchanged by this work). Levy, Mechanization and Warbands compile with 0 errors with the real build (`-build`).

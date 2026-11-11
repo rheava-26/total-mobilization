@@ -23,7 +23,7 @@ Lab: `levy-mod/lab/levylab run levy-mod/lab/specs/perf_destroyer.yaml` (Calamity
 
 ## Why this is the 2 FPS
 
-The in-game clock moved 10 minutes in 14 s of video, i.e. 600 ticks in 14 s = 43 updates per second, about 23 ms per update, while the frame rate was 2. That is the signature of the update being slower than 16.7 ms, not of a slow draw: the engine runs up to 30 catch-up updates between two draws (it clamps the backlog at half a second), so once an update costs more than 16.7 ms the game does 30 updates, one draw, 30 updates... and FPS is about UPS / 30. This lab measures 14 ms (CPU time of a server tick, no client work) where the video implies 23 ms, a factor 1.6 that a laptop and the client-side extras (dust, lighting, sound, the player) account for. To get a game under 16.7 ms the army's increment has to come down by about 40%, which the changes below do not reach (see the options). `LEVY_PROF=1` on a client now logs one `[Prof] client` line every 2 s (fps, ups, ms per update split NPC / projectile / rest, ms per frame of draw split NPCs / projectiles / dust / gore / players / interface / levy bodies / nameplates): one fight on the machine that ran at 2 FPS settles update against draw. The draw side could not be measured here (headless).
+The in-game clock moved 10 minutes in 14 s of video, i.e. 600 ticks in 14 s = 43 updates per second, about 23 ms per update, while the frame rate was 2. That is the signature of the update being slower than 16.7 ms, not of a slow draw: the engine runs up to 30 catch-up updates between two draws (it clamps the backlog at half a second), so once an update costs more than 16.7 ms the game does 30 updates, one draw, 30 updates... and FPS is about UPS / 30. This lab measures 14 ms (CPU time of a server tick, no client work) where the video implies 23 ms, a factor 1.6 that a laptop and the client-side extras (dust, lighting, sound, the player) account for. To get a game under 16.7 ms the army's increment has to come down by about 40%, which the first pass did not reach; the pair cull of the perf2 section below takes about a third of the whole update. `LEVY_PROF=1` on a client now logs one `[Prof] client` line every 2 s (fps, ups, ms per update split NPC / projectile / rest, ms per frame of draw split NPCs / projectiles / dust / gore / players / interface / levy bodies / nameplates): one fight on the machine that ran at 2 FPS settles update against draw. The draw side could not be measured here (headless).
 
 ## What changed (all behind `LEVY_OPT=0` for A/B, none changes what a levy does)
 
@@ -31,7 +31,7 @@ The in-game clock moved 10 minutes in 14 s of video, i.e. 600 ticks in 14 s = 43
 * Stat refresh of a levy is phased by body index instead of all landing on the same tick (a 14 ms tick every second for an army spawned together).
 * Gear frame: the saved projectile counts are sparse (only the non-zero entries are saved and restored, the array has thousands of entries), and the per-frame timing is lab-only.
 * `CanHitNPC` of `LootCreditGlobalProjectile` folded into `SoldierProjectileTag.CanHitNPC`: one hook and one tag lookup per pair instead of two.
-* `PairCull` (off by default, `LEVY_PAIRCULL=1`): an army shot with the plain hit test refuses an NPC out of any hitbox's reach inside Levy's own `CanHitNPC`. With `LEVY_PAIRCHK=1` it audited 99.6 million refused-to-be pairs: 0 would have hit, and no hit ever landed beyond its plain reach (0 px). It refuses 35% of the pairs and saves about 2% of the tick (the dispatch up to Levy's hook, which comes after Calamity's, and the vanilla loop are the cost), so it ships off. If Levy's hook ran first in the dispatch (`sortBefore = CalamityMod`, a load-order change that touches every hook pair of the two mods) it would save more.
+* `PairCull` (since perf2 an IL edit of `Projectile.Damage`, on by default, `LEVY_PAIRCULL=0` turns it off): see the perf2 section below.
 * Tooling: Destroyer boss, `drones=` / `turrets=` / `arena=a3w` in the Calamity harness, `LevyProf` buckets (gear frame parts, NPCs and projectiles by owner, per type, hit loop, pairs, hits), CPU-time census with allocation, GC and spike ticks, `ClientProf`, `lab/perf/` (EventPipe profile scripts), `perf_summary.py`, `perf_buckets.py`.
 
 ## Before / after (same seeds, 3 each)
@@ -43,6 +43,38 @@ The in-game clock moved 10 minutes in 14 s of video, i.e. 600 ticks in 14 s = 43
 | this branch (CPU, profiled) | 14.2 | 135 | 2.7 | 11.8 |
 
 A process is worth about +-1 ms in this lab, so the gain (7 to 10%) is real but small; the dodge buckets, which are measured inside one process, show the part the fixes touch.
+
+## perf2: the pair loop is cut before any hook is dispatched
+
+`Projectile.Damage` walks the 200 NPC slots for every damaging projectile and, for each live NPC, dispatches `CombinedHooks.CanHitNPCWithProj` (every mod's `GlobalProjectile.CanHitNPC`, `GlobalNPC.CanBeHitByProjectile`, `ModProjectile`, `ModNPC`, `ModPlayer`, Calamity's included) before it tests the hitboxes. 212 army projectiles x the Destroyer's 82 segments = 33 000 dispatches a tick for 9 hits. The previous `PairCull` ran inside Levy's own hook, after the other mods' hooks, and saved 2%. It is now an IL edit of `Projectile.Damage` (`PairCullSystem`, `Common/Weapons/PairCull.cs`, installed with `MonoModHooks.Modify`):
+
+* Right after the damage hitbox is stored (vanilla's local `val`, which already includes every mod's `ModifyDamageHitbox`), `PairCull.Begin` decides once per `Damage` call whether this is an army shot (soldier, officer / summon, drone shot; never hostile) whose hit test is provably the plain overlap of `val` with the NPC's rectangle, and builds four bounds: `val` grown by 32 px.
+* At the top of the NPC loop, right after vanilla's own "slot alive" check and before anything else (immunity flags, hooks, netOffset shift, hitbox test), `PairCull.Far` skips (the same `continue` vanilla uses for a dead slot) an NPC whose rectangle, with its `netOffset` added exactly as vanilla does, lies entirely outside those bounds. Per pair that is one local test and a few field reads, inlined.
+* Why it is exact: a hook can only veto a pair or force it into the hitbox test (which still decides), the loop has no side effect before the hooks, and for a plain-overlap shot a pair farther than the grown hitbox cannot overlap. The hit test is only plain when none of these holds, so `Classify` leaves alone (margin 0, never skipped) any projectile with a vanilla type that `Projectile.Colliding` / `Damage_GetHitbox` names (53 types: lasers, beams, lances, cones, trails...), an AI style 15 / 19 / 137 / 190, a whip, a modded projectile that overrides `Colliding`, and any projectile a loaded mod's `GlobalProjectile` that overrides `Colliding` applies to. The lists were read from the game's code (`ilspycmd`); a modded projectile never reaches the vanilla per-type branches. In the Destroyer lab only Calamity's ShadeFire, StormSurgeTornado and SandstreamScepterExplosion (all override `Colliding`) and vanilla 974 are left alone (about 3% of army projectile ticks).
+* If the game's code does not have the shape the edit expects (the matched instructions are checked before anything is emitted) the edit is not made and the log says so.
+* Audit, `LEVY_PAIRCHK=1` (lab): culls nothing and asks vanilla's real `Colliding(val, rect)` of EVERY classified pair; `paircull[checked audited violations maxHitExcessPx]` in the profile line. Result: 977 million pairs checked (969 million of them would be skipped), 0 violations, no hit ever landed outside the plain rectangle (`maxHitExcessPx` 0.0), over 12 Destroyer seeds; vanilla Skeletron, 20 seeds, 47 million pairs, 0 violations.
+
+### Numbers (36 levies, postwof.best, Caustic Staffs, Death mode, 12 seeds, same seeds in both arms, CPU ms per tick, profiled; the box was loaded by other builders, so look at the paired difference, not the absolute)
+
+| | cull off (`LEVY_PAIRCULL=0`) | cull on | difference |
+|---|---|---|---|
+| whole update | 17.68 | 11.62 | -5.5 ms mean (-32%), better on 12 / 12 seeds |
+| projectile hit loop (`Projectile.Damage`) | 5.98 | 1.06 | -4.8 ms (-82%), 12 / 12 |
+| projectiles (all) | 9.50 | 4.20 | -5.1 ms (-54%) |
+| pairs the mods are still asked about per tick | 35 800 | 800 | -98% |
+| pairs skipped per tick | 0 | 34 500 | |
+| ticks over 22 ms after 10 s (per fight) | 517 | 44 | -89%, 12 / 12 |
+| shot hits per tick | 9.5 | 9.2 | same within noise |
+
+The previous branch head (`e1e6532`, same spec, same box a few minutes later) measured 17.26 ms, 478 ticks over 22 ms. A vanilla boss with a medium army (Skeletron, vanilla world, 100 seeds): whole update 1.53 -> 1.45 ms, hit loop 0.15 -> 0.10 ms, hits per tick 0.40 vs 0.35, damage dealt per second 232 vs 234, wins 57 vs 60 of 100 (p 0.77): no regression and no change in what the army does. (The fights are chaotic: two identical arms differ by a few wins; one 40-seed comparison showed 20 against 28 wins, the 100 fresh seeds did not repeat it.)
+
+On her machine the update is 23 ms and the pair loop was about a third of it, so the expected update is about 16 to 17 ms: right at the 16.7 ms line, not safely under it. The rest of the army's cost is now gear frames (3.2 ms, Calamity's own code), the levy AI itself (4.8 ms with the gear frames inside it as `stats`), the Caustic Staff minions' AI (1.9 ms) and the Destroyer (1.2 ms).
+
+Other places in the same loop looked at: the vanilla loop before the hooks reads only flags, so nothing else is wasted there; the player branch (`Main.player[Main.myPlayer].hostile`) is player-versus-player only; the per-type NPC loops after the hit loop belong to Slime and corruption-spread projectiles. After the cull the remaining 800 pairs a tick are shots that really are near a segment.
+
+## The profiler for the player: /levyprof
+
+`/levyprof` (or `/levyprof on` / `off`) in chat switches the client profiler on and off at runtime, no environment variable needed. Off, nothing is hooked and nothing is measured; on, it hooks the game's update and draw calls and every 4 seconds prints four short lines to chat and to the log (`[Prof]`), for example: "Levy profiler: 2.1 frames and 43.0 updates per second." / "One update takes 23.0 ms. Holding 60 per second needs under 16.7 ms, so the updates are the slow part." / "Per update: NPCs 9.1 ms, projectiles 8.0 ms (shot hit checks 1.1 ms of that), everything else 5.9 ms. One frame draws in 4.2 ms." / "Levy costs per update: AI 5.1 ms (dodging 0.4, moving 0.5, fighting 0.4, deciding 0.2), gear upkeep 2.9 ms." The log also gets the detailed `[Prof] client` line with the draw split and every Levy bucket of the window. On a multiplayer client it measures that client; the army's own costs show on the host. `LEVY_PROFTEST=1` (lab) lets a headless server run the same code, `LEVY_PROF=1` still starts it with the game (log only).
 
 ## Options that need a design decision (not done)
 

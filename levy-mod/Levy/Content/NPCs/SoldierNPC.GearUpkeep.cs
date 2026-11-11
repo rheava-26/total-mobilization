@@ -382,7 +382,8 @@ namespace Levy.Content.NPCs
 
 		// counters (harness)
 		/// <summary>Frame timing is lab-only (LEVY_PROF / LEVY_HARNESS): two clock reads per soldier per tick are not free.</summary>
-		public static readonly bool Timing = Common.Util.LevyProf.On || Environment.GetEnvironmentVariable("LEVY_HARNESS") == "1";
+		private static readonly bool HarnessTiming = Environment.GetEnvironmentVariable("LEVY_HARNESS") == "1";
+		public static bool Timing => HarnessTiming || Common.Util.LevyProf.On;
 		public static long Ticks; public static int Frames, Failures, HookFailures, Adopted, LifeWriteBacks, ManaWriteBacks, HurtCalls, UseSignals;
 		public static readonly Dictionary<int, int> Dropped = new(), AdoptedByType = new(), SpawnCounts = new();
 		/// <summary>HARNESS: count every projectile spawn by type (short-lived shots like the leaf's are missed by a once-a-tick sample).</summary>

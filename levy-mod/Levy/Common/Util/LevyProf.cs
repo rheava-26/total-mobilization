@@ -8,7 +8,8 @@ namespace Levy.Common.Util
 	{
 		/// <summary>LEVY_OPT=0 puts the army tick back to its previous code path (the perf-destroyer fixes off) so a lab can A/B them. On by default.</summary>
 		public static readonly bool Opt = Environment.GetEnvironmentVariable("LEVY_OPT") != "0";
-		public static readonly bool On = Environment.GetEnvironmentVariable("LEVY_PROF") == "1";
+		/// <summary>Profiling on: LEVY_PROF=1 at start, or the /levyprof chat command at runtime. A plain static (not readonly) so the command can switch it; every call site is one bool test.</summary>
+		public static bool On = Environment.GetEnvironmentVariable("LEVY_PROF") == "1";
 		public const int AI = 0, Dodge = 1, Near = 2, Hits = 3, Snap = 4, Worm = 5, Zone = 6, Rows = 7, Brain = 8, Perch = 9, Hold = 10, Mom = 11, Move = 12, Combat = 13, Fear = 14, Dmg = 15, Dummy = 16, Stats = 17, Rip = 18, GfSlot = 19, GfCopy = 20, GfReset = 21, GfBuffs = 22, GfEquips = 23, GfSets = 24, GfPost = 25, GfMisc = 26, GfExit = 27, NpcLevy = 28, NpcBoss = 29, NpcAdd = 30, NpcMech = 31, NpcOther = 32, ProjArmy = 33, ProjEnemy = 34, ProjMech = 35, ProjOther = 36, N = 37;
 		private static readonly string[] Names = { "ai", "dodge", "near", "hits", "snap", "wormfn", "zone", "rows", "brain", "perch", "hold", "mom", "move", "combat", "fear", "dmg", "dummy", "stats", "rip", "g.slot", "g.copy", "g.reset", "g.buffs", "g.equips", "g.sets", "g.post", "g.misc", "g.exit", "npc.levy", "npc.boss", "npc.add", "npc.mech", "npc.other", "proj.army", "proj.enemy", "proj.mech", "proj.other" };
 		/// <summary>Entities updated since the last Reset (per category, same order as Names from NpcLevy), for the per-tick counts in the dump.</summary>
@@ -27,7 +28,7 @@ namespace Levy.Common.Util
 			catch (Exception) { _cpuBroken = true; return -1; }
 		}
 		public static long Begin() => On ? Stopwatch.GetTimestamp() : 0L;
-		public static void End(int k, long t0) { if (On) T[k] += Stopwatch.GetTimestamp() - t0; }
+		public static void End(int k, long t0) { if (On && t0 != 0) T[k] += Stopwatch.GetTimestamp() - t0; } // t0 == 0: the section began while profiling was off
 		public static void Add(int k, long d) { T[k] += d; }
 		/// <summary>Update time and calls per projectile / NPC type (lab only), to find the one weapon or enemy whose AI is out of proportion.</summary>
 		private static readonly System.Collections.Generic.Dictionary<int, (long ticks, int n)> ByType = new();
@@ -52,6 +53,10 @@ namespace Levy.Common.Util
 			catch (Exception) { return key.ToString(); }
 		}
 		public static void CopyTo(long[] dst) { Array.Copy(T, dst, N); }
+		/// <summary>The bucket <paramref name="k"/> in Stopwatch ticks since the start (the /levyprof report takes differences).</summary>
+		public static long Get(int k) => T[k];
+		/// <summary>True when profiling was on from the start (LEVY_PROF=1), so /levyprof off leaves it on.</summary>
+		public static readonly bool OnFromStart = On;
 		/// <summary>The buckets that grew the most since <paramref name="before"/> (a CopyTo snapshot), as "name ms" pairs: what a spike tick was spent in. Lab only.</summary>
 		public static string DescribeDelta(long[] before, int top)
 		{

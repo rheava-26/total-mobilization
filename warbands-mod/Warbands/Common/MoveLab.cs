@@ -15,14 +15,14 @@ namespace Warbands.Common
 	///   t_first_hit   seconds until the player first loses life (-1 never)
 	///   t_position    seconds until any member has a firing position (a clear line to the player and the player inside the member's own weapon reach; a blade: within 3.2 tiles), -1 never
 	///   pos_end       members in a firing position at the end of the trial
-	///   stuck         members that stood within 3 tiles of one spot for 10 s without a firing position
+	///   stuck         members that stayed within 3 tiles sideways and 7 tiles up or down of one spot for 10 s without a firing position
 	///   clump         mean distance between members (tiles), sampled once a second from second 5
 	///   spread_pos    mean distance between the members that have a position (how apart they fight from)
 	/// One TSV row per trial.
 	/// </summary>
 	public partial class WarbandsLab
 	{
-		private enum Mv { Open, Overhang, Chasm, Pit, Tower }
+		private enum Mv { Open, Overhang, Chasm, Pit, Tower, PitFar }
 
 		private class MvState
 		{
@@ -60,21 +60,21 @@ namespace Warbands.Common
 			{
 				case Mv.Open:
 					player = new Point(c + 10, F);
-					for (int k = 0; k < n; k++) spots.Add(new Point(c - 30 - 2 * k, F));
+					for (int k = 0; k < n; k++) spots.Add(new Point(c - 30 - 3 * k, F));
 					break;
 				case Mv.Overhang:
 					// a cliff top 16 tiles over the floor, undercut: an 8-tile cave opens to the left. The player stands in the cave, the band on the cliff straight above.
 					MvBox(c - 12, c + 70, F - 16, F - 9, true);
 					MvBox(c + 14, c + 70, F - 16, F - 1, true);
 					player = new Point(c - 2, F);
-					for (int k = 0; k < n; k++) spots.Add(new Point(c - 6 + 2 * k, F - 16));
+					for (int k = 0; k < n; k++) spots.Add(new Point(c - 6 + 3 * k, F - 16));
 					break;
 				case Mv.Chasm:
 					// a 17-wide, 40-deep chasm; the player on the far side on a plateau 10 tiles higher, 22 tiles from the edge; the band 36 tiles short of the near edge
 					MvBox(c - 8, c + 8, F, F + 40, false);
 					MvBox(c + 9, c + 110, F - 10, F - 1, true);
 					player = new Point(c + 30, F - 10);
-					for (int k = 0; k < n; k++) spots.Add(new Point(c - 44 - 2 * k, F));
+					for (int k = 0; k < n; k++) spots.Add(new Point(c - 44 - 3 * k, F));
 					break;
 				case Mv.Pit:
 					// a 12-wide, 30-deep pit; the band at its bottom, the player on the rim 18 tiles from it
@@ -82,11 +82,17 @@ namespace Warbands.Common
 					player = new Point(c + 24, F);
 					for (int k = 0; k < n; k++) spots.Add(new Point(c - 5 + 2 * k, F + 31));
 					break;
+				case Mv.PitFar:
+					// the pit again with the player 105 tiles off: no player's view box holds the band, so the levy's off-screen hop is allowed
+					MvBox(c - 100, c - 89, F, F + 30, false);
+					player = new Point(c + 10, F);
+					for (int k = 0; k < n; k++) spots.Add(new Point(c - 99 + 2 * k, F + 31));
+					break;
 				default: // Tower
 					// a 34-tile pillar, 8 wide; the player on top, the band on the floor 50 tiles away
 					MvBox(c + 20, c + 27, F - 34, F - 1, true);
 					player = new Point(c + 23, F - 34);
-					for (int k = 0; k < n; k++) spots.Add(new Point(c - 30 - 2 * k, F));
+					for (int k = 0; k < n; k++) spots.Add(new Point(c - 30 - 3 * k, F));
 					break;
 			}
 		}
@@ -182,7 +188,8 @@ namespace Warbands.Common
 								if (t % 30 == 0)
 								{
 									int key = m.NPC.whoAmI;
-									if (!st.Anchor.TryGetValue(key, out var a) || Vector2.Distance(a.at, m.NPC.Center) > 48f) st.Anchor[key] = (m.NPC.Center, t, false);
+									bool near = st.Anchor.TryGetValue(key, out var a) && Math.Abs(a.at.X - m.NPC.Center.X) <= 48f && Math.Abs(a.at.Y - m.NPC.Center.Y) <= 112f; // a body hopping on the spot is still on the spot
+									if (!near) st.Anchor[key] = (m.NPC.Center, t, false);
 									else if (!a.stuck && !ip && !m.Panic && t - a.since >= 600) { st.Anchor[key] = (a.at, a.since, true); st.StuckCount++; }
 								}
 							}
@@ -219,7 +226,7 @@ namespace Warbands.Common
 		{
 			Vector2 pc = Main.player[0].Center;
 			foreach (var m in alive)
-				Mod.Logger.Info($"[Warbands] mvdbg {st.Scen}/{st.Type.Id}/s{st.Seed} t={t} #{m.MemberIdx} role={m.Role} tile=({(int)(m.NPC.Center.X / 16f) - MvC},{(int)(m.NPC.Bottom.Y / 16f) - MvFloor}) toPlayer=({(pc.X - m.NPC.Center.X) / 16f:0},{(pc.Y - m.NPC.Center.Y) / 16f:0}) state={m.State} tgt={m.TargetIndex} inPos={MvInPosition(m)} still={MvReflect(m, "StillReason")} route={MvReflect(m, "DebugRoute")} hook={(m.Record?.Gear.Hook.IsAir == false)} wings={m.HasFlightKit} rng={m.Weapon?.RangeTiles}");
+				Mod.Logger.Info($"[Warbands] mvdbg {st.Scen}/{st.Type.Id}/s{st.Seed} t={t} #{m.MemberIdx} role={m.Role} tile=({(int)(m.NPC.Center.X / 16f) - MvC},{(int)(m.NPC.Bottom.Y / 16f) - MvFloor}) toPlayer=({(pc.X - m.NPC.Center.X) / 16f:0},{(pc.Y - m.NPC.Center.Y) / 16f:0}) state={m.State} tgt={m.TargetIndex} inPos={MvInPosition(m)} panic={m.Panic} morale={m.Morale:0} still={MvReflect(m, "StillReason")} route={MvReflect(m, "DebugRoute")} pur[{m.PursuitDebug()}] hook={(m.Record?.Gear.Hook.IsAir == false)} wings={m.HasFlightKit} rng={m.Weapon?.RangeTiles}");
 		}
 
 		private static double MvMeanPair(List<BandLevyNPC> l)

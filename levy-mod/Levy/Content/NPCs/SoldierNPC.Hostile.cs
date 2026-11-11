@@ -8,6 +8,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
 using Levy.Common.Globals;
+using Levy.Common.Movement;
 using Levy.Common.Soldiers;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
@@ -103,6 +104,37 @@ namespace Levy.Content.NPCs
 			_engPathOk = path;
 			SetGoal(pos);
 		}
+
+		// ---- HOSTILE SEAM (Warbands bandmove): the long-route planner for a hostile body ----
+		private Point _hostileRtGoal = new Point(int.MinValue, 0);
+
+		/// <summary>
+		/// Walk to <paramref name="goalBottom"/> (bottom centre of the feet) by Levy's long-route planner (RoutePlanner: walking, drops, grappling-hook casts and chains up a face, wall climbs, wing arcs), the way a map-march order does.
+		/// True: a route leg is under way and the body's goal is set to it. False: no leg this think (the trip is short enough to walk, the plan is still being searched, or none was found); the goal is then set to the point itself and
+		/// the body walks by its own reflexes. <paramref name="noWay"/> is true once the planner has given up on the goal (the best-effort route has run out, or the search failed): the body is as near as it can get by this route.
+		/// Asking again for a different tile resets the route; ask for the same point every think.
+		/// </summary>
+		public bool HostileRouteTo(Vector2 goalBottom, out bool noWay)
+		{
+			noWay = false;
+			if (State != SoldierState.Engage && State != SoldierState.Routed) SetState(SoldierState.SearchDestroy);
+			_engPathOk = true;
+			Point g = TileNav.FeetTile(goalBottom);
+			if (g != _hostileRtGoal) { _hostileRtGoal = g; RouteReset(); }
+			if (RouteLeg((int)Main.GameUpdateCount, goalBottom, out Vector2 leg)) { SetGoal(leg); noWay = RouteEndedShort; return true; }
+			noWay = RouteEndedShort || RouteExhausted || HostileRouteStatus == 4;
+			SetGoal(goalBottom);
+			return false;
+		}
+
+		/// <summary>The state of this body's current route: 0 none, 1 being searched, 2 found, 3 best-effort (the goal itself is out of reach), 4 search failed.</summary>
+		public int HostileRouteStatus => _rt == null ? 0 : _rt.State switch { Route.S.Pending => 1, Route.S.Ready => 2, Route.S.Partial => 3, _ => 4 };
+
+		/// <summary>Forget the current route (and its banned hook targets); the next <see cref="HostileRouteTo"/> plans afresh.</summary>
+		public void HostileRouteReset() { _hostileRtGoal = new Point(int.MinValue, 0); RouteReset(); }
+
+		/// <summary>True while the body is hanging on a grappling hook, climbing a face or flying a planned arc: the route owns it, do not hand it a new goal.</summary>
+		public bool HostileMovementBusy => (_hkPhase != HookPhase.Idle && _hkPhase != HookPhase.Cooldown) || _clmOn || RouteFlying;
 
 		/// <summary>Drops the movement goal (stand and keep shooting).</summary>
 		public void HostileStop() { _engPathOk = false; ClearGoal(); }

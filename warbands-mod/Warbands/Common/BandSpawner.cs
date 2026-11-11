@@ -196,10 +196,10 @@ namespace Warbands.Common
 			return null;
 		}
 
-		/// <summary>The standing spot of member <paramref name="k"/>: two tiles further along the band's ground per member, on the floor nearest the band's own height; when the body does not fit there the nearest column that does is taken (outward, both ways), never within a tile of a member already placed. False when nothing near fits.</summary>
+		/// <summary>The standing spot of member <paramref name="k"/>: three tiles further along the band's ground per member, on the floor nearest the band's own height; when the body does not fit there the nearest column that does is taken (outward, both ways), never within a tile of a member already placed. False when nothing near fits.</summary>
 		public static bool PlaceMember(Point foot, int side, int k, List<Point> taken, out Point spot)
 		{
-			int want = foot.X + side * k * 2;
+			int want = foot.X + side * k * 3;
 			for (int d = 0; d <= 8 + k; d++)
 				for (int s = 0; s < (d == 0 ? 1 : 2); s++)
 				{

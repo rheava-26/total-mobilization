@@ -19,8 +19,7 @@ env: {LEVY_CROWD: 1, LEVY_PROF: 1, LEVY_SPIKE_MS: 22}
 vs:
   alone: {levies: 1}
   nocull: {env: {LEVY_PAIRCULL: 0}}
-  pairchk: {env: {LEVY_PAIRCHK: 1}, seeds: 2}
+  pairchk: {env: {LEVY_PAIRCHK: 1}}
+  before: {env: {LEVY_OPT: 0}}
   sea: {arena: a3w, seeds: 2}
   noxs: {xs: ~, seeds: 2}
-  noupkeep: {env: {LEVY_UPKEEP: 0}, seeds: 2}
-  before: {env: {LEVY_OPT: 0}}

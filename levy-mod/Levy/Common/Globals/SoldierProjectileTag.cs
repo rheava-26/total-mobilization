@@ -50,6 +50,8 @@ namespace Levy.Common.Globals
 		public uint SpawnTick = Main.GameUpdateCount;
 
 		public bool IsSoldierShot => SoldierIndex >= 0;
+		/// <summary>PairCull: -1 not decided yet, 0 never cull this projectile, else the margin (px) beyond its hitbox.</summary>
+		private float _cullMargin = -1f;
 		/// <summary>Set once a reflected soldier shot has been re-aimed at its firing soldier (so the bounce-back hits the unit, not the commander).</summary>
 		private bool _reflectRedirected;
 
@@ -131,6 +133,8 @@ namespace Levy.Common.Globals
 			// minions beside it but they deal nothing.
 			if (SoldierIndex >= 0)
 			{
+				if (_cullMargin < 0f) _cullMargin = PairCull.Classify(projectile);
+				if (_cullMargin > 0f && PairCull.Far(projectile, target, _cullMargin)) return false; // out of reach of anything this shot could hit: refused before the mods after this hook are asked (PairCull)
 				if (SoldierTargeting.IsNeverTarget(target) && !SoldierTargeting.FocusAllowsCritterShot(SoldierIndex, target)) return false;
 				if (SoldierMinions.SuppressedByHoldFire(projectile, SoldierIndex)) return false;
 			}

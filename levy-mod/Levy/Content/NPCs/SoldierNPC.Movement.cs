@@ -166,7 +166,7 @@ namespace Levy.Content.NPCs
 			if (!air && (!_blocked || routeClimb) && dy < -JumpUpAbovePx && Math.Abs(dx) <= GoalJumpReachPx())
 			{
 				if (routeClimb) { _blocked = false; _blockedHard = false; }
-				int tiles = (int)Math.Ceiling(-dy / 16f);
+				int tiles = (int)Math.Ceiling(-dy / 16f - (PathSearch.Travel8On && _pathFromRoute ? 0.25f : 0f));   // (a planned jump is a whole number of rows, the body may stand a pixel or two off the tile grid on a slope: 6 rows planned read 6.1 and was refused as 7)
 				int reachBonus = State == SoldierState.Engage ? EngageJumpReachBonusTiles : 0; // a weapon covers the last stretch
 				if (PlatMode >= 1) reachBonus += Abilities.ExtraJumps > 0 ? ExtraJumpReachTiles * Math.Min(2, Abilities.ExtraJumps) : 0; // a second jump at the apex carries the rest
 				if (tiles <= Abilities.JumpTiles + reachBonus)

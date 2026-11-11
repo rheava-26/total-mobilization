@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 
 namespace Warbands.Common
 {
 	public enum BandBiome : byte { Forest, Underground, Corruption, Crimson, Desert, Snow, Jungle, Hallow, Underworld, Dungeon, Mushroom }
+
+	/// <summary>The vanilla event an event band (EventBands) joins. None for every ordinary band.</summary>
+	public enum EventKind : byte { None, Goblins, Pirates, Sandstorm, SlimeRain }
 
 	/// <summary>One soldier of a band: a role, the real weapon and ammo it carries, and the armor set it wears. All names are vanilla internal item names (ItemID.Search).</summary>
 	public class BandMember
@@ -14,6 +18,10 @@ namespace Warbands.Common
 		public char Role;
 		public string Weapon, Ammo;
 		public string[] Armor;
+		/// <summary>Event bands only: the captain (sturdier, named, drops the event's loot).</summary>
+		public bool Captain;
+		/// <summary>Event bands only: the accessories (internal item names) and the grappling hook this member carries; null = the standard stage kit.</summary>
+		public string[] Kit; public string Hook;
 		public BandMember(char role, string weapon, string ammo, string[] armor) { Role = role; Weapon = weapon; Ammo = ammo; Armor = armor; }
 	}
 
@@ -42,6 +50,8 @@ namespace Warbands.Common
 		public int BountyCopper;
 		/// <summary>Sash colour of the band (the red of enemies is kept; this is the stripe), and the colour of the summon item.</summary>
 		public int TintR, TintG, TintB;
+		/// <summary>Event bands (EventBands): the event joined, the captain's title, whether the band harasses (hops to new high ground and, for blades, darts in and out), and an optional skin tint.</summary>
+		public EventKind Event; public string CaptainTitle; public bool Skirmish; public Color? Skin;
 	}
 
 	/// <summary>

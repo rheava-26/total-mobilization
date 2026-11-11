@@ -57,5 +57,18 @@ namespace Warbands.Common
 
 		/// <summary>The Lunatic Cultist's Archers and Devotees fight as a band: archers strafe and hover, devotees close in and cast.</summary>
 		[DefaultValue(true)] public bool CultistBand;
+
+		/// <summary>Event bands: a band that joins a Goblin Army, a Pirate Invasion, a Sandstorm or a Slime Rain while it lasts. Always hostile, part of the event, gone when it ends. Needs the Levy brain.</summary>
+		[DefaultValue(true)] public bool EventBands;
+		[DefaultValue(true)] public bool EventGoblins;
+		[DefaultValue(true)] public bool EventPirates;
+		[DefaultValue(true)] public bool EventSandstorm;
+		[DefaultValue(true)] public bool EventSlimeRain;
+
+		/// <summary>Seconds between one event band being beaten and the next forming, while the event lasts.</summary>
+		[Range(10, 600)] [DefaultValue(90)] public int EventBandCooldownSeconds;
+
+		/// <summary>Most event bands one run of an event sends.</summary>
+		[Range(1, 12)] [DefaultValue(4)] public int EventBandMaxPerEvent;
 	}
 }

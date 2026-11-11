@@ -40,6 +40,11 @@ namespace Warbands.Common
 		public uint LastOneTapTick, LastDeathTick; public int FarTicks, FarAggroless;
 		public uint LastHitTick;
 		public bool RaisedAlarm; public readonly HashSet<FoeClass> ClassRemarked = new();
+		/// <summary>Event bands (EventBands): the event is over (or no player is near any more), so the band walks off and is removed once off screen. Never set on an ordinary band.</summary>
+		public bool Leaving; public uint LeaveTick;
+		/// <summary>Event bands: the band rallies on the Flying Dutchman (Anchor follows the ship's ground and members stay within 70 tiles of it).</summary>
+		public bool Rally;
+		public bool IsEvent => Type != null && Type.Event != EventKind.None;
 
 		public static BandBrain Create(BandRoster type, int stage, int startSize, Vector2 anchor, int id = 0, bool neutral = false)
 		{

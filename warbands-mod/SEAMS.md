@@ -43,3 +43,7 @@ Levy symbols newly used: `SettlementSystem.Instance.NearestBarracks` (the bounty
 ## Phase 4 (Warbands 0.3.0): no Levy edits
 
 Public Levy symbols read: `DialogueTable.Lines` / `Get` / `LineCount` / `LoadedFrom` and `DialogueLine` (`Cond`, `Needs`, `Parts`, `Text`), `LineCond`, `LineNeeds`, `PlaceholderKind` (`BandChatter` borrows Levy's fighting lines, so the player's edited Levy dialogue file applies to bands too). `SoldierNPC.BodyWidth` / `BodyHeight` (the footing check). The Calamity Sunken Sea is read by name through tModLoader's `ModBiome` list; Calamity is never referenced.
+
+## Phase 5 (Warbands 0.4.0): no Levy edits
+
+Event bands add no Levy edit. Public Levy symbols newly read: `WeaponClassifier.Classify` and `WeaponFamily` (the self-check holds every event weapon to a family Levy's brain can fire) and `ProgressionTier.Of` (tier ceilings for signature items and drops). Vanilla seams used: `Main.invasionType`, `invasionSize`, `invasionSizeStart`, `invasionX`, `invasionDelay`, `Main.ReportInvasionProgress` and packet 78 (a dead event-band member takes its slot off the invasion like a vanilla invader; Levy's `EventPressure`, which multiplies an invasion's size when it starts, is unaffected), `Sandstorm.Happening`, `Main.slimeRain`, `NPCID.PirateShip`, `Player.ZoneSandstorm` and `ZoneOverworldHeight`.

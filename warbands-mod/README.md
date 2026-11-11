@@ -1,4 +1,4 @@
-# Warbands (v0.3.0): levy bands, a Levy sub-mod
+# Warbands (v0.4.0): levy bands, a Levy sub-mod
 
 Eve approved hostile levy bands as a sub-mod: enemy groups you can fight for part of their loot, biome-specific, running Levy's real soldier brain. Design tenet from `levy-mod/NORTH_STAR.md`: difficulty comes from a scarier enemy, never from nerfing the player's army.
 
@@ -24,6 +24,25 @@ Eve approved hostile levy bands as a sub-mod: enemy groups you can fight for par
 - **Spawn sampler:** `WARBANDS_SAMPLE=1` on a dedicated server boot draws spots across the loaded world, reads their biome with the vanilla zone rules, forms bands of every type and logs `[Warbands] sample ...` lines (spots per biome, natural roll per biome and stage, type, neutral count, soldiers inside terrain, bands with three quarters of their members free after 400 ticks).
 - **Self-check:** `[Warbands] self-check done pass=N fail=0` on a dedicated server boot. `WARBANDS_LIVE=check` runs 32 scripted scenarios (Levy brain, both-way damage, no i-frames, warning, tactics, rotation, morale and Recall, chatter, all 20 items, bounty, cultists, recipes); `WARBANDS_LIVE=fight WARBANDS_OUT=f.tsv WARBANDS_SEEDS=6` runs the fight comparison.
 
+## Event bands (0.4.0)
+
+A band that joins a vanilla event and fills the gap the event lacks. Code: `Common/EventBands.cs` (rosters, loot, event rules, the ticker), `Common/EventBandsCheck.cs` (self-check cases). Config: `EventBands` (master), `EventGoblins`, `EventPirates`, `EventSandstorm`, `EventSlimeRain`, `EventBandCooldownSeconds` (90), `EventBandMaxPerEvent` (4). Needs the Levy brain.
+
+| Event | Band | Weapon style | Look | Captain |
+|---|---|---|---|---|
+| Goblin Army | Goblin Skirmishers: aerial harassers | Spiky balls and the stage's guns; rocket boots (Hermes boots before the first boss), a grappling hook each; they hop to fresh high ground every few seconds | Goggles, blue skin | Warchief |
+| Pirate Invasion | Pirate Boarders: ranged boarders | The stage's guns and bows; cutlass boarders with a hook; they rally on the Flying Dutchman (the band's camp follows the ground under the ship and members stay within 70 tiles of it) | Pirate hat, shirt, pants | Captain |
+| Sandstorm | Sandstorm Mages | The stage's staves (all mages); Sandstorm in a Bottle from Hardmode | Ancient Headdress set; Forbidden set from Hardmode | Sandcaller |
+| Slime Rain | Ninja Clan | Katanas (the stage's blades from Skeletron on), shurikens, spiky balls; a hook each, Hermes boots; blades dart in and out | Ninja hood, shirt, pants | Sensei |
+
+- **Stage rule.** The event sets the look and the weapon style; the items come from the world's own stage table (`BandTypes`, the highest stage reached), so a band never carries what the player could not have yet. Signature items (spiky ball, shuriken, katana, cutlass, rocket boots) are checked against Levy's tier ceiling for every stage by the self-check. The Desert Tiger Staff is a captain drop only from the post-Plantera stage on (Levy cannot fire a summon staff on a hostile body).
+- **Only while the event is on.** The first band forms ten seconds into the event near a player who is inside it (invasions: the surface within the invasion's own spawn window of its front, on the side the invasion comes from; sandstorm: in the sandstorm; slime rain: on the surface). One band at a time per event, captain plus 3 to 5 members (plus the army bonus, 8 at most); the next forms after the cooldown, up to the per-event maximum. Never in a base: the footing needs open sky above it, no house walls beside it, no town NPC within 30 tiles, and it is 45 to 90 tiles from the player. When the event ends the band walks away from the nearest player and is removed once 80 tiles from every player; a member still near after 25 seconds drinks Recall. A band with no player within 220 tiles for 30 seconds is removed.
+- **Always hostile**, whatever `NeutralBandPercent` says. Health and damage are the ordinary band numbers (`BandStats`); the captain has 1.6 times a member's life and a title and nickname (Warchief Garrick "Hookhand").
+- **Progress.** Goblin Army and Pirate Invasion: a dead member takes 1 off the invasion's remaining size, the captain 2, exactly as vanilla does for its own invaders (`Main.invasionSize`, `Main.ReportInvasionProgress`, synced to clients). Sandstorm and Slime Rain have no counter.
+- **Loot.** Members drop nothing but a small vanity chance and a few of the event's consumables; the captain drops the event's own items (Goblin Army: spiky balls, Harpoon, rocket boots, Shadowflame bow, knife and hex doll, Goblin Tech, goggles; Pirates: Cutlass, Coin Gun, Lucky Coin, Discount Card, Gold Ring, Pirate Staff, pirate vanity; Sandstorm: Sandstorm in a Bottle, Forbidden and ancient vanity, Ancient Cloth, Flying Carpet, Desert Tiger Staff; Slime Rain: shuriken, spiky balls, Katana, ninja vanity, Slime Staff, Master Ninja Gear) at vanilla-or-kinder odds with stage gates. No bounty notice.
+- **Brain changes that came with it.** `Skirmish` rosters (goblins, ninjas): ranged members re-pick their high ground every 3 to 7 seconds; blades break off for a moment every 5 to 8 seconds and close in again. First contact: a ranged member engages from up to 60 tiles (blades 32) instead of waiting for a spot at 30 tiles or less (members of a band that formed 40 or more tiles away used to shuffle between spots and never fire).
+- **Lab.** `WARBANDS_LIVE=events WARBANDS_SEEDS=16 WARBANDS_OUT=ev.tsv` starts each event through the game's own calls (`Main.StartInvasion`, `Sandstorm.StartSandstorm`, `Main.StartSlimeRain`), lets the ticker form the band, fights it with the lab stand-in at the world stage, ends the event and checks that the band leaves; one TSV row per trial. `WARBANDS_EVENTS=Goblins,Pirates` limits it, `WARBANDS_DEBUGEV=1` logs member positions.
+
 ## Editing the dialogue
 
 Everything a band says is in one plain text file, `Warbands/Dialogue.txt`. Open it in any text editor. `[SPOTTED]`, `[WARNING]`, `[PANIC]`, `[RETREAT]`, `[VICTORY]`, `[DEFEAT]`, `[CHIP_DAMAGE]`, `[LEVY_BANTER]` and the others are situations; each line under one is something a soldier can say, one per row. `{mate}`, `{who}`, `{armor}` and `{n}` are filled in (another soldier's name, your name, your armor set, a number). `[SPOTTED Zealots]` or `[WARNING CorruptZealots]` is a variant for one band style or band type. Lines starting with `#` are notes.
@@ -32,7 +51,7 @@ You do not need to rebuild the mod: on its first run Warbands copies the file to
 
 ## Not done
 
-Summon staves and sentries on hostile bodies; the draw path is unverified headless (red plate, pennant, player-renderer body); multiplayer is exercised only through the packet path, not with a real client.
+Harpoon and Coin Gun are drops only: Levy cannot fire a tethered harpoon or a coin-ammo gun. Summon staves (Desert Tiger Staff, Pirate Staff), sentries and the Magic Carpet on hostile bodies; the draw path is unverified headless (red plate, pennant, player-renderer body); multiplayer is exercised only through the packet path, not with a real client.
 
 ## Testing
 

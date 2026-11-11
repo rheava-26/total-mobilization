@@ -3,6 +3,7 @@
 Chat: {
 	Arrive: "{0} are on the road."
 	Beaten: The {0} are beaten. Their bounty notice lies where the last one fell.
+	EventArrive: "{0} join the fight."
 }
 
 NPCs: {
@@ -98,6 +99,41 @@ Configs: {
 		CultistBand: {
 			Label: Cultist band
 			Tooltip: Cultist Archers fight as a band. Lunatic Devotees cast while they chant.
+		}
+
+		EventBands: {
+			Label: Event bands
+			Tooltip: A band joins a Goblin Army, Pirate Invasion, Sandstorm or Slime Rain while it lasts. They are always hostile and leave when the event ends.
+		}
+
+		EventGoblins: {
+			Label: Goblin skirmishers
+			Tooltip: Rocket-booted goblins with hooks and spiky balls join the Goblin Army.
+		}
+
+		EventPirates: {
+			Label: Pirate boarders
+			Tooltip: Gunners and boarders join the Pirate Invasion and gather under the Flying Dutchman.
+		}
+
+		EventSandstorm: {
+			Label: Sandstorm mages
+			Tooltip: Desert mages join a Sandstorm.
+		}
+
+		EventSlimeRain: {
+			Label: Ninja clan
+			Tooltip: A ninja clan joins a Slime Rain.
+		}
+
+		EventBandCooldownSeconds: {
+			Label: Event band cooldown
+			Tooltip: Seconds between one event band being beaten and the next one forming while the event lasts.
+		}
+
+		EventBandMaxPerEvent: {
+			Label: Event bands per event
+			Tooltip: Most bands one run of an event sends.
 		}
 	}
 }

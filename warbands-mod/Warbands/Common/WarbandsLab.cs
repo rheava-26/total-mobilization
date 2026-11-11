@@ -19,6 +19,7 @@ namespace Warbands.Common
 	/// HEADLESS LAB (env WARBANDS_LIVE=check|fight; nothing happens without it). A dedicated server with nobody online does not advance the world, so the lab steps Main.Update itself from the server loop (as Levy's harness does)
 	/// in a sealed sky arena with a stand-in player in slot 0 (real armor on it, a puppet weapon that fires at the nearest enemy on a fixed rhythm). Modes:
 	///   check  scripted scenarios with assertions: the real Levy brain on the enemy side (targets, shots, damage both ways, no i-frames), warnings, tactics, rotating aggro, morale and Recall, cultists, all 20 summoning items.
+	///   events a live run per vanilla event (Goblin Army, Pirate Invasion, Sandstorm, Slime Rain) over WARBANDS_SEEDS seeds: the band forms, fights, credits the invasion, drops the captain's loot, leaves when the event ends; one TSV row per trial.
 	///   fight  the fight comparison (Expert): the same player kit against a Levy-AI band, a phase-1 Fighter-AI band and ordinary enemies of the stage; one TSV row per fight (WARBANDS_OUT).
 	/// The check results go to the log as "[Warbands] LIVE PASS/FAIL ..." and into the self-check count.
 	/// </summary>
@@ -77,6 +78,7 @@ namespace Warbands.Common
 			BandChatter.Log.Lines.Clear();
 		}
 
+		public override void PreUpdateWorld() { if (On && Mode.Contains("events") && !Done) { Main.windSpeedCurrent = 0.8f; Main.windSpeedTarget = 0.8f; } }
 		public override void PreUpdateNPCs() { KeepPlayer(); }
 		public override void PreUpdateProjectiles() { KeepPlayer(); }
 		public override void PostUpdateNPCs() { KeepPlayer(); }
@@ -89,6 +91,7 @@ namespace Warbands.Common
 			p.active = true; p.dead = false; p.ghost = false;
 			if (_pin) { p.position = _pinAt; p.velocity = Vector2.Zero; }
 			Main.dayTime = true; Main.time = 27000; Main.raining = false; Main.eclipse = false; Main.bloodMoon = false;
+			if (Mode.Contains("events")) { Main.windSpeedCurrent = 0.8f; Main.windSpeedTarget = 0.8f; } // a sandstorm ends at once in dead air
 		}
 		private const string Tester = "WBTester";
 		private bool _pin; private Vector2 _pinAt; private int _extraDefense;
@@ -203,6 +206,7 @@ namespace Warbands.Common
 				BuildArena();
 				if (Mode.Contains("check")) AddCheckTrials();
 				if (Mode.Contains("fight")) AddFightTrials();
+				if (Mode.Contains("events")) AddEventTrials();
 				Mod.Logger.Info($"[Warbands] LIVE: {_trials.Count} trials ({Mode})");
 				_ti = -1; return;
 			}
@@ -244,7 +248,7 @@ namespace Warbands.Common
 		private void Finish(string why)
 		{
 			if (Done) return; Done = true;
-			if (Mode.Contains("fight")) { try { File.WriteAllText(Environment.GetEnvironmentVariable("WARBANDS_OUT") ?? "warbands_fight.tsv", _tsv.ToString()); } catch (Exception e) { Mod.Logger.Warn("[Warbands] lab: could not write the TSV: " + e.Message); } }
+			if (Mode.Contains("fight") || Mode.Contains("events")) { try { File.WriteAllText(Environment.GetEnvironmentVariable("WARBANDS_OUT") ?? "warbands_fight.tsv", _tsv.ToString()); } catch (Exception e) { Mod.Logger.Warn("[Warbands] lab: could not write the TSV: " + e.Message); } }
 			Mod.Logger.Info($"[Warbands] LIVE done ({why}) pass={Pass} fail={Fail}");
 			Mod.Logger.Info($"[Warbands] self-check done pass={Pass} fail={Fail} (live)");
 			try { Netplay.SaveOnServerExit = false; Netplay.Disconnect = true; } catch { }
@@ -527,6 +531,131 @@ namespace Warbands.Common
 					return (items == 20 && recipes == 20, $"{items} items, {recipes} recipes {string.Join(",", bad)}");
 				},
 			});
+		}
+
+		// ================================================================================================ EVENT TRIALS
+		private static readonly (string[] armor, int hp, int defAllow, string weapon, string ammo)[] EventKits =
+		{
+			(Gold, 200, 0, "DemonBow", "FlamingArrow"), (Shadow, 300, 2, "PhoenixBlaster", "MeteorShot"), (Shadow, 330, 4, "PhoenixBlaster", "MeteorShot"),
+			(Mythril, 400, 5, "MythrilRepeater", "HellfireArrow"), (Mythril, 450, 7, "MythrilRepeater", "HellfireArrow"), (Turtle, 500, 10, "Megashark", "ChlorophyteBullet"), (Turtle, 520, 12, "Megashark", "ChlorophyteBullet"),
+		};
+
+		private static readonly int[][] EventStages = { null, new[] { 0, 1, 2, 3, 5, 6 }, new[] { 3, 4, 5, 6 }, new[] { 0, 1, 2, 3, 4, 5 }, new[] { 0, 1, 2, 3, 4, 5 } };
+
+		/// <summary>The world's progress by actual bosses beaten (Levy's WeaponRank reads these flags).</summary>
+		private static void SetWorldStage(int s)
+		{
+			NPC.downedBoss2 = s >= 1; NPC.downedBoss3 = s >= 2; Main.hardMode = s >= 3;
+			NPC.downedMechBoss1 = NPC.downedMechBoss2 = NPC.downedMechBoss3 = NPC.downedMechBossAny = s >= 4;
+			NPC.downedPlantBoss = s >= 5; NPC.downedGolemBoss = s >= 6;
+		}
+
+		private static void StartEvent(EventKind k, Player p, int sign)
+		{
+			Main.invasionType = 0; Main.invasionSize = 0; Main.slimeRain = false; Terraria.GameContent.Events.Sandstorm.Happening = false;
+			p.ConsumedLifeCrystals = 5;
+			if (k == EventKind.Goblins || k == EventKind.Pirates)
+			{
+				Main.StartInvasion(k == EventKind.Goblins ? InvasionID.GoblinArmy : InvasionID.PirateInvasion);
+				if (Main.invasionType == 0) { Main.invasionType = k == EventKind.Goblins ? InvasionID.GoblinArmy : InvasionID.PirateInvasion; Main.invasionSize = Main.invasionSizeStart = k == EventKind.Goblins ? 120 : 180; }
+				Main.invasionX = p.Center.X / 16.0 + sign * 120; Main.invasionDelay = 0; // the front has arrived, 120 tiles to one side
+			}
+			else if (k == EventKind.Sandstorm) Terraria.GameContent.Events.Sandstorm.StartSandstorm();
+			else { Main.StartSlimeRain(false); if (!Main.slimeRain) Main.slimeRain = true; Main.slimeRainTime = 54000.0; }
+		}
+
+		private static void StopEvent(EventKind k)
+		{
+			if (k == EventKind.Goblins || k == EventKind.Pirates) Main.invasionType = 0;
+			else if (k == EventKind.Sandstorm) Terraria.GameContent.Events.Sandstorm.StopSandstorm();
+			else Main.StopSlimeRain(false);
+		}
+
+		private static readonly bool _debugEv = Environment.GetEnvironmentVariable("WARBANDS_DEBUGEV") == "1";
+		private void AddEventTrials()
+		{
+			int seeds = int.TryParse(Environment.GetEnvironmentVariable("WARBANDS_SEEDS"), out int sv) ? sv : 12;
+			string only = Environment.GetEnvironmentVariable("WARBANDS_EVENTS"); // e.g. "Goblins,Pirates" (default: all four)
+			_tsv.AppendLine("event\tstage\tseed\tside\tform_tick\tmembers\tbands\thostile\thostile_shots\tstandin_damage\tmin_dist_tiles\tnatural_kills\tkilled\tcaptain_killed\tcredited\texpected_credit\tinvasion_size_at_form\tinvasion_size_at_end\tcaptain_drop_items\tend_tick\tleft_ticks\tleft_walk_off\tleft_recall\tremaining\tnote");
+			foreach (var kind in new[] { EventKind.Goblins, EventKind.Pirates, EventKind.Sandstorm, EventKind.SlimeRain })
+			{
+				if (only != null && !only.Contains(kind.ToString())) continue;
+				for (int seed = 0; seed < seeds; seed++)
+				{
+					var k = kind; int sd = seed; int stage = EventStages[(int)k][seed % EventStages[(int)k].Length]; int sign = sd % 2 == 0 ? 1 : -1;
+					bool capAtExec = false; int k0 = 0, c0 = 0, creditedAtEnd = 0, aliveAtEnd = 0, stageSeen = -1, formTick = -1, endTick = -1, leftTick = -1, members = 0, cr0 = 0, cd0 = 0, dep0 = 0, rec0 = 0, sizeStart = 0, sizeEnd = 0, dropItems = 0, dropSnapAt = -1, killedAtEnd = 0, capAtEnd = 0, natKills = 0, execAt = -1;
+					bool hostile = false, sawLeaving = false; float minDist = 9999f;
+					var seen = new Dictionary<int, int>(); var dropTypes = new HashSet<int>();
+					int TotalKilled() { int s = 0; foreach (var v in seen.Values) s += v; return s; }
+					int AliveOfKind() { int a = 0; for (int i = 0; i < Main.maxNPCs; i++) { var n = Main.npc[i]; if (n.active && n.life > 0 && n.ModNPC is BandLevyNPC l && l.Roster != null && l.Roster.Event == k) a++; } return a; }
+					_trials.Add(new Trial
+					{
+						Name = $"event {k} / stage {stage} / seed {sd}", Max = 60 * 160,
+						Setup = () =>
+						{
+							WarbandsConfig.Get.NeutralBandPercent = 100f; WarbandsConfig.Get.EventBandCooldownSeconds = 10;
+							SetWorldStage(stage);
+							var kit = EventKits[stage]; ArmPlayer(kit.armor, kit.hp, kit.defAllow, kit.weapon, kit.ammo); _accuracy = 0.6f; _range = 48; DamageTaken = 0;
+							Main.rand = new Terraria.Utilities.UnifiedRandom(7000 * (int)k + 131 * sd + 3);
+							ModContent.GetInstance<EventBandSystem>().OnWorldLoad();
+							EventBands.LabAlwaysQualify = k == EventKind.Sandstorm || k == EventKind.SlimeRain;
+							_shotIds.Clear(); _shotsSeen = 0; formTick = endTick = leftTick = execAt = -1; capAtExec = false; hostile = false; sawLeaving = false; dropSnapAt = -1; dropItems = 0; dropTypes.Clear(); seen.Clear(); minDist = 9999f; natKills = 0;
+							cr0 = EventBands.Credited; k0 = EventBands.Kills; c0 = EventBands.CaptainKills; cd0 = EventBands.CaptainDrops; creditedAtEnd = 0; aliveAtEnd = 0; dep0 = EventBands.Departed; rec0 = BandLevyNPC.Vanished; killedAtEnd = capAtEnd = 0;
+							StartEvent(k, Main.player[0], sign); stageSeen = Stage.Current;
+							foreach (var d in EventBands.CaptainLoot(k)) dropTypes.Add(BandData.ItemType(d.Item));
+						},
+						Tick = t =>
+						{
+							CountShots();
+							if (_debugEv && formTick >= 0 && endTick < 0 && (t - formTick) % 150 == 0) for (int i = 0; i < Main.maxNPCs; i++) { var n = Main.npc[i]; if (n.active && n.ModNPC is BandLevyNPC l && l.Roster?.Event == k) Mod.Logger.Info($"[Warbands] dbg t={t - formTick} #{l.MemberIdx} {l.Role} {(l.IsCaptain ? "CAP " : "")}dist {Vector2.Distance(n.Center, Main.player[0].Center) / 16f:0.0} spot {(l.PostureSpot == default ? -1f : Vector2.Distance(n.Bottom, l.PostureSpot) / 16f):0.0} vel {n.velocity.X:0.0},{n.velocity.Y:0.0} target {l.HostileTarget?.whoAmI ?? -1} panic {l.Panic} hook {l.IsHooking} at {(int)(n.Center.X / 16f)},{(int)(n.Bottom.Y / 16f)} player {(int)(Main.player[0].Center.X / 16f)},{(int)(Main.player[0].Bottom.Y / 16f)} spotAt {(int)(l.PostureSpot.X / 16f)},{(int)(l.PostureSpot.Y / 16f)} weapon {l.Record?.Gear.Weapon.Name}"); }
+							foreach (var b in BandBrain.All.Values)
+							{
+								if (!b.IsEvent || b.Type.Event != k) continue;
+								if (!seen.ContainsKey(b.Id)) { seen[b.Id] = 0; if (formTick < 0) { formTick = t; members = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is BandLevyNPC l && l.BandId == b.Id) members++; hostile = !b.Neutral && b.Aggro; sizeStart = Main.invasionSize; } else hostile &= !b.Neutral && b.Aggro; }
+								seen[b.Id] = Math.Max(seen[b.Id], b.Killed); if (b.Leaving) sawLeaving = true;
+							}
+							if (formTick < 0) return t > 60 * 40; // the first band comes ten seconds in; none by forty is a failure
+							if (endTick < 0)
+							{
+								for (int i = 0; i < Main.maxNPCs; i++) { var n = Main.npc[i]; if (n.active && n.life > 0 && n.ModNPC is BandLevyNPC l && l.Roster?.Event == k) minDist = Math.Min(minDist, Vector2.Distance(n.Center, Main.player[0].Center) / 16f); }
+								if (dropSnapAt < 0 && EventBands.CaptainDrops > cd0) dropSnapAt = t + 2;
+								if (dropSnapAt > 0 && t == dropSnapAt) for (int i = 0; i < Main.maxItems; i++) if (Main.item[i].active && dropTypes.Contains(Main.item[i].type)) dropItems++;
+								// 25 seconds of real fighting, then the stand-in's weapon finishes what it started: one member and the captain fall at once, so every run exercises credit and the drop table
+								if (execAt < 0 && t - formTick >= 60 * 25) { execAt = t; natKills = EventBands.Kills - k0; }
+								if (execAt == t)
+								{
+									BandLevyNPC cap = null, crew = null;
+									for (int i = 0; i < Main.maxNPCs; i++) { var n = Main.npc[i]; if (n.active && n.life > 0 && n.ModNPC is BandLevyNPC l && l.Roster?.Event == k) { if (l.IsCaptain) cap = l; else crew ??= l; } }
+									capAtExec = cap != null; crew?.NPC.StrikeInstantKill(); cap?.NPC.StrikeInstantKill();
+									return false;
+								}
+								if (execAt >= 0 && t > execAt) { endTick = t; killedAtEnd = EventBands.Kills - k0; capAtEnd = EventBands.CaptainKills - c0; creditedAtEnd = EventBands.Credited - cr0; aliveAtEnd = AliveOfKind(); sizeEnd = Main.invasionSize; StopEvent(k); }
+								return false;
+							}
+							if (dropSnapAt > 0 && t == dropSnapAt) for (int i = 0; i < Main.maxItems; i++) if (Main.item[i].active && dropTypes.Contains(Main.item[i].type)) dropItems++;
+							if (AliveOfKind() == 0 && leftTick < 0) { leftTick = t; return true; }
+							return false;
+						},
+						Result = () =>
+						{
+							int remaining = AliveOfKind();
+							int credited = creditedAtEnd;
+							int expected = (k == EventKind.Goblins || k == EventKind.Pirates) ? Math.Max(0, killedAtEnd - capAtEnd) + 2 * capAtEnd : 0;
+							int walk = EventBands.Departed - dep0; int recall = BandLevyNPC.Vanished - rec0;
+							bool formedOk = formTick >= 60 * 9 && formTick <= 60 * 25 && members >= 3 && members <= 8;
+							bool fought = _shotsSeen > 0 || DamageTaken > 0;
+							bool killedOk = killedAtEnd >= 1 && (!capAtExec || capAtEnd >= 1);
+							bool creditOk = (k == EventKind.Sandstorm || k == EventKind.SlimeRain) ? Main.invasionSize == 0 || sizeEnd == sizeStart : credited == expected && credited >= 1 && (sizeStart - sizeEnd) == credited;
+							bool leaveOk = endTick >= 0 && leftTick >= 0 && remaining == 0 && (sawLeaving || aliveAtEnd == 0);
+							bool ok = formedOk && hostile && fought && killedOk && creditOk && leaveOk;
+							string note = (stageSeen == stage ? "" : $"stage mismatch (wanted {stage}, world {stageSeen}) ") + (ok ? "" : $"formedOk={formedOk} hostile={hostile} fought={fought} killedOk={killedOk} creditOk={creditOk} leaveOk={leaveOk}");
+							_tsv.AppendLine($"{k}\t{stage}\t{sd}\t{sign}\t{formTick}\t{members}\t{seen.Count}\t{(hostile ? 1 : 0)}\t{_shotsSeen}\t{DamageTaken:0}\t{minDist:0}\t{natKills}\t{killedAtEnd}\t{capAtEnd}\t{credited}\t{expected}\t{sizeStart}\t{sizeEnd}\t{dropItems}\t{endTick}\t{(leftTick >= 0 && endTick >= 0 ? leftTick - endTick : -1)}\t{walk}\t{recall}\t{remaining}\t{note}");
+							return (ok, $"form@{formTick} members {members} bands {seen.Count} hostile={hostile} shots {_shotsSeen} dmg {DamageTaken:0} closest {minDist:0} tiles, natural kills {natKills}, killed {killedAtEnd} (captain {capAtEnd}), credit {credited}/{expected} (size {sizeStart}->{sizeEnd}), captain-drop items {dropItems}, left {(leftTick >= 0 && endTick >= 0 ? (leftTick - endTick) : -1)} ticks after the end (off-screen {walk}, recall {recall}), remaining {remaining}{(note.Length > 0 ? " [" + note + "]" : "")}");
+						},
+						Cleanup = () => { StopEvent(k); EventBands.LabAlwaysQualify = false; },
+					});
+				}
+			}
 		}
 
 		// ================================================================================================ FIGHT TRIALS

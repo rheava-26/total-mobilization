@@ -17,6 +17,16 @@ Connected: Connected to {0}.
 Watching: Watching {0}.
 NoGoPro: No levy of yours carries a GoPro.
 Lost: The signal is lost.
+CamTitle: Camera view
+CamLevies: Levies
+CamCameras: Cameras
+CamEmpty: No GoPro or camera to watch.
+CamHideHud: Hide HUD
+CamShowHud: Show HUD
+CamHideHint: Hides the interface while watching. Esc or this button brings it back.
+CamStop: Stop watching
+CamStopHint: Return to your own view.
+HudRestore: Esc shows the HUD
 MindRefused: That levy cannot be controlled.
 MindNone: You have no living levy to control.
 HudCamera: CAMERA: {0}  (x{1})

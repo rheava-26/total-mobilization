@@ -72,7 +72,8 @@ Mods: {
 					'''
 					A body camera. A levy who carries one in the camera slot can be watched.
 					The Armory issues it to the camera slot, one per levy.
-					Use it to see through the next GoPro levy. Right-click or Esc to stop.
+					Use it to see through the next GoPro levy. Esc stops.
+					Right click to open the camera view
 					'''
 			}
 

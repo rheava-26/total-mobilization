@@ -37,6 +37,8 @@ namespace Levy.Common.Systems
 				new RecipeGroup(() => Language.GetTextValue("LegacyMisc.37") + " " + Lang.GetItemNameValue(ItemID.GraveMarker),
 					ItemID.Tombstone, ItemID.GraveMarker, ItemID.CrossGraveMarker, ItemID.Headstone, ItemID.Gravestone, ItemID.Obelisk,
 					ItemID.RichGravestone1, ItemID.RichGravestone2, ItemID.RichGravestone3, ItemID.RichGravestone4, ItemID.RichGravestone5));
+			RecipeGroup.RegisterGroup(LevyConstants.RecipeGroupAnyCopperBar,
+				new RecipeGroup(() => Language.GetTextValue("LegacyMisc.37") + " " + Lang.GetItemNameValue(ItemID.CopperBar), ItemID.CopperBar, ItemID.TinBar));
 			RecipeGroup.RegisterGroup(LevyConstants.RecipeGroupAnyChest,
 				new RecipeGroup(() => Language.GetTextValue("LegacyMisc.37") + " " + Lang.GetItemNameValue(ItemID.Chest), chests.ToArray()));
 		}

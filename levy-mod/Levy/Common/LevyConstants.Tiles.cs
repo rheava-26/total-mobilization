@@ -16,6 +16,7 @@ namespace Levy.Common
 		public const int WarHornRecipeWood = 5, WarHornRecipeIron = 1;
 		public const string RecipeGroupAnyBanner = "Levy:AnyBanner";
 		public const string RecipeGroupAnyChest = "Levy:AnyChest";
+		public const string RecipeGroupAnyCopperBar = "Levy:AnyCopperBar";
 
 		// ---------- Tiles ----------
 		public const int BarracksWidth = 3, BarracksHeight = 3;

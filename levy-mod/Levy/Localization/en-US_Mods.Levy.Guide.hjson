@@ -314,7 +314,7 @@ Pages: {
 		Body:
 			'''
 			Every levy has a camera slot that only a GoPro fits. Put GoPros in the Armory and they are issued one per levy, and a levy that carries one can be watched.
-			Use a GoPro to see through the next GoPro levy. Right-click or Esc stops.
+			Use a GoPro to see through the next GoPro levy. Right-click it to open the camera view: pick a levy or camera, hide the HUD, or stop. Esc stops.
 			Place a Static Camera, then right-click it from anywhere in reach to see its view. The mouse wheel zooms out.
 			The Mind Link takes direct control of the levy nearest your cursor. Right-click lets go.
 			'''

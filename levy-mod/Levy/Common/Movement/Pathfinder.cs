@@ -53,7 +53,7 @@ namespace Levy.Common.Movement
 		private int _ox, _oy, _w, _h;
 		private readonly List<int> _rev = new();
 		private Point _goalTile; private int _startIdx, _goalIdx, _bestIdx; private float _bestH, _hWeight;
-		private int _jumpTiles, _maxFall, _gapTiles, _maxFlight; private bool _wings;
+		private int _jumpTiles, _maxFall, _gapTiles, _maxFlight, _bestRow; private bool _wings;
 		// flight arcs (route searches of winged bodies): takeoff cell -> cruise row -> descent line -> landing cell
 		private bool _arcs, _gridFly; private float _arcFuelTicks, _arcCostPerTick, _arcGlideR; private int _arcAyT, _arcCxT;
 		private readonly short[] _arcAy, _arcCx;      // KindArc cells: cruise row (offset from the window top) and cruise columns
@@ -61,6 +61,7 @@ namespace Levy.Common.Movement
 		public static long StatArcScans, StatArcEdges;
 		/// <summary>Lab switch: LEVY_ARCS=0 turns the 2.0.53 travel changes off (flight arcs, the cheaper flight grid, the shallow-drop nudge, the overhead-waypoint flight), for before / after runs in one build.</summary>
 		public static readonly bool Travel6On = Environment.GetEnvironmentVariable("LEVY_ARCS") != "0";
+		public static readonly bool NudgeOn = Environment.GetEnvironmentVariable("LEVY_NUDGE") != "0", BestRowOn = Environment.GetEnvironmentVariable("LEVY_BESTROW") != "0";
 
 		public State Status { get; private set; }
 		public int Expanded { get; private set; }
@@ -104,8 +105,8 @@ namespace Levy.Common.Movement
 			_maxFall = _wings ? FallScanTiles : (TravelLegacy.On || centred ? Math.Min(FallScanTiles, _jumpTiles + DropMarginTiles) : FallScanTiles); // the executor (ScanAhead) takes a fall of exactly FallScanTiles on a planned route // a route may go down into a pit (a safe fall) when the far side lets it climb out
 			_gapTiles = abilities.GapTiles;
 			_maxFlight = TravelLegacy.On ? ushort.MaxValue : Math.Max(6, (int)(abilities.WingTimeMax * FlySpeed / 16f * FlightRangeShare)); // tiles of flight one tank of wing time covers, with room for the climb
-			_arcs = Travel6On && _wings && !centred && !TravelLegacy.On;
-			_gridFly = _wings && (!_arcs || gridFlight);   // a route search flies arcs between standing cells; the open-air grid only as the second pass (when no arc route reaches the goal)
+			_arcs = Travel6On && _wings && !centred && !TravelLegacy.On && !gridFlight;
+			_gridFly = _wings && !_arcs;   // a route search flies arcs between standing cells; the open-air flight grid only as the second pass (when no arc route reaches the goal within ArcPassMaxNodes)
 			_arcFuelTicks = _wings ? Math.Max(0f, (abilities.WingTimeMax - WingBudgetReserveTicks) * ArcFuelShare - ArcOverheadTicks) : 0f;
 			_arcCostPerTick = ArcPreference * Math.Max(3f, abilities.MaxRunSpeed) / 16f;           // search cost of a tick of flight: a tick of walking at the body's run speed costs 1/16 tile-cost per px
 			_arcGlideR = MathHelper.Clamp(abilities.MaxRunSpeed / GlideFallSpeed * ArcGlideSpeedShare, ArcGlideRatioMin, ArcGlideRatioMax);
@@ -113,7 +114,7 @@ namespace Levy.Common.Movement
 			_hook = allowHooks && !TravelLegacy.On && !centred && !_wings && abilities.HasHook && abilities.HookReachPx >= HookMinReachTiles * 16f;
 			_climb = !TravelLegacy.On && !centred && abilities.CanWallClimb;
 			_hookReachPx = _hook ? abilities.HookReachPx : 0f; _ban = hookBan;
-			_goalTile = t;
+			_goalTile = t; _bestRow = Math.Max(s.Y, t.Y) + 15;
 			if (++_gen == int.MaxValue) { Array.Clear(_stamp, 0, _stamp.Length); _gen = 1; }
 			_heapN = 0;
 			_startIdx = Idx(s.X, s.Y); _goalIdx = Idx(t.X, t.Y);
@@ -135,7 +136,7 @@ namespace Levy.Common.Movement
 				_closed[cur] = true;
 				int cx = _ox + cur % _w, cy = _oy + cur / _w;
 				if (cur == _goalIdx) { Status = State.Found; return Status; }
-				float hc = Heur(cx, cy);
+				float hc = Heur(cx, cy) + (Travel6On && BestRowOn ? Math.Max(0, cy - _bestRow) * 0.6f : 0f);   // (the end of a best-effort route is not a hole far below the goal)
 				if (hc < _bestH && _trap[cur] == 0) { _bestH = hc; _bestIdx = cur; }
 				Expand(cx, cy, cur, _g[cur]);
 				Expanded++;
@@ -430,14 +431,12 @@ namespace Levy.Common.Movement
 		}
 
 		// ---- flight arcs ----
-		/// <summary>A standing cell with a wall (two or more tiles high) or no floor within ArcLaunchLook tiles on this side: somewhere a body with wings takes off.</summary>
-		private static bool ArcLaunch(int x, int y, int side)
+		/// <summary>A standing cell at the rim of a pit or a gap, or with a wall taller than ArcLaunchWallRows within ArcLaunchLook tiles on this side: somewhere a body with wings takes off.</summary>
+		private bool ArcLaunch(int x, int y, int side)
 		{
-			for (int k = 1; k <= ArcLaunchLook; k++)
-			{
-				int cx = x + side * k;
-				if (TileNav.IsSolid(cx, y - 1) || !TileNav.IsFloor(cx, y + 1)) return true;
-			}
+			if (!TileNav.IsFloor(x + side, y + 1)) return true;                                  // the rim of a pit or a gap
+			int h = Math.Min(_jumpTiles, ArcLaunchWallRows);
+			for (int k = 1; k <= ArcLaunchLook; k++) if (TileNav.IsSolid(x + side * k, y - h)) return true;   // a wall taller than that stands within a few tiles
 			return false;
 		}
 
@@ -445,13 +444,9 @@ namespace Levy.Common.Movement
 		{
 			if (_afs[c] != _arcStamp)
 			{
-				int col = x0 + side * c, fr = int.MaxValue; bool lv = false;
+				int col = x0 + side * c;
 				int rMax = Math.Min(ay + ArcMaxDescentRows, _oy + _h - 2);
-				for (int r = ay + 1; r <= rMax; r++)
-				{
-					if (TileNav.HasLava(col, r)) { fr = r; lv = true; break; }
-					if (TileNav.IsFloor(col, r) || TileNav.IsSolid(col, r)) { fr = r; break; }
-				}
+				int fr = TileNav.FirstFloorOrLava(col, ay + 1, rMax, out bool lv);
 				_afr[c] = fr; _afl[c] = lv; _afs[c] = _arcStamp;
 			}
 			lava = _afl[c]; return _afr[c];
@@ -496,12 +491,13 @@ namespace Levy.Common.Movement
 			if (maxC < 0) return;
 			if (++_arcStamp == int.MaxValue) { Array.Clear(_afs, 0, _afs.Length); Array.Clear(_ats, 0, _ats.Length); _arcStamp = 1; }
 			int lastTx = int.MinValue, lastTy = int.MinValue;
-			for (int cx = 0; cx <= maxC; cx++)
+			for (int cx = 0; cx <= maxC; cx += (cx >= 8 ? 2 : 1))
 			{
 				if (cx > 0)
 				{
 					int col = x + side * cx;
 					if (!InWindow(col, ay)) break;
+					if (cx >= 9 && !ArcTopClear(x, side, ay, cx - 1)) break;          // (the column skipped by the step of two)
 					if (!ArcTopClear(x, side, ay, cx)) break;
 					int fc = ArcFloor(x, side, ay, cx, out _);
 					if (fc != int.MaxValue && fc < ay + 1 + ArcClearAboveFloor) break;       // the ground comes up into the cruise: this cruise ends

@@ -116,7 +116,7 @@ namespace Levy.Common.Movement
 				var st = PathSearch.State.Running; int spent = 0;
 				while (st == PathSearch.State.Running && spent < RouteNodesPerTick && (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency < RouteSliceMs) { int chunk = _aAb != null && _aAb.HasWings ? RouteChunkNodes / 4 : RouteChunkNodes; st = _big.Step(chunk); spent += chunk; }   // an arc node scans hundreds of tiles: check the clock more often
 				r.NodesUsed = _hookBase + _big.Expanded;
-				if (st == PathSearch.State.Running && _big.Expanded >= RouteMaxNodes) { _big.Abandon(); st = _big.Status; }
+				if (st == PathSearch.State.Running && _big.Expanded >= (_aAb != null && _aAb.HasWings && !r.GridPass && PathSearch.Travel6On ? ArcPassMaxNodes : RouteMaxNodes)) { _big.Abandon(); st = _big.Status; }
 				// a route on foot comes first: only when none reaches the goal does the search run again with the grappling hook's edges (a levy walks where it can)
 				if (st != PathSearch.State.Running && st != PathSearch.State.Found && r.HookTiles > 0 && !r.HookPass)
 				{

@@ -247,7 +247,9 @@ namespace Levy.Common
 			public static readonly int[] ArcApex = { 3, 6, 10, 16, 24, 34 };
 			public const int ArcClearAboveFloor = 3;
 			/// <summary>A standing cell with a wall or no floor this many tiles ahead is a launch spot.</summary>
-			public const int ArcLaunchLook = 4;
+			public const int ArcLaunchLook = 4, ArcLaunchWallRows = 3;
+			/// <summary>Nodes the arc search may spend before the route search starts again with the open-air flight grid (arc routes need a few hundred).</summary>
+			public const int ArcPassMaxNodes = 30000;
 			/// <summary>Search cost of an arc: a takeoff, and the share of the walking cost its flight time is charged at (below 1: flight is faster than walking, so it is preferred).</summary>
 			public const float ArcTakeoffCost = 2f, ArcPreference = 0.85f;
 			/// <summary>Horizontal tiles a glide covers per tile it falls: run speed over the glide fall speed, kept at this share, and clamped.</summary>

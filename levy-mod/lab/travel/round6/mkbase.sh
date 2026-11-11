@@ -14,5 +14,5 @@ for f in $(git diff --name-only e7ff2af | grep '^levy-mod/Levy/' ); do
   esac
 done
 rm -f $B/Levy/Content/NPCs/SoldierNPC.FlightTalk.cs
-printf 'namespace Levy.Content.NPCs { public partial class SoldierNPC { internal static long StatArcStarts, StatArcFuelOut; internal static int FlightShouts, FlightLines; } }\n' > $B/Levy/Content/NPCs/SoldierNPC.BaseStubs.cs
+printf 'namespace Levy.Content.NPCs { public partial class SoldierNPC { internal static long StatArcStarts, StatArcFuelOut; internal static int FlightShouts, FlightLines; internal static long FlyUnjams; } }\n' > $B/Levy/Content/NPCs/SoldierNPC.BaseStubs.cs
 cd /home/user/lab/t6 && bash build.sh $B/Levy base

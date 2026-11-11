@@ -151,7 +151,7 @@ namespace Levy.Content.NPCs
 				int face = FacingWhileMoving(dir);
 				npc.direction = face; npc.spriteDirection = face;
 				bool close = Math.Abs(_pathFromRoute && !TravelLegacy.On && HasMoveGoal ? MoveGoal.X - npc.Center.X : dx) < WalkWithinTiles * 16 && !Retreating; // a retreat always runs, however short the step; on a planned route the waypoints are close together, the leg end is what counts
-				bool walk = reversing || close || State == SoldierState.Idle || State == SoldierState.Patrol;
+				bool walk = reversing || (close && !(PathSearch.Travel6On && _pathFromRoute && RouteFlying && !grounded)) || State == SoldierState.Idle || State == SoldierState.Patrol;   // (a glide to a landing does not slow to a stroll for its last six tiles)
 				maxSpeed = walk ? WalkSpeedPx * Abilities.WalkSpeed : Abilities.MaxRunSpeed; // MaxRunSpeed already carries moveSpeed the way Player.Update applies it (not on the sprint)
 				if (State == SoldierState.Routed && !walk) maxSpeed *= LevyConstants.RoutedSpeedMult;
 				accel = walk ? WalkAccel : RunAccel;
@@ -667,6 +667,8 @@ namespace Levy.Content.NPCs
 		private void Fly(Vector2 goal, int dir, bool flyUp)
 		{
 			NPC npc = NPC;
+			// thrusting but not moving: a corner of the ceiling or the wall holds the body (it is 20 px wide, a tile is 16); slide it off a few pixels
+			if (PathSearch.Travel6On && _flying && npc.velocity.LengthSquared() < 0.06f && (goal - npc.Bottom).LengthSquared() > 24f * 24f) { if (++_flyJam >= 3) { FlyUnjam(goal - npc.Bottom); _flyJam = 0; } } else _flyJam = 0;
 			_flying = true;
 			// hold-to-accelerate: bonus is the share of the wings' peak speed earned so far (0 = flat FlySpeed, today's behaviour)
 			float bonus = (_flyPeakMult - 1f) * Math.Min(1f, _flyRampTicks / (float)FlyRampTicks);
@@ -684,6 +686,21 @@ namespace Levy.Content.NPCs
 			_blocked = false;
 			if (desired.X != 0f) { npc.direction = desired.X > 0f ? 1 : -1; npc.spriteDirection = npc.direction; }
 		}
+
+		private int _flyJam;
+		/// <summary>Moves the body 2 to 6 px sideways of its heading to the first spot from which a few pixels of travel toward the goal are free.</summary>
+		private void FlyUnjam(Vector2 toGoal)
+		{
+			NPC npc = NPC; Vector2 dir = toGoal.SafeNormalize(Vector2.Zero), perp = new Vector2(-dir.Y, dir.X);
+			for (int k = 1; k <= 3; k++)
+				for (int sgn = 1; sgn >= -1; sgn -= 2)
+				{
+					Vector2 cand = npc.position + perp * (sgn * 2f * k);
+					if (Collision.SolidCollision(cand, npc.width, npc.height) || Collision.SolidCollision(cand + dir * 4f, npc.width, npc.height)) continue;
+					npc.position = cand; FlyUnjams++; return;
+				}
+		}
+		internal static long FlyUnjams;
 
 		/// <summary>With wings but no flight time left, fall slowly.</summary>
 		private void Glide(bool grounded)
@@ -1092,7 +1109,7 @@ namespace Levy.Content.NPCs
 			// A drop waypoint sits in the landing column, so a body whose centre is already over it (balanced on the lip, still held up by the edge of its box) has no sideways error left to walk off with.
 			// Aim a little past it, in the direction the route goes on, until the body is in the air.
 			// (a shallow drop counts too, and so does a body that stands on a slope or a half block, whose vertical speed is a small positive number: the lip of a two-tile dip held bodies for seconds)
-			bool shallowOk = PathSearch.Travel6On;
+			bool shallowOk = PathSearch.NudgeOn && PathSearch.Travel6On && !_rtHookWant && _hkPhase == HookPhase.Idle && !_clmOn;   // (not at a hook's cast point or the foot of a climb: the body stands there on purpose)
 			if (!TravelLegacy.On && next.Y - NPC.Bottom.Y > (shallowOk ? 12f : 32f) && Math.Abs(next.X - NPC.Center.X) < 14f && (shallowOk ? NPC.velocity.Y >= 0f && NPC.velocity.Y < 2.5f : NPC.velocity.Y == 0f))
 			{
 				float onward = _path.Count > 1 ? _path[1].X : MoveGoal.X;

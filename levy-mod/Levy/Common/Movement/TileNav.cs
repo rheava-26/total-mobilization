@@ -66,6 +66,24 @@ namespace Levy.Common.Movement
 			return t.LiquidAmount > LevyConstants.Movement.DeepWaterLiquid && t.LiquidType != LiquidID.Lava;
 		}
 
+		/// <summary>The first row in [r0, r1] of column x that holds a floor (a solid tile or a platform, not a closed door) or lava, one tile read per row; int.MaxValue when none. <paramref name="lava"/> says it was lava.</summary>
+		public static int FirstFloorOrLava(int x, int r0, int r1, out bool lava)
+		{
+			lava = false;
+			for (int r = r0; r <= r1; r++)
+			{
+				if (!InBounds(x, r)) return r;
+				Tile t = Main.tile[x, r];
+				if (t.LiquidAmount > 0 && t.LiquidType == LiquidID.Lava) { lava = true; return r; }
+				if (t.HasUnactuatedTile)
+				{
+					ushort type = t.TileType;
+					if ((Main.tileSolid[type] || Main.tileSolidTop[type]) && !IsClosedDoor(t)) return r;
+				}
+			}
+			return int.MaxValue;
+		}
+
 		/// <summary>The three body cells with their feet in tile (x, y) hold no wall and no lava.</summary>
 		public static bool IsBodyClear(int x, int y)
 			=> !IsSolid(x, y) && !IsSolid(x, y - 1) && !IsSolid(x, y - 2) && !HasLava(x, y) && !HasLava(x, y - 1) && !HasLava(x, y - 2);

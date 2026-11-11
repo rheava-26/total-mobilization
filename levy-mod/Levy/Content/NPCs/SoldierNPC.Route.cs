@@ -28,8 +28,12 @@ namespace Levy.Content.NPCs
 		private readonly List<long> _rtBan = new();
 		private bool _rtHookWant; private Point _rtHookT; private Vector2 _rtHookGoal; private uint _rtHookSince, _rtHookLastTry; private int _rtHookTries;
 		internal int RouteHookCasts, RouteHookBans;
+		/// <summary>Tick the route last asked this body to fly an arc (thrust while the tank lasts); 0 = never. Movement reads it (<see cref="RouteFlying"/>).</summary>
+		private uint _rtFlyTick;
+		internal bool RouteFlying => _rtFlyTick != 0 && Main.GameUpdateCount - _rtFlyTick <= (uint)RouteFlyHoldTicks;
+		internal static long StatArcStarts, StatArcFuelOut;
 
-		internal void RouteReset() { ClimbCancel(); _rtBan.Clear(); _rtHookWant = false; RouteExhausted = false; _rt = null; _rtIdx = 0; _rtVariant = 0; _rtReplans = 0; _rtLegSent = new Vector2(float.MinValue); RouteEndedShort = false; _pathFromRoute = false; }
+		internal void RouteReset() { _rtFlyTick = 0; ClimbCancel(); _rtBan.Clear(); _rtHookWant = false; RouteExhausted = false; _rt = null; _rtIdx = 0; _rtVariant = 0; _rtReplans = 0; _rtLegSent = new Vector2(float.MinValue); RouteEndedShort = false; _pathFromRoute = false; }
 
 		/// <summary>Hands the movement code the waypoints of the current leg as its path (no search): the same list a local A* would have produced.</summary>
 		private void FeedPath(List<Vector2> pts, Vector2 goal)
@@ -52,7 +56,7 @@ namespace Levy.Content.NPCs
 			if (_hkPhase != HookPhase.Idle && _hkPhase != HookPhase.Cooldown && _rt != null && _rtHookWant) { _rtProgPos = NPC.Center; _rtProgTick = now; leg = _rtHookGoal; return true; }
 			Vector2 me = NPC.Bottom;
 			float dxT = Math.Abs(goalBottom.X - me.X) / 16f, dyT = (goalBottom.Y - me.Y) / 16f;
-			if (dxT <= RouteMinTripTiles && Math.Abs(dyT) <= RouteMinTripRise) { if (_rt != null) RouteReset(); return false; }
+			if (dxT <= RouteMinTripTiles && Math.Abs(dyT) <= RouteMinTripRise && !(_rt != null && RouteFlying && NPC.velocity.Y != 0f)) { if (_rt != null) RouteReset(); return false; }   // (an arc in the air is flown to its landing)
 			// a trip wider than the planner's window is routed in hops: the far side of a floor column RouteMaxHopTiles on toward the goal
 			if (dxT > RouteMaxHopTiles)
 			{
@@ -147,13 +151,38 @@ namespace Levy.Content.NPCs
 				leg = goalBottom; return true; // the last stretch: the goal itself
 			}
 
+			// the next waypoints are the air points of an arc: walk to the takeoff cell, then fly them to the landing (thrust while the tank lasts, a glide after)
+			if (hasKinds && kinds[_rtIdx] == 4)
+			{
+				_rtHookWant = false;
+				Vector2 takeoff = _rtIdx > 0 ? pts[_rtIdx - 1] : me;
+				bool midArc = _rtIdx > 0 && kinds[_rtIdx - 1] == 4;
+				bool atTakeoff = Math.Abs(takeoff.X - me.X) < 40f && Math.Abs(takeoff.Y - me.Y) < 56f;
+				if (midArc || NPC.velocity.Y != 0f || _flying || atTakeoff)
+				{
+					int e = _rtIdx; while (e + 1 < n && kinds[e + 1] == 4) e++;
+					if (!RouteFlying) { StatArcStarts++; TakeoffTalk(); }
+					_rtFlyTick = Main.GameUpdateCount;
+					leg = pts[e];
+					if (leg != _rtLegSent || _path.Count == 0)
+					{
+						_rtLeg.Clear();
+						for (int i = _rtIdx; i <= e; i++) _rtLeg.Add(pts[i]);
+						FeedPath(_rtLeg, leg);
+						_rtLegSent = leg;
+					}
+					return true;
+				}
+				if (_rtLegSent != takeoff || _path.Count == 0) { _rtLeg.Clear(); _rtLeg.Add(takeoff); FeedPath(_rtLeg, takeoff); _rtLegSent = takeoff; }
+				leg = takeoff; return true;
+			}
 			// the leg: waypoints up to RouteLookaheadTiles of polyline ahead
 			float acc = 0f; int j = _rtIdx; Vector2 prev = me;
 			for (; j < n; j++)
 			{
 				acc += Vector2.Distance(prev, pts[j]) / 16f; prev = pts[j];
 				if (acc >= RouteLookaheadTiles) break;
-				if (hasKinds && j + 1 < n && kinds[j + 1] != 0) break;   // the leg ends at a hook cast point
+				if (hasKinds && j + 1 < n && kinds[j + 1] != 0) break;   // the leg ends at a hook cast point, a climb foot or a takeoff cell
 			}
 			if (j >= n) j = n - 1;
 			leg = pts[j];
@@ -201,7 +230,8 @@ namespace Levy.Content.NPCs
 			if (_rt == null) return "route=none";
 			string nx = "";
 			for (int i = _rtIdx; i < Math.Min(_rt.Pts.Count, _rtIdx + 6); i++) { var q = TileNav.FeetTile(_rt.Pts[i]); nx += $"({q.X - TileNav.FeetTile(NPC.Bottom).X},{q.Y - TileNav.FeetTile(NPC.Bottom).Y})"; }
-			return $"route={_rt.State} hookWant={_rtHookWant}/{_rtHookTries} bans={_rtBan.Count} idx={_rtIdx}/{_rt.Pts.Count} replans={_rtReplans} fromRoute={_pathFromRoute} pathN={_path.Count} goal=({MoveGoal.X / 16f:0},{MoveGoal.Y / 16f:0}) next={nx}";
+			string p0 = _path.Count > 0 ? $"({(_path[0].X - NPC.Center.X) / 16f:0.0},{(_path[0].Y - NPC.Bottom.Y) / 16f:0.0})" : "none";
+			return $"p0={p0} whyM={WhyM} route={_rt.State} hookWant={_rtHookWant}/{_rtHookTries} bans={_rtBan.Count} idx={_rtIdx}/{_rt.Pts.Count} replans={_rtReplans} fromRoute={_pathFromRoute} pathN={_path.Count} goal=({MoveGoal.X / 16f:0},{MoveGoal.Y / 16f:0}) next={nx}";
 		}
 
 		private static bool LevyUtilIsServerOrSingle() => global::Levy.Common.Util.LevyUtil.IsServerOrSingle;

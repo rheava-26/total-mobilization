@@ -24,6 +24,7 @@
 #               COMRADE_HIT COMRADE_DOWN SHAKEN ROUTED RALLIED VICTORY PROMOTED VETERAN DEATH_MESSAGE
 #               MUTINY MUTINY_BEGIN MUTINY_REFUSE MUTINY_CALM   (soldiers in revolt over unpaid wages)
 #               DRINK   (the army is served a round from a keg, case or cooler; floating lines, a few levies each time)
+#               TAKEOFF FLIGHT_FEAR LANDING   (a winged levy on a long march: a complaint before take-off, fear in the air, relief on landing; floating lines, a few at a time)
 #               OFFICER_MARCH NURSE_MARCH   (officers talking on the march)
 #               OFFICER_<Officer>_<STATE>   (an officer's own voice; STATE is IDLE MARCH HOLD FIGHT BOSS HURT VICTORY)
 #               OFFICER_CHAT_<STATE>        (the officer voice used when an officer has no lines of his own for that STATE)
@@ -585,6 +586,41 @@ MUTINY | Any | No coin, no orders!
 MUTINY | Any | Your gold or your head!
 MUTINY_REFUSE | Any | No orders! Not until we're paid!
 MUTINY_CALM | Any | Paid. Back to work.
+
+# ---------------------------------------------------------------- Pro-ground (the party of the ground)
+IDLE | Any | Feet on the ground. Vote Pro-Ground.
+IDLE | Any | The ground has never let me down. Not once. Not even the pit.
+IDLE | Any | Pro-Ground: because up is just down that hasn't happened yet.
+IDLE | Any | I'm running for ground. Platform: it's there when you need it.
+IDLE | Any | Wings are for people with something to prove. I have a perfectly good floor.
+IDLE | Any | Two feet, one floor. That's all the politics I need.
+IDLE | Any | Fly if you like. I'll be here. On the ground. Where it's nice.
+IDLE | Any | Say it with me: the ground is our friend. The ground is also underneath us.
+IDLE | Any | Vote Pro-Ground! We keep it level!
+IDLE | Any | If we were meant to fly, they'd have given the wings a union.
+IDLE | Any | I love the ground. I love it more every time we leave it.
+
+# ---------------------------------------------------------------- Flying: TAKEOFF, FLIGHT_FEAR, LANDING
+TAKEOFF | Any | Do we have to? I just got comfortable down here.
+TAKEOFF | Any | Is there a path? There's usually a path. I like paths.
+TAKEOFF | Any | I'll go, but I'm not going to enjoy it.
+TAKEOFF | Any | Nobody look at me. I do this badly.
+TAKEOFF | Any | Fine. Up. But I'm writing to my representative.
+TAKEOFF | Any | Tell my boots I'll be back.
+TAKEOFF | Any | Eyes closed. Wings open. Mostly the wings.
+TAKEOFF | Any | Pro-Ground means pro-ground! I'm going under protest!
+FLIGHT_FEAR | Any | Too high! Too high! Who made it this high?!
+FLIGHT_FEAR | Any | I can see the top of the trees! Trees shouldn't have tops!
+FLIGHT_FEAR | Any | Where's the floor? The floor was right here a second ago!
+FLIGHT_FEAR | Any | The ground is so far away! I miss it so much!
+FLIGHT_FEAR | Any | Don't flap so hard! You're making it worse!
+FLIGHT_FEAR | Any | Everything down there looks like a map! I hate maps!
+LANDING | Any | Ground! Sweet, sweet ground! I'll never leave you again!
+LANDING | Any | Solid. Flat. Mine. Never again.
+LANDING | Any | I'm kissing this dirt. Nobody make it weird.
+LANDING | Any | The ground never let me down. I let it down. Sorry, ground.
+LANDING | Any | I'm fine. I'm absolutely fine. Give me a minute.
+LANDING | Any | Pro-Ground! Pro-Ground! Pro-Ground!
 
 # ============================================================================================================
 # DRINK  (the army is served a round: a floating line over a few of the levies a moment after the cheer)

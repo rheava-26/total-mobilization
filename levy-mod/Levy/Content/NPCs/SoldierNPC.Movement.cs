@@ -64,6 +64,7 @@ namespace Levy.Content.NPCs
 		partial void Movement_Update()
 		{
 			Movement_UpdateCore();
+			FlightTalkTick();
 			AirPost();   // SoldierNPC.AirCtl.cs: lava catch, wing hold / release, telemetry (last word on the air velocity)
 		}
 
@@ -150,7 +151,7 @@ namespace Levy.Content.NPCs
 				int face = FacingWhileMoving(dir);
 				npc.direction = face; npc.spriteDirection = face;
 				bool close = Math.Abs(_pathFromRoute && !TravelLegacy.On && HasMoveGoal ? MoveGoal.X - npc.Center.X : dx) < WalkWithinTiles * 16 && !Retreating; // a retreat always runs, however short the step; on a planned route the waypoints are close together, the leg end is what counts
-				bool walk = reversing || close || State == SoldierState.Idle || State == SoldierState.Patrol;
+				bool walk = reversing || (close && !(PathSearch.Travel6On && _pathFromRoute && RouteFlying && !grounded)) || State == SoldierState.Idle || State == SoldierState.Patrol;   // (a glide to a landing does not slow to a stroll for its last six tiles)
 				maxSpeed = walk ? WalkSpeedPx * Abilities.WalkSpeed : Abilities.MaxRunSpeed; // MaxRunSpeed already carries moveSpeed the way Player.Update applies it (not on the sprint)
 				if (State == SoldierState.Routed && !walk) maxSpeed *= LevyConstants.RoutedSpeedMult;
 				accel = walk ? WalkAccel : RunAccel;
@@ -179,7 +180,8 @@ namespace Levy.Content.NPCs
 			// goal well below while standing on a platform: drop through it when the floor below is safe
 			if (!air && grounded && (dy > PlatformDropBelowPx || brainDropRequest) && PlatformDropIsSafe()) { _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; }
 			if (Abilities.HasWings && dy < -(Abilities.JumpTiles * 16f)) wantFly = true;
-			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && _wingTime > 0 && dy < -RouteFlyRisePx) wantFly = true; // a planned route climbs by wing (a flight edge), not by hopping at the foot of the climb
+			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && _wingTime > 0 && dy < -(Math.Abs(dx) < 24f && PathSearch.Travel6On ? ArriveYPx : RouteFlyRisePx)) wantFly = true;   // (a waypoint straight overhead, between 'arrived' and the flight threshold, used to leave the body standing under it until the wedge jump) // a planned route climbs by wing (a flight edge), not by hopping at the foot of the climb
+			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && RouteFlying) { if (_wingTime > 0) { wantFly = true; flyUp = false; } else if (!grounded) StatArcFuelOutNote(); } // a planned arc: thrust toward the next air point while the tank lasts, a glide after
 			if (air) { jumpTiles = 0; wantFly = false; flyUp = false; } // aerial mode owns the vertical axis
 
 			if (!air && Abilities.HasWings && _wingTime > 0 && (wantFly || (_flying && dy < -FlyArriveYPx)))
@@ -665,6 +667,8 @@ namespace Levy.Content.NPCs
 		private void Fly(Vector2 goal, int dir, bool flyUp)
 		{
 			NPC npc = NPC;
+			// thrusting but not moving: a corner of the ceiling or the wall holds the body (it is 20 px wide, a tile is 16); slide it off a few pixels
+			if (PathSearch.Travel6On && _flying && npc.velocity.LengthSquared() < 0.06f && (goal - npc.Bottom).LengthSquared() > 24f * 24f) { if (++_flyJam >= 3) { FlyUnjam(goal - npc.Bottom); _flyJam = 0; } } else _flyJam = 0;
 			_flying = true;
 			// hold-to-accelerate: bonus is the share of the wings' peak speed earned so far (0 = flat FlySpeed, today's behaviour)
 			float bonus = (_flyPeakMult - 1f) * Math.Min(1f, _flyRampTicks / (float)FlyRampTicks);
@@ -674,13 +678,29 @@ namespace Levy.Content.NPCs
 			Vector2 desired = flyUp
 				? new Vector2(dir * FlySpeed * 0.3f, -FlySpeed * (1f + bonus * FlyUpRampShare))
 				: toGoal.SafeNormalize(Vector2.Zero) * FlySpeed * (1f + bonus * MathHelper.Clamp(toGoal.Length() / FlyRampArriveDampPx, 0f, 1f));
-			npc.velocity.X += MathHelper.Clamp(desired.X - npc.velocity.X, -FlyAccel, FlyAccel);
-			npc.velocity.Y += MathHelper.Clamp(desired.Y - npc.velocity.Y, -FlyAccel, FlyAccel);
+			float acc = PathSearch.Travel6On && _pathFromRoute && RouteFlying ? RouteFlyAccel : FlyAccel;   // a planned arc turns and takes off crisply (the planner's fuel sum assumes it)
+			npc.velocity.X += MathHelper.Clamp(desired.X - npc.velocity.X, -acc, acc);
+			npc.velocity.Y += MathHelper.Clamp(desired.Y - npc.velocity.Y, -acc, acc);
 			npc.velocity.Y -= Gravity();
 			_wingTime--;
 			_blocked = false;
 			if (desired.X != 0f) { npc.direction = desired.X > 0f ? 1 : -1; npc.spriteDirection = npc.direction; }
 		}
+
+		private int _flyJam;
+		/// <summary>Moves the body 2 to 6 px sideways of its heading to the first spot from which a few pixels of travel toward the goal are free.</summary>
+		private void FlyUnjam(Vector2 toGoal)
+		{
+			NPC npc = NPC; Vector2 dir = toGoal.SafeNormalize(Vector2.Zero), perp = new Vector2(-dir.Y, dir.X);
+			for (int k = 1; k <= 3; k++)
+				for (int sgn = 1; sgn >= -1; sgn -= 2)
+				{
+					Vector2 cand = npc.position + perp * (sgn * 2f * k);
+					if (Collision.SolidCollision(cand, npc.width, npc.height) || Collision.SolidCollision(cand + dir * 4f, npc.width, npc.height)) continue;
+					npc.position = cand; FlyUnjams++; return;
+				}
+		}
+		internal static long FlyUnjams;
 
 		/// <summary>With wings but no flight time left, fall slowly.</summary>
 		private void Glide(bool grounded)
@@ -1088,7 +1108,9 @@ namespace Levy.Content.NPCs
 			Vector2 next = _path[0];
 			// A drop waypoint sits in the landing column, so a body whose centre is already over it (balanced on the lip, still held up by the edge of its box) has no sideways error left to walk off with.
 			// Aim a little past it, in the direction the route goes on, until the body is in the air.
-			if (!TravelLegacy.On && next.Y - NPC.Bottom.Y > 32f && Math.Abs(next.X - NPC.Center.X) < 14f && NPC.velocity.Y == 0f)
+			// (a shallow drop counts too, and so does a body that stands on a slope or a half block, whose vertical speed is a small positive number: the lip of a two-tile dip held bodies for seconds)
+			bool shallowOk = PathSearch.NudgeOn && PathSearch.Travel6On && !_rtHookWant && _hkPhase == HookPhase.Idle && !_clmOn;   // (not at a hook's cast point or the foot of a climb: the body stands there on purpose)
+			if (!TravelLegacy.On && next.Y - NPC.Bottom.Y > (shallowOk ? 12f : 32f) && Math.Abs(next.X - NPC.Center.X) < 14f && (shallowOk ? NPC.velocity.Y >= 0f && NPC.velocity.Y < 2.5f : NPC.velocity.Y == 0f))
 			{
 				float onward = _path.Count > 1 ? _path[1].X : MoveGoal.X;
 				next.X += (onward >= NPC.Center.X ? 1f : -1f) * 24f;

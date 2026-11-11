@@ -32,7 +32,8 @@ namespace Levy.Common
 		OFFICER_CHAT_FIGHT, OFFICER_CHAT_BOSS, OFFICER_CHAT_HURT, OFFICER_CHAT_VICTORY,
 		OFFICER_CHAT_MARCH, OFFICER_CHAT_HOLD, OFFICER_CHAT_IDLE,
 		MUTINY_BEGIN, MUTINY_REFUSE, MUTINY_CALM, // appended: the mutineers' lines now live in the dialogue file too
-		DRINK // appended: a floating line over a levy when the army is served a round (see DrinkCheers)
+		DRINK, // appended: a floating line over a levy when the army is served a round (see DrinkCheers)
+		FLIGHT_SHOUT, FLIGHT_FEAR, TAKEOFF, LANDING // appended: a winged levy's shout in the air, its fear mid-flight, a complaint before take-off, relief on landing (SoldierNPC.FlightTalk.cs)
 	}
 
 	/// <summary>Where a dialogue line is delivered.</summary>

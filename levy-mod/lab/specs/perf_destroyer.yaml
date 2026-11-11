@@ -1,4 +1,7 @@
-# perf: the Destroyer (Death mode) against an army, to measure the update cost per tick ([Crowd] lines + [Prof] lines in server.log.gz). The Destroyer's life is scaled so the fight lasts; levies take 10% damage so they stay up.
+# perf: the Destroyer (Death mode) against an army, to measure the update cost per tick ([Crowd] census lines + LEVY_PROF buckets, summarised by lab/perf_summary.py RUN_DIR).
+# The Destroyer's life is scaled so the fight lasts; levies take 10% damage so they stay up. The commander is a Spectator (the boss goes for the levies) except in `nospec`.
+#   alone = the Destroyer with one levy (stand-in)   army = 36 levies   armymech = + 10 Mechanization field drones and 3 turrets   nospec = army with the commander a plain visible player
+#   army_before = LEVY_OPT=0 (the code path before the perf-destroyer fixes)
 name: perf_destroyer
 boss: destroyer
 mode: death
@@ -7,9 +10,11 @@ levies: 36
 seeds: 3
 bhp: 8
 dr: 0.9
-cap: 70
-env: {LEVY_CROWD: 1, LEVY_PROF: 1}
+cap: 40
+env: {LEVY_CROWD: 1, LEVY_PROF: 1, LEVY_SPIKE_MS: 22}
 vs:
   alone: {levies: 1}
   army: {}
-  armymech: {drones: 10, turrets: 3}
+  armymech: {tokens: [drones=10, turrets=3]}
+  nospec: {tokens: [spec=0]}
+  army_before: {env: {LEVY_OPT: 0}}

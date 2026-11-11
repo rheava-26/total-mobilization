@@ -146,11 +146,13 @@ namespace Levy.Content.NPCs
 				// ResetEffects ends in ResetProjectileCaches, which zeroes the owned counts: put them back (PrepareCountsOncePerTick filled them) or the Stardust Guardian is cast every tick.
 				// (The array is one int per projectile type, thousands with Calamity, and all but a few entries are zero: only the non-zero ones are saved and put back; a full-array copy twice per soldier per tick was a measurable slice of the army's tick.)
 				int[] counts = d.ownedProjectileCounts;
-				int nz = SaveOwnedCounts(counts);
+				int nz = 0;
+				if (global::Levy.Common.Util.LevyProf.Opt) nz = SaveOwnedCounts(counts);
+				else { if (_upkeepCounts == null || _upkeepCounts.Length != counts.Length) _upkeepCounts = new int[counts.Length]; Array.Copy(counts, _upkeepCounts, counts.Length); }
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfCopy, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				d.ResetEffects();
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfReset, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
-				RestoreOwnedCounts(d.ownedProjectileCounts, nz);
+				if (global::Levy.Common.Util.LevyProf.Opt) RestoreOwnedCounts(d.ownedProjectileCounts, nz); else Array.Copy(_upkeepCounts, d.ownedProjectileCounts, counts.Length);
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfCopy, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				d.numMinions = savedNum; d.slotsMinions = savedSlots; d.highestStormTigerGemOriginalDamage = hs; d.highestAbigailCounterOriginalDamage = ha;
 

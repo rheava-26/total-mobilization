@@ -125,6 +125,14 @@ namespace Levy.Common.Globals
 			// refuse it before anything else spends time on the pair.
 			if ((SoldierIndex >= 0 || CommanderIndex >= 0) && target.friendly) return false;
 			if (CommanderIndex >= 0 && SoldierIndex < 0 && SoldierTargeting.IsNeverTarget(target)) return false;
+			// A soldier's own shot (LootCredit's rule, folded in so the pair pays for one hook and one tag lookup, not two): never hits what a soldier would never choose (disguised mimics, cultist set pieces, bound NPCs,
+			// Plantera's hooks, the Dungeon Guardian... never start a fight we did not choose; the one exception is a critter inside the commander's Focus Attack radius), and a soldier told to hold fire keeps its real
+			// minions beside it but they deal nothing.
+			if (SoldierIndex >= 0)
+			{
+				if (SoldierTargeting.IsNeverTarget(target) && !SoldierTargeting.FocusAllowsCritterShot(SoldierIndex, target)) return false;
+				if (SoldierMinions.SuppressedByHoldFire(projectile, SoldierIndex)) return false;
+			}
 			return null;
 		}
 

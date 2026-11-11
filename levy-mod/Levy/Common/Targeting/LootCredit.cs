@@ -68,18 +68,7 @@ namespace Levy.Common.Targeting
 	/// <summary>Soldier shots: never hit what a soldier would never choose; book-keep every hit. Hooks fire on the machine whose index owns the projectile (the server for npcProj shots owned by Main.myPlayer).</summary>
 	public class LootCreditGlobalProjectile : GlobalProjectile
 	{
-		public override bool? CanHitNPC(Projectile projectile, NPC target)
-		{
-			var tag = projectile.GetGlobalProjectile<SoldierProjectileTag>();
-			if (!tag.IsSoldierShot) return null;
-			// Friendly projectiles already skip friendly NPCs (Projectile.Damage flag9 = !npc.friendly); this adds the never-target list:
-			// disguised mimics, cultist set pieces, bound NPCs, Plantera's hooks, the Dungeon Guardian... never start a fight we did not choose.
-			// (the one exception: a critter inside the commander's Focus Attack radius)
-			if (SoldierTargeting.IsNeverTarget(target) && !SoldierTargeting.FocusAllowsCritterShot(tag.SoldierIndex, target)) return false;
-			// a soldier told to hold fire keeps its real minions beside it but they deal nothing
-			if (Weapons.SoldierMinions.SuppressedByHoldFire(projectile, tag.SoldierIndex)) return false;
-			return null;
-		}
+		// CanHitNPC (the never-target list, hold fire) lives in SoldierProjectileTag.CanHitNPC: one hook per projectile/NPC pair instead of two, and the pair loop is the army's hottest vanilla path.
 
 		// Runs before NPC.StrikeNPC (which drops loot synchronously on a kill): the commander must already be on the interaction list here.
 		public override void ModifyHitNPC(Projectile projectile, NPC target, ref NPC.HitModifiers modifiers)

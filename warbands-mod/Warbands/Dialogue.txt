@@ -166,3 +166,122 @@ Oh good, a stranger. Nobody say anything weird, {mate}.
 Hey! We were being NICE, {who}, {mate} tell them we were being nice!
 Okay, fine, FINE, that's it, now we're doing this, {mate}!
 That's what we get for being polite!
+
+# ---------------------------------------------------------------- event bands (they join a Goblin Army, Pirate Invasion, Sandstorm or Slime Rain)
+# [EVENT_ARRIVE] is said by the captain when the band forms, [EVENT_END] when the event is over and the band walks off. The variants [X EventGoblins], [X EventPirates], [X EventSandstorm] and [X EventSlimeRain] are used about half the time.
+[EVENT_ARRIVE]
+Right, we're with the big lot now. {mate}, stay near someone who looks important!
+Everybody into position, and by position I mean over there, {mate}!
+
+[EVENT_END]
+That's the whole thing done, {mate}, everybody pretend we were never here!
+Event's over, lads. {mate}, you're carrying the flag home, no, I'm kidding, nobody has the flag!
+
+[EVENT_ARRIVE EventGoblins]
+Rocket boots on, hooks out, {mate}, and if anyone lands in a hole it's their own fault!
+Up on the rooftops, {mate}, the army wants us bouncy and annoying!
+Warchief says harass them, {mate}, so everybody harass!
+
+[EVENT_END EventGoblins]
+The army's broken, {mate}, take the boots and go, go, go!
+
+[SPOTTED EventGoblins]
+Spiky ball, {mate}, give me a spiky ball, no, the pointy kind!
+Get above them, get above them, {mate}, they hate it when we're above!
+Hook, boost, throw, repeat, {mate}, that's the whole plan, the whole plan!
+They look so serious down there, {mate}, let's fix that!
+
+[HURT EventGoblins]
+Ow, that was my good ear, {mate}, I only have the one good ear!
+My boots are smoking, {mate}, is that normal, are my boots smoking?!
+
+[PANIC EventGoblins]
+Everybody bounce away, {mate}, bouncing counts as a plan!
+Hook out, {mate}, hook OUT, I'm leaving at speed!
+
+[MATE_DIED EventGoblins]
+They got {mate}, they got the one with the nice hook, that was a really nice hook!
+
+[VICTORY EventGoblins]
+We got one! {mate}, tell the Warchief we got one, tell everyone!
+
+[EVENT_ARRIVE EventPirates]
+Pirates, to the shore! {mate}, mind the powder, it's the only dry stuff we have!
+We board at sunset, {mate}, or whenever, I don't have a watch!
+
+[EVENT_END EventPirates]
+The ship's gone quiet, {mate}, which means someone's lost the map again!
+
+[SPOTTED EventPirates]
+Fire at will, {mate}, and at {who} if you can't find will!
+Steady, steady, {mate}, wait for the cannon, no, shoot now, the cannon's late!
+Under the ship, everyone under the ship, {mate}, it's the only shade!
+Boarders forward, {mate}, shooters behind the boarders, and nobody behind the shooters!
+
+[HURT EventPirates]
+That's my favourite hat, {mate}, you can't shoot that, it's got sentimental holes in it already!
+Tell the parrot I was brave, {mate}, I was medium brave!
+
+[PANIC EventPirates]
+Abandon ship, {mate}, I mean abandon the ground, it's the same thing, run!
+Every pirate for himself, {mate}, and I'm the only pirate in here!
+
+[MATE_DIED EventPirates]
+{mate}, they got Old Whatshisname, that's a lot of paperwork!
+
+[VICTORY EventPirates]
+Hah! That's one for the ship, {mate}, hang him on the mast, no, the other mast!
+
+[EVENT_ARRIVE EventSandstorm]
+The wind's on our side, {mate}, mostly because it's on everyone's side!
+Fingers out, {mate}, we cast on three, or two, whichever comes first!
+
+[EVENT_END EventSandstorm]
+Storm's dying, {mate}, dust settles, mages leave, that's the arrangement!
+
+[SPOTTED EventSandstorm]
+Sand in my robes, sand in my spells, {mate}, sand in my breakfast!
+{who}, you picked the wrong dune, {mate}, tell them it's the wrong dune!
+Cast through the storm, {mate}, they can't see us and we can barely see them!
+Don't look into the sand, {mate}, I did and now I have opinions!
+
+[HURT EventSandstorm]
+My robe's on fire, {mate}, is it my robe or the dune, it's hard to tell with all this sand!
+That went right through my spell, {mate}, my spell had one job!
+
+[PANIC EventSandstorm]
+Hold the storm, {mate}, hold it, I'm going around it, around it very quickly!
+I forgot every spell, {mate}, I just forgot them, all of them, at once!
+
+[MATE_DIED EventSandstorm]
+{mate}'s gone into the dune, {mate} is the dune now, that's how it works out here!
+
+[VICTORY EventSandstorm]
+The sand knew, {mate}, the sand always knows, I'm taking a nap!
+
+[EVENT_ARRIVE EventSlimeRain]
+Roll out, {mate}, quiet feet, quiet feet, slimy feet are fine!
+Sensei says nobody gets hit, {mate}, and by nobody he means him!
+
+[EVENT_END EventSlimeRain]
+The rain's done, {mate}, back to the shadows, and if we can't find any, behind a tree!
+
+[SPOTTED EventSlimeRain]
+In, strike, out, {mate}, in, strike, out, no, the other out!
+Throw first, think later, {mate}, the shurikens won't throw themselves!
+Don't slip in the goo, {mate}, ninjas never slip, I'm just saying it for you!
+{who} thinks we can't see them, {mate}, show them we can't be seen either!
+
+[HURT EventSlimeRain]
+Hit! Where, {mate}, which side, I don't know which side I have!
+That was not in the training, {mate}, the training was very clear about getting hit!
+
+[PANIC EventSlimeRain]
+Vanish, {mate}, vanish now, I'm not even here, I'm already vanished!
+Smoke bomb, {mate}, give me a smoke bomb, any smoke, just smoke!
+
+[MATE_DIED EventSlimeRain]
+{mate} was the quiet one, {mate} will be quietly missed!
+
+[VICTORY EventSlimeRain]
+Swift as the rain, {mate}, and twice as wet!

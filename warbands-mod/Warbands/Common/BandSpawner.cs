@@ -98,15 +98,17 @@ namespace Warbands.Common
 		}
 
 		/// <summary>Forms one band of <paramref name="type"/> near <paramref name="p"/>, <paramref name="minTiles"/> to <paramref name="maxTiles"/> to one side. <paramref name="size"/> is the base count; the army bonus is added and the total capped at 8.</summary>
-		public static bool SpawnBand(Player p, BandRoster type, int size, int minTiles, int maxTiles, bool legacy = false, bool armyBonus = true, bool neutral = false)
+		public static bool SpawnBand(Player p, BandRoster type, int size, int minTiles, int maxTiles, bool legacy = false, bool armyBonus = true, bool neutral = false, int forceSide = 0, bool eventFoot = false)
 		{
-			int n = Math.Min(MaxBand, Math.Max(1, size) + (armyBonus ? ArmyBonus() : 0));
+			// an event band is its captain plus the members asked for (the captain does not count against the config size)
+			bool isEvent = type.Event != EventKind.None;
+			int n = Math.Min(MaxBand, Math.Max(1, size) + (armyBonus ? ArmyBonus() : 0) + (isEvent ? 1 : 0));
 			// find room for the whole band before anything spawns: up to six tries (alternating sides) at a footing where at least three soldiers (or all of a smaller band) have a place to stand
-			int side = Main.rand.NextBool() ? 1 : -1; Point? foot = null; List<(int k, Point spot)> spots = null;
+			int side = forceSide != 0 ? forceSide : Main.rand.NextBool() ? 1 : -1; Point? foot = null; List<(int k, Point spot)> spots = null;
 			for (int attempt = 0; attempt < 6 && spots == null; attempt++)
 			{
 				int sd = attempt % 2 == 0 ? side : -side;
-				Point? f = FindFooting(p, sd, minTiles, maxTiles); if (f == null) continue;
+				Point? f = FindFooting(p, sd, minTiles, maxTiles, eventFoot ? EventBands.OpenFooting : null); if (f == null) continue;
 				var taken = new List<Point>(); var got = new List<(int, Point)>();
 				for (int k = 0; k < n; k++) if (PlaceMember(f.Value, sd, k, taken, out Point sp)) { taken.Add(sp); got.Add((k, sp)); }
 				if (got.Count >= Math.Min(n, 3)) { spots = got; foot = f; side = sd; }
@@ -142,13 +144,17 @@ namespace Warbands.Common
 			if (slotFull > 0) SlotFailures++;
 			if (made == 0) { if (brain != null) BandBrain.All.Remove(bandId); return false; }
 			if (brain != null) brain.StartSize = made;
+			LastBrain = brain;
 			BandsSpawned++;
-			string line = Language.GetTextValue("Mods.Warbands.Chat.Arrive", type.DisplayName);
+			string line = Language.GetTextValue(isEvent ? "Mods.Warbands.Chat.EventArrive" : "Mods.Warbands.Chat.Arrive", type.DisplayName);
 			if (Main.netMode == NetmodeID.Server) Terraria.Chat.ChatHelper.BroadcastChatMessage(NetworkText.FromLiteral(line), new Color(210, 150, 90));
 			else Main.NewText(line, 210, 150, 90);
 			Warbands.Instance.Logger.Info($"[Warbands] band #{bandId} '{type.Name}' stage {stage} size {made}{(legacy ? " (fighter AI)" : "")} at tile {foot.Value.X},{foot.Value.Y}{(neutral ? " (neutral)" : "")}{(noSpot > 0 ? $" ({noSpot} members found no standing room)" : "")}{(slotFull > 0 ? $" ({slotFull} members left out: NPC array full)" : "")}");
 			return true;
 		}
+
+		/// <summary>The brain of the band the last successful SpawnBand formed (null for a legacy Fighter-AI band).</summary>
+		public static BandBrain LastBrain;
 
 		/// <summary>The summoning item was used: a band of that type forms 24 to 34 tiles from the player.</summary>
 		public static bool Summon(Player p, int typeIdx)
@@ -178,14 +184,14 @@ namespace Warbands.Common
 		}
 
 		/// <summary>A standing spot <paramref name="minTiles"/> to <paramref name="maxTiles"/> tiles to one side of the player, as (column, floor row): a body fits there, and of the floors in the column the one nearest the player's own height is taken (so the band stands where the player can reach it, not on the topmost ledge).</summary>
-		public static Point? FindFooting(Player p, int side, int minTiles, int maxTiles)
+		public static Point? FindFooting(Player p, int side, int minTiles, int maxTiles, Func<Point, bool> accept = null)
 		{
 			int px = (int)(p.Center.X / 16f), py = (int)(p.Bottom.Y / 16f);
 			for (int attempt = 0; attempt < 18; attempt++)
 			{
 				int x = Math.Clamp(px + side * (minTiles + Main.rand.Next(Math.Max(1, maxTiles - minTiles + 1))), 10, Main.maxTilesX - 10);
 				int fy = FloorAt(x, py, 25, 40);
-				if (fy >= 0) return new Point(x, fy);
+				if (fy >= 0 && (accept == null || accept(new Point(x, fy)))) return new Point(x, fy);
 			}
 			return null;
 		}

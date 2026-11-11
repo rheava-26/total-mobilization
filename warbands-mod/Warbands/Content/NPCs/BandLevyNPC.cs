@@ -30,6 +30,10 @@ namespace Warbands.Content.NPCs
 		public BandMember Member => Roster != null && MemberIdx < Roster.Members.Length ? Roster.Members[MemberIdx] : null;
 		public char Role => Member?.Role ?? 'E';
 		public int Group => MemberIdx & 1;
+		/// <summary>Event bands: the sturdier named member that drops the event's loot.</summary>
+		public bool IsCaptain => Member?.Captain == true;
+		public const float CaptainLifeMult = 1.6f;
+		private uint _skWithdrawUntil, _skNextAt, _hopAt; private int _leaveDir;
 		public uint EngagedUntil;
 		public float Morale = 100f;
 		public string ShortName = "";
@@ -116,20 +120,22 @@ namespace Warbands.Content.NPCs
 		public void Setup(BandRoster type, int memberIdx, int stage, int bandId, int startSize)
 		{
 			BandId = bandId; TypeIdx = (byte)Math.Max(0, BandTypes.IndexOf(type));
-			string title = type.RankTitle ?? "Soldier"; MemberIdx = (byte)memberIdx; StageIdx = (byte)stage;
+			MemberIdx = (byte)memberIdx; StageIdx = (byte)stage;
 			var m = type.Members[memberIdx % type.Members.Length];
+			string title = (m.Captain ? type.CaptainTitle : null) ?? type.RankTitle ?? "Soldier";
 			var rng = new Random(bandId * 7919 + memberIdx * 31 + 5);
 			ShortName = First[rng.Next(First.Length)];
-			var rec = new SoldierRecord { Name = title + " " + ShortName, Id = -(bandId * 16 + memberIdx + 1), Kind = SoldierKind.Regular, Grade = Grade.Levy };
+			string full = title + " " + ShortName + (m.Captain ? " " + EventBands.Epithet(type.Event, rng) : "");
+			var rec = new SoldierRecord { Name = full, Id = -(bandId * 16 + memberIdx + 1), Kind = SoldierKind.Regular, Grade = Grade.Levy };
 			rec.Male = rng.Next(2) == 0; rec.Hair = 1 + rng.Next(30); rec.SkinVariant = 0;
 			rec.HairColor = new Color(50 + rng.Next(150), 35 + rng.Next(80), 25 + rng.Next(40));
-			rec.SkinColor = new Color(232 - rng.Next(60), 176 - rng.Next(50), 140 - rng.Next(40)); rec.EyeColor = new Color(60, 40, 30);
+			rec.SkinColor = type.Skin.HasValue ? new Color(type.Skin.Value.R + rng.Next(-12, 13), type.Skin.Value.G + rng.Next(-12, 13), type.Skin.Value.B + rng.Next(-12, 13)) : new Color(232 - rng.Next(60), 176 - rng.Next(50), 140 - rng.Next(40)); rec.EyeColor = new Color(60, 40, 30);
 			// the red of an enemy: shirt and sash in the band's red, a stripe in its tint
 			rec.ShirtColor = new Color(170 + rng.Next(50), 40 + rng.Next(30), 40 + rng.Next(25)); rec.UnderShirtColor = new Color(90, 30, 30);
 			rec.PantsColor = new Color(70 + rng.Next(40), 50, 45); rec.ShoeColor = new Color(60, 40, 35);
 			if (m.Role == 'M') rec.ManaCrystals = 9;
 			var g = rec.Gear;
-			g.Weapon = Make(m.Weapon);
+			g.Weapon = Make(m.Weapon, WeaponStack(m.Weapon));
 			if (m.Ammo != null) g.Ammo = Make(m.Ammo, 999);
 			g.Head = Make(m.Armor[0]); g.Body = Make(m.Armor[1]); g.Legs = Make(m.Armor[2]);
 			GiveKit(g, m, stage, memberIdx);
@@ -144,8 +150,10 @@ namespace Warbands.Content.NPCs
 			_budgetHit = BandStats.Hit(stage, m.Role, weaponHit, m.Role == 'E' ? Math.Min(hz, 1.5f) : hz);
 			_shotScale = _budgetHit / weaponHit;
 			HostileBind(rec, life, defCap);
+			if (m.Captain) { NPC.lifeMax = Math.Max(1, (int)Math.Round(NPC.lifeMax * CaptainLifeMult)); NPC.life = NPC.lifeMax; }
 			NPC.lavaImmune = type.Biome == BandBiome.Underworld;
 			NPC.GivenName = rec.Name;
+			if (m.Captain) NPC.rarity = BandRarity + 1;
 			NPC.netUpdate = true;
 			_lastLife = NPC.life;
 		}
@@ -159,11 +167,24 @@ namespace Warbands.Content.NPCs
 		private static void GiveKit(SoldierGear g, BandMember m, int stage, int idx)
 		{
 			int a = 0;
+			if (m.Kit != null || m.Hook != null) // an event band's own kit (EventBands): exactly these accessories and this hook
+			{
+				if (m.Hook != null) g.Hook = Make(m.Hook);
+				if (m.Kit != null) foreach (var k in m.Kit) if (a < g.Accessories.Length) g.Accessories[a++] = Make(k);
+				return;
+			}
 			if (stage >= 1 && idx % 3 == 0) g.Hook = Make("GrapplingHook");
 			if (stage >= 5 && idx % 2 == 1) g.Accessories[a++] = Make("LeafWings");
 			else if (stage >= 3 && idx % 2 == 1) g.Accessories[a++] = Make("AngelWings");
 			if (stage >= 1 && m.Role == 'E') g.Accessories[a++] = Make("HermesBoots");
 			else if (stage >= 1 && m.Role != 'E' && idx % 2 == 0) g.Accessories[a++] = Make("CloudinaBottle");
+		}
+
+		/// <summary>A thrown consumable (spiky ball, shuriken) is carried as a big stack; every other weapon as one.</summary>
+		private static int WeaponStack(string name)
+		{
+			int t = BandData.ItemType(name); if (t <= 0) return 1;
+			var it = new Item(); it.SetDefaults(t); return it.consumable ? 999 : 1;
 		}
 
 		public string RandomMateName()
@@ -183,7 +204,7 @@ namespace Warbands.Content.NPCs
 		{
 			var band = BandBrain.Get(BandId);
 			if (band == null) return true;
-			if (Recalling) return false;
+			if (Recalling || band.Leaving) return false;
 			if (Panic) return Main.rand.NextBool(3); // a routed body still fires, wildly (Levy applies the routed aim penalty)
 			return band.TryToken(this);
 		}
@@ -193,9 +214,12 @@ namespace Warbands.Content.NPCs
 			var band = BandBrain.Get(BandId);
 			if (band == null) { base.HostileThink(now); return; }
 			if (Recalling) { HostileStop(); return; }
+			if (band.Leaving) { LeaveStep(now); return; }
 			// a neutral band nobody has provoked goes about its business
 			if (band.Neutral && !band.Provoked) { HostileDropTarget(); Loiter(band, now); return; }
 			NPC near = HostileNearestEnemy(120f, out float nearTiles);
+			// the Flying Dutchman's boarders stay with their ship
+			if (band.Rally && Vector2.Distance(NPC.Center, band.Anchor) > 70f * 16f && (near == null || nearTiles > 20f)) { HostileDropTarget(); HostileIdleState(); HostileGoTo(band.Anchor); return; }
 			if (near == null)
 			{
 				// nobody in sight: camp at the spot the band formed
@@ -226,6 +250,7 @@ namespace Warbands.Content.NPCs
 				Posture(band, near, 30f, Role != 'E', (uint)now);
 				return;
 			}
+			if (Roster?.Skirmish == true && Role == 'E' && !Panic && SkirmishWithdraw(near, (uint)now)) return;
 			bool engaged = HostileEngage();
 			NPC foe = HostileTarget ?? near;
 			FoeClass cls = BandBrain.ClassOf(foe);
@@ -300,13 +325,51 @@ namespace Warbands.Content.NPCs
 			bool clumped = false;
 			foreach (var o in band.Members) if (o != this && o.NPC.active && Vector2.Distance(o.NPC.Center, NPC.Center) < 4f * 16f) { clumped = true; break; }
 			if (!clumped) _clumpSince = 0; else if (_clumpSince == 0) _clumpSince = now;
-			if (clumped && now - _clumpSince > 45 && now >= _postureUntil)
+			// a skirmisher (goblins, ninjas) does not stand still: every few seconds it hops to fresh high ground
+			bool hop = Roster?.Skirmish == true && Role != 'E' && now >= _hopAt;
+			if (hop) _hopAt = now + 200u + (uint)Main.rand.Next(220);
+			if ((clumped && now - _clumpSince > 45 || hop) && now >= _postureUntil)
 			{
 				_postureUntil = now + 100; _postureAt = 0;
 				float range = Role == 'E' ? 6f : cls == FoeClass.Melee ? 15f : cls == FoeClass.Unknown ? 12f : 9f;
 				var s = FindSpot(band, foe, range, Role != 'E'); if (s != null) PostureSpot = s.Value; else _postureUntil = 0;
 			}
 			if (now < _postureUntil && PostureSpot != default && Vector2.Distance(NPC.Bottom, PostureSpot) > 28f) HostileGoTo(PostureSpot);
+		}
+
+		/// <summary>Hit and run for a skirmishing blade: after five to eight seconds in melee it breaks off for a moment, back-stepping with the full movement kit, then closes in again.</summary>
+		private bool SkirmishWithdraw(NPC near, uint now)
+		{
+			if (now < _skWithdrawUntil)
+			{
+				HostileDropTarget(); HostileIdleState();
+				float away = NPC.Center.X >= near.Center.X ? 1f : -1f;
+				HostileGoTo(new Vector2(NPC.Center.X + away * 12f * 16f, NPC.Center.Y), false);
+				return true;
+			}
+			if (_skNextAt == 0) _skNextAt = now + 300u + (uint)Main.rand.Next(180);
+			if (now >= _skNextAt && Vector2.Distance(NPC.Center, near.Center) < 10f * 16f) { _skWithdrawUntil = now + 80; _skNextAt = now + 80 + 300u + (uint)Main.rand.Next(180); }
+			return false;
+		}
+
+		/// <summary>The event is over: walk away from the nearest player, shooting at nobody. EventBands removes the member once it is off screen.</summary>
+		private void LeaveStep(int now)
+		{
+			HostileDropTarget(); HostileIdleState();
+			if (_leaveDir == 0)
+			{
+				float best = float.MaxValue; _leaveDir = Main.rand.NextBool() ? 1 : -1;
+				for (int i = 0; i < Main.maxPlayers; i++) { var p = Main.player[i]; if (!p.active || p.dead) continue; float d = Math.Abs(p.Center.X - NPC.Center.X); if (d < best) { best = d; _leaveDir = NPC.Center.X >= p.Center.X ? 1 : -1; } }
+			}
+			HostileGoTo(new Vector2(NPC.Center.X + _leaveDir * 40f * 16f, NPC.Center.Y));
+		}
+
+		/// <summary>The Recall potion, now: the same glow and flash as a routed member, with no morale needed (EventBands' fallback for a member that could not walk off).</summary>
+		public void BeginRecall()
+		{
+			if (Recalling) return;
+			Recalling = true; RecallDrinks++; _recallDone = Main.GameUpdateCount + 55; NPC.netUpdate = true;
+			SoundEngine.PlaySound(SoundID.Item3, NPC.Center);
 		}
 
 		/// <summary>What the band does about the class of its foe: ranged members keep the maximum range from a melee foe, close in on a gunner or caster, and take flanking positions around a summoner.</summary>
@@ -432,6 +495,7 @@ namespace Warbands.Content.NPCs
 			var band = BandBrain.Get(BandId);
 			bool oneTap = _lifeBeforeBlow >= NPC.lifeMax * 0.6f && _lastBlow >= NPC.lifeMax * 0.55f;
 			band?.OnMemberDied(this, oneTap);
+			if (band != null && band.IsEvent) { EventBands.OnMemberKilled(this, band); return; } // an event band's reward is the event's own loot, not its gear
 			var cfg = WarbandsConfig.Get; if (cfg == null || !cfg.GearDrops) return; float share = cfg.LootSharePercent / 100f;
 			void Roll(string name, int stack, float chance) { int t = BandData.ItemType(name); if (t > 0 && Main.rand.NextFloat() < chance) Item.NewItem(NPC.GetSource_Loot(), NPC.Hitbox, t, stack); }
 			Roll(Member.Weapon, 1, share);

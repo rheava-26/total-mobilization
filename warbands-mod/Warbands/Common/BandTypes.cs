@@ -156,13 +156,14 @@ namespace Warbands.Common
 			return pool.Count == 0 ? null : pool[rng.Next(pool.Count)];
 		}
 
-		/// <summary>0..19 for a named type; 200 + n for the n-th legacy biome roster (BandData.All); -1 when unknown.</summary>
+		/// <summary>0..19 for a named type; 100 + n for an event roster (EventBands); 200 + n for the n-th legacy biome roster (BandData.All); -1 when unknown.</summary>
 		public static int IndexOf(BandRoster r)
 		{
 			for (int i = 0; i < All.Length; i++) if (ReferenceEquals(All[i], r)) return i;
 			for (int i = 0; i < BandData.All.Length; i++) if (ReferenceEquals(BandData.All[i], r)) return 200 + i;
+			int e = EventBands.IndexOf(r); if (e >= 0) return e;
 			return -1;
 		}
-		public static BandRoster FromIndex(int i) => i >= 0 && i < All.Length ? All[i] : i >= 200 && i - 200 < BandData.All.Length ? BandData.All[i - 200] : null;
+		public static BandRoster FromIndex(int i) => i >= 0 && i < All.Length ? All[i] : i >= 200 && i - 200 < BandData.All.Length ? BandData.All[i - 200] : EventBands.FromIndex(i);
 	}
 }

@@ -237,7 +237,7 @@ namespace Levy.Content.NPCs
 			for (int i = _rtIdx; i < Math.Min(_rt.Pts.Count, _rtIdx + 6); i++) { var q = TileNav.FeetTile(_rt.Pts[i]); nx += $"({q.X - TileNav.FeetTile(NPC.Bottom).X},{q.Y - TileNav.FeetTile(NPC.Bottom).Y})"; }
 			string p0 = _path.Count > 0 ? $"({(_path[0].X - NPC.Center.X) / 16f:0.0},{(_path[0].Y - NPC.Bottom.Y) / 16f:0.0})" : "none";
 			string kd = ""; if (_rt.Kinds.Count == _rt.Pts.Count) for (int i = _rtIdx; i < Math.Min(_rt.Pts.Count, _rtIdx + 6); i++) kd += _rt.Kinds[i];
-			return $"lavaL={LavaAhead(-1)} lavaR={LavaAhead(1)} jump={DbgJump} blkWhy={BlockWhy} dropWhy={DropWhy} flyWhy={FlyWhy} kinds={kd} routeFlying={RouteFlying} p0={p0} whyM={WhyM} route={_rt.State} hookWant={_rtHookWant}/{_rtHookTries} bans={_rtBan.Count} idx={_rtIdx}/{_rt.Pts.Count} replans={_rtReplans} fromRoute={_pathFromRoute} pathN={_path.Count} goal=({MoveGoal.X / 16f:0},{MoveGoal.Y / 16f:0}) next={nx}";
+			return $"dodge={DodgeTimers} threats={ThreatField.Snapshot().Count} hkPhase={_hkPhase} stage[{DbgStage}] lavaL={LavaAhead(-1)} lavaR={LavaAhead(1)} jump={DbgJump} blkWhy={BlockWhy} dropWhy={DropWhy} flyWhy={FlyWhy} kinds={kd} routeFlying={RouteFlying} p0={p0} whyM={WhyM} route={_rt.State} hookWant={_rtHookWant}/{_rtHookTries} bans={_rtBan.Count} idx={_rtIdx}/{_rt.Pts.Count} replans={_rtReplans} fromRoute={_pathFromRoute} pathN={_path.Count} goal=({MoveGoal.X / 16f:0},{MoveGoal.Y / 16f:0}) next={nx}";
 		}
 
 		private static bool LevyUtilIsServerOrSingle() => global::Levy.Common.Util.LevyUtil.IsServerOrSingle;

@@ -70,7 +70,7 @@ namespace Levy.Content.NPCs
 
 		private void Movement_UpdateCore()
 		{
-			NPC npc = NPC; WhyM = Why.MNone;
+			NPC npc = NPC; WhyM = Why.MNone; DbgStage = $"v0={npc.velocity.X:0.00}";
 			if (!_stepInit) { npc.stepSpeed = StepSpeed; _stepInit = true; }
 			TickReturnHomeProgress();
 			// on a slope the body keeps a small downward velocity as it walks: with solid ground within a few pixels under the feet and no real fall under way it is standing, not airborne (jumping, dodging and strafing all need that)
@@ -199,9 +199,9 @@ namespace Levy.Content.NPCs
 				if (dropNudged) npc.velocity.X = _dropNudge * 0.6f;   // stepping clear of the shaft wall: the walk toward the waypoint's tile centre (which overlaps the wall by a pixel or two) waits one tick
 				else if (horizontal)
 				{
-					if (_blocked) npc.velocity.X *= BlockedDecel;
-					else if (MobilityMode >= 1 && LavaAhead(dir)) npc.velocity.X *= 0.5f;   // never run or drift toward lava, on the ground or in the air
-					else Accelerate(dir, maxSpeed, accel);
+					if (_blocked) { npc.velocity.X *= BlockedDecel; DbgStage += " blocked"; }
+					else if (MobilityMode >= 1 && LavaAhead(dir)) { npc.velocity.X *= 0.5f; DbgStage += " lava"; }   // never run or drift toward lava, on the ground or in the air
+					else { Accelerate(dir, maxSpeed, accel); DbgStage += $" acc(dir={dir},max={maxSpeed:0.0})->{npc.velocity.X:0.00}"; }
 				}
 				else Decelerate();
 				DbgJump = jumpTiles * 10 + (horizontal ? 1 : 0) + (grounded ? 2 : 0) + (_blocked ? 4 : 0);
@@ -1081,7 +1081,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Why the last platform-drop test said no (lab: the travel lab's STUCK lines print it).</summary>
 		internal string DropWhy = ""; private int _dropNudge;
 		/// <summary>Lab: which rule asked for wing thrust this tick (1 goal above, 2 rise, 3 route rise, 4 planned arc, 5 overhang, 6 wall, 7 gap, 8 deep drop; 0 none).</summary>
-		internal int FlyWhy, DbgJump;
+		internal int FlyWhy, DbgJump; internal string DbgStage = "";
 		private bool PlatformDropIsSafe()
 		{
 			var npc = NPC;
@@ -1095,7 +1095,8 @@ namespace Levy.Content.NPCs
 				{
 					DropWhy = "solid-under-edge";
 					// the body's box overlaps a solid tile at one edge (a shaft is 2 to 4 tiles wide, the body 1.25 and a waypoint is a tile centre): step away from that edge so the platform alone is under it
-					if (PathSearch.Travel8On && x0 < x1) { bool leftSolid = TileNav.IsSolid(x0, fy + 1), rightSolid = TileNav.IsSolid(x1, fy + 1); if (leftSolid != rightSolid) _dropNudge = leftSolid ? 1 : -1; }
+					// (only on a platform: on plain ground one solid edge under the box is just the ground, and a nudge there pushed the body back off a slope or a notch it was walking over)
+					if (PathSearch.Travel8On && x0 < x1) { bool anyPlat = false; for (int px = x0; px <= x1; px++) if (TileNav.IsPlatform(px, fy + 1)) anyPlat = true; bool leftSolid = TileNav.IsSolid(x0, fy + 1), rightSolid = TileNav.IsSolid(x1, fy + 1); if (anyPlat && leftSolid != rightSolid) _dropNudge = leftSolid ? 1 : -1; }
 					return false;
 				}
 				if (TileNav.IsPlatform(x, fy + 1)) platform = true;

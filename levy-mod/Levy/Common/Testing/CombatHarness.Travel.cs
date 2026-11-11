@@ -484,7 +484,7 @@ namespace Levy.Common.Testing
 				}
 				p.position = new Vector2(px - p.width / 2f, prow * 16f - p.height); p.velocity = Vector2.Zero;
 			}
-			if (!_tvFoes) for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !(n.ModNPC is SoldierNPC) && !n.townNPC && !n.friendly) n.active = false; }
+			if (!_tvFoes) for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !(n.ModNPC is SoldierNPC) && !n.townNPC && (!n.friendly || Environment.GetEnvironmentVariable("LEVY_TRAVEL_NOCRITTERS") == "1")) { if (n.friendly && _tvTick % 600 == 0) _tvEvents.AppendLine($"t={_tvTick} removed critter {n.TypeName} at {n.Center.X / 16f - TvX0:0},{TvG - n.Center.Y / 16f:0}"); n.active = false; } }
 		}
 
 		/// <summary>FOES: every 6 s a day-time monster (slime / zombie / demon eye) appears 28 tiles ahead of the lead levy, like the night traffic of a real surface walk.</summary>

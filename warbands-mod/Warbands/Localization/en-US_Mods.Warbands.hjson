@@ -41,8 +41,23 @@ Configs: {
 		}
 
 		MaxActiveBands: {
-			Label: Bands at once
-			Tooltip: Most bands out across the world at one time.
+			Label: Bands near a player
+			Tooltip: Most bands out within 200 tiles of one player. No new band forms near a player while this many are about.
+		}
+
+		MaxWorldBands: {
+			Label: Max World Bands
+			Tooltip: ""
+		}
+
+		BandCleanupMinutes: {
+			Label: Band Cleanup Minutes
+			Tooltip: ""
+		}
+
+		UseLevyLines: {
+			Label: Use Levy Lines
+			Tooltip: ""
 		}
 
 		GearDrops: {
@@ -57,7 +72,7 @@ Configs: {
 
 		NeutralBandPercent: {
 			Label: Neutral bands
-			Tooltip: Percent of naturally forming bands that ignore you and your levies until one of you hits them. Summoned bands are always hostile.
+			Tooltip: Percent of naturally forming bands that ignore you and your levies until one of you hits them. Bands in the Sunken Sea are always neutral. Summoned bands are always hostile.
 		}
 
 		LifeScale: {

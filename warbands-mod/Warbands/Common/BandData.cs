@@ -33,6 +33,8 @@ namespace Warbands.Common
 		public string Flavor;
 		/// <summary>True: the band warns first (BandBrain) and only attacks once the warning is broken.</summary>
 		public bool Warns;
+		/// <summary>True: a naturally forming band of this type is always neutral (ignores you until hit), whatever the neutral-band percent.</summary>
+		public bool AlwaysNeutral;
 		/// <summary>Ingredient pairs (item name, count) crafted with wood at a Work Bench into the summon item.</summary>
 		public (string item, int count)[] Mats;
 		/// <summary>The unique payout for beating the whole band: items (min..max each) and a coin purse in copper.</summary>
@@ -140,7 +142,7 @@ namespace Warbands.Common
 		{
 			if (p.ZoneUnderworldHeight) return BandBiome.Underworld;
 			if (p.ZoneDungeon) return BandBiome.Dungeon;
-			if (p.ZoneGlowshroom) return BandBiome.Mushroom;
+			if (p.ZoneGlowshroom && !p.ZoneJungle) return BandBiome.Mushroom; // glowing mushroom patches grow inside the underground jungle: that is still jungle
 			if (p.ZoneCorrupt) return BandBiome.Corruption;
 			if (p.ZoneCrimson) return BandBiome.Crimson;
 			if (p.ZoneHallow) return BandBiome.Hallow;

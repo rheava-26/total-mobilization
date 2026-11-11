@@ -16,7 +16,7 @@ namespace Warbands.Common
 		private int _idle;
 		public static int StandIns;
 
-		public override void OnWorldLoad() { BandBrain.Reset(); _idle = 0; }
+		public override void OnWorldLoad() { BandBrain.Reset(); _idle = 0; CalamityZones.Reset(); }
 		public override void OnWorldUnload() { BandBrain.Reset(); }
 
 		public override void PreUpdateNPCs()

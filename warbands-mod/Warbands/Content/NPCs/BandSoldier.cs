@@ -46,6 +46,7 @@ namespace Warbands.Content.NPCs
 			NPC.knockBackResist = 0.35f; NPC.value = 0f;
 			NPC.HitSound = SoundID.PlayerHit; NPC.DeathSound = SoundID.PlayerKilled;
 			NPC.npcSlots = 0.5f;
+			NPC.rarity = BandLevyNPC.BandRarity; // a rare creature: the Lifeform Analyzer reports it
 		}
 
 		public override bool CheckActive() => false; // a band stays out until it is beaten or the despawn below fires

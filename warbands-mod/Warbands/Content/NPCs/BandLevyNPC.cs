@@ -39,6 +39,8 @@ namespace Warbands.Content.NPCs
 		private int _chip; private uint _classTalkAt;
 		public static int Vanished, PanicEntries, RecallDrinks;
 
+		/// <summary>NPC.rarity of every band soldier (vanilla rare creatures are 1 to 5): above zero is what the Lifeform Analyzer lists.</summary>
+		public const int BandRarity = 2;
 		public override bool Hostile => true;
 		public override string HostilePlateTag => Roster?.DisplayName;
 		public Vector2 PostureSpot; private uint _postureAt, _postureUntil, _clumpSince, _loiterAt; private Vector2 _loiterGoal; private bool _bantered, _passiveNet;
@@ -80,6 +82,7 @@ namespace Warbands.Content.NPCs
 		{
 			base.SetDefaults();
 			NPC.friendly = false; NPC.damage = 0; NPC.knockBackResist = 0.35f; NPC.npcSlots = 0.5f; NPC.value = 0f;
+			NPC.rarity = BandRarity; // a rare creature: the Lifeform Analyzer reports it
 			NPC.dontTakeDamageFromHostiles = false; NPC.immortal = false; NPC.dontTakeDamage = false;
 		}
 

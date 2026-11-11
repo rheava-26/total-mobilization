@@ -1,4 +1,4 @@
-# Warbands (v0.2.0): levy bands, a Levy sub-mod
+# Warbands (v0.3.0): levy bands, a Levy sub-mod
 
 Eve approved hostile levy bands as a sub-mod: enemy groups you can fight for part of their loot, biome-specific, running Levy's real soldier brain. Design tenet from `levy-mod/NORTH_STAR.md`: difficulty comes from a scarier enemy, never from nerfing the player's army.
 
@@ -17,7 +17,11 @@ Eve approved hostile levy bands as a sub-mod: enemy groups you can fight for par
 - **Positioning:** on contact a band spreads out: shooters take the highest ground in view at their own spot around you, melee members come from both sides, and a member standing in a clump is sent to its own spot. Warning bands do the same while they warn and open fire only if you get too close, stay, or hit them.
 - **Brains:** morale (chip damage on an armoured player, comrades one-tapped, low life) makes a member panic and run, and 60% carry a Recall potion; band chatter over their heads in Levy's dialogue voice, all of it in `Warbands/Dialogue.txt` (see below); class-adaptive tactics (keep range from a melee foe, close in on a gunner or caster, flank a summoner); rotating aggro for ranged bands (the attacked side falls back while the other fires); warning bands ("Turn back.") attack only if you stay or close in.
 - **Cultists:** Lunatic Devotees keep chanting and cast slow homing orbs; Cultist Archers become a levy-AI band.
-- **Spawner:** natural bands as before (4% per minute, post-EoW by default); band size is the config range plus one per ten active levies, at most 8.
+- **Spawner:** natural bands (4% per minute, post-EoW by default); band size is the config range plus one per ten active levies, at most 8. 90% of natural bands start neutral; bands in the Calamity Sunken Sea are always neutral (read by name through tModLoader's mod-biome flags, so Calamity is not referenced); summoned bands are always hostile.
+- **Rare enemies:** every soldier has `NPC.rarity` 2, so a Lifeform Analyzer lists a band. Bands never despawn: only Recall, being beaten, or 30 minutes (config) with no player within 220 tiles removes one. One band per player area (config `MaxActiveBands`, 200 tiles) and six in the world (`MaxWorldBands`). The Radar counts only enemies that deal contact damage; bands deal none, so it does not list them.
+- **Footing:** a band forms where each soldier's whole 20x42 body fits on a floor tile (the old check covered only a 1-tile column, so 15 to 50% of soldiers began inside terrain in caves, jungle canopy and the Sunken Sea); every member gets its own spot, a band needs room for three, and the floor nearest the player's own height is taken.
+- **Levy's lines:** half of a soldier's fighting lines come from Levy's dialogue table (ENGAGE, HURT, LOW_HP, COMRADE_DOWN, SHAKEN, ROUTED, VICTORY, KILL), skipping any line that names the commander, wages, the barracks, the boss fight or the town's healers; the rest come from `Dialogue.txt`. Config `UseLevyLines`.
+- **Spawn sampler:** `WARBANDS_SAMPLE=1` on a dedicated server boot draws spots across the loaded world, reads their biome with the vanilla zone rules, forms bands of every type and logs `[Warbands] sample ...` lines (spots per biome, natural roll per biome and stage, type, neutral count, soldiers inside terrain, bands with three quarters of their members free after 400 ticks).
 - **Self-check:** `[Warbands] self-check done pass=N fail=0` on a dedicated server boot. `WARBANDS_LIVE=check` runs 32 scripted scenarios (Levy brain, both-way damage, no i-frames, warning, tactics, rotation, morale and Recall, chatter, all 20 items, bounty, cultists, recipes); `WARBANDS_LIVE=fight WARBANDS_OUT=f.tsv WARBANDS_SEEDS=6` runs the fight comparison.
 
 ## Editing the dialogue

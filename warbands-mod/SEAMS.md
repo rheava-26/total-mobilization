@@ -39,3 +39,7 @@ Still Levy's own and unchanged: pathing, hooks, wings, double jumps, platform dr
 3. `SoldierNPC.HostilePlateColor` (virtual): colour of a hostile body's name and bar (Warbands: gold while neutral).
 
 Levy symbols newly used: `SettlementSystem.Instance.NearestBarracks` (the bounty notice turns in at a Barracks), `VanityLook` / `VanitySet`, `SoldierProjectileTag.SoldierIndex` (a levy's shot hit a band member: banter).
+
+## Phase 4 (Warbands 0.3.0): no Levy edits
+
+Public Levy symbols read: `DialogueTable.Lines` / `Get` / `LineCount` / `LoadedFrom` and `DialogueLine` (`Cond`, `Needs`, `Parts`, `Text`), `LineCond`, `LineNeeds`, `PlaceholderKind` (`BandChatter` borrows Levy's fighting lines, so the player's edited Levy dialogue file applies to bands too). `SoldierNPC.BodyWidth` / `BodyHeight` (the footing check). The Calamity Sunken Sea is read by name through tModLoader's `ModBiome` list; Calamity is never referenced.

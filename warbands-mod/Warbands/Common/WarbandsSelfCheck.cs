@@ -117,8 +117,10 @@ namespace Warbands.Common
 				bool cal = BandChatter.Lines.Keys.Any(k => k.StartsWith("Cal")) || BandTypes.All.Any(t => t.Name.Contains("Wulfrum") || t.Name.Contains("Ilmer") || t.Name.Contains("Dragon Cult"));
 				bool pain = BandChatter.Lines["HURT"].Any(l => l.Contains("this would hurt so much more if we could feel pain"));
 				Check("Dialogue.txt: every situation has lines, no faction groups, Eve's pain line is in", badD.Count == 0 && !cal && pain, string.Join(",", badD));
-				Check("gear drops are off and neutral bands are 35% by default", c != null && !c.GearDrops && Math.Abs(c.NeutralBandPercent - 35f) < 1e-3f);
+				Check("gear drops are off by default", c != null && !c.GearDrops);
 			}
+
+			Spawn030();
 
 			// stat rules
 			bool lifeUp = true; for (int s = 1; s < Stage.Count; s++) if (BandStats.StageLife[s] < BandStats.StageLife[s - 1]) lifeUp = false;
@@ -180,6 +182,88 @@ namespace Warbands.Common
 				foreach (var m in made) { m.active = false; }
 			}
 			catch (Exception e) { Check("live band soldier", false, e.GetType().Name + ": " + e.Message); }
+		}
+
+		/// <summary>Warbands 0.3.0: neutral by default, the Sunken Sea, rare enemies that stay, bodies that never spawn inside terrain, Levy's fighting lines.</summary>
+		private void Spawn030()
+		{
+			var c = WarbandsConfig.Get;
+			Check("natural bands are 90% neutral by default; world cap 6, far cleanup 30 minutes, Levy lines on", c != null && Math.Abs(c.NeutralBandPercent - 90f) < 1e-3f && c.MaxWorldBands == 6 && c.BandCleanupMinutes == 30 && c.UseLevyLines && c.MaxActiveBands == 1);
+
+			// the neutral roll: the percent decides, the Sunken Sea always wins, a flagged type is always neutral
+			try
+			{
+				float keep = c.NeutralBandPercent; var any = new Player(); var type = BandTypes.All[0]; int neutral = 0;
+				c.NeutralBandPercent = 90f; for (int i = 0; i < 2000; i++) if (BandSpawner.RollNeutral(any, type)) neutral++;
+				c.NeutralBandPercent = 0f; bool none = !BandSpawner.RollNeutral(any, type);
+				CalamityZones.TestForce = true; bool sea = BandSpawner.RollNeutral(any, type); CalamityZones.TestForce = false;
+				type.AlwaysNeutral = true; bool flagged = BandSpawner.RollNeutral(any, type); type.AlwaysNeutral = false;
+				c.NeutralBandPercent = keep;
+				Check("neutral roll: about 90% at the default, never at 0%, always in the Sunken Sea and for a flagged type", neutral > 1700 && neutral < 1900 && none && sea && flagged, $"{neutral}/2000 none={none} sea={sea} flagged={flagged}");
+			}
+			catch (Exception e) { Check("neutral roll", false, e.GetType().Name + ": " + e.Message); }
+			bool calamity = ModLoader.HasMod("CalamityMod"); var sunken = CalamityZones.SunkenSea;
+			Check("Sunken Sea zone: found by name when Calamity is loaded, inert when it is not", calamity ? sunken != null : sunken == null, calamity ? (sunken?.FullName ?? "NOT FOUND") : "Calamity not loaded");
+
+			// rare, and they stay
+			try
+			{
+				var fake = new Microsoft.Xna.Framework.Vector2(Main.spawnTileX * 16, (Main.spawnTileY - 3) * 16);
+				var p = new Player(); p.position = fake; p.width = 20; p.height = 42;
+				int before = BandSpawner.ActiveBands();
+				bool formed = BandSpawner.SpawnBand(p, 1, 4);
+				var members = new List<NPC>();
+				for (int i = 0; i < Main.maxNPCs; i++) { var n = Main.npc[i]; if (n.active && n.ModNPC is BandLevyNPC) members.Add(n); }
+				bool rare = members.Count > 0 && members.All(n => n.rarity > 0);
+				bool noDespawn = members.Count > 0 && members.All(n => !n.ModNPC.CheckActive());
+				int ticks = 60 * 60 * 3; for (int t = 0; t < ticks; t++) BandBrain.Update(); // three minutes with no player anywhere: nothing may despawn
+				int alive = members.Count(n => n.active && n.life > 0);
+				Check("band soldiers are rare creatures (Lifeform Analyzer) and never despawn on their own: cleanup waits 30 minutes, 3 idle minutes lose no one", formed && rare && noDespawn && alive == members.Count && BandBrain.FarCleanupTicks >= 60 * 60 * 5, $"members={members.Count} rarity={members.FirstOrDefault()?.rarity} alive={alive} cleanupTicks={BandBrain.FarCleanupTicks}");
+				foreach (var n in members) n.active = false; BandBrain.All.Clear();
+			}
+			catch (Exception e) { Check("rare, no despawn", false, e.GetType().Name + ": " + e.Message + " @ " + e.StackTrace?.Split('\n')[0]); }
+
+			// footing: bands formed across the world's surface never leave a soldier inside a tile
+			try
+			{
+				int tried = 0, formed = 0, members = 0, buried = 0, sparse = 0; var rng = new Random(77);
+				for (int a = 0; a < 80 && tried < 40; a++)
+				{
+					int x = rng.Next(150, Main.maxTilesX - 150); int fy = BandSpawner.FloorAt(x, (int)Main.worldSurface - 20, 120, 160); if (fy < 0) continue;
+					var p = new Player(); p.width = 20; p.height = 42; p.position = new Microsoft.Xna.Framework.Vector2(x * 16f - 10f, fy * 16f - 42f);
+					tried++; int firstId = BandSpawner.ActiveBands() == 0 ? 0 : 0;
+					int first = BandBrain.PeekNextId();
+					if (!BandSpawner.SpawnBand(p, 1, 4)) continue;
+					formed++; int m = 0;
+					for (int i = 0; i < Main.maxNPCs; i++) { var n = Main.npc[i]; if (n.active && n.ModNPC is BandLevyNPC l && l.BandId >= first) { m++; if (Terraria.Collision.SolidCollision(n.position, n.width, n.height)) buried++; n.active = false; } }
+					members += m; if (m < 3) sparse++; BandBrain.All.Remove(first);
+				}
+				Check($"forming a band: {formed}/{tried} spots across the world formed one, {buried}/{members} soldiers inside terrain, {sparse} bands under 3 soldiers", tried >= 20 && formed >= tried * 0.9 && buried == 0 && sparse <= Math.Max(1, formed / 10));
+			}
+			catch (Exception e) { Check("band footing", false, e.GetType().Name + ": " + e.Message + " @ " + e.StackTrace?.Split('\n')[0]); }
+
+			// Levy's fighting lines: borrowed for the matching situations, mixed with our own, none that name the commander, wages or the barracks
+			try
+			{
+				bool loaded = Levy.Common.Dialogue.DialogueTable.Lines.Count > 0;
+				var empty = new List<string>(); var dirty = new List<string>();
+				foreach (var k in BandChatter.LevyFeeds.Keys)
+				{
+					var pool = BandChatter.LevyPool(k);
+					if (pool == null || pool.Count == 0) empty.Add(k);
+					else foreach (var l in pool) if (l.Contains('{') && l.Replace("{mate}", "").Contains('{') || System.Text.RegularExpressions.Regex.IsMatch(l, @"\b(pay|wage|wages|barracks|nurse|commander|boss)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) dirty.Add(k + ": " + l);
+				}
+				int own = 0, levy = 0; var hurtOwn = new HashSet<string>(BandChatter.Lines["HURT"]); var hurtLevy = new HashSet<string>(BandChatter.LevyPool("HURT") ?? new List<string>());
+				for (int i = 0; i < 600; i++)
+				{
+					string line = BandChatter.Pick("HURT", null, "x", null, 0); if (line == null) continue;
+					bool isLevy = hurtLevy.Any(h => line == h.Replace("{mate}", "mate")); bool isOwn = hurtOwn.Any(h => line == h.Replace("{mate}", "mate").Replace("{who}", "x"));
+					if (isLevy) levy++; else if (isOwn) own++;
+				}
+				bool pain = BandChatter.Lines["HURT"].Any(l => l.Contains("this would hurt so much more if we could feel pain"));
+				Check("band chatter mixes Levy's fighting lines (hurt, low life, mate down, panic, routed, victory) with Dialogue.txt, none about the commander, wages or barracks", loaded && empty.Count == 0 && dirty.Count == 0 && own > 100 && levy > 100 && pain, $"levyTable={loaded} emptyFeeds=[{string.Join(",", empty)}] dirty=[{string.Join(" | ", dirty)}] hurtPicks own={own} levy={levy}");
+			}
+			catch (Exception e) { Check("levy lines", false, e.GetType().Name + ": " + e.Message + " @ " + e.StackTrace?.Split('\n')[0]); }
 		}
 
 		private static int HostileShots() { int c = 0; for (int i = 0; i < Main.maxProjectiles; i++) { var p = Main.projectile[i]; if (p.active && p.hostile && (p.type == ProjectileID.WoodenArrowHostile || p.type == ProjectileID.EyeLaser || p.type == ProjectileID.BulletDeadeye)) c++; } return c; }

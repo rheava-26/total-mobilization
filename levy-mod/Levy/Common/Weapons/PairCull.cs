@@ -35,8 +35,8 @@ namespace Levy.Common.Weapons
 		internal static readonly bool Audit = Environment.GetEnvironmentVariable("LEVY_PAIRCHK") == "1";
 		/// <summary>True once the Projectile.Damage edit is in (the cull is live, or auditing).</summary>
 		public static bool Enabled;
-		/// <summary>Margin beyond the damage hitbox, px. A plain hit test reaches no further than the hitbox; the margin is slack for the NPC's netOffset and hooks that nudge the rectangles.</summary>
-		public const float ModMarginPx = 160f, VanillaMarginPx = 256f;
+		/// <summary>Slack beyond the damage hitbox, px. A plain hit test reaches exactly the hitbox; the slack covers integer truncation of the rectangles and the 8 px the game adds around one NPC type. (The NPC's own netOffset is added exactly, per pair.)</summary>
+		public const float MarginPx = 32f;
 
 		/// <summary>Vanilla projectile TYPES whose Colliding / Damage_GetHitbox is not the plain overlap of the damage hitbox (read from the game's code: every type named in Projectile.Colliding and Damage_GetHitbox).</summary>
 		private static readonly int[] SpecialTypes = { 85, 101, 188, 455, 461, 464, 466, 537, 580, 598, 607, 611, 614, 623, 632, 636, 642, 661, 684, 686, 687, 697, 699, 707, 711, 756, 758, 802, 842, 871, 872, 877, 878, 879, 919, 923, 927, 932, 933, 938, 939, 940, 941, 942, 943, 944, 945, 961, 963, 967, 973, 974, 985 };
@@ -44,22 +44,29 @@ namespace Levy.Common.Weapons
 		private static readonly int[] SpecialStyles = { 15, 19, 137, 190 };
 
 		/// <summary>Lab counters.</summary>
-		public static long Culled, Audited, Violations, Eligible, Ineligible, Checked; public static float MaxHitExcessPx;
+		public static long Audited, Violations, Eligible, Ineligible, Checked; public static float MaxHitExcessPx;
 		/// <summary>Lab: why army projectile types were left alone (type -> reason), for the profile dump.</summary>
 		public static readonly Dictionary<int, string> WhyNot = new();
 		public static readonly Dictionary<int, int> InelPairs = new();
 		private static List<GlobalProjectile> _collidingGlobals;
 		private static readonly Dictionary<Type, bool> _overrides = new();
 
-		/// <summary>Installed by <see cref="PairCullSystem"/>: the margin (px) of this projectile's cull, or 0 = never cull it. Called once per Projectile.Damage, after the damage hitbox is known.</summary>
-		public static float Begin(Projectile p)
+		/// <summary>Called once per Projectile.Damage (installed by <see cref="PairCullSystem"/>), after the damage hitbox <paramref name="val"/> is known. True for an army shot whose hit test is the plain rectangle overlap: then the four
+		/// bounds are val's rectangle grown by <see cref="MarginPx"/>, and <see cref="Far"/> may skip NPCs entirely outside them.</summary>
+		public static bool Begin(Projectile p, Rectangle val, out float loX, out float hiX, out float loY, out float hiY)
 		{
-			if (!p.friendly || p.hostile || p.damage <= 0) return 0f;
-			if (!p.TryGetGlobalProjectile(out SoldierProjectileTag t)) return 0f;
-			if (t.SoldierIndex < 0 && t.CommanderIndex < 0 && !t.DroneShot) return 0f;
+			loX = hiX = loY = hiY = 0f;
+			if (!p.friendly || p.hostile || p.damage <= 0) return false;
+			if (!p.TryGetGlobalProjectile(out SoldierProjectileTag t)) return false;
+			if (t.SoldierIndex < 0 && t.CommanderIndex < 0 && !t.DroneShot) return false;
 			float m = t.CullMargin(p);
-			if (m == 0f && LevyProf.On) { InelPairs.TryGetValue(p.type, out int n); InelPairs[p.type] = n + 1; }
-			return m;
+			if (m == 0f)
+			{
+				if (LevyProf.On) { InelPairs.TryGetValue(p.type, out int n); InelPairs[p.type] = n + 1; }
+				return false;
+			}
+			loX = val.X - m; hiX = val.X + val.Width + m; loY = val.Y - m; hiY = val.Y + val.Height + m;
+			return true;
 		}
 
 		/// <summary>Decides, for one projectile (cached on its tag until its type or AI style changes), whether its hit test is the plain rectangle overlap. Returns the margin to add to its hitbox, or 0.</summary>
@@ -80,32 +87,42 @@ namespace Levy.Common.Weapons
 				return 0f;
 			}
 			Eligible++;
-			return t >= ProjectileID.Count ? ModMarginPx : VanillaMarginPx;
+			return MarginPx;
 		}
 
-		/// <summary>True when the projectile may be skipped for <paramref name="n"/>: its damage hitbox <paramref name="val"/> and the NPC's rectangle are farther apart than the margin (plus its speed) on one axis. In audit mode never true.</summary>
-		public static bool Check(Projectile p, Rectangle val, float margin, NPC n)
+		/// <summary>True when the NPC's rectangle (with its netOffset, which vanilla adds to the position before it tests the hitboxes) lies entirely outside the grown hitbox: the pair cannot collide and is skipped before any hook is dispatched.</summary>
+		[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+		public static bool Far(NPC n, float loX, float hiX, float loY, float hiY)
 		{
-			float ox = n.netOffset.X, oy = n.netOffset.Y;
-			float left = n.position.X + ox, top = n.position.Y + oy;
-			float gx = Math.Max(left - (val.X + val.Width), val.X - (left + n.width));
-			float gy = Math.Max(top - (val.Y + val.Height), val.Y - (top + n.height));
-			float slack = margin + (Math.Abs(p.velocity.X) + Math.Abs(p.velocity.Y)) * (1 + p.extraUpdates) + Math.Abs(ox) + Math.Abs(oy) + 16f;
-			bool far = gx > slack || gy > slack;
-			if (Audit)
+			float l = n.position.X + n.netOffset.X, t = n.position.Y + n.netOffset.Y;
+			if (l + n.width < loX | l > hiX | t + n.height < loY | t > hiY)
 			{
-				Checked++;
-				bool hit = false;
-				try { hit = p.Colliding(val, new Rectangle((int)left, (int)top, n.width, n.height)); } catch (Exception) { }
-				float gap = Math.Max(gx, gy);
-				if (hit && gap > MaxHitExcessPx) MaxHitExcessPx = gap;
-				if (far) { Audited++; if (hit) Violations++; }
-				return false;
+				if (LevyProf.On) LevyProf.PairsCulled++;
+				return true;
 			}
-			if (!far) return false;
-			Culled++;
-			if (LevyProf.On) LevyProf.PairsCulled++;
-			return true;
+			return false;
+		}
+
+		/// <summary>Audit stand-in for <see cref="Far"/> (LEVY_PAIRCHK=1): culls nothing; asks vanilla's real hit test of the pair and counts the pairs <see cref="Far"/> would have skipped that collide anyway.</summary>
+		public static bool AuditPair(Projectile p, Rectangle val, NPC n, float loX, float hiX, float loY, float hiY)
+		{
+			Checked++;
+			bool far = Far0(n, loX, hiX, loY, hiY);
+			bool hit = false;
+			try { hit = p.Colliding(val, new Rectangle((int)(n.position.X + n.netOffset.X), (int)(n.position.Y + n.netOffset.Y), n.width, n.height)); } catch (Exception) { }
+			if (hit)
+			{
+				float l = n.position.X + n.netOffset.X, t = n.position.Y + n.netOffset.Y;
+				float gap = Math.Max(Math.Max(l - (val.X + val.Width), val.X - (l + n.width)), Math.Max(t - (val.Y + val.Height), val.Y - (t + n.height)));
+				if (gap > MaxHitExcessPx) MaxHitExcessPx = gap;
+			}
+			if (far) { Audited++; if (hit) Violations++; }
+			return false;
+		}
+		private static bool Far0(NPC n, float loX, float hiX, float loY, float hiY)
+		{
+			float l = n.position.X + n.netOffset.X, t = n.position.Y + n.netOffset.Y;
+			return l + n.width < loX | l > hiX | t + n.height < loY | t > hiY;
 		}
 
 		/// <summary>Does <paramref name="type"/> (or a base class below ModProjectile / GlobalProjectile) declare its own <paramref name="method"/>?</summary>
@@ -186,29 +203,32 @@ namespace Levy.Common.Weapons
 				int branchIdx = d.Index; // the brfalse
 
 				// edits (everything matched, nothing emitted so far)
-				var marginVar = new VariableDefinition(il.Import(typeof(float)));
-				il.Body.Variables.Add(marginVar);
+				VariableDefinition Flt() { var v = new VariableDefinition(il.Import(typeof(float))); il.Body.Variables.Add(v); return v; }
+				var act = new VariableDefinition(il.Import(typeof(bool))); il.Body.Variables.Add(act);
+				VariableDefinition loX = Flt(), hiX = Flt(), loY = Flt(), hiY = Flt();
 				var valVar = il.Body.Variables[valIdx];
 				var loopVarDef = il.Body.Variables[loopVar];
+				MethodInfo far = typeof(PairCull).GetMethod(nameof(PairCull.Far));
+				MethodInfo audit = typeof(PairCull).GetMethod(nameof(PairCull.AuditPair));
 				d.Index = branchIdx + 1;
 				ILLabel skip = d.DefineLabel();
-				d.Emit(OpCodes.Ldloc, marginVar);
-				d.Emit(OpCodes.Ldc_R4, 0f);
-				d.Emit(OpCodes.Ble_Un, skip);
-				d.Emit(OpCodes.Ldarg_0);
-				d.Emit(OpCodes.Ldloc, valVar);
-				d.Emit(OpCodes.Ldloc, marginVar);
+				d.Emit(OpCodes.Ldloc, act);
+				d.Emit(OpCodes.Brfalse, skip);
+				if (PairCull.Audit) { d.Emit(OpCodes.Ldarg_0); d.Emit(OpCodes.Ldloc, valVar); }
 				d.Emit(OpCodes.Ldsfld, typeof(Main).GetField("npc"));
 				d.Emit(OpCodes.Ldloc, loopVarDef);
 				d.Emit(OpCodes.Ldelem_Ref);
-				d.Emit(OpCodes.Call, typeof(PairCull).GetMethod(nameof(PairCull.Check)));
+				d.Emit(OpCodes.Ldloc, loX); d.Emit(OpCodes.Ldloc, hiX); d.Emit(OpCodes.Ldloc, loY); d.Emit(OpCodes.Ldloc, hiY);
+				d.Emit(OpCodes.Call, PairCull.Audit ? audit : far);
 				d.Emit(OpCodes.Brtrue, cont);
 				d.MarkLabel(skip);
-				// the margin, once per Damage call (the loop is after the hitbox is stored; the local starts at 0 on every path)
+				// once per Damage call, right after the damage hitbox is stored (the locals start at false / 0 on every path)
 				c.Index = afterHitbox;
 				c.Emit(OpCodes.Ldarg_0);
+				c.Emit(OpCodes.Ldloc, valVar);
+				c.Emit(OpCodes.Ldloca, loX); c.Emit(OpCodes.Ldloca, hiX); c.Emit(OpCodes.Ldloca, loY); c.Emit(OpCodes.Ldloca, hiY);
 				c.Emit(OpCodes.Call, typeof(PairCull).GetMethod(nameof(PairCull.Begin)));
-				c.Emit(OpCodes.Stloc, marginVar);
+				c.Emit(OpCodes.Stloc, act);
 				PairCull.Enabled = true;
 				Mod.Logger.Info("PairCull: Projectile.Damage edited" + (PairCull.Audit ? " (AUDIT: nothing is culled, every classified pair is also asked the real hit test)" : ""));
 			}

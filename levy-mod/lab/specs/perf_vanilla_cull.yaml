@@ -1,0 +1,12 @@
+# perf2: no regression and no behaviour change on a vanilla boss (vanilla world, medium army, Skeletron): cull on against off, 10 seeds. Hits per tick and damage dealt per seed must match within noise.
+name: perf_vanilla_cull
+boss: skel
+mods: vanilla
+mode: mdeath
+gear: postskel.best
+levies: 16
+seeds: 10
+cap: 60
+env: {LEVY_CROWD: 1, LEVY_PROF: 1}
+vs:
+  nocull: {env: {LEVY_PAIRCULL: 0}}

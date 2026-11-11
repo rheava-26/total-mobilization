@@ -30,6 +30,7 @@ namespace Levy.Common.Util
 		public override void Load()
 		{
 			if (LevyProf.On && !Main.dedServ) Enable(chat: false);
+			else if (Main.dedServ && Environment.GetEnvironmentVariable("LEVY_PROFTEST") == "1") Enable(chat: true); // lab: exercises the chat summary on a headless server
 		}
 
 		public override void Unload() { Disable(); }
@@ -38,7 +39,7 @@ namespace Levy.Common.Util
 		public static void Enable(bool chat)
 		{
 			_chat = chat;
-			if (_on || Main.dedServ) return;
+			if (_on || (Main.dedServ && Environment.GetEnvironmentVariable("LEVY_PROFTEST") != "1")) return;
 			try
 			{
 				LevyProf.On = true;

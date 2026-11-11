@@ -393,6 +393,15 @@ namespace Warbands.Content.NPCs
 			return false;
 		}
 
+		/// <summary>A spot still gives a shot at the foe: inside the weapon's reach (a blade: the ground within a few tiles), not closer than a shooter wants to be, with a clear line from a body standing there.</summary>
+		private bool SpotGivesShot(Vector2 bot, NPC foe)
+		{
+			bool blade = Weapon == null || Weapon.IsMelee;
+			float d = Vector2.Distance(bot - new Vector2(0f, 21f), foe.Center) / 16f;
+			if (blade ? d > 11f : d > Weapon.RangeTiles * 0.95f) return false;
+			return Collision.CanHitLine(new Vector2(bot.X - 4f, bot.Y - 36f), 8, 8, foe.Center - new Vector2(4f, 4f), 8, 8);
+		}
+
 		/// <summary>The best place to fight <paramref name="foe"/> from, anywhere in view of it that this member could stand: a shooter wants a clear line inside its weapon's reach, on higher ground when there is some, a good way from the other members' spots and on the side of the foe its place in the band suggests; a blade wants the ground beside the foe, odd members on the far side. Banned (unreachable) spots are skipped.</summary>
 		private Vector2? PickPursuitSpot(BandBrain band, NPC foe, uint now)
 		{
@@ -442,12 +451,16 @@ namespace Warbands.Content.NPCs
 			if (foe == null) return;
 			if (HostileMovementBusy) return; // hanging on a hook, climbing a face or flying an arc: the route owns the body
 			if (Walled(now)) { if (now >= _dispAt) Disperse(band, now); if (_dispHas && now < _dispAt) HostileGoTo(_dispSpot); else HostileStop(); return; }
-			if (!_purHasSpot || now >= _purPickAt)
+			// the spot is kept while it still gives a shot at the foe: picking another one halfway up a hook climb would throw the climb away
+			if (_purHasSpot && now >= _purPickAt)
+			{
+				if (SpotGivesShot(_purSpot, foe) && !SpotBanned(TileNav.FeetTile(_purSpot), now)) _purPickAt = now + 90u; else { _purHasSpot = false; _purPickAt = 0; }
+			}
+			if (!_purHasSpot && now >= _purPickAt)
 			{
 				var s = PickPursuitSpot(band, foe, now); PursuitPicks++;
-				_purPickAt = now + 150u + (uint)(NPC.whoAmI * 7 % 70);
+				_purPickAt = now + (s.HasValue ? 90u : 120u) + (uint)(NPC.whoAmI * 7 % 40);
 				if (s.HasValue) { _purSpot = s.Value; _purHasSpot = true; }
-				else _purHasSpot = false;
 			}
 			Vector2 goal = _purHasSpot ? _purSpot : foe.Bottom;
 			// parked at the end of the best route there is: members do not stack on one tile, each takes its own spot on the ground it has

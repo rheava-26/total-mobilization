@@ -4,6 +4,7 @@ Eve approved hostile levy bands as a sub-mod: enemy groups you can fight for par
 
 - `docs/TTK.md`: the time-to-kill lab (phase 1) and the proposed stat rules.
 - `docs/FIGHT_LAB.md`: phase 2 fight comparison (Levy-AI band vs Fighter-AI band vs ordinary enemies, Expert).
+- `docs/PURSUIT.md`: the pursuit lab, before and after (bands that go over, under and around terrain), with the raw rows.
 - `docs/item_preview_4x.png`: the 20 summoning items at 4x. `tools/make_art.py` redraws them.
 - `docs/bounty_notice_4x.png`: the bounty notice item at 4x.
 - `SEAMS.md`: every Levy symbol Warbands touches and the Levy edits (the HOSTILE SEAM).

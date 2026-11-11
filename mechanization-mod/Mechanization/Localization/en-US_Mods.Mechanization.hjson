@@ -5,8 +5,8 @@ Items: {
 		DisplayName: Armory Relay
 		Tooltip:
 			'''
-			Links to the nearest armory within 1000 tiles, or to your pylon network.
-			Turrets and drones within 25 tiles of it draw from that armory.
+			Links to the nearest Armory within 1000 tiles or your pylon network
+			Turrets and drones within 25 tiles draw from that Armory
 			'''
 	}
 
@@ -14,9 +14,11 @@ Items: {
 		DisplayName: Combat Drone
 		Tooltip:
 			'''
-			Sets a combat drone down at the cursor. It patrols 36 tiles either side of that spot and shoots hostiles within reach of its weapon.
-			Mounts the best spare ranged weapon from armories within 240 tiles or on your pylon network. With none it fires a plain bullet, reach 32 tiles.
-			Right-click the drone and choose Pack up to take it back.
+			Places a combat drone at the cursor
+			Patrols 36 tiles either side of that spot
+			Mounts the best spare ranged weapon from an Armory within 240 tiles
+			Fires a plain bullet with no weapon, reach 32 tiles
+			Right click the drone to pack it up
 			'''
 	}
 
@@ -24,8 +26,9 @@ Items: {
 		DisplayName: Automatic Turret
 		Tooltip:
 			'''
-			An automatic turret. Shoots hostiles within the reach of its mounted weapon.
-			Mounts the best spare ranged weapon from armories within 240 tiles or on your pylon network. With none it fires a plain bullet, reach 32 tiles.
+			Shoots hostiles within reach of its weapon
+			Mounts the best spare ranged weapon from an Armory within 240 tiles
+			Fires a plain bullet with no weapon, reach 32 tiles
 			'''
 	}
 }
@@ -45,7 +48,7 @@ Configs: {
 
 		FireOnUnbeatenBosses: {
 			Label: Drones and turrets fire on bosses you haven't beaten
-			Tooltip: Off, drones and turrets hold fire on a boss, and its parts, until you have defeated that boss once. A boss's minions are always fair game.
+			Tooltip: Off, they hold fire on a boss until you have defeated it once. Its minions are always fair game.
 		}
 	}
 }

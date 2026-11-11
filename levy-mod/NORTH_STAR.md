@@ -108,6 +108,8 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 
 **Player-facing text must not echo the request.** When Eve says "drones should put weapons back when they land", the UI must not say "returns weapon when landed" (11-04). Describe what a thing is and does. (The ROADMAP carries over Total Mobilization's 1-to-4 short declarative sentences rule for tooltips.)
 
+**Tooltips read like vanilla Terraria (Eve, 11-11).** "You make single lines 600 characters long. You over-define concepts and then restate them again." Copy the register of vanilla potions, accessories and summon items: "Increases defense by 8", "Provides immunity to lava", "Summons ...". One effect per line, lines under about 50 characters, numbers not adjectives. Never explain how a system works, restate, give examples or write lore paragraphs. An optional single flavour line goes last, in quotes, and only when it adds something. Anything that needs explaining (Barracks, Armory, War Horn, orders) gets one or two plain lines, and the detail belongs in the in-game help or the config description. Config descriptions are one or two short sentences. Buff descriptions follow the same rule.
+
 **Levy dialogue voice (Eve, 11-07 20:40):**
 - Messy, run-on, exclamation marks, people talking over themselves. Lines are AIMED at someone: the commander, or another levy by name. No neat setup-and-punchline, and no "man, this guy, am I right?"
 - Levies mention each other often, so the army feels alive.

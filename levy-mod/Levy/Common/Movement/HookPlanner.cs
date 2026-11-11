@@ -17,6 +17,8 @@ namespace Levy.Common.Movement
 		bool Lava(int x, int y);
 		/// <summary>A sloped or half-height tile: the body slides along it instead of stopping, and the planner's block model does not know how far.</summary>
 		bool Sloped(int x, int y);
+		/// <summary>A closed door or tall gate: the hook sticks to it (it is solid) but a levy that reels into it has to open it, so the planner never uses one as an anchor.</summary>
+		bool ClosedDoor(int x, int y);
 	}
 
 	/// <summary>The live world (<see cref="TileNav"/> plus the hook AI's latch test).</summary>
@@ -32,6 +34,7 @@ namespace Levy.Common.Movement
 			return t.HasUnactuatedTile && Main.tileSolid[t.TileType];
 		}
 		public bool Lava(int x, int y) => TileNav.HasLava(x, y);
+		public bool ClosedDoor(int x, int y) => TileNav.InBounds(x, y) && TileNav.IsClosedDoor(Main.tile[x, y]);
 		public bool Sloped(int x, int y)
 		{
 			if (!TileNav.InBounds(x, y)) return false;
@@ -191,6 +194,7 @@ namespace Levy.Common.Movement
 						if (d2 < bd) { bd = d2; tx = x; ty = y; hit = true; }
 					}
 					if (!hit) continue;
+					if (w.ClosedDoor(tx, ty)) break;   // the hook would stick to a door: a ray that ends on one is no anchor
 					long key = ((long)tx << 32) ^ (uint)ty;
 					if (seen.Add(key))
 					{
@@ -254,7 +258,7 @@ namespace Levy.Common.Movement
 				Vector2 tgt = new(cand[i].x * 16f + 8f, cand[i].y * 16f + 8f);
 				Vector2 dir = tgt - c0; float len = dir.Length(); if (len < 24f) continue;
 				dir /= len;
-				if (!FirstLatch(w, c0, dir, p.ReachPx, out int hx, out int hy, out Vector2 pt)) continue;
+				if (!FirstLatch(w, c0, dir, p.ReachPx, out int hx, out int hy, out Vector2 pt) || w.ClosedDoor(hx, hy)) continue;
 				long key = ((long)hx << 32) ^ (uint)hy;
 				if (!seen.Add(key)) continue;
 				Vector2 an = new(hx * 16f + 8f, hy * 16f + 8f);

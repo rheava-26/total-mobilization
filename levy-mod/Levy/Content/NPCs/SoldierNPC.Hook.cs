@@ -353,7 +353,7 @@ namespace Levy.Content.NPCs
 			HookPlan plan = HookPlanner.Plan(TileHookWorld.Instance, bottom, hp, goalBottom, altitude ? HookGoalKind.Altitude : HookGoalKind.Ground, nowDist);
 			SoldierHooks.PlanTs += Stopwatch.GetTimestamp() - t0; SoldierHooks.Plans++;
 			if (SoldierHooks.Debug && plan == null || (SoldierHooks.Debug && Environment.GetEnvironmentVariable("LEVY_HOOKDBG2") == "1")) foreach (var l in HookPlanner.DiagLog.Take(60)) Levy.Instance?.Logger.Info("HOOKDBG2 " + l);
-			if (SoldierHooks.Debug) Levy.Instance?.Logger.Info($"HOOKDBG {SoldierName} {reason} from {bottom.X / 16f:0.0},{bottom.Y / 16f:0.0} goal {goalBottom.X / 16f:0.0},{goalBottom.Y / 16f:0.0} nowDist {nowDist / 16f:0.0}T: " + (plan == null ? "no plan" : $"anchors={plan.Anchors.Count} first={plan.Anchors[0].X / 16f:0.0},{plan.Anchors[0].Y / 16f:0.0} relTick={plan.ReleaseTick} relDist={plan.ReleaseDist:0} land={plan.Landing.X / 16f:0.0},{plan.Landing.Y / 16f:0.0} goalDist={plan.GoalDist / 16f:0.0}T gain={plan.Gain / 16f:0.0}T score={plan.Score:0}") + " " + HookPlanner.Describe() + (plan?.Path != null ? " path: " + string.Join(" ", plan.Path.Where((v, i) => i % 4 == 0).Select(v => $"{v.X / 16f:0.0},{v.Y / 16f:0.0}")) : ""));
+			if (SoldierHooks.Debug) Levy.Instance?.Logger.Info($"HOOKDBG {SoldierName} {reason} px=({bottom.X:0.00},{bottom.Y:0.00}) js={js:0.000} g={Gravity():0.000} wh={NPC.width}x{NPC.height} goalPx=({goalBottom.X:0.0},{goalBottom.Y:0.0}) from {bottom.X / 16f:0.0},{bottom.Y / 16f:0.0} goal {goalBottom.X / 16f:0.0},{goalBottom.Y / 16f:0.0} nowDist {nowDist / 16f:0.0}T: " + (plan == null ? "no plan" : $"anchors={plan.Anchors.Count} first={plan.Anchors[0].X / 16f:0.0},{plan.Anchors[0].Y / 16f:0.0} relTick={plan.ReleaseTick} relDist={plan.ReleaseDist:0} land={plan.Landing.X / 16f:0.0},{plan.Landing.Y / 16f:0.0} goalDist={plan.GoalDist / 16f:0.0}T gain={plan.Gain / 16f:0.0}T score={plan.Score:0}") + " " + HookPlanner.Describe() + (plan?.Path != null ? " path: " + string.Join(" ", plan.Path.Where((v, i) => i % 4 == 0).Select(v => $"{v.X / 16f:0.0},{v.Y / 16f:0.0}")) : ""));
 			HookLog($"plan {reason} goal={goalBottom.X / 16f:0},{goalBottom.Y / 16f:0} " + (plan == null ? "none " + HookPlanner.Describe() : $"anchor={plan.Anchors[0].X / 16f:0},{plan.Anchors[0].Y / 16f:0} n={plan.Anchors.Count} {(plan.Hang ? "hang" : "land=" + (plan.Landing.X / 16f).ToString("0") + "," + (plan.Landing.Y / 16f).ToString("0"))} gain={plan.Gain / 16f:0.0}T beats={plan.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f)}"));
 			bool planOk = plan != null && (reason == HookReason.Rescue ? plan.Landed : plan.Beats(H.ArriveTiles * 16f, H.MinGainTiles * 16f));
 			bool climbStart = false;
@@ -586,6 +586,7 @@ namespace Levy.Content.NPCs
 			}
 			if (_hkTicks > H.ReelMaxTicks + 40 + (_hkPlan.Hang ? H.HangMaxTicks * (HmHang ? 4 : 1) : 0) + (Main.GameUpdateCount < HookHoldUntil ? 160 : 0)) release = true;
 
+			if (!release) HookReelDoor(centroid);
 			if (!HookReelFrame(release, centroid)) { HookLetGo(false, true); return true; }
 			if (release && _hkJumpKick && dist < 24f) npc.velocity.Y = Math.Min(npc.velocity.Y, -HookJumpSpeed);   // arrived: the hook-jump, a full jump off the hook
 			if (release)
@@ -602,6 +603,21 @@ namespace Levy.Content.NPCs
 			else npc.noGravity = true;
 			if (Math.Abs(npc.velocity.X) > 0.3f) { npc.direction = npc.spriteDirection = npc.velocity.X > 0f ? 1 : -1; }
 			return true;
+		}
+
+		/// <summary>A body reeling toward its anchor opens a closed door in its way, as a player clicks the door (the planner's body passes closed doors, which a walking levy opens too). The door custodian shuts it again once the doorway is clear.</summary>
+		private void HookReelDoor(Vector2 centroid)
+		{
+			Vector2 dir = centroid - NPC.Center; float len = dir.Length(); if (len < 1f) return;
+			dir /= len;
+			Rectangle r = NPC.Hitbox; r.Offset((int)Math.Round(dir.X * 6f), (int)Math.Round(dir.Y * 6f));
+			int x0 = r.Left / 16, x1 = (r.Right - 1) / 16, y0 = r.Top / 16, y1 = (r.Bottom - 1) / 16;
+			for (int x = x0; x <= x1; x++) for (int y = y0; y <= y1; y++)
+			{
+				if (!TileNav.InBounds(x, y) || !TileNav.IsClosedDoor(Main.tile[x, y])) continue;
+				int side = dir.X != 0f ? Math.Sign(dir.X) : NPC.direction;
+				if (TryOpenDoor(x, y, side == 0 ? 1 : side)) { HookLog($"reel opens door ({x},{y})"); return; }
+			}
 		}
 
 		/// <summary>One reel tick: the real Player.GrappleMovement on the dummy standing on the soldier. On a release tick it presses jump so vanilla lets go itself.</summary>

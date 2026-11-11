@@ -121,6 +121,7 @@ namespace Warbands.Common
 			}
 
 			Spawn030();
+			try { EventBandsCheck.Run(Check, tiers); } catch (Exception e) { Check("event bands", false, e.GetType().Name + ": " + e.Message + " @ " + e.StackTrace?.Split('\n')[0]); }
 
 			// stat rules
 			bool lifeUp = true; for (int s = 1; s < Stage.Count; s++) if (BandStats.StageLife[s] < BandStats.StageLife[s - 1]) lifeUp = false;

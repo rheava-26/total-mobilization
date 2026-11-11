@@ -96,10 +96,10 @@ namespace Warbands.Common
 			{
 				case EventKind.Goblins:
 					r.Title = "Skirmisher"; r.CaptainTitle = "Warchief"; r.Skirmish = true; r.Skin = new Color(112, 128, 176); r.TintR = 110; r.TintG = 130; r.TintB = 200;
-					r.Vanity = new[] { "GoblinBomberCap", null, null };
+					r.Vanity = new[] { "Goggles", null, null };
 					for (int i = 0; i < 8; i++)
 					{
-						var kit = new[] { "RocketBoots" };
+						var kit = new[] { stage >= 1 ? "RocketBoots" : "HermesBoots" };
 						if (i % 3 == 1) members.Add(Own('R', "SpikyBall", null, Arm(i), i == 0, kit, "GrapplingHook"));
 						else members.Add(Copy(G(i), i == 0, kit, "GrapplingHook"));
 					}
@@ -130,7 +130,7 @@ namespace Warbands.Common
 					for (int i = 0; i < 8; i++)
 					{
 						var src = mages.Count > 0 ? mages[i % mages.Count] : G(i);
-						members.Add(Copy(src, i == 0, stage >= 1 ? new[] { "SandstorminaBottle" } : none, null));
+						members.Add(Copy(src, i == 0, stage >= 3 ? new[] { "SandstorminaBottle" } : none, null));
 					}
 					break;
 				case EventKind.SlimeRain:
@@ -171,7 +171,7 @@ namespace Warbands.Common
 			EventKind.Goblins => new[]
 			{
 				new Drop("SpikyBall", 20, 40, 1f), new Drop("Harpoon", 1, 1, 0.30f), new Drop("RocketBoots", 1, 1, 0.12f), new Drop("ShadowFlameBow", 1, 1, 0.10f), new Drop("ShadowFlameKnife", 1, 1, 0.10f),
-				new Drop("ShadowFlameHexDoll", 1, 1, 0.10f), new Drop("GoblinTech", 1, 1, 0.10f), new Drop("GoblinBomberCap", 1, 1, 0.35f),
+				new Drop("ShadowFlameHexDoll", 1, 1, 0.10f), new Drop("GoblinTech", 1, 1, 0.10f), new Drop("Goggles", 1, 1, 0.35f),
 			},
 			EventKind.Pirates => new[]
 			{
@@ -180,7 +180,7 @@ namespace Warbands.Common
 			},
 			EventKind.Sandstorm => new[]
 			{
-				new Drop("SandstorminaBottle", 1, 1, 0.15f, 1), new Drop("AncientArmorHat", 1, 1, 0.30f), new Drop("AncientArmorShirt", 1, 1, 0.30f), new Drop("AncientArmorPants", 1, 1, 0.30f),
+				new Drop("SandstorminaBottle", 1, 1, 0.15f, 3), new Drop("AncientArmorHat", 1, 1, 0.30f), new Drop("AncientArmorShirt", 1, 1, 0.30f), new Drop("AncientArmorPants", 1, 1, 0.30f),
 				new Drop("AncientCloth", 2, 5, 0.50f, 3), new Drop("AncientBattleArmorHat", 1, 1, 0.20f, 3), new Drop("AncientBattleArmorShirt", 1, 1, 0.20f, 3), new Drop("AncientBattleArmorPants", 1, 1, 0.20f, 3),
 				new Drop("FlyingCarpet", 1, 1, 0.10f, 3), new Drop("StormTigerStaff", 1, 1, 0.12f, 5),
 			},
@@ -194,7 +194,7 @@ namespace Warbands.Common
 
 		public static Drop[] CrewLoot(EventKind k) => k switch
 		{
-			EventKind.Goblins => new[] { new Drop("SpikyBall", 3, 8, 0.20f), new Drop("GoblinBomberCap", 1, 1, 0.04f) },
+			EventKind.Goblins => new[] { new Drop("SpikyBall", 3, 8, 0.20f), new Drop("Goggles", 1, 1, 0.04f) },
 			EventKind.Pirates => new[] { new Drop("PirateHat", 1, 1, 0.05f), new Drop("PirateShirt", 1, 1, 0.05f), new Drop("PiratePants", 1, 1, 0.05f), new Drop("EyePatch", 1, 1, 0.05f) },
 			EventKind.Sandstorm => new[] { new Drop("AncientArmorHat", 1, 1, 0.05f), new Drop("AncientArmorShirt", 1, 1, 0.05f), new Drop("AncientArmorPants", 1, 1, 0.05f) },
 			EventKind.SlimeRain => new[] { new Drop("Shuriken", 4, 10, 0.25f), new Drop("NinjaHood", 1, 1, 0.05f), new Drop("NinjaShirt", 1, 1, 0.05f), new Drop("NinjaPants", 1, 1, 0.05f) },
@@ -352,7 +352,7 @@ namespace Warbands.Common
 		}
 
 		/// <summary>Event bands in the world: leave when their event ends, are cleaned up when no player is near, follow the Flying Dutchman.</summary>
-		private void Tend(uint now)
+		public void Tend(uint now)
 		{
 			foreach (var b in BandBrain.All.Values)
 			{

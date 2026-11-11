@@ -2,13 +2,13 @@
 # summ.py : markdown before/after table for the travel5 lab (round 6)
 import csv, glob, sys
 PAIRS = [
-    ('lips course, bare (12 seeds x 6)', 'c_lipbo', 'n_lipbo', 'none'),
-    ('lips course, Hermes Boots (12 x 6)', 'c_lipb', 'n_lipb', 'boots'),
-    ('lips course, wings (12 x 8)', 'c_lipw', 'n_lipw', 'wings'),
-    ('ravine trek, wings (12 x 8)', 'b_ravw', 'n_ravw', 'wings'),
-    ('ravine trek (valleys, hills), boots (12 x 6)', 'e_ravb', 'n_ravb', 'boots'),
-    ('real worlds 800 tiles, wings (6 worlds x 4 starts x 8)', 'b_wrw', 'n_wrw', 'wings'),
-    ('real worlds 800 tiles, boots (6 x 4 x 6)', 'b_wrb', 'n_wrb', 'boots'),
+    ('lips course, bare (12 seeds x 6)', 'c_lipbo', 'q_lipbo', 'none'),
+    ('lips course, Hermes Boots (12 x 6)', 'c_lipb', 'q_lipb', 'boots'),
+    ('lips course, wings (12 x 8)', 'c_lipw', 'v_lipw', 'wings'),
+    ('ravine trek, wings (12 x 8)', 'b_ravw', 'v_ravw', 'wings'),
+    ('ravine trek (valleys, hills), boots (12 x 6)', 'e_ravb', 'q_ravb', 'boots'),
+    ('real worlds 800 tiles, wings (6 worlds x 4 starts x 8)', 'b_wrw', 'v_wrw', 'wings'),
+    ('real worlds 800 tiles, boots (6 x 4 x 6)', 'b_wrb', 'q_wrb', 'boots'),
 ]
 def load(pre, gear):
     rows = []

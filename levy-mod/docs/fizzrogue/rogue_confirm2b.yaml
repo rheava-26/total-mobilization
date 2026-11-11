@@ -1,0 +1,20 @@
+# Confirm v2 (policy table with the boss-flagged measurements): after (pol auto) for every weapon; before (old always-wait) only for the weapons the first confirm run did not have. 10 seeds.
+name: rogue_confirm2b
+mods: calamity
+arena: a3
+seeds: 10
+tipsy:
+  dist: [20]
+  motion: [static]
+  size: [small, boss]
+  warm: 300
+  win: 2400
+  every: {rg: 1}
+  arms: {before: {pol: wait}}
+  weapons:
+    - {name: CalamityMod/SludgeSplotch, cls: R}
+    - {name: CalamityMod/Cinquedea, cls: R}
+    - {name: CalamityMod/AdamantiteThrowingAxe, cls: R}
+    - {name: CalamityMod/ScourgeoftheSeas, cls: R}
+    - {name: CalamityMod/SpentFuelContainer, cls: R}
+    - {name: CalamityMod/GhoulishGouger, cls: R}

@@ -61,7 +61,7 @@ namespace Levy.Common.Testing
 				int i = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("LevyTipsy"), (int)(bx * 16f), (int)(baseY * 16f), TpNpcType(size));
 				if (i < 0 || i >= Main.maxNPCs) throw new Exception("dummy spawn failed");
 				NPC d = Main.npc[i]; var ht = d.GetGlobalNPC<HarnessTarget>(); ht.IsTarget = true;
-				d.lifeMax = 100_000_000; d.life = d.lifeMax; d.damage = 0; d.knockBackResist = 0f; d.noGravity = true; d.noTileCollide = true; d.aiStyle = -1; d.friendly = false; d.dontTakeDamage = false; d.value = 0f; d.boss = false; d.defense = 10; d.defDefense = 10;
+				d.lifeMax = 100_000_000; d.life = d.lifeMax; d.damage = 0; d.knockBackResist = 0f; d.noGravity = true; d.noTileCollide = true; d.aiStyle = -1; d.friendly = false; d.dontTakeDamage = false; d.value = 0f; d.boss = rogue && size == "boss"; d.defense = 10; d.defDefense = 10;
 				d.Center = new Vector2(bx * 16f, baseY * 16f); d.velocity = Vector2.Zero; ht.Pin = d.position;
 				if (motion == "strafe")
 				{

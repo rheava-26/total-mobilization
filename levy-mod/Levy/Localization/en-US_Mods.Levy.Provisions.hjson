@@ -7,42 +7,83 @@ GroupStuffed: Any Exquisitely Stuffed Dish
 
 FizzPop: {
 	DisplayName: Fizz Can
-	Tooltip: A bubbly, non-alcoholic soda. Gives a double jump and {0} tiles of extra jump height for {1} minutes. Lowers defense by {2}.
+	Tooltip:
+		'''
+		A bubbly, non-alcoholic soda.
+		Gives a double jump and {0} tiles of extra jump height for {1} minutes.
+		Lowers defense by {2}.
+		'''
 }
 
 FizzTank: {
 	DisplayName: Case of Fizz
-	Tooltip: Twelve cans of soda for the whole army. Gives your levies within {0} tiles a double jump and {2} tiles of extra jump height for {1} minutes. Lowers their defense by {3}, and hits knock them back at {4}% strength.
+	Tooltip:
+		'''
+		Twelve cans of soda for the whole army.
+		Gives your levies within {0} tiles a double jump
+		and {2} tiles of extra jump height for {1} minutes.
+		Lowers their defense by {3}, and hits knock them back at {4}% strength.
+		'''
 }
 
 MagmaShot: {
 	DisplayName: Iceberg Shot
-	Tooltip: A shot of ice-cold vodka, numb enough to ignore lava. Makes you immune to lava and fire for {0} minutes.
+	Tooltip:
+		'''
+		A shot of ice-cold vodka, numb enough to ignore lava.
+		Makes you immune to lava and fire for {0} minutes.
+		'''
 }
 
 MagmaCrucible: {
 	DisplayName: Iceberg Tray
-	Tooltip: A frosted bottle and shots for the whole army. Makes your levies within {0} tiles immune to lava and burning for {1} minutes, and they swim through lava as if it were water. They cheer, then stagger: drunk levies have {2}% more aim error.
+	Tooltip:
+		'''
+		A frosted bottle and shots for the whole army.
+		Makes your levies within {0} tiles immune to lava and burning for {1} minutes,
+		and they swim through lava as if it were water.
+		They cheer, then stagger: drunk levies have {2}% more aim error.
+		'''
 }
 
 FishFryPlatter: {
 	DisplayName: Fish Fry Platter
-	Tooltip: A platter of fried fish. Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale for {4} minutes.
+	Tooltip:
+		'''
+		A platter of fried fish.
+		Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale
+		for {4} minutes.
+		'''
 }
 
 FruitBasket: {
 	DisplayName: Fruit Basket
-	Tooltip: A basket of fresh fruit. Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale for {4} minutes.
+	Tooltip:
+		'''
+		A basket of fresh fruit.
+		Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale
+		for {4} minutes.
+		'''
 }
 
 BurgerBox: {
 	DisplayName: Happy Burger Box
-	Tooltip: A box of burgers and fries. Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale for {4} minutes.
+	Tooltip:
+		'''
+		A box of burgers and fries.
+		Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale
+		for {4} minutes.
+		'''
 }
 
 GrandFeast: {
 	DisplayName: Grand Feast
-	Tooltip: A banquet for a whole army. Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale for {4} minutes.
+	Tooltip:
+		'''
+		A banquet for a whole army.
+		Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale
+		for {4} minutes.
+		'''
 }
 
 FizzyBuff: {

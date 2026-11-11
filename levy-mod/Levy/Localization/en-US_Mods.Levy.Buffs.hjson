@@ -1,40 +1,40 @@
 # Officer buff strings. Keys are relative to Mods.Levy.Buffs. (The Marked buff's strings live in en-US.hjson.)
 MoraleBuff: {
 	DisplayName: Morale
-	Description: Fights with raised spirits: more damage, more defense and more critical hits.
+	Description: Increases damage by 12%, defense by 10 and critical strike chance by 10%
 }
 
 BardEmpowermentBuff: {
 	DisplayName: Empowered
-	Description: Lifted by a bard's music with the stat bonuses of that instrument.
+	Description: Gains the stat bonuses of a bard's instrument
 }
 
 DryadsBlessingBuff: {
 	DisplayName: Dryad's Blessing
-	Description: Gains defense and steady life regeneration, and throws a share of contact damage back at the attacker.
+	Description: Increases defense by 8 and life regeneration. Reflects 50% of contact damage
 }
 
 VenomBuff: {
 	DisplayName: Venom
-	Description: Loses life steadily, ignoring defense.
+	Description: Losing life, ignoring defense
 }
 
 PaintedBuff: {
 	DisplayName: Paint-Soaked
-	Description: Covered in paint: less defense and weaker attacks.
+	Description: Decreases defense by 20 and damage by 25%
 }
 
 AleBuff: {
 	DisplayName: Ale
-	Description: Increases defense by 8. Aim error is 60% wider.
+	Description: Increases defense by 8. Increases aim error by 60%
 }
 
 StoutBuff: {
 	DisplayName: Stout
-	Description: Increases damage by 15%. Aim error is 60% wider.
+	Description: Increases damage by 15%. Increases aim error by 60%
 }
 
 RumBuff: {
 	DisplayName: Rum
-	Description: Increases critical strike chance by 10%. Aim error is 60% wider.
+	Description: Increases critical strike chance by 10%. Increases aim error by 60%
 }

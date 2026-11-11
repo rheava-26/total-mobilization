@@ -18,77 +18,77 @@ LevyProgressionConfig: {
 
 	LifeCrystalRecipe: {
 		Label: Life Crystal recipe
-		Tooltip: Craft a Life Crystal from 5 Lesser Healing Potions and 1 Ruby at an Alchemy Table. Needs a reload.
+		Tooltip: Craft a Life Crystal from 5 Lesser Healing Potions and 1 Ruby at an Alchemy Table. Needs a reload
 	}
 
 	LifeFruitRecipe: {
 		Label: Life Fruit recipe
-		Tooltip: Craft a Life Fruit from a Life Crystal, 3 Chlorophyte Bars and 5 Jungle Spores at a Mythril Anvil. Needs any mechanical boss defeated. Needs a reload.
+		Tooltip: Craft a Life Fruit from a Life Crystal, 3 Chlorophyte Bars and 5 Jungle Spores at a Mythril Anvil after any mechanical boss. Needs a reload
 	}
 
 	FallenStarRecipe: {
 		Label: Fallen Star recipe
-		Tooltip: Craft a Fallen Star from 3 Meteorite Bars at an Anvil. Needs the Eater of Worlds or Brain of Cthulhu defeated. Needs a reload.
+		Tooltip: Craft a Fallen Star from 3 Meteorite Bars at an Anvil after the Eater of Worlds or Brain of Cthulhu. Needs a reload
 	}
 
 	FallenStarsPerManaCrystal: {
 		Label: Fallen Stars per Mana Crystal
-		Tooltip: Fallen Stars one Mana Crystal costs to craft, and what the Armory spends turning stars into levy mana. 5 is the normal amount. Needs a reload.
+		Tooltip: Fallen Stars one Mana Crystal costs. 5 is normal. Needs a reload
 	}
 
 	ChlorophyteOrePerBar: {
 		Label: Chlorophyte Ore per bar
-		Tooltip: Chlorophyte Ore needed for one Chlorophyte Bar. 5 is the normal amount. Needs a reload.
+		Tooltip: Chlorophyte Ore for one Chlorophyte Bar. 5 is normal. Needs a reload
 	}
 
 	ChlorophyteOreRecipe: {
 		Label: Chlorophyte Ore recipe
-		Tooltip: Craft a Chlorophyte Ore from 2 Mud Blocks and 2 Jungle Spores at an Adamantite Forge. Needs Hardmode. Needs a reload.
+		Tooltip: Craft Chlorophyte Ore from 2 Mud Blocks and 2 Jungle Spores at an Adamantite Forge in Hardmode. Needs a reload
 	}
 
 	AmmoRecipeYieldMultiplier: {
 		Label: Ammo recipe yield
-		Tooltip: Multiplies how many arrows, bullets, darts and rockets each ammo recipe makes, up to a full stack. Needs a reload.
+		Tooltip: Multiplies the arrows, bullets, darts and rockets each ammo recipe makes. Needs a reload
 	}
 
 	EctoplasmDropMultiplier: {
 		Label: Ectoplasm drop rate
-		Tooltip: Multiplies Ectoplasm drops, including from the Dungeon Spirit. Needs a reload.
+		Tooltip: Multiplies Ectoplasm drops. Needs a reload
 	}
 
 	SoulDropMultiplier: {
 		Label: Soul drop rate
-		Tooltip: Multiplies drops of Souls of Light, Night and Flight. Needs a reload.
+		Tooltip: Multiplies drops of Souls of Light, Night and Flight. Needs a reload
 	}
 
 	MobDropMultiplier: {
 		Label: Monster drop rate
-		Tooltip: Multiplies every drop of non-boss monsters. Applies on top of the Ectoplasm and Soul rates. Needs a reload.
+		Tooltip: Multiplies every drop of non-boss monsters. Needs a reload
 	}
 
 	ChlorophyteGrowthMultiplier: {
 		Label: Chlorophyte growth
-		Tooltip: Extra Chlorophyte spawn and spread attempts for every growth update. 1 is the normal rate.
+		Tooltip: Extra Chlorophyte spawn and spread attempts per growth update. 1 is normal
 	}
 
 	ChlorophyteChunkScale: {
 		Label: Chlorophyte chunk size
-		Tooltip: Scales how much Chlorophyte may grow in one area before growth stops. 1 is the normal limit of about 40 ore nearby and 130 in the wider area.
+		Tooltip: Scales how much Chlorophyte may grow in one area. 1 is normal
 	}
 
 	OnceOnlyBossWeaponRepeatPercent: {
 		Label: Repeat boss weapon drop
-		Tooltip: Chance per kill for Plantera to drop another Grenade Launcher with Rocket Is. Applies to her Treasure Bag as well. Needs a reload.
+		Tooltip: Chance per kill for Plantera or her Treasure Bag to drop another Grenade Launcher. Needs a reload
 	}
 
 	ShimmerDesertShards: {
 		Label: Shimmer shard route
-		Tooltip: Shimmer turns Forbidden Fragments into Dark Shards, Dark Shards into Light Shards, and Light Shards into Forbidden Fragments. Needs a reload.
+		Tooltip: Shimmer turns Forbidden Fragments into Dark Shards, Dark Shards into Light Shards and Light Shards into Forbidden Fragments. Needs a reload
 	}
 
 	EarlyHardmodeCrateOreMultiplier: {
 		Label: Early Hardmode crate ore
-		Tooltip: Multiplies the Cobalt, Palladium, Mythril and Orichalcum ore that crates hold. Needs a reload.
+		Tooltip: Multiplies the Cobalt, Palladium, Mythril and Orichalcum ore in crates. Needs a reload
 	}
 
 	ChlorophyteArmorCostPercent: {
@@ -108,17 +108,17 @@ LevyProgressionConfig: {
 
 	LevyArmorCostPercent: {
 		Label: Levy armor sets cost
-		Tooltip: Percent of the normal ingredient cost of every armor set. Spectre, Shroomite and Spooky armor never change. Needs a reload.
+		Tooltip: Percent of the normal ingredient cost of every armor set, except Spectre, Shroomite and Spooky. Needs a reload
 	}
 
 	ArmsDealerBulkAmmo: {
 		Label: Arms Dealer bulk ammo
-		Tooltip: The Arms Dealer sells any arrow, bullet, dart or rocket you have crafted or picked up enough of. He stocks up to 12 types.
+		Tooltip: The Arms Dealer sells any ammo you have crafted or picked up enough of, up to 12 types
 	}
 
 	BulkAmmoUnlockAmount: {
 		Label: Bulk ammo unlock amount
-		Tooltip: Rounds of one ammo type you must have crafted or picked up before the Arms Dealer sells it.
+		Tooltip: Rounds of one ammo type you need before the Arms Dealer sells it
 	}
 
 	BulkAmmoPricePercent: {
@@ -128,7 +128,7 @@ LevyProgressionConfig: {
 
 	ArmyLootPercentPerCp: {
 		Label: Army loot bonus per command point
-		Tooltip: Boss drops and Treasure Bags give this percent more ore, bars and materials for each command point your levies hold. Counts the player who opens the bag or is nearest the kill. 0 is off.
+		Tooltip: Boss drops and Treasure Bags give this percent more ore, bars and materials per command point your levies hold. 0 is off
 	}
 
 	ArmyLootRareChance: {
@@ -138,17 +138,17 @@ LevyProgressionConfig: {
 
 	OrbLootScaling: {
 		Label: Extra orb and heart loot
-		Tooltip: Smashing a Shadow Orb or Crimson Heart rolls extra drops from that orb's own loot, ammo included. Meteors, boss summons and the goblin army still count once per smash.
+		Tooltip: Smashing a Shadow Orb or Crimson Heart rolls extra drops from its own loot
 	}
 
 	LeviesPerExtraOrbRoll: {
 		Label: Levies per extra orb roll
-		Tooltip: Every this many levies on duty add one more roll to each orb or heart smash. 5 gives 4 extra rolls at 20 levies.
+		Tooltip: Every this many levies on duty add one roll to each orb or heart smash
 	}
 
 	DungeonSpiritMultiplier: {
 		Label: Dungeon Spirit spawn rate
-		Tooltip: Multiplies how often a dying dungeon monster summons a Dungeon Spirit after Plantera. Kills by levies count.
+		Tooltip: Multiplies how often a dying dungeon monster summons a Dungeon Spirit after Plantera
 	}
 
 	DungeonSpiritPercentPerCp: {
@@ -158,27 +158,27 @@ LevyProgressionConfig: {
 
 	EventSpawnBoost: {
 		Label: Events spawn more with an army
-		Tooltip: During a Blood Moon, Eclipse, invasion, Pumpkin Moon, Frost Moon or the Old One's Army, and at the Lunar Pillars, enemies spawn faster and in larger numbers as your army grows. Off leaves the vanilla spawn rate.
+		Tooltip: Events spawn faster and in larger numbers as your army grows. Off leaves the vanilla rate
 	}
 
 	EventInvasionBoost: {
 		Label: Bigger invasions with an army
-		Tooltip: An invasion starts several times its vanilla size, more with a larger army. Off leaves the vanilla size.
+		Tooltip: Invasions start several times their vanilla size, more with a larger army. Off leaves the vanilla size
 	}
 
 	MerchantFenceCoins: {
 		Label: Merchant fences kills
-		Tooltip: A Merchant on the field pays the treasury the coin value of every enemy that dies within 30 tiles of him. Off pays nothing extra.
+		Tooltip: A Merchant on the field pays the treasury the coin value of every enemy that dies within 30 tiles of him
 	}
 
 	TaxCollectorBounty: {
 		Label: Tax Collector bounty
-		Tooltip: A Tax Collector on the field pays the treasury a bounty for every marked enemy that dies near him. Off pays nothing extra.
+		Tooltip: A Tax Collector on the field pays the treasury a bounty for every marked enemy that dies near him
 	}
 
 	ExtractinatorChlorophyte: {
 		Label: Extractinator Chlorophyte
-		Tooltip: Mud Blocks can go into an Extractinator and sometimes yield Chlorophyte Ore after any mechanical boss. Needs a reload.
+		Tooltip: Mud Blocks in an Extractinator sometimes yield Chlorophyte Ore after any mechanical boss. Needs a reload
 	}
 
 	ExtractinatorChlorophytePercent: {

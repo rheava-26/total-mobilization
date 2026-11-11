@@ -7,8 +7,8 @@ Mods: {
 				DisplayName: Barracks
 				Tooltip:
 					'''
-					The hub of a settlement. Town NPCs living within 120 tiles belong to it.
-					Right-click it to enlist Regulars, pay wages and raise the militia.
+					Town NPCs within 120 tiles belong to it
+					Right click it to enlist Regulars and raise the militia
 					'''
 			}
 
@@ -16,31 +16,31 @@ Mods: {
 				DisplayName: Armory
 				Tooltip:
 					'''
-					A 1000-slot store with issue rows for weapons, armor, ammo and potions.
-					Soldiers of a Barracks within 120 tiles arm themselves from it.
+					Stores 1000 items
+					Arms the soldiers of Barracks within 120 tiles
 					'''
 			}
 
 			LogisticalCenterItem: {
 				DisplayName: Logistical Center
-				Tooltip:
-					'''
-					Adds 250 storage slots to the nearest Armory within 40 tiles.
-					Centers stack.
-					'''
+				Tooltip: Adds 250 slots to the nearest Armory within 40 tiles
 			}
 
 			PatrolBannerItem: {
 				DisplayName: Patrol Banner
-				Tooltip: Place two to mark a patrol line. Assign Regulars to it from the Barracks.
+				Tooltip:
+					'''
+					Place two to mark a patrol line
+					Assign Regulars to it from the Barracks
+					'''
 			}
 
 			WarHorn: {
 				DisplayName: War Horn
 				Tooltip:
 					'''
-					Left-click to call up or stand down the nearest settlement's militia.
-					Right-click to give orders to your Regulars.
+					Left click to call up or stand down the militia
+					Right click to give orders to your Regulars
 					'''
 			}
 
@@ -48,9 +48,8 @@ Mods: {
 				DisplayName: Spectral Lens
 				Tooltip:
 					'''
-					Vanity accessory. Draws your levies, their weapons,
-					their projectiles and their summoned units 85% transparent.
-					Only you see the effect.
+					Makes levies, their weapons, shots and summons 85% transparent
+					Only you see the effect
 					'''
 			}
 
@@ -58,11 +57,9 @@ Mods: {
 				DisplayName: Command Radio
 				Tooltip:
 					'''
-					A field set tuned to every soldier you command.
-					Orders and Rally from the radial reach your whole army,
-					anywhere in the world. Click it to open the radial.
-					Pick Send to map point on the radial, click a spot on the full map,
-					then click it again to send every levy there.
+					Orders and Rally reach every levy in the world
+					Click to open the command radial
+					Can send the army to a point on the map
 					'''
 			}
 
@@ -70,9 +67,9 @@ Mods: {
 				DisplayName: GoPro
 				Tooltip:
 					'''
-					A body camera. A levy who carries one in the camera slot can be watched.
-					The Armory issues it to the camera slot, one per levy.
-					Use it to see through the next GoPro levy. Right-click or Esc to stop.
+					Equipped by a levy in its camera slot
+					Use to see through the next GoPro levy
+					Right click or Esc to stop watching
 					'''
 			}
 
@@ -80,8 +77,8 @@ Mods: {
 				DisplayName: Static Camera
 				Tooltip:
 					'''
-					Place it, then right-click it from anywhere in reach to see its view.
-					Mouse wheel zooms out to a wide arena view.
+					Right click it from anywhere in reach to see its view
+					Mouse wheel zooms out
 					'''
 			}
 
@@ -89,43 +86,41 @@ Mods: {
 				DisplayName: Mind Link
 				Tooltip:
 					'''
-					Use it to take direct control of the levy nearest your cursor.
-					Your movement and attack drive that levy.
-					Right-click to let go. Dying gives you a levy to control until you respawn.
+					Take control of the levy nearest your cursor
+					Right click to let go
+					If you die, you control a levy until you respawn
 					'''
 			}
 
 			FieldManual: {
 				DisplayName: Field Manual
-				Tooltip:
-					'''
-					A paged guide to raising, arming and commanding levies.
-					Use it to read. It is never used up.
-					'''
+				Tooltip: Opens a guide to raising and commanding levies
 			}
 
 			GuideToConscription: {
 				DisplayName: A Guide to Conscription
 				Tooltip:
 					'''
-					Each town NPC provides 15 manpower instead of 9.
-					Manpower is the reserve the militia draw from as they fall,
-					not how many stand at once.
-					Consumed on use, once per world.
+					Increases manpower per town NPC to 15
+					Consumed on use, once per world
 					'''
 			}
 
 			GuideToDrill: {
 				DisplayName: A Guide to Drill
-				Tooltip: Militia aim 25% better. Consumed on use, once per world.
+				Tooltip:
+					'''
+					Reduces militia aim error by 25%
+					Consumed on use, once per world
+					'''
 			}
 
 			GuideToPlunder: {
 				DisplayName: A Guide to Plunder
 				Tooltip:
 					'''
-					Coins hauled to the treasury are worth 50% more.
-					Consumed on use, once per world.
+					Increases coins hauled to the treasury by 50%
+					Consumed on use, once per world
 					'''
 			}
 
@@ -133,42 +128,54 @@ Mods: {
 				DisplayName: A Guide to Fortification
 				Tooltip:
 					'''
-					Soldiers within 60 tiles of a Barracks gain 4 defense.
-					Consumed on use, once per world.
+					Increases defense by 4 for soldiers within 60 tiles of a Barracks
+					Consumed on use, once per world
 					'''
 			}
 
 			GuideToDiscipline: {
 				DisplayName: A Guide to Discipline
-				Tooltip: Your soldiers aim truer. Shots are 35% tighter. Consumed on use, once per world.
+				Tooltip:
+					'''
+					Reduces soldier aim error by 35%
+					Consumed on use, once per world
+					'''
 			}
 
 			GuideToFirepower: {
 				DisplayName: A Guide to Firepower
 				Tooltip:
 					'''
-					Militia gain 100 health and 80 mana.
-					Every Armory gains 2 buff slots.
-					Dropped by the Wall of Flesh. Consumed on use, once per world.
+					Increases militia life by 100 and mana by 80
+					Adds 2 buff slots to every Armory
+					Consumed on use, once per world
 					'''
 			}
 
 			GuideToHealthcare: {
 				DisplayName: A Guide to Healthcare
-				Tooltip: Militia gain 150 health. Consumed on use, once per world.
+				Tooltip:
+					'''
+					Increases militia life by 150
+					Consumed on use, once per world
+					'''
 			}
 
 			GuideToTheArcaneArts: {
 				DisplayName: A Guide to the Arcane Arts
-				Tooltip: Militia gain 60 mana. Consumed on use, once per world.
+				Tooltip:
+					'''
+					Increases militia mana by 60
+					Consumed on use, once per world
+					'''
 			}
 
 			GuideToExpertise: {
 				DisplayName: A Guide to Expertise
 				Tooltip:
 					'''
-					Every soldier gains 1 accessory slot.
-					Dropped by the Lunatic Cultist. Consumed on use, once per world.
+					Increases accessory slots by 1 for every soldier
+					Consumed on use, once per world
 					'''
 			}
 
@@ -176,10 +183,10 @@ Mods: {
 				DisplayName: A Guide to Engineering
 				Tooltip:
 					'''
-					Unlocks combat drones at every Barracks. Needs the Mechanization mod.
-					A drone mounts one spare ranged or magic weapon from the Armory
-					and fires it at nearby enemies.
-					A destroyed drone returns its weapon. Consumed on use, once per world.
+					Unlocks combat drones at every Barracks
+					Each drone mounts a spare ranged or magic weapon
+					Requires the Mechanization mod
+					Consumed on use, once per world
 					'''
 			}
 
@@ -187,8 +194,9 @@ Mods: {
 				DisplayName: Levy Rod
 				Tooltip:
 					'''
-					Plants a levy sentry during the Old One's Army.
-					Calls up {0} levy for {1} Etherian Mana.
+					Summons a levy sentry during the Old One's Army
+					Calls up {0} levy
+					Costs {1} Etherian Mana
 					'''
 			}
 
@@ -196,8 +204,9 @@ Mods: {
 				DisplayName: Levy Cane
 				Tooltip:
 					'''
-					Plants a levy sentry during the Old One's Army.
-					Calls up {0} levies for {1} Etherian Mana.
+					Summons a levy sentry during the Old One's Army
+					Calls up {0} levies
+					Costs {1} Etherian Mana
 					'''
 			}
 
@@ -205,8 +214,9 @@ Mods: {
 				DisplayName: Levy Staff
 				Tooltip:
 					'''
-					Plants a levy sentry during the Old One's Army.
-					Calls up {0} levies for {1} Etherian Mana.
+					Summons a levy sentry during the Old One's Army
+					Calls up {0} levies
+					Costs {1} Etherian Mana
 					'''
 			}
 
@@ -214,9 +224,8 @@ Mods: {
 				DisplayName: Barracks Keg
 				Tooltip:
 					'''
-					A keg for the whole army.
-					Increases defense by {2} for your levies within {0} tiles for {1} minutes.
-					They cheer, then stagger: drunk levies have {3}% more aim error.
+					Increases defense by {2} for levies within {0} tiles for {1} minutes
+					Increases aim error by {3}%
 					'''
 			}
 
@@ -224,29 +233,22 @@ Mods: {
 				DisplayName: Case of Stout
 				Tooltip:
 					'''
-					Twenty-four cans for the whole army.
-					Increases damage by {2}% for your levies within {0} tiles for {1} minutes.
-					They cheer, then stagger: drunk levies have {3}% more aim error.
+					Increases damage by {2}% for levies within {0} tiles for {1} minutes
+					Increases aim error by {3}%
 					'''
 			}
 
 			MeteorBeacon: {
 				DisplayName: Meteor Beacon
-				Tooltip:
-					'''
-					Calls down a meteor when used at night.
-					Needs the Eater of Worlds or Brain of Cthulhu defeated to craft.
-					'''
+				Tooltip: Calls down a meteor when used at night
 			}
 
 			SpicedRum: {
 				DisplayName: Rum Cooler
 				Tooltip:
 					'''
-					A cooler for the whole army.
-					Increases critical strike chance by {2}% for your levies within {0} tiles
-					for {1} minutes.
-					They cheer, then stagger: drunk levies have {3}% more aim error.
+					Increases critical strike chance by {2}% for levies within {0} tiles for {1} minutes
+					Increases aim error by {3}%
 					'''
 			}
 		}
@@ -298,22 +300,22 @@ Mods: {
 			WeaponRankMode: {
 				Balanced: {
 					Label: Balanced
-					Tooltip: Weapons rank by sell price. Weapons far behind your world's progress rank lower, and weapons recently added to the Armory rank higher.
+					Tooltip: Sell price, lowered for weapons far behind your progress and raised for recent Armory additions
 				}
 
 				SellPrice: {
 					Label: Sell price
-					Tooltip: Weapons rank by their sell price.
+					Tooltip: Sell price
 				}
 
 				SellPricePlusMaterials: {
 					Label: Sell price + materials
-					Tooltip: Weapons rank by their sell price plus the cost of the materials in their cheapest recipe.
+					Tooltip: Sell price plus the cost of the materials in the cheapest recipe
 				}
 
 				Damage: {
 					Label: Damage
-					Tooltip: Weapons rank by damage per second, raised for rarity and price.
+					Tooltip: Damage per second, raised for rarity and price
 				}
 
 				Tooltip: ""
@@ -324,17 +326,15 @@ Mods: {
 					Label: Events
 					Tooltip:
 						'''
-						Levies become afraid when a world event or a boss arrives,
-						when one hit takes 30% of a levy's health, when a levy dies within 40 tiles,
-						and when a boss changes phase.
-						Levies are fearless while you have the Spectator potion active.
-						Fear drains after 3 seconds without being hit.
+						Levies fear events, bosses, hits of 30% of their health,
+						deaths within 40 tiles and boss phase changes
+						Fear drains after 3 seconds without a hit
 						'''
 				}
 
 				Proximity: {
 					Label: Proximity
-					Tooltip: Levies become afraid steadily while a boss is in view, and more so when hit or when a levy dies.
+					Tooltip: Levies fear a boss steadily while it is in view, and more when hit or when a levy dies
 				}
 
 				Tooltip: ""
@@ -361,27 +361,27 @@ Mods: {
 
 				ArmyEntityBudget: {
 					Label: Army entity budget
-					Tooltip: The army's minions, sentries, lingering shots and drones stand down, oldest first, so the game keeps free projectile and NPC slots for you and the enemy.
+					Tooltip: Minions, sentries, lingering shots and drones stand down, oldest first, to keep free projectile and NPC slots
 				}
 
 				ReservedProjectileSlots: {
 					Label: Projectile slots kept free
-					Tooltip: The army never takes the game below this many free projectile slots.
+					Tooltip: Free projectile slots the army always leaves
 				}
 
 				ReservedNpcSlots: {
 					Label: NPC slots kept free
-					Tooltip: Drones never take the game below this many free NPC slots.
+					Tooltip: Free NPC slots drones always leave
 				}
 
 				ArmySoundVolume: {
 					Label: Army sound volume
-					Tooltip: Volume of every sound the army makes. Lower it to keep the music audible in a big fight.
+					Tooltip: Volume of every sound the army makes
 				}
 
 				BossHpScalingPercentPerCp: {
 					Label: Boss HP scaling per command point (%)
-					Tooltip: Bosses gain this much max and current HP for every command point of soldiers that engage them.
+					Tooltip: Max and current HP a boss gains for every command point of soldiers engaging it
 				}
 
 				BossHpScalingCapPercent: {
@@ -391,17 +391,12 @@ Mods: {
 
 				BossesPunishSoldiers: {
 					Label: Bosses punish soldiers
-					Tooltip: Bosses redirect shots and dashes at soldiers that get close or hurt them.
+					Tooltip: Bosses aim shots and dashes at soldiers that get close or hurt them
 				}
 
 				BossesTargetSoldiers: {
 					Label: Bosses target soldiers
-					Tooltip:
-						'''
-						Bosses you have already defeated in this world chase the nearest soldier like a player.
-						The first kill of any boss is always solo. Needs Enemies target soldiers.
-						Some boss AIs will not be fully diverted.
-						'''
+					Tooltip: Bosses you have beaten chase the nearest soldier, but first kills stay solo. Needs Enemies target soldiers.
 				}
 
 				FearMultiplier: {
@@ -413,16 +408,14 @@ Mods: {
 					Label: Fear model
 					Tooltip:
 						'''
-						Events: levies fear hits that take 30% of their health,
-						nearby deaths and boss phase changes.
-						Proximity: levies fear a boss steadily while it is in view.
-						Levies with the Happy! buff, or near a Sunflower, gain fear at half speed.
+						Events: fear from big hits, nearby deaths and phase changes
+						Proximity: fear builds while a boss is in view
 						'''
 				}
 
 				FormationDefense: {
 					Label: Formation defense
-					Tooltip: A levy takes 2% less damage for each other levy within 15 tiles that is not routed, up to 20%.
+					Tooltip: Each steady levy within 15 tiles reduces a levy's damage taken by 2%, up to 20%
 				}
 
 				SoldierDamageMultiplier: {
@@ -432,7 +425,7 @@ Mods: {
 
 				RenderCap: {
 					Label: Soldiers on screen
-					Tooltip: Bodies above this number wait in the barracks as reinforcements.
+					Tooltip: Soldiers above this number wait in the Barracks as reinforcements
 				}
 
 				Tombstones: {
@@ -442,52 +435,52 @@ Mods: {
 
 				EnemiesTargetSoldiers: {
 					Label: Enemies target soldiers
-					Tooltip: Allowlisted enemies chase the nearest soldier like a player.
+					Tooltip: Allowlisted enemies chase the nearest soldier like a player
 				}
 
 				UseVanillaStatPipeline: {
 					Label: Use vanilla stat pipeline
-					Tooltip: Soldiers get armor set and accessory stats through the game's own equipment code. Turn off if another mod misbehaves.
+					Tooltip: Soldiers get armor set and accessory stats from the game's own equipment code. Turn off if another mod misbehaves
 				}
 
 				AutoFeedCrystals: {
 					Label: Soldiers use growth crystals from the Armory
-					Tooltip: Soldiers draw Life Crystals, Life Fruit and Mana Crystals from their Armory's storage, one at a time, until they reach their grade limit.
+					Tooltip: Soldiers use Life Crystals, Life Fruit and Mana Crystals from their Armory up to their grade limit
 				}
 
 				ArmoryTurnsStarsIntoMana: {
 					Label: Levies use Fallen Stars as Mana Crystals
-					Tooltip: Fallen Stars in an Armory's storage become Mana Crystals for its magic levies at the crafting cost, worst-supplied first. Stars are kept while any weapon there or in a levy's hands fires them.
+					Tooltip: Fallen Stars in an Armory become Mana Crystals for magic levies at the crafting cost. Stars are kept while a weapon there fires them
 				}
 
 				RealWeaponShoot: {
 					Label: Real weapon effects
-					Tooltip: Soldiers fire through the game's own shooting code, so special weapons keep their effects. Turn off to use the simpler fallback.
+					Tooltip: Soldiers fire through the game's own shooting code, so special weapons keep their effects
 				}
 
 				ClassMatchIssue: {
 					Label: Fixed-class companies
-					Tooltip: Off, soldiers take the strongest weapon they can use whatever its type, and their armor follows it. On, a soldier's armor decides which weapon class it draws, and its upgrades stay within that class.
+					Tooltip: Off, soldiers take the strongest weapon they can use. On, a soldier's armor decides its weapon class
 				}
 
 				WeaponRanking: {
 					Label: Weapon ranking
-					Tooltip: Levies draw the highest-ranked weapon their class can use. This sets what a weapon is ranked by.
+					Tooltip: What the Armory ranks weapons by
 				}
 
 				SkipArmoredWeapons: {
 					Label: Skip weapons that barely hurt armored enemies
-					Tooltip: A weapon whose hits do almost nothing to the enemies at your world's progress ranks below every weapon that does real damage. Applies to the price rankings.
+					Tooltip: Weapons that barely hurt your world's enemies rank below weapons that do real damage. Applies to price rankings
 				}
 
 				AimAccuracy: {
 					Label: Levy aim accuracy
-					Tooltip: Higher values make levies aim better, lower values worse. This strongly affects how strong levies are.
+					Tooltip: Higher values make levies aim better
 				}
 
 				AutoUpgradeWeapons: {
 					Label: Soldiers upgrade their gear
-					Tooltip: Soldiers swap to a clearly better weapon or armor set when one is stocked in their Armory, and put the old one back. Soldiers with Lock Loadout on are skipped.
+					Tooltip: Soldiers swap to a clearly better stocked weapon or armor set and return the old one. Skips Lock Loadout
 				}
 
 				SoldiersTriggerPressurePlates: {
@@ -507,7 +500,7 @@ Mods: {
 
 				SoldiersUseHooks: {
 					Label: Levies use grappling hooks
-					Tooltip: Levies carry the best grappling hook in the armory. They swing across gaps and climb cliffs with it.
+					Tooltip: Levies carry the best grappling hook in the Armory and use it to cross gaps and climb cliffs
 				}
 
 				SoldiersTakeFallDamage: {
@@ -517,17 +510,17 @@ Mods: {
 
 				AmbientChatter: {
 					Label: Idle chatter
-					Tooltip: A levy with nothing to do says a line to a comrade nearby every 18 to 45 seconds, and every 5 to 14 seconds for half a minute after a fight. Needs a player within 70 tiles.
+					Tooltip: Idle levies talk to a nearby comrade every 18 to 45 seconds. Needs a player within 70 tiles
 				}
 
 				LeviesSitWhenIdle: {
 					Label: Levies sit when idle
-					Tooltip: A levy with nothing to do sits on a nearby chair, bench or throne and chats with the levies beside it. It stands up at once for a fight, a threat or an order.
+					Tooltip: Idle levies sit on a nearby chair, bench or throne and stand up for a fight or an order
 				}
 
 				SoldiersTakeTileHazards: {
 					Label: Levies take tile hazards
-					Tooltip: Spikes, wooden spikes, thorns, cactus, meteorite and hellstone hurt levies the way they hurt players. Off by default.
+					Tooltip: Spikes, thorns, cactus, meteorite and hellstone hurt levies as they hurt players
 				}
 
 				ExtraTargetingAiStyles: {
@@ -542,7 +535,7 @@ Mods: {
 
 				WageMutiny: {
 					Label: Wage mutiny
-					Tooltip: Soldiers whose wage the treasury cannot pay revolt at once. They refuse every order, rob town NPCs, attack you and rob your pockets and banks until they have taken their back pay or the treasury pays it. Off by default.
+					Tooltip: Soldiers the treasury cannot pay refuse orders, rob town NPCs and attack you until they are paid
 				}
 
 				AutoMusterDefault: {
@@ -552,62 +545,62 @@ Mods: {
 
 				OldOnesArmyUsesLevySentries: {
 					Label: Old One's Army uses levy sentries
-					Tooltip: Regular levies stand down during the Old One's Army. Levy sentries call them up for Etherian Mana.
+					Tooltip: Regular levies stand down during the Old One's Army. Levy sentries call them up for Etherian Mana
 				}
 
 				MilitiaFieldCap: {
 					Label: Militia on the field at once
-					Tooltip: How many militia a town fields simultaneously. Manpower is the deeper reserve they draw from as they fall; this keeps the active crowd small.
+					Tooltip: Militia a town fields at once. The rest of its manpower stays in reserve
 				}
 
 				LeviesAtStart: {
 					Label: Levies at the start
-					Tooltip: Levies you can field in a new world, before any boss is beaten. Recommended 6 to 20.
+					Tooltip: Levies you can field in a new world. Recommended 6 to 20
 				}
 
 				LeviesByEndOfPreHardmode: {
 					Label: Levies by the Wall of Flesh
-					Tooltip: Levies you can field once every pre-hardmode boss is beaten, and the most you can field before the Wall of Flesh falls. Recommended 12 to 40. Each boss beaten adds only its own share.
+					Tooltip: Levies you can field once every pre-hardmode boss is beaten. Recommended 12 to 40
 				}
 
 				LeviesByEndOfHardmode: {
 					Label: Levies by Moon Lord
-					Tooltip: Levies you can field once Moon Lord and every boss before him is beaten, and the most until Moon Lord falls. Recommended 24 to 60. Each boss beaten adds only its own share.
+					Tooltip: Levies you can field once Moon Lord and every boss before him is beaten. Recommended 24 to 60
 				}
 
 				LeviesByEndOfPostMoonLord: {
 					Label: Levies by the end of post-Moon Lord
-					Tooltip: The most levies you can field after Moon Lord. Recommended 32 to 90. Each boss beaten adds only its own share.
+					Tooltip: The most levies you can field after Moon Lord. Recommended 32 to 90
 				}
 
 				CapLeviesByStage: {
 					Label: Cap levies by stage
-					Tooltip: Before the Wall of Flesh falls the levy count stops at the Wall of Flesh number, before Moon Lord falls at the Moon Lord number, and after that at the final number. Off leaves only Maximum levies.
+					Tooltip: Holds the levy count at each stage's number until the next milestone boss falls. Off leaves only Maximum levies
 				}
 
 				MaxLevies: {
 					Label: Maximum levies
-					Tooltip: The most levies you can ever field, whatever the other numbers say.
+					Tooltip: The most levies you can ever field
 				}
 
 				MilestoneRewards: {
 					Label: Boss milestones
-					Tooltip: A boss you beat grants every levy extra accessory slots and the world extra levies. Each entry shows what it grants. All start switched off.
+					Tooltip: A boss you beat grants every levy extra accessory slots and the world extra levies. All start off
 				}
 
 				LevyAccessorySlots: {
 					Label: Levy accessory slots
-					Tooltip: Accessory slots a Levy opens. Every levy has at least 2: one for the best mobility accessory, one for the best other accessory. At most 6.
+					Tooltip: Accessory slots a Levy opens. At least 2, at most 6
 				}
 
 				ManAtArmsAccessorySlots: {
 					Label: Man-at-Arms accessory slots
-					Tooltip: Accessory slots a Man-at-Arms opens. Every levy has at least 2. At most 6.
+					Tooltip: Accessory slots a Man-at-Arms opens. At least 2, at most 6
 				}
 
 				ChampionAccessorySlots: {
 					Label: Champion accessory slots
-					Tooltip: Accessory slots a Champion opens. Every levy has at least 2. At most 6.
+					Tooltip: Accessory slots a Champion opens. At least 2, at most 6
 				}
 
 				ExpertiseGuideSlots: {
@@ -627,17 +620,17 @@ Mods: {
 
 				MagicStorageSupply: {
 					Label: Armories draw from Magic Storage
-					Tooltip: An armory within 50 tiles of a Storage Heart, Storage Access or Remote Access arms soldiers from that network once its own shelves and pylon-linked armories run dry. Does nothing without Magic Storage.
+					Tooltip: Armories within 50 tiles of a Magic Storage network arm soldiers from it when their own shelves run dry. Needs Magic Storage
 				}
 
 				LogisticsReachesPylons: {
 					Label: Logistics reaches shopkeepers through pylons
-					Tooltip: An armory within 60 tiles of a working pylon also trades with shopkeepers housed near any other working pylon. Buying, standing buys and selling all use them.
+					Tooltip: An Armory within 60 tiles of a working pylon also trades with shopkeepers near any other working pylon
 				}
 
 				Nameplates: {
 					Label: Nameplates
-					Tooltip: Name, grade and HP over each soldier. Hidden when more than 20 are on screen.
+					Tooltip: Name, grade and HP over each soldier. Hidden above 20 on screen
 				}
 
 				MilitiaDeathMessages: {
@@ -864,7 +857,7 @@ Mods: {
 		Buffs: {
 			MarkedBuff: {
 				DisplayName: Marked
-				Description: The whole army deals extra damage to this enemy.
+				Description: Takes extra damage from the whole army
 			}
 		}
 	}

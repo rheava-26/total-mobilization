@@ -17,11 +17,11 @@ namespace Levy.Common.Weapons
 	/// the NPC is refused and the loop moves on. Only an ARMY projectile with the plain hit test is ever refused: a modded projectile that overrides neither Colliding nor ModifyDamageHitbox, or a vanilla one of an ordinary
 	/// shot AI style (arrows, bullets, thrown, explosive). The cut-off is the hitbox plus a margin (<see cref="ModMarginPx"/> / <see cref="VanillaMarginPx"/>, several times what any stock collision reaches) plus the
 	/// distance the projectile moves in a tick. Nothing in the world is touched. LEVY_PAIRCHK=1 (lab) refuses nothing and instead asks the real hit test of every pair the cull would have refused and records how far
-	/// beyond its plain reach any hit ever landed: violations must stay 0. LEVY_PAIRCULL=0 / LEVY_OPT=0 turn the cull off.
+	/// beyond its plain reach any hit ever landed: violations must stay 0. OFF BY DEFAULT: LEVY_PAIRCULL=1 turns it on. Measured on the Destroyer lab it refuses 35% of the pairs (the rest belong to special-shape projectiles or are near enough) and saves 2% of the tick (the dispatch up to this hook and the vanilla loop are the cost), with 0 violations over 100 million audited pairs and no hit ever landing beyond the plain reach (maxHitExcessPx 0). Left in for a build where Levy's hook comes first in the dispatch.
 	/// </summary>
 	public static class PairCull
 	{
-		public static readonly bool Enabled = LevyProf.Opt && Environment.GetEnvironmentVariable("LEVY_PAIRCULL") != "0";
+		public static readonly bool Enabled = LevyProf.Opt && Environment.GetEnvironmentVariable("LEVY_PAIRCULL") == "1";
 		internal static readonly bool Audit = Enabled && Environment.GetEnvironmentVariable("LEVY_PAIRCHK") == "1";
 		/// <summary>Margin beyond the hitbox, px. A stock hit test reaches no further than the hitbox; the margin is for global hooks that stretch an ordinary shot.</summary>
 		public const float ModMarginPx = 160f, VanillaMarginPx = 256f;

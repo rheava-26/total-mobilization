@@ -56,9 +56,9 @@ namespace Warbands.Content.Items
 		public override void ModifyTooltips(List<TooltipLine> tooltips)
 		{
 			var r = Roster; if (r == null) return;
-			string beaten = SharePct >= 100 ? "The whole band was beaten." : $"{SharePct}% of the band was beaten.";
-			tooltips.Add(new TooltipLine(Mod, "Bounty", $"A bounty notice for the {r.Name}. {beaten}"));
-			tooltips.Add(new TooltipLine(Mod, "TurnIn", "Turn it in at a Barracks or next to a town NPC to claim the bounty."));
+			string beaten = SharePct >= 100 ? "The whole band was beaten" : $"{SharePct}% of the band was beaten";
+			tooltips.Add(new TooltipLine(Mod, "Bounty", beaten));
+			tooltips.Add(new TooltipLine(Mod, "TurnIn", "Turn in at a Barracks or town NPC to claim the bounty"));
 		}
 
 		/// <summary>A Levy Barracks or a town NPC is close enough to take the notice.</summary>

@@ -23,7 +23,7 @@ Configs: {
 
 		FirstStage: {
 			Label: First stage
-			Tooltip: No bands before this point. 0 pre-boss, 1 after the Eater of Worlds or Brain of Cthulhu, 2 after Skeletron, 3 early Hardmode, 4 after the mechanical bosses, 5 after Plantera, 6 after Golem.
+			Tooltip: No bands before this stage. 0 pre-boss, 1 Eater of Worlds or Brain of Cthulhu, 2 Skeletron, 3 early Hardmode, 4 mechanical bosses, 5 Plantera, 6 Golem.
 		}
 
 		SpawnChancePercentPerMinute: {
@@ -43,7 +43,7 @@ Configs: {
 
 		MaxActiveBands: {
 			Label: Bands near a player
-			Tooltip: Most bands out within 200 tiles of one player. No new band forms near a player while this many are about.
+			Tooltip: Most bands within 200 tiles of one player.
 		}
 
 		MaxWorldBands: {
@@ -63,7 +63,7 @@ Configs: {
 
 		GearDrops: {
 			Label: Gear drops (not recommended)
-			Tooltip: Fallen soldiers drop their own weapons, ammo and armor. Off by default; the reward is the bounty notice.
+			Tooltip: Fallen soldiers drop their weapons, ammo and armor. Off by default.
 		}
 
 		LootSharePercent: {
@@ -73,7 +73,7 @@ Configs: {
 
 		NeutralBandPercent: {
 			Label: Neutral bands
-			Tooltip: Percent of naturally forming bands that ignore you and your levies until one of you hits them. Bands in the Sunken Sea are always neutral. Summoned bands are always hostile.
+			Tooltip: Percent of natural bands that ignore you until hit. Sunken Sea bands are always neutral and summoned bands always hostile.
 		}
 
 		LifeScale: {
@@ -88,7 +88,7 @@ Configs: {
 
 		LevyBrain: {
 			Label: Levy brain
-			Tooltip: Band soldiers move, hook, fly, dodge and use their weapons the way your levies do.
+			Tooltip: Band soldiers move, hook, fly, dodge and fight the way your levies do.
 		}
 
 		SummonedBandSize: {
@@ -103,7 +103,7 @@ Configs: {
 
 		EventBands: {
 			Label: Event bands
-			Tooltip: A band joins a Goblin Army, Pirate Invasion, Sandstorm or Slime Rain while it lasts. They are always hostile and leave when the event ends.
+			Tooltip: Bands join a Goblin Army, Pirate Invasion, Sandstorm or Slime Rain. They are always hostile and leave when it ends.
 		}
 
 		EventGoblins: {
@@ -113,7 +113,7 @@ Configs: {
 
 		EventPirates: {
 			Label: Pirate boarders
-			Tooltip: Gunners and boarders join the Pirate Invasion and gather under the Flying Dutchman.
+			Tooltip: Gunners and boarders join the Pirate Invasion.
 		}
 
 		EventSandstorm: {
@@ -143,9 +143,9 @@ Items: {
 		DisplayName: Deserters' Wanted Poster
 		Tooltip:
 			'''
-			Calls the Forest Deserters to 24 to 34 tiles away, four soldiers with bows and guns.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Forest Deserters, armed with bows and guns
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -153,9 +153,9 @@ Items: {
 		DisplayName: Brigands' Wanted Poster
 		Tooltip:
 			'''
-			Calls the Iron Brigands to 24 to 34 tiles away, four soldiers with bows and guns.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Iron Brigands, armed with bows and guns
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -163,9 +163,9 @@ Items: {
 		DisplayName: Raiders' Challenge Flag
 		Tooltip:
 			'''
-			Calls the Dune Raiders to 24 to 34 tiles away, four soldiers with bows and guns.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Dune Raiders, armed with bows and guns
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -173,9 +173,9 @@ Items: {
 		DisplayName: Rangers' Challenge Flag
 		Tooltip:
 			'''
-			Calls the Snow Rangers to 24 to 34 tiles away, four soldiers with bows and guns.
-			They warn you off and attack only if you stay.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Snow Rangers, armed with bows and guns
+			Warns you off, then attacks if you stay
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -183,9 +183,9 @@ Items: {
 		DisplayName: Zealots' Effigy
 		Tooltip:
 			'''
-			Calls the Corrupt Zealots to 24 to 34 tiles away, four soldiers with staves and blades.
-			They warn you off and attack only if you stay.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Corrupt Zealots, armed with staves and blades
+			Warns you off, then attacks if you stay
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -193,9 +193,9 @@ Items: {
 		DisplayName: Flesh-Cult Effigy
 		Tooltip:
 			'''
-			Calls the Crimson Flesh-Cult to 24 to 34 tiles away, four soldiers with staves and blades.
-			They warn you off and attack only if you stay.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Crimson Flesh-Cult, armed with staves and blades
+			Warns you off, then attacks if you stay
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -203,9 +203,9 @@ Items: {
 		DisplayName: Poachers' Wanted Poster
 		Tooltip:
 			'''
-			Calls the Jungle Poachers to 24 to 34 tiles away, four soldiers with bows and guns.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Jungle Poachers, armed with bows and guns
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -213,9 +213,9 @@ Items: {
 		DisplayName: Marauders' Battle Standard
 		Tooltip:
 			'''
-			Calls the Meteor Marauders to 24 to 34 tiles away, four soldiers with bows and guns.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Meteor Marauders, armed with bows and guns
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -223,9 +223,9 @@ Items: {
 		DisplayName: Scavengers' Battle Standard
 		Tooltip:
 			'''
-			Calls the Ashland Scavengers to 24 to 34 tiles away, four soldiers with bows and guns.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Ashland Scavengers, armed with bows and guns
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -233,9 +233,9 @@ Items: {
 		DisplayName: Wardens' Challenge Flag
 		Tooltip:
 			'''
-			Calls the Dungeon Wardens to 24 to 34 tiles away, four soldiers with staves and blades.
-			They warn you off and attack only if you stay.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Dungeon Wardens, armed with staves and blades
+			Warns you off, then attacks if you stay
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -243,9 +243,9 @@ Items: {
 		DisplayName: Hive Raiders' Challenge Flag
 		Tooltip:
 			'''
-			Calls the Hive Raiders to 24 to 34 tiles away, four soldiers with staves and blades.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Hive Raiders, armed with staves and blades
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -253,9 +253,9 @@ Items: {
 		DisplayName: Paladins' Effigy
 		Tooltip:
 			'''
-			Calls the Hallow Paladins to 24 to 34 tiles away, four soldiers with bows and guns.
-			They warn you off and attack only if you stay.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Hallow Paladins, armed with bows and guns
+			Warns you off, then attacks if you stay
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -263,9 +263,9 @@ Items: {
 		DisplayName: Mercenaries' Wanted Poster
 		Tooltip:
 			'''
-			Calls the Mythril Mercenaries to 24 to 34 tiles away, four soldiers with bows and guns.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Mythril Mercenaries, armed with bows and guns
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -273,9 +273,9 @@ Items: {
 		DisplayName: Hellfire Legion Standard
 		Tooltip:
 			'''
-			Calls the Hellfire Legion to 24 to 34 tiles away, four soldiers with bows and guns.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Hellfire Legion, armed with bows and guns
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -283,9 +283,9 @@ Items: {
 		DisplayName: Titanium Legion Flag
 		Tooltip:
 			'''
-			Calls the Titanium Legion to 24 to 34 tiles away, four soldiers with bows and guns.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Titanium Legion, armed with bows and guns
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -293,9 +293,9 @@ Items: {
 		DisplayName: Wardens' Battle Standard
 		Tooltip:
 			'''
-			Calls the Chlorophyte Wardens to 24 to 34 tiles away, four soldiers with bows and guns.
-			They warn you off and attack only if you stay.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Chlorophyte Wardens, armed with bows and guns
+			Warns you off, then attacks if you stay
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -303,9 +303,9 @@ Items: {
 		DisplayName: Shroomite Raiders' Standard
 		Tooltip:
 			'''
-			Calls the Shroomite Raiders to 24 to 34 tiles away, four soldiers with bows and guns.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Shroomite Raiders, armed with bows and guns
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -313,9 +313,9 @@ Items: {
 		DisplayName: Frost Legion Flag
 		Tooltip:
 			'''
-			Calls the Frost Legion to 24 to 34 tiles away, four soldiers with bows and guns.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Frost Legion, armed with bows and guns
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -323,9 +323,9 @@ Items: {
 		DisplayName: Ritualists' Effigy
 		Tooltip:
 			'''
-			Calls the Dungeon Ritualists to 24 to 34 tiles away, four soldiers with staves and blades.
-			They warn you off and attack only if you stay.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Dungeon Ritualists, armed with staves and blades
+			Warns you off, then attacks if you stay
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 
@@ -333,9 +333,9 @@ Items: {
 		DisplayName: Cultist Archers' Sigil
 		Tooltip:
 			'''
-			Calls the Cultist Archers to 24 to 34 tiles away, four soldiers with bows and guns.
-			They fight you and your levies at once.
-			Beating the whole band drops a bounty notice to turn in.
+			Summons the Cultist Archers, armed with bows and guns
+			Fights you and your levies on sight
+			Drops a bounty notice when the band is beaten
 			'''
 	}
 

@@ -80,7 +80,7 @@ namespace Levy.Content.NPCs
 		public bool StatsDirty = true;
 		/// <summary>Buff stations beside an armory this soldier is near (refreshed with the stats; server only). Damage.cs reads it for regen.</summary>
 		public StationFlags Stations;
-		private int _statsTimer;
+		private int _statsTimer; private bool _statsPhased;
 		/// <summary>Per-soldier latch: tick (Main.GameUpdateCount) before which this soldier uses the manual stat fallback after its pipeline threw. Retried after <see cref="LevyConstants.PipelineRetryTicks"/>.</summary>
 		private uint _pipelineRetryAt;
 		private bool _pipelineWarned;
@@ -439,6 +439,8 @@ namespace Levy.Content.NPCs
 				return;
 			}
 			pd = global::Levy.Common.Util.LevyProf.Begin();
+			// The once-a-second stat refresh is staggered by body index: an army summoned or loaded in one tick otherwise refreshes all together, one tick in sixty carrying the whole army's re-equip (a ~10 ms tick).
+			if (!_statsPhased) { _statsPhased = true; if (global::Levy.Common.Util.LevyProf.Opt) _statsTimer = NPC.whoAmI * 7 % 60; }
 			if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; RefreshStats(); }
 			else if (_upkeepGear) GearTick(); // per-tick gear upkeep (SoldierNPC.GearUpkeep.cs); RefreshStats ran the same frame this tick when it was due
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Stats, pd);

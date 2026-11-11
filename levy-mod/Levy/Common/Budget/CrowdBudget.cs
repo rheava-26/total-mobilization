@@ -257,7 +257,7 @@ namespace Levy.Common.Budget
 			if (Log)
 			{
 				_tick.Stop(); double t = _tick.Elapsed.TotalMilliseconds; _allocSum += GC.GetAllocatedBytesForCurrentThread() - _allocStart; _cpuSum += Util.LevyProf.ThreadCpuNs() - _cpuStart; _tickMs += t; _npcMs += _npc.Elapsed.TotalMilliseconds; _projMs += _proj.Elapsed.TotalMilliseconds; _tickN++; if (t > _tickMax) _tickMax = t;
-				if (t > SpikeMs && _spikes++ < 60) Levy.Instance?.Logger.Info($"[Crowd] spike tick={Main.GameUpdateCount} {t:0.0} ms (npcs {_npc.Elapsed.TotalMilliseconds:0.0}, projectiles {_proj.Elapsed.TotalMilliseconds:0.0}, gc {GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2) - _gcBefore}) {(Util.LevyProf.On ? Util.LevyProf.DescribeDelta(_profBefore, 5) : "")}");
+				if (t > SpikeMs && _spikes++ < 400) Levy.Instance?.Logger.Info($"[Crowd] spike tick={Main.GameUpdateCount} {t:0.0} ms (npcs {_npc.Elapsed.TotalMilliseconds:0.0}, projectiles {_proj.Elapsed.TotalMilliseconds:0.0}, gc {GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2) - _gcBefore}) {(Util.LevyProf.On ? Util.LevyProf.DescribeDelta(_profBefore, 5) : "")}");
 			}
 			uint now = Main.GameUpdateCount;
 			bool logNow = Log && now - _lastLog >= 120;

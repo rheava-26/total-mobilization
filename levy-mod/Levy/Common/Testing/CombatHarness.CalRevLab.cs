@@ -33,7 +33,7 @@ namespace Levy.Common.Testing
 			bool cal = ModLoader.HasMod("CalamityMod");
 			// Calamity world: bosses beaten before the fight, in Boss Checklist order. Vanilla-only world: vanilla bosses only.
 			float furthest = cal
-				? boss switch { "kslime" => 0f, "ds" => 1f, "eye" => 1.6f, "eow" => 2.7f, "brain" => 2.7f, "hive" => 3f, "perf" => 3f, "qb" => 3.99f, "skel" => 4f, "sg" => 5f, "crab" => 2f, _ => 0f }
+				? boss switch { "kslime" => 0f, "ds" => 1f, "eye" => 1.6f, "eow" => 2.7f, "brain" => 2.7f, "hive" => 3f, "perf" => 3f, "qb" => 3.99f, "skel" => 4f, "sg" => 5f, "crab" => 2f, "destroyer" => 6.5f, _ => 0f }
 				: boss switch { "kslime" => 0f, "eye" => 1f, "eow" => 2f, "brain" => 2f, "qb" => 3f, "skel" => 4f, _ => 0f };
 			float[] prog = { 1, 2, 3, 4, 5, 6, 7 }; int[] w = { 1, 2, 2, 1, 2, 1, 7 };
 			var l = new List<TierBoss>();
@@ -51,6 +51,7 @@ namespace Levy.Common.Testing
 			{
 				case "kslime": foreach (int t in new[] { NPCID.BlueSlime, NPCID.SlimeSpiked, NPCID.GreenSlime, NPCID.PurpleSlime, NPCID.RedSlime, NPCID.YellowSlime, NPCID.IceSlime, NPCID.JungleSlime, NPCID.BlackSlime }) s.AddTypes.Add(t); { int jw = CrCalNpc("KingSlimeJewelRuby"); if (jw > 0) s.AddTypes.Add(jw); } break;
 				case "brain": s.AddTypes.Add(NPCID.Creeper); break;
+				case "destroyer": s.BodyType = NPCID.TheDestroyerBody; s.TailType = NPCID.TheDestroyerTail; s.PartTypes.Add(NPCID.TheDestroyer); s.PartTypes.Add(NPCID.TheDestroyerBody); s.PartTypes.Add(NPCID.TheDestroyerTail); s.AddTypes.Add(NPCID.Probe); break;
 				case "eow": s.BodyType = NPCID.EaterofWorldsBody; s.TailType = NPCID.EaterofWorldsTail; s.PartTypes.Add(NPCID.EaterofWorldsHead); s.PartTypes.Add(NPCID.EaterofWorldsBody); s.PartTypes.Add(NPCID.EaterofWorldsTail); break;
 				case "ds":
 					s.BodyType = CrCalNpc("DesertScourgeBody"); s.TailType = CrCalNpc("DesertScourgeTail");
@@ -169,6 +170,7 @@ namespace Levy.Common.Testing
 				if (st.HalfTick < 0 && st.Tick > 40 && life * 2 <= st.BossLifeMaxSum) st.HalfTick = st.Tick;
 			}
 			if (head != null) e = head;
+			if (head != null && !st.WormHpScaled && st.Run.BossHpX != 1f) { st.WormHpScaled = true; head.lifeMax = (int)(head.lifeMax * st.Run.BossHpX); head.life = head.lifeMax; } // bhp= on a worm: scale the head (segments share its life through realLife)
 			if (st.Tick == 5 || st.Tick == 200)
 			{
 				int hh = 0, bb = 0, tt = 0; for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (!n.active) continue; if (n.type == st.BossType) hh++; else if (n.type == st.BodyType) bb++; else if (n.type == st.TailType) tt++; }
@@ -179,7 +181,7 @@ namespace Levy.Common.Testing
 			{
 				st.BossGone = true; st.EndTick = st.Tick; st.BossLife = 0;
 				long dmg = st.Levies.Sum(l => l.DmgBoss);
-				bool flag = st.Run.Boss == "eow" ? NPC.downedBoss2 : CrCalDowned(st.Run.Boss);
+				bool flag = st.Run.Boss == "eow" ? NPC.downedBoss2 : st.Run.Boss == "destroyer" ? NPC.downedMechBoss1 : CrCalDowned(st.Run.Boss);
 				st.Result = flag || (st.BossLifeMaxSum > 0 && dmg >= 0.9 * st.BossLifeMaxSum) ? "WIN" : "DESPAWN";
 			}
 			return alive;

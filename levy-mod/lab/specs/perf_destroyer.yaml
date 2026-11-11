@@ -1,0 +1,15 @@
+# perf: the Destroyer (Death mode) against an army, to measure the update cost per tick ([Crowd] lines + [Prof] lines in server.log.gz). The Destroyer's life is scaled so the fight lasts; levies take 10% damage so they stay up.
+name: perf_destroyer
+boss: destroyer
+mode: death
+gear: postwof.best
+levies: 36
+seeds: 3
+bhp: 8
+dr: 0.9
+cap: 70
+env: {LEVY_CROWD: 1, LEVY_PROF: 1}
+vs:
+  alone: {levies: 1}
+  army: {}
+  armymech: {drones: 10, turrets: 3}

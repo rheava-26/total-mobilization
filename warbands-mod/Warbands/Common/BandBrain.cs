@@ -23,6 +23,9 @@ namespace Warbands.Common
 		public static readonly Dictionary<int, BandBrain> All = new();
 		private static int _nextId = 1;
 		public static int NextId() => _nextId++;
+		/// <summary>Ticks a band may stand with no player within 220 tiles before it is cleaned up (config minutes; 30 by default). Bands are rare enemies: nothing else despawns them.</summary>
+		public static int FarCleanupTicks => 3600 * Math.Max(5, WarbandsConfig.Get?.BandCleanupMinutes ?? 30);
+		public static int PeekNextId() => _nextId;
 		public static BandBrain Get(int id) => All.TryGetValue(id, out var b) ? b : null;
 		public static int Counted;           // bands formed this session
 		public static int BountiesPaid;      // payouts handed out this session
@@ -168,7 +171,7 @@ namespace Warbands.Common
 			bool near = false; Vector2 c = Members[0].NPC.Center;
 			for (int i = 0; i < Main.maxPlayers; i++) { var p = Main.player[i]; if (p.active && !p.dead && Vector2.DistanceSquared(p.Center, c) < 220f * 16f * 220f * 16f) { near = true; break; } }
 			FarTicks = near ? 0 : FarTicks + 1;
-			if (FarTicks > 60 * 45) { foreach (var m in Members) { m.NPC.active = false; m.NPC.netUpdate = true; } Paid = true; return; }
+			if (FarTicks > FarCleanupTicks) { foreach (var m in Members) { m.NPC.active = false; m.NPC.netUpdate = true; } Paid = true; return; } // the only despawn: a band left alone for a very long time
 			if (now >= FlipAt) { FlipAt = now + 60 * 6; if (RetreatGroup < 0) ActiveGroup = 1 - ActiveGroup; }
 			if (RetreatGroup >= 0 && now >= RetreatUntil) RetreatGroup = -1;
 

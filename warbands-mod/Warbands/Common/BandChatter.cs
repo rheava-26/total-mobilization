@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
+using Levy.Common.Dialogue;
 using Warbands.Content.NPCs;
 
 namespace Warbands.Common
@@ -45,6 +47,53 @@ namespace Warbands.Common
 			catch (Exception e) { mod.Logger.Warn("[Warbands] could not read Dialogue.txt: " + e.Message); }
 		}
 
+		// ---------------------------------------------------------------- Levy's own fighting lines
+		/// <summary>Which of Levy's dialogue triggers (Levy/Dialogue/en-US.txt, or the player's edited copy of it) feed each Warbands situation. Only situations a soldier on the other side has in common with a levy.</summary>
+		public static readonly Dictionary<string, string[]> LevyFeeds = new()
+		{
+			["SPOTTED"] = new[] { "ENGAGE" }, ["WARNING_BROKEN"] = new[] { "ENGAGE" },
+			["HURT"] = new[] { "HURT" }, ["LOW_LIFE"] = new[] { "LOW_HP" },
+			["MATE_DIED"] = new[] { "COMRADE_DOWN" }, ["ONE_HIT"] = new[] { "COMRADE_DOWN", "SHAKEN" },
+			["PANIC"] = new[] { "SHAKEN" }, ["RETREAT"] = new[] { "ROUTED" }, ["DEFEAT"] = new[] { "SHAKEN", "ROUTED" },
+			["VICTORY"] = new[] { "VICTORY", "KILL" }, ["LEVY_BANTER"] = new[] { "HURT", "KILL" },
+		};
+		/// <summary>Words that only make sense for the player's own army (the commander, the barracks, wages, the boss fight, the town's healers); a Levy line with one is not borrowed.</summary>
+		private static readonly Regex OwnArmy = new(@"\b(pay|paid|payday|payroll|wage|wages|salary|barracks|nurse|commander|boss|contract|army|levy|levies|banner|tally|dryad|guide|loot|oath)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		private static Dictionary<string, List<string>> _levy = new(); private static int _levyStamp = -1;
+
+		/// <summary>True when a Levy line can be spoken by an enemy soldier: no condition tag, no placeholder but the comrade, no wording about the player's own army.</summary>
+		public static bool Borrowable(DialogueLine l)
+		{
+			if (l == null || l.Cond != LineCond.None || (l.Needs & ~LineNeeds.Comrade) != LineNeeds.None) return false;
+			foreach (var part in l.Parts) if (part.Kind != PlaceholderKind.Literal && part.Kind != PlaceholderKind.Comrade) return false;
+			return !OwnArmy.IsMatch(l.Text);
+		}
+
+		/// <summary>Levy's lines for a Warbands situation that an enemy soldier can say ({Comrade} becomes {mate}); empty when the situation has no feed or Levy's table is not loaded. Rebuilt when Levy reloads its table.</summary>
+		public static List<string> LevyPool(string key)
+		{
+			try
+			{
+				int stamp = DialogueTable.LineCount * 31 + DialogueTable.Lines.Count + (DialogueTable.LoadedFrom?.Length ?? 0);
+				if (stamp != _levyStamp)
+				{
+					_levyStamp = stamp; _levy = new();
+					foreach (var kv in LevyFeeds)
+					{
+						var list = new List<string>();
+						foreach (var trig in kv.Value)
+						{
+							var src = DialogueTable.Get(trig); if (src == null) continue;
+							foreach (var l in src) if (Borrowable(l)) list.Add(l.Text.Replace("{Comrade}", "{mate}"));
+						}
+						_levy[kv.Key] = list;
+					}
+				}
+				return _levy.TryGetValue(key, out var r) ? r : null;
+			}
+			catch { return null; }
+		}
+
 		private static List<string> Group(string name) => Lines.TryGetValue(name, out var l) && l.Count > 0 ? l : null;
 
 		private static readonly Dictionary<int, uint> _speakerAt = new();
@@ -60,6 +109,12 @@ namespace Warbands.Common
 				if (own != null && (key.StartsWith("WARNING") || Main.rand.NextBool(2))) pool = own;
 			}
 			pool ??= Group(key);
+			// half the time (when the config allows it) the line is one of Levy's own for that situation, otherwise one of ours
+			if (WarbandsConfig.Get?.UseLevyLines != false && Main.rand.NextBool(2))
+			{
+				var levy = LevyPool(key);
+				if (levy != null && levy.Count > 0) pool = levy;
+			}
 			if (pool == null) return null;
 			string line = pool[Main.rand.Next(pool.Count)];
 			string mate = speaker?.RandomMateName() ?? "mate";

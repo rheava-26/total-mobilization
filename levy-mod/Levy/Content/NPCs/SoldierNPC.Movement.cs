@@ -204,6 +204,7 @@ namespace Levy.Content.NPCs
 					else Accelerate(dir, maxSpeed, accel);
 				}
 				else Decelerate();
+				DbgJump = jumpTiles * 10 + (horizontal ? 1 : 0) + (grounded ? 2 : 0) + (_blocked ? 4 : 0);
 				if (jumpTiles > 0)
 				{
 					bool fromGround = npc.velocity.Y == 0f;
@@ -1080,7 +1081,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Why the last platform-drop test said no (lab: the travel lab's STUCK lines print it).</summary>
 		internal string DropWhy = ""; private int _dropNudge;
 		/// <summary>Lab: which rule asked for wing thrust this tick (1 goal above, 2 rise, 3 route rise, 4 planned arc, 5 overhang, 6 wall, 7 gap, 8 deep drop; 0 none).</summary>
-		internal int FlyWhy;
+		internal int FlyWhy, DbgJump;
 		private bool PlatformDropIsSafe()
 		{
 			var npc = NPC;

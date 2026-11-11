@@ -180,6 +180,8 @@ namespace Levy.Common
 			// One shared, sliced A* over the whole trip (start..goal bounding box) per (goal, ability class, start bucket); soldiers follow its waypoints with the usual local reflexes.
 			/// <summary>Search buffer: the widest and tallest trip window (tiles). A trip wider than this is walked in hops toward the goal (the far end is out of the window).</summary>
 			public const int RouteWindowW = 1500, RouteWindowH = 1900, RouteWindowCells = 1000000;
+			/// <summary>The most margin (tiles) a long trip's window gets beyond the box of start and goal: a third of the trip's longer side, up to this much sideways and up (down gets 60 more).</summary>
+			public const int RouteMaxPadX = 240, RouteMaxPadY = 240;
 			/// <summary>Nodes expanded per game tick by the planner (about 2 microseconds a node: 1.4 ms) and the most one route may use before it settles for the closest point it reached.</summary>
 			public const int RouteNodesPerTick = 700, RouteMaxNodes = 220000;
 			/// <summary>A planner slice also stops after this many ms (checked every RouteChunkNodes nodes).</summary>

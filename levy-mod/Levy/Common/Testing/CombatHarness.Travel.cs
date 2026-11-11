@@ -624,7 +624,7 @@ namespace Levy.Common.Testing
 					else if (_tvMode == "map" && rec.Order != SoldierOrder.GoTo && l.GaveUp < 0) { l.GaveUp = _tvTick - 120; _tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) ORDER ENDED away from goal at {offNow:0} ({TvFeature(offNow)}) now={rec.Order}"); }
 					if (l.ArriveTick < 0 && l.GaveUp < 0) allDone = false;
 				}
-				if (_tvDbgFrom >= 0 && _tvTick >= _tvDbgFrom && _tvTick <= _tvDbgTo && _tvTick % _tvDbgStep == 0 && (_tvDbgWho < 0 || l.Idx == _tvDbgWho || _tv.IndexOf(l) == _tvDbgWho)) _tvEvents.AppendLine($"DBG t={_tvTick} {rec.Name} pos=({n.Center.X / 16f - TvX0:0.00},{TvG - n.Bottom.Y / 16f:0.00}) v=({n.velocity.X:0.00},{n.velocity.Y:0.00}) fly={sn.IsFlying} wing={sn.WingTime} blocked={sn.MoveBlocked} why={sn.StillReason()} {sn.DebugRoute()} {TvTiles(n)}");
+				if (_tvDbgFrom >= 0 && _tvTick >= _tvDbgFrom && _tvTick <= _tvDbgTo && _tvTick % _tvDbgStep == 0 && (_tvDbgWho < 0 || l.Idx == _tvDbgWho || _tv.IndexOf(l) == _tvDbgWho)) _tvEvents.AppendLine($"DBG t={_tvTick} {rec.Name} pos=({n.Center.X / 16f - TvX0:0.00},{TvG - n.Bottom.Y / 16f:0.00}) v=({n.velocity.X:0.00},{n.velocity.Y:0.00}) fly={sn.IsFlying} wing={sn.WingTime} blocked={sn.MoveBlocked} why={sn.StillReason()} {sn.DebugRoute()} {TvTiles(n)} solidL={Collision.SolidCollision(n.position + new Vector2(-2f, 0f), n.width, n.height)} solidR={Collision.SolidCollision(n.position + new Vector2(2f, 0f), n.width, n.height)} solidUp={Collision.SolidCollision(n.position + new Vector2(0f, -2f), n.width, n.height)} solidNow={Collision.SolidCollision(n.position, n.width, n.height)} tcolL={Collision.TileCollision(n.position, new Vector2(-3f, 0f), n.width, n.height, false, false, 1).X:0.0} tcolR={Collision.TileCollision(n.position, new Vector2(3f, 0f), n.width, n.height, false, false, 1).X:0.0} col={n.collideX}/{n.collideY} pos=({n.position.X:0.0},{n.position.Y:0.0})");
 				if (_tvTick % 30 == 0) _tvTrace.AppendLine($"{_tvTick},{rec.Name},{l.Gear},{offNow:0.0},{TvG - c.Y / 16f:0.0},{(int)sn.State}");
 			}
 			if (_tvTick % 600 == 0) Mod.Logger.Info($"HARNESS-TRAVEL: t={_tvTick} arrived={_tv.FindAll(l => l.ArriveTick >= 0).Count}/{_tv.Count} medOffset={Median():0}");
@@ -643,7 +643,7 @@ namespace Levy.Common.Testing
 		private string TvTiles(NPC n)
 		{
 			var f = Terraria.Utils.ToTileCoordinates(n.Bottom - new Vector2(0, 1)); var sb = new StringBuilder("tiles[feet=" + f.X + "," + (f.Y - TvG) + ":");
-			for (int dx = 0; dx <= 3; dx++) { var sbb = new StringBuilder(); for (int dy = 0; dy <= 2; dy++) { Tile t = Main.tile[f.X + dx, f.Y + dy]; sbb.Append(t.HasTile ? t.TileType.ToString() + (t.Slope != SlopeType.Solid ? "s" : "") : "."); sbb.Append('/'); } sb.Append(" +" + dx + "=" + sbb); }
+			for (int dx = -3; dx <= 3; dx++) { var sbb = new StringBuilder(); for (int dy = -2; dy <= 1; dy++) { Tile t = Main.tile[f.X + dx, f.Y + dy]; sbb.Append(t.HasTile ? t.TileType.ToString() + (t.Slope != SlopeType.Solid ? "s" + (int)t.Slope : "") + (t.IsHalfBlock ? "h" : "") : "."); sbb.Append('/'); } sb.Append(" " + (dx >= 0 ? "+" : "") + dx + "=" + sbb); }   // columns -3..+3; rows two over the head .. the floor (the feet row is the third)
 			return sb + "]";
 		}
 

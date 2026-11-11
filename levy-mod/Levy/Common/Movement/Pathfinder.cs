@@ -97,6 +97,12 @@ namespace Levy.Common.Movement
 			{
 				// the window is the box of start and goal plus margins, within the buffer's area (any shape: a wide trip, or a tall one down a shaft). A box too big for it loses margin first; then the goal check below refuses (the caller hops).
 				int x0, x1, y0, y1;
+				if (Travel8On)
+				{
+					// a longer trip gets a wider window (the way round an obstacle, down a cave and back up, is further off the straight line the longer the trip), within the buffer's area
+					int span = Math.Max(Math.Abs(s.X - t.X), Math.Abs(s.Y - t.Y));
+					padX = Math.Max(padX, Math.Min(RouteMaxPadX, span / 3)); padUp = Math.Max(padUp, Math.Min(RouteMaxPadY, span / 3)); padDown = Math.Max(padDown, Math.Min(RouteMaxPadY + 60, span / 2));
+				}
 				for (int shrink = 0; ; shrink++)
 				{
 					x0 = Math.Min(s.X, t.X) - padX; x1 = Math.Max(s.X, t.X) + padX; y0 = Math.Min(s.Y, t.Y) - padUp; y1 = Math.Max(s.Y, t.Y) + padDown;

@@ -134,6 +134,42 @@ namespace Levy.Common.Testing
 			fx = cx; fy = cy; return false;
 		}
 
+		/// <summary>
+		/// A deep cave a body could get to: flood the dry open cells (three clear rows, no liquid) 4-connected from the surface at the start, within 600 columns and down to depth+60 rows, and take the standing room
+		/// (3 clear columns) whose depth is nearest the wanted one (at least 40 rows down): the deepest cave the surface connects to when the world has nothing at the wanted depth. A property of the world, not a route: whether a levy's gear gets there is the test. False when none is connected.
+		/// </summary>
+		private bool TvFindCave(int startX, int depth, out int fx, out int fy)
+		{
+			fx = startX; fy = 0;
+			int srf = TvTopSolid(startX), x0 = Math.Max(20, startX - 600), x1 = Math.Min(Main.maxTilesX - 20, startX + 600), y0 = srf - 30, y1 = Math.Min(Main.maxTilesY - 30, srf + depth + 60);
+			int w = x1 - x0 + 1, h = y1 - y0 + 1; var seen = new bool[w * h]; var q = new Queue<int>();
+			int sx = -1, sy = -1;
+			for (int d = 0; d < 30 && sx < 0; d++) for (int y = srf - 6; y < srf + 2 && sx < 0; y++) if (TileNav.IsStandable(startX + d, y)) { sx = startX + d; sy = y; }
+			if (sx < 0) return false;
+			seen[(sx - x0) + (sy - y0) * w] = true; q.Enqueue((sx - x0) + (sy - y0) * w);
+			int best = -1, bestScore = int.MaxValue, reached = 0, deepest = 0;
+			while (q.Count > 0)
+			{
+				int cur = q.Dequeue(); int cx = x0 + cur % w, cy = y0 + cur / w; reached++; if (cy - srf > deepest) deepest = cy - srf;
+				if (cy - srf >= Math.Min(40, depth) && TileNav.IsStandable(cx, cy))
+				{
+					bool room = true; for (int k = -1; k <= 1 && room; k++) if (!TileNav.IsStandable(cx + k, cy) || TileNav.HasLiquid(cx + k, cy)) room = false;
+					int score = Math.Abs(cy - srf - depth) * 4 + Math.Abs(cx - startX) / 4;
+					if (room && score < bestScore) { bestScore = score; best = cur; }
+				}
+				for (int k = 0; k < 4; k++)
+				{
+					int nx = cx + (k == 0 ? 1 : k == 1 ? -1 : 0), ny = cy + (k == 2 ? 1 : k == 3 ? -1 : 0);
+					if (nx < x0 || nx > x1 || ny < y0 || ny > y1) continue;
+					int ni = (nx - x0) + (ny - y0) * w; if (seen[ni]) continue;
+					if (!TileNav.IsBodyClear(nx, ny) || TileNav.HasLiquid(nx, ny) || TileNav.HasLiquid(nx, ny - 1)) continue;
+					seen[ni] = true; q.Enqueue(ni);
+				}
+			}
+			if (best < 0) { Mod.Logger.Info($"HARNESS-TRAVEL: cave flood from ({sx},{sy}) reached {reached} cells, deepest {deepest} rows below the surface, none a room at depth {depth}"); return false; }
+			fx = x0 + best % w; fy = y0 + best / w; Mod.Logger.Info($"HARNESS-TRAVEL: cave goal ({fx},{fy}) is {fy - srf} rows below the surface (wanted {depth}; the flood reached {deepest}); {reached} open cells"); return true;
+		}
+
 		/// <summary>Sets TvX0 (start column), _tvFrom, _tvTo and the absolute rows for run number <paramref name="run"/>.</summary>
 		private void TvSpecPlace(int run)
 		{
@@ -151,7 +187,7 @@ namespace Levy.Common.Testing
 			int goalX;
 			if (key == "east") goalX = startX + (arg > 0 ? arg : 800);
 			else if (key == "west") goalX = startX - (arg > 0 ? arg : 800);
-			else if (key == "far") goalX = startX < Main.maxTilesX / 2 ? Main.maxTilesX - 350 : 350;
+			else if (key == "far") goalX = _tvBaseX < Main.maxTilesX / 2 ? Main.maxTilesX - 350 : 350;   // (the side is fixed by the spec's start, not by each run's spread)
 			else if (key == "surface") goalX = arg > 0 ? arg : startX + 800;
 			else if (key == "underworld")
 			{
@@ -163,7 +199,8 @@ namespace Levy.Common.Testing
 			{
 				int depth = arg > 0 ? arg : 150;
 				int srf = TvTopSolid(startX);
-				if (TvFindRoom(startX, srf + depth, 500, 60, out int cx, out int cy)) { goalX = cx; _tvGoalRowAbs = cy + 1; }
+				if (TvFindCave(startX, depth, out int cx, out int cy)) { goalX = cx; _tvGoalRowAbs = cy + 1; }
+				else if (TvFindRoom(startX, srf + depth, 500, 60, out cx, out cy)) { goalX = cx; _tvGoalRowAbs = cy + 1; _tvEvents.AppendLine("GOAL cave: no cave connected to the surface within reach; nearest standing room (may be sealed)"); }
 				else { goalX = startX; _tvGoalRowAbs = srf + depth; _tvEvents.AppendLine("GOAL cave: no standing room found"); }
 			}
 			else if (TvParseXY(g, out int ax, out int ay)) { goalX = ax; if (ay > 0) _tvGoalRowAbs = ay; }
@@ -194,6 +231,7 @@ namespace Levy.Common.Testing
 				TvScanSurface();
 				{ var sf = new StringBuilder("x,surfaceRow,dry\n"); for (int x = 0; x < Main.maxTilesX; x++) sf.AppendLine($"{x},{TvSurf[x]},{(TvSurf[x] > 0 && TvDry(x) ? 1 : 0)}"); File.WriteAllText(Path.Combine(_tvOut, "surface.csv"), sf.ToString()); }
 				_tvWorldReady = true;
+				_tvEvents.AppendLine($"tileSolid: cactus={Main.tileSolid[TileID.Cactus]} solidTop={Main.tileSolidTop[TileID.Cactus]} sand={Main.tileSolid[TileID.Sand]}");
 			}
 			TvSpecPlace(_tvRun);
 			_tvEvents.AppendLine($"world mode: X0={TvX0} world={Main.maxTilesX}x{Main.maxTilesY} surface={Main.worldSurface:0} rock={Main.rockLayer:0} underworld={Main.UnderworldLayer}");

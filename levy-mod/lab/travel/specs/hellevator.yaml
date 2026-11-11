@@ -1,0 +1,18 @@
+# A travel test, no C#. Run it:   levy-mod/lab/travel/travelab run levy-mod/lab/travel/specs/hellevator.yaml
+# 12 levies of mixed gear are sent from the world spawn to the Underworld down a straight shaft (hellevator) with a platform every 15 rows and a platform ring at the bottom.
+# Every levy that teleports (the catch-up hop or any other jump of 6+ tiles in a tick) FAILS. Three runs, each starting 60 tiles apart.
+name: hellevator
+world: {seed: 11111, size: 2}          # generated once and cached; or {file: /path/World.wld}, or a cached name such as M1
+start: spawn                           # spawn | X (tile column) | [X, Y] (tile)
+goal: underworld                       # far | east:N | west:N | surface:X | underworld | cave[:depth] | [X, Y]; or goals: [a, b] for one cell each
+edit:                                  # world edits made before the run
+  - hellevator: {dx: 120, width: 4, platforms: 15}     # shaft dx tiles east of the start; platforms: a landing every N rows (0 = a bare shaft)
+levies: 12
+gear: {bare: 3, boots: 2, wings: 2, hook: 2, prehm: 1, hm: 1, endgame: 1}   # counts per tier (bare boots wings hook wh climb prehm hm endgame, or kit:ItemID+ItemID+hk=HookItem)
+runs: 3                                # trips per cell (one server boot); run k starts at start +/- spread
+spread: 60
+timeout: 400                           # game seconds per run
+# hop: on                              # leave the catch-up hop on (default off: levies must walk, no one watches them)
+# arms:                                # A/B in one table: each arm overrides any field above, plus env: {LEVY_...: 0} and tmod: PATH
+#   before: {env: {LEVY_TRAVEL8: 0}}
+#   after: {}

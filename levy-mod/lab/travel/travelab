@@ -142,10 +142,19 @@ def mix_list(spec):
 
 
 def cells_of(spec):
+    """(arm, overrides, goal) per cell. A goal may be a dict {goal: underworld, edit: [...], levies: ...}: its other keys override the spec for that cell only."""
     arms = spec.get("arms") or {"run": {}}
     if isinstance(arms, list): arms = {a: {} for a in arms}
     goals = spec.get("goals") or [spec.get("goal", "far")]
-    return [(a, ov or {}, norm_goal(g)) for a, ov in arms.items() for g in goals]
+    out = []
+    for a, ov in arms.items():
+        for g in goals:
+            o2 = dict(ov or {}); label = None
+            if isinstance(g, dict) and "goal" in g:
+                label = g.get("name"); o2.update({k: v for k, v in g.items() if k not in ("goal", "name")}); g = g["goal"]
+            o2["_label"] = label or norm_goal(g)
+            out.append((a, o2, norm_goal(g)))
+    return out
 
 
 # ------------------------------------------------------------------------------------------------------------ run one cell
@@ -154,7 +163,8 @@ def run_cell(spec, arm, ov, goal, tmod_default, outroot, wld, twld, slot):
     mix, n = mix_list(merged)
     runs = int(merged.get("runs", 10)); cap = int(float(merged.get("timeout", 600)) * 60)
     tmod = Path(ov.get("tmod") or tmod_default)
-    cell = f"{arm}__{re.sub(r'[^A-Za-z0-9]+', '_', goal)}"
+    label = ov.get("_label", goal)
+    cell = f"{arm}__{re.sub(r'[^A-Za-z0-9]+', '_', label)}"
     d = outroot / cell; shutil.rmtree(d, ignore_errors=True); (d / "save" / "Mods").mkdir(parents=True); (d / "save" / "Worlds").mkdir(); (d / "out").mkdir()
     shutil.copy(tmod, d / "save" / "Mods" / "Levy.tmod"); (d / "save" / "Mods" / "enabled.json").write_text('["Levy"]')
     shutil.copy(wld, d / "save" / "Worlds" / "T.wld"); shutil.copy(twld, d / "save" / "Worlds" / "T.twld")
@@ -178,7 +188,7 @@ def run_cell(spec, arm, ov, goal, tmod_default, outroot, wld, twld, slot):
             try: os.killpg(p.pid, signal.SIGKILL)
             except Exception: pass
     done = len(glob.glob(str(d / "out" / "**" / "levies.csv"), recursive=True))
-    return dict(arm=arm, goal=goal, dir=d, runs_done=done, runs=runs, secs=time.time() - t0, mix=mix, cap=cap)
+    return dict(arm=arm, goal=label, dir=d, runs_done=done, runs=runs, secs=time.time() - t0, mix=mix, cap=cap)
 
 
 # ------------------------------------------------------------------------------------------------------------ read results
@@ -255,6 +265,8 @@ def report(spec, cells, wname):
 
 def cmd_run(a):
     spec = yaml.safe_load(open(a.spec))
+    for kv in a.set or []:
+        k, v = kv.split("=", 1); spec[k] = yaml.safe_load(v)      # --set world='{seed: 90909, size: 2}' --set runs=5 : override a spec key from the command line
     HOME.mkdir(parents=True, exist_ok=True); ensure_tml()
     tmod = Path(a.tmod) if a.tmod else build()
     wld, twld = world_files(spec.get("world", {"seed": 11111, "size": 2}))
@@ -286,12 +298,14 @@ def cmd_table(a):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sp = ap.add_subparsers(dest="cmd", required=True)
-    r = sp.add_parser("run"); r.add_argument("spec"); r.add_argument("--tmod"); r.add_argument("-j", type=int, default=3); r.add_argument("--tag"); r.add_argument("--keep", action="store_true", help="keep each cell's save dir")
+    r = sp.add_parser("run"); r.add_argument("spec"); r.add_argument("--tmod"); r.add_argument("-j", type=int, default=3); r.add_argument("--tag"); r.add_argument("--keep", action="store_true", help="keep each cell's save dir"); r.add_argument("--set", action="append", help="KEY=YAML override of a spec key, e.g. runs=5")
     t = sp.add_parser("table"); t.add_argument("spec"); t.add_argument("dir")
     b = sp.add_parser("build"); b.add_argument("out", nargs="?")
     sp.add_parser("worlds")
+    g = sp.add_parser("gen"); g.add_argument("seed", type=int); g.add_argument("size", type=int, nargs="?", default=2)
     a = ap.parse_args()
     if a.cmd == "run": cmd_run(a)
     elif a.cmd == "table": cmd_table(a)
     elif a.cmd == "build": print(build(out_name=a.out))
+    elif a.cmd == "gen": print(world_files({"seed": a.seed, "size": a.size})[0])
     elif a.cmd == "worlds": print("\n".join(str(p) for p in sorted((HOME / "worlds").glob("*.wld"))))

@@ -3,6 +3,17 @@
 Measures how well levies get from one point to another: a map-point order (Barracks "Send to map point", Command Radio shift-click) or Follow behind a commander who walks the same route.
 It is a harness scenario (`LEVY_HARNESS_SCENARIO=travel`, `Common/Testing/CombatHarness.Travel.cs`) plus small scripts here. It is separate from the boss lab (`levylab`) because it needs long courses, not arenas.
 
+## No-code travel test (`travelab`, round 8)
+A travel test is one small yaml file and one command; no C#, no run scripts. A levy that teleports (the catch-up hop, or any jump of 6+ tiles in one tick) FAILS: the hop is off by default (`hop: off`, nobody watches the army) and every jump is counted anyway.
+```
+export TRAVELAB_HOME=/home/user/lab/travelab                      # scratch: a tML copy, generated worlds, builds, runs (first use copies /home/user/tml-bin/tml)
+levy-mod/lab/travel/travelab run levy-mod/lab/travel/specs/hellevator.yaml [--tmod X.tmod] [-j 3] [--keep]   # builds levy-mod/Levy once per content hash, generates the world once, one boot per cell, one table
+```
+The table has one row per arm x goal x gear tier: arrive (arrived and never teleported) / teleported / trip seconds / stuck episodes (levies) / max depth, then one line per run. Spec keys: `world` ({seed, size} or {file} or a cached name), `start` (spawn | X | [X, Y]),
+`goal` or `goals` (far | east:N | west:N | surface:X | underworld | cave[:depth] | [X, Y]), `edit` (`hellevator: {dx, width, platforms, ring}`), `levies`, `gear` (counts per tier: bare boots wings hook wh climb prehm hm endgame, or `kit:HermesBoots+CloudinaBottle+hk=GrapplingHook`), `runs`, `spread`, `timeout` (game seconds), `hop`, `env`,
+`arms` (A/B: each arm overrides any key, plus `tmod:` and `env: {LEVY_TRAVEL8: 0}`). A new test is a new yaml (`specs/hellevator.yaml` is the example). Under it: `LEVY_TRAVEL_START / GOAL / EDIT / RUNS / SPREAD` and `kit:` gear in `CombatHarness.TravelSpec.cs`, the same `CombatHarness.Travel.cs` scenario, `levies.csv` / `events.txt` per run in `runs/<spec>_<tag>/<arm>__<goal>/out/rN/`.
+`LEVY_TRAVEL8=0` turns the round 8 movement changes off in the same build. `env: {LEVY_TRAVEL_DBG: "from,to,step,levy"}` prints a DBG line per sampled tick in events.txt (position, velocity, route state, `dropWhy`, `flyWhy`, waypoint kinds).
+
 ## What it records (per levy, `out/levies.csv`)
 arrived / arrival time, straight line vs tiles actually walked (`ratio`), time stuck (no 4-tile exit from a spot for 3 s, only while still travelling), stall (best progress toward the goal not improved for 10 s), where (course feature / world x),
 teleports (a jump of more than 6 tiles in one tick), falls of 8+ tiles, seconds wet, body lost, and the order/state it ended in. `events.txt` has every STUCK / TELEPORT / FALL / "order ended" with the movement reason, an ASCII map around the first stuck levy of each gear, the route-planner log and cost counters.

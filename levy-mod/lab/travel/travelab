@@ -1,0 +1,297 @@
+#!/usr/bin/env python3
+"""travelab: a Levy travel test from one small yaml file, no C#.   travelab run SPEC.yaml [--tmod PATH] [-j 3] [--tag T]   |   travelab worlds   |   travelab build [OUT]
+A cell = (arm, goal). One server boot per cell runs `runs` trips of `levies` levies each (start spread over `spread` tiles), counts any teleport as a FAIL, prints one table + per-run lines.
+See levy-mod/lab/travel/README.md ("No-code travel test")."""
+import argparse, csv, concurrent.futures as cf, glob, hashlib, io, os, random, re, shutil, signal, subprocess, sys, time
+from collections import defaultdict
+from pathlib import Path
+
+try:
+    import yaml
+except ImportError:
+    sys.exit("travelab needs PyYAML (pip install pyyaml)")
+
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parent.parent.parent          # repo root (levy-mod/lab/travel -> root)
+HOME = Path(os.environ.get("TRAVELAB_HOME", "/home/user/lab/travelab"))
+SRC_TML = Path(os.environ.get("TRAVELAB_TML_SRC", "/home/user/tml-bin/tml"))   # a stock tModLoader install; copied once to HOME/tml
+SAVE_FALLBACK = Path("/home/user/tml-save-hotfix/Mods")                          # weak-reference mods the build wants (Thorium, MagicStorage, SerousCommonLib)
+DOTNET = os.environ.get("DOTNET_ROOT", "/home/user/dotnet")
+
+# gear tiers -> harness gear entries (LEVY_TRAVEL_MIX). kit:A+B+hk=Hook = ItemID names, accessories in order, then the hook.
+KITS = {
+    "bare": "none",
+    "boots": "boots",                       # Hermes Boots
+    "wings": "wings",                       # Angel Wings
+    "hook": "hook",                         # Grappling Hook
+    "prehm": "kit:HermesBoots+CloudinaBottle+hk=GrapplingHook",
+    "hm": "kit:LightningBoots+FlameWings+hk=DualHook",
+    "endgame": "kit:TerrasparkBoots+WingsSolar+MasterNinjaGear+hk=LunarHook",
+    "wh": "wh",                             # Angel Wings + Grappling Hook
+    "climb": "claws",                       # Climbing Claws
+}
+REV = {v: k for k, v in KITS.items()}
+
+
+def sh(cmd, **kw):
+    return subprocess.run(cmd, shell=isinstance(cmd, str), **kw)
+
+
+def env_base():
+    e = dict(os.environ)
+    e["DOTNET_ROOT"] = DOTNET; e["PATH"] = DOTNET + ":" + e["PATH"]; e["DOTNET_NOLOGO"] = "1"; e["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1"
+    return e
+
+
+def ensure_tml():
+    tml = HOME / "tml"
+    if not (tml / "tModLoader.dll").exists():
+        HOME.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(SRC_TML, tml, ignore=shutil.ignore_patterns("tModLoader-Logs", "levy_harness.tsv"))
+    return tml
+
+
+# ------------------------------------------------------------------------------------------------------------ build
+def build(src_dir=None, out_name=None):
+    """Build levy-mod/Levy (the working tree) with the real tML build; cached by content hash. Returns the .tmod path."""
+    src = Path(src_dir or REPO / "levy-mod" / "Levy")
+    h = hashlib.sha1()
+    for f in sorted(src.rglob("*")):
+        if f.is_file() and not any(p in f.parts for p in ("bin", "obj", "docs")) and f.suffix in (".cs", ".txt", ".json", ".csproj", ".hjson", ".png"):
+            h.update(str(f.relative_to(src)).encode()); h.update(f.read_bytes())
+    name = out_name or h.hexdigest()[:10]
+    out = HOME / "tmod" / f"{name}.tmod"
+    if out.exists():
+        return out
+    tml = ensure_tml(); save = HOME / f"bsave_{name}"
+    shutil.rmtree(save, ignore_errors=True); (save / "ModSources").mkdir(parents=True); (save / "Mods").mkdir()
+    for m in ("ThoriumMod", "SerousCommonLib", "MagicStorage"):
+        if (SAVE_FALLBACK / f"{m}.tmod").exists(): shutil.copy(SAVE_FALLBACK / f"{m}.tmod", save / "Mods")
+    shutil.copytree(src, save / "ModSources" / "Levy", ignore=shutil.ignore_patterns("bin", "obj", "docs"))
+    print(f"building {src} -> {out} ...", file=sys.stderr)
+    r = sh(["dotnet", "tModLoader.dll", "-server", "-nosteam", "-tmlsavedirectory", str(save), "-build", str(save / "ModSources" / "Levy")], cwd=tml, env=env_base(), capture_output=True, text=True, timeout=1500)
+    bad = [l for l in (r.stdout + r.stderr).splitlines() if " error " in l or "Build error" in l]
+    if bad or not (save / "Mods" / "Levy.tmod").exists():
+        sys.exit("build failed:\n" + "\n".join(bad[:20]))
+    (HOME / "tmod").mkdir(exist_ok=True); shutil.copy(save / "Mods" / "Levy.tmod", out); shutil.rmtree(save, ignore_errors=True)
+    return out
+
+
+# ------------------------------------------------------------------------------------------------------------ worlds
+def world_files(w):
+    """w: {seed, size} -> generated once and cached; {file: path or name} -> an existing .wld (+ .twld) ; a bare string = a cached world name."""
+    wd = HOME / "worlds"; wd.mkdir(parents=True, exist_ok=True)
+    if isinstance(w, str): w = {"file": w}
+    if "file" in w:
+        p = Path(w["file"])
+        if not p.exists(): p = wd / (w["file"] if w["file"].endswith(".wld") else w["file"] + ".wld")
+        if not p.exists(): sys.exit(f"world file not found: {w['file']}")
+        return p, p.with_suffix(".twld")
+    seed, size = int(w.get("seed", 11111)), int(w.get("size", 2))
+    name = f"G{size}_{seed}"
+    wld = wd / f"{name}.wld"
+    if wld.exists() and wld.with_suffix(".twld").exists(): return wld, wld.with_suffix(".twld")
+    tml = ensure_tml(); save = HOME / f"gen_{name}"
+    shutil.rmtree(save, ignore_errors=True); (save / "Mods").mkdir(parents=True); (save / "Worlds").mkdir()
+    (save / "Mods" / "enabled.json").write_text("[]")
+    log = save / "gen.log"
+    print(f"generating world {name} (size {size}, seed {seed}) ...", file=sys.stderr)
+    p = subprocess.Popen(["dotnet", "tModLoader.dll", "-server", "-nosteam", "-tmlsavedirectory", str(save), "-port", str(20000 + random.randint(0, 9000)), "-autocreate", str(size), "-seed", str(seed),
+                          "-worldname", name, "-world", str(save / "Worlds" / f"{name}.wld"), "-difficulty", "0"], cwd=tml, env=env_base(), stdout=open(log, "w"), stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
+    t0 = time.time()
+    while time.time() - t0 < 600:
+        time.sleep(4)
+        if (save / "Worlds" / f"{name}.twld").exists() and "Server started" in log.read_text(errors="ignore"): break
+        if p.poll() is not None: break
+    time.sleep(3)
+    try: os.killpg(p.pid, signal.SIGKILL)
+    except Exception: pass
+    if not (save / "Worlds" / f"{name}.wld").exists(): sys.exit(f"world generation failed, see {log}")
+    shutil.copy(save / "Worlds" / f"{name}.wld", wld); shutil.copy(save / "Worlds" / f"{name}.twld", wld.with_suffix(".twld")); shutil.rmtree(save, ignore_errors=True)
+    return wld, wld.with_suffix(".twld")
+
+
+# ------------------------------------------------------------------------------------------------------------ spec
+def norm_goal(g):
+    return g if isinstance(g, str) else (f"{g['x']},{g['y']}" if isinstance(g, dict) else ",".join(str(v) for v in g))
+
+
+def edit_tok(edits):
+    out = []
+    for e in edits or []:
+        if isinstance(e, str): out.append(e); continue
+        for k, v in e.items():
+            if k == "hellevator":
+                v = v or {}
+                out.append(f"hellevator:{v.get('dx', 120)}:{v.get('width', 4)}:{v.get('platforms', 0)}:{v.get('ring', 12)}")
+            else:
+                sys.exit(f"unknown edit '{k}' (known: hellevator)")
+    return ";".join(out)
+
+
+def mix_list(spec):
+    g = spec.get("gear", {"bare": 3, "boots": 3, "wings": 3, "hook": 3})
+    if isinstance(g, str): g = {g: 1}
+    if isinstance(g, list): g = {x: 1 for x in g}
+    pat = []
+    for tier, c in g.items():
+        if tier not in KITS and not (str(tier).startswith("kit:") or str(tier).startswith("w:")): sys.exit(f"unknown gear tier '{tier}' (known: {', '.join(KITS)}; or kit:Item+Item+hk=Hook / w:WingsItem)")
+        pat += [KITS.get(tier, tier)] * int(c)
+    n = int(spec.get("levies", len(pat)))
+    return [pat[i % len(pat)] for i in range(n)], n
+
+
+def cells_of(spec):
+    arms = spec.get("arms") or {"run": {}}
+    if isinstance(arms, list): arms = {a: {} for a in arms}
+    goals = spec.get("goals") or [spec.get("goal", "far")]
+    return [(a, ov or {}, norm_goal(g)) for a, ov in arms.items() for g in goals]
+
+
+# ------------------------------------------------------------------------------------------------------------ run one cell
+def run_cell(spec, arm, ov, goal, tmod_default, outroot, wld, twld, slot):
+    merged = {**spec, **ov}
+    mix, n = mix_list(merged)
+    runs = int(merged.get("runs", 10)); cap = int(float(merged.get("timeout", 600)) * 60)
+    tmod = Path(ov.get("tmod") or tmod_default)
+    cell = f"{arm}__{re.sub(r'[^A-Za-z0-9]+', '_', goal)}"
+    d = outroot / cell; shutil.rmtree(d, ignore_errors=True); (d / "save" / "Mods").mkdir(parents=True); (d / "save" / "Worlds").mkdir(); (d / "out").mkdir()
+    shutil.copy(tmod, d / "save" / "Mods" / "Levy.tmod"); (d / "save" / "Mods" / "enabled.json").write_text('["Levy"]')
+    shutil.copy(wld, d / "save" / "Worlds" / "T.wld"); shutil.copy(twld, d / "save" / "Worlds" / "T.twld")
+    start = merged.get("start", "spawn"); start = start if isinstance(start, (str, int)) else ",".join(str(v) for v in start)
+    e = env_base()
+    e.update({"LEVY_HARNESS": "1", "LEVY_HARNESS_OUT": str(d / "harness.tsv"), "LEVY_HARNESS_SCENARIO": "travel", "LEVY_TRAVEL_MODE": "map", "LEVY_TRAVEL_COURSE": "world",
+              "LEVY_TRAVEL_START": str(start), "LEVY_TRAVEL_GOAL": goal, "LEVY_TRAVEL_EDIT": edit_tok(merged.get("edit")), "LEVY_TRAVEL_RUNS": str(runs), "LEVY_TRAVEL_SPREAD": str(merged.get("spread", 60)),
+              "LEVY_TRAVEL_N": str(n), "LEVY_TRAVEL_CAP": str(cap), "LEVY_TRAVEL_GEAR": "mixed", "LEVY_TRAVEL_MIX": ",".join(mix), "LEVY_TRAVEL_OUT": str(d / "out"),
+              "LEVY_TRAVEL_CMDFAR": str(merged.get("cmdfar", 20)), "LEVY_TRAVEL_NOHOP": "0" if str(merged.get("hop", "off")) == "on" else "1", "LEVY_TRAVEL_FOES": "1" if merged.get("foes") else "0",
+              "LEVY_TRAVEL_X0": "200", "LEVY_TRAVEL_HOOKLOG": "0"})
+    for k, v in {**(spec.get("env") or {}), **(ov.get("env") or {})}.items(): e[str(k)] = str(v)
+    wall = int(merged.get("wall", 120 + runs * max(60, cap // 300)))
+    port = 21000 + (os.getpid() * 7 + slot * 131 + random.randint(0, 99)) % 8000
+    tml = ensure_tml()
+    t0 = time.time()
+    with open(d / "server.log", "w") as lg:
+        p = subprocess.Popen(["dotnet", "tModLoader.dll", "-server", "-nosteam", "-tmlsavedirectory", str(d / "save"), "-port", str(port), "-world", str(d / "save" / "Worlds" / "T.wld")],
+                             cwd=tml, env=e, stdout=lg, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
+        try: p.wait(timeout=wall)
+        except subprocess.TimeoutExpired:
+            try: os.killpg(p.pid, signal.SIGKILL)
+            except Exception: pass
+    done = len(glob.glob(str(d / "out" / "**" / "levies.csv"), recursive=True))
+    return dict(arm=arm, goal=goal, dir=d, runs_done=done, runs=runs, secs=time.time() - t0, mix=mix, cap=cap)
+
+
+# ------------------------------------------------------------------------------------------------------------ read results
+def fnum(r, k):
+    try: return float(r[k])
+    except Exception: return 0.0
+
+
+def load_cell(c):
+    rows = []
+    files = sorted(glob.glob(str(c["dir"] / "out" / "r*" / "levies.csv")), key=lambda f: int(re.search(r"/r(\d+)/", f).group(1))) or glob.glob(str(c["dir"] / "out" / "levies.csv"))
+    for f in files:
+        m = re.search(r"/r(\d+)/", f); run = int(m.group(1)) if m else 0
+        ev = Path(f).with_name("events.txt"); spec_line = ""
+        if ev.exists():
+            for l in ev.read_text(errors="ignore").splitlines():
+                if l.startswith("SPEC run="): spec_line = l; break
+        for r in csv.DictReader(open(f)):
+            r["run"] = run; r["spec"] = spec_line; r["tier"] = REV.get(r["gear"], r["gear"]); rows.append(r)
+    return rows
+
+
+def stats(rows):
+    n = len(rows)
+    if not n: return None
+    arrived = [r for r in rows if r["arrived"] == "1"]
+    ok = [r for r in arrived if fnum(r, "teleports") == 0]
+    tele = [r for r in rows if fnum(r, "teleports") > 0]
+    return dict(n=n, ok=len(ok), arr=len(arrived), tele=len(tele), teleN=int(sum(fnum(r, "teleports") for r in rows)),
+                t=(sum(fnum(r, "arriveSec") for r in ok) / len(ok)) if ok else float("nan"),
+                se=int(sum(fnum(r, "stuckEps") for r in rows)), sl=sum(1 for r in rows if fnum(r, "stuckEps") > 0),
+                md=sum(fnum(r, "maxDepth") for r in rows) / n, gone=sum(1 for r in rows if fnum(r, "bodyGone") > 0))
+
+
+def fmt(s, tier=None):
+    if not s: return "(no data)"
+    t = "-" if s["t"] != s["t"] else f"{s['t']:.0f}"
+    return f"{s['ok']}/{s['n']}", s["tele"], t, f"{s['se']} ({s['sl']})", f"{s['md']:.0f}"
+
+
+def report(spec, cells, wname):
+    out = io.StringIO()
+    out.write(f"## {spec.get('name', 'travel')}  (world {wname}; {spec.get('levies', '')} levies; start {spec.get('start', 'spawn')}; hop {spec.get('hop', 'off')}; teleport = FAIL)\n\n")
+    out.write("| arm | goal | tier | arrive (no teleport) | teleported | trip s | stuck episodes (levies) | max depth |\n|---|---|---|---|---|---|---|---|\n")
+    allrows = {}
+    for c in cells:
+        rows = load_cell(c); allrows[(c["arm"], c["goal"])] = rows
+        if not rows:
+            out.write(f"| {c['arm']} | {c['goal']} | all | NO DATA ({c['runs_done']}/{c['runs']} runs; see {c['dir']}/server.log) | | | | |\n"); continue
+        tiers = []
+        for r in rows:
+            if r["tier"] not in tiers: tiers.append(r["tier"])
+        for t in tiers + ["ALL"]:
+            s = stats([r for r in rows if t == "ALL" or r["tier"] == t])
+            a, tl, tm, se, md = fmt(s)
+            out.write(f"| {c['arm']} | {c['goal']} | {t} | {a} | {tl} | {tm} | {se} | {md} |\n")
+    out.write("\nPer run (arrivals by tier, ok/levies; T = levies that teleported):\n\n")
+    for c in cells:
+        rows = allrows[(c["arm"], c["goal"])]
+        out.write(f"- {c['arm']} / {c['goal']}  ({c['runs_done']}/{c['runs']} runs done, {c['secs']:.0f}s wall)\n")
+        byrun = defaultdict(list)
+        for r in rows: byrun[r["run"]].append(r)
+        for run in sorted(byrun):
+            rr = byrun[run]; per = defaultdict(lambda: [0, 0])
+            for r in rr:
+                per[r["tier"]][1] += 1
+                if r["arrived"] == "1" and fnum(r, "teleports") == 0: per[r["tier"]][0] += 1
+            m = re.search(r"start=\((\d+)", rr[0]["spec"]); sx = m.group(1) if m else "?"
+            ts = [fnum(r, "arriveSec") for r in rr if r["arrived"] == "1" and fnum(r, "teleports") == 0]
+            out.write(f"    run {run:>2} x={sx:<5} " + " ".join(f"{t} {a}/{b}" for t, (a, b) in per.items()) + f" | T={sum(1 for r in rr if fnum(r, 'teleports') > 0)} stuck={int(sum(fnum(r, 'stuckEps') for r in rr))} "
+                      + (f"slowest={max(ts):.0f}s" if ts else "no arrivals") + (f" ended: {', '.join(sorted({r['endFeature'] for r in rr if r['arrived'] != '1'}))[:70]}" if any(r['arrived'] != '1' for r in rr) else "") + "\n")
+    return out.getvalue()
+
+
+def cmd_run(a):
+    spec = yaml.safe_load(open(a.spec))
+    HOME.mkdir(parents=True, exist_ok=True); ensure_tml()
+    tmod = Path(a.tmod) if a.tmod else build()
+    wld, twld = world_files(spec.get("world", {"seed": 11111, "size": 2}))
+    tag = a.tag or time.strftime("%m%d-%H%M%S")
+    outroot = HOME / "runs" / f"{spec.get('name', Path(a.spec).stem)}_{tag}"; outroot.mkdir(parents=True, exist_ok=True)
+    cs = cells_of(spec)
+    for _, ov, _ in cs:
+        if ov.get("tmod") and not Path(ov["tmod"]).exists(): sys.exit(f"arm tmod not found: {ov['tmod']}")
+    res = []
+    with cf.ThreadPoolExecutor(max_workers=a.j) as ex:
+        futs = [ex.submit(run_cell, spec, arm, ov, goal, tmod, outroot, wld, twld, i) for i, (arm, ov, goal) in enumerate(cs)]
+        for f in futs: res.append(f.result())
+    txt = report(spec, res, wld.stem)
+    (outroot / "table.md").write_text(txt); print(txt); print(f"(raw results: {outroot})")
+    if not a.keep:
+        for c in res:
+            shutil.rmtree(c["dir"] / "save", ignore_errors=True)
+
+
+def cmd_table(a):
+    spec = yaml.safe_load(open(a.spec)); root = Path(a.dir)
+    cs = []
+    for d in sorted(root.iterdir()):
+        if d.is_dir() and "__" in d.name:
+            arm, g = d.name.split("__", 1); cs.append(dict(arm=arm, goal=g, dir=d, runs_done=len(glob.glob(str(d / "out" / "**" / "levies.csv"), recursive=True)), runs=int(spec.get("runs", 10)), secs=0))
+    print(report(spec, cs, "?"))
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sp = ap.add_subparsers(dest="cmd", required=True)
+    r = sp.add_parser("run"); r.add_argument("spec"); r.add_argument("--tmod"); r.add_argument("-j", type=int, default=3); r.add_argument("--tag"); r.add_argument("--keep", action="store_true", help="keep each cell's save dir")
+    t = sp.add_parser("table"); t.add_argument("spec"); t.add_argument("dir")
+    b = sp.add_parser("build"); b.add_argument("out", nargs="?")
+    sp.add_parser("worlds")
+    a = ap.parse_args()
+    if a.cmd == "run": cmd_run(a)
+    elif a.cmd == "table": cmd_table(a)
+    elif a.cmd == "build": print(build(out_name=a.out))
+    elif a.cmd == "worlds": print("\n".join(str(p) for p in sorted((HOME / "worlds").glob("*.wld"))))

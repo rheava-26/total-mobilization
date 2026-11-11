@@ -91,6 +91,7 @@ namespace Levy.Common.Testing
 			OffscreenHop.LabNoHop = Environment.GetEnvironmentVariable("LEVY_TRAVEL_NOHOP") == "1";
 			TvDepthA = 12; TvBridgeB = true;
 			_tvTick = 0; _tvStarted = false; _tv.Clear(); _tvTrace.Clear(); _tvEvents.Clear();
+			TvSpecInit(); if (_tvSpec) TvSpecOutDir();
 			return true;
 		}
 
@@ -431,6 +432,7 @@ namespace Levy.Common.Testing
 					if (rec.Gear.CanHold(SoldierGear.SlotWeapon, w)) { rec.Gear.Weapon = w; rec.Gear.SetLocked(SoldierGear.SlotWeapon, true); }
 					Item ammo = FindAmmo(w, ""); if (ammo != null && rec.Gear.CanHold(SoldierGear.SlotAmmo, ammo)) { rec.Gear.Ammo = ammo; rec.Gear.SetLocked(SoldierGear.SlotAmmo, true); }
 				}
+				TvKit(rec, g);
 				if (g == "boots") { var it = new Item(); it.SetDefaults(ItemID.HermesBoots); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
 				if (g.StartsWith("w:")) { var it = new Item(); it.SetDefaults(TvItemId(g.Substring(2))); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
 				if (g == "wings" || g == "wh") { var it = new Item(); it.SetDefaults(ItemID.AngelWings); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
@@ -439,7 +441,7 @@ namespace Levy.Common.Testing
 				if (g == "hook" || g == "wh") { var it = new Item(); it.SetDefaults(ItemID.GrapplingHook); rec.Gear.Hook = it; rec.Gear.SetLocked(SoldierGear.SlotHook, true); }
 				RosterSystem.Instance.Regulars.Add(rec);
 				int off = _tvFrom + (i - _tvN / 2);
-				Vector2 at = new Vector2((TvX0 + off) * 16f + 8f, TvRow(off) * 16f);
+				Vector2 at = new Vector2((TvX0 + off) * 16f + 8f, TvSpawnRow(off) * 16f);
 				int idx = RosterSystem.Instance.SpawnBody(rec, at);
 				if (_tvMode == "map" && Environment.GetEnvironmentVariable("LEVY_TRAVEL_HOLD") == "1") { rec.Order = SoldierOrder.Hold; rec.HoldPos = at; if (rec.HasBody && Main.npc[rec.BodyIndex].ModNPC is SoldierNPC hb) hb.HoldPosition = true; } // far commander: the levies wait where they are (a Follow levy 400+ tiles from the commander is pulled back to them before the order lands)
 				var lv = new TvLevy { Gear = g, Rec = rec, Idx = idx };
@@ -473,7 +475,7 @@ namespace Levy.Common.Testing
 				// the player is far from the army (LEVY_TRAVEL_CMDFAR tiles behind the start, default 400): off screen, out of the usual NPC range
 				int far = int.TryParse(Environment.GetEnvironmentVariable("LEVY_TRAVEL_CMDFAR"), out int cf) ? cf : 400;
 				float px = Math.Clamp(fromX - far * 16f, 40 * 16f, (Main.maxTilesX - 40) * 16f);
-				int prow = TvWorld ? TvRow(_tvFrom) : TvRow(_tvFrom);
+				int prow = TvSpawnRow(_tvFrom);
 				if (Environment.GetEnvironmentVariable("LEVY_TRAVEL_CMDTRACK") == "1" && _tvTick >= 120)
 				{
 					// the commander travels with the army: stands at the middle levy (by x) that has a body, so the army is on screen around them
@@ -506,10 +508,10 @@ namespace Levy.Common.Testing
 			if (!_tvStarted)
 			{
 				ClearAll();
-				TvBuild();
+				if (_tvSpec) TvSpecBuild(); else TvBuild();
 				_tvCmdX = (TvX0 + _tvFrom) * 16f;
 				TvSpawn();
-				_tvGx = TvX0 + _tvTo; _tvGy = TvRow(_tvTo) - 3;
+				_tvGx = TvX0 + _tvTo; _tvGy = _tvGoalRowAbs != int.MinValue ? _tvGoalRowAbs - 3 : TvRow(_tvTo) - 3;
 				_tvStarted = true; _tvTick = 0; _tvWatch.Restart();
 				TvPinCommander();
 				SoldierNPC.StatArcStarts = SoldierNPC.StatArcFuelOut = SoldierNPC.FlyUnjams = 0; SoldierNPC.FlightShouts = SoldierNPC.FlightLines = 0; Pathfinder.StatReset(); RoutePlanner.StatReset(); SoldierHooks.ResetCounters(); PathSearch.StatHookScans = PathSearch.StatHookEdges = 0;
@@ -517,7 +519,7 @@ namespace Levy.Common.Testing
 				if (Environment.GetEnvironmentVariable("LEVY_TRAVEL_PLAN") == "1")
 				{
 					// what the planner finds for each ability class between the two ends, searched to the end in one go (cost and end point)
-					var ps = new PathSearch(LevyConstants.Movement.RouteWindowW, LevyConstants.Movement.RouteWindowH); var pts = new List<Vector2>();
+					var ps = new PathSearch(LevyConstants.Movement.RouteWindowW, LevyConstants.Movement.RouteWindowH, LevyConstants.Movement.RouteWindowCells); var pts = new List<Vector2>();
 					foreach (bool wg in new[] { false, true })
 					{
 						var ab = new MovementAbilities { JumpTiles = 6, HasWings = wg, WingTimeMax = wg ? 100 : 0 };
@@ -608,10 +610,10 @@ namespace Levy.Common.Testing
 					l.InStuck = true; l.StuckEps++;
 					if (l.StuckWhere.Length < 200) l.StuckWhere += TvFeature(offNow) + "@" + (int)offNow + " ";
 					if (_tvAscii < 6) { _tvAscii++; _tvEvents.AppendLine("MAP around " + rec.Name + " (@ levy feet tile; # solid, / slope, = platform, ~ water, t other tile; x from -24 to +40, y from -14 to +10):\n" + TvAscii((int)(c.X / 16f), (int)((n.Bottom.Y - 1f) / 16f), 1)); }
-					_tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) STUCK at {offNow:0} ({TvFeature(offNow)}) state={sn.State} order={rec.Order} blocked={sn.MoveBlocked} why={sn.StillReason()} hasPath={sn.HasPath} {sn.DebugRoute()} v={n.velocity.X:0.0},{n.velocity.Y:0.0} noGrav={n.noGravity} wet={n.wet} hookSt={sn.HookState} fly={sn.IsFlying} {TvTiles(n)} elev={(TvG - c.Y / 16f):0}");
+					_tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) STUCK at {offNow:0} ({TvFeature(offNow)}) state={sn.State} order={rec.Order} blocked={sn.MoveBlocked} why={sn.StillReason()} dropWhy={sn.DropWhy}  hasPath={sn.HasPath} {sn.DebugRoute()} v={n.velocity.X:0.0},{n.velocity.Y:0.0} noGrav={n.noGravity} wet={n.wet} hookSt={sn.HookState} fly={sn.IsFlying} {TvTiles(n)} elev={(TvG - c.Y / 16f):0}");
 				}
 				// global stall: best progress toward the goal has not improved for 600 ticks
-				float prog = _tvTo >= _tvFrom ? offNow - _tvFrom : _tvFrom - offNow;
+				float prog = _tvSpec ? (Vector2.Distance(l.Start, new Vector2(goalPx, goalY)) - Vector2.Distance(c, new Vector2(goalPx, goalY))) / 16f : (_tvTo >= _tvFrom ? offNow - _tvFrom : _tvFrom - offNow);
 				if (prog > l.BestProg + 1f) { if (l.StallOpen) { l.StallTicks += _tvTick - l.StallFrom; l.StallOpen = false; } l.BestProg = prog; l.BestProgTick = _tvTick; }
 				else if (!l.StallOpen && _tvTick - l.BestProgTick > 600) { l.StallOpen = true; l.StallFrom = l.BestProgTick; l.StallEps++; if (l.StallWhere.Length < 200) l.StallWhere += TvFeature(offNow) + "@" + (int)offNow + " "; }
 				// arrival
@@ -686,6 +688,7 @@ namespace Levy.Common.Testing
 			File.WriteAllText(Path.Combine(_tvOut, "events.txt"), _tvEvents.ToString());
 			int arrived = _tv.FindAll(l => l.ArriveTick >= 0).Count;
 			Mod.Logger.Info($"HARNESS-TRAVEL: RESULT mode={_tvMode} from={_tvFrom} to={_tvTo} arrived={arrived}/{_tv.Count} ticks={_tvTick} pathfinder[{Pathfinder.StatSummary()}] planner[{RoutePlanner.StatSummary()}] out={_tvOut}");
+			if (TvNextRun()) return;
 			Finish($"travel scenario complete arrived={arrived}/{_tv.Count}");
 		}
 	}

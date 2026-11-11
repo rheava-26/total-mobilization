@@ -95,7 +95,7 @@ namespace Levy.Common.Movement
 			if (LevyUtil.IsClient) return;
 			if (_active == null && _queue.Count == 0) return;
 			long t0 = Stopwatch.GetTimestamp();
-			_big ??= new PathSearch(RouteWindowW, RouteWindowH);
+			_big ??= new PathSearch(RouteWindowW, RouteWindowH, RouteWindowCells);
 			if (_active == null)
 			{
 				while (_queue.Count > 0 && _active == null)
@@ -151,6 +151,9 @@ namespace Levy.Common.Movement
 			r.Born = Main.GameUpdateCount;
 			_active = null;
 		}
+
+		/// <summary>Lab: forget every cached and queued route (a new run in the same boot).</summary>
+		public static void LabReset() { _routes.Clear(); _queue.Clear(); _pendingAbilities.Clear(); _pendingBan.Clear(); _pendingFrom.Clear(); _pendingTo.Clear(); _active = null; }
 
 		public override void OnWorldUnload() { _routes.Clear(); _queue.Clear(); _pendingAbilities.Clear(); _pendingBan.Clear(); _pendingFrom.Clear(); _pendingTo.Clear(); _active = null; }
 	}

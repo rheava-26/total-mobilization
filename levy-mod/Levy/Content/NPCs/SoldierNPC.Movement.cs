@@ -140,7 +140,7 @@ namespace Levy.Content.NPCs
 			if (TickDash(goal, dx, dy, grounded, air)) { MirrorDummyControls(); return; }
 
 			_blocked = false; _blockedHard = false;
-			int jumpTiles = 0; bool wantFly = false; bool flyUp = false; bool goalJump = false;
+			int jumpTiles = 0; bool wantFly = false; bool flyUp = false; bool goalJump = false; FlyWhy = 0;
 			bool horizontal = Math.Abs(dx) >= ArriveXPx;
 			int dir = dx >= 0f ? 1 : -1;
 			bool reversing = _reverseTicks > 0;
@@ -174,14 +174,19 @@ namespace Levy.Content.NPCs
 					int jt = Math.Min(tiles, Abilities.JumpTiles);
 					if (jt > jumpTiles && GoalJumpAllowed()) { jumpTiles = jt; goalJump = true; }
 				}
-				else if (Abilities.HasWings) wantFly = true;
+				else if (Abilities.HasWings) { wantFly = true; FlyWhy = 1; }
 				else { _blocked = true; _blockedHard = true; BlockWhy = 1; HookTrigger(HookReason.GoalAbove); }
 			}
 			// goal well below while standing on a platform: drop through it when the floor below is safe
-			if (!air && grounded && (dy > PlatformDropBelowPx || brainDropRequest) && PlatformDropIsSafe()) { _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; }
-			if (Abilities.HasWings && dy < -(Abilities.JumpTiles * 16f)) wantFly = true;
-			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && _wingTime > 0 && dy < -(Math.Abs(dx) < 24f && PathSearch.Travel6On ? ArriveYPx : RouteFlyRisePx)) wantFly = true;   // (a waypoint straight overhead, between 'arrived' and the flight threshold, used to leave the body standing under it until the wedge jump) // a planned route climbs by wing (a flight edge), not by hopping at the foot of the climb
-			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && RouteFlying) { if (_wingTime > 0) { wantFly = true; flyUp = false; } else if (!grounded) StatArcFuelOutNote(); } // a planned arc: thrust toward the next air point while the tank lasts, a glide after
+			bool dropNudged = false;
+			if (!air && grounded && (dy > PlatformDropBelowPx || brainDropRequest))
+			{
+				if (PlatformDropIsSafe()) { _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; }
+				else if (_dropNudge != 0 && !Collision.SolidCollision(new Vector2(npc.position.X + _dropNudge * 1.5f, npc.position.Y), npc.width, npc.height - 2)) { npc.position.X += _dropNudge * 1.5f; dropNudged = true; }   // off the solid edge, then the next tick drops
+			}
+			if (Abilities.HasWings && dy < -(Abilities.JumpTiles * 16f)) { wantFly = true; FlyWhy = 2; }
+			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && _wingTime > 0 && dy < -(Math.Abs(dx) < 24f && PathSearch.Travel6On ? ArriveYPx : RouteFlyRisePx)) { wantFly = true; FlyWhy = 3; }   // (a waypoint straight overhead, between 'arrived' and the flight threshold, used to leave the body standing under it until the wedge jump) // a planned route climbs by wing (a flight edge), not by hopping at the foot of the climb
+			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && RouteFlying) { if (_wingTime > 0) { wantFly = true; flyUp = false; FlyWhy = 4; } else if (!grounded) StatArcFuelOutNote(); } // a planned arc: thrust toward the next air point while the tank lasts, a glide after
 			if (air) { jumpTiles = 0; wantFly = false; flyUp = false; } // aerial mode owns the vertical axis
 
 			if (!air && Abilities.HasWings && _wingTime > 0 && (wantFly || (_flying && dy < -FlyArriveYPx)))
@@ -191,7 +196,8 @@ namespace Levy.Content.NPCs
 			else
 			{
 				_flying = false; _flyRampTicks = 0;
-				if (horizontal)
+				if (dropNudged) npc.velocity.X = _dropNudge * 0.6f;   // stepping clear of the shaft wall: the walk toward the waypoint's tile centre (which overlaps the wall by a pixel or two) waits one tick
+				else if (horizontal)
 				{
 					if (_blocked) npc.velocity.X *= BlockedDecel;
 					else if (MobilityMode >= 1 && LavaAhead(dir)) npc.velocity.X *= 0.5f;   // never run or drift toward lava, on the ground or in the air
@@ -307,7 +313,7 @@ namespace Levy.Content.NPCs
 			{
 				// an overhang at chest or head height: the body cannot duck under it and cannot jump onto it
 				_blocked = true; _blockedHard = true; BlockWhy = 5;
-				if (Abilities.HasWings) { wantFly = true; flyUp = true; } else HookTrigger(HookReason.Wall);
+				if (Abilities.HasWings) { wantFly = true; flyUp = true; FlyWhy = 5; } else HookTrigger(HookReason.Wall);
 				return;
 			}
 			if (h >= 2)
@@ -316,7 +322,7 @@ namespace Levy.Content.NPCs
 				bool headroom = true;
 				for (int k = 1; k <= h && headroom; k++) if (TileNav.IsSolid(feetX, fy - 2 - k)) headroom = false;
 				if (h <= Abilities.JumpTiles && clearAbove && headroom) { if (h > jumpTiles) jumpTiles = h; }
-				else { _blocked = true; _blockedHard = true; BlockWhy = 6; if (Abilities.HasWings) { wantFly = true; flyUp = true; } else HookTrigger(HookReason.Wall); }
+				else { _blocked = true; _blockedHard = true; BlockWhy = 6; if (Abilities.HasWings) { wantFly = true; flyUp = true; FlyWhy = 6; } else HookTrigger(HookReason.Wall); }
 				return;
 			}
 			if (h == 1) return; // a single step: Collision.StepUp carries the body over it
@@ -330,14 +336,14 @@ namespace Levy.Content.NPCs
 				if ((depth < 0 || depth >= GapJumpMinDepthTiles) && TryGapJump(ax, fy, dir, dyPx, ref jumpTiles)) return;
 				if (depth < 0)
 				{
-					if (!TravelLegacy.On && Abilities.HasWings && _wingTime > 0) { wantFly = true; return; } // a gap wider than a jump: wings fly it
+					if (!TravelLegacy.On && Abilities.HasWings && _wingTime > 0) { wantFly = true; FlyWhy = 7; return; } // a gap wider than a jump: wings fly it
 					_blocked = true; _blockedHard = true; BlockWhy = 7; if (dyPx <= 2f * 16f) HookTrigger(HookReason.Gap); return; // a hook may span it
 				}
 				// a hole too deep to climb back out of (deeper than a jump) is not stepped into when the goal is level or above and no planned route asks for it: that is how a body ends up trapped in a pit
 				if (!TravelLegacy.On && depth > Abilities.JumpTiles && !Abilities.HasWings && dyPx <= 2f * 16f && !_pathFromRoute) { _blocked = true; _blockedHard = true; BlockWhy = 8; HookTrigger(HookReason.Gap); return; }
 				if (depth > Abilities.JumpTiles + DropMarginTiles && !(!TravelLegacy.On && _pathFromRoute && !Abilities.HasWings && depth <= FallScanTiles)) // a planned route may go down a safe fall (the far side was checked for a way out)
 				{
-					if (Abilities.HasWings) wantFly = true;
+					if (Abilities.HasWings) { wantFly = true; FlyWhy = 8; }
 					else { _blocked = true; _blockedHard = true; BlockWhy = 8; if (dyPx <= 2f * 16f) HookTrigger(HookReason.Gap); }
 				}
 			}
@@ -1069,23 +1075,34 @@ namespace Levy.Content.NPCs
 		/// platform and none may be a solid block (it would hold him up). Refused when any column has lava below (<see cref="TileNav.DropDepth"/> -2), when no column has a floor
 		/// within the scan (-1), or when the shallowest drop is deeper than a jump plus <see cref="DropMarginTiles"/> and he has no wings.
 		/// </summary>
+		/// <summary>Why the last platform-drop test said no (lab: the travel lab's STUCK lines print it).</summary>
+		internal string DropWhy = ""; private int _dropNudge;
+		/// <summary>Lab: which rule asked for wing thrust this tick (1 goal above, 2 rise, 3 route rise, 4 planned arc, 5 overhang, 6 wall, 7 gap, 8 deep drop; 0 none).</summary>
+		internal int FlyWhy;
 		private bool PlatformDropIsSafe()
 		{
 			var npc = NPC;
 			int fy = TileNav.FeetTile(npc.Bottom).Y;
 			int x0 = (int)(npc.position.X / 16f), x1 = (int)((npc.position.X + npc.width - 1f) / 16f);
 			bool platform = false;
-			int depth = int.MaxValue;
+			int depth = int.MaxValue; _dropNudge = 0;
 			for (int x = x0; x <= x1; x++)
 			{
-				if (TileNav.IsSolid(x, fy + 1)) return false;
+				if (TileNav.IsSolid(x, fy + 1))
+				{
+					DropWhy = "solid-under-edge";
+					// the body's box overlaps a solid tile at one edge (a shaft is 2 to 4 tiles wide, the body 1.25 and a waypoint is a tile centre): step away from that edge so the platform alone is under it
+					if (PathSearch.Travel6On && x0 < x1) { bool leftSolid = TileNav.IsSolid(x0, fy + 1), rightSolid = TileNav.IsSolid(x1, fy + 1); if (leftSolid != rightSolid) _dropNudge = leftSolid ? 1 : -1; }
+					return false;
+				}
 				if (TileNav.IsPlatform(x, fy + 1)) platform = true;
 				int d = TileNav.DropDepth(x, fy + 1);
-				if (d == -2) return false; // lava below: stays refused
+				if (d == -2) { DropWhy = "lava"; return false; } // lava below: stays refused
 				if (d >= 0 && d < depth) depth = d;
 			}
-			if (!platform || depth == int.MaxValue) return false;
-			return Abilities.HasWings || depth <= Abilities.JumpTiles + DropMarginTiles;
+			if (!platform || depth == int.MaxValue) { DropWhy = !platform ? "no-platform" : "no-floor-in-scan"; return false; }
+			if (!(Abilities.HasWings || depth <= Abilities.JumpTiles + DropMarginTiles || (PathSearch.Travel6On && _pathFromRoute && depth <= FallScanTiles))) { DropWhy = "too-deep:" + depth; return false; }   // (a planned route takes falls up to FallScanTiles: the platform drop is such a fall)
+			DropWhy = "ok"; return true;
 		}
 
 		/// <summary>The next waypoint while a path exists, else the brain's goal. Pops waypoints as they are reached.</summary>
@@ -1114,7 +1131,15 @@ namespace Levy.Content.NPCs
 			if (!TravelLegacy.On && next.Y - NPC.Bottom.Y > (shallowOk ? 12f : 32f) && Math.Abs(next.X - NPC.Center.X) < 14f && (shallowOk ? NPC.velocity.Y >= 0f && NPC.velocity.Y < 2.5f : NPC.velocity.Y == 0f))
 			{
 				float onward = _path.Count > 1 ? _path[1].X : MoveGoal.X;
-				next.X += (onward >= NPC.Center.X ? 1f : -1f) * 24f;
+				float side = onward >= NPC.Center.X ? 1f : -1f;
+				if (PathSearch.Travel6On)
+				{
+					// in a shaft the way on is straight down, so 'onward' is a coin toss: never aim into the shaft wall (the look-ahead takes it for a wall and a winged body flies up against it); if both sides are walls, drop straight
+					int fy = TileNav.FeetTile(NPC.Bottom).Y;
+					bool wallAt(float sd) { int ax = (int)((NPC.Center.X + sd * (NPC.width / 2f + LookAheadPx)) / 16f); return TileNav.IsSolid(ax, fy) || TileNav.IsSolid(ax, fy - 1) || TileNav.IsSolid(ax, fy - 2); }
+					if (wallAt(side)) side = wallAt(-side) ? 0f : -side;
+				}
+				next.X += side * 24f;
 			}
 			return next;
 		}

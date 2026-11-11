@@ -177,7 +177,7 @@ namespace Levy.Common
 			// ---- long routes (RoutePlanner / SoldierNPC.Route.cs) ----
 			// One shared, sliced A* over the whole trip (start..goal bounding box) per (goal, ability class, start bucket); soldiers follow its waypoints with the usual local reflexes.
 			/// <summary>Search buffer: the widest and tallest trip window (tiles). A trip wider than this is walked in hops toward the goal (the far end is out of the window).</summary>
-			public const int RouteWindowW = 1500, RouteWindowH = 460;
+			public const int RouteWindowW = 1500, RouteWindowH = 1900, RouteWindowCells = 1000000;
 			/// <summary>Nodes expanded per game tick by the planner (about 2 microseconds a node: 1.4 ms) and the most one route may use before it settles for the closest point it reached.</summary>
 			public const int RouteNodesPerTick = 700, RouteMaxNodes = 220000;
 			/// <summary>A planner slice also stops after this many ms (checked every RouteChunkNodes nodes).</summary>

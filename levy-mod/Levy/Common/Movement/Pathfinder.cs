@@ -42,7 +42,7 @@ namespace Levy.Common.Movement
 		public enum State : byte { Idle, Running, Found, Partial, Failed }
 		public const byte KindWalk = 0, KindStep = 1, KindFall = 2, KindJump = 3, KindFly = 4, KindHook = 5, KindChain = 6, KindClimb = 7, KindArc = 8;
 
-		private readonly int _maxW, _maxH;
+		private readonly int _maxW, _maxH, _cells;
 		private readonly ushort[] _fl;   // consecutive flight steps on the best way to the cell (wings only run for WingTimeMax ticks)
 		private readonly int[] _trap;    // row (+1) the body fell from on the best way to the cell when that drop was deeper than a jump and it has not climbed back to that row yet (0 = not in a pit); such a cell is never a best-effort end
 		private bool _hook, _climb; private float _hookReachPx; private HashSet<long> _ban;
@@ -68,9 +68,9 @@ namespace Levy.Common.Movement
 		/// <summary>True when the last search ended without reaching the goal but has a best-effort node (the closest it expanded to the goal).</summary>
 		public bool HasPartial => _bestIdx >= 0 && _bestIdx != _startIdx;
 
-		public PathSearch(int maxW, int maxH)
+		public PathSearch(int maxW, int maxH, int maxCells = 0)
 		{
-			_maxW = maxW; _maxH = maxH; int cells = maxW * maxH;
+			_maxW = maxW; _maxH = maxH; int cells = maxCells > 0 ? maxCells : maxW * maxH; _cells = cells;
 			_arcAy = new short[cells]; _arcCx = new short[cells]; int arcSpan = ArcMaxCruiseTiles + ArcMaxGlideCols + 4; _afr = new int[arcSpan]; _afs = new int[arcSpan]; _ats = new int[arcSpan]; _afl = new bool[arcSpan]; _atc = new sbyte[arcSpan];
 			_fl = new ushort[cells]; _trap = new int[cells]; _g = new float[cells]; _from = new int[cells]; _stamp = new int[cells]; _closed = new bool[cells]; _kind = new byte[cells];
 			_heapF = new float[Math.Min(cells * 2, 1 << 16)]; _heapI = new int[_heapF.Length];
@@ -93,9 +93,16 @@ namespace Levy.Common.Movement
 			if (centred) { _w = _maxW; _h = _maxH; _ox = s.X - _w / 2; _oy = s.Y - _h / 2; }
 			else
 			{
-				int x0 = Math.Min(s.X, t.X) - padX, x1 = Math.Max(s.X, t.X) + padX;
-				int y0 = Math.Min(s.Y, t.Y) - padUp, y1 = Math.Max(s.Y, t.Y) + padDown;
+				// the window is the box of start and goal plus margins, within the buffer's area (any shape: a wide trip, or a tall one down a shaft). A box too big for it loses margin first; then the goal check below refuses (the caller hops).
+				int x0, x1, y0, y1;
+				for (int shrink = 0; ; shrink++)
+				{
+					x0 = Math.Min(s.X, t.X) - padX; x1 = Math.Max(s.X, t.X) + padX; y0 = Math.Min(s.Y, t.Y) - padUp; y1 = Math.Max(s.Y, t.Y) + padDown;
+					if (!Travel6On || shrink >= 4 || ((x1 - x0 + 1) <= _maxW && (y1 - y0 + 1) <= _maxH && (long)(x1 - x0 + 1) * (y1 - y0 + 1) <= _cells)) break;
+					padX = Math.Max(16, padX * 2 / 3); padUp = Math.Max(24, padUp * 2 / 3); padDown = Math.Max(30, padDown * 2 / 3);
+				}
 				_w = Math.Min(_maxW, x1 - x0 + 1); _h = Math.Min(_maxH, y1 - y0 + 1);
+				if (Travel6On && (long)_w * _h > _cells) _h = Math.Max(1, _cells / _w);
 				_ox = x0; _oy = y0;
 				if (x1 - x0 + 1 > _maxW) _ox = (s.X + t.X) / 2 - _w / 2; // too wide: centre on the span, the goal check below refuses
 			}

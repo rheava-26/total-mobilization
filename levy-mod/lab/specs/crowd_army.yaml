@@ -1,0 +1,15 @@
+# crowd: 36 levies (late-game Calamity kit, every non-summoner carrying a summon item) vs the Hive Mind. Census of NPCs / projectiles by source, PlaySound by source, tick time ([Crowd] lines in server.log.gz).
+# before = the previous behaviour: sentry + staff on every non-summoner, no entity budget, old sound rules.  after = one summon item, entity budget, new sound rules.
+name: crowd_army
+boss: hive
+mode: exp
+gear: postwof.best
+levies: 36
+seeds: 1
+bhp: 60
+cap: 100
+env: {LEVY_CROWD: 1, LEVY_AUDIOCAP: 1}
+vs:
+  before: {xs: "CalamityMod/CausticCroakerStaff+CalamityMod/CausticStaff", env: {LEVY_CROWD_BUDGET: 0, LEVY_AUDIO_OLD: 1}}
+  twoitems: {xs: "CalamityMod/CausticCroakerStaff+CalamityMod/CausticStaff"}
+  after: {xs: "CalamityMod/CausticStaff"}

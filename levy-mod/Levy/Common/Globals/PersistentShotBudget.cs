@@ -20,7 +20,9 @@ namespace Levy.Common.Globals
 	public class PersistentShot : GlobalProjectile
 	{
 		public override bool InstancePerEntity => true;
-		internal const int LingerTicks = 150, PerSoldierCap = 40, ArmyCap = 330, BoardCeiling = 600;
+		internal const int LingerTicks = 150, PerSoldierCap = 40, ArmyCap = 330;
+		/// <summary>The whole board is never taken past this: every projectile slot but the army-entity budget's reserve (default 850 of 1000).</summary>
+		internal static int BoardCeiling => Terraria.Main.maxProjectiles - (global::Levy.Common.Budget.CrowdBudget.On ? global::Levy.Common.Budget.CrowdBudget.ReservedProj : 400);
 		internal uint Born, Serial; internal int Soldier = -1; internal bool Registered;
 
 		public override void PostAI(Projectile p)

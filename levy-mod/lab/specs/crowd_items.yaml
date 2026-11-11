@@ -1,0 +1,16 @@
+# crowd items: six levies who all carry one suspect Calamity weapon, against a long Hive Mind fight; [Crowd] census lines (projectiles by source and top types) in server.log.gz.
+name: crowd_items
+boss: hive
+mode: exp
+gear: postwof.best
+levies: 6
+seeds: 1
+bhp: 60
+cap: 60
+env: {LEVY_CROWD: 1, LEVY_AUDIOCAP: 1, LEVY_CROWD_BUDGET: 0}
+cells:
+  - {name: slimepuppet, cw: "CalamityMod/SlimePuppetStaff"}
+  - {name: shellfish, cw: "CalamityMod/ShellfishStaff"}
+  - {name: murasama_locked, cw: "CalamityMod/Murasama"}
+  - {name: murasama_doG, cw: "CalamityMod/Murasama", env: {LEVY_CR_DOWNED: downedDoG}}
+  - {name: mollusk_set, gear: postwof.mollusk, levies: 6}

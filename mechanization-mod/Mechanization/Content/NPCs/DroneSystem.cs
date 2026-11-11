@@ -7,6 +7,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
+using Levy.Common.Budget;
 using Levy.Common.Config;
 using Levy.Common.Flavor;
 using Levy.Common.Soldiers;
@@ -87,7 +88,7 @@ namespace Mechanization.Content.NPCs
 			if (guides == null || !guides.Engineering) return; // no guide, no garrison (and a single bool read is all this costs)
 			if (--_sweepTimer > 0) return;
 			_sweepTimer = D.SweepIntervalTicks;
-			try { SweepOne(); }
+			try { StandDownForBudget(); SweepOne(); }
 			catch (Exception e)
 			{
 				// A fault in the garrison must never break the tick. Say so at most every ten seconds.
@@ -161,7 +162,7 @@ namespace Mechanization.Content.NPCs
 			}
 
 			if (_mine.Count >= D.PerBarracksCap) return;
-			if (Main.maxNPCs - activeNpcs < D.NpcSlotReserve) return; // never crowd soldiers or an invasion out of the NPC array
+			if (Main.maxNPCs - activeNpcs < ReserveSlots) { CrowdBudget.NoteDroneGate(); return; } // never crowd soldiers or an invasion out of the NPC array (the army entity budget's reserve: 40 free NPC slots by default)
 
 			Item weapon = armory.LendDroneWeapon(ArmoryReserve(armory));
 			if (weapon == null) { _nextLaunch[barracks.ID] = now + (uint)D.NoSurplusBackoffTicks; return; }
@@ -174,6 +175,25 @@ namespace Mechanization.Content.NPCs
 				return;
 			}
 			_nextLaunch[barracks.ID] = now + (uint)D.RespawnCadenceTicks;
+		}
+
+		/// <summary>Free NPC slots a launch must leave: the army entity budget's reserve, or the old constant with the budget off.</summary>
+		internal static int ReserveSlots => CrowdBudget.On ? CrowdBudget.ReservedNpc : D.NpcSlotReserve;
+
+		/// <summary>The army entity budget at the NPC array: while free NPC slots are under the reserve, the garrison's OLDEST drone stands down (its weapon goes home) every sweep until they are back. Player-built field drones are never touched.</summary>
+		private void StandDownForBudget()
+		{
+			if (!CrowdBudget.On || CrowdBudget.NpcOver <= 0) return;
+			DroneNPC oldest = null;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.ModNPC is not DroneNPC d || !d.IsBound || d.RecordId >= 0) continue;
+				if (oldest == null || d.Born < oldest.Born) oldest = d;
+			}
+			if (oldest == null) return;
+			oldest.Dismantle();
+			CrowdBudget.NoteRetiredDrone();
 		}
 
 		/// <summary>One pass over the NPC slots: every bound drone into <see cref="_all"/>, and the number of active NPCs (for the free-slot guard).</summary>

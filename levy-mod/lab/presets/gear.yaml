@@ -29,6 +29,7 @@ sets:    # armor sets; {c} = Ranged | Magic | Melee | Summon by class
   pall_e:    [Palladium Helmet, Palladium Breastplate, Palladium Leggings]
   cobalt_m:  [Cobalt Hat, Cobalt Breastplate, Cobalt Leggings]
   wulfrum:   [CalamityMod/WulfrumHat, CalamityMod/WulfrumJacket, CalamityMod/WulfrumOveralls]   # Calamity rogue armor: gives the wearer a stealth bar
+  mollusk:   [CalamityMod/MolluskShellmet, CalamityMod/MolluskShellplate, CalamityMod/MolluskShelleggings]   # set bonus: two shellfish aid you
   sulph:     [CalamityMod/SulphurousHelmet, CalamityMod/SulphurousBreastplate, CalamityMod/SulphurousLeggings]
 
 tiers:
@@ -129,6 +130,11 @@ presets:
     mix: {R: 0, M: 0, E: 1.0, S: 0}
     weapons: {E: {0: ["CalamityMod/WulfrumKnife:-", "CalamityMod/Mycoroot:-", "CalamityMod/UrchinStinger:-"], 1: ["CalamityMod/WulfrumKnife:-", "CalamityMod/Mycoroot:-"]}}
     armor: {E: {0: [wulfrum], 1: [wulfrum, sulph]}}
+  postwof.mollusk:
+    extends: postwof.best
+    desc: "six melee levies in the Mollusk set (its bonus summons two Shellfish), post-Wall of Flesh"
+    mix: {R: 0, M: 0, E: 1.0, S: 0}
+    armor: {E: {3: [mollusk]}}
   postskel.best_nomob:
     extends: postskel.best
     desc: "post-Skeletron best gear without Cloud in a Bottle or wings (3 accessory slots, no mobility pieces)"

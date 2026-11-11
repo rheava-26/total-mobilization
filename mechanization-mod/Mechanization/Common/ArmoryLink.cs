@@ -32,13 +32,13 @@ namespace Mechanization.Common
 			// Armory Relays standing within their serve radius lend their linked Armory (and its pylon network), however far away it is.
 			foreach (ArmoryTE linked in ArmoryRelays.LinkedFor(pos)) AddNetwork(settle, linked, pool);
 
-			var pylons = Main.PylonSystem?.Pylons;
+			var pylons = Pylons();
 			if (pylons != null && pylons.Count > 0 && NearPylon(pos, pylons))
 			{
 				ArmoryTE seed = null; float bestSq = float.MaxValue;
 				foreach (TileEntity te in TileEntity.ByID.Values)
 				{
-					if (te is not ArmoryTE a || !NearPylon(a.Center, pylons)) continue;
+					if (te is not ArmoryTE a || !settle.IsArmoryOnNetwork(a)) continue; // the 2.0.39 network rule: a pylon near the armory OR linking its settlement
 					float d = Vector2.DistanceSquared(pos, a.Center);
 					if (d < bestSq) { bestSq = d; seed = a; }
 				}
@@ -61,6 +61,9 @@ namespace Mechanization.Common
 			foreach (ArmoryTE a in settle.NetworkedArmories(seed))
 				if (a != null && !pool.Contains(a)) pool.Add(a);
 		}
+
+		/// <summary>The world's pylons (Levy's test seam answers first, so the boot checks can plant their own).</summary>
+		internal static IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> Pylons() => SettlementSystem.PylonListOverride ?? Main.PylonSystem?.Pylons;
 
 		/// <summary>True when a vanilla pylon stands within Levy's pylon-share radius of <paramref name="c"/> (the same test Levy uses to put an Armory on the network).</summary>
 		internal static bool NearPylon(Vector2 c, IReadOnlyList<Terraria.GameContent.TeleportPylonInfo> pylons)

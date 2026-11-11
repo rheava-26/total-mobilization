@@ -15,18 +15,33 @@ namespace Levy.Common.Audio
 	/// </summary>
 	public class ArmySoundThrottle : ModSystem
 	{
+		/// <summary>LEVY_AUDIO_OLD=1 (lab): the previous rules (caps 3 / 10, only Levy and Mechanization's own entities in scope), for before/after numbers.</summary>
+		internal static readonly bool OldRules = Environment.GetEnvironmentVariable("LEVY_AUDIO_OLD") == "1";
 		public const int WindowTicks = 12;       // 0.2 s
-		public const int PerStyleMax = 3;        // same style, per window, all army sources combined
-		public const int TotalMax = 10;          // all styles, per window
+		public static readonly int PerStyleMax = OldRules ? 3 : 2;   // same style, per window, all army sources combined
+		public static readonly int TotalMax = OldRules ? 10 : 4;     // all styles, per window (4 per 0.2 s = 20 a second, then only the one-per-style guarantee)
+		public static readonly int HardExtra = OldRules ? 1000 : 2;
+		public const int StarvedExtra = 4;  // the one-per-style guarantee may take the window this far past TotalMax, never further
+		/// <summary>What kind of army entity is making the sound.</summary>
+		public const int KShot = 1, KMinion = 2, KSentry = 3, KDrone = 4, KEnemy = 5, KPlayer = 6, KOther = 7, KindCount = 8;
+		public static readonly string[] KindNames = { "none", "weapon", "minion", "sentry", "drone", "enemy", "player", "other" };
+		/// <summary>Per window, all styles of one kind: summoned things are background noise, so they get a small share of the window.</summary>
+		public static int KindMax(int kind) => OldRules ? int.MaxValue : kind == KMinion ? 2 : kind == KSentry ? 2 : kind == KDrone ? 2 : int.MaxValue;
+		/// <summary>The loudness each kind plays at before the player's Army sound volume.</summary>
+		public static float KindGain(int kind) => OldRules ? 1f : kind == KMinion || kind == KSentry ? 0.7f : kind == KDrone ? 0.8f : 1f;
+		/// <summary>The config slider (Army sound volume), 1 under the previous rules.</summary>
+		static float UserVolume() { if (OldRules) return 1f; try { return Config.LevyConfig.Get?.ArmySoundVolume ?? 0.6f; } catch (Exception) { return 0.6f; } }
 		public const float DropDistance = 2200f; // beyond this an army sound is never played
 		public const float BusyDistance = 1100f; // beyond this it is dropped once the window is half full
 		public const float MinVolume = 0.45f;
 
 		/// <summary>Pure decision: returns the volume scale to play at (0 = drop). Counts are sounds already played this window.</summary>
-		public static float Decide(int sameInWindow, int totalInWindow, float distance, float nearestSame = 0f)
+		public static float Decide(int sameInWindow, int totalInWindow, float distance, float nearestSame = 0f, int kindInWindow = 0, int kindMax = int.MaxValue, bool starved = false)
 		{
 			if (distance > DropDistance) return 0f;
-			// Every style is guaranteed one audible play per window, whatever the total budget: a fast weapon (Minishark, every 8 ticks) is never silenced by other styles filling the window.
+			if (totalInWindow >= TotalMax + HardExtra + (starved ? StarvedExtra : 0)) return 0f; // a style that has been silent for two windows may pass the ceiling by a little, so no style is shut out for good // the hard ceiling: even the guarantee below stops here
+			if (kindInWindow >= kindMax) return 0f;
+			// Every style is guaranteed one audible play per window, up to the hard ceiling: a fast weapon (Minishark, every 8 ticks) is never silenced by other styles filling the window.
 			if (sameInWindow == 0) return 1f;
 			// Closest first: a sound well nearer than any already played this window may exceed the style cap by up to two plays, at the floor volume.
 			if (sameInWindow >= PerStyleMax && sameInWindow < PerStyleMax + 2 && distance < nearestSame * 0.5f) return MinVolume;
@@ -36,8 +51,12 @@ namespace Levy.Common.Audio
 			return v < MinVolume ? MinVolume : v;
 		}
 
-		static bool inArmy;
+		/// <summary>The kind of army entity whose update is running (0 = none). Set by the NPC / projectile detours.</summary>
+		static int kind;
+		static bool inArmy => kind != 0 && kind < KEnemy;
 		static int windowStart = int.MinValue, total;
+		static readonly int[] perKind = new int[KindCount];
+		static readonly Dictionary<string, int> lastAdmit = new Dictionary<string, int>();
 		static readonly Dictionary<string, int> perStyle = new Dictionary<string, int>();
 		static readonly Dictionary<string, float> nearest = new Dictionary<string, float>();
 
@@ -45,11 +64,29 @@ namespace Levy.Common.Audio
 		public static void PlayAsArmy(SoundStyle style, Vector2 pos)
 		{
 			if (Main.dedServ) return;
-			bool was = inArmy; inArmy = true;
-			try { SoundEngine.PlaySound(style, pos); } finally { inArmy = was; }
+			int was = kind; kind = KShot;
+			try { SoundEngine.PlaySound(style, pos); } finally { kind = was; }
 		}
 
 		static bool IsArmy(Mod m) => m != null && (m.Name == "Levy" || m.Name == "Mechanization");
+
+		/// <summary>The kind a projectile's update makes sounds as: a projectile tagged to a levy (whatever mod made it: Calamity's minions, sentries and shots too), a Mechanization one, else (diag) the commander's or an enemy's.</summary>
+		static int ProjKind(Projectile p)
+		{
+			if (p.TryGetGlobalProjectile(out Globals.SoldierProjectileTag t) && t.SoldierIndex >= 0) return p.sentry ? KSentry : p.minion ? KMinion : KShot;
+			if (p.ModProjectile?.Mod?.Name == "Mechanization" || (t != null && t.DroneShot)) return KDrone;
+			if (OldRules) return p.ModProjectile != null && IsArmy(p.ModProjectile.Mod) ? KShot : 0;
+			if (!Diag) return 0;
+			return p.hostile ? KEnemy : p.owner >= 0 && p.owner < Main.maxPlayers - 1 && Main.player[p.owner].active ? KPlayer : KOther;
+		}
+
+		static int NpcKind(NPC n)
+		{
+			var m = n.ModNPC?.Mod;
+			if (m != null && m.Name == "Mechanization") return KDrone;
+			if (m != null && m.Name == "Levy") return KShot;
+			return Diag && !n.friendly && !n.townNPC ? KEnemy : 0;
+		}
 
 		/// <summary>LEVY_AUDIOCAP=1: the detour also runs on a dedicated server (lab harness) and logs the PlaySound stream per second as [AudioCap] lines. Never set in play.</summary>
 		static readonly bool Diag = Environment.GetEnvironmentVariable("LEVY_AUDIOCAP") == "1";
@@ -61,9 +98,10 @@ namespace Levy.Common.Audio
 		/// <summary>Set by the diag log: true while an owner frame is open (such sounds are dropped on a real client because the frame forces dedServ).</summary>
 		public static Func<bool> InFrame = () => global::Levy.Common.Owner.SoldierOwner.Depth > 0;
 
-		static void DiagTick(int now, string key, bool army, bool admitted)
+		static readonly int[] dKindRaw = new int[KindCount], dKindAdmit = new int[KindCount];
+		static void DiagTick(int now, string key, bool army, bool admitted, int k = KOther)
 		{
-			dCalls++;
+			dCalls++; dKindRaw[k]++; if (!army || admitted) dKindAdmit[k]++;
 			if (!army) { if (InFrame()) dInFrame++; else { dOther.TryGetValue(key, out int o); dOther[key] = o + 1; } }
 			if (army) { dArmy++; if (dLastArmy >= 0) { int g = now - dLastArmy; if (g > dMaxRaw) dMaxRaw = g; if (g >= 12) dGapsRaw12++; } dLastArmy = now; dStyle.TryGetValue(key, out int c); dStyle[key] = c + 1; if (admitted) { dAdmit++; if (dLastAdmit >= 0) { int g = now - dLastAdmit; if (g > dMaxGap) dMaxGap = g; if (g >= 12) dGaps12++; } dLastAdmit = now; } else dDrop++; }
 			if (dLogAt == 0) dLogAt = now + 120;
@@ -74,6 +112,7 @@ namespace Levy.Common.Audio
 				var oth = new List<KeyValuePair<string, int>>(dOther); oth.Sort((a, b) => b.Value.CompareTo(a.Value));
 				string ot = ""; for (int i = 0; i < oth.Count && i < 5; i++) ot += (i > 0 ? "," : "") + oth[i].Key.Substring(oth[i].Key.LastIndexOf('/') + 1) + "=" + oth[i].Value;
 				Levy.Instance?.Logger.Info($"[AudioCap] nonArmyInFrame={dInFrame} nonArmyOutside={dOther.Count} otherTop={ot}");
+				{ var kb = new System.Text.StringBuilder(); for (int q = 1; q < KindCount; q++) kb.Append(q > 1 ? " " : "").Append(KindNames[q]).Append('=').Append(dKindRaw[q]).Append('/').Append(dKindAdmit[q]); Levy.Instance?.Logger.Info($"[Crowd] audio calls/played by source over {(dLogAt == 0 ? 0 : 120)} ticks: {kb} | rules={(OldRules ? "old" : "new")} volume={UserVolume():0.00}"); Array.Clear(dKindRaw, 0, KindCount); Array.Clear(dKindAdmit, 0, KindCount); }
 				dInFrame = 0; dOther.Clear();
 				Levy.Instance?.Logger.Info($"[AudioCap] tick={now} calls={dCalls} army={dArmy} admitted={dAdmit} dropped={dDrop} styles={dStyle.Count} maxAdmitGapTicks={dMaxGap} maxRawGapTicks={dMaxRaw} admitGaps12={dGaps12} rawGaps12={dGapsRaw12} top={t}");
 				dCalls = dArmy = dAdmit = dDrop = dMaxGap = dMaxRaw = dGaps12 = dGapsRaw12 = 0; dStyle.Clear(); dLogAt = now + 120;
@@ -86,6 +125,7 @@ namespace Levy.Common.Audio
 			if (Main.dedServ && !Diag) return;
 			On_NPC.AI += NpcAI;
 			On_Projectile.AI += ProjAI;
+			On_Projectile.Update += ProjUpdate;
 			On_SoundEngine.PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback += Play;
 		}
 
@@ -94,31 +134,41 @@ namespace Levy.Common.Audio
 			if (Main.dedServ && !Diag) return;
 			On_NPC.AI -= NpcAI;
 			On_Projectile.AI -= ProjAI;
+			On_Projectile.Update -= ProjUpdate;
 			On_SoundEngine.PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback -= Play;
 		}
 
 		static void NpcAI(On_NPC.orig_AI orig, NPC self)
 		{
-			bool was = inArmy;
-			inArmy = was || IsArmy(self.ModNPC?.Mod);
-			try { orig(self); } finally { inArmy = was; }
+			int was = kind;
+			if (was == 0) kind = NpcKind(self);
+			try { orig(self); } finally { kind = was; }
 		}
 
 		static void ProjAI(On_Projectile.orig_AI orig, Projectile self)
 		{
-			bool was = inArmy;
-			inArmy = was || IsArmy(self.ModProjectile?.Mod);
-			try { orig(self); } finally { inArmy = was; }
+			int was = kind;
+			if (was == 0) kind = ProjKind(self);
+			try { orig(self); } finally { kind = was; }
+		}
+
+		/// <summary>The whole update, not only the AI: a levy's projectile also makes sounds when it hits (the strike, the enemy's hurt and death sound) and from its on-hit hooks.</summary>
+		static void ProjUpdate(On_Projectile.orig_Update orig, Projectile self, int i)
+		{
+			int was = kind;
+			if (was == 0) kind = ProjKind(self);
+			try { orig(self, i); } finally { kind = was; }
 		}
 
 		static SlotId Play(On_SoundEngine.orig_PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback orig, ref SoundStyle style, Vector2? position, SoundUpdateCallback cb)
 		{
-			if (Diag && isServer) { AudioCapLog.OnPlay(ref style, position, inArmy); int n0 = (int)Main.GameUpdateCount; bool a0 = inArmy; bool ok = !a0 || Admit(ref style, position, n0, true) > 0f; DiagTick(n0, style.SoundPath ?? "", a0, ok); return SlotId.Invalid; }
+			if (Diag && isServer) { AudioCapLog.OnPlay(ref style, position, inArmy); int n0 = (int)Main.GameUpdateCount; bool a0 = inArmy; int k0 = kind == 0 ? KOther : kind; bool ok = !a0 || Admit(ref style, position, n0, true) > 0f; DiagTick(n0, style.SoundPath ?? "", a0, ok, k0); return SlotId.Invalid; }
 			if (AudioCapLog.On && !isServer) AudioCapLog.OnPlay(ref style, position, inArmy);
 			if (!inArmy || Main.gameMenu) return orig(ref style, position, cb);
 			int now = (int)Main.GameUpdateCount;
 			float vol = Admit(ref style, position, now, false);
 			if (vol <= 0f) return SlotId.Invalid;
+			vol *= KindGain(kind) * UserVolume();
 			if (vol < 0.999f) { var quieter = style.WithVolumeScale(vol); return orig(ref quieter, position, cb); }
 			return orig(ref style, position, cb);
 		}
@@ -127,19 +177,22 @@ namespace Levy.Common.Audio
 		static float Admit(ref SoundStyle style, Vector2? position, int now, bool ignoreDistance)
 		{
 			float dist = !ignoreDistance && position.HasValue ? Vector2.Distance(position.Value, Main.screenPosition + new Vector2(Main.screenWidth, Main.screenHeight) * 0.5f) : 0f;
-			return AdmitKey(style.SoundPath ?? "", dist, now);
+			return AdmitKey(style.SoundPath ?? "", dist, now, kind);
 		}
 
 		/// <summary>The stateful part (window reset, per-style counts), separated from SoundStyle so the boot check can drive it.</summary>
-		static float AdmitKey(string key, float dist, int now)
+		static float AdmitKey(string key, float dist, int now, int k = KShot)
 		{
 			// long: the first window starts at int.MinValue, and an int subtraction overflows negative and never resets
-			if ((long)now - windowStart >= WindowTicks || now < windowStart) { windowStart = now; total = 0; perStyle.Clear(); nearest.Clear(); }
+			if ((long)now - windowStart >= WindowTicks || now < windowStart) { windowStart = now; total = 0; perStyle.Clear(); nearest.Clear(); Array.Clear(perKind, 0, perKind.Length); }
 			perStyle.TryGetValue(key, out int same);
 			float near = nearest.TryGetValue(key, out float nv) ? nv : float.MaxValue;
-			float vol = Decide(same, total, dist, near);
+			int ki = k < 0 || k >= KindCount ? KShot : k;
+			bool starved = same == 0 && (!lastAdmit.TryGetValue(key, out int la) || (long)now - la >= 2 * WindowTicks || now < la);
+			float vol = Decide(same, total, dist, near, perKind[ki], KindMax(ki), starved);
 			if (vol <= 0f) return 0f;
-			total++; perStyle[key] = same + 1; nearest[key] = Math.Min(near, dist);
+			lastAdmit[key] = now;
+			total++; perKind[ki]++; perStyle[key] = same + 1; nearest[key] = Math.Min(near, dist);
 			return vol;
 		}
 
@@ -154,7 +207,7 @@ namespace Levy.Common.Audio
 			{
 				foreach (int start in new[] { 0, 1000000, int.MaxValue - 300 })
 				{
-					windowStart = int.MinValue; total = 0; perStyle.Clear(); nearest.Clear();
+					windowStart = int.MinValue; total = 0; perStyle.Clear(); nearest.Clear(); lastAdmit.Clear(); Array.Clear(perKind, 0, perKind.Length);
 					const int styles = 15, shooters = 40, ticks = 1200; // 20 s
 					var last = new int[styles]; var maxGap = new int[styles]; int admitted = 0, calls = 0;
 					for (int k = 0; k < ticks; k++)
@@ -171,10 +224,10 @@ namespace Levy.Common.Audio
 					numbers += $"start {start}: {calls} calls -> {admitted} admitted, worst per-style gap {worst} ticks; ";
 					if (admitted == 0) return "stateful throttle admitted nothing (window never reset?)";
 					if (worst > 2 * WindowTicks + 30) return $"a style went {worst} ticks without an audible play from start {start}";
-					if (admitted / (ticks / 60f) > (TotalMax + styles) * 60f / WindowTicks) return "admitted rate above the cap plus one-per-style guarantee";
+					if (admitted / (ticks / 60f) > (TotalMax + HardExtra + StarvedExtra) * 60f / WindowTicks) return "admitted rate above the cap plus one-per-style guarantee";
 				}
 			}
-			finally { windowStart = sw0; total = t0; perStyle.Clear(); foreach (var kv in ps) perStyle[kv.Key] = kv.Value; nearest.Clear(); foreach (var kv in nr) nearest[kv.Key] = kv.Value; }
+			finally { lastAdmit.Clear(); windowStart = sw0; total = t0; perStyle.Clear(); foreach (var kv in ps) perStyle[kv.Key] = kv.Value; nearest.Clear(); foreach (var kv in nr) nearest[kv.Key] = kv.Value; }
 			return null;
 		}
 
@@ -232,7 +285,7 @@ namespace Levy.Common.Audio
 			}
 			numbers += $"modelled {shooters} shooters: {before / (float)secs:0.0}/s unthrottled -> {after / (float)secs:0.0}/s throttled";
 			if (after >= before) return "throttle removed nothing in a big fight";
-			if (after / (float)secs > TotalMax * 60f / WindowTicks) return "throttled rate above the total cap";
+			if (after / (float)secs > (TotalMax + HardExtra + StarvedExtra) * 60f / WindowTicks) return "throttled rate above the total cap";
 			return null;
 		}
 

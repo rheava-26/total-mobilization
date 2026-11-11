@@ -42,7 +42,7 @@ namespace Levy.Common
 		/// <summary>A modded cast that dies by itself within this many driven ticks of spawning counts as an immediate self-kill (lifetime only, hits are never considered).</summary>
 		public const int ModdedMinionShortLifeTicks = 10;
 		/// <summary>Flood guard: projectiles a modded flock's minions may create per upkeep pass (20 ticks) / may have alive at once before its staff uses the stand-in. Measured peaks of the heaviest Calamity minions: 31 per pass (Dragonblood Disgorger), 76 alive (Ares' Exoskeleton); the runaway (Void Concentration Staff) makes 420 per pass.</summary>
-		public const int ModdedMinionMaxChildSpawnsPerPass = 100, ModdedMinionMaxChildrenAlive = 300;
+		public const int ModdedMinionMaxChildSpawnsPerPass = 40, ModdedMinionMaxChildrenAlive = 60;
 		/// <summary>Consecutive immediate self-kills of a modded cast after which the staff uses the stand-in minion.</summary>
 		public const int ModdedMinionMaxShortLives = 3;
 		/// <summary>Horizontal scatter (px) of a fresh real minion around its soldier.</summary>

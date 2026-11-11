@@ -65,6 +65,8 @@ namespace Mechanization.Content.NPCs
 		public bool Held;
 		/// <summary>Id of this drone's saved record in <see cref="FieldDroneSystem"/> (server / single player; -1 for a garrison drone). A player-built drone has no Barracks: it patrols around its home point.</summary>
 		public int RecordId = -1;
+		/// <summary>The tick this drone was created on: the army entity budget stands the oldest garrison drone down first.</summary>
+		public uint Born = Main.GameUpdateCount;
 
 		/// <summary>Free-standing Player swapped into Main.player[255] for one enemy AI call so the enemy chases this body (never in Main.player[] otherwise).</summary>
 		public Player Dummy { get; private set; }

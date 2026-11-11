@@ -62,8 +62,9 @@ namespace Levy.Common.Soldiers
 		/// <summary>True when the weapon may sit beside this primary and these other sidearms.</summary>
 		public static bool Fits(Item primary, Item side, IEnumerable<Item> others) => !OffClass(primary, side) && !Duplicates(primary, side, others);
 
-		/// <summary>The sidearms (hand first) that do not fit beside the primary and the ones kept before them: what a tidy-up gives back to the shelf. Locked slots are never listed.</summary>
-		public static List<int> Misfits(SoldierGear g)
+		/// <summary>The sidearms (hand first) that do not fit beside the primary and the ones kept before them: what a tidy-up gives back to the shelf. Locked slots are never listed.
+		/// <paramref name="summoner"/> false adds the one-summon-item rule: a levy who is not a summoner keeps ONE minion staff or sentry (a locked one first, else the best), </summary>
+		public static List<int> Misfits(SoldierGear g, bool? summoner = null)
 		{
 			var res = new List<int>();
 			if (g == null) return res;
@@ -76,7 +77,27 @@ namespace Levy.Common.Soldiers
 				if (!g.IsLocked(slot) && g.HasWeapon && !Fits(g.Weapon, it, kept)) { res.Add(slot); continue; }
 				kept.Add(it);
 			}
+			if (summoner == false) AddExtraSummonItems(g, res);
 			return res;
+		}
+
+		/// <summary>The one-summon-item rule for a non-summoner: every unlocked staff / sentry past the first (locked first, then highest rank) goes back, or all of them when non-summoners carry none.</summary>
+		private static void AddExtraSummonItems(SoldierGear g, List<int> res)
+		{
+			int keepSlot = -1; float keepRank = -1f;
+			bool allow = true;
+			var slots = new List<int>();
+			for (int i = 0; i < LevyConstants.MaxSidearms; i++)
+			{
+				int slot = SoldierGear.SidearmSlotAt(i);
+				var it = g.Get(slot);
+				if (it == null || it.IsAir || !IsDeployer(it) || res.Contains(slot)) continue;
+				slots.Add(slot);
+				if (!allow) continue;
+				float rank = g.IsLocked(slot) ? float.MaxValue : WeaponRank.Of(it);
+				if (rank > keepRank) { keepRank = rank; keepSlot = slot; }
+			}
+			foreach (int slot in slots) if (slot != keepSlot && !g.IsLocked(slot)) res.Add(slot);
 		}
 	}
 }

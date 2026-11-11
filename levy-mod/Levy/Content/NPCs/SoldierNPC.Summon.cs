@@ -5,6 +5,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
+using Levy.Common.Budget;
 using Levy.Common.Globals;
 using Levy.Common.Util;
 using Levy.Common.Weapons;
@@ -196,7 +197,9 @@ namespace Levy.Content.NPCs
 				if ((int)p.ai[1] != weapon.shoot) { p.ai[1] = weapon.shoot; p.netUpdate = true; }
 			}
 			if (_minionScratch.Count >= desired || _minionSpawnCd > 0) return;
+			if (!CrowdBudget.MayAddProjectiles()) return; // the army entity budget: no new minion while the game is short of free projectile slots
 			SpawnMinion(weapon, damage);
+			CrowdBudget.NoteAdded();
 		}
 
 		/// <summary>
@@ -244,8 +247,10 @@ namespace Levy.Content.NPCs
 			// the count guard keeps a staff whose minion reports no slot cost from casting without end
 			if (_minionSpawnCd > 0 || have + perCast > want + LevyConstants.MinionSlotEpsilon || _minionScratch.Count >= LevyConstants.MinionControllerMaxPerSoldier * 2) return;
 
+			if (!CrowdBudget.MayAddProjectiles(Math.Max(1, (int)Math.Ceiling(perCast)))) return; // the army entity budget
 			_minionSpawnCd = LevyConstants.MinionSpawnCooldownTicks;
 			if (!SoldierMinions.Summon(this, weapon, damage)) return;
+			CrowdBudget.NoteAdded();
 			// a short cast animation when the staff is the weapon in hand
 			if (!UsingSidearm && ItemAnimation <= 0 && ReferenceEquals(weapon, Record?.Gear?.Weapon)) { ItemAnimation = ItemAnimationMax = Math.Max(1, weapon.useAnimation); NPC.netUpdate = true; }
 			if (weapon.UseSound.HasValue) Terraria.Audio.SoundEngine.PlaySound(weapon.UseSound.Value, NPC.Center);
@@ -390,6 +395,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Plants the sentry where the soldier stands (the old one is removed only once the new spot is known to work). Returns false and backs off when no spot was found.</summary>
 		private bool DeploySentry(Item weapon, Projectile replacing, int index)
 		{
+			if (replacing == null && !CrowdBudget.MayAddProjectiles()) { _sentryCd = LevyConstants.SentryRetryTicks; return false; } // the army entity budget: a new tower waits for a free slot (a replant frees its own)
 			if (!PlanSentry(weapon, index, out Vector2 pos, out Vector2 vel, out float ai0, out float ai1, out float localAi0))
 			{
 				DudTrace.Note(weapon, "sentry-plan-failed");

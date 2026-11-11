@@ -12,7 +12,7 @@ namespace Levy.Content.TileEntities
 {
 	/// <summary>
 	/// The levy's sidearms (see <see cref="SidearmPolicy"/> for the rules): up to <see cref="LevyConstants.MaxSidearms"/> of them, the hand sidearm and two extra slots that hold the summon weapons.
-	///  * A levy who is NOT a summoner carries one sentry staff and one minion staff, the best of each in stock, in the two extra slots; a ranged or magic levy keeps his lesser blade in hand.
+	///  * A levy who is NOT a summoner carries ONE summon item, a sentry staff or a minion staff (the better one in stock; none when the config turns it off), in an extra slot; a ranged or magic levy keeps his lesser blade in hand.
 	///  * A SUMMONER leads with a whip. The hand slot carries his minion staff, the extra slots his sentry staff and then as many one-minion staves (see <see cref="SummonCap"/>) as he has room for.
 	///  * With no whip in stock a summoner leads with the staff and carries the sentry; with neither, with the sentry.
 	/// </summary>
@@ -109,9 +109,9 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>Gives back to the shelf every sidearm that no longer fits beside the primary (a second blade, a second whip, an off-class weapon). Locked slots stay. True if anything went back.</summary>
-		private bool TidySidearms(SoldierGear g)
+		private bool TidySidearms(SoldierGear g, SoldierRecord soldier = null)
 		{
-			var bad = SidearmPolicy.Misfits(g);
+			var bad = SidearmPolicy.Misfits(g, soldier == null ? (bool?)null : IsSummonerSoldier(soldier));
 			if (bad.Count == 0) return false;
 			foreach (int slot in bad)
 			{
@@ -137,7 +137,7 @@ namespace Levy.Content.TileEntities
 		/// </summary>
 		private bool FillSidearms(SoldierRecord soldier, SoldierGear g, bool summoner, WeaponFamily primaryFam, bool primaryMelee)
 		{
-			bool changed = TidySidearms(g);
+			bool changed = TidySidearms(g, soldier);
 			if (EnforceSidearmRules(g, summoner)) changed = true;
 			HashSet<object> claimed = null; bool claimedRead = false;
 			bool Free(Item it) { if (!claimedRead) { claimed = ClaimedWeapons(soldier); claimedRead = true; } return claimed == null || !claimed.Contains(it); }
@@ -174,7 +174,7 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>
-		/// The next summon weapon an extra slot takes, or null (removed from the armory). A levy who is not a summoner takes one sentry staff, then one minion staff (the best of each in stock). A summoner takes the
+		/// The next summon weapon an extra slot takes, or null (removed from the armory). A levy who is not a summoner takes at most one: the better of a sentry staff and a minion staff in stock. A summoner takes the
 		/// unlimited minion staff he does not carry yet, then his sentry staff, then one-minion staves with a limit of their own (<see cref="SummonCap"/>) that fit beside what he carries.
 		/// </summary>
 		private Item NextDeployer(SoldierGear g, bool summoner, List<Item> carried, Func<Item, bool> free, SoldierRecord who = null)
@@ -190,13 +190,11 @@ namespace Levy.Content.TileEntities
 			Item TakeSentry() => TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => IsIssuableSentry(it) && Fits(it), WeaponRank.Of);
 			if (!summoner)
 			{
-				if (!Rules.SummonsForOthers) return null; // the armory's rules keep summon weapons for summoners
+				// ONE SUMMON ITEM: a levy who is not a summoner carries a single minion staff OR a single sentry (the better one in stock); none when the armory's rules keep summon weapons for summoners.
+				if (!Rules.SummonsForOthers || hasSentry || hasStaff) return null;
 				// SUMMONERS FIRST: a levy who is not a summoner is dealt only the staves no summoner could still use (see SummonerWants), the leftovers.
 				var wants = SummonerWantList(who);
-				Item pick = null;
-				if (!hasSentry) pick = TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => IsIssuableSentry(it) && Fits(it) && !SummonerWants(wants, it), WeaponRank.Of);
-				if (pick == null && !hasStaff) pick = TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => IsIssuableSummonStaff(it) && Fits(it) && !SummonerWants(wants, it), WeaponRank.Of);
-				return pick;
+				return TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => (IsIssuableSentry(it) || IsIssuableSummonStaff(it)) && Fits(it) && !SummonerWants(wants, it), WeaponRank.Of);
 			}
 			Item p = null;
 			if (!hasUnlimited) p = TakeStaff(it => !SummonCap.IsCapped(it));

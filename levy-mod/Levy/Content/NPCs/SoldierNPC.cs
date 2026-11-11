@@ -366,7 +366,7 @@ namespace Levy.Content.NPCs
 					Dummy.inventory[0] = item;
 					int dmg = Dummy.GetWeaponDamage(item);
 					if ((Stations & StationFlags.Sharpening) != 0 && item.CountsAsClass(DamageClass.Melee)) dmg += LevyConstants.SharpenedMeleeFlatDamage;
-					return Math.Max(1, dmg);
+					return Math.Max(1, (int)Math.Round(dmg * WeaponUse.RateComp(item)));
 				}
 				catch (Exception e)
 				{
@@ -374,7 +374,7 @@ namespace Levy.Content.NPCs
 					if (_badDamageItems.Add(item.type)) Levy.Instance.Logger.Warn("Levy: GetWeaponDamage threw for item " + item.Name + " (type " + item.type + "); using its plain damage: " + e);
 				}
 			}
-			return Math.Max(1, item.damage);
+			return Math.Max(1, (int)Math.Round(item.damage * WeaponUse.RateComp(item)));
 		}
 
 		private string GearSummary()

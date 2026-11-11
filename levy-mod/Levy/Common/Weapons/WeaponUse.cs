@@ -46,6 +46,7 @@ namespace Levy.Common.Weapons
 			WeaponProfile profile = s.Weapon;
 			if (profile == null || profile.ItemType != item.type) { profile = WeaponClassifier.GetProfile(item); s.Weapon = profile.Supported ? profile : null; }
 			if (profile == null || !profile.Supported) return false;
+			if (ModWeaponGates.Locked(item)) { s.AttackCooldown = 30; return false; } // the weapon's own use gate is shut in this world (Murasama before the Devourer of Gods): nobody swings it, whatever family it was classified as
 			DudTrace.Call(item, profile);
 			NPC seg = Aiming.NearestSegment(target, s.NPC.Center) ?? target;
 			// A rogue lets its stealth bar fill and throws the strike the moment it is full (Calamity empties the bar on every other throw)
@@ -990,13 +991,27 @@ namespace Levy.Common.Weapons
 			return true;
 		}
 
+		/// <summary>The floor (ticks) a melee-class weapon's use time is raised to for a levy, or 0 when it needs none (Calamity's Murasama has useTime 5 and is channelled: a player's held mouse keeps up with it, a levy swung it 12 times a second).</summary>
+		public static int SwingFloor(Item item)
+		{
+			if (item == null || item.IsAir || item.useTime >= LevyConstants.MeleeSwingFloorTicks || item.damage <= 0) return 0;
+			return item.CountsAsClass(DamageClass.Melee) ? LevyConstants.MeleeSwingFloorTicks : 0;
+		}
+
+		/// <summary>Damage multiplier that keeps a floored weapon's output: the use-time ratio, capped.</summary>
+		public static float RateComp(Item item)
+		{
+			int f = SwingFloor(item);
+			return f <= 0 ? 1f : Math.Min(LevyConstants.SwingRateCompMax, f / (float)Math.Max(1, item.useTime));
+		}
+
 		/// <summary>Cooldown, animation, aim rotation, facing and use sound shared by every family.</summary>
 		internal static void FinishUse(SoldierNPC s, Item item, Vector2 aimVel)
 		{
 			// A running animation keeps going (burst weapons fire several shots per animation, one every useTime); a new use starts a fresh one.
-			if (s.ItemAnimation <= 0) { s.ItemAnimation = s.ItemAnimationMax = Math.Max(1, item.useAnimation); s.UsesThisAnimation = 0; }
+			if (s.ItemAnimation <= 0) { s.ItemAnimation = s.ItemAnimationMax = Math.Max(Math.Max(1, item.useAnimation), SwingFloor(item)); s.UsesThisAnimation = 0; }
 			s.UsesThisAnimation++;
-			s.AttackCooldown = Math.Max(1, item.useTime);
+			s.AttackCooldown = Math.Max(Math.Max(1, item.useTime), SwingFloor(item));
 			s.LastUseTick = Main.GameUpdateCount; // gear upkeep shows the dummy a "first frame of a use" next tick (Calamity consumes stealth off it)
 			// useLimitPerAnimation caps the uses per animation (Player.ItemCheck_OwnerOnlyCode; the Tome of Infinite Wisdom fires 4 shots then waits out the rest of its 25-tick animation):
 			// once spent, the weapon is silent until the animation ends, then reuseDelay (applied by Combat_Update) adds its pause.

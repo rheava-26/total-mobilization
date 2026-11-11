@@ -32,7 +32,7 @@ namespace Warbands.Common
 		{
 			var c = WarbandsConfig.Get;
 			Check("config loaded with shipped defaults", c != null && c.Enabled && c.FirstStage == 1 && c.BandSizeMin == 3 && c.BandSizeMax == 5 && c.MaxActiveBands == 1 && Math.Abs(c.LootSharePercent - 35f) < 1e-3f && c.CultistBand);
-			Check("spawn chance default is modest (4% per minute)", c != null && Math.Abs(c.SpawnChancePercentPerMinute - 4f) < 1e-3f);
+			Check("natural spawn chance default is 12% per minute and bosses hold new bands back", c != null && Math.Abs(c.NaturalChancePercentPerMinute - 12f) < 1e-3f && c.NoSpawnsDuringBosses);
 
 			try { ProgressionTier.EnsureBuilt(); } catch { }
 			bool tiers = ProgressionTier.Ready;
@@ -165,6 +165,20 @@ namespace Warbands.Common
 				for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && (Main.npc[i].ModNPC is BandSoldier || Main.npc[i].ModNPC is BandLevyNPC)) Main.npc[i].active = false;
 			}
 			catch (Exception e) { Check("spawner", false, e.GetType().Name + ": " + e.Message + " @ " + e.StackTrace?.Split('\n')[0]); }
+
+			// no new natural band while a boss is alive (a band already out is not removed)
+			try
+			{
+				var cfgB = WarbandsConfig.Get; int slot = -1;
+				for (int i = Main.maxNPCs - 1; i >= 0 && slot < 0; i--) if (!Main.npc[i].active) slot = i;
+				bool idle = !BandSpawner.NaturalSpawnBlocked(cfgB);
+				if (slot >= 0) { var bn = Main.npc[slot]; bn.SetDefaults(NPCID.EyeofCthulhu); bn.active = true; }
+				bool held = BandSpawner.NaturalSpawnBlocked(cfgB);
+				if (slot >= 0) Main.npc[slot].active = false;
+				bool freed = !BandSpawner.NaturalSpawnBlocked(cfgB);
+				Check("a live boss holds natural bands back, and releases them when it is gone", slot >= 0 && idle && held && freed, $"idle={idle} held={held} freed={freed}");
+			}
+			catch (Exception e) { Check("boss hold", false, e.GetType().Name + ": " + e.Message); }
 
 			// a live band soldier from every role of one roster
 			try

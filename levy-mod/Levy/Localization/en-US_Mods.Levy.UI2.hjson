@@ -100,6 +100,8 @@ PromoteMax: Highest grade
 NoBarracksNearby: No barracks within 120 tiles.
 MobilizeHint: Call up the militia of the nearest settlement.
 StandDownHint: Send the militia home.
+StandDownAllHint: Every Regular goes to the reserve. No body in the field, no wage, no command points.
+RemobilizeAllHint: Every Regular in the reserve returns to duty while command points last.
 RallyHint: Steady every Regular within 30 tiles. Once a minute.
 RallyHintRadio: Steady every Regular, anywhere. Once a minute.
 ResetLoadouts: Reset loadouts

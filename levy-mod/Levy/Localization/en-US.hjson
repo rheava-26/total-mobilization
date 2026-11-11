@@ -61,8 +61,8 @@ Mods: {
 					A field set tuned to every soldier you command.
 					Orders and Rally from the radial reach your whole army,
 					anywhere in the world. Click it to open the radial.
-					Pick Send to map point on the radial, click a spot on the full map,
-					then click it again to send every levy there.
+					Pick Send to map point on the radial, then double-click
+					a spot on the full map to send every levy there.
 					'''
 			}
 
@@ -763,6 +763,8 @@ Mods: {
 			TaxToTreasury: Tax Collector pays the treasury
 			Mobilize: Mobilize
 			StandDown: Stand down
+			StandDownAll: Stand down all
+			RemobilizeAll: Remobilize all
 			Follow: Follow me
 			Hold: Hold here
 			Return: Return to barracks

@@ -99,6 +99,7 @@ namespace Levy.Common.Systems
 		{
 			int soldierId = r.ReadInt32(); bool toReserve = r.ReadBoolean();
 			if (!LevyUtil.IsServer) return;
+			if (soldierId == -1) { Roster.SetReserveAll(Sender(whoAmI), toReserve); return; } // every Regular of the sender at once
 			var rec = Owned(soldierId, Sender(whoAmI));
 			if (rec == null) return;
 			if (toReserve) Roster.Demobilize(rec); else Roster.Remobilize(rec);

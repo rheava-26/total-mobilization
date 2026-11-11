@@ -105,7 +105,7 @@ Pages: {
 			'''
 			Map orders send your Regulars to a point on the full map. They march there, fight what is in reach and hold the spot.
 			They need A Guide to Autonomy, studied once in the world.
-			Pick Send to map point on the orders radial or the Barracks panel. Click a spot on the full map, then click it again to send the army. Dragging moves the map and never sends. Esc cancels.
+			Pick Send to map point on the orders radial or the Barracks panel. Double-click a spot on the full map to send the army. Dragging moves the map and never sends. Esc cancels.
 			With a Command Radio in your pack, holding Shift on the full map does the same.
 			'''
 	}

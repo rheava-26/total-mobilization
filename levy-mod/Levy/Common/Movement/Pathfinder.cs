@@ -61,7 +61,7 @@ namespace Levy.Common.Movement
 		public static long StatArcScans, StatArcEdges;
 		/// <summary>Lab switch: LEVY_ARCS=0 turns the 2.0.53 travel changes off (flight arcs, the cheaper flight grid, the shallow-drop nudge, the overhead-waypoint flight), for before / after runs in one build.</summary>
 		public static readonly bool Travel6On = Environment.GetEnvironmentVariable("LEVY_ARCS") != "0";
-		public static readonly bool NudgeOn = Environment.GetEnvironmentVariable("LEVY_NUDGE") != "0", BestRowOn = Environment.GetEnvironmentVariable("LEVY_BESTROW") != "0";
+		public static readonly bool ArcSearchOn = Environment.GetEnvironmentVariable("LEVY_ARCSEARCH") != "0", NudgeOn = Environment.GetEnvironmentVariable("LEVY_NUDGE") != "0", BestRowOn = Environment.GetEnvironmentVariable("LEVY_BESTROW") != "0";
 
 		public State Status { get; private set; }
 		public int Expanded { get; private set; }
@@ -105,7 +105,7 @@ namespace Levy.Common.Movement
 			_maxFall = _wings ? FallScanTiles : (TravelLegacy.On || centred ? Math.Min(FallScanTiles, _jumpTiles + DropMarginTiles) : FallScanTiles); // the executor (ScanAhead) takes a fall of exactly FallScanTiles on a planned route // a route may go down into a pit (a safe fall) when the far side lets it climb out
 			_gapTiles = abilities.GapTiles;
 			_maxFlight = TravelLegacy.On ? ushort.MaxValue : Math.Max(6, (int)(abilities.WingTimeMax * FlySpeed / 16f * FlightRangeShare)); // tiles of flight one tank of wing time covers, with room for the climb
-			_arcs = Travel6On && _wings && !centred && !TravelLegacy.On && !gridFlight;
+			_arcs = Travel6On && ArcSearchOn && _wings && !centred && !TravelLegacy.On && !gridFlight;
 			_gridFly = _wings && !_arcs;   // a route search flies arcs between standing cells; the open-air flight grid only as the second pass (when no arc route reaches the goal within ArcPassMaxNodes)
 			_arcFuelTicks = _wings ? Math.Max(0f, (abilities.WingTimeMax - WingBudgetReserveTicks) * ArcFuelShare - ArcOverheadTicks) : 0f;
 			_arcCostPerTick = ArcPreference * Math.Max(3f, abilities.MaxRunSpeed) / 16f;           // search cost of a tick of flight: a tick of walking at the body's run speed costs 1/16 tile-cost per px

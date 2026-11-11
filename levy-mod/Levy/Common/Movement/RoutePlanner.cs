@@ -114,7 +114,7 @@ namespace Levy.Common.Movement
 				var r = _active;
 				// a slice is RouteNodesPerTick nodes at most, and at most RouteSliceMs of time: a hook-carrying search spends far longer on a node at a wall or an edge (the anchor fan), so the node budget alone would spike
 				var st = PathSearch.State.Running; int spent = 0;
-				while (st == PathSearch.State.Running && spent < RouteNodesPerTick && (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency < RouteSliceMs) { int chunk = _aAb != null && _aAb.HasWings ? RouteChunkNodes / 4 : RouteChunkNodes; st = _big.Step(chunk); spent += chunk; }   // an arc node scans hundreds of tiles: check the clock more often
+				while (st == PathSearch.State.Running && spent < RouteNodesPerTick && (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency < RouteSliceMs) { int chunk = _aAb != null && _aAb.HasWings ? 2 : RouteChunkNodes; st = _big.Step(chunk); spent += chunk; }   // an arc node scans hundreds of tiles: check the clock more often
 				r.NodesUsed = _hookBase + _big.Expanded;
 				if (st == PathSearch.State.Running && _big.Expanded >= (_aAb != null && _aAb.HasWings && !r.GridPass && PathSearch.Travel6On ? ArcPassMaxNodes : RouteMaxNodes)) { _big.Abandon(); st = _big.Status; }
 				// a route on foot comes first: only when none reaches the goal does the search run again with the grappling hook's edges (a levy walks where it can)

@@ -20,7 +20,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Harness telemetry: shouts and other flight lines said since boot.</summary>
 		internal static int FlightShouts, FlightLines;
 		/// <summary>Harness: -1 follows the default, 0 off.</summary>
-		internal static int FlightTalkOverride = -1;
+		internal static int FlightTalkOverride = Environment.GetEnvironmentVariable("LEVY_FLIGHTTALK") == "0" ? 0 : -1;
 
 		internal static bool TestClaimSlot() => ClaimShoutSlot();
 		internal static void TestResetSlots() { for (int i = 0; i < ShoutSlot.Length; i++) ShoutSlot[i] = 0; }

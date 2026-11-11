@@ -968,6 +968,41 @@ namespace Levy.Content.TileEntities
 		public virtual Item TakeHook(SoldierRecord forSoldier)
 			=> TakeBest(null, 0, 0, 1, it => Common.Movement.HookInfo.Of(it).Usable, it => Common.Movement.HookInfo.Of(it).Score);
 
+		/// <summary>A GoPro from stock (any source this armory reaches); removes it. Null if none.</summary>
+		public virtual Item TakeCamera(SoldierRecord forSoldier)
+			=> TakeBest(null, 0, 0, 1, it => !IsAir(it) && it.ModItem is Content.Items.Observe.GoProItem, it => 0f);
+
+		/// <summary>GoPros in reach (shelves, storage, networked armories, Magic Storage).</summary>
+		private int CamerasInStock()
+		{
+			int n = 0;
+			ForEachShelfItem(it => { if (it.ModItem is Content.Items.Observe.GoProItem) n += Math.Max(1, it.stack); });
+			return n;
+		}
+
+		/// <summary>
+		/// Issues a GoPro to the camera slot when this levy is among the first levies that lack one, as many as there are GoPros in stock. Order: veterans (sergeants) first, then lowest id,
+		/// so a few cameras go to the levies a player most likely wants to watch and every levy without one is served before anyone gets a second. Locked or filled slots are left alone.
+		/// </summary>
+		private bool CameraStep(SoldierRecord soldier)
+		{
+			var g = soldier?.Gear;
+			if (g == null || g.IsLocked(SoldierGear.SlotCamera) || !IsAir(g.Camera)) return false;
+			int stock = CamerasInStock();
+			if (stock <= 0) return false;
+			var served = ServedSoldiers();
+			if (served.Count > 0 && served.Contains(soldier)) {
+				var lacking = new List<SoldierRecord>();
+				foreach (var s in served) if (s?.Gear != null && !s.Disarmed && !s.Gear.IsLocked(SoldierGear.SlotCamera) && IsAir(s.Gear.Camera)) lacking.Add(s);
+				lacking.Sort((a, b) => a.Veteran != b.Veteran ? (a.Veteran ? -1 : 1) : a.Id.CompareTo(b.Id));
+				if (lacking.IndexOf(soldier) >= stock) return false;
+			}
+			var cam = TakeCamera(soldier);
+			if (cam == null) return false;
+			g.Camera = cam;
+			return true;
+		}
+
 		/// <summary>Best accessory not already worn; removes it. Null if none.</summary>
 		public virtual Item TakeAccessory(SoldierRecord forSoldier)
 		{
@@ -1998,6 +2033,9 @@ namespace Levy.Content.TileEntities
 				var hk = TakeHook(soldier);
 				if (hk != null) { g.Hook = hk; changed = true; }
 			}
+
+			// The camera slot: a GoPro, one per levy, to the levies the player most likely watches first (see CameraStep).
+			if (CameraStep(soldier)) changed = true;
 
 			// Reservation: a non-summoner never keeps a whip off-hand (a leftover from an old save or a role change goes back to the racks). A minion staff or a sentry is a
 			// legitimate off-hand for any class: minions persist whatever is in hand, so a gunner or a swordsman may field a flock beside his primary.

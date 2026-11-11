@@ -8,8 +8,8 @@ using Levy.Content.Tiles;
 namespace Levy.Content.Items.Observe
 {
 	/// <summary>
-	/// A body camera. Put it in the Armory or hand it to a levy's accessory slot: a levy that carries one is watchable. Use it to watch the next GoPro levy through their eyes; right-click or Esc to stop.
-	/// It is an accessory so the Armory issues it like any other; it adds no stats. Art: Content/Items/Observe/GoProItem.png (and GoProIndicator.png over a carrier).
+	/// A body camera. Put it in the Armory and it is issued to a levy's camera slot (or hand it to one): a levy that carries one is watchable. Use it to watch the next GoPro levy through their eyes; right-click or Esc to stop.
+	/// It is not an accessory: a levy carries it in the dedicated camera slot (SoldierGear.Camera) and the Armory issues it there. It adds no stats. Art: Content/Items/Observe/GoProItem.png (and GoProIndicator.png over a carrier).
 	/// </summary>
 	public class GoProItem : ModItem
 	{
@@ -17,7 +17,6 @@ namespace Levy.Content.Items.Observe
 		{
 			Item.width = 32; Item.height = 24; Item.useTime = 20; Item.useAnimation = 20; Item.useStyle = ItemUseStyleID.HoldUp;
 			Item.UseSound = SoundID.MenuTick; Item.value = Item.buyPrice(gold: 2); Item.rare = ItemRarityID.Green; Item.maxStack = 1; Item.noMelee = true;
-			Item.accessory = true;
 		}
 
 		public override bool AltFunctionUse(Player player) => true;
@@ -29,11 +28,13 @@ namespace Levy.Content.Items.Observe
 			return true;
 		}
 
-		/// <summary>True when the soldier's gear has a GoPro in an accessory slot.</summary>
+		/// <summary>True when the soldier's gear has a GoPro in the camera slot (or, from an old kit, an accessory slot).</summary>
 		public static bool Carries(SoldierGear g)
 		{
-			if (g?.Accessories == null) return false;
+			if (g == null) return false;
 			int t = ModContent.ItemType<GoProItem>();
+			if (g.Camera != null && !g.Camera.IsAir && g.Camera.type == t) return true;
+			if (g.Accessories == null) return false;
 			foreach (var a in g.Accessories) if (a != null && !a.IsAir && a.type == t) return true;
 			return false;
 		}

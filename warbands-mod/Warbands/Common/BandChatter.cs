@@ -31,7 +31,24 @@ namespace Warbands.Common
 				try
 				{
 					string dir = System.IO.Path.Combine(Terraria.Main.SavePath, "Warbands"), path = System.IO.Path.Combine(dir, "Dialogue.txt");
-					if (System.IO.File.Exists(path)) { text = System.IO.File.ReadAllText(path, System.Text.Encoding.UTF8); mod.Logger.Info("[Warbands] using your dialogue file: " + path); }
+					string shipped = text;
+					if (System.IO.File.Exists(path))
+					{
+						string mine = System.IO.File.ReadAllText(path, System.Text.Encoding.UTF8);
+						if (Hash(mine) == Hash(shipped)) { }
+						else if (ShippedBefore(mine))
+						{
+							// an untouched copy of an older version: replace it with this version's lines
+							System.IO.File.WriteAllText(path, shipped, System.Text.Encoding.UTF8);
+							mod.Logger.Info("[Warbands] updated your unedited dialogue file to this version: " + path);
+						}
+						else
+						{
+							// an edited copy: keep it, and fill any group it lacks from this version's lines
+							text = mine + "\n" + MissingGroups(mine, shipped);
+							mod.Logger.Info("[Warbands] using your dialogue file (groups it lacks come from the mod): " + path);
+						}
+					}
 					else { System.IO.Directory.CreateDirectory(dir); System.IO.File.WriteAllText(path, text, System.Text.Encoding.UTF8); }
 				}
 				catch (Exception e) { mod.Logger.Warn("[Warbands] could not use the editable dialogue file: " + e.Message); }
@@ -45,6 +62,37 @@ namespace Warbands.Common
 				}
 			}
 			catch (Exception e) { mod.Logger.Warn("[Warbands] could not read Dialogue.txt: " + e.Message); }
+		}
+
+		/// <summary>SHA-256 of a dialogue file's text, line endings and byte-order mark ignored.</summary>
+		private static string Hash(string t)
+		{
+			t = t.TrimStart((char)0xFEFF).Replace("\r\n", "\n");
+			using var sha = System.Security.Cryptography.SHA256.Create();
+			return Convert.ToHexString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(t))).ToLowerInvariant();
+		}
+
+		/// <summary>Hashes of every Dialogue.txt an earlier version wrote to the save folder. A copy matching one was never edited.</summary>
+		private static readonly HashSet<string> OlderShipped = new()
+		{
+			"0de1383e1856af493cb5686c5bb804c5374b4fd051ee051734a1c2507dd9766f",
+			"60429b7a96bc6cbbd5fb731878f49ab1278de071d158c4114cedb2dd9e758aef",
+		};
+		private static bool ShippedBefore(string t) => OlderShipped.Contains(Hash(t));
+
+		/// <summary>The groups of <paramref name="shipped"/> (header and lines) whose [NAME] does not appear in <paramref name="mine"/>.</summary>
+		private static string MissingGroups(string mine, string shipped)
+		{
+			var have = new HashSet<string>();
+			foreach (var raw in mine.Split('\n')) { string l = raw.Trim(); if (l.Length > 1 && l[0] == '[' && l[l.Length - 1] == ']') have.Add(l.Substring(1, l.Length - 2).Trim()); }
+			var sb = new System.Text.StringBuilder(); bool take = false;
+			foreach (var raw in shipped.Split('\n'))
+			{
+				string l = raw.Trim();
+				if (l.Length > 1 && l[0] == '[' && l[l.Length - 1] == ']') take = !have.Contains(l.Substring(1, l.Length - 2).Trim());
+				if (take) sb.Append(l).Append('\n');
+			}
+			return sb.ToString();
 		}
 
 		// ---------------------------------------------------------------- Levy's own fighting lines

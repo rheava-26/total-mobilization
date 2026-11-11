@@ -93,7 +93,7 @@ IDLE | Greenhorn | I named my gun Gerald. Gerald is the only one who gets me.
 IDLE | Greenhorn | Nobody told me there'd be this much standing. My feet want a raise.
 IDLE | Greenhorn | They promised adventure. I've been guarding a wall made of dirt since breakfast.
 IDLE | Greenhorn | I counted every block in this wall. Twice. Got two different numbers.
-IDLE | Greenhorn | The recruiter said steady work. He did not say steady at what.
+IDLE | Greenhorn | The recruiter said steady work. The recruiter did not say steady at what.
 IDLE | Greenhorn | Are we the good guys? The zombies seem pretty committed too.
 
 # ---------------------------------------------------------------- IDLE: Sellsword

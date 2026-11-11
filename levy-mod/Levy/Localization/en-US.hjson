@@ -467,7 +467,7 @@ Mods: {
 
 				ClassMatchIssue: {
 					Label: Fixed-class companies
-					Tooltip: Off, soldiers take the strongest weapon they can use whatever its type, and their armor follows it. On, a soldier's armor decides the weapon class he draws and his upgrades stay within that class.
+					Tooltip: Off, soldiers take the strongest weapon they can use whatever its type, and their armor follows it. On, a soldier's armor decides which weapon class it draws, and its upgrades stay within that class.
 				}
 
 				WeaponRanking: {

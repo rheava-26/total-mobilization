@@ -16,6 +16,6 @@ Over: The mutiny is over. Every soldier is paid.
 RobbedNpc: Robbed {0}: {1}
 RobbedPlayer: "{0} robbed you of {1}."
 RobbedBank: "{0} raided your pockets and your bank for {1}."
-DeathReason: "{0} was cut down by {1}, who wanted his pay."
+DeathReason: "{0} was cut down by {1}, who wanted their pay."
 RobbedMood: Robbed by mutinous soldiers.
 CardOwed: MUTINY: owed {0}

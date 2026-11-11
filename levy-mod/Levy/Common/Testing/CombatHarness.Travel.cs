@@ -28,7 +28,7 @@ namespace Levy.Common.Testing
 		private static readonly int[] TvElev = new int[1100];   // elevation (tiles above TvG) of the top solid row at each course offset
 		private static readonly bool[] TvWater = new bool[1100];
 		private const int TvLen = 960;
-		private static int TvDepthA = 12; private static bool TvBridgeB = true, TvZoo, TvWorld, TvCorrupt, TvWall, TvLavaC; private static int TvWallH = 20;
+		private static int TvDepthA = 12; private static bool TvBridgeB = true, TvZoo, TvWorld, TvCorrupt, TvWall, TvLavaC, TvRavine, TvLips; private static int TvWallH = 20;
 		private static readonly int[] TvLavaLvl = new int[1100];   // lava course: elevation of the lava surface (int.MinValue = none)
 		private static int[] TvSurf;                 // world mode: feet row of the standing surface for every world column (-1 = none)
 		private string _tvMode = "map", _tvOut = "", _tvGear = "mixed";
@@ -38,7 +38,7 @@ namespace Levy.Common.Testing
 			public string Gear; public SoldierRecord Rec; public int Idx = -1;
 			public Vector2 Start, Last; public float Straight, Path; public int ArriveTick = -1, GaveUp = -1, Teleports, Falls, WetTicks, DeepTicks, Gone, StuckTicks, StuckEps, StallTicks, StallEps, Frames;
 			public int LavaTicks, LavaEntries, LavaDeaths; public bool InLava; public int LavaLastTick; public int HkCasts, HkLatches, HkChains, HkAborts, HkReleases, HkLandings, RtCasts, RtBans, StepBacks; public float EndElev; public float FallTiles, BestProg; public int BestProgTick; public int VisTele, Hops, ClimbDone;
-			public Vector2 Anchor; public int AnchorTick; public bool InStuck;
+			public Vector2 Anchor; public int AnchorTick; public bool InStuck; public int FlyTicks, AirTicks, TravTicks; public float MaxDepth, DepthSum, RefRow = float.NaN;
 			public string StuckWhere = "";
 			public bool StallOpen; public int StallFrom;
 			public float FallStartY = float.NaN; public bool Falling; public string StallWhere = ""; public int LastHasBody = 1;
@@ -52,6 +52,7 @@ namespace Levy.Common.Testing
 		private static string TvFeature(float off)
 		{
 			if (TvWorld) return "w" + ((int)(off + TvX0) / 50 * 50);
+			if (TvRavine || TvLips) { foreach (var f in TvFeats) if (off >= f.A - 3 && off <= f.B + 3) return f.Name; return "flat"; }
 			if (TvLavaC) { int lg = (int)Math.Floor((off - 20) / 150f); string[] ln = { "lavalake", "lavagap8", "lavapit", "lavapool3", "lavashaft", "lavaledge" }; return lg >= 0 && lg < ln.Length ? "v" + lg + "-" + ln[lg] : "camp"; }
 			if (TvWall) return off < 100 ? "foot" : off < 300 ? (TvWallH > 0 ? "plateau" : "far") : "end";
 			if (TvCorrupt) { int leg2 = (int)Math.Floor((off - 20) / 150f); string[] nm2 = { "holes3-5-8", "cavemouth", "chasm60", "hole4", "pitstairs", "lakesteep" }; return leg2 >= 0 && leg2 < nm2.Length ? "c" + leg2 + "-" + nm2[leg2] : "camp"; }
@@ -82,6 +83,7 @@ namespace Levy.Common.Testing
 			TvCorrupt = string.Equals(course, "corrupt", StringComparison.OrdinalIgnoreCase);
 			TvWall = string.Equals(course, "wall", StringComparison.OrdinalIgnoreCase);
 			TvLavaC = string.Equals(course, "lava", StringComparison.OrdinalIgnoreCase);
+			TvRavine = string.Equals(course, "ravine", StringComparison.OrdinalIgnoreCase); TvLips = string.Equals(course, "lips", StringComparison.OrdinalIgnoreCase);
 			TvG = 150; if (TvWall) { TvG = 300; int.TryParse(Environment.GetEnvironmentVariable("LEVY_TRAVEL_WALLH"), out TvWallH); if (TvWallH == 0) TvWallH = 20; }
 			SoldierHooks.LogCasts = Environment.GetEnvironmentVariable("LEVY_TRAVEL_HOOKLOG") != "0"; SoldierHooks.CastLog.Clear();
 			OffscreenHop.LabNoHop = Environment.GetEnvironmentVariable("LEVY_TRAVEL_NOHOP") == "1";
@@ -149,6 +151,7 @@ namespace Levy.Common.Testing
 
 		private static void TvDefineCourse()
 		{
+			if (TvRavine || TvLips) { TvDefineRavine(); return; }
 			if (TvLavaC) { TvDefineLava(); return; }
 			if (TvWall) { TvDefineWall(); return; }
 			if (TvCorrupt) { TvDefineCorrupt(); return; }
@@ -183,6 +186,81 @@ namespace Levy.Common.Testing
 				TvElev[i] = Math.Max(0, e);
 			}
 			for (int i = 905; i < 912; i++) TvElev[i] = Math.Max(0, TvElev[i - 1] - 1);
+		}
+
+
+		// ---- seeded ravine / lip courses (LEVY_TRAVEL_COURSE=ravine|lips, LEVY_TRAVEL_SEED, LEVY_TRAVEL_RAVMODE=walk|mixed) ----
+		private struct TvFeat { public int A, B; public string Name; public int Rim; }   // Rim: 0 square, 1 slope, 2 half block
+		private static readonly List<TvFeat> TvFeats = new List<TvFeat>();
+		private static readonly int[] TvRimL = new int[1100], TvRimR = new int[1100];      // per column: rim type of a left/right edge (0 none, 1 slope, 2 half)
+		private static string TvRimTag(int rim) => rim == 1 ? "s" : rim == 2 ? "h" : "q";
+		/// <summary>Rolling ground with a feature every 20 to 50 tiles. ravine: pits and V-valleys 8 to 40 wide and 12 to 45 deep (walkable ones have stairs both ways), hills, mesas, cracks. lips: small steps, rises and pits (3 to 12 deep) whose rim tiles are sloped or half blocks. Camps (flat) every 150 from 20.</summary>
+		private static void TvDefineRavine()
+		{
+			Array.Clear(TvElev, 0, TvElev.Length); Array.Clear(TvWater, 0, TvWater.Length); Array.Clear(TvRimL, 0, TvRimL.Length); Array.Clear(TvRimR, 0, TvRimR.Length); TvFeats.Clear();
+			int seed = int.TryParse(Environment.GetEnvironmentVariable("LEVY_TRAVEL_SEED"), out int sd) ? sd : 1;
+			bool walk = (Environment.GetEnvironmentVariable("LEVY_TRAVEL_RAVMODE") ?? "mixed") == "walk";
+			var r = new Random(seed * 7919 + (TvLips ? 17 : 3));
+			int x = 40;
+			while (x < 860)
+			{
+				int k = (x - 20) / 150; int campEnd = 20 + 150 * k + 20; int nextCamp = Math.Min(880, 20 + 150 * (k + 1));
+				if (x < campEnd) { x = campEnd; continue; }
+				x += 18 + r.Next(30);
+				int rim = TvLips ? (r.Next(3) == 0 ? 2 : 1) : (r.Next(2) == 0 ? 1 : (r.Next(3) == 0 ? 2 : 0));
+				int type = r.Next(5);
+				if (TvLips)
+				{
+					int h = 2 + r.Next(4), w = 4 + r.Next(14), d = 3 + r.Next(8);
+					if (type == 0) { if (x + w + 6 >= nextCamp) continue; for (int i = x; i < x + w; i++) TvElev[i] = h; TvRimL[x] = rim; TvRimR[x + w - 1] = rim; TvFeats.Add(new TvFeat { A = x, B = x + w, Name = "rise" + h + "x" + w + TvRimTag(rim), Rim = rim }); x += w; }
+					else if (type == 1) { w = 2 + r.Next(2); d = 6 + r.Next(7); if (x + w + 6 >= nextCamp) continue; for (int i = x; i < x + w; i++) TvElev[i] = -d; TvRimL[x - 1] = rim; TvRimR[x + w] = rim; TvFeats.Add(new TvFeat { A = x, B = x + w, Name = "pit" + d + "x" + w + TvRimTag(rim), Rim = rim }); x += w; }
+					else if (type == 4) { w = 5 + r.Next(8); d = 2 + r.Next(4); if (x + w + 6 >= nextCamp) continue; for (int i = x; i < x + w; i++) TvElev[i] = -d; TvRimL[x - 1] = rim; TvRimR[x + w] = rim; TvFeats.Add(new TvFeat { A = x, B = x + w, Name = "dip" + d + "x" + w + TvRimTag(rim), Rim = rim }); x += w; }
+					else if (type == 2) { h = 2 + r.Next(4); if (x + w + 6 >= nextCamp) continue; for (int i = x; i < x + w; i++) TvElev[i] = h; TvRimL[x] = rim; TvRimR[x + w - 1] = rim; TvFeats.Add(new TvFeat { A = x, B = x + w, Name = "mesa" + h + "x" + w + TvRimTag(rim), Rim = rim }); x += w; }
+					else { w = 8 + r.Next(8); if (x + w + 6 >= nextCamp) continue; for (int i = x; i < x + w; i++) TvElev[i] = Math.Max(1, Math.Min(h, Math.Min(i - x + 1, x + w - i))); TvRimL[x] = rim; TvRimR[x + w - 1] = rim; TvFeats.Add(new TvFeat { A = x, B = x + w, Name = "hump" + h + "x" + w, Rim = rim }); x += w; }
+					continue;
+				}
+				if (type <= 1)
+				{
+					int w = 8 + r.Next(33), d = 12 + r.Next(34); if (x + w + 6 >= nextCamp) { w = nextCamp - x - 8; if (w < 6) continue; }
+					bool stairs = walk || r.Next(5) < 3; int sw = 2 + r.Next(2), sh = 3;
+					for (int i = x; i < x + w; i++) { int e = stairs ? -Math.Min(d, (Math.Min(i - x, x + w - 1 - i) / sw + 1) * sh) : -d; TvElev[i] = e; }
+					TvRimL[x - 1] = rim; TvRimR[x + w] = rim; TvFeats.Add(new TvFeat { A = x, B = x + w, Name = (stairs ? "vale" : "pit") + d + "x" + w + TvRimTag(rim), Rim = rim }); x += w;
+				}
+				else if (type == 2)
+				{
+					int w = 8 + r.Next(30), h = 8 + r.Next(23); if (x + w + 2 * h + 6 >= nextCamp) continue;
+					for (int i = 0; i < w + 2 * h; i++) TvElev[x + i] = i < h ? i + 1 : i >= w + h ? Math.Max(1, h - (i - (w + h))) : h;
+					TvRimL[x + h] = rim; TvRimR[x + w + h - 1] = rim; TvFeats.Add(new TvFeat { A = x, B = x + w + 2 * h, Name = "hill" + h + "x" + w, Rim = rim }); x += w + 2 * h;
+				}
+				else if (type == 3)
+				{
+					int w = 6 + r.Next(14), h = 5 + r.Next(10); if (x + w + 6 >= nextCamp) continue;
+					for (int i = x; i < x + w; i++) TvElev[i] = h; TvRimL[x] = rim; TvRimR[x + w - 1] = rim; TvFeats.Add(new TvFeat { A = x, B = x + w, Name = "mesa" + h + "x" + w + TvRimTag(rim), Rim = rim }); x += w;
+				}
+				else
+				{
+					int w = 4 + r.Next(6), d = 20 + r.Next(25); if (x + w + 6 >= nextCamp) continue;
+					for (int i = x; i < x + w; i++) TvElev[i] = -d; TvRimL[x - 1] = rim; TvRimR[x + w] = rim; TvFeats.Add(new TvFeat { A = x, B = x + w, Name = "crack" + d + "x" + w + TvRimTag(rim), Rim = rim }); x += w;
+				}
+			}
+		}
+
+		/// <summary>After the columns exist: the rim tile of every edge that changes the ground by 2 or more becomes a slope or a half block, as chosen by the course (TvRimL / TvRimR mark the column at the lip).</summary>
+		private static void TvApplyRims()
+		{
+			for (int off = 1; off < TvLen - 1; off++)
+			{
+				int x = TvX0 + off, top = TvG - TvElev[off];
+				for (int side = -1; side <= 1; side += 2)
+				{
+					if (TvElev[off] - TvElev[off + side] < 2) continue;                       // not an edge that drops away to this side
+					int kind = side < 0 ? Math.Max(TvRimL[off], TvRimR[off - 1]) : Math.Max(TvRimR[off], TvRimL[off + 1]);
+					if (kind == 0) continue;
+					Tile t = Main.tile[x, top];
+					if (kind == 2) t.IsHalfBlock = true;
+					else t.Slope = side < 0 ? SlopeType.SlopeDownLeft : SlopeType.SlopeDownRight;
+				}
+			}
 		}
 
 		private static void TvSet(int x, int y, ushort type)
@@ -263,6 +341,7 @@ namespace Levy.Common.Testing
 			}
 			foreach (int x in new[] { x0 - 1, x1 + 1 }) for (int y = 30; y < TvG + 100; y++) TvSet(x, y, TileID.GrayBrick);
 			// house 382..406: 1-thick wood walls, doors at ground both ends, flat roof, a one-tile crate inside
+			if (!TvRavine && !TvLips)
 			{
 				int hx0 = TvX0 + 382, hx1 = TvX0 + 406, top = TvG;
 				for (int x = hx0; x <= hx1; x++)
@@ -280,9 +359,10 @@ namespace Levy.Common.Testing
 				// chasm walls: ledges every 10 rows, 2 wide, alternating sides
 				for (int k = 1; k <= 5; k++) { int side = (k & 1) == 0 ? 400 : 406; for (int w = 0; w < 2; w++) for (int y = TvG + 10 * k; y < TvG + 10 * k + 2; y++) TvSet(TvX0 + side + w, y, TileID.Stone); }
 			}
-			else if (!TvZoo) TvBuildFixtures();
+			else if (!TvZoo && !TvRavine && !TvLips) TvBuildFixtures();
 			// natural slopes: smooth every surface step the way world generation does
 			for (int x = x0; x <= x1; x++) { int off = x - TvX0; if (off < 0 || off >= TvLen) continue; int top = TvG - TvElev[off]; try { Tile.SmoothSlope(x, top, false, false); } catch { } }
+			if (TvRavine || TvLips) { TvApplyRims(); _tvEvents.AppendLine("features: " + string.Join(" ", TvFeats.ConvertAll(f => f.Name + "@" + f.A))); }
 			_tvEvents.AppendLine($"course built: X0={TvX0} world={world}x{Main.maxTilesY} zoo={TvZoo}");
 		}
 
@@ -320,6 +400,8 @@ namespace Levy.Common.Testing
 		private string TvGearOf(int i)
 		{
 			if (_tvGear == "climb") { int c3 = i % 3; return c3 == 0 ? "spikes" : c3 == 1 ? "claws" : "tiger"; } // wall-climb gear arm: Shoe Spikes, Climbing Claws, Tiger Climbing Gear
+			if (_tvGear == "wmix") { string[] wn = { "w:FledglingWings", "w:AngelWings", "w:FlameWings", "w:SteampunkWings" }; return wn[i % wn.Length]; }
+			if (_tvGear == "wbare") return i % 2 == 0 ? "none" : "w:AngelWings";
 			if (_tvGear == "hooks") return "hook:" + TvHookNames[i % TvHookNames.Length];
 			if (_tvGear == "lavamix") { int c4 = i % 4; return c4 == 0 ? "none" : c4 == 1 ? "wings" : c4 == 2 ? "hook" : "wh"; }   // the lava lab: bare, wings, hook, wings + hook
 			if (_tvGear != "mixed") return _tvGear;
@@ -328,6 +410,7 @@ namespace Levy.Common.Testing
 		}
 
 		private static readonly string[] TvHookNames = { "GrapplingHook", "AmethystHook", "SapphireHook", "EmeraldHook", "DiamondHook", "IvyWhip", "WebSlinger", "SkeletronHand", "SlimeHook", "FishHook", "DualHook", "LunarHook", "StaticHook" };
+		private static int TvItemId(string name) { var f = typeof(ItemID).GetField(name); return f == null ? ItemID.AngelWings : (int)(short)f.GetValue(null); }
 		private static int TvHookId(string name) { var f = typeof(ItemID).GetField(name); return f == null ? ItemID.GrapplingHook : (int)(short)f.GetValue(null); }
 
 		private void TvSpawn()
@@ -345,6 +428,7 @@ namespace Levy.Common.Testing
 					Item ammo = FindAmmo(w, ""); if (ammo != null && rec.Gear.CanHold(SoldierGear.SlotAmmo, ammo)) { rec.Gear.Ammo = ammo; rec.Gear.SetLocked(SoldierGear.SlotAmmo, true); }
 				}
 				if (g == "boots") { var it = new Item(); it.SetDefaults(ItemID.HermesBoots); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
+				if (g.StartsWith("w:")) { var it = new Item(); it.SetDefaults(TvItemId(g.Substring(2))); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
 				if (g == "wings" || g == "wh") { var it = new Item(); it.SetDefaults(ItemID.AngelWings); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
 				if (g == "spikes" || g == "claws" || g == "tiger" || g == "ninja") { var it = new Item(); it.SetDefaults(g == "spikes" ? ItemID.ShoeSpikes : g == "claws" ? ItemID.ClimbingClaws : g == "tiger" ? ItemID.TigerClimbingGear : ItemID.MasterNinjaGear); rec.Gear.Accessories[0] = it; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
 				if (g.StartsWith("hook:")) { var it = new Item(); it.SetDefaults(TvHookId(g.Substring(5))); rec.Gear.Hook = it; rec.Gear.SetLocked(SoldierGear.SlotHook, true); }
@@ -477,6 +561,7 @@ namespace Levy.Common.Testing
 				NPC n = Main.npc[rec.BodyIndex]; var sn = (SoldierNPC)n.ModNPC;
 				Vector2 c = n.Center; l.Idx = rec.BodyIndex;
 				l.Frames++;
+				if (l.ArriveTick < 0) { l.TravTicks++; if (n.velocity.Y != 0f && !n.wet) l.AirTicks++; if (sn.IsFlying) l.FlyTicks++; if (float.IsNaN(l.RefRow)) l.RefRow = Math.Max(l.Start.Y / 16f, _tvGy + 3f); float dep = n.Bottom.Y / 16f - l.RefRow; l.DepthSum += Math.Max(0f, dep); if (dep > l.MaxDepth) l.MaxDepth = dep; }
 				l.ClimbDone = sn.ClimbEdges; //HOP
 				l.HkCasts = sn.HkCasts; l.HkLatches = sn.HkLatches; l.HkChains = sn.HkChains; l.HkAborts = sn.HkAborts; l.HkReleases = sn.HkReleases; l.HkLandings = sn.HkLandings; l.RtCasts = sn.RouteHookCasts; l.RtBans = sn.RouteHookBans; l.StepBacks = sn.HkStepBacks; l.EndElev = TvG - n.Bottom.Y / 16f;
 				float step = Vector2.Distance(c, l.Last);
@@ -564,7 +649,7 @@ namespace Levy.Common.Testing
 			OffscreenHop.LabViewers = null; OffscreenHop.LabNoHop = false; //HOP
 			double ms = _tvWatch.Elapsed.TotalMilliseconds;
 			var sb = new StringBuilder();
-			sb.AppendLine("name,gear,arrived,arriveSec,gaveUpSec,straightTiles,pathTiles,ratio,stuckSec,stuckEps,stallSec,stallEps,teleports,falls,fallTiles,wetSec,deepSec,bodyGone,endOffset,endFeature,endState,endOrder,stuckWhere,stallWhere,visTele,climbEdges,hkCasts,hkLatches,hkChains,hkAborts,hkReleases,hkLandings,rtCasts,rtBans,stepBacks,endElev,lavaSec,lavaEntries");
+			sb.AppendLine("name,gear,arrived,arriveSec,gaveUpSec,straightTiles,pathTiles,ratio,stuckSec,stuckEps,stallSec,stallEps,teleports,falls,fallTiles,wetSec,deepSec,bodyGone,endOffset,endFeature,endState,endOrder,stuckWhere,stallWhere,visTele,climbEdges,hkCasts,hkLatches,hkChains,hkAborts,hkReleases,hkLandings,rtCasts,rtBans,stepBacks,endElev,lavaSec,lavaEntries,maxDepth,meanDepth,flyShare,airShare,travSec");
 			foreach (var l in _tv)
 			{
 				if (l.InStuck) l.StuckTicks += _tvTick - l.AnchorTick;
@@ -572,7 +657,7 @@ namespace Levy.Common.Testing
 				float straight = Vector2.Distance(l.Start, new Vector2(_tvGx * 16f + 8f, _tvGy * 16f)) / 16f;
 				float pathT = l.Path / 16f; float endOff = l.Last.X / 16f - TvX0;
 				string st = ""; if (l.Rec.HasBody) st = ((SoldierNPC)Main.npc[l.Rec.BodyIndex].ModNPC).State.ToString();
-				sb.AppendLine(string.Join(",", l.Rec.Name, l.Gear, l.ArriveTick >= 0 ? 1 : 0, l.ArriveTick >= 0 ? (l.ArriveTick / 60f).ToString("0.0") : "", l.GaveUp >= 0 ? (l.GaveUp / 60f).ToString("0.0") : "", straight.ToString("0"), pathT.ToString("0"), (pathT / Math.Max(1f, straight)).ToString("0.00"), (l.StuckTicks / 60f).ToString("0.0"), l.StuckEps, (l.StallTicks / 60f).ToString("0.0"), l.StallEps, l.Teleports, l.Falls, l.FallTiles.ToString("0"), (l.WetTicks / 60f).ToString("0.0"), (l.DeepTicks / 60f).ToString("0.0"), l.Gone, endOff.ToString("0"), TvFeature(endOff), st, l.Rec.Order.ToString(), "\"" + l.StuckWhere.Trim() + "\"", "\"" + l.StallWhere.Trim() + "\"", l.VisTele, l.ClimbDone, l.HkCasts, l.HkLatches, l.HkChains, l.HkAborts, l.HkReleases, l.HkLandings, l.RtCasts, l.RtBans, l.StepBacks, l.EndElev.ToString("0"), (l.LavaTicks / 60f).ToString("0.0"), l.LavaEntries));
+				sb.AppendLine(string.Join(",", l.Rec.Name, l.Gear, l.ArriveTick >= 0 ? 1 : 0, l.ArriveTick >= 0 ? (l.ArriveTick / 60f).ToString("0.0") : "", l.GaveUp >= 0 ? (l.GaveUp / 60f).ToString("0.0") : "", straight.ToString("0"), pathT.ToString("0"), (pathT / Math.Max(1f, straight)).ToString("0.00"), (l.StuckTicks / 60f).ToString("0.0"), l.StuckEps, (l.StallTicks / 60f).ToString("0.0"), l.StallEps, l.Teleports, l.Falls, l.FallTiles.ToString("0"), (l.WetTicks / 60f).ToString("0.0"), (l.DeepTicks / 60f).ToString("0.0"), l.Gone, endOff.ToString("0"), TvFeature(endOff), st, l.Rec.Order.ToString(), "\"" + l.StuckWhere.Trim() + "\"", "\"" + l.StallWhere.Trim() + "\"", l.VisTele, l.ClimbDone, l.HkCasts, l.HkLatches, l.HkChains, l.HkAborts, l.HkReleases, l.HkLandings, l.RtCasts, l.RtBans, l.StepBacks, l.EndElev.ToString("0"), (l.LavaTicks / 60f).ToString("0.0"), l.LavaEntries, l.MaxDepth.ToString("0.0"), (l.DepthSum / Math.Max(1, l.TravTicks)).ToString("0.0"), (l.FlyTicks / (float)Math.Max(1, l.TravTicks)).ToString("0.000"), (l.AirTicks / (float)Math.Max(1, l.TravTicks)).ToString("0.000"), (l.TravTicks / 60f).ToString("0.0")));
 			}
 			File.WriteAllText(Path.Combine(_tvOut, "levies.csv"), sb.ToString());
 			File.WriteAllText(Path.Combine(_tvOut, "trace.csv"), "tick,name,gear,x,elevation,state\n" + _tvTrace);

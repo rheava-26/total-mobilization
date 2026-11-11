@@ -34,7 +34,7 @@ namespace Levy.Common.UI
 				case DialogueTrigger.BOSS_SIGHTED: case DialogueTrigger.BOSS: case DialogueTrigger.COMRADE_DOWN:
 				case DialogueTrigger.ROUTED: case DialogueTrigger.MUTINY:
 					return LevyConstants.ChatBarPriorityBig;
-				case DialogueTrigger.RALLIED: case DialogueTrigger.VICTORY:
+				case DialogueTrigger.RALLIED: case DialogueTrigger.VICTORY: case DialogueTrigger.FLIGHT_SHOUT:
 				case DialogueTrigger.EVENT_GOBLINS: case DialogueTrigger.EVENT_PIRATES: case DialogueTrigger.EVENT_ECLIPSE: case DialogueTrigger.EVENT_PUMPKIN:
 				case DialogueTrigger.EVENT_FROST: case DialogueTrigger.EVENT_MARTIANS: case DialogueTrigger.EVENT_OLDONES: case DialogueTrigger.EVENT_FROSTLEGION:
 					return LevyConstants.ChatBarPriorityNotice;

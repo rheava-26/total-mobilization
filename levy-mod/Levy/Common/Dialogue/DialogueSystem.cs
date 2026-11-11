@@ -194,6 +194,7 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.RALLIED:
 				case DialogueTrigger.OFFICER_MARCH:
 				case DialogueTrigger.NURSE_MARCH:
+				case DialogueTrigger.FLIGHT_SHOUT: case DialogueTrigger.FLIGHT_FEAR: case DialogueTrigger.TAKEOFF: case DialogueTrigger.LANDING:
 				case DialogueTrigger.VICTORY: return DialogueChannel.FloatingText;
 
 				case DialogueTrigger.DEATH_MESSAGE:
@@ -435,6 +436,7 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.ROUTED: return new Color(255, 225, 90);
 				case DialogueTrigger.RALLIED: return new Color(150, 255, 150);
 				case DialogueTrigger.VICTORY: return new Color(255, 235, 120);
+				case DialogueTrigger.FLIGHT_SHOUT: return new Color(255, 245, 170);
 				case DialogueTrigger.EVENT_GOBLINS: case DialogueTrigger.EVENT_PIRATES: case DialogueTrigger.EVENT_ECLIPSE: case DialogueTrigger.EVENT_PUMPKIN:
 				case DialogueTrigger.EVENT_FROST: case DialogueTrigger.EVENT_MARTIANS: case DialogueTrigger.EVENT_OLDONES: case DialogueTrigger.EVENT_FROSTLEGION:
 					return new Color(255, 240, 200);

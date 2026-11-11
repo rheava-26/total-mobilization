@@ -64,6 +64,7 @@ namespace Levy.Content.NPCs
 		partial void Movement_Update()
 		{
 			Movement_UpdateCore();
+			FlightTalkTick();
 			AirPost();   // SoldierNPC.AirCtl.cs: lava catch, wing hold / release, telemetry (last word on the air velocity)
 		}
 
@@ -180,6 +181,7 @@ namespace Levy.Content.NPCs
 			if (!air && grounded && (dy > PlatformDropBelowPx || brainDropRequest) && PlatformDropIsSafe()) { _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; }
 			if (Abilities.HasWings && dy < -(Abilities.JumpTiles * 16f)) wantFly = true;
 			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && _wingTime > 0 && dy < -RouteFlyRisePx) wantFly = true; // a planned route climbs by wing (a flight edge), not by hopping at the foot of the climb
+			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && RouteFlying) { if (_wingTime > 0) { wantFly = true; flyUp = false; } else if (!grounded) StatArcFuelOutNote(); } // a planned arc: thrust toward the next air point while the tank lasts, a glide after
 			if (air) { jumpTiles = 0; wantFly = false; flyUp = false; } // aerial mode owns the vertical axis
 
 			if (!air && Abilities.HasWings && _wingTime > 0 && (wantFly || (_flying && dy < -FlyArriveYPx)))

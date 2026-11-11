@@ -169,7 +169,7 @@ namespace Levy.Common
 			public const int GoalSnapTiles = 4;
 			public const float JumpEdgeCost = 1.5f;
 			public const float FallEdgeCost = 0.5f;
-			public const float FlightCostMult = 1.3f;
+			public const float FlightCostMult = 0.9f;
 			/// <summary>Share of the straight-line range of a full wing tank (WingTimeMax ticks at FlySpeed) a planned flight may use before it must touch down (the climb and the wind-up take the rest).</summary>
 			public const float FlightRangeShare = 0.8f;
 			public const int PathFailRetryTicks = 45;
@@ -235,6 +235,25 @@ namespace Levy.Common
 			public const float CatchUpBoxW = 2400f, CatchUpBoxH = 1400f;
 			/// <summary>A hop lands at least this far ahead (tiles of straight line) or is not made; a spot at the goal is searched this many tiles around it.</summary>
 			public const int CatchUpMinHopTiles = 10, CatchUpGoalSpotTiles = 5, CatchUpWaySpotTiles = 6;
+
+			// ---- flight arcs (a winged body on a planned route flies from one standing cell to another) ----
+			/// <summary>An arc is: straight up from the takeoff cell to a cruise row, level along that row, then a straight descent line to the landing cell. It is planned with the powered speed ArcSpeedPx and a share of the wing tank (the climb and the cruise must fit; the descent line is flown on thrust while the tank lasts and glided after).</summary>
+			public const float ArcSpeedPx = 6f, ArcFuelShare = 0.8f;
+			/// <summary>Longest cruise (tiles), deepest landing below the cruise row, and widest descent (columns) an arc looks at.</summary>
+			public const int ArcMaxCruiseTiles = 64, ArcMaxDescentRows = 40, ArcMaxGlideCols = 90;
+			/// <summary>Rows above the takeoff cell the cruise row may be, and the rows kept clear between the cruise row and the ground under it.</summary>
+			public static readonly int[] ArcApex = { 3, 6, 10, 16, 24, 34 };
+			public const int ArcClearAboveFloor = 3;
+			/// <summary>A standing cell with a wall or no floor this many tiles ahead is a launch spot.</summary>
+			public const int ArcLaunchLook = 4;
+			/// <summary>Search cost of an arc: a takeoff, and the share of the walking cost its flight time is charged at (below 1: flight is faster than walking, so it is preferred).</summary>
+			public const float ArcTakeoffCost = 2f, ArcPreference = 0.85f;
+			/// <summary>Horizontal tiles a glide covers per tile it falls: run speed over the glide fall speed, kept at this share, and clamped.</summary>
+			public const float ArcGlideSpeedShare = 0.8f, ArcGlideRatioMin = 1.6f, ArcGlideRatioMax = 5f;
+			/// <summary>The route keeps the body flying (thrust while the tank lasts) for this many ticks after the last time the route asked for it.</summary>
+			public const int RouteFlyHoldTicks = 24;
+			/// <summary>A winged body that has been flying this long (ticks) shouts once; at most ShoutMaxAtOnce shouts show at a time, each blocks its slot for ShoutSlotTicks.</summary>
+			public const int ShoutAfterFlyTicks = 90, ShoutMaxAtOnce = 3, ShoutSlotTicks = 240;
 
 			// ---- wings ----
 			public const float FlySpeed = 6f;

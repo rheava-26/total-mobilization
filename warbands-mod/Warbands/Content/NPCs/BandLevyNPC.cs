@@ -34,7 +34,7 @@ namespace Warbands.Content.NPCs
 		/// <summary>Event bands: the sturdier named member that drops the event's loot.</summary>
 		public bool IsCaptain => Member?.Captain == true;
 		public const float CaptainLifeMult = 1.6f;
-		private uint _skWithdrawUntil, _skNextAt, _hopAt, _settledAt; private int _leaveDir;
+		private uint _skWithdrawUntil, _skNextAt, _hopAt; private int _leaveDir;
 		public uint EngagedUntil;
 		public float Morale = 100f;
 		public string ShortName = "";
@@ -164,7 +164,7 @@ namespace Warbands.Content.NPCs
 			var it = new Item(); int t = BandData.ItemType(name); if (t > 0) it.SetDefaults(t); it.stack = Math.Max(1, stack); return it;
 		}
 
-		/// <summary>Mobility kit by stage: a hook on every third member, boots on blades, a double jump on shooters, wings from Hardmode. Levy's movement reads them from the gear like it does for a levy.</summary>
+		/// <summary>Mobility kit by stage: a hook on every member (every second one before the first boss), boots on blades, a double jump on shooters, wings from Hardmode. Levy's movement reads them from the gear like it does for a levy.</summary>
 		private static void GiveKit(SoldierGear g, BandMember m, int stage, int idx)
 		{
 			int a = 0;
@@ -174,7 +174,7 @@ namespace Warbands.Content.NPCs
 				if (m.Kit != null) foreach (var k in m.Kit) if (a < g.Accessories.Length) g.Accessories[a++] = Make(k);
 				return;
 			}
-			if (stage >= 1 && idx % 3 == 0) g.Hook = Make("GrapplingHook");
+			if (stage >= 1 || idx % 2 == 0) g.Hook = Make("GrapplingHook"); // a hook for every member from the first boss on (half of a pre-boss band): a band that can hook is a band that gets up the cliff
 			if (stage >= 5 && idx % 2 == 1) g.Accessories[a++] = Make("LeafWings");
 			else if (stage >= 3 && idx % 2 == 1) g.Accessories[a++] = Make("AngelWings");
 			if (stage >= 1 && m.Role == 'E') g.Accessories[a++] = Make("HermesBoots");
@@ -245,21 +245,7 @@ namespace Warbands.Content.NPCs
 				return;
 			}
 			StallWatch(band, near, (uint)now);
-			// first contact: do not walk in as a clump. Shooters take high ground and every member takes its own slot around the foe, then the fight proper begins
-			if (nearTiles > (Role == 'E' ? 32f : 60f) && !Panic)
-			{
-				// a member that has stood at its spot for a moment opens fire from there (a spot further than 32 tiles out would otherwise hold the member back for ever)
-				bool settled = PostureSpot != default && Vector2.Distance(NPC.Bottom, PostureSpot) <= 40f;
-				if (!settled) _settledAt = 0; else if (_settledAt == 0) _settledAt = (uint)now;
-				if (!(settled && (uint)now - _settledAt > 40u))
-				{
-					HostileDropTarget(); HostileIdleState();
-					Posture(band, near, 30f, Role != 'E', (uint)now);
-					if (PostureSpot == default || !_postureOk) Pursue(band, near, (uint)now); // nowhere to take a posture around this foe (it is high up, across a chasm, walled in): go and get a firing position
-					return;
-				}
-			}
-			else _settledAt = 0;
+			// first contact needs no separate step: a member with no shot at the foe goes to a firing position of its own (Pursue), spread around the foe, shooters on the high ground in view
 			if (Roster?.Skirmish == true && Role == 'E' && !Panic && SkirmishWithdraw(near, (uint)now)) return;
 			bool engaged = HostileEngage();
 			NPC foe = HostileTarget ?? near;
@@ -279,6 +265,7 @@ namespace Warbands.Content.NPCs
 			if (!Panic && !strike && (!engaged || _pursuing || ((uint)now - _noStrikeSince >= PursueAfterTicks && !_purProgressing)))
 			{
 				_pursuing = true;
+				if (!engaged) HostileIdleState();
 				Pursue(band, foe ?? near, (uint)now);
 				return;
 			}
@@ -453,14 +440,13 @@ namespace Warbands.Content.NPCs
 		private void Pursue(BandBrain band, NPC foe, uint now)
 		{
 			if (foe == null) return;
-			HostileIdleState();
 			if (HostileMovementBusy) return; // hanging on a hook, climbing a face or flying an arc: the route owns the body
 			if (Walled(now)) { if (now >= _dispAt) Disperse(band, now); if (_dispHas && now < _dispAt) HostileGoTo(_dispSpot); else HostileStop(); return; }
 			if (!_purHasSpot || now >= _purPickAt)
 			{
 				var s = PickPursuitSpot(band, foe, now); PursuitPicks++;
 				_purPickAt = now + 150u + (uint)(NPC.whoAmI * 7 % 70);
-				if (s.HasValue) { if (!_purHasSpot || Vector2.Distance(_purSpot, s.Value) > 24f) { HostileRouteReset(); } _purSpot = s.Value; _purHasSpot = true; }
+				if (s.HasValue) { _purSpot = s.Value; _purHasSpot = true; }
 				else _purHasSpot = false;
 			}
 			Vector2 goal = _purHasSpot ? _purSpot : foe.Bottom;

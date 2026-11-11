@@ -22,7 +22,7 @@ namespace Warbands.Common
 	/// </summary>
 	public partial class WarbandsLab
 	{
-		private enum Mv { Open, Overhang, Chasm, Pit, Tower, PitFar }
+		private enum Mv { Open, Overhang, Chasm, Pit, Tower, PitFar, Chase }
 
 		private class MvState
 		{
@@ -52,6 +52,7 @@ namespace Warbands.Common
 		private void MvBuild(Mv s, int n, out Point player, out List<Point> spots)
 		{
 			int c = MvC, F = MvFloor;
+			int sp = int.TryParse(Environment.GetEnvironmentVariable("WARBANDS_MOVE_SPACING"), out int spv) ? spv : 3; // tiles between members when a band forms (the spawner's own spacing)
 			MvBox(c - 110, c + 110, 40, F + 70, false);
 			MvBox(c - 111, c - 111, 40, F + 70, true); MvBox(c + 111, c + 111, 40, F + 70, true);
 			MvBox(c - 110, c + 110, F, F + 70, true);
@@ -60,21 +61,26 @@ namespace Warbands.Common
 			{
 				case Mv.Open:
 					player = new Point(c + 10, F);
-					for (int k = 0; k < n; k++) spots.Add(new Point(c - 30 - 3 * k, F));
+					for (int k = 0; k < n; k++) spots.Add(new Point(c - 30 - sp * k, F));
+					break;
+				case Mv.Chase:
+					// open ground; the player runs back and forth 25 tiles each way (a 15 second round trip, about 10 tiles a second)
+					player = new Point(c + 10, F);
+					for (int k = 0; k < n; k++) spots.Add(new Point(c - 30 - sp * k, F));
 					break;
 				case Mv.Overhang:
 					// a cliff top 16 tiles over the floor, undercut: an 8-tile cave opens to the left. The player stands in the cave, the band on the cliff straight above.
 					MvBox(c - 12, c + 70, F - 16, F - 9, true);
 					MvBox(c + 14, c + 70, F - 16, F - 1, true);
 					player = new Point(c - 2, F);
-					for (int k = 0; k < n; k++) spots.Add(new Point(c - 6 + 3 * k, F - 16));
+					for (int k = 0; k < n; k++) spots.Add(new Point(c - 6 + sp * k, F - 16));
 					break;
 				case Mv.Chasm:
 					// a 17-wide, 40-deep chasm; the player on the far side on a plateau 10 tiles higher, 22 tiles from the edge; the band 36 tiles short of the near edge
 					MvBox(c - 8, c + 8, F, F + 40, false);
 					MvBox(c + 9, c + 110, F - 10, F - 1, true);
 					player = new Point(c + 30, F - 10);
-					for (int k = 0; k < n; k++) spots.Add(new Point(c - 44 - 3 * k, F));
+					for (int k = 0; k < n; k++) spots.Add(new Point(c - 44 - sp * k, F));
 					break;
 				case Mv.Pit:
 					// a 12-wide, 30-deep pit; the band at its bottom, the player on the rim 18 tiles from it
@@ -92,7 +98,7 @@ namespace Warbands.Common
 					// a 34-tile pillar, 8 wide; the player on top, the band on the floor 50 tiles away
 					MvBox(c + 20, c + 27, F - 34, F - 1, true);
 					player = new Point(c + 23, F - 34);
-					for (int k = 0; k < n; k++) spots.Add(new Point(c - 30 - 3 * k, F));
+					for (int k = 0; k < n; k++) spots.Add(new Point(c - 30 - sp * k, F));
 					break;
 			}
 		}
@@ -158,7 +164,7 @@ namespace Warbands.Common
 						Setup = () =>
 						{
 							Main.rand = new Terraria.Utilities.UnifiedRandom(7000 + 131 * (int)sc + sd);
-							MvClearRoutes();
+							MvClearRoutes(); if (MvHookLog) { Levy.Common.Movement.SoldierHooks.LogCasts = true; Levy.Common.Movement.SoldierHooks.CastLog.Clear(); }
 							int n = 4 + (sd / 3) % 2; // 4 or 5 members
 							MvBuild(sc, n, out Point pl, out List<Point> spots);
 							ArmPlayer(Gold, 400, 0, "DemonBow", "FlamingArrow"); _accuracy = 0f; DamageTaken = 0; _shotIds.Clear(); _shotsSeen = 0;
@@ -168,6 +174,7 @@ namespace Warbands.Common
 						},
 						Tick = t =>
 						{
+							if (sc == Mv.Chase) { float ph = t * 2f * (float)Math.PI / 900f; Main.player[0].velocity = new Vector2((float)Math.Cos(ph) * 25f * 16f * 2f * (float)Math.PI / 900f, 0f); _pinAt = new Vector2((MvC + 10) * 16f + 8f - 10f + (float)Math.Sin(ph) * 25f * 16f, MvFloor * 16f - 42f); }
 							if (st.FirstHit < 0 && DamageTaken > 0) st.FirstHit = t; // a blade that landed (a dedicated server runs no player-side projectile hits, so shots are counted below)
 							{
 								var ph = Main.player[0].Hitbox;
@@ -204,6 +211,8 @@ namespace Warbands.Common
 						},
 						Result = () =>
 						{
+							if (MvHookLog) { foreach (var l in Levy.Common.Movement.SoldierHooks.CastLog.Take(400)) Mod.Logger.Info("[Warbands] mvhook " + l); Levy.Common.Movement.SoldierHooks.CastLog.Clear(); }
+							if (MvDbg) { foreach (var l in Levy.Common.Movement.RoutePlanner.Log) Mod.Logger.Info("[Warbands] mvroute " + l); Levy.Common.Movement.RoutePlanner.Log.Clear(); Mod.Logger.Info("[Warbands] mvroute " + Levy.Common.Movement.RoutePlanner.StatSummary()); }
 							var alive = Levies().Where(b => b.NPC.life > 0).ToList();
 							int posEnd = alive.Count(MvInPosition);
 							Vector2 pc = Main.player[0].Center;
@@ -217,6 +226,7 @@ namespace Warbands.Common
 			}
 		}
 
+		private static readonly bool MvHookLog = Environment.GetEnvironmentVariable("WARBANDS_MOVEHOOKLOG") == "1";
 		private static readonly bool MvDbg = Environment.GetEnvironmentVariable("WARBANDS_MOVEDBG") == "1";
 		private static string MvReflect(object o, string name)
 		{
@@ -227,6 +237,33 @@ namespace Warbands.Common
 			Vector2 pc = Main.player[0].Center;
 			foreach (var m in alive)
 				Mod.Logger.Info($"[Warbands] mvdbg {st.Scen}/{st.Type.Id}/s{st.Seed} t={t} #{m.MemberIdx} role={m.Role} tile=({(int)(m.NPC.Center.X / 16f) - MvC},{(int)(m.NPC.Bottom.Y / 16f) - MvFloor}) toPlayer=({(pc.X - m.NPC.Center.X) / 16f:0},{(pc.Y - m.NPC.Center.Y) / 16f:0}) state={m.State} tgt={m.TargetIndex} inPos={MvInPosition(m)} panic={m.Panic} morale={m.Morale:0} still={MvReflect(m, "StillReason")} route={MvReflect(m, "DebugRoute")} pur[{m.PursuitDebug()}] hook={(m.Record?.Gear.Hook.IsAir == false)} wings={m.HasFlightKit} rng={m.Weapon?.RangeTiles}");
+		}
+
+		/// <summary>The scripted pursuit checks (WARBANDS_LIVE=check): a band with hooks gets a firing position on a player standing under its overhang, and gets out of a pit and across to the player.</summary>
+		private void AddPursuitCheckTrials()
+		{
+			foreach (var (scen, label, secs) in new[] { (Mv.Overhang, "a band on the cliff over a player in the cave comes down and around to a firing position", 25), (Mv.Pit, "a band in a pit with hooks climbs out to a firing position", 30), (Mv.Chasm, "a band across a chasm from the player gets to a firing position", 30), (Mv.Tower, "a band at the foot of a 34-tile tower gets a firing position on the player", 30) })
+			{
+				var sc = scen; var st = new MvState { Scen = sc, Type = BandTypes.ById("MythrilMercenaries") }; int rise = 0;
+				_trials.Add(new Trial
+				{
+					Name = "pursuit: " + label, Max = secs * 60 + 5,
+					Setup = () =>
+					{
+						Main.rand = new Terraria.Utilities.UnifiedRandom(4242 + (int)sc); MvClearRoutes();
+						MvBuild(sc, 4, out Point pl, out List<Point> spots);
+						ArmPlayer(Gold, 400, 0, "DemonBow", "FlamingArrow"); _accuracy = 0f; DamageTaken = 0;
+						_pinAt = new Vector2(pl.X * 16f + 8f - 10f, pl.Y * 16f - 42f); Main.player[0].position = _pinAt; Main.player[0].velocity = Vector2.Zero;
+						var made = MvForm(st.Type, spots, spots[0].X < pl.X ? 1 : -1); st.StartY = made.Count > 0 ? made.Average(m => m.NPC.Bottom.Y) : 0; rise = 0; st.FirstPos = -1;
+					},
+					Tick = t =>
+					{
+						foreach (var m in Levies()) { rise = Math.Max(rise, (int)((st.StartY - m.NPC.Bottom.Y) / 16f)); if (MvInPosition(m) && st.FirstPos < 0) st.FirstPos = t; }
+						return st.FirstPos >= 0;
+					},
+					Result = () => (st.FirstPos >= 0, $"first firing position after {(st.FirstPos < 0 ? "never" : (st.FirstPos / 60f).ToString("0.0") + " s")}, highest rise {rise} tiles"),
+				});
+			}
 		}
 
 		private static double MvMeanPair(List<BandLevyNPC> l)

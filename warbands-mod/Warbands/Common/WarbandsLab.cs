@@ -532,6 +532,8 @@ namespace Warbands.Common
 					return (items == 20 && recipes == 20, $"{items} items, {recipes} recipes {string.Join(",", bad)}");
 				},
 			});
+
+			AddPursuitCheckTrials();
 		}
 
 		// ================================================================================================ EVENT TRIALS

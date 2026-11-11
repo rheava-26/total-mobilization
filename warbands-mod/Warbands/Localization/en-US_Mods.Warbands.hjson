@@ -26,9 +26,14 @@ Configs: {
 			Tooltip: No bands before this point. 0 pre-boss, 1 after the Eater of Worlds or Brain of Cthulhu, 2 after Skeletron, 3 early Hardmode, 4 after the mechanical bosses, 5 after Plantera, 6 after Golem.
 		}
 
-		SpawnChancePercentPerMinute: {
+		NaturalChancePercentPerMinute: {
 			Label: Chance per minute
 			Tooltip: Percent chance each real minute that a band forms near a player in the open.
+		}
+
+		NoSpawnsDuringBosses: {
+			Label: No new bands during bosses
+			Tooltip: While a boss is alive no new band forms. Bands already out stay and keep fighting.
 		}
 
 		BandSizeMin: {

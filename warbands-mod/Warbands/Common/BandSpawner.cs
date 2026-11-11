@@ -10,7 +10,7 @@ using Warbands.Content.NPCs;
 namespace Warbands.Common
 {
 	/// <summary>
-	/// The band spawner. Server / single player only. Natural bands: once a minute, for each player standing in the open with no boss out and no town under them, it rolls the config chance (once the world has reached
+	/// The band spawner. Server / single player only. Natural bands: once a minute, for each player standing in the open with no town under them (and, by default, no boss out anywhere), it rolls the config chance (once the world has reached
 	/// FirstStage, fewer than MaxWorldBands are out and fewer than MaxActiveBands are within 200 tiles of that player) and forms a band of the player's biome and world stage on the ground 40 to 70 tiles to one side. Summoned bands (the crafted items) form 24 to 34 tiles to one side on demand.
 	/// A band runs Levy's soldier brain (BandLevyNPC) unless the config asks for the older Fighter-AI soldiers (BandSoldier).
 	/// Band size is the config range plus one per ten active levies (cap 8), so a big army does not trivialise a band.
@@ -56,6 +56,7 @@ namespace Warbands.Common
 			int stage = Stage.Current;
 			if (!force && stage < cfg.FirstStage) return;
 			if (ActiveBands() >= cfg.MaxWorldBands) return;
+			if (!force && NaturalSpawnBlocked(cfg)) return; // a boss fight is not interrupted by a new band (bands already out stay)
 			if (!force && (Main.eclipse || Main.bloodMoon || Main.pumpkinMoon || Main.snowMoon || Terraria.GameContent.Events.DD2Event.Ongoing || Main.invasionType > 0)) return;
 			if (force) // headless test: no player is online, so a stand-in at the world spawn takes the roll
 			{
@@ -67,9 +68,19 @@ namespace Warbands.Common
 				var p = Main.player[i];
 				if (!p.active || p.dead || p.townNPCs > 0 && !force) continue;
 				if (!force && BandsNear(p.Center, NearBandTiles) >= cfg.MaxActiveBands) continue; // a band already out near this player: it is the local rare enemy, no second one on top
-				if (!force && Main.rand.NextFloat() * 100f >= cfg.SpawnChancePercentPerMinute) continue;
+				if (!force && Main.rand.NextFloat() * 100f >= cfg.NaturalChancePercentPerMinute) continue;
 				if (SpawnBand(p, stage, null)) { _forced = true; break; }
 			}
+		}
+
+		/// <summary>True while a natural band may not form because a boss is alive (config NoSpawnsDuringBosses). Bands already out are untouched.</summary>
+		public static bool NaturalSpawnBlocked(WarbandsConfig cfg) => cfg != null && cfg.NoSpawnsDuringBosses && BossAlive();
+
+		/// <summary>Any boss (vanilla or modded: NPC.boss) alive in the world.</summary>
+		public static bool BossAlive()
+		{
+			for (int i = 0; i < Main.maxNPCs; i++) { var n = Main.npc[i]; if (n.active && n.boss && n.life > 0) return true; }
+			return false;
 		}
 
 		/// <summary>Bonus members for the player's army: one per ten active levies.</summary>

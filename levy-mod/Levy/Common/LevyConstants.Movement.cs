@@ -123,6 +123,8 @@ namespace Levy.Common
 			// ---- hazards ----
 			public const int LookAheadPx = 8;
 			public const int FallScanTiles = 20;
+			/// <summary>Route searches of bodies that a fall cannot hurt (no fall damage in the config, or wings or a horseshoe) take a fall down a shaft of up to this many tiles, the part beyond FallScanTiles at LongFallEdgeCost a tile (vertical movement is the cheapest kind).</summary>
+			public const int LongFallTiles = 1600; public const float LongFallEdgeCost = 0.2f;
 			public const int DropMarginTiles = 6;               // refuse drops deeper than JumpTiles + this (unless winged)
 			public const int DeepWaterLiquid = 128;
 			/// <summary>Swimming up (see SoldierNPC.SwimAssist): upward acceleration and top speed in px per tick, and how far above the feet the goal must be (px).</summary>

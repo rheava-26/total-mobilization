@@ -332,6 +332,7 @@ namespace Levy.Content.NPCs
 			{
 				int depth = TileNav.DropDepth(ax, fy);
 				if (depth < 0 && !TravelLegacy.On && _pathFromRoute && !Abilities.HasWings && TileNav.IsFloor(ax, fy + FallScanTiles + 1) && !TileNav.HasLava(ax, fy + FallScanTiles + 1)) depth = FallScanTiles;   // the route search takes a fall of exactly FallScanTiles; the scan above stops one row short
+				if (depth < 0 && PathSearch.Travel8On && _pathFromRoute && !Abilities.HasWings && _path.Count > 0 && _path[0].Y - NPC.Bottom.Y > 3 * 16f && Math.Abs((int)(_path[0].X / 16f) - ax) <= 2) depth = FallScanTiles;   // the route's next waypoint is down the column ahead, further than the scan above reaches: a long fall (a shaft) whose far floor the route search checked
 				// a narrow gap with floor on the far side: jump it rather than drop into a pit that cannot be climbed back out of
 				if ((depth < 0 || depth >= GapJumpMinDepthTiles) && TryGapJump(ax, fy, dir, dyPx, ref jumpTiles)) return;
 				if (depth < 0)
@@ -712,6 +713,7 @@ namespace Levy.Content.NPCs
 		private void Glide(bool grounded)
 		{
 			if (grounded || _flying || !Abilities.CanGlide) return;
+			if (PathSearch.Travel8On && _pathFromRoute && !RouteFlying && _path.Count > 0 && _path[0].Y - NPC.Bottom.Y > 6 * 16f) return;   // a planned long drop (a shaft) falls at full speed: wings take no fall damage, and the slow glide made the trip down 1200 tiles last minutes
 			if (_wingTime > 0)
 			{
 				// budget in hand after an aerial climb: come down under control rather than plunge
@@ -1092,7 +1094,7 @@ namespace Levy.Content.NPCs
 				{
 					DropWhy = "solid-under-edge";
 					// the body's box overlaps a solid tile at one edge (a shaft is 2 to 4 tiles wide, the body 1.25 and a waypoint is a tile centre): step away from that edge so the platform alone is under it
-					if (PathSearch.Travel6On && x0 < x1) { bool leftSolid = TileNav.IsSolid(x0, fy + 1), rightSolid = TileNav.IsSolid(x1, fy + 1); if (leftSolid != rightSolid) _dropNudge = leftSolid ? 1 : -1; }
+					if (PathSearch.Travel8On && x0 < x1) { bool leftSolid = TileNav.IsSolid(x0, fy + 1), rightSolid = TileNav.IsSolid(x1, fy + 1); if (leftSolid != rightSolid) _dropNudge = leftSolid ? 1 : -1; }
 					return false;
 				}
 				if (TileNav.IsPlatform(x, fy + 1)) platform = true;
@@ -1101,7 +1103,7 @@ namespace Levy.Content.NPCs
 				if (d >= 0 && d < depth) depth = d;
 			}
 			if (!platform || depth == int.MaxValue) { DropWhy = !platform ? "no-platform" : "no-floor-in-scan"; return false; }
-			if (!(Abilities.HasWings || depth <= Abilities.JumpTiles + DropMarginTiles || (PathSearch.Travel6On && _pathFromRoute && depth <= FallScanTiles))) { DropWhy = "too-deep:" + depth; return false; }   // (a planned route takes falls up to FallScanTiles: the platform drop is such a fall)
+			if (!(Abilities.HasWings || depth <= Abilities.JumpTiles + DropMarginTiles || (PathSearch.Travel8On && _pathFromRoute && depth <= FallScanTiles))) { DropWhy = "too-deep:" + depth; return false; }   // (a planned route takes falls up to FallScanTiles: the platform drop is such a fall)
 			DropWhy = "ok"; return true;
 		}
 
@@ -1132,7 +1134,7 @@ namespace Levy.Content.NPCs
 			{
 				float onward = _path.Count > 1 ? _path[1].X : MoveGoal.X;
 				float side = onward >= NPC.Center.X ? 1f : -1f;
-				if (PathSearch.Travel6On)
+				if (PathSearch.Travel8On)
 				{
 					// in a shaft the way on is straight down, so 'onward' is a coin toss: never aim into the shaft wall (the look-ahead takes it for a wall and a winged body flies up against it); if both sides are walls, drop straight
 					int fy = TileNav.FeetTile(NPC.Bottom).Y;

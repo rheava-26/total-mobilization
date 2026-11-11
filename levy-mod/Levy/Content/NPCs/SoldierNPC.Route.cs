@@ -60,7 +60,7 @@ namespace Levy.Content.NPCs
 			// a trip whose box (wide, or tall: a shaft down to the Underworld) does not fit the planner's window is routed in hops: the standable cell nearest the point of the straight line to the goal that does
 			{
 				int ddx = (int)dxT, ddy = (int)Math.Abs(dyT);
-				bool fits(double f) { double wx = ddx * f + 40, wy = ddy * f + 70; return ddx * f <= RouteMaxHopTiles && wx <= RouteWindowW && wy <= RouteWindowH && wx * wy <= RouteWindowCells; }
+				bool fits(double f) { double wx = ddx * f + 40, wy = ddy * f + 70; return ddx * f <= RouteMaxHopTiles && (!PathSearch.Travel8On || (wx <= RouteWindowW && wy <= RouteWindowH && wx * wy <= RouteWindowCells)); }
 				if (!fits(1.0))
 				{
 					double f = 1.0; while (f > 0.05 && !fits(f)) f *= 0.9;

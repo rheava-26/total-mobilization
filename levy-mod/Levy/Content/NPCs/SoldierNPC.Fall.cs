@@ -27,6 +27,8 @@ namespace Levy.Content.NPCs
 				try { return LevyConfig.Get.SoldiersTakeFallDamage; } catch (Exception) { return false; }
 			}
 		}
+		/// <summary>The planner's view of the same switch: falls are free of damage, so a route may take any fall.</summary>
+		internal static bool FallDamageEnabled => FallDamageOn;
 		private int _fallStartRow = int.MinValue;
 		/// <summary>Ticks left after a teleport in which no fall counts; ends early on landing.</summary>
 		private int _fallImmuneTicks;

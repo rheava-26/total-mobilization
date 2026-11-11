@@ -53,7 +53,7 @@ namespace Levy.Common.Movement
 		private int _ox, _oy, _w, _h;
 		private readonly List<int> _rev = new();
 		private Point _goalTile; private int _startIdx, _goalIdx, _bestIdx; private float _bestH, _hWeight;
-		private int _jumpTiles, _maxFall, _gapTiles, _maxFlight, _bestRow; private bool _wings;
+		private int _jumpTiles, _maxFall, _gapTiles, _maxFlight, _bestRow; private bool _wings, _longFall;
 		// flight arcs (route searches of winged bodies): takeoff cell -> cruise row -> descent line -> landing cell
 		private bool _arcs, _gridFly; private float _arcFuelTicks, _arcCostPerTick, _arcGlideR; private int _arcAyT, _arcCxT;
 		private readonly short[] _arcAy, _arcCx;      // KindArc cells: cruise row (offset from the window top) and cruise columns
@@ -61,6 +61,8 @@ namespace Levy.Common.Movement
 		public static long StatArcScans, StatArcEdges;
 		/// <summary>Lab switch: LEVY_ARCS=0 turns the 2.0.53 travel changes off (flight arcs, the cheaper flight grid, the shallow-drop nudge, the overhead-waypoint flight), for before / after runs in one build.</summary>
 		public static readonly bool Travel6On = Environment.GetEnvironmentVariable("LEVY_ARCS") != "0";
+		/// <summary>Lab switch: LEVY_TRAVEL8=0 turns the round 8 changes off in the same build (the route window by area and the hops down a shaft, platform drops on a route, the shaft-wall nudge), for before / after runs.</summary>
+		public static readonly bool Travel8On = Environment.GetEnvironmentVariable("LEVY_TRAVEL8") != "0";
 		public static readonly bool ArcSearchOn = Environment.GetEnvironmentVariable("LEVY_ARCSEARCH") != "0", NudgeOn = Environment.GetEnvironmentVariable("LEVY_NUDGE") != "0", BestRowOn = Environment.GetEnvironmentVariable("LEVY_BESTROW") != "0";
 
 		public State Status { get; private set; }
@@ -98,11 +100,11 @@ namespace Levy.Common.Movement
 				for (int shrink = 0; ; shrink++)
 				{
 					x0 = Math.Min(s.X, t.X) - padX; x1 = Math.Max(s.X, t.X) + padX; y0 = Math.Min(s.Y, t.Y) - padUp; y1 = Math.Max(s.Y, t.Y) + padDown;
-					if (!Travel6On || shrink >= 4 || ((x1 - x0 + 1) <= _maxW && (y1 - y0 + 1) <= _maxH && (long)(x1 - x0 + 1) * (y1 - y0 + 1) <= _cells)) break;
+					if (!Travel8On || shrink >= 4 || ((x1 - x0 + 1) <= _maxW && (y1 - y0 + 1) <= _maxH && (long)(x1 - x0 + 1) * (y1 - y0 + 1) <= _cells)) break;
 					padX = Math.Max(16, padX * 2 / 3); padUp = Math.Max(24, padUp * 2 / 3); padDown = Math.Max(30, padDown * 2 / 3);
 				}
-				_w = Math.Min(_maxW, x1 - x0 + 1); _h = Math.Min(_maxH, y1 - y0 + 1);
-				if (Travel6On && (long)_w * _h > _cells) _h = Math.Max(1, _cells / _w);
+				_w = Math.Min(_maxW, x1 - x0 + 1); _h = Math.Min(Travel8On ? _maxH : Math.Min(_maxH, 460), y1 - y0 + 1);
+				if ((long)_w * _h > (Travel8On ? _cells : 690000)) _h = Math.Max(1, (Travel8On ? _cells : 690000) / _w);
 				_ox = x0; _oy = y0;
 				if (x1 - x0 + 1 > _maxW) _ox = (s.X + t.X) / 2 - _w / 2; // too wide: centre on the span, the goal check below refuses
 			}
@@ -110,6 +112,8 @@ namespace Levy.Common.Movement
 			_wings = abilities.HasWings;
 			_jumpTiles = Math.Max(1, abilities.JumpTiles);
 			_maxFall = _wings ? FallScanTiles : (TravelLegacy.On || centred ? Math.Min(FallScanTiles, _jumpTiles + DropMarginTiles) : FallScanTiles); // the executor (ScanAhead) takes a fall of exactly FallScanTiles on a planned route // a route may go down into a pit (a safe fall) when the far side lets it climb out
+			_longFall = Travel8On && !centred && !TravelLegacy.On && (abilities.NoFallDamage || !Content.NPCs.SoldierNPC.FallDamageEnabled);
+			if (_longFall) _maxFall = LongFallTiles;
 			_gapTiles = abilities.GapTiles;
 			_maxFlight = TravelLegacy.On ? ushort.MaxValue : Math.Max(6, (int)(abilities.WingTimeMax * FlySpeed / 16f * FlightRangeShare)); // tiles of flight one tank of wing time covers, with room for the climb
 			_arcs = Travel6On && ArcSearchOn && _wings && !centred && !TravelLegacy.On && !gridFlight;
@@ -190,6 +194,12 @@ namespace Levy.Common.Movement
 					// compress straight walking runs: a waypoint only where the row or the edge kind changes
 					int m = _rev[i - 1];
 					if (_oy + m / _w == y && _kind[m] == KindWalk && _kind[n] == KindWalk) continue;
+				}
+				if (_kind[n] == KindFall && Travel8On && _from[n] >= 0)
+				{
+					// a long fall: a waypoint every 8 rows down its column, so the body is never farther than a few tiles from the route while it drops (a route is dropped when the body is 12 tiles off it)
+					int fy0 = _oy + _from[n] / _w;
+					for (int yy = fy0 + 8; yy < y - 4; yy += 8) { path.Add(TileNav.BottomCentre(x, yy)); kinds?.Add(0); }
 				}
 				path.Add(TileNav.BottomCentre(x, y));
 				kinds?.Add(_kind[n] == KindHook ? (byte)1 : _kind[n] == KindChain ? (byte)2 : _kind[n] == KindClimb ? (byte)3 : (byte)0);
@@ -560,7 +570,7 @@ namespace Levy.Common.Movement
 				if (TileNav.IsSolid(x, fy) || TileNav.HasLava(x, fy)) return;
 				if (TileNav.IsFloor(x, fy + 1))
 				{
-					if (TileNav.IsStandable(x, fy) && (TravelLegacy.On || _wings || originWet || !TileNav.IsDeepWater(x, fy - 2))) Relax(x, fy, cur, g + d * FallEdgeCost, KindFall);
+					if (TileNav.IsStandable(x, fy) && (TravelLegacy.On || _wings || originWet || !TileNav.IsDeepWater(x, fy - 2))) Relax(x, fy, cur, g + (d <= FallScanTiles ? d * FallEdgeCost : FallScanTiles * FallEdgeCost + (d - FallScanTiles) * LongFallEdgeCost), KindFall);
 					return;
 				}
 			}

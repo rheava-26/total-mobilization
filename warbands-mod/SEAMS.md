@@ -47,3 +47,16 @@ Public Levy symbols read: `DialogueTable.Lines` / `Get` / `LineCount` / `LoadedF
 ## Phase 5 (Warbands 0.4.0): no Levy edits
 
 Event bands add no Levy edit. Public Levy symbols newly read: `WeaponClassifier.Classify` and `WeaponFamily` (the self-check holds every event weapon to a family Levy's brain can fire) and `ProgressionTier.Of` (tier ceilings for signature items and drops). Vanilla seams used: `Main.invasionType`, `invasionSize`, `invasionSizeStart`, `invasionX`, `invasionDelay`, `Main.ReportInvasionProgress` and packet 78 (a dead event-band member takes its slot off the invasion like a vanilla invader; Levy's `EventPressure`, which multiplies an invasion's size when it starts, is unaffected), `Sandstorm.Happening`, `Main.slimeRain`, `NPCID.PirateShip`, `Player.ZoneSandstorm` and `ZoneOverworldHeight`.
+
+## Phase 6 (Warbands pursuit): one additive Levy seam, `SoldierNPC.Hostile.cs`
+
+Levy's long-route planner (`RoutePlanner`: walking, drops, hook casts and chains, wall climbs, wing arcs) was reachable only from the map-march order; a hostile body had no way to ask it for a route, so a band whose foe was not reachable by the brain's local search stood where it was. Added (all marked HOSTILE SEAM, nothing inside the planner or the executor changed):
+
+| Symbol | Use |
+|---|---|
+| `HostileRouteTo(Vector2 goalBottom, out bool noWay)` | Walk to a point by the route planner. True while a route leg is under way. `noWay`: the planner gave up on the goal. Asking for a different tile resets the route. |
+| `HostileRouteStatus` | 0 none, 1 searching, 2 found, 3 best-effort (the goal itself is out of reach), 4 failed. |
+| `HostileRouteReset()` | Forget the route and its banned hook targets. |
+| `HostileMovementBusy` | The body hangs on a hook, climbs a face or flies a planned arc: do not hand it a new goal. |
+
+Levy symbols newly read by Warbands: `TileNav.InBounds / IsFloor / IsStandable / BottomCentre / FeetTile`, `OffscreenHop.Seen / RoomIsOpen`, `FollowerTravel.HopTo`, `WeaponProfile.RangeTiles / IsMelee`, `SoldierNPC.HasFlightKit` and `Record.Gear.Hook`.

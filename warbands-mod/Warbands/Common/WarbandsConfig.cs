@@ -16,8 +16,11 @@ namespace Warbands.Common
 		/// <summary>No bands until the world reaches this stage: 0 pre-boss, 1 after the Eater of Worlds / Brain of Cthulhu, 2 after Skeletron, 3 early Hardmode, 4 after the mechanical bosses, 5 after Plantera, 6 after Golem.</summary>
 		[Range(0, 6)] [DefaultValue(1)] public int FirstStage;
 
-		/// <summary>Chance per real minute, in percent, that a band forms near a player standing in the open. Rolled once per minute per player, only when fewer than the maximum number of bands are out.</summary>
-		[Range(0f, 100f)] [DefaultValue(4f)] public float SpawnChancePercentPerMinute;
+		/// <summary>Chance per real minute, in percent, that a band forms near a player standing in the open. Rolled once per minute per player, only when fewer than the maximum number of bands are out. (Named afresh when the default went from 4 to 12, so a saved config does not hold the old figure.)</summary>
+		[Range(0f, 100f)] [DefaultValue(12f)] public float NaturalChancePercentPerMinute;
+
+		/// <summary>No new natural band forms while any boss is alive (a band already out stays and keeps fighting). Summoned bands and event bands are not held back.</summary>
+		[DefaultValue(true)] public bool NoSpawnsDuringBosses;
 
 		[Range(1, 12)] [DefaultValue(3)] public int BandSizeMin;
 		[Range(1, 12)] [DefaultValue(5)] public int BandSizeMax;

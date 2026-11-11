@@ -33,7 +33,7 @@ namespace Warbands.Content.NPCs
 		/// <summary>Event bands: the sturdier named member that drops the event's loot.</summary>
 		public bool IsCaptain => Member?.Captain == true;
 		public const float CaptainLifeMult = 1.6f;
-		private uint _skWithdrawUntil, _skNextAt, _hopAt; private int _leaveDir;
+		private uint _skWithdrawUntil, _skNextAt, _hopAt, _settledAt; private int _leaveDir;
 		public uint EngagedUntil;
 		public float Morale = 100f;
 		public string ShortName = "";
@@ -244,12 +244,19 @@ namespace Warbands.Content.NPCs
 				return;
 			}
 			// first contact: do not walk in as a clump. Shooters take high ground and every member takes its own slot around the foe, then the fight proper begins
-			if (nearTiles > 32f && !Panic)
+			if (nearTiles > (Role == 'E' ? 32f : 60f) && !Panic)
 			{
-				HostileDropTarget(); HostileIdleState();
-				Posture(band, near, 30f, Role != 'E', (uint)now);
-				return;
+				// a member that has stood at its spot for a moment opens fire from there (a spot further than 32 tiles out would otherwise hold the member back for ever)
+				bool settled = PostureSpot != default && Vector2.Distance(NPC.Bottom, PostureSpot) <= 40f;
+				if (!settled) _settledAt = 0; else if (_settledAt == 0) _settledAt = (uint)now;
+				if (!(settled && (uint)now - _settledAt > 40u))
+				{
+					HostileDropTarget(); HostileIdleState();
+					Posture(band, near, 30f, Role != 'E', (uint)now);
+					return;
+				}
 			}
+			else _settledAt = 0;
 			if (Roster?.Skirmish == true && Role == 'E' && !Panic && SkirmishWithdraw(near, (uint)now)) return;
 			bool engaged = HostileEngage();
 			NPC foe = HostileTarget ?? near;

@@ -22,7 +22,7 @@ namespace Warbands.Common
 	{
 		public const int IndexBase = 100;
 		private static readonly BandRoster[] _cache = new BandRoster[4 * Stage.Count];
-		public static int Credited, Departed, Spawned, CaptainDrops;
+		public static int Credited, Departed, Spawned, CaptainDrops, Kills, CaptainKills;
 		/// <summary>Headless lab / self-check: pretend the event is on and a player qualifies (a dedicated server with nobody online runs no zone code).</summary>
 		public static bool LabAlwaysQualify;
 
@@ -221,6 +221,7 @@ namespace Warbands.Common
 		public static void OnMemberKilled(BandLevyNPC m, BandBrain band)
 		{
 			var kind = band.Type.Event;
+			Kills++; if (m.IsCaptain) CaptainKills++;
 			if (CreditProgress(kind, m.IsCaptain ? 2 : 1)) Credited += m.IsCaptain ? 2 : 1;
 			var table = m.IsCaptain ? CaptainLoot(kind) : CrewLoot(kind);
 			foreach (var (type, stack) in RollDrops(table, band.Stage))
@@ -327,8 +328,8 @@ namespace Warbands.Common
 			{
 				var kind = (EventKind)ki; var s = _st[ki];
 				bool active = EventBands.Enabled(kind) && EventBands.Active(kind);
-				if (!active) { s.WasActive = false; s.BandId = 0; continue; }
-				if (!s.WasActive) { s.WasActive = true; s.Spawned = 0; s.NextAt = now + 60u * 10; s.BandId = 0; } // the first band comes ten seconds into the event
+				if (!active) { if (s.WasActive) Mod.Logger.Info($"[Warbands] event {kind} over"); s.WasActive = false; s.BandId = 0; continue; }
+				if (!s.WasActive) { Mod.Logger.Info($"[Warbands] event {kind} on (stage {Stage.Current})"); s.WasActive = true; s.Spawned = 0; s.NextAt = now + 60u * 10; s.BandId = 0; } // the first band comes ten seconds into the event
 				if (s.BandId != 0)
 				{
 					if (BandBrain.All.ContainsKey(s.BandId)) continue; // one band at a time per event
@@ -340,7 +341,7 @@ namespace Warbands.Common
 				if (who.Count == 0) continue;
 				var p = who[Main.rand.Next(who.Count)];
 				if (EventBands.TrySpawn(kind, p) && BandSpawner.LastBrain != null) { s.BandId = BandSpawner.LastBrain.Id; s.Spawned++; }
-				else s.NextAt = now + 60u * 4; // no footing this time: try again shortly
+				else { s.NextAt = now + 60u * 4; Mod.Logger.Info($"[Warbands] event {kind}: no band formed this try (no footing near the player)"); } // try again shortly
 			}
 			Tend(now);
 		}

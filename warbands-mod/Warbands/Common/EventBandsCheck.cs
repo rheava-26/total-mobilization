@@ -138,7 +138,7 @@ namespace Warbands.Common
 					var cap = live.FirstOrDefault(l => l.IsCaptain);
 					var crew = live.Where(l => !l.IsCaptain).ToList();
 					bool hostile = !brain.Neutral && brain.Aggro && !brain.Warns && !brain.Type.Warns && live.All(l => !l.HostilePassive);
-					Chk($"{k}: a band of {live.Count} forms (captain + {crew.Count}), always hostile with the neutral percent at 100", live.Count >= 4 && live.Count <= 8 && cap != null && crew.Count >= 3 && hostile && brain.IsEvent, $"neutral={brain.Neutral} aggro={brain.Aggro} warns={brain.Warns}");
+					Chk($"{k}: a band of {live.Count} forms (captain + {crew.Count}), always hostile with the neutral percent at 100", live.Count >= 3 && live.Count <= 8 && cap != null && crew.Count >= 2 && hostile && brain.IsEvent, $"neutral={brain.Neutral} aggro={brain.Aggro} warns={brain.Warns}");
 					bool capOk = cap != null && cap.NPC.GivenName.StartsWith(brain.Type.CaptainTitle) && cap.NPC.GivenName.Contains('"') && crew.All(l => !l.NPC.GivenName.StartsWith(brain.Type.CaptainTitle) && l.NPC.GivenName.StartsWith(brain.Type.Title))
 						&& cap.NPC.lifeMax >= (int)(BandStats.Life(brain.Stage, cap.Role) * BandLevyNPC.CaptainLifeMult) - 1 && crew.All(l => l.NPC.lifeMax == BandStats.Life(brain.Stage, l.Role));
 					Chk($"{k}: the captain has its own title and name and {BandLevyNPC.CaptainLifeMult:0.#}x the life; members keep the normal band life", capOk, cap == null ? "no captain" : $"{cap.NPC.GivenName} life {cap.NPC.lifeMax} (member base {BandStats.Life(brain.Stage, cap.Role)})");

@@ -13,7 +13,7 @@ namespace Levy.Common.Net
 	///  Discharge: int soldierId                                   (Roster)
 	///  Promote: int soldierId, byte grade                         (Roster)
 	///  Demote: int soldierId, byte grade (the lower grade wanted)  (Roster) — a repeat of an applied demotion is a no-op, like Promote
-	///  Reserve: int soldierId, bool toReserve                     (Roster) — true takes the soldier off active duty, false recalls him; the packet names the wanted state, so a repeat is a no-op
+	///  Reserve: int soldierId, bool toReserve                     (Roster) — true takes the soldier off active duty, false recalls him; the packet names the wanted state, so a repeat is a no-op; soldierId -1 means every Regular of the sender
 	///  Order: byte order (SoldierOrder, incl. SearchDestroy, FreeRein), bool atBarracks   (Roster) — commander = sender
 	///  HoldFire: bool atBarracks                                  (Roster)
 	///  SpreadOut: bool atBarracks                                 (Roster) — toggle, like HoldFire

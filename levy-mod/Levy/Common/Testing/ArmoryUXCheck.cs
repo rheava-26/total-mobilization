@@ -16,7 +16,7 @@ namespace Levy.Common.Testing
 {
 	/// <summary>
 	/// Boot self-check of the Armory UX batch (dedicated server only; throwaway armories and records): the rule list's new fields round-trip and old data loads as no limit, the sidearm limit and the summon-weapon rule
-	/// shape a levy's kit and take back what is over, a stripped levy is issued nothing, hand-set items can be listed and cleared without the item in the armory, the map click needs a second click, and the levy
+	/// shape a levy's kit and take back what is over, a stripped levy is issued nothing, hand-set items can be listed and cleared without the item in the armory, the map order needs a double-click, and the levy
 	/// cap curve. Logs "[ArmoryUX] ..." lines and a final "[ArmoryUX] self-check DONE pass=N fail=M".
 	/// </summary>
 	public sealed class ArmoryUXCheck : ModSystem
@@ -39,7 +39,7 @@ namespace Levy.Common.Testing
 				Stripped(Check);
 				HandSet(Check);
 				Cameras(Check);
-				var why = ""; Check("map click: a drag never sends, a click places, the second click sends", MapClicks.SelfCheck(out why), why);
+				var why = ""; Check("map click: a drag never sends, a single click does nothing, a double-click sends", MapClicks.SelfCheck(out why), why);
 				CapCurve(Check);
 			}
 			catch (Exception e) { fail++; Mod.Logger.Info("[ArmoryUX] FAIL threw " + e.GetType().Name + ": " + e.Message + " " + e.StackTrace); }

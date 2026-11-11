@@ -224,11 +224,10 @@ namespace Levy.Common.Observe
 			Vector2 t = MapOrder.MouseTile(in context);
 			int tx = (int)t.X, ty = (int)t.Y;
 			bool overUi = MapOrder.OverMapCloseButton(Main.mouseX, Main.mouseY, Main.screenHeight);
-			var step = MapClicks.Step(Main.mouseLeft, Main.MouseScreen, tx, ty, context.MapScale, Main.GameUpdateCount, overUi);
-			if (MapClicks.Pending) Mark(ref context, MapClicks.PendingX, MapClicks.PendingY, new Color(255, 140, 60));
+			var step = MapClicks.Step(Main.mouseLeft, Main.MouseScreen, tx, ty, Environment.TickCount64, overUi);
 			if (!MapOrder.ValidTile(tx, ty)) return;
 			Mark(ref context, tx, ty, new Color(255, 230, 90));
-			text = LevyUtil.T(MapClicks.Pending ? "Observe.MapConfirmHint" : "Observe.MapSendHint");
+			text = LevyUtil.T("Observe.MapSendHint");
 			if (step == MapClicks.Result.Confirmed)
 			{
 				bool wasPick = MapOrder.PickMode;
@@ -236,7 +235,6 @@ namespace Levy.Common.Observe
 				MapOrder.PickMode = false;
 				if (wasPick) { Main.mapFullscreen = false; Terraria.Audio.SoundEngine.PlaySound(SoundID.MenuClose); } // the barracks pick is one click: back to the world (MapPickSystem reopens the panel)
 			}
-			else if (step == MapClicks.Result.Placed) Terraria.Audio.SoundEngine.PlaySound(SoundID.MenuTick);
 		}
 
 		private static void Mark(ref MapOverlayDrawContext c, int tx, int ty, Color col)
@@ -248,62 +246,67 @@ namespace Levy.Common.Observe
 	}
 
 	/// <summary>
-	/// Map-order clicking. A click is a press and a release that stay within <see cref="DragPx"/> pixels, so dragging the map never counts. The first click puts a pending marker on the map;
-	/// a second click on the same spot (within <see cref="SlopPx"/> pixels, inside <see cref="WindowTicks"/>) confirms and sends. A click anywhere else moves the marker. Pure state, driven once a frame.
+	/// Map-order clicking. A click is a press and a release that stay within <see cref="DragPx"/> pixels, so dragging the map never counts (and a drag between two clicks cancels the first).
+	/// The order is sent only by a real DOUBLE-click: two clicks within <see cref="DoubleMs"/> milliseconds and <see cref="SlopPx"/> pixels of each other. A single click does nothing, so the map can be panned and clicked about freely.
+	/// Pure state, driven once a frame; time is real milliseconds (the map can be open while the game ticks are not advancing evenly).
 	/// </summary>
 	public static class MapClicks
 	{
-		public enum Result : byte { None, Placed, Confirmed }
+		public enum Result : byte { None, Clicked, Confirmed }
 		public const float DragPx = 6f, SlopPx = 16f;
-		public const uint WindowTicks = 60u * 12u;
-		public static bool Pending; public static int PendingX, PendingY; public static int SentX, SentY;
-		private static uint _pendingTick; private static bool _wasLeft, _down, _gate; private static Vector2 _downAt;
+		public const long DoubleMs = 350;
+		public static int SentX, SentY;
+		private static long _lastClickMs = long.MinValue; private static Vector2 _lastClickAt;
+		private static bool _wasLeft, _down, _gate; private static Vector2 _downAt;
 
-		public static void Reset() { Pending = false; _down = false; _gate = false; _wasLeft = !Main.dedServ && Main.mouseLeft; }
+		public static void Reset() { _lastClickMs = long.MinValue; _down = false; _gate = false; _wasLeft = !Main.dedServ && Main.mouseLeft; }
 
-		/// <summary>One frame. <paramref name="left"/> is the mouse button, <paramref name="mouse"/> its screen position, (tx, ty) the map tile under it, <paramref name="mapScale"/> the map's pixels per tile.</summary>
-		public static Result Step(bool left, Vector2 mouse, int tx, int ty, float mapScale, uint now, bool overUi)
+		/// <summary>One frame. <paramref name="left"/> is the mouse button, <paramref name="mouse"/> its screen position, (tx, ty) the map tile under it, <paramref name="nowMs"/> real time in milliseconds.</summary>
+		public static Result Step(bool left, Vector2 mouse, int tx, int ty, long nowMs, bool overUi)
 		{
 			var res = Result.None;
-			if (Pending && now - _pendingTick > WindowTicks) Pending = false;
 			if (!left) _gate = true; // the press that opened the map is not a click
 			if (left && !_wasLeft && _gate && !overUi) { _down = true; _downAt = mouse; }
-			else if (left && _down && Vector2.Distance(mouse, _downAt) > DragPx) _down = false; // the map is being dragged
+			else if (left && _down && Vector2.Distance(mouse, _downAt) > DragPx) { _down = false; _lastClickMs = long.MinValue; } // the map is being dragged: not a click, and it cancels a first click
 			else if (!left && _wasLeft && _down)
 			{
 				_down = false;
-				if (Pending && Vector2.Distance(new Vector2(tx, ty) * mapScale, new Vector2(PendingX, PendingY) * mapScale) <= SlopPx)
+				if (_lastClickMs != long.MinValue && nowMs - _lastClickMs <= DoubleMs && Vector2.Distance(mouse, _lastClickAt) <= SlopPx)
 				{
-					SentX = PendingX; SentY = PendingY; Pending = false; res = Result.Confirmed;
+					SentX = tx; SentY = ty; _lastClickMs = long.MinValue; res = Result.Confirmed;
 				}
-				else { Pending = true; PendingX = tx; PendingY = ty; _pendingTick = now; res = Result.Placed; }
+				else { _lastClickMs = nowMs; _lastClickAt = mouse; res = Result.Clicked; }
 			}
 			_wasLeft = left;
 			return res;
 		}
 
-		/// <summary>Boot check: the opening press never places, a drag never places, a click places, a second click on the spot confirms, a click elsewhere moves the marker, an old marker expires.</summary>
+		/// <summary>Boot check: the opening press never counts, a drag never counts, a single click does nothing, two quick clicks on the spot send, slow or distant pairs do not, a drag between the clicks cancels.</summary>
 		public static bool SelfCheck(out string why)
 		{
 			why = "";
-			bool was = _wasLeft, wp = Pending, wd = _down, wg = _gate; int px = PendingX, py = PendingY;
+			bool was = _wasLeft, wd = _down, wg = _gate; long wl = _lastClickMs; Vector2 wa = _lastClickAt, wda = _downAt; int sx = SentX, sy = SentY;
 			try
 			{
-				Pending = false; _down = false; _gate = false; _wasLeft = true; // the opening press is still down
-				uint t = 1000;
-				Result Click(int x, int y, uint at) { Step(true, new Vector2(x * 2, y * 2), x, y, 2f, at, false); return Step(false, new Vector2(x * 2, y * 2), x, y, 2f, at + 2, false); }
-				var r0 = Step(false, Vector2.Zero, 0, 0, 2f, t, false);
-				if (r0 != Result.None || Pending) { why = "the press that opened the map placed a point"; return false; }
-				Step(true, new Vector2(100, 100), 50, 50, 2f, t + 5, false); Step(true, new Vector2(160, 100), 80, 50, 2f, t + 6, false);
-				var r1 = Step(false, new Vector2(160, 100), 80, 50, 2f, t + 7, false);
-				if (r1 != Result.None || Pending) { why = "a drag placed a point"; return false; }
-				var r2 = Click(300, 300, t + 20); if (r2 != Result.Placed || !Pending) { why = "a click did not place a point"; return false; }
-				var r3 = Click(400, 400, t + 40); if (r3 != Result.Placed || PendingX != 400) { why = "a click elsewhere did not move the point"; return false; }
-				var r4 = Click(401, 400, t + 60); if (r4 != Result.Confirmed || SentX != 400 || Pending) { why = "the second click did not confirm"; return false; }
-				Click(10, 10, t + 80); var r5 = Click(10, 10, t + WindowTicks + 200); if (r5 != Result.Placed) { why = "an old point did not expire"; return false; }
+				_lastClickMs = long.MinValue; _down = false; _gate = false; _wasLeft = true; // the opening press is still down
+				long t = 100000;
+				Result Click(int x, int y, long at) { Step(true, new Vector2(x * 2, y * 2), x, y, at, false); return Step(false, new Vector2(x * 2, y * 2), x, y, at + 20, false); }
+				var r0 = Step(false, Vector2.Zero, 0, 0, t, false);
+				if (r0 != Result.None) { why = "the press that opened the map counted"; return false; }
+				Step(true, new Vector2(100, 100), 50, 50, t + 5, false); Step(true, new Vector2(160, 100), 80, 50, t + 6, false);
+				var r1 = Step(false, new Vector2(160, 100), 80, 50, t + 7, false);
+				if (r1 != Result.None) { why = "a drag counted as a click"; return false; }
+				var r2 = Click(300, 300, t + 1000); if (r2 != Result.Clicked) { why = "a single click was not just a click (" + r2 + ")"; return false; }
+				var r3 = Click(300, 300, t + 1100); if (r3 != Result.Confirmed || SentX != 300 || SentY != 300) { why = "two quick clicks on the spot did not send (" + r3 + ")"; return false; }
+				var r4 = Click(300, 300, t + 1200); if (r4 != Result.Clicked) { why = "a third click right after a send sent again (" + r4 + ")"; return false; }
+				Click(300, 300, t + 3000); var r5 = Click(300, 300, t + 3000 + DoubleMs + 100); if (r5 != Result.Clicked) { why = "two slow clicks sent (" + r5 + ")"; return false; }
+				Click(300, 300, t + 6000); var r6 = Click(330, 300, t + 6100); if (r6 != Result.Clicked) { why = "two quick clicks on different spots sent (" + r6 + ")"; return false; }
+				Click(300, 300, t + 9000); // first click, then a drag, then a second click on the same spot
+				Step(true, new Vector2(600, 600), 300, 300, t + 9060, false); Step(true, new Vector2(700, 600), 350, 300, t + 9070, false); Step(false, new Vector2(700, 600), 350, 300, t + 9080, false);
+				var r7 = Click(300, 300, t + 9150); if (r7 != Result.Clicked) { why = "a drag between two clicks did not cancel the first (" + r7 + ")"; return false; }
 				return true;
 			}
-			finally { _wasLeft = was; Pending = wp; _down = wd; _gate = wg; PendingX = px; PendingY = py; }
+			finally { _wasLeft = was; _down = wd; _gate = wg; _lastClickMs = wl; _lastClickAt = wa; _downAt = wda; SentX = sx; SentY = sy; }
 		}
 	}
 
@@ -338,7 +341,7 @@ namespace Levy.Common.Observe
 		public override void PostSetupContent()
 		{
 			bool clickOk = MapOrder.IsPickClick(true, 600, 400, 1080) && !MapOrder.IsPickClick(false, 600, 400, 1080) && !MapOrder.IsPickClick(true, 20, 1050, 1080);
-			string why = ""; if (PickGate.SelfCheck() && clickOk && MapClicks.SelfCheck(out why)) Mod.Logger.Info("[MapPick] self-check ok (a click places, a second click on it sends, a drag never does)"); else Mod.Logger.Error("[MapPick] self-check FAILED " + why);
+			string why = ""; if (PickGate.SelfCheck() && clickOk && MapClicks.SelfCheck(out why)) Mod.Logger.Info("[MapPick] self-check ok (a double-click sends, a single click or a drag never does)"); else Mod.Logger.Error("[MapPick] self-check FAILED " + why);
 		}
 
 		public override void PostUpdateEverything()

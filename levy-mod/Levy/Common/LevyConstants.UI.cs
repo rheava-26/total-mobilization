@@ -75,8 +75,8 @@ namespace Levy.Common
 			public const int ArmoryGridTop = 96;
 			public const float SlotScale = 0.6f;
 			public const int SlotPitch = 34; // 52 * 0.6 + gap
-			/// <summary>Server-side sanity range for armory slot edits (tiles from the armory).</summary>
-			public const int ArmoryEditRangeTiles = 32;
+			/// <summary>Server-side sanity range for armory slot edits (tiles from the armory). Wide enough for a player standing at an Armory Heart, which may sit a Logistical Center's reach from its armory.</summary>
+			public const int ArmoryEditRangeTiles = LevyConstants.LogisticsLinkRadiusTiles + 6;
 
 			// ---- armory search + filter ----
 			/// <summary>Search box in the header row: left edge, gap to the Sort button, height, and the left/right text inset inside it.</summary>

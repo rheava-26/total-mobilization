@@ -455,8 +455,8 @@ namespace Levy.Common.Systems
 		{
 			if (LevyUtil.IsClient || rec == null || rec.Kind != SoldierKind.Regular || !Regulars.Contains(rec) || rec.Reserve) return false;
 			var commander = OnlineCommander(rec);
-			if (MutinySystem.IsMutinous(rec)) { SendToPlayer(commander, LevyUtil.T("Roster.ReserveMutinous", rec.Name), LevyConstants.Mutiny.Alarm); return false; }
-			if (ReserveCount >= LevyConstants.ReserveMax) { SendToPlayer(commander, LevyUtil.T("Roster.ReserveFull", LevyConstants.ReserveMax)); return false; }
+			if (MutinySystem.IsMutinous(rec)) { if (!_reserveBatch) SendToPlayer(commander, LevyUtil.T("Roster.ReserveMutinous", rec.Name), LevyConstants.Mutiny.Alarm); return false; }
+			if (ReserveCount >= LevyConstants.ReserveMax) { if (!_reserveBatch) SendToPlayer(commander, LevyUtil.T("Roster.ReserveFull", LevyConstants.ReserveMax)); return false; }
 
 			var body = BodyOf(rec);
 			if (body != null)
@@ -468,6 +468,7 @@ namespace Levy.Common.Systems
 			rec.Reserve = true;
 			// Stood down in every other respect (so nothing that reads the order can mistake him for a follower), but Reserve is what keeps him off the books.
 			rec.Order = SoldierOrder.ReturnToBarracks; rec.StoodDown = true;
+			if (_reserveBatch) return true; // SetReserveAll says one line and sends one snapshot for the whole sweep
 			SendToPlayer(commander, LevyUtil.T("Roster.Demobilized", rec.Name));
 			SendRosterSnapshot();
 			return true;
@@ -482,7 +483,7 @@ namespace Levy.Common.Systems
 		{
 			if (LevyUtil.IsClient || rec == null || rec.Kind != SoldierKind.Regular || !Regulars.Contains(rec) || !rec.Reserve) return false;
 			var commander = OnlineCommander(rec);
-			if (CommandPointsUsed + rec.CommandPointCost > CommandPoints) { SendToPlayer(commander, LevyUtil.T("UI.NotEnoughCp")); return false; }
+			if (CommandPointsUsed + rec.CommandPointCost > CommandPoints) { if (!_reserveBatch) SendToPlayer(commander, LevyUtil.T("UI.NotEnoughCp")); return false; }
 
 			rec.Reserve = false;
 			rec.Order = SoldierOrder.Follow; rec.StoodDown = false;
@@ -491,9 +492,37 @@ namespace Levy.Common.Systems
 				ArmoryOf(HomeOf(rec))?.IssueGear(rec);
 				if (SpawnPositionFor(rec, out var pos)) SpawnBody(rec, pos); // -1 under the render cap: the deployment loop picks him up later
 			}
+			if (_reserveBatch) return true;
 			SendToPlayer(commander, LevyUtil.T("Roster.Remobilized", rec.Name));
 			SendRosterSnapshot();
 			return true;
+		}
+
+		private bool _reserveBatch;
+
+		/// <summary>
+		/// Stand down every Regular of <paramref name="commander"/> (<paramref name="toReserve"/> true: <see cref="Demobilize"/> each) or bring every one in the reserve back (false: <see cref="Remobilize"/> each, while command points last).
+		/// One chat line and one roster snapshot for the whole sweep. Returns how many changed state. Server / single player only.
+		/// </summary>
+		public virtual int SetReserveAll(Player commander, bool toReserve)
+		{
+			if (LevyUtil.IsClient || commander == null) return 0;
+			var list = new List<SoldierRecord>(RegularsOf(commander));
+			int done = 0, refused = 0;
+			_reserveBatch = true;
+			try
+			{
+				foreach (var r in list)
+				{
+					if (r == null || r.Kind != SoldierKind.Regular || r.Reserve == toReserve) continue;
+					if (toReserve ? Demobilize(r) : Remobilize(r)) done++; else refused++;
+				}
+			}
+			finally { _reserveBatch = false; }
+			if (done > 0) SendRosterSnapshot();
+			SendToPlayer(commander, done == 0 && refused == 0 ? LevyUtil.T(toReserve ? "Roster.NoneToReserve" : "Roster.NoneInReserve") : LevyUtil.T(toReserve ? "Roster.ReservedAll" : "Roster.RecalledAll", done));
+			if (refused > 0) SendToPlayer(commander, LevyUtil.T("Roster.ReserveAllRefused", refused));
+			return done;
 		}
 
 		public virtual void Discharge(SoldierRecord rec)

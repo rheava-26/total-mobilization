@@ -59,7 +59,7 @@ Mods: {
 					'''
 					Orders and Rally reach every levy in the world
 					Click to open the command radial
-					Can send the army to a point on the map
+					Double-click the map to send the army there
 					'''
 			}
 
@@ -69,7 +69,7 @@ Mods: {
 					'''
 					Equipped by a levy in its camera slot
 					Use to see through the next GoPro levy
-					Right click or Esc to stop watching
+					Right click to open the camera view
 					'''
 			}
 
@@ -756,6 +756,8 @@ Mods: {
 			TaxToTreasury: Tax Collector pays the treasury
 			Mobilize: Mobilize
 			StandDown: Stand down
+			StandDownAll: Stand down all
+			RemobilizeAll: Remobilize all
 			Follow: Follow me
 			Hold: Hold here
 			Return: Return to barracks

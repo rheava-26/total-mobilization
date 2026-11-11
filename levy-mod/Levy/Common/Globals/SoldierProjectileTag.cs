@@ -50,6 +50,8 @@ namespace Levy.Common.Globals
 		public uint SpawnTick = Main.GameUpdateCount;
 
 		public bool IsSoldierShot => SoldierIndex >= 0;
+		/// <summary>PairCull: -1 not decided yet, 0 never cull this projectile, else the margin (px) beyond its hitbox.</summary>
+		private float _cullMargin = -1f;
 		/// <summary>Set once a reflected soldier shot has been re-aimed at its firing soldier (so the bounce-back hits the unit, not the commander).</summary>
 		private bool _reflectRedirected;
 
@@ -123,8 +125,19 @@ namespace Levy.Common.Globals
 			// Vanilla runs this for EVERY (damaging projectile, NPC) pair before the hitbox test, and the army's own bodies fill much of the NPC array: with a sky full of soldier shots most
 			// pairs are (our shot, our friend). A friendly NPC is never a legal target for a soldier / officer / summon shot (it is a never-target, and vanilla would not hit it either), so
 			// refuse it before anything else spends time on the pair.
+			if (LevyProf.On && SoldierIndex >= 0) LevyProf.Pairs++;
 			if ((SoldierIndex >= 0 || CommanderIndex >= 0) && target.friendly) return false;
 			if (CommanderIndex >= 0 && SoldierIndex < 0 && SoldierTargeting.IsNeverTarget(target)) return false;
+			// A soldier's own shot (LootCredit's rule, folded in so the pair pays for one hook and one tag lookup, not two): never hits what a soldier would never choose (disguised mimics, cultist set pieces, bound NPCs,
+			// Plantera's hooks, the Dungeon Guardian... never start a fight we did not choose; the one exception is a critter inside the commander's Focus Attack radius), and a soldier told to hold fire keeps its real
+			// minions beside it but they deal nothing.
+			if (SoldierIndex >= 0)
+			{
+				if (_cullMargin < 0f) _cullMargin = PairCull.Classify(projectile);
+				if (_cullMargin > 0f && PairCull.Far(projectile, target, _cullMargin)) return false; // out of reach of anything this shot could hit: refused before the mods after this hook are asked (PairCull)
+				if (SoldierTargeting.IsNeverTarget(target) && !SoldierTargeting.FocusAllowsCritterShot(SoldierIndex, target)) return false;
+				if (SoldierMinions.SuppressedByHoldFire(projectile, SoldierIndex)) return false;
+			}
 			return null;
 		}
 
@@ -147,7 +160,7 @@ namespace Levy.Common.Globals
 		/// <summary>Owner-gear on-hit effects vanilla skips for npcProj shots: the soldier's armor set bonuses (Spectre Mask / Hood bolts, Titanium, Orichalcum, Hallowed, Palladium, Nebula, Frost, Beetle Might) run here against his own timers.</summary>
 		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
 		{
-			if (SoldierIndex >= 0) Hits++;
+			if (SoldierIndex >= 0) { Hits++; if (LevyProf.On) LevyProf.ShotHits++; }
 			if (SoldierIndex < 0 || LevyUtil.IsClient) return;
 			SoldierNPC hitter = EnemyTargeting.LiveBody(SoldierIndex);
 			if (hitter != null) { hitter.MinionHits++; hitter.ProjHitTick = (int)Main.GameUpdateCount; }

@@ -504,23 +504,32 @@ namespace Levy.Common.Movement
 			return best;
 		}
 
+		/// <summary>What <see cref="Hits"/> returns when the candidate was cut off before its first threat: far over any cut-off.</summary>
+		public const int AbortedHits = 1_000_000;
+
 		/// <summary>True when one of these threats is a worm head.</summary>
 		public static bool HasHead(List<Threat> l) { for (int i = 0; i < l.Count; i++) if (l[i].Head) return true; return false; }
 
 		/// <summary>Counts the threats that overlap the body on this manoeuvre inside the horizon. <paramref name="lastHit"/> is the tick of the latest overlap.</summary>
-		public static int Hits(List<Threat> near, Vector2 c0, float bw, float bh, in Maneuver m, float g, int horizon, out int firstHit, out int lastHit, float extraMargin = 0f, int immune = 0)
+		public static int Hits(List<Threat> near, Vector2 c0, float bw, float bh, in Maneuver m, float g, int horizon, out int firstHit, out int lastHit, float extraMargin = 0f, int immune = 0, float scoreBase = 0f, float abortScore = float.PositiveInfinity)
 		{
-			if (!PerfChk) return HitsCore(near, c0, bw, bh, m, g, horizon, out firstHit, out lastHit, extraMargin, immune, FastOn);
-			int a = HitsCore(near, c0, bw, bh, m, g, horizon, out firstHit, out lastHit, extraMargin, immune, true);
-			int b = HitsCore(near, c0, bw, bh, m, g, horizon, out int f2, out int l2, extraMargin, immune, false);
+			if (!PerfChk) return HitsCore(near, c0, bw, bh, m, g, horizon, out firstHit, out lastHit, extraMargin, immune, FastOn, scoreBase, abortScore);
+			int a = HitsCore(near, c0, bw, bh, m, g, horizon, out firstHit, out lastHit, extraMargin, immune, true, scoreBase, abortScore);
+			int b = HitsCore(near, c0, bw, bh, m, g, horizon, out int f2, out int l2, extraMargin, immune, false, scoreBase, abortScore);
 			ChkN++; if (a != b || firstHit != f2 || lastHit != l2) ChkBad++;
 			return a;
 		}
 
-		private static int HitsCore(List<Threat> near, Vector2 c0, float bw, float bh, in Maneuver m, float g, int horizon, out int firstHit, out int lastHit, float extraMargin, int immune, bool fast)
+		/// <summary>
+		/// scoreBase / abortScore: the caller only wants a candidate that scores below abortScore, where score = hits * 100 + scoreBase (+ a penalty that is never negative). Once the running count alone puts it
+		/// at or over that, the candidate cannot win whatever the remaining threats do, so the count stops there (the returned number is then only a lower bound, at or over the cut-off).
+		/// </summary>
+		private static int HitsCore(List<Threat> near, Vector2 c0, float bw, float bh, in Maneuver m, float g, int horizon, out int firstHit, out int lastHit, float extraMargin, int immune, bool fast, float scoreBase = 0f, float abortScore = float.PositiveInfinity)
 		{
 			long t0 = Stopwatch.GetTimestamp();
 			int hits = 0; firstHit = int.MaxValue; lastHit = -1;
+			bool cut = Util.LevyProf.Opt && abortScore < float.PositiveInfinity;
+			if (cut && scoreBase >= abortScore) return AbortedHits;
 			Vector2 bHalf = new Vector2(bw, bh) * 0.5f;
 			// the body's path is the same for every threat: sample it once (2-tick steps from the first even tick), with the box around it
 			int bt0 = immune - (immune & 1), bn = horizon >= bt0 ? ((horizon - bt0) >> 1) + 1 : 0;
@@ -563,7 +572,11 @@ namespace Levy.Common.Movement
 						prev = cur;
 					}
 				}
-				if (hit >= 0) { hits += (th.Boss ? BossHitWeight : 1) + lineTicks / 12; if (hit < firstHit) firstHit = hit; if (hit > lastHit) lastHit = hit; if (lineLast > lastHit) lastHit = lineLast; }
+				if (hit >= 0)
+				{
+					hits += (th.Boss ? BossHitWeight : 1) + lineTicks / 12; if (hit < firstHit) firstHit = hit; if (hit > lastHit) lastHit = hit; if (lineLast > lastHit) lastHit = lineLast;
+					if (cut && hits * 100f + scoreBase >= abortScore) break;
+				}
 			}
 			long te = Stopwatch.GetTimestamp() - t0; EvalTs += te; Evals++; if (Util.LevyProf.On) Util.LevyProf.Add(Util.LevyProf.Hits, te);
 			return hits;

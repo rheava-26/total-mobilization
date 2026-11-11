@@ -457,11 +457,22 @@ namespace Levy.Content.NPCs
 		{
 			if (_dAir && !m.Hook) { m.Air = true; m.V0x = _dV0x; m.V0y = _dV0y; m.FloorY = m.Kind == 13 ? _dSolidFloorY : _dFloorY; m.VyCap = m.Kind == 13 ? 0f : m.Kind == 15 ? GlideFallSpeed : _dGlideCap; }
 			int imm = DanceMode >= 1 && DOn(4) && DashIFrameTicks > 0 && (m.Kind == 4 || m.Kind == 8 || m.Kind == 10) ? DashIFrameTicks : 0;
-			int h = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int last, _wormMargin, imm);
+			// only a candidate that scores under the best so far can win (score = hits * 100 + Penalty + a non-negative worm term): the count stops once it cannot
+			int h = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int last, _wormMargin, imm, m.Penalty, bestScore);
 			if (MobilityMode >= 1 && h == 0 && m.Kind != 0 && !(m.Air ? AirLandingSafe(c0, m, g) : LandingSafe(c0, m, g))) return;
 			float score = h * 100f + m.Penalty + (_wormScan && m.Kind != 0 ? WormAlongPenalty(m, c0, g) : 0f);
+			if (CutCheck)
+			{
+				// lab (LEVY_CUTCHK=1): the same candidate counted to the end must reach the same verdict as the cut-off count (and the same numbers when it wins)
+				int hf = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int lastF, _wormMargin, imm);
+				float scoreF = hf * 100f + m.Penalty + (_wormScan && m.Kind != 0 ? WormAlongPenalty(m, c0, g) : 0f);
+				CutChecked++; if ((score < bestScore) != (scoreF < bestScore) || (score < bestScore && (h != hf || last != lastF))) CutBad++;
+				if (h >= ThreatField.AbortedHits || h * 100f + m.Penalty >= bestScore) CutCut++;
+			}
 			if (score < bestScore) { best = m; bestHits = h; bestScore = score; bestLast = last; }
 		}
+		internal static readonly bool CutCheck = Environment.GetEnvironmentVariable("LEVY_CUTCHK") == "1";
+		public static int CutChecked, CutBad, CutCut;
 
 		/// <summary>Room to run <paramref name="distPx"/> to one side: no wall, no lava, a floor under every column (and, on a platform, only the same level).</summary>
 		private bool StepLaneSafe(int side, float distPx)

@@ -155,6 +155,24 @@ namespace Levy.Common.Testing
 				FaFill(cx + half + 1, fy - 90, cx + half + 1, fy + 25, true);
 			}
 			CrF = fy;
+			if (kind.EndsWith("w") && !sealedBox)
+			{
+				// a3w: a SEA arena. The box is flooded 24 tiles deep (water) with a sand island under the army's spawn (x from cx-45 to cx+15), so the commander and the levies stand on the shore and the Destroyer
+				// (spawned 80 tiles to the right) flies over open water; levies that wander off the island swim. No platform rows. Measurement only (perf labs).
+				const int seaDepth = 24;
+				for (int x = cx - half; x <= cx + half; x++)
+					for (int y = fy - seaDepth; y <= fy - 1; y++)
+					{
+						Tile t = Main.tile[x, y];
+						bool island = x >= cx - 45 && x <= cx + 15;
+						t.HasTile = island; t.TileType = island ? TileID.Sand : (ushort)0; if (island) t.BlockType = Terraria.ID.BlockType.Solid;
+						t.WallType = 0; t.LiquidAmount = island ? (byte)0 : (byte)255; t.LiquidType = Terraria.ID.LiquidID.Water;
+					}
+				CrF = fy - seaDepth;
+				_crArenaBuilt = kind;
+				Mod.Logger.Info($"HARNESS-L3: arena '{kind}' built: sea {seaDepth} tiles deep, island floor row {CrF}, half-width {half}");
+				return;
+			}
 			for (int k = 1; k <= 5; k++)
 			{
 				int py = fy - rowGap * k; int gap0 = cx - half + 10 + (k * 41) % 150;
@@ -292,7 +310,7 @@ namespace Levy.Common.Testing
 		private void Lab3Begin(CrRun run, CrState s)
 		{
 			Array.Clear(_l3Lv, 0, _l3Lv.Length); _l3HSum = _l3HSq = _l3BossH = 0; _l3HN = _l3BossHN = 0; CombatHarnessFloor = CrF;
-			L3LogAmmo(); global::Levy.Common.Util.LevyProf.Reset(); SoldierNPC.WmThinks = SoldierNPC.WmHolds = SoldierNPC.WmShifts = SoldierNPC.WmAims = SoldierNPC.WmAimCalls = SoldierNPC.WmPierce = 0;
+			L3LogAmmo(); global::Levy.Common.Util.LevyProf.Reset(); global::Levy.Common.Movement.Pathfinder.StatReset(); global::Levy.Common.Movement.RoutePlanner.StatReset(); SoldierNPC.WmThinks = SoldierNPC.WmHolds = SoldierNPC.WmShifts = SoldierNPC.WmAims = SoldierNPC.WmAimCalls = SoldierNPC.WmPierce = 0;
 			SoldierNPC.RowEvalsS = SoldierNPC.RowClimbsS = SoldierNPC.RowArriveS = SoldierNPC.RowStayS = SoldierNPC.RowDropsS = SoldierNPC.RowThreatEvalsS = 0; SoldierNPC.JumpFxCounts.Clear(); SoldierNPC.JumpFxProj = 0; SoldierNPC.JumpFxDmg = 0; SoldierNPC.JumpFxFailed = 0; _l3JumpKit.Clear(); _l3ChainN = _l3ChainBad = 0; _l3ChainMax = _l3NaiveSum = 0; SoldierNPC.ZoneClampsS = SoldierNPC.ZoneReturnsS = 0; _l3DN = 0; _l3DCmdSum = _l3DCmdMax = _l3DCtrSum = _l3DCtrMax = _l3DBossSum = 0;
 			_l3Tick = -1; _l3Poison = 0; _l3Irr = 0; _l3Flags.Clear(); _l3Buffs.Clear(); _l3Sampled = 0; _l3SulphSet = 0; _l3DefSum = 0; _l3Hazard = 0;
 			_l3Ammo = string.Join(",", s.Levies.Select(l => l.Spec.Weapon.Replace("CalamityMod/", "C:") + (string.IsNullOrEmpty(l.Spec.Ammo) ? "" : "/" + l.Spec.Ammo)));

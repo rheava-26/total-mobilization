@@ -48,6 +48,7 @@ TOKENS = {
     "fm": "fear model override", "surv": "survivability model override", "vet": "veterancy level", "mp": "mana points for every levy", "food": "1 Well Fed | 2 Plenty Satisfied on every levy",
     "hazard": "1 = real hazard pay", "zone": "1 = commander stands in the boss's biome zone", "side": "fight side", "rogue": "N rogue levies (Calamity)", "jungle": "1 = jungle arena biome",
     "stock": "1|2 = stock an armory so levies pick accessories themselves", "spec": "0 = the commander is an ordinary visible player", "bts": "boss tick scale", "dbg": "1 = debug logging", "diag": "1 = spectator diagnostic",
+    "drones": "N Mechanization field drones set down beside the commander (perf labs)", "turrets": "N Mechanization turrets set down beside the commander (perf labs)",
     "xs": "summon items (Item+Item) every non-summoner levy carries in his extra sidearm slots", "hook": "grappling hook item for every levy", "acc": "accessory item every levy gets", "cw": "every levy carries this weapon (clone weapon)", "zswap": "<zone>@<seconds>: the commander walks into this biome that many seconds into the fight (snow desert jungle hallow hell sky corrupt crimson)", "bb": "every Biome Blade holds this attunement (Default Hot Cold Evil TrueDefault ... Andromeda), whatever the biome", "clone": "R|M|E|S clone one rolled levy",
 }
 ENVS = {
@@ -59,7 +60,7 @@ ENVS = {
     "LEVY_CR_EXCLUDE": "comma list of weapons never rolled by the C# pools (default UrchinMace,SaharaSlicers)", "LEVY_CR_DOWNED": "milestone flags for gated weapons, e.g. downedDoG",
     "LEVY_CR_WORMDIST": "tiles between the worm's spawn and the commander (default 80)", "LEVY_CR_STEPS": "game ticks stepped per server turn (kit sets 120; lower = slower)",
 }
-BOSSES = "kslime ds eye crab eow brain hive perf qb skel sg".split()
+BOSSES = "kslime ds eye crab eow brain hive perf qb skel sg destroyer".split()
 SPEC_KEYS = {f[0] for f in FIELDS} | set(TOKENS)
 DEFAULT_ENV = {"LEVY_FEARMODEL": "events", "LEVY_SURV": "formation", "LEVY_CR_EXCLUDE": "CalamityMod/UrchinMace,CalamityMod/SaharaSlicers", "LEVY_ROWDBG": "0"}
 DEFAULTS = dict(boss="eow", mode="mdeath", arena="a3", gear="postskel.best", cmd="near", order="follow", cap=180, seeds=6, mods="calamity")

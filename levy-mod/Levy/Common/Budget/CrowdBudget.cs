@@ -234,6 +234,7 @@ namespace Levy.Common.Budget
 	{
 		/// <summary>LEVY_CROWD=1: log a [Crowd] census every 2 s (lab / diagnosis only).</summary>
 		internal static readonly bool Log = Environment.GetEnvironmentVariable("LEVY_CROWD") == "1";
+		private static readonly double SpikeMs = double.TryParse(Environment.GetEnvironmentVariable("LEVY_SPIKE_MS"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double sm) ? sm : 25.0;
 		private static readonly Stopwatch _tick = new(), _npc = new(), _proj = new();
 		private static double _tickMs, _npcMs, _projMs, _tickMax; private static int _tickN;
 		private static uint _lastLog;
@@ -242,18 +243,21 @@ namespace Levy.Common.Budget
 		public override void OnWorldUnload() { ResetCounters(); }
 		internal static void ResetCounters() { CrowdBudget.Peak.Clear(); CrowdBudget.RetiredMinions = CrowdBudget.RetiredSentries = CrowdBudget.RetiredDrones = CrowdBudget.GatedCasts = CrowdBudget.GatedDrones = CrowdBudget.Passes = 0; CrowdBudget.Retiring = false; _tickMs = _npcMs = _projMs = _tickMax = 0; _tickN = 0; }
 
-		public override void PreUpdateEntities() { if (Log) _tick.Restart(); }
-		public override void PreUpdateNPCs() { if (Log) _npc.Restart(); }
-		public override void PostUpdateNPCs() { if (Log) _npc.Stop(); }
-		public override void PreUpdateProjectiles() { if (Log) _proj.Restart(); }
-		public override void PostUpdateProjectiles() { if (Log) _proj.Stop(); }
+		private static int _gcBefore; private static long _allocStart, _allocSum, _cpuStart, _cpuSum, _cpuNpcStart, _cpuNpc, _cpuProjStart, _cpuProj; private static int _gc0, _gc1, _gc2; private static double _gcPause0;
+		private static readonly long[] _profBefore = new long[Util.LevyProf.N]; private static int _spikes;
+		public override void PreUpdateEntities() { if (Log) { if (Util.LevyProf.On) Util.LevyProf.CopyTo(_profBefore); _gcBefore = GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2); _tick.Restart(); _allocStart = GC.GetAllocatedBytesForCurrentThread(); _cpuStart = Util.LevyProf.ThreadCpuNs(); } }
+		public override void PreUpdateNPCs() { if (Log) { _npc.Restart(); _cpuNpcStart = Util.LevyProf.ThreadCpuNs(); } }
+		public override void PostUpdateNPCs() { if (Log) { _npc.Stop(); _cpuNpc += Util.LevyProf.ThreadCpuNs() - _cpuNpcStart; } }
+		public override void PreUpdateProjectiles() { if (Log) { _proj.Restart(); _cpuProjStart = Util.LevyProf.ThreadCpuNs(); } }
+		public override void PostUpdateProjectiles() { if (Log) { _proj.Stop(); _cpuProj += Util.LevyProf.ThreadCpuNs() - _cpuProjStart; } }
 
 		public override void PostUpdateEverything()
 		{
 			if (!LevyUtil.IsServerOrSingle || Main.gameMenu) return;
 			if (Log)
 			{
-				_tick.Stop(); double t = _tick.Elapsed.TotalMilliseconds; _tickMs += t; _npcMs += _npc.Elapsed.TotalMilliseconds; _projMs += _proj.Elapsed.TotalMilliseconds; _tickN++; if (t > _tickMax) _tickMax = t;
+				_tick.Stop(); double t = _tick.Elapsed.TotalMilliseconds; _allocSum += GC.GetAllocatedBytesForCurrentThread() - _allocStart; _cpuSum += Util.LevyProf.ThreadCpuNs() - _cpuStart; _tickMs += t; _npcMs += _npc.Elapsed.TotalMilliseconds; _projMs += _proj.Elapsed.TotalMilliseconds; _tickN++; if (t > _tickMax) _tickMax = t;
+				if (t > SpikeMs && _spikes++ < 120) Levy.Instance?.Logger.Info($"[Crowd] spike tick={Main.GameUpdateCount} {t:0.0} ms (npcs {_npc.Elapsed.TotalMilliseconds:0.0}, projectiles {_proj.Elapsed.TotalMilliseconds:0.0}, gc {GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2) - _gcBefore}) {(Util.LevyProf.On ? Util.LevyProf.DescribeDelta(_profBefore, 5) : "")}");
 			}
 			uint now = Main.GameUpdateCount;
 			bool logNow = Log && now - _lastLog >= 120;
@@ -267,7 +271,8 @@ namespace Levy.Common.Budget
 				var top = new List<KeyValuePair<string, int>>(c.Top); top.Sort((a, b) => b.Value.CompareTo(a.Value));
 				var sb = new StringBuilder(); for (int i = 0; i < top.Count && i < 8; i++) sb.Append(i > 0 ? ", " : "").Append(top[i].Key).Append('=').Append(top[i].Value);
 				double n = Math.Max(1, _tickN);
-				Levy.Instance?.Logger.Info($"[Crowd] census tick={now} {CrowdBudget.Describe(c)} | budget on={CrowdBudget.On} retired minions={CrowdBudget.RetiredMinions} sentries={CrowdBudget.RetiredSentries} drones={CrowdBudget.RetiredDrones} gatedCasts={CrowdBudget.GatedCasts} gatedDrones={CrowdBudget.GatedDrones} | ms/tick entities avg={_tickMs / n:0.00} max={_tickMax:0.0} npcs={_npcMs / n:0.00} projectiles={_projMs / n:0.00} | top {sb}");
+				Levy.Instance?.Logger.Info($"[Crowd] census tick={now} {CrowdBudget.Describe(c)} | budget on={CrowdBudget.On} retired minions={CrowdBudget.RetiredMinions} sentries={CrowdBudget.RetiredSentries} drones={CrowdBudget.RetiredDrones} gatedCasts={CrowdBudget.GatedCasts} gatedDrones={CrowdBudget.GatedDrones} | ms/tick entities avg={_tickMs / n:0.00} max={_tickMax:0.0} npcs={_npcMs / n:0.00} projectiles={_projMs / n:0.00} | cpu ms/tick entities={_cpuSum / 1e6 / n:0.00} npcs={_cpuNpc / 1e6 / n:0.00} projectiles={_cpuProj / 1e6 / n:0.00} | alloc KB/tick={_allocSum / 1024.0 / n:0.0} gc0/1/2 +{GC.CollectionCount(0) - _gc0}/{GC.CollectionCount(1) - _gc1}/{GC.CollectionCount(2) - _gc2} gcPause ms +{(GC.GetTotalPauseDuration().TotalMilliseconds - _gcPause0):0.0} | top {sb}");
+				_spikes = 0; _allocSum = _cpuSum = _cpuNpc = _cpuProj = 0; _gc0 = GC.CollectionCount(0); _gc1 = GC.CollectionCount(1); _gc2 = GC.CollectionCount(2); _gcPause0 = GC.GetTotalPauseDuration().TotalMilliseconds;
 				_tickMs = _npcMs = _projMs = _tickMax = 0; _tickN = 0;
 			}
 		}

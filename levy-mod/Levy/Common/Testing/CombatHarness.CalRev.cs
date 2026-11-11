@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -60,9 +61,9 @@ namespace Levy.Common.Testing
 
 		internal sealed class CrRun
 		{
-			public int Mp, BossDef = -1; public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public string Fm = "", Surv = ""; public int Vet = -1; public bool Dbg, Diag; public bool L3; public int Food, RogueN; public bool Hazard; public string HookItem = "", AccItem = "", Stock = ""; public string AmmoMode = "best", Mods = ""; public bool NoSpec, OldAmmo; public string Zone = ""; public string Bb = "", ZSwap = ""; public int Bts = -1; public string Dl = ""; public string Pl = ""; public bool DlOk; public int DlN; public string Tag = ""; public string Tp = ""; public string Xs = ""; internal KitData Lv; public bool Mixed => AmmoMode == "mixed" || AmmoMode == "mixedm"; public List<CrLevySpec> Specs; public string Desc = "";
+			public int Drones, Turrets; public int Mp, BossDef = -1; public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public string Fm = "", Surv = ""; public int Vet = -1; public bool Dbg, Diag; public bool L3; public int Food, RogueN; public bool Hazard; public string HookItem = "", AccItem = "", Stock = ""; public string AmmoMode = "best", Mods = ""; public bool NoSpec, OldAmmo; public string Zone = ""; public string Bb = "", ZSwap = ""; public int Bts = -1; public string Dl = ""; public string Pl = ""; public bool DlOk; public int DlN; public string Tag = ""; public string Tp = ""; public string Xs = ""; internal KitData Lv; public bool Mixed => AmmoMode == "mixed" || AmmoMode == "mixedm"; public List<CrLevySpec> Specs; public string Desc = "";
 			public string Key => $"{Kind}|{Boss}|{Mode}|{Order}|{Seed}|{Cap}" + (N != 10 ? "|n" + N : "") + (HpX != 1f ? "|hp" + HpX.ToString(CultureInfo.InvariantCulture) : "") + (Dr != 0f ? "|dr" + Dr.ToString(CultureInfo.InvariantCulture) : "")
-				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (Mp > 0 ? "|mp" + Mp : "") + (BossDef >= 0 ? "|bdef" + BossDef : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "") + (Fear >= 0f ? "|fe" + Fear.ToString(CultureInfo.InvariantCulture) : "") + (Fm != "" ? "|fm" + Fm : "") + (Surv != "" ? "|sv" + Surv : "") + (Vet >= 0 ? "|vt" + Vet : "") + (L3 ? "|L3" : "") + (Food > 0 ? "|food" + Food : "") + (Hazard ? "|hz" : "") + (HookItem != "" ? "|hk" + HookItem : "") + (AccItem != "" ? "|ac" + AccItem : "") + (Stock != "" ? "|stk" + Stock : "") + (RogueN > 0 ? "|rg" + RogueN : "") + (L3 && AmmoMode != "best" ? "|am" + AmmoMode : "") + (OldAmmo ? "|oldammo" : "") + (NoSpec ? "|nospec" : "") + (Bts >= 0 ? "|bts" + Bts : "") + (Zone != "" ? "|zn" + Zone : "") + (Pl != "" ? "|pl" + Pl : "") + (Tag != "" ? "|t" + Tag : "") + (Xs != "" ? "|xs" + Xs : "") + (Dl != "" ? "|dl" + Dl + (DlOk ? "ok" : "") + (DlN > 0 ? "n" + DlN : "") : "");
+				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (Drones > 0 ? "|dr" + Drones : "") + (Turrets > 0 ? "|tu" + Turrets : "") + (Mp > 0 ? "|mp" + Mp : "") + (BossDef >= 0 ? "|bdef" + BossDef : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "") + (Fear >= 0f ? "|fe" + Fear.ToString(CultureInfo.InvariantCulture) : "") + (Fm != "" ? "|fm" + Fm : "") + (Surv != "" ? "|sv" + Surv : "") + (Vet >= 0 ? "|vt" + Vet : "") + (L3 ? "|L3" : "") + (Food > 0 ? "|food" + Food : "") + (Hazard ? "|hz" : "") + (HookItem != "" ? "|hk" + HookItem : "") + (AccItem != "" ? "|ac" + AccItem : "") + (Stock != "" ? "|stk" + Stock : "") + (RogueN > 0 ? "|rg" + RogueN : "") + (L3 && AmmoMode != "best" ? "|am" + AmmoMode : "") + (OldAmmo ? "|oldammo" : "") + (NoSpec ? "|nospec" : "") + (Bts >= 0 ? "|bts" + Bts : "") + (Zone != "" ? "|zn" + Zone : "") + (Pl != "" ? "|pl" + Pl : "") + (Tag != "" ? "|t" + Tag : "") + (Xs != "" ? "|xs" + Xs : "") + (Dl != "" ? "|dl" + Dl + (DlOk ? "ok" : "") + (DlN > 0 ? "n" + DlN : "") : "");
 		}
 		/// <summary>The plainest ammo item for an ammo type (cw= runs and fallbacks): the lowest-damage vanilla item with that ammo type, else the first modded one.</summary>
 		private static string CrDefaultAmmo(int useAmmo)
@@ -106,7 +107,7 @@ namespace Levy.Common.Testing
 						string k = f[x].Substring(0, eq), v = f[x].Substring(eq + 1);
 						if (k == "hook") r.HookItem = v.Replace("_", " "); else if (k == "acc") r.AccItem = v.Replace("_", " "); else if (k == "stock") r.Stock = v; else if (k == "order") r.Order = v; else if (k == "n") r.N = v == "cp" ? CrRealMax(r.Boss) : int.Parse(v); else if (k == "hpx") r.HpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "dr") r.Dr = float.Parse(v, CultureInfo.InvariantCulture);
 						else if (k == "clone") r.Clone = v[0]; else if (k == "cmd") r.Cmd = v; else if (k == "arena") r.Arena = v; else if (k == "gear") r.Gear = v; else if (k == "grade") r.Grade = v;
-						else if (k == "mp") r.Mp = int.Parse(v); else if (k == "bdef") r.BossDef = int.Parse(v); else if (k == "cw") r.CloneWeapon = v; else if (k == "side") r.Side = v; else if (k == "jungle") r.Jungle = v == "1"; else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fear") r.Fear = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fm") r.Fm = v; else if (k == "surv") r.Surv = v; else if (k == "vet") r.Vet = int.Parse(v); else if (k == "l3") r.L3 = v == "1"; else if (k == "food") r.Food = int.Parse(v); else if (k == "hazard") r.Hazard = v == "1"; else if (k == "rogue") r.RogueN = int.Parse(v); else if (k == "ammo") r.AmmoMode = v; else if (k == "spec") r.NoSpec = v == "0"; else if (k == "oldammo") r.OldAmmo = v == "1"; else if (k == "bts") r.Bts = int.Parse(v); else if (k == "zone") r.Zone = v; else if (k == "bb") r.Bb = v; else if (k == "zswap") r.ZSwap = v; else if (k == "pl") r.Pl = v; else if (k == "dl") r.Dl = v; else if (k == "dlok") r.DlOk = v == "1"; else if (k == "dln") r.DlN = int.Parse(v); else if (k == "xs") r.Xs = v; else if (k == "tag") r.Tag = v; else if (k == "tp") r.Tp = v; else if (k == "lv") r.Lv = KitLoad(v);
+						else if (k == "drones") r.Drones = int.Parse(v); else if (k == "turrets") r.Turrets = int.Parse(v); else if (k == "mp") r.Mp = int.Parse(v); else if (k == "bdef") r.BossDef = int.Parse(v); else if (k == "cw") r.CloneWeapon = v; else if (k == "side") r.Side = v; else if (k == "jungle") r.Jungle = v == "1"; else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fear") r.Fear = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fm") r.Fm = v; else if (k == "surv") r.Surv = v; else if (k == "vet") r.Vet = int.Parse(v); else if (k == "l3") r.L3 = v == "1"; else if (k == "food") r.Food = int.Parse(v); else if (k == "hazard") r.Hazard = v == "1"; else if (k == "rogue") r.RogueN = int.Parse(v); else if (k == "ammo") r.AmmoMode = v; else if (k == "spec") r.NoSpec = v == "0"; else if (k == "oldammo") r.OldAmmo = v == "1"; else if (k == "bts") r.Bts = int.Parse(v); else if (k == "zone") r.Zone = v; else if (k == "bb") r.Bb = v; else if (k == "zswap") r.ZSwap = v; else if (k == "pl") r.Pl = v; else if (k == "dl") r.Dl = v; else if (k == "dlok") r.DlOk = v == "1"; else if (k == "dln") r.DlN = int.Parse(v); else if (k == "xs") r.Xs = v; else if (k == "tag") r.Tag = v; else if (k == "tp") r.Tp = v; else if (k == "lv") r.Lv = KitLoad(v);
 					}
 					if (r.Gear == "mod" && r.Grade == "mix") r.Grade = "lv";
 					if (r.Lv != null) r.Dl = "K"; // lv=<file>: army, supplies and stations come from data (CombatHarness.LabKit.cs)
@@ -249,6 +250,7 @@ namespace Levy.Common.Testing
 			if (!_crHooked)
 			{
 				_crHooked = true;
+				if (global::Levy.Common.Util.LevyProf.On) On_Projectile.Damage += CrDamageTimer;
 				On_NPC.StrikeNPC_HitInfo_bool_bool += CrStrikeDetour;
 				On_NPC.UpdateNPC += CrNpcUpdateDetour;
 				On_Projectile.Update += CrProjUpdateDetour;
@@ -266,7 +268,7 @@ namespace Levy.Common.Testing
 		{
 			if (!_crHooked) return;
 			_crHooked = false;
-			try { On_NPC.StrikeNPC_HitInfo_bool_bool -= CrStrikeDetour; On_NPC.UpdateNPC -= CrNpcUpdateDetour; On_Projectile.Update -= CrProjUpdateDetour; On_Player.Update -= CrPlayerUpdate; } catch { }
+			try { On_Projectile.Damage -= CrDamageTimer; On_NPC.StrikeNPC_HitInfo_bool_bool -= CrStrikeDetour; On_NPC.UpdateNPC -= CrNpcUpdateDetour; On_Projectile.Update -= CrProjUpdateDetour; On_Player.Update -= CrPlayerUpdate; } catch { }
 		}
 
 		// -------------------------------------------------------------------------------------------------- Calamity switches
@@ -290,7 +292,25 @@ namespace Levy.Common.Testing
 		internal static CrState CrLive => _cr;
 		internal static bool CrIsBossOrAdd(int type) => _cr != null && (type == _cr.BossType || _cr.PartTypes.Contains(type) || _cr.AddTypes.Contains(type));
 
+		/// <summary>LEVY_PROF=1: time and count every NPC update by category (levy / boss parts / boss adds / Mechanization / other) and every projectile update by owner (army / enemy / Mechanization / other).</summary>
 		private static void CrNpcUpdateDetour(On_NPC.orig_UpdateNPC orig, NPC self, int i)
+		{
+			if (!global::Levy.Common.Util.LevyProf.On) { CrNpcUpdateInner(orig, self, i); return; }
+			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+			try { CrNpcUpdateInner(orig, self, i); }
+			finally
+			{
+				int k = self.ModNPC is SoldierNPC ? global::Levy.Common.Util.LevyProf.NpcLevy
+					: _cr != null && (self.type == _cr.BossType || _cr.PartTypes.Contains(self.type)) ? global::Levy.Common.Util.LevyProf.NpcBoss
+					: _cr != null && _cr.AddTypes.Contains(self.type) ? global::Levy.Common.Util.LevyProf.NpcAdd
+					: self.ModNPC != null && self.ModNPC.Mod.Name == "Mechanization" ? global::Levy.Common.Util.LevyProf.NpcMech : global::Levy.Common.Util.LevyProf.NpcOther;
+				long dt = System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+				global::Levy.Common.Util.LevyProf.Add(k, dt); global::Levy.Common.Util.LevyProf.Cnt[k]++;
+				if (self.active && k != global::Levy.Common.Util.LevyProf.NpcLevy) global::Levy.Common.Util.LevyProf.AddType(100000 + self.type, dt);
+			}
+		}
+
+		private static void CrNpcUpdateInner(On_NPC.orig_UpdateNPC orig, NPC self, int i)
 		{
 			if (_cr != null && _cr.Run.BossDef >= 0 && !(self.ModNPC is SoldierNPC) && CrIsBossOrAdd(self.type)) // bdef=N: the boss and its parts hold defense N (measurement of low-damage weapons without the defense floor)
 			{
@@ -304,6 +324,29 @@ namespace Levy.Common.Testing
 		}
 
 		private static void CrProjUpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
+		{
+			if (!global::Levy.Common.Util.LevyProf.On) { CrProjUpdateInner(orig, self, i); return; }
+			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+			try { CrProjUpdateInner(orig, self, i); }
+			finally
+			{
+				int k = self.hostile ? global::Levy.Common.Util.LevyProf.ProjEnemy
+					: self.TryGetGlobalProjectile(out SoldierProjectileTag tg) && (tg.SoldierIndex >= 0 || tg.CommanderIndex >= 0) ? global::Levy.Common.Util.LevyProf.ProjArmy
+					: self.ModProjectile != null && self.ModProjectile.Mod.Name == "Mechanization" ? global::Levy.Common.Util.LevyProf.ProjMech : global::Levy.Common.Util.LevyProf.ProjOther;
+				long dt = System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+				global::Levy.Common.Util.LevyProf.Add(k, dt); global::Levy.Common.Util.LevyProf.Cnt[k]++;
+				if (self.active) global::Levy.Common.Util.LevyProf.AddType(self.type, dt);
+			}
+		}
+
+		/// <summary>LEVY_PROF=1: the time of the projectile hit loop (Projectile.Damage), the part of a projectile update that scales with the NPC count.</summary>
+		private static void CrDamageTimer(On_Projectile.orig_Damage orig, Projectile self)
+		{
+			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+			try { orig(self); } finally { global::Levy.Common.Util.LevyProf.DamageTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; }
+		}
+
+		private static void CrProjUpdateInner(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
 			if (_cr == null) { orig(self, i); return; }
 			_crProjDepth++;
@@ -333,7 +376,7 @@ namespace Levy.Common.Testing
 		{
 			public bool FleeLogged;
 			public CrRun Run; public List<CrLevy> Levies = new();
-			public int BossType, BodyType = -1, TailType = -1; public HashSet<int> AddTypes = new(), PartTypes = new(); public bool Worm => PartTypes.Count > 0;
+			public int BossType, BodyType = -1, TailType = -1; public HashSet<int> AddTypes = new(), PartTypes = new(); public bool Worm => PartTypes.Count > 0; public bool WormHpScaled;
 			public Dictionary<string, long> Srcs = new(); public void Src(string k, long d) { Srcs.TryGetValue(k, out long v); Srcs[k] = v + d; } public long DtdTicks, LastDmgSum, AddKills; public int PrevAdds; public SortedDictionary<int, (long ticks, long dmg)> Phase = new(); public long TgtLevy, TgtPlayer, TgtNone, AddTgtLevy, AddTgtPlayer, AddTgtNone, HitsBoss, DmgHead, DmgBody, DmgTail, DmgAdd, EnragedTicks, BossAliveTicks; public double Moved; public Vector2 LastPos; public bool HavePos; public int FirstHitTick = -1, MaxParts, MaxAdds; public long BossLifeMaxSum;
 			public int Tick; public int BossIdx = -1; public int BossLifeMax; public int BossLife; public int BossDamage, BossDefense;
 			public int AddsPeak; public int HalfTick = -1; public bool BossGone; public int EndTick = -1; public string Result = "";
@@ -512,7 +555,7 @@ namespace Levy.Common.Testing
 			return new CrLevy { Cls = spec.Cls, Rec = rec, Idx = idx, Id = rec.Id, Spec = spec, LastLife = n.life, MaxHp = rec.MaxHp, Weapon = spec.Weapon, PotionsLeft = spec.Potions };
 		}
 
-		private static int CrBossNpcType(string boss) => boss switch { "kslime" => NPCID.KingSlime, "brain" => NPCID.BrainofCthulhu, "eow" => NPCID.EaterofWorldsHead, "qb" => NPCID.QueenBee, "skel" => NPCID.SkeletronHead, "ds" => CrCalNpc("DesertScourgeHead"), "hive" => CrCalNpc("HiveMind"), "perf" => CrCalNpc("PerforatorHive"), "sg" => CrCalNpc("SlimeGodCore"), "crab" => CrCalNpc("Crabulon"), _ => NPCID.EyeofCthulhu };
+		private static int CrBossNpcType(string boss) => boss switch { "kslime" => NPCID.KingSlime, "brain" => NPCID.BrainofCthulhu, "eow" => NPCID.EaterofWorldsHead, "qb" => NPCID.QueenBee, "skel" => NPCID.SkeletronHead, "destroyer" => NPCID.TheDestroyer, "ds" => CrCalNpc("DesertScourgeHead"), "hive" => CrCalNpc("HiveMind"), "perf" => CrCalNpc("PerforatorHive"), "sg" => CrCalNpc("SlimeGodCore"), "crab" => CrCalNpc("Crabulon"), _ => NPCID.EyeofCthulhu };
 
 		private static readonly string[] CrStockPool = { "Obsidian Shield", "Charm of Myths", "Band of Regeneration", "Magma Stone", "Hermes Boots", "Worm Scarf", "Shackle", "Anklet of the Wind", "Shiny Stone", "Philosopher's Stone", "Lucky Horseshoe", "Feral Claws", "Band of Starpower" };
 
@@ -583,6 +626,7 @@ namespace Levy.Common.Testing
 				if (total > global::Levy.Common.Config.LevyConfig.Get.RenderCap) global::Levy.Common.Config.LevyConfig.Get.RenderCap = total;
 				foreach (var sp in run.Specs) s.Levies.Add(CrSpawnLevy(sp, run, slot++, total, _crCmdPos));
 				if (run.Stock != "") CrStockArmory(s, run);
+				if (run.Drones > 0 || run.Turrets > 0) CrSpawnMech(run);
 				if (probe) { for (int k = 0; k < s.Levies.Count; k++) s.Levies[k].Upkeep = k >= 2; }
 				float spawnDx = 30f; // tiles right of the commander; a worm spawns off-screen like NPC.SpawnOnPlayer does (~70-100 tiles away), not 43 tiles from the army: LEVY_CR_WORMDIST overrides (30 = the old harness position)
 				if (s.Worm && run.Boss != "sg") spawnDx = float.TryParse(Environment.GetEnvironmentVariable("LEVY_CR_WORMDIST"), NumberStyles.Float, CultureInfo.InvariantCulture, out float wd) ? wd : 80f;
@@ -700,6 +744,28 @@ namespace Levy.Common.Testing
 			if (st.Result != "" && (st.Result != "WIN" || st.Tick >= st.EndTick + 20)) CrFinishFight(run, st);
 		}
 
+		/// <summary>drones=N turrets=M: Mechanization field drones and turrets set down around the commander (the real placement path, through reflection; Levy cannot reference Mechanization). Perf labs.</summary>
+		private void CrSpawnMech(CrRun run)
+		{
+			if (!ModLoader.TryGetMod("Mechanization", out Mod mech)) { Mod.Logger.Warn("HARNESS-CR: drones= needs Mechanization"); return; }
+			int made = 0, madeDrones = 0;
+			void Place(string sys, int n, float dx0, float dy)
+			{
+				var t = mech.Code.GetType(sys); var inst = t?.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.GetValue(null); var m = t?.GetMethod("TryPlace", BindingFlags.Public | BindingFlags.Instance);
+				if (inst == null || m == null) { Mod.Logger.Warn("HARNESS-CR: cannot reach " + sys); return; }
+				for (int i = 0; i < n; i++)
+				{
+					Vector2 spot = _crCmdPos + new Vector2((dx0 + (i % 2 == 0 ? 1 : -1) * (2 + i * 1.5f)) * 16f, dy * 16f);
+					object r = m.Invoke(inst, new object[] { new EntitySource_WorldEvent("LevyCalRev"), spot });
+					if (r is int ix && ix >= 0) made++;
+					else Mod.Logger.Info($"HARNESS-CR: mech place {sys} #{i} at {spot / 16f} -> {r}");
+				}
+			}
+			Place("Mechanization.Content.NPCs.FieldDroneSystem", run.Drones, 0f, -3f); madeDrones = made;
+			Place("Mechanization.Content.NPCs.TurretSystem", run.Turrets, -4f, 0f);
+			Mod.Logger.Info($"HARNESS-CR: mech placed {madeDrones} of {run.Drones} drones + {made - madeDrones} of {run.Turrets} turrets");
+		}
+
 		private void CrPurgeNpcs()
 		{
 			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !(n.ModNPC is SoldierNPC) && !n.townNPC) n.active = false; }
@@ -738,7 +804,7 @@ namespace Levy.Common.Testing
 			if (run.Dl != "") DlFinish(run, st);
 			if (run.Pl != "") PlFinish(run, st, end);
 			KitFinish(run, st);
-			if (global::Levy.Common.Util.LevyProf.On) { string pl = global::Levy.Common.Util.LevyProf.Dump(end) + $" wm={SoldierNPC.WmThinks}/{SoldierNPC.WmHolds}/{SoldierNPC.WmShifts}/{SoldierNPC.WmAims}/{SoldierNPC.WmAimCalls}/{SoldierNPC.WmPierce} chk=" + global::Levy.Common.Movement.ThreatField.ChkBad + "/" + global::Levy.Common.Movement.ThreatField.ChkN; Mod.Logger.Info("PROF " + run.Key + " ms/tick " + pl); try { File.AppendAllText(_crOut + ".prof.tsv", run.Key + "\t" + pl + "\n"); } catch { } }
+			if (global::Levy.Common.Util.LevyProf.On) { string pl = global::Levy.Common.Util.LevyProf.Dump(end) + " path[" + global::Levy.Common.Movement.Pathfinder.StatSummary() + "] route[" + global::Levy.Common.Movement.RoutePlanner.StatSummary() + "] paircull[eligible=" + global::Levy.Common.Weapons.PairCull.Eligible + " ineligible=" + global::Levy.Common.Weapons.PairCull.Ineligible + " refused=" + global::Levy.Common.Weapons.PairCull.Refused + " audited=" + global::Levy.Common.Weapons.PairCull.Audited + " violations=" + global::Levy.Common.Weapons.PairCull.Violations + " maxHitExcessPx=" + global::Levy.Common.Weapons.PairCull.MaxHitExcessPx.ToString("0.0") + "] cutchk[checked=" + SoldierNPC.CutChecked + " cut=" + SoldierNPC.CutCut + " bad=" + SoldierNPC.CutBad + "] TOP[" + global::Levy.Common.Util.LevyProf.TopTypes(end, 12) + "] " + $" projTypes={ProjectileLoader.ProjectileCount} npcTypes={NPCLoader.NPCCount} " + $" wm={SoldierNPC.WmThinks}/{SoldierNPC.WmHolds}/{SoldierNPC.WmShifts}/{SoldierNPC.WmAims}/{SoldierNPC.WmAimCalls}/{SoldierNPC.WmPierce} chk=" + global::Levy.Common.Movement.ThreatField.ChkBad + "/" + global::Levy.Common.Movement.ThreatField.ChkN; Mod.Logger.Info("PROF " + run.Key + " ms/tick " + pl); try { File.AppendAllText(_crOut + ".prof.tsv", run.Key + "\t" + pl + "\n"); } catch { } }
 			if (SoldierNPC.HitDbg != null) { try { File.AppendAllText(_crOut + ".hit.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitDbg.OrderByDescending(kv => kv.Value.dmg).Select(kv => $"{kv.Key}={kv.Value.dmg}/{kv.Value.n}")) + "\n"); } catch { } SoldierNPC.HitDbg = new(); }
 			if (SoldierNPC.HitGapDbg != null) { try { File.AppendAllText(_crOut + ".gap.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitGapDbg.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}:{kv.Value}")) + "\n"); } catch { } SoldierNPC.HitGapDbg = new(); }
 			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} rageAct={LevyRippers.RageActivations - st.Rage0} adrAct={LevyRippers.AdrenalineActivations - st.Adr0} rogueAligned={LevyRippers.RogueAligned} rogueTimeouts={LevyRippers.RogueTimeouts} strikes={LevyRippers.Strikes} strikesBoosted={LevyRippers.StrikesBoosted} fx={LevyRippers.FxRequests} boosterCopies={LevyRippers.BoosterCopies} levyBoosters={CrLevyBoosters()}");

@@ -80,7 +80,7 @@ namespace Levy.Content.NPCs
 		public bool StatsDirty = true;
 		/// <summary>Buff stations beside an armory this soldier is near (refreshed with the stats; server only). Damage.cs reads it for regen.</summary>
 		public StationFlags Stations;
-		private int _statsTimer;
+		private int _statsTimer; private bool _statsPhased;
 		/// <summary>Per-soldier latch: tick (Main.GameUpdateCount) before which this soldier uses the manual stat fallback after its pipeline threw. Retried after <see cref="LevyConstants.PipelineRetryTicks"/>.</summary>
 		private uint _pipelineRetryAt;
 		private bool _pipelineWarned;
@@ -316,10 +316,10 @@ namespace Levy.Content.NPCs
 					{
 						// the per-tick gear frame (SoldierNPC.GearUpkeep.cs) IS the stat pass for these soldiers: same steps, plus the timers, buffs and the mod hooks Player.Update runs
 						GearUpkeep.PrepareCountsOncePerTick();
-						long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+						long t0 = GearUpkeep.Timing ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
 						try { GearFrame(); _upkeepFails = 0; framed = true; }
 						catch (Exception e) { UpkeepFailed(e); }
-						GearUpkeep.Ticks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; GearUpkeep.Frames++;
+						if (GearUpkeep.Timing) { GearUpkeep.Ticks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; GearUpkeep.Frames++; }
 					}
 					if (!framed)
 					{
@@ -439,6 +439,8 @@ namespace Levy.Content.NPCs
 				return;
 			}
 			pd = global::Levy.Common.Util.LevyProf.Begin();
+			// The once-a-second stat refresh is staggered by body index: an army summoned or loaded in one tick otherwise refreshes all together, one tick in sixty carrying the whole army's re-equip (a ~10 ms tick).
+			if (!_statsPhased) { _statsPhased = true; if (global::Levy.Common.Util.LevyProf.Opt) _statsTimer = NPC.whoAmI * 7 % 60; }
 			if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; RefreshStats(); }
 			else if (_upkeepGear) GearTick(); // per-tick gear upkeep (SoldierNPC.GearUpkeep.cs); RefreshStats ran the same frame this tick when it was due
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Stats, pd);
@@ -508,14 +510,18 @@ namespace Levy.Content.NPCs
 		{
 			if (Record == null) return false;
 			bool drawn = false;
+			long pt = global::Levy.Common.Util.LevyProf.Begin(); // LEVY_PROF=1 only (client profiler): the time of a levy body's draw
 			Draw_PreDraw(spriteBatch, screenPos, drawColor, ref drawn);
+			if (pt != 0) { global::Levy.Common.Util.ClientProf.SoldierBody += System.Diagnostics.Stopwatch.GetTimestamp() - pt; global::Levy.Common.Util.ClientProf.SoldiersDrawn++; }
 			return !drawn; // if nothing drew the body, fall back to the placeholder texture
 		}
 
 		public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
 		{
 			if (Record == null) return;
+			long pt = global::Levy.Common.Util.LevyProf.Begin();
 			Draw_PostDraw(spriteBatch, screenPos, drawColor);
+			if (pt != 0) global::Levy.Common.Util.ClientProf.SoldierPlate += System.Diagnostics.Stopwatch.GetTimestamp() - pt;
 		}
 
 		// ---- chat ----

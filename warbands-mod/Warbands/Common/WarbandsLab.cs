@@ -23,7 +23,7 @@ namespace Warbands.Common
 	///   fight  the fight comparison (Expert): the same player kit against a Levy-AI band, a phase-1 Fighter-AI band and ordinary enemies of the stage; one TSV row per fight (WARBANDS_OUT).
 	/// The check results go to the log as "[Warbands] LIVE PASS/FAIL ..." and into the self-check count.
 	/// </summary>
-	public class WarbandsLab : ModSystem
+	public partial class WarbandsLab : ModSystem
 	{
 		public static readonly string Mode = Environment.GetEnvironmentVariable("WARBANDS_LIVE");
 		public static bool On => !string.IsNullOrEmpty(Mode);
@@ -207,6 +207,7 @@ namespace Warbands.Common
 				if (Mode.Contains("check")) AddCheckTrials();
 				if (Mode.Contains("fight")) AddFightTrials();
 				if (Mode.Contains("events")) AddEventTrials();
+				if (Mode.Contains("move")) AddMoveTrials();
 				Mod.Logger.Info($"[Warbands] LIVE: {_trials.Count} trials ({Mode})");
 				_ti = -1; return;
 			}
@@ -248,7 +249,7 @@ namespace Warbands.Common
 		private void Finish(string why)
 		{
 			if (Done) return; Done = true;
-			if (Mode.Contains("fight") || Mode.Contains("events")) { try { File.WriteAllText(Environment.GetEnvironmentVariable("WARBANDS_OUT") ?? "warbands_fight.tsv", _tsv.ToString()); } catch (Exception e) { Mod.Logger.Warn("[Warbands] lab: could not write the TSV: " + e.Message); } }
+			if (Mode.Contains("fight") || Mode.Contains("events") || Mode.Contains("move")) { try { File.WriteAllText(Environment.GetEnvironmentVariable("WARBANDS_OUT") ?? "warbands_fight.tsv", _tsv.ToString()); } catch (Exception e) { Mod.Logger.Warn("[Warbands] lab: could not write the TSV: " + e.Message); } }
 			Mod.Logger.Info($"[Warbands] LIVE done ({why}) pass={Pass} fail={Fail}");
 			Mod.Logger.Info($"[Warbands] self-check done pass={Pass} fail={Fail} (live)");
 			try { Netplay.SaveOnServerExit = false; Netplay.Disconnect = true; } catch { }

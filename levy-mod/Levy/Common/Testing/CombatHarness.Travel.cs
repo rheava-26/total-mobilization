@@ -343,7 +343,7 @@ namespace Levy.Common.Testing
 			}
 			foreach (int x in new[] { x0 - 1, x1 + 1 }) for (int y = 30; y < TvG + 100; y++) TvSet(x, y, TileID.GrayBrick);
 			// house 382..406: 1-thick wood walls, doors at ground both ends, flat roof, a one-tile crate inside
-			if (!TvRavine && !TvLips)
+			if (!TvRavine && !TvLips && Environment.GetEnvironmentVariable("LEVY_TRAVEL_NOHOUSE") != "1")   // (lab: LEVY_TRAVEL_NOHOUSE=1 leaves the house out; on the corruption course it stands across the chasm)
 			{
 				int hx0 = TvX0 + 382, hx1 = TvX0 + 406, top = TvG;
 				for (int x = hx0; x <= hx1; x++)
@@ -407,6 +407,8 @@ namespace Levy.Common.Testing
 			if (_tvGear == "hooks") return "hook:" + TvHookNames[i % TvHookNames.Length];
 			if (_tvGear == "lavamix") { int c4 = i % 4; return c4 == 0 ? "none" : c4 == 1 ? "wings" : c4 == 2 ? "hook" : "wh"; }   // the lava lab: bare, wings, hook, wings + hook
 			if (_tvGear != "mixed") return _tvGear;
+			string mixEnv = Environment.GetEnvironmentVariable("LEVY_TRAVEL_MIX");   // lab: LEVY_TRAVEL_MIX=none,boots,wings,hook,... the gear of levy i is entry i % count (instead of the 15-levy mix)
+			if (!string.IsNullOrEmpty(mixEnv)) { var mx = mixEnv.Split(','); return mx[i % mx.Length]; }
 			int k = i % 15; // 15: 5 none, 4 boots, 3 wings, 3 hook
 			if (k < 5) return "none"; if (k < 9) return "boots"; if (k < 12) return "wings"; return "hook";
 		}

@@ -924,6 +924,7 @@ namespace Levy.Content.NPCs
 		private bool TryOpenDoor(int x, int y, int dir)
 		{
 			if (!DoorCustodian.TryOpen(x, y, dir)) return false;
+			if (SoldierHooks.Debug) Levy.Instance?.Logger.Info($"DOORDBG t={Main.GameUpdateCount} {SoldierName} opened door ({x},{y}) dir={dir} at {NPC.Bottom.X / 16f:0.0},{NPC.Bottom.Y / 16f:0.0} v={NPC.velocity.X:0.0},{NPC.velocity.Y:0.0} flying={_flying}");
 			_doorBusy = DoorBusyTicks;
 			return true;
 		}

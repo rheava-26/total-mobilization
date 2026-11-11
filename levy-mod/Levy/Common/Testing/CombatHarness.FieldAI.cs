@@ -403,6 +403,7 @@ namespace Levy.Common.Testing
 			public bool Latchable(int x, int y) => x >= 0 && y >= 0 && x < 100 && y < 70 && S[x, y];
 			public bool Lava(int x, int y) => false;
 			public bool Sloped(int x, int y) => x >= 0 && y >= 0 && x < 100 && y < 70 && Sl[x, y];
+			public bool ClosedDoor(int x, int y) => false;
 		}
 
 		private void FaSlope()

@@ -19,6 +19,8 @@ namespace Levy.Common.Weapons
 		/// <summary>Env LEVY_STEALTH_WAIT (lab): the longest fill time in ticks worth waiting for; 0 turns the patience off. Default 130: a full bar from empty standing still (120 ticks) is worth waiting for.</summary>
 		internal static readonly int WaitTicks = Read("LEVY_STEALTH_WAIT", 130);
 		internal const int MaxHoldTicks = 200, SaveForBossTicks = 240;
+		/// <summary>Lab override: -1 follow the per-weapon policy, 0 never wait (spam), 1 always wait for the strike (the pre-policy behaviour).</summary>
+		internal static int Force = -1;
 		/// <summary>Lab counters: throws held for the bar, strikes the bar was kept for, throws saved for a boss.</summary>
 		internal static int Holds, BossSaves;
 
@@ -27,7 +29,7 @@ namespace Levy.Common.Weapons
 		/// <summary>True when this throw should wait: the levy holds a rogue weapon with a stealth bar that will fill soon, or has a full bar it is saving for a boss.</summary>
 		internal static bool Hold(SoldierNPC s, Item item, NPC target)
 		{
-			if (WaitTicks <= 0 || !CombatFix.On(CombatFix.Stealth) || !LevyUtil.IsServerOrSingle || s.Dummy == null || !ExtraDamageClasses.IsRogue(item.DamageType)) return false;
+			if (WaitTicks <= 0 || Force == 0 || !CombatFix.On(CombatFix.Stealth) || !LevyUtil.IsServerOrSingle || s.Dummy == null || !ExtraDamageClasses.IsRogue(item.DamageType)) return false;
 			object cp = LevyRippers.Of(s.Dummy);
 			if (cp == null || !LevyRippers.IsRogue(cp)) { s.StealthHoldRun = 0; return false; } // no stealth bar (no rogue armor): nothing to wait for
 			uint now = Main.GameUpdateCount;
@@ -43,7 +45,7 @@ namespace Levy.Common.Weapons
 			bool moving = Math.Abs(s.NPC.velocity.X) > 0.4f || Math.Abs(s.NPC.velocity.Y) > 0.8f;
 			float gen = LevyRippers.StealthGen(cp, moving);
 			float fillTicks = Math.Max(0f, 1f - LevyRippers.Stealth(cp) / max) * 120f / gen;
-			if (fillTicks > WaitTicks || s.StealthHoldRun >= MaxHoldTicks) { if (s.StealthHoldRun >= MaxHoldTicks) s.StealthHoldRun = 0; return false; } // too long to wait: throw as before (a run this long fires once, then waits again)
+			if (fillTicks > (Force == 2 ? 900 : WaitTicks) || s.StealthHoldRun >= (Force == 2 ? 900 : MaxHoldTicks)) { if (s.StealthHoldRun >= (Force == 2 ? 900 : MaxHoldTicks)) s.StealthHoldRun = 0; return false; } // too long to wait: throw as before (a run this long fires once, then waits again)
 			s.StealthHoldRun++; Holds++;
 			return true;
 		}

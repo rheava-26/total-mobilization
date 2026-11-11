@@ -460,7 +460,7 @@ namespace Levy.Common.Testing
 			try
 			{
 				if (!_crStarted && _crArenaBuilt != run.Arena) CrBuildArena(run.Arena);
-				if (run.Tp != "") { if (BtKv(run.Tp).ContainsKey("hl")) StepHostile(run); else StepTipsy(run); } else StepCrFight(run);
+				if (run.Tp != "") { var tpkv = BtKv(run.Tp); if (tpkv.ContainsKey("hl")) StepHostile(run); else if (tpkv.ContainsKey("fz")) StepFizz(run); else StepTipsy(run); } else StepCrFight(run);
 			}
 			catch (Exception e)
 			{

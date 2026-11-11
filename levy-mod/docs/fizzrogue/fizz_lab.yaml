@@ -1,0 +1,16 @@
+# Fizzy lab: knockback distance per blow, gravity, fall damage and the walk back, old Fizzy vs the rework (harness stage CombatHarness.FizzLab.cs).
+name: fizz_lab
+mods: vanilla
+arena: a3
+seeds: 10
+tipsy:
+  order: follow
+  dist: [0]
+  motion: [static]
+  size: [small]
+  warm: 0
+  win: 300
+  every: {fz: 1, hits: 8, gap: 150, drop: 55, far: 45, walk: 900}
+  arms: {old: {arm: old}, new: {arm: new}, old_cobalt: {arm: old, kb: cobalt}, new_cobalt: {arm: new, kb: cobalt}}
+  weapons:
+    - {name: Minishark, cls: R, ammo: Musket Ball}

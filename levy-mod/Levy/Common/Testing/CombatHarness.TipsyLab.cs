@@ -23,7 +23,7 @@ namespace Levy.Common.Testing
 	public partial class CombatHarness
 	{
 		private bool _tpStarted; private int _tpTick, _tpDummy = -1, _tpLife0, _tpFirstHit, _tpDistN, _tpAlive; private double _tpDist; private CrLevy _tpLevy; private float _tpPrevAcc = 1f;
-		internal static int TpLevyIdx = -1, TpShots, TpProjHits, TpHits; internal static int TpDummyIdx = -1; internal static bool TpMeasuring;
+		internal static int TpLevyIdx = -1, TpShots, TpProjHits, TpHits, TpStrikes; internal static int TpDummyIdx = -1; internal static bool TpMeasuring;
 
 		private static int TpNpcType(string z) => z == "boss" ? NPCID.EyeofCthulhu : NPCID.Zombie;
 
@@ -35,6 +35,7 @@ namespace Levy.Common.Testing
 			int warm = (int)F("warm", 600), win = (int)F("win", 1200);
 			float distT = F("d", 25f), x = F("x", 1f); string motion = G("m", "static"), size = G("z", "small"), drink = G("b", "none"), cls = G("c", "R");
 			bool pin = G("pin", "1") == "1";
+			bool rogue = kv.ContainsKey("rg"); // rogue lab: the levy is a Calamity rogue in Statigel (a stealth bar), and pol=spam|wait|auto forces its throw policy (Weapons/StealthPolicy.cs)
 			float x0 = _crCx - 30f; // tiles; the levy stands here, the dummy distT tiles to its right
 			if (!_tpStarted)
 			{
@@ -44,6 +45,7 @@ namespace Levy.Common.Testing
 				CrPinCommander();
 				_tpPrevAcc = WeaponUse.AimAccuracyFactor; WeaponUse.SetAimAccuracy(1f / Math.Max(0.05f, x));
 				var spec = new CrLevySpec { Cls = cls[0], Weapon = G("w", "Minishark").Replace('_', ' '), Ammo = G("a", "").Replace('_', ' '), LifeCrystals = 15, ManaCrystals = 9, Potions = 0, Potion = "Healing Potion", ManAtArms = false };
+				if (rogue) { spec.Cls = 'T'; spec.Armor = new[] { "CalamityMod/StatigelHeadRogue", "CalamityMod/StatigelArmor", "CalamityMod/StatigelGreaves" }; StealthPolicy.Force = G("pol", "auto") == "spam" ? 0 : G("pol", "auto") == "wait" ? 1 : G("pol", "auto") == "patient" ? 2 : -1; TpStrikes = 0; }
 				_tpLevy = CrSpawnLevy(spec, run, 0, 1, new Vector2(x0 * 16f, CrF * 16f));
 				NPC ln = Main.npc[_tpLevy.Idx]; var sn = (SoldierNPC)ln.ModNPC;
 				if (drink != "none")
@@ -84,7 +86,7 @@ namespace Levy.Common.Testing
 				_tpAlive++;
 				if (_tpTick >= warm) { _tpDist += Vector2.Distance(lv.Center, dm.Center) / 16f; _tpDistN++; }
 			}
-			if (_tpTick == warm) { _tpLife0 = dm.life; TpShots = TpProjHits = TpHits = 0; TpMeasuring = true; }
+			if (_tpTick == warm) { _tpLife0 = dm.life; TpShots = TpProjHits = TpHits = TpStrikes = 0; TpMeasuring = true; }
 			if (_tpTick > warm && _tpFirstHit < 0 && dm.life < _tpLife0) _tpFirstHit = _tpTick - warm;
 			if (_tpTick >= warm + win) TpFinish(run, dm, win, kv);
 		}
@@ -97,9 +99,9 @@ namespace Levy.Common.Testing
 			try
 			{
 				string path = _crOut + ".tipsy.tsv";
-				if (!File.Exists(path)) File.WriteAllText(path, "key\ttag\tseed\tw\tc\td\tm\tz\tb\tx\tdps\tdmg\tshots\tprojHits\thits\tfirstHit\tavgDist\talivePct\n");
+				if (!File.Exists(path)) File.WriteAllText(path, "key\ttag\tseed\tw\tc\td\tm\tz\tb\tx\tdps\tdmg\tshots\tprojHits\thits\tfirstHit\tavgDist\talivePct\tstrikes\tpol\n");
 				File.AppendAllText(path, string.Join("\t", new[] { run.Key, run.Tag, run.Seed.ToString(), G("w", ""), G("c", ""), G("d", ""), G("m", ""), G("z", ""), G("b", "none"), G("x", "1"), f(dmg / secs), dmg.ToString(), TpShots.ToString(), TpProjHits.ToString(), TpHits.ToString(),
-					_tpFirstHit < 0 ? "-1" : f(_tpFirstHit / 60.0), f(_tpDistN > 0 ? _tpDist / _tpDistN : -1), f(100.0 * _tpAlive / Math.Max(1, _tpTick)) }) + "\n");
+					_tpFirstHit < 0 ? "-1" : f(_tpFirstHit / 60.0), f(_tpDistN > 0 ? _tpDist / _tpDistN : -1), f(100.0 * _tpAlive / Math.Max(1, _tpTick)), TpStrikes.ToString(), G("pol", "") }) + "\n");
 			}
 			catch (Exception e) { Mod.Logger.Warn("HARNESS-TP: row failed: " + e.Message); }
 			Mod.Logger.Info($"HARNESS-TP: done {run.Tag} seed {run.Seed}: dps {dmg / secs:0.0} shots {TpShots} hits {TpHits}");
@@ -107,7 +109,7 @@ namespace Levy.Common.Testing
 			v[0] = run.Key; v[1] = run.Kind; v[2] = run.Boss; v[3] = run.Mode; v[4] = run.Order; v[5] = run.Seed.ToString(); v[6] = "TIPSY"; v[7] = win.ToString(); v[8] = f(secs); v[cols - 1] = "tipsy";
 			File.AppendAllText(_crOut, string.Join("\t", v) + "\n");
 			WeaponUse.SetAimAccuracy(_tpPrevAcc <= 0f ? 1f : 1f / _tpPrevAcc);
-			TpMeasuring = false; TpLevyIdx = -1; TpDummyIdx = -1;
+			TpMeasuring = false; TpLevyIdx = -1; TpDummyIdx = -1; StealthPolicy.Force = -1;
 			_tpStarted = false; _cr = null; _crS = null; _crStarted = false; _crI++;
 			ClearAll(); CrPurgeNpcs();
 		}
@@ -123,8 +125,10 @@ namespace Levy.Common.Testing
 			if (!CombatHarness.TpMeasuring || _seen) return;
 			_seen = true;
 			if (!p.friendly || p.minion || p.damage <= 0) return;
+			if (Terraria.ModLoader.ModLoader.HasMod("CalamityMod") && p.TryGetGlobalProjectile(out SoldierProjectileTag tag0) && tag0.SoldierIndex == CombatHarness.TpLevyIdx && StrikeFlag(p)) CombatHarness.TpStrikes++;
 			if (p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex == CombatHarness.TpLevyIdx) CombatHarness.TpShots++;
 		}
+		private static bool StrikeFlag(Projectile p) => HarnessCalamityProbe.IsStealthStrike(p, out bool sub) && !sub;
 		public override void OnHitNPC(Projectile p, NPC target, NPC.HitInfo hit, int damageDone)
 		{
 			if (!CombatHarness.TpMeasuring || target.whoAmI != CombatHarness.TpDummyIdx) return;

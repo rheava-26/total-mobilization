@@ -15,10 +15,10 @@ namespace Levy.Common
 		/// <summary>A Fizzy body that wears knockback immunity (Cobalt Shield and the like) loses the immunity and takes this fraction less damage instead.</summary>
 		public const float FizzImmunityDr = 0.10f;
 		/// <summary>Fastest a hit may throw a Fizzy body (px/tick sideways, px/tick up): vanilla caps a launch at 16, which in a quarter gravity is a rise of 60 tiles.</summary>
-		public const float FizzMaxLaunchX = 9f, FizzMaxLaunchUp = 6.5f;
+		public const float FizzMaxLaunchX = 7f, FizzMaxLaunchUp = 4.5f;
 		/// <summary>Flight: the AI's movement stays off until the body settles. Longest flight (ticks), what a wall or a ceiling gives back, what a floor gives back, the ground slide, the air drag on x, and the speed below which a grounded body has settled.</summary>
 		public const int FizzFlightMaxTicks = 420;
-		public const float FizzBounceWall = 0.6f, FizzBounceFloor = 0.45f, FizzGroundSlide = 0.9f, FizzAirDrag = 0.992f, FizzSettleSpeed = 1.2f;
+		public const float FizzBounceWall = 0.6f, FizzBounceFloor = 0.45f, FizzGroundSlide = 0.9f, FizzAirDrag = 0.975f, FizzSettleSpeed = 1.2f;
 
 		// ---- Magma Shot / Magma Crucible ----
 		/// <summary>Ten minutes of lava immunity.</summary>

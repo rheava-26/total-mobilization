@@ -149,7 +149,7 @@ def tipsy_cells(spec):
                     for an, ao in arms.items():
                         kv = {"w": w["name"], "a": w.get("ammo", ""), "c": w.get("cls", "R"), "d": d, "m": m, "z": z, "warm": warm, "win": win, **{k: v for k, v in (t.get("every") or {}).items()}, **{k: v for k, v in (w.get("every") or {}).items()}, **ao}
                         tp = ";".join(f"{k}={str(v).replace(' ', '_') if k in ('w', 'a') else v}" for k, v in kv.items() if v != "")
-                        rows = [["fight", "tipsy", "exp", str(sd), str(warm + win + 120), "cmd=near", "order=free", "arena=" + str(spec.get("arena", "a3")), "tp=" + tp] for sd in seeds]
+                        rows = [["fight", "tipsy", "exp", str(sd), str(warm + win + 120), "cmd=near", "order=" + str(t.get("order", "free")), "arena=" + str(spec.get("arena", "a3")), "tp=" + tp] for sd in seeds]
                         cells.append(dict(id=f"c{len(cells)}", name=f"{w['name']} {d}t {m} {z} {an}", raw=rows, seeds=seeds, tp=dict(kv, arm=an, kind=w.get("kind", "")), mods=spec.get("mods", "vanilla")))
     return cells
 

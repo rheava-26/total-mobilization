@@ -1,0 +1,17 @@
+# smoke: a rogue levy (Statigel) on a dummy, forced policy spam vs wait
+name: rogue_smoke
+mods: calamity
+arena: a3
+seeds: 2
+tipsy:
+  dist: [20]
+  motion: [static]
+  size: [small]
+  warm: 300
+  win: 3600
+  every: {rg: 1}
+  arms: {spam: {pol: spam}, wait: {pol: wait}}
+  weapons:
+    - {name: CalamityMod/WulfrumKnife, cls: R}
+    - {name: CalamityMod/Pumpkaboom, cls: R}
+    - {name: CalamityMod/Penumbra, cls: R}

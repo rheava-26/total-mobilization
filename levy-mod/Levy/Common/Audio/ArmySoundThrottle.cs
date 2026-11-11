@@ -20,7 +20,8 @@ namespace Levy.Common.Audio
 		public const int WindowTicks = 12;       // 0.2 s
 		public static readonly int PerStyleMax = OldRules ? 3 : 2;   // same style, per window, all army sources combined
 		public static readonly int TotalMax = OldRules ? 10 : 4;     // all styles, per window (4 per 0.2 s = 20 a second, then only the one-per-style guarantee)
-		public static readonly int HardExtra = OldRules ? 1000 : 2;  // the one-per-style guarantee may take the window this far past TotalMax, never further
+		public static readonly int HardExtra = OldRules ? 1000 : 2;
+		public const int StarvedExtra = 4;  // the one-per-style guarantee may take the window this far past TotalMax, never further
 		/// <summary>What kind of army entity is making the sound.</summary>
 		public const int KShot = 1, KMinion = 2, KSentry = 3, KDrone = 4, KEnemy = 5, KPlayer = 6, KOther = 7, KindCount = 8;
 		public static readonly string[] KindNames = { "none", "weapon", "minion", "sentry", "drone", "enemy", "player", "other" };
@@ -35,10 +36,10 @@ namespace Levy.Common.Audio
 		public const float MinVolume = 0.45f;
 
 		/// <summary>Pure decision: returns the volume scale to play at (0 = drop). Counts are sounds already played this window.</summary>
-		public static float Decide(int sameInWindow, int totalInWindow, float distance, float nearestSame = 0f, int kindInWindow = 0, int kindMax = int.MaxValue)
+		public static float Decide(int sameInWindow, int totalInWindow, float distance, float nearestSame = 0f, int kindInWindow = 0, int kindMax = int.MaxValue, bool starved = false)
 		{
 			if (distance > DropDistance) return 0f;
-			if (totalInWindow >= TotalMax + HardExtra) return 0f; // the hard ceiling: even the guarantee below stops here
+			if (totalInWindow >= TotalMax + HardExtra + (starved ? StarvedExtra : 0)) return 0f; // a style that has been silent for two windows may pass the ceiling by a little, so no style is shut out for good // the hard ceiling: even the guarantee below stops here
 			if (kindInWindow >= kindMax) return 0f;
 			// Every style is guaranteed one audible play per window, up to the hard ceiling: a fast weapon (Minishark, every 8 ticks) is never silenced by other styles filling the window.
 			if (sameInWindow == 0) return 1f;
@@ -55,6 +56,7 @@ namespace Levy.Common.Audio
 		static bool inArmy => kind != 0 && kind < KEnemy;
 		static int windowStart = int.MinValue, total;
 		static readonly int[] perKind = new int[KindCount];
+		static readonly Dictionary<string, int> lastAdmit = new Dictionary<string, int>();
 		static readonly Dictionary<string, int> perStyle = new Dictionary<string, int>();
 		static readonly Dictionary<string, float> nearest = new Dictionary<string, float>();
 
@@ -186,8 +188,10 @@ namespace Levy.Common.Audio
 			perStyle.TryGetValue(key, out int same);
 			float near = nearest.TryGetValue(key, out float nv) ? nv : float.MaxValue;
 			int ki = k < 0 || k >= KindCount ? KShot : k;
-			float vol = Decide(same, total, dist, near, perKind[ki], KindMax(ki));
+			bool starved = same == 0 && (!lastAdmit.TryGetValue(key, out int la) || (long)now - la >= 2 * WindowTicks || now < la);
+			float vol = Decide(same, total, dist, near, perKind[ki], KindMax(ki), starved);
 			if (vol <= 0f) return 0f;
+			lastAdmit[key] = now;
 			total++; perKind[ki]++; perStyle[key] = same + 1; nearest[key] = Math.Min(near, dist);
 			return vol;
 		}
@@ -203,7 +207,7 @@ namespace Levy.Common.Audio
 			{
 				foreach (int start in new[] { 0, 1000000, int.MaxValue - 300 })
 				{
-					windowStart = int.MinValue; total = 0; perStyle.Clear(); nearest.Clear(); Array.Clear(perKind, 0, perKind.Length);
+					windowStart = int.MinValue; total = 0; perStyle.Clear(); nearest.Clear(); lastAdmit.Clear(); Array.Clear(perKind, 0, perKind.Length);
 					const int styles = 15, shooters = 40, ticks = 1200; // 20 s
 					var last = new int[styles]; var maxGap = new int[styles]; int admitted = 0, calls = 0;
 					for (int k = 0; k < ticks; k++)
@@ -220,10 +224,10 @@ namespace Levy.Common.Audio
 					numbers += $"start {start}: {calls} calls -> {admitted} admitted, worst per-style gap {worst} ticks; ";
 					if (admitted == 0) return "stateful throttle admitted nothing (window never reset?)";
 					if (worst > 2 * WindowTicks + 30) return $"a style went {worst} ticks without an audible play from start {start}";
-					if (admitted / (ticks / 60f) > (TotalMax + HardExtra) * 60f / WindowTicks) return "admitted rate above the cap plus one-per-style guarantee";
+					if (admitted / (ticks / 60f) > (TotalMax + HardExtra + StarvedExtra) * 60f / WindowTicks) return "admitted rate above the cap plus one-per-style guarantee";
 				}
 			}
-			finally { windowStart = sw0; total = t0; perStyle.Clear(); foreach (var kv in ps) perStyle[kv.Key] = kv.Value; nearest.Clear(); foreach (var kv in nr) nearest[kv.Key] = kv.Value; }
+			finally { lastAdmit.Clear(); windowStart = sw0; total = t0; perStyle.Clear(); foreach (var kv in ps) perStyle[kv.Key] = kv.Value; nearest.Clear(); foreach (var kv in nr) nearest[kv.Key] = kv.Value; }
 			return null;
 		}
 
@@ -281,7 +285,7 @@ namespace Levy.Common.Audio
 			}
 			numbers += $"modelled {shooters} shooters: {before / (float)secs:0.0}/s unthrottled -> {after / (float)secs:0.0}/s throttled";
 			if (after >= before) return "throttle removed nothing in a big fight";
-			if (after / (float)secs > (TotalMax + HardExtra) * 60f / WindowTicks) return "throttled rate above the total cap";
+			if (after / (float)secs > (TotalMax + HardExtra + StarvedExtra) * 60f / WindowTicks) return "throttled rate above the total cap";
 			return null;
 		}
 

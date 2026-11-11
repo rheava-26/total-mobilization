@@ -82,7 +82,7 @@ namespace Levy.Common.Testing
 			// no limit: the full kit, as before
 			var free = new SoldierRecord { Id = 901 };
 			var te0 = Armory(null, Stock()); Armor(free); ArmoryTE.TestServed = new List<SoldierRecord> { free }; te0.IssueGear(free);
-			check("with no limit a ranged levy carries a blade and two summon weapons", free.Gear.SidearmCount == 3, Kit(free));
+			check("with no limit a ranged levy carries a blade and one summon weapon", free.Gear.SidearmCount == 2 && Summons(free) == 1, Kit(free));
 
 			var one = ArmoryRules.Default(); one.SidearmLimit = 1;
 			var l1 = new SoldierRecord { Id = 902 }; var te1 = Armory(one, Stock()); Armor(l1); ArmoryTE.TestServed = new List<SoldierRecord> { l1 }; te1.IssueGear(l1);
@@ -101,9 +101,9 @@ namespace Levy.Common.Testing
 			int before = over.Gear.SidearmCount;
 			var tight = ArmoryRules.Default(); tight.SidearmLimit = 1; tight.SummonsForOthers = false; te4.Rules.CopyFrom(tight);
 			te4.UpgradeWeapons(over);
-			check("tightening the rules returns the excess sidearms to the armory", before == 3 && over.Gear.SidearmCount <= 1 && Summons(over) == 0, $"{before} -> {over.Gear.SidearmCount}: {Kit(over)}");
+			check("tightening the rules returns the excess sidearms to the armory", before == 2 && over.Gear.SidearmCount <= 1 && Summons(over) == 0, $"{before} -> {over.Gear.SidearmCount}: {Kit(over)}");
 			int staves = te4.Storage.Count(i => i != null && !i.IsAir && (i.type == ItemID.SlimeStaff || i.type == ItemID.QueenSpiderStaff));
-			check("the returned staves are in storage", staves == 2, staves.ToString());
+			check("the returned and the unissued staves are all in storage", staves == 2, staves.ToString());
 
 			// a summoner is never limited
 			var sumRules = ArmoryRules.Default(); sumRules.SidearmLimit = 0; sumRules.SummonsForOthers = false;

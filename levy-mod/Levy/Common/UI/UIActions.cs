@@ -63,6 +63,13 @@ namespace Levy.Common.UI
 			else { var p = LevyPackets.New(LevyPacket.Reserve); p.Write(rec.Id); p.Write(reserve); p.Send(); }
 		}
 
+		/// <summary>Every Regular of the local player goes to the reserve (<paramref name="reserve"/> true) or comes back from it. The same Reserve packet with soldier id -1, so the server does one sweep and one chat line.</summary>
+		public static void SetReserveAll(bool reserve)
+		{
+			if (Single) RosterSystem.Instance.SetReserveAll(Me, reserve);
+			else { var p = LevyPackets.New(LevyPacket.Reserve); p.Write(-1); p.Write(reserve); p.Send(); }
+		}
+
 		public static void AssignPatrol(SoldierRecord rec, Point16 a, Point16 b)
 		{
 			if (rec == null) return;

@@ -34,6 +34,13 @@ namespace Levy.Common.Observe
 		public static int TargetId { get; private set; } = -1;
 		public static List<CamInfo> Cams = new();
 		public static float Zoom = 2f;
+		/// <summary>While watching, the whole interface is hidden (the camera viewer's toggle). Esc or the same toggle brings it back; it never outlives the view.</summary>
+		public static bool HideHud { get; private set; }
+		private static uint _hudHiddenAt;
+		public static void SetHideHud(bool on) { HideHud = on && Kind != ViewKind.None; if (HideHud) _hudHiddenAt = Main.GameUpdateCount; }
+
+		/// <summary>The world point the view is centred on right now (camera, GoPro levy or mind-linked levy), once known.</summary>
+		public static bool TryViewCenter(out Vector2 c) { c = _lastCenter; return Kind != ViewKind.None && _haveLast; }
 
 		private static Vector2 _remotePos, _lastCenter; private static uint _remoteTick = uint.MaxValue; private static bool _haveLast;
 		private static int _bodyCache = -1; private static bool _closeMenu; private static uint _nextAuto; private static bool _optOut;
@@ -45,8 +52,8 @@ namespace Levy.Common.Observe
 			ArenaView.Load();
 		}
 
-		public override void Unload() { ArenaView.Unload(); Kind = ViewKind.None; Cams = new(); }
-		public override void OnWorldUnload() { Kind = ViewKind.None; TargetId = -1; ArenaView.Leave(); MindControl.Reset(); ObserveNet.Reset(); }
+		public override void Unload() { ArenaView.Unload(); Kind = ViewKind.None; Cams = new(); HideHud = false; CameraViewPanel.Unload(); }
+		public override void OnWorldUnload() { Kind = ViewKind.None; TargetId = -1; HideHud = false; ArenaView.Leave(); MindControl.Reset(); ObserveNet.Reset(); if (!Main.dedServ) CameraViewPanel.Close(); }
 
 		private static void Net_Register() { MapOrder.Register(); ObserveNet.Register(); MindControl.Register(); }
 
@@ -87,11 +94,23 @@ namespace Levy.Common.Observe
 			Main.NewText(LevyUtil.T("Observe.Watching", NameOf(pick)), 160, 220, 255);
 		}
 
+		/// <summary>Watch one particular GoPro levy (the camera viewer's list).</summary>
+		public static void WatchLevy(int id)
+		{
+			if (Main.dedServ) return;
+			if (!GoProLevies(Main.LocalPlayer).Contains(id)) { Main.NewText(LevyUtil.T("Observe.NoGoPro"), 255, 200, 120); return; }
+			if (MindControl.LocalSoldierId >= 0) MindControl.RequestEnd();
+			Kind = ViewKind.Levy; TargetId = id; Zoom = 1f; _haveLast = false; _remoteTick = uint.MaxValue; _bodyCache = -1;
+			ArenaView.Factor = 1f;
+			ObserveNet.SendRequest(2, id);
+			Main.NewText(LevyUtil.T("Observe.Watching", NameOf(id)), 160, 220, 255);
+		}
+
 		public static void Exit()
 		{
 			if (Kind == ViewKind.Mind) { _optOut = Main.LocalPlayer.dead; MindControl.RequestEnd(); return; } // released while dead: stay released until the respawn
 			if (Kind == ViewKind.None) return;
-			Kind = ViewKind.None; TargetId = -1;
+			Kind = ViewKind.None; TargetId = -1; HideHud = false;
 			ArenaView.Leave();
 			ObserveNet.SendRequest(0, 0);
 		}
@@ -258,12 +277,13 @@ namespace Levy.Common.Observe
 			}
 			if (Kind == ViewKind.Mind && MindControl.LocalViaDeath && !me.dead) { MindControl.RequestEnd(); }
 			if (Kind == ViewKind.Mind && Main.netMode == NetmodeID.SinglePlayer && MindControl.LinkOfPlayer(Main.myPlayer) == null) OnMindEnd(); // the server side ended it
-			if (Kind == ViewKind.None) return;
+			if (Kind == ViewKind.None) { HideHud = false; return; }
 			if (Kind != ViewKind.Mind && me.dead) { Exit(); return; }
 
 			bool typing = Main.drawingPlayerChat || Main.editSign || Main.editChest;
 			bool esc = Main.keyState.IsKeyDown(Keys.Escape) && !Main.oldKeyState.IsKeyDown(Keys.Escape);
 			bool back = Main.keyState.IsKeyDown(Keys.Back) && !Main.oldKeyState.IsKeyDown(Keys.Back) && !typing;
+			if ((esc || back) && HideHud && Main.GameUpdateCount - _hudHiddenAt > 6u) { HideHud = false; if (esc) _closeMenu = true; return; } // the first Esc only brings the HUD back; the next one stops watching
 			if (esc || back) { if (esc) _closeMenu = true; Exit(); return; }
 			if (!typing)
 			{
@@ -293,18 +313,33 @@ namespace Levy.Common.Observe
 
 		public override void PreUpdateWorld() => ArenaView.RestoreSize();
 
+		public override void UpdateUI(GameTime gameTime) { if (!Main.dedServ) CameraViewPanel.Update(gameTime); }
+
+		/// <summary>The layers that stay while the HUD is hidden: input and menu plumbing, the cursor and the viewer's own.</summary>
+		private static bool KeepWhileHidden(string name) => name.StartsWith("Levy: Observe") || name.Contains("Cursor") || name.StartsWith("Vanilla: Interface Logic") || name == "Vanilla: Ingame Options" || name == "Vanilla: Death Text" || name == "Vanilla: Diagnose Net";
+
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)
 		{
 			if (Main.dedServ) return;
 			layers.Insert(0, new LegacyGameInterfaceLayer("Levy: Observe Restore", () => { ArenaView.RestoreSize(); return true; }, InterfaceScaleType.None));
 			int i = layers.FindIndex(l => l.Name == "Vanilla: Mouse Text");
 			layers.Insert(i < 0 ? layers.Count : i, new LegacyGameInterfaceLayer("Levy: Observe HUD", DrawHud, InterfaceScaleType.UI));
+			layers.Insert(i < 0 ? layers.Count : i, new LegacyGameInterfaceLayer("Levy: Observe Viewer", () => { CameraViewPanel.Draw(Main.spriteBatch, new GameTime()); return true; }, InterfaceScaleType.UI));
+			if (HideHud && Kind != ViewKind.None) foreach (var l in layers) if (!KeepWhileHidden(l.Name)) l.Active = false;
 		}
 
 		private static bool DrawHud()
 		{
 			var sb = Main.spriteBatch;
-			if (Kind != ViewKind.None)
+			if (Kind != ViewKind.None && HideHud)
+			{
+				if (Main.GameUpdateCount - _hudHiddenAt < 240u) // a hint for four seconds, then nothing on screen at all
+				{
+					string hint = LevyUtil.T("Observe.HudRestore"); Vector2 hs = FontAssets.MouseText.Value.MeasureString(hint) * 0.8f;
+					Utils.DrawBorderString(sb, hint, new Vector2((Main.screenWidth / Main.UIScale - hs.X) / 2f, 24f), Color.White * 0.8f, 0.8f);
+				}
+			}
+			else if (Kind != ViewKind.None)
 			{
 				string title = Title(), keys = LevyUtil.T(Kind == ViewKind.Mind ? "Observe.KeysMind" : Kind == ViewKind.Camera ? "Observe.KeysCamera" : "Observe.KeysGoPro");
 				float w = Main.screenWidth / Main.UIScale;
@@ -313,7 +348,7 @@ namespace Levy.Common.Observe
 				Vector2 sz2 = FontAssets.MouseText.Value.MeasureString(keys) * 0.8f;
 				Utils.DrawBorderString(sb, keys, new Vector2((w - sz2.X) / 2f, 52f), Color.White, 0.8f);
 			}
-			DrawGoProMarks(sb);
+			if (!HideHud) DrawGoProMarks(sb);
 			return true;
 		}
 

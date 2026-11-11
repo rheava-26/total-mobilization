@@ -105,7 +105,7 @@ Pages: {
 			'''
 			Map orders send your Regulars to a point on the full map. They march there, fight what is in reach and hold the spot.
 			They need A Guide to Autonomy, studied once in the world.
-			Pick Send to map point on the orders radial or the Barracks panel. Click a spot on the full map, then click it again to send the army. Dragging moves the map and never sends. Esc cancels.
+			Pick Send to map point on the orders radial or the Barracks panel. Double-click a spot on the full map to send the army. Dragging moves the map and never sends. Esc cancels.
 			With a Command Radio in your pack, holding Shift on the full map does the same.
 			'''
 	}
@@ -314,7 +314,7 @@ Pages: {
 		Body:
 			'''
 			Every levy has a camera slot that only a GoPro fits. Put GoPros in the Armory and they are issued one per levy, and a levy that carries one can be watched.
-			Use a GoPro to see through the next GoPro levy. Right-click or Esc stops.
+			Use a GoPro to see through the next GoPro levy. Right-click it to open the camera view: pick a levy or camera, hide the HUD, or stop. Esc stops.
 			Place a Static Camera, then right-click it from anywhere in reach to see its view. The mouse wheel zooms out.
 			The Mind Link takes direct control of the levy nearest your cursor. Right-click lets go.
 			'''

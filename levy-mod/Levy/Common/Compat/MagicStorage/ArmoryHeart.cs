@@ -53,7 +53,7 @@ namespace Levy.Common.Compat.MagicStorageLink
 			var armory = te.Armory; var heart = te.GetHeart();
 			Main.NewText(Terraria.Localization.Language.GetTextValue(heart == null ? "Mods.Levy.Logistics.HeartNoNetwork" : "Mods.Levy.Logistics.HeartNetworked", heart?.storageName ?? ""), 200, 220, 255);
 			if (armory == null) Main.NewText(Terraria.Localization.Language.GetTextValue("Mods.Levy.Logistics.HeartNoArmory"), 220, 200, 120);
-			else UISystem.Instance.OpenArmory(armory);
+			else UISystem.Instance.OpenArmory(armory, te.Center); // anchored to the heart: it may stand up to a Logistical Center's reach from the armory, and the panel must not close on the player standing at the heart
 			return true;
 		}
 

@@ -9,9 +9,9 @@ FizzPop: {
 	DisplayName: Fizz Can
 	Tooltip:
 		'''
-		A bubbly, non-alcoholic soda.
-		Gives a double jump and {0} tiles of extra jump height for {1} minutes.
-		Lowers defense by {2}.
+		Allows a double jump for {1} minutes
+		Increases jump height by {0} tiles
+		Lowers defense by {2}
 		'''
 }
 
@@ -30,8 +30,8 @@ MagmaShot: {
 	DisplayName: Iceberg Shot
 	Tooltip:
 		'''
-		A shot of ice-cold vodka, numb enough to ignore lava.
-		Makes you immune to lava and fire for {0} minutes.
+		Provides immunity to lava and fire for {0} minutes
+		"Ice-cold enough to ignore the lava."
 		'''
 }
 
@@ -39,10 +39,9 @@ MagmaCrucible: {
 	DisplayName: Iceberg Tray
 	Tooltip:
 		'''
-		A frosted bottle and shots for the whole army.
-		Makes your levies within {0} tiles immune to lava and burning for {1} minutes,
-		and they swim through lava as if it were water.
-		They cheer, then stagger: drunk levies have {2}% more aim error.
+		Provides immunity to lava and fire for levies within {0} tiles for {1} minutes
+		Levies swim through lava
+		Increases aim error by {2}%
 		'''
 }
 
@@ -50,9 +49,9 @@ FishFryPlatter: {
 	DisplayName: Fish Fry Platter
 	Tooltip:
 		'''
-		A platter of fried fish.
-		Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale
-		for {4} minutes.
+		Feeds the {0} nearest levies within {1} tiles
+		Gives {2} for {3} minutes
+		Gives Morale for {4} minutes
 		'''
 }
 
@@ -60,9 +59,9 @@ FruitBasket: {
 	DisplayName: Fruit Basket
 	Tooltip:
 		'''
-		A basket of fresh fruit.
-		Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale
-		for {4} minutes.
+		Feeds the {0} nearest levies within {1} tiles
+		Gives {2} for {3} minutes
+		Gives Morale for {4} minutes
 		'''
 }
 
@@ -70,9 +69,9 @@ BurgerBox: {
 	DisplayName: Happy Burger Box
 	Tooltip:
 		'''
-		A box of burgers and fries.
-		Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale
-		for {4} minutes.
+		Feeds the {0} nearest levies within {1} tiles
+		Gives {2} for {3} minutes
+		Gives Morale for {4} minutes
 		'''
 }
 
@@ -80,18 +79,19 @@ GrandFeast: {
 	DisplayName: Grand Feast
 	Tooltip:
 		'''
-		A banquet for a whole army.
-		Feeds your {0} nearest levies within {1} tiles: {2} for {3} minutes and Morale
-		for {4} minutes.
+		Feeds the {0} nearest levies within {1} tiles
+		Gives {2} for {3} minutes
+		Gives Morale for {4} minutes
+		"A banquet for a whole army."
 		'''
 }
 
 FizzyBuff: {
 	DisplayName: Fizzy
-	Description: Gives a double jump and {0} tiles of extra jump height. Lowers defense by {1}.
+	Description: Allows a double jump and increases jump height by {0} tiles. Lowers defense by {1}
 }
 
 LavaShotBuff: {
 	DisplayName: Numbed
-	Description: Immune to lava and burning. Swims through lava. Aim error is {0}% wider.
+	Description: Provides immunity to lava and fire. Swims through lava. Increases aim error by {0}%
 }

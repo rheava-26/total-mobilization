@@ -40,6 +40,8 @@ namespace Levy.Common.UI
 
 		public static BarracksTE CurrentBarracks { get; private set; }
 		public static ArmoryTE CurrentArmory { get; private set; }
+		/// <summary>Where the player opened the armory from when that is not the armory itself (an Armory Heart up to a Logistical Center's reach away); the panel stays open while the player is near this instead. Null = near the armory.</summary>
+		public static Vector2? CurrentArmoryAnchor { get; private set; }
 		/// <summary>Id of the soldier whose loadout panel is open, or -1.</summary>
 		public static int CurrentLoadoutId { get; private set; } = -1;
 
@@ -91,7 +93,7 @@ namespace Levy.Common.UI
 			FollowKey = HoldKey = ReturnKey = HoldFireKey = MobilizeKey = RallyKey = ArmyStripKey = null;
 			_barracksUI = _armoryUI = _radialUI = _hudUI = _manualUI = _loadoutUI = _officersUI = _setupUI = null;
 			_barracks = null; _armory = null; _radial = null; _hud = null; _manual = null; _loadout = null; _officers = null; _setup = null;
-			CurrentBarracks = null; CurrentArmory = null; CurrentLoadoutId = -1; ArmyStripVisible = false; NameplatesForced = false; FocusDesignating = false; FocusActive = false;
+			CurrentBarracks = null; CurrentArmory = null; CurrentArmoryAnchor = null; CurrentLoadoutId = -1; ArmyStripVisible = false; NameplatesForced = false; FocusDesignating = false; FocusActive = false;
 		}
 
 		public override void OnWorldUnload() { FocusDesignating = false; FocusActive = false; if (!Main.dedServ) { CloseAll(); CloseSetup(); } }
@@ -110,11 +112,11 @@ namespace Levy.Common.UI
 			SoundEngine.PlaySound(SoundID.MenuOpen);
 		}
 
-		public virtual void OpenArmory(ArmoryTE te)
+		public virtual void OpenArmory(ArmoryTE te, Vector2? anchor = null)
 		{
 			if (Main.dedServ || te == null || _armoryUI == null) return;
 			CloseBarracks(); CloseRadial(); CloseManual(); CloseSoldierLoadout(); CloseOfficers();
-			CurrentArmory = te;
+			CurrentArmory = te; CurrentArmoryAnchor = anchor;
 			_armory.Bind(te);
 			_armoryUI.SetState(_armory);
 			Main.playerInventory = true; Main.recBigList = false;
@@ -211,8 +213,8 @@ namespace Levy.Common.UI
 
 		public void CloseArmory()
 		{
-			if (_armoryUI?.CurrentState == null) { CurrentArmory = null; return; }
-			_armoryUI.SetState(null); CurrentArmory = null;
+			if (_armoryUI?.CurrentState == null) { CurrentArmory = null; CurrentArmoryAnchor = null; return; }
+			_armoryUI.SetState(null); CurrentArmory = null; CurrentArmoryAnchor = null;
 			SoundEngine.PlaySound(SoundID.MenuClose);
 		}
 
@@ -287,7 +289,7 @@ namespace Levy.Common.UI
 			}
 			if (_armoryUI.CurrentState != null)
 			{
-				if (!PanelStillValid(CurrentArmory, CurrentArmory?.Center ?? Vector2.Zero, player)) CloseArmory();
+				if (!PanelStillValid(CurrentArmory, CurrentArmoryAnchor ?? CurrentArmory?.Center ?? Vector2.Zero, player)) CloseArmory();
 				else { _armory?.RefreshIfStorageReplaced(); _armoryUI.Update(gameTime); }
 			}
 			if (_manualUI.CurrentState != null)
@@ -312,9 +314,12 @@ namespace Levy.Common.UI
 		private static bool PanelStillValid(TileEntity te, Vector2 center, Player player)
 		{
 			if (te == null || !UIActions.IsLive(te)) return false;
-			if (!Main.playerInventory || Main.gameMenu || player.dead) return false;
-			return LevyUtil.WithinTiles(player.Center, center, LevyConstants.UI.PanelCloseDistanceTiles);
+			return PanelHolds(center, player.Center, Main.playerInventory, Main.gameMenu, player.dead);
 		}
+
+		/// <summary>True while a panel opened from <paramref name="center"/> (the tile the player used) should stay open for a player at <paramref name="playerCenter"/>.</summary>
+		public static bool PanelHolds(Vector2 center, Vector2 playerCenter, bool inventoryOpen, bool inMenu, bool dead)
+			=> inventoryOpen && !inMenu && !dead && LevyUtil.WithinTiles(playerCenter, center, LevyConstants.UI.PanelCloseDistanceTiles);
 
 		// ------------------------------------------------------------------ layers
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)

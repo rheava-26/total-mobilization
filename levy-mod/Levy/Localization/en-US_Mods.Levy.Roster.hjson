@@ -20,6 +20,11 @@ DemoteBlocked: "{0} cannot be demoted yet. The spare accessories have nowhere to
 Demobilized: "{0} goes to the reserve."
 Remobilized: "{0} returns to active duty."
 InReserve: "{0} is in reserve. Recall them first."
+ReservedAll: "{0} levies go to the reserve."
+RecalledAll: "{0} levies return to active duty."
+NoneToReserve: Every levy is already in the reserve.
+NoneInReserve: No levy is in the reserve.
+ReserveAllRefused: "{0} could not be moved: the reserve is full, a levy is in mutiny, or there are no command points left."
 ReserveFull: The reserve is full ({0} soldiers).
 ReserveMutinous: "{0} is in mutiny and refuses the order."
 TooFar: "{0} soldiers are too far away to hear that order. Orders by key and radio reach {1} tiles; the barracks panel reaches everyone."

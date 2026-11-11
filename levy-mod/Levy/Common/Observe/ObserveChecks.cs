@@ -28,6 +28,7 @@ namespace Levy.Common.Observe
 			try { MapOrderChecks(Check); } catch (Exception e) { failures.Add("map order threw " + e.GetType().Name + ": " + e.Message); }
 			try { MindChecks(Check); } catch (Exception e) { failures.Add("mind control threw " + e.GetType().Name + ": " + e.Message); }
 			try { CameraChecks(Check); } catch (Exception e) { failures.Add("camera tile threw " + e.GetType().Name + ": " + e.Message); }
+			try { GoProRecipeCheck(Check); } catch (Exception e) { failures.Add("gopro recipe threw " + e.GetType().Name + ": " + e.Message); }
 			try { ZoomChecks(Check); } catch (Exception e) { failures.Add("zoom threw " + e.GetType().Name + ": " + e.Message); }
 			if (failures.Count == 0) Mod.Logger.Info($"Levy observe self-check: {ok} checks OK");
 			else
@@ -160,6 +161,28 @@ namespace Levy.Common.Observe
 			}
 			finally { te.Label = keep; }
 			Check(ModContent.TileType<Content.Tiles.StaticCameraTile>() > 0 && ModContent.ItemType<Content.Items.Observe.StaticCameraItem>() > 0, "the camera tile and item are registered");
+		}
+
+		// ---- GoPro: recipe without wire (copper or tin), right-click opens the viewer, tooltip says so ----
+		private static void GoProRecipeCheck(Action<bool, string> Check)
+		{
+			int gopro = ModContent.ItemType<global::Levy.Content.Items.Observe.GoProItem>();
+			Recipe found = null;
+			for (int i = 0; i < Recipe.numRecipes; i++) if (Main.recipe[i].createItem.type == gopro) { found = Main.recipe[i]; break; }
+			Check(found != null, "the GoPro has a recipe");
+			if (found != null)
+			{
+				bool wire = false, copperGroup = false, lens = false;
+				foreach (var it in found.requiredItem) { if (it.type == ItemID.Wire) wire = true; if (it.type == ItemID.Lens) lens = true; }
+				var group = RecipeGroup.recipeGroups.TryGetValue(RecipeGroup.recipeGroupIDs[LevyConstants.RecipeGroupAnyCopperBar], out var g) ? g : null;
+				foreach (int id in found.acceptedGroups) if (RecipeGroup.recipeGroups.TryGetValue(id, out var rg) && ReferenceEquals(rg, group)) copperGroup = true;
+				Check(!wire, "the GoPro recipe no longer needs wire (the Mechanic comes after Skeletron)");
+				Check(copperGroup && group != null && group.ContainsItem(ItemID.CopperBar) && group.ContainsItem(ItemID.TinBar), "the GoPro recipe takes copper or tin bars");
+				Check(lens, "the GoPro recipe still needs a lens");
+			}
+			var item = ModContent.GetInstance<global::Levy.Content.Items.Observe.GoProItem>();
+			Check(item.CanRightClick() && item.AltFunctionUse(new Player()), "a GoPro opens on right-click in the pack and in hand");
+			Check(item.Tooltip.Value.Contains("Right click to open the camera view"), "the GoPro tooltip tells her to right click for the camera view");
 		}
 
 		// ---- zoom limits ----

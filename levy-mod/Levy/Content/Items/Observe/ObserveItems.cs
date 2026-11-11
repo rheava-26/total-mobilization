@@ -1,6 +1,7 @@
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Levy.Common;
 using Levy.Common.Observe;
 using Levy.Common.Soldiers;
 using Levy.Content.Tiles;
@@ -8,7 +9,7 @@ using Levy.Content.Tiles;
 namespace Levy.Content.Items.Observe
 {
 	/// <summary>
-	/// A body camera. Put it in the Armory and it is issued to a levy's camera slot (or hand it to one): a levy that carries one is watchable. Use it to watch the next GoPro levy through their eyes; right-click or Esc to stop.
+	/// A body camera. Put it in the Armory and it is issued to a levy's camera slot (or hand it to one): a levy that carries one is watchable. Use it to watch the next GoPro levy through their eyes; right-click opens the camera view, Esc stops.
 	/// It is not an accessory: a levy carries it in the dedicated camera slot (SoldierGear.Camera) and the Armory issues it there. It adds no stats. Art: Content/Items/Observe/GoProItem.png (and GoProIndicator.png over a carrier).
 	/// </summary>
 	public class GoProItem : ModItem
@@ -21,10 +22,15 @@ namespace Levy.Content.Items.Observe
 
 		public override bool AltFunctionUse(Player player) => true;
 
+		/// <summary>Right-click in the pack opens the camera view as well (the item is kept).</summary>
+		public override bool CanRightClick() => true;
+		public override void RightClick(Player player) { if (player.whoAmI == Main.myPlayer && !Main.dedServ) CameraViewPanel.Toggle(); }
+		public override bool ConsumeItem(Player player) => false;
+
 		public override bool? UseItem(Player player)
 		{
 			if (player.whoAmI != Main.myPlayer || Main.dedServ) return true;
-			if (player.altFunctionUse == 2) ObserveSystem.Exit(); else ObserveSystem.ConnectLevy(next: true);
+			if (player.altFunctionUse == 2) CameraViewPanel.Toggle(); else ObserveSystem.ConnectLevy(next: true);
 			return true;
 		}
 
@@ -41,7 +47,8 @@ namespace Levy.Content.Items.Observe
 
 		public override void AddRecipes()
 		{
-			CreateRecipe().AddIngredient(ItemID.Lens, 1).AddRecipeGroup(RecipeGroupID.IronBar, 3).AddIngredient(ItemID.Wire, 5).AddTile(TileID.WorkBenches).Register();
+			// Copper or tin instead of wire (wire needs the Mechanic), so it can be made as soon as a lens drops.
+			CreateRecipe().AddIngredient(ItemID.Lens, 1).AddRecipeGroup(RecipeGroupID.IronBar, 3).AddRecipeGroup(LevyConstants.RecipeGroupAnyCopperBar, 3).AddTile(TileID.WorkBenches).Register();
 		}
 	}
 

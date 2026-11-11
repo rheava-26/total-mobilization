@@ -1,6 +1,6 @@
 DisplayName: Armory Heart
 Tooltip:
 	'''
-	A storage component that joins the nearest Armory to a Magic Storage network.
-	Orders and buying draw from the network, and overflow goes into it.
+	Joins the nearest Armory to a Magic Storage network
+	Orders and buying draw from the network
 	'''

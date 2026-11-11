@@ -1,9 +1,8 @@
 # Command and Observe strings. Keys are relative to Mods.Levy.Observe.
 SendToPoint: Send to map point
-SendToPointHint: Opens the map. Click a point, then click it again, and every Regular marches there, fights what is in reach, then holds the spot.
-PickPrompt: Click a spot on the map, then click it again to send your army. Drag to move the map. Esc cancels.
-MapSendHint: Click, then click again to send levies here
-MapConfirmHint: Click again to send levies here
+SendToPointHint: Opens the map. Double-click a point and every Regular marches there, fights what is in reach, then holds the spot.
+PickPrompt: Double-click a spot on the map to send your army. Drag to move the map. Esc cancels.
+MapSendHint: Double-click to send levies here
 MapSent: "{0} levies sent to {1}."
 MapUnreachable: "{0} levies could not find a way to that point and stopped as close as they could get."
 PlaceSpace: space
@@ -18,6 +17,16 @@ Connected: Connected to {0}.
 Watching: Watching {0}.
 NoGoPro: No levy of yours carries a GoPro.
 Lost: The signal is lost.
+CamTitle: Camera view
+CamLevies: Levies
+CamCameras: Cameras
+CamEmpty: No GoPro or camera to watch.
+CamHideHud: Hide HUD
+CamShowHud: Show HUD
+CamHideHint: Hides the interface while watching. Esc or this button brings it back.
+CamStop: Stop watching
+CamStopHint: Return to your own view.
+HudRestore: Esc shows the HUD
 MindRefused: That levy cannot be controlled.
 MindNone: You have no living levy to control.
 HudCamera: CAMERA: {0}  (x{1})

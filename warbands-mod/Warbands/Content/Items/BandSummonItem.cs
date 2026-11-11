@@ -24,13 +24,13 @@ namespace Warbands.Content.Items
 		public override LocalizedText DisplayName => Language.GetOrRegister("Mods.Warbands.Items." + Name + ".DisplayName", () => Band.ItemName);
 		public override LocalizedText Tooltip => Language.GetOrRegister("Mods.Warbands.Items." + Name + ".Tooltip", () => TooltipText(Band));
 
-		/// <summary>1 to 4 short declarative sentences: what it is, reach, the numbers that matter, one special rule.</summary>
+		/// <summary>Vanilla-style tooltip lines: one effect per line, no explaining. The hjson entry overrides this fallback.</summary>
 		public static string TooltipText(BandRoster b)
 		{
 			string kit = b.Members[0].Role == 'R' ? "bows and guns" : "staves and blades";
-			string s = $"Calls the {b.Name} to 24 to 34 tiles away, four soldiers with {kit}.\n";
-			s += b.Warns ? "They warn you off and attack only if you stay.\n" : "They fight you and your levies at once.\n";
-			s += "Beating the whole band drops a bounty notice to turn in.";
+			string s = $"Summons the {b.Name}, armed with {kit}\n";
+			s += b.Warns ? "Warns you off, then attacks if you stay\n" : "Fights you and your levies on sight\n";
+			s += "Drops a bounty notice when the band is beaten";
 			return s;
 		}
 

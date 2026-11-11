@@ -1,0 +1,21 @@
+# perf: the Destroyer (Death mode) against an army, to measure the update cost per tick ([Crowd] census lines + LEVY_PROF buckets, summarised by lab/perf_summary.py RUN_DIR).
+# Every non-summoner levy carries a Caustic Staff (the one summon item the army rules give them). The Destroyer's life is scaled so the fight lasts; levies take 10% damage so they stay up.
+# The commander is a Spectator (the boss goes for the levies) except in `nospec`.
+#   ctl = 36 levies   alone = the Destroyer with one levy (stand-in)   armymech = + 10 Mechanization field drones and 3 turrets   nospec = the commander a plain visible player
+#   sea = the same army on a shore (arena a3w: 24 tiles of water, a sand island under the spawn)   noxs = no Caustic Staffs (no army minions)   noupkeep = LEVY_UPKEEP=0 (gear frames off: what they cost)
+#   cull = LEVY_PAIRCULL=1 (the projectile/NPC pair cull, off by default)   pairchk = + LEVY_PAIRCHK=1 (audit: the cull only counts; every pair it would refuse is also asked the real hit test, violations must stay 0)
+#   before = LEVY_OPT=0 (the dodge cut-off, stat stagger and gear-frame fixes off; LEVY_CUTCHK=1 audits the dodge cut-off the same way: bad=0)
+name: perf_destroyer_orig
+boss: destroyer
+mode: death
+gear: postwof.best
+levies: 36
+seeds: 3
+bhp: 8
+dr: 0.9
+xs: "CalamityMod/CausticStaff"
+cap: 40
+env: {LEVY_CROWD: 1}
+vs:
+  alone: {levies: 1}
+  noxs: {xs: ~, seeds: 2}

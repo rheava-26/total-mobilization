@@ -38,6 +38,7 @@ namespace Levy.Common.Testing
 				SidearmRules(Check);
 				Stripped(Check);
 				HandSet(Check);
+				Cameras(Check);
 				var why = ""; Check("map click: a drag never sends, a click places, the second click sends", MapClicks.SelfCheck(out why), why);
 				CapCurve(Check);
 			}
@@ -47,6 +48,54 @@ namespace Levy.Common.Testing
 		}
 
 		private delegate void CheckFn(string name, bool ok, string detail = "");
+
+		private static void Cameras(CheckFn check)
+		{
+			int gopro = ModContent.ItemType<Content.Items.Observe.GoProItem>();
+			Item[] Stk(int cams) { var l = new List<Item> { Make(ItemID.Musket), Make(ItemID.MusketBall, 300), Make(ItemID.IronBroadsword), Make(ItemID.BandofRegeneration), Make(ItemID.HermesBoots), Make(ItemID.CloudinaBottle), Make(ItemID.ShinyRedBalloon) }; for (int i = 0; i < cams; i++) l.Add(Make(gopro)); return l.ToArray(); }
+			SoldierRecord[] Crew() { var a = new SoldierRecord[4]; for (int i = 0; i < 4; i++) { a[i] = new SoldierRecord { Id = 700 + i }; Armor(a[i]); } a[2].Veteran = true; return a; }
+			static int Cams(SoldierRecord r) => (r.Gear.HasCamera ? 1 : 0);
+			static int AccGoPro(SoldierRecord r, int t) => r.Gear.Accessories.Count(a => !a.IsAir && a.type == t);
+			static string Accs(SoldierRecord r) => string.Join(",", r.Gear.Accessories.Take(r.AccessorySlots).Select(a => a.IsAir ? "-" : a.type.ToString()));
+
+			var ctl = Crew(); var teC = Armory(null, Stk(0)); ArmoryTE.TestServed = ctl.ToList();
+			foreach (var r in ctl) teC.IssueGear(r);
+			var cr = Crew(); var te = Armory(null, Stk(2)); ArmoryTE.TestServed = cr.ToList();
+			foreach (var r in cr) te.IssueGear(r);
+			check("2 GoPros and 4 levies: exactly 2 levies carry a camera", cr.Sum(Cams) == 2, string.Join(",", cr.Select(Cams)));
+			check("the cameras go to the sergeant, then the lowest id", cr[2].Gear.HasCamera && cr[0].Gear.HasCamera && !cr[1].Gear.HasCamera && !cr[3].Gear.HasCamera);
+			check("no GoPro sits in an accessory slot", cr.Sum(r => AccGoPro(r, gopro)) == 0);
+			check("accessory allocation is the same as with no GoPros stocked", Enumerable.Range(0, 4).All(i => Accs(cr[i]) == Accs(ctl[i])), string.Join(" | ", cr.Select(Accs)));
+			check("the camera slot holds a GoPro and Carries sees it", cr[0].Gear.Camera.type == gopro && Content.Items.Observe.GoProItem.Carries(cr[0].Gear) && !Content.Items.Observe.GoProItem.Carries(cr[1].Gear));
+			var te3 = Armory(null, Stk(6)); var c3 = Crew(); ArmoryTE.TestServed = c3.ToList();
+			foreach (var r in c3) te3.IssueGear(r);
+			check("more GoPros than levies: one each, the rest stay in stock", c3.All(r => Cams(r) == 1) && te3.Storage.Count(i => !i.IsAir && i.type == gopro) == 2);
+			// return
+			var back = cr[0].Gear; te.ReturnGear(back);
+			check("returning gear returns the camera to the Armory", !back.HasCamera && te.Storage.Any(i => !i.IsAir && i.type == gopro));
+			// hand rules
+			var g = new SoldierGear();
+			check("only a GoPro fits the camera slot", g.CanHold(SoldierGear.SlotCamera, Make(gopro)) && !g.CanHold(SoldierGear.SlotCamera, Make(ItemID.HermesBoots)) && !g.CanHold(SoldierGear.SlotCamera, Make(ItemID.Musket)));
+			check("a GoPro does not fit an accessory slot", !g.CanHold(SoldierGear.SlotAcc0, Make(gopro)));
+			// save / load / clone / sync
+			g.Camera = Make(gopro); g.SetLocked(SoldierGear.SlotCamera, true);
+			var ld = SoldierGear.Load(g.Save());
+			check("camera and its lock survive save and load", ld.Camera.type == gopro && ld.IsLocked(SoldierGear.SlotCamera) && g.Clone().Camera.type == gopro && g.AllItems().Any(i => i.type == gopro));
+			using (var ms = new MemoryStream()) {
+				using (var w = new BinaryWriter(ms, System.Text.Encoding.UTF8, true)) g.WriteVisual(w);
+				var vis = new SoldierGear(); using (var rd = new BinaryReader(new MemoryStream(ms.ToArray()))) vis.ReadVisual(rd);
+				check("the camera reaches clients", vis.Camera.type == gopro && Content.Items.Observe.GoProItem.Carries(vis));
+			}
+			// migration of an old save: GoPro in accessory slot 1, locked, slot still holding a real accessory beside it
+			var old = new SoldierGear(); old.Accessories[0] = Make(ItemID.HermesBoots); old.Accessories[1] = Make(gopro); old.SetLocked(SoldierGear.SlotAcc0 + 1, true);
+			var oldTag = old.Save(); oldTag.Remove("cam"); // an older save has no camera entry
+			var mig = SoldierGear.Load(oldTag);
+			check("an old save's accessory-slot GoPro moves to the camera slot", mig.Camera.type == gopro && mig.Accessories[1].IsAir && mig.Accessories[0].type == ItemID.HermesBoots && mig.IsLocked(SoldierGear.SlotCamera) && !mig.IsLocked(SoldierGear.SlotAcc0 + 1));
+			var oldFull = new SoldierGear(); oldFull.Camera = Make(gopro); oldFull.Accessories[0] = Make(gopro);
+			var mig2 = SoldierGear.Load(oldFull.Save());
+			check("an accessory-slot GoPro still counts when the camera slot is taken", Content.Items.Observe.GoProItem.Carries(mig2) && mig2.Camera.type == gopro);
+			check("a levy with a GoPro only in an accessory slot still carries", Content.Items.Observe.GoProItem.Carries(new SoldierGear { Accessories = new[] { Make(gopro), new Item(), new Item(), new Item(), new Item(), new Item() } }));
+		}
 
 		private static void RulesFields(CheckFn check)
 		{

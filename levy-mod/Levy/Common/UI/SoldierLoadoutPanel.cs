@@ -70,6 +70,8 @@ namespace Levy.Common.UI
 			for (int i = 0; i < SoldierGear.AccessorySlots; i++) AddSlot(SoldierGear.SlotAcc0 + i, "Loadout.Accessory", 12 + i * Pitch, 160, remove: true);
 			Put(new Label(LevyUtil.T("Loadout.ExtraSidearms"), 0.75f), 12, 214);
 			for (int x = 0; x < LevyConstants.ExtraSidearms; x++) AddSlot(SoldierGear.SlotSide2 + x, "Loadout.ExtraSidearm", 12 + x * Pitch, 232);
+			Put(new Label(LevyUtil.T("Loadout.Camera"), 0.75f), 140, 214);
+			AddSlot(SoldierGear.SlotCamera, "Loadout.Camera", 140, 232);
 
 			_kit = Put(new LevyButton(LevyUtil.T("Loadout.ReturnKit"), 0.8f, 150, 26, ToggleKit, LevyUtil.T("Loadout.ReturnKitHint")), 210, 238);
 			_status = Put(new Label("", 0.75f), 12, 280);

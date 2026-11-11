@@ -59,6 +59,8 @@ namespace Levy.Common.Movement
 		private readonly short[] _arcAy, _arcCx;      // KindArc cells: cruise row (offset from the window top) and cruise columns
 		private int _arcStamp; private readonly int[] _afr, _afs, _ats; private readonly bool[] _afl; private readonly sbyte[] _atc;
 		public static long StatArcScans, StatArcEdges;
+		/// <summary>Lab switch: LEVY_ARCS=0 turns the 2.0.53 travel changes off (flight arcs, the cheaper flight grid, the shallow-drop nudge, the overhead-waypoint flight), for before / after runs in one build.</summary>
+		public static readonly bool Travel6On = Environment.GetEnvironmentVariable("LEVY_ARCS") != "0";
 
 		public State Status { get; private set; }
 		public int Expanded { get; private set; }
@@ -102,9 +104,9 @@ namespace Levy.Common.Movement
 			_maxFall = _wings ? FallScanTiles : (TravelLegacy.On || centred ? Math.Min(FallScanTiles, _jumpTiles + DropMarginTiles) : FallScanTiles); // the executor (ScanAhead) takes a fall of exactly FallScanTiles on a planned route // a route may go down into a pit (a safe fall) when the far side lets it climb out
 			_gapTiles = abilities.GapTiles;
 			_maxFlight = TravelLegacy.On ? ushort.MaxValue : Math.Max(6, (int)(abilities.WingTimeMax * FlySpeed / 16f * FlightRangeShare)); // tiles of flight one tank of wing time covers, with room for the climb
-			_arcs = _wings && !centred && !TravelLegacy.On;
+			_arcs = Travel6On && _wings && !centred && !TravelLegacy.On;
 			_gridFly = _wings && (!_arcs || gridFlight);   // a route search flies arcs between standing cells; the open-air grid only as the second pass (when no arc route reaches the goal)
-			_arcFuelTicks = _wings ? Math.Max(0, abilities.WingTimeMax - WingBudgetReserveTicks) * ArcFuelShare : 0f;
+			_arcFuelTicks = _wings ? Math.Max(0f, (abilities.WingTimeMax - WingBudgetReserveTicks) * ArcFuelShare - ArcOverheadTicks) : 0f;
 			_arcCostPerTick = ArcPreference * Math.Max(3f, abilities.MaxRunSpeed) / 16f;           // search cost of a tick of flight: a tick of walking at the body's run speed costs 1/16 tile-cost per px
 			_arcGlideR = MathHelper.Clamp(abilities.MaxRunSpeed / GlideFallSpeed * ArcGlideSpeedShare, ArcGlideRatioMin, ArcGlideRatioMax);
 			_hWeight = Math.Max(1f, hWeight);
@@ -249,7 +251,7 @@ namespace Levy.Common.Movement
 						int nx = x + dx, ny = y + dy;
 						if (!TileNav.IsBodyClear(nx, ny)) continue;
 						float c = (dx != 0 && dy != 0) ? 1.414f : 1f;
-						Relax(nx, ny, cur, g + c * FlightCostMult, KindFly);
+						Relax(nx, ny, cur, g + c * (Travel6On ? FlightCostMult : 1.3f), KindFly);
 					}
 				}
 			}
@@ -574,7 +576,7 @@ namespace Levy.Common.Movement
 			{
 				fl = (_kind[from] == KindFly ? _fl[from] : 0) + 1;
 				if (fl > _maxFlight) return;
-				if (TileNav.IsStandable(x, y)) fl = 0;   // touching down refills the tank
+				if (Travel6On && TileNav.IsStandable(x, y)) fl = 0;   // touching down refills the tank
 			}
 			if (_stamp[idx] == _gen && (_closed[idx] || g >= _g[idx])) return;
 			Open(idx, from, g, Heur(x, y), kind);

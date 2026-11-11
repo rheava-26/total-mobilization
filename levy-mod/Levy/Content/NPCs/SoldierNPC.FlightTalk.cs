@@ -22,6 +22,9 @@ namespace Levy.Content.NPCs
 		/// <summary>Harness: -1 follows the default, 0 off.</summary>
 		internal static int FlightTalkOverride = -1;
 
+		internal static bool TestClaimSlot() => ClaimShoutSlot();
+		internal static void TestResetSlots() { for (int i = 0; i < ShoutSlot.Length; i++) ShoutSlot[i] = 0; }
+
 		private static bool ClaimShoutSlot()
 		{
 			uint now = Main.GameUpdateCount;
@@ -85,6 +88,34 @@ namespace Levy.Content.NPCs
 				_ftFeared = true;
 				if (Main.rand.Next(100) < 60) SayFlightLine(DialogueTrigger.FLIGHT_FEAR);
 			}
+		}
+	}
+
+	/// <summary>Boot self-check of the flight talk: the shout varies and stays short, only ShoutMaxAtOnce shouts hold a slot at once, and the dialogue file has lines for the three flight triggers.</summary>
+	public class FlightTalkCheck : Terraria.ModLoader.ModSystem
+	{
+		public override void PostAddRecipes()
+		{
+			var fails = new System.Collections.Generic.List<string>();
+			try
+			{
+				var seen = new System.Collections.Generic.HashSet<string>();
+				for (int i = 0; i < 60; i++)
+				{
+					string t = SoldierNPC.ShoutText();
+					seen.Add(t);
+					if (t.Length < 6 || t.Length > 24 || t[0] != 'W' || !t.EndsWith("!") || t.Contains(" ")) fails.Add("a shout is one short word starting with W and ending in !: '" + t + "'");
+				}
+				if (seen.Count < 8) fails.Add("the shout should vary (" + seen.Count + " distinct in 60)");
+				int got = 0; for (int i = 0; i < ShoutMaxAtOnce + 3; i++) if (SoldierNPC.TestClaimSlot()) got++;
+				if (got != ShoutMaxAtOnce) fails.Add("at most " + ShoutMaxAtOnce + " shouts at once (got " + got + ")");
+				SoldierNPC.TestResetSlots();
+				foreach (var t in new[] { DialogueTrigger.TAKEOFF, DialogueTrigger.FLIGHT_FEAR, DialogueTrigger.LANDING })
+					if (DialogueTable.Get(t) == null) fails.Add("no dialogue lines for " + t);
+			}
+			catch (Exception e) { fails.Add("exception " + e.Message); }
+			if (fails.Count == 0) Levy.Instance?.Logger.Info("Levy flight talk self-check: OK (shout varies, slot cap, TAKEOFF / FLIGHT_FEAR / LANDING lines)");
+			else Levy.Instance?.Logger.Error("Levy flight talk self-check FAILED: " + string.Join("; ", fails));
 		}
 	}
 }

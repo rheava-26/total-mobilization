@@ -180,7 +180,7 @@ namespace Levy.Content.NPCs
 			// goal well below while standing on a platform: drop through it when the floor below is safe
 			if (!air && grounded && (dy > PlatformDropBelowPx || brainDropRequest) && PlatformDropIsSafe()) { _fallThroughTicks = PlatformDropTicks; WantsToFallThrough = true; }
 			if (Abilities.HasWings && dy < -(Abilities.JumpTiles * 16f)) wantFly = true;
-			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && _wingTime > 0 && dy < -RouteFlyRisePx) wantFly = true; // a planned route climbs by wing (a flight edge), not by hopping at the foot of the climb
+			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && _wingTime > 0 && dy < -(Math.Abs(dx) < 24f && PathSearch.Travel6On ? ArriveYPx : RouteFlyRisePx)) wantFly = true;   // (a waypoint straight overhead, between 'arrived' and the flight threshold, used to leave the body standing under it until the wedge jump) // a planned route climbs by wing (a flight edge), not by hopping at the foot of the climb
 			if (!TravelLegacy.On && _pathFromRoute && Abilities.HasWings && RouteFlying) { if (_wingTime > 0) { wantFly = true; flyUp = false; } else if (!grounded) StatArcFuelOutNote(); } // a planned arc: thrust toward the next air point while the tank lasts, a glide after
 			if (air) { jumpTiles = 0; wantFly = false; flyUp = false; } // aerial mode owns the vertical axis
 
@@ -676,8 +676,9 @@ namespace Levy.Content.NPCs
 			Vector2 desired = flyUp
 				? new Vector2(dir * FlySpeed * 0.3f, -FlySpeed * (1f + bonus * FlyUpRampShare))
 				: toGoal.SafeNormalize(Vector2.Zero) * FlySpeed * (1f + bonus * MathHelper.Clamp(toGoal.Length() / FlyRampArriveDampPx, 0f, 1f));
-			npc.velocity.X += MathHelper.Clamp(desired.X - npc.velocity.X, -FlyAccel, FlyAccel);
-			npc.velocity.Y += MathHelper.Clamp(desired.Y - npc.velocity.Y, -FlyAccel, FlyAccel);
+			float acc = PathSearch.Travel6On && _pathFromRoute && RouteFlying ? RouteFlyAccel : FlyAccel;   // a planned arc turns and takes off crisply (the planner's fuel sum assumes it)
+			npc.velocity.X += MathHelper.Clamp(desired.X - npc.velocity.X, -acc, acc);
+			npc.velocity.Y += MathHelper.Clamp(desired.Y - npc.velocity.Y, -acc, acc);
 			npc.velocity.Y -= Gravity();
 			_wingTime--;
 			_blocked = false;
@@ -1090,7 +1091,9 @@ namespace Levy.Content.NPCs
 			Vector2 next = _path[0];
 			// A drop waypoint sits in the landing column, so a body whose centre is already over it (balanced on the lip, still held up by the edge of its box) has no sideways error left to walk off with.
 			// Aim a little past it, in the direction the route goes on, until the body is in the air.
-			if (!TravelLegacy.On && next.Y - NPC.Bottom.Y > 32f && Math.Abs(next.X - NPC.Center.X) < 14f && NPC.velocity.Y == 0f)
+			// (a shallow drop counts too, and so does a body that stands on a slope or a half block, whose vertical speed is a small positive number: the lip of a two-tile dip held bodies for seconds)
+			bool shallowOk = PathSearch.Travel6On;
+			if (!TravelLegacy.On && next.Y - NPC.Bottom.Y > (shallowOk ? 12f : 32f) && Math.Abs(next.X - NPC.Center.X) < 14f && (shallowOk ? NPC.velocity.Y >= 0f && NPC.velocity.Y < 2.5f : NPC.velocity.Y == 0f))
 			{
 				float onward = _path.Count > 1 ? _path[1].X : MoveGoal.X;
 				next.X += (onward >= NPC.Center.X ? 1f : -1f) * 24f;

@@ -239,6 +239,8 @@ namespace Levy.Common
 			// ---- flight arcs (a winged body on a planned route flies from one standing cell to another) ----
 			/// <summary>An arc is: straight up from the takeoff cell to a cruise row, level along that row, then a straight descent line to the landing cell. It is planned with the powered speed ArcSpeedPx and a share of the wing tank (the climb and the cruise must fit; the descent line is flown on thrust while the tank lasts and glided after).</summary>
 			public const float ArcSpeedPx = 6f, ArcFuelShare = 0.8f;
+			/// <summary>Ticks of wing time every arc spends on top of its path (the takeoff and the turn at the cruise row are not at full speed).</summary>
+			public const int ArcOverheadTicks = 8;
 			/// <summary>Longest cruise (tiles), deepest landing below the cruise row, and widest descent (columns) an arc looks at.</summary>
 			public const int ArcMaxCruiseTiles = 64, ArcMaxDescentRows = 40, ArcMaxGlideCols = 90;
 			/// <summary>Rows above the takeoff cell the cruise row may be, and the rows kept clear between the cruise row and the ground under it.</summary>
@@ -258,6 +260,8 @@ namespace Levy.Common
 			// ---- wings ----
 			public const float FlySpeed = 6f;
 			public const float FlyAccel = 0.3f;
+			/// <summary>Thrust acceleration (px/tick per tick) while a body flies a planned arc.</summary>
+			public const float RouteFlyAccel = 0.75f;
 			public const float GlideFallSpeed = 1.5f;
 			public const float FlyArriveYPx = 16f;
 			// Hold-to-accelerate: the longer a soldier keeps flying, the faster it flies, up to a peak set by its wings

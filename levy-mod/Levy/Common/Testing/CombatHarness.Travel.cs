@@ -43,6 +43,7 @@ namespace Levy.Common.Testing
 			public bool StallOpen; public int StallFrom;
 			public float FallStartY = float.NaN; public bool Falling; public string StallWhere = ""; public int LastHasBody = 1;
 		}
+		private int _tvDbgFrom = -1, _tvDbgTo = -1, _tvDbgStep = 10, _tvDbgWho = -1;   // LEVY_TRAVEL_DBG=from,to[,step[,levyIndex]]: a DBG line per sampled tick in events.txt
 		private bool _tvGun, _tvFoes; private int _tvAscii; private readonly Dictionary<string, int> _tvKnockTick = new Dictionary<string, int>();
 		private readonly List<TvLevy> _tv = new List<TvLevy>();
 		private StringBuilder _tvTrace = new StringBuilder(), _tvEvents = new StringBuilder();
@@ -73,6 +74,7 @@ namespace Levy.Common.Testing
 			if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_TRAVEL_N"), out int n) && n > 0) _tvN = n;
 			if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_TRAVEL_CAP"), out int cap) && cap > 600) _tvCap = cap;
 			_tvGear = (Environment.GetEnvironmentVariable("LEVY_TRAVEL_GEAR") ?? "mixed").ToLowerInvariant();
+			{ _tvDbgFrom = -1; string dbg = Environment.GetEnvironmentVariable("LEVY_TRAVEL_DBG"); if (!string.IsNullOrEmpty(dbg)) { var q = dbg.Split(','); int.TryParse(q[0], out _tvDbgFrom); _tvDbgTo = q.Length > 1 && int.TryParse(q[1], out int t1) ? t1 : _tvDbgFrom + 300; _tvDbgStep = q.Length > 2 && int.TryParse(q[2], out int t2) && t2 > 0 ? t2 : 10; _tvDbgWho = q.Length > 3 && int.TryParse(q[3], out int t3) ? t3 : -1; } }
 			_tvOut = Environment.GetEnvironmentVariable("LEVY_TRAVEL_OUT") ?? Path.Combine(Path.GetTempPath(), "levy_travel");
 			Directory.CreateDirectory(_tvOut);
 			_tvGun = Environment.GetEnvironmentVariable("LEVY_TRAVEL_GUN") == "1" || Environment.GetEnvironmentVariable("LEVY_TRAVEL_FOES") == "1"; _tvFoes = Environment.GetEnvironmentVariable("LEVY_TRAVEL_FOES") == "1";
@@ -208,7 +210,7 @@ namespace Levy.Common.Testing
 				if (x < campEnd) { x = campEnd; continue; }
 				x += 18 + r.Next(30);
 				int rim = TvLips ? (r.Next(3) == 0 ? 2 : 1) : (r.Next(2) == 0 ? 1 : (r.Next(3) == 0 ? 2 : 0));
-				int type = r.Next(5);
+				int type = r.Next(5); if (walk && type >= 3) type = r.Next(3);   // walk mode: only valleys with stairs and hills, the sheer mesas and cracks are for the winged
 				if (TvLips)
 				{
 					int h = 2 + r.Next(4), w = 4 + r.Next(14), d = 3 + r.Next(8);
@@ -254,7 +256,7 @@ namespace Levy.Common.Testing
 				for (int side = -1; side <= 1; side += 2)
 				{
 					if (TvElev[off] - TvElev[off + side] < 2) continue;                       // not an edge that drops away to this side
-					int kind = side < 0 ? Math.Max(TvRimL[off], TvRimR[off - 1]) : Math.Max(TvRimR[off], TvRimL[off + 1]);
+					int kind = Math.Max(TvRimL[off], TvRimR[off]);   // the lip column itself was marked by the feature
 					if (kind == 0) continue;
 					Tile t = Main.tile[x, top];
 					if (kind == 2) t.IsHalfBlock = true;
@@ -508,7 +510,7 @@ namespace Levy.Common.Testing
 				_tvGx = TvX0 + _tvTo; _tvGy = TvRow(_tvTo) - 3;
 				_tvStarted = true; _tvTick = 0; _tvWatch.Restart();
 				TvPinCommander();
-				Pathfinder.StatReset(); RoutePlanner.StatReset(); SoldierHooks.ResetCounters(); PathSearch.StatHookScans = PathSearch.StatHookEdges = 0;
+				SoldierNPC.StatArcStarts = SoldierNPC.StatArcFuelOut = 0; SoldierNPC.FlightShouts = SoldierNPC.FlightLines = 0; Pathfinder.StatReset(); RoutePlanner.StatReset(); SoldierHooks.ResetCounters(); PathSearch.StatHookScans = PathSearch.StatHookEdges = 0;
 				SoldierNPC.CatchUpHops = 0; SoldierNPC.CatchUpHopsSeen = 0; SoldierNPC.CatchUpTicks = 0; //HOP
 				if (Environment.GetEnvironmentVariable("LEVY_TRAVEL_PLAN") == "1")
 				{
@@ -570,7 +572,8 @@ namespace Levy.Common.Testing
 				else l.Path += step;
 				l.Last = c;
 				bool grounded = n.velocity.Y == 0f;
-				if (!grounded && n.velocity.Y > 2f && !l.Falling) { l.Falling = true; l.FallStartY = c.Y; }
+				if (!grounded && n.velocity.Y > 2f && !l.Falling && !sn.IsFlying) { l.Falling = true; l.FallStartY = c.Y; }
+				if (l.Falling && sn.IsFlying) l.Falling = false;   // a powered descent is not a fall
 				if (l.Falling && grounded) { float drop = (c.Y - l.FallStartY) / 16f; if (drop >= 8f) { l.Falls++; l.FallTiles += drop; _tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) FALL {drop:0} tiles at {offNow:0} ({TvFeature(offNow)})"); } l.Falling = false; }
 				if (n.wet) { l.WetTicks++; int tx = (int)(c.X / 16f), ty = (int)(c.Y / 16f) - 1; if (Main.tile[tx, ty].LiquidAmount > 0) l.DeepTicks++; }
 				// stuck: no 4-tile exit from the anchor for >180 ticks (only while still travelling: not once arrived, and in Follow only while more than 15 tiles from the commander)
@@ -617,6 +620,7 @@ namespace Levy.Common.Testing
 					else if (_tvMode == "map" && rec.Order != SoldierOrder.GoTo && l.GaveUp < 0) { l.GaveUp = _tvTick - 120; _tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) ORDER ENDED away from goal at {offNow:0} ({TvFeature(offNow)}) now={rec.Order}"); }
 					if (l.ArriveTick < 0 && l.GaveUp < 0) allDone = false;
 				}
+				if (_tvDbgFrom >= 0 && _tvTick >= _tvDbgFrom && _tvTick <= _tvDbgTo && _tvTick % _tvDbgStep == 0 && (_tvDbgWho < 0 || l.Idx == _tvDbgWho || _tv.IndexOf(l) == _tvDbgWho)) _tvEvents.AppendLine($"DBG t={_tvTick} {rec.Name} pos=({n.Center.X / 16f - TvX0:0.00},{TvG - n.Bottom.Y / 16f:0.00}) v=({n.velocity.X:0.00},{n.velocity.Y:0.00}) fly={sn.IsFlying} wing={sn.WingTime} blocked={sn.MoveBlocked} why={sn.StillReason()} {sn.DebugRoute()} {TvTiles(n)}");
 				if (_tvTick % 30 == 0) _tvTrace.AppendLine($"{_tvTick},{rec.Name},{l.Gear},{offNow:0.0},{TvG - c.Y / 16f:0.0},{(int)sn.State}");
 			}
 			if (_tvTick % 600 == 0) Mod.Logger.Info($"HARNESS-TRAVEL: t={_tvTick} arrived={_tv.FindAll(l => l.ArriveTick >= 0).Count}/{_tv.Count} medOffset={Median():0}");
@@ -672,6 +676,7 @@ namespace Levy.Common.Testing
 			}
 			_tvEvents.AppendLine($"hops: total={SoldierNPC.CatchUpHops} seenByMod={SoldierNPC.CatchUpHopsSeen} ms={SoldierNPC.CatchUpTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.00} tries={SoldierNPC.CatchUpTries} last={SoldierNPC.CatchUpLast}"); //HOP
 			foreach (string rl in RoutePlanner.Log) _tvEvents.AppendLine(rl);
+			_tvEvents.AppendLine($"arcs: starts={SoldierNPC.StatArcStarts} fuelOut={SoldierNPC.StatArcFuelOut} shouts={SoldierNPC.FlightShouts} flightLines={SoldierNPC.FlightLines}");
 			_tvEvents.AppendLine($"lavaguard: ticks={SoldierNPC.LavaGuardTicks} kicks={SoldierNPC.LavaKicks} escapeTicks={SoldierNPC.LavaEscapeTicks}");
 			_tvEvents.AppendLine($"airctl: dangerTicks={SoldierNPC.StatLavaDangerTicks} lavaCatches={SoldierNPC.StatLavaCatches} hookedTicks={SoldierNPC.StatHookedTicks} hangTicks={SoldierNPC.StatHangTicks} wingHold={SoldierNPC.StatWingHoldTicks} wingRel={SoldierNPC.StatWingRelTicks} escapeFlight={SoldierNPC.StatEscapeTicks}");
 			_tvEvents.AppendLine($"hookstats: plans={SoldierHooks.Plans} found={SoldierHooks.PlansFound} planMs={SoldierHooks.PlanTs * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} tickCalls={SoldierHooks.TickCalls} tickMs={SoldierHooks.TickTs * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} projMs={SoldierHooks.ProjTs * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} casts={SoldierHooks.Casts} ok={SoldierHooks.CastsOk} latches={SoldierHooks.Latches} releases={SoldierHooks.Releases} landings={SoldierHooks.Landings} aborts={SoldierHooks.Aborts} scans={PathSearch.StatHookScans} edges={PathSearch.StatHookEdges}");

@@ -56,7 +56,7 @@ namespace Levy.Content.NPCs
 			if (_hkPhase != HookPhase.Idle && _hkPhase != HookPhase.Cooldown && _rt != null && _rtHookWant) { _rtProgPos = NPC.Center; _rtProgTick = now; leg = _rtHookGoal; return true; }
 			Vector2 me = NPC.Bottom;
 			float dxT = Math.Abs(goalBottom.X - me.X) / 16f, dyT = (goalBottom.Y - me.Y) / 16f;
-			if (dxT <= RouteMinTripTiles && Math.Abs(dyT) <= RouteMinTripRise) { if (_rt != null) RouteReset(); return false; }
+			if (dxT <= RouteMinTripTiles && Math.Abs(dyT) <= RouteMinTripRise && !(_rt != null && RouteFlying && NPC.velocity.Y != 0f)) { if (_rt != null) RouteReset(); return false; }   // (an arc in the air is flown to its landing)
 			// a trip wider than the planner's window is routed in hops: the far side of a floor column RouteMaxHopTiles on toward the goal
 			if (dxT > RouteMaxHopTiles)
 			{
@@ -230,7 +230,8 @@ namespace Levy.Content.NPCs
 			if (_rt == null) return "route=none";
 			string nx = "";
 			for (int i = _rtIdx; i < Math.Min(_rt.Pts.Count, _rtIdx + 6); i++) { var q = TileNav.FeetTile(_rt.Pts[i]); nx += $"({q.X - TileNav.FeetTile(NPC.Bottom).X},{q.Y - TileNav.FeetTile(NPC.Bottom).Y})"; }
-			return $"route={_rt.State} hookWant={_rtHookWant}/{_rtHookTries} bans={_rtBan.Count} idx={_rtIdx}/{_rt.Pts.Count} replans={_rtReplans} fromRoute={_pathFromRoute} pathN={_path.Count} goal=({MoveGoal.X / 16f:0},{MoveGoal.Y / 16f:0}) next={nx}";
+			string p0 = _path.Count > 0 ? $"({(_path[0].X - NPC.Center.X) / 16f:0.0},{(_path[0].Y - NPC.Bottom.Y) / 16f:0.0})" : "none";
+			return $"p0={p0} whyM={WhyM} route={_rt.State} hookWant={_rtHookWant}/{_rtHookTries} bans={_rtBan.Count} idx={_rtIdx}/{_rt.Pts.Count} replans={_rtReplans} fromRoute={_pathFromRoute} pathN={_path.Count} goal=({MoveGoal.X / 16f:0},{MoveGoal.Y / 16f:0}) next={nx}";
 		}
 
 		private static bool LevyUtilIsServerOrSingle() => global::Levy.Common.Util.LevyUtil.IsServerOrSingle;

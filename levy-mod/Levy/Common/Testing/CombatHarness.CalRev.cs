@@ -250,6 +250,7 @@ namespace Levy.Common.Testing
 			if (!_crHooked)
 			{
 				_crHooked = true;
+				if (global::Levy.Common.Util.LevyProf.On) On_Projectile.Damage += CrDamageTimer;
 				On_NPC.StrikeNPC_HitInfo_bool_bool += CrStrikeDetour;
 				On_NPC.UpdateNPC += CrNpcUpdateDetour;
 				On_Projectile.Update += CrProjUpdateDetour;
@@ -267,7 +268,7 @@ namespace Levy.Common.Testing
 		{
 			if (!_crHooked) return;
 			_crHooked = false;
-			try { On_NPC.StrikeNPC_HitInfo_bool_bool -= CrStrikeDetour; On_NPC.UpdateNPC -= CrNpcUpdateDetour; On_Projectile.Update -= CrProjUpdateDetour; On_Player.Update -= CrPlayerUpdate; } catch { }
+			try { On_Projectile.Damage -= CrDamageTimer; On_NPC.StrikeNPC_HitInfo_bool_bool -= CrStrikeDetour; On_NPC.UpdateNPC -= CrNpcUpdateDetour; On_Projectile.Update -= CrProjUpdateDetour; On_Player.Update -= CrPlayerUpdate; } catch { }
 		}
 
 		// -------------------------------------------------------------------------------------------------- Calamity switches
@@ -336,6 +337,13 @@ namespace Levy.Common.Testing
 				global::Levy.Common.Util.LevyProf.Add(k, dt); global::Levy.Common.Util.LevyProf.Cnt[k]++;
 				if (self.active) global::Levy.Common.Util.LevyProf.AddType(self.type, dt);
 			}
+		}
+
+		/// <summary>LEVY_PROF=1: the time of the projectile hit loop (Projectile.Damage), the part of a projectile update that scales with the NPC count.</summary>
+		private static void CrDamageTimer(On_Projectile.orig_Damage orig, Projectile self)
+		{
+			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+			try { orig(self); } finally { global::Levy.Common.Util.LevyProf.DamageTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; }
 		}
 
 		private static void CrProjUpdateInner(On_Projectile.orig_Update orig, Projectile self, int i)
@@ -796,7 +804,7 @@ namespace Levy.Common.Testing
 			if (run.Dl != "") DlFinish(run, st);
 			if (run.Pl != "") PlFinish(run, st, end);
 			KitFinish(run, st);
-			if (global::Levy.Common.Util.LevyProf.On) { string pl = global::Levy.Common.Util.LevyProf.Dump(end) + " path[" + global::Levy.Common.Movement.Pathfinder.StatSummary() + "] route[" + global::Levy.Common.Movement.RoutePlanner.StatSummary() + "] TOP[" + global::Levy.Common.Util.LevyProf.TopTypes(end, 12) + "] " + $" projTypes={ProjectileLoader.ProjectileCount} npcTypes={NPCLoader.NPCCount} " + $" wm={SoldierNPC.WmThinks}/{SoldierNPC.WmHolds}/{SoldierNPC.WmShifts}/{SoldierNPC.WmAims}/{SoldierNPC.WmAimCalls}/{SoldierNPC.WmPierce} chk=" + global::Levy.Common.Movement.ThreatField.ChkBad + "/" + global::Levy.Common.Movement.ThreatField.ChkN; Mod.Logger.Info("PROF " + run.Key + " ms/tick " + pl); try { File.AppendAllText(_crOut + ".prof.tsv", run.Key + "\t" + pl + "\n"); } catch { } }
+			if (global::Levy.Common.Util.LevyProf.On) { string pl = global::Levy.Common.Util.LevyProf.Dump(end) + " path[" + global::Levy.Common.Movement.Pathfinder.StatSummary() + "] route[" + global::Levy.Common.Movement.RoutePlanner.StatSummary() + "] cutchk[checked=" + SoldierNPC.CutChecked + " cut=" + SoldierNPC.CutCut + " bad=" + SoldierNPC.CutBad + "] TOP[" + global::Levy.Common.Util.LevyProf.TopTypes(end, 12) + "] " + $" projTypes={ProjectileLoader.ProjectileCount} npcTypes={NPCLoader.NPCCount} " + $" wm={SoldierNPC.WmThinks}/{SoldierNPC.WmHolds}/{SoldierNPC.WmShifts}/{SoldierNPC.WmAims}/{SoldierNPC.WmAimCalls}/{SoldierNPC.WmPierce} chk=" + global::Levy.Common.Movement.ThreatField.ChkBad + "/" + global::Levy.Common.Movement.ThreatField.ChkN; Mod.Logger.Info("PROF " + run.Key + " ms/tick " + pl); try { File.AppendAllText(_crOut + ".prof.tsv", run.Key + "\t" + pl + "\n"); } catch { } }
 			if (SoldierNPC.HitDbg != null) { try { File.AppendAllText(_crOut + ".hit.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitDbg.OrderByDescending(kv => kv.Value.dmg).Select(kv => $"{kv.Key}={kv.Value.dmg}/{kv.Value.n}")) + "\n"); } catch { } SoldierNPC.HitDbg = new(); }
 			if (SoldierNPC.HitGapDbg != null) { try { File.AppendAllText(_crOut + ".gap.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitGapDbg.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}:{kv.Value}")) + "\n"); } catch { } SoldierNPC.HitGapDbg = new(); }
 			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} rageAct={LevyRippers.RageActivations - st.Rage0} adrAct={LevyRippers.AdrenalineActivations - st.Adr0} rogueAligned={LevyRippers.RogueAligned} rogueTimeouts={LevyRippers.RogueTimeouts} strikes={LevyRippers.Strikes} strikesBoosted={LevyRippers.StrikesBoosted} fx={LevyRippers.FxRequests} boosterCopies={LevyRippers.BoosterCopies} levyBoosters={CrLevyBoosters()}");

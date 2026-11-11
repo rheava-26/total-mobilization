@@ -1,7 +1,9 @@
 # perf: the Destroyer (Death mode) against an army, to measure the update cost per tick ([Crowd] census lines + LEVY_PROF buckets, summarised by lab/perf_summary.py RUN_DIR).
-# The Destroyer's life is scaled so the fight lasts; levies take 10% damage so they stay up. The commander is a Spectator (the boss goes for the levies) except in `nospec`.
+# Every non-summoner levy carries a Caustic Staff (the one summon item the army rules give them). The Destroyer's life is scaled so the fight lasts; levies take 10% damage so they stay up.
+# The commander is a Spectator (the boss goes for the levies) except in `nospec`.
 #   ctl = 36 levies   alone = the Destroyer with one levy (stand-in)   armymech = + 10 Mechanization field drones and 3 turrets   nospec = the commander a plain visible player
-#   sea = the same army on a shore (arena a3w: 24 tiles of water, a sand island under the spawn)   before = LEVY_OPT=0 (the dodge cut-off and gear-frame fixes of perf-destroyer off)
+#   sea = the same army on a shore (arena a3w: 24 tiles of water, a sand island under the spawn)   noxs = no Caustic Staffs (no army minions)   noupkeep = LEVY_UPKEEP=0 (gear frames off: what they cost)
+#   cutchk = LEVY_CUTCHK=1 (every dodge candidate also counted to the end; the dodge cut-off must reach the same verdict: bad=0)   before = LEVY_OPT=0 (the perf-destroyer fixes off)
 name: perf_destroyer
 boss: destroyer
 mode: death
@@ -10,11 +12,13 @@ levies: 36
 seeds: 3
 bhp: 8
 dr: 0.9
+xs: "CalamityMod/CausticStaff"
 cap: 40
 env: {LEVY_CROWD: 1, LEVY_PROF: 1, LEVY_SPIKE_MS: 22}
 vs:
   alone: {levies: 1}
-  armymech: {drones: 10, turrets: 3}
-  nospec: {spec: 0}
-  sea: {arena: a3w}
+  noxs: {xs: ~, seeds: 2}
+  sea: {arena: a3w, seeds: 2}
+  noupkeep: {env: {LEVY_UPKEEP: 0}, seeds: 2}
+  cutchk: {env: {LEVY_CUTCHK: 1}, seeds: 2}
   before: {env: {LEVY_OPT: 0}}

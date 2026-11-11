@@ -13,6 +13,8 @@ namespace Levy.Common.Util
 		private static readonly string[] Names = { "ai", "dodge", "near", "hits", "snap", "wormfn", "zone", "rows", "brain", "perch", "hold", "mom", "move", "combat", "fear", "dmg", "dummy", "stats", "rip", "g.slot", "g.copy", "g.reset", "g.buffs", "g.equips", "g.sets", "g.post", "g.misc", "g.exit", "npc.levy", "npc.boss", "npc.add", "npc.mech", "npc.other", "proj.army", "proj.enemy", "proj.mech", "proj.other" };
 		/// <summary>Entities updated since the last Reset (per category, same order as Names from NpcLevy), for the per-tick counts in the dump.</summary>
 		public static readonly long[] Cnt = new long[N];
+		/// <summary>Lab counters: projectile/NPC pairs a soldier shot was asked about (CanHitNPC, once per pair the vanilla loop gets past its own flags) and hits it landed.</summary>
+		public static long Pairs, ShotHits, DamageTicks;
 		private static readonly long[] T = new long[N];
 		[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)] private struct Timespec { public long Sec, Nsec; }
 		[System.Runtime.InteropServices.DllImport("libc", EntryPoint = "clock_gettime")] private static extern int ClockGetTime(int clk, out Timespec ts);
@@ -60,12 +62,13 @@ namespace Levy.Common.Util
 			for (int k = 0; k < top && d[k].ms > 0.05; k++) sb.Append(k > 0 ? ", " : "").Append(Names[d[k].i]).Append(' ').Append(d[k].ms.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
 			return sb.ToString();
 		}
-		public static void Reset() { Array.Clear(T, 0, N); Array.Clear(Cnt, 0, N); ByType.Clear(); }
+		public static void Reset() { Array.Clear(T, 0, N); Array.Clear(Cnt, 0, N); ByType.Clear(); Pairs = ShotHits = DamageTicks = 0; }
 		public static string Dump(int ticks)
 		{
 			double f = 1000.0 / Stopwatch.Frequency / Math.Max(1, ticks);
 			var sb = new System.Text.StringBuilder();
 			for (int i = 0; i < N; i++) sb.Append(Names[i]).Append('=').Append((T[i] * f).ToString("0.000", System.Globalization.CultureInfo.InvariantCulture)).Append(' ');
+			sb.Append("| pairs/tick=").Append((Pairs / (double)Math.Max(1, ticks)).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)).Append(" hits/tick=").Append((ShotHits / (double)Math.Max(1, ticks)).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)).Append(" damage ms/tick=").Append((DamageTicks * f).ToString("0.000", System.Globalization.CultureInfo.InvariantCulture)).Append(' ');
 			sb.Append("| per tick counts:");
 			for (int i = NpcLevy; i < N; i++) sb.Append(' ').Append(Names[i]).Append('=').Append((Cnt[i] / (double)Math.Max(1, ticks)).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
 			return sb.ToString().Trim();

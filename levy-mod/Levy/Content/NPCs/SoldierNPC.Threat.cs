@@ -461,8 +461,18 @@ namespace Levy.Content.NPCs
 			int h = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int last, _wormMargin, imm, m.Penalty, bestScore);
 			if (MobilityMode >= 1 && h == 0 && m.Kind != 0 && !(m.Air ? AirLandingSafe(c0, m, g) : LandingSafe(c0, m, g))) return;
 			float score = h * 100f + m.Penalty + (_wormScan && m.Kind != 0 ? WormAlongPenalty(m, c0, g) : 0f);
+			if (CutCheck)
+			{
+				// lab (LEVY_CUTCHK=1): the same candidate counted to the end must reach the same verdict as the cut-off count (and the same numbers when it wins)
+				int hf = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int lastF, _wormMargin, imm);
+				float scoreF = hf * 100f + m.Penalty + (_wormScan && m.Kind != 0 ? WormAlongPenalty(m, c0, g) : 0f);
+				CutChecked++; if ((score < bestScore) != (scoreF < bestScore) || (score < bestScore && (h != hf || last != lastF))) CutBad++;
+				if (h >= ThreatField.AbortedHits || h * 100f + m.Penalty >= bestScore) CutCut++;
+			}
 			if (score < bestScore) { best = m; bestHits = h; bestScore = score; bestLast = last; }
 		}
+		internal static readonly bool CutCheck = Environment.GetEnvironmentVariable("LEVY_CUTCHK") == "1";
+		public static int CutChecked, CutBad, CutCut;
 
 		/// <summary>Room to run <paramref name="distPx"/> to one side: no wall, no lava, a floor under every column (and, on a platform, only the same level).</summary>
 		private bool StepLaneSafe(int side, float distPx)

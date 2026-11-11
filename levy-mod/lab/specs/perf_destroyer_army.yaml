@@ -1,4 +1,4 @@
-# perf: one Destroyer (Death mode) vs 36 levies cell, for the EventPipe sampling profile (see docs/perf_destroyer/).
+# perf: one Destroyer (Death mode) vs 36 levies cell (each non-summoner with a Caustic Staff), for the EventPipe sampling profile: lab/perf/profile.sh levy-mod/lab/specs/perf_destroyer_army.yaml /tmp/x
 name: perf_destroyer_army
 boss: destroyer
 mode: death
@@ -7,5 +7,6 @@ levies: 36
 seeds: 1
 bhp: 8
 dr: 0.9
-cap: 45
+xs: "CalamityMod/CausticStaff"
+cap: 40
 env: {LEVY_CROWD: 1, LEVY_PROF: 1}

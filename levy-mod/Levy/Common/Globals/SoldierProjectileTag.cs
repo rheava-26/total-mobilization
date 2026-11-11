@@ -123,6 +123,7 @@ namespace Levy.Common.Globals
 			// Vanilla runs this for EVERY (damaging projectile, NPC) pair before the hitbox test, and the army's own bodies fill much of the NPC array: with a sky full of soldier shots most
 			// pairs are (our shot, our friend). A friendly NPC is never a legal target for a soldier / officer / summon shot (it is a never-target, and vanilla would not hit it either), so
 			// refuse it before anything else spends time on the pair.
+			if (LevyProf.On && SoldierIndex >= 0) LevyProf.Pairs++;
 			if ((SoldierIndex >= 0 || CommanderIndex >= 0) && target.friendly) return false;
 			if (CommanderIndex >= 0 && SoldierIndex < 0 && SoldierTargeting.IsNeverTarget(target)) return false;
 			// A soldier's own shot (LootCredit's rule, folded in so the pair pays for one hook and one tag lookup, not two): never hits what a soldier would never choose (disguised mimics, cultist set pieces, bound NPCs,
@@ -155,7 +156,7 @@ namespace Levy.Common.Globals
 		/// <summary>Owner-gear on-hit effects vanilla skips for npcProj shots: the soldier's armor set bonuses (Spectre Mask / Hood bolts, Titanium, Orichalcum, Hallowed, Palladium, Nebula, Frost, Beetle Might) run here against his own timers.</summary>
 		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
 		{
-			if (SoldierIndex >= 0) Hits++;
+			if (SoldierIndex >= 0) { Hits++; if (LevyProf.On) LevyProf.ShotHits++; }
 			if (SoldierIndex < 0 || LevyUtil.IsClient) return;
 			SoldierNPC hitter = EnemyTargeting.LiveBody(SoldierIndex);
 			if (hitter != null) { hitter.MinionHits++; hitter.ProjHitTick = (int)Main.GameUpdateCount; }

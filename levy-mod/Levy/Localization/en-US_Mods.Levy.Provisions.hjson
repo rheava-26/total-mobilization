@@ -9,9 +9,9 @@ FizzPop: {
 	DisplayName: Fizz Can
 	Tooltip:
 		'''
-		A bubbly, non-alcoholic soda.
-		Gives a double jump and {0} tiles of extra jump height for {1} minutes.
-		Lowers defense by {2}.
+		Low gravity and a double jump for {0} minutes
+		Greatly increases knockback taken
+		Knockback immunity becomes {1}% damage reduction
 		'''
 }
 
@@ -19,10 +19,11 @@ FizzTank: {
 	DisplayName: Case of Fizz
 	Tooltip:
 		'''
-		Twelve cans of soda for the whole army.
-		Gives your levies within {0} tiles a double jump
-		and {2} tiles of extra jump height for {1} minutes.
-		Lowers their defense by {3}, and hits knock them back at {4}% strength.
+		Levies within {0} tiles float for {1} minutes
+		Gives a double jump
+		Greatly increases knockback taken
+		Knockback immunity becomes {2}% damage reduction
+		'Shake well.'
 		'''
 }
 
@@ -88,7 +89,7 @@ GrandFeast: {
 
 FizzyBuff: {
 	DisplayName: Fizzy
-	Description: Gives a double jump and {0} tiles of extra jump height. Lowers defense by {1}.
+	Description: Low gravity and a double jump. Greatly increases knockback taken. Knockback immunity becomes {0}% damage reduction.
 }
 
 LavaShotBuff: {

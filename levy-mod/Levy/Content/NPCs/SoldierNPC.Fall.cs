@@ -73,12 +73,12 @@ namespace Levy.Content.NPCs
 			}
 			bool web = Collision.StickyTiles(npc.position, npc.velocity, npc.width, npc.height).Y != -1f;
 			bool hooked = _hkPhase == HookPhase.InFlight || _hkPhase == HookPhase.Reel || _hkPhase == HookPhase.Cast;
-			if (npc.velocity.Y < 0f || npc.wet || npc.honeyWet || npc.lavaWet || web || hooked || _flying || _clmOn || (Dummy != null && Dummy.slowFall) || ThinAir(npc.position.Y)) _fallStartRow = row;
+			if (npc.velocity.Y < 0f || npc.wet || npc.honeyWet || npc.lavaWet || web || hooked || _flying || _clmOn || (Dummy != null && Dummy.slowFall) || ThinAir(npc.position.Y) || FizzyNow) _fallStartRow = row; // Fizzy: a quarter gravity, nothing it falls hurts
 		}
 
 		private void TakeFallDamage(int damage, int tiles)
 		{
-			if (!IsAlive || LevyUtil.IsClient) return;
+			if (!IsAlive || LevyUtil.IsClient || FizzyNow) return;
 			LastFallTiles = tiles;
 			if (TryShadowDodge()) return;
 			LastAttackerIndex = -1; LastAttackerType = LevyConstants.EnvKillerFall; LastAttackerName = LevyUtil.T("Damage.KillerFall");

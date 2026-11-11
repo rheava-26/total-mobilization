@@ -11,8 +11,9 @@ using Levy.Content.NPCs;
 namespace Levy.Content.Buffs
 {
 	/// <summary>
-	/// Fizzy (Fizz Pop, Fizz Tank): a double jump and higher jumps, at a price in defense, and hits knock the body back. A real player gets the same effect from the buff itself;
-	/// a levy gets the stat side through <see cref="DrinkBuffs.Apply"/> (its dummy never runs UpdateBuffs) and the knockback through <see cref="ProvisionsBody"/>.
+	/// Fizzy (Fizz Pop, Fizz Tank): low gravity (a quarter, vanilla's floor at the top of the Space layer), a double jump, six times the knockback, and no knockback immunity (it becomes a little damage reduction).
+	/// A real player gets the effect from the buff itself (<see cref="FizzyPlayer"/>); a levy gets the gravity and knockback through <see cref="ProvisionsBody"/>, the double jump through <see cref="DrinkBuffs.Apply"/>
+	/// (its dummy never runs UpdateBuffs) and the hit side through SoldierNPC.Fizz.cs.
 	/// </summary>
 	public class FizzyBuff : ModBuff
 	{
@@ -25,7 +26,7 @@ namespace Levy.Content.Buffs
 			Main.buffNoSave[Type] = true;
 		}
 
-		public override void ModifyBuffText(ref string buffName, ref string tip, ref int rare) => tip = string.Format(tip, ProvisionRules.FizzJumpTiles, LevyConstants.FizzDefense);
+		public override void ModifyBuffText(ref string buffName, ref string tip, ref int rare) => tip = string.Format(tip, (int)Math.Round(LevyConstants.FizzImmunityDr * 100f));
 
 		public override void Update(Player player, ref int buffIndex) => ProvisionRules.ApplyFizzy(player);
 	}
@@ -53,11 +54,13 @@ namespace Levy.Content.Buffs
 		}
 	}
 
-	/// <summary>Lava immunity and Fizzy knockback for a levy's body, from the buffs it carries (set each tick before its AI runs; the soldier files only read NPC.lavaImmune and NPC.knockBackResist).</summary>
+	/// <summary>Lava immunity and Fizzy gravity and knockback for a levy's body, from the buffs it carries (set each tick before its AI runs; the soldier files only read NPC.lavaImmune, NPC.gravity and NPC.knockBackResist).</summary>
 	public class ProvisionsBody : GlobalNPC
 	{
 		public override bool InstancePerEntity => true;
 		private bool _lava, _kb, _fireWasImmune;
+		/// <summary>The body carries Fizzy this tick (refreshed in PreAI and on a hit).</summary>
+		public bool Fizzy;
 
 		public override bool AppliesToEntity(NPC entity, bool lateInstantiation) => lateInstantiation && entity.ModNPC is SoldierNPC;
 
@@ -67,11 +70,12 @@ namespace Levy.Content.Buffs
 			return true;
 		}
 
-		/// <summary>Brings lava immunity (with Burning immunity) and knockback resistance in line with the buffs the body carries now.</summary>
+		/// <summary>Brings lava immunity (with Burning immunity), knockback resistance and gravity in line with the buffs the body carries now.</summary>
 		public void Refresh(NPC npc)
 		{
 			bool lava = npc.HasBuff(ModContent.BuffType<LavaShotBuff>());
 			bool fizz = npc.HasBuff(ModContent.BuffType<FizzyBuff>());
+			Fizzy = fizz;
 			npc.lavaImmune = lava;
 			if (lava)
 			{
@@ -84,6 +88,29 @@ namespace Levy.Content.Buffs
 
 			if (fizz) { if (!_kb && npc.knockBackResist <= 0f) { _kb = true; npc.knockBackResist = LevyConstants.FizzKnockbackResist; } }
 			else if (_kb) { _kb = false; npc.knockBackResist = 0f; }
+
+			// low gravity: vanilla resets NPC.GravityMultiplier every tick before the AI and reads it after, so it is multiplied here each tick (NPC.gravity, which the movement code reads for its jump speed, its fall prediction and its hook arcs, follows it)
+			if (fizz) npc.GravityMultiplier *= LevyConstants.FizzGravityMult;
+		}
+	}
+
+	/// <summary>The same Fizzy rules on a real player (a Fizz Can drunk by the commander): knockback immunity is turned off and paid back as damage reduction, and every hit carries six times the knockback.</summary>
+	public class FizzyPlayer : ModPlayer
+	{
+		private bool _converted;
+
+		public override void PostUpdateEquips()
+		{
+			_converted = false;
+			if (!Player.HasBuff<FizzyBuff>()) return;
+			if (Player.noKnockback) { Player.noKnockback = false; _converted = true; }
+		}
+
+		public override void ModifyHurt(ref Player.HurtModifiers modifiers)
+		{
+			if (!Player.HasBuff<FizzyBuff>()) return;
+			modifiers.Knockback *= LevyConstants.FizzKnockbackMult;
+			if (_converted) modifiers.FinalDamage *= 1f - LevyConstants.FizzImmunityDr;
 		}
 	}
 
@@ -93,16 +120,11 @@ namespace Levy.Content.Buffs
 		/// <summary>Round ids on the wire (byte): 0 Ale, 1 Stout, 2 Rum (DrinkBuffs), then Fizz Tank, Magma Crucible and the four meals.</summary>
 		public const int FizzId = 3, LavaId = 4, MealBase = 5, MealCount = 4, MaxServeId = MealBase + MealCount - 1;
 
-		/// <summary>Tiles of extra jump height Fizzy gives a levy: a Frog Leg's boost plus a balloon's.</summary>
-		public static int FizzJumpTiles => (int)Math.Round(LevyConstants.Movement.FrogLegBoost / LevyConstants.Movement.JumpBoostPerTile) + LevyConstants.Movement.BalloonJumpTiles;
-
-		/// <summary>Fizzy's effect on a player or a levy's dummy: a Cloud in a Bottle jump, the Frog Leg and balloon jump boosts, and lost defense.</summary>
+		/// <summary>Fizzy's effect on a player or a levy's dummy: a Cloud in a Bottle jump, and a quarter of the gravity (a player; the levy's body carries its own, see <see cref="ProvisionsBody"/>).</summary>
 		public static void ApplyFizzy(Player p)
 		{
 			p.GetJumpState(ExtraJump.CloudInABottle).Enable();
-			p.jumpBoost = true;
-			p.frogLegJumpBoost = true;
-			p.statDefense -= LevyConstants.FizzDefense;
+			p.gravity *= LevyConstants.FizzGravityMult;
 		}
 
 		public static int WellFedBuff(int tier) => tier <= 1 ? BuffID.WellFed : tier == 2 ? BuffID.WellFed2 : BuffID.WellFed3;

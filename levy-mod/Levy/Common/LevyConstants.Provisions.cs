@@ -3,13 +3,22 @@ namespace Levy.Common
 	/// <summary>Provisions: army meals, Fizz Pop and Magma Shot (items, buffs and bulk containers). Additive to LevyConstants.</summary>
 	public static partial class LevyConstants
 	{
-		// ---- Fizzy (Fizz Pop / Fizz Tank) ----
-		/// <summary>Defense a Fizzy levy loses.</summary>
-		public const int FizzDefense = 6;
-		/// <summary>A Fizzy levy takes enemy knockback at this fraction of a regular enemy's (levies are otherwise immovable).</summary>
-		public const float FizzKnockbackResist = 0.75f;
-		/// <summary>Knockback strength of a contact hit on a Fizzy levy.</summary>
+		// ---- Fizzy (Fizz Pop / Fizz Tank): low gravity, a double jump, and a body that is carried by every hit ----
+		/// <summary>Gravity a Fizzy body falls under, as a fraction of normal: vanilla's own floor for a player at the top of the Space layer (Player.Update scales gravity down to 0.25).</summary>
+		public const float FizzGravityMult = 0.25f;
+		/// <summary>Knockback a Fizzy body takes, as a multiple of a regular enemy's (+500%).</summary>
+		public const float FizzKnockbackMult = 6f;
+		/// <summary>Knockback resistance a Fizzy levy body carries (a levy is otherwise immovable, 0): 1 is a plain NPC, the 6x comes on top.</summary>
+		public const float FizzKnockbackResist = 1f;
+		/// <summary>Knockback strength of a contact hit on a Fizzy levy before the multiple.</summary>
 		public const float FizzContactKnockback = 4f;
+		/// <summary>A Fizzy body that wears knockback immunity (Cobalt Shield and the like) loses the immunity and takes this fraction less damage instead.</summary>
+		public const float FizzImmunityDr = 0.10f;
+		/// <summary>Fastest a hit may throw a Fizzy body (px/tick sideways, px/tick up): vanilla caps a launch at 16, which in a quarter gravity is a rise of 60 tiles.</summary>
+		public const float FizzMaxLaunchX = 9f, FizzMaxLaunchUp = 6.5f;
+		/// <summary>Flight: the AI's movement stays off until the body settles. Longest flight (ticks), what a wall or a ceiling gives back, what a floor gives back, the ground slide, the air drag on x, and the speed below which a grounded body has settled.</summary>
+		public const int FizzFlightMaxTicks = 420;
+		public const float FizzBounceWall = 0.6f, FizzBounceFloor = 0.45f, FizzGroundSlide = 0.9f, FizzAirDrag = 0.992f, FizzSettleSpeed = 1.2f;
 
 		// ---- Magma Shot / Magma Crucible ----
 		/// <summary>Ten minutes of lava immunity.</summary>

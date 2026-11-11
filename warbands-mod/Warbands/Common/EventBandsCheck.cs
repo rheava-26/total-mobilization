@@ -146,16 +146,16 @@ namespace Warbands.Common
 					if (k == EventKind.Goblins || k == EventKind.Pirates)
 					{
 						int before = Main.invasionSize; int cr0 = EventBands.Credited;
-						crew[0].NPC.StrikeInstantKill();
+						EventBands.OnMemberKilled(crew[0], brain);
 						int afterOne = Main.invasionSize;
-						cap.NPC.StrikeInstantKill();
+						EventBands.OnMemberKilled(cap, brain);
 						Chk($"{k}: killing a member takes 1 off the invasion and the captain 2 (size {before} to {afterOne} to {Main.invasionSize})", afterOne == before - 1 && Main.invasionSize == before - 3 && EventBands.Credited == cr0 + 3 && Main.invasionProgress == Main.invasionSizeStart - Main.invasionSize, $"progress {Main.invasionProgress}/{Main.invasionProgressMax}");
 					}
 					else
 					{
-						int before = Main.invasionSize; crew[0].NPC.StrikeInstantKill();
+						int before = Main.invasionSize; EventBands.OnMemberKilled(crew[0], brain);
 						Chk($"{k}: no invasion counter, killing a member changes no invasion size", Main.invasionSize == before);
-						cap.NPC.StrikeInstantKill();
+						EventBands.OnMemberKilled(cap, brain);
 					}
 
 					// the event ends: the band leaves (no player near, so it is off screen and removed at once)

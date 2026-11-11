@@ -78,6 +78,7 @@ namespace Warbands.Common
 			BandChatter.Log.Lines.Clear();
 		}
 
+		public override void PreUpdateWorld() { if (On && Mode.Contains("events") && !Done) { Main.windSpeedCurrent = 0.8f; Main.windSpeedTarget = 0.8f; } }
 		public override void PreUpdateNPCs() { KeepPlayer(); }
 		public override void PreUpdateProjectiles() { KeepPlayer(); }
 		public override void PostUpdateNPCs() { KeepPlayer(); }

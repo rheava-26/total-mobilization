@@ -7,6 +7,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using MagicStorage.Components;
 using Levy.Common.Logistics;
+using Levy.Common.UI;
 using Levy.Content.TileEntities;
 
 namespace Levy.Common.Compat.MagicStorageLink
@@ -89,6 +90,16 @@ namespace Levy.Common.Compat.MagicStorageLink
 				var net = NetworkStocks.For(armory);
 				Check(net is MsNetworkStock, "NetworkStocks.For returns the Magic Storage stock");
 				if (net == null) throw new InvalidOperationException("no network stock");
+
+				// the armory panel opened from a heart far from its armory must stay open for a player standing at the heart (it used to close the instant it opened)
+				var far = (TEArmoryHeart)Place<TEArmoryHeart>(placed, 40 + 33, 40);
+				Check(ReferenceEquals(far.Armory, armory), "a heart 33 tiles from the armory still serves it (a Logistical Center's reach)");
+				bool legacy = UISystem.PanelHolds(armory.Center, far.Center, true, false, false);
+				bool anchored = UISystem.PanelHolds(far.Center, far.Center, true, false, false);
+				Check(!legacy, "measured from the armory, a player at the far heart is out of panel range (the reported close)");
+				Check(anchored, "measured from the heart he opened it at, the panel stays open");
+				Check(!UISystem.PanelHolds(far.Center, far.Center + new Microsoft.Xna.Framework.Vector2(LevyConstants.TilePx * 40, 0), true, false, false), "the panel still closes when he walks away from the heart");
+				Check(LevyConstants.UI.ArmoryEditRangeTiles >= 33 + 4, "the server's edit range covers a player at the far heart");
 
 				// stock: counts, item list, deposit, withdraw
 				Check(net.Count(ItemID.IronBar) == 0, "an empty network counts 0");

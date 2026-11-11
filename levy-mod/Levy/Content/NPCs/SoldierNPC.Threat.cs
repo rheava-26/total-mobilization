@@ -457,7 +457,8 @@ namespace Levy.Content.NPCs
 		{
 			if (_dAir && !m.Hook) { m.Air = true; m.V0x = _dV0x; m.V0y = _dV0y; m.FloorY = m.Kind == 13 ? _dSolidFloorY : _dFloorY; m.VyCap = m.Kind == 13 ? 0f : m.Kind == 15 ? GlideFallSpeed : _dGlideCap; }
 			int imm = DanceMode >= 1 && DOn(4) && DashIFrameTicks > 0 && (m.Kind == 4 || m.Kind == 8 || m.Kind == 10) ? DashIFrameTicks : 0;
-			int h = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int last, _wormMargin, imm);
+			// only a candidate that scores under the best so far can win (score = hits * 100 + Penalty + a non-negative worm term): the count stops once it cannot
+			int h = ThreatField.Hits(_thrNear, c0, NPC.width, NPC.height, m, g, MobilityMode >= 1 ? ThreatHorizonMobile : ThreatHorizon, out _, out int last, _wormMargin, imm, m.Penalty, bestScore);
 			if (MobilityMode >= 1 && h == 0 && m.Kind != 0 && !(m.Air ? AirLandingSafe(c0, m, g) : LandingSafe(c0, m, g))) return;
 			float score = h * 100f + m.Penalty + (_wormScan && m.Kind != 0 ? WormAlongPenalty(m, c0, g) : 0f);
 			if (score < bestScore) { best = m; bestHits = h; bestScore = score; bestLast = last; }

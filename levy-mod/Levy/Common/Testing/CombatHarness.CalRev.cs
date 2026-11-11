@@ -303,7 +303,9 @@ namespace Levy.Common.Testing
 					: _cr != null && (self.type == _cr.BossType || _cr.PartTypes.Contains(self.type)) ? global::Levy.Common.Util.LevyProf.NpcBoss
 					: _cr != null && _cr.AddTypes.Contains(self.type) ? global::Levy.Common.Util.LevyProf.NpcAdd
 					: self.ModNPC != null && self.ModNPC.Mod.Name == "Mechanization" ? global::Levy.Common.Util.LevyProf.NpcMech : global::Levy.Common.Util.LevyProf.NpcOther;
-				global::Levy.Common.Util.LevyProf.Add(k, System.Diagnostics.Stopwatch.GetTimestamp() - t0); global::Levy.Common.Util.LevyProf.Cnt[k]++;
+				long dt = System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+				global::Levy.Common.Util.LevyProf.Add(k, dt); global::Levy.Common.Util.LevyProf.Cnt[k]++;
+				if (self.active && k != global::Levy.Common.Util.LevyProf.NpcLevy) global::Levy.Common.Util.LevyProf.AddType(100000 + self.type, dt);
 			}
 		}
 
@@ -330,7 +332,9 @@ namespace Levy.Common.Testing
 				int k = self.hostile ? global::Levy.Common.Util.LevyProf.ProjEnemy
 					: self.TryGetGlobalProjectile(out SoldierProjectileTag tg) && (tg.SoldierIndex >= 0 || tg.CommanderIndex >= 0) ? global::Levy.Common.Util.LevyProf.ProjArmy
 					: self.ModProjectile != null && self.ModProjectile.Mod.Name == "Mechanization" ? global::Levy.Common.Util.LevyProf.ProjMech : global::Levy.Common.Util.LevyProf.ProjOther;
-				global::Levy.Common.Util.LevyProf.Add(k, System.Diagnostics.Stopwatch.GetTimestamp() - t0); global::Levy.Common.Util.LevyProf.Cnt[k]++;
+				long dt = System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+				global::Levy.Common.Util.LevyProf.Add(k, dt); global::Levy.Common.Util.LevyProf.Cnt[k]++;
+				if (self.active) global::Levy.Common.Util.LevyProf.AddType(self.type, dt);
 			}
 		}
 
@@ -792,7 +796,7 @@ namespace Levy.Common.Testing
 			if (run.Dl != "") DlFinish(run, st);
 			if (run.Pl != "") PlFinish(run, st, end);
 			KitFinish(run, st);
-			if (global::Levy.Common.Util.LevyProf.On) { string pl = global::Levy.Common.Util.LevyProf.Dump(end) + $" projTypes={ProjectileLoader.ProjectileCount} npcTypes={NPCLoader.NPCCount} " + $" wm={SoldierNPC.WmThinks}/{SoldierNPC.WmHolds}/{SoldierNPC.WmShifts}/{SoldierNPC.WmAims}/{SoldierNPC.WmAimCalls}/{SoldierNPC.WmPierce} chk=" + global::Levy.Common.Movement.ThreatField.ChkBad + "/" + global::Levy.Common.Movement.ThreatField.ChkN; Mod.Logger.Info("PROF " + run.Key + " ms/tick " + pl); try { File.AppendAllText(_crOut + ".prof.tsv", run.Key + "\t" + pl + "\n"); } catch { } }
+			if (global::Levy.Common.Util.LevyProf.On) { string pl = global::Levy.Common.Util.LevyProf.Dump(end) + " TOP[" + global::Levy.Common.Util.LevyProf.TopTypes(end, 12) + "] " + $" projTypes={ProjectileLoader.ProjectileCount} npcTypes={NPCLoader.NPCCount} " + $" wm={SoldierNPC.WmThinks}/{SoldierNPC.WmHolds}/{SoldierNPC.WmShifts}/{SoldierNPC.WmAims}/{SoldierNPC.WmAimCalls}/{SoldierNPC.WmPierce} chk=" + global::Levy.Common.Movement.ThreatField.ChkBad + "/" + global::Levy.Common.Movement.ThreatField.ChkN; Mod.Logger.Info("PROF " + run.Key + " ms/tick " + pl); try { File.AppendAllText(_crOut + ".prof.tsv", run.Key + "\t" + pl + "\n"); } catch { } }
 			if (SoldierNPC.HitDbg != null) { try { File.AppendAllText(_crOut + ".hit.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitDbg.OrderByDescending(kv => kv.Value.dmg).Select(kv => $"{kv.Key}={kv.Value.dmg}/{kv.Value.n}")) + "\n"); } catch { } SoldierNPC.HitDbg = new(); }
 			if (SoldierNPC.HitGapDbg != null) { try { File.AppendAllText(_crOut + ".gap.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitGapDbg.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}:{kv.Value}")) + "\n"); } catch { } SoldierNPC.HitGapDbg = new(); }
 			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s bossLeft={bossLeft}/{st.BossLifeMax} dmg={dmgBoss} deaths={deaths}/{st.Levies.Count} takenBoss={tB} takenAdd={tA} rageAct={LevyRippers.RageActivations - st.Rage0} adrAct={LevyRippers.AdrenalineActivations - st.Adr0} rogueAligned={LevyRippers.RogueAligned} rogueTimeouts={LevyRippers.RogueTimeouts} strikes={LevyRippers.Strikes} strikesBoosted={LevyRippers.StrikesBoosted} fx={LevyRippers.FxRequests} boosterCopies={LevyRippers.BoosterCopies} levyBoosters={CrLevyBoosters()}");

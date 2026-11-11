@@ -27,6 +27,28 @@ namespace Levy.Common.Util
 		public static long Begin() => On ? Stopwatch.GetTimestamp() : 0L;
 		public static void End(int k, long t0) { if (On) T[k] += Stopwatch.GetTimestamp() - t0; }
 		public static void Add(int k, long d) { T[k] += d; }
+		/// <summary>Update time and calls per projectile / NPC type (lab only), to find the one weapon or enemy whose AI is out of proportion.</summary>
+		private static readonly System.Collections.Generic.Dictionary<int, (long ticks, int n)> ByType = new();
+		/// <summary>key: a projectile type, or 100000 + an NPC type.</summary>
+		public static void AddType(int key, long ticks) { ByType.TryGetValue(key, out var v); ByType[key] = (v.ticks + ticks, v.n + 1); }
+		public static string TopTypes(int ticks, int top)
+		{
+			var l = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<int, (long ticks, int n)>>(ByType);
+			l.Sort((a, b) => b.Value.ticks.CompareTo(a.Value.ticks));
+			var sb = new System.Text.StringBuilder();
+			double f = 1000.0 / Stopwatch.Frequency / Math.Max(1, ticks);
+			for (int i = 0; i < top && i < l.Count; i++) sb.Append(i > 0 ? ", " : "").Append(TypeName(l[i].Key)).Append(' ').Append((l[i].Value.ticks * f).ToString("0.000", System.Globalization.CultureInfo.InvariantCulture)).Append("ms (").Append((l[i].Value.n / (double)Math.Max(1, ticks)).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)).Append("/tick)");
+			return sb.ToString();
+		}
+		private static string TypeName(int key)
+		{
+			try
+			{
+				if (key >= 100000) { int t = key - 100000; var m = Terraria.ModLoader.NPCLoader.GetNPC(t); return "N:" + (m != null ? m.FullName : "vanilla" + t); }
+				var p = Terraria.ModLoader.ProjectileLoader.GetProjectile(key); return "P:" + (p != null ? p.FullName : "vanilla" + key);
+			}
+			catch (Exception) { return key.ToString(); }
+		}
 		public static void CopyTo(long[] dst) { Array.Copy(T, dst, N); }
 		/// <summary>The buckets that grew the most since <paramref name="before"/> (a CopyTo snapshot), as "name ms" pairs: what a spike tick was spent in. Lab only.</summary>
 		public static string DescribeDelta(long[] before, int top)
@@ -38,7 +60,7 @@ namespace Levy.Common.Util
 			for (int k = 0; k < top && d[k].ms > 0.05; k++) sb.Append(k > 0 ? ", " : "").Append(Names[d[k].i]).Append(' ').Append(d[k].ms.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
 			return sb.ToString();
 		}
-		public static void Reset() { Array.Clear(T, 0, N); Array.Clear(Cnt, 0, N); }
+		public static void Reset() { Array.Clear(T, 0, N); Array.Clear(Cnt, 0, N); ByType.Clear(); }
 		public static string Dump(int ticks)
 		{
 			double f = 1000.0 / Stopwatch.Frequency / Math.Max(1, ticks);

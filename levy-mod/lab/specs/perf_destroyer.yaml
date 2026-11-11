@@ -15,6 +15,6 @@ env: {LEVY_CROWD: 1, LEVY_PROF: 1, LEVY_SPIKE_MS: 22}
 vs:
   alone: {levies: 1}
   army: {}
-  armymech: {tokens: [drones=10, turrets=3]}
-  nospec: {tokens: [spec=0]}
+  armymech: {drones: 10, turrets: 3}
+  nospec: {spec: 0}
   army_before: {env: {LEVY_OPT: 0}}

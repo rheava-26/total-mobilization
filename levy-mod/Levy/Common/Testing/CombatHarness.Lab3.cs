@@ -155,6 +155,24 @@ namespace Levy.Common.Testing
 				FaFill(cx + half + 1, fy - 90, cx + half + 1, fy + 25, true);
 			}
 			CrF = fy;
+			if (kind.EndsWith("w") && !sealedBox)
+			{
+				// a3w: a SEA arena. The box is flooded 24 tiles deep (water) with a sand island under the army's spawn (x from cx-45 to cx+15), so the commander and the levies stand on the shore and the Destroyer
+				// (spawned 80 tiles to the right) flies over open water; levies that wander off the island swim. No platform rows. Measurement only (perf labs).
+				const int seaDepth = 24;
+				for (int x = cx - half; x <= cx + half; x++)
+					for (int y = fy - seaDepth; y <= fy - 1; y++)
+					{
+						Tile t = Main.tile[x, y];
+						bool island = x >= cx - 45 && x <= cx + 15;
+						t.HasTile = island; t.TileType = island ? TileID.Sand : (ushort)0; if (island) t.BlockType = Terraria.ID.BlockType.Solid;
+						t.WallType = 0; t.LiquidAmount = island ? (byte)0 : (byte)255; t.LiquidType = Terraria.ID.LiquidID.Water;
+					}
+				CrF = fy - seaDepth;
+				_crArenaBuilt = kind;
+				Mod.Logger.Info($"HARNESS-L3: arena '{kind}' built: sea {seaDepth} tiles deep, island floor row {CrF}, half-width {half}");
+				return;
+			}
 			for (int k = 1; k <= 5; k++)
 			{
 				int py = fy - rowGap * k; int gap0 = cx - half + 10 + (k * 41) % 150;

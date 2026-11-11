@@ -508,14 +508,18 @@ namespace Levy.Content.NPCs
 		{
 			if (Record == null) return false;
 			bool drawn = false;
+			long pt = global::Levy.Common.Util.LevyProf.Begin(); // LEVY_PROF=1 only (client profiler): the time of a levy body's draw
 			Draw_PreDraw(spriteBatch, screenPos, drawColor, ref drawn);
+			if (pt != 0) { global::Levy.Common.Util.ClientProf.SoldierBody += System.Diagnostics.Stopwatch.GetTimestamp() - pt; global::Levy.Common.Util.ClientProf.SoldiersDrawn++; }
 			return !drawn; // if nothing drew the body, fall back to the placeholder texture
 		}
 
 		public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
 		{
 			if (Record == null) return;
+			long pt = global::Levy.Common.Util.LevyProf.Begin();
 			Draw_PostDraw(spriteBatch, screenPos, drawColor);
+			if (pt != 0) global::Levy.Common.Util.ClientProf.SoldierPlate += System.Diagnostics.Stopwatch.GetTimestamp() - pt;
 		}
 
 		// ---- chat ----

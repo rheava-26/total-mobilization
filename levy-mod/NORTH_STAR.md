@@ -25,6 +25,8 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 - Separate OBSERVED from INFERRED in every report.
 - When corrected, widen the search. Do not narrow to the corrected item.
 
+**Search our own history before saying "I don't know that."** When Eve brings up something that sounds like it was discussed before (lore, a design, a decision), search the session transcript and the scratchpad references first. Never claim not to recognise something we already went through together, and never contradict an earlier analysis without saying so.
+
 **Never explain a bug as Eve using it wrong.** "Stop saying the cause of an issue I clearly could have found out by just trying is 'oh you just did it wrong'. No I didn't." (11-11) Her reports are real bugs. Never tell her she was too far, placed it wrong, or used it wrong, not even as a hedge ("if yours is close, tell me"). An inferred cause is not a cause: reproduce what she did in the lab, prove the cause, then fix. Player-facing failure messages state what was checked, never what the player did wrong.
 
 **Reproduce Eve's setup before calling a bug fixed or "not a bug".** Eve plays a real world with real mod lists, and a harness that doesn't match it hasn't tested the report. Example: Magic Storage was OFF in her world, so a Magic Storage fix was not their cause (ROADMAP, 11-07).

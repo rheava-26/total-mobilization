@@ -239,7 +239,20 @@ namespace Levy.Content.NPCs
 			if (_lzKind == LzSit)
 			{
 				// Sit_Think runs first and spends the think while the levy walks to a seat or sits; getting here means it is not (yet) doing so
-				if (now >= _lzSitUntil || (_sitMode == 0 && now - _lzWalkSince > 60 * 12)) { if (_sitMode == 0 && now < _lzSitUntil) LeisureAbandons++; Leisure_StopAt(now, true); }
+				if (_sitMode == 0 && now < _lzSitUntil && LevyUtil.TileDistance(NPC.Bottom, _lzSitAnchor) > 16f)
+				{
+					// the seats are at the fire: walk there first (the seat search only looks around the fire and near the levy's own floor)
+					if (!HasMoveGoal || MoveGoal != _lzSpot)
+					{
+						Point at = (_lzSitAnchor + new Vector2(0f, -8f)).ToTileCoordinates();
+						Vector2 spot = default; bool ok = TileNav.NearestStandable(at.X, at.Y, 14, out Point st) && !NearDrop(st.X, st.Y, LevyConstants.FreeReinRimTiles) && FreeReinBoxOutside(spot = TileNav.BottomCentre(st.X, st.Y)) <= 0f && LzReach(spot);
+						if (!ok) { LeisureAbandons++; Leisure_StopAt(now, true); return false; } // no safe way to the fire from here: not now
+						_lzSpot = spot; SetGoal(_lzSpot);
+					}
+					if (now - _lzWalkSince > 60 * 40) { LeisureAbandons++; Leisure_StopAt(now, true); return false; }
+					return true;
+				}
+				if (now >= _lzSitUntil || (_sitMode == 0 && now - _lzWalkSince > 60 * 12 + (LevyUtil.TileDistance(NPC.Bottom, _lzSitAnchor) > 16f ? 60 * 40 : 0))) { if (_sitMode == 0 && now < _lzSitUntil) LeisureAbandons++; Leisure_StopAt(now, true); }
 				return false;
 			}
 			if (now - _lzWalkSince > LevyConstants.LeisureWalkTimeoutTicks) { LeisureAbandons++; Leisure_StopAt(now, true); return false; }

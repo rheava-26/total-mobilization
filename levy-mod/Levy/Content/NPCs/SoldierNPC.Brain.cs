@@ -264,6 +264,7 @@ namespace Levy.Content.NPCs
 					else if (TryEngage(now))
 					{
 						Chatter_Note(true, now);
+						if (_lzMode != 0) Leisure_StopAt(now, true); // a fight ends a pastime in the same think it starts
 						// Return / a map order outrank a fight: the body keeps walking its order and shoots what is in reach on the way (State stays Engage so the weapon fires)
 						if (MarchingOrder) MarchWhileEngaged(now, nearestHostileTiles);
 					}

@@ -245,7 +245,6 @@ namespace Levy.Content.NPCs
 			if (partner == null) return;
 			var ctx = new DialogueContext { Comrade = partner.SoldierName, Player = Record.CommanderName };
 			bool fire = NearLitCampfire(NPC.Center, 8) && Main.rand.Next(100) < 70; // by a fire the talk is fireside talk
-			DialogueTrigger trig = fire ? DialogueTrigger.FIRESIDE : DialogueTrigger.IDLE;
 			string line = (fire ? DialogueSystem.PickLine(DialogueTrigger.FIRESIDE, Record, ctx) : null) ?? DialogueSystem.PickLine(Main.dayTime ? DialogueTrigger.IDLE : DialogueTrigger.IDLE_NIGHT, Record, ctx) ?? DialogueSystem.PickLine(DialogueTrigger.IDLE, Record, ctx);
 			if (!string.IsNullOrEmpty(line)) { DialogueSystem.FloatingText(this, line, fire ? DialogueTrigger.FIRESIDE : DialogueTrigger.IDLE); ChatterLines++; }
 			DialogueSystem.Emote(partner, SitEmotes[Main.rand.Next(SitEmotes.Length)]);

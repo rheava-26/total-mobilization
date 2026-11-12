@@ -83,6 +83,7 @@ def report(spec, cells, tag):
     for arm, rows in by.items():
         tot = sum(f(r, "samples") for r in rows) or 1
         o.append(f"| {arm} | " + " | ".join(f"{100.0 * sum(f(r, 'act_' + a) for r in rows) / tot:.1f}%" for a in ACTS) + f" | {100.0 * sum(f(r, 'seated') for r in rows) / tot:.1f}% |")
+    o.append("\nA pastime and a fight at the same sample (should be 0): " + ", ".join(f"{arm} {int(sum(f(r, 'busyEngaged') for r in rows))}" for arm, rows in by.items()))
     o.append("\nPer arm and run (levies ever outside 150 / in the hole / shaft / pit / deep / underground, of N):\n")
     for arm, rows in by.items():
         runs = defaultdict(list)

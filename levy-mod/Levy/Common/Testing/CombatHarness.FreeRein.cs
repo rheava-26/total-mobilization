@@ -32,7 +32,7 @@ namespace Levy.Common.Testing
 			public SoldierRecord Rec; public int Idx = -1; public string Gear = "";
 			public float MaxDx, MaxDepth, DistSum; public int Samples, OutTicks, PitTicks, DeepTicks, UgTicks, FirstOut = -1, FirstPit = -1, FirstDeep = -1, BodyLost, Pits, Seated, Moves;
 			public bool InPit; public int[] Act = new int[12]; public float FinalDx, FinalDepth; public string FirstOutWhy = "", FirstPitWhy = "", FirstDeepWhy = ""; public Vector2 Last;
-			public readonly List<string> Ring = new List<string>(); public int Out200Ticks, Teleports, InHoleTicks, InShaftTicks, InPitTicks; public bool WasInHole, WasInShaft, WasInPit; public int HoleFalls, ShaftFalls, PitFalls;
+			public int BusyEngaged, BusyHit; public readonly List<string> Ring = new List<string>(); public int Out200Ticks, Teleports, InHoleTicks, InShaftTicks, InPitTicks; public bool WasInHole, WasInShaft, WasInPit; public int HoleFalls, ShaftFalls, PitFalls;
 		}
 		private readonly List<FrLevy> _fr = new List<FrLevy>();
 		private int _frRuns = 4, _frRun, _frRun0, _frTotal = 4, _frN = 15, _frTicks = 36000, _frTick, _frSpacing = 260, _frShaft = 5;
@@ -341,6 +341,7 @@ namespace Levy.Common.Testing
 				if (deep) { l.DeepTicks += 20; if (l.FirstDeep < 0) { l.FirstDeep = _frTick; l.FirstDeepWhy = sn.FreeReinProbe(); } }
 				if (ug) l.UgTicks += 20;
 				int act = sn.LeisureKindForLab; if (act >= 0 && act < l.Act.Length) l.Act[act]++;
+				if (act != 0 && (sn.State == SoldierState.Engage || sn.State == SoldierState.Shaken || sn.State == SoldierState.Routed)) l.BusyEngaged++;
 				if (sn.Seated) l.Seated++;
 			}
 			if (_frTick % 1200 == 0)
@@ -353,9 +354,9 @@ namespace Levy.Common.Testing
 
 		private void FrEndRun()
 		{
-			var csv = new StringBuilder("run,name,gear,samples,bodyLost,maxDx,meanDx,finalDx,maxDepth,finalDepth,outTicks,pitTicks,deepTicks,ugTicks,pits,firstOut,firstPit,firstDeep,teleports,seated,out200Ticks,holeFalls,shaftFalls,pitFalls," + string.Join(",", FrActNames.Take(9).Select(a => "act_" + a)) + "\n");
+			var csv = new StringBuilder("run,name,gear,samples,bodyLost,maxDx,meanDx,finalDx,maxDepth,finalDepth,outTicks,pitTicks,deepTicks,ugTicks,pits,firstOut,firstPit,firstDeep,teleports,seated,busyEngaged,out200Ticks,holeFalls,shaftFalls,pitFalls," + string.Join(",", FrActNames.Take(9).Select(a => "act_" + a)) + "\n");
 			foreach (var l in _fr)
-				csv.AppendLine($"{_frRun},{l.Rec.Name},{l.Gear},{l.Samples},{l.BodyLost},{l.MaxDx:0},{(l.Samples > 0 ? l.DistSum / l.Samples : 0):0},{l.FinalDx:0},{l.MaxDepth:0},{l.FinalDepth:0},{l.OutTicks},{l.PitTicks},{l.DeepTicks},{l.UgTicks},{l.Pits},{l.FirstOut},{l.FirstPit},{l.FirstDeep},{l.Teleports},{l.Seated},{l.Out200Ticks},{l.HoleFalls},{l.ShaftFalls},{l.PitFalls},{string.Join(",", l.Act.Take(9))}");
+				csv.AppendLine($"{_frRun},{l.Rec.Name},{l.Gear},{l.Samples},{l.BodyLost},{l.MaxDx:0},{(l.Samples > 0 ? l.DistSum / l.Samples : 0):0},{l.FinalDx:0},{l.MaxDepth:0},{l.FinalDepth:0},{l.OutTicks},{l.PitTicks},{l.DeepTicks},{l.UgTicks},{l.Pits},{l.FirstOut},{l.FirstPit},{l.FirstDeep},{l.Teleports},{l.Seated},{l.BusyEngaged},{l.Out200Ticks},{l.HoleFalls},{l.ShaftFalls},{l.PitFalls},{string.Join(",", l.Act.Take(9))}");
 			string dir = Path.Combine(_frOut, "r" + (_frRun0 + _frRun)); Directory.CreateDirectory(dir);
 			File.WriteAllText(Path.Combine(dir, "levies.csv"), csv.ToString());
 			foreach (var l in _fr)

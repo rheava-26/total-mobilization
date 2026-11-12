@@ -1,0 +1,16 @@
+# Hold the banners under attack: the army walks to a Holding Banner, then for 60 s zombies, slimes and demon eyes come at it from 15 tiles either side, one every 2 s (levies armed with handguns).
+# events.txt has a HOLDREPORT per run: % of the time in the banner's aura and at its own stand, the farthest a levy strayed from its stand, how many times one chased past 8 tiles, hits taken.
+#   travelab run levy-mod/lab/travel/specs/banner_hold.yaml
+name: banner_hold
+world: {seed: 11111, size: 2}
+start: spawn
+order: banner
+hold: 60
+levies: 12
+gear: {bare: 3, boots: 2, wings: 2, hook: 2, prehm: 1, hm: 1, endgame: 1}
+runs: 4
+spread: 120
+timeout: 300
+goals:
+  - {name: ground, goal: "east:60"}
+  - {name: tower-35-stairs, goal: tower, edit: [{tower: {dx: 150, height: 35, stairs: 3}}]}

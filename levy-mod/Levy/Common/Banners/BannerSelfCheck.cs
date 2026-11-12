@@ -102,12 +102,12 @@ namespace Levy.Common.Banners
 
 				// 4. the buff
 				var d = new Player();
-				int def0 = d.statDefense, kb0 = d.noKnockback ? 1 : 0; float end0 = d.endurance;
+				int def0 = d.statDefense.Positive, kb0 = d.noKnockback ? 1 : 0; float end0 = d.endurance;
 				var m = typeof(SoldierNPC).GetMethod("ApplyBuffEffect", BindingFlags.Static | BindingFlags.NonPublic);
 				m?.Invoke(null, new object[] { d, ModContent.BuffType<HoldingBannerBuff>() });
 				Check("4 the buff gives +" + LevyConstants.Banner.Defense + " defense, " + (int)(LevyConstants.Banner.DamageReduction * 100) + "% damage reduction and knockback immunity through ApplyBuffEffect",
-					m != null && d.statDefense == def0 + LevyConstants.Banner.Defense && Math.Abs(d.endurance - (end0 + LevyConstants.Banner.DamageReduction)) < 1e-4f && d.noKnockback && kb0 == 0,
-					$"def {d.statDefense} endurance {d.endurance:0.00} noKnockback {d.noKnockback}");
+					m != null && d.statDefense.Positive == def0 + LevyConstants.Banner.Defense && Math.Abs(d.endurance - (end0 + LevyConstants.Banner.DamageReduction)) < 1e-4f && d.noKnockback && kb0 == 0,
+					$"def {d.statDefense.Positive} endurance {d.endurance:0.00} noKnockback {d.noKnockback}");
 				string tip = Terraria.Localization.Language.GetTextValue("Mods.Levy.Buffs.HoldingBannerBuff.Description");
 				Check("4 the buff text states the numbers in use", tip.Contains(LevyConstants.Banner.Defense.ToString()) && tip.Contains((int)(LevyConstants.Banner.DamageReduction * 100) + "%") && tip.Contains("knockback"), tip.Replace("\n", " | "));
 				Check("4 it is one boon, not a debuff", ModContent.GetInstance<HoldingBannerBuff>() != null && !Main.debuff[ModContent.BuffType<HoldingBannerBuff>()]);

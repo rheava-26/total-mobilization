@@ -124,8 +124,11 @@ def edit_tok(edits):
             if k == "hellevator":
                 v = v or {}
                 out.append(f"hellevator:{v.get('dx', 120)}:{v.get('width', 4)}:{v.get('platforms', 0)}:{v.get('ring', 12)}")
+            elif k == "tower":
+                v = v or {}
+                out.append(f"tower:{v.get('dx', 60)}:{v.get('height', 35)}:{v.get('width', 9)}:{v.get('stairs', 3)}:{v.get('top', 'platform')}")
             else:
-                sys.exit(f"unknown edit '{k}' (known: hellevator)")
+                sys.exit(f"unknown edit '{k}' (known: hellevator, tower)")
     return ";".join(out)
 
 
@@ -175,6 +178,8 @@ def run_cell(spec, arm, ov, goal, tmod_default, outroot, wld, twld, slot):
               "LEVY_TRAVEL_N": str(n), "LEVY_TRAVEL_CAP": str(cap), "LEVY_TRAVEL_GEAR": "mixed", "LEVY_TRAVEL_MIX": ",".join(mix), "LEVY_TRAVEL_OUT": str(d / "out"),
               "LEVY_TRAVEL_CMDFAR": str(merged.get("cmdfar", 20)), "LEVY_TRAVEL_NOHOP": "0" if str(merged.get("hop", "off")) == "on" else "1", "LEVY_TRAVEL_FOES": "1" if merged.get("foes") else "0",
               "LEVY_TRAVEL_X0": "200", "LEVY_TRAVEL_HOOKLOG": "0"})
+    if merged.get("hold"): e["LEVY_TRAVEL_HOLDSEC"] = str(merged["hold"]); e["LEVY_TRAVEL_GUN"] = "1"      # hold: N -> after arrival, foes come at the banner for N seconds (levies armed with handguns); the stands are measured
+    if str(merged.get("order", "")) == "banner": e["LEVY_TRAVEL_ORDER"] = "banner"      # order: banner -> a Holding Banner is placed at the goal and the army is given Hold the banners (arrive = standing at its stand)
     for k, v in {**(spec.get("env") or {}), **(ov.get("env") or {})}.items(): e[str(k)] = str(v)
     course = merged.get("course")
     if course:   # a carved course (walk zoo corrupt wall ravine lips ...): one boot per run, no world edits; from/to are course offsets, wallh the face height

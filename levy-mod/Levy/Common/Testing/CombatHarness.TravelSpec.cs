@@ -35,7 +35,7 @@ namespace Levy.Common.Testing
 			_tvSpec = TvWorld && (_tvStartTok.Length > 0 || _tvGoalTok.Length > 0 || _tvEditTok.Length > 0);
 			if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_TRAVEL_RUNS"), out int r) && r > 0) _tvRuns = r;
 			if (int.TryParse(Environment.GetEnvironmentVariable("LEVY_TRAVEL_SPREAD"), out int sp)) _tvSpread = sp;
-			_tvRun = 0; _tvWorldReady = false; _tvOutBase = _tvOut;
+			_tvRun = 0; _tvWorldReady = false; _tvOutBase = _tvOut; _tvTowerX = -1; TvBannerInit();
 		}
 
 		/// <summary>Per-run output directory: the base for one run, base/rN for several.</summary>
@@ -59,6 +59,7 @@ namespace Levy.Common.Testing
 			foreach (string ed in _tvEditTok.Split(';'))
 			{
 				var q = ed.Split(':'); if (q.Length == 0) continue;
+				if (q[0] == "tower") { TvTowerEdit(q, baseX); continue; }
 				if (q[0] == "hellevator")
 				{
 					int dx = q.Length > 1 && int.TryParse(q[1], out int a) ? a : 120, w = q.Length > 2 && int.TryParse(q[2], out int b) ? b : 4, plat = q.Length > 3 && int.TryParse(q[3], out int c) ? c : 0, ring = q.Length > 4 && int.TryParse(q[4], out int d) ? d : 12;
@@ -203,6 +204,7 @@ namespace Levy.Common.Testing
 				else if (TvFindRoom(startX, srf + depth, 500, 60, out cx, out cy)) { goalX = cx; _tvGoalRowAbs = cy + 1; _tvEvents.AppendLine("GOAL cave: no cave connected to the surface within reach; nearest standing room (may be sealed)"); }
 				else { goalX = startX; _tvGoalRowAbs = srf + depth; _tvEvents.AppendLine("GOAL cave: no standing room found"); }
 			}
+			else if (key == "tower" && _tvTowerX >= 0) { goalX = _tvTowerX; _tvGoalRowAbs = _tvTowerFloor; }
 			else if (TvParseXY(g, out int ax, out int ay)) { goalX = ax; if (ay > 0) _tvGoalRowAbs = ay; }
 			else goalX = startX + 800;
 			goalX = Math.Clamp(goalX, 20, Main.maxTilesX - 20);
@@ -240,6 +242,7 @@ namespace Levy.Common.Testing
 		/// <summary>After a run's files are written: start the next one in the same boot. False when that was the last run.</summary>
 		private bool TvNextRun()
 		{
+			TvBannerClear();
 			if (!_tvSpec || _tvRun + 1 >= _tvRuns) return false;
 			_tvRun++;
 			OffscreenHop.LabViewers = null;

@@ -255,6 +255,7 @@ namespace Levy.Content.NPCs
 		private static int ApplyBuffEffect(Player d, int buffType)
 		{
 			// The mod's own buffs: their types are assigned at load, so they cannot be switch cases and are matched by type here, ahead of the vanilla switch.
+			if (buffType == ModContent.BuffType<HoldingBannerBuff>()) { HoldingBannerBuff.Apply(d); return 0; }                // near a Holding Banner: defense + damage reduction + no knockback
 			if (buffType == ModContent.BuffType<MoraleBuff>()) { MoraleBuff.Apply(d); return 0; }                      // Princess / Guide / Merchant: damage + defense + crit
 			if (global::Levy.Content.Buffs.DrinkBuffs.Apply(d, buffType)) return 0;                                            // Tavernkeep drinks: defense / damage / crit
 			if (buffType == ModContent.BuffType<DryadsBlessingBuff>()) return DryadsBlessingBuff.Apply(d);              // Dryad: defense + thorns + regeneration

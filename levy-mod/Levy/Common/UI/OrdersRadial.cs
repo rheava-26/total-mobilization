@@ -11,14 +11,14 @@ using Levy.Content.TileEntities;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// Fifteen buttons on an ellipse around the cursor, clockwise from the top: Follow / Hold / Return / Search &amp; destroy (orders),
-	/// Hold fire–Fire at will / Spread out–Close up / Focus attack (combat), Mobilize–Stand down / Rally / Re-arm / Nameplates (muster), Send to map point and Stand down all / Remobilize all (the whole army to or from the reserve).
+	/// Sixteen buttons on an ellipse around the cursor, clockwise from the top: Follow / Hold / Return / Search &amp; destroy (orders),
+	/// Hold fire–Fire at will / Spread out–Close up / Focus attack (combat), Mobilize–Stand down / Rally / Re-arm / Nameplates (muster), Send to map point, Stand down all / Remobilize all (the whole army to or from the reserve) and Hold the banners.
 	/// The ellipse is grown at start-up until no two buttons touch, so it stays readable for any button count.
 	/// Opened by the War Horn right-click or the soldier chat button; closes after a click, on Escape or on right-click.
 	/// </summary>
 	public class OrdersRadial : UIState
 	{
-		private const int Count = 15;
+		private const int Count = 16;
 		private const float GrowStep = 1.04f;
 		private const int MaxGrowSteps = 60;
 		private static float _radX, _radY;
@@ -122,6 +122,7 @@ namespace Levy.Common.UI
 			_buttons[12].Set(LevyUtil.T("Observe.SendToPoint"), true, LevyUtil.T("Observe.SendToPointHint"));
 			_buttons[13].Set(LevyUtil.T("UI.StandDownAll"), true, LevyUtil.T("UI2.StandDownAllHint"));
 			_buttons[14].Set(LevyUtil.T("UI.RemobilizeAll"), true, LevyUtil.T("UI2.RemobilizeAllHint"));
+			_buttons[15].Set(LevyUtil.T("Banner.Order"), true, LevyUtil.T(_radio ? "Banner.OrderHintRadio" : "Banner.OrderHint"));
 			_buttons[11].Set(LevyUtil.T(UISystem.NameplatesForced ? "UI.NamesOff" : "UI.NamesOn"), true, LevyUtil.T("UI.NamesHint"));
 		}
 
@@ -146,6 +147,7 @@ namespace Levy.Common.UI
 				case 11: UISystem.Instance.ToggleNameplates(); break;
 				case 13: UIActions.SetReserveAll(true); break;
 				case 14: UIActions.SetReserveAll(false); break;
+				case 15: UIActions.Order(SoldierOrder.HoldBanners, _radio); break;
 				case 12: UISystem.Instance.CloseRadial(); global::Levy.Common.Observe.MapOrder.BeginPick(false); return;
 			}
 			UISystem.Instance.CloseRadial();

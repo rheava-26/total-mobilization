@@ -110,7 +110,7 @@ namespace Levy.Common.Systems
 			byte order = r.ReadByte(); bool atBarracks = r.ReadBoolean();
 			if (!LevyUtil.IsServer) return;
 			var sender = Sender(whoAmI);
-			if (sender == null || order > (byte)SoldierOrder.FreeRein) return;
+			if (sender == null || (order > (byte)SoldierOrder.FreeRein && order != (byte)SoldierOrder.HoldBanners)) return;
 			Roster.IssueOrder(sender, (SoldierOrder)order, atBarracks);
 		}
 

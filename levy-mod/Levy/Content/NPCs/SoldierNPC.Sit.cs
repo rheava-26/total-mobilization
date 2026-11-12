@@ -131,7 +131,7 @@ namespace Levy.Content.NPCs
 			if (nearestHostileTiles < LevyConstants.SitWakeEnemyTiles) return SitNo("hostile near");
 			if (now - _sitBusyTick < LevyConstants.SitQuietTicks) return SitNo("recent fight");
 			if (TicksSinceDamaged < LevyConstants.SitQuietTicks) return SitNo("recent hit");
-			if (BeingTalkedTo || Record.Order == SoldierOrder.GoTo || Record.Order == SoldierOrder.Patrol) return SitNo("talk/goto/patrol");
+			if (BeingTalkedTo || Record.Order == SoldierOrder.GoTo || Record.Order == SoldierOrder.Patrol || Record.Order == SoldierOrder.HoldBanners) return SitNo("talk/goto/patrol/banner");
 			if (_sitMode != 2 && (NPC.velocity.Y != 0f || NPC.wet || ClimbActive || _hkPhase != HookPhase.Idle)) return SitNo("airborne/wet/climb", true);
 			SoldierState os = OrderState();
 			if (os == SoldierState.Idle)

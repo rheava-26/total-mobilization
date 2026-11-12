@@ -176,7 +176,7 @@ namespace Levy.Content.NPCs
 			NPC.GivenName = record.Name;
 			ThinkOffset = NPC.whoAmI % LevyConstants.ThinkIntervalTicks;
 			State = SoldierState.Idle; StateTimer = 0; TargetIndex = -1; HasMoveGoal = false; _deathHandled = false;
-			HoldPosition = record.Order == SoldierOrder.Hold;
+			HoldPosition = record.Order == SoldierOrder.Hold || record.Order == SoldierOrder.HoldBanners;
 			EnsureDummy();
 			ApplyLooks();
 			StatsDirty = true;

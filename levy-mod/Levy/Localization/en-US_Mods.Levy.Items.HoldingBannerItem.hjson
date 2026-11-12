@@ -1,0 +1,7 @@
+DisplayName: Holding Banner
+Tooltip:
+	'''
+	Regulars on Hold the banners stand near it
+	Increases defense by 12 for soldiers near it
+	Reduces damage taken by 20% for soldiers near it
+	'''

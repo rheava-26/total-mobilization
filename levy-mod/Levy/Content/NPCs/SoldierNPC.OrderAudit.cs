@@ -18,6 +18,7 @@ namespace Levy.Content.NPCs
 			SoldierOrder.ReturnToBarracks => SoldierState.ReturnHome,
 			SoldierOrder.SearchDestroy => SoldierState.SearchDestroy,
 			SoldierOrder.FreeRein => SoldierState.FreeRein,
+			SoldierOrder.HoldBanners => SoldierState.Idle,
 			_ => null,
 		};
 
@@ -32,7 +33,7 @@ namespace Levy.Content.NPCs
 			if (Record.Order != order) { why = "record holds " + Record.Order; return false; }
 			if (State == SoldierState.Shaken || State == SoldierState.Routed || State == SoldierState.Desert || State == SoldierState.Dead || State == SoldierState.Mutiny) return true;
 			if (order == SoldierOrder.ReturnToBarracks && Home == null && Record.HomePos != Terraria.DataStructures.Point16.NegativeOne) { why = "barracks link lost (HomeBarracksId " + Record.HomeBarracksId + " names nothing, HomePos known)"; return false; }
-			if (HoldPosition != (order == SoldierOrder.Hold)) { why = "HoldPosition=" + HoldPosition; return false; }
+			if (HoldPosition != (order == SoldierOrder.Hold || order == SoldierOrder.HoldBanners)) { why = "HoldPosition=" + HoldPosition; return false; }
 			// a calm levy at its Hold post, or following a commander who stands still, sits down again a few seconds after the order stood it up: that is the post, not a missed order
 			bool mayRest = order == SoldierOrder.Hold || (order == SoldierOrder.Follow && Commander != null);
 			if (Seated && !mayRest) { why = "still seated"; return false; }
@@ -40,6 +41,7 @@ namespace Levy.Content.NPCs
 			SoldierState? want = StateAfterOrder(order);
 			if (want.HasValue && State == want.Value) return true;
 			// the brain re-derives the state from the order every think: an idle spot (arrived home, nobody to follow, a hold post) is also what the order asks for there
+			if (order == SoldierOrder.HoldBanners && State == SoldierState.Follow) return true; // on the march to its banner stand
 			if (State == SoldierState.Idle && (order == SoldierOrder.Hold || order == SoldierOrder.ReturnToBarracks || Commander == null || Home == null)) return true;
 			// Follow with no commander online falls back to the barracks (OrderState)
 			if (order == SoldierOrder.Follow && Commander == null && State == SoldierState.ReturnHome) return true;

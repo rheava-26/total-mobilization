@@ -38,3 +38,13 @@ RumBuff: {
 	DisplayName: Rum
 	Description: Increases critical strike chance by 10%. Increases aim error by 60%
 }
+
+HoldingBannerBuff: {
+	DisplayName: Holding the Banner
+	Description:
+		'''
+		Increases defense by 12
+		Reduces damage taken by 20%
+		Grants immunity to knockback
+		'''
+}

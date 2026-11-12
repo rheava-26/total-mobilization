@@ -1,0 +1,4 @@
+# Holding Banner strings. Keys are relative to Mods.Levy.Banner.
+Order: Hold the banners
+OrderHint: Regulars within 150 tiles go to the nearest Holding Banner and stand there.
+OrderHintRadio: Every Regular, anywhere, goes to the nearest Holding Banner and stands there.

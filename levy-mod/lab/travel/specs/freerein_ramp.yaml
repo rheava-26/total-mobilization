@@ -1,0 +1,15 @@
+# The walkable way down: a 1:1 mine ramp from the base to a cavern 130 rows under it (any levy can walk it, both ways), no shaft.   freereinlab run levy-mod/lab/travel/specs/freerein_ramp.yaml
+name: freerein_ramp
+world: {seed: 11111, size: 2}
+levies: 15
+runs: 6
+shards: 3
+minutes: 12
+foes: true
+time: noon
+commander: base
+shaft: -2              # -2 = the ramp (-1 = no elevator, 0 = a bare shaft, N = a shaft with a platform every N rows)
+life: false
+arms:
+  before: {env: {LEVY_FREEREIN_LEGACY: 1}}
+  after: {}

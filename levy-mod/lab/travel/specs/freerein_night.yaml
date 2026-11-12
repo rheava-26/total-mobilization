@@ -1,0 +1,13 @@
+# Free Rein from dusk into the night: the pastimes that need the dark (beds, the stars, the fire).   freereinlab run levy-mod/lab/travel/specs/freerein_night.yaml
+name: freerein_night
+world: {seed: 11111, size: 2}
+levies: 15
+runs: 6
+shards: 3
+minutes: 14            # the clock starts at 50000 (dusk is 54000): about 1 minute of day, then night
+foes: true
+time: dusk
+commander: base
+shaft: 5
+arms:
+  after: {}

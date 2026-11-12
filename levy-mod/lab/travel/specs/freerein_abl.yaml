@@ -1,0 +1,20 @@
+# Which part of the new Free Rein does what: the old one, then the leash pieces added one at a time (LEVY_FREEREIN_ABL bit flags remove a piece: 1 spot pick, 2 route check, 4 walk home,
+# 8 old 600-tile circle, 16 vertical box, 32 rim spots and fight goals, 64 gap stop).   freereinlab run levy-mod/lab/travel/specs/freerein_abl.yaml
+name: freerein_abl
+world: {seed: 11111, size: 2}
+levies: 15
+runs: 6
+shards: 3
+minutes: 8
+foes: true
+time: noon
+life: false
+commander: base
+shaft: 5
+arms:
+  a0_old: {env: {LEVY_FREEREIN_LEGACY: 1}}
+  a1_radius_only: {env: {LEVY_FREEREIN_ABL: 119}}       # a 200-tile circle, nothing else (no box, old spot pick, no route check, no walk home)
+  a2_plus_box: {env: {LEVY_FREEREIN_ABL: 99}}           # + the rows above and below the base floor, and the walk home
+  a3_plus_spots: {env: {LEVY_FREEREIN_ABL: 98}}         # + spots that are dry, not under rock, not a pit floor
+  a4_plus_routes: {env: {LEVY_FREEREIN_ABL: 96}}        # + routes that do not dip into or cross a hole
+  a5_full: {}                                           # + rim spots and fight goals stopped at gaps

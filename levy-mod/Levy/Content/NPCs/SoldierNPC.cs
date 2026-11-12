@@ -457,7 +457,7 @@ namespace Levy.Content.NPCs
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Fear, pq);
 			MindControl_Drive();
 			pq = global::Levy.Common.Util.LevyProf.Begin();
-			if (!Sit_Hold() && !Fizz_Flight()) Movement_Update(); // a seated levy stays on its seat (SoldierNPC.Sit.cs); a knocked Fizzy body flies on its momentum (SoldierNPC.Fizz.cs)
+			if (!Sit_Hold() && !Leisure_Hold() && !Fizz_Flight()) Movement_Update(); // a seated levy stays on its seat (SoldierNPC.Sit.cs); a knocked Fizzy body flies on its momentum (SoldierNPC.Fizz.cs)
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Move, pq);
 			TickJumpEffects(); // the real OnStarted of every non-vanilla extra jump spent (SoldierNPC.JumpFx.cs)
 			TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs); a dedicated server returns at once
@@ -623,6 +623,7 @@ namespace Levy.Content.NPCs
 			if (OfficerMode) { writer.Write(OfficerTownIndex); writer.Write(OfficerTownType); }
 			HookWriteNet(writer); // grappled: clients draw the chain
 			writer.Write(Sit_NetFlag()); // seated: clients draw the sitting pose
+			writer.Write(Leisure_NetByte()); // the pastime: clients draw the prop and the pose (SoldierNPC.Leisure.cs)
 		}
 
 		public override void ReceiveExtraAI(BinaryReader reader)
@@ -646,6 +647,7 @@ namespace Levy.Content.NPCs
 			else { OfficerTownIndex = -1; OfficerTownType = -1; }
 			HookReadNet(reader);
 			Sit_ReadNet(reader.ReadBoolean());
+			Leisure_ReadNet(reader.ReadByte());
 			Record.BodyIndex = NPC.whoAmI; Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 			NPC.GivenName = Record.Name;
 			EnsureDummy(); ApplyLooks(); EquipDummy();

@@ -1,0 +1,15 @@
+# What the Free Rein pastimes cost in a 36-levy army: the same army with and without them, in the same waves.   freereinlab run levy-mod/lab/travel/specs/freerein_cpu.yaml
+name: freerein_cpu
+world: {seed: 11111, size: 2}
+levies: 36
+runs: 6
+shards: 3
+minutes: 8
+foes: true
+time: dusk             # the full mix of pastimes (kite by day, then fire, beds, stars)
+commander: base
+shaft: 5
+arms:
+  before: {env: {LEVY_FREEREIN_LEGACY: 1}}
+  nopastimes: {life: false}
+  after: {}

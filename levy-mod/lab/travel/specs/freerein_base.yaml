@@ -1,0 +1,17 @@
+# Free Rein near a base with an elevator, a hole and a pit.   Run:  levy-mod/lab/travel/freereinlab run levy-mod/lab/travel/specs/freerein_base.yaml
+# 15 armed levies of mixed gear (5 bare, 4 boots, 3 wings, 3 hook) sit at a barracks on real generated terrain with campfires, beds, a keg, chairs, a 4-wide elevator shaft (a platform every 5 rows) down
+# to a cavern 130 rows under the base, a sheer 30-deep hole and a 9-deep pit. At 2 s the army is put on Free Rein. Each run is a different base site 260 tiles apart (a seed).
+name: freerein_base
+world: {seed: 11111, size: 2}
+levies: 15
+runs: 10               # base sites ("seeds")
+shards: 3              # processes per arm
+minutes: 12            # game minutes per run
+foes: true             # day/night monsters near the base, a skeleton in the cavern
+time: noon             # dawn | noon | dusk | midnight (the clock at the start of each run)
+commander: base        # base | away | none
+shaft: 5               # platform spacing in the elevator (0 = a bare shaft, -1 = no elevator)
+arms:
+  before: {env: {LEVY_FREEREIN_LEGACY: 1}}    # the Free Rein of 2.0.55 in the same build
+  nopastimes: {life: false}                   # the new leash, no pastimes (what the pastimes cost is the difference to the next arm)
+  after: {}

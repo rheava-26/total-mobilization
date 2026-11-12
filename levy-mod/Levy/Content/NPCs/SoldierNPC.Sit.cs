@@ -154,6 +154,7 @@ namespace Levy.Content.NPCs
 				anchor = cmd.Bottom; radius = LevyConstants.SitFollowRadiusTiles;
 				SitWhy = "calm follow"; return true;
 			}
+			if (os == SoldierState.FreeRein && Leisure_SitWanted(now, ref anchor, ref radius)) { SitWhy = "free rein pastime"; return true; }
 			return SitNo("state " + os);
 		}
 
@@ -243,8 +244,9 @@ namespace Levy.Content.NPCs
 			if (partner == null) partner = NearbyCalmRegular(LevyConstants.SitChatTiles); // nobody else is seated: a standing comrade hears it
 			if (partner == null) return;
 			var ctx = new DialogueContext { Comrade = partner.SoldierName, Player = Record.CommanderName };
-			string line = DialogueSystem.PickLine(Main.dayTime ? DialogueTrigger.IDLE : DialogueTrigger.IDLE_NIGHT, Record, ctx) ?? DialogueSystem.PickLine(DialogueTrigger.IDLE, Record, ctx);
-			if (!string.IsNullOrEmpty(line)) { DialogueSystem.FloatingText(this, line, DialogueTrigger.IDLE); ChatterLines++; }
+			bool fire = NearLitCampfire(NPC.Center, 8) && Main.rand.Next(100) < 70; // by a fire the talk is fireside talk
+			string line = (fire ? DialogueSystem.PickLine(DialogueTrigger.FIRESIDE, Record, ctx) : null) ?? DialogueSystem.PickLine(Main.dayTime ? DialogueTrigger.IDLE : DialogueTrigger.IDLE_NIGHT, Record, ctx) ?? DialogueSystem.PickLine(DialogueTrigger.IDLE, Record, ctx);
+			if (!string.IsNullOrEmpty(line)) { DialogueSystem.FloatingText(this, line, fire ? DialogueTrigger.FIRESIDE : DialogueTrigger.IDLE); ChatterLines++; }
 			DialogueSystem.Emote(partner, SitEmotes[Main.rand.Next(SitEmotes.Length)]);
 			partner._sitChatAt = Math.Max(partner._sitChatAt, now + LevyConstants.SitChatMinTicks / 2); // the listener answers later, not at once
 		}

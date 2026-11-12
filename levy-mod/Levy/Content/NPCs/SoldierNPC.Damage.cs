@@ -131,6 +131,7 @@ namespace Levy.Content.NPCs
 			if (DodgeDebug) Levy.Instance?.Logger.Info($"DODGEDBG-HIT t={Main.GameUpdateCount} {SoldierName} dmg={damageDone} vy={NPC.velocity.Y:0.0} yAboveFloorPx={(int)(NPC.Bottom.Y)} pend={_dodgePend}");
 			ImmuneTime = HitImmuneTicks(damageDone);
 			Sit_Stop(); // a hit stands a seated levy up
+			Leisure_Stop(); // and ends a pastime
 			if (HitGapDbg != null) HitGapAdd(damageDone);
 			TicksSinceDamaged = 0;
 			_regenCounter = 0;

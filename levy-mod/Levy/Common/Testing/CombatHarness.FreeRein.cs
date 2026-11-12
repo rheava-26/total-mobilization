@@ -32,7 +32,7 @@ namespace Levy.Common.Testing
 			public SoldierRecord Rec; public int Idx = -1; public string Gear = "";
 			public float MaxDx, MaxDepth, DistSum; public int Samples, OutTicks, PitTicks, DeepTicks, UgTicks, FirstOut = -1, FirstPit = -1, FirstDeep = -1, BodyLost, Pits, Seated, Moves;
 			public bool InPit; public int[] Act = new int[12]; public float FinalDx, FinalDepth; public string FirstOutWhy = "", FirstPitWhy = "", FirstDeepWhy = ""; public Vector2 Last;
-			public int Out200Ticks, Teleports, InHoleTicks, InShaftTicks, InPitTicks; public bool WasInHole, WasInShaft, WasInPit; public int HoleFalls, ShaftFalls, PitFalls;
+			public readonly List<string> Ring = new List<string>(); public int Out200Ticks, Teleports, InHoleTicks, InShaftTicks, InPitTicks; public bool WasInHole, WasInShaft, WasInPit; public int HoleFalls, ShaftFalls, PitFalls;
 		}
 		private readonly List<FrLevy> _fr = new List<FrLevy>();
 		private int _frRuns = 4, _frRun, _frRun0, _frTotal = 4, _frN = 15, _frTicks = 36000, _frTick, _frSpacing = 260, _frShaft = 5;
@@ -100,6 +100,13 @@ namespace Levy.Common.Testing
 			FrBuildPit(fx + 62, floor, 9);
 			_frBase = new Vector2(barracks != null ? barracks.MusterPoint.X : (fx - 12) * 16f, barracks != null ? barracks.MusterPoint.Y : floor * 16f);
 			_frAsciiText = FrAscii(fx, floor);
+			{
+				int ar = (int)(_frBase.Y / 16f) - 1; var sbp = new StringBuilder("PITCHECK anchorRow=" + ar + ":");
+				for (int x = _frPitX - 2; x <= _frPitX + 18; x++)
+					for (int y = floor - 3; y < floor + 14; y++)
+						if (TileNav.IsStandable(x, y)) { int ov = SoldierNPC.Overburden(x, y); sbp.Append($" [{x - _frPitX}:{y - floor} ov{ov} pit{(SoldierNPC.PitFloor(x, y, ov, ar) ? 1 : 0)}]"); break; }
+				_frEvents.AppendLine(sbp.ToString());
+			}
 			_frEvents.AppendLine($"BASE run={run} site={site} pad=({fx},{floor}) surfaceHere={srf} barracks={(barracks == null ? "NONE" : barracks.Position.ToString())} muster=({(int)(_frBase.X / 16f)},{(int)(_frBase.Y / 16f)}) shaftX={_frShaftX} holeX={_frHoleX} pitX={_frPitX} world={Main.maxTilesX}x{Main.maxTilesY}");
 		}
 
@@ -263,6 +270,21 @@ namespace Levy.Common.Testing
 			_frTick++;
 			FrSetClock(); FrPinCommander();
 			OffscreenHop.LabViewers = _frCmd == "none" ? new List<Vector2>() : new List<Vector2> { Main.player[0].Center };
+			if (_frTick == 100 && _frHoleX > 0)
+			{
+				// the route check across the hole: east rim to west rim, for a walker and a winger
+				foreach (int gi in new[] { 0, 5, 9, 12 })
+				{
+					var lv = _fr[Math.Min(gi, _fr.Count - 1)]; if (!lv.Rec.HasBody) continue;
+					var sn = (SoldierNPC)Main.npc[lv.Rec.BodyIndex].ModNPC; NPC bn = Main.npc[lv.Rec.BodyIndex];
+					Vector2 save = bn.Bottom;
+					int row = FrSurfaceRow(_frHoleX + 8, _frFy - 10);
+					bn.Bottom = new Vector2((_frHoleX + 8) * 16f + 8f, row * 16f);
+					Vector2 west = new Vector2((_frHoleX - 2) * 16f + 8f, row * 16f);
+					_frEvents.AppendLine($"ROUTEPROBE gear={lv.Gear} " + sn.LabRouteProbe(west));
+					bn.Bottom = save;
+				}
+			}
 			if (_frTick == 120)
 			{
 				RosterSystem.Instance.IssueOrder(Main.player[0], SoldierOrder.FreeRein, true);
@@ -290,7 +312,8 @@ namespace Levy.Common.Testing
 				if (pit) { l.PitTicks += 20; if (!l.InPit) { l.Pits++; if (l.FirstPit < 0) { l.FirstPit = _frTick; l.FirstPitWhy = sn.FreeReinProbe(); } } l.InPit = true; } else if (depth < 4f) l.InPit = false;
 				int tx = (int)(n.Center.X / 16f);
 				bool inHole = _frHoleX > 0 && tx >= _frHoleX - 1 && tx <= _frHoleX + 3 && depth >= 6f, inShaft = _frShaftX > 0 && tx >= _frShaftX - 1 && tx <= _frShaftX + 4 && depth >= 6f, inPit = _frPitX > 0 && tx >= _frPitX && tx <= _frPitX + 15 && depth >= 6f;
-				if (inHole) { l.InHoleTicks += 20; if (!l.WasInHole) l.HoleFalls++; } l.WasInHole = inHole;
+				if (_frHoleX > 0 && Math.Abs(tx - _frHoleX) <= 12 && depth < 6f) { l.Ring.Add($"t={_frTick / 60.0:0.0}s dx={tx - _frHoleX} y={depth:0} [{sn.FreeReinProbe()}] pastime={sn.LeisureKindForLab}"); if (l.Ring.Count > 7) l.Ring.RemoveAt(0); }
+				if (inHole) { l.InHoleTicks += 20; if (!l.WasInHole) { l.HoleFalls++; _frEvents.AppendLine($"HOLEFALL {l.Rec.Name}({l.Gear}) at t={_frTick / 60.0:0.0}s; last samples before:\n    " + string.Join("\n    ", l.Ring)); } } l.WasInHole = inHole;
 				if (inShaft) { l.InShaftTicks += 20; if (!l.WasInShaft) l.ShaftFalls++; } l.WasInShaft = inShaft;
 				if (inPit) { l.InPitTicks += 20; if (!l.WasInPit) l.PitFalls++; } l.WasInPit = inPit;
 				if (deep) { l.DeepTicks += 20; if (l.FirstDeep < 0) { l.FirstDeep = _frTick; l.FirstDeepWhy = sn.FreeReinProbe(); } }

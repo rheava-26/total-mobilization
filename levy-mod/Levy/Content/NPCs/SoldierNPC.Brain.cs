@@ -186,6 +186,8 @@ namespace Levy.Content.NPCs
 		partial void Brain_OnOrder(SoldierOrder order)
 		{
 			Sit_Stop(); // an order from the commander puts a seated levy on its feet
+			Leisure_Stop(); // and ends a pastime
+			_lzNextAt = 0;
 			TargetIndex = -1;
 			_acquireNextTick = 0; // a new order from the commander is acted on at the next think, not after the idle-scan pacing
 			HasMoveGoal = false; WantsToFallThrough = false;
@@ -239,6 +241,7 @@ namespace Levy.Content.NPCs
 			ScanNpcs(out int fleeIdx, out float nearestHostileTiles);
 			HangWatch.Brain(NPC.whoAmI, 3);
 			Sit_Guard(now, fleeIdx, nearestHostileTiles); // a seated levy stands for a fight, a threat, a talk or an order (SoldierNPC.Sit.cs)
+			Leisure_Guard(now, fleeIdx, nearestHostileTiles); // and a free-roaming levy drops its pastime for the same (SoldierNPC.Leisure.cs)
 
 			switch (State)
 			{
@@ -272,6 +275,7 @@ namespace Levy.Content.NPCs
 						if (TryResupply(now)) WhyB = Why.BResupply;
 						else if (ThinkUnarmed(now)) WhyB = Why.BUnarmed;
 						else if (Sit_Think(now, nearestHostileTiles)) { } // calm and idle: sit on a seat nearby and chat
+						else if (Leisure_Think(now, nearestHostileTiles)) { } // calm on Free Rein: a pastime near home (kite, campfire, keg, bed)
 						else { Chatter_Think(now, nearestHostileTiles); ThinkOrder(now, nearestHostileTiles); } // a calm standing levy murmurs to a comrade now and then
 					}
 					break;
@@ -820,7 +824,7 @@ namespace Levy.Content.NPCs
 				var cmd = Commander;
 				if (cmd != null && !LevyUtil.WithinTiles(cmd.Center, target.Center, FollowChaseLimitTiles + rangeTiles)) return false;
 			}
-			if (Roaming && !LevyUtil.WithinTiles(RoamAnchor(), target.Center, RoamLeashTiles + rangeTiles)) return false;
+			if (Roaming && !(FreeReining ? FreeReinInBox(target.Center, rangeTiles) : LevyUtil.WithinTiles(RoamAnchor(), target.Center, RoamLeashTiles + rangeTiles))) return false;
 			return true;
 		}
 
@@ -1956,6 +1960,7 @@ namespace Levy.Content.NPCs
 				if (cmd != null) ClampToCircle(ref goal, cmd.Center, FollowChaseLimitTiles);
 			}
 			if (Roaming) ClampToCircle(ref goal, RoamAnchor(), RoamLeashTiles);
+			if (FreeReining) { FreeReinClampBox(ref goal); FreeReinStopAtGap(ref goal); FreeReinKeepOffRim(ref goal); } // SoldierNPC.FreeRein.cs: and never below the base floor's reach nor into the sky past it, nor on the rim of a hole
 			if (FreeReining) // never chase a target out past the world margin into the edge void
 				goal.X = MathHelper.Clamp(goal.X, LevyConstants.FreeReinWorldMarginTiles * LevyConstants.TilePx, (Main.maxTilesX - LevyConstants.FreeReinWorldMarginTiles) * LevyConstants.TilePx);
 		}
@@ -2535,7 +2540,7 @@ namespace Levy.Content.NPCs
 		/// <remarks>Militia roam only while mustered out: a body walking home on stand-down (State ReturnHome) is not roaming.</remarks>
 		private bool Roaming => IsRegular ? (Record.Order == SoldierOrder.SearchDestroy || Record.Order == SoldierOrder.FreeRein)
 			: IsMilitia && Record.Order == SoldierOrder.SearchDestroy && State != SoldierState.ReturnHome;
-		private int RoamLeashTiles => FreeReining ? LevyConstants.FreeReinLeashTiles : IsMilitia ? LevyConstants.MilitiaLeashTiles : LevyConstants.SearchLeashTiles;
+		private int RoamLeashTiles => FreeReining ? FreeReinLeash : IsMilitia ? LevyConstants.MilitiaLeashTiles : LevyConstants.SearchLeashTiles;
 		private Vector2 RoamAnchor() => FreeReining ? FreeReinBase() : SearchAnchor();
 
 		/// <summary>
@@ -2547,13 +2552,16 @@ namespace Levy.Content.NPCs
 			if (_searchAnchorSet) return _searchAnchor;
 			Vector2 a = NPC.Center;
 			var home = Home;
-			if (home != null && LevyUtil.WithinTiles(NPC.Center, home.MusterPoint, LevyConstants.FreeReinLeashTiles)) a = home.MusterPoint;
+			int reach = FreeReinLegacy ? LevyConstants.FreeReinLeashTiles : FreeReinLeash * 2; // a levy farther from its barracks than that is out with the commander: the base is where he gave the order
+			if (home != null && LevyUtil.WithinTiles(NPC.Center, home.MusterPoint, reach)) a = home.MusterPoint;
 			else
 			{
-				var near = SettlementSystem.Instance.NearestBarracks(NPC.Center, LevyConstants.FreeReinLeashTiles);
+				var near = SettlementSystem.Instance.NearestBarracks(NPC.Center, reach);
 				if (near != null) a = near.MusterPoint;
+				else if (!FreeReinLegacy) a = FreeReinCommanderSpot(a);
 			}
 			_searchAnchor = a; _searchAnchorSet = true;
+			if (!FreeReinLegacy) FreeReinAnchorSet(a);
 			return a;
 		}
 
@@ -2564,14 +2572,14 @@ namespace Levy.Content.NPCs
 		private bool FindFreeReinScout(Vector2 anchor, out float dx)
 		{
 			dx = 0f; int best = -1; float bestSq = float.MaxValue;
-			float tilePx = LevyConstants.TilePx, reach = LevyConstants.FreeReinScoutTiles * tilePx; reach *= reach;
+			float tilePx = LevyConstants.TilePx, reach = (FreeReinLegacy ? LevyConstants.FreeReinScoutTiles : Math.Min(LevyConstants.FreeReinScoutTiles, FreeReinLeash)) * tilePx; reach *= reach;
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				var n = Main.npc[i];
 				if (!n.active || i == NPC.whoAmI || SoldierTargeting.IsNeverTarget(n)) continue;
 				float dsq = Vector2.DistanceSquared(NPC.Center, n.Center);
 				if (dsq > reach || dsq >= bestSq || Math.Abs(n.Center.X - NPC.Center.X) < LevyConstants.SearchMinStepTiles * tilePx) continue;
-				if (!LevyUtil.WithinTiles(anchor, n.Center, LevyConstants.FreeReinLeashTiles)) continue;
+				if (!(FreeReinLegacy ? LevyUtil.WithinTiles(anchor, n.Center, LevyConstants.FreeReinLeashTiles) : FreeReinInBox(n.Center))) continue; // never drawn toward a monster in the rock or past the box
 				best = i; bestSq = dsq;
 			}
 			if (best < 0) return false;
@@ -2626,6 +2634,7 @@ namespace Levy.Content.NPCs
 				return;
 			}
 
+			if (free && FrOn(4) && FreeReinRecall(now)) return; // outside its box (SoldierNPC.FreeRein.cs): walk home before anything else
 			bool onWaypoint = HasMoveGoal && MoveGoal == _searchGoal && _searchGoalTick != 0;
 			if (onWaypoint)
 			{
@@ -2671,11 +2680,14 @@ namespace Levy.Content.NPCs
 				float mult = t == 0 ? 1f : t == 1 ? LevyConstants.FreeReinStepRetryMult1 : LevyConstants.FreeReinStepRetryMult2;
 				float gx = MathHelper.Clamp(NPC.Center.X + _searchDir * stepTiles * mult * tilePx + slotPx, leftEdge, rightEdge);
 				if (Math.Abs(gx - NPC.Center.X) < LevyConstants.SearchMinStepTiles * tilePx) break; // leash edge or world margin: shorter legs only get shorter
-				if (!TileNav.NearestStandable((int)(gx / tilePx), (int)(NPC.Bottom.Y / tilePx) - 1, spotRadius, out Point tile)) continue;
+				Point tile;
+				if (free && FrOn(1)) { if (!FreeReinPickSpot(gx, underworldBase, out tile)) continue; } // a standing spot inside the box: dry, not under rock, not a pit floor (SoldierNPC.FreeRein.cs)
+				else if (!TileNav.NearestStandable((int)(gx / tilePx), (int)(NPC.Bottom.Y / tilePx) - 1, spotRadius, out tile)) continue;
 				Vector2 cand = TileNav.BottomCentre(tile.X, tile.Y);
 				if (Vector2.DistanceSquared(cand, anchor) > (float)leash * leash * tilePx * tilePx) continue;
 				if (free && !underworldBase && tile.Y >= Main.UnderworldLayer - LevyConstants.FreeReinUnderworldMarginTiles) continue; // never wander down into the underworld
 				if (!Pathfinder.FindPath(NPC.Bottom, cand, Abilities, _probePath)) continue;
+				if (free && FrOn(2) && !FreeReinRouteOk(cand)) continue; // the way there does not dip into a hole, and a lower spot has a way back
 				bottom = cand; found = true;
 			}
 			ChargeSearch(System.Diagnostics.Stopwatch.GetTimestamp() - searchStart);

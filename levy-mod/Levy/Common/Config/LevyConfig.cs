@@ -82,6 +82,8 @@ namespace Levy.Common.Config
 		[DefaultValue(false)] public bool SoldiersTakeTileHazards;
 		[DefaultValue(true)] public bool LeviesSitWhenIdle;
 		[DefaultValue(true)] public bool AmbientChatter;
+		[Range(60, 600)] [DefaultValue(200)] public int FreeReinRadius;
+		[DefaultValue(true)] public bool FreeReinPastimes;
 
 		// ---- Gear upkeep ------------------------------------------------------------------------------------
 		[Header("GearUpkeep")]

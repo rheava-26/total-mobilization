@@ -513,6 +513,16 @@ Mods: {
 					Tooltip: Idle levies talk to a nearby comrade every 18 to 45 seconds. Needs a player within 70 tiles
 				}
 
+				FreeReinRadius: {
+					Label: Free Rein range
+					Tooltip: How far Free Rein levies roam from home, in tiles
+				}
+
+				FreeReinPastimes: {
+					Label: Free Rein pastimes
+					Tooltip: Calm levies on Free Rein fly kites, roast marshmallows, drink and sleep near home
+				}
+
 				LeviesSitWhenIdle: {
 					Label: Levies sit when idle
 					Tooltip: Idle levies sit on a nearby chair, bench or throne and stand up for a fight or an order

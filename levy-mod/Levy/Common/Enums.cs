@@ -34,7 +34,7 @@ namespace Levy.Common
 		MUTINY_BEGIN, MUTINY_REFUSE, MUTINY_CALM, // appended: the mutineers' lines now live in the dialogue file too
 		DRINK, // appended: a floating line over a levy when the army is served a round (see DrinkCheers)
 		FLIGHT_SHOUT, FLIGHT_FEAR, TAKEOFF, LANDING, // appended: a winged levy's shout in the air, its fear mid-flight, a complaint before take-off, relief on landing (SoldierNPC.FlightTalk.cs)
-		FIRESIDE, PASTIME // appended: talk by a campfire, and talk at a kite, a keg or the stars (Free Rein pastimes, SoldierNPC.Leisure.cs)
+		FIRESIDE, PASTIME, PASTIME_NIGHT // appended: talk by a campfire, talk at a kite or a cheer, and talk under the stars (Free Rein pastimes, SoldierNPC.Leisure.cs)
 	}
 
 	/// <summary>Where a dialogue line is delivered.</summary>

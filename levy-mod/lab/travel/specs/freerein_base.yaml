@@ -13,4 +13,5 @@ commander: base        # base | away | none
 shaft: 5               # platform spacing in the elevator (0 = a bare shaft, -1 = no elevator)
 arms:
   before: {env: {LEVY_FREEREIN_LEGACY: 1}}    # the Free Rein of 2.0.55 in the same build
+  nopastimes: {life: false}                   # the new leash, no pastimes (what the pastimes cost is the difference to the next arm)
   after: {}

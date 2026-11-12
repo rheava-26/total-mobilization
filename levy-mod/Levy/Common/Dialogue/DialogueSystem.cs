@@ -194,7 +194,7 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.RALLIED:
 				case DialogueTrigger.OFFICER_MARCH:
 				case DialogueTrigger.NURSE_MARCH:
-				case DialogueTrigger.FLIGHT_SHOUT: case DialogueTrigger.FLIGHT_FEAR: case DialogueTrigger.TAKEOFF: case DialogueTrigger.LANDING: case DialogueTrigger.FIRESIDE: case DialogueTrigger.PASTIME:
+				case DialogueTrigger.FLIGHT_SHOUT: case DialogueTrigger.FLIGHT_FEAR: case DialogueTrigger.TAKEOFF: case DialogueTrigger.LANDING: case DialogueTrigger.FIRESIDE: case DialogueTrigger.PASTIME: case DialogueTrigger.PASTIME_NIGHT:
 				case DialogueTrigger.VICTORY: return DialogueChannel.FloatingText;
 
 				case DialogueTrigger.DEATH_MESSAGE:

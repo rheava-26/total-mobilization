@@ -68,6 +68,7 @@ namespace Levy.Common.Systems
 				// 4. the dialogue file speaks for both new triggers
 				Check("4a FIRESIDE has lines", DialogueTable.Get(DialogueTrigger.FIRESIDE) != null);
 				Check("4b PASTIME has lines", DialogueTable.Get(DialogueTrigger.PASTIME) != null);
+				Check("4c PASTIME_NIGHT has lines", DialogueTable.Get(DialogueTrigger.PASTIME_NIGHT) != null);
 
 				// 5. the numbers are sane
 				Check("5a a pastime lasts seconds to a minute", LevyConstants.LeisureKiteMaxTicks <= 60 * 80 && LevyConstants.LeisureCheerMinTicks >= 60 * 3 && LevyConstants.LeisureRoastMinTicks >= 60 * 10);

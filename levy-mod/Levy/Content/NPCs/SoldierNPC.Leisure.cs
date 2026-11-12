@@ -142,7 +142,7 @@ namespace Levy.Content.NPCs
 			var props = LzScan(anchor, now);
 			LzCount(out int doing, out int total);
 			if (total > 1 && doing >= Math.Ceiling(total * LevyConstants.LeisureMaxShare)) { _lzNextAt = now + 300; return false; }
-			float[] w = LzWeights(Main.dayTime, Main.raining, Math.Abs(Main.WindForVisuals), props.Fires.Count > 0, props.Seats > LzSitters(), props.Kegs.Count > 0, props.Beds.Count > 0);
+			float[] w = LzWeights(Main.dayTime, Main.raining, Math.Abs(Main.WindForVisuals), props.Fires.Count > 0, LzSeatsNear(props, anchor) > LzSitters(), props.Kegs.Count > 0, props.Beds.Count > 0);
 			for (int attempt = 0; attempt < 3; attempt++)
 			{
 				float sum = 0f; for (int i = 0; i < w.Length; i++) sum += w[i];
@@ -164,7 +164,7 @@ namespace Levy.Content.NPCs
 			float[] w = new float[9];
 			w[LzKite] = day && !rain ? (wind > 0.15f ? 5f : 3f) : 0f;
 			w[LzRoast] = fire ? (day ? 2f : 3f) : 0f;
-			w[LzSit] = seat ? (fire && !day ? 5f : 2f) : 0f;
+			w[LzSit] = seat && SitEnabled ? (fire && !day ? 5f : 2f) : 0f;
 			w[LzKeg] = keg ? 2f : 0f;
 			w[LzSleep] = !day && bed ? 8f : 0f;
 			w[LzStars] = !day && !rain ? 2f : 0f;
@@ -295,7 +295,7 @@ namespace Levy.Content.NPCs
 				if (d < best && d <= 9f) { best = d; partner = s; }
 			}
 			if (partner == null) return;
-			DialogueTrigger trig = _lzKind == LzRoast || _lzKind == LzKeg ? DialogueTrigger.FIRESIDE : DialogueTrigger.PASTIME;
+			DialogueTrigger trig = _lzKind == LzRoast || _lzKind == LzKeg ? DialogueTrigger.FIRESIDE : (Main.dayTime ? DialogueTrigger.PASTIME : DialogueTrigger.PASTIME_NIGHT);
 			var ctx = new DialogueContext { Comrade = partner.SoldierName, Player = Record.CommanderName };
 			string line = DialogueSystem.PickLine(trig, Record, ctx);
 			if (!string.IsNullOrEmpty(line)) { DialogueSystem.FloatingText(this, line, trig); ChatterLines++; LeisureChats++; }
@@ -306,7 +306,7 @@ namespace Levy.Content.NPCs
 		// ---------------- places ----------------
 		private sealed class LzProps
 		{
-			public int Stamp; public readonly List<Point> Fires = new(), Kegs = new(); public readonly List<(Vector2 pos, int dir)> Beds = new(); public int Seats;
+			public int Stamp; public readonly List<Point> Fires = new(), Kegs = new(); public readonly List<(Vector2 pos, int dir)> Beds = new(); public int Seats; public readonly List<Point> SeatTiles = new();
 		}
 		private static readonly Dictionary<long, LzProps> LzCache = new();
 
@@ -343,7 +343,7 @@ namespace Levy.Content.NPCs
 							if (seenBeds.Add(bk)) c.Beds.Add((pos, dir));
 						}
 					}
-					else if (c.Seats < 40 && TileID.Sets.CanBeSatOnForPlayers[ty]) c.Seats++;
+					else if (c.Seats < 60 && TileID.Sets.CanBeSatOnForPlayers[ty]) { c.Seats++; c.SeatTiles.Add(new Point(x, y)); }
 				}
 			LzCache[key] = c;
 			return c;
@@ -363,11 +363,19 @@ namespace Levy.Content.NPCs
 			return false;
 		}
 
+		/// <summary>Seats within the sitting radius of where a sit pastime would gather (the nearest lit fire, else the base).</summary>
+		private int LzSeatsNear(LzProps props, Vector2 anchor)
+		{
+			Vector2 c = props.Fires.Count > 0 ? NearestTileTo(props.Fires, NPC.Bottom) : anchor; int n = 0;
+			foreach (var t in props.SeatTiles) if (Math.Abs(t.X * 16f - c.X) <= 22 * 16f && Math.Abs(t.Y * 16f - c.Y) <= 6 * 16f) n++;
+			return n;
+		}
+
 		/// <summary>Levies of this commander now sitting or walking to a seat.</summary>
 		private int LzSitters()
 		{
 			int n = 0;
-			for (int i = 0; i < Main.maxNPCs; i++) { NPC o = Main.npc[i]; if (o.active && o.ModNPC is SoldierNPC s && s.Record != null && s._sitMode != 0) n++; }
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC o = Main.npc[i]; if (o.active && o.ModNPC is SoldierNPC s && s.Record != null && (s._sitMode != 0 || (s._lzMode == 1 && s._lzKind == LzSit))) n++; }
 			return n;
 		}
 

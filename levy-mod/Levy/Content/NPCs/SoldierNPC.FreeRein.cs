@@ -122,7 +122,7 @@ namespace Levy.Content.NPCs
 			int over = Overburden(tx, ty);
 			if (!OverburdenOk(over, _frAnchorOver)) return false;
 			if (PitFloor(tx, ty, over, _frAnchorRow)) return false;
-			return !NearDrop(tx, ty, LevyConstants.FreeReinRimTiles);
+			return !(FrOn(32) && NearDrop(tx, ty, LevyConstants.FreeReinRimTiles));
 		}
 
 		/// <summary>A hole, a chasm or a cliff edge within <paramref name="reach"/> columns of the spot: a deep drop (or no floor in reach) under the feet row beside it.</summary>

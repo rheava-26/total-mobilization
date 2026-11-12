@@ -96,6 +96,7 @@ namespace Levy.Common.Testing
 			// the elevator (a 4-wide shaft with a platform every _frShaft rows, down to a cavern 130 rows below the pad), a sheer hole 3 wide and 30 deep, and a 9-deep pit with a stair out
 			_frShaftX = _frHoleX = _frPitX = -1;
 			if (_frShaft >= 0) FrBuildShaft(fx + 40, floor, 4, 130, _frShaft);
+			else if (_frShaft == -2) FrBuildRamp(fx + 40, floor, 130);   // a walkable 1:1 mine ramp down to the same cavern
 			FrBuildHole(fx - 44, floor, 3, 30);
 			FrBuildPit(fx + 62, floor, 9);
 			_frBase = new Vector2(barracks != null ? barracks.MusterPoint.X : (fx - 12) * 16f, barracks != null ? barracks.MusterPoint.Y : floor * 16f);
@@ -169,6 +170,27 @@ namespace Levy.Common.Testing
 			}
 			if (plat > 0) for (int y = floor + plat; y < bottom - 14; y += plat) for (int xx = x; xx < x + w; xx++) TvPlat(xx, y);
 			for (int y = floor - 3; y < floor; y++) for (int xx = x; xx < x + w; xx++) TvAir(xx, y);
+		}
+
+		/// <summary>A walkable way down: a 1:1 ramp (a 5-high tunnel, a stone floor) running east from the pad, 130 rows to the cavern. Any levy can walk it, both ways.</summary>
+		private void FrBuildRamp(int x, int floor, int depth)
+		{
+			_frShaftX = x; int bottom = floor + depth;
+			for (int xx = x - 34; xx <= x + depth + 40; xx++)
+				for (int y = bottom - 14; y <= bottom + 6; y++)
+				{
+					bool wall = xx == x - 34 || xx == x + depth + 40 || y == bottom - 14 || y >= bottom + 1;
+					if (xx >= x - 34 && xx <= x + depth + 40) { if (wall) TvSet(xx, y, TileID.Stone); else TvAir(xx, y); }
+				}
+			for (int xx = x - 33; xx <= x + depth + 39; xx++) TvSet(xx, bottom, TileID.Stone);
+			for (int k = 0; k <= depth - 14; k++)
+			{
+				int xx = x + k, fy = floor + k;
+				for (int y = fy - 5; y < fy; y++) TvAir(xx, y);
+				TvSet(xx, fy, TileID.Stone);
+				for (int y = fy - 6; y >= floor - 6 && y > fy - 7; y--) { if (!Main.tile[xx, y].HasTile) TvSet(xx, y, TileID.GrayBrick); }
+			}
+			for (int y = floor - 3; y < floor; y++) for (int xx = x; xx < x + 4; xx++) TvAir(xx, y);
 		}
 
 		private void FrBuildHole(int x, int floor, int w, int depth)

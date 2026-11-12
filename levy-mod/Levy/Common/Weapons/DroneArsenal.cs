@@ -222,8 +222,10 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>
-		/// The projectile a weapon fires with a round of <paramref name="ammo"/>, as Player.PickAmmo decides it: a specific launcher/ammo pairing first, then rocket and solution ammo add their
-		/// offset to the launcher's base projectile, any other ammo replaces it; then the per-weapon swaps vanilla makes (Hellwing bats, Shadowflame / Frost / Pulse arrows, high-velocity bullets...).
+		/// The projectile a weapon fires with a round of <paramref name="ammo"/>, as the game's own shot resolves it: a specific launcher/ammo pairing first; rocket and solution ammo add their offset to the
+		/// launcher's base projectile only for the launchers the offset is made for (<see cref="LevyConstants.Arsenal.OffsetLauncherBases"/>: every other launcher, vanilla or modded, sets its projectile in its own
+		/// hooks, so its own <c>shoot</c> stands); any other ammo replaces the projectile, except that the stock round (musket ball, wooden arrow) becomes the weapon's own signature shot when a modded weapon names one;
+		/// then the per-weapon swaps vanilla makes (Hellwing bats, Shadowflame / Frost / Pulse arrows, high-velocity bullets...). Never an offset on a projectile that is not a launcher base.
 		/// Kept here, beside the drone, rather than shared with the soldier pipeline.
 		/// </summary>
 		public static int ResolveAmmoProjectile(Item weapon, Item ammo)
@@ -239,8 +241,18 @@ namespace Levy.Common.Weapons
 			}
 			if (!matched)
 			{
-				if (weapon.useAmmo == AmmoID.Rocket || weapon.useAmmo == AmmoID.Solution) projectile = weapon.shoot + Math.Max(0, ammo.shoot);
-				else if (ammo.shoot > ProjectileID.None) projectile = ammo.shoot;
+				if (weapon.useAmmo == AmmoID.Rocket || weapon.useAmmo == AmmoID.Solution)
+				{
+					if (LevyConstants.Arsenal.OffsetLauncherBases.Contains(weapon.shoot)) projectile = weapon.shoot + Math.Max(0, ammo.shoot);
+					else if (weapon.type >= ItemID.Count && WeaponClassifier.GetProfile(weapon).Family == WeaponFamily.HeldWeapon)
+						projectile = (weapon.useAmmo == AmmoID.Rocket ? ProjectileID.RocketI : ProjectileID.PureSpray) + Math.Max(0, ammo.shoot); // a holdout launcher's own shot is its owner-anchored holdout, which a machine never flies: the round's own rocket / spray flies
+					// else: the launcher's own projectile (a modded launcher's hooks replace the type; vanilla's Electrosphere Launcher keeps its missile)
+				}
+				else if (ammo.shoot > ProjectileID.None)
+				{
+					projectile = ammo.shoot;
+					if (weapon.type >= ItemID.Count && SignatureShot(weapon, projectile) && WeaponClassifier.GetProfile(weapon).Family != WeaponFamily.HeldWeapon) projectile = weapon.shoot;
+				}
 			}
 			if (projectile == ProjectileID.SandBallGun) // the Sandgun: each sand has its own bespoke shot (never the block that would place tiles)
 			{
@@ -262,8 +274,23 @@ namespace Levy.Common.Weapons
 				case ItemID.Marrow: projectile = ProjectileID.BoneArrow; break;
 				case ItemID.IceBow: projectile = ProjectileID.FrostArrow; break;
 				case ItemID.PulseBow: projectile = ProjectileID.PulseBolt; break;
+				case ItemID.DD2BetsyBow: projectile = ProjectileID.DD2BetsyArrow; break;
+				case ItemID.PewMaticHorn: projectile = ProjectileID.PewMaticHornShot; break;
+				case ItemID.FireworksLauncher: projectile = ProjectileID.RocketFireworkRed; break; // one of its four colours
+				case ItemID.Xenopopper: projectile = ProjectileID.Xenopopper; break; // every bullet becomes the popper's own shot
 			}
 			return projectile;
+		}
+
+		/// <summary>
+		/// True when a modded weapon that takes ammo replaces the stock round (the Musket Ball / Wooden Arrow projectile) with the shot its own item names: its <c>shoot</c> is a real projectile of its own, not the
+		/// bow / gun placeholder. Only the stock round: a special round (Silver Bullet, Holy Arrow) keeps its own shot.
+		/// </summary>
+		private static bool SignatureShot(Item weapon, int roundProjectile)
+		{
+			if (roundProjectile != ProjectileID.Bullet && roundProjectile != ProjectileID.WoodenArrowFriendly) return false;
+			int own = weapon.shoot;
+			return own > ProjectileID.None && own != ProjectileID.Bullet && own != ProjectileID.WoodenArrowFriendly && own != ProjectileID.PurificationPowder;
 		}
 	}
 }

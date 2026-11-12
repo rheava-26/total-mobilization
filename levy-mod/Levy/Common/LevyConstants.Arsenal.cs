@@ -23,6 +23,12 @@ namespace Levy.Common
 			/// <summary>Shot cadence is the weapon's own, held within these bounds (ticks between shots).</summary>
 			public const int MinShotIntervalTicks = 4, MaxShotIntervalTicks = 120;
 
+			/// <summary>
+			/// The projectiles a launcher's own <c>shoot</c> can be for rocket / solution ammo to ADD its offset to it (what the game does for these and no other): the Grenade Launcher's, the Rocket Launcher's,
+			/// the Proximity Mine Launcher's, the Snowman Cannon's and the Clentaminator's. Every other launcher sets its projectile in its own hooks, so an offset on its <c>shoot</c> lands on an unrelated projectile.
+			/// </summary>
+			public static readonly HashSet<int> OffsetLauncherBases = new() { ProjectileID.GrenadeI, ProjectileID.RocketI, ProjectileID.ProximityMineI, ProjectileID.RocketSnowmanI, ProjectileID.PureSpray };
+
 			// ---------- Held weapons (Last Prism, Laser Machinegun, Charged Blaster...) ----------
 			// A held weapon's real shot is an owner-anchored AI that would grab the commander, so a machine never spawns it. A held weapon that fires ammo (Phantasm, Vortex Beater,
 			// Phantom Phoenix) fires that ammo's own shot; a held caster fires this bolt instead, at the weapon's real cadence and damage.

@@ -57,9 +57,11 @@ namespace Levy.Content.NPCs
 				ApplyVanitySlots();  // social armor slots, read by PlayerFrame / the renderer; emptied again in the finally below
 				SyncDummyTransform();
 				Dummy.gfxOffY = NPC.gfxOffY;
+				Leisure_PrePose(); // SoldierNPC.Leisure.cs: a pastime puts its prop in the hand (taken out again after the draw)
 				Dummy.lastVisualizedSelectedItem = Dummy.inventory[0]; // the renderer draws this, not inventory[selectedItem]
 				PoseDummy();
 				Sit_PoseDummy(); // SoldierNPC.Sit.cs: the seated pose
+				Leisure_PostPose(); // a sip, a bed
 				if (newTick)
 				{
 					_drawAnimTick = tick;
@@ -67,6 +69,7 @@ namespace Levy.Content.NPCs
 					ArmorFxTick(); // SoldierNPC.ArmorFx.cs: armor afterimage flags + history, head lights (after PlayerFrame resolved head/body/legs)
 				}
 				DrawDummy(spriteBatch, screenPos);
+				Leisure_DrawProps(spriteBatch, screenPos); // the kite and its string
 				drawn = true;
 			}
 			catch (Exception e)
@@ -74,7 +77,7 @@ namespace Levy.Content.NPCs
 				_rendererBroken = true;
 				Levy.Instance.Logger.Error("Levy: drawing a soldier through the player renderer failed; soldiers fall back to the placeholder sprite: " + e);
 			}
-			finally { ClearVanitySlots(); }
+			finally { ClearVanitySlots(); Leisure_RestoreHeld(); }
 		}
 
 		partial void Draw_PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
@@ -234,6 +237,7 @@ namespace Levy.Content.NPCs
 					global::Levy.Common.Util.HangWatch.DrawEnter(2); // watchdog breadcrumb: a frame stall here = this soldier's player-render (incl. its modded gear draw layers)
 					float bodyRot = Dummy.fullRotation; Vector2 bodyOrigin = Dummy.fullRotationOrigin;
 					DrunkPose(ref pos, ref bodyRot, ref bodyOrigin); // SoldierNPC.Drunk.cs: hop, sway and a raised arm under a drink (draw only)
+					LeisurePose(ref pos, ref bodyRot, ref bodyOrigin); // SoldierNPC.Leisure.cs: raised arms for a kite, the stars, a cheer
 					try { Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, bodyRot, bodyOrigin, 0f, 1f); }
 					finally { global::Levy.Common.Util.HangWatch.DrawExit(); }
 					if (!lens) DrawSwordSlash(sb);

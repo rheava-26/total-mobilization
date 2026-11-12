@@ -24,6 +24,7 @@
 #               COMRADE_HIT COMRADE_DOWN SHAKEN ROUTED RALLIED VICTORY PROMOTED VETERAN DEATH_MESSAGE
 #               MUTINY MUTINY_BEGIN MUTINY_REFUSE MUTINY_CALM   (soldiers in revolt over unpaid wages)
 #               DRINK   (the army is served a round from a keg, case or cooler; floating lines, a few levies each time)
+#               FIRESIDE PASTIME   (levies off duty on Free Rein: talk by a campfire or a keg, talk at a kite, the stars or a cheer; floating lines to a comrade nearby)
 #               TAKEOFF FLIGHT_FEAR LANDING   (a winged levy on a long march: a complaint before take-off, fear in the air, relief on landing; floating lines, a few at a time)
 #               OFFICER_MARCH NURSE_MARCH   (officers talking on the march)
 #               OFFICER_<Officer>_<STATE>   (an officer's own voice; STATE is IDLE MARCH HOLD FIGHT BOSS HURT VICTORY)
@@ -599,6 +600,34 @@ IDLE | Any | Say it with me: the ground is our friend. The ground is also undern
 IDLE | Any | Vote Pro-Ground! We keep it level!
 IDLE | Any | If we were meant to fly, they'd have given the wings a union.
 IDLE | Any | I love the ground. I love it more every time we leave it.
+
+# ---------------------------------------------------------------- Free Rein pastimes: FIRESIDE (by a campfire or a keg), PASTIME (a kite, the stars, a cheer)
+FIRESIDE | Any | {Comrade}, yours is on fire. No, the marshmallow. Well. Both.
+FIRESIDE | Any | {Comrade}, you hold it too close every time and then you cry about it.
+FIRESIDE | Any | I'm not saying {Comrade} has no patience. I'm saying {Comrade} has eaten four raw ones.
+FIRESIDE | Any | Pass the stick, {Comrade}. You had your turn. Your turn was most of the afternoon.
+FIRESIDE | Any | It's the only warm thing I've held all week and it's a marshmallow.
+FIRESIDE | Any | {Comrade}, tell me the one about the cave again. The one where you were brave.
+FIRESIDE | Any | I wasn't scared of the dark until {Comrade} started telling stories about it.
+FIRESIDE | Any | Sit closer, {Comrade}! The fire doesn't bite! The thing past the fire bites!
+FIRESIDE | Any | Nobody shoot anything tonight. I just got my shoes off.
+FIRESIDE | Any | {Player} said we could. {Player} said it with a face, but {Player} said it.
+FIRESIDE | Any | {Comrade}, is it weird that this is my favorite part? Don't answer that. Yes. It's weird.
+FIRESIDE | Any | Somebody pour me one, {Comrade}, and I'll pretend I didn't see you pour yourself three.
+FIRESIDE | Any | My chip hums when it's warm. {Comrade}, does yours do that? Don't look at me like that.
+FIRESIDE | Any | Rigroth the Undying has never turned down a campfire. I checked.
+PASTIME | Any | {Comrade}, it's up! It's actually up! Look, look, don't look, I'll lose it!
+PASTIME | Any | I made this one myself. {Comrade} laughed. {Comrade} stopped laughing when it flew.
+PASTIME | Any | Hold the string, {Comrade}. No, gently. It's not a gun, it's a feeling.
+PASTIME | Any | If it gets away, nobody tell {Player}. If it comes back, tell {Player} everything.
+PASTIME | Any | There's a whole sky up there and nothing in it wants me dead. I'm taking a minute.
+PASTIME | Any | {Comrade}, I'm not slacking. This is wind reconnaissance.
+PASTIME | Any | Count them with me, {Comrade}. There's more of them tonight than last night. Probably.
+PASTIME | Any | I found the one that looks like a hat, {Comrade}. Find your own.
+PASTIME | Any | {Comrade}! Are we the sort of people who dance? We are now!
+PASTIME | Any | Somebody tell {Comrade} it's not a funeral. Somebody tell {Comrade} I said that nicely.
+PASTIME | Any | I haven't looked up in weeks. {Comrade}, why did nobody say there's this much of it?
+PASTIME | Any | Hey {Comrade}, hold my gun. I've got a kite and I'm using both hands.
 
 # ---------------------------------------------------------------- Flying: TAKEOFF, FLIGHT_FEAR, LANDING
 TAKEOFF | Any | Do we have to? I just got comfortable down here.

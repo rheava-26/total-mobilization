@@ -41,6 +41,8 @@ namespace Levy.Common.Globals
 		public bool Redirected;
 		/// <summary>Server / single player: this minion is a direct cast of a soldier's staff (not a minion-flagged child its own AI made). Not synced.</summary>
 		public bool Cast;
+		/// <summary>A modded shot of a driven minion, kept on owner 255 and updated in its minion's frame (see SoldierMinions.ReownChild). Server / single player; not synced.</summary>
+		public bool DrivenChild;
 		/// <summary>Ticks a modded minion has been driven, hits it landed, and whether the upkeep ended it on purpose (see SoldierMinions.NoteModdedDeath). Server / single player.</summary>
 		public int Age, Hits;
 		public bool Dismissed;

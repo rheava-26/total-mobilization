@@ -176,6 +176,23 @@ def run_cell(spec, arm, ov, goal, tmod_default, outroot, wld, twld, slot):
               "LEVY_TRAVEL_CMDFAR": str(merged.get("cmdfar", 20)), "LEVY_TRAVEL_NOHOP": "0" if str(merged.get("hop", "off")) == "on" else "1", "LEVY_TRAVEL_FOES": "1" if merged.get("foes") else "0",
               "LEVY_TRAVEL_X0": "200", "LEVY_TRAVEL_HOOKLOG": "0"})
     for k, v in {**(spec.get("env") or {}), **(ov.get("env") or {})}.items(): e[str(k)] = str(v)
+    course = merged.get("course")
+    if course:   # a carved course (walk zoo corrupt wall ravine lips ...): one boot per run, no world edits; from/to are course offsets, wallh the face height
+        for k in ("LEVY_TRAVEL_START", "LEVY_TRAVEL_GOAL", "LEVY_TRAVEL_EDIT", "LEVY_TRAVEL_RUNS", "LEVY_TRAVEL_SPREAD"): e.pop(k, None)
+        e.update({"LEVY_TRAVEL_COURSE": str(course), "LEVY_TRAVEL_FROM": str(merged.get("from", 0)), "LEVY_TRAVEL_TO": str(merged.get("to", 920)), "LEVY_TRAVEL_HOOKLOG": "1"})
+        if "wallh" in merged: e["LEVY_TRAVEL_WALLH"] = str(merged["wallh"])
+        if "hookmix" in merged: e["LEVY_TRAVEL_GEAR"] = str(merged["hookmix"])
+        wall = int(merged.get("wall", 200 + max(60, cap // 300)))
+        t0 = time.time()
+        for k in range(runs):
+            e["LEVY_TRAVEL_OUT"] = str(d / "out" / f"r{k}"); (d / "out" / f"r{k}").mkdir(parents=True, exist_ok=True)
+            with open(d / "server.log", "a") as lg:
+                p = subprocess.Popen(["dotnet", "tModLoader.dll", "-server", "-nosteam", "-tmlsavedirectory", str(d / "save"), "-port", str(21000 + random.randint(0, 8000)), "-world", str(d / "save" / "Worlds" / "T.wld")], cwd=ensure_tml(), env=e, stdout=lg, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
+                try: p.wait(timeout=wall)
+                except subprocess.TimeoutExpired:
+                    try: os.killpg(p.pid, signal.SIGKILL)
+                    except Exception: pass
+        return dict(arm=arm, goal=label, dir=d, runs_done=len(glob.glob(str(d / "out" / "**" / "levies.csv"), recursive=True)), runs=runs, secs=time.time() - t0, mix=mix, cap=cap)
     wall = int(merged.get("wall", 120 + runs * max(60, cap // 300)))
     port = 21000 + (os.getpid() * 7 + slot * 131 + random.randint(0, 99)) % 8000
     tml = ensure_tml()
@@ -245,6 +262,10 @@ def report(spec, cells, wname):
             s = stats([r for r in rows if t == "ALL" or r["tier"] == t])
             a, tl, tm, se, md = fmt(s)
             out.write(f"| {c['arm']} | {c['goal']} | {t} | {a} | {tl} | {tm} | {se} | {md} |\n")
+    for c in cells:
+        ev = list(Path(c["dir"]).glob("out/r*/events.txt")) + list(Path(c["dir"]).glob("out/events.txt"))
+        if ev and "GOAL cave: no cave connected" in ev[0].read_text(errors="ignore"):
+            out.write(f"\nWARNING {c['arm']} / {c['goal']}: no cave connected to the surface within 600 columns of the start; the goal is the nearest standing room and may be sealed (a zero here is the world, not the levies). Try another depth or start.\n")
     out.write("\nPer run (arrivals by tier, ok/levies; T = levies that teleported):\n\n")
     for c in cells:
         rows = allrows[(c["arm"], c["goal"])]

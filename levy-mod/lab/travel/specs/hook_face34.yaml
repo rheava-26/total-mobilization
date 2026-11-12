@@ -1,0 +1,12 @@
+# Hook-only levies up a sheer 34-tile face (carved wall course: flat to 100, face, plateau to 300; start 40, goal 250). One boot per run.
+#   travelab run levy-mod/lab/travel/specs/hook_face34.yaml
+name: hook_face34
+world: LevyTest
+course: wall
+wallh: 34
+from: 40
+to: 250
+levies: 13
+gear: {kit:hk=GrapplingHook: 1, kit:hk=AmethystHook: 1, kit:hk=SapphireHook: 1, kit:hk=EmeraldHook: 1, kit:hk=DiamondHook: 1, kit:hk=IvyWhip: 1, kit:hk=WebSlinger: 1, kit:hk=SkeletronHand: 1, kit:hk=SlimeHook: 1, kit:hk=FishHook: 1, kit:hk=DualHook: 1, kit:hk=LunarHook: 1, kit:hk=StaticHook: 1}
+runs: 4
+timeout: 150

@@ -301,3 +301,46 @@ Real worlds, wings, 8 levies x 24 starts: 124 arrive, 68 do not, and 29 of those
 
 ## Boot
 Levy, Mechanization and Warbands build with 0 errors (real tML build). The headless boot has 0 exceptions; mobility, hop (HopCheck), accessory mobility (AccMobCheck) and flight talk self-checks pass. The summon-staff pick self-check fails as it does on the old code (known, not touched).
+
+# Round 8: no-code travel test, the hellevator, platform drops, long routes down
+
+Lab: `lab/travel/travelab` (README, "No-code travel test") and `lab/travel/specs/*.yaml`. A test is one yaml file; a levy that teleports (the catch-up hop, or any jump of 6+ tiles in one tick) fails; the hop is off by default. Worlds: three generated medium worlds (G2_80808 and G2_90909 are new, seed 11111 is the old M1), 15 levies of seven gear tiers (3 bare, 2 Hermes Boots, 3 Angel Wings, 2 Grappling Hook, 2 pre-HM kit, 2 HM kit, 1 endgame kit), runs spread 150 tiles along the start, `timeout` 600 game seconds. Before = the same build with `LEVY_TRAVEL8=0` (all round 8 movement changes off, arcs and the closed-door hook fix on). Machine load average was 8 to 25 (other builders), so wall times mean nothing, only counts.
+
+## OBSERVED (before), world G2_80808, 6 runs per cell
+| goal | arrive before (all 15 levies x 6 runs) |
+|---|---|
+| Underworld, bare shaft from the surface to a platform ring | 0/90 |
+| Underworld, platform every 15 rows | 0/90 |
+| deep cave (the deepest room the surface connects to, 86 rows down) | 0/90 |
+| far side of the world | 0/90 |
+
+## Causes (each proved with a log before it was changed)
+1. **The route window was too narrow in height.** `PathSearch.Begin` clipped the window to `RouteWindowH` = 460 rows (1500 x 460 cells); the Underworld is 1280 rows below the surface, so the goal was outside the window: `Begin` returned false, the planner logged `routes=401 found=0 failed=401 nodes=0`, and every levy fell back to the old "aim 30 tiles on" walk along the surface until a ledge refused (`path-blocked:deep-drop`). Reading of "a big wide path": confirmed for the vertical direction (and a long trip had margins of only 60/90/150 tiles). Fix: the window is any shape inside a cell budget (`RouteWindowCells` = 1,000,000, 1500 wide, 1900 tall), margins grow with the trip (a third of the longer side, up to 240 sideways and up, 300 down) and shrink first when the box does not fit; a box that still does not fit is routed in hops along the straight line (generalised from the old 1100-tile x hop), so planner cost per node is unchanged (700 nodes per tick slice).
+2. **Platform drop on a planned route refused a 14-row fall.** `PlatformDropIsSafe` allowed `JumpTiles + 6` = 12 rows; the route search takes falls up to `FallScanTiles` = 20. Log: `dropWhy=too-deep:14`. Fix: on a planned route a platform drop may go 20 rows.
+3. **A body whose centre is a tile centre overlaps the wall of a 2 to 4 wide shaft by a pixel or two**, so `PlatformDropIsSafe` saw a solid tile under its box edge (`dropWhy=solid-under-edge`) and never dropped. Fix: step 1.5 px away from that edge (only on a platform), then drop.
+4. **The drop-waypoint nudge aimed into the shaft wall** (the "way on" is straight down, so its side is a coin toss); the look-ahead took the wall for an obstacle and a winged body thrust up against it and hovered (`flyWhy=6`, stood hovering 500+ ticks). Fix: never nudge toward a wall; if both sides are walls, drop straight.
+5. **No fall longer than 20 rows existed in the planner**, so a bare shaft (the designer's hellevator) had no route for walkers. Fix: bodies a fall cannot hurt (no fall damage in the config, or wings or a horseshoe) take falls of up to 1600 rows in a route search; the part beyond 20 rows costs 0.2 a row (the first 20 stay 0.5: vertical movement is the cheapest kind), the route gets a waypoint every 8 rows down the fall (a route is dropped when the body is 12 tiles off it), and the executor takes the ledge when the next waypoint is a fall in its column. Winged bodies fell at the glide cap after their tank ran dry (200 s down 1280 rows); on a planned long drop they now fall at full speed (45 s).
+6. **A planned jump of 6 rows was refused as 7** when the body stood a pixel or two off the tile grid on a slope (`p0=(-2.3,-6.1)`, `blkWhy=1`): bare and boots levies stood at the foot of a 1:1 hill. Fix: 0.25 tile tolerance on routes. Slope course sample (`slope1.yaml`, start 2800 west 200): 0/12 -> 12/12.
+7. A mistake of mine found by the lab: the first version of cause 3's step pushed any body whose box edge had a solid and a free tile under it back off the ground when the goal was deep (`brainDropRequest` is true for every deep goal), so desert slopes pinned levies (v reset to +0.6 every 6 ticks, `stage[...]` trace). Now only on a platform. All "cave" numbers below are after that fix.
+
+Planner clock: slices of a hook search now look at the clock every 2 nodes (as arc searches did).
+
+## After (final build), world G2_80808, 15 levies, before -> after
+All tiers, world G2_80808 (before: 6 runs, 90 levy trips per cell; after: 12 runs, 180 trips, far side 6 runs, platform shaft 6 runs). Per-tier rows are in `lab/travel/round8/worldsum.py` output; every tier went from 0 to all in the Underworld and cave cells (bare 36/36, boots 24/24, wings 36/36, hook 24/24, pre-HM 24/24, HM 24/24, endgame 12/12). Teleports: 0 everywhere (hop off; every jump of 6+ tiles per tick counted).
+
+| goal | arrive before -> after | trip s (arrivers) | stuck episodes (levies) |
+|---|---|---|---|
+| Underworld, bare shaft | 0/90 -> 180/180 | - -> 45 | 95 (85) -> 0 (0) |
+| Underworld, platform every 15 rows | 0/90 -> 90/90 | - -> 74 | 99 (83) -> 0 (0) |
+| deep cave (86 rows down, 400 tiles away) | 0/90 -> 180/180 | - -> 36 | 1341 (74) -> 0 (0) |
+| far side of the world (2900 tiles) | 0/90 -> 1/90 | - -> 432 | 1414 (90) -> 1512 (90) |
+
+## The worst remaining failure: the far side (not fixed)
+OBSERVED in 6 runs x 15 levies on G2_80808 (hop off): 1 of 90 arrive. End points cluster at four places (x 750, 1750, 2350 to 2400, 2700 to 2750). Logs:
+- w2700: bare and boots at the foot of a 1:1 hill: the `goal-above` refusal of cause 6 (fixed above, 0/12 -> 12/12 on the slope course; the far run was made before that fix and has not been repeated at 3000 tiles).
+- w1750: hook and kit levies sit 450 s in a water-filled pit 25 rows deep (`wet` 450 s, route Partial); w2350: winged levies 60 to 70 s in water. The lake / flooded-pit swim is the known item from round 7, still unplanned.
+- Many levies spend long stretches with `route=Pending`: 3153 routes planned in one 15-levy run (1174 found, 1406 partial, 572 failed), 4.2M nodes. Seven ability classes x start buckets x replan variants x 1100-tile hops saturate the one-search-at-a-time planner, and a levy waiting on its route uses the old aim-ahead walk, which ends at ledges (`deep-drop`, `void-gap`). Worth its own round: share partial results between classes, cap retries of Partial routes.
+- Planner cost: on a loaded machine the worst slice was 555 ms (load average 16) against 38 ms in an earlier run at load 6 (before the clock-check change for hook searches); only an unloaded box can say what the slice cost is, nodes per route did not change (see above).
+
+## Hook levies on a sheer 34-tile face (coordinator item, from warbands-mod/docs/PURSUIT.md)
+Spec `specs/hook_face34.yaml` (carved wall course, 34-row face, 13 levies, one per vanilla hook, 4 runs). Result: 52/52 arrive in 21 s, 4 stuck episodes (Web Slinger 3, Skeletron Hand 1), no abandoned route. NOT REPRODUCED with levies: the Warbands failure (a failed cast leaves the body at the base and it gives up) needs Warbands' own body type and start offsets; the levy executor already bans the failed target and re-plans from where the body stands (`RouteHookGiveUp`, up to `RouteReplanMax`). Nothing was changed for it; the spec is the reproduction harness if Warbands' executor is pointed at it.

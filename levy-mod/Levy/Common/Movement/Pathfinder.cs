@@ -118,7 +118,7 @@ namespace Levy.Common.Movement
 			_wings = abilities.HasWings;
 			_jumpTiles = Math.Max(1, abilities.JumpTiles);
 			_maxFall = _wings ? FallScanTiles : (TravelLegacy.On || centred ? Math.Min(FallScanTiles, _jumpTiles + DropMarginTiles) : FallScanTiles); // the executor (ScanAhead) takes a fall of exactly FallScanTiles on a planned route // a route may go down into a pit (a safe fall) when the far side lets it climb out
-			_longFall = Travel8On && !centred && !TravelLegacy.On && (abilities.NoFallDamage || !Content.NPCs.SoldierNPC.FallDamageEnabled);
+			_longFall = Travel8On && !centred && !TravelLegacy.On && (abilities.NoFallDamage || !Content.NPCs.SoldierNPC.FallDamageEnabled) && (!_wings || t.Y - s.Y > 2 * FallScanTiles);   // (a winged body dives past 20 rows only on a trip that ends deeper: on a level trip a 39-row pit is flown over, not fallen into)
 			if (_longFall) _maxFall = LongFallTiles;
 			_gapTiles = abilities.GapTiles;
 			_maxFlight = TravelLegacy.On ? ushort.MaxValue : Math.Max(6, (int)(abilities.WingTimeMax * FlySpeed / 16f * FlightRangeShare)); // tiles of flight one tank of wing time covers, with room for the climb

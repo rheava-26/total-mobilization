@@ -30,7 +30,7 @@ namespace Levy.Common.Testing
 		private static bool _mnHooked; private static CombatHarness _mnSelf;
 		/// <summary>LEVY_HARNESS_MNSP=1: single-player owner emulation for the minions scenario (Main.myPlayer = 0 around each Main.Update), as the calrev scenario's LEVY_CR_SP does.</summary>
 		internal static bool MnSp;
-		private int _mnWatchTicks, _mnWatchAlive;
+		private int _mnWatchTicks, _mnWatchAlive, _mnWatchKills;
 
 		private bool BeginMinions()
 		{
@@ -38,7 +38,7 @@ namespace Levy.Common.Testing
 			MnSp = Environment.GetEnvironmentVariable("LEVY_HARNESS_MNSP") == "1";
 			global::Levy.Common.Util.LevyUtil.SpEmulation = MnSp;
 			string v = Environment.GetEnvironmentVariable("LEVY_HARNESS_MINIONS") ?? "list";
-			_mnList = v.Equals("list", StringComparison.OrdinalIgnoreCase); bool all = v.Equals("all", StringComparison.OrdinalIgnoreCase);
+			_mnList = v.Equals("list", StringComparison.OrdinalIgnoreCase); bool all = v.Equals("all", StringComparison.OrdinalIgnoreCase), allVanilla = v.Equals("allvanilla", StringComparison.OrdinalIgnoreCase);
 			_mnNames = v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 			for (int t = 1; t < ItemLoader.ItemCount; t++)
 			{
@@ -48,6 +48,7 @@ namespace Levy.Common.Testing
 				bool summon = it.CountsAsClass(DamageClass.Summon) && !it.sentry;
 				bool modded = it.ModItem != null && it.ModItem.Mod.Name == TestMod;
 				if (_mnList || (all && summon && modded && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Summon)) { if (summon && modded) _mnItems.Add(t); continue; }
+				if (allVanilla) { if (summon && it.ModItem == null && WeaponClassifier.GetProfile(it).Family == WeaponFamily.Summon && WeaponClassifier.ProjectileSample(it.shoot)?.minion == true) _mnItems.Add(t); continue; }
 				foreach (string n in _mnNames)
 					if (it.Name.Equals(n, StringComparison.OrdinalIgnoreCase) || (it.ModItem != null && it.ModItem.Name.Equals(n, StringComparison.OrdinalIgnoreCase)) || (it.ModItem == null && ItemID.Search.TryGetName(t, out string idn) && idn.Equals(n, StringComparison.OrdinalIgnoreCase)))
 					{ _mnItems.Add(t); break; }
@@ -107,6 +108,8 @@ namespace Levy.Common.Testing
 			try
 			{
 				var m = _mnSelf;
+				if (m != null && m._mnStarted && self.active && self.ModProjectile != null && Environment.GetEnvironmentVariable("LEVY_HARNESS_MNWATCH") is string wn && Array.IndexOf(wn.Split(','), self.ModProjectile.Name) >= 0 && m._mnWatchKills++ < 12)
+					m.Mod.Logger.Info("HARNESS-MINION-WATCHKILL " + self.ModProjectile.Name + " owner=" + self.owner + " timeLeft=" + self.timeLeft + " minion=" + self.minion + " ownerActive=" + Main.player[self.owner].active + " ownerDead=" + Main.player[self.owner].dead + " ownerMaxMin=" + Main.player[self.owner].maxMinions + " ownerSlots=" + Main.player[self.owner].slotsMinions + " minionSlots=" + self.minionSlots + " myPlayer=" + Main.myPlayer + " penetrate=" + self.penetrate + " ai=" + self.ai[0] + "/" + self.ai[1] + " trace=" + Environment.StackTrace.Replace("\n", " | ").Substring(0, Math.Min(900, Environment.StackTrace.Length)));
 				if (m != null && m._mnStarted && self.minion && self.active && SoldierMinions.OwnedBy(self, m._mnBody) && m._mnKillLogs++ < 3)
 					m.Mod.Logger.Info("HARNESS-MINION-DBG kill " + (self.ModProjectile?.Name ?? self.type.ToString()) + " timeLeft=" + self.timeLeft + " trace=" + Environment.StackTrace.Replace("\n", " | ").Substring(0, 1000));
 			}

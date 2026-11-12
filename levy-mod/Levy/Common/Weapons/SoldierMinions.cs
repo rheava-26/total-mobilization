@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Levy.Common.Config;
 using Levy.Common.Globals;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
@@ -130,7 +131,7 @@ namespace Levy.Common.Weapons
 
 		internal static void Reset()
 		{
-			BadTypes.Clear(); ShortLives.Clear(); LearnedBuff.Clear(); Parked.Clear(); ParkedDragons.Clear();
+			BadTypes.Clear(); ShortLives.Clear(); LearnedBuff.Clear(); Parked.Clear(); ParkedDragons.Clear(); CastSlots.Clear(); NoRealShoot.Clear(); EmptyCasts.Clear(); Helpers.Clear();
 			GroupMinionsNow.Clear(); GroupMinionOwners.Clear(); DragonSegmentsNow.Clear(); DragonSegmentOwners.Clear();
 			PendingBody = null; _faked = false; EnsureAliasRestored(); ClearFrame();
 		}
@@ -295,6 +296,7 @@ namespace Levy.Common.Weapons
 		{
 			int shoot = weapon.shoot;
 			if (shoot == ProjectileID.StardustDragon1) return SummonDragon(s, weapon, damage);
+			if (UsesRealShoot(weapon) && SummonReal(s, weapon, damage)) return true;
 			int type = shoot;
 			float ai1 = 0f, localAi0 = 0f;
 			bool pair = false;
@@ -382,6 +384,131 @@ namespace Levy.Common.Weapons
 			ratio = Math.Clamp(ratio, LevyConstants.MinionDamageRatioMin, LevyConstants.MinionDamageRatioMax);
 			int original = Math.Max(1, (int)Math.Round(desiredDamage / ratio));
 			if (p.originalDamage != original) p.originalDamage = original;
+		}
+
+		// =====================================================================================================
+		// A modded staff's own Shoot (the cast, and the helper a full flock still gets)
+		// =====================================================================================================
+		/// <summary>Slots one real cast of a staff takes (item type to the summed slots of the minions its own Shoot made), learned from the first cast. Staves whose pieces report no slots yet keep the sample's cost.</summary>
+		internal static readonly Dictionary<int, float> CastSlots = new();
+		/// <summary>Staves (item types) whose own Shoot threw or made nothing twice: they keep the direct cast of their shot.</summary>
+		private static readonly HashSet<int> NoRealShoot = new();
+		private static readonly Dictionary<int, int> EmptyCasts = new();
+		private sealed class HelperInfo { public int Probes; public bool Seen; }
+		/// <summary>Staff item type to what its Shoot has been seen to make while the flock is full (Dormant Brimseeker: an aura that empowers the minions).</summary>
+		private static readonly Dictionary<int, HelperInfo> Helpers = new();
+
+		/// <summary>A modded staff is cast through its own Shoot hook, as a player's swing does it (the minion's companion parts, the extra ai values, the summoner shot a minion comes out of); vanilla staves keep the cast table in <see cref="Summon"/>.</summary>
+		internal static bool UsesRealShoot(Item weapon) =>
+			weapon != null && weapon.ModItem != null && weapon.shoot >= ProjectileID.Count && LevyConfig.Get.RealWeaponShoot && !NoRealShoot.Contains(weapon.type);
+
+		/// <summary>
+		/// Runs the staff's ModifyShootStats and Shoot with the soldier's dummy as the player (see HeldWeapons.ShootHooks) and returns what they made, still owned by 255. Every OTHER soldier's minions sit on the parked
+		/// owner for the call: a Shoot counts the owner's minions to decide between its cast and its fallback, and all soldiers share owner 255. The staff's buff, which Shoot adds to the dummy, is put back afterwards.
+		/// </summary>
+		private static List<Projectile> RunShoot(SoldierNPC s, Item weapon, int damage, out bool threw)
+		{
+			Player d = s.Dummy; threw = false;
+			var moved = new List<Projectile>();
+			int me = s.NPC.whoAmI, saved = Main.myPlayer;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (p.active && p.owner == Slot && p.minion && p.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.SoldierIndex >= 0 && t.SoldierIndex != me) { p.owner = ParkedOwner; moved.Add(p); }
+			}
+			float scatter = Main.rand.NextFloat(-1f, 1f) * LevyConstants.MinionSpawnScatterPx;
+			Vector2 at = s.NPC.Center + new Vector2(scatter, 0f);
+			if (Collision.SolidCollision(at - LevyConstants.MinionSpawnProbe * 0.5f, (int)LevyConstants.MinionSpawnProbe.X, (int)LevyConstants.MinionSpawnProbe.Y)) at = s.NPC.Center;
+			List<Projectile> made;
+			SaveBuffs(d);
+			PendingBody = s;
+			try
+			{
+				if (saved != Slot) { _trueMyPlayer = saved; _faked = true; }
+				using (new AltPolicies.AimScope(d, at))
+					made = HeldWeapons.ShootHooks(s, weapon, new Vector2(0f, -Math.Max(1f, weapon.shootSpeed)), damage, Slot, false, null, out threw);
+			}
+			finally
+			{
+				Main.myPlayer = saved; _faked = false; PendingBody = null;
+				RestoreBuffs(d);
+				foreach (Projectile p in moved) if (p.active && p.owner == ParkedOwner) p.owner = Slot;
+			}
+			return made;
+		}
+
+		/// <summary>True for the minion a cast is "of" (the staff's own shot or a variant of it); the other parts a Shoot makes are companions that count through their own slots.</summary>
+		private static bool IsMainPiece(Item weapon, Projectile p) => p.type == weapon.shoot || InFamily(weapon.shoot, p.type);
+
+		/// <summary>The damage a made piece should be retuned to: the cast's damage, scaled by the staff's own factor for that piece (a helper the Shoot gives double damage keeps it).</summary>
+		private static int PieceDamage(Item weapon, Projectile p, int damage)
+		{
+			if (weapon.damage <= 0 || p.originalDamage <= 0 || p.originalDamage == damage) return damage;
+			return Math.Max(1, (int)Math.Round(damage * Math.Clamp(p.originalDamage / (float)weapon.damage, 0.1f, 10f)));
+		}
+
+		/// <summary>Takes a minion a staff's Shoot made as a driven minion of the soldier (owner 255, tagged, retuned).</summary>
+		private static void AdoptMade(SoldierNPC s, Item weapon, Projectile p, int damage, bool cast)
+		{
+			p.npcProj = true; p.noDropItem = true; p.friendly = true; p.hostile = false;
+			if (p.TryGetGlobalProjectile(out SoldierProjectileTag tag)) { tag.SoldierIndex = s.NPC.whoAmI; tag.Cast = cast; }
+			Retune(s, p, weapon, PieceDamage(weapon, p, damage));
+			p.netUpdate = true;
+		}
+
+		/// <summary>
+		/// One cast of a modded staff through its own Shoot. The minions it made become the soldier's (the one the cast is "of" is a cast, its companions count through their slots), and the slots the whole cast
+		/// takes (one of each kind of part) are remembered so the flock is sized right (Lilies of Finality: two different minions at once). False when the Shoot threw or made no minion; a staff that does that twice in a row is cast directly from then on.
+		/// </summary>
+		private static bool SummonReal(SoldierNPC s, Item weapon, int damage)
+		{
+			List<Projectile> made = RunShoot(s, weapon, damage, out bool threw);
+			float slots = 0f; int minions = 0;
+			var seenTypes = new HashSet<int>();
+			foreach (Projectile p in made)
+			{
+				if (!p.active) continue;
+				if (p.minion && !p.sentry)
+				{
+					minions++;
+					if (seenTypes.Add(p.type)) slots += p.minionSlots; // one of each part: a staff that makes five petals still costs one petal's slots per cast, as the owner's slot cap keeps what fits
+					AdoptMade(s, weapon, p, damage, IsMainPiece(weapon, p));
+				}
+				else WeaponUse.TagSoldierProjectile(s, p, weapon.DamageType ?? DamageClass.Summon);
+			}
+			if (threw || minions == 0)
+			{
+				int n = EmptyCasts.GetValueOrDefault(weapon.type) + 1; EmptyCasts[weapon.type] = n;
+				if ((threw || n >= 2) && NoRealShoot.Add(weapon.type))
+					ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: " + weapon.Name + "'s own Shoot " + (threw ? "threw" : "made no minion") + " for a soldier; its minion is cast directly from now on.");
+				return false;
+			}
+			EmptyCasts[weapon.type] = 0;
+			if (slots > ChildSlotMin && !CastSlots.ContainsKey(weapon.type)) CastSlots[weapon.type] = slots;
+			return true;
+		}
+
+		/// <summary>
+		/// A staff whose own shot takes no slot (a summoner shot the minion comes out of) is swung again by a player when the flock is full, and its Shoot then makes something else: the Dormant Brimseeker's aura that
+		/// empowers its Brimseekers. Learned here: the soldier's full flock gets the staff's Shoot now and then, and what it makes that takes no slot is kept; anything that would take a slot is ended. A staff that
+		/// has never made such a helper after two tries is left alone.
+		/// </summary>
+		internal static void Helper(SoldierNPC s, Item weapon, int damage)
+		{
+			if (!UsesRealShoot(weapon)) return;
+			Projectile sample = WeaponClassifier.ProjectileSample(weapon.shoot);
+			if (sample == null || sample.minionSlots > ChildSlotMin) return;
+			if (!Helpers.TryGetValue(weapon.type, out HelperInfo info)) Helpers[weapon.type] = info = new HelperInfo();
+			if (!info.Seen && info.Probes >= 2) return;
+			if (!info.Seen) info.Probes++;
+			foreach (Projectile p in RunShoot(s, weapon, damage, out _))
+			{
+				if (!p.active) continue;
+				if (!p.minion || p.sentry) { WeaponUse.TagSoldierProjectile(s, p, weapon.DamageType ?? DamageClass.Summon); continue; }
+				if (p.minionSlots > ChildSlotMin || p.type == weapon.shoot) { p.active = false; continue; } // a cast, not a helper: the flock is full (ended quietly: a Dismiss would run its OnKill)
+				AdoptMade(s, weapon, p, damage, false);
+				info.Seen = true;
+			}
 		}
 
 		// =====================================================================================================
@@ -617,13 +744,47 @@ namespace Levy.Common.Weapons
 			return s != null && s.Record.HoldFire;
 		}
 
-		/// <summary>A projectile created inside a driven minion's Update (a stinger, a spear, a fireball) is owned by 255 there; in single player it is handed to the real owner so Projectile.Damage processes it.</summary>
+		/// <summary>
+		/// A projectile created inside a driven minion's Update (a stinger, a spear, a fireball) is owned by 255 there; in single player a vanilla one is handed to the real owner so Projectile.Damage processes it.
+		/// Two kinds are NOT handed over. A child that is itself a minion (the Dormant Brimseeker's Summoner makes its Brimseeker as it dies, a summoner's babies) stays a driven minion of the soldier: handed to the
+		/// commander it would take the commander's own minion slots (vanilla's slot overflow ends it at once when they are full) and its AI would read the commander's buffs and flags. A modded shot keeps owner 255
+		/// too and is updated in its parent's frame (<see cref="IsDrivenChild"/>): modded children find their parent by owner and identity (the Deathstare Rod's beam), which a hand-over breaks, and a driven frame
+		/// already claims the owner slot for damage.
+		/// </summary>
 		internal static void ReownChild(Projectile parent, Projectile child)
 		{
-			if (!Util.LevyUtil.SinglePlayerLike || parent.owner != Slot || !parent.minion || child.owner != Slot) return;
+			if (parent.owner != Slot || child.owner != Slot || child.minion) return;
+			bool fromChild = !parent.minion; // a shot of a driven shot (the Gamma Hydra's canister bursts into homing bullets) stays on 255 like its parent, whatever its type
+			if (fromChild && !IsDrivenChild(parent)) return;
+			if ((fromChild || child.type >= ProjectileID.Count) && child.TryGetGlobalProjectile(out SoldierProjectileTag tag)) { tag.DrivenChild = true; return; } // on a dedicated server too: its parent lookups need the frame
+			if (!Util.LevyUtil.SinglePlayerLike) return;
 			child.owner = TrueMyPlayer;
 		}
 
+		/// <summary>A modded shot of a driven minion that stays on owner 255 and is updated in its minion's frame (see <see cref="ReownChild"/>).</summary>
+		internal static bool IsDrivenChild(Projectile p) =>
+			p.active && p.owner == Slot && !p.minion && p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.DrivenChild && tag.SoldierIndex >= 0;
+
+		/// <summary>One bullet stack stood in the dummy's ammo slots for a modded minion's Update: a minion that fires "the owner's gun" asks the owner for ammo (Calamity's Black Hawk Remote, Cosmic Viper Engine, Tactical Plague Engine).</summary>
+		private static Item _minionAmmo;
+		private static int _ammoSlot = -1;
+		private static void GiveMinionAmmo(Player d)
+		{
+			_ammoSlot = -1;
+			for (int i = 54; i < 58 && i < d.inventory.Length; i++)
+				if (d.inventory[i] == null || d.inventory[i].IsAir)
+				{
+					if (_minionAmmo == null) { _minionAmmo = new Item(); _minionAmmo.SetDefaults(ItemID.MusketBall); }
+					_minionAmmo.stack = _minionAmmo.maxStack;
+					d.inventory[i] = _minionAmmo; _ammoSlot = i;
+					return;
+				}
+		}
+		private static void TakeMinionAmmo(Player d)
+		{
+			if (_ammoSlot >= 0 && _ammoSlot < d.inventory.Length && ReferenceEquals(d.inventory[_ammoSlot], _minionAmmo)) d.inventory[_ammoSlot] = new Item();
+			_ammoSlot = -1;
+		}
 
 		/// <summary>
 		/// A modded minion's AI keeps itself alive through its owner's ModPlayer flag, which the staff's buff sets (<c>ModBuff.Update</c> raises the flag while the owner owns the minion and refreshes the
@@ -679,17 +840,17 @@ namespace Levy.Common.Weapons
 
 			Player d = body.Dummy;
 			int savedMyPlayer = Main.myPlayer, savedMax = d.maxMinions, ownerSlot = p.owner;
-			bool swapped = false, parked = false, parkedDragons = false, buffsSaved = false;
+			bool swapped = false, parked = false, parkedDragons = false, buffsSaved = false, ammoGiven = false;
 			Projectile outerFrameProj = _frameProj; SoldierNPC outerFrameBody = _frameBody; int outerFrameSlot = _frameOwnerSlot; bool outerArmed = _strikeArmed, outerReal = _realContext;
 			try
 			{
-				if (p.timeLeft < LevyConstants.MinionLifeTicks / 2 && (!authority || IsCast(p))) p.timeLeft = LevyConstants.MinionLifeTicks; // vanilla keeps a minion alive while its buff flag is up; the soldier's upkeep is the buff here
+				if (p.minion && p.timeLeft < LevyConstants.MinionLifeTicks / 2 && (!authority || IsCast(p))) p.timeLeft = LevyConstants.MinionLifeTicks; // vanilla keeps a minion alive while its buff flag is up; the soldier's upkeep is the buff here
 				EnemyTargeting.Swap(body); // dummy -> Main.player[255], at the soldier
 				swapped = true;
 				if (ownerSlot != Slot) AliasDummy(ownerSlot, d); // a dragon segment reads Main.player[its own owner slot]: the same dummy stands there too
 				d.maxMinions = LevyConstants.MinionDriverMaxMinions;
 				if (p.type >= ProjectileID.Count && p.TryGetGlobalProjectile(out SoldierProjectileTag at)) at.Age++;
-				if (p.type >= ProjectileID.Count) { SaveBuffs(d); buffsSaved = true; ApplyModdedBuff(body, p); } // a modded minion's AI re-adds its own buff to its owner every tick: the dummy's real buffs are put back in the finally
+				if (p.type >= ProjectileID.Count) { SaveBuffs(d); buffsSaved = true; ApplyModdedBuff(body, p); if (p.minion) { GiveMinionAmmo(d); ammoGiven = true; } } // a modded minion's AI re-adds its own buff to its owner every tick: the dummy's real buffs are put back in the finally
 				if (authority && savedMyPlayer != ownerSlot) { _trueMyPlayer = savedMyPlayer; _faked = true; Main.myPlayer = ownerSlot; }
 				if (GroupIndexed.Contains(p.type)) { parked = true; ParkOtherFlocks(p, body.NPC.whoAmI); } // flag first: a throw halfway still restores what was moved
 				if (IsDragonType(p.type)) { parkedDragons = true; ParkOtherDragons(p, body.NPC.whoAmI); }
@@ -711,6 +872,7 @@ namespace Levy.Common.Weapons
 				Main.myPlayer = savedMyPlayer;
 				_faked = false;
 				d.maxMinions = savedMax;
+				if (ammoGiven) TakeMinionAmmo(d);
 				if (buffsSaved) { LearnBuff(d, p); RestoreBuffs(d); }
 				if (swapped) EnemyTargeting.Unswap();
 				EnsureAliasRestored(); // never leave a dummy in the dragon's owner slot
@@ -727,6 +889,23 @@ namespace Levy.Common.Weapons
 		// =====================================================================================================
 		/// <summary>True when <paramref name="p"/> is the driven minion whose Update is running under the dummy swap right now (the one cheap test the Damage detour runs first).</summary>
 		internal static bool IsFrameProjectile(Projectile p) => ReferenceEquals(p, _frameProj);
+
+		/// <summary>
+		/// Projectile.GetByUUID answers -1 for owner 255 (it only takes owners below 255), so a modded minion's part that finds its parent that way (the Mounted Scanner's laser, the Endo Hydra's heads) would find nothing
+		/// under the shared soldier owner. Inside a driven minion's frame the lookup is answered from the projectile array instead: the part of owner 255 whose identity or UUID is the one asked for. Elsewhere vanilla's answer stands.
+		/// </summary>
+		internal static int UuidLookup(int owner, int uuid)
+		{
+			if (_frameProj == null || owner != Slot || uuid < 0 || uuid >= Main.maxProjectiles) return -1;
+			Projectile q = Main.projectile[uuid];
+			if (q.active && q.owner == Slot && (q.identity == uuid || q.projUUID == uuid)) return uuid;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				q = Main.projectile[i];
+				if (q.active && q.owner == Slot && (q.identity == uuid || q.projUUID == uuid)) return i;
+			}
+			return -1;
+		}
 
 		/// <summary>
 		/// The one Projectile.Damage call of a driven minion mid-Update (called from the Damage detour on the server / single player only). The projectile keeps its owner and the dummy stays in
@@ -852,12 +1031,20 @@ namespace Levy.Common.Weapons
 		{
 			On_Projectile.Update += UpdateDetour;
 			On_NPC.StrikeNPC_HitInfo_bool_bool += StrikeDetour;
+			On_Projectile.GetByUUID_int_int += UuidDetour;
+		}
+
+		private static int UuidDetour(On_Projectile.orig_GetByUUID_int_int orig, int owner, int uuid)
+		{
+			int r = orig(owner, uuid);
+			return r >= 0 || owner != SoldierNPC.DummySlot ? r : SoldierMinions.UuidLookup(owner, uuid);
 		}
 
 		public override void Unload()
 		{
 			On_Projectile.Update -= UpdateDetour;
 			On_NPC.StrikeNPC_HitInfo_bool_bool -= StrikeDetour;
+			On_Projectile.GetByUUID_int_int -= UuidDetour;
 			SoldierMinions.Reset();
 			EnemyTargeting.EnsureSlotRestored();
 		}
@@ -883,7 +1070,7 @@ namespace Levy.Common.Weapons
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
 			HangWatch.Proj(self); // diagnostic breadcrumb (see HangWatch): which projectile's Update started last
-			if (self.minion && SoldierMinions.IsDriven(self)) SoldierMinions.RunUpdate(orig, self, i);
+			if (self.minion ? SoldierMinions.IsDriven(self) : (self.owner == SoldierNPC.DummySlot && SoldierMinions.IsDrivenChild(self))) SoldierMinions.RunUpdate(orig, self, i);
 			else orig(self, i);
 		}
 

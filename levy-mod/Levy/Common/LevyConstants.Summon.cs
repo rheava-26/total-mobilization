@@ -45,6 +45,8 @@ namespace Levy.Common
 		public const int ModdedMinionMaxChildSpawnsPerPass = 40, ModdedMinionMaxChildrenAlive = 60;
 		/// <summary>Consecutive immediate self-kills of a modded cast after which the staff uses the stand-in minion.</summary>
 		public const int ModdedMinionMaxShortLives = 3;
+		/// <summary>Upkeep passes (20 ticks each) between the tries of a full flock's staff at making its helper.</summary>
+		public const int MinionHelperPasses = 6;
 		/// <summary>Horizontal scatter (px) of a fresh real minion around its soldier.</summary>
 		public const float MinionSpawnScatterPx = 36f;
 		/// <summary>Size (px) of the box tested for wall overlap at a fresh real minion's scattered spawn point; a blocked point falls back to the soldier's centre.</summary>

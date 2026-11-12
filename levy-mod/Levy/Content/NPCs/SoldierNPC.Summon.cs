@@ -23,7 +23,7 @@ namespace Levy.Content.NPCs
 	/// </summary>
 	public partial class SoldierNPC
 	{
-		private int _minionTick, _minionSpawnCd;
+		private int _minionTick, _minionSpawnCd, _helperCd;
 		private readonly List<int> _minionScratch = new();
 		/// <summary>The game tick this soldier's dummy minion counters were last reset on (SoldierMinions.PrepareTick).</summary>
 		internal uint MinionPrepStamp = uint.MaxValue;
@@ -66,6 +66,7 @@ namespace Levy.Content.NPCs
 		public static float SlotsPerMinion(Item weapon)
 		{
 			float slots = 0f;
+			if (weapon != null && SoldierMinions.CastSlots.TryGetValue(weapon.type, out float learned) && learned > 0.01f) return learned; // what the staff's own Shoot made, summed over its parts
 			if (weapon != null && weapon.type > 0 && weapon.type < ItemID.Sets.StaffMinionSlotsRequired.Length) slots = ItemID.Sets.StaffMinionSlotsRequired[weapon.type];
 			if (slots <= 0f)
 			{
@@ -244,6 +245,12 @@ namespace Levy.Content.NPCs
 				_minionScratch.RemoveAt(worst);
 			}
 			SoldierMinions.MaintainCompanion(this, weapon, _minionScratch);
+			// a full flock: a staff whose shot takes no slot may still make a helper when swung again (see SoldierMinions.Helper)
+			if (have + perCast > want + LevyConstants.MinionSlotEpsilon && _minionScratch.Count > 0 && _minionSpawnCd <= 0 && --_helperCd <= 0)
+			{
+				_helperCd = LevyConstants.MinionHelperPasses;
+				if (CrowdBudget.MayAddProjectiles(1)) SoldierMinions.Helper(this, weapon, damage);
+			}
 			// the count guard keeps a staff whose minion reports no slot cost from casting without end
 			if (_minionSpawnCd > 0 || have + perCast > want + LevyConstants.MinionSlotEpsilon || _minionScratch.Count >= LevyConstants.MinionControllerMaxPerSoldier * 2) return;
 

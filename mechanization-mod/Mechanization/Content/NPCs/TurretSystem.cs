@@ -96,6 +96,9 @@ namespace Mechanization.Content.NPCs
 		/// <summary>Server / single player: <see cref="FindRestSpot"/> then <see cref="PlaceNew"/>. Returns the NPC slot, or -1 when there is no room or no slot.</summary>
 		public int TryPlace(IEntitySource source, Vector2 spot) => FindRestSpot(spot, out Vector2 rest) ? PlaceNew(source, rest) : -1;
 
+		/// <summary>True while at least one NPC slot is free (a refused placement then means no room at the spot, not a full NPC array).</summary>
+		public static bool AnyFreeNpcSlot() { for (int i = 0; i < Main.maxNPCs; i++) if (!Main.npc[i].active) return true; return false; }
+
 		private static readonly uint[] _lastPlace = new uint[Main.maxPlayers + 1];
 
 		/// <summary>
@@ -114,7 +117,7 @@ namespace Mechanization.Content.NPCs
 
 			if (TryPlace(new EntitySource_ItemUse(player, player.HeldItem), spot) >= 0) return true;
 			Item.NewItem(new EntitySource_Misc("Mechanization:TurretRefund"), player.getRect(), ModContent.ItemType<TurretItem>());
-			Terraria.Chat.ChatHelper.SendChatMessageToClient(Terraria.Localization.NetworkText.FromKey("Mods.Mechanization.UI.TurretNoRoom"), new Color(255, 190, 110), player.whoAmI);
+			Terraria.Chat.ChatHelper.SendChatMessageToClient(Terraria.Localization.NetworkText.FromKey(AnyFreeNpcSlot() ? "Mods.Mechanization.UI.TurretNoRoom" : "Mods.Mechanization.UI.TurretNoSlots"), new Color(255, 190, 110), player.whoAmI);
 			return false;
 		}
 

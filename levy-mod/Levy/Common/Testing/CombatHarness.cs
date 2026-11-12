@@ -154,6 +154,7 @@ namespace Levy.Common.Testing
 					if (list.Count > 0) _ranges = list.ToArray();
 				}
 				OwnerLab.ReadEnv();
+				if (Environment.GetEnvironmentVariable("LEVY_HARNESS_MNSP") == "1") { MnSp = true; global::Levy.Common.Util.LevyUtil.SpEmulation = true; } // single-player owner emulation for the weapon trials too
 				if (Main.dedServ) Main.OnTickForThirdPartySoftwareOnly += DriveServer;
 				On_Projectile.Update += OnProjUpdate;
 				if (_vanProbe) On_Projectile.vampireHeal += VampireHealProbe;
@@ -396,6 +397,23 @@ namespace Levy.Common.Testing
 			for (int b = 0; b < p.buffType.Length; b++) { p.buffType[b] = 0; p.buffTime[b] = 0; }
 		}
 
+		private static readonly bool _cmdTrack = Environment.GetEnvironmentVariable("LEVY_HARNESS_CMDTRACK") == "1";
+		internal static bool CmdTrack => _cmdTrack;
+		private static int _cmdMoves;
+		private static string _cmdLast, _cmdLastWeapon; private static int _cmdLastStage;
+		private static readonly Dictionary<string, int> _cmdDiff = new();
+		private static string CmdSnapshot(Player p)
+		{
+			var sb = new System.Text.StringBuilder();
+			foreach (var f in typeof(Player).GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public))
+			{
+				Type t = f.FieldType;
+				if (!(t.IsPrimitive || t == typeof(Vector2) || t == typeof(string) || t.IsEnum)) continue;
+				if (f.Name is "name" or "statMana" or "lifeRegenTime" or "lifeRegenCount" or "manaRegenCount" or "manaRegenDelay" or "manaRegen" or "breath" or "breathCD" or "lifeRegen" or "buffTime") continue;
+				sb.Append(f.Name).Append('=').Append(f.GetValue(p)).Append('\n');
+			}
+			return sb.ToString();
+		}
 		private void KeepSite()
 		{
 			Player p = Main.player[0];
@@ -406,6 +424,24 @@ namespace Levy.Common.Testing
 			if (_accNames != null && ModLoader.HasMod("ThoriumMod") && ThoriumCompatSystem.Active) HarnessThoriumProbe.SetHealBonus(p, 1);
  // what a Medical Bag gives; the stand-in's gear is never updated
 			p.lifeRegenTime = 0; p.lifeRegenCount = 0; // natural regeneration speeds up the longer a player goes unhurt; pin it so every window sees the same slow regen and a heal stands out
+			if (_ph == Ph.Run && _cmdTrack)
+			{
+				string snap = null;
+				try { snap = CmdSnapshot(p); } catch { }
+				if (snap != null && _cmdLast != null && _cmdLastWeapon == _cur?.Weapon?.Name && _cmdLastStage == _stage)
+				{
+					var a = _cmdLast.Split('\n'); var b = snap.Split('\n');
+					for (int i = 0; i < Math.Min(a.Length, b.Length); i++) if (a[i] != b[i]) { string key = _stage + "|" + _cur?.Weapon?.Name + "|" + b[i].Split('=')[0]; _cmdDiff[key] = (_cmdDiff.TryGetValue(key, out int c0) ? c0 : 0) + 1; if (_cmdDiff[key] == 1) Mod.Logger.Info($"CMDDIFF first {key}: {a[i]} -> {b[i]} (tick {_phTick})"); }
+				}
+				_cmdLast = snap; _cmdLastWeapon = _cur?.Weapon?.Name; _cmdLastStage = _stage;
+				// the commander is pinned each tick, so whatever the tick did to it shows here before the pin: log any velocity or drift (a weapon that pushes its owner)
+				Vector2 pin0 = new Vector2(_cx * 16f - (_stage == 1 ? 10f : 4 * 16f), FloorY * 16f - p.height);
+				if (p.velocity.LengthSquared() > 1e-4f || Vector2.DistanceSquared(p.position, pin0) > 1e-2f)
+				{
+					_cmdMoves++;
+					if (_cmdMoves <= 40) Mod.Logger.Info($"CMDMOVE stage={_stage} weapon={_cur?.Weapon?.Name} tick={_phTick} vel={p.velocity} drift={p.position - pin0}");
+				}
+			}
 			p.position = new Vector2(_cx * 16f - (_stage == 1 ? 10f : 4 * 16f) , FloorY * 16f - p.height);
 			if (HarnessOnHit.Enabled && _stage == 0 && HarnessOnHit.FarTiles > 0) p.position = new Vector2(_cx * 16f - HarnessOnHit.FarTiles * 16f, HarnessOnHit.FarY * 16f); // far and high above the soldier
 			p.velocity = Vector2.Zero;

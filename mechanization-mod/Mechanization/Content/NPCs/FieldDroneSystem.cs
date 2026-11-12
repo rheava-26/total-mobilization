@@ -89,15 +89,26 @@ namespace Mechanization.Content.NPCs
 		}
 
 		/// <summary>Server / single player: <see cref="FindPad"/> then <see cref="PlaceNew"/>. Returns the NPC slot, or -1 when there is no room or no free NPC slot.</summary>
-		public int TryPlace(IEntitySource source, Vector2 spot)
+		public int TryPlace(IEntitySource source, Vector2 spot) => TryPlace(source, spot, out _);
+
+		/// <summary>As <see cref="TryPlace(IEntitySource, Vector2)"/>, and says why it refused: the UI key of a one-line reason ("" when it placed one).</summary>
+		public int TryPlace(IEntitySource source, Vector2 spot, out string refusal)
 		{
+			refusal = "";
 			if (Main.netMode == NetmodeID.MultiplayerClient) return -1;
-			if (!FindPad(spot, out Vector2 pad)) return -1;
+			if (!FindPad(spot, out Vector2 pad)) { refusal = "Mods.Mechanization.UI.DroneNoRoom"; return -1; }
 			int active = 0;
 			for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) active++;
-			if (Main.maxNPCs - active < (Levy.Common.Budget.CrowdBudget.On ? System.Math.Min(F.NpcSlotReserve, Levy.Common.Budget.CrowdBudget.ReservedNpc) : F.NpcSlotReserve)) { Levy.Common.Budget.CrowdBudget.NoteDroneGate(); return -1; }
-			return PlaceNew(source, pad);
+			// The player's own drone is a toy they paid for: it is refused only when the NPC array is about to be full (the army's reserve stands down garrison drones, never this one).
+			if (Main.maxNPCs - active < F.NpcSlotFloor) { Levy.Common.Budget.CrowdBudget.NoteDroneGate(); refusal = "Mods.Mechanization.UI.DroneNoSlots"; _lastFree = Main.maxNPCs - active; return -1; }
+			int idx = PlaceNew(source, pad);
+			if (idx < 0) refusal = "Mods.Mechanization.UI.DroneNoRoom";
+			return idx;
 		}
+
+		private int _lastFree;
+		/// <summary>The text for a refusal key from <see cref="TryPlace(IEntitySource, Vector2, out string)"/>.</summary>
+		public string RefusalText(string key) => key.EndsWith("DroneNoSlots") ? Terraria.Localization.Language.GetTextValue(key, _lastFree, F.NpcSlotFloor) : Terraria.Localization.Language.GetTextValue(key);
 
 		/// <summary>
 		/// Server: a client asked to set a drone down at <paramref name="spot"/>. Validates the sender (alive, near the spot, holding the drone, not spamming), places it, and when it cannot be placed
@@ -114,9 +125,9 @@ namespace Mechanization.Content.NPCs
 			if (_lastPlace[who] != 0 && now - _lastPlace[who] < (uint)F.PlaceMinGapTicks && now >= _lastPlace[who]) return false;
 			_lastPlace[who] = now == 0 ? 1u : now;
 
-			if (TryPlace(new EntitySource_ItemUse(player, player.HeldItem), spot) >= 0) return true;
+			if (TryPlace(new EntitySource_ItemUse(player, player.HeldItem), spot, out string refusal) >= 0) return true;
 			Item.NewItem(new EntitySource_Misc("Mechanization:DroneRefund"), player.getRect(), ModContent.ItemType<DroneItem>());
-			Terraria.Chat.ChatHelper.SendChatMessageToClient(Terraria.Localization.NetworkText.FromKey("Mods.Mechanization.UI.DroneNoRoom"), new Color(255, 190, 110), player.whoAmI);
+			Terraria.Chat.ChatHelper.SendChatMessageToClient(refusal.EndsWith("DroneNoSlots") ? Terraria.Localization.NetworkText.FromKey(refusal, _lastFree, F.NpcSlotFloor) : Terraria.Localization.NetworkText.FromKey("Mods.Mechanization.UI.DroneNoRoom"), new Color(255, 190, 110), player.whoAmI);
 			return false;
 		}
 

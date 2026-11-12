@@ -567,7 +567,10 @@ namespace Levy.Common.Weapons
 				if (!ReferenceEquals(d.inventory[0], item)) d.inventory[0] = item;
 				d.selectedItem = 0;
 				thoriumPrev = OwnerPuppet.SwapThorium(d); // experiment (harness-gated): SetLocalThoriumPlayer(dummy's) AFTER d.whoAmI == Main.myPlayer (its own guard)
+				bool track = Testing.CombatHarness.CmdTrack; Vector2 dv0 = track ? d.velocity : default, cv0 = track ? Main.player[0].velocity : default, cp0 = track ? Main.player[0].position : default;
 				CombinedHooks.ModifyShootStats(d, item, ref pos, ref v, ref type, ref dmg, ref kb);
+				if (track && (d.velocity != dv0 || Main.player[0].velocity != cv0 || Main.player[0].position != cp0))
+					ModContent.GetInstance<Levy>()?.Logger.Info($"[CmdTrack] ModifyShootStats of {item.Name}: dummy.velocity {dv0}->{d.velocity}; whoAmI={d.whoAmI} sameAsSlot={ReferenceEquals(Main.player[d.whoAmI], d)}; player0.velocity {cv0}->{Main.player[0].velocity}; player0.position {cp0}->{Main.player[0].position}");
 				// Hold-to-fire weapons (modded channeled guns) only spawn their shot while the owner's use button is down: the soldier is firing.
 				d.controlUseItem = true;
 				var source = new EntitySource_ItemUse_WithAmmo(d, item, ammoItemId);

@@ -67,6 +67,7 @@ namespace Mechanization.Common
 			try { Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			_running = false;
+			try { Levy.Common.Testing.SummonWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[MechWorld] Levy summon world check threw " + e.GetType().Name + ": " + e.Message); } // Levy's own world check runs after this one: the server stops right below
 			_mod.Logger.Info($"[MechWorld] self-check pass={_pass} fail={_fail}");
 			if (Environment.GetEnvironmentVariable("LEVY_MECHWORLD_EXIT") == "1") { try { Netplay.SaveOnServerExit = false; Netplay.Disconnect = true; } catch { } }
 		}

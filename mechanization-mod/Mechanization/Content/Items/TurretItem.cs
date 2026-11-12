@@ -19,12 +19,9 @@ namespace Mechanization.Content.Items
 	/// </summary>
 	public class TurretItem : ModItem
 	{
-		// A valid vanilla icon so no new art is needed.
-		public override string Texture => "Terraria/Images/Item_" + ItemID.Cannon;
-
 		public override void SetDefaults()
 		{
-			Item.width = 32; Item.height = 24; Item.maxStack = 9999;
+			Item.width = 36; Item.height = 40; Item.maxStack = 9999;
 			Item.useStyle = ItemUseStyleID.Swing; Item.useTime = 25; Item.useAnimation = 25; Item.useTurn = true;
 			Item.autoReuse = false; Item.consumable = true;
 			Item.rare = ItemRarityID.Green; Item.value = Item.sellPrice(silver: 20);
@@ -40,7 +37,7 @@ namespace Mechanization.Content.Items
 
 			// TurretSystem settles the turret onto the ground AND registers it in the world save, so it survives a reload; a destroyed turret is dropped from that set.
 			int idx = TurretSystem.Instance?.TryPlace(new EntitySource_ItemUse(player, Item), spot) ?? -1;
-			if (idx < 0) Main.NewText(Language.GetTextValue("Mods.Mechanization.UI.TurretNoRoom"), 255, 190, 110);
+			if (idx < 0) Main.NewText(Language.GetTextValue(TurretSystem.AnyFreeNpcSlot() ? "Mods.Mechanization.UI.TurretNoRoom" : "Mods.Mechanization.UI.TurretNoSlots"), 255, 190, 110);
 			return idx >= 0;
 		}
 

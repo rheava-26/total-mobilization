@@ -88,7 +88,13 @@ namespace Mechanization.Content.Relay
 			player.cursorItemIconID = ModContent.ItemType<ArmoryRelayItem>();
 			ArmoryRelayTE relay = RelayAt(i, j);
 			ArmoryTE a = relay?.Linked;
-			if (a == null) { player.cursorItemIconText = Language.GetTextValue("Mods.Mechanization.UI.RelayUnlinked", (int)R.LinkReachTiles); return; }
+			if (relay == null) { player.cursorItemIconText = Language.GetTextValue("Mods.Mechanization.UI.RelayNoEntity"); return; }
+			if (a == null)
+			{
+				ArmoryRelays.Diagnose(relay.Center, out int inReach, out int pylons, out int onNet);
+				player.cursorItemIconText = Language.GetTextValue("Mods.Mechanization.UI.RelayUnlinked", (int)R.LinkReachTiles, inReach, (int)Levy.Common.LevyConstants.PylonShareRadius, pylons, onNet);
+				return;
+			}
 			int dist = (int)Math.Round(Vector2.Distance(relay.Center, a.Center) / 16f);
 			player.cursorItemIconText = Language.GetTextValue("Mods.Mechanization.UI.RelayLinked", a.Position.X, a.Position.Y, dist, (int)R.ServeRadiusTiles);
 		}

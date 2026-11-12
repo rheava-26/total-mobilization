@@ -152,6 +152,8 @@ namespace Mechanization.Common
 			public const int PlaceMinGapTicks = 10;
 			/// <summary>No drone is set down while fewer than this many NPC slots are free.</summary>
 			public const int NpcSlotReserve = 30;
+			/// <summary>A player-placed drone is refused only when fewer than this many NPC slots are free (the NPC array is nearly full); the army's own reserve never refuses it.</summary>
+			public const int NpcSlotFloor = 8;
 			/// <summary>How close (px) a player must be for the server to accept a pack-up request (a flying drone patrols above the ground).</summary>
 			public const float PackReachPx = 30f * TilePx;
 

@@ -62,7 +62,7 @@ namespace Mechanization.Content.NPCs
 			_barracksIds.Clear(); _listStamp = 0; _cursor = 0; _sweepTimer = 0;
 			_nextLaunch.Clear(); _all.Clear(); _mine.Clear();
 			Array.Clear(_lastOrder, 0, _lastOrder.Length);
-			_lastWarnTick = 0; _announcedFirst = false;
+			_lastWarnTick = 0; _announcedFirst = false; _whyNot.Clear();
 		}
 
 		// =====================================================================================================
@@ -162,10 +162,11 @@ namespace Mechanization.Content.NPCs
 			}
 
 			if (_mine.Count >= D.PerBarracksCap) return;
-			if (Main.maxNPCs - activeNpcs < ReserveSlots) { CrowdBudget.NoteDroneGate(); return; } // never crowd soldiers or an invasion out of the NPC array (the army entity budget's reserve: 40 free NPC slots by default)
+			if (Main.maxNPCs - activeNpcs < ReserveSlots) { CrowdBudget.NoteDroneGate(); WhyNot(barracks, "Mods.Mechanization.UI.DroneGarrisonNoSlots", Main.maxNPCs - activeNpcs, ReserveSlots); return; } // never crowd soldiers or an invasion out of the NPC array (the army entity budget's reserve: 40 free NPC slots by default)
 
-			Item weapon = armory.LendDroneWeapon(ArmoryReserve(armory));
-			if (weapon == null) { _nextLaunch[barracks.ID] = now + (uint)D.NoSurplusBackoffTicks; return; }
+			int reserve = ArmoryReserve(armory);
+			Item weapon = armory.LendDroneWeapon(reserve);
+			if (weapon == null) { _nextLaunch[barracks.ID] = now + (uint)D.NoSurplusBackoffTicks; WhyNot(barracks, "Mods.Mechanization.UI.DroneGarrisonNoSpare", reserve, 0); return; }
 			Item ammo = DroneArsenal.TakesAmmo(weapon) ? armory.LendDroneAmmo(weapon.useAmmo, D.AmmoKeepRounds) : null; // none to spare: the drone fires the default round
 			if (Launch(barracks, armory, weapon, ammo, FreeSlot(_mine)) < 0)
 			{
@@ -421,6 +422,22 @@ namespace Mechanization.Content.NPCs
 		}
 
 		/// <summary>Tells the ordering player what happened: straight to chat in single player, to that client in multiplayer.</summary>
+		/// <summary>The last tick each Barracks told its player why no drone launched (one line a minute at most, and only to a player close enough to be at the base).</summary>
+		private readonly Dictionary<int, uint> _whyNot = new();
+
+		/// <summary>One short line to the nearest player when the garrison could not launch a drone, so a silent refusal is never a mystery. {0} and {1} are the two numbers the line quotes.</summary>
+		private void WhyNot(BarracksTE barracks, string key, int a, int b)
+		{
+			uint now = Main.GameUpdateCount;
+			if (_whyNot.TryGetValue(barracks.ID, out uint last) && now >= last && now - last < 3600u) return;
+			int who = ShotKit.PickCommander(barracks.Center);
+			if (who < 0 || Main.player[who].dead || Vector2.DistanceSquared(Main.player[who].Center, barracks.Center) > 120f * 120f * 256f) return;
+			_whyNot[barracks.ID] = now;
+			if (Main.dedServ) ChatHelper.SendChatMessageToClient(NetworkText.FromKey(key, a, b), new Color(150, 220, 255), who);
+			else if (who == Main.myPlayer) Main.NewText(Language.GetTextValue(key, a, b), 150, 220, 255);
+			Mod.Logger.Info($"Mechanization: garrison of Barracks {barracks.ID} launched no drone ({key.Substring(key.LastIndexOf('.') + 1)} {a} {b}).");
+		}
+
 		private static bool Say(Player player, string key, int count)
 		{
 			if (Main.dedServ) ChatHelper.SendChatMessageToClient(NetworkText.FromKey(key, count), new Color(150, 220, 255), player.whoAmI);

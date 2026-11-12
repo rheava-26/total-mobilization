@@ -75,6 +75,27 @@ namespace Mechanization.Content.Relay
 			return Link(relay.Center, _armories, LivePylonNear(relay.Center), LiveOnNetwork);
 		}
 
+		/// <summary>What an unlinked relay at <paramref name="c"/> looked at: the Armories within link reach, the pylons within Levy's pylon-share radius, and the Armories on a pylon network anywhere. Read-only; for the hover text.</summary>
+		public static void Diagnose(Vector2 c, out int armoriesInReach, out int pylonsNear, out int armoriesOnNetwork)
+		{
+			Gather();
+			armoriesInReach = 0; armoriesOnNetwork = 0; pylonsNear = 0;
+			float reach = R.LinkReachTiles * PxPerTile; reach *= reach;
+			foreach (ArmoryTE a in _armories)
+			{
+				if (Vector2.DistanceSquared(c, a.Center) <= reach) armoriesInReach++;
+				if (LiveOnNetwork(a)) armoriesOnNetwork++;
+			}
+			var pylons = ArmoryLink.Pylons();
+			if (pylons == null) return;
+			float lim = Levy.Common.LevyConstants.PylonShareRadius * PxPerTile; lim *= lim;
+			for (int i = 0; i < pylons.Count; i++)
+			{
+				var p = pylons[i].PositionInTiles;
+				if (Vector2.DistanceSquared(c, new Vector2((p.X + 1.5f) * PxPerTile, (p.Y + 2f) * PxPerTile)) <= lim) pylonsNear++;
+			}
+		}
+
 		private static void Gather()
 		{
 			_relays.Clear(); _armories.Clear();

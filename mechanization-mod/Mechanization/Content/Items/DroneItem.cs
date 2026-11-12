@@ -35,8 +35,9 @@ namespace Mechanization.Content.Items
 			Vector2 spot = Main.MouseWorld;
 			if (Main.netMode == NetmodeID.MultiplayerClient) { MechPackets.SendPlaceDrone(spot); return true; } // the server places it (and refunds the item if there is no room)
 
-			int idx = FieldDroneSystem.Instance?.TryPlace(new EntitySource_ItemUse(player, Item), spot) ?? -1;
-			if (idx < 0) Main.NewText(Language.GetTextValue("Mods.Mechanization.UI.DroneNoRoom"), 255, 190, 110);
+			string refusal = "";
+			int idx = FieldDroneSystem.Instance?.TryPlace(new EntitySource_ItemUse(player, Item), spot, out refusal) ?? -1;
+			if (idx < 0) Main.NewText(FieldDroneSystem.Instance?.RefusalText(string.IsNullOrEmpty(refusal) ? "Mods.Mechanization.UI.DroneNoRoom" : refusal) ?? Language.GetTextValue("Mods.Mechanization.UI.DroneNoRoom"), 255, 190, 110);
 			return idx >= 0;
 		}
 

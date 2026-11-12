@@ -55,7 +55,8 @@ Configs: {
 
 UI: {
 	RelayLinked: Armory at {0}, {1}. {2} tiles away. Serves turrets and drones within {3} tiles.
-	RelayUnlinked: No armory within {0} tiles. Place the relay by a pylon on your network.
+	RelayUnlinked: No armory linked. Armories within {0} tiles: {1}. Pylons within {2} tiles: {3}. Armories on a pylon network: {4}.
+	RelayNoEntity: This relay has no tile entity. Pick it up and place it again.
 	TurretDismantle: Dismantle
 	TurretChatMounted: Weapon: {0}. Reach {2} tiles. Armories: {1}.
 	TurretChatNoWeapon: No weapon. Plain bullet, reach {0} tiles. No spare ranged weapon.
@@ -82,6 +83,10 @@ UI: {
 	DroneNone: This Barracks has no drones.
 	DronePackUp: Pack up
 	DroneNoRoom: No room for a drone there.
+	DroneNoSlots: No drone placed. {0} free NPC slots, {1} needed.
+	DroneGarrisonNoSlots: No drone launched. {0} free NPC slots, {1} needed.
+	DroneGarrisonNoSpare: No drone launched. The army keeps the best {0} ranged weapons in the armory.
+	TurretNoSlots: No turret placed. No free NPC slot.
 	DroneFieldMounted: Weapon: {0}. Battery {1}%. Armories: {2}.
 	DroneFieldNoWeapon: No weapon. Plain bullet. Battery {0}%. No spare ranged weapon.
 	DroneFieldNoArmory: No weapon. Plain bullet. Battery {0}%. No armory in reach.

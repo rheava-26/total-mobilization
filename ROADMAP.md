@@ -365,6 +365,7 @@
   - 11-12: Eve vindicated on Silva (Blossom Flux) and on Yharim (Rancor). Lore chat only, nothing to build. necfix builder still running.
   - 11-12: full Silva sweep of mod text + wiki done (all lines found are in scratchpad lore reference).
   - 11-12: Silva armor recipe read as lore (Planty Mush + Dragonfolly feather + fused souls). Chat only.
+  - 11-12: lore chat (Primordial Wyrm blessed by Silva; remains imply not the Devourer). Chat only.
   - Terra Colony (Steam 3832587738; tML 1.4.4 total conversion, ~2.5k subs, ~10 days old, no public source/license listed). Proposed to Eve: daily rhythm (folds into freerein), friendships + grief, funerals at the barracks; villages-with-leaders ↔ her neutral villages.
   - research: the RimWorld-like tML mod ("Terra Colonies"/"Rim Colony") — features, license, ideas for off-duty levies; top tML mods by subscribers + which Levy should integrate with.
   - NEXT (after travellab, they need movement): `freerein` — leash (no running to the map edge / falling into holes / exploring the underground), idle activities with vanilla props (kites, marshmallows on a stick, sitting, campfire); `banners` — HOLDING BANNER item: levies go to the nearest banner and hold it (+defense, +DR, +KB resist), climb towers to reach it. Firing hole / bunker walls: she withdrew ("never mind").

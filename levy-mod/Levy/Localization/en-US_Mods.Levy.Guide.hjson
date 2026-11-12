@@ -78,7 +78,7 @@ Pages: {
 		Title: What each order does
 		Body:
 			'''
-			Follow me and Hold here move the line. Return to barracks sends Regulars home.
+			Follow me and Hold here move the line. Hold the banners stands Regulars at the nearest Holding Banner, where they take less damage. Return to barracks sends Regulars home.
 			Hold fire stops all shooting. Fire at will turns it back on.
 			Spread out keeps wide gaps against area attacks. Close up packs the line tight around you.
 			Search & destroy hunts outward from the settlement, and Regulars more than 60 tiles from you and out of sight teleport to you. Free rein lets Regulars roam the whole region and follow the fighting, and they never teleport.

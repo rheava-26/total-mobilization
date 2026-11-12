@@ -1,0 +1,18 @@
+# Hold the banners: 12 levies of mixed gear are given the order with a Holding Banner placed at the goal (placed with WorldGen.PlaceObject, like the player's click).
+# A levy ARRIVES when it stands at its own stand inside the banner's aura (and never teleported). Cells: the banner on the ground (control), on a platform floor 14 rows up (platform stairs), on a platform floor on top of a
+# 35-row tower with platform stairs, and on top of a sheer 35-row stone pillar (only hooks, wings and climbs get up).
+#   travelab run levy-mod/lab/travel/specs/banner_towers.yaml --set world='{seed: 80808, size: 2}'
+name: banner_towers
+world: {seed: 11111, size: 2}
+start: spawn
+order: banner
+levies: 12
+gear: {bare: 3, boots: 2, wings: 2, hook: 2, prehm: 1, hm: 1, endgame: 1}
+runs: 12
+spread: 120
+timeout: 300
+goals:
+  - {name: ground, goal: "east:60"}
+  - {name: platform-floor-14, goal: tower, edit: [{tower: {dx: 150, height: 14, stairs: 3}}]}
+  - {name: tower-35-stairs, goal: tower, edit: [{tower: {dx: 150, height: 35, stairs: 3}}]}
+  - {name: pillar-35, goal: tower, edit: [{tower: {dx: 150, height: 35, stairs: 0, top: brick}}]}

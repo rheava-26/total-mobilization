@@ -536,7 +536,8 @@ namespace Levy.Common.Testing
 			_tvPrevPl = Main.player[0].Center;
 			OffscreenHop.LabViewers = new List<Vector2> { Main.player[0].Center }; //HOP
 			TvPinCommander();
-			if (_tvTick == 120 && _tvMode == "map")
+			if (_tvTick == 120 && _tvMode == "map" && _tvBannerMode) TvBannerOrder();
+			else if (_tvTick == 120 && _tvMode == "map")
 			{
 				int took = MapOrder.Issue(Main.player[0], _tvGx, _tvGy);
 				Mod.Logger.Info($"HARNESS-TRAVEL: order issued; took={took}");
@@ -620,15 +621,15 @@ namespace Levy.Common.Testing
 				if (l.ArriveTick < 0)
 				{
 					float dxT = Math.Abs(c.X - goalPx) / 16f, dyT = Math.Abs(n.Bottom.Y - goalY) / 16f;
-					if (dxT <= 12f && dyT <= 10f) l.ArriveTick = _tvTick - 120;
-					else if (_tvMode == "map" && rec.Order != SoldierOrder.GoTo && l.GaveUp < 0) { l.GaveUp = _tvTick - 120; _tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) ORDER ENDED away from goal at {offNow:0} ({TvFeature(offNow)}) now={rec.Order}"); }
+					if (_tvBannerMode ? TvBannerArrived(sn, n) : (dxT <= 12f && dyT <= 10f)) l.ArriveTick = _tvTick - 120;
+					else if (_tvMode == "map" && rec.Order != (_tvBannerMode ? SoldierOrder.HoldBanners : SoldierOrder.GoTo) && l.GaveUp < 0) { l.GaveUp = _tvTick - 120; _tvEvents.AppendLine($"t={_tvTick} {rec.Name}({l.Gear}) ORDER ENDED away from goal at {offNow:0} ({TvFeature(offNow)}) now={rec.Order}"); }
 					if (l.ArriveTick < 0 && l.GaveUp < 0) allDone = false;
 				}
 				if (_tvDbgFrom >= 0 && _tvTick >= _tvDbgFrom && _tvTick <= _tvDbgTo && _tvTick % _tvDbgStep == 0 && (_tvDbgWho < 0 || l.Idx == _tvDbgWho || _tv.IndexOf(l) == _tvDbgWho)) _tvEvents.AppendLine($"DBG t={_tvTick} {rec.Name} pos=({n.Center.X / 16f - TvX0:0.00},{TvG - n.Bottom.Y / 16f:0.00}) v=({n.velocity.X:0.00},{n.velocity.Y:0.00}) fly={sn.IsFlying} wing={sn.WingTime} blocked={sn.MoveBlocked} why={sn.StillReason()} {sn.DebugRoute()} {TvTiles(n)} solidL={Collision.SolidCollision(n.position + new Vector2(-2f, 0f), n.width, n.height)} solidR={Collision.SolidCollision(n.position + new Vector2(2f, 0f), n.width, n.height)} solidUp={Collision.SolidCollision(n.position + new Vector2(0f, -2f), n.width, n.height)} solidNow={Collision.SolidCollision(n.position, n.width, n.height)} tcolL={Collision.TileCollision(n.position, new Vector2(-3f, 0f), n.width, n.height, false, false, 1).X:0.0} tcolR={Collision.TileCollision(n.position, new Vector2(3f, 0f), n.width, n.height, false, false, 1).X:0.0} col={n.collideX}/{n.collideY} pos=({n.position.X:0.0},{n.position.Y:0.0})");
 				if (_tvTick % 30 == 0) _tvTrace.AppendLine($"{_tvTick},{rec.Name},{l.Gear},{offNow:0.0},{TvG - c.Y / 16f:0.0},{(int)sn.State}");
 			}
 			if (_tvTick % 600 == 0) Mod.Logger.Info($"HARNESS-TRAVEL: t={_tvTick} arrived={_tv.FindAll(l => l.ArriveTick >= 0).Count}/{_tv.Count} medOffset={Median():0}");
-			if ((allDone && _tvTick > 300) || _tvTick >= _tvCap + 120) TvFinish();
+			if ((allDone && _tvTick > 300 && !TvHoldPhase()) || _tvTick >= _tvCap + 120) TvFinish();
 		}
 
 		/// <summary>Is this point inside the 2400x1400 px box around any active player (the harness's own test, not the mod's).</summary>
@@ -656,6 +657,7 @@ namespace Levy.Common.Testing
 		{
 			OffscreenHop.LabViewers = null; OffscreenHop.LabNoHop = false; //HOP
 			double ms = _tvWatch.Elapsed.TotalMilliseconds;
+			if (_tvBannerMode) TvBannerReport();
 			var sb = new StringBuilder();
 			sb.AppendLine("name,gear,arrived,arriveSec,gaveUpSec,straightTiles,pathTiles,ratio,stuckSec,stuckEps,stallSec,stallEps,teleports,falls,fallTiles,wetSec,deepSec,bodyGone,endOffset,endFeature,endState,endOrder,stuckWhere,stallWhere,visTele,climbEdges,hkCasts,hkLatches,hkChains,hkAborts,hkReleases,hkLandings,rtCasts,rtBans,stepBacks,endElev,lavaSec,lavaEntries,maxDepth,meanDepth,flyShare,airShare,travSec");
 			foreach (var l in _tv)

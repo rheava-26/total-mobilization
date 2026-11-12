@@ -170,6 +170,7 @@ namespace Levy.Content.NPCs
 				{
 					case SoldierOrder.Follow: State = SoldierState.Follow; break;
 					case SoldierOrder.Hold: HoldPosition = true; State = SoldierState.Idle; break;
+					case SoldierOrder.HoldBanners: HoldPosition = true; State = SoldierState.Idle; break;
 					case SoldierOrder.Patrol: State = SoldierState.Patrol; break;
 					case SoldierOrder.ReturnToBarracks: State = SoldierState.ReturnHome; break;
 					case SoldierOrder.SearchDestroy: State = SoldierState.SearchDestroy; break;
@@ -206,6 +207,7 @@ namespace Levy.Content.NPCs
 			{
 				case SoldierOrder.Follow: HoldPosition = false; SetState(SoldierState.Follow); break;
 				case SoldierOrder.Hold: HoldPosition = true; SetState(SoldierState.Idle); break;
+				case SoldierOrder.HoldBanners: HoldPosition = true; Record.HoldPos = NPC.Center; _bnHasPost = false; SetState(SoldierState.Idle); break; // walks to its banner stand from the next think (SoldierNPC.Banner.cs); with no banner this is Hold
 				case SoldierOrder.Patrol: HoldPosition = false; _patrolLeg = 0; _patrolPauseUntil = 0; SetState(SoldierState.Patrol); break;
 				case SoldierOrder.ReturnToBarracks: HoldPosition = false; SetState(SoldierState.ReturnHome); break;
 				case SoldierOrder.SearchDestroy: HoldPosition = false; SetState(SoldierState.SearchDestroy); break;
@@ -540,6 +542,7 @@ namespace Levy.Content.NPCs
 					return Home == null || NearHome() ? SoldierState.Idle : SoldierState.ReturnHome;
 				}
 				case SoldierOrder.Hold: return SoldierState.Idle;
+				case SoldierOrder.HoldBanners: return SoldierState.Idle;
 				case SoldierOrder.Patrol: return SoldierState.Patrol;
 				case SoldierOrder.SearchDestroy: return SoldierState.SearchDestroy;
 				case SoldierOrder.FreeRein: return SoldierState.FreeRein;
@@ -558,7 +561,7 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>A regular under Return (not yet home) or a map order: it leaves the fight rather than standing in it.</summary>
-		private bool MarchingOrder => IsRegular && Record != null && (Record.Order == SoldierOrder.GoTo || (Record.Order == SoldierOrder.ReturnToBarracks && Home != null && !NearHome()));
+		private bool MarchingOrder => IsRegular && Record != null && (Record.Order == SoldierOrder.GoTo || BannerMarching || (Record.Order == SoldierOrder.ReturnToBarracks && Home != null && !NearHome()));
 
 		private void MarchWhileEngaged(int now, float nearestHostileTiles)
 		{
@@ -2134,6 +2137,7 @@ namespace Levy.Content.NPCs
 		{
 			HangWatch.Brain(NPC.whoAmI, 8);
 			if (Record.Order == SoldierOrder.GoTo && ThinkMapOrder(now)) return; // map-point march (Common/Observe/SoldierNPC.Observe.cs)
+			if (Record.Order == SoldierOrder.HoldBanners && ThinkBannerOrder(now)) return; // walk to the banner stand and stay (SoldierNPC.Banner.cs)
 			if (State == SoldierState.Haul) { ThinkHaul(now, nearestHostileTiles); return; }
 
 			// Re-derive the state from the standing order every think so a returned commander, a finished walk home,

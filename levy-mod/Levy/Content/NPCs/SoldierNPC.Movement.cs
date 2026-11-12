@@ -1010,7 +1010,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Snaps the body onto its barracks muster point (server/single player). The brain then sees it arrived and stands it down.</summary>
 		/// <summary>A map-point march runs in State Follow; the catch-up teleports toward the commander must not fire on it (it is meant to leave the commander far behind).</summary>
 		private static readonly bool GoToTeleportsOld = Environment.GetEnvironmentVariable("LEVY_GOTO_TELE") == "1"; // harness: restore the old behaviour for before/after
-		private bool OnMapMarch => !GoToTeleportsOld && Record != null && Record.Order == SoldierOrder.GoTo;
+		private bool OnMapMarch => !GoToTeleportsOld && Record != null && (Record.Order == SoldierOrder.GoTo || Record.Order == SoldierOrder.HoldBanners); // the Hold the Banners march is a map march too
 
 		private bool TeleportHome()
 		{

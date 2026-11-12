@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
+using Terraria.Enums;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Banners;
@@ -68,15 +69,36 @@ namespace Levy.Common.Testing
 		/// <summary>Places the banner on the goal's floor (tile row <c>_tvGy + 3</c>), the middle column of it, and registers its tile entity.</summary>
 		private void TvBannerPlace()
 		{
-			int floorRow = _tvGy + 3, x0 = _tvGx - 1, topY = floorRow - LevyConstants.Banner.Height;
-			for (int xx = x0; xx < x0 + LevyConstants.Banner.Width; xx++) for (int y = topY; y < floorRow; y++) { Tile t = Main.tile[xx, y]; if (t.HasTile && !Main.tileSolid[t.TileType]) TvAir(xx, y); }
-			bool ok = WorldGen.PlaceObject(x0, floorRow - 1, ModContent.TileType<HoldingBannerTile>(), true, 0);
-			Tile tl = Main.tile[x0, topY];
-			bool tile = tl.HasTile && tl.TileType == ModContent.TileType<HoldingBannerTile>() && tl.TileFrameX == 0 && tl.TileFrameY == 0;
+			// the click of a player: the banner goes where the floor takes it (two solid columns under it, four clear rows above); on uneven ground the nearest such place within 12 columns of the goal
+			int floorRow0 = _tvGy + 3, w = LevyConstants.Banner.Width, h = LevyConstants.Banner.Height;
+			bool ok = false; int px = -1, pr = -1;
+			for (int d = 0; d <= 12 && !ok; d++)
+				for (int sgn = -1; sgn <= 1 && !ok; sgn += 2)
+				{
+					if (d == 0 && sgn == 1) continue;
+					int x0 = _tvGx - 1 + sgn * d;
+					for (int dr = -2; dr <= 2 && !ok; dr++)
+					{
+						int fr = floorRow0 + dr; bool floor = true, clear = true;
+						for (int xx = x0; xx < x0 + w; xx++)
+						{
+							Tile ft = Main.tile[xx, fr];
+							if (!ft.HasTile || !(Main.tileSolid[ft.TileType] || Main.tileSolidTop[ft.TileType]) || ft.IsHalfBlock || ft.Slope != SlopeType.Solid) floor = false;
+							for (int y = fr - h; y < fr; y++) { Tile t = Main.tile[xx, y]; if (t.HasTile && Main.tileSolid[t.TileType]) clear = false; }
+						}
+						if (!floor || !clear) continue;
+						for (int xx = x0; xx < x0 + w; xx++) for (int y = fr - h; y < fr; y++) { Tile t = Main.tile[xx, y]; if (t.HasTile) TvAir(xx, y); }
+						ok = WorldGen.PlaceObject(x0, fr - 1, ModContent.TileType<HoldingBannerTile>(), true, 0);
+						if (ok) { px = x0; pr = fr; }
+					}
+				}
+			int topY = pr - h;
+			Tile tl = ok ? Main.tile[px, topY] : default;
+			bool tile = ok && tl.HasTile && tl.TileType == ModContent.TileType<HoldingBannerTile>() && tl.TileFrameX == 0 && tl.TileFrameY == 0;
 			int te = -1;
-			if (tile) { te = ModContent.GetInstance<HoldingBannerTE>().Place(x0, topY); BannerSystem.Changed(); _tvBannerTop = new Point16(x0, topY); }
-			_tvEvents.AppendLine($"BANNER placed={ok} tile={tile} te={te} top=({x0},{topY}) floorRow={floorRow}");
-			Mod.Logger.Info($"HARNESS-TRAVEL: banner placed={ok} tile={tile} te={te} at ({x0},{topY})");
+			if (tile) { te = ModContent.GetInstance<HoldingBannerTE>().Place(px, topY); BannerSystem.Changed(); _tvBannerTop = new Point16(px, topY); }
+			_tvEvents.AppendLine($"BANNER placed={ok} tile={tile} te={te} top=({px},{topY}) floorRow={pr} goalX={_tvGx}");
+			Mod.Logger.Info($"HARNESS-TRAVEL: banner placed={ok} tile={tile} te={te} at ({px},{topY})");
 		}
 
 		private void TvBannerClear()

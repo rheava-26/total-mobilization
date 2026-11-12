@@ -27,7 +27,7 @@ namespace Mechanization.Common
 	/// </summary>
 	public class MechWorldCheck : ModSystem
 	{
-		private static bool _armed, _done; private static int _calls;
+		private static bool _armed, _done, _running; private static int _calls;
 		private static MethodInfo _update;
 		private static int _pass, _fail;
 		private static Mod _mod;
@@ -42,6 +42,14 @@ namespace Mechanization.Common
 			Main.OnTickForThirdPartySoftwareOnly += Drive;
 		}
 
+		// A dedicated server has no local player (Main.myPlayer 255), but a single-player game has one, and the drone's rounds are owned by it. A full Player.Update of slot 0 as the local player needs a client,
+		// so the stand-in makes slot 0 local only while NPCs and projectiles update, which is where the drone fires and where its round flies.
+		private static NPC _pinTgt; private static Vector2 _pinAt; private static bool _localIsSlot0; private static int _savedMyPlayer;
+		public override void PreUpdateNPCs() { if (_running && Main.player[0] != null) Main.player[0].active = true; if (_running && _pinTgt != null) Pin(_pinTgt, _pinAt); /* the server drops a slot with no connection each tick, and the world's NPCs despawn with nobody on */ if (_localIsSlot0) { _savedMyPlayer = Main.myPlayer; Main.myPlayer = 0; } }
+		public override void PostUpdateNPCs() { if (_localIsSlot0) Main.myPlayer = _savedMyPlayer; }
+		public override void PreUpdateProjectiles() { if (_localIsSlot0) { _savedMyPlayer = Main.myPlayer; Main.myPlayer = 0; } }
+		public override void PostUpdateProjectiles() { if (_localIsSlot0) Main.myPlayer = _savedMyPlayer; }
+
 		public override void OnWorldUnload() { try { Main.OnTickForThirdPartySoftwareOnly -= Drive; } catch { } _armed = false; }
 
 		private static void Drive()
@@ -49,8 +57,10 @@ namespace Mechanization.Common
 			if (!_armed || _done || !Main.dedServ) return;
 			if (++_calls < 4) return;
 			_done = true;
+			_running = true;
 			try { Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
+			_running = false;
 			_mod.Logger.Info($"[MechWorld] self-check pass={_pass} fail={_fail}");
 			if (Environment.GetEnvironmentVariable("LEVY_MECHWORLD_EXIT") == "1") { try { Netplay.SaveOnServerExit = false; Netplay.Disconnect = true; } catch { } }
 		}
@@ -163,6 +173,7 @@ namespace Mechanization.Common
 			RelayAcrossPylons();
 			TurretItemUse();
 			DroneItemUse();
+			DroneLeavesPlayerAlone();
 			DroneGarrison();
 			CrowdedWorld();
 		}
@@ -319,7 +330,7 @@ namespace Mechanization.Common
 			NPC n = Main.npc[i]; n.lifeMax = n.life = 100000; n.knockBackResist = 0f; n.noGravity = true; n.noTileCollide = true; n.damage = 0; n.defense = 0;
 			return n;
 		}
-		private static void Pin(NPC n, Vector2 at) { n.position = at; n.velocity = Vector2.Zero; n.life = n.lifeMax; }
+		private static void Pin(NPC n, Vector2 at) { n.active = true; n.timeLeft = 9999; n.position = at; n.velocity = Vector2.Zero; n.life = n.lifeMax; }
 
 		private static void TurretItemUse()
 		{
@@ -374,6 +385,108 @@ namespace Mechanization.Common
 				tgt.active = false;
 			}
 			KillAll<DroneNPC>(); FieldDroneSystem.Instance?.OnWorldUnload(); ClearPlaced();
+		}
+
+		// ---------------------------------------------------------------------------------------------- the real player stays untouched by a machine's gun
+		private static readonly Dictionary<Type, List<FieldInfo>> _fieldCache = new();
+
+		private static List<FieldInfo> StateFields(Type t)
+		{
+			if (_fieldCache.TryGetValue(t, out var l)) return l;
+			l = new List<FieldInfo>();
+			for (Type c = t; c != null && c != typeof(object); c = c.BaseType)
+				foreach (FieldInfo f in c.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+				{
+					Type ft = f.FieldType;
+					if (ft.IsPrimitive || ft.IsEnum || ft == typeof(string) || ft == typeof(Vector2)) l.Add(f);
+				}
+			_fieldCache[t] = l;
+			return l;
+		}
+
+		/// <summary>Every scalar field of the player and of each of its mod players (Calamity's included), by name: whatever a weapon's use, a projectile's hook or a mod's listener could write.</summary>
+		private static Dictionary<string, string> PlayerSnapshot(Player p)
+		{
+			var d = new Dictionary<string, string>();
+			void Take(object o, string tag) { foreach (FieldInfo f in StateFields(o.GetType())) { try { d[tag + "." + f.Name] = Convert.ToString(f.GetValue(o), System.Globalization.CultureInfo.InvariantCulture); } catch (Exception) { } } }
+			Take(p, "Player");
+			foreach (ModPlayer mp in p.ModPlayers) Take(mp, mp.Mod.Name + ":" + mp.Name);
+			d["Player.velocity"] = p.velocity.ToString(); d["Player.compositeFrontArm"] = p.compositeFrontArm.enabled + "/" + p.compositeFrontArm.rotation;
+			return d;
+		}
+
+		/// <summary>Names of the fields in <paramref name="now"/> that differ from <paramref name="before"/>, added to <paramref name="into"/>.</summary>
+		private static void Differences(Dictionary<string, string> before, Dictionary<string, string> now, HashSet<string> into)
+		{
+			foreach (var kv in now) if (!before.TryGetValue(kv.Key, out string b) || b != kv.Value) into.Add(kv.Key);
+		}
+
+		/// <summary>
+		/// A gun mounted on a machine fires with the real player as the shot's owner (single player: Main.myPlayer is the player). That must never move the player. Slot 0 stands in for the single-player
+		/// local player (a dedicated server has none; see the Pre/PostUpdate hooks), the machine's weapon fires at a pinned enemy, and EVERY scalar field of the player and of its mod players is compared
+		/// with a quiet stretch (the same machine with nothing in reach). Anything that changes only while the gun fires is a touch on the player; the check fails and names it.
+		/// </summary>
+		private static void MachineLeavesPlayerAlone(string name, int weaponType, bool turret)
+		{
+			int cx = 1200; PrepareArena(cx);
+			ArmoryTE armory = ArmoryWith(cx, -10, weaponType);
+			Player p = Main.player[0];
+			Item item = new Item(turret ? ModContent.ItemType<TurretItem>() : ModContent.ItemType<DroneItem>(), 3);
+			UseItem(p, item, new Vector2(cx * 16f, (FloorY - 4) * 16f), out string why);
+			Step(180);
+			string label = $"player-safety, {(turret ? "turret" : "drone")} with {name}";
+			bool placed = false;
+			for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && (turret ? Main.npc[i].ModNPC is TurretNPC : Main.npc[i].ModNPC is DroneNPC)) placed = true;
+			if (!placed) { Check($"{label}: the machine is placed", false); KillAll<DroneNPC>(); KillAll<TurretNPC>(); ClearPlaced(); return; }
+			NPC tgt = Target(cx, 14); Vector2 near = tgt.position, far = near + new Vector2(6000f, 0f);
+			_update ??= typeof(Main).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(GameTime) }, null);
+			var quiet = new HashSet<string>(); var firing = new HashSet<string>();
+			int ownedTicks = 0, lastType = -1; int[] usesStarted = new int[2], useErrors = new int[2];
+			p.inventory[0] = new Item(ItemID.WoodenSword); p.inventory[0].autoReuse = true; p.selectedItem = 0;
+			try
+			{
+				_localIsSlot0 = true;
+				for (int phase = 0; phase < 2; phase++)
+				{
+					_pinTgt = tgt; _pinAt = phase == 0 ? far : near;
+					KeepCommander(); Step(1);
+					Dictionary<string, string> before = PlayerSnapshot(Main.player[0]);
+					for (int k = 0; k < (phase == 0 ? 240 : 700); k++)
+					{
+						KeepCommander(); // the position and health only: the speed and everything else is read after the update, so a recoil or a lock shows
+						_update.Invoke(Main.instance, new object[] { new GameTime() });
+						Differences(before, PlayerSnapshot(Main.player[0]), phase == 0 ? quiet : firing);
+						// the player holds the use button the whole time: how often does the swing actually start?
+						{
+							Player q = Main.player[0]; int sm = Main.myPlayer; int prevAnim = q.itemAnimation;
+							try { Main.myPlayer = 0; q.controlUseItem = true; q.releaseUseItem = true; q.ItemCheck(); }
+							catch (Exception) { useErrors[phase]++; }
+							finally { Main.myPlayer = sm; }
+							if (q.itemAnimation > prevAnim) usesStarted[phase]++;
+						}
+						if (phase == 1)
+						{
+							bool owned = false;
+							for (int i = 0; i < Main.maxProjectiles; i++) { Projectile pr = Main.projectile[i]; if (pr.active && pr.friendly && pr.owner == 0) { owned = true; lastType = pr.type; } }
+							if (owned) ownedTicks++;
+						}
+					}
+				}
+			}
+			finally { _localIsSlot0 = false; _pinTgt = null; }
+			firing.ExceptWith(quiet);
+			Note($"{label}: player holding the use button, swings started per 100 ticks: quiet {usesStarted[0] * 100f / 240f:0.0}, while the machine fires {usesStarted[1] * 100f / 700f:0.0} (errors {useErrors[0]}/{useErrors[1]})");
+			Note($"{label}: ticks with a round in flight owned by the player = {ownedTicks} (last round type {lastType}); player fields changed only while it fired: [{string.Join(", ", firing)}]");
+			Check($"{label}: it fires, and nothing on the real player changes", ownedTicks > 0 && firing.Count == 0);
+			tgt.active = false;
+			KillAll<DroneNPC>(); KillAll<TurretNPC>(); FieldDroneSystem.Instance?.OnWorldUnload(); ClearPlaced();
+		}
+
+		private static void DroneLeavesPlayerAlone()
+		{
+			var weapons = new List<(string name, int type)> { ("Handgun", ItemID.Handgun) };
+			if (ModLoader.TryGetMod("CalamityMod", out Mod cal) && cal.TryFind("NitroExpressRifle", out ModItem nit)) weapons.Add(("Nitro Express Rifle", nit.Type));
+			foreach (var (name, type) in weapons) { MachineLeavesPlayerAlone(name, type, false); MachineLeavesPlayerAlone(name, type, true); }
 		}
 
 		private static void DroneGarrison()

@@ -23,7 +23,7 @@ FizzTank: {
 		Gives a double jump
 		Greatly increases knockback taken
 		Knockback immunity becomes {2}% damage reduction
-		'Shake well.'
+		"Shake well."
 		'''
 }
 

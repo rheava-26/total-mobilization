@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""freereinlab: a Free Rein test from one small yaml file.   freereinlab run SPEC.yaml [--tmod PATH] [-j 3] [--tag T] [--keep]   |   freereinlab table SPEC.yaml RUNS_DIR
+On a generated world it builds a base (barracks, campfires, beds, keg, chairs), an elevator shaft to a cavern, a sheer hole and a pit, puts `levies` levies on Free Rein for `ticks` game ticks and
+measures distance from the base, depth below the base floor and the off-duty activities. One cell = (arm, shard); a shard is a slice of the `runs` base sites (so 10 seeds run on 3 processes).
+Same scratch layout and helpers as travelab (TRAVELAB_HOME, build, worlds); see levy-mod/lab/travel/README.md ("Free Rein lab")."""
+import argparse, concurrent.futures as cf, csv, glob, importlib.machinery, importlib.util, math, os, re, shutil, signal, subprocess, sys, time
+from collections import defaultdict
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+_ld = importlib.machinery.SourceFileLoader("travelab", str(HERE / "travelab"))
+_sp = importlib.util.spec_from_loader("travelab", _ld)
+T = importlib.util.module_from_spec(_sp); _ld.exec_module(T)
+import yaml
+
+ACTS = ["none", "kite", "marshmallow", "sit", "keg", "sleep", "stargaze", "fish", "cheer"]
+
+
+def run_shard(spec, arm, ov, shard, run0, nruns, total, tmod_default, outroot, wld, twld, slot):
+    merged = {**spec, **ov}
+    tmod = Path(ov.get("tmod") or tmod_default)
+    cell = f"{arm}__s{shard}"
+    d = outroot / cell
+    shutil.rmtree(d, ignore_errors=True); (d / "save" / "Mods").mkdir(parents=True); (d / "save" / "Worlds").mkdir(); (d / "out").mkdir()
+    shutil.copy(tmod, d / "save" / "Mods" / "Levy.tmod"); (d / "save" / "Mods" / "enabled.json").write_text('["Levy"]')
+    shutil.copy(wld, d / "save" / "Worlds" / "T.wld"); shutil.copy(twld, d / "save" / "Worlds" / "T.twld")
+    ticks = int(float(merged.get("minutes", 10)) * 3600)
+    e = T.env_base()
+    e.update({"LEVY_HARNESS": "1", "LEVY_HARNESS_OUT": str(d / "harness.tsv"), "LEVY_HARNESS_SCENARIO": "freerein", "LEVY_FR_OUT": str(d / "out"), "LEVY_FR_RUNS": str(nruns), "LEVY_FR_RUN0": str(run0),
+              "LEVY_FR_TOTAL": str(total), "LEVY_FR_N": str(merged.get("levies", 15)), "LEVY_FR_TICKS": str(ticks), "LEVY_FR_FOES": "1" if merged.get("foes") else "0",
+              "LEVY_FR_SPACING": str(merged.get("spacing", 260)), "LEVY_FR_TIME": str(merged.get("time", "noon")), "LEVY_FR_SHAFT": str(merged.get("shaft", 5)), "LEVY_FR_CMD": str(merged.get("commander", "base"))})
+    if "life" in merged: e["LEVY_FR_LIFE"] = "1" if merged["life"] else "0"
+    if "gear" in merged: e["LEVY_TRAVEL_MIX"] = ",".join(T.mix_list({"gear": merged["gear"], "levies": merged.get("levies", 15)})[0])
+    for k, v in {**(spec.get("env") or {}), **(ov.get("env") or {})}.items(): e[str(k)] = str(v)
+    wall = int(merged.get("wall", 240 + nruns * (ticks // 500 + 40)))
+    import socket
+    with socket.socket() as so:
+        so.bind(("127.0.0.1", 0)); port = so.getsockname()[1]
+    time.sleep(slot * 3)
+    t0 = time.time()
+    with open(d / "server.log", "w") as lg:
+        p = subprocess.Popen(["dotnet", "tModLoader.dll", "-server", "-nosteam", "-tmlsavedirectory", str(d / "save"), "-port", str(port), "-world", str(d / "save" / "Worlds" / "T.wld")],
+                             cwd=T.ensure_tml(), env=e, stdout=lg, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
+        try: p.wait(timeout=wall)
+        except subprocess.TimeoutExpired:
+            try: os.killpg(p.pid, signal.SIGKILL)
+            except Exception: pass
+    done = len(glob.glob(str(d / "out" / "r*" / "levies.csv")))
+    return dict(arm=arm, shard=shard, dir=d, done=done, runs=nruns, secs=time.time() - t0)
+
+
+def f(r, k):
+    try: return float(r[k])
+    except Exception: return 0.0
+
+
+def load(cells):
+    by = defaultdict(list)
+    for c in cells:
+        for fn in sorted(glob.glob(str(c["dir"] / "out" / "r*" / "levies.csv"))):
+            run = int(re.search(r"/r(\d+)/", fn).group(1))
+            for r in csv.DictReader(open(fn)):
+                r["run"] = run; r["shard"] = c["shard"]; by[c["arm"]].append(r)
+    return by
+
+
+def pct(a, b): return "-" if b == 0 else f"{100.0 * a / b:.0f}%"
+
+
+def report(spec, cells, tag):
+    by = load(cells)
+    o = [f"## {spec.get('name', 'freerein')}  ({spec.get('levies', 15)} levies, {spec.get('minutes', 10)} min per run, {spec.get('runs', 4)} runs/seeds, foes={bool(spec.get('foes'))}, time={spec.get('time', 'noon')}, commander={spec.get('commander', 'base')})\n"]
+    o.append("Reference lines, not the mod's own numbers: inside 150 = within 150 tiles of the barracks and not 14+ rows under its floor; inside 205 = within 205 tiles and not 18+ rows under it (the new box). hole / shaft / pit = standing 6+ rows below the base floor inside the built 3-wide 30-deep hole, the 4-wide elevator shaft (platform every 5 rows, a cavern 130 rows down) or the 9-deep pit with a stair out. deep = 20+ rows under the base floor, underground = 40+.\n")
+    o.append("| arm | time inside 150 | time inside 205 | levies ever outside 150 | levies in the built hole | in the elevator shaft | in the 9-deep pit | levies deep (20+ rows) | levies underground (40+) | max dist (tiles) | median max dist | max depth | teleports |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+    for arm, rows in by.items():
+        n = len(rows); s_ = sum(f(r, "samples") for r in rows) or 1; outt = sum(f(r, "outTicks") for r in rows) / 20.0; out2 = sum(f(r, "out200Ticks") for r in rows) / 20.0
+        out = sum(1 for r in rows if f(r, "outTicks") > 0); hole = sum(1 for r in rows if f(r, "holeFalls") > 0); shaft = sum(1 for r in rows if f(r, "shaftFalls") > 0); pit = sum(1 for r in rows if f(r, "pitFalls") > 0)
+        deep = sum(1 for r in rows if f(r, "deepTicks") > 0); ug = sum(1 for r in rows if f(r, "ugTicks") > 0)
+        md = sorted(f(r, "maxDx") for r in rows); med = md[len(md) // 2] if md else 0
+        o.append(f"| {arm} | {pct(s_ - outt, s_)} | {pct(s_ - out2, s_)} | {out}/{n} | {hole}/{n} | {shaft}/{n} | {pit}/{n} | {deep}/{n} | {ug}/{n} | {max([f(r, 'maxDx') for r in rows] or [0]):.0f} | {med:.0f} | {max([f(r, 'maxDepth') for r in rows] or [0]):.0f} | {int(sum(f(r, 'teleports') for r in rows))} |")
+    o.append("\nActivity mix (share of sampled levy-time, free rein, per arm):\n")
+    o.append("| arm | " + " | ".join(ACTS) + " | seated |\n|---|" + "---|" * (len(ACTS) + 1))
+    for arm, rows in by.items():
+        tot = sum(f(r, "samples") for r in rows) or 1
+        o.append(f"| {arm} | " + " | ".join(f"{100.0 * sum(f(r, 'act_' + a) for r in rows) / tot:.1f}%" for a in ACTS) + f" | {100.0 * sum(f(r, 'seated') for r in rows) / tot:.1f}% |")
+    o.append("\nPer arm and run (levies ever outside 150 / in the hole / shaft / pit / deep / underground, of N):\n")
+    for arm, rows in by.items():
+        runs = defaultdict(list)
+        for r in rows: runs[r["run"]].append(r)
+        o.append(f"- {arm}")
+        for run in sorted(runs):
+            rr = runs[run]
+            o.append(f"    run {run:>2}: out {sum(1 for r in rr if f(r, 'outTicks') > 0)}  hole {sum(1 for r in rr if f(r, 'holeFalls') > 0)} shaft {sum(1 for r in rr if f(r, 'shaftFalls') > 0)} pit {sum(1 for r in rr if f(r, 'pitFalls') > 0)}  deep {sum(1 for r in rr if f(r, 'deepTicks') > 0)}  ug {sum(1 for r in rr if f(r, 'ugTicks') > 0)}  of {len(rr)} | max dx {max(f(r, 'maxDx') for r in rr):.0f} max depth {max(f(r, 'maxDepth') for r in rr):.0f}")
+    # cost
+    o.append("\nServer cost (ms per game tick over the whole run incl. the world; last run of each shard) and the off-duty code:\n")
+    for c in cells:
+        evs = sorted(glob.glob(str(c["dir"] / "out" / "r*" / "events.txt")))
+        if not evs: continue
+        txt = open(evs[-1]).read()
+        w = re.findall(r"WALL .*", txt); l = re.findall(r"LEISURE .*", txt); pth = re.findall(r"PATH .*", txt)
+        o.append(f"- {c['arm']} shard {c['shard']} ({c['done']}/{c['runs']} runs, {c['secs']:.0f}s wall): " + (w[-1] if w else "") + " | " + (l[-1] if l else "") + " | " + (pth[-1] if pth else ""))
+    return "\n".join(o)
+
+
+def cmd_run(a):
+    spec = yaml.safe_load(open(a.spec))
+    for kv in a.set or []:
+        k, v = kv.split("=", 1); spec[k] = yaml.safe_load(v)
+    T.HOME.mkdir(parents=True, exist_ok=True); T.ensure_tml()
+    tmod = Path(a.tmod) if a.tmod else T.build()
+    wld, twld = T.world_files(spec.get("world", {"seed": 11111, "size": 2}))
+    tag = a.tag or time.strftime("%m%d-%H%M%S")
+    outroot = T.HOME / "runs" / f"{spec.get('name', Path(a.spec).stem)}_{tag}"; outroot.mkdir(parents=True, exist_ok=True)
+    arms = spec.get("arms") or {"run": {}}
+    runs = int(spec.get("runs", 4)); shards = max(1, min(int(spec.get("shards", 1)), runs))
+    jobs = []
+    for arm, ov in arms.items():
+        per = math.ceil(runs / shards)
+        for s in range(shards):
+            r0 = s * per; n = min(per, runs - r0)
+            if n > 0: jobs.append((arm, ov or {}, s, r0, n))
+    res = []
+    with cf.ThreadPoolExecutor(max_workers=a.j) as ex:
+        futs = [ex.submit(run_shard, spec, arm, ov, s, r0, n, runs, tmod, outroot, wld, twld, i) for i, (arm, ov, s, r0, n) in enumerate(jobs)]
+        for fu in futs: res.append(fu.result())
+    txt = report(spec, res, tag)
+    (outroot / "table.md").write_text(txt); print(txt); print(f"\n(raw results: {outroot})")
+    if not a.keep:
+        for c in res: shutil.rmtree(c["dir"] / "save", ignore_errors=True)
+
+
+def cmd_table(a):
+    spec = yaml.safe_load(open(a.spec)); root = Path(a.dir); cells = []
+    for d in sorted(root.iterdir()):
+        if d.is_dir() and "__s" in d.name:
+            arm, s = d.name.rsplit("__s", 1); cells.append(dict(arm=arm, shard=int(s), dir=d, done=len(glob.glob(str(d / "out" / "r*" / "levies.csv"))), runs=0, secs=0))
+    print(report(spec, cells, "?"))
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sp = ap.add_subparsers(dest="cmd", required=True)
+    r = sp.add_parser("run"); r.add_argument("spec"); r.add_argument("--tmod"); r.add_argument("-j", type=int, default=3); r.add_argument("--tag"); r.add_argument("--keep", action="store_true"); r.add_argument("--set", action="append")
+    t = sp.add_parser("table"); t.add_argument("spec"); t.add_argument("dir")
+    a = ap.parse_args()
+    if a.cmd == "run": cmd_run(a)
+    else: cmd_table(a)

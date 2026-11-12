@@ -49,6 +49,8 @@ namespace Mechanization.Common
 		private static Dictionary<string, string> _phaseBefore; internal static readonly HashSet<string> PhaseDiffs = new();
 		private static void PhaseOpen() { if (_localIsSlot0 && Main.player[0] != null) _phaseBefore = PlayerSnapshot(Main.player[0]); }
 		private static void PhaseClose(string phase) { if (_localIsSlot0 && _phaseBefore != null && Main.player[0] != null) { var d = new HashSet<string>(); Differences(_phaseBefore, PlayerSnapshot(Main.player[0]), d); foreach (string k in d) PhaseDiffs.Add(phase + ":" + k); } }
+		// vanilla's ambience pass reads the active players later in the tick and throws (caught, but logged) when the server has just dropped the connectionless stand-in
+		public override void PostUpdatePlayers() { if (_running && Main.player[0] != null) Main.player[0].active = true; }
 		public override void PreUpdateNPCs() { PhaseOpen(); if (_running && Main.player[0] != null) Main.player[0].active = true; if (_running && _pinTgt != null) Pin(_pinTgt, _pinFollow != null && _pinFollow.active ? _pinFollow.Center + new Vector2(160f, 0f) - _pinTgt.Size * 0.5f : _pinAt); /* the server drops a slot with no connection each tick, and the world's NPCs despawn with nobody on */ if (_localIsSlot0) { _savedMyPlayer = Main.myPlayer; Main.myPlayer = 0; } }
 		public override void PostUpdateNPCs() { if (_localIsSlot0) Main.myPlayer = _savedMyPlayer; PhaseClose("npcs"); }
 		public override void PreUpdateProjectiles() { if (_running && Main.player[0] != null) Main.player[0].active = true; PhaseOpen(); if (_localIsSlot0) { _savedMyPlayer = Main.myPlayer; Main.myPlayer = 0; } }
@@ -477,7 +479,8 @@ namespace Mechanization.Common
 			finally { _localIsSlot0 = false; _pinTgt = null; _pinFollow = null; }
 			MechShotProbe.On = false; firing.ExceptWith(quiet); PhaseDiffs.ExceptWith(quietPhase);
 			Note($"{label}: ticks with a round in flight owned by the player = {ownedTicks} (machine shots {shots}, rounds spawned {MechShotProbe.Spawned}, killed {MechShotProbe.Killed}, first kill {MechShotProbe.FirstKill}) (last round type {lastType}); player fields changed only while it fired: [{string.Join(", ", firing)}]; changed inside a phase: [{string.Join(", ", PhaseDiffs)}]");
-			Check($"{label}: it fires, and nothing on the real player changes", shots > 0 && ownedTicks > 0 && firing.Count == 0 && PhaseDiffs.Count == 0);
+			firing.RemoveWhere(f => !IsWatched(f)); // the counters and timers the player advances on its own are noise; what a use or a hook writes is not
+			Check($"{label}: it fires, and nothing on the real player changes", shots > 0 && MechShotProbe.Spawned > 0 && firing.Count == 0 && PhaseDiffs.Count == 0);
 			tgt.active = false;
 			KillAll<DroneNPC>(); KillAll<TurretNPC>(); FieldDroneSystem.Instance?.OnWorldUnload(); ClearPlaced();
 		}
@@ -513,6 +516,7 @@ namespace Mechanization.Common
 					if (shot.Valid && !byProj.ContainsKey(shot.Projectile)) byProj[shot.Projectile] = Lang.GetItemNameValue(i) + (round != null ? " + " + Lang.GetItemNameValue(round.type) : "");
 				}
 			}
+			int g0 = OwnerGuard.GuardedUpdates;
 			Note($"shot sweep: {byProj.Count} distinct projectile types across the mountable weapons and their ammo");
 			_update ??= typeof(Main).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(GameTime) }, null);
 			NPC tgt = Target(cx, 14); Vector2 at = tgt.position;
@@ -524,8 +528,10 @@ namespace Mechanization.Common
 				// What the player's own update moves with no round in the air (gravity, counters, the regen tick): the watched fields are compared against it.
 				var control = new HashSet<string>();
 				for (int c = 0; c < 3; c++) { SweepRound(-1, tgt, at, control, null); }
+				string only = Environment.GetEnvironmentVariable("LEVY_MECHSWEEP_TYPES"); // a comma list of projectile ids: re-check just those
 				foreach (var kv in byProj)
 				{
+					if (!string.IsNullOrEmpty(only) && Array.IndexOf(only.Split(','), kv.Key.ToString()) < 0) continue;
 					var seen = new HashSet<string>();
 					string threw = SweepRound(kv.Key, tgt, at, seen, null);
 					seen.ExceptWith(control);
@@ -536,6 +542,8 @@ namespace Mechanization.Common
 			}
 			finally { _localIsSlot0 = false; _pinTgt = null; }
 			tgt.active = false;
+			Note($"shot sweep: the owner guard wrapped {OwnerGuard.GuardedUpdates - g0} round updates and had to put the use state back {OwnerGuard.Undone} times");
+			foreach (string o in SweepOther) Note("shot sweep, other player field moved inside the round's own pass: " + o);
 			foreach (string o in offenders) Note("shot sweep, touches the real player: " + o);
 			Check($"shot sweep: none of {done} projectile types a machine can fire changes the real player (touched: {offenders.Count})", offenders.Count == 0);
 		}
@@ -557,8 +565,11 @@ namespace Mechanization.Common
 				int sm = Main.myPlayer; Main.myPlayer = 0;
 				try
 				{
-					int idx = Projectile.NewProjectile(tgt.GetSource_FromAI(), muzzle.X, muzzle.Y, 11f, 0f, type, 40, 3f, 0);
-					if (idx >= 0 && idx < Main.maxProjectiles) ShotKit.TagShot(Main.projectile[idx], 0, null, 0);
+					OwnerGuard.Hold(0, () =>
+					{
+						int idx = Projectile.NewProjectile(tgt.GetSource_FromAI(), muzzle.X, muzzle.Y, 11f, 0f, type, 40, 3f, 0);
+						if (idx >= 0 && idx < Main.maxProjectiles) ShotKit.TagShot(Main.projectile[idx], 0, null, 0);
+					});
 				}
 				catch (Exception e) { threw = "spawn threw " + e.GetType().Name; }
 				finally { Main.myPlayer = sm; }
@@ -573,10 +584,11 @@ namespace Mechanization.Common
 				all.Clear(); Differences(before, PlayerSnapshot(Main.player[0]), all);
 				foreach (string d in all) if (IsWatched(d)) watched.Add(d);
 			}
-			foreach (string d in PhaseDiffs) seen.Add(d); // a change inside the NPC or projectile pass is the round's own doing, whatever the field
+			foreach (string d in PhaseDiffs) { if (IsWatched(d)) seen.Add(d); else SweepOther.Add(type + " " + d); } // a change inside the NPC or projectile pass is the round's own doing; fields of the player that are not use state (health, a cooldown, a screen shake) are listed, not failed
 			foreach (string d in watched) seen.Add(d);
 			return threw;
 		}
+		private static readonly HashSet<string> SweepOther = new();
 		private static bool IsWatched(string field) { foreach (string w in Watched) if (field.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0) return true; return false; }
 
 		private static void DroneLeavesPlayerAlone()

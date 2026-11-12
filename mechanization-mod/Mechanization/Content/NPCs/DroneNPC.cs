@@ -586,14 +586,17 @@ namespace Mechanization.Content.NPCs
 
 			int dmg = ShotKit.ScaledDamage(shot.BaseDamage * D.DamageMult);
 			int owner = Main.myPlayer; // 255 on a dedicated server: a shot owned by any other index is an unsynced ghost
-			for (int k = 0; k < shot.Count; k++)
+			OwnerGuard.Hold(owner, () => // a round's own spawn hooks never touch the player who owns it
 			{
-				float deg = shot.Count > 1 ? -shot.SpreadDeg * 0.5f + shot.SpreadDeg * k / (shot.Count - 1) : 0f;
-				Vector2 v = deg == 0f ? vel : vel.RotatedBy(MathHelper.ToRadians(deg));
-				int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, v.X, v.Y, shot.Projectile, dmg, shot.Knockback, owner);
-				if (idx < 0 || idx >= Main.maxProjectiles) continue;
-				ShotKit.TagShot(Main.projectile[idx], CommanderIndex, shot.Class, shot.Crit);
-			}
+				for (int k = 0; k < shot.Count; k++)
+				{
+					float deg = shot.Count > 1 ? -shot.SpreadDeg * 0.5f + shot.SpreadDeg * k / (shot.Count - 1) : 0f;
+					Vector2 v = deg == 0f ? vel : vel.RotatedBy(MathHelper.ToRadians(deg));
+					int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, v.X, v.Y, shot.Projectile, dmg, shot.Knockback, owner);
+					if (idx < 0 || idx >= Main.maxProjectiles) continue;
+					ShotKit.TagShot(Main.projectile[idx], CommanderIndex, shot.Class, shot.Crit);
+				}
+			});
 			_shotSeq++;
 			_recoil = D.RecoilPx;
 			if (_cooldown >= D.AimSyncTicks) NPC.netUpdate = true; // a slow gun: sync each shot now (a fast one rides the aim-sync cadence)

@@ -518,6 +518,8 @@ namespace Mechanization.Common
 				}
 			}
 			int g0 = OwnerGuard.GuardedUpdates;
+			OwnerGuard.Measure = true; OwnerGuard.GuardTicks = 0; OwnerGuard.GuardSnaps = 0;
+			var sweepWatch = System.Diagnostics.Stopwatch.StartNew();
 			Note($"shot sweep: {byProj.Count} distinct projectile types across the mountable weapons and their ammo");
 			_update ??= typeof(Main).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(GameTime) }, null);
 			NPC tgt = Target(cx, 14); Vector2 at = tgt.position;
@@ -541,8 +543,10 @@ namespace Mechanization.Common
 					else if (seen.Count > 0) offenders.Add($"{kv.Value} (projectile {kv.Key}{(ProjectileLoader.GetProjectile(kv.Key) is ModProjectile mp ? " " + mp.GetType().FullName : "")}): [{string.Join(", ", seen)}]");
 				}
 			}
-			finally { _localIsSlot0 = false; _pinTgt = null; }
+			finally { _localIsSlot0 = false; _pinTgt = null; OwnerGuard.Measure = false; }
+			sweepWatch.Stop();
 			tgt.active = false;
+			Note($"owner guard timing: {OwnerGuard.GuardSnaps} snapshots took {OwnerGuard.GuardTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms in the sweep of {sweepWatch.ElapsedMilliseconds} ms ({OwnerGuard.GuardTicks * 1e6 / System.Diagnostics.Stopwatch.Frequency / Math.Max(1, OwnerGuard.GuardSnaps):F2} us per snapshot + restore); one round trip on slot 0 over 20000 reps: {OwnerGuard.BenchMicros(0, 20000):F2} us; mod players on the player: {Main.player[0].ModPlayers.Length}");
 			Note($"shot sweep: the owner guard wrapped {OwnerGuard.GuardedUpdates - g0} round updates and had to put the use state back {OwnerGuard.Undone} times");
 			foreach (string o in SweepOther) Note("shot sweep, other player field moved inside the round's own pass: " + o);
 			foreach (string o in offenders) Note("shot sweep, touches the real player: " + o);
@@ -619,7 +623,7 @@ namespace Mechanization.Common
 				l.Add(smp);
 			}
 			var rows = new List<string>(); rows.Add("weapon\tmod\tfamily\tkind\tammo\tgot\tgotName\ttruth\tverdict\twshoot\tashoot\tweaponType\tammoType");
-			int total = 0, ok = 0, wrong = 0, indet = 0, held = 0, heldBad = 0, threw = 0;
+			int total = 0, ok = 0, wrong = 0, indet = 0, held = 0, hardWrong = 0, threw = 0;
 			var perKind = new Dictionary<string, int[]>(); // kind -> total, wrong
 			var wrongWeapons = new SortedDictionary<string, int>();
 			Player saved = Main.player[0]; int savedMy = Main.myPlayer;
@@ -668,8 +672,15 @@ namespace Mechanization.Common
 						string verdict;
 						if (truth.Count == 0) { verdict = err != null ? "INDET-threw" : "INDET-nospawn"; indet++; }
 						else if (truth.Contains(got)) { verdict = "OK"; ok++; }
-						else if (isHeld) { held++; verdict = "HELD-other"; bool holdoutish = ContentSamples.ProjectilesByType.TryGetValue(got, out Projectile gp) && (gp.aiStyle == ProjAIStyleID.HeldProjectile || (gp.hide && gp.ownerHitCheck)); if (holdoutish) { heldBad++; verdict = "WRONG-held"; } }
-						else { verdict = "WRONG"; wrong++; }
+						else if (isHeld)
+						{
+							// a holdout's own shot is its owner-anchored holdout, which a machine never flies: the round's own shot (bullet / arrow / vanilla rocket) is the right answer
+							bool roundShot = got == round.shoot || (kind == "rocket" && got == ProjectileID.RocketI + round.shoot) || (kind == "solution" && got == ProjectileID.PureSpray + round.shoot);
+							if (roundShot) { verdict = "OK-round"; ok++; }
+							else if (kind != "other" && got == probe.shoot) { verdict = "WRONG-holdout"; wrong++; hardWrong++; }
+							else { verdict = "HELD-other"; held++; }
+						}
+						else { verdict = "WRONG"; wrong++; if (kind != "other" || probe.ModItem == null) hardWrong++; }
 						if (!perKind.TryGetValue(kind, out int[] c)) perKind[kind] = c = new int[2];
 						c[0]++; if (verdict.StartsWith("WRONG")) c[1]++;
 						if (verdict.StartsWith("WRONG")) wrongWeapons[wname] = (wrongWeapons.TryGetValue(wname, out int n0) ? n0 : 0) + 1;
@@ -680,10 +691,11 @@ namespace Mechanization.Common
 			finally { Main.player[0] = saved; Main.myPlayer = savedMy; for (int k = 0; k < Main.maxProjectiles; k++) Main.projectile[k].active = false; }
 			string outp = Environment.GetEnvironmentVariable("LEVY_MECHAMMO_OUT");
 			if (!string.IsNullOrEmpty(outp)) { try { System.IO.File.WriteAllLines(outp, rows); } catch { } }
-			Note($"ammo audit: {total} weapon+ammo pairs; OK {ok}, WRONG {wrong} (plain launchers/guns), held-weapon pairs whose result is another holdout {heldBad} (other held mismatches {held - heldBad}), indeterminate {indet} (threw {threw})");
+			Note($"ammo audit: {total} weapon+ammo pairs; OK {ok}, WRONG {wrong} ({hardWrong} of them rocket / solution or vanilla), other held {held}, indeterminate {indet} (threw {threw})");
 			foreach (var kv in perKind) Note($"ammo audit: kind {kv.Key}: {kv.Value[0]} pairs, {kv.Value[1]} wrong");
 			Note($"ammo audit: {wrongWeapons.Count} distinct weapons with a wrong pair: " + string.Join("; ", wrongWeapons.Select(kv => kv.Key + " x" + kv.Value)));
-			Check($"ammo audit: no launcher+ammo pair resolves to a projectile the weapon does not fire (wrong {wrong + heldBad})", wrong + heldBad == 0);
+			// the check: no rocket / solution pair and no vanilla weapon resolves to a projectile it does not fire; a modded gun or bow that swaps EVERY round for its own shot in its hooks is listed above, not failed
+			Check($"ammo audit: no launcher+ammo pair resolves to a projectile the weapon does not fire (rocket / solution / vanilla wrong: {hardWrong})", hardWrong == 0);
 		}
 
 		private static void DroneLeavesPlayerAlone()

@@ -196,6 +196,7 @@ namespace Levy.Content.NPCs
 		// ------------------------------------------------------------------------------------------------------
 		public override void HitEffect(NPC.HitInfo hit)
 		{
+			Fizz_OnHit(hit); // a Fizzy body's launch is capped and its flight starts (SoldierNPC.Fizz.cs)
 			if (LevyUtil.IsServerOrSingle && !_contactStriking && !_projectileStriking && NPC.lavaWet && NPC.immune[DummySlot] == LevyConstants.LavaStrikeImmuneTicks)
 			{
 				// Vanilla lava strike: no attacker. Players get immune frames from it too.

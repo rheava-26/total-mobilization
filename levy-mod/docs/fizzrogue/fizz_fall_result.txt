@@ -1,0 +1,5 @@
+arm kb n dx_mean dx_max dy_mean dy_max vmax air_ticks settle_ticks gravity drop_dmg drop_falls drop_dead walk_start walk_end walk_path still_max flights
+new cobalt 10 30.04 30.04 8.30 8.30 8.13 154.40 266.40 0.07 0.00 0.00 0.00 82.76 73.76 9.70 12.00 1.00 status Counter({'ok': 10})
+new none 10 27.50 27.50 8.30 8.30 8.13 152.50 232.80 0.07 0.00 0.00 0.00 73.49 63.36 10.61 6.00 1.00 status Counter({'ok': 10})
+old cobalt 10 53.83 53.83 1.05 1.05 5.70 65.90 300.00 0.30 79.00 1.00 0.00 70.59 71.41 6.13 9.30 0.00 status Counter({'ok': 10})
+old none 10 54.43 54.43 1.05 1.05 5.70 53.80 300.00 0.30 80.00 1.00 0.00 73.75 77.50 7.73 6.30 0.00 status Counter({'ok': 10})

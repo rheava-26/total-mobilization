@@ -97,7 +97,7 @@ namespace Levy.Content.NPCs
 			}
 
 			// ---- extra jump: the puff and sound now, then the trail the jump streams while it lasts ----
-			if (jumpFired && TakeFxBudget()) ExtraJumpBurst(jump ?? ExtraJump.CloudInABottle);
+			if (jumpFired && TakeFxBudget()) { ExtraJumpBurst(jump ?? ExtraJump.CloudInABottle); if (FizzyNow) FizzPuff(); }
 			if (_fxTrailTicks > 0)
 			{
 				_fxTrailTicks--;

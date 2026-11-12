@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.ID;
 using Levy.Common.Compat.Calamity;
 using Levy.Common.Util;
 using Levy.Content.NPCs;
@@ -19,6 +20,8 @@ namespace Levy.Common.Weapons
 		/// <summary>Env LEVY_STEALTH_WAIT (lab): the longest fill time in ticks worth waiting for; 0 turns the patience off. Default 130: a full bar from empty standing still (120 ticks) is worth waiting for.</summary>
 		internal static readonly int WaitTicks = Read("LEVY_STEALTH_WAIT", 130);
 		internal const int MaxHoldTicks = 200, SaveForBossTicks = 240;
+		/// <summary>Lab override: -1 follow the per-weapon policy, 0 never wait (spam), 1 always wait for the strike (the pre-policy behaviour).</summary>
+		internal static int Force = -1;
 		/// <summary>Lab counters: throws held for the bar, strikes the bar was kept for, throws saved for a boss.</summary>
 		internal static int Holds, BossSaves;
 
@@ -27,10 +30,11 @@ namespace Levy.Common.Weapons
 		/// <summary>True when this throw should wait: the levy holds a rogue weapon with a stealth bar that will fill soon, or has a full bar it is saving for a boss.</summary>
 		internal static bool Hold(SoldierNPC s, Item item, NPC target)
 		{
-			if (WaitTicks <= 0 || !CombatFix.On(CombatFix.Stealth) || !LevyUtil.IsServerOrSingle || s.Dummy == null || !ExtraDamageClasses.IsRogue(item.DamageType)) return false;
+			if (WaitTicks <= 0 || Force == 0 || !CombatFix.On(CombatFix.Stealth) || !LevyUtil.IsServerOrSingle || s.Dummy == null || !ExtraDamageClasses.IsRogue(item.DamageType)) return false;
 			object cp = LevyRippers.Of(s.Dummy);
 			if (cp == null || !LevyRippers.IsRogue(cp)) { s.StealthHoldRun = 0; return false; } // no stealth bar (no rogue armor): nothing to wait for
-			uint now = Main.GameUpdateCount;
+			RogueMode mode = Force >= 1 ? RogueMode.Wait : RoguePolicy.For(item); // the lab can force the old always-wait behaviour; otherwise the weapon's own policy (RoguePolicy.cs)
+			if (mode == RogueMode.Spam || (mode == RogueMode.SmallTargets && target.boss)) { s.StealthHoldRun = 0; s.StealthSaveRun = 0; return false; }
 			if (LevyRippers.StealthStrikeReady(cp))
 			{
 				// a full bar: throw now, unless a boss is about to be in reach and this is not it
@@ -38,14 +42,28 @@ namespace Levy.Common.Weapons
 				s.StealthHoldRun = 0; s.StealthSaveRun = 0;
 				return false;
 			}
+			if (mode == RogueMode.Situational && !(target.boss || Crowd(target))) { s.StealthHoldRun = 0; return false; } // a plain throw: this strike is not worth the wait on a lone small target
 			float max = LevyRippers.StealthMax(cp);
 			if (max <= 0f) return false;
 			bool moving = Math.Abs(s.NPC.velocity.X) > 0.4f || Math.Abs(s.NPC.velocity.Y) > 0.8f;
 			float gen = LevyRippers.StealthGen(cp, moving);
 			float fillTicks = Math.Max(0f, 1f - LevyRippers.Stealth(cp) / max) * 120f / gen;
-			if (fillTicks > WaitTicks || s.StealthHoldRun >= MaxHoldTicks) { if (s.StealthHoldRun >= MaxHoldTicks) s.StealthHoldRun = 0; return false; } // too long to wait: throw as before (a run this long fires once, then waits again)
+			if (fillTicks > (Force == 2 ? 900 : WaitTicks) || s.StealthHoldRun >= (Force == 2 ? 900 : MaxHoldTicks)) { if (s.StealthHoldRun >= (Force == 2 ? 900 : MaxHoldTicks)) s.StealthHoldRun = 0; return false; } // too long to wait: throw as before (a run this long fires once, then waits again)
 			s.StealthHoldRun++; Holds++;
 			return true;
+		}
+
+		/// <summary>Three or more hostile bodies within 12 tiles of the target: a strike that pierces, bursts or splits has something to hit.</summary>
+		internal static bool Crowd(NPC target)
+		{
+			int n = 0; float r2 = 12f * 16f * 12f * 16f;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC o = Main.npc[i];
+				if (!o.active || o.friendly || o.life <= 0 || o.lifeMax <= 5 || o.dontTakeDamage || NPCID.Sets.ProjectileNPC[o.type]) continue;
+				if (Vector2.DistanceSquared(o.Center, target.Center) <= r2 && ++n >= 3) return true;
+			}
+			return false;
 		}
 
 		/// <summary>A boss (not this levy's target) is alive and inside twice the weapon's reach: the levy will have it in range within a few seconds.</summary>

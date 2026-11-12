@@ -1,0 +1,51 @@
+# Rogue levy (Statigel) on a dummy, 20 tiles away, 40 s window: forced throw policy per arm.
+#  spam    = never hold a throw for stealth (every throw drains the bar, so no strikes)
+#  wait    = the pre-policy behaviour (hold up to 130 ticks for the bar, else throw)
+#  patient = always wait for the full bar (up to 900 ticks), strike, repeat
+name: rogue_screen2
+mods: calamity
+arena: a3
+seeds: 3
+tipsy:
+  dist: [20]
+  motion: [static]
+  size: [small]
+  warm: 300
+  win: 2400
+  every: {rg: 1}
+  arms: {spam: {pol: spam}, wait: {pol: wait}}
+  weapons:
+    - {name: CalamityMod/SpentFuelContainer, cls: R}
+    - {name: CalamityMod/Equanimity, cls: R}
+    - {name: CalamityMod/GraveGrimreaver, cls: R}
+    - {name: CalamityMod/CrystalPiercer, cls: R}
+    - {name: CalamityMod/PulseGrenade, cls: R}
+    - {name: CalamityMod/Exorcism, cls: R}
+    - {name: CalamityMod/SpearofDestiny, cls: R}
+    - {name: CalamityMod/LeviathanTeeth, cls: R}
+    - {name: CalamityMod/TerrorTalons, cls: R}
+    - {name: CalamityMod/AuroradicalThrow, cls: R}
+    - {name: CalamityMod/BallisticPoisonBomb, cls: R}
+    - {name: CalamityMod/Whitewater, cls: R}
+    - {name: CalamityMod/StellarKnife, cls: R}
+    - {name: CalamityMod/MangroveChakram, cls: R}
+    - {name: CalamityMod/DeepWounder, cls: R}
+    - {name: CalamityMod/Apoctolith, cls: R}
+    - {name: CalamityMod/EpidemicShredder, cls: R}
+    - {name: CalamityMod/DukesDecapitator, cls: R}
+    - {name: CalamityMod/CraniumSmasher, cls: R}
+    - {name: CalamityMod/HeavenfallenStardisk, cls: R}
+    - {name: CalamityMod/DoomsdayDevice, cls: R}
+    - {name: CalamityMod/ShardofAntumbra, cls: R}
+    - {name: CalamityMod/StarofDestruction, cls: R}
+    - {name: CalamityMod/UtensilPoker, cls: R}
+    - {name: CalamityMod/ProfanedPartisan, cls: R}
+    - {name: CalamityMod/EclipsesFall, cls: R}
+    - {name: CalamityMod/DynamicPursuer, cls: R}
+    - {name: CalamityMod/TimeBolt, cls: R}
+    - {name: CalamityMod/Penumbra, cls: R}
+    - {name: CalamityMod/PlasmaGrenade, cls: R}
+    - {name: CalamityMod/Supernova, cls: R}
+    - {name: CalamityMod/ScarletDevil, cls: R}
+    - {name: CalamityMod/GhoulishGouger, cls: R}
+    - {name: CalamityMod/Valediction, cls: R}

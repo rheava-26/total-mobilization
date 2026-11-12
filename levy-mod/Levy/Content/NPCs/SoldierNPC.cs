@@ -457,7 +457,7 @@ namespace Levy.Content.NPCs
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Fear, pq);
 			MindControl_Drive();
 			pq = global::Levy.Common.Util.LevyProf.Begin();
-			if (!Sit_Hold()) Movement_Update(); // a seated levy stays on its seat (SoldierNPC.Sit.cs)
+			if (!Sit_Hold() && !Fizz_Flight()) Movement_Update(); // a seated levy stays on its seat (SoldierNPC.Sit.cs); a knocked Fizzy body flies on its momentum (SoldierNPC.Fizz.cs)
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Move, pq);
 			TickJumpEffects(); // the real OnStarted of every non-vanilla extra jump spent (SoldierNPC.JumpFx.cs)
 			TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs); a dedicated server returns at once
@@ -475,6 +475,7 @@ namespace Levy.Content.NPCs
 		public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers)
 		{
 			PinLifeMax(); // the hit lands on the record's maximum, whatever ran since the last pin
+			Fizz_ModifyHit(ref modifiers); // a Fizzy body takes six times the knockback and its knockback immunity becomes damage reduction (SoldierNPC.Fizz.cs)
 			// NPC defense is half as effective as player defense in Classic; soldiers use the player's per-mode value.
 			modifiers.DefenseEffectiveness *= LevyUtil.ModeDefenseEffectiveness() / 0.5f;
 			if (Endurance > 0f) modifiers.FinalDamage *= 1f - Endurance; // Player.Hurt applies endurance the same way (Endurance potion, Worm Scarf, Brain of Confusion)

@@ -206,13 +206,13 @@ namespace Levy.Common.Provisions
 			{
 				var d = new Player(); d.statDefense = new Player.DefenseStat();
 				d.statDefense += 20;
-				int def0 = d.statDefense; float jb0 = d.jumpSpeedBoost;
+				int def0 = d.statDefense; float g0 = d.gravity;
 				Check(DrinkBuffs.Apply(d, ModContent.BuffType<FizzyBuff>()), "Fizzy is claimed as a levy buff");
-				Check(d.statDefense == def0 - LevyConstants.FizzDefense, $"Fizzy lowers defense by {LevyConstants.FizzDefense} ({def0} -> {(int)d.statDefense})");
+				Check(d.statDefense == def0, "Fizzy leaves defense alone");
 				Check(d.GetJumpState(ExtraJump.CloudInABottle).Enabled, "Fizzy gives a double jump");
-				Check(d.jumpBoost && d.frogLegJumpBoost, "Fizzy raises the jump (balloon + frog leg)");
+				Check(Math.Abs(d.gravity - g0 * LevyConstants.FizzGravityMult) < 1e-4f, $"Fizzy sets a player's gravity to {LevyConstants.FizzGravityMult:0.##} of normal ({g0:0.###} -> {d.gravity:0.###})");
 				var ab = Common.Movement.MovementAbilities.FromDummy(d);
-				Check(ab.ExtraJumps >= 1 && ab.JumpTiles >= Common.LevyConstants.Movement.BaseJumpTiles + ProvisionRules.FizzJumpTiles - 1, $"a Fizzy levy reads {ab.ExtraJumps} extra jump and {ab.JumpTiles} jump tiles (+{ProvisionRules.FizzJumpTiles})");
+				Check(ab.ExtraJumps >= 1, $"a Fizzy levy reads {ab.ExtraJumps} extra jump");
 				Check(DrinkBuffs.Apply(new Player { statDefense = new Player.DefenseStat() }, ModContent.BuffType<LavaShotBuff>()), "Lava Shot is claimed as a levy buff");
 				Check(!DrinkBuffs.IsDrinkBuff(ModContent.BuffType<FizzyBuff>()) && DrinkBuffs.IsDrinkBuff(ModContent.BuffType<LavaShotBuff>()), "Fizzy is soda (not Tipsy) and the Iceberg vodka is Tipsy");
 
@@ -229,18 +229,29 @@ namespace Levy.Common.Provisions
 				if (body != null && n.TryGetGlobalNPC(out ProvisionsBody g))
 				{
 					n.active = true;
-					g.Refresh(n);
-					Check(!n.lavaImmune && n.knockBackResist == 0f, "a levy with no drink is not lava immune and is not knocked back");
+					n.GravityMultiplier = Terraria.ModLoader.MultipliableFloat.One; g.Refresh(n); // (vanilla resets the multiplier every tick; a detached body does not tick)
+					Check(!n.lavaImmune && n.knockBackResist == 0f && Math.Abs(n.gravity - 0.3f) < 1e-4f, "a levy with no drink is not lava immune, is not knocked back and falls at the normal gravity");
 					n.AddBuff(ModContent.BuffType<LavaShotBuff>(), 600); n.AddBuff(ModContent.BuffType<FizzyBuff>(), 600);
 					bool kept = n.HasBuff(ModContent.BuffType<LavaShotBuff>());
 					if (!kept) { n.buffType[0] = ModContent.BuffType<LavaShotBuff>(); n.buffTime[0] = 600; n.buffType[1] = ModContent.BuffType<FizzyBuff>(); n.buffTime[1] = 600; }
-					g.Refresh(n);
+					n.GravityMultiplier = Terraria.ModLoader.MultipliableFloat.One; g.Refresh(n);
 					Check(n.lavaImmune && n.buffImmune[BuffID.OnFire], $"a Lava Shot levy is lava and burning immune (AddBuff kept it: {kept})");
 					Check(DrinkBuffs.IsDrunk(n) && Math.Abs(DrinkBuffs.AimErrorFactor(body) - LevyConstants.DrunkAimErrorMult) < 1e-4f, "a Lava Shot levy is Tipsy");
 					Check(Math.Abs(n.knockBackResist - LevyConstants.FizzKnockbackResist) < 1e-4f, "a Fizzy levy takes knockback");
+					Check(Math.Abs(n.gravity - 0.3f * LevyConstants.FizzGravityMult) < 1e-4f && body.FizzyNow, $"a Fizzy levy falls under {LevyConstants.FizzGravityMult:0.##} of the normal gravity (NPC.gravity {n.gravity:0.###}, which the movement code reads)");
+					NPC.HitModifiers mf = n.GetIncomingStrikeModifiers(DamageClass.Default, 1);
+					float kbF = mf.GetKnockback(4f); int dmgF = mf.GetDamage(100, false, false);
+					Check(Math.Abs(kbF - 4f * LevyConstants.FizzKnockbackMult) < 1e-3f, $"a Fizzy hit carries {LevyConstants.FizzKnockbackMult:0.#}x the knockback (4 -> {kbF:0.##})");
+					body.Dummy.noKnockback = true;
+					NPC.HitModifiers mi2 = n.GetIncomingStrikeModifiers(DamageClass.Default, 1);
+					int dmgI = mi2.GetDamage(100, false, false);
+					Check(Math.Abs(mi2.GetKnockback(4f) - kbF) < 1e-3f && dmgI < dmgF && Math.Abs(dmgI - dmgF * (1f - LevyConstants.FizzImmunityDr)) <= 1.5f, $"knockback immunity does not stop the knockback and becomes {LevyConstants.FizzImmunityDr * 100f:0}% damage reduction (a 100 hit: {dmgF} -> {dmgI})");
+					body.Dummy.noKnockback = false;
 					for (int i = 0; i < n.buffType.Length; i++) { n.buffType[i] = 0; n.buffTime[i] = 0; }
-					g.Refresh(n);
-					Check(!n.lavaImmune && n.knockBackResist == 0f, "both wear off together");
+					n.GravityMultiplier = Terraria.ModLoader.MultipliableFloat.One; g.Refresh(n);
+					Check(!n.lavaImmune && n.knockBackResist == 0f && Math.Abs(n.gravity - 0.3f) < 1e-4f, "both wear off together (resistance and gravity back to normal)");
+					NPC.HitModifiers m0 = n.GetIncomingStrikeModifiers(DamageClass.Default, 1);
+					Check(m0.GetKnockback(4f) == 0f, "a levy with no drink is still immovable");
 					// a meal: Well Fed ladder
 					n.buffType[0] = BuffID.WellFed2; n.buffTime[0] = 600;
 					Check(ProvisionRules.HeldTier(n) == 2, "the held Well Fed tier is read");

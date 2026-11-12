@@ -1,0 +1,74 @@
+# (boss-flagged dummy) Same rogue levy, but the dummy has an Eye-of-Cthulhu-sized hitbox (a boss): only the weapons that did not clearly win by waiting on the small one.
+name: rogue_boss2
+mods: calamity
+arena: a3
+seeds: 3
+tipsy:
+  dist: [20]
+  motion: [static]
+  size: [boss]
+  warm: 300
+  win: 2400
+  every: {rg: 1}
+  arms: {spam: {pol: spam}, wait: {pol: wait}}
+  weapons:
+    - {name: CalamityMod/WulfrumKnife, cls: R}
+    - {name: CalamityMod/Kylie, cls: R}
+    - {name: CalamityMod/UrchinStinger, cls: R}
+    - {name: CalamityMod/GildedDagger, cls: R}
+    - {name: CalamityMod/ContaminatedBile, cls: R}
+    - {name: CalamityMod/Mycoroot, cls: R}
+    - {name: CalamityMod/SnapClam, cls: R}
+    - {name: CalamityMod/Pumpkaboom, cls: R}
+    - {name: CalamityMod/AntlionSkewer, cls: R}
+    - {name: CalamityMod/SludgeSplotch, cls: R}
+    - {name: CalamityMod/MeteorFist, cls: R}
+    - {name: CalamityMod/BouncingEyeball, cls: R}
+    - {name: CalamityMod/RotBall, cls: R}
+    - {name: CalamityMod/FeatherKnife, cls: R}
+    - {name: CalamityMod/MetalMonstrosity, cls: R}
+    - {name: CalamityMod/Lionfish, cls: R}
+    - {name: CalamityMod/Cinquedea, cls: R}
+    - {name: CalamityMod/ShinobiBlade, cls: R}
+    - {name: CalamityMod/TitaniumShuriken, cls: R}
+    - {name: CalamityMod/CobaltKunai, cls: R}
+    - {name: CalamityMod/AdamantiteThrowingAxe, cls: R}
+    - {name: CalamityMod/MythrilKnife, cls: R}
+    - {name: CalamityMod/PalladiumJavelin, cls: R}
+    - {name: CalamityMod/IchorSpear, cls: R}
+    - {name: CalamityMod/GacruxianMollusk, cls: R}
+    - {name: CalamityMod/StormfrontRazor, cls: R}
+    - {name: CalamityMod/SkyfinBombers, cls: R}
+    - {name: CalamityMod/KelvinCatalyst, cls: R}
+    - {name: CalamityMod/ScourgeoftheSeas, cls: R}
+    - {name: CalamityMod/SpearofPaleolith, cls: R}
+    - {name: CalamityMod/BlazingStar, cls: R}
+    - {name: CalamityMod/SpentFuelContainer, cls: R}
+    - {name: CalamityMod/GraveGrimreaver, cls: R}
+    - {name: CalamityMod/CrystalPiercer, cls: R}
+    - {name: CalamityMod/Exorcism, cls: R}
+    - {name: CalamityMod/SpearofDestiny, cls: R}
+    - {name: CalamityMod/LeviathanTeeth, cls: R}
+    - {name: CalamityMod/TerrorTalons, cls: R}
+    - {name: CalamityMod/AuroradicalThrow, cls: R}
+    - {name: CalamityMod/BallisticPoisonBomb, cls: R}
+    - {name: CalamityMod/Whitewater, cls: R}
+    - {name: CalamityMod/StellarKnife, cls: R}
+    - {name: CalamityMod/DeepWounder, cls: R}
+    - {name: CalamityMod/Apoctolith, cls: R}
+    - {name: CalamityMod/EpidemicShredder, cls: R}
+    - {name: CalamityMod/DukesDecapitator, cls: R}
+    - {name: CalamityMod/CraniumSmasher, cls: R}
+    - {name: CalamityMod/HeavenfallenStardisk, cls: R}
+    - {name: CalamityMod/ShardofAntumbra, cls: R}
+    - {name: CalamityMod/StarofDestruction, cls: R}
+    - {name: CalamityMod/UtensilPoker, cls: R}
+    - {name: CalamityMod/ProfanedPartisan, cls: R}
+    - {name: CalamityMod/EclipsesFall, cls: R}
+    - {name: CalamityMod/DynamicPursuer, cls: R}
+    - {name: CalamityMod/TimeBolt, cls: R}
+    - {name: CalamityMod/Penumbra, cls: R}
+    - {name: CalamityMod/PlasmaGrenade, cls: R}
+    - {name: CalamityMod/ScarletDevil, cls: R}
+    - {name: CalamityMod/GhoulishGouger, cls: R}
+    - {name: CalamityMod/Valediction, cls: R}

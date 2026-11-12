@@ -1,0 +1,16 @@
+# Fall test: drop a levy 70 tiles up (free rein, so the follow catch-up does not teleport it back); fall damage forced on, old Fizzy vs the rework
+name: fizz_fall
+mods: vanilla
+arena: a3
+seeds: 10
+tipsy:
+  order: free
+  dist: [0]
+  motion: [static]
+  size: [small]
+  warm: 0
+  win: 300
+  every: {fz: 1, hits: 1, gap: 60, drop: 70, far: 45, walk: 60}
+  arms: {old: {arm: old}, new: {arm: new}, old_cobalt: {arm: old, kb: cobalt}, new_cobalt: {arm: new, kb: cobalt}}
+  weapons:
+    - {name: Minishark, cls: R, ammo: Musket Ball}

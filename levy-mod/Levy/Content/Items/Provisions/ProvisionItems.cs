@@ -60,7 +60,7 @@ namespace Levy.Content.Items.Provisions
 		public override int RoundId => ProvisionRules.FizzId;
 		protected override (int w, int h) Size => (38, 28);
 		protected override int PriceCopper => Item.buyPrice(silver: 5);
-		public override LocalizedText Tooltip => base.Tooltip.WithFormatArgs(LevyConstants.DrinkRadiusTiles, LevyConstants.DrinkDurationTicks / 3600, ProvisionRules.FizzJumpTiles, LevyConstants.FizzDefense, (int)System.Math.Round(LevyConstants.FizzKnockbackResist * 100f));
+		public override LocalizedText Tooltip => base.Tooltip.WithFormatArgs(LevyConstants.DrinkRadiusTiles, LevyConstants.DrinkDurationTicks / 3600, (int)System.Math.Round(LevyConstants.FizzImmunityDr * 100f));
 
 		public override void AddRecipes()
 			=> CreateRecipe().AddIngredient(ModContent.ItemType<FizzPop>(), LevyConstants.FizzTankPops).AddTile(TileID.WorkBenches).Register();
@@ -102,7 +102,7 @@ namespace Levy.Content.Items.Provisions
 		protected override int BuffType => ModContent.BuffType<FizzyBuff>();
 		protected override int BuffTicks => LevyConstants.DrinkDurationTicks;
 		protected override (int w, int h) Size => (16, 28);
-		public override LocalizedText Tooltip => base.Tooltip.WithFormatArgs(ProvisionRules.FizzJumpTiles, LevyConstants.DrinkDurationTicks / 3600, LevyConstants.FizzDefense);
+		public override LocalizedText Tooltip => base.Tooltip.WithFormatArgs(LevyConstants.DrinkDurationTicks / 3600, (int)System.Math.Round(LevyConstants.FizzImmunityDr * 100f));
 
 		public override void SetStaticDefaults()
 		{

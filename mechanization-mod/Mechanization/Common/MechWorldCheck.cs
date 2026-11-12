@@ -181,6 +181,7 @@ namespace Mechanization.Common
 			DroneItemUse();
 			DroneLeavesPlayerAlone();
 			if (Environment.GetEnvironmentVariable("LEVY_MECHSWEEP") == "1") ShotSweep();
+			if (Environment.GetEnvironmentVariable("LEVY_MECHAMMO") == "1") AmmoResolveAudit();
 			DroneGarrison();
 			CrowdedWorld();
 		}
@@ -590,6 +591,100 @@ namespace Mechanization.Common
 		}
 		private static readonly HashSet<string> SweepOther = new();
 		private static bool IsWatched(string field) { foreach (string w in Watched) if (field.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0) return true; return false; }
+
+
+		// ---------------------------------------------------------------------------------------------- what a launcher + ammo really fires
+		private static string ProjName(int id)
+		{
+			if (id < 0) return "none";
+			if (id < ProjectileID.Count) return ProjectileID.Search.TryGetName(id, out string vn) ? vn : "vanilla" + id;
+			ModProjectile mp = ProjectileLoader.GetProjectile(id);
+			return mp != null ? mp.Mod.Name + "/" + mp.Name : "proj" + id;
+		}
+
+		/// <summary>
+		/// Every mountable weapon that takes ammo, with every round of its kind: the projectile DroneArsenal.ResolveAmmoProjectile returns, against the projectiles the game really spawns when a player holding that weapon
+		/// and that round uses it (the real Player.ItemCheck_Shoot on a scratch player: PickAmmo, every mod's PickAmmo / ModifyShootStats / Shoot hook). A held-weapon (holdout) launcher's own shot is its owner-anchored holdout,
+		/// which the drone does not fly, so for those the verdict is whether the result is a holdout or an unrelated projectile. Logged as "[MechWorld] AMMO" lines, a TSV goes to LEVY_MECHAMMO_OUT.
+		/// </summary>
+		private static void AmmoResolveAudit()
+		{
+			MethodInfo shootM = typeof(Player).GetMethod("ItemCheck_Shoot", BindingFlags.Instance | BindingFlags.NonPublic);
+			if (shootM == null) { Check("ammo audit: Player.ItemCheck_Shoot found", false); return; }
+			var ammoByKind = new Dictionary<int, List<Item>>();
+			for (int i = 1; i < ItemLoader.ItemCount; i++)
+			{
+				if (!ContentSamples.ItemsByType.TryGetValue(i, out Item smp) || smp == null || smp.IsAir || smp.ammo <= 0 || smp.IsACoin) continue;
+				if (!ammoByKind.TryGetValue(smp.ammo, out var l)) ammoByKind[smp.ammo] = l = new List<Item>();
+				l.Add(smp);
+			}
+			var rows = new List<string>(); rows.Add("weapon\tmod\tfamily\tkind\tammo\tgot\tgotName\ttruth\tverdict\twshoot\tashoot\tweaponType\tammoType");
+			int total = 0, ok = 0, wrong = 0, indet = 0, held = 0, heldBad = 0, threw = 0;
+			var perKind = new Dictionary<string, int[]>(); // kind -> total, wrong
+			var wrongWeapons = new SortedDictionary<string, int>();
+			Player saved = Main.player[0]; int savedMy = Main.myPlayer;
+			try
+			{
+				Main.myPlayer = 0;
+				for (int wi = 1; wi < ItemLoader.ItemCount; wi++)
+				{
+					if (!ContentSamples.ItemsByType.TryGetValue(wi, out Item w0) || w0 == null || w0.IsAir || w0.useAmmo <= 0) continue;
+					Item probe = new Item(); probe.SetDefaults(wi);
+					if (!Levy.Common.Weapons.DroneArsenal.IsMountable(probe)) continue;
+					if (!ammoByKind.TryGetValue(probe.useAmmo, out var rounds)) continue;
+					bool isHeld = Levy.Common.Weapons.WeaponClassifier.GetProfile(probe).Family == Levy.Common.WeaponFamily.HeldWeapon;
+					string kind = probe.useAmmo == AmmoID.Rocket ? "rocket" : probe.useAmmo == AmmoID.Solution ? "solution" : "other";
+					string wname = (probe.ModItem != null ? probe.ModItem.Mod.Name + "/" : "") + Lang.GetItemNameValue(wi);
+					foreach (Item round in rounds)
+					{
+						total++;
+						int got = Levy.Common.Weapons.DroneArsenal.ResolveAmmoProjectile(probe, round);
+						var truth = new SortedSet<int>(); string err = null;
+						try
+						{
+							var sp = new Player(); sp.whoAmI = 0; sp.active = true; sp.position = new Vector2(1200 * 16, 280 * 16); sp.direction = 1;
+							Main.player[0] = sp;
+							Item weapon = new Item(); weapon.SetDefaults(wi); weapon.stack = 1; weapon.Prefix(0);
+							Item ammo = new Item(); ammo.SetDefaults(round.type); ammo.stack = ammo.maxStack;
+							sp.inventory[0] = weapon; sp.inventory[54] = ammo; sp.selectedItem = 0;
+							sp.itemAnimation = sp.itemAnimationMax = Math.Max(1, weapon.useAnimation); sp.itemTime = 0; sp.controlUseItem = true; sp.channel = true;
+							Main.mouseX = (int)(sp.Center.X + 300 - Main.screenPosition.X); Main.mouseY = (int)(sp.Center.Y - Main.screenPosition.Y);
+							for (int attempt = 0; attempt < 8 && !truth.Contains(got); attempt++) // some weapons pick their shot at random (Celebration's four fireworks): ask until the result shows up or the draws run out
+							{
+								weapon = new Item(); weapon.SetDefaults(wi); weapon.stack = 1; sp.inventory[0] = weapon; sp.itemAnimation = sp.itemAnimationMax = Math.Max(1, weapon.useAnimation); sp.itemTime = 0;
+								ammo = new Item(); ammo.SetDefaults(round.type); ammo.stack = ammo.maxStack; sp.inventory[54] = ammo;
+								var before = new HashSet<int>(); for (int k = 0; k < Main.maxProjectiles; k++) if (Main.projectile[k].active) before.Add(k * 100000 + Main.projectile[k].identity);
+								shootM.Invoke(sp, new object[] { 0, weapon, weapon.damage });
+								for (int k = 0; k < Main.maxProjectiles; k++)
+								{
+									Projectile pr = Main.projectile[k];
+									if (!pr.active) continue;
+									if (!before.Contains(k * 100000 + pr.identity)) truth.Add(pr.type);
+									pr.active = false;
+								}
+							}
+						}
+						catch (Exception e) { err = (e.InnerException ?? e).GetType().Name; threw++; }
+						string verdict;
+						if (truth.Count == 0) { verdict = err != null ? "INDET-threw" : "INDET-nospawn"; indet++; }
+						else if (truth.Contains(got)) { verdict = "OK"; ok++; }
+						else if (isHeld) { held++; verdict = "HELD-other"; bool holdoutish = ContentSamples.ProjectilesByType.TryGetValue(got, out Projectile gp) && (gp.aiStyle == ProjAIStyleID.HeldProjectile || (gp.hide && gp.ownerHitCheck)); if (holdoutish) { heldBad++; verdict = "WRONG-held"; } }
+						else { verdict = "WRONG"; wrong++; }
+						if (!perKind.TryGetValue(kind, out int[] c)) perKind[kind] = c = new int[2];
+						c[0]++; if (verdict.StartsWith("WRONG")) c[1]++;
+						if (verdict.StartsWith("WRONG")) wrongWeapons[wname] = (wrongWeapons.TryGetValue(wname, out int n0) ? n0 : 0) + 1;
+						rows.Add($"{wname}\t{probe.ModItem?.Mod.Name ?? "Terraria"}\t{(isHeld ? "held" : "plain")}\t{kind}\t{Lang.GetItemNameValue(round.type)}\t{got}\t{ProjName(got)}\t{string.Join("|", truth.Select(t => t + ":" + ProjName(t)))}\t{verdict}\t{probe.shoot}\t{round.shoot}\t{wi}\t{round.type}");
+					}
+				}
+			}
+			finally { Main.player[0] = saved; Main.myPlayer = savedMy; for (int k = 0; k < Main.maxProjectiles; k++) Main.projectile[k].active = false; }
+			string outp = Environment.GetEnvironmentVariable("LEVY_MECHAMMO_OUT");
+			if (!string.IsNullOrEmpty(outp)) { try { System.IO.File.WriteAllLines(outp, rows); } catch { } }
+			Note($"ammo audit: {total} weapon+ammo pairs; OK {ok}, WRONG {wrong} (plain launchers/guns), held-weapon pairs whose result is another holdout {heldBad} (other held mismatches {held - heldBad}), indeterminate {indet} (threw {threw})");
+			foreach (var kv in perKind) Note($"ammo audit: kind {kv.Key}: {kv.Value[0]} pairs, {kv.Value[1]} wrong");
+			Note($"ammo audit: {wrongWeapons.Count} distinct weapons with a wrong pair: " + string.Join("; ", wrongWeapons.Select(kv => kv.Key + " x" + kv.Value)));
+			Check($"ammo audit: no launcher+ammo pair resolves to a projectile the weapon does not fire (wrong {wrong + heldBad})", wrong + heldBad == 0);
+		}
 
 		private static void DroneLeavesPlayerAlone()
 		{

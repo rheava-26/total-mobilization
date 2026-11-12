@@ -63,6 +63,8 @@ namespace Levy.Common.Movement
 		public static readonly bool Travel6On = Environment.GetEnvironmentVariable("LEVY_ARCS") != "0";
 		/// <summary>Lab switch: LEVY_TRAVEL8=0 turns the round 8 changes off in the same build (the route window by area and the hops down a shaft, platform drops on a route, the shaft-wall nudge), for before / after runs.</summary>
 		public static readonly bool Travel8On = Environment.GetEnvironmentVariable("LEVY_TRAVEL8") != "0";
+		/// <summary>Lab: LEVY_T8PAD=0 keeps the old margins, LEVY_T8FALL=0 the old 20-row falls (to bisect the round 8 changes).</summary>
+		public static readonly bool PadOn = Environment.GetEnvironmentVariable("LEVY_T8PAD") != "0", LongFallOn = Environment.GetEnvironmentVariable("LEVY_T8FALL") != "0";
 		public static readonly bool ArcSearchOn = Environment.GetEnvironmentVariable("LEVY_ARCSEARCH") != "0", NudgeOn = Environment.GetEnvironmentVariable("LEVY_NUDGE") != "0", BestRowOn = Environment.GetEnvironmentVariable("LEVY_BESTROW") != "0";
 
 		public State Status { get; private set; }
@@ -97,7 +99,7 @@ namespace Levy.Common.Movement
 			{
 				// the window is the box of start and goal plus margins, within the buffer's area (any shape: a wide trip, or a tall one down a shaft). A box too big for it loses margin first; then the goal check below refuses (the caller hops).
 				int x0, x1, y0, y1;
-				if (Travel8On)
+				if (Travel8On && PadOn)
 				{
 					// a longer trip gets a wider window (the way round an obstacle, down a cave and back up, is further off the straight line the longer the trip), within the buffer's area
 					int span = Math.Max(Math.Abs(s.X - t.X), Math.Abs(s.Y - t.Y));
@@ -118,7 +120,7 @@ namespace Levy.Common.Movement
 			_wings = abilities.HasWings;
 			_jumpTiles = Math.Max(1, abilities.JumpTiles);
 			_maxFall = _wings ? FallScanTiles : (TravelLegacy.On || centred ? Math.Min(FallScanTiles, _jumpTiles + DropMarginTiles) : FallScanTiles); // the executor (ScanAhead) takes a fall of exactly FallScanTiles on a planned route // a route may go down into a pit (a safe fall) when the far side lets it climb out
-			_longFall = Travel8On && !centred && !TravelLegacy.On && (abilities.NoFallDamage || !Content.NPCs.SoldierNPC.FallDamageEnabled) && (!_wings || t.Y - s.Y > 2 * FallScanTiles);   // (a winged body dives past 20 rows only on a trip that ends deeper: on a level trip a 39-row pit is flown over, not fallen into)
+			_longFall = Travel8On && LongFallOn && !centred && !TravelLegacy.On && (abilities.NoFallDamage || !Content.NPCs.SoldierNPC.FallDamageEnabled) && t.Y - s.Y > 2 * FallScanTiles;   // (a fall past 20 rows is only on a trip that ends deeper: on a level trip a deep pit is not fallen into, and a best-effort route no longer ends at the bottom of one)
 			if (_longFall) _maxFall = LongFallTiles;
 			_gapTiles = abilities.GapTiles;
 			_maxFlight = TravelLegacy.On ? ushort.MaxValue : Math.Max(6, (int)(abilities.WingTimeMax * FlySpeed / 16f * FlightRangeShare)); // tiles of flight one tank of wing time covers, with room for the climb

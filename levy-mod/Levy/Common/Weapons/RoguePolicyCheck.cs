@@ -20,7 +20,7 @@ namespace Levy.Common.Weapons
 			Check(RoguePolicy.Table.Count >= 55, $"the table has {RoguePolicy.Table.Count} rows");
 			Check(count[(int)RogueMode.Wait] > 10 && count[(int)RogueMode.Spam] > 10 && count[(int)RogueMode.Situational] > 5 && count[(int)RogueMode.SmallTargets] > 3, $"all four policies are used (wait {count[0]}, spam {count[1]}, situational {count[2]}, small targets {count[3]})");
 			Check(RoguePolicy.Estimate(4) == RogueMode.Situational && RoguePolicy.Estimate(90) == RogueMode.Situational && RoguePolicy.For(new Item()) == RogueMode.Situational, "an unlisted weapon gets the hedge (strike for a boss or a crowd, plain throws otherwise)");
-			Check(RoguePolicy.Table["CalamityMod/Mycoroot"] == RogueMode.Wait && RoguePolicy.Table["CalamityMod/EclipsesFall"] == RogueMode.Spam && RoguePolicy.Table["CalamityMod/Penumbra"] == RogueMode.Situational && RoguePolicy.Table["CalamityMod/EpidemicShredder"] == RogueMode.SmallTargets, "spot rows: Mycoroot waits (plain throws do nothing), Eclipse's Fall spams, Penumbra is situational");
+			Check(RoguePolicy.Table["CalamityMod/Mycoroot"] == RogueMode.Wait && RoguePolicy.Table["CalamityMod/EclipsesFall"] == RogueMode.Spam && RoguePolicy.Table["CalamityMod/Penumbra"] == RogueMode.Spam && RoguePolicy.Table["CalamityMod/ProfanedPartisan"] == RogueMode.Situational && RoguePolicy.Table["CalamityMod/EpidemicShredder"] == RogueMode.SmallTargets, "spot rows: Mycoroot waits (plain throws do nothing), Eclipse's Fall spams, Penumbra spams, Profaned Partisan is situational, Epidemic Shredder strikes small targets only");
 			string info = "";
 			if (ModLoader.TryGetMod("CalamityMod", out Mod cal))
 			{

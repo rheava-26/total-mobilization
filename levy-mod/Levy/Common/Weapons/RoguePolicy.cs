@@ -42,7 +42,7 @@ namespace Levy.Common.Weapons
 			["CalamityMod/MeteorFist"] = RogueMode.Wait, // spam 87, strike 109 dps (x1.26) boss x0.95
 			["CalamityMod/BouncingEyeball"] = RogueMode.Spam, // spam 23, strike 18 dps (x0.78) boss x0.83
 			["CalamityMod/RotBall"] = RogueMode.Wait, // spam 56, strike 106 dps (x1.91) boss x1.66
-			["CalamityMod/FeatherKnife"] = RogueMode.Situational, // spam 53, strike 53 dps (x1.00) boss x0.90
+			["CalamityMod/FeatherKnife"] = RogueMode.Spam, // spam 53, strike 53 dps (x1.00) boss x0.90
 			["CalamityMod/ShinobiBlade"] = RogueMode.Wait, // spam 56, strike 86 dps (x1.53) boss x0.98
 			["CalamityMod/MetalMonstrosity"] = RogueMode.Situational, // spam 10, strike 11 dps (x1.03) boss x1.17
 			["CalamityMod/Lionfish"] = RogueMode.Wait, // spam 162, strike 281 dps (x1.73) boss x1.06
@@ -69,7 +69,7 @@ namespace Levy.Common.Weapons
 			["CalamityMod/TerrorTalons"] = RogueMode.Spam, // spam 147, strike 89 dps (x0.61) boss x0.84
 			["CalamityMod/AuroradicalThrow"] = RogueMode.Spam, // spam 683, strike 479 dps (x0.70) boss x0.86
 			["CalamityMod/BallisticPoisonBomb"] = RogueMode.Situational, // spam 650, strike 627 dps (x0.96) boss x0.97
-			["CalamityMod/StellarKnife"] = RogueMode.Situational, // spam 490, strike 494 dps (x1.01) boss x0.83
+			["CalamityMod/StellarKnife"] = RogueMode.Spam, // spam 490, strike 494 dps (x1.01) boss x0.83
 			["CalamityMod/Whitewater"] = RogueMode.Spam, // spam 351, strike 250 dps (x0.71) boss x0.96
 			["CalamityMod/DeepWounder"] = RogueMode.Wait, // spam 328, strike 443 dps (x1.35) boss x1.01
 			["CalamityMod/Apoctolith"] = RogueMode.Wait, // spam 7, strike 270 dps (x36.22) boss x0.99
@@ -77,7 +77,7 @@ namespace Levy.Common.Weapons
 			["CalamityMod/DukesDecapitator"] = RogueMode.Wait, // spam 1987, strike 2360 dps (x1.19) boss x1.00
 			["CalamityMod/CraniumSmasher"] = RogueMode.Spam, // spam 598, strike 491 dps (x0.82) boss x0.91
 			["CalamityMod/HeavenfallenStardisk"] = RogueMode.Wait, // spam 835, strike 912 dps (x1.09) boss x0.96
-			["CalamityMod/ShardofAntumbra"] = RogueMode.Situational, // spam 598, strike 575 dps (x0.96) boss x0.91
+			["CalamityMod/ShardofAntumbra"] = RogueMode.Spam, // spam 598, strike 575 dps (x0.96) boss x0.91
 			["CalamityMod/UtensilPoker"] = RogueMode.Spam, // spam 624, strike 409 dps (x0.65) boss x0.96
 			["CalamityMod/StarofDestruction"] = RogueMode.Spam, // spam 1367, strike 1184 dps (x0.87) boss x0.90
 			["CalamityMod/ProfanedPartisan"] = RogueMode.Situational, // spam 833, strike 814 dps (x0.98) boss x1.31

@@ -1,0 +1,15 @@
+name: fizz_dbg
+mods: vanilla
+arena: a3
+seeds: 2
+tipsy:
+  order: follow
+  dist: [0]
+  motion: [static]
+  size: [small]
+  warm: 0
+  win: 300
+  every: {fz: 1, hits: 1, gap: 60, drop: 85, far: 45, walk: 300}
+  arms: {old: {arm: old}, new: {arm: new}}
+  weapons:
+    - {name: Minishark, cls: R, ammo: Musket Ball}

@@ -1,0 +1,150 @@
+id	name	damage	useTime	useAnim	rare	value	shoot	shootSpeed	channel	consumable	noMelee	crit	knockBack
+CalamityMod/Spadefish	Spadefish	30	40	40	2	20000	1024	12	False	False	True	0	2
+CalamityMod/AerialTracker	P-LSR: Aerial Tracker	16	40	40	3	50000	1204	8	False	False	True	0	3
+CalamityMod/PlasmaGrenade	Plasma Grenade	860	30	30	14	2000000	1239	11	False	False	True	0	3
+CalamityMod/PulseGrenade	R-PLS: Pulse Grenade	123	75	75	5	200000	1244	16	True	False	True	0	8
+CalamityMod/SystemBane	System Bane	45	15	15	8	600000	1255	16	False	False	True	0	4
+CalamityMod/WavePounder	Wave Pounder	75	56	56	19	1500000	1262	16	False	False	True	0	0.25
+CalamityMod/AdamantiteThrowingAxe	Adamantite Throwing Axe	61	14	14	4	100000	2389	12	False	False	True	0	3.25
+CalamityMod/AntlionSkewer	Antlion Skewer	19	28	28	2	20000	2390	12	False	False	True	0	2
+CalamityMod/Apoctolith	Apoctolith	185	26	26	7	450000	2395	18	False	False	True	20	10
+CalamityMod/AshenStalactite	Ashen Stalactite	37	20	20	3	50000	2398	15	False	False	True	0	1
+CalamityMod/AuroradicalThrow	Auroradical Throw	48	30	30	7	450000	2400	10	False	False	True	0	6
+CalamityMod/BallisticPoisonBomb	Ballistic Poison Bomb	57	26	26	7	450000	2402	12	False	False	True	0	6.5
+CalamityMod/BlastBarrel	Blast Barrel	32	22	22	4	100000	2407	12	False	False	True	0	8
+CalamityMod/BlazingStar	Blazing Star	75	15	15	5	200000	2409	13	False	False	True	4	3
+CalamityMod/BloodsoakedCrasher	Bloodsoaked Crasher	245	24	24	19	1500000	2410	9	False	False	True	0	3
+CalamityMod/BouncingEyeball	Bouncing Eyeball	16	23	23	3	50000	2413	10	False	False	True	0	3.5
+CalamityMod/Brimblade	Brimblade	28	18	18	5	200000	2418	12	False	False	True	0	6.5
+CalamityMod/BurningStrife	Burning Strife	73	25	25	5	200000	2420	8	False	False	True	0	0.25
+CalamityMod/CelestialReaper	Celestial Reaper	140	31	31	11	3000000	2425	20	False	False	True	0	6
+CalamityMod/Celestus	Celestus	280	22	22	16	2400000	2427	25	False	False	True	0	6
+CalamityMod/Cinquedea	Cinquedea	35	20	20	3	100000	2428	10	False	False	True	8	5
+CalamityMod/CobaltKunai	Cobalt Kunai	49	12	12	4	100000	2431	14	False	False	True	0	2.5
+CalamityMod/ConsecratedWater	Consecrated Water	48	29	29	5	200000	2432	15	False	False	True	0	4.5
+CalamityMod/ContaminatedBile	Contaminated Bile	16	40	40	1	10000	2433	12	False	False	True	0	4.5
+CalamityMod/CorpusAvertor	Corpus Avertor	98	15	15	8	600000	2435	14	False	False	True	0	3
+CalamityMod/CosmicKunai	Cosmic Kunai	110	3	12	19	1500000	2440	28	False	False	True	0	5
+CalamityMod/CraniumSmasher	Cranium Smasher	140	20	20	8	600000	2444	20	False	False	True	0	4
+CalamityMod/CrushsawCrasher	Crushsaw Crasher	57	18	18	7	450000	2446	13.5	False	False	False	0	7
+CalamityMod/Crystalline	Crystalline	16	18	18	2	20000	2448	10	False	False	True	4	3
+CalamityMod/CrystalPiercer	Crystal Piercer	92	22	22	5	200000	2449	20	False	False	True	0	6
+CalamityMod/CursedDagger	Cursed Dagger	45	18	18	4	100000	2452	19	False	False	True	0	4.5
+CalamityMod/DeepSeaDumbbell	Deep Sea Dumbbell	466	25	25	18	1750000	2453	20	False	False	True	0	8
+CalamityMod/DeepWounder	Deep Wounder	132	25	25	7	450000	2457	17	False	False	True	0	3
+CalamityMod/DefectiveSphere	Defective Sphere	85	13	13	8	600000	2666	15	False	False	True	0	5
+CalamityMod/DesecratedWater	Desecrated Water	55	29	29	5	200000	2460	12	False	False	True	0	4.5
+CalamityMod/DimensionTearingDisk	Dimension-Tearing Disk	725	27	27	14	2000000	2464	10.5	False	False	True	0	7
+CalamityMod/DoomsdayDevice	Doomsday Device	240	55	55	8	600000	2465	12	True	False	True	0	12
+CalamityMod/DukesDecapitator	Duke's Decapitator	90	30	30	8	600000	2469	15	False	False	True	0	2
+CalamityMod/DuststormInABottle	Duststorm in a Bottle	110	28	28	7	450000	2472	14	True	False	True	0	4
+CalamityMod/DynamicPursuer	Dynamic Pursuer	2000	42	42	12	2400000	2476	17	False	False	True	0	3
+CalamityMod/EclipsesFall	Eclipse's Fall	700	24	24	12	2000000	2478	32	False	False	True	0	3.5
+CalamityMod/ElephantKiller	Elephant Killer	135	38	38	4	100000	2486	15	False	False	True	0	3
+CalamityMod/EnchantedAxe	Enchanted Axe	19	19	19	3	50000	2488	30	False	False	True	0	1
+CalamityMod/EpidemicShredder	Epidemic Shredder	80	16	16	8	600000	2489	18	False	False	True	0	4.5
+CalamityMod/Equanimity	Equanimity	84	46	46	5	200000	2492	3	False	False	True	0	1
+CalamityMod/ExecutionersBlade	Executioner's Blade	165	3	9	14	2000000	2493	24	False	False	True	0	6.75
+CalamityMod/Exorcism	Exorcism	222	96	96	6	350000	2495	6	False	False	True	0	12
+CalamityMod/FantasyTalisman	Fantasy Talisman	45	25	25	8	600000	2497	18	False	False	True	0	6
+CalamityMod/FeatherKnife	Feather Knife	22	30	30	3	50000	2499	25	False	False	True	0	2
+CalamityMod/FishboneBoomerang	Fishbone Boomerang	27	30	30	2	20000	2508	3	False	False	True	0	5.5
+CalamityMod/FrostcrushValari	Frostcrush Valari	81	19	19	8	600000	2708	16	False	False	True	16	12
+CalamityMod/FrostyFlare	Frosty Flare	37	13	13	6	350000	2512	22	False	False	True	0	2
+CalamityMod/GacruxianMollusk	Gacruxian Mollusk	36	26	26	5	200000	2515	15	False	False	True	0	5
+CalamityMod/GelDart	Gel Dart	21	11	11	4	100000	2516	14	False	False	True	0	2.5
+CalamityMod/GhoulishGouger	Ghoulish Gouger	204	5	20	18	1750000	2517	17	False	False	True	0	7.5
+CalamityMod/GildedDagger	Gilded Dagger	14	18	18	1	10000	2518	15	False	False	True	0	1
+CalamityMod/Glaive	Glaive	19	22	22	3	100000	2520	13	False	False	True	6	3
+CalamityMod/GleamingDagger	Gleaming Dagger	14	18	18	1	10000	2521	15	False	False	True	0	1
+CalamityMod/GodsParanoia	Gods' Paranoia	163	29	29	14	2000000	2523	10	False	False	True	0	5
+CalamityMod/GraveGrimreaver	Grave Grimreaver	84	48	48	5	200000	2524	16.5	False	False	True	0	4
+CalamityMod/HardenedHoneycomb	Hardened Honeycomb	19	18	18	3	50000	2529	14	False	False	True	0	3
+CalamityMod/HeavenfallenStardisk	Heavenfallen Stardisk	160	40	40	8	600000	2528	10	False	False	True	0	8
+CalamityMod/Hypothermia	Hypothermia	148	4	12	14	2000000	2532	8	False	False	True	16	3
+CalamityMod/Icebreaker	Icebreaker	60	14	14	5	200000	2533	16	False	False	True	0	6.75
+CalamityMod/IceStar	Ice Star	35	17	17	5	200000	2534	14	False	False	True	3	2.5
+CalamityMod/IchorSpear	Ichor Spear	120	39	39	4	100000	2535	17	False	False	True	0	7
+CalamityMod/InfernalKris	Infernal Kris	21	18	18	3	50000	2538	15	False	False	True	0	1
+CalamityMod/InfestedClawmerang	Infested Clawmerang	18	20	20	2	20000	2539	15	False	False	True	0	1.5
+CalamityMod/IronFrancisca	Iron Francisca	9	20	20	0	5000	2542	12	False	False	True	0	1
+CalamityMod/JawsOfOblivion	Jaws of Oblivion	159	15	15	18	1750000	2543	25	False	False	True	0	1
+CalamityMod/KelvinCatalyst	Kelvin Catalyst	50	30	30	5	200000	2545	8	False	False	True	0	4
+CalamityMod/Kylie	Kylie	12	25	25	1	10000	2547	14	False	False	True	16	9
+CalamityMod/LeadTomahawk	Lead Tomahawk	9	20	20	0	5000	2549	12	False	False	True	0	1
+CalamityMod/LemonNade	Lemon 'nade	33	30	30	2	20000	2550	13	True	False	True	0	3
+CalamityMod/LeonidProgenitor	Leonid Progenitor	57	15	15	7	450000	2554	12	False	False	True	0	3
+CalamityMod/LeviathanTeeth	Leviathan Teeth	43	9	9	7	450000	2556	7.5	False	False	True	0	1
+CalamityMod/Lionfish	Lionfish	33	26	26	3	50000	2558	12	False	False	True	0	2.5
+CalamityMod/LunarKunai	Lunar Kunai	102	10	10	11	1200000	2560	22	False	False	True	0	2
+CalamityMod/Malachite	Malachite	52	14	14	8	600000	2564	10	False	False	True	0	1.25
+CalamityMod/MangroveChakram	Mangrove Chakram	84	14	14	7	450000	2567	16	False	False	True	0	7.5
+CalamityMod/MetalMonstrosity	Metal Monstrosity	28	45	45	3	50000	2568	7	False	False	True	0	12
+CalamityMod/MeteorFist	Meteor Fist	31	25	25	2	20000	2571	4	False	False	True	0	5.75
+CalamityMod/MoltenAmputator	Molten Amputator	200	25	25	19	1500000	2572	16	False	False	True	0	2
+CalamityMod/Mycoroot	Mycoroot	12	6	6	2	20000	2573	20	False	False	True	0	1.5
+CalamityMod/MythrilKnife	Mythril Knife	66	12	12	4	100000	2574	12	False	False	True	0	1.75
+CalamityMod/NanoblackReaper	Nanoblack Reaper	555	19	19	17	2800000	2577	16	False	False	True	0	9
+CalamityMod/NastyCholla	Nasty Cholla	10	20	20	0	5000	2581	8	False	False	True	0	3
+CalamityMod/OrichalcumSpikedGemstone	Orichalcum Spiked Gemstone	40	13	13	4	100000	2583	12	False	False	True	0	2
+CalamityMod/PalladiumJavelin	Palladium Javelin	81	24	24	4	100000	2585	12	False	False	True	0	5.5
+CalamityMod/Penumbra	Penumbra	725	35	35	14	2000000	2587	9	False	False	True	16	8
+CalamityMod/PhantasmalRuin	Phantasmal Ruin	140	30	30	8	600000	2589	12	False	False	True	0	8
+CalamityMod/Plaguenade	Plaguenade	63	15	15	8	600000	2594	12	False	False	True	0	1.5
+CalamityMod/Prismalline	Prismalline	36	20	20	5	200000	2597	16	False	False	True	4	5
+CalamityMod/ProfanedPartisan	Profaned Partisan	300	21	21	11	1200000	2600	6	False	False	True	15	8
+CalamityMod/Pumpkaboom	Pumpkaboom	17	70	70	2	20000	2605	14	False	False	True	0	2
+CalamityMod/RadiantStar	Radiant Star	55	12	12	9	800000	2608	20	False	False	True	8	5
+CalamityMod/RealityRupture	Reality Rupture	420	37	37	19	1500000	2612	10	False	False	True	0	9
+CalamityMod/ReboundingRainbow	Rebounding Rainbow	92	16	16	11	1200000	2615	15	False	False	True	0	9
+CalamityMod/RefractionRotor	Refraction Rotor	240	40	40	16	2400000	2617	18	False	False	True	0	8.5
+CalamityMod/RegulusRiot	Regulus Riot	100	24	24	9	800000	2621	8	False	False	True	0	4.5
+CalamityMod/RotBall	Rot Ball	16	16	16	3	50000	2622	16	False	False	True	8	2.5
+CalamityMod/Sacrifice	Sacrifice	300	9	9	13	2400000	2623	16	False	False	True	0	4
+CalamityMod/SamsaraSlicer	Samsara Slicer	80	30	30	8	600000	2624	25	False	False	True	0	4
+CalamityMod/SandDollar	Sand Dollar	26	15	15	2	20000	2627	14	False	False	True	0	3.5
+CalamityMod/ScarletDevil	Scarlet Devil	8800	60	60	17	2800000	2631	30	False	False	True	20	8
+CalamityMod/ScourgeoftheDesert	Scourge of the Desert	12	24	24	2	20000	2632	12	False	False	True	0	3.5
+CalamityMod/ScourgeoftheSeas	Scourge of the Seas	50	24	24	5	200000	2633	10	False	False	True	0	3.5
+CalamityMod/SeafoamBomb	Seafoam Bomb	12	25	25	2	20000	2635	8	False	False	True	0	8
+CalamityMod/SealedSingularity	Sealed Singularity	220	30	30	19	1500000	2638	13	True	False	True	0	3
+CalamityMod/Seraphim	Seraphim	280	13	13	12	2400000	2645	64	False	False	True	0	6
+CalamityMod/ShardofAntumbra	Shard of Antumbra	111	17	17	10	1000000	2393	14	False	False	True	0	8
+CalamityMod/ShatteredDawn	Shattered Dawn	80	12	12	19	1500000	2646	25	False	False	True	10	6
+CalamityMod/ShinobiBlade	Shinobi Blade	24	10	10	3	50000	2649	10	False	False	True	0	1
+CalamityMod/SkyfinBombers	Skyfin Bombers	46	35	35	5	200000	2654	12	False	False	True	0	6.5
+CalamityMod/SludgeSplotch	Sludge Splotch	30	18	18	2	20000	2655	10	False	False	True	0	1
+CalamityMod/SnapClam	Snap Clam	14	25	25	2	20000	2658	12	False	False	True	0	3
+CalamityMod/SpearofDestiny	Spear of Destiny	70	41	41	6	350000	2660	10	False	False	True	0	2
+CalamityMod/SpearofPaleolith	Spear of Paleolith	70	27	27	5	200000	2662	6	False	False	True	0	6
+CalamityMod/SpentFuelContainer	Spent Fuel Container	80	50	50	5	200000	2663	15	False	False	True	0	4.5
+CalamityMod/SporeKnife	Spore Knife	18	20	20	3	50000	2668	15	False	False	True	0	1.75
+CalamityMod/StarofDestruction	Star of Destruction	400	90	90	10	1000000	2461	12	False	False	True	0	10
+CalamityMod/StellarKnife	Stellar Knife	69	9	9	7	450000	2672	10	False	False	True	4	4
+CalamityMod/StormfrontRazor	Stormfront Razor	38	20	20	5	200000	2674	8.2	False	False	True	8	7
+CalamityMod/SubductionSlicer	Subduction Slicer	95	20	20	8	600000	2677	16	False	False	True	0	8.5
+CalamityMod/Supernova	Supernova	5200	70	70	16	2400000	2681	16	True	False	True	0	18
+CalamityMod/TarragonThrowingDart	Tarragon Throwing Dart	380	11	11	19	1500000	2685	15	False	False	True	0	4.5
+CalamityMod/TerrorTalons	Terror Talons	47	7	7	7	450000	2684	12	False	False	True	0	3
+CalamityMod/TheAtomSplitter	The Atom Splitter	296	25	25	16	2400000	2688	24	False	False	True	0	7
+CalamityMod/TheFinalDawn	The Final Dawn	2500	15	15	12	2400000	2504	1	True	False	True	0	4
+CalamityMod/TheOldReaper	The Old Reaper	1420	50	50	18	1750000	2614	10	False	False	True	0	4
+CalamityMod/TheSyringe	The Syringe	60	15	15	8	600000	2690	15	False	False	True	0	5
+CalamityMod/ThrowingBrick	Throwing Brick	14	25	25	0	20	2415	15	False	True	True	20	5
+CalamityMod/TimeBolt	Time Bolt	303	20	20	14	1750000	2692	16	False	False	True	0	4
+CalamityMod/TitaniumShuriken	Titanium Shuriken	38	9	9	4	100000	2694	16	False	False	True	10	3
+CalamityMod/ToothBall	Tooth Ball	16	16	16	3	50000	2695	16	False	False	True	8	2.5
+CalamityMod/TotalityBreakers	Totality Breakers	64	28	28	7	450000	2697	12	False	False	True	0	5
+CalamityMod/ToxicantTwister	Toxicant Twister	272	40	40	18	1750000	2701	20	False	False	True	0	4
+CalamityMod/Turbulance	Turbulance	20	18	18	3	50000	2702	12	False	False	True	0	5
+CalamityMod/TwistingThunder	Twisting Thunder	466	21	21	19	1500000	2704	13.69	False	False	True	12	10
+CalamityMod/UrchinStinger	Urchin Stinger	13	17	17	1	10000	2707	12	False	False	True	0	1.5
+CalamityMod/UtensilPoker	Utensil Poker	333	15	45	10	1000000	2509	12	False	False	True	0	8
+CalamityMod/Valediction	Valediction	243	17	17	18	1750000	2710	20	False	False	True	0	7
+CalamityMod/Vega	Vega	500	20	20	18	1750000	2711	30	False	False	True	0	1
+CalamityMod/WalkingCane	Walking Cane	40	16	16	3	50000	2715	20	True	False	True	0	6
+CalamityMod/WaveSkipper	Wave Skipper	80	22	22	5	200000	2716	12	False	False	True	0	4
+CalamityMod/WebBall	Web Ball	11	20	20	0	5000	2717	6.5	False	False	True	0	3
+CalamityMod/Whitewater	Whitewater	80	34	34	7	450000	2719	6	False	False	True	0	6.5
+CalamityMod/Wrathwing	Wrathwing	592	13	13	12	2400000	2723	28	False	False	True	0	5
+CalamityMod/WulfrumKnife	Wulfrum Knife	11	4	10	1	10000	2724	4	False	False	True	0	1

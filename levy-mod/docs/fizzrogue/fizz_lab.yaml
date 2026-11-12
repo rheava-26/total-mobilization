@@ -10,7 +10,7 @@ tipsy:
   size: [small]
   warm: 0
   win: 300
-  every: {fz: 1, hits: 8, gap: 150, drop: 55, far: 45, walk: 900}
+  every: {fz: 1, hits: 8, gap: 150, drop: 85, far: 45, walk: 900}
   arms: {old: {arm: old}, new: {arm: new}, old_cobalt: {arm: old, kb: cobalt}, new_cobalt: {arm: new, kb: cobalt}}
   weapons:
     - {name: Minishark, cls: R, ammo: Musket Ball}

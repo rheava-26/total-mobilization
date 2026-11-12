@@ -1,0 +1,8 @@
+# Live-fight sanity: Eater of Worlds with 6 rogue levies among the army (Calamity world, Master+Death), the new policy in the real code path.
+name: rogue_boss_fight
+mods: calamity
+boss: eow
+mode: mdeath
+gear: posteow.best
+seeds: 6
+rogue: 6

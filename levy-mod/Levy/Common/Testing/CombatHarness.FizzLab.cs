@@ -26,7 +26,7 @@ namespace Levy.Common.Testing
 		private readonly List<float> _fzDxs = new(), _fzDys = new(), _fzVs = new(), _fzAirs = new(), _fzSettles = new();
 		private int _fzHp0, _fzFallDmg0, _fzFallHits0, _fzDeaths, _fzFlights0; private float _fzDropMinGrav = 1f; private float _fzGravSample; private float _fzWalkDist0, _fzWalkPath; private Vector2 _fzPrevPos;
 		private float _fzDropTop; private int _fzDropHp0; private bool _fzDropped; private float _fzFarX;
-		private int _fzStillRun, _fzStillMax;
+		private int _fzStillRun, _fzStillMax, _fzLowRow, _fzHpMin = 9999; private float _fzVyMax;
 
 		private void StepFizz(CrRun run)
 		{
@@ -49,7 +49,7 @@ namespace Levy.Common.Testing
 				// a harmless friendly "attacker" the hits are credited to
 				int di = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("LevyFizz"), (int)((x0 + 60f) * 16f), (int)((CrF - 3f) * 16f), NPCID.Zombie);
 				NPC d = Main.npc[di]; d.friendly = true; d.damage = 0; d.noGravity = true; d.noTileCollide = true; d.aiStyle = -1; d.dontTakeDamage = true; d.lifeMax = d.life = 1000; d.velocity = Vector2.Zero; d.GetGlobalNPC<HarnessTarget>().Pin = d.position; _fzDummyNpc = di;
-				SoldierNPC.FallDamageOverride = 1;
+				SoldierNPC.FallDamageOverride = 1; SoldierNPC.ThinAirOff = true;
 				_fzPhase = 0; _fzTick = 0; _fzHit = 0; _fzStarted = true; _fzDxs.Clear(); _fzDys.Clear(); _fzVs.Clear(); _fzAirs.Clear(); _fzSettles.Clear(); _fzDeaths = 0; _fzDropped = false; _fzStillRun = _fzStillMax = 0; _fzFlights0 = SoldierNPC.FizzFlights;
 				Mod.Logger.Info($"HARNESS-FZ: start {run.Key} tp={run.Tp}");
 				return;
@@ -85,7 +85,7 @@ namespace Levy.Common.Testing
 				else if (inHit < win)
 				{
 					_fzDx = Math.Max(_fzDx, Math.Abs(lv.Center.X - _fzP0.X) / 16f); _fzDy = Math.Max(_fzDy, (_fzP0.Y - lv.Center.Y) / 16f); _fzV = Math.Max(_fzV, speed);
-					if (lv.velocity.Y != 0f) _fzAir++;
+					if (neu ? sn.FizzFlying : lv.velocity.Y != 0f) _fzAir++; // new: ticks the movement code stayed off; old: ticks off the ground
 					if (!_fzSettled && inHit > 8 && Math.Abs(lv.velocity.X) < 0.3f && lv.velocity.Y == 0f && !sn.FizzFlying) { _fzSettled = true; _fzSettle = inHit; }
 					if (inHit == win - 1) { _fzDxs.Add(_fzDx); _fzDys.Add(_fzDy); _fzVs.Add(_fzV); _fzAirs.Add(_fzAir); _fzSettles.Add(_fzSettled ? _fzSettle : win); }
 				}
@@ -97,10 +97,10 @@ namespace Levy.Common.Testing
 				if (!_fzDropped)
 				{
 					if (_fzTick < 30) return;
-					lv.position = new Vector2(lv.position.X, (CrF - dropT) * 16f); lv.velocity = Vector2.Zero; sn.NotifyTeleported(); _fzDropped = true; _fzDropHp0 = lv.life; _fzFallDmg0 = sn.FallDamageTotal; _fzFallHits0 = sn.FallHits; _fzDropMinGrav = 1f; _fzTick = 31;
+					lv.position = new Vector2(lv.position.X, (CrF - dropT) * 16f); lv.velocity = new Vector2(0f, -0.5f); _fzDropped = true; // a small upward speed for one tick: the fall counter restarts at the new height (a body that rises resets it) _fzDropHp0 = lv.life; _fzFallDmg0 = sn.FallDamageTotal; _fzFallHits0 = sn.FallHits; _fzDropMinGrav = 1f; _fzTick = 31;
 					return;
 				}
-				_fzDropMinGrav = Math.Min(_fzDropMinGrav, lv.gravity);
+				_fzDropMinGrav = Math.Min(_fzDropMinGrav, lv.gravity); _fzVyMax = Math.Max(_fzVyMax, lv.velocity.Y); _fzLowRow = Math.Max(_fzLowRow, (int)(lv.Bottom.Y / 16f)); _fzHpMin = Math.Min(_fzHpMin, lv.life);
 				if (_fzTick > 31 + 900) { _fzPhase = 2; _fzTick = 0; _fzFarX = (x0 + farT) * 16f; _crCmdPos = new Vector2(_fzFarX, CrF * 16f); _fzWalkDist0 = Math.Abs(lv.Center.X - _fzFarX) / 16f; _fzWalkPath = 0f; _fzPrevPos = lv.Center; _fzStillRun = _fzStillMax = 0; }
 				return;
 			}
@@ -128,11 +128,11 @@ namespace Levy.Common.Testing
 					f(_fzGravSample), (sn != null ? sn.FallDamageTotal - _fzFallDmg0 : -1).ToString(), (sn != null ? sn.FallHits - _fzFallHits0 : -1).ToString(), (alive ? 0 : 1).ToString(), f(_fzWalkDist0), f(endDist), f(_fzWalkPath), _fzStillMax.ToString(), status, (SoldierNPC.FizzFlights - _fzFlights0).ToString() }) + "\n");
 			}
 			catch (Exception e) { Mod.Logger.Warn("HARNESS-FZ: row failed: " + e.Message); }
-			Mod.Logger.Info($"HARNESS-FZ: done {run.Tag} seed {run.Seed}: {status} dx {Mean(_fzDxs):0.0} air {Mean(_fzAirs):0} fall {(sn != null ? sn.FallDamageTotal - _fzFallDmg0 : -1)} walk {_fzWalkDist0:0}->{endDist:0}");
+			Mod.Logger.Info($"HARNESS-FZ: drop vyMax {_fzVyMax:0.0} lowestRow {_fzLowRow} (floor {CrF}) minHp {_fzHpMin}"); Mod.Logger.Info($"HARNESS-FZ: done {run.Tag} seed {run.Seed}: {status} dx {Mean(_fzDxs):0.0} air {Mean(_fzAirs):0} fall {(sn != null ? sn.FallDamageTotal - _fzFallDmg0 : -1)} walk {_fzWalkDist0:0}->{endDist:0}");
 			var cols = CrHeader.Split('\t').Length; var v = new string[cols]; for (int i = 0; i < cols; i++) v[i] = "0";
 			v[0] = run.Key; v[1] = run.Kind; v[2] = run.Boss; v[3] = run.Mode; v[4] = run.Order; v[5] = run.Seed.ToString(); v[6] = "FIZZ"; v[7] = _fzTick.ToString(); v[8] = f(_fzTick / 60.0); v[cols - 1] = "fizz";
 			File.AppendAllText(_crOut, string.Join("\t", v) + "\n");
-			SoldierNPC.FallDamageOverride = -1;
+			SoldierNPC.FallDamageOverride = -1; SoldierNPC.ThinAirOff = false;
 			_fzStarted = false; _cr = null; _crS = null; _crStarted = false; _crI++;
 			ClearAll(); CrPurgeNpcs();
 		}

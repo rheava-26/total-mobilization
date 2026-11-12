@@ -57,15 +57,20 @@ namespace Levy.Content.NPCs
 			Vector2 me = NPC.Bottom;
 			float dxT = Math.Abs(goalBottom.X - me.X) / 16f, dyT = (goalBottom.Y - me.Y) / 16f;
 			if (dxT <= RouteMinTripTiles && Math.Abs(dyT) <= RouteMinTripRise && !(_rt != null && RouteFlying && NPC.velocity.Y != 0f)) { if (_rt != null) RouteReset(); return false; }   // (an arc in the air is flown to its landing)
-			// a trip wider than the planner's window is routed in hops: the far side of a floor column RouteMaxHopTiles on toward the goal
-			if (dxT > RouteMaxHopTiles)
+			// a trip whose box (wide, or tall: a shaft down to the Underworld) does not fit the planner's window is routed in hops: the standable cell nearest the point of the straight line to the goal that does
 			{
-				int hx = (int)(me.X / 16f) + (int)Math.Sign(goalBottom.X - me.X) * RouteMaxHopTiles, hy = TileNav.FeetTile(me).Y, found = -1;
-				for (int d = 0; d <= 80 && found < 0; d++)
-					for (int sgn = -1; sgn <= 1 && found < 0; sgn += 2)
-						if (TileNav.InBounds(hx, hy + sgn * d) && TileNav.IsStandable(hx, hy + sgn * d)) found = hy + sgn * d;
-				if (found < 0) return false;
-				goalBottom = TileNav.BottomCentre(hx, found);
+				int ddx = (int)dxT, ddy = (int)Math.Abs(dyT);
+				bool fits(double f) { double wx = ddx * f + 40, wy = ddy * f + 70; return ddx * f <= RouteMaxHopTiles && (!PathSearch.Travel8On || (wx <= RouteWindowW && wy <= RouteWindowH && wx * wy <= RouteWindowCells)); }
+				if (!fits(1.0))
+				{
+					double f = 1.0; while (f > 0.05 && !fits(f)) f *= 0.9;
+					Point mt = TileNav.FeetTile(me); int hx = mt.X + (int)Math.Round((goalBottom.X - me.X) / 16f * f), hy = mt.Y + (int)Math.Round(dyT * f), found = -1;
+					for (int d = 0; d <= 80 && found < 0; d++)
+						for (int sgn = -1; sgn <= 1 && found < 0; sgn += 2)
+							if (TileNav.InBounds(hx, hy + sgn * d) && TileNav.IsStandable(hx, hy + sgn * d)) found = hy + sgn * d;
+					if (found < 0) { if (!TileNav.NearestStandable(hx, hy, 60, out Point np)) return false; hx = np.X; found = np.Y; }
+					goalBottom = TileNav.BottomCentre(hx, found);
+				}
 			}
 			Point g = TileNav.FeetTile(goalBottom);
 
@@ -231,7 +236,8 @@ namespace Levy.Content.NPCs
 			string nx = "";
 			for (int i = _rtIdx; i < Math.Min(_rt.Pts.Count, _rtIdx + 6); i++) { var q = TileNav.FeetTile(_rt.Pts[i]); nx += $"({q.X - TileNav.FeetTile(NPC.Bottom).X},{q.Y - TileNav.FeetTile(NPC.Bottom).Y})"; }
 			string p0 = _path.Count > 0 ? $"({(_path[0].X - NPC.Center.X) / 16f:0.0},{(_path[0].Y - NPC.Bottom.Y) / 16f:0.0})" : "none";
-			return $"p0={p0} whyM={WhyM} route={_rt.State} hookWant={_rtHookWant}/{_rtHookTries} bans={_rtBan.Count} idx={_rtIdx}/{_rt.Pts.Count} replans={_rtReplans} fromRoute={_pathFromRoute} pathN={_path.Count} goal=({MoveGoal.X / 16f:0},{MoveGoal.Y / 16f:0}) next={nx}";
+			string kd = ""; if (_rt.Kinds.Count == _rt.Pts.Count) for (int i = _rtIdx; i < Math.Min(_rt.Pts.Count, _rtIdx + 6); i++) kd += _rt.Kinds[i];
+			return $"dodge={DodgeTimers} threats={ThreatField.Snapshot().Count} hkPhase={_hkPhase} stage[{DbgStage}] lavaL={LavaAhead(-1)} lavaR={LavaAhead(1)} jump={DbgJump} blkWhy={BlockWhy} dropWhy={DropWhy} flyWhy={FlyWhy} kinds={kd} routeFlying={RouteFlying} p0={p0} whyM={WhyM} route={_rt.State} hookWant={_rtHookWant}/{_rtHookTries} bans={_rtBan.Count} idx={_rtIdx}/{_rt.Pts.Count} replans={_rtReplans} fromRoute={_pathFromRoute} pathN={_path.Count} goal=({MoveGoal.X / 16f:0},{MoveGoal.Y / 16f:0}) next={nx}";
 		}
 
 		private static bool LevyUtilIsServerOrSingle() => global::Levy.Common.Util.LevyUtil.IsServerOrSingle;

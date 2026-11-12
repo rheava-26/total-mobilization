@@ -1,0 +1,16 @@
+# The standard world trip: 15 levies of seven gear tiers go to the far side of the world, down a hellevator to the Underworld (a bare shaft, and one with a platform every 15 rows) and into a deep cave, 12 runs each (6 for the far side and the platform shaft).
+#   travelab run levy-mod/lab/travel/specs/world_trip.yaml --set world='{seed: 80808, size: 2}'
+# Any levy that teleports fails. The hellevator is built only in the two Underworld cells.
+name: world_trip
+world: {seed: 11111, size: 2}
+start: spawn
+levies: 15
+gear: {bare: 3, boots: 2, wings: 3, hook: 2, prehm: 2, hm: 2, endgame: 1}
+runs: 12
+spread: 150
+timeout: 600
+goals:
+  - {goal: far, runs: 6}
+  - {name: hell-bare-shaft, goal: underworld, edit: [{hellevator: {dx: 120, width: 4, platforms: 0}}]}
+  - {name: hell-platforms, goal: underworld, edit: [{hellevator: {dx: 120, width: 4, platforms: 15}}], runs: 6}
+  - {goal: "cave:150"}

@@ -123,6 +123,8 @@ namespace Levy.Common
 			// ---- hazards ----
 			public const int LookAheadPx = 8;
 			public const int FallScanTiles = 20;
+			/// <summary>Route searches of bodies that a fall cannot hurt (no fall damage in the config, or wings or a horseshoe) take a fall down a shaft of up to this many tiles, the part beyond FallScanTiles at LongFallEdgeCost a tile (vertical movement is the cheapest kind).</summary>
+			public const int LongFallTiles = 1600; public const float LongFallEdgeCost = 0.2f;
 			public const int DropMarginTiles = 6;               // refuse drops deeper than JumpTiles + this (unless winged)
 			public const int DeepWaterLiquid = 128;
 			/// <summary>Swimming up (see SoldierNPC.SwimAssist): upward acceleration and top speed in px per tick, and how far above the feet the goal must be (px).</summary>
@@ -177,7 +179,9 @@ namespace Levy.Common
 			// ---- long routes (RoutePlanner / SoldierNPC.Route.cs) ----
 			// One shared, sliced A* over the whole trip (start..goal bounding box) per (goal, ability class, start bucket); soldiers follow its waypoints with the usual local reflexes.
 			/// <summary>Search buffer: the widest and tallest trip window (tiles). A trip wider than this is walked in hops toward the goal (the far end is out of the window).</summary>
-			public const int RouteWindowW = 1500, RouteWindowH = 460;
+			public const int RouteWindowW = 1500, RouteWindowH = 1900, RouteWindowCells = 1000000;
+			/// <summary>The most margin (tiles) a long trip's window gets beyond the box of start and goal: a third of the trip's longer side, up to this much sideways and up (down gets 60 more).</summary>
+			public const int RouteMaxPadX = 240, RouteMaxPadY = 240;
 			/// <summary>Nodes expanded per game tick by the planner (about 2 microseconds a node: 1.4 ms) and the most one route may use before it settles for the closest point it reached.</summary>
 			public const int RouteNodesPerTick = 700, RouteMaxNodes = 220000;
 			/// <summary>A planner slice also stops after this many ms (checked every RouteChunkNodes nodes).</summary>

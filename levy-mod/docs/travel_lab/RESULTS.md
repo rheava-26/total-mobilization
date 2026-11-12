@@ -344,3 +344,26 @@ OBSERVED in 6 runs x 15 levies on G2_80808 (hop off): 1 of 90 arrive. End points
 
 ## Hook levies on a sheer 34-tile face (coordinator item, from warbands-mod/docs/PURSUIT.md)
 Spec `specs/hook_face34.yaml` (carved wall course, 34-row face, 13 levies, one per vanilla hook, 4 runs). Result: 52/52 arrive in 21 s, 4 stuck episodes (Web Slinger 3, Skeletron Hand 1), no abandoned route. NOT REPRODUCED with levies: the Warbands failure (a failed cast leaves the body at the base and it gives up) needs Warbands' own body type and start offsets; the levy executor already bans the failed target and re-plans from where the body stands (`RouteHookGiveUp`, up to `RouteReplanMax`). Nothing was changed for it; the spec is the reproduction harness if Warbands' executor is pointed at it.
+
+## Other worlds (after only; Underworld bare shaft and cave, 8 runs x 15 levies, the far side was not repeated)
+| world | goal | arrive |
+|---|---|---|
+| G2_90909 | Underworld, bare shaft | 120/120 |
+| G2_90909 | deep cave | 0/120: the lab found no cave connected to the surface within 600 columns (the table now warns); the goal was a sealed room. A world property, not a movement result. |
+| seed 11111 (M1) | Underworld, bare shaft | 120/120 |
+| seed 11111 (M1) | deep cave (3471,499) | 45/120 at the time of the run: wings 3/3 and the HM/endgame kit arrive, bare, boots, hook and pre-HM end at w3400 / w3450 (a cliff in the way for walkers; the hook levies there are the open item) |
+
+## Regression (rounds 6 and 7 sets, same seeds, final build; round 7 numbers in brackets)
+- lips course, wings (12 seeds x 8): 96/96, 63 s [96/96, 63 s], 0 stuck episodes.
+- ravine trek, wings (12 x 8): 96/96, 65 s [96/96, 65 s]. A first run of this set gave 92/96 (seed 11, a 43-wide 39-deep pit: the long-fall edges let winged bodies dive into it); winged long falls now only exist on a trip that ends more than 40 rows deeper, and the seed is 8/8 again.
+- real worlds 800 tiles, wings (6 worlds x 4 starts x 8): 121/184 done at writing, 74 s, 209 stuck episodes [124/192, 75 s, 277]: the same.
+- The boots sets, the 27-run hook regression and the lips/ravine bare sets were started but not finished before this write-up (the machine was at load 15 to 25 with other builders); the winged results the brief asked to hold, hold.
+
+## Boot
+Levy, Mechanization and Warbands build with 0 errors (real tML build). Headless boot with all three: 0 exceptions (the silently caught first-run `server.log.old` FileNotFound aside), mobility self-check OK, flight talk OK, AccMobCheck pass=22 fail=0, HopCheck pass=9 fail=0. The summon-staff pick self-check fails as before (known, not touched).
+
+## Not done / open
+- The far side of the world (1/90): flooded pits and lakes (swim planning), the route planner's throughput on 1000+ tile trips (3153 routes in one run), and 11-row cliffs for walkers.
+- Hook levies in the M1 cave (w3400).
+- Warbands' 34-row face failure does not reproduce with levies (above).
+- `LEVY_TRAVEL8=0` switches every round 8 movement change off in one build for A/B.

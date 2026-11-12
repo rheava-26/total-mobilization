@@ -367,3 +367,23 @@ Levy, Mechanization and Warbands build with 0 errors (real tML build). Headless 
 - Hook levies in the M1 cave (w3400).
 - Warbands' 34-row face failure does not reproduce with levies (above).
 - `LEVY_TRAVEL8=0` switches every round 8 movement change off in one build for A/B.
+
+## Round 8 verification on the final build (n24; round 7 numbers in brackets)
+One regression found and fixed: the hook-only army on M2, 800 tiles from x 3700 (`hfar_M2_x3700_long`) fell from 13/13 to 3/13. Bisected with `LEVY_TRAVEL8=0` (13/13), `LEVY_T8PAD=0` (1/13) and `LEVY_T8FALL=0` (13/13): the long falls. The best-effort (Partial) route now ended at the bottom of a 16-row water pit ((4449,451) instead of the ledge (4339,367)) and the hook levies sat in the water. Fix: a fall past 20 rows only exists on a trip that ends more than 40 rows deeper (was: only for winged bodies). Hellevator and cave cells re-checked: 24/24.
+
+| set | arrive | trip s | stuck eps |
+|---|---|---|---|
+| lips, bare (12 seeds x 6) | 72/72 [72/72] | 89 [89] | 0 |
+| lips, boots | 72/72 [72/72] | 55 [55] | 0 |
+| lips, wings (12 x 8) | 96/96 [96/96] | 63 [63] | 0 |
+| ravine, wings | 96/96 [96/96] | 65 [65] | 0 |
+| ravine, boots | 72/72 [72/72] | 61 [60] | 0 |
+| real worlds 800, wings (6 x 4 x 8) | 130/192 [124/192] | 73 [75] | 182 [277] |
+| real worlds 800, boots (6 x 4 x 6) | 3/144 [4/144] | 53 [50] | 170 [163] |
+| 27-run regression set | 300/387 [299/387]; hook levies 139/171 [138/171]; winged 54/54 [54/54] | | |
+
+Per-run differences in the 27-run set against round 7 are inside its documented noise (`hfar_M2_x1700` 13/13 vs 10/13, `hnear_M1_x700` 0 vs 1, `hnear_M2_x700` 7 vs 9, `zoo_Z1` 13 vs 12). One `zoo_Z5` run hung to its 900 s timeout under load and ran 13/13 in 33 s when repeated.
+
+Far side of the world, final build (6 runs x 15 levies, G2_80808): 0/90, ending at the same places (x 750, 1650 to 1850, 2350 to 2400, 2750): the slope fix did not change it; the open items above stand.
+
+Planner slice (A/B in one spec, the two arms running at the same time, load average 2 to 5; far cell, 1 run, 15 levies): with round 8 on, 3685 routes, 9.2M nodes, 38.9 s, so 4.2 ms per 1000 nodes, 1.26 ms mean slice, worst slice 10.6 ms; with `LEVY_TRAVEL8=0`, 4139 routes, 8.6M nodes, 35.6 s, 4.1 ms per 1000 nodes, 1.23 ms mean, worst 5.5 ms. Cost per node is unchanged; the worst slice is about twice (one sample each, noisy). Bisect switches: `LEVY_T8PAD=0`, `LEVY_T8FALL=0`.

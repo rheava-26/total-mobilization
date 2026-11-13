@@ -868,7 +868,10 @@ namespace Levy.Common.Weapons
 			g.UpgradeCheckTick = now + (uint)LevyConstants.AutoUpgradeCheckIntervalTicks;
 			var armory = s.Home == null ? null : SettlementSystem.Instance?.LinkedArmory(s.Home);
 			if (armory == null || !Terraria.DataStructures.TileEntity.ByID.TryGetValue(armory.ID, out var live) || !ReferenceEquals(live, armory)) return;
-			if (!armory.UpgradeWeapons(rec)) return;
+			long pu = global::Levy.Common.Util.LevyProf.Begin();
+			bool upgraded = armory.UpgradeWeapons(rec);
+			global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmUp, pu);
+			if (!upgraded) return;
 			g.UpgradeCheckTick = now + (uint)LevyConstants.AutoUpgradeSwapCooldownTicks;
 			s.NotifyGearChanged(); // the periodic roster snapshot carries the new kit to clients
 		}

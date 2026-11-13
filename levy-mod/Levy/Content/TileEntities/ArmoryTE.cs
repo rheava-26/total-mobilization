@@ -155,8 +155,10 @@ namespace Levy.Content.TileEntities
 
 		public override void Update()
 		{
+			long pt = global::Levy.Common.Util.LevyProf.Begin();
 			if (_dirty) Sync();
 			if (Main.netMode != NetmodeID.MultiplayerClient && ++_stampTimer >= StampIntervalTicks) { _stampTimer = 0; StampNew(); }
+			global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmTick, pt);
 		}
 
 		private const int StampIntervalTicks = 30;
@@ -1459,6 +1461,13 @@ namespace Levy.Content.TileEntities
 		/// line. The issue rows are never lent from (they are the army's own first picks); only bulk storage is. A weapon on a Re-arm hold this tick is skipped. Server / single player only.
 		/// </summary>
 		public Item LendDroneWeapon(int reserveForSoldiers)
+		{
+			long pl = global::Levy.Common.Util.LevyProf.Begin();
+			try { return LendDroneWeaponCore(reserveForSoldiers); }
+			finally { global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmLend, pl); }
+		}
+
+		private Item LendDroneWeaponCore(int reserveForSoldiers)
 		{
 			using var _rs = ArmoryRules.Enter(Rules);
 			if (Main.netMode == NetmodeID.MultiplayerClient) return null;

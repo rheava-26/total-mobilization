@@ -859,6 +859,7 @@ namespace Levy.Common.UI
 		/// with the pointer on the panel only the panel's own cells may set it.
 		/// </summary>
 		/// <summary>The status line: storage size (and how much the linked Logistical Centers provide) above the total worth of everything held. Rebuilds either row only when its number changes.</summary>
+		private ArmoryTE _valueTe; private uint _valueTick; private long _valueCache;
 		private void UpdateStatusLine()
 		{
 			if (Te == null || _capacity == null) return;
@@ -871,7 +872,9 @@ namespace Levy.Common.UI
 					: centers == 1 ? LevyUtil.T("UI2.ArmoryCapacityCenter", slots, extra)
 					: LevyUtil.T("UI2.ArmoryCapacityCenters", slots, extra, centers));
 			}
-			long worth = Te.TotalSellValue();
+			uint nowTick = Main.GameUpdateCount; // a pass over every slot, twice a second is plenty for a number shown in coins
+			if (!ReferenceEquals(_valueTe, Te) || nowTick - _valueTick >= 30u || nowTick < _valueTick) { _valueTe = Te; _valueTick = nowTick; _valueCache = Te.TotalSellValue(); }
+			long worth = _valueCache;
 			if (worth != _shownValue)
 			{
 				_shownValue = worth;
@@ -924,7 +927,9 @@ namespace Levy.Common.UI
 				else if (HasChild(_logView.Checklist)) RemoveChild(_logView.Checklist);
 			}
 			UpdateFilterView();
+			long pui = global::Levy.Common.Util.LevyProf.Begin();
 			UpdateStatusLine();
+			global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmUi, pui);
 			if (Te != null && --_payerRefresh <= 0) { _payerRefresh = 20; _payer = Te.LinkedBarracks(); }
 			else if (Te == null) _payer = null;
 			RefreshReforgeBar();

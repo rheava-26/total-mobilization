@@ -159,6 +159,7 @@ namespace Levy.Content.TileEntities
 			if (_allocating || requester?.Gear == null || Main.netMode == NetmodeID.MultiplayerClient) return false;
 			_allocating = true;
 			using var _rs = ArmoryRules.Enter(Rules);
+			long pa = global::Levy.Common.Util.LevyProf.Begin();
 			try {
 				var plan = BuildAllocation(requester);
 				WeaponAllocator.Plan(plan.Levies, plan.Cands, Rules.Alloc);
@@ -168,7 +169,7 @@ namespace Levy.Content.TileEntities
 				if (!_allocWarned) { _allocWarned = true; Levy.Instance?.Logger.Warn("Levy: the army weapon allocation failed, falling back to per-soldier picks: " + e); }
 				return false;
 			}
-			finally { _allocating = false; }
+			finally { _allocating = false; global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmAlloc, pa); }
 		}
 
 		private bool Carry(AllocPlan plan, SoldierRecord requester, bool upgrade)

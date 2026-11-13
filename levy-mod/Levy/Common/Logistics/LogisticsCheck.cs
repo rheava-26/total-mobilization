@@ -329,6 +329,22 @@ namespace Levy.Common.Logistics
 			Check(OrderMath.DragCells(3, 1, 0, 0) == (0, 0, 3, 1), "drag corners are normalised");
 			Check(Selling.SelectRect(a, 4, 0, 0, 0, 0).SequenceEqual(new[] { 0 }), "a one-cell drag selects one slot");
 			Check(Selling.CategoryOf(Make(ItemID.HealingPotion)) == SellCat.Potion, "a healing potion is a Potion");
+			// a big armory: Select matching, the price read and a Pricer stay far under a frame (16 ms). Re-measurable: the numbers go to the log.
+			{
+				var big = new ArmoryTE(); big.Storage = new Item[3000];
+				var mix = new[] { ItemID.IronBroadsword, ItemID.WoodenBow, ItemID.Minishark, ItemID.Excalibur, ItemID.IronHelmet, ItemID.TerraBlade, ItemID.Musket, ItemID.SlimeStaff, ItemID.HermesBoots, ItemID.HealingPotion, ItemID.Handgun, ItemID.WaterBolt };
+				for (int i = 0; i < big.Storage.Length; i++) big.Storage[i] = i % 20 == 0 ? new Item() : Make(mix[i % mix.Length]);
+				var sw = System.Diagnostics.Stopwatch.StartNew();
+				var pick = Selling.Select(big, new Selling.Filter { TierLo = Selling.Tiers[0].Lo, TierHi = Selling.Tiers[0].Hi });
+				double selMs = sw.Elapsed.TotalMilliseconds;
+				var price = Selling.Pricer(Main.LocalPlayer, null);
+				sw.Restart(); long total = 0; foreach (int i in pick) total += price(big.Storage[i]);
+				double priceMs = sw.Elapsed.TotalMilliseconds;
+				var one = price(Make(ItemID.Musket)); var two = price(Make(ItemID.Musket));
+				Levy.Instance?.Logger.Info($"[Logistics] sell at {big.Storage.Length} slots: select-matching {pick.Count} items {selMs:F2} ms, priced {priceMs:F2} ms");
+				Check(pick.Count > 0 && selMs < 16.0, $"Select matching over a {big.Storage.Length}-slot armory takes {selMs:F2} ms (under a frame)");
+				Check(priceMs < 16.0 && one == two && one >= 0, $"pricing {pick.Count} selected items takes {priceMs:F2} ms and the same kind prices the same");
+			}
 			ProgressionTier.Reset();
 		}
 

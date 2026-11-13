@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -24,7 +25,7 @@ namespace Mechanization.Content.NPCs
 	{
 		public static FieldDroneSystem Instance => ModContent.GetInstance<FieldDroneSystem>();
 
-		/// <summary>One placed drone's saved state. <see cref="Pad"/> is the body centre resting on the ground (or the hover point); life is its current HP.</summary>
+		/// <summary>One placed drone's saved state. <see cref="Pad"/> is the spot it was set down at: the body centre, resting on a surface or hovering in open air; life is its current HP.</summary>
 		public sealed class FieldRecord
 		{
 			public int Id;
@@ -52,8 +53,9 @@ namespace Mechanization.Content.NPCs
 		// Placement
 		// =====================================================================================================
 		/// <summary>
-		/// Where a drone set down at <paramref name="spot"/> rests: a spot buried in terrain is lifted to the first open space above it (up to <see cref="F.PlaceLiftTiles"/>), then the pad is the ground beneath
-		/// (the body centre, resting on it). With no ground within <see cref="F.PlaceDropTiles"/> the pad is the spot itself and the drone hangs there. False when there is no room.
+		/// Where a drone set down at <paramref name="spot"/> rests. It stays where the player put it: a spot buried in terrain is lifted to the first open space above it (up to <see cref="F.PlaceLiftTiles"/>);
+		/// a spot on or within <see cref="F.SettleTiles"/> above a surface (solid ground, or a platform or table top) settles onto that surface (the body centre, its feet on it); a spot in open air is the pad itself.
+		/// False when there is no room.
 		/// </summary>
 		public static bool FindPad(Vector2 spot, out Vector2 pad)
 		{
@@ -68,24 +70,46 @@ namespace Mechanization.Content.NPCs
 				pos.Y -= MechConstants.TilePx;
 				if (++lifted > F.PlaceLiftTiles) return false;
 			}
-			Vector2 ground = pos;
-			bool landed = false;
-			for (int i = 0; i < F.PlaceDropTiles; i++)
-			{
-				Vector2 next = ground + new Vector2(0f, MechConstants.TilePx);
-				if (!WorldGen.InWorld((int)(next.X / MechConstants.TilePx), (int)(next.Y / MechConstants.TilePx), 10)) break;
-				if (Blocked(next)) { landed = true; break; }
-				ground = next;
-			}
-			if (!landed) { pad = pos; return true; } // nothing to land on in reach: it hangs where it was set down
-			for (int i = 0; i < MechConstants.TilePx; i++)
+
+			float half = D.BodyHeight * 0.5f, reach = F.SettleTiles * MechConstants.TilePx;
+			float bestRest = float.NaN; // the body centre's Y when resting on the nearest surface in reach
+
+			// solid ground: fall at most the settle distance, a pixel at a time (so slopes and half blocks are honoured as the body collides)
+			Vector2 ground = pos; bool grounded = false;
+			for (int i = 0; i < (int)reach; i++)
 			{
 				Vector2 next = ground + new Vector2(0f, 1f);
-				if (Blocked(next)) break;
+				if (Blocked(next)) { grounded = true; break; }
 				ground = next;
 			}
-			pad = ground;
+			if (grounded) bestRest = ground.Y;
+
+			// platforms (solid only from above, so the collision test above ignores them): the nearest top that is no more than a tile above the cursor (the cursor sits on the platform) and no more than the settle reach below the body's feet
+			float bottom = pos.Y + half;
+			int x0 = (int)((pos.X - D.BodyWidth * 0.5f) / MechConstants.TilePx), x1 = (int)((pos.X + D.BodyWidth * 0.5f - 1f) / MechConstants.TilePx);
+			int y0 = (int)Math.Floor((bottom - half - MechConstants.TilePx) / MechConstants.TilePx), y1 = (int)Math.Floor((bottom + reach) / MechConstants.TilePx);
+			for (int ty = y0; ty <= y1; ty++)
+			{
+				float top = ty * MechConstants.TilePx;
+				if (top < bottom - half - MechConstants.TilePx || top > bottom + reach) continue;
+				bool surface = false;
+				for (int tx = x0; tx <= x1 && !surface; tx++) surface = IsPlatform(tx, ty);
+				if (!surface) continue;
+				float rest = top - half;
+				if (Blocked(new Vector2(pos.X, rest))) continue; // a ceiling over the platform: not room to stand
+				if (float.IsNaN(bestRest) || Math.Abs(rest - pos.Y) < Math.Abs(bestRest - pos.Y)) bestRest = rest;
+			}
+
+			pad = float.IsNaN(bestRest) ? pos : new Vector2(pos.X, bestRest);
 			return true;
+		}
+
+		/// <summary>True for a tile that can be stood on from above without being solid from below: a platform (or a table or workbench top).</summary>
+		private static bool IsPlatform(int tx, int ty)
+		{
+			if (!WorldGen.InWorld(tx, ty, 4)) return false;
+			Tile t = Main.tile[tx, ty];
+			return t.HasTile && !t.IsActuated && Main.tileSolidTop[t.TileType];
 		}
 
 		/// <summary>Server / single player: <see cref="FindPad"/> then <see cref="PlaceNew"/>. Returns the NPC slot, or -1 when there is no room or no free NPC slot.</summary>

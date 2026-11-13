@@ -72,7 +72,8 @@ namespace Mechanization.Common
 			if (Environment.GetEnvironmentVariable("LEVY_MECHWORLD_EXIT") == "1") { try { Netplay.SaveOnServerExit = false; Netplay.Disconnect = true; } catch { } }
 		}
 
-		private static void Check(string name, bool ok) { if (ok) _pass++; else _fail++; _mod.Logger.Info($"[MechWorld] {(ok ? "PASS" : "FAIL")} {name}"); }
+		private static int _secPass, _secFail;
+		private static void Check(string name, bool ok) { if (ok) { _pass++; _secPass++; } else { _fail++; _secFail++; } _mod.Logger.Info($"[MechWorld] {(ok ? "PASS" : "FAIL")} {name}"); }
 		private static void Note(string s) => _mod.Logger.Info("[MechWorld] OBSERVED " + s);
 
 		// ---------------------------------------------------------------------------------------------- world helpers
@@ -104,6 +105,7 @@ namespace Mechanization.Common
 
 		private static void Refresh()
 		{
+			ArmoryRelays.Invalidate(); // entities were just swapped in or out
 			var sys = Main.PylonSystem; var t = sys.GetType();
 			foreach (string name in new[] { "RequestImmediateUpdate", "Update" })
 				t.GetMethod(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null)?.Invoke(sys, null);
@@ -131,7 +133,7 @@ namespace Mechanization.Common
 			for (int i = 0; i < n; i++)
 			{
 				KeepCommander();
-				_update.Invoke(Main.instance, new object[] { new GameTime() });
+				global::Levy.Common.Testing.WorldStep.Update();
 			}
 		}
 
@@ -180,6 +182,7 @@ namespace Mechanization.Common
 			RelayAcrossPylons();
 			TurretItemUse();
 			DroneItemUse();
+			DronePlacementRule();
 			DroneLeavesPlayerAlone();
 			if (Environment.GetEnvironmentVariable("LEVY_MECHSWEEP") == "1") ShotSweep();
 			if (Environment.GetEnvironmentVariable("LEVY_MECHAMMO") == "1") AmmoResolveAudit();
@@ -261,13 +264,12 @@ namespace Mechanization.Common
 			ClearPlaced(); Flatten(east);
 			Point16 lone = RealPlace(relType, 0, east + 2, FloorY - 1); RealPlace(kinds[0].Type, kinds[0].Style, east + 8, FloorY - 1); Refresh();
 			ArmoryRelayTE loneRelay = TileEntity.ByPosition.TryGetValue(lone, out TileEntity e3) ? e3 as ArmoryRelayTE : null;
-			Check("a lone relay beside a pylon with no Armory in the world stays unlinked", loneRelay != null && ArmoryRelays.LinkOf(loneRelay) == null);
+			Check("a lone relay with no Armory in the world stays unlinked", loneRelay != null && ArmoryRelays.LinkOf(loneRelay) == null);
 			if (loneRelay != null)
 			{
-				ArmoryRelays.Diagnose(loneRelay.Center, out int inReach, out int pylons, out int onNet);
-				string txt = Terraria.Localization.Language.GetTextValue("Mods.Mechanization.UI.RelayUnlinked", (int)MechConstants.Relay.LinkReachTiles, inReach, (int)Levy.Common.LevyConstants.PylonShareRadius, pylons, onNet);
+				string txt = Terraria.Localization.Language.GetTextValue("Mods.Mechanization.UI.RelayUnlinked");
 				Note("unlinked relay hover text: " + txt);
-				Check("the unlinked text counts 1 pylon and 0 armories and has no unfilled slot", pylons == 1 && inReach == 0 && onNet == 0 && !txt.Contains("{"));
+				Check("the unlinked text says there is no Armory in the world and has no unfilled slot", ArmoryRelays.ArmoriesInWorld() == 0 && txt.Contains("no Armory") && !txt.Contains("{"));
 			}
 			ClearPlaced();
 		}
@@ -372,6 +374,105 @@ namespace Mechanization.Common
 			KillAll<TurretNPC>(); ClearPlaced();
 		}
 
+		/// <summary>
+		/// Where a Combat Drone ends up and what it does there: set down in open air it hovers at the cursor; on or within two tiles above solid ground or a platform it rests on that surface (not the floor below a platform);
+		/// buried in terrain it is lifted out. Placed through the real item and the server's request path, then stepped with the real Main.Update: a patrolling drone never sinks below its spot, and when its battery sends it
+		/// home it returns to the spot (not the floor, not a Barracks pad) and rests there. Logged as "[DronePlace] self-check pass=N fail=N".
+		/// </summary>
+		private static void DronePlacementRule()
+		{
+			int cx = 1200; PrepareArena(cx);
+			_secPass = _secFail = 0;
+			float floorTop = FloorY * 16f; int platRow = FloorY - 8; float platTop = platRow * 16f;
+			for (int x = cx - 6; x <= cx + 6; x++) { Tile t = Main.tile[x, platRow]; t.HasTile = true; t.TileType = TileID.Platforms; t.TileFrameX = 0; t.TileFrameY = 0; t.BlockType = BlockType.Solid; }
+			_placed.Add((cx - 6, platRow, 13, 1));
+			for (int x = cx + 20; x <= cx + 24; x++) for (int y = FloorY - 4; y < FloorY; y++) { Tile t = Main.tile[x, y]; t.HasTile = true; t.TileType = TileID.Dirt; t.BlockType = BlockType.Solid; }
+			_placed.Add((cx + 20, FloorY - 4, 5, 4));
+			float blockTop = (FloorY - 4) * 16f;
+			Player p = Main.player[0];
+			FieldDroneSystem sys = FieldDroneSystem.Instance;
+
+			DroneNPC Place(Vector2 cursor, string label)
+			{
+				KillAll<DroneNPC>(); sys.OnWorldUnload();
+				bool used = UseItem(p, new Item(ModContent.ItemType<DroneItem>(), 2), cursor, out string why);
+				DroneNPC d = null; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is DroneNPC dn && dn.IsField) d = dn;
+				Note($"{label}: cursor {cursor} used={used} drone centre {(d != null ? d.NPC.Center.ToString() : "none")} bottom {(d != null ? d.NPC.Bottom.Y.ToString("0.0") : "-")} (floor top {floorTop}, platform top {platTop}, block top {blockTop}) {why}");
+				return d;
+			}
+			bool Near(float a, float b, float tol = 2.5f) => Math.Abs(a - b) <= tol;
+
+			Vector2 air = new Vector2(cx * 16f, (FloorY - 20) * 16f);
+			DroneNPC d = Place(air, "open air, 20 tiles above the floor");
+			Check("open air: the drone is placed", d != null);
+			if (d != null) Check("open air: it hovers at the cursor, not on the floor 20 tiles below", Vector2.Distance(d.NPC.Center, air) <= 2.5f && d.NPC.Bottom.Y < floorTop - 10 * 16f);
+
+			d = Place(new Vector2(cx * 16f + 8f, platRow * 16f + 8f), "cursor on a platform");
+			Check("platform: the drone is placed", d != null);
+			if (d != null) Check("platform: it rests on the platform, not on the floor below", Near(d.NPC.Bottom.Y, platTop) && Near(d.NPC.Center.X, cx * 16f + 8f));
+			d = Place(new Vector2(cx * 16f + 8f, platTop - 14f - 20f), "cursor 20px above a platform");
+			if (d != null) Check("platform, just above: it settles onto the platform", Near(d.NPC.Bottom.Y, platTop));
+			d = Place(new Vector2(cx * 16f, platTop - 14f - 6f * 16f), "cursor 6 tiles above a platform");
+			if (d != null) Check("platform, well above: it hovers at the cursor", Math.Abs(d.NPC.Center.Y - (platTop - 14f - 6f * 16f)) <= 2.5f);
+			d = Place(new Vector2((cx + 30) * 16f, floorTop - 14f - 20f), "cursor 20px above the ground");
+			if (d != null) Check("ground, just above: it rests on the ground", Near(d.NPC.Bottom.Y, floorTop));
+			d = Place(new Vector2((cx + 30) * 16f, floorTop - 14f - 8f * 16f), "cursor 8 tiles above the ground");
+			if (d != null) Check("ground, well above: it hovers at the cursor", Math.Abs(d.NPC.Center.Y - (floorTop - 14f - 8f * 16f)) <= 2.5f);
+			Vector2 buried = new Vector2((cx + 22) * 16f, (FloorY - 2) * 16f);
+			d = Place(buried, "cursor buried inside a block");
+			Check("buried: the drone is placed", d != null);
+			if (d != null) Check("buried: it is lifted out of the terrain onto its top", !Collision.SolidCollision(d.NPC.position, d.NPC.width, d.NPC.height) && Near(d.NPC.Bottom.Y, blockTop));
+
+			// ---- the server's request path (what a multiplayer client's place packet runs) ----
+			p.active = true; p.dead = false; p.position = air - new Vector2(p.width / 2f, p.height / 2f);
+			KillAll<DroneNPC>(); sys.OnWorldUnload();
+			p.inventory[0] = new Item(ModContent.ItemType<DroneItem>()); p.selectedItem = 0;
+			Step(15);
+			p.position = air - new Vector2(p.width / 2f, p.height / 2f);
+			p.active = true; // the server loop drops a connectionless slot from the side: set it right before the call
+			bool placedAir = sys.PlaceFor(p, air);
+			DroneNPC sa = null; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is DroneNPC dn && dn.IsField) sa = dn;
+			Note($"server request, open air: PlaceFor={placedAir} netMode={Main.netMode} held={p.HeldItem?.type} want={ModContent.ItemType<DroneItem>()} drone centre {(sa != null ? sa.NPC.Center.ToString() : "none")} cursor {air} playerActive={p.active} dead={p.dead} reach={Vector2.Distance(p.Center, air)}");
+						Check("server request, open air: it hovers at the cursor", placedAir && sa != null && Vector2.Distance(sa.NPC.Center, air) <= 2.5f);
+			KillAll<DroneNPC>(); sys.OnWorldUnload();
+			Step(15);
+			Vector2 onPlat = new Vector2(cx * 16f + 8f, platRow * 16f + 8f);
+			p.position = onPlat - new Vector2(p.width / 2f, p.height / 2f);
+			p.active = true;
+			bool placedPlat = sys.PlaceFor(p, onPlat);
+			DroneNPC sp = null; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is DroneNPC dn && dn.IsField) sp = dn;
+			Check("server request, on a platform: it rests on the platform", placedPlat && sp != null && Near(sp.NPC.Bottom.Y, platTop));
+			p.inventory[0] = new Item();
+
+			// ---- the runtime keeps to the spot ----
+			foreach (var (label, cursor, restBottom) in new[] { ("open air", air, float.NaN), ("platform", new Vector2(cx * 16f + 8f, platRow * 16f + 8f), platTop) })
+			{
+				d = Place(cursor, label + " runtime");
+				if (d == null) { Check(label + " runtime: placed", false); continue; }
+				Vector2 home = d.HomeSpot;
+				_cmdAt = new Vector2(cx * 16f, (FloorY - 3) * 16f);
+				float lowest = float.MinValue, widest = 0f;
+				for (int k = 0; k < 900; k++) { Step(1); if (!d.NPC.active) break; lowest = Math.Max(lowest, d.NPC.Center.Y - home.Y); widest = Math.Max(widest, Math.Abs(d.NPC.Center.X - home.X)); }
+				Note($"{label}: after 15 s of patrol the drone was at most {lowest:0.0}px below its spot and {widest / 16f:0.0} tiles to the side; phase {(d.NPC.active ? d.Phase.ToString() : "gone")}");
+				Check($"{label}: a patrolling drone stays alive and never sinks below its spot", d.NPC.active && lowest <= 8f);
+				Check($"{label}: it patrols within the box around its spot", widest <= (MechConstants.FieldDrone.LoiterHalfWidthTiles + MechConstants.FieldDrone.LeashTiles) * 16f);
+				d.DrainBatteryForCheck();
+				int landedAt = -1;
+				for (int k = 0; k < 1500 && d.NPC.active; k++) { Step(1); if (d.Landed) { landedAt = k; break; } }
+				Note($"{label}: low battery, landed after {landedAt} ticks at {d.NPC.Center} (spot {home})");
+				Check($"{label}: a low battery sends it home and it lands", landedAt >= 0);
+				if (landedAt >= 0)
+				{
+					Check($"{label}: it rests within 2 tiles of the spot it was set down at", Vector2.Distance(d.NPC.Center, home) <= 32f);
+					if (!float.IsNaN(restBottom)) Check($"{label}: it rests on the platform, not the floor below", Near(d.NPC.Bottom.Y, restBottom) );
+					Step(300);
+					Check($"{label}: after 5 more seconds it is still at the spot", d.NPC.active && Vector2.Distance(d.NPC.Center, home) <= 32f);
+				}
+			}
+			KillAll<DroneNPC>(); sys.OnWorldUnload(); ClearPlaced();
+			_mod.Logger.Info($"[DronePlace] self-check pass={_secPass} fail={_secFail}");
+		}
+
 		private static void DroneItemUse()
 		{
 			int cx = 1200; PrepareArena(cx);
@@ -465,7 +566,7 @@ namespace Mechanization.Common
 					for (int k = 0; k < (phase == 0 ? 240 : 700); k++)
 					{
 						KeepCommander(); // the position and health only: the speed and everything else is read after the update, so a recoil or a lock shows
-						_update.Invoke(Main.instance, new object[] { new GameTime() });
+						global::Levy.Common.Testing.WorldStep.Update();
 						Differences(before, PlayerSnapshot(Main.player[0]), phase == 0 ? quiet : firing);
 						if (phase == 1)
 						{
@@ -586,7 +687,7 @@ namespace Mechanization.Common
 			for (int k = 0; k < 90; k++)
 			{
 				KeepCommander();
-				_update.Invoke(Main.instance, new object[] { new GameTime() });
+				global::Levy.Common.Testing.WorldStep.Update();
 				all.Clear(); Differences(before, PlayerSnapshot(Main.player[0]), all);
 				foreach (string d in all) if (IsWatched(d)) watched.Add(d);
 			}

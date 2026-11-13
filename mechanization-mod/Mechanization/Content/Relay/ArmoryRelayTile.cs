@@ -91,8 +91,7 @@ namespace Mechanization.Content.Relay
 			if (relay == null) { player.cursorItemIconText = Language.GetTextValue("Mods.Mechanization.UI.RelayNoEntity"); return; }
 			if (a == null)
 			{
-				ArmoryRelays.Diagnose(relay.Center, out int inReach, out int pylons, out int onNet);
-				player.cursorItemIconText = Language.GetTextValue("Mods.Mechanization.UI.RelayUnlinked", (int)R.LinkReachTiles, inReach, (int)Levy.Common.LevyConstants.PylonShareRadius, pylons, onNet);
+				player.cursorItemIconText = Language.GetTextValue("Mods.Mechanization.UI.RelayUnlinked");
 				return;
 			}
 			int dist = (int)Math.Round(Vector2.Distance(relay.Center, a.Center) / 16f);

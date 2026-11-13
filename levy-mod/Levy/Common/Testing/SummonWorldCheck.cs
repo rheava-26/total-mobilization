@@ -71,7 +71,7 @@ namespace Levy.Common.Testing
 		private static void Step(int n)
 		{
 			_update ??= typeof(Main).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(GameTime) }, null);
-			for (int i = 0; i < n; i++) { KeepCommander(); _update.Invoke(Main.instance, new object[] { new GameTime() }); }
+			for (int i = 0; i < n; i++) { KeepCommander(); global::Levy.Common.Testing.WorldStep.Update(); }
 		}
 
 		private static void KeepCommander()

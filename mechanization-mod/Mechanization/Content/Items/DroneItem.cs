@@ -11,7 +11,7 @@ using F = Mechanization.Common.MechConstants.FieldDrone;
 namespace Mechanization.Content.Items
 {
 	/// <summary>
-	/// Deploys a combat drone at the cursor. The drone unfolds on its landing pad (the ground under the spot), takes off, patrols the box around it and shoots hostiles in reach of what it has mounted.
+	/// Deploys a combat drone at the cursor. The drone unfolds where it was set down (resting on solid ground or a platform at the spot, or hovering there in open air), takes off, patrols the box around it and shoots hostiles in reach of what it has mounted.
 	/// It arms itself from the Armories in reach exactly as <see cref="TurretItem"/>'s turret does, and fires a plain bullet when it finds none. Craftable from wire, so the Mechanic gates it.
 	///
 	/// Placement is server-authoritative, as the turret's: single player places directly; a multiplayer client sends <see cref="MechPackets.SendPlaceDrone"/> and the server validates, places

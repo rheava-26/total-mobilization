@@ -15,10 +15,10 @@ namespace Mechanization.Common
 		/// <summary>The Armory Relay: a small placeable that lends a linked Armory to turrets and drones standing near it.</summary>
 		public static class Relay
 		{
-			/// <summary>How far a relay looks for the Armory it links to, in tiles. Wider than a turret's own Armory reach, so a relay can bridge a frontier turret back to a far base.</summary>
-			public const float LinkReachTiles = 1000f;
-			/// <summary>Turrets and drones within this many tiles of a relay treat its linked Armory as in reach.</summary>
-			public const float ServeRadiusTiles = 25f;
+			/// <summary>Turrets and drones within this many tiles of a relay treat its linked Armory as in reach. A relay links to the nearest Armory anywhere in the world, so it has no link reach.</summary>
+			public const float ServeRadiusTiles = 50f;
+			/// <summary>The live link and the entity lists are re-resolved at most this often, in ticks, or at once when the tile-entity count changes (an Armory or relay placed or removed).</summary>
+			public const int RefreshTicks = 30;
 			/// <summary>Pulse period of the relay's lamp, in ticks.</summary>
 			public const int PulseTicks = 90;
 		}
@@ -147,8 +147,8 @@ namespace Mechanization.Common
 			public const float PlaceReachPx = 90f * TilePx;
 			/// <summary>A spot buried in the ground is lifted up to this many tiles to the first open space; with none the item is not used up.</summary>
 			public const int PlaceLiftTiles = 8;
-			/// <summary>The landing pad is the ground below the spot, searched down this many tiles; with none the drone hangs at the spot itself.</summary>
-			public const int PlaceDropTiles = 120;
+			/// <summary>A spot on, or this many tiles above, solid ground or a platform settles onto it; any higher the drone hovers where it was set down.</summary>
+			public const int SettleTiles = 2;
 			public const int PlaceMinGapTicks = 10;
 			/// <summary>No drone is set down while fewer than this many NPC slots are free.</summary>
 			public const int NpcSlotReserve = 30;

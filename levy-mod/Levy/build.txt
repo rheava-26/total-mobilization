@@ -1,6 +1,6 @@
 displayName = Levy
 author = Eve
-version = 2.0.58
+version = 2.0.59
 homepage =
 side = Both
 hideCode = false

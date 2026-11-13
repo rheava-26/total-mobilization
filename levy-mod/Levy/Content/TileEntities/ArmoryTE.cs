@@ -939,11 +939,11 @@ namespace Levy.Content.TileEntities
 			return haveSentry ? TakeSentrySidearm(forSoldier) : null; // only sentries in the whole armory: double up rather than go one-handed
 		}
 
-		/// <summary>The minion staff or sentry the player placed in the armory's dedicated sidearm slot, taken by a soldier who is not a summoner (the racks stay reserved for summoners). Removes it. Null if the slot holds neither.</summary>
-		private Item TakeDeployerFromSidearmSlot()
+		/// <summary>The minion staff or sentry the player placed in the armory's dedicated sidearm slot, taken by a soldier who is not a summoner when his gear gives the extra slot for it (the racks stay reserved for summoners). Removes it. Null if the slot holds neither.</summary>
+		private Item TakeDeployerFromSidearmSlot(int extraMinions = 1, int extraTurrets = 1)
 		{
 			var it = IssueWeapons[SidearmSlot];
-			if (IsReservedRef(it) || !(IsIssuableSummonStaff(it) || IsIssuableSentry(it))) return null;
+			if (IsReservedRef(it) || !(IsIssuableSummonStaff(it) || IsIssuableSentry(it)) || !SidearmPolicy.AllowedForOthers(it, extraMinions, extraTurrets)) return null;
 			return Remove(IssueWeapons, SidearmSlot);
 		}
 
@@ -2037,8 +2037,8 @@ namespace Levy.Content.TileEntities
 			// The camera slot: a GoPro, one per levy, to the levies the player most likely watches first (see CameraStep).
 			if (CameraStep(soldier)) changed = true;
 
-			// Reservation: a non-summoner never keeps a whip off-hand (a leftover from an old save or a role change goes back to the racks). A minion staff or a sentry is a
-			// legitimate off-hand for any class: minions persist whatever is in hand, so a gunner or a swordsman may field a flock beside his primary.
+			// Reservation: a non-summoner never keeps a whip off-hand (a leftover from an old save or a role change goes back to the racks). A minion staff or a sentry is
+			// carried by a non-summoner only while his gear gives the extra slot for it (SidearmPolicy.Misfits, run by FillSidearms).
 			if (!summoner && !g.IsLocked(SoldierGear.SlotSidearm) && g.HasSidearm && WeaponClassifier.GetProfile(g.Sidearm).Family == WeaponFamily.Whip)
 			{
 				var rem = DepositOld(g.Sidearm);

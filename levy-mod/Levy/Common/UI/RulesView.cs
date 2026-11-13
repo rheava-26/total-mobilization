@@ -147,22 +147,18 @@ namespace Levy.Common.UI
 			return card;
 		}
 
-		/// <summary>The loadout limits card: the sidearms a levy who is not a summoner may carry, and whether he may carry summon weapons at all.</summary>
+		/// <summary>The loadout limits card: the most sidearms a levy who is not a summoner may carry.</summary>
 		private UIElement BuildLimitsCard(ArmoryRules rules)
 		{
 			var card = new UIPanel();
 			card.SetPadding(0);
-			card.Width.Set(CardWidth, 0f); card.Height.Set(HeaderH + 56 + Pad, 0f);
+			card.Width.Set(CardWidth, 0f); card.Height.Set(HeaderH + 28 + Pad, 0f);
 			card.BackgroundColor = new Color(30, 44, 72) * 0.92f;
 			var title = new Label(LevyUtil.T("Rules.LimitsTitle"), 0.9f); title.Left.Set(Pad + 4, 0f); title.Top.Set(Pad + 3, 0f); card.Append(title);
 			float y = HeaderH + Pad - 2;
 			var l1 = new Label(LevyUtil.T("Rules.SidearmLimit"), 0.85f); l1.Left.Set(Pad + 4, 0f); l1.Top.Set(y + 4, 0f); card.Append(l1);
 			Field(card, 300, y, 112, 0, LevyConstants.MaxSidearms, 1, true, () => rules.SidearmLimit, v => { rules.SidearmLimit = (int)v; rules.Changed(); });
 			var n1 = new Label(LevyUtil.T("Rules.SidearmLimitNote"), 0.7f); n1.Left.Set(420, 0f); n1.Top.Set(y + 6, 0f); card.Append(n1);
-			y += 28;
-			var l2 = new Label(LevyUtil.T("Rules.SummonsForOthers"), 0.85f); l2.Left.Set(Pad + 4, 0f); l2.Top.Set(y + 4, 0f); card.Append(l2);
-			var on = new LevyButton(LevyUtil.T(rules.SummonsForOthers ? "Rules.On" : "Rules.Off"), LevyConstants.UI.ButtonTextScale, 112, 24, () => { rules.SummonsForOthers = !rules.SummonsForOthers; Reshape(); }, LevyUtil.T("Rules.SummonsForOthersHint")) { Lit = rules.SummonsForOthers };
-			on.Left.Set(300, 0f); on.Top.Set(y, 0f); card.Append(on);
 			return card;
 		}
 

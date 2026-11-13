@@ -12,7 +12,8 @@ namespace Levy.Content.TileEntities
 {
 	/// <summary>
 	/// The levy's sidearms (see <see cref="SidearmPolicy"/> for the rules): up to <see cref="LevyConstants.MaxSidearms"/> of them, the hand sidearm and two extra slots that hold the summon weapons.
-	///  * A levy who is NOT a summoner carries ONE summon item, a sentry staff or a minion staff (the better one in stock; none when the config turns it off), in an extra slot; a ranged or magic levy keeps his lesser blade in hand.
+	///  * A levy who is NOT a summoner has no summon slot of his own: he carries a minion staff only when his gear gives a minion slot beyond the base one, and a sentry staff only when it gives a sentry slot beyond the base one
+	///    (see <see cref="ArmorDoctrine.ExtraSummonSlots"/>), as one of his ordinary sidearms (it counts against the sidearm limit). Without the extra slot it goes back to the shelf on the next pass. A ranged or magic levy keeps his lesser blade in hand.
 	///  * A SUMMONER leads with a whip. The hand slot carries his minion staff, the extra slots his sentry staff and then as many one-minion staves (see <see cref="SummonCap"/>) as he has room for.
 	///  * With no whip in stock a summoner leads with the staff and carries the sentry; with neither, with the sentry.
 	/// </summary>
@@ -142,14 +143,16 @@ namespace Levy.Content.TileEntities
 			HashSet<object> claimed = null; bool claimedRead = false;
 			bool Free(Item it) { if (!claimedRead) { claimed = ClaimedWeapons(soldier); claimedRead = true; } return claimed == null || !claimed.Contains(it); }
 			bool meleeRole = g.HasWeapon && SidearmPolicy.IsMeleeRole(g.Weapon);
-			bool noSummons = !summoner && !Rules.SummonsForOthers;
+			int exM = 0, exT = 0;
+			if (!summoner) ArmorDoctrine.ExtraSummonSlots(g, out exM, out exT);
+			bool noSummons = !summoner && exM < 1 && exT < 1;
 
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && !g.HasSidearm && SidearmRoom(g, summoner))
 			{
 				Item s;
 				if (summoner && !meleeRole) s = TakeSummonerComplement(soldier, primaryFam);
 				else if (summoner) s = TakeDeployerFromSidearmSlot() ?? TakeSummonSecondary(Free); // a whip-leading summoner: a staff, never a blade
-				else s = (noSummons ? null : TakeDeployerFromSidearmSlot())
+				else s = (noSummons ? null : TakeDeployerFromSidearmSlot(exM, exT))
 					?? (meleeRole || primaryMelee ? null // a melee levy's summon weapons ride in the extra slots, never a sword here
 					: TakeSidearm(soldier)); // ranged / magic: a lesser blade
 				if (s != null)
@@ -190,11 +193,13 @@ namespace Levy.Content.TileEntities
 			Item TakeSentry() => TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => IsIssuableSentry(it) && Fits(it), WeaponRank.Of);
 			if (!summoner)
 			{
-				// ONE SUMMON ITEM: a levy who is not a summoner carries a single minion staff OR a single sentry (the better one in stock); none when the armory's rules keep summon weapons for summoners.
-				if (!Rules.SummonsForOthers || hasSentry || hasStaff) return null;
+				// NO SUMMON SLOT OF HIS OWN: a minion staff only with a minion slot beyond the base one, a sentry staff only with a sentry slot beyond the base one (and none of a kind he already carries).
+				ArmorDoctrine.ExtraSummonSlots(g, out int exM, out int exT);
+				bool wantStaff = exM >= 1 && !hasStaff, wantSentry = exT >= 1 && !hasSentry;
+				if (!wantStaff && !wantSentry) return null;
 				// SUMMONERS FIRST: a levy who is not a summoner is dealt only the staves no summoner could still use (see SummonerWants), the leftovers.
 				var wants = SummonerWantList(who);
-				return TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => (IsIssuableSentry(it) || IsIssuableSummonStaff(it)) && Fits(it) && !SummonerWants(wants, it), WeaponRank.Of);
+				return TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => ((wantSentry && IsIssuableSentry(it)) || (wantStaff && IsIssuableSummonStaff(it))) && Fits(it) && !SummonerWants(wants, it), WeaponRank.Of);
 			}
 			Item p = null;
 			if (!hasUnlimited) p = TakeStaff(it => !SummonCap.IsCapped(it));
@@ -211,18 +216,17 @@ namespace Levy.Content.TileEntities
 			return n < Rules.SidearmLimit;
 		}
 
-		/// <summary>Gives back to the shelf the sidearms a levy who is not a summoner carries beyond this armory's limit (extra slots first), and the summon weapons the rules keep for summoners. Locked slots stay. True if anything went back.</summary>
+		/// <summary>Gives back to the shelf the sidearms a levy who is not a summoner carries beyond this armory's limit (extra slots first). Locked slots stay. True if anything went back.</summary>
 		private bool EnforceSidearmRules(SoldierGear g, bool summoner)
 		{
-			if (summoner || !Rules.LimitsLoadouts) return false;
+			if (summoner || !Rules.LimitsLoadouts) return false; // the summon-slot rule is SidearmPolicy.Misfits' (TidySidearms runs first)
 			bool any = false;
 			int count = 0; foreach (var s in g.Sidearms()) if (!IsAir(s)) count++;
 			for (int i = LevyConstants.MaxSidearms - 1; i >= 0; i--)
 			{
 				int slot = SoldierGear.SidearmSlotAt(i); var cur = g.Get(slot);
 				if (g.IsLocked(slot) || IsAir(cur)) continue;
-				bool denied = !Rules.SummonsForOthers && SidearmPolicy.IsDeployer(cur);
-				if (!denied && count <= Rules.SidearmLimit) continue;
+				if (count <= Rules.SidearmLimit) continue;
 				var rem = DepositOld(cur);
 				if (!IsAir(rem)) Spill(rem, protect: true);
 				g.Set(slot, new Item()); count--; any = true;

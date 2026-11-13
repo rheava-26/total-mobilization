@@ -5,33 +5,31 @@ using Terraria;
 using Terraria.DataStructures;
 using Terraria.ModLoader;
 using Levy.Content.TileEntities;    // ArmoryTE
-using Mechanization.Common;         // ArmoryLink.NearPylon
+using Mechanization.Common;         // ArmoryLink
 using R = Mechanization.Common.MechConstants.Relay;
 
 namespace Mechanization.Content.Relay
 {
 	/// <summary>
-	/// Armory Relay logic. A relay links to ONE Armory: the nearest within <see cref="R.LinkReachTiles"/>, else (when the relay stands at a vanilla pylon) the nearest Armory on the pylon network.
-	/// Anything within <see cref="R.ServeRadiusTiles"/> of a relay treats that Armory (and its pylon network) as in reach. The core is pure over passed lists so it can be checked without a world;
-	/// the live wrappers read the tile entities. Several relays each add their Armory to the pool, which de-duplicates, so nothing stacks.
+	/// Armory Relay logic. A relay links to ONE Armory: the nearest one anywhere in the world (the whole pylon network of that Armory is then lent along with it, see <see cref="ArmoryLink"/>).
+	/// Anything within <see cref="R.ServeRadiusTiles"/> of a relay treats that Armory as in reach. The core is pure over passed lists so it can be checked without a world;
+	/// the live wrappers read the tile entities through a cache refreshed on a cadence. Several relays each add their Armory to the pool, which de-duplicates, so nothing stacks.
 	/// </summary>
 	public static class ArmoryRelays
 	{
 		public const float PxPerTile = 16f;
 
-		/// <summary>The Armory a relay at <paramref name="relayCenter"/> links to, from the given candidates. Null when none.</summary>
-		public static ArmoryTE Link(Vector2 relayCenter, IEnumerable<ArmoryTE> armories, bool nearPylon, Func<ArmoryTE, bool> onNetwork)
+		/// <summary>The Armory a relay at <paramref name="relayCenter"/> links to: the nearest of the given candidates, at any distance. Null when there are none.</summary>
+		public static ArmoryTE Link(Vector2 relayCenter, IEnumerable<ArmoryTE> armories)
 		{
-			float reach = R.LinkReachTiles * PxPerTile; reach *= reach;
-			ArmoryTE best = null, bestNet = null; float bestD = float.MaxValue, bestNetD = float.MaxValue;
+			ArmoryTE best = null; float bestD = float.MaxValue;
 			foreach (ArmoryTE a in armories)
 			{
 				if (a == null) continue;
 				float d = Vector2.DistanceSquared(relayCenter, a.Center);
-				if (d <= reach && d < bestD) { bestD = d; best = a; }
-				if (nearPylon && onNetwork != null && d < bestNetD && onNetwork(a)) { bestNetD = d; bestNet = a; }
+				if (d < bestD) { bestD = d; best = a; }
 			}
-			return best ?? bestNet;
+			return best;
 		}
 
 		/// <summary>True when <paramref name="spot"/> is within the serve radius of <paramref name="relayCenter"/>.</summary>
@@ -42,12 +40,12 @@ namespace Mechanization.Content.Relay
 		}
 
 		/// <summary>Adds to <paramref name="into"/> the linked Armory of every relay that serves <paramref name="spot"/> (no duplicates).</summary>
-		public static void LinkedFor(Vector2 spot, IEnumerable<ArmoryRelayTE> relays, IEnumerable<ArmoryTE> armories, Func<Vector2, bool> pylonNear, Func<ArmoryTE, bool> onNetwork, List<ArmoryTE> into)
+		public static void LinkedFor(Vector2 spot, IEnumerable<ArmoryRelayTE> relays, IEnumerable<ArmoryTE> armories, List<ArmoryTE> into)
 		{
 			foreach (ArmoryRelayTE r in relays)
 			{
 				if (!Serves(r.Center, spot)) continue;
-				ArmoryTE a = Link(r.Center, armories, pylonNear != null && pylonNear(r.Center), onNetwork);
+				ArmoryTE a = Link(r.Center, armories);
 				if (a != null && !into.Contains(a)) into.Add(a);
 			}
 		}
@@ -56,48 +54,41 @@ namespace Mechanization.Content.Relay
 		private static readonly List<ArmoryTE> _scratch = new();
 		private static readonly List<ArmoryRelayTE> _relays = new();
 		private static readonly List<ArmoryTE> _armories = new();
+		private static uint _gatherStamp = uint.MaxValue; private static int _gatherCount = -1;
 
 		/// <summary>The Armories lent to <paramref name="spot"/> by nearby relays in the live world. The returned list is reused; read it at once.</summary>
 		public static List<ArmoryTE> LinkedFor(Vector2 spot)
 		{
 			_scratch.Clear();
 			Gather();
-			if (_relays.Count > 0) LinkedFor(spot, _relays, _armories, LivePylonNear, LiveOnNetwork, _scratch);
+			for (int i = 0; i < _relays.Count; i++)
+			{
+				ArmoryRelayTE r = _relays[i];
+				if (!Serves(r.Center, spot)) continue;
+				ArmoryTE a = r.Linked;
+				if (a != null && !_scratch.Contains(a)) _scratch.Add(a);
+			}
 			return _scratch;
 		}
 
 		public static ArmoryTE FirstLinkedFor(Vector2 spot) { var l = LinkedFor(spot); return l.Count > 0 ? l[0] : null; }
 
-		/// <summary>The Armory this one relay is linked to right now (for the hover readout). Null when none.</summary>
+		/// <summary>The Armory this one relay is linked to right now (the relay caches it; see <see cref="ArmoryRelayTE.Linked"/>). Null when there is no Armory in the world.</summary>
 		public static ArmoryTE LinkOf(ArmoryRelayTE relay)
 		{
 			Gather();
-			return Link(relay.Center, _armories, LivePylonNear(relay.Center), LiveOnNetwork);
+			return Link(relay.Center, _armories);
 		}
 
-		/// <summary>What an unlinked relay at <paramref name="c"/> looked at: the Armories within link reach, the pylons within Levy's pylon-share radius, and the Armories on a pylon network anywhere. Read-only; for the hover text.</summary>
-		public static void Diagnose(Vector2 c, out int armoriesInReach, out int pylonsNear, out int armoriesOnNetwork)
-		{
-			Gather();
-			armoriesInReach = 0; armoriesOnNetwork = 0; pylonsNear = 0;
-			float reach = R.LinkReachTiles * PxPerTile; reach *= reach;
-			foreach (ArmoryTE a in _armories)
-			{
-				if (Vector2.DistanceSquared(c, a.Center) <= reach) armoriesInReach++;
-				if (LiveOnNetwork(a)) armoriesOnNetwork++;
-			}
-			var pylons = ArmoryLink.Pylons();
-			if (pylons == null) return;
-			float lim = Levy.Common.LevyConstants.PylonShareRadius * PxPerTile; lim *= lim;
-			for (int i = 0; i < pylons.Count; i++)
-			{
-				var p = pylons[i].PositionInTiles;
-				if (Vector2.DistanceSquared(c, new Vector2((p.X + 1.5f) * PxPerTile, (p.Y + 2f) * PxPerTile)) <= lim) pylonsNear++;
-			}
-		}
+		/// <summary>How many Armories stand in the world right now. Read-only; for the hover text of an unlinked relay.</summary>
+		public static int ArmoriesInWorld() { Gather(); return _armories.Count; }
 
+		/// <summary>The relay and Armory lists, rebuilt at most every <see cref="R.RefreshTicks"/> ticks or when the tile-entity count changes, so many relays and many turrets do not each scan every entity every tick.</summary>
 		private static void Gather()
 		{
+			uint now = Main.GameUpdateCount;
+			if (_gatherStamp != uint.MaxValue && now >= _gatherStamp && now - _gatherStamp < R.RefreshTicks && _gatherCount == TileEntity.ByID.Count) return;
+			_gatherStamp = now; _gatherCount = TileEntity.ByID.Count;
 			_relays.Clear(); _armories.Clear();
 			foreach (TileEntity te in TileEntity.ByID.Values)
 			{
@@ -106,13 +97,7 @@ namespace Mechanization.Content.Relay
 			}
 		}
 
-		private static bool LivePylonNear(Vector2 c)
-		{
-			var pylons = ArmoryLink.Pylons();
-			return pylons != null && pylons.Count > 0 && ArmoryLink.NearPylon(c, pylons);
-		}
-
-		/// <summary>On the pylon network by Levy's own rule (a pylon near the armory, or a pylon linking its barracks' settlement), not just "a pylon within 60 tiles of the armory".</summary>
-		private static bool LiveOnNetwork(ArmoryTE a) => Levy.Common.Systems.SettlementSystem.Instance?.IsArmoryOnNetwork(a) ?? LivePylonNear(a.Center);
+		/// <summary>Drops the cached lists so the next read rebuilds them (the boot checks swap entities in and out within one tick).</summary>
+		internal static void Invalidate() { _gatherStamp = uint.MaxValue; }
 	}
 }

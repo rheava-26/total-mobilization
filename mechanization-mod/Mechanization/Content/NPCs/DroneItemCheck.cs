@@ -98,7 +98,25 @@ namespace Mechanization.Content.NPCs
 				Check("it belongs to no Barracks and holds no loan", drone.BarracksId == -1 && drone.ArmoryId == -1 && drone.Weapon == null);
 				Check("it is armed (the plain bullet) and takes off", drone.Armed && drone.Phase == DronePhase.Loiter && drone.FieldWeaponType == 0);
 				float groundY = (y0 + 1) * 16f;
-				Check("its pad rests on the ground below the cursor", Math.Abs(Main.npc[idx].Bottom.Y - groundY) <= 2f && Math.Abs(Main.npc[idx].Center.X - spot.X) <= 2f);
+				Check("set down ten tiles above the floor it hovers at the cursor", Vector2.Distance(Main.npc[idx].Center, spot) <= 2.5f && Main.npc[idx].Bottom.Y < groundY - 5f * 16f);
+				{
+					// FindPad directly: open air, just above and on solid ground, on a platform, just above one, buried
+					bool ok = FieldDroneSystem.FindPad(new Vector2(x0 * 16f, groundY - 14f - 20f), out Vector2 onGround);
+					Check("a spot 20px above solid ground settles onto it", ok && Math.Abs(onGround.Y + 14f - groundY) <= 2.5f && Math.Abs(onGround.X - x0 * 16f) <= 0.5f);
+					ok = FieldDroneSystem.FindPad(new Vector2(x0 * 16f, groundY - 14f - 6f * 16f), out Vector2 air);
+					Check("a spot six tiles above solid ground stays put", ok && Math.Abs(air.Y - (groundY - 14f - 6f * 16f)) <= 0.5f);
+					int py = y0 - 5; for (int x = x0 - 3; x <= x0 + 3; x++) { Tile t = Main.tile[x, py]; t.HasTile = true; t.TileType = TileID.Platforms; t.TileFrameX = 0; t.TileFrameY = 0; touched.Add(new Point(x, py)); }
+					float platTop = py * 16f;
+					ok = FieldDroneSystem.FindPad(new Vector2(x0 * 16f, py * 16f + 8f), out Vector2 onPlat);
+					Check("a spot on a platform rests on the platform, not the floor below it", ok && Math.Abs(onPlat.Y + 14f - platTop) <= 2.5f);
+					ok = FieldDroneSystem.FindPad(new Vector2(x0 * 16f, platTop - 14f - 24f), out Vector2 abovePlat);
+					Check("a spot a tile and a half above a platform settles onto it", ok && Math.Abs(abovePlat.Y + 14f - platTop) <= 2.5f);
+					for (int x = x0 - 3; x <= x0 + 3; x++) { Tile t = Main.tile[x, py]; t.HasTile = false; }
+					for (int x = x0 + 30; x <= x0 + 32; x++) for (int y = y0 - 4; y <= y0; y++) { Tile t = Main.tile[x, y]; t.HasTile = true; t.TileType = TileID.Stone; t.BlockType = BlockType.Solid; touched.Add(new Point(x, y)); }
+					ok = FieldDroneSystem.FindPad(new Vector2((x0 + 31) * 16f, (y0 - 2) * 16f), out Vector2 lifted);
+					Check("a spot buried in a block is lifted out onto its top", ok && !Collision.SolidCollision(lifted - new Vector2(D.BodyWidth * 0.5f, D.BodyHeight * 0.5f), D.BodyWidth, D.BodyHeight) && Math.Abs(lifted.Y + 14f - (y0 - 4) * 16f) <= 2.5f);
+					for (int x = x0 + 30; x <= x0 + 32; x++) for (int y = y0 - 4; y <= y0; y++) { Tile t = Main.tile[x, y]; t.HasTile = false; }
+				}
 
 				// ---- it arms itself from the Armory in reach, without taking the weapon ----
 				var armory = new ArmoryTE { Position = new Point16(x0 + 6, y0 - 3) }; armory.ID = 970001; TileEntity.ByID[armory.ID] = armory; armories.Add(armory);

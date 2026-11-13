@@ -5,8 +5,8 @@ Items: {
 		DisplayName: Armory Relay
 		Tooltip:
 			'''
-			Links to the nearest Armory within 1000 tiles or your pylon network
-			Turrets and drones within 25 tiles draw from that Armory
+			Links to the nearest Armory in the world, or to your pylon network
+			Turrets and drones within 50 tiles draw from that Armory
 			'''
 	}
 
@@ -55,7 +55,7 @@ Configs: {
 
 UI: {
 	RelayLinked: Armory at {0}, {1}. {2} tiles away. Serves turrets and drones within {3} tiles.
-	RelayUnlinked: No armory linked. Armories within {0} tiles: {1}. Pylons within {2} tiles: {3}. Armories on a pylon network: {4}.
+	RelayUnlinked: No armory linked. There is no Armory in the world.
 	RelayNoEntity: This relay has no tile entity. Pick it up and place it again.
 	TurretDismantle: Dismantle
 	TurretChatMounted: Weapon: {0}. Reach {2} tiles. Armories: {1}.

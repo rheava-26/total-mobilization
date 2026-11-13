@@ -162,7 +162,7 @@ namespace Mechanization.Content.NPCs
 		}
 
 		/// <summary>
-		/// Binds a freshly spawned drone as a player-built one: its home is <paramref name="pad"/> (the body centre, resting on the ground below where it was set down), it mounts the best spare weapon
+		/// Binds a freshly spawned drone as a player-built one: its home is <paramref name="pad"/> (the body centre where it was set down: resting on solid ground or a platform, or hovering in open air), it mounts the best spare weapon
 		/// from the Armories in reach (or the plain bullet) and takes off. Call once right after NPC.NewNPC, then sync.
 		/// </summary>
 		public void BindField(int recordId, Vector2 pad)
@@ -217,6 +217,12 @@ namespace Mechanization.Content.NPCs
 			_cooldown = Math.Min(_cooldown, shot.IntervalTicks);
 			NPC.netUpdate = true;
 		}
+
+		/// <summary>The spot a player-built drone was set down at (its body centre). For the self-check.</summary>
+		internal Vector2 HomeSpot => _home;
+
+		/// <summary>Drains the battery to nearly flat so the drone takes its normal run home (the self-check watches where it lands).</summary>
+		internal void DrainBatteryForCheck() { _battery = 1f; }
 
 		/// <summary>The item type of the weapon a player-built drone has mounted (0 = the plain bullet). For the self-check.</summary>
 		public int FieldWeaponType => WeaponType;
@@ -378,7 +384,7 @@ namespace Mechanization.Content.NPCs
 			if (IsField)
 			{
 				_baseX = _home.X;
-				_roofY = _home.Y + D.BodyHeight * 0.5f + 1f;   // the ground under the pad: the patrol band is measured up from it
+				_roofY = _home.Y + D.BodyHeight * 0.5f + 1f;   // the foot line at the pad: the patrol band is measured up from it
 				_pad = _home;
 				return;
 			}

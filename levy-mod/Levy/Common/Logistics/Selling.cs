@@ -97,8 +97,12 @@ namespace Levy.Common.Logistics
 			{
 				var key = (it.type, (int)it.prefix, it.stack, it.value);
 				if (memo.TryGetValue(key, out long v)) return v;
-				try { if (!ok) throw new InvalidOperationException(); p.GetItemExpectedPrice(it, out long sell, out _); v = Math.Max(0, sell); }
-				catch (Exception) { v = Math.Max(0, it.value / 5L * it.stack); }
+				if (!ok) v = Math.Max(0, it.value / 5L * it.stack); // settings unreadable for this buyer: the plain fifth of the value, with no exception per item
+				else
+				{
+					try { p.GetItemExpectedPrice(it, out long sell, out _); v = Math.Max(0, sell); }
+					catch (Exception) { v = Math.Max(0, it.value / 5L * it.stack); }
+				}
 				memo[key] = v;
 				return v;
 			};

@@ -93,43 +93,73 @@ namespace Levy.Content.TileEntities
 			if (Main.netMode != NetmodeID.MultiplayerClient && w.HasBody && Main.npc[w.BodyIndex].ModNPC is SoldierNPC sn) sn.NotifyGearChanged();
 		}
 
+		/// <summary>The sweep works in slices of at most this many milliseconds per call (it resumes where it stopped), so a big army and a big armory deal their gear over a few seconds instead of in one long stall. Tests that want the whole sweep at once raise it.</summary>
+		internal static double SweepSliceMs = 2.0;
+		/// <summary>Slicing is on in play (see <see cref="FloorSweepSlicing"/>); the boot and world self-checks, which expect a sweep to finish inside the call that starts it, run with it off.</summary>
+		internal static bool SweepSlicing;
+		private bool _swActive; private int _swPhase, _swPass, _swIdx = -1; private bool _swAny; private List<SoldierRecord> _swLevies;
+		/// <summary>True while a sweep is part-way through (the armory's own tick keeps feeding it).</summary>
+		internal bool SweepRunning => _swActive;
+
 		/// <summary>
 		/// The army-wide armor and accessory deal: levies are visited from the worst-equipped up, and each takes the best he is entitled to (the normal upgrade pick, with its margin). A no-op when nothing new
-		/// arrived since the last sweep. Server / single player only.
+		/// arrived since the last sweep. Server / single player only. A sweep that does not fit in <see cref="SweepSliceMs"/> carries on from where it stopped on the next call (an upgrade pass or the armory's tick);
+		/// the passes and their order are exactly those of one long run.
 		/// </summary>
 		internal void FloorSweep()
 		{
 			if (!FloorFirst || _sweeping || Main.netMode == NetmodeID.MultiplayerClient) return;
-			var levies = FloorLevies();
-			if (levies.Count < 2) return;
 			uint now = Main.GameUpdateCount;
-			if (_sweepRev == _gearStockRev && _sweepServed == levies.Count && now - _sweepTick < SweepRecheckTicks) return;
+			if (!_swActive)
+			{
+				var fresh = FloorLevies();
+				if (fresh.Count < 2) return;
+				if (_sweepRev == _gearStockRev && _sweepServed == fresh.Count && now - _sweepTick < SweepRecheckTicks) return;
+				_swActive = true; _swLevies = fresh; _swPhase = 0; _swPass = 0; _swIdx = -1; _swAny = false;
+			}
+			var levies = _swLevies;
 			_sweeping = true;
 			using var _rs = ArmoryRules.Enter(Rules);
+			long deadline = SweepSlicing ? System.Diagnostics.Stopwatch.GetTimestamp() + (long)(SweepSliceMs * System.Diagnostics.Stopwatch.Frequency / 1000.0) : long.MaxValue;
+			long pw = global::Levy.Common.Util.LevyProf.Begin();
+			bool first = true;
 			try {
-				// armor sets: worst kit first (bare first of all)
-				for (int pass = 0; pass < 4; pass++) {
-					levies.Sort((a, b) => { int c = KitScore(a.Gear).CompareTo(KitScore(b.Gear)); return c != 0 ? c : a.Id.CompareTo(b.Id); });
-					bool any = false;
-					foreach (var w in levies) {
-						if (!w.Gear.HasWeapon) continue; // an armor upgrade follows the weapon's class; a bare-handed levy is issued normally
-						if (TakeArmorSetCore(w, true, true)) { any = true; FloorTouch(w); }
+				while (_swActive) {
+					if (_swIdx < 0) { // a pass begins: worst-equipped first (armor: bare first of all)
+						if (_swPhase == 0) levies.Sort((a, b) => { int c = KitScore(a.Gear).CompareTo(KitScore(b.Gear)); return c != 0 ? c : a.Id.CompareTo(b.Id); });
+						else levies.Sort((a, b) => { int c = AccAverage(a).CompareTo(AccAverage(b)); return c != 0 ? c : a.Id.CompareTo(b.Id); });
+						_swIdx = 0; _swAny = false;
 					}
-					if (!any) break;
-				}
-				// accessories: one slot per levy per visit, lowest average first, until nobody improves
-				for (int pass = 0; pass < 60; pass++) {
-					levies.Sort((a, b) => { int c = AccAverage(a).CompareTo(AccAverage(b)); return c != 0 ? c : a.Id.CompareTo(b.Id); });
-					bool any = false;
-					foreach (var w in levies) if (AccessoryStep(w, levies)) { any = true; MarkDirty(); NotifyOnly(w); }
-					if (!any) break;
+					for (; _swIdx < levies.Count; _swIdx++) {
+						if (!first && System.Diagnostics.Stopwatch.GetTimestamp() > deadline) return; // out of time: the next call picks up at this levy
+						first = false;
+						var w = levies[_swIdx];
+						if (!FloorEligible(w)) continue; // left, died or went busy since the pass began
+						if (_swPhase == 0) {
+							if (!w.Gear.HasWeapon) continue; // an armor upgrade follows the weapon's class; a bare-handed levy is issued normally
+							if (TakeArmorSetCore(w, true, true)) { _swAny = true; FloorTouch(w); }
+						}
+						else {
+							long pq = global::Levy.Common.Util.LevyProf.Begin(); bool st = AccessoryStep(w, levies); global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.SwpAccStep, pq);
+							if (st) { _swAny = true; global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.SwpAccChg, pq); MarkDirty(); NotifyOnly(w); }
+						}
+					}
+					_swIdx = -1; _swPass++; // the pass is done
+					if (_swPhase == 0) { if (!_swAny || _swPass >= 4) { _swPhase = 1; _swPass = 0; } } // armor sets: up to 4 passes, then accessories
+					else if (!_swAny || _swPass >= 60) { FinishSweep(levies.Count, now); } // accessories: one slot per levy per visit, lowest average first, until nobody improves
 				}
 			}
-			catch (Exception e) { Levy.Instance?.Logger.Warn("Levy: the floor sweep failed: " + e); }
+			catch (Exception e) { Levy.Instance?.Logger.Warn("Levy: the floor sweep failed: " + e); FinishSweep(levies.Count, now); }
 			finally {
 				_sweeping = false;
-				_sweepRev = _gearStockRev; _sweepServed = levies.Count; _sweepTick = now;
+				global::Levy.Common.Util.LevyProf.EndCount(_swPhase == 0 ? global::Levy.Common.Util.LevyProf.SwpArmor : global::Levy.Common.Util.LevyProf.SwpAcc, pw);
 			}
+		}
+
+		private void FinishSweep(int served, uint startedAt)
+		{
+			_swActive = false; _swLevies = null; _swIdx = -1;
+			_sweepRev = _gearStockRev; _sweepServed = served; _sweepTick = Main.GameUpdateCount;
 		}
 
 		private static void NotifyOnly(SoldierRecord w)
@@ -177,7 +207,7 @@ namespace Levy.Content.TileEntities
 			float bestMob = MobilityFirst ? AccessoryMobility.Best(g.Accessories, -1) : 0f;
 			int mobSlot = -1;
 			if (bestMob > 0f) for (int i = 0; i < n; i++) if (!IsAir(g.Accessories[i]) && AccessoryMobility.Value(g.Accessories[i]) >= bestMob) { mobSlot = i; break; }
-			var teamClaimed = Common.Team.TeamAccessory.Claimed(all, w); // team effects the rest of the army (or the commander) already wears
+			long pt = global::Levy.Common.Util.LevyProf.Begin(); var teamClaimed = Common.Team.TeamAccessory.Claimed(all, w); global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.AsTeam, pt); // team effects the rest of the army (or the commander) already wears
 			bool soleMob = mobSlot >= 0 && AccessoryMobility.Best(g.Accessories, mobSlot) <= 0f;
 			// every slot holds mobility (an older kit, or nothing else was stocked): the weakest of the extra ones is given up as soon as a non-mobility accessory is stocked
 			bool allMob = MobilityFirst && ReserveSlots && n >= 2 && !AnyEmpty(g, n) && MobilityWorn(g.Accessories, n) >= n;
@@ -193,20 +223,20 @@ namespace Levy.Content.TileEntities
 			// a better mobility accessory may replace his only one
 			if (soleMob && !g.IsLocked(SoldierGear.SlotAcc0 + mobSlot) && !empty) {
 				var wm = (Item[])g.Accessories.Clone(); wm[mobSlot] = new Item();
-				bool UPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wm, it) && AccessoryMobility.Value(it) > bestMob && !ClassReserved(it, w, cls, all) && (!MobilityFirst || MobilityRoom(wm, n)) && !Preferred(g.Accessories[mobSlot], it);
-				a = TakeBest(null, 0, 0, 1, UPred, it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
+				bool UPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && AccessoryMobility.Value(it) > bestMob && (!MobilityFirst || MobilityRoom(wm, n)) && !Preferred(g.Accessories[mobSlot], it) && CanWearWith(wm, it) && !ClassReserved(it, w, cls, all); // cheapest tests first: the item must beat his mobility before anything is asked of the other levies
+				pt = global::Levy.Common.Util.LevyProf.Begin(); a = TakeBest(null, 0, 0, 1, UPred, it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls)); global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.AsScan, pt);
 				if (a != null) target = mobSlot;
 			}
 			// a direct upgrade of something he wears takes that slot (Lightning Boots over Hermes), never a second slot beside it
 			if (a == null && !empty) {
 				bool UpPred(Item it) {
-					if (!WeaponClassifier.IsUsefulAccessory(it) || ClassReserved(it, w, cls, all)) return false;
+					if (!WeaponClassifier.IsUsefulAccessory(it)) return false;
 					int slot = AccessoryProgression.ReplacesSlot(g.Accessories, it, i => !g.IsLocked(SoldierGear.SlotAcc0 + i));
-					if (slot < 0 || Preferred(g.Accessories[slot], it)) return false;
+					if (slot < 0 || Preferred(g.Accessories[slot], it)) return false; // most of the shelf replaces nothing he wears: it ends here, before the other levies are asked
 					var ex = (Item[])g.Accessories.Clone(); ex[slot] = new Item();
-					return CanWearWith(ex, it) && !AccessoryProgression.Redundant(ex, it);
+					return CanWearWith(ex, it) && !AccessoryProgression.Redundant(ex, it) && !ClassReserved(it, w, cls, all);
 				}
-				a = TakeBest(null, 0, 0, 1, UpPred, it => AccessoryScore(it, cls));
+				pt = global::Levy.Common.Util.LevyProf.Begin(); a = TakeBest(null, 0, 0, 1, UpPred, it => AccessoryScore(it, cls)); global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.AsScan, pt);
 				if (a != null) target = AccessoryProgression.ReplacesSlot(g.Accessories, a, i => !g.IsLocked(SoldierGear.SlotAcc0 + i));
 			}
 			if (a == null) {
@@ -216,17 +246,17 @@ namespace Levy.Content.TileEntities
 				float stack = MobilityFirst && AccessoryMobility.Best(wornEx) > 0f ? LevyConstants.Armory.MobilityStackBonus : 0f;
 				float need = empty || (allMob && target >= 0) ? 0f : Math.Max(tScore * LevyConstants.AutoUpgradeScoreMargin, tScore + 1f);
 				bool mobRoom = !MobilityFirst || MobilityRoom(wornEx, n);
-				var claimed = Common.Team.TeamAccessory.Claimed(all, w);
+				pt = global::Levy.Common.Util.LevyProf.Begin(); var claimed = Common.Team.TeamAccessory.Claimed(all, w); global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.AsTeam, pt);
 				float Sc(Item it) => AccessoryScore(it, cls) + (stack > 0f && AccessoryMobility.Is(it) ? stack : 0f) + Common.Team.TeamAccessory.Bonus(it, claimed);
 				// a levy with no mobility accessory takes the best one stocked into this slot before anything else
 				if (MobilityFirst && bestMob <= 0f) {
-					bool MPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && !AccessoryProgression.Redundant(wornEx, it) && AccessoryMobility.Is(it) && mobRoom && !ClassReserved(it, w, cls, all);
-					a = TakeBest(null, 0, 0, 1, MPred, it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
+					bool MPred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && mobRoom && AccessoryMobility.Is(it) && CanWearWith(wornEx, it) && !AccessoryProgression.Redundant(wornEx, it) && !ClassReserved(it, w, cls, all);
+					pt = global::Levy.Common.Util.LevyProf.Begin(); a = TakeBest(null, 0, 0, 1, MPred, it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls)); global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.AsScan, pt);
 				}
 				if (a == null) {
-					bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(wornEx, it) && !AccessoryProgression.Redundant(wornEx, it) && (empty || Sc(it) >= need) && !ClassReserved(it, w, cls, all)
-						&& (mobRoom || !AccessoryMobility.Is(it)) && (!allMob || !AccessoryMobility.Is(it));
-					a = TakeBest(null, 0, 0, 1, Pred, Sc);
+					bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && (empty || Sc(it) >= need) && (mobRoom || !AccessoryMobility.Is(it)) && (!allMob || !AccessoryMobility.Is(it))
+						&& CanWearWith(wornEx, it) && !AccessoryProgression.Redundant(wornEx, it) && !ClassReserved(it, w, cls, all); // the score margin first: most of the shelf is no better than what he wears
+					pt = global::Levy.Common.Util.LevyProf.Begin(); a = TakeBest(null, 0, 0, 1, Pred, Sc); global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.AsScan, pt);
 				}
 			}
 			if (a == null) return false;
@@ -269,5 +299,14 @@ namespace Levy.Content.TileEntities
 			}
 			return false;
 		}
+	}
+
+	/// <summary>Turns on sliced gear sweeps ten seconds into a world, after the load-time self-checks have run (they need a sweep to complete in one call).</summary>
+	public class FloorSweepSlicing : Terraria.ModLoader.ModSystem
+	{
+		private int _ticks;
+		public override void OnWorldLoad() { _ticks = 0; ArmoryTE.SweepSlicing = false; }
+		public override void OnWorldUnload() { ArmoryTE.SweepSlicing = false; }
+		public override void PostUpdateEverything() { if (!ArmoryTE.SweepSlicing && ++_ticks > 600) ArmoryTE.SweepSlicing = true; }
 	}
 }

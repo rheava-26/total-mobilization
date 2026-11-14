@@ -149,6 +149,48 @@ namespace Levy.Content.TileEntities
 			}
 		}
 
+		// ---- plan memo: the army plan is a pure function of the shelves, the levies' gear and the rules, so when none of them changed since a plan that found nothing to do, the answer is the same
+		/// <summary>A memoised plan is trusted for this many ticks at most, so anything the fingerprint does not read (a world flag that opens a weapon's gate) still gets looked at every couple of seconds.</summary>
+		private const uint PlanMemoTicks = 120;
+		private long _planFp = long.MinValue; private uint _planFpTick; private int _lastChangers;
+		private long _claimFp = long.MinValue; private uint _claimFpTick; private HashSet<object> _claimSet;
+		/// <summary>Self-check seam: plans skipped because the fingerprint matched, and plans actually built.</summary>
+		internal static int PlanMemoHits, PlanBuilds;
+
+		/// <summary>
+		/// A hash of everything the army plan reads: the weapon rack, ammo row and storage of this armory and of the armories networked with it (each item by type, prefix, stack and identity), every served levy's gear,
+		/// lock mask, mana, slots and whether he is busy, the armory rules and the issue mode. <see cref="long.MinValue"/> when it cannot be taken (a Magic Storage network is attached: its contents are not hashed).
+		/// A levy other than the requester who is busy is left out of the plan, so the requester's own id joins the hash only when it matters (he is busy or not on the served list).
+		/// </summary>
+		private long PlanFingerprint(SoldierRecord requester)
+		{
+			if (MsHeart() != null) return long.MinValue;
+			unchecked
+			{
+				ulong h = 14695981039346656037UL;
+				void M(long v) { h = (h ^ (ulong)v) * 1099511628211UL; }
+				void MI(Item it)
+				{
+					if (it == null || it.IsAir) { M(0); return; }
+					M(it.type); M(it.prefix); M(it.stack); M(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(it));
+				}
+				void MA(Item[] a, int to) { if (a == null) { M(-7); return; } for (int i = 0; i < a.Length && i < to; i++) MI(a[i]); }
+				M(Rules.Rev); M(Common.Config.LevyConfig.Get.ClassMatchIssue ? 1 : 0); M(_reservedRefs.Count);
+				MA(IssueWeapons, SidearmSlot); MA(IssueAmmo, int.MaxValue); MA(Storage, int.MaxValue);
+				foreach (var o in OtherNetworked()) { M(o.ID); M(o._reservedRefs.Count); MA(o.Storage, int.MaxValue); }
+				bool present = false;
+				foreach (var rec in ServedSoldiers())
+				{
+					var g = rec?.Gear; if (g == null) { M(-3); continue; }
+					if (ReferenceEquals(rec, requester)) present = true;
+					M(rec.Id); M(g.LockMask); M(rec.LoadoutLocked ? 1 : 0); M(rec.Disarmed ? 1 : 0); M((long)rec.MaxMana); M(rec.AccessorySlots); M((int)rec.Grade); M(IsBusy(rec) ? 1 : 0);
+					MI(g.Weapon); MI(g.Sidearm); MI(g.Head); MI(g.Body); MI(g.Legs); MI(g.Ammo); MA(g.ExtraSidearms, int.MaxValue); MA(g.Accessories, int.MaxValue);
+				}
+				if (requester != null && (!present || IsBusy(requester))) M(requester.Id + 100000L);
+				long r = (long)h; return r == long.MinValue ? r + 1 : r;
+			}
+		}
+
 		/// <summary>
 		/// Decides and carries out the whole army's primary weapons. Called when <paramref name="requester"/> is bare-handed (an issue) or asks for an upgrade. A levy whose weapon changes is
 		/// handed his new one, his old one goes back to the shelf (or straight to the levy who is dealt it), a levy who lost his weapon to a better-matched one is re-armed from what is left,
@@ -157,17 +199,20 @@ namespace Levy.Content.TileEntities
 		internal bool AllocateArmy(SoldierRecord requester, bool upgrade)
 		{
 			if (_allocating || requester?.Gear == null || Main.netMode == NetmodeID.MultiplayerClient) return false;
+			long fp = PlanFingerprint(requester); uint now0 = Main.GameUpdateCount;
+			if (fp != long.MinValue && fp == _planFp && _lastChangers == 0 && now0 - _planFpTick < PlanMemoTicks) { PlanMemoHits++; return false; } // nothing changed since a plan that found nothing to deal
 			_allocating = true;
 			using var _rs = ArmoryRules.Enter(Rules);
 			long pa = global::Levy.Common.Util.LevyProf.Begin();
 			try {
+				PlanBuilds++; _lastChangers = -1;
 				long pb = global::Levy.Common.Util.LevyProf.Begin();
 				var plan = BuildAllocation(requester);
 				global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmBuild, pb); pb = global::Levy.Common.Util.LevyProf.Begin();
 				WeaponAllocator.Plan(plan.Levies, plan.Cands, Rules.Alloc);
 				global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmPlan, pb); pb = global::Levy.Common.Util.LevyProf.Begin();
 				try { return Carry(plan, requester, upgrade); }
-				finally { global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmCarry, pb); }
+				finally { global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmCarry, pb); if (_lastChangers == 0) { _planFp = fp; _planFpTick = now0; } else _planFp = long.MinValue; }
 			}
 			catch (Exception e) {
 				if (!_allocWarned) { _allocWarned = true; Levy.Instance?.Logger.Warn("Levy: the army weapon allocation failed, falling back to per-soldier picks: " + e); }
@@ -179,6 +224,7 @@ namespace Levy.Content.TileEntities
 		private bool Carry(AllocPlan plan, SoldierRecord requester, bool upgrade)
 		{
 			var changers = plan.Levies.FindAll(l => l.Target != null && !ReferenceEquals(l.Target, l.Own));
+			_lastChangers = changers.Count;
 			if (changers.Count == 0) return false;
 			var picked = new Dictionary<AllocLevy, Item>();
 			var affected = new List<SoldierRecord>();
@@ -242,12 +288,19 @@ namespace Levy.Content.TileEntities
 		{
 			if (Main.netMode == NetmodeID.MultiplayerClient) return null;
 			using var _rs = ArmoryRules.Enter(Rules);
+			long fp = PlanFingerprint(who); uint now0 = Main.GameUpdateCount;
+			if (fp != long.MinValue && fp == _claimFp && now0 - _claimFpTick < PlanMemoTicks) { PlanMemoHits++; return _claimSet; } // same shelves, gear and rules: the same plan
 			try {
+				PlanBuilds++;
 				var plan = BuildAllocation(who);
-				if (plan.Levies.Count == 0) return null;
-				WeaponAllocator.Plan(plan.Levies, plan.Cands, Rules.Alloc);
-				var set = new HashSet<object>(ReferenceEqualityComparer.Instance);
-				foreach (var c in plan.Cands) if (c.Used) set.Add(c.It);
+				HashSet<object> set = null;
+				if (plan.Levies.Count > 0)
+				{
+					WeaponAllocator.Plan(plan.Levies, plan.Cands, Rules.Alloc);
+					set = new HashSet<object>(ReferenceEqualityComparer.Instance);
+					foreach (var c in plan.Cands) if (c.Used) set.Add(c.It);
+				}
+				if (fp != long.MinValue) { _claimFp = fp; _claimFpTick = now0; _claimSet = set; }
 				return set;
 			}
 			catch (Exception e) {

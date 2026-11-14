@@ -337,7 +337,7 @@ namespace Levy.Common.Logistics
 				var sw = System.Diagnostics.Stopwatch.StartNew();
 				var pick = Selling.Select(big, new Selling.Filter { TierLo = Selling.Tiers[0].Lo, TierHi = Selling.Tiers[0].Hi });
 				double selMs = sw.Elapsed.TotalMilliseconds;
-				var price = Selling.Pricer(Main.LocalPlayer, null);
+				var keeper = new NPC(); keeper.SetDefaults(NPCID.Merchant); var price = Selling.Pricer(Main.LocalPlayer, keeper);
 				sw.Restart(); long total = 0; foreach (int i in pick) total += price(big.Storage[i]);
 				double priceMs = sw.Elapsed.TotalMilliseconds;
 				var one = price(Make(ItemID.Musket)); var two = price(Make(ItemID.Musket));

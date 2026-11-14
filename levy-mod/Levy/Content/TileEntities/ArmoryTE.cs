@@ -158,6 +158,7 @@ namespace Levy.Content.TileEntities
 			long pt = global::Levy.Common.Util.LevyProf.Begin();
 			if (_dirty) Sync();
 			if (Main.netMode != NetmodeID.MultiplayerClient && ++_stampTimer >= StampIntervalTicks) { _stampTimer = 0; StampNew(); }
+			if (_swActive) FloorSweep(); // a gear sweep that did not fit in one slice carries on
 			global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmTick, pt);
 		}
 
@@ -1996,6 +1997,8 @@ namespace Levy.Content.TileEntities
 			var g = soldier?.Gear;
 			if (g == null || soldier.Disarmed) return false; // a levy whose kit the player stripped is issued nothing until he is issued a kit again
 			bool changed = false;
+			long pi = global::Levy.Common.Util.LevyProf.Begin();
+			void IMark(int bucket) { global::Levy.Common.Util.LevyProf.EndCount(bucket, pi); pi = global::Levy.Common.Util.LevyProf.Begin(); }
 
 			// A Re-arm in this very tick parked this soldier's hand-assigned items: take exactly those back first.
 			if (g.Reserved != null && ReclaimLocked(g, soldier.AccessorySlots)) changed = true;
@@ -2006,9 +2009,11 @@ namespace Levy.Content.TileEntities
 				if (RestockThrown(soldier)) changed = true;
 				if (IssuePrimary(soldier, g)) changed = true;
 			}
+			IMark(global::Levy.Common.Util.LevyProf.IssPrimary);
 
 			// One matching set first (set bonus, aligned with his weapon); anything it could not supply is filled piece by piece below.
 			if (TakeArmorSet(soldier)) changed = true;
+			IMark(global::Levy.Common.Util.LevyProf.IssArmorSet);
 
 			if (!g.IsLocked(SoldierGear.SlotHead) && IsAir(g.Head)) { var a = TakeArmor(soldier, 0); if (a != null) { g.Head = a; changed = true; } }
 			if (!g.IsLocked(SoldierGear.SlotBody) && IsAir(g.Body)) { var a = TakeArmor(soldier, 1); if (a != null) { g.Body = a; changed = true; } }
@@ -2016,6 +2021,7 @@ namespace Levy.Content.TileEntities
 
 			// The weapon and the armor come from separate pickers (network-wide availability vs local racks), so they can disagree: the armor now on him wins.
 			if (fluid && ReconcileWeaponToArmor(soldier)) changed = true;
+			IMark(global::Levy.Common.Util.LevyProf.IssArmor);
 
 			if (!fluid) {
 				// A thrown stack is kept supplied: topped up while he holds it, handed back first when it ran dry.
@@ -2037,6 +2043,7 @@ namespace Levy.Content.TileEntities
 				g.Accessories[i] = a; changed = true;
 			}
 
+			IMark(global::Levy.Common.Util.LevyProf.IssAcc);
 			// The hook slot: the best grappling hook in stock (levies cross gaps and climb with it; see SoldierNPC.Hook.cs).
 			if (Common.Config.LevyConfig.Get.SoldiersUseHooks && !g.IsLocked(SoldierGear.SlotHook) && IsAir(g.Hook)) {
 				var hk = TakeHook(soldier);
@@ -2045,6 +2052,7 @@ namespace Levy.Content.TileEntities
 
 			// The camera slot: a GoPro, one per levy, to the levies the player most likely watches first (see CameraStep).
 			if (CameraStep(soldier)) changed = true;
+			IMark(global::Levy.Common.Util.LevyProf.IssHook);
 
 			// Reservation: a non-summoner never keeps a whip off-hand (a leftover from an old save or a role change goes back to the racks). A minion staff or a sentry is
 			// carried by a non-summoner only while his gear gives the extra slot for it (SidearmPolicy.Misfits, run by FillSidearms).
@@ -2057,6 +2065,7 @@ namespace Levy.Content.TileEntities
 			}
 
 			if (FillSidearms(soldier, g, summoner, primaryFam, primaryMelee)) changed = true;
+			IMark(global::Levy.Common.Util.LevyProf.IssSide);
 
 			g.Ammo ??= new Item();
 			if (g.IsLocked(SoldierGear.SlotAmmo)) {
@@ -2083,6 +2092,7 @@ namespace Levy.Content.TileEntities
 				}
 			}
 
+			IMark(global::Levy.Common.Util.LevyProf.IssAmmo);
 			if (changed) MarkDirty();
 			return changed;
 		}

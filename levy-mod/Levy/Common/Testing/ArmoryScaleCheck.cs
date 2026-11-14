@@ -28,7 +28,14 @@ namespace Levy.Common.Testing
 
 		public override void PostSetupRecipes()
 		{
-			if (Environment.GetEnvironmentVariable("LEVY_PERFSCENE") != "1") return;
+			if (Environment.GetEnvironmentVariable("LEVY_PERFSCENE") != "1" || Environment.GetEnvironmentVariable("LEVY_PERFSCENE_WORLD") == "1") return;
+			global::Levy.Common.Util.LoadSafe.Run(Run);
+		}
+
+		/// <summary>LEVY_PERFSCENE_WORLD=1 (with a world loaded on a test server) runs the scene once the world is up instead of at recipe time: mod players, tiles and the real item caches exist then, as in play.</summary>
+		public override void OnWorldLoad()
+		{
+			if (!Main.dedServ || Environment.GetEnvironmentVariable("LEVY_PERFSCENE") != "1" || Environment.GetEnvironmentVariable("LEVY_PERFSCENE_WORLD") != "1") return;
 			global::Levy.Common.Util.LoadSafe.Run(Run);
 		}
 
@@ -47,7 +54,7 @@ namespace Levy.Common.Testing
 				times.TryGetValue(k, out var s); s.All ??= new List<double>();
 				s.N++; s.Sum += ms; if (ms > s.Max) s.Max = ms; s.All.Add(ms); times[k] = s;
 			}
-			var savedTestServed = ArmoryTE.TestServed; bool profWas = LevyProf.On; Action undoNpc = null, undoPlayer = null;
+			var savedTestServed = ArmoryTE.TestServed; bool slicingWas = ArmoryTE.SweepSlicing; ArmoryTE.SweepSlicing = Environment.GetEnvironmentVariable("LEVY_PERFSCENE_NOSLICE") != "1"; bool profWas = LevyProf.On; Action undoNpc = null, undoPlayer = null;
 			try
 			{
 				try { ProgressionTier.EnsureBuilt(m => log?.Info("[PerfScene] " + m)); } catch (Exception) { }
@@ -66,15 +73,20 @@ namespace Levy.Common.Testing
 					new int[] { ItemID.NebulaHelmet, ItemID.NebulaBreastplate, ItemID.NebulaLeggings }, new int[] { ItemID.StardustHelmet, ItemID.StardustBreastplate, ItemID.StardustLeggings },
 					new int[] { ItemID.SpiderMask, ItemID.SpiderBreastplate, ItemID.SpiderGreaves }, new int[] { 0, 0, 0 },
 				};
-				var crew = new List<SoldierRecord>();
 				var grades = Enum.GetValues<Grade>();
-				for (int i = 0; i < levies; i++)
+				List<SoldierRecord> MakeCrew(int idBase)
 				{
-					var r = new SoldierRecord { Id = 1000 + i, Name = "Pvt. Scale " + i, Grade = grades[i % grades.Length] };
-					var set = sets[i % sets.Length];
-					if (set[0] != 0) { r.Gear.Head = Make(set[0]); r.Gear.Body = Make(set[1]); r.Gear.Legs = Make(set[2]); }
-					crew.Add(r);
+					var l = new List<SoldierRecord>();
+					for (int i = 0; i < levies; i++)
+					{
+						var r = new SoldierRecord { Id = idBase + i, Name = "Pvt. Scale " + i, Grade = grades[i % grades.Length] };
+						var set = sets[i % sets.Length];
+						if (set[0] != 0) { r.Gear.Head = Make(set[0]); r.Gear.Body = Make(set[1]); r.Gear.Legs = Make(set[2]); }
+						l.Add(r);
+					}
+					return l;
 				}
+				var crew = MakeCrew(1000);
 				ArmoryTE.TestServed = crew;
 
 				long t0 = Stopwatch.GetTimestamp();
@@ -82,8 +94,16 @@ namespace Levy.Common.Testing
 				double issueAll = Ms(t0);
 				int armed = crew.Count(r => r.Gear.HasWeapon);
 
+				{ // the same stock and a fresh crew on a second armory: what is left of the first issue once every per-item cache is warm
+					var te2 = SellFreezeRepro.BuildStock(slots, out _, out _); var crew2 = MakeCrew(5000); ArmoryTE.TestServed = crew2;
+					long t2 = Stopwatch.GetTimestamp(); foreach (var r in crew2) { long t = Stopwatch.GetTimestamp(); te2.IssueGear(r); Add("IssueGear (same stock, caches warm)", Ms(t)); }
+					log?.Info($"[PerfScene] second army, same stock, caches warm: issuing all took {Ms(t2):F1} ms (first took {issueAll:F1} ms)");
+					ArmoryTE.TestServed = crew;
+				}
+				var upSeries = new List<double>();
 				for (int round = 0; round < 3; round++)
-					foreach (var r in crew) { long t = Stopwatch.GetTimestamp(); te.UpgradeWeapons(r); Add("UpgradeWeapons (one levy's 5 s pass)", Ms(t)); }
+					foreach (var r in crew) { long t = Stopwatch.GetTimestamp(); te.UpgradeWeapons(r); double d = Ms(t); upSeries.Add(d); Add("UpgradeWeapons (one levy's 5 s pass)", d); }
+				log?.Info("[PerfScene] UpgradeWeapons per call in order (ms, 3 rounds of " + levies + " levies): " + string.Join(" ", upSeries.Select(x => x < 10 ? x.ToString("F1", Inv) : x.ToString("F0", Inv))));
 
 				for (int i = 0; i < 20; i++) { long t = Stopwatch.GetTimestamp(); te.StampNew(); Add("StampNew (every 30 ticks, per armory)", Ms(t)); }
 				for (int i = 0; i < 10; i++) { long t = Stopwatch.GetTimestamp(); te.TotalSellValue(); Add("TotalSellValue (armory panel, per call)", Ms(t)); }
@@ -112,13 +132,13 @@ namespace Levy.Common.Testing
 				double perTick = times.TryGetValue("UpgradeWeapons (one levy's 5 s pass)", out var up) ? up.All.Skip(levies).DefaultIfEmpty(up.Sum / up.N).Average() * levies / (LevyConstants.AutoUpgradeCheckIntervalTicks) : 0;
 				sb.Append($"[PerfScene] model: {levies} levies each upgrading every {LevyConstants.AutoUpgradeCheckIntervalTicks} ticks costs {perTick:F4} ms per tick on average (a tick is 16.7 ms)\n");
 				sb.Append("[PerfScene] profiler arm.* buckets, total ms (calls) over the whole run:");
-				foreach (var (nm, k) in new[] { ("upgrade", LevyProf.ArmUp), ("alloc", LevyProf.ArmAlloc), ("build", LevyProf.ArmBuild), ("plan", LevyProf.ArmPlan), ("carry", LevyProf.ArmCarry), ("floor", LevyProf.ArmFloor), ("armor", LevyProf.ArmArmor), ("acc", LevyProf.ArmAcc), ("side", LevyProf.ArmSide), ("issue", LevyProf.ArmIssue), ("lend", LevyProf.ArmLend), ("tick", LevyProf.ArmTick) })
+				foreach (var (nm, k) in new[] { ("upgrade", LevyProf.ArmUp), ("alloc", LevyProf.ArmAlloc), ("build", LevyProf.ArmBuild), ("plan", LevyProf.ArmPlan), ("carry", LevyProf.ArmCarry), ("floor", LevyProf.ArmFloor), ("armor", LevyProf.ArmArmor), ("acc", LevyProf.ArmAcc), ("side", LevyProf.ArmSide), ("issue", LevyProf.ArmIssue), ("lend", LevyProf.ArmLend), ("tick", LevyProf.ArmTick), ("iss.primary", LevyProf.IssPrimary), ("iss.armorset", LevyProf.IssArmorSet), ("iss.armor", LevyProf.IssArmor), ("iss.acc", LevyProf.IssAcc), ("iss.hook+cam", LevyProf.IssHook), ("iss.side", LevyProf.IssSide), ("iss.ammo", LevyProf.IssAmmo), ("swp.armor", LevyProf.SwpArmor), ("swp.acc", LevyProf.SwpAcc), ("swp.accstep", LevyProf.SwpAccStep), ("swp.accchg", LevyProf.SwpAccChg), ("as.team", LevyProf.AsTeam), ("as.scan", LevyProf.AsScan) })
 					sb.Append($" {nm}={LevyProf.Get(k) * 1000.0 / Stopwatch.Frequency:F1}({LevyProf.Cnt[k]})");
-				sb.Append('\n');
+				sb.Append($" plan builds={ArmoryTE.PlanBuilds} memo hits={ArmoryTE.PlanMemoHits}\n");
 				log?.Info(sb.ToString().TrimEnd());
 			}
 			catch (Exception e) { log?.Warn("[PerfScene] threw " + e.GetType().Name + ": " + e.Message + " " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim()))); }
-			finally { undoPlayer?.Invoke(); undoNpc?.Invoke(); ArmoryTE.TestServed = savedTestServed; LevyProf.On = profWas; LevyProf.Reset(); ProgressionTier.Reset(); }
+			finally { ArmoryTE.SweepSlicing = slicingWas; undoPlayer?.Invoke(); undoNpc?.Invoke(); ArmoryTE.TestServed = savedTestServed; LevyProf.On = profWas; LevyProf.Reset(); ProgressionTier.Reset(); }
 		}
 	}
 }

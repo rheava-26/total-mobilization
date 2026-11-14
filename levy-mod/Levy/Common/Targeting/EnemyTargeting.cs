@@ -582,6 +582,8 @@ namespace Levy.Common.Targeting
 		// =====================================================================================================
 		/// <summary>True while a soldier's dummy stands in Main.player[255] for an enemy's AI call.</summary>
 		internal static bool IsSwapped => _swapped;
+		/// <summary>Lab telemetry: called after an enemy's AI call, while its soldier's dummy is still in the slot. Null outside labs.</summary>
+		internal static Action<NPC> AiProbe;
 		internal static string WhyLast => _why;
 		/// <summary>LEVY_SWAPFIX=0 restores the old behaviour (a re-lock inside an AI call keeps the previous soldier's dummy in slot 255). A/B switch.</summary>
 		internal static readonly bool SwapFixOn = Environment.GetEnvironmentVariable("LEVY_SWAPFIX") != "0";
@@ -835,6 +837,7 @@ namespace Levy.Common.Targeting
 					$"tick={Main.GameUpdateCount} target={tg} lock={d.SoldierTarget} swapped={EnemyTargeting.IsSwapped} plActive={pl.active} plDead={pl.dead} dx={(pl.position.X - npc.position.X) / 16f:0}t dy={(pl.position.Y - npc.position.Y) / 16f:0}t ai1={npc.ai[1]} ai2={npc.ai[2]} why={EnemyTargeting.WhyLast}";
 			}
 			if (EnemyTargeting.WhyTrack != null && EnemyTargeting.TgtTrace[npc.whoAmI] != null) EnemyTargeting.TgtTrace[npc.whoAmI] += " postAI=" + npc.target;
+			EnemyTargeting.AiProbe?.Invoke(npc);
 			EnemyTargeting.ReturnWallTarget();
 			EnemyTargeting.Unswap();
 			// A flyer was aimed through the flyer slot for this AI call only; outside it, "locked on a soldier" reads as 255 like every other swapped enemy.

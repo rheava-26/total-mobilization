@@ -147,8 +147,11 @@ namespace Levy.Common.Testing
 			p.ZoneSnow = false; p.ZoneHallow = false; p.ZoneBeach = false;
 			if (zone == "snow") { p.ZoneSnow = true; } else if (zone == "desert") { p.ZoneDesert = true; } else if (zone == "jungle") { p.ZoneJungle = true; } else if (zone == "hallow") { p.ZoneHallow = true; } // zone=: the commander (and the levy dummy that mirrors it) stands in this biome (Biome Blade labs)
 			p.ZoneOverworldHeight = r.Arena != "ug" && !r.Arena.StartsWith("a3e"); p.ZoneRockLayerHeight = r.Arena == "ug" || r.Arena.StartsWith("a3e"); p.ZoneDirtLayerHeight = false; p.ZoneSkyHeight = false; p.ZoneUnderworldHeight = false;
-			if (r.Arena.Contains("uw")) { p.ZoneUnderworldHeight = true; p.ZoneOverworldHeight = false; p.ZoneRockLayerHeight = false; }
+			if (r.Arena.Contains("uw") || r.Arena.Contains("@crag")) { p.ZoneUnderworldHeight = true; p.ZoneOverworldHeight = false; p.ZoneRockLayerHeight = false; }
+			if (r.Arena.Contains("@ocean")) p.ZoneBeach = true; // the commander stands on the beach strip
+			if (r.Arena.Contains("@jungle")) p.ZoneJungle = true;
 			if (zone == "hell") { p.ZoneUnderworldHeight = true; p.ZoneOverworldHeight = false; } else if (zone == "sky") { p.ZoneSkyHeight = true; p.ZoneOverworldHeight = false; }
+			try { (global::Levy.Common.Targeting.BiomeMirror.FlagsField?.GetValue(p) as System.Collections.BitArray)?.SetAll(false); } catch { } // modded-biome flags from an earlier fight in this process must not leak into this one
 			BbZones(p, r);
 		}
 

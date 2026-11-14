@@ -255,7 +255,7 @@ namespace Levy.Common.Testing
 				On_NPC.UpdateNPC += CrNpcUpdateDetour;
 				On_Projectile.Update += CrProjUpdateDetour;
 				On_Player.Update += CrPlayerUpdate;
-				BbInstall();
+				BbInstall(); global::Levy.Common.Targeting.EnemyTargeting.AiProbe = BbBiomeProbe;
 			}
 			CrSp = Environment.GetEnvironmentVariable("LEVY_CR_SP") == "1";
 			global::Levy.Common.Util.LevyUtil.SpEmulation = CrSp;
@@ -270,7 +270,7 @@ namespace Levy.Common.Testing
 			if (!_crHooked) return;
 			_crHooked = false;
 			try { On_Projectile.Damage -= CrDamageTimer; On_NPC.StrikeNPC_HitInfo_bool_bool -= CrStrikeDetour; On_NPC.UpdateNPC -= CrNpcUpdateDetour; On_Projectile.Update -= CrProjUpdateDetour; On_Player.Update -= CrPlayerUpdate; } catch { }
-			BbRemove();
+			BbRemove(); global::Levy.Common.Targeting.EnemyTargeting.AiProbe = null;
 		}
 
 		// -------------------------------------------------------------------------------------------------- Calamity switches

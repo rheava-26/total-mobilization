@@ -64,6 +64,8 @@ namespace Levy.Common.Testing
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			finally { _local = false; _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; }
 			_mod.Logger.Info($"[SummonWorld] self-check pass={_pass} fail={_fail}");
+			// the identity world check runs after this one (never two checks stepping the world at once)
+			try { IdentityWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[IdentityWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 		}
 
 		private static void Check(string name, bool ok) { if (ok) _pass++; else _fail++; _mod.Logger.Info($"[SummonWorld] {(ok ? "PASS" : "FAIL")} {name}"); }

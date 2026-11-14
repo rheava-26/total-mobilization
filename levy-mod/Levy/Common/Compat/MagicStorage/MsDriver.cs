@@ -26,7 +26,7 @@ namespace Levy.Common.Compat.MagicStorageLink
 			NetworkStocks.CanDecraft = CanDecraft;
 		}
 
-		public static void Unregister() { NetworkStocks.Provider = null; NetworkStocks.HasStation = null; NetworkStocks.ItemTypes = null; NetworkStocks.CanDecraft = null; }
+		public static void Unregister() { ResetCache(); NetworkStocks.Provider = null; NetworkStocks.HasStation = null; NetworkStocks.ItemTypes = null; NetworkStocks.CanDecraft = null; }
 
 		/// <summary>True when a Decrafting Interface (Magic Storage's shimmer module) is joined to the armory's network.</summary>
 		private static bool CanDecraft(ArmoryTE a)
@@ -36,32 +36,55 @@ namespace Levy.Common.Compat.MagicStorageLink
 			return false;
 		}
 
-		/// <summary>The storage heart of the network that an Armory Heart serving <paramref name="a"/> is joined to, or null.</summary>
+		// The heart, the stations and the stock of a network are read many times a frame by the logistics screen (every recipe asks for a station, every ingredient for a count),
+		// so each is looked up once and kept for a few ticks.
+		private static int _heartArmory = -1; private static TEStorageHeart _heartHit; private static uint _heartStamp = uint.MaxValue;
+		private static readonly Dictionary<int, CachedStock> _stocks = new();
+		private static int _stationHeart = -1; private static uint _stationStamp = uint.MaxValue; private static HashSet<int> _stations;
+
+		/// <summary>The storage heart of the network that an Armory Heart serving <paramref name="a"/> is joined to, or null. The answer is kept for half a second: finding it walks every tile entity of the world.</summary>
 		public static TEStorageHeart HeartFor(ArmoryTE a)
 		{
 			if (a == null) return null;
+			uint now = Main.GameUpdateCount;
+			if (_heartArmory == a.ID && _heartStamp != uint.MaxValue && now >= _heartStamp && now - _heartStamp < 30)
+			{
+				if (_heartHit == null) return null;
+				if (TileEntity.ByID.TryGetValue(_heartHit.ID, out var live) && ReferenceEquals(live, _heartHit) && _heartHit.IsAlive) return _heartHit;
+			}
+			TEStorageHeart found = null;
 			foreach (var te in TileEntity.ByID.Values)
-				if (te is TEArmoryHeart h && ReferenceEquals(h.Armory, a) && h.GetHeart() is TEStorageHeart heart && heart.IsAlive) return heart;
-			return null;
+				if (te is TEArmoryHeart h && ReferenceEquals(h.Armory, a) && h.GetHeart() is TEStorageHeart heart && heart.IsAlive) { found = heart; break; }
+			_heartArmory = a.ID; _heartHit = found; _heartStamp = now;
+			return found;
 		}
 
-		private static IStock ProviderFor(ArmoryTE a) { var h = HeartFor(a); return h == null ? null : new MsNetworkStock(h); }
+		/// <summary>Forgets the kept heart, stations and snapshots (a network was linked or unlinked just now; the self-check, whose game tick never moves).</summary>
+		public static void ResetCache() { _heartArmory = -1; _heartHit = null; _heartStamp = uint.MaxValue; _stationHeart = -1; _stations = null; _stocks.Clear(); }
+
+		private static IStock ProviderFor(ArmoryTE a)
+		{
+			var h = HeartFor(a); if (h == null) return null;
+			if (!_stocks.TryGetValue(h.ID, out var cached) || !ReferenceEquals(((MsNetworkStock)cached.Inner).Heart, h)) _stocks[h.ID] = cached = new CachedStock(new MsNetworkStock(h));
+			return cached;
+		}
 
 		private static bool HasStation(ArmoryTE a, int tile)
 		{
 			var heart = HeartFor(a); if (heart == null) return false;
-			var set = new HashSet<int>();
-			foreach (var access in heart.ComponentManager.GetCraftingAccessEntities())
-				foreach (var st in access.stations)
-					if (st != null && !st.IsAir && st.createTile >= TileID.Dirt) Crafting.AddWithEquivalents(set, st.createTile);
-			return set.Contains(tile);
+			uint now = Main.GameUpdateCount;
+			if (_stations == null || _stationHeart != heart.ID || now < _stationStamp || now - _stationStamp >= 60)
+			{
+				var set = new HashSet<int>();
+				foreach (var access in heart.ComponentManager.GetCraftingAccessEntities())
+					foreach (var st in access.stations)
+						if (st != null && !st.IsAir && st.createTile >= TileID.Dirt) Crafting.AddWithEquivalents(set, st.createTile);
+				_stations = set; _stationHeart = heart.ID; _stationStamp = now;
+			}
+			return _stations.Contains(tile);
 		}
 
-		private static IEnumerable<int> ItemTypes(ArmoryTE a)
-		{
-			var heart = HeartFor(a); if (heart == null) return Array.Empty<int>();
-			return heart.GetStoredItems().Where(i => i != null && !i.IsAir).Select(i => i.type).Distinct().ToList();
-		}
+		private static IEnumerable<int> ItemTypes(ArmoryTE a) => ProviderFor(a) is CachedStock c ? c.Types().ToList() : Array.Empty<int>();
 	}
 
 	/// <summary>A Magic Storage network as a stock: counts, withdraws and deposits through the storage heart, so Magic Storage does its own netcode, sorting and security.</summary>
@@ -70,6 +93,7 @@ namespace Levy.Common.Compat.MagicStorageLink
 	{
 		private readonly TEStorageHeart _heart;
 		public MsNetworkStock(TEStorageHeart heart) { _heart = heart; }
+		public TEStorageHeart Heart => _heart;
 		public string Name => "network";
 
 		public long Count(int type)

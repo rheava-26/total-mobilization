@@ -31,7 +31,8 @@ namespace Levy.Common.Potions
 			Item = item;
 			_types = new bool[TileLoader.TileCount];
 			if (item <= 0 || item >= ItemLoader.ItemCount) return;
-			var it = new Item(); it.SetDefaults(item);
+			var it = ContentSamples.ItemsByType.TryGetValue(item, out var sample) ? sample : new Item();
+			if (it.IsAir) it.SetDefaults(item);
 			if (it.createTile >= 0 && it.createTile < _types.Length) _types[it.createTile] = true;
 			if (Gems.TryGetValue(item, out var g)) { if (g.tile >= 0) _types[g.tile] = true; _gemStyle = g.style; }
 			if (item == ItemID.LifeCrystal) _types[TileID.Heart] = true;
@@ -62,10 +63,9 @@ namespace Levy.Common.Potions
 		{
 			if (_fallback != null) return _fallback;
 			var set = new SortedSet<int>(Gems.Keys) { ItemID.LifeCrystal };
-			var it = new Item();
 			for (int i = 1; i < ItemLoader.ItemCount; i++)
 			{
-				it.SetDefaults(i);
+				if (!ContentSamples.ItemsByType.TryGetValue(i, out var it)) continue; // the shared samples: no SetDefaults for each of ~9000 items the first time the list opens
 				int ct = it.createTile;
 				if (ct >= 0 && ct < Main.tileSpelunker.Length && Main.tileSpelunker[ct] && !TileID.Sets.BasicChest[ct]) set.Add(i);
 			}

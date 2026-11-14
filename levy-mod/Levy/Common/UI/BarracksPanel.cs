@@ -38,7 +38,7 @@ namespace Levy.Common.UI
 		private string _titleRaw = "", _treasuryRaw = "";
 		// full (un-ellipsised) captions of the two flex control buttons, so the row reflow always fits from the complete text
 		private string _recruitRaw = "", _hazardRaw = "";
-		private LevyButton _setupBtn, _close, _dep1, _dep10, _depAll, _wd1, _wd10, _mobilize, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
+		private LevyButton _setupBtn, _close, _dep1, _dep10, _depAll, _wd1, _wd10, _mobilize, _standAll, _remobAll, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
 		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire, _resetLoadouts, _officers, _goMap;
 		private LevyButton _fClassBtn, _fGradeBtn, _fTierBtn, _fDutyBtn, _sortBtn;
 		private BarElement _manpower, _cp;
@@ -75,7 +75,7 @@ namespace Levy.Common.UI
 		private const int ClassCount = 6, GradeCount = 4, DutyCount = 3, SortCount = 5;
 		private static int TierCount => LevyConstants.UI.RosterTierBandMin.Length + 1;
 
-		/// <summary>Top of header row <paramref name="row"/> (0 = deposit row .. 6 = roster + orders row).</summary>
+		/// <summary>Top of header row <paramref name="row"/> (0 = deposit row .. 6 = roster + orders row, 7 = muster row).</summary>
 		private static float RowY(int row) => LevyConstants.UI.BarracksHeaderTop + row * LevyConstants.UI.BarracksRowPitch;
 
 		/// <summary>Width of each of the five filter / sort buttons (class, grade, tier, duty, sort) at the current panel width.</summary>
@@ -100,7 +100,11 @@ namespace Levy.Common.UI
 			_depAll = Put(new LevyButton(LevyUtil.T("UI2.DepositAll"), 0.7f, 92, BH, () => UIActions.Deposit(Te, UIActions.InventoryCoins()), depHint), 168, y0);
 			_wd1 = Put(new LevyButton(LevyUtil.T("UI2.WithdrawOneGold"), 0.7f, 70, BH, () => UIActions.Withdraw(Te, LevyConstants.UI.DepositSmall), wdHint), 268, y0);
 			_wd10 = Put(new LevyButton(LevyUtil.T("UI2.WithdrawTenGold"), 0.7f, 78, BH, () => UIActions.Withdraw(Te, LevyConstants.UI.DepositLarge), wdHint), 342, y0);
-			_mobilize = Put(new LevyButton("", BtnScale, 118, BH, () => UIActions.ToggleMobilize(Te)), 0, y0);
+			// muster row (the last header row): Mobilize / Stand down for this barracks, then the whole army to or from the reserve
+			float y7 = RowY(7);
+			_mobilize = Put(new LevyButton("", BtnScale, 118, BH, () => UIActions.ToggleMobilize(Te)), 12, y7);
+			_standAll = Put(new LevyButton(LevyUtil.T("UI.StandDownAll"), 0.7f, 110, BH, () => UIActions.SetReserveAll(true), LevyUtil.T("UI2.StandDownAllHint")), 138, y7);
+			_remobAll = Put(new LevyButton(LevyUtil.T("UI.RemobilizeAll"), 0.7f, 120, BH, () => UIActions.SetReserveAll(false), LevyUtil.T("UI2.RemobilizeAllHint")), 256, y7);
 
 			// manpower + command-point bars (widths follow the panel width, see ApplyLayout)
 			_manpower = Put(new BarElement(260, LevyConstants.UI.BarracksBarH) { Fill = new Color(90, 160, 90) }, 12, RowY(1) + 1);
@@ -189,7 +193,6 @@ namespace Levy.Common.UI
 		{
 			_panel.Width.Set(_w, 0f); _panel.Height.Set(_h, 0f);
 			_close.Left.Set(_w - 36, 0f);
-			_mobilize.Left.Set(_w - 12 - 118, 0f);
 			LayoutControlRows(); // the toggle / hazard and recruit / officers / reset rows, sized from their real text so nothing overlaps
 			float barW = (_w - 24f - LevyConstants.UI.BarracksBarGap) * 0.5f;
 			_manpower.Width.Set(barW, 0f);

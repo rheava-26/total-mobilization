@@ -941,11 +941,11 @@ namespace Levy.Content.TileEntities
 			return haveSentry ? TakeSentrySidearm(forSoldier) : null; // only sentries in the whole armory: double up rather than go one-handed
 		}
 
-		/// <summary>The minion staff or sentry the player placed in the armory's dedicated sidearm slot, taken by a soldier who is not a summoner when his gear gives the extra slot for it (the racks stay reserved for summoners). Removes it. Null if the slot holds neither.</summary>
-		private Item TakeDeployerFromSidearmSlot(int extraMinions = 1, int extraTurrets = 1)
+		/// <summary>The minion staff or sentry the player placed in the armory's dedicated sidearm slot, taken by a soldier who is not a summoner as his one summon sidearm (the racks stay reserved for summoners). Removes it. Null if the slot holds neither.</summary>
+		private Item TakeDeployerFromSidearmSlot()
 		{
 			var it = IssueWeapons[SidearmSlot];
-			if (IsReservedRef(it) || !(IsIssuableSummonStaff(it) || IsIssuableSentry(it)) || !SidearmPolicy.AllowedForOthers(it, extraMinions, extraTurrets)) return null;
+			if (IsReservedRef(it) || !(IsIssuableSummonStaff(it) || IsIssuableSentry(it))) return null;
 			return Remove(IssueWeapons, SidearmSlot);
 		}
 
@@ -2053,7 +2053,7 @@ namespace Levy.Content.TileEntities
 			IMark(global::Levy.Common.Util.LevyProf.IssHook);
 
 			// Reservation: a non-summoner never keeps a whip off-hand (a leftover from an old save or a role change goes back to the racks). A minion staff or a sentry is
-			// carried by a non-summoner only while his gear gives the extra slot for it (SidearmPolicy.Misfits, run by FillSidearms).
+			// carried by a non-summoner as his one summon sidearm, in a free sidearm slot (SidearmPolicy.Misfits, run by FillSidearms).
 			if (!summoner && !g.IsLocked(SoldierGear.SlotSidearm) && g.HasSidearm && WeaponClassifier.GetProfile(g.Sidearm).Family == WeaponFamily.Whip)
 			{
 				var rem = DepositOld(g.Sidearm);

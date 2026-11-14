@@ -120,7 +120,8 @@ namespace Levy.Common.Testing
 			Check(minSummonerMinion == float.MaxValue || maxOtherMinion <= minSummonerMinion, "no non-summoner's minion staff outranks a summoner's");
 			Check(minSummonerSentry == float.MaxValue || maxOtherSentry <= minSummonerSentry, "no non-summoner's sentry outranks a summoner's");
 			Check(bestItem == null || bestHeldBySummoner, "the best minion staff anywhere is a summoner's");
-			Check(others.Any(r => SummonKit(r).Any()) || true, "non-summoners may keep leftovers (informational)");
+			Check(others.All(r => SummonKit(r).Count() <= 1), "no non-summoner carries more than one summon item");
+			Check(others.Any(r => SummonKit(r).Any()), "non-summoners carry the leftovers the summoners could not use");
 		}
 
 		// ------------------------------------------------------------------ 2. accessories by class

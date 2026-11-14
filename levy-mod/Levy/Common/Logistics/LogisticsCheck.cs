@@ -39,6 +39,7 @@ namespace Levy.Common.Logistics
 				Orders_(Check);
 				Sell_(Check);
 				ClearOut_(Check);
+				Storage_(Check);
 				Buy_(Check);
 				Search_(Check);
 				CraftBrowser_(Check);
@@ -53,6 +54,65 @@ namespace Levy.Common.Logistics
 				Mod.Logger.Warn($"Levy logistics self-check: {failures.Count} FAILURE(S) ({ok} checks OK) !!!");
 				foreach (var f in failures) Mod.Logger.Warn("  logistics: " + f);
 			}
+		}
+
+		// ------------------------------------------------------------------------------------------------------------------ send to storage
+		private sealed class MemStock : IStockItems
+		{
+			public readonly List<Item> Held = new(); public int Room = int.MaxValue; public int Walks;
+			public string Name => "memory";
+			public long Count(int type) => Held.Where(i => i.type == type).Sum(i => (long)i.stack);
+			public long Take(int type, long n) => 0;
+			public Item Put(Item item) { int k = Math.Min(item.stack, Room); if (k > 0) { var c = item.Clone(); c.stack = k; Held.Add(c); item.stack -= k; Room -= k; } if (item.stack <= 0) item.TurnToAir(); return item.IsAir ? null : item; }
+			public IEnumerable<Item> Items() { Walks++; return Held; }
+			public long TakeExact(Item like, long n) => 0;
+			public bool Protected(Item it) => false;
+		}
+
+		private static void Storage_(Action<bool, string> Check)
+		{
+			var saved = StorageSend.TargetOverride;
+			try
+			{
+				var net = new MemStock(); var tgt = new StorageSend.Target { Kind = 1 }; tgt.Stocks.Add(net);
+				StorageSend.TargetOverride = _ => tgt;
+				Check(StorageSend.ArmyUses(Make(ItemID.Musket)) && StorageSend.ArmyUses(Make(ItemID.IronBroadsword)) && StorageSend.ArmyUses(Make(ItemID.IronHelmet)) && StorageSend.ArmyUses(Make(ItemID.MusketBall, 50)) && StorageSend.ArmyUses(Make(ItemID.LesserHealingPotion, 5)), "the army uses weapons, armor, ammo and potions");
+				Check(!StorageSend.ArmyUses(Make(ItemID.StoneBlock, 100)) && !StorageSend.ArmyUses(Make(ItemID.IronPickaxe)) && !StorageSend.ArmyUses(Make(ItemID.AngelHalo)) && !StorageSend.ArmyUses(Make(ItemID.GoldCoin)), "blocks, tools, vanity accessories and coins are not army items");
+				var a = new ArmoryTE();
+				a.Storage[0] = Make(ItemID.Musket); a.Storage[1] = Make(ItemID.StoneBlock, 400); a.Storage[2] = Make(ItemID.AngelHalo); a.Storage[3] = Make(ItemID.GoldCoin, 3);
+				a.Storage[4] = Make(ItemID.StoneBlock, 200); a.Storage[4].favorited = true; a.Storage[5] = Make(ItemID.IronPickaxe); a.Storage[6] = Make(ItemID.IronHelmet);
+				var slots = StorageSend.NonArmySlots(a);
+				Check(slots.SequenceEqual(new[] { 1, 2, 5 }), "the non-army list is the blocks, the halo and the pickaxe (got " + string.Join(",", slots) + ")");
+				var pv = StorageSend.Build(a);
+				Check(pv.Items == 402 && pv.Stacks == 3 && pv.RowTotal == 3 && pv.TargetKind == 1, "the preview counts 402 items in 3 stacks (got " + pv.Items + " in " + pv.Stacks + ")");
+				var ms = new MemoryStream(); using (var w = new BinaryWriter(ms)) pv.Write(w);
+				var back = StorageSend.Preview.Read(new BinaryReader(new MemoryStream(ms.ToArray())));
+				Check(back.Hash == pv.Hash && back.Items == pv.Items && back.Rows.Count == 3 && back.Rows[0].Count == 400, "the preview survives the wire");
+				var stale = StorageSend.Execute(a, pv.Hash + 1);
+				Check(stale.Stale && stale.Items == 0 && a.CountInStorage(ItemID.StoneBlock) == 600, "a changed list moves nothing");
+				var res = StorageSend.Execute(a, pv.Hash);
+				Check(res.Items == 402 && res.Stacks == 3 && net.Count(ItemID.StoneBlock) == 400 && net.Count(ItemID.AngelHalo) == 1 && net.Count(ItemID.IronPickaxe) == 1, "the confirmed list went to storage (" + res.Items + " items)");
+				Check(a.Storage[0].type == ItemID.Musket && a.Storage[3].type == ItemID.GoldCoin && a.Storage[4].favorited && a.Storage[4].stack == 200 && a.Storage[6].type == ItemID.IronHelmet && a.Storage[1].IsAir, "gear, coins and favorited items stayed; the sent slots are empty");
+				Check(StorageSend.Build(a).Empty, "nothing is left to send");
+				// selected slots: army gear goes when the player chose it, coins and favorited items never
+				var sel = StorageSend.SendSlots(a, new[] { 0, 3, 4, 6, 6, -1, 99999 });
+				Check(sel.Items == 2 && net.Count(ItemID.Musket) == 1 && net.Count(ItemID.IronHelmet) == 1 && a.Storage[3].type == ItemID.GoldCoin && a.Storage[4].favorited, "selected slots move (the gun and the helmet), a coin stack and a favorited stack do not");
+				// a full target: what does not fit stays in the armory
+				var small = new MemStock { Room = 150 }; var t2 = new StorageSend.Target { Kind = 2 }; t2.Stocks.Add(small); StorageSend.TargetOverride = _ => t2;
+				var b = new ArmoryTE(); b.Storage[0] = Make(ItemID.StoneBlock, 400);
+				var r2 = StorageSend.Execute(b, StorageSend.Build(b).Hash);
+				Check(r2.Items == 150 && r2.Left == 250 && b.Storage[0].stack == 250 && small.Count(ItemID.StoneBlock) == 150, "a full chest takes what fits and the rest stays (" + r2.Items + " sent, " + b.Storage[0].stack + " left)");
+				// no storage at all
+				StorageSend.TargetOverride = _ => new StorageSend.Target();
+				Check(StorageSend.Execute(b, 0).NoTarget && StorageSend.SendSlots(b, new[] { 0 }).NoTarget && b.Storage[0].stack == 250, "with no network and no chest nothing moves");
+				// the cached network read: one walk answers every count, a put drops it
+				var inner = new MemStock(); for (int i = 0; i < 50; i++) inner.Held.Add(Make(ItemID.IronBar, 10));
+				var cs = new CachedStock(inner); long total = 0; for (int i = 0; i < 200; i++) total += cs.Count(ItemID.IronBar);
+				Check(total == 200 * 500 && inner.Walks == 1, "200 counts of a cached network walk it once (walks " + inner.Walks + ")");
+				cs.Put(Make(ItemID.IronBar, 5));
+				Check(cs.Count(ItemID.IronBar) == 505 && inner.Walks == 2, "a deposit through the wrapper drops the snapshot");
+			}
+			finally { StorageSend.TargetOverride = saved; }
 		}
 
 		// ------------------------------------------------------------------------------------------------------------------ search filter and pylon reach

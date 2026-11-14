@@ -27,4 +27,4 @@ NoneInReserve: No levy is in the reserve.
 ReserveAllRefused: "{0} could not be moved: the reserve is full, a levy is in mutiny, or there are no command points left."
 ReserveFull: The reserve is full ({0} soldiers).
 ReserveMutinous: "{0} is in mutiny and refuses the order."
-TooFar: "{0} soldiers are too far away to hear that order. Orders by key and radio reach {1} tiles; the barracks panel reaches everyone."
+TooFar: "{0} soldiers are too far away to hear that order. Orders by key reach {1} tiles. The radio and the barracks panel reach everyone."

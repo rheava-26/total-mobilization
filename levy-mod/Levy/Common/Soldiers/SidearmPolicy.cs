@@ -7,7 +7,7 @@ namespace Levy.Common.Soldiers
 {
 	/// <summary>
 	/// What a levy may carry besides his primary. A levy holds up to <see cref="LevyConstants.MaxSidearms"/> sidearms: the hand sidearm (a fallback weapon, or a staff / sentry that is kept up without being in hand) and
-	/// <see cref="LevyConstants.ExtraSidearms"/> more, which hold the summon weapons (a sentry staff and a minion staff). Two rules decide whether a weapon fits beside the others:
+	/// <see cref="LevyConstants.ExtraSidearms"/> more, which hold the summon weapons (a sentry staff and a minion staff). A levy who is not a summoner has no summon slot of his own: he may carry ONE summon item as an ordinary sidearm, only when a sidearm slot is free after his other sidearms. Two rules decide whether a weapon fits beside the others:
 	///  * NO SECOND OF A ROLE. A melee weapon beside a melee primary, a second whip, a second sentry, a second unlimited minion staff or the same staff twice duplicate what he already has. A staff with a limit of its own
 	///    (see <see cref="SummonCap"/>) only takes the slots its minions use, so it fits beside an unlimited staff and beside other limited ones.
 	///  * NOTHING OFF-CLASS. A melee primary carries only a summon weapon beside it, never a gun, a bow or a second sword.
@@ -62,16 +62,8 @@ namespace Levy.Common.Soldiers
 		/// <summary>True when the weapon may sit beside this primary and these other sidearms.</summary>
 		public static bool Fits(Item primary, Item side, IEnumerable<Item> others) => !OffClass(primary, side) && !Duplicates(primary, side, others);
 
-		/// <summary>True when a levy who is not a summoner may carry this summon item: a minion staff needs a minion slot beyond the base one, a sentry staff a sentry slot beyond the base one. Anything else is allowed.</summary>
-		public static bool AllowedForOthers(Item it, int extraMinions, int extraTurrets)
-		{
-			if (IsStaff(it)) return extraMinions >= 1;
-			if (IsSentry(it)) return extraTurrets >= 1;
-			return true;
-		}
-
 		/// <summary>The sidearms (hand first) that do not fit beside the primary and the ones kept before them: what a tidy-up gives back to the shelf. Locked slots are never listed.
-		/// <paramref name="summoner"/> false adds the summon-slot rule: a levy who is not a summoner keeps a minion staff only while his gear gives a minion slot beyond the base one, and a sentry staff only while it gives a sentry slot beyond the base one.</summary>
+		/// <paramref name="summoner"/> false adds the one-summon-item rule: a levy who is not a summoner keeps at most one minion staff or sentry.</summary>
 		public static List<int> Misfits(SoldierGear g, bool? summoner = null)
 		{
 			var res = new List<int>();
@@ -85,21 +77,21 @@ namespace Levy.Common.Soldiers
 				if (!g.IsLocked(slot) && g.HasWeapon && !Fits(g.Weapon, it, kept)) { res.Add(slot); continue; }
 				kept.Add(it);
 			}
-			if (summoner == false) AddUnearnedSummonItems(g, res);
+			if (summoner == false) AddExtraSummonItems(g, res);
 			return res;
 		}
 
-		/// <summary>The summon-slot rule for a non-summoner: every unlocked staff / sentry his gear gives no extra slot for goes back.</summary>
-		private static void AddUnearnedSummonItems(SoldierGear g, List<int> res)
+		/// <summary>The one-summon-item rule for a non-summoner: he carries at most ONE minion staff or sentry as an ordinary sidearm. The first kept (a locked one always stays) holds the place; every further unlocked one goes back.</summary>
+		private static void AddExtraSummonItems(SoldierGear g, List<int> res)
 		{
-			int exM = 0, exT = 0; bool read = false;
+			bool have = false;
 			for (int i = 0; i < LevyConstants.MaxSidearms; i++)
 			{
 				int slot = SoldierGear.SidearmSlotAt(i);
 				var it = g.Get(slot);
-				if (it == null || it.IsAir || !IsDeployer(it) || g.IsLocked(slot) || res.Contains(slot)) continue;
-				if (!read) { ArmorDoctrine.ExtraSummonSlots(g, out exM, out exT); read = true; } // read once, and only for a levy who carries a summon item at all
-				if (!AllowedForOthers(it, exM, exT)) res.Add(slot);
+				if (it == null || it.IsAir || !IsDeployer(it) || res.Contains(slot)) continue;
+				if (!have) { have = true; continue; }
+				if (!g.IsLocked(slot)) res.Add(slot);
 			}
 		}
 	}

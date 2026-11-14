@@ -158,6 +158,8 @@ HeartNoNetwork: The Armory Heart reaches no storage network. Connect it to a Sto
 HeartNetworked: Joined to the storage network. {0}
 HeartNoArmory: No Armory is within reach of this heart.
 PageClear: Clear out
+PageStore: Storage
+PageStoreHint: Send what the army cannot use to Magic Storage or a chest.
 PageClearHint: Sell or take apart every weapon, armor piece and accessory below a tier.
 ClearHeader: Clear out below a tier
 ClearTierBtn: Below tier {0}: {1}
@@ -198,3 +200,26 @@ ClearTier14: Duke Fishron
 ClearTier15: Empress of Light
 ClearTier17: Lunatic Cultist
 ClearTier18: Moon Lord
+StoreNetwork: the Magic Storage network
+StoreChest: the chest beside the armory
+StoreNoTarget: No Magic Storage network or chest beside the armory.
+StoreStale: The armory changed. Preview the list again.
+StoreNothing: Nothing was sent.
+StoreSent: "{0} items sent to {1}."
+StoreSomeLeft: "{0} items sent to {1}. {2} did not fit."
+SellToStorage: To storage
+SellToStorageHint: Send the selection to Magic Storage, or to a chest beside the armory.
+StoreHeader: Send to storage
+StorePreview: Preview
+StorePreviewHint: List what the army cannot use.
+StoreConfirm: Send {0} items
+StoreConfirmNone: Send
+StoreConfirmHint: Send the listed items to storage.
+StorePreviewFirst: Press Preview to see the list.
+StoreNone: The army uses everything here.
+StoreCounts: "{0} items in {1} stacks."
+StoreTip: Weapons, armor, accessories, ammo and potions stay. Coins and favorited items stay.
+StoreToNetwork: To the Magic Storage network
+StoreToChest: To the chest beside the armory
+StoreToNone: No Magic Storage network or chest in reach
+StoreToUnknown: To storage, if there is any in reach

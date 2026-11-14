@@ -723,7 +723,11 @@ Mods: {
 
 			ObserveConfig: {
 				DisplayName: Observe Config
-				Headers.ArenaView: Arena View Header
+
+				Headers: {
+					ArenaView: Arena View Header
+					Seeker: Seeker
+				}
 
 				ArenaZoomPerSide: {
 					Label: Arena Zoom Per Side
@@ -738,6 +742,11 @@ Mods: {
 				MindControlOnDeath: {
 					Label: Mind Control On Death
 					Tooltip: ""
+				}
+
+				SeekerOutlineBrightness: {
+					Label: Seeker Outline Brightness
+					Tooltip: Lower values let the ore show through
 				}
 			}
 		}
@@ -794,9 +803,9 @@ Mods: {
 			Sort: Sort
 			SortHint: Groups storage into weapons, armor, accessories, ammo, potions and everything else, merges partial stacks and packs it to the front.
 			IssueWeapons: Weapons
-			IssueArmor: Armor sets
-			IssueAmmo: Ammo
-			IssuePotions: Potions
+			IssueArmor: Armor sets (used first)
+			IssueAmmo: Ammo (used first)
+			IssuePotions: Potions (buffs only from here)
 			Storage: Storage
 			GradeLevy: Levy
 			GradeManAtArms: Man-at-Arms

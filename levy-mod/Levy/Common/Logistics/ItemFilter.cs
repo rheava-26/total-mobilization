@@ -66,10 +66,19 @@ namespace Levy.Common.Logistics
 		}
 
 		/// <summary>Every space-separated word of <paramref name="term"/> appears in the name, ignoring case. An empty term matches everything.</summary>
-		public static bool NameMatches(string name, string term)
+		public static bool NameMatches(string name, string term) => NameMatches(name, Words(term));
+
+		private static readonly string[] NoWords = Array.Empty<string>();
+
+		/// <summary>The words of a search term, split once so a list of thousands of items is not split thousands of times.</summary>
+		public static string[] Words(string term) => string.IsNullOrWhiteSpace(term) ? NoWords : term.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+		/// <summary>Every word appears in the name, ignoring case. No words matches everything.</summary>
+		public static bool NameMatches(string name, string[] words)
 		{
-			if (string.IsNullOrWhiteSpace(term)) return true;
-			foreach (var w in term.Split(' ', StringSplitOptions.RemoveEmptyEntries)) if ((name ?? "").IndexOf(w, StringComparison.OrdinalIgnoreCase) < 0) return false;
+			if (words == null || words.Length == 0) return true;
+			name ??= "";
+			foreach (var w in words) if (name.IndexOf(w, StringComparison.OrdinalIgnoreCase) < 0) return false;
 			return true;
 		}
 	}

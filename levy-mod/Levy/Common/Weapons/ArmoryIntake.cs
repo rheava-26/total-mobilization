@@ -11,6 +11,12 @@ namespace Levy.Common.Weapons
 	/// </summary>
 	public static class ArmoryIntake
 	{
+		/// <summary>
+		/// What a shift-click puts in: any item, like a chest (the armory's storage holds anything: crafting materials for orders, blocks, banners). Favorited items and coins stay with the player.
+		/// <see cref="Accepts"/> is the narrower list Deposit junk sweeps.
+		/// </summary>
+		public static bool TakesByHand(Item it) => it != null && !it.IsAir && it.stack > 0 && !it.favorited && !it.IsACoin;
+
 		public static bool Accepts(Item it)
 		{
 			if (it == null || it.IsAir || it.stack <= 0 || it.favorited || it.IsACoin) return false;

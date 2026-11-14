@@ -21,6 +21,8 @@ namespace Levy.Common.Logistics
 	///  LogisticsSell: int armoryId, bool shimmerBack, byte kind(0 slots,1 filter), then kind 0: ushort count, ushort[] storage indices; kind 1: byte category (0 none), sbyte tierIndex (-1 none)
 	///  LogisticsClearOut: int armoryId, byte mode(0 preview,1 confirm), float tier, bool decraft, int expectHash (confirm: the fingerprint of the list the player saw)
 	///  LogisticsClearOutPreview (server -> client): ClearOut.Preview.Write
+	///  LogisticsToStorage: int armoryId, byte mode(0 preview the non-army list, 1 confirm it, 2 send selected slots), int expectHash (mode 1), ushort count + ushort[] storage indices (mode 2)
+	///  LogisticsStoragePreview (server -> client): StorageSend.Preview.Write
 	///  LogisticsCraft: int armoryId, int recipeIndex (Main.recipe), int crafts
 	///  LogisticsBuy: int armoryId, byte kind, int type, int count, long budget   (one standing rule, run once now)
 	/// </summary>
@@ -161,6 +163,58 @@ namespace Levy.Common.Logistics
 			if (mode == 1) prev.Stale = false;
 			if (Main.netMode == NetmodeID.Server && who >= 0 && who < Main.maxPlayers) { var p = LevyPackets.New(LevyPacket.LogisticsClearOutPreview); prev.Write(p); p.Send(who); }
 			else ClearOut.SetLatest(prev);
+		}
+
+		// ---------------------------------------------------------------- send to storage
+		/// <summary>Asks for the list "send the rest to storage" would move. The answer lands in <see cref="StorageSend.Latest"/> (single player at once, multiplayer when the server replies).</summary>
+		public static void StoragePreview(ArmoryTE a)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) { var p = LevyPackets.New(LevyPacket.LogisticsToStorage); p.Write(a.ID); p.Write((byte)0); p.Write(0); p.Send(); }
+			else DoToStorage(Main.myPlayer, a, 0, 0, null);
+		}
+
+		public static void StorageConfirm(ArmoryTE a, int expectHash)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient) { var p = LevyPackets.New(LevyPacket.LogisticsToStorage); p.Write(a.ID); p.Write((byte)1); p.Write(expectHash); p.Send(); }
+			else DoToStorage(Main.myPlayer, a, 1, expectHash, null);
+		}
+
+		public static void StorageSendSlots(ArmoryTE a, IList<int> slots)
+		{
+			if (Main.netMode == NetmodeID.MultiplayerClient)
+			{
+				var p = LevyPackets.New(LevyPacket.LogisticsToStorage); p.Write(a.ID); p.Write((byte)2); p.Write(0);
+				var list = slots.Where(i => i >= 0 && i < ushort.MaxValue).Take(ushort.MaxValue).ToList();
+				p.Write((ushort)list.Count); foreach (int i in list) p.Write((ushort)i); p.Send();
+			}
+			else DoToStorage(Main.myPlayer, a, 2, 0, slots);
+		}
+
+		internal static void OnToStorage(BinaryReader r, int who)
+		{
+			int id = r.ReadInt32(); byte mode = r.ReadByte(); int hash = r.ReadInt32(); List<int> slots = null;
+			if (mode == 2) { int n = r.ReadUInt16(); slots = new List<int>(n); for (int i = 0; i < n; i++) slots.Add(r.ReadUInt16()); }
+			if (Main.netMode != NetmodeID.Server || mode > 2) return;
+			var a = Armory(id); if (a == null || !Near(who, a)) return;
+			DoToStorage(who, a, mode, hash, slots);
+		}
+
+		private static void DoToStorage(int who, ArmoryTE a, byte mode, int hash, IList<int> slots)
+		{
+			if (mode != 0)
+			{
+				var res = mode == 1 ? StorageSend.Execute(a, hash) : StorageSend.SendSlots(a, slots);
+				string where = LevyUtil.T(res.TargetKind == 1 ? "Logistics.StoreNetwork" : "Logistics.StoreChest");
+				if (res.NoTarget) Tell(who, LevyUtil.T("Logistics.StoreNoTarget"));
+				else if (res.Stale) Tell(who, LevyUtil.T("Logistics.StoreStale"));
+				else if (res.Items == 0) Tell(who, LevyUtil.T("Logistics.StoreNothing"));
+				else Tell(who, res.Left > 0 ? LevyUtil.T("Logistics.StoreSomeLeft", res.Items, where, res.Left) : LevyUtil.T("Logistics.StoreSent", res.Items, where));
+				a.Sync();
+			}
+			if (mode == 2) return;
+			var prev = StorageSend.Build(a);
+			if (Main.netMode == NetmodeID.Server && who >= 0 && who < Main.maxPlayers) { var p = LevyPackets.New(LevyPacket.LogisticsStoragePreview); prev.Write(p); p.Send(who); }
+			else StorageSend.SetLatest(prev);
 		}
 
 		// ---------------------------------------------------------------- craft now

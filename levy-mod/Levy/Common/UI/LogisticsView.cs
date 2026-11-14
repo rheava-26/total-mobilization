@@ -27,7 +27,7 @@ namespace Levy.Common.UI
 	public class LogisticsView : UIElement
 	{
 		private static string L(string key, params object[] a) => LevyUtil.T("Logistics." + key, a);
-		private const int PageTop = 32, ColL = 232, ColR = 244, Pages = 5;
+		private const int PageTop = 32, ColL = 232, ColR = 244, Pages = 6;
 
 		private readonly ArmoryPanel _owner;
 		private ArmoryTE Te => _owner.Te;
@@ -63,18 +63,18 @@ namespace Levy.Common.UI
 		private int _offerTick = -1000;
 
 		// ---- sell page
-		private ItemFilterBar _sellFilter; private SellGrid _grid; private LevyButton _catBtn, _tierBtn, _pickBtn, _clearBtn, _shimmerBtn, _sellBtn; private Label _sellInfo;
+		private ItemFilterBar _sellFilter; private SellGrid _grid; private LevyButton _catBtn, _tierBtn, _pickBtn, _clearBtn, _shimmerBtn, _sellBtn, _toStoreBtn; private Label _sellInfo;
 		private int _catIdx, _tierIdx = -1; private bool _shimmer; private int _sellTick; private bool _sellDirty = true;
 
 		// ---- find page
 		private readonly UIGrid _findGrid = new(); private readonly UIScrollbar _findBar = new(); private Label _findLbl; private ItemFilterBar _findFilter;
-		private List<int> _findAll = new(); private bool _findDirty = true;
+		private List<int> _findAll = new(); private bool _findDirty = true, _findCandDirty = true; private int _findWait;
 
 		public LogisticsView(ArmoryPanel owner)
 		{
 			_owner = owner;
 			Width.Set(LevyConstants.UI.ArmoryPanelWidth - 20, 0f); Height.Set(LevyConstants.UI.ArmoryBarTop - 36 - 4, 0f);
-			string[] keys = { "PageOrders", "PageBuy", "PageSell", "PageFind", "PageClear" };
+			string[] keys = { "PageOrders", "PageBuy", "PageSell", "PageFind", "PageClear", "PageStore" };
 			for (int i = 0; i < Pages; i++)
 			{
 				int p = i;
@@ -82,8 +82,8 @@ namespace Levy.Common.UI
 				_pageBtn[i].Left.Set(i * 106, 0f); Append(_pageBtn[i]);
 				_page[i] = new UIElement(); _page[i].Top.Set(PageTop, 0f); _page[i].Width.Set(Width.Pixels, 0f); _page[i].Height.Set(Height.Pixels - PageTop, 0f);
 			}
-			_note = new Label(L("Rule"), 0.7f); _note.Left.Set(Pages * 106 + 6, 0f); _note.Top.Set(4, 0f); Append(_note);
-			BuildOrders(); BuildBuy(); BuildSell(); BuildFind(); BuildClear();
+			_note = new Label(L("Rule"), 0.7f); _note.Left.Set(316, 0f); _note.Top.Set(6, 0f); _page[0].Append(_note); // the orders page's own line: six page buttons fill the row above
+			BuildOrders(); BuildBuy(); BuildSell(); BuildFind(); BuildClear(); BuildStore();
 			FindTarget.Chooser = (cb, cands) => { ShowPage(3); _findPick = cb; };
 			ShowPage(0);
 		}
@@ -98,8 +98,9 @@ namespace Levy.Common.UI
 			_cur = p; Append(_page[p]);
 			if (p == 1) _offerTick = -1000;
 			if (p == 2) _sellDirty = true;
-			if (p == 3) _findDirty = true;
+			if (p == 3) { _findDirty = true; _findCandDirty = true; _findWait = 0; }
 			if (p == 4) _clearRows = true;
+			if (p == 5) { _storeRows = true; _storeTick = 0; }
 			Recalculate();
 		}
 
@@ -111,7 +112,7 @@ namespace Levy.Common.UI
 		{
 			StopTyping();
 			_recipeRescan = true; _recipeSig = "";
-			_selectedId = 0; _seenVersion = -1; _draft = NewDraft(); _grid?.Clear(); _sellDirty = true; _findDirty = true; _offerTick = -1000;
+			_selectedId = 0; _seenVersion = -1; _draft = NewDraft(); _grid?.Clear(); _sellDirty = true; _findDirty = true; _findCandDirty = true; _offerTick = -1000; _prevOrder = null;
 			RebuildOrderList(); RebuildLines();
 		}
 
@@ -228,7 +229,7 @@ namespace Levy.Common.UI
 		/// <summary>Recounts every recipe against the stock (page open, after a craft, then at most every 30 ticks) and the selected recipe's ingredient lines.</summary>
 		private void RescanRecipes()
 		{
-			_recipeRescan = false; _recipeTick = (int)Main.GameUpdateCount; _recipeVersion = CraftBrowser.Version;
+			_recipeRescan = false; _recipeTick = (int)Main.GameUpdateCount; _recipeVersion = CraftBrowser.Version; _stockSig = StockSig();
 			try
 			{
 				var pool = CraftBrowser.PoolFor(Te, Main.LocalPlayer);
@@ -385,7 +386,7 @@ namespace Levy.Common.UI
 			_addRuleBtn = new LevyButton(L("AddToOrder"), LevyConstants.UI.ButtonTextScale, 170, 26, () => { if (_draft.Rules.Count < 8) { _draft.Rules.Add(new BuyRule { Kind = _rule.Kind, Type = _rule.Type, Count = _rule.Count, Budget = _rule.Budget }); Main.NewText(L("RuleAdded", _draft.Rules.Count), 160, 220, 160); } }, L("AddToOrderHint")); _addRuleBtn.Left.Set(128, 0f); _addRuleBtn.Top.Set(92, 0f); pg.Append(_addRuleBtn);
 			_buyInfo = new Label("", 0.75f); _buyInfo.Left.Set(304, 0f); _buyInfo.Top.Set(98, 0f); pg.Append(_buyInfo);
 			_offersHdr = new Label(L("Offers"), 0.8f); _offersHdr.Top.Set(124, 0f); pg.Append(_offersHdr);
-			_buyFilter = new ItemFilterBar(620, "Mods.Levy.Logistics.OfferSearch"); _buyFilter.Top.Set(142, 0f); _buyFilter.Changed += () => _offerTick = -1000; pg.Append(_buyFilter);
+			_buyFilter = new ItemFilterBar(620, "Mods.Levy.Logistics.OfferSearch"); _buyFilter.Top.Set(142, 0f); _buyFilter.Changed += () => _offerReshow = true; pg.Append(_buyFilter);
 			_offerList.Top.Set(174, 0f); _offerList.Width.Set(620, 0f); _offerList.Height.Set(190, 0f); _offerList.ListPadding = 2f;
 			_offerBar.Left.Set(626, 0f); _offerBar.Top.Set(174, 0f); _offerBar.Height.Set(190, 0f); _offerList.SetScrollbar(_offerBar);
 			pg.Append(_offerList); pg.Append(_offerBar);
@@ -407,12 +408,25 @@ namespace Levy.Common.UI
 			else { var n = new Label(L("AnyGunHint"), 0.72f); n.Top.Set(12, 0f); _itemCellHost.Append(n); }
 		}
 
+		private List<Shopping.Offer> _offersCache = new(); private int _offersHere, _offersVia; private bool _offerReshow;
+
+		/// <summary>Asks every shopkeeper in reach what he sells (slow: each shop is set up for the purpose), at most every two seconds; typing in the search box only re-filters this list.</summary>
 		private void RefreshOffers()
 		{
+			_offerReshow = false;
+			if (Te == null) { _offerList.Clear(); return; }
+			int here = 0, via = 0;
+			try { _offersCache = Shopping.AllOffers(Te, out here, out via).OrderBy(o => o.Keeper.GivenName).ThenBy(o => o.UnitPrice).ToList(); } catch (Exception) { _offersCache = new(); }
+			_offersHere = here; _offersVia = via;
+			ShowOffers();
+		}
+
+		private void ShowOffers()
+		{
+			_offerReshow = false;
 			_offerList.Clear();
 			if (Te == null) return;
-			List<Shopping.Offer> offers; int here = 0, via = 0;
-			try { offers = Shopping.AllOffers(Te, out here, out via).OrderBy(o => o.Keeper.GivenName).ThenBy(o => o.UnitPrice).ToList(); } catch (Exception) { offers = new(); }
+			var offers = _offersCache; int here = _offersHere, via = _offersVia;
 			_offersHdr.SetText(via > 0 ? L("ReachHeaderPylons", Shopkeepers(here), via) : L("ReachHeader", Shopkeepers(here)));
 			if (offers.Count == 0) { var none = new Label(L("NoShops"), 0.8f); _offerList.Add(none); return; }
 			int shown = 0;
@@ -443,8 +457,9 @@ namespace Levy.Common.UI
 			_clearBtn = new LevyButton(L("ClearSel"), LevyConstants.UI.ButtonTextScale, 150, 24, () => { _grid.Clear(); _sellDirty = true; }); _clearBtn.Left.Set(x, 0f); _clearBtn.Top.Set(104, 0f); pg.Append(_clearBtn);
 			_shimmerBtn = new LevyButton("", LevyConstants.UI.ButtonTextScale, 150, 24, () => { _shimmer = !_shimmer; _sellDirty = true; }, L("ShimmerHint")); _shimmerBtn.Left.Set(x, 0f); _shimmerBtn.Top.Set(132, 0f); pg.Append(_shimmerBtn);
 			_sellBtn = new LevyButton(L("SellNow"), LevyConstants.UI.ButtonTextScale, 150, 28, SellNow, L("SellNowHint")); _sellBtn.Left.Set(x, 0f); _sellBtn.Top.Set(164, 0f); pg.Append(_sellBtn);
-			_sellInfo = new Label("", 0.72f); _sellInfo.Left.Set(x, 0f); _sellInfo.Top.Set(200, 0f); pg.Append(_sellInfo);
-			var tip = new Label(L("DragTip"), 0.66f); tip.Left.Set(x, 0f); tip.Top.Set(236, 0f); pg.Append(tip);
+			_toStoreBtn = new LevyButton(L("SellToStorage"), LevyConstants.UI.ButtonTextScale, 150, 28, SendSelectedToStorage, L("SellToStorageHint")); _toStoreBtn.Left.Set(x, 0f); _toStoreBtn.Top.Set(196, 0f); pg.Append(_toStoreBtn);
+			_sellInfo = new Label("", 0.72f); _sellInfo.Left.Set(x, 0f); _sellInfo.Top.Set(232, 0f); pg.Append(_sellInfo);
+			var tip = new Label(L("DragTip"), 0.66f); tip.Left.Set(x, 0f); tip.Top.Set(268, 0f); pg.Append(tip);
 			_sellFilter = new ItemFilterBar(SellGrid.Cols * SellGrid.Cell + 14 + 230, "Mods.Levy.Logistics.OfferSearch"); _sellFilter.Top.Set(SellGrid.VisRows * SellGrid.Cell + 8, 0f); pg.Append(_sellFilter);
 			_grid.Visible = it => _sellFilter.Matches(Lang.GetItemNameValue(it.type), it);
 		}
@@ -456,6 +471,13 @@ namespace Levy.Common.UI
 			if (Te == null) return; var f = CurrentFilter();
 			if (!f.Any) { Main.NewText(L("PickAFilter"), 220, 200, 120); return; }
 			_grid.Add(Selling.Select(Te, f)); _sellDirty = true;
+		}
+
+		private void SendSelectedToStorage()
+		{
+			if (Te == null || _grid.Selected.Count == 0) return;
+			LogisticsActions.StorageSendSlots(Te, _grid.Selected.ToList());
+			_grid.Clear(); _sellDirty = true; SoundEngine.PlaySound(SoundID.Grab);
 		}
 
 		private void SellNow()
@@ -527,12 +549,62 @@ namespace Levy.Common.UI
 			}
 		}
 
+		// ====================================================================================== STORAGE
+		private LevyButton _storePreviewBtn, _storeGoBtn; private Label _storeTargetLbl, _storeInfo, _storeTip;
+		private readonly UIList _storeList = new(); private readonly UIScrollbar _storeBar = new();
+		private bool _storeRows = true; private int _storeSeen = -1, _storeTick; private byte _storeKind = 255; // 0 nowhere, 1 network, 2 chests, 255 not known (a multiplayer client does not look)
+
+		private StorageSend.Preview CurrentStore { get { var p = StorageSend.Latest; return p != null && Te != null && p.ArmoryId == Te.ID ? p : null; } }
+
+		private void BuildStore()
+		{
+			var pg = _page[5];
+			var hl = new Label(L("StoreHeader"), 0.8f); pg.Append(hl);
+			_storeTargetLbl = new Label("", 0.72f); _storeTargetLbl.Top.Set(22, 0f); pg.Append(_storeTargetLbl);
+			_storePreviewBtn = new LevyButton(L("StorePreview"), LevyConstants.UI.ButtonTextScale, 230, 26, () => { if (Te != null) LogisticsActions.StoragePreview(Te); }, L("StorePreviewHint")); _storePreviewBtn.Top.Set(48, 0f); pg.Append(_storePreviewBtn);
+			_storeGoBtn = new LevyButton("", LevyConstants.UI.ButtonTextScale, 230, 30, StoreConfirm, L("StoreConfirmHint")); _storeGoBtn.Top.Set(82, 0f); pg.Append(_storeGoBtn);
+			_storeInfo = new Label("", 0.72f); _storeInfo.Top.Set(122, 0f); pg.Append(_storeInfo);
+			_storeTip = new Label(L("StoreTip"), 0.66f); _storeTip.Top.Set(160, 0f); pg.Append(_storeTip);
+			float lx = 244;
+			_storeList.Left.Set(lx, 0f); _storeList.Top.Set(22, 0f); _storeList.Width.Set(400, 0f); _storeList.Height.Set(300, 0f); _storeList.ListPadding = 2f;
+			_storeBar.Left.Set(lx + 406, 0f); _storeBar.Top.Set(22, 0f); _storeBar.Height.Set(300, 0f); _storeList.SetScrollbar(_storeBar);
+			pg.Append(_storeList); pg.Append(_storeBar);
+		}
+
+		private void StoreConfirm()
+		{
+			var p = CurrentStore; if (Te == null || p == null || p.Empty) return;
+			LogisticsActions.StorageConfirm(Te, p.Hash);
+			SoundEngine.PlaySound(SoundID.Grab);
+		}
+
+		private void TickStore()
+		{
+			if (Te == null) return;
+			if (--_storeTick <= 0)
+			{
+				_storeTick = 60;
+				_storeKind = Main.netMode == NetmodeID.SinglePlayer ? StorageSend.TargetFor(Te).Kind : (byte)255;
+			}
+			_storeTargetLbl.SetText(_storeKind == 1 ? L("StoreToNetwork") : _storeKind == 2 ? L("StoreToChest") : _storeKind == 0 ? L("StoreToNone") : L("StoreToUnknown"));
+			var p = CurrentStore;
+			if (p == null) { _storeGoBtn.SetText(L("StoreConfirmNone")); _storeGoBtn.Enabled = false; _storeInfo.SetText(L("StorePreviewFirst")); }
+			else if (p.Empty) { _storeGoBtn.SetText(L("StoreConfirmNone")); _storeGoBtn.Enabled = false; _storeInfo.SetText(L("StoreNone")); }
+			else { _storeGoBtn.SetText(L("StoreConfirm", p.Items)); _storeGoBtn.Enabled = _storeKind != 0; _storeInfo.SetText(L("StoreCounts", p.Items, p.Stacks)); }
+			if (_storeRows || _storeSeen != StorageSend.Version)
+			{
+				_storeRows = false; _storeSeen = StorageSend.Version;
+				_storeList.Clear();
+				if (p != null) { foreach (var r in p.Rows) _storeList.Add(new ClearRowEl(r, true)); if (p.RowTotal > p.Rows.Count) _storeList.Add(new Label(L("ClearMore", p.RowTotal - p.Rows.Count), 0.7f)); }
+			}
+		}
+
 		// ====================================================================================== FIND
 		private void BuildFind()
 		{
 			var pg = _page[3];
 			_findLbl = new Label("", 0.8f); pg.Append(_findLbl);
-			_findFilter = new ItemFilterBar(500, "Mods.Levy.Logistics.FindSearch"); _findFilter.Top.Set(22, 0f); _findFilter.Changed += () => _findDirty = true; pg.Append(_findFilter);
+			_findFilter = new ItemFilterBar(500, "Mods.Levy.Logistics.FindSearch"); _findFilter.Top.Set(22, 0f); _findFilter.Changed += () => { _findDirty = true; _findWait = 8; }; pg.Append(_findFilter); // a keystroke waits a moment: typing a word rebuilds the grid once, not once per letter
 			var clear = new LevyButton(L("FindClear"), LevyConstants.UI.ButtonTextScale, 110, 26, () => { FindTarget.Set(0); }, L("FindClearHint")); clear.Left.Set(510, 0f); clear.Top.Set(22, 0f); pg.Append(clear);
 			_findGrid.Top.Set(56, 0f); _findGrid.Width.Set(620, 0f); _findGrid.Height.Set(280, 0f); _findGrid.ListPadding = 2f;
 			_findBar.Left.Set(626, 0f); _findBar.Top.Set(56, 0f); _findBar.Height.Set(280, 0f); _findGrid.SetScrollbar(_findBar);
@@ -543,7 +615,7 @@ namespace Levy.Common.UI
 		{
 			_findGrid.Clear();
 			if (Te == null) return;
-			if (_findAll.Count == 0 || _findDirty) _findAll = FindTarget.Candidates(Te);
+			if (_findAll.Count == 0 || _findCandDirty) { _findAll = FindTarget.Candidates(Te); _findCandDirty = false; } // the list of every item is built when the page opens, not on every keystroke
 			int shown = 0;
 			var stocked = new HashSet<int>(); if (Te.Storage != null) foreach (var it in Te.Storage) if (it != null && !it.IsAir) stocked.Add(it.type);
 			foreach (int t in _findAll)
@@ -584,18 +656,58 @@ namespace Levy.Common.UI
 			_tierBtn.SetText(_tierIdx < 0 ? L("TierAny") : L("Tier" + Selling.Tiers[_tierIdx].Key));
 			_shimmerBtn.SetText(_shimmer ? L("ShimmerOn") : L("ShimmerOff")); _shimmerBtn.Lit = _shimmer;
 			_sellBtn.Enabled = _grid.Selected.Count > 0;
+			_toStoreBtn.Enabled = _grid.Selected.Count > 0;
 
 			_modeOrdersBtn.Lit = !_craftMode; _modeCraftBtn.Lit = _craftMode;
-			if (_cur == 0 && !_craftMode) Checklist.Show(s != null ? Clone(s) : LocalPreview(), s != null);
+			if (_cur == 0 && !_craftMode) Checklist.Show(PreviewFor(s), s != null);
 			if (_cur == 0 && _craftMode)
 			{
-				if (_recipeRescan || _recipeVersion != CraftBrowser.Version || (Main.GameUpdateCount - (uint)_recipeTick) > 30) RescanRecipes();
+				uint now = Main.GameUpdateCount;
+				if (_recipeRescan || _recipeVersion != CraftBrowser.Version) RescanRecipes();
+				else if (now - (uint)_recipeTick >= RescanMinTicks && (StockSig() != _stockSig || now - (uint)_recipeTick >= RescanMaxTicks)) RescanRecipes(); // the stock is walked again when it changed (a craft, a deposit), and now and then for chests and the network
 				if (_recipeRebuild) RebuildRecipeList();
 			}
 			if (_cur == 1 && (Main.GameUpdateCount - (uint)_offerTick) > 120) { _offerTick = (int)Main.GameUpdateCount; RefreshOffers(); }
+			else if (_cur == 1 && _offerReshow) ShowOffers();
 			if (_cur == 2 && (_sellDirty || ++_sellTick > 60)) { _sellTick = 0; _sellDirty = false; UpdateSellInfo(); }
 			if (_cur == 4) TickClear();
-			if (_cur == 3) { _findLbl.SetText(FindTarget.Target > 0 ? L("FindCurrent", ItemName(FindTarget.Target)) : L("FindNone")); if (_findDirty) RefreshFind(); }
+			if (_cur == 5) TickStore();
+			if (_cur == 3) { _findLbl.SetText(FindTarget.Target > 0 ? L("FindCurrent", ItemName(FindTarget.Target)) : L("FindNone")); if (_findDirty && --_findWait <= 0) RefreshFind(); }
+		}
+
+		private const int RescanMinTicks = 15, RescanMaxTicks = 300, PreviewTicks = 30;
+		private int _stockSig;
+		/// <summary>A cheap fingerprint of what the recipe browser counts that this client can see change: the armory's storage and the commander's pack.</summary>
+		private int StockSig()
+		{
+			unchecked
+			{
+				int h = 17;
+				var st = Te?.Storage; if (st != null) foreach (var it in st) if (it != null && !it.IsAir) h = h * 31 + it.type * 7 + it.stack;
+				var inv = Main.LocalPlayer?.inventory; if (inv != null) for (int i = 0; i < PlayerStock.Slots && i < inv.Length; i++) { var it = inv[i]; if (it != null && !it.IsAir) h = h * 31 + it.type * 7 + it.stack; }
+				return h;
+			}
+		}
+
+		// ---- the materials checklist beside the orders page: rebuilt when the draft or the book changes, and twice a second for the stock, never per frame
+		private uint _prevTick = uint.MaxValue; private int _prevSig; private LogisticsOrder _prevOrder;
+		private LogisticsOrder PreviewFor(LogisticsOrder saved)
+		{
+			uint now = Main.GameUpdateCount;
+			int sig = saved != null ? unchecked(saved.Id * 31 + OrderBook.Version) : DraftSig();
+			if (_prevOrder != null && sig == _prevSig && now >= _prevTick && now - _prevTick < PreviewTicks) return _prevOrder;
+			_prevOrder = saved != null ? Clone(saved) : LocalPreview(); _prevSig = sig; _prevTick = now;
+			return _prevOrder;
+		}
+
+		private int DraftSig()
+		{
+			unchecked
+			{
+				int h = _draft.Total * 31 + (int)_draft.Mode; h = h * 31 + (_draft.BuyShortfalls ? 1 : 0);
+				foreach (var l in _draft.Lines) { h = h * 31 + l.Weight; h = h * 31 + l.Planned; h = h * 31 + l.Done; foreach (int t in l.Types) h = h * 31 + t; }
+				return h;
+			}
 		}
 
 		/// <summary>Unsaved draft: the client's own estimate of the materials from the armory it can see (the server's figure, with chests and the network, replaces it once saved).</summary>

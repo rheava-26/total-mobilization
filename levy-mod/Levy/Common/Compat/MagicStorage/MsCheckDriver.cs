@@ -85,10 +85,11 @@ namespace Levy.Common.Compat.MagicStorageLink
 				Check(NetworkStocks.For(armory) == null, "an Armory Heart that reaches no storage heart gives no network");
 				heart.ComponentManager.Link(unit);
 				heart.ComponentManager.Link(ah);
+				MsDriver.ResetCache(); // the heart lookup is kept for half a second: a network linked a moment ago must be found now
 				Check(ReferenceEquals(ah.GetHeart(), heart), "the connected Armory Heart resolves to the storage heart");
 				Check(ReferenceEquals(MsDriver.HeartFor(armory), heart), "MsDriver.HeartFor(armory) is the real storage heart");
 				var net = NetworkStocks.For(armory);
-				Check(net is MsNetworkStock, "NetworkStocks.For returns the Magic Storage stock");
+				Check(net is CachedStock cs && cs.Inner is MsNetworkStock, "NetworkStocks.For returns the Magic Storage stock (read through one snapshot)");
 				if (net == null) throw new InvalidOperationException("no network stock");
 
 				// the armory panel opened from a heart far from its armory must stay open for a player standing at the heart (it used to close the instant it opened)

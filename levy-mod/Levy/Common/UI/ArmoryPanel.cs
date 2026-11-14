@@ -350,6 +350,9 @@ namespace Levy.Common.UI
 			BuildGrid();
 
 			float y = 0f;
+			var optional = new Label(LevyUtil.T("UI2.IssueOptional"), 0.65f);
+			optional.Left.Set(0f, 0f); optional.Top.Set(y, 0f);
+			_issue.Append(optional); y += 14f;
 			AddLabel(LevyUtil.T("UI.IssueWeapons"), y); y += 18f;
 			int weaponRows = (te.IssueWeapons.Length + IssueColumns - 1) / IssueColumns;
 			for (int i = 0; i < te.IssueWeapons.Length; i++)
@@ -774,6 +777,15 @@ namespace Levy.Common.UI
 			return ArmoryView.Matches(Te.Storage, Matches);
 		}
 
+		private readonly Dictionary<int, string> _affixNames = new();
+		/// <summary>An item's name with its prefix, built once per (type, prefix): a search over thousands of slots would otherwise build thousands of strings every time the list refreshes.</summary>
+		private string AffixCached(Item it)
+		{
+			int key = it.type * 256 + (it.prefix & 255);
+			if (!_affixNames.TryGetValue(key, out var n)) _affixNames[key] = n = it.AffixName();
+			return n;
+		}
+
 		private bool Matches(Item it)
 		{
 			if (it == null || it.IsAir || it.stack <= 0) return false;
@@ -781,7 +793,7 @@ namespace Levy.Common.UI
 			if (_rarityMask != 0 && (_rarityMask & (1u << RarityBucket(it))) == 0) return false;
 			if (_terms.Length > 0)
 			{
-				string name = it.AffixName();
+				string name = AffixCached(it);
 				foreach (string t in _terms) if (name.IndexOf(t, StringComparison.OrdinalIgnoreCase) < 0) return false;
 			}
 			return true;

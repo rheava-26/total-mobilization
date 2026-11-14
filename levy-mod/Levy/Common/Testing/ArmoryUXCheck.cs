@@ -139,18 +139,18 @@ namespace Levy.Common.Testing
 			// no limit: the full kit, as before
 			var free = new SoldierRecord { Id = 901 };
 			var te0 = Armory(null, Stock()); Armor(free); ArmoryTE.TestServed = new List<SoldierRecord> { free }; te0.IssueGear(free);
-			check("with no limit and no extra summon slot a ranged levy carries a blade and no summon weapon", free.Gear.SidearmCount == 1 && Summons(free) == 0, Kit(free));
+			check("with no limit a ranged levy carries a blade and one summon weapon as sidearms", free.Gear.SidearmCount == 2 && Summons(free) == 1 && free.Gear.Sidearm.type == ItemID.IronBroadsword, Kit(free));
 
-			// no extra slot: no summon item, whatever the armory stocks. An extra minion slot lets a staff ride as a sidearm, an extra sentry slot a sentry staff.
+			// no summon slot of his own: whatever his gear gives, a levy who is not a summoner carries at most ONE summon item (a staff or a sentry), beside his blade.
 			var minionSlot = new SoldierRecord { Id = 911 }; Armor(minionSlot); Wear(minionSlot, ItemID.PapyrusScarab);
 			var te6 = Armory(null, Stock()); ArmoryTE.TestServed = new List<SoldierRecord> { minionSlot }; te6.IssueGear(minionSlot);
-			check("with an extra minion slot a ranged levy carries a minion staff in a sidearm slot", Staves(minionSlot) == 1 && Sentries(minionSlot) == 0 && minionSlot.Gear.SidearmCount == 2, Kit(minionSlot));
+			check("with gear that adds a minion slot he still carries one summon item and his blade", Summons(minionSlot) == 1 && minionSlot.Gear.SidearmCount == 2, Kit(minionSlot));
 			var sentrySlot = new SoldierRecord { Id = 912 }; Armor(sentrySlot); Wear(sentrySlot, ItemID.SquireShield);
 			var te7 = Armory(null, Stock()); ArmoryTE.TestServed = new List<SoldierRecord> { sentrySlot }; te7.IssueGear(sentrySlot);
-			check("with an extra sentry slot a ranged levy carries a sentry staff and no minion staff", Sentries(sentrySlot) == 1 && Staves(sentrySlot) == 0, Kit(sentrySlot));
+			check("with gear that adds a sentry slot he still carries one summon item", Summons(sentrySlot) == 1 && sentrySlot.Gear.SidearmCount == 2, Kit(sentrySlot));
 			var bothSlots = new SoldierRecord { Id = 913 }; Armor(bothSlots); Wear(bothSlots, ItemID.PapyrusScarab, ItemID.SquireShield);
 			var te8 = Armory(null, Stock()); ArmoryTE.TestServed = new List<SoldierRecord> { bothSlots }; te8.IssueGear(bothSlots);
-			check("with both extra slots he carries a staff and a sentry beside his blade", Staves(bothSlots) == 1 && Sentries(bothSlots) == 1 && bothSlots.Gear.SidearmCount == 3, Kit(bothSlots));
+			check("with both extra slots he carries one summon item, never a staff and a sentry", Summons(bothSlots) == 1 && bothSlots.Gear.SidearmCount == 2, Kit(bothSlots));
 			{
 				// read straight off the scratch player: the equip pass really raises maxMinions / maxTurrets (the staff above rode on these numbers)
 				ArmorDoctrine.ExtraSummonSlots(minionSlot.Gear, out int m1, out int t1); ArmorDoctrine.ExtraSummonSlots(sentrySlot.Gear, out int m2, out int t2); ArmorDoctrine.ExtraSummonSlots(bothSlots.Gear, out int m3, out int t3); ArmorDoctrine.ExtraSummonSlots(free.Gear, out int m0, out int t0);
@@ -162,12 +162,12 @@ namespace Levy.Common.Testing
 			var capped = ArmoryRules.Default(); capped.SidearmLimit = 1;
 			var limited = new SoldierRecord { Id = 914 }; Armor(limited); Wear(limited, ItemID.PapyrusScarab, ItemID.SquireShield);
 			var te9 = Armory(capped, Stock()); ArmoryTE.TestServed = new List<SoldierRecord> { limited }; te9.IssueGear(limited);
-			check("a summon sidearm counts against the sidearm limit", limited.Gear.SidearmCount == 1, Kit(limited));
-			// the slot goes away with the gear: the staff goes back to the armory on the next pass
+			check("a summon sidearm only takes a slot his other sidearms leave free (limit 1: the blade, no summon item)", limited.Gear.SidearmCount == 1 && Summons(limited) == 0, Kit(limited));
+			// two summon items on a levy who is not a summoner: one goes back to the armory on the next pass
 			var lost = new SoldierRecord { Id = 915 }; Armor(lost); lost.Gear.Weapon = Make(ItemID.Musket); lost.Gear.ExtraSidearms[0] = Make(ItemID.SlimeStaff); lost.Gear.ExtraSidearms[1] = Make(ItemID.QueenSpiderStaff);
 			var te10 = Armory(null, Make(ItemID.MusketBall, 300)); ArmoryTE.TestServed = new List<SoldierRecord> { lost }; te10.UpgradeWeapons(lost);
-			check("a levy with no extra summon slot gives a summon sidearm back on the next pass", Summons(lost) == 0, Kit(lost));
-			check("the returned staff and sentry are in the armory", te10.Storage.Count(i => i != null && !i.IsAir && (i.type == ItemID.SlimeStaff || i.type == ItemID.QueenSpiderStaff)) == 2);
+			check("a levy carrying a staff and a sentry gives one back on the next pass", Summons(lost) == 1, Kit(lost));
+			check("the returned summon item is in the armory", te10.Storage.Count(i => i != null && !i.IsAir && (i.type == ItemID.SlimeStaff || i.type == ItemID.QueenSpiderStaff)) == 1);
 			// a summoner is unchanged: no extra slot needed
 			var summoner = new SoldierRecord { Id = 916 }; summoner.Gear.Weapon = Make(ItemID.HornetStaff); summoner.Gear.Head = Make(ItemID.SpiderMask); summoner.Gear.Body = Make(ItemID.SpiderBreastplate); summoner.Gear.Legs = Make(ItemID.SpiderGreaves);
 			var te11 = Armory(null, Make(ItemID.QueenSpiderStaff)); ArmoryTE.TestServed = new List<SoldierRecord> { summoner }; te11.IssueGear(summoner);

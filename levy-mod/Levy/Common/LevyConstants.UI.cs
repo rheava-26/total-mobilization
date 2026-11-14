@@ -105,6 +105,15 @@ namespace Levy.Common
 			/// <summary>Colour of the extra swatch that stands for every modded / unlisted rarity.</summary>
 			public static readonly Color ArmoryRarityOtherColor = new Color(110, 190, 180);
 
+			// ---- items out of the armory (carried by a levy, lent to a drone): read-only cells in the grid ----
+			/// <summary>The in-use list is rebuilt at most this often (ticks) while the armory is open; it is never built while the panel is closed.</summary>
+			public const int ArmoryInUseTicks = 30;
+			/// <summary>Cell background of gear a levy carries, and of a weapon lent to a drone.</summary>
+			public static readonly Color ArmoryCarriedTint = new Color(70, 150, 110), ArmoryLentTint = new Color(190, 130, 50);
+			/// <summary>Tooltip line colours for the same two cases, and the item's drawing strength inside its cell (the item is not in the rack, so it is drawn faded).</summary>
+			public static readonly Color ArmoryCarriedText = new Color(130, 220, 170), ArmoryLentText = new Color(240, 180, 90);
+			public const float ArmoryOutItemAlpha = 0.6f;
+
 			// ---- bulk reforge (armory) ----
 			/// <summary>Reforge floor presets, best-of-N: a weapon qualifies once its prefix is among the top this-fraction of the prefixes THAT weapon can roll (0 = only the single best). Index = the floor button's cycle position.</summary>
 			public static readonly float[] ReforgeFloorTopFraction = { 0.50f, 0.25f, 0.10f, 0f };

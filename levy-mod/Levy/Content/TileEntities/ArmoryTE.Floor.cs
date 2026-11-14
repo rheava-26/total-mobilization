@@ -12,8 +12,9 @@ using Levy.Content.NPCs;
 namespace Levy.Content.TileEntities
 {
 	/// <summary>
-	/// Raise the floor: when new armor or accessories arrive, the worst-equipped levies take them first, whoever happens to ask. The best set of a class still goes to a levy of that class (a set is never
-	/// taken by another class while a levy of its class would gain from it), and every swap needs the usual upgrade margin, so a swap always strictly improves the slot and nobody churns.
+	/// Armor and accessory rules of a levy's own gear check (see <see cref="UpgradeWeapons"/>): each levy looks at the shelf on his own timer, takes the best free piece for a slot when it beats what he wears by the usual
+	/// upgrade margin, and gives back what it replaced. A set is never taken by another class while a levy of its class would gain from it, and a class-specific accessory is left for a levy of that class,
+	/// so a swap always strictly improves the slot and nobody churns. There is no army-wide pass: worse-equipped levies pick up what the better-equipped ones put back on their own next look.
 	/// (Weapons are dealt by <see cref="WeaponAllocator"/>, which already deals each class's stock worst-equipped first.)
 	/// </summary>
 	public partial class ArmoryTE
@@ -24,13 +25,6 @@ namespace Levy.Content.TileEntities
 		internal static float ArmorScoreOf(Item it) => ArmorScore(it);
 		internal static float AccessoryScoreOf(Item it, DamageClass cls) => AccessoryScore(it, cls);
 		internal static string StemOf(Item it) => ArmorStem(it);
-
-		/// <summary>Bumped whenever armor or an accessory enters this armory's storage; the sweep runs again only when it changed (or after <see cref="SweepRecheckTicks"/>).</summary>
-		private int _gearStockRev;
-		private int _sweepRev = -1, _sweepServed = -1;
-		private uint _sweepTick;
-		private bool _sweeping;
-		private const uint SweepRecheckTicks = 60 * 20;
 
 		private static float KitScore(SoldierGear g)
 		{
@@ -84,89 +78,6 @@ namespace Levy.Content.TileEntities
 			return res;
 		}
 
-		/// <summary>A levy's gear changed outside his own upgrade tick: the armor may have changed his class, so the weapon follows, he is issued what is missing, and clients are told.</summary>
-		private void FloorTouch(SoldierRecord w)
-		{
-			ReconcileWeaponToArmor(w);
-			IssueGear(w);
-			MarkDirty();
-			if (Main.netMode != NetmodeID.MultiplayerClient && w.HasBody && Main.npc[w.BodyIndex].ModNPC is SoldierNPC sn) sn.NotifyGearChanged();
-		}
-
-		/// <summary>The sweep works in slices of at most this many milliseconds per call (it resumes where it stopped), so a big army and a big armory deal their gear over a few seconds instead of in one long stall. Tests that want the whole sweep at once raise it.</summary>
-		internal static double SweepSliceMs = 2.0;
-		/// <summary>Slicing is on in play (see <see cref="FloorSweepSlicing"/>); the boot and world self-checks, which expect a sweep to finish inside the call that starts it, run with it off.</summary>
-		internal static bool SweepSlicing;
-		private bool _swActive; private int _swPhase, _swPass, _swIdx = -1; private bool _swAny; private List<SoldierRecord> _swLevies;
-		/// <summary>True while a sweep is part-way through (the armory's own tick keeps feeding it).</summary>
-		internal bool SweepRunning => _swActive;
-
-		/// <summary>
-		/// The army-wide armor and accessory deal: levies are visited from the worst-equipped up, and each takes the best he is entitled to (the normal upgrade pick, with its margin). A no-op when nothing new
-		/// arrived since the last sweep. Server / single player only. A sweep that does not fit in <see cref="SweepSliceMs"/> carries on from where it stopped on the next call (an upgrade pass or the armory's tick);
-		/// the passes and their order are exactly those of one long run.
-		/// </summary>
-		internal void FloorSweep()
-		{
-			if (!FloorFirst || _sweeping || Main.netMode == NetmodeID.MultiplayerClient) return;
-			uint now = Main.GameUpdateCount;
-			if (!_swActive)
-			{
-				var fresh = FloorLevies();
-				if (fresh.Count < 2) return;
-				if (_sweepRev == _gearStockRev && _sweepServed == fresh.Count && now - _sweepTick < SweepRecheckTicks) return;
-				_swActive = true; _swLevies = fresh; _swPhase = 0; _swPass = 0; _swIdx = -1; _swAny = false;
-			}
-			var levies = _swLevies;
-			_sweeping = true;
-			using var _rs = ArmoryRules.Enter(Rules);
-			long deadline = SweepSlicing ? System.Diagnostics.Stopwatch.GetTimestamp() + (long)(SweepSliceMs * System.Diagnostics.Stopwatch.Frequency / 1000.0) : long.MaxValue;
-			long pw = global::Levy.Common.Util.LevyProf.Begin();
-			bool first = true;
-			try {
-				while (_swActive) {
-					if (_swIdx < 0) { // a pass begins: worst-equipped first (armor: bare first of all)
-						if (_swPhase == 0) levies.Sort((a, b) => { int c = KitScore(a.Gear).CompareTo(KitScore(b.Gear)); return c != 0 ? c : a.Id.CompareTo(b.Id); });
-						else levies.Sort((a, b) => { int c = AccAverage(a).CompareTo(AccAverage(b)); return c != 0 ? c : a.Id.CompareTo(b.Id); });
-						_swIdx = 0; _swAny = false;
-					}
-					for (; _swIdx < levies.Count; _swIdx++) {
-						if (!first && System.Diagnostics.Stopwatch.GetTimestamp() > deadline) return; // out of time: the next call picks up at this levy
-						first = false;
-						var w = levies[_swIdx];
-						if (!FloorEligible(w)) continue; // left, died or went busy since the pass began
-						if (_swPhase == 0) {
-							if (!w.Gear.HasWeapon) continue; // an armor upgrade follows the weapon's class; a bare-handed levy is issued normally
-							if (TakeArmorSetCore(w, true, true)) { _swAny = true; FloorTouch(w); }
-						}
-						else {
-							long pq = global::Levy.Common.Util.LevyProf.Begin(); bool st = AccessoryStep(w, levies); global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.SwpAccStep, pq);
-							if (st) { _swAny = true; global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.SwpAccChg, pq); MarkDirty(); NotifyOnly(w); }
-						}
-					}
-					_swIdx = -1; _swPass++; // the pass is done
-					if (_swPhase == 0) { if (!_swAny || _swPass >= 4) { _swPhase = 1; _swPass = 0; } } // armor sets: up to 4 passes, then accessories
-					else if (!_swAny || _swPass >= 60) { FinishSweep(levies.Count, now); } // accessories: one slot per levy per visit, lowest average first, until nobody improves
-				}
-			}
-			catch (Exception e) { Levy.Instance?.Logger.Warn("Levy: the floor sweep failed: " + e); FinishSweep(levies.Count, now); }
-			finally {
-				_sweeping = false;
-				global::Levy.Common.Util.LevyProf.EndCount(_swPhase == 0 ? global::Levy.Common.Util.LevyProf.SwpArmor : global::Levy.Common.Util.LevyProf.SwpAcc, pw);
-			}
-		}
-
-		private void FinishSweep(int served, uint startedAt)
-		{
-			_swActive = false; _swLevies = null; _swIdx = -1;
-			_sweepRev = _gearStockRev; _sweepServed = served; _sweepTick = Main.GameUpdateCount;
-		}
-
-		private static void NotifyOnly(SoldierRecord w)
-		{
-			if (Main.netMode != NetmodeID.MultiplayerClient && w.HasBody && Main.npc[w.BodyIndex].ModNPC is SoldierNPC sn) sn.NotifyGearChanged();
-		}
-
 		/// <summary>For an armor upgrade by <paramref name="who"/>: does a levy of the set's class (other than him) stand to gain from a set of this raw score? Per-class best-off-needing levy, computed once.</summary>
 		private Func<DamageClass, float, bool> ClassWantsSet(SoldierRecord who)
 		{
@@ -181,7 +92,7 @@ namespace Levy.Content.TileEntities
 			return (cls, raw) => low.TryGetValue(cls, out var k) && k * LevyConstants.AutoUpgradeScoreMargin < raw;
 		}
 
-		/// <summary>The requester's own accessory pass (the sweep has already served the worse-equipped): fills and upgrades his slots. True if anything changed.</summary>
+		/// <summary>A levy's own accessory pass: fills and upgrades his slots. True if anything changed.</summary>
 		public virtual bool UpgradeAccessories(SoldierRecord soldier)
 		{
 			if (!FloorFirst || soldier?.Gear == null || Main.netMode == NetmodeID.MultiplayerClient) return false;
@@ -215,7 +126,7 @@ namespace Levy.Content.TileEntities
 				if (g.IsLocked(SoldierGear.SlotAcc0 + i)) continue;
 				if (IsAir(g.Accessories[i])) { target = i; tScore = 0f; empty = true; break; }
 				if (soleMob && i == mobSlot) continue;
-				if (allMob && i == mobSlot) continue; // the best mobility accessory stays
+				if (i == mobSlot && (allMob || (MobilityFirst && ReserveSlots && n >= 2))) continue; // his best mobility accessory is only ever swapped for a better mobility one (below): giving it up for a non-mobility pick, then taking it back as "better mobility", turned two mobility accessories and one other into a three-step rotation every check
 				float sc = AccessoryScore(g.Accessories[i], cls) + Common.Team.TeamAccessory.Bonus(g.Accessories[i], teamClaimed);
 				if (sc < tScore) { target = i; tScore = sc; }
 			}
@@ -299,14 +210,5 @@ namespace Levy.Content.TileEntities
 			}
 			return false;
 		}
-	}
-
-	/// <summary>Turns on sliced gear sweeps ten seconds into a world, after the load-time self-checks have run (they need a sweep to complete in one call).</summary>
-	public class FloorSweepSlicing : Terraria.ModLoader.ModSystem
-	{
-		private int _ticks;
-		public override void OnWorldLoad() { _ticks = 0; ArmoryTE.SweepSlicing = false; }
-		public override void OnWorldUnload() { ArmoryTE.SweepSlicing = false; }
-		public override void PostUpdateEverything() { if (!ArmoryTE.SweepSlicing && ++_ticks > 600) ArmoryTE.SweepSlicing = true; }
 	}
 }

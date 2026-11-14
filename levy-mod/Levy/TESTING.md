@@ -194,10 +194,14 @@ Configuration → Levy, and `EventBookDropDenominator` in `Common/LevyConstants.
 4. Multiplayer: the robbed player's client removes its own coins (server sends MutinyRob); the server counts only coins its copy of the player shows.
 
 ## Re-measuring the lag (big scene)
-* Boot with `LEVY_PERFSCENE=1` (optionally `LEVY_PERFSCENE_SLOTS=3000`, `LEVY_PERFSCENE_LEVIES=40`). After recipes load, `ArmoryScaleCheck` fills an
+* Boot with `LEVY_PERFSCENE=1` (optionally `LEVY_PERFSCENE_SLOTS=3000`, `LEVY_PERFSCENE_LEVIES=40`, `LEVY_PERFSCENE_SEEDS=3`). After recipes load, `ArmoryScaleCheck` fills an
   unplaced Armory with every weapon, armor piece, accessory, ammo and potion the loaded mods have, serves a crowd of levies from it and logs one
-  `[PerfScene]` table: ms per call (mean, p95, max) for the first issue, the per-levy upgrade pass, the stamp pass, a drone loan, Select matching
-  and its price, plus the average ms per tick the upgrade pass costs for that many levies. Boot it once with Calamity and once without.
+  `[PerfScene]` table: ms per call (mean, p95, max) for the first issue, one levy's own gear check, the stamp pass, a drone loan, Select matching
+  and its price, the armory panel's items-out list, plus the average ms per tick the gear checks cost for that many levies. Boot it once with Calamity and once without.
+* The same run ends with the gear-cadence scene (`GearCadenceScene`, `LEVY_PERFSCENE_CADENCE=0` skips it): a fresh army is issued at once, then each levy re-checks his own gear on his own random 10 to 15 second timer
+  on a virtual clock (a drop of the 115 best armor pieces, accessories and weapons arrives at game second 240). It logs real ms per tick, the worst single call (with the calls that had a GC inside split out), game seconds until
+  the kits stop changing, items passed between levies and any that went back to an earlier holder (ping-pong), and the final kits as score sums (weapons, sidearms, armor, accessories) with class-mismatch and empty-slot counts.
+  `LEVY_PERFSCENE_TRACE=1` (optionally `LEVY_PERFSCENE_TRACE_LEVY=<id>`) prints every slot change and the final kits.
 * In a real game, `/levyprof` (or `LEVY_PROF=1`) prints the live cost per tick. The `arm.upgrade`, `arm.alloc`, `arm.lend`, `arm.tick` and
   `arm.ui` buckets are the armory's share (ms per tick, with calls per tick in the counts), next to the army AI, drone, turret and projectile buckets.
 * A 3000-slot Select matching and price timing runs with the logistics self-check at every boot (`[Logistics] sell at 3000 slots`).

@@ -158,7 +158,6 @@ namespace Levy.Content.TileEntities
 			long pt = global::Levy.Common.Util.LevyProf.Begin();
 			if (_dirty) Sync();
 			if (Main.netMode != NetmodeID.MultiplayerClient && ++_stampTimer >= StampIntervalTicks) { _stampTimer = 0; StampNew(); }
-			if (_swActive) FloorSweep(); // a gear sweep that did not fit in one slice carries on
 			global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmTick, pt);
 		}
 
@@ -1131,7 +1130,7 @@ namespace Levy.Content.TileEntities
 				float sc = h.Score + b.Score + l.Score;
 				if (classGuard != null && full && !((h.Worn || h.Fixed) && (b.Worn || b.Fixed) && (l.Worn || l.Fixed))) {
 					var pc = ArmorDoctrine.PreferredClass(h.It, b.It, l.It);
-					if (pc != null && pc != wc && classGuard(pc, sc)) return float.NegativeInfinity;
+					if (pc != null && pc != wc) return float.NegativeInfinity;
 				}
 				if (bonus) sc += LevyConstants.ArmorSetBonusScore;
 				if (wc != null && ArmorDoctrine.PreferredClass(h.It, b.It, l.It) == wc) sc += LevyConstants.ArmorSetClassMatchScore;
@@ -1968,7 +1967,6 @@ namespace Levy.Content.TileEntities
 		public virtual Item Deposit(Item item)
 		{
 			if (IsAir(item)) return null;
-			if (item.headSlot >= 0 || item.bodySlot >= 0 || item.legSlot >= 0 || item.accessory) _gearStockRev++; // new armor / accessory stock: the floor sweep looks again
 			// 1. top up matching stacks (same type and prefix, below max stack)
 			for (int i = 0; i < Storage.Length; i++) {
 				var s = Storage[i];
@@ -2283,8 +2281,6 @@ namespace Levy.Content.TileEntities
 			bool changed = false;
 			long ps = global::Levy.Common.Util.LevyProf.Begin();
 			void Mark(int bucket) { global::Levy.Common.Util.LevyProf.EndCount(bucket, ps); ps = global::Levy.Common.Util.LevyProf.Begin(); }
-			FloorSweep(); // new armor and accessories go to the worst-equipped levies first, whoever asks
-			Mark(global::Levy.Common.Util.LevyProf.ArmFloor);
 			if (!g.IsLocked(SoldierGear.SlotWeapon) && UpgradePrimary(soldier)) changed = true; // its own time is in arm.alloc
 			ps = global::Levy.Common.Util.LevyProf.Begin();
 			if (UpgradeArmor(soldier)) changed = true; // after the primary: the armor follows the weapon he now carries (locked slots are skipped inside)
@@ -2292,6 +2288,7 @@ namespace Levy.Content.TileEntities
 			if (ReconcileWeaponToArmor(soldier)) changed = true; // the armor may not have followed (margin, locks, stock): a class mismatch is corrected, never upgraded into
 			if (UpgradeAccessories(soldier)) changed = true;
 			Mark(global::Levy.Common.Util.LevyProf.ArmAcc);
+			if (PromoteSummonPrimary(soldier)) changed = true; // a better minion staff carried as a sidearm leads, so the kit does not depend on which look came first
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && UpgradeSidearm(soldier)) changed = true;
 			if (TidySidearms(g, soldier)) changed = true; // a second sword, a second whip, a gun beside a melee primary: back to the shelf
 			if (ReclaimSummonWeapons(soldier)) changed = true; // summoners first: a staff a summoner could still use goes from a non-summoner to him

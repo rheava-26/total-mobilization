@@ -137,8 +137,8 @@ namespace Levy.Common
 		public const float SubtypeSteerMinScoreFraction = 0.6f;
 
 		// ---------- Automatic gear upgrade (a soldier re-checks his Armory for a better weapon, armor set or sidearm) ----------
-		/// <summary>How often each soldier re-checks his Armory (ticks). Each soldier's first check is offset by his id, so a muster never checks on one tick.</summary>
-		public const int AutoUpgradeCheckIntervalTicks = 60 * 5;
+		/// <summary>Each soldier re-checks his own gear at the Armory (weapon, armor, accessories, sidearms) every this many ticks at the soonest, and at the latest <see cref="AutoUpgradeCheckMaxTicks"/>; the wait is drawn fresh each time, and his first look lands at a random point inside the window, so a muster never checks on one tick.</summary>
+		public const int AutoUpgradeCheckMinTicks = 60 * 10, AutoUpgradeCheckMaxTicks = 60 * 15;
 		/// <summary>After a swap the soldier does not look again for this long (ticks), so a chain of near-equal weapons cannot flip-flop.</summary>
 		public const int AutoUpgradeSwapCooldownTicks = 60 * 30;
 		/// <summary>A candidate must score at least this many times the weapon in hand (WeaponClassifier.Score) to be worth a swap. Armor sets use the same margin on the whole set's score.</summary>

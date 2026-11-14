@@ -42,7 +42,7 @@ namespace Levy.Common.Weapons
 		private static readonly Dictionary<int, uint> _fed = new(), _spawned = new();
 		private static bool[] _before;
 
-		internal static void Reset() { _holder.Clear(); _fed.Clear(); _spawned.Clear(); _countStamp.Clear(); ArkSwings.Reset(); BiomeBlades.Reset(); }
+		internal static void Reset() { _holder.Clear(); _fed.Clear(); _spawned.Clear(); _countStamp.Clear(); ArkSwings.Reset(); BiomeBlades.Reset(); RealWhips.Reset(); }
 
 		private static readonly Dictionary<int, uint> _countStamp = new();
 		/// <summary>Once a tick per soldier: the dummy's <c>ownedProjectileCounts</c> recounted from the projectiles tagged to this soldier (what Player.Update does for a real player).</summary>
@@ -288,7 +288,29 @@ namespace Levy.Common.Weapons
 			{
 				EnemyTargeting.Swap(body); // dummy -> Main.player[255]
 				swapped = true;
-				if (!holder || !authority) { orig(p); return; } // beams and client copies: only the anchor
+				if (!holder || !authority)
+				{
+					// beams and client copies: only the anchor; a lash also lends its dummy the item and the use animation for the call (RealWhips.AiScope)
+					if (RealWhips.IsWhipProjectile(p))
+					{
+						long tw = RealWhips.Begin();
+						// a modded lash makes side projectiles from its AI (Thorium's Thrombosis drops blood) and counts what it already has out through its owner's ownedProjectileCounts: the dummy's are kept, and
+						// what the AI made is an ordinary soldier shot
+						bool moddedLash = authority && item.type >= ItemID.Count;
+						bool[] bef = null;
+						if (moddedLash)
+						{
+							CountOwned(body);
+							bef = _before ??= new bool[Main.maxProjectiles];
+							for (int i = 0; i < Main.maxProjectiles; i++) bef[i] = Main.projectile[i].active;
+						}
+						using (new RealWhips.AiScope(body, p, item, authority)) { orig(p); if (p.active) RealWhips.NoteReach(p, item); }
+						if (bef != null) AdoptChildren(body, p, item, bef);
+						if (tw != 0L) { RealWhips.End(ref RealWhips.AiTicks, tw); RealWhips.AiCalls++; }
+					}
+					else orig(p);
+					return;
+				}
 
 				// ---- holder on the server / single player: set the dummy up as a player holding the use button ----
 				uint now = Main.GameUpdateCount;
@@ -402,8 +424,10 @@ namespace Levy.Common.Weapons
 			SoldierNPC body = BodyOf(p, g);
 			if (body == null || !LevyUtil.IsServerOrSingle) { orig(p); return; }
 			int savedOwner = p.owner, savedType = p.type;
+			Item item0 = g.Whip ? WeaponUse.HeldItem(body) : null;
 			ArkSwings.DamageScope ark = g.Ark != ArkRole.None ? new ArkSwings.DamageScope(body, p, g) : default; // an Ark's blade reads its owner's centre: the real player stands at the soldier for the call
 			BiomeBlades.DamageScope bb = g.Biome != 0 ? new BiomeBlades.DamageScope(body, p, g) : default; // a Biome Blade's too, with the soldier's blade in the real player's hand
+			RealWhips.DamageScope wh = g.Whip && item0 != null ? new RealWhips.DamageScope(body, item0) : default; // a lash's hit writes the owner (the minion focus, the item's on-hit hooks): the commander is put back as it was
 			try
 			{
 				p.owner = SoldierMinions.TrueMyPlayer;
@@ -414,6 +438,7 @@ namespace Levy.Common.Weapons
 				if (p.type == savedType) p.owner = savedOwner; // undo only our own edit: if the cascade killed p and recycled its slot, the new projectile keeps its owner
 				ark.Dispose();
 				bb.Dispose();
+				if (g.Whip && item0 != null) wh.Dispose();
 				EnemyTargeting.EnsureSlotRestored(); // never leave a dummy in Main.player[255]
 			}
 		}
@@ -521,6 +546,8 @@ namespace Levy.Common.Weapons
 		internal ArkSpec ArkSpec;
 		/// <summary>The parry has struck an enemy (it empowers once); and whether that enemy could hurt the soldier by touch (the parry's immunity window needs it).</summary>
 		public bool ParryHit, ParryContact, SnapCounted;
+		/// <summary>A soldier's lash: the item's real whip projectile run as a chain projectile (see <see cref="RealWhips"/>). Server side only.</summary>
+		public bool Whip;
 		/// <summary>A scripted cursor path (see ModShotKinds.CursorScriptOf) this holdout and its bound children follow instead of the plain aim point.</summary>
 		public CursorScript Script;
 		/// <summary>Server-side identity of the soldier record that fired this (guards NPC-slot reuse). Never synced.</summary>
@@ -587,7 +614,11 @@ namespace Levy.Common.Weapons
 		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
 		{
 			if (Chain && Ark == ArkRole.Parry && !ParryHit) { ParryHit = true; ParryContact = target.damage > 0; }
+			if (Chain && Whip) RealWhips.OnHit(projectile, target);
 		}
+
+		/// <summary>A lash's hit line is taken from its soldier, not from the commander who owns the projectile.</summary>
+		public override bool? CanHitNPC(Projectile projectile, NPC target) => Chain && Whip && !RealWhips.CanHit(projectile, target) ? false : null;
 
 		/// <summary>The soldier's dummy must not keep pointing at a dead holder (the dummy's held-projectile layer would draw whatever reuses that slot).</summary>
 		public override void OnKill(Projectile projectile, int timeLeft)
@@ -662,7 +693,8 @@ namespace Levy.Common.Weapons
 
 		private static void LoaderAiDetour(Action<Projectile> orig, Projectile self)
 		{
-			if (!HeldWeapons.IsChainOwner(self.owner) || _wrapDepth != 0 || self.ModProjectile == null || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain || !g.ModHolder) { orig(self); return; }
+			// a lash (vanilla or modded) is wrapped here too: Projectile.Update runs every projectile's AI through ProjectileLoader.ProjectileAI, and the vanilla whip AI reads its owner's use animation and arm
+			if (!HeldWeapons.IsChainOwner(self.owner) || _wrapDepth != 0 || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain || !(RealWhips.IsWhipProjectile(self) || (self.ModProjectile != null && g.ModHolder))) { orig(self); return; }
 			_wrapDepth++;
 			try { HeldWeapons.RunAi(orig, self, g); }
 			finally { _wrapDepth--; }

@@ -9,6 +9,7 @@ using Terraria.ModLoader;
 using Levy.Common;
 using Levy.Common.Globals;
 using Levy.Common.Targeting;
+using Levy.Common.Weapons;
 using Levy.Common.Util;
 using Levy.Content.NPCs;
 
@@ -102,7 +103,7 @@ namespace Levy.Content.Projectiles
 		/// <summary>It is a summon: an enemy a whip tagged takes the same bonus the soldiers' other minions get.</summary>
 		public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
 		{
-			if (LevyNpcData.IsNpcTagged(target)) modifiers.SourceDamage += LevyConstants.TagMinionDamageBonus;
+			WhipTag.Apply(Projectile, target, ref modifiers);
 		}
 
 		/// <summary>Vanilla's punch spark (ParticleOrchestraType.StardustPunch) at the knuckles, broadcast to every screen, at most a few a second per Guardian so a squad does not flood the wire.</summary>

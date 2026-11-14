@@ -227,7 +227,7 @@ namespace Levy.Content.Projectiles
 				int dmg = Math.Max(1, (int)Math.Round(Projectile.damage * shot.DamageMult));
 				// a vanilla MinionShot already gets the tag bonus from SoldierProjectileTag.ModifyHitNPC; other (modded) shots get it here
 				bool tagBonusAlready = shot.Proj > 0 && shot.Proj < ProjectileID.Sets.MinionShot.Length && ProjectileID.Sets.MinionShot[shot.Proj];
-				if (!tagBonusAlready && LevyNpcData.IsNpcTagged(target)) dmg = Math.Max(1, (int)Math.Round(dmg * (1f + LevyConstants.TagMinionDamageBonus)));
+				if (!tagBonusAlready) dmg = WhipTag.ShotDamage(target, dmg, shot.Proj);
 				Projectile p = WeaponUse.Spawn(s, Projectile.Center, v, shot.Proj, dmg, Projectile.knockBack, DamageClass.Summon);
 				_fireCd = shot.CooldownTicks;
 				if (p == null) return;
@@ -324,7 +324,7 @@ namespace Levy.Content.Projectiles
 
 		public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
 		{
-			if (LevyNpcData.IsNpcTagged(target)) modifiers.SourceDamage += LevyConstants.TagMinionDamageBonus;
+			WhipTag.Apply(Projectile, target, ref modifiers);
 		}
 
 		public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)

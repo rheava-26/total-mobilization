@@ -81,6 +81,13 @@ namespace Levy.Content.Projectiles
 
 		public override void AI()
 		{
+			long t0 = RealWhips.Begin();
+			try { LashAi(); }
+			finally { if (t0 != 0L) { RealWhips.End(ref RealWhips.AiTicks, t0); RealWhips.AiCalls++; } }
+		}
+
+		private void LashAi()
+		{
 			SoldierNPC s = Soldier;
 			if (s == null || !s.IsAlive)
 			{

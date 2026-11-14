@@ -164,7 +164,7 @@ namespace Levy.Common.Globals
 				if (firer != null) { float m = firer.Rippers_DamageMult(); if (m > 1f) modifiers.SourceDamage *= m; }
 			}
 			if (SoldierIndex < 0 || !(projectile.minion || (projectile.type > 0 && projectile.type < ProjectileID.Sets.MinionShot.Length && ProjectileID.Sets.MinionShot[projectile.type]))) return;
-			if (LevyNpcData.IsNpcTagged(target)) modifiers.SourceDamage += LevyConstants.TagMinionDamageBonus;
+			WhipTag.Apply(projectile, target, ref modifiers); // the whip tag: the game skips it for an NPC-style shot, so a levy's minion gets it by the game's own numbers
 		}
 
 		/// <summary>Owner-gear on-hit effects vanilla skips for npcProj shots: the soldier's armor set bonuses (Spectre Mask / Hood bolts, Titanium, Orichalcum, Hallowed, Palladium, Nebula, Frost, Beetle Might) run here against his own timers.</summary>

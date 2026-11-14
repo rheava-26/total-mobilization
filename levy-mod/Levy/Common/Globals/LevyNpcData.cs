@@ -53,6 +53,7 @@ namespace Levy.Common.Globals
 			d.TagExpireTick = (int)Main.GameUpdateCount + LevyConstants.TagDurationTicks;
 			d.TagSoldier = soldierIndex;
 		}
-		public static bool IsNpcTagged(NPC npc) => npc != null && npc.active && Of(npc).IsTagged;
+		/// <summary>Marked by a levy's lash, or carrying a whip's tag debuff (the commander's whip or a levy's real one): the levy's minions prefer it.</summary>
+		public static bool IsNpcTagged(NPC npc) => npc != null && npc.active && (Of(npc).IsTagged || Common.Weapons.WhipTag.HasTag(npc));
 	}
 }

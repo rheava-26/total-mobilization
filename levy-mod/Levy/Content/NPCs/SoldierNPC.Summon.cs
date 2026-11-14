@@ -114,6 +114,7 @@ namespace Levy.Content.NPCs
 				if (!p.active || (int)p.ai[0] != NPC.whoAmI) continue;
 				if (p.type == minion || p.type == whip || p.type == boom || p.type == yoyo || p.type == flail || p.type == leaf) p.Kill();
 			}
+			RealWhips.KillFor(this); // the item's real lash is a chain projectile owned by the dummy slot
 			SoldierMinions.KillAll(this);
 			KillSentries();
 		}

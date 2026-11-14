@@ -58,6 +58,7 @@ namespace Levy.Common.Testing
 		public static void RunIfArmed()
 		{
 			if (!_armed || _done || !Main.dedServ) return;
+			if (Environment.GetEnvironmentVariable("LEVY_WHIPONLY") == "1") { _done = true; try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the whip check alone
 			_done = true; _running = true;
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation;
 			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; _local = true; Run(); }
@@ -68,6 +69,8 @@ namespace Levy.Common.Testing
 			try { IdentityWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[IdentityWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the officer world check runs after that (never two checks stepping the world at once)
 			try { OfficerWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[OfficerWorld] check threw " + e.GetType().Name + ": " + e.Message); }
+			// the whip world check runs last (never two checks stepping the world at once)
+			try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); }
 		}
 
 		private static void Check(string name, bool ok) { if (ok) _pass++; else _fail++; _mod.Logger.Info($"[SummonWorld] {(ok ? "PASS" : "FAIL")} {name}"); }

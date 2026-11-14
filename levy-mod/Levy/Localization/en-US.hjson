@@ -872,5 +872,12 @@ Mods: {
 				Description: Takes extra damage from the whole army
 			}
 		}
+
+		Compat: {
+			LuiAfk: {
+				SavedMechanic: Rescued the Mechanic
+				SavedWizard: Rescued the Wizard
+			}
+		}
 	}
 }

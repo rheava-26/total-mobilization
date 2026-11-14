@@ -707,7 +707,7 @@ namespace Levy.Common.Testing
 				}
 				Mod.Logger.Info($"HARNESS-SG: tick {st.Tick}{sb}");
 			}
-			CrOrderProbe(st); BbZoneLog(st);
+			CrOrderProbe(st); BbZoneLog(st); BbEolProjCensus(st);
 			if (run.Boss == "wof") CrWofProbe(st);
 			int alive = 0;
 			foreach (var l in st.Levies)

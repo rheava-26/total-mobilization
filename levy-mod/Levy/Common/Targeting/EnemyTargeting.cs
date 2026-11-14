@@ -806,7 +806,9 @@ namespace Levy.Common.Targeting
 				// chases the null player at (0,0) or a stranger that inherited the index.
 				int staleTarget = native ? data.SoldierTarget + 300 : EnemyTargeting.SlotFor(npc);
 				EnemyTargeting.SetLock(npc, data, -1);
-				if (npc.target == staleTarget) EnemyTargeting.Retarget(npc);
+				// A flyer-slot enemy (Flying AI, Empress of Light) was handed target 255 by the last PostAI as its "locked on a soldier" sentinel. With that soldier gone, 255 reads "no target" to GetTargetData() and
+				// these AIs do not re-search mid-attack (the Empress's dash then ran on an invalid target: her velocity blew up to NaN and she sat idle for the rest of the fight), so search again now.
+				if (npc.target == staleTarget || (!native && EnemyTargeting.UsesFlyerSlot(npc) && npc.target == SoldierNPC.DummySlot)) EnemyTargeting.Retarget(npc);
 				body = EnemyTargeting.LiveTarget(data.SoldierTarget);
 				if (body == null) return;
 			}

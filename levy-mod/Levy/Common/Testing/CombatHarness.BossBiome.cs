@@ -1,8 +1,12 @@
+using FSP = global::Levy.Common.Targeting.FlyerSlotProjectile;
 using System;
 using System.Globalization;
 using System.Text;
 using Terraria;
 using Terraria.ID;
+using Terraria.DataStructures;
+using Microsoft.Xna.Framework;
+using Levy.Content.NPCs;
 
 namespace Levy.Common.Testing
 {
@@ -13,8 +17,40 @@ namespace Levy.Common.Testing
 	/// </summary>
 	public partial class CombatHarness
 	{
+		/// <summary>Empress of Light probe (lab): her AI state every 15 ticks and a census of her hostile projectiles (target slot read, whether they close on a levy / the commander).</summary>
+		private static void BbEolProbe(NPC npc)
+		{
+			var st = _cr; if (st == null || st.Run == null || st.Run.Boss != "eol" || npc.whoAmI != st.BossIdx || st.Tick > 2400) return;
+			if (st.Tick % 15 != 0) return;
+			NPCAimedTarget td = npc.GetTargetData(); Player tp = npc.target >= 0 && npc.target <= Main.maxPlayers ? Main.player[npc.target] : null;
+			global::Levy.Levy.Instance.Logger.Info(string.Format(CultureInfo.InvariantCulture, "HARNESS-EOL: t={0} ai=[{1:0},{2:0},{3:0},{4:0}] tgt={5} invalid={6} dist={7:0} tgtActive={8} vel={9:0.0} hp={10:0.00} day={11}",
+				st.Tick, npc.ai[0], npc.ai[1], npc.ai[2], npc.ai[3], npc.target, td.Invalid ? 1 : 0, td.Invalid ? -1f : npc.Distance(td.Center), tp != null && tp.active ? 1 : 0, npc.velocity.Length(), npc.life / (float)npc.lifeMax, Main.dayTime ? 1 : 0));
+		}
+
+		/// <summary>Called from the harness step (after the NPC and projectile updates of the tick, so the slots are back to normal): what the Empress's hostile projectiles are doing now.</summary>
+		internal static void BbEolProjCensus(CrState st)
+		{
+			if (st == null || st.Run == null || st.Run.Boss != "eol" || st.Tick > 2400 || st.Tick % 20 != 0) return;
+			global::Levy.Levy.Instance.Logger.Info($"HARNESS-EOLPROJ: t={st.Tick} hook seen={FSP.DbgSeen} swapped={FSP.DbgSwapped} noBody={FSP.DbgNoBody} blocked={FSP.DbgBlocked}");
+			var seen = new System.Collections.Generic.Dictionary<string, int>();
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile pr = Main.projectile[i]; if (!pr.active || !pr.hostile || pr.velocity.LengthSquared() < 0.25f) continue;
+				string k = $"{pr.type}:{pr.Name}"; seen.TryGetValue(k, out int c); if (c >= 2) continue; seen[k] = c + 1;
+				int a0 = (int)pr.ai[0]; Player sl = a0 >= 0 && a0 <= Main.maxPlayers ? Main.player[a0] : null;
+				NPC nl = null; float dl = float.MaxValue;
+				for (int q = 0; q < Main.maxNPCs; q++) { NPC n = Main.npc[q]; if (n.active && n.ModNPC is SoldierNPC) { float d = Vector2.Distance(n.Center, pr.Center); if (d < dl) { dl = d; nl = n; } } }
+				Vector2 v = Vector2.Normalize(pr.velocity);
+				float cl = nl != null ? Vector2.Dot(v, Vector2.Normalize(nl.Center - pr.Center)) : 0f, cc = Vector2.Dot(v, Vector2.Normalize(Main.player[0].Center - pr.Center));
+				string cs = sl != null ? Vector2.Dot(v, Vector2.Normalize(sl.Center - pr.Center)).ToString("0.00", CultureInfo.InvariantCulture) : "-";
+				global::Levy.Levy.Instance.Logger.Info(string.Format(CultureInfo.InvariantCulture, "HARNESS-EOLPROJ: t={0} {1} ai0={2} slotActive={3} speed={4:0.0} cosToSlot={5} cosToNearestLevy={6:0.00} cosToCmd={7:0.00} levyTiles={8:0} cmdTiles={9:0}",
+					st.Tick, k, a0, sl != null && sl.active ? 1 : 0, pr.velocity.Length(), cs, cl, cc, dl / 16f, Vector2.Distance(Main.player[0].Center, pr.Center) / 16f));
+			}
+		}
+
 		internal static void BbBiomeProbe(NPC npc)
 		{
+			BbEolProbe(npc);
 			var st = _cr; if (st == null || st.Run == null || npc.whoAmI != st.BossIdx) return;
 			string b = st.Run.Boss; if (!(BbIsBoss(b) || b == "qb")) return;
 			if (st.Tick % 60 != 30) return;

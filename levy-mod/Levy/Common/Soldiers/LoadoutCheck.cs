@@ -143,7 +143,7 @@ namespace Levy.Common.Soldiers
 			ArmoryTE.TestServed = new List<SoldierRecord> { gun };
 			te.IssueGear(gun);
 			info("ranged levy: " + Kit(gun));
-			check("a ranged levy carries a gun, a lesser blade and a spare minion staff (3 weapons)", gun.Gear.Weapon.type == ItemID.Musket && gun.Gear.Sidearm.type == ItemID.IronBroadsword && gun.Gear.ExtraSidearms[0].type == ItemID.SlimeStaff && WeaponsCarried(gun) == 3, Kit(gun));
+			check("a ranged levy in armor with no extra summon slot carries a gun and a lesser blade, and no minion staff (2 weapons)", gun.Gear.Weapon.type == ItemID.Musket && gun.Gear.Sidearm.type == ItemID.IronBroadsword && gun.Gear.ExtraSidearms[0].type == 0 && WeaponsCarried(gun) == 2, Kit(gun));
 			check("the extra sidearm slots only take minion staves", !gun.Gear.CanHold(SoldierGear.SlotSide2, Make(ItemID.IronBroadsword)) && gun.Gear.CanHold(SoldierGear.SlotSide2, Make(ItemID.SlimeStaff)));
 		}
 

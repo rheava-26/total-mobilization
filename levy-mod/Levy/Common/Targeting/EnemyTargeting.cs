@@ -128,6 +128,7 @@ namespace Levy.Common.Targeting
 			if (npc == null || !npc.active || !Enabled) return false;
 			if (npc.friendly || npc.townNPC || npc.ModNPC is SoldierNPC) return false;
 			int type = npc.type;
+			if (type == NPCID.WallofFlesh && WofKinOn && !WofMouthSwaps && WallHasPlayerToWalkAt(npc)) return false; // the wall's walk stays on the real player; its eyes, Hungry and Leeches are what the army draws
 			// Lunar Pillars: boss-class, but they only spawn event attacks (AI 94 reads Main.player[target] directly, swap-safe), so they take the swap without the boss unlock.
 			if (_eventTowers.Contains(type)) return true;
 			if (npc.boss) return BossAllowlisted(npc);
@@ -156,7 +157,37 @@ namespace Levy.Common.Targeting
 			return _swapStyles.Contains(style) || ConfigAllows(style);
 		}
 
+		private static int _lentWall = -1, _lentWallTarget;
+		/// <summary>The wall's mouth reads as targeting this slot until <see cref="ReturnWallTarget"/>.</summary>
+		internal static void LendWallTarget(int slot)
+		{
+			int w = Main.wofNPCIndex;
+			if (w < 0 || w >= Main.maxNPCs || !Main.npc[w].active || Main.npc[w].type != NPCID.WallofFlesh || _lentWall >= 0) return;
+			_lentWall = w; _lentWallTarget = Main.npc[w].target; Main.npc[w].target = slot;
+		}
+		internal static void ReturnWallTarget()
+		{
+			if (_lentWall < 0) return;
+			if (Main.npc[_lentWall].active && Main.npc[_lentWall].type == NPCID.WallofFlesh) Main.npc[_lentWall].target = _lentWallTarget;
+			_lentWall = -1;
+		}
+
+		/// <summary>A live, visible (not Spectator) player in the Underworld for the wall to walk at.</summary>
+		private static bool WallHasPlayerToWalkAt(NPC wall)
+		{
+			for (int i = 0; i < Main.maxPlayers; i++)
+			{
+				Player p = Main.player[i];
+				if (p.active && !p.dead && !p.ghost && !Potions.SpectatorPlayer.IsSpectator(p) && p.Center.Y / 16f >= Main.UnderworldLayer - 40) return true;
+			}
+			return false;
+		}
+
 		/// <summary>LEVY_KINTARGET=0 turns the boss-owner rule off (A/B switch for measuring).</summary>
+		/// <summary>LEVY_WOFKIN=0 turns the Wall of Flesh's Hungry / Leech / eye rules off (A/B switch for measuring).</summary>
+		internal static readonly bool WofKinOn = Environment.GetEnvironmentVariable("LEVY_WOFKIN") != "0";
+		/// <summary>LEVY_WOFMOUTH=1: the mouth is picked off the commander like any boss (the old behaviour); default 0 = the wall keeps walking at the real player and only its eyes, Hungry and Leeches take the army.</summary>
+		internal static readonly bool WofMouthSwaps = Environment.GetEnvironmentVariable("LEVY_WOFMOUTH") == "1";
 		internal static readonly bool KinOn = Environment.GetEnvironmentVariable("LEVY_KINTARGET") != "0";
 		/// <summary>The boss a minion belongs to while that boss is alive: any modded NPC a live boss spawned (<see cref="LevyNpcData.BossOwner"/>), Creepers to the Brain of Cthulhu (NPC.crimsonBoss), Servants of Cthulhu to the Eye of Cthulhu. Null for everything else.</summary>
 		internal static NPC MinionBoss(NPC npc)
@@ -169,6 +200,12 @@ namespace Levy.Common.Targeting
 			{
 				int b = NPC.crimsonBoss;
 				return b >= 0 && b < Main.maxNPCs && Main.npc[b].active && Main.npc[b].type == NPCID.BrainofCthulhu ? Main.npc[b] : null;
+			}
+			if (WofKinOn && (npc.type == NPCID.TheHungry || npc.type == NPCID.TheHungryII || npc.type == NPCID.LeechHead || npc.type == NPCID.LeechBody || npc.type == NPCID.LeechTail))
+			{
+				// The Wall of Flesh's own Hungry and Leeches go after the army exactly when their wall does.
+				int w = Main.wofNPCIndex;
+				return w >= 0 && w < Main.maxNPCs && Main.npc[w].active && Main.npc[w].type == NPCID.WallofFlesh ? Main.npc[w] : null;
 			}
 			if (npc.type != NPCID.ServantofCthulhu) return null;
 			if (_eocStamp != Main.GameUpdateCount)
@@ -328,11 +365,14 @@ namespace Levy.Common.Targeting
 		/// </summary>
 		/// <summary>Diagnostic switch (/levyspec on). When false none of the diagnostic notes run.</summary>
 		internal static bool DiagOn;
+		/// <summary>Harness: when set, the last Compete verdict (and how many searches ran) per NPC index.</summary>
+		internal static string[] WhyTrack = null; internal static int[] WhyCount; internal static string[] TgtTrace = new string[Main.maxNPCs + 1];
 		private static string _why = "";
 
 		private static bool Compete(NPC npc, bool faceTarget, Vector2 center, bool manhattan, float maxSoldierDist)
 		{
 			bool r = CompeteCore(npc, faceTarget, center, manhattan, maxSoldierDist);
+			if (WhyTrack != null) { WhyTrack[npc.whoAmI] = (r ? "SOLDIER " : "") + _why; WhyCount[npc.whoAmI]++; }
 			if (DiagOn) Potions.SpectatorDiagnostic.NoteCompete(npc, r, _why);
 			return r;
 		}
@@ -511,7 +551,7 @@ namespace Levy.Common.Targeting
 		}
 
 		/// <summary>A worm segment that trails a live head (realLife = the head's index). A body segment promoted to head when the head dies (Calamity's Perforator worms) keeps a realLife that points at the dead head's slot: it is a head again, and must search for a soldier itself.</summary>
-		internal static bool IsFollowerSegment(NPC npc) => npc.realLife >= 0 && npc.realLife != npc.whoAmI && npc.realLife < Main.maxNPCs && Main.npc[npc.realLife].active;
+		internal static bool IsFollowerSegment(NPC npc) => npc.type != NPCID.WallofFleshEye && npc.realLife >= 0 && npc.realLife != npc.whoAmI && npc.realLife < Main.maxNPCs && Main.npc[npc.realLife].active;
 
 		/// <summary>True on this enemy's staggered once-a-second slot when it is allowlisted, steers itself (worm segments follow their head) and a soldier exists.</summary>
 		internal static bool ShouldPollForSoldier(NPC npc)
@@ -568,6 +608,7 @@ namespace Levy.Common.Targeting
 		/// <summary>Never leave a soldier's dummy in the array: restore the real null player if anything (an exception mid-AI) skipped PostAI.</summary>
 		internal static void EnsureSlotRestored()
 		{
+			ReturnWallTarget();
 			if (_swapped) Unswap();
 			Player fly = Main.player[FlyerSlot];
 			if (fly == null) Main.player[FlyerSlot] = _null254 ?? new Player();
@@ -774,6 +815,9 @@ namespace Levy.Common.Targeting
 			int slot = EnemyTargeting.SlotFor(npc);
 			if (npc.target != slot) npc.target = slot;
 			EnemyTargeting.Swap(body, slot);
+			// A Wall of Flesh eye copies its target from the wall's mouth at the top of its own AI, which would put the commander back; the mouth carries the eye's soldier for this one call (PostAI puts it back).
+			if (npc.type == NPCID.WallofFleshEye && EnemyTargeting.WofKinOn) EnemyTargeting.LendWallTarget(slot);
+			if (EnemyTargeting.WhyTrack != null) EnemyTargeting.TgtTrace[npc.whoAmI] = "swapped(pre)=" + npc.target;
 			return;
 		}
 
@@ -790,6 +834,8 @@ namespace Levy.Common.Targeting
 				FleeProbe = pl == null ? $"tick={Main.GameUpdateCount} target={tg} noPlayer ai1={npc.ai[1]}" :
 					$"tick={Main.GameUpdateCount} target={tg} lock={d.SoldierTarget} swapped={EnemyTargeting.IsSwapped} plActive={pl.active} plDead={pl.dead} dx={(pl.position.X - npc.position.X) / 16f:0}t dy={(pl.position.Y - npc.position.Y) / 16f:0}t ai1={npc.ai[1]} ai2={npc.ai[2]} why={EnemyTargeting.WhyLast}";
 			}
+			if (EnemyTargeting.WhyTrack != null && EnemyTargeting.TgtTrace[npc.whoAmI] != null) EnemyTargeting.TgtTrace[npc.whoAmI] += " postAI=" + npc.target;
+			EnemyTargeting.ReturnWallTarget();
 			EnemyTargeting.Unswap();
 			// A flyer was aimed through the flyer slot for this AI call only; outside it, "locked on a soldier" reads as 255 like every other swapped enemy.
 			if (npc.target == EnemyTargeting.FlyerSlot && npc.aiStyle == NPCAIStyleID.Flying && LevyNpcData.Of(npc).SoldierTarget >= 0) npc.target = SoldierNPC.DummySlot;

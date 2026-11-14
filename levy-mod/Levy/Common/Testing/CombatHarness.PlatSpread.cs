@@ -34,7 +34,7 @@ namespace Levy.Common.Testing
 		private readonly Dictionary<SoldierRecord, float> _psAirY = new Dictionary<SoldierRecord, float>();
 		private int _psBoss = -1, _psCmdRow = 2, _psCmdX; private bool _psWalk;
 		private int _psFarLast, _psDrops, _psTrans, _psFalls, _psTele, _psSamples, _psAirSum, _psFarSum, _psPackedSum, _psRowsSum, _psSamplesMeasured; private float _psShareSum, _psMinGap = 99f;
-		private int _psRowsMin = 99, _psAirMax, _psWorstTrans;
+		private int _psRowsMin = 99, _psAirMax, _psWorstTrans, _psAngSum, _psAngMin = 99, _psAngSamples, _psUpperSum, _psLowerSum, _psSideSum; private float _psMaxDx;
 		private string _psLastCounts = "";
 		private void PsLog(string s) => Mod.Logger.Info("HARNESS-PLATSPREAD: " + s);
 		private bool BeginPlatSpread() { _psTick = 0; _psPhase = 0; _psPass = _psFail = 0; _psStarted = false; _psRecs.Clear(); return true; }
@@ -96,7 +96,7 @@ namespace Levy.Common.Testing
 			PsPin(phase);
 			_psRecs.Clear(); _psLastRow.Clear(); _psLastPos.Clear(); _psAirY.Clear();
 			FollowRows.Reset(); SoldierNPC.FrPicksS = SoldierNPC.FrBreaksS = SoldierNPC.FrFailsS = 0;
-			_psFarLast = 0; _psDrops = _psTrans = _psFalls = _psTele = _psSamples = _psAirSum = _psFarSum = _psPackedSum = _psRowsSum = _psSamplesMeasured = 0; _psShareSum = 0f; _psMinGap = 99f; _psRowsMin = 99; _psAirMax = 0; _psWorstTrans = 0;
+			_psFarLast = 0; _psDrops = _psTrans = _psFalls = _psTele = _psSamples = _psAirSum = _psFarSum = _psPackedSum = _psRowsSum = _psSamplesMeasured = 0; _psShareSum = 0f; _psMinGap = 99f; _psRowsMin = 99; _psAirMax = 0; _psWorstTrans = 0; _psAngSum = _psAngSamples = _psUpperSum = _psLowerSum = _psSideSum = 0; _psAngMin = 99; _psMaxDx = 0f;
 			for (int k = 0; k < PsN; k++)
 			{
 				var rec = MakeRecord("Pvt. P" + k);
@@ -146,6 +146,18 @@ namespace Levy.Common.Testing
 				}
 			}
 			if (!measure) return;
+			{
+				// ANGLE COVERAGE around the commander: 8 sectors of 45 degrees of the circle through (dx tiles, dy tiles x 2, a 2:1 ellipse); a ring fills them, a line fills two (left, right)
+				var bins = new bool[8]; int cnt = 0; float cx0 = cmd.Center.X / 16f, cyf = (cmd.Bottom.Y - 1f) / 16f;
+				foreach (var rec in _psRecs)
+				{
+					if (!rec.HasBody) continue; NPC b = Main.npc[rec.BodyIndex]; if (!b.active || b.velocity.Y != 0f) continue;
+					float dx = b.Center.X / 16f - cx0, dy = cyf - (b.Bottom.Y - 1f) / 16f; _psMaxDx = Math.Max(_psMaxDx, Math.Abs(dx));
+					if (dy > 2f) _psUpperSum++; else if (dy < -2f) _psLowerSum++; else _psSideSum++;
+					double ang = Math.Atan2(dy * 2f, dx); int bi = (int)Math.Floor((ang + Math.PI) / (Math.PI / 4)); bins[Math.Clamp(bi, 0, 7)] = true; cnt++;
+				}
+				int cov = bins.Count(x => x); _psAngSum += cov; _psAngMin = Math.Min(_psAngMin, cov); _psAngSamples++;
+			}
 			int used = counts.Count(c => c > 0), maxc = counts.Length > 0 ? counts.Max() : 0, packed = 0; float minGap = 99f;
 			for (int r = 0; r < perRowX.Length; r++)
 			{
@@ -217,6 +229,7 @@ namespace Levy.Common.Testing
 				PsLog($"LANES {phase} (x offset from the commander, floor first):{sb}");
 			}
 			PsLog($"COST {phase}: row scans={FollowRows.Rebuilds} ({FollowRows.RebuildMs / Math.Max(1, FollowRows.Rebuilds):0.000} ms each, {FollowRows.TilesRead / Math.Max(1, FollowRows.Rebuilds)} columns-rows read each, {_psTick} ticks, {_psRecs.Count} levies); claims made={SoldierNPC.FrPicksS} broken={SoldierNPC.FrBreaksS} rows struck off as unreachable={SoldierNPC.FrFailsS}");
+			PsLog($"RING {phase}: angleCoverage mean={_psAngSum / (float)Math.Max(1, _psAngSamples):0.00} min={_psAngMin} of 8 sectors; above/level/below the commander (levy-samples)={_psUpperSum}/{_psSideSum}/{_psLowerSum}; widest dx={_psMaxDx:0.0}t");
 			PsLog($"RESULT {phase}: n={_psRecs.Count} samples={_psSamplesMeasured} rowsUsed mean={rowsMean:0.00} min={_psRowsMin} of {rowsAvail}; maxRowShare={share:0.00}; packed(<1.6t)={packedFrac:0.00}; closestPair={_psMinGap:0.0}t; rowChanges/levy={transPerLevy:0.00}; airborne mean={airMean:0.0} max={_psAirMax}; farOrStranded mean={_psFarSum / (float)m:0.0}; falls8+(landed off every row)={_psFalls}; drops8+(onto a row)={_psDrops}; teleports={_psTele}; lastCounts(floor..top)={_psLastCounts}");
 			PsCheck(rowsMean >= 2.0f, $"{phase}: levies stand on >= 2 rows (mean {rowsMean:0.00})");
 			if (!fightPhase && phase != "short" && phase != "fightend") PsCheck(share <= 0.55f, $"{phase}: no row holds more than 55% (max share {share:0.00})");
@@ -225,6 +238,8 @@ namespace Levy.Common.Testing
 			if (phase == "short") { PsCheck(share <= 0.75f, $"{phase}: short rows: no row holds more than 75% (max share {share:0.00})"); PsCheck(packedFrac <= 0.20f, $"{phase}: short rows hold fewer levies than there are: <= 20% packed (got {packedFrac:0.00})"); }
 			if (!fightPhase && phase != "short") PsCheck(packedFrac <= 0.10f, $"{phase}: <= 10% of levies packed within 1.6 tiles of a neighbour (got {packedFrac:0.00})");
 			if (!fightPhase && phase != "climb" && phase != "fightend") PsCheck(transPerLevy <= 0.5f, $"{phase}: stable, row changes per levy {transPerLevy:0.00} <= 0.5");
+			if (SoldierNPC.FollowRingMode >= 1 && PsStance != "close" && _psRecs.Count >= 20 && (phase == "idle" || phase == "walk" || phase == "fightend" || phase == "stagger"))
+				PsCheck(_psAngSum / (float)Math.Max(1, _psAngSamples) >= 6.5f, $"{phase}: the army forms a ring: levies in >= 6.5 of the 8 sectors around the commander (mean {_psAngSum / (float)Math.Max(1, _psAngSamples):0.00})");
 			PsCheck(_psFarLast == 0 && airFrac <= (fightPhase ? 0.35f : 0.15f), $"{phase}: nobody stranded or far at the end (far={_psFarLast}), few in the air (mean {airFrac:0.00})");
 			PsCheck(_psFalls == 0 && _psTele == 0, $"{phase}: no falls of 8+ tiles off every row ({_psFalls}) and no teleports ({_psTele})");
 			if (phase == "climb") PsCheck(transPerLevy <= 1.2f, $"{phase}: the army follows the commander up without churning (row changes per levy {transPerLevy:0.00} <= 1.2)");

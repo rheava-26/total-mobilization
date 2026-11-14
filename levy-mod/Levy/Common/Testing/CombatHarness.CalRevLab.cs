@@ -33,8 +33,8 @@ namespace Levy.Common.Testing
 			bool cal = ModLoader.HasMod("CalamityMod");
 			// Calamity world: bosses beaten before the fight, in Boss Checklist order. Vanilla-only world: vanilla bosses only.
 			float furthest = cal
-				? boss switch { "kslime" => 0f, "ds" => 1f, "eye" => 1.6f, "eow" => 2.7f, "brain" => 2.7f, "hive" => 3f, "perf" => 3f, "qb" => 3.99f, "skel" => 4f, "sg" => 5f, "crab" => 2f, "destroyer" => 6.5f, _ => 0f }
-				: boss switch { "kslime" => 0f, "eye" => 1f, "eow" => 2f, "brain" => 2f, "qb" => 3f, "skel" => 4f, _ => 0f };
+				? boss switch { "kslime" => 0f, "ds" => 1f, "eye" => 1.6f, "eow" => 2.7f, "brain" => 2.7f, "hive" => 3f, "perf" => 3f, "qb" => 3.99f, "skel" => 4f, "sg" => 5f, "crab" => 2f, "destroyer" => 6.5f, "wof" => 6f, _ => 0f }
+				: boss switch { "kslime" => 0f, "eye" => 1f, "eow" => 2f, "brain" => 2f, "qb" => 3f, "skel" => 4f, "wof" => 6f, _ => 0f };
 			float[] prog = { 1, 2, 3, 4, 5, 6, 7 }; int[] w = { 1, 2, 2, 1, 2, 1, 7 };
 			var l = new List<TierBoss>();
 			for (int i = 0; i < 7; i++) l.Add(new TierBoss(0, w[i], prog[i] <= furthest, prog[i]));
@@ -67,6 +67,7 @@ namespace Levy.Common.Testing
 				case "crab": { int t = CrCalNpc("CrabShroom"); if (t > 0) s.AddTypes.Add(t); } break;
 				case "qb": s.AddTypes.Add(NPCID.Bee); s.AddTypes.Add(NPCID.BeeSmall); break;
 				case "skel": s.AddTypes.Add(NPCID.SkeletronHand); break;
+				case "wof": s.NoWorm = true; s.PartTypes.Add(NPCID.WallofFleshEye); foreach (int t in new[] { NPCID.TheHungry, NPCID.TheHungryII, NPCID.LeechHead, NPCID.LeechBody, NPCID.LeechTail }) s.AddTypes.Add(t); break;
 				default: s.AddTypes.Add(NPCID.ServantofCthulhu); break;
 			}
 		}
@@ -91,9 +92,9 @@ namespace Levy.Common.Testing
 		// ---- design options (LEVY_FEARMODEL / LEVY_SURV): spec tokens fm=<model> surv=<flags, comma list> vet=<boss fights survived> override the env for one fight ----
 		private static global::Levy.Common.Options.FearModel _crDefFm; private static global::Levy.Common.Options.SurvMode _crDefSurv; private static bool _crOptSaved;
 		/// <summary>The lab's stand-in for "what a player has at that progression point" (inferred typical values, see OPTIONS.md): max HP and defense per boss tier.</summary>
-		internal static (int hp, int def) CrParityTable(string boss) => boss switch { "kslime" => (160, 6), "ds" => (200, 8), "eye" => (240, 10), "eow" => (300, 12), "brain" => (300, 12), "qb" => (300, 16), "skel" => (400, 20), _ => (200, 8) };
+		internal static (int hp, int def) CrParityTable(string boss) => boss switch { "kslime" => (160, 6), "ds" => (200, 8), "eye" => (240, 10), "eow" => (300, 12), "brain" => (300, 12), "qb" => (300, 16), "skel" => (400, 20), "wof" => (400, 20), _ => (200, 8) };
 		/// <summary>Boss fights a campaign army has survived by this boss (veteran option): bosses before it in Boss Checklist order.</summary>
-		private static int CrVetDefault(string boss) => boss switch { "kslime" => 0, "ds" => 1, "eye" => 2, "eow" => 3, "brain" => 3, "qb" => 4, "skel" => 5, _ => 0 };
+		private static int CrVetDefault(string boss) => boss switch { "kslime" => 0, "ds" => 1, "eye" => 2, "eow" => 3, "brain" => 3, "qb" => 4, "skel" => 5, "wof" => 6, _ => 0 };
 		private static int CrVetFights(CrRun run) => run.Vet >= 0 ? run.Vet : (global::Levy.Common.Options.LevyOptions.Surv & global::Levy.Common.Options.SurvMode.Veteran) != 0 ? CrVetDefault(run.Boss) : 0;
 		private static bool _crBtsSaved, _crDefBts, _crAmmoSaved, _crDefAmmoOff;
 		private static void CrSetOptions(CrRun run)
@@ -145,6 +146,7 @@ namespace Levy.Common.Testing
 			p.ZoneSnow = false; p.ZoneHallow = false;
 			if (zone == "snow") { p.ZoneSnow = true; } else if (zone == "desert") { p.ZoneDesert = true; } else if (zone == "jungle") { p.ZoneJungle = true; } else if (zone == "hallow") { p.ZoneHallow = true; } // zone=: the commander (and the levy dummy that mirrors it) stands in this biome (Biome Blade labs)
 			p.ZoneOverworldHeight = r.Arena != "ug" && !r.Arena.StartsWith("a3e"); p.ZoneRockLayerHeight = r.Arena == "ug" || r.Arena.StartsWith("a3e"); p.ZoneDirtLayerHeight = false; p.ZoneSkyHeight = false; p.ZoneUnderworldHeight = false;
+			if (r.Arena.Contains("uw")) { p.ZoneUnderworldHeight = true; p.ZoneOverworldHeight = false; p.ZoneRockLayerHeight = false; }
 			if (zone == "hell") { p.ZoneUnderworldHeight = true; p.ZoneOverworldHeight = false; } else if (zone == "sky") { p.ZoneSkyHeight = true; p.ZoneOverworldHeight = false; }
 		}
 
@@ -207,6 +209,57 @@ namespace Levy.Common.Testing
 		}
 
 		private static string CrNpcName(int type) => type < 0 ? "none(" + type + ")" : type < NPCID.Count ? Lang.GetNPCNameValue(type).Replace(" ", "_") : (NPCLoader.GetNPC(type)?.Name ?? ("t" + type));
+
+		/// <summary>Wall of Flesh probe (spec boss=wof): every 120 ticks one line per Wall of Flesh part alive: allowlisted, target slot and class, ai style, and how many of its lasers fly.</summary>
+		private readonly HashSet<int> _crWofSeen = new(); private readonly Dictionary<string, int> _crWofLaserAim = new(); private int _crWofLaserTotal; private int _crWofLasers; private string _crWofLast = "";
+		private void CrWofProbe(CrState st)
+		{
+			if (Main.wofNPCIndex >= 0 && Main.wofNPCIndex < Main.maxNPCs && Main.npc[Main.wofNPCIndex].active && st.Tick < 1500)
+			{
+				NPC m = Main.npc[Main.wofNPCIndex]; int lk = global::Levy.Common.Globals.LevyNpcData.Of(m).SoldierTarget; var wt0 = global::Levy.Common.Targeting.EnemyTargeting.WhyTrack;
+				string cur = $"tgt={m.target} lock={lk} why={(wt0 == null ? "" : wt0[m.whoAmI])}";
+				if (cur != _crWofLast) { _crWofLast = cur; Mod.Logger.Info($"HARNESS-WOF-TRACE: t={st.Tick} mouth {cur} dist={(Main.player[0].Center.X - m.Center.X) / 16f:0}t"); }
+			}
+			// every hostile laser the Wall of Flesh fires, once, on the tick it first appears: who it flies at (the commander, a levy, or nobody within 15 degrees)
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				var pr = Main.projectile[i]; if (!pr.active || !pr.hostile || pr.velocity.LengthSquared() < 1f) continue;
+				if (!(pr.type == ProjectileID.EyeLaser || pr.type == ProjectileID.DeathLaser || pr.type == ProjectileID.PinkLaser)) continue;
+				if (pr.timeLeft < 595 && pr.localAI[2] == 0f) { if (pr.type == ProjectileID.EyeLaser || true) { } }
+				if (_crWofSeen.Contains(pr.identity)) continue;
+				_crWofSeen.Add(pr.identity);
+				float a0 = (float)Math.Atan2(pr.velocity.Y, pr.velocity.X), best = 99f; string who = "nobody";
+				float da(Vector2 to) { float a = (float)Math.Atan2(to.Y - pr.Center.Y, to.X - pr.Center.X); float d = Math.Abs(a - a0); if (d > Math.PI) d = (float)(2 * Math.PI - d); return d * 57.3f; }
+				float dc = da(Main.player[0].Center); if (dc < best) { best = dc; who = "commander"; }
+				foreach (var l in st.Levies) { if (l.Dead) continue; NPC ln = Main.npc[l.Idx]; if (!ln.active) continue; float d = da(ln.Center); if (d < best - 0.01f) { best = d; who = "levy"; } }
+				if (best > 15f) who = "nobody(" + best.ToString("0") + "deg)";
+				_crWofLaserAim[who.StartsWith("nobody") ? "nobody" : who] = (_crWofLaserAim.TryGetValue(who.StartsWith("nobody") ? "nobody" : who, out int cc) ? cc : 0) + 1;
+				_crWofLaserTotal++;
+			}
+			if (st.Tick != 5 && st.Tick % 120 != 0) return;
+			var sb = new System.Text.StringBuilder(); int lasers = 0;
+			{
+				NPC m = Main.wofNPCIndex >= 0 && Main.wofNPCIndex < Main.maxNPCs ? Main.npc[Main.wofNPCIndex] : null; int near = 0, alive = 0; float dmin = 999f;
+				if (m != null && m.active) foreach (var l in st.Levies) { if (l.Dead) continue; NPC ln = Main.npc[l.Idx]; if (!ln.active) continue; alive++; float d = Math.Abs(ln.Center.X - m.Center.X) / 16f; dmin = Math.Min(dmin, d); if (d < 45f) near++; }
+				sb.Append($" BOSS hp={(m != null && m.active ? m.life : -1)} mouthX={(m != null ? (m.Center.X / 16f - _crCx) : 0):0} mouthY={(m != null ? (CrF - m.Center.Y / 16f) : 0):0} cmdX={(Main.player[0].Center.X / 16f - _crCx):0} levyAlive={alive} within45={near} nearestDx={dmin:0}");
+			}
+			sb.Append($" LASERAIM total={_crWofLaserTotal} " + string.Join(",", _crWofLaserAim.Select(kv => kv.Key + "=" + kv.Value)));
+			for (int i = 0; i < Main.maxProjectiles; i++) { var pr = Main.projectile[i]; if (pr.active && pr.hostile && (pr.type == ProjectileID.EyeLaser || pr.type == ProjectileID.DeathLaser || pr.type == ProjectileID.PinkLaser)) lasers++; }
+			_crWofLasers += lasers;
+			if (global::Levy.Common.Targeting.EnemyTargeting.WhyTrack == null) { global::Levy.Common.Targeting.EnemyTargeting.WhyTrack = new string[Main.maxNPCs]; global::Levy.Common.Targeting.EnemyTargeting.WhyCount = new int[Main.maxNPCs]; }
+			var tt = global::Levy.Common.Targeting.EnemyTargeting.TgtTrace; var wt = global::Levy.Common.Targeting.EnemyTargeting.WhyTrack; var wc = global::Levy.Common.Targeting.EnemyTargeting.WhyCount; var seen = new Dictionary<int, (int n, int allow, int lv, int pl, int none)>(); var whys = new System.Text.StringBuilder();
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i]; if (!n.active) continue;
+				int t = n.type; if (t != NPCID.WallofFlesh && t != NPCID.WallofFleshEye && t != NPCID.TheHungry && t != NPCID.TheHungryII && t != NPCID.LeechHead && t != NPCID.LeechBody && t != NPCID.LeechTail) continue;
+				seen.TryGetValue(t, out var a); a.n++; if (global::Levy.Common.Targeting.EnemyTargeting.IsAllowlisted(n)) a.allow++;
+				int c = CrTgtClass(n); if (c == 0) a.lv++; else if (c == 1) a.pl++; else a.none++; seen[t] = a;
+				if (t == NPCID.WallofFlesh || t == NPCID.WallofFleshEye || (t == NPCID.TheHungry && whys.Length < 400)) whys.Append($" [{CrNpcName(t)}#{i} tgt={n.target} searches={wc[i]} why={wt[i]}]");
+			}
+			foreach (var kv in seen) sb.Append($" {CrNpcName(kv.Key)}[n={kv.Value.n} allow={kv.Value.allow} tgt levy/player/none={kv.Value.lv}/{kv.Value.pl}/{kv.Value.none}]");
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && (n.type == NPCID.WallofFleshEye || n.type == NPCID.WallofFlesh || n.type == NPCID.TheHungry) && whys.Length < 1400) whys.Append($" <{CrNpcName(n.type)}#{i} ai={n.aiStyle} trace={tt[i]} tgt={n.target} lock={(global::Levy.Common.Globals.LevyNpcData.Of(n).SoldierTarget)} realLife={n.realLife}>"); }
+			Mod.Logger.Info($"HARNESS-WOF: t={st.Tick} downed={(global::Levy.Common.Boss.BossDownedSystem.IsTypeDowned(NPCID.WallofFlesh))} wofIdx={Main.wofNPCIndex} lasers={lasers} cfgBoss={(global::Levy.Common.Config.LevyConfig.Get.BossesTargetSoldiers)}{sb}{whys}");
+		}
 
 		private static int CrTgtClass(NPC n) => n.target == SoldierNPC.DummySlot || n.target >= 300 ? 0 : n.target >= 0 && n.target < Main.maxPlayers ? 1 : 2;
 

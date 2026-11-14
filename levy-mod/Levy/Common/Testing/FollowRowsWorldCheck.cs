@@ -56,6 +56,19 @@ namespace Levy.Common.Testing
 				Check("the scan is cached between rebuilds", again == set && again.Built == built && FollowRows.Rebuilds == rb);
 				FollowRows.Get(cmd, now + FollowRows.RebuildTicks + 1);
 				Check("the scan refreshes after the rebuild interval", FollowRows.Rebuilds == rb + 1);
+				// the ring: points on an ellipse round the commander, spread over every direction, wider for a bigger army and for Spread out
+				foreach (int n in new[] { 8, 12, 30, 60 })
+				{
+					var bins = new bool[8]; float minD = float.MaxValue; var pts = new List<Vector2>();
+					for (int r = 0; r < n; r++) { SoldierNPC.FrRingPointOf(r, n, false, out float px, out float pu); pts.Add(new Vector2(px, pu)); bins[Math.Clamp((int)Math.Floor((Math.Atan2(pu * 2f, px) + Math.PI) / (Math.PI / 4)), 0, 7)] = true; }
+					for (int i = 0; i < pts.Count; i++) for (int j = i + 1; j < pts.Count; j++) minD = Math.Min(minD, Vector2.Distance(pts[i], pts[j]));
+					int cov = 0; foreach (bool bb in bins) if (bb) cov++;
+					Check($"ring of {n}: points reach {cov} of 8 sectors round the commander (>= {(n >= 12 ? 8 : 6)}) and no two coincide (closest {minD:0.0} tiles)", cov >= (n >= 12 ? 8 : 6) && minD > 0.3f);
+					SoldierNPC.FrRingPointOf(0, n, false, out float nx, out _); SoldierNPC.FrRingPointOf(0, n, true, out float sx, out _);
+					Check($"ring of {n}: Spread out is at least as wide as the normal ring (rank 0 at {Math.Abs(nx):0.0} vs {Math.Abs(sx):0.0} tiles)", Math.Abs(sx) >= Math.Abs(nx) - 0.01f);
+				}
+				SoldierNPC.FrRingPointOf(0, 12, false, out float r12, out _); SoldierNPC.FrRingPointOf(0, 60, false, out float r60, out _);
+				Check("a bigger army makes a wider ring", Math.Abs(r60) > Math.Abs(r12));
 				var sw = System.Diagnostics.Stopwatch.StartNew(); for (int i = 0; i < 20; i++) FollowRows.Get(cmd, now + 1000 + i * FollowRows.RebuildTicks); sw.Stop();
 				double ms = sw.Elapsed.TotalMilliseconds / 20.0;
 				Check($"a row scan costs well under a millisecond ({ms:0.000} ms)", ms < 1.0);

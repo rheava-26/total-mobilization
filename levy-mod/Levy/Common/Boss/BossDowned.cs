@@ -93,6 +93,7 @@ namespace Levy.Common.Boss
 			Seed(NPC.downedMechBoss1, NPCID.TheDestroyer);
 			Seed(NPC.downedMechBoss2, NPCID.Retinazer, NPCID.Spazmatism); // the Twins; RecordKill keys them separately
 			Seed(NPC.downedMechBoss3, NPCID.SkeletronPrime);
+			Seed(Main.hardMode, NPCID.WallofFlesh); // no vanilla downed flag of its own: hardmode begins when it falls, so a world already in hardmode has beaten it
 			Seed(NPC.downedQueenSlime, NPCID.QueenSlimeBoss);
 			Seed(NPC.downedPlantBoss, NPCID.Plantera);
 			Seed(NPC.downedGolemBoss, NPCID.Golem);

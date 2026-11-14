@@ -25,7 +25,8 @@ namespace Levy.Common.Compat.LuiAfk
 	///       b) on a client it runs LuiAFK's UI reset as if the dummy were the local player (observed: SoldierNPC.GearFrame -> Player.ResetEffects -> ResetUIs with Main.myPlayer = 255), so the reset reads
 	///          the dummy's held item and closes the held-item panels of LuiAFK's builder tools (Building Rod, Paint Tool, Wiring, ...) while a levy with a gear frame ticks. (Consequence read from LuiAFK's
 	///          RightClickUI code; the drawn panel itself is not run headless.)
-	///     ResetUIs is skipped on a dedicated server and whenever Main.player[Main.myPlayer] is a Levy dummy; a real local player still resets as before.
+	///     ResetUIs is skipped on a dedicated server and whenever Main.player[Main.myPlayer] is a Levy dummy; a real local player still resets as before. (The identity guard hides a dummy from every
+///     ModPlayer of a mod that has no wearable gear; LuiAFK has some, so its ModPlayer is given the local view a gear mod needs and this one call site stays guarded.)
 	/// Env LEVY_LUIAFK_REPAIR=0 switches all four off (lab A/B for the self-check).
 	/// </summary>
 	public static class LuiAfkShops
@@ -100,7 +101,16 @@ namespace Levy.Common.Compat.LuiAfk
 		public static bool Hooked;
 
 		/// <summary>True when LuiafkUI.ResetUIs must not run now: on a dedicated server, or while the "local player" is a Levy dummy.</summary>
-		public static bool SkipReset() => Main.dedServ || global::Levy.Common.Owner.SoldierOwner.IsDummy(Main.player[Main.myPlayer]);
+		public static bool SkipReset()
+		{
+			bool dummy = global::Levy.Common.Owner.SoldierOwner.IsDummy(Main.player[Main.myPlayer]);
+			if (dummy) SkippedForDummy++;
+			return Main.dedServ || dummy;
+		}
+
+		/// <summary>How many times LuiAFK's UI reset was reached with a Levy dummy as the local player and stopped here. LuiAFK ships wearable accessories (the Unlimited Mana set, tool-time rings), so
+		/// its ModPlayer keeps the identity guard's local view of a dummy (the one gear logic needs: see IdentityGuard) and this call site is the one place the dummy would reach its UI.</summary>
+		public static long SkippedForDummy;
 
 		public override void PostSetupContent()
 		{

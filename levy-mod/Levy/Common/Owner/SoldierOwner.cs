@@ -28,13 +28,15 @@ namespace Levy.Common.Owner
 	/// (<see cref="OwnerPuppet.SwapThorium"/>), and forces <c>Main.dedServ</c> and mutes sound so "!dedServ &amp;&amp; whoAmI == myPlayer" blocks (UI, shaders, music, screen shake) cannot fire in single player.
 	/// Dispose undoes all of it in reverse, inside a finally. Frames nest: each remembers exactly what it replaced (a depth stack), and a frame left open by an exception is unwound by the one below it.
 	/// A <see cref="KillMeGuard"/> keeps the dummy from ever running the local-player death path.
+	/// <para/>The dummy is "the local player" only for the code that has to see it so (vanilla's equip pass, item and buff hooks, owner-gated spawns). Another mod's ModPlayer, dispatched for the dummy inside the
+	/// frame, is given the view <see cref="IdentityGuard"/> decides: hidden (it sees the real local player) or, for a mod that provides wearable gear, local with the commander's talk, chest and sign state mirrored.
 	/// </summary>
 	public static class SoldierOwner
 	{
 		private struct Rec
 		{
 			public SoldierNPC Body; public Player Dummy; public int Slot, MyPlayer, FakeToken, SavedWho, MouseX, MouseY;
-			public Player BackupSlot; public bool Ded, Locked, MouseTouched; public float Volume; public Vector2 ScreenPos; public object Thorium;
+			public int GuardMark; public Player BackupSlot; public bool Ded, Locked, MouseTouched; public float Volume; public Vector2 ScreenPos; public object Thorium;
 		}
 
 		private static readonly List<Rec> _stack = new();
@@ -68,7 +70,7 @@ namespace Levy.Common.Owner
 			{
 				r.MyPlayer = Main.myPlayer; r.SavedWho = d.whoAmI; r.Ded = Main.dedServ; r.Volume = Main.soundVolume;
 				r.ScreenPos = Main.screenPosition; r.MouseX = Main.mouseX; r.MouseY = Main.mouseY;
-				r.BackupSlot = Main.player[slot];
+				r.BackupSlot = Main.player[slot]; r.GuardMark = IdentityGuard.Mark();
 				// the dummy first takes the soldier's body (its whoAmI is rewritten to the slot below)
 				if (opts.FullSync) body.SyncDummyTransform();
 				else
@@ -116,6 +118,7 @@ namespace Levy.Common.Owner
 			Player d = r.Dummy;
 			try
 			{
+				IdentityGuard.Release(r.GuardMark);           // a ModPlayer hook that threw left its view open
 				Main.myPlayer = r.MyPlayer;                   // before the Thorium restore: it finds the commander through Main.myPlayer / Main.player
 				SoldierMinions.EndFake(r.FakeToken);
 				if (!d.active) d.active = true;               // the network thread may have cleared it if the lock was not held

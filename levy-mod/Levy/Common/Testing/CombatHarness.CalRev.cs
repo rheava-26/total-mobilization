@@ -466,7 +466,8 @@ namespace Levy.Common.Testing
 			if (_crI < 0) return;
 			if (_crI >= _crRuns.Count) { try { File.WriteAllText(_crOut + ".done", "1"); } catch { } Finish("calrev complete"); return; }
 			CrRun run = _crRuns[_crI];
-			Main.dayTime = false; Main.time = 16200; Main.raining = false; Main.bloodMoon = false; Main.eclipse = false;
+			if (Environment.GetEnvironmentVariable("LEVY_CR_DAY") == "1") { Main.dayTime = true; Main.time = 20000; } else { Main.dayTime = false; Main.time = 16200; } // LEVY_CR_DAY=1: a midday fight (Empress of Light daytime enrage)
+			Main.raining = false; Main.bloodMoon = false; Main.eclipse = false;
 			try
 			{
 				if (!_crStarted && _crArenaBuilt != run.Arena) CrBuildArena(run.Arena);

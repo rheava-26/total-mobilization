@@ -1,0 +1,9 @@
+mode	seed	lines	max_bubbles	frames2	overlap_frames_pct	talk_over_pct	overlap_area_pct	lines_per_min
+bubbles	0	9	1	0	0.0	0.0	0.0	6.0
+bubbles	1	7	1	0	0.0	0.0	0.0	4.7
+bubbles	2	6	1	0	0.0	0.0	0.0	4.0
+bubbles	3	4	1	0	0.0	0.0	0.0	2.7
+bubbles	4	4	1	0	0.0	0.0	0.0	2.7
+bubbles	5	5	1	0	0.0	0.0	0.0	3.3
+bubbles	6	4	1	0	0.0	0.0	0.0	2.7
+bubbles	7	5	1	0	0.0	0.0	0.0	3.3

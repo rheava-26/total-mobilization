@@ -57,6 +57,8 @@ namespace Mechanization.Common
 			/// really flies (speed x lifetime x Levy's short-shot fraction), never past it, but never below this.
 			/// </summary>
 			public const float MinReachTiles = 8f;
+			/// <summary>The farthest a turret reaches for a straight bullet that flies farther than this (a sniper rifle's round), in tiles.</summary>
+			public const float MaxReachTiles = 120f;
 			/// <summary>How many updates a flamethrower's flames (the Flamethrower projectile AI) fly before they burn out when the turret fires them (vanilla: 50). Their projectile lists a far longer lifetime that the AI cuts short.</summary>
 			public const int FlameLifetimeUpdates = 50;
 
@@ -290,6 +292,8 @@ namespace Mechanization.Common
 			public const float AimTurnLerp = 0.25f;
 			/// <summary>Weapon recoil kick (px) and return (px per tick). Purely visual.</summary>
 			public const float RecoilPx = 3f, RecoilReturnPx = 0.5f;
+			/// <summary>A weapon that kicks "the player" (Nitro Express: 7 px/tick) throws the drone back by this share of that kick, never faster than <see cref="KickMaxSpeed"/> per axis.</summary>
+			public const float KickVelocityScale = 0.6f, KickMaxSpeed = 5f;
 
 			// ---------- draw (the body is Content/NPCs/DroneNPC.png) ----------
 			public const int HpBarWidthPx = 36, HpBarHeightPx = 5, HpBarOffsetY = 12;

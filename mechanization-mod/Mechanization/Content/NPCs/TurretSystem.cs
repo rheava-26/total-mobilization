@@ -89,8 +89,35 @@ namespace Mechanization.Content.NPCs
 				if (Blocked(next)) break;
 				pos = next;
 			}
+			// A platform (or any tile solid only from above) between the spot and the ground is a surface too: the turret rests on the nearest one, the way a drone set down beside it settles.
+			// The spot may sit inside the platform's own tile (the cursor is on it) or a little above it; the turret never rests on the ground under a platform it was set down on.
+			float platRest = PlatformRest(spot, pos.Y, Blocked);
+			if (!float.IsNaN(platRest)) pos.Y = platRest;
 			rest = pos;
 			return true;
+		}
+
+		/// <summary>The bottom-centre Y of a turret resting on the highest platform top at or below the spot (and no more than a tile above it) that is above <paramref name="groundY"/>, or NaN. A ceiling over the platform leaves no room, so that platform is skipped.</summary>
+		private static float PlatformRest(Vector2 spot, float groundY, System.Func<Vector2, bool> blocked)
+		{
+			int x0 = (int)((spot.X - T.BodyWidth * 0.5f) / MechConstants.TilePx), x1 = (int)((spot.X + T.BodyWidth * 0.5f - 1f) / MechConstants.TilePx);
+			int y0 = (int)System.Math.Floor((spot.Y - MechConstants.TilePx) / MechConstants.TilePx), y1 = (int)System.Math.Floor(groundY / MechConstants.TilePx);
+			for (int ty = y0; ty <= y1; ty++)
+			{
+				float top = ty * MechConstants.TilePx;
+				if (top < spot.Y - MechConstants.TilePx || top > groundY) continue;
+				bool surface = false;
+				for (int tx = x0; tx <= x1 && !surface; tx++)
+				{
+					if (!WorldGen.InWorld(tx, ty, 4)) continue;
+					Tile t = Main.tile[tx, ty];
+					surface = t.HasTile && !t.IsActuated && Main.tileSolidTop[t.TileType];
+				}
+				if (!surface) continue;
+				if (blocked(new Vector2(spot.X, top))) continue; // a ceiling over the platform: no room to stand
+				return top;
+			}
+			return float.NaN;
 		}
 
 		/// <summary>Server / single player: <see cref="FindRestSpot"/> then <see cref="PlaceNew"/>. Returns the NPC slot, or -1 when there is no room or no slot.</summary>

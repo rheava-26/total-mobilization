@@ -128,7 +128,7 @@ namespace Mechanization.Content.NPCs
 			NPC.lifeMax = DroneArsenal.MaxHpFor(0); NPC.life = NPC.lifeMax; // until a weapon is mounted
 			NPC.knockBackResist = D.KnockbackResist;
 			NPC.npcSlots = 0f; // a garrison must never thin out the enemy spawn pressure
-			NPC.HitSound = SoundID.NPCHit42; NPC.DeathSound = SoundID.NPCDeath44;
+			NPC.HitSound = SoundID.NPCHit42; NPC.DeathSound = SoundID.Item14;
 			NPC.lavaImmune = true; NPC.noGravity = true; NPC.noTileCollide = false; // flies; solid ground and walls still stop it
 			NPC.rarity = 0; NPC.value = 0f;
 			NPC.netAlways = false; // a slow loiter: the server refreshes it on a cadence (NetRefreshTicks) and clients carry it on its last velocity between
@@ -243,6 +243,7 @@ namespace Mechanization.Content.NPCs
 			DroneShot shot = DroneArsenal.BuildShot(weapon, ammo);
 			if (shot == null || !shot.Valid) return false;
 			ArmoryId = armoryId; Weapon = weapon; Ammo = ammo; _shot = shot; WeaponType = weapon.type;
+			if (ArmoryOrNull() is ArmoryTE lender) { lender.NoteLoan(weapon, NPC.TypeName); if (ammo != null) lender.NoteLoan(ammo, NPC.TypeName); } // the Armory's "Lent to" line names the borrower
 			Held = false;
 			ApplyWeaponStats();
 			if (Landed) { NPC.life = NPC.lifeMax; _lastLife = NPC.life; }
@@ -267,6 +268,7 @@ namespace Mechanization.Content.NPCs
 			if (Dummy != null) return;
 			Dummy = new Player { whoAmI = SoldierNPC.DummySlot, active = true, dead = false, ghost = false, difficulty = 0, direction = 1 };
 			Dummy.width = D.BodyWidth; Dummy.height = D.BodyHeight;
+			global::Levy.Common.Owner.SoldierOwner.RegisterDummy(Dummy); // the army's own guards know it is not a real player
 		}
 
 		// =====================================================================================================
@@ -295,6 +297,7 @@ namespace Mechanization.Content.NPCs
 			EnsureDummy();
 			NPC.noTileCollide = IsBound && (Phase == DronePhase.Refuel || Phase == DronePhase.Recall); // the run home ignores blocks; everything else collides again
 			SyncDummyTransform();
+			if (!Main.dedServ && IsBound) Alarm();
 			if (!Main.dedServ && IsBound) // a real glow (designer: drones should be visible); tinted like the status LED
 			{
 				Vector3 glow = Phase switch { DronePhase.Refuel or DronePhase.Charging => new Vector3(0.55f, 0.38f, 0.12f), DronePhase.Recall => new Vector3(0.2f, 0.35f, 0.6f), _ => new Vector3(0.25f, 0.5f, 0.3f) };
@@ -592,17 +595,13 @@ namespace Mechanization.Content.NPCs
 
 			int dmg = ShotKit.ScaledDamage(shot.BaseDamage * D.DamageMult);
 			int owner = Main.myPlayer; // 255 on a dedicated server: a shot owned by any other index is an unsynced ghost
+			Vector2 kick = Vector2.Zero;
 			OwnerGuard.Hold(owner, () => // a round's own spawn hooks never touch the player who owns it
 			{
-				for (int k = 0; k < shot.Count; k++)
-				{
-					float deg = shot.Count > 1 ? -shot.SpreadDeg * 0.5f + shot.SpreadDeg * k / (shot.Count - 1) : 0f;
-					Vector2 v = deg == 0f ? vel : vel.RotatedBy(MathHelper.ToRadians(deg));
-					int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, v.X, v.Y, shot.Projectile, dmg, shot.Knockback, owner);
-					if (idx < 0 || idx >= Main.maxProjectiles) continue;
-					ShotKit.TagShot(Main.projectile[idx], CommanderIndex, shot.Class, shot.Crit);
-				}
+				// the weapon's own shoot path (its signature round, its volley, its hooks), with this drone's dummy as the player holding it
+				MachineShots.Fire(this, shot, muzzle, vel, dmg, owner, target.Center, p => ShotKit.TagShot(p, CommanderIndex, shot.Class, shot.Crit), out kick);
 			});
+			if (kick != Vector2.Zero) NPC.velocity += Vector2.Clamp(kick * D.KickVelocityScale, new Vector2(-D.KickMaxSpeed), new Vector2(D.KickMaxSpeed)); // the weapon's recoil throws the drone, never the player
 			_shotSeq++;
 			_recoil = D.RecoilPx;
 			if (_cooldown >= D.AimSyncTicks) NPC.netUpdate = true; // a slow gun: sync each shot now (a fast one rides the aim-sync cadence)
@@ -840,7 +839,6 @@ namespace Mechanization.Content.NPCs
 		public override bool CanHitPlayer(Player target, ref int cooldownSlot) => false;
 		public override bool? CanBeHitByItem(Player player, Item item) => false;
 		public override bool? CanBeHitByProjectile(Projectile projectile) => projectile.friendly && !projectile.hostile ? false : null;
-		public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) => false; // we draw our own bar
 
 		public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers)
 		{
@@ -901,18 +899,32 @@ namespace Mechanization.Content.NPCs
 		public override void HitEffect(NPC.HitInfo hit)
 		{
 			if (Main.netMode == NetmodeID.Server) return;
-			int sparks = NPC.life > 0 ? 3 : 14;
-			for (int i = 0; i < sparks; i++)
+			if (NPC.life > 0)
 			{
-				int d = Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Electric, hit.HitDirection * 1.8f, -1.5f);
-				Main.dust[d].scale = 0.7f;
+				for (int i = 0; i < 3; i++)
+				{
+					int d = Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Electric, hit.HitDirection * 1.8f, -1.5f);
+					Main.dust[d].scale = 0.7f;
+				}
+				return;
 			}
-			if (NPC.life <= 0)
-			{
-				Gore.NewGore(NPC.GetSource_Death(), NPC.Center - new Vector2(10f, 10f), NPC.velocity, 605, NPC.scale);
-				Gore.NewGore(NPC.GetSource_Death(), NPC.Center - new Vector2(10f, 10f), NPC.velocity, 606, NPC.scale);
-			}
+			MachineFx.Explode(NPC.GetSource_Death(), NPC.Center, Math.Max(NPC.width, NPC.height));
+			Gore.NewGore(NPC.GetSource_Death(), NPC.Center - new Vector2(10f, 10f), NPC.velocity, 605, NPC.scale);
+			Gore.NewGore(NPC.GetSource_Death(), NPC.Center - new Vector2(10f, 10f), NPC.velocity, 606, NPC.scale);
 		}
+
+		/// <summary>The alarm: a machine under 40% life beeps, faster the less it has left, and flashes redder on each beep. Client-side, throttled across the whole army.</summary>
+		private void Alarm()
+		{
+			if (_flash > 0f) _flash = Math.Max(0f, _flash - 0.08f);
+			int gap = MachineFx.BeepGap(NPC.life, NPC.lifeMax);
+			if (gap <= 0) { _beepIn = 0; return; }
+			if (_beepIn <= 0) _beepIn = Math.Min(gap, 1 + Main.rand.Next(gap)); // each machine starts at its own phase, so a squad does not beep in step
+			if (--_beepIn > 0) return;
+			_beepIn = gap;
+			if (MachineFx.TryBeep(NPC.Center)) _flash = 1f;
+		}
+		private int _beepIn; private float _flash;
 
 		// =====================================================================================================
 		// Draw, in layers: the far rotor, the BODY (tail ring + boom + hull, tilted with sideways speed), the status light and weapon on the hull, then the near rotor.
@@ -930,7 +942,7 @@ namespace Mechanization.Content.NPCs
 				Texture2D px = TextureAssets.MagicPixel.Value;
 				Vector2 c = NPC.Center - screenPos + new Vector2(0f, NPC.gfxOffY);
 				c = new Vector2((float)Math.Round(c.X), (float)Math.Round(c.Y));   // whole pixels, so the art's 2x2 blocks stay on the screen grid
-				Color light = Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor);
+				Color light = MachineFx.Hurt(Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor), NPC.life, NPC.lifeMax, _flash);
 				int sd = NPC.direction == 0 ? 1 : NPC.direction;
 				SpriteEffects fx = sd == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
 
@@ -1020,11 +1032,7 @@ namespace Mechanization.Content.NPCs
 			var pixel = TextureAssets.MagicPixel.Value;
 			Vector2 top = NPC.Top - screenPos;
 
-			int w = D.HpBarWidthPx, h = D.HpBarHeightPx;
-			float frac = MathHelper.Clamp(NPC.life / (float)Math.Max(1, NPC.lifeMax), 0f, 1f);
-			int bx = (int)(top.X - w * 0.5f), by = (int)(top.Y - D.HpBarOffsetY);
-			spriteBatch.Draw(pixel, new Rectangle(bx - 1, by - 1, w + 2, h + 2), new Color(20, 20, 20, 200));
-			spriteBatch.Draw(pixel, new Rectangle(bx, by, (int)(w * frac), h), Color.Lerp(Color.Red, Color.LimeGreen, frac));
+			int by = (int)(top.Y - D.HpBarOffsetY);   // the life bar is the game's own, below the body; the battery bar rides above it
 
 			// The battery: a thin bar over the healthbar, shown only when it matters (hovered, charging, or running low) so a healthy garrison stays uncluttered.
 			float bat = BatteryFraction;
@@ -1032,7 +1040,7 @@ namespace Mechanization.Content.NPCs
 			if (hovered || Phase == DronePhase.Charging || Phase == DronePhase.Refuel || Phase == DronePhase.Parked || bat <= D.ShowBarFraction)
 			{
 				int bw = D.BatteryBarWidthPx, bh = D.BatteryBarHeightPx;
-				int cx = (int)(top.X - bw * 0.5f), cy = by - bh - D.BatteryBarGapPx;
+				int cx = (int)(top.X - bw * 0.5f), cy = by - D.BatteryBarGapPx;
 				Color fill = bat > 0.5f ? new Color(90, 200, 255) : Color.Lerp(new Color(255, 90, 70), new Color(255, 200, 80), bat / 0.5f);
 				spriteBatch.Draw(pixel, new Rectangle(cx - 1, cy - 1, bw + 2, bh + 2), new Color(20, 20, 20, 200));
 				spriteBatch.Draw(pixel, new Rectangle(cx, cy, Math.Max(bat > 0f ? 1 : 0, (int)(bw * bat)), bh), fill);

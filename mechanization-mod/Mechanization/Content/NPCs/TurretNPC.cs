@@ -94,7 +94,7 @@ namespace Mechanization.Content.NPCs
 			NPC.knockBackResist = 0f;                        // immovable
 			NPC.npcSlots = 0f;                               // never thins the hostile spawn pressure
 			NPC.HitSound = SoundID.NPCHit4;                  // metallic
-			NPC.DeathSound = SoundID.NPCDeath14;             // small explosion
+			NPC.DeathSound = SoundID.Item14;                 // explosion
 			NPC.lavaImmune = false;
 			NPC.noGravity = true;                            // core adds no gravity for aiStyle -1; the turret applies its own in AI
 			NPC.noTileCollide = false;                       // so it rests on solid ground
@@ -118,6 +118,7 @@ namespace Mechanization.Content.NPCs
 			if (Dummy != null) return;
 			Dummy = new Player { whoAmI = SoldierNPC.DummySlot, active = true, dead = false, ghost = false, difficulty = 0, direction = 1 };
 			Dummy.width = T.BodyWidth; Dummy.height = T.BodyHeight;
+			global::Levy.Common.Owner.SoldierOwner.RegisterDummy(Dummy); // the army's own guards know it is not a real player
 		}
 
 		/// <summary>Moves the dummy onto the turret just before it is swapped into slot 255, so the enemy's AI reads the turret's position as its target.</summary>
@@ -234,6 +235,8 @@ namespace Mechanization.Content.NPCs
 		/// <summary>Reach, in px: the mounted weapon's real reach when one is up (see <see cref="ReachFor"/>), else the plain bullet's.</summary>
 		private float CurrentRangePx => _reachPx;
 
+		/// <summary>The NPC slot of the target the turret holds (-1 none), for the world check.</summary>
+		internal int HeldTarget => _target;
 		/// <summary>Reach in whole tiles (what the hover text and the chat panel say).</summary>
 		public int ReachTiles => (int)Math.Round(_reachPx / LevyConstants.TilePx);
 		/// <summary>Reach in px, for drawing the reach ring.</summary>
@@ -262,6 +265,8 @@ namespace Mechanization.Content.NPCs
 					int life = sample.aiStyle == ProjAIStyleID.Flamethrower ? Math.Min(sample.timeLeft, T.FlameLifetimeUpdates) : sample.timeLeft;
 					if (life <= LevyConstants.LongShotLifetimeTicks)
 						reach = Math.Min(reach, Math.Max(1f, shot.Speed) * Math.Max(1, life) * LevyConstants.ShortShotReachFraction);
+					else if (!shot.Gravity && weapon != null && weapon.useAmmo == AmmoID.Bullet && sample.aiStyle == ProjAIStyleID.Arrow)
+						reach = Math.Max(reach, Math.Min(Math.Max(1f, shot.Speed) * life * LevyConstants.ShortShotReachFraction, T.MaxReachTiles * LevyConstants.TilePx)); // a bullet flies speed x lifetime: a sniper turret reaches as far as the round does, out to the cap
 				}
 			}
 			catch (Exception) { /* keep the shot's own reach */ }
@@ -403,14 +408,7 @@ namespace Mechanization.Content.NPCs
 			int owner = Main.myPlayer; // 255 on a dedicated server: a shot owned by any other index is an unsynced ghost
 			OwnerGuard.Hold(owner, () => // a round's own spawn hooks never touch the player who owns it
 			{
-				for (int k = 0; k < shot.Count; k++)
-				{
-					float deg = shot.Count > 1 ? -shot.SpreadDeg * 0.5f + shot.SpreadDeg * k / (shot.Count - 1) : 0f;
-					Vector2 v = deg == 0f ? vel : vel.RotatedBy(MathHelper.ToRadians(deg));
-					int idx = Projectile.NewProjectile(NPC.GetSource_FromAI(), muzzle.X, muzzle.Y, v.X, v.Y, shot.Projectile, dmg, shot.Knockback, owner);
-					if (idx < 0 || idx >= Main.maxProjectiles) continue;
-					ShotKit.TagShot(Main.projectile[idx], commander, shot.Class, shot.Crit);
-				}
+				MachineShots.Fire(this, shot, muzzle, vel, dmg, owner, target.Center, p => ShotKit.TagShot(p, commander, shot.Class, shot.Crit), out _); // the weapon's own shoot path; a turret is bolted down, so a recoil is only drawn
 			});
 		}
 
@@ -461,6 +459,8 @@ namespace Mechanization.Content.NPCs
 		// =====================================================================================================
 		// Vanilla NPC hooks
 		// =====================================================================================================
+		/// <summary>A turret rests on platforms: the fall that ends it on the ground never carries it through one.</summary>
+		public override bool? CanFallThroughPlatforms() => false;
 		public override bool CheckDead() => true;
 		public override bool PreKill() => false;              // no vanilla loot
 		public override bool CheckActive() => false;          // a placed turret does not despawn by distance
@@ -488,22 +488,20 @@ namespace Mechanization.Content.NPCs
 		public override bool CanHitPlayer(Player target, ref int cooldownSlot) => false;
 		public override bool? CanBeHitByItem(Player player, Item item) => false;                 // no friendly fire from the owner's tools
 		public override bool? CanBeHitByProjectile(Projectile projectile) => projectile.friendly && !projectile.hostile ? false : null; // hostile projectiles hit; friendly ones do not
-		public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) => false; // we draw our own bar
 
 		public override void HitEffect(NPC.HitInfo hit)
 		{
 			if (Main.netMode == NetmodeID.Server) return;
-			int sparks = NPC.life > 0 ? 3 : 18;
-			for (int i = 0; i < sparks; i++)
+			if (NPC.life > 0)
 			{
-				int d = Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Iron, hit.HitDirection * 1.8f, -1.5f);
-				Main.dust[d].scale = 0.9f;
+				for (int i = 0; i < 3; i++)
+				{
+					int d = Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Iron, hit.HitDirection * 1.8f, -1.5f);
+					Main.dust[d].scale = 0.9f;
+				}
+				return;
 			}
-			if (NPC.life <= 0)
-			{
-				for (int i = 0; i < 8; i++)
-					Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Smoke, hit.HitDirection, -2f, 100, default, 1.3f);
-			}
+			MachineFx.Explode(NPC.GetSource_Death(), NPC.Center, Math.Max(NPC.width, NPC.height));
 		}
 
 		// =====================================================================================================
@@ -516,7 +514,7 @@ namespace Mechanization.Content.NPCs
 			{
 				Texture2D px = TextureAssets.MagicPixel.Value;
 				Vector2 c = NPC.Center - screenPos + new Vector2(0f, NPC.gfxOffY);
-				Color light = Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor);
+				Color light = MachineFx.Hurt(Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor), NPC.life, NPC.lifeMax);
 
 				// The fixed base (TurretNPC.png: plinth and pedestal, 34x16, standing on the ground). It never turns; only the gun does.
 				float bottom = c.Y + NPC.height * 0.5f;
@@ -589,18 +587,6 @@ namespace Mechanization.Content.NPCs
 			}
 			spriteBatch.Draw(wt, new Vector2((float)Math.Round(basePos.X), (float)Math.Round(basePos.Y)), null, light, rot, new Vector2(wt.Width, wt.Height) * 0.5f, scale, fx, 0f);
 			return longest * scale * 0.5f;
-		}
-
-		public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
-		{
-			if (Main.dedServ) return;
-			int w = T.HpBarWidthPx, h = T.HpBarHeightPx;
-			Vector2 top = NPC.Top - screenPos;
-			float frac = MathHelper.Clamp(NPC.life / (float)Math.Max(1, NPC.lifeMax), 0f, 1f);
-			var pixel = TextureAssets.MagicPixel.Value;
-			int bx = (int)(top.X - w * 0.5f), by = (int)(top.Y - T.HpBarOffsetY);
-			spriteBatch.Draw(pixel, new Rectangle(bx - 1, by - 1, w + 2, h + 2), new Color(20, 20, 20, 200));
-			spriteBatch.Draw(pixel, new Rectangle(bx, by, (int)(w * frac), h), Color.Lerp(Color.Red, Color.LimeGreen, frac));
 		}
 
 		// =====================================================================================================

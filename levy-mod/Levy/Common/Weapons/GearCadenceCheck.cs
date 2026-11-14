@@ -52,6 +52,7 @@ namespace Levy.Common.Weapons
 					Guard("accessories", () => Accessories(Check), failures);
 					Guard("mobility rotation", () => MobilityRotation(Check), failures);
 					Guard("timers", () => Timers(Check), failures);
+					Guard("summoner staff", () => SummonerStaff(Check), failures);
 				}
 				finally { WeaponRank.Release(); ArmoryTE.TestServed = null; }
 				if (failures.Count == 0) Mod.Logger.Info($"Levy gear cadence self-check: {ok} checks OK");
@@ -174,6 +175,21 @@ namespace Levy.Common.Weapons
 				check(late == 0, $"a levy with {Make(weapon).Name} settles on his accessories instead of rotating them every look ({late} late changes)");
 				check(r.Gear.Accessories.Any(x => x != null && !x.IsAir && AccessoryMobility.Is(x)), $"a levy with {Make(weapon).Name} still wears a mobility accessory");
 			}
+		}
+
+		/// <summary>A summoner carrying a better minion staff as a sidearm than the one in his hand ends with the better one in hand, whichever look came first; a melee set on the shelf is not his to take.</summary>
+		private static void SummonerStaff(Action<bool, string> check)
+		{
+			var r = Levy(1, Iron, ItemID.SlimeStaff, Grade.ManAtArms);
+			r.Gear.Head = Make(ItemID.StardustHelmet); r.Gear.Body = Make(ItemID.StardustBreastplate); r.Gear.Legs = Make(ItemID.StardustLeggings);
+			r.Gear.ExtraSidearms[0] = Make(ItemID.StardustDragonStaff);
+			var te = new ArmoryTE();
+			foreach (int t in new[] { ItemID.SolarFlareHelmet, ItemID.SolarFlareBreastplate, ItemID.SolarFlareLeggings }) te.Deposit(Make(t));
+			ArmoryTE.TestServed = new List<SoldierRecord> { r };
+			try { for (int i = 0; i < 4; i++) te.UpgradeWeapons(r); } finally { ArmoryTE.TestServed = null; }
+			var carried = new[] { r.Gear.Weapon, r.Gear.Sidearm }.Concat(r.Gear.ExtraSidearms).Where(x => x != null && !x.IsAir).Select(x => x.type).ToList();
+			check(r.Gear.Weapon.type == ItemID.StardustDragonStaff, "the better minion staff leads (hand: " + r.Gear.Weapon.Name + ")");
+			check(r.Gear.Head.type == ItemID.StardustHelmet, "a summoner does not take a melee set off the shelf (wears " + r.Gear.Head.Name + ")");
 		}
 
 		/// <summary>The timers: the wait is 10 to 15 seconds each time, and a muster's first looks are spread out.</summary>

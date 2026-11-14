@@ -235,6 +235,32 @@ namespace Levy.Content.TileEntities
 			return any;
 		}
 
+		/// <summary>
+		/// A summoner whose minion staff in hand ranks below another minion staff he carries as a sidearm (the margin applies) swaps them: the better staff leads, the other becomes the sidearm. A whip in hand is left alone (a summoner leads
+		/// with a whip by design) and so is a staff against a whip (the allocator deals whips first), so this only settles which STAFF leads, whichever look came first. Locked slots stay. True if they were swapped.
+		/// </summary>
+		private bool PromoteSummonPrimary(SoldierRecord soldier)
+		{
+			var g = soldier?.Gear;
+			if (g == null || !g.HasWeapon || g.IsLocked(SoldierGear.SlotWeapon) || !IsSummonerSoldier(soldier)) return false;
+			var cur = g.Weapon;
+			if (!IsIssuableSummonStaff(cur)) return false;
+			float need = WeaponRank.Of(cur) * LevyConstants.AutoUpgradeScoreMargin, best = need; int bestSlot = -1;
+			for (int i = 0; i < LevyConstants.MaxSidearms; i++)
+			{
+				int slot = SoldierGear.SidearmSlotAt(i);
+				var s = g.Get(slot);
+				if (g.IsLocked(slot) || IsAir(s) || !IsIssuableSummonStaff(s) || !WeaponUse.CanEverPay(s, (int)soldier.MaxMana)) continue;
+				float r = WeaponRank.Of(s);
+				if (r >= best) { best = r; bestSlot = slot; }
+			}
+			if (bestSlot < 0) return false;
+			var neu = g.Get(bestSlot);
+			g.Set(bestSlot, cur); g.Weapon = neu; g.ThrownRestockType = 0;
+			MarkDirty();
+			return true;
+		}
+
 		/// <summary>The periodic look at the sidearm slots (a levy enlisted before staves were stocked, or while the plan had claimed them all, stayed without).</summary>
 		private bool FillEmptySidearms(SoldierRecord soldier)
 		{

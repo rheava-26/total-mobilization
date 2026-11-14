@@ -1130,7 +1130,7 @@ namespace Levy.Content.TileEntities
 				float sc = h.Score + b.Score + l.Score;
 				if (classGuard != null && full && !((h.Worn || h.Fixed) && (b.Worn || b.Fixed) && (l.Worn || l.Fixed))) {
 					var pc = ArmorDoctrine.PreferredClass(h.It, b.It, l.It);
-					if (pc != null && pc != wc && classGuard(pc, sc)) return float.NegativeInfinity;
+					if (pc != null && pc != wc) return float.NegativeInfinity;
 				}
 				if (bonus) sc += LevyConstants.ArmorSetBonusScore;
 				if (wc != null && ArmorDoctrine.PreferredClass(h.It, b.It, l.It) == wc) sc += LevyConstants.ArmorSetClassMatchScore;
@@ -2288,6 +2288,7 @@ namespace Levy.Content.TileEntities
 			if (ReconcileWeaponToArmor(soldier)) changed = true; // the armor may not have followed (margin, locks, stock): a class mismatch is corrected, never upgraded into
 			if (UpgradeAccessories(soldier)) changed = true;
 			Mark(global::Levy.Common.Util.LevyProf.ArmAcc);
+			if (PromoteSummonPrimary(soldier)) changed = true; // a better minion staff carried as a sidearm leads, so the kit does not depend on which look came first
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && UpgradeSidearm(soldier)) changed = true;
 			if (TidySidearms(g, soldier)) changed = true; // a second sword, a second whip, a gun beside a melee primary: back to the shelf
 			if (ReclaimSummonWeapons(soldier)) changed = true; // summoners first: a staff a summoner could still use goes from a non-summoner to him

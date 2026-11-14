@@ -202,8 +202,10 @@ namespace Levy.Common.Testing
 				res.LastChangeSec = phase1Last / 60.0; res.DropSettleSec = Math.Max(0, lastChange - dropTick) / 60.0;
 				res.Final = Score(army);
 				if (Trace) foreach (var r in army) FinalDump.Add("seed " + seed + " levy " + r.Id + " " + string.Join(" | ", Slots(r)));
-				foreach (var l in hist.Values)
+				foreach (var kv in hist)
 				{
+					var l = kv.Value;
+					if (Trace && l.Count >= 3 && l.Distinct().Count() < l.Count) FinalDump.Add("seed " + seed + " PINGPONG " + N(kv.Key) + " holders " + string.Join(">", l));
 					var distinct = l.Distinct().Count();
 					if (l.Count >= 3 && distinct < l.Count) res.PingPong++; // went back to a holder it had before
 					if (distinct >= 2) res.MultiHolder++;

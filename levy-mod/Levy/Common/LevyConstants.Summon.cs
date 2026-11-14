@@ -106,6 +106,12 @@ namespace Levy.Common
 		public const int WhipCadenceMinTicks = 14, WhipCadenceMaxTicks = 40;
 		/// <summary>The lash is the summoner's active damage: every lash deals this multiple of the weapon damage, and the outer fraction of the lash (the tip) cracks for a guaranteed critical.</summary>
 		public const float WhipDamageMult = 1.35f, WhipTipFraction = 0.3f;
+		/// <summary>
+		/// Damage multiplier of a lash thrown through the item's real whip projectile (RealWhips), on top of the levy's weapon damage and grade. Measured in the whip sweep (WhipRealCheck, same arena, same enemy):
+		/// at 1.0 the real lash does 31 to 41 percent of the damage per second the hand-made lash did (the hand-made one hit 1.35x harder, crit every hit, and lashed every 0.75 use times); 4.0 puts every whip
+		/// at or above the old rate, so changing to the item's own projectile does not weaken the army.
+		/// </summary>
+		public const float WhipRealDamageMult = 4.0f;
 		/// <summary>Target hit-boxes are widened by this many pixels per side for the lash line test, so a lash that visibly meets an enemy lands.</summary>
 		public const int WhipHitPadPx = 8;
 		/// <summary>Segment sprite spacing (px) when drawing the lash sheet, and the min/max segment counts.</summary>

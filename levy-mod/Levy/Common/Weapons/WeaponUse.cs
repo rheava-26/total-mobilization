@@ -924,8 +924,18 @@ namespace Levy.Common.Weapons
 		/// <summary>Lash period in ticks: close to the weapon's useTime (a little brisker), clamped. The lash lives for the whole period, so the next one follows immediately.</summary>
 		public static int WhipPeriod(Item item) => Math.Clamp((int)Math.Round(Math.Max(1, item.useTime) * LevyConstants.WhipCadenceMult), LevyConstants.WhipCadenceMinTicks, LevyConstants.WhipCadenceMaxTicks);
 
-		/// <summary>Spawns a lash toward the target unless this soldier's lash is still out. Reach grows with the dummy's whip range bonus.</summary>
+		/// <summary>The soldier lashes: through the item's own whip projectile (<see cref="RealWhips"/>), or the hand-made lash when the real path is off or the item makes none.</summary>
 		private static bool StartWhip(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
+		{
+			if (RealWhips.TryStart(s, item, profile, target, out bool fired)) return fired;
+			long t0 = RealWhips.Begin();
+			bool started = StartLegacyWhip(s, item, profile, target);
+			if (started && t0 != 0L) { RealWhips.End(ref RealWhips.StartTicks, t0); RealWhips.Starts++; }
+			return started;
+		}
+
+		/// <summary>Spawns a lash toward the target unless this soldier's lash is still out. Reach grows with the dummy's whip range bonus.</summary>
+		private static bool StartLegacyWhip(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
 		{
 			int type = ModContent.ProjectileType<SoldierWhip>();
 			if (s.CountAnchored<SoldierWhip>() > 0) { s.AttackCooldown = 1; return false; } // the old lash is on its last tick: lash again the moment it clears

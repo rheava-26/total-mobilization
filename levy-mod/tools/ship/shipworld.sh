@@ -68,9 +68,12 @@ report() { # $1 = label, $2 = run dir
   echo "OfficerWorld: PASS=$(grep -c -F '[OfficerWorld] PASS ' "$L") FAIL=$(grep -c -F '[OfficerWorld] FAIL ' "$L")"
   grep -F "[OfficerWorld] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[OfficerWorld] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
+  echo "WhipReal: PASS=$(grep -c -F '[WhipReal] PASS ' "$L") FAIL=$(grep -c -F '[WhipReal] FAIL ' "$L")"
+  grep -F "[WhipReal] self-check pass=" "$L" | sed 's/^/  /'
+  grep -F '[WhipReal] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
   [ -z "$(grep -F '[MechWorld] self-check pass=' "$L")" ] && echo "  !! no MechWorld summary line (check did not finish; see $2/tml/boot.out)"
   echo "other failures (fail=[1-9] / FAILURE / !!!), known summon-staff pick failure excluded:"
-  grep -E 'fail=[1-9]|FAILURE|!!!' "$L" | grep -v -E "$KNOWN_FAIL_RE" | grep -v -F -e '[MechWorld] FAIL ' -e '[SummonWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' | sed 's/^/  /' | head -20
+  grep -E 'fail=[1-9]|FAILURE|!!!' "$L" | grep -v -E "$KNOWN_FAIL_RE" | grep -v -F -e '[MechWorld] FAIL ' -e '[SummonWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' | sed 's/^/  /' | head -20
   grep -E "$KNOWN_FAIL_RE" "$L" | head -1 | sed 's/^/  (known, excluded) /'
   local ex; ex=$(grep -c -E -i "$EXC_RE" "$L"); echo "exceptions: $ex"
   grep -E -i "$EXC_RE" "$L" | head -6 | cut -c1-220 | sed 's/^/  /'

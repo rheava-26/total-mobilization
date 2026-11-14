@@ -22,8 +22,10 @@ namespace Levy.Common.UI
 	/// </summary>
 	public class OfficerPanel : UIState
 	{
-		private const int W = 500;
+		private const int W = 520;
 		private const int Pad = 16;                 // panel side margin
+		private const int HeaderH = 84;             // fixed header: title, subtitle, link line
+		private const int BottomPad = 12, ScreenMargin = 10, MinListH = 120, ScrollW = 20, ScrollGap = 6;
 		private const int Portrait = 46;            // officer head icon size
 		private const int SlotCardH = 66, CardGap = 8, SectionGap = 14;
 		private const float TitleScale = 1.1f, SubScale = 0.7f, HeaderScale = 0.85f, NameScale = 0.88f, RoleScale = 0.68f, DescScale = 0.64f, SmallScale = 0.64f;
@@ -34,7 +36,10 @@ namespace Levy.Common.UI
 		private DraggablePanel _panel;
 		private Label _title, _sub, _link;
 		private LevyButton _close;
-		private readonly List<UIElement> _dyn = new();
+		private UIList _list;
+		private UIScrollbar _bar;
+		private UIElement _content;
+		private Vector2 _lastScreen = new(-1f, -1f);
 		private BarracksTE _te;
 		private string _sig = "";
 		private int _refreshTimer;
@@ -55,8 +60,44 @@ namespace Levy.Common.UI
 			_sub = Put(new Label("", SubScale), Pad, 40);
 			_sub.TextColor = Dim;
 			_link = Put(new Label("", SmallScale), Pad, 58);
+
+			// The slots and the townsfolk scroll inside this list (mouse wheel or the bar beside it); the header above stays put.
+			_list = new UIList { ListPadding = 0f };
+			_list.Left.Set(Pad, 0f); _list.Top.Set(HeaderH, 0f);
+			_list.Width.Set(CardW, 0f); _list.Height.Set(MinListH, 0f);
+			_list.ManualSortMethod = _ => { };
+			_bar = new UIScrollbar();
+			_bar.Left.Set(Pad + CardW + ScrollGap, 0f); _bar.Top.Set(HeaderH, 0f); _bar.Height.Set(MinListH, 0f);
+			_panel.Append(_list);
+			_panel.Append(_bar);
+			_list.SetScrollbar(_bar);
+			// the wheel also scrolls from the panel's margins and header; a wheel already handled by the list (or the bar) bubbles up here and must not scroll twice
+			_panel.OnScrollWheel += (evt, el) => { if (!IsWithin(evt.Target, _list) && !IsWithin(evt.Target, _bar)) _bar.ViewPosition -= evt.ScrollWheelValue; };
 			Append(_panel);
 		}
+
+		/// <summary>The whole panel's height (header, list, bottom padding) for content of <paramref name="contentH"/> on a screen <paramref name="screenH"/> tall.</summary>
+		public static float PanelHeight(float contentH, float screenH) => HeaderH + ListHeight(contentH, screenH) + BottomPad;
+
+		/// <summary>The screen margin the panel keeps top and bottom.</summary>
+		public const int EdgeMargin = ScreenMargin;
+
+		private static float CardW => W - Pad - ScrollW - ScrollGap - 8;
+
+		private static bool IsWithin(UIElement el, UIElement ancestor)
+		{
+			for (; el != null; el = el.Parent) if (ReferenceEquals(el, ancestor)) return true;
+			return false;
+		}
+
+		/// <summary>True while the cursor is over the panel; it owns the mouse wheel then (the hotbar must not scroll).</summary>
+		public bool Hovered => _panel != null && _panel.ContainsPoint(Main.MouseScreen);
+
+		/// <summary>The tallest the panel may be on this screen at this UI scale: the whole height less a margin top and bottom.</summary>
+		public static float MaxPanelHeight(float screenH) => Math.Max(HeaderH + MinListH + BottomPad, screenH - 2 * ScreenMargin);
+
+		/// <summary>The list's height for content of <paramref name="contentH"/> on a screen <paramref name="screenH"/> tall (UI pixels): the whole content when it fits, else what the screen leaves under the header.</summary>
+		public static float ListHeight(float contentH, float screenH) => Math.Min(contentH, MaxPanelHeight(screenH) - HeaderH - BottomPad);
 
 		private T Put<T>(T el, float left, float top) where T : UIElement
 		{
@@ -66,15 +107,15 @@ namespace Levy.Common.UI
 		}
 
 		/// <summary>Point the panel at a barracks and dock it beside the barracks panel.</summary>
-		public void Bind(BarracksTE te, bool docked = true)
+		public void Bind(BarracksTE te)
 		{
 			_te = te;
 			if (_panel == null) return;
 			float sw = Main.screenWidth / Main.UIScale, sh = Main.screenHeight / Main.UIScale;
-			float left = docked ? Math.Max(LevyConstants.UI.PanelDefaultLeft + LevyConstants.UI.BarracksPanelWidth, BarracksPanel.DockRight) + 12 : LevyConstants.UI.PanelDefaultLeft;
+			float left = Math.Max(LevyConstants.UI.PanelDefaultLeft + LevyConstants.UI.BarracksPanelWidth, BarracksPanel.DockRight) + 12;
 			_panel.Left.Set(Math.Max(0f, Math.Min(left, sw - W - 10f)), 0f);
 			_panel.Top.Set(Math.Max(0f, Math.Min(LevyConstants.UI.PanelDefaultTop, sh - _h - 10f)), 0f);
-			_sig = ""; _refreshTimer = 0;
+			_sig = ""; _refreshTimer = 0; _lastScreen = new Vector2(-1f, -1f);
 			Rebuild();
 			Recalculate();
 		}
@@ -83,7 +124,10 @@ namespace Levy.Common.UI
 		{
 			base.Update(gameTime);
 			if (_te == null || !UIActions.IsLive(_te)) { UISystem.Instance.CloseOfficers(); return; }
-			if (--_refreshTimer > 0) return;
+			var screen = new Vector2(Main.screenWidth, Main.screenHeight) / Main.UIScale;
+			bool refit = screen != _lastScreen; // resolution or UI scale changed: refit the list to the new screen
+			if (refit) _sig = "";
+			if (--_refreshTimer > 0 && !refit) return;
 			_refreshTimer = RefreshTicks;
 			Rebuild();
 		}
@@ -127,16 +171,19 @@ namespace Levy.Common.UI
 			if (sig == _sig) return;
 			_sig = sig;
 
-			foreach (var el in _dyn) el.Remove();
-			_dyn.Clear();
+			_lastScreen = new Vector2(Main.screenWidth, Main.screenHeight) / Main.UIScale;
+			float scrolled = _bar.ViewPosition;
+			_list.Clear();
+			_content = new UIElement();
+			_content.Width.Set(CardW, 0f);
 			_title.SetText(LevyUtil.T("Officers.UI.Title", SettlementSystem.Instance.TownName(_te)));
 			_sub.SetText(LevyUtil.T("Officers.UI.Sub", sys.UsedSlots(me), max));
 
-			float cardW = W - 2 * Pad;
+			float cardW = CardW;
 			var lk = SettlementSystem.Instance.LinkOf(_te);
 			_link.SetText(SettlementSystem.Instance.LinkLine(_te));
 			_link.TextColor = lk.Linked ? Dim : Unpaid;
-			float y = 84;
+			float y = 0;
 			var slotsHdr = PutDyn(new Label(LevyUtil.T("Officers.UI.SlotsHeader"), HeaderScale), Pad, y);
 			slotsHdr.TextColor = Gold;
 			y += 24;
@@ -177,9 +224,22 @@ namespace Levy.Common.UI
 			hint.TextColor = Faint;
 			y += 26;
 
-			_h = y + 8;
+			float contentH = y;
+			_content.Height.Set(contentH, 0f);
+			float listH = ListHeight(contentH, _lastScreen.Y);
+			_list.Height.Set(listH, 0f); _bar.Height.Set(listH, 0f);
+			_list.Add(_content);
+			bool scrolls = contentH > listH + 0.5f;
+			if (scrolls && !_panel.HasChild(_bar)) _panel.Append(_bar);
+			else if (!scrolls && _panel.HasChild(_bar)) _panel.RemoveChild(_bar);
+			_h = HeaderH + listH + BottomPad;
 			_panel.Height.Set(_h, 0f);
+			// never let the panel's bottom edge fall off the screen (it may have been dragged, or the screen may have shrunk)
+			_panel.Top.Set(Math.Max(0f, Math.Min(_panel.Top.Pixels, _lastScreen.Y - _h - ScreenMargin)), 0f);
+			_panel.Left.Set(Math.Max(0f, Math.Min(_panel.Left.Pixels, _lastScreen.X - W - ScreenMargin)), 0f);
 			Recalculate();
+			_list.Recalculate();
+			_bar.ViewPosition = scrolled;
 		}
 
 		// ---- cards ----------------------------------------------------------
@@ -274,7 +334,7 @@ namespace Levy.Common.UI
 			card.SetPadding(0);
 			card.Left.Set(x, 0f); card.Top.Set(y, 0f); card.Width.Set(w, 0f); card.Height.Set(h, 0f);
 			card.BackgroundColor = bg; card.BorderColor = border;
-			_panel.Append(card); _dyn.Add(card);
+			_content.Append(card);
 			return card;
 		}
 
@@ -288,7 +348,7 @@ namespace Levy.Common.UI
 		private T PutDyn<T>(T el, float left, float top) where T : UIElement
 		{
 			el.Left.Set(left, 0f); el.Top.Set(top, 0f);
-			_panel.Append(el); _dyn.Add(el);
+			_content.Append(el);
 			return el;
 		}
 

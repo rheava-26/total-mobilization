@@ -40,6 +40,25 @@ namespace Levy.Common.Officers
 				if (OfficerRegistry.Get(NPCID.Guide)?.Kit is AuraKit) fail.Add("Guide is still a stat aura");
 				if (OfficerRegistry.Get(NPCID.Guide)?.Kit is not GuideKit) fail.Add("Guide has no volley kit");
 				if (!(LevyConstants.Officer.MerchantMarchPriceAdjust < 0.75)) fail.Add("Merchant march price is not better than vanilla's best");
+
+				// the Officers panel's scrolling list: bounded by the screen at every common resolution and UI scale, whole content when it fits
+				foreach (int sh in new[] { 600, 720, 768, 900, 1080, 1440, 2160 })
+					foreach (float ui in new[] { 0.85f, 1f, 1.25f, 1.5f, 2f })
+					{
+						float screenH = sh / ui;
+						if (screenH < 240f) continue; // below this the list floor (120 px) cannot fit
+						foreach (float contentH in new[] { 200f, 1400f, 6000f })
+						{
+							float h = global::Levy.Common.UI.OfficerPanel.PanelHeight(contentH, screenH), list = global::Levy.Common.UI.OfficerPanel.ListHeight(contentH, screenH);
+							if (h > screenH - 2 * global::Levy.Common.UI.OfficerPanel.EdgeMargin + 0.01f) fail.Add($"officer panel {h} tall does not fit a {screenH} px screen ({sh}p x{ui})");
+							if (list > contentH + 0.01f || list <= 0f) fail.Add($"officer list height {list} for content {contentH} on {screenH}"); // list never exceeds content
+						}
+						if (global::Levy.Common.UI.OfficerPanel.ListHeight(200f, screenH) != 200f) fail.Add("short content should show whole at " + screenH);
+					}
+				// the pylon is vanilla's: no Levy GlobalTile claims a right-click on any tile
+				foreach (var gt in ModContent.GetContent<GlobalTile>())
+					if (gt.Mod == Mod && gt.GetType().GetMethod("RightClick", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly) != null)
+						fail.Add(gt.GetType().Name + " overrides RightClick (pylons must stay vanilla)");
 			}
 			catch (Exception e) { fail.Add("officer kit check threw " + e.GetType().Name + ": " + e.Message); }
 

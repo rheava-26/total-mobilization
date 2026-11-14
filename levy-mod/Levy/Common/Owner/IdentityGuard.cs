@@ -27,7 +27,7 @@ namespace Levy.Common.Owner
 	/// by the gear-parity self-check: hiding the dummy from them stops those casts for levies. They keep seeing the dummy as local, but its talk / chest / sign state is mirrored from the real local player for the
 	/// length of the hook, so a "no conversation, close the panel" test reads the commander's real state.</item></list>
 	/// The equip pass, ModItem and ModBuff hooks, set bonuses and weapon use are never touched: they keep running with the dummy local, so everything gear does for a levy keeps working.
-	/// <para/><b>Where.</b> The state hooks (<see cref="StateHooks"/>: the per-tick update family) of every ModPlayer type of every loaded mod are wrapped once, at load (IL: enter at the top, exit before each return).
+	/// <para/><b>Where.</b> The state hooks (<see cref="StateHooks"/>: the per-tick update family and the hurt family a gear frame dispatches) of every ModPlayer type of every loaded mod are wrapped once, at load (IL: <c>Enter(); try { original } finally { Exit(); }</c>).
 	/// The item-use family (CanUseItem, ModifyShootStats, Shoot, ...) is deliberately left alone: those run inside a use window, where the dummy IS the player using an item, and the real-player side of that window
 	/// is protected by <see cref="UseGuard"/>. Env LEVY_IDENTITY_GUARD=0 switches the guard off (the unfixed behaviour, for A/B in the self-checks).
 	/// </summary>
@@ -43,6 +43,8 @@ namespace Levy.Common.Owner
 			"NaturalLifeRegen", "UpdateAutopause", "PreUpdate", "SetControls", "PreUpdateBuffs", "PostUpdateBuffs", "UpdateEquips", "PostUpdateEquips", "UpdateVisibleAccessories",
 			"UpdateVisibleVanityAccessories", "UpdateDyes", "PostUpdateMiscEffects", "PostUpdateRunSpeeds", "PreUpdateMovement", "PostUpdate", "FrameEffects", "ModifyScreenPosition", "ModifyZoom",
 			"ArmorSetBonusActivated", "ArmorSetBonusHeld", "OnRespawn", "SyncPlayer", "CopyClientState", "SendClientChanges",
+			// a levy's dummy is hurt by hand so the gear that reacts to a hit runs (SoldierNPC.GearOnHurt): the hurt family of the same frames
+			"ModifyHurt", "OnHurt", "PostHurt", "Kill", "ModifyHitByNPC", "OnHitByNPC", "ModifyHitByProjectile", "OnHitByProjectile",
 		};
 
 		public enum View { Local, Hidden }

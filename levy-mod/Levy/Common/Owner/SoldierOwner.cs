@@ -28,6 +28,8 @@ namespace Levy.Common.Owner
 	/// (<see cref="OwnerPuppet.SwapThorium"/>), and forces <c>Main.dedServ</c> and mutes sound so "!dedServ &amp;&amp; whoAmI == myPlayer" blocks (UI, shaders, music, screen shake) cannot fire in single player.
 	/// Dispose undoes all of it in reverse, inside a finally. Frames nest: each remembers exactly what it replaced (a depth stack), and a frame left open by an exception is unwound by the one below it.
 	/// A <see cref="KillMeGuard"/> keeps the dummy from ever running the local-player death path.
+	/// <para/>The dummy is "the local player" only for the code that has to see it so (vanilla's equip pass, item and buff hooks, owner-gated spawns). Another mod's ModPlayer, dispatched for the dummy inside the
+	/// frame, is given the view <see cref="IdentityGuard"/> decides: hidden (it sees the real local player) or, for a mod that provides wearable gear, local with the commander's talk, chest and sign state mirrored.
 	/// </summary>
 	public static class SoldierOwner
 	{

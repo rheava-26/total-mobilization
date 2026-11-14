@@ -8,6 +8,7 @@ using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Levy.Common.Compat.LuiAfk;
 using Levy.Common.Owner;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
@@ -174,7 +175,7 @@ namespace Levy.Common.Testing
 		/// </summary>
 		private static void IdentityProbes()
 		{
-			_spNet = true;
+			_spNet = false; // the probes do not depend on the client netMode; a client netMode in a headless world makes other mods reach for lighting and sound that a server has not built
 			try
 			{
 				Item acc = ModdedAccessory();
@@ -191,7 +192,7 @@ namespace Levy.Common.Testing
 					if (SpawnLevy("Pvt. Probe" + k, w, a, new Vector2(Cx * 16f - 60f - 24f * k, FloorY * 16f)) >= 0) made++;
 				}
 				Array.Clear(IdentityProbeHidden.Seen); Array.Clear(IdentityProbeGear.Seen); IdentityProbeBase.On = true; IdentityGuard.Census.Clear(); IdentityGuard.Instrument = true;
-				long hid0 = IdentityGuard.Hidden, mir0 = IdentityGuard.Mirrored;
+				long hid0 = IdentityGuard.Hidden, mir0 = IdentityGuard.Mirrored, lui0 = LuiAfkServerRepair.SkippedForDummy;
 				Step(120);
 				IdentityProbeBase.On = false; IdentityGuard.Instrument = false; Note("identity guard unbalanced keys (enter/exit): " + string.Join(", ", IdentityGuard.EnterKeys.Where(kv => !IdentityGuard.ExitKeys.TryGetValue(kv.Key, out int xx) || xx != kv.Value).Take(15).Select(kv => kv.Key + "=" + kv.Value + "/" + (IdentityGuard.ExitKeys.TryGetValue(kv.Key, out int x2) ? x2 : 0))));
 				Note($"identity guard enters {IdentityGuard.Enters} exits {IdentityGuard.Exits} leaked {IdentityGuard.Leaked}: {string.Join(", ", IdentityGuard.LeakedKeys.OrderByDescending(kv => kv.Value).Take(12).Select(kv => kv.Key + "=" + kv.Value))}");
@@ -200,6 +201,11 @@ namespace Levy.Common.Testing
 				Note($"identity probes with {made} levies, commander talking to NPC {Main.player[0].talkNPC}: hidden-view ModPlayer saw {h[0]} dummy dispatches (as local {h[1]}, LocalPlayer a dummy {h[2]}, wrong talk NPC {h[3]}); local-view ModPlayer saw {g[0]} (as local {g[1]}, LocalPlayer a dummy {g[2]}, wrong talk NPC {g[3]}); guard hid {IdentityGuard.Hidden - hid0} and mirrored {IdentityGuard.Mirrored - mir0} dispatches; {IdentityGuard.Wrapped} ModPlayer hooks wrapped");
 				Note("identity guard wrapped: " + string.Join(", ", IdentityGuard.WrappedNames.Where(n => n.StartsWith("AlchemistNPCLite") || n.StartsWith("Levy:IdentityProbe")).ToArray()));
 				Check($"identity: a ModPlayer on the hidden view is never handed a levy dummy as the local player ({h[0]} dispatches, {h[1]} as local, LocalPlayer was a dummy {h[2]} times)", h[0] > 0 && h[1] == 0 && h[2] == 0 && h[3] == 0);
+				if (LuiAfkShops.TryGet(out _))
+				{
+					long luiN = LuiAfkServerRepair.SkippedForDummy - lui0;
+					Check($"identity: LuiAFK's UI reset is reached for a levy dummy {luiN} times and stopped by the compat patch every time (patch installed: {LuiAfkServerRepair.Hooked})", LuiAfkServerRepair.Hooked);
+				}
 				Check($"identity: a ModPlayer on the local view reads the commander's own talk state from the dummy ({g[0]} dispatches, wrong talk NPC {g[3]})", g[0] > 0 && g[3] == 0 && g[2] == g[0]);
 			}
 			catch (Exception e) { Check("identity probes threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }

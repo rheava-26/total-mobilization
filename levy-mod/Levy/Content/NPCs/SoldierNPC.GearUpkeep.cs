@@ -220,7 +220,8 @@ namespace Levy.Content.NPCs
 		// write Main.LocalPlayer, play sounds and touch other local-player state. Borrowing the commander's slot would aim every one of them at the REAL commander. So the frame stands the dummy in slot 255
 		// (the null-player slot, as the soldier minions do), makes 255 the machine's player for its length, and lets WeaponUse.OwnerFor keep answering with the real one (SoldierMinions fake). Whatever the
 		// frame does to "the local player" lands on the dummy. Sounds are muted for the length (a levy's gear is not a sound the listener should hear 40 times a tick). On a dedicated server
-		// Main.myPlayer already is 255 and only the array slot is lent.
+		// Main.myPlayer already is 255 and only the array slot is lent. Every other mod's ModPlayer hook dispatched for the dummy inside the frame passes the IdentityGuard (hidden or mirrored view), so a mod
+		// that reads Main.LocalPlayer, or closes a panel when the local player is not in conversation, never mistakes the dummy for the human at the keyboard.
 		// ------------------------------------------------------------------------------------------------------------
 		private struct FrameSlot { public Player Backup; public int MyPlayer, FakeToken, GuardMark; public float Volume; public bool Active, Ded; }
 

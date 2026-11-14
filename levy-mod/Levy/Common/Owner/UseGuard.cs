@@ -23,8 +23,8 @@ namespace Levy.Common.Owner
 	/// <list type="bullet">
 	/// <item>every Projectile.Update, Kill and Damage of an army projectile (a soldier's shot, a minion's child, a drone or turret round) whose owner is a real player: the spawn's own hooks of a shot are inside
 	/// <see cref="Hold"/> / the NPC pass below, its AI, movement, hit pass and death are inside the three projectile detours (HeldWeapons.RunAi / RunDamage, MiscProjSwap, SoldierMinions run inside them);</item>
-	/// <item>the whole AI pass of a soldier (NPC.AI): item use, real Shoot hooks (HeldWeapons.ShootHooks), spawn hooks, gear frames, owner frames;</item>
-	/// <item>Projectile.NewProjectile whose source is a soldier (spawns made outside its AI pass);</item>
+	/// <item>the whole AI pass of a soldier or of a companion-mod machine (NPCLoader.AI): item use, real Shoot hooks (HeldWeapons.ShootHooks), spawn hooks, gear frames, owner frames;</item>
+	/// <item>Projectile.NewProjectile whose source is an army body (spawns made outside its AI pass);</item>
 	/// <item>drone and turret rounds: Mechanization's <c>OwnerGuard.Hold</c> is this guard's <see cref="Hold"/>.</item></list>
 	/// A round counts as the army's when Levy tagged it (<see cref="SoldierProjectileTag"/>: a soldier's shot, a unit's, a driven minion child, a machine round; fragments inherit it). The real player's own weapon, its
 	/// own projectiles and its own update are never inside a scope. Env LEVY_USEGUARD=0 switches the guard off (the unguarded behaviour, for the A/B in the player-safety sweep).
@@ -230,10 +230,13 @@ namespace Levy.Common.Owner
 			try { orig(self); } finally { PutT(s, "damage", type); }
 		}
 
+		/// <summary>A body of the army: a levy or officer (SoldierNPC) or a machine of the companion mod (a drone, a turret).</summary>
+		private static bool IsArmyNpc(NPC n) => n.ModNPC is SoldierNPC || n.ModNPC?.Mod.Name == "Mechanization";
+
 		private static void NpcAiDetour(Action<NPC> orig, NPC self)
 		{
-			if (Disabled || self.ModNPC is not SoldierNPC sn) { orig(self); return; }
-			int owner = WeaponUse.OwnerFor(sn);
+			if (Disabled || !IsArmyNpc(self)) { orig(self); return; }
+			int owner = SoldierMinions.TrueMyPlayer; // what WeaponUse.OwnerFor answers for every body: the real local player
 			if (!RealOwner(owner) || (_aiDepth > 0 && _aiOwner == owner)) { orig(self); return; }
 			Snap s = TakeT(owner); Scopes++;
 			int prevOwner = _aiOwner; _aiOwner = owner; _aiDepth++;
@@ -242,7 +245,7 @@ namespace Levy.Common.Owner
 
 		private static int NewProjectileDetour(On_Projectile.orig_NewProjectile_IEntitySource_float_float_float_float_int_int_float_int_float_float_float orig, IEntitySource source, float x, float y, float sx, float sy, int type, int damage, float kb, int owner, float ai0, float ai1, float ai2)
 		{
-			if (Disabled || !RealOwner(owner) || (_aiDepth > 0 && _aiOwner == owner) || source is not EntitySource_Parent { Entity: NPC { ModNPC: SoldierNPC } })
+			if (Disabled || !RealOwner(owner) || (_aiDepth > 0 && _aiOwner == owner) || source is not EntitySource_Parent { Entity: NPC army } || !IsArmyNpc(army))
 				return orig(source, x, y, sx, sy, type, damage, kb, owner, ai0, ai1, ai2);
 			Snap s = TakeT(owner); Scopes++;
 			try { return orig(source, x, y, sx, sy, type, damage, kb, owner, ai0, ai1, ai2); } finally { PutT(s, "spawn", type); }

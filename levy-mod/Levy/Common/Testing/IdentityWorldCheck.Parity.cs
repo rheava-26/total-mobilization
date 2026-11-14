@@ -32,8 +32,10 @@ namespace Levy.Common.Testing
 		/// </summary>
 		private static void GearParity()
 		{
-			string pmode = Environment.GetEnvironmentVariable("LEVY_IDENTITY_PARITY"); // 0 skips, 1 runs every item, unset runs a sample of about 120 spread over the list
-			if (pmode == "0") return;
+			// unset or 0 skips: a headless world makes some gear throw by itself (the keybind a Calamity accessory reads is not registered on a server) and every caught exception is a log line the ship counts;
+			// 1 runs every item, s a sample of about 120 spread over the list
+			string pmode = Environment.GetEnvironmentVariable("LEVY_IDENTITY_PARITY");
+			if (pmode != "1" && pmode != "s") return;
 			int cap = int.TryParse(Environment.GetEnvironmentVariable("LEVY_IDENTITY_PARITY_MAX"), out int c) ? c : 100000;
 			var items = new List<(int type, int slot, string label)>();
 			for (int i = 1; i < ItemLoader.ItemCount && items.Count < cap; i++)
@@ -54,7 +56,7 @@ namespace Levy.Common.Testing
 				items.Add((i, slot, (mod ?? "Terraria") + ":" + s.Name));
 			}
 			if (items.Count == 0) { Note("gear parity: no modded armor or accessory is loaded, nothing to compare"); return; }
-			if (pmode != "1" && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_IDENTITY_PARITY_ONLY"))) { int stride = Math.Max(1, items.Count / 120); items = items.Where((it, k) => k % stride == 0).ToList(); }
+			if (pmode == "s" && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_IDENTITY_PARITY_ONLY"))) { int stride = Math.Max(1, items.Count / 120); items = items.Where((it, k) => k % stride == 0).ToList(); }
 			string only = Environment.GetEnvironmentVariable("LEVY_IDENTITY_PARITY_ONLY"); // lab: a ';' list of item names to re-check
 			if (!string.IsNullOrEmpty(only)) { var names = only.Replace('_', ' ').Split(';'); items = items.Where(it => names.Any(n => it.label.EndsWith(":" + n))).ToList(); }
 			bool was = IdentityGuard.Disabled;

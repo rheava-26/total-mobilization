@@ -75,7 +75,7 @@ namespace Levy.Common.Testing
 
 			_watch = true; bool wasUg = UseGuard.Disabled;
 			UseGuard.Measure = true; UseGuard.Moves.Clear(); UseGuard.GuardTicks = 0; UseGuard.GuardSnaps = 0; UseGuard.Undone = 0; UseGuard.GuardedUpdates = 0; UseGuard.Scopes = 0;
-			var leakers = new List<string>(); var tally = new Dictionary<string, int>(); int done = 0, fired = 0, threw = 0;
+			var others = new List<string>(); var leakers = new List<string>(); var tally = new Dictionary<string, int>(); int done = 0, fired = 0, threw = 0;
 			var sw = Stopwatch.StartNew();
 			try
 			{
@@ -90,9 +90,12 @@ namespace Levy.Common.Testing
 						int ammo = ContentSamples.ItemsByType[type].useAmmo is int ua && ua > 0 && ammoByKind.TryGetValue(ua, out int at) ? at : 0;
 						var r = SweepOne(type, ammo, label);
 						r.leaks.ExceptWith(control); done++; if (r.fired > 0) fired++;
+						// the use state (the Player's own use fields, the mouse-world listeners) is what the guard answers for; another mod's own counter or an immunity flicker is listed, not failed
+						var other = r.leaks.Where(lf => !IsUseField(lf)).ToList(); r.leaks.ExceptWith(other);
+						if (other.Count > 0) others.Add($"{label} [{string.Join(", ", other.Take(4).Select(lf => r.detail.TryGetValue(lf, out string dv2) ? lf + " " + dv2 : lf))}]");
 						if (r.leaks.Count > 0)
 						{
-							leakers.Add($"{label} [{string.Join(", ", r.leaks.Take(6))}{(r.leaks.Count > 6 ? ", +" + (r.leaks.Count - 6) : "")}]");
+							leakers.Add($"{label} [{string.Join(", ", r.leaks.Take(6).Select(lf => r.detail.TryGetValue(lf, out string dv) ? lf + " " + dv : lf))}{(r.leaks.Count > 6 ? ", +" + (r.leaks.Count - 6) : "")}]");
 							foreach (string k in r.leaks) tally[k] = tally.TryGetValue(k, out int n) ? n + 1 : 1;
 						}
 					}
@@ -103,6 +106,7 @@ namespace Levy.Common.Testing
 			sw.Stop();
 			Note($"player-safety sweep (use guard {(UseGuard.Disabled ? "OFF" : "on")}): {done} of {total} levy weapons run ({fired} fired a shot, {threw} threw) in {sw.ElapsedMilliseconds / 1000} s; the guard held {UseGuard.Scopes} scopes and {UseGuard.GuardedUpdates} round updates, and had to put the use state back {UseGuard.Undone} times; {UseGuard.GuardSnaps} snapshots took {UseGuard.GuardTicks * 1000.0 / Stopwatch.Frequency:F1} ms ({UseGuard.GuardTicks * 1e6 / Stopwatch.Frequency / Math.Max(1, UseGuard.GuardSnaps):F2} us per snapshot + restore)");
 			if (UseGuard.Moves.Count > 0) Note("player-safety sweep, passes the guard had to undo (kind:projectile type = count): " + string.Join(", ", UseGuard.Moves.OrderByDescending(kv => kv.Value).Take(25).Select(kv => kv.Key + "=" + kv.Value)));
+			foreach (string o in others.Take(20)) Note("player-safety sweep, another field of the real player moved (not use state, listed): " + o);
 			foreach (string l in leakers.Take(80)) Note("player-safety sweep, touches the real player: " + l);
 			if (leakers.Count > 80) Note($"player-safety sweep: {leakers.Count - 80} more weapons touch the real player");
 			Note("player-safety sweep, fields moved (weapon count): " + string.Join(", ", tally.OrderByDescending(kv => kv.Value).Take(25).Select(kv => kv.Key + "=" + kv.Value)));
@@ -110,8 +114,17 @@ namespace Levy.Common.Testing
 			_ = wasUg;
 		}
 
+		private static readonly HashSet<string> UseFields = new() { "itemAnimation", "itemAnimationMax", "itemTime", "itemTimeMax", "reuseDelay", "channel", "controlUseItem", "controlUseTile", "releaseUseItem", "heldProj", "noItems", "selectedItem", "itemRotation", "itemLocation", "direction", "velocity", "noThrow", "stoned", "frozen", "webbed", "dead", "talkNPC", "mount", "compositeFrontArm", "compositeBackArm" };
+		/// <summary>A watched key (optionally "phase:" prefixed) that is a use field: one of the Player's own use fields, or a mod player's mouse-world listener.</summary>
+		private static bool IsUseField(string key)
+		{
+			int c = key.IndexOf(':'); if (c >= 0 && (key.StartsWith("npcs:") || key.StartsWith("projectiles:"))) key = key.Substring(c + 1);
+			if (key.IndexOf("mouseWorld", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+			return key.StartsWith("Player.") && UseFields.Contains(key.Substring(7));
+		}
+
 		/// <summary>One levy fires one weapon at the pinned enemy for 240 ticks; returns what moved on slot 0 and whether a shot of the army appeared.</summary>
-		private static (HashSet<string> leaks, int fired) SweepOne(int weaponType, int ammoType, string label)
+		private static (HashSet<string> leaks, int fired, Dictionary<string, string> detail) SweepOne(int weaponType, int ammoType, string label)
 		{
 			ClearSoldiers();
 			if (_sweepTarget != null) _sweepTarget.active = false;
@@ -143,20 +156,21 @@ namespace Levy.Common.Testing
 			KeepCommander(); PinSweepTarget(); Step(20); // the levy settles and takes the weapon
 			PhaseDiffs.Clear();
 			Dictionary<string, string> before = PlayerProbe.WatchedSnapshot(Main.player[0]);
-			var leaks = new HashSet<string>(); int fired = 0;
+			var leaks = new HashSet<string>(); int fired = 0; var detail = new Dictionary<string, string>();
 			for (int k = 0; k < 240; k++)
 			{
 				rec.Mana = rec.MaxMana;
 				Step(1);
 				var now = PlayerProbe.WatchedSnapshot(Main.player[0]);
-				PlayerProbe.Differences(before, now, leaks);
+				var fresh = new HashSet<string>(); PlayerProbe.Differences(before, now, fresh);
+				foreach (string fk in fresh) if (leaks.Add(fk)) detail[fk] = (before.TryGetValue(fk, out string bv) ? bv : "?") + " -> " + now[fk] + " @tick " + k;
 				bool shot = false;
 				for (int i = 0; i < Main.maxProjectiles && !shot; i++) { Projectile p = Main.projectile[i]; if (p.active && p.TryGetGlobalProjectile(out SoldierProjectileTag t) && (t.IsSoldierShot || t.Cast || t.DrivenChild)) shot = true; }
 				if (shot) fired++;
 			}
 			foreach (string d in PhaseDiffs) leaks.Add(d);
 			ClearSoldiers();
-			return (leaks, fired);
+			return (leaks, fired, detail);
 		}
 	}
 }

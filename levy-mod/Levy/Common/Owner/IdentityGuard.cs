@@ -62,7 +62,8 @@ namespace Levy.Common.Owner
 		private static readonly HashSet<string> _own = new() { "Levy", "Mechanization", "Warbands" };
 
 		private struct Entry { public int Kind, MyPlayer, Talk, Chest, Sign; public Player Dummy; public string Key; }
-		private static Entry[] _stack = new Entry[64]; private static int _depth;
+		// per thread: the network thread dispatches some ModPlayer hooks too, and its calls must never meet the main thread's
+		[ThreadStatic] private static Entry[] _stack; [ThreadStatic] private static int _depth;
 		private const int KNone = 0, KHidden = 1, KMirror = 2;
 
 		/// <summary>True when the mod provides armor or an accessory that a levy can wear: its ModPlayer is gear logic and must keep the local view.</summary>
@@ -105,20 +106,23 @@ namespace Levy.Common.Owner
 		{
 			var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 			Forced[typeof(IdentityProbeHidden)] = View.Hidden; Forced[typeof(IdentityProbeGear)] = View.Local; // the stand-ins the identity check reads
+			var seen = new HashSet<MethodInfo>();
 			foreach (Mod mod in ModLoader.Mods)
 			{
-				if (mod.Code == null) continue;
-				Type[] types;
-				try { types = mod.Code.GetTypes(); } catch (ReflectionTypeLoadException e) { types = e.Types.Where(x => x != null).ToArray(); }
 				if (mod.Name == "ModLoader") continue; // tML's own ModPlayers are not another mod's
-				foreach (Type t in types)
+				// the mod's own ModPlayer content (never GetTypes on its assembly: a weak reference that is not loaded makes that throw)
+				foreach (ModPlayer proto in mod.GetContent<ModPlayer>())
 				{
-					if (!t.IsClass || t.ContainsGenericParameters || !typeof(ModPlayer).IsAssignableFrom(t)) continue;
-					foreach (MethodInfo m in t.GetMethods(flags))
+					// the overrides declared by the type and by every base class below ModPlayer (an abstract base of a family of ModPlayers declares them once)
+					for (Type t = proto.GetType(); t != null && t != typeof(ModPlayer) && t != typeof(object); t = t.BaseType)
 					{
-						if (!StateHooks.Contains(m.Name) || !m.IsVirtual || m.IsAbstract || m.ReturnType != typeof(void) || m.GetBaseDefinition().DeclaringType != typeof(ModPlayer) || m.GetMethodBody() == null) continue;
-						try { MonoModHooks.Modify(m, Wrap); Wrapped++; WrappedNames.Add(mod.Name + ":" + t.Name + "." + m.Name); }
-						catch (Exception e) { mod.Logger.Debug("Levy identity guard: " + t.Name + "." + m.Name + " not wrapped: " + e.Message); }
+						if (t.ContainsGenericParameters) continue;
+						foreach (MethodInfo m in t.GetMethods(flags))
+						{
+							if (!StateHooks.Contains(m.Name) || !m.IsVirtual || m.IsAbstract || m.ReturnType != typeof(void) || m.GetBaseDefinition().DeclaringType != typeof(ModPlayer) || m.GetMethodBody() == null || !seen.Add(m)) continue;
+							try { MonoModHooks.Modify(m, Wrap); Wrapped++; WrappedNames.Add(mod.Name + ":" + t.Name + "." + m.Name); }
+							catch (Exception e) { mod.Logger.Debug("Levy identity guard: " + t.Name + "." + m.Name + " not wrapped: " + e.Message); }
+						}
 					}
 				}
 			}
@@ -170,6 +174,7 @@ namespace Levy.Common.Owner
 				Census[key] = (c.dummy + 1, c.local + (mp.Player.whoAmI == Main.myPlayer ? 1 : 0));
 			}
 			Enters++;
+			_stack ??= new Entry[64];
 			if (_depth >= _stack.Length) Array.Resize(ref _stack, _stack.Length * 2);
 			ref Entry e = ref _stack[_depth++];
 			e.Kind = KNone; e.Key = Instrument ? mp.GetType().Name + "." + hook : null; if (e.Key != null) EnterKeys[e.Key] = EnterKeys.TryGetValue(e.Key, out int en) ? en + 1 : 1;

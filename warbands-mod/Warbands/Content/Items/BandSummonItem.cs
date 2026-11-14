@@ -65,5 +65,5 @@ namespace Warbands.Content.Items
 		}
 	}
 
-	public enum WarbandsPacket : byte { SummonBand = 1 }
+	public enum WarbandsPacket : byte { SummonBand = 1, Chatter = 2 }
 }

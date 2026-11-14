@@ -161,10 +161,38 @@ namespace Warbands.Common
 				bool formed = BandSpawner.SpawnBand(fake, 1, 4);
 				int count = 0;
 				for (int i = 0; i < Main.maxNPCs; i++) { var n = Main.npc[i]; if (n.active && (n.ModNPC is BandLevyNPC || n.ModNPC is BandSoldier)) { count++; } }
-				Check("spawner forms a band of 4 at the world spawn and counts it", formed && count >= 4 && BandSpawner.ActiveBands() == before + 1 && BandSpawner.BandsSpawned == spawnedBefore + 1, $"formed={formed} members={count} bands={BandSpawner.ActiveBands()}");
+				Check("spawner forms a band of 4 at the world spawn and counts it", formed && count >= 4 && BandSpawner.ActiveBands() == before + 1 && BandSpawner.BandsSpawned == spawnedBefore + 1, $"formed={formed} members={count} bands={BandSpawner.ActiveBands()} {BandSpawner.Report}");
 				for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && (Main.npc[i].ModNPC is BandSoldier || Main.npc[i].ModNPC is BandLevyNPC)) Main.npc[i].active = false;
 			}
 			catch (Exception e) { Check("spawner", false, e.GetType().Name + ": " + e.Message + " @ " + e.StackTrace?.Split('\n')[0]); }
+
+			// the spawner finds room for every member when the ground has it: thirty bands of 4 at the spawn, at most one short (a ship world's test fixtures sit around the spawn)
+			try
+			{
+				var fake = new Player(); fake.position = new Microsoft.Xna.Framework.Vector2(Main.spawnTileX * 16, (Main.spawnTileY - 3) * 16); fake.width = 20; fake.height = 42;
+				int shortN = 0, formedN = 0; var saved = Main.rand; Main.rand = new Terraria.Utilities.UnifiedRandom(4401);
+				for (int k = 0; k < 30; k++)
+				{
+					for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && (Main.npc[i].ModNPC is BandSoldier || Main.npc[i].ModNPC is BandLevyNPC)) Main.npc[i].active = false;
+					if (BandSpawner.SpawnBand(fake, 1, 4)) { formedN++; if (BandSpawner.Report.Made < 4) shortN++; }
+				}
+				Main.rand = saved;
+				for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && (Main.npc[i].ModNPC is BandSoldier || Main.npc[i].ModNPC is BandLevyNPC)) Main.npc[i].active = false;
+				Check("thirty bands of 4 at the world spawn: all form, at most one comes up short", formedN == 30 && shortN <= 1, $"formed={formedN} short={shortN}");
+			}
+			catch (Exception e) { Check("spawner repeat", false, e.GetType().Name + ": " + e.Message + " @ " + e.StackTrace?.Split('\n')[0]); }
+
+			// speech bubbles: lines said together never sit on one another, and each is at most four lines of 210 px
+			try
+			{
+				var list = new List<BandBubbles.Bubble>(); string[] sample = { "Mavis, I can see the plate from here, that is a lot of plate!", "Hold on, hold on, I am nearly out of arrows and it is entirely your fault, Corwin!", "Nobody said it was a whole army.", "Are we sure this is a good idea? I would like it noted that I asked.", "Pell! Pell, behind you!", "That one is mine. That one is also mine. Leave me one." };
+				for (int i = 0; i < sample.Length; i++) list.Add(new BandBubbles.Bubble { Npc = i, Band = 1, Text = sample[i], Name = "Name", Start = (uint)(100 + i * 5), Life = BandBubbles.LifeFor(sample[i]) });
+				BandBubbles.Layout(list, b => new Microsoft.Xna.Framework.Vector2(1000f + b.Npc * 40f, 500f), BandBubbles.EstimateMeasure);
+				int overlaps = 0; for (int i = 0; i < list.Count; i++) for (int j = i + 1; j < list.Count; j++) if (list[i].Rect.Intersects(list[j].Rect)) overlaps++;
+				bool within = true; foreach (var b in list) if (b.Lines == null || b.Lines.Length > BandBubbles.MaxLines || b.Size.X > BandBubbles.MaxWidthPx + BandBubbles.PadPx * 2 + 1) within = false;
+				Check("speech bubbles: six lines said at once, 40 px apart, do not overlap and fit four lines of 210 px", overlaps == 0 && within, $"overlaps={overlaps} within={within}");
+			}
+			catch (Exception e) { Check("speech bubbles", false, e.GetType().Name + ": " + e.Message); }
 
 			// no new natural band while a boss is alive (a band already out is not removed)
 			try

@@ -140,6 +140,11 @@ Configs: {
 			Label: Event bands per event
 			Tooltip: Most bands one run of an event sends.
 		}
+
+		HuntRangeTiles: {
+			Label: Hunt range (tiles)
+			Tooltip: Hostile bands go after the nearest player within this many tiles. 0 turns it off.
+		}
 	}
 }
 

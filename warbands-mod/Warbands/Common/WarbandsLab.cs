@@ -204,10 +204,14 @@ namespace Warbands.Common
 				_booted = true;
 				Main.GameMode = GameModeID.Expert;
 				BuildArena();
-				if (Mode.Contains("check")) AddCheckTrials();
+				if (Mode.Contains("check")) { AddCheckTrials(); AddHuntCheckTrials(); }
 				if (Mode.Contains("fight")) AddFightTrials();
 				if (Mode.Contains("events")) AddEventTrials();
 				if (Mode.Contains("move")) AddMoveTrials();
+				if (Mode.Contains("spawn")) AddSpawnTrials();
+				if (Mode.Contains("hunt")) AddHuntTrials();
+				if (Mode.Contains("dodge")) AddDodgeTrials();
+				if (Mode.Contains("chat")) AddChatTrials();
 				Mod.Logger.Info($"[Warbands] LIVE: {_trials.Count} trials ({Mode})");
 				_ti = -1; return;
 			}
@@ -249,7 +253,7 @@ namespace Warbands.Common
 		private void Finish(string why)
 		{
 			if (Done) return; Done = true;
-			if (Mode.Contains("fight") || Mode.Contains("events") || Mode.Contains("move")) { try { File.WriteAllText(Environment.GetEnvironmentVariable("WARBANDS_OUT") ?? "warbands_fight.tsv", _tsv.ToString()); } catch (Exception e) { Mod.Logger.Warn("[Warbands] lab: could not write the TSV: " + e.Message); } }
+			if (Mode.Contains("fight") || Mode.Contains("events") || Mode.Contains("move") || Mode.Contains("spawn") || Mode.Contains("hunt") || Mode.Contains("dodge") || Mode.Contains("chat")) { try { File.WriteAllText(Environment.GetEnvironmentVariable("WARBANDS_OUT") ?? "warbands_fight.tsv", _tsv.ToString()); } catch (Exception e) { Mod.Logger.Warn("[Warbands] lab: could not write the TSV: " + e.Message); } }
 			Mod.Logger.Info($"[Warbands] LIVE done ({why}) pass={Pass} fail={Fail}");
 			Mod.Logger.Info($"[Warbands] self-check done pass={Pass} fail={Fail} (live)");
 			try { Netplay.SaveOnServerExit = false; Netplay.Disconnect = true; } catch { }

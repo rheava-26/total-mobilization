@@ -223,7 +223,9 @@ namespace Warbands.Content.NPCs
 			if (band.Rally && Vector2.Distance(NPC.Center, band.Anchor) > 70f * 16f && (near == null || nearTiles > 20f)) { HostileDropTarget(); HostileIdleState(); HostileGoTo(band.Anchor); return; }
 			if (near == null)
 			{
-				// nobody in sight: camp at the spot the band formed
+				// nobody within 120 tiles: a hostile band hunts the nearest of the player's side within the hunt range (config), off screen or not
+				if (!HuntLegacy && band.Aggro && !band.IsEvent && Hunt(band, (uint)now)) return;
+				// nobody to hunt: camp at the spot the band formed
 				HostileIdleState(); HostileDropTarget();
 				if (Vector2.Distance(NPC.Center, band.Anchor) > 8f * 16f) HostileGoTo(band.Anchor); else HostileStop();
 				return;
@@ -245,6 +247,7 @@ namespace Warbands.Content.NPCs
 				return;
 			}
 			StallWatch(band, near, (uint)now);
+			if (!HuntLegacy && HurtFallback(band, (uint)now)) { HostileEngage(); return; } // a badly hurt member backs off toward its healthy mates and keeps shooting
 			// first contact needs no separate step: a member with no shot at the foe goes to a firing position of its own (Pursue), spread around the foe, shooters on the high ground in view
 			if (Roster?.Skirmish == true && Role == 'E' && !Panic && SkirmishWithdraw(near, (uint)now)) return;
 			bool engaged = HostileEngage();
@@ -359,6 +362,83 @@ namespace Warbands.Content.NPCs
 				var s = FindSpot(band, foe, range, Role != 'E'); if (s != null) PostureSpot = s.Value; else _postureUntil = 0;
 			}
 			if (now < _postureUntil && PostureSpot != default && Vector2.Distance(NPC.Bottom, PostureSpot) > 28f) HostileGoTo(PostureSpot);
+		}
+
+		// ---------------------------------------------------------------------------------------------------- the hunt: a hostile band goes and finds its foe
+		/// <summary>Lab only (env WARBANDS_HUNT_LEGACY=1): a band with nobody within 120 tiles camps at its anchor, as before the hunt.</summary>
+		public static readonly bool HuntLegacy = Environment.GetEnvironmentVariable("WARBANDS_HUNT_LEGACY") == "1";
+		private uint _huntWaitUntil, _huntNoWaitUntil, _huntGoalAt; private Vector2 _huntGoal;
+		/// <summary>Telemetry (lab): members that held for the band, hunts begun.</summary>
+		public static int HuntWaits, HuntSteps;
+
+		public string HuntDebug() => $"goal=({_huntGoal.X / 16f:0},{_huntGoal.Y / 16f:0}) wait={(_huntWaitUntil != 0)} rt={HostileRouteStatus} busy={HostileMovementBusy} confined={_purConf} walled={Walled(Main.GameUpdateCount)} fb={FallingBack} state={State}";
+
+		/// <summary>The ground a body can stand on under or beside <paramref name="p"/> (a foe on a rope, in the air or on a ledge is reached from the floor): the first standable tile at or below its feet, else the nearest standable one.</summary>
+		private static Vector2 GroundNear(Vector2 p)
+		{
+			Point f = TileNav.FeetTile(p);
+			for (int d = 0; d <= 60; d++) { int y = f.Y + d; if (TileNav.InBounds(f.X, y) && TileNav.IsStandable(f.X, y)) return TileNav.BottomCentre(f.X, y); }
+			if (TileNav.NearestStandable(f.X, f.Y, 30, out Point np)) return TileNav.BottomCentre(np.X, np.Y);
+			return p;
+		}
+
+		/// <summary>A hostile band with nobody in sight goes after the nearest foe within the hunt range: it keeps track of the player where it is (off screen too), takes the long route to the foe's ground (walking, drops, hooks, wall climbs, wing arcs), staggers its approach so members come at the foe from different tiles, and does not let one member run far ahead of the rest. False when there is nobody to hunt.</summary>
+		private bool Hunt(BandBrain band, uint now)
+		{
+			var cfg = WarbandsConfig.Get; float range = cfg?.HuntRangeTiles ?? 300f; if (range <= 0f) return false;
+			NPC foe = HostileNearestEnemy(range, out float tiles); if (foe == null) return false;
+			HostileDropTarget(); HostileIdleState(); HuntSteps++;
+			NPC.direction = foe.Center.X >= NPC.Center.X ? 1 : -1;
+			StallWatch(band, foe, now);
+			if (Panic || Recalling) { HostileStop(); return true; }
+			if (HostileMovementBusy) return true; // hanging on a hook, climbing or flying a planned arc: the route owns the body
+			// regroup: a member far in front of the band holds (at most eight seconds, then not again for ten) so the band arrives together
+			if (band.Members.Count >= 2 && tiles > 70f && now >= _huntNoWaitUntil)
+			{
+				var ds = new List<float>(); foreach (var o in band.Members) if (o != this && o.NPC.active && !o.Panic && !o.Recalling) ds.Add(Vector2.Distance(o.NPC.Center, foe.Center) / 16f);
+				if (ds.Count > 0)
+				{
+					ds.Sort(); float med = ds[ds.Count / 2];
+					if (tiles + 22f < med) { if (_huntWaitUntil == 0 || now > _huntWaitUntil + 600u) _huntWaitUntil = now + 480u; }
+					else if (_huntWaitUntil != 0 && now < _huntWaitUntil && tiles + 8f > med) _huntWaitUntil = 0;
+					if (_huntWaitUntil != 0 && now < _huntWaitUntil) { HuntWaits++; HostileStop(); return true; }
+					if (_huntWaitUntil != 0 && now >= _huntWaitUntil) { _huntWaitUntil = 0; _huntNoWaitUntil = now + 600u; }
+				}
+			}
+			// the goal: the ground beside the foe, a different column for each member (so the band does not arrive as one stack)
+			if (now >= _huntGoalAt || _huntGoal == default)
+			{
+				_huntGoalAt = now + 90u + (uint)(NPC.whoAmI % 30);
+				Vector2 ground = GroundNear(foe.Bottom);
+				int side = NPC.Center.X >= ground.X ? 1 : -1; float off = (4f + (MemberIdx % 4) * 3.5f) * 16f;
+				Vector2 g = GroundNear(new Vector2(ground.X + side * off, ground.Y - 8f));
+				_huntGoal = TileNav.InBounds((int)(g.X / 16f), (int)(g.Y / 16f)) ? g : ground;
+			}
+			bool leg = HostileRouteTo(_huntGoal, out bool noWay);
+			if (noWay || HostileRouteStatus == 4) { NoteNoWay(now); _huntGoal = default; HostileGoTo(foe.Bottom); }
+			return true;
+		}
+
+		// ---------------------------------------------------------------------------------------------------- falling back when hurt
+		private uint _fbUntil, _fbNext; public static int Fallbacks;
+		public bool FallingBack => _fbUntil != 0;
+
+		/// <summary>A member under 35% life with a healthy mate (60% or more) within 40 tiles backs away from the fight toward that mate for five seconds, still shooting (Levy's fighting retreat), then rejoins; it does this at most once every twelve seconds. A band that cannot spare a healthy mate fights on, and a member that panics is on the Recall path instead. Returns true while it falls back.</summary>
+		private bool HurtFallback(BandBrain band, uint now)
+		{
+			if (Panic || Recalling) { if (_fbUntil != 0) { _fbUntil = 0; } return false; }
+			if (_fbUntil != 0)
+			{
+				if (now < _fbUntil) return true;
+				_fbUntil = 0; _fbNext = now + 720u; HostileSetRouted(false); return false;
+			}
+			if (now < _fbNext || NPC.life * 100 >= NPC.lifeMax * 35) return false;
+			bool helper = false;
+			foreach (var o in band.Members)
+				if (o != this && o.NPC.active && !o.Panic && !o.Recalling && o.NPC.life * 100 >= o.NPC.lifeMax * 60 && Vector2.Distance(o.NPC.Center, NPC.Center) < 40f * 16f) { helper = true; break; }
+			if (!helper) return false;
+			_fbUntil = now + 300u; Fallbacks++; HostileSetRouted(true);
+			return true;
 		}
 
 		// ---------------------------------------------------------------------------------------------------- pursuit: over, under and around terrain
@@ -528,11 +608,25 @@ namespace Warbands.Content.NPCs
 			if (best.HasValue) { _dispSpot = best.Value; _dispHas = true; } else _dispHas = false;
 		}
 
+		/// <summary>A player can see this point: Levy's own rule (inside a player's view box) and, for a member walled in behind terrain, a clear line from a player within 60 tiles (a member hidden by rock under the player's feet is not watched, so it may take the hop; one in the open is).</summary>
+		private static bool SeenByPlayer(Vector2 p)
+		{
+			if (HuntLegacy) return OffscreenHop.Seen(p);
+			for (int i = 0; i < Main.maxPlayers; i++)
+			{
+				var pl = Main.player[i]; if (!pl.active || pl.dead) continue;
+				float d = Vector2.Distance(pl.Center, p) / 16f;
+				if (d < 14f) return true;
+				if (d < 60f && Collision.CanHitLine(pl.Center - new Vector2(2f, 2f), 4, 4, p - new Vector2(2f, 2f), 4, 4)) return true;
+			}
+			return false;
+		}
+
 		/// <summary>The off-screen catch-up hop a levy takes (its landing rules: out of every player's sight, a standable spot, not a sealed pocket): a body that is walled in and unseen lands on the standable spot nearest its firing position (or the foe) that lies outside the place it has been confined to.</summary>
 		private void TryHop(BandBrain band, NPC foe, uint now)
 		{
 			bool dbg = Environment.GetEnvironmentVariable("WARBANDS_MOVEDBG") == "1";
-			if (OffscreenHop.Seen(NPC.Center) || NPC.wet || HostileMovementBusy) { if (dbg) Mod.Logger.Info($"[Warbands] hop refused #{MemberIdx} seen={OffscreenHop.Seen(NPC.Center)} wet={NPC.wet} busy={HostileMovementBusy}"); return; }
+			if (SeenByPlayer(NPC.Center) || NPC.wet || HostileMovementBusy) { if (dbg) Mod.Logger.Info($"[Warbands] hop refused #{MemberIdx} seen={SeenByPlayer(NPC.Center)} wet={NPC.wet} busy={HostileMovementBusy}"); return; }
 			_purBad.Clear();
 			var s = PickPursuitSpot(band, foe, now);
 			Vector2 goal = s ?? foe.Bottom, me = NPC.Bottom;
@@ -545,7 +639,7 @@ namespace Warbands.Content.NPCs
 					if (!TileNav.InBounds(x, y) || !TileNav.IsFloor(x, y + 1) || !TileNav.IsStandable(x, y)) continue;
 					Vector2 bot = TileNav.BottomCentre(x, y);
 					if (bot.X >= lo.X && bot.X <= hi.X && bot.Y >= lo.Y && bot.Y <= hi.Y) continue; // where it has been going round and round
-					if (OffscreenHop.Seen(bot)) continue;
+					if (SeenByPlayer(bot - new Vector2(0f, 21f))) continue;
 					cand.Add((Vector2.DistanceSquared(bot, goal), bot));
 				}
 			cand.Sort((a, b) => a.d.CompareTo(b.d));
@@ -656,7 +750,7 @@ namespace Warbands.Content.NPCs
 			if (d > 0)
 			{
 				_lastBlow = d; _lifeBeforeBlow = _lastLife; _lastHitTick = now;
-				if (band != null) { band.OnMemberHit(this, d); if (NPC.life * 4 < NPC.lifeMax && Main.rand.NextBool(3)) band.Chat(this, "LOW_LIFE"); else if (Main.rand.NextBool(7)) band.Chat(this, "HURT"); }
+				if (band != null) { if (band.Aggro || HuntLegacy || HostileNearestEnemy(45f, out _) != null) band.OnMemberHit(this, d); if (NPC.life * 4 < NPC.lifeMax && Main.rand.NextBool(3)) band.Chat(this, "LOW_LIFE"); else if (Main.rand.NextBool(7)) band.Chat(this, "HURT"); }
 				Morale -= 100f * d / Math.Max(1, NPC.lifeMax) * 0.9f;
 			}
 			_lastLife = NPC.life;

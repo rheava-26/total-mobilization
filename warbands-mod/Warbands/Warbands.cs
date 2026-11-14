@@ -32,6 +32,7 @@ namespace Warbands
 				int idx = reader.ReadByte();
 				if (whoAmI >= 0 && whoAmI < Main.maxPlayers) BandSpawner.Summon(Main.player[whoAmI], idx);
 			}
+			else if (kind == WarbandsPacket.Chatter && Main.netMode == NetmodeID.MultiplayerClient) BandBubbles.Receive(reader);
 		}
 	}
 }

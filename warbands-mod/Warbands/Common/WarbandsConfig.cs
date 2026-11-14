@@ -52,6 +52,9 @@ namespace Warbands.Common
 		/// <summary>Multiplies every band member's damage. 1 is the stage table in BandStats.</summary>
 		[Range(0.25f, 4f)] [DefaultValue(1f)] public float DamageScale;
 
+		/// <summary>Tiles from which a hostile band goes after the nearest player (or levy, or turret) it is not already fighting, off screen too, by the long route over, under and around the ground. 0 keeps a band at its camp until something comes within 120 tiles.</summary>
+		[Range(0f, 600f)] [DefaultValue(300f)] public float HuntRangeTiles;
+
 		/// <summary>Band members run Levy's own soldier brain (movement, hooks, wings, dodging, weapon use). Off: the older Fighter-AI soldiers.</summary>
 		[DefaultValue(true)] public bool LevyBrain;
 

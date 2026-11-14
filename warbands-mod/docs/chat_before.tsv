@@ -1,0 +1,9 @@
+mode	seed	lines	max_bubbles	frames2	overlap_frames_pct	talk_over_pct	overlap_area_pct	lines_per_min
+legacy	0	13	2	52	13.5	100.0	17.1	8.7
+legacy	1	13	3	67	76.1	100.0	46.1	8.7
+legacy	2	11	3	62	83.9	100.0	50.4	7.3
+legacy	3	9	3	94	73.4	100.0	42.6	6.0
+legacy	4	10	3	83	75.9	100.0	56.3	6.7
+legacy	5	10	3	81	42.0	100.0	36.2	6.7
+legacy	6	10	4	86	79.1	100.0	56.1	6.7
+legacy	7	10	3	93	65.6	100.0	42.9	6.7

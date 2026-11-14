@@ -3890,3 +3890,4 @@ WAVES (Brain.cs is the serialization point): A (PARALLEL, no Brain) = A1 Weapons
   REJECTED by Eve herself: one-of-each-weapon per levy.
   CHECKED (Calamity source): Cryo Slime = Snow + cavern layer + Cryogen + 2 of 3 mechs, not PlayerSafe, not Abyss/Sunken Sea, 8% of cavern spawn chance, drops 10-26 Cryonic Ore. Our mods don't cut natural spawns outside events.
 - 2026-11-14 Eve corrected: WoF 'no backup' was just the radio range limit (fun annoyance, not a bug). Real bug: Wall of Flesh never targets levies (levies can hit it). ringwof builder re-scoped.
+- 2026-11-14 Eve corrections: Armory side slots = PREFERRED weapons (not 'prepared'); sent to armoryux2. 'shift-click GoPros into the armory' is speech-to-text garble; asked her to type the item name.

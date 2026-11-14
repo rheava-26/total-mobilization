@@ -272,7 +272,14 @@ namespace Mechanization.Common
 							foreach (string f in all) if (IsWatched(f) && !control.Contains(f) && !noise.Contains(f)) { diffs.Add("fire:" + f); if (onlyNames != null) Note($"audit detail {wname}: fire changed {f}: {snap.GetValueOrDefault(f)} -> {PlayerSnapshot(Main.player[0]).GetValueOrDefault(f)}"); }
 							if (first) // one short flight per weapon: the rounds' own first ticks run on the real world update, guarded as in play
 							{
-								for (int k = 0; k < 3; k++) { KeepCommander(); Pin(shooter, shooterAt); Pin(tgt, tgtAt); global::Levy.Common.Testing.WorldStep.Update(); all.Clear(); Differences(snap, PlayerSnapshot(Main.player[0]), all); foreach (string f in all) if (IsWatched(f) && !control.Contains(f) && !noise.Contains(f)) { diffs.Add(f); if (onlyNames != null) Note($"audit detail {wname}: tick {k} changed {f}: {snap.GetValueOrDefault(f)} -> {PlayerSnapshot(Main.player[0]).GetValueOrDefault(f)} (noise set [{string.Join(",", noise)}])"); } }
+								Vector2 v0 = Main.player[0].velocity;
+								for (int k = 0; k < 3; k++)
+								{
+									KeepCommander(); Pin(shooter, shooterAt); Pin(tgt, tgtAt); global::Levy.Common.Testing.WorldStep.Update(); all.Clear(); Differences(snap, PlayerSnapshot(Main.player[0]), all);
+									all.Remove("Player.velocity"); // the player's own update gives and takes a fraction of gravity from tick to tick (landing noise): only a real push counts
+									if ((Main.player[0].velocity - v0).Length() > 1.5f) diffs.Add("tick:Player.velocity");
+									foreach (string f in all) if (IsWatched(f) && !control.Contains(f) && !noise.Contains(f)) diffs.Add(f);
+								}
 							}
 						}
 						catch (Exception e) { threwHere = true; threwN++; stillWrong.Add($"{wname} threw {e.GetType().Name}"); }

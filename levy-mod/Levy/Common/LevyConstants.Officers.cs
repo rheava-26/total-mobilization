@@ -513,6 +513,8 @@ namespace Levy.Common
 			public const int ClothierAggro = 0;
 			/// <summary>Skeleton warriors the Clothier keeps fielded at once.</summary>
 			public const int ClothierSkeletonCount = 5;
+			/// <summary>The least life a raised skeleton has, and the least damage of its contact blow (before the world-progress multiply): a plain Skeleton is as sturdy as the squad always was; armored bones are above it on their own.</summary>
+			public const int ClothierSkeletonMinLife = 170, ClothierSkeletonMinDamage = 26;
 			/// <summary>A lost skeleton is replaced this often (ticks) while below the squad size.</summary>
 			public const int ClothierRespawnCadenceTicks = 240;
 			/// <summary>The Clothier's own shot: the cursed skull he throws. Launch speed and arc lift (px/tick, px), base damage, knockback, cooldown (fixed + random, ticks) and reach (tiles).</summary>
@@ -544,6 +546,8 @@ namespace Levy.Common
 			public const int ZoologistAggro = 0;
 			/// <summary>Creatures the Zoologist keeps called at once: one of the strongest the world's progress and her Bestiary allow (see ConjureRoster).</summary>
 			public const int ZoologistBeastCount = 1;
+			/// <summary>The least life the Zoologist's creature has, and the least damage of its contact blow (before the world-progress multiply).</summary>
+			public const int ZoologistBeastMinLife = 420, ZoologistBeastMinDamage = 48;
 			/// <summary>A fallen creature is replaced this often (ticks).</summary>
 			public const int ZoologistBeastRespawnCadenceTicks = 1500;
 			/// <summary>The Zoologist's own shot: the green strike she looses. Launch speed and arc lift, base damage, knockback, cooldown and reach.</summary>

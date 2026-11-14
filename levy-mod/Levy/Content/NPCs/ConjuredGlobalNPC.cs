@@ -50,6 +50,8 @@ namespace Levy.Content.NPCs
 		public int Target = -1;
 		/// <summary>The vanilla / modded type that was conjured (what the kit asked for).</summary>
 		public int ConjuredType;
+		/// <summary>Floor of its contact blow before the world-progress multiply (0 = none). Server only.</summary>
+		public int MinDamage;
 
 		private NPC _npc;
 		private int _scan, _farTicks, _strikeCd, _immuneTime, _age;
@@ -68,7 +70,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Why the last <see cref="Conjure"/> returned -1 (diagnostics for the self-checks).</summary>
 		public static string LastFail = "";
 
-		public static int Conjure(NPC avatar, int commanderIndex, int type)
+		public static int Conjure(NPC avatar, int commanderIndex, int type, int minLife = 0, int minDamage = 0)
 		{
 			LastFail = "";
 			if (!LevyUtil.IsServerOrSingle || avatar == null || !avatar.active || type <= 0 || type >= NPCLoader.NPCCount) { LastFail = $"preconditions (server={LevyUtil.IsServerOrSingle} avatar={avatar?.active} type={type})"; return -1; }
@@ -79,6 +81,8 @@ namespace Levy.Content.NPCs
 			NPC n = Main.npc[idx];
 			if (n.type != type || !n.TryGetGlobalNPC(out ConjuredGlobalNPC c)) { LastFail = $"spawned type {n.type} global={n.TryGetGlobalNPC(out ConjuredGlobalNPC _)}"; n.active = false; return -1; }
 			c.Bind(n, avatar.whoAmI, commanderIndex, type);
+			c.MinDamage = minDamage;
+			if (minLife > n.lifeMax) { n.lifeMax = minLife; n.life = minLife; } // never weaker than the squad it replaces
 			n.Bottom = pos;
 			n.netUpdate = true;
 			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, idx);
@@ -311,7 +315,8 @@ namespace Levy.Content.NPCs
 		private int BlowDamage()
 		{
 			float mult = Math.Max(1f, Main.GameModeInfo.EnemyDamageMultiplier);
-			return Math.Max(1, (int)Math.Round(_npc.damage / mult));
+			int own = Math.Max(1, (int)Math.Round(_npc.damage / mult));
+			return MinDamage > 0 ? Math.Max(own, (int)(MinDamage * OfficerBrain.TownDamageScale())) : own;
 		}
 
 		/// <summary>One blow on each enemy its body touches: the same strike a soldier's sword makes (commander credited first, shred mark, banner, venom). One blow per cooldown. Server / single player.</summary>

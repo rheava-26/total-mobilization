@@ -22,8 +22,10 @@ namespace Levy.Common.Officers
 		public readonly int RespawnTicks;
 		/// <summary>When set, the squad is CONJURED creatures (real enemy types on their own AI, see <see cref="ConjuredGlobalNPC"/>): it returns the NPC type to conjure each time one is needed (0 = none right now). <see cref="Kind"/> is then null.</summary>
 		public readonly Func<int> Conjure;
-		public SummonSquad(SummonKind kind, int cap, int respawnTicks) { Kind = kind; Cap = cap; RespawnTicks = respawnTicks; Conjure = null; }
-		public SummonSquad(Func<int> conjure, int cap, int respawnTicks) { Kind = null; Cap = cap; RespawnTicks = respawnTicks; Conjure = conjure; }
+		/// <summary>For a conjured squad: the least life and the least contact damage (before the world-progress multiply) a creature has, so a weak early creature is never weaker than the squad it replaces.</summary>
+		public readonly int MinLife, MinDamage;
+		public SummonSquad(SummonKind kind, int cap, int respawnTicks) { Kind = kind; Cap = cap; RespawnTicks = respawnTicks; Conjure = null; MinLife = 0; MinDamage = 0; }
+		public SummonSquad(Func<int> conjure, int cap, int respawnTicks, int minLife = 0, int minDamage = 0) { Kind = null; Cap = cap; RespawnTicks = respawnTicks; Conjure = conjure; MinLife = minLife; MinDamage = minDamage; }
 	}
 
 	/// <summary>
@@ -151,7 +153,7 @@ namespace Levy.Common.Officers
 		{
 			if (squad.Conjure == null) return SpawnOne(avatar, commander, squad.Kind);
 			int type = squad.Conjure();
-			return type > 0 ? ConjuredGlobalNPC.Conjure(avatar, commander, type) : -1;
+			return type > 0 ? ConjuredGlobalNPC.Conjure(avatar, commander, type, squad.MinLife, squad.MinDamage) : -1;
 		}
 
 		/// <summary>Spawns one unit of <paramref name="kind"/> near the officer (safe placement) and binds it. Returns its whoAmI, or -1 when no slot/spot is available.</summary>

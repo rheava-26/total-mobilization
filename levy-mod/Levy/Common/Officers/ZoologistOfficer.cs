@@ -35,7 +35,7 @@ namespace Levy.Common.Officers
 	/// <summary>The Zoologist's kit: one strong creature from her Bestiary, managed by <see cref="SummonerKit"/>.</summary>
 	public sealed class ZoologistKit : SummonerKit
 	{
-		private static readonly SummonSquad[] _squads = { new SummonSquad(ConjureRoster.PickBeast, ZoologistBeastCount, ZoologistBeastRespawnCadenceTicks) };
+		private static readonly SummonSquad[] _squads = { new SummonSquad(ConjureRoster.PickBeast, ZoologistBeastCount, ZoologistBeastRespawnCadenceTicks, ZoologistBeastMinLife, ZoologistBeastMinDamage) };
 		protected override SummonSquad[] Squads => _squads;
 
 		// {0} seconds to call a replacement

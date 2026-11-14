@@ -35,7 +35,7 @@ namespace Levy.Common.Officers
 	/// <summary>The Clothier's kit: one squad of tier-appropriate skeletons, managed by <see cref="SummonerKit"/>.</summary>
 	public sealed class ClothierKit : SummonerKit
 	{
-		private static readonly SummonSquad[] _squads = { new SummonSquad(ConjureRoster.PickSkeleton, ClothierSkeletonCount, ClothierRespawnCadenceTicks) };
+		private static readonly SummonSquad[] _squads = { new SummonSquad(ConjureRoster.PickSkeleton, ClothierSkeletonCount, ClothierRespawnCadenceTicks, ClothierSkeletonMinLife, ClothierSkeletonMinDamage) };
 		protected override SummonSquad[] Squads => _squads;
 
 		// {0} squad size, {1} seconds to raise a replacement

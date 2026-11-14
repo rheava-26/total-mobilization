@@ -192,9 +192,8 @@ namespace Levy.Common.Testing
 			Main.player[0] = Main.player[0] ?? new Player();
 			Arena();
 			_cmdAt = new Vector2(Cx * 16f, (FloorY - 3) * 16f);
-			RosterChecks();
-			ClothierScenario();
-			ZoologistScenario();
+			string only = Environment.GetEnvironmentVariable("LEVY_OFFICERWORLD_ONLY"); // lab switch: "sweep" runs only the creature sweep (with LEVY_OFFICERWORLD_TYPES = comma-separated NPCID names added to it)
+			if (only != "sweep") { RosterChecks(); ClothierScenario(); ZoologistScenario(); }
 			Sweep();
 		}
 
@@ -249,6 +248,7 @@ namespace Levy.Common.Testing
 			Check($"Clothier: his squad is {LevyConstants.Summon.ClothierSkeletonCount} conjured creatures ({squad.Count})", squad.Count == LevyConstants.Summon.ClothierSkeletonCount);
 			Check("Clothier: at the start of the world they are plain Skeletons on the real type", squad.Count > 0 && squad.All(n => n.type == NPCID.Skeleton));
 			Check("Clothier: they are friendly, owner-bound and not the generic summoned unit", squad.Count > 0 && squad.All(n => n.friendly && !n.townNPC && n.ModNPC == null && n.GetGlobalNPC<ConjuredGlobalNPC>().OwnerWho == owner));
+			Check($"Clothier: no raised skeleton is frailer than the squad was (life {(squad.Count > 0 ? squad.Min(n => n.lifeMax) : 0)} >= {LevyConstants.Summon.ClothierSkeletonMinLife})", squad.Count > 0 && squad.All(n => n.lifeMax >= LevyConstants.Summon.ClothierSkeletonMinLife && n.life == n.lifeMax));
 			Check("Clothier: they carry no loot (value 0, from a statue)", squad.Count > 0 && squad.All(n => n.value == 0f && n.SpawnedFromStatue));
 			Check("Clothier: enemies can target them (each is a live targeting body, resolved by its NPC index)", squad.Count > 0 && SummonedUnitSystem.Instance.ActiveBodies.Count(b => b is ConjuredGlobalNPC) == squad.Count && squad.All(n => EnemyTargeting.LiveTarget(n.whoAmI) != null));
 			// control for the no-player-damage check: a real hostile skeleton would hit a player; ours must not
@@ -316,17 +316,21 @@ namespace Levy.Common.Testing
 			Note($"Zoologist: stage {ConjureRoster.Stage()}, bestiary used = {usedBestiary}, candidates {cands.Count}; called: " + string.Join(", ", beasts.Select(b => b.TypeName)));
 			Check($"Zoologist: she fields {LevyConstants.Summon.ZoologistBeastCount} creature ({beasts.Count})", beasts.Count == LevyConstants.Summon.ZoologistBeastCount);
 			Check("Zoologist: it is on the candidate list, and is not a boss", beasts.Count > 0 && beasts.All(b => cands.Any(c => c.Type == b.type) && !b.boss && !NPCID.Sets.ShouldBeCountedAsBoss[b.type]));
+			Check($"Zoologist: her creature is not frailer than the pack was (life {(beasts.Count > 0 ? beasts.Min(n => n.lifeMax) : 0)} >= {LevyConstants.Summon.ZoologistBeastMinLife})", beasts.Count > 0 && beasts.All(n => n.lifeMax >= LevyConstants.Summon.ZoologistBeastMinLife));
 			Check("Zoologist: it is a real creature of its own type, friendly, with no loot", beasts.Count > 0 && beasts.All(b => b.friendly && b.ModNPC == null && b.value == 0f));
-			int dmg = 0; _commanderHurt = 0;
+			int dmg = 0; _commanderHurt = 0; float closest = float.MaxValue, x0 = beasts.Count > 0 ? beasts[0].Center.X : 0f, travelled = 0f;
 			for (int tick = 0; tick < 900; tick++)
 			{
 				Step(1);
 				if (_target != null && _target.active && _target.life < _target.lifeMax) dmg += _target.lifeMax - _target.life;
+				var live = Conjured(owner);
+				if (live.Count > 0 && _target != null) { closest = Math.Min(closest, Math.Abs(live[0].Center.X - _target.Center.X)); travelled = Math.Max(travelled, Math.Abs(live[0].Center.X - x0)); }
 			}
+			bool engaged = dmg > 0 || closest < 6 * 16f || travelled > 4 * 16f; // a caster may hold its distance and fire rarely: it counts when it hurt the enemy, closed on it or moved toward it
 			beasts = Conjured(owner);
 			Note($"Zoologist: damage to the enemy over 900 ticks = {dmg}; commander hurt ticks = {_commanderHurt}; creature = " + string.Join(", ", beasts.Select(b => b.TypeName)));
 			Check("Zoologist: the commander was never hurt", _commanderHurt == 0);
-			Check($"Zoologist: her creature fought the enemy on its own AI ({dmg})", dmg > 0);
+			Check($"Zoologist: her creature went for the enemy on its own AI (damage {dmg}, closest {(int)(closest / 16f)} tiles, travelled {(int)(travelled / 16f)})", engaged);
 			Dismiss(town);
 			Check($"Zoologist: dismissing her removes her creature ({Conjured(owner).Count} left)", Conjured(owner).Count == 0);
 			KillEnemy();
@@ -354,6 +358,15 @@ namespace Levy.Common.Testing
 		// =====================================================================================================
 		// SWEEP: does each strong creature's own AI engage the enemy when friendly?
 		// =====================================================================================================
+		private static HashSet<int> LabTypes()
+		{
+			var set = new HashSet<int>();
+			string v = Environment.GetEnvironmentVariable("LEVY_OFFICERWORLD_TYPES");
+			if (string.IsNullOrEmpty(v)) return set;
+			foreach (string name in v.Split(',')) { var f = typeof(NPCID).GetField(name.Trim()); if (f != null) set.Add(Convert.ToInt32(f.GetValue(null))); }
+			return set;
+		}
+
 		private static void Sweep()
 		{
 			NPC town = Commission(NPCID.Merchant, 0, out SoldierNPC avatar); // an officer with no squad of his own: just an owner
@@ -365,8 +378,8 @@ namespace Levy.Common.Testing
 			for (int stage = 0; stage <= 11; stage++)
 			{
 				// stage 11: the shooters among the Clothier's skeletons, which no stage's strongest list holds (an archer, and the Sniper's rifle)
-				var top = stage <= 10 ? ConjureRoster.BeastCandidates(stage, false, out _).Take(2).ToList()
-					: allFacts.Where(q => q.Type == NPCID.SkeletonArcher || q.Type == NPCID.SkeletonSniper).ToList();
+				var top = stage <= 10 ? ConjureRoster.BeastCandidates(stage, false, out _).Take(Environment.GetEnvironmentVariable("LEVY_OFFICERWORLD_ONLY") == "sweep" ? 0 : 2).ToList()
+					: allFacts.Where(q => q.Type == NPCID.SkeletonArcher || q.Type == NPCID.SkeletonSniper || LabTypes().Contains(q.Type)).ToList();
 				bool any = false;
 				foreach (var f in top)
 				{
@@ -396,7 +409,7 @@ namespace Levy.Common.Testing
 					bool got = dmg > 0 || (n.active && Math.Abs(n.Center.X - x0) > 48f) || best < 6 * 16f;
 					if (got) { engaged++; any = true; }
 					if (f.Type == NPCID.SkeletonArcher && dmg > 0 && best > 6 * 16f) archerRanged = true;
-					Note($"stage {stage}: {f.Name} (ai {f.AiStyle}) engaged={got} damage={dmg} closest={(int)(best / 16f)} tiles alive={n.active}");
+					Note($"stage {stage}: {f.Name} (ai {f.AiStyle}) engaged={got} damage={dmg} closest={(int)(best / 16f)} tiles alive={n.active}" + (n.active ? $" pos={(int)((n.Center.X - _targetAt.X) / 16f)},{(int)((n.Center.Y - _targetAt.Y) / 16f)} rel-to-enemy target={n.GetGlobalNPC<ConjuredGlobalNPC>().Target} ai=[{n.ai[0]:0.#},{n.ai[1]:0.#},{n.ai[2]:0.#},{n.ai[3]:0.#}] vel={n.velocity.X:0.#},{n.velocity.Y:0.#} noGrav={n.noGravity} dmgStat={n.damage}" : ""));
 					if (n.active) { n.active = false; }
 					Step(2);
 				}

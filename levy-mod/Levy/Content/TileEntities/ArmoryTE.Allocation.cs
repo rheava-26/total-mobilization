@@ -161,9 +161,13 @@ namespace Levy.Content.TileEntities
 			using var _rs = ArmoryRules.Enter(Rules);
 			long pa = global::Levy.Common.Util.LevyProf.Begin();
 			try {
+				long pb = global::Levy.Common.Util.LevyProf.Begin();
 				var plan = BuildAllocation(requester);
+				global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmBuild, pb); pb = global::Levy.Common.Util.LevyProf.Begin();
 				WeaponAllocator.Plan(plan.Levies, plan.Cands, Rules.Alloc);
-				return Carry(plan, requester, upgrade);
+				global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmPlan, pb); pb = global::Levy.Common.Util.LevyProf.Begin();
+				try { return Carry(plan, requester, upgrade); }
+				finally { global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmCarry, pb); }
 			}
 			catch (Exception e) {
 				if (!_allocWarned) { _allocWarned = true; Levy.Instance?.Logger.Warn("Levy: the army weapon allocation failed, falling back to per-soldier picks: " + e); }

@@ -27,7 +27,7 @@ namespace Levy.Common.Logistics
 			if (it.damage > 0 && it.ammo > 0) return SellCat.Ammo;
 			if (it.damage > 0 && !it.accessory && it.maxStack == 1 || it.damage > 0 && it.pick == 0 && it.axe == 0 && it.hammer == 0 && it.maxStack == 1)
 			{
-				var c = WeaponClassifier.ItemDamageClass(it);
+				var c = WeaponClassifier.ItemDamageClass(it) ?? it.DamageType; if (c == null) c = DamageClass.Default;
 				if (c == DamageClass.Melee || c == DamageClass.MeleeNoSpeed || c.CountsAsClass(DamageClass.Melee)) return SellCat.Melee;
 				if (c == DamageClass.Ranged || c.CountsAsClass(DamageClass.Ranged)) return SellCat.Ranged;
 				if (c == DamageClass.Magic || c.CountsAsClass(DamageClass.Magic)) return SellCat.Magic;

@@ -2271,18 +2271,25 @@ namespace Levy.Content.TileEntities
 			var g = soldier?.Gear;
 			if (g == null || soldier.LoadoutLocked || soldier.Disarmed || Main.netMode == NetmodeID.MultiplayerClient) return false;
 			bool changed = false;
+			long ps = global::Levy.Common.Util.LevyProf.Begin();
+			void Mark(int bucket) { global::Levy.Common.Util.LevyProf.EndCount(bucket, ps); ps = global::Levy.Common.Util.LevyProf.Begin(); }
 			FloorSweep(); // new armor and accessories go to the worst-equipped levies first, whoever asks
-			if (!g.IsLocked(SoldierGear.SlotWeapon) && UpgradePrimary(soldier)) changed = true;
+			Mark(global::Levy.Common.Util.LevyProf.ArmFloor);
+			if (!g.IsLocked(SoldierGear.SlotWeapon) && UpgradePrimary(soldier)) changed = true; // its own time is in arm.alloc
+			ps = global::Levy.Common.Util.LevyProf.Begin();
 			if (UpgradeArmor(soldier)) changed = true; // after the primary: the armor follows the weapon he now carries (locked slots are skipped inside)
+			Mark(global::Levy.Common.Util.LevyProf.ArmArmor);
 			if (ReconcileWeaponToArmor(soldier)) changed = true; // the armor may not have followed (margin, locks, stock): a class mismatch is corrected, never upgraded into
 			if (UpgradeAccessories(soldier)) changed = true;
+			Mark(global::Levy.Common.Util.LevyProf.ArmAcc);
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && UpgradeSidearm(soldier)) changed = true;
 			if (TidySidearms(g, soldier)) changed = true; // a second sword, a second whip, a gun beside a melee primary: back to the shelf
 			if (ReclaimSummonWeapons(soldier)) changed = true; // summoners first: a staff a summoner could still use goes from a non-summoner to him
 			if (UpgradeExtraSidearms(soldier)) changed = true;
 			if (FillEmptySidearms(soldier)) changed = true;
+			Mark(global::Levy.Common.Util.LevyProf.ArmSide);
 			// The new weapon may fire other ammo (or none): IssueGear returns the wrong pouch and draws the right one (it only fills what is empty otherwise).
-			if (changed) IssueGear(soldier);
+			if (changed) { IssueGear(soldier); Mark(global::Levy.Common.Util.LevyProf.ArmIssue); }
 			return changed;
 		}
 

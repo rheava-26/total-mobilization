@@ -203,3 +203,259 @@ perlevy mean army DPS over 33 fights: 2113
 - Gear is data-built (route tier from the game's drop and recipe tables, ranked by Levy's weapon score, top 6 per class at random). Armor and accessory ladders are hand-set vanilla. Calamity armor in Hardmode is not used. Levies stay at 400 HP.
 - Boss HP is Levy-scaled (up to about 1.3x per fight); sim is chaotic and 3 seeds is thin: read differences below about 25% as noise.
 - Tooling: `levylab` got env overrides for its install paths (`LEVYLAB_SRC_TML` etc.). The lab world is a fresh vanilla world (ShipWorld), not LevyTest.
+
+
+---
+
+# FOLLOW-UP (2026-11-14, branch bossbiome): why Brimstone, Plantera, Fishron and Queen Bee were enraged, and Empress of Light targeting
+
+Lab only for the biome part (no product change); the Empress change is product code. Same army, kits, arena size, 3 seeds, cap 300 s as above. Stand-in commander caveat unchanged: the commander is an invulnerable pinned Spectator-style stand-in (Plantera runs use `spec=0`), so commander damage is 0 by construction and no real client was tested. Rows of every fight below are also appended to `results.csv` with `imm` = `FOLLOWUP_<before|after>_<night|day>_<arena>` (columns not measured are blank). Helper scripts: `scripts/enr.py`, `scripts/followup.py`, `scripts/summ.py`.
+
+## 1. The enrage cause (OBSERVED)
+
+The lead (levy dummies never get biome flags) is disproved. Levy already copies the commander's zone bits and modded-biome bit array onto the dummy (`BiomeMirror.Apply`, every tick), and a probe inside each boss's own AI call (`HARNESS-ENR`, once a second, dummy still in slot 255) shows the dummy carrying the right flags. What Calamity's checks read is different for each boss, and the lab arena failed them:
+
+| boss | Calamity check (target = Main.player[NPC.target]) | what the probe saw in the old lab arena (floor tile row ~203, world 4200x1200, surface row 337, arena in the sky above the surface, x = world centre) | proper placement | enraged ticks, old arena / proper |
+|---|---|---|---|---|
+| Brimstone Elemental | `!target.ZoneUnderworldHeight \|\| !target.Calamity().ZoneCalamity` (BrimstoneElemental.cs:197) | dummy `crag=1` (mirrored), `uwh=0`: the harness set the Crags biome but never Underworld height, and the arena was not at that depth | Underworld depth, `a3@crag` (row 1140) | 60/60 vs 0/43 samples |
+| Plantera | target above `worldSurface` (or below the Underworld) (PlanteraAI.cs:77,146) | target row 202, surface 337: above the surface | below the surface, `a3e@jungle` (row 544) | 90/90 vs 0/90 |
+| Duke Fishron | target Y < 800 px, or below the surface, or x between 400 tiles of either world edge (DukeFishronAI.cs:~146). No biome flag is read | `notOceanX=1`: arena at the world centre | x within 400 tiles of an edge, `a3@ocean` (tile x 166) | 13/13 vs 0/36 samples |
+| Queen Bee | boss itself above `worldSurface`, or `!target.ZoneJungle` (QueenBeeAI.cs:43-48) | `bossAboveSurface=1 noJungle=1` | underground jungle, `a3e@jungle` | 32/32 vs 0/39 samples |
+
+The dummies stood at the soldiers' true positions (`SyncDummyTransform`), so the position-based checks were evaluated correctly; the arena was the cause. A real fight in the right place is not enraged. Other Calamity bosses found by grep that read the target's position or zones: Aquatic Scourge, Leviathan, Anahita (ocean x/y band; Sulphur zone for Aquatic Scourge), Old Duke (Underworld-depth band), Hive Mind (ZoneCorrupt), Perforator (ZoneCrimson), Desert Scourge/Nuisance (ZoneDesert), Dragonfolly and Plaguebringer Goliath (ZoneJungle), Providence (ZoneHallow/Underworld), Polterghast (ZoneDungeon or below the surface), Deerclops (ZoneSnow). They go through the same mirrored dummy, so the arena placement is what to check for any of them; not re-run here except where listed.
+
+Harness fix found on the way: the commander's modded-biome bit array was never cleared between fights in one server process, so a Brimstone fight leaked the Crags flag into later fights (the Plantera and Fishron dummies in the first probe showed `crag=1`). It is cleared every tick now; it only affected Calamity biome flags, none of which those bosses read.
+
+Not done, on purpose: no per-position biome scan for dummies. The mirror is proven sufficient for the enrage; a positional scan (the `ViewBiome` private-SceneMetrics technique) swaps Main.SceneMetrics and re-hands tile counts to mod systems, which risks the real player's biome music and visuals in single player. The one case it would change is a levy far from the commander in a different biome from the commander.
+
+## 2. Empress of Light targets levies (product change)
+
+Cause (OBSERVED): `LevyConstants.Targeting.BossSwapIncompatibleAiStyles` listed AI style 120. Her AI (and Calamity's override) reads its target only through `NPC.GetTargetData()`, which treats slot 255 as no target, so `IsAllowlisted` was false and `Compete` always kept the commander. Fix: she takes the last real player slot (254, the existing flyer slot) for one AI call, like Flying-AI enemies; `PostAI` hands back target 255. Boss-aggro unlock (first kill solo) unchanged: with the first-kill flag cleared she targeted the commander 100% and the fight went as before (d4 check, 1 fight).
+
+Share of her attacks on levies (the harness samples the boss's target every tick): before 0% in all 24 fights, after 100% in all but a few cells (see per-fight tables). Checks: zero exceptions in the server logs of the after runs.
+
+What this did to the fights (night, 12 fights each): before 12/12 wins, median kill 41 s; after 10/12 wins, median kill 77 s, the two losses are Master+Death seed 1 (timeout at 300 s, she switched to the commander for most of the fight in the on-tier one: 6% on levies). Daytime (LEVY_CR_DAY=1, midday, she is enraged for the whole fight): before 12/12 (median 45 s, she fought only the stand-in commander), after 0/12: all 300 s timeouts with her at 70-140% of max HP; in those fights she spent 30-50 s in phase 1 (the idle phase-switch, damage 0) per cycle against about 6 s before, and the army's damage output dropped to a third or less (e.g. 90k, 44k, 174k vs 257k-330k). I did not find why she lingers in phase 1 (inferred only: her phase-switch despawn check reads `GetTargetData().Invalid`); the daytime numbers should be read as "she is currently unbeatable by the army in daylight", not tuned. Her projectiles carry `NPC.target` (254) as ai[0]; vanilla rainbow/lance projectiles that read `Main.player[ai[0]]` would see the empty slot after the AI call. The lab shows damage landing on levies but nobody has watched her patterns in game.
+
+## 3. Re-run, every fight
+
+"before" = harness build 9c6bab6 (no Empress change; old surface arena). "after" = 99fd58c (Empress change; proper arena for the first four, the same surface arena for Empress). Queen Bee ran with the Calamity world's Queen Bee kit (`posteow.best`, 13 levies), 3 seeds, both modes (kit column "on" is a placeholder: one kit). Empress daytime runs: build 2a29a0c, `LEVY_EOLFLY=0` (before) vs default (after). Attacks-on-levies share is the share of ticks the boss's target was a levy.
+
+Summary by boss (wins / fights; Brimstone, Plantera, Fishron: 12 fights each per set; Queen Bee 6; Empress night 12, day 12):
+
+| boss | before (old arena) | after (proper arena / fixed) |
+|---|---|---|
+| Brimstone Elemental | 12/12, median kill 50 s, enraged 53 s mean | 12/12, median 46 s, enraged 0 s |
+| Plantera | 0/12 (11 timeouts, 1 despawn), enraged 276 s mean | 7/12 (all 6 Expert+Rev and 1 Master+Death win; 5 Master+Death wipes) |
+| Duke Fishron | 0/12 (wipe in 2-5 s), enraged 18 s mean | 0/12 (all 30 levies dead in every fight, first death at 5-34 s; boss HP left 54-129%) |
+| Queen Bee | 6/6, median 40 s | 6/6, median 31 s |
+| Empress of Light, night | 12/12, median 41 s, 0% on levies | 10/12, median 77 s, 88% on levies |
+| Empress of Light, day | 12/12, median 45 s, 0% on levies | 0/12, 300 s timeouts, 15% on levies |
+
+Reading it: the old Plantera and Brimstone numbers were rage-inflated. Plantera in her real arena is beatable on Expert+Rev and about 1 in 6 on Master+Death with this kit; Fishron stays a wipe (first death moves from 2-5 s to 5-34 s but the army loses in all 12), so his difficulty is not an enrage artifact. 
+
+### Per-fight tables
+
+#### Brimstone Elemental
+
+| difficulty | kit | seed | set | arena | result | kill s | levy deaths /30 | first death s | boss HP left % (loss) | attacks on levies % | on commander % | enraged s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Expert+Rev | mid | 1 | before | surface (a3) | WIN | 33.8 | 5 | 22.9 | - | 100 | 0 | 33.7 |
+| Expert+Rev | mid | 2 | before | surface (a3) | WIN | 49.4 | 6 | 12.8 | - | 100 | 0 | 49.3 |
+| Expert+Rev | mid | 3 | before | surface (a3) | WIN | 43.8 | 1 | 19.8 | - | 100 | 0 | 43.8 |
+| Expert+Rev | mid | 1 | after | Brimstone Crags depth (a3@crag) | WIN | 35.9 | 1 | 34.2 | - | 100 | 0 | 0.0 |
+| Expert+Rev | mid | 2 | after | Brimstone Crags depth (a3@crag) | WIN | 33.7 | 4 | 25.9 | - | 100 | 0 | 0.0 |
+| Expert+Rev | mid | 3 | after | Brimstone Crags depth (a3@crag) | WIN | 42.9 | 1 | 31.0 | - | 100 | 0 | 0.0 |
+| Expert+Rev | on | 1 | before | surface (a3) | WIN | 31.8 | 1 | 29.8 | - | 100 | 0 | 31.8 |
+| Expert+Rev | on | 2 | before | surface (a3) | WIN | 32.0 | 0 | - | - | 100 | 0 | 31.9 |
+| Expert+Rev | on | 3 | before | surface (a3) | WIN | 46.2 | 1 | 13.6 | - | 100 | 0 | 46.1 |
+| Expert+Rev | on | 1 | after | Brimstone Crags depth (a3@crag) | WIN | 43.7 | 2 | 12.1 | - | 100 | 0 | 0.0 |
+| Expert+Rev | on | 2 | after | Brimstone Crags depth (a3@crag) | WIN | 48.2 | 2 | 10.9 | - | 100 | 0 | 0.0 |
+| Expert+Rev | on | 3 | after | Brimstone Crags depth (a3@crag) | WIN | 32.1 | 4 | 7.0 | - | 100 | 0 | 0.0 |
+| Master+Death | mid | 1 | before | surface (a3) | WIN | 79.6 | 5 | 4.3 | - | 100 | 0 | 79.6 |
+| Master+Death | mid | 2 | before | surface (a3) | WIN | 73.6 | 6 | 12.0 | - | 100 | 0 | 73.6 |
+| Master+Death | mid | 3 | before | surface (a3) | WIN | 67.0 | 4 | 21.0 | - | 100 | 0 | 67.0 |
+| Master+Death | mid | 1 | after | Brimstone Crags depth (a3@crag) | WIN | 59.6 | 1 | 40.7 | - | 100 | 0 | 0.0 |
+| Master+Death | mid | 2 | after | Brimstone Crags depth (a3@crag) | WIN | 78.2 | 3 | 25.8 | - | 100 | 0 | 0.0 |
+| Master+Death | mid | 3 | after | Brimstone Crags depth (a3@crag) | WIN | 61.6 | 1 | 17.2 | - | 100 | 0 | 0.0 |
+| Master+Death | on | 1 | before | surface (a3) | WIN | 72.4 | 4 | 11.0 | - | 100 | 0 | 72.4 |
+| Master+Death | on | 2 | before | surface (a3) | WIN | 58.2 | 6 | 18.2 | - | 100 | 0 | 58.2 |
+| Master+Death | on | 3 | before | surface (a3) | WIN | 50.8 | 5 | 8.4 | - | 100 | 0 | 50.8 |
+| Master+Death | on | 1 | after | Brimstone Crags depth (a3@crag) | WIN | 62.7 | 8 | 8.5 | - | 100 | 0 | 0.0 |
+| Master+Death | on | 2 | after | Brimstone Crags depth (a3@crag) | WIN | 53.9 | 7 | 8.6 | - | 100 | 0 | 0.0 |
+| Master+Death | on | 3 | after | Brimstone Crags depth (a3@crag) | WIN | 43.7 | 3 | 7.5 | - | 100 | 0 | 0.0 |
+
+Summary (wins / fights, enraged seconds mean, median kill s of wins):
+
+| set | wins | mean enraged s | mean attacks on levies % | median kill s |
+|---|---|---|---|---|
+| before | 12/12 | 53 | 100 | 50 |
+| after | 12/12 | 0 | 100 | 46 |
+
+#### Plantera
+
+| difficulty | kit | seed | set | arena | result | kill s | levy deaths /30 | first death s | boss HP left % (loss) | attacks on levies % | on commander % | enraged s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Expert+Rev | mid | 1 | before | surface (a3) | TIMEOUT | - | 9 | 13.5 | 143.2 | 100 | 0 | 300.0 |
+| Expert+Rev | mid | 2 | before | surface (a3) | TIMEOUT | - | 11 | 12.0 | 160.0 | 100 | 0 | 300.0 |
+| Expert+Rev | mid | 3 | before | surface (a3) | TIMEOUT | - | 13 | 7.2 | 158.4 | 100 | 0 | 300.0 |
+| Expert+Rev | mid | 1 | after | underground jungle box (a3e@jungle) | WIN | 64.8 | 10 | 7.8 | - | 99 | 1 | 0.0 |
+| Expert+Rev | mid | 2 | after | underground jungle box (a3e@jungle) | WIN | 67.5 | 10 | 8.8 | - | 99 | 1 | 0.0 |
+| Expert+Rev | mid | 3 | after | underground jungle box (a3e@jungle) | WIN | 53.6 | 7 | 8.5 | - | 99 | 1 | 0.0 |
+| Expert+Rev | on | 1 | before | surface (a3) | TIMEOUT | - | 9 | 13.6 | 158.8 | 100 | 0 | 300.0 |
+| Expert+Rev | on | 2 | before | surface (a3) | TIMEOUT | - | 16 | 13.0 | 160.0 | 100 | 0 | 300.0 |
+| Expert+Rev | on | 3 | before | surface (a3) | DESPAWN | - | 0 | - | - | 100 | 0 | 11.4 |
+| Expert+Rev | on | 1 | after | underground jungle box (a3e@jungle) | WIN | 59.7 | 7 | 16.1 | - | 100 | 0 | 0.0 |
+| Expert+Rev | on | 2 | after | underground jungle box (a3e@jungle) | WIN | 44.1 | 5 | 11.7 | - | 99 | 1 | 0.0 |
+| Expert+Rev | on | 3 | after | underground jungle box (a3e@jungle) | WIN | 81.0 | 14 | 10.5 | - | 99 | 1 | 0.0 |
+| Master+Death | mid | 1 | before | surface (a3) | TIMEOUT | - | 13 | 11.6 | 159.0 | 100 | 0 | 300.0 |
+| Master+Death | mid | 2 | before | surface (a3) | TIMEOUT | - | 11 | 10.6 | 160.0 | 100 | 0 | 300.0 |
+| Master+Death | mid | 3 | before | surface (a3) | TIMEOUT | - | 9 | 12.8 | 158.0 | 100 | 0 | 300.0 |
+| Master+Death | mid | 1 | after | underground jungle box (a3e@jungle) | LOSS | - | 30 | 8.5 | 20.7 | 93 | 7 | 0.0 |
+| Master+Death | mid | 2 | after | underground jungle box (a3e@jungle) | LOSS | - | 30 | 10.6 | 14.6 | 91 | 9 | 0.0 |
+| Master+Death | mid | 3 | after | underground jungle box (a3e@jungle) | WIN | 89.1 | 12 | 11.5 | - | 100 | 0 | 0.0 |
+| Master+Death | on | 1 | before | surface (a3) | TIMEOUT | - | 19 | 9.0 | 160.0 | 100 | 0 | 300.0 |
+| Master+Death | on | 2 | before | surface (a3) | TIMEOUT | - | 7 | 16.4 | 160.0 | 100 | 0 | 300.0 |
+| Master+Death | on | 3 | before | surface (a3) | TIMEOUT | - | 8 | 15.9 | 160.0 | 100 | 0 | 300.0 |
+| Master+Death | on | 1 | after | underground jungle box (a3e@jungle) | LOSS | - | 30 | 8.7 | 44.6 | 89 | 11 | 0.0 |
+| Master+Death | on | 2 | after | underground jungle box (a3e@jungle) | LOSS | - | 30 | 13.7 | 19.6 | 80 | 20 | 0.0 |
+| Master+Death | on | 3 | after | underground jungle box (a3e@jungle) | LOSS | - | 30 | 19.4 | 9.1 | 76 | 24 | 0.0 |
+
+Summary (wins / fights, enraged seconds mean, median kill s of wins):
+
+| set | wins | mean enraged s | mean attacks on levies % | median kill s |
+|---|---|---|---|---|
+| before | 0/12 | 276 | 100 | - |
+| after | 7/12 | 0 | 94 | 65 |
+
+#### Duke Fishron
+
+| difficulty | kit | seed | set | arena | result | kill s | levy deaths /30 | first death s | boss HP left % (loss) | attacks on levies % | on commander % | enraged s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Expert+Rev | mid | 1 | before | surface (a3) | LOSS | - | 30 | 4.0 | 156.2 | 100 | 0 | 20.5 |
+| Expert+Rev | mid | 2 | before | surface (a3) | LOSS | - | 30 | 4.9 | 152.3 | 100 | 0 | 28.2 |
+| Expert+Rev | mid | 3 | before | surface (a3) | LOSS | - | 30 | 2.5 | 154.7 | 100 | 0 | 22.8 |
+| Expert+Rev | mid | 1 | after | ocean strip (a3@ocean) | LOSS | - | 30 | 24.9 | 68.6 | 100 | 0 | 0.0 |
+| Expert+Rev | mid | 2 | after | ocean strip (a3@ocean) | LOSS | - | 30 | 34.4 | 75.5 | 100 | 0 | 0.0 |
+| Expert+Rev | mid | 3 | after | ocean strip (a3@ocean) | LOSS | - | 30 | 20.1 | 92.4 | 100 | 0 | 0.0 |
+| Expert+Rev | on | 1 | before | surface (a3) | LOSS | - | 30 | 2.5 | 151.4 | 100 | 0 | 17.3 |
+| Expert+Rev | on | 2 | before | surface (a3) | LOSS | - | 30 | 3.9 | 151.2 | 100 | 0 | 15.8 |
+| Expert+Rev | on | 3 | before | surface (a3) | LOSS | - | 30 | 2.5 | 147.1 | 100 | 0 | 26.0 |
+| Expert+Rev | on | 1 | after | ocean strip (a3@ocean) | LOSS | - | 30 | 25.1 | 63.4 | 100 | 0 | 0.0 |
+| Expert+Rev | on | 2 | after | ocean strip (a3@ocean) | LOSS | - | 30 | 28.8 | 53.9 | 100 | 0 | 0.0 |
+| Expert+Rev | on | 3 | after | ocean strip (a3@ocean) | LOSS | - | 30 | 22.7 | - | 100 | 0 | 0.0 |
+| Master+Death | mid | 1 | before | surface (a3) | LOSS | - | 30 | 2.5 | 147.7 | 100 | 0 | 17.4 |
+| Master+Death | mid | 2 | before | surface (a3) | LOSS | - | 30 | 1.9 | 153.3 | 100 | 0 | 14.1 |
+| Master+Death | mid | 3 | before | surface (a3) | LOSS | - | 30 | 2.5 | 156.7 | 100 | 0 | 19.5 |
+| Master+Death | mid | 1 | after | ocean strip (a3@ocean) | LOSS | - | 30 | 14.6 | 124.4 | 100 | 0 | 0.0 |
+| Master+Death | mid | 2 | after | ocean strip (a3@ocean) | LOSS | - | 30 | 8.9 | 122.5 | 100 | 0 | 0.0 |
+| Master+Death | mid | 3 | after | ocean strip (a3@ocean) | LOSS | - | 30 | 5.4 | 126.5 | 100 | 0 | 0.0 |
+| Master+Death | on | 1 | before | surface (a3) | LOSS | - | 30 | 2.5 | 151.2 | 100 | 0 | 13.5 |
+| Master+Death | on | 2 | before | surface (a3) | LOSS | - | 30 | 2.5 | 151.6 | 100 | 0 | 11.5 |
+| Master+Death | on | 3 | before | surface (a3) | LOSS | - | 30 | 2.5 | 151.3 | 100 | 0 | 10.8 |
+| Master+Death | on | 1 | after | ocean strip (a3@ocean) | LOSS | - | 30 | 7.1 | 105.8 | 100 | 0 | 0.0 |
+| Master+Death | on | 2 | after | ocean strip (a3@ocean) | LOSS | - | 30 | 9.7 | 128.6 | 100 | 0 | 0.0 |
+| Master+Death | on | 3 | after | ocean strip (a3@ocean) | LOSS | - | 30 | 8.7 | 102.8 | 100 | 0 | 0.0 |
+
+Summary (wins / fights, enraged seconds mean, median kill s of wins):
+
+| set | wins | mean enraged s | mean attacks on levies % | median kill s |
+|---|---|---|---|---|
+| before | 0/12 | 18 | 100 | - |
+| after | 0/12 | 0 | 100 | - |
+
+#### Queen Bee
+
+| difficulty | kit | seed | set | arena | result | kill s | levy deaths /30 | first death s | boss HP left % (loss) | attacks on levies % | on commander % | enraged s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Expert+Rev | on | 1 | before | surface (a3) | WIN | 32.6 | 0 | - | - | 100 | 0 | 32.6 |
+| Expert+Rev | on | 2 | before | surface (a3) | WIN | 32.2 | 0 | - | - | 100 | 0 | 32.2 |
+| Expert+Rev | on | 3 | before | surface (a3) | WIN | 26.6 | 0 | - | - | 100 | 0 | 26.6 |
+| Expert+Rev | on | 1 | after | underground jungle box (a3e@jungle) | WIN | 30.5 | 0 | - | - | 100 | 0 | 0.0 |
+| Expert+Rev | on | 2 | after | underground jungle box (a3e@jungle) | WIN | 28.6 | 0 | - | - | 100 | 0 | 0.0 |
+| Expert+Rev | on | 3 | after | underground jungle box (a3e@jungle) | WIN | 26.6 | 0 | - | - | 100 | 0 | 0.0 |
+| Master+Death | on | 1 | before | surface (a3) | WIN | 53.4 | 0 | - | - | 100 | 0 | 53.4 |
+| Master+Death | on | 2 | before | surface (a3) | WIN | 62.1 | 0 | - | - | 100 | 0 | 62.1 |
+| Master+Death | on | 3 | before | surface (a3) | WIN | 47.5 | 0 | - | - | 100 | 0 | 47.5 |
+| Master+Death | on | 1 | after | underground jungle box (a3e@jungle) | WIN | 36.0 | 0 | - | - | 100 | 0 | 0.0 |
+| Master+Death | on | 2 | after | underground jungle box (a3e@jungle) | WIN | 43.2 | 0 | - | - | 100 | 0 | 0.0 |
+| Master+Death | on | 3 | after | underground jungle box (a3e@jungle) | WIN | 30.7 | 0 | - | - | 100 | 0 | 0.0 |
+
+Summary (wins / fights, enraged seconds mean, median kill s of wins):
+
+| set | wins | mean enraged s | mean attacks on levies % | median kill s |
+|---|---|---|---|---|
+| before | 6/6 | 42 | 100 | 40 |
+| after | 6/6 | 0 | 100 | 31 |
+
+#### Empress of Light
+
+| difficulty | kit | seed | set | arena | result | kill s | levy deaths /30 | first death s | boss HP left % (loss) | attacks on levies % | on commander % | enraged s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Expert+Rev | mid | 1 | before | surface (a3) | WIN | 41.0 | 0 | - | - | 0 | 100 | 0.0 |
+| Expert+Rev | mid | 2 | before | surface (a3) | WIN | 40.6 | 0 | - | - | 0 | 100 | 0.0 |
+| Expert+Rev | mid | 3 | before | surface (a3) | WIN | 42.0 | 12 | 7.4 | - | 0 | 100 | 0.0 |
+| Expert+Rev | mid | 1 | after | surface (a3) | WIN | 85.1 | 0 | - | - | 100 | 0 | 0.0 |
+| Expert+Rev | mid | 2 | after | surface (a3) | WIN | 80.2 | 0 | - | - | 100 | 0 | 0.0 |
+| Expert+Rev | mid | 3 | after | surface (a3) | WIN | 95.2 | 12 | 7.5 | - | 100 | 0 | 0.0 |
+| Expert+Rev | on | 1 | before | surface (a3) | WIN | 36.2 | 0 | - | - | 0 | 100 | 0.0 |
+| Expert+Rev | on | 2 | before | surface (a3) | WIN | 36.3 | 0 | - | - | 0 | 100 | 0.0 |
+| Expert+Rev | on | 3 | before | surface (a3) | WIN | 34.5 | 8 | 7.4 | - | 0 | 100 | 0.0 |
+| Expert+Rev | on | 1 | after | surface (a3) | WIN | 71.7 | 0 | - | - | 100 | 0 | 0.0 |
+| Expert+Rev | on | 2 | after | surface (a3) | WIN | 47.0 | 0 | - | - | 100 | 0 | 0.0 |
+| Expert+Rev | on | 3 | after | surface (a3) | WIN | 67.7 | 6 | 7.4 | - | 100 | 0 | 0.0 |
+| Master+Death | mid | 1 | before | surface (a3) | WIN | 55.9 | 12 | 7.1 | - | 0 | 100 | 0.0 |
+| Master+Death | mid | 2 | before | surface (a3) | WIN | 47.7 | 0 | - | - | 0 | 100 | 0.0 |
+| Master+Death | mid | 3 | before | surface (a3) | WIN | 44.9 | 0 | - | - | 0 | 100 | 0.0 |
+| Master+Death | mid | 1 | after | surface (a3) | TIMEOUT | - | 22 | 16.1 | 30.8 | 56 | 44 | 0.0 |
+| Master+Death | mid | 2 | after | surface (a3) | WIN | 106.6 | 0 | - | - | 100 | 0 | 0.0 |
+| Master+Death | mid | 3 | after | surface (a3) | WIN | 82.0 | 0 | - | - | 100 | 0 | 0.0 |
+| Master+Death | on | 1 | before | surface (a3) | WIN | 52.8 | 14 | 7.0 | - | 0 | 100 | 0.0 |
+| Master+Death | on | 2 | before | surface (a3) | WIN | 41.5 | 0 | - | - | 0 | 100 | 0.0 |
+| Master+Death | on | 3 | before | surface (a3) | WIN | 40.6 | 0 | - | - | 0 | 100 | 0.0 |
+| Master+Death | on | 1 | after | surface (a3) | TIMEOUT | - | 8 | 7.0 | 132.4 | 6 | 94 | 0.0 |
+| Master+Death | on | 2 | after | surface (a3) | WIN | 66.6 | 0 | - | - | 100 | 0 | 0.0 |
+| Master+Death | on | 3 | after | surface (a3) | WIN | 74.1 | 0 | - | - | 100 | 0 | 0.0 |
+
+Summary (wins / fights, enraged seconds mean, median kill s of wins):
+
+| set | wins | mean enraged s | mean attacks on levies % | median kill s |
+|---|---|---|---|---|
+| before | 12/12 | 0 | 0 | 41 |
+| after | 10/12 | 0 | 88 | 77 |
+
+#### Empress of Light (daytime fights)
+
+| difficulty | kit | seed | set | arena | result | kill s | levy deaths /30 | first death s | boss HP left % (loss) | attacks on levies % | on commander % | enraged s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Expert+Rev | mid | 1 | before | surface (a3) | WIN | 45.9 | 7 | 6.8 | - | 0 | 100 | 45.9 |
+| Expert+Rev | mid | 2 | before | surface (a3) | WIN | 57.1 | 16 | 6.8 | - | 0 | 100 | 57.1 |
+| Expert+Rev | mid | 3 | before | surface (a3) | WIN | 45.0 | 7 | 6.8 | - | 0 | 100 | 44.9 |
+| Expert+Rev | mid | 1 | after | surface (a3) | TIMEOUT | - | 27 | 6.8 | 97.6 | 38 | 62 | 300.0 |
+| Expert+Rev | mid | 2 | after | surface (a3) | TIMEOUT | - | 16 | 7.1 | 139.6 | 5 | 95 | 300.0 |
+| Expert+Rev | mid | 3 | after | surface (a3) | TIMEOUT | - | 28 | 7.0 | 70.8 | 52 | 48 | 300.0 |
+| Expert+Rev | on | 1 | before | surface (a3) | WIN | 34.7 | 2 | 14.8 | - | 0 | 100 | 34.6 |
+| Expert+Rev | on | 2 | before | surface (a3) | WIN | 37.5 | 5 | 7.2 | - | 0 | 100 | 37.5 |
+| Expert+Rev | on | 3 | before | surface (a3) | WIN | 34.4 | 3 | 14.8 | - | 0 | 100 | 34.4 |
+| Expert+Rev | on | 1 | after | surface (a3) | TIMEOUT | - | 21 | 7.1 | 39.2 | 44 | 56 | 300.0 |
+| Expert+Rev | on | 2 | after | surface (a3) | TIMEOUT | - | 15 | 7.1 | 128.2 | 5 | 95 | 300.0 |
+| Expert+Rev | on | 3 | after | surface (a3) | TIMEOUT | - | 11 | 7.2 | 136.7 | 5 | 95 | 300.0 |
+| Master+Death | mid | 1 | before | surface (a3) | WIN | 75.6 | 20 | 6.6 | - | 0 | 100 | 75.6 |
+| Master+Death | mid | 2 | before | surface (a3) | WIN | 65.8 | 21 | 6.7 | - | 0 | 100 | 65.8 |
+| Master+Death | mid | 3 | before | surface (a3) | WIN | 64.6 | 25 | 6.6 | - | 0 | 100 | 64.5 |
+| Master+Death | mid | 1 | after | surface (a3) | TIMEOUT | - | 9 | 6.3 | 140.7 | 5 | 95 | 300.0 |
+| Master+Death | mid | 2 | after | surface (a3) | TIMEOUT | - | 16 | 6.5 | 134.4 | 9 | 91 | 300.0 |
+| Master+Death | mid | 3 | after | surface (a3) | TIMEOUT | - | 1 | 6.5 | 140.5 | 2 | 98 | 300.0 |
+| Master+Death | on | 1 | before | surface (a3) | WIN | 40.7 | 3 | 31.5 | - | 0 | 100 | 40.7 |
+| Master+Death | on | 2 | before | surface (a3) | WIN | 56.7 | 22 | 6.6 | - | 0 | 100 | 56.7 |
+| Master+Death | on | 3 | before | surface (a3) | WIN | 41.0 | 4 | 6.6 | - | 0 | 100 | 41.0 |
+| Master+Death | on | 1 | after | surface (a3) | TIMEOUT | - | 8 | 6.3 | 136.1 | 5 | 95 | 300.0 |
+| Master+Death | on | 2 | after | surface (a3) | TIMEOUT | - | 9 | 13.5 | 128.3 | 5 | 95 | 300.0 |
+| Master+Death | on | 3 | after | surface (a3) | TIMEOUT | - | 9 | 6.5 | 140.3 | 5 | 95 | 300.0 |
+
+Summary (wins / fights, enraged seconds mean, median kill s of wins):
+
+| set | wins | mean enraged s | mean attacks on levies % | median kill s |
+|---|---|---|---|---|
+| before | 12/12 | 50 | 0 | 45 |
+| after | 0/12 | 300 | 15 | - |
+

@@ -54,6 +54,7 @@ namespace Levy.Common.Util
 			}
 			catch (Exception) { return key.ToString(); }
 		}
+		public static string NameOf(int k) => Names[k];
 		public static void CopyTo(long[] dst) { Array.Copy(T, dst, N); }
 		/// <summary>The bucket <paramref name="k"/> in Stopwatch ticks since the start (the /levyprof report takes differences).</summary>
 		public static long Get(int k) => T[k];

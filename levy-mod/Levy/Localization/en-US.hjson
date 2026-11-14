@@ -294,6 +294,7 @@ Mods: {
 			Mobilize.DisplayName: Levy: Mobilize / stand down
 			Rally.DisplayName: Levy: Rally
 			ArmyStrip.DisplayName: Levy: Army overview
+			ToggleProfiler.DisplayName: Levy: Toggle profiler
 		}
 
 		Configs: {

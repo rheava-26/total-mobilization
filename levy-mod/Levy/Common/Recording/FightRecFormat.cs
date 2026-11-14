@@ -29,7 +29,7 @@ namespace Levy.Common.Recording
 	///         hdr: auto (0 hand or harness, 1 automatic boss fights, 2 automatic all fights), gzip, cmd (the commander at the start: life, mana, defense, armor / accessories / hotbar / ammo item ids), army (n, avgLife, classes = levies by damage class
 	///         of the main weapon, grades, weapons = [[itemType,count],..]); meta gains source, trigger (boss|army), setting, label.
 	///         events: dmg once a second (d = [[owner cmd|levy|drone|other, class, src item|proj, type, onBoss 1|0, damage, hits],..]: damage landed on bosses and their parts, and on adds, by who and damage class), cdeath (the commander fell: x, y, n),
-	///         prof (/levyprof was on: fps, ups, upd = ms per update, npc, proj, draw, ai, gear = ms, top = the biggest levy buckets).
+	///         prof (the profiler was on: /levyprof, the Toggle Levy profiler key, or automatically while an automatic recording ran, see FightRecConfig.ProfileRecordedFights; fps, ups, upd = ms per update, npc, proj, draw, ai, gear = ms, top = the biggest levy buckets, ms summed over the window, win = the window in real seconds).
 	///         end gains result (won|lost|fled|ended|interrupted: the word in the file name), durationSec, bossName, bosses, cmdDeaths, armyAlive, armyTotal, dmgBoss, dmgAll, profiled, dropped, capped, writeError.
 	///         Outcome and duration are only known at the end, so they live in the end record (and in the file name), not the header.
 	///         Older files stay readable: every new field is appended or optional.

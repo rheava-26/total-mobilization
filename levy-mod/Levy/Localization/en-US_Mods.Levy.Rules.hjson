@@ -15,8 +15,6 @@ ResetHint: Replaces the list with the default. Item overrides stay.
 LimitsTitle: Loadout limits
 SidearmLimit: Sidearms per levy
 SidearmLimitNote: Summoners are not limited. 3 is no limit.
-SummonsForOthers: Summon weapons for other levies
-SummonsForOthersHint: Off keeps sentry and minion staves for summoners. Levies who carry them return them to the Armory.
 HandSetTitle: Hand-set items
 HandSetNote: Click an item to clear it. P is preferred, N is never, a number is a set rank.
 HandSetNone: Nothing is hand-set. Preferred, never and set ranks are made from the item panel and listed here.

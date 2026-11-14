@@ -155,8 +155,11 @@ namespace Levy.Content.TileEntities
 
 		public override void Update()
 		{
+			long pt = global::Levy.Common.Util.LevyProf.Begin();
 			if (_dirty) Sync();
 			if (Main.netMode != NetmodeID.MultiplayerClient && ++_stampTimer >= StampIntervalTicks) { _stampTimer = 0; StampNew(); }
+			if (_swActive) FloorSweep(); // a gear sweep that did not fit in one slice carries on
+			global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmTick, pt);
 		}
 
 		private const int StampIntervalTicks = 30;
@@ -939,11 +942,11 @@ namespace Levy.Content.TileEntities
 			return haveSentry ? TakeSentrySidearm(forSoldier) : null; // only sentries in the whole armory: double up rather than go one-handed
 		}
 
-		/// <summary>The minion staff or sentry the player placed in the armory's dedicated sidearm slot, taken by a soldier who is not a summoner (the racks stay reserved for summoners). Removes it. Null if the slot holds neither.</summary>
-		private Item TakeDeployerFromSidearmSlot()
+		/// <summary>The minion staff or sentry the player placed in the armory's dedicated sidearm slot, taken by a soldier who is not a summoner when his gear gives the extra slot for it (the racks stay reserved for summoners). Removes it. Null if the slot holds neither.</summary>
+		private Item TakeDeployerFromSidearmSlot(int extraMinions = 1, int extraTurrets = 1)
 		{
 			var it = IssueWeapons[SidearmSlot];
-			if (IsReservedRef(it) || !(IsIssuableSummonStaff(it) || IsIssuableSentry(it))) return null;
+			if (IsReservedRef(it) || !(IsIssuableSummonStaff(it) || IsIssuableSentry(it)) || !SidearmPolicy.AllowedForOthers(it, extraMinions, extraTurrets)) return null;
 			return Remove(IssueWeapons, SidearmSlot);
 		}
 
@@ -1459,6 +1462,13 @@ namespace Levy.Content.TileEntities
 		/// line. The issue rows are never lent from (they are the army's own first picks); only bulk storage is. A weapon on a Re-arm hold this tick is skipped. Server / single player only.
 		/// </summary>
 		public Item LendDroneWeapon(int reserveForSoldiers)
+		{
+			long pl = global::Levy.Common.Util.LevyProf.Begin();
+			try { return LendDroneWeaponCore(reserveForSoldiers); }
+			finally { global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmLend, pl); }
+		}
+
+		private Item LendDroneWeaponCore(int reserveForSoldiers)
 		{
 			using var _rs = ArmoryRules.Enter(Rules);
 			if (Main.netMode == NetmodeID.MultiplayerClient) return null;
@@ -1987,6 +1997,8 @@ namespace Levy.Content.TileEntities
 			var g = soldier?.Gear;
 			if (g == null || soldier.Disarmed) return false; // a levy whose kit the player stripped is issued nothing until he is issued a kit again
 			bool changed = false;
+			long pi = global::Levy.Common.Util.LevyProf.Begin();
+			void IMark(int bucket) { global::Levy.Common.Util.LevyProf.EndCount(bucket, pi); pi = global::Levy.Common.Util.LevyProf.Begin(); }
 
 			// A Re-arm in this very tick parked this soldier's hand-assigned items: take exactly those back first.
 			if (g.Reserved != null && ReclaimLocked(g, soldier.AccessorySlots)) changed = true;
@@ -1997,9 +2009,11 @@ namespace Levy.Content.TileEntities
 				if (RestockThrown(soldier)) changed = true;
 				if (IssuePrimary(soldier, g)) changed = true;
 			}
+			IMark(global::Levy.Common.Util.LevyProf.IssPrimary);
 
 			// One matching set first (set bonus, aligned with his weapon); anything it could not supply is filled piece by piece below.
 			if (TakeArmorSet(soldier)) changed = true;
+			IMark(global::Levy.Common.Util.LevyProf.IssArmorSet);
 
 			if (!g.IsLocked(SoldierGear.SlotHead) && IsAir(g.Head)) { var a = TakeArmor(soldier, 0); if (a != null) { g.Head = a; changed = true; } }
 			if (!g.IsLocked(SoldierGear.SlotBody) && IsAir(g.Body)) { var a = TakeArmor(soldier, 1); if (a != null) { g.Body = a; changed = true; } }
@@ -2007,6 +2021,7 @@ namespace Levy.Content.TileEntities
 
 			// The weapon and the armor come from separate pickers (network-wide availability vs local racks), so they can disagree: the armor now on him wins.
 			if (fluid && ReconcileWeaponToArmor(soldier)) changed = true;
+			IMark(global::Levy.Common.Util.LevyProf.IssArmor);
 
 			if (!fluid) {
 				// A thrown stack is kept supplied: topped up while he holds it, handed back first when it ran dry.
@@ -2028,6 +2043,7 @@ namespace Levy.Content.TileEntities
 				g.Accessories[i] = a; changed = true;
 			}
 
+			IMark(global::Levy.Common.Util.LevyProf.IssAcc);
 			// The hook slot: the best grappling hook in stock (levies cross gaps and climb with it; see SoldierNPC.Hook.cs).
 			if (Common.Config.LevyConfig.Get.SoldiersUseHooks && !g.IsLocked(SoldierGear.SlotHook) && IsAir(g.Hook)) {
 				var hk = TakeHook(soldier);
@@ -2036,9 +2052,10 @@ namespace Levy.Content.TileEntities
 
 			// The camera slot: a GoPro, one per levy, to the levies the player most likely watches first (see CameraStep).
 			if (CameraStep(soldier)) changed = true;
+			IMark(global::Levy.Common.Util.LevyProf.IssHook);
 
-			// Reservation: a non-summoner never keeps a whip off-hand (a leftover from an old save or a role change goes back to the racks). A minion staff or a sentry is a
-			// legitimate off-hand for any class: minions persist whatever is in hand, so a gunner or a swordsman may field a flock beside his primary.
+			// Reservation: a non-summoner never keeps a whip off-hand (a leftover from an old save or a role change goes back to the racks). A minion staff or a sentry is
+			// carried by a non-summoner only while his gear gives the extra slot for it (SidearmPolicy.Misfits, run by FillSidearms).
 			if (!summoner && !g.IsLocked(SoldierGear.SlotSidearm) && g.HasSidearm && WeaponClassifier.GetProfile(g.Sidearm).Family == WeaponFamily.Whip)
 			{
 				var rem = DepositOld(g.Sidearm);
@@ -2048,6 +2065,7 @@ namespace Levy.Content.TileEntities
 			}
 
 			if (FillSidearms(soldier, g, summoner, primaryFam, primaryMelee)) changed = true;
+			IMark(global::Levy.Common.Util.LevyProf.IssSide);
 
 			g.Ammo ??= new Item();
 			if (g.IsLocked(SoldierGear.SlotAmmo)) {
@@ -2074,6 +2092,7 @@ namespace Levy.Content.TileEntities
 				}
 			}
 
+			IMark(global::Levy.Common.Util.LevyProf.IssAmmo);
 			if (changed) MarkDirty();
 			return changed;
 		}
@@ -2262,18 +2281,25 @@ namespace Levy.Content.TileEntities
 			var g = soldier?.Gear;
 			if (g == null || soldier.LoadoutLocked || soldier.Disarmed || Main.netMode == NetmodeID.MultiplayerClient) return false;
 			bool changed = false;
+			long ps = global::Levy.Common.Util.LevyProf.Begin();
+			void Mark(int bucket) { global::Levy.Common.Util.LevyProf.EndCount(bucket, ps); ps = global::Levy.Common.Util.LevyProf.Begin(); }
 			FloorSweep(); // new armor and accessories go to the worst-equipped levies first, whoever asks
-			if (!g.IsLocked(SoldierGear.SlotWeapon) && UpgradePrimary(soldier)) changed = true;
+			Mark(global::Levy.Common.Util.LevyProf.ArmFloor);
+			if (!g.IsLocked(SoldierGear.SlotWeapon) && UpgradePrimary(soldier)) changed = true; // its own time is in arm.alloc
+			ps = global::Levy.Common.Util.LevyProf.Begin();
 			if (UpgradeArmor(soldier)) changed = true; // after the primary: the armor follows the weapon he now carries (locked slots are skipped inside)
+			Mark(global::Levy.Common.Util.LevyProf.ArmArmor);
 			if (ReconcileWeaponToArmor(soldier)) changed = true; // the armor may not have followed (margin, locks, stock): a class mismatch is corrected, never upgraded into
 			if (UpgradeAccessories(soldier)) changed = true;
+			Mark(global::Levy.Common.Util.LevyProf.ArmAcc);
 			if (!g.IsLocked(SoldierGear.SlotSidearm) && UpgradeSidearm(soldier)) changed = true;
 			if (TidySidearms(g, soldier)) changed = true; // a second sword, a second whip, a gun beside a melee primary: back to the shelf
 			if (ReclaimSummonWeapons(soldier)) changed = true; // summoners first: a staff a summoner could still use goes from a non-summoner to him
 			if (UpgradeExtraSidearms(soldier)) changed = true;
 			if (FillEmptySidearms(soldier)) changed = true;
+			Mark(global::Levy.Common.Util.LevyProf.ArmSide);
 			// The new weapon may fire other ammo (or none): IssueGear returns the wrong pouch and draws the right one (it only fills what is empty otherwise).
-			if (changed) IssueGear(soldier);
+			if (changed) { IssueGear(soldier); Mark(global::Levy.Common.Util.LevyProf.ArmIssue); }
 			return changed;
 		}
 

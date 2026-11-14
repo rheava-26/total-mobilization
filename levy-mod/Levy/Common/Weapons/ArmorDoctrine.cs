@@ -38,7 +38,7 @@ namespace Levy.Common.Weapons
 		public static int PipelineRuns { get; private set; }
 
 		/// <summary>Drop cached state (world load / mod unload).</summary>
-		public static void Reset() { _classes = null; _cache.Clear(); _setCache.Clear(); ResetAccessoryProfiles(); _leanCache.Clear(); _manaCache.Clear(); _leanBaseline = null; _scratch = null; _baseline = null; _broken = false; }
+		public static void Reset() { _classes = null; _cache.Clear(); _setCache.Clear(); ResetAccessoryProfiles(); _leanCache.Clear(); _manaCache.Clear(); _leanBaseline = null; _slotCache.Clear(); _scratch = null; _baseline = null; _broken = false; }
 
 		/// <summary>The damage class the given armor favours, or null when none stands out (no armor, generic armor, hybrids, or any failure).</summary>
 		public static DamageClass PreferredClass(Item head, Item body, Item legs)
@@ -152,6 +152,47 @@ namespace Levy.Common.Weapons
 			catch (Exception) { v = 0f; }
 			_manaCache[it.type] = v;
 			return v;
+		}
+
+		private static readonly Dictionary<string, (int minions, int turrets)> _slotCache = new();
+
+		/// <summary>
+		/// The minion slots and sentry slots the soldier's worn gear gives beyond the base one (the scratch Player's maxMinions and maxTurrets after the equip pass and the set bonus, each minus 1).
+		/// Both 0 when the gear gives none, the stat pipeline is off, or the read fails. Cached by the worn item types.
+		/// </summary>
+		public static void ExtraSummonSlots(global::Levy.Common.Soldiers.SoldierGear g, out int minions, out int turrets)
+		{
+			minions = 0; turrets = 0;
+			if (g == null || _broken) return;
+			var acc = g.Accessories;
+			var types = new int[3 + (acc?.Length ?? 0)];
+			types[0] = TypeOf(g.Head); types[1] = TypeOf(g.Body); types[2] = TypeOf(g.Legs);
+			for (int i = 0; acc != null && i < acc.Length; i++) types[3 + i] = TypeOf(acc[i]);
+			string key = string.Join(",", types);
+			if (_slotCache.TryGetValue(key, out var hit)) { minions = hit.minions; turrets = hit.turrets; return; }
+			try {
+				if (LevyConfig.Get.UseVanillaStatPipeline) {
+					EnsureScratch();
+					var p = _scratch;
+					for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
+					for (int i = 0; i < p.dye.Length; i++) p.dye[i] = new Item();
+					for (int i = 0; i < types.Length && i < p.armor.Length; i++) if (types[i] != 0) p.armor[i].SetDefaults(types[i]);
+					p.head = p.armor[0].headSlot; p.body = p.armor[1].bodySlot; p.legs = p.armor[2].legSlot; // UpdateArmorSets reads the worn slots, not the armor array
+					p.inventory[0] = new Item();
+					p.selectedItem = 0;
+					p.ResetEffects();
+					p.setBonus = "";
+					SafeUpdateEquips(p);
+					p.UpdateArmorSets(SoldierNPC.DummySlot);
+					minions = Math.Max(0, p.maxMinions - 1); turrets = Math.Max(0, p.maxTurrets - 1);
+					for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item(); // leave the scratch player clean
+				}
+			}
+			catch (Exception e) {
+				minions = 0; turrets = 0;
+				Levy.Instance?.Logger.Warn("Levy: extra summon slot read failed, taken as none: " + e.Message);
+			}
+			_slotCache[key] = (minions, turrets);
 		}
 
 		private static float[] _leanBaseline; // maxTurrets, maxMinions, melee/ranged/magic/summon damage on a bare player

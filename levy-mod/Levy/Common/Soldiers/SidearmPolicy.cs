@@ -62,8 +62,16 @@ namespace Levy.Common.Soldiers
 		/// <summary>True when the weapon may sit beside this primary and these other sidearms.</summary>
 		public static bool Fits(Item primary, Item side, IEnumerable<Item> others) => !OffClass(primary, side) && !Duplicates(primary, side, others);
 
+		/// <summary>True when a levy who is not a summoner may carry this summon item: a minion staff needs a minion slot beyond the base one, a sentry staff a sentry slot beyond the base one. Anything else is allowed.</summary>
+		public static bool AllowedForOthers(Item it, int extraMinions, int extraTurrets)
+		{
+			if (IsStaff(it)) return extraMinions >= 1;
+			if (IsSentry(it)) return extraTurrets >= 1;
+			return true;
+		}
+
 		/// <summary>The sidearms (hand first) that do not fit beside the primary and the ones kept before them: what a tidy-up gives back to the shelf. Locked slots are never listed.
-		/// <paramref name="summoner"/> false adds the one-summon-item rule: a levy who is not a summoner keeps ONE minion staff or sentry (a locked one first, else the best), </summary>
+		/// <paramref name="summoner"/> false adds the summon-slot rule: a levy who is not a summoner keeps a minion staff only while his gear gives a minion slot beyond the base one, and a sentry staff only while it gives a sentry slot beyond the base one.</summary>
 		public static List<int> Misfits(SoldierGear g, bool? summoner = null)
 		{
 			var res = new List<int>();
@@ -77,27 +85,22 @@ namespace Levy.Common.Soldiers
 				if (!g.IsLocked(slot) && g.HasWeapon && !Fits(g.Weapon, it, kept)) { res.Add(slot); continue; }
 				kept.Add(it);
 			}
-			if (summoner == false) AddExtraSummonItems(g, res);
+			if (summoner == false) AddUnearnedSummonItems(g, res);
 			return res;
 		}
 
-		/// <summary>The one-summon-item rule for a non-summoner: every unlocked staff / sentry past the first (locked first, then highest rank) goes back, or all of them when non-summoners carry none.</summary>
-		private static void AddExtraSummonItems(SoldierGear g, List<int> res)
+		/// <summary>The summon-slot rule for a non-summoner: every unlocked staff / sentry his gear gives no extra slot for goes back.</summary>
+		private static void AddUnearnedSummonItems(SoldierGear g, List<int> res)
 		{
-			int keepSlot = -1; float keepRank = -1f;
-			bool allow = true;
-			var slots = new List<int>();
+			int exM = 0, exT = 0; bool read = false;
 			for (int i = 0; i < LevyConstants.MaxSidearms; i++)
 			{
 				int slot = SoldierGear.SidearmSlotAt(i);
 				var it = g.Get(slot);
-				if (it == null || it.IsAir || !IsDeployer(it) || res.Contains(slot)) continue;
-				slots.Add(slot);
-				if (!allow) continue;
-				float rank = g.IsLocked(slot) ? float.MaxValue : WeaponRank.Of(it);
-				if (rank > keepRank) { keepRank = rank; keepSlot = slot; }
+				if (it == null || it.IsAir || !IsDeployer(it) || g.IsLocked(slot) || res.Contains(slot)) continue;
+				if (!read) { ArmorDoctrine.ExtraSummonSlots(g, out exM, out exT); read = true; } // read once, and only for a levy who carries a summon item at all
+				if (!AllowedForOthers(it, exM, exT)) res.Add(slot);
 			}
-			foreach (int slot in slots) if (slot != keepSlot && !g.IsLocked(slot)) res.Add(slot);
 		}
 	}
 }

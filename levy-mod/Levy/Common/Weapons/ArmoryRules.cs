@@ -102,10 +102,8 @@ namespace Levy.Common.Weapons
 		public readonly Dictionary<string, ItemOverride> Overrides = new();
 		/// <summary>Most sidearms a levy who is not a summoner carries (0 to <see cref="LevyConstants.MaxSidearms"/>). The top value is no limit.</summary>
 		public int SidearmLimit = LevyConstants.MaxSidearms;
-		/// <summary>Whether a levy who is not a summoner may carry sentry and minion staves as sidearms.</summary>
-		public bool SummonsForOthers = true;
 		/// <summary>True when the sidearm rules limit anything.</summary>
-		public bool LimitsLoadouts => SidearmLimit < LevyConstants.MaxSidearms || !SummonsForOthers;
+		public bool LimitsLoadouts => SidearmLimit < LevyConstants.MaxSidearms;
 		/// <summary>Bumped on every edit; the UI and the compiled cache compare it.</summary>
 		public int Rev;
 
@@ -134,7 +132,7 @@ namespace Levy.Common.Weapons
 
 		public ArmoryRules Clone()
 		{
-			var r = new ArmoryRules { Blocks = Blocks.ConvertAll(b => b.Clone()), Rev = Rev, SidearmLimit = SidearmLimit, SummonsForOthers = SummonsForOthers };
+			var r = new ArmoryRules { Blocks = Blocks.ConvertAll(b => b.Clone()), Rev = Rev, SidearmLimit = SidearmLimit };
 			foreach (var kv in Overrides) r.Overrides[kv.Key] = kv.Value.Clone();
 			return r;
 		}
@@ -145,7 +143,7 @@ namespace Levy.Common.Weapons
 			Blocks = o.Blocks.ConvertAll(b => b.Clone());
 			Overrides.Clear();
 			foreach (var kv in o.Overrides) Overrides[kv.Key] = kv.Value.Clone();
-			SidearmLimit = o.SidearmLimit; SummonsForOthers = o.SummonsForOthers;
+			SidearmLimit = o.SidearmLimit;
 			Rev = o.Rev;
 			Changed(false);
 		}
@@ -418,7 +416,7 @@ namespace Levy.Common.Weapons
 					w.Write((byte)Math.Min(o.CatAdd.Count, 16)); int a = 0; foreach (var s in o.CatAdd) { if (a++ >= 16) break; w.Write(s); }
 					w.Write((byte)Math.Min(o.CatRemove.Count, 16)); a = 0; foreach (var s in o.CatRemove) { if (a++ >= 16) break; w.Write(s); }
 				}
-				w.Write((byte)Math.Clamp(SidearmLimit, 0, LevyConstants.MaxSidearms)); w.Write(SummonsForOthers); // appended last: data written before these existed ends above and reads as no limit
+				w.Write((byte)Math.Clamp(SidearmLimit, 0, LevyConstants.MaxSidearms)); w.Write(true); // appended last: data written before these existed ends above and reads as no limit. The bool is the retired summon toggle, kept so the format is unchanged; it is always written on and ignored on read
 			}
 			return ms.ToArray();
 		}
@@ -471,7 +469,7 @@ namespace Levy.Common.Weapons
 					int nr = Math.Min((int)r.ReadByte(), 16); for (int k = 0; k < nr; k++) { string s = Id(r.ReadString()); if (s.Length > 0) o.CatRemove.Add(s); }
 					if (key.Length > 0 && key.Length <= 96 && !o.IsEmpty) res.Overrides[key] = o;
 				}
-				if (ms.Position + 2 <= ms.Length) { res.SidearmLimit = Math.Clamp((int)r.ReadByte(), 0, LevyConstants.MaxSidearms); res.SummonsForOthers = r.ReadBoolean(); }
+				if (ms.Position + 2 <= ms.Length) { res.SidearmLimit = Math.Clamp((int)r.ReadByte(), 0, LevyConstants.MaxSidearms); r.ReadBoolean(); } // the retired summon toggle: a saved "off" or "on" changes nothing
 				return res;
 			}
 			catch (Exception) { return Default(); }

@@ -162,8 +162,8 @@ Pages: {
 			The first potion slot holds a healing or mana potion. Levies drink it when hurt, and casters sip mana potions when low.
 			The other potion slots hold buff potions for the whole army.
 			Consumable throwables, such as grenades and throwing knives, go in storage. A levy refills a thrown stack from the Armory when it runs low.
-			The last weapon slot is the sidearm. A minion staff or sentry there goes to a levy who is not a summoner.
-			Two more slots hold summon weapons: a sentry staff and a minion staff, and a summoner leads with a whip. A sentry staff keeps one sentry up, plus one for each sentry slot the levy's gear gives.
+			The last weapon slot is the sidearm. A minion staff or sentry there goes to a levy whose gear has an extra minion or sentry slot.
+			Two more slots hold summon weapons: a sentry staff and a minion staff, and a summoner leads with a whip. A levy who is not a summoner carries a minion staff only with an extra minion slot, and a sentry staff only with an extra sentry slot. A sentry staff keeps one sentry up, plus one for each sentry slot the levy's gear gives.
 			'''
 	}
 

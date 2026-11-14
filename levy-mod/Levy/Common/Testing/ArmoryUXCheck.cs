@@ -100,17 +100,21 @@ namespace Levy.Common.Testing
 		private static void RulesFields(CheckFn check)
 		{
 			var r = ArmoryRules.Default();
-			check("a new rule list has no limit", r.SidearmLimit == LevyConstants.MaxSidearms && r.SummonsForOthers && !r.LimitsLoadouts && r.IsNeutral);
-			r.SidearmLimit = 1; r.SummonsForOthers = false;
+			check("a new rule list has no limit", r.SidearmLimit == LevyConstants.MaxSidearms && !r.LimitsLoadouts && r.IsNeutral);
+			r.SidearmLimit = 1;
 			check("a limited list is not neutral", r.LimitsLoadouts && !r.IsNeutral);
 			var back = ArmoryRules.FromBytes(r.ToBytes());
-			check("the limits round-trip through the wire format", back.SidearmLimit == 1 && !back.SummonsForOthers && back.Blocks.Count == 1);
+			check("the limits round-trip through the wire format", back.SidearmLimit == 1 && back.Blocks.Count == 1);
 			var clone = r.Clone(); var cp = ArmoryRules.Default(); cp.CopyFrom(r);
-			check("Clone and CopyFrom carry the limits", clone.SidearmLimit == 1 && !clone.SummonsForOthers && cp.SidearmLimit == 1 && !cp.SummonsForOthers);
+			check("Clone and CopyFrom carry the limits", clone.SidearmLimit == 1 && cp.SidearmLimit == 1);
 			var plain = ArmoryRules.Default(); var bytes = plain.ToBytes();
 			var old = new byte[bytes.Length - 2]; Array.Copy(bytes, old, old.Length); // data written before the limits existed
 			var oldRead = ArmoryRules.FromBytes(old);
-			check("data written before the limits existed loads as no limit", oldRead.SidearmLimit == LevyConstants.MaxSidearms && oldRead.SummonsForOthers && oldRead.Blocks.Count == 1);
+			check("data written before the limits existed loads as no limit", oldRead.SidearmLimit == LevyConstants.MaxSidearms && oldRead.Blocks.Count == 1);
+			// a list saved with the retired summon toggle OFF reads as no limit: the toggle is gone and nothing in the file can switch the old behaviour back on
+			var toggled = plain.ToBytes(); toggled[toggled.Length - 1] = 0;
+			var toggledRead = ArmoryRules.FromBytes(toggled);
+			check("a list saved with the old summon toggle off loads as an ordinary list", toggledRead.SidearmLimit == LevyConstants.MaxSidearms && !toggledRead.LimitsLoadouts && toggledRead.IsNeutral && toggledRead.Blocks.Count == 1);
 		}
 
 		private static ArmoryTE Armory(ArmoryRules rules, params Item[] stock)
@@ -124,6 +128,10 @@ namespace Levy.Common.Testing
 		private static void Armor(SoldierRecord r) { r.Gear.Head = Make(ItemID.VortexHelmet); r.Gear.Body = Make(ItemID.VortexBreastplate); r.Gear.Legs = Make(ItemID.VortexLeggings); }
 		private static string Kit(SoldierRecord r) => $"{N(r.Gear.Weapon)}; sidearms {string.Join(" | ", r.Gear.Sidearms().Select(N))}";
 		private static Item[] Stock() => new[] { Make(ItemID.Musket), Make(ItemID.MusketBall, 300), Make(ItemID.IronBroadsword), Make(ItemID.SlimeStaff), Make(ItemID.QueenSpiderStaff) };
+		/// <summary>Puts accessories on a levy by hand (locked, so the armory leaves them alone).</summary>
+		private static void Wear(SoldierRecord r, params int[] accessories) { for (int i = 0; i < accessories.Length; i++) { r.Gear.Accessories[i] = Make(accessories[i]); r.Gear.SetLocked(SoldierGear.SlotAcc0 + i, true); } }
+		private static int Staves(SoldierRecord r) => r.Gear.Sidearms().Count(s => !s.IsAir && SidearmPolicy.IsStaff(s));
+		private static int Sentries(SoldierRecord r) => r.Gear.Sidearms().Count(s => !s.IsAir && SidearmPolicy.IsSentry(s));
 		private static int Summons(SoldierRecord r) => r.Gear.Sidearms().Count(s => !s.IsAir && SidearmPolicy.IsDeployer(s));
 
 		private static void SidearmRules(CheckFn check)
@@ -131,7 +139,39 @@ namespace Levy.Common.Testing
 			// no limit: the full kit, as before
 			var free = new SoldierRecord { Id = 901 };
 			var te0 = Armory(null, Stock()); Armor(free); ArmoryTE.TestServed = new List<SoldierRecord> { free }; te0.IssueGear(free);
-			check("with no limit a ranged levy carries a blade and one summon weapon", free.Gear.SidearmCount == 2 && Summons(free) == 1, Kit(free));
+			check("with no limit and no extra summon slot a ranged levy carries a blade and no summon weapon", free.Gear.SidearmCount == 1 && Summons(free) == 0, Kit(free));
+
+			// no extra slot: no summon item, whatever the armory stocks. An extra minion slot lets a staff ride as a sidearm, an extra sentry slot a sentry staff.
+			var minionSlot = new SoldierRecord { Id = 911 }; Armor(minionSlot); Wear(minionSlot, ItemID.PapyrusScarab);
+			var te6 = Armory(null, Stock()); ArmoryTE.TestServed = new List<SoldierRecord> { minionSlot }; te6.IssueGear(minionSlot);
+			check("with an extra minion slot a ranged levy carries a minion staff in a sidearm slot", Staves(minionSlot) == 1 && Sentries(minionSlot) == 0 && minionSlot.Gear.SidearmCount == 2, Kit(minionSlot));
+			var sentrySlot = new SoldierRecord { Id = 912 }; Armor(sentrySlot); Wear(sentrySlot, ItemID.SquireShield);
+			var te7 = Armory(null, Stock()); ArmoryTE.TestServed = new List<SoldierRecord> { sentrySlot }; te7.IssueGear(sentrySlot);
+			check("with an extra sentry slot a ranged levy carries a sentry staff and no minion staff", Sentries(sentrySlot) == 1 && Staves(sentrySlot) == 0, Kit(sentrySlot));
+			var bothSlots = new SoldierRecord { Id = 913 }; Armor(bothSlots); Wear(bothSlots, ItemID.PapyrusScarab, ItemID.SquireShield);
+			var te8 = Armory(null, Stock()); ArmoryTE.TestServed = new List<SoldierRecord> { bothSlots }; te8.IssueGear(bothSlots);
+			check("with both extra slots he carries a staff and a sentry beside his blade", Staves(bothSlots) == 1 && Sentries(bothSlots) == 1 && bothSlots.Gear.SidearmCount == 3, Kit(bothSlots));
+			{
+				// read straight off the scratch player: the equip pass really raises maxMinions / maxTurrets (the staff above rode on these numbers)
+				ArmorDoctrine.ExtraSummonSlots(minionSlot.Gear, out int m1, out int t1); ArmorDoctrine.ExtraSummonSlots(sentrySlot.Gear, out int m2, out int t2); ArmorDoctrine.ExtraSummonSlots(bothSlots.Gear, out int m3, out int t3); ArmorDoctrine.ExtraSummonSlots(free.Gear, out int m0, out int t0);
+				check("the scratch player gets no extra summon slot from plain armor", m0 == 0 && t0 == 0, $"minions+{m0} sentries+{t0}");
+				check("Papyrus Scarab raises maxMinions by one and maxTurrets by none on the scratch player", m1 == 1 && t1 == 0, $"minions+{m1} sentries+{t1}");
+				check("Squire's Shield raises maxTurrets by one and maxMinions by none on the scratch player", m2 == 0 && t2 == 1, $"minions+{m2} sentries+{t2}");
+				check("Papyrus Scarab and Squire's Shield together give one of each", m3 == 1 && t3 == 1, $"minions+{m3} sentries+{t3}");
+			}
+			var capped = ArmoryRules.Default(); capped.SidearmLimit = 1;
+			var limited = new SoldierRecord { Id = 914 }; Armor(limited); Wear(limited, ItemID.PapyrusScarab, ItemID.SquireShield);
+			var te9 = Armory(capped, Stock()); ArmoryTE.TestServed = new List<SoldierRecord> { limited }; te9.IssueGear(limited);
+			check("a summon sidearm counts against the sidearm limit", limited.Gear.SidearmCount == 1, Kit(limited));
+			// the slot goes away with the gear: the staff goes back to the armory on the next pass
+			var lost = new SoldierRecord { Id = 915 }; Armor(lost); lost.Gear.Weapon = Make(ItemID.Musket); lost.Gear.ExtraSidearms[0] = Make(ItemID.SlimeStaff); lost.Gear.ExtraSidearms[1] = Make(ItemID.QueenSpiderStaff);
+			var te10 = Armory(null, Make(ItemID.MusketBall, 300)); ArmoryTE.TestServed = new List<SoldierRecord> { lost }; te10.UpgradeWeapons(lost);
+			check("a levy with no extra summon slot gives a summon sidearm back on the next pass", Summons(lost) == 0, Kit(lost));
+			check("the returned staff and sentry are in the armory", te10.Storage.Count(i => i != null && !i.IsAir && (i.type == ItemID.SlimeStaff || i.type == ItemID.QueenSpiderStaff)) == 2);
+			// a summoner is unchanged: no extra slot needed
+			var summoner = new SoldierRecord { Id = 916 }; summoner.Gear.Weapon = Make(ItemID.HornetStaff); summoner.Gear.Head = Make(ItemID.SpiderMask); summoner.Gear.Body = Make(ItemID.SpiderBreastplate); summoner.Gear.Legs = Make(ItemID.SpiderGreaves);
+			var te11 = Armory(null, Make(ItemID.QueenSpiderStaff)); ArmoryTE.TestServed = new List<SoldierRecord> { summoner }; te11.IssueGear(summoner);
+			check("a summoner carries summon weapons whatever his gear gives", Summons(summoner) >= 1, Kit(summoner));
 
 			var one = ArmoryRules.Default(); one.SidearmLimit = 1;
 			var l1 = new SoldierRecord { Id = 902 }; var te1 = Armory(one, Stock()); Armor(l1); ArmoryTE.TestServed = new List<SoldierRecord> { l1 }; te1.IssueGear(l1);
@@ -141,21 +181,18 @@ namespace Levy.Common.Testing
 			var l0 = new SoldierRecord { Id = 903 }; var te2 = Armory(zero, Stock()); Armor(l0); ArmoryTE.TestServed = new List<SoldierRecord> { l0 }; te2.IssueGear(l0);
 			check("a limit of 0 gives none", l0.Gear.SidearmCount == 0 && l0.Gear.HasWeapon, Kit(l0));
 
-			var noSum = ArmoryRules.Default(); noSum.SummonsForOthers = false;
-			var ln = new SoldierRecord { Id = 904 }; var te3 = Armory(noSum, Stock()); Armor(ln); ArmoryTE.TestServed = new List<SoldierRecord> { ln }; te3.IssueGear(ln);
-			check("with summon weapons denied a levy who is not a summoner carries none but keeps his blade", Summons(ln) == 0 && ln.Gear.SidearmCount == 1, Kit(ln));
-
 			// tightening the rules takes the excess back on the next pass; locked slots stay
-			var over = new SoldierRecord { Id = 905 }; var te4 = Armory(null, Stock()); Armor(over); ArmoryTE.TestServed = new List<SoldierRecord> { over }; te4.IssueGear(over);
+			var over = new SoldierRecord { Id = 905 }; var te4 = Armory(null, Stock()); Armor(over); Wear(over, ItemID.PapyrusScarab); ArmoryTE.TestServed = new List<SoldierRecord> { over }; te4.IssueGear(over);
 			int before = over.Gear.SidearmCount;
-			var tight = ArmoryRules.Default(); tight.SidearmLimit = 1; tight.SummonsForOthers = false; te4.Rules.CopyFrom(tight);
+			var tight = ArmoryRules.Default(); tight.SidearmLimit = 1; te4.Rules.CopyFrom(tight);
+			over.Gear.Accessories[0] = new Item(); over.Gear.SetLocked(SoldierGear.SlotAcc0, false); // the minion slot goes too
 			te4.UpgradeWeapons(over);
 			check("tightening the rules returns the excess sidearms to the armory", before == 2 && over.Gear.SidearmCount <= 1 && Summons(over) == 0, $"{before} -> {over.Gear.SidearmCount}: {Kit(over)}");
 			int staves = te4.Storage.Count(i => i != null && !i.IsAir && (i.type == ItemID.SlimeStaff || i.type == ItemID.QueenSpiderStaff));
 			check("the returned and the unissued staves are all in storage", staves == 2, staves.ToString());
 
 			// a summoner is never limited
-			var sumRules = ArmoryRules.Default(); sumRules.SidearmLimit = 0; sumRules.SummonsForOthers = false;
+			var sumRules = ArmoryRules.Default(); sumRules.SidearmLimit = 0;
 			var sm = new SoldierRecord { Id = 906 }; sm.Gear.Weapon = Make(ItemID.HornetStaff); sm.Gear.Head = Make(ItemID.SpiderMask); sm.Gear.Body = Make(ItemID.SpiderBreastplate); sm.Gear.Legs = Make(ItemID.SpiderGreaves);
 			var te5 = Armory(sumRules, Make(ItemID.SlimeStaff), Make(ItemID.QueenSpiderStaff), Make(ItemID.ThornWhip)); ArmoryTE.TestServed = new List<SoldierRecord> { sm }; te5.UpgradeWeapons(sm); te5.IssueGear(sm);
 			check("a summoner keeps his summon weapons whatever the limit", Summons(sm) >= 1, Kit(sm));

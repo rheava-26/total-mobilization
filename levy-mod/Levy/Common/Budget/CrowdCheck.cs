@@ -45,15 +45,19 @@ namespace Levy.Common.Budget
 				int freeBefore = 1000 - board; int armyAfter = 216 - retire.Count;
 				nums.Add($"model: 36 levies x (3 minions + 3 towers) on a board of {board}/1000: free {freeBefore}; budget retires {need} -> free {freeBefore + need} (reserve {reserve})");
 
-				// 2. one summon item for a non-summoner
+				// 2. no summon item for a non-summoner without an extra slot for it
 				{
 					Item Make(int t) { var it = new Item(); it.SetDefaults(t); return it; }
 					var g = new SoldierGear();
 					g.Weapon = Make(ItemID.TerraBlade); g.ExtraSidearms[0] = Make(ItemID.QueenSpiderStaff); g.ExtraSidearms[1] = Make(ItemID.HornetStaff);
 					var bad = SidearmPolicy.Misfits(g, false);
-					Check(bad.Count == 1, "a non-summoner with a sentry and a staff gives one back, got " + bad.Count);
+					Check(bad.Count == 2, "a non-summoner with no extra summon slot gives a sentry and a staff back, got " + bad.Count);
 					Check(SidearmPolicy.Misfits(g, true).Count == 0 && SidearmPolicy.Misfits(g).Count == 0, "a summoner (or no class given) keeps both");
-					nums.Add("non-summoner kit: sentry + staff -> " + (2 - bad.Count) + " summon item");
+					g.Accessories[0] = Make(ItemID.PapyrusScarab);
+					Check(SidearmPolicy.Misfits(g, false).Count == 1, "an extra minion slot keeps the staff and sends the sentry back");
+					g.Accessories[1] = Make(ItemID.SquireShield);
+					Check(SidearmPolicy.Misfits(g, false).Count == 0, "an extra minion slot and an extra sentry slot keep both");
+					nums.Add("non-summoner kit: sentry + staff, no extra slot -> " + (2 - bad.Count) + " summon items");
 				}
 
 				// 3. sound caps

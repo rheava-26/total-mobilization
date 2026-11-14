@@ -164,9 +164,10 @@ namespace Levy.Common.Logistics
 			{
 				if (plan.Buyer == null && !plan.TestBuyer) { res.NoBuyer = true; return res; }
 				var payer = Shopping.Payer(a); long total = 0;
+				var price = TestPrice == null && payer != null && plan.Buyer != null ? Selling.Pricer(payer, plan.Buyer) : null; // the shopkeeper's settings read once, not per item
 				foreach (var e in plan.Entries)
 				{
-					var it = e.Item; long worth = TestPrice != null ? TestPrice(it) : payer != null ? Selling.SellValue(payer, plan.Buyer, it) : it.value / 5L * it.stack; int stack = it.stack;
+					var it = e.Item; long worth = TestPrice != null ? TestPrice(it) : price != null ? price(it) : it.value / 5L * it.stack; int stack = it.stack;
 					if (e.Src.TakeExact(it, stack) <= 0) continue;
 					if (e.Src is ArmoryStock ast) touched.Add(ast.Te);
 					total += worth; res.Items += stack; res.Stacks++;
@@ -209,10 +210,11 @@ namespace Levy.Common.Logistics
 					FromArmory = plan.FromArmory, FromChests = plan.FromChests, FromNetwork = plan.FromNetwork };
 				var payer = Shopping.Payer(a);
 				var rows = new Dictionary<(int, int), Row>();
+				var price = !plan.Decraft && TestPrice == null && payer != null && plan.Buyer != null ? Selling.Pricer(payer, plan.Buyer) : null; // settings read once, each kind priced once
 				foreach (var e in plan.Entries)
 				{
 					var k = (e.Item.type, e.Item.prefix); rows.TryGetValue(k, out var r);
-					long worth = plan.Decraft ? 0 : TestPrice != null ? TestPrice(e.Item) : payer == null || plan.Buyer == null ? 0 : Selling.SellValue(payer, plan.Buyer, e.Item);
+					long worth = plan.Decraft ? 0 : TestPrice != null ? TestPrice(e.Item) : price == null ? 0 : price(e.Item);
 					rows[k] = new Row { Type = k.Item1, Prefix = (byte)k.Item2, Count = r.Count + Math.Max(1, e.Item.stack), Value = r.Value + worth };
 				}
 				var all = rows.Values.OrderBy(r => ProgressionTier.Of(r.Type)).ThenByDescending(r => r.Value).ToList();

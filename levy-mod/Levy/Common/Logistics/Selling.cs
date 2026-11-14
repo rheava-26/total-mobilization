@@ -27,7 +27,7 @@ namespace Levy.Common.Logistics
 			if (it.damage > 0 && it.ammo > 0) return SellCat.Ammo;
 			if (it.damage > 0 && !it.accessory && it.maxStack == 1 || it.damage > 0 && it.pick == 0 && it.axe == 0 && it.hammer == 0 && it.maxStack == 1)
 			{
-				var c = WeaponClassifier.ItemDamageClass(it);
+				var c = WeaponClassifier.ItemDamageClass(it) ?? it.DamageType; if (c == null) c = DamageClass.Default;
 				if (c == DamageClass.Melee || c == DamageClass.MeleeNoSpeed || c.CountsAsClass(DamageClass.Melee)) return SellCat.Melee;
 				if (c == DamageClass.Ranged || c.CountsAsClass(DamageClass.Ranged)) return SellCat.Ranged;
 				if (c == DamageClass.Magic || c.CountsAsClass(DamageClass.Magic)) return SellCat.Magic;
@@ -84,6 +84,33 @@ namespace Levy.Common.Logistics
 			catch (Exception) { return Math.Max(0, it.value / 5L * it.stack); }
 		}
 
+		/// <summary>
+		/// A price lister for one buyer: vanilla's shopping settings (happiness, which walks every NPC and builds its report) are read ONCE, and each distinct kind of item (type, prefix, stack, value) is priced once.
+		/// Pricing a 2000-slot armory item by item through <see cref="SellValue"/> read those settings once per item per shopkeeper.
+		/// </summary>
+		public static Func<Item, long> Pricer(Player p, NPC buyer)
+		{
+			bool ok = true;
+			try { p.currentShoppingSettings = Main.ShopHelper.GetShoppingSettings(p, buyer); } catch (Exception) { ok = false; }
+			var memo = new Dictionary<(int, int, int, int), long>();
+			return it =>
+			{
+				var key = (it.type, (int)it.prefix, it.stack, it.value);
+				if (memo.TryGetValue(key, out long v)) return v;
+				if (!ok) v = Math.Max(0, it.value / 5L * it.stack); // settings unreadable for this buyer: the plain fifth of the value, with no exception per item
+				else
+				{
+					try { p.GetItemExpectedPrice(it, out long sell, out _); v = Math.Max(0, sell); }
+					catch (Exception) { v = Math.Max(0, it.value / 5L * it.stack); }
+				}
+				memo[key] = v;
+				return v;
+			};
+		}
+
+		/// <summary>Self-check seam: counts the buyers priced through <see cref="Pricer"/> (one shopping-settings read each).</summary>
+		internal static int PricerBuilds;
+
 		/// <summary>The shopkeeper who pays the most for these slots (ties go to the nearer one), and what he pays. Null buyer when no shopkeeper is in reach.</summary>
 		public static (NPC buyer, long total) BestBuyer(ArmoryTE a, IList<int> slots) => BestBuyer(a, slots.Select(i => a.Storage[i]).ToList());
 
@@ -94,7 +121,8 @@ namespace Levy.Common.Logistics
 			if (payer == null) return (null, 0);
 			foreach (var k in Shopping.Keepers(a))
 			{
-				long t = 0; foreach (var it in items) t += SellValue(payer, k, it);
+				var price = Pricer(payer, k); PricerBuilds++;
+				long t = 0; foreach (var it in items) t += price(it);
 				if (t > bestTotal || t == bestTotal && best != null && Math.Abs(k.Center.X - a.Center.X) < Math.Abs(best.Center.X - a.Center.X)) { best = k; bestTotal = t; }
 			}
 			return (best, Math.Max(0, bestTotal));

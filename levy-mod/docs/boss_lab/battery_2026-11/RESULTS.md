@@ -459,3 +459,69 @@ Summary (wins / fights, enraged seconds mean, median kill s of wins):
 | before | 12/12 | 50 | 0 | 45 |
 | after | 0/12 | 300 | 15 | - |
 
+
+
+---
+
+## FOLLOW-UP 2: why the daytime Empress stalled (found, fixed)
+
+The 0/12 daytime result was our slot-254 targeting breaking her, not difficulty. A per-tick probe of her AI (`HARNESS-EOL`: ai[0..3], target slot, `GetTargetData().Invalid`, distance to target, velocity) and of her projectiles (`HARNESS-EOLPROJ`) showed two separate faults (OBSERVED):
+
+1. **Stale target.** Her post-AI hand-back leaves `NPC.target` = 255 as the "locked on a soldier" sentinel. When that soldier died mid-attack, `Prepare` cleared the lock but only re-searched if the target equalled the flyer slot (254), so she kept 255. `GetTargetData()` reads 255 as invalid, her dash (attack 8/9) ran on that: velocity went 64, then 2.8e11, then NaN, her position became NaN, and she hovered idle through the rest of the fight (probe: `tgt=255 invalid=1`, then `dist=NaN vel=NaN` for the remaining ~1500 ticks). The "30-50 s in phase 1" was the phase counter of a boss with a NaN position cycling idle states. Her vanilla AI itself is fine: phase 1 idles `idleTimer` = 20-30 ticks per cycle; the day branch (`ShouldEmpressBeEnraged`) only scales distances, speed and damage and does not despawn her at midday. Fix: a flyer-slot enemy with a lost lock searches again (`EnemyTargetingGlobalNPC.Prepare`).
+2. **Bolts flew at the world origin.** Calamity passes `NPC.target` (254) as ai[0] of her Prismatic Bolts (type 873), and they read `Main.player[(int)ai[0]]` every tick to steer. Outside her own AI call slot 254 is the empty vanilla player: after the AI call the census showed bolts at 20-55 px/tick with cos 1.00 to that empty slot and about -1 to the nearest levy and the commander (flying away from everyone). Her Everlasting Rainbow, Ethereal Lance and Sun Dance carry other values in ai[0] (0, 0 or 1, 6 or 7) and do not read a slot. A `GlobalProjectile.PreAI` hook did not help (Calamity runs its projectile AI from its own PreAI, ahead of Levy), so the fix is a `Projectile.AI` detour (`FlyerSlotProjectile`) that puts the soldier she is locked on (else the nearest soldier) in slot 254 for that projectile's own AI call. Only hostile projectiles with ai[0] = 254 are touched.
+
+Result with both fixes (24 fights, same kits and seeds, cap 300 s, build e707b6e; zero invalid/NaN probe lines in 3,864 samples, zero exceptions; median share of the fight in phase 1: 7% night, 11% day, was 6-7 s total before and 30-49 s stalled):
+
+| | before the Empress change | first Empress change (99fd58c) | with both fixes |
+|---|---|---|---|
+| Night | 12/12, median 41 s | 10/12, median 77 s | 11/12, median 80 s (one timeout at 300 s with 26 levies dead) |
+| Day | 12/12, median 45 s, she fought only the stand-in | 0/12, stalled | 0/12, 9 wipes (all 30 levies dead after 69-210 s) and 3 timeouts at 300 s with 28-29 levies dead |
+
+Day fights now play out as a deadly enraged Empress: she kills the army and the army gets her to 32-134% of her max HP before dying (best 32%). Whether the daytime Empress should be beatable by this kit is a balance call, not a bug; I did not tune anything. Day wipes come from her attacks now landing on levies (her bolts steer at them and a wipe takes 70-210 s); before, her attacks were aimed at the invulnerable stand-in. Stand-in commander caveat unchanged. Per-fight tables below (set label `after2`); rows are also in `results.csv` as `FOLLOWUP2_after2_<night|day>_a3`. Script: `scripts/followup2.py`.
+
+#### Empress of Light
+
+| difficulty | kit | seed | set | arena | result | kill s | levy deaths /30 | first death s | boss HP left % (loss) | attacks on levies % | on commander % | enraged s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Expert+Rev | mid | 1 | after2 | surface (a3) | WIN | 98.1 | 0 | - | - | 100 | 0 | 0.0 |
+| Expert+Rev | mid | 2 | after2 | surface (a3) | WIN | 81.6 | 0 | - | - | 100 | 0 | 0.0 |
+| Expert+Rev | mid | 3 | after2 | surface (a3) | WIN | 71.8 | 9 | 17.7 | - | 100 | 0 | 0.0 |
+| Expert+Rev | on | 1 | after2 | surface (a3) | WIN | 75.2 | 0 | - | - | 100 | 0 | 0.0 |
+| Expert+Rev | on | 2 | after2 | surface (a3) | WIN | 45.9 | 0 | - | - | 100 | 0 | 0.0 |
+| Expert+Rev | on | 3 | after2 | surface (a3) | WIN | 178.1 | 22 | 17.7 | - | 100 | 0 | 0.0 |
+| Master+Death | mid | 1 | after2 | surface (a3) | TIMEOUT | - | 26 | 7.1 | 33.5 | 100 | 0 | 0.0 |
+| Master+Death | mid | 2 | after2 | surface (a3) | WIN | 99.0 | 0 | - | - | 100 | 0 | 0.0 |
+| Master+Death | mid | 3 | after2 | surface (a3) | WIN | 79.6 | 0 | - | - | 100 | 0 | 0.0 |
+| Master+Death | on | 1 | after2 | surface (a3) | WIN | 225.7 | 26 | 15.9 | - | 100 | 0 | 0.0 |
+| Master+Death | on | 2 | after2 | surface (a3) | WIN | 58.3 | 0 | - | - | 100 | 0 | 0.0 |
+| Master+Death | on | 3 | after2 | surface (a3) | WIN | 68.2 | 0 | - | - | 100 | 0 | 0.0 |
+
+Summary (wins / fights, enraged seconds mean, median kill s of wins):
+
+| set | wins | mean enraged s | mean attacks on levies % | median kill s |
+|---|---|---|---|---|
+| after2 | 11/12 | 0 | 100 | 80 |
+
+#### Empress of Light (daytime fights)
+
+| difficulty | kit | seed | set | arena | result | kill s | levy deaths /30 | first death s | boss HP left % (loss) | attacks on levies % | on commander % | enraged s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Expert+Rev | mid | 1 | after2 | surface (a3) | LOSS | - | 30 | 7.1 | 104.1 | 100 | 0 | 83.6 |
+| Expert+Rev | mid | 2 | after2 | surface (a3) | LOSS | - | 30 | 7.0 | 101.3 | 100 | 0 | 113.9 |
+| Expert+Rev | mid | 3 | after2 | surface (a3) | TIMEOUT | - | 28 | 7.1 | 32.1 | 100 | 0 | 300.0 |
+| Expert+Rev | on | 1 | after2 | surface (a3) | LOSS | - | 30 | 7.0 | 68.2 | 100 | 0 | 122.0 |
+| Expert+Rev | on | 2 | after2 | surface (a3) | TIMEOUT | - | 29 | 7.1 | 53.7 | 100 | 0 | 300.0 |
+| Expert+Rev | on | 3 | after2 | surface (a3) | LOSS | - | 30 | 7.2 | 66.2 | 100 | 0 | 177.1 |
+| Master+Death | mid | 1 | after2 | surface (a3) | LOSS | - | 30 | 6.6 | 113.2 | 100 | 0 | 77.0 |
+| Master+Death | mid | 2 | after2 | surface (a3) | LOSS | - | 30 | 13.6 | 133.6 | 100 | 0 | 69.3 |
+| Master+Death | mid | 3 | after2 | surface (a3) | LOSS | - | 30 | 6.5 | 75.3 | 100 | 0 | 210.9 |
+| Master+Death | on | 1 | after2 | surface (a3) | LOSS | - | 30 | 6.4 | 117.0 | 100 | 0 | 69.3 |
+| Master+Death | on | 2 | after2 | surface (a3) | LOSS | - | 30 | 6.5 | 73.8 | 100 | 0 | 182.2 |
+| Master+Death | on | 3 | after2 | surface (a3) | LOSS | - | 30 | 13.5 | 115.6 | 100 | 0 | 117.7 |
+
+Summary (wins / fights, enraged seconds mean, median kill s of wins):
+
+| set | wins | mean enraged s | mean attacks on levies % | median kill s |
+|---|---|---|---|---|
+| after2 | 0/12 | 152 | 100 | - |
+

@@ -239,6 +239,9 @@ namespace Levy.Common.UI
 			Mod.Logger.Warn("Levy: map markers (" + what + ") failed to draw; logged once: " + e);
 		}
 
+		/// <summary>Bench seam (MapLagCheck): the non-drawing half of one frame of this layer.</summary>
+		internal static void BenchGather() { GatherOfficers(); GatherArmy(); GatherBosses(); }
+
 		public override void Unload() => FlushCache();
 
 		// =====================================================================================================

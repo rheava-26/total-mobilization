@@ -151,6 +151,14 @@ namespace Levy.Common.Testing
 			var bothSlots = new SoldierRecord { Id = 913 }; Armor(bothSlots); Wear(bothSlots, ItemID.PapyrusScarab, ItemID.SquireShield);
 			var te8 = Armory(null, Stock()); ArmoryTE.TestServed = new List<SoldierRecord> { bothSlots }; te8.IssueGear(bothSlots);
 			check("with both extra slots he carries a staff and a sentry beside his blade", Staves(bothSlots) == 1 && Sentries(bothSlots) == 1 && bothSlots.Gear.SidearmCount == 3, Kit(bothSlots));
+			{
+				// read straight off the scratch player: the equip pass really raises maxMinions / maxTurrets (the staff above rode on these numbers)
+				ArmorDoctrine.ExtraSummonSlots(minionSlot.Gear, out int m1, out int t1); ArmorDoctrine.ExtraSummonSlots(sentrySlot.Gear, out int m2, out int t2); ArmorDoctrine.ExtraSummonSlots(bothSlots.Gear, out int m3, out int t3); ArmorDoctrine.ExtraSummonSlots(free.Gear, out int m0, out int t0);
+				check("the scratch player gets no extra summon slot from plain armor", m0 == 0 && t0 == 0, $"minions+{m0} sentries+{t0}");
+				check("Papyrus Scarab raises maxMinions by one and maxTurrets by none on the scratch player", m1 == 1 && t1 == 0, $"minions+{m1} sentries+{t1}");
+				check("Squire's Shield raises maxTurrets by one and maxMinions by none on the scratch player", m2 == 0 && t2 == 1, $"minions+{m2} sentries+{t2}");
+				check("Papyrus Scarab and Squire's Shield together give one of each", m3 == 1 && t3 == 1, $"minions+{m3} sentries+{t3}");
+			}
 			var capped = ArmoryRules.Default(); capped.SidearmLimit = 1;
 			var limited = new SoldierRecord { Id = 914 }; Armor(limited); Wear(limited, ItemID.PapyrusScarab, ItemID.SquireShield);
 			var te9 = Armory(capped, Stock()); ArmoryTE.TestServed = new List<SoldierRecord> { limited }; te9.IssueGear(limited);

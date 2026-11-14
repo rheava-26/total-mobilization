@@ -4,6 +4,7 @@ using Terraria;
 using Levy.Common;
 using Levy.Common.Movement;
 using Levy.Common.Soldiers;
+using Levy.Common.Systems;
 using static Levy.Common.LevyConstants.Movement;
 
 namespace Levy.Content.NPCs
@@ -22,6 +23,36 @@ namespace Levy.Content.NPCs
 		private int _frY = int.MinValue, _frLane = -1, _frNextPick, _frReachCheck, _frOffSince, _frBadY = int.MinValue, _frBadUntil;
 		/// <summary>The feet-tile y of the row this levy follows on (int.MinValue when it has none); the harness and friends read it.</summary>
 		internal int FollowRowY => _frY;
+
+		/// <summary>1 = following levies take stable points on a ring around the commander (the default look), 0 = the old row balancing. Harness switch LEVY_FOLLOWRING=0.</summary>
+		internal static int FollowRingMode = Environment.GetEnvironmentVariable("LEVY_FOLLOWRING") == "0" ? 0 : 1;
+		private const float FrRingRowWeight = 1.2f, FrRingBase = 4f, FrRingPerLevy = 0.4f, FrRingSpreadMult = 1.6f, FrRingMaxRadius = 26f;
+
+		/// <summary>This levy's rank among the commander's following levies (by id) and how many there are.</summary>
+		private void FrRank(out int rank, out int count)
+		{
+			rank = 0; count = 0;
+			foreach (var r in RosterSystem.Instance.Regulars)
+			{
+				if (r.Reserve || r.Order != SoldierOrder.Follow || r.CommanderName != Record.CommanderName || r.CloseUp) continue;
+				count++; if (r.Id < Record.Id) rank++;
+			}
+			if (count == 0) count = 1;
+		}
+
+		/// <summary>
+		/// The levy's point on the ring, as an offset (tiles) from the commander: x to the right, up above. The angle is its rank times the golden angle, so any number of levies is spread evenly round and a
+		/// levy keeps its angle while others come and go; the ring is as wide as the army is big (Spread out: wider) and half as tall.
+		/// </summary>
+		private void FrRingPoint(bool spread, out float x, out float up)
+		{
+			FrRank(out int rank, out int n);
+			float a = Math.Clamp(FrRingBase + FrRingPerLevy * n, 6f, FrRingMaxRadius);
+			if (spread) a = Math.Clamp(a * FrRingSpreadMult, 12f, FrSpreadMax);
+			float b = Math.Clamp(a * 0.5f, 5f, 12f);
+			double ang = (rank * 0.6180339887 % 1.0) * Math.PI * 2.0;
+			x = (float)(a * Math.Cos(ang)); up = (float)(b * Math.Sin(ang));
+		}
 
 		private const float FrNormalStart = 2.8f, FrNormalStep = 3.0f, FrNormalMax = 30f, FrSpreadStart = 6f, FrSpreadStep = 6f, FrSpreadMax = 24f;
 		private const float FollowRowStopTiles = 0.7f, FollowRowStartTiles = 1.6f;
@@ -152,23 +183,35 @@ namespace Levy.Content.NPCs
 				_frNextPick = now + FrPickEveryTicks + (int)(SlotFrac(SlotSaltPhase) * 40f);
 				FrReach(set, _frReach);
 				int bestRow = -1, bestLane = -1; float bestScore = float.MaxValue;
+				// RING: this levy's stable point on a circle (an ellipse, wider than tall) around the commander; the lane it takes is the free one nearest that point
+				bool ring = FollowRingMode >= 1;
+				float ringX = 0f, ringUp = 0f;
+				if (ring) FrRingPoint(spread, out ringX, out ringUp);
 				for (int pass = 0; pass < 2 && bestRow < 0; pass++) // pass 0: the rows in the band; pass 1: any row this body can reach (a levy that cannot get into the band stands where it can)
 				for (int r = 0; r < set.Count; r++)
 				{
 					var row = set.Rows[r];
 					if (!_frReach[r] || (pass == 0 && !row.InBand) || (row.Y == _frBadY && now < _frBadUntil)) continue;
-					int occupied = 0, valid = 0, free = -1;
+					int occupied = 0, valid = 0, free = -1; float bestLaneCost = float.MaxValue;
+					float rowUp = set.CmdY - row.Y;
 					for (int k = 0; k < FollowRowSet.MaxLanes; k++)
 					{
 						if (!FrLaneInRange(k, spread)) break;
 						if (!FrLaneStands(row, cmdX, k, spread)) continue;
 						valid++;
 						if (row.OwnerNpc[k] != 0 && row.OwnerNpc[k] - 1 != NPC.whoAmI && FrLaneOwnedByLiving(row, k)) { occupied++; continue; }
-						if (free < 0) free = k;
+						if (!ring) { if (free < 0) free = k; continue; }
+						float lc = Math.Abs(FrLaneOffset(k, spread) - ringX) + FrRingRowWeight * Math.Abs(rowUp - ringUp);
+						if (lc < bestLaneCost) { bestLaneCost = lc; free = k; }
 					}
 					if (free < 0 || valid == 0) continue;
-					float weight = Math.Min(valid, 24) * (r == set.CmdRow ? 1.4f : 1f) / (1f + 0.05f * Math.Abs(row.Y - set.CmdY));
-					float score = (occupied + 1) / weight + 0.01f * Math.Abs(row.Y - feet.Y);
+					float score;
+					if (ring) score = bestLaneCost + 0.02f * Math.Abs(row.Y - feet.Y);
+					else
+					{
+						float weight = Math.Min(valid, 24) * (r == set.CmdRow ? 1.4f : 1f) / (1f + 0.05f * Math.Abs(row.Y - set.CmdY));
+						score = (occupied + 1) / weight + 0.01f * Math.Abs(row.Y - feet.Y);
+					}
 					if (score < bestScore) { bestScore = score; bestRow = r; bestLane = free; }
 				}
 				if (bestRow < 0) return false;

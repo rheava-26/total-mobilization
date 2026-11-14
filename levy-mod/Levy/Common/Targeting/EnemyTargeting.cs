@@ -55,6 +55,7 @@ namespace Levy.Common.Targeting
 		private static readonly HashSet<int> _bossParts = new(LevyConstants.Targeting.BossPartTypes);
 		private static readonly HashSet<int> _swapExcludedTypes = new(LevyConstants.Targeting.SwapExcludedTypes);
 		private static readonly HashSet<int> _bossSwapIncompatible = new(LevyConstants.Targeting.BossSwapIncompatibleAiStyles);
+		private static readonly HashSet<int> _bossFlyerSlotStyles = new(LevyConstants.Targeting.BossFlyerSlotAiStyles);
 		private static readonly HashSet<int> _eventTowers = new(LevyConstants.Targeting.EventTowerTypes);
 
 		// Scratch for one Compete call: the soldiers in reach, as (index into Bodies, NPC index, weighted distance). Compete is never re-entered, so one set is enough.
@@ -75,7 +76,9 @@ namespace Levy.Common.Targeting
 		private static Player _null254;
 		internal static bool FlyerSlotUsable => (_swapped && _swapSlot == FlyerSlot) || (Main.player[FlyerSlot] != null && !Main.player[FlyerSlot].active);
 		/// <summary>The slot this enemy's soldier target is swapped into.</summary>
-		internal static int SlotFor(NPC npc) => npc.aiStyle == NPCAIStyleID.Flying && !UsesNativeTargeting(npc) && FlyerSlotUsable ? FlyerSlot : SoldierNPC.DummySlot;
+		internal static int SlotFor(NPC npc) => UsesFlyerSlot(npc) && FlyerSlotUsable ? FlyerSlot : SoldierNPC.DummySlot;
+		/// <summary>An enemy whose AI reads its target only through GetTargetData(): Flying-AI enemies and the boss styles in <see cref="LevyConstants.Targeting.BossFlyerSlotAiStyles"/> (Empress of Light).</summary>
+		internal static bool UsesFlyerSlot(NPC npc) => !UsesNativeTargeting(npc) && (npc.aiStyle == NPCAIStyleID.Flying || _bossFlyerSlotStyles.Contains(npc.aiStyle));
 		/// <summary>Before any vanilla target search: a dummy parked in the flyer slot would be found as a real player.</summary>
 		private static void PreSearch() { if (_swapped && _swapSlot != SoldierNPC.DummySlot) Unswap(); }
 		/// <summary>The Player instance that legitimately lives in Main.player[255] (vanilla null player). Captured whenever the slot is in its normal state.</summary>
@@ -275,6 +278,7 @@ namespace Levy.Common.Targeting
 			if (BossPersistenceGlobalNPC.IsDaytimeExcluded(npc)) return false;
 			if (UsesNativeTargeting(npc)) return true;
 			int style = npc.aiStyle;
+			if (_bossFlyerSlotStyles.Contains(style)) return FlyerSlotUsable && !_swapExcludedTypes.Contains(npc.type);
 			return !_swapIncompatible.Contains(style) && !_bossSwapIncompatible.Contains(style) && !_swapExcludedTypes.Contains(npc.type);
 		}
 
@@ -841,7 +845,7 @@ namespace Levy.Common.Targeting
 			EnemyTargeting.ReturnWallTarget();
 			EnemyTargeting.Unswap();
 			// A flyer was aimed through the flyer slot for this AI call only; outside it, "locked on a soldier" reads as 255 like every other swapped enemy.
-			if (npc.target == EnemyTargeting.FlyerSlot && npc.aiStyle == NPCAIStyleID.Flying && LevyNpcData.Of(npc).SoldierTarget >= 0) npc.target = SoldierNPC.DummySlot;
+			if (npc.target == EnemyTargeting.FlyerSlot && EnemyTargeting.UsesFlyerSlot(npc) && LevyNpcData.Of(npc).SoldierTarget >= 0) npc.target = SoldierNPC.DummySlot;
 		}
 	}
 }

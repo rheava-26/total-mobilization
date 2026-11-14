@@ -182,7 +182,7 @@ namespace Levy.Common.Testing
 			{
 				if (!rec.HasBody) continue; NPC b = Main.npc[rec.BodyIndex]; var sn = b.ModNPC as SoldierNPC;
 				bool enclosed = phase == "pocket" && Math.Abs(b.Center.X / 16f - _cx) < 200 && (FloorY - b.Bottom.Y / 16f) < 3 && JtInsidePocket(b);
-				if (enclosed) stuckTiny++;
+				if (enclosed) { stuckTiny++; JtLog($"INSIDE {phase} {rec.Name} x={(b.Center.X / 16f - _cx):0.0} up={(FloorY - b.Bottom.Y / 16f):0.0} state={sn?.State} goal={(sn != null && sn.HasMoveGoal ? ((sn.MoveGoal.X / 16f) - _cx).ToString("0") + "," + (FloorY - sn.MoveGoal.Y / 16f).ToString("0") : "-")} why={sn?.StillReason()} cmdX={(Main.player[0].Center.X / 16f - _cx):0}"); }
 			}
 			JtLog($"RESULT {phase}: n={_jtRecs.Count} windowsJudged={_jtWindowsJudged} jitterWindowsOnTinyFooting={_jtJitterWindows} floorStrafeWindows(not counted)={_jtFloorStrafe} jitterLevies={_jtJitterers.Count} ({string.Join(",", _jtJitterers.Take(8))}) windowsOnTinyFooting={_jtOnTiny}/{_jtOnTinySamples} teleports={_jtTele} stillInsidePocket={stuckTiny}");
 			JtCheck(_jtJitterWindows == 0, $"{phase}: no levy jitters in place on a foothold of 4 tiles or fewer (jitter windows {_jtJitterWindows}, levies {_jtJitterers.Count})");

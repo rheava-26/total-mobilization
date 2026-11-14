@@ -26,7 +26,7 @@ namespace Levy.Content.NPCs
 
 		/// <summary>1 = following levies take stable points on a ring around the commander (the default look), 0 = the old row balancing. Harness switch LEVY_FOLLOWRING=0.</summary>
 		internal static int FollowRingMode = Environment.GetEnvironmentVariable("LEVY_FOLLOWRING") == "0" ? 0 : 1;
-		private const float FrRingRowWeight = 1.2f, FrRingBase = 4f, FrRingPerLevy = 0.4f, FrRingSpreadMult = 1.6f, FrRingMaxRadius = 26f;
+		private const float FrRingRowWeight = 1.2f, FrRingBase = 4f, FrRingPerLevy = 0.4f, FrRingSpreadMult = 1.6f, FrRingMaxRadius = 22f;
 
 		/// <summary>This levy's rank among the commander's following levies (by id) and how many there are.</summary>
 		private void FrRank(out int rank, out int count)
@@ -47,6 +47,12 @@ namespace Levy.Content.NPCs
 		private void FrRingPoint(bool spread, out float x, out float up)
 		{
 			FrRank(out int rank, out int n);
+			FrRingPointOf(rank, n, spread, out x, out up);
+		}
+
+		/// <summary>The ring point of the levy ranked <paramref name="rank"/> among <paramref name="n"/> followers: x to the right, up above, in tiles from the commander. Pure arithmetic (the world check exercises it).</summary>
+		internal static void FrRingPointOf(int rank, int n, bool spread, out float x, out float up)
+		{
 			float a = Math.Clamp(FrRingBase + FrRingPerLevy * n, 6f, FrRingMaxRadius);
 			if (spread) a = Math.Clamp(a * FrRingSpreadMult, 12f, FrSpreadMax);
 			float b = Math.Clamp(a * 0.5f, 5f, 12f);

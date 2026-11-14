@@ -238,6 +238,11 @@ namespace Levy.Common.Testing
 			}
 			if (st.Tick != 5 && st.Tick % 120 != 0) return;
 			var sb = new System.Text.StringBuilder(); int lasers = 0;
+			{
+				NPC m = Main.wofNPCIndex >= 0 && Main.wofNPCIndex < Main.maxNPCs ? Main.npc[Main.wofNPCIndex] : null; int near = 0, alive = 0; float dmin = 999f;
+				if (m != null && m.active) foreach (var l in st.Levies) { if (l.Dead) continue; NPC ln = Main.npc[l.Idx]; if (!ln.active) continue; alive++; float d = Math.Abs(ln.Center.X - m.Center.X) / 16f; dmin = Math.Min(dmin, d); if (d < 45f) near++; }
+				sb.Append($" BOSS hp={(m != null && m.active ? m.life : -1)} mouthX={(m != null ? (m.Center.X / 16f - _crCx) : 0):0} mouthY={(m != null ? (CrF - m.Center.Y / 16f) : 0):0} cmdX={(Main.player[0].Center.X / 16f - _crCx):0} levyAlive={alive} within45={near} nearestDx={dmin:0}");
+			}
 			sb.Append($" LASERAIM total={_crWofLaserTotal} " + string.Join(",", _crWofLaserAim.Select(kv => kv.Key + "=" + kv.Value)));
 			for (int i = 0; i < Main.maxProjectiles; i++) { var pr = Main.projectile[i]; if (pr.active && pr.hostile && (pr.type == ProjectileID.EyeLaser || pr.type == ProjectileID.DeathLaser || pr.type == ProjectileID.PinkLaser)) lasers++; }
 			_crWofLasers += lasers;

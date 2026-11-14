@@ -431,12 +431,20 @@ namespace Levy.Common.Testing
 			Mod.Logger.Info($"HARNESS-CR: arena '{kind}' built: floor row {fy}, half-width {half}, 4 platform rows; world {Main.maxTilesX}x{Main.maxTilesY} worldSurface {Main.worldSurface:0} rockLayer {Main.rockLayer:0} => arena is {(fy < Main.worldSurface ? "ABOVE" : "BELOW")} worldSurface, {(fy > Main.rockLayer ? "in" : "above")} the cavern layer");
 		}
 
-		private Vector2 _crCmdPos;
+		private Vector2 _crCmdPos; private int _crWofDir;
 		private void CrPinCommander()
 		{
 			Player p = Main.player[0];
 			p.active = true; p.dead = false; p.name = CommanderName; p.team = 0;
 			p.statLifeMax = p.statLifeMax2 = 500; p.statLife = 500; p.statManaMax = p.statManaMax2 = 200; p.statMana = 200;
+			if (_crRunCur != null && _crRunCur.Boss == "wof" && Main.wofNPCIndex >= 0 && Main.wofNPCIndex < Main.maxNPCs && Main.npc[Main.wofNPCIndex].active && Main.npc[Main.wofNPCIndex].type == NPCID.WallofFlesh)
+			{
+				// the commander keeps ahead of the wall like a player running a bridge: never closer than the gap to its mouth, never past the corridor's end (LEVY_CR_WOFGAP tiles, default 40; the wall never turns round)
+				float gap = float.TryParse(Environment.GetEnvironmentVariable("LEVY_CR_WOFGAP"), NumberStyles.Float, CultureInfo.InvariantCulture, out float wg) ? wg : 40f;
+				float wallX = Main.npc[Main.wofNPCIndex].Center.X, dir = _crWofDir == 0 ? 0 : _crWofDir;
+				if (_crWofDir == 0 && Math.Abs(wallX - _crCmdPos.X) > 16f) _crWofDir = wallX > _crCmdPos.X ? 1 : -1; // the wall comes from this side; the commander runs the other way
+				if (_crWofDir != 0) { float want = wallX - _crWofDir * gap * 16f; if (_crWofDir > 0) _crCmdPos.X = Math.Max(Math.Min(_crCmdPos.X, want), (_crCx - 880) * 16f); else _crCmdPos.X = Math.Min(Math.Max(_crCmdPos.X, want), (_crCx + 880) * 16f); }
+			}
 			Vector2 pin = _crRunCur != null && _crRunCur.Cmd == "far" ? new Vector2((_crCx + 121) * 16f, CrF * 16f) : _crCmdPos; // cmd=far: the commander stands outside the arena, so he is never the closer target
 			p.position = new Vector2(pin.X - p.width / 2f, pin.Y - p.height);
 			p.velocity = Vector2.Zero; p.immune = true; p.immuneTime = 30;
@@ -613,7 +621,7 @@ namespace Levy.Common.Testing
 				CrApplyMode(run.Mode); CrDrGlobal.Dr = run.Dr; _crBrainRun = run.Boss == "brain"; _crRunCur = run;
 				Main.rand = new Terraria.Utilities.UnifiedRandom(run.Seed * 7919 + 13);
 				NPC.downedBoss1 = false; NPC.downedBoss2 = false; NPC.downedSlimeKing = false;
-				_crCmdPos = new Vector2((_crCx - 6) * 16f, CrF * 16f);
+				_crCmdPos = new Vector2((_crCx - 6) * 16f, CrF * 16f); _crWofDir = 0;
 				CrPinCommander();
 				var s = new CrState { Run = run, BossType = CrBossNpcType(run.Boss) };
 				CrSetupBoss(s, run);

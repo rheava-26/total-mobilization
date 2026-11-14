@@ -1042,8 +1042,12 @@ namespace Levy.Common.Recording
 
 		private static void ExtraJumpEvents(Player p)
 		{
+			// a stand-in player made before the mods registered their jumps (a dedicated-server test) has a state array too short for them
+			int have = int.MaxValue;
+			try { var f = typeof(Player).GetField("extraJumps", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public); if (f?.GetValue(p) is Array a) have = a.Length; } catch { }
 			foreach (var (key, jump) in ExtraJumpList())
 			{
+				if (jump.Type >= have) continue;
 				bool active = p.GetJumpState(jump).Active;
 				_pXJump.TryGetValue(key, out bool was);
 				if (active && !was) Ev("xjump", ("name", FightRecFormat.Esc(jump.Name)), ("x", FightRecFormat.N(p.Center.X)), ("y", FightRecFormat.N(p.Center.Y)));

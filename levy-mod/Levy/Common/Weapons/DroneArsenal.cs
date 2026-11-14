@@ -25,6 +25,12 @@ namespace Levy.Common.Weapons
 		public float RangePx;
 		/// <summary>The shot is a stand-in for a held weapon whose real shot is owner-anchored (see <see cref="LevyConstants.Arsenal.HeldStandInProjectile"/>): approximate.</summary>
 		public bool StandIn;
+		/// <summary>A private clone of the mounted weapon and of the round it fires (null: none), the item and ammo the weapon's own hooks run with (<see cref="MachineShots"/>). Never the Armory's own items.</summary>
+		public Item HookItem, AmmoItem;
+		/// <summary>The projectile the weapon's hooks start from: what a player's use hands them (the round's own shot, the weapon's own for a caster), before the signature-shot stand-in <see cref="Projectile"/> carries.</summary>
+		public int HookProjectile;
+		/// <summary>How many shots the machine has fired with this mount: a weapon that works through the phase of its use animation (a beam per step of the swing) is shown the phase this shot would have had.</summary>
+		public int UseIndex;
 
 		public bool Valid => Projectile > ProjectileID.None && IntervalTicks > 0;
 	}
@@ -37,7 +43,7 @@ namespace Levy.Common.Weapons
 	/// shot is a plain projectile (staves, wands, tomes, magic guns), multi-projectile weapons through the same Multishot table soldiers use, and the weapon's own cadence.
 	/// APPROXIMATE: a held / channeled weapon never spawns its owner-anchored shot (it would grab the commander); one that fires ammo fires that ammo's shot at its real cadence, a held caster
 	/// fires <see cref="LevyConstants.Arsenal.HeldStandInProjectile"/>. Sky-drop weapons (Daedalus Stormbow, Blizzard Staff...) shoot straight from the drone instead of raining from above.
-	/// A modded weapon's own Shoot hook is not run. REFUSED: melee, summon, whip, sentry, thrown, boomerang, yoyo, flail, tools, and <see cref="LevyConstants.Arsenal.UnmountableItems"/>.
+	/// A shot that is not a stand-in runs the weapon's own ModifyShootStats and Shoot (<see cref="MachineShots"/>). REFUSED: melee, summon, whip, sentry, thrown, boomerang, yoyo, flail, tools, and <see cref="LevyConstants.Arsenal.UnmountableItems"/>.
 	/// </summary>
 	public static class DroneArsenal
 	{
@@ -184,6 +190,12 @@ namespace Levy.Common.Weapons
 				}
 				if (projectile <= ProjectileID.None) return shot;
 				if (profile.Family == WeaponFamily.HeldWeapon && weapon.useAmmo > 0) shot.StandIn = true; // the held AI's own volley, flown as plain ammo shots
+				if (!shot.StandIn)
+				{
+					shot.HookItem = weapon.Clone(); shot.HookItem.stack = 1;
+					shot.HookProjectile = weapon.useAmmo > 0 ? ResolveAmmoProjectile(weapon, ammo != null && !ammo.IsAir ? ammo : DefaultAmmoSample(weapon.useAmmo), false) : weapon.shoot;
+					if (weapon.useAmmo > 0) { Item round = ammo != null && !ammo.IsAir ? ammo : DefaultAmmoSample(weapon.useAmmo); shot.AmmoItem = round?.Clone(); if (shot.AmmoItem != null) shot.AmmoItem.stack = 1; }
+				}
 
 				shot.Projectile = projectile;
 				shot.Speed = Math.Max(1f, speed);
@@ -228,7 +240,7 @@ namespace Levy.Common.Weapons
 		/// then the per-weapon swaps vanilla makes (Hellwing bats, Shadowflame / Frost / Pulse arrows, high-velocity bullets...). Never an offset on a projectile that is not a launcher base.
 		/// Kept here, beside the drone, rather than shared with the soldier pipeline.
 		/// </summary>
-		public static int ResolveAmmoProjectile(Item weapon, Item ammo)
+		public static int ResolveAmmoProjectile(Item weapon, Item ammo, bool signatureShot = true)
 		{
 			int projectile = weapon.shoot, match;
 			bool matched = false;
@@ -251,7 +263,7 @@ namespace Levy.Common.Weapons
 				else if (ammo.shoot > ProjectileID.None)
 				{
 					projectile = ammo.shoot;
-					if (weapon.type >= ItemID.Count && SignatureShot(weapon, projectile) && WeaponClassifier.GetProfile(weapon).Family != WeaponFamily.HeldWeapon) projectile = weapon.shoot;
+					if (signatureShot && weapon.type >= ItemID.Count && SignatureShot(weapon, projectile) && WeaponClassifier.GetProfile(weapon).Family != WeaponFamily.HeldWeapon) projectile = weapon.shoot;
 				}
 			}
 			if (projectile == ProjectileID.SandBallGun) // the Sandgun: each sand has its own bespoke shot (never the block that would place tiles)

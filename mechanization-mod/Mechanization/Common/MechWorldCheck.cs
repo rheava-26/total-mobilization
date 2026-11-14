@@ -25,7 +25,7 @@ namespace Mechanization.Common
 	/// cursor aimed by Main.mouseX / mouseY. The world is stepped with the real Main.Update (the way the combat harness does) so NPC AI, the garrison sweep and the turret's own brain run.
 	/// No test override of the pylon list is used. LEVY_MECHWORLD_EXIT=1 stops the server when the check ends.
 	/// </summary>
-	public class MechWorldCheck : ModSystem
+	public partial class MechWorldCheck : ModSystem
 	{
 		private static bool _armed, _done, _running; private static int _calls;
 		private static MethodInfo _update;
@@ -183,9 +183,14 @@ namespace Mechanization.Common
 			TurretItemUse();
 			DroneItemUse();
 			DronePlacementRule();
+			TurretPlatformRule();
+			TurretReach();
+			DroneWeaponMix();
+			MachineFxCheck();
 			DroneLeavesPlayerAlone();
 			if (Environment.GetEnvironmentVariable("LEVY_MECHSWEEP") == "1") ShotSweep();
 			if (Environment.GetEnvironmentVariable("LEVY_MECHAMMO") == "1") AmmoResolveAudit();
+			if (Environment.GetEnvironmentVariable("LEVY_MECHSHOTS") == "1") MachineShotAudit();
 			DroneGarrison();
 			CrowdedWorld();
 		}

@@ -1,0 +1,1132 @@
+# Levy weapon-choice probe. Levy 2.0.61
+# boss NPCs mapped with a progression: 73; boss-flag NPCs with NO mapping (23): Moon Lord, Moon Lord's Hand, The Torch God, CalamityMod/AstrumDeusBody, CalamityMod/AstrumDeusTail, CalamityMod/Dragonfolly, CalamityMod/DesertScourgeBody, CalamityMod/DesertScourgeTail, CalamityMod/DevourerofGodsBody, CalamityMod/DevourerofGodsTail, CalamityMod/AresGaussNuke, CalamityMod/AresLaserCannon, CalamityMod/AresPlasmaFlamethrower, CalamityMod/AresTeslaCannon, CalamityMod/ThanatosBody1, CalamityMod/ThanatosBody2, CalamityMod/ThanatosTail, CalamityMod/THELORDE, CalamityMod/PrimordialWyrmHead, CalamityMod/StormWeaverBody, CalamityMod/StormWeaverTail, CalamityMod/BrainIllusion, CalamityMod/FalseBrain
+# shop condition keys seen: Conditions.AnotherTownNPCNearby x275 ->0; Conditions.HappyEnoughForPylons x203 ->0; Conditions.NotInEvilBiome x200 ->0; Conditions.InHardmode x124 ->7; Conditions.InJungle x31 ->0; Conditions.InGraveyard x30 ->0; Conditions.InSnow x29 ->0; Conditions.InDesert x27 ->0; Conditions.InHallow x27 ->0; Conditions.InBeach x26 ->0; Conditions.InGlowshroom x26 ->0; Conditions.ForestPylon x25 ->0; Conditions.UndergroundPylon x25 ->0; Mods.CalamityMod.Condition.InAstral x25 ->0; Mods.CalamityMod.Condition.InSulph x25 ->0; Mods.CalamityMod.Condition.InSunken x25 ->0; Conditions.DownedMechBossAny x23 ->9; Conditions.GolfScoreOver x23 ->0; Conditions.DownedGolem x22 ->13; Conditions.BestiaryPercentage x20 ->0; Conditions.PlayerCarriesItem x18 ->0; Conditions.BloodMoon x17 ->2.5; Conditions.WorldNotRemix x17 ->0; Conditions.Halloween x16 ->0; Conditions.BirthdayParty x16 ->0; Conditions.DownedPlantera x13 ->12; Conditions.TimeNight x12 ->0; Conditions.NpcIsPresent x12 ->0; Conditions.DownedSkeletron x11 ->5; Conditions.DownedMoonLord x10 ->18; Conditions.Christmas x10 ->0; Conditions.FullMoon x9 ->0; Conditions.WorldAnniversary x9 ->0; Conditions.WorldCrimson x8 ->0; Conditions.WorldCorrupt x8 ->0; Conditions.MoonPhasesQuarter0 x8 ->0; Conditions.MoonPhasesQuarter1 x8 ->0; Conditions.MoonPhasesQuarter2 x8 ->0; Conditions.MoonPhasesQuarter3 x8 ->0; Conditions.MoonPhasesOdd x8 ->0; Mods.CalamityMod.Condition.Drops.DownedDoG x7 ->21; Conditions.NotInGraveyard x7 ->0; Conditions.TimeDay x6 ->0; Conditions.DownedPirates x6 ->7.7; Conditions.DownedMartians x6 ->13.75; Conditions.MoonPhasesEven x6 ->0; Conditions.NotBloodMoon x5 ->0; Conditions.DownedMechBossAll x5 ->11; Conditions.DownedGoblinArmy x5 ->3.3; Conditions.DownedLunaticCultist x4 ->0; Conditions.FirstQuarterMoon x4 ->0; Mods.CalamityMod.Condition.InRev x4 ->0; Mods.CalamityMod.Condition.HasFlareGun x3 ->0; Conditions.DownedEyeOfCthulhu x3 ->2; Conditions.WaningGibbousMoon x3 ->0; Conditions.DownedClown x3 ->7; Conditions.ThirdQuarterMoon x3 ->0; Conditions.WaningCrescentMoon x3 ->0; Conditions.NewMoon x3 ->0; Conditions.WaxingCrescentMoon x3 ->0
+
+## TIERS
+mod	name	family	class	dmg	perHit	hitsPerSec	dpsAdj	pierce	rare	value	score	route	routeSrc	useAmmo	mana	leafCost	isTool	displayName
+Vanilla	IronBroadsword	Broadsword	melee	12	12.0	3.00	36.0	1	0	1800	40.7	0.00	recipe<-	0	0	12000	False	Iron Broadsword
+Vanilla	IronShortsword	Shortsword	melee	10	10.0	5.00	50.0	-1	0	1400	56.3	0.00	recipe<-	0	0	9000	False	Iron Shortsword
+Vanilla	WoodenSword	Broadsword	melee	7	7.0	3.00	21.0	1	0	100	22.7	0.00	unknown:rarity	0	0	100	False	Wooden Sword
+Vanilla	WoodenBow	Bow	ranged	4	14.0	2.00	28.0	1	0	100	30.2	0.00	unknown:rarity	40	0	100	False	Wooden Bow
+Vanilla	Shuriken	Thrown	ranged	10	10.0	4.00	12.0	4	0	15	12.6	0.00	shop:Terraria/Merchant/Shop	0	0	15	False	Shuriken
+Vanilla	DemonBow	Bow	ranged	12	22.0	2.40	52.8	1	1	18000	65.0	2.00	recipe<-Demonite Bar	40	0	120000	False	Demon Bow
+Vanilla	LightsBane	Broadsword	melee	16	16.0	3.00	96.0	2	1	13500	117.6	2.00	recipe<-Demonite Bar	0	0	150000	False	Light's Bane
+Vanilla	EnchantedBoomerang	Boomerang	melee	21	21.0	3.00	50.4	-1	1	50000	62.9	0.50	recipe<-Wooden Boomerang	0	0	78100	False	Enchanted Boomerang
+Vanilla	Vilethorn	Magic	magic	10	10.0	2.14	21.4	-1	1	75000	26.9	0.50	unknown:rarity	0	10	75000	False	Vilethorn
+Vanilla	Starfury	Broadsword	melee	25	25.0	1.50	93.8	2	2	50000	122.6	4.50	recipe<-Aerialite Bar	0	0	113000	False	Starfury
+Vanilla	FlintlockPistol	Gun	ranged	13	23.0	3.75	86.2	1	1	50000	107.6	0.50	shop:Terraria/ArmsDealer/Shop+rarityfloor0.5	97	0	50000	False	Flintlock Pistol
+Vanilla	Musket	Gun	ranged	22	32.0	1.88	60.0	-1	1	75000	75.3	0.50	unknown:rarity	97	0	75000	False	Musket
+Vanilla	Minishark	Gun	ranged	4	14.0	7.50	105.0	-1	2	350000	140.9	1.50	shop:Terraria/ArmsDealer/Shop+rarityfloor1.5	97	0	350000	False	Minishark
+Vanilla	IronBow	Bow	ranged	8	18.0	2.14	38.6	1	0	1400	43.4	0.00	recipe<-	40	0	10500	False	Iron Bow
+Vanilla	FlowerofFire	Magic	magic	37	37.0	3.75	138.8	1	3	125000	192.0	4.50	unknown:rarity	0	12	125000	False	Flower of Fire
+Vanilla	MagicMissile	Magic	magic	23	23.0	6.00	138.0	1	2	87500	181.8	7.00	shop:Terraria/Wizard/Shop	0	14	87500	False	Magic Missile
+Vanilla	Flamarang	Boomerang	melee	40	40.0	3.00	96.0	-1	3	100000	132.5	5.00	recipe<-Hellstone Bar	0	0	115600	False	Flamarang
+Vanilla	MoltenFury	Bow	ranged	31	41.0	2.14	87.9	1	3	27000	119.2	5.00	recipe<-Hellstone Bar	40	0	56250	False	Molten Fury
+Vanilla	FieryGreatsword	Broadsword	melee	40	40.0	1.50	60.0	1	3	27000	81.4	5.00	recipe<-Hellstone Bar	0	0	75000	False	Volcano
+Vanilla	SpaceGun	Magic	magic	23	23.0	3.53	81.2	3	1	20000	100.0	2.00	recipe<-Meteorite Bar	0	6	60000	False	Space Gun
+Vanilla	Bone	Thrown	ranged	20	20.0	5.00	30.0	1	0	50	32.0	5.00	boss:Skeletron@5	0	0	50	False	Bone
+Vanilla	Muramasa	Broadsword	melee	24	24.0	3.33	80.0	1	2	87500	105.4	5.00	recipe<-Bone	0	0	63500	False	Muramasa
+Vanilla	AquaScepter	Magic	magic	24	24.0	7.50	180.0	5	2	87500	237.2	1.50	unknown:rarity	0	7	87500	False	Aqua Scepter
+Vanilla	SpikyBall	Thrown	ranged	16	16.0	4.00	19.2	7	0	80	20.7	3.30	shop:Terraria/GoblinTinkerer/Shop	0	0	80	False	Spiky Ball
+Vanilla	BallOHurt	Flail	melee	15	15.0	1.33	16.0	-1	1	75000	20.1	0.50	unknown:rarity	0	0	75000	False	Ball O' Hurt
+Vanilla	BlueMoon	Flail	melee	27	27.0	1.33	28.8	-1	2	87500	37.9	1.50	unknown:rarity	0	0	87500	False	Blue Moon
+Vanilla	Handgun	Gun	ranged	26	36.0	3.00	108.0	1	2	87500	142.3	1.50	unknown:rarity	97	0	87500	False	Handgun
+Vanilla	WaterBolt	Magic	magic	23	23.0	3.53	81.2	10	2	75000	106.7	7.00	recipe<-Water Candle	0	10	56301	False	Water Bolt
+Vanilla	Grenade	Thrown	ranged	60	60.0	1.33	24.0	-1	0	75	25.8	0.00	shop:Terraria/Demolitionist/Shop	0	0	75	False	Grenade
+Vanilla	BreathingReed	Broadsword	melee	10	10.0	3.16	31.6	1	1	10000	38.5	0.50	unknown:rarity	0	0	10000	False	Breathing Reed
+Vanilla	BladeofGrass	Broadsword	melee	18	18.0	3.00	108.0	2	3	27000	146.6	4.50	recipe<-Stinger+rarityfloor4.5	0	0	6900	False	Blade of Grass
+Vanilla	ThornChakram	Boomerang	melee	25	25.0	4.00	80.0	-1	3	50000	109.4	4.50	recipe<-Stinger+rarityfloor4.5	0	0	2400	False	Thorn Chakram
+Vanilla	StarCannon	Gun	ranged	55	55.0	3.33	183.3	-1	2	500000	247.1	2.00	recipe<-Meteorite Bar	75	0	435000	False	Star Cannon
+Vanilla	BluePhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0	101250	False	Blue Phaseblade
+Vanilla	RedPhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0	157500	False	Red Phaseblade
+Vanilla	GreenPhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0	120000	False	Green Phaseblade
+Vanilla	PurplePhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0	63750	False	Purple Phaseblade
+Vanilla	WhitePhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0	195000	False	White Phaseblade
+Vanilla	YellowPhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0	82500	False	Yellow Phaseblade
+Vanilla	Flamelash	Magic	magic	36	36.0	2.00	72.0	2	3	125000	99.6	4.50	unknown:rarity	0	21	125000	False	Flamelash
+Vanilla	PhoenixBlaster	Gun	ranged	30	40.0	3.00	120.0	1	3	175000	166.8	5.00	recipe<-Hellstone Bar	97	0	125000	False	Phoenix Blaster
+Vanilla	Sunfury	Flail	melee	32	32.0	1.33	34.1	-1	3	125000	47.2	4.50	unknown:rarity	0	0	125000	False	Sunfury
+Vanilla	Sandgun	Gun	ranged	30	30.0	3.00	90.0	1	2	10000	115.2	1.50	recipe<-+rarityfloor1.5	169	0	219250	False	Sandgun
+Vanilla	DemonScythe	Magic	magic	28	28.0	3.00	84.0	5	3	75000	115.5	4.50	unknown:rarity	0	14	75000	False	Demon Scythe
+Vanilla	NightsEdge	Broadsword	melee	45	45.0	2.40	108.0	2	3	200000	150.3	7.00	recipe<-Purified Gel	0	0	320400	False	Night's Edge
+Vanilla	DarkLance	Spear	melee	34	34.0	2.73	92.7	-1	3	125000	128.3	4.50	unknown:rarity	0	0	125000	False	Dark Lance
+Vanilla	Trident	Spear	melee	20	20.0	1.94	38.7	-1	1	10000	47.2	0.50	unknown:rarity	0	0	10000	False	Trident
+Vanilla	ThrowingKnife	Thrown	ranged	12	12.0	4.00	14.4	2	0	50	15.4	2.50	shop:Terraria/Merchant/Shop:BloodMoon	0	0	50	False	Throwing Knife
+Vanilla	Spear	Spear	melee	14	14.0	1.94	27.1	-1	0	1000	30.3	0.00	unknown:rarity	0	0	1000	False	Spear
+Vanilla	Blowpipe	Gun	ranged	9	15.0	2.40	36.0	-1	0	10000	41.8	0.00	unknown:rarity	283	0	10000	False	Blowpipe
+Vanilla	WoodenBoomerang	Boomerang	melee	16	16.0	3.00	38.4	-1	1	100	43.8	0.50	recipe<-+rarityfloor0.5	0	0	100	False	Wooden Boomerang
+Vanilla	PoisonedKnife	Thrown	ranged	14	14.0	4.00	16.8	2	0	60	18.0	2.50	recipe<-Throwing Knife	0	0	52	False	Poisoned Knife
+Vanilla	Excalibur	Broadsword	melee	170	170.0	3.00	510.0	3	5	230000	772.4	9.50	recipe<-Hallowed Bar+rarityfloor9.5	0	0	288000	False	Excalibur
+Vanilla	DaoofPow	Flail	melee	85	85.0	1.33	90.7	-1	5	144000	136.6	9.50	recipe<-Soul of Night+rarityfloor9.5	0	0	23000	False	Dao of Pow
+Vanilla	MythrilHalberd	Spear	melee	65	65.0	7.50	487.5	-1	4	67500	698.7	7.00	recipe<-Mythril Bar	0	0	220000	False	Mythril Halberd
+Vanilla	AdamantiteGlaive	Spear	melee	66	66.0	8.57	565.7	-1	4	90000	813.6	7.00	recipe<-Adamantite Bar	0	0	360000	False	Adamantite Glaive
+Vanilla	HolyWater	Thrown	ranged	20	20.0	4.00	24.0	1	3	200	30.5	7.00	recipe<-Hallowed Seeds	0	0	320	False	Holy Water
+Vanilla	UnholyWater	Thrown	ranged	20	20.0	4.00	24.0	1	3	100	30.2	4.50	recipe<-+rarityfloor4.5	0	0	70	False	Unholy Water
+Vanilla	BreakerBlade	Broadsword	melee	160	160.0	1.71	274.3	1	4	150000	396.9	7.00	boss:Wall of Flesh@7	0	0	150000	False	Breaker Blade
+Vanilla	ClockworkAssaultRifle	Gun	ranged	24	34.0	6.92	235.4	-1	4	150000	340.6	7.00	boss:Wall of Flesh@7	97	0	150000	False	Clockwork Assault Rifle
+Vanilla	CobaltRepeater	Bow	ranged	35	45.0	3.53	158.8	1	4	60000	227.3	7.00	recipe<-Cobalt Bar	40	0	105000	False	Cobalt Repeater
+Vanilla	MythrilRepeater	Bow	ranged	39	49.0	3.75	183.8	1	4	90000	264.3	7.00	recipe<-Mythril Bar	40	0	220000	False	Mythril Repeater
+Vanilla	AdamantiteRepeater	Bow	ranged	42	52.0	4.29	222.9	1	4	120000	321.6	7.00	recipe<-Adamantite Bar	40	0	360000	False	Adamantite Repeater
+Vanilla	AdamantiteSword	Broadsword	melee	72	72.0	8.57	617.1	1	4	138000	892.1	7.00	recipe<-Adamantite Bar	0	0	360000	False	Adamantite Sword
+Vanilla	CobaltSword	Broadsword	melee	69	69.0	6.67	460.0	1	4	69000	659.4	7.00	recipe<-Cobalt Bar	0	0	84000	False	Cobalt Sword
+Vanilla	MythrilSword	Broadsword	melee	70	70.0	7.50	525.0	1	4	103500	756.3	7.00	recipe<-Mythril Bar	0	0	176000	False	Mythril Sword
+Vanilla	Ruler	Shortsword	melee	12	12.0	12.00	144.0	-1	1	1000	169.9	3.30	shop:Terraria/GoblinTinkerer/Shop	0	0	1000	False	Ruler
+Vanilla	MagicalHarp	Magic	magic	50	50.0	5.00	250.0	-1	5	200000	378.0	9.50	recipe<-Soul of Sight	0	5	778000	False	Magical Harp
+Vanilla	RainbowRod	Magic	magic	40	40.0	2.40	96.0	3	5	200000	145.2	9.50	recipe<-Soul of Sight	0	21	723000	False	Rainbow Rod
+Vanilla	IceRod	Magic	magic	28	28.0	10.00	280.0	1	4	500000	411.0	7.00	shop:Terraria/Wizard/Shop	0	6	500000	False	Ice Rod
+Vanilla	Flamethrower	Gun	ranged	21	21.0	10.00	131.2	4	5	500000	200.5	9.50	recipe<-Soul of Fright	23	0	1030000	False	Flamethrower
+Vanilla	LaserRifle	Magic	magic	46	46.0	5.00	230.0	3	4	150000	332.8	7.00	boss:Wall of Flesh@7	0	8	150000	False	Laser Rifle
+Vanilla	MagicDagger	Magic	magic	35	35.0	7.50	262.5	2	4	250000	382.2	7.00	unknown:rarity	0	6	250000	False	Magic Dagger
+Vanilla	CrystalStorm	Magic	magic	40	40.0	8.57	342.9	1	4	200000	497.8	7.00	recipe<-Crystal Shard	0	5	225000	False	Crystal Storm
+Vanilla	CursedFlames	Magic	magic	55	55.0	4.00	220.0	2	4	200000	319.4	7.00	recipe<-Soul of Night	0	9	145000	False	Cursed Flames
+Vanilla	Megashark	Gun	ranged	25	35.0	8.57	300.0	-1	5	350000	456.5	9.50	recipe<-Soul of Might	97	0	1351000	False	Megashark
+Vanilla	Shotgun	Gun	ranged	36	46.0	5.33	245.3	-1	4	250000	357.2	7.00	shop:Terraria/ArmsDealer/Shop:InHardmode	97	0	250000	False	Shotgun
+Vanilla	CobaltNaginata	Spear	melee	60	60.0	6.67	400.0	-1	4	45000	570.5	7.00	recipe<-Cobalt Bar	0	0	105000	False	Cobalt Naginata
+Vanilla	Gungnir	Spear	melee	130	130.0	2.73	354.5	-1	5	230000	536.9	9.50	recipe<-Hallowed Bar+rarityfloor9.5	0	0	288000	False	Gungnir
+Vanilla	LightDisc	Boomerang	melee	80	80.0	4.29	274.3	-1	5	750000	421.0	9.50	recipe<-Soul of Might	0	0	1495000	False	Light Disc
+Vanilla	HallowedRepeater	Bow	ranged	50	60.0	5.00	300.0	1	4	200000	435.6	9.00	recipe<-Hallowed Bar	40	0	288000	False	Hallowed Repeater
+Vanilla	EbonwoodSword	Broadsword	melee	11	11.0	3.16	34.7	1	0	100	37.5	0.00	unknown:rarity	0	0	100	False	Ebonwood Sword
+Vanilla	EbonwoodBow	Bow	ranged	8	18.0	2.14	38.6	1	0	100	41.7	0.00	unknown:rarity	40	0	100	False	Ebonwood Bow
+Vanilla	RichMahoganySword	Broadsword	melee	8	8.0	3.16	25.3	1	0	100	27.3	0.00	unknown:rarity	0	0	100	False	Rich Mahogany Sword
+Vanilla	RichMahoganyBow	Bow	ranged	6	16.0	2.07	33.1	1	0	100	35.8	0.00	unknown:rarity	40	0	100	False	Rich Mahogany Bow
+Vanilla	PearlwoodSword	Broadsword	melee	45	45.0	4.00	180.0	1	4	100	237.6	7.00	unknown:rarity	0	0	100	False	Pearlwood Sword
+Vanilla	PearlwoodBow	Bow	ranged	32	42.0	3.00	126.0	1	4	100	166.3	7.00	unknown:rarity	40	0	100	False	Pearlwood Bow
+Vanilla	IceBoomerang	Boomerang	melee	21	21.0	2.40	40.3	-1	1	50000	50.3	0.50	unknown:rarity	0	0	50000	False	Ice Boomerang
+Vanilla	Keybrand	Broadsword	melee	105	105.0	3.00	315.0	1	8	200000	533.0	13.50	unknown:rarity	0	0	200000	False	Keybrand
+Vanilla	Cutlass	Broadsword	melee	90	90.0	5.45	490.9	1	4	180000	711.9	7.70	boss:Flying Dutchman@7.7	0	0	180000	False	Cutlass
+Vanilla	TrueExcalibur	Broadsword	melee	105	105.0	3.33	350.0	6	8	500000	597.8	13.50	recipe<-Chlorophyte Bar+rarityfloor13.5	0	0	648000	False	True Excalibur
+Vanilla	TrueNightsEdge	Broadsword	melee	99	99.0	1.88	185.6	4	8	500000	317.0	13.50	recipe<-Soul of Fright+rarityfloor13.5	0	0	680400	False	True Night's Edge
+Vanilla	Frostbrand	Broadsword	melee	110	110.0	2.00	440.0	3	5	250000	667.0	9.50	unknown:rarity	0	0	250000	False	Frostbrand
+Vanilla	TacticalShotgun	Gun	ranged	34	44.0	10.59	465.9	-1	8	400000	793.9	13.50	unknown:rarity	97	0	400000	False	Tactical Shotgun
+Vanilla	Marrow	Bow	ranged	60	70.0	3.16	221.1	1	5	27000	326.6	9.50	shop:Terraria/SkeletonMerchant/Shop:InHardmode+MoonPhases26+rarityfloor9.5	40	0	27000	False	Marrow
+Vanilla	UnholyTrident	Magic	magic	80	80.0	3.53	282.4	3	6	500000	448.4	11.50	unknown:rarity	0	19	500000	False	Unholy Trident
+Vanilla	BeamSword	Broadsword	melee	131	131.0	1.71	449.1	1	4	150000	649.9	7.00	unknown:rarity	0	0	150000	False	Beam Sword
+Vanilla	IceBlade	Broadsword	melee	17	17.0	1.09	37.1	1	1	20000	45.7	0.50	unknown:rarity	0	0	20000	False	Ice Blade
+Vanilla	IceBow	Bow	ranged	39	49.0	4.29	210.0	1	5	250000	318.3	9.50	unknown:rarity	40	0	250000	False	Ice Bow
+Vanilla	FrostStaff	Magic	magic	46	46.0	5.00	230.0	2	5	200000	347.8	9.50	unknown:rarity	0	12	200000	False	Frost Staff
+Vanilla	AmethystStaff	Magic	magic	15	15.0	1.62	24.3	1	0	2000	27.5	0.00	recipe<-	0	2	22500	False	Amethyst Staff
+Vanilla	TopazStaff	Magic	magic	16	16.0	1.67	26.7	1	0	3000	30.4	0.00	recipe<-	0	2	41250	False	Topaz Staff
+Vanilla	SapphireStaff	Magic	magic	25	25.0	1.76	44.1	1	1	10000	53.8	0.50	recipe<-+rarityfloor0.5	0	6	75000	False	Sapphire Staff
+Vanilla	EmeraldStaff	Magic	magic	27	27.0	1.88	50.6	1	1	15000	62.1	0.50	recipe<-+rarityfloor0.5	0	6	105000	False	Emerald Staff
+Vanilla	RubyStaff	Magic	magic	21	21.0	2.14	45.0	2	1	20000	55.4	0.50	recipe<-+rarityfloor0.5	0	7	150000	False	Ruby Staff
+Vanilla	DiamondStaff	Magic	magic	23	23.0	2.31	53.1	2	2	30000	69.0	1.50	recipe<-+rarityfloor1.5	0	8	210000	False	Diamond Staff
+Vanilla	MushroomSpear	Spear	melee	100	100.0	1.88	187.5	-1	7	700000	310.1	12.50	shop:Terraria/Truffle/Shop:DownedMechBossAny+rarityfloor12.5	0	0	700000	False	Mushroom Spear
+Vanilla	TerraBlade	Broadsword	melee	90	90.0	3.33	600.0	-1	8	1000000	1032.0	13.50	recipe<-True Night's Edge	0	0	2003400	False	Terra Blade
+Vanilla	GrenadeLauncher	Gun	ranged	105	145.0	3.00	435.0	-1	8	350000	740.3	13.50	boss:Plantera@12+rarityfloor13.5	771	0	350000	False	Grenade Launcher
+Vanilla	RocketLauncher	Gun	ranged	60	100.0	2.00	200.0	-1	8	400000	340.8	13.50	unknown:rarity	771	0	400000	False	Rocket Launcher
+Vanilla	ProximityMineLauncher	Gun	ranged	80	120.0	1.20	144.0	-1	8	350000	245.1	13.50	shop:Terraria/Cyborg/Shop:InHardmode+rarityfloor13.5	771	0	350000	False	Proximity Mine Launcher
+Vanilla	NettleBurst	Magic	magic	65	65.0	2.40	156.0	-1	7	200000	254.6	12.50	boss:Plantera@12+rarityfloor12.5	0	12	200000	False	Nettle Burst
+Vanilla	BloodButcherer	Broadsword	melee	22	22.0	2.40	52.8	1	1	13500	64.7	2.00	recipe<-Crimtane Bar	0	0	195000	False	Blood Butcherer
+Vanilla	TendonBow	Bow	ranged	17	27.0	2.00	54.0	1	1	18000	66.4	2.00	recipe<-Crimtane Bar	40	0	156000	False	Tendon Bow
+Vanilla	TheUndertaker	Gun	ranged	15	25.0	3.00	75.0	1	1	75000	94.1	0.50	unknown:rarity	97	0	75000	False	The Undertaker
+Vanilla	TheMeatball	Flail	melee	24	24.0	1.33	25.6	-1	1	27000	31.7	3.00	recipe<-Tissue Sample	0	0	198750	False	The Meatball
+Vanilla	TheRottedFork	Spear	melee	20	20.0	1.94	38.7	-1	1	75000	48.6	0.50	unknown:rarity	0	0	75000	False	The Rotted Fork
+Vanilla	CactusSword	Broadsword	melee	10	10.0	2.00	20.0	1	0	1800	22.6	0.00	unknown:rarity	0	0	100	False	Cactus Sword
+Vanilla	ShadewoodSword	Broadsword	melee	11	11.0	3.16	34.7	1	0	100	37.5	0.00	unknown:rarity	0	0	100	False	Shadewood Sword
+Vanilla	ShadewoodBow	Bow	ranged	8	18.0	2.14	38.6	1	0	100	41.7	0.00	unknown:rarity	40	0	100	False	Shadewood Bow
+Vanilla	FlareGun	Gun	ranged	2	2.0	3.33	6.7	-1	1	5000	8.1	0.50	unknown:rarity	931	0	5000	False	Flare Gun
+Vanilla	Boomstick	Gun	ranged	11	21.0	4.50	94.5	-1	2	100000	124.7	1.50	unknown:rarity	97	0	100000	False	Boomstick
+Vanilla	Blowgun	Gun	ranged	40	46.0	1.71	78.9	-1	3	50000	107.9	4.50	shop:Terraria/WitchDoctor/Shop+rarityfloor4.5	283	0	50000	False	Blowgun
+Vanilla	EnchantedSword	Broadsword	melee	23	23.0	1.33	61.3	1	2	150000	81.4	1.60	recipe<-Pearl Shard	0	0	103250	False	Enchanted Sword
+Vanilla	BeeGun	Magic	magic	11	11.0	5.00	55.0	2	2	100000	72.6	4.00	boss:Queen Bee@4	0	5	100000	False	Bee Gun
+Vanilla	PossessedHatchet	Boomerang	melee	135	135.0	4.29	462.9	10	7	350000	759.9	13.00	boss:Golem@13	0	0	350000	False	Possessed Hatchet
+Vanilla	BeeKeeper	Broadsword	melee	30	30.0	3.00	90.0	1	3	100000	124.2	4.50	boss:Queen Bee@4+rarityfloor4.5	0	0	100000	False	Bee Keeper
+Vanilla	Beenade	Thrown	ranged	12	12.0	2.73	9.8	1	0	2500	11.2	4.00	boss:Queen Bee@4	0	0	700	False	Beenade
+Vanilla	WaspGun	Magic	magic	41	41.0	3.33	136.7	2	8	500000	233.4	13.50	boss:Plantera@12+rarityfloor13.5	0	10	500000	False	Wasp Gun
+Vanilla	PiranhaGun	Magic	ranged	38	38.0	2.00	76.0	-1	8	1000000	130.7	13.50	unknown:rarity	0	0	1000000	False	Piranha Gun
+Vanilla	PygmyStaff	Summon	summon	60	60.0	2.00	208.8	-1	7	350000	342.8	12.50	boss:Plantera@12+rarityfloor12.5	0	10	350000	False	Pygmy Staff
+Vanilla	BoneSword	Broadsword	melee	25	25.0	2.73	68.2	1	3	9000	91.2	4.50	unknown:rarity	0	0	9000	False	Bone Sword
+Vanilla	LeafBlower	Magic	magic	61	61.0	8.57	522.9	1	7	300000	857.0	12.50	boss:Plantera@12+rarityfloor12.5	0	5	300000	False	Leaf Blower
+Vanilla	PalladiumSword	Broadsword	melee	150	150.0	2.73	409.1	1	4	92000	588.5	7.00	recipe<-Palladium Bar	0	0	135000	False	Palladium Sword
+Vanilla	PalladiumPike	Spear	melee	120	120.0	2.22	266.7	-1	4	60000	381.6	7.00	recipe<-Palladium Bar	0	0	162000	False	Palladium Pike
+Vanilla	PalladiumRepeater	Bow	ranged	48	58.0	2.73	158.2	1	4	80000	227.2	7.00	recipe<-Palladium Bar	40	0	162000	False	Palladium Repeater
+Vanilla	OrichalcumSword	Broadsword	melee	175	175.0	2.73	477.3	1	4	126500	689.2	7.00	recipe<-Orichalcum Bar	0	0	260000	False	Orichalcum Sword
+Vanilla	OrichalcumHalberd	Spear	melee	128	128.0	2.40	307.2	-1	4	82500	441.3	7.00	recipe<-Orichalcum Bar	0	0	312000	False	Orichalcum Halberd
+Vanilla	OrichalcumRepeater	Bow	ranged	50	60.0	3.16	189.5	1	4	110000	273.2	7.00	recipe<-Orichalcum Bar	40	0	312000	False	Orichalcum Repeater
+Vanilla	TitaniumSword	Broadsword	melee	185	185.0	3.00	555.0	1	4	161000	803.8	7.00	recipe<-Titanium Bar	0	0	442000	False	Titanium Sword
+Vanilla	TitaniumTrident	Spear	melee	144	144.0	2.61	375.7	-1	4	105000	541.3	7.00	recipe<-Titanium Bar	0	0	442000	False	Titanium Trident
+Vanilla	TitaniumRepeater	Bow	ranged	52	62.0	3.53	218.8	1	4	140000	316.4	7.00	recipe<-Titanium Bar	40	0	442000	False	Titanium Repeater
+Vanilla	ChlorophyteClaymore	Broadsword	melee	180	180.0	1.33	480.0	1	7	276000	786.1	12.50	recipe<-Chlorophyte Bar	0	0	360000	False	Chlorophyte Claymore
+Vanilla	ChlorophyteSaber	Broadsword	melee	92	92.0	6.00	1104.0	-1	7	276000	1808.0	12.50	recipe<-Chlorophyte Bar	0	0	360000	False	Chlorophyte Saber
+Vanilla	ChlorophytePartisan	Spear	melee	80	80.0	2.61	208.7	-1	7	180000	340.2	12.50	recipe<-Chlorophyte Bar	0	0	360000	False	Chlorophyte Partisan
+Vanilla	ChlorophyteShotbow	Bow	ranged	34	44.0	3.16	138.9	1	7	240000	227.2	12.50	recipe<-Chlorophyte Bar	40	0	360000	False	Chlorophyte Shotbow
+Vanilla	NimbusRod	Magic	magic	30	30.0	2.73	81.8	-1	6	175000	128.4	11.50	unknown:rarity	0	30	175000	False	Nimbus Rod
+Vanilla	SniperRifle	Gun	ranged	185	195.0	1.67	325.0	-1	8	400000	553.8	13.50	unknown:rarity	97	0	400000	False	Sniper Rifle
+Vanilla	VenusMagnum	Gun	ranged	50	60.0	6.67	400.0	1	7	250000	654.4	12.50	boss:Plantera@12+rarityfloor12.5	97	0	250000	False	Venus Magnum
+Vanilla	CrimsonRod	Magic	magic	12	12.0	2.50	30.0	-1	1	75000	37.7	0.50	unknown:rarity	0	30	75000	False	Crimson Rod
+Vanilla	Stynger	Gun	ranged	75	75.0	2.73	204.5	1	7	350000	335.8	13.00	boss:Golem@13	1261	0	350000	False	Stynger
+Vanilla	FlowerPow	Flail	melee	80	80.0	1.50	96.0	-1	7	300000	157.4	12.50	boss:Plantera@12+rarityfloor12.5	0	0	300000	False	Flower Pow
+Vanilla	RainbowGun	Magic	magic	60	60.0	1.50	90.0	-1	8	1000000	154.8	13.50	unknown:rarity	0	20	1000000	False	Rainbow Gun
+Vanilla	FlowerofFrost	Magic	magic	60	60.0	5.00	300.0	1	5	250000	454.8	9.50	unknown:rarity	0	11	250000	False	Flower of Frost
+Vanilla	Uzi	Gun	ranged	30	40.0	7.50	300.0	1	7	350000	492.5	12.50	shop:Terraria/ArmsDealer/Shop:DownedPlantera+rarityfloor12.5	97	0	350000	False	Uzi
+Vanilla	MagnetSphere	Magic	magic	48	48.0	3.00	144.0	1	8	500000	245.9	13.50	unknown:rarity	0	14	500000	False	Magnet Sphere
+Vanilla	HeatRay	Magic	magic	90	90.0	6.00	540.0	1	7	350000	886.6	13.00	boss:Golem@13	0	8	350000	False	Heat Ray
+Vanilla	StaffofEarth	Magic	magic	150	150.0	2.50	375.0	6	7	350000	615.7	13.00	boss:Golem@13	0	18	350000	False	Staff of Earth
+Vanilla	ZombieArm	Broadsword	melee	15	15.0	2.73	40.9	1	0	2000	46.3	0.00	unknown:rarity	0	0	2000	False	Zombie Arm
+Vanilla	IceSickle	Broadsword	melee	75	75.0	2.40	360.0	4	5	250000	545.7	9.50	unknown:rarity	0	0	250000	False	Ice Sickle
+Vanilla	PoisonStaff	Magic	magic	57	57.0	1.67	95.0	3	6	200000	149.3	11.50	unknown:rarity	0	22	200000	False	Poison Staff
+Vanilla	SlimeStaff	Summon	summon	8	8.0	2.00	22.1	-1	4	100000	31.8	7.00	recipe<-Gel+rarityfloor7.0	0	10	200	False	Slime Staff
+Vanilla	BookofSkulls	Magic	magic	29	29.0	2.31	66.9	3	2	75000	88.0	5.00	boss:Skeletron@5	0	18	75000	False	Book of Skulls
+Vanilla	SnowballCannon	Gun	ranged	10	10.0	3.16	31.6	1	1	100000	39.8	0.50	unknown:rarity	949	0	100000	False	Snowball Cannon
+Vanilla	Bananarang	Boomerang	melee	60	60.0	5.45	261.8	-1	5	600000	400.9	9.50	unknown:rarity	0	0	600000	False	Bananarang
+Vanilla	DeathSickle	Broadsword	melee	65	65.0	2.40	312.0	5	6	375000	493.9	11.50	enemy:Reaper:DownedAllMechBosses+rarityfloor11.5	0	0	375000	False	Death Sickle
+Vanilla	GoldenShower	Magic	magic	30	30.0	10.00	300.0	2	4	200000	435.6	7.00	recipe<-Soul of Night	0	7	155000	False	Golden Shower
+Vanilla	ShadowbeamStaff	Magic	magic	100	100.0	4.00	400.0	-1	8	300000	679.6	13.50	unknown:rarity	0	7	300000	False	Shadowbeam Staff
+Vanilla	InfernoFork	Magic	magic	83	83.0	2.00	166.0	1	8	300000	282.0	13.50	unknown:rarity	0	18	300000	False	Inferno Fork
+Vanilla	SpectreStaff	Magic	magic	72	72.0	2.50	180.0	3	8	300000	305.8	13.50	unknown:rarity	0	15	300000	False	Spectre Staff
+Vanilla	PaladinsHammer	Boomerang	melee	95	95.0	4.00	304.0	-1	8	500000	519.2	13.50	unknown:rarity	0	0	500000	False	Paladin's Hammer
+Vanilla	SDMG	Gun	ranged	85	95.0	12.00	1140.0	-1	10	750000	2091.9	18.00	boss:Moon Lord's Core@18	97	0	750000	False	S.D.M.G.
+Vanilla	VampireKnives	ThrownMelee	melee	29	29.0	18.75	543.8	1	8	1000000	935.2	13.50	unknown:rarity	0	0	1000000	False	Vampire Knives
+Vanilla	ScourgeoftheCorruptor	ThrownMelee	melee	63	63.0	3.00	189.0	1	8	1000000	325.1	13.50	unknown:rarity	0	0	1000000	False	Scourge of the Corruptor
+Vanilla	StaffoftheFrostHydra	Sentry	summon	100	100.0	2.00	150.0	1	8	1000000	258.0	13.50	unknown:rarity	0	20	1000000	False	Staff of the Frost Hydra
+Vanilla	CandyCornRifle	Gun	ranged	80	80.0	6.67	533.3	3	8	500000	910.9	13.50	boss:Pumpking@13.25+rarityfloor13.5	1783	0	500000	False	Candy Corn Rifle
+Vanilla	JackOLanternLauncher	Gun	ranged	65	65.0	2.40	156.0	1	8	500000	266.4	13.50	boss:Pumpking@13.25+rarityfloor13.5	1785	0	500000	False	Jack 'O Lantern Launcher
+Vanilla	Sickle	Broadsword	melee	9	9.0	2.50	22.5	1	0	6000	25.9	0.00	shop:Terraria/Merchant/Shop	0	0	6000	False	Sickle
+Vanilla	BatScepter	Magic	magic	50	50.0	5.00	250.0	1	8	500000	427.0	13.50	boss:Pumpking@13.25+rarityfloor13.5	0	6	500000	False	Bat Scepter
+Vanilla	RavenStaff	Summon	summon	36	36.0	2.00	133.9	1	8	500000	228.7	13.50	boss:Pumpking@13.25+rarityfloor13.5	0	10	500000	False	Raven Staff
+Vanilla	RottenEgg	Thrown	ranged	13	13.0	3.16	12.3	1	0	0	12.3	0.00	unknown:rarity	0	0	0	False	Rotten Egg
+Vanilla	BloodyMachete	Boomerang	melee	24	24.0	4.00	76.8	-1	2	50000	100.5	1.50	unknown:rarity	0	0	50000	False	Bloody Machete
+Vanilla	TheHorsemansBlade	Broadsword	melee	150	150.0	2.31	346.2	3	8	500000	591.2	13.50	boss:Pumpking@13.25+rarityfloor13.5	0	0	500000	False	The Horseman's Blade
+Vanilla	BladedGlove	Broadsword	melee	14	14.0	7.50	105.0	1	2	50000	137.3	1.50	unknown:rarity	0	0	50000	False	Bladed Glove
+Vanilla	StakeLauncher	Gun	ranged	75	75.0	5.00	375.0	10	8	500000	640.5	13.50	boss:Mourning Wood@13.25+rarityfloor13.5	1836	0	500000	False	Stake Launcher
+Vanilla	RedRyder	Gun	ranged	24	34.0	1.58	53.7	-1	1	100000	67.6	0.50	unknown:rarity	97	0	100000	False	Red Ryder
+Vanilla	CandyCaneSword	Broadsword	melee	19	19.0	2.22	42.2	1	1	13500	51.7	0.50	unknown:rarity	0	0	13500	False	Candy Cane Sword
+Vanilla	ElfMelter	Gun	ranged	53	53.0	10.00	450.5	4	8	500000	769.4	13.50	boss:Santa-NK1@13.5	23	0	500000	False	Elf Melter
+Vanilla	StarAnise	Thrown	ranged	14	14.0	4.00	16.8	6	0	25	17.8	0.00	unknown:rarity	0	0	25	False	Star Anise
+Vanilla	FruitcakeChakram	Boomerang	melee	19	19.0	4.00	60.8	-1	1	50000	75.9	0.50	unknown:rarity	0	0	50000	False	Fruitcake Chakram
+Vanilla	ChristmasTreeSword	Broadsword	melee	80	80.0	2.00	320.0	2	8	500000	546.5	13.50	boss:Everscream@13.5	0	0	500000	False	Christmas Tree Sword
+Vanilla	ChainGun	Gun	ranged	35	45.0	15.00	675.0	-1	8	450000	1151.6	13.50	boss:Santa-NK1@13.5	97	0	450000	False	Chain Gun
+Vanilla	Razorpine	Magic	magic	40	40.0	7.50	300.0	1	8	450000	511.8	13.50	boss:Everscream@13.5	0	5	450000	False	Razorpine
+Vanilla	BlizzardStaff	Magic	magic	41	41.0	12.00	492.0	1	8	450000	839.4	13.50	boss:Ice Queen@13.5	0	9	450000	False	Blizzard Staff
+Vanilla	SnowmanCannon	Gun	ranged	67	107.0	4.00	428.0	-1	8	450000	730.2	13.50	boss:Ice Queen@13.5	771	0	450000	False	Snowman Cannon
+Vanilla	NorthPole	Spear	melee	80	80.0	2.00	160.0	-1	7	450000	263.4	13.50	boss:Ice Queen@13.5	0	0	450000	False	North Pole
+Vanilla	VenomStaff	Magic	magic	44	44.0	2.00	88.0	5	7	350000	144.5	12.50	recipe<-Chlorophyte Bar	0	25	620000	False	Venom Staff
+Vanilla	PulseBow	Bow	ranged	80	90.0	3.00	270.0	-1	8	450000	460.7	13.50	shop:Terraria/TravellingMerchant/Shop:DownedDestroyer+DownedTwins+DownedSkeletronPrime+rarityfloor13.5	40	0	480000	False	Pulse Bow
+Vanilla	Revolver	Gun	ranged	20	30.0	2.73	81.8	1	2	100000	108.0	7.00	shop:Terraria/ArmsDealer/Shop:InHardmode	97	0	100000	False	Revolver
+Vanilla	Gatligator	Gun	ranged	21	31.0	10.00	310.0	-1	4	350000	453.1	7.00	shop:Terraria/TravellingMerchant/Shop:InHardmode	97	0	350000	False	Gatligator
+Vanilla	Katana	Broadsword	melee	18	18.0	0.60	10.8	1	1	100000	13.6	1.00	boss:King Slime@1	0	0	100000	False	Katana
+Vanilla	PurpleClubberfish	Broadsword	melee	35	35.0	1.71	60.0	1	1	50000	74.9	0.50	unknown:rarity	0	0	50000	False	Purple Clubberfish
+Vanilla	ObsidianSwordfish	Spear	melee	70	70.0	3.00	210.0	-1	7	50000	337.7	12.50	unknown:rarity	0	0	50000	False	Obsidian Swordfish
+Vanilla	Swordfish	Spear	melee	21	21.0	3.00	63.0	-1	2	25000	81.6	1.50	unknown:rarity	0	0	25000	False	Swordfish
+Vanilla	HornetStaff	Summon	summon	12	12.0	2.50	30.2	-1	3	35000	41.2	4.50	recipe<-Bee Wax+rarityfloor4.5	0	10	35000	False	Hornet Staff
+Vanilla	ImpStaff	Summon	summon	17	17.0	1.58	42.8	-1	3	27000	58.1	5.00	recipe<-Hellstone Bar	0	10	63750	False	Imp Staff
+Vanilla	QueenSpiderStaff	Sentry	summon	26	26.0	2.00	39.0	1	4	250000	56.8	7.00	recipe<-Spider Fang	0	10	60000	False	Queen Spider Staff
+Vanilla	Anchor	Boomerang	melee	107	107.0	3.00	256.8	-1	3	50000	351.3	4.50	unknown:rarity	0	0	50000	False	Anchor
+Vanilla	PalmWoodBow	Bow	ranged	6	16.0	2.07	33.1	1	0	100	35.8	0.00	unknown:rarity	40	0	100	False	Palm Wood Bow
+Vanilla	PalmWoodSword	Broadsword	melee	8	8.0	3.16	25.3	1	0	100	27.3	0.00	unknown:rarity	0	0	100	False	Palm Wood Sword
+Vanilla	OpticStaff	Summon	summon	24	24.0	1.58	72.0	-1	5	100000	108.0	9.50	recipe<-Soul of Sight	0	10	806000	False	Optic Staff
+Vanilla	SpiderStaff	Summon	summon	26	26.0	1.58	71.8	-1	4	50000	102.5	7.00	recipe<-Spider Fang	0	10	40000	False	Spider Staff
+Vanilla	PirateStaff	Summon	summon	40	40.0	1.58	120.0	-1	5	50000	178.6	9.50	boss:Flying Dutchman@7.7+rarityfloor9.5	0	10	50000	False	Pirate Staff
+Vanilla	StickyGrenade	Thrown	ranged	60	60.0	1.33	24.0	-1	0	75	25.8	1.00	recipe<-Gel	0	0	76	False	Sticky Grenade
+Vanilla	MolotovCocktail	Thrown	ranged	23	23.0	1.50	10.4	1	1	500	12.1	0.50	unknown:rarity	0	0	221	False	Molotov Cocktail
+Vanilla	FalconBlade	Broadsword	melee	25	25.0	4.62	115.4	1	4	10000	161.5	7.00	unknown:rarity	0	0	10000	False	Falcon Blade
+Vanilla	Flairon	Magic	melee	66	66.0	3.00	198.0	-1	8	250000	335.8	14.00	boss:Duke Fishron@14	0	0	250000	False	Flairon
+Vanilla	TempestStaff	Summon	summon	50	50.0	1.58	186.0	-1	8	250000	315.4	14.00	boss:Duke Fishron@14	0	10	250000	False	Tempest Staff
+Vanilla	RazorbladeTyphoon	Magic	magic	103	103.0	1.50	154.5	-1	8	250000	262.0	14.00	boss:Duke Fishron@14	0	20	250000	False	Razorblade Typhoon
+Vanilla	BubbleGun	Magic	magic	70	70.0	20.00	1400.0	1	8	250000	2374.3	14.00	boss:Duke Fishron@14	0	5	250000	False	Bubble Gun
+Vanilla	Tsunami	Bow	ranged	45	55.0	12.50	687.5	1	8	250000	1165.9	14.00	boss:Duke Fishron@14	40	0	250000	False	Tsunami
+Vanilla	BorealWoodSword	Broadsword	melee	8	8.0	3.00	24.0	1	0	100	25.9	0.00	unknown:rarity	0	0	100	False	Boreal Wood Sword
+Vanilla	BorealWoodBow	Bow	ranged	6	16.0	2.07	33.1	1	0	100	35.8	0.00	unknown:rarity	40	0	100	False	Boreal Wood Bow
+Vanilla	XenoStaff	Summon	summon	36	36.0	1.58	133.9	-1	8	500000	228.7	13.75	boss:Martian Saucer@13.75	0	10	500000	False	Xeno Staff
+Vanilla	MeteorStaff	Magic	magic	50	50.0	6.00	300.0	1	5	100000	450.0	9.50	recipe<-Soul of Light+rarityfloor9.5	0	9	75000	False	Meteor Staff
+Vanilla	LaserMachinegun	HeldWeapon	magic	49	49.0	3.00	588.0	-1	8	500000	1004.3	13.75	boss:Martian Saucer@13.75	0	6	500000	False	Laser Machinegun
+Vanilla	ElectrosphereLauncher	Gun	ranged	40	80.0	5.00	400.0	1	8	500000	683.2	13.75	boss:Martian Saucer@13.75	771	0	500000	False	Electrosphere Launcher
+Vanilla	Xenopopper	Gun	ranged	45	55.0	11.43	628.6	1	8	500000	1073.6	13.75	boss:Martian Saucer@13.75	97	0	500000	False	Xenopopper
+Vanilla	InfluxWaver	Broadsword	melee	80	80.0	2.40	384.0	3	8	500000	655.9	13.75	boss:Martian Saucer@13.75	0	0	500000	False	Influx Waver
+Vanilla	ChargedBlasterCannon	HeldWeapon	magic	100	100.0	3.00	666.7	-1	8	500000	1138.6	13.50	unknown:rarity	0	14	500000	False	Charged Blaster Cannon
+Vanilla	BeesKnees	Bow	ranged	21	31.0	1.71	53.1	1	3	100000	73.3	4.50	boss:Queen Bee@4+rarityfloor4.5	40	0	100000	False	The Bee's Knees
+Vanilla	SoulDrain	Magic	magic	38	38.0	5.00	190.0	-1	5	400000	289.6	9.50	unknown:rarity	0	10	400000	False	Life Drain
+Vanilla	DartPistol	Gun	ranged	28	34.0	2.73	92.7	-1	5	400000	141.3	9.50	unknown:rarity	283	0	400000	False	Dart Pistol
+Vanilla	DartRifle	Gun	ranged	52	58.0	1.58	91.6	-1	5	400000	139.6	9.50	unknown:rarity	283	0	400000	False	Dart Rifle
+Vanilla	FetidBaghnakhs	Broadsword	melee	60	60.0	7.50	450.0	1	5	400000	685.8	9.50	unknown:rarity	0	0	400000	False	Fetid Baghnakhs
+Vanilla	ClingerStaff	Magic	magic	43	43.0	2.50	107.5	-1	5	400000	163.8	9.50	unknown:rarity	0	40	400000	False	Clinger Staff
+Vanilla	Seedler	Broadsword	melee	45	45.0	2.61	234.8	1	5	500000	358.7	12.00	boss:Plantera@12	0	0	500000	False	Seedler
+Vanilla	HellwingBow	Bow	ranged	22	32.0	4.62	147.7	-1	3	125000	204.4	4.50	unknown:rarity	40	0	125000	False	Hellwing Bow
+Vanilla	DaedalusStormbow	Bow	ranged	30	40.0	3.16	126.3	1	6	400000	200.1	11.50	unknown:rarity	40	0	400000	False	Daedalus Stormbow
+Vanilla	FlyingKnife	Magic	melee	45	45.0	4.00	180.0	-1	6	400000	285.1	11.50	unknown:rarity	0	0	400000	False	Flying Knife
+Vanilla	CrystalVileShard	Magic	magic	35	35.0	1.82	63.6	-1	5	400000	97.0	9.50	unknown:rarity	0	13	400000	False	Crystal Vile Shard
+Vanilla	ShadowFlameBow	Bow	ranged	55	65.0	3.00	195.0	3	5	100000	292.5	9.50	boss:Goblin Warlock@3.4+rarityfloor9.5	40	0	100000	False	Shadowflame Bow
+Vanilla	ShadowFlameHexDoll	Magic	magic	40	40.0	8.57	342.9	3	5	100000	514.3	9.50	boss:Goblin Warlock@3.4+rarityfloor9.5	0	6	100000	False	Shadowflame Hex Doll
+Vanilla	ShadowFlameKnife	ThrownMelee	melee	43	43.0	5.00	215.0	3	5	100000	322.5	9.50	boss:Goblin Warlock@3.4+rarityfloor9.5	0	0	100000	False	Shadowflame Knife
+Vanilla	Meowmere	Broadsword	melee	200	200.0	4.29	1714.3	3	10	1000000	3154.3	18.00	boss:Moon Lord's Core@18	0	0	1000000	False	Meowmere
+Vanilla	StarWrath	Broadsword	melee	170	170.0	3.75	2550.0	1	10	1000000	4692.0	18.00	boss:Moon Lord's Core@18	0	0	1000000	False	Star Wrath
+Vanilla	WandofSparking	Magic	magic	14	14.0	2.31	32.3	2	1	10000	39.4	0.50	recipe<-Fallen Star	0	2	5005	False	Wand of Sparking
+Vanilla	Javelin	Thrown	ranged	17	17.0	2.50	12.8	3	0	25	13.5	0.00	unknown:rarity	0	0	25	False	Javelin
+Vanilla	ToxicFlask	Magic	magic	62	62.0	1.82	112.7	1	8	500000	192.5	13.50	enemy:Dr. Man Fly:DownedPlantera+rarityfloor13.5	0	30	500000	False	Toxic Flask
+Vanilla	PsychoKnife	Broadsword	melee	200	200.0	5.45	1090.9	1	8	500000	1863.2	13.50	enemy:Psycho:DownedPlantera+rarityfloor13.5	0	0	500000	False	Psycho Knife
+Vanilla	NailGun	Gun	ranged	77	77.0	4.00	308.0	3	8	500000	526.1	13.50	enemy:Nailhead:DownedPlantera+rarityfloor13.5	3108	0	500000	False	Nail Gun
+Vanilla	BouncyGrenade	Thrown	ranged	65	65.0	1.50	29.3	-1	0	100	31.6	0.00	recipe<-	0	0	82	False	Bouncy Grenade
+Vanilla	FrostDaggerfish	Thrown	ranged	17	17.0	4.62	23.5	3	1	80	26.7	0.50	unknown:rarity	0	0	80	False	Frost Daggerfish
+Vanilla	CrystalSerpent	Magic	magic	40	40.0	2.07	82.8	1	5	200000	125.1	9.50	unknown:rarity	0	9	200000	False	Crystal Serpent
+Vanilla	Toxikarp	Magic	ranged	43	43.0	6.67	286.7	1	5	200000	433.5	9.50	unknown:rarity	0	0	200000	False	Toxikarp
+Vanilla	Bladetongue	Broadsword	melee	120	120.0	2.73	327.3	1	5	200000	494.8	9.50	unknown:rarity	0	0	200000	False	Bladetongue
+Vanilla	DeadlySphereStaff	Summon	summon	50	50.0	1.58	186.0	-1	8	500000	317.7	13.50	enemy:Deadly Sphere:DownedPlantera+rarityfloor13.5	0	10	500000	False	Deadly Sphere Staff
+Vanilla	SlapHand	Broadsword	melee	120	120.0	3.00	360.0	1	4	250000	524.1	7.00	shop:Terraria/SkeletonMerchant/Shop:InHardmode+BloodMoon	0	0	250000	False	Slap Hand
+Vanilla	Code1	Yoyo	melee	21	21.0	2.40	40.3	-1	2	50000	52.7	2.00	shop:Terraria/TravellingMerchant/Shop:DownedEyeOfCthulhu	0	0	50000	False	Code 1
+Vanilla	MedusaHead	Magic	magic	75	75.0	2.00	150.0	-1	4	200000	217.8	7.00	unknown:rarity	0	15	200000	False	Medusa Head
+Vanilla	WoodYoyo	Yoyo	melee	9	9.0	2.40	17.3	-1	0	500	19.1	0.00	unknown:rarity	0	0	500	False	Wooden Yoyo
+Vanilla	CorruptYoyo	Yoyo	melee	20	20.0	2.40	38.4	-1	1	50000	47.9	2.00	recipe<-Demonite Bar	0	0	180000	False	Malaise
+Vanilla	CrimsonYoyo	Yoyo	melee	20	20.0	2.40	38.4	-1	1	50000	47.9	2.00	recipe<-Crimtane Bar	0	0	234000	False	Artery
+Vanilla	JungleYoyo	Yoyo	melee	18	18.0	2.40	34.6	-1	3	65000	47.4	4.50	unknown:rarity	0	0	4300	False	Amazon
+Vanilla	Cascade	Yoyo	melee	31	31.0	2.40	59.5	-1	3	90000	82.0	4.50	unknown:rarity	0	0	90000	False	Cascade
+Vanilla	Chik	Yoyo	melee	39	39.0	2.40	74.9	-1	4	200000	108.7	7.00	unknown:rarity	0	0	130500	False	Chik
+Vanilla	Code2	Yoyo	melee	43	43.0	2.40	82.6	-1	5	250000	125.2	9.50	shop:Terraria/TravellingMerchant/Shop:DownedMechBossAny+rarityfloor9.5	0	0	250000	False	Code 2
+Vanilla	Rally	Yoyo	melee	18	18.0	2.40	34.6	-1	1	25000	42.7	0.50	unknown:rarity	0	0	25000	False	Rally
+Vanilla	Yelets	Yoyo	melee	53	53.0	2.40	101.8	-1	7	250000	166.5	12.50	unknown:rarity	0	0	250000	False	Yelets
+Vanilla	RedsYoyo	Yoyo	melee	48	48.0	2.40	92.2	-1	9	200000	161.5	16.00	unknown:rarity	0	0	200000	False	Red's Throw
+Vanilla	ValkyrieYoyo	Yoyo	melee	48	48.0	2.40	92.2	-1	9	200000	161.5	16.00	unknown:rarity	0	0	200000	False	Valkyrie Yoyo
+Vanilla	Amarok	Yoyo	melee	43	43.0	2.40	82.6	-1	4	200000	119.9	7.00	unknown:rarity	0	0	200000	False	Amarok
+Vanilla	HelFire	Yoyo	melee	41	41.0	2.40	78.7	-1	4	200000	114.3	7.00	unknown:rarity	0	0	200000	False	Hel-Fire
+Vanilla	Kraken	Yoyo	melee	65	65.0	2.40	124.8	-1	8	550000	213.4	13.50	unknown:rarity	0	0	550000	False	Kraken
+Vanilla	TheEyeOfCthulhu	Yoyo	melee	80	80.0	2.40	153.6	-1	8	625000	262.9	13.50	boss:Mothron@11.5+rarityfloor13.5	0	0	625000	False	The Eye of Cthulhu
+Vanilla	FormatC	Yoyo	melee	39	39.0	2.40	74.9	-1	3	200000	104.2	7.00	shop:Terraria/SkeletonMerchant/Shop:InHardmode+MoonPhasesHalf1	0	0	200000	False	Format:C
+Vanilla	Gradient	Yoyo	melee	39	39.0	2.40	74.9	-1	3	200000	104.2	7.00	shop:Terraria/SkeletonMerchant/Shop:InHardmode+MoonPhasesHalf0	0	0	200000	False	Gradient
+Vanilla	Valor	Yoyo	melee	28	28.0	2.40	53.8	-1	3	87500	74.1	4.50	unknown:rarity	0	0	87500	False	Valor
+Vanilla	DyeTradersScimitar	Broadsword	melee	24	24.0	3.33	80.0	1	2	25000	103.7	1.50	shop:Terraria/DyeTrader/Shop+rarityfloor1.5	0	0	25000	False	Exotic Scimitar
+Vanilla	PainterPaintballGun	Magic	ranged	12	12.0	6.67	80.0	1	2	25000	103.7	1.50	shop:Terraria/Painter/Shop+rarityfloor1.5	0	0	25000	False	Paintball Gun
+Vanilla	TaxCollectorsStickOfDoom	Broadsword	melee	80	80.0	6.00	480.0	1	2	25000	622.0	1.50	unknown:rarity	0	0	25000	False	Classy Cane
+Vanilla	StylistKilLaKillScissorsIWish	Broadsword	melee	21	21.0	5.00	105.0	1	2	25000	136.1	3.00	shop:Terraria/Stylist/Shop	0	0	25000	False	Stylish Scissors
+Vanilla	Arkhalis	HeldWeapon	melee	25	25.0	4.00	40.0	-1	9	250000	70.2	16.00	unknown:rarity	0	0	250000	False	Arkhalis
+Vanilla	AmberStaff	Magic	magic	21	21.0	2.35	49.4	2	1	20000	60.9	0.50	recipe<-Sturdy Fossil	0	7	120000	False	Amber Staff
+Vanilla	BoneJavelin	Thrown	ranged	20	20.0	2.40	14.4	-1	1	50	16.2	0.50	recipe<-Sturdy Fossil	0	0	50	False	Bone Javelin
+Vanilla	BoneDagger	Thrown	ranged	14	14.0	4.29	18.0	6	1	50	20.3	0.50	recipe<-Sturdy Fossil	0	0	50	False	Bone Throwing Knife
+Vanilla	Terrarian	Yoyo	melee	90	90.0	2.40	172.8	-1	10	500000	315.9	18.00	boss:Moon Lord's Core@18	0	0	500000	False	Terrarian
+Vanilla	SolarEruption	HeldWeapon	melee	105	105.0	3.00	630.0	-1	10	500000	1151.6	17.50	recipe<-Solar Fragment	0	0	3060000	False	Solar Eruption
+Vanilla	StardustCellStaff	Summon	summon	60	60.0	1.58	252.0	-1	10	500000	460.6	17.50	recipe<-Stardust Fragment	0	10	540000	False	Stardust Cell Staff
+Vanilla	VortexBeater	HeldWeapon	ranged	50	60.0	3.00	720.0	-1	10	500000	1316.1	17.50	recipe<-Vortex Fragment	97	0	1620000	False	Vortex Beater
+Vanilla	NebulaArcanum	Magic	magic	70	70.0	2.00	700.0	3	10	500000	1279.6	17.50	recipe<-Nebula Fragment	0	30	900000	False	Nebula Arcanum
+Vanilla	BloodWater	Thrown	ranged	20	20.0	4.00	24.0	1	3	100	30.2	4.50	recipe<-+rarityfloor4.5	0	0	70	False	Blood Water
+Vanilla	PlatinumBow	Bow	ranged	13	23.0	2.40	55.2	1	0	10500	64.1	0.00	recipe<-	40	0	63000	False	Platinum Bow
+Vanilla	PlatinumShortsword	Shortsword	melee	18	18.0	6.00	108.0	-1	0	10500	125.4	0.00	recipe<-	0	0	54000	False	Platinum Shortsword
+Vanilla	PlatinumBroadsword	Broadsword	melee	16	16.0	3.00	48.0	1	0	13500	55.9	0.00	recipe<-	0	0	72000	False	Platinum Broadsword
+Vanilla	TungstenBow	Bow	ranged	10	20.0	2.31	46.2	1	0	5250	53.0	0.00	recipe<-	40	0	31500	False	Tungsten Bow
+Vanilla	TungstenShortsword	Shortsword	melee	15	15.0	5.45	81.8	-1	0	5250	94.0	0.00	recipe<-	0	0	27000	False	Tungsten Shortsword
+Vanilla	TungstenBroadsword	Broadsword	melee	14	14.0	3.00	42.0	1	0	6750	48.4	0.00	recipe<-	0	0	36000	False	Tungsten Broadsword
+Vanilla	LeadBow	Bow	ranged	9	19.0	2.22	42.2	1	0	2100	47.8	0.00	recipe<-	40	0	15750	False	Lead Bow
+Vanilla	LeadShortsword	Shortsword	melee	11	11.0	5.00	55.0	-1	0	2100	62.3	0.00	recipe<-	0	0	13500	False	Lead Shortsword
+Vanilla	LeadBroadsword	Broadsword	melee	13	13.0	3.00	39.0	1	0	2700	44.4	0.00	recipe<-	0	0	18000	False	Lead Broadsword
+Vanilla	TinBow	Bow	ranged	7	17.0	2.14	36.4	1	0	525	40.4	0.00	recipe<-	40	0	7875	False	Tin Bow
+Vanilla	TinShortsword	Shortsword	melee	7	7.0	5.00	35.0	-1	0	525	38.8	0.00	recipe<-	0	0	5625	False	Tin Shortsword
+Vanilla	TinBroadsword	Broadsword	melee	10	10.0	3.00	30.0	1	0	675	33.4	0.00	recipe<-	0	0	6750	False	Tin Broadsword
+Vanilla	CopperBow	Bow	ranged	6	16.0	2.07	33.1	1	0	350	36.5	0.00	recipe<-	40	0	5250	False	Copper Bow
+Vanilla	CopperShortsword	Shortsword	melee	5	5.0	4.62	23.1	-1	0	350	25.4	0.00	recipe<-	0	0	3750	False	Copper Shortsword
+Vanilla	CopperBroadsword	Broadsword	melee	9	9.0	3.00	27.0	1	0	450	29.9	0.00	recipe<-	0	0	4500	False	Copper Broadsword
+Vanilla	SilverBow	Bow	ranged	9	19.0	2.22	42.2	1	0	3500	48.2	0.00	recipe<-	40	0	21000	False	Silver Bow
+Vanilla	SilverShortsword	Shortsword	melee	14	14.0	5.00	70.0	-1	0	3500	79.9	0.00	recipe<-	0	0	18000	False	Silver Shortsword
+Vanilla	SilverBroadsword	Broadsword	melee	14	14.0	3.00	42.0	1	0	4500	48.1	0.00	recipe<-	0	0	24000	False	Silver Broadsword
+Vanilla	GoldBow	Bow	ranged	11	21.0	2.31	48.5	1	0	7000	55.9	0.00	recipe<-	40	0	42000	False	Gold Bow
+Vanilla	GoldShortsword	Shortsword	melee	17	17.0	5.45	92.7	-1	0	7000	107.0	0.00	recipe<-	0	0	36000	False	Gold Shortsword
+Vanilla	GoldBroadsword	Broadsword	melee	15	15.0	3.00	45.0	1	0	9000	52.1	0.00	recipe<-	0	0	48000	False	Gold Broadsword
+Vanilla	StardustDragonStaff	Summon	summon	24	24.0	1.58	100.8	-1	10	500000	184.3	17.50	recipe<-Stardust Fragment	0	10	540000	False	Stardust Dragon Staff
+Vanilla	Phantasm	HeldWeapon	ranged	50	60.0	20.00	720.0	-1	10	500000	1316.1	17.50	recipe<-Vortex Fragment	40	0	1620000	False	Phantasm
+Vanilla	LastPrism	HeldWeapon	magic	57	57.0	4.00	1368.0	-1	10	500000	2500.6	18.00	boss:Moon Lord's Core@18	0	12	500000	False	Last Prism
+Vanilla	NebulaBlaze	Magic	magic	130	130.0	5.00	650.0	1	10	500000	1188.2	17.50	recipe<-Nebula Fragment	0	12	900000	False	Nebula Blaze
+Vanilla	DayBreak	ThrownMelee	melee	125	125.0	2.73	340.9	-1	10	500000	623.2	17.50	recipe<-Solar Fragment	0	0	3060000	False	Daybreak
+Vanilla	FireworksLauncher	Gun	ranged	50	90.0	2.40	216.0	-1	8	800000	370.7	13.50	shop:Terraria/PartyGirl/Shop:DownedGolem+rarityfloor13.5	771	0	800000	False	Celebration
+Vanilla	PartyGirlGrenade	Thrown	ranged	30	30.0	3.00	27.0	-1	2	250	32.8	1.50	unknown:rarity	0	0	250	False	Happy Grenade
+Vanilla	MoonlordTurretStaff	Sentry	summon	50	50.0	2.00	75.0	1	10	500000	137.1	18.00	boss:Moon Lord's Core@18	0	10	500000	False	Lunar Portal Staff
+Vanilla	LunarFlareBook	Magic	magic	110	110.0	6.00	660.0	-1	10	500000	1206.5	18.00	boss:Moon Lord's Core@18	0	9	500000	False	Lunar Flare
+Vanilla	RainbowCrystalStaff	Sentry	summon	130	130.0	2.00	195.0	1	10	500000	356.5	18.00	boss:Moon Lord's Core@18	0	10	500000	False	Rainbow Crystal Staff
+Vanilla	BluePhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0	301250	False	Blue Phasesaber
+Vanilla	RedPhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0	357500	False	Red Phasesaber
+Vanilla	GreenPhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0	320000	False	Green Phasesaber
+Vanilla	PurplePhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0	263750	False	Purple Phasesaber
+Vanilla	WhitePhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0	395000	False	White Phasesaber
+Vanilla	YellowPhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0	282500	False	Yellow Phasesaber
+Vanilla	AntlionClaw	Broadsword	melee	16	16.0	6.00	96.0	1	2	5000	121.7	1.50	unknown:rarity	0	0	5000	False	Mandible Blade
+Vanilla	SpiritFlame	Magic	magic	85	85.0	3.00	255.0	-1	4	50000	364.1	12.09	recipe<-Forbidden Fragment	0	14	197000	False	Spirit Flame
+Vanilla	SkyFracture	Magic	magic	46	46.0	6.00	276.0	1	4	300000	402.7	7.00	recipe<-Magic Missile	0	17	112500	False	Sky Fracture
+Vanilla	OnyxBlaster	Gun	ranged	24	34.0	6.25	212.5	-1	4	250000	309.4	7.00	recipe<-Shotgun	97	0	269000	False	Onyx Blaster
+Vanilla	DD2FlameburstTowerT1Popper	Sentry	summon	17	17.0	2.00	25.5	1	3	50000	34.9	4.50	unknown:rarity	0	5	50000	False	Flameburst Rod
+Vanilla	DD2FlameburstTowerT2Popper	Sentry	summon	42	42.0	2.00	63.0	1	5	250000	95.5	9.50	shop:Terraria/DD2Bartender/Shop:InHardmode+DownedMechBossAny+rarityfloor9.5	0	10	250000	False	Flameburst Cane
+Vanilla	DD2FlameburstTowerT3Popper	Sentry	summon	88	88.0	2.00	132.0	1	8	750000	226.4	13.50	shop:Terraria/DD2Bartender/Shop:InHardmode+DownedGolem+rarityfloor13.5	0	15	750000	False	Flameburst Staff
+Vanilla	AleThrowingGlove	Gun	ranged	20	20.0	1.50	30.0	1	1	500	35.0	0.50	unknown:rarity	353	0	500	False	Ale Tosser
+Vanilla	DD2SquireDemonSword	Broadsword	melee	95	95.0	3.00	285.0	1	5	50000	424.1	11.01	boss:Ogre@11.01	0	0	50000	False	Brand of the Inferno
+Vanilla	DD2BallistraTowerT1Popper	Sentry	summon	30	30.0	2.00	45.0	1	3	50000	61.6	4.50	unknown:rarity	0	5	50000	False	Ballista Rod
+Vanilla	DD2BallistraTowerT2Popper	Sentry	summon	74	74.0	2.00	111.0	1	5	250000	168.3	9.50	shop:Terraria/DD2Bartender/Shop:InHardmode+DownedMechBossAny+rarityfloor9.5	0	10	250000	False	Ballista Cane
+Vanilla	DD2BallistraTowerT3Popper	Sentry	summon	156	156.0	2.00	234.0	1	8	750000	401.3	13.50	shop:Terraria/DD2Bartender/Shop:InHardmode+DownedGolem+rarityfloor13.5	0	15	750000	False	Ballista Staff
+Vanilla	DD2SquireBetsySword	Broadsword	melee	150	150.0	3.00	900.0	3	8	250000	1526.3	16.00	boss:Betsy@16	0	0	250000	False	Flying Dragon
+Vanilla	DD2LightningAuraT1Popper	Sentry	summon	4	4.0	2.00	6.0	-1	3	50000	8.2	4.50	unknown:rarity	0	5	50000	False	Lightning Aura Rod
+Vanilla	DD2LightningAuraT2Popper	Sentry	summon	11	11.0	2.00	16.5	-1	5	250000	25.0	9.50	shop:Terraria/DD2Bartender/Shop:InHardmode+DownedMechBossAny+rarityfloor9.5	0	10	250000	False	Lightning Aura Cane
+Vanilla	DD2LightningAuraT3Popper	Sentry	summon	34	34.0	2.00	51.0	-1	8	750000	87.5	13.50	shop:Terraria/DD2Bartender/Shop:InHardmode+DownedGolem+rarityfloor13.5	0	15	750000	False	Lightning Aura Staff
+Vanilla	DD2ExplosiveTrapT1Popper	Sentry	summon	24	24.0	2.00	36.0	-1	3	50000	49.2	4.50	unknown:rarity	0	5	50000	False	Explosive Trap Rod
+Vanilla	DD2ExplosiveTrapT2Popper	Sentry	summon	59	59.0	2.00	88.5	-1	5	250000	134.2	9.50	shop:Terraria/DD2Bartender/Shop:InHardmode+DownedMechBossAny+rarityfloor9.5	0	10	250000	False	Explosive Trap Cane
+Vanilla	DD2ExplosiveTrapT3Popper	Sentry	summon	126	126.0	2.00	189.0	-1	8	750000	324.1	13.50	shop:Terraria/DD2Bartender/Shop:InHardmode+DownedGolem+rarityfloor13.5	0	15	750000	False	Explosive Trap Staff
+Vanilla	MonkStaffT1	Spear	melee	83	83.0	2.00	166.0	-1	5	50000	247.0	11.01	boss:Ogre@11.01	0	0	50000	False	Sleepy Octopod
+Vanilla	MonkStaffT2	Spear	melee	90	90.0	2.22	200.0	-1	5	50000	297.6	11.01	boss:Ogre@11.01	0	0	50000	False	Ghastly Glaive
+Vanilla	BookStaff	Magic	magic	36	36.0	9.60	345.6	1	5	50000	514.2	11.01	boss:Ogre@11.01	0	20	50000	False	Tome of Infinite Wisdom
+Vanilla	DD2PhoenixBow	HeldWeapon	ranged	32	42.0	3.33	56.0	-1	5	50000	83.3	11.01	boss:Ogre@11.01	40	0	50000	False	Phantom Phoenix
+Vanilla	MonkStaffT3	Spear	melee	225	225.0	2.00	450.0	-1	8	250000	763.2	16.00	boss:Betsy@16	0	0	250000	False	Sky Dragon's Fury
+Vanilla	DD2BetsyBow	Bow	ranged	42	52.0	6.00	312.0	1	8	250000	529.1	16.00	boss:Betsy@16	40	0	250000	False	Aerial Bane
+Vanilla	ApprenticeStaffT3	Magic	magic	100	100.0	2.00	200.0	1	8	250000	339.2	16.00	boss:Betsy@16	0	14	250000	False	Betsy's Wrath
+Vanilla	Celeb2	HeldWeapon	ranged	50	90.0	10.00	360.0	-1	10	500000	658.1	18.00	boss:Moon Lord's Core@18	771	0	500000	False	Celebration Mk2
+Vanilla	SuperStarCannon	Gun	ranged	60	60.0	3.33	200.0	-1	3	500000	281.6	9.00	recipe<-Hallowed Bar	75	0	723000	False	Super Star Shooter
+Vanilla	ThunderSpear	Spear	melee	14	14.0	2.14	30.0	-1	1	15000	36.8	0.50	unknown:rarity	0	0	15000	False	Storm Spear
+Vanilla	ThunderStaff	Magic	magic	15	15.0	3.53	52.9	2	1	15000	65.0	0.50	unknown:rarity	0	7	15000	False	Thunder Zapper
+Vanilla	Terragrim	HeldWeapon	melee	13	13.0	4.00	20.8	-1	2	250000	27.8	12.00	shop:Terraria/Princess/Shop:WorldAnniversary+BloodMoon	0	0	250000	False	Terragrim
+Vanilla	OrangePhaseblade	Broadsword	melee	36	36.0	3.33	120.0	1	1	27000	148.5	2.00	recipe<-Meteorite Bar	0	0	195000	False	Orange Phaseblade
+Vanilla	OrangePhasesaber	Broadsword	melee	132	132.0	3.75	495.0	1	4	50000	706.8	7.00	recipe<-Crystal Shard	0	0	395000	False	Orange Phasesaber
+Vanilla	SanguineStaff	Summon	summon	35	35.0	1.58	96.6	-1	4	250000	140.6	7.00	unknown:rarity	0	10	250000	False	Sanguine Staff
+Vanilla	SharpTears	Magic	magic	49	49.0	5.45	267.3	4	4	200000	388.1	7.00	unknown:rarity	0	20	200000	False	Blood Thorn
+Vanilla	DripplerFlail	Flail	melee	55	55.0	1.50	66.0	-1	4	200000	95.8	7.00	unknown:rarity	0	0	200000	False	Drippler Crippler
+Vanilla	VampireFrogStaff	Summon	summon	11	11.0	1.58	27.7	-1	3	50000	37.9	4.50	unknown:rarity	0	10	50000	False	Vampire Frog Staff
+Vanilla	BabyBirdStaff	Summon	summon	7	7.0	1.58	14.3	-1	1	50000	17.8	0.50	recipe<-+rarityfloor0.5	0	10	2500	False	Finch Staff
+Vanilla	ZapinatorGray	Magic	magic	42	42.0	1.67	70.0	8	2	170000	93.0	1.50	unknown:rarity	0	16	170000	False	Gray Zapinator
+Vanilla	ZapinatorOrange	Magic	magic	100	100.0	1.67	166.7	8	5	500000	254.7	9.50	shop:Terraria/TravellingMerchant/Shop:InHardmode+rarityfloor9.5	0	16	500000	False	Orange Zapinator
+Vanilla	BloodRainBow	Bow	ranged	14	24.0	3.16	75.8	1	3	50000	103.7	4.50	unknown:rarity	40	0	50000	False	Blood Rain Bow
+Vanilla	Gladius	Shortsword	melee	15	15.0	8.57	128.6	-1	1	15000	157.8	0.50	unknown:rarity	0	0	15000	False	Gladius
+Vanilla	StormTigerStaff	Summon	summon	49	49.0	1.58	182.3	-1	8	1000000	313.5	13.50	unknown:rarity	0	10	1000000	False	Desert Tiger Staff
+Vanilla	BlandWhip	Whip	summon	14	14.0	2.00	22.4	-1	1	100000	28.2	0.50	shop:Terraria/BestiaryGirl/Shop:BestiaryPercentage+rarityfloor0.5	0	0	100000	False	Leather Whip
+Vanilla	SwordWhip	Whip	summon	55	55.0	2.14	94.3	-1	5	230000	142.8	9.50	recipe<-Hallowed Bar+rarityfloor9.5	0	0	288000	False	Durendal
+Vanilla	MaceWhip	Whip	summon	165	165.0	1.71	226.3	-1	8	300000	384.5	13.50	unknown:rarity	0	0	300000	False	Morning Star
+Vanilla	ScytheWhip	Whip	summon	100	100.0	2.22	177.8	-1	8	500000	303.6	13.50	boss:Pumpking@13.25+rarityfloor13.5	0	0	500000	False	Dark Harvest
+Vanilla	QuadBarrelShotgun	Gun	ranged	14	24.0	4.36	104.7	1	3	350000	146.8	5.00	shop:Terraria/ArmsDealer/Shop:InGraveyard+DownedSkeletron	97	0	350000	False	Quad-Barrel Shotgun
+Vanilla	GravediggerShovel	Broadsword	melee	12	12.0	4.29	51.4	1	1	5000	62.1	0.50	recipe<-+rarityfloor0.5	0	0	18000	False	Gravedigger's Shovel
+Vanilla	SparkleGuitar	Magic	magic	85	85.0	10.00	850.0	1	5	500000	1298.8	15.00	boss:Empress of Light@15	0	12	500000	False	Stellar Tune
+Vanilla	Smolstar	Summon	summon	9	9.0	1.58	27.0	-1	5	50000	40.2	9.50	boss:Queen Slime@8+rarityfloor9.5	0	10	50000	False	Blade Staff
+Vanilla	BouncingShield	Boomerang	melee	80	80.0	1.67	106.7	5	5	350000	162.3	9.50	shop:Terraria/TravellingMerchant/Shop:InHardmode+rarityfloor9.5	0	0	130000	False	Sergeant United Shield
+Vanilla	Shroomerang	Boomerang	melee	23	23.0	3.00	55.2	-1	1	30000	68.4	0.50	unknown:rarity	0	0	30000	False	Shroomerang
+Vanilla	JoustingLance	Spear	melee	60	60.0	2.50	150.0	-1	4	60000	214.7	7.00	shop:Terraria/BestiaryGirl/Shop:BestiaryPercentage+InHardmode	0	0	60000	False	Jousting Lance
+Vanilla	ShadowJoustingLance	Spear	melee	130	130.0	2.50	325.0	-1	8	500000	555.1	13.50	unknown:rarity	0	0	500000	False	Shadow Jousting Lance
+Vanilla	HallowJoustingLance	Spear	melee	90	90.0	2.50	225.0	-1	5	230000	340.8	9.50	recipe<-Hallowed Bar+rarityfloor9.5	0	0	288000	False	Hallowed Jousting Lance
+Vanilla	CombatWrench	Boomerang	melee	25	25.0	4.00	80.0	-1	2	25000	103.7	5.00	shop:Terraria/Mechanic/Shop	0	0	25000	False	Combat Wrench
+Vanilla	CoolWhip	Whip	summon	45	45.0	2.00	72.0	-1	4	200000	104.5	9.50	recipe<-Frost Core	0	0	66000	False	Cool Whip
+Vanilla	FireWhip	Whip	summon	37	37.0	2.00	59.2	-1	4	150000	85.7	7.00	boss:Wall of Flesh@7	0	0	150000	False	Firecracker
+Vanilla	ThornWhip	Whip	summon	18	18.0	2.00	28.8	-1	3	50000	39.4	4.50	recipe<-Stinger+rarityfloor4.5	0	0	7200	False	Snapthorn
+Vanilla	RainbowWhip	Whip	summon	180	180.0	2.00	288.0	-1	8	250000	488.4	15.00	boss:Empress of Light@15	0	0	250000	False	Kaleidoscope
+Vanilla	PiercingStarlight	HeldWeapon	melee	80	80.0	10.00	320.0	-1	8	250000	542.7	15.00	boss:Empress of Light@15	0	0	250000	False	Starlight
+Vanilla	FairyQueenMagicItem	Magic	magic	54	54.0	6.67	360.0	3	8	250000	610.5	15.00	boss:Empress of Light@15	0	23	250000	False	Nightglow
+Vanilla	FairyQueenRangedItem	Bow	ranged	50	60.0	10.00	600.0	1	8	250000	1017.6	15.00	boss:Empress of Light@15	40	0	250000	False	Eventide
+Vanilla	Zenith	Broadsword	melee	210	210.0	6.00	1260.0	-1	12	1000000	2469.6	22.00	recipe<-Auric Bar	0	0	7323400	False	Zenith
+Vanilla	EmpressBlade	Summon	summon	68	68.0	1.58	204.0	-1	5	1000000	314.2	15.00	boss:Empress of Light@15	0	10	1000000	False	Terraprisma
+Vanilla	Mace	Flail	melee	9	9.0	1.33	9.6	-1	1	100000	12.1	0.50	unknown:rarity	0	0	100000	False	Mace
+Vanilla	FlamingMace	Flail	melee	9	9.0	1.33	9.6	-1	1	100000	12.1	0.50	recipe<-Mace	0	0	100165	False	Flaming Mace
+Vanilla	PrincessWeapon	Magic	magic	80	80.0	2.40	192.0	-1	5	500000	293.4	9.50	enemy:Princess:IsHardmode+rarityfloor9.5	0	18	500000	False	Resonance Scepter
+Vanilla	FlinxStaff	Summon	summon	8	8.0	1.58	20.2	-1	3	25000	27.3	4.50	recipe<-Flinx Fur+rarityfloor4.5	0	5	63000	False	Flinx Staff
+Vanilla	BoneWhip	Whip	summon	27	27.0	2.00	43.2	-1	2	75000	56.8	1.50	unknown:rarity	0	0	4500	False	Spinal Tap
+Vanilla	TentacleSpike	Broadsword	melee	20	20.0	2.86	57.1	1	2	25000	74.1	1.50	unknown:rarity	0	0	25000	False	Tentacle Spike
+Vanilla	HamBat	Broadsword	melee	57	57.0	3.00	171.0	1	4	50000	244.2	7.00	unknown:rarity	0	0	50000	False	Ham Bat
+Vanilla	BatBat	Broadsword	melee	36	36.0	1.33	48.0	1	2	12500	61.6	1.50	unknown:rarity	0	0	12500	False	Bat Bat
+Vanilla	AbigailsFlower	Summon	summon	6	6.0	1.58	15.1	-1	3	25000	20.5	4.50	unknown:rarity	0	10	25000	False	Abigail's Flower
+Vanilla	PewMaticHorn	Gun	ranged	25	35.0	4.00	140.0	1	2	75000	184.1	6.00	boss:Deerclops@6	97	0	75000	False	Pew-matic Horn
+Vanilla	WeatherPain	Magic	magic	13	13.0	1.33	17.3	15	2	75000	22.8	6.00	boss:Deerclops@6	0	30	75000	False	Weather Pain
+Vanilla	HoundiusShootius	Sentry	summon	24	24.0	2.00	36.0	1	2	75000	47.3	6.00	boss:Deerclops@6	0	20	75000	False	Houndius Shootius
+Vanilla	Flymeal	Broadsword	melee	15	15.0	3.53	52.9	1	2	17500	68.3	1.50	recipe<-+rarityfloor1.5	0	0	73000	False	Flymeal
+Vanilla	WandofFrosting	Magic	magic	15	15.0	2.31	34.6	2	1	7500	42.1	0.50	recipe<-Wand of Sparking	0	2	5170	False	Wand of Frosting
+Vanilla	AshWoodBow	Bow	ranged	10	20.0	2.40	48.0	1	0	100	51.8	0.00	unknown:rarity	40	0	100	False	Ash Wood Bow
+Vanilla	AshWoodSword	Broadsword	melee	13	13.0	3.53	45.9	1	0	100	49.6	0.00	unknown:rarity	0	0	100	False	Ash Wood Sword
+Vanilla	HiveFive	Yoyo	melee	27	27.0	2.40	51.8	-1	3	35000	70.6	4.50	recipe<-Bee Wax+rarityfloor4.5	0	0	35000	False	Hive-Five
+Vanilla	Trimarang	Boomerang	melee	21	21.0	3.00	50.4	-1	3	100000	69.6	4.50	recipe<-Pearl Shard+rarityfloor4.5	0	0	160600	False	Trimarang
+Vanilla	WaffleIron	Broadsword	melee	50	50.0	2.61	260.9	1	5	150000	393.1	9.50	boss:Retinazer@9+rarityfloor9.5	0	0	150000	False	Waffle's Iron
+CalamityMod	DragoonDrizzlefish	Magic	ranged	18	18.0	3.00	54.0	5	3	50000	73.9	4.50	unknown:rarity	0	0	50000	False	Dragoon Drizzlefish
+CalamityMod	SparklingEmpress	HeldWeapon	magic	10	10.0	3.00	12.0	-1	2	20000	15.5	1.50	unknown:rarity	0	5	20000	False	Sparkling Empress
+CalamityMod	AerialTracker	Magic	RogueDamageClass	16	16.0	1.50	24.0	-1	3	50000	32.8	19.00	recipe<-Mysterious Circuitry	0	0	71500	False	P-LSR: Aerial Tracker
+CalamityMod	AqueousHunterDrone	Summon	summon	18	18.0	1.67	21.6	-1	3	50000	29.5	19.00	recipe<-Mysterious Circuitry	0	10	71500	False	P-PMA: Aqueous Hunter Drone
+CalamityMod	Auger	HeldWeapon	melee	55	55.0	5.00	110.0	-1	3	50000	150.5	19.00	recipe<-Mysterious Circuitry	0	0	71500	False	P-GSS: Auger
+CalamityMod	CountermeasureMitt	HeldWeapon	magic	45	45.0	5.45	98.2	-1	8	600000	168.0	19.00	recipe<-Mysterious Circuitry	0	3	1125000	False	B-LSR: Countermeasure Mitt
+CalamityMod	GalvanizingGlaive	Spear	melee	130	130.0	2.86	371.4	-1	8	600000	635.6	19.00	recipe<-Mysterious Circuitry	0	0	1125000	False	Galvanizing Glaive
+CalamityMod	HolofibreImmolator	HeldWeapon	ranged	30	30.0	4.29	51.4	1	5	200000	77.8	19.00	recipe<-Mysterious Circuitry	0	0	1050000	False	R-PMA: Holofibre Immolator
+CalamityMod	MountedScanner	Summon	summon	24	24.0	1.67	72.0	-1	5	200000	108.9	19.00	recipe<-Mysterious Circuitry	0	10	1050000	False	Mounted Scanner
+CalamityMod	Nidhogg	Magic	ranged	69	69.0	7.50	517.5	1	8	600000	885.5	19.00	recipe<-Mysterious Circuitry	0	0	1125000	False	B-GSS: Nidhogg
+CalamityMod	PhalanxSurge	Magic	ranged	175	175.0	2.00	350.0	1	19	1500000	688.5	19.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor19.0	0	0	845000	False	W-LSR: Phalanx Surge
+CalamityMod	Phaseslayer	HeldWeapon	melee	1350	1350.0	2.50	1350.0	-1	14	2000000	2662.3	21.00	recipe<-Cosmilite Bar	0	0	1500000	False	Phaseslayer
+CalamityMod	PlasmaCaster	Magic	magic	705	705.0	1.33	940.0	1	19	1500000	1849.0	19.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor19.0	0	36	845000	False	Plasma Caster
+CalamityMod	PlasmaGrenade	Magic	RogueDamageClass	860	860.0	2.00	1720.0	1	14	2000000	3391.9	21.00	recipe<-Cosmilite Bar	0	0	1500000	False	Plasma Grenade
+CalamityMod	PoleWarper	Summon	summon	207	207.0	2.50	968.8	-1	14	2000000	1910.4	21.00	recipe<-Cosmilite Bar	0	12	1500000	False	Pole Warper
+CalamityMod	PulseDragon	Boomerang	melee	300	300.0	3.00	720.0	-1	19	1500000	1416.3	19.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor19.0	0	0	845000	False	Pulse Dragon
+CalamityMod	PulseGrenade	Magic	RogueDamageClass	123	123.0	0.80	98.4	1	5	200000	148.8	19.00	recipe<-Mysterious Circuitry	0	0	1050000	False	R-PLS: Pulse Grenade
+CalamityMod	PulsePistol	Magic	magic	42	42.0	0.94	39.4	-1	3	50000	53.9	19.00	recipe<-Mysterious Circuitry	0	25	71500	False	P-PLS: Pulse Pistol
+CalamityMod	PulseRifle	Magic	ranged	530	530.0	1.09	578.2	-1	14	2000000	1140.2	21.00	recipe<-Cosmilite Bar	0	0	1500000	False	A-PLS: Pulse Rifle
+CalamityMod	PulseTurretRemote	Sentry	summon	150	150.0	2.00	225.0	-1	8	600000	385.0	19.00	recipe<-Mysterious Circuitry	0	10	1125000	False	Pulse Turret Remote
+CalamityMod	ShortCircuit	Magic	ranged	11	11.0	7.50	82.5	2	3	50000	112.9	19.00	recipe<-Mysterious Circuitry	0	0	71500	False	P-TSL: Short Circuit
+CalamityMod	SnakeEyes	Summon	summon	160	160.0	2.50	748.8	-1	19	1500000	1472.9	19.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor19.0	0	12	845000	False	Snake Eyes
+CalamityMod	SystemBane	Magic	RogueDamageClass	45	45.0	4.00	180.0	-1	8	600000	308.0	19.00	recipe<-Mysterious Circuitry	0	0	1125000	False	System Bane
+CalamityMod	TeslaCannon	Magic	magic	1200	1200.0	0.67	800.0	1	14	2000000	1577.6	21.00	recipe<-Cosmilite Bar	0	120	1500000	False	Tesla Cannon
+CalamityMod	Vulcan	HeldWeapon	magic	42	42.0	5.45	91.6	1	5	200000	138.6	19.00	recipe<-Mysterious Circuitry	0	9	1050000	False	R-GSS: Vulcan
+CalamityMod	WavePounder	Magic	RogueDamageClass	75	75.0	1.07	80.4	1	19	1500000	158.1	19.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor19.0	0	0	845000	False	Wave Pounder
+CalamityMod	AbyssalTome	Magic	magic	22	22.0	2.40	52.8	2	4	100000	76.0	7.00	boss:CalamityMod/SlimeGodCore@6.7+rarityfloor7.0	0	15	100000	False	Abyssal Tome
+CalamityMod	AbyssShocker	Magic	magic	30	30.0	3.16	94.7	5	3	50000	129.6	4.50	unknown:rarity	0	14	50000	False	Abyss Shocker
+CalamityMod	AcidGun	Magic	magic	18	18.0	3.00	54.0	2	2	20000	69.8	1.50	unknown:rarity	0	12	3600	False	Acid Gun
+CalamityMod	AetherfluxCannon	HeldWeapon	magic	315	315.0	1.67	210.0	1	12	2400000	414.8	22.00	recipe<-Auric Bar	0	7	4210000	False	Aetherflux Cannon
+CalamityMod	AethersWhisper	Magic	magic	600	600.0	2.50	1500.0	1	19	1500000	2950.6	19.62	recipe<-Twisting Nether	0	30	230000	False	Aether's Whisper
+CalamityMod	AlphaDraconis	Magic	magic	150	150.0	5.00	750.0	5	18	1750000	1477.3	20.00	recipe<-Ruinous Soul	0	16	793000	False	Alpha Draconis
+CalamityMod	AlulaAustralis	Magic	magic	65	65.0	3.53	229.4	1	7	450000	377.6	12.81	boss:CalamityMod/AstrumAureus@12.81	0	15	450000	False	Alula Australis
+CalamityMod	AnahitasArpeggio	Magic	magic	60	60.0	2.73	163.6	5	7	450000	269.4	12.80	boss:CalamityMod/Anahita@12.8	0	7	450000	False	Anahita's Arpeggio
+CalamityMod	Apathanull	Magic	magic	63	63.0	6.43	405.0	-1	10	1000000	745.2	17.50	recipe<-Meld Blob	0	26	230000	False	Apathanull
+CalamityMod	ApoctosisArray	Magic	magic	40	40.0	12.00	480.0	1	10	1000000	883.2	17.50	recipe<-Solar Fragment	0	14	2345000	False	Apoctosis Array
+CalamityMod	Apotheosis	Magic	magic	222	222.0	0.36	79.8	-1	17	2800000	157.8	23.00	recipe<-Shadowspec Bar	0	277	21786650	False	Apotheosis
+CalamityMod	AquamarineStaff	Magic	magic	17	17.0	2.73	46.4	1	2	20000	59.9	1.61	recipe<-Navystone	0	10	36500	False	Aquamarine Staff
+CalamityMod	ArchAmaryllis	Magic	magic	58	58.0	2.61	151.3	1	10	1000000	278.4	17.50	recipe<-Nebula Fragment	0	23	745600	False	Arch Amaryllis
+CalamityMod	ArcticBearPaw	Magic	magic	80	80.0	2.14	171.4	5	6	350000	271.2	11.50	shop:CalamityMod/Archmage/Shop:DownedMechBossAll+rarityfloor11.5	0	18	350000	False	Arctic Bear Paw
+CalamityMod	ArtAttack	HeldWeapon	magic	120	120.0	2.50	120.0	1	7	450000	197.5	12.50	recipe<-Ashes of Calamity	0	60	1024750	False	Art Attack
+CalamityMod	AstralachneaStaff	Magic	magic	55	55.0	2.86	157.1	1	7	450000	258.7	12.50	unknown:rarity	0	16	450000	False	Astralachnea Staff
+CalamityMod	AstralStaff	Magic	magic	245	245.0	3.33	816.7	2	9	800000	1450.5	17.00	recipe<-Astral Bar	0	26	468000	False	Astral Staff
+CalamityMod	Atlantis	Magic	magic	81	81.0	2.40	194.4	4	7	450000	320.0	12.80	boss:CalamityMod/Anahita@12.8	0	15	450000	False	Atlantis
+CalamityMod	AuguroftheVoid	Magic	magic	131	131.0	20.00	2620.0	1	11	1200000	4986.3	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	14	1430000	False	Augur of the Void
+CalamityMod	BelchingSaxophone	Magic	magic	32	32.0	5.00	160.0	1	5	200000	241.9	9.50	unknown:rarity	0	16	200000	False	Belching Saxophone
+CalamityMod	Biofusillade	Magic	magic	118	118.0	20.00	2360.0	2	19	1500000	4642.2	19.00	recipe<-Uelibloom Bar	0	4	890000	False	Biofusillade
+CalamityMod	BlackAnurian	Magic	magic	24	24.0	3.33	80.0	1	3	50000	109.4	4.50	unknown:rarity	0	13	50000	False	Black Anurian
+CalamityMod	BloodBath	Magic	magic	24	24.0	4.00	96.0	2	3	50000	131.3	4.50	boss:CalamityMod/PerforatorHive@3.99+rarityfloor4.5	0	12	50000	False	Blood Bath
+CalamityMod	BrimroseStaff	Magic	magic	45	45.0	3.75	168.8	-1	5	200000	255.2	9.50	recipe<-Unholy Core	0	12	212000	False	Brimrose Staff
+CalamityMod	BurningSea	HeldWeapon	magic	56	56.0	3.00	67.2	-1	5	200000	101.6	9.50	recipe<-Unholy Core	0	8	262000	False	Burning Sea
+CalamityMod	ChronomancersScythe	HeldWeapon	magic	159	159.0	12.00	763.2	-1	11	1200000	1452.5	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	30	962000	False	Chronomancer's Scythe
+CalamityMod	ClothiersWrath	Magic	magic	36	36.0	2.73	98.2	3	4	100000	141.4	7.00	unknown:rarity	0	15	100000	False	Clothier's Wrath
+CalamityMod	CoralSpout	HeldWeapon	magic	9	9.0	2.31	8.3	1	2	20000	10.7	1.60	recipe<-Sea Remains	0	30	41000	False	Coral Spout
+CalamityMod	CosmicRainbow	Magic	magic	117	117.0	6.00	702.0	-1	11	1200000	1336.0	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	10	1390000	False	Cosmic Rainbow
+CalamityMod	Cryophobia	Magic	magic	96	96.0	1.50	144.0	3	6	350000	227.8	11.50	shop:CalamityMod/Archmage/Shop:DownedMechBossAll+rarityfloor11.5	0	22	350000	False	Cryophobia
+CalamityMod	DarkSpark	HeldWeapon	magic	60	60.0	6.00	144.0	-1	18	1750000	283.6	20.00	recipe<-Ruinous Soul	0	12	4650000	False	Dark Spark
+CalamityMod	DeathValleyDuster	Magic	magic	130	130.0	1.20	156.0	-1	4	100000	224.6	7.00	recipe<-Spell Tome+rarityfloor7.0	0	38	51000	False	Death Valley Duster
+CalamityMod	Downpour	Magic	magic	50	50.0	4.00	200.0	-1	5	200000	302.4	9.50	boss:CalamityMod/AquaticScourgeHead@9.5	0	10	200000	False	Downpour
+CalamityMod	Effervescence	Magic	magic	60	60.0	4.00	240.0	-1	11	1200000	456.8	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	20	550000	False	Effervescence
+CalamityMod	EidolicWail	Magic	magic	943	943.0	2.57	2424.9	11	18	1750000	4776.3	19.00	unknown:rarity	0	90	1750000	False	Eidolic Wail
+CalamityMod	EidolonStaff	Magic	magic	180	180.0	3.33	600.0	1	18	1750000	1181.8	19.00	unknown:rarity	0	24	1750000	False	Eidolon Staff
+CalamityMod	EldritchTome	Magic	magic	32	32.0	8.57	274.3	2	4	100000	395.0	7.00	boss:CalamityMod/SlimeGodCore@6.7+rarityfloor7.0	0	13	100000	False	Eldritch Tome
+CalamityMod	Eternity	Magic	magic	840	840.0	0.50	420.0	-1	17	2800000	830.7	23.00	recipe<-Heresy	0	300	8791650	False	Eternity
+CalamityMod	EventHorizon	Magic	magic	138	138.0	1.33	184.0	-1	19	1500000	361.9	19.60	recipe<-Dark Plasma	0	45	2060000	False	Event Horizon
+CalamityMod	EvergladeSpray	Magic	magic	65	65.0	10.00	650.0	3	7	450000	1070.0	12.50	recipe<-Perennial Bar	0	7	645000	False	Everglade Spray
+CalamityMod	FaceMelter	Magic	magic	130	130.0	6.00	780.0	2	14	2000000	1538.2	21.00	recipe<-Cosmilite Bar	0	14	2200000	False	Face Melter
+CalamityMod	FatesReveal	Magic	magic	120	120.0	3.75	450.0	1	18	1750000	886.4	20.00	boss:CalamityMod/Polterghast@20	0	20	1750000	False	Fate's Reveal
+CalamityMod	FlareBolt	Magic	magic	40	40.0	0.75	30.0	-1	3	50000	41.0	5.00	recipe<-Hellstone Bar	0	40	49250	False	Flare Bolt
+CalamityMod	ForbiddenSun	Magic	magic	80	80.0	2.00	160.0	1	8	600000	273.8	13.50	recipe<-Scoria Bar	0	33	550000	False	Forbidden Sun
+CalamityMod	FrigidflashBolt	Magic	magic	95	95.0	3.00	285.0	5	4	100000	410.4	7.00	unknown:rarity	0	20	75075	False	Frigidflash Bolt
+CalamityMod	FrostBolt	Magic	magic	25	25.0	2.00	50.0	3	2	20000	64.6	1.50	unknown:rarity	0	8	5825	False	Frost Bolt
+CalamityMod	Genesis	HeldWeapon	magic	65	65.0	12.00	312.0	1	11	1200000	593.8	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	20	1130000	False	Genesis
+CalamityMod	GhastlyVisage	HeldWeapon	magic	120	120.0	2.22	106.7	-1	18	1750000	210.1	20.00	boss:CalamityMod/Polterghast@20	0	36	1750000	False	Ghastly Visage
+CalamityMod	GleamingMagnolia	Magic	magic	53	53.0	2.22	117.8	1	6	350000	186.3	11.50	recipe<-Hallowed Bar+rarityfloor11.5	0	15	145600	False	Gleaming Magnolia
+CalamityMod	GloriousEnd	HeldWeapon	magic	60	60.0	2.00	48.0	1	4	100000	69.1	7.00	unknown:rarity	0	60	100000	False	Glorious End
+CalamityMod	GruesomeEminence	HeldWeapon	magic	666	666.0	2.22	592.0	-1	13	2400000	1169.3	19.00	unknown:rarity	0	30	2400000	False	Gruesome Eminence
+CalamityMod	HadalUrn	HeldWeapon	magic	37	37.0	3.00	44.4	-1	7	450000	73.1	12.50	unknown:rarity	0	10	140500	False	Hadal Urn
+CalamityMod	HeliumFlash	HeldWeapon	magic	3200	3200.0	3.53	4517.6	1	12	2400000	8923.3	22.00	recipe<-Auric Bar	0	120	4520000	False	Helium Flash
+CalamityMod	HellwingStaff	Magic	magic	21	21.0	2.00	42.0	1	3	50000	57.5	4.50	unknown:rarity	0	18	37500	False	Hellwing Staff
+CalamityMod	Hematemesis	Magic	magic	75	75.0	2.73	204.5	1	8	600000	350.0	16.50	boss:CalamityMod/RavagerBody@16.5	0	14	600000	False	Hematemesis
+CalamityMod	Heresy	HeldWeapon	magic	960	960.0	0.50	192.0	-1	13	2400000	379.2	23.00	boss:CalamityMod/SupremeCalamitas@23	0	15	2400000	False	Heresy
+CalamityMod	HyperdeathRiftScepter	Magic	magic	4100	4100.0	1.20	4920.0	-1	14	2000000	9702.4	21.00	boss:CalamityMod/DevourerofGodsHead@21	0	50	2000000	False	Hyperdeath Rift Scepter
+CalamityMod	HyphaeRod	Magic	magic	22	22.0	2.50	55.0	1	2	20000	71.1	2.70	boss:CalamityMod/Crabulon@2.7	0	10	20000	False	Hyphae Rod
+CalamityMod	IceBarrage	Gun	ranged	2250	2250.0	0.17	375.0	-1	14	2000000	739.5	21.00	recipe<-Cosmilite Bar	5836	300	2550300	False	Ice Barrage
+CalamityMod	IcicleStaff	Magic	magic	10	10.0	8.57	85.7	1	1	10000	104.6	0.50	recipe<-+rarityfloor0.5	0	6	300	False	Icicle Staff
+CalamityMod	IcicleTrident	Magic	magic	69	69.0	2.40	165.6	2	5	200000	250.4	9.50	unknown:rarity	0	21	200000	False	Icicle Trident
+CalamityMod	InfernalRift	Magic	magic	50	50.0	13.64	681.8	1	8	600000	1166.7	13.50	recipe<-Scoria Bar	0	25	612500	False	Infernal Rift
+CalamityMod	IonBlaster	Magic	magic	24	24.0	8.57	205.7	1	5	200000	311.0	9.50	recipe<-Adamantite Bar+rarityfloor9.5	0	12	305000	False	Ion Blaster
+CalamityMod	Keelhaul	Magic	magic	55	55.0	2.00	110.0	1	8	600000	188.2	13.50	unknown:rarity	0	40	600000	False	Keelhaul
+CalamityMod	LashesofChaos	Magic	magic	130	130.0	1.30	169.6	1	7	450000	279.1	12.50	boss:CalamityMod/CalamitasClone@11.7+rarityfloor12.5	0	28	450000	False	Lashes of Chaos
+CalamityMod	LightGodsBrilliance	Magic	magic	111	111.0	10.00	1110.0	1	14	2000000	2189.0	21.00	recipe<-Cosmilite Bar	0	6	2315200	False	Light God's Brilliance
+CalamityMod	MadAlchemistsCocktailGlove	Magic	magic	240	240.0	4.00	960.0	1	11	1200000	1827.0	18.00	recipe<-Effulgent Feather	0	12	881400	False	Mad Alchemist's Cocktail Glove
+CalamityMod	MagneticMeltdown	Magic	magic	200	200.0	1.62	324.3	1	19	1500000	638.0	19.62	recipe<-Twisting Nether	0	45	710000	False	Magnetic Meltdown
+CalamityMod	ManaRose	Magic	magic	20	20.0	1.58	31.6	1	3	50000	43.2	4.50	recipe<-Nature's Gift	0	15	25600	False	Mana Rose
+CalamityMod	Miasma	Magic	magic	40	40.0	2.22	88.9	10	5	200000	134.4	11.50	recipe<-Nimbus Rod	0	22	251500	False	Miasma
+CalamityMod	Mistlestorm	Magic	magic	59	59.0	10.00	590.0	1	19	1500000	1160.6	19.60	recipe<-Dark Plasma	0	7	1660000	False	Mistlestorm
+CalamityMod	NanoPurge	HeldWeapon	magic	135	135.0	3.00	162.0	1	19	1500000	318.7	19.00	recipe<-Uelibloom Bar	0	8	1350000	False	Nano Purge
+CalamityMod	NebulousCataclysm	HeldWeapon	magic	530	530.0	2.00	424.0	-1	14	2000000	836.1	21.00	recipe<-Cosmilite Bar	0	120	3000000	False	Nebulous Cataclysm
+CalamityMod	NightsRay	Magic	magic	20	20.0	3.00	60.0	10	4	100000	86.4	7.00	unknown:rarity	0	15	312670	False	Night's Ray
+CalamityMod	NuclearFury	Magic	magic	91	91.0	2.40	218.4	3	11	1200000	415.7	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	30	750000	False	Nuclear Fury
+CalamityMod	Nucleosynthesis	Magic	magic	70	70.0	8.00	560.0	1	11	1200000	1065.8	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	30	2315920	False	Nucleosynthesis
+CalamityMod	Omicron	HeldWeapon	magic	80	80.0	15.00	480.0	1	14	2000000	946.6	21.00	recipe<-Cosmilite Bar	0	15	2930000	False	Omicron
+CalamityMod	ParasiticSceptor	Magic	magic	12	12.0	1.71	20.6	-1	2	20000	26.6	1.50	unknown:rarity	0	12	3600	False	Parasitic Scepter
+CalamityMod	PhantasmalFury	Magic	magic	190	190.0	7.50	1425.0	-1	18	1750000	2806.9	20.00	recipe<-Ruinous Soul	0	120	520000	False	Phantasmal Fury
+CalamityMod	PhoenixFlameBarrage	Magic	magic	140	140.0	4.00	560.0	1	12	2400000	1106.1	22.00	boss:CalamityMod/Yharon@22	0	40	2400000	False	Phoenix Flame Barrage
+CalamityMod	Photosynthesis	Magic	magic	74	74.0	2.86	211.4	-1	8	600000	361.8	13.50	unknown:rarity	0	10	1085920	False	Photosynthesis
+CalamityMod	PlagueStaff	Magic	magic	70	70.0	2.86	200.0	6	8	600000	342.2	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	0	22	600000	False	Plague Staff
+CalamityMod	PlasmaRifle	Magic	magic	120	120.0	1.50	180.0	-1	10	1000000	331.2	17.50	recipe<-Vortex Fragment	0	40	1190000	False	Plasma Rifle
+CalamityMod	PlasmaRod	Magic	magic	8	8.0	3.00	24.0	1	2	20000	31.0	1.50	unknown:rarity	0	10	20000	False	Plasma Rod
+CalamityMod	Poseidon	Magic	magic	52	52.0	1.22	63.7	6	5	200000	96.3	9.50	boss:CalamityMod/GiantClam@1.61+rarityfloor9.5	0	30	200000	False	Poseidon
+CalamityMod	PrimordialAncient	Magic	magic	3825	3825.0	0.83	3187.5	-1	14	2000000	6285.9	21.00	recipe<-Cosmilite Bar	0	104	1451000	False	Primordial Ancient
+CalamityMod	PrimordialEarth	Magic	magic	205	205.0	0.88	180.9	-1	8	600000	309.5	13.50	recipe<-Ectoplasm	0	48	251000	False	Primordial Earth
+CalamityMod	PurgeGuzzler	Magic	magic	152	152.0	1.58	240.0	1	19	1500000	472.1	19.00	boss:CalamityMod/Providence@19	0	14	1500000	False	Purge Guzzler
+CalamityMod	RainbowPartyCannon	HeldWeapon	magic	170	170.0	2.50	170.0	-1	17	2800000	336.2	23.00	recipe<-Shadowspec Bar	0	60	7091650	False	Rainbow Party Cannon
+CalamityMod	Rancor	HeldWeapon	magic	333	333.0	2.40	319.7	-1	13	2400000	631.4	19.00	unknown:rarity	0	25	2400000	False	Rancor
+CalamityMod	RecitationoftheBeast	Magic	magic	60	60.0	2.73	163.6	2	19	1500000	321.9	19.00	recipe<-Bloodstone	0	22	691000	False	Recitation of the Beast
+CalamityMod	RelicofRuin	Magic	magic	21	21.0	1.71	36.0	1	5	200000	54.4	12.09	recipe<-Forbidden Fragment	0	16	300000	False	Relic of Ruin
+CalamityMod	RougeSlash	Magic	magic	119	119.0	3.16	375.8	3	11	1200000	715.2	18.00	unknown:rarity	0	30	1200000	False	Rouge Slash
+CalamityMod	SandstreamScepter	Magic	magic	16	16.0	3.00	48.0	-1	2	20000	62.0	1.60	boss:CalamityMod/DesertScourgeHead@1.6	0	7	20000	False	Sandstream Scepter
+CalamityMod	SanguineFlare	Magic	magic	1050	1050.0	2.40	2520.0	1	19	1500000	4957.0	19.00	recipe<-Bloodstone	0	36	752000	False	Sanguine Flare
+CalamityMod	SeethingDischarge	Magic	magic	40	40.0	1.00	40.0	1	5	200000	60.5	10.50	boss:CalamityMod/BrimstoneElemental@10.5	0	30	200000	False	Seething Discharge
+CalamityMod	Serpentine	Magic	magic	10	10.0	1.71	17.1	5	4	100000	24.7	7.00	unknown:rarity	0	22	100000	False	Serpentine
+CalamityMod	ShadecrystalBarrage	Magic	magic	24	24.0	1.90	45.7	1	5	200000	69.1	9.50	recipe<-Cryonic Bar	0	40	657000	False	Shadecrystal Barrage
+CalamityMod	ShaderainStaff	Magic	magic	19	19.0	1.76	33.5	1	3	50000	45.9	4.50	boss:CalamityMod/HiveMind@3.98+rarityfloor4.5	0	14	50000	False	Shaderain Staff
+CalamityMod	ShadowboltStaff	Magic	magic	285	285.0	3.33	950.0	-1	18	1750000	1871.2	20.00	recipe<-Ruinous Soul	0	72	520000	False	Shadowbolt Staff
+CalamityMod	ShiftingSands	HeldWeapon	magic	81	81.0	2.00	64.8	3	7	450000	106.7	12.50	recipe<-Grand Scale	0	20	138500	False	Shifting Sands
+CalamityMod	SHPC	Magic	magic	117	117.0	1.00	117.0	1	6	350000	185.1	19.00	recipe<-Prototype Plasma Drive	0	30	820080	False	SHPC
+CalamityMod	SkyGlaze	Magic	magic	10	10.0	2.40	24.0	3	2	20000	31.0	1.50	unknown:rarity	0	9	20000	False	Sky Glaze
+CalamityMod	SlitheringEels	Magic	magic	50	50.0	1.50	75.0	-1	5	200000	113.4	9.50	unknown:rarity	0	20	200000	False	Slithering Eels
+CalamityMod	SnowstormStaff	HeldWeapon	magic	39	39.0	0.86	13.4	-1	5	200000	20.2	9.50	boss:CalamityMod/Cryogen@8.5+rarityfloor9.5	0	40	200000	False	Snowstorm Staff
+CalamityMod	SoulPiercer	Magic	magic	235	235.0	2.40	564.0	-1	14	2000000	1112.2	21.00	recipe<-Cosmilite Bar	0	30	1000000	False	Soul Piercer
+CalamityMod	StaffofBlushie	HeldWeapon	magic	1	1.0	2.00	0.8	1	17	2800000	1.6	23.00	recipe<-Shadowspec Bar	0	200	5291650	False	Staff of Blushie
+CalamityMod	StarShower	Magic	magic	60	60.0	4.29	257.1	1	9	800000	456.7	17.50	boss:CalamityMod/AstrumDeusHead@17.5	0	15	800000	False	Star Shower
+CalamityMod	Sylvestaff	HeldWeapon	magic	140	140.0	3.00	168.0	-1	17	2800000	332.3	23.00	recipe<-Shadowspec Bar	0	30	5970370	False	Sylvestaff
+CalamityMod	TacticiansTrumpCard	Magic	magic	248	248.0	5.00	1240.0	3	19	1500000	2439.1	19.60	recipe<-Dark Plasma	0	20	2033000	False	Tactician's Trump Card
+CalamityMod	TearsofHeaven	Magic	magic	43	43.0	3.00	129.0	2	8	600000	220.7	13.50	unknown:rarity	0	15	293876	False	Tears of Heaven
+CalamityMod	Teslastaff	HeldWeapon	magic	166	166.0	0.86	56.9	-1	19	1500000	112.0	19.61	recipe<-Armored Shell	0	10	252000	False	Teslastaff
+CalamityMod	TheCauldron	HeldWeapon	magic	56	56.0	1.00	22.4	-1	3	50000	30.6	5.00	recipe<-Hellstone Bar	0	30	30000	False	The Cauldron
+CalamityMod	TheDanceofLight	Magic	magic	515	515.0	18.46	9507.7	2	17	2800000	18805.1	23.00	recipe<-Shadowspec Bar	0	26	5529150	False	The Dance of Light
+CalamityMod	ThePrince	Magic	magic	180	180.0	2.86	514.3	4	19	1500000	1011.6	19.00	recipe<-Divine Geode	0	16	1920600	False	The Prince
+CalamityMod	TheSwarmer	Magic	magic	36	36.0	5.00	180.0	2	10	1000000	331.2	17.50	recipe<-Stardust Fragment	0	14	780000	False	The Swarmer
+CalamityMod	TheWand	Magic	magic	1	1.0	3.16	3.2	1	12	15000000	6.3	19.00	unknown:rarity	0	200	15000000	False	The Wand
+CalamityMod	ThornBlossom	Magic	magic	120	120.0	2.61	313.0	1	19	1500000	615.8	19.00	recipe<-Uelibloom Bar	0	27	1645600	False	Thorn Blossom
+CalamityMod	Tradewinds	Magic	magic	23	23.0	4.00	92.0	2	3	50000	125.9	4.50	recipe<-Aerialite Bar	0	6	90000	False	Tradewinds
+CalamityMod	UltraLiquidator	Magic	magic	120	120.0	10.00	1200.0	1	11	1200000	2283.8	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	25	1250000	False	Ultra Liquidator
+CalamityMod	UndinesRetribution	Magic	magic	44	44.0	3.33	146.7	1	7	450000	241.4	12.50	unknown:rarity	0	15	180000	False	Undine's Retribution
+CalamityMod	UnstableCastersGauntlet	HeldWeapon	magic	320	320.0	3.00	384.0	-1	11	1200000	730.8	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	1230000	False	Unstable Caster's Gauntlet
+CalamityMod	VeeringWind	Magic	magic	16	16.0	1.67	26.7	2	2	20000	34.5	1.50	unknown:rarity	0	14	25150	False	Veering Wind
+CalamityMod	VenusianTrident	Magic	magic	1150	1150.0	0.92	1061.5	1	18	1750000	2090.9	20.00	recipe<-Ruinous Soul	0	90	520000	False	Venusian Trident
+CalamityMod	Vesuvius	Magic	magic	55	55.0	4.00	220.0	1	8	600000	376.4	16.50	boss:CalamityMod/RavagerBody@16.5	0	8	600000	False	Vesuvius
+CalamityMod	Viscera	Magic	magic	229	229.0	3.87	886.5	7	19	1500000	1743.7	19.00	recipe<-Bloodstone	0	18	752000	False	Viscera
+CalamityMod	VitriolicViper	HeldWeapon	magic	2626	2626.0	3.75	3939.0	1	18	1750000	7758.7	20.50	boss:CalamityMod/OldDuke@20.5	0	60	1750000	False	Vitriolic Viper
+CalamityMod	VividClarity	Magic	magic	162	162.0	7.50	1215.0	1	16	2400000	2399.9	22.99	recipe<-Miracle Matter	0	54	9417920	False	Vivid Clarity
+CalamityMod	VoidVortex	Magic	magic	210	210.0	1.22	257.1	-1	12	2400000	507.9	22.00	recipe<-Auric Bar	0	70	3250000	False	Void Vortex
+CalamityMod	VoltaicClimax	Magic	magic	215	215.0	1.76	379.4	-1	14	2000000	748.2	21.00	recipe<-Cosmilite Bar	0	45	1750000	False	Voltaic Climax
+CalamityMod	Volterion	HeldWeapon	magic	890	890.0	0.75	267.0	-1	19	1500000	525.2	19.61	boss:CalamityMod/StormWeaverHead@19.61	0	90	1500000	False	Volterion
+CalamityMod	Waywasher	Magic	magic	16	16.0	4.00	64.0	2	2	20000	82.7	1.50	unknown:rarity	0	4	20000	False	Waywasher
+CalamityMod	Wingman	HeldWeapon	magic	82	82.0	4.00	131.2	1	8	600000	224.5	13.50	unknown:rarity	0	8	600000	False	Wingman
+CalamityMod	WintersFury	Magic	magic	65	65.0	5.00	325.0	1	8	600000	556.1	13.50	unknown:rarity	0	7	600000	False	Winter's Fury
+CalamityMod	WulfrumProsthesis	Magic	magic	18	18.0	2.50	45.0	1	1	10000	54.9	0.50	unknown:rarity	0	10	500	False	Wulfrum Prosthesis
+CalamityMod	WyvernsCall	Magic	magic	65	65.0	2.61	169.6	5	5	200000	256.4	9.50	recipe<-Mythril Bar+rarityfloor9.5	0	14	145000	False	Wyvern's Call
+CalamityMod	YharimsCrystal	HeldWeapon	magic	65	65.0	6.00	156.0	-1	12	2400000	308.1	22.00	boss:CalamityMod/Yharon@22	0	15	2400000	False	Yharim's Crystal
+CalamityMod	AbsoluteZero	Broadsword	melee	75	75.0	3.00	450.0	1	8	600000	770.0	13.50	unknown:rarity	0	0	600000	False	Absolute Zero
+CalamityMod	AbyssBlade	Boomerang	melee	114	114.0	0.92	84.2	-1	7	450000	138.6	12.50	unknown:rarity	0	0	170000	False	Abyss Blade
+CalamityMod	AcidwoodSword	Broadsword	melee	12	12.0	3.33	40.0	1	0	100	43.2	0.00	unknown:rarity	0	0	100	False	Acidwood Sword
+CalamityMod	AegisBlade	Broadsword	melee	152	152.0	3.75	570.0	1	8	600000	975.3	13.50	boss:Golem@13+rarityfloor13.5	0	0	600000	False	Aegis Blade
+CalamityMod	AirSpinner	Yoyo	melee	29	29.0	2.73	63.3	-1	3	50000	86.6	4.50	recipe<-Aerialite Bar	0	0	90000	False	Air Spinner
+CalamityMod	AmidiasTrident	Spear	melee	12	12.0	3.53	42.4	-1	2	20000	54.7	1.50	unknown:rarity	0	0	20000	False	Amidias' Trident
+CalamityMod	AnarchyBlade	Broadsword	melee	120	120.0	3.16	378.9	1	8	600000	648.4	13.50	recipe<-Core of Calamity	0	0	418000	False	Anarchy Blade
+CalamityMod	Aorta	Yoyo	melee	31	31.0	2.73	67.6	-1	3	50000	92.5	4.50	boss:CalamityMod/PerforatorHive@3.99+rarityfloor4.5	0	0	50000	False	Aorta
+CalamityMod	ArkoftheCosmos	HeldWeapon	melee	1700	1700.0	4.00	13600.0	-1	12	2400000	26862.8	19.00	unknown:rarity	0	0	6108350	False	Ark of the Cosmos
+CalamityMod	ArkoftheElements	HeldWeapon	melee	444	444.0	3.00	2397.6	-1	11	1200000	4563.0	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	2453750	False	Ark of the Elements
+CalamityMod	AstralPike	Spear	melee	90	90.0	4.62	415.4	-1	9	800000	737.8	17.00	recipe<-Astral Bar	0	0	468000	False	Astral Pike
+CalamityMod	AstralScythe	Broadsword	melee	80	80.0	3.00	480.0	8	7	450000	790.1	12.50	unknown:rarity	0	0	450000	False	Astral Scythe
+CalamityMod	Ataraxia	Broadsword	melee	325	325.0	6.00	3900.0	1	12	2400000	7703.3	22.00	recipe<-Auric Bar	0	0	3315000	False	Ataraxia
+CalamityMod	Avalanche	Broadsword	melee	75	75.0	1.71	128.6	1	5	200000	194.4	9.50	boss:CalamityMod/Cryogen@8.5+rarityfloor9.5	0	0	200000	False	Avalanche
+CalamityMod	BalefulHarvester	Boomerang	melee	150	150.0	0.67	80.0	-1	10	1000000	147.2	17.50	recipe<-Stardust Fragment	0	0	860000	False	Baleful Harvester
+CalamityMod	BallOFugu	Magic	melee	25	25.0	3.00	75.0	-1	3	50000	102.6	4.50	unknown:rarity	0	0	50000	False	Ball O' Fugu
+CalamityMod	BansheeHook	Spear	melee	250	250.0	2.86	714.3	-1	18	1750000	1406.9	20.00	boss:CalamityMod/Polterghast@20	0	0	1750000	False	Banshee Hook
+CalamityMod	Basher	HeldWeapon	melee	65	65.0	2.00	52.0	-1	2	20000	67.2	1.50	unknown:rarity	0	0	3600	False	Basher
+CalamityMod	BladecrestOathsword	Boomerang	melee	35	35.0	1.13	31.7	-1	3	50000	43.4	4.50	unknown:rarity	0	0	50000	False	Bladecrest Oathsword
+CalamityMod	BlightedCleaver	Broadsword	melee	52	52.0	2.14	222.9	-1	8	600000	381.3	13.50	unknown:rarity	0	0	746200	False	Blighted Cleaver
+CalamityMod	Bonebreaker	Magic	melee	55	55.0	2.61	143.5	-1	5	200000	216.9	9.50	recipe<-Corroded Fossil	0	0	67500	False	Bonebreaker
+CalamityMod	BotanicPiercer	Spear	melee	80	80.0	3.53	282.4	-1	8	600000	483.1	13.50	recipe<-Chlorophyte Partisan+rarityfloor13.5	0	0	1073000	False	Botanic Piercer
+CalamityMod	Brimlance	Spear	melee	50	50.0	3.16	157.9	-1	5	200000	238.7	10.50	boss:CalamityMod/BrimstoneElemental@10.5	0	0	200000	False	Brimlance
+CalamityMod	Brimlash	Broadsword	melee	60	60.0	2.00	240.0	-1	7	450000	395.1	12.50	recipe<-Ashes of Calamity	0	0	412000	False	Brimlash
+CalamityMod	BrimstoneSword	Broadsword	melee	70	70.0	2.14	300.0	5	5	200000	453.6	9.50	recipe<-Unholy Core	0	0	212000	False	Brimstone Sword
+CalamityMod	BrinyBaron	Broadsword	melee	182	182.0	3.00	1092.0	3	8	600000	1868.5	14.00	boss:Duke Fishron@14	0	0	600000	False	Briny Baron
+CalamityMod	BrokenBiomeBlade	HeldWeapon	melee	38	38.0	2.00	69.4	-1	3	50000	94.9	4.50	unknown:rarity	0	0	127600	False	Broken Biome Blade
+CalamityMod	BurningRevelation	Yoyo	melee	300	300.0	3.00	720.0	-1	19	1500000	1416.3	19.00	boss:CalamityMod/Providence@19	0	0	1500000	False	Burning Revelation
+CalamityMod	BurntSienna	Broadsword	melee	32	32.0	2.50	80.0	1	1	10000	97.6	0.50	unknown:rarity	0	0	10000	False	Burnt Sienna
+CalamityMod	Carnage	Broadsword	melee	130	130.0	2.86	371.4	1	4	100000	534.9	7.00	boss:Wall of Flesh@7	0	0	100000	False	Carnage
+CalamityMod	CelestialClaymore	Broadsword	melee	50	50.0	2.50	250.0	1	5	200000	378.0	9.50	unknown:rarity	0	0	200000	False	Celestial Claymore
+CalamityMod	ClamCrusher	Boomerang	melee	150	150.0	1.20	144.0	-1	5	200000	217.7	9.50	boss:CalamityMod/GiantClam@1.61+rarityfloor9.5	0	0	200000	False	Clam Crusher
+CalamityMod	CometQuasher	Boomerang	melee	45	45.0	1.58	56.8	-1	4	100000	81.9	13.00	recipe<-Essence of Sunlight	0	0	105000	False	Comet Quasher
+CalamityMod	CosmicDischarge	Boomerang	melee	450	450.0	4.00	1440.0	-1	14	2000000	2839.7	21.00	boss:CalamityMod/DevourerofGodsHead@21	0	0	2000000	False	Cosmic Discharge
+CalamityMod	CosmicShiv	Shortsword	melee	155	155.0	2.00	310.0	-1	14	2000000	611.3	21.00	recipe<-Cosmilite Bar	0	0	3820000	False	Cosmic Shiv
+CalamityMod	CrescentMoon	HeldWeapon	melee	1000	1000.0	3.33	1333.3	-1	18	1750000	2626.3	20.00	recipe<-Ruinous Soul	0	0	735500	False	Crescent Moon
+CalamityMod	DarklightGreatsword	Broadsword	melee	60	60.0	2.00	240.0	-1	5	200000	362.9	9.50	recipe<-Cryonic Bar	0	0	434000	False	Darklight Greatsword
+CalamityMod	DeathsAscension	HeldWeapon	melee	500	500.0	2.50	500.0	-1	18	1750000	984.9	20.00	recipe<-Ruinous Soul	0	0	900000	False	Death's Ascension
+CalamityMod	DefiledGreatsword	Broadsword	melee	111	111.0	2.14	475.7	-1	19	1500000	935.8	19.00	unknown:rarity	0	0	1726200	False	Defiled Greatsword
+CalamityMod	DepthCrusher	Boomerang	melee	48	48.0	0.92	35.4	-1	3	50000	48.5	4.50	unknown:rarity	0	0	50000	False	Depth Crusher
+CalamityMod	DevilsDevastation	Boomerang	melee	333	333.0	1.33	355.2	-1	14	2000000	700.5	21.00	recipe<-Cosmilite Bar	0	0	2303000	False	Devil's Devastation
+CalamityMod	DevilsSunrise	HeldWeapon	melee	420	420.0	12.00	2016.0	-1	19	1500000	3965.6	19.00	unknown:rarity	0	0	1750000	False	Devil's Sunrise
+CalamityMod	DraconicDestruction	Broadsword	melee	350	350.0	1.76	1235.3	-1	17	2800000	2443.3	23.00	recipe<-Shadowspec Bar	0	0	6628650	False	Draconic Destruction
+CalamityMod	DragonPow	Boomerang	melee	333	333.0	3.00	799.2	-1	12	2400000	1578.6	22.00	recipe<-Auric Bar	0	0	6773000	False	Dragon Pow
+CalamityMod	DragonRage	HeldWeapon	melee	888	888.0	2.40	852.5	-1	12	2400000	1683.8	22.00	boss:CalamityMod/Yharon@22	0	0	2400000	False	Dragon Rage
+CalamityMod	DriftwoodSword	Broadsword	melee	11	11.0	3.16	34.7	1	0	100	37.5	0.00	unknown:rarity	0	0	100	False	Driftwood Sword
+CalamityMod	Earth	Boomerang	melee	4200	4200.0	1.43	4800.0	-1	17	2800000	9493.9	23.00	recipe<-Shadowspec Bar	0	0	6997650	False	Earth
+CalamityMod	EarthenPike	Spear	melee	85	85.0	2.40	204.0	-1	5	200000	308.5	9.50	unknown:rarity	0	0	200000	False	Earthen Pike
+CalamityMod	EmpyreanKnives	Magic	melee	110	110.0	4.00	440.0	1	19	1500000	865.5	19.00	unknown:rarity	0	0	1235175	False	Empyrean Knives
+CalamityMod	EntropicClaymore	Broadsword	melee	90	90.0	2.00	360.0	5	10	1000000	662.4	17.50	recipe<-Meld Blob	0	0	180000	False	Entropic Claymore
+CalamityMod	EssenceFlayer	Broadsword	melee	220	220.0	3.16	1389.5	5	14	2000000	2740.1	21.00	recipe<-Cosmilite Bar	0	0	1000000	False	Essence Flayer
+CalamityMod	ExaltedOathblade	Boomerang	melee	90	90.0	1.33	96.0	-1	8	600000	164.3	13.50	recipe<-Broken Hero Sword	0	0	1103000	False	Exalted Oathblade
+CalamityMod	Exoblade	HeldWeapon	melee	915	915.0	1.22	448.2	-1	16	2400000	885.2	22.99	recipe<-Miracle Matter	0	0	11482900	False	Exoblade
+CalamityMod	FallenPaladinsHammer	Magic	melee	315	315.0	1.05	331.6	-1	8	600000	567.4	13.50	recipe<-Paladin's Hammer	0	0	1667000	False	Fallen Paladin's Hammer
+CalamityMod	FaultLine	Yoyo	melee	75	75.0	2.73	163.6	-1	8	600000	280.0	13.50	recipe<-Scoria Bar	0	0	500000	False	Fault Line
+CalamityMod	FeralthornClaymore	Broadsword	melee	109	109.0	4.62	503.1	1	7	450000	828.1	12.50	recipe<-Perennial Bar	0	0	500000	False	Feralthorn Claymore
+CalamityMod	FlarefrostBlade	Broadsword	melee	125	125.0	2.07	517.2	1	5	200000	782.1	9.50	recipe<-Cryonic Bar	0	0	407500	False	Flarefrost Blade
+CalamityMod	Floodtide	Broadsword	melee	85	85.0	2.50	425.0	1	7	450000	699.6	12.50	recipe<-Depth Cells	0	0	276400	False	Floodtide
+CalamityMod	ForbiddenOathblade	Boomerang	melee	58	58.0	1.20	55.7	-1	5	200000	84.2	10.50	recipe<-Essence of Havoc	0	0	328000	False	Forbidden Oathblade
+CalamityMod	ForsakenSaber	Broadsword	melee	80	80.0	4.00	640.0	1	5	200000	967.7	12.09	recipe<-Forbidden Fragment	0	0	250000	False	Forsaken Saber
+CalamityMod	FourSeasonsGalaxia	HeldWeapon	melee	250	250.0	2.00	1346.5	-1	19	1500000	2648.5	19.00	unknown:rarity	0	0	2154600	False	Galaxia
+CalamityMod	FracturedArk	HeldWeapon	melee	41	41.0	2.73	195.7	-1	4	100000	281.8	7.00	recipe<-Purified Gel	0	0	135750	False	Fractured Ark
+CalamityMod	GaelsGreatsword	Broadsword	melee	850	850.0	4.62	7846.2	1	13	2400000	15497.8	23.00	boss:CalamityMod/SupremeCalamitas@23	0	0	2400000	False	Gael's Greatsword
+CalamityMod	GalactusBlade	Broadsword	melee	185	185.0	2.22	822.2	-1	19	1500000	1617.3	19.00	recipe<-Divine Geode	0	0	2330000	False	Galactus Blade
+CalamityMod	GalaxySmasher	Magic	melee	1100	1100.0	1.25	1375.0	-1	14	2000000	2711.6	21.00	recipe<-Cosmilite Bar	0	0	3929000	False	Galaxy Smasher
+CalamityMod	GalileoGladius	Boomerang	melee	600	600.0	7.50	3600.0	-1	18	1750000	7091.0	20.00	recipe<-Ruinous Soul	0	0	663000	False	Galileo Gladius
+CalamityMod	GeliticBlade	Broadsword	melee	38	38.0	2.00	152.0	-1	4	100000	218.9	7.00	recipe<-Purified Gel	0	0	35700	False	Gelitic Blade
+CalamityMod	GildedProboscis	Boomerang	melee	2090	2090.0	0.92	1543.4	-1	11	1200000	2937.3	18.00	unknown:rarity	0	0	1200000	False	Gilded Proboscis
+CalamityMod	GoldplumeSpear	Spear	melee	26	26.0	2.40	62.4	-1	3	50000	85.4	4.50	recipe<-Aerialite Bar	0	0	90000	False	Goldplume Spear
+CalamityMod	GrandDad	HeldWeapon	melee	5577	5577.0	0.78	1738.3	-1	18	1750000	3423.9	19.00	unknown:rarity	0	0	1750000	False	Grand Dad
+CalamityMod	GrandGuardian	Boomerang	melee	360	360.0	1.71	493.7	-1	10	1000000	908.4	17.50	recipe<-Nebula Fragment	0	0	996000	False	Grand Guardian
+CalamityMod	GreatswordofJudgement	Broadsword	melee	225	225.0	3.00	1350.0	-1	11	1200000	2569.3	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	476000	False	Greatsword of Judgement
+CalamityMod	Greentide	Broadsword	melee	81	81.0	2.00	324.0	1	7	450000	533.3	12.80	boss:CalamityMod/Anahita@12.8	0	0	450000	False	Greentide
+CalamityMod	HellfireFlamberge	Broadsword	melee	90	90.0	3.00	540.0	1	8	600000	924.0	13.50	recipe<-Scoria Bar	0	0	500000	False	Hellfire Flamberge
+CalamityMod	HellionFlowerSpear	Spear	melee	100	100.0	3.00	300.0	-1	7	450000	493.8	12.50	recipe<-Perennial Bar	0	0	500000	False	Hellion Flower Spear
+CalamityMod	Hellkite	Boomerang	melee	570	570.0	0.85	385.4	-1	8	600000	659.4	13.50	unknown:rarity	0	0	600000	False	Hellkite
+CalamityMod	HolyCollider	Boomerang	melee	2200	2200.0	1.33	2346.7	-1	19	1500000	4616.0	19.00	boss:CalamityMod/Providence@19	0	0	1500000	False	Holy Collider
+CalamityMod	IllustriousKnives	Magic	melee	525	525.0	7.50	3937.5	1	17	2800000	7787.9	19.00	unknown:rarity	0	0	6263825	False	Illustrious Knives
+CalamityMod	InsidiousImpaler	Magic	melee	250	250.0	4.62	1153.8	-1	18	1750000	2272.8	20.50	boss:CalamityMod/OldDuke@20.5	0	0	1750000	False	Insidious Impaler
+CalamityMod	Lacerator	Yoyo	melee	222	222.0	3.00	532.8	-1	19	1500000	1048.0	19.00	recipe<-Bloodstone	0	0	752000	False	Lacerator
+CalamityMod	LifehuntScythe	Broadsword	melee	156	156.0	3.33	1040.0	5	19	1500000	2045.7	19.00	recipe<-Uelibloom Bar	0	0	840000	False	Lifehunt Scythe
+CalamityMod	Lightspeed	HeldWeapon	melee	200	200.0	3.00	240.0	-1	11	1200000	456.8	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	2820000	False	Lightspeed
+CalamityMod	LionHeart	Broadsword	melee	960	960.0	4.00	3840.0	1	18	1750000	7563.7	19.00	unknown:rarity	0	0	1750000	False	Lion Heart
+CalamityMod	Lucrecia	Boomerang	melee	124	124.0	1.76	175.1	-1	8	600000	299.5	13.50	recipe<-Life Alloy	0	0	740000	False	Lucrecia
+CalamityMod	MajesticGuard	Boomerang	melee	270	270.0	1.20	259.2	-1	5	200000	391.9	13.00	recipe<-Essence of Sunlight	0	0	396000	False	Majestic Guard
+CalamityMod	MantisClaws	Boomerang	melee	75	75.0	2.40	144.0	-1	7	450000	237.0	12.50	unknown:rarity	0	0	450000	False	Mantis Claws
+CalamityMod	MawOfInfinity	Boomerang	melee	2080	2080.0	1.82	3025.5	-1	14	2000000	5966.3	21.00	boss:CalamityMod/DevourerofGodsHead@21	0	0	2000000	False	Maw of Infinity
+CalamityMod	MirrorBlade	Boomerang	melee	600	600.0	1.50	720.0	-1	19	1500000	1416.3	19.60	boss:CalamityMod/CeaselessVoid@19.6	0	0	1500000	False	Mirror Blade
+CalamityMod	MonolithSword	Broadsword	melee	30	30.0	8.57	257.1	1	4	100	339.5	7.00	unknown:rarity	0	0	100	False	Monolith Sword
+CalamityMod	MonstrousKnives	ThrownMelee	melee	8	8.0	2.86	22.9	1	2	20000	29.5	1.50	unknown:rarity	0	0	25175	False	Monstrous Knives
+CalamityMod	Mourningstar	Boomerang	melee	112	112.0	6.00	537.6	-1	19	1500000	1057.5	19.00	recipe<-Divine Geode	0	0	3474000	False	Mourningstar
+CalamityMod	Murasama	Magic	melee	2200	2200.0	12.00	26400.0	-1	14	2000000	52061.9	19.00	unknown:rarity	0	0	2000000	False	Murasama
+CalamityMod	MycelialClaws	Broadsword	melee	28	28.0	8.57	240.0	1	2	20000	310.1	2.70	boss:CalamityMod/Crabulon@2.7	0	0	20000	False	Mycelial Claws
+CalamityMod	Nadir	Spear	melee	365	365.0	3.33	1216.7	-1	12	2400000	2403.2	22.00	recipe<-Auric Bar	0	0	4993000	False	Nadir
+CalamityMod	Nebulash	Boomerang	melee	85	85.0	3.33	226.7	-1	7	450000	373.1	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0	450000	False	Nebulash
+CalamityMod	NeptunesBounty	Boomerang	melee	420	420.0	0.92	310.2	-1	18	1750000	610.9	19.00	unknown:rarity	0	0	995000	False	Neptune's Bounty
+CalamityMod	Oblivion	Yoyo	melee	35	35.0	2.73	76.4	-1	7	450000	125.7	12.50	boss:CalamityMod/CalamitasClone@11.7+rarityfloor12.5	0	0	450000	False	Oblivion
+CalamityMod	OldLordClaymore	Boomerang	melee	100	100.0	0.67	53.3	-1	3	50000	73.0	4.50	unknown:rarity	0	0	50000	False	Old Lord Claymore
+CalamityMod	OmegaBiomeBlade	HeldWeapon	melee	150	150.0	3.33	354.6	-1	9	800000	629.8	16.00	unknown:rarity	0	0	1944600	False	True Biome Blade
+CalamityMod	Omniblade	HeldWeapon	melee	100	100.0	5.00	200.0	-1	8	600000	342.2	13.50	recipe<-Life Alloy	0	0	892000	False	Omniblade
+CalamityMod	Orderbringer	Broadsword	melee	700	700.0	3.75	5250.0	-1	12	2400000	10369.8	22.00	recipe<-Auric Bar	0	0	2656000	False	Orderbringer
+CalamityMod	Ozzathoth	Yoyo	melee	145	145.0	3.00	348.0	-1	17	2800000	688.3	23.00	recipe<-Shadowspec Bar	0	0	5528650	False	Ozzathoth
+CalamityMod	Pandemic	Yoyo	melee	125	125.0	2.73	272.7	-1	8	600000	466.7	14.50	recipe<-Infected Armor Plating	0	0	350000	False	Pandemic
+CalamityMod	PerfectDark	Broadsword	melee	24	24.0	2.50	120.0	-1	3	50000	164.2	4.50	boss:CalamityMod/HiveMind@3.98+rarityfloor4.5	0	0	50000	False	Perfect Dark
+CalamityMod	PhosphorescentGauntlet	Magic	melee	3200	3200.0	1.50	4800.0	-1	18	1750000	9454.7	19.00	unknown:rarity	0	0	1750000	False	Phosphorescent Gauntlet
+CalamityMod	PrismaticBreaker	HeldWeapon	ranged	425	425.0	1.40	237.2	1	14	2000000	467.8	21.00	recipe<-Cosmilite Bar	0	0	4742000	False	Prismatic Breaker
+CalamityMod	Pwnagehammer	Magic	melee	140	140.0	1.20	168.0	1	6	350000	265.7	11.50	recipe<-Soul of Fright+rarityfloor11.5	0	0	567000	False	Pwnagehammer
+CalamityMod	Quagmire	Yoyo	melee	54	54.0	2.73	117.8	-1	7	450000	193.9	12.50	recipe<-Perennial Bar	0	0	500000	False	Quagmire
+CalamityMod	RedSun	Broadsword	melee	400	400.0	6.00	4800.0	1	17	2800000	9493.9	23.00	recipe<-Shadowspec Bar	0	0	5181650	False	Red Sun
+CalamityMod	RemsRevenge	Magic	melee	188	188.0	4.00	752.0	-1	11	1200000	1431.2	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	447500	False	Rem's Revenge
+CalamityMod	Riptide	Yoyo	melee	12	12.0	2.40	23.0	-1	2	20000	29.8	1.61	recipe<-Navystone	0	0	19000	False	Riptide
+CalamityMod	Roxcalibur	HeldWeapon	melee	180	180.0	1.20	86.4	-1	4	100000	124.4	7.00	unknown:rarity	0	0	117500	False	Roxcalibur
+CalamityMod	SaharaSlicers	Shortsword	melee	20	20.0	5.00	100.0	2	2	20000	129.2	1.60	boss:CalamityMod/DesertScourgeHead@1.6	0	0	20000	False	Sahara Slicers
+CalamityMod	SausageMaker	Spear	melee	27	27.0	3.00	81.0	-1	3	50000	110.8	4.50	boss:CalamityMod/PerforatorHive@3.99+rarityfloor4.5	0	0	50000	False	Sausage Maker
+CalamityMod	ScourgeoftheCosmos	Magic	melee	380	380.0	3.75	1425.0	1	14	2000000	2810.2	21.00	recipe<-Cosmilite Bar	0	0	2067500	False	Scourge of the Cosmos
+CalamityMod	SeashineSword	Broadsword	melee	22	22.0	1.50	66.0	1	2	20000	85.3	1.61	recipe<-Navystone	0	0	19000	False	Seashine Sword
+CalamityMod	SeekingScorcher	Boomerang	melee	1170	1170.0	1.09	1021.1	-1	19	1500000	2008.5	19.00	recipe<-Divine Geode	0	0	835000	False	Seeking Scorcher
+CalamityMod	Shimmerspark	Yoyo	melee	41	41.0	2.40	78.7	-1	5	200000	119.0	9.50	recipe<-Cryonic Bar	0	0	432000	False	Shimmerspark
+CalamityMod	SkytideDragoon	Boomerang	melee	365	365.0	1.71	500.6	-1	19	1500000	984.6	19.61	boss:CalamityMod/StormWeaverHead@19.61	0	0	1500000	False	Skytide Dragoon
+CalamityMod	SmokingComet	Yoyo	melee	17	17.0	2.40	32.6	-1	2	20000	42.2	2.00	recipe<-Meteorite Bar	0	0	189525	False	Smoking Comet
+CalamityMod	SolsticeClaymore	Broadsword	melee	235	235.0	3.75	1762.5	1	11	1200000	3354.3	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	2152000	False	Solstice Claymore
+CalamityMod	SoulHarvester	Broadsword	melee	77	77.0	2.73	420.0	3	8	600000	718.7	14.50	recipe<-Plague Cell Canister	0	0	530000	False	Soul Harvester
+CalamityMod	SpineOfThanatos	HeldWeapon	melee	128	128.0	2.50	128.0	-1	16	2400000	252.8	22.99	boss:CalamityMod/Apollo@22.99	0	0	2400000	False	Spine of Thanatos
+CalamityMod	StarnightLance	Spear	melee	80	80.0	2.61	208.7	-1	5	200000	315.6	9.50	recipe<-Cryonic Bar	0	0	432000	False	Starnight Lance
+CalamityMod	StellarContempt	Magic	melee	525	525.0	1.25	656.2	-1	11	1200000	1249.0	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	2929000	False	Stellar Contempt
+CalamityMod	StellarStriker	Boomerang	melee	100	100.0	2.14	171.4	-1	11	1200000	326.3	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	405000	False	Stellar Striker
+CalamityMod	StormRuler	Broadsword	melee	80	80.0	2.40	384.0	1	10	1000000	706.6	17.50	recipe<-Vortex Fragment	0	0	830000	False	Storm Ruler
+CalamityMod	StormSaber	Broadsword	melee	38	38.0	2.61	198.3	1	5	200000	299.8	9.50	unknown:rarity	0	0	200000	False	Storm Saber
+CalamityMod	StreamGouge	HeldWeapon	melee	470	470.0	3.16	593.7	-1	14	2000000	1170.8	21.00	recipe<-Cosmilite Bar	0	0	1000000	False	Stream Gouge
+CalamityMod	StygianShield	Magic	melee	180	180.0	1.50	270.0	-1	8	600000	462.0	13.50	recipe<-Scoria Bar	0	0	1064500	False	Stygian Shield
+CalamityMod	SubmarineShocker	Shortsword	melee	90	90.0	3.75	337.5	-1	5	200000	510.3	9.50	boss:CalamityMod/AquaticScourgeHead@9.5	0	0	200000	False	Submarine Shocker
+CalamityMod	SulphurousGrabber	Yoyo	melee	40	40.0	2.40	76.8	-1	5	200000	116.1	9.50	unknown:rarity	0	0	200000	False	Sulphurous Grabber
+CalamityMod	Swordsplosion	Broadsword	melee	48	48.0	2.00	192.0	3	11	1200000	365.4	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	2635000	False	Swordsplosion
+CalamityMod	TaintedBlade	Broadsword	melee	48	48.0	2.22	106.7	1	3	50000	145.9	4.50	unknown:rarity	0	0	4200	False	Tainted Blade
+CalamityMod	TeardropCleaver	Broadsword	melee	33	33.0	2.50	82.5	1	2	20000	106.6	2.00	boss:Eye of Cthulhu@2	0	0	20000	False	Teardrop Cleaver
+CalamityMod	TenebreusTides	Spear	melee	120	120.0	4.29	514.3	-1	10	1000000	946.3	17.00	recipe<-tile412	0	0	1270000	False	Tenebreus Tides
+CalamityMod	Terratomere	Boomerang	melee	120	120.0	2.86	274.3	-1	19	1500000	539.5	19.00	recipe<-Uelibloom Bar	0	0	3263400	False	Terratomere
+CalamityMod	TerrorBlade	Broadsword	melee	560	560.0	3.33	3733.3	4	18	1750000	7353.6	20.00	boss:CalamityMod/Polterghast@20	0	0	1750000	False	Terror Blade
+CalamityMod	TheBurningSky	Magic	melee	147	147.0	7.50	1102.5	1	12	2400000	2177.7	22.00	boss:CalamityMod/Yharon@22	0	0	2400000	False	The Burning Sky
+CalamityMod	TheDarkMaster	Broadsword	melee	50	50.0	2.31	230.8	2	4	100000	332.3	10.50	recipe<-Essence of Havoc	0	0	337250	False	The Dark Master
+CalamityMod	TheGodsGambit	Yoyo	melee	28	28.0	2.86	64.0	-1	4	100000	92.2	7.00	recipe<-Purified Gel	0	0	35700	False	The God's Gambit
+CalamityMod	TheLastMourning	Broadsword	melee	600	600.0	3.00	1800.0	1	18	1750000	3545.5	20.00	recipe<-Ruinous Soul	0	0	1130000	False	The Last Mourning
+CalamityMod	TheMicrowave	Yoyo	melee	111	111.0	2.73	242.2	-1	9	800000	430.1	17.50	boss:CalamityMod/AstrumDeusHead@17.5	0	0	800000	False	The Microwave
+CalamityMod	TheMutilator	Boomerang	melee	1005	1005.0	2.00	1608.0	-1	19	1500000	3163.0	19.00	recipe<-Bloodstone	0	0	752000	False	The Mutilator
+CalamityMod	TheObliterator	Yoyo	melee	370	370.0	3.00	888.0	-1	14	2000000	1751.2	21.00	boss:CalamityMod/DevourerofGodsHead@21	0	0	2000000	False	The Obliterator
+CalamityMod	TheOracle	Yoyo	melee	201	201.0	3.00	482.4	-1	12	2400000	952.8	22.00	recipe<-Auric Bar	0	0	5000000	False	The Oracle
+CalamityMod	TitanArm	Broadsword	melee	200	200.0	3.00	600.0	1	7	450000	987.7	12.50	unknown:rarity	0	0	450000	False	Titan Arm
+CalamityMod	TriactisTruePaladinianMageHammerofMight	Magic	melee	2000	2000.0	2.40	4800.0	-1	17	2800000	9493.9	23.00	recipe<-Shadowspec Bar	0	0	9525650	False	Triactis' True Paladinian Mage-Hammer of Might
+CalamityMod	TrueArkoftheAncients	HeldWeapon	melee	100	100.0	2.40	576.0	-1	8	600000	985.6	13.50	recipe<-Broken Hero Sword	0	0	623750	False	Ark of the Ancients
+CalamityMod	TrueBiomeBlade	HeldWeapon	melee	115	115.0	2.86	339.4	-1	6	350000	536.9	11.50	unknown:rarity	0	0	258600	False	Biome Blade
+CalamityMod	TrueCausticEdge	Broadsword	melee	100	100.0	2.14	428.6	3	4	100000	617.1	7.00	unknown:rarity	0	0	56200	False	Caustic Edge
+CalamityMod	Tumbleweed	Magic	melee	78	78.0	3.00	234.0	-1	7	450000	385.2	12.50	recipe<-Grand Scale	0	0	176000	False	Tumbleweed
+CalamityMod	TyphonsGreed	Magic	melee	60	60.0	2.00	120.0	-1	7	450000	197.5	12.50	unknown:rarity	0	0	180000	False	Typhon's Greed
+CalamityMod	UltimusCleaver	Broadsword	melee	130	130.0	3.00	780.0	2	8	600000	1334.7	16.50	boss:CalamityMod/RavagerBody@16.5	0	0	600000	False	Ultimus Cleaver
+CalamityMod	UrchinMace	Magic	melee	15	15.0	3.16	47.4	-1	2	20000	61.2	1.60	recipe<-Sea Remains	0	0	54000	False	Urchin Mace
+CalamityMod	VanishingPoint	Spear	melee	240	240.0	1.33	320.0	-1	11	1200000	609.0	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	2903000	False	Vanishing Point
+CalamityMod	VeinBurster	Broadsword	melee	38	38.0	1.46	111.2	-1	3	50000	152.1	4.50	boss:CalamityMod/PerforatorHive@3.99+rarityfloor4.5	0	0	50000	False	Vein Burster
+CalamityMod	Violence	HeldWeapon	melee	485	485.0	2.40	465.6	1	13	2400000	919.7	23.00	boss:CalamityMod/SupremeCalamitas@23	0	0	2400000	False	Violence
+CalamityMod	Virulence	Broadsword	melee	100	100.0	4.00	800.0	-1	8	600000	1368.9	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	0	0	600000	False	Virulence
+CalamityMod	VoidEdge	Broadsword	melee	210	210.0	2.50	1050.0	1	18	1750000	2068.2	20.00	recipe<-Necroplasm	0	0	1175000	False	Void Edge
+CalamityMod	VulcaniteLance	Spear	melee	90	90.0	2.73	245.5	-1	8	600000	420.0	13.50	recipe<-Scoria Bar	0	0	500000	False	Vulcanite Lance
+CalamityMod	WindBlade	Broadsword	melee	30	30.0	2.73	163.6	2	3	50000	223.8	4.50	recipe<-Aerialite Bar	0	0	90000	False	Wind Blade
+CalamityMod	WulfrumScrewdriver	Boomerang	melee	12	12.0	2.50	24.0	-1	1	10000	29.3	0.50	unknown:rarity	0	0	500	False	Wulfrum Screwdriver
+CalamityMod	YateveoBloom	Magic	melee	30	30.0	2.73	81.8	-1	3	50000	111.9	4.50	unknown:rarity	0	0	4100	False	Yateveo Bloom
+CalamityMod	YinYo	Yoyo	melee	44	44.0	2.40	84.5	-1	5	200000	127.7	9.50	recipe<-Soul of Light+rarityfloor9.5	0	0	110500	False	Yin-Yo
+CalamityMod	AcesHigh	Gun	ranged	325	335.0	12.00	4020.0	1	12	2400000	7940.3	19.00	unknown:rarity	97	0	2562000	False	Ace's High
+CalamityMod	AcidwoodBow	Bow	ranged	9	19.0	2.22	42.2	1	0	100	45.6	0.00	unknown:rarity	40	0	100	False	Acidwood Bow
+CalamityMod	AdamantiteParticleAccelerator	HeldWeapon	ranged	65	65.0	1.36	35.5	1	5	200000	53.6	9.50	recipe<-Adamantite Bar+rarityfloor9.5	0	0	306000	False	Adamantite Particle Accelerator
+CalamityMod	Alluvion	Bow	ranged	96	106.0	4.00	424.0	1	14	2000000	836.1	21.00	recipe<-Cosmilite Bar	40	0	2215000	False	Alluvion
+CalamityMod	AngelicShotgun	Gun	ranged	92	102.0	2.31	235.4	-1	19	1500000	463.0	19.00	unknown:rarity	97	0	1004000	False	Angelic Shotgun
+CalamityMod	Animosity	Gun	ranged	39	49.0	1.46	71.7	-1	7	450000	118.0	12.50	boss:CalamityMod/CalamitasClone@11.7+rarityfloor12.5	97	0	450000	False	Animosity
+CalamityMod	AntiMaterielRifle	Gun	ranged	1818	1828.0	1.00	1828.0	1	14	2000000	3604.9	21.00	recipe<-Cosmilite Bar	97	0	1800000	False	Anti-materiel Rifle
+CalamityMod	AquashardShotgun	Gun	ranged	12	22.0	2.00	44.0	1	3	50000	60.2	4.50	recipe<-Aerialite Bar	97	0	143000	False	Aquashard Shotgun
+CalamityMod	Arbalest	Bow	ranged	28	38.0	3.53	134.1	-1	5	200000	202.8	9.50	recipe<-Soul of Sight	40	0	630500	False	Arbalest
+CalamityMod	Archerfish	Gun	ranged	16	26.0	5.45	141.8	2	3	50000	194.0	4.50	unknown:rarity	97	0	50000	False	Archerfish
+CalamityMod	ArcNovaDiffuser	Magic	ranged	125	125.0	6.67	833.3	1	8	600000	1425.9	13.50	unknown:rarity	0	0	285125	False	Arc Nova Diffuser
+CalamityMod	Arietes41	Gun	ranged	77	87.0	4.62	401.5	-1	8	600000	687.1	13.50	recipe<-Shroomite Bar+rarityfloor13.5	97	0	250000	False	Arietes 41
+CalamityMod	ArterialAssault	Bow	ranged	256	266.0	6.00	1596.0	1	19	1500000	3139.4	19.00	recipe<-Bloodstone	40	0	752000	False	Arterial Assault
+CalamityMod	AstralBlaster	Gun	ranged	150	160.0	4.00	640.0	1	9	800000	1136.7	17.00	recipe<-Astral Bar	97	0	468000	False	Astral Blaster
+CalamityMod	AstrealDefeat	Bow	ranged	160	170.0	15.00	2550.0	1	11	1200000	4853.1	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	40	0	722000	False	Astreal Defeat
+CalamityMod	Auralis	Gun	ranged	695	705.0	2.00	1410.0	5	19	1500000	2773.5	19.00	recipe<-Uelibloom Bar	97	0	1275000	False	Auralis
+CalamityMod	AuroraBlazer	Gun	ranged	69	69.0	12.00	828.0	-1	7	450000	1363.0	12.81	boss:CalamityMod/AstrumAureus@12.81	23	0	450000	False	Aurora Blazer
+CalamityMod	Barinade	Bow	ranged	5	15.0	2.50	37.5	1	2	20000	48.5	1.60	boss:CalamityMod/DesertScourgeHead@1.6	40	0	20000	False	Barinade
+CalamityMod	Barinautical	Bow	ranged	32	42.0	5.62	236.2	1	5	200000	357.2	9.50	boss:CalamityMod/AquaticScourgeHead@9.5	40	0	200000	False	Barinautical
+CalamityMod	BarracudaGun	Magic	ranged	52	52.0	3.00	156.0	-1	11	1200000	296.9	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	1300400	False	Barracuda Gun
+CalamityMod	BladedgeRailbow	Bow	ranged	30	40.0	2.14	85.7	-1	7	450000	141.1	12.50	recipe<-Perennial Bar	40	0	500000	False	Bladedge Railbow
+CalamityMod	BlightSpewer	Gun	ranged	52	52.0	3.16	164.2	-1	8	600000	281.0	14.50	recipe<-Infected Armor Plating	23	0	346310	False	Blight Spewer
+CalamityMod	BlissfulBombardier	HeldWeapon	ranged	550	590.0	1.54	363.1	1	19	1500000	714.2	19.00	boss:CalamityMod/Providence@19	771	0	1500000	False	Blissful Bombardier
+CalamityMod	BloodBoiler	Magic	ranged	120	120.0	12.00	1440.0	-1	19	1500000	2832.5	19.00	recipe<-Bloodstone	0	0	752000	False	Blood Boiler
+CalamityMod	BlossomFlux	Bow	ranged	18	28.0	15.00	420.0	1	7	450000	691.4	12.50	boss:Plantera@12+rarityfloor12.5	40	0	450000	False	Blossom Flux
+CalamityMod	BrimstoneFury	Bow	ranged	21	31.0	2.73	84.5	3	5	200000	127.8	9.50	recipe<-Unholy Core	40	0	212000	False	Brimstone Fury
+CalamityMod	BulletFilledShotgun	Gun	ranged	1	11.0	0.80	8.8	1	3	50000	12.0	4.50	recipe<-Aerialite Bar	97	0	38200	False	Bullet-Filled Shotgun
+CalamityMod	Buzzkill	HeldWeapon	ranged	56	56.0	2.00	44.8	-1	5	200000	67.7	9.50	recipe<-Soul of Fright	0	0	610500	False	Buzzkill
+CalamityMod	ChickenCannon	HeldWeapon	ranged	277	317.0	2.00	253.6	-1	12	2400000	500.9	22.00	boss:CalamityMod/Yharon@22	771	0	2400000	False	Chicken Cannon
+CalamityMod	ChromaticEruption	HeldWeapon	ranged	94	94.0	10.00	376.0	1	11	1200000	715.6	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	23	0	2860000	False	Chromatic Eruption
+CalamityMod	ClamorRifle	Gun	ranged	36	46.0	4.00	184.0	1	5	200000	278.2	9.50	boss:CalamityMod/GiantClam@1.61+rarityfloor9.5	97	0	200000	False	Clamor Rifle
+CalamityMod	CleansingBlaze	Gun	ranged	275	275.0	20.00	5500.0	7	14	2000000	10846.2	21.00	recipe<-Cosmilite Bar	23	0	1000000	False	Cleansing Blaze
+CalamityMod	ClockworkBow	HeldWeapon	ranged	770	780.0	2.00	624.0	-1	11	1200000	1187.6	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	40	0	335000	False	Clockwork Bow
+CalamityMod	Condemnation	Bow	ranged	2130	2140.0	2.73	5836.4	1	13	2400000	11528.0	23.00	boss:CalamityMod/SupremeCalamitas@23	40	0	2400000	False	Condemnation
+CalamityMod	ConferenceCall	Gun	ranged	53	63.0	1.43	90.0	-1	10	1000000	165.6	17.50	recipe<-Vortex Fragment	97	0	1480000	False	Conference Call
+CalamityMod	Contagion	HeldWeapon	ranged	880	890.0	3.00	1068.0	-1	17	2800000	2112.4	23.00	recipe<-Shadowspec Bar	40	0	8486650	False	Contagion
+CalamityMod	ContinentalGreatbow	Bow	ranged	45	55.0	2.50	137.5	1	8	600000	235.3	13.50	recipe<-Scoria Bar	40	0	500000	False	Continental Greatbow
+CalamityMod	CorinthPrime	Gun	ranged	140	150.0	2.00	300.0	1	19	1500000	590.1	19.61	recipe<-Armored Shell	97	0	2630000	False	Corinth Prime
+CalamityMod	CorrodedCaustibow	Bow	ranged	75	85.0	1.33	113.3	5	5	200000	171.4	9.50	unknown:rarity	40	0	63600	False	Corroded Caustibow
+CalamityMod	CrackshotColt	Gun	ranged	18	28.0	1.71	48.0	-1	2	20000	62.0	1.50	recipe<-Blood Orb	97	0	48420	False	Crackshot Colt
+CalamityMod	DaemonsFlame	HeldWeapon	ranged	162	172.0	5.00	344.0	-1	18	1750000	677.6	20.00	boss:CalamityMod/Polterghast@20	40	0	1750000	False	Daemon's Flame
+CalamityMod	DarkechoGreatbow	Bow	ranged	45	55.0	1.82	100.0	-1	5	200000	151.2	9.50	recipe<-Cryonic Bar	40	0	432000	False	Darkecho Greatbow
+CalamityMod	DeadSunsWind	Gun	ranged	115	115.0	2.73	313.6	1	10	1000000	577.1	17.50	recipe<-Meld Blob	23	0	180000	False	Dead Sun's Wind
+CalamityMod	DeepcoreGK2	Gun	ranged	45	55.0	4.29	235.7	1	5	200000	356.4	9.50	shop:Terraria/Demolitionist/Shop:DownedMechBossAny+rarityfloor9.5	97	0	200000	False	Deepcore GK2
+CalamityMod	DragonsBreath	HeldWeapon	ranged	328	328.0	2.00	262.4	1	12	2400000	518.3	22.00	boss:CalamityMod/Yharon@22	23	0	2400000	False	Dragon's Breath
+CalamityMod	Drataliornus	HeldWeapon	ranged	129	139.0	1.67	92.7	-1	12	2400000	183.0	22.00	recipe<-Auric Bar	40	0	3730000	False	Drataliornus
+CalamityMod	DriftwoodBow	Bow	ranged	8	18.0	2.14	38.6	1	0	100	41.7	0.00	unknown:rarity	40	0	100	False	Driftwood Bow
+CalamityMod	EternalBlizzard	Bow	ranged	67	77.0	3.33	256.7	-1	8	600000	439.2	13.50	unknown:rarity	40	0	600000	False	Eternal Blizzard
+CalamityMod	Eviscerator	Gun	ranged	60	70.0	1.00	70.0	1	3	50000	95.8	4.50	boss:CalamityMod/PerforatorHive@3.99+rarityfloor4.5	97	0	50000	False	Eviscerator
+CalamityMod	FetidEmesis	Gun	ranged	214	224.0	10.00	2240.0	1	18	1750000	4412.2	20.50	boss:CalamityMod/OldDuke@20.5	97	0	1750000	False	Fetid Emesis
+CalamityMod	FirestormCannon	HeldWeapon	ranged	15	15.0	5.45	32.7	-1	3	50000	44.8	5.00	recipe<-Hellstone Bar	931	0	242500	False	Firestorm Cannon
+CalamityMod	FlakKraken	HeldWeapon	ranged	78	118.0	0.95	45.0	1	7	450000	74.0	12.50	unknown:rarity	771	0	320000	False	Flak Kraken
+CalamityMod	FlakToxicannon	HeldWeapon	ranged	73	113.0	1.36	61.6	1	5	200000	93.2	9.50	unknown:rarity	771	0	200000	False	Flak Toxicannon
+CalamityMod	FlarewingBow	Bow	ranged	31	41.0	1.71	70.3	1	4	100000	101.2	13.00	recipe<-Essence of Sunlight	40	0	135000	False	Flarewing Bow
+CalamityMod	FlurrystormCannon	HeldWeapon	ranged	10	10.0	3.75	15.0	-1	3	50000	20.5	5.00	recipe<-Bone	949	0	395500	False	Flurrystorm Cannon
+CalamityMod	FreedomStar	HeldWeapon	ranged	120	120.0	6.00	288.0	-1	19	1500000	566.5	19.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor19.0	0	0	845000	False	Freedom Star
+CalamityMod	FrostbiteBlaster	Gun	ranged	50	60.0	2.40	144.0	1	5	200000	217.7	9.50	unknown:rarity	97	0	200000	False	Frostbite Blaster
+CalamityMod	Fungicide	Gun	ranged	19	29.0	2.73	79.1	1	2	20000	102.2	2.70	boss:CalamityMod/Crabulon@2.7	97	0	20000	False	Fungicide
+CalamityMod	Galeforce	Bow	ranged	13	23.0	3.00	69.0	1	3	50000	94.4	4.50	recipe<-Aerialite Bar	40	0	90000	False	Galeforce
+CalamityMod	GoldenEagle	Gun	ranged	88	98.0	3.33	326.7	1	11	1200000	621.7	18.00	unknown:rarity	97	0	1200000	False	Golden Eagle
+CalamityMod	Goobow	Bow	ranged	33	43.0	1.94	83.2	1	4	100000	119.8	7.00	recipe<-Purified Gel	40	0	35700	False	Goobow
+CalamityMod	GunkShot	Gun	ranged	22	32.0	1.71	54.9	-1	4	100000	79.0	7.00	recipe<-Purified Gel	97	0	35700	False	Gunk Shot
+CalamityMod	HalibutCannon	Gun	ranged	100	110.0	6.00	660.0	1	17	2800000	1305.4	19.00	unknown:rarity	97	0	2800000	False	Halibut Cannon
+CalamityMod	HalleysInferno	Gun	ranged	444	444.0	4.69	2081.2	1	18	1750000	4099.5	20.00	recipe<-Ruinous Soul	23	0	1148000	False	Halley's Inferno
+CalamityMod	HandheldTank	Gun	ranged	740	780.0	0.81	632.4	1	19	1500000	1244.0	19.00	recipe<-Divine Geode	771	0	800000	False	Handheld Tank
+CalamityMod	HavocsBreath	Gun	ranged	62	62.0	7.64	307.7	-1	7	450000	506.6	12.50	unknown:rarity	23	0	450000	False	Havoc's Breath
+CalamityMod	HeavenlyGale	Bow	ranged	256	266.0	1.50	399.0	1	16	2400000	788.1	22.99	recipe<-Miracle Matter	40	0	9568250	False	Heavenly Gale
+CalamityMod	Hellborn	HeldWeapon	ranged	300	300.0	2.00	240.0	-1	5	200000	362.9	10.50	boss:CalamityMod/BrimstoneElemental@10.5	0	0	200000	False	Hellborn
+CalamityMod	Helstorm	Gun	ranged	33	43.0	6.67	286.7	-1	8	600000	490.5	13.50	recipe<-Scoria Bar	97	0	500000	False	Helstorm
+CalamityMod	HoarfrostBow	Bow	ranged	36	46.0	2.07	95.2	1	5	200000	143.9	9.50	boss:CalamityMod/Cryogen@8.5+rarityfloor9.5	40	0	200000	False	Hoarfrost Bow
+CalamityMod	Hydra	Gun	ranged	44	54.0	0.91	49.1	1	8	600000	84.0	13.50	recipe<-tile134+rarityfloor13.5	97	0	425000	False	Hydra
+CalamityMod	Infinity	Gun	ranged	75	85.0	60.00	5100.0	-1	14	2000000	10057.4	21.00	recipe<-Cosmilite Bar	97	0	1738200	False	Infinity
+CalamityMod	Karasawa	Gun	ranged	2400	2410.0	1.15	2780.8	-1	14	2000000	5483.8	21.00	recipe<-Cosmilite Bar	97	0	1428750	False	Karasawa
+CalamityMod	Kingsbane	HeldWeapon	ranged	249	259.0	20.00	2072.0	1	12	2400000	4092.6	22.00	recipe<-Auric Bar	97	0	2708000	False	Kingsbane
+CalamityMod	Leviatitan	Gun	ranged	89	99.0	3.33	330.0	1	7	450000	543.2	12.80	boss:CalamityMod/Anahita@12.8	97	0	450000	False	Leviatitan
+CalamityMod	LunarianBow	Bow	ranged	27	37.0	2.73	100.9	1	4	100000	145.3	7.00	recipe<-Purified Gel	40	0	301250	False	Lunarian Bow
+CalamityMod	M1Garand	Gun	ranged	75	85.0	1.50	127.5	1	3	200000	177.5	5.00	shop:Terraria/ArmsDealer/Shop:DownedSkeletron	97	0	200000	False	M1 Garand
+CalamityMod	MagnaCannon	Magic	ranged	25	25.0	2.00	50.0	1	2	20000	64.6	1.50	unknown:rarity	0	0	109125	False	Magna Cannon
+CalamityMod	MagnomalyCannon	Gun	ranged	279	319.0	4.00	1276.0	1	16	2400000	2520.4	19.00	unknown:rarity	771	0	17842000	False	Magnomaly Cannon
+CalamityMod	Malevolence	Bow	ranged	56	66.0	3.33	220.0	1	8	600000	376.4	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	40	0	600000	False	Malevolence
+CalamityMod	MarksmanBow	Bow	ranged	39	49.0	7.20	352.8	-1	8	600000	603.7	13.50	recipe<-Ectoplasm	40	0	325000	False	Marksman Bow
+CalamityMod	Megalodon	HeldWeapon	ranged	58	68.0	15.00	408.0	1	7	450000	671.6	12.50	recipe<-Depth Cells	97	0	1492000	False	Megalodon
+CalamityMod	Meowthrower	Gun	ranged	29	29.0	7.50	157.7	3	4	100000	227.1	7.00	boss:Wall of Flesh@7	23	0	100000	False	Meowthrower
+CalamityMod	MidasPrime	Gun	ranged	81	91.0	1.88	170.6	-1	5	200000	258.0	9.50	unknown:rarity	97	0	200000	False	Midas Prime
+CalamityMod	MineralMortar	HeldWeapon	ranged	85	125.0	1.00	50.0	1	5	200000	75.6	12.09	recipe<-Forbidden Fragment	771	0	490000	False	Mineral Mortar
+CalamityMod	MonolithBow	Bow	ranged	19	29.0	5.33	154.7	1	4	100	204.2	7.00	unknown:rarity	40	0	100	False	Monolith Bow
+CalamityMod	Monsoon	Bow	ranged	156	166.0	3.00	498.0	1	18	1750000	980.9	19.00	recipe<-Reaper Tooth	40	0	895000	False	Monsoon
+CalamityMod	Needler	Gun	ranged	52	62.0	3.33	206.7	-1	4	100000	297.6	7.00	unknown:rarity	97	0	100000	False	Needler
+CalamityMod	NettlevineGreatbow	Bow	ranged	73	83.0	3.33	276.7	-1	19	1500000	544.2	19.00	recipe<-Uelibloom Bar	40	0	840000	False	Nettlevine Greatbow
+CalamityMod	NitroExpressRifle	Gun	ranged	210	220.0	0.86	188.6	1	4	100000	271.5	7.00	unknown:rarity	97	0	93000	False	Nitro Express Rifle
+CalamityMod	Norfleet	Magic	ranged	5678	5678.0	0.86	4866.9	1	14	2000000	9597.6	21.00	recipe<-Cosmilite Bar	0	0	1850000	False	Norfleet
+CalamityMod	NullificationPistol	Magic	ranged	190	190.0	3.33	633.3	-1	8	600000	1083.7	13.50	unknown:rarity	0	0	600000	False	Nullification Pistol
+CalamityMod	OmniGun	HeldWeapon	ranged	57	67.0	10.00	268.0	1	8	1000000	461.0	13.50	shop:CalamityMod/ShadySalesman/Shop:DownedGolem+rarityfloor13.5	97	0	1000000	False	The Omnigun
+CalamityMod	OntologicalDespoiler	Magic	ranged	445	445.0	7.50	3337.5	1	19	1500000	6565.0	19.00	unknown:rarity	0	0	1295125	False	Ontological Despoiler
+CalamityMod	OnyxChainBlaster	Gun	ranged	58	68.0	4.00	272.0	1	11	1200000	517.7	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	97	0	1019000	False	Onyx Chain Blaster
+CalamityMod	Onyxia	Gun	ranged	90	100.0	6.00	600.0	1	14	2000000	1183.2	21.00	recipe<-Cosmilite Bar	97	0	2059000	False	Onyxia
+CalamityMod	OpalStriker	Magic	ranged	30	30.0	3.53	105.9	1	2	20000	136.8	1.50	unknown:rarity	0	0	120000	False	Opal Striker
+CalamityMod	OverloadedBlaster	Gun	ranged	19	19.0	2.14	40.7	-1	4	100000	58.6	7.00	boss:CalamityMod/SlimeGodCore@6.7+rarityfloor7.0	23	0	100000	False	Overloaded Blaster
+CalamityMod	P90	Gun	ranged	6	16.0	30.00	480.0	1	4	350000	701.6	7.00	shop:Terraria/ArmsDealer/Shop:InHardmode	97	0	350000	False	P90
+CalamityMod	PearlGod	Gun	ranged	160	170.0	6.67	1133.3	-1	18	1750000	2232.4	20.00	recipe<-Ruinous Soul	97	0	1130000	False	Pearl God
+CalamityMod	PestilentDefiler	Gun	ranged	105	115.0	1.62	186.5	1	8	600000	319.1	14.50	recipe<-Infected Armor Plating	97	0	570000	False	Pestilent Defiler
+CalamityMod	Photoviscerator	HeldWeapon	ranged	495	495.0	6.00	1188.0	1	16	2400000	2346.5	22.99	recipe<-Miracle Matter	23	0	9000000	False	Photoviscerator
+CalamityMod	PlagueTaintedSMG	Gun	ranged	78	88.0	5.00	440.0	1	8	600000	752.9	14.50	recipe<-Infected Armor Plating	97	0	1150000	False	Plague Tainted SMG
+CalamityMod	PlanetaryAnnihilation	Bow	ranged	66	76.0	2.73	207.3	1	11	1200000	394.5	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	40	0	2719250	False	Planetary Annihilation
+CalamityMod	PolarisParrotfish	Magic	ranged	35	35.0	6.67	175.0	-1	5	200000	264.6	9.50	unknown:rarity	0	0	200000	False	Polaris Parrotfish
+CalamityMod	PridefulHuntersPlanarRipper	Gun	ranged	79	89.0	12.00	1068.0	1	11	1200000	2032.6	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	97	0	1900000	False	Prideful Hunter's Planar Ripper
+CalamityMod	PristineFury	Gun	ranged	60	60.0	20.00	1200.0	1	19	1500000	2360.5	19.00	boss:CalamityMod/Providence@19	23	0	1500000	False	Pristine Fury
+CalamityMod	RealmRavager	Gun	ranged	54	64.0	2.73	174.5	1	8	600000	298.7	16.50	boss:CalamityMod/RavagerBody@16.5	97	0	600000	False	Realm Ravager
+CalamityMod	ReedBlowgun	Magic	ranged	25	25.0	1.88	46.9	3	2	20000	60.6	1.60	recipe<-Sea Remains	0	0	36000	False	Reed Blowgun
+CalamityMod	Riftburst	HeldWeapon	ranged	91	101.0	5.00	202.0	-1	14	2000000	398.4	21.00	recipe<-Cosmilite Bar	40	0	3420000	False	Riftburst
+CalamityMod	RubicoPrime	Gun	ranged	450	460.0	0.80	368.0	5	8	600000	629.7	13.50	unknown:rarity	97	0	693000	False	Rubico Prime
+CalamityMod	Sandblaster	Gun	ranged	70	70.0	3.33	233.3	1	7	450000	384.1	12.50	recipe<-Grand Scale	169	0	270250	False	Sandblaster
+CalamityMod	ScorchedEarth	HeldWeapon	ranged	550	590.0	1.00	236.0	1	14	2000000	465.4	19.00	recipe<-Darksun Fragment	771	0	10150000	False	Scorched Earth
+CalamityMod	Scorpio	HeldWeapon	ranged	33	73.0	2.00	58.4	1	10	1000000	107.5	17.50	recipe<-Nebula Fragment	771	0	900000	False	Scorpio
+CalamityMod	SDFMG	Gun	ranged	118	128.0	20.00	2560.0	-1	14	2000000	5048.4	21.00	recipe<-Cosmilite Bar	97	0	1950000	False	SDFMG
+CalamityMod	Seadragon	HeldWeapon	ranged	154	164.0	20.00	1312.0	1	19	1500000	2580.8	20.00	recipe<-Necroplasm	97	0	1997000	False	Seadragon
+CalamityMod	SeasSearing	Magic	ranged	40	40.0	4.62	184.6	1	5	200000	279.1	9.50	boss:CalamityMod/AquaticScourgeHead@9.5	0	0	200000	False	Sea's Searing
+CalamityMod	SepticSkewer	Magic	ranged	933	933.0	2.00	1866.0	-1	18	1750000	3675.5	20.50	boss:CalamityMod/OldDuke@20.5	0	0	1750000	False	Septic Skewer
+CalamityMod	Shadethrower	Gun	ranged	21	21.0	6.00	75.6	3	3	50000	103.4	4.50	boss:CalamityMod/HiveMind@3.98+rarityfloor4.5	23	0	50000	False	Shadethrower
+CalamityMod	Shellshooter	Bow	ranged	40	50.0	0.86	42.9	5	2	20000	55.4	1.50	unknown:rarity	40	0	20000	False	Shellshooter
+CalamityMod	Shredder	Gun	ranged	48	58.0	7.16	415.5	1	11	1200000	790.8	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	97	0	538200	False	Shredder
+CalamityMod	Shroomer	Gun	ranged	150	160.0	1.71	274.3	1	10	1000000	504.7	17.50	recipe<-Stardust Fragment	97	0	600000	False	Shroomer
+CalamityMod	SlagfireDouser	HeldWeapon	ranged	5	5.0	2.00	4.0	1	3	50000	5.5	4.50	unknown:rarity	0	0	50000	False	Slagfire Douser
+CalamityMod	SlagMagnum	Gun	ranged	36	46.0	4.00	184.0	1	5	200000	278.2	9.50	unknown:rarity	97	0	200000	False	Slag Magnum
+CalamityMod	SomaPrime	Gun	ranged	705	715.0	12.00	8580.0	3	17	2800000	16970.3	23.00	recipe<-Shadowspec Bar	97	0	7874650	False	Soma Prime
+CalamityMod	SparkSpreader	Gun	ranged	16	16.0	4.00	40.0	3	1	10000	48.8	1.00	recipe<-Gel	23	0	71310	False	Spark Spreader
+CalamityMod	SpectralstormCannon	HeldWeapon	ranged	85	85.0	5.45	185.5	-1	10	1000000	341.2	17.50	recipe<-Solar Fragment	931	0	1512500	False	Spectralstorm Cannon
+CalamityMod	SpeedBlaster	Magic	ranged	40	40.0	6.00	240.0	-1	5	200000	362.9	9.50	recipe<-Mythril Bar+rarityfloor9.5	0	0	335000	False	Speed Blaster
+CalamityMod	Spyker	Gun	ranged	210	220.0	4.62	1015.4	3	19	1500000	1997.3	19.00	recipe<-Uelibloom Bar	97	0	1150000	False	Spyker
+CalamityMod	Starfleet	Gun	ranged	3170	3170.0	0.86	2717.1	3	18	1750000	5352.0	20.00	recipe<-Ruinous Soul	75	0	1248000	False	Starfleet
+CalamityMod	Starmada	Gun	ranged	4900	4900.0	0.86	4200.0	5	12	2400000	8295.9	22.00	recipe<-Auric Bar	75	0	3123000	False	Starmada
+CalamityMod	Starmageddon	HeldWeapon	ranged	138	138.0	2.00	110.4	-1	14	2000000	217.7	21.00	recipe<-Cosmilite Bar	0	0	3813400	False	Starmageddon
+CalamityMod	StarSputter	Gun	ranged	138	138.0	5.62	776.3	1	9	800000	1378.7	17.50	boss:CalamityMod/AstrumDeusHead@17.5	75	0	800000	False	Star Sputter
+CalamityMod	StellarCannon	Magic	ranged	180	180.0	1.50	270.0	1	7	450000	444.5	12.50	unknown:rarity	0	0	450000	False	Stellar Cannon
+CalamityMod	StormSurge	Magic	ranged	18	18.0	3.33	60.0	2	2	20000	77.5	1.61	recipe<-Navystone	0	0	19200	False	Storm Surge
+CalamityMod	SulphuricAcidCannon	Gun	ranged	550	590.0	1.71	1011.4	-1	18	1750000	1992.2	19.00	unknown:rarity	771	0	1750000	False	Sulphuric Acid Cannon
+CalamityMod	SuperradiantSlaughterer	HeldWeapon	ranged	100	100.0	2.00	80.0	-1	11	1200000	152.3	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	2375500	False	Superradiant Slaughterer
+CalamityMod	SurgeDriver	Gun	ranged	140	150.0	2.14	321.4	-1	16	2400000	634.9	22.99	boss:CalamityMod/Apollo@22.99	97	0	2400000	False	Surge Driver
+CalamityMod	Svantechnical	Gun	ranged	232	242.0	60.00	14520.0	-1	17	2800000	28718.9	23.00	recipe<-Shadowspec Bar	97	0	6654850	False	Svantechnical
+CalamityMod	TauCannon	HeldWeapon	ranged	620	620.0	0.33	82.7	1	18	1750000	162.8	19.00	unknown:rarity	0	0	862625	False	Tau Cannon
+CalamityMod	TelluricGlare	Bow	ranged	83	93.0	20.00	1860.0	-1	19	1500000	3658.7	19.00	boss:CalamityMod/Providence@19	40	0	1500000	False	Telluric Glare
+CalamityMod	TheBallista	Bow	ranged	88	98.0	2.14	210.0	2	8	600000	359.3	13.50	recipe<-Ectoplasm	40	0	202000	False	The Ballista
+CalamityMod	TheHive	HeldWeapon	ranged	92	132.0	1.76	93.2	1	8	600000	159.4	14.50	recipe<-Infected Armor Plating	771	0	860000	False	The Hive
+CalamityMod	TheJailor	Magic	ranged	235	235.0	2.14	503.6	-1	16	2400000	994.7	22.99	boss:CalamityMod/Apollo@22.99	0	0	2400000	False	The Jailor
+CalamityMod	TheMaelstrom	HeldWeapon	ranged	550	560.0	1.33	298.7	-1	18	1750000	588.3	19.00	unknown:rarity	40	0	3025000	False	The Maelstrom
+CalamityMod	ThePack	Gun	ranged	1000	1040.0	1.13	1177.4	-1	14	2000000	2321.8	19.00	unknown:rarity	771	0	2380000	False	The Pack
+CalamityMod	ThermoclineBlaster	Gun	ranged	45	55.0	3.75	206.2	-1	4	100000	297.0	10.50	recipe<-Essence of Havoc	97	0	145000	False	Thermocline Blaster
+CalamityMod	TheStorm	Bow	ranged	40	50.0	30.00	1500.0	3	19	1500000	2950.6	19.61	boss:CalamityMod/StormWeaverHead@19.61	40	0	1500000	False	The Storm
+CalamityMod	ThreadOfEradication	Bow	ranged	1500	1510.0	1.33	2013.3	-1	14	2000000	3970.4	21.00	boss:CalamityMod/DevourerofGodsHead@21	40	0	2000000	False	Thread of Eradication
+CalamityMod	TitaniumRailgun	HeldWeapon	ranged	370	370.0	2.31	341.5	1	5	200000	516.4	9.50	recipe<-Titanium Bar+rarityfloor9.5	0	0	380000	False	Titanium Railgun
+CalamityMod	Toxibow	Bow	ranged	15	25.0	2.14	53.6	-1	2	20000	69.2	1.50	unknown:rarity	40	0	3600	False	Toxibow
+CalamityMod	TyrannysEnd	Gun	ranged	2150	2160.0	1.00	2160.0	3	12	2400000	4266.5	19.00	unknown:rarity	97	0	4401000	False	Tyranny's End
+CalamityMod	Ultima	HeldWeapon	ranged	115	125.0	7.50	375.0	-1	14	2000000	739.5	21.00	recipe<-Cosmilite Bar	40	0	3395000	False	Ultima
+CalamityMod	UniversalGenesis	Gun	ranged	180	190.0	2.31	438.5	1	14	2000000	864.7	21.00	recipe<-Cosmilite Bar	97	0	3560000	False	Universal Genesis
+CalamityMod	VernalBolter	Bow	ranged	35	45.0	3.00	135.0	1	8	600000	231.0	13.50	recipe<-Living Shard+rarityfloor13.5	40	0	889250	False	Vernal Bolter
+CalamityMod	Voidragon	HeldWeapon	ranged	1400	1410.0	20.00	11280.0	1	17	2800000	22310.6	23.00	recipe<-Shadowspec Bar	97	0	9313650	False	Voidragon
+CalamityMod	Vortexpopper	Gun	ranged	30	40.0	2.86	114.3	1	10	1000000	210.3	17.50	recipe<-Vortex Fragment	97	0	1580000	False	Vortexpopper
+CalamityMod	WildfireBloom	HeldWeapon	ranged	62	62.0	7.50	186.0	1	8	600000	318.3	13.50	recipe<-Living Shard+rarityfloor13.5	23	0	1430000	False	Wildfire Bloom
+CalamityMod	WulfrumBlunderbuss	Magic	ranged	11	11.0	1.09	12.0	1	1	10000	14.6	0.50	unknown:rarity	0	0	500	False	Wulfrum Blunderbuss
+CalamityMod	AdamantiteThrowingAxe	Magic	RogueDamageClass	61	61.0	4.29	261.4	3	4	100000	376.5	7.00	recipe<-Adamantite Bar	0	0	300000	False	Adamantite Throwing Axe
+CalamityMod	AntlionSkewer	Magic	RogueDamageClass	19	19.0	2.14	40.7	2	2	20000	52.6	1.50	unknown:rarity	0	0	20000	False	Antlion Skewer
+CalamityMod	Apoctolith	Magic	RogueDamageClass	185	185.0	2.31	426.9	1	7	450000	702.8	12.50	unknown:rarity	0	0	122000	False	Apoctolith
+CalamityMod	AshenStalactite	Magic	RogueDamageClass	37	37.0	3.00	52.7	1	3	50000	72.1	4.50	unknown:rarity	0	0	50000	False	Ashen Stalactite
+CalamityMod	AuroradicalThrow	Magic	RogueDamageClass	48	48.0	2.00	60.0	-1	7	450000	98.8	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0	450000	False	Auroradical Throw
+CalamityMod	BallisticPoisonBomb	Magic	RogueDamageClass	57	57.0	2.31	131.5	-1	7	450000	216.5	12.50	unknown:rarity	0	0	153000	False	Ballistic Poison Bomb
+CalamityMod	BlastBarrel	Magic	RogueDamageClass	32	32.0	2.73	87.3	-1	4	100000	125.7	7.00	boss:Wall of Flesh@7	0	0	100000	False	Blast Barrel
+CalamityMod	BlazingStar	Magic	RogueDamageClass	75	75.0	4.00	300.0	6	5	200000	453.6	10.50	recipe<-Essence of Havoc	0	0	138750	False	Blazing Star
+CalamityMod	BloodsoakedCrasher	Magic	RogueDamageClass	245	245.0	2.50	612.5	6	19	1500000	1204.8	19.00	recipe<-Bloodstone	0	0	1202000	False	Bloodsoaked Crasher
+CalamityMod	BouncingEyeball	Magic	RogueDamageClass	16	16.0	2.61	41.7	2	3	50000	57.1	4.50	unknown:rarity	0	0	50000	False	Bouncing Eyeball
+CalamityMod	Brimblade	Boomerang	RogueDamageClass	28	28.0	3.33	74.7	-1	5	200000	112.9	9.50	recipe<-Unholy Core	0	0	212000	False	Brimblade
+CalamityMod	BurningStrife	Magic	RogueDamageClass	73	73.0	2.40	175.2	1	5	200000	264.9	9.50	boss:Goblin Warlock@3.4+rarityfloor9.5	0	0	200000	False	Burning Strife
+CalamityMod	CelestialReaper	Magic	RogueDamageClass	140	140.0	1.94	271.0	6	11	3000000	520.0	18.00	shop:CalamityMod/Bandit/Shop:DownedMoonLord	0	0	3000000	False	Celestial Reaper
+CalamityMod	Celestus	Magic	RogueDamageClass	280	280.0	2.73	763.6	-1	16	2400000	1508.3	22.99	recipe<-Miracle Matter	0	0	8455000	False	Celestus
+CalamityMod	Cinquedea	Magic	RogueDamageClass	35	35.0	3.00	105.0	2	3	100000	144.9	4.50	unknown:rarity	0	0	100000	False	Cinquedea
+CalamityMod	CobaltKunai	Magic	RogueDamageClass	49	49.0	5.00	245.0	2	4	100000	352.8	7.00	recipe<-Cobalt Bar	0	0	105000	False	Cobalt Kunai
+CalamityMod	ConsecratedWater	Magic	RogueDamageClass	48	48.0	2.07	99.3	1	5	200000	150.2	9.50	recipe<-Holy Water+rarityfloor9.5	0	0	269000	False	Consecrated Water
+CalamityMod	ContaminatedBile	Magic	RogueDamageClass	16	16.0	1.50	24.0	1	1	10000	29.3	0.50	unknown:rarity	0	0	10000	False	Contaminated Bile
+CalamityMod	CorpusAvertor	Magic	RogueDamageClass	98	98.0	4.00	392.0	1	8	600000	670.8	16.50	boss:CalamityMod/RavagerBody@16.5	0	0	600000	False	Corpus Avertor
+CalamityMod	CosmicKunai	Magic	RogueDamageClass	110	110.0	18.46	2030.8	1	19	1500000	3994.6	19.62	boss:CalamityMod/Signus@19.62	0	0	1500000	False	Cosmic Kunai
+CalamityMod	CraniumSmasher	Magic	RogueDamageClass	140	140.0	3.00	420.0	5	8	600000	718.7	16.50	boss:CalamityMod/RavagerBody@16.5	0	0	600000	False	Cranium Smasher
+CalamityMod	CrushsawCrasher	Magic	RogueDamageClass	57	57.0	3.33	190.0	2	7	450000	312.8	12.50	unknown:rarity	0	0	450000	False	Crushsaw Crasher
+CalamityMod	Crystalline	Magic	RogueDamageClass	16	16.0	3.33	53.3	1	2	20000	68.9	1.50	unknown:rarity	0	0	60500	False	Crystalline
+CalamityMod	CrystalPiercer	Magic	RogueDamageClass	92	92.0	2.73	250.9	-1	5	200000	379.4	9.50	recipe<-Cryonic Bar	0	0	432000	False	Crystal Piercer
+CalamityMod	CursedDagger	Magic	RogueDamageClass	45	45.0	3.33	150.0	2	4	100000	216.0	7.00	unknown:rarity	0	0	100000	False	Cursed Dagger
+CalamityMod	DeepSeaDumbbell	Magic	RogueDamageClass	466	466.0	2.40	1118.4	1	18	1750000	2202.9	19.00	unknown:rarity	0	0	1750000	False	Deep Sea Dumbbell
+CalamityMod	DeepWounder	Magic	RogueDamageClass	132	132.0	2.40	316.8	3	7	450000	521.5	12.50	unknown:rarity	0	0	450000	False	Deep Wounder
+CalamityMod	DefectiveSphere	Boomerang	RogueDamageClass	85	85.0	4.62	313.8	-1	8	600000	537.0	13.50	unknown:rarity	0	0	600000	False	Defective Sphere
+CalamityMod	DesecratedWater	Magic	RogueDamageClass	55	55.0	2.07	113.8	1	5	200000	172.1	9.50	recipe<-Adamantite Bar+rarityfloor9.5	0	0	184000	False	Desecrated Water
+CalamityMod	DimensionTearingDisk	Magic	RogueDamageClass	725	725.0	2.22	1611.1	-1	14	2000000	3177.2	21.00	boss:CalamityMod/DevourerofGodsHead@21	0	0	2000000	False	Dimension-Tearing Disk
+CalamityMod	DoomsdayDevice	Magic	RogueDamageClass	240	240.0	1.09	261.8	-1	8	600000	448.0	13.50	unknown:rarity	0	0	600000	False	Doomsday Device
+CalamityMod	DukesDecapitator	Magic	RogueDamageClass	90	90.0	2.00	180.0	-1	8	600000	308.0	14.00	boss:Duke Fishron@14	0	0	600000	False	Duke's Decapitator
+CalamityMod	DynamicPursuer	Magic	RogueDamageClass	2000	2000.0	1.43	2857.1	-1	12	2400000	5643.5	22.00	recipe<-Auric Bar	0	0	3571500	False	Dynamic Pursuer
+CalamityMod	EclipsesFall	Magic	RogueDamageClass	700	700.0	2.50	1750.0	1	12	2000000	3451.1	22.00	recipe<-Auric Bar	0	0	3318000	False	Eclipse's Fall
+CalamityMod	EnchantedAxe	Magic	RogueDamageClass	19	19.0	3.16	60.0	-1	3	50000	82.1	5.00	recipe<-Bone	0	0	42000	False	Enchanted Axe
+CalamityMod	EpidemicShredder	Magic	RogueDamageClass	80	80.0	3.75	300.0	6	8	600000	513.3	14.50	recipe<-Plague Cell Canister	0	0	937500	False	Epidemic Shredder
+CalamityMod	ExecutionersBlade	Magic	RogueDamageClass	165	165.0	20.00	3300.0	1	14	2000000	6507.7	21.00	recipe<-Cosmilite Bar	0	0	1000000	False	Executioner's Blade
+CalamityMod	Exorcism	Magic	RogueDamageClass	222	222.0	0.62	138.8	-1	6	350000	219.5	11.50	recipe<-Soul of Fright+rarityfloor11.5	0	0	840000	False	Exorcism
+CalamityMod	FantasyTalisman	Magic	RogueDamageClass	45	45.0	2.40	108.0	-1	8	600000	184.8	13.50	unknown:rarity	0	0	210000	False	Fantasy Talisman
+CalamityMod	FeatherKnife	Magic	RogueDamageClass	22	22.0	2.00	44.0	1	3	50000	60.2	4.50	recipe<-Aerialite Bar	0	0	90000	False	Feather Knife
+CalamityMod	FrostcrushValari	Magic	RogueDamageClass	81	81.0	3.16	255.8	-1	8	600000	437.7	13.50	recipe<-Ectoplasm	0	0	351000	False	Frostcrush Valari
+CalamityMod	FrostyFlare	Magic	RogueDamageClass	37	37.0	4.62	170.8	-1	6	350000	270.1	11.50	shop:CalamityMod/Archmage/Shop:DownedMechBossAll+rarityfloor11.5	0	0	350000	False	Frosty Flare
+CalamityMod	GacruxianMollusk	Magic	RogueDamageClass	36	36.0	2.31	83.1	1	5	200000	125.6	9.50	unknown:rarity	0	0	200000	False	Gacruxian Mollusk
+CalamityMod	GelDart	Magic	RogueDamageClass	21	21.0	5.45	114.5	4	4	100000	164.9	7.00	recipe<-Purified Gel	0	0	35700	False	Gel Dart
+CalamityMod	GhoulishGouger	Magic	RogueDamageClass	204	204.0	6.86	1398.9	-1	18	1750000	2755.4	20.00	boss:CalamityMod/Polterghast@20	0	0	1750000	False	Ghoulish Gouger
+CalamityMod	GildedDagger	Magic	RogueDamageClass	14	14.0	3.33	46.7	2	1	10000	56.9	0.50	recipe<-+rarityfloor0.5	0	0	72000	False	Gilded Dagger
+CalamityMod	Glaive	Magic	RogueDamageClass	19	19.0	2.73	51.8	4	3	100000	71.5	4.50	unknown:rarity	0	0	100000	False	Glaive
+CalamityMod	GleamingDagger	Magic	RogueDamageClass	14	14.0	3.33	46.7	2	1	10000	56.9	0.50	recipe<-+rarityfloor0.5	0	0	108000	False	Gleaming Dagger
+CalamityMod	GodsParanoia	Magic	RogueDamageClass	163	163.0	2.07	337.2	-1	14	2000000	665.1	21.00	recipe<-Cosmilite Bar	0	0	1000000	False	Gods' Paranoia
+CalamityMod	GraveGrimreaver	Magic	RogueDamageClass	84	84.0	1.25	105.0	1	5	200000	158.8	9.50	recipe<-Soul of Fright	0	0	428500	False	Grave Grimreaver
+CalamityMod	HardenedHoneycomb	Magic	RogueDamageClass	19	19.0	3.33	63.3	1	3	50000	86.6	4.50	boss:Queen Bee@4+rarityfloor4.5	0	0	50000	False	Hardened Honeycomb
+CalamityMod	HeavenfallenStardisk	Magic	RogueDamageClass	160	160.0	1.50	240.0	1	8	600000	410.7	13.50	unknown:rarity	0	0	600000	False	Heavenfallen Stardisk
+CalamityMod	Hypothermia	Magic	RogueDamageClass	148	148.0	13.85	2049.2	1	14	2000000	4041.2	21.00	recipe<-Cosmilite Bar	0	0	1650000	False	Hypothermia
+CalamityMod	Icebreaker	Boomerang	RogueDamageClass	60	60.0	4.29	205.7	-1	5	200000	311.0	9.50	boss:CalamityMod/Cryogen@8.5+rarityfloor9.5	0	0	200000	False	Icebreaker
+CalamityMod	IceStar	Magic	RogueDamageClass	35	35.0	3.53	123.5	3	5	200000	186.8	9.50	unknown:rarity	0	0	200000	False	Ice Star
+CalamityMod	IchorSpear	Magic	RogueDamageClass	120	120.0	1.54	184.6	6	4	100000	265.8	7.00	unknown:rarity	0	0	100000	False	Ichor Spear
+CalamityMod	InfernalKris	Magic	RogueDamageClass	21	21.0	3.33	70.0	2	3	50000	95.8	4.50	unknown:rarity	0	0	37500	False	Infernal Kris
+CalamityMod	InfestedClawmerang	Boomerang	RogueDamageClass	18	18.0	3.00	43.2	-1	2	20000	55.8	2.70	boss:CalamityMod/Crabulon@2.7	0	0	20000	False	Infested Clawmerang
+CalamityMod	IronFrancisca	Magic	RogueDamageClass	9	9.0	3.00	27.0	2	0	5000	31.0	0.00	recipe<-	0	0	10500	False	Iron Francisca
+CalamityMod	JawsOfOblivion	Magic	RogueDamageClass	159	159.0	4.00	636.0	-1	18	1750000	1252.7	20.00	recipe<-Ruinous Soul	0	0	1140000	False	Jaws of Oblivion
+CalamityMod	KelvinCatalyst	Magic	RogueDamageClass	50	50.0	2.00	100.0	-1	5	200000	151.2	9.50	recipe<-Ice Star	0	0	1020000	False	Kelvin Catalyst
+CalamityMod	Kylie	Magic	RogueDamageClass	12	12.0	2.40	28.8	-1	1	10000	35.1	0.50	unknown:rarity	0	0	10000	False	Kylie
+CalamityMod	LeadTomahawk	Magic	RogueDamageClass	9	9.0	3.00	27.0	2	0	5000	31.0	0.00	recipe<-	0	0	15750	False	Lead Tomahawk
+CalamityMod	LeonidProgenitor	Magic	RogueDamageClass	57	57.0	4.00	228.0	1	7	450000	375.3	12.81	boss:CalamityMod/AstrumAureus@12.81	0	0	450000	False	Leonid Progenitor
+CalamityMod	LeviathanTeeth	Magic	RogueDamageClass	43	43.0	6.67	286.7	-1	7	450000	471.9	12.80	boss:CalamityMod/Anahita@12.8	0	0	450000	False	Leviathan Teeth
+CalamityMod	Lionfish	Magic	RogueDamageClass	33	33.0	2.31	76.2	-1	3	50000	104.2	4.50	unknown:rarity	0	0	50000	False	Lionfish
+CalamityMod	LunarKunai	Magic	RogueDamageClass	102	102.0	6.00	612.0	1	11	1200000	1164.7	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	300000	False	Lunar Kunai
+CalamityMod	Malachite	Magic	RogueDamageClass	52	52.0	4.29	222.9	3	8	600000	381.3	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	0	0	600000	False	Malachite
+CalamityMod	MangroveChakram	Boomerang	RogueDamageClass	84	84.0	4.29	288.0	-1	7	450000	474.1	12.50	recipe<-Perennial Bar	0	0	500000	False	Mangrove Chakram
+CalamityMod	MetalMonstrosity	Magic	RogueDamageClass	28	28.0	1.33	37.3	1	3	50000	51.1	4.50	recipe<-Spiky Ball+rarityfloor4.5	0	0	40000	False	Metal Monstrosity
+CalamityMod	MeteorFist	Magic	RogueDamageClass	31	31.0	2.40	74.4	2	2	20000	96.1	2.00	recipe<-Meteorite Bar	0	0	30000	False	Meteor Fist
+CalamityMod	MoltenAmputator	Magic	RogueDamageClass	200	200.0	2.40	480.0	-1	19	1500000	944.2	19.00	boss:CalamityMod/Providence@19	0	0	1500000	False	Molten Amputator
+CalamityMod	Mycoroot	Magic	RogueDamageClass	12	12.0	10.00	120.0	1	2	20000	155.0	2.70	boss:CalamityMod/Crabulon@2.7	0	0	20000	False	Mycoroot
+CalamityMod	MythrilKnife	Magic	RogueDamageClass	66	66.0	5.00	330.0	1	4	100000	475.2	7.00	recipe<-Mythril Bar	0	0	220000	False	Mythril Knife
+CalamityMod	NanoblackReaper	Magic	RogueDamageClass	555	555.0	3.16	1752.6	-1	17	2800000	3466.5	23.00	recipe<-Shadowspec Bar	0	0	9716650	False	Nanoblack Reaper
+CalamityMod	NastyCholla	Magic	RogueDamageClass	10	10.0	3.00	30.0	-1	0	5000	34.4	0.00	unknown:rarity	0	0	80	False	Nasty Cholla
+CalamityMod	OrichalcumSpikedGemstone	Magic	RogueDamageClass	40	40.0	4.62	184.6	3	4	100000	265.8	7.00	recipe<-Orichalcum Bar	0	0	260000	False	Orichalcum Spiked Gemstone
+CalamityMod	PalladiumJavelin	Magic	RogueDamageClass	81	81.0	2.50	202.5	2	4	100000	291.6	7.00	recipe<-Palladium Bar	0	0	135000	False	Palladium Javelin
+CalamityMod	Penumbra	Magic	RogueDamageClass	725	725.0	1.71	1242.9	1	14	2000000	2451.0	21.00	recipe<-Cosmilite Bar	0	0	1650000	False	Penumbra
+CalamityMod	PhantasmalRuin	Magic	RogueDamageClass	140	140.0	2.00	280.0	1	8	600000	479.1	13.50	recipe<-Spectre Bar+rarityfloor13.5	0	0	639250	False	Phantasmal Ruin
+CalamityMod	Plaguenade	Magic	RogueDamageClass	63	63.0	4.00	252.0	1	8	600000	431.2	14.50	recipe<-Plague Cell Canister	0	0	182500	False	Plaguenade
+CalamityMod	Prismalline	Magic	RogueDamageClass	36	36.0	3.00	108.0	-1	5	200000	163.3	9.50	unknown:rarity	0	0	93000	False	Prismalline
+CalamityMod	ProfanedPartisan	Magic	RogueDamageClass	300	300.0	2.86	857.1	1	11	1200000	1631.3	18.50	recipe<-Unholy Essence	0	0	720000	False	Profaned Partisan
+CalamityMod	Pumpkaboom	Magic	RogueDamageClass	17	17.0	0.86	14.6	-1	2	20000	18.8	1.50	unknown:rarity	0	0	6125	False	Pumpkaboom
+CalamityMod	RadiantStar	Magic	RogueDamageClass	55	55.0	5.00	275.0	4	9	800000	488.4	16.00	unknown:rarity	0	0	626000	False	Radiant Star
+CalamityMod	RealityRupture	Magic	RogueDamageClass	420	420.0	1.62	681.1	1	19	1500000	1339.7	19.62	recipe<-Twisting Nether	0	0	1078000	False	Reality Rupture
+CalamityMod	ReboundingRainbow	Magic	RogueDamageClass	92	92.0	3.75	345.0	-1	11	1200000	656.6	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	0	1601000	False	Rebounding Rainbow
+CalamityMod	RefractionRotor	Magic	RogueDamageClass	240	240.0	1.50	360.0	-1	16	2400000	711.1	22.99	boss:CalamityMod/Apollo@22.99	0	0	2400000	False	Refraction Rotor
+CalamityMod	RegulusRiot	Magic	RogueDamageClass	100	100.0	2.50	250.0	3	9	800000	444.0	17.50	boss:CalamityMod/AstrumDeusHead@17.5	0	0	800000	False	Regulus Riot
+CalamityMod	RotBall	Magic	RogueDamageClass	16	16.0	3.75	60.0	3	3	50000	82.1	4.50	boss:CalamityMod/HiveMind@3.98+rarityfloor4.5	0	0	50000	False	Rot Ball
+CalamityMod	Sacrifice	Magic	RogueDamageClass	300	300.0	6.67	2000.0	-1	13	2400000	3950.4	23.00	boss:CalamityMod/SupremeCalamitas@23	0	0	2400000	False	Sacrifice
+CalamityMod	SamsaraSlicer	Magic	RogueDamageClass	80	80.0	2.00	160.0	-1	8	600000	273.8	13.50	recipe<-Living Shard+rarityfloor13.5	0	0	571000	False	Samsara Slicer
+CalamityMod	SandDollar	Boomerang	RogueDamageClass	26	26.0	4.00	83.2	-1	2	20000	107.5	1.50	unknown:rarity	0	0	20000	False	Sand Dollar
+CalamityMod	ScarletDevil	Magic	RogueDamageClass	8800	8800.0	1.00	8800.0	5	17	2800000	17405.4	23.00	recipe<-Shadowspec Bar	0	0	9909650	False	Scarlet Devil
+CalamityMod	ScourgeoftheDesert	Magic	RogueDamageClass	12	12.0	2.50	30.0	2	2	20000	38.8	1.60	boss:CalamityMod/DesertScourgeHead@1.6	0	0	20000	False	Scourge of the Desert
+CalamityMod	ScourgeoftheSeas	Magic	RogueDamageClass	50	50.0	2.50	125.0	1	5	200000	189.0	9.50	boss:CalamityMod/AquaticScourgeHead@9.5	0	0	200000	False	Scourge of the Seas
+CalamityMod	SeafoamBomb	Magic	RogueDamageClass	12	12.0	2.40	28.8	1	2	20000	37.2	1.60	recipe<-Pearl Shard	0	0	33000	False	Seafoam Bomb
+CalamityMod	Seraphim	Magic	RogueDamageClass	280	280.0	4.62	1292.3	-1	12	2400000	2552.6	19.00	unknown:rarity	0	0	2516000	False	Seraphim
+CalamityMod	ShardofAntumbra	Magic	RogueDamageClass	111	111.0	3.53	391.8	-1	10	1000000	720.8	17.50	recipe<-Meld Blob	0	0	180000	False	Shard of Antumbra
+CalamityMod	ShatteredDawn	Magic	RogueDamageClass	80	80.0	5.00	400.0	4	19	1500000	786.8	19.00	unknown:rarity	0	0	1016000	False	Shattered Dawn
+CalamityMod	ShinobiBlade	Magic	RogueDamageClass	24	24.0	6.00	144.0	1	3	50000	197.0	4.50	unknown:rarity	0	0	50000	False	Shinobi Blade
+CalamityMod	SkyfinBombers	Magic	RogueDamageClass	46	46.0	1.71	78.9	1	5	200000	119.2	9.50	recipe<-Corroded Fossil	0	0	70000	False	Skyfin Bombers
+CalamityMod	SludgeSplotch	Magic	RogueDamageClass	30	30.0	3.33	100.0	1	2	20000	129.2	3.00	recipe<-Shadow Scale	0	0	6500	False	Sludge Splotch
+CalamityMod	SnapClam	Magic	RogueDamageClass	14	14.0	2.40	33.6	-1	2	20000	43.4	1.50	unknown:rarity	0	0	20000	False	Snap Clam
+CalamityMod	SpearofDestiny	Magic	RogueDamageClass	70	70.0	1.46	102.4	1	6	350000	162.0	11.50	recipe<-Soul of Fright+rarityfloor11.5	0	0	868000	False	Spear of Destiny
+CalamityMod	SpearofPaleolith	Magic	RogueDamageClass	70	70.0	2.22	155.6	1	5	200000	235.2	12.09	recipe<-Forbidden Fragment	0	0	220000	False	Spear of Paleolith
+CalamityMod	SpentFuelContainer	Magic	RogueDamageClass	80	80.0	1.20	96.0	1	5	200000	145.2	9.52	boss:CalamityMod/CragmawMire@9.52	0	0	200000	False	Spent Fuel Container
+CalamityMod	SporeKnife	Magic	RogueDamageClass	18	18.0	3.00	54.0	1	3	50000	73.9	4.50	recipe<-Stinger+rarityfloor4.5	0	0	2800	False	Spore Knife
+CalamityMod	StarofDestruction	Magic	RogueDamageClass	400	400.0	0.67	266.7	-1	10	1000000	490.7	17.50	recipe<-Meld Blob	0	0	180000	False	Star of Destruction
+CalamityMod	StellarKnife	Magic	RogueDamageClass	69	69.0	6.67	460.0	1	7	450000	757.2	12.50	unknown:rarity	0	0	450000	False	Stellar Knife
+CalamityMod	StormfrontRazor	Magic	RogueDamageClass	38	38.0	3.00	114.0	1	5	200000	172.4	13.00	recipe<-Essence of Sunlight	0	0	277900	False	Stormfront Razor
+CalamityMod	SubductionSlicer	Boomerang	RogueDamageClass	95	95.0	3.00	228.0	5	8	600000	390.1	13.50	recipe<-Scoria Bar	0	0	500000	False	Subduction Slicer
+CalamityMod	TarragonThrowingDart	Magic	RogueDamageClass	380	380.0	5.45	2072.7	6	19	1500000	4077.1	19.00	recipe<-Uelibloom Bar	0	0	840000	False	Tarragon Throwing Dart
+CalamityMod	TerrorTalons	Magic	RogueDamageClass	47	47.0	8.57	402.9	1	7	450000	663.2	12.50	recipe<-Chlorophyte Bar	0	0	150200	False	Terror Talons
+CalamityMod	TheAtomSplitter	Magic	RogueDamageClass	296	296.0	2.40	710.4	2	16	2400000	1403.2	22.99	boss:CalamityMod/Apollo@22.99	0	0	2400000	False	The Atom Splitter
+CalamityMod	TheFinalDawn	Magic	RogueDamageClass	2500	2500.0	4.00	10000.0	-1	12	2400000	19752.1	22.00	boss:CalamityMod/Yharon@22	0	0	2400000	False	The Final Dawn
+CalamityMod	TheSyringe	Magic	RogueDamageClass	60	60.0	4.00	240.0	1	8	600000	410.7	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	0	0	600000	False	The Syringe
+CalamityMod	TimeBolt	Magic	RogueDamageClass	303	303.0	3.00	909.0	6	14	1750000	1790.5	21.00	recipe<-Cosmilite Bar	0	0	2010100	False	Time Bolt
+CalamityMod	TitaniumShuriken	Magic	RogueDamageClass	38	38.0	6.67	253.3	3	4	100000	364.8	7.00	recipe<-Titanium Bar	0	0	340000	False	Titanium Shuriken
+CalamityMod	ToothBall	Magic	RogueDamageClass	16	16.0	3.75	60.0	3	3	50000	82.1	4.50	boss:CalamityMod/PerforatorHive@3.99+rarityfloor4.5	0	0	50000	False	Tooth Ball
+CalamityMod	TotalityBreakers	Magic	RogueDamageClass	64	64.0	2.14	137.1	1	7	450000	225.8	12.50	unknown:rarity	0	0	86066	False	Totality Breakers
+CalamityMod	ToxicantTwister	Magic	RogueDamageClass	272	272.0	1.50	408.0	-1	18	1750000	803.6	20.50	boss:CalamityMod/OldDuke@20.5	0	0	1750000	False	Toxicant Twister
+CalamityMod	Turbulance	Magic	RogueDamageClass	20	20.0	3.33	66.7	1	3	50000	91.2	4.50	recipe<-Aerialite Bar	0	0	90000	False	Turbulance
+CalamityMod	TwistingThunder	Magic	RogueDamageClass	466	466.0	2.86	1331.4	1	19	1500000	2619.0	19.61	recipe<-Armored Shell	0	0	787900	False	Twisting Thunder
+CalamityMod	UrchinStinger	Magic	RogueDamageClass	13	13.0	3.53	45.9	2	1	10000	56.0	0.50	unknown:rarity	0	0	10000	False	Urchin Stinger
+CalamityMod	UtensilPoker	Magic	RogueDamageClass	333	333.0	3.00	999.0	1	10	1000000	1838.2	18.00	boss:Moon Lord's Core@18	0	0	1000000	False	Utensil Poker
+CalamityMod	Valediction	Magic	RogueDamageClass	243	243.0	3.53	857.6	-1	18	1750000	1689.3	19.00	unknown:rarity	0	0	1750000	False	Valediction
+CalamityMod	Vega	Magic	RogueDamageClass	500	500.0	3.00	1500.0	1	18	1750000	2954.6	20.00	recipe<-Ruinous Soul	0	0	1368000	False	Vega
+CalamityMod	WaveSkipper	Magic	RogueDamageClass	80	80.0	2.73	218.2	6	5	200000	329.9	9.50	recipe<-Mollusk Husk	0	0	87500	False	Wave Skipper
+CalamityMod	WebBall	Magic	RogueDamageClass	11	11.0	3.00	33.0	3	0	5000	37.9	0.00	unknown:rarity	0	0	5000	False	Web Ball
+CalamityMod	Whitewater	Magic	RogueDamageClass	80	80.0	1.76	141.2	-1	7	450000	232.4	12.80	boss:CalamityMod/Anahita@12.8	0	0	450000	False	Whitewater
+CalamityMod	Wrathwing	Magic	RogueDamageClass	592	592.0	4.62	2732.3	1	12	2400000	5396.9	22.00	boss:CalamityMod/Yharon@22	0	0	2400000	False	Wrathwing
+CalamityMod	WulfrumKnife	Magic	RogueDamageClass	11	11.0	5.29	58.2	1	1	10000	71.0	0.50	unknown:rarity	0	0	500	False	Wulfrum Knife
+CalamityMod	AbandonedSlimeStaff	Summon	summon	56	56.0	1.67	194.9	-1	7	450000	320.8	12.50	unknown:rarity	0	40	450000	False	Abandoned Slime Staff
+CalamityMod	AncientIceChunk	Summon	summon	25	25.0	1.67	69.0	-1	4	100000	99.4	7.00	unknown:rarity	0	10	100000	False	Ancient Ice Chunk
+CalamityMod	AquasScepter	Sentry	summon	65	65.0	2.00	97.5	-1	19	1500000	191.8	19.61	recipe<-Armored Shell	0	50	472500	False	Aqua's Scepter
+CalamityMod	AresExoskeleton	Summon	summon	550	550.0	2.50	858.0	-1	16	2400000	1694.7	22.99	boss:CalamityMod/Apollo@22.99	0	80	2400000	False	Ares' Exoskeleton
+CalamityMod	AtlasMunitionsBeacon	Sentry	summon	200	200.0	2.00	300.0	1	16	2400000	592.6	22.99	boss:CalamityMod/Apollo@22.99	0	10	2400000	False	Atlas Munitions Beacon
+CalamityMod	BelladonnaSpiritStaff	Summon	summon	22	22.0	1.67	55.4	-1	3	50000	75.8	4.50	unknown:rarity	0	10	6100	False	Belladonna Spirit Staff
+CalamityMod	BlackHawkRemote	Summon	summon	25	25.0	1.67	69.0	-1	4	100000	99.4	7.00	boss:Wall of Flesh@7	0	10	100000	False	Black Hawk Remote
+CalamityMod	BlightedSlimeStaff	Summon	summon	18	18.0	1.67	49.7	-1	4	100000	71.5	7.00	boss:CalamityMod/SlimeGodCore@6.7+rarityfloor7.0	0	10	100000	False	Blighted Slime Staff
+CalamityMod	BorealisBomber	Summon	summon	34	34.0	3.00	118.3	1	7	450000	194.8	12.81	boss:CalamityMod/AstrumAureus@12.81	0	10	450000	False	Borealis Bomber
+CalamityMod	BrittleStarStaff	Summon	summon	10	10.0	1.67	22.8	-1	2	20000	29.5	1.60	boss:CalamityMod/DesertScourgeHead@1.6	0	10	20000	False	Brittle Star Staff
+CalamityMod	CadaverousCarrion	Sentry	summon	384	384.0	2.00	576.0	-1	18	1750000	1134.6	20.50	boss:CalamityMod/OldDuke@20.5	0	10	1750000	False	Cadaverous Carrion
+CalamityMod	CalamarisLament	Summon	summon	120	120.0	2.50	561.6	-1	18	1750000	1106.2	19.00	unknown:rarity	0	10	1750000	False	Calamari's Lament
+CalamityMod	CausticCroakerStaff	Sentry	summon	8	8.0	2.00	12.0	-1	2	20000	15.5	1.50	unknown:rarity	0	10	20000	False	Caustic Croaker Staff
+CalamityMod	CausticStaff	Summon	summon	18	18.0	1.67	49.7	-1	4	100000	71.5	7.00	recipe<-Soul of Night	0	10	200000	False	Caustic Staff
+CalamityMod	CinderBlossomStaff	Summon	summon	16	16.0	1.67	40.3	-1	3	50000	55.2	4.50	unknown:rarity	0	10	38000	False	Cinder Blossom Staff
+CalamityMod	CindersOfLament	Summon	summon	1666	1666.0	0.75	7796.9	-1	13	2400000	15400.5	19.00	unknown:rarity	0	10	2400000	False	Cinders of Lament
+CalamityMod	CorvidHarbringerStaff	Summon	summon	99	99.0	2.50	463.3	-1	14	2000000	913.7	21.00	recipe<-Cosmilite Bar	0	10	1700000	False	Corvid Harbinger Staff
+CalamityMod	CosmicImmaterializer	Summon	summon	560	560.0	2.50	672.0	-1	16	2400000	1327.3	22.99	recipe<-Miracle Matter	0	10	11516350	False	Cosmic Immaterializer
+CalamityMod	CosmicViperEngine	Summon	summon	255	255.0	2.50	1193.4	-1	14	2000000	2353.4	21.00	recipe<-Cosmilite Bar	0	10	2000000	False	Cosmic Viper Engine
+CalamityMod	Cosmilamp	Summon	summon	95	95.0	2.50	444.6	-1	19	1500000	874.5	19.62	boss:CalamityMod/Signus@19.62	0	10	1500000	False	Cosmilamp
+CalamityMod	CryogenicStaff	Sentry	summon	30	30.0	2.00	45.0	1	6	350000	71.2	11.50	shop:CalamityMod/Archmage/Shop:DownedMechBossAll+rarityfloor11.5	0	10	350000	False	Cryogenic Staff
+CalamityMod	DaedalusGolemStaff	Summon	summon	70	70.0	1.67	210.0	-1	5	200000	317.5	9.50	recipe<-Cryonic Bar	0	10	432000	False	Daedalus Golem Staff
+CalamityMod	DankStaff	Summon	summon	10	10.0	1.67	25.2	-1	3	50000	34.5	4.50	boss:CalamityMod/HiveMind@3.98+rarityfloor4.5	0	10	50000	False	Dank Staff
+CalamityMod	DazzlingStabberStaff	Summon	summon	69	69.0	2.50	322.9	-1	19	1500000	635.2	19.00	boss:CalamityMod/Providence@19	0	10	1500000	False	Dazzling Stabber Staff
+CalamityMod	DeathstareRod	Summon	summon	20	20.0	1.67	45.6	-1	2	20000	58.9	2.00	boss:Eye of Cthulhu@2	0	10	20000	False	Deathstare Rod
+CalamityMod	DeepseaStaff	Summon	summon	32	32.0	1.67	96.0	-1	5	200000	145.2	9.50	boss:CalamityMod/AquaticScourgeHead@9.5	0	10	200000	False	Deepsea Staff
+CalamityMod	DormantBrimseeker	Summon	summon	42	42.0	1.67	126.0	1	5	200000	190.5	10.50	boss:CalamityMod/BrimstoneElemental@10.5	0	10	200000	False	Dormant Brimseeker
+CalamityMod	DragonbloodDisgorger	Summon	summon	222	222.0	2.50	266.4	-1	19	1500000	524.0	19.00	recipe<-Bloodstone	0	10	752000	False	Dragonblood Disgorger
+CalamityMod	DreadmineStaff	Sentry	summon	40	40.0	2.00	60.0	-1	7	450000	98.8	12.50	unknown:rarity	0	10	180000	False	Dreadmine Staff
+CalamityMod	EnchantedConch	Summon	summon	20	20.0	1.67	45.6	-1	2	20000	58.9	1.50	unknown:rarity	0	10	20000	False	Enchanted Conch
+CalamityMod	EnchantedKnifeStaff	Summon	summon	10	10.0	4.00	20.4	-1	1	10000	24.9	0.50	unknown:rarity	0	10	10000	False	Enchanted Knife Staff
+CalamityMod	Endogenesis	Summon	summon	1300	1300.0	2.50	1560.0	-1	17	2800000	3085.5	23.00	recipe<-Shadowspec Bar	0	80	7746650	False	Endogenesis
+CalamityMod	EndoHydraStaff	Summon	summon	190	190.0	2.50	889.2	-1	14	2000000	1753.5	21.00	recipe<-Cosmilite Bar	0	10	2200000	False	Endo Hydra Staff
+CalamityMod	EntropysVigil	Summon	summon	38	38.0	1.67	66.1	-1	7	450000	108.8	12.50	boss:CalamityMod/CalamitasClone@11.7+rarityfloor12.5	0	10	450000	False	Entropy's Vigil
+CalamityMod	EtherealSubjugator	Summon	summon	160	160.0	2.50	748.8	-1	18	1750000	1474.9	20.00	boss:CalamityMod/Polterghast@20	0	10	1750000	False	Ethereal Subjugator
+CalamityMod	EyeOfNight	Summon	summon	24	24.0	1.67	60.5	-1	3	50000	82.7	4.50	unknown:rarity	0	10	224350	False	Eye of Night
+CalamityMod	FleshOfInfidelity	Summon	summon	14	14.0	1.67	35.3	-1	3	50000	48.3	4.50	boss:CalamityMod/PerforatorHive@3.99+rarityfloor4.5	0	10	50000	False	Flesh of Infidelity
+CalamityMod	FlowersOfMortality	Summon	summon	70	70.0	2.50	103.6	-1	11	1200000	197.2	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	10	1391000	False	Flowers of Mortality
+CalamityMod	ForgottenApexWand	Summon	summon	46	46.0	1.67	138.0	-1	5	200000	208.7	12.09	recipe<-Forbidden Fragment	0	10	257500	False	Forgotten Apex Wand
+CalamityMod	FrostBlossomStaff	Summon	summon	15	15.0	1.67	30.6	-1	1	10000	37.3	0.50	unknown:rarity	0	10	500	False	Frost Blossom Staff
+CalamityMod	FuelCellBundle	Summon	summon	22	22.0	1.67	81.8	-1	8	600000	140.0	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	0	10	600000	False	Fuel Cell Bundle
+CalamityMod	GammaHeart	Summon	summon	93	93.0	2.50	435.2	-1	18	1750000	857.3	19.00	unknown:rarity	0	10	1750000	False	Gamma Heart
+CalamityMod	GastricBelcherStaff	Summon	summon	50	50.0	1.67	174.0	-1	7	450000	286.4	12.80	boss:CalamityMod/Anahita@12.8	0	10	450000	False	Gastric Belcher Staff
+CalamityMod	GlacialEmbrace	Summon	summon	48	48.0	1.67	144.0	1	5	200000	217.7	9.50	boss:CalamityMod/Cryogen@8.5+rarityfloor9.5	0	10	200000	False	Glacial Embrace
+CalamityMod	GuidelightofOblivion	Sentry	summon	75	75.0	2.00	112.5	-1	19	1500000	221.3	19.00	unknown:rarity	0	10	1500000	False	Guidelight of Oblivion
+CalamityMod	HauntedScroll	Summon	summon	25	25.0	1.67	69.0	-1	4	100000	99.4	7.00	recipe<-Soul of Light	0	10	10450	False	Haunted Scroll
+CalamityMod	HerringStaff	Summon	summon	15	15.0	1.67	37.8	-1	3	50000	51.7	4.50	unknown:rarity	0	10	50000	False	Herring Staff
+CalamityMod	HivePod	Sentry	summon	75	75.0	2.00	112.5	-1	7	450000	185.2	12.50	unknown:rarity	0	10	450000	False	Hive Pod
+CalamityMod	IgneousExaltation	Summon	summon	30	30.0	1.67	90.0	-1	5	200000	136.1	10.50	recipe<-Essence of Havoc	0	10	228000	False	Igneous Exaltation
+CalamityMod	InfectedRemote	Summon	summon	50	50.0	1.67	62.0	-1	8	600000	106.1	14.50	boss:CalamityMod/PlaguebringerGoliath@14.5	0	10	600000	False	Infected Remote
+CalamityMod	KingofConstellationsTenryu	Summon	summon	175	175.0	2.50	210.0	-1	19	1500000	413.1	19.62	recipe<-Twisting Nether	0	10	759000	False	King of Constellations, Tenryū
+CalamityMod	LegionofCelestia	Summon	summon	50	50.0	2.50	222.0	-1	11	1200000	422.5	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	10	1704350	False	Legion of Celestia
+CalamityMod	LiliesOfFinality	Summon	summon	512	512.0	2.50	1198.1	-1	12	2400000	2366.5	19.00	unknown:rarity	0	10	2400000	False	Lilies of Finality
+CalamityMod	Metastasis	Summon	summon	400	400.0	2.50	480.0	-1	13	2400000	948.1	19.00	unknown:rarity	0	10	2400000	False	Metastasis
+CalamityMod	MidnightSunBeacon	Summon	summon	176	176.0	2.50	823.7	1	12	2400000	1626.9	22.00	recipe<-Auric Bar	0	10	2450000	False	Midnight Sun Beacon
+CalamityMod	MirrorofKalandra	Summon	summon	256	256.0	2.50	1198.1	-1	14	2000000	2362.7	21.00	recipe<-Cosmilite Bar	0	10	1500000	False	Mirror of Kalandra
+CalamityMod	MutatedTruffle	Summon	summon	250	250.0	2.50	390.0	-1	18	1750000	768.2	20.50	boss:CalamityMod/OldDuke@20.5	0	10	1750000	False	Mutated Truffle
+CalamityMod	Perdition	Sentry	summon	375	375.0	2.00	562.5	-1	13	2400000	1111.1	23.00	boss:CalamityMod/SupremeCalamitas@23	0	10	2400000	False	Perdition
+CalamityMod	PlantationStaff	Summon	summon	58	58.0	1.67	71.9	-1	8	600000	123.1	13.50	unknown:rarity	0	10	524350	False	Plantation Staff
+CalamityMod	PolypLauncher	Sentry	summon	12	12.0	2.00	18.0	-1	2	20000	23.3	1.50	unknown:rarity	0	10	20000	False	Polyp Launcher
+CalamityMod	PuffShroom	Summon	summon	14	14.0	1.67	31.9	-1	2	20000	41.2	2.70	boss:CalamityMod/Crabulon@2.7	0	10	20000	False	Puff Shroom
+CalamityMod	ResurrectionButterfly	Summon	summon	66	66.0	1.67	122.8	-1	8	600000	210.1	13.50	unknown:rarity	0	10	1095000	False	Resurrection Butterfly
+CalamityMod	RustyBeaconPrototype	Sentry	summon	7	7.0	2.00	10.5	-1	1	10000	12.8	0.50	unknown:rarity	0	10	10000	False	Rusty Beacon Prototype
+CalamityMod	SanctifiedSpark	Sentry	summon	100	100.0	2.00	150.0	-1	11	1200000	285.5	18.00	unknown:rarity	0	100	1200000	False	Sanctified Spark
+CalamityMod	SandSharknadoStaff	Summon	summon	60	60.0	1.67	208.8	-1	7	450000	343.7	12.50	recipe<-Grand Scale	0	10	308500	False	Sand Sharknado Staff
+CalamityMod	SarosPossession	Summon	summon	66	66.0	2.50	308.9	-1	12	2400000	610.1	19.00	unknown:rarity	0	10	3408150	False	Saros Possession
+CalamityMod	ScabRipper	Summon	summon	10	10.0	1.67	22.8	-1	2	20000	29.5	1.50	unknown:rarity	0	10	104250	False	Scab Ripper
+CalamityMod	ShellfishStaff	Summon	summon	70	70.0	1.67	105.0	-1	5	200000	158.8	9.50	boss:CalamityMod/GiantClam@1.61+rarityfloor9.5	0	10	200000	False	Shellfish Staff
+CalamityMod	Sirius	Summon	summon	90	90.0	2.50	421.2	-1	18	1750000	829.6	19.00	unknown:rarity	0	10	1458150	False	Sirius
+CalamityMod	SlimePuppetStaff	Summon	summon	10	10.0	2.07	27.6	1	4	100000	39.7	7.00	recipe<-Purified Gel	0	10	35700	False	Slime Puppet Staff
+CalamityMod	SpikecragStaff	Sentry	summon	25	25.0	2.00	37.5	-1	8	600000	64.2	16.50	boss:CalamityMod/RavagerBody@16.5	0	10	600000	False	Spikecrag Staff
+CalamityMod	SquirrelSquireStaff	Sentry	summon	8	8.0	2.00	12.0	-1	0	5000	13.8	0.00	recipe<-	0	10	10	False	Squirrel Squire Staff
+CalamityMod	StaffOfNecrosteocytes	Summon	summon	25	25.0	1.67	63.0	-1	3	50000	86.2	4.50	unknown:rarity	0	10	50000	False	Staff of Necrosteocytes
+CalamityMod	StarspawnHelixStaff	Summon	summon	103	103.0	1.67	407.9	-1	9	800000	724.4	17.50	boss:CalamityMod/AstrumDeusHead@17.5	0	10	800000	False	Starspawn Helix Staff
+CalamityMod	StellarTorusStaff	Summon	summon	132	132.0	2.50	617.8	-1	19	1500000	1215.2	19.61	recipe<-Armored Shell	0	10	890000	False	Stellar Torus Staff
+CalamityMod	StormjawStaff	Summon	summon	11	11.0	1.67	25.1	-1	2	20000	32.4	1.50	unknown:rarity	0	10	20000	False	Stormjaw Staff
+CalamityMod	SunSpiritStaff	Summon	summon	22	22.0	1.67	44.9	-1	1	10000	54.8	0.50	unknown:rarity	0	10	75150	False	Sun Spirit Staff
+CalamityMod	TacticalPlagueEngine	Summon	summon	110	110.0	2.50	488.4	-1	11	1200000	929.5	18.00	boss:CalamityMod/AstrumAureus@12.81+rarityfloor18.0	0	10	1000000	False	Tactical Plague Engine
+CalamityMod	TemporalUmbrella	Summon	summon	193	193.0	2.50	231.6	-1	17	2800000	458.1	19.00	unknown:rarity	0	99	9909300	False	Temporal Umbrella
+CalamityMod	TundraFlameBlossomsStaff	Summon	summon	56	56.0	1.67	67.2	-1	5	200000	101.6	9.50	unknown:rarity	0	10	148500	False	Tundra Flame Blossoms Staff
+CalamityMod	UniverseSplitter	Summon	summon	9000	9000.0	6.00	42120.0	1	17	2800000	83308.6	23.00	recipe<-Shadowspec Bar	0	300	5234650	False	Universe Splitter
+CalamityMod	VengefulSunStaff	Summon	summon	38	38.0	1.67	123.1	-1	6	350000	194.7	11.50	unknown:rarity	0	10	810150	False	Vengeful Sun Staff
+CalamityMod	Vigilance	Summon	summon	115	115.0	2.50	538.2	-1	13	2400000	1063.1	23.00	boss:CalamityMod/SupremeCalamitas@23	0	10	2400000	False	Vigilance
+CalamityMod	VileFeeder	Summon	summon	10	10.0	1.67	22.8	-1	2	20000	29.5	1.50	unknown:rarity	0	10	79500	False	Vile Feeder
+CalamityMod	ViralSprout	Summon	summon	24	24.0	1.67	83.5	-1	7	450000	137.5	12.50	recipe<-Perennial Bar	0	10	500000	False	Viral Sprout
+CalamityMod	ViridVanguard	Summon	summon	55	55.0	2.50	257.4	-1	19	1500000	506.3	19.00	recipe<-Uelibloom Bar	0	10	1568000	False	Virid Vanguard
+CalamityMod	VoidConcentrationStaff	Summon	summon	200	200.0	2.50	240.0	-1	19	1500000	472.1	19.60	boss:CalamityMod/CeaselessVoid@19.6	0	10	1500000	False	Void Concentration Staff
+CalamityMod	VoidEaterMarionette	Summon	summon	110	110.0	2.50	514.8	-1	14	2000000	1015.2	21.00	boss:CalamityMod/DevourerofGodsHead@21	0	10	2000000	False	Void Eater Marionette
+CalamityMod	WarloksMoonFist	Summon	summon	450	450.0	2.50	540.0	-1	18	1750000	1063.6	20.00	recipe<-Ruinous Soul	0	10	998000	False	Warloks' Moon Fist
+CalamityMod	WitherBlossomsStaff	Summon	summon	50	50.0	1.67	93.0	-1	8	600000	159.1	13.50	unknown:rarity	0	10	261000	False	Wither Blossoms Staff
+CalamityMod	WulfrumController	Summon	summon	19	19.0	1.67	38.8	-1	1	10000	47.3	0.50	unknown:rarity	0	10	500	False	Wulfrum Controller
+CalamityMod	YharonsKindleStaff	Summon	summon	325	325.0	2.50	390.0	-1	12	2400000	770.3	22.00	boss:CalamityMod/Yharon@22	0	10	2400000	False	Yharon's Kindle Staff

@@ -47,6 +47,7 @@ namespace Levy.Common.Testing
 
 		private static void CrSetupBoss(CrState s, CrRun run)
 		{
+			if (BbSetup(s, run)) return;
 			switch (run.Boss)
 			{
 				case "kslime": foreach (int t in new[] { NPCID.BlueSlime, NPCID.SlimeSpiked, NPCID.GreenSlime, NPCID.PurpleSlime, NPCID.RedSlime, NPCID.YellowSlime, NPCID.IceSlime, NPCID.JungleSlime, NPCID.BlackSlime }) s.AddTypes.Add(t); { int jw = CrCalNpc("KingSlimeJewelRuby"); if (jw > 0) s.AddTypes.Add(jw); } break;
@@ -143,11 +144,12 @@ namespace Levy.Common.Testing
 			global::Levy.Common.Weapons.BiomeBlades.ForcedName = string.IsNullOrEmpty(r.Bb) ? null : r.Bb; // bb=: every Biome Blade holds this attunement (lab)
 			p.ZoneCrimson = r.Boss == "brain" || r.Boss == "perf"; p.ZoneCorrupt = r.Boss == "eow" || r.Boss == "hive"; p.ZoneJungle = r.Jungle; p.ZoneDesert = r.Boss == "ds"; p.ZoneGlowshroom = r.Boss == "crab"; p.ZoneUndergroundDesert = r.Boss == "ds" && r.Arena == "ug";
 			if (zone == "corrupt") { p.ZoneCorrupt = true; p.ZoneCrimson = false; } else if (zone == "crimson") { p.ZoneCrimson = true; p.ZoneCorrupt = false; } else if (zone == "none") { p.ZoneCorrupt = false; p.ZoneCrimson = false; } // zone=: the commander (and the levy dummy that mirrors it) stands in this evil biome
-			p.ZoneSnow = false; p.ZoneHallow = false;
+			p.ZoneSnow = false; p.ZoneHallow = false; p.ZoneBeach = false;
 			if (zone == "snow") { p.ZoneSnow = true; } else if (zone == "desert") { p.ZoneDesert = true; } else if (zone == "jungle") { p.ZoneJungle = true; } else if (zone == "hallow") { p.ZoneHallow = true; } // zone=: the commander (and the levy dummy that mirrors it) stands in this biome (Biome Blade labs)
 			p.ZoneOverworldHeight = r.Arena != "ug" && !r.Arena.StartsWith("a3e"); p.ZoneRockLayerHeight = r.Arena == "ug" || r.Arena.StartsWith("a3e"); p.ZoneDirtLayerHeight = false; p.ZoneSkyHeight = false; p.ZoneUnderworldHeight = false;
 			if (r.Arena.Contains("uw")) { p.ZoneUnderworldHeight = true; p.ZoneOverworldHeight = false; p.ZoneRockLayerHeight = false; }
 			if (zone == "hell") { p.ZoneUnderworldHeight = true; p.ZoneOverworldHeight = false; } else if (zone == "sky") { p.ZoneSkyHeight = true; p.ZoneOverworldHeight = false; }
+			BbZones(p, r);
 		}
 
 		private static string CrPct(long a, long b) => b <= 0 ? "-" : (100.0 * a / b).ToString("0", CultureInfo.InvariantCulture);
@@ -162,7 +164,8 @@ namespace Levy.Common.Testing
 				if (!n.active || !(n.type == st.BossType || st.PartTypes.Contains(n.type))) continue;
 				parts++; n.timeLeft = 99999;
 				bool linked = n.realLife >= 0 && n.realLife != n.whoAmI && n.realLife < Main.maxNPCs && Main.npc[n.realLife].active; // Calamity worms: segments share the head's life (realLife); counting them would multiply it
-				if (!linked) { life += n.life; lmax += n.lifeMax; }
+				bool headOnly = st.Run.Boss is "destroyer" or "aqua"; // the segments of these two are NPCs of their own with their own life; only the head holds the fight's life
+				if (!linked && !(headOnly && n.type != st.BossType)) { life += n.life; lmax += n.lifeMax; }
 				if (n.type == st.BossType && head == null) head = n;
 			}
 			st.MaxParts = Math.Max(st.MaxParts, parts);
@@ -176,15 +179,16 @@ namespace Levy.Common.Testing
 			if (st.Tick == 5 || st.Tick == 200)
 			{
 				int hh = 0, bb = 0, tt = 0; for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (!n.active) continue; if (n.type == st.BossType) hh++; else if (n.type == st.BodyType) bb++; else if (n.type == st.TailType) tt++; }
-				Mod.Logger.Info($"HARNESS-CR: worm census {st.Run.Key} tick {st.Tick}: heads={hh} bodies={bb} tails={tt} death={CrDeathOn()}");
+				Mod.Logger.Info($"HARNESS-CR: worm census {st.Run.Key} tick {st.Tick}: heads={hh} bodies={bb} tails={tt} death={CrDeathOn()}"); BbCensus(st);
 			}
 			bool alive = parts > 0 || st.Tick < 60;
 			if (!alive && !st.BossGone)
 			{
+				int lastLife = st.BossLife;
 				st.BossGone = true; st.EndTick = st.Tick; st.BossLife = 0;
 				long dmg = st.Levies.Sum(l => l.DmgBoss);
 				bool flag = st.Run.Boss == "eow" ? NPC.downedBoss2 : st.Run.Boss == "destroyer" ? NPC.downedMechBoss1 : CrCalDowned(st.Run.Boss);
-				st.Result = flag || (st.BossLifeMaxSum > 0 && dmg >= 0.9 * st.BossLifeMaxSum) ? "WIN" : "DESPAWN";
+				st.Result = flag || (st.BossLifeMaxSum > 0 && dmg >= 0.9 * st.BossLifeMaxSum) || ((BbIsBoss(st.Run.Boss) || st.Run.Boss == "destroyer") && BbWon(st.Run.Boss, lastLife, st.BossLifeMaxSum)) ? "WIN" : "DESPAWN";
 			}
 			return alive;
 		}

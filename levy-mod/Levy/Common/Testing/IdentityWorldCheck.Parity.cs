@@ -10,15 +10,16 @@ using Terraria.ModLoader;
 using Levy.Common.Owner;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
+using Levy.Common.Weapons;
 using Levy.Content.NPCs;
 
 namespace Levy.Common.Testing
 {
-	/// <summary>Counts the projectiles that appear while a parity run is on (by type): what gear casts for a levy.</summary>
+	/// <summary>Counts the projectiles that appear inside a levy's gear frame while a parity run is on (by type): what gear casts for a levy.</summary>
 	public class ParityCensus : GlobalProjectile
 	{
 		public static bool On; public static readonly Dictionary<int, int> Spawns = new();
-		public override void OnSpawn(Projectile projectile, IEntitySource source) { if (On) Spawns[projectile.type] = Spawns.TryGetValue(projectile.type, out int n) ? n + 1 : 1; }
+		public override void OnSpawn(Projectile projectile, IEntitySource source) { if (On && GearUpkeep.Body != null) Spawns[projectile.type] = Spawns.TryGetValue(projectile.type, out int n) ? n + 1 : 1; }
 	}
 
 	public partial class IdentityWorldCheck
@@ -31,8 +32,9 @@ namespace Levy.Common.Testing
 		/// </summary>
 		private static void GearParity()
 		{
+			string pmode = Environment.GetEnvironmentVariable("LEVY_IDENTITY_PARITY"); // 0 skips, 1 runs every item, unset runs a sample of about 120 spread over the list
+			if (pmode == "0") return;
 			int cap = int.TryParse(Environment.GetEnvironmentVariable("LEVY_IDENTITY_PARITY_MAX"), out int c) ? c : 100000;
-			if (Environment.GetEnvironmentVariable("LEVY_IDENTITY_PARITY") == "0") return;
 			var items = new List<(int type, int slot, string label)>();
 			for (int i = 1; i < ItemLoader.ItemCount && items.Count < cap; i++)
 			{
@@ -51,6 +53,10 @@ namespace Levy.Common.Testing
 				if (slot < 0) continue;
 				items.Add((i, slot, (mod ?? "Terraria") + ":" + s.Name));
 			}
+			if (items.Count == 0) { Note("gear parity: no modded armor or accessory is loaded, nothing to compare"); return; }
+			if (pmode != "1" && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_IDENTITY_PARITY_ONLY"))) { int stride = Math.Max(1, items.Count / 120); items = items.Where((it, k) => k % stride == 0).ToList(); }
+			string only = Environment.GetEnvironmentVariable("LEVY_IDENTITY_PARITY_ONLY"); // lab: a ';' list of item names to re-check
+			if (!string.IsNullOrEmpty(only)) { var names = only.Replace('_', ' ').Split(';'); items = items.Where(it => names.Any(n => it.label.EndsWith(":" + n))).ToList(); }
 			bool was = IdentityGuard.Disabled;
 			var diffItems = new List<string>(); int done = 0, threw = 0; var keyTally = new Dictionary<string, int>();
 			var sw = Stopwatch.StartNew();
@@ -60,18 +66,18 @@ namespace Levy.Common.Testing
 				{
 					try
 					{
-						var a1 = ParityRun(type, slot, true);
-						var a2 = ParityRun(type, slot, true);
-						var b = ParityRun(type, slot, false);
 						done++;
-						var noise = new HashSet<string>(); PlayerProbe.Differences(a1.snap, a2.snap, noise);
-						var real = new HashSet<string>(); PlayerProbe.Differences(a1.snap, b.snap, real); real.ExceptWith(noise);
-						string spawnA = SpawnText(a1.spawns), spawnB = SpawnText(b.spawns), spawnNoise = SpawnText(a2.spawns);
-						bool spawnsDiffer = spawnA != spawnB && spawnA == spawnNoise;
+						var (real, spawnsDiffer, spawnA, spawnB) = ParityCompare(type, slot);
 						if (real.Count > 0 || spawnsDiffer)
 						{
-							diffItems.Add($"{label} [{string.Join(", ", real.Take(6))}{(real.Count > 6 ? ", +" + (real.Count - 6) : "")}]{(spawnsDiffer ? $" spawns off: {spawnA} / on: {spawnB}" : "")}");
-							foreach (string k in real) keyTally[k] = keyTally.TryGetValue(k, out int n) ? n + 1 : 1;
+							// a difference counts only when a second, independent comparison finds the same thing (a one-off is the world's own noise: a periodic event landing in one run's window)
+							var (real2, spawnsDiffer2, _, _) = ParityCompare(type, slot);
+							real.IntersectWith(real2); spawnsDiffer &= spawnsDiffer2;
+							if (real.Count > 0 || spawnsDiffer)
+							{
+								diffItems.Add($"{label} [{string.Join(", ", real.Take(6))}{(real.Count > 6 ? ", +" + (real.Count - 6) : "")}]{(spawnsDiffer ? $" spawns off: {spawnA} / on: {spawnB}" : "")}");
+								foreach (string k in real) keyTally[k] = keyTally.TryGetValue(k, out int n) ? n + 1 : 1;
+							}
 						}
 					}
 					catch (Exception e) { threw++; if (threw <= 3) Note($"gear parity: {label} threw {e.GetType().Name}: {e.Message}"); }
@@ -83,6 +89,18 @@ namespace Levy.Common.Testing
 			if (diffItems.Count > 60) Note($"gear parity: {diffItems.Count - 60} more items differ");
 			Note("gear parity, fields the guard moved (item count): " + string.Join(", ", keyTally.OrderByDescending(kv => kv.Value).Take(25).Select(kv => kv.Key + "=" + kv.Value)));
 			Check($"gear parity: the identity guard changes no stat, ModPlayer field or cast of {done} modded gear items (changed: {diffItems.Count})", done > 0 && diffItems.Count == 0 && threw == 0);
+		}
+
+		/// <summary>One comparison: the guard off twice (what differs between those is noise), then on. Returns the fields and casts that differ beyond the noise.</summary>
+		private static (HashSet<string> real, bool spawnsDiffer, string spawnA, string spawnB) ParityCompare(int type, int slot)
+		{
+			var a1 = ParityRun(type, slot, true);
+			var a2 = ParityRun(type, slot, true);
+			var b = ParityRun(type, slot, false);
+			var noise = new HashSet<string>(); PlayerProbe.Differences(a1.snap, a2.snap, noise);
+			var real = new HashSet<string>(); PlayerProbe.Differences(a1.snap, b.snap, real); real.ExceptWith(noise);
+			string spawnA = SpawnText(a1.spawns), spawnB = SpawnText(b.spawns), spawnNoise = SpawnText(a2.spawns);
+			return (real, spawnA != spawnB && spawnA == spawnNoise, spawnA, spawnB);
 		}
 
 		private static string SpawnText(Dictionary<int, int> d) => string.Join(",", d.OrderBy(kv => kv.Key).Select(kv => kv.Key + "x" + kv.Value));

@@ -51,10 +51,10 @@ namespace Levy.Common.Testing
 
 		// the server drops a slot with no connection every tick, and the NPCs despawn with nobody on: slot 0 is kept alive and made local only while NPCs and projectiles update
 		public override void PostUpdatePlayers() { if (_running && Main.player[0] != null) Main.player[0].active = true; }
-		public override void PreUpdateNPCs() { if (!_running) return; Main.player[0].active = true; Pin(); _savedMy = Main.myPlayer; Main.myPlayer = 0; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; }
-		public override void PostUpdateNPCs() { if (!_running) return; Main.myPlayer = _savedMy; Main.netMode = _savedNet; }
-		public override void PreUpdateProjectiles() { if (!_running) return; Main.player[0].active = true; _savedMy = Main.myPlayer; Main.myPlayer = 0; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; }
-		public override void PostUpdateProjectiles() { if (!_running) return; Main.myPlayer = _savedMy; Main.netMode = _savedNet; }
+		public override void PreUpdateNPCs() { if (!_running) return; Main.player[0].active = true; Pin(); PinSweepTarget(); _savedMy = Main.myPlayer; Main.myPlayer = 0; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; PhaseOpen(); }
+		public override void PostUpdateNPCs() { if (!_running) return; PhaseClose("npcs"); Main.myPlayer = _savedMy; Main.netMode = _savedNet; }
+		public override void PreUpdateProjectiles() { if (!_running) return; Main.player[0].active = true; _savedMy = Main.myPlayer; Main.myPlayer = 0; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; PhaseOpen(); }
+		public override void PostUpdateProjectiles() { if (!_running) return; PhaseClose("projectiles"); Main.myPlayer = _savedMy; Main.netMode = _savedNet; }
 
 		/// <summary>Runs now when this boot armed it (the summon world check calls this at its end, so the checks run one after another).</summary>
 		public static void RunIfArmed()
@@ -161,6 +161,8 @@ namespace Levy.Common.Testing
 			IdentityProbes();
 			ClearSoldiers();
 			GearParity();
+			ClearSoldiers();
+			SafetySweepLevies();
 			ClearSoldiers();
 		}
 

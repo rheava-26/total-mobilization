@@ -17,7 +17,7 @@ namespace Levy.Common
 			// ---- barracks roster (resizable panel + card grid) ----
 			/// <summary>Header layout: rows of controls start at BarracksHeaderTop and step down by BarracksRowPitch (button height + a 2 px gap); BarracksHeaderRows rows
 			/// (deposit, manpower + command-point bars, toggles, recruit, enlist, filters, roster+orders). The roster grid starts right under the last row.</summary>
-			public const int BarracksHeaderTop = 32, BarracksRowPitch = 26, BarracksButtonH = 24, BarracksHeaderRows = 7, BarracksListGap = 2;
+			public const int BarracksHeaderTop = 32, BarracksRowPitch = 26, BarracksButtonH = 24, BarracksHeaderRows = 8, BarracksListGap = 2;
 			public const int BarracksListTop = BarracksHeaderTop + BarracksHeaderRows * BarracksRowPitch + BarracksListGap;
 			/// <summary>Gap between the filter/sort buttons, and between the manpower bar and the command-point bar; and the height of those two header bars.</summary>
 			public const int BarracksFilterGap = 4, BarracksBarGap = 10, BarracksBarH = 22;

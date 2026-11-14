@@ -9,8 +9,8 @@ using Levy.Content.TileEntities;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// Shift-click an inventory item while an Armory is open: the whole stack goes into its storage (as with a chest), if the Armory takes it (<see cref="ArmoryIntake"/>:
-	/// weapons, thrown stacks, armor, vanity, accessories, ammo, hooks, dyes, potions, growth crystals). Anything else keeps its normal shift-click.
+	/// Shift-click an inventory item while an Armory is open: the whole stack goes into its storage, stacking onto the stacks already there, as with a chest (<see cref="ArmoryIntake.TakesByHand"/>:
+	/// anything but a favorited item or a coin). Those keep their normal shift-click.
 	/// </summary>
 	public class ArmoryIntakePlayer : ModPlayer
 	{
@@ -19,7 +19,7 @@ namespace Levy.Common.UI
 			if (Main.dedServ || !Main.playerInventory) return null;
 			if (context != ItemSlot.Context.InventoryItem && context != ItemSlot.Context.InventoryAmmo) return null;
 			var te = UISystem.CurrentArmory;
-			if (te == null || !UIActions.IsLive(te) || !ArmoryIntake.Accepts(item)) return null;
+			if (te == null || !UIActions.IsLive(te) || !ArmoryIntake.TakesByHand(item)) return null;
 			return te;
 		}
 

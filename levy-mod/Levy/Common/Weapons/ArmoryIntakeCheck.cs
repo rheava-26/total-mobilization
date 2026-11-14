@@ -72,6 +72,13 @@ namespace Levy.Common.Weapons
 			check(!ArmoryIntake.Accepts(fav), "a favourited item is never taken");
 			check(!ArmoryIntake.Accepts(Make(ItemID.GoldCoin, 5)), "coins are never taken");
 			check(!ArmoryIntake.Accepts(Make(ItemID.IronPickaxe)), "a pickaxe is not taken");
+			check(ArmoryIntake.TakesByHand(Make(ItemID.IronPickaxe)) && ArmoryIntake.TakesByHand(Make(ItemID.IronBar, 40)) && ArmoryIntake.TakesByHand(Make(ItemID.StoneBlock, 500)) && ArmoryIntake.TakesByHand(Make(ItemID.Musket)), "a shift-click puts any item in: a pickaxe, bars, blocks, a gun");
+			check(!ArmoryIntake.TakesByHand(fav) && !ArmoryIntake.TakesByHand(Make(ItemID.GoldCoin, 5)) && !ArmoryIntake.TakesByHand(new Item()), "a shift-click leaves favorited items, coins and empty slots alone");
+			{
+				var te = new ArmoryTE(); te.Storage[2] = Make(ItemID.IronBar, 990); var more = Make(ItemID.IronBar, 30);
+				var left = te.Deposit(more);
+				check((left == null || left.IsAir) && te.CountInStorage(ItemID.IronBar) == 1020 && te.Storage[2].stack == 999 && te.Storage.Count(i => i != null && !i.IsAir) == 2, "a shift-clicked stack tops up the stack already there and puts the rest in the next free slot");
+			}
 			check(!ArmoryIntake.Accepts(Make(ItemID.SlimySaddle)), "a mount is not taken (levies use none)");
 			check(WeaponClassifier.Classify(Make(ItemID.MolotovCocktail)) == WeaponFamily.Thrown, "Molotov Cocktail is a thrown weapon");
 			check(WeaponClassifier.IsIssuableWeapon(Make(ItemID.MolotovCocktail)), "Molotov Cocktail is issuable");

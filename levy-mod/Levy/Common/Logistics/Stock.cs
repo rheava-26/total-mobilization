@@ -79,6 +79,50 @@ namespace Levy.Common.Logistics
 	}
 
 	/// <summary>
+	/// A network stock read from a snapshot. Enumerating a big Magic Storage network (every stack of every storage unit) costs milliseconds, and the logistics screen asks "how many of this?" once per ingredient of
+	/// every recipe: the snapshot is taken once, answers every count from a dictionary, and is dropped after <see cref="Ttl"/> ticks or the moment anything is taken out or put in through this wrapper.
+	/// </summary>
+	public sealed class CachedStock : IStockItems
+	{
+		/// <summary>Ticks a snapshot stays good. A stack another player moves meanwhile shows up at the next one.</summary>
+		public const uint Ttl = 20;
+		private readonly IStockItems _inner;
+		private uint _stamp = uint.MaxValue; private Dictionary<int, long> _counts; private List<Item> _items;
+		/// <summary>Self-check seam: how many times the underlying stock was walked.</summary>
+		public int Walks;
+
+		public CachedStock(IStockItems inner) { _inner = inner; }
+		public IStockItems Inner => _inner;
+		public string Name => _inner.Name;
+
+		private void Fresh()
+		{
+			uint now = Main.GameUpdateCount;
+			if (_counts != null && now >= _stamp && now - _stamp < Ttl) return;
+			Rebuild(now);
+		}
+
+		private void Rebuild(uint now)
+		{
+			var items = new List<Item>(); var counts = new Dictionary<int, long>();
+			foreach (var it in _inner.Items()) { if (it == null || it.IsAir) continue; items.Add(it); counts.TryGetValue(it.type, out long c); counts[it.type] = c + it.stack; }
+			_items = items; _counts = counts; _stamp = now; Walks++;
+		}
+
+		/// <summary>Forgets the snapshot; the next read walks the stock again.</summary>
+		public void Drop() { _counts = null; _items = null; }
+
+		public long Count(int type) { Fresh(); return _counts.TryGetValue(type, out long n) ? n : 0; }
+		/// <summary>The distinct item types held (the "find this item" list).</summary>
+		public IEnumerable<int> Types() { Fresh(); return _counts.Keys; }
+		public IEnumerable<Item> Items() { Fresh(); return _items; }
+		public long Take(int type, long n) { Drop(); var r = _inner.Take(type, n); Drop(); return r; }
+		public Item Put(Item item) { Drop(); var r = _inner.Put(item); Drop(); return r; }
+		public long TakeExact(Item like, long n) { Drop(); var r = _inner.TakeExact(like, n); Drop(); return r; }
+		public bool Protected(Item it) => _inner.Protected(it);
+	}
+
+	/// <summary>
 	/// The seam Magic Storage plugs into. Levy core never names a Magic Storage type: the compat registers these hooks when the mod is present, and every caller treats a null hook as "no network".
 	/// </summary>
 	public static class NetworkStocks

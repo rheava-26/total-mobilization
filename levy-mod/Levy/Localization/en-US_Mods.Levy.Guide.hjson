@@ -93,6 +93,7 @@ Pages: {
 			'''
 			The Barracks panel gives orders to all Regulars at once or to one at a time.
 			All Regulars has Follow, Hold and Return. Mobilize and Stand down call or send home the militia.
+			Stand down all sends every Regular to the reserve. Remobilize all brings them back while command points last.
 			Each Regular's row has Kit, Promote, Demote, Reserve and More. More holds patrol, feeding and rebasing.
 			Patrol walks a Regular between the two nearest Patrol Banners. Place the banners within 60 tiles of the Barracks.
 			Send to map point marches every Regular to a spot on the map.
@@ -125,7 +126,7 @@ Pages: {
 		Title: Items tab - putting things in
 		Body:
 			'''
-			Click an item in your pack to pick it up, then click a storage slot to set it down. Shift-click an item in your pack to send the whole stack to storage.
+			Click an item in your pack to pick it up, then click a storage slot to set it down. Shift-click an item in your pack to send the whole stack to storage. Favorited items and coins stay.
 			Deposit junk moves everything levies can use that is not favorited into storage: weapons, throwables, armor, accessories, hooks, dyes, potions and ammo. Favorite what you want to keep.
 			Loot all takes everything back out. Sort groups storage and packs it to the front.
 			Search, the type button and the rarity swatches narrow what the grid shows.
@@ -138,9 +139,10 @@ Pages: {
 		Body:
 			'''
 			Levies wield nearly any weapon a player can: swords, spears, guns, bows, magic, whips, boomerangs, yoyos, flails, summon staves, sentries, held weapons and thrown weapons.
-			Weapons in storage or on the weapon rack are issued best first. Put a weapon in the rack to issue it before the rest.
+			Weapons in storage or on the weapon rack are issued best first. The rack is optional.
 			Hover a weapon to see its class and rank.
-			Armor goes in storage or the armor set slots. Levies prefer a complete matching set so the set bonus works.
+			Armor goes in storage or the armor set slots. The armor set slots are optional: armor in them is used first.
+			Levies prefer a complete matching set so the set bonus works.
 			'''
 	}
 
@@ -151,7 +153,7 @@ Pages: {
 			Accessories go in storage. Levies wear the best ones that suit their weapon and they work as they would on you. Wings take a slot.
 			A Levy has 1 accessory slot, a Man-at-Arms 3 and a Champion 5.
 			Grappling hooks go in storage. Each levy carries the best hook, swings across gaps and climbs cliffs with it.
-			Ammo goes in the ammo row or storage. Each levy carries one kind of ammo in a pouch and refills it from the Armory.
+			Ammo goes in the ammo row or storage. Ammo in the row is used first. Each levy carries one kind of ammo in a pouch and refills it from the Armory.
 			'''
 	}
 
@@ -160,10 +162,10 @@ Pages: {
 		Body:
 			'''
 			The first potion slot holds a healing or mana potion. Levies drink it when hurt, and casters sip mana potions when low.
-			The other potion slots hold buff potions for the whole army.
+			The other potion slots hold buff potions for the whole army. Buff potions are only used from these slots.
 			Consumable throwables, such as grenades and throwing knives, go in storage. A levy refills a thrown stack from the Armory when it runs low.
-			The last weapon slot is the sidearm. A minion staff or sentry there goes to a levy whose gear has an extra minion or sentry slot.
-			Two more slots hold summon weapons: a sentry staff and a minion staff, and a summoner leads with a whip. A levy who is not a summoner carries a minion staff only with an extra minion slot, and a sentry staff only with an extra sentry slot. A sentry staff keeps one sentry up, plus one for each sentry slot the levy's gear gives.
+			The last weapon slot is the sidearm. A minion staff or sentry there goes to a levy who is not a summoner, if he has no other sidearm.
+			Two more slots hold summon weapons: a sentry staff and a minion staff, and a summoner leads with a whip. A levy who is not a summoner carries at most one summon weapon, in a free sidearm slot. A sentry staff keeps one sentry up, plus one for each sentry slot the levy's gear gives.
 			'''
 	}
 
@@ -211,7 +213,9 @@ Pages: {
 			Sell mass-sells Armory items to the best-paying shopkeeper in reach.
 			Pick a kind and a tier and press Select matching, or drag over slots to select a block.
 			Shimmer back returns the materials of items that shimmer apart.
+			To storage sends the selection to Magic Storage, or to a chest beside the Armory.
 			Clear out lists every weapon, armor piece and accessory below a tier, from the Armory, nearby chests and the Magic Storage network. Preview the list, then confirm to sell it, or to take it apart when a Decrafting Interface is linked. Favourited and preferred items stay.
+			The Storage page lists what the army cannot use: blocks, tools, banners and vanity. Preview the list, then send it to Magic Storage, or to a chest beside the Armory. Weapons, armor, accessories, ammo, potions, coins and favourited items stay.
 			'''
 	}
 

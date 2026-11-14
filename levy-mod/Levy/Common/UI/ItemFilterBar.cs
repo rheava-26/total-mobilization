@@ -18,7 +18,7 @@ namespace Levy.Common.UI
 		public const int TypeWidth = 190, ClearWidth = 60, Gap = 8, RowHeight = 26;
 		private readonly UIPanel _box = new(); private readonly UISearchBar _search; private readonly LevyButton _typeBtn, _clearBtn;
 		private readonly FilterCat[] _cats = ItemFilter.Cats();
-		private int _idx; private string _term = "";
+		private int _idx; private string _term = ""; private string[] _words = Array.Empty<string>();
 		public event Action Changed;
 
 		public string Term => _term;
@@ -32,7 +32,7 @@ namespace Levy.Common.UI
 			_box.SetPadding(0); _box.Width.Set(width - TypeWidth - ClearWidth - 2 * Gap, 0f); _box.Height.Set(RowHeight, 0f); _box.BackgroundColor = new Color(20, 26, 52) * 0.9f;
 			_search = new UISearchBar(Language.GetText(searchKey), LevyConstants.UI.ButtonTextScale + 0.05f);
 			_search.Left.Set(LevyConstants.UI.ArmorySearchInset, 0f); _search.Width.Set(-2f * LevyConstants.UI.ArmorySearchInset, 1f); _search.Height.Set(0f, 1f);
-			_search.OnContentsChanged += s => { _term = (s ?? "").Trim().ToLowerInvariant(); Changed?.Invoke(); Refresh(); };
+			_search.OnContentsChanged += s => { _term = (s ?? "").Trim().ToLowerInvariant(); _words = ItemFilter.Words(_term); Changed?.Invoke(); Refresh(); };
 			_search.OnCanceledTakingInput += () => _search.SetContents("", true);
 			_box.OnLeftClick += (e, el) => { if (!_search.IsWritingText) _search.ToggleTakingText(); };
 			_box.Append(_search); Append(_box);
@@ -46,7 +46,7 @@ namespace Levy.Common.UI
 
 		private void Step(int d) { _idx = (_idx + d + _cats.Length) % _cats.Length; Changed?.Invoke(); Refresh(); }
 
-		public void Clear() { _idx = 0; _search.SetContents("", true); _term = ""; Changed?.Invoke(); Refresh(); }
+		public void Clear() { _idx = 0; _search.SetContents("", true); _term = ""; _words = Array.Empty<string>(); Changed?.Invoke(); Refresh(); }
 
 		public void StopTyping() { if (_search.IsWritingText) _search.ToggleTakingText(); }
 
@@ -57,7 +57,7 @@ namespace Levy.Common.UI
 			_typeBtn.Lit = _idx != 0; _clearBtn.Enabled = Active;
 		}
 
-		public bool Matches(string name, Item it) => ItemFilter.NameMatches(name, _term) && ItemFilter.Matches(it, Cat);
+		public bool Matches(string name, Item it) => ItemFilter.NameMatches(name, _words) && ItemFilter.Matches(it, Cat);
 
 		public override void Update(GameTime gameTime)
 		{

@@ -143,7 +143,7 @@ namespace Levy.Common.Soldiers
 			ArmoryTE.TestServed = new List<SoldierRecord> { gun };
 			te.IssueGear(gun);
 			info("ranged levy: " + Kit(gun));
-			check("a ranged levy in armor with no extra summon slot carries a gun and a lesser blade, and no minion staff (2 weapons)", gun.Gear.Weapon.type == ItemID.Musket && gun.Gear.Sidearm.type == ItemID.IronBroadsword && gun.Gear.ExtraSidearms[0].type == 0 && WeaponsCarried(gun) == 2, Kit(gun));
+			check("a ranged levy carries a gun, a lesser blade and one minion staff as a plain sidearm (3 weapons)", gun.Gear.Weapon.type == ItemID.Musket && gun.Gear.Sidearm.type == ItemID.IronBroadsword && gun.Gear.ExtraSidearms[0].type == ItemID.SlimeStaff && gun.Gear.ExtraSidearms[1].type == 0 && WeaponsCarried(gun) == 3, Kit(gun));
 			check("the extra sidearm slots only take minion staves", !gun.Gear.CanHold(SoldierGear.SlotSide2, Make(ItemID.IronBroadsword)) && gun.Gear.CanHold(SoldierGear.SlotSide2, Make(ItemID.SlimeStaff)));
 		}
 
@@ -218,7 +218,7 @@ namespace Levy.Common.Soldiers
 				te.IssueGear(melee);
 				info("melee levy, staves in stock: " + Kit(melee));
 				var sides = melee.Gear.Sidearms().Where(s => !s.IsAir).ToList();
-				check("a melee levy with no extra summon slot takes no secondary, never a second sword", sides.Count == 0, Kit(melee));
+				check("a melee levy takes one summon item as his sidearm, never a second sword", sides.Count == 1 && SidearmPolicy.IsDeployer(sides[0]), Kit(melee));
 				check("a melee levy carries no gun and no extra blade", !sides.Any(s => !SidearmPolicy.IsDeployer(s)), Kit(melee));
 			}
 			{
@@ -239,7 +239,7 @@ namespace Levy.Common.Soldiers
 				ArmoryTE.TestServed = new List<SoldierRecord> { melee };
 				te.UpgradeWeapons(melee);
 				info($"older melee kit with a sword secondary: before [{before}] after [{Kit(melee)}]");
-				check("a second sword is put back on the shelf and, with no extra minion slot, no staff is taken in its place", !melee.Gear.Sidearms().Any(s => s.type == ItemID.Muramasa) && !melee.Gear.Sidearms().Any(SidearmPolicy.IsStaff), Kit(melee));
+				check("a second sword is put back on the shelf and a free slot takes at most one staff in its place", !melee.Gear.Sidearms().Any(s => s.type == ItemID.Muramasa) && melee.Gear.Sidearms().Count(SidearmPolicy.IsStaff) <= 1, Kit(melee));
 				bool onShelf = false; foreach (var it in te.Storage) if (it.type == ItemID.Muramasa) onShelf = true; foreach (var it in te.IssueWeapons) if (it.type == ItemID.Muramasa) onShelf = true;
 				check("the sword went back to the armory, not lost", onShelf);
 			}
@@ -259,7 +259,7 @@ namespace Levy.Common.Soldiers
 				ArmoryTE.TestServed = new List<SoldierRecord> { melee };
 				te.IssueGear(melee);
 				info("case 1, melee levy, 2 staves + 2 sentries in stock: " + Kit(melee));
-				check("a melee levy with no extra summon slot carries no summon item", melee.Gear.SidearmCount == 0, Kit(melee));
+				check("a melee levy with staves and sentries in stock carries exactly one summon item", melee.Gear.SidearmCount == 1 && Count(melee, SidearmPolicy.IsDeployer) == 1, Kit(melee));
 				var slotted = new SoldierRecord { Id = 192 };
 				Armor(slotted, ItemID.SolarFlareHelmet, ItemID.SolarFlareBreastplate, ItemID.SolarFlareLeggings);
 				slotted.Gear.Accessories[0] = Make(ItemID.PapyrusScarab); slotted.Gear.SetLocked(SoldierGear.SlotAcc0, true);
@@ -272,7 +272,7 @@ namespace Levy.Common.Soldiers
 				old.Gear.Weapon = Make(ItemID.TerraBlade); old.Gear.ExtraSidearms[0] = Make(ItemID.StaffoftheFrostHydra); old.Gear.ExtraSidearms[1] = Make(ItemID.ImpStaff);
 				ArmoryTE.TestServed = new List<SoldierRecord> { old };
 				te.UpgradeWeapons(old);
-				check("an older melee kit with a sentry and a staff and no extra slot gives both back", Count(old, SidearmPolicy.IsDeployer) == 0, Kit(old));
+				check("an older melee kit with a sentry and a staff gives one back", Count(old, SidearmPolicy.IsDeployer) == 1, Kit(old));
 			}
 			{ // 2. a gunner: his lesser blade in hand, no summon item without an extra slot
 				var te = Armory(Make(ItemID.Musket), Make(ItemID.MusketBall, 300), Make(ItemID.IronBroadsword)); foreach (var it in Staves()) te.Deposit(it);
@@ -281,7 +281,7 @@ namespace Levy.Common.Soldiers
 				ArmoryTE.TestServed = new List<SoldierRecord> { gun };
 				te.IssueGear(gun);
 				info("case 2, ranged levy: " + Kit(gun));
-				check("a ranged levy carries a gun and a lesser blade and no summon item", gun.Gear.Weapon.type == ItemID.Musket && gun.Gear.Sidearm.type == ItemID.IronBroadsword && Count(gun, SidearmPolicy.IsDeployer) == 0 && WeaponsCarried(gun) == 2, Kit(gun));
+				check("a ranged levy carries a gun, a lesser blade and one summon item", gun.Gear.Weapon.type == ItemID.Musket && gun.Gear.Sidearm.type == ItemID.IronBroadsword && Count(gun, SidearmPolicy.IsDeployer) == 1 && WeaponsCarried(gun) == 3, Kit(gun));
 			}
 			{ // 3. a summoner with a whip in stock: whip primary, minion staff + sentry + a one-minion staff
 				var te = Armory(Make(ItemID.ThornWhip), Make(ItemID.PygmyStaff)); foreach (var it in Staves()) te.Deposit(it);

@@ -17,5 +17,9 @@ namespace Levy.Common.Observe
 		[DefaultValue(true)] public bool SkipDustAndGoreInArena;
 		/// <summary>When you die, take control of one of your levies until you respawn.</summary>
 		[DefaultValue(true)] public bool MindControlOnDeath;
+
+		[Header("Seeker")]
+		/// <summary>How bright the Seeker's outlines are. 1 is the brightest; lower lets the ore show through.</summary>
+		[Range(0.05f, 1f)] [Increment(0.05f)] [DefaultValue(0.35f)] public float SeekerOutlineBrightness;
 	}
 }

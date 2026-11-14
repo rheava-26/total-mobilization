@@ -90,6 +90,8 @@ namespace Levy.Common.Net
 		LogisticsClearOut, // client -> server: preview or confirm a clear-out below a tier (layout in LogisticsActions)
 		LogisticsClearOutPreview, // server -> one client: the list a clear-out would take (ClearOut.Preview)
 		RipperFx, // server -> clients: short npcIndex, byte kind (0 Rage, 1 Adrenaline, 2 Nanomachines): Calamity's activation sound at that levy, through the army sound throttle (LevyRippers)
+		LogisticsToStorage, // client -> server: preview / confirm "send the rest to storage", or send the selected slots (layout in LogisticsActions)
+		LogisticsStoragePreview, // server -> one client: the list "send the rest to storage" would move (StorageSend.Preview)
 		StripKit, // client -> server: int soldierId, bool issue - false strips the levy's whole kit to his Armory and stops issue, true issues him a kit again
 	}
 

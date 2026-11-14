@@ -123,21 +123,23 @@ namespace Levy.Common.Potions
 			sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
 			var px = TextureAssets.MagicPixel.Value;
 			float pulse = 0.5f + 0.5f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 5f);
-			Color fill = new Color(255, 215, 90) * (0.22f + 0.22f * pulse), edge = new Color(255, 240, 160) * (0.55f + 0.35f * pulse);
+			float k = Math.Clamp(Observe.ObserveConfig.Get?.SeekerOutlineBrightness ?? 0.35f, 0.05f, 1f); // 1 = the brightest outline; the default is soft enough to see the ore through it
+			int edgePx = k >= 0.75f ? 2 : 1;
+			Color fill = new Color(255, 215, 90) * ((0.22f + 0.22f * pulse) * k * 0.6f), edge = new Color(255, 240, 160) * ((0.55f + 0.35f * pulse) * k);
 			Rectangle view = new Rectangle((int)Main.screenPosition.X - 32, (int)Main.screenPosition.Y - 32, Main.screenWidth + 64, Main.screenHeight + 64);
-			foreach (Point t in Tiles) Glow(sb, px, new Rectangle(t.X * 16, t.Y * 16, 16, 16), view, fill, edge);
-			Color cfill = new Color(90, 220, 255) * (0.22f + 0.22f * pulse), cedge = new Color(170, 240, 255) * (0.55f + 0.35f * pulse);
-			foreach (Point c in Chests) Glow(sb, px, new Rectangle(c.X * 16, c.Y * 16, 32, 32), view, cfill, cedge);
+			foreach (Point t in Tiles) Glow(sb, px, new Rectangle(t.X * 16, t.Y * 16, 16, 16), view, fill, edge, edgePx);
+			Color cfill = new Color(90, 220, 255) * ((0.22f + 0.22f * pulse) * k * 0.6f), cedge = new Color(170, 240, 255) * ((0.55f + 0.35f * pulse) * k);
+			foreach (Point c in Chests) Glow(sb, px, new Rectangle(c.X * 16, c.Y * 16, 32, 32), view, cfill, cedge, edgePx);
 			sb.End();
 		}
 
-		private static void Glow(SpriteBatch sb, Texture2D px, Rectangle world, Rectangle view, Color fill, Color edge)
+		private static void Glow(SpriteBatch sb, Texture2D px, Rectangle world, Rectangle view, Color fill, Color edge, int edgePx)
 		{
 			if (!world.Intersects(view)) return;
 			var r = new Rectangle(world.X - (int)Main.screenPosition.X, world.Y - (int)Main.screenPosition.Y, world.Width, world.Height);
 			sb.Draw(px, r, fill);
-			sb.Draw(px, new Rectangle(r.X, r.Y, r.Width, 2), edge); sb.Draw(px, new Rectangle(r.X, r.Bottom - 2, r.Width, 2), edge);
-			sb.Draw(px, new Rectangle(r.X, r.Y, 2, r.Height), edge); sb.Draw(px, new Rectangle(r.Right - 2, r.Y, 2, r.Height), edge);
+			sb.Draw(px, new Rectangle(r.X, r.Y, r.Width, edgePx), edge); sb.Draw(px, new Rectangle(r.X, r.Bottom - edgePx, r.Width, edgePx), edge);
+			sb.Draw(px, new Rectangle(r.X, r.Y, edgePx, r.Height), edge); sb.Draw(px, new Rectangle(r.Right - edgePx, r.Y, edgePx, r.Height), edge);
 		}
 
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)

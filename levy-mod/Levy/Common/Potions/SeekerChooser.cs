@@ -66,6 +66,7 @@ namespace Levy.Common.Potions
 			private Action<int> _pick;
 			private List<int> _all = new();
 			private string _term = "";
+			private int _fillWait;
 
 			public void Setup(IReadOnlyList<int> cands, Action<int> pick)
 			{
@@ -80,7 +81,7 @@ namespace Levy.Common.Potions
 				var box = new UIPanel(); box.SetPadding(0); box.Top.Set(26, 0f); box.Width.Set(w - 120, 0f); box.Height.Set(28, 0f); box.BackgroundColor = new Color(10, 14, 34) * 0.9f;
 				_search = new UISearchBar(Language.GetText("Mods.Levy.Logistics.FindSearch"), 0.8f);
 				_search.Left.Set(6, 0f); _search.Width.Set(-12, 1f); _search.Height.Set(0, 1f);
-				_search.OnContentsChanged += s => { _term = (s ?? "").Trim().ToLowerInvariant(); Fill(); };
+				_search.OnContentsChanged += s => { _term = (s ?? "").Trim().ToLowerInvariant(); _fillWait = 8; }; // the grid is rebuilt a moment after the last keystroke, not once per letter
 				_search.OnCanceledTakingInput += () => { if (_search.IsWritingText) _search.ToggleTakingText(); };
 				box.OnLeftClick += (e, el) => { if (!_search.IsWritingText) _search.ToggleTakingText(); };
 				box.Append(_search); _panel.Append(box);
@@ -101,7 +102,7 @@ namespace Levy.Common.Potions
 				int shown = 0;
 				foreach (int t in _all)
 				{
-					if (_term.Length > 0 && !Lang.GetItemNameValue(t).ToLowerInvariant().Contains(_term)) continue;
+					if (_term.Length > 0 && Lang.GetItemNameValue(t).IndexOf(_term, StringComparison.OrdinalIgnoreCase) < 0) continue;
 					if (_term.Length == 0 && !SeekerMatcher.IsTreasure(t)) continue; // an empty search lists ores, gems and treasure; typing searches every item
 					if (++shown > MaxCells) break;
 					int tt = t;
@@ -112,6 +113,7 @@ namespace Levy.Common.Potions
 			public override void Update(GameTime gameTime)
 			{
 				base.Update(gameTime);
+				if (_fillWait > 0 && --_fillWait == 0) Fill();
 				if (_panel != null && _panel.IsMouseHovering) Main.LocalPlayer.mouseInterface = true;
 			}
 		}

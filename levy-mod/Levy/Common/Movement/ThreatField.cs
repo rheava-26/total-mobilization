@@ -33,6 +33,8 @@ namespace Levy.Common.Movement
 		public Vector2 BbMin, BbMax;
 		/// <summary>A worm chain's head (set only while the worm dodge is on). <see cref="Turn"/> is its turn rate (rad per tick) and <see cref="TurnT"/> the ticks that turn is assumed to last (a body threat bends on an arc, then flies straight).</summary>
 		public bool Head; public float Turn, TurnT;
+		/// <summary>HOSTILE SEAM: a projectile of the player's side (friendly, not a hostile body's). Only a hostile soldier's dodge reads it (<see cref="ThreatField.Near"/> keeps each side to its own threats); a levy never sees it.</summary>
+		public bool PlayerSide;
 	}
 
 	/// <summary>A worm head the field tracks this tick: where it is, how fast it flies, and how fast its heading is turning (rad per tick).</summary>
@@ -120,30 +122,38 @@ namespace Levy.Common.Movement
 			return back && n.realLife >= 0 && n.realLife != n.whoAmI && (parent == n.realLife || p.realLife == n.realLife);
 		}
 
+		/// <summary>HOSTILE SEAM: the tick a hostile soldier last ran its AI (set by SoldierNPC.AI). The snapshot lists the player's side's projectiles only while one is about, so a levy army's field is unchanged.</summary>
+		public static uint HostileSeen = uint.MaxValue - 10;
+		/// <summary>Harness switch (LEVY_HOSTILE_DODGE=0): a hostile soldier ignores the player's side's shots again (the field then lists only hostile projectiles, as before).</summary>
+		public static bool HostileDodgeOn = Environment.GetEnvironmentVariable("LEVY_HOSTILE_DODGE") != "0";
+
 		public static List<Threat> Snapshot()
 		{
 			uint now = Main.GameUpdateCount;
 			if (_tick == now) return Snap;
 			_tick = now;
 			long t0 = Stopwatch.GetTimestamp();
+			bool wantPlayerSide = HostileDodgeOn && now - HostileSeen <= 2u;
 			Snap.Clear(); BossBodies = 0; _trajN = 0; ChainsThisTick = 0; ChainSegsThisTick = 0; ChainHeads.Clear(); Heads.Clear();
 			for (int i = 0; i < _childOf.Length; i++) { _childOf[i] = -1; _follower[i] = false; _snapOf[i] = -1; _chainOf[i] = -1; }
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
-				if (!p.active || !p.hostile || p.damage < LevyConstants.Movement.DodgeMinDamage) continue;
+				if (!p.active || p.damage < LevyConstants.Movement.DodgeMinDamage) continue;
+				bool theirs = false; // HOSTILE SEAM: a shot of the player's side is a threat to a hostile soldier, never to a levy
+				if (!p.hostile) { if (!wantPlayerSide || !p.friendly) continue; theirs = true; }
 				if (BeamOf(p, out float len, out float width))
 				{
 					Vector2 d = p.velocity; if (d == Vector2.Zero || d.HasNaNs()) continue;
 					float ang = d.ToRotation(), omega = 0f;
 					if (PrevAngTick[i] != 0 && now - PrevAngTick[i] <= 8u && now > PrevAngTick[i]) omega = MathHelper.WrapAngle(ang - PrevAng[i]) / (now - PrevAngTick[i]);
 					PrevAng[i] = ang; PrevAngTick[i] = now;
-					Snap.Add(new Threat { P = p.Center, Line = true, Ang = ang, Omega = omega, Len = len, Width = width, Weight = p.damage });
+					Snap.Add(new Threat { P = p.Center, Line = true, Ang = ang, Omega = omega, Len = len, Width = width, Weight = p.damage, PlayerSide = theirs });
 					continue;
 				}
 				Vector2 v = p.velocity;
 				if (v.LengthSquared() < LevyConstants.Movement.DodgeMinProjectileSpeed * LevyConstants.Movement.DodgeMinProjectileSpeed) continue;
-				Snap.Add(new Threat { P = p.Center, V = v * (1f + p.extraUpdates), Half = new Vector2(p.width, p.height) * 0.5f, Weight = p.damage });
+				Snap.Add(new Threat { P = p.Center, V = v * (1f + p.extraUpdates), Half = new Vector2(p.width, p.height) * 0.5f, Weight = p.damage, PlayerSide = theirs });
 			}
 			float minSq = LevyConstants.Movement.DodgeNpcMinSpeed * LevyConstants.Movement.DodgeNpcMinSpeed, heavyMinSq = LevyConstants.Movement.DodgeHeavyMinSpeed * LevyConstants.Movement.DodgeHeavyMinSpeed;
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -323,6 +333,7 @@ namespace Levy.Common.Movement
 			for (int i = 0; i < all.Count; i++)
 			{
 				Threat t = all[i];
+				if (HostileDodgeOn && t.PlayerSide != HostileSide.Active) continue; // HOSTILE SEAM: each side reads its own threats (a hostile soldier steps out of the player's shots, not out of its own band's)
 				if (t.Line) { if (Vector2.DistanceSquared(t.P, c) <= (t.Len + reach) * (t.Len + reach)) into.Add(t); continue; }
 				if (t.TrajN > 0)
 				{

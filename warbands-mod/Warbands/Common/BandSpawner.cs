@@ -114,22 +114,29 @@ namespace Warbands.Common
 			// an event band is its captain plus the members asked for (the captain does not count against the config size)
 			bool isEvent = type.Event != EventKind.None;
 			int n = Math.Min(MaxBand, Math.Max(1, size) + (armyBonus ? ArmyBonus() : 0) + (isEvent ? 1 : 0));
-			// find room for the whole band before anything spawns: up to six tries (alternating sides) at a footing where at least three soldiers (or all of a smaller band) have a place to stand
+			// find room for the whole band before anything spawns: up to eight tries (alternating sides) at a footing; the first with room for every member is taken, otherwise the one with the most (a band needs room for at least three, or all of a smaller band)
 			int side = forceSide != 0 ? forceSide : Main.rand.NextBool() ? 1 : -1; Point? foot = null; List<(int k, Point spot)> spots = null;
-			for (int attempt = 0; attempt < 6 && spots == null; attempt++)
+			// a player standing under the open sky gets a band on open ground too (a band formed in a sealed cave under the player's feet has no way out); with no such footing the band forms anywhere there is room
+			bool wantOpen = !isEvent && !BandLevyNPC.HuntLegacy && OpenAbove(p.Center.X / 16f, p.Bottom.Y / 16f - 1f);
+			for (int pass = 0; pass < (wantOpen ? 2 : 1) && spots == null; pass++)
 			{
-				int sd = attempt % 2 == 0 ? side : -side;
-				Point? f = FindFooting(p, sd, minTiles, maxTiles, eventFoot ? EventBands.OpenFooting : null); if (f == null) continue;
-				var taken = new List<Point>(); var got = new List<(int, Point)>();
-				for (int k = 0; k < n; k++) if (PlaceMember(f.Value, sd, k, taken, out Point sp)) { taken.Add(sp); got.Add((k, sp)); }
-				if (got.Count >= Math.Min(n, 3)) { spots = got; foot = f; side = sd; }
+				Func<Point, bool> acc = eventFoot ? EventBands.OpenFooting : (wantOpen && pass == 0 ? pt => OpenAbove(pt.X, pt.Y - 1f) : null);
+				for (int attempt = 0; attempt < 8; attempt++)
+				{
+					int sd = attempt % 2 == 0 ? side : -side;
+					Point? f = FindFooting(p, sd, minTiles, maxTiles, acc); if (f == null) continue;
+					var taken = new List<Point>(); var got = new List<(int, Point)>();
+					for (int k = 0; k < n; k++) if (PlaceMember(f.Value, sd, k, taken, out Point sp)) { taken.Add(sp); got.Add((k, sp)); }
+					if (got.Count >= Math.Min(n, 3) && (spots == null || got.Count > spots.Count)) { spots = got; foot = f; side = sd; }
+					if (spots != null && spots.Count >= n) break;
+				}
 			}
 			if (spots == null) return false;
 			int stage = type.Stage;
 			BandBrain brain = null; int bandId = BandBrain.NextId();
 			Vector2 anchor = new Vector2(foot.Value.X * 16f + 8f, foot.Value.Y * 16f - BandLevyNPC.BodyHeight * 0.5f);
 			if (!legacy) brain = BandBrain.Create(type, stage, n, anchor, bandId, neutral);
-			int made = 0, slotFull = 0, noSpot = n - spots.Count;
+			int made = 0, slotFull = 0, embedded = 0, noSpot = n - spots.Count;
 			foreach (var (k, spot) in spots)
 			{
 				int idx = k % type.Members.Length; // every role is fielded before any repeats
@@ -146,13 +153,14 @@ namespace Warbands.Common
 				}
 				int id = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent(), x, y, ModContent.NPCType<BandLevyNPC>());
 				if (id < 0 || id >= Main.maxNPCs) { slotFull++; continue; }
-				if (Collision.SolidCollision(Main.npc[id].position, Main.npc[id].width, Main.npc[id].height)) { Main.npc[id].active = false; continue; } // never leave a soldier inside a tile
+				if (Collision.SolidCollision(Main.npc[id].position, Main.npc[id].width, Main.npc[id].height)) { Main.npc[id].active = false; embedded++; continue; } // never leave a soldier inside a tile
 				(Main.npc[id].ModNPC as BandLevyNPC)?.Setup(type, k, stage, bandId, n);
 				Main.npc[id].direction = -side;
 				if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, id);
 				made++;
 			}
 			if (slotFull > 0) SlotFailures++;
+			Report = new SpawnReport { Wanted = n, Spots = spots.Count, Made = made, NoSpot = noSpot, SlotFull = slotFull, Embedded = embedded };
 			if (made == 0) { if (brain != null) BandBrain.All.Remove(bandId); return false; }
 			if (brain != null) brain.StartSize = made;
 			LastBrain = brain;
@@ -164,6 +172,10 @@ namespace Warbands.Common
 			return true;
 		}
 
+		/// <summary>What the last SpawnBand that found footing did: members wanted, standing spots found, soldiers made, spots not found, NPC slots full, soldiers dropped for starting inside a tile (the spawn lab and the self-check read it).</summary>
+		public struct SpawnReport { public int Wanted, Spots, Made, NoSpot, SlotFull, Embedded; public override string ToString() => $"wanted={Wanted} spots={Spots} made={Made} noSpot={NoSpot} slotFull={SlotFull} embedded={Embedded}"; }
+		public static SpawnReport Report;
+
 		/// <summary>The brain of the band the last successful SpawnBand formed (null for a legacy Fighter-AI band).</summary>
 		public static BandBrain LastBrain;
 
@@ -173,6 +185,19 @@ namespace Warbands.Common
 			var type = BandTypes.FromIndex(typeIdx); if (type == null || p == null || !p.active) return false;
 			var cfg = WarbandsConfig.Get; if (cfg == null) return false;
 			return SpawnBand(p, type, cfg.SummonedBandSize, 24, 34, false);
+		}
+
+		/// <summary>True when nothing solid (a platform or a tree top does not count) lies over tile column <paramref name="x"/> from row <paramref name="y"/> up to 40 tiles: the spot is under the open sky.</summary>
+		public static bool OpenAbove(float x, float y)
+		{
+			int tx = (int)x, ty = (int)y;
+			for (int a = 1; a <= 40; a++)
+			{
+				int yy = ty - a; if (yy < 10) break;
+				Tile t = Main.tile[Math.Clamp(tx, 10, Main.maxTilesX - 10), yy];
+				if (t.HasUnactuatedTile && Main.tileSolid[t.TileType] && !Main.tileSolidTop[t.TileType]) return false;
+			}
+			return true;
 		}
 
 		/// <summary>True when a soldier's whole body (20 x 42 px) can stand on floor tile (<paramref name="tx"/>, <paramref name="fy"/>): a solid, non-platform floor, no solid tile or liquid anywhere in the body box.</summary>

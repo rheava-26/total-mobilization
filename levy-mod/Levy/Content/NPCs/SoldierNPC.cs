@@ -400,6 +400,7 @@ namespace Levy.Content.NPCs
 		{
 			long pt = global::Levy.Common.Util.LevyProf.Begin();
 			bool prevSide = Common.Targeting.HostileSide.Active; Common.Targeting.HostileSide.Active = Hostile; // HOSTILE SEAM: a hostile body asks every "who is my enemy" question for the other side (SoldierNPC.Hostile.cs)
+			if (Hostile) global::Levy.Common.Movement.ThreatField.HostileSeen = Main.GameUpdateCount;
 			try { AIBody(); } finally { Common.Targeting.HostileSide.Active = prevSide; global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.AI, pt); }
 		}
 

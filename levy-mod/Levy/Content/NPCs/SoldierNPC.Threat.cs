@@ -27,6 +27,8 @@ namespace Levy.Content.NPCs
 		internal int DodgeAirManeuvers, DodgeAirScans;
 		internal static bool DodgeDebug = Environment.GetEnvironmentVariable("LEVY_DODGEDBG") == "1";
 		private const int ThreatHorizon = 40, ThreatHorizonMobile = 56, ThreatScanInterval = 4, ThreatCooldown = 10, ThreatBudgetPerTick = 14;
+		/// <summary>HOSTILE SEAM: a hostile soldier reads the field twice as often and is ready for the next dodge in half the time (it fights the player's whole arsenal, a levy fights one enemy's).</summary>
+		private const int HostileScanInterval = 2, HostileCooldown = 5;
 		private int _dodgeHold; private int _dodgeBusy; private int _dodgePend, _dodgePendTiles;
 		private static uint _thrBudgetTick; private static int _thrBudget;
 		private static readonly List<Threat> _thrNear = new(32);
@@ -88,7 +90,7 @@ namespace Levy.Content.NPCs
 			if ((!grounded && !air && !airScan) || _flying || npc.wet) { _dodgeHold = 0; DodgeSkippedBusy++; return false; }
 			bool holding = _dodgeHold > 0;
 			if (_dodgeCooldown > 0) { _dodgeCooldown--; return HoldStep(holding); }
-			if ((int)((Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)(airScan || (DanceMode >= 1 && DOn(2) && ThreatField.BossBodies > 0) ? AirScanInterval : ThreatScanInterval)) != 0) return HoldStep(holding);
+			if ((int)((Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)(airScan || (DanceMode >= 1 && DOn(2) && ThreatField.BossBodies > 0) ? AirScanInterval : Hostile && ThreatField.HostileDodgeOn ? HostileScanInterval : ThreatScanInterval)) != 0) return HoldStep(holding);
 			uint now = Main.GameUpdateCount;
 			if (_thrBudgetTick != now) { _thrBudgetTick = now; _thrBudget = ThreatBudgetPerTick; }
 			if (_thrBudget <= 0) return HoldStep(holding);
@@ -178,7 +180,7 @@ namespace Levy.Content.NPCs
 			}
 			if (!jerked && _wormScan && best.Kind != 0 && bestHits == 0 && WormCanWait(best, c0, g, horizon, airScan)) return WormHoldStill();
 			if (_wormScan && DodgeDebug) Levy.Instance?.Logger.Info($"WORMDBG t={Main.GameUpdateCount} {SoldierName} margin={_wormMargin} base={baseHits}@{firstHit} best=k{best.Kind}/d{best.Delay} hits={bestHits} grounded={grounded}");
-			_dodgeCooldown = airScan ? AirCooldown : ThreatCooldown;
+			_dodgeCooldown = airScan ? AirCooldown : Hostile && ThreatField.HostileDodgeOn ? HostileCooldown : ThreatCooldown;
 			if (DodgeDebug) Levy.Instance?.Logger.Info($"DODGEDBG t={Main.GameUpdateCount} {SoldierName} threats={_thrNear.Count} base={baseHits}@{firstHit}..{lastHit} best=kind{best.Kind} delay={best.Delay} hits={bestHits} vx={NPC.velocity.X:0.0} grounded={grounded}");
 			if (best.Kind == 0 || bestHits >= baseHits) { DodgeStays++; DodgeNoBetter++; if (!grounded && air && AirBlip()) npc.netUpdate = true; return HoldStep(holding); }
 			DodgeManeuvers++; if (airScan) DodgeAirManeuvers++;

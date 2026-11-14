@@ -60,3 +60,12 @@ Levy's long-route planner (`RoutePlanner`: walking, drops, hook casts and chains
 | `HostileMovementBusy` | The body hangs on a hook, climbs a face or flies a planned arc: do not hand it a new goal. |
 
 Levy symbols newly read by Warbands: `TileNav.InBounds / IsFloor / IsStandable / BottomCentre / FeetTile`, `OffscreenHop.Seen / RoomIsOpen`, `FollowerTravel.HopTo`, `WeaponProfile.RangeTiles / IsMelee`, `SoldierNPC.HasFlightKit` and `Record.Gear.Hook`.
+
+## Phase 7 (Warbands hunt, dodge, chatter): two small Levy edits, both marked HOSTILE SEAM
+
+A hostile soldier's dodge read only hostile projectiles, so a band stepped out of its own members' shots and never out of the player's. Two additive edits; nothing a levy does changes:
+
+1. `Common/Movement/ThreatField.cs`: `Threat.PlayerSide` marks a friendly projectile (the player's, a levy's, a turret's). `Snapshot()` lists friendly projectiles only while a hostile soldier has run its AI in the last two ticks (`ThreatField.HostileSeen`, set by `SoldierNPC.AI` for a hostile body), so a levy army's field and its cost are as before. `NearCore` keeps each side to its own threats (a threat whose `PlayerSide` differs from `HostileSide.Active` is skipped): a hostile soldier steps out of the player's side's shots and no longer out of its own band's, a levy never sees a friendly projectile. Env `LEVY_HOSTILE_DODGE=0` restores the old field (the lab's before and after).
+2. `Content/NPCs/SoldierNPC.Threat.cs`: a hostile body reads the field every 2 ticks (a levy every 4) and is ready for its next dodge after 5 ticks (a levy after 10): `HostileScanInterval`, `HostileCooldown`, same switch.
+
+Warbands reads no new public Levy symbol for either. The hunt uses `TileNav.NearestStandable`, which was already public.

@@ -145,7 +145,17 @@ namespace Warbands.Common
 		private static List<string> Group(string name) => Lines.TryGetValue(name, out var l) && l.Count > 0 ? l : null;
 
 		private static readonly Dictionary<int, uint> _speakerAt = new();
+		/// <summary>Lab only (env WARBANDS_CHAT_LEGACY=1): the old chatter, every line at once as vanilla combat text over its speaker, a two second cool-down across all bands.</summary>
+		public static readonly bool Legacy = Environment.GetEnvironmentVariable("WARBANDS_CHAT_LEGACY") == "1";
+		/// <summary>Lab probe: called with the speaker and the line whenever a line is shown.</summary>
+		public static Action<NPC, string> Probe;
 		private static uint _bandAt;
+
+		/// <summary>One band's speech: it says one line at a time. A line that arrives while another is on show waits its turn (an urgent one, at most two of them, for up to five seconds); an ordinary one is dropped.</summary>
+		private class BandTalk { public uint BusyUntil; public readonly List<(BandLevyNPC who, string text, string key, uint expire)> Queue = new(); }
+		private static readonly Dictionary<int, BandTalk> _talk = new();
+		private static BandTalk Talk(int band) { if (!_talk.TryGetValue(band, out var t)) _talk[band] = t = new BandTalk(); return t; }
+		public static void ResetTalk() { _talk.Clear(); _speakerAt.Clear(); }
 
 		/// <summary>One line for an event: the band type's own group (warnings always, other situations half the time), else the band style's group, else the plain group.</summary>
 		public static string Pick(string key, BandLevyNPC speaker, string who, string armor, int n)
@@ -169,35 +179,76 @@ namespace Warbands.Common
 			return line.Replace("{mate}", mate).Replace("{who}", who ?? "you").Replace("{armor}", armor ?? "plate").Replace("{n}", n.ToString());
 		}
 
-		/// <summary>Says a line for an event, if the speaker and the band are not on cool-down. Returns the text (or null).</summary>
+		/// <summary>Says a line for an event, if the speaker is not on cool-down and the band is not already talking (an urgent line waits its turn). Returns the text (or null when it was dropped or queued).</summary>
 		public static string Say(BandLevyNPC speaker, string key, string who = null, string armor = null, int n = 0, string literal = null, bool force = false)
 		{
 			if (speaker == null || !speaker.NPC.active || Main.netMode == NetmodeID.MultiplayerClient) return null;
 			uint now = Main.GameUpdateCount;
-			if (!force)
+			if (Legacy)
 			{
-				if (_speakerAt.TryGetValue(speaker.NPC.whoAmI, out uint t) && now - t < 60 * 7) return null;
-				if (now - _bandAt < 60 * 2) return null;
+				if (!force)
+				{
+					if (_speakerAt.TryGetValue(speaker.NPC.whoAmI, out uint t0) && now - t0 < 60 * 7) return null;
+					if (now - _bandAt < 60 * 2) return null;
+				}
+				string lt = literal ?? Pick(key, speaker, who, armor, n);
+				if (lt == null) return null;
+				_speakerAt[speaker.NPC.whoAmI] = now; _bandAt = now;
+				Emit(speaker.NPC, lt); Log.Add(key + ": " + lt);
+				return lt;
 			}
+			var talk = Talk(speaker.BandId);
+			if (!force && _speakerAt.TryGetValue(speaker.NPC.whoAmI, out uint t) && now - t < 60 * 7) return null;
+			bool busy = now < talk.BusyUntil || talk.Queue.Count > 0;
+			if (busy && !force) return null;
 			string text = literal ?? Pick(key, speaker, who, armor, n);
 			if (text == null) return null;
-			_speakerAt[speaker.NPC.whoAmI] = now; _bandAt = now;
-			Emit(speaker.NPC, text);
-			Log.Add(key + ": " + text);
-			return text;
+			_speakerAt[speaker.NPC.whoAmI] = now;
+			if (!busy) { Speak(talk, speaker, text, key, now); return text; }
+			if (talk.Queue.Count >= 2) talk.Queue.RemoveAt(0);
+			talk.Queue.Add((speaker, text, key, now + 300));
+			return null;
 		}
 
-		/// <summary>Floating text over the speaker (single player and server; the server broadcasts it).</summary>
+		private static void Speak(BandTalk talk, BandLevyNPC speaker, string text, string key, uint now)
+		{
+			talk.BusyUntil = now + (uint)BandBubbles.LifeFor(text) + 18u;
+			Emit(speaker.NPC, text);
+			Log.Add(key + ": " + text);
+		}
+
+		/// <summary>Every tick on the server and in single player: the next queued line of each band starts once its band is quiet.</summary>
+		public static void Pump()
+		{
+			if (_talk.Count == 0) return;
+			uint now = Main.GameUpdateCount;
+			foreach (var kv in _talk)
+			{
+				var t = kv.Value;
+				while (t.Queue.Count > 0 && now >= t.BusyUntil)
+				{
+					var q = t.Queue[0]; t.Queue.RemoveAt(0);
+					if (now > q.expire || q.who == null || !q.who.NPC.active || q.who.NPC.life <= 0) continue;
+					Speak(t, q.who, q.text, q.key, now);
+				}
+			}
+		}
+
+		/// <summary>A line over the speaker: a speech bubble on every screen (single player draws it itself, the server sends it to the clients).</summary>
 		public static void Emit(NPC npc, string text)
 		{
-			var color = new Color(240, 130, 110);
-			var rect = new Rectangle((int)npc.Center.X, (int)npc.Top.Y - 20, 1, 1);
-			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.CombatTextString, -1, -1, NetworkText.FromLiteral(text), (int)color.PackedValue, rect.X, rect.Y);
-			else
+			Probe?.Invoke(npc, text);
+			if (Legacy)
 			{
-				int i = CombatText.NewText(rect, color, text);
-				if (i >= 0 && i < Main.combatText.Length) Main.combatText[i].lifeTime = 210;
+				var color = new Color(240, 130, 110);
+				var rect = new Rectangle((int)npc.Center.X, (int)npc.Top.Y - 20, 1, 1);
+				if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.CombatTextString, -1, -1, NetworkText.FromLiteral(text), (int)color.PackedValue, rect.X, rect.Y);
+				else { int i = CombatText.NewText(rect, color, text); if (i >= 0 && i < Main.combatText.Length) Main.combatText[i].lifeTime = 210; }
+				return;
 			}
+			var b = npc.ModNPC as BandLevyNPC; int band = b?.BandId ?? 0; string name = b?.ShortName;
+			if (Main.netMode == NetmodeID.Server) BandBubbles.Send(npc, band, name, text);
+			else if (!Main.dedServ) BandBubbles.Add(npc.whoAmI, band, name, text, new Color(240, 130, 110), Main.GameUpdateCount);
 		}
 
 		/// <summary>Lines said this session, newest last (self-check and lab read it).</summary>

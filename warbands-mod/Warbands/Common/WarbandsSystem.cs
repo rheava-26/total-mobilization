@@ -16,13 +16,14 @@ namespace Warbands.Common
 		private int _idle;
 		public static int StandIns;
 
-		public override void OnWorldLoad() { BandBrain.Reset(); _idle = 0; CalamityZones.Reset(); }
+		public override void OnWorldLoad() { BandBrain.Reset(); BandChatter.ResetTalk(); _idle = 0; CalamityZones.Reset(); }
 		public override void OnWorldUnload() { BandBrain.Reset(); }
 
 		public override void PreUpdateNPCs()
 		{
 			if (Main.netMode == NetmodeID.MultiplayerClient) return;
 			BandBrain.Update();
+			BandChatter.Pump();
 			bool any = false;
 			int standType = ModContent.NPCType<PlayerStandIn>();
 			for (int i = 0; i < Main.maxNPCs; i++) { var n = Main.npc[i]; if (n.active && n.ModNPC is BandLevyNPC) { any = true; break; } }

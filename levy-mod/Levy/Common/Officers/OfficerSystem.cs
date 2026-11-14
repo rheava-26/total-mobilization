@@ -71,7 +71,7 @@ namespace Levy.Common.Officers
 
 		public override void OnWorldLoad() { Reset(); }
 		public override void OnWorldUnload() { Reset(); }
-		private void Reset() { _bossWasUp = false; _lastBossFell = uint.MaxValue; _stamp = uint.MaxValue; _enrolled.Clear(); _active.Clear(); _avatars.Clear(); _dayInit = false; _lastDay = -1; _housekeepingTimer = 0; }
+		private void Reset() { ConjureRoster.Reset(); _bossWasUp = false; _lastBossFell = uint.MaxValue; _stamp = uint.MaxValue; _enrolled.Clear(); _active.Clear(); _avatars.Clear(); _dayInit = false; _lastDay = -1; _housekeepingTimer = 0; }
 
 		// =====================================================================================================
 		// Queries (safe on clients)
@@ -218,8 +218,8 @@ namespace Levy.Common.Officers
 			if (g == null) return OfficerCheck.Invalid;
 			if (g.Enrolled) return OfficerCheck.AlreadyOfficer;
 			if (FreeSlot(commander.name) < 0) return OfficerCheck.NoSlot;
-			if (!SettlementSystem.Instance.IsHousedOnNetwork(barracks, npc)) return OfficerCheck.NotHoused; // any settlement on this barracks's pylon network; the commander must still stand at THIS barracks
-			if (!LevyUtil.WithinTiles(commander.Center, barracks.Center, LevyConstants.Officer.ActionRangeTiles)) return OfficerCheck.TooFar;
+			if (!SettlementSystem.Instance.IsHousedOnNetwork(barracks, npc)) return OfficerCheck.NotHoused; // any settlement on this barracks's pylon network; the commander stands at any barracks or active pylon of that network
+			if (!SettlementSystem.Instance.InRecruitingRange(commander.Center, barracks, LevyConstants.Officer.ActionRangeTiles)) return OfficerCheck.TooFar; // beside any barracks of the network, or any active pylon on it
 			if (!EconomySystem.CanAffordNetwork(barracks, Fee(def))) return OfficerCheck.NoMoney; // the whole settlement's money counts, not just this barracks's wallet
 			return OfficerCheck.Ok;
 		}

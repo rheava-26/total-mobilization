@@ -66,12 +66,12 @@ namespace Levy.Common.UI
 		}
 
 		/// <summary>Point the panel at a barracks and dock it beside the barracks panel.</summary>
-		public void Bind(BarracksTE te)
+		public void Bind(BarracksTE te, bool docked = true)
 		{
 			_te = te;
 			if (_panel == null) return;
 			float sw = Main.screenWidth / Main.UIScale, sh = Main.screenHeight / Main.UIScale;
-			float left = Math.Max(LevyConstants.UI.PanelDefaultLeft + LevyConstants.UI.BarracksPanelWidth, BarracksPanel.DockRight) + 12;
+			float left = docked ? Math.Max(LevyConstants.UI.PanelDefaultLeft + LevyConstants.UI.BarracksPanelWidth, BarracksPanel.DockRight) + 12 : LevyConstants.UI.PanelDefaultLeft;
 			_panel.Left.Set(Math.Max(0f, Math.Min(left, sw - W - 10f)), 0f);
 			_panel.Top.Set(Math.Max(0f, Math.Min(LevyConstants.UI.PanelDefaultTop, sh - _h - 10f)), 0f);
 			_sig = ""; _refreshTimer = 0;
@@ -89,7 +89,7 @@ namespace Levy.Common.UI
 		}
 
 		// ------------------------------------------------------------------ rows
-		private sealed class Candidate { public NPC Npc; public OfficerDef Def; public OfficerCheck Check; public BarracksTE Town; }
+		private sealed class Candidate { public NPC Npc; public OfficerDef Def; public OfficerCheck Check; public BarracksTE Town; public string Pylon; }
 
 		private List<Candidate> Candidates()
 		{
@@ -100,7 +100,7 @@ namespace Levy.Common.UI
 			{
 				NPC n = t.Npc;
 				if (!OfficerRegistry.TryGet(n.type, out OfficerDef def) || OfficerSystem.Instance.IsEnrolled(n)) continue;
-				list.Add(new Candidate { Npc = n, Def = def, Town = t.Town, Check = OfficerSystem.Instance.CanCommission(player, _te, n) });
+				list.Add(new Candidate { Npc = n, Def = def, Town = t.Town, Pylon = t.Pylon, Check = OfficerSystem.Instance.CanCommission(player, _te, n) });
 			}
 			return list;
 		}
@@ -122,7 +122,7 @@ namespace Levy.Common.UI
 				sb.Append('|').Append(slotNpcs[s] == null ? "-" : slotNpcs[s].whoAmI + ":" + slotNpcs[s].GivenName + ":" + g?.DaysUnpaid);
 			}
 			var cands = Candidates();
-			foreach (var c in cands) sb.Append('|').Append(c.Town?.ID).Append('/').Append(c.Npc.whoAmI).Append(':').Append((int)c.Check).Append(':').Append(c.Npc.GivenName);
+			foreach (var c in cands) sb.Append('|').Append(c.Town?.ID).Append(c.Pylon).Append('/').Append(c.Npc.whoAmI).Append(':').Append((int)c.Check).Append(':').Append(c.Npc.GivenName);
 			string sig = sb.ToString();
 			if (sig == _sig) return;
 			_sig = sig;
@@ -158,15 +158,15 @@ namespace Levy.Common.UI
 				none.TextColor = Dim;
 				y += 28;
 			}
-			BarracksTE lastTown = null; bool multiTown = false;
+			BarracksTE lastTown = null; string lastPylon = null; bool multiTown = false;
 			foreach (var c in cands) if (!ReferenceEquals(c.Town, _te)) { multiTown = true; break; }
 			foreach (var c in cands)
 			{
-				if (multiTown && !ReferenceEquals(c.Town, lastTown))
+				if (multiTown && (!ReferenceEquals(c.Town, lastTown) || c.Pylon != lastPylon))
 				{
-					lastTown = c.Town;
-					string tn = SettlementSystem.Instance.TownName(c.Town);
-					var th = PutDyn(new Label(ReferenceEquals(c.Town, _te) ? tn : LevyUtil.T("Officers.UI.TownHeader", tn), SubScale), Pad, y);
+					lastTown = c.Town; lastPylon = c.Pylon;
+					string tn = c.Town == null ? LevyUtil.T("Officers.UI.PylonTownHeader", c.Pylon ?? "") : SettlementSystem.Instance.TownName(c.Town);
+					var th = PutDyn(new Label(ReferenceEquals(c.Town, _te) ? tn : c.Town == null ? tn : LevyUtil.T("Officers.UI.TownHeader", tn), SubScale), Pad, y);
 					th.TextColor = ReferenceEquals(c.Town, _te) ? Gold : Dim;
 					y += 22;
 				}

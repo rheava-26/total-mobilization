@@ -6,9 +6,9 @@ using static Levy.Common.LevyConstants.Summon;
 namespace Levy.Common.Officers
 {
 	/// <summary>
-	/// THE NECROMANCER'S TAILOR. The Clothier is a SUPPORT officer who raises a squad of skeleton warriors: <see cref="LevyConstants.Summon.ClothierSkeletonCount"/> melee
-	/// <see cref="SummonedUnitNPC"/>s that march with the army, run down the nearest enemy beside the line and cut it on contact. A fallen skeleton is raised again on a cadence,
-	/// so the squad is rebuilt on the fly mid-fight, not only on death. He throws his cursed skull at what strays into reach.
+	/// THE NECROMANCER'S TAILOR. The Clothier is a SUPPORT officer who raises a squad of skeletons: <see cref="LevyConstants.Summon.ClothierSkeletonCount"/> REAL skeleton enemies (a Skeleton, a Skeleton Archer, Angry Bones,
+	/// Armored Skeletons, the Rusty / Blue / Hell Armored Bones, the Skeleton Commando and Sniper: <see cref="ConjureRoster.SkeletonPool"/> by how far the world has got), each running its own vanilla AI against the army's
+	/// enemies (<see cref="ConjuredGlobalNPC"/>). A fallen skeleton is raised again on a cadence, so the squad is rebuilt on the fly mid-fight, not only on death. He throws his cursed skull at what strays into reach.
 	/// </summary>
 	public static class ClothierOfficer
 	{
@@ -32,14 +32,13 @@ namespace Levy.Common.Officers
 		};
 	}
 
-	/// <summary>The Clothier's kit: one squad of skeleton warriors, managed by <see cref="SummonerKit"/>.</summary>
+	/// <summary>The Clothier's kit: one squad of tier-appropriate skeletons, managed by <see cref="SummonerKit"/>.</summary>
 	public sealed class ClothierKit : SummonerKit
 	{
-		protected override SummonKind Kind => SummonKinds.ClothierSkeleton;
-		protected override int SquadCap => ClothierSkeletonCount;
-		protected override int RespawnCadenceTicks => ClothierRespawnCadenceTicks;
+		private static readonly SummonSquad[] _squads = { new SummonSquad(ConjureRoster.PickSkeleton, ClothierSkeletonCount, ClothierRespawnCadenceTicks, ClothierSkeletonMinLife, ClothierSkeletonMinDamage) };
+		protected override SummonSquad[] Squads => _squads;
 
-		// {0} squad size, {1} each skeleton's health, {2} seconds to raise a replacement
-		public override object[] DescriptionArgs => new object[] { ClothierSkeletonCount, ClothierSkeletonHp, ClothierRespawnCadenceTicks / 60 };
+		// {0} squad size, {1} seconds to raise a replacement
+		public override object[] DescriptionArgs => new object[] { ClothierSkeletonCount, ClothierRespawnCadenceTicks / 60 };
 	}
 }

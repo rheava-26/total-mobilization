@@ -21,7 +21,7 @@ namespace Levy.Common
 			public const int FeeDays = LevyConstants.MusterFeeDays;
 			/// <summary>Consecutive unpaid dawns (a grace of MaxDaysUnpaid - 1 missed paydays, each warned in chat) after which an officer goes OFF DUTY: the commission and the slot are kept, but no avatar marches and no kit runs until a dawn payroll pays him again. A commission is never ended for want of pay.</summary>
 			public const int MaxDaysUnpaid = 3;
-			/// <summary>The commander must be this close (tiles) to the barracks to commission or dismiss (server check; the panel itself closes at <see cref="LevyConstants.UI.PanelCloseDistanceTiles"/>).</summary>
+			/// <summary>The commander must be this close (tiles) to a barracks of the settlement's network or to an active pylon on it to commission (server check; the panel itself closes at <see cref="LevyConstants.UI.PanelCloseDistanceTiles"/>).</summary>
 			public const int ActionRangeTiles = 32;
 
 			// ---- follow ----
@@ -429,6 +429,20 @@ namespace Levy.Common
 			/// <summary>Jump: speed for an N-tile wall is sqrt(2 * gravity * (N*16 + clear)); anything taller than <see cref="MaxJumpTiles"/> is not attempted.</summary>
 			public const float Gravity = 0.3f, JumpClearPx = 10f;
 			public const int MaxJumpTiles = 4;
+			// ---- Conjured creatures (a real enemy type run on its own AI for the army: the Clothier's skeletons, the Zoologist's beast) ----
+			/// <summary>A conjured creature goes for an enemy within this many tiles of itself (and within <see cref="MeleeLeashTiles"/> of its officer).</summary>
+			public const float ConjureReachTiles = 26f;
+			/// <summary>A conjured creature touching an enemy lands a blow every this many ticks.</summary>
+			public const int ConjureStrikeCooldownTicks = 30;
+			/// <summary>The most life (classic-mode numbers) and the most contact damage a creature the Zoologist may call can have, by how far the world has got (stage 0 = nothing downed ... 10 = Moon Lord). A creature above either is never called, however it got into the Bestiary.</summary>
+			public static readonly int[] ConjureMaxLifeByStage = { 120, 200, 300, 450, 1800, 2600, 3500, 4500, 6000, 8000, 12000 };
+			public static readonly int[] ConjureMaxDamageByStage = { 30, 40, 45, 60, 110, 140, 170, 200, 240, 280, 340 };
+			/// <summary>The Zoologist calls one of this many strongest eligible creatures (a pick at random among them, so her pick varies).</summary>
+			public const int ZoologistPickFromTop = 4;
+			/// <summary>False: a miniboss (Mothron, Dreadnautilus, the Pumpking...) is never called, whatever the Bestiary holds.</summary>
+			public const bool ZoologistAllowMinibosses = false;
+			/// <summary>With fewer than this many Bestiary-unlocked candidates the Zoologist falls back to everything her stage allows.</summary>
+			public const int ZoologistMinBestiaryPool = 3;
 			/// <summary>Healthbar drawn over each unit's head.</summary>
 			public const int HpBarWidthPx = 36, HpBarHeightPx = 5, HpBarOffsetY = 10;
 
@@ -499,15 +513,8 @@ namespace Levy.Common
 			public const int ClothierAggro = 0;
 			/// <summary>Skeleton warriors the Clothier keeps fielded at once.</summary>
 			public const int ClothierSkeletonCount = 5;
-			/// <summary>Health of one skeleton (flat; damage, not HP, scales with progress).</summary>
-			public const int ClothierSkeletonHp = 170;
-			/// <summary>Base damage of one skeleton blow before the world-progress multiply; pause after a blow (fixed + random extra, ticks); knockback.</summary>
-			public const int ClothierSkeletonBaseDamage = 26;
-			public const int ClothierSkeletonCooldownTicks = 42, ClothierSkeletonRandomCooldownTicks = 14;
-			public const float ClothierSkeletonKnockback = 3f;
-			/// <summary>How far (tiles) a skeleton notices a hostile, and its run speed cap (px/tick).</summary>
-			public const float ClothierSkeletonRangeTiles = 22f, ClothierSkeletonMoveSpeedPx = 2.4f;
-			public const int ClothierSkeletonAggro = 0;
+			/// <summary>The least life a raised skeleton has, and the least damage of its contact blow (before the world-progress multiply): a plain Skeleton is as sturdy as the squad always was; armored bones are above it on their own.</summary>
+			public const int ClothierSkeletonMinLife = 170, ClothierSkeletonMinDamage = 26;
 			/// <summary>A lost skeleton is replaced this often (ticks) while below the squad size.</summary>
 			public const int ClothierRespawnCadenceTicks = 240;
 			/// <summary>The Clothier's own shot: the cursed skull he throws. Launch speed and arc lift (px/tick, px), base damage, knockback, cooldown (fixed + random, ticks) and reach (tiles).</summary>
@@ -537,26 +544,12 @@ namespace Levy.Common
 			/// <summary>Wage/fee multiplier of the Zoologist.</summary>
 			public const float ZoologistCostMult = 1.8f;
 			public const int ZoologistAggro = 0;
-			/// <summary>Wolves the Zoologist keeps fielded at once: fast and fragile.</summary>
-			public const int ZoologistWolfCount = 3;
-			public const int ZoologistWolfHp = 140;
-			public const int ZoologistWolfBaseDamage = 22;
-			public const int ZoologistWolfCooldownTicks = 30, ZoologistWolfRandomCooldownTicks = 10;
-			public const float ZoologistWolfKnockback = 2f;
-			public const float ZoologistWolfRangeTiles = 26f, ZoologistWolfMoveSpeedPx = 3.6f;
-			public const int ZoologistWolfAggro = 0;
-			public const int ZoologistWolfWidthPx = 34, ZoologistWolfHeightPx = 26;
-			public const int ZoologistWolfRespawnCadenceTicks = 240;
-			/// <summary>Werewolves the Zoologist keeps fielded at once: slow, sturdy, and hits hard.</summary>
-			public const int ZoologistWerewolfCount = 1;
-			public const int ZoologistWerewolfHp = 420;
-			public const int ZoologistWerewolfBaseDamage = 48;
-			public const int ZoologistWerewolfCooldownTicks = 50, ZoologistWerewolfRandomCooldownTicks = 16;
-			public const float ZoologistWerewolfKnockback = 6f;
-			public const float ZoologistWerewolfRangeTiles = 22f, ZoologistWerewolfMoveSpeedPx = 2.6f;
-			public const int ZoologistWerewolfAggro = 2;
-			public const int ZoologistWerewolfWidthPx = 22, ZoologistWerewolfHeightPx = 42;
-			public const int ZoologistWerewolfRespawnCadenceTicks = 600;
+			/// <summary>Creatures the Zoologist keeps called at once: one of the strongest the world's progress and her Bestiary allow (see ConjureRoster).</summary>
+			public const int ZoologistBeastCount = 1;
+			/// <summary>The least life the Zoologist's creature has, and the least damage of its contact blow (before the world-progress multiply).</summary>
+			public const int ZoologistBeastMinLife = 420, ZoologistBeastMinDamage = 48;
+			/// <summary>A fallen creature is replaced this often (ticks).</summary>
+			public const int ZoologistBeastRespawnCadenceTicks = 1500;
 			/// <summary>The Zoologist's own shot: the green strike she looses. Launch speed and arc lift, base damage, knockback, cooldown and reach.</summary>
 			public const float ZoologistStrikeSpeed = 12f, ZoologistStrikeGravityCorrection = 0f, ZoologistStrikeKnockback = 4f, ZoologistStrikeRangeTiles = 24f;
 			public const int ZoologistStrikeDamage = 18, ZoologistStrikeCooldown = 22, ZoologistStrikeRandomCooldown = 10;

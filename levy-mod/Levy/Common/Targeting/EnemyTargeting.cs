@@ -99,6 +99,7 @@ namespace Levy.Common.Targeting
 			if (!npc.active) return null;
 			if (npc.ModNPC is SoldierNPC s) return s.Record != null && s.IsAlive ? s : null;
 			if (npc.ModNPC is Content.NPCs.SummonedUnitNPC u) return u.IsAlive ? u : null; // so an enemy sticks to a summoned unit without re-acquiring every tick
+			if (npc.TryGetGlobalNPC(out Content.NPCs.ConjuredGlobalNPC conj) && conj.Active) return conj.IsAlive ? conj : null; // ...and to a creature an officer conjured
 			// A companion mod's own body (a Mechanization turret or combat drone): any ModNPC that implements ITargetBody resolves here, so an enemy locked
 			// on it is re-resolved each tick exactly as it is for a summoned unit. Reached only for external types — every Levy body is handled above.
 			if (npc.ModNPC is ITargetBody ext) return ext.IsAlive ? ext : null;

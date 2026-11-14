@@ -391,7 +391,7 @@ namespace Levy.Common.Systems
 		}
 
 		/// <summary>Forget the cached housing lists (a world edit or test that re-homes townsfolk inside one tick).</summary>
-		public void InvalidateTownNpcs() { foreach (var rt in _rt.Values) rt.HasNpcs = false; _linkStamp = uint.MaxValue; _netStamp = uint.MaxValue; }
+		public void InvalidateTownNpcs() { foreach (var rt in _rt.Values) rt.HasNpcs = false; _linkStamp = uint.MaxValue; _netStamp = uint.MaxValue; _pylonTownStamp = uint.MaxValue; }
 
 		/// <summary>Which pylon puts a settlement on the network, and how far it is from the Barracks. <see cref="Linked"/> is false when no pylon reaches the settlement.</summary>
 		public struct PylonLink { public bool Linked; public Point16 Pylon; public int Tiles; public string Name; }
@@ -437,22 +437,117 @@ namespace Levy.Common.Systems
 			return l.Linked ? LevyUtil.T("Pylon.Linked", l.Name, l.Tiles) : LevyUtil.T("Pylon.NotLinked", LevyConstants.SettlementRadiusX, LevyConstants.SettlementRadiusY);
 		}
 
-		/// <summary>One townsperson on the pylon network and the barracks (town) that houses them.</summary>
-		public struct NetTownsperson { public NPC Npc; public BarracksTE Town; }
+		/// <summary>One townsperson on the pylon network and the barracks (town) that houses them. <see cref="Town"/> is null for a town that has a pylon but no barracks (see <see cref="PylonTownNpcs"/>); <see cref="Pylon"/> names that pylon.</summary>
+		public struct NetTownsperson { public NPC Npc; public BarracksTE Town; public string Pylon; }
 
-		/// <summary>Every town NPC housed in any settlement on <paramref name="from"/>'s pylon network (its own settlement first, then the rest nearest-first). Read-only use.</summary>
+		/// <summary>Every town NPC housed in any settlement on <paramref name="from"/>'s pylon network (its own settlement first, then the other barracks towns nearest-first, then pylon towns that have no barracks). Read-only use.</summary>
 		public virtual List<NetTownsperson> NetworkTownNpcs(BarracksTE from)
 		{
 			var res = new List<NetTownsperson>();
 			foreach (var b in NetworkedBarracks(from)) foreach (var n in TownNpcsOf(b)) res.Add(new NetTownsperson { Npc = n, Town = b });
+			if (from != null && LinkOf(from).Linked) foreach (var t in PylonTownNpcs()) res.Add(t);
 			return res;
 		}
 
-		/// <summary>True when <paramref name="npc"/> is housed in <paramref name="from"/>'s settlement or any settlement linked to it by the pylon network.</summary>
+		/// <summary>True when <paramref name="npc"/> is housed in <paramref name="from"/>'s settlement, any settlement linked to it by the pylon network, or a pylon town (a town on the network with no barracks of its own).</summary>
 		public virtual bool IsHousedOnNetwork(BarracksTE from, NPC npc)
 		{
 			if (from == null || npc == null) return false;
 			foreach (var b in NetworkedBarracks(from)) if (TownNpcsOf(b).Contains(npc)) return true;
+			if (!LinkOf(from).Linked) return false;
+			foreach (var t in PylonTownNpcs()) if (ReferenceEquals(t.Npc, npc)) return true;
+			return false;
+		}
+
+		/// <summary>True when a pylon counts as part of the network: vanilla's own rule (two town NPCs housed near it), with the same test seam <see cref="PylonValidOverride"/> the shopping code uses.</summary>
+		private static bool PylonActive(Terraria.GameContent.TeleportPylonInfo info)
+		{
+			try { return PylonValidOverride != null ? PylonValidOverride(info) : Terraria.GameContent.TeleportPylonsSystem.DoesPositionHaveEnoughNPCs(2, info.PositionInTiles); }
+			catch (Exception) { return false; }
+		}
+
+		private readonly List<NetTownsperson> _pylonTown = new(); private uint _pylonTownStamp = uint.MaxValue; private int _pylonTownKey;
+
+		/// <summary>
+		/// The townsfolk of towns that have an ACTIVE pylon but no barracks: housed within the settlement box of a pylon and claimed by no barracks (a barracks claims an NPC inside its own box).
+		/// A settlement on the pylon network recruits from them too, so the whole network is one recruiting office. Cached per tick; read-only use.
+		/// </summary>
+		public virtual List<NetTownsperson> PylonTownNpcs()
+		{
+			var pylons = Pylons();
+			if (pylons == null || pylons.Count == 0) { _pylonTown.Clear(); return _pylonTown; }
+			uint now = Main.GameUpdateCount; int key = PylonKey(pylons);
+			if (_pylonTownStamp == now && _pylonTownKey == key) return _pylonTown;
+			_pylonTownStamp = now; _pylonTownKey = key;
+			_pylonTown.Clear();
+			var active = new List<(Point16 pos, string name)>();
+			for (int i = 0; i < pylons.Count; i++) if (PylonActive(pylons[i])) active.Add((pylons[i].PositionInTiles, PylonName(pylons[i])));
+			if (active.Count == 0) return _pylonTown;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				var n = Main.npc[i];
+				if (!n.active || !n.townNPC || n.homeless) continue;
+				if (n.type == NPCID.OldMan || n.type == NPCID.TravellingMerchant) continue;
+				if (n.type >= 0 && n.type < NPCID.Sets.IsTownPet.Length && NPCID.Sets.IsTownPet[n.type]) continue;
+				if (ClaimedByBarracks(n)) continue;
+				foreach (var (pos, name) in active)
+				{
+					if (Math.Abs(n.homeTileX - pos.X) > LevyConstants.SettlementRadiusX || Math.Abs(n.homeTileY - pos.Y) > LevyConstants.SettlementRadiusY) continue;
+					_pylonTown.Add(new NetTownsperson { Npc = n, Town = null, Pylon = name });
+					break;
+				}
+			}
+			return _pylonTown;
+		}
+
+		/// <summary>True when some barracks counts this NPC in its settlement (the same rule <see cref="TownNpcsOf"/> applies).</summary>
+		private static bool ClaimedByBarracks(NPC n)
+		{
+			var b = NearestBarracksToTile(n.homeTileX, n.homeTileY);
+			return b != null && Math.Abs(n.homeTileX - b.Position.X) <= LevyConstants.SettlementRadiusX && Math.Abs(n.homeTileY - b.Position.Y) <= LevyConstants.SettlementRadiusY;
+		}
+
+		/// <summary>
+		/// May a commander standing at <paramref name="at"/> use <paramref name="from"/>'s recruiting office? Yes beside that barracks, beside any other barracks of its settlement network, or beside any active pylon when the
+		/// settlement is on the pylon network. <paramref name="tiles"/> is the reach.
+		/// </summary>
+		public virtual bool InRecruitingRange(Vector2 at, BarracksTE from, float tiles)
+		{
+			if (from == null) return false;
+			if (LevyUtil.WithinTiles(at, from.Center, tiles)) return true;
+			foreach (var b in NetworkedBarracks(from)) if (LevyUtil.WithinTiles(at, b.Center, tiles)) return true;
+			if (!LinkOf(from).Linked) return false;
+			var pylons = Pylons(); if (pylons == null) return false;
+			for (int i = 0; i < pylons.Count; i++)
+				if (LevyUtil.WithinTiles(at, PylonCenter(pylons[i]), tiles) && PylonActive(pylons[i])) return true;
+			return false;
+		}
+
+		/// <summary>The barracks to bind an Officers panel to when the commander uses an active pylon at <paramref name="pylonCenter"/>: the nearest barracks whose settlement is on the pylon network, or null.</summary>
+		public virtual BarracksTE RecruitingBarracksFor(Vector2 pylonCenter)
+		{
+			BarracksTE best = null; float bestD = float.MaxValue;
+			foreach (var te in TileEntity.ByID.Values)
+			{
+				if (te is not BarracksTE b || !LinkOf(b).Linked) continue;
+				float d = Vector2.DistanceSquared(b.Center, pylonCenter);
+				if (d < bestD) { bestD = d; best = b; }
+			}
+			return best;
+		}
+
+		/// <summary>True when (i, j) is a tile of an active pylon; <paramref name="center"/> is that pylon's middle.</summary>
+		public virtual bool IsActivePylonAt(int i, int j, out Vector2 center)
+		{
+			center = default;
+			var pylons = Pylons(); if (pylons == null) return false;
+			for (int k = 0; k < pylons.Count; k++)
+			{
+				var p = pylons[k].PositionInTiles;
+				if (i < p.X || i > p.X + 2 || j < p.Y || j > p.Y + 3) continue;
+				center = PylonCenter(pylons[k]);
+				return PylonActive(pylons[k]);
+			}
 			return false;
 		}
 

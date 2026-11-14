@@ -6,9 +6,9 @@ using static Levy.Common.LevyConstants.Summon;
 namespace Levy.Common.Officers
 {
 	/// <summary>
-	/// THE BEASTMASTER. The Zoologist is a FRONTLINE officer who marches with a pack: <see cref="LevyConstants.Summon.ZoologistWolfCount"/> fast wolves and
-	/// <see cref="LevyConstants.Summon.ZoologistWerewolfCount"/> sturdy werewolf, all melee <see cref="SummonedUnitNPC"/>s that run down the nearest enemy beside the line and maul it.
-	/// The werewolf draws the enemy's attention. A lost beast is replaced on a cadence (the werewolf slowly). She also looses a green strike of her own.
+	/// THE BEASTMASTER. The Zoologist is a FRONTLINE officer who marches with a creature from her Bestiary: one of the strongest the world's progress and her unlocked entries allow
+	/// (<see cref="ConjureRoster.BeastCandidates"/>: no boss, miniboss, town NPC or critter, and nothing past the stage's life and damage caps). It is the real creature running its own AI against the army's
+	/// enemies (<see cref="ConjuredGlobalNPC"/>). A fallen creature is replaced on a cadence. She also looses a green strike of her own.
 	/// </summary>
 	public static class ZoologistOfficer
 	{
@@ -32,23 +32,13 @@ namespace Levy.Common.Officers
 		};
 	}
 
-	/// <summary>The Zoologist's kit: a wolf pack and a werewolf, two squads managed by <see cref="SummonerKit"/>.</summary>
+	/// <summary>The Zoologist's kit: one strong creature from her Bestiary, managed by <see cref="SummonerKit"/>.</summary>
 	public sealed class ZoologistKit : SummonerKit
 	{
-		// Wolves first, then the werewolf: the pack runs out ahead of the brute.
-		private static readonly SummonSquad[] _squads =
-		{
-			new SummonSquad(SummonKinds.ZoologistWolf, ZoologistWolfCount, ZoologistWolfRespawnCadenceTicks),
-			new SummonSquad(SummonKinds.ZoologistWerewolf, ZoologistWerewolfCount, ZoologistWerewolfRespawnCadenceTicks),
-		};
-
+		private static readonly SummonSquad[] _squads = { new SummonSquad(ConjureRoster.PickBeast, ZoologistBeastCount, ZoologistBeastRespawnCadenceTicks, ZoologistBeastMinLife, ZoologistBeastMinDamage) };
 		protected override SummonSquad[] Squads => _squads;
 
-		// {0} wolves, {1} each wolf's health, {2} seconds to replace a wolf, {3} werewolves, {4} the werewolf's health, {5} seconds to replace a werewolf
-		public override object[] DescriptionArgs => new object[]
-		{
-			ZoologistWolfCount, ZoologistWolfHp, ZoologistWolfRespawnCadenceTicks / 60,
-			ZoologistWerewolfCount, ZoologistWerewolfHp, ZoologistWerewolfRespawnCadenceTicks / 60,
-		};
+		// {0} seconds to call a replacement
+		public override object[] DescriptionArgs => new object[] { ZoologistBeastRespawnCadenceTicks / 60 };
 	}
 }

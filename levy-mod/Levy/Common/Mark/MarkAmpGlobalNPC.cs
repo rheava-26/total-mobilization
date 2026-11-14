@@ -48,7 +48,7 @@ namespace Levy.Common.Mark
 			if (tag.SourceNpcIndex >= 0 && tag.SourceNpcIndex < Main.maxNPCs)     // officer avatar bolts: fired BY a soldier-family NPC
 			{
 				NPC src = Main.npc[tag.SourceNpcIndex];
-				if (src.active && (src.ModNPC is SoldierNPC || src.ModNPC is SummonedUnitNPC)) return true; // a summoned unit's shot is the army's too
+				if (src.active && (src.ModNPC is SoldierNPC || src.ModNPC is SummonedUnitNPC || ConjuredGlobalNPC.IsConjured(src))) return true; // a summoned unit's shot is the army's too
 			}
 			return false;
 		}

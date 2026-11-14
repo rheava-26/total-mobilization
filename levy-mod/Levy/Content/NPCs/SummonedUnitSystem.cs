@@ -31,7 +31,9 @@ namespace Levy.Content.NPCs
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
-				if (n.active && n.ModNPC is SummonedUnitNPC u && u.IsAlive) _active.Add(u);
+				if (!n.active) continue;
+				if (n.ModNPC is SummonedUnitNPC u) { if (u.IsAlive) _active.Add(u); }
+				else if (n.TryGetGlobalNPC(out ConjuredGlobalNPC c) && c.Active && c.IsAlive) _active.Add(c); // a conjured creature is a body enemies chase too
 			}
 		}
 

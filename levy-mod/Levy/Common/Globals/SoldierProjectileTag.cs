@@ -102,6 +102,11 @@ namespace Levy.Common.Globals
 					CommanderIndex = unit.CommanderIndex;
 					projectile.npcProj = true; projectile.noDropItem = true;
 				}
+				else if (npc.TryGetGlobalNPC(out ConjuredGlobalNPC conj) && conj.Active)
+				{
+					CommanderIndex = conj.CommanderIndex; // a conjured creature's shot is its commander's
+					projectile.npcProj = true; projectile.noDropItem = true;
+				}
 			}
 			// Anything a soldier's projectile spawns (a sentry's own shots: ballista bolts, fireballs, lightning, hydra breath; Beenade bees, cluster and rocket fragments,
 			// Molotov fire, Stynger shards...) carries the soldier's tag so kills and loot credit the soldier, and is an NPC-style projectile so the commander's

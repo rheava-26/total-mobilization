@@ -177,10 +177,28 @@ namespace Levy.Common.UI
 			SoundEngine.PlaySound(SoundID.MenuOpen);
 		}
 
+		/// <summary>Opens the officer menu from an active pylon (its middle is <paramref name="pylonCenter"/>), standing alone with no Barracks panel: the network is the recruiting office. It stays open while the commander stays beside the pylon.</summary>
+		public virtual void OpenOfficersAtPylon(BarracksTE te, Vector2 pylonCenter)
+		{
+			if (Main.dedServ || te == null || _officersUI == null) return;
+			CloseBarracks(); CloseArmory(); CloseRadial(); CloseManual(); CloseSoldierLoadout();
+			_officers.Bind(te, docked: false);
+			_officersUI.SetState(_officers);
+			OfficerPylonAnchor = pylonCenter;
+			Main.playerInventory = true; Main.recBigList = false;
+			if (Main.LocalPlayer.talkNPC >= 0) Main.LocalPlayer.SetTalkNPC(-1);
+			Main.npcChatText = "";
+			SoundEngine.PlaySound(SoundID.MenuOpen);
+		}
+
+		/// <summary>Where the pylon is that the officer menu was opened from, or null when it was opened from a Barracks panel.</summary>
+		public static Vector2? OfficerPylonAnchor { get; private set; }
+
 		public bool OfficersOpen => _officersUI?.CurrentState != null;
 
 		public void CloseOfficers()
 		{
+			OfficerPylonAnchor = null;
 			if (_officersUI?.CurrentState == null) return;
 			_officersUI.SetState(null);
 			SoundEngine.PlaySound(SoundID.MenuClose);
@@ -284,7 +302,9 @@ namespace Levy.Common.UI
 			}
 			if (_officersUI.CurrentState != null)
 			{
-				if (CurrentBarracks == null || !Main.playerInventory || Main.gameMenu || player.dead) CloseOfficers();
+				bool atPylon = OfficerPylonAnchor.HasValue;
+				if ((!atPylon && CurrentBarracks == null) || !Main.playerInventory || Main.gameMenu || player.dead
+					|| (atPylon && !LevyUtil.WithinTiles(player.Center, OfficerPylonAnchor.Value, LevyConstants.UI.PanelCloseDistanceTiles + 6))) CloseOfficers();
 				else _officersUI.Update(gameTime);
 			}
 			if (_armoryUI.CurrentState != null)

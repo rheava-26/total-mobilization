@@ -21,7 +21,7 @@ namespace Levy.Common
 			public const int FeeDays = LevyConstants.MusterFeeDays;
 			/// <summary>Consecutive unpaid dawns (a grace of MaxDaysUnpaid - 1 missed paydays, each warned in chat) after which an officer goes OFF DUTY: the commission and the slot are kept, but no avatar marches and no kit runs until a dawn payroll pays him again. A commission is never ended for want of pay.</summary>
 			public const int MaxDaysUnpaid = 3;
-			/// <summary>The commander must be this close (tiles) to the barracks to commission or dismiss (server check; the panel itself closes at <see cref="LevyConstants.UI.PanelCloseDistanceTiles"/>).</summary>
+			/// <summary>The commander must be this close (tiles) to a barracks of the settlement's network or to an active pylon on it to commission (server check; the panel itself closes at <see cref="LevyConstants.UI.PanelCloseDistanceTiles"/>).</summary>
 			public const int ActionRangeTiles = 32;
 
 			// ---- follow ----

@@ -39,6 +39,7 @@ UI: {
 	Available: Townsfolk who can serve
 	NoneAvailable: No one housed in this settlement or its pylon-linked settlements can serve as an officer yet.
 	TownHeader: "{0} (pylon-linked)"
+	PylonTownHeader: "{0} town (pylon-linked)"
 	Hint: Officers fight beside the army. If one falls they are gone until rehoused.
 	SlotsHeader: Command slots
 	SlotRole: Slot {0}: {1}

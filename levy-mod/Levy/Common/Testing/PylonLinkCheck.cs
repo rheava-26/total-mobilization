@@ -80,7 +80,42 @@ namespace Levy.Common.Testing
 				Check("CanCommission accepts a far-town NPC from this barracks", OfficerSystem.Instance.CanCommission(player, A, nB) == OfficerCheck.Ok);
 				Check("CanCommission accepts an own-town NPC", OfficerSystem.Instance.CanCommission(player, A, gA) == OfficerCheck.Ok);
 				StandAt(B);
-				Check("CanCommission: commander at the other barracks is too far", OfficerSystem.Instance.CanCommission(player, A, nB) == OfficerCheck.TooFar);
+				Check("CanCommission: commander at the other networked barracks may commission from the network", OfficerSystem.Instance.CanCommission(player, A, nB) == OfficerCheck.Ok);
+				player.position = new Vector2((ax + 200) * 16f, y * 16f); // 200 tiles from both barracks and from both pylons
+				Check("CanCommission: commander away from every barracks and pylon is too far", OfficerSystem.Instance.CanCommission(player, A, nB) == OfficerCheck.TooFar);
+				player.position = new Vector2((bx + 6) * 16f, y * 16f); // beside the east pylon, 8 tiles from the east barracks
+				SettlementSystem.PylonListOverride = new List<TeleportPylonInfo> { Py(ax + 6), Py(bx + 6) };
+				Check("CanCommission: commander beside a networked pylon commissions", OfficerSystem.Instance.CanCommission(player, A, gA) == OfficerCheck.Ok);
+				StandAt(A);
+
+				// a town with a pylon and NO barracks, on the network: its townsfolk are recruitable, and the commander may stand at its pylon
+				{
+					int dx = 1250;
+					SettlementSystem.PylonValidOverride = _ => true;
+					var Dn = new Player { name = "PylonCheckCommanderD", active = true };
+					NPC pn = null;
+					for (int i = Main.maxNPCs - 2; i >= 0 && pn == null; i--)
+					{
+						var cand0 = Main.npc[i]; if (cand0.active) continue;
+						cand0.SetDefaults(NPCID.Dryad); cand0.active = true; cand0.townNPC = true; cand0.homeless = false; cand0.homeTileX = dx + 3; cand0.homeTileY = y + 2; cand0.life = cand0.lifeMax; pn = cand0; npcs.Add(cand0);
+					}
+					SettlementSystem.PylonListOverride = new List<TeleportPylonInfo> { Py(ax + 6), Py(bx + 6), Py(dx) };
+					sys.InvalidateTownNpcs();
+					Dn.position = new Vector2(dx * 16f, y * 16f);
+					Check("pylon town with no barracks: its townsperson is housed on the network", pn != null && sys.IsHousedOnNetwork(A, pn));
+					var pc = sys.NetworkTownNpcs(A);
+					Check("pylon town with no barracks: the officer list carries her, with no barracks and the pylon named", pn != null && pc.Exists(t => ReferenceEquals(t.Npc, pn) && t.Town == null && !string.IsNullOrEmpty(t.Pylon)));
+					Check("pylon town with no barracks: CanCommission accepts her from the commander standing at her pylon", pn != null && OfficerSystem.Instance.CanCommission(Dn, A, pn) == OfficerCheck.Ok);
+					Check("pylon town with no barracks: the pylon is a recruiting office for the settlement", sys.InRecruitingRange(Dn.Center, A, LevyConstants.Officer.ActionRangeTiles));
+					SettlementSystem.PylonValidOverride = t => t.PositionInTiles.X != dx;  // her pylon has too few townsfolk to be active
+					sys.InvalidateTownNpcs();
+					Check("pylon town whose pylon is not active: not on the network (NotHoused)", pn != null && OfficerSystem.Instance.CanCommission(Dn, A, pn) == OfficerCheck.NotHoused);
+					SettlementSystem.PylonValidOverride = null;
+					SettlementSystem.PylonListOverride = new List<TeleportPylonInfo> { Py(ax + 6), Py(bx + 6) };
+					sys.InvalidateTownNpcs();
+					Check("pylon town with no pylon on the network: not housed on it (NotHoused)", pn != null && OfficerSystem.Instance.CanCommission(Dn, A, pn) == OfficerCheck.NotHoused);
+					SettlementSystem.PylonListOverride = new List<TeleportPylonInfo> { Py(ax + 6), Py(bx + 6) };
+				}
 				StandAt(A);
 
 				// a third, unlinked town
@@ -90,7 +125,7 @@ namespace Levy.Common.Testing
 			catch (Exception e) { Check("threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			finally
 			{
-				SettlementSystem.PylonListOverride = null;
+				SettlementSystem.PylonListOverride = null; SettlementSystem.PylonValidOverride = null;
 				foreach (var t in made) TileEntity.ByID.Remove(t.ID);
 				foreach (var n in npcs) { n.active = false; n.townNPC = false; }
 			}

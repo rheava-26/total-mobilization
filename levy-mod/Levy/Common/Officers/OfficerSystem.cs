@@ -218,8 +218,8 @@ namespace Levy.Common.Officers
 			if (g == null) return OfficerCheck.Invalid;
 			if (g.Enrolled) return OfficerCheck.AlreadyOfficer;
 			if (FreeSlot(commander.name) < 0) return OfficerCheck.NoSlot;
-			if (!SettlementSystem.Instance.IsHousedOnNetwork(barracks, npc)) return OfficerCheck.NotHoused; // any settlement on this barracks's pylon network; the commander must still stand at THIS barracks
-			if (!LevyUtil.WithinTiles(commander.Center, barracks.Center, LevyConstants.Officer.ActionRangeTiles)) return OfficerCheck.TooFar;
+			if (!SettlementSystem.Instance.IsHousedOnNetwork(barracks, npc)) return OfficerCheck.NotHoused; // any settlement on this barracks's pylon network; the commander stands at any barracks or active pylon of that network
+			if (!SettlementSystem.Instance.InRecruitingRange(commander.Center, barracks, LevyConstants.Officer.ActionRangeTiles)) return OfficerCheck.TooFar; // beside any barracks of the network, or any active pylon on it
 			if (!EconomySystem.CanAffordNetwork(barracks, Fee(def))) return OfficerCheck.NoMoney; // the whole settlement's money counts, not just this barracks's wallet
 			return OfficerCheck.Ok;
 		}

@@ -25,6 +25,8 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 - Separate OBSERVED from INFERRED in every report.
 - When corrected, widen the search. Do not narrow to the corrected item.
 
+**Talk ideas in prose, not lists (Eve, 2026-11-14).** When discussing designs and ideas with Eve, write freeform prose that gives each idea the weight it deserves. Lists flatten everything to equal worth. Keep lists for status and changelogs.
+
 **Eve's standing approval (2026-11-14).** When Eve asks for something, that request is her yes: check the wiki, download the mod or audio she names, watch the video, fetch the Workshop file (DepotDownloader anonymous, already approved), without asking again. Only things I decide to fetch on my own initiative need a quick ask first. If a site blocks automated access, respect that and don't work around it.
 
 **Search our own history before saying "I don't know that."** When Eve brings up something that sounds like it was discussed before (lore, a design, a decision), search the session transcript and the scratchpad references first. Never claim not to recognise something we already went through together, and never contradict an earlier analysis without saying so.

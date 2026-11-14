@@ -148,7 +148,7 @@ namespace Levy.Common.Testing
 			}
 			else
 			{
-				fy = Math.Clamp(band + 75, 100, Main.maxTilesY - 120);
+				fy = kind.Contains("uw") ? Main.maxTilesY - 60 : Math.Clamp(band + 75, 100, Main.maxTilesY - 120); // "uw": the arena stands in the Underworld (Wall of Flesh)
 				FaFill(cx - 130, fy - 90, cx + 130, fy - 1, false);
 				FaFill(cx - 130, fy, cx + 130, fy + 25, true);
 				FaFill(cx - half - 1, fy - 90, cx - half - 1, fy + 25, true);

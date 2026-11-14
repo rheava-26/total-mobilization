@@ -376,7 +376,7 @@ namespace Levy.Common.Testing
 		{
 			public bool FleeLogged;
 			public CrRun Run; public List<CrLevy> Levies = new();
-			public int BossType, BodyType = -1, TailType = -1; public HashSet<int> AddTypes = new(), PartTypes = new(); public bool Worm => PartTypes.Count > 0; public bool WormHpScaled;
+			public int BossType, BodyType = -1, TailType = -1; public HashSet<int> AddTypes = new(), PartTypes = new(); public bool NoWorm; public bool Worm => PartTypes.Count > 0 && !NoWorm; public bool WormHpScaled;
 			public Dictionary<string, long> Srcs = new(); public void Src(string k, long d) { Srcs.TryGetValue(k, out long v); Srcs[k] = v + d; } public long DtdTicks, LastDmgSum, AddKills; public int PrevAdds; public SortedDictionary<int, (long ticks, long dmg)> Phase = new(); public long TgtLevy, TgtPlayer, TgtNone, AddTgtLevy, AddTgtPlayer, AddTgtNone, HitsBoss, DmgHead, DmgBody, DmgTail, DmgAdd, EnragedTicks, BossAliveTicks; public double Moved; public Vector2 LastPos; public bool HavePos; public int FirstHitTick = -1, MaxParts, MaxAdds; public long BossLifeMaxSum;
 			public int Tick; public int BossIdx = -1; public int BossLifeMax; public int BossLife; public int BossDamage, BossDefense;
 			public int AddsPeak; public int HalfTick = -1; public bool BossGone; public int EndTick = -1; public string Result = "";
@@ -555,7 +555,7 @@ namespace Levy.Common.Testing
 			return new CrLevy { Cls = spec.Cls, Rec = rec, Idx = idx, Id = rec.Id, Spec = spec, LastLife = n.life, MaxHp = rec.MaxHp, Weapon = spec.Weapon, PotionsLeft = spec.Potions };
 		}
 
-		private static int CrBossNpcType(string boss) => boss switch { "kslime" => NPCID.KingSlime, "brain" => NPCID.BrainofCthulhu, "eow" => NPCID.EaterofWorldsHead, "qb" => NPCID.QueenBee, "skel" => NPCID.SkeletronHead, "destroyer" => NPCID.TheDestroyer, "ds" => CrCalNpc("DesertScourgeHead"), "hive" => CrCalNpc("HiveMind"), "perf" => CrCalNpc("PerforatorHive"), "sg" => CrCalNpc("SlimeGodCore"), "crab" => CrCalNpc("Crabulon"), _ => NPCID.EyeofCthulhu };
+		private static int CrBossNpcType(string boss) => boss switch { "wof" => NPCID.WallofFlesh, "kslime" => NPCID.KingSlime, "brain" => NPCID.BrainofCthulhu, "eow" => NPCID.EaterofWorldsHead, "qb" => NPCID.QueenBee, "skel" => NPCID.SkeletronHead, "destroyer" => NPCID.TheDestroyer, "ds" => CrCalNpc("DesertScourgeHead"), "hive" => CrCalNpc("HiveMind"), "perf" => CrCalNpc("PerforatorHive"), "sg" => CrCalNpc("SlimeGodCore"), "crab" => CrCalNpc("Crabulon"), _ => NPCID.EyeofCthulhu };
 
 		private static readonly string[] CrStockPool = { "Obsidian Shield", "Charm of Myths", "Band of Regeneration", "Magma Stone", "Hermes Boots", "Worm Scarf", "Shackle", "Anklet of the Wind", "Shiny Stone", "Philosopher's Stone", "Lucky Horseshoe", "Feral Claws", "Band of Starpower" };
 
@@ -630,7 +630,8 @@ namespace Levy.Common.Testing
 				if (probe) { for (int k = 0; k < s.Levies.Count; k++) s.Levies[k].Upkeep = k >= 2; }
 				float spawnDx = 30f; // tiles right of the commander; a worm spawns off-screen like NPC.SpawnOnPlayer does (~70-100 tiles away), not 43 tiles from the army: LEVY_CR_WORMDIST overrides (30 = the old harness position)
 				if (s.Worm && run.Boss != "sg") spawnDx = float.TryParse(Environment.GetEnvironmentVariable("LEVY_CR_WORMDIST"), NumberStyles.Float, CultureInfo.InvariantCulture, out float wd) ? wd : 80f;
-				int bx = (int)((_crCx + spawnDx) * 16f), by = run.Boss == "kslime" ? (int)((CrF - 6) * 16f) : (int)((CrF - 38) * 16f);
+				if (run.Boss == "wof") spawnDx = float.TryParse(Environment.GetEnvironmentVariable("LEVY_CR_WOFDIST"), NumberStyles.Float, CultureInfo.InvariantCulture, out float wfd) ? wfd : 60f;
+				int bx = (int)((_crCx + spawnDx) * 16f), by = run.Boss == "kslime" ? (int)((CrF - 6) * 16f) : run.Boss == "wof" ? (int)((CrF - 12) * 16f) : (int)((CrF - 38) * 16f);
 				global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(s.BossType, Environment.GetEnvironmentVariable("LEVY_CR_DOWNED") != "0"); // a rematch: the first kill of a boss is solo
 				int ei;
 				if (Environment.GetEnvironmentVariable("LEVY_CR_SOP") == "0") ei = NPC.NewNPC(new EntitySource_WorldEvent("LevyCalRev"), bx, by, s.BossType); // the old direct spawn (comparison only)
@@ -638,7 +639,8 @@ namespace Levy.Common.Testing
 				{
 					// the path every Calamity summon item takes (CalamityUtils.SpawnBossUsingItem -> NPC.SpawnOnPlayer); the boss is then moved to the lab's fixed spot so arenas stay comparable. LEVY_CR_SOPPOS=1 keeps the game's own spawn position.
 					for (int q = 0; q < Main.maxNPCs; q++) if (Main.npc[q].active && Main.npc[q].type == s.BossType) Main.npc[q].active = false;
-					NPC.SpawnOnPlayer(0, s.BossType); ei = -1;
+					if (run.Boss == "wof") { NPC.SpawnWOF(Main.player[0].position); Mod.Logger.Info($"HARNESS-CR: SpawnWOF at commander y={Main.player[0].position.Y / 16f:0} underworldLayer={Main.UnderworldLayer} wofNPCIndex={Main.wofNPCIndex}"); }
+					else NPC.SpawnOnPlayer(0, s.BossType); ei = -1;
 					for (int q = 0; q < Main.maxNPCs; q++) if (Main.npc[q].active && Main.npc[q].type == s.BossType) { ei = q; break; }
 					if (ei >= 0 && Environment.GetEnvironmentVariable("LEVY_CR_SOPPOS") != "1") { Main.npc[ei].position = new Vector2(bx, by) - Main.npc[ei].Size / 2f; Main.npc[ei].velocity = Vector2.Zero; }
 				}
@@ -692,6 +694,7 @@ namespace Levy.Common.Testing
 				Mod.Logger.Info($"HARNESS-SG: tick {st.Tick}{sb}");
 			}
 			CrOrderProbe(st);
+			if (run.Boss == "wof") CrWofProbe(st);
 			int alive = 0;
 			foreach (var l in st.Levies)
 			{

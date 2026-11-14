@@ -238,6 +238,8 @@ namespace Levy.Common.Testing
 			if (phase == "short") { PsCheck(share <= 0.75f, $"{phase}: short rows: no row holds more than 75% (max share {share:0.00})"); PsCheck(packedFrac <= 0.20f, $"{phase}: short rows hold fewer levies than there are: <= 20% packed (got {packedFrac:0.00})"); }
 			if (!fightPhase && phase != "short") PsCheck(packedFrac <= 0.10f, $"{phase}: <= 10% of levies packed within 1.6 tiles of a neighbour (got {packedFrac:0.00})");
 			if (!fightPhase && phase != "climb" && phase != "fightend") PsCheck(transPerLevy <= 0.5f, $"{phase}: stable, row changes per levy {transPerLevy:0.00} <= 0.5");
+			if (SoldierNPC.FollowRingMode >= 1 && PsStance != "close" && _psRecs.Count >= 20 && (phase == "idle" || phase == "walk" || phase == "fightend" || phase == "stagger"))
+				PsCheck(_psAngSum / (float)Math.Max(1, _psAngSamples) >= 6.5f, $"{phase}: the army forms a ring: levies in >= 6.5 of the 8 sectors around the commander (mean {_psAngSum / (float)Math.Max(1, _psAngSamples):0.00})");
 			PsCheck(_psFarLast == 0 && airFrac <= (fightPhase ? 0.35f : 0.15f), $"{phase}: nobody stranded or far at the end (far={_psFarLast}), few in the air (mean {airFrac:0.00})");
 			PsCheck(_psFalls == 0 && _psTele == 0, $"{phase}: no falls of 8+ tiles off every row ({_psFalls}) and no teleports ({_psTele})");
 			if (phase == "climb") PsCheck(transPerLevy <= 1.2f, $"{phase}: the army follows the commander up without churning (row changes per levy {transPerLevy:0.00} <= 1.2)");

@@ -190,7 +190,7 @@ namespace Levy.Common.Testing
 		{
 			ProgressionTierProbe.Build(sb);
 			sb.AppendLine("\n## TIERS");
-			sb.AppendLine("mod\tname\tfamily\tclass\tdmg\tperHit\thitsPerSec\tdpsAdj\tpierce\trare\tvalue\tscore\troute\trouteSrc\tuseAmmo\tmana\tleafCost\tisTool");
+			sb.AppendLine("mod\tname\tfamily\tclass\tdmg\tperHit\thitsPerSec\tdpsAdj\tpierce\trare\tvalue\tscore\troute\trouteSrc\tuseAmmo\tmana\tleafCost\tisTool\tdisplayName");
 			foreach (var mod in mods)
 			{
 				IEnumerable<(int type, string name)> src;
@@ -214,7 +214,7 @@ namespace Levy.Common.Testing
 					var ps = WeaponClassifier.ProjectileSample(it.shoot); int pen = ps != null ? ps.penetrate : 1;
 					float t = ProgressionTierProbe.Tier(mtype, out string rs);
 					sb.AppendLine(string.Join("\t", mod.Trim(), mname, p.Family, ClsName(WeaponClassifier.ItemDamageClass(it)), it.damage, perHit.ToString("F1"), hps.ToString("F2"), (score / tm).ToString("F1"), pen, it.rare, it.value, score.ToString("F1"),
-						t >= ProgressionTierProbe.Inf ? "-1" : t.ToString("F2"), rs, it.useAmmo, it.mana, ((long)ProgressionTierProbe.LeafCost(mtype)).ToString(), it.pick > 0 || it.hammer > 0 || it.axe > 0));
+						t >= ProgressionTierProbe.Inf ? "-1" : t.ToString("F2"), rs, it.useAmmo, it.mana, ((long)ProgressionTierProbe.LeafCost(mtype)).ToString(), it.pick > 0 || it.hammer > 0 || it.axe > 0, Lang.GetItemNameValue(mtype)));
 				}
 			}
 		}

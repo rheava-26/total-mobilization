@@ -12,8 +12,8 @@ except ImportError:
 LAB = Path(__file__).resolve().parent
 PRESETS = LAB / "presets"
 HOME = Path(os.environ.get("LEVYLAB_HOME", "/home/user/lab/kit"))
-SRC_TML, SRC_SAVE = Path("/home/user/lab/tmlv"), Path("/home/user/lab/savev")
-WORLD_SRC = Path("/root/.local/share/Terraria/tModLoader/Worlds/LevyTest.wld")
+SRC_TML, SRC_SAVE = Path(os.environ.get("LEVYLAB_SRC_TML", "/home/user/lab/tmlv")), Path(os.environ.get("LEVYLAB_SRC_SAVE", "/home/user/lab/savev"))
+WORLD_SRC = Path(os.environ.get("LEVYLAB_WORLD", "/root/.local/share/Terraria/tModLoader/Worlds/LevyTest.wld"))
 DOTNET = "/home/user/dotnet"
 MAX_SLOTS = 8
 TICKS = 60
@@ -269,7 +269,8 @@ def ensure_install():
     if not (HOME / "world" / "W.wld").exists():
         (HOME / "world").mkdir(exist_ok=True)
         w = WORLD_SRC if WORLD_SRC.exists() else die("test world LevyTest.wld not found")
-        shutil.copy2(w, HOME / "world" / "W.wld"); shutil.copy2(w.with_suffix(".twld"), HOME / "world" / "W.twld")
+        shutil.copy2(w, HOME / "world" / "W.wld")
+        if w.with_suffix(".twld").exists(): shutil.copy2(w.with_suffix(".twld"), HOME / "world" / "W.twld")
 
 def build(rev, force=False):
     """-> path of the cached .tmod for this git revision (built once; the cache key is the commit, plus a hash of uncommitted changes)."""
@@ -355,7 +356,8 @@ def run_proc(job, ctx):
             if not todo: break
             a = out / f"try{attempt}"; a.mkdir(exist_ok=True); outs.append(a)
             save = s / "save"; shutil.rmtree(save / "Worlds", ignore_errors=True); (save / "Worlds").mkdir(); shutil.rmtree(save / "ModConfigs", ignore_errors=True)
-            shutil.copy2(HOME / "world" / "W.wld", save / "Worlds" / "W.wld"); shutil.copy2(HOME / "world" / "W.twld", save / "Worlds" / "W.twld")
+            shutil.copy2(HOME / "world" / "W.wld", save / "Worlds" / "W.wld")
+            if (HOME / "world" / "W.twld").exists(): shutil.copy2(HOME / "world" / "W.twld", save / "Worlds" / "W.twld")
             lm = save / "Mods" / "Levy.tmod"; lm.unlink(missing_ok=True); os.symlink(ctx["tmod"], lm)
             (save / "Mods" / "enabled.json").write_text(json.dumps(["CalamityModMusic", "CalamityMod", "Levy", "Mechanization"] if ctx["mods"] == "calamity" else ["Levy", "Mechanization"]))
             logs = s / "tml" / "tModLoader-Logs"; shutil.rmtree(logs, ignore_errors=True); logs.mkdir()

@@ -25,6 +25,13 @@ namespace Levy.Common.Recording
 	///         names gains prefixes (id to name). Item names are in names.items.
 	///         Format 7 adds the frame key s: the hitbox of EVERY other hostile NPC anywhere within 600 tiles of the commander (off-screen ones too) that b and a do not carry (the segments of secondary worms, damage-0 adds), SchemaS, integer pixels.
 	///         A row is full (8 numbers) the first time an NPC slot is seen or when its type, size, realLife or flags change, and just [id,x,y] after that. Hostile projectile hitboxes (j: w,h) were already there since format 3.
+	///         Format 8 is the automatic recorder (file extension .levyrec = this JSON-lines text, gzip-compressed, sync-flushed every 2 s so a cut file still reads up to its last flush; .jsonl stays plain text for harness recordings). Adds:
+	///         hdr: auto (0 hand or harness, 1 automatic boss fights, 2 automatic all fights), gzip, cmd (the commander at the start: life, mana, defense, armor / accessories / hotbar / ammo item ids), army (n, avgLife, classes = levies by damage class
+	///         of the main weapon, grades, weapons = [[itemType,count],..]); meta gains source, trigger (boss|army), setting, label.
+	///         events: dmg once a second (d = [[owner cmd|levy|drone|other, class, src item|proj, type, onBoss 1|0, damage, hits],..]: damage landed on bosses and their parts, and on adds, by who and damage class), cdeath (the commander fell: x, y, n),
+	///         prof (/levyprof was on: fps, ups, upd = ms per update, npc, proj, draw, ai, gear = ms, top = the biggest levy buckets).
+	///         end gains result (won|lost|fled|ended|interrupted: the word in the file name), durationSec, bossName, bosses, cmdDeaths, armyAlive, armyTotal, dmgBoss, dmgAll, profiled, dropped, capped, writeError.
+	///         Outcome and duration are only known at the end, so they live in the end record (and in the file name), not the header.
 	///         Older files stay readable: every new field is appended or optional.
 	///   names type id to name tables (items, npcs, projectiles, buffs, soldiers), written at the end
 	///   end   stop reason and counts
@@ -49,7 +56,7 @@ namespace Levy.Common.Recording
 
 	internal static class FightRecFormat
 	{
-		public const int Version = 7;
+		public const int Version = 8;
 		public const string SchemaP = "x,y,vx,vy,dir,flags,life,mana,immune,wingTime,rocketTime,held,mount,hookX,hookY,dashDelay";
 		public const string SchemaPFlags = "1 grounded,2 flying,4 hookOut,8 hookAttached,16 left,32 right,64 jump,128 down,256 up,512 grapple,1024 useItem,2048 dashing,4096 mounted,8192 dead";
 		public const string SchemaB = "type,id,x,y,vx,vy,life,lifeMax,ai0,ai1,ai2,ai3,target,isPart,tkind,tlevy,w,h";

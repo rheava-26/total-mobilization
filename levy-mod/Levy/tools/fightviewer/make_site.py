@@ -33,7 +33,7 @@ MAX_TOTAL = 55 * 1048576  # hard limit is 60 MB for the site
 
 # ---------------------------------------------------------------- reading
 def load(path):
-    op = gzip.open if path.endswith(".gz") else open
+    op = gzip.open if path.endswith((".gz", ".levyrec")) else open
     rows = []
     with op(path, "rt", encoding="utf-8") as f:
         for line in f:
@@ -293,7 +293,7 @@ def walk_recordings(dirs):
     for d in dirs:
         for root, _dn, fn in os.walk(d):
             for f in fn:
-                if f.endswith(".jsonl") or f.endswith(".jsonl.gz"):
+                if f.endswith((".jsonl", ".jsonl.gz", ".levyrec")):
                     out.append(os.path.join(root, f))
     return sorted(out)
 
@@ -409,7 +409,7 @@ def main():
                 break
             factor += 1
         del rows
-        base = re.sub(r"\.jsonl(\.gz)?$", "", fn)
+        base = re.sub(r"\.(jsonl(\.gz)?|levyrec)$", "", fn)
         fid = slug(setname) + "__" + slug(base)
         n = 2
         while fid in seen:

@@ -208,10 +208,8 @@ Pages: {
 		Title: Logistics tab - buy and sell
 		Body:
 			'''
-			Buy lists what shopkeepers in reach sell. Click an item to buy it.
-			A standing buy gets one item, the best gun or the best ammo each time an order runs, until its count or budget is met.
-			Sell mass-sells Armory items to the best-paying shopkeeper in reach.
-			Pick a kind and a tier and press Select matching, or drag over slots to select a block.
+			Buy lists what shopkeepers in reach sell. Click an item to buy it. A standing buy gets one item, the best gun or the best ammo each time an order runs, until its count or budget is met.
+			Sell mass-sells Armory items to the best-paying shopkeeper in reach. Pick a kind and a tier and press Select matching, or drag over slots to select a block.
 			Shimmer back returns the materials of items that shimmer apart.
 			To storage sends the selection to Magic Storage, or to a chest beside the Armory.
 			Clear out lists every weapon, armor piece and accessory below a tier, from the Armory, nearby chests and the Magic Storage network. Preview the list, then confirm to sell it, or to take it apart when a Decrafting Interface is linked. Favourited and preferred items stay.

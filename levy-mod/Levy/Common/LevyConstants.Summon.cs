@@ -108,7 +108,7 @@ namespace Levy.Common
 		public const float WhipDamageMult = 1.35f, WhipTipFraction = 0.3f;
 		/// <summary>
 		/// Damage multiplier of a lash thrown through the item's real whip projectile (RealWhips), on top of the levy's weapon damage and grade. Measured in the whip sweep (WhipRealCheck, same arena, same enemy):
-		/// at 1.0 the real lash does 29 to 41 percent of the damage per second the hand-made lash did (the hand-made one hit 1.35x harder, crit every hit, and lashed every 0.75 use times); 4.0 puts every whip
+		/// at 1.0 the real lash does 31 to 41 percent of the damage per second the hand-made lash did (the hand-made one hit 1.35x harder, crit every hit, and lashed every 0.75 use times); 4.0 puts every whip
 		/// at or above the old rate, so changing to the item's own projectile does not weaken the army.
 		/// </summary>
 		public const float WhipRealDamageMult = 4.0f;

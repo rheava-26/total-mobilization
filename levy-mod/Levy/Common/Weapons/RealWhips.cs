@@ -190,7 +190,7 @@ namespace Levy.Common.Weapons
 			{
 				int o = SoldierMinions.TrueMyPlayer;
 				_real = o >= 0 && o < Main.maxPlayers ? Main.player[o] : null;
-				_t0 = Begin();
+				_t0 = Begin(); long ts = _t0;
 				if (_real == null) { _snap = default; _focus = _anim = _animMax = _dir = _life = _mana = 0; _range = _grav = _gfx = 0f; _pos = default; _frame = default; return; }
 				_life = _real.statLife; _mana = _real.statMana; Array.Copy(_real.buffType, BuffType, BuffType.Length); Array.Copy(_real.buffTime, BuffTime, BuffTime.Length);
 				_snap = UseGuard.Disabled ? default : UseGuard.Take(o);
@@ -199,9 +199,11 @@ namespace Levy.Common.Weapons
 				_real.itemAnimationMax = TotalAnimation(d, item); _real.itemAnimation = Math.Max(1, body.ItemAnimation);
 				_real.whipRangeMultiplier = d.whipRangeMultiplier; _real.direction = body.NPC.direction == 0 ? 1 : body.NPC.direction; _real.gravDir = 1f; _real.gfxOffY = 0f;
 				_real.position = body.NPC.position; _real.bodyFrame = d.bodyFrame;
+				if (ts != 0L) ScopeTicks += System.Diagnostics.Stopwatch.GetTimestamp() - ts;
 			}
 			public void Dispose()
 			{
+				long ts = Begin();
 				if (_real != null)
 				{
 					_real.itemAnimation = _anim; _real.itemAnimationMax = _animMax; _real.direction = _dir; _real.whipRangeMultiplier = _range; _real.gravDir = _grav; _real.gfxOffY = _gfx; _real.position = _pos; _real.bodyFrame = _frame;
@@ -214,6 +216,7 @@ namespace Levy.Common.Weapons
 						Array.Copy(BuffType, _real.buffType, BuffType.Length); Array.Copy(BuffTime, _real.buffTime, BuffTime.Length);
 					}
 				}
+				if (ts != 0L) ScopeTicks += System.Diagnostics.Stopwatch.GetTimestamp() - ts;
 				if (_t0 != 0L) { End(ref DamageTicks, _t0); DamageCalls++; }
 			}
 		}

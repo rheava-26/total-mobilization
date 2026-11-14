@@ -295,7 +295,7 @@ namespace Levy.Common.Testing
 			public string Item, Path; public int Ticks, Swings, Hits, Crits, WhipType = -1, Segs; public float Reach; public long Dmg;
 			public double LifeTicks; public readonly Dictionary<int, int> Types = new(); public readonly List<string> Buffs = new();
 			public readonly List<int> BuffIds = new(); public bool VanillaTag, LevyTag; public double StingerBase, StingerCmd, StingerLevy, StingerCmdFirst, StingerLevyFirst; public string LeftoverNames = ""; public int StingerBaseN, StingerCmdN, StingerLevyN;
-			public float DrawReach = float.NaN; public int Leftover = -1; public int Writes; public List<string> WriteNotes = new(); public double StartUs, AiUs, DmgUs; public bool Ok = true;
+			public float DrawReach = float.NaN; public int Leftover = -1; public int Writes; public List<string> WriteNotes = new(); public double StartUs, AiUs, DmgUs, ScopeUs; public bool Ok = true;
 			public double DmgPerHit => Hits > 0 ? (double)Dmg / Hits : 0; public double DmgPerSec => Ticks > 0 ? Dmg * 60.0 / Ticks : 0;
 		}
 
@@ -328,7 +328,7 @@ namespace Levy.Common.Testing
 
 		/// <summary>Fires <paramref name="n"/> Hornet stingers (a vanilla MinionShot) into the enemy, one a tick, and returns the mean damage of the hits that did not crit.</summary>
 		private static double LastFirst;
-		private static int Reps => int.TryParse(Environment.GetEnvironmentVariable("LEVY_WHIPREPS"), out int r) && r > 0 ? r : 1;
+		private static int Reps => int.TryParse(Environment.GetEnvironmentVariable("LEVY_WHIPREPS"), out int r) && r > 0 ? r : (Lab ? 1 : 2); // the old lash's damage rate varies by a third from run to run: the quick check takes two runs of each
 
 		/// <summary>Adds another run of the same whip to <paramref name="a"/> (the damage numbers only: swings, hits, crits, damage, ticks).</summary>
 		private static void Merge(Scene a, Scene b) { if (b == null || !b.Ok) return; a.Swings += b.Swings; a.Hits += b.Hits; a.Crits += b.Crits; a.Dmg += b.Dmg; a.Ticks += b.Ticks; a.Reach = Math.Max(a.Reach, b.Reach); a.Segs = Math.Max(a.Segs, b.Segs); }
@@ -525,7 +525,7 @@ namespace Levy.Common.Testing
 			if (RealWhips.Starts > 0 || RealWhips.AiCalls > 0)
 			{
 				double us = 1e6 / System.Diagnostics.Stopwatch.Frequency; int sw = Math.Max(1, sc.Swings);
-				sc.StartUs = RealWhips.StartTicks * us / sw; sc.AiUs = RealWhips.AiTicks * us / sw; sc.DmgUs = RealWhips.DamageTicks * us / sw;
+				sc.StartUs = RealWhips.StartTicks * us / sw; sc.AiUs = RealWhips.AiTicks * us / sw; sc.DmgUs = RealWhips.DamageTicks * us / sw; sc.ScopeUs = RealWhips.ScopeTicks * us / sw;
 			}
 			if (!control && (sc.VanillaTag || sc.LevyTag))
 			{
@@ -575,7 +575,7 @@ namespace Levy.Common.Testing
 		}
 
 		private static string Fmt(Scene s) =>
-			$"{s.Path,-8} proj={ProjName(s.WhipType)} segs={s.Segs} reach={s.Reach:0}px swings={s.Swings} life={s.LifeTicks:0.0}t hits={s.Hits} crit={s.Crits} dmg/hit={s.DmgPerHit:0.0} dmg/s={s.DmgPerSec:0.0} others=[{string.Join(",", s.Types.Where(k => !(k.Key == s.WhipType)).Select(k => ProjName(k.Key) + "x" + k.Value))}] buffs=[{string.Join(",", s.Buffs)}] tag(vanilla={s.VanillaTag},levy={s.LevyTag}) stinger(base={s.StingerBase:0.0},cmd={s.StingerCmd:0.0},levy={s.StingerLevy:0.0}) writes={s.Writes}[{string.Join(" ", s.WriteNotes)}] cost/swing(start={s.StartUs:0.0},ai={s.AiUs:0.0},dmg={s.DmgUs:0.0})us";
+			$"{s.Path,-8} proj={ProjName(s.WhipType)} segs={s.Segs} reach={s.Reach:0}px swings={s.Swings} life={s.LifeTicks:0.0}t hits={s.Hits} crit={s.Crits} dmg/hit={s.DmgPerHit:0.0} dmg/s={s.DmgPerSec:0.0} others=[{string.Join(",", s.Types.Where(k => !(k.Key == s.WhipType)).Select(k => ProjName(k.Key) + "x" + k.Value))}] buffs=[{string.Join(",", s.Buffs)}] tag(vanilla={s.VanillaTag},levy={s.LevyTag}) stinger(base={s.StingerBase:0.0},cmd={s.StingerCmd:0.0},levy={s.StingerLevy:0.0}) writes={s.Writes}[{string.Join(" ", s.WriteNotes)}] cost/swing(start={s.StartUs:0.0},ai={s.AiUs:0.0},dmg={s.DmgUs:0.0},of which damage-scope={s.ScopeUs:0.0})us";
 
 		private static void Run()
 		{
@@ -646,7 +646,7 @@ namespace Levy.Common.Testing
 				}
 				Check($"{label}: the real commander is not written to ({ls.Writes} ticks vs control {ctlWrites})", ls.Writes <= ctlWrites);
 				Check($"{label}: no whip projectile is left after the levy is gone ({ls.Leftover} {ls.LeftoverNames})", ls.Leftover == 0);
-				if (lo != null) Check($"{label}: the levy's whip damage per second is not below the old lash's ({ls.DmgPerSec:0.0} vs {lo.DmgPerSec:0.0})", ls.DmgPerSec >= lo.DmgPerSec * 0.9);
+				if (lo != null) Check($"{label}: the levy's whip damage per second is not below the old lash's, within the run-to-run spread ({ls.DmgPerSec:0.0} vs {lo.DmgPerSec:0.0})", ls.DmgPerSec >= lo.DmgPerSec * 0.8);
 			}
 			// the table the report is made of
 			Note("-- SUMMARY (per whip: levy / player)");

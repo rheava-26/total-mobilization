@@ -11,6 +11,11 @@ RecordFightsAutomatically: {
 	Tooltip: Saves a recording of each fight. All fights also saves fights your army joins.
 }
 
+ProfileRecordedFights: {
+	Label: Profile recorded fights
+	Tooltip: Measures where the time goes during each recorded fight and saves it in the recording. One line in chat when the fight ends.
+}
+
 RecordingFolder: {
 	Label: Recording folder
 	Tooltip: Full path of the folder. Leave empty for Levy/Recordings in the tModLoader save folder.

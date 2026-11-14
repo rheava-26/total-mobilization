@@ -204,4 +204,10 @@ Configuration → Levy, and `EventBookDropDenominator` in `Common/LevyConstants.
   `LEVY_PERFSCENE_TRACE=1` (optionally `LEVY_PERFSCENE_TRACE_LEVY=<id>`) prints every slot change and the final kits.
 * In a real game, `/levyprof` (or `LEVY_PROF=1`) prints the live cost per tick. The `arm.upgrade`, `arm.alloc`, `arm.lend`, `arm.tick` and
   `arm.ui` buckets are the armory's share (ms per tick, with calls per tick in the counts), next to the army AI, drone, turret and projectile buckets.
+* Profiling without typing: the **Levy: Toggle profiler** key (Settings, Controls, Mod Controls; unbound by default, no default key so it cannot clash with vanilla or Calamity keys) does what `/levyprof` does, with the same green and grey
+  chat lines, and works while dead and respawning. The **Profile recorded fights** option (Levy: Fight recorder config, on by default) switches the profiler on while an automatic recording runs and off when it ends (unless the player's own
+  is on). Nothing goes to chat during the fight; the windows (2 s) go into the recording as `prof` events and into the log, and one line follows the fight (average fps, worst moment, biggest Levy cost).
+  `tools/recview/recview.py FILE` prints them: fps over time, the worst windows with what was on screen, and the top costs.
+* Profiler self-check (world check, `[ClientProf] self-check pass=N fail=M`, inside the fight-recorder world check): key registered, switch on and off, auto on and off around scripted recordings, prof events in the file, no chat mid-fight.
+  `LEVY_PROF_OVERHEAD=1` (and `LEVY_PROF_OVERHEAD_LEVIES=N`) also logs `[ClientProf] overhead`: real NPC updates of N levies with the profiler off against on, tick by tick at random, and the projectile hook per call.
 * A 3000-slot Select matching and price timing runs with the logistics self-check at every boot (`[Logistics] sell at 3000 slots`).

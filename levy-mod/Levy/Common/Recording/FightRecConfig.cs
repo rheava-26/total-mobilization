@@ -17,6 +17,9 @@ namespace Levy.Common.Recording
 		/// <summary>Empty = the Levy/Recordings folder inside the tModLoader save folder.</summary>
 		[DefaultValue("")] public string RecordingFolder = "";
 
+		/// <summary>While a recording started by the setting above runs, the Levy profiler measures it and the numbers go into the recording. Nothing is printed during the fight; one line follows it.</summary>
+		[DefaultValue(true)] public bool ProfileRecordedFights = true;
+
 		[Header("Limits")]
 		/// <summary>Largest size one recording may reach on disk (compressed). Recording stops when it is reached.</summary>
 		[Range(5, 1000)] [DefaultValue(200)] public int MaxFileSizeMB = 200;

@@ -11,7 +11,7 @@ Reads .levyrec (gzip of JSON lines), .jsonl.gz and plain .jsonl. A file cut shor
 as it goes and says so. Positions are world pixels, times are seconds from the start of the recording (ticks / 60).
 Format reference: the comment at the top of FightRecFormat.cs in the Levy mod.
 """
-import argparse, glob, gzip, json, os, sys, zlib
+import argparse, glob, gzip, json, os, re, sys, zlib
 from collections import Counter, defaultdict
 
 TICKS = 60.0
@@ -194,14 +194,124 @@ def analyse(rec):
     # profile
     pr = ev.get("prof", [])
     if pr:
-        def avg(k):
-            return sum(x.get(k, 0) for x in pr) / float(len(pr))
-        out["profile"] = {"windows": len(pr), "fps": avg("fps"), "ups": avg("ups"), "updateMs": avg("upd"), "npcMs": avg("npc"), "projMs": avg("proj"), "drawMs": avg("draw"),
-                          "levyAiMs": avg("ai"), "gearMs": avg("gear"), "worstUpdateMs": max(x.get("upd", 0) for x in pr), "lowestFps": min(x.get("fps", 0) for x in pr),
-                          "top": Counter(x.get("top", "") for x in pr).most_common(1)[0][0]}
+        out["profile"] = analyse_profile(pr, tl)
     gear = [x for x in ev.get("gear", [])]
     out["commanderGearChanges"] = max(0, len(gear) - 1)
     return out
+
+
+# ------------------------------------------------------------------ profiler
+def parse_top(text):
+    """'combat 3.2, dodge 1.1' -> [('combat', 3.2), ('dodge', 1.1)] (ms over the window, summed over its updates)."""
+    res = []
+    for part in (text or "").split(","):
+        part = part.strip()
+        m = re.match(r"^(.*\S)\s+(-?[0-9.]+)$", part)
+        if m:
+            res.append((m.group(1), float(m.group(2))))
+    return res
+
+
+def analyse_profile(pr, tl):
+    """One row per profiler window (a prof event is written when a window closes, t = its end), plus totals. Windows are 2 s in an automatic
+    recording and 4 s when the player switched the profiler on; the length is the gap to the previous window."""
+    pr = sorted(pr, key=lambda x: x.get("t", 0))
+    rows, prev = [], 0
+    for x in pr:
+        t = x.get("t", 0)
+        secs = x.get("win") or max(0.05, (t - prev) / TICKS)  # "win" = the window in real seconds (the game may run slower than 60 ticks per second)
+        prev = t
+        near = None
+        if tl:
+            near = min(tl, key=lambda m: abs(m["t"] - t))
+        ups = x.get("ups", 0)
+        rows.append({"t": t, "secs": secs, "fps": x.get("fps", 0), "ups": ups, "upd": x.get("upd", 0), "npc": x.get("npc", 0), "proj": x.get("proj", 0), "draw": x.get("draw", 0),
+                     "ai": x.get("ai", 0), "gear": x.get("gear", 0), "updates": ups * secs, "top": parse_top(x.get("top", "")), "now": near})
+    tot = sum(r["secs"] for r in rows) or 1.0
+    totu = sum(r["updates"] for r in rows) or 1.0
+
+    def wavg(k):
+        return sum(r[k] * r["secs"] for r in rows) / tot
+
+    def uavg(k):
+        return sum(r[k] * r["updates"] for r in rows) / totu
+    # biggest Levy sections over the whole fight, ms per update (the window figure is milliseconds summed over the window's updates)
+    sums = defaultdict(float)
+    for r in rows:
+        for name, ms in r["top"]:
+            sums[name] += ms
+    costs = sorted(((n, v / totu) for n, v in sums.items()), key=lambda kv: -kv[1])
+    worst = sorted(rows, key=lambda r: r["fps"])[:5]
+    return {"windows": len(rows), "seconds": tot, "windowSecs": round(tot / len(rows), 2), "fps": wavg("fps"), "ups": wavg("ups"), "updateMs": uavg("upd"), "npcMs": uavg("npc"), "projMs": uavg("proj"),
+            "drawMs": wavg("draw"), "levyAiMs": uavg("ai"), "gearMs": uavg("gear"), "worstUpdateMs": max(r["upd"] for r in rows), "lowestFps": min(r["fps"] for r in rows),
+            "slowWindows": sum(1 for r in rows if r["fps"] < 30), "updateBound": sum(1 for r in rows if r["upd"] > 16.7), "drawBound": sum(1 for r in rows if r["draw"] > 16.7),
+            "topCosts": [{"name": n, "msPerUpdate": round(v, 3)} for n, v in costs[:8]],
+            "worst": [{"t": r["t"], "fps": r["fps"], "ups": r["ups"], "updateMs": r["upd"], "npcMs": r["npc"], "projMs": r["proj"], "drawMs": r["draw"], "levyAiMs": r["ai"],
+                       "top": [[n, round(v / max(1.0, r["updates"]), 3)] for n, v in r["top"][:4]]} for r in worst],
+            "rows": rows}
+
+
+def why_slow(r):
+    if r["upd"] > 16.7 and r["draw"] > 16.7:
+        return "updates and drawing are both over 16.7 ms"
+    if r["upd"] > 16.7:
+        return "updates are the slow part (%.1f ms each, 60 per second needs under 16.7)" % r["upd"]
+    if r["draw"] > 16.7:
+        return "drawing is the slow part (%.1f ms per frame)" % r["draw"]
+    return "neither updates (%.1f ms) nor drawing (%.1f ms) is over 16.7 ms, so the time went outside them (waiting on the graphics card or another program)" % (r["upd"], r["draw"])
+
+
+def bar(v, top=60.0, width=24):
+    n = int(round(width * max(0.0, min(v, top)) / top))
+    return "#" * n + "." * (width - n)
+
+
+def print_profile(a, rec, step):
+    P = print
+    pf = a["profile"]
+    rows = pf["rows"]
+    P("")
+    mode = "profiled automatically with the recording" if (rec.hdr.get("auto") and pf["windowSecs"] < 3.2) else "the profiler was switched on by hand"
+    P("PROFILER   %d windows of about %.0f s covering %s (%s). Frames per second is what the player sees; one update has 16.7 ms at 60 per second." % (
+        pf["windows"], pf["windowSecs"], fmt_t(int(pf["seconds"] * TICKS)), mode))
+    P("  whole fight:  %.1f fps on average, %.1f updates per second, lowest window %.1f fps; %d of %d windows under 30 fps (%d update-bound, %d draw-bound)" % (
+        pf["fps"], pf["ups"], pf["lowestFps"], pf["slowWindows"], pf["windows"], pf["updateBound"], pf["drawBound"]))
+    P("  per update:   %.1f ms (npcs %.1f, projectiles %.1f, the rest %.1f); worst window %.1f ms.  per frame draw: %.1f ms.  levy AI %.1f ms, gear upkeep %.1f ms" % (
+        pf["updateMs"], pf["npcMs"], pf["projMs"], max(0.0, pf["updateMs"] - pf["npcMs"] - pf["projMs"]), pf["worstUpdateMs"], pf["drawMs"], pf["levyAiMs"], pf["gearMs"]))
+    P("")
+    P("  FPS OVER TIME (every %ss; mean fps in the span, lowest window in it, and the slowest part)" % step)
+    P("  %6s  %5s %5s  %-24s  %7s %7s  %s" % ("time", "mean", "low", "0 ........ 60 fps", "upd ms", "draw ms", "state of the fight at the lowest window"))
+    spans = defaultdict(list)
+    for r in rows:
+        spans[int((r["t"] / TICKS - 1e-6) // step)].append(r)
+    for k in sorted(spans):
+        g = spans[k]
+        sec = sum(r["secs"] for r in g) or 1.0
+        mean = sum(r["fps"] * r["secs"] for r in g) / sec
+        low = min(g, key=lambda r: r["fps"])
+        n = low["now"]
+        st = ""
+        if n:
+            st = "boss %s, levies %d, adds %d, projectiles %d" % (pct(n["boss"], n["bossMax"]) if n["bossMax"] else "-", n["levies"], n["adds"], n["proj"])
+        P("  %6s  %5.0f %5.0f  %s  %7.1f %7.1f  %s%s" % (fmt_t(g[-1]["t"]), mean, low["fps"], bar(mean), max(r["upd"] for r in g), max(r["draw"] for r in g), st, "  <" if low["fps"] < 30 else ""))
+    P("")
+    P("  WORST WINDOWS")
+    for r in sorted(rows, key=lambda r: r["fps"])[:5]:
+        n = r["now"]
+        P("  %6s  %5.1f fps, %5.1f updates/s: %s" % (fmt_t(r["t"]), r["fps"], r["ups"], why_slow(r)))
+        P("          update %.1f ms (npcs %.1f, projectiles %.1f), draw %.1f ms, levy AI %.1f ms%s" % (
+            r["upd"], r["npc"], r["proj"], r["draw"], r["ai"], ("; levy costs per update: " + ", ".join("%s %.2f" % (nm, v / max(1.0, r["updates"])) for nm, v in r["top"][:4])) if r["top"] else ""))
+        if n:
+            P("          at that moment: %d levies standing, %d hostile adds, %d hostile projectiles, boss %s, commander %s" % (
+                n["levies"], n["adds"], n["proj"], pct(n["boss"], n["bossMax"]) if n["bossMax"] else "-", n["cmd"]))
+    P("")
+    P("  TOP COSTS (ms per update, whole fight; a section can contain another, so they do not add up)")
+    if pf["topCosts"]:
+        for c in pf["topCosts"][:8]:
+            P("    %-14s %6.2f ms   %s of the 16.7 ms budget" % (c["name"], c["msPerUpdate"], pct(c["msPerUpdate"], 16.7)))
+    else:
+        P("    no Levy section above 0.05 ms")
+
 
 
 # ------------------------------------------------------------------ printing
@@ -313,12 +423,10 @@ def print_summary(rec, a, step):
     if not a["notable"]:
         P("  nothing flagged")
     if "profile" in a:
-        p = a["profile"]
+        print_profile(a, rec, step)
+    elif h.get("auto"):
         P("")
-        P("PROFILER (/levyprof was on): %d windows, %.1f fps, %.1f updates/s, update %.1f ms (worst window %.1f; npcs %.1f, projectiles %.1f), draw %.1f ms, levy AI %.1f ms, gear %.1f ms, lowest fps %.1f" % (
-            p["windows"], p["fps"], p["ups"], p["updateMs"], p["worstUpdateMs"], p["npcMs"], p["projMs"], p["drawMs"], p["levyAiMs"], p["gearMs"], p["lowestFps"]))
-        if p["top"]:
-            P("  biggest levy costs in the typical window: %s" % p["top"])
+        P("PROFILER   no data (this recording was made without profiling: the Fight recorder option Profile recorded fights was off, or the recording is older than the option)")
     P("")
 
 
@@ -367,6 +475,8 @@ def main():
     if a.json:
         for r in results:
             r.pop("timeline", None)
+            if "profile" in r:
+                r["profile"].pop("rows", None)
         print(json.dumps(results if len(results) != 1 else results[0], indent=1, default=str))
 
 

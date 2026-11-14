@@ -298,6 +298,7 @@ namespace Levy.Common.Recording
 				boss = SpawnBoss(cx); Step(60, p, boss); FightRecAuto.Pump();
 				Chk(!FightRecorder.On && FightRecAuto.Said.Exists(m => m.Contains("could not start") || m.Contains("recording is off")), "with no writable folder at all it does not record and says why");
 				Main.npc[boss].active = false;
+				RunProf(p, cx, good, def, recs, spawned);
 				if (Environment.GetEnvironmentVariable("LEVY_FIGHTRECAUTO_SIZEPROBE") == "1") SizeProbe(p, cx, good, recs, spawned);
 			}
 			catch (Exception e) { _fail++; Mod.Logger.Warn("  fightrecauto world: threw " + e); }
@@ -314,6 +315,196 @@ namespace Levy.Common.Recording
 			}
 			if (_fail == 0) Mod.Logger.Info($"[FightRecAuto] world self-check pass={_pass} fail=0");
 			else Mod.Logger.Warn($"[FightRecAuto] world self-check pass={_pass} fail={_fail}");
+		}
+
+		// ============================================================================================ profiler (ClientProf) around automatic recordings
+		private int _ppass, _pfail;
+		private void PChk(bool ok, string name) { if (ok) _ppass++; else { _pfail++; Mod.Logger.Warn("  clientprof world: FAIL " + name); } }
+
+		/// <summary>One scripted boss fight with the auto recorder, the clock stepped by hand. <paramref name="slowFrom"/>: from this tick on every tick sleeps (a lag stretch, so one profiler window reads lower fps than the rest).</summary>
+		private string ProfFight(Player p, int cx, int ticks, int slowFrom, out int chatDuring, Action midFight = null)
+		{
+			FightRecAuto.ClearCooldown(); Step(3, p, null);
+			int boss = SpawnBoss(cx); Step(40, p, boss);
+			int said0 = global::Levy.Common.Util.ClientProf.Said.Count;
+			for (int k = 0; k < ticks; k++)
+			{
+				if (k == ticks / 2) midFight?.Invoke();
+				One(p, boss, k);
+				if (FightRecorder.On && Main.npc[boss].active && k % 7 == 0) FightRecorder.NoteDamage(Main.npc[boss], p, null, new Item(ItemID.Zenith), 220);
+				System.Threading.Thread.Sleep(k >= slowFrom ? 14 : (k % 3 == 0 ? 1 : 0));
+			}
+			chatDuring = global::Levy.Common.Util.ClientProf.Said.Count - said0;
+			FightRecorder.NoteBossKill(Main.npc[boss]); Main.npc[boss].life = 0; Main.npc[boss].active = false;
+			StepUntilStopped(p, -1, 1500);
+			return FightRecorder.LastResult;
+		}
+
+		private static List<JsonElement> ProfEvents(string path, out JsonElement end)
+		{
+			var l = new List<JsonElement>(); end = default;
+			foreach (string line in ReadLines(path, true, out _))
+			{
+				try { using var d = JsonDocument.Parse(line); var r = d.RootElement; string k = r.GetProperty("k").GetString(); if (k == "end") end = r.Clone(); else if (k == "e" && r.GetProperty("e").GetString() == "prof") l.Add(r.Clone()); } catch { }
+			}
+			return l;
+		}
+
+		private void RunProf(Player p, int cx, string good, string def, List<SoldierRecord> recs, List<int> spawned)
+		{
+			_ppass = _pfail = 0;
+			try
+			{
+				global::Levy.Common.Util.ClientProf.TestServer = true; global::Levy.Common.Util.ClientProf.TestInterval = 0.05; global::Levy.Common.Util.ClientProf.TestAutoProfile = null; global::Levy.Common.Util.ClientProf.Said.Clear();
+				FightRecAuto.TestFolder = good; FightRecAuto.TestDefaultDir = def; FightRecAuto.ResetMessages(); FightRecAuto.TestMode = FightRecMode.BossFights;
+
+				// ---- the key and the config
+				PChk(global::Levy.Common.Util.ClientProfKey.Key != null, "the Toggle Levy profiler keybind is registered");
+				PChk(Language.Exists("Mods.Levy.Keybinds.ToggleProfiler.DisplayName") && Language.GetTextValue("Mods.Levy.Keybinds.ToggleProfiler.DisplayName").Contains("profiler"), "the keybind has a display name");
+				PChk(Language.Exists("Mods.Levy.Configs.FightRecConfig.ProfileRecordedFights.Label") && Language.Exists("Mods.Levy.Configs.FightRecConfig.ProfileRecordedFights.Tooltip"), "the config option has a label and a tooltip");
+				var fi = typeof(FightRecConfig).GetField("ProfileRecordedFights");
+				PChk(fi != null && (bool)((System.ComponentModel.DefaultValueAttribute)Attribute.GetCustomAttribute(fi, typeof(System.ComponentModel.DefaultValueAttribute))).Value, "Profile recorded fights defaults to on");
+				PChk(FightRecConfig.Get == null || FightRecConfig.Get.ProfileRecordedFights, "the loaded config has it on");
+
+				// ---- the switch (same one as /levyprof): on, off, the same chat lines
+				PChk(!global::Levy.Common.Util.ClientProf.IsRunning && !global::Levy.Common.Util.LevyProf.On || global::Levy.Common.Util.LevyProf.OnFromStart, "the profiler starts off");
+				global::Levy.Common.Util.ClientProf.Toggle();
+				PChk(global::Levy.Common.Util.ClientProf.IsOn && global::Levy.Common.Util.ClientProf.Said.Count == 1 && global::Levy.Common.Util.ClientProf.Said[0].StartsWith("Levy profiler is on."), "the key switches the profiler on and says so");
+				global::Levy.Common.Util.ClientProf.Toggle();
+				PChk(!global::Levy.Common.Util.ClientProf.IsRunning && global::Levy.Common.Util.ClientProf.Said.Count == 2 && global::Levy.Common.Util.ClientProf.Said[1] == "Levy profiler is off.", "the key switches it off and says so");
+				PChk(global::Levy.Common.Util.ClientProf.LastSayColor == Color.LightGray, "the off line is grey");
+				global::Levy.Common.Util.ClientProf.Toggle();
+				PChk(global::Levy.Common.Util.ClientProf.LastSayColor == Color.LightGreen, "the on line is green");
+				global::Levy.Common.Util.ClientProf.Toggle();
+
+				// ---- 1. an automatic recording turns the profiler on, and off again, with nothing in chat mid-fight
+				global::Levy.Common.Util.ClientProf.Said.Clear();
+				bool onDuring = false, autoDuring = false, manualDuring = true, hookDuring = true;
+				string f1 = ProfFight(p, cx, 900, 600, out int chat1, () => { onDuring = global::Levy.Common.Util.ClientProf.IsRunning; autoDuring = global::Levy.Common.Util.ClientProf.AutoRunning; manualDuring = global::Levy.Common.Util.ClientProf.IsOn; hookDuring = global::Levy.Common.Util.ClientProf.DamageHookOn; });
+				PChk(f1 != null && File.Exists(f1), "the profiled recording was saved");
+				PChk(!hookDuring, "the in-fight profiling leaves the per-projectile hit-check hook off");
+				PChk(onDuring && autoDuring && !manualDuring, "profiling is on during an automatic recording, as the fight's own and not as the player's");
+				PChk(chat1 == 0, "nothing was printed to chat during the fight (" + chat1 + " lines)");
+				PChk(!global::Levy.Common.Util.ClientProf.IsRunning && !global::Levy.Common.Util.ClientProf.AutoRunning && (global::Levy.Common.Util.LevyProf.OnFromStart || !global::Levy.Common.Util.LevyProf.On), "profiling is off again when the recording ends");
+				PChk(global::Levy.Common.Util.ClientProf.Said.Count == 1 && global::Levy.Common.Util.ClientProf.Said[0].StartsWith("Fight profile: ") && global::Levy.Common.Util.ClientProf.Said[0].Contains(" fps on average, worst ") && global::Levy.Common.Util.ClientProf.Said[0].Contains("Levy"), "one summary line in chat after the fight (" + (global::Levy.Common.Util.ClientProf.Said.Count > 0 ? global::Levy.Common.Util.ClientProf.Said[0] : "none") + ")");
+				JsonElement e1 = default; var pe = f1 != null ? ProfEvents(f1, out e1) : new List<JsonElement>();
+				PChk(pe.Count >= 5, "the recording has prof events through the fight (" + pe.Count + ")");
+				bool fields = pe.Count > 0, ordered = true; double lo = double.MaxValue, hi = 0; double lastT = -1;
+				foreach (var x in pe)
+				{
+					fields &= x.TryGetProperty("fps", out _) && x.TryGetProperty("ups", out _) && x.TryGetProperty("upd", out _) && x.TryGetProperty("draw", out _) && x.TryGetProperty("ai", out _) && x.TryGetProperty("top", out _) && x.TryGetProperty("win", out var wn) && wn.GetDouble() > 0;
+					double t = x.GetProperty("t").GetDouble(); ordered &= t >= lastT; lastT = t;
+					if (x.TryGetProperty("fps", out var fp)) { lo = Math.Min(lo, fp.GetDouble()); hi = Math.Max(hi, fp.GetDouble()); }
+				}
+				PChk(fields && ordered, "every prof event carries fps, ups, upd, draw, ai, top and its window length, in time order");
+				PChk(pe.Count > 0 && hi > lo * 1.5, "the lag stretch shows as a lower-fps window in the file (" + lo.ToString("0") + " to " + hi.ToString("0") + " fps)");
+				PChk(e1.ValueKind == JsonValueKind.Object && e1.TryGetProperty("profiled", out var pf) && pf.GetInt32() == 1, "the end record says the recording was profiled");
+
+				// ---- 2. the player's own profiler is on when the fight starts: it stays on, full, chatting, and survives the fight's end
+				global::Levy.Common.Util.ClientProf.Said.Clear();
+				global::Levy.Common.Util.ClientProf.Toggle(); int said2 = global::Levy.Common.Util.ClientProf.Said.Count;
+				string f2 = ProfFight(p, cx, 400, 1000000, out int chat2);
+				PChk(global::Levy.Common.Util.ClientProf.IsOn && global::Levy.Common.Util.ClientProf.IsRunning && global::Levy.Common.Util.ClientProf.DamageHookOn, "the player's profiler is still on, hit-check hook included, after an automatic recording ends");
+				PChk(chat2 >= 2, "with the player's own profiler on, its summaries still print (" + chat2 + " lines)");
+				PChk(f2 != null && ProfEvents(f2, out _).Count >= 2, "the recording still gets prof events");
+				global::Levy.Common.Util.ClientProf.Toggle();
+				PChk(!global::Levy.Common.Util.ClientProf.IsRunning && global::Levy.Common.Util.ClientProf.Said[global::Levy.Common.Util.ClientProf.Said.Count - 1] == "Levy profiler is off.", "and the key still switches it off");
+
+				// ---- 3. the player switches theirs on and off in the middle of a fight: the fight's own profiling carries on
+				global::Levy.Common.Util.ClientProf.Said.Clear(); bool afterOff = false, midOn = false;
+				string f3 = ProfFight(p, cx, 500, 1000000, out int chat3, () => { global::Levy.Common.Util.ClientProf.Toggle(); midOn = global::Levy.Common.Util.ClientProf.IsOn; global::Levy.Common.Util.ClientProf.Toggle(); afterOff = global::Levy.Common.Util.ClientProf.AutoRunning && !global::Levy.Common.Util.ClientProf.IsOn; });
+				PChk(midOn && afterOff, "switching the profiler on and off mid-fight leaves the fight's own profiling running");
+				PChk(f3 != null && ProfEvents(f3, out _).Count >= 3 && !global::Levy.Common.Util.ClientProf.IsRunning, "and it still ends cleanly with prof events");
+
+				// ---- 4. the config option off: no profiling, no prof events, no line
+				global::Levy.Common.Util.ClientProf.Said.Clear(); global::Levy.Common.Util.ClientProf.TestAutoProfile = false; bool onWhileOff = true;
+				string f4 = ProfFight(p, cx, 300, 1000000, out int chat4, () => { onWhileOff = global::Levy.Common.Util.ClientProf.IsRunning; });
+				PChk(!onWhileOff && chat4 == 0 && global::Levy.Common.Util.ClientProf.Said.Count == 0, "with Profile recorded fights off nothing is profiled and nothing is said");
+				PChk(f4 != null && File.Exists(f4) && ProfEvents(f4, out JsonElement e4).Count == 0 && e4.GetProperty("profiled").GetInt32() == 0, "the recording is made without prof events and says it was not profiled");
+				global::Levy.Common.Util.ClientProf.TestAutoProfile = null;
+
+				// ---- 5. a manual recording (/levyrec start) is not profiled by this option
+				FightRecAuto.ClearCooldown(); Step(3, p, null); FightRecorder.AutoKind = 0;
+				string mp = FightRecorder.Start(p, "Probe", out string merr);
+				PChk(mp != null && !global::Levy.Common.Util.ClientProf.IsRunning, "a recording the player starts by hand does not switch the profiler on");
+				if (FightRecorder.On) FightRecorder.Stop("stopped by command");
+			}
+			catch (Exception e) { _pfail++; Mod.Logger.Warn("  clientprof world: threw " + e); }
+			finally
+			{
+				try { if (FightRecorder.On) FightRecorder.Stop("self-check over"); } catch { }
+				global::Levy.Common.Util.ClientProf.Disable(); global::Levy.Common.Util.ClientProf.TestAutoProfile = null;
+			}
+			if (Environment.GetEnvironmentVariable("LEVY_PROF_OVERHEAD") == "1") { try { ProfOverhead(p, cx, recs, spawned); } catch (Exception e) { Mod.Logger.Warn("[ClientProf] overhead probe threw " + e); } }
+			global::Levy.Common.Util.ClientProf.TestServer = false; global::Levy.Common.Util.ClientProf.TestInterval = null;
+			if (_pfail == 0) Mod.Logger.Info($"[ClientProf] self-check pass={_ppass} fail=0");
+			else Mod.Logger.Warn($"[ClientProf] self-check pass={_ppass} fail={_pfail}");
+		}
+
+		/// <summary>Lab only (LEVY_PROF_OVERHEAD=1, levies from LEVY_PROF_OVERHEAD_LEVIES, default 30): what the profiler costs. The levies fight 8 foes that never die; their real NPC updates run with the profiler off or on, tick by tick at random. The projectile hook and the clock are timed on their own.</summary>
+		private void ProfOverhead(Player p, int cx, List<SoldierRecord> recs, List<int> spawned)
+		{
+			var rnd = new Random(5); int made = 0; var mine = new List<int>(); int levies = int.TryParse(Environment.GetEnvironmentVariable("LEVY_PROF_OVERHEAD_LEVIES"), out int lv) && lv > 0 ? lv : 30;
+			foreach (int i in spawned) if (Main.npc[i].active) mine.Add(i);
+			for (int i = 0; mine.Count < levies && i < levies * 2; i++)
+			{
+				var rec = new SoldierRecord { Id = RosterSystem.Instance.NextId++, Kind = SoldierKind.Regular, Grade = Grade.Levy, Temperament = Temperament.Sellsword, Male = true, Name = "Pvt. Ovh" + i, CommanderName = p.name, CommanderIndex = 0, LifeCrystals = 20, ManaCrystals = 9, HomeBarracksId = -1, StoodDown = false };
+				rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana; rec.Order = SoldierOrder.Follow;
+				rec.Gear.Weapon = new Item(i % 3 == 0 ? ItemID.Zenith : i % 3 == 1 ? ItemID.SpaceGun : ItemID.Megashark);
+				RosterSystem.Instance.Regulars.Add(rec); recs.Add(rec);
+				Vector2 at = new Vector2((cx - 55 + (mine.Count % 38) * 3) * 16f, Floor * 16f);
+				int idx = RosterSystem.Instance.SpawnBody(rec, at);
+				if (idx >= 0) { Main.npc[idx].Bottom = at; Main.npc[idx].velocity = Vector2.Zero; spawned.Add(idx); mine.Add(idx); made++; }
+			}
+			var foes = new List<int>();
+			for (int k = 0; k < 8; k++)
+			{
+				int i = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("FightRecAutoCheck"), cx * 16 + 300 + k * 60, (Floor - 3) * 16, NPCID.BlueSlime);
+				if (i >= 0) { NPC b = Main.npc[i]; b.aiStyle = -1; b.noGravity = true; b.velocity = Vector2.Zero; b.damage = 20; b.life = b.lifeMax = 50_000_000; b.ai[3] = 4242f; foes.Add(i); }
+			}
+			_clock ??= typeof(Main).GetField("_gameUpdateCount", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+			bool wasOn = global::Levy.Common.Util.LevyProf.On;
+			void Tick(int mode, int k)
+			{
+				_clock.SetValue(null, Main.GameUpdateCount + 1u);
+				global::Levy.Common.Util.LevyProf.On = mode == 1;
+				foreach (int i in mine) { NPC n = Main.npc[i]; if (n.active) n.UpdateNPC(i); }
+				foreach (int i in foes) { NPC n = Main.npc[i]; if (n.active) { n.life = n.lifeMax; n.Center = new Vector2(n.Center.X, Floor * 16f - 30); } }
+				p.statLife = p.statLifeMax2; p.active = true;
+			}
+			for (int k = 0; k < 300; k++) Tick(0, k); // settle
+			// every tick is timed on its own and given to the profiler-off or the profiler-on code path at random (a fixed alternation would line up with the army's own 10 and 60 tick schedules)
+			var off = new List<double>(); var on = new List<double>(); var order = new Random(9);
+			for (int k = 0; k < 8000; k++)
+			{
+				bool profOn = order.Next(2) == 1;
+				long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+				Tick(profOn ? 1 : 0, k);
+				double dt = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+				(profOn ? on : off).Add(dt);
+			}
+			global::Levy.Common.Util.LevyProf.On = wasOn;
+			double Mean(List<double> l) => l.Count == 0 ? 0 : System.Linq.Enumerable.Average(l);
+			double Med(List<double> l) { var c = new List<double>(l); c.Sort(); return c.Count == 0 ? 0 : c[c.Count / 2]; }
+			double Trim(List<double> l) { var c = new List<double>(l); c.Sort(); int k = c.Count / 20; return c.Count < 40 ? 0 : System.Linq.Enumerable.Average(c.GetRange(k, c.Count - 2 * k)); }
+			double offM = Mean(off), fullM = Mean(on), offD = Med(off), fullD = Med(on), offT = Trim(off), fullT = Trim(on);
+			// the projectile hook: friendly shots, so Damage walks the NPC list like a levy's shot does
+			foreach (int i in foes) Main.npc[i].active = false;
+			var shots = new List<int>();
+			for (int k = 0; k < 300; k++) { int j = Projectile.NewProjectile(new Terraria.DataStructures.EntitySource_WorldEvent("probe"), p.Center + new Vector2(rnd.Next(-600, 600), rnd.Next(-300, 100)), Vector2.Zero, ProjectileID.Bullet, 10, 0f, 0); if (j >= 0) shots.Add(j); }
+			double Damage(bool hooked)
+			{
+				if (hooked) global::Levy.Common.Util.ClientProf.Enable(false); else global::Levy.Common.Util.ClientProf.Disable();
+				long t0 = System.Diagnostics.Stopwatch.GetTimestamp(); int calls = 0;
+				for (int rep = 0; rep < 40; rep++) foreach (int j in shots) { Projectile pr = Main.projectile[j]; if (!pr.active) continue; pr.velocity = Vector2.Zero; pr.Damage(); calls++; }
+				double ns = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1e9 / System.Diagnostics.Stopwatch.Frequency / Math.Max(1, calls);
+				global::Levy.Common.Util.ClientProf.Disable(); return ns;
+			}
+			Damage(true); Damage(false); double dOn = Math.Min(Damage(true), Damage(true)), dOff = Math.Min(Damage(false), Damage(false));
+			foreach (int j in shots) Main.projectile[j].active = false;
+			long c0 = System.Diagnostics.Stopwatch.GetTimestamp(); long sink = 0; for (int k = 0; k < 2_000_000; k++) sink += System.Diagnostics.Stopwatch.GetTimestamp();
+			double clockNs = (System.Diagnostics.Stopwatch.GetTimestamp() - c0) * 1e9 / System.Diagnostics.Stopwatch.Frequency / 2_000_000.0;
+			Mod.Logger.Info($"[ClientProf] overhead ({mine.Count} levies, 8 foes, {off.Count + on.Count} real NPC updates, each tick randomly with the profiler off or on): ms per tick mean off {offM:0.000} / full {fullM:0.000} (+{fullM - offM:0.000}, {100 * (fullM - offM) / Math.Max(1e-6, offM):0}%), trimmed mean (middle 90%) off {offT:0.000} / full {fullT:0.000} (+{fullT - offT:0.000}), median off {offD:0.000} / full {fullD:0.000} (+{fullD - offD:0.000}); projectile hook {dOff:0} ns per Damage call without, {dOn:0} with (+{dOn - dOff:0} ns, x300 shots = +{(dOn - dOff) * 300 / 1e6:0.000} ms per tick); Stopwatch.GetTimestamp {clockNs:0.0} ns (sink {sink & 1})");
 		}
 
 		/// <summary>Lab only (LEVY_FIGHTRECAUTO_SIZEPROBE=1): a big scripted fight of one minute (40 levies, a boss, 25 adds, 60 hostile projectiles, all moving) to measure bytes per minute.</summary>
@@ -395,7 +586,9 @@ namespace Levy.Common.Recording
 				NPC b = Main.npc[boss]; b.timeLeft = 3600; float ang = k / 70f;
 				b.Center = p.Center + new Vector2((float)Math.Cos(ang), (float)Math.Sin(ang) * 0.5f - 0.6f) * 400f; b.velocity = new Vector2(3, 0);
 			}
+			long q = global::Levy.Common.Util.ClientProf.TestBegin(); // the profiler (when a self-check has it on) sees this tick as one update and one drawn frame
 			FightRecSystem.Step();
+			if (q != 0) { global::Levy.Common.Util.ClientProf.TestFrame(System.Diagnostics.Stopwatch.Frequency / 1000); global::Levy.Common.Util.ClientProf.TestEnd(q); }
 		}
 
 		/// <summary>The commander and an unnamed shooter hit the boss every few ticks while the clock runs; one commander hit; real-time pauses so the writer thread can flush.</summary>

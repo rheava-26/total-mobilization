@@ -284,11 +284,11 @@ namespace Levy.Common.Recording
 
 		private static int _profWindows;
 		/// <summary>The /levyprof profiler finished a window while this recording runs: the numbers go in as a prof event (and the file says it was profiled).</summary>
-		public static void NoteProf(double fps, double ups, double updMs, double npcMs, double projMs, double drawMs, double aiMs, double gearMs, string levyTop)
+		public static void NoteProf(double fps, double ups, double updMs, double npcMs, double projMs, double drawMs, double aiMs, double gearMs, string levyTop, double winSecs = 0)
 		{
 			if (!On || _w == null) return;
 			_profWindows++;
-			Ev("prof", ("fps", FightRecFormat.N(fps)), ("ups", FightRecFormat.N(ups)), ("upd", FightRecFormat.N(updMs)), ("npc", FightRecFormat.N(npcMs)), ("proj", FightRecFormat.N(projMs)), ("draw", FightRecFormat.N(drawMs)), ("ai", FightRecFormat.N(aiMs)), ("gear", FightRecFormat.N(gearMs)), ("top", FightRecFormat.Esc(levyTop ?? "")));
+			Ev("prof", ("fps", FightRecFormat.N(fps)), ("ups", FightRecFormat.N(ups)), ("upd", FightRecFormat.N(updMs)), ("npc", FightRecFormat.N(npcMs)), ("proj", FightRecFormat.N(projMs)), ("draw", FightRecFormat.N(drawMs)), ("ai", FightRecFormat.N(aiMs)), ("gear", FightRecFormat.N(gearMs)), ("top", FightRecFormat.Esc(levyTop ?? "")), ("win", FightRecFormat.N(winSecs)));
 		}
 
 		private static string ModList(out string gameMode)
@@ -367,6 +367,7 @@ namespace Levy.Common.Recording
 				Array.Clear(_accLast); _accLast[0] = int.MinValue; // force the first accessory event
 				_pJump = cmd.jump; _pAnim = cmd.itemAnimation; _pDashDelay = cmd.dashDelay; _pFly = false; _pHookOut = false; _pHookAtt = false;
 				On = true;
+				if (_auto != 0 && !Headless) global::Levy.Common.Util.ClientProf.AutoStart();
 				return _path;
 			}
 			catch (Exception e) { error = e.Message; Abort(); return null; }
@@ -396,6 +397,7 @@ namespace Levy.Common.Recording
 		public static string Stop(string reason)
 		{
 			if (!On) return null;
+			if (_auto != 0 && !Headless) global::Levy.Common.Util.ClientProf.AutoEnding(reason == "world unloaded" || reason == "unloaded"); // closes the last profiler window while the recording still takes it
 			On = false;
 			if (Headless) FightRecAuto.Stopped(); else FightRecAuto.RecorderStopped(reason);
 			string final = _path; var w = _w;

@@ -28,6 +28,8 @@ namespace Levy.Common.Weapons
 	{
 		/// <summary>Lab A/B switch: LEVY_WHIPREAL=0 runs the levy half on the old hand-made lash.</summary>
 		public static bool Disabled = Environment.GetEnvironmentVariable("LEVY_WHIPREAL") == "0";
+		/// <summary>Lab A/B switch: LEVY_WHIPRESTORE=0 leaves the commander as the lash's hit left it (the use guard's snapshot, the minion focus, life, mana and buffs are not put back), to show what the hit writes.</summary>
+		public static bool NoRestore = Environment.GetEnvironmentVariable("LEVY_WHIPRESTORE") == "0";
 
 		/// <summary>Lab counters: swings started on the real path, those that fell back, hooks that threw.</summary>
 		public static int Real, Fallbacks, Threw;
@@ -182,14 +184,15 @@ namespace Levy.Common.Weapons
 		internal readonly struct DamageScope : IDisposable
 		{
 			private readonly UseGuard.Snap _snap; private readonly Player _real; private readonly int _focus, _anim, _animMax, _dir, _life, _mana; private readonly float _range, _grav, _gfx; private readonly Vector2 _pos; private readonly Rectangle _frame; private readonly long _t0;
-			private readonly int[] _buffType, _buffTime;
+			// one scope is open at a time (the chain's damage wrapper does not nest), so its copies of the commander's buffs live in two shared arrays instead of two allocations per call
+			private static readonly int[] BuffType = new int[Player.MaxBuffs], BuffTime = new int[Player.MaxBuffs];
 			public DamageScope(SoldierNPC body, Item item)
 			{
 				int o = SoldierMinions.TrueMyPlayer;
 				_real = o >= 0 && o < Main.maxPlayers ? Main.player[o] : null;
 				_t0 = Begin();
-				if (_real == null) { _snap = default; _focus = _anim = _animMax = _dir = _life = _mana = 0; _range = _grav = _gfx = 0f; _pos = default; _frame = default; _buffType = _buffTime = null; return; }
-				_life = _real.statLife; _mana = _real.statMana; _buffType = (int[])_real.buffType.Clone(); _buffTime = (int[])_real.buffTime.Clone();
+				if (_real == null) { _snap = default; _focus = _anim = _animMax = _dir = _life = _mana = 0; _range = _grav = _gfx = 0f; _pos = default; _frame = default; return; }
+				_life = _real.statLife; _mana = _real.statMana; Array.Copy(_real.buffType, BuffType, BuffType.Length); Array.Copy(_real.buffTime, BuffTime, BuffTime.Length);
 				_snap = UseGuard.Disabled ? default : UseGuard.Take(o);
 				_focus = _real.MinionAttackTargetNPC; _anim = _real.itemAnimation; _animMax = _real.itemAnimationMax; _dir = _real.direction; _range = _real.whipRangeMultiplier; _grav = _real.gravDir; _gfx = _real.gfxOffY; _pos = _real.position; _frame = _real.bodyFrame;
 				Player d = body.Dummy;
@@ -202,11 +205,14 @@ namespace Levy.Common.Weapons
 				if (_real != null)
 				{
 					_real.itemAnimation = _anim; _real.itemAnimationMax = _animMax; _real.direction = _dir; _real.whipRangeMultiplier = _range; _real.gravDir = _grav; _real.gfxOffY = _gfx; _real.position = _pos; _real.bodyFrame = _frame;
-					UseGuard.Put(_snap);
-					_real.MinionAttackTargetNPC = _focus;
-					// what the lash's on-hit hooks wrote on their "owner": a buff a hit handed out, a heal, a mana refund
-					_real.statLife = _life; _real.statMana = _mana;
-					Array.Copy(_buffType, _real.buffType, _buffType.Length); Array.Copy(_buffTime, _real.buffTime, _buffTime.Length);
+					if (!NoRestore)
+					{
+						UseGuard.Put(_snap);
+						_real.MinionAttackTargetNPC = _focus;
+						// what the lash's on-hit hooks wrote on their "owner": a buff a hit handed out, a heal, a mana refund
+						_real.statLife = _life; _real.statMana = _mana;
+						Array.Copy(BuffType, _real.buffType, BuffType.Length); Array.Copy(BuffTime, _real.buffTime, BuffTime.Length);
+					}
 				}
 				if (_t0 != 0L) { End(ref DamageTicks, _t0); DamageCalls++; }
 			}

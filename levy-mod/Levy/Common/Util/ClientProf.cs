@@ -126,6 +126,7 @@ namespace Levy.Common.Util
 			var sb = new System.Text.StringBuilder();
 			for (int i = 0; i < 7; i++) sb.Append(i > 0 ? ", " : "").Append(DrawNames[i]).Append(' ').Append((Draw[i] * f / fr).ToString("0.00"));
 			Levy.Instance?.Logger.Info($"[Prof] client: fps {fps:0.0} ups {ups:0.0} | update ms/tick {upd:0.00} (npcs {npc:0.00}, projectiles {proj:0.00}, hit loop {hit:0.00}) | draw ms/frame: {sb} | levy bodies {SoldierBody * f / fr:0.00}, nameplates {SoldierPlate * f / fr:0.00} ({SoldiersDrawn / fr:0.0}/frame) | npcs {CountActiveNpcs()}, projectiles {CountActiveProjectiles()} | levy buckets over this window, ms: {LevyProf.DescribeDelta(_snap, 14)}");
+			if (global::Levy.Common.Recording.FightRecorder.On) global::Levy.Common.Recording.FightRecorder.NoteProf(fps, ups, upd, npc, proj, draw, ai, gear, LevyProf.DescribeDelta(_snap, 6));
 			if (_chat)
 			{
 				foreach (string l in new[] { l1, l2, l3, l4 }) { Levy.Instance?.Logger.Info("[Prof] " + l); Main.NewText(l, Color.LightGoldenrodYellow); }

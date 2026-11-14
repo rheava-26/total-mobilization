@@ -15,15 +15,20 @@ namespace Levy.Common.Recording
 			else Mod.Logger.Error("[FightRec] self-check FAILED: " + fail);
 		}
 
-		public override void PostUpdateEverything()
+		public override void PostUpdateEverything() => Step();
+
+		/// <summary>One game tick of the recorder: show queued chat lines, start an automatic recording when one is due, sample, stop when the fight is over.</summary>
+		internal static void Step()
 		{
-			if (!FightRecorder.On) FightRecAuto.Update(); // LEVY_REC_DIR unset: one string test and nothing else
-			if (FightRecorder.On) FightRecorder.Tick();
+			FightRecAuto.Pump();
+			if (!FightRecorder.On) FightRecAuto.Update(); // setting off and LEVY_REC_DIR unset: a config read and an enum test
+			if (FightRecorder.On) { FightRecorder.Tick(); if (FightRecorder.On) FightRecAuto.Watch(); }
 		}
 
 		public override void OnWorldUnload()
 		{
-			if (FightRecorder.On) FightRecorder.Stop("world unloaded");
+			if (FightRecorder.On) FightRecorder.Stop("world unloaded"); // finishes the file before the world goes (the writer is joined)
+			FightRecAuto.ResetMessages();
 		}
 
 		public override void Unload()
@@ -61,12 +66,16 @@ namespace Levy.Common.Recording
 
 		public override void OnHitByItem(NPC npc, Player player, Item item, NPC.HitInfo hit, int damageDone)
 		{
-			if (FightRecorder.On) FightRecorder.NoteBossSource(npc, "item", item.type, item.Name);
+			if (!FightRecorder.On) return;
+			FightRecorder.NoteBossSource(npc, "item", item.type, item.Name);
+			FightRecorder.NoteDamage(npc, player, null, item, damageDone);
 		}
 
 		public override void OnHitByProjectile(NPC npc, Projectile projectile, NPC.HitInfo hit, int damageDone)
 		{
-			if (FightRecorder.On) FightRecorder.NoteBossSource(npc, "proj", projectile.type, Terraria.Lang.GetProjectileName(projectile.type).Value);
+			if (!FightRecorder.On) return;
+			FightRecorder.NoteBossSource(npc, "proj", projectile.type, Terraria.Lang.GetProjectileName(projectile.type).Value);
+			FightRecorder.NoteDamage(npc, null, projectile, null, damageDone);
 		}
 
 		public override void OnKill(NPC npc)
@@ -101,12 +110,13 @@ namespace Levy.Common.Recording
 		}
 	}
 
-	/// <summary>/levyrec start [name], /levyrec stop, /levyrec status. Records the local player's fight to Levy/recordings in the tModLoader save folder.</summary>
+	/// <summary>/levyrec start [name], /levyrec stop, /levyrec status, /levyrec folder. Records the local player's fight into the recording folder (Levy/Recordings in the tModLoader save folder, or the one set in the Fight recorder config).</summary>
 	public class LevyRecCommand : ModCommand
 	{
 		public override CommandType Type => CommandType.Chat;
 		public override string Command => "levyrec";
-		public override string Description => "Fight recorder. /levyrec start [name] begins, /levyrec stop ends and prints the file path.";
+		public override string Usage => "/levyrec [start [name]|stop|status|folder]";
+		public override string Description => "Fight recorder. /levyrec start [name] begins, /levyrec stop ends and prints the file path, /levyrec folder prints the recording folder.";
 		public override void Action(CommandCaller caller, string input, string[] args)
 		{
 			if (Main.dedServ) { caller.Reply("levyrec runs on a client.", Color.OrangeRed); return; }
@@ -114,16 +124,24 @@ namespace Levy.Common.Recording
 			if (a == "start")
 			{
 				string name = args.Length > 1 ? string.Join("_", args, 1, args.Length - 1) : null;
+				FightRecorder.AutoKind = 0;
 				string path = FightRecorder.Start(Main.LocalPlayer, name, out string err);
 				if (path == null) caller.Reply("levyrec: " + err, Color.OrangeRed);
-				else caller.Reply("levyrec: recording to " + path + " (stops on boss death, /levyrec stop, or after 10 minutes)", Color.LightGreen);
+				else caller.Reply("levyrec: recording (stops on boss death, /levyrec stop, or after 10 minutes)", Color.LightGreen);
 			}
 			else if (a == "stop")
 			{
 				string path = FightRecorder.Stop("stopped by command");
 				caller.Reply(path == null ? "levyrec: not recording." : "levyrec: saved " + path, path == null ? Color.OrangeRed : Color.LightGreen);
 			}
-			else caller.Reply(FightRecorder.On ? "levyrec: recording " + (FightRecorder.Elapsed / 60) + "s to " + FightRecorder.Path : "levyrec: off. /levyrec start [name]", Color.LightSkyBlue);
+			else if (a == "folder")
+			{
+				string cfg = FightRecConfig.Get?.RecordingFolder;
+				string d = FightRecFolder.Resolve(cfg, FightRecFolder.DefaultDir, out string warn);
+				caller.Reply(d != null ? "levyrec: recordings go to " + d : "levyrec: " + warn, d != null ? Color.LightSkyBlue : Color.OrangeRed);
+				if (d != null && warn != null) caller.Reply("levyrec: " + warn, Color.OrangeRed);
+			}
+			else caller.Reply(FightRecorder.On ? "levyrec: recording " + (FightRecorder.Elapsed / 60) + "s" + (FightRecorder.Auto != 0 ? " (automatic)" : "") : "levyrec: off. Automatic recording: " + FightRecAuto.CurrentMode() + ". /levyrec start [name]", Color.LightSkyBlue);
 		}
 	}
 }

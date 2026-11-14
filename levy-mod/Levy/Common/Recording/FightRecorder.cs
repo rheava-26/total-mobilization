@@ -9,6 +9,7 @@ using Terraria.ModLoader;
 using Levy.Common.Boss;
 using Levy.Common.Globals;
 using Levy.Common.Observe;
+using Levy.Common.Systems;
 using Levy.Common.Util;
 using Levy.Content.NPCs;
 
@@ -29,10 +30,39 @@ namespace Levy.Common.Recording
 
 		/// <summary>Override for the output folder (synthetic test). Null = the tModLoader save folder.</summary>
 		public static string OutDirOverride;
+		/// <summary>null = gzip (.levyrec) unless a headless harness or an output-folder override asked for plain .jsonl; true / false force it (self-checks).</summary>
+		public static bool? GzipOverride;
+		/// <summary>Largest compressed size of one recording (0 = the config's MaxFileSizeMB). The writer flags it and the recorder stops.</summary>
+		public static long MaxFileBytes;
+		/// <summary>Largest total of the recording folder, applied after each recording is saved (0 = the config's MaxFolderSizeMB).</summary>
+		public static long MaxFolderBytes;
+		/// <summary>0 = started by hand (/levyrec) or by a harness; 1 = automatic, boss fights; 2 = automatic, all fights. Automatic recordings stop 5 s after the boss is gone and may run 20 minutes.</summary>
+		public static int AutoKind;
+		private static int _auto;
+		/// <summary>True while a recording is running, once a boss has been seen in it.</summary>
+		public static bool BossSeen => _bossSeen;
+		/// <summary>0 manual / harness, 1 automatic boss fights, 2 automatic all fights, for the recording now running.</summary>
+		public static int Auto => _auto;
+		public const int AutoGraceTicks = 300, AutoMaxTicks = 20 * 60 * 60, MinKeepTicks = 300;
+		/// <summary>Self-check: finish the file on the calling thread, never in the background.</summary>
+		public static bool ForceSync;
+		/// <summary>Extra header fields (raw JSON members starting with a comma) the caller adds, e.g. the trigger.</summary>
+		public static string HeaderExtra = "";
+		private static bool _gzip;
+		private static DateTime _startWall;
+		private static int _cmdDeaths; private static bool _pDead;
+		private static int _lastDmgFlush;
+		private sealed class DmgAcc { public long Dmg; public int Hits; }
+		private static readonly Dictionary<string, DmgAcc> _dmg = new();
+		private static long _dmgBoss, _dmgAll;
+		/// <summary>The last header written (the self-check parses it back).</summary>
+		public static string LastHeader { get; private set; }
+		/// <summary>What the last Stop decided (self-check): the final path.</summary>
+		public static string LastResult { get; private set; }
 		/// <summary>Synthetic test only: a client-less server keeps flipping the stand-in player inactive.</summary>
 		public static bool IgnoreInactive;
 
-		private static StreamWriter _w;
+		private static RecWriter _w;
 		private static Player _cmd;
 		private static string _path, _boss = "none";
 		private static int _startTick, _frames, _events, _lastBossSeen, _bossesSeen;
@@ -120,7 +150,146 @@ namespace Levy.Common.Recording
 			return sb.Length == 0 ? "none" : sb.ToString();
 		}
 
-		private static string Dir() => OutDirOverride ?? System.IO.Path.Combine(Main.SavePath, "Levy", "recordings");
+		/// <summary>The folder a recording goes in: the harness override, else the config's folder (default Levy/Recordings in the save folder), falling back to the default with a chat warning. Null when nothing is writable.</summary>
+		private static string Dir(out string warn)
+		{
+			warn = null;
+			if (OutDirOverride != null)
+			{
+				try { Directory.CreateDirectory(OutDirOverride); return OutDirOverride; }
+				catch (Exception e) { warn = e.Message; return null; }
+			}
+			string cfg = FightRecAuto.TestFolder; if (cfg == null) { try { cfg = FightRecConfig.Get?.RecordingFolder; } catch { } }
+			string d = FightRecFolder.Resolve(cfg, FightRecAuto.TestDefaultDir ?? FightRecFolder.DefaultDir, out warn);
+			if (warn != null) FightRecAuto.Post(warn, true);
+			return d;
+		}
+
+		private static long ConfigFileBytes() { try { return Math.Max(1, FightRecConfig.Get?.MaxFileSizeMB ?? 200) * 1048576L; } catch { return 200L * 1048576; } }
+		private static long ConfigFolderBytes() { try { return Math.Max(1, FightRecConfig.Get?.MaxFolderSizeMB ?? 2048) * 1048576L; } catch { return 2048L * 1048576; } }
+
+		/// <summary>Damage-class word of an item or projectile: summon, magic, ranged, melee (whips count as summon), else the class's own name lower-cased ("rogue", "throwing").</summary>
+		internal static string ClassName(DamageClass dc)
+		{
+			if (dc == null) return "other";
+			try
+			{
+				if (dc.CountsAsClass(DamageClass.Summon)) return "summon";
+				if (dc.CountsAsClass(DamageClass.Magic)) return "magic";
+				if (dc.CountsAsClass(DamageClass.Ranged)) return "ranged";
+				if (dc.CountsAsClass(DamageClass.Melee)) return "melee";
+				string n = dc.Name ?? ""; if (n.EndsWith("DamageClass")) n = n.Substring(0, n.Length - 11);
+				return n.Length == 0 || n == "Default" || n == "Generic" ? "other" : n.ToLowerInvariant();
+			}
+			catch { return "other"; }
+		}
+
+		private static string ItemIds(Item[] arr, int from, int to)
+		{
+			var sb = new StringBuilder("["); bool first = true;
+			for (int i = from; i < to && i < arr.Length; i++)
+			{
+				Item it = arr[i]; if (it == null || it.IsAir) continue;
+				if (!_items.ContainsKey(it.type)) _items[it.type] = it.Name;
+				if (!first) sb.Append(','); first = false; sb.Append(it.type);
+			}
+			return sb.Append(']').ToString();
+		}
+
+		/// <summary>The commander's loadout at the start, as one header member: life, mana, defense, armor, accessories, the hotbar and the ammo slots (item ids; the names table at the end of the file resolves them).</summary>
+		private static string CommanderSummary(Player p)
+		{
+			try
+			{
+				return "{\"life\":" + p.statLifeMax2 + ",\"mana\":" + p.statManaMax2 + ",\"defense\":" + (int)p.statDefense + ",\"armor\":" + ItemIds(p.armor, 0, 3) + ",\"accessories\":" + ItemIds(p.armor, 3, 10)
+					+ ",\"hotbar\":" + ItemIds(p.inventory, 0, 10) + ",\"ammo\":" + ItemIds(p.inventory, 54, 58) + "}";
+			}
+			catch { return "{}"; }
+		}
+
+		/// <summary>The army at the start: how many levies stand in the world, split by the damage class of their main weapon and by grade, plus the most common weapons (item ids).</summary>
+		private static string ArmySummary()
+		{
+			try
+			{
+				var cls = new Dictionary<string, int>(); var grades = new Dictionary<string, int>(); var weapons = new Dictionary<int, int>(); int n = 0, hp = 0;
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC b = Main.npc[i];
+					if (!b.active || !(b.ModNPC is SoldierNPC s) || s.Record == null) continue;
+					n++; hp += b.lifeMax;
+					Item wpn = s.Record.Gear?.Weapon;
+					string c = wpn != null && !wpn.IsAir ? ClassName(wpn.DamageType) : "unarmed";
+					cls[c] = cls.TryGetValue(c, out int v) ? v + 1 : 1;
+					string g = s.Record.Grade.ToString(); grades[g] = grades.TryGetValue(g, out v) ? v + 1 : 1;
+					if (wpn != null && !wpn.IsAir) { weapons[wpn.type] = weapons.TryGetValue(wpn.type, out v) ? v + 1 : 1; if (!_items.ContainsKey(wpn.type)) _items[wpn.type] = wpn.Name; }
+				}
+				var top = new List<KeyValuePair<int, int>>(weapons); top.Sort((a, b2) => b2.Value.CompareTo(a.Value));
+				var sb = new StringBuilder("{\"n\":" + n + ",\"avgLife\":" + (n > 0 ? hp / n : 0) + ",\"classes\":{");
+				bool first = true; foreach (var kv in cls) { if (!first) sb.Append(','); first = false; sb.Append(FightRecFormat.Esc(kv.Key)).Append(':').Append(kv.Value); }
+				sb.Append("},\"grades\":{"); first = true; foreach (var kv in grades) { if (!first) sb.Append(','); first = false; sb.Append(FightRecFormat.Esc(kv.Key)).Append(':').Append(kv.Value); }
+				sb.Append("},\"weapons\":["); for (int i = 0; i < top.Count && i < 12; i++) { if (i > 0) sb.Append(','); sb.Append('[').Append(top[i].Key).Append(',').Append(top[i].Value).Append(']'); }
+				return sb.Append("]}").ToString();
+			}
+			catch { return "{}"; }
+		}
+
+		/// <summary>One hit on a boss (or its parts) or on an add, from the GlobalNPC hooks: who dealt it (cmd, levy, drone, other), its damage class, the item or projectile, the damage actually done. Added up and written once a second as dmg events.</summary>
+		internal static void NoteDamage(NPC npc, Player byPlayer, Projectile proj, Item item, int dmg)
+		{
+			if (!On || dmg <= 0 || npc == null) return;
+			try
+			{
+				bool boss = IsBossOrPart(npc);
+				string owner, cls, kind; int type;
+				if (proj != null)
+				{
+					proj.TryGetGlobalProjectile(out SoldierProjectileTag tag);
+					if (tag != null && tag.SoldierIndex >= 0) owner = "levy";
+					else if (tag != null && tag.DroneShot) owner = "drone";
+					else if (tag != null && tag.CommanderIndex >= 0) owner = "levy";
+					else if (_cmd != null && proj.owner == _cmd.whoAmI) owner = "cmd";
+					else owner = "other";
+					cls = ClassName(proj.DamageType); kind = "proj"; type = proj.type;
+					if (!_projs.ContainsKey(type)) _projs[type] = Lang.GetProjectileName(type).Value;
+				}
+				else
+				{
+					owner = byPlayer != null && global::Levy.Common.Owner.SoldierOwner.IsDummy(byPlayer) ? "levy" : byPlayer != null && byPlayer == _cmd ? "cmd" : "other";
+					cls = ClassName(item?.DamageType); kind = "item"; type = item != null ? item.type : 0;
+					if (item != null && !_items.ContainsKey(type)) _items[type] = item.Name;
+				}
+				string key = owner + "|" + cls + "|" + kind + "|" + type + "|" + (boss ? 1 : 0);
+				if (!_dmg.TryGetValue(key, out var a)) _dmg[key] = a = new DmgAcc();
+				a.Dmg += dmg; a.Hits++; _dmgAll += dmg; if (boss) _dmgBoss += dmg;
+			}
+			catch { }
+		}
+
+		private static void FlushDmg(int el, bool force)
+		{
+			if (_dmg.Count == 0) { _lastDmgFlush = el; return; }
+			if (!force && el - _lastDmgFlush < 60) return;
+			_lastDmgFlush = el;
+			var sb = new StringBuilder("["); bool first = true;
+			foreach (var kv in _dmg)
+			{
+				string[] k = kv.Key.Split('|');
+				if (!first) sb.Append(','); first = false;
+				sb.Append('[').Append(FightRecFormat.Esc(k[0])).Append(',').Append(FightRecFormat.Esc(k[1])).Append(',').Append(FightRecFormat.Esc(k[2])).Append(',').Append(k[3]).Append(',').Append(k[4]).Append(',').Append(kv.Value.Dmg).Append(',').Append(kv.Value.Hits).Append(']');
+			}
+			_dmg.Clear();
+			Ev("dmg", ("d", sb.Append(']').ToString()));
+		}
+
+		private static int _profWindows;
+		/// <summary>The /levyprof profiler finished a window while this recording runs: the numbers go in as a prof event (and the file says it was profiled).</summary>
+		public static void NoteProf(double fps, double ups, double updMs, double npcMs, double projMs, double drawMs, double aiMs, double gearMs, string levyTop)
+		{
+			if (!On || _w == null) return;
+			_profWindows++;
+			Ev("prof", ("fps", FightRecFormat.N(fps)), ("ups", FightRecFormat.N(ups)), ("upd", FightRecFormat.N(updMs)), ("npc", FightRecFormat.N(npcMs)), ("proj", FightRecFormat.N(projMs)), ("draw", FightRecFormat.N(drawMs)), ("ai", FightRecFormat.N(aiMs)), ("gear", FightRecFormat.N(gearMs)), ("top", FightRecFormat.Esc(levyTop ?? "")));
+		}
 
 		private static string ModList(out string gameMode)
 		{
@@ -153,7 +322,11 @@ namespace Levy.Common.Recording
 			if (On) { error = "already recording to " + _path; return null; }
 			try
 			{
-				Directory.CreateDirectory(Dir());
+				string dir = Dir(out string dirWarn);
+				if (dir == null) { error = dirWarn ?? "no recording folder"; return null; }
+				_auto = AutoKind; AutoKind = 0; string extra = HeaderExtra; HeaderExtra = "";
+				_gzip = GzipOverride ?? (!Headless && OutDirOverride == null);
+				_startWall = DateTime.Now; _profWindows = 0; _cmdDeaths = 0; _pDead = false; _dmg.Clear(); _dmgBoss = _dmgAll = 0; _lastDmgFlush = 0; LastResult = null;
 				_cmd = cmd; _frames = 0; _events = 0; _bossSeen = false; _bossesSeen = 0; _bossIdsSeen.Clear(); _hbDef.Clear(); _lastBossSeen = 0;
 				_items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
@@ -172,19 +345,24 @@ namespace Levy.Common.Recording
 				}
 				_boss = SafeName(!string.IsNullOrWhiteSpace(name) ? name : nearest?.FullName);
 				string stem = string.IsNullOrEmpty(fileBase) ? stamp + "_" + _boss : SafeName(fileBase);
-				_path = System.IO.Path.Combine(Dir(), stem + ".jsonl");
-				if (!string.IsNullOrEmpty(fileBase)) { int dup = 2; while (File.Exists(_path)) _path = System.IO.Path.Combine(Dir(), stem + "_" + dup++ + ".jsonl"); }
-				_w = new StreamWriter(_path, false, new UTF8Encoding(false), 1 << 16);
+				string ext = _gzip ? FightRecFolder.Ext : ".jsonl";
+				_path = System.IO.Path.Combine(dir, (_gzip ? "rec_" : "") + stem + ext);
+				if (!string.IsNullOrEmpty(fileBase) || _gzip) { int dup = 2; while (File.Exists(_path) || File.Exists(_path + ".part")) _path = System.IO.Path.Combine(dir, (_gzip ? "rec_" : "") + stem + "_" + dup++ + ext); }
+				long cap = _gzip ? (MaxFileBytes > 0 ? MaxFileBytes : ConfigFileBytes()) : 0;
+				if (!RecWriter.TryOpen(_path, _gzip, cap, out _w, out string openWhy)) { error = "could not create " + _path + ": " + openWhy; return null; }
 				string mods = ModList(out string mode);
 				string ver = Levy.Instance?.Version?.ToString() ?? "?";
 				string metaJson = FightRecFormat.MetaJson(meta);
-				_w.WriteLine("{\"k\":\"hdr\",\"format\":" + FightRecFormat.Version + ",\"meta\":" + metaJson + ",\"headless\":" + (Headless ? "1" : "0") + ",\"levy\":" + FightRecFormat.Esc(ver) + ",\"mods\":" + mods + ",\"mode\":" + FightRecFormat.Esc(mode)
+				string hdr = ("{\"k\":\"hdr\",\"format\":" + FightRecFormat.Version + ",\"meta\":" + metaJson + ",\"headless\":" + (Headless ? "1" : "0") + ",\"levy\":" + FightRecFormat.Esc(ver) + ",\"mods\":" + mods + ",\"mode\":" + FightRecFormat.Esc(mode)
 					+ ",\"boss\":" + FightRecFormat.Esc(_boss) + ",\"player\":" + FightRecFormat.Esc(cmd.name) + ",\"startTick\":" + _startTick + ",\"hz\":" + (60 / SampleEvery)
 					+ ",\"world\":" + FightRecFormat.Esc(Main.worldName) + ",\"date\":" + FightRecFormat.Esc(DateTime.Now.ToString("s"))
 					+ ",\"stateNames\":" + FightRecFormat.Esc(string.Join(",", Enum.GetNames(typeof(SoldierState))))
 					+ ",\"schemaP\":" + FightRecFormat.Esc(FightRecFormat.SchemaP) + ",\"flagsP\":" + FightRecFormat.Esc(FightRecFormat.SchemaPFlags)
 					+ ",\"schemaB\":" + FightRecFormat.Esc(FightRecFormat.SchemaB) + ",\"schemaJ\":" + FightRecFormat.Esc(FightRecFormat.SchemaJ)
-					+ ",\"tkinds\":" + FightRecFormat.Esc(FightRecFormat.TKinds) + ",\"schemaA\":" + FightRecFormat.Esc(FightRecFormat.SchemaA) + ",\"schemaL\":" + FightRecFormat.Esc(FightRecFormat.SchemaL) + ",\"flagsL\":" + FightRecFormat.Esc(FightRecFormat.SchemaLFlags) + "}");
+					+ ",\"tkinds\":" + FightRecFormat.Esc(FightRecFormat.TKinds) + ",\"schemaA\":" + FightRecFormat.Esc(FightRecFormat.SchemaA) + ",\"schemaL\":" + FightRecFormat.Esc(FightRecFormat.SchemaL) + ",\"flagsL\":" + FightRecFormat.Esc(FightRecFormat.SchemaLFlags)
+					+ ",\"auto\":" + _auto + ",\"gzip\":" + (_gzip ? "1" : "0") + ",\"cmd\":" + CommanderSummary(cmd) + ",\"army\":" + ArmySummary() + extra + "}");
+				LastHeader = hdr;
+				_w.WriteLine(hdr, true);
 				WriteArena(cmd);
 				Array.Clear(_accLast); _accLast[0] = int.MinValue; // force the first accessory event
 				_pJump = cmd.jump; _pAnim = cmd.itemAnimation; _pDashDelay = cmd.dashDelay; _pFly = false; _pHookOut = false; _pHookAtt = false;
@@ -197,36 +375,89 @@ namespace Levy.Common.Recording
 		private static void Abort()
 		{
 			On = false;
-			try { _w?.Dispose(); } catch { }
+			try { _w?.Close(null, null, true, 3000); } catch { }
 			_w = null; _cmd = null;
 		}
+
+		/// <summary>The word in the file name: won (boss killed), lost (the commander fell and the boss left alive), fled (it left, nobody fell), ended (no boss, or the limit), interrupted (the world closed).</summary>
+		private static string ResultWord(string reason)
+		{
+			if (reason == "world unloaded" || reason == "unloaded") return "interrupted";
+			if (_outcome == "killed") return "won";
+			if (_outcome == "despawn") return _cmdDeaths > 0 ? "lost" : "fled";
+			return _cmdDeaths > 0 && _bossesSeen > 0 ? "lost" : "ended";
+		}
+
+		/// <summary>What the file is named for: the first boss seen, else the label the automatic recorder gave the fight (an invasion, "Fight").</summary>
+		private static string FileLabel() => _bossNameSeen ?? (_boss != "none" ? _boss : FightLabel ?? "Fight");
+		/// <summary>Set by the automatic recorder for a fight with no boss.</summary>
+		public static string FightLabel;
 
 		public static string Stop(string reason)
 		{
 			if (!On) return null;
 			On = false;
-			if (Headless) FightRecAuto.Stopped();
-			string final = _path;
+			if (Headless) FightRecAuto.Stopped(); else FightRecAuto.RecorderStopped(reason);
+			string final = _path; var w = _w;
+			bool sync = Headless || ForceSync || reason == "world unloaded" || reason == "unloaded";
+			bool discard = false; string result = "ended";
 			try
 			{
 				FlushBossEnd(true);
-				_w.WriteLine("{\"k\":\"names\",\"items\":" + Names(_items) + ",\"npcs\":" + Names(_npcs) + ",\"projectiles\":" + Names(_projs) + ",\"buffs\":" + Names(_buffs) + ",\"soldiers\":" + Names(_soldiers) + ",\"prefixes\":" + Names(_prefixes) + "}");
-				_w.WriteLine("{\"k\":\"end\",\"reason\":" + FightRecFormat.Esc(reason) + ",\"ticks\":" + Elapsed + ",\"frames\":" + _frames + ",\"events\":" + _events
-					+ ",\"target\":{\"none\":" + _tkNone + ",\"player\":" + _tkPlayer + ",\"levy\":" + _tkLevy + "},\"levyHits\":" + _levyHits + ",\"levyDeaths\":" + _levyDeaths + ",\"outcome\":" + FightRecFormat.Esc(_outcome) + ",\"arenaChunks\":" + _chunks + "}");
-				_w.Dispose(); _w = null;
-				if (Headless && _frames < 90) { File.Delete(_path); Levy.Instance?.Logger.Info("[FightRec] discarded a " + _frames + "-sample recording (" + reason + ")"); _path = null; _cmd = null; _bossNameSeen = null; return null; }
-				if (Headless) Levy.Instance?.Logger.Info("[FightRec] saved " + _path + " (" + reason + ", " + _frames + " samples, levy hits " + _levyHits + ", deaths " + _levyDeaths + ", target none/player/levy " + _tkNone + "/" + _tkPlayer + "/" + _tkLevy + ")");
-				// the boss may have appeared after the start: rename once to carry its name
-				if (_boss == "none" && _bossNameSeen != null && string.IsNullOrEmpty(_fileBase))
+				FlushDmg(Elapsed, true);
+				result = ResultWord(reason);
+				discard = (Headless && _frames < 90) || (_auto != 0 && Elapsed < MinKeepTicks && _bossesSeen == 0);
+				w.WriteLine("{\"k\":\"names\",\"items\":" + Names(_items) + ",\"npcs\":" + Names(_npcs) + ",\"projectiles\":" + Names(_projs) + ",\"buffs\":" + Names(_buffs) + ",\"soldiers\":" + Names(_soldiers) + ",\"prefixes\":" + Names(_prefixes) + "}", true);
+				int alive = 0, total = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) alive++;
+				if (RosterSystem.Instance != null) foreach (var r in RosterSystem.Instance.Regulars) if (!r.Reserve) total++;
+				double secs = Elapsed / 60.0;
+				w.WriteLine("{\"k\":\"end\",\"reason\":" + FightRecFormat.Esc(reason) + ",\"ticks\":" + Elapsed + ",\"frames\":" + _frames + ",\"events\":" + _events
+					+ ",\"target\":{\"none\":" + _tkNone + ",\"player\":" + _tkPlayer + ",\"levy\":" + _tkLevy + "},\"levyHits\":" + _levyHits + ",\"levyDeaths\":" + _levyDeaths + ",\"outcome\":" + FightRecFormat.Esc(_outcome) + ",\"arenaChunks\":" + _chunks
+					+ ",\"result\":" + FightRecFormat.Esc(result) + ",\"durationSec\":" + FightRecFormat.N(secs) + ",\"bossName\":" + FightRecFormat.Esc(_bossNameSeen ?? _boss) + ",\"bosses\":" + _bossesSeen + ",\"cmdDeaths\":" + _cmdDeaths
+					+ ",\"armyAlive\":" + alive + ",\"armyTotal\":" + total + ",\"dmgBoss\":" + _dmgBoss + ",\"dmgAll\":" + _dmgAll + ",\"profiled\":" + (_profWindows > 0 ? "1" : "0") + ",\"dropped\":" + w.Dropped + ",\"capped\":" + (w.Full ? "1" : "0") + ",\"writeError\":" + FightRecFormat.Esc(w.Error) + "}", true);
+				_w = null;
+				if (!_gzip)
 				{
-					string np = System.IO.Path.Combine(Dir(), System.IO.Path.GetFileName(_path).Replace("_none.jsonl", "_" + SafeName(_bossNameSeen) + ".jsonl"));
-					if (np != _path && !File.Exists(np)) { File.Move(_path, np); final = np; }
+					w.Close(null, null, true);
+					if (Headless && _frames < 90) { File.Delete(_path); Levy.Instance?.Logger.Info("[FightRec] discarded a " + _frames + "-sample recording (" + reason + ")"); _path = null; _cmd = null; _bossNameSeen = null; return null; }
+					if (Headless) Levy.Instance?.Logger.Info("[FightRec] saved " + _path + " (" + reason + ", " + _frames + " samples, levy hits " + _levyHits + ", deaths " + _levyDeaths + ", target none/player/levy " + _tkNone + "/" + _tkPlayer + "/" + _tkLevy + ")");
+					// the boss may have appeared after the start: rename once to carry its name
+					if (_boss == "none" && _bossNameSeen != null && string.IsNullOrEmpty(_fileBase))
+					{
+						string np = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(_path), System.IO.Path.GetFileName(_path).Replace("_none.jsonl", "_" + SafeName(_bossNameSeen) + ".jsonl"));
+						if (np != _path && !File.Exists(np)) { File.Move(_path, np); final = np; }
+					}
+				}
+				else
+				{
+					string dir = System.IO.Path.GetDirectoryName(_path);
+					string to = discard ? null : FightRecFolder.FileName(dir, _startWall, FileLabel(), result);
+					long folderCap = MaxFolderBytes > 0 ? MaxFolderBytes : ConfigFolderBytes();
+					int frames = _frames; string why = reason;
+					w.Close(to, done => Finished(w, done, discard, dir, folderCap, why, frames), sync);
+					final = discard ? null : to;
 				}
 			}
 			catch (Exception e) { Levy.Instance?.Logger.Warn("[FightRec] stop failed: " + e.Message); }
-			_path = final; _cmd = null; _bossNameSeen = null;
-			if (!Main.dedServ && reason != "stopped by command") Main.NewText("Fight recording saved (" + reason + "): " + final, 160, 255, 160);
+			LastResult = final;
+			_path = final; _cmd = null; _bossNameSeen = null; FightLabel = null;
+			if (final != null && !Main.dedServ && !Headless && reason != "stopped by command" && reason != "world unloaded" && reason != "unloaded") Main.NewText("Fight recording saved: " + System.IO.Path.GetFileName(final), 160, 255, 160);
 			return final;
+		}
+
+		/// <summary>Runs on the writer thread once the file is closed and renamed: drops a too-short file, trims the folder to its cap, and reports a write problem to chat.</summary>
+		private static void Finished(RecWriter w, string path, bool discard, string dir, long folderCap, string reason, int frames)
+		{
+			try
+			{
+				if (path == null) { FightRecAuto.Post("Fight recording could not be saved: " + (w.Error ?? "unknown error") + ".", true); return; }
+				if (discard) { try { File.Delete(path); } catch { } Levy.Instance?.Logger.Info("[FightRec] discarded a " + frames + "-sample recording (" + reason + ")"); return; }
+				int gone = FightRecFolder.Enforce(dir, folderCap, path, out long total);
+				Levy.Instance?.Logger.Info("[FightRec] saved " + path + " (" + reason + ", " + frames + " samples, " + (w.FileBytes / 1024) + " KB on disk from " + (w.RawBytes / 1024) + " KB, folder " + (total / 1048576) + " MB, " + gone + " old removed" + (w.Dropped > 0 ? ", " + w.Dropped + " lines dropped" : "") + ")");
+				if (w.Error != null) FightRecAuto.Post("Fight recording hit a write error (" + w.Error + "). The file may be cut short.", true);
+				if (gone > 0) FightRecAuto.Post("Removed " + gone + " old recording" + (gone == 1 ? "" : "s") + " to keep the folder under " + (folderCap / 1048576) + " MB.", false);
+			}
+			catch (Exception e) { Levy.Instance?.Logger.Warn("[FightRec] finishing failed: " + e.Message); }
 		}
 		private static string _bossNameSeen;
 
@@ -364,7 +595,10 @@ namespace Levy.Common.Recording
 				int el = Elapsed;
 				PollLevies(el);
 				PollBosses(el);
-				if (el >= MaxTicks) { Stop("10 minute limit"); return; }
+				if (_w != null && _w.Error != null) { Stop("write error"); return; }
+				if (_w != null && _w.Full) { Stop("size limit"); return; }
+				FlushDmg(el, false);
+				if (_auto != 0 ? el >= AutoMaxTicks : el >= MaxTicks) { Stop(_auto != 0 ? "20 minute limit" : "10 minute limit"); return; }
 				if (el % SampleEvery != 0) return;
 				Sample(el);
 			}
@@ -394,6 +628,8 @@ namespace Levy.Common.Recording
 			f.P = new double[] { p.Center.X, p.Center.Y, p.velocity.X, p.velocity.Y, p.direction, flags, p.statLife, p.statMana, p.immuneTime, p.wingTime, p.rocketTime,
 				held != null && !held.IsAir ? held.type : 0, p.mount.Active ? p.mount.Type : -1, hookPos.X, hookPos.Y, p.dashDelay };
 			if (held != null && !held.IsAir && !_items.ContainsKey(held.type)) _items[held.type] = held.Name;
+			if (p.dead && !_pDead) { _cmdDeaths++; Ev("cdeath", ("x", FightRecFormat.N(p.Center.X)), ("y", FightRecFormat.N(p.Center.Y)), ("n", _cmdDeaths.ToString())); }
+			_pDead = p.dead;
 
 			// events
 			if (p.jump > 0 && _pJump == 0) Ev("jump", ("x", FightRecFormat.N(p.Center.X)), ("y", FightRecFormat.N(p.Center.Y)));
@@ -450,7 +686,7 @@ namespace Levy.Common.Recording
 					}
 				}
 			}
-			int grace = Headless ? HeadlessGraceTicks : GraceTicks;
+			int grace = Headless ? HeadlessGraceTicks : _auto != 0 ? AutoGraceTicks : GraceTicks;
 			if (anyBoss)
 			{
 				if (Headless && _bossGoneTick > 0)

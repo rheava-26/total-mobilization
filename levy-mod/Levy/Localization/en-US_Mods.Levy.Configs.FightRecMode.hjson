@@ -1,0 +1,17 @@
+# Keys here are relative to Mods.Levy.Configs.FightRecMode (the choices of "Record fights automatically").
+Off: {
+	Label: Off
+	Tooltip: ""
+}
+
+BossFights: {
+	Label: Boss fights
+	Tooltip: ""
+}
+
+AllFights: {
+	Label: All fights
+	Tooltip: ""
+}
+
+Tooltip: ""

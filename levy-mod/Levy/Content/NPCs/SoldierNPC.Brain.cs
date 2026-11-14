@@ -1142,8 +1142,8 @@ namespace Levy.Content.NPCs
 				if (danger && !aloft && NPC.velocity.Y == 0f && (_thinkCount % 5) == 0 && !LavaAhead((int)side)) TryJump(2);
 				Vector2 shuffle;
 				if (aloft) shuffle = new Vector2(NPC.Center.X + side * strafeTiles * LevyConstants.TilePx, NPC.Center.Y);
-				else if (!FindSafeStep((int)side, strafeTiles, seg.Center, range, standoff, false, out shuffle)
-					&& !FindSafeStep(-(int)side, strafeTiles, seg.Center, range, standoff, false, out shuffle)) { WhyB = Why.BLedgeNoStep; return true; } // a ledge edge: stay put
+				else if (!FindSafeStep((int)side, strafeTiles, seg.Center, range, standoff, false, out shuffle, StrafeMinStepTiles)
+					&& !FindSafeStep(-(int)side, strafeTiles, seg.Center, range, standoff, false, out shuffle, StrafeMinStepTiles)) { WhyB = Why.BLedgeNoStep; return true; } // a ledge edge: stay put
 				WhyB = aloft ? Why.BAirStrafe : Why.BStrafe;
 				ApplyChaseClamp(ref shuffle);
 				SetGoal(shuffle);
@@ -1721,11 +1721,14 @@ namespace Levy.Content.NPCs
 		/// A standable tile up to <paramref name="maxSteps"/> columns away in <paramref name="dir"/> (the farthest that works) at the same
 		/// level (+/- one row) that still satisfies the standoff and reach. False if none, so a ledge edge is never stepped off.
 		/// </summary>
-		private bool FindSafeStep(int dir, int maxSteps, Vector2 tc, float range, float standoff, bool checkLos, out Vector2 dest)
+		/// <summary>A strafe shorter than this is a shuffle: on a foothold only one or two tiles wide the only step is back onto the tile it just left, so the body ping-pongs on the spot. With no step this long it stands still (and keeps firing).</summary>
+		internal static int StrafeMinStepTiles = Environment.GetEnvironmentVariable("LEVY_STRAFEMIN") == "0" ? 1 : 2;
+
+		private bool FindSafeStep(int dir, int maxSteps, Vector2 tc, float range, float standoff, bool checkLos, out Vector2 dest, int minSteps = 1)
 		{
 			Point feet = TileNav.FeetTile(NPC.Bottom);
 			bool ignoresTiles = checkLos && ShotIgnoresTiles();
-			for (int k = maxSteps; k >= 1; k--)
+			for (int k = maxSteps; k >= Math.Max(1, minSteps); k--)
 			{
 				int x = feet.X + dir * k;
 				for (int row = 0; row < 3; row++)

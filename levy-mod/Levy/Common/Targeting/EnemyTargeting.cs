@@ -55,6 +55,8 @@ namespace Levy.Common.Targeting
 		private static readonly HashSet<int> _bossParts = new(LevyConstants.Targeting.BossPartTypes);
 		private static readonly HashSet<int> _swapExcludedTypes = new(LevyConstants.Targeting.SwapExcludedTypes);
 		private static readonly HashSet<int> _bossSwapIncompatible = new(LevyConstants.Targeting.BossSwapIncompatibleAiStyles);
+		/// <summary>LEVY_EOLFLY=0 keeps Empress-style bosses off the flyer slot (A/B switch for labs).</summary>
+		internal static readonly bool BossFlyerOn = Environment.GetEnvironmentVariable("LEVY_EOLFLY") != "0";
 		private static readonly HashSet<int> _bossFlyerSlotStyles = new(LevyConstants.Targeting.BossFlyerSlotAiStyles);
 		private static readonly HashSet<int> _eventTowers = new(LevyConstants.Targeting.EventTowerTypes);
 
@@ -278,7 +280,7 @@ namespace Levy.Common.Targeting
 			if (BossPersistenceGlobalNPC.IsDaytimeExcluded(npc)) return false;
 			if (UsesNativeTargeting(npc)) return true;
 			int style = npc.aiStyle;
-			if (_bossFlyerSlotStyles.Contains(style)) return FlyerSlotUsable && !_swapExcludedTypes.Contains(npc.type);
+			if (_bossFlyerSlotStyles.Contains(style)) return BossFlyerOn && FlyerSlotUsable && !_swapExcludedTypes.Contains(npc.type);
 			return !_swapIncompatible.Contains(style) && !_bossSwapIncompatible.Contains(style) && !_swapExcludedTypes.Contains(npc.type);
 		}
 

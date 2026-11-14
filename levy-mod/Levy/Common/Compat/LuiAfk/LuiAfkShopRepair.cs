@@ -18,9 +18,14 @@ namespace Levy.Common.Compat.LuiAfk
 	///  2. The same AddShops guards four of its items with plain `if (NPC.AnyNPCs(19))`, `if (NPC.savedMech)`, `if (NPC.savedWizard)` evaluated ONCE, while mods load, when no world exists: all four are false, so the
 	///     Musket Ball, Wire, Actuator and item 500 never appear. They are added back as real shop conditions that are read every time the shop opens.
 	///  3. Steampunker: LuiAFK adds Red Solution for a Crimson world on a Blood Moon or eclipse, which the vanilla shop already sells there; the duplicate is dropped at fill time.
-	///  4. LuiafkPlayer.ResetEffects calls LuiafkUI.ResetUIs() for the player whose whoAmI equals Main.myPlayer, and its UI objects are only built for clients. On a dedicated server Main.myPlayer is 255,
-	///     which is also the whoAmI of every detached Player a mod builds (Levy's armour and accessory reads): their ResetEffects throws a NullReferenceException out of LuiAFK. Real players (slots 0-254) are not
-	///     affected. On a dedicated server the method is skipped (it only resets client UI state).
+	///  4. LuiafkPlayer.ResetEffects calls LuiafkUI.ResetUIs() for the player whose whoAmI equals Main.myPlayer. Two things make that wrong for a Levy dummy, because Levy lends Main.myPlayer / slot 255
+	///     to a soldier's dummy Player while it runs a gear frame or a weapon swap:
+	///       a) on a dedicated server (Main.myPlayer is 255, LuiAFK builds no UI) it throws a NullReferenceException out of LuiAFK for every detached Player a mod builds (observed: Levy's armour and
+	///          accessory reads, "armor-class read failed");
+	///       b) on a client it runs LuiAFK's UI reset as if the dummy were the local player (observed: SoldierNPC.GearFrame -> Player.ResetEffects -> ResetUIs with Main.myPlayer = 255), so the reset reads
+	///          the dummy's held item and closes the held-item panels of LuiAFK's builder tools (Building Rod, Paint Tool, Wiring, ...) while a levy with a gear frame ticks. (Consequence read from LuiAFK's
+	///          RightClickUI code; the drawn panel itself is not run headless.)
+	///     ResetUIs is skipped on a dedicated server and whenever Main.player[Main.myPlayer] is a Levy dummy; a real local player still resets as before.
 	/// Env LEVY_LUIAFK_REPAIR=0 switches all four off (lab A/B for the self-check).
 	/// </summary>
 	public static class LuiAfkShops
@@ -88,24 +93,27 @@ namespace Levy.Common.Compat.LuiAfk
 		}
 	}
 
-	/// <summary>Repair 4: LuiAFK's UI reset on a dedicated server.</summary>
+	/// <summary>Repair 4: LuiAFK's UI reset must only run for the real local player.</summary>
 	public class LuiAfkServerRepair : ModSystem
 	{
 		private delegate void OrigVoid();
 		public static bool Hooked;
 
+		/// <summary>True when LuiafkUI.ResetUIs must not run now: on a dedicated server, or while the "local player" is a Levy dummy.</summary>
+		public static bool SkipReset() => Main.dedServ || global::Levy.Common.Owner.SoldierOwner.IsDummy(Main.player[Main.myPlayer]);
+
 		public override void PostSetupContent()
 		{
-			if (LuiAfkShops.Disabled || !Main.dedServ || !LuiAfkShops.TryGet(out Mod lui)) return;
+			if (LuiAfkShops.Disabled || !LuiAfkShops.TryGet(out Mod lui)) return;
 			try
 			{
 				Type ui = lui.Code?.GetType("miningcracks_take_on_luiafk.UI.LuiafkUI");
 				MethodInfo reset = ui?.GetMethod("ResetUIs", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-				if (reset == null) { Mod.Logger.Info("LuiAFK server repair: LuiafkUI.ResetUIs not found (the mod changed?), nothing patched."); return; }
-				MonoModHooks.Add(reset, (Action<OrigVoid>)(orig => { if (!Main.dedServ) orig(); }));
+				if (reset == null) { Mod.Logger.Info("LuiAFK UI-reset repair: LuiafkUI.ResetUIs not found (the mod changed?), nothing patched."); return; }
+				MonoModHooks.Add(reset, (Action<OrigVoid>)(orig => { if (!SkipReset()) orig(); }));
 				Hooked = true;
 			}
-			catch (Exception e) { Mod.Logger.Warn("LuiAFK server repair: could not patch LuiafkUI.ResetUIs: " + e.Message); }
+			catch (Exception e) { Mod.Logger.Warn("LuiAFK UI-reset repair: could not patch LuiafkUI.ResetUIs: " + e.Message); }
 		}
 	}
 }

@@ -116,12 +116,20 @@ namespace Levy.Common.Compat.LuiAfk
 					Check("Travelling Merchant shop", err == null && tShop != null, err != null ? "threw " + err : $"registered, fills from Main.travelShop ({items.Count} items now; the roster is filled each dawn)");
 				}
 
-				// 4. Dedicated server: ResetEffects on a detached Player (whoAmI = Main.myPlayer = 255, like Levy's dummies) must not throw out of LuiAFK's UI reset. A client builds those UIs, so this only applies to a server.
-				if (Main.dedServ)
+				// 4. LuiAFK's UI reset must not run for a Levy dummy standing in as the local player (Levy's gear frames and weapon swaps do this every tick a levy with tick-dependent gear updates).
+				//    The dummy is posed as a gear frame poses it: slot 255, Main.myPlayer = 255, Main.dedServ false. On a dedicated server LuiAFK builds no UI, so without the repair that call throws.
 				{
-					string thrown = null;
-					try { var dummy = new Player(); dummy.whoAmI = Main.myPlayer; dummy.ResetEffects(); } catch (Exception e) { thrown = e.GetType().Name + " in " + (e.StackTrace ?? "").Split('\n').FirstOrDefault()?.Trim(); }
-					Check("Dedicated server detached-Player ResetEffects", thrown == null, thrown == null ? $"Player.ResetEffects completes (LuiafkUI.ResetUIs patched={LuiAfkServerRepair.Hooked})" : "threw " + thrown);
+					string thrown = null; var savedSlot = Main.player[255]; int my = Main.myPlayer; bool ded = Main.dedServ;
+					try
+					{
+						var dummy = new Player(); dummy.whoAmI = 255; global::Levy.Common.Owner.SoldierOwner.RegisterDummy(dummy);
+						Main.player[255] = dummy; Main.myPlayer = 255; Main.dedServ = false;
+						dummy.ResetEffects();
+					}
+					catch (Exception e) { thrown = e.GetType().Name + " in " + (e.StackTrace ?? "").Split('\n').FirstOrDefault()?.Trim(); }
+					finally { Main.player[255] = savedSlot; Main.myPlayer = my; Main.dedServ = ded; }
+					Check("Levy dummy as local player", thrown == null && LuiAfkServerRepair.Hooked,
+						thrown == null ? $"dummy.ResetEffects with Main.myPlayer = its slot does not reach LuiAFK's UI reset (patched={LuiAfkServerRepair.Hooked})" : "threw " + thrown);
 				}
 			}
 			catch (Exception e) { Check("self-check", false, "threw " + e.GetType().Name + ": " + e.Message); }

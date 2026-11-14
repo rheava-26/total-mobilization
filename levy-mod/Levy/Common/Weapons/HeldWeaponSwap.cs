@@ -582,9 +582,39 @@ namespace Levy.Common.Weapons
 			if (!Chain || (Main.dedServ && !lab) || !CombatFix.On(CombatFix.Draw) || projectile.owner != SoldierNPC.DummySlot || EnemyTargeting.IsSwapped) return true;
 			if (!projectile.TryGetGlobalProjectile(out SoldierProjectileTag tag) || tag.SoldierIndex < 0 || tag.SoldierIndex >= Main.maxNPCs) return true;
 			if (Main.npc[tag.SoldierIndex].ModNPC is not SoldierNPC s || s.Dummy == null || !s.IsAlive) return true;
-			try { EnemyTargeting.Swap(s); _drawSwapped = true; CombatFix.DrawSwaps++; }
+			try
+			{
+				EnemyTargeting.Swap(s); _drawSwapped = true; CombatFix.DrawSwaps++;
+				// a lash is drawn along the control points the whip code works out from its owner's use animation and arm: the dummy holds the item and the animation for the draw too
+				if (RealWhips.IsWhipProjectile(projectile))
+				{
+					Item it = WeaponUse.HeldItem(s);
+					if (it == null || it.IsAir || it.type != ItemType) it = ContentSamples.ItemsByType.TryGetValue(ItemType, out Item smp) ? smp : null;
+					if (it != null) _whipDraw = new RealWhips.AiScope(s, projectile, it, false);
+				}
+			}
 			catch (Exception) { EnemyTargeting.EnsureSlotRestored(); }
 			return true;
+		}
+
+		private RealWhips.AiScope? _whipDraw;
+
+		/// <summary>Lab: the reach (px, from the first control point) the whip code gives this lash in the state its draw sees: the dummy in the owner slot, as <see cref="ProbeDraw"/>. -1 when it could not be read.</summary>
+		internal static float ProbeWhipDrawReach(Projectile projectile)
+		{
+			if (!projectile.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain || !RealWhips.IsWhipProjectile(projectile)) return -1f;
+			var pts = new List<Vector2>(48);
+			try
+			{
+				g.BeginDraw(projectile, true);
+				if (!g._drawSwapped) return -1f;
+				Projectile.FillWhipControlPoints(projectile, pts);
+			}
+			catch (Exception) { return -1f; }
+			finally { g.PostDraw(projectile, default); }
+			float r = 0f;
+			for (int i = 1; i < pts.Count; i++) { float d = Vector2.Distance(pts[0], pts[i]); if (!float.IsNaN(d)) r = Math.Max(r, d); else return -2f; }
+			return r;
 		}
 
 		/// <summary>Lab only (a dedicated server never draws): runs the draw swap on this chain projectile exactly as PreDraw / PostDraw do, and reports where the projectile's owner slot stands during the draw (distance to its soldier in px) and whether the slot was put back.</summary>
@@ -606,6 +636,7 @@ namespace Levy.Common.Weapons
 		{
 			if (!_drawSwapped) return;
 			_drawSwapped = false;
+			if (_whipDraw.HasValue) { _whipDraw.Value.Dispose(); _whipDraw = null; }
 			EnemyTargeting.Unswap();
 			EnemyTargeting.EnsureSlotRestored();
 		}

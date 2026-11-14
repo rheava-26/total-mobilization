@@ -86,7 +86,7 @@ namespace Levy.Common.Testing
 		/// <summary>What the check records about every projectile spawned while it is tracking.</summary>
 		private sealed class Info
 		{
-			public int Seq, Type, Owner, Kind, SpawnTick, SoldierIdx = -1, MaxSegs, Hits, Crits, LastSeen; public long Dmg; public float MaxReach; public bool Whip, Dead; public List<int> HitDmg = new();
+			public int Seq, Type, Owner, Kind, SpawnTick, SoldierIdx = -1, MaxSegs, Hits, Crits, LastSeen; public long Dmg; public float MaxReach, DrawReach = float.NaN; public bool Whip, Dead; public List<int> HitDmg = new();
 		}
 		public static bool Tracking;
 		private static int _seq, _tick;
@@ -113,11 +113,44 @@ namespace Levy.Common.Testing
 			Note($"  dbg KILL whip owner={p.owner} ai0={p.ai[0]:0.0} ai1={p.ai[1]:0.0} timeLeft={timeLeft} itemAnim(dummy)={(Main.player[p.owner]?.itemAnimation)}/{(Main.player[p.owner]?.itemAnimationMax)} :: {frames}");
 		}
 
+		/// <summary>True for a probe stinger: its hit has no damage variation, so the tag's bonus reads as an exact number instead of hiding in the +-15% spread.</summary>
+		internal static bool IsProbe(Projectile p) => Tracking && Live.TryGetValue(p.whoAmI, out Info inf) && inf.Type == p.type && inf.Kind != 0;
+
 		internal static void OnHit(Projectile p, NPC target, NPC.HitInfo hit, int dmg)
 		{
 			if (!Tracking || !Live.TryGetValue(p.whoAmI, out Info inf) || inf.Type != p.type) return;
 			inf.Hits++; inf.Dmg += dmg; if (hit.Crit) inf.Crits++; inf.HitDmg.Add(dmg);
 		}
+
+		/// <summary>Draw-state geometry: once a swing, a levy's lash is measured the way its draw sees it (BeginDraw's swap) and compared with the AI-state reach the sampler read.</summary>
+		private static void DrawProbe()
+		{
+			if (!_drawProbeOn) return;
+			foreach (var kv in Live)
+			{
+				Info inf = kv.Value; Projectile p = Main.projectile[kv.Key];
+				if (!inf.Whip || !p.active || p.owner != SoldierNPC.DummySlot || p.ModProjectile is SoldierWhip || _tick - inf.SpawnTick < _probeAnim * 0.45f || !float.IsNaN(inf.DrawReach)) continue;
+				float draw = HeldWeaponProjectile.ProbeWhipDrawReach(p), ai = AiReach(p, inf);
+				// the draw state must give the lash the same geometry the AI state does, at the same instant
+				inf.DrawReach = draw < 0f || ai <= 0f ? -3f : Math.Abs(draw - ai);
+			}
+		}
+		/// <summary>The lash's reach at this instant in the state its AI sees (the dummy in the owner slot with the swing's animation).</summary>
+		private static float AiReach(Projectile p, Info inf)
+		{
+			var pts = new List<Vector2>(48); bool swapped = false;
+			try
+			{
+				if (inf.SoldierIdx < 0 || Main.npc[inf.SoldierIdx].ModNPC is not SoldierNPC sb || sb.Dummy == null) return -1f;
+				EnemyTargeting.Swap(sb); swapped = true;
+				using (new RealWhips.AiScope(sb, p, WeaponUse.HeldItem(sb), true)) Projectile.FillWhipControlPoints(p, pts);
+			}
+			catch (Exception) { return -1f; }
+			finally { if (swapped) EnemyTargeting.Unswap(); EnemyTargeting.EnsureSlotRestored(); }
+			float r = 0f; for (int i = 1; i < pts.Count; i++) { float d = Vector2.Distance(pts[0], pts[i]); if (!float.IsNaN(d)) r = Math.Max(r, d); }
+			return r;
+		}
+		private static bool _drawProbeOn; private static int _probeAnim = 30;
 
 		private static bool IsWhipType(Projectile p) => (p.type > 0 && p.type < ProjectileID.Sets.IsAWhip.Length && ProjectileID.Sets.IsAWhip[p.type]) || p.aiStyle == ProjAIStyleID.Whip || p.ModProjectile is SoldierWhip;
 
@@ -130,6 +163,7 @@ namespace Levy.Common.Testing
 			_tick++;
 			List<int> dead = null;
 			var pts = new List<Vector2>(32);
+			DrawProbe();
 			foreach (var kv in Live)
 			{
 				Info inf = kv.Value; Projectile p = Main.projectile[kv.Key];
@@ -261,7 +295,7 @@ namespace Levy.Common.Testing
 			public string Item, Path; public int Ticks, Swings, Hits, Crits, WhipType = -1, Segs; public float Reach; public long Dmg;
 			public double LifeTicks; public readonly Dictionary<int, int> Types = new(); public readonly List<string> Buffs = new();
 			public readonly List<int> BuffIds = new(); public bool VanillaTag, LevyTag; public double StingerBase, StingerCmd, StingerLevy, StingerCmdFirst, StingerLevyFirst; public string LeftoverNames = ""; public int StingerBaseN, StingerCmdN, StingerLevyN;
-			public int Leftover = -1; public int Writes; public List<string> WriteNotes = new(); public double StartUs, AiUs, DmgUs; public bool Ok = true;
+			public float DrawReach = float.NaN; public int Leftover = -1; public int Writes; public List<string> WriteNotes = new(); public double StartUs, AiUs, DmgUs; public bool Ok = true;
 			public double DmgPerHit => Hits > 0 ? (double)Dmg / Hits : 0; public double DmgPerSec => Ticks > 0 ? Dmg * 60.0 / Ticks : 0;
 		}
 
@@ -275,6 +309,7 @@ namespace Levy.Common.Testing
 			if (whips.Count > 0)
 			{
 				sc.WhipType = whips[0].Type; sc.Segs = whips.Max(i => i.MaxSegs); sc.Reach = whips.Max(i => i.MaxReach);
+				var dr = whips.Where(i => !float.IsNaN(i.DrawReach)).Select(i => i.DrawReach).ToList(); if (dr.Count > 0) sc.DrawReach = dr.Max(); // the largest gap between the draw state and the AI state
 				sc.Hits = whips.Sum(i => i.Hits); sc.Dmg = whips.Sum(i => i.Dmg); sc.Crits = whips.Sum(i => i.Crits);
 				var done = whips.Where(i => i.Dead).Select(i => i.LastSeen - i.SpawnTick + 1).ToList();
 				sc.LifeTicks = done.Count > 0 ? done.Average() : 0;
@@ -326,7 +361,7 @@ namespace Levy.Common.Testing
 		/// The reference player: a scratch Player standing in slot 255, which is where a dedicated server's own player lives (Main.myPlayer = 255 there) and the one slot the server loop never marks inactive from its
 		/// thread (it does that to slot 0 between hooks, and a whip is killed the moment its owner is not active). It uses the whip through vanilla's own Player.ItemCheck, one call a tick.
 		/// </summary>
-		private static Player _scratch, _saved255;
+		private static Player _scratch, _saved255; private static Terraria.Graphics.SpriteViewMatrix _savedView;
 
 		private static void PlayerUse(Item whip, Vector2 aim, int t)
 		{
@@ -365,13 +400,17 @@ namespace Levy.Common.Testing
 			_scratch.ResetEffects();
 			_scratch.inventory[0] = new Item(); _scratch.selectedItem = 0;
 			Main.player[255] = _scratch; _my = 255;
+			// vanilla's use code reads Main.GameViewMatrix.Zoom for every item (ItemCheck_PlayInstruments), and a dedicated server has none: it threw a NullReferenceException a tick (tML logs each)
+			_savedView = Main.GameViewMatrix;
+			if (_savedView == null) Main.GameViewMatrix = new Terraria.Graphics.SpriteViewMatrix(null);
 		}
 
 		private static void EndScratch()
 		{
 			_my = 0;
 			if (_scratch != null && ReferenceEquals(Main.player[255], _scratch)) Main.player[255] = _saved255;
-			_scratch = null; _saved255 = null;
+			if (_savedView == null) Main.GameViewMatrix = null;
+			_scratch = null; _saved255 = null; _savedView = null;
 			EnemyTargeting.ResetState(); // the swap bookkeeping adopted the scratch as slot 255's null player: it is the real one again
 		}
 
@@ -470,6 +509,7 @@ namespace Levy.Common.Testing
 			if (body == null) { sc.Ok = false; return sc; }
 			Tracking = true; _tick = 0; _seq = 0; All.Clear(); Live.Clear();
 			Step(3);
+			_drawProbeOn = mode == 1; _probeAnim = Math.Max(1, whip.useAnimation);
 			RealWhips.Measure = true; RealWhips.ResetCost();
 			int from = _tick; var writes = new Dictionary<string, int>(); int writeTicks = 0;
 			for (int t = 0; t < ticks; t++)
@@ -479,7 +519,7 @@ namespace Levy.Common.Testing
 				CmdState after = CmdState.Take();
 				var d = before.Diff(after); if (d.Count > 0) { writeTicks++; foreach (string f in d) writes[f] = writes.TryGetValue(f, out int n) ? n + 1 : 1; }
 			}
-			RealWhips.Measure = false;
+			RealWhips.Measure = false; _drawProbeOn = false;
 			sc.Writes = writeTicks; foreach (var kv in writes.OrderBy(k => k.Key)) sc.WriteNotes.Add(kv.Key + "x" + kv.Value);
 			Collect(sc, from); ReadEnemy(sc);
 			if (RealWhips.Starts > 0 || RealWhips.AiCalls > 0)
@@ -498,6 +538,7 @@ namespace Levy.Common.Testing
 			if (!control)
 			{
 				// the levy is gone: the lash it threw goes with it
+				RosterSystem.Instance.Regulars.RemoveAll(r => r.CommanderName == Commander); // (a levy that is still on the roster is respawned at once, and its lash with it)
 				body.NPC.active = false;
 				Step(4);
 				int left = 0; for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && IsWhipType(q)) { left++; q.TryGetGlobalProjectile(out SoldierProjectileTag lt); q.TryGetGlobalProjectile(out HeldWeaponProjectile lh); sc.LeftoverNames += $"{ProjName(q.type)}@{q.owner} ai0={q.ai[0]:0} timeLeft={q.timeLeft} chain={lh?.Chain} whip={lh?.Whip} soldier={lt?.SoldierIndex} "; } }
@@ -586,6 +627,7 @@ namespace Levy.Common.Testing
 				Check($"{label}: its segments match the player's ({ls.Segs} vs {ps.Segs})", ls.Segs == ps.Segs && ps.Segs > 0);
 				Check($"{label}: its reach is within 15% of the player's ({ls.Reach:0} vs {ps.Reach:0}px)", ps.Reach > 0 && Math.Abs(ls.Reach - ps.Reach) <= ps.Reach * 0.15f);
 				Check($"{label}: it lashes and hits ({ls.Swings} swings, {ls.Hits} hits)", ls.Swings > 0 && ls.Hits > 0);
+				Check($"{label}: its draw sees the same lash geometry as its AI (largest gap {ls.DrawReach:0.0}px)", !float.IsNaN(ls.DrawReach) && ls.DrawReach >= 0f && ls.DrawReach <= 2f);
 				// the tag debuffs are the whip's identity and must match; a debuff that rides on a crit or a tip hit (Thorium's Gouge) depends on where the lash met the enemy: reported, not judged
 				var tagsOf = (Scene sc0) => sc0.BuffIds.Where(IsTagBuff).Select(BuffName).ToList();
 				bool buffsOk = tagsOf(ps).All(b => ls.Buffs.Contains(b));
@@ -595,9 +637,12 @@ namespace Levy.Common.Testing
 				{
 					bool flame = ps.Buffs.Contains("FlameWhipEnemyDebuff"); // the Firecracker's tag is a one-shot: its first hit is the big one
 					bool Up(double mean, double first, double b) => b > 0 && (flame ? first > b * 1.4 : mean > b * 1.03);
-					Check($"{label}: the tag buff raises a commander minion's hit ({ps.StingerBase:0.0} -> {ps.StingerCmd:0.0}, first {ps.StingerCmdFirst:0.0}, on the player's lash)", Up(ps.StingerCmd, ps.StingerCmdFirst, ps.StingerBase));
-					Check($"{label}: the levy's lash tags the enemy so the commander's minion hits harder ({ls.StingerCmd:0.0}, first {ls.StingerCmdFirst:0.0}, vs untagged {stingerBase:0.0})", Up(ls.StingerCmd, ls.StingerCmdFirst, stingerBase));
-					Check($"{label}: a levy minion's shot hits the tagged enemy harder, by the game's numbers ({ls.StingerLevy:0.0}, first {ls.StingerLevyFirst:0.0}, vs untagged {stingerBase:0.0})", Up(ls.StingerLevy, ls.StingerLevyFirst, stingerBase));
+					// the reference is what the game gives a commander minion off the player's lash (Calamity re-works the vanilla tags into its own system, some of them crit chances, so the amount is read, not assumed)
+					bool playerGives = Up(ps.StingerCmd, ps.StingerCmdFirst, ps.StingerBase);
+					Note($"   OBSERVED {label}: commander minion off the player's lash {ps.StingerBase:0.0} -> {ps.StingerCmd:0.0} (first {ps.StingerCmdFirst:0.0}); off the levy's lash {ls.StingerCmd:0.0} (first {ls.StingerCmdFirst:0.0}); levy minion {ls.StingerLevy:0.0} (first {ls.StingerLevyFirst:0.0}); untagged {stingerBase:0.0}");
+					double refCmd = flame ? ps.StingerCmdFirst : ps.StingerCmd, gotCmd = flame ? ls.StingerCmdFirst : ls.StingerCmd;
+					Check($"{label}: the levy's lash gives the commander's minion what the player's lash does ({gotCmd:0.0} vs {refCmd:0.0})", Math.Abs(gotCmd - refCmd) <= Math.Max(3.0, refCmd * 0.1));
+					if (playerGives) Check($"{label}: a levy minion's shot hits the tagged enemy harder, by the game's numbers ({ls.StingerLevy:0.0}, first {ls.StingerLevyFirst:0.0}, vs untagged {stingerBase:0.0})", Up(ls.StingerLevy, ls.StingerLevyFirst, stingerBase));
 				}
 				Check($"{label}: the real commander is not written to ({ls.Writes} ticks vs control {ctlWrites})", ls.Writes <= ctlWrites);
 				Check($"{label}: no whip projectile is left after the levy is gone ({ls.Leftover} {ls.LeftoverNames})", ls.Leftover == 0);
@@ -622,5 +667,6 @@ namespace Levy.Common.Testing
 		public override void OnSpawn(Projectile projectile, IEntitySource source) { if (WhipRealCheck.Tracking) WhipRealCheck.OnSpawn(projectile); }
 		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone) { if (WhipRealCheck.Tracking) WhipRealCheck.OnHit(projectile, target, hit, damageDone); }
 		public override void OnKill(Projectile projectile, int timeLeft) { if (WhipRealCheck.Tracking) WhipRealCheck.OnKill(projectile, timeLeft); }
+		public override void ModifyHitNPC(Projectile projectile, NPC target, ref NPC.HitModifiers modifiers) { if (WhipRealCheck.Tracking && WhipRealCheck.IsProbe(projectile)) modifiers.DamageVariationScale *= 0f; }
 	}
 }

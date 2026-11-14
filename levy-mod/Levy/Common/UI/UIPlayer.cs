@@ -33,6 +33,8 @@ namespace Levy.Common.UI
 		/// </summary>
 		public override void PreUpdate()
 		{
+			// The officer panel scrolls with the wheel; the vanilla hotbar must not also change slot (the UI reads ScrollWheelDeltaForUI, so zeroing this leaves the panel's scrolling intact).
+			if (Player.whoAmI == Main.myPlayer && !Main.dedServ && UISystem.Instance != null && UISystem.Instance.OfficersHovered) PlayerInput.ScrollWheelDelta = 0;
 			if (!UISystem.FocusDesignating) return;
 			if (Main.dedServ || Main.gameMenu || Player.whoAmI != Main.myPlayer || Player.dead) { EndDesignate(); return; }
 

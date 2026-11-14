@@ -153,4 +153,15 @@ namespace Levy.Common.Util
 			else { ClientProf.Disable(); caller.Reply("Levy profiler is off.", Color.LightGray); }
 		}
 	}
+
+	/// <summary>/levyproof: the same command under the spelling speech-to-text produces.</summary>
+	public class LevyProofCommand : ModCommand
+	{
+		private readonly LevyProfCommand _prof = new();
+		public override CommandType Type => _prof.Type;
+		public override string Command => "levyproof";
+		public override string Usage => "/levyproof [on|off]";
+		public override string Description => _prof.Description;
+		public override void Action(CommandCaller caller, string input, string[] args) => _prof.Action(caller, input, args);
+	}
 }

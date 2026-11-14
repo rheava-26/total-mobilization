@@ -523,34 +523,6 @@ namespace Levy.Common.Systems
 			return false;
 		}
 
-		/// <summary>The barracks to bind an Officers panel to when the commander uses an active pylon at <paramref name="pylonCenter"/>: the nearest barracks whose settlement is on the pylon network, or null.</summary>
-		public virtual BarracksTE RecruitingBarracksFor(Vector2 pylonCenter)
-		{
-			BarracksTE best = null; float bestD = float.MaxValue;
-			foreach (var te in TileEntity.ByID.Values)
-			{
-				if (te is not BarracksTE b || !LinkOf(b).Linked) continue;
-				float d = Vector2.DistanceSquared(b.Center, pylonCenter);
-				if (d < bestD) { bestD = d; best = b; }
-			}
-			return best;
-		}
-
-		/// <summary>True when (i, j) is a tile of an active pylon; <paramref name="center"/> is that pylon's middle.</summary>
-		public virtual bool IsActivePylonAt(int i, int j, out Vector2 center)
-		{
-			center = default;
-			var pylons = Pylons(); if (pylons == null) return false;
-			for (int k = 0; k < pylons.Count; k++)
-			{
-				var p = pylons[k].PositionInTiles;
-				if (i < p.X || i > p.X + 2 || j < p.Y || j > p.Y + 3) continue;
-				center = PylonCenter(pylons[k]);
-				return PylonActive(pylons[k]);
-			}
-			return false;
-		}
-
 		public virtual ArmoryTE LinkedArmory(BarracksTE barracks) => barracks == null ? null : NearestArmory(barracks.Center, LevyConstants.ArmoryLinkRadius);
 
 		public virtual string TownName(BarracksTE barracks) => string.IsNullOrWhiteSpace(barracks?.TownName) ? LevyUtil.T("Militia.DefaultTownName") : barracks.TownName;

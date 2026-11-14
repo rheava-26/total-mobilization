@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -19,7 +20,10 @@ namespace Levy.Common.Officers
 		public readonly SummonKind Kind;
 		public readonly int Cap;
 		public readonly int RespawnTicks;
-		public SummonSquad(SummonKind kind, int cap, int respawnTicks) { Kind = kind; Cap = cap; RespawnTicks = respawnTicks; }
+		/// <summary>When set, the squad is CONJURED creatures (real enemy types on their own AI, see <see cref="ConjuredGlobalNPC"/>): it returns the NPC type to conjure each time one is needed (0 = none right now). <see cref="Kind"/> is then null.</summary>
+		public readonly Func<int> Conjure;
+		public SummonSquad(SummonKind kind, int cap, int respawnTicks) { Kind = kind; Cap = cap; RespawnTicks = respawnTicks; Conjure = null; }
+		public SummonSquad(Func<int> conjure, int cap, int respawnTicks) { Kind = null; Cap = cap; RespawnTicks = respawnTicks; Conjure = conjure; }
 	}
 
 	/// <summary>
@@ -77,7 +81,7 @@ namespace Levy.Common.Officers
 				// Stand each squad up at once so the officer marches out with it; refills are paced by the cadence.
 				while (st.Units[s].Count < squads[s].Cap)
 				{
-					int idx = SpawnOne(avatar, commander, squads[s].Kind);
+					int idx = SpawnSquadUnit(avatar, commander, squads[s]);
 					if (idx < 0) break; // no slot / no safe spot: the per-tick refill fills in later
 					st.Units[s].Add(idx);
 				}
@@ -104,7 +108,7 @@ namespace Levy.Common.Officers
 				if (st.RespawnTimer[s] > 0) st.RespawnTimer[s]--;
 				if (units.Count < squads[s].Cap && st.RespawnTimer[s] <= 0)
 				{
-					int idx = SpawnOne(avatar, commander, squads[s].Kind);
+					int idx = SpawnSquadUnit(avatar, commander, squads[s]);
 					if (idx >= 0) units.Add(idx);
 					st.RespawnTimer[s] = squads[s].RespawnTicks; // pace retries whether or not the spawn found a slot
 				}
@@ -122,7 +126,7 @@ namespace Levy.Common.Officers
 					int who = units[i];
 					if (who < 0 || who >= Main.maxNPCs) continue;
 					NPC n = Main.npc[who];
-					if (n.active && n.ModNPC is SummonedUnitNPC)
+					if (n.active && (n.ModNPC is SummonedUnitNPC || ConjuredGlobalNPC.IsConjured(n)))
 					{
 						n.life = 0; n.active = false; n.netUpdate = true;
 						if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, who);
@@ -137,7 +141,17 @@ namespace Levy.Common.Officers
 		{
 			if (who < 0 || who >= Main.maxNPCs) return false;
 			NPC n = Main.npc[who];
-			return n.active && n.ModNPC is SummonedUnitNPC u && u.IsAlive && u.OwnerWho == ownerWho;
+			if (!n.active) return false;
+			if (n.ModNPC is SummonedUnitNPC u) return u.IsAlive && u.OwnerWho == ownerWho;
+			return n.TryGetGlobalNPC(out ConjuredGlobalNPC c) && c.Active && c.IsAlive && c.OwnerWho == ownerWho; // a conjured creature of this officer
+		}
+
+		/// <summary>One unit of a squad: a conjured creature of the type the squad asks for, or a <see cref="SummonedUnitNPC"/> of its kind. Returns its whoAmI, or -1.</summary>
+		private static int SpawnSquadUnit(NPC avatar, int commander, SummonSquad squad)
+		{
+			if (squad.Conjure == null) return SpawnOne(avatar, commander, squad.Kind);
+			int type = squad.Conjure();
+			return type > 0 ? ConjuredGlobalNPC.Conjure(avatar, commander, type) : -1;
 		}
 
 		/// <summary>Spawns one unit of <paramref name="kind"/> near the officer (safe placement) and binds it. Returns its whoAmI, or -1 when no slot/spot is available.</summary>

@@ -116,27 +116,9 @@ namespace Levy.Content.NPCs
 			leashTiles: LevyConstants.Summon.PirateCannonLeashTiles,
 			fireSound: SoundID.Item14);
 
-		/// <summary>The Clothier's skeleton warriors: ground chargers that run down the nearest enemy near the officer and cut it on contact.</summary>
-		public static readonly SummonKind ClothierSkeleton = new SummonKind(
-			id: 2,
-			name: "Skeleton",
-			maxHp: LevyConstants.Summon.ClothierSkeletonHp,
-			baseDamage: LevyConstants.Summon.ClothierSkeletonBaseDamage,
-			drawNpcType: NPCID.Skeleton,
-			projectileType: ProjectileID.None,
-			projectileSpeed: 0f,
-			knockback: LevyConstants.Summon.ClothierSkeletonKnockback,
-			gravityCorrection: 0f,
-			cooldownTicks: LevyConstants.Summon.ClothierSkeletonCooldownTicks,
-			randomCooldownTicks: LevyConstants.Summon.ClothierSkeletonRandomCooldownTicks,
-			rangeTiles: LevyConstants.Summon.ClothierSkeletonRangeTiles,
-			moveSpeedPx: LevyConstants.Summon.ClothierSkeletonMoveSpeedPx,
-			aggro: LevyConstants.Summon.ClothierSkeletonAggro,
-			melee: true);
-
 		/// <summary>The Wizard's enchanted swords: flying chargers that dart at the nearest enemy and slash it on contact.</summary>
 		public static readonly SummonKind WizardSword = new SummonKind(
-			id: 3,
+			id: 2,
 			name: "Enchanted Sword",
 			maxHp: LevyConstants.Summon.WizardSwordHp,
 			baseDamage: LevyConstants.Summon.WizardSwordBaseDamage,
@@ -155,49 +137,9 @@ namespace Levy.Content.NPCs
 			melee: true,
 			flying: true);
 
-		/// <summary>The Zoologist's wolves: fast ground chargers.</summary>
-		public static readonly SummonKind ZoologistWolf = new SummonKind(
-			id: 4,
-			name: "Wolf",
-			maxHp: LevyConstants.Summon.ZoologistWolfHp,
-			baseDamage: LevyConstants.Summon.ZoologistWolfBaseDamage,
-			drawNpcType: NPCID.Wolf,
-			projectileType: ProjectileID.None,
-			projectileSpeed: 0f,
-			knockback: LevyConstants.Summon.ZoologistWolfKnockback,
-			gravityCorrection: 0f,
-			cooldownTicks: LevyConstants.Summon.ZoologistWolfCooldownTicks,
-			randomCooldownTicks: LevyConstants.Summon.ZoologistWolfRandomCooldownTicks,
-			rangeTiles: LevyConstants.Summon.ZoologistWolfRangeTiles,
-			moveSpeedPx: LevyConstants.Summon.ZoologistWolfMoveSpeedPx,
-			aggro: LevyConstants.Summon.ZoologistWolfAggro,
-			width: LevyConstants.Summon.ZoologistWolfWidthPx,
-			height: LevyConstants.Summon.ZoologistWolfHeightPx,
-			melee: true);
-
-		/// <summary>The Zoologist's werewolf: a slow, sturdy brute that draws the enemy's attention.</summary>
-		public static readonly SummonKind ZoologistWerewolf = new SummonKind(
-			id: 5,
-			name: "Werewolf",
-			maxHp: LevyConstants.Summon.ZoologistWerewolfHp,
-			baseDamage: LevyConstants.Summon.ZoologistWerewolfBaseDamage,
-			drawNpcType: NPCID.Werewolf,
-			projectileType: ProjectileID.None,
-			projectileSpeed: 0f,
-			knockback: LevyConstants.Summon.ZoologistWerewolfKnockback,
-			gravityCorrection: 0f,
-			cooldownTicks: LevyConstants.Summon.ZoologistWerewolfCooldownTicks,
-			randomCooldownTicks: LevyConstants.Summon.ZoologistWerewolfRandomCooldownTicks,
-			rangeTiles: LevyConstants.Summon.ZoologistWerewolfRangeTiles,
-			moveSpeedPx: LevyConstants.Summon.ZoologistWerewolfMoveSpeedPx,
-			aggro: LevyConstants.Summon.ZoologistWerewolfAggro,
-			width: LevyConstants.Summon.ZoologistWerewolfWidthPx,
-			height: LevyConstants.Summon.ZoologistWerewolfHeightPx,
-			melee: true);
-
 		/// <summary>The Cyborg's combat drones: flying shooters that hover over the squad and laser the enemy from range.</summary>
 		public static readonly SummonKind CyborgDrone = new SummonKind(
-			id: 6,
+			id: 3,
 			name: "Combat Drone",
 			maxHp: LevyConstants.Summon.CyborgDroneHp,
 			baseDamage: LevyConstants.Summon.CyborgDroneBaseDamage,
@@ -218,7 +160,7 @@ namespace Levy.Content.NPCs
 
 		/// <summary>The Witch Doctor's voodoo spirits: flying shooters that spit poison darts.</summary>
 		public static readonly SummonKind WitchDoctorSpirit = new SummonKind(
-			id: 7,
+			id: 4,
 			name: "Voodoo Spirit",
 			maxHp: LevyConstants.Summon.WitchDoctorSpiritHp,
 			baseDamage: LevyConstants.Summon.WitchDoctorSpiritBaseDamage,
@@ -239,7 +181,7 @@ namespace Levy.Content.NPCs
 
 		private static readonly SummonKind[] _all =
 		{
-			PirateCrew, PirateCannon, ClothierSkeleton, WizardSword, ZoologistWolf, ZoologistWerewolf, CyborgDrone, WitchDoctorSpirit,
+			PirateCrew, PirateCannon, WizardSword, CyborgDrone, WitchDoctorSpirit,
 		};
 
 		/// <summary>The kind for a synced id, or null when the id is out of range (a stale/forward packet): the unit then waits for a valid sync.</summary>

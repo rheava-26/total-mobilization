@@ -508,7 +508,7 @@ namespace Levy.Content.NPCs
 				if (tex == null) return true;
 				int frames = Math.Max(1, Main.npcFrameCount[k.DrawNpcType]);
 				int frameH = tex.Height / frames;
-				Rectangle frame = new Rectangle(0, 0, tex.Width, frameH); // frame 0 (standing); no frame-layout guesswork
+				Rectangle frame = SkinFrame(k, tex, frameH);
 				int sdir = NPC.direction == 0 ? 1 : NPC.direction;
 				SpriteEffects fx = sdir == 1 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 				Color c = Lighting.GetColor((int)(NPC.Center.X / 16f), (int)(NPC.Center.Y / 16f), drawColor);
@@ -531,6 +531,36 @@ namespace Levy.Content.NPCs
 				Levy.Instance.Logger.Warn("Levy: drawing a summoned unit's borrowed sprite failed: " + e.Message);
 				return true; // fall back to the placeholder
 			}
+		}
+
+		// ---- animation: the borrowed type's own frames, stepped by vanilla's own FindFrame on a skin NPC that mirrors this unit's motion ----
+		private NPC _skin; private int _skinKind = -1; private uint _skinTick = uint.MaxValue;
+
+		/// <summary>
+		/// The frame of the borrowed sprite for this tick: a pirate walks, a probe spins, a spirit flaps, a sword turns, as the stock enemy does. A skin NPC of the borrowed type is fed this unit's velocity and
+		/// facing and asked for its frame by vanilla's FindFrame (once per game tick). Any failure falls back to the standing frame.
+		/// </summary>
+		private Rectangle SkinFrame(SummonKind k, Texture2D tex, int frameH)
+		{
+			Rectangle standing = new Rectangle(0, 0, tex.Width, frameH);
+			try
+			{
+				if (_skin == null || _skinKind != k.Id)
+				{
+					_skin = new NPC(); _skin.SetDefaults(k.DrawNpcType); _skinKind = k.Id; _skinTick = uint.MaxValue;
+				}
+				if (_skinTick != Main.GameUpdateCount)
+				{
+					_skinTick = Main.GameUpdateCount;
+					_skin.position = NPC.position; _skin.velocity = NPC.velocity; _skin.width = NPC.width; _skin.height = NPC.height;
+					_skin.direction = NPC.direction == 0 ? 1 : NPC.direction; _skin.spriteDirection = _skin.direction;
+					_skin.noGravity = NPC.noGravity; _skin.active = true;
+					_skin.FindFrame();
+				}
+				Rectangle f = _skin.frame;
+				return f.Width > 0 && f.Height > 0 && f.Y >= 0 && f.Y + f.Height <= tex.Height ? new Rectangle(0, f.Y, tex.Width, f.Height) : standing;
+			}
+			catch (Exception) { return standing; }
 		}
 
 		public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)

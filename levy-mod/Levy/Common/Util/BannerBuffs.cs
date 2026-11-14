@@ -91,6 +91,7 @@ namespace Levy.Common.Util
 			{
 				if (Main.npc[src].ModNPC is SoldierNPC s) return s.CommanderIndex;
 				if (Main.npc[src].ModNPC is SummonedUnitNPC u) return u.CommanderIndex;
+				if (Main.npc[src].TryGetGlobalNPC(out ConjuredGlobalNPC cj) && cj.Active) return cj.CommanderIndex;
 			}
 			return -1;
 		}
@@ -170,7 +171,7 @@ namespace Levy.Common.Util
 		public override void ModifyHitNPC(NPC npc, NPC target, ref NPC.HitModifiers modifiers)
 		{
 			if (npc.friendly) return;
-			int cmd = target.ModNPC is SoldierNPC s ? s.CommanderIndex : target.ModNPC is SummonedUnitNPC u ? u.CommanderIndex : -1;
+			int cmd = target.ModNPC is SoldierNPC s ? s.CommanderIndex : target.ModNPC is SummonedUnitNPC u ? u.CommanderIndex : ConjuredGlobalNPC.IsConjured(target) ? target.GetGlobalNPC<ConjuredGlobalNPC>().CommanderIndex : -1;
 			if (cmd < 0) return;
 			float m = BannerBuffs.Defense(cmd, npc);
 			if (m != 1f) modifiers.FinalDamage *= m;

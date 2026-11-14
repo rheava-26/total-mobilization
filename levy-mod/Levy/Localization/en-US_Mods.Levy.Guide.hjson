@@ -254,7 +254,7 @@ Pages: {
 		Body:
 			'''
 			Officers are town NPCs conscripted into the army. They leave their post, march with the army and bring a special skill.
-			Press Officers on the Barracks panel to commission townsfolk housed in the settlement.
+			Press Officers on the Barracks panel, or right-click an active pylon, to commission townsfolk from every town on the pylon network.
 			You start with 3 command slots. The Wall of Flesh, a mechanical boss, Plantera, Golem and Moon Lord each add one.
 			A commission costs a fee once and a wage every dawn from the settlement's treasuries and stored coin.
 			An unpaid officer goes off duty until paid. A fallen officer is gone until rehoused.
@@ -290,8 +290,8 @@ Pages: {
 		Body:
 			'''
 			The Pirate Captain conscripts flintlock gunners and a cannon.
-			The Clothier raises skeleton warriors. The Wizard enchants flying swords.
-			The Zoologist marches with wolves and a werewolf.
+			The Clothier raises skeletons. The Wizard enchants flying swords.
+			The Zoologist calls a creature from the Bestiary.
 			The Cyborg deploys combat drones, and ore and treasure glow around his commander.
 			Fallen followers are replaced on a timer, and their damage grows as bosses fall.
 			'''

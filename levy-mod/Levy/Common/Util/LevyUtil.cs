@@ -102,6 +102,7 @@ namespace Levy.Common.Util
 		public static int FindPlayerByName(string name)
 		{
 			if (string.IsNullOrEmpty(name)) return -1;
+			if (SpEmulation && Main.player[0] != null && Main.player[0].name == name) return 0; // world checks on a dedicated test server: the netplay thread drops slot 0's active flag between hooks, the stand-in commander is still there
 			for (int i = 0; i < Main.maxPlayers; i++) if (Main.player[i].active && Main.player[i].name == name) return i;
 			return -1;
 		}

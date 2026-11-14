@@ -26,7 +26,8 @@ CLASS_ACC = {"R": "Molten Quiver", "M": "Band of Starpower", "E": "Feral Claws",
 
 
 def accessories(T, cls):
-    return ["Cloud in a Bottle", "Shield of Cthulhu", CLASS_ACC[cls], "Band of Regeneration", "Angel Wings" if T >= 6.9 else "Hermes Boots"]
+    a = ["Cloud in a Bottle", "Shield of Cthulhu", CLASS_ACC[cls], "Band of Regeneration", "Angel Wings" if T >= 6.9 else "Hermes Boots"]
+    return list(dict.fromkeys(a))
 
 
 def ammo_for(kind, T, idx):

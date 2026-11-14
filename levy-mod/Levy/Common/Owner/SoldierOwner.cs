@@ -34,7 +34,7 @@ namespace Levy.Common.Owner
 		private struct Rec
 		{
 			public SoldierNPC Body; public Player Dummy; public int Slot, MyPlayer, FakeToken, SavedWho, MouseX, MouseY;
-			public Player BackupSlot; public bool Ded, Locked, MouseTouched; public float Volume; public Vector2 ScreenPos; public object Thorium;
+			public int GuardMark; public Player BackupSlot; public bool Ded, Locked, MouseTouched; public float Volume; public Vector2 ScreenPos; public object Thorium;
 		}
 
 		private static readonly List<Rec> _stack = new();
@@ -68,7 +68,7 @@ namespace Levy.Common.Owner
 			{
 				r.MyPlayer = Main.myPlayer; r.SavedWho = d.whoAmI; r.Ded = Main.dedServ; r.Volume = Main.soundVolume;
 				r.ScreenPos = Main.screenPosition; r.MouseX = Main.mouseX; r.MouseY = Main.mouseY;
-				r.BackupSlot = Main.player[slot];
+				r.BackupSlot = Main.player[slot]; r.GuardMark = IdentityGuard.Mark();
 				// the dummy first takes the soldier's body (its whoAmI is rewritten to the slot below)
 				if (opts.FullSync) body.SyncDummyTransform();
 				else
@@ -116,6 +116,7 @@ namespace Levy.Common.Owner
 			Player d = r.Dummy;
 			try
 			{
+				IdentityGuard.Release(r.GuardMark);           // a ModPlayer hook that threw left its view open
 				Main.myPlayer = r.MyPlayer;                   // before the Thorium restore: it finds the commander through Main.myPlayer / Main.player
 				SoldierMinions.EndFake(r.FakeToken);
 				if (!d.active) d.active = true;               // the network thread may have cleared it if the lock was not held

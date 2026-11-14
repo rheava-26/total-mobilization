@@ -222,12 +222,12 @@ namespace Levy.Content.NPCs
 		// frame does to "the local player" lands on the dummy. Sounds are muted for the length (a levy's gear is not a sound the listener should hear 40 times a tick). On a dedicated server
 		// Main.myPlayer already is 255 and only the array slot is lent.
 		// ------------------------------------------------------------------------------------------------------------
-		private struct FrameSlot { public Player Backup; public int MyPlayer, FakeToken; public float Volume; public bool Active, Ded; }
+		private struct FrameSlot { public Player Backup; public int MyPlayer, FakeToken, GuardMark; public float Volume; public bool Active, Ded; }
 
 		private FrameSlot EnterFrameSlot()
 		{
 			if (GearUpkeep.LegacySlot) { Dummy.whoAmI = WeaponUse.OwnerFor(this); return default; } // HARNESS A/B only (env LEVY_UPKEEP_LEGACYSLOT=1): the first version's borrowed commander slot
-			var f = new FrameSlot { Active = true, Backup = Main.player[DummySlot], MyPlayer = Main.myPlayer, Volume = Main.soundVolume, Ded = Main.dedServ };
+			var f = new FrameSlot { Active = true, Backup = Main.player[DummySlot], MyPlayer = Main.myPlayer, Volume = Main.soundVolume, Ded = Main.dedServ, GuardMark = global::Levy.Common.Owner.IdentityGuard.Mark() };
 			Dummy.whoAmI = DummySlot;
 			Main.player[DummySlot] = Dummy;
 			f.FakeToken = SoldierMinions.BeginFake(f.MyPlayer);
@@ -243,6 +243,7 @@ namespace Levy.Content.NPCs
 		private void ExitFrameSlot(FrameSlot f)
 		{
 			if (!f.Active) return;
+			global::Levy.Common.Owner.IdentityGuard.Release(f.GuardMark); // a hook that threw left its view open
 			Main.myPlayer = f.MyPlayer;
 			SoldierMinions.EndFake(f.FakeToken);
 			Main.player[DummySlot] = f.Backup ?? Main.player[DummySlot];
@@ -253,10 +254,12 @@ namespace Levy.Content.NPCs
 
 		private void RunHook(Action a)
 		{
+			int idm = global::Levy.Common.Owner.IdentityGuard.Mark();
 			try { a(); }
 			catch (Exception e)
 			{
 				if (e is System.Reflection.TargetInvocationException { InnerException: not null } t) e = t.InnerException;
+				global::Levy.Common.Owner.IdentityGuard.Release(idm); // the hook's own exit never ran
 				GearUpkeep.HookFailures++;
 				if (GearUpkeep.WarnOnce(e)) Levy.Instance?.Logger.Warn("Levy: a gear hook threw during upkeep (once per kind): " + e);
 			}

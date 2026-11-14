@@ -24,7 +24,7 @@ namespace Levy.Common.Testing
 	/// then the world is stepped with no levies (control) and with levies (their gear frames run). The tick the menu closes, and the call stack that closed it, are logged.
 	/// Env LEVY_IDENTITY_GUARD=0 turns the identity guard off, which is how the unfixed behaviour is reproduced.
 	/// </summary>
-	public class IdentityWorldCheck : ModSystem
+	public partial class IdentityWorldCheck : ModSystem
 	{
 		private static bool _armed, _done, _running, _spNet; private static int _calls, _pass, _fail;
 		private static Mod _mod; private static int _savedMy, _savedNet;
@@ -158,6 +158,50 @@ namespace Levy.Common.Testing
 			ClearSoldiers();
 			AlchemistMenu();
 			ClearSoldiers();
+			IdentityProbes();
+			ClearSoldiers();
+			GearParity();
+			ClearSoldiers();
+		}
+
+		// ---------------------------------------------------------------------------------------------- what other mods' ModPlayers see
+		/// <summary>
+		/// The commander is talking to an NPC; six levies tick with modded gear (their gear frames run every tick) while two stand-in ModPlayers, one per view, record what they are handed. The Hidden one must never
+		/// be handed a dummy as the local player and must read the commander's own talk state through Main.LocalPlayer; the Gear one is handed the dummy as local (that is what gear logic needs) with the
+		/// commander's talk state mirrored onto it.
+		/// </summary>
+		private static void IdentityProbes()
+		{
+			_spNet = true;
+			try
+			{
+				Item acc = ModdedAccessory();
+				_brewerAt = new Vector2(Cx * 16f + 40f, (FloorY - 3) * 16f);
+				int gi = NPC.NewNPC(new EntitySource_WorldEvent("IdentityWorldCheck"), (int)_brewerAt.X, (int)_brewerAt.Y, NPCID.Guide);
+				if (gi < 0 || gi >= Main.maxNPCs) { Check("identity probes: an NPC to talk to spawns", false); return; }
+				_brewer = Main.npc[gi]; _brewer.homeless = false; _brewer.townNPC = true; Pin();
+				KeepCommander(); Step(2);
+				int made = 0;
+				for (int k = 0; k < 6; k++)
+				{
+					Item w = new Item(); w.SetDefaults(ItemID.CopperShortsword);
+					Item a = null; if (acc != null) { a = new Item(); a.SetDefaults(acc.type); }
+					if (SpawnLevy("Pvt. Probe" + k, w, a, new Vector2(Cx * 16f - 60f - 24f * k, FloorY * 16f)) >= 0) made++;
+				}
+				Array.Clear(IdentityProbeHidden.Seen); Array.Clear(IdentityProbeGear.Seen); IdentityProbeBase.On = true; IdentityGuard.Census.Clear(); IdentityGuard.Instrument = true;
+				long hid0 = IdentityGuard.Hidden, mir0 = IdentityGuard.Mirrored;
+				Step(120);
+				IdentityProbeBase.On = false; IdentityGuard.Instrument = false; Note("identity guard unbalanced keys (enter/exit): " + string.Join(", ", IdentityGuard.EnterKeys.Where(kv => !IdentityGuard.ExitKeys.TryGetValue(kv.Key, out int xx) || xx != kv.Value).Take(15).Select(kv => kv.Key + "=" + kv.Value + "/" + (IdentityGuard.ExitKeys.TryGetValue(kv.Key, out int x2) ? x2 : 0))));
+				Note($"identity guard enters {IdentityGuard.Enters} exits {IdentityGuard.Exits} leaked {IdentityGuard.Leaked}: {string.Join(", ", IdentityGuard.LeakedKeys.OrderByDescending(kv => kv.Value).Take(12).Select(kv => kv.Key + "=" + kv.Value))}");
+				Note("identity census (dispatches for a dummy / of those local): " + string.Join(", ", IdentityGuard.Census.Where(kv => kv.Key.StartsWith("Levy:") || kv.Key.StartsWith("Alchemist")).Select(kv => kv.Key + "=" + kv.Value.dummy + "/" + kv.Value.local)));
+				long[] h = IdentityProbeHidden.Seen, g = IdentityProbeGear.Seen;
+				Note($"identity probes with {made} levies, commander talking to NPC {Main.player[0].talkNPC}: hidden-view ModPlayer saw {h[0]} dummy dispatches (as local {h[1]}, LocalPlayer a dummy {h[2]}, wrong talk NPC {h[3]}); local-view ModPlayer saw {g[0]} (as local {g[1]}, LocalPlayer a dummy {g[2]}, wrong talk NPC {g[3]}); guard hid {IdentityGuard.Hidden - hid0} and mirrored {IdentityGuard.Mirrored - mir0} dispatches; {IdentityGuard.Wrapped} ModPlayer hooks wrapped");
+				Note("identity guard wrapped: " + string.Join(", ", IdentityGuard.WrappedNames.Where(n => n.StartsWith("AlchemistNPCLite") || n.StartsWith("Levy:IdentityProbe")).ToArray()));
+				Check($"identity: a ModPlayer on the hidden view is never handed a levy dummy as the local player ({h[0]} dispatches, {h[1]} as local, LocalPlayer was a dummy {h[2]} times)", h[0] > 0 && h[1] == 0 && h[2] == 0 && h[3] == 0);
+				Check($"identity: a ModPlayer on the local view reads the commander's own talk state from the dummy ({g[0]} dispatches, wrong talk NPC {g[3]})", g[0] > 0 && g[3] == 0 && g[2] == g[0]);
+			}
+			catch (Exception e) { Check("identity probes threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
+			finally { _spNet = false; IdentityProbeBase.On = false; if (_brewer != null) _brewer.active = false; _brewer = null; Main.player[0].SetTalkNPC(-1, true); }
 		}
 
 		// ---------------------------------------------------------------------------------------------- AlchemistNPC Lite: the side menu of a shop NPC

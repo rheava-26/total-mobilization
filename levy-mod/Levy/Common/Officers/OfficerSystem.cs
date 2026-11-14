@@ -71,7 +71,7 @@ namespace Levy.Common.Officers
 
 		public override void OnWorldLoad() { Reset(); }
 		public override void OnWorldUnload() { Reset(); }
-		private void Reset() { _bossWasUp = false; _lastBossFell = uint.MaxValue; _stamp = uint.MaxValue; _enrolled.Clear(); _active.Clear(); _avatars.Clear(); _dayInit = false; _lastDay = -1; _housekeepingTimer = 0; }
+		private void Reset() { ConjureRoster.Reset(); _bossWasUp = false; _lastBossFell = uint.MaxValue; _stamp = uint.MaxValue; _enrolled.Clear(); _active.Clear(); _avatars.Clear(); _dayInit = false; _lastDay = -1; _housekeepingTimer = 0; }
 
 		// =====================================================================================================
 		// Queries (safe on clients)

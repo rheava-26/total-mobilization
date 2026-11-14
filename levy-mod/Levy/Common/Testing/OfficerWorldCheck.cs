@@ -360,10 +360,13 @@ namespace Levy.Common.Testing
 			Check("sweep: an owner officer is marching", town != null && avatar != null);
 			if (avatar == null) { if (town != null) town.active = false; return; }
 			int owner = avatar.NPC.whoAmI;
-			int tried = 0, engaged = 0, spawned = 0, stagesWithEngagement = 0;
-			for (int stage = 0; stage <= 10; stage++)
+			int tried = 0, engaged = 0, spawned = 0, stagesWithEngagement = 0, conjProj = 0, hostileConjProj = 0; bool archerRanged = false;
+			var allFacts = ConjureRoster.AllFacts();
+			for (int stage = 0; stage <= 11; stage++)
 			{
-				var top = ConjureRoster.BeastCandidates(stage, false, out _).Take(2).ToList();
+				// stage 11: the shooters among the Clothier's skeletons, which no stage's strongest list holds (an archer, and the Sniper's rifle)
+				var top = stage <= 10 ? ConjureRoster.BeastCandidates(stage, false, out _).Take(2).ToList()
+					: allFacts.Where(q => q.Type == NPCID.SkeletonArcher || q.Type == NPCID.SkeletonSniper).ToList();
 				bool any = false;
 				foreach (var f in top)
 				{
@@ -386,19 +389,24 @@ namespace Levy.Common.Testing
 							break;
 						}
 						if (!n.active) break;
+						if (tick % 4 == 0) for (int q = 0; q < Main.maxProjectiles; q++) { Projectile pr = Main.projectile[q]; if (pr.active && pr.TryGetGlobalProjectile(out ConjuredProjectile cp) && cp.Conjured) { conjProj++; if (pr.hostile || !pr.friendly) hostileConjProj++; } }
 						if (_target != null && _target.active && _target.life < _target.lifeMax) dmg += _target.lifeMax - _target.life;
 						best = Math.Min(best, Math.Abs(_target.Center.X - n.Center.X));
 					}
 					bool got = dmg > 0 || (n.active && Math.Abs(n.Center.X - x0) > 48f) || best < 6 * 16f;
 					if (got) { engaged++; any = true; }
+					if (f.Type == NPCID.SkeletonArcher && dmg > 0 && best > 6 * 16f) archerRanged = true;
 					Note($"stage {stage}: {f.Name} (ai {f.AiStyle}) engaged={got} damage={dmg} closest={(int)(best / 16f)} tiles alive={n.active}");
 					if (n.active) { n.active = false; }
 					Step(2);
 				}
-				if (any) stagesWithEngagement++;
+				if (any && stage <= 10) stagesWithEngagement++;
 			}
 			Note($"sweep: {spawned}/{tried} conjured, {engaged} engaged the enemy");
 			Check("sweep: every candidate could be conjured", spawned == tried);
+			Check("sweep: a Skeleton Archer hurt the enemy from range with arrows (its shots are the army's)", archerRanged);
+			Note($"sweep: projectiles of conjured creatures seen: {conjProj}, of them hostile: {hostileConjProj}");
+			Check("sweep: a conjured creature's projectiles are the army's (none hostile)", hostileConjProj == 0);
 			Check($"sweep: at nearly every stage one of the strongest creatures engaged the enemy ({stagesWithEngagement}/11)", stagesWithEngagement >= 9);
 			Dismiss(town);
 			KillEnemy();

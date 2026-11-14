@@ -151,6 +151,7 @@ namespace Levy.Common.Officers
 			if (probe.townNPC || probe.friendly || NPCID.Sets.CountsAsCritter[t] || NPCID.Sets.IsTownPet[t] || NPCID.Sets.ActsLikeTownNPC[t]) { why = "town / critter"; return true; }
 			if (LevyUtil.IsProjectileNpc(t)) { why = "projectile NPC"; return true; }
 			if (probe.dontTakeDamage || probe.immortal || probe.lifeMax <= 5 || probe.damage <= 0) { why = "no fight"; return true; }
+			if (probe.value <= 0f) { why = "no value (a boss part, a minion or an event piece)"; return true; }
 			if (!_aiOk.Contains(probe.aiStyle)) { why = "ai " + probe.aiStyle; return true; }
 			return false;
 		}

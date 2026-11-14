@@ -435,8 +435,8 @@ namespace Levy.Common
 			/// <summary>A conjured creature touching an enemy lands a blow every this many ticks.</summary>
 			public const int ConjureStrikeCooldownTicks = 30;
 			/// <summary>The most life (classic-mode numbers) and the most contact damage a creature the Zoologist may call can have, by how far the world has got (stage 0 = nothing downed ... 10 = Moon Lord). A creature above either is never called, however it got into the Bestiary.</summary>
-			public static readonly int[] ConjureMaxLifeByStage = { 200, 350, 500, 800, 1800, 2600, 3500, 4500, 6000, 8000, 12000 };
-			public static readonly int[] ConjureMaxDamageByStage = { 30, 45, 60, 80, 110, 140, 170, 200, 240, 280, 340 };
+			public static readonly int[] ConjureMaxLifeByStage = { 120, 200, 300, 450, 1800, 2600, 3500, 4500, 6000, 8000, 12000 };
+			public static readonly int[] ConjureMaxDamageByStage = { 30, 40, 45, 60, 110, 140, 170, 200, 240, 280, 340 };
 			/// <summary>The Zoologist calls one of this many strongest eligible creatures (a pick at random among them, so her pick varies).</summary>
 			public const int ZoologistPickFromTop = 4;
 			/// <summary>False: a miniboss (Mothron, Dreadnautilus, the Pumpking...) is never called, whatever the Bestiary holds.</summary>

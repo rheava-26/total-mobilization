@@ -2250,6 +2250,14 @@ namespace Levy.Content.NPCs
 				return;
 			}
 
+			if (TryFollowRowSlot(cmd, now, Record.SpreadOut, out Vector2 rowSlot))
+			{
+				// ROWS: a lane on one of the standing rows near the commander (SoldierNPC.FollowRows.cs); stops close to the lane so neighbours keep their gap
+				float dRow = LevyUtil.TileDistance(NPC.Bottom, rowSlot);
+				if (HasMoveGoal) { if (dRow < FollowRowStopTiles) ClearGoal(); else SetGoal(rowSlot); }
+				else if (dRow > FollowRowStartTiles) SetGoal(rowSlot);
+				return;
+			}
 			int facing = cmd.direction == 0 ? 1 : cmd.direction;
 			int slotIdx = FollowSlotIndex();
 			float slotTiles = (slotIdx + 1) * LevyConstants.FollowSlotSpacingTiles, slotSide = -facing;
@@ -2269,6 +2277,7 @@ namespace Levy.Content.NPCs
 			if (cmd.gravDir < 0f && FollowerTravel.FindGroundBelow(cmd.Center, out Vector2 under)) cmdBase = under; // a commander walking on a ceiling (Gravitation Potion): wait on the ground beneath them, never path up to the ceiling
 			Vector2 slot = cmdBase + new Vector2(slotSide * slotTiles * LevyConstants.TilePx, 0f);
 			if (cmd.Center.Y / 16f > Main.worldSurface) slot = KeepSlotOutOfRock(cmdBase, slot); // underground only: surface slots are untouched
+			if (FollowRowsMode >= 1 && Math.Abs(slot.Y - cmd.Bottom.Y) < 1f) { var frs = FollowRows.Get(cmd, now); if (frs != null && frs.Count >= 2) slot.X = FollowRows.ClampToRun(frs, slot.X); } // a plain slot never hangs off the end of a narrow platform
 			float dSlot = LevyUtil.TileDistance(NPC.Bottom, slot);
 			// Close up also tightens how close to the slot a soldier must stand before it stops: the normal 4 / 6 tile slack is what lets a squad sprawl.
 			// Spread out needs the same: slots are 6 tiles apart, so a 4 / 6 tile slack would let neighbours stop on one spot.

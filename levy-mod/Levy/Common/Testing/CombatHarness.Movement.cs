@@ -33,6 +33,7 @@ namespace Levy.Common.Testing
 			if (string.Equals(Scenario, "maporder", StringComparison.OrdinalIgnoreCase)) return BeginMapOrder();
 			if (string.Equals(Scenario, "sit", StringComparison.OrdinalIgnoreCase)) return BeginSit();
 			if (string.Equals(Scenario, "orderrepro", StringComparison.OrdinalIgnoreCase)) return BeginOrderRepro();
+			if (string.Equals(Scenario, "platspread", StringComparison.OrdinalIgnoreCase)) return BeginPlatSpread();
 			if (string.Equals(Scenario, "ordermix", StringComparison.OrdinalIgnoreCase)) return BeginOrderMix();
 			if (string.Equals(Scenario, "orderobey", StringComparison.OrdinalIgnoreCase)) return BeginOrderObey();
 			if (string.Equals(Scenario, "calrev", StringComparison.OrdinalIgnoreCase)) return BeginCalRev();
@@ -89,6 +90,7 @@ namespace Levy.Common.Testing
 			if (string.Equals(Scenario, "maporder", StringComparison.OrdinalIgnoreCase)) { StepMapOrder(); return; }
 			if (string.Equals(Scenario, "sit", StringComparison.OrdinalIgnoreCase)) { StepSit(); return; }
 			if (string.Equals(Scenario, "orderrepro", StringComparison.OrdinalIgnoreCase)) { StepOrderRepro(); return; }
+			if (string.Equals(Scenario, "platspread", StringComparison.OrdinalIgnoreCase)) { StepPlatSpread(); return; }
 			if (string.Equals(Scenario, "ordermix", StringComparison.OrdinalIgnoreCase)) { StepOrderMix(); return; }
 			if (string.Equals(Scenario, "orderobey", StringComparison.OrdinalIgnoreCase)) { StepOrderObey(); return; }
 			if (string.Equals(Scenario, "calrev", StringComparison.OrdinalIgnoreCase)) { StepCalRev(); return; }

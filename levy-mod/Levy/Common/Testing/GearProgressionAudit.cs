@@ -110,7 +110,7 @@ namespace Levy.Common.Testing
 				WeaponRank.Force(WeaponRankMode.SellPrice, false);
 				sb.AppendLine("# Levy gear progression audit. Levy " + Mod.Version + ". Weapon ranking forced to SellPrice (no world: no stage discount, no recency boost).");
 				if (mode == "before" || mode == "both") { ArmoryTE.FloorFirst = false; WeaponAllocator.LegacySpreadRedeal = true; Playthrough(sb, "BEFORE (first-come: each levy upgrades from storage when his timer comes round)", null); }
-				if (mode == "after" || mode == "both") { ArmoryTE.FloorFirst = true; WeaponAllocator.LegacySpreadRedeal = false; Playthrough(sb, "AFTER (raise the floor: worst-equipped levies take new gear first)", null); }
+				if (mode == "after" || mode == "both") { ArmoryTE.FloorFirst = true; WeaponAllocator.LegacySpreadRedeal = false; Playthrough(sb, "AFTER (each levy re-checks his own gear every 10 to 15 seconds and takes what beats his kit; no army-wide pass)", null); }
 				// order sensitivity
 				foreach (var m in new[] { false, true }) {
 					ArmoryTE.FloorFirst = m; WeaponAllocator.LegacySpreadRedeal = !m;

@@ -852,7 +852,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>
-		/// Automatic weapon upgrade (the body only ticks on the server / single player). Every <see cref="LevyConstants.AutoUpgradeCheckIntervalTicks"/> a soldier
+		/// Automatic weapon upgrade (the body only ticks on the server / single player). Every 10 to 15 seconds (<see cref="ArmoryTE.GearCheckDelay"/>, a fresh random wait each time) a soldier
 		/// asks his home barracks' linked armory for a clearly better weapon (any damage class unless fixed-class companies is on) or armor set aimed at it (<see cref="ArmoryTE.UpgradeWeapons"/>); after a swap he waits
 		/// <see cref="LevyConstants.AutoUpgradeSwapCooldownTicks"/>. Skipped when switched off in the config, while the soldier's loadout is locked, and mid-fight or mid-swing.
 		/// </summary>
@@ -862,10 +862,10 @@ namespace Levy.Common.Weapons
 			var g = rec?.Gear;
 			if (g == null || rec.LoadoutLocked || !Common.Config.LevyConfig.Get.AutoUpgradeWeapons) return;
 			uint now = Main.GameUpdateCount;
-			if (g.UpgradeCheckTick == 0) { g.UpgradeCheckTick = now + (uint)rec.Id % (uint)LevyConstants.AutoUpgradeCheckIntervalTicks; return; } // stagger by id
+			if (g.UpgradeCheckTick == 0) { g.UpgradeCheckTick = now + global::Levy.Content.TileEntities.ArmoryTE.GearCheckFirstDelay(rec); return; } // a random point inside the window: levies never check together
 			if (now < g.UpgradeCheckTick) return;
 			if (s.State == SoldierState.Engage || s.State == SoldierState.Shaken || s.State == SoldierState.Routed || s.ItemAnimation > 0) return; // look again at the next sidearm check
-			g.UpgradeCheckTick = now + (uint)LevyConstants.AutoUpgradeCheckIntervalTicks;
+			g.UpgradeCheckTick = now + global::Levy.Content.TileEntities.ArmoryTE.GearCheckDelay();
 			var armory = s.Home == null ? null : SettlementSystem.Instance?.LinkedArmory(s.Home);
 			if (armory == null || !Terraria.DataStructures.TileEntity.ByID.TryGetValue(armory.ID, out var live) || !ReferenceEquals(live, armory)) return;
 			long pu = global::Levy.Common.Util.LevyProf.Begin();

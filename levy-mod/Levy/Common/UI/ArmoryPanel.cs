@@ -5,12 +5,14 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
+using Terraria.GameContent;
 using Terraria.GameContent.UI;
 using Terraria.GameContent.UI.Elements;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.UI;
+using Terraria.UI.Chat;
 using Levy.Common.Systems;
 using Levy.Common.Util;
 using Levy.Common.Vanity;
@@ -77,6 +79,10 @@ namespace Levy.Common.UI
 		private int _filterTick;
 		/// <summary>Real Storage indices the grid currently shows, in order; null while the full, unfiltered grid (every slot, empties included) is showing.</summary>
 		private List<int> _shown;
+		/// <summary>The items that are out of the racks (carried by a levy, lent to a drone) as the grid last saw them, the stamp of that list, and the entries (indices into it) the grid shows as read-only cells. See <see cref="ArmoryTE.InUse"/>.</summary>
+		private IReadOnlyList<InUseEntry> _out = Array.Empty<InUseEntry>();
+		private int _outStamp = -1;
+		private List<int> _outShown = new();
 		/// <summary>Item type -> type bucket (0 = not computed yet), so the type filter does not re-classify the same item every refresh.</summary>
 		private sbyte[] _catCache;
 
@@ -332,12 +338,15 @@ namespace Levy.Common.UI
 			_grid.Clear();
 			_issue.RemoveAllChildren();
 			_potionEls.Clear();
-			_shown = null;
+			_shown = null; _outShown = new(); _out = Array.Empty<InUseEntry>(); _outStamp = -1;
 			ResetFilters();
 			_shownCapacity = _shownCenters = -1; _shownValue = -1;
 			if (te == null) return;
 
-			// A fresh open shows every storage slot (no search, no filters).
+			// A fresh open shows every storage slot (no search, no filters), then the items that are out.
+			_out = te.InUse(out _outStamp);
+			_outShown = CollectOut();
+			_count.SetText(_outShown.Count > 0 ? LevyUtil.T("UI2.ArmoryInUse", _outShown.Count) : "");
 			BuildGrid();
 
 			float y = 0f;
@@ -424,7 +433,8 @@ namespace Levy.Common.UI
 			_builtStorage = arr;
 			int cols = LevyConstants.UI.ArmoryColumns;
 			string storageHint = LevyUtil.T("Guide.StorageHint"); // hover text of an empty storage slot: what the levies can use
-			int count = _shown?.Count ?? arr.Length;
+			var cells = ArmoryView.Layout(arr, _shown, _outShown, cols); // real storage indices, the in-use block on its own rows, blanks to pad
+			int count = cells.Count;
 			var rows = new List<UIElement>((count + cols - 1) / cols);
 			for (int start = 0; start < count; start += cols)
 			{
@@ -432,8 +442,11 @@ namespace Levy.Common.UI
 				row.Width.Set(cols * Pitch, 0f); row.Height.Set(Pitch, 0f);
 				for (int c = 0; c < cols && start + c < count; c++)
 				{
-					int real = _shown == null ? start + c : _shown[start + c];
-					var slot = MakeSlot(arr, real, 0, null, storageHint);
+					int cell = cells[start + c];
+					if (cell == ArmoryView.Spacer) continue;
+					UIElement slot;
+					if (cell >= 0) slot = MakeSlot(arr, cell, 0, null, storageHint);
+					else { int k = ~cell; if (k >= _out.Count) continue; slot = new OutSlot(_out[k], Scale); }
 					slot.Left.Set(c * Pitch, 0f);
 					row.Append(slot);
 				}
@@ -522,6 +535,50 @@ namespace Levy.Common.UI
 				ItemSlot.Draw(spriteBatch, ref inv, Context, GetDimensions().Position());
 				_items[_at] = inv;
 				Main.inventoryScale = oldScale;
+			}
+		}
+
+		/// <summary>
+		/// A read-only cell for an item that is out of the racks: gear a levy carries (green) or a weapon lent to a drone (amber). It sits where nothing can be dragged, taken or dropped; the item is drawn faded and the tooltip
+		/// names the holder. Drawn with the vanilla slot texture and item icon, so it is the same size and look as a stored item's cell.
+		/// </summary>
+		private sealed class OutSlot : UIElement
+		{
+			private readonly InUseEntry _e;
+			private readonly float _scale;
+
+			public OutSlot(InUseEntry e, float scale)
+			{
+				_e = e; _scale = scale;
+				float size = 52f * scale;
+				Width.Set(size, 0f); Height.Set(size, 0f);
+			}
+
+			private string HolderLine() => _e.Kind == InUseKind.Lent
+				? LevyUtil.T("UI2.ArmoryLentTo", string.IsNullOrEmpty(_e.Holder) ? LevyUtil.T("UI2.ArmoryDroneName") : _e.Holder)
+				: LevyUtil.T("UI2.ArmoryCarriedBy", _e.Holder);
+
+			protected override void DrawSelf(SpriteBatch spriteBatch)
+			{
+				var item = _e.Item;
+				if (item == null || item.IsAir) return;
+				bool lent = _e.Kind == InUseKind.Lent;
+				Color tint = lent ? LevyConstants.UI.ArmoryLentTint : LevyConstants.UI.ArmoryCarriedTint;
+				var dims = GetDimensions(); var pos = dims.Position();
+				spriteBatch.Draw(TextureAssets.InventoryBack.Value, pos, null, tint, 0f, Vector2.Zero, _scale, SpriteEffects.None, 0f);
+				float oldScale = Main.inventoryScale;
+				Main.inventoryScale = _scale;
+				ItemSlot.DrawItemIcon(item, ItemSlot.Context.ChestItem, spriteBatch, pos + new Vector2(52f * _scale / 2f), _scale, 32f, Color.White * LevyConstants.UI.ArmoryOutItemAlpha);
+				if (item.stack > 1)
+					ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.ItemStack.Value, item.stack.ToString(), pos + new Vector2(10f, 26f) * _scale, Color.White * LevyConstants.UI.ArmoryOutItemAlpha, 0f, Vector2.Zero, new Vector2(_scale), -1f, _scale);
+				Main.inventoryScale = oldScale;
+				if (IsMouseHovering && ContainsPoint(Main.MouseScreen))
+				{
+					Main.LocalPlayer.mouseInterface = true;
+					var shown = item.Clone();
+					Main.HoverItem = shown; Main.hoverItemName = item.Name;
+					ArmoryOutTip.Set(shown, HolderLine(), lent ? LevyConstants.UI.ArmoryLentText : LevyConstants.UI.ArmoryCarriedText);
+				}
 			}
 		}
 
@@ -657,6 +714,7 @@ namespace Levy.Common.UI
 			if (Te == null || _grid == null) return;
 			if (_filterDirty) { _filterDirty = false; _filterTick = LevyConstants.UI.ArmoryFilterRefreshTicks; RefreshGrid(true); }
 			else if (Filtering && --_filterTick <= 0) { _filterTick = LevyConstants.UI.ArmoryFilterRefreshTicks; RefreshGrid(false); }
+			else if (!Filtering) { Te.InUse(out int stamp); if (stamp != _outStamp) RefreshGrid(false); } // a levy swapped gear or a drone launched: the list changed (a tick compare, the list itself is taken every 30 ticks)
 		}
 
 		/// <summary>
@@ -680,23 +738,34 @@ namespace Levy.Common.UI
 		{
 			List<int> matches = Filtering ? Collect() : null;
 			List<int> want = matches == null ? null : ArmoryView.WithDepositCell(Te.Storage, matches); // the last cell is an empty slot, so anything can be put back
-			if (matches == null) { _count.SetText(""); _noMatch.SetText(""); }
+			var outs = Te.InUse(out int outStamp);
+			_out = outs;
+			var wantOut = CollectOut();
+			if (matches == null) { _count.SetText(wantOut.Count > 0 ? LevyUtil.T("UI2.ArmoryInUse", wantOut.Count) : ""); _noMatch.SetText(""); }
 			else
 			{
 				int stored = 0;
 				foreach (var it in Te.Storage) if (it != null && !it.IsAir) stored++;
-				_count.SetText(LevyUtil.T("UI2.ArmoryShown", matches.Count, stored));
-				_noMatch.SetText(matches.Count == 0 ? LevyUtil.T("UI2.ArmoryNoMatch") : "");
+				_count.SetText(wantOut.Count > 0 ? LevyUtil.T("UI2.ArmoryShownInUse", matches.Count, stored, wantOut.Count) : LevyUtil.T("UI2.ArmoryShown", matches.Count, stored));
+				_noMatch.SetText(matches.Count == 0 && wantOut.Count == 0 ? LevyUtil.T("UI2.ArmoryNoMatch") : "");
 			}
-			bool same = want == null ? _shown == null : _shown != null && want.SequenceEqual(_shown);
+			bool same = (want == null ? _shown == null : _shown != null && want.SequenceEqual(_shown)) && outStamp == _outStamp && wantOut.SequenceEqual(_outShown);
 			float pos = resetScroll ? 0f : _gridScroll.ViewPosition;
 			if (!same)
 			{
-				_shown = want;
+				_shown = want; _outShown = wantOut; _outStamp = outStamp;
 				BuildGrid();
 				_grid.Recalculate(); // refreshes the scrollbar's view size to the new row count; its position then clamps into range
 			}
 			_gridScroll.ViewPosition = pos;
+		}
+
+		/// <summary>Indices into <see cref="_out"/> of the in-use entries the grid shows: all of them, or with a search or filter on, those that pass it (same tests as the stored items).</summary>
+		private List<int> CollectOut()
+		{
+			var l = new List<int>(_out.Count);
+			for (int k = 0; k < _out.Count; k++) if (!Filtering || Matches(_out[k].Item)) l.Add(k);
+			return l;
 		}
 
 		/// <summary>Real Storage indices of every item that passes the search, the rarity toggles and the type filter, in storage order.</summary>

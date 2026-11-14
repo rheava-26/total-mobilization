@@ -158,7 +158,6 @@ namespace Levy.Content.TileEntities
 			long pt = global::Levy.Common.Util.LevyProf.Begin();
 			if (_dirty) Sync();
 			if (Main.netMode != NetmodeID.MultiplayerClient && ++_stampTimer >= StampIntervalTicks) { _stampTimer = 0; StampNew(); }
-			if (_swActive) FloorSweep(); // a gear sweep that did not fit in one slice carries on
 			global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmTick, pt);
 		}
 
@@ -1968,7 +1967,6 @@ namespace Levy.Content.TileEntities
 		public virtual Item Deposit(Item item)
 		{
 			if (IsAir(item)) return null;
-			if (item.headSlot >= 0 || item.bodySlot >= 0 || item.legSlot >= 0 || item.accessory) _gearStockRev++; // new armor / accessory stock: the floor sweep looks again
 			// 1. top up matching stacks (same type and prefix, below max stack)
 			for (int i = 0; i < Storage.Length; i++) {
 				var s = Storage[i];
@@ -2283,8 +2281,6 @@ namespace Levy.Content.TileEntities
 			bool changed = false;
 			long ps = global::Levy.Common.Util.LevyProf.Begin();
 			void Mark(int bucket) { global::Levy.Common.Util.LevyProf.EndCount(bucket, ps); ps = global::Levy.Common.Util.LevyProf.Begin(); }
-			FloorSweep(); // new armor and accessories go to the worst-equipped levies first, whoever asks
-			Mark(global::Levy.Common.Util.LevyProf.ArmFloor);
 			if (!g.IsLocked(SoldierGear.SlotWeapon) && UpgradePrimary(soldier)) changed = true; // its own time is in arm.alloc
 			ps = global::Levy.Common.Util.LevyProf.Begin();
 			if (UpgradeArmor(soldier)) changed = true; // after the primary: the armor follows the weapon he now carries (locked slots are skipped inside)

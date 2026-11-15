@@ -204,6 +204,7 @@ namespace Levy.Common.Testing
 			if (only == "all" || only == "shots") { try { Shots(); } finally { Cleanup(); } }
 			if (only == "all" || only == "ml") { try { MoonLord(); } finally { Cleanup(); } }
 			if (only == "all" || only == "wof") { try { WallOfFlesh(); } finally { Cleanup(); } }
+			if (only == "all" || only == "mlkill") { try { MoonLordDeath(); } finally { Cleanup(); } }
 		}
 
 		// =====================================================================================================
@@ -381,6 +382,65 @@ namespace Levy.Common.Testing
 			Note("damage the levies took by source: " + (SoldierNPC.HitDbg.Count == 0 ? "none" : string.Join(", ", SoldierNPC.HitDbg.OrderByDescending(k => k.Value.dmg).Select(k => k.Key + "=" + k.Value.dmg + " (" + k.Value.n + " hits)"))));
 			Check($"Moon Lord locks onto levies ({lockedTicks} of {ticks} ticks, the first second to find them not counted)", ticks > 100 && lockedTicks * 10 >= (ticks - 60) * 8);
 			Check("every kind of shot he fired in the check was tried on a levy (" + tested.Count + " of " + kinds.Length + ")", tested.Count == kinds.Length);
+		}
+
+		// =====================================================================================================
+		// MOON LORD'S DEATH: Calamity's override AI ends the fight inside its own PreAI
+		// =====================================================================================================
+		/// <summary>
+		/// Calamity's Moon Lord override finishes the core's death animation INSIDE its AI: it deactivates the parts and the core and calls NetMessage.SendData(SyncNPC) for each. On a server that serializes the NPC,
+		/// and Calamity's SendExtraAI clears <c>AIOverride</c> of a dead NPC, so when the AI returns, CalamityVanillaAIOverrideNPC.PreAI reads the field again (<c>AIOverride.DisableMultiplayerSmoothing</c>) and throws a
+		/// NullReferenceException, once per Moon Lord kill (seen in every Moon Lord fight of the hardmode battery). Levy's PreAI detour wraps that call: it must let the death finish without an exception.
+		/// </summary>
+		private static void MoonLordDeath()
+		{
+			if (!ModLoader.HasMod("CalamityMod")) { Note("Calamity is not loaded: the Moon Lord death part is skipped"); return; }
+			Arena(FloorY, Half);
+			_spectator = true;
+			PlaceCommander(0);
+			Main.hardMode = true;
+			SetRevenge(true, true); Main.GameMode = GameModeID.Master;
+			Note($"Moon Lord death scenario: netMode {Main.netMode} (2 = dedicated server, the mode Calamity's death animation throws in), Calamity Revengeance+Death on");
+			global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(NPCID.MoonLordCore, true);
+			SetBossesTarget(true);
+			var levies = Levies(6, 3f);
+			Check("six levies spawn", levies.Count == 6);
+			Step(4);
+			NPC core = SpawnNpc(NPCID.MoonLordCore, new Vector2(Cx * 16f, (FloorY - 40) * 16f));
+			if (core == null) { Check("Moon Lord spawns", false); return; }
+			Check("Calamity's Revengeance AI is bound to Moon Lord's core", CalamityTargetingCompat.OverrideBound(core));
+			var thrown = new Dictionary<string, int>(); string firstEx = null;
+			On_NPC.hook_UpdateNPC det = (On_NPC.orig_UpdateNPC orig, NPC self, int i) =>
+			{
+				try { orig(self, i); }
+				catch (Exception e)
+				{
+					if (self.type == NPCID.MoonLordCore || self.type == NPCID.MoonLordHead || self.type == NPCID.MoonLordHand) { string k = self.TypeName + ": " + e.GetType().Name; thrown[k] = thrown.GetValueOrDefault(k) + 1; firstEx ??= k + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(); }
+					throw;
+				}
+			};
+			On_NPC.UpdateNPC += det;
+			try
+			{
+				// the parts: the core spawns its two hands and head one second in
+				int[] part = null;
+				for (int t = 0; t < 600 && part == null; t++)
+				{
+					for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && n.ModNPC is not SoldierNPC && !n.friendly && !n.townNPC) n.timeLeft = 99999; }
+					Step(1);
+					if (core.active && core.localAI[0] > 0 && core.localAI[1] > 0 && core.localAI[2] > 0) part = new[] { (int)core.localAI[0], (int)core.localAI[1], (int)core.localAI[2] };
+				}
+				Check("Moon Lord's two hands and head spawn", part != null && Main.npc[part[0]].type == NPCID.MoonLordHand && Main.npc[part[1]].type == NPCID.MoonLordHand && Main.npc[part[2]].type == NPCID.MoonLordHead);
+				if (part == null) return;
+				Check("nothing threw while the fight ran up to the kill", thrown.Count == 0);
+				// the end of the death animation: ai[0] == 2 is "death effects", ai[1] counts its ticks and the kill comes at 600
+				core.ai[0] = 2f; core.ai[1] = 595f; core.netUpdate = true;
+				Step(12);
+				Note("exceptions the three kinds of Moon Lord NPC threw during the death: " + (thrown.Count == 0 ? "none" : string.Join(", ", thrown.Select(k => k.Key + " x" + k.Value))) + (firstEx != null ? "; first: " + firstEx : ""));
+				Check("Moon Lord's death animation ends without an exception (Calamity's override AI clears itself on the server inside its own PreAI)", thrown.Count == 0);
+				Check("the core and its parts are gone after the kill", !core.active && !Main.npc[part[0]].active && !Main.npc[part[1]].active && !Main.npc[part[2]].active);
+			}
+			finally { On_NPC.UpdateNPC -= det; }
 		}
 
 		// =====================================================================================================

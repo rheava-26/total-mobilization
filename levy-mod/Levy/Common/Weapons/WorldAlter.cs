@@ -203,6 +203,7 @@ namespace Levy.Common.Weapons
 			Kind k = KindOf(weapon); if (k != Kind.None) return k;
 			if (ammo == null || ammo.IsAir) return Kind.None;
 			k = KindOf(ammo); if (k != Kind.None) return k;
+			if (weapon == null || weapon.IsAir) return Kind.None; // a round judged alone (the pouch of a levy whose weapon is not known)
 			lock (Gate)
 			{
 				if (_pairCache.TryGetValue((weapon.type, ammo.type), out Kind c)) return c;

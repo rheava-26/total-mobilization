@@ -54,7 +54,7 @@ namespace Levy.Common.Testing
 		public static string KeyOf(int itemType) => WorldAlter.KeyOf(itemType);
 		private static bool Hard(Kind k) => WorldAlter.Hard(k) != Kind.None;
 
-		private sealed class Row { public int Weapon, Ammo; public Kind Kind; public SortedSet<int> Made; public string Error; }
+		private sealed class Row { public int Weapon, Ammo; public Kind Kind; public SortedSet<int> Made; public string Error; public bool Altered; }
 
 		private static void Run()
 		{
@@ -136,6 +136,7 @@ namespace Levy.Common.Testing
 					pairs++;
 					var res = TileSandbox.Shoot(w, r);
 					var row = new Row { Weapon = w, Ammo = r, Kind = res.Kind, Made = res.Made, Error = res.Error };
+					row.Altered = Hard(res.Kind) || res.Made.Any(pAlter.ContainsKey); // the field says so, or a projectile it made is one the sweep saw alter the field somewhere (a falling-sand shot may land on sand and change nothing here)
 					rows.Add(row); wl.Add(row);
 				}
 			}
@@ -148,7 +149,7 @@ namespace Levy.Common.Testing
 			{
 				var good = kv.Value.Where(r => r.Error == null).ToList();
 				if (kv.Value.Count > 0 && good.Count == 0) { eWeapon.Add(kv.Key); continue; } // every shot threw: nothing measured (decided below from its compiled code)
-				if (good.Count > 0 && good.All(r => Hard(r.Kind))) { Kind k = Kind.None; foreach (var r in good) k |= r.Kind; wBreak[kv.Key] = k; }
+				if (good.Count > 0 && good.All(r => r.Altered)) { Kind k = Kind.None; foreach (var r in good) k |= r.Kind; wBreak[kv.Key] = k; }
 			}
 			// A round is altering when it is what makes the difference: among the weapons that fire it AND another round of its kind to different effect, most alter the field with this round and not with the others.
 			// (Launchers swap the projectile by round, bullets and arrows mostly do not; a weapon that alters or stays safe whatever the round says nothing about the round.)
@@ -162,13 +163,13 @@ namespace Levy.Common.Testing
 					foreach (var wl in byWeapon.Values)
 					{
 						var mine = wl.FirstOrDefault(r => r.Ammo == a); if (mine == null) continue;
-						bool others = wl.Any(r => r.Ammo != a && Hard(r.Kind) != Hard(mine.Kind));
+						bool others = wl.Any(r => r.Ammo != a && r.Altered != mine.Altered);
 						if (!others && wl.Any(r => r.Ammo != a)) continue; // the same outcome for every round: not a statement about this one
-						discriminating++; if (Hard(mine.Kind)) { altered++; seenKind |= mine.Kind; }
+						discriminating++; if (mine.Altered) { altered++; seenKind |= mine.Kind; }
 					}
 					if (own != Kind.None || (discriminating > 0 && altered * 2 >= discriminating)) aBreak[a] = seenKind;
 				}
-			foreach (var r in rows) if (r.Error == null && Hard(r.Kind) && !wBreak.ContainsKey(r.Weapon) && !(r.Ammo > 0 && aBreak.ContainsKey(r.Ammo))) xBreak.Add(r);
+			foreach (var r in rows) if (r.Error == null && r.Altered && !wBreak.ContainsKey(r.Weapon) && !(r.Ammo > 0 && aBreak.ContainsKey(r.Ammo))) xBreak.Add(r);
 			foreach (int w in eWeapon) { Kind scan = WorldAlter.ScanOnly(ContentSamples.ItemsByType[w]); if (scan != Kind.None) wBreak[w] = scan; }
 			Note($"world-altering: {wBreak.Count} items by themselves, {aBreak.Count} rounds, {xBreak.Count} single (weapon, round) pairs; {eWeapon.Count} items threw on every shot (decided from their compiled code: {eWeapon.Count(w => wBreak.ContainsKey(w))} altering)");
 
@@ -206,7 +207,7 @@ namespace Levy.Common.Testing
 			foreach (var r in rows)
 			{
 				if (r.Error != null) continue;
-				bool observed = Hard(r.Kind);
+				bool observed = r.Altered;
 				Item ws = ContentSamples.ItemsByType[r.Weapon]; Item am = r.Ammo > 0 ? ContentSamples.ItemsByType[r.Ammo] : null;
 				bool scanned = WorldAlter.IsTool(ws) || Scan(ws) != Kind.None || (am != null && Scan(am) != Kind.None);
 				if (observed && !scanned) { sMiss++; if (scanMisses.Count < 30) scanMisses.Add(KeyOf(r.Weapon) + "+" + (r.Ammo > 0 ? KeyOf(r.Ammo) : "-") + " [" + TileSandbox.KindText(r.Kind) + "] made " + string.Join("|", r.Made.Select(ProjName))); } else if (!observed && scanned) sOver++; else sOk++;
@@ -216,7 +217,7 @@ namespace Levy.Common.Testing
 				else if (!observed && flagged) over++;
 				else ok++;
 			}
-			int altPairs = rows.Count(r => r.Error == null && Hard(r.Kind));
+			int altPairs = rows.Count(r => r.Error == null && r.Altered);
 			Note($"compiled-code scan alone (no table), over the {rows.Count} pairs: caught {altPairs - sMiss} of {altPairs} pairs that altered the field, flagged {sOver} that did not, agreed {sOk}");
 			foreach (var m in scanMisses) Note("scan alone MISSED: " + m);
 			foreach (var m in missList) Note("MISSED by the classifier: " + m);

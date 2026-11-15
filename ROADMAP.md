@@ -14,6 +14,18 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🧪 BATTERY RERUN (hmbattery2 MERGED fc48ec2; projectiles land now)
+- Overall: Master+Death wins 64/87 → 62/88 (no net change). Projectile damage per fight 24 → 1,262; contact flat.
+- **Destroyer baseline 38% → 18%**, but the controls show it's NOT the veto. The drop sits between fieldfix and current (mobslots + bossbugs non-veto parts). Controls: old 30%, +bosshitbox 25%, +fieldfix 30%, current with the veto back on 10%, current 18%.
+- Prime and Calamitas Clone contact damage doubled (unexplained). Plantera Master+Death 2/4 → 0/4.
+- Easier: Cultist 2/4 → 4/4, Leviathan 1/4 → 3/4.
+- Unchanged: Fishron 0/8, Ravager Master+Death 0/4. Moon Lord is slower (90 → 113 s) but still 4/4 with 0 deaths.
+- Deerclops 4/4 in both modes, no crash.
+- Spite = 0% in every fight. "Boss on levy" is the real lock.
+- New exceptions (silently caught): UseGuard.KillDetour IndexOutOfRange (Queen Slime); CalamityTargetingCompat.PreAiDetour → Calamity PreAI NullReference (every Moon Lord fight); plus Calamity-internal ones (PlanteraAI SolidTile, CalamityGlobalProjectile.CanHitNPC) and harness CrPinStrays.
+- **Lab replay site updated to the rerun** (same URL, https://claude.ai/artifact/5bQWET74N12m4bYMbFxqqK): 229 fights, 230 data files; 69 stale old files removed; verified 231 files.
+- `destroyerdrop` builder: bisect the Destroyer drop (mobslots on/off, boots on/off, 40 per arm) and fix the two Levy exceptions.
+
 ## 🚢 2.0.66 SHIPPED (11-15 ~08:55, sent to Eve): bossbugs. Vanilla/Calamity boot exc=0. World: BossBugs 25/0 and 36/0. Only failures were the known race flakes (SummonWorld Hornet, FieldFix). The exc=5 is the harmless /proc/<pid>/stat read race.
 - **checkfix MERGED after it (f5ee5e6)**; the shipworld.sh conflict was resolved to fail_lines plus the BossBugs exclusion. Verified on the merged state: vanilla and Calamity boots exc=0; all world checks pass; 0 FAIL lines and 0 exceptions in both halves (first fully clean ship signal). Battery rerun (hmbattery2) launched.
 

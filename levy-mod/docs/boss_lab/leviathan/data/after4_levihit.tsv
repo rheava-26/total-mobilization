@@ -1,0 +1,1022 @@
+key	tick	levy	cls	dmg	hpBefore	hpAfter	attacker	charge	dtLaunch	died	grounded	wet	vy	perpToLane
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	463	24	E	82	400	318	env/	-1	-1	0	0	0	2.7	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	463	25	E	86	400	314	env/	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	483	23	E	159	400	241	Detonating_Bubble/Detonating Bubble	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	499	22	E	82	400	318	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	499	24	E	78	321	243	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	536	23	E	86	245	159	Detonating_Bubble/Detonating Bubble	-1	-1	0	0	0	-4.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	1586	9	R	85	400	315	env/	-1	-1	0	0	0	-5.1	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	1588	19	M	84	400	316	env/	-1	-1	0	0	0	-3.9	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	1590	27	S	76	400	324	env/	-1	-1	0	0	0	-3.9	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	3	R	243	400	157	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	6	R	224	400	176	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	8	R	236	400	164	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	9	R	219	400	181	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	11	R	227	400	173	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	14	M	111	400	289	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	17	M	230	400	170	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	19	M	250	400	150	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	21	M	249	400	151	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	22	E	223	400	177	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	24	E	219	400	181	Leviathan/The Leviathan	-1	-1	0	0	0	-4.9	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	27	S	218	400	182	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	29	S	113	400	287	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	2525	30	S	205	400	195	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	3960	23	E	128	400	272	Detonating_Bubble/Detonating Bubble	-1	-1	0	0	0	-3.2	7.3
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	3960	24	E	125	400	275	Leviathan/The Leviathan	2	1	0	0	0	-3.2	7.3
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	3960	25	E	125	400	275	env/	-1	-1	0	0	0	-3.2	14.3
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	3967	9	R	126	400	274	Leviathan/The Leviathan	2	8	0	0	0	-7.5	14.4
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	3970	26	E	113	400	287	env/	-1	-1	0	0	0	-7.5	11.8
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	3972	22	E	102	400	298	Leviathan/The Leviathan	2	13	0	0	0	-7.5	12.7
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	3978	29	S	207	400	193	Leviathan/The Leviathan	2	19	0	0	0	-7.5	14.1
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	3978	30	S	111	400	289	Leviathan/The Leviathan	2	19	0	0	0	-7.5	15.5
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4545	30	S	234	353	119	Leviathan/The Leviathan	3	9	0	0	0	-7.5	-12.4
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4546	29	S	123	400	277	Leviathan/The Leviathan	3	10	0	0	0	-7.5	-4.5
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4548	27	S	117	400	283	Leviathan/The Leviathan	3	12	0	0	0	-7.5	-14
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4552	26	E	214	352	138	Leviathan/The Leviathan	3	16	0	0	0	-7.5	-16
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4554	18	M	124	400	276	env/	-1	-1	0	0	0	-7.5	-15.1
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4563	31	S	113	400	287	env/	-1	-1	0	0	0	-7.5	-14.6
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4751	14	M	79	400	321	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4754	18	M	78	298	220	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4754	19	M	82	400	318	Leviathan/The Leviathan	-1	-1	0	0	0	3.7	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4754	20	M	77	400	323	env/	-1	-1	0	0	0	1.7	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4755	2	R	85	400	315	env/	-1	-1	0	0	0	1.2	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4755	5	R	81	400	319	env/	-1	-1	0	0	0	1.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4755	8	R	82	400	318	Leviathan/The Leviathan	-1	-1	0	0	0	4.3	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4757	10	R	85	400	315	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4758	11	R	82	400	318	Leviathan/The Leviathan	-1	-1	0	0	0	4.9	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4758	15	M	83	400	317	env/	-1	-1	0	0	0	4.9	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4759	3	R	85	400	315	Leviathan/The Leviathan	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4759	7	R	85	400	315	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4849	4	R	82	400	318	env/	-1	-1	0	0	0	1.2	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4849	12	M	84	400	316	env/	-1	-1	0	0	0	-2.4	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4849	17	M	88	400	312	Leviathan/The Leviathan	-1	-1	0	0	0	2.9	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4851	13	M	87	400	313	env/	-1	-1	0	0	0	2.1	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4852	6	R	76	400	324	Leviathan/The Leviathan	-1	-1	0	0	0	1.7	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4854	11	R	75	327	252	Leviathan/The Leviathan	-1	-1	0	0	0	-1.2	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4854	15	M	80	326	246	env/	-1	-1	0	0	0	-1.2	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4855	3	R	153	325	172	Anahita/Anahita	-1	-1	0	0	0	2.7	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	4862	21	M	83	400	317	Leviathan/The Leviathan	-1	-1	0	0	0	4.3	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5035	12	M	158	336	178	Anahita/Anahita	-1	-1	0	0	0	-4.5	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5035	20	M	79	353	274	env/	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5095	5	R	82	355	273	env/	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5097	12	M	163	333	170	Anahita/Anahita	-1	-1	0	0	0	0.9	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5099	6	R	159	352	193	Anahita/Anahita	-1	-1	0	0	0	1.5	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5099	8	R	77	356	279	Leviathan/The Leviathan	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5101	16	M	79	400	321	env/	-1	-1	0	0	0	4.9	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5102	17	M	79	340	261	Leviathan/The Leviathan	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5102	18	M	155	259	104	Anahita/Anahita	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5103	14	M	157	358	201	Anahita/Anahita	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5104	10	R	81	351	270	env/	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5195	6	R	180	351	171	Anahita/Anahita	-1	-1	0	0	0	-1.9	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5195	8	R	175	289	114	Anahita/Anahita	-1	-1	0	0	0	-1.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5201	18	M	173	263	90	Anahita/Anahita	-1	-1	0	0	0	2.6	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5202	16	M	84	331	247	env/	-1	-1	0	0	0	-2.4	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5572	10	R	161	316	155	Anahita/Anahita	-1	-1	0	0	0	4.5	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5575	24	E	76	400	324	Leviathan/The Leviathan	-1	-1	0	0	0	6.6	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5676	13	M	97	400	303	env/	-1	-1	0	0	0	3	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc0|dlK	5680	16	M	196	297	101	Anahita/Anahita	-1	-1	0	0	0	0.3	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	473	22	E	85	400	315	env/	-1	-1	0	0	0	-5.1	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	473	24	E	76	400	324	env/	-1	-1	0	0	0	-4.2	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	475	25	E	77	400	323	env/	-1	-1	0	0	0	-5.1	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	826	15	M	90	400	310	env/	-1	-1	0	0	0	-1.2	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	838	25	E	76	364	288	env/	-1	-1	0	0	0	-4.6	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	843	22	E	167	356	189	Anahita/Anahita	-1	-1	0	0	0	-5.3	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	895	23	E	84	400	316	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	899	24	E	174	371	197	Anahita/Anahita	-1	-1	0	0	0	-4.8	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	993	23	E	154	325	171	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	997	22	E	153	353	200	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	997	25	E	142	304	162	Anahita/Anahita	-1	-1	0	0	0	-6.2	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	999	30	S	68	400	332	env/	-1	-1	0	0	0	-1.9	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	1885	3	R	119	400	281	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	1885	6	R	108	400	292	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	1885	9	R	118	400	282	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	1885	11	R	111	400	289	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	1885	14	M	111	400	289	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	1885	19	M	124	400	276	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	1885	21	M	117	400	283	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	1885	24	E	218	400	182	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	1885	27	S	104	400	296	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3174	26	E	129	400	271	env/	-1	-1	0	0	0	-7.5	-7.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3175	24	E	116	322	206	Leviathan/The Leviathan	1	18	0	0	0	-7.5	-7.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3175	25	E	127	400	273	Anahita/Anahita	-1	-1	0	0	0	-7.5	-2.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3182	8	R	111	400	289	env/	-1	-1	0	0	0	-7.5	-9.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3188	11	R	238	400	162	Leviathan/The Leviathan	1	31	0	0	0	-7.5	-12.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3188	22	E	105	400	295	Anahita/Anahita	-1	-1	0	0	0	-7.5	-11.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3189	16	M	113	400	287	env/	-1	-1	0	0	0	-7.5	-12.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3192	7	R	113	400	287	env/	-1	-1	0	0	0	-7.5	-12.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3192	29	S	202	400	198	Leviathan/The Leviathan	1	35	0	0	0	-7.5	-6.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3192	30	S	100	400	300	env/	-1	-1	0	0	0	-7.5	-13.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3202	23	E	115	400	285	Anahita/Anahita	-1	-1	0	0	0	-7.5	-11.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3204	18	M	127	400	273	env/	-1	-1	0	0	0	-7.5	-12.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3211	31	S	111	400	289	env/	-1	-1	0	0	0	-7.5	-15.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3245	24	E	38	214	176	Leviathan/The Leviathan	1	88	0	1	0	0	-18.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3245	25	E	40	280	240	Anahita/Anahita	-1	-1	0	1	0	0	-18.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3245	26	E	36	278	242	env/	-1	-1	0	1	0	0	-18.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3550	9	R	246	400	154	Leviathan/The Leviathan	2	1	0	0	0	-2.9	13.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3550	22	E	248	335	87	Leviathan/The Leviathan	2	1	0	0	0	-0.4	-4.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3550	23	E	255	323	68	Leviathan/The Leviathan	2	1	0	0	0	-3.2	12.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3550	24	E	254	361	107	Leviathan/The Leviathan	2	1	0	0	0	2.8	-4.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3550	25	E	239	275	36	Leviathan/The Leviathan	2	1	0	0	0	-3.2	-1.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3550	26	E	240	277	37	Leviathan/The Leviathan	2	1	0	0	0	-3.2	5.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3550	29	S	205	381	176	Leviathan/The Leviathan	2	1	0	0	0	-4.4	-4.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3550	30	S	218	339	121	Leviathan/The Leviathan	2	1	0	0	0	-2	13.3
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3551	12	M	118	400	282	env/	-1	-1	0	0	0	-3.6	12
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3551	13	M	121	400	279	env/	-1	-1	0	0	0	-3.9	12.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3551	14	M	231	400	169	Leviathan/The Leviathan	2	2	0	0	0	-3.6	10.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3551	17	M	120	400	280	env/	-1	-1	0	0	0	-3.9	13.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3551	19	M	239	400	161	Leviathan/The Leviathan	2	2	0	0	0	-3.9	12.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3551	28	S	105	400	295	env/	-1	-1	0	0	0	-4.2	13.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3552	2	R	118	400	282	env/	-1	-1	0	0	0	-7	10.3
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3555	6	R	232	400	168	Leviathan/The Leviathan	2	6	0	0	0	-7.5	1.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3555	18	M	239	310	71	Leviathan/The Leviathan	2	6	0	0	0	-7.5	-2.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3555	21	M	233	400	167	Leviathan/The Leviathan	2	6	0	0	0	-7.5	1.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3555	27	S	211	400	189	Leviathan/The Leviathan	2	6	0	0	0	2.1	-6.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3555	31	S	224	326	102	Leviathan/The Leviathan	2	6	0	0	0	-7.5	1.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3556	3	R	227	400	173	Leviathan/The Leviathan	2	7	0	0	0	-7.5	-3.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3556	4	R	109	400	291	env/	-1	-1	0	0	0	-7.5	-4.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3556	5	R	118	400	282	env/	-1	-1	0	0	0	-7.5	-1.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3556	8	R	234	331	97	Leviathan/The Leviathan	2	7	0	0	0	-7.5	-4.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3556	11	R	225	348	123	Leviathan/The Leviathan	2	7	0	0	0	-7.5	-4.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3556	15	M	124	400	276	env/	-1	-1	0	0	0	-7.5	-3.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3556	16	M	247	328	81	Leviathan/The Leviathan	2	7	0	0	0	-7.5	-4.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3557	7	R	227	328	101	Leviathan/The Leviathan	2	8	0	0	0	-7.5	-12
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3558	10	R	113	400	287	env/	-1	-1	0	0	0	-7.5	-7.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3563	20	M	118	400	282	env/	-1	-1	0	0	0	0.9	-4.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3580	29	S	180	180	0	Leviathan/The Leviathan	2	31	1	0	0	-7.5	9.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3585	18	M	224	224	0	Leviathan/The Leviathan	2	36	1	0	0	-7.5	11.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3585	27	S	205	341	136	Leviathan/The Leviathan	2	36	0	0	0	-7.5	4.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3586	3	R	232	326	94	Leviathan/The Leviathan	2	37	0	0	0	-7.5	10.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3586	4	R	118	293	175	env/	-1	-1	0	0	0	-7.5	9.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3586	5	R	119	284	165	env/	-1	-1	0	0	0	-7.5	12.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3586	8	R	231	249	18	Leviathan/The Leviathan	2	37	0	0	0	-7.5	9.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3586	11	R	126	126	0	Leviathan/The Leviathan	2	37	1	0	0	-7.5	9.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3586	15	M	118	278	160	env/	-1	-1	0	0	0	-7.5	10.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3586	16	M	224	234	10	Leviathan/The Leviathan	2	37	0	0	0	-7.5	9.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3587	7	R	237	254	17	Leviathan/The Leviathan	2	38	0	0	0	-7.5	2.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3588	10	R	113	289	176	env/	-1	-1	0	0	0	-7.5	6.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	3593	20	M	123	284	161	env/	-1	-1	0	0	0	-7.5	8.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4202	5	R	173	384	211	Anahita/Anahita	-1	-1	0	0	0	2	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4202	16	M	74	74	0	Anahita/Anahita	-1	-1	1	0	0	-2.7	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4203	7	R	81	81	0	Anahita/Anahita	-1	-1	1	0	0	-2.7	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4204	4	R	164	395	231	Anahita/Anahita	-1	-1	0	0	0	-3.3	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4206	10	R	157	396	239	Anahita/Anahita	-1	-1	0	0	0	-2.7	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4206	17	M	167	352	185	Anahita/Anahita	-1	-1	0	0	0	-1.8	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4207	13	M	159	351	192	Anahita/Anahita	-1	-1	0	0	0	-2.7	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4209	6	R	79	385	306	Leviathan/The Leviathan	-1	-1	0	0	0	-3.9	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4209	21	M	79	385	306	Leviathan/The Leviathan	-1	-1	0	0	0	-4.8	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4210	12	M	162	355	193	Anahita/Anahita	-1	-1	0	0	0	-3.6	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4210	14	M	84	388	304	Leviathan/The Leviathan	-1	-1	0	0	0	-3.9	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4210	19	M	82	379	297	Leviathan/The Leviathan	-1	-1	0	0	0	-3.6	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	4281	17	M	164	343	179	Anahita/Anahita	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5075	26	E	128	354	226	Leviathan/The Leviathan	3	13	0	0	0	10	6.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5077	22	E	119	400	281	Leviathan/The Leviathan	3	15	0	0	0	10	13.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5078	24	E	216	274	58	Leviathan/The Leviathan	3	16	0	0	0	10	11.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5078	27	S	108	300	192	Leviathan/The Leviathan	3	16	0	1	0	0	13.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5079	25	E	107	353	246	Leviathan/The Leviathan	3	17	0	0	0	10	13.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5082	21	M	237	400	163	Leviathan/The Leviathan	3	20	0	0	0	9.6	9.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5083	14	M	243	400	157	Leviathan/The Leviathan	3	21	0	1	0	0	13.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5085	4	R	237	325	88	Leviathan/The Leviathan	3	23	0	0	0	1.7	13.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5086	15	M	242	400	158	Leviathan/The Leviathan	3	24	0	0	0	7.5	8.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5087	19	M	246	397	151	Leviathan/The Leviathan	3	25	0	1	0	0	13.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5087	30	S	211	400	189	Leviathan/The Leviathan	3	25	0	1	0	0	13.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5089	3	R	118	260	142	Leviathan/The Leviathan	3	27	0	1	0	0	13.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5089	12	M	244	400	156	Leviathan/The Leviathan	3	27	0	1	0	0	13.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5089	13	M	242	400	158	Leviathan/The Leviathan	3	27	0	1	0	0	13.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5089	17	M	245	265	20	Leviathan/The Leviathan	3	27	0	1	0	0	13.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5094	2	R	222	400	178	Leviathan/The Leviathan	3	32	0	1	0	0	13.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5096	5	R	232	306	74	Leviathan/The Leviathan	3	34	0	1	0	0	13.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5096	8	R	109	184	75	Leviathan/The Leviathan	3	34	0	1	0	0	13.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5097	6	R	224	400	176	Leviathan/The Leviathan	3	35	0	1	0	0	13.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5098	10	R	223	334	111	Leviathan/The Leviathan	3	36	0	0	0	10	12.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5100	9	R	124	400	276	Leviathan/The Leviathan	3	38	0	0	0	1.7	13.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5100	28	S	221	400	179	Leviathan/The Leviathan	3	38	0	1	0	0	13.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5102	20	M	238	400	162	Leviathan/The Leviathan	3	40	0	1	0	0	13.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5102	23	E	138	389	251	Leviathan/The Leviathan	3	40	0	0	0	-7.5	-5.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5104	31	S	127	400	273	Leviathan/The Leviathan	3	42	0	0	0	-7.5	-6.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5105	26	E	122	229	107	Leviathan/The Leviathan	3	43	0	1	0	0	13.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5107	22	E	118	283	165	Leviathan/The Leviathan	3	45	0	1	0	0	13.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5108	24	E	105	211	106	Leviathan/The Leviathan	3	46	0	1	0	0	13.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5108	27	S	103	195	92	Leviathan/The Leviathan	3	46	0	1	0	0	13.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5109	25	E	111	249	138	Leviathan/The Leviathan	3	47	0	1	0	0	13.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5112	21	M	166	166	0	Leviathan/The Leviathan	3	50	1	1	0	0	13.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5113	14	M	159	159	0	Leviathan/The Leviathan	3	51	1	1	0	0	13.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5115	4	R	91	91	0	Leviathan/The Leviathan	3	53	1	1	0	0	13.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5116	15	M	161	161	0	Leviathan/The Leviathan	3	54	1	1	0	0	13.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5117	19	M	154	154	0	Leviathan/The Leviathan	3	55	1	1	0	0	13.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5117	30	S	111	192	81	Leviathan/The Leviathan	3	55	0	1	0	0	13.7
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc2|dlK	5172	26	E	78	116	38	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	461	25	E	75	400	325	env/	-1	-1	0	0	0	-2.1	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	462	22	E	72	400	328	env/	-1	-1	0	0	0	-4.2	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	462	24	E	82	400	318	env/	-1	-1	0	0	0	-4.8	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	499	24	E	81	321	240	env/	-1	-1	0	0	0	4.3	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	500	23	E	79	400	321	env/	-1	-1	0	0	0	1.8	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	517	22	E	76	332	256	env/	-1	-1	0	0	0	-0.3	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	847	20	M	94	400	306	env/	-1	-1	0	0	0	-6	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	912	25	E	149	375	226	Anahita/Anahita	-1	-1	0	0	0	7.6	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	916	24	E	138	287	149	Anahita/Anahita	-1	-1	0	0	0	-6.3	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	916	26	E	74	400	326	env/	-1	-1	0	0	0	-5.5	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	917	22	E	137	301	164	Anahita/Anahita	-1	-1	0	0	0	-5	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1001	16	M	77	400	323	env/	-1	-1	0	0	0	6.3	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1010	9	R	84	400	316	env/	-1	-1	0	0	0	-3.5	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1012	19	M	84	400	316	env/	-1	-1	0	0	0	0.8	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1524	17	M	84	400	316	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1524	29	S	65	400	335	env/	-1	-1	0	0	0	1.7	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1524	30	S	73	400	327	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1526	4	R	76	400	324	env/	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1532	20	M	94	378	284	env/	-1	-1	0	0	0	3.3	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1635	20	M	166	296	130	Anahita/Anahita	-1	-1	0	0	0	4	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1638	21	M	97	400	303	env/	-1	-1	0	0	0	-1.2	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1700	19	M	204	392	188	Detonating_Bubble/Detonating Bubble	-1	-1	0	0	0	3.1	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1715	23	E	166	400	234	Detonating_Bubble/Detonating Bubble	-1	-1	0	0	0	-1.6	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1818	15	M	93	400	307	env/	-1	-1	0	0	0	-3.9	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1831	12	M	106	400	294	env/	-1	-1	0	0	0	-4.2	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1889	12	M	97	299	202	env/	-1	-1	0	0	0	-2.8	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1891	30	S	155	368	213	Anahita/Anahita	-1	-1	0	0	0	4.8	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1896	22	E	145	400	255	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1897	25	E	156	332	176	Anahita/Anahita	-1	-1	0	0	0	7.5	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1901	21	M	99	331	232	env/	-1	-1	0	0	0	5.2	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	1904	19	M	191	358	167	Anahita/Anahita	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	2092	14	M	93	400	307	env/	-1	-1	0	0	0	-1.6	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	2104	25	E	177	347	170	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4474	26	E	128	400	272	env/	-1	-1	0	0	0	-7.5	-8.2
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4475	22	E	114	400	286	Anahita/Anahita	-1	-1	0	0	0	-7.5	-8.4
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4475	25	E	125	400	275	Detonating_Bubble/Detonating Bubble	-1	-1	0	0	0	-7.5	-10
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4477	9	R	134	400	266	env/	-1	-1	0	0	0	-7.5	-13.9
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4483	6	R	119	400	281	env/	-1	-1	0	0	0	-7.5	-11.8
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4487	14	M	116	400	284	env/	-1	-1	0	0	0	-7.5	-10.2
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4487	24	E	114	400	286	Anahita/Anahita	-1	-1	0	0	0	-7.5	-3.1
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4491	29	S	102	400	298	env/	-1	-1	0	0	0	-7.5	-4.9
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4491	30	S	111	400	289	Anahita/Anahita	-1	-1	0	0	0	-7.5	-11.9
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4492	20	M	120	400	280	Anahita/Anahita	-1	-1	0	0	0	-7.5	-13.7
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4493	13	M	116	400	284	env/	-1	-1	0	0	0	-7.5	-14.8
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4493	16	M	114	400	286	env/	-1	-1	0	0	0	-7.5	-13
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4496	19	M	110	400	290	Anahita/Anahita	-1	-1	0	0	0	-7.5	-14.6
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4506	10	R	109	400	291	env/	-1	-1	0	0	0	-7.5	-11.4
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4510	31	S	240	400	160	Leviathan/The Leviathan	1	53	0	0	0	-7.5	-13.2
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	4513	2	R	128	400	272	env/	-1	-1	0	0	0	-7.5	-14.5
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	5294	16	M	260	377	117	Leviathan/The Leviathan	2	6	0	0	0	9.3	0.2
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	5298	4	R	120	400	280	env/	-1	-1	0	0	0	10	-13.9
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	5298	8	R	127	400	273	env/	-1	-1	0	0	0	10	-5.9
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	5300	12	M	133	400	267	env/	-1	-1	0	0	0	9	3.3
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	5301	2	R	266	360	94	Leviathan/The Leviathan	2	13	0	0	0	7.5	5.9
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	5330	12	M	114	270	156	env/	-1	-1	0	0	0	10	-15.3
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	5331	2	R	240	246	6	Leviathan/The Leviathan	2	43	0	0	0	10	-12.7
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	5453	22	E	163	396	233	Detonating_Bubble/Detonating Bubble	-1	-1	0	0	0	0.9	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	5892	3	R	84	400	316	env/	-1	-1	0	0	0	-2.2	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	5892	8	R	158	339	181	Anahita/Anahita	-1	-1	0	0	0	0.9	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	5892	23	E	68	400	332	Detonating_Bubble/Detonating Bubble	-1	-1	0	0	0	3.1	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6063	23	E	161	350	189	Detonating_Bubble/Detonating Bubble	-1	-1	0	0	0	5.7	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6064	24	E	158	400	242	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6064	25	E	165	400	235	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6076	22	E	172	299	127	Detonating_Bubble/Detonating Bubble	-1	-1	0	0	0	-5.1	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6093	23	E	168	342	174	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6094	24	E	158	244	86	Detonating_Bubble/Detonating Bubble	-1	-1	0	0	0	-1.6	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6094	25	E	166	237	71	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6155	23	E	170	179	9	Anahita/Anahita	-1	-1	0	0	0	-5.1	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6155	25	E	171	228	57	Anahita/Anahita	-1	-1	0	0	0	-5.4	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6156	24	E	165	242	77	Anahita/Anahita	-1	-1	0	0	0	-4.8	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6157	22	E	159	284	125	Anahita/Anahita	-1	-1	0	0	0	-3.6	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6158	26	E	158	400	242	Anahita/Anahita	-1	-1	0	0	0	-4.8	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6326	5	R	91	400	309	env/	-1	-1	0	0	0	-3.9	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc4|dlK	6328	11	R	78	400	322	env/	-1	-1	0	0	0	-1.2	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	1615	6	R	198	400	202	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	1615	19	M	231	400	169	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	2908	22	E	228	400	172	Leviathan/The Leviathan	1	14	0	0	0	10	8.7
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	2915	14	M	235	400	165	Leviathan/The Leviathan	1	21	0	0	0	10	8.1
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	2917	23	E	209	400	191	Leviathan/The Leviathan	1	23	0	0	0	1.5	14.4
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	2918	7	R	263	400	137	Leviathan/The Leviathan	1	24	0	0	0	10	-3.1
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	2919	30	S	209	400	191	Leviathan/The Leviathan	1	25	0	0	0	1.5	14.4
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	2923	3	R	230	400	170	Leviathan/The Leviathan	1	29	0	0	0	10	7.8
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	2948	7	R	219	289	70	Leviathan/The Leviathan	1	54	0	0	0	1.5	14.4
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3886	15	M	286	400	114	Leviathan/The Leviathan	2	2	0	0	0	7.3	-10
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3888	6	R	228	400	172	Leviathan/The Leviathan	2	4	0	0	0	7.2	-4.5
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3888	12	M	249	400	151	Leviathan/The Leviathan	2	4	0	0	0	7.8	-4.1
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3888	19	M	244	400	156	Leviathan/The Leviathan	2	4	0	0	0	7.5	-4.6
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3891	8	R	212	400	188	Leviathan/The Leviathan	2	7	0	0	0	10	-10.1
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3896	20	M	275	400	125	Leviathan/The Leviathan	2	12	0	0	0	-7.5	5.6
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3897	4	R	212	400	188	Leviathan/The Leviathan	2	13	0	0	0	10	-11.1
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3897	7	R	205	400	195	Leviathan/The Leviathan	2	13	0	0	0	10	-10.7
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3897	11	R	217	400	183	Leviathan/The Leviathan	2	13	0	0	0	10	-11.7
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3898	5	R	216	400	184	Leviathan/The Leviathan	2	14	0	0	0	10	-15.6
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3898	21	M	247	400	153	Leviathan/The Leviathan	2	14	0	0	0	10	-7.2
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3900	13	M	231	400	169	Leviathan/The Leviathan	2	16	0	0	0	10	-10.2
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	3902	18	M	235	400	165	Leviathan/The Leviathan	2	18	0	0	0	10	-12.8
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	4283	3	R	151	400	249	Anahita/Anahita	-1	-1	0	0	0	-1.8	NaN
+fight|levi|rev|follow|1|14400|n30|aa3@ocean|L3|tc6|dlK	4284	16	M	181	400	219	Anahita/Anahita	-1	-1	0	0	0	-2.4	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	825	18	M	163	400	237	Anahita/Anahita	-1	-1	0	0	0	-3.9	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	827	21	M	87	400	313	env/	-1	-1	0	0	0	-4.2	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	828	3	R	139	400	261	Anahita/Anahita	-1	-1	0	0	0	-3.6	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	906	3	R	148	281	133	Anahita/Anahita	-1	-1	0	0	0	-1.5	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	908	19	M	164	400	236	Anahita/Anahita	-1	-1	0	0	0	-2.1	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	909	7	R	135	400	265	Anahita/Anahita	-1	-1	0	0	0	-2.8	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	910	13	M	160	400	240	Anahita/Anahita	-1	-1	0	0	0	-2.1	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	911	17	M	158	400	242	Anahita/Anahita	-1	-1	0	0	0	-3	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	913	14	M	159	400	241	Anahita/Anahita	-1	-1	0	0	0	-2.1	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	1479	6	R	209	400	191	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	1479	11	R	212	400	188	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	1479	19	M	238	322	84	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2305	10	R	252	400	148	Leviathan/The Leviathan	1	22	0	0	0	10	13.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2313	3	R	271	400	129	Leviathan/The Leviathan	1	30	0	0	0	10	2.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2671	25	E	191	400	209	Leviathan/The Leviathan	2	3	0	0	0	9	-9.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2673	26	E	206	400	194	Leviathan/The Leviathan	2	5	0	0	0	1.5	-14.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2675	4	R	210	400	190	Leviathan/The Leviathan	2	7	0	0	0	3	-7.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2675	8	R	225	400	175	Leviathan/The Leviathan	2	7	0	0	0	9	-2.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2675	12	M	234	400	166	Leviathan/The Leviathan	2	7	0	0	0	9	-2.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2677	5	R	213	400	187	Leviathan/The Leviathan	2	9	0	0	0	4.5	-7.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2677	22	E	200	400	200	Leviathan/The Leviathan	2	9	0	0	0	9.6	-10.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2677	24	E	194	400	206	Leviathan/The Leviathan	2	9	0	0	0	9.3	-9.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2678	20	M	232	400	168	Leviathan/The Leviathan	2	10	0	0	0	10	-8.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2680	17	M	236	400	164	Leviathan/The Leviathan	2	12	0	0	0	10	-11.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2682	15	M	232	400	168	Leviathan/The Leviathan	2	14	0	0	0	1.5	-14.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2683	3	R	214	400	186	Leviathan/The Leviathan	2	15	0	0	0	10	-13.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2683	7	R	220	400	180	Leviathan/The Leviathan	2	15	0	0	0	10	-13.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2683	19	M	230	400	170	Leviathan/The Leviathan	2	15	0	0	0	10	-13.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2684	16	M	242	400	158	Leviathan/The Leviathan	2	16	0	0	0	10	-12.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2685	13	M	232	400	168	Leviathan/The Leviathan	2	17	0	0	0	10	-12.5
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2686	2	R	225	400	175	Leviathan/The Leviathan	2	18	0	0	0	10	-13.3
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2686	6	R	211	400	189	Leviathan/The Leviathan	2	18	0	0	0	1.5	-7.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2686	14	M	237	400	163	Leviathan/The Leviathan	2	18	0	0	0	10	-8.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2686	18	M	232	400	168	Leviathan/The Leviathan	2	18	0	0	0	1.5	-7.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2687	9	R	202	400	198	Leviathan/The Leviathan	2	19	0	0	0	10	-12.6
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2687	10	R	212	400	188	Leviathan/The Leviathan	2	19	0	0	0	10	-13.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2690	21	M	228	400	172	Leviathan/The Leviathan	2	22	0	1	0	0	-13.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2705	8	R	215	327	112	Leviathan/The Leviathan	2	37	0	0	0	6	-15.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2705	12	M	242	318	76	Leviathan/The Leviathan	2	37	0	0	0	6	-15.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2711	27	S	201	400	199	Leviathan/The Leviathan	2	43	0	0	0	-7.5	-14.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2713	11	R	208	400	192	Leviathan/The Leviathan	2	45	0	0	0	-7.5	-14.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2713	29	S	197	400	203	Leviathan/The Leviathan	2	45	0	0	0	-7.5	-15.1
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	2727	14	M	238	316	78	Leviathan/The Leviathan	2	59	0	0	0	-7.5	-15
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	3956	27	S	229	400	171	Leviathan/The Leviathan	3	13	0	0	0	-7.5	-5.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	3960	11	R	245	400	155	Leviathan/The Leviathan	3	17	0	0	0	-7.5	-7.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	3961	14	M	244	400	156	Leviathan/The Leviathan	3	18	0	0	0	-7.5	-13.2
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	3964	22	E	205	400	195	Leviathan/The Leviathan	3	21	0	0	0	-7.5	-14.4
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	3973	12	M	245	400	155	Leviathan/The Leviathan	3	30	0	0	0	-7.5	-13.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	3973	19	M	255	400	145	Leviathan/The Leviathan	3	30	0	0	0	-7.5	-15.9
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	3974	29	S	210	400	190	Leviathan/The Leviathan	3	31	0	0	0	-7.5	-14.8
+fight|levi|rev|follow|2|14400|n30|aa3@ocean|L3|tc8|dlK	3983	20	M	242	400	158	Leviathan/The Leviathan	3	40	0	0	0	1.8	-15.3
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	884	11	R	90	400	310	env/	-1	-1	0	0	0	-2.8	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1122	24	E	69	400	331	AnahitasIceShield/Ice Shield	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1129	22	E	65	400	335	AnahitasIceShield/Ice Shield	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1135	30	S	61	400	339	AnahitasIceShield/Ice Shield	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1143	17	M	86	400	314	AnahitasIceShield/Ice Shield	-1	-1	0	0	0	9	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1156	4	R	71	400	329	AnahitasIceShield/Ice Shield	-1	-1	0	0	0	6.9	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1168	13	M	102	400	298	AnahitasIceShield/Ice Shield	-1	-1	0	0	0	6	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	3	R	204	400	196	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	6	R	222	400	178	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	8	R	210	400	190	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	9	R	210	400	190	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	11	R	202	400	198	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	14	M	236	400	164	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	16	M	235	400	165	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	17	M	237	346	109	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	19	M	236	400	164	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	21	M	241	400	159	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	22	E	206	369	163	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	24	E	202	367	165	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	27	S	190	400	210	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	29	S	207	400	193	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	1490	30	S	204	372	168	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3325	4	R	167	400	233	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	26.1
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3703	7	R	153	400	247	Anahita/Anahita	-1	-1	0	0	0	-2.1	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3703	13	M	85	400	315	AnahitasIceShield/Ice Shield	-1	-1	0	0	0	4.6	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3772	23	E	152	400	248	Anahita/Anahita	-1	-1	0	0	0	-4.9	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3772	26	E	151	400	249	Anahita/Anahita	-1	-1	0	0	0	2.8	NaN
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3991	8	R	215	400	185	Leviathan/The Leviathan	2	6	0	0	0	10	-4.6
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3991	12	M	237	400	163	Leviathan/The Leviathan	2	6	0	0	0	6	-6.3
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3994	14	M	233	400	167	Leviathan/The Leviathan	2	9	0	0	0	9.3	-7.8
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3996	3	R	218	400	182	Leviathan/The Leviathan	2	11	0	0	0	9.6	-8.4
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3996	6	R	206	400	194	Leviathan/The Leviathan	2	11	0	0	0	9.9	-9
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3996	11	R	217	400	183	Leviathan/The Leviathan	2	11	0	0	0	9.6	-8.4
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3996	13	M	241	346	105	Leviathan/The Leviathan	2	11	0	0	0	9.9	-9
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3996	16	M	238	400	162	Leviathan/The Leviathan	2	11	0	0	0	9.3	-7.7
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3996	18	M	236	400	164	Leviathan/The Leviathan	2	11	0	0	0	9.9	-9
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3996	21	M	236	400	164	Leviathan/The Leviathan	2	11	0	0	0	9.9	-9
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3997	4	R	217	400	183	Leviathan/The Leviathan	2	12	0	0	0	9.9	-8.9
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3997	9	R	214	400	186	Leviathan/The Leviathan	2	12	0	0	0	10	-9.6
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3997	15	M	234	400	166	Leviathan/The Leviathan	2	12	0	0	0	10	-9.6
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3997	19	M	234	400	166	Leviathan/The Leviathan	2	12	0	0	0	10	-9.6
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3997	20	M	237	400	163	Leviathan/The Leviathan	2	12	0	0	0	10	-9.6
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3999	2	R	214	400	186	Leviathan/The Leviathan	2	14	0	0	0	10	-9.5
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3999	7	R	211	381	170	Leviathan/The Leviathan	2	14	0	0	0	10	-10.8
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	3999	10	R	212	400	188	Leviathan/The Leviathan	2	14	0	0	0	10	-10.8
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	4001	17	M	232	400	168	Leviathan/The Leviathan	2	16	0	0	0	10	-10.7
+fight|levi|rev|follow|3|14400|n30|aa3@ocean|L3|tc10|dlK	4002	5	R	207	400	193	Leviathan/The Leviathan	2	17	0	0	0	9.3	-7.6
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	525	2	R	373	400	27	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	525	15	M	347	400	53	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1264	23	E	213	400	187	env/	-1	-1	0	0	0	-7.5	14.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1264	24	E	208	400	192	env/	-1	-1	0	0	0	-7.5	15.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1790	6	R	125	400	275	env/	-1	-1	0	1	0	0	-21
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1793	22	E	111	400	289	env/	-1	-1	0	1	0	0	-18.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1793	29	S	106	400	294	env/	-1	-1	0	1	0	0	-18.5
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1793	30	S	120	400	280	env/	-1	-1	0	1	0	0	-18.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1794	18	M	125	400	275	env/	-1	-1	0	1	0	0	-16.9
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1794	31	S	120	400	280	env/	-1	-1	0	1	0	0	-17.5
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1795	16	M	121	400	279	env/	-1	-1	0	1	0	0	-18.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1799	9	R	67	400	333	env/	-1	-1	0	1	0	0	-18.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1801	19	M	75	400	325	env/	-1	-1	0	1	0	0	-18.2
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1823	6	R	74	277	203	env/	-1	-1	0	1	0	0	-21
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1823	22	E	56	291	235	env/	-1	-1	0	1	0	0	-18.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1823	29	S	60	296	236	env/	-1	-1	0	1	0	0	-18.5
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1823	30	S	56	282	226	env/	-1	-1	0	1	0	0	-18.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1824	18	M	68	277	209	env/	-1	-1	0	1	0	0	-16.9
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1824	31	S	56	282	226	env/	-1	-1	0	1	0	0	-17.5
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	1845	15	M	132	346	214	Leviathan/The Leviathan	2	70	0	0	0	1.4	-27
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2285	6	R	255	255	0	Anahita/Anahita	-1	-1	1	1	0	0	-24.1
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2285	8	R	137	400	263	env/	-1	-1	0	1	0	0	-24.5
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2285	24	E	236	400	164	Anahita/Anahita	-1	-1	0	1	0	0	-23.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2286	11	R	130	400	270	env/	-1	-1	0	1	0	0	-22.6
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2286	13	M	135	400	265	env/	-1	-1	0	1	0	0	-22.9
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2291	23	E	235	400	165	Anahita/Anahita	-1	-1	0	1	0	0	-23.9
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2373	14	M	126	400	274	env/	-1	-1	0	1	0	0	23
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2374	12	M	128	400	272	env/	-1	-1	0	1	0	0	23.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2374	21	M	126	400	274	env/	-1	-1	0	1	0	0	23.6
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2374	29	S	236	299	63	Anahita/Anahita	-1	-1	0	1	0	0	23.3
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2374	30	S	217	289	72	Anahita/Anahita	-1	-1	0	1	0	0	23.3
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2376	18	M	247	272	25	Anahita/Anahita	-1	-1	0	1	0	0	23.6
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2377	31	S	216	289	73	Anahita/Anahita	-1	-1	0	1	0	0	23.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2380	20	M	125	400	275	env/	-1	-1	0	1	0	0	23.1
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2380	22	E	221	298	77	Anahita/Anahita	-1	-1	0	1	0	0	23.2
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2559	18	M	192	192	0	Detonating_Bubble/Detonating Bubble	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2559	31	S	234	240	6	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2608	12	M	252	297	45	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2608	21	M	249	299	50	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2608	29	S	220	235	15	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2608	30	S	219	244	25	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2609	14	M	243	299	56	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2611	31	S	11	11	0	Anahita/Anahita	-1	-1	1	0	0	0.3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2698	4	R	128	400	272	env/	-1	-1	0	1	0	0	23.9
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2698	5	R	117	400	283	env/	-1	-1	0	1	0	0	23.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2698	7	R	123	400	277	env/	-1	-1	0	1	0	0	23.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2698	27	S	120	400	280	env/	-1	-1	0	1	0	0	23.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2703	15	M	266	312	46	Anahita/Anahita	-1	-1	0	1	0	0	24.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2849	15	M	209	209	0	Detonating_Bubble/Detonating Bubble	-1	-1	1	1	0	0	24.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2854	4	R	232	288	56	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	23.9
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2856	27	S	220	296	76	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	23.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2857	7	R	247	293	46	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	23.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2858	5	R	247	299	52	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	23.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2897	4	R	211	211	0	Detonating_Bubble/Detonating Bubble	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2914	27	S	221	232	11	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2915	7	R	202	202	0	Detonating_Bubble/Detonating Bubble	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2916	5	R	208	208	0	Detonating_Bubble/Detonating Bubble	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2953	10	R	152	400	248	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	2954	2	R	152	400	248	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3017	12	M	235	235	0	Anahita/Anahita	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3018	14	M	241	246	5	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3018	21	M	240	240	0	Anahita/Anahita	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3018	30	S	65	65	0	Anahita/Anahita	-1	-1	1	0	0	0.3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3019	29	S	55	55	0	Anahita/Anahita	-1	-1	1	0	0	0.3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3023	20	M	270	346	76	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3023	22	E	243	294	51	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3024	16	M	281	400	119	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3026	9	R	274	400	126	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3027	19	M	272	400	128	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3194	27	S	38	38	0	Detonating_Bubble/Detonating Bubble	-1	-1	1	0	0	0.3	-23.3
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3654	2	R	303	325	22	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3654	10	R	309	325	16	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3719	14	M	79	79	0	Anahita/Anahita	-1	-1	1	0	0	0.3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3723	20	M	287	300	13	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3723	22	E	125	125	0	Anahita/Anahita	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3725	16	M	148	343	195	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3726	9	R	152	349	197	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	3727	19	M	146	351	205	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	4038	24	E	118	358	240	Anahita/Anahita	-1	-1	0	0	0	6.7	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	4040	20	M	44	44	0	Anahita/Anahita	-1	-1	1	0	0	4.4	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	4577	19	M	284	299	15	Anahita/Anahita	-1	-1	0	0	0	-1.4	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	4578	13	M	155	400	245	env/	-1	-1	0	0	0	-3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	4582	2	R	132	273	141	Anahita/Anahita	-1	-1	0	0	0	-1.5	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	4660	17	M	162	400	238	env/	-1	-1	0	0	0	4.3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	4672	13	M	158	254	96	env/	-1	-1	0	0	0	4.3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	4755	10	R	285	285	0	Anahita/Anahita	-1	-1	1	0	0	2.8	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	4759	13	M	256	256	0	Anahita/Anahita	-1	-1	1	0	0	2.8	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	5128	11	R	138	400	262	env/	-1	-1	0	0	0	5.4	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	5436	11	R	297	297	0	Anahita/Anahita	-1	-1	1	0	0	0.8	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	5438	17	M	163	325	162	env/	-1	-1	0	0	0	1.7	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	5439	9	R	308	391	83	Anahita/Anahita	-1	-1	0	0	0	-0.2	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	5507	25	E	120	400	280	env/	-1	-1	0	0	0	-5.1	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	5508	23	E	134	400	266	Anahita/Anahita	-1	-1	0	0	0	-5.4	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	5511	3	R	151	400	249	env/	-1	-1	0	0	0	-4.5	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	5525	2	R	142	245	103	Anahita/Anahita	-1	-1	0	0	0	-1.2	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	5604	2	R	151	261	110	Anahita/Anahita	-1	-1	0	0	0	2.8	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	5605	2	R	110	110	0	Anahita/Anahita	-1	-1	1	0	0	3.1	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6023	9	R	144	293	149	Anahita/Anahita	-1	-1	0	0	0	-4.2	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6090	24	E	282	400	118	Anahita/Anahita	-1	-1	0	0	0	1.2	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6175	16	M	154	400	246	Anahita/Anahita	-1	-1	0	0	0	-4.2	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6175	17	M	291	396	105	Anahita/Anahita	-1	-1	0	0	0	-3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6175	19	M	144	341	197	Anahita/Anahita	-1	-1	0	0	0	-1.8	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6186	3	R	149	324	175	env/	-1	-1	0	0	0	-3.6	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6270	28	S	144	400	256	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6595	19	M	244	244	0	Detonating_Bubble/Detonating Bubble	-1	-1	1	0	0	-0.2	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6636	8	R	142	400	258	env/	-1	-1	0	0	0	0.9	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6637	3	R	300	376	76	Anahita/Anahita	-1	-1	0	0	0	-0.2	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6704	24	E	145	332	187	Anahita/Anahita	-1	-1	0	0	0	5.1	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6808	25	E	131	400	269	env/	-1	-1	0	0	0	-0.3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6809	16	M	278	317	39	Anahita/Anahita	-1	-1	0	0	0	0.9	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6810	9	R	239	239	0	Anahita/Anahita	-1	-1	1	0	0	-3.3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6811	3	R	93	93	0	Anahita/Anahita	-1	-1	1	0	0	0.6	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	6811	17	M	151	171	20	Anahita/Anahita	-1	-1	0	0	0	0.3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	7170	17	M	61	61	0	Detonating_Bubble/Detonating Bubble	-1	-1	1	0	0	7.9	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	7262	28	S	259	367	108	Anahita/Anahita	-1	-1	0	0	0	-5.4	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	7341	23	E	130	400	270	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	7526	24	E	135	280	145	Anahita/Anahita	-1	-1	0	0	0	-5.1	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	7537	25	E	134	351	217	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	7597	24	E	147	153	6	Anahita/Anahita	-1	-1	0	0	0	5.5	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	7855	24	E	36	36	0	Anahita/Anahita	-1	-1	1	0	0	-4.8	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	7932	25	E	130	262	132	env/	-1	-1	0	0	0	-4.8	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	8014	16	M	152	320	168	Anahita/Anahita	-1	-1	0	0	0	10	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	8400	16	M	163	212	49	Anahita/Anahita	-1	-1	0	0	0	0.6	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	8406	8	R	301	400	99	Anahita/Anahita	-1	-1	0	0	0	-2.7	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	8481	25	E	276	344	68	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	8495	26	E	140	400	260	env/	-1	-1	0	0	0	-3.9	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	9020	25	E	124	124	0	Anahita/Anahita	-1	-1	1	0	0	7.2	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	9106	16	M	278	278	0	Anahita/Anahita	-1	-1	1	0	0	-2.7	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	9552	23	E	139	400	261	Anahita/Anahita	-1	-1	0	0	0	-3.7	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	9799	8	R	150	400	250	Anahita/Anahita	-1	-1	0	0	0	-3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	9891	8	R	259	259	0	Anahita/Anahita	-1	-1	1	0	0	-1.9	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	9953	23	E	262	305	43	Anahita/Anahita	-1	-1	0	0	0	-4.8	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	10538	23	E	255	255	0	Anahita/Anahita	-1	-1	1	0	0	-1.8	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	10605	28	S	149	400	251	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	11588	26	E	139	400	261	env/	-1	-1	0	0	0	0.5	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	12114	26	E	261	319	58	Anahita/Anahita	-1	-1	0	0	0	4	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	12903	28	S	148	400	252	Anahita/Anahita	-1	-1	0	0	0	0.3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	12991	28	S	261	261	0	Anahita/Anahita	-1	-1	1	0	0	4	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	13140	26	E	284	319	35	Anahita/Anahita	-1	-1	0	0	0	-5.5	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc1|dlK	13308	26	E	52	52	0	Anahita/Anahita	-1	-1	1	0	0	-3.6	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	525	2	R	354	400	46	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	525	10	R	357	400	43	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	525	28	S	323	400	77	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1169	11	R	204	400	196	env/	-1	-1	0	0	0	3	3.4
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1170	13	M	217	400	183	env/	-1	-1	0	0	0	7.5	1.3
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1171	7	R	202	400	198	env/	-1	-1	0	0	0	9	0.7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1171	14	M	220	400	180	env/	-1	-1	0	0	0	9.3	-0.3
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1171	15	M	202	400	198	env/	-1	-1	0	0	0	9	0.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1188	2	R	220	265	45	Leviathan/The Leviathan	1	22	0	0	0	10	-14.6
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1189	8	R	212	400	188	env/	-1	-1	0	0	0	10	-14.1
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1199	11	R	169	348	179	env/	-1	-1	0	0	0	10	-14.4
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1570	26	E	71	400	329	env/	-1	-1	0	0	0	-2.3	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1571	25	E	71	400	329	env/	-1	-1	0	0	0	-2.3	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1843	18	M	85	400	315	env/	-1	-1	0	0	0	-7.5	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1881	22	E	69	400	331	env/	-1	-1	0	0	0	-7.5	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1949	4	R	144	400	256	env/	-1	-1	0	0	0	-4.5	-18.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1949	18	M	297	325	28	Anahita/Anahita	-1	-1	0	1	0	0	-19.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1950	14	M	299	400	101	Anahita/Anahita	-1	-1	0	0	0	-0.5	-19.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	1955	26	E	265	372	107	Anahita/Anahita	-1	-1	0	0	0	-7.5	-14.1
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	2806	11	R	322	362	40	Anahita/Anahita	-1	-1	0	0	0	-3	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	2810	5	R	158	400	242	env/	-1	-1	0	0	0	2.8	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	2887	14	M	154	193	39	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	2901	27	S	117	400	283	env/	-1	-1	0	0	0	-2.7	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	2905	29	S	225	400	175	Anahita/Anahita	-1	-1	0	0	0	-3.3	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	2905	30	S	111	400	289	env/	-1	-1	0	0	0	-2.7	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	2909	25	E	227	400	173	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	2912	6	R	115	400	285	env/	-1	-1	0	0	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	2914	26	E	214	358	144	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3138	12	M	154	400	246	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3140	24	E	253	400	147	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3140	26	E	165	165	0	Anahita/Anahita	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3158	29	S	260	349	89	Anahita/Anahita	-1	-1	0	0	0	-0.7	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3199	30	S	134	320	186	AnahitasIceShield/Ice Shield	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3224	12	M	254	254	0	Leviathan/The Leviathan	4	21	1	0	0	-7.5	-9.3
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3226	24	E	205	304	99	Anahita/Anahita	-1	-1	0	0	0	-7.5	-7.1
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3230	25	E	354	354	0	Leviathan/The Leviathan	4	27	1	0	0	-7.5	-8.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3233	22	E	400	400	0	Leviathan/The Leviathan	4	30	1	0	0	-7.5	-13.7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3249	8	R	231	400	169	env/	-1	-1	0	0	0	-7.5	-12
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3249	17	M	169	400	231	env/	-1	-1	0	0	0	9	12.4
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3257	14	M	221	231	10	Anahita/Anahita	-1	-1	0	0	0	8.8	-14.7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3264	30	S	342	342	0	Leviathan/The Leviathan	4	61	1	0	0	-1.2	15.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3266	20	M	178	400	222	env/	-1	-1	0	0	0	-1.2	15.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3269	11	R	184	236	52	Anahita/Anahita	-1	-1	0	0	0	-1.2	15.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3270	4	R	348	397	49	Leviathan/The Leviathan	4	67	0	0	0	-1.2	15.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3270	16	M	182	400	218	env/	-1	-1	0	0	0	-1.2	15.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3271	6	R	323	323	0	Leviathan/The Leviathan	4	68	1	0	0	-1.2	15.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3271	13	M	185	400	215	env/	-1	-1	0	0	0	-1.2	15.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3398	8	R	333	333	0	Leviathan/The Leviathan	5	11	1	0	0	-7.5	4.3
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3398	29	S	112	112	0	Detonating_Bubble/Detonating Bubble	-1	-1	1	0	0	-4.2	-68.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3487	17	M	256	256	0	Anahita/Anahita	-1	-1	1	0	0	-0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3489	7	R	70	400	330	env/	-1	-1	0	0	0	-3	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3489	15	M	77	400	323	env/	-1	-1	0	0	0	-3	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3491	13	M	162	239	77	AnahitasIceShield/Ice Shield	-1	-1	0	0	0	1.2	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3493	4	R	149	220	71	AnahitasIceShield/Ice Shield	-1	-1	0	0	0	0.5	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3500	16	M	242	242	0	Anahita/Anahita	-1	-1	1	0	0	-0.6	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3503	2	R	73	400	327	Leviathan/The Leviathan	5	-1	0	0	0	2.8	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3503	11	R	79	79	0	AnahitasIceShield/Ice Shield	-1	-1	1	0	0	2.5	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3505	3	R	68	400	332	env/	-1	-1	0	0	0	2.5	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3505	9	R	81	400	319	env/	-1	-1	0	0	0	2.5	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3505	10	R	131	400	269	Leviathan/The Leviathan	-1	-1	0	0	0	-1.5	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3574	24	E	135	135	0	Leviathan/The Leviathan	6	7	1	0	0	-7.2	1.4
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3578	7	R	340	340	0	Leviathan/The Leviathan	6	11	1	0	0	9.6	3.9
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3579	15	M	333	333	0	Leviathan/The Leviathan	6	12	1	0	0	9.9	4.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3587	3	R	242	340	98	Anahita/Anahita	-1	-1	0	1	0	0	7.1
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3587	9	R	243	327	84	Anahita/Anahita	-1	-1	0	1	0	0	7.1
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3587	21	M	176	400	224	env/	-1	-1	0	0	0	10	7.9
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3588	4	R	81	81	0	Leviathan/The Leviathan	6	21	1	0	0	10	12.3
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3588	13	M	236	236	0	Leviathan/The Leviathan	6	21	1	0	0	10	6
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3588	14	M	48	48	0	Anahita/Anahita	-1	-1	1	1	0	0	7.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3588	18	M	350	350	0	Leviathan/The Leviathan	6	21	1	0	0	10	9.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3589	5	R	329	329	0	Leviathan/The Leviathan	6	22	1	0	0	10	10.4
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3590	2	R	249	335	86	Anahita/Anahita	-1	-1	0	0	0	4.5	7.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3590	19	M	186	400	214	env/	-1	-1	0	0	0	3	7.6
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3590	20	M	257	257	0	Leviathan/The Leviathan	6	23	1	0	0	7.5	8.7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3591	10	R	269	277	8	Anahita/Anahita	-1	-1	0	0	0	6	8.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3601	28	S	202	400	198	Leviathan/The Leviathan	6	34	0	1	0	0	13.9
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	3782	23	E	148	400	252	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4012	27	S	258	400	142	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4052	27	S	274	295	21	Detonating_Bubble/Detonating Bubble	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4224	3	R	157	314	157	Anahita/Anahita	-1	-1	0	0	0	5.1	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4224	9	R	151	300	149	Anahita/Anahita	-1	-1	0	0	0	5.1	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4275	9	R	156	156	0	AquaticAberration/Aquatic Aberration	-1	-1	1	0	0	-7.5	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4276	3	R	163	164	1	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	-7.5	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4306	3	R	4	4	0	Leviathan/The Leviathan	7	7	1	0	0	-7.2	3.7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4315	27	S	47	47	0	Leviathan/The Leviathan	7	16	1	0	0	-7.2	7.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4330	23	E	313	313	0	Leviathan/The Leviathan	7	31	1	0	0	-7.5	12.1
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4389	28	S	68	400	332	Leviathan/The Leviathan	7	-1	0	0	0	1.5	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4389	31	S	69	400	331	env/	-1	-1	0	0	0	3.2	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4394	10	R	156	244	88	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	0.1	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4394	19	M	162	304	142	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	0.1	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4395	2	R	155	323	168	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	0.1	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4445	19	M	164	297	133	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	4.5	0.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4447	10	R	93	93	0	AquaticAberration/Aquatic Aberration	-1	-1	1	0	0	9.3	2.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4449	21	M	167	320	153	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	9.9	3.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4449	28	S	337	337	0	Leviathan/The Leviathan	8	9	1	0	0	1.7	7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4450	2	R	167	173	6	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	10	4.4
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4466	31	S	221	338	117	env/	-1	-1	0	1	0	0	6.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4475	19	M	135	135	0	Leviathan/The Leviathan	8	35	1	1	0	0	7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4479	21	M	306	306	0	Leviathan/The Leviathan	8	39	1	1	0	0	7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4480	2	R	9	9	0	Leviathan/The Leviathan	8	40	1	1	0	0	7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4496	31	S	200	269	69	env/	-1	-1	0	1	0	0	6.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc3|dlK	4596	31	S	81	81	0	Leviathan/The Leviathan	9	13	1	0	0	-7.2	6.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	525	10	R	368	400	32	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	525	15	M	351	400	49	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	525	23	E	351	400	49	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	1153	25	E	70	400	330	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	1205	25	E	77	334	257	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	1210	26	E	77	400	323	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	1254	22	E	76	400	324	env/	-1	-1	0	0	0	-4.2	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	1642	20	M	120	400	280	env/	-1	-1	0	0	0	-7.5	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	1645	5	R	128	400	272	env/	-1	-1	0	0	0	9.6	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	1648	11	R	131	400	269	env/	-1	-1	0	0	0	3.3	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	1650	8	R	127	400	273	env/	-1	-1	0	0	0	9.9	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	1724	29	S	130	400	270	env/	-1	-1	0	0	0	2.9	-54.6
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	1765	4	R	218	400	182	env/	-1	-1	0	0	0	-7.5	14.5
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	2521	4	R	279	400	121	Anahita/Anahita	-1	-1	0	0	0	-0.6	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	2528	16	M	129	400	271	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	2543	3	R	274	400	126	Anahita/Anahita	-1	-1	0	0	0	2.8	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	2611	10	R	148	400	252	Leviathan/The Leviathan	-1	-1	0	0	0	0.2	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	2621	14	M	139	400	261	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	2688	4	R	134	134	0	AquaticAberration/Aquatic Aberration	-1	-1	1	0	0	1.5	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	2698	8	R	148	390	242	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	-2.4	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	2700	11	R	151	387	236	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	-3.3	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	2757	15	M	75	400	325	Leviathan/The Leviathan	-1	-1	0	0	0	0.3	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	2758	5	R	152	397	245	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	-2.4	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3182	21	M	82	400	318	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3183	2	R	83	400	317	env/	-1	-1	0	0	0	0	0
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3192	20	M	359	400	41	Leviathan/The Leviathan	3	10	0	0	0	-1.5	-14.7
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3193	19	M	180	400	220	env/	-1	-1	0	0	0	-1.5	-14.7
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3212	21	M	207	319	112	env/	-1	-1	0	0	0	0	-0
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3213	2	R	222	318	96	env/	-1	-1	0	0	0	0	-0
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3213	16	M	347	347	0	Leviathan/The Leviathan	3	31	1	0	0	-7.5	-14.6
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3222	20	M	193	193	0	Leviathan/The Leviathan	3	40	1	0	0	0.3	-10.7
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3223	19	M	187	222	35	env/	-1	-1	0	0	0	2.8	-14.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3233	5	R	130	291	161	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	-17.3
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3233	10	R	137	322	185	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	-17.3
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3233	11	R	140	289	149	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	-17.3
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3233	13	M	74	400	326	env/	-1	-1	0	0	0	-7.5	-16.3
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3261	2	R	211	250	39	env/	-1	-1	0	0	0	10	7
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3261	21	M	202	266	64	env/	-1	-1	0	0	0	10	7
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3262	21	M	64	64	0	Leviathan/The Leviathan	4	13	1	0	0	10	7.6
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3263	2	R	39	39	0	Leviathan/The Leviathan	4	14	1	0	0	10	8.2
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3263	10	R	337	337	0	Leviathan/The Leviathan	4	14	1	0	0	-7.5	3.5
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3263	13	M	236	328	92	env/	-1	-1	0	0	0	-7.5	2
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3275	5	R	135	316	181	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	-2.4	20.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3276	11	R	144	303	159	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	21.7
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3276	15	M	70	381	311	Leviathan/The Leviathan	4	27	0	1	0	0	21.7
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3293	13	M	238	245	7	env/	-1	-1	0	0	0	0	-0.6
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3347	13	M	11	11	0	AquaticAberration/Aquatic Aberration	-1	-1	1	0	0	9.6	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3456	6	R	80	400	320	env/	-1	-1	0	0	0	-7.5	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3456	12	M	83	400	317	env/	-1	-1	0	0	0	-7.5	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3474	11	R	179	179	0	AquaticAberration/Aquatic Aberration	-1	-1	1	0	0	-7.5	-1.3
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3475	15	M	333	333	0	Leviathan/The Leviathan	5	6	1	0	0	-7.5	-1.6
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3478	14	M	209	357	148	env/	-1	-1	0	0	0	-7.5	3.4
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3486	6	R	210	322	112	env/	-1	-1	0	0	0	-7.5	8.3
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3486	12	M	206	319	113	env/	-1	-1	0	0	0	-7.5	8.8
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3598	3	R	142	389	247	Anahita/Anahita	-1	-1	0	0	0	1.8	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3780	25	E	72	400	328	env/	-1	-1	0	0	0	-7.2	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	3782	26	E	71	400	329	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4175	3	R	267	314	47	Anahita/Anahita	-1	-1	0	0	0	-2.1	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4175	5	R	145	276	131	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	-2.1	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4176	9	R	144	400	256	env/	-1	-1	0	0	0	-5.2	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4179	8	R	139	400	261	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	-1.8	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4255	22	E	121	400	279	env/	-1	-1	0	0	0	6.3	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4256	24	E	128	400	272	env/	-1	-1	0	0	0	6.3	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4259	23	E	116	400	284	Leviathan/The Leviathan	-1	-1	0	0	0	-0.2	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4335	28	S	137	400	263	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4335	31	S	141	400	259	env/	-1	-1	0	0	0	0.2	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4338	26	E	280	391	111	Detonating_Bubble/Detonating Bubble	-1	-1	0	0	0	-4.6	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4388	22	E	117	294	177	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4433	26	E	263	271	8	Anahita/Anahita	-1	-1	0	0	0	-3.3	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4433	28	S	272	272	0	Anahita/Anahita	-1	-1	1	0	0	-3.6	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4529	12	M	253	371	118	Anahita/Anahita	-1	-1	0	0	0	-0.4	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4593	12	M	124	124	0	Anahita/Anahita	-1	-1	1	0	0	-3.9	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4598	23	E	119	320	201	Leviathan/The Leviathan	-1	-1	0	0	0	-5.9	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4602	24	E	233	309	76	Anahita/Anahita	-1	-1	0	0	0	-5.1	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4602	25	E	235	400	165	Anahita/Anahita	-1	-1	0	0	0	-4.8	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	4978	5	R	223	223	0	Anahita/Anahita	-1	-1	1	0	0	-2.4	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5036	25	E	128	359	231	Anahita/Anahita	-1	-1	0	0	0	-0.3	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5037	7	R	144	400	256	env/	-1	-1	0	0	0	-3.6	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5039	26	E	71	71	0	Anahita/Anahita	-1	-1	1	0	0	-5.2	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5046	23	E	247	253	6	Anahita/Anahita	-1	-1	0	0	0	-0.9	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5049	24	E	258	272	14	Anahita/Anahita	-1	-1	0	0	0	4	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5110	3	R	147	297	150	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5110	8	R	142	365	223	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5349	22	E	268	400	132	Anahita/Anahita	-1	-1	0	0	0	-4.2	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5421	22	E	128	138	10	Anahita/Anahita	-1	-1	0	0	0	4.9	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5506	19	M	152	400	248	env/	-1	-1	0	0	0	-4.5	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5510	18	M	147	400	253	env/	-1	-1	0	0	0	-1.5	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5512	25	E	242	285	43	Anahita/Anahita	-1	-1	0	0	0	-4.8	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5519	8	R	146	270	124	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	3.9	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5861	7	R	319	343	24	Anahita/Anahita	-1	-1	0	0	0	0.5	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	5923	19	M	294	294	0	Anahita/Anahita	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	6109	6	R	137	400	263	env/	-1	-1	0	0	0	-3.6	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	6112	22	E	84	84	0	Anahita/Anahita	-1	-1	1	0	0	3.3	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	6734	18	M	156	390	234	env/	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	6743	3	R	141	335	194	Anahita/Anahita	-1	-1	0	0	0	2.8	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	6743	14	M	145	400	255	env/	-1	-1	0	0	0	2.8	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	6830	23	E	118	353	235	Anahita/Anahita	-1	-1	0	0	0	-1.2	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	7470	8	R	135	400	265	AquaticAberration/Aquatic Aberration	-1	-1	0	0	0	2.8	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	7557	14	M	275	346	71	Anahita/Anahita	-1	-1	0	0	0	-0.6	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	7559	8	R	263	274	11	Anahita/Anahita	-1	-1	0	0	0	2	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	7559	17	M	143	400	257	env/	-1	-1	0	0	0	2.8	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	7893	17	M	285	293	8	Anahita/Anahita	-1	-1	0	0	0	1.5	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	7971	29	S	131	400	269	env/	-1	-1	0	0	0	-2.7	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	7973	27	S	133	400	267	env/	-1	-1	0	0	0	-2	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	7981	31	S	138	400	262	env/	-1	-1	0	0	0	-3.9	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	8219	7	R	147	400	253	Anahita/Anahita	-1	-1	0	0	0	-2.7	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	8224	8	R	231	231	0	Anahita/Anahita	-1	-1	1	0	0	-1.5	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	8224	14	M	280	291	11	Anahita/Anahita	-1	-1	0	0	0	-1.5	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	8226	3	R	288	400	112	Anahita/Anahita	-1	-1	0	0	0	-0.6	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	8297	7	R	132	262	130	Anahita/Anahita	-1	-1	0	0	0	2.8	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc5|dlK	8299	7	R	137	280	143	Anahita/Anahita	-1	-1	0	0	0	2.8	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	525	10	R	364	400	36	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	525	15	M	380	400	20	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	525	23	E	320	400	80	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1194	12	M	394	400	6	Leviathan/The Leviathan	1	13	0	0	0	10	-7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1196	13	M	382	400	18	Leviathan/The Leviathan	1	15	0	0	0	10	-10.5
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1196	17	M	385	400	15	Leviathan/The Leviathan	1	15	0	0	0	10	-4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1196	21	M	373	400	27	Leviathan/The Leviathan	1	15	0	0	0	10	-10.5
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1197	7	R	346	400	54	Leviathan/The Leviathan	1	16	0	0	0	10	-5.6
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1197	11	R	344	400	56	Leviathan/The Leviathan	1	16	0	0	0	10	-9
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1197	19	M	384	400	16	Leviathan/The Leviathan	1	16	0	0	0	10	-7.9
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1198	18	M	394	400	6	Leviathan/The Leviathan	1	17	0	0	0	10	-9.6
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1202	15	M	382	400	18	Leviathan/The Leviathan	1	21	0	0	0	10	-11.2
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1209	4	R	400	400	0	Leviathan/The Leviathan	1	28	1	0	0	10	-13.5
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1389	28	S	143	400	257	AnahitasIceShield/Ice Shield	-1	-1	0	0	0	-5.4	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1399	2	R	132	400	268	AnahitasIceShield/Ice Shield	-1	-1	0	0	0	1.7	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1431	2	R	269	270	1	Anahita/Anahita	-1	-1	0	0	0	1.7	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1571	29	S	365	400	35	Leviathan/The Leviathan	2	34	0	0	0	10	12.2
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1940	12	M	248	384	136	Anahita/Anahita	-1	-1	0	0	0	-5.1	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1942	15	M	254	385	131	Anahita/Anahita	-1	-1	0	0	0	-5.1	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1942	18	M	251	400	149	Anahita/Anahita	-1	-1	0	0	0	-0.2	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1945	3	R	228	400	172	Anahita/Anahita	-1	-1	0	0	0	-0.9	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1945	6	R	222	400	178	Anahita/Anahita	-1	-1	0	0	0	-1.5	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1946	10	R	222	400	178	Anahita/Anahita	-1	-1	0	0	0	-3.3	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1947	14	M	242	400	158	Anahita/Anahita	-1	-1	0	0	0	4	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1947	17	M	244	393	149	Anahita/Anahita	-1	-1	0	0	0	4	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1947	20	M	265	400	135	Anahita/Anahita	-1	-1	0	0	0	-1.2	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1948	7	R	220	400	180	Anahita/Anahita	-1	-1	0	0	0	-2.4	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	1948	8	R	220	400	180	Anahita/Anahita	-1	-1	0	0	0	-1.5	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2492	14	M	364	364	0	Leviathan/The Leviathan	4	12	1	0	0	10	10.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2497	5	R	346	400	54	Leviathan/The Leviathan	4	17	0	0	0	9.3	7.6
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2497	11	R	330	400	70	Leviathan/The Leviathan	4	17	0	0	0	9.9	8.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2497	15	M	362	400	38	Leviathan/The Leviathan	4	17	0	0	0	9.3	7.6
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2498	6	R	326	385	59	Leviathan/The Leviathan	4	18	0	0	0	9.6	8.2
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2498	7	R	318	400	82	Leviathan/The Leviathan	4	18	0	0	0	9.3	7.5
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2498	18	M	377	400	23	Leviathan/The Leviathan	4	18	0	0	0	9.9	8.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2498	21	M	356	391	35	Leviathan/The Leviathan	4	18	0	0	0	9.6	8.2
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2498	26	E	311	400	89	Leviathan/The Leviathan	4	18	0	0	0	10	14.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2499	10	R	336	400	64	Leviathan/The Leviathan	4	19	0	0	0	9.9	8.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2503	13	M	357	379	22	Leviathan/The Leviathan	4	23	0	0	0	10	11.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2503	19	M	364	374	10	Leviathan/The Leviathan	4	23	0	0	0	10	11.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2503	20	M	361	400	39	Leviathan/The Leviathan	4	23	0	0	0	10	11.1
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2504	12	M	357	400	43	Leviathan/The Leviathan	4	24	0	0	0	10	11.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2510	8	R	363	386	23	Leviathan/The Leviathan	4	30	0	0	0	10	10.9
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2539	13	M	25	25	0	Leviathan/The Leviathan	4	59	1	0	0	-0.3	15.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2549	28	S	347	383	36	Leviathan/The Leviathan	4	69	0	0	0	0.6	15.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2586	27	S	211	400	189	Anahita/Anahita	-1	-1	0	0	0	1.2	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2651	30	S	119	400	281	env/	-1	-1	0	0	0	-0.7	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2651	31	S	108	400	292	env/	-1	-1	0	0	0	4.6	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2741	23	E	381	400	19	Leviathan/The Leviathan	5	1	0	0	0	-7.5	6.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2741	24	E	373	400	27	Leviathan/The Leviathan	5	1	0	0	0	-7.5	8.3
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2742	17	M	359	400	41	Leviathan/The Leviathan	5	2	0	0	0	3	-5.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2744	16	M	382	400	18	Leviathan/The Leviathan	5	4	0	0	0	6	-6.3
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2745	18	M	106	106	0	Leviathan/The Leviathan	5	5	1	0	0	6.3	-6.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2745	19	M	174	174	0	Leviathan/The Leviathan	5	5	1	1	0	0	-5.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2745	21	M	141	141	0	Leviathan/The Leviathan	5	5	1	0	0	6.3	-6.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2746	15	M	211	211	0	Leviathan/The Leviathan	5	6	1	0	0	9	-7.3
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2746	28	S	205	205	0	Leviathan/The Leviathan	5	6	1	0	0	9.3	-7.9
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2750	2	R	345	400	55	Leviathan/The Leviathan	5	10	0	0	0	10	-3.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2751	5	R	228	228	0	Leviathan/The Leviathan	5	11	1	0	0	1.5	-5.3
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2751	7	R	107	107	0	Leviathan/The Leviathan	5	11	1	0	0	9.9	-8.9
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2754	12	M	76	76	0	Leviathan/The Leviathan	5	14	1	0	0	10	-9.5
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2754	20	M	208	208	0	Leviathan/The Leviathan	5	14	1	0	0	10	-10.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2755	30	S	291	291	0	Leviathan/The Leviathan	5	15	1	0	0	-7.5	-4.2
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2756	6	R	84	84	0	Leviathan/The Leviathan	5	16	1	0	0	7.8	-6.9
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2756	10	R	250	250	0	Leviathan/The Leviathan	5	16	1	0	0	9	-7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2757	3	R	322	400	78	Leviathan/The Leviathan	5	17	0	0	0	1.7	-12
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	2757	11	R	95	95	0	Leviathan/The Leviathan	5	17	1	0	0	1.7	-12
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3189	16	M	212	212	0	Detonating_Bubble/Detonating Bubble	-1	-1	1	0	0	-3.6	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3267	2	R	270	270	0	Leviathan/The Leviathan	6	1	1	0	0	10	10.5
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3267	3	R	240	240	0	Leviathan/The Leviathan	6	1	1	0	0	9.6	12.6
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3267	8	R	231	231	0	Leviathan/The Leviathan	6	1	1	0	0	10	11.4
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3267	9	R	374	400	26	Leviathan/The Leviathan	6	1	0	0	0	9.6	12.2
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3267	17	M	316	316	0	Leviathan/The Leviathan	6	1	1	0	0	9	13.6
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3267	22	E	400	400	0	Leviathan/The Leviathan	6	1	1	1	0	0	-5.1
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3267	26	E	320	320	0	Leviathan/The Leviathan	6	1	1	0	0	3	8.3
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3267	27	S	379	400	21	Leviathan/The Leviathan	6	1	0	0	0	6	0.6
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3267	31	S	361	361	0	Leviathan/The Leviathan	6	1	1	0	0	-7.5	2.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3273	29	S	376	400	24	Leviathan/The Leviathan	6	7	0	0	0	-7.5	3.2
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3274	24	E	230	230	0	Leviathan/The Leviathan	6	8	1	0	0	-7.5	3.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3276	23	E	239	239	0	Leviathan/The Leviathan	6	10	1	0	0	-7.5	4.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3533	9	R	201	201	0	Leviathan/The Leviathan	8	1	1	0	0	9.6	-1.5
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3539	27	S	46	46	0	Leviathan/The Leviathan	8	7	1	0	0	0.9	3.8
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3542	29	S	200	200	0	Leviathan/The Leviathan	8	10	1	0	0	-7.5	4.7
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3546	25	E	394	400	6	Leviathan/The Leviathan	8	14	0	0	0	-7.5	9.2
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3769	25	E	131	177	46	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|1|14400|n30|aa3@ocean|L3|tc7|dlK	3807	25	E	49	49	0	Anahita/Anahita	-1	-1	1	0	0	0.3	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	525	2	R	355	400	45	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	525	15	M	362	400	38	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1202	22	E	118	400	282	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1257	22	E	131	400	269	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1338	24	E	121	400	279	AnahitasIceShield/Ice Shield	-1	-1	0	0	0	-0.2	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1377	22	E	253	400	147	Anahita/Anahita	-1	-1	0	0	0	9.1	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1840	2	R	213	400	187	Anahita/Anahita	-1	-1	0	0	0	3	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1840	3	R	234	400	166	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1840	8	R	219	400	181	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1840	12	M	255	400	145	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1840	20	M	259	400	141	Anahita/Anahita	-1	-1	0	0	0	1.5	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1840	25	E	212	400	188	Anahita/Anahita	-1	-1	0	0	0	6	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1841	5	R	234	400	166	Anahita/Anahita	-1	-1	0	0	0	9.3	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1845	22	E	205	400	195	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1846	6	R	224	400	176	Anahita/Anahita	-1	-1	0	0	0	10	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1895	2	R	214	214	0	Anahita/Anahita	-1	-1	1	0	0	-7.5	-15.9
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1895	7	R	238	400	162	Anahita/Anahita	-1	-1	0	0	0	-7.5	-15.9
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1895	8	R	238	336	98	Anahita/Anahita	-1	-1	0	0	0	-7.5	-15.9
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1895	12	M	289	300	11	Anahita/Anahita	-1	-1	0	0	0	-7.5	-15.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1895	20	M	273	329	56	Anahita/Anahita	-1	-1	0	0	0	-7.5	-15.9
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1896	3	R	236	321	85	Anahita/Anahita	-1	-1	0	0	0	-7.5	-15.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1914	17	M	259	400	141	Anahita/Anahita	-1	-1	0	0	0	-7.5	-9
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1916	18	M	278	400	122	Anahita/Anahita	-1	-1	0	0	0	-7.5	-8.6
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1918	16	M	251	400	149	Anahita/Anahita	-1	-1	0	0	0	-7.5	-6.7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1919	15	M	304	400	96	Anahita/Anahita	-1	-1	0	0	0	-7.5	-8.6
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1923	4	R	239	400	161	Anahita/Anahita	-1	-1	0	0	0	-7.5	-3.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1924	14	M	392	400	8	Leviathan/The Leviathan	1	33	0	0	0	-7.5	8.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1926	12	M	13	13	0	Leviathan/The Leviathan	1	35	1	0	0	-7.2	-1.3
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1927	7	R	314	314	0	Leviathan/The Leviathan	1	36	1	0	0	-7.5	-0.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1929	28	S	342	400	58	Leviathan/The Leviathan	1	38	0	0	0	-7.5	9.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1930	8	R	101	101	0	Leviathan/The Leviathan	1	39	1	0	0	-7.2	0.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1930	20	M	104	104	0	Leviathan/The Leviathan	1	39	1	0	0	-7.2	0.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1932	3	R	88	88	0	Leviathan/The Leviathan	1	41	1	0	0	-7.2	1.4
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1939	22	E	244	244	0	Leviathan/The Leviathan	1	48	1	0	0	-7.5	12.1
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1939	25	E	326	347	21	Leviathan/The Leviathan	1	48	0	0	0	-7.5	12.1
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1940	23	E	308	400	92	Leviathan/The Leviathan	1	49	0	0	0	-7.5	12.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1954	17	M	294	294	0	Leviathan/The Leviathan	1	63	1	0	0	-7.5	9.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1957	18	M	275	275	0	Leviathan/The Leviathan	1	66	1	0	0	-7.5	10.6
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1959	16	M	302	302	0	Leviathan/The Leviathan	1	68	1	0	0	-7.5	12.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	1960	15	M	99	99	0	Leviathan/The Leviathan	1	69	1	0	0	-7.2	10.6
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2132	4	R	331	331	0	Leviathan/The Leviathan	2	11	1	0	0	-7.5	-5.4
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2134	13	M	400	400	0	Leviathan/The Leviathan	2	13	1	0	0	-7.5	-6.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2135	10	R	366	400	34	Leviathan/The Leviathan	2	14	0	0	0	-7.5	-6.6
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2141	19	M	383	400	17	Leviathan/The Leviathan	2	20	0	0	0	-0	-8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2142	9	R	362	400	38	Leviathan/The Leviathan	2	21	0	0	0	4.5	-6.4
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2142	26	E	320	400	80	Leviathan/The Leviathan	2	21	0	0	0	-3	-9.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2143	6	R	353	354	1	Leviathan/The Leviathan	2	22	0	0	0	4.5	-6.9
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2144	5	R	322	360	38	Leviathan/The Leviathan	2	23	0	0	0	2.9	-8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2146	24	E	325	400	75	Leviathan/The Leviathan	2	25	0	0	0	1.4	-9.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2149	21	M	394	400	6	Leviathan/The Leviathan	2	28	0	0	0	-3.1	-12.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2151	23	E	262	262	0	Leviathan/The Leviathan	2	30	1	0	0	10	-3.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2152	25	E	212	212	0	Leviathan/The Leviathan	2	31	1	0	0	10	-2.5
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2164	14	M	288	288	0	Leviathan/The Leviathan	2	43	1	0	0	10	-5.9
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2165	10	R	186	186	0	Leviathan/The Leviathan	2	44	1	0	0	10	5.1
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2171	19	M	169	169	0	Leviathan/The Leviathan	2	50	1	0	0	10	8.9
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2172	9	R	190	190	0	Leviathan/The Leviathan	2	51	1	0	0	10	11.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2172	26	E	232	232	0	Leviathan/The Leviathan	2	51	1	0	0	10	6.3
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2173	6	R	3	3	0	Leviathan/The Leviathan	2	52	1	0	0	10	11.3
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2174	5	R	41	41	0	Leviathan/The Leviathan	2	53	1	0	0	10	9.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2176	24	E	227	227	0	Leviathan/The Leviathan	2	55	1	0	0	10	7.8
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2179	21	M	158	158	0	Leviathan/The Leviathan	2	58	1	0	0	10	3.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2296	28	S	244	244	0	Leviathan/The Leviathan	3	5	1	0	0	-7.5	-0.9
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2298	31	S	360	400	40	Leviathan/The Leviathan	3	7	0	0	0	-7.5	-2.7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2300	29	S	371	400	29	Leviathan/The Leviathan	3	9	0	0	0	-7.5	-1.7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2300	30	S	370	400	30	Leviathan/The Leviathan	3	9	0	0	0	1.8	-8.3
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2302	11	R	386	400	14	Leviathan/The Leviathan	3	11	0	0	0	-7.5	5.1
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2309	27	S	391	400	9	Leviathan/The Leviathan	3	18	0	0	0	-7.5	12.7
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2328	31	S	192	192	0	Leviathan/The Leviathan	3	37	1	0	0	-7.5	11.3
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2330	29	S	181	181	0	Leviathan/The Leviathan	3	39	1	0	0	-7.2	12.3
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2330	30	S	182	182	0	Leviathan/The Leviathan	3	39	1	0	0	-7.2	3.2
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2431	11	R	175	175	0	Anahita/Anahita	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|2|14400|n30|aa3@ocean|L3|tc9|dlK	2526	27	S	179	179	0	Anahita/Anahita	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	525	2	R	329	400	71	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	525	10	R	331	400	69	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	525	28	S	320	400	80	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1235	22	E	386	400	14	Leviathan/The Leviathan	1	6	0	0	0	-7.5	12.5
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1235	26	E	373	400	27	Leviathan/The Leviathan	1	6	0	0	0	-7.5	12.5
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1237	23	E	376	400	24	Leviathan/The Leviathan	1	8	0	0	0	-7.5	10.6
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1253	24	E	400	400	0	Leviathan/The Leviathan	1	24	1	0	0	-7.5	-6.4
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1260	27	S	322	400	78	Leviathan/The Leviathan	1	31	0	0	0	-7.5	12.2
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1262	8	R	351	400	49	Leviathan/The Leviathan	1	33	0	0	0	-7.5	14.6
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1264	13	M	359	400	41	Leviathan/The Leviathan	1	35	0	0	0	-7.5	11.8
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1264	18	M	368	400	32	Leviathan/The Leviathan	1	35	0	0	0	-7.5	11.4
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1265	5	R	344	400	56	Leviathan/The Leviathan	1	36	0	0	0	-7.5	13.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1265	10	R	323	400	77	Leviathan/The Leviathan	1	36	0	0	0	-7.5	11.8
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1265	15	M	357	400	43	Leviathan/The Leviathan	1	36	0	0	0	-7.5	10.7
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1265	20	M	355	400	45	Leviathan/The Leviathan	1	36	0	0	0	-7.5	13.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	2	R	332	400	68	Leviathan/The Leviathan	1	37	0	0	0	-7.5	11.4
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	3	R	331	400	69	Leviathan/The Leviathan	1	37	0	0	0	-7.5	10.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	4	R	325	400	75	Leviathan/The Leviathan	1	37	0	0	0	-7.5	10.8
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	6	R	327	400	73	Leviathan/The Leviathan	1	37	0	0	0	-7.5	10.3
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	9	R	338	400	62	Leviathan/The Leviathan	1	37	0	0	0	-7.5	10.7
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	11	R	327	400	73	Leviathan/The Leviathan	1	37	0	0	0	-7.5	9.8
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	12	M	372	400	28	Leviathan/The Leviathan	1	37	0	0	0	-7.5	10.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	14	M	360	400	40	Leviathan/The Leviathan	1	37	0	0	0	-7.5	10.4
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	16	M	353	400	47	Leviathan/The Leviathan	1	37	0	0	0	-7.5	9.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	17	M	355	400	45	Leviathan/The Leviathan	1	37	0	0	0	-7.5	10.8
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	19	M	382	400	18	Leviathan/The Leviathan	1	37	0	0	0	-7.5	10.3
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	21	M	364	400	36	Leviathan/The Leviathan	1	37	0	0	0	-7.5	9.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1266	29	S	322	400	78	Leviathan/The Leviathan	1	37	0	0	0	-7.5	10
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1268	25	E	313	400	87	Leviathan/The Leviathan	1	39	0	0	0	-7.5	11.7
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1270	28	S	316	400	84	Leviathan/The Leviathan	1	41	0	0	0	-7.5	12.2
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	1270	31	S	305	400	95	Leviathan/The Leviathan	1	41	0	0	0	-7.5	13.3
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2176	14	M	298	384	86	Anahita/Anahita	-1	-1	0	0	0	3	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2196	7	R	252	400	148	Anahita/Anahita	-1	-1	0	0	0	-5.4	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2267	22	E	123	400	277	Leviathan/The Leviathan	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2270	20	M	152	314	162	Leviathan/The Leviathan	-1	-1	0	0	0	4.5	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2271	13	M	149	400	251	Leviathan/The Leviathan	-1	-1	0	0	0	6.9	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2271	15	M	139	399	260	Leviathan/The Leviathan	-1	-1	0	0	0	6.9	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2271	19	M	144	400	256	Leviathan/The Leviathan	-1	-1	0	0	0	6.6	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2396	17	M	400	400	0	Leviathan/The Leviathan	3	38	1	0	0	-7.5	7.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2733	11	R	260	379	119	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2817	15	M	275	400	125	Anahita/Anahita	-1	-1	0	1	0	0	14.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2819	2	R	224	389	165	Anahita/Anahita	-1	-1	0	1	0	0	14.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2820	13	M	265	400	135	Anahita/Anahita	-1	-1	0	1	0	0	14.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2822	12	M	247	395	148	Anahita/Anahita	-1	-1	0	1	0	0	14.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2822	21	M	258	400	142	Anahita/Anahita	-1	-1	0	1	0	0	14.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2850	29	S	364	400	36	Leviathan/The Leviathan	4	57	0	0	0	-7.5	-11.2
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2853	8	R	369	382	13	Leviathan/The Leviathan	4	60	0	0	0	-7.5	-12.6
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2856	4	R	394	394	0	Leviathan/The Leviathan	4	63	1	1	0	0	15.2
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2856	6	R	343	392	49	Leviathan/The Leviathan	4	63	0	1	0	0	15.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2856	10	R	335	395	60	Leviathan/The Leviathan	4	63	0	1	0	0	15.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2856	19	M	364	400	36	Leviathan/The Leviathan	4	63	0	1	0	0	15.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2858	5	R	331	400	69	Leviathan/The Leviathan	4	65	0	1	0	0	15.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2859	7	R	338	400	62	Leviathan/The Leviathan	4	66	0	1	0	0	15
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2859	16	M	359	400	41	Leviathan/The Leviathan	4	66	0	1	0	0	15
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2860	9	R	341	381	40	Leviathan/The Leviathan	4	67	0	1	0	0	15
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2862	14	M	377	400	23	Leviathan/The Leviathan	4	69	0	1	0	0	15
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2864	3	R	338	389	51	Leviathan/The Leviathan	4	71	0	1	0	0	15
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2865	18	M	371	400	29	Leviathan/The Leviathan	4	72	0	1	0	0	15
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2868	12	M	152	152	0	Leviathan/The Leviathan	4	75	1	1	0	0	14.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2868	21	M	146	146	0	Leviathan/The Leviathan	4	75	1	1	0	0	14.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2870	13	M	139	139	0	Leviathan/The Leviathan	4	77	1	1	0	0	14.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2871	2	R	319	319	0	Leviathan/The Leviathan	4	78	1	1	0	0	14.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2875	15	M	158	158	0	Leviathan/The Leviathan	4	82	1	1	0	0	14.9
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2881	11	R	339	339	0	Leviathan/The Leviathan	4	88	1	1	0	0	14.8
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2886	6	R	52	52	0	Leviathan/The Leviathan	4	93	1	1	0	0	15.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2886	10	R	213	213	0	Leviathan/The Leviathan	4	93	1	1	0	0	15.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2886	19	M	38	38	0	Leviathan/The Leviathan	4	93	1	1	0	0	15.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2888	5	R	71	71	0	Leviathan/The Leviathan	4	95	1	1	0	0	15.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2889	7	R	64	64	0	Leviathan/The Leviathan	4	96	1	1	0	0	15
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2889	16	M	43	43	0	Leviathan/The Leviathan	4	96	1	1	0	0	15
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2890	9	R	42	42	0	Leviathan/The Leviathan	4	97	1	1	0	0	15
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2892	14	M	25	25	0	Leviathan/The Leviathan	4	99	1	1	0	0	15
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2894	3	R	54	54	0	Leviathan/The Leviathan	4	101	1	1	0	0	15
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	2895	18	M	31	31	0	Leviathan/The Leviathan	4	102	1	1	0	0	15
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	3475	31	S	365	400	35	Leviathan/The Leviathan	6	34	0	0	0	-7.5	-14.7
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	3485	30	S	377	400	23	Leviathan/The Leviathan	6	44	0	0	0	-7.5	-13.6
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	3747	20	M	326	400	74	Anahita/Anahita	-1	-1	0	0	0	3	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	3777	20	M	226	226	0	Leviathan/The Leviathan	7	20	1	1	0	0	-8.3
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4361	22	E	125	400	275	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4398	8	R	136	400	264	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4464	28	S	255	400	145	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4532	8	R	138	277	139	AnahitasIceShield/Ice Shield	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4534	22	E	124	291	167	AnahitasIceShield/Ice Shield	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4534	27	S	243	400	157	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4636	23	E	257	400	143	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4637	26	E	238	400	162	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4637	30	S	253	336	83	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4843	22	E	133	348	215	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4846	27	S	126	337	211	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4853	29	S	112	400	288	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4917	8	R	141	327	186	AquaticAberration/Aquatic Aberration	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4965	22	E	227	227	0	Anahita/Anahita	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4966	27	S	223	223	0	Anahita/Anahita	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4970	29	S	248	299	51	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	4973	31	S	242	352	110	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	5032	26	E	234	351	117	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	5034	30	S	122	122	0	Anahita/Anahita	-1	-1	1	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	5035	23	E	243	332	89	Anahita/Anahita	-1	-1	0	1	0	0	NaN
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	5074	8	R	201	201	0	Leviathan/The Leviathan	8	14	1	0	0	-7.2	-6
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	5080	29	S	211	211	0	Leviathan/The Leviathan	8	20	1	0	0	-7.5	-8.4
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	5083	31	S	120	120	0	Leviathan/The Leviathan	8	23	1	0	0	-7.2	-9.5
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	5088	25	E	393	400	7	Leviathan/The Leviathan	8	28	0	0	0	-7.5	-8.8
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	5090	26	E	122	122	0	Leviathan/The Leviathan	8	30	1	0	0	-7.2	-11.2
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	5093	23	E	94	94	0	Leviathan/The Leviathan	8	33	1	0	0	-7.2	-13.3
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	5131	28	S	263	365	102	Anahita/Anahita	-1	-1	0	1	0	0	-18.5
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	5232	28	S	111	111	0	Leviathan/The Leviathan	9	1	1	0	0	-7.2	1.1
+fight|levi|mdeath|follow|3|14400|n30|aa3@ocean|L3|tc11|dlK	5245	25	E	172	172	0	Leviathan/The Leviathan	9	14	1	0	0	-7.2	6.5

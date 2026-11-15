@@ -105,6 +105,7 @@ namespace Levy.Content.NPCs
 			if (_hkPhase == HookPhase.Idle) { FallCatchCheck(); HookFollowCommander(); }
 			if (_hkStepUntil != 0 && HookStepBackTick(grounded)) { WhyM = Why.MHook; _dashTicks = 0; MirrorDummyControls(); return; }
 			if (_clmOn && TickClimb(grounded)) { WhyM = Why.MClimb; _dashTicks = 0; MirrorDummyControls(); return; } // up a wall face on a planned route: the climb owns the tick
+			if (TickChargeLane(grounded, air)) { WhyM = Why.MDodgeHold; _dashTicks = 0; MirrorDummyControls(); return; } // a charge lane the boss is lining up: across it, not along it (SoldierNPC.ChargeLane.cs)
 			if (TickDodge(grounded, air)) { _dashTicks = 0; if (air) ApplyAltitude(grounded); MirrorDummyControls(); return; }
 			if (_hkPhase != HookPhase.Idle && TickHook(grounded)) { WhyM = Why.MHook; _dashTicks = 0; MirrorDummyControls(); return; } // in flight, reeling or ballistic: the hook owns the tick
 			if (_hkAltSeen != 0 && _hkPhase == HookPhase.Idle && Main.GameUpdateCount - _hkAltSeen <= 12u) { _hkGoalNow = new Vector2(_hkAltX, _hkAltY); HookTrigger(HookReason.Altitude); }

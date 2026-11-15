@@ -14,6 +14,11 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## ☀️ Eve 11-15 morning
+- Calamitas Clone doubt ("did you put them in the box?"): Calamity's Rev+ CalClone ArenaWallSystem box (±2000 px around the closest player) contains PLAYERS only (ArenaWallPlayer). Levies aren't contained, but in all 4 Master+Death rerun fights no levy ever left the box region (max 50–68 tiles from start). So the box isn't why they win. Likely cause: her dashes hit one target at a time, against 34 on-tier levies. One-tier-below gear: full wipe (34/34 dead). Open idea: levies obey Calamity arena boxes like players (fair play, same as hit parity); also SupremeCalamitas.
+- **Eve asks: ≥100 fights per boss on the newest build, run gradually and equalized,** to find what's wrong per boss. Plan: after destroyerdrop, a long-running battery at ≤2 tML, mostly Master+Death (her balance target). Raw recordings stay on disk (container resets lose them!). fights.csv and the tables are committed.
+- **Mod of Redemption:** Eve will play it blind next. `redemption` builder audits it (Workshop 2893332653, anonymous DepotDownloader) for Levy breakers. Report to Eve SPOILER-FREE: problem/no-problem lines only.
+
 ## 🧪 BATTERY RERUN (hmbattery2 MERGED fc48ec2; projectiles land now)
 - Overall: Master+Death wins 64/87 → 62/88 (no net change). Projectile damage per fight 24 → 1,262; contact flat.
 - **Destroyer baseline 38% → 18%**, but the controls show it's NOT the veto. The drop sits between fieldfix and current (mobslots + bossbugs non-veto parts). Controls: old 30%, +bosshitbox 25%, +fieldfix 30%, current with the veto back on 10%, current 18%.

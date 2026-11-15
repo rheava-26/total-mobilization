@@ -60,6 +60,8 @@ namespace Levy.Content.NPCs
 			if (!IsAlive) return;
 			// a hostile body takes no contact damage from the enemy side it belongs to. A hit with its own immunity slot (a boss's Bosses slot) is gated by that slot, not by the general window; an all-types window (dash, parry, dodge) closes both.
 			if (!Hostile && (ImmuneTime == 0 || (HostileContact.Parity && HostileContact.Slots && AllImmune == 0))) ContactDamage();
+			DebuffDot(); // the debuffs on the body hurt it by the player's rules (SoldierNPC.PlayerHit.cs)
+			if (!IsAlive) return;
 			if (IsAlive && ImmuneTime == 0) TileHazards(); // spikes, thorns, meteorite and the like, when the setting is on (SoldierNPC.TileHazards.cs)
 			if (!IsAlive) return;
 			Regen();
@@ -90,16 +92,21 @@ namespace Levy.Content.NPCs
 				if (TryShadowDodge()) return; // Hallowed armor's dodge: no wound, 80 ticks of immunity
 				LastAttackerIndex = i; LastAttackerType = a.type; LastAttackerName = a.GivenOrTypeName;
 				int done;
+				HitResult seq = PlayerSequence(a, null, raw, dir, rawSlot); // the player's own hit sequence on the dummy (SoldierNPC.PlayerHit.cs)
+				if (seq.Ran && seq.Dodged) { AfterDodge(); return; }
 				_contactStriking = true;
+				PreResolved = seq.Ran;
 				PendingContactScale = IncomingSetScale() * global::Levy.Common.Util.BannerBuffs.Defense(CommanderIndex, a); // Solar shield / Beetle orbs / Paladin's Shield share, folded into the strike by SoldierSetHitScale
-				try { done = NPC.SimpleStrikeNPC(raw, dir, false, NPC.knockBackResist > 0f ? LevyConstants.FizzContactKnockback : 0f, null, false, 0f, true); } // ModifyIncomingHit applies the player defense formula; the server broadcasts the strike (a Fizzy body, the only one with knockback resistance above 0, is knocked back)
-				finally { _contactStriking = false; PendingContactScale = 1f; }
+				try { done = NPC.SimpleStrikeNPC(seq.Ran ? seq.Damage : raw, dir, false, NPC.knockBackResist > 0f ? LevyConstants.FizzContactKnockback : 0f, null, false, 0f, true); } // ModifyIncomingHit applies the player defense formula (or, after the sequence, only the body's endurance); the server broadcasts the strike (a Fizzy body, the only one with knockback resistance above 0, is knocked back)
+				finally { _contactStriking = false; PendingContactScale = 1f; PreResolved = false; }
 				if (HitDbg != null)
 				{
 					HitDbgAdd("contact:" + a.TypeName + "/" + a.type, done);
 					if (!HostileContact.PlayerRules(a, i, mine, Dummy ?? HostileContact.Stand, out _, out _)) HitDbgAdd("notplayer:" + a.TypeName, done); // harness: damage taken where a player standing there would not have been hit
 				}
-				AfterHit(done, i, slot);
+				SeqSourceDamage = seq.Ran ? seq.Info.SourceDamage : 0;
+				try { AfterHit(done, i, slot); } finally { SeqSourceDamage = 0; }
+				if (seq.Ran && IsAlive) PlayerOnHit(a, null, in seq, dir); // the attacker's on-hit hooks, the debuffs, the knockback
 				return; // one contact hit per tick; immune frames gate the rest
 			}
 		}
@@ -156,12 +163,41 @@ namespace Levy.Content.NPCs
 		// ------------------------------------------------------------------------------------------------------
 		// Hostile projectiles (vanilla already strikes friendly NPCs; we fix the damage number and do the bookkeeping)
 		// ------------------------------------------------------------------------------------------------------
+		private void AfterDodge() { NPC.netUpdate = true; }
+		private bool _projDodged, _projResolved;
+
 		public override void ModifyHitByProjectile(Projectile projectile, ref NPC.HitModifiers modifiers)
 		{
 			if (!projectile.hostile) return;
-			modifiers.SourceDamage *= LevyConstants.HostileProjectileDamageMult;
+			_projDodged = false; _projResolved = false; LastProjectileResult = default;
+			bool own = projectile.TryGetGlobalProjectile<SoldierProjectileTag>(out var tag0) && tag0.HostileShot;
+			float paint = 1f;
 			if (projectile.TryGetGlobalProjectile<SoldierProjectileTag>(out var shooter) && shooter.SourceNpcIndex >= 0 && shooter.SourceNpcIndex < Main.maxNPCs)
-				modifiers.SourceDamage *= global::Levy.Common.Officers.PaintGlobalNPC.DamageMult(Main.npc[shooter.SourceNpcIndex]); // a paint-soaked shooter hits softer
+				paint = global::Levy.Common.Officers.PaintGlobalNPC.DamageMult(Main.npc[shooter.SourceNpcIndex]); // a paint-soaked shooter hits softer
+			if (!LevyUtil.IsClient && PlayerHitOn && !own)
+			{
+				// the player path: Projectile.Damage hands Player.Hurt DamageVar(damage) x 2; the sequence returns the damage after the hooks, the difficulty multiplier and the defense formula
+				int dir = projectile.Center.X < NPC.Center.X ? 1 : -1;
+				int baseDmg = Math.Max(1, (int)(Main.DamageVar(projectile.damage, 0f) * LevyConstants.HostileProjectileDamageMult * paint));
+				HitResult res = PlayerSequence(null, projectile, baseDmg, dir, ProjectileSlot(projectile));
+				if (res.Ran)
+				{
+					LastProjectileResult = res; _projResolved = true; _projDodged = res.Dodged;
+					modifiers.SourceDamage = new StatModifier(0f, 1f, res.Damage, 0f); // the damage is final: ToHitInfo(damage) returns exactly it
+					modifiers.DamageVariationScale *= 0f;
+					modifiers.DefenseEffectiveness *= 0f;
+					modifiers.FinalDamage = new StatModifier(); // the endurance, formation and Fizz cuts ModifyIncomingHit already folded in are inside the sequence's number
+					if (Common.Options.LevyOptions.SurvOn) modifiers.FinalDamage *= 1f - Common.Options.LevyOptions.FormationDr(this);
+					modifiers.TargetDamageMultiplier = new MultipliableFloat();
+					if (res.Dodged) modifiers.SetMaxDamage(1);
+				}
+			}
+			if (!_projResolved)
+			{
+				modifiers.SourceDamage *= LevyConstants.HostileProjectileDamageMult;
+				modifiers.SourceDamage *= paint;
+				if (!LevyUtil.IsClient) global::Levy.Common.Util.HostileProjectile.Modify(projectile, Dummy ?? global::Levy.Common.Util.HostileContact.Stand, ref modifiers); // earlier intake (LEVY_PLAYERHIT=0): the projectile's ModifyHitPlayer hooks and the difficulty multiplier
+			}
 			if (LevyUtil.IsClient) return;
 			modifiers.FinalDamage *= global::Levy.Common.Util.BannerBuffs.Defense(CommanderIndex, global::Levy.Common.Util.BannerBuffs.BannerOf(projectile)); // the commander's banner for the shooter (Player.ApplyBannerDefenseBuff)
 			modifiers.FinalDamage *= IncomingSetScale(); // Solar shield / Beetle orbs / Paladin's Shield share (Player.ApplyVanillaHurtEffectModifiers)
@@ -175,8 +211,19 @@ namespace Levy.Content.NPCs
 			_projectileStriking = false;
 			if (!projectile.hostile || LevyUtil.IsClient) return;
 			RecordProjectileAttacker(projectile);
+			if (_projDodged)
+			{
+				// a dodged hit: the strike cannot be cancelled from the hit hook, so its floor of 1 is given back and the dodge's own window stands
+				NPC.life = Math.Min(NPC.lifeMax, NPC.life + damageDone); NPC.netUpdate = true; if (Record != null) Record.CurrentHp = Math.Max(0, NPC.life);
+				_projDodged = false; _projResolved = false; return;
+			}
 			if (HitDbg != null) HitDbgAdd("proj:" + projectile.Name + "<-" + LastAttackerName, damageDone);
-			AfterHit(damageDone, LastAttackerIndex);
+			HurtProjectile = _projResolved ? projectile : null;
+			SeqSourceDamage = _projResolved ? LastProjectileResult.Info.SourceDamage : 0;
+			try { AfterHit(damageDone, LastAttackerIndex, _projResolved ? HostileContact.EffectiveSlot(ProjectileSlot(projectile)) : -1); } finally { HurtProjectile = null; SeqSourceDamage = 0; }
+			if (IsAlive && _projResolved) { var res = LastProjectileResult; PlayerOnHit(null, projectile, in res, projectile.Center.X < NPC.Center.X ? 1 : -1); }
+			else if (IsAlive) global::Levy.Common.Util.HostileProjectile.OnHit(projectile, this, damageDone); // earlier intake: the debuffs a player would have caught
+			_projResolved = false;
 		}
 
 		private void RecordProjectileAttacker(Projectile projectile)
@@ -427,7 +474,14 @@ namespace Levy.Content.NPCs
 		{
 			if (projectile.hostile && npc.ModNPC is SoldierNPC s)
 			{
-				if (s.ImmuneTime > 0) return false;
+				if (SoldierNPC.PlayerHitOn && HostileContact.Slots && HostileContact.Parity && Environment.GetEnvironmentVariable("LEVY_PROJSLOTS") != "0")
+				{
+					// Player.Hurt: a hit with its own immunity slot (Moon Lord, the Empress) waits on that slot, not on the general window; an all-types window closes every slot
+					if (s.AllImmune > 0) return false;
+					int slot = HostileContact.EffectiveSlot(SoldierNPC.ProjectileSlot(projectile));
+					if (slot < 0 ? s.ImmuneTime > 0 : s.SlotImmune[slot] > 0) return false;
+				}
+				else if (s.ImmuneTime > 0) return false;
 				if (!LevyUtil.IsClient && s.TryShadowDodge()) return false; // Hallowed armor's dodge turns the shot aside; its 80 immune ticks cover the rest
 			}
 			return null;

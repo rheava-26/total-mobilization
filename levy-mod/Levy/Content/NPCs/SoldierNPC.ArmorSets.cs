@@ -102,6 +102,7 @@ namespace Levy.Content.NPCs
 		// ------------------------------------------------------------------------------------------------------------
 		public override void PostAI()
 		{
+			if (!LevyUtil.IsClient && global::Levy.Common.Compat.Calamity.ArenaBoxes.Active) global::Levy.Common.Compat.Calamity.ArenaBoxes.Contain(NPC); // Calamity's arena box holds a levy as it holds a player (Common/Compat/Calamity/ArenaBoxes.cs)
 			Player d = Dummy;
 			if (d == null || Record == null) return;
 			try

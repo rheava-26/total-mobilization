@@ -23,6 +23,21 @@ namespace Levy.Common.Targeting
 		private static readonly bool[] _hid = new bool[Main.maxNPCs + 1];
 		public static bool Installed { get; private set; }
 		public static bool AiHookInstalled { get; private set; }
+		/// <summary>LEVY_CALOVERRIDESLOT=0 turns the flyer-slot route for Calamity-driven native types off (A/B switch for the lab and the world check).</summary>
+		internal static readonly bool OverrideSlotOn = Environment.GetEnvironmentVariable("LEVY_CALOVERRIDESLOT") != "0";
+		private static GlobalNPC _overrideGlobal;
+		private static FieldInfo _overrideField;
+		/// <summary>
+		/// True while Calamity's vanilla-AI override (CalamityVanillaAIOverrideNPC.AIOverride, bound in its SetDefaults from Revengeance up) drives this NPC. Those AIs index <c>Main.player[NPC.target]</c> without a range check
+		/// at their attack lines (Deerclops' shadow hands, the bees' steering), so a 300+ NPC-target index throws IndexOutOfRange there. <see cref="EnemyTargeting.UsesNativeTargeting"/> reads this to keep such an enemy off the native
+		/// route and on the flyer slot (a real player index).
+		/// </summary>
+		internal static bool OverrideBound(NPC npc)
+		{
+			if (!OverrideSlotOn || _overrideGlobal == null || _overrideField == null) return false;
+			try { return npc.TryGetGlobalNPC(_overrideGlobal, out GlobalNPC inst) && _overrideField.GetValue(inst) != null; }
+			catch (Exception) { return false; }
+		}
 
 		public override void PostSetupContent()
 		{
@@ -40,6 +55,7 @@ namespace Levy.Common.Targeting
 						break;
 					}
 				Type g = cal.Code.GetType("CalamityMod.NPCs.CalamityVanillaAIOverrideNPC");
+				if (g != null && cal.TryFind("CalamityVanillaAIOverrideNPC", out GlobalNPC og)) { _overrideGlobal = og; _overrideField = g.GetField("AIOverride", BindingFlags.Public | BindingFlags.Instance); }
 				MethodInfo pre = g?.GetMethod("PreAI", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(NPC) }, null);
 				if (pre != null) { MonoModHooks.Add(pre, (Func<OrigPreAI, GlobalNPC, NPC, bool>)PreAiDetour); AiHookInstalled = true; }
 				Mod.Logger.Info($"Levy Calamity targeting compat: CalamityTargeting hook {(Installed ? "installed" : "NOT found")}, PreAI hook {(AiHookInstalled ? "installed" : "NOT found")}");

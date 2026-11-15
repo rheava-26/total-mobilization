@@ -16,7 +16,7 @@
 
 ## 🚀 Eve 11-15 ~18:00: SHIP NOW as Levy 3.0 (her weekly limit is close). Core bugs first, fluff waits.
 - Asked projparity (WoF fix or diagnosis) and levyrules (push what's proven) for a ~15-minute turnaround. Then merge, serial shipboth, ship 3.0.0.
-- dialogue3 is NOT in 3.0: Eve hasn't approved it yet.
+- **Dialogue APPROVED by Eve except battle shouts:** make them punchy and enthusiastic ("Enemy incoming! Open fire!", "Die, monster!", "I'm getting paid for this!"), not quirky. `dialogue4` builder is rewriting the combat shout pools (incl. grumpy and officer fight lines). It goes into 3.0 if done in time, otherwise 3.0.1.
 
 ## 🧭 redecompat MERGED
 - notAmmo thrown weapons. World-alter scanner catches ref-returning Tile.TileType writes (get_TileType + stind), dup and ref locals, and follows ProjectileType<T> into blasts (any mod). Redemption rows added to WorldAlterTable.tsv.

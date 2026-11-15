@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """OLD vs NEW tables for the hardmode boss battery and broad sweep (hmreplays = old, hmbattery2 = new).
-  hm_compare.py [--old /home/user/lab/hmreplays] [--new /home/user/lab/hmbattery2] [--part battery|sweep|all]
+  hm_compare.py [--old /home/user/lab/hmreplays] [--new /home/user/lab/hmbattery2] [--part battery|sweep|controls|all]
 Reads <lab>/battery/fights.csv and <lab>/recordings/fights.csv; the damage split is read back from each fight's levylab run dir (hm_hits.py).
 Damage figures are per fight, means: contact = what levies took from boss bodies / segments / adds touching them, projectile = what they took from hostile projectiles."""
 import argparse, csv, statistics, sys
@@ -85,3 +85,22 @@ if a.part in ("sweep", "all"):
             lv = (mn or mo)[0]["levies"]
             print(f"| {BOSSES[slug][4]} | {lv} | {PAIR[pair]} | {wl(mo, so)} | {wl(mn, sn)} | {kt(so, False)} | {kt(sn, False)} | {f1(so['deaths'])} | {f1(sn['deaths'])} | {f0(so['contact'])} -> {f0(sn['contact'])} | {f0(so['proj'])} -> {f0(sn['proj'])} ({f0(sn['projN'])}) | {f0(sn['lock'])} / {f0(sn['spite'])} / {f0(sn['cmdr'])} |")
     print(f"\nfights: OLD {tot_o}, NEW {tot_n}")
+
+if a.part in ("controls", "all"):
+    # Destroyer baseline (Master+Death, 40 seeds) under single-change controls (hm_controls.sh), next to the two full batteries
+    rows_src = [("OLD run (hmreplays, recorded)", Path(a.old) / "battery" / "fights.csv", "old"), ("NEW run (hmbattery2)", Path(a.new) / "battery" / "fights.csv", "new")]
+    print("## Destroyer baseline controls (Master+Death, same army, seeds 1-40)\n")
+    print("| run | what differs from NEW | fights | win rate (95% CI) | kill s median (p10-p90) | levy deaths/fight | contact | projectile |")
+    print("|---|---|---|---|---|---|---|---|")
+    def line(name, what, rs):
+        if not rs: return
+        w = [r for r in rs if r["result"].upper() == "WIN"]; lo, hi = wilson(len(w), len(rs)); ks = [num(r["sec"]) for r in w if num(r["sec"]) is not None]
+        con = mean([sum(num(r.get(k)) or 0 for k in ("takenHead", "takenBody", "takenTail", "takenOtherContact")) for r in rs]); pr = mean([num(r.get("takenProj")) or 0 for r in rs])
+        print(f"| {name} | {what} | {len(rs)} | {len(w)}/{len(rs)} = {100 * len(w) / len(rs):.0f}% ({100 * lo:.0f}-{100 * hi:.0f}) | " + (f"{statistics.median(ks):.0f} ({pct(ks, .1):.0f}-{pct(ks, .9):.0f})" if ks else "-") + f" | {f1(mean([num(r['deaths']) for r in rs]))} | {f0(con)} | {f0(pr)} |")
+    for name, path, _ in rows_src:
+        rs = [r for r in load(path) if r["boss"] == "destroyer" and r["cell"] == "baseline"]
+        line(name, "-" if name.startswith("NEW") else "old build, old harness, veto on", rs)
+    for ctl, what in (("oldbuild", "the hmreplays code (before bosshitbox, fieldfix, Wings/Boots slots, the shot fix), re-run on this box and world"), ("hitbox", "Levy 2.0.64: + bosshitbox (contact damage as a player takes it)"),
+                      ("preslots", "+ fieldfix, up to the commit before the Wings/Boots slots"), ("noveto", "this build with LEVY_SPECSHOTS=0: the Spectator commander vetoes hostile shots again")):
+        f = Path(a.new) / "work" / f"ctl_{ctl}" / "run" / "results.csv"
+        if f.exists(): line(f"control: {ctl}", what, [r for r in csv.DictReader(open(f)) if r["result"].lower() in OK])

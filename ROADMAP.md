@@ -21,7 +21,8 @@
 ## ⏸ RESUME HERE (Eve near usage limit, ~18:30 UTC 11-15)
 
 - 2026-11-15: **3.0.0 SENT to Eve** (both boots exc=0, 0 FAIL; shipworld was still running at send — check its result and tell Eve if anything failed). NEXT: merge dialogue4 (b45a2b3, includes dialogue3) → ship 3.0.1. Then the Fixed-replays artifact + the 3.0 battery.
-- ⚠ 3.0.0 shipworld (Calamity half, rerun after a port clash): BossBugs FAIL=2. In Calamity the Wall of Flesh ignores levies (its eyes don't lock on; no damage, 4000->4000). The vanilla half passes. Sent to the projparity builder (a63e) as top priority. 3.0.1 = this WoF fix + dialogue4. No fights recorded on the parity build exist yet; the 'Fixed' replay page is still pending.
+- ✅ RESOLVED (false alarm; the bug was in the test, not the game): ProjParityCheck leaked a fixed-seed Main.rand and clock into BossBugs, fixed in projparity db523fa3. Merged with dialogue4, bumped to 3.0.1, serial shipboth running (ship-3.0.1.log).
+- (was) ⚠ 3.0.0 shipworld (Calamity half, rerun after a port clash): BossBugs FAIL=2. In Calamity the Wall of Flesh ignores levies (its eyes don't lock on; no damage, 4000->4000). The vanilla half passes. Sent to the projparity builder (a63e) as top priority. 3.0.1 = this WoF fix + dialogue4. No fights recorded on the parity build exist yet; the 'Fixed' replay page is still pending.
 1. Check `verify-pre30.log` (scratchpad; serial shipboth on b672e07, still at build 2.0.67).
 2. projparity: waiting on the WoF fix ("the wall hurts the levies" FAIL). Merge when pushed.
 3. dialogue4: punchy shouts on top of dialogue3. Merge when pushed. dialogue3 is approved apart from the shouts.

@@ -92,7 +92,7 @@ def summarize(rows):
     meta = hdr.get("meta") or {}
     frames = [r for r in rows if r.get("k") == "f"]
     ev = [r for r in rows if r.get("k") == "e"]
-    tally = [0, 0, 0]
+    tally = [0, 0, 0, 0]   # kinds 0 none, 1 commander, 2 levy, 3 spite (format 9)
     ids, bx0, far = set(), None, 0.0
     for f in frames:
         for l in f.get("l") or []:
@@ -148,7 +148,7 @@ def summarize(rows):
     boss = meta.get("bossName") or (named[0] if named and not meta else None) or ("Other fights" if not meta else (hdr.get("boss") or "?").replace("_", " "))
     return {
         "boss": boss, "mode": mode, "arena": arena, "levies": max(n_levies, len(ids)), "result": result,
-        "pl": round(100.0 * tally[2] / n, 1), "pp": round(100.0 * tally[1] / n, 1),
+        "pl": round(100.0 * tally[2] / n, 1), "pp": round(100.0 * tally[1] / n, 1), "ps": round(100.0 * tally[3] / n, 1),
         "hits": len(lhit), "dmg": sum(e.get("dmg", 0) for e in lhit), "deaths": deaths,
         "dur": round(dur, 1), "hasT": any(len(b) > 14 for f in frames for b in (f.get("b") or [])[:1]),
         "bossEnd": ({"kind": "killed" if fin["e"] == "bdeath" else "despawn", "t": round(fin["t"] / 60.0, 1)} if fin else None),

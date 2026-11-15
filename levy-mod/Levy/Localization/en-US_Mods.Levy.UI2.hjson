@@ -138,6 +138,8 @@ FocusAttackSet: The squad attacks the marked spot.
 FocusAttackCleared: Focus attack cleared.
 HudTitle: Army
 HudHover: "{0} - {1}"
+OffDuty: Off on duty.
+OffDutyMore: and {0} more
 HeartValue: Each heart is worth {0} HP.
 StarValue: Each star is worth {0} mana.
 FilterAny: All

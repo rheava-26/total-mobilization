@@ -59,6 +59,7 @@ namespace Levy.Common.Testing
 		{
 			if (!_armed || _done || !Main.dedServ) return;
 			if (Environment.GetEnvironmentVariable("LEVY_WHIPONLY") == "1") { _done = true; try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the whip check alone
+			if (Environment.GetEnvironmentVariable("LEVY_FIELDFIX_ONLY") == "1") { _done = true; try { FieldFixCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[FieldFix] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the field-fix check alone
 			_done = true; _running = true;
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation;
 			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; _local = true; Run(); }
@@ -71,6 +72,8 @@ namespace Levy.Common.Testing
 			try { OfficerWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[OfficerWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the whip world check runs next (never two checks stepping the world at once)
 			try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); }
+			// the field-fix check (thorn contact break, officers in a boss fight, the off-duty banner) runs after that
+			try { FieldFixCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[FieldFix] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the shop lag check runs after that, then the tile sweep (which also reads what the army shot during every check before it)
 			try { ShopLagCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ShopLag] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { HitParityCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[HitParity] check threw " + e.GetType().Name + ": " + e.Message); }

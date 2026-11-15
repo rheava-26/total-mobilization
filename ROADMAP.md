@@ -14,6 +14,14 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🎲 Eve 11-15 ~16:15
+- Approved the spawn-tick fix (Eve: "it might just be levies losing, then the boss targeting the player"; the builder must confirm which).
+- **NEW rule (Eve): Spectator + whole army dead + no manpower left, during a boss fight, means the player dies** (stops the exploit of dropping Spectator to finish a low-HP boss). Death messages from Eve's ideas: "lost the bet", "realized prolonged poverty would kill them", "watched their favorite team lose", "realized the levies did not know what dashes were", "had money on the levies".
+  - Both are in builder `spectator3`.
+- **"Fixed" replay artifact (Eve):** a separate page holding ONLY fights recorded on fixed versions, so she stops opening broken ones. Fill it after parity lands and the rerun is done. The curated main page keeps history with outdated stamps.
+- Eve still wants to work on the dialogue (draft is in scratchpad/dialogue_review.md, branch dialogue2; three questions open).
+- Eve: "fix anything broken, you have my permission." Post progress updates more often. If near a usage limit, pause and report; builders can be resumed.
+
 ## 🧠 Eve 11-15 ~16:00
 - **Hold new boss testing** (the 100-fight battery) until the in-flight fixes land: projparity, levyrules, redecompat.
 - **Curated page per boss: 3–4 wins + 3–4 losses + the weird ones** (sent to sitecurate; ceiling ~260 files / 230 MB).

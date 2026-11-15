@@ -6,6 +6,14 @@
 
 ---
 
+## 🚢 2.0.64 (building, 11-15 early morning)
+- **bosshitbox MERGED (40e1c9a):** levies take contact damage exactly where a player would. HostileContact runs the player's hit sequence (Calamity CanHitPlayer circles/states/cooldown slots) with per-slot immunity. Parity: 763,875 static positions plus 13.7–15.6M live positions, 0 mismatches after the fix (12,497 / 41,727 levy-only hits before).
+  - Leviathan Expert+Rev: deaths 4.3 → 0.0 per fight, 15/15 wins.
+  - Leviathan Master+Death: still 3/15 (dash and adds, not hitboxes).
+  - Recorder checks are deterministic now (RecWriter.Flush, ClientProf.TestClock).
+  - Ship scripts accept path/port overrides.
+- Levy 2.0.64 = leviathan charge lanes + bosshitbox. shipboth running. Still building: fieldfix, mobslots, hmreplays (Destroyer/AS battery first).
+
 ## 🌿 EVE'S NOV 14 FIGHTS (2026-11-15, Drive folder "Levy Fights" only)
 - Pulled 30 .levyrec files from Drive "Levy Fights/recordings": Retinazer x4 won, Plantera x9 lost, Anahita x12 (3 won), Empress x5 lost. All Master+Death.
 - **Replay site updated** (v17, https://claude.ai/artifact/Q6aYA45u8MSxyB7VZxHSEH): new set "Your fights, Nov 14" first, default = the 21:20 Plantera loss. make_site.py set mode now accepts .levyrec (it silently skipped them before).

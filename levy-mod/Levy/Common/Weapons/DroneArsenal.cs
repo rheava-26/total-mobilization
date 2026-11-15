@@ -122,7 +122,7 @@ namespace Levy.Common.Weapons
 				foreach (KeyValuePair<int, Item> kv in ContentSamples.ItemsByType)
 				{
 					Item s = kv.Value;
-					if (s == null || s.IsAir || s.ammo != useAmmo || s.IsACoin) continue;
+					if (s == null || s.IsAir || s.ammo != useAmmo || s.IsACoin || WorldAlter.Alters(s)) continue; // never a round that alters the world
 					if (type == 0 || s.type < type) type = s.type;
 				}
 			}
@@ -161,6 +161,8 @@ namespace Levy.Common.Weapons
 			try
 			{
 				if (weapon == null || weapon.IsAir || weapon.shoot <= ProjectileID.None) return shot;
+				if (WorldAlter.Alters(weapon)) return shot; // a machine never fires what alters the world
+				if (ammo != null && !ammo.IsAir && WorldAlter.AltersWith(weapon, ammo)) ammo = null; // a lent round that would: the weapon's own safe default round instead
 				WeaponProfile profile = WeaponClassifier.GetProfile(weapon);
 				shot.Class = weapon.DamageType ?? profile.DamageType;
 				shot.Crit = Math.Max(0, weapon.crit) + LevyConstants.BaseCritChance;
@@ -172,7 +174,7 @@ namespace Levy.Common.Weapons
 				if (weapon.useAmmo > 0)
 				{
 					Item round = ammo != null && !ammo.IsAir ? ammo : DefaultAmmoSample(weapon.useAmmo);
-					if (round == null) return shot;
+					if (round == null || WorldAlter.AltersWith(weapon, round)) return shot;
 					projectile = ResolveAmmoProjectile(weapon, round);
 					speed += round.shootSpeed; knockback += round.knockBack; damage += Math.Max(0, round.damage);
 					shot.Homing = LevyConstants.HomingAmmo.Contains(round.type);

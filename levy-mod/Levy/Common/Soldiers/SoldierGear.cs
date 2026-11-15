@@ -107,7 +107,7 @@ namespace Levy.Common.Soldiers
 		public bool CanHold(int slot, Item item)
 		{
 			if (Empty(item)) return slot >= 0 && slot < SlotCount;
-			if (slot == SlotAmmo) return item.ammo > 0 && !item.IsACoin;
+			if (slot == SlotAmmo) return item.ammo > 0 && !item.IsACoin && !WorldAlter.Alters(item);
 			if (slot == SlotHook) return global::Levy.Common.Movement.HookInfo.IsHookItem(item) && item.stack <= 1;
 			if (slot == SlotCamera) return item.ModItem is global::Levy.Content.Items.Observe.GoProItem && item.stack <= 1;
 			// Only a thrown consumable may be a stack: it is carried (and used up) as one. Every other weapon is a single item.

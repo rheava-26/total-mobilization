@@ -134,8 +134,9 @@ namespace Levy.Common.Logistics
 			return keeper.GivenName;
 		}
 
-		public static bool IsGun(Item it) => it.damage > 0 && it.useAmmo == AmmoID.Bullet && it.maxStack == 1;
-		public static bool IsAmmo(Item it, int ammoId) => it.damage > 0 && it.ammo > 0 && (ammoId == 0 || it.ammo == ammoId);
+		// a standing rule for "any gun" or "any ammo" never buys what alters the world: the army would not use it
+		public static bool IsGun(Item it) => it.damage > 0 && it.useAmmo == AmmoID.Bullet && it.maxStack == 1 && !global::Levy.Common.Weapons.WorldAlter.Alters(it);
+		public static bool IsAmmo(Item it, int ammoId) => it.damage > 0 && it.ammo > 0 && (ammoId == 0 || it.ammo == ammoId) && !global::Levy.Common.Weapons.WorldAlter.Alters(it);
 
 		public static bool Matches(BuyRule r, Item it) => r.Kind switch { BuyRule.KindItem => it.type == r.Type, BuyRule.KindAnyGun => IsGun(it), BuyRule.KindAnyAmmo => IsAmmo(it, r.Type), _ => false };
 

@@ -39,12 +39,13 @@ namespace Levy.Common.UI
 			if (te == null) return false;
 			var before = new SlotSnap[te.Storage.Length];
 			for (int i = 0; i < before.Length; i++) before[i] = new SlotSnap(te.Storage[i]);
+			var warned = it.Clone(); // what was put in (the deposit takes the stack): items that alter the world get the warning
 			var left = te.Deposit(it);
 			bool moved = left == null || left.IsAir || left.stack <= 0 || !ReferenceEquals(left, it) || left.stack != it.stack;
 			inventory[slot] = left == null || left.IsAir || left.stack <= 0 ? new Item() : left;
 			if (Main.netMode == NetmodeID.MultiplayerClient)
 				for (int i = 0; i < te.Storage.Length && i < before.Length; i++) if (SlotSnap.Differs(before, te.Storage, i)) UIActions.SendArmorySlot(te, 0, i);
-			if (moved) SoundEngine.PlaySound(SoundID.Grab);
+			if (moved) { SoundEngine.PlaySound(SoundID.Grab); AlterWarning.Note(warned); }
 			return true;
 		}
 	}

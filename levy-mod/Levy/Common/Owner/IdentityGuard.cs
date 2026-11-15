@@ -195,7 +195,7 @@ namespace Levy.Common.Owner
 				Player rp = real >= 0 && real < Main.player.Length ? Main.player[real] : null;
 				if (rp == null || rp == p) return;
 				e.Kind = KMirror; e.Dummy = p; e.Talk = p.talkNPC; e.Chest = p.chest; e.Sign = p.sign;
-				p.SetTalkNPC(rp.talkNPC, true); p.chest = rp.chest; p.sign = rp.sign;
+				TalkMirror.Set(p, rp.talkNPC); p.chest = rp.chest; p.sign = rp.sign; // never SetTalkNPC here: with a conversation open it re-reads the shopping settings, and this runs over a thousand times a tick
 				Mirrored++; MirroredBy[modName] = MirroredBy.TryGetValue(modName, out long n) ? n + 1 : 1;
 			}
 		}
@@ -207,7 +207,7 @@ namespace Levy.Common.Owner
 			ref Entry e = ref _stack[--_depth];
 			if (Instrument && e.Key != null) ExitKeys[e.Key] = ExitKeys.TryGetValue(e.Key, out int xn) ? xn + 1 : 1;
 			if (e.Kind == KHidden) Main.myPlayer = e.MyPlayer;
-			else if (e.Kind == KMirror) { e.Dummy.SetTalkNPC(e.Talk, true); e.Dummy.chest = e.Chest; e.Dummy.sign = e.Sign; e.Dummy = null; }
+			else if (e.Kind == KMirror) { TalkMirror.Set(e.Dummy, e.Talk); e.Dummy.chest = e.Chest; e.Dummy.sign = e.Sign; e.Dummy = null; }
 			e.Kind = KNone;
 		}
 

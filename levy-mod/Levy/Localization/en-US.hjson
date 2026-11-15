@@ -284,6 +284,7 @@ Mods: {
 			SoldierHeal.DisplayName: Soldier Heal
 			HarnessBeam.DisplayName: Harness Beam
 			LevySentryBanner.DisplayName: Levy Sentry
+			SapperCharge.DisplayName: Sapper Charge
 		}
 
 		Keybinds: {

@@ -20,6 +20,7 @@ namespace Levy.Common.Weapons
 		public static bool Accepts(Item it)
 		{
 			if (it == null || it.IsAir || it.stack <= 0 || it.favorited || it.IsACoin) return false;
+			if (WorldAlter.Alters(it)) return false; // Deposit junk leaves what alters the world with the player (a shift-click still takes it, with the warning)
 			if (WeaponClassifier.IsIssuableWeapon(it)) return true;                 // weapons, sentries, staves and thrown stacks (Molotov, knives, grenades)
 			if (it.damage > 0 && !it.accessory && !it.consumable && it.pick == 0 && it.axe == 0 && it.hammer == 0 && it.headSlot < 0 && it.bodySlot < 0 && it.legSlot < 0) return true; // any other weapon-shaped item
 			if (it.headSlot >= 0 || it.bodySlot >= 0 || it.legSlot >= 0) return true; // armor and vanity armor

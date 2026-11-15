@@ -358,7 +358,7 @@ namespace Levy.Common.UI
 			for (int i = 0; i < te.IssueWeapons.Length; i++)
 			{
 				bool sidearm = i == ArmoryTE.SidearmSlot;
-				var slot = MakeSlot(te.IssueWeapons, i, 1, IsWeaponShaped, sidearm ? LevyUtil.T("UI2.Sidearm") : null);
+				var slot = MakeSlot(te.IssueWeapons, i, 1, it => IsWeaponShaped(it) && !WorldAlter.Alters(it), sidearm ? LevyUtil.T("UI2.Sidearm") : null);
 				slot.Left.Set((i % IssueColumns) * Pitch, 0f); slot.Top.Set(y + (i / IssueColumns) * Pitch, 0f);
 				_issue.Append(slot);
 				if (sidearm)
@@ -391,7 +391,7 @@ namespace Levy.Common.UI
 			int ammoRows = (te.IssueAmmo.Length + IssueColumns - 1) / IssueColumns;
 			for (int i = 0; i < te.IssueAmmo.Length; i++)
 			{
-				var slot = MakeSlot(te.IssueAmmo, i, 3, it => it.ammo > 0 && !it.IsACoin, null);
+				var slot = MakeSlot(te.IssueAmmo, i, 3, it => it.ammo > 0 && !it.IsACoin && !WorldAlter.Alters(it), null);
 				slot.Left.Set((i % IssueColumns) * Pitch, 0f); slot.Top.Set(y + (i / IssueColumns) * Pitch, 0f);
 				_issue.Append(slot);
 			}
@@ -470,6 +470,7 @@ namespace Levy.Common.UI
 			var slot = new ArmorySlot(arr, index, Scale) { Accepts = accepts, EmptyHint = emptyHint, OnHover = ShowInfo, Region = region };
 			if (region <= 1) { slot.PickActive = () => PickingForReforge; slot.IsPicked = (r, i) => _reforgePanel.Plan.IsPicked(r, i); slot.TogglePick = (r, i) => _reforgePanel.TogglePicked(r, i); }
 			slot.OnChanged = (a, i) => { if (Te != null) UIActions.SendArmorySlot(Te, region, i); };
+			slot.OnPlaced = AlterWarning.Note; slot.OnRejected = AlterWarning.Note; // an item that breaks blocks or alters the world: the deposit warning (it is also kept out of the issue rows)
 			return slot;
 		}
 
@@ -861,16 +862,19 @@ namespace Levy.Common.UI
 			var inv = Main.LocalPlayer.inventory;
 			var before = Snapshot(Te.Storage);
 			bool any = false;
+			var warn = new List<Item>(); // deposited items that alter the world: one warning for the whole sweep
 			for (int i = LevyConstants.UI.InventoryMainStart; i < LevyConstants.UI.InventoryMainEnd && i < inv.Length; i++)
 			{
 				var it = inv[i];
 				if (!IsJunk(it)) continue;
+				if (WorldAlter.Alters(it)) warn.Add(it.Clone());
 				var left = Te.Deposit(it);
 				if (left == null || left.IsAir || left.stack <= 0) { inv[i] = new Item(); any = true; }
 				else { if (!ReferenceEquals(left, it) || left.stack != it.stack) any = true; inv[i] = left; }
 			}
 			SendChanged(before, Te.Storage);
 			if (any) SoundEngine.PlaySound(SoundID.Grab);
+			if (warn.Count > 0) AlterWarning.NoteMany(warn);
 		}
 
 		/// <summary>Takes everything in storage into the inventory (issue rows stay); with a search or filter on, only the shown items.</summary>

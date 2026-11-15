@@ -197,3 +197,16 @@ State: {
 	FreeRein: Roaming free
 	Mutiny: In mutiny
 }
+
+AlterWarnTitleOne: Levies will never use this
+AlterWarnTitleMany: Levies will never use these
+AlterWarnMore: and {0} more
+AlterWarnOk: OK
+AlterWarnNeverOne: Don't show again for this item
+AlterWarnNeverMany: Don't show again for these items
+AlterReasonTool: Mines or breaks blocks.
+AlterReasonBreak: Breaks blocks.
+AlterReasonLiquid: Places or moves liquid.
+AlterReasonConvert: Changes blocks or the biome.
+AlterReasonPlace: Places blocks.
+AlterReasonPaint: Paints the world.

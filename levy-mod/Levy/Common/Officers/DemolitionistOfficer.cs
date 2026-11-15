@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
+using Terraria.ModLoader;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Util;
@@ -75,7 +76,7 @@ namespace Levy.Common.Officers
 			int dmg = (int)(DemoDynamiteDamage * OfficerBrain.TownDamageScale() * AttackDamageMult);
 			if (Main.expertMode) dmg = (int)(dmg * Main.GameModeInfo.TownNPCDamageMultiplier);
 			int idx = Projectile.NewProjectile(demo.GetSource_FromAI(), demo.Center.X + dir * 16f, demo.Center.Y - 2f,
-				aim.X, aim.Y, ProjectileID.Dynamite, Math.Max(1, dmg), DemoDynamiteKnockback, Main.myPlayer);
+				aim.X, aim.Y, ModContent.ProjectileType<global::Levy.Content.Projectiles.SapperCharge>(), Math.Max(1, dmg), DemoDynamiteKnockback, Main.myPlayer); // his own stick of dynamite: vanilla Dynamite breaks tiles and walls, the army never alters the world
 			if (idx >= 0 && idx < Main.maxProjectiles) { Main.projectile[idx].npcProj = true; Main.projectile[idx].noDropItem = true; }
 
 			demo.direction = target.Center.X < demo.Center.X ? -1 : 1; demo.spriteDirection = demo.direction;

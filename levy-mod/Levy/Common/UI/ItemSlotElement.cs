@@ -32,6 +32,8 @@ namespace Levy.Common.UI
 		public Action<Item> OnRejected;
 		/// <summary>Called after a click changed this slot's content.</summary>
 		public Action<Item[], int> OnChanged;
+		/// <summary>Called with a copy of the item a click just put into this slot (a different item type than was there).</summary>
+		public Action<Item> OnPlaced;
 		/// <summary>Hover text shown while the slot is empty and the mouse holds nothing.</summary>
 		public string EmptyHint;
 
@@ -71,6 +73,7 @@ namespace Levy.Common.UI
 				ItemSlot.MouseHover(ref inv, context);
 				_arr[_index] = inv;
 				if (before.Changed(inv)) OnChanged?.Invoke(_arr, _index);
+				if (OnPlaced != null && inv != null && !inv.IsAir && inv.type != before.Type) OnPlaced(inv.Clone());
 				if (inv.IsAir && Main.mouseItem.IsAir && !string.IsNullOrEmpty(EmptyHint)) Main.hoverItemName = EmptyHint;
 			}
 			var pos = GetDimensions().Position();

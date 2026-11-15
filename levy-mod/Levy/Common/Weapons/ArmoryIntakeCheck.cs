@@ -61,7 +61,7 @@ namespace Levy.Common.Weapons
 			foreach (var (id, what) in new[] {
 				(ItemID.GrapplingHook, "a grappling hook"), (ItemID.AmethystHook, "a gem hook"), (ItemID.CobaltShield, "an accessory"), (ItemID.IronHelmet, "a helmet"), (ItemID.FamiliarWig, "vanity armor"),
 				(ItemID.RedDye, "a dye"), (ItemID.MusketBall, "ammo"), (ItemID.LesserHealingPotion, "a healing potion"), (ItemID.LesserManaPotion, "a mana potion"), (ItemID.IronskinPotion, "a buff potion"),
-				(ItemID.Musket, "a gun"), (ItemID.MolotovCocktail, "Molotov Cocktails"), (ItemID.ThrowingKnife, "throwing knives"), (ItemID.Grenade, "grenades"), (ItemID.Shuriken, "shuriken"), (ItemID.BoneJavelin, "bone javelins"),
+				(ItemID.Musket, "a gun"), (ItemID.MolotovCocktail, "Molotov Cocktails"), (ItemID.ThrowingKnife, "throwing knives"), (ItemID.Shuriken, "shuriken"), (ItemID.BoneJavelin, "bone javelins"),
 				(ItemID.LifeCrystal, "a life crystal"), (ItemID.ManaCrystal, "a mana crystal") })
 			{
 				var it = Make(id, 20);
@@ -83,7 +83,7 @@ namespace Levy.Common.Weapons
 			check(!ArmoryIntake.Accepts(Make(ItemID.SlimySaddle)), "a mount is not taken (levies use none)");
 			check(WeaponClassifier.Classify(Make(ItemID.MolotovCocktail)) == WeaponFamily.Thrown, "Molotov Cocktail is a thrown weapon");
 			check(WeaponClassifier.IsIssuableWeapon(Make(ItemID.MolotovCocktail)), "Molotov Cocktail is issuable");
-			foreach (int t in new[] { ItemID.ThrowingKnife, ItemID.Grenade, ItemID.Shuriken, ItemID.Javelin, ItemID.BoneJavelin, ItemID.SpikyBall, ItemID.PoisonedKnife, ItemID.MolotovCocktail })
+			foreach (int t in new[] { ItemID.ThrowingKnife, ItemID.Shuriken, ItemID.Javelin, ItemID.BoneJavelin, ItemID.SpikyBall, ItemID.PoisonedKnife, ItemID.MolotovCocktail })
 				check(UI.ArmoryPanel.IsWeaponShaped(Make(t, 40)) && UI.ArmoryPanel.IsJunk(Make(t, 40)), Make(t).Name + " fits a weapon row and Deposit junk");
 		}
 
@@ -121,8 +121,8 @@ namespace Levy.Common.Weapons
 			}
 			// The restock loop still tops a thrown stack up from the armory.
 			{
-				var te = new ArmoryTE(); te.Storage[0] = Make(ItemID.Grenade, 300);
-				var s = Soldier(100); s.Gear.Weapon = Make(ItemID.Grenade, 5);
+				var te = new ArmoryTE(); te.Storage[0] = Make(ItemID.ThrowingKnife, 300);
+				var s = Soldier(100); s.Gear.Weapon = Make(ItemID.ThrowingKnife, 5);
 				ArmoryTE.TestServed = new List<SoldierRecord> { s };
 				try { te.RestockThrown(s); } finally { ArmoryTE.TestServed = null; }
 				check(s.Gear.Weapon.stack > 5 && s.Gear.Weapon.stack <= LevyConstants.ThrownCarryMax, "a thrown stack is restocked from the armory (now " + s.Gear.Weapon.stack + ")");

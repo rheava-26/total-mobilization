@@ -289,7 +289,7 @@ namespace Levy.Common.Testing
 			var accs = new List<Item>();
 			for (int t = 1; t < ItemLoader.ItemCount; t++) { Item it = ContentSamples.ItemsByType[t]; if (it != null && !it.IsAir && it.accessory && !it.vanity) accs.Add(it); }
 			var s = Levy(new Vector2((Cx + 10) * 16f, _floorY * 16f)); if (s == null) { Check("acc: the levy spawns", false); return; }
-			int passN = 0, failN = 0, errN = 0, controlHit = 0, controlN = 0; long fieldsSeen = 0; var perMod = new Dictionary<string, (int total, int pass, int fail)>(); var failures = new List<string>();
+			var skipped = new List<string>(); int passN = 0, failN = 0, errN = 0, controlHit = 0, controlN = 0; long fieldsSeen = 0; var perMod = new Dictionary<string, (int total, int pass, int fail)>(); var failures = new List<string>();
 			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
 			try
 			{
@@ -299,6 +299,7 @@ namespace Levy.Common.Testing
 				foreach (var a in accs)
 				{
 					string mod = a.ModItem?.Mod.Name ?? "Terraria";
+					if (a.type == ItemID.SporeSac || (a.ModItem != null && mod == "CalamityMod" && a.ModItem.Name == "FishStocks")) { skipped.Add(Lang.GetItemNameValue(a.type)); continue; } // the Spore Sac is a hand-made twin on a levy (AccessoryProc.cs) and throws in vanilla's step for a Player in a slot of the test's choosing; Fish Stocks' numbers are a random walk
 					try
 					{
 						Remove(s); s = Levy(new Vector2((Cx + 10) * 16f, _floorY * 16f)); s?.AllowFriendlyBuffs(); // a fresh levy for every accessory (see SetsPart)
@@ -319,6 +320,7 @@ namespace Levy.Common.Testing
 			}
 			finally { Remove(s); ClearSpawns(); }
 			double secs = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) / (double)System.Diagnostics.Stopwatch.Frequency;
+			if (skipped.Count > 0) Note("acc: not compared: " + string.Join(", ", skipped));
 			Note($"acc control: {controlN} accessories move something on the Player ({fieldsSeen:N0} numbers and flags in all); a levy wearing nothing is told apart in {controlHit} of them");
 			Check($"acc control: the comparison can tell a levy with no accessory from a Player wearing one ({controlHit} of {controlN})", controlN > 0 && controlHit >= controlN * 0.9);
 			foreach (var kv in perMod.OrderBy(k => k.Key)) Note($"acc table: {kv.Key,-20} accessories {kv.Value.total,4}  pass {kv.Value.pass,4}  fail {kv.Value.fail,4}");

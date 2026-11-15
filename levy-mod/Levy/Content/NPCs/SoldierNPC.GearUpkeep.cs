@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
@@ -46,15 +47,15 @@ namespace Levy.Content.NPCs
 		/// <summary>The soldier's gear is tick-dependent and the real upkeep is enabled (config / harness mode), the stat pipeline is up, and the soldier is not paused after failures.</summary>
 		public bool UpkeepActive => _upkeepGear && GearUpkeep.Mode > 0 && !OfficerMode && Record != null && Dummy != null && PipelineOk && Main.GameUpdateCount >= _upkeepPausedUntil;
 
-		private static bool? _calamity;
-		/// <summary>Calamity is loaded: its ModPlayer adds to the stats of every Player (a life regeneration on top of the vanilla one, its Death-mode and endurance conversions, the defense and damage clamps) in PostUpdateEquips and PostUpdateMiscEffects, which only the gear frame runs.</summary>
-		private static bool CalamityLoaded => _calamity ??= ModLoader.HasMod("CalamityMod");
+		private static bool? _gearMods;
+		/// <summary>A mod that provides armor or accessories is loaded (Calamity, Thorium, ...): its ModPlayer adds to the stats of every Player (Calamity a life regeneration on top of the vanilla one and its endurance conversion, Thorium the cap on its own endurance) in PostUpdateEquips and PostUpdateMiscEffects, which only the gear frame runs.</summary>
+		private static bool GearModLoaded => _gearMods ??= ModLoader.Mods.Any(m => m.Name != "ModLoader" && m.Name != "Levy" && m.Name != "Mechanization" && m.Name != "Warbands" && global::Levy.Common.Owner.IdentityGuard.IsGearMod(m));
 
 		/// <summary>
-		/// A levy in vanilla-only gear that still takes its stats from the gear frame once a second (RefreshStats) because Calamity's hooks are part of every Player's stats. It is not ticked every tick (that is <see cref="UpkeepActive"/>, for gear whose
+		/// A levy in vanilla-only gear that still takes its stats from the gear frame once a second (RefreshStats) because a gear mod's hooks are part of every Player's stats. It is not ticked every tick (that is <see cref="UpkeepActive"/>, for gear whose
 		/// effects work across ticks); the stat pass alone is enough for a Player's numbers to match.
 		/// </summary>
-		private bool StatFrameNeeded => CalamityLoaded && GearUpkeep.Mode > 0 && !OfficerMode && Record != null && Dummy != null && PipelineOk && Main.GameUpdateCount >= _upkeepPausedUntil;
+		private bool StatFrameNeeded => GearModLoaded && GearUpkeep.Mode > 0 && !OfficerMode && Record != null && Dummy != null && PipelineOk && Main.GameUpdateCount >= _upkeepPausedUntil;
 
 		private bool ComputeUpkeepNeed()
 		{

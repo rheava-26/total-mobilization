@@ -302,7 +302,7 @@ namespace Levy.Content.NPCs
 			d.GetCritChance(DamageClass.Generic) += step;
 			d.GetDamage(DamageClass.Generic) += LevyConstants.WellFedDamageStep * step;   // +0.05 / +0.075 / +0.1
 			d.moveSpeed += LevyConstants.WellFedMoveStep * step;                           // +0.2  / +0.3   / +0.4
-			d.GetKnockback(DamageClass.Summon) += 0.25f * step;                            // minionKB +0.5 / +0.75 / +1
+			d.GetKnockback(DamageClass.Summon).Base += 0.25f * step;                            // minionKB +0.5 / +0.75 / +1
 			d.pickSpeed -= 0.05f * tier;                                                   // mining speed, as the buff has it
 			return 0;                                                                      // the food buffs give no regeneration of their own: Player.wellFed lifts the Expert and Master halving (set above)
 		}

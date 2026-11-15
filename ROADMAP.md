@@ -16,7 +16,7 @@
 
 ## ⏸ 14:55 UTC: all 5 builders hit the 5-hour usage limit (resets 17:30 UTC)
 - destroyerdrop, spectarget, projparity, parityaudit and redemption were all cut off mid-work. Their worktrees and labs are intact (git worktree list; /home/user/lab/*). No orphan tML processes.
-- A check-in is scheduled for 17:35 UTC to resume each with SendMessage (≤1 tML each).
+- Eve renewed her limit (~15:00 UTC): all five resumed right away via SendMessage (≤1 tML each); the 17:35 check-in was cancelled. Her point stands: a reminder can't fire usefully while I'm the one rate-limited.
 
 ## 🎯 Eve caught it again: projectiles "tickle" levies (projectile damage parity)
 - Calamitas Clone Master+Death: darts, explosions, fireballs and bolts hit levies for exactly 1 damage (hundreds of hits/fight); Cataclysmic Flame ~10. Expert+Rev darts ~6. A player takes ~100+. Destroyer and WoF lasers also do 1.

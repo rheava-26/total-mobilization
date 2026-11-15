@@ -73,6 +73,7 @@ namespace Levy.Common.Testing
 			try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the shop lag check runs after that, then the tile sweep (which also reads what the army shot during every check before it)
 			try { ShopLagCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ShopLag] check threw " + e.GetType().Name + ": " + e.Message); }
+			try { HitParityCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[HitParity] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { TileSweepCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[TileSweep] check threw " + e.GetType().Name + ": " + e.Message); }
 		}
 

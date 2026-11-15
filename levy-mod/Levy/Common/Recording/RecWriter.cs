@@ -28,6 +28,7 @@ namespace Levy.Common.Recording
 		private volatile bool _closing, _done, _full;
 		private volatile string _error;
 		private Action<string> _onDone;
+		private volatile int _flushAsk, _flushSeen;
 		private string _renameTo;
 
 		/// <summary>The compressed (or plain) size on disk has passed the cap: the recorder should stop and close.</summary>
@@ -73,6 +74,20 @@ namespace Levy.Common.Recording
 		}
 
 		/// <summary>
+		/// Writes everything queued so far and sync-flushes the stream now, as the timer does every <see cref="FlushMs"/>; returns once the file holds it (false after <paramref name="waitMs"/> or when the writer has stopped).
+		/// A copy of the open .part file taken after this returns reads back every line written before the call. Self-checks use it so they do not depend on how loaded the machine is.
+		/// </summary>
+		public bool Flush(int waitMs = 15000)
+		{
+			if (_closing || _done) return false;
+			int ask = Interlocked.Increment(ref _flushAsk);
+			_sig.Release();
+			long until = Environment.TickCount64 + waitMs;
+			while (_flushSeen < ask && !_done && Environment.TickCount64 < until) Thread.Sleep(1);
+			return _flushSeen >= ask;
+		}
+
+		/// <summary>
 		/// Ends the recording: everything queued is written, the file is closed and (gzip) moved to <paramref name="finalName"/> (null = the name given at construction). <paramref name="onDone"/> runs on the writer thread with the
 		/// final path, or null when the file could not be finished. With <paramref name="wait"/> the call returns after that (at most <paramref name="waitMs"/>); without it the game thread carries on at once.
 		/// </summary>
@@ -96,6 +111,7 @@ namespace Levy.Common.Recording
 				while (true)
 				{
 					_sig.Wait(Math.Min(500, FlushMs));
+					int ask = _flushAsk; // lines queued before a Flush call are drained below, then flushed
 					int n = 0;
 					while (_q.TryDequeue(out string line))
 					{
@@ -107,7 +123,7 @@ namespace Levy.Common.Recording
 						}
 					}
 					long now = Environment.TickCount64;
-					if (_error == null && (now - lastFlushMs > FlushMs || _closing))
+					if (_error == null && (now - lastFlushMs > FlushMs || _closing || ask != _flushSeen))
 					{
 						try
 						{
@@ -118,6 +134,7 @@ namespace Levy.Common.Recording
 						catch (Exception e) { _error = e.Message; }
 						lastFlushMs = now;
 					}
+					if (ask != _flushSeen) _flushSeen = ask; // also when the stream is in error: the caller must not wait for a flush that cannot come
 					if (_closing && _q.IsEmpty) break;
 				}
 				if (_error == null)

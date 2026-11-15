@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Shared paths and helpers for the ship toolchain. Source it: . "$(dirname "$0")/env.sh"
+# Every install/save/world path below can be overridden from the environment (TML08 TML10 SAVE08 SHIPNORM SHIPCAL VERIFY_SAVE LAB PORT_*): a builder that must not touch the shared ship installs points them at a private root.
 # Everything lives OUTSIDE the repo (a container reset wipes it; setup_toolchain.sh rebuilds it).
 
 SHIP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,18 +12,21 @@ WARB_SRC="$REPO/warbands-mod/Warbands"
 U=/home/user
 DOTNET8=$U/dotnet                      # .NET 8 runtime (runs both tML builds)
 DOTNET10=$U/dotnet10                   # .NET 10 SDK + the .NET 8 runtime (csproj builds of Calamity / MagicStorage)
-TML08=$U/tml-bin/tml                   # tModLoader v2026.08.3.0 (shipping toolchain)
-TML10=$U/tml-bin/tml-2026.10           # tModLoader v2026.10.2.3 (Calamity toolchain)
-SAVE08="$HOME/.local/share/Terraria/tModLoader"   # default save dir of TML08 builds (Mods/, ModSources/)
+TML08="${TML08:-$U/tml-bin/tml}"                   # tModLoader v2026.08.3.0 (shipping toolchain)
+TML10="${TML10:-$U/tml-bin/tml-2026.10}"           # tModLoader v2026.10.2.3 (Calamity toolchain)
+SAVE08="${SAVE08:-$HOME/.local/share/Terraria/tModLoader}"   # default save dir of TML08 builds (Mods/, ModSources/)
 SAVE10=$U/tml-save-2026.10             # save dir of TML10 builds (Mods/, ModSources/ with Calamity sources)
 MODCACHE=$U/mods-cache                 # drop ThoriumMod.tmod here (not open source; see setup_toolchain.sh)
 
 # PRIVATE ship installs: a copy of tML + its own save dir. tML writes its log into the INSTALL dir
 # (tModLoader-Logs/), so a shared install means one boot overwrites another's log. Never hardlink into these.
-SHIPNORM=$U/shipnorm                   # vanilla (tML 2026.08): tML copy, save/ inside
-SHIPCAL=$U/shipcal                     # Calamity (tML 2026.10): tML copy, save/ inside
-VERIFY_SAVE=$U/tml-save-verify         # save dir the vanilla boot runs against (Mods/ holds the built tmods)
-LAB=$U/lab/shipworld                   # shipworld: world/ShipWorld.wld + per-run private installs
+SHIPNORM="${SHIPNORM:-$U/shipnorm}"                   # vanilla (tML 2026.08): tML copy, save/ inside
+SHIPCAL="${SHIPCAL:-$U/shipcal}"                     # Calamity (tML 2026.10): tML copy, save/ inside
+VERIFY_SAVE="${VERIFY_SAVE:-$U/tml-save-verify}"         # save dir the vanilla boot runs against (Mods/ holds the built tmods)
+LAB="${LAB:-$U/lab/shipworld}"                   # shipworld: world/ShipWorld.wld + per-run private installs
+
+# Ports (override PORT_* to run beside another builder's ship run): shipcal boot, shipboth vanilla boot, shipworld world-making / vanilla half / Calamity half
+PORT_CAL="${PORT_CAL:-7774}"; PORT_NORM="${PORT_NORM:-7775}"; PORT_GEN="${PORT_GEN:-7871}"; PORT_WVAN="${PORT_WVAN:-7872}"; PORT_WCAL="${PORT_WCAL:-7873}"
 
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 

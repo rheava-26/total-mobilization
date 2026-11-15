@@ -266,11 +266,7 @@ namespace Levy.Content.NPCs
 				NPC a = Main.npc[i];
 				if (!a.active || a.friendly || a.damage <= 0 || i == NPC.whoAmI) continue; // friendly skips our own side (soldiers, avatars, other units)
 				if (Math.Abs(a.Center.X - cx) > a.width * 0.5f + halfW || Math.Abs(a.Center.Y - cy) > a.height * 0.5f + halfH) continue;
-				if (!NPCLoader.CanHitNPC(a, NPC)) continue;
-				int slot = -1; float mult = 1f;
-				Rectangle rect = a.Hitbox;
-				NPC.GetMeleeCollisionData(mine, i, ref slot, ref mult, ref rect);
-				if (!mine.Intersects(rect)) continue;
+				if (!global::Levy.Common.Util.HostileContact.Hits(a, i, mine, global::Levy.Common.Util.HostileContact.Stand, NPC, out _, out float mult)) continue; // the player's own hit rules (SoldierNPC.Damage.cs); one window for every immunity slot
 
 				int dir = a.Center.X < cx ? 1 : -1;
 				int raw = Math.Max(1, (int)Math.Round(Main.DamageVar(a.damage * mult) * global::Levy.Common.Util.BannerBuffs.Defense(CommanderIndex, a))); // the commander's banner for this attacker

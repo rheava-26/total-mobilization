@@ -47,6 +47,8 @@ namespace Levy.Content.NPCs
 		partial void Damage_Update()
 		{
 			if (ImmuneTime > 0) ImmuneTime--;
+			if (AllImmune > 0) AllImmune--;
+			for (int k = 0; k < SlotImmune.Length; k++) if (SlotImmune[k] > 0) SlotImmune[k]--;
 			if (TicksSinceDamaged < LevyConstants.TicksSinceDamagedCap) TicksSinceDamaged++;
 			if (PotionSickness > 0) PotionSickness--;
 			if (_buffPotionCooldown > 0) _buffPotionCooldown--;
@@ -56,7 +58,8 @@ namespace Levy.Content.NPCs
 			if (!IsAlive) return;
 			Fall_Update();
 			if (!IsAlive) return;
-			if (ImmuneTime == 0 && !Hostile) ContactDamage(); // a hostile body takes no contact damage from the enemy side it belongs to
+			// a hostile body takes no contact damage from the enemy side it belongs to. A hit with its own immunity slot (a boss's Bosses slot) is gated by that slot, not by the general window; an all-types window (dash, parry, dodge) closes both.
+			if (!Hostile && (ImmuneTime == 0 || (HostileContact.Parity && HostileContact.Slots && AllImmune == 0))) ContactDamage();
 			if (IsAlive && ImmuneTime == 0) TileHazards(); // spikes, thorns, meteorite and the like, when the setting is on (SoldierNPC.TileHazards.cs)
 			if (!IsAlive) return;
 			Regen();
@@ -68,6 +71,7 @@ namespace Levy.Content.NPCs
 		// ------------------------------------------------------------------------------------------------------
 		private void ContactDamage()
 		{
+			if (AllImmune > 0 && HostileContact.Parity && HostileContact.Slots) return; // an all-types window closes the general window and every slot
 			Rectangle mine = NPC.Hitbox;
 			float cx = NPC.Center.X, cy = NPC.Center.Y;
 			float halfW = NPC.width * 0.5f + LevyConstants.ContactBroadPhasePx, halfH = NPC.height * 0.5f + LevyConstants.ContactBroadPhasePx;
@@ -75,13 +79,10 @@ namespace Levy.Content.NPCs
 			{
 				NPC a = Main.npc[i];
 				if (!a.active || a.friendly || a.damage <= 0 || i == NPC.whoAmI) continue;
-				if (a.type == NPCID.HallowBoss && (a.ai[0] == 0f || a.ai[0] == 10f)) continue;
 				if (Math.Abs(a.Center.X - cx) > a.width * 0.5f + halfW || Math.Abs(a.Center.Y - cy) > a.height * 0.5f + halfH) continue;
-				if (!NPCLoader.CanHitNPC(a, NPC)) continue;
-				int slot = -1; float mult = 1f;
-				Rectangle rect = a.Hitbox;
-				NPC.GetMeleeCollisionData(mine, i, ref slot, ref mult, ref rect);
-				if (!mine.Intersects(rect)) continue;
+				if (!HostileContact.Hits(a, i, mine, Dummy ?? HostileContact.Stand, NPC, out int rawSlot, out float mult)) continue; // the player's own rules: the boss's CanHitPlayer, its collision data, then the rectangle
+				int slot = HostileContact.EffectiveSlot(rawSlot);
+				if (slot < 0 ? ImmuneTime > 0 : SlotImmune[slot] > 0) continue; // Player.Update_NPCCollision: a general hit waits on the general window, a slot hit on its own slot
 
 				int dir = a.Center.X < cx ? 1 : -1;
 				int raw = Math.Max(1, Main.DamageVar(a.damage * mult * global::Levy.Common.Officers.PaintGlobalNPC.DamageMult(a))); // a paint-soaked attacker hits softer
@@ -93,8 +94,12 @@ namespace Levy.Content.NPCs
 				PendingContactScale = IncomingSetScale() * global::Levy.Common.Util.BannerBuffs.Defense(CommanderIndex, a); // Solar shield / Beetle orbs / Paladin's Shield share, folded into the strike by SoldierSetHitScale
 				try { done = NPC.SimpleStrikeNPC(raw, dir, false, NPC.knockBackResist > 0f ? LevyConstants.FizzContactKnockback : 0f, null, false, 0f, true); } // ModifyIncomingHit applies the player defense formula; the server broadcasts the strike (a Fizzy body, the only one with knockback resistance above 0, is knocked back)
 				finally { _contactStriking = false; PendingContactScale = 1f; }
-				if (HitDbg != null) HitDbgAdd("contact:" + a.TypeName + "/" + a.type, done);
-				AfterHit(done, i);
+				if (HitDbg != null)
+				{
+					HitDbgAdd("contact:" + a.TypeName + "/" + a.type, done);
+					if (!HostileContact.PlayerRules(a, i, mine, Dummy ?? HostileContact.Stand, out _, out _)) HitDbgAdd("notplayer:" + a.TypeName, done); // harness: damage taken where a player standing there would not have been hit
+				}
+				AfterHit(done, i, slot);
 				return; // one contact hit per tick; immune frames gate the rest
 			}
 		}
@@ -125,11 +130,12 @@ namespace Levy.Content.NPCs
 			_lastHitTick = Main.GameUpdateCount;
 		}
 
-		private void AfterHit(int damageDone, int attackerIndex)
+		private void AfterHit(int damageDone, int attackerIndex, int slot = -1)
 		{
 			HitsTaken++;
 			if (DodgeDebug) Levy.Instance?.Logger.Info($"DODGEDBG-HIT t={Main.GameUpdateCount} {SoldierName} dmg={damageDone} vy={NPC.velocity.Y:0.0} yAboveFloorPx={(int)(NPC.Bottom.Y)} pend={_dodgePend}");
-			ImmuneTime = HitImmuneTicks(damageDone);
+			if (slot >= 0 && slot < SlotImmune.Length) SlotImmune[slot] = HitImmuneTicks(damageDone); // Player.Hurt: a slot hit starts only its own cooldown
+			else ImmuneTime = HitImmuneTicks(damageDone);
 			Sit_Stop(); // a hit stands a seated levy up
 			Leisure_Stop(); // and ends a pastime
 			if (HitGapDbg != null) HitGapAdd(damageDone);

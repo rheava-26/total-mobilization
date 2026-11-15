@@ -568,7 +568,7 @@ namespace Levy.Content.NPCs
 			if (_holyDodgeReady <= 0 || Dummy == null || !Dummy.onHitDodge) return false;
 			_holyDodgeReady = 0;
 			_holyDodgeCooldown = LevyConstants.HallowedCooldownTicks;
-			ImmuneTime = LevyConstants.HallowedDodgeImmuneTicks;
+			ImmuneTime = LevyConstants.HallowedDodgeImmuneTicks; AllImmune = LevyConstants.HallowedDodgeImmuneTicks; // Player.ShadowDodge: SetImmuneTimeForAllTypes
 			if (!Main.dedServ)
 			{
 				for (int i = 0; i < 30; i++)

@@ -19,7 +19,7 @@ if [ ! -f "$WORLD" ]; then
   echo "== making ShipWorld (seed shipworld1, small) =="
   GEN=$LAB/gen; rm -rf "$GEN"; mkdir -p "$GEN"; ensure_install "$TML08" "$GEN/tml" || exit 1
   mkdir -p "$GEN/save/Mods"; write_enabled "$GEN/save/Mods"      # no mods: plain vanilla world
-  "$SHIP_DIR/tmlboot.sh" -i "$GEN/tml" -s "$GEN/save" -w "$GEN/ShipWorld.wld" -p 7871 -x 'Listening on port' -q 4 -t 600 \
+  "$SHIP_DIR/tmlboot.sh" -i "$GEN/tml" -s "$GEN/save" -w "$GEN/ShipWorld.wld" -p "$PORT_GEN" -x 'Listening on port' -q 4 -t 600 \
       -- -autocreate 1 -worldname ShipWorld -seed shipworld1 -pass "" -secure 0
   # tML writes an autocreated world to <save>/Worlds/<worldname>.wld whatever -world says
   [ -f "$GEN/save/Worlds/ShipWorld.wld" ] && cp -f "$GEN/save/Worlds/ShipWorld.wld" "$WORLD"
@@ -46,10 +46,10 @@ run_half() { # $1 = run dir, $2 = port, $3 = mod list
       -e "LEVY_SELFCHECK_WORLD=1 LEVY_MECHWORLD_EXIT=1" -x '\[MechWorld\] self-check pass=' -q "$SETTLE" -t "$TMO" > "$1/half.out" 2>&1
   echo $? > "$1/half.rc"
 }
-echo "== booting ShipWorld: vanilla (7872) and Calamity (7873) in parallel =="
+echo "== booting ShipWorld: vanilla ($PORT_WVAN) and Calamity ($PORT_WCAL) in parallel =="
 T0=$SECONDS
-run_half "$VR" 7872 "$VAN_MODS" & P1=$!
-run_half "$CR" 7873 "$CAL_MODS" & P2=$!
+run_half "$VR" "$PORT_WVAN" "$VAN_MODS" & P1=$!
+run_half "$CR" "$PORT_WCAL" "$CAL_MODS" & P2=$!
 wait $P1 $P2
 echo "both halves done in $((SECONDS - T0))s"
 
@@ -74,12 +74,15 @@ report() { # $1 = label, $2 = run dir
   echo "ShopLag: PASS=$(grep -c -F '[ShopLag] PASS ' "$L") FAIL=$(grep -c -F '[ShopLag] FAIL ' "$L")"
   grep -F "[ShopLag] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[ShopLag] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
+  echo "HitParity: PASS=$(grep -c -F '[HitParity] PASS ' "$L") FAIL=$(grep -c -F '[HitParity] FAIL ' "$L")"
+  grep -F "[HitParity] self-check pass=" "$L" | sed 's/^/  /'
+  grep -F '[HitParity] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
   echo "TileSweep: PASS=$(grep -c -F '[TileSweep] PASS ' "$L") FAIL=$(grep -c -F '[TileSweep] FAIL ' "$L")"
   grep -F "[TileSweep] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[TileSweep] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
   [ -z "$(grep -F '[MechWorld] self-check pass=' "$L")" ] && echo "  !! no MechWorld summary line (check did not finish; see $2/tml/boot.out)"
   echo "other failures (fail=[1-9] / FAILURE / !!!), known summon-staff pick failure excluded:"
-  grep -E 'fail=[1-9]|FAILURE|!!!' "$L" | grep -v -E "$KNOWN_FAIL_RE" | grep -v -F -e '[MechWorld] FAIL ' -e '[SummonWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[TileSweep] FAIL ' | sed 's/^/  /' | head -20
+  grep -E 'fail=[1-9]|FAILURE|!!!' "$L" | grep -v -E "$KNOWN_FAIL_RE" | grep -v -F -e '[MechWorld] FAIL ' -e '[SummonWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' | sed 's/^/  /' | head -20
   grep -E "$KNOWN_FAIL_RE" "$L" | head -1 | sed 's/^/  (known, excluded) /'
   local ex; ex=$(grep -c -E -i "$EXC_RE" "$L"); echo "exceptions: $ex"
   grep -E -i "$EXC_RE" "$L" | head -6 | cut -c1-220 | sed 's/^/  /'

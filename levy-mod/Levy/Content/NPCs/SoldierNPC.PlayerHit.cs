@@ -59,8 +59,8 @@ namespace Levy.Content.NPCs
 		private int HitDefense()
 		{
 			Player d = Dummy;
-			if (!Hostile && d != null && UpkeepActive) return Math.Max(0, (int)d.statDefense);
-			return NPC.defense;
+			int def = !Hostile && d != null && UpkeepActive ? Math.Max(0, (int)d.statDefense) : NPC.defense;
+			return Math.Max(0, def - DotDefenseDown);
 		}
 
 		private struct Opened { public FrameSlot Fs; public object Thorium; public SoldierNPC Prev; public int Spawn; public int SavedWho; public Vector2 SavedCenter; }
@@ -171,5 +171,69 @@ namespace Levy.Content.NPCs
 			if (_knockTicks < 9 && NPC.collideY && NPC.velocity.Y >= 0f) { _knockTicks = 0; return false; }
 			return true;
 		}
+
+		// ------------------------------------------------------------------------------------------------------------
+		// Damage over time by the player's rules
+		// ------------------------------------------------------------------------------------------------------------
+		private static Player _dotScratch;
+		private int _dotCount;
+		/// <summary>Defense the body's debuffs take away (Ichor, Broken Armor ...), read from the game's own buff update on a scratch player.</summary>
+		internal int DotDefenseDown;
+		internal static long DotTicks, DotDamage;
+
+		/// <summary>
+		/// The debuffs on the body, run through the game's own player rules: a scratch Player holds the same debuffs, UpdateBuffs and UpdateLifeRegen run on it (vanilla's switch and every ModBuff / ModPlayer
+		/// life-regen hook, Calamity's included) and the life it loses is the body's loss, one point per 120 units of negative regeneration as for a player. The NPC's own damage over time is switched
+		/// off for a levy (<see cref="LevyDotSystem"/>), whose numbers differ per mod.
+		/// </summary>
+		internal void DebuffDot()
+		{
+			if (!HitDebuffsOn || LevyUtil.IsClient || !IsAlive) return;
+			bool any = false;
+			for (int i = 0; i < NPC.maxBuffs; i++) if (NPC.buffType[i] > 0 && NPC.buffTime[i] > 0 && Main.debuff[NPC.buffType[i]]) { any = true; break; }
+			if (!any) { _dotCount = 0; DotDefenseDown = 0; return; }
+			Player s = _dotScratch ??= new Player { whoAmI = Main.maxPlayers, active = true, width = 20, height = 42 };
+			Player prev = Main.player[Main.maxPlayers]; int prevMy = Main.myPlayer;
+			try
+			{
+				Main.player[Main.maxPlayers] = s; Main.myPlayer = Main.maxPlayers; // a player's own rules run for the local player
+				s.ResetEffects();
+				Array.Clear(s.buffType); Array.Clear(s.buffTime);
+				int k = 0;
+				for (int i = 0; i < NPC.maxBuffs && k < s.buffType.Length; i++) if (NPC.buffType[i] > 0 && NPC.buffTime[i] > 0 && Main.debuff[NPC.buffType[i]]) { s.buffType[k] = NPC.buffType[i]; s.buffTime[k] = NPC.buffTime[i]; k++; }
+				s.statLifeMax = s.statLifeMax2 = Math.Max(1, NPC.lifeMax); s.statLife = Math.Clamp(NPC.life, 1, s.statLifeMax2); int life0 = s.statLife; s.dead = false; s.lifeRegenCount = _dotCount; s.lifeRegenTime = 0f;
+				s.position = NPC.position; s.width = NPC.width; s.height = NPC.height;
+				s.UpdateBuffs(Main.maxPlayers);
+				s.UpdateLifeRegen();
+				int loss = Math.Max(0, life0 - s.statLife); _dotCount = s.lifeRegenCount; DotDefenseDown = s.statDefense.Negative; DotTicks++;
+				if (loss > 0)
+				{
+					DotDamage += loss;
+					NPC.life -= loss; NPC.netUpdate = true;
+					if (Record != null) Record.CurrentHp = Math.Max(0, NPC.life);
+					if (NPC.life <= 0) { NPC.life = 0; NPC.checkDead(); }
+				}
+			}
+			catch (Exception e) { SeqErrors++; if (GearUpkeep.WarnOnce(e)) Levy.Instance?.Logger.Warn("Levy: the damage-over-time step threw on a soldier (once per kind): " + e); }
+			finally { Main.player[Main.maxPlayers] = prev; Main.myPlayer = prevMy; }
+		}
+	}
+
+	/// <summary>Switches the NPC's own buff damage over time off for a levy body (vanilla NPC.UpdateNPC_BuffApplyDOTs): the player-rule step in SoldierNPC.DebuffDot replaces it.</summary>
+	public sealed class LevyDotSystem : ModSystem
+	{
+		private delegate void Orig(NPC self);
+		public override void Load()
+		{
+			if (!SoldierNPC.HitDebuffsOn) return;
+			try
+			{
+				var m = typeof(NPC).GetMethod("UpdateNPC_BuffApplyDOTs", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+				if (m == null) { Mod.Logger.Warn("Levy: NPC.UpdateNPC_BuffApplyDOTs not found; a levy's debuff damage stays the NPC's"); return; }
+				MonoModHooks.Add(m, (Action<Orig, NPC>)Detour);
+			}
+			catch (Exception e) { Mod.Logger.Warn("Levy: damage-over-time hook failed: " + e.Message); }
+		}
+		private static void Detour(Orig orig, NPC self) { if (self.ModNPC is SoldierNPC) return; orig(self); }
 	}
 }

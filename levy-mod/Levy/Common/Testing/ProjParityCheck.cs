@@ -246,8 +246,48 @@ namespace Levy.Common.Testing
 			Note($"CONTACT pairs {tc.N}: damage differs {tc.DmgBad}, knockback {tc.KnockBad}, immunity {tc.ImmBad}, debuffs {tc.BuffBad}, defense damage {tc.DefBad}; worst damage gap {tc.Worst}; first: {tc.FirstBad}");
 			Check($"projectile: a levy takes exactly what a player takes (damage, knockback, immunity, debuffs, defense damage), {tp.N} seeded pairs, {tp.DmgBad + tp.KnockBad + tp.ImmBad + tp.BuffBad + tp.DefBad} mismatches", tp.N > 50 && tp.DmgBad + tp.KnockBad + tp.ImmBad + tp.BuffBad + tp.DefBad == 0);
 			Check($"contact: a levy takes exactly what a player takes (damage, knockback, immunity, debuffs, defense damage), {tc.N} seeded pairs, {tc.DmgBad + tc.KnockBad + tc.ImmBad + tc.BuffBad + tc.DefBad} mismatches", tc.N > 50 && tc.DmgBad + tc.KnockBad + tc.ImmBad + tc.BuffBad + tc.DefBad == 0);
+			try { DotParity(real, levy); } catch (Exception e) { Check("DoT parity threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			try { DiagDefenseDamage(levy); } catch (Exception e) { Note("defense damage diag threw " + e.GetType().Name + " " + e.Message); }
 			ArenaBoxCheck(real, levy);
+		}
+
+		/// <summary>Damage over time: the same debuff on a real Player (ticked with the game's own UpdateBuffs and UpdateLifeRegen) and on a levy (ticked by the world), the life each loses over the same ticks.</summary>
+		private static void DotParity(Player real, SoldierNPC levy)
+		{
+			var types = new List<(string n, int t)> { ("On Fire!", BuffID.OnFire), ("Poisoned", BuffID.Poisoned), ("Cursed Inferno", BuffID.CursedInferno), ("Venom", BuffID.Venom), ("Frostburn", BuffID.Frostburn), ("Burning", BuffID.Burning) };
+			if (ModLoader.TryGetMod("CalamityMod", out Mod cm))
+				foreach (string n in new[] { "BrimstoneFlames", "HolyFlames", "Plague", "GodSlayerInferno", "Nightwither", "CrushDepth", "Vaporfied", "Irradiated", "ElementalMix" })
+					if (cm.TryFind<ModBuff>(n, out ModBuff mb)) types.Add((n, mb.Type));
+			int ticks = 240, bad = 0, n0 = 0; var rows = new List<string>();
+			Main.GameMode = GameModeID.Master; SetRev(ModLoader.HasMod("CalamityMod"), ModLoader.HasMod("CalamityMod"));
+			int savedMy = Main.myPlayer; Player prev = Main.player[254];
+			foreach (var (name, type) in types)
+			{
+				int realLoss, levyLoss;
+				try
+				{
+					Main.player[254] = real; Main.myPlayer = 254;
+					real.ResetEffects(); real.statLife = real.statLifeMax2 = real.statLifeMax = 100000; real.dead = false; real.lifeRegenCount = 0; real.lifeRegenTime = 0; Array.Clear(real.buffType); Array.Clear(real.buffTime);
+					real.AddBuff(type, 600, true);
+					int hp0 = real.statLife;
+					for (int i = 0; i < ticks; i++) { real.ResetEffects(); real.UpdateBuffs(254); real.UpdateLifeRegen(); }
+					realLoss = hp0 - real.statLife;
+				}
+				finally { Main.player[254] = prev; Main.myPlayer = savedMy; }
+				NPC body = levy.NPC; body.life = body.lifeMax = 100000; Array.Clear(body.buffType); Array.Clear(body.buffTime); body.buffImmune[type] = false;
+				levy.NPC.defense = 0; levy.Defense = 0;
+				body.AddBuff(type, 600);
+				bool had = body.HasBuff(type);
+				int l0 = body.life;
+				for (int i = 0; i < ticks; i++) { Main.myPlayer = 0; levy.DebuffDot(); Main.myPlayer = savedMy; }
+				levyLoss = l0 - body.life;
+				n0++; bool ok = Math.Abs(realLoss - levyLoss) <= Math.Max(2, realLoss / 12);
+				if (!ok) bad++;
+				rows.Add($"{name,-18} player lost {realLoss,4} levy lost {levyLoss,4} (buff stuck {had}){(ok ? "" : "  <- differs")}");
+				body.life = body.lifeMax; Array.Clear(body.buffType); Array.Clear(body.buffTime);
+			}
+			foreach (string r in rows) Note($"DoT over {ticks} ticks: " + r);
+			Check($"damage over time: a levy loses what a player loses holding the same debuff ({n0} debuffs, {bad} differ)", bad == 0);
 		}
 
 		private static void DiagDefenseDamage(SoldierNPC levy)

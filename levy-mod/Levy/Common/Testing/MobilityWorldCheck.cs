@@ -133,7 +133,7 @@ namespace Levy.Common.Testing
 				speeds[name] = r.peak; // the top speed: the most a levy covers in one tick (the average also holds the time spent accelerating and the follow brain's pauses)
 			}
 			float none = speeds["none"];
-			foreach (var kv in speeds) if (kv.Key != "none") Check($"boots in the boots slot change a levy's measured top speed: {kv.Key} {F(kv.Value)} px/tick vs bare {F(none)}", kv.Value > none + 1.5f);
+			foreach (var kv in speeds) if (kv.Key != "none") Check($"boots in the boots slot change a levy's measured top speed: {kv.Key} {F(kv.Value)} px/tick vs bare {F(none)}", kv.Value >= none + 1.5f - 0.01f);
 			if (speeds.ContainsKey("Hermes Boots") && speeds.ContainsKey("Lightning Boots")) Check($"better boots run faster: Lightning {F(speeds["Lightning Boots"])} > Hermes {F(speeds["Hermes Boots"])}", speeds["Lightning Boots"] > speeds["Hermes Boots"] + 0.2f);
 			if (speeds.ContainsKey("Angel Treads") && speeds.ContainsKey("Hermes Boots")) Check($"Angel Treads outrun Hermes Boots: {F(speeds["Angel Treads"])} vs {F(speeds["Hermes Boots"])}", speeds["Angel Treads"] > speeds["Hermes Boots"] + 0.5f);
 

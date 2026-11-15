@@ -60,6 +60,8 @@ namespace Levy.Content.NPCs
 			if (!IsAlive) return;
 			// a hostile body takes no contact damage from the enemy side it belongs to. A hit with its own immunity slot (a boss's Bosses slot) is gated by that slot, not by the general window; an all-types window (dash, parry, dodge) closes both.
 			if (!Hostile && (ImmuneTime == 0 || (HostileContact.Parity && HostileContact.Slots && AllImmune == 0))) ContactDamage();
+			DebuffDot(); // the debuffs on the body hurt it by the player's rules (SoldierNPC.PlayerHit.cs)
+			if (!IsAlive) return;
 			if (IsAlive && ImmuneTime == 0) TileHazards(); // spikes, thorns, meteorite and the like, when the setting is on (SoldierNPC.TileHazards.cs)
 			if (!IsAlive) return;
 			Regen();

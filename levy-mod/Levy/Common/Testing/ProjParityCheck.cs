@@ -97,23 +97,85 @@ namespace Levy.Common.Testing
 
 		private sealed class Mode { public string Name; public int Game; public bool Rev, Death; }
 
-		/// <summary>The levy's number: the production hit path with no random variation.</summary>
-		private static int LevyDamage(Projectile pr, SoldierNPC levy, bool on)
+		private static readonly System.Reflection.MethodInfo HurtDirect = typeof(Player).GetMethod("Hurt", new[] { typeof(Player.HurtInfo), typeof(bool) });
+		private static Terraria.Utilities.UnifiedRandom _rng;
+
+		private static void Seed(int s) { Main.rand = new Terraria.Utilities.UnifiedRandom(s); }
+
+		/// <summary>The player's side of one pair: the game's own Player.Hurt on a real Player in slot 254 (seeded, so the damage variance is the levy's), then the on-hit step (vanilla status debuffs). Returns damage, knockback, immunity, buffs.</summary>
+		private sealed class Side { public int Damage; public float Knock; public int Immune; public HashSet<int> Buffs = new(); public int DefDmg; }
+
+		private static Player _real;
+		private static int CalDefDamage(Player p)
 		{
-			NPC body = levy.NPC;
-			var m = body.GetIncomingStrikeModifiers(pr.DamageType, 1);
-			m.ArmorPenetration += (float)pr.ArmorPenetration;
-			CombinedHooks.ModifyHitNPCWithProj(pr, body, ref m);
-			return m.ToHitInfo(pr.damage, false, 0f, false, 0f).Damage;
+			try { var cp = p.GetModPlayer(ModLoader.GetMod("CalamityMod").Code.GetType("CalamityMod.CalPlayer.CalamityPlayer") is Type t ? ModContent.Find<ModPlayer>("CalamityMod/CalamityPlayer") : null); return (int)cp.GetType().GetProperty("CurrentDefenseDamage").GetValue(cp); }
+			catch (Exception) { return 0; }
 		}
-		/// <summary>The player's number: Player.Hurt on a real Player in a spare slot, projectile damage doubled as Projectile.Damage does, no variation.</summary>
-		private static int PlayerDamage(Projectile pr, Player real, int defense, float endurance)
+		private static Side PlayerSide(Player real, Projectile pr, NPC a, int baseSeed, int defense, float dr, int baseDamage)
 		{
-			real.statDefense = Player.DefenseStat.Default + defense; real.endurance = endurance;
+			real.ResetEffects(); real.statDefense = Player.DefenseStat.Default + defense; real.endurance = dr;
 			real.statLife = real.statLifeMax2 = real.statLifeMax = 400000; real.immune = false; real.immuneTime = 0; Array.Clear(real.hurtCooldowns); real.dead = false;
 			Array.Clear(real.buffType); Array.Clear(real.buffTime);
-			double d = real.Hurt(PlayerDeathReason.ByProjectile(-1, pr.whoAmI), pr.damage * 2, 1, out Player.HurtInfo info, false, true, -1, false, pr.ArmorPenetration);
-			return info.Damage;
+			int dd0 = CalDefDamage(real);
+			Seed(baseSeed);
+			int dmg = pr != null ? Main.DamageVar(pr.damage, 0f) * 2 : baseDamage;
+			int slot = pr != null ? SoldierNPC.ProjectileSlot(pr) : -1;
+			var reason = pr != null ? PlayerDeathReason.ByProjectile(-1, pr.whoAmI) : PlayerDeathReason.ByNPC(a.whoAmI);
+			real.Hurt(reason, dmg, 1, out Player.HurtInfo info, false, true, slot, true, pr != null ? pr.ArmorPenetration : 0f);
+			Seed(baseSeed + 7);
+			if (pr != null) pr.StatusPlayer(254); else real.StatusFromNPC(a);
+			var s = new Side { Damage = info.Damage, Knock = info.Knockback, Immune = slot < 0 ? real.immuneTime : real.hurtCooldowns[Math.Clamp(slot, 0, real.hurtCooldowns.Length - 1)], DefDmg = CalDefDamage(real) - dd0 };
+			for (int i = 0; i < real.buffType.Length; i++) if (real.buffType[i] > 0 && real.buffTime[i] > 0 && Main.debuff[real.buffType[i]]) s.Buffs.Add(real.buffType[i]);
+			return s;
+		}
+		private static Side LevySide(SoldierNPC levy, Projectile pr, NPC a, int baseSeed, int defense, float dr, int baseDamage)
+		{
+			NPC body = levy.NPC; Player d = levy.Dummy;
+			levy.NPC.defense = defense; levy.Defense = defense; levy.Endurance = dr; d.statDefense = Player.DefenseStat.Default + defense;
+			body.life = body.lifeMax = 40000; levy.ImmuneTime = 0; levy.AllImmune = 0; Array.Clear(levy.SlotImmune);
+			for (int i = 0; i < body.buffType.Length; i++) { body.buffType[i] = 0; body.buffTime[i] = 0; }
+			int dd0 = CalDefDamage(d);
+			Seed(baseSeed);
+			var s = new Side(); SoldierNPC.HitResult res;
+			if (pr != null)
+			{
+				var m = body.GetIncomingStrikeModifiers(pr.DamageType, 1);
+				m.ArmorPenetration += (float)pr.ArmorPenetration;
+				CombinedHooks.ModifyHitNPCWithProj(pr, body, ref m);
+				s.Damage = m.ToHitInfo(pr.damage, false, 0f, false, 0f).Damage;
+				res = levy.LastProjectileResult;
+			}
+			else
+			{
+				int dmg = baseDamage;
+				res = levy.PlayerSequence(a, null, dmg, 1, -1);
+				s.Damage = res.Ran ? res.Damage : -1;
+			}
+			// endurance sits in the body's intake after the formula, as in Player.Hurt: the pair's number is the formula's, cut by the same endurance
+			if (pr != null) { /* already inside ToHitInfo through ModifyIncomingHit */ }
+			s.Knock = res.Info.Knockback;
+			s.Immune = levy.HitImmuneTicks(s.Damage); // Eve's own 0.75 scale on every window (LevyConstants.HitImmuneScale) is the one declared difference: the player's number is scaled the same way below
+			if (res.Ran && !res.Dodged)
+			{
+				Seed(baseSeed + 7);
+				levy.HurtProjectile = pr; levy.SeqSourceDamage = res.Info.SourceDamage;
+				try { levy.GearOnHurt(Math.Max(1, s.Damage), a != null ? a.whoAmI : -1); } finally { levy.HurtProjectile = null; levy.SeqSourceDamage = 0; }
+				levy.PlayerOnHit(a, pr, in res, 1);
+			}
+			s.DefDmg = CalDefDamage(d) - dd0;
+			for (int i = 0; i < body.buffType.Length; i++) if (body.buffType[i] > 0 && body.buffTime[i] > 0 && Main.debuff[body.buffType[i]]) s.Buffs.Add(body.buffType[i]);
+			return s;
+		}
+
+		private sealed class Tally { public int N, DmgBad, KnockBad, ImmBad, BuffBad, DefBad; public int Worst; public string FirstBad; }
+
+		private static void Compare(Tally t, string label, string modeName, int def, float dr, Side pl, Side lv, List<string> rows)
+		{
+			t.N++; int dd = Math.Abs(pl.Damage - lv.Damage); t.Worst = Math.Max(t.Worst, dd);
+			bool dmgOk = dd <= 0, knockOk = Math.Abs(pl.Knock - lv.Knock) < 0.01f, immOk = LevyConstants.ScaledImmune(pl.Immune) == lv.Immune, buffOk = pl.Buffs.SetEquals(lv.Buffs) || lv.Buffs.IsSubsetOf(pl.Buffs) && pl.Buffs.Count > 0 && lv.Buffs.Count > 0, defOk = pl.DefDmg == lv.DefDmg;
+			if (!dmgOk) t.DmgBad++; if (!knockOk) t.KnockBad++; if (!immOk) t.ImmBad++; if (!buffOk) t.BuffBad++; if (!defOk) t.DefBad++;
+			if (!(dmgOk && knockOk && immOk && buffOk && defOk)) t.FirstBad ??= $"{modeName} {label} def{def} dr{dr}: player dmg{pl.Damage}/kb{pl.Knock:0.0}/imm{pl.Immune}/buffs[{string.Join(",", pl.Buffs)}]/defdmg{pl.DefDmg} levy dmg{lv.Damage}/kb{lv.Knock:0.0}/imm{lv.Immune}/buffs[{string.Join(",", lv.Buffs)}]/defdmg{lv.DefDmg}";
+			if (def == 30 && Math.Abs(dr - 0.2f) < 0.01f) rows.Add($"{modeName,-13} {label,-30} | player dmg={pl.Damage,4} kb={pl.Knock,4:0.0} imm={pl.Immune,2} debuffs=[{string.Join(",", pl.Buffs)}] defdmg={pl.DefDmg} | levy dmg={lv.Damage,4} kb={lv.Knock,4:0.0} imm={lv.Immune,2} debuffs=[{string.Join(",", lv.Buffs)}] defdmg={lv.DefDmg}");
 		}
 
 		private static void Run()
@@ -123,75 +185,87 @@ namespace Levy.Common.Testing
 			bool cal = ModLoader.HasMod("CalamityMod");
 			var levy = MakeLevy(new Vector2(Cx * 16f, FloorY * 16f));
 			if (levy == null) { Check("a levy spawns", false); return; }
+			Step(3);
+			Note($"levy upkeep active={levy.UpkeepActive} pipelineOk={levy.PipelineOk} mode={GearUpkeep.Mode}");
 			int savedMy = Main.myPlayer; Player prev = Main.player[254];
 			var real = new Player { whoAmI = 254, active = true, width = 20, height = 42 };
 			var modes = new List<Mode> { new() { Name = cal ? "Expert+Rev" : "Expert", Game = GameModeID.Expert, Rev = cal, Death = false }, new() { Name = cal ? "Master+Death" : "Master", Game = GameModeID.Master, Rev = cal, Death = cal } };
-			// (label, projectile type, base damage as the boss AI stores it)
 			var shots = new List<(string label, int type, int dmg)>
 			{
 				("Destroyer laser", ProjectileID.DeathLaser, 22), ("Twins laser", ProjectileID.DeathLaser, 20), ("Twins cursed flame", ProjectileID.CursedFlameHostile, 25),
 				("WoF laser", ProjectileID.EyeLaser, 25), ("Plantera seed", ProjectileID.SeedPlantera, 30), ("Plantera poison seed", ProjectileID.PoisonSeedPlantera, 30),
 			};
+			var bosses = new List<(string label, int type)> { ("Eye of Cthulhu", NPCID.EyeofCthulhu), ("Retinazer", NPCID.Retinazer), ("Spazmatism", NPCID.Spazmatism), ("Plantera", NPCID.Plantera), ("Deerclops", NPCID.Deerclops), ("Duke Fishron", NPCID.DukeFishron) };
 			if (cal && ModLoader.TryGetMod("CalamityMod", out Mod cm))
+			{
 				foreach (var (label, name, d) in new[] { ("Cal Clone dart", "CalamitousDart", 22), ("Cal Clone brimstone barrage", "BrimstoneBarrage", 25), ("Cal Clone hellblast", "BrimstoneHellblast", 25), ("Cal Clone hellfireball", "BrimstoneHellfireball", 25), ("Leviathan bomb", "LeviathanBomb", 40) })
 					if (cm.TryFind<ModProjectile>(name, out ModProjectile mp)) shots.Add((label, mp.Type, d)); else Note("calamity projectile not found: " + name);
-			int worst = 0; var rows = new List<string>(); int n = 0, badAfter = 0, badBefore = 0, differBefore = 0;
+				foreach (var (label, name) in new[] { ("Cal Clone body", "CalamitasClone"), ("Leviathan body", "Leviathan"), ("Anahita body", "Anahita"), ("Aquatic Scourge head", "AquaticScourgeHead"), ("Cryogen body", "Cryogen"), ("Brimstone Elemental body", "BrimstoneElemental") })
+					if (cm.TryFind<ModNPC>(name, out ModNPC mn)) bosses.Add((label, mn.Type)); else Note("calamity npc not found: " + name);
+			}
+			var rows = new List<string>(); var tp = new Tally(); var tc = new Tally(); int seed = 1000;
 			try
 			{
-				Main.player[254] = real; Main.myPlayer = 254;
+				Main.player[254] = real; Main.myPlayer = 254; _real = real;
 				foreach (var mode in modes)
 				{
-					Main.GameMode = mode.Game; SetRev(mode.Rev, mode.Death);
-					Main.hardMode = true;
+					Main.GameMode = mode.Game; SetRev(mode.Rev, mode.Death); Main.hardMode = true;
 					foreach (int def in new[] { 0, 30, 70 })
 					foreach (float dr in new[] { 0f, 0.2f })
-					foreach (var (label, type, dmg) in shots)
 					{
-						int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("ProjParity"), levy.NPC.Center, Vector2.Zero, type, dmg, 0f, 255);
-						if (pi < 0 || pi >= Main.maxProjectiles) continue;
-						Projectile pr = Main.projectile[pi]; pr.hostile = true; pr.friendly = false; pr.damage = dmg; pr.npcProj = true; pr.timeLeft = 100;
-						levy.NPC.defense = def; levy.Defense = def; levy.Endurance = dr; levy.NPC.lifeMax = levy.NPC.life = 40000;
-						int after = LevyDamage(pr, levy, true), pl = PlayerDamage(pr, real, def, dr);
-						// BEFORE: the earlier rule is the same hit with only the x2 and the defense: recompute by hand from the NPC formula
-						float eff = LevyUtil.ModeDefenseEffectiveness();
-						int before = Math.Max(1, (int)((Math.Max(dmg * 2f - def * eff, 1f)) * (1f - dr)));
-						n++;
-						int diff = Math.Abs(after - pl); worst = Math.Max(worst, diff);
-						if (diff > 1) badAfter++;
-						if (Math.Abs(before - pl) > 1) differBefore++;
-						if (def == 30 && dr == 0f) rows.Add($"{mode.Name,-13} {label,-28} dmg={dmg,3} def=30 | player={pl,4} levy NOW={after,4} levy BEFORE={before,4}");
-						pr.active = false;
+						foreach (var (label, type, dmg) in shots)
+						{
+							int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("ProjParity"), levy.NPC.Center + new Vector2(300, 0), Vector2.Zero, type, dmg, 0f, 255);
+							if (pi < 0 || pi >= Main.maxProjectiles) continue;
+							Projectile pr = Main.projectile[pi]; pr.hostile = true; pr.friendly = false; pr.damage = dmg; pr.npcProj = true; pr.timeLeft = 100;
+							seed++;
+							Side pl = PlayerSide(real, pr, null, seed, def, dr, 0);
+							Main.myPlayer = 0; Side lv = LevySide(levy, pr, null, seed, def, dr, 0); Main.myPlayer = 254;
+							Compare(tp, label, mode.Name, def, dr, pl, lv, rows);
+							pr.active = false;
+						}
+						foreach (var (label, type) in bosses)
+						{
+							int ai = NPC.NewNPC(new EntitySource_WorldEvent("ProjParity"), (int)levy.NPC.Center.X + 900, (int)levy.NPC.Center.Y, type);
+							if (ai < 0 || ai >= Main.maxNPCs) continue;
+							NPC n = Main.npc[ai]; n.timeLeft = 99999; n.netOffset = Vector2.Zero; n.dontTakeDamage = true; n.friendly = false; n.active = true;
+							if (n.damage <= 0) n.damage = 60;
+							seed++;
+							int baseDmg = n.damage;
+							Side pl = PlayerSide(real, null, n, seed, def, dr, baseDmg);
+							Main.myPlayer = 0; Side lv = LevySide(levy, null, n, seed, def, dr, baseDmg); Main.myPlayer = 254;
+							Compare(tc, "contact " + label + " (dmg " + baseDmg + ")", mode.Name, def, dr, pl, lv, rows);
+							n.active = false;
+						}
 					}
 				}
 			}
 			finally { Main.player[254] = prev; Main.myPlayer = savedMy; }
 			foreach (string r in rows) Note(r);
-			Note($"{n} shot/mode/defense/DR combinations: worst |levy-player| = {worst}; BEFORE differed from the player in {differBefore}");
-			Check($"a hostile projectile hurts a levy as it hurts a player with the same defense and DR (within 1), {n} combinations, {badAfter} outside", badAfter == 0 && n > 50);
-			if (HostileProjectile.On) Check($"the check has teeth: the earlier damage differed from the player's in {differBefore} of {n} combinations", differBefore > n / 3);
-			// end to end: the game's own Projectile.Damage against the levy
-			try
-			{
-				Main.GameMode = GameModeID.Master; SetRev(cal, cal); levy.NPC.defense = 30; levy.Defense = 30; levy.Endurance = 0f;
-				int type = shots.Last().type; int dmg = shots.Last().dmg;
-				Main.player[254] = real; Main.myPlayer = 254;
-				int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("ProjParity"), levy.NPC.Center, Vector2.Zero, type, dmg, 0f, 255);
-				Projectile pr = Main.projectile[pi]; pr.hostile = true; pr.friendly = false; pr.npcProj = true; pr.damage = dmg; pr.timeLeft = 100; pr.penetrate = -1;
-				int lo = PlayerDamage(WithDamage(pr, (int)(dmg * 0.85f)), real, 30, 0f), hi = PlayerDamage(WithDamage(pr, (int)Math.Ceiling(dmg * 1.15f)), real, 30, 0f);
-				pr.damage = dmg;
-				Main.myPlayer = 0; levy.ImmuneTime = 0; levy.NPC.life = levy.NPC.lifeMax = 40000;
-				pr.position = levy.NPC.Center - new Vector2(pr.width / 2f, pr.height / 2f);
-				pr.Damage();
-				int lost = 40000 - levy.NPC.life;
-				Note($"end to end (Projectile.Damage, Master): levy lost {lost}; the player's range for this shot is {lo} to {hi}");
-				Check("Projectile.Damage on a levy lands inside the player's damage range for the same shot", lost >= lo - 1 && lost <= hi + 1);
-				pr.active = false;
-			}
-			catch (Exception e) { Check("end-to-end Projectile.Damage threw " + e.GetType().Name + ": " + e.Message, false); }
-			finally { Main.player[254] = prev; Main.myPlayer = savedMy; }
+			Note($"PROJECTILE pairs {tp.N}: damage differs {tp.DmgBad}, knockback {tp.KnockBad}, immunity {tp.ImmBad}, debuffs {tp.BuffBad}, defense damage {tp.DefBad}; worst damage gap {tp.Worst}; first: {tp.FirstBad}");
+			Note($"CONTACT pairs {tc.N}: damage differs {tc.DmgBad}, knockback {tc.KnockBad}, immunity {tc.ImmBad}, debuffs {tc.BuffBad}, defense damage {tc.DefBad}; worst damage gap {tc.Worst}; first: {tc.FirstBad}");
+			Check($"projectile: a levy takes exactly what a player takes (damage, knockback, immunity, debuffs, defense damage), {tp.N} seeded pairs, {tp.DmgBad + tp.KnockBad + tp.ImmBad + tp.BuffBad + tp.DefBad} mismatches", tp.N > 50 && tp.DmgBad + tp.KnockBad + tp.ImmBad + tp.BuffBad + tp.DefBad == 0);
+			Check($"contact: a levy takes exactly what a player takes (damage, knockback, immunity, debuffs, defense damage), {tc.N} seeded pairs, {tc.DmgBad + tc.KnockBad + tc.ImmBad + tc.BuffBad + tc.DefBad} mismatches", tc.N > 50 && tc.DmgBad + tc.KnockBad + tc.ImmBad + tc.BuffBad + tc.DefBad == 0);
+			try { DiagDefenseDamage(levy); } catch (Exception e) { Note("defense damage diag threw " + e.GetType().Name + " " + e.Message); }
 			ArenaBoxCheck(real, levy);
 		}
-		private static Projectile WithDamage(Projectile p, int d) { p.damage = d; return p; }
+
+		private static void DiagDefenseDamage(SoldierNPC levy)
+		{
+			if (!ModLoader.TryGetMod("CalamityMod", out Mod cm) || !cm.TryFind<ModNPC>("CalamitasClone", out ModNPC mn)) return;
+			Main.GameMode = GameModeID.Master; SetRev(true, true);
+			int ai = NPC.NewNPC(new EntitySource_WorldEvent("ProjParity"), (int)levy.NPC.Center.X + 900, (int)levy.NPC.Center.Y, mn.Type);
+			NPC a = Main.npc[ai]; a.dontTakeDamage = true;
+			Player d = levy.Dummy; var cp = d.GetModPlayer(ModContent.Find<ModPlayer>("CalamityMod/CalamityPlayer")); Type ct = cp.GetType();
+			object F(string n) => (ct.GetField(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) as FieldInfo)?.GetValue(cp);
+			Note($"diag before: totalDefDmg={F("totalDefenseDamage")} next={F("nextHitDealsDefenseDamage")} ratio={F("defenseDamageRatio")} iframes={d.immune}/{d.immuneTime} cooldowns={string.Join(",", d.hurtCooldowns)} canBreak={a.GetGlobalNPC(ModContent.Find<GlobalNPC>("CalamityMod/CalamityGlobalNPC")) != null}");
+			levy.NPC.life = levy.NPC.lifeMax = 40000; levy.ImmuneTime = 0;
+			var res = levy.PlayerSequence(a, null, 100, 1, -1);
+			Note($"diag after sequence: ran={res.Ran} dodged={res.Dodged} dmg={res.Damage} next={F("nextHitDealsDefenseDamage")} cooldowns={string.Join(",", d.hurtCooldowns)} immune={d.immune}");
+			levy.GearOnHurt(100, a.whoAmI);
+			Note($"diag after GearOnHurt: totalDefDmg={F("totalDefenseDamage")} next={F("nextHitDealsDefenseDamage")} immune={d.immune}/{d.immuneTime} cooldowns={string.Join(",", d.hurtCooldowns)} curDefDmg={ct.GetProperty("CurrentDefenseDamage")?.GetValue(cp)}");
+			a.active = false;
+		}
 
 		private static void ArenaBoxCheck(Player real, SoldierNPC levy)
 		{
@@ -237,7 +311,7 @@ namespace Levy.Common.Testing
 				// cheapness: with no box up, Active is false
 			}
 			finally { list.Remove(box); }
-			Check("with no box up the hold is off (one static check)", !global::Levy.Common.Compat.Calamity.ArenaBoxes.Active);
+			Step(1); Check("with no box up the hold is off (one static check)", !global::Levy.Common.Compat.Calamity.ArenaBoxes.Active);
 		}
 	}
 }

@@ -49,11 +49,11 @@ namespace Levy.Common.Compat.Calamity
 		/// <summary>The live box list once per game tick (null when there is none), so a whole army costs one reflection read.</summary>
 		private static IList Boxes()
 		{
-			if (_tickStamp == Main.GameUpdateCount) return _list;
+			if (_tickStamp == Main.GameUpdateCount) return _list != null && _list.Count > 0 ? _list : null;
 			_tickStamp = Main.GameUpdateCount;
-			try { _list = _boxes.GetValue(null) as IList; if (_list != null && _list.Count == 0) _list = null; }
+			try { _list = _boxes.GetValue(null) as IList; }
 			catch (Exception) { _list = null; }
-			return _list;
+			return _list != null && _list.Count > 0 ? _list : null;
 		}
 
 		/// <summary>True while a Calamity arena box is up.</summary>

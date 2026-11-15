@@ -482,14 +482,19 @@ namespace Levy.Common.Testing
 			}
 		}
 
+		private static readonly HashSet<int> _crStrayWarned = new();
 		private void CrPinStrays(int keep)
 		{
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
-				if (!n.active || n.ModNPC is SoldierNPC || n.townNPC || n.friendly) continue;
-				if (i == keep || (_cr != null && (_cr.AddTypes.Contains(n.type) || _cr.PartTypes.Contains(n.type) || n.type == _cr.BossType)) || (n.TryGetGlobalNPC(out HarnessTarget ht) && ht.IsTarget)) continue;
-				n.active = false;
+				try
+				{
+					if (!n.active || n.ModNPC is SoldierNPC || n.townNPC || n.friendly) continue;
+					if (i == keep || (_cr != null && (_cr.AddTypes.Contains(n.type) || _cr.PartTypes.Contains(n.type) || n.type == _cr.BossType)) || (n.TryGetGlobalNPC(out HarnessTarget ht) && ht.IsTarget)) continue;
+					n.active = false;
+				}
+				catch (IndexOutOfRangeException e) { if (_crStrayWarned.Add(n.type)) Mod.Logger.Warn($"HARNESS-CR: stray scan skipped NPC {i} type {n.type} ({n.FullName}): {e.Message}"); } // an NPC whose per-entity global slots are not set up yet (hmreplays: Plantera fight in a3e@jungle)
 			}
 		}
 

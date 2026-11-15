@@ -176,7 +176,7 @@ namespace Levy.Common.Testing
 				Mod.Logger.Info($"HARNESS-L3: arena '{kind}' built: sea {seaDepth} tiles deep, island floor row {CrF}, half-width {half}");
 				return;
 			}
-			for (int k = 1; k <= 5; k++)
+			for (int k = 1; k <= (kind.Contains("flat") ? 0 : 5); k++) // "flat" in the arena token (a3flat, a3flat@ocean): no platform rows (hmreplays battery)
 			{
 				int py = fy - rowGap * k; int gap0 = cx - half + 10 + (k * 41) % 150;
 				for (int x = cx - half + 6; x <= cx + half - 6; x++)
@@ -186,6 +186,8 @@ namespace Levy.Common.Testing
 					t.HasTile = true; t.TileType = TileID.Platforms; t.TileFrameX = 0; t.TileFrameY = 0; t.BlockType = Terraria.ID.BlockType.Solid; t.WallType = 0;
 				}
 			}
+			if (kind.Contains("@temple")) // Golem (Calamity) is enraged unless its target stands inside Lihzahrd temple wall below the surface: wall the whole chamber (hmreplays)
+				for (int x = cx - half; x <= cx + half; x++) for (int y = fy - 90; y <= fy - 1; y++) { Tile wt = Main.tile[x, y]; if (!wt.HasTile || wt.TileType == TileID.Platforms) wt.WallType = WallID.LihzahrdBrickUnsafe; }
 			_crArenaBuilt = kind;
 			Mod.Logger.Info($"HARNESS-L3: arena '{kind}' built: floor row {fy}, half-width {half}, 5 platform rows with gaps; {(fy < Main.worldSurface ? "ABOVE" : "BELOW")} worldSurface");
 		}

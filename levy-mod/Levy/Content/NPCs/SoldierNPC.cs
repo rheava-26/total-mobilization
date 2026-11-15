@@ -115,7 +115,7 @@ namespace Levy.Content.NPCs
 		public BarracksTE Home => SettlementSystem.Instance.GetBarracks(Record?.HomeBarracksId ?? -1);
 		public string SoldierName => Record?.Name ?? "Soldier";
 		public Grade Grade => Record?.Grade ?? Grade.Levy;
-		public float DamageMultiplier => LevyConstants.GradeDamageMult[(int)Grade] * LevyConfig.Get.SoldierDamageMultiplier * (Shaken ? LevyConstants.ShakenDamageMult : 1f);
+		public float DamageMultiplier => LevyConfig.Get.SoldierDamageMultiplier * (Shaken ? LevyConstants.ShakenDamageMult : 1f);
 		/// <summary>
 		/// Owner index for projectiles the soldier spawns. Must be Main.myPlayer: Projectile.NewProjectile only assigns ai[], sends the
 		/// spawn packet and runs NPC hit detection when owner == Main.myPlayer (255 on a dedicated server). Loot credit is separate: see <see cref="CreditPlayer"/>.
@@ -307,9 +307,26 @@ namespace Levy.Content.NPCs
 			Dummy.miscEquips[4] = g.HasHook ? g.Hook : _blankSlot; // the hook slot (QuickGrapple reads it)
 			Dummy.inventory[0] = UsingSidearm && g.HasSidearm ? g.Sidearm : (g.HasWeapon ? g.Weapon : (_blankSlot ??= new Item()));
 			Dummy.selectedItem = 0;
+			ReserveWornItems(g);
+			// ResetEffects rebuilds statLifeMax / statManaMax from the crystals and fruit the Player has consumed (PlayerLoader.ResetMaxStatsToVanilla): without these the dummy's maximum fell back to 100 life and 20 mana at every pass
+			// while its life stayed the body's, and every effect that reads life as a fraction of the maximum (Calamity's regeneration items, Frost Flare, Nebulous Core, the low-health set bonuses) saw a levy at 400% life.
+			Dummy.ConsumedLifeCrystals = Math.Clamp(Record.LifeCrystals, 0, LevyConstants.MaxLifeCrystals); Dummy.ConsumedLifeFruit = Math.Clamp(Record.LifeFruit, 0, LevyConstants.MaxLifeFruit); Dummy.ConsumedManaCrystals = Math.Clamp(Record.ManaCrystals, 0, 9);
 			Dummy.statLifeMax = Dummy.statLifeMax2 = Math.Max(1, Record.MaxHp);
+			Dummy.statLife = Math.Clamp(NPC.life, 1, Dummy.statLifeMax2); // the dummy's life is the body's: gear that reads it (Paladin's Shield above a quarter life, Auric and God Slayer at full life, Frost Flare below a threshold) saw its default 100 until the first gear frame
 			Dummy.statManaMax = Dummy.statManaMax2 = Record.BaseMaxMana; // the stat pipeline adds the gear's mana on top (Record.GearMana); SyncDummyMana then holds the pool at the record's total
 			SyncDummyMana();
+		}
+
+		/// <summary>
+		/// A worn item knows whose it is: <c>Item.playerIndexTheItemIsReservedFor</c> is the Player slot the item was made for (SetDefaults stamps Main.myPlayer: the commander's slot in single player). Mods read the wearer through it
+		/// (Calamity's reworked vanilla armor sets look up <c>Main.player[head.playerIndexTheItemIsReservedFor]</c> to find the armor being worn), so a levy's gear must name the dummy's slot or the sets are judged on the commander's armor.
+		/// </summary>
+		private static void ReserveWornItems(SoldierGear g)
+		{
+			void Mark(Item it) { if (it != null && !it.IsAir && it.playerIndexTheItemIsReservedFor != DummySlot) it.playerIndexTheItemIsReservedFor = DummySlot; }
+			Mark(g.Head); Mark(g.Body); Mark(g.Legs);
+			for (int i = 0; i < g.Accessories.Length; i++) Mark(g.Accessories[i]);
+			Mark(g.Wings); Mark(g.Boots);
 		}
 
 		/// <summary>Mirrors the record's mana onto the dummy so modded Shoot / CanUseItem / CheckMana hooks see the real pool (HeldWeaponSwap sets it the same way around a held-weapon shot).</summary>
@@ -337,7 +354,7 @@ namespace Levy.Content.NPCs
 				{
 					Dummy.position = NPC.position; Dummy.velocity = NPC.velocity;
 					bool framed = false;
-					if (UpkeepActive)
+					if (UpkeepActive || StatFrameNeeded)
 					{
 						// the per-tick gear frame (SoldierNPC.GearUpkeep.cs) IS the stat pass for these soldiers: same steps, plus the timers, buffs and the mod hooks Player.Update runs
 						GearUpkeep.PrepareCountsOncePerTick();
@@ -348,12 +365,14 @@ namespace Levy.Content.NPCs
 					}
 					if (!framed)
 					{
+						ResetPotionDelayModifier(Dummy);
 						Dummy.ResetEffects();
 						Dummy.UpdateEquips(DummySlot);
 						ApplyExtraAccessories(Dummy);
 						UpdateDummyArmorSets(); // resolves head/body/legs first (SoldierNPC.ArmorSets.cs): the dummy never runs Player.Update, which is what fills them
 						try { StationBuffSystem.Apply(Dummy, Stations); } catch (Exception e) { Levy.Instance.Logger.Warn("Levy: station buffs failed on a soldier: " + e.Message); }
 						try { _buffLifeRegen = ApplyPotionBuffs(Dummy); } catch (Exception e) { _buffLifeRegen = 0; Levy.Instance.Logger.Warn("Levy: potion buffs failed on a soldier: " + e.Message); }
+						_modRegenDelta = 0; NoteRegenBase(Dummy);
 					}
 					Endurance = Math.Clamp(Dummy.endurance, 0f, LevyConstants.MaxEndurance);
 					Defense = Dummy.statDefense;

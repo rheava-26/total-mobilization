@@ -11,7 +11,7 @@ namespace Warbands.Common
 {
 	/// <summary>
 	/// TIME-TO-KILL lab (env WARBANDS_TTK=1, headless boot). For four progression stages it reads the REAL game numbers (Item.SetDefaults damage and use time, NPC.SetDefaults life, defense and contact damage with the
-	/// world mode forced to Master and to Classic, the armor pieces' defense) and Levy's real damage rules (LevyConstants.GradeDamageMult, HostileProjectileDamageMult, the defense formula Levy's soldiers use through
+	/// world mode forced to Master and to Classic, the armor pieces' defense) and Levy's real damage rules (HostileProjectileDamageMult, the defense formula Levy's soldiers use through
 	/// Player.DefenseEffectiveness: Classic 0.5 / Expert 0.75 / Master 1.0, and the NPC rule damage - defense x 0.5), then prints one TSV row per matchup to the log and to $WARBANDS_OUT.
 	/// Pure arithmetic: no fight is run. The hostile band does not exist yet, so a "levy" here is the stage's typical Levy kit as a target and as an attacker.
 	/// </summary>
@@ -73,7 +73,7 @@ namespace Warbands.Common
 					string mname = mode == 2 ? "Master" : "Classic";
 					float eff = mode == 2 ? 1f : 0.5f;
 					float lifeMul = Main.GameModeInfo.EnemyMaxLifeMultiplier, dmgMul = Main.GameModeInfo.EnemyDamageMultiplier;
-					Row("#", "MODE", mname, "defenseEffectiveness(player/levy)=" + eff, "npcDefenseEffectiveness=0.5", "levyGradeDamage=" + LevyConstants.GradeDamageMult[0], "hostileProjMult=" + LevyConstants.HostileProjectileDamageMult, "enemyLifeMult=" + lifeMul, "enemyDamageMult=" + dmgMul);
+					Row("#", "MODE", mname, "defenseEffectiveness(player/levy)=" + eff, "npcDefenseEffectiveness=0.5", "levyGradeDamage=1", "hostileProjMult=" + LevyConstants.HostileProjectileDamageMult, "enemyLifeMult=" + lifeMul, "enemyDamageMult=" + dmgMul);
 					foreach (var k in Kits)
 					{
 						int armor = 0;
@@ -95,7 +95,7 @@ namespace Warbands.Common
 						}
 						float PlayerDps(float defense) { float s = 0; foreach (var w in wInfo) s += Math.Max(1f, w.dmg - defense * 0.5f) * w.rate * w.shots * PlayerAcc[w.cls]; return s / Math.Max(1, wInfo.Count); }
 						float PlayerDpsCls(char c, float defense) { foreach (var w in wInfo) if (w.cls == c) return Math.Max(1f, w.dmg - defense * 0.5f) * w.rate * w.shots * PlayerAcc[c]; return 0; }
-						float LevyDpsOn(float defense, float defEff) { float s = 0; foreach (var w in wInfo) s += Math.Max(1f, w.dmg * LevyConstants.GradeDamageMult[0] - defense * defEff) * w.rate * w.shots * LevyDuty[w.cls]; return s / Math.Max(1, wInfo.Count); }
+						float LevyDpsOn(float defense, float defEff) { float s = 0; foreach (var w in wInfo) s += Math.Max(1f, w.dmg - defense * defEff) * w.rate * w.shots * LevyDuty[w.cls]; return s / Math.Max(1, wInfo.Count); }
 
 						// Targets: three ordinary enemies and the Levy
 						foreach (var f in k.Foes)
@@ -117,8 +117,8 @@ namespace Warbands.Common
 							float levyDps = LevyDpsOn(def, eff);
 							// the levy firing a hostile projectile at the player takes the x2 rule if left alone
 							float levyDpsProj = Math.Max(1f, 0f);
-							float rawLevyDps = 0; foreach (var w in wInfo) rawLevyDps += w.dmg * LevyConstants.GradeDamageMult[0] * w.rate * w.shots * LevyDuty[w.cls]; rawLevyDps /= Math.Max(1, wInfo.Count);
-							float sLife = life * lifeMul; float sRaw = 0; foreach (var w in wInfo) sRaw += Math.Max(1f, w.dmg * LevyConstants.GradeDamageMult[0] * dmgMul - def * eff) * w.rate * w.shots * LevyDuty[w.cls]; sRaw /= Math.Max(1, wInfo.Count);
+							float rawLevyDps = 0; foreach (var w in wInfo) rawLevyDps += w.dmg * w.rate * w.shots * LevyDuty[w.cls]; rawLevyDps /= Math.Max(1, wInfo.Count);
+							float sLife = life * lifeMul; float sRaw = 0; foreach (var w in wInfo) sRaw += Math.Max(1f, w.dmg * dmgMul - def * eff) * w.rate * w.shots * LevyDuty[w.cls]; sRaw /= Math.Max(1, wInfo.Count);
 							Row("LEVY*", k.Label, "mode-scaled levy", "life=" + sLife, "defense=" + ldef, "damage=weapon x" + dmgMul,
 								"playerTTK R/M/E=" + Ttk(sLife, PlayerDpsCls('R', ldef)) + "/" + Ttk(sLife, PlayerDpsCls('M', ldef)) + "/" + Ttk(sLife, PlayerDpsCls('E', ldef)),
 								"playerTTKavg=" + Ttk(sLife, dpsAvg), "levyDpsOnPlayer=" + sRaw.ToString("F0"), "timeToKillPlayer=" + Ttk(k.PlayerHp, sRaw));

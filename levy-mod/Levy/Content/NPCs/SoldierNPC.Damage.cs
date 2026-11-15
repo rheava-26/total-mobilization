@@ -343,54 +343,15 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private static int ApplyWellFed(Player d, int tier)
 		{
+			d.wellFed = true; // the flag the player's life regeneration reads (Expert and Master halve an unfed player's regeneration)
 			int step = tier + 1;                                                  // +2 / +3 / +4
 			d.statDefense += step;
 			d.GetCritChance(DamageClass.Generic) += step;
 			d.GetDamage(DamageClass.Generic) += LevyConstants.WellFedDamageStep * step;   // +0.05 / +0.075 / +0.1
 			d.moveSpeed += LevyConstants.WellFedMoveStep * step;                           // +0.2  / +0.3   / +0.4
-			return LevyConstants.WellFedRegenPerTier * tier;                              // +1    / +2     / +3 regen units
-		}
-
-		/// <summary>Armory-side stations: Campfire / Heart Lantern add to a vanilla-style lifeRegen counter (1 HP per 120 units, applied from the first tick like vanilla); Star in a Bottle adds extra mana.</summary>
-		private void StationRegen()
-		{
-			int setUnits = SetRegenUnits(); // Palladium rapid healing, Nebula life boosters
-			if (Stations == StationFlags.None && _buffLifeRegen <= 0 && setUnits <= 0) { _stationLifeCount = _stationManaTick = 0; return; }
-			int units = StationBuffSystem.LifeRegen(Stations) + Math.Max(0, _buffLifeRegen) + setUnits;
-			if (units > 0 && NPC.life < NPC.lifeMax)
-			{
-				_stationLifeCount += units;
-				if (_stationLifeCount >= LevyConstants.StationLifeRegenPerHp)
-				{
-					_stationLifeCount -= LevyConstants.StationLifeRegenPerHp;
-					NPC.life = Math.Min(NPC.lifeMax, NPC.life + 1);
-					if (Record != null) Record.CurrentHp = NPC.life;
-					NPC.netUpdate = true;
-				}
-			}
-			else _stationLifeCount = 0;
-			if ((Stations & StationFlags.StarInBottle) != 0 && Record != null && Record.MaxMana > 0 && Record.Mana < Record.MaxMana)
-			{
-				if (++_stationManaTick >= LevyConstants.StationStarManaIntervalTicks) { _stationManaTick = 0; Record.Mana++; }
-			}
-			else _stationManaTick = 0;
-		}
-
-		private void Regen()
-		{
-			StationRegen();
-			if (NPC.life >= NPC.lifeMax || TicksSinceDamaged <= LevyConstants.RegenDelayTicks) { _regenCounter = 0; return; }
-			if (++_regenCounter < (Dummy != null && Dummy.crimsonRegen ? (int)(LevyConstants.RegenIntervalTicks / LevyConstants.CrimsonRegenSpeedup) : LevyConstants.RegenIntervalTicks)) return; // Crimson armor: natural regeneration half again as fast
-			_regenCounter = 0;
-			int amount = LevyConstants.RegenHpPerInterval;
-			if (Record != null && Record.StoodDown)
-			{
-				var home = Home;
-				if (home != null && LevyUtil.WithinTiles(NPC.Center, home.Center, LevyConstants.RegenHomeBonusTiles)) amount = LevyConstants.RegenHpPerIntervalAtHome;
-			}
-			NPC.life = Math.Min(NPC.lifeMax, NPC.life + amount);
-			if (Record != null) Record.CurrentHp = NPC.life;
-			NPC.netUpdate = true;
+			d.GetKnockback(DamageClass.Summon).Base += 0.25f * step;                            // minionKB +0.5 / +0.75 / +1
+			d.pickSpeed -= 0.05f * tier;                                                   // mining speed, as the buff has it
+			return 0;                                                                      // the food buffs give no regeneration of their own: Player.wellFed lifts the Expert and Master halving (set above)
 		}
 
 		// ------------------------------------------------------------------------------------------------------
@@ -405,7 +366,7 @@ namespace Levy.Content.NPCs
 			if (Record == null || _armoryRetry > 0 || Hostile) return; // a hostile body has no armory
 			bool wantHeal = PotionSickness == 0 && NPC.life * 100 < NPC.lifeMax * LevyConstants.PotionDrinkBelowPercent;
 			// Magic/summon soldiers top up an empty mana pool from Mana / Restoration / Super Mana potions.
-			bool wantMana = PotionSickness == 0 && Record.MaxMana > 0 && Record.Mana * 100 < Record.MaxMana * LevyConstants.ManaPotionDrinkBelowPercent;
+			bool wantMana = _manaPotionGap == 0 && Record.MaxMana > 0 && Record.Mana * 100 < Record.MaxMana * LevyConstants.ManaPotionDrinkBelowPercent;
 			bool wantBuff = _buffPotionCooldown == 0 && (State == SoldierState.Engage || TargetIndex >= 0);
 			if (!wantHeal && !wantMana && !wantBuff) return;
 			var armory = SettlementSystem.Instance.NearestArmory(NPC.Center, LevyConstants.ResupplyArmoryRadius);
@@ -416,13 +377,13 @@ namespace Levy.Content.NPCs
 				// At most one restorative per check (PotionSickness then gates the next); heal is tried before mana. Only a potion that serves the need is removed.
 				Item potion = null;
 				if (wantHeal) potion = armory.TakeServingPotion(0, it => it.healLife > 0);
-				if (potion == null && wantMana) potion = armory.TakeServingPotion(0, it => it.healMana > 0);
+				if (potion == null && wantMana) potion = armory.TakeServingPotion(0, it => it.healMana > 0 && (PotionSickness == 0 || !it.potion)); // a potion that gives sickness waits for it; a mana potion does not
 				if (potion != null && !potion.IsAir)
 				{
 					if (potion.healLife > 0) NPC.life = Math.Min(NPC.lifeMax, NPC.life + potion.healLife);
 					if (potion.healMana > 0) Record.Mana = Math.Min(Record.MaxMana, Record.Mana + potion.healMana);
 					if (potion.buffType > 0) { NPC.AddBuff(potion.buffType, Math.Max(1, potion.buffTime)); StatsDirty = true; }
-					PotionSickness = LevyConstants.PotionSicknessTicks;
+					if (potion.potion || potion.healLife > 0) PotionSickness = PotionDelayFor(potion); else _manaPotionGap = Math.Max(1, potion.useTime); // the player's rule: only a healing potion brings potion sickness
 					drank = true;
 				}
 				else _armoryRetry = LevyConstants.PotionRetryTicks;

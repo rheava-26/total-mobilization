@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
@@ -45,6 +46,16 @@ namespace Levy.Content.NPCs
 
 		/// <summary>The soldier's gear is tick-dependent and the real upkeep is enabled (config / harness mode), the stat pipeline is up, and the soldier is not paused after failures.</summary>
 		public bool UpkeepActive => _upkeepGear && GearUpkeep.Mode > 0 && !OfficerMode && Record != null && Dummy != null && PipelineOk && Main.GameUpdateCount >= _upkeepPausedUntil;
+
+		private static bool? _gearMods;
+		/// <summary>A mod that provides armor or accessories is loaded (Calamity, Thorium, ...): its ModPlayer adds to the stats of every Player (Calamity a life regeneration on top of the vanilla one and its endurance conversion, Thorium the cap on its own endurance) in PostUpdateEquips and PostUpdateMiscEffects, which only the gear frame runs.</summary>
+		private static bool GearModLoaded => _gearMods ??= ModLoader.Mods.Any(m => m.Name != "ModLoader" && m.Name != "Levy" && m.Name != "Mechanization" && m.Name != "Warbands" && global::Levy.Common.Owner.IdentityGuard.IsGearMod(m));
+
+		/// <summary>
+		/// A levy in vanilla-only gear that still takes its stats from the gear frame once a second (RefreshStats) because a gear mod's hooks are part of every Player's stats. It is not ticked every tick (that is <see cref="UpkeepActive"/>, for gear whose
+		/// effects work across ticks); the stat pass alone is enough for a Player's numbers to match.
+		/// </summary>
+		private bool StatFrameNeeded => GearModLoaded && GearUpkeep.Mode > 0 && !OfficerMode && Record != null && Dummy != null && PipelineOk && Main.GameUpdateCount >= _upkeepPausedUntil;
 
 		private bool ComputeUpkeepNeed()
 		{
@@ -130,6 +141,7 @@ namespace Levy.Content.NPCs
 			var prev = GearUpkeep.Body; GearUpkeep.Body = this;
 			int spawnStart = GearUpkeep.Spawned.Count;
 			long pf = global::Levy.Common.Util.LevyProf.Begin();
+			bool campfire0 = Main.SceneMetrics.HasCampfire, lantern0 = Main.SceneMetrics.HasHeartLantern; // gear may raise the local scene's flags (Calamity's The Camper); they are the levy's, not the commander's
 			try
 			{
 				d.Center = NPC.Center;
@@ -151,6 +163,7 @@ namespace Levy.Content.NPCs
 				if (global::Levy.Common.Util.LevyProf.Opt) nz = SaveOwnedCounts(counts);
 				else { if (_upkeepCounts == null || _upkeepCounts.Length != counts.Length) _upkeepCounts = new int[counts.Length]; Array.Copy(counts, _upkeepCounts, counts.Length); }
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfCopy, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
+				ResetPotionDelayModifier(d);
 				d.ResetEffects();
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfReset, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				if (global::Levy.Common.Util.LevyProf.Opt) RestoreOwnedCounts(d.ownedProjectileCounts, nz); else Array.Copy(_upkeepCounts, d.ownedProjectileCounts, counts.Length);
@@ -185,8 +198,10 @@ namespace Levy.Content.NPCs
 				// What the mods' PostUpdateEquips add to lifeRegen (Calamity adds the regeneration of its buffs and gear here, a dummy never runs Player.UpdateLifeRegen) is the levy's regeneration, in the same units as the Campfire's.
 				int regen0 = d.lifeRegen;
 				RunHook(() => PlayerLoader.PostUpdateEquips(d));
-				if (d.lifeRegen > regen0) _buffLifeRegen += d.lifeRegen - regen0;
+				_modRegenDelta = 0;
+				if (d.lifeRegen > regen0) { _buffLifeRegen += d.lifeRegen - regen0; _modRegenDelta = d.lifeRegen - regen0; } // already inside Player.lifeRegen: the regeneration pass must not count it again
 				Common.Team.TeamItems.LevyThoriumEquips(this, d, ref _buffLifeRegen); // Thorium's Ring of Unity and life recovery for the dummy
+				GearBuffsToBody(d, campfire0, lantern0);
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfPost, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// The dummy never runs ItemCheck, so it never "uses" its weapon; mod hooks that key off the first frame of an item use (Calamity spends rogue stealth there) see the soldier's use as it begins.
 				int animSaved = d.itemAnimation, animMaxSaved = d.itemAnimationMax, timeSaved = d.itemTime;
@@ -201,10 +216,12 @@ namespace Levy.Content.NPCs
 				Rippers_Restore(); // ResetEffects cleared Calamity's Rage / Adrenaline mode flags; Calamity's fill/burn step (in PostUpdateMiscEffects) reads them
 				RunHook(() => PlayerLoader.PostUpdateMiscEffects(d));
 				d.itemAnimation = animSaved; d.itemAnimationMax = animMaxSaved; d.itemTime = timeSaved;
+				NoteRegenBase(d);
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfMisc, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 			}
 			finally
 			{
+				Main.SceneMetrics.HasCampfire = campfire0; Main.SceneMetrics.HasHeartLantern = lantern0;
 				if (frameAimed) { Main.screenPosition = savedScreen; Main.mouseX = savedMx; Main.mouseY = savedMy; }
 				ExitFrameSlot(fs); // the real Main.myPlayer / Main.player[255] first: RestoreThorium finds the commander through them
 				d.whoAmI = savedWho; d.Center = savedCenter;

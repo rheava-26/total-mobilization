@@ -24,7 +24,6 @@ namespace Levy.Common
 		public static readonly int[] GradeSlots = { 1, 3, 5 };
 		public static readonly int[] GradeCpCost = { 1, 3, 7 };
 		public static readonly float[] GradeWageMult = { 1f, 3f, 7f };
-		public static readonly float[] GradeDamageMult = { 0.8f, 0.9f, 1.0f };
 		public static readonly float[] GradeAimJitterDeg = { 6f, 3f, 1f };
 		public static readonly float[] GradeLeadError = { 0.25f, 0.10f, 0.03f };
 		public const float VeteranAimMult = 0.6f;
@@ -83,7 +82,8 @@ namespace Levy.Common
 		public const int BaseMana = 20, ManaPerCrystal = 20, MaxMana = 200;
 		public const int PotionDrinkBelowPercent = 50;
 		public const int ManaPotionDrinkBelowPercent = 30; // magic/summon soldiers sip a mana potion from the heal slot below this fraction of their pool
-		public const int PotionSicknessTicks = 60 * 30;
+		/// <summary>Potion sickness after a healing potion: vanilla's Item.potionDelay (60 s). A levy's own value comes from its dummy (SoldierNPC.PotionDelayFor); this is the base for a body with no dummy.</summary>
+		public const int PotionSicknessTicks = 60 * 60;
 		public const int RegenDelayTicks = 60 * 5;
 		public const int RegenIntervalTicks = 60;
 		public const int ImmuneTicksOnHit = 20;

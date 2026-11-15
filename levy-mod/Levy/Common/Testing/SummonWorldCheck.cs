@@ -58,6 +58,7 @@ namespace Levy.Common.Testing
 		public static void RunIfArmed()
 		{
 			if (!_armed || _done || !Main.dedServ) return;
+			if (Environment.GetEnvironmentVariable("LEVY_RULES_ONLY") == "1") { _done = true; try { LevyRulesCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LevyRules] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the army-follows-the-player's-rules check alone
 			if (Environment.GetEnvironmentVariable("LEVY_WHIPONLY") == "1") { _done = true; try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the whip check alone
 			if (Environment.GetEnvironmentVariable("LEVY_TILESWEEPSHIPONLY") == "1") { _done = true; try { TileSweepCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[TileSweep] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the ship-mode tile sweep sample alone
 			if (Environment.GetEnvironmentVariable("LEVY_OFFICERONLY") == "1") { _done = true; try { OfficerWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[OfficerWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the officer world check alone
@@ -85,6 +86,7 @@ namespace Levy.Common.Testing
 			try { HitParityCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[HitParity] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { ProjParityCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ProjParity] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { BossBugsWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[BossBugs] check threw " + e.GetType().Name + ": " + e.Message); }
+			try { LevyRulesCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LevyRules] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { TileSweepCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[TileSweep] check threw " + e.GetType().Name + ": " + e.Message); }
 		}
 

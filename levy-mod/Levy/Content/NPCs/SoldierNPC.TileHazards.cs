@@ -9,7 +9,7 @@ using Levy.Common.Util;
 namespace Levy.Content.NPCs
 {
 	/// <summary>
-	/// TILE HAZARDS (config <c>SoldiersTakeTileHazards</c>, off by default). Vanilla hurts only players with touch tiles (Player.GetHurtTile / ApplyTouchDamage), so with the setting on a levy that overlaps one takes what
+	/// TILE HAZARDS (config <c>SoldiersTakeTileHazards</c>, on by default). Vanilla hurts only players with touch tiles (Player.GetHurtTile / ApplyTouchDamage), so with the setting on a levy that overlaps one takes what
 	/// a player would: <see cref="TileID.Sets.TouchDamageImmediate"/> tiles (spikes, wooden spikes, jungle / corruption / crimson thorns, cactus in a hostile world) strike through the ordinary defense formula,
 	/// <see cref="TileID.Sets.TouchDamageHot"/> tiles (meteorite, hellstone, ...) set Burning, <see cref="TileID.Sets.TouchDamageBleeding"/> tiles set Bleeding. Immunity frames and the Fire Gauntlet / Obsidian fireWalk rule are the player's.
 	/// </summary>

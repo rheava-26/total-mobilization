@@ -7,7 +7,7 @@
 ---
 
 ## 🚢 2.0.66 SHIPPED (11-15 ~08:55, sent to Eve): bossbugs. Vanilla/Calamity boot exc=0. World: BossBugs 25/0 and 36/0. Only failures were the known race flakes (SummonWorld Hornet, FieldFix). The exc=5 is the harmless /proc/<pid>/stat read race.
-- **checkfix MERGED after it (f5ee5e6)**; the shipworld.sh conflict was resolved to fail_lines plus the BossBugs exclusion. Verifying with shipboth on the merged state.
+- **checkfix MERGED after it (f5ee5e6)**; the shipworld.sh conflict was resolved to fail_lines plus the BossBugs exclusion. Verified on the merged state: vanilla and Calamity boots exc=0; all world checks pass; 0 FAIL lines and 0 exceptions in both halves (first fully clean ship signal). Battery rerun (hmbattery2) launched.
 
 ## 🐞 bossbugs MERGED (6c1f07e)
 - Deerclops, Bee and BeeSmall (types driven by a Calamity AI override) take the flyer slot 254 instead of target+300. Deerclops used to throw IndexOutOfRange and despawn. Audit result: Levy writes 300+ targets only in CompeteCore for UsesNewTargetting types, so these 3 were the only exposed ones.

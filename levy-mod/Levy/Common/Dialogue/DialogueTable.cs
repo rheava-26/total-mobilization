@@ -13,9 +13,17 @@ namespace Levy.Common.Dialogue
 	[Flags]
 	public enum LineNeeds : ushort { None = 0, Name = 1, Comrade = 2, Boss = 4, Killer = 8, Town = 16, Wage = 32, Tank = 64, Glutton = 128, WorldName = 256, Officer = 512 }
 
-	/// <summary>Roster conditions a line can demand, written as a [tag] at the start of its text: [summoner] [non-summoner] [fragile].</summary>
+	/// <summary>
+	/// Conditions a line can demand, written as a [tag] at the start of its text. Several tags join with a plus: [hardmode+ranger]. Every tag must hold.
+	/// Roster: [summoner] [non-summoner] [fragile] [mage] [non-mage] [hardmode+officer] [goblin] [lowhp] [boss]. Speaker: [female] [ranger] [melee].
+	/// World: [early] [postskeletron] [hardmode] [postplantera] [postmoonlord]. [grumpy] marks the annoyed line set a female levy speaks in place of everything else on a Blood Moon.
+	/// </summary>
 	[Flags]
-	public enum LineCond : ushort { None = 0, Summoner = 1, NonSummonerWithSummoner = 2, Fragile = 4, Mage = 8, NonMageWithMage = 16, HardmodeOfficer = 32, Goblin = 64, LowHp = 128, BossFight = 256 }
+	public enum LineCond : uint
+	{
+		None = 0, Summoner = 1, NonSummonerWithSummoner = 2, Fragile = 4, Mage = 8, NonMageWithMage = 16, HardmodeOfficer = 32, Goblin = 64, LowHp = 128, BossFight = 256,
+		Female = 512, Ranger = 1024, Melee = 2048, Early = 4096, PostSkeletron = 8192, Hardmode = 16384, PostPlantera = 32768, PostMoonlord = 65536, Grumpy = 131072,
+	}
 
 	public enum PlaceholderKind : byte { Literal = 0, Player, Name, Comrade, Boss, Killer, Town, Wage, TownNpc, Tank, TankDeaths, TankHe, Glutton, GluttonKills, WorldName, Officer }
 
@@ -176,7 +184,7 @@ namespace Levy.Common.Dialogue
 				if (body[0] == '[')
 				{
 					int close = body.IndexOf(']');
-					if (close < 0 || !TryParseCond(body.Substring(1, close - 1), out cond)) { Warn(mod, source, n, "unknown or unclosed [condition] tag (use summoner, non-summoner, mage, non-mage, fragile, hardmode+officer, goblin, lowhp, boss)"); rejected++; continue; }
+					if (close < 0 || !TryParseCond(body.Substring(1, close - 1), out cond)) { Warn(mod, source, n, "unknown or unclosed [condition] tag (use summoner, non-summoner, mage, non-mage, fragile, hardmode+officer, goblin, lowhp, boss, female, ranger, melee, early, postskeletron, hardmode, postplantera, postmoonlord, grumpy; join several with +)"); rejected++; continue; }
 					body = body.Substring(close + 1).Trim();
 					if (body.Length == 0) { Warn(mod, source, n, "empty text"); rejected++; continue; }
 				}
@@ -202,19 +210,41 @@ namespace Levy.Common.Dialogue
 			return rejected;
 		}
 
+		/// <summary>One bracketed tag, or several joined by '+'. "hardmode+officer" is its own tag (a hardmode world with an officer commissioned); anything else is split at the plusses.</summary>
 		private static bool TryParseCond(string s, out LineCond cond)
 		{
-			switch (s.Trim().ToLowerInvariant())
+			cond = LineCond.None;
+			string whole = s.Trim().ToLowerInvariant();
+			if (whole == "hardmode+officer") { cond = LineCond.HardmodeOfficer; return true; }
+			foreach (string part in whole.Split('+'))
+			{
+				if (!TryParseOneCond(part.Trim(), out LineCond one)) { cond = LineCond.None; return false; }
+				cond |= one;
+			}
+			return cond != LineCond.None;
+		}
+
+		private static bool TryParseOneCond(string s, out LineCond cond)
+		{
+			switch (s)
 			{
 				case "summoner": cond = LineCond.Summoner; return true;
 				case "non-summoner": cond = LineCond.NonSummonerWithSummoner; return true;
 				case "fragile": cond = LineCond.Fragile; return true;
 				case "mage": cond = LineCond.Mage; return true;
 				case "non-mage": cond = LineCond.NonMageWithMage; return true;
-				case "hardmode+officer": cond = LineCond.HardmodeOfficer; return true;
 				case "goblin": cond = LineCond.Goblin; return true;
 				case "lowhp": cond = LineCond.LowHp; return true;
 				case "boss": cond = LineCond.BossFight; return true;
+				case "female": cond = LineCond.Female; return true;
+				case "ranger": cond = LineCond.Ranger; return true;
+				case "melee": cond = LineCond.Melee; return true;
+				case "early": cond = LineCond.Early; return true;
+				case "postskeletron": cond = LineCond.PostSkeletron; return true;
+				case "hardmode": cond = LineCond.Hardmode; return true;
+				case "postplantera": cond = LineCond.PostPlantera; return true;
+				case "postmoonlord": cond = LineCond.PostMoonlord; return true;
+				case "grumpy": cond = LineCond.Grumpy; return true;
 			}
 			cond = LineCond.None;
 			return false;

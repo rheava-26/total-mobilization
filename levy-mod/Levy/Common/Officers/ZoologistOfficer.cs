@@ -16,6 +16,7 @@ namespace Levy.Common.Officers
 		{
 			NpcType = NPCID.BestiaryGirl,
 			Key = "Zoologist",
+			Female = true,
 			CostMult = ZoologistCostMult,
 			Aggro = ZoologistAggro,
 			Posture = OfficerPosture.Frontline,   // marches with her pack

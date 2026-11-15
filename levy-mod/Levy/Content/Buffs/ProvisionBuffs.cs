@@ -173,7 +173,7 @@ namespace Levy.Content.Buffs
 				s.StatsDirty = true;
 				served.Add(s);
 			}
-			DrinkCheers.Begin(served, commander);
+			DrinkCheers.Begin(served, commander, drink: id == FizzId ? 3 : 4);
 			return served.Count;
 		}
 

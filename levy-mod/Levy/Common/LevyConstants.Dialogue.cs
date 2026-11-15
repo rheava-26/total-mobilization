@@ -9,6 +9,17 @@ namespace Levy.Common
 		public const int DialogueRecentLineTicks = 60 * 120;
 		/// <summary>Chance that a right-click chat is a NAMEDROP line (when no event or recent line applies).</summary>
 		public const float DialogueNamedropChance = 0.3f;
+		/// <summary>Chance a right-click chat is about where the levy's kit ranks in the army (when it ranks best, worst or well below the average).</summary>
+		public const float DialogueArmoryChance = 0.45f;
+		/// <summary>A levy speaks about new gear (ARMORY_GOT) at most once in this many ticks, and the whole army at most once in <see cref="GearTalkArmyTicks"/>.</summary>
+		public const int GearTalkSoldierTicks = 60 * 240, GearTalkArmyTicks = 60 * 12;
+		/// <summary>A new body keeps quiet about its gear for this long (an issue at muster is not a gift).</summary>
+		public const int GearTalkGraceTicks = 60 * 20;
+		/// <summary>The commander's reactions: life crystal (cooldown, speakers) and chest (cooldown, chance, reach in tiles).</summary>
+		public const int CrystalReactCooldownTicks = 60 * 20, CrystalReactSpeakers = 3, ChestReactCooldownTicks = 60 * 40, ReactReachTiles = 36;
+		public const float ChestReactChance = 0.6f;
+		/// <summary>The share of drink rounds whose cheer comes from the drink's own pool (DRINK_ALE and so on) when it has one; the rest use the general DRINK pool.</summary>
+		public const float DrinkOwnPoolShare = 0.65f;
 		/// <summary>Chance that an applicable biome or situation line is used instead of falling through to IDLE.</summary>
 		public const float DialogueSituationChance = 0.65f;
 		/// <summary>Selection weight of a personality line (temperament or Veteran) relative to an Any line.</summary>

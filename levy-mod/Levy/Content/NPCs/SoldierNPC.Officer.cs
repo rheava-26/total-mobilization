@@ -95,6 +95,7 @@ namespace Levy.Content.NPCs
 				Name = OfficerName(townNpc),
 				CommanderName = commanderName ?? "",
 				HomeBarracksId = -1,
+				Male = !(def != null && def.Female),
 			};
 			rec.CommanderIndex = LevyUtil.FindPlayerByName(rec.CommanderName);
 			Record = rec;
@@ -736,7 +737,7 @@ namespace Levy.Content.NPCs
 			if (!marching) { _offMarchTimer = 30; return; }
 			_offMarchTimer = Main.rand.Next(LevyConstants.Officer.MarchChatterMinTicks, LevyConstants.Officer.MarchChatterMaxTicks);
 			if (Main.rand.NextFloat() < LevyConstants.Officer.MarchChatterChance)
-				DialogueSystem.Bark(this, _offDef?.MarchTrigger ?? DialogueTrigger.OFFICER_MARCH);
+				DialogueSystem.Bark(this, _offDef?.MarchTrigger ?? DialogueTrigger.OFFICER_MARCH, new DialogueContext { PoolKey = global::Levy.Common.Officers.OfficerChat.OwnPoolKey(_offDef?.Key, global::Levy.Common.Officers.OfficerChat.March) }); // his own voice when the file has one for him
 		}
 
 		// =====================================================================================================

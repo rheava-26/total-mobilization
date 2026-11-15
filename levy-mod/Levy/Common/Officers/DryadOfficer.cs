@@ -22,6 +22,7 @@ namespace Levy.Common.Officers
 		{
 			NpcType = NPCID.Dryad,
 			Key = "Dryad",
+			Female = true,
 			CostMult = DryadCostMult,
 			Aggro = DryadAggro,
 			Posture = OfficerPosture.Support,   // casts from behind the line, out of melee

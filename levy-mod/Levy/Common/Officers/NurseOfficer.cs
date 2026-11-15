@@ -27,6 +27,7 @@ namespace Levy.Common.Officers
 		{
 			NpcType = NPCID.Nurse,
 			Key = "Nurse",
+			Female = true,
 			CostMult = 1f,
 			Aggro = NurseAggro,
 			Posture = OfficerPosture.Support,            // stays behind the line, near the wounded, out of enemy reach

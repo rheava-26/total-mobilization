@@ -17,6 +17,7 @@ namespace Levy.Common.Officers
 		{
 			NpcType = NPCID.Princess,
 			Key = "Princess",
+			Female = true,
 			CostMult = PrincessCostMult,
 			Aggro = PrincessAggro,
 			Posture = OfficerPosture.Support,   // hangs back and buffs; she only strikes what strays into reach

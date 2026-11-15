@@ -2,74 +2,100 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<title>Levy Fight Viewer</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>Levy Fight Replay</title>
 <style>
-:root{--bg:#05090b;--panel:#0b1317;--panel2:#0f1a1f;--line:#1c2e33;--ink:#cfe3df;--dim:#7e9a96;--grn:#3cff9a;--cyan:#4fe3ff;--red:#ff4d4d;--amb:#ffb020;--vio:#c77dff;--proj:#ff9f2e}
+/* Dark-only design: every colour is a token here (the canvases draw with the same palette as literals), the body background is explicit and color-scheme is dark. */
+:root{color-scheme:dark;--bg:#05090b;--panel:#0b1317;--panel2:#0f1a1f;--line:#1c2e33;--line2:#15252a;--ink:#cfe3df;--dim:#7e9a96;--grn:#3cff9a;--cyan:#4fe3ff;--red:#ff4d4d;--amb:#ffb020;--vio:#c77dff;--proj:#ff9f2e;
+  --btn:#12222a;--btn-h:#18313b;--btn-a:#1d3b47;--btn-on:#16403a;--btn-on-line:#2c7a64;--stage:#03070a;--strip:#04090b;--strip2:#060d10;--chip:#0a1418;--track:#1a2a2e;--tipbg:#06100f;--warn:#ffd37a;
+  --won:#3cff9a;--lost:#ff6b6b;--fled:#ffb020;--ended:#9bb0ad;--intr:#c77dff;--crash:#ff4d4d;--cut:#ffd37a;--gutl:max(16px,env(safe-area-inset-left));--gutr:max(16px,env(safe-area-inset-right))}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-text-size-adjust:100%}
-body{min-height:100vh}
-header{position:sticky;top:0;z-index:20;display:flex;gap:10px;align-items:center;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+body{min-height:100vh;overflow-x:hidden}
+body.drag::after{content:"Drop recordings or a folder to load them";position:fixed;inset:8px;border:2px dashed var(--grn);border-radius:12px;background:#05090bcc;color:var(--grn);display:flex;align-items:center;justify-content:center;font-size:18px;z-index:50;pointer-events:none;text-align:center;padding:20px}
+header{position:sticky;top:0;z-index:20;display:flex;gap:8px 10px;align-items:center;flex-wrap:wrap;padding:8px var(--gutr) 8px var(--gutl);background:var(--panel);border-bottom:1px solid var(--line)}
 header h1{font-size:15px;margin:0;font-weight:650;letter-spacing:.02em;white-space:nowrap;color:var(--grn)}
 header .meta{color:var(--dim);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
-button,select,label.btn{background:#12222a;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 11px;font:inherit;cursor:pointer;min-height:34px}
-button:hover,label.btn:hover{background:#18313b}
-button:active{background:#1d3b47}
-button.on{background:#16403a;border-color:#2c7a64}
+button,select,label.btn{background:var(--btn);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 11px;font:inherit;cursor:pointer;min-height:34px}
+button:hover,label.btn:hover{background:var(--btn-h)}
+button:active{background:var(--btn-a)}
+button.on{background:var(--btn-on);border-color:var(--btn-on-line)}
+button.mini{min-height:26px;padding:2px 8px;font-size:12px}
 input[type=file]{display:none}
-#body{display:grid;grid-template-columns:260px minmax(0,1fr);gap:0;align-items:start}
+#body{display:grid;grid-template-columns:290px minmax(0,1fr);gap:0;align-items:start}
 body.solo #body{grid-template-columns:minmax(0,1fr)}
 body.solo #list,body.solo #listBtn{display:none}
-#list{position:sticky;top:51px;max-height:calc(100vh - 51px);overflow:auto;border-right:1px solid var(--line);background:var(--panel);padding:8px}
-#list h2{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:6px 4px 8px}
+#list{position:sticky;top:51px;max-height:calc(100vh - 51px);overflow:auto;border-right:1px solid var(--line);background:var(--panel);padding:8px 8px 8px var(--gutl)}
+#list .lh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 4px 8px}
+#list h2{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:0}
+#loadMsg:not(:empty){margin:0 4px 8px}
 .card{display:block;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:0 0 8px;color:var(--ink)}
 .card.sel{border-color:var(--grn);box-shadow:0 0 0 1px var(--grn) inset}
-.card b{display:block;font-size:14px}
-.card .sub{color:var(--dim);font-size:12px;margin-top:1px}
+.card.bad{opacity:.75}
+.card b{display:block;font-size:14px;overflow-wrap:anywhere}
+.card .ct{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.card .sub{color:var(--dim);font-size:12px;margin-top:1px;overflow-wrap:anywhere}
 .badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
-.bd{font-size:11.5px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);background:#0a1418;font-variant-numeric:tabular-nums}
-.bd.l{color:#ff9a9a;border-color:#5a2a2a}.bd.p{color:#8eeaff;border-color:#1f5560}.bd.h{color:#ffd37a;border-color:#5a4513}.bd.d{color:#ff6b6b;border-color:#6a2626}
+.bd{font-size:11.5px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);background:var(--chip);font-variant-numeric:tabular-nums}
+.bd.l{color:#ff9a9a;border-color:#5a2a2a}.bd.p{color:#8eeaff;border-color:#1f5560}.bd.h{color:#ffd37a;border-color:#5a4513}.bd.d{color:#ff6b6b;border-color:#6a2626}.bd.c{color:var(--cut);border-color:#6a5a26}
+.res{font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.05em;padding:1px 8px;border-radius:99px;border:1px solid currentColor;white-space:nowrap;flex:none}
+.res.won{color:var(--won)}.res.lost{color:var(--lost)}.res.fled{color:var(--fled)}.res.ended,.res.unknown{color:var(--ended)}.res.interrupted{color:var(--intr)}.res.crashed,.res.cut{color:var(--crash)}
 main{min-width:0}
-#stage{position:relative;height:clamp(300px,60vh,700px);background:#03070a;border-bottom:1px solid var(--line);overflow:hidden}
+#stage{position:relative;height:clamp(300px,60vh,700px);background:var(--stage);border-bottom:1px solid var(--line);overflow:hidden}
 canvas#view{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #hud{position:absolute;left:10px;top:8px;right:10px;pointer-events:none;font-size:12.5px;text-shadow:0 0 4px #000,0 0 2px #000;display:flex;gap:8px;justify-content:space-between;align-items:flex-start}
 #hud .l{display:flex;flex-direction:column;gap:3px}
 #hud .tgt{font-weight:650}
-#hud .bar{width:150px;height:6px;background:#1a2a2e;border-radius:3px;overflow:hidden}
+#hud .bar{width:150px;height:6px;background:var(--track);border-radius:3px;overflow:hidden}
 #hud .bar i{display:block;height:100%;background:var(--red)}
-#empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--dim);font-size:16px;padding:20px}
-#tip{position:absolute;pointer-events:none;background:#06100fee;border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:12px;white-space:pre;display:none;z-index:5}
-#controls{padding:8px 12px 10px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+#empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--dim);font-size:16px;padding:20px 16px}
+#tip{position:absolute;pointer-events:none;background:var(--tipbg);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:12px;white-space:pre;display:none;z-index:5;max-width:calc(100% - 20px);overflow:hidden}
+#controls{padding:8px var(--gutr) 10px var(--gutl);background:var(--panel);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 #scrub{flex:1;min-width:140px;accent-color:var(--grn);height:28px}
 #time{font-variant-numeric:tabular-nums;color:var(--dim);min-width:104px;text-align:right}
-canvas#strip{width:100%;height:92px;display:block;background:#04090b;border:1px solid var(--line);border-radius:6px;touch-action:none;cursor:pointer}
+canvas#strip,canvas#fpsStrip{width:100%;height:92px;display:block;background:var(--strip);border:1px solid var(--line);border-radius:6px;touch-action:none;cursor:pointer}
+canvas#fpsStrip{height:72px}
+#fpsWrap{display:flex;flex-direction:column;gap:6px}
+#fpsWrap[hidden]{display:none}
+#fpsInfo{min-height:18px;overflow-wrap:anywhere}
 .legend{display:flex;gap:12px;color:var(--dim);flex-wrap:wrap;font-size:12px}
 .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}
 .legend i.sq{border-radius:1px}
-#info{padding:12px 14px 40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+#info{padding:12px var(--gutr) 40px var(--gutl);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:14px}
 #info section{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
 #info h2{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:0 0 8px}
 table{border-collapse:collapse;width:100%}
-td,th{padding:3px 5px;text-align:right;border-bottom:1px solid #15252a;font-variant-numeric:tabular-nums;font-size:13px}
+td,th{padding:3px 5px;text-align:right;border-bottom:1px solid var(--line2);font-variant-numeric:tabular-nums;font-size:13px;overflow-wrap:anywhere}
 td:first-child,th:first-child{text-align:left}
 th{color:var(--dim);font-weight:500}
 .small{color:var(--dim);font-size:12px}
-.tbar{display:flex;height:16px;border-radius:4px;overflow:hidden;background:#1a2a2e;margin:6px 0}
+.tbar{display:flex;height:16px;border-radius:4px;overflow:hidden;background:var(--track);margin:6px 0}
 .tbar i{display:block;height:100%}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13px}
+.kv span{overflow-wrap:anywhere}
 .kv span:nth-child(odd){color:var(--dim)}
 details summary{cursor:pointer;color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
-.warn{color:#ffd37a}
+.warn{color:var(--warn)}
+.sumhead{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;margin-bottom:8px}
+.sumhead .bn{font-size:18px;font-weight:650;overflow-wrap:anywhere}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin:8px 0}
+.tile{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-width:0}
+.tile b{display:block;font-size:18px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tile span{color:var(--dim);font-size:11.5px}
+.sumcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:14px}
+.mbar{display:block;height:6px;border-radius:3px;background:var(--cyan);min-width:1px}
+.mbar.w{background:var(--amb)}
+.cutbox{border:1px solid #6a5a26;background:#1a1606;color:var(--cut);border-radius:6px;padding:6px 10px;margin:6px 0;font-size:13px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:max(16px,env(safe-area-inset-bottom));max-width:calc(100% - 32px);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;z-index:60;display:none;font-size:13px}
 @media (max-width:820px){
   #body{grid-template-columns:minmax(0,1fr)}
-  #list{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line);display:none}
+  #list{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line);display:none;padding-right:var(--gutr)}
   body.showlist #list{display:block}
-  #list .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  #list .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr));gap:8px}
   .card{margin:0}
   #stage{height:clamp(260px,64vw,460px)}
-  header{padding:7px 10px}
   header .meta{display:none}
   #time{min-width:90px}
   canvas#strip{height:84px}
@@ -79,15 +105,16 @@ details summary{cursor:pointer;color:var(--dim);font-size:12px;text-transform:up
 </head>
 <body class="solo">
 <header>
-  <h1>LEVY FIGHT REPLAY</h1>
+  <h1>LEVY FIGHT VIEWER</h1>
   <span class="meta" id="meta">no recording loaded</span>
   <button id="listBtn">Fights</button>
-  <label class="btn" id="openLbl">Open file<input id="file" type="file" accept=".jsonl,.json,.txt"></label>
+  <label class="btn" id="openLbl">Open files<input id="file" type="file" multiple accept=".levyrec,.gz,.jsonl,.json,.txt"></label>
+  <label class="btn" id="dirLbl" title="load every recording in a folder">Pick folder<input id="dir" type="file" webkitdirectory multiple></label>
 </header>
 <div id="body">
-  <nav id="list"><h2>Recorded fights</h2><div class="cards" id="cards"></div></nav>
+  <nav id="list"><div class="lh"><h2 id="listTitle">Recorded fights</h2><button class="mini" id="clearBtn">Clear</button></div><div id="loadMsg" class="small"></div><div class="cards" id="cards"></div></nav>
   <main>
-    <div id="stage"><canvas id="view"></canvas><div id="hud"></div><div id="empty">Drop a Levy fight recording (.jsonl) here,<br>or use Open file.</div><div id="tip"></div></div>
+    <div id="stage"><canvas id="view"></canvas><div id="hud"></div><div id="empty">Drop Levy fight recordings (.levyrec, .jsonl.gz, .jsonl) or a whole folder here,<br>or use Open files / Pick folder.</div><div id="tip"></div></div>
     <div id="controls">
       <div class="row">
         <button id="play" style="min-width:76px">Play</button>
@@ -98,6 +125,11 @@ details summary{cursor:pointer;color:var(--dim);font-size:12px;text-transform:up
         <span id="time">0.00 / 0.00 s</span>
       </div>
       <canvas id="strip" aria-label="timeline"></canvas>
+      <div id="fpsWrap" hidden>
+        <canvas id="fpsStrip" aria-label="frames per second over time"></canvas>
+        <div class="small" id="fpsInfo"></div>
+        <div class="row" id="fpsWorst"></div>
+      </div>
       <div class="row">
         <button id="fit" title="show the whole arena">Fit</button>
         <button id="followBoss" title="camera follows the boss">Follow boss</button>
@@ -109,6 +141,7 @@ details summary{cursor:pointer;color:var(--dim);font-size:12px;text-transform:up
     <div id="info"></div>
   </main>
 </div>
+<div id="toast" role="status"></div>
 <script id="gallery-data" type="application/json">/*__GALLERY__*/null</script>
 <script>
 "use strict";
@@ -125,7 +158,7 @@ function parseRec(text){
   for(const line of text.split("\n")){
     const s=line.trim(); if(!s) continue;
     let o; try{o=JSON.parse(s);}catch(e){continue;}
-    switch(o.k){case "hdr":R.hdr=o;break;case "arena":R.arena=o;break;case "f":if(o.s){const o2=[];for(const q of o.s){if(q.length>=8){R.sdef.set(q[1],q);o2.push(q);}else{const d=R.sdef.get(q[0]);if(d)o2.push([d[0],q[0],q[1],q[2],d[4],d[5],d[6],d[7]]);}}o.s=o2;}R.frames.push(o);break;case "e":R.events.push(o);break;case "names":R.names=o;break;case "end":R.end=o;break;}
+    switch(o.k){case "hdr":R.hdr=o;break;case "arena":(R.arenas||(R.arenas=[])).push(o);if(!R.arena)R.arena=o;break;case "f":if(o.s){const o2=[];for(const q of o.s){if(q.length>=8){R.sdef.set(q[1],q);o2.push(q);}else{const d=R.sdef.get(q[0]);if(d)o2.push([d[0],q[0],q[1],q[2],d[4],d[5],d[6],d[7]]);}}o.s=o2;}R.frames.push(o);break;case "e":R.events.push(o);break;case "names":R.names=o;break;case "end":R.end=o;break;}
   }
   if(!R.frames.length) throw new Error("no frames in file");
   return R;
@@ -154,19 +187,21 @@ function build(R){
   for(const f of R.frames){const b=mainBoss(f); if(!b) continue; const k=tkOf(b); tl[k===2?"levy":k===1?"player":"none"]++;
     if(k!==pk){if(pk>=0)R.band.push([ps,f.t,pk]);pk=k;ps=f.t;}}
   if(pk>=0)R.band.push([ps,R.tmax+R.dt,pk]); R.tally=tl;
-  // arena image
-  const A=R.arena; R.arenaImg=null;
-  if(A){
+  // arena images: format 4+ writes several arena records (the start area, then strips as the fight moves); draw them all
+  R.arenaImgs=[]; R.arenaBox=null;
+  for(const A of (R.arenas||[])){
     const c=document.createElement("canvas"); c.width=A.w; c.height=A.h; const g=c.getContext("2d"); const im=g.createImageData(A.w,A.h);
     const grid=A.rows.map(row=>{const o=[];for(let i=0;i+1<row.length;i+=2)for(let k=0;k<row[i+1];k++)o.push(row[i]);return o;});
     const put=(x,y,r,gg,b,a)=>{const o=(y*A.w+x)*4;im.data[o]=r;im.data[o+1]=gg;im.data[o+2]=b;im.data[o+3]=a;};
     for(let y=0;y<A.h;y++)for(let x=0;x<A.w;x++){
-      const c0=grid[y][x]||0; if(!c0) continue;
+      const c0=(grid[y]&&grid[y][x])||0; if(!c0) continue;
       if(c0===1){const top=y===0||!grid[y-1][x]||grid[y-1][x]===3; if(top)put(x,y,52,150,110,255); else put(x,y,13,36,31,255);}
       else if(c0===2) put(x,y,60,130,110,255);
       else put(x,y,16,60,95,170);
     }
-    g.putImageData(im,0,0); R.arenaImg=c;
+    g.putImageData(im,0,0); R.arenaImgs.push({img:c,A});
+    const b=R.arenaBox||(R.arenaBox={x0:A.x0,y0:A.y0,x1:A.x0+A.w,y1:A.y0+A.h});
+    b.x0=Math.min(b.x0,A.x0);b.y0=Math.min(b.y0,A.y0);b.x1=Math.max(b.x1,A.x0+A.w);b.y1=Math.max(b.y1,A.y0+A.h);
   }
   return R;
 }
@@ -178,61 +213,319 @@ function summary(R){
 }
 
 // ================================================================ loading
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pad2=n=>String(n).padStart(2,"0");
+const fmtT=ticks=>{const s=Math.max(0,Math.round(ticks/TPS));return Math.floor(s/60)+":"+pad2(s%60);};
+const fmtDur=sec=>{const s=Math.max(0,Math.round(sec));return Math.floor(s/60)+":"+pad2(s%60);};
+const fmtN=n=>n==null||isNaN(n)?"-":Math.round(n).toLocaleString("en-US");
+const fmtDate=ms=>{if(ms==null)return "";const d=new Date(ms);return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;};
+const RES_LABEL={won:"won",lost:"lost",fled:"fled",ended:"ended",interrupted:"interrupted",crashed:"crashed",cut:"cut short",unknown:"unknown"};
+const resLabel=r=>RES_LABEL[r]||String(r);
+let toastT=null;
+function toast(msg,ms){const t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>{t.style.display="none";},ms||6000);}
+
 function setRec(R,name){
   D=build(R);
-  const h=D.hdr||{},m=h.meta||{},s=summary(D);
-  $("meta").textContent=[name,s.boss,m.arena,m.target,h.mode,"format "+D.v].filter(Boolean).join("  |  ");
+  if(!R.card) R.card=computeCard(R,name,null);
+  const h=D.hdr||{},m=h.meta||{},c=R.card;
+  $("meta").textContent=[name,c.boss,resLabel(c.result),m.arena,m.target,h.mode,"format "+D.v,c.cut?"CUT SHORT":null].filter(Boolean).join("  |  ");
   $("empty").style.display="none"; playing=false; $("play").textContent="Play";
-  cur=D.tmin; camMode="fit"; $("followBoss").classList.remove("on"); fitView(); renderInfo(); drawStrip(); draw(); syncUI();
+  cur=D.tmin; camMode="fit"; $("followBoss").classList.remove("on"); fitView(); renderInfo(); setupFps(); drawStrip(); draw(); syncUI();
 }
 function load(text,name){ setRec(parseRec(text),name); }
-$("file").addEventListener("change",e=>{const f=e.target.files[0];if(f)f.text().then(t=>{document.body.classList.add("solo");load(t,f.name);}).catch(err=>alert(err.message));});
-const stage=$("stage");
-stage.addEventListener("dragover",e=>e.preventDefault());
-stage.addEventListener("drop",e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)f.text().then(t=>load(t,f.name)).catch(err=>alert(err.message));});
-window.addEventListener("dragover",e=>e.preventDefault()); window.addEventListener("drop",e=>e.preventDefault());
 
-// ---- gallery (one page, several recordings embedded as base64 gzip)
-function b64bytes(s){const bin=atob(s),n=bin.length,u=new Uint8Array(n);for(let i=0;i<n;i++)u[i]=bin.charCodeAt(i);return u;}
-let pakoP=null;
-function loadPako(){return pakoP||(pakoP=new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js";s.onload=()=>res(window.pako);s.onerror=()=>rej(new Error("this browser cannot decompress the embedded recordings"));document.head.appendChild(s);}));}
-async function gunzip(u8){
-  if(typeof DecompressionStream==="function"){
-    const st=new Blob([u8]).stream().pipeThrough(new DecompressionStream("gzip"));
-    return await new Response(st).text();
+// ---- reading one file: .levyrec / .jsonl.gz (gzip, sniffed by its magic bytes whatever the name) or plain .jsonl text
+async function gunzipText(u8){
+  if(typeof DecompressionStream!=="function") throw new Error("This browser has no DecompressionStream, so it cannot unzip .levyrec files. Use a current Chrome, Edge, Firefox or Safari.");
+  const ds=new DecompressionStream("gzip"), w=ds.writable.getWriter(), dec=new TextDecoder("utf-8"), parts=[]; let err=null;
+  w.closed.catch(()=>{});
+  // read as far as the stream goes: a file cut short (crash, copied while the game still wrote) keeps everything up to its last flush
+  const pump=(async()=>{const rd=ds.readable.getReader();try{for(;;){const x=await rd.read();if(x.done)break;parts.push(dec.decode(x.value,{stream:true}));}parts.push(dec.decode());}catch(e){err=e;}})();
+  try{await w.write(u8);await w.close();}catch(e){err=err||e;}
+  await pump;
+  return {text:parts.join(""),err};
+}
+async function textFromBytes(u8){
+  if(u8.length>1&&u8[0]===0x1f&&u8[1]===0x8b){const r=await gunzipText(u8);return {text:r.text,gz:true,gzErr:r.err?(r.err.message||String(r.err)):null};}
+  return {text:new TextDecoder("utf-8").decode(u8),gz:false,gzErr:null};
+}
+function parseChecked(info){
+  const R=parseRec(info.text); R.gz=info.gz; R.gzErr=info.gzErr;
+  R.cut=!R.end; R.cutWhy=R.cut?(info.gzErr?"the gzip stream ends early: "+info.gzErr:"no end record"):"";
+  return R;
+}
+async function readRecFile(file){
+  const u8=new Uint8Array(await file.arrayBuffer());
+  const info=await textFromBytes(u8);
+  try{return parseChecked(info);}
+  catch(e){ if(!u8.length) throw new Error("empty file"); if(/no frames/.test(e.message)&&info.text.indexOf('"k":"hdr"')<0) throw new Error("not a Levy fight recording (no header record)"); if(/no frames/.test(e.message)) throw new Error("no samples: the recording was cut short before the first frame was written"+(info.gzErr?" ("+info.gzErr+")":"")); throw e; }
+}
+
+// ---- what the file name says: 2026-11-14_20-05_Eye_of_Cthulhu_won.levyrec, rec_20261114_200500_Boss.levyrec, *_crashed.levyrec
+function nameInfo(fn){
+  let s=String(fn).split(/[\\/]/).pop().replace(/\.(levyrec|jsonl\.gz|jsonl|gz|json|txt)$/i,"");
+  const o={crashed:false,result:null,date:null,boss:null}; let d;
+  if(/_crashed(_\d+)?$/i.test(s)){o.crashed=true;s=s.replace(/_crashed(_\d+)?$/i,"");}
+  s=s.replace(/_\d{1,2}$/,"");
+  d=/_(won|lost|fled|ended|interrupted)$/i.exec(s); if(d){o.result=d[1].toLowerCase();s=s.slice(0,d.index);}
+  if(d=/^(?:rec_)?(\d{4})-(\d\d)-(\d\d)_(\d\d)-(\d\d)(?:-(\d\d))?_(.+)$/.exec(s)){o.date=new Date(+d[1],+d[2]-1,+d[3],+d[4],+d[5],+(d[6]||0)).getTime();o.boss=d[7];}
+  else if(d=/^(?:rec_)?(\d{4})(\d\d)(\d\d)_(\d\d)(\d\d)(\d\d)_(.+)$/.exec(s)){o.date=new Date(+d[1],+d[2]-1,+d[3],+d[4],+d[5],+d[6]).getTime();o.boss=d[7];}
+  else o.boss=s;
+  return o;
+}
+
+// ---- the per-fight numbers (summary card, list row, fps strip), from header + events + end record; works on cut files and older formats
+function computeCard(R,name,mtime){
+  const h=R.hdr||{},m=h.meta||{},e=R.end||null,fi=nameInfo(name||""),nz=R.names||{};
+  const c={name:name||"",v:R.v||h.format||1,auto:h.auto|0,cut:!!R.cut,cutWhy:R.cutWhy||"",hasEnd:!!e};
+  const bossHdr=h.boss&&h.boss!=="none"?String(h.boss).replace(/_/g," "):null;
+  c.boss=(e&&e.bossName)||m.bossName||bossHdr||String(m.label||fi.boss||"Fight").replace(/_/g," ");
+  c.when=h.date&&!isNaN(Date.parse(h.date))?Date.parse(h.date):(fi.date!=null?fi.date:(mtime!=null?mtime:null));
+  let res=e&&e.result; if(!res&&e) res=e.outcome==="killed"?"won":e.outcome==="despawn"?"fled":"ended";
+  if(!res) res=fi.crashed?"crashed":(R.cut?"cut":(fi.result||"unknown"));
+  c.result=res;
+  const first=R.frames[0].t,last=R.frames[R.frames.length-1].t;
+  c.dur=e&&e.durationSec!=null?e.durationSec:(last-first)/TPS;
+  const ids=new Set(); for(const f of R.frames) for(const l of (f.l||[])) ids.add(l[0]);
+  let cd=0,ld=0,lh=0,all=0,boss=0,hasDmg=false; const cls=new Map(),own=new Map(),src=new Map(),prof=[];
+  for(const x of R.events){
+    if(x.e==="cdeath")cd++; else if(x.e==="ldeath")ld++; else if(x.e==="lhit")lh++; else if(x.e==="prof")prof.push(x);
+    else if(x.e==="dmg"){hasDmg=true;for(const r of (x.d||[])){const [owner,klass,kind,typ,onBoss,dm,hits]=r;
+      all+=dm; if(onBoss)boss+=dm;
+      let a=cls.get(klass); if(!a)cls.set(klass,a={name:klass,dmg:0,hits:0,boss:0,add:0}); a.dmg+=dm;a.hits+=hits; if(onBoss)a.boss+=dm; else a.add+=dm;
+      own.set(owner,(own.get(owner)||0)+dm);
+      const k=owner+"|"+kind+"|"+typ+"|"+(onBoss?1:0); let s=src.get(k); if(!s)src.set(k,s={owner,kind,typ,onBoss:!!onBoss,dmg:0,hits:0}); s.dmg+=dm;s.hits+=hits;}}
   }
-  const p=await loadPako(); return p.ungzip(u8,{to:"string"});
+  c.cmdDeaths=e&&e.cmdDeaths!=null?e.cmdDeaths:cd;
+  c.levyDeaths=e&&e.levyDeaths!=null?e.levyDeaths:ld;
+  c.levyHits=e&&e.levyHits!=null?e.levyHits:lh;
+  c.armyTotal=e&&e.armyTotal!=null?e.armyTotal:(h.army&&h.army.n!=null?h.army.n:ids.size);
+  c.armyAlive=e&&e.armyAlive!=null?e.armyAlive:(R.frames[R.frames.length-1].l||[]).length;
+  c.dmgAll=e&&e.dmgAll!=null?e.dmgAll:all; c.dmgBoss=e&&e.dmgBoss!=null?e.dmgBoss:boss;
+  c.hasDmg=hasDmg;
+  c.classes=[...cls.values()].sort((a,b)=>b.dmg-a.dmg);
+  c.owners=[...own.entries()].sort((a,b)=>b[1]-a[1]);
+  c.weapons=[...src.values()].sort((a,b)=>b.dmg-a.dmg).slice(0,10).map(s=>({...s,label:s.kind==="item"?((nz.items&&nz.items[s.typ])||("item "+s.typ)):((nz.projectiles&&nz.projectiles[s.typ])||("projectile "+s.typ))}));
+  // profiler windows (a prof event is written when its window closes, t = the end; win = the window in real seconds)
+  prof.sort((a,b)=>a.t-b.t); const P=[]; let prev=null;
+  for(const x of prof){
+    const ticks=Math.max(30,(x.ups||60)*(x.win||2)); let t0=(prev!=null&&x.t-prev<=ticks*3)?prev:x.t-ticks; t0=Math.max(0,t0);
+    P.push({t0,t1:x.t,fps:+x.fps||0,ups:+x.ups||0,upd:+x.upd||0,npc:+x.npc||0,proj:+x.proj||0,draw:+x.draw||0,ai:+x.ai||0,gear:+x.gear||0,top:x.top||"",win:+x.win||0}); prev=x.t;
+  }
+  c.profWin=P;
+  if(P.length){let tw=0,sw=0,mn=P[0],u30=0;for(const w of P){const d=Math.max(1,w.t1-w.t0);tw+=d;sw+=w.fps*d;if(w.fps<mn.fps)mn=w;if(w.fps<30)u30++;}
+    c.prof={n:P.length,mean:sw/tw,min:mn.fps,minAt:mn.t0,under30:u30};}
+  return c;
 }
+
+// ---- the library of loaded fights (the side list)
+let lib=[], libSeq=0, selId=null, busy=Promise.resolve(), openTok=0;
 const cache=new Map();
-async function openGallery(i){
-  const g=gallery[i]; galleryIdx=i; location.hash="fight="+i;
-  document.querySelectorAll(".card").forEach((c,k)=>c.classList.toggle("sel",k===i));
-  $("empty").style.display="flex"; $("empty").textContent="Loading "+g.title+" ...";
-  try{
-    let R=cache.get(i);
-    if(!R){ const text=g.raw!=null?g.raw:await gunzip(b64bytes(g.z)); R=parseRec(text); cache.set(i,R); }
-    setRec(R,g.title); document.body.classList.remove("showlist");
-  }catch(e){$("empty").textContent="Could not load: "+e.message;}
-}
-function initGallery(){
-  let data=null; try{data=JSON.parse($("gallery-data").textContent.replace(/^\/\*__GALLERY__\*\//,""));}catch(e){}
-  if(!data||!data.length) return;
-  gallery=data; document.body.classList.remove("solo");
-  const box=$("cards");
-  gallery.forEach((g,i)=>{
-    const s=g.sum||{}, m=s.meta||{};
-    const b=document.createElement("button"); b.className="card";
+function cacheSet(id,R){cache.delete(id);cache.set(id,R);while(cache.size>4)cache.delete(cache.keys().next().value);}
+const isRecName=n=>/\.(levyrec|jsonl\.gz|jsonl)$/i.test(n);
+function sortedLib(){return lib.map((x,i)=>[x,i]).sort((a,b)=>{if(!!a[0].err!==!!b[0].err)return a[0].err?1:-1; const wa=a[0].when,wb=b[0].when;if(wa==null&&wb==null)return a[1]-b[1];if(wa==null)return 1;if(wb==null)return -1;return wb-wa||a[1]-b[1];}).map(x=>x[0]);}
+function cardEl(ent){
+  const b=document.createElement("button"); b.className="card"+(ent.err?" bad":"")+(ent.id===selId?" sel":""); b.dataset.id=ent.id;
+  if(ent.kind==="gallery"){
+    const g=ent.g,s=g.sum||{},m=s.meta||{};
     const sub=[m.arena,m.target?("target "+m.target):null,m.harness].filter(Boolean).join(" · ");
     b.innerHTML=`<b>${esc(g.title)}</b><div class="sub">${esc(sub)} · ${s.dur!=null?s.dur.toFixed(0)+" s":""}</div>`+
       `<div class="badges">${s.hasT?`<span class="bd l" title="share of the fight the boss was aimed at a levy">levy ${s.pl.toFixed(0)}%</span><span class="bd p" title="aimed at the commander">cmd ${s.pp.toFixed(0)}%</span>`:`<span class="bd">no target data</span>`}<span class="bd h">${s.hits} hits</span><span class="bd d">${s.deaths} deaths</span></div>`;
-    b.onclick=()=>openGallery(i); box.appendChild(b);
-  });
-  $("listBtn").onclick=()=>document.body.classList.toggle("showlist");
-  document.body.classList.add("showlist");
-  const m=/fight=(\d+)/.exec(location.hash); const i0=m?Math.min(gallery.length-1,+m[1]):0;
-  openGallery(i0);
+  } else if(ent.err){
+    b.innerHTML=`<div class="ct"><b>${esc(ent.name)}</b><span class="res crashed">unreadable</span></div><div class="sub">${esc(ent.err)}</div>`;
+  } else {
+    const c=ent.card, bd=[];
+    bd.push(`<span class="bd l" title="levies alive at the end of the fight, of all levies">army ${c.armyAlive}/${c.armyTotal}</span>`);
+    if(c.cmdDeaths) bd.push(`<span class="bd d">${c.cmdDeaths} cmd death${c.cmdDeaths>1?"s":""}</span>`);
+    if(c.prof) bd.push(`<span class="bd ${c.prof.min<30?"h":"p"}" title="lowest profiler window">low ${c.prof.min.toFixed(0)} fps</span>`);
+    if(c.cut&&c.result!=="cut"&&c.result!=="crashed") bd.push(`<span class="bd c">cut short</span>`);
+    if(c.v<8) bd.push(`<span class="bd">format ${c.v}</span>`);
+    b.innerHTML=`<div class="ct"><b>${esc(c.boss)}</b><span class="res ${esc(c.result)}">${esc(resLabel(c.result))}</span></div><div class="sub">${esc(fmtDate(c.when))} &middot; ${esc(fmtDur(c.dur))}</div><div class="badges">${bd.join("")}</div>`;
+  }
+  b.onclick=()=>openEntry(ent);
+  return b;
 }
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function renderList(){
+  document.body.classList.toggle("solo",!lib.length);
+  $("listTitle").textContent="Recorded fights ("+lib.length+")";
+  $("listBtn").textContent="Fights ("+lib.length+")";
+  $("clearBtn").style.display=gallery?"none":"";
+  const box=$("cards"); box.innerHTML="";
+  for(const ent of sortedLib()) box.appendChild(cardEl(ent));
+}
+async function openEntry(ent){
+  const tok=++openTok; selId=ent.id;
+  document.querySelectorAll(".card").forEach(el=>el.classList.toggle("sel",+el.dataset.id===ent.id));
+  if(ent.err){toast(ent.name+": "+ent.err);return;}
+  const empty=$("empty"); let R=cache.get(ent.id);
+  if(!R){
+    empty.style.display="flex"; empty.textContent="Loading "+(ent.card?ent.card.boss:ent.name)+" ...";
+    try{R=ent.kind==="gallery"?parseRec(ent.g.raw!=null?ent.g.raw:(await gunzipText(b64bytes(ent.g.z))).text):await readRecFile(ent.file);}
+    catch(e){if(tok===openTok)empty.textContent="Could not load: "+e.message;return;}
+    cacheSet(ent.id,R); if(ent.card)R.card=ent.card;
+  }
+  if(tok!==openTok) return;
+  if(ent.kind==="gallery"){galleryIdx=ent.gi;try{location.hash="fight="+ent.gi;}catch(e){}}
+  try{setRec(R,ent.kind==="gallery"?ent.g.title:ent.name);}catch(e){empty.style.display="flex";empty.textContent="Could not show this recording: "+e.message;return;}
+  document.body.classList.remove("showlist");
+}
+async function addFiles(items,skipped){
+  let ok=0,bad=0,dup=0; const added=[];
+  for(let i=0;i<items.length;i++){
+    const file=items[i].file, path=items[i].rel||file.name, key=path+"|"+file.size+"|"+file.lastModified;
+    if(lib.some(x=>x.key===key)){dup++;continue;}
+    $("loadMsg").textContent="Reading "+(i+1)+" of "+items.length+": "+file.name;
+    const ent={id:++libSeq,kind:"file",key,name:file.name,path,size:file.size,file,card:null,err:null,when:null};
+    try{const R=await readRecFile(file); ent.card=computeCard(R,file.name,file.lastModified); R.card=ent.card; ent.when=ent.card.when; cacheSet(ent.id,R); ok++; added.push(ent);}
+    catch(e){ent.err=e.message||String(e); const fi=nameInfo(file.name); ent.when=fi.date!=null?fi.date:file.lastModified; bad++;}
+    lib.push(ent);
+    if(i%5===4||i===items.length-1){renderList();await new Promise(r=>setTimeout(r,0));}
+  }
+  const parts=[ok+" loaded"]; if(bad)parts.push(bad+" unreadable"); if(dup)parts.push(dup+" already in the list"); if(skipped)parts.push(skipped+" other files skipped");
+  $("loadMsg").textContent=parts.join(", ");
+  if(!items.length) toast("No .levyrec, .jsonl.gz or .jsonl recordings found there.");
+  else if(!ok&&bad) toast("Could not read "+(bad===1?"that file":"those files")+" (see the list).");
+  renderList();
+  if(added.length){
+    const newest=added.slice().sort((a,b)=>(b.when||0)-(a.when||0))[0];
+    if(!D||added.length===1) await openEntry(newest);
+    else if(window.matchMedia&&window.matchMedia("(max-width:820px)").matches) document.body.classList.add("showlist");
+  }
+}
+function enqueue(items,skipped){ busy=busy.then(()=>addFiles(items,skipped||0)).catch(e=>toast("Loading failed: "+(e.message||e))); return busy; }
+function clearAll(){
+  lib=[]; cache.clear(); selId=null; D=null; FP=null; FPW=[]; playing=false; openTok++;
+  $("meta").textContent="no recording loaded"; $("loadMsg").textContent=""; $("info").innerHTML=""; $("fpsWrap").hidden=true; $("play").textContent="Play"; $("hud").innerHTML="";
+  $("empty").style.display="flex"; $("empty").innerHTML="Drop Levy fight recordings (.levyrec, .jsonl.gz, .jsonl) or a whole folder here,<br>or use Open files / Pick folder.";
+  renderList(); draw(); drawStrip(); syncUI();
+}
+$("clearBtn").onclick=clearAll;
+$("listBtn").onclick=()=>document.body.classList.toggle("showlist");
+$("file").addEventListener("change",e=>{const fs=[...e.target.files];e.target.value="";if(fs.length)enqueue(fs.map(f=>({file:f})),0);});
+$("dir").addEventListener("change",e=>{const fs=[...e.target.files];e.target.value="";const items=[];let skipped=0;
+  for(const f of fs){if(isRecName(f.name))items.push({file:f,rel:f.webkitRelativePath||f.name});else skipped++;}
+  enqueue(items,skipped);});
+// drag and drop: files, or a whole folder (walked recursively through the entry API)
+async function walkEntry(en,out,top,depth){
+  depth=depth||0;
+  if(en.isFile){const f=await new Promise((res,rej)=>en.file(res,rej)); if(top||isRecName(f.name)){out.push({file:f,rel:String(en.fullPath||f.name).replace(/^\//,"")});return 0;} return 1;}
+  if(en.isDirectory&&depth<12){const rd=en.createReader();let sk=0;for(;;){const kids=await new Promise((res,rej)=>rd.readEntries(res,rej));if(!kids.length)break;for(const k of kids)sk+=await walkEntry(k,out,false,depth+1);}return sk;}
+  return 0;
+}
+const hasFiles=e=>!!(e.dataTransfer&&[...(e.dataTransfer.types||[])].includes("Files"));
+let dragN=0;
+window.addEventListener("dragenter",e=>{if(hasFiles(e)){dragN++;document.body.classList.add("drag");}});
+window.addEventListener("dragleave",()=>{dragN=Math.max(0,dragN-1);if(!dragN)document.body.classList.remove("drag");});
+window.addEventListener("dragover",e=>e.preventDefault());
+window.addEventListener("drop",async e=>{
+  e.preventDefault(); dragN=0; document.body.classList.remove("drag");
+  const dt=e.dataTransfer; if(!dt) return;
+  const files=[...dt.files], ents=[...(dt.items||[])].map(it=>it.kind==="file"&&it.webkitGetAsEntry?it.webkitGetAsEntry():null); // both must be read before the first await
+  let items=[],skipped=0;
+  try{
+    if(ents.length&&ents.every(Boolean)){for(const en of ents)skipped+=await walkEntry(en,items,true);}
+    else items=files.map(f=>({file:f}));
+  }catch(err){items=files.filter(f=>isRecName(f.name)).map(f=>({file:f})); if(!items.length){toast("This browser would not let the page read that folder. Use Pick folder instead.");return;}}
+  enqueue(items,skipped);
+});
+
+// ---- gallery (one page, several recordings embedded as base64 gzip; written by make_gallery.py)
+function b64bytes(s){const bin=atob(s),n=bin.length,u=new Uint8Array(n);for(let i=0;i<n;i++)u[i]=bin.charCodeAt(i);return u;}
+function initGallery(){
+  let data=null; try{data=JSON.parse($("gallery-data").textContent.replace(/^\/\*__GALLERY__\*\//,""));}catch(e){}
+  if(!data||!data.length) return;
+  gallery=data;
+  data.forEach((g,i)=>lib.push({id:++libSeq,kind:"gallery",g,gi:i,name:g.title,when:null,key:"g"+i,card:null,err:null}));
+  renderList(); document.body.classList.add("showlist");
+  let hs=""; try{hs=location.hash||"";}catch(e){}
+  const m=/fight=(\d+)/.exec(hs); const i0=m?Math.min(gallery.length-1,+m[1]):0;
+  openEntry(lib[i0]);
+}
+
+// ================================================================ fps strip (profiler windows) under the timeline
+let FP=null, FPW=[]; // FP: the open fight's profiler windows, FPW: indices of the worst ones (marked)
+function winAt(t){if(!FP)return -1;for(let i=0;i<FP.length;i++) if(t>=FP[i].t0&&t<FP[i].t1) return i;return -1;}
+function why(w){return w.upd>16.7&&w.draw>16.7?"updates and drawing both over 16.7 ms":w.upd>16.7?"update-bound":w.draw>16.7?"draw-bound":"outside the game's own updates and drawing";}
+function showWin(i){
+  const el=$("fpsInfo"); if(!FP){el.textContent="";return;}
+  if(i<0){const p=D.card.prof;el.textContent=`Frames per second: mean ${p.mean.toFixed(0)}, lowest ${p.min.toFixed(0)} at ${fmtT(p.minAt)}, ${p.under30} of ${p.n} windows under 30. Tap a bar to seek, or a marked window to jump to it.`;return;}
+  const w=FP[i];
+  el.textContent=`${fmtT(w.t0)}-${fmtT(w.t1)}  ${w.fps.toFixed(1)} fps, ${w.ups.toFixed(0)} updates/s (${why(w)}); update ${w.upd.toFixed(1)} ms (npcs ${w.npc.toFixed(1)}, projectiles ${w.proj.toFixed(1)}), draw ${w.draw.toFixed(1)} ms, levy AI ${w.ai.toFixed(1)} ms${w.top?"; "+w.top:""}`;
+}
+function setupFps(){
+  const P=(D.card&&D.card.profWin)||[]; FP=P.length?P:null; FPW=[]; $("fpsWrap").hidden=!FP;
+  if(!FP){$("fpsInfo").textContent="";$("fpsWorst").innerHTML="";return;}
+  FPW=P.map((w,i)=>i).filter(i=>P[i].fps<55).sort((a,b)=>P[a].fps-P[b].fps).slice(0,5);
+  $("fpsWorst").innerHTML=FPW.length?`<span class="small">worst windows</span>`+FPW.map((i,k)=>`<button class="mini" data-i="${i}" title="jump the replay to the start of this window">${k+1} &middot; ${fmtT(P[i].t0)} &middot; ${P[i].fps.toFixed(0)} fps</button>`).join(""):`<span class="small">no window under 55 fps</span>`;
+  showWin(-1);
+}
+function jumpWin(i){
+  if(!D||!FP||i<0)return; cur=Math.max(D.tmin,Math.min(D.tmax,FP[i].t0)); syncUI();draw();drawStrip(); showWin(i);
+}
+$("fpsWorst").addEventListener("click",e=>{const b=e.target.closest("button[data-i]");if(b)jumpWin(+b.dataset.i);});
+function drawFps(){
+  if(!D||!FP||$("fpsWrap").hidden)return;
+  const c=$("fpsStrip"),{w:W,h:H,dpr}=canvasSize(c),g=c.getContext("2d"); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,W,H);
+  const span=Math.max(1,D.tmax-D.tmin),X=t=>(t-D.tmin)/span*(W-2)+1;
+  let mx=60; for(const w of FP) mx=Math.max(mx,w.fps); const top=Math.ceil(mx/10)*10;
+  const padT=12*dpr,bot=H-2*dpr,hh=bot-padT,Y=f=>bot-Math.min(f,top)/top*hh;
+  g.font=`${9*dpr}px system-ui`; g.lineWidth=1*dpr; g.setLineDash([3*dpr,4*dpr]);
+  for(const f of [30,60]){if(f>top)continue;const y=Y(f);g.strokeStyle="#2a3f45";g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke();g.fillStyle="#4d6663";g.fillText(f+" fps",3*dpr,y-2*dpr);}
+  g.setLineDash([]);
+  FP.forEach(w=>{const x0=X(Math.max(w.t0,D.tmin)),x1=X(Math.min(w.t1,D.tmax)); if(x1<x0)return;
+    g.fillStyle=w.fps<30?"#ff4d4d":w.fps<50?"#ffb020":"#2f9a6a"; const y=Y(w.fps); g.fillRect(x0,y,Math.max(1,x1-x0-(x1-x0>4?dpr:0)),bot-y);});
+  g.fillStyle="#ffd37a"; g.font=`${9*dpr}px system-ui`;
+  FPW.forEach((i,k)=>{const w=FP[i],x=(X(Math.max(w.t0,D.tmin))+X(Math.min(w.t1,D.tmax)))/2;
+    g.beginPath();g.moveTo(x-5*dpr,1*dpr);g.lineTo(x+5*dpr,1*dpr);g.lineTo(x,10*dpr);g.closePath();g.fill(); g.fillText(String(k+1),x+7*dpr,9*dpr);});
+  const x=X(cur);g.fillStyle="#fff";g.fillRect(x-1*dpr,0,2*dpr,H);
+}
+let fDrag=false;
+function fpsPtr(e,down){
+  if(!D||!FP)return;
+  const r=$("fpsStrip").getBoundingClientRect(),px=e.clientX-r.left,span=D.tmax-D.tmin||1,t=D.tmin+Math.max(0,Math.min(1,px/r.width))*span;
+  if(down){for(const i of FPW){const w=FP[i],mx=(((w.t0+w.t1)/2)-D.tmin)/span*r.width;if(Math.abs(mx-px)<=10){jumpWin(i);return true;}}}
+  if(down||fDrag){cur=t;syncUI();draw();drawStrip();}
+  showWin(winAt(t)); return false;
+}
+$("fpsStrip").addEventListener("pointerdown",e=>{fDrag=!fpsPtr(e,true);$("fpsStrip").setPointerCapture(e.pointerId);});
+$("fpsStrip").addEventListener("pointermove",e=>fpsPtr(e,false));
+$("fpsStrip").addEventListener("pointerup",()=>fDrag=false);
+$("fpsStrip").addEventListener("pointercancel",()=>fDrag=false);
+
+// ================================================================ summary card
+function sumCard(){
+  const c=D.card,h=D.hdr||{},m=h.meta||{},e=D.end||{},arm=h.army||null,cmd=h.cmd||null,nmI=t=>(D.names.items&&D.names.items[t])||("item "+t);
+  let s=`<section style="grid-column:1/-1"><h2>Fight summary</h2><div class="sumhead"><span class="bn">${esc(c.boss)}</span><span class="res ${esc(c.result)}">${esc(resLabel(c.result))}</span><span class="small">${esc(fmtDate(c.when))}</span><span class="small">${esc(c.name)}</span></div>`;
+  if(c.cut) s+=`<div class="cutbox">This recording was cut short (${esc(c.cutWhy)}). It plays up to the last data that was saved. There is no end record, so the totals below are counted from the saved samples and events.</div>`;
+  if(e.capped) s+=`<div class="cutbox">The recording hit its size limit, so the later part of the fight is missing.</div>`;
+  if(e.dropped) s+=`<div class="cutbox">${esc(e.dropped)} lines were dropped while writing (the disk fell behind).</div>`;
+  if(e.writeError) s+=`<div class="cutbox">Write error: ${esc(e.writeError)}</div>`;
+  const p=c.prof, tile=(v,l)=>`<div class="tile"><b>${v}</b><span>${l}</span></div>`;
+  s+=`<div class="tiles">`+tile(esc(fmtDur(c.dur)),"duration")+tile(`${c.armyAlive} / ${c.armyTotal}`,"army alive / total"+(c.armyTotal?` (${Math.round(100*c.armyAlive/c.armyTotal)}%)`:""))+tile(c.cmdDeaths,"commander deaths")+tile(`${c.levyDeaths}`,`levy deaths &middot; ${c.levyHits} hits taken`)+
+    (c.hasDmg||c.dmgAll?tile(fmtN(c.dmgBoss),"damage to the boss")+tile(fmtN(c.dmgAll),"all damage dealt"):"")+
+    (p?tile(p.mean.toFixed(0),"mean fps")+tile(p.min.toFixed(0),"lowest fps at "+fmtT(p.minAt)):"")+`</div>`;
+  s+=`<div class="sumcols"><div><h2>Damage by class</h2>`;
+  if(c.classes.length){const tot=c.classes.reduce((a,x)=>a+x.dmg,0)||1;
+    s+=`<table><tr><th>class</th><th>damage</th><th>share</th><th>hits</th></tr>`+c.classes.map(x=>`<tr><td>${esc(x.name)}<span class="mbar" style="width:${(100*x.dmg/tot).toFixed(1)}%"></span></td><td>${fmtN(x.dmg)}</td><td>${(100*x.dmg/tot).toFixed(0)}%</td><td>${fmtN(x.hits)}</td></tr>`).join("")+`</table>`+
+      `<div class="small" style="margin-top:6px">By who: ${c.owners.map(o=>esc(o[0])+" "+fmtN(o[1])+" ("+Math.round(100*o[1]/tot)+"%)").join(", ")}. Includes hits on the boss, its parts and its adds.</div>`;
+  } else s+=`<div class="small">No damage events in this recording (only format 8 carries them).</div>`;
+  s+=`</div><div><h2>Top weapons</h2>`;
+  if(c.weapons.length){const tot=c.classes.reduce((a,x)=>a+x.dmg,0)||1;
+    s+=`<table><tr><th>weapon</th><th>by</th><th>damage</th><th>hits</th></tr>`+c.weapons.slice(0,8).map(x=>`<tr><td>${esc(x.label)}${x.onBoss?"":' <span class="small">(adds)</span>'}<span class="mbar w" style="width:${(100*x.dmg/tot).toFixed(1)}%"></span></td><td>${esc(x.owner)}</td><td>${fmtN(x.dmg)}</td><td>${fmtN(x.hits)}</td></tr>`).join("")+`</table>`;
+  } else s+=`<div class="small">No weapon data in this recording.</div>`;
+  s+=`</div>`;
+  const kv=[]; const add=(k,v)=>{if(v!=null&&v!=="")kv.push(`<span>${esc(k)}</span><span>${esc(v)}</span>`);};
+  add("recorded",c.when!=null?fmtDate(c.when):""); add("format",String(c.v)+(c.auto?(c.auto===2?", automatic (all fights)":", automatic (boss fights)"):"")); add("world",h.world); add("commander",h.player); add("mode",h.mode); add("levy mod",h.levy);
+  add("started by",m.trigger); add("setting",m.setting); add("label",m.label);
+  if(arm){add("army",`${arm.n} levies, average life ${arm.avgLife}`);
+    if(arm.classes)add("army classes",Object.entries(arm.classes).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+" "+v).join(", "));
+    if(arm.grades)add("grades",Object.entries(arm.grades).map(([k,v])=>k+" "+v).join(", "));
+    if(arm.weapons&&arm.weapons.length)add("main weapons",arm.weapons.map(([t,n])=>nmI(t)+" x"+n).join(", "));}
+  if(cmd){add("commander at start",`life ${cmd.life}, mana ${cmd.mana}, defense ${cmd.defense}`);
+    if(cmd.armor&&cmd.armor.length)add("armor",cmd.armor.filter(Boolean).map(nmI).join(", "));}
+  s+=`<div><h2>Recording</h2><div class="kv">${kv.join("")}</div></div></div></section>`;
+  return s;
+}
 
 // ================================================================ helpers
 function frameIndex(t){let lo=0,hi=D.frames.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(D.frames[m].t<=t)lo=m;else hi=m-1;}return lo;}
@@ -251,7 +544,7 @@ function fitView(){
   const pc=(a,q)=>{a.sort((m,n)=>m-n);return a[Math.max(0,Math.min(a.length-1,Math.floor(q*(a.length-1))))];};
   if(xs.length){x0=pc(xs,.03);x1=pc(xs,.97);y0=pc(ys,.03);y1=pc(ys,.97);} else ext(0,0);
   const pad=380; x0-=pad;x1+=pad;y0-=pad;y1+=pad;
-  const A=D.arena; if(A){x0=Math.max(x0,A.x0*TILE);x1=Math.min(x1,(A.x0+A.w)*TILE);y0=Math.max(y0,A.y0*TILE);y1=Math.min(y1,(A.y0+A.h)*TILE);}
+  const A=D.arenaBox; if(A){x0=Math.max(x0,A.x0*TILE);x1=Math.min(x1,A.x1*TILE);y0=Math.max(y0,A.y0*TILE);y1=Math.min(y1,A.y1*TILE);}
   if(x1-x0<400){const c=(x0+x1)/2;x0=c-200;x1=c+200;} if(y1-y0<300){const c=(y0+y1)/2;y0=c-150;y1=c+150;}
   cam.x=(x0+x1)/2; cam.y=(y0+y1)/2; cam.z=Math.min(w/(x1-x0),h/(y1-y0))*0.97;
 }
@@ -294,7 +587,7 @@ function draw(){
   const sc=(x,y)=>w2s(x,y,W,H);
   // terrain silhouette
   g.imageSmoothingEnabled=false;
-  if(D.arenaImg){const A=D.arena;const [sx,sy]=sc(A.x0*TILE,A.y0*TILE);g.drawImage(D.arenaImg,sx,sy,A.w*TILE*cam.z,A.h*TILE*cam.z);}
+  for(const ai of (D.arenaImgs||[])){const A=ai.A;const [sx,sy]=sc(A.x0*TILE,A.y0*TILE);g.drawImage(ai.img,sx,sy,A.w*TILE*cam.z,A.h*TILE*cam.z);}
   // radar rings around the boss (or the commander without a boss) + a slow cosmetic sweep
   const ctr=mb0?sc(lerp(mb0[2],(byIdB.get(mb0[1])||mb0)[2],u),lerp(mb0[3],(byIdB.get(mb0[1])||mb0)[3],u)):sc(P[0],P[1]);
   g.lineWidth=1*dpr; g.strokeStyle="rgba(60,255,154,.13)"; g.setLineDash([4*dpr,6*dpr]);
@@ -415,6 +708,7 @@ function drawStrip(){
   {const [y0,h]=Y["cmd hit"]; g.fillStyle="#4fe3ff";for(const e of D.cmdHit)g.fillRect(X(e.t)-1,y0+2,2*dpr,h-3);}
   {const [y0,h]=Y["cmd moves"]; const cl={jump:"#3cff9a",xjump:"#b6ff5a",dash:"#41e0e0",hook:"#f2d94a",fly:"#c77dff"}; for(const e of D.events){const col=cl[e.e];if(!col)continue;if(e.e==="fly"&&!e.on)continue;if(e.e==="hook"&&e.phase!=="launch")continue;g.fillStyle=col;g.fillRect(X(e.t)-1,y0+3,2*dpr,h-5);}}
   const x=X(cur);g.fillStyle="#fff";g.fillRect(x-1*dpr,0,2*dpr,H);
+  drawFps();
 }
 function seekStrip(e){if(!D)return;const r=$("strip").getBoundingClientRect();const u=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));cur=D.tmin+u*(D.tmax-D.tmin);syncUI();draw();drawStrip();}
 let stripDrag=false;
@@ -475,7 +769,7 @@ function renderInfo(){
   let h4=`<section><details><summary>Commander and levy movement</summary><table style="margin-top:8px"><tr><th></th><th>commander</th><th>levies</th></tr>`+
     [["airborne %","air"],["standing still %","still"],["avg speed (tiles/s)","avg"],["max speed (tiles/s)","max"],["avg distance to boss (tiles)","dist"],["closest to boss (tiles)","distMin"]].map(([l,k])=>`<tr><td>${l}</td><td>${f1(S.ps&&S.ps[k])}</td><td>${f1(S.ls&&S.ls[k])}</td></tr>`).join("")+`</table>`+
     `<div class="small" style="margin-top:6px">Commander actions: ${["jump","xjump","dash","hook","use","hit"].map(k=>k+" "+S.ev[k]).join(", ")}</div></details></section>`;
-  $("info").innerHTML=`<section style="grid-column:1/-1"><h2>Boss parts now (life and ai[0..3] from the game)</h2><div style="max-height:220px;overflow:auto"><table id="parts"></table></div><div class="small" style="margin-top:6px">ai values are the NPC's own ai[] slots: they show which attack or phase each part is in. Hover or tap a part on the radar for the same numbers.</div></section>`+h1+h2+h3+h4; partsAt=-1;
+  $("info").innerHTML=sumCard()+`<section style="grid-column:1/-1"><h2>Boss parts now (life and ai[0..3] from the game)</h2><div style="max-height:220px;overflow:auto"><table id="parts"></table></div><div class="small" style="margin-top:6px">ai values are the NPC's own ai[] slots: they show which attack or phase each part is in. Hover or tap a part on the radar for the same numbers.</div></section>`+h1+h2+h3+h4; partsAt=-1;
 }
 function summarizeMove(samples,dt){
   const n=samples.length; if(!n) return null; let air=0,still=0,sp=0,mx=0,dsum=0,dn=0,dmin=1e9;
@@ -544,7 +838,7 @@ function frameLoop(now){
   requestAnimationFrame(frameLoop);
 }
 requestAnimationFrame(frameLoop);
-window.__loadText=load; window.__state=()=>({D,cur,gallery,galleryIdx});
+window.__loadText=load; window.__state=()=>({D,cur,gallery,galleryIdx,lib,FP,FPW}); window.__idle=()=>busy; window.__walk=walkEntry;
 window.__seek=t=>{cur=t;syncUI();draw();drawStrip();};
 initGallery();
 </script>

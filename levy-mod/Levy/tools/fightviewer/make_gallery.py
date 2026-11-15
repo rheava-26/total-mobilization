@@ -4,7 +4,7 @@
 usage: make_gallery.py <out.html> <rec files...> [--hz 30|15] [--budget-mb 12] [--title "..."]
 
 Each .jsonl recording is gzip-compressed and embedded as base64 next to a small precomputed summary (for the fight list).
-The page is viewer.html with the data spliced in; it needs no network (a pinned cdnjs pako is only fetched by browsers that lack DecompressionStream).
+The page is viewer.html with the data spliced in; it needs no network (browsers without DecompressionStream cannot open it).
 If the page would exceed the budget the recordings are downsampled to 15 Hz (every other sample; events are kept), then projectile rows are thinned.
 """
 import argparse, base64, gzip, json, os, sys
@@ -124,7 +124,7 @@ def build(files, hz, budget, title):
         blob = json.dumps(gal, separators=(",", ":"))
         html = tpl.replace(marker, blob.replace("</", "<\\/"), 1)
         if title:
-            html = html.replace("<title>Levy Fight Replay</title>", "<title>%s</title>" % title, 1)
+            html = html.replace("<title>Levy Fight Viewer</title>", "<title>%s</title>" % title, 1)
         size = len(html.encode("utf-8"))
         print("%d fights, %s Hz%s, %.2f MB" % (len(gal), 60 // 2 // factor if factor else 30, ", thinned projectiles" if thin else "", size / 1048576), file=sys.stderr)
         if size <= budget:

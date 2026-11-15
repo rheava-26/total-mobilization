@@ -14,6 +14,16 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🧠 Eve 11-15 ~16:00
+- **Hold new boss testing** (the 100-fight battery) until the in-flight fixes land: projparity, levyrules, redecompat.
+- **Curated page per boss: 3–4 wins + 3–4 losses + the weird ones** (sent to sitecurate; ceiling ~260 files / 230 MB).
+- **Spawn-tick Spectator fix (spectarget2):** waiting on Eve's OK after the classifier blocked it.
+- **IDEA (Eve): predict a boss's dash by running its AI ahead of time ("running its AI on itself") so levies pre-emptively leave the path.**
+  - Lead's view: feasible if it's a boss-side forward simulation once per wind-up, not per levy. Snapshot the NPC, step its AI N ticks with side effects suppressed (no projectile spawns, sounds, dust or net messages; save/restore RNG; same snapshot/restore idea as UseGuard), then restore.
+  - The output is a swept-hitbox "danger corridor" that every levy checks cheaply, so the cost scales with bosses, not levies. That generalises the Leviathan charge lanes.
+  - Risks: RNG-driven choices (sample a few seeds or fall back to the lane read), AIs with side effects in odd places, and the target moving.
+  - Proposed a measurement-only prototype: prediction accuracy + cost on EoC, Leviathan, Fishron and Destroyer, with no behaviour change.
+
 ## 🚢 2.0.67 SHIPPED (11-15 ~15:40): spectarget + destroyerdrop fixes. Serial shipboth 677 s: both boots exc=0; all world checks 0 exceptions. One FAIL: BossBugs spectarget, Calamity half: Spazmatism on the commander for 27/360 ticks at spawn (default target 0 before the first retarget). Sent back for a spawn-tick fix. The new `spectarget2` builder was BLOCKED: the permission classifier denied its `git checkout -B/-b spectarget2` (all variants), so no work was done. Not routed around; asked Eve to approve a rerun.
 
 ## 🗂 Replay pages (Eve 11-15): why two pages? Curate, version-stamp, clear old

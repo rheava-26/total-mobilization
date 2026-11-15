@@ -8,7 +8,7 @@ namespace Levy.Common.Officers
 	/// <summary>
 	/// THE NECROMANCER'S TAILOR. The Clothier is a SUPPORT officer who raises a squad of skeletons: <see cref="LevyConstants.Summon.ClothierSkeletonCount"/> REAL skeleton enemies (a Skeleton, a Skeleton Archer, Angry Bones,
 	/// Armored Skeletons, the Rusty / Blue / Hell Armored Bones, the Skeleton Commando and Sniper: <see cref="ConjureRoster.SkeletonPool"/> by how far the world has got), each running its own vanilla AI against the army's
-	/// enemies (<see cref="ConjuredGlobalNPC"/>). A fallen skeleton is raised again on a cadence, so the squad is rebuilt on the fly mid-fight, not only on death. He throws his cursed skull at what strays into reach.
+	/// enemies (<see cref="ConjuredGlobalNPC"/>). In a fight he never stops raising them: a lost one is replaced every second (the squad size is the cap), and a skeleton that deals no damage for ten seconds of a fight crumbles, so idle ones fade and fighting ones stay. He throws his cursed skull at what strays into reach.
 	/// </summary>
 	public static class ClothierOfficer
 	{
@@ -35,10 +35,10 @@ namespace Levy.Common.Officers
 	/// <summary>The Clothier's kit: one squad of tier-appropriate skeletons, managed by <see cref="SummonerKit"/>.</summary>
 	public sealed class ClothierKit : SummonerKit
 	{
-		private static readonly SummonSquad[] _squads = { new SummonSquad(ConjureRoster.PickSkeleton, ClothierSkeletonCount, ClothierRespawnCadenceTicks, ClothierSkeletonMinLife, ClothierSkeletonMinDamage) };
+		private static readonly SummonSquad[] _squads = { new SummonSquad(ConjureRoster.PickSkeleton, ClothierSkeletonCount, ClothierRespawnCadenceTicks, ClothierSkeletonMinLife, ClothierSkeletonMinDamage, ClothierCombatRespawnCadenceTicks, ClothierSkeletonIdleLifeTicks) };
 		protected override SummonSquad[] Squads => _squads;
 
 		// {0} squad size, {1} seconds to raise a replacement
-		public override object[] DescriptionArgs => new object[] { ClothierSkeletonCount, ClothierRespawnCadenceTicks / 60 };
+		public override object[] DescriptionArgs => new object[] { ClothierSkeletonCount, ClothierCombatRespawnCadenceTicks / 60, ClothierSkeletonIdleLifeTicks / 60 };
 	}
 }

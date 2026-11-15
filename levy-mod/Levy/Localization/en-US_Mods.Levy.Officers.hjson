@@ -174,8 +174,9 @@ Kit: {
 		Name: Clothier
 		Desc:
 			'''
-			Raises {0} skeletons that fight beside the army, each with its own attacks.
-			The kind follows the world's progress, from the Skeleton to the Hell Armored Bones. A fallen one is raised again every {1} seconds.
+			Raises up to {0} skeletons that fight beside the army, each with its own attacks.
+			The kind follows the world's progress, from the Skeleton to the Hell Armored Bones.
+			In a fight a new one is raised every {1} second. One that deals no damage for {2} seconds crumbles.
 			Throws a cursed skull at any enemy that strays into reach.
 			'''
 	}

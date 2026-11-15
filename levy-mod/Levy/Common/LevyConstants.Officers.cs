@@ -432,6 +432,10 @@ namespace Levy.Common
 			// ---- Conjured creatures (a real enemy type run on its own AI for the army: the Clothier's skeletons, the Zoologist's beast) ----
 			/// <summary>A conjured creature goes for an enemy within this many tiles of itself (and within <see cref="MeleeLeashTiles"/> of its officer).</summary>
 			public const float ConjureReachTiles = 26f;
+			/// <summary>An orb or other NPC a conjured creature's own AI throws (a Chaos Ball, a Burning Sphere) is the army's, flies at the army's enemy and is spent after this many ticks.</summary>
+			public const int ConjureChildLifeTicks = 300;
+			/// <summary>How often (ticks) an officer checks whether an enemy is near enough to count as a fight, and how far (tiles) from the officer that is.</summary>
+			public const int FightScanTicks = 15; public const float FightReachTiles = 40f;
 			/// <summary>A conjured creature touching an enemy lands a blow every this many ticks.</summary>
 			public const int ConjureStrikeCooldownTicks = 30;
 			/// <summary>The most life (classic-mode numbers) and the most contact damage a creature the Zoologist may call can have, by how far the world has got (stage 0 = nothing downed ... 10 = Moon Lord). A creature above either is never called, however it got into the Bestiary.</summary>
@@ -515,8 +519,12 @@ namespace Levy.Common
 			public const int ClothierSkeletonCount = 5;
 			/// <summary>The least life a raised skeleton has, and the least damage of its contact blow (before the world-progress multiply): a plain Skeleton is as sturdy as the squad always was; armored bones are above it on their own.</summary>
 			public const int ClothierSkeletonMinLife = 170, ClothierSkeletonMinDamage = 26;
-			/// <summary>A lost skeleton is replaced this often (ticks) while below the squad size.</summary>
+			/// <summary>A lost skeleton is replaced this often (ticks) while below the squad size and no enemy is near.</summary>
 			public const int ClothierRespawnCadenceTicks = 240;
+			/// <summary>In a fight (an enemy near the Clothier) a skeleton is raised this often (ticks) whenever the squad is below its size: he never stops raising them while the fight lasts.</summary>
+			public const int ClothierCombatRespawnCadenceTicks = 60;
+			/// <summary>In a fight a skeleton that has dealt no damage for this many ticks crumbles; every blow it lands (a strike, an arrow that hits) starts the count again. Outside a fight the count is paused.</summary>
+			public const int ClothierSkeletonIdleLifeTicks = 600;
 			/// <summary>The Clothier's own shot: the cursed skull he throws. Launch speed and arc lift (px/tick, px), base damage, knockback, cooldown (fixed + random, ticks) and reach (tiles).</summary>
 			public const float ClothierCurseSpeed = 10f, ClothierCurseGravityCorrection = 0f, ClothierCurseKnockback = 2f, ClothierCurseRangeTiles = 26f;
 			public const int ClothierCurseDamage = 16, ClothierCurseCooldown = 24, ClothierCurseRandomCooldown = 14;

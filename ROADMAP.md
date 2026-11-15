@@ -20,6 +20,10 @@
   - Officer target picks respect IsNeverTarget (they used to target the Dungeon Guardian).
   - Off-duty banner (draw-only, 0-alloc refresh). FieldFixCheck 37/0 on both toolchains.
   - **CORRECTION to what I told Eve:** "followers never fight bosses" was my misreading. The 21:20 "ReturnHome militia" appear only after she died and respawned at home, 1,400 tiles away (militia hunt within 120 tiles of their barracks, by design). The 20:36 "never Engage" unit was 5 officers merged into id -1; officers keep to the commander and never write Engage. Officers DO deal damage (Arms Dealer 237–800+ in 12 s). Support officers (Nurse, Angler, Clothier…) avoid fights by design. Officers have no fear meter.
+- **mobslots round 1 done (a3dd1b5 + merge d7fbb04, NOT merged yet):** Wings and Boots lock slots 16 and 17 (lgear 13/14). Picker fills them first; preferred items win; no wings/boots in normal slots.
+  - Measured peak speed: bare 3.00 → Hermes 6.00, Terraspark 6.75, Angel Treads 7.50 px/tick. Angel Wings: ~46 tiles of height.
+  - Classifier counts: vanilla 58 wings / 25 boots; with Calamity 74 / 28; with Thorium 71 / 46.
+  - **Lead's call (sent back, round 2):** the Boots slot is only run-speed/rocket boots. Utility shoes (Master Ninja Gear, Tiger Climbing Gear, Frog Gear, Shoe Spikes, Flower Boots, water walkers) go back in normal slots, so dash and climb toys aren't taken away. Also asked: is the FieldFix militia check flaky?
 - **OPEN (pre-existing, not caught by the ship scripts):** "OFFICERKIT CHECK FAIL: short content should show whole at 300" (OfficerPanel.ListHeight). It appears in the 2.0.64 shipworld logs too; shipboth greps only fail=[1-9]/FAILURE/!!!. Fix the check or the panel, and widen the ship grep to "CHECK FAIL".
 - **`dialogue2` DRAFT DONE (branch dialogue2, 968dc58, NOT merged; awaiting Eve).** Review doc sent: scratchpad/dialogue_review.md.
   - Soldier lines 479 → 552: 329 kept, 41 tightened, 31 rewritten, 78 cut, 153 new. Officer and mutiny lines untouched.

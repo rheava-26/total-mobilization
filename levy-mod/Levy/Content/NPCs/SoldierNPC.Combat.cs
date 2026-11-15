@@ -204,6 +204,7 @@ namespace Levy.Content.NPCs
 			if (++_sidearmTick >= LevyConstants.SidearmCheckIntervalTicks) { _sidearmTick = 0; UpdateSidearm(); WeaponUse.ThrownRestockTick(this); WeaponUse.WeaponUpgradeTick(this); }
 
 			bool fighting = State == SoldierState.Engage || State == SoldierState.Shaken || State == SoldierState.Routed; // a routed body backpedals and keeps shooting
+			if (!fighting && Weapon != null && Weapon.Supported && Weapon.IsWhip && !Record.HoldFire && !Hostile) { WhipOpportunity(); return; } // a whip lashes whatever is in its reach, whatever the body is doing
 			if (!fighting || Record.HoldFire) return;
 			NPC target;
 			if (_focusBare && State != SoldierState.Routed && SoldierTargeting.FocusPositionFor(this, out Vector2 focusPos))
@@ -269,9 +270,10 @@ namespace Levy.Content.NPCs
 			}
 			if (meleeTiles <= trigger) { WeaponUse.TryAttack(this, target); return; }
 			// The chosen target is still out of reach but another hostile is in it (a mob scrum, a target that just died or slipped away): keep swinging at that one.
-			if (!Weapon.IsTethered && AttackCooldown <= 0 && ((int)Main.GameUpdateCount + NPC.whoAmI) % 3 == 0)
+			// A whip does the same at the length of its lash: whatever stands in its reach is lashed, as a player lashes it.
+			if ((!Weapon.IsTethered || Weapon.IsWhip) && AttackCooldown <= 0 && ((int)Main.GameUpdateCount + NPC.whoAmI) % 3 == 0)
 			{
-				NPC near = NearestHostileWithin(blowReach + LevyConstants.MeleeEngageExtraTiles);
+				NPC near = NearestHostileWithin(Weapon.IsWhip ? trigger : blowReach + LevyConstants.MeleeEngageExtraTiles);
 				if (near != null)
 				{
 					// face the enemy being swung at (the swing box is built from NPC.direction); the facing then holds for the swing
@@ -279,6 +281,21 @@ namespace Levy.Content.NPCs
 					WeaponUse.TryAttack(this, near);
 				}
 			}
+		}
+
+		/// <summary>
+		/// A whip in hand and no fight on (the body follows, patrols, walks home, or a boss it will not charge stands in its reach with no target chosen): any hostile inside the lash's reach is lashed, the way a player
+		/// lashes whatever the whip can touch. Every third tick while the lash is ready; the lash itself runs at the whip's own use rate (RealWhips).
+		/// </summary>
+		private void WhipOpportunity()
+		{
+			if (AttackCooldown > 0 || ((int)Main.GameUpdateCount + NPC.whoAmI) % 3 != 0) return;
+			if (State == SoldierState.Dead || State == SoldierState.Desert || State == SoldierState.Mutiny || State == SoldierState.Resupply || OfficerMode) return;
+			float whipMult = Dummy != null && Dummy.whipRangeMultiplier > 0.5f ? Dummy.whipRangeMultiplier : 1f;
+			NPC near = NearestHostileWithin(Math.Max(LevyConstants.RangeMelee, Weapon.ThrustReachPx * whipMult / LevyConstants.TilePx));
+			if (near == null) return;
+			if (Math.Abs(near.Center.X - NPC.Center.X) > 2f) NPC.direction = near.Center.X < NPC.Center.X ? -1 : 1;
+			WeaponUse.TryAttack(this, near);
 		}
 
 		/// <summary>A broadsword mid-swing keeps its facing, so the swing box stays on the side the blow was thrown.</summary>

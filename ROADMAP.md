@@ -14,7 +14,11 @@
 - **OPEN:** the Kite NRE is intermittent and unreproduced. Investigate with the next builder. FollowRowsWorld's timing check is wall-clock, so make it deterministic like the recorder checks.
 - Eve's Plantera 21:03: she died with Plantera at 8,849/256,396 (3.5%). The army kept firing to 5,788, then Plantera despawned (vanilla, target dead). Raised with her as a design question: should the army be able to fight on after the commander falls, for already-downed bosses only?
 - Corrected with Eve: spore gas is NOT a line. Puffs fly out in random directions at up to ~7 tiles/s, don't collide with tiles, and last 15 s (13 s live), with a 2x2-tile hurtbox and 108 damage by Calamity's design. Her bigger-arena idea is the right lever.
-- `dialogue2` launched: a draft rewrite plus a TTS-friendly review doc for Eve; nothing ships until she approves.
+- **`dialogue2` DRAFT DONE (branch dialogue2, 968dc58, NOT merged; awaiting Eve).** Review doc sent: scratchpad/dialogue_review.md.
+  - Soldier lines 479 → 552: 329 kept, 41 tightened, 31 rewritten, 78 cut, 153 new. Officer and mutiny lines untouched.
+  - Staged (commented out) lines need code: LIFE_CRYSTAL, CHEST_OPENED, ARMORY_GOT/WANT/BEST/WORST, per-drink triggers, world-tier tags, ranger/melee tags, a female tag.
+  - Lead's critique sent to Eve: right-click chat lines (IDLE, biomes, blood moon) got better in vanilla's clean style, but combat shouts lost the messy, talk-over-each-other energy from her 11-07 voice notes (e.g. "Weapons up! Mostly up. Up-ish." → "Here they come! Weapons up."). Proposal: vanilla-clean for chat, messy for shouts. One duplicated line (the heart crystal line appears twice).
+  - Asks for Eve: officer voices next? The gods-agree format regularly or only sometimes? What did "grumpy female levies on blood moon" mean?
 
 ## (was) 2.0.64 building
 - **bosshitbox MERGED (40e1c9a):** levies take contact damage exactly where a player would. HostileContact runs the player's hit sequence (Calamity CanHitPlayer circles/states/cooldown slots) with per-slot immunity. Parity: 763,875 static positions plus 13.7–15.6M live positions, 0 mismatches after the fix (12,497 / 41,727 levy-only hits before).

@@ -18,6 +18,13 @@
 - Asked projparity (WoF fix or diagnosis) and levyrules (push what's proven) for a ~15-minute turnaround. Then merge, serial shipboth, ship 3.0.0.
 - **Dialogue APPROVED by Eve except battle shouts:** make them punchy and enthusiastic ("Enemy incoming! Open fire!", "Die, monster!", "I'm getting paid for this!"), not quirky. `dialogue4` builder is rewriting the combat shout pools (incl. grumpy and officer fight lines). It goes into 3.0 if done in time, otherwise 3.0.1.
 
+## ⏸ RESUME HERE (Eve near usage limit, ~18:30 UTC 11-15)
+1. Check `verify-pre30.log` (scratchpad; serial shipboth on b672e07, still at build 2.0.67).
+2. projparity: waiting on the WoF fix ("the wall hurts the levies" FAIL). Merge when pushed.
+3. dialogue4: punchy shouts on top of dialogue3. Merge when pushed. dialogue3 is approved apart from the shouts.
+4. Bump Levy to 3.0.0, serial shipboth, ship 3.0 with a changelog: parity, levyrules, spectator3, redecompat, dialogue.
+5. Then: the Fixed replay page + rerun the battery on 3.0.
+
 ## 🩹 levyrules MERGED (625fd71)
 - Regen = Player.UpdateLifeRegen on the dummy (matches a player; the barracks 2× stood-down bonus kept; old Well Fed extra regen removed).
 - Potion sickness = Player.ApplyPotionDelay (60 s, 45 s for Restoration/Philosopher's Stone).

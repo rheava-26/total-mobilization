@@ -48,7 +48,9 @@ namespace Levy.Common.Testing
 				Item it = new Item(); it.SetDefaults(i);
 				var g = new SoldierGear();
 				int slot = -1;
-				if (s.accessory && !s.vanity && g.CanHold(SoldierGear.SlotAcc0, it)) slot = SoldierGear.SlotAcc0;
+				if (s.accessory && !s.vanity && g.CanHold(SoldierGear.SlotWings, it)) slot = SoldierGear.SlotWings;
+				else if (s.accessory && !s.vanity && g.CanHold(SoldierGear.SlotBoots, it)) slot = SoldierGear.SlotBoots;
+				else if (s.accessory && !s.vanity && g.CanHold(SoldierGear.SlotAcc0, it)) slot = SoldierGear.SlotAcc0;
 				else if (s.headSlot >= 0 && !s.vanity && g.CanHold(SoldierGear.SlotHead, it)) slot = SoldierGear.SlotHead;
 				else if (s.bodySlot >= 0 && !s.vanity && g.CanHold(SoldierGear.SlotBody, it)) slot = SoldierGear.SlotBody;
 				else if (s.legSlot >= 0 && !s.vanity && g.CanHold(SoldierGear.SlotLegs, it)) slot = SoldierGear.SlotLegs;

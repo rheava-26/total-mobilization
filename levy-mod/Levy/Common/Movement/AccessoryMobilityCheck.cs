@@ -79,6 +79,7 @@ namespace Levy.Common.Movement
 				Mod.Logger.Info($"[AccMobCheck] INFO upgrade ran={upgraded} {upErr} slots={string.Join(",", Array.ConvertAll(r2.Gear.Accessories, x => x?.Name ?? "-"))}");
 				bool bootsKept = false;
 				for (int i = 0; i < r2.Gear.Accessories.Length; i++) if (r2.Gear.Accessories[i]?.type == ItemID.SpectreBoots) bootsKept = true;
+				if (r2.Gear.Boots.type == ItemID.SpectreBoots) bootsKept = true; // the gear check moves them to the boots slot
 				Check("levy keeps Spectre Boots with a bottle in stock", bootsKept);
 			}
 			catch (Exception e) { Check("self-check ran", false, e.GetType().Name + ": " + e.Message); }

@@ -650,6 +650,14 @@
 - **Single-player safety:** the frame runs in slot 255 with `Main.myPlayer` faked to 255 (`SoldierMinions.BeginFake` keeps `OwnerFor` answering with the real commander) and `Main.dedServ` forced on, so `whoAmI == Main.myPlayer` blocks hit the dummy and process-wide writes (sounds, Calamity TextureAssets.FlyingCarpet / buff icons / BossHealthBarManager, dust, shaders) are skipped. Unverified on a real SP client.
 - Lab: `OwnerLab` kind `ctl` with flags `upk=0..3`, `wpn=`, `phurt=`; Calamity via `tools/lab_build.sh -N`.
 
+## 🪽 MOBILITY SLOTS (branch `mobslots`, off worktree-levy-stardust; build.txt NOT bumped; unreleased) — Eve 11-15: "horizontal plus vertical mobility are essential"
+- **Why:** her recordings: 39 of 40 levies in wings, ZERO in boots, ~34 Angel Treads unused. Wings always won the scarce accessory slots (the older MobilityFirst rule gave every levy one mobility accessory first, and wings outrank everything).
+- **What:** every levy has a WINGS slot and a BOOTS slot (open from the start, no accessory slot used). Wings = accessory with wingSlot > 0; boots = accessory with shoeSlot > 0 (read from item properties, no name list). `SoldierGear.Wings/Boots`, lock slots 16/17 (SlotCount 18), `Common/Movement/MobilitySlots.cs`, `ArmoryTE.Mobility.cs`.
+- **Picker:** IssueGear and the per-levy gear check (10-15 s) fill both slots first with the best pair (accessory score + measured movement value; boots that raise run speed or give rocket flight beat shoes that only climb/dash/jump; Preferred first, a preferred pair is never swapped out). Wings and boots are NEVER dealt into an ordinary accessory slot; spare pairs wait on the shelf. A levy in wings no longer gets a jump accessory "first" (his slots go to everything else); a levy with no wings still does.
+- **Old saves:** wings/boots found in accessory slots move to the new slots on load (locks move too); a second pair stays and the gear check shelves it. Hand placement into an accessory slot is refused for wings/boots.
+- **Open question for Eve:** shoeSlot also covers Shoe Spikes, Tiger Climbing Gear, Tabi, Master Ninja Gear, Frog Leg/Flipper/Gear, Flower Boots, skates and water walkers, so those compete for the ONE boots slot (run-speed boots win it). A levy can no longer wear Master Ninja Gear beside Terraspark Boots.
+- **Recording:** lgear slots 13 wings, 14 boots (FightRecFormat.cs, recview.py, viewer.html, site LSLOT). Checks: `[MobSlots]` (boot), `[MobWorld]` (world, LEVY_MOBONLY=1 runs it alone).
+
 ## 🧭 WORKING AGREEMENT WITH EVE (2026-10-27 → 11-04) — read before diagnosing anything
 Eve called out a systemic failure: the lead jumps to ONE hypothesis, skips testing it, ships a fix on it, and pins new bugs on whatever was just discussed (Rotted Fork: Calamity→projectile→broadsword→"it's a spear"; the turret "line": Vilethorn beam → actually the weapon's sprite). Agreed practice:
 - List EVERY plausible cause before acting (not 2-3). Separate what is observed from what is guessed. Never ship a fix on an unconfirmed cause. Don't pin a new bug on the most recent topic. Widen, don't re-narrow, when corrected.
@@ -848,7 +856,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 
 **DONE (1.7.8–1.8.0):**
 - Drones/turrets hold fire on unbeaten bosses.
-- Exact player speed; no special mobility slot.
+- Exact player speed; no special mobility slot. (REVERSED 11-15: Eve asked for dedicated Wings and Boots slots, branch `mobslots`.)
 - Minishark not picked post-Plantera.
 - Found/dropped weapons rank a bit above crafted ones.
 - Armory filter put-back bug.
@@ -1770,7 +1778,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 
 ## 🚀 LEVY 2.0 — Eve's big batch (2026-11-05 night). "Big batch, talk before you commit." Art refs saved in scratchpad/art-refs/ (potion tier list + potion recipe sheet).
 **Decided and running now:**
-- Speed: exact player parity (levy-speed merged). Eve did NOT give levies Swiftness. No special mobility slot (the hardmode slot already covers it).
+- Speed: exact player parity (levy-speed merged). Eve did NOT give levies Swiftness. No special mobility slot (the hardmode slot already covers it). (REVERSED 11-15, see MOBILITY SLOTS.)
 - `p0-fixes`:
   - BUG: an item filtered out of the armory can't be put back.
   - Drones/turrets hold fire on bosses not yet beaten (config, default off = hold fire).

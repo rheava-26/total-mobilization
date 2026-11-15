@@ -531,6 +531,7 @@ function sumCard(){
 function frameIndex(t){let lo=0,hi=D.frames.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(D.frames[m].t<=t)lo=m;else hi=m-1;}return lo;}
 function trackStart(tr,t){let lo=0,hi=tr.length;while(lo<hi){const m=(lo+hi)>>1;if(tr[m][0]<t)lo=m+1;else hi=m;}return lo;}
 const nm=(tbl,id)=>(D.names[tbl]&&D.names[tbl][id])||("#"+id);
+const LSLOT=["weapon","sidearm","head","body","legs","accessory","accessory","accessory","accessory","accessory","accessory","ammo","hook","wings","boots"]; // lgear slot names: 13 wings and 14 boots are the levy's mobility slots
 const lname=id=>(D.lbl.get(id)||("#"+id))+" "+((D.names.soldiers&&D.names.soldiers[id])||"");
 function canvasSize(c){const r=c.getBoundingClientRect();const dpr=window.devicePixelRatio||1;const w=Math.max(10,Math.round(r.width*dpr)),h=Math.max(10,Math.round(r.height*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}return {w,h,dpr};}
 function fitView(){

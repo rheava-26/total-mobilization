@@ -30,6 +30,10 @@ namespace Levy.Common.Soldiers
 		public Item Hook = new Item();
 		/// <summary>The camera slot: only a GoPro fits, and a levy that holds one can be watched. It takes no accessory slot.</summary>
 		public Item Camera = new Item();
+		/// <summary>The wings slot: a pair of wings (an item with a wing slot). It takes no accessory slot and is open from the start.</summary>
+		public Item Wings = new Item();
+		/// <summary>The boots slot: a pair of movement boots (an item with a shoe slot). It takes no accessory slot and is open from the start.</summary>
+		public Item Boots = new Item();
 
 		// ---- hand-assigned ("locked") slots ----
 		// Slot indices used by the loadout menu, the lock mask and the SoldierGearSet packet.
@@ -40,7 +44,9 @@ namespace Levy.Common.Soldiers
 		public const int SlotSide2 = SlotHook + 1;
 		/// <summary>The camera slot follows the extra sidearms so every older lock bit keeps its place.</summary>
 		public const int SlotCamera = SlotSide2 + LevyConstants.ExtraSidearms;
-		public const int SlotCount = SlotCamera + 1;
+		/// <summary>The mobility slots follow the camera so every older lock bit keeps its place.</summary>
+		public const int SlotWings = SlotCamera + 1, SlotBoots = SlotCamera + 2;
+		public const int SlotCount = SlotBoots + 1;
 
 		/// <summary>One bit per slot (see Slot*): set while the player hand-placed the item there. Auto-issue never replaces a locked slot.</summary>
 		public int LockMask;
@@ -74,6 +80,8 @@ namespace Levy.Common.Soldiers
 			if (slot == SlotAmmo) return Ammo ??= new Item();
 			if (slot == SlotHook) return Hook ??= new Item();
 			if (slot == SlotCamera) return Camera ??= new Item();
+			if (slot == SlotWings) return Wings ??= new Item();
+			if (slot == SlotBoots) return Boots ??= new Item();
 			int a = slot - SlotAcc0;
 			if (a >= 0 && a < AccessorySlots) return Accessories[a] ??= new Item();
 			int x = slot - SlotSide2;
@@ -93,6 +101,8 @@ namespace Levy.Common.Soldiers
 			else if (slot == SlotAmmo) Ammo = item;
 			else if (slot == SlotHook) Hook = item;
 			else if (slot == SlotCamera) Camera = item;
+			else if (slot == SlotWings) Wings = item;
+			else if (slot == SlotBoots) Boots = item;
 			else { int a = slot - SlotAcc0; if (a >= 0 && a < AccessorySlots) Accessories[a] = item; else { int x = slot - SlotSide2; if (x >= 0 && x < ExtraSidearms.Length) ExtraSidearms[x] = item; } }
 		}
 
@@ -110,17 +120,19 @@ namespace Levy.Common.Soldiers
 			if (slot == SlotAmmo) return item.ammo > 0 && !item.IsACoin && !WorldAlter.Alters(item);
 			if (slot == SlotHook) return global::Levy.Common.Movement.HookInfo.IsHookItem(item) && item.stack <= 1;
 			if (slot == SlotCamera) return item.ModItem is global::Levy.Content.Items.Observe.GoProItem && item.stack <= 1;
+			if (slot == SlotWings) return item.stack <= 1 && global::Levy.Common.Movement.MobilitySlots.IsWings(item) && WeaponClassifier.IsUsefulAccessory(item);
+			if (slot == SlotBoots) return item.stack <= 1 && global::Levy.Common.Movement.MobilitySlots.IsBoots(item) && WeaponClassifier.IsUsefulAccessory(item);
 			// Only a thrown consumable may be a stack: it is carried (and used up) as one. Every other weapon is a single item.
 			if (item.stack > 1 && !(slot == SlotWeapon && WeaponClassifier.Classify(item) == WeaponFamily.Thrown)) return false;
 			if (slot == SlotWeapon) return WeaponClassifier.IsIssuableWeapon(item) && IsSupportedFamily(WeaponClassifier.Classify(item));
 			if (slot == SlotSidearm) return WeaponClassifier.IsIssuableWeapon(item) && IsSidearmFamily(WeaponClassifier.Classify(item));
-			if (slot >= SlotSide2) return slot < SlotCount && WeaponClassifier.IsIssuableWeapon(item) && WeaponClassifier.Classify(item) is WeaponFamily.Summon or WeaponFamily.Sentry; // an extra sidearm is a minion staff or a sentry staff: it runs without being in hand
+			if (slot >= SlotSide2) return slot < SlotCamera && WeaponClassifier.IsIssuableWeapon(item) && WeaponClassifier.Classify(item) is WeaponFamily.Summon or WeaponFamily.Sentry; // an extra sidearm is a minion staff or a sentry staff: it runs without being in hand
 			if (slot == SlotHead) return WeaponClassifier.IsArmorPiece(item, 0) && !item.vanity;
 			if (slot == SlotBody) return WeaponClassifier.IsArmorPiece(item, 1) && !item.vanity;
 			if (slot == SlotLegs) return WeaponClassifier.IsArmorPiece(item, 2) && !item.vanity;
 			int a = slot - SlotAcc0;
 			if (a < 0 || a >= AccessorySlots) return false;
-			if (!WeaponClassifier.IsUsefulAccessory(item)) return false;
+			if (!WeaponClassifier.IsUsefulAccessory(item) || global::Levy.Common.Movement.MobilitySlots.Is(item)) return false; // wings and boots have a slot of their own
 			for (int i = 0; i < AccessorySlots; i++) if (i != a && !Empty(Accessories[i]) && Accessories[i].type == item.type) return false;
 			return true;
 		}
@@ -209,6 +221,8 @@ namespace Levy.Common.Soldiers
 		public bool HasAmmo => Ammo != null && !Ammo.IsAir && Ammo.stack > 0;
 		public bool HasHook => Hook != null && !Hook.IsAir;
 		public bool HasCamera => Camera != null && !Camera.IsAir;
+		public bool HasWings => Wings != null && !Wings.IsAir;
+		public bool HasBoots => Boots != null && !Boots.IsAir;
 
 		/// <summary>All non-air items, for dropping or returning to the armory.</summary>
 		public IEnumerable<Item> AllItems()
@@ -224,12 +238,14 @@ namespace Levy.Common.Soldiers
 			if (HasAmmo) yield return Ammo;
 			if (HasHook) yield return Hook;
 			if (HasCamera) yield return Camera;
+			if (HasWings) yield return Wings;
+			if (HasBoots) yield return Boots;
 		}
 
 		public void Clear()
 		{
 			LockMask = 0; Reserved = null; ThrownRestockType = 0;
-			Weapon = new Item(); Sidearm = new Item(); Head = new Item(); Body = new Item(); Legs = new Item(); Ammo = new Item(); Hook = new Item(); Camera = new Item();
+			Weapon = new Item(); Sidearm = new Item(); Head = new Item(); Body = new Item(); Legs = new Item(); Ammo = new Item(); Hook = new Item(); Camera = new Item(); Wings = new Item(); Boots = new Item();
 			Accessories = NewArray(AccessorySlots); Dyes = NewArray(DyeSlots); ExtraSidearms = NewArray(LevyConstants.ExtraSidearms);
 		}
 
@@ -239,6 +255,7 @@ namespace Levy.Common.Soldiers
 			{
 				LockMask = LockMask, ThrownRestockType = ThrownRestockType,
 				Weapon = Weapon.Clone(), Sidearm = Sidearm.Clone(), Head = Head.Clone(), Body = Body.Clone(), Legs = Legs.Clone(), Ammo = Ammo.Clone(), Hook = (Hook ?? new Item()).Clone(), Camera = (Camera ?? new Item()).Clone(),
+				Wings = (Wings ?? new Item()).Clone(), Boots = (Boots ?? new Item()).Clone(),
 			};
 			for (int i = 0; i < AccessorySlots; i++) g.Accessories[i] = Accessories[i].Clone();
 			for (int i = 0; i < DyeSlots; i++) g.Dyes[i] = Dyes[i].Clone();
@@ -255,6 +272,8 @@ namespace Levy.Common.Soldiers
 			};
 			if (HasHook) tag["hook"] = ItemIO.Save(Hook);
 			if (HasCamera) tag["cam"] = ItemIO.Save(Camera); // absent in older saves: loads empty (a GoPro in an accessory slot moves here on load)
+			if (HasWings) tag["wings"] = ItemIO.Save(Wings); // absent in older saves: loads empty (wings in an accessory slot move here on load, see MigrateMobility)
+			if (HasBoots) tag["boots"] = ItemIO.Save(Boots);
 			bool anyExtra = false; foreach (var x in ExtraSidearms) if (!Empty(x)) anyExtra = true;
 			if (anyExtra) { var ex = new List<TagCompound>(); foreach (var x in ExtraSidearms) ex.Add(ItemIO.Save(x ?? new Item())); tag["sides"] = ex; } // absent in older saves: loads empty
 			var acc = new List<TagCompound>(); foreach (var a in Accessories) acc.Add(ItemIO.Save(a)); tag["acc"] = acc;
@@ -274,6 +293,8 @@ namespace Levy.Common.Soldiers
 			g.Ammo = ItemIO.Load(tag.GetCompound("ammo"));
 			if (tag.ContainsKey("hook")) g.Hook = ItemIO.Load(tag.GetCompound("hook"));
 			if (tag.ContainsKey("cam")) g.Camera = ItemIO.Load(tag.GetCompound("cam"));
+			if (tag.ContainsKey("wings")) g.Wings = ItemIO.Load(tag.GetCompound("wings"));
+			if (tag.ContainsKey("boots")) g.Boots = ItemIO.Load(tag.GetCompound("boots"));
 			if (tag.ContainsKey("sides")) { var ex = tag.GetList<TagCompound>("sides"); for (int i = 0; i < g.ExtraSidearms.Length && i < ex.Count; i++) g.ExtraSidearms[i] = ItemIO.Load(ex[i]); }
 			var acc = tag.GetList<TagCompound>("acc"); for (int i = 0; i < AccessorySlots && i < acc.Count; i++) g.Accessories[i] = ItemIO.Load(acc[i]);
 			var dyes = tag.GetList<TagCompound>("dyes"); for (int i = 0; i < DyeSlots && i < dyes.Count; i++) g.Dyes[i] = ItemIO.Load(dyes[i]);
@@ -287,6 +308,7 @@ namespace Levy.Common.Soldiers
 			}
 			g.LockMask = locks & ((1 << SlotCount) - 1);
 			g.MigrateCamera();
+			g.MigrateMobility();
 			for (int s = 0; s < SlotCount; s++) if (g.IsLocked(s) && g.Get(s).IsAir) g.SetLocked(s, false); // a lock on an empty slot means nothing
 			return g;
 		}
@@ -305,6 +327,35 @@ namespace Levy.Common.Soldiers
 			}
 		}
 
+		/// <summary>
+		/// A kit saved before the mobility slots: the first pair of wings in an accessory slot moves to the empty wings slot and the best pair of boots to the empty boots slot (each with its hand-assigned lock),
+		/// which frees the accessory slot for an ordinary accessory. A second pair of wings or boots stays where it is (the armory takes it back to the shelf on the levy's next look). Returns true when anything moved.
+		/// </summary>
+		public bool MigrateMobility()
+		{
+			bool moved = false;
+			for (int pass = 0; pass < 2; pass++)
+			{
+				bool wings = pass == 0;
+				if (wings ? HasWings : HasBoots) continue;
+				int best = -1; float bestScore = float.MinValue;
+				for (int i = 0; i < Accessories.Length; i++)
+				{
+					var a = Accessories[i];
+					if (Empty(a) || !(wings ? global::Levy.Common.Movement.MobilitySlots.IsWings(a) : global::Levy.Common.Movement.MobilitySlots.IsBoots(a))) continue;
+					float sc = a.rare * 1000f + a.value * 0.001f; // an old kit had at most one or two of them: the rarer one is the better one
+					if (sc > bestScore) { bestScore = sc; best = i; }
+				}
+				if (best < 0) continue;
+				int slot = wings ? SlotWings : SlotBoots;
+				bool locked = IsLocked(SlotAcc0 + best);
+				Set(slot, Accessories[best]); Accessories[best] = new Item();
+				if (locked) { SetLocked(SlotAcc0 + best, false); SetLocked(slot, true); }
+				moved = true;
+			}
+			return moved;
+		}
+
 		/// <summary>Visual-only sync (type + prefix) for clients that draw the body.</summary>
 		public void WriteVisual(BinaryWriter w)
 		{
@@ -313,9 +364,10 @@ namespace Levy.Common.Soldiers
 			foreach (var a in Accessories) W(a);
 			foreach (var d in Dyes) W(d);
 			w.Write(Ammo.type); w.Write(Ammo.stack);
-			w.Write((ushort)LockMask);
+			w.Write(LockMask);
 			foreach (var x in ExtraSidearms) W(x ?? new Item()); // appended last so the earlier layout is unchanged
 			W(Camera ?? new Item());
+			W(Wings ?? new Item()); W(Boots ?? new Item());
 		}
 
 		public void ReadVisual(BinaryReader r)
@@ -325,9 +377,10 @@ namespace Levy.Common.Soldiers
 			for (int i = 0; i < AccessorySlots; i++) Accessories[i] = R();
 			for (int i = 0; i < DyeSlots; i++) Dyes[i] = R();
 			int at = r.ReadInt32(); int ast = r.ReadInt32(); Ammo = new Item(); if (at > 0) { Ammo.SetDefaults(at); Ammo.stack = ast; }
-			LockMask = r.ReadUInt16();
+			LockMask = r.ReadInt32();
 			for (int i = 0; i < ExtraSidearms.Length; i++) ExtraSidearms[i] = R();
 			Camera = R();
+			Wings = R(); Boots = R();
 		}
 	}
 }

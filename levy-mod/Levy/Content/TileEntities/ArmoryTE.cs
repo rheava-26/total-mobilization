@@ -1041,17 +1041,19 @@ namespace Levy.Content.TileEntities
 		{
 			var g = forSoldier?.Gear;
 			var worn = g?.Accessories;
+			// a levy who wears wings has his height covered: a jump accessory is then an ordinary one, never taken first
+			bool mobFirst = MobilityFirst && !(g != null && g.HasWings);
 			// Best fit to the soldier's class: his weapon's, else what his armor favours.
 			DamageClass cls = null;
 			if (g != null && g.HasWeapon) cls = WeaponClassifier.ItemDamageClass(g.Weapon);
 			if (cls == null && g != null) cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
 			int nSlots = Math.Clamp(forSoldier?.AccessorySlots ?? SoldierGear.AccessorySlots, 0, worn?.Length ?? 0);
 			// the last free slot is kept for a non-mobility accessory: a mobility one only goes in while one more slot would still be left for it
-			bool mobRoom = !MobilityFirst || MobilityRoom(worn, nSlots);
-			bool Pred(Item it) => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(worn, it) && (mobRoom || !AccessoryMobility.Is(it));
+			bool mobRoom = !mobFirst || MobilityRoom(worn, nSlots);
+			bool Pred(Item it) => Ordinary(it) && CanWearWith(worn, it, g) && (mobRoom || !AccessoryMobility.Is(it));
 			// Every levy takes one mobility accessory (wings, then the most extra jumps) before anything else; a second one is only a mild plus.
-			bool hasMob = MobilityFirst && AccessoryMobility.Best(worn) > 0f;
-			if (MobilityFirst && !hasMob) {
+			bool hasMob = mobFirst && AccessoryMobility.Best(worn) > 0f;
+			if (mobFirst && !hasMob) {
 				var m = TakeBest(null, 0, 0, 1, it => Pred(it) && AccessoryMobility.Is(it) && !AccessoryProgression.Redundant(worn, it), it => AccessoryMobility.Value(it) * 100000f + AccessoryScore(it, cls));
 				if (m != null) return m;
 			}
@@ -1060,7 +1062,7 @@ namespace Levy.Content.TileEntities
 			var best = TakeBest(null, 0, 0, 1, Pred, Score);
 			if (best != null || mobRoom) return best;
 			// nothing but mobility accessories is stocked: a second one beats an empty slot (a non-mobility one replaces it when it arrives, see AccessoryStep)
-			return TakeBest(null, 0, 0, 1, it => WeaponClassifier.IsUsefulAccessory(it) && CanWearWith(worn, it), Score);
+			return TakeBest(null, 0, 0, 1, it => Ordinary(it) && CanWearWith(worn, it, g), Score);
 		}
 
 		/// <summary>An item (or its upgrade, or its ingredient) the soldier already wears is only issued when nothing else is stocked.</summary>
@@ -2081,6 +2083,7 @@ namespace Levy.Content.TileEntities
 			var primaryFam = g.HasWeapon ? WeaponClassifier.Classify(g.Weapon) : WeaponFamily.None;
 			bool primaryMelee = IsMeleeTypeFamily(primaryFam);
 			bool summoner = IsSummonerSoldier(soldier);
+			if (MobilitySlotsStep(soldier)) changed = true; // wings and boots have slots of their own: filled before the ordinary accessories, which never take either
 			int slots = Math.Clamp(soldier.AccessorySlots, 0, Math.Min(SoldierGear.AccessorySlots, g.Accessories.Length));
 			for (int i = 0; i < slots; i++) {
 				if (g.IsLocked(SoldierGear.SlotAcc0 + i) || !IsAir(g.Accessories[i])) continue;

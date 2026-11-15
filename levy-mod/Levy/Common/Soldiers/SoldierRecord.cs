@@ -132,6 +132,7 @@ namespace Levy.Common.Soldiers
 				int open = Math.Min(AccessorySlots, g.Accessories?.Length ?? 0);
 				float bonus = global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Head, g.Body, g.Legs);
 				for (int i = 0; i < open; i++) bonus += global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Accessories[i]);
+				bonus += global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Wings) + global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Boots);
 				_gearMana = Math.Max(0, (int)bonus); _gearManaStamp = now == 0 ? 1u : now;
 				return _gearMana;
 			}

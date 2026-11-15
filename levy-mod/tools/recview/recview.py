@@ -15,6 +15,8 @@ import argparse, glob, gzip, json, os, re, sys, zlib
 from collections import Counter, defaultdict
 
 TICKS = 60.0
+# levy gear (lgear) slot names; 13 and 14 are the two mobility slots (a recording from before them has neither)
+LSLOT = ["weapon", "sidearm", "head", "body", "legs", "accessory", "accessory", "accessory", "accessory", "accessory", "accessory", "ammo", "hook", "wings", "boots"]
 
 
 # ------------------------------------------------------------------ reading
@@ -197,6 +199,14 @@ def analyse(rec):
         out["profile"] = analyse_profile(pr, tl)
     gear = [x for x in ev.get("gear", [])]
     out["commanderGearChanges"] = max(0, len(gear) - 1)
+    # how many levies wear wings and boots in their mobility slots (the last lgear of each levy)
+    last = {}
+    for x in ev.get("lgear", []):
+        last[x.get("id")] = x
+    if last:
+        slots = {i: {g[0] for g in x.get("g", [])} for i, x in last.items()}
+        out["levyMobility"] = {"levies": len(last), "wings": sum(1 for s in slots.values() if 13 in s), "boots": sum(1 for s in slots.values() if 14 in s),
+                               "both": sum(1 for s in slots.values() if 13 in s and 14 in s)}
     return out
 
 
@@ -339,6 +349,9 @@ def print_summary(rec, a, step):
         wp = ", ".join("%s x%d" % (rec.item(t), n) for t, n in army.get("weapons", []))
         if wp:
             P("            main weapons: %s" % wp)
+    lm = a.get("levyMobility")
+    if lm:
+        P("Mobility   %d levies seen: %d with wings, %d with boots, %d with both (the wings and boots slots, lgear 13 and 14)" % (lm["levies"], lm["wings"], lm["boots"], lm["both"]))
     c = a["commander"]
     if c:
         P("Commander  life %s  mana %s  defense %s" % (c.get("life"), c.get("mana"), c.get("defense")))

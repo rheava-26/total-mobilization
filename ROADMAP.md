@@ -14,6 +14,12 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🎯 Eve caught it: Leviathan targets the commander (lab replays)
+- Scan of all 344 rerun fights: only 3 boss-parts are on the commander >30%: Leviathan Master+Death s1 and Expert+Rev s1 (100%), Spazmatism Master+Death s1 (73%). All seed 1.
+- The commander is a hidden Spectator, so these were free wins: Leviathan Master+Death s1 landed 8 hits on levies vs 227 in s2.
+- Corrected Leviathan Master+Death on-tier record: 2/3 legit wins (s1 doesn't count).
+- `spectarget` builder: find why a downed boss locks onto a Spectator (spawned-by-boss / second-Twin path?), fix it, add a world check, reproduce s1.
+
 ## ☀️ Eve 11-15 morning
 - Calamitas Clone doubt ("did you put them in the box?"): Calamity's Rev+ CalClone ArenaWallSystem box (±2000 px around the closest player) contains PLAYERS only (ArenaWallPlayer). Levies aren't contained, but in all 4 Master+Death rerun fights no levy ever left the box region (max 50–68 tiles from start). So the box isn't why they win. Likely cause: her dashes hit one target at a time, against 34 on-tier levies. One-tier-below gear: full wipe (34/34 dead). Open idea: levies obey Calamity arena boxes like players (fair play, same as hit parity); also SupremeCalamitas.
 - **Eve asks: ≥100 fights per boss on the newest build, run gradually and equalized,** to find what's wrong per boss. Plan: after destroyerdrop, a long-running battery at ≤2 tML, mostly Master+Death (her balance target). Raw recordings stay on disk (container resets lose them!). fights.csv and the tables are committed.

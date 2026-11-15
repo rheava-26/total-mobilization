@@ -186,7 +186,7 @@ namespace Levy.Common.UI
 			// ammo pouch is trimmed, the excess comes back
 			check(g.TrySet(SoldierGear.SlotAmmo, arrows, 1, out var extra) && g.Ammo.stack == LevyConstants.AmmoPouchMax && extra != null && extra.stack == 1500 - LevyConstants.AmmoPouchMax && g.IsLocked(SoldierGear.SlotAmmo), "an oversized ammo stack is trimmed to the pouch and the excess is handed back");
 			// accessories: grade limit and duplicates
-			var boots = Make(ItemID.HermesBoots); var boots2 = Make(ItemID.HermesBoots);
+			var boots = Make(ItemID.BandofRegeneration); var boots2 = Make(ItemID.BandofRegeneration); // (wings and boots have slots of their own)
 			bool bootsOk = g.CanHold(SoldierGear.SlotAcc0, boots);
 			if (bootsOk)
 			{
@@ -194,7 +194,8 @@ namespace Levy.Common.UI
 				check(!g.TrySet(SoldierGear.SlotAcc0 + 1, boots2, 1, out _), "an accessory slot the grade has not opened refuses");
 				check(!g.TrySet(SoldierGear.SlotAcc0 + 1, boots2, 3, out _), "the same accessory twice is refused");
 			}
-			else check(false, "Hermes Boots should be a useful accessory");
+			else check(false, "Band of Regeneration should be a useful accessory");
+			check(g.CanHold(SoldierGear.SlotWings, Make(ItemID.AngelWings)) && g.CanHold(SoldierGear.SlotBoots, Make(ItemID.HermesBoots)) && !g.CanHold(SoldierGear.SlotAcc0 + 2, Make(ItemID.HermesBoots)) && !g.CanHold(SoldierGear.SlotBoots, Make(ItemID.AngelWings)), "wings and boots fit their own slots and no accessory slot");
 
 			// vanity dyes: a dye only, one at a time, never locked
 			var dye = Make(ItemID.RedDye); dye.stack = 5;

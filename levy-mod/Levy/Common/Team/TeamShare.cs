@@ -108,6 +108,9 @@ namespace Levy.Common.Team
 					Item it = s.Record.Gear.Accessories[i];
 					if (it != null && !it.IsAir && !_items.Exists(x => x.type == it.type)) _items.Add(it);
 				}
+				Item wn = s.Record.Gear.Wings, bt = s.Record.Gear.Boots;
+				if (wn != null && !wn.IsAir && !_items.Exists(x => x.type == wn.type)) _items.Add(wn);
+				if (bt != null && !bt.IsAir && !_items.Exists(x => x.type == bt.type)) _items.Add(bt);
 			}
 		}
 	}

@@ -129,9 +129,17 @@ namespace Levy.Common.Testing
 			{
 				if (!ContentSamples.ItemsByType.TryGetValue(i, out Item s) || s == null || s.IsAir || !s.accessory || s.vanity) continue;
 				Item it = new Item(); it.SetDefaults(i);
-				if (new SoldierGear().CanHold(SoldierGear.SlotAcc0, it)) return it;
+				if (AccessorySlotFor(new SoldierGear(), it) >= 0) return it;
 			}
 			return null;
+		}
+
+		/// <summary>The slot a levy wears this accessory in: the wings slot for wings, the boots slot for boots, else the first accessory slot; -1 when none takes it.</summary>
+		internal static int AccessorySlotFor(SoldierGear g, Item it)
+		{
+			if (g.CanHold(SoldierGear.SlotWings, it)) return SoldierGear.SlotWings;
+			if (g.CanHold(SoldierGear.SlotBoots, it)) return SoldierGear.SlotBoots;
+			return g.CanHold(SoldierGear.SlotAcc0, it) ? SoldierGear.SlotAcc0 : -1;
 		}
 
 		private static int SpawnLevy(string name, Item weapon, Item accessory, Vector2 at)
@@ -143,7 +151,7 @@ namespace Levy.Common.Testing
 			};
 			rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana;
 			if (weapon != null && rec.Gear.CanHold(SoldierGear.SlotWeapon, weapon)) { rec.Gear.Weapon = weapon; rec.Gear.SetLocked(SoldierGear.SlotWeapon, true); }
-			if (accessory != null && rec.Gear.CanHold(SoldierGear.SlotAcc0, accessory)) { rec.Gear.Accessories[0] = accessory; rec.Gear.SetLocked(SoldierGear.SlotAcc0, true); }
+			if (accessory != null) { int aslot = AccessorySlotFor(rec.Gear, accessory); if (aslot >= 0) { rec.Gear.Set(aslot, accessory); rec.Gear.SetLocked(aslot, true); } }
 			rec.LoadoutLocked = true; rec.Order = SoldierOrder.Follow;
 			RosterSystem.Instance.Regulars.Add(rec);
 			int body = RosterSystem.Instance.SpawnBody(rec, at);

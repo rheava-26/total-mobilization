@@ -11,7 +11,12 @@ namespace Levy.Common.Movement
 	public static class AccessoryMobility
 	{
 		private static readonly Dictionary<int, (int jumps, bool wings, float value)> Cache = new();
+		/// <summary>Item types that raise a dummy's top run speed or give rocket flight (read together with <see cref="Cache"/>).</summary>
+		private static readonly HashSet<int> Runners = new();
 		private static Player _dummy;
+
+		/// <summary>True when wearing the item makes a dummy run faster or gives it rocket flight (Hermes Boots up to Angel Treads, not Shoe Spikes, Frog Leg or a dash).</summary>
+		public static bool IsRunner(Item it) { if (it == null || it.IsAir) return false; ReadAll(it); return Runners.Contains(it.type); }
 
 		/// <summary>Extra jumps the item grants and whether it is a pair of wings.</summary>
 		public static (int jumps, bool wings) Read(Item it) { var r = ReadAll(it); return (r.jumps, r.wings); }
@@ -67,6 +72,7 @@ namespace Levy.Common.Movement
 				var bare = Snap(_dummy, null);
 				var c = new Item(); c.SetDefaults(it.type);
 				var w = Snap(_dummy, c);
+				if (w.ab.MaxRunSpeed - bare.ab.MaxRunSpeed > 0.05f || w.rocketTime > bare.rocketTime || w.rocketTier > bare.rocketTier) Runners.Add(it.type);
 				int jumps = Math.Max(0, w.ab.ExtraJumps - bare.ab.ExtraJumps);
 				bool wings = it.wingSlot > 0 || (w.ab.HasWings && !bare.ab.HasWings);
 				float v;

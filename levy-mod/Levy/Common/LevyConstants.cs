@@ -59,6 +59,10 @@ namespace Levy.Common
 			public const float MobilityClimbValue = 1f, MobilityClimbHoldBonus = 0.3f;
 			public const int MobilityMaxJumpsCounted = 3;
 			public const float MobilityStackBonus = 150f;
+			/// <summary>Score points per unit of measured movement value when two pairs of wings or boots are ranked for a mobility slot (the accessory score decides first; this breaks a level ranking toward the faster pair).</summary>
+			public const float MobilitySlotValueWeight = 150f;
+			/// <summary>Score added to boots that raise the run speed or give rocket flight: above an upgrade chain (5000 per level), below a Preferred pick, so the boots slot never goes to a shoe that does not make a levy faster while real boots are stocked.</summary>
+			public const float MobilityRunnerBoots = 100000f;
 		}
 
 		// ---------- HP / mana ----------

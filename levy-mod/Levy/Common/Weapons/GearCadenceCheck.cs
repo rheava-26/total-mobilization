@@ -155,7 +155,7 @@ namespace Levy.Common.Weapons
 				int Count(SoldierRecord r) => r.Gear.Accessories.Count(x => x != null && !x.IsAir && x.type == ItemID.ObsidianShield);
 				string tag = reverse ? " (timers in reverse)" : "";
 				check(Count(a) + Count(b) + Count(c) == 1 && te.CountInStorage(ItemID.ObsidianShield) == 0, "the one new accessory is worn by exactly one levy" + tag + $" (a={Count(a)} b={Count(b)} c={Count(c)})");
-				check(a.Gear.Accessories.Any(x => x.type == ItemID.CloudinaBottle) && c.Gear.Accessories.Any(x => x.type == ItemID.HermesBoots), "nobody loses a mobility accessory to it" + tag);
+				check(a.Gear.Accessories.Any(x => x.type == ItemID.CloudinaBottle) && (c.Gear.Accessories.Any(x => x.type == ItemID.HermesBoots) || c.Gear.Boots.type == ItemID.HermesBoots), "nobody loses a mobility accessory to it" + tag);
 				check(again == 0, "no churn once the accessory is dealt" + tag);
 			}
 		}
@@ -173,7 +173,7 @@ namespace Levy.Common.Weapons
 				int late = 0;
 				try { for (int i = 0; i < 10; i++) { var before = Snap(r); te.UpgradeWeapons(r); if (i >= 4 && before != Snap(r)) late++; } } finally { ArmoryTE.TestServed = null; }
 				check(late == 0, $"a levy with {Make(weapon).Name} settles on his accessories instead of rotating them every look ({late} late changes)");
-				check(r.Gear.Accessories.Any(x => x != null && !x.IsAir && AccessoryMobility.Is(x)), $"a levy with {Make(weapon).Name} still wears a mobility accessory");
+				check(r.Gear.HasWings && r.Gear.HasBoots && r.Gear.Accessories.All(x => x == null || x.IsAir || !MobilitySlots.Is(x)), $"a levy with {Make(weapon).Name} still wears his wings and boots, in their own slots");
 			}
 		}
 

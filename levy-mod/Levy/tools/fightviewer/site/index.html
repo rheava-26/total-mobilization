@@ -762,11 +762,11 @@ function buildRoster(){
 }
 function levyRowAt(id,f){return (f.l||[]).find(l=>l[0]===id)||null;}
 const itemTxt=(t,pre)=>{const pn=pre>0&&D.names.prefixes&&D.names.prefixes[pre];return (pn?pn+" ":"")+nm("items",t);};
-const LSLOT=["weapon","sidearm","head","body","legs","accessory","accessory","accessory","accessory","accessory","accessory","ammo","hook"];
+const LSLOT=["weapon","sidearm","head","body","legs","accessory","accessory","accessory","accessory","accessory","accessory","ammo","hook","wings","boots"];
 function levyGearHtml(id){
   let ev=null; for(const e of (D.lgear.get(id)||[])){if(e.t<=cur)ev=e;else break;} if(!ev) ev=(D.lgear.get(id)||[])[0]; if(!ev) return "";
   const by={}; for(const g of ev.g){const k=LSLOT[g[0]]||"slot"+g[0];(by[k]=by[k]||[]).push(itemTxt(g[1],g[2])+(g[0]===11&&g[3]>1?" x"+g[3]:""));}
-  return ["weapon","sidearm","head","body","legs","accessory","ammo","hook"].filter(k=>by[k]).map(k=>`<span>${k==="accessory"?"accessories":k}</span><span>${esc(by[k].join(", "))}</span>`).join("");
+  return ["weapon","sidearm","head","body","legs","accessory","wings","boots","ammo","hook"].filter(k=>by[k]).map(k=>`<span>${k==="accessory"?"accessories":k}</span><span>${esc(by[k].join(", "))}</span>`).join("");
 }
 function updateRoster(){
   if(!D||!$("roster")||performance.now()-rosterAt<120) return; rosterAt=performance.now();

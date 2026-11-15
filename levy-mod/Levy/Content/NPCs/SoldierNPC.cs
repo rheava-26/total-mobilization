@@ -262,6 +262,25 @@ namespace Levy.Content.NPCs
 				d.GrantArmorBenefits(it);
 				d.ApplyEquipFunctional(it, false);
 			}
+			// the wings and boots slots: worn by every levy from the start, applied the same way as an accessory beyond the dummy's slots
+			ApplyMobilityItem(d, Record.Gear.Wings);
+			ApplyMobilityItem(d, Record.Gear.Boots);
+		}
+
+		private static void ApplyMobilityItem(Player d, Item it)
+		{
+			if (it == null || it.IsAir || !it.accessory || (it.expertOnly && !Main.expertMode)) return;
+			d.GrantPrefixBenefits(it);
+			d.GrantArmorBenefits(it);
+			d.ApplyEquipFunctional(it, false);
+		}
+
+		/// <summary>The body shows the wings and boots of the mobility slots: PlayerFrame resolves the visible accessories from the dummy's own slots only, so the two are made visible here (draw only).</summary>
+		private void ApplyMobilityVisuals(Player p)
+		{
+			var g = Record?.Gear; if (g == null) return;
+			if (g.HasWings && p.wings <= 0) p.UpdateVisibleAccessory(3, g.Wings);
+			if (g.HasBoots && p.shoe <= 0) p.UpdateVisibleAccessory(3, g.Boots);
 		}
 
 		/// <summary>Copies gear into the dummy's equipment arrays (references, not clones).</summary>

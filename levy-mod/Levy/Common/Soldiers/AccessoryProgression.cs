@@ -148,9 +148,11 @@ namespace Levy.Common.Soldiers
 				ArmoryTE.TestServed = new List<SoldierRecord> { r1, r2 };
 				var te = new ArmoryTE();
 				te.Deposit(Make(ItemID.HermesBoots)); te.Deposit(Make(ItemID.LightningBoots));
-				var first = te.TakeAccessory(r1);
+				var viaAcc = te.TakeAccessory(r1);
+				Check("boots are never dealt into an accessory slot (they have a slot of their own)", viaAcc == null, viaAcc?.Name ?? "null");
+				var first = te.TakeMobility(r1, false);
 				Check("armory issues Lightning Boots, not Hermes Boots", first != null && first.type == ItemID.LightningBoots, first?.Name ?? "null");
-				if (first != null) r1.Gear.Accessories[0] = first;
+				if (first != null) r1.Gear.Boots = first;
 				te.Deposit(Make(ItemID.ObsidianShield));
 				var second = te.TakeAccessory(r1);
 				Check("a levy in Lightning Boots is not also given Hermes Boots while other gear is stocked", second != null && second.type != ItemID.HermesBoots, second?.Name ?? "null");

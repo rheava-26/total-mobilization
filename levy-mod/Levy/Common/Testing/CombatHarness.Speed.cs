@@ -200,7 +200,7 @@ namespace Levy.Common.Testing
 				var gear = rec.Gear;
 				if (tr.Boots.Length > 1) rec.Grade = Grade.Champion; // a Levy-grade soldier has one accessory slot; the stack loadouts need the Champion's five
 				int ai = 0;
-				for (int bi = 0; bi < tr.Boots.Length; bi++) { if (tr.Boots[bi] < 0) continue; var b = new Item(); b.SetDefaults(tr.Boots[bi]); if (gear.CanHold(SoldierGear.SlotAcc0 + ai, b)) { gear.Set(SoldierGear.SlotAcc0 + ai, b); gear.SetLocked(SoldierGear.SlotAcc0 + ai, true); } else Mod.Logger.Warn("HARNESS-SPEED: accessory CanHold false"); ai++; }
+				for (int bi = 0; bi < tr.Boots.Length; bi++) { if (tr.Boots[bi] < 0) continue; var b = new Item(); b.SetDefaults(tr.Boots[bi]); int bslot = gear.CanHold(SoldierGear.SlotBoots, b) ? SoldierGear.SlotBoots : SoldierGear.SlotAcc0 + ai; /* boots have their own slot; the rest of a stack is accessories */ if (gear.CanHold(bslot, b)) { gear.Set(bslot, b); gear.SetLocked(bslot, true); if (bslot != SoldierGear.SlotBoots) ai++; } else Mod.Logger.Warn("HARNESS-SPEED: accessory CanHold false"); }
 				if (tr.Armed)
 				{
 					var w = new Item(); w.SetDefaults(ItemID.Handgun);

@@ -95,6 +95,8 @@ namespace Levy.Common.Team
 					if (r == null || ReferenceEquals(r, self) || r.Gear == null) continue;
 					int n = Math.Min(r.AccessorySlots, r.Gear.Accessories.Length);
 					for (int i = 0; i < n; i++) foreach (var k in KeysOf(r.Gear.Accessories[i])) set.Add(k);
+					foreach (var k in KeysOf(r.Gear.Wings)) set.Add(k);
+					foreach (var k in KeysOf(r.Gear.Boots)) set.Add(k);
 				}
 			for (int i = 0; i < Main.maxPlayers; i++)
 			{

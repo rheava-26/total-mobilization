@@ -70,6 +70,7 @@ namespace Levy.Content.TileEntities
 					Add(g.Head, InUseKind.Carried, name, id); Add(g.Body, InUseKind.Carried, name, id); Add(g.Legs, InUseKind.Carried, name, id);
 					for (int i = 0, n = AccSlotsOf(rec); i < n; i++) Add(g.Accessories[i], InUseKind.Carried, name, id);
 					Add(g.Ammo, InUseKind.Carried, name, id); Add(g.Hook, InUseKind.Carried, name, id); Add(g.Camera, InUseKind.Carried, name, id);
+					Add(g.Wings, InUseKind.Carried, name, id); Add(g.Boots, InUseKind.Carried, name, id);
 				}
 			}
 			if (_loanHolders.Count > 0) PruneLoanHolders();

@@ -53,7 +53,7 @@ namespace Levy.Content.NPCs
 			if (NeedsUpkeep(g.Head) || NeedsUpkeep(g.Body) || NeedsUpkeep(g.Legs)) return true;
 			int slots = Math.Min(Record.AccessorySlots, g.Accessories.Length);
 			for (int i = 0; i < slots; i++) if (NeedsUpkeep(g.Accessories[i])) return true;
-			return false;
+			return NeedsUpkeep(g.Wings) || NeedsUpkeep(g.Boots); // a modded pair of wings or boots has hooks of its own (Calamity's Angel Treads sets a flag its player reads every tick)
 		}
 
 		private static bool NeedsUpkeep(Item it) => it != null && !it.IsAir && (it.type >= ItemID.Count || UpkeepVanillaAccessories.Contains(it.type));

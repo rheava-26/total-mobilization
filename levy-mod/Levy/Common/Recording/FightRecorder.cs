@@ -1013,14 +1013,14 @@ namespace Levy.Common.Recording
 			int h = 17;
 			h = GearHash(g.Weapon, h); h = GearHash(g.Sidearm, h); h = GearHash(g.Head, h); h = GearHash(g.Body, h); h = GearHash(g.Legs, h);
 			for (int i = 0; i < g.Accessories.Length; i++) h = GearHash(g.Accessories[i], h);
-			h = GearHash(g.Ammo, h); h = GearHash(g.Hook, h);
+			h = GearHash(g.Ammo, h); h = GearHash(g.Hook, h); h = GearHash(g.Wings, h); h = GearHash(g.Boots, h);
 			if (_lgear.TryGetValue(id, out int was) && was == h) return;
 			_lgear[id] = h;
 			var l = new List<string>();
 			void Add(Item it, int slot) { string x = GearItem(it, slot, true); if (x != null) l.Add(x); }
 			Add(g.Weapon, 0); Add(g.Sidearm, 1); Add(g.Head, 2); Add(g.Body, 3); Add(g.Legs, 4);
 			for (int i = 0; i < g.Accessories.Length; i++) Add(g.Accessories[i], 5 + i);
-			Add(g.Ammo, 11); Add(g.Hook, 12);
+			Add(g.Ammo, 11); Add(g.Hook, 12); Add(g.Wings, 13); Add(g.Boots, 14);
 			Ev("lgear", ("id", id.ToString()), ("g", "[" + string.Join(",", l) + "]"));
 		}
 

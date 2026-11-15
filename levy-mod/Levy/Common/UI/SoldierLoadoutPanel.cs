@@ -30,7 +30,7 @@ namespace Levy.Common.UI
 		private readonly Label[] _captions = new Label[SoldierGear.SlotCount];
 		private int _refreshTimer, _statusTimer;
 
-		private const int W = 372, H = 332;
+		private const int W = 372, H = 372;
 		private const float SlotScale = 0.85f;
 		private const int Pitch = 50, SlotSize = 44;
 		private static readonly Color Gold = new(255, 215, 80);
@@ -72,10 +72,13 @@ namespace Levy.Common.UI
 			for (int x = 0; x < LevyConstants.ExtraSidearms; x++) AddSlot(SoldierGear.SlotSide2 + x, "Loadout.ExtraSidearm", 12 + x * Pitch, 232);
 			Put(new Label(LevyUtil.T("Loadout.Camera"), 0.75f), 140, 214);
 			AddSlot(SoldierGear.SlotCamera, "Loadout.Camera", 140, 232);
+			Put(new Label(LevyUtil.T("Loadout.Mobility"), 0.75f), 210, 214);
+			AddSlot(SoldierGear.SlotWings, "Loadout.Wings", 210, 232);
+			AddSlot(SoldierGear.SlotBoots, "Loadout.Boots", 260, 232);
 
-			_kit = Put(new LevyButton(LevyUtil.T("Loadout.ReturnKit"), 0.8f, 150, 26, ToggleKit, LevyUtil.T("Loadout.ReturnKitHint")), 210, 238);
-			_status = Put(new Label("", 0.75f), 12, 280);
-			_hint = Put(new Label(LevyUtil.T("Loadout.Hint"), 0.65f), 12, 304);
+			_kit = Put(new LevyButton(LevyUtil.T("Loadout.ReturnKit"), 0.8f, 150, 26, ToggleKit, LevyUtil.T("Loadout.ReturnKitHint")), 210, 296);
+			_status = Put(new Label("", 0.75f), 12, 326);
+			_hint = Put(new Label(LevyUtil.T("Loadout.Hint"), 0.65f), 12, 350);
 			_hint.TextColor = new Color(200, 205, 225);
 
 			Append(_panel);

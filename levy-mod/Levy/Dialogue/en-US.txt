@@ -503,339 +503,339 @@ EVENT_FROSTLEGION | Any | Somebody warm up! No, somebody warm THEM up! Hot thing
 EVENT_FROSTLEGION | Any | Go for the hats! The hats! That's where they keep the courage!
 
 # ---------------------------------------------------------------- Combat (a bubble and a short floating line; messy on purpose: they talk over each other)
-ENGAGE | Any | Contact! Contact! I think that's what you yell! Contact!
-ENGAGE | Any | Weapons up! Mostly up. Up-ish.
-ENGAGE | Any | Here they come! Everyone act brave! I'll start! I'm starting!
-ENGAGE | Any | Enemy sighted! Shooting it is the plan! It's the whole plan!
-ENGAGE | Any | Targets ahead! I'm calling them targets! It sounds better than monsters!
-ENGAGE | Any | Something's coming from the left! Or the right! Definitely coming!
-ENGAGE | Any | Heads up! Heads up! Heads up, {Player}!
-ENGAGE | Any | They're back! They brought friends! They always bring friends!
-ENGAGE | Any | Okay, nobody panic! I mean, panic quietly! Facing the right way!
-ENGAGE | Any | Left! No, your left! The thing's on the left!
-ENGAGE | Any | I see it! Does everybody see it?! Tell me you see it!
-ENGAGE | Any | Whoever's behind me, please stay behind me! I like the feeling!
-ENGAGE | Any | Move up! Hold! Move up! Somebody pick one!
-ENGAGE | Any | Stay behind {Tank}! {TankHe} died {TankDeaths} times! {TankHe} knows how it works!
-ENGAGE | Greenhorn | Okay. Okay okay okay. Okay!
-ENGAGE | Greenhorn | Please be a slime! Please be a slime! Please be a slime!
-ENGAGE | Greenhorn | I remember the drill! Point it at the thing! That's the drill!
-ENGAGE | Greenhorn | Is that one of the big ones?! It looks like one of the big ones!
-ENGAGE | Sellsword | Contact! The clock's running and so's my meter!
-ENGAGE | Sellsword | Hazard pay starts now! Everyone heard that! Witnesses!
-ENGAGE | Sellsword | Monsters! Fine! I'll bill it as two incidents!
-ENGAGE | Sellsword | Is this one extra? This feels like an extra one!
-ENGAGE | Zealot | For {Player} and for the wall! And for whatever {Player} wants next!
-ENGAGE | Zealot | They come! Let them find us ready and in a good mood!
-ENGAGE | Zealot | Fight in a straight line! Rigroth the Undying hates a crooked line!
-ENGAGE | Zealot | Everyone look busy! The boss is watching! The boss is always watching!
-ENGAGE | Cynic | Right on schedule! Wonderful! I'm thrilled!
-ENGAGE | Cynic | Here we go again! Can we get a different one next time?!
-ENGAGE | Cynic | Contact! I said there'd be contact! Nobody wrote it down!
-ENGAGE | Cynic | Great! More of them! There were too few of them before!
-ENGAGE | Veteran | Easy! Let them come to us! Chasing's how you die tired!
-ENGAGE | Veteran | Steady! Pick your target! Then pick a better one!
-ENGAGE | Veteran | Breathe. Aim. Shout if you want. I won't tell the greenhorns!
-ENGAGE | Veteran | Same as always! Don't all pick the same one! Spread out!
-ENGAGE | Any | [early] Is it a slime? Please say it's a slime! It's a slime, right?!
-ENGAGE | Any | [hardmode] Bigger ones, bigger guns, same old shouting! Contact!
+ENGAGE | Any | Enemy incoming! Open fire!
+ENGAGE | Any | Contact! Open fire!
+ENGAGE | Any | Here they come! Weapons up!
+ENGAGE | Any | Targets ahead! Fire at will!
+ENGAGE | Any | Hostiles in sight! Let them have it!
+ENGAGE | Any | Incoming! Take cover!
+ENGAGE | Any | Stand ready! They're here!
+ENGAGE | Any | Lock and load! Here we go!
+ENGAGE | Any | Form up! Fire!
+ENGAGE | Any | Everyone fire! Now!
+ENGAGE | Any | Eyes open! Shoot on sight!
+ENGAGE | Any | Open fire! Don't let up!
+ENGAGE | Any | Heads up, {Player}! Enemy incoming!
+ENGAGE | Any | Stay behind {Tank}! {TankHe} died {TankDeaths} times and kept fighting!
+ENGAGE | Any | [early] Slimes ahead! Open fire!
+ENGAGE | Any | [hardmode] Heavy hitters incoming! Open fire!
+ENGAGE | Greenhorn | Okay! Okay! Fire! Fire!
+ENGAGE | Greenhorn | I'm ready! I think! Open fire!
+ENGAGE | Greenhorn | Here they come! I can do this!
+ENGAGE | Greenhorn | Enemy incoming! I'm not afraid!
+ENGAGE | Sellsword | Fighting's my job! Open fire!
+ENGAGE | Sellsword | Time to earn my pay!
+ENGAGE | Sellsword | Enemy incoming! Let's get paid!
+ENGAGE | Sellsword | I'm getting paid for this! Fire!
+ENGAGE | Zealot | For the commander! Open fire!
+ENGAGE | Zealot | For {Player}! For {Player}'s army! Fire!
+ENGAGE | Zealot | No fear! Righteous fire!
+ENGAGE | Zealot | Strike them down!
+ENGAGE | Cynic | Here we go again!
+ENGAGE | Cynic | Of course they're back! Open fire!
+ENGAGE | Cynic | More of them! Fire!
+ENGAGE | Cynic | Same fight, new monsters! Fire!
+ENGAGE | Veteran | Steady! Pick your targets!
+ENGAGE | Veteran | Hold the line! Steady!
+ENGAGE | Veteran | Easy! Let them come!
+ENGAGE | Veteran | Stay sharp! Open fire!
 
-KILL | Any | Got one! Put it on the banner!
-KILL | Any | That one's for {Comrade}! The other ones were for me!
-KILL | Any | Down it goes! Was that cool? Tell me that was cool!
-KILL | Any | And stay down! ... Please stay down.
-KILL | Any | One less! Only a few hundred to go!
-KILL | Any | Dead on the first try! I'll never repeat it!
-KILL | Any | Another one for the tally! The tally's on my arm! It's getting long!
-KILL | Any | Did you see that?! Somebody say they saw that!
-KILL | Any | That's mine! That one's mine! {Glutton}, don't even look at it!
-KILL | Any | Ha! Right in the... whatever that was! Right in it!
-KILL | Any | I hit it! I hit it with the thing! First time!
-KILL | Any | It's down! {Player}, it's down! I did that! A little bit of that was me!
-KILL | Any | And THAT'S what I think of your opinions!
-KILL | Greenhorn | I got one! Did you see?! Please say you saw!
-KILL | Greenhorn | It's dead! I did that! Me! Don't tell my mother, she'll worry!
-KILL | Greenhorn | I'm not going to throw up! I'm not going to! I'm fine! One down!
-KILL | Sellsword | That's one off the invoice!
-KILL | Sellsword | Another head, another coin! Hopefully! Probably a coin!
-KILL | Sellsword | Kill count's up! So's my rate!
-KILL | Sellsword | Count that! Somebody count that! In writing!
-KILL | Zealot | Another prayer answered! I lost count at forty!
-KILL | Zealot | Praise be! And pass the ammunition, praise be!
-KILL | Zealot | Headshots are the only honest kind! Vorrath of the Thousand Teeth said so!
-KILL | Zealot | Did the boss see that one?! Somebody tell the boss that one was mine!
-KILL | Cynic | One down! Don't get excited! There's always another!
-KILL | Cynic | It's dead. It'll be back. Something like it, anyway.
-KILL | Cynic | Great! Now the next one hates me personally!
-KILL | Veteran | Clean. Next.
-KILL | Veteran | Another one! They never stop looking surprised!
-KILL | Veteran | That's how it's done! Take notes! I'll quiz you!
+KILL | Any | Got one!
+KILL | Any | Die, monster!
+KILL | Any | Take that!
+KILL | Any | Down you go!
+KILL | Any | One less!
+KILL | Any | Another one down!
+KILL | Any | Stay down!
+KILL | Any | Eat lead!
+KILL | Any | That's one!
+KILL | Any | Target down!
+KILL | Any | That one's for {Comrade}!
+KILL | Any | Mine! Beat that, {Glutton}!
+KILL | Any | It's down, {Player}! Got it!
+KILL | Greenhorn | I got one! I actually got one!
+KILL | Greenhorn | Did you see that?! I got it!
+KILL | Greenhorn | It's down! I did it!
+KILL | Sellsword | Another kill! Another coin!
+KILL | Sellsword | That's one for the bounty!
+KILL | Sellsword | I'm getting paid for this!
+KILL | Sellsword | Money in the bank!
+KILL | Zealot | Justice is served!
+KILL | Zealot | For the commander!
+KILL | Zealot | Begone, foul thing!
+KILL | Zealot | Purified!
+KILL | Cynic | One down. Plenty to go!
+KILL | Cynic | Dead! Next!
+KILL | Cynic | Stay dead this time!
+KILL | Veteran | Clean shot! Next!
+KILL | Veteran | Steady work!
+KILL | Veteran | That's how it's done!
 
-HURT | Any | I'm hit! Right in the part that was fine!
-HURT | Any | Ow! That was a good one! Rude, but good!
-HURT | Any | Hit! I'm fine! I'm completely fine! Don't look at me!
-HURT | Any | Ouch! That's coming out of someone's pay!
-HURT | Any | Ow! That went right through the armor! I paid good coin for that armor!
-HURT | Any | Ow ow ow! Okay! Ow! Moving on!
-HURT | Any | Who hit me?! Who?! Say it to my face!
-HURT | Any | It got me! It actually got me! I thought we had an understanding!
-HURT | Any | That stung! That stung and I'm going to remember it!
-HURT | Any | Don't look! Everybody keep shooting! I'm just going to hop over here!
-HURT | Greenhorn | I'm hit! Is that a lot?! It feels like a lot!
-HURT | Greenhorn | Ow! Is this normal?! Somebody say this is normal!
-HURT | Greenhorn | I'm okay! I'm okay! That's a lot of red!
-HURT | Sellsword | That goes on the invoice! Underlined!
-HURT | Sellsword | Injury! Mention it to payroll! Loudly!
-HURT | Sellsword | I'm hurt! Is that covered?! Somebody check the contract!
-HURT | Zealot | A blessing! A painful one! Ow, but a blessing!
-HURT | Zealot | I accept this pain! I accept it! Please stop offering!
-HURT | Zealot | Pain is a gift! Ixxethra the Star-Eater said that! Ixxethra's never been hit!
-HURT | Cynic | Called it! I called it!
-HURT | Cynic | Of course! Of COURSE it hit me!
-HURT | Cynic | Wonderful! It found me! I was hoping it would!
-HURT | Veteran | Stung. I've had worse. Less often, but worse.
-HURT | Veteran | Hm. Tag, you're it! Now I'm coming for you!
-HURT | Veteran | Still standing! Still annoyed! Let's go!
+HURT | Any | I'm hit!
+HURT | Any | Ow! That hurt!
+HURT | Any | Argh! I'm hit!
+HURT | Any | I'm hit! Keep firing!
+HURT | Any | Took one! I'm fine!
+HURT | Any | Just a scratch!
+HURT | Any | They got me! Keep fighting!
+HURT | Any | Ugh! That's bad!
+HURT | Any | I'm hurt! Still fighting!
+HURT | Any | Hit! Still standing!
+HURT | Greenhorn | I'm hit! I'm actually hit!
+HURT | Greenhorn | Ow! Is that supposed to happen?!
+HURT | Greenhorn | It hurts! I'm still fighting!
+HURT | Sellsword | That's costing extra!
+HURT | Sellsword | Hit! Hazard pay!
+HURT | Sellsword | Ow! I want a raise!
+HURT | Zealot | Pain is nothing! For the commander!
+HURT | Zealot | I will endure!
+HURT | Zealot | Still standing! Praise be!
+HURT | Cynic | Of course I'm hit!
+HURT | Cynic | Typical! I'm hit!
+HURT | Cynic | Ow! Called it!
+HURT | Veteran | Hit! Still in it!
+HURT | Veteran | I've had worse! Keep firing!
+HURT | Veteran | Walk it off! Keep going!
 
-LOW_HP | Any | Not dead! Mostly! {Nurse}, if you're listening...
-LOW_HP | Any | Somebody find a Nurse! Or a bandage! Or a cheerful anecdote!
-LOW_HP | Any | I'm not saying I'm dying! I'm saying I see a bright light and it smells like soup!
-LOW_HP | Any | Health is low! Optimism is lower! I'm still shooting, though!
-LOW_HP | Any | Please don't mention the blood! It's mine and I'm attached to it!
-LOW_HP | Any | I'm okay! I'm okay! I'm very much not okay!
-LOW_HP | Any | Everything's gone fuzzy at the edges! It's kind of pretty! Somebody heal me!
-LOW_HP | Any | If I fall over, step around me! Or heal me! Mostly heal me!
-LOW_HP | Any | I'm down to the last of me! Cover me! Somebody cover me, {Player}!
-LOW_HP | Any | Hello?! Nurse?! Anyone with a heart?! I'll take a potion!
-LOW_HP | Greenhorn | I want to go home! I'm still shooting!
-LOW_HP | Greenhorn | Mom?! I mean, medic! I meant medic!
-LOW_HP | Sellsword | I'm bleeding on company time! Somebody fill out a form!
-LOW_HP | Zealot | Not yet! I haven't finished my prayers! Give me one more verse!
-LOW_HP | Cynic | Well. That's about what I expected! Anyone have a plan B?!
-LOW_HP | Veteran | Not my first near miss. Might be my last. Cover the left.
+LOW_HP | Any | Low on health!
+LOW_HP | Any | I need healing!
+LOW_HP | Any | Medic!
+LOW_HP | Any | I'm hurt bad!
+LOW_HP | Any | Cover me! I'm weak!
+LOW_HP | Any | Need a medic here!
+LOW_HP | Any | I can't take much more!
+LOW_HP | Any | Health's critical!
+LOW_HP | Any | Medic! {Nurse}, I need you!
+LOW_HP | Any | Cover me, {Player}! I'm hurt bad!
+LOW_HP | Greenhorn | I'm bleeding! Medic!
+LOW_HP | Greenhorn | Am I okay?! Medic!
+LOW_HP | Sellsword | I'm not paid enough for this! Medic!
+LOW_HP | Zealot | I'll fight to my last breath!
+LOW_HP | Cynic | Knew it! Medic!
+LOW_HP | Veteran | Need a medic! Cover me!
 
-OUT_OF_AMMO | Any | Out of ammo! Throwing the gun! Throwing the gun didn't work!
-OUT_OF_AMMO | Any | Click. Why is it click? It's never supposed to click!
-OUT_OF_AMMO | Any | I'm out! Does anyone have a bullet? A pebble? An encouraging word?
-OUT_OF_AMMO | Any | Out of ammo! Somebody tell {ArmsDealer} I'm a very good customer!
-OUT_OF_AMMO | Any | Dry! I'm dry! Tell the others I'm dry! Don't tell them how I know!
-OUT_OF_AMMO | Any | Who's got my ammo?! I had it! I swear I had it!
-OUT_OF_AMMO | Any | Nothing! It's empty! It was full! I only blinked!
-OUT_OF_AMMO | Any | I'm reloading! Not really! There's nothing to reload with! I'm just standing here!
-OUT_OF_AMMO | Greenhorn | It stopped! Did I break it?! I didn't touch anything!
-OUT_OF_AMMO | Sellsword | Out of ammo! Ammo's not in my contract! Put it in my contract!
-OUT_OF_AMMO | Sellsword | Dry! Resupply is a company obligation!
-OUT_OF_AMMO | Zealot | My ammunition is spent! Mother Gnash provides! Mother Gnash is slow!
-OUT_OF_AMMO | Cynic | Out of ammo. Naturally. Naturally.
-OUT_OF_AMMO | Veteran | Dry. Cover me while I scrounge.
+OUT_OF_AMMO | Any | Reloading!
+OUT_OF_AMMO | Any | Out of ammo!
+OUT_OF_AMMO | Any | Empty! Reloading!
+OUT_OF_AMMO | Any | Cover me! Reloading!
+OUT_OF_AMMO | Any | I'm dry! Need ammo!
+OUT_OF_AMMO | Any | Out of bullets!
+OUT_OF_AMMO | Any | Magazine's empty!
+OUT_OF_AMMO | Any | Out of ammo! {ArmsDealer}, I need more!
+OUT_OF_AMMO | Greenhorn | I'm out! Where's more ammo?!
+OUT_OF_AMMO | Sellsword | Out of ammo! Put it on the bill!
+OUT_OF_AMMO | Sellsword | Reloading! Pay me later!
+OUT_OF_AMMO | Zealot | Out of ammo! Steel it is!
+OUT_OF_AMMO | Cynic | Out of ammo! Of course!
+OUT_OF_AMMO | Veteran | Reloading! Cover me!
 
-HOLD_FIRE | Any | Standing down. Best order all week.
-HOLD_FIRE | Any | Fingers off the triggers. I'm not worried. I'm just very, very quiet.
-HOLD_FIRE | Any | Holding fire. Please tell the monsters.
-HOLD_FIRE | Any | Holding fire. It's harder than it looks.
+HOLD_FIRE | Any | Holding fire!
+HOLD_FIRE | Any | Cease fire! Standing down!
+HOLD_FIRE | Any | Weapons down! Holding!
+HOLD_FIRE | Any | Fire held! Ready when you are!
 
-COMRADE_HIT | Any | {Comrade}'s hit! Someone shoot that thing!
-COMRADE_HIT | Any | {Comrade} took a hit! Is that a lot? That looked like a lot!
-COMRADE_HIT | Any | Hang in there, {Comrade}! The Nurse is... somewhere!
-COMRADE_HIT | Any | Someone's hit! Not me! Good! Someone else! Sorry! Not good!
-COMRADE_HIT | Any | Cover the wounded! Cover everyone! Cover me, mainly!
-COMRADE_HIT | Any | That one hurt a friend! Now I'm angry, in a very organized way!
-COMRADE_HIT | Any | {Comrade}! Walk it off! ...Don't walk it off, sit down, sit down!
-COMRADE_HIT | Any | Hey! HEY! That's {Comrade}! You don't get to do that to {Comrade}!
-COMRADE_HIT | Greenhorn | {Comrade}! Say something! Are you okay?! Say a word, any word!
-COMRADE_HIT | Sellsword | {Comrade}'s hit! Does anybody know if {Comrade} is covered?!
-COMRADE_HIT | Cynic | {Comrade}, I said duck. I said it twice. It's on the record.
-COMRADE_HIT | Veteran | {Comrade}, fall back and get patched! I've got your spot!
-COMRADE_HIT | Zealot | Hold on, {Comrade}! The light is with you! And I'm with the light!
+COMRADE_HIT | Any | Someone's hit! Cover them!
+COMRADE_HIT | Any | Medic! Over here!
+COMRADE_HIT | Any | We've got wounded! Hold the line!
+COMRADE_HIT | Any | {Comrade} is hit! Medic!
+COMRADE_HIT | Any | Hang on, {Comrade}!
+COMRADE_HIT | Any | {Comrade}, stay with us!
+COMRADE_HIT | Any | Keep fighting, {Comrade}!
+COMRADE_HIT | Any | {Comrade}'s hit! Cover {Comrade}!
+COMRADE_HIT | Greenhorn | {Comrade}'s hit! Hang on!
+COMRADE_HIT | Sellsword | {Comrade}! Hold on! {Comrade}, don't quit!
+COMRADE_HIT | Zealot | Be strong, {Comrade}! We are with you!
+COMRADE_HIT | Cynic | {Comrade}'s hit! Stay low!
+COMRADE_HIT | Veteran | Stay calm, {Comrade}! Heads down!
 
 # ---------------------------------------------------------------- Bosses
-BOSS_SIGHTED | Any | That's a boss! That's a boss and it's looking at me!
-BOSS_SIGHTED | Any | That's bigger than the briefing said! The briefing said nothing!
-BOSS_SIGHTED | Any | Everyone stay calm! I'll panic enough for the whole squad!
-BOSS_SIGHTED | Any | A boss! Good! I wrote my will on the way here!
-BOSS_SIGHTED | Any | It's huge! It's HUGE! Is it supposed to be that huge?!
-BOSS_SIGHTED | Any | Okay, new plan! Nobody die! That's the whole plan! {Player}, is that okay?!
-BOSS_SIGHTED | Any | I'm not scared! I'm just standing very still! In case it only sees movement!
-BOSS_SIGHTED | Any | Here it comes! Everyone look busy! Look brave! Look anywhere else!
-BOSS_SIGHTED | Greenhorn | That's a boss? That's a boss. I should have stayed home! I should have stayed home!
-BOSS_SIGHTED | Sellsword | Boss pay is double! Somebody confirm that boss pay is double! Confirm it loud!
-BOSS_SIGHTED | Zealot | The boss is here, and so am I! Somebody write that down! In ink!
-BOSS_SIGHTED | Cynic | Of course it's a boss! Of COURSE it's a boss!
-BOSS_SIGHTED | Veteran | Another one! Spread out and pick a side! Don't all pick the same side!
+BOSS_SIGHTED | Any | Big one! Everybody fire!
+BOSS_SIGHTED | Any | Boss ahead! Focus fire!
+BOSS_SIGHTED | Any | That's a big one! Stand firm!
+BOSS_SIGHTED | Any | Boss on the field! Hit it hard!
+BOSS_SIGHTED | Any | Here comes trouble! Open fire!
+BOSS_SIGHTED | Any | Everything on the boss! Fire!
+BOSS_SIGHTED | Any | Hit it with everything!
+BOSS_SIGHTED | Any | Boss ahead, {Player}! We're ready!
+BOSS_SIGHTED | Greenhorn | That's huge! I'm staying! Fire!
+BOSS_SIGHTED | Sellsword | Big target, big payday! Open fire!
+BOSS_SIGHTED | Zealot | For the commander! Bring it down!
+BOSS_SIGHTED | Cynic | Here we go again! Big one!
+BOSS_SIGHTED | Veteran | Hold the line! Focus fire!
 
-BOSS_KingSlime | Any | It's a slime! It's a big slime! It's wearing a crown! I respect the crown!
-BOSS_KingSlime | Any | How many little slimes can one big slime hold?! I'm about to find out!
-BOSS_KingSlime | Any | Everything it swallows comes back out as a smaller slime! I'd like to not be swallowed!
-BOSS_KingSlime | Any | Keep your distance! It's heavier than it looks, and it looks heavy!
+BOSS_KingSlime | Any | Slime king! Hit the crown!
+BOSS_KingSlime | Any | Big jelly! Open fire!
+BOSS_KingSlime | Any | Aim for the king! Fire!
+BOSS_KingSlime | Any | Bring down the slime king!
 
-BOSS_EyeofCthulhu | Any | Why is the eye only looking at me?! Why me?!
-BOSS_EyeofCthulhu | Any | It has a second form! They always have a second form!
-BOSS_EyeofCthulhu | Any | Stay out of its charge! Then stay out of the second charge!
-BOSS_EyeofCthulhu | Any | It's an eye! A very large eye! It's blinking at us! Don't blink back!
+BOSS_EyeofCthulhu | Any | Giant eye! Shoot it!
+BOSS_EyeofCthulhu | Any | Eye in the sky! Open fire!
+BOSS_EyeofCthulhu | Any | Watch its charge! Fire!
+BOSS_EyeofCthulhu | Any | Take out that eye!
 
-BOSS_EaterofWorldsHead | Any | The ground's moving! The ground's got TEETH!
-BOSS_EaterofWorldsHead | Any | It's all segments, and every segment is angry! That's a lot of angry!
-BOSS_EaterofWorldsHead | Any | Every piece I shoot becomes two worms! I don't like that math!
-BOSS_EaterofWorldsHead | Any | Hit the head! Hit the head! Which one's the head?! They're all heads!
+BOSS_EaterofWorldsHead | Any | Giant worm! Cut it down!
+BOSS_EaterofWorldsHead | Any | Hit every segment! Fire!
+BOSS_EaterofWorldsHead | Any | It's coming up! Open fire!
+BOSS_EaterofWorldsHead | Any | Chop it to pieces!
 
-BOSS_BrainofCthulhu | Any | It's a brain! A big brain! We're not winning the argument!
-BOSS_BrainofCthulhu | Any | It's seeing double and now so am I! Which one do I shoot?!
-BOSS_BrainofCthulhu | Any | Kill the little ones first! They're the ones that bite!
-BOSS_BrainofCthulhu | Any | Don't think about it! It can hear you thinking! Think about soup!
+BOSS_BrainofCthulhu | Any | Giant brain! Open fire!
+BOSS_BrainofCthulhu | Any | Watch the clones! Fire!
+BOSS_BrainofCthulhu | Any | Crush that brain!
+BOSS_BrainofCthulhu | Any | Stay sharp! It's tricky! Fire!
 
-BOSS_QueenBee | Any | Bees! You said this job wouldn't have bees!
-BOSS_QueenBee | Any | Her majesty is mad! Her majesty has a stinger! Her majesty has a lot of children!
-BOSS_QueenBee | Any | Mind the stingers when she dashes! They're meaner than they look!
-BOSS_QueenBee | Any | Somebody get the honey! No, don't get the honey! Don't touch the honey!
+BOSS_QueenBee | Any | Queen bee! Open fire!
+BOSS_QueenBee | Any | Swat the queen!
+BOSS_QueenBee | Any | Watch the stingers! Fire!
+BOSS_QueenBee | Any | Bring down the queen!
 
-BOSS_Deerclops | Any | A deer! One eye, no patience, and cold air everywhere! I want to go home!
-BOSS_Deerclops | Any | The snow is moving away from it! Everything's moving away from it! Should I?!
-BOSS_Deerclops | Any | It has one eye and a bad attitude! I know the type!
-BOSS_Deerclops | Any | Its antlers are made of hands! Hands! Why hands?!
+BOSS_Deerclops | Any | Deerclops! Hold the line!
+BOSS_Deerclops | Any | Big beast! Open fire!
+BOSS_Deerclops | Any | Watch the ice! Fire!
+BOSS_Deerclops | Any | Bring it down! Fire!
 
-BOSS_SkeletronHead | Any | That old man was NOT fine! That old man was not fine at all!
-BOSS_SkeletronHead | Any | A skull with hands that aren't attached! I'm not attached to this plan either!
-BOSS_SkeletronHead | Any | Watch the hands! Watch the hands! Watch the head!
-BOSS_SkeletronHead | Any | He's spinning! Why is he spinning?! Everybody duck on three! One! Two!
+BOSS_SkeletronHead | Any | Skeletron! Smash that skull!
+BOSS_SkeletronHead | Any | Giant skull! Open fire!
+BOSS_SkeletronHead | Any | Break its bones! Fire!
+BOSS_SkeletronHead | Any | Hit the head! Hit the hands!
 
-BOSS_WallofFlesh | Any | Nobody told me the wall moves!
-BOSS_WallofFlesh | Any | It has a mouth, eyes, and lasers! Where do I even aim?!
-BOSS_WallofFlesh | Any | {Guide} said the doll would be fine in the lava! {Guide} has questions to answer!
-BOSS_WallofFlesh | Any | Don't let it push us back! It's a wall! We're also a wall! This is a wall fight!
+BOSS_WallofFlesh | Any | Wall of flesh! Open fire!
+BOSS_WallofFlesh | Any | Hold the line! Burn it!
+BOSS_WallofFlesh | Any | Keep firing! It's closing in!
+BOSS_WallofFlesh | Any | {Guide} warned us! Hit the wall!
 
-BOSS_QueenSlimeBoss | Any | A slime queen! Pink, sparkly, and furious! The sparkles are a threat!
-BOSS_QueenSlimeBoss | Any | She has crystal wings! I didn't know slimes had wings! I didn't know slimes had a queen!
-BOSS_QueenSlimeBoss | Any | Don't stand on the crystals! Don't stand on anything pink!
-BOSS_QueenSlimeBoss | Any | It's so shiny! It's so pretty! It's so going to kill us!
+BOSS_QueenSlimeBoss | Any | Queen slime! Open fire!
+BOSS_QueenSlimeBoss | Any | Shatter the crown!
+BOSS_QueenSlimeBoss | Any | Big queen! Hit hard!
+BOSS_QueenSlimeBoss | Any | Stay on your feet! Fire!
 
-BOSS_Retinazer | Any | Two of them! Mechanical! Who is BUILDING these?!
-BOSS_Retinazer | Any | It has a laser and it's looking at me! I'd call it personal, but it feels like policy!
-BOSS_Retinazer | Any | Get the one with the laser! Which one has the laser?! They both have lasers!
+BOSS_Retinazer | Any | Mechanical eye! Open fire!
+BOSS_Retinazer | Any | Watch the laser! Fire!
+BOSS_Retinazer | Any | Bring down the twins!
 
-BOSS_Spazmatism | Any | Two of them, and they're both looking at me! It's a team-up! I hate team-ups!
-BOSS_Spazmatism | Any | It spits fire out of its eye! I'm told that's normal!
-BOSS_Spazmatism | Any | Bite, spit, bite, spit! It's got a rhythm! I hate that I can hear the rhythm!
+BOSS_Spazmatism | Any | Twin eye! Open fire!
+BOSS_Spazmatism | Any | Watch the flames! Fire!
+BOSS_Spazmatism | Any | Take down the twins!
 
-BOSS_TheDestroyer | Any | That's not a worm! That's a train with opinions!
-BOSS_TheDestroyer | Any | Its body is made of probes, and every probe has a grudge!
-BOSS_TheDestroyer | Any | It's so long! How is it still coming out of the ground?! How long is it?!
+BOSS_TheDestroyer | Any | Giant machine! Open fire!
+BOSS_TheDestroyer | Any | Break the machine! Fire!
+BOSS_TheDestroyer | Any | Hit every segment! Keep firing!
 
-BOSS_SkeletronPrime | Any | It's Skeletron again, but he brought tools!
-BOSS_SkeletronPrime | Any | Four arms, four weapons, one angry skull! I'd rather fight none of them!
-BOSS_SkeletronPrime | Any | The saw! The saw! Duck! The other saw!
+BOSS_SkeletronPrime | Any | Metal skull! Open fire!
+BOSS_SkeletronPrime | Any | Break its arms! Fire!
+BOSS_SkeletronPrime | Any | Bring down the machine!
 
-BOSS_Plantera | Any | It's a flower and I'm scared of a flower!
-BOSS_Plantera | Any | Hooks, thorns, and a lovely bloom if you get close enough to see it! I won't!
-BOSS_Plantera | Any | Don't step on the vines! Don't step on anything! Float!
+BOSS_Plantera | Any | Giant flower! Burn it!
+BOSS_Plantera | Any | Cut it down! Fire!
+BOSS_Plantera | Any | Watch the vines! Open fire!
 
-BOSS_Golem | Any | It's a statue! It's a walking statue! We're leaving! We're not leaving!
-BOSS_Golem | Any | It's a lot of rocks very close together, and all of them are angry!
-BOSS_Golem | Any | Is it throwing its own head?! It threw its head! It's got another head!
+BOSS_Golem | Any | Stone giant! Open fire!
+BOSS_Golem | Any | Smash it! Fire!
+BOSS_Golem | Any | Hit the head! Fire!
 
-BOSS_HallowBoss | Any | She's beautiful and she's going to kill all of us! In that order!
-BOSS_HallowBoss | Any | Prismatic bolts and a very straight stare! I'm moved! I'm also moving!
-BOSS_HallowBoss | Any | Don't look at the lights! Don't look at the lights! They're so pretty!
+BOSS_HallowBoss | Any | Blinding light! Open fire!
+BOSS_HallowBoss | Any | Watch the beams! Fire!
+BOSS_HallowBoss | Any | Bring it down! Open fire!
 
-BOSS_DukeFishron | Any | A pig! A fish! A dragon! Pick ONE!
-BOSS_DukeFishron | Any | It brought sharknados! Who brings sharknados to a fight?!
-BOSS_DukeFishron | Any | It's so fast! It's so FAST! Who gave a pig that much speed?!
+BOSS_DukeFishron | Any | Giant fish! Open fire!
+BOSS_DukeFishron | Any | Reel it in! Fire!
+BOSS_DukeFishron | Any | Watch the charge! Fire!
 
-BOSS_CultistBoss | Any | He's doing a ritual! I don't know what it does! It's rude to interrupt!
-BOSS_CultistBoss | Any | Lightning, fireballs, and ice! He's got range! I've got a stick!
-BOSS_CultistBoss | Any | There's two of him! There's four of him! Which one is the one?!
+BOSS_CultistBoss | Any | Cultist! Open fire!
+BOSS_CultistBoss | Any | Stop the ritual! Fire!
+BOSS_CultistBoss | Any | Take out the cultist!
 
-BOSS_MoonLordCore | Any | The moon has a face! The moon has a FACE!
-BOSS_MoonLordCore | Any | There's an eye on its hand, an eye on its chest, and an eye on the eye! So many eyes!
-BOSS_MoonLordCore | Any | Everybody look away! Don't look away! Look at the hands! Which hands?!
+BOSS_MoonLordCore | Any | Moon Lord! Hold the line!
+BOSS_MoonLordCore | Any | Hit the eyes! Open fire!
+BOSS_MoonLordCore | Any | Everything we've got! Fire!
 
 # ---------------------------------------------------------------- Comrades and fear
-COMRADE_DOWN | Any | One of ours just dropped! Don't look! Keep shooting!
-COMRADE_DOWN | Any | We lost one! That's one fewer on payroll! ...I didn't mean that!
-COMRADE_DOWN | Any | {Comrade}! Oh, {Comrade}! Not again! You always do this!
-COMRADE_DOWN | Any | {Comrade}'s down! Somebody grab the gear! No! Somebody grab {Comrade}! Then the gear!
-COMRADE_DOWN | Any | No no no no! Get up, {Comrade}! Please get up! That's a request!
-COMRADE_DOWN | Any | {Comrade} was right there! Right THERE! I was just talking to {Comrade}!
-COMRADE_DOWN | Any | Man down! Man down! Somebody down! Everybody keep calm! I'm calm! I'm so calm!
-COMRADE_DOWN | Any | {Comrade} fell! Tell {Player}! Tell somebody! Tell me what to do!
-COMRADE_DOWN | Greenhorn | No! {Comrade} was just here! We were going to get lunch!
-COMRADE_DOWN | Greenhorn | {Comrade} went down! Somebody do something!
-COMRADE_DOWN | Greenhorn | No, no, no. {Comrade} was going to teach me the knots!
-COMRADE_DOWN | Greenhorn | A soldier's down! Get the Nurse! Get ANYONE!
-COMRADE_DOWN | Cynic | {Comrade} owed me two silver!
-COMRADE_DOWN | Cynic | Another one down! And they said it would be fun!
-COMRADE_DOWN | Cynic | {Comrade} went down! I did warn them! Nobody listens to me!
-COMRADE_DOWN | Cynic | Call it a lesson! Call it a shame! Call it Tuesday!
-COMRADE_DOWN | Sellsword | Dibs on {Comrade}'s boots!
-COMRADE_DOWN | Sellsword | {Comrade} is down! Their contract is legally unclear!
-COMRADE_DOWN | Sellsword | {Comrade} fell! I'll hold their wages in trust! For a while!
-COMRADE_DOWN | Sellsword | Someone fell! Pay stops at the end of the shift!
-COMRADE_DOWN | Zealot | {Comrade} has gone ahead! We'll follow! After we win! Please let it be soon!
-COMRADE_DOWN | Zealot | A sacrifice has been made! I'll say a few words! The words are ow!
-COMRADE_DOWN | Zealot | May the light find {Comrade}! And someone should find their gear!
-COMRADE_DOWN | Zealot | Nobody mourn in the front line! Mother Gnash says mourn after!
-COMRADE_DOWN | Veteran | {Comrade} was a good one! Say a prayer and keep your head down!
-COMRADE_DOWN | Veteran | Eyes up! Grieve later! That's the job!
-COMRADE_DOWN | Veteran | I knew {Comrade} for years! Twelve minutes, I mean! It felt like years!
+COMRADE_DOWN | Any | Man down!
+COMRADE_DOWN | Any | Soldier down! Medic!
+COMRADE_DOWN | Any | Someone's down! Cover them!
+COMRADE_DOWN | Any | {Comrade} is down! Medic!
+COMRADE_DOWN | Any | {Comrade} is down! Get {Comrade} out!
+COMRADE_DOWN | Any | {Comrade}! Stay with me! {Comrade}!
+COMRADE_DOWN | Any | Avenge {Comrade}! Open fire! {Comrade} fell for this!
+COMRADE_DOWN | Any | Tell {Player}! {Comrade} is down!
+COMRADE_DOWN | Greenhorn | Someone's down! Oh no! Medic!
+COMRADE_DOWN | Greenhorn | {Comrade} is down! What do we do?!
+COMRADE_DOWN | Greenhorn | Get up, {Comrade}! Please get up!
+COMRADE_DOWN | Greenhorn | No! {Comrade}! Medic!
+COMRADE_DOWN | Sellsword | Soldier down! Somebody help!
+COMRADE_DOWN | Sellsword | {Comrade}'s down! They'll pay for this!
+COMRADE_DOWN | Sellsword | Not {Comrade}! Make them pay!
+COMRADE_DOWN | Sellsword | {Comrade}, hold on! Medic!
+COMRADE_DOWN | Zealot | A soldier has fallen! Avenge them!
+COMRADE_DOWN | Zealot | Fight on for the fallen!
+COMRADE_DOWN | Zealot | {Comrade} has fallen! We will avenge you!
+COMRADE_DOWN | Zealot | Rest well, {Comrade}! For the commander!
+COMRADE_DOWN | Cynic | Another one down! Keep firing!
+COMRADE_DOWN | Cynic | Down again! Stay sharp!
+COMRADE_DOWN | Cynic | {Comrade} is down! Make it count!
+COMRADE_DOWN | Cynic | Damn it, {Comrade}!
+COMRADE_DOWN | Veteran | Soldier down! Keep it tight!
+COMRADE_DOWN | Veteran | {Comrade}'s down! Steady! Keep fighting!
+COMRADE_DOWN | Veteran | Cover {Comrade}! Drag them back!
 
-SHAKEN | Any | I signed up for zombies! ZOMBIES! Nobody said anything about THAT!
-SHAKEN | Any | {Comrade} was standing right there! Right! There!
-SHAKEN | Any | That's too big! That's way too big! Is it getting bigger?!
-SHAKEN | Any | My hands won't stop shaking! The gun is doing a little dance!
-SHAKEN | Any | I'm fine! I'm fine! I'm just going to hold the wall with my eyes shut!
-SHAKEN | Any | Nobody said the word boss in the briefing! Not once! I checked!
-SHAKEN | Any | I can't! I can't! I'm going to! I can't!
-SHAKEN | Any | It looked at me! Did you see it look at me?!
-SHAKEN | Any | Is it supposed to do that?! It's not supposed to do that!
-SHAKEN | Greenhorn | I'm fine! I'm fine! I'm going to be sick! I'm fine!
-SHAKEN | Sellsword | This is NOT what I priced this at! This is a different job!
-SHAKEN | Zealot | The light's gone dim! Dimmer! Does anyone have a torch?!
-SHAKEN | Zealot | Pray! Somebody pray! I'm out! I used all of mine!
-SHAKEN | Cynic | I knew this was a bad idea! I even said so! Out loud! Twice!
-SHAKEN | Veteran | Breathe! Aim! Pray! The last one's optional but recommended!
+SHAKEN | Any | I'm rattled! Keep firing!
+SHAKEN | Any | Hold it together!
+SHAKEN | Any | Steady! Steady!
+SHAKEN | Any | I can do this! I can do this!
+SHAKEN | Any | Stay calm! Stay in the fight!
+SHAKEN | Any | Don't back down!
+SHAKEN | Any | Keep it together! Fire!
+SHAKEN | Any | Easy! Breathe! Fire!
+SHAKEN | Any | Stay with me, {Comrade}! Don't run!
+SHAKEN | Greenhorn | I'm scared! I'm still here!
+SHAKEN | Sellsword | It's too hot here! Hold your ground!
+SHAKEN | Zealot | Faith! Hold fast!
+SHAKEN | Zealot | Fear is nothing! Stand firm!
+SHAKEN | Cynic | Knew this was a bad idea! Hold!
+SHAKEN | Veteran | Steady! Nobody runs!
 
-ROUTED | Any | Strategic retreat! Very strategic! Running now!
-ROUTED | Any | Tell {Player} I was brave right up until this part!
-ROUTED | Any | Everyone for themselves! I'll be for myself over here!
-ROUTED | Any | Retreat! I'm not running! I'm advancing in the opposite direction!
-ROUTED | Any | Nope. Nope. Nope. Nope. Nope!
-ROUTED | Any | I'll be at the barracks! Tell {Player} I was never here!
-ROUTED | Any | Move! Move! Whoever's in front, move faster!
-ROUTED | Any | Run! RUN! Why is nobody running with me?!
-ROUTED | Any | It's coming this way! It's coming THIS way! Why this way?!
-ROUTED | Any | I love you all! Goodbye! I'll be over there!
-ROUTED | Greenhorn | I want my mother! I want my mother's cooking!
-ROUTED | Sellsword | This isn't in the contract! I'm leaving! Pro-rated!
-ROUTED | Zealot | The light has left the building! So have I!
-ROUTED | Cynic | I said we should run! Nobody said I could lead! I'm leading!
-ROUTED | Veteran | Fall back! Fall back and re-form! Don't look at it, just fall back!
+ROUTED | Any | Fall back! Fall back!
+ROUTED | Any | Retreat!
+ROUTED | Any | Run! Run!
+ROUTED | Any | Get out of here!
+ROUTED | Any | Pull back!
+ROUTED | Any | Save yourselves!
+ROUTED | Any | Back! Back!
+ROUTED | Any | Withdraw! Withdraw!
+ROUTED | Any | Sorry, {Player}! Fall back!
+ROUTED | Any | Retreat, {Player}! Fall back!
+ROUTED | Greenhorn | Run! Everybody run!
+ROUTED | Sellsword | I'm not paid for this! Retreat!
+ROUTED | Zealot | Forgive me, commander! Retreat!
+ROUTED | Cynic | Knew it! Fall back!
+ROUTED | Veteran | Fall back! Regroup! Regroup!
 
-RALLIED | Any | Okay. I'm back. Don't tell anyone!
-RALLIED | Any | Nobody saw that! Good! Where's the big one?
-RALLIED | Any | Right. Back to work! We didn't see anything!
-RALLIED | Any | I'm back! Still shaking, but I'm back!
-RALLIED | Any | The horn! I remember now! We were winning! We are still winning, right?!
-RALLIED | Any | Okay, okay! I found my courage! It was under the pile of fear!
-RALLIED | Any | Sorry! Sorry! I left my feet for a second! They're back!
-RALLIED | Any | I'm good! I'm good! Who's counting how long I was gone?! Don't count!
-RALLIED | Any | Fine! Fine! I'll fight it like I meant to the whole time!
-RALLIED | Greenhorn | I'm okay! I'm okay! I ran, and I came back! That counts!
-RALLIED | Sellsword | Fine! I'm back! The pay's the same, so I'll be the same!
-RALLIED | Zealot | The light returns! And so do I!
-RALLIED | Veteran | Everyone runs! The good ones come back!
+RALLIED | Any | Back in the fight!
+RALLIED | Any | Rally! Rally!
+RALLIED | Any | Let's go again!
+RALLIED | Any | Reform the line!
+RALLIED | Any | I'm back! Fire!
+RALLIED | Any | On me! Back to it!
+RALLIED | Any | Steady now! Back in it!
+RALLIED | Any | Never again! Let's fight!
+RALLIED | Any | Together! Charge!
+RALLIED | Greenhorn | I'm okay! I'm ready!
+RALLIED | Sellsword | Back to work! Pay's still good!
+RALLIED | Zealot | Faith restored! Charge!
+RALLIED | Veteran | Form up! Hold the line!
 
-VICTORY | Any | We won! Is that what winning feels like? It's mostly ringing!
-VICTORY | Any | Loot! The boss had loot! Is any of it ours? No? Cool. Cool.
-VICTORY | Any | It's dead! It's actually dead! Somebody check! Not me!
-VICTORY | Any | Victory! We'll celebrate later! After the Nurse! And a long nap!
-VICTORY | Any | We did it! Who landed the last hit? Doesn't matter! It was me!
-VICTORY | Any | Nobody tell it we're tired! We won! We're not tired!
-VICTORY | Any | That's it?! That's all it had?! ...It had a lot. Okay!
-VICTORY | Any | Somebody pinch me! Not hard! {Player}, you pinch me, softly!
-VICTORY | Greenhorn | We won! I helped! I was there!
-VICTORY | Sellsword | Boss is dead! Let's talk about the bonus!
-VICTORY | Zealot | Praise be! And praise {Player}, who's standing right there!
-VICTORY | Cynic | It's over! Until the next one!
-VICTORY | Veteran | Another one down! Tell the rookies it was easy!
+VICTORY | Any | Victory!
+VICTORY | Any | We won!
+VICTORY | Any | That's how it's done!
+VICTORY | Any | We held the line!
+VICTORY | Any | They're finished! Victory!
+VICTORY | Any | Enemy down! Great work!
+VICTORY | Any | Well fought, everyone!
+VICTORY | Any | Victory, {Player}! Great work!
+VICTORY | Greenhorn | We won! I survived!
+VICTORY | Sellsword | Job done! Time to get paid!
+VICTORY | Zealot | Praise be! Glory to {Player}!
+VICTORY | Cynic | We won! Don't relax yet!
+VICTORY | Veteran | Good work! Stay sharp!
 
 PROMOTED | Any | Promoted? Me? I'd like it noted that I'm still terrified!
 PROMOTED | Any | A promotion! More pay, more danger! I only read the first half!
@@ -849,19 +849,19 @@ VETERAN | Any | I've survived enough to be called a veteran! I'd like a plaque!
 VETERAN | Any | Veteran, huh! Guess surviving counts for something! Not much, but something!
 VETERAN | Any | Sergeant! Does Sergeant get a better chair?! Somebody get me a better chair!
 
-MUSTER | Any | You rang? It's a horn, but you rang!
-MUSTER | Any | Militia, assemble! Slowly! Some of us have knees!
-MUSTER | Any | Falling in! Please hold the monsters until I've buckled this!
-MUSTER | Any | Horn heard! Boots found! Courage still looking!
-MUSTER | Any | Reporting! I had a nap planned, but this is fine!
-MUSTER | Any | Here! Present! Fully dressed! Ish!
-MUSTER | Any | Assemble! Assemble! I'm assembling! I just need my other boot!
+MUSTER | Any | Falling in!
+MUSTER | Any | Reporting for duty!
+MUSTER | Any | On my way! Ready!
+MUSTER | Any | Ready and willing!
+MUSTER | Any | Rally up! Let's go!
+MUSTER | Any | Here! Ready to fight!
+MUSTER | Any | Answering the call!
 
-STAND_DOWN | Any | Stand down? Good! My arms were starting to forget what they were holding!
-STAND_DOWN | Any | Back to the barracks! The soup is cold but it's ours!
-STAND_DOWN | Any | Standing down! I'll keep one eye open, in a professional capacity!
-STAND_DOWN | Any | Still alive! I'm going to assume that was on purpose!
-STAND_DOWN | Any | Horn says stand down! Knees say thank you!
+STAND_DOWN | Any | Standing down!
+STAND_DOWN | Any | Stand down! Good work!
+STAND_DOWN | Any | Fall out! Well done!
+STAND_DOWN | Any | Weapons down! We held!
+STAND_DOWN | Any | Dismissed! Great work!
 
 # ---------------------------------------------------------------- Death messages (chat log). The lines without a full stop at the end are Eve's.
 DEATH_MESSAGE | Any | {Name} was honorably discharged by {Killer}.
@@ -1224,18 +1224,18 @@ UNPAID | Any | [grumpy] No coin and a Blood Moon. Don't look for me. I'm somewhe
 UNPAID | Any | [grumpy] You're late with the pay and I'm already furious. Be careful.
 UNPAID | Any | [grumpy] Unpaid. Under that sky. Do the math, {Player}.
 UNPAID | Any | [grumpy] I will take the money. I will take it late. And I'll hold a grudge.
-HOLD_FIRE | Any | [grumpy] Holding fire! On a night like this! Who thought of that?!
-HOLD_FIRE | Any | [grumpy] Fine. Fingers off. My fingers are LOUD about it.
-HOLD_FIRE | Any | [grumpy] I'll hold fire. I won't hold my tongue.
-HOLD_FIRE | Any | [grumpy] Hold fire. I hold a lot more than that. Don't push it.
-MUSTER | Any | [grumpy] Muster, tonight?! Fine! I'm up! I'm up and I'm cross!
-MUSTER | Any | [grumpy] The horn! The horn! At this hour! Under that sky! Grr!
-MUSTER | Any | [grumpy] I'm reporting! I'm not happy! Both things!
-MUSTER | Any | [grumpy] Assembling! Nobody talk to me! Assemble quietly!
-STAND_DOWN | Any | [grumpy] Finally. Stand down. Don't talk to me.
-STAND_DOWN | Any | [grumpy] Good. I'm going to sit down and be furious in peace.
-STAND_DOWN | Any | [grumpy] Stand down. Don't thank me. I'm not being nice.
-STAND_DOWN | Any | [grumpy] Done. I'm done. Everybody leave me out of it.
+HOLD_FIRE | Any | [grumpy] Holding fire! Fine!
+HOLD_FIRE | Any | [grumpy] Weapons down! Now what?
+HOLD_FIRE | Any | [grumpy] Cease fire! Make up your mind!
+HOLD_FIRE | Any | [grumpy] Standing down! For now!
+MUSTER | Any | [grumpy] On my way! Make it quick!
+MUSTER | Any | [grumpy] Falling in! Not tonight!
+MUSTER | Any | [grumpy] Ready! Let's get this over with!
+MUSTER | Any | [grumpy] I'm coming! Fine!
+STAND_DOWN | Any | [grumpy] Standing down! Finally!
+STAND_DOWN | Any | [grumpy] Fall out! Get me out of here!
+STAND_DOWN | Any | [grumpy] Dismissed! About time!
+STAND_DOWN | Any | [grumpy] Done! Weapons down!
 
 # ---------------------------------------------------------------- Events
 EVENT_GOBLINS | Any | [grumpy] Goblins and a Blood Moon! Perfect! Wonderful!
@@ -1272,146 +1272,146 @@ EVENT_FROSTLEGION | Any | [grumpy] Don't ask me to build a snowman! I'm shooting
 EVENT_FROSTLEGION | Any | [grumpy] Hats! They've got hats! I'm too cross to laugh!
 
 # ---------------------------------------------------------------- Combat shouts
-ENGAGE | Any | [grumpy] Great! More of them! Right when I was having such a lovely time!
-ENGAGE | Any | [grumpy] Not tonight! Not TONIGHT! Come here and say that to my face!
-ENGAGE | Any | [grumpy] You picked the wrong moon! You picked the wrong person!
-ENGAGE | Any | [grumpy] I'm cross and I'm armed! Which of you wants to find out?!
-ENGAGE | Any | [grumpy] Oh, you want a fight? You're getting a fight! You're getting my whole mood!
-ENGAGE | Any | [grumpy] Contact! Wonderful! Something to take it out on!
-ENGAGE | Any | [grumpy] Come on, then! Come on! I've been waiting all night to be rude!
-ENGAGE | Any | [grumpy] Don't just stand there, shoot! Everything's the worst, so shoot it!
-ENGAGE | Any | [grumpy] Weapons up! I'm already up! I've been up all night!
-ENGAGE | Any | [grumpy] If it moves, it's mine! If it doesn't, give it a second!
-ENGAGE | Any | [grumpy] They woke me up for THIS?! Fine! Fine!
-ENGAGE | Any | [grumpy] Heads up! Mood up! Everyone, mood up!
-ENGAGE | Cynic | [grumpy] Of course. Under a red moon. They'd never come at noon.
-ENGAGE | Veteran | [grumpy] Easy. I'm already angry. Let me use it.
+ENGAGE | Any | [grumpy] Not tonight! Open fire!
+ENGAGE | Any | [grumpy] Back off! Open fire!
+ENGAGE | Any | [grumpy] Not now! Get them!
+ENGAGE | Any | [grumpy] Come on, then! Fire!
+ENGAGE | Any | [grumpy] Under this moon? Fire!
+ENGAGE | Any | [grumpy] Get away from me! Open fire!
+ENGAGE | Any | [grumpy] Enough! Open fire!
+ENGAGE | Any | [grumpy] Enemy incoming! Great! Fire!
+ENGAGE | Any | [grumpy] Just die already! Fire!
+ENGAGE | Any | [grumpy] I'm in no mood! Fire!
+ENGAGE | Any | [grumpy] Not tonight, monsters! Fire!
+ENGAGE | Any | [grumpy] Try me! Open fire!
+ENGAGE | Cynic | [grumpy] Of course tonight! Fire!
+ENGAGE | Veteran | [grumpy] Steady! Make it quick!
 
-KILL | Any | [grumpy] Got one! And I feel marginally better!
-KILL | Any | [grumpy] Good! Next! I've got plenty more where that came from!
-KILL | Any | [grumpy] Down! Stay down! I'm in no mood for a second round!
-KILL | Any | [grumpy] That one's for the moon! The next one's for the moon again!
-KILL | Any | [grumpy] Take that, and take it personally!
-KILL | Any | [grumpy] One less thing between me and bed!
-KILL | Any | [grumpy] Ha! That felt good! Why does that feel good?!
-KILL | Any | [grumpy] Stop staring! It started it!
-KILL | Any | [grumpy] That's what you get for being loud!
-KILL | Any | [grumpy] Another one for the pile! It's a big pile! I'm still in a mood!
-KILL | Any | [grumpy] Mine! Don't touch it! Mine! I'm using it to vent!
-KILL | Any | [grumpy] Dead! Good! One less thing to be annoyed at!
+KILL | Any | [grumpy] Die already!
+KILL | Any | [grumpy] Finally! Stay dead!
+KILL | Any | [grumpy] That's what you get!
+KILL | Any | [grumpy] And stay down!
+KILL | Any | [grumpy] Good riddance!
+KILL | Any | [grumpy] One less on my night!
+KILL | Any | [grumpy] Take that, you pest!
+KILL | Any | [grumpy] Gone! Next!
+KILL | Any | [grumpy] Not tonight, creep!
+KILL | Any | [grumpy] Dead! Who's next?
+KILL | Any | [grumpy] Got it! Now go away!
+KILL | Any | [grumpy] Serves you right!
 
-HURT | Any | [grumpy] Ow! Of course! OF COURSE!
-HURT | Any | [grumpy] That hurt! Everything hurts tonight! Everything!
-HURT | Any | [grumpy] Who did that?! Say it again!
-HURT | Any | [grumpy] Great! Now I'm cross AND injured!
-HURT | Any | [grumpy] Hit me when I'm in a good mood next time! Oh, wait!
-HURT | Any | [grumpy] Ow! I'm going to remember that! Don't think I won't!
-HURT | Any | [grumpy] Seriously?! Right now?! You pick right now?!
-HURT | Any | [grumpy] I'm not hurt! I'm furious! They feel the same from outside!
-HURT | Any | [grumpy] Ugh! Somebody write down what hit me so I can hit it back!
-HURT | Any | [grumpy] Ow ow ow ow! And rude!
-HURT | Any | [grumpy] That's not funny! Nobody laugh! I'll see you!
-HURT | Any | [grumpy] Argh! Don't help! Don't look! Don't speak!
+HURT | Any | [grumpy] Ow! Not tonight!
+HURT | Any | [grumpy] Hey! That hurt!
+HURT | Any | [grumpy] You'll pay for that!
+HURT | Any | [grumpy] Argh! Rude!
+HURT | Any | [grumpy] Ow! I'll get you!
+HURT | Any | [grumpy] That hurt! Die!
+HURT | Any | [grumpy] Hit me, will you?!
+HURT | Any | [grumpy] I'm hit! I'm furious!
+HURT | Any | [grumpy] Ow! Come here!
+HURT | Any | [grumpy] You'll regret that!
+HURT | Any | [grumpy] Argh! Right in the ribs!
+HURT | Any | [grumpy] That's it! No mercy!
 
-LOW_HP | Any | [grumpy] I'm almost out of me and I'm still in a mood! Somebody help!
-LOW_HP | Any | [grumpy] Somebody heal me! Nicely! Without talking!
-LOW_HP | Any | [grumpy] This is the worst Blood Moon yet! I say that every time! This time I mean it!
-LOW_HP | Any | [grumpy] I'm bleeding and annoyed and one of them's going to win!
-LOW_HP | Any | [grumpy] Nurse! NURSE! I don't care how you feel about it! Come here!
-LOW_HP | Any | [grumpy] I'm down to nothing and I'm still the angriest one here!
-LOW_HP | Any | [grumpy] Ugh! Don't look at the blood! It's mine and I'm busy!
-LOW_HP | Any | [grumpy] Does anyone have a potion? A bandage? A strongly worded letter?!
-LOW_HP | Any | [grumpy] I can't believe it's come to this! Under THAT moon!
-LOW_HP | Any | [grumpy] Help! I'm too cross to ask nicely! Help anyway!
+LOW_HP | Any | [grumpy] Medic! Now!
+LOW_HP | Any | [grumpy] I'm hurt! Somebody help!
+LOW_HP | Any | [grumpy] Heal me! Now!
+LOW_HP | Any | [grumpy] I'm nearly dead! Not tonight!
+LOW_HP | Any | [grumpy] Where's the medic?!
+LOW_HP | Any | [grumpy] I'm barely standing! Cover me!
+LOW_HP | Any | [grumpy] Low health! I'm furious!
+LOW_HP | Any | [grumpy] Help me! Hurry!
+LOW_HP | Any | [grumpy] Don't you dare finish me!
+LOW_HP | Any | [grumpy] I need healing! Fast!
 
-OUT_OF_AMMO | Any | [grumpy] Out of ammo! Of course! Tonight! Naturally!
-OUT_OF_AMMO | Any | [grumpy] Click! Seriously?! CLICK?!
-OUT_OF_AMMO | Any | [grumpy] Who's got my ammo?! Who took it?! Give it back!
-OUT_OF_AMMO | Any | [grumpy] Empty! Great! Wonderful! Somebody throw me something!
-OUT_OF_AMMO | Any | [grumpy] No ammo! Somebody's going to pay for this! Probably me!
-OUT_OF_AMMO | Any | [grumpy] I'm out! I'm loud about it! I'm so loud!
-OUT_OF_AMMO | Any | [grumpy] I swear I had a full pouch! I SWEAR!
-OUT_OF_AMMO | Any | [grumpy] No bullets! I'll throw my mood at them instead!
-OUT_OF_AMMO | Any | [grumpy] It's empty! Why is it empty?! It was full! Everything's wrong!
-OUT_OF_AMMO | Any | [grumpy] Ammo! Somebody! Anyone! I'm not asking nicely!
+OUT_OF_AMMO | Any | [grumpy] Out of ammo! Seriously?!
+OUT_OF_AMMO | Any | [grumpy] Empty! Perfect!
+OUT_OF_AMMO | Any | [grumpy] Reloading! Don't move!
+OUT_OF_AMMO | Any | [grumpy] No ammo! Not tonight!
+OUT_OF_AMMO | Any | [grumpy] Out! Cover me, quick!
+OUT_OF_AMMO | Any | [grumpy] Dry! Hold them off!
+OUT_OF_AMMO | Any | [grumpy] Out of bullets! I'm furious!
+OUT_OF_AMMO | Any | [grumpy] Reloading! Wait your turn!
+OUT_OF_AMMO | Any | [grumpy] Empty! Don't you dare!
+OUT_OF_AMMO | Any | [grumpy] Ammo! Somebody! Now!
 
-COMRADE_HIT | Any | [grumpy] {Comrade}'s hit! Whoever did that, I'll find you!
-COMRADE_HIT | Any | [grumpy] {Comrade}! Get back! Get behind me! I'm in a mood to take it!
-COMRADE_HIT | Any | [grumpy] That's {Comrade}! You don't hit {Comrade}! Only I yell at {Comrade}!
-COMRADE_HIT | Any | [grumpy] Hey! HEY! Leave {Comrade} alone! I'm the only one allowed to be mean to {Comrade}!
-COMRADE_HIT | Any | [grumpy] {Comrade}, I told you to duck! I'm not mad! I'm a little mad!
-COMRADE_HIT | Any | [grumpy] Somebody get {Comrade}! I'd do it, but I'm busy being furious!
-COMRADE_HIT | Any | [grumpy] You hit a friend of mine, you miserable thing! Now I'm going to hit YOU!
-COMRADE_HIT | Any | [grumpy] {Comrade}, you're hurt! Don't talk! I'm too cross to hear it!
-COMRADE_HIT | Any | [grumpy] {Comrade}, walk it off! No, don't, sit down! Ugh!
-COMRADE_HIT | Any | [grumpy] Ow, {Comrade}! I felt that! I'm angry on your behalf!
+COMRADE_HIT | Any | [grumpy] Somebody's hit! Cover them!
+COMRADE_HIT | Any | [grumpy] {Comrade} is hit! Get them!
+COMRADE_HIT | Any | [grumpy] Leave {Comrade} alone!
+COMRADE_HIT | Any | [grumpy] Hold on, {Comrade}! I'm coming!
+COMRADE_HIT | Any | [grumpy] {Comrade}, get down!
+COMRADE_HIT | Any | [grumpy] Who hit {Comrade}?! Die!
+COMRADE_HIT | Any | [grumpy] Medic! {Comrade}'s hit!
+COMRADE_HIT | Any | [grumpy] Hang in there, {Comrade}!
+COMRADE_HIT | Any | [grumpy] {Comrade}! Stay with me! {Comrade}, don't you dare!
+COMRADE_HIT | Any | [grumpy] Hit {Comrade}, will you?! Pay for that!
 
-COMRADE_DOWN | Any | [grumpy] {Comrade} is down! This night just keeps getting better!
-COMRADE_DOWN | Any | [grumpy] No! {Comrade}! Not on this night! Get up! GET UP!
-COMRADE_DOWN | Any | [grumpy] Somebody tell {Player}! Somebody tell the moon! Somebody tell somebody!
-COMRADE_DOWN | Any | [grumpy] {Comrade} fell! I'm too angry to be sad! I'll be sad in the morning!
-COMRADE_DOWN | Any | [grumpy] Oh, you did NOT just do that to {Comrade}!
-COMRADE_DOWN | Any | [grumpy] Great! One down! I'm furious, and I'm lonelier! Both!
-COMRADE_DOWN | Any | [grumpy] {Comrade}! You said you'd be fine! You said that!
-COMRADE_DOWN | Any | [grumpy] I'm not crying! I'm cross! There's a difference! It's leaking!
-COMRADE_DOWN | Any | [grumpy] Down! Down! Someone's down! Everyone's mad! Everyone!
-COMRADE_DOWN | Any | [grumpy] {Comrade}, I'll get your gear! And I'll get what did it! Both!
+COMRADE_DOWN | Any | [grumpy] Man down! Not tonight!
+COMRADE_DOWN | Any | [grumpy] Someone's down! Get them!
+COMRADE_DOWN | Any | [grumpy] No! Not on this night!
+COMRADE_DOWN | Any | [grumpy] {Comrade} is down! Make them pay!
+COMRADE_DOWN | Any | [grumpy] Get up, {Comrade}! Get up!
+COMRADE_DOWN | Any | [grumpy] {Comrade}! No! Medic!
+COMRADE_DOWN | Any | [grumpy] You'll pay for {Comrade}!
+COMRADE_DOWN | Any | [grumpy] {Comrade} fell! I'm furious!
+COMRADE_DOWN | Any | [grumpy] Hold on, {Comrade}! I'm coming!
+COMRADE_DOWN | Any | [grumpy] Soldier down, {Player}! Make them pay!
 
-SHAKEN | Any | [grumpy] I'm not scared! I'm cross! They look the same from outside!
-SHAKEN | Any | [grumpy] That's too big! That's too big and it's in a bad mood! So am I!
-SHAKEN | Any | [grumpy] I can't! I can't! Not tonight! I can't!
-SHAKEN | Any | [grumpy] Everything's wrong! Everything! The sky! The boss! My boots!
-SHAKEN | Any | [grumpy] Don't look at me! Don't talk to me! I'm shaking from RAGE!
-SHAKEN | Any | [grumpy] Great. Fear on top of fury. My night was missing that!
-SHAKEN | Any | [grumpy] My hands won't stop! The gun's rattling! I'm rattling!
-SHAKEN | Any | [grumpy] Whoever's in charge, I have a complaint, and it's very long!
-SHAKEN | Any | [grumpy] That wasn't in the briefing! None of this tonight was in the briefing!
-SHAKEN | Any | [grumpy] I need a minute! A quiet minute! Is a quiet minute too much?!
+SHAKEN | Any | [grumpy] Not tonight! Hold it together!
+SHAKEN | Any | [grumpy] I'm shaken! Still fighting!
+SHAKEN | Any | [grumpy] Steady! Don't back down!
+SHAKEN | Any | [grumpy] Keep it together!
+SHAKEN | Any | [grumpy] Easy now! Easy!
+SHAKEN | Any | [grumpy] Hold on! Don't run!
+SHAKEN | Any | [grumpy] I'm not scared! Just angry!
+SHAKEN | Any | [grumpy] Get a grip! Fire!
+SHAKEN | Any | [grumpy] Hold the line! Hold it!
+SHAKEN | Any | [grumpy] Stay calm! Stay mad!
 
-ROUTED | Any | [grumpy] Out! I'm out! I'm furious and I'm out!
-ROUTED | Any | [grumpy] Run! Run! This moon is not worth it!
-ROUTED | Any | [grumpy] I'm leaving! I'm not scared! I'm angry at the whole situation!
-ROUTED | Any | [grumpy] Nope! Nope! Tell {Player} I'll deal with it tomorrow, in daylight!
-ROUTED | Any | [grumpy] Get away from me! Get away from everything!
-ROUTED | Any | [grumpy] I quit! I quit tonight! I'll un-quit at dawn!
-ROUTED | Any | [grumpy] Move, move, MOVE! I'm in no mood to be trampled!
-ROUTED | Any | [grumpy] I'm retreating! Loudly! With a lot of opinions!
-ROUTED | Any | [grumpy] Somebody else take the boss! I'm busy having a night!
-ROUTED | Any | [grumpy] Fall back! And someone punch the moon for me!
+ROUTED | Any | [grumpy] Retreat! Not tonight!
+ROUTED | Any | [grumpy] Pull back! Pull back!
+ROUTED | Any | [grumpy] I'm out of here!
+ROUTED | Any | [grumpy] Fall back! Fall back!
+ROUTED | Any | [grumpy] Run! Regroup!
+ROUTED | Any | [grumpy] Get out! Go go go!
+ROUTED | Any | [grumpy] This isn't over! Retreat!
+ROUTED | Any | [grumpy] Back off! Back!
+ROUTED | Any | [grumpy] Withdraw! Now!
+ROUTED | Any | [grumpy] Fall back, {Player}! Regroup!
 
-RALLIED | Any | [grumpy] Fine! FINE! I'm back! Stop looking at me!
-RALLIED | Any | [grumpy] I'm back, and I'm still cross! Nobody say anything!
-RALLIED | Any | [grumpy] Okay. Deep breath. Back to being angry at the right thing.
-RALLIED | Any | [grumpy] I came back. I'm not happy about it. Let's go.
-RALLIED | Any | [grumpy] Right. The boss. The moon. Everything. Let's finish it.
-RALLIED | Any | [grumpy] I've calmed down! I haven't! Let's go!
-RALLIED | Any | [grumpy] I ran. I'm back. I'm furious about both!
-RALLIED | Any | [grumpy] That was a lapse! Never mention it! I'll deny it!
-RALLIED | Any | [grumpy] Alright! Alright! Where's the thing that scared me?! I want a word with it!
-RALLIED | Any | [grumpy] Done running! Now I'm just mad! Aim me!
+RALLIED | Any | [grumpy] Enough running! Fight!
+RALLIED | Any | [grumpy] I'm back! Now I'm angry!
+RALLIED | Any | [grumpy] Rally! Let's end this!
+RALLIED | Any | [grumpy] Back in it! Not tonight!
+RALLIED | Any | [grumpy] That's it! Fight back!
+RALLIED | Any | [grumpy] Reform! Get them!
+RALLIED | Any | [grumpy] No more running!
+RALLIED | Any | [grumpy] Let's finish this!
+RALLIED | Any | [grumpy] I'm done being scared! Fire!
+RALLIED | Any | [grumpy] Back at them! All of you!
 
-VICTORY | Any | [grumpy] It's dead. The moon's still up. I'm still cross. That's a win, I guess.
-VICTORY | Any | [grumpy] Finally! Now will everybody please be quiet!
-VICTORY | Any | [grumpy] We won! I'm not going to smile! You can't make me!
-VICTORY | Any | [grumpy] Good! Now somebody bring me a chair and some silence!
-VICTORY | Any | [grumpy] Dead! Great! I'd cheer, but I'm saving my energy for being annoyed!
-VICTORY | Any | [grumpy] Fine. We did it. Don't hug me. Don't even look.
-VICTORY | Any | [grumpy] Victory. Don't talk to me about it. Let me have the quiet.
-VICTORY | Any | [grumpy] That's the first good thing that's happened tonight! Don't ruin it!
-VICTORY | Any | [grumpy] It's down! Now go away! All of you!
-VICTORY | Any | [grumpy] We won. I'm going to go be mad somewhere quiet.
+VICTORY | Any | [grumpy] Victory! About time!
+VICTORY | Any | [grumpy] We won! Now leave me alone!
+VICTORY | Any | [grumpy] That's right! Stay down!
+VICTORY | Any | [grumpy] Done! Good riddance!
+VICTORY | Any | [grumpy] We did it! Now let me sleep!
+VICTORY | Any | [grumpy] Take that, moon!
+VICTORY | Any | [grumpy] Dead! All of them!
+VICTORY | Any | [grumpy] Finally! We won!
+VICTORY | Any | [grumpy] Not tonight, monsters!
+VICTORY | Any | [grumpy] That's the end of that!
 
-BOSS_SIGHTED | Any | [grumpy] A boss! Tonight! Of course! Of COURSE!
-BOSS_SIGHTED | Any | [grumpy] Whoever sent that, I'd like to speak to your manager!
-BOSS_SIGHTED | Any | [grumpy] Great! A giant monster under a Blood Moon! Did anyone check this schedule?!
-BOSS_SIGHTED | Any | [grumpy] Don't tell me it's a boss. I can SEE it's a boss. I'm cross, not blind!
-BOSS_SIGHTED | Any | [grumpy] Oh good, a boss. This night was too quiet.
-BOSS_SIGHTED | Any | [grumpy] That's the biggest one yet and I'm in the worst mood! Good luck to it!
-BOSS_SIGHTED | Any | [grumpy] I'll hit it, but I won't enjoy the conversation first!
-BOSS_SIGHTED | Any | [grumpy] That thing's ruined my evening! It's ruined my WEEK!
-BOSS_SIGHTED | Any | [grumpy] A boss on a Blood Moon! The sky has it in for me!
-BOSS_SIGHTED | Any | [grumpy] Somebody tell it I'm busy! Tell it to come back tomorrow!
-BOSS_SIGHTED | Sellsword | [grumpy] Boss and Blood Moon, same night! That's two hazards on one shift! Pay me for both!
+BOSS_SIGHTED | Any | [grumpy] Boss! Not tonight!
+BOSS_SIGHTED | Any | [grumpy] A boss? Fine! Open fire!
+BOSS_SIGHTED | Any | [grumpy] Great, a boss! Get it!
+BOSS_SIGHTED | Any | [grumpy] Big one! Make it quick!
+BOSS_SIGHTED | Any | [grumpy] Down, you oversized pest!
+BOSS_SIGHTED | Any | [grumpy] Boss ahead! Take it down!
+BOSS_SIGHTED | Any | [grumpy] Not tonight, boss! Fire!
+BOSS_SIGHTED | Any | [grumpy] Everything on the boss! Now!
+BOSS_SIGHTED | Any | [grumpy] Come on, boss! Try me!
+BOSS_SIGHTED | Any | [grumpy] Boss! Hit it hard!
+BOSS_SIGHTED | Sellsword | [grumpy] Big target! Pay me extra!
 
 PROMOTED | Any | [grumpy] Promoted. Good. Don't clap. Don't talk.
 PROMOTED | Any | [grumpy] A promotion? Tonight? You pick tonight? Thank you. Go away.
@@ -1541,27 +1541,27 @@ NURSE_MARCH | Any | [grumpy] Walk. And if I hear the word cheer, someone's getti
 #   those and nothing else, the way their town NPCs turn irritable.
 # Temperament Any everywhere, so every officer can speak every line.
 # ============================================================================================================
-OFFICER_CHAT_FIGHT | Any | Not now! Ask me again when nothing's trying to eat us!
-OFFICER_CHAT_FIGHT | Any | Talk fast! Something out there wants a word with me more than you do!
-OFFICER_CHAT_FIGHT | Any | I can chat or I can shoot! The enemy's making it easy!
-OFFICER_CHAT_FIGHT | Any | Make it quick, {Player}! The line won't hold itself!
-OFFICER_CHAT_FIGHT | Any | There's a fight on! I've got opinions, but they're mostly profane!
-OFFICER_CHAT_FIGHT | Any | Whatever you wanted, it's the second most urgent thing here!
-OFFICER_CHAT_BOSS | Any | That's {Boss}! I'd like it noted that I never volunteered for this!
-OFFICER_CHAT_BOSS | Any | {Boss} is out there! Please do something about that before I do something brave!
-OFFICER_CHAT_BOSS | Any | Is {Boss} always this big?! Nobody warned me about the size!
-OFFICER_CHAT_BOSS | Any | Tell me you've got a plan for {Boss}! Even a bad one! Even a loud one!
-OFFICER_CHAT_BOSS | Any | I've faced worse than {Boss}! I can't think when, but I'm sure of it!
-OFFICER_CHAT_HURT | Any | I've been better. I've also been worse. Not recently, though.
-OFFICER_CHAT_HURT | Any | Everything hurts, but the paperwork says I'm fit for duty.
-OFFICER_CHAT_HURT | Any | I'm fine! The blood's mostly decorative!
-OFFICER_CHAT_HURT | Any | Give me a minute to stop bleeding and I'll be right with you.
-OFFICER_CHAT_HURT | Any | If I fall over, that's a tactical decision.
-OFFICER_CHAT_VICTORY | Any | We won! I'm told this is where I feel proud.
-OFFICER_CHAT_VICTORY | Any | That was close! Don't tell the others how close!
-OFFICER_CHAT_VICTORY | Any | Well fought, {Player}! I'll be thinking about it for weeks, mostly with a flinch!
-OFFICER_CHAT_VICTORY | Any | It's quiet now. I don't trust it, but I'll take it.
-OFFICER_CHAT_VICTORY | Any | Another one down! I'm keeping count, mostly out of spite!
+OFFICER_CHAT_FIGHT | Any | Not now! Open fire!
+OFFICER_CHAT_FIGHT | Any | Talk fast! Enemy's on us!
+OFFICER_CHAT_FIGHT | Any | Fighting here! Make it quick!
+OFFICER_CHAT_FIGHT | Any | Make it quick, {Player}! Hold the line!
+OFFICER_CHAT_FIGHT | Any | Fight first! Talk later!
+OFFICER_CHAT_FIGHT | Any | Fire! Whatever you want can wait!
+OFFICER_CHAT_BOSS | Any | That's {Boss}! Everybody fire!
+OFFICER_CHAT_BOSS | Any | {Boss} is here! Hit it hard!
+OFFICER_CHAT_BOSS | Any | {Boss}! Give it everything!
+OFFICER_CHAT_BOSS | Any | Focus on {Boss}! Bring it down!
+OFFICER_CHAT_BOSS | Any | We can take {Boss}! Open fire!
+OFFICER_CHAT_HURT | Any | I'm hit! Still fighting!
+OFFICER_CHAT_HURT | Any | Ow! I'm fine! Keep going!
+OFFICER_CHAT_HURT | Any | Just a scratch! Fire!
+OFFICER_CHAT_HURT | Any | I'll hold! Keep firing!
+OFFICER_CHAT_HURT | Any | I'm hurt! Not out!
+OFFICER_CHAT_VICTORY | Any | We won! Well fought!
+OFFICER_CHAT_VICTORY | Any | That's how it's done!
+OFFICER_CHAT_VICTORY | Any | Great work, {Player}! We won!
+OFFICER_CHAT_VICTORY | Any | Victory! Stay sharp!
+OFFICER_CHAT_VICTORY | Any | Another one down! Good work!
 OFFICER_CHAT_MARCH | Any | Keep pace, {Player}! I'm told the enemy doesn't wait for stragglers!
 OFFICER_CHAT_MARCH | Any | All quiet so far. I only mention it so it can be proven wrong.
 OFFICER_CHAT_MARCH | Any | I'm marching, I'm listening, and I'm regretting my boots. Pick one for the conversation!
@@ -1595,20 +1595,20 @@ OFFICER_Nurse_MARCH | Any | If something hurts, say so early. I get grumpy when 
 OFFICER_Nurse_HOLD | Any | Standing around is just waiting with posture. Nobody's bleeding yet. I'm waiting.
 OFFICER_Nurse_HOLD | Any | Fine. We hold. I'll count the ones most likely to faint.
 OFFICER_Nurse_HOLD | Any | Quiet's the worst. Quiet is when they all get hurt at once.
-OFFICER_Nurse_FIGHT | Any | Not now! Bleed over there! In an orderly line!
-OFFICER_Nurse_FIGHT | Any | If you can talk, you're not dying! Go away!
-OFFICER_Nurse_FIGHT | Any | I treat the loudest one last! It's never the bad one!
-OFFICER_Nurse_FIGHT | Any | Duck first, chat later! In that order!
-OFFICER_Nurse_BOSS | Any | That's {Boss}! I'm going to need more bandages and a different job!
-OFFICER_Nurse_BOSS | Any | {Boss} is going to hurt people! I'm counting the cots!
-OFFICER_Nurse_BOSS | Any | If {Boss} hits you, lie still and think of me! I'll do the rest!
-OFFICER_Nurse_BOSS | Any | Does {Boss} bleed? Good! Everything bleeds! I'm being optimistic!
-OFFICER_Nurse_HURT | Any | I patch people! Do I look like I've got time to be patched?!
-OFFICER_Nurse_HURT | Any | Great. The patient's me. I'm rude and I never tip.
-OFFICER_Nurse_HURT | Any | Ow! Don't help! Everyone who helps makes it worse! Back up!
-OFFICER_Nurse_VICTORY | Any | It's down. Now come the casualties. That's my half of the victory.
-OFFICER_Nurse_VICTORY | Any | Good work. Line up so I can see what's missing.
-OFFICER_Nurse_VICTORY | Any | Nobody celebrate near the injured! Celebrate over there! Quietly!
+OFFICER_Nurse_FIGHT | Any | Not now! Take cover! Fire!
+OFFICER_Nurse_FIGHT | Any | Talking means you're alive! Fight!
+OFFICER_Nurse_FIGHT | Any | Heads down! I'll patch you after!
+OFFICER_Nurse_FIGHT | Any | Fight now, bandage later!
+OFFICER_Nurse_BOSS | Any | {Boss}! Bring bandages! Fight!
+OFFICER_Nurse_BOSS | Any | {Boss}! I'll patch you up! Go!
+OFFICER_Nurse_BOSS | Any | Hit {Boss}! I've got your back!
+OFFICER_Nurse_BOSS | Any | Everything bleeds! Hit {Boss}!
+OFFICER_Nurse_HURT | Any | I'm hit! Keep fighting!
+OFFICER_Nurse_HURT | Any | Ow! I'll patch myself!
+OFFICER_Nurse_HURT | Any | Back up! I'm fine!
+OFFICER_Nurse_VICTORY | Any | We won! Line up for bandages!
+OFFICER_Nurse_VICTORY | Any | Good work! Come see me!
+OFFICER_Nurse_VICTORY | Any | Victory! Wounded, over here!
 
 # ---- Guide: earnest, helpful, writes everything down
 OFFICER_Guide_IDLE | Any | Hi, {Player}! I wrote down some tips while we were standing around! Ten pages!
@@ -1623,20 +1623,20 @@ OFFICER_Guide_MARCH | Any | Right foot, left foot! Great! You're all doing wonde
 OFFICER_Guide_HOLD | Any | Holding here is a good idea! I read about it! Probably!
 OFFICER_Guide_HOLD | Any | Fun fact while we wait! There's dirt everywhere! Isn't that nice?
 OFFICER_Guide_HOLD | Any | It's a good spot! Good sightlines! I think that's the word!
-OFFICER_Guide_FIGHT | Any | Not now, {Player}! Tip: don't stand near the monsters!
-OFFICER_Guide_FIGHT | Any | Hit them before they hit you! That's the whole tip!
-OFFICER_Guide_FIGHT | Any | I'd give advice but the advice is duck!
-OFFICER_Guide_FIGHT | Any | One second! Guiding bolt! Hold on! Guiding bolt!
-OFFICER_Guide_BOSS | Any | That's {Boss}! Tip: it's much bigger than you! Stay away from the big part!
-OFFICER_Guide_BOSS | Any | I read about {Boss}! The chapter was very short and very worrying!
-OFFICER_Guide_BOSS | Any | {Boss} is here! Use everything you've got! And some things you haven't!
-OFFICER_Guide_BOSS | Any | Don't panic about {Boss}! I'm panicking enough for everyone!
-OFFICER_Guide_HURT | Any | Ow! Tip: don't do that! I did that! Ow!
-OFFICER_Guide_HURT | Any | I'm okay! I'm okay! That's not a tip, that's just me being okay!
-OFFICER_Guide_HURT | Any | Wow, that really hurt. I'll add it to the list of things to avoid.
-OFFICER_Guide_VICTORY | Any | We did it! I'm writing this one down in ink!
-OFFICER_Guide_VICTORY | Any | Great job, {Player}! Tip for next time: do that again!
-OFFICER_Guide_VICTORY | Any | Is it over? It's over! I love it when it's over!
+OFFICER_Guide_FIGHT | Any | Not now, {Player}! Hit them hard!
+OFFICER_Guide_FIGHT | Any | Hit them first! That's my tip!
+OFFICER_Guide_FIGHT | Any | Keep firing! Stay alive!
+OFFICER_Guide_FIGHT | Any | Guiding bolt! Take that!
+OFFICER_Guide_BOSS | Any | That's {Boss}! Stay clear of the big part! Fire!
+OFFICER_Guide_BOSS | Any | {Boss}! Everything you've got! Fire!
+OFFICER_Guide_BOSS | Any | Don't give up! Hit {Boss} hard!
+OFFICER_Guide_BOSS | Any | {Boss} is here! Together now!
+OFFICER_Guide_HURT | Any | Ow! I'm okay! Keep fighting!
+OFFICER_Guide_HURT | Any | I'm hit! Not out! Fire!
+OFFICER_Guide_HURT | Any | That hurt! Stay in the fight!
+OFFICER_Guide_VICTORY | Any | We did it! Great work!
+OFFICER_Guide_VICTORY | Any | Great job, {Player}! Well done!
+OFFICER_Guide_VICTORY | Any | It's over! We won!
 
 # ---- Merchant: a salesman first, in a war or not
 OFFICER_Merchant_IDLE | Any | Slow day for sales. Everybody's busy not dying. Bad for business!
@@ -1651,20 +1651,20 @@ OFFICER_Merchant_MARCH | Any | I'm walking, I'm selling, I'm walking. It's calle
 OFFICER_Merchant_HOLD | Any | We hold here? Good. The foot traffic's just right for a stall.
 OFFICER_Merchant_HOLD | Any | Standing still is an investment. I expect returns.
 OFFICER_Merchant_HOLD | Any | Quiet post. Perfect for a little inventory and a little profit.
-OFFICER_Merchant_FIGHT | Any | Not now! The shop's closed for combat! Come back never!
-OFFICER_Merchant_FIGHT | Any | Buy a weapon or get behind someone who has one!
-OFFICER_Merchant_FIGHT | Any | Heh heh! Sale price on nothing! Duck!
-OFFICER_Merchant_FIGHT | Any | I'm busy! I'm throwing things! I'll invoice you later!
-OFFICER_Merchant_BOSS | Any | That's {Boss}? It's bigger than my budget! Heh!
-OFFICER_Merchant_BOSS | Any | {Boss}! Nobody's going to pay for that much damage! Nobody!
-OFFICER_Merchant_BOSS | Any | {Boss} walks in with no coin and wants everything! I know the type!
-OFFICER_Merchant_BOSS | Any | Let's get {Boss}! I'll count the loot! I'll count it twice!
-OFFICER_Merchant_HURT | Any | Ow! That's coming out of somebody's margin!
-OFFICER_Merchant_HURT | Any | I've been hurt worse by an overdue invoice. Still, ow!
-OFFICER_Merchant_HURT | Any | Wounded! Customer service is closed!
-OFFICER_Merchant_VICTORY | Any | It's down! Sell the pieces! Heh heh! Joking! Mostly!
-OFFICER_Merchant_VICTORY | Any | That was a profitable afternoon. Spiritually.
-OFFICER_Merchant_VICTORY | Any | Great! Now who's buying a victory flag?
+OFFICER_Merchant_FIGHT | Any | Shop's closed! Fighting now!
+OFFICER_Merchant_FIGHT | Any | Grab a weapon and fight!
+OFFICER_Merchant_FIGHT | Any | Sale on bullets! Fire!
+OFFICER_Merchant_FIGHT | Any | Stand back! I'm throwing everything!
+OFFICER_Merchant_BOSS | Any | {Boss}! Biggest threat yet! Fire!
+OFFICER_Merchant_BOSS | Any | Nobody's paying for {Boss}! Open fire!
+OFFICER_Merchant_BOSS | Any | {Boss}! Make it count!
+OFFICER_Merchant_BOSS | Any | Take down {Boss}! The loot's ours!
+OFFICER_Merchant_HURT | Any | Ow! Somebody's paying for that!
+OFFICER_Merchant_HURT | Any | I'm hit! Keep fighting!
+OFFICER_Merchant_HURT | Any | Wounded! Still in it!
+OFFICER_Merchant_VICTORY | Any | Victory! Time to count the loot!
+OFFICER_Merchant_VICTORY | Any | That's a win! Good business!
+OFFICER_Merchant_VICTORY | Any | Great fight! The profit's ours!
 
 # ---- Arms Dealer: gravel voice, few words, all of them about guns
 OFFICER_ArmsDealer_IDLE | Any | Listen to that. Nothing. It's the sound of a barrel that needs firing.
@@ -1679,20 +1679,20 @@ OFFICER_ArmsDealer_MARCH | Any | Keep the barrels pointed away from me, {Player}
 OFFICER_ArmsDealer_HOLD | Any | Hold the line? Gladly. I've got a lot of rounds that want to hold it with me.
 OFFICER_ArmsDealer_HOLD | Any | Good field of fire. I've been counting the places a target could stand.
 OFFICER_ArmsDealer_HOLD | Any | Stand watch, count rounds, repeat. Closest thing I've got to poetry.
-OFFICER_ArmsDealer_FIGHT | Any | Talk later. Right now my guns are the loudest ones in this conversation.
-OFFICER_ArmsDealer_FIGHT | Any | Not now. Reloading's sacred.
-OFFICER_ArmsDealer_FIGHT | Any | Hear that? That's me being busy. Step back.
-OFFICER_ArmsDealer_FIGHT | Any | Down. Down. Down. I don't want to explain brass on your hat.
-OFFICER_ArmsDealer_BOSS | Any | That's {Boss}. Finally, a target worth the good ammunition.
-OFFICER_ArmsDealer_BOSS | Any | {Boss} is huge. Can't miss. Best day of my life.
-OFFICER_ArmsDealer_BOSS | Any | Don't worry about {Boss}. I brought plenty of bullets. Most of them are fast.
-OFFICER_ArmsDealer_BOSS | Any | {Boss}. Hm. I'd say it's a three-clip problem. Maybe four.
-OFFICER_ArmsDealer_HURT | Any | It winged me. I'll remember that when I pull the trigger.
-OFFICER_ArmsDealer_HURT | Any | Can still hold a rifle. Counts as a scratch. A loud scratch.
-OFFICER_ArmsDealer_HURT | Any | Ow. That's one more thing I'll be shooting.
-OFFICER_ArmsDealer_VICTORY | Any | That's what a sustained burst can do. I want it framed.
-OFFICER_ArmsDealer_VICTORY | Any | It's down. I'll be picking up brass all week and loving every minute.
-OFFICER_ArmsDealer_VICTORY | Any | Ammo's extra. Victory's free. Don't tell {Merchant}.
+OFFICER_ArmsDealer_FIGHT | Any | Open fire! Keep it loud!
+OFFICER_ArmsDealer_FIGHT | Any | Reloading! Cover me!
+OFFICER_ArmsDealer_FIGHT | Any | Heads down! Guns up!
+OFFICER_ArmsDealer_FIGHT | Any | Get down! I'm shooting!
+OFFICER_ArmsDealer_BOSS | Any | {Boss}! Finally, a real target!
+OFFICER_ArmsDealer_BOSS | Any | {Boss} is huge! Can't miss! Fire!
+OFFICER_ArmsDealer_BOSS | Any | Plenty of ammo for {Boss}! Fire!
+OFFICER_ArmsDealer_BOSS | Any | Three clips for {Boss}! Open fire!
+OFFICER_ArmsDealer_HURT | Any | I'm hit! I can still shoot!
+OFFICER_ArmsDealer_HURT | Any | Winged me! Keep firing!
+OFFICER_ArmsDealer_HURT | Any | Ow! Shooting back!
+OFFICER_ArmsDealer_VICTORY | Any | That's a win! Great shooting!
+OFFICER_ArmsDealer_VICTORY | Any | Down it goes! Good work!
+OFFICER_ArmsDealer_VICTORY | Any | Victory's free! Ammo's extra!
 
 # ---- Demolitionist: cheerful, careless, missing the odd finger
 OFFICER_Demolitionist_IDLE | Any | Don't mind the smoke! It's a feature! Mostly!
@@ -1707,20 +1707,20 @@ OFFICER_Demolitionist_MARCH | Any | Is it hot? It's hot. It's hot in my bag. Tha
 OFFICER_Demolitionist_HOLD | Any | Holding here? Great! I'll dig a few holes! For later! Don't ask!
 OFFICER_Demolitionist_HOLD | Any | I'm just going to put this here. And this. And, hm, this too.
 OFFICER_Demolitionist_HOLD | Any | Quiet spot! A shame! A spot like this wants a crater!
-OFFICER_Demolitionist_FIGHT | Any | Fire in the hole! Everyone's in the hole! Go go go!
-OFFICER_Demolitionist_FIGHT | Any | Not now! I'm busy making it rain!
-OFFICER_Demolitionist_FIGHT | Any | Stand back! Farther! Farther! No, that's too far! Heh!
-OFFICER_Demolitionist_FIGHT | Any | Boom! Hah! Did you see that?! Somebody say they saw that!
-OFFICER_Demolitionist_BOSS | Any | That's {Boss}?! I brought bigger! I brought way bigger!
-OFFICER_Demolitionist_BOSS | Any | A boss! A real boss! I've got a surprise for {Boss}! It's a surprise for me too!
-OFFICER_Demolitionist_BOSS | Any | {Boss}, huh? Everybody get behind me! No, in FRONT of me! Hm, behind!
-OFFICER_Demolitionist_BOSS | Any | Please hold {Boss} still! Just for a second! It's for science!
-OFFICER_Demolitionist_HURT | Any | I'm fine! That's not mine! That limb is somebody else's! It's mine!
-OFFICER_Demolitionist_HURT | Any | Ow! Not the good arm! Well, okay, the good arm!
-OFFICER_Demolitionist_HURT | Any | Ooh, that's a new kind of ow! I love learning!
-OFFICER_Demolitionist_VICTORY | Any | Ha ha! Did I do that? I did that! Wait, did I do that?!
-OFFICER_Demolitionist_VICTORY | Any | That's what I call a farewell party! Sorry, {Nurse}! More work for you!
-OFFICER_Demolitionist_VICTORY | Any | One more! Let's do another! Is there another?!
+OFFICER_Demolitionist_FIGHT | Any | Fire in the hole!
+OFFICER_Demolitionist_FIGHT | Any | Stand back! Boom!
+OFFICER_Demolitionist_FIGHT | Any | Here comes the boom!
+OFFICER_Demolitionist_FIGHT | Any | Light it up! Fire!
+OFFICER_Demolitionist_BOSS | Any | {Boss}! I brought bigger bombs!
+OFFICER_Demolitionist_BOSS | Any | A boss! Blow it up!
+OFFICER_Demolitionist_BOSS | Any | {Boss}! Everyone clear! Boom!
+OFFICER_Demolitionist_BOSS | Any | Hold {Boss} still! I'll blow it up!
+OFFICER_Demolitionist_HURT | Any | Ow! I'm okay! Boom time!
+OFFICER_Demolitionist_HURT | Any | Hit! Still throwing!
+OFFICER_Demolitionist_HURT | Any | That hurt! More bombs!
+OFFICER_Demolitionist_VICTORY | Any | Boom! We did it!
+OFFICER_Demolitionist_VICTORY | Any | Great blast! We won!
+OFFICER_Demolitionist_VICTORY | Any | That's how you do it! Hah!
 
 # ---- Goblin Tinkerer: chirpy, gadget-mad, not a fan of fighting
 OFFICER_GoblinTinkerer_IDLE | Any | I finally fixed the thing! It was the other thing! I fixed that too!
@@ -1735,20 +1735,20 @@ OFFICER_GoblinTinkerer_MARCH | Any | Everything's heavier when it's your own too
 OFFICER_GoblinTinkerer_HOLD | Any | We hold! Great! I'll tinker! It's what I do when I'm scared!
 OFFICER_GoblinTinkerer_HOLD | Any | Don't touch that! It's not dangerous! Probably! Don't touch it!
 OFFICER_GoblinTinkerer_HOLD | Any | I love a long wait! Lots of time for little improvements!
-OFFICER_GoblinTinkerer_FIGHT | Any | Not now! I'm throwing balls of spikes! It's very tiring!
-OFFICER_GoblinTinkerer_FIGHT | Any | Eep! Everyone's so loud! Do it quieter!
-OFFICER_GoblinTinkerer_FIGHT | Any | I'm a tinkerer, not a soldier! But I'll tinker them hard!
-OFFICER_GoblinTinkerer_FIGHT | Any | Duck! I mean, I'll duck! I'm already ducking!
-OFFICER_GoblinTinkerer_BOSS | Any | That's {Boss}?! My people had a drawing of that! It was scary in the drawing!
-OFFICER_GoblinTinkerer_BOSS | Any | {Boss} is too big! I'd need a bigger wrench! I'd need a bigger everything!
-OFFICER_GoblinTinkerer_BOSS | Any | Can we reforge {Boss}? Into a smaller, nicer thing? Please?
-OFFICER_GoblinTinkerer_BOSS | Any | Everybody please be careful of {Boss}! I only just reforged you!
-OFFICER_GoblinTinkerer_HURT | Any | Ow! Spiked ball! It was my own spiked ball!
-OFFICER_GoblinTinkerer_HURT | Any | Don't worry, I'm sturdy! Sort of! Get me a bandage!
-OFFICER_GoblinTinkerer_HURT | Any | Tinkerers shouldn't bleed! It's not in the design!
-OFFICER_GoblinTinkerer_VICTORY | Any | We did it! Can I go home now? I'll go home now!
-OFFICER_GoblinTinkerer_VICTORY | Any | Wow! I want to build something that does that!
-OFFICER_GoblinTinkerer_VICTORY | Any | I'd say it worked as designed! I didn't design it! But it worked!
+OFFICER_GoblinTinkerer_FIGHT | Any | Take that! Spiked balls!
+OFFICER_GoblinTinkerer_FIGHT | Any | Everyone fire! Quick!
+OFFICER_GoblinTinkerer_FIGHT | Any | I'm a tinkerer, not a soldier! Take that!
+OFFICER_GoblinTinkerer_FIGHT | Any | Spikes away! Duck!
+OFFICER_GoblinTinkerer_BOSS | Any | {Boss}! Too big! Hit it anyway!
+OFFICER_GoblinTinkerer_BOSS | Any | {Boss}! I'll tinker it to pieces!
+OFFICER_GoblinTinkerer_BOSS | Any | Careful of {Boss}! Stay alive!
+OFFICER_GoblinTinkerer_BOSS | Any | Take it down! Everything we've got!
+OFFICER_GoblinTinkerer_HURT | Any | Ow! I'm okay! Still tinkering!
+OFFICER_GoblinTinkerer_HURT | Any | Hit! Bandage! Quick!
+OFFICER_GoblinTinkerer_HURT | Any | I'm sturdy! Keep going!
+OFFICER_GoblinTinkerer_VICTORY | Any | We did it! Great work!
+OFFICER_GoblinTinkerer_VICTORY | Any | Wow! It worked!
+OFFICER_GoblinTinkerer_VICTORY | Any | Victory! Time to build!
 
 # ---- Princess: sweet, warm, delighted by everything, never means harm
 OFFICER_Princess_IDLE | Any | Oh, hi, {Player}! Isn't it a lovely day to be a kingdom?
@@ -1763,20 +1763,20 @@ OFFICER_Princess_MARCH | Any | Smile, everyone! It makes the enemy wonder what w
 OFFICER_Princess_HOLD | Any | Holding the line is very brave! Please tell the soldiers I said so!
 OFFICER_Princess_HOLD | Any | We'll wait here! I'll hum! It helps with the nerves!
 OFFICER_Princess_HOLD | Any | It's quiet! Is it too quiet? I never know! Somebody tell me!
-OFFICER_Princess_FIGHT | Any | Oh no, oh no! Please make it stop, {Player}! As politely as you can!
-OFFICER_Princess_FIGHT | Any | Chin up, everyone! You're all doing wonderfully!
-OFFICER_Princess_FIGHT | Any | Not now, dear! I'm cheering! It needs my full attention!
-OFFICER_Princess_FIGHT | Any | Hey! Excuse me! That's my army you're being rude to!
-OFFICER_Princess_BOSS | Any | Goodness, {Boss}! What a rude guest! We didn't send an invitation!
-OFFICER_Princess_BOSS | Any | {Boss} is so big! But so was my dragon plush! And I managed!
-OFFICER_Princess_BOSS | Any | Don't worry, {Player}! {Boss} can't be as scary as court dinners!
-OFFICER_Princess_BOSS | Any | We can do this! We can do this! I'm going to say we can do this until it's true!
-OFFICER_Princess_HURT | Any | Oh! Ow! I'm okay! A princess just rests in a dignified horizontal position!
-OFFICER_Princess_HURT | Any | That wasn't very nice! I'm still smiling! It's the principle!
-OFFICER_Princess_HURT | Any | Ouchie! Sorry! I mean ow! I mean, carry on!
-OFFICER_Princess_VICTORY | Any | Hooray! I'll make sure the story gets told at court! Heavily improved!
-OFFICER_Princess_VICTORY | Any | Victory suits us! Somebody bring me a nice chair!
-OFFICER_Princess_VICTORY | Any | Everybody gets a medal! I'll draw the medals myself!
+OFFICER_Princess_FIGHT | Any | Get them, {Player}! Go, go, go!
+OFFICER_Princess_FIGHT | Any | Chin up, everyone! You're doing wonderfully!
+OFFICER_Princess_FIGHT | Any | I'm cheering for you! Fire!
+OFFICER_Princess_FIGHT | Any | That's my army! Fight!
+OFFICER_Princess_BOSS | Any | {Boss}! Don't be afraid! Fight!
+OFFICER_Princess_BOSS | Any | We can do this! Take down {Boss}!
+OFFICER_Princess_BOSS | Any | {Player}, {Boss} is nothing! Fight!
+OFFICER_Princess_BOSS | Any | Brave hearts! Strike {Boss}!
+OFFICER_Princess_HURT | Any | Ow! I'm okay! Carry on!
+OFFICER_Princess_HURT | Any | I'm still smiling! Keep fighting!
+OFFICER_Princess_HURT | Any | Hit! Don't stop!
+OFFICER_Princess_VICTORY | Any | Hooray! We won!
+OFFICER_Princess_VICTORY | Any | Victory! Everybody gets a medal!
+OFFICER_Princess_VICTORY | Any | Splendid! Well fought!
 
 # ---- Dryad: serene, ancient, always aware of the corruption
 OFFICER_Dryad_IDLE | Any | The land is whispering, {Player}. I don't care for what it says.
@@ -1791,20 +1791,20 @@ OFFICER_Dryad_MARCH | Any | I do not march. I drift with purpose. Please do the 
 OFFICER_Dryad_HOLD | Any | We hold, and the earth holds with us. For now.
 OFFICER_Dryad_HOLD | Any | Do you hear that? The soil is counting us. I hope it likes the number.
 OFFICER_Dryad_HOLD | Any | Waiting is what trees do. I've gotten rather good at it.
-OFFICER_Dryad_FIGHT | Any | Not now. Even the leaves are shaking.
-OFFICER_Dryad_FIGHT | Any | The world is being cut. Be quick, {Player}.
-OFFICER_Dryad_FIGHT | Any | I'm marking them. Strike what I mark. The rest can wait.
-OFFICER_Dryad_FIGHT | Any | Don't stand in the roots. They're listening, and they take sides.
-OFFICER_Dryad_BOSS | Any | {Boss}. The land flinches. I flinch with it.
-OFFICER_Dryad_BOSS | Any | I've felt {Boss} in my roots for a long time. It was easier to ignore then.
-OFFICER_Dryad_BOSS | Any | There's no purifying {Boss}. Only ending.
-OFFICER_Dryad_BOSS | Any | Be brave, {Player}. The forest cannot help you. It is much too afraid.
-OFFICER_Dryad_HURT | Any | I bleed sap. I bleed memory. It's all rather inconvenient.
-OFFICER_Dryad_HURT | Any | A little pain. The wood always remembers.
-OFFICER_Dryad_HURT | Any | Do not fuss. I've lived through worse winters.
-OFFICER_Dryad_VICTORY | Any | The air feels lighter. Only for a while, but I'll take it.
-OFFICER_Dryad_VICTORY | Any | Good. The land can breathe. Let it.
-OFFICER_Dryad_VICTORY | Any | Something small will grow where that fell. I'll see to it.
+OFFICER_Dryad_FIGHT | Any | The land fights back! Strike!
+OFFICER_Dryad_FIGHT | Any | Strike what I mark! Now!
+OFFICER_Dryad_FIGHT | Any | Hold the roots! Fight!
+OFFICER_Dryad_FIGHT | Any | Quick, {Player}! Defend the land!
+OFFICER_Dryad_BOSS | Any | {Boss}! End it! Strike!
+OFFICER_Dryad_BOSS | Any | The land fears {Boss}! Be brave!
+OFFICER_Dryad_BOSS | Any | No purifying {Boss}! Strike it down!
+OFFICER_Dryad_BOSS | Any | Be brave, {Player}! Strike {Boss}!
+OFFICER_Dryad_HURT | Any | Sap and bark! Still standing!
+OFFICER_Dryad_HURT | Any | A wound! I will endure!
+OFFICER_Dryad_HURT | Any | Do not fuss! Fight on!
+OFFICER_Dryad_VICTORY | Any | Well fought! The land breathes!
+OFFICER_Dryad_VICTORY | Any | Good! The land is safe!
+OFFICER_Dryad_VICTORY | Any | Victory! Something will grow here!
 
 # ---- Painter: a perfectionist about color, treats war as a bad palette
 OFFICER_Painter_IDLE | Any | Look at this light, {Player}! Honestly! I could weep! I could also repaint it!
@@ -1819,20 +1819,20 @@ OFFICER_Painter_MARCH | Any | Mind the paint! It's wet! Everything on me is wet!
 OFFICER_Painter_HOLD | Any | We hold? Finally! I can finish this little corner!
 OFFICER_Painter_HOLD | Any | A still moment. Perfect for sketching the horizon. It's mostly gray. Ugh.
 OFFICER_Painter_HOLD | Any | Don't mind me. I'm just matching the sky. It keeps changing its mind.
-OFFICER_Painter_FIGHT | Any | Not now! I'm mid-stroke! It's a barrage! It's art!
-OFFICER_Painter_FIGHT | Any | Oh, the colors! The terrible, terrible colors! Fire!
-OFFICER_Painter_FIGHT | Any | Splash splash splash! Fine, that's the technique!
-OFFICER_Painter_FIGHT | Any | Whoever did that with the orange and the red needs to stop talking!
-OFFICER_Painter_BOSS | Any | {Boss}! What a palette! What a monster! What a very bad choice of palette!
-OFFICER_Painter_BOSS | Any | I could paint {Boss}! Later! With a larger brush! And a weaker stomach!
-OFFICER_Painter_BOSS | Any | {Boss} clashes with everything! I've never been so offended!
-OFFICER_Painter_BOSS | Any | A bold composition, {Boss}. I'm going to cover it in a lot of paint.
-OFFICER_Painter_HURT | Any | Oh, that's red! A very deep red! I'm not enjoying it as much as I thought!
-OFFICER_Painter_HURT | Any | I've been hit! Somebody paint over it! Quickly!
-OFFICER_Painter_HURT | Any | That one went right through the sleeve! It's my good sleeve!
-OFFICER_Painter_VICTORY | Any | Magnificent! A masterpiece of defeating things! I'll sign it later!
-OFFICER_Painter_VICTORY | Any | Ah, the afterglow! Isn't it warm? I'm getting all poetic!
-OFFICER_Painter_VICTORY | Any | Somebody frame that. Not the monster. The moment.
+OFFICER_Painter_FIGHT | Any | Paint them red! Fire!
+OFFICER_Painter_FIGHT | Any | Splash them! Fire!
+OFFICER_Painter_FIGHT | Any | Colors flying! Open fire!
+OFFICER_Painter_FIGHT | Any | Make a masterpiece! Fire!
+OFFICER_Painter_BOSS | Any | {Boss}! What a canvas! Fire!
+OFFICER_Painter_BOSS | Any | A bold subject! Paint it red!
+OFFICER_Painter_BOSS | Any | {Boss}! Cover it in color! Fire!
+OFFICER_Painter_BOSS | Any | Splash {Boss} with everything!
+OFFICER_Painter_HURT | Any | I'm hit! Still painting!
+OFFICER_Painter_HURT | Any | Ow! I'm fine! Fire!
+OFFICER_Painter_HURT | Any | Hit! Keep brushing! Fire!
+OFFICER_Painter_VICTORY | Any | A masterpiece! We won!
+OFFICER_Painter_VICTORY | Any | Magnificent! Well fought!
+OFFICER_Painter_VICTORY | Any | Beautiful work! Victory!
 
 # ---- Angler: a kid, cocky, bossy, thinks soldiers are free minions
 OFFICER_Angler_IDLE | Any | Hey! You! Go catch me a fish! Not you, {Player}! Well, also you!
@@ -1847,20 +1847,20 @@ OFFICER_Angler_MARCH | Any | I'm leading from the back! It's the best place to b
 OFFICER_Angler_HOLD | Any | Why are we just standing here?! Is this a trick?! Is it?!
 OFFICER_Angler_HOLD | Any | This is boring! Somebody go poke something!
 OFFICER_Angler_HOLD | Any | I'm setting a trap! Don't step on it! Don't step anywhere!
-OFFICER_Angler_FIGHT | Any | Hey! Hey! I'm busy! Fight stuff or get out of the way!
-OFFICER_Angler_FIGHT | Any | Watch it! Watch it! That's MY fight!
-OFFICER_Angler_FIGHT | Any | Tell the monsters I'm not scared! Tell them loud!
-OFFICER_Angler_FIGHT | Any | Heh, take that! And that! And a fish!
-OFFICER_Angler_BOSS | Any | Whoa! {Boss} is HUGE! I'd catch it! Totally! With a really big net!
-OFFICER_Angler_BOSS | Any | I'm not scared of {Boss}! I'm just standing very far behind you!
-OFFICER_Angler_BOSS | Any | You guys go first, okay? I'll hold the fish!
-OFFICER_Angler_BOSS | Any | {Boss} can't be worse than a bad fishing day! Okay, maybe a little worse!
-OFFICER_Angler_HURT | Any | Ow! Ow! Ow! I'm okay! I'm totally okay! Don't tell anyone!
-OFFICER_Angler_HURT | Any | You dropped me! You dropped a kid! That's a crime!
-OFFICER_Angler_HURT | Any | That hurt! Somebody do something about that! Anything!
-OFFICER_Angler_VICTORY | Any | Heh heh! I knew we'd win! I totally knew!
-OFFICER_Angler_VICTORY | Any | That's my army! I'm going to tell everyone I did it!
-OFFICER_Angler_VICTORY | Any | Great! Now someone owes me a fish! Several!
+OFFICER_Angler_FIGHT | Any | Take that! And that!
+OFFICER_Angler_FIGHT | Any | I'm not scared! Fire!
+OFFICER_Angler_FIGHT | Any | Out of my way! Fire!
+OFFICER_Angler_FIGHT | Any | My fight! Watch this!
+OFFICER_Angler_BOSS | Any | {Boss} is huge! I'm still in!
+OFFICER_Angler_BOSS | Any | Go go go! Hit {Boss}!
+OFFICER_Angler_BOSS | Any | I'm not scared of {Boss}! Fire!
+OFFICER_Angler_BOSS | Any | {Boss} can't beat us! Fire!
+OFFICER_Angler_HURT | Any | Ow! I'm okay! Keep going!
+OFFICER_Angler_HURT | Any | Hey! That hurt! Take that!
+OFFICER_Angler_HURT | Any | I'm hit! I'm still fighting!
+OFFICER_Angler_VICTORY | Any | Yeah! We won!
+OFFICER_Angler_VICTORY | Any | I knew we'd win!
+OFFICER_Angler_VICTORY | Any | Awesome! Best army ever!
 
 # ---- Pirate: salt, rum, the parrot, and sentences that go sideways
 OFFICER_Pirate_IDLE | Any | Arr, {Player}! A fine day to be standin' about and lookin' dangerous!
@@ -1875,20 +1875,20 @@ OFFICER_Pirate_MARCH | Any | I've got a fine crew behind me! Shiver me timbers, 
 OFFICER_Pirate_HOLD | Any | We hold the deck, then! The deck be a field! Close enough!
 OFFICER_Pirate_HOLD | Any | Aye, I'll stand watch! Hand me the spyglass! I don't have a spyglass!
 OFFICER_Pirate_HOLD | Any | If ye hear a squawk, that's the parrot! If ye hear screamin', that's me!
-OFFICER_Pirate_FIGHT | Any | Boarders! Hold fast! Hold FAST!
-OFFICER_Pirate_FIGHT | Any | Not now, matey! I'm loadin'! I'm always loadin'!
-OFFICER_Pirate_FIGHT | Any | Fire at will! At whoever's will, I don't care!
-OFFICER_Pirate_FIGHT | Any | Yarr! Cutlasses out! Parrots out! Everything out!
-OFFICER_Pirate_BOSS | Any | Blimey! That be {Boss}! I've fought sea serpents smaller than its toe!
-OFFICER_Pirate_BOSS | Any | {Boss}! Everybody to the guns! The big ones! The BIG ones!
-OFFICER_Pirate_BOSS | Any | Ye want a plan? Me plan's to shoot {Boss} until it stops bein' a problem!
-OFFICER_Pirate_BOSS | Any | If I fall to {Boss}, bury me with me parrot! Do NOT feed the parrot to {Boss}!
-OFFICER_Pirate_HURT | Any | Arr! Just a scratch! A scratch the size of a wave!
-OFFICER_Pirate_HURT | Any | Ye've shot me! I didn't think ye had it in ye! Well done!
-OFFICER_Pirate_HURT | Any | Blast! Me coat! It was a good coat!
-OFFICER_Pirate_VICTORY | Any | Aye, that be a victory! Break out the grog! Any grog! All the grog!
-OFFICER_Pirate_VICTORY | Any | We sank 'er! Oh, aye, it was on land. We sank 'er in spirit!
-OFFICER_Pirate_VICTORY | Any | A rousing success! Three cheers for the crew, and one for me!
+OFFICER_Pirate_FIGHT | Any | Boarders! Hold fast!
+OFFICER_Pirate_FIGHT | Any | Fire at will!
+OFFICER_Pirate_FIGHT | Any | Cutlasses out! Charge!
+OFFICER_Pirate_FIGHT | Any | Load and fire! Aye!
+OFFICER_Pirate_BOSS | Any | That be {Boss}! Guns ready!
+OFFICER_Pirate_BOSS | Any | {Boss}! All cannons! Fire!
+OFFICER_Pirate_BOSS | Any | Shoot {Boss} until it falls!
+OFFICER_Pirate_BOSS | Any | Blimey! {Boss}! Give 'em everything!
+OFFICER_Pirate_HURT | Any | Arr! Just a scratch!
+OFFICER_Pirate_HURT | Any | Ye got me! Keep firing!
+OFFICER_Pirate_HURT | Any | Blast! Still standin'!
+OFFICER_Pirate_VICTORY | Any | Victory! Break out the grog!
+OFFICER_Pirate_VICTORY | Any | We sank 'er! Hooray!
+OFFICER_Pirate_VICTORY | Any | Three cheers for the crew!
 
 # ---- Clothier: a crotchety tailor with a long-lifted curse
 OFFICER_Clothier_IDLE | Any | Don't stand so close to the fabric. You'll get lint on your dignity.
@@ -1903,20 +1903,20 @@ OFFICER_Clothier_MARCH | Any | Hup, hup, hup. And mind the thread. I don't have 
 OFFICER_Clothier_HOLD | Any | We hold. Fine. I'll sew. It's what I do when I'm angry.
 OFFICER_Clothier_HOLD | Any | Don't look at me. I'm busy being disappointed in the weather.
 OFFICER_Clothier_HOLD | Any | Quiet job. Good. Maybe now somebody will notice my stitching.
-OFFICER_Clothier_FIGHT | Any | Not now! I'm raising skeletons! It's a delicate craft!
-OFFICER_Clothier_FIGHT | Any | Hmph! Get off my lawn! My lawn is anywhere I'm standing!
-OFFICER_Clothier_FIGHT | Any | I haven't got time for you! Time's the one fabric I never have enough of!
-OFFICER_Clothier_FIGHT | Any | Watch the fringe! You don't know what that fringe cost!
-OFFICER_Clothier_BOSS | Any | That's {Boss}? Ugly cut. Ugly cut and no taste.
-OFFICER_Clothier_BOSS | Any | I've been cursed worse than {Boss}. Mostly by customers.
-OFFICER_Clothier_BOSS | Any | {Boss} shows up without an appointment. I'm going to stitch it a new face.
-OFFICER_Clothier_BOSS | Any | Everybody out of {Boss}'s way! It can't be tailored!
-OFFICER_Clothier_HURT | Any | That's a rip! A big rip! Somebody take a needle to this!
-OFFICER_Clothier_HURT | Any | Ow! Don't poke where I'm sewn! It's a whole system!
-OFFICER_Clothier_HURT | Any | I'm too old for this, and too stubborn to say it!
-OFFICER_Clothier_VICTORY | Any | Hm. Not a bad bit of work. I'll allow it.
-OFFICER_Clothier_VICTORY | Any | Hmph. Fine. We won. Somebody sweep up.
-OFFICER_Clothier_VICTORY | Any | Clean seam. Clean seam. I like a clean seam.
+OFFICER_Clothier_FIGHT | Any | Get off my lawn! Fire!
+OFFICER_Clothier_FIGHT | Any | Hmph! Take that!
+OFFICER_Clothier_FIGHT | Any | Watch the fringe! Fire!
+OFFICER_Clothier_FIGHT | Any | Rise, skeletons! Fight!
+OFFICER_Clothier_BOSS | Any | {Boss}! Ugly thing! Fire!
+OFFICER_Clothier_BOSS | Any | I've beaten worse than {Boss}! Fire!
+OFFICER_Clothier_BOSS | Any | Take down {Boss}! No mercy!
+OFFICER_Clothier_BOSS | Any | Everyone, out of {Boss}'s way! Fire!
+OFFICER_Clothier_HURT | Any | That's a rip! Still fighting!
+OFFICER_Clothier_HURT | Any | Ow! Too stubborn to fall!
+OFFICER_Clothier_HURT | Any | I'm hit! Not done yet!
+OFFICER_Clothier_VICTORY | Any | Good work! I'll allow it!
+OFFICER_Clothier_VICTORY | Any | We won! Clean seam!
+OFFICER_Clothier_VICTORY | Any | Hmph! Well fought!
 
 # ---- Wizard: gentle, far away, never quite sure what day it is
 OFFICER_Wizard_IDLE | Any | Ah, {Player}. I foresaw this. Or was that yesterday? Either way, hello.
@@ -1931,20 +1931,20 @@ OFFICER_Wizard_MARCH | Any | I'll lead the way with a nice, steady glow. Please 
 OFFICER_Wizard_HOLD | Any | We hold. Yes. Excellent. I'll stare at the middle distance. I'm very good at it.
 OFFICER_Wizard_HOLD | Any | Hush. I'm listening to the stars. They have so little to say.
 OFFICER_Wizard_HOLD | Any | A quiet moment. Oh, I could nap. I could nap forever. Would anyone mind?
-OFFICER_Wizard_FIGHT | Any | One moment, dear! I'm casting! It needs both hands and a lot of luck!
-OFFICER_Wizard_FIGHT | Any | Oh dear. Oh dear. Swords, please!
-OFFICER_Wizard_FIGHT | Any | Stand behind me! No! In front of me! No! Beside me, but further away!
-OFFICER_Wizard_FIGHT | Any | I know a spell for this! It's the one with the thing! Hold on!
-OFFICER_Wizard_BOSS | Any | Ah. {Boss}. I've read about this. The ending was unclear.
-OFFICER_Wizard_BOSS | Any | {Boss} is something out of the old books. The old books weren't kind to anyone.
-OFFICER_Wizard_BOSS | Any | Don't look it in the eyes, dear. Or the eyes, or the other eyes.
-OFFICER_Wizard_BOSS | Any | I shall summon something clever against {Boss}. In a moment. I'm finding it.
-OFFICER_Wizard_HURT | Any | Ah. That's not meant to happen. Where did I put the healing spell?
-OFFICER_Wizard_HURT | Any | Oh my. My robe is on fire. A little on fire. It's fine.
-OFFICER_Wizard_HURT | Any | I'll be well in a moment. I'll also be better dressed. Hm, no.
-OFFICER_Wizard_VICTORY | Any | Splendid! I'll write it in my book, as soon as I find the book!
-OFFICER_Wizard_VICTORY | Any | Marvelous. I did say it'd work. Eventually.
-OFFICER_Wizard_VICTORY | Any | A small miracle. I'll take it. Small is all I ask.
+OFFICER_Wizard_FIGHT | Any | Casting! Stand back!
+OFFICER_Wizard_FIGHT | Any | Fire and lightning! Away!
+OFFICER_Wizard_FIGHT | Any | Swords up! Spells flying!
+OFFICER_Wizard_FIGHT | Any | Spell ready! Stand back!
+OFFICER_Wizard_BOSS | Any | {Boss}! Everything I've got! Cast!
+OFFICER_Wizard_BOSS | Any | I've read about {Boss}! Hit it hard!
+OFFICER_Wizard_BOSS | Any | {Boss}! Summoning something big!
+OFFICER_Wizard_BOSS | Any | Don't look it in the eye! Fire!
+OFFICER_Wizard_HURT | Any | Ow! Still casting!
+OFFICER_Wizard_HURT | Any | My robe's on fire! I'm fine! Casting!
+OFFICER_Wizard_HURT | Any | Hit! Healing spell! Hold on!
+OFFICER_Wizard_VICTORY | Any | Splendid! We won!
+OFFICER_Wizard_VICTORY | Any | Marvelous work!
+OFFICER_Wizard_VICTORY | Any | A small miracle! Well done!
 
 # ---- Zoologist: bubbly, "like", loves animals more than people
 OFFICER_Zoologist_IDLE | Any | Like, hi, {Player}! Did you see the wolf by the wall? He's my best friend! Don't tell him!
@@ -1959,20 +1959,20 @@ OFFICER_Zoologist_MARCH | Any | Stay close, you guys! The pack protects its own!
 OFFICER_Zoologist_HOLD | Any | We're staying? Rad! I'll look at the squirrels!
 OFFICER_Zoologist_HOLD | Any | I'm gonna make friends with the nearest thing! Wish me luck!
 OFFICER_Zoologist_HOLD | Any | It's so peaceful here, I could, like, nap on a rock!
-OFFICER_Zoologist_FIGHT | Any | Not now! I'm, like, summoning wolves! They're excited!
-OFFICER_Zoologist_FIGHT | Any | Go get 'em, boys! Go get 'em!
-OFFICER_Zoologist_FIGHT | Any | I'm totally not scared! My fur says otherwise! My fur's very honest!
-OFFICER_Zoologist_FIGHT | Any | Bite, bite, bite! Good boys!
-OFFICER_Zoologist_BOSS | Any | Whoa! {Boss}! Is that a pet?! Can I pet it?! No?! Okay!
-OFFICER_Zoologist_BOSS | Any | {Boss} is, like, the biggest critter I've ever seen! I love it! I hate it!
-OFFICER_Zoologist_BOSS | Any | We have to, like, calm {Boss} down! With teeth! With a lot of teeth!
-OFFICER_Zoologist_BOSS | Any | I'm sending all the wolves at {Boss}! I'm sorry, wolves!
-OFFICER_Zoologist_HURT | Any | Ow! Not the ear! The ear is a very serious ear!
-OFFICER_Zoologist_HURT | Any | I'm okay! I'm, like, an animal! We heal! We just heal!
-OFFICER_Zoologist_HURT | Any | Hands off the tail! It's attached! It's my tail!
-OFFICER_Zoologist_VICTORY | Any | Yes! Rad! We totally got it! Good pack! Good everyone!
-OFFICER_Zoologist_VICTORY | Any | I'm giving the wolves a treat! And you guys too! Okay, mostly the wolves!
-OFFICER_Zoologist_VICTORY | Any | That was, like, intense! I need to lie down in the sun!
+OFFICER_Zoologist_FIGHT | Any | Wolves, attack! Get 'em!
+OFFICER_Zoologist_FIGHT | Any | Go get 'em, boys!
+OFFICER_Zoologist_FIGHT | Any | I'm not scared! Bite, bite, bite!
+OFFICER_Zoologist_FIGHT | Any | Good boys! Get 'em!
+OFFICER_Zoologist_BOSS | Any | {Boss}! Wolves, attack!
+OFFICER_Zoologist_BOSS | Any | Biggest critter ever! Get it!
+OFFICER_Zoologist_BOSS | Any | All wolves on {Boss}! Go!
+OFFICER_Zoologist_BOSS | Any | Take down {Boss}! Teeth out!
+OFFICER_Zoologist_HURT | Any | Ow! Not the ear! Still fighting!
+OFFICER_Zoologist_HURT | Any | I'm okay! I heal fast!
+OFFICER_Zoologist_HURT | Any | Hit! Not the tail! Fight on!
+OFFICER_Zoologist_VICTORY | Any | Yes! We got it! Good pack!
+OFFICER_Zoologist_VICTORY | Any | Treats for everyone! Great fight!
+OFFICER_Zoologist_VICTORY | Any | Rad! We won!
 
 # ---- Cyborg: literal-minded, polite, cheerfully glitchy
 OFFICER_Cyborg_IDLE | Any | Greetings, {Player}. My social module reports a seventy percent chance of small talk.
@@ -1987,20 +1987,20 @@ OFFICER_Cyborg_MARCH | Any | The army's rhythm is uneven. I recommend a metronom
 OFFICER_Cyborg_HOLD | Any | Standing by. I am standing. I am by.
 OFFICER_Cyborg_HOLD | Any | Running a diagnostic. It says I am doing fine. It says that often.
 OFFICER_Cyborg_HOLD | Any | I enjoy this. It is like sleeping, except I am awake.
-OFFICER_Cyborg_FIGHT | Any | Combat active. Please remain unharmed. That is not a request. It is a hope.
-OFFICER_Cyborg_FIGHT | Any | Drones deployed. Feelings suppressed. Rockets, however, are enthusiastic.
-OFFICER_Cyborg_FIGHT | Any | Not now. I am calculating a trajectory. It involves a lot of explosions.
-OFFICER_Cyborg_FIGHT | Any | Targets identified. Targets will be corrected.
-OFFICER_Cyborg_BOSS | Any | Analysis of {Boss}: large. Further analysis: very large.
-OFFICER_Cyborg_BOSS | Any | {Boss} exceeds the threat level I expected. I will adjust my expectations.
-OFFICER_Cyborg_BOSS | Any | I give us a modest chance against {Boss}. Modest is my highest setting.
-OFFICER_Cyborg_BOSS | Any | Deploying everything I have against {Boss}. Everything is not very much, but it is loud.
-OFFICER_Cyborg_HURT | Any | Damage detected. Pain simulated. It is a very good simulation.
-OFFICER_Cyborg_HURT | Any | My locomotive actuator is impaired. I would say ow, but I do not have one.
-OFFICER_Cyborg_HURT | Any | Fluid is leaking. It is the good fluid. I would like to keep it.
-OFFICER_Cyborg_VICTORY | Any | Target neutralized. I experience a brief, pleasant error.
-OFFICER_Cyborg_VICTORY | Any | Success. I will store this memory in the good folder.
-OFFICER_Cyborg_VICTORY | Any | Excellent. I rate this victory four out of five stars. The fifth was for style.
+OFFICER_Cyborg_FIGHT | Any | Combat active! Open fire!
+OFFICER_Cyborg_FIGHT | Any | Drones deployed! Fire!
+OFFICER_Cyborg_FIGHT | Any | Targets locked! Firing!
+OFFICER_Cyborg_FIGHT | Any | Rockets away!
+OFFICER_Cyborg_BOSS | Any | {Boss} detected! Everything online! Fire!
+OFFICER_Cyborg_BOSS | Any | Threat: {Boss}! Full firepower!
+OFFICER_Cyborg_BOSS | Any | Target {Boss}! Maximum output!
+OFFICER_Cyborg_BOSS | Any | Engaging {Boss}! All weapons!
+OFFICER_Cyborg_HURT | Any | Damage detected! Still fighting!
+OFFICER_Cyborg_HURT | Any | System hit! Continuing!
+OFFICER_Cyborg_HURT | Any | Leaking! Still operational! Fire!
+OFFICER_Cyborg_VICTORY | Any | Target neutralized! Success!
+OFFICER_Cyborg_VICTORY | Any | Mission complete! Excellent work!
+OFFICER_Cyborg_VICTORY | Any | Victory! Well done!
 
 # ---- Witch Doctor: formal, mystical, deals in volatile things
 OFFICER_WitchDoctor_IDLE | Any | The spirits grow restless, {Player}. As do I. We have this in common.
@@ -2015,20 +2015,20 @@ OFFICER_WitchDoctor_MARCH | Any | The spirits whisper of a long road. They do no
 OFFICER_WitchDoctor_HOLD | Any | We hold. The spirits and I will confer. Quietly. Very quietly.
 OFFICER_WitchDoctor_HOLD | Any | Silence is also a spell. A weak one. But we are using it.
 OFFICER_WitchDoctor_HOLD | Any | I will make tea from the dust of the ground. Do not ask what is in the tea.
-OFFICER_WitchDoctor_FIGHT | Any | The spirits want blood. Preferably theirs. Strike, strike!
-OFFICER_WitchDoctor_FIGHT | Any | Not now. I am speaking to the venom.
-OFFICER_WitchDoctor_FIGHT | Any | Back! The air is thick with curses, and not all of them are mine!
-OFFICER_WitchDoctor_FIGHT | Any | Blow, little dart! Find a throat!
-OFFICER_WitchDoctor_BOSS | Any | The spirits whisper of {Boss}. They are not whispering kindly.
-OFFICER_WitchDoctor_BOSS | Any | {Boss} walks like a thing the earth forgot to bury. We shall help it.
-OFFICER_WitchDoctor_BOSS | Any | I have a venom for {Boss}. I have also made a will.
-OFFICER_WitchDoctor_BOSS | Any | The bones say {Boss} fears nothing. The bones have not met my venom.
-OFFICER_WitchDoctor_HURT | Any | A wound. The spirits will collect interest.
-OFFICER_WitchDoctor_HURT | Any | I bleed. I bleed in a very mystical way.
-OFFICER_WitchDoctor_HURT | Any | Do not weep. Weeping stains the ritual. Bleeding, however, is welcome.
-OFFICER_WitchDoctor_VICTORY | Any | It is done. The spirits are pleased. They are never pleased for long.
-OFFICER_WitchDoctor_VICTORY | Any | The earth drinks. May the earth be satisfied for a day or two.
-OFFICER_WitchDoctor_VICTORY | Any | A good day. I shall count the dead, then nap.
+OFFICER_WitchDoctor_FIGHT | Any | The spirits demand blood! Strike!
+OFFICER_WitchDoctor_FIGHT | Any | Poison darts! Fly!
+OFFICER_WitchDoctor_FIGHT | Any | Back! The curses are loose!
+OFFICER_WitchDoctor_FIGHT | Any | Spirits, strike! Strike!
+OFFICER_WitchDoctor_BOSS | Any | {Boss}! The spirits roar! Strike!
+OFFICER_WitchDoctor_BOSS | Any | I have venom for {Boss}! Strike it down!
+OFFICER_WitchDoctor_BOSS | Any | {Boss}! Take it down! Spirits guide us!
+OFFICER_WitchDoctor_BOSS | Any | The bones say we win! Fire!
+OFFICER_WitchDoctor_HURT | Any | A wound! The spirits ask more! Strike!
+OFFICER_WitchDoctor_HURT | Any | I bleed! I fight on!
+OFFICER_WitchDoctor_HURT | Any | Pain feeds the ritual! Fire!
+OFFICER_WitchDoctor_VICTORY | Any | It is done! The spirits are pleased!
+OFFICER_WitchDoctor_VICTORY | Any | Victory! The earth drinks!
+OFFICER_WitchDoctor_VICTORY | Any | A good day! Well done!
 
 # ---- Tax Collector: bitter, thrifty, everyone owes him
 OFFICER_TaxCollector_IDLE | Any | Bah! What do you want? A gold coin? Join the queue!
@@ -2043,20 +2043,20 @@ OFFICER_TaxCollector_MARCH | Any | March, march! Bah! My feet have a lien on me!
 OFFICER_TaxCollector_HOLD | Any | We hold. And I count. And I frown. A very productive afternoon.
 OFFICER_TaxCollector_HOLD | Any | A fixed post! Just the thing for a long talk about unpaid taxes!
 OFFICER_TaxCollector_HOLD | Any | I intend to stand here until everybody settles up! Which may be a while!
-OFFICER_TaxCollector_FIGHT | Any | Not now! I'm collecting! The creditors are very noisy!
-OFFICER_TaxCollector_FIGHT | Any | Let them attack all they like! They still owe me!
-OFFICER_TaxCollector_FIGHT | Any | The enemy has no receipts! I find that deeply offensive!
-OFFICER_TaxCollector_FIGHT | Any | Whatever that is, it's getting audited!
-OFFICER_TaxCollector_BOSS | Any | {Boss}! An astonishing amount of unpaid debt walks upright in that thing!
-OFFICER_TaxCollector_BOSS | Any | I've got a long list of reasons to dislike {Boss}! Number one's the size!
-OFFICER_TaxCollector_BOSS | Any | {Boss} won't be paying! I'll make a note, and then I'll make a corpse!
-OFFICER_TaxCollector_BOSS | Any | Does {Boss} have loot? Of course it has loot! Everybody has loot!
-OFFICER_TaxCollector_HURT | Any | Bleeding is an expense! I'll be billing whoever's responsible!
-OFFICER_TaxCollector_HURT | Any | Injured, yes! Unpaid, still! The second one hurts worse!
-OFFICER_TaxCollector_HURT | Any | Bah! I'd say ow, but ow costs extra!
-OFFICER_TaxCollector_VICTORY | Any | It fell. I'll tally what it owed and who holds the loot now. Both lists are short.
-OFFICER_TaxCollector_VICTORY | Any | A successful audit! The enemy's been settled in full!
-OFFICER_TaxCollector_VICTORY | Any | Bah. Good. Pay up.
+OFFICER_TaxCollector_FIGHT | Any | Pay up! Fire!
+OFFICER_TaxCollector_FIGHT | Any | Enemy's overdue! Open fire!
+OFFICER_TaxCollector_FIGHT | Any | You owe me! Take that!
+OFFICER_TaxCollector_FIGHT | Any | Get audited! Fire!
+OFFICER_TaxCollector_BOSS | Any | {Boss}! Pay your debts! Fire!
+OFFICER_TaxCollector_BOSS | Any | {Boss}! Collect the loot! Fire!
+OFFICER_TaxCollector_BOSS | Any | {Boss} won't be paying! Open fire!
+OFFICER_TaxCollector_BOSS | Any | Make {Boss} settle! Fire!
+OFFICER_TaxCollector_HURT | Any | Ow! That's billed to you!
+OFFICER_TaxCollector_HURT | Any | Hit! I'm still collecting!
+OFFICER_TaxCollector_HURT | Any | I'm hurt! They'll pay for it!
+OFFICER_TaxCollector_VICTORY | Any | Debt settled! We won!
+OFFICER_TaxCollector_VICTORY | Any | Audit complete! Victory!
+OFFICER_TaxCollector_VICTORY | Any | Pay up! We won!
 
 # ---- Blood Moon: the women among the officers (Nurse, Dryad, Zoologist, Princess) speak ONLY these while the moon is red
 OFFICER_Nurse_IDLE | Any | [grumpy] Don't. Whatever it is, don't. Not under that moon.
@@ -2068,18 +2068,18 @@ OFFICER_Nurse_MARCH | Any | [grumpy] Tell me to smile and I'll show you a very l
 OFFICER_Nurse_HOLD | Any | [grumpy] We hold. I hold a grudge. Different thing.
 OFFICER_Nurse_HOLD | Any | [grumpy] Leave me alone and I'll leave your arteries alone.
 OFFICER_Nurse_HOLD | Any | [grumpy] I'm standing here, and I'm furious. Don't test it.
-OFFICER_Nurse_FIGHT | Any | [grumpy] Not tonight! Not with that sky! Duck and shut up!
-OFFICER_Nurse_FIGHT | Any | [grumpy] You bring me a fight under a Blood Moon and expect a bedside manner?!
-OFFICER_Nurse_FIGHT | Any | [grumpy] Out of my way or into my syringe!
-OFFICER_Nurse_BOSS | Any | [grumpy] {Boss}! On a night like this! Of course! OF COURSE!
-OFFICER_Nurse_BOSS | Any | [grumpy] I hate {Boss}. I hate the moon. I hate the hat. Everybody bleed quietly.
-OFFICER_Nurse_BOSS | Any | [grumpy] If {Boss} hits you, don't scream. I'm not in the mood.
-OFFICER_Nurse_HURT | Any | [grumpy] I'm hurt, I'm angry, and I'm the nurse! Everybody loses tonight!
-OFFICER_Nurse_HURT | Any | [grumpy] Do not touch me! I know where everything is and I'll fix it myself, grumpily!
-OFFICER_Nurse_HURT | Any | [grumpy] Ow! And no, don't help!
-OFFICER_Nurse_VICTORY | Any | [grumpy] Fine. It's dead. Doesn't make the moon any less red.
-OFFICER_Nurse_VICTORY | Any | [grumpy] Great. We won. I still hate everything.
-OFFICER_Nurse_VICTORY | Any | [grumpy] Good. Now everybody leave me alone.
+OFFICER_Nurse_FIGHT | Any | [grumpy] Not tonight! Duck and fight!
+OFFICER_Nurse_FIGHT | Any | [grumpy] Fight now! I'm in no mood!
+OFFICER_Nurse_FIGHT | Any | [grumpy] Out of my way! Fire!
+OFFICER_Nurse_BOSS | Any | [grumpy] {Boss}! Tonight! Fine! Fire!
+OFFICER_Nurse_BOSS | Any | [grumpy] {Boss}! I hate this night! Hit it!
+OFFICER_Nurse_BOSS | Any | [grumpy] Hit {Boss}! Hard! Now!
+OFFICER_Nurse_HURT | Any | [grumpy] I'm hurt! I'm angry! Fight!
+OFFICER_Nurse_HURT | Any | [grumpy] Don't touch me! Keep firing!
+OFFICER_Nurse_HURT | Any | [grumpy] Ow! Fine! Keep going!
+OFFICER_Nurse_VICTORY | Any | [grumpy] It's dead! About time!
+OFFICER_Nurse_VICTORY | Any | [grumpy] We won! I still hate this!
+OFFICER_Nurse_VICTORY | Any | [grumpy] Good! Now leave me alone!
 
 OFFICER_Dryad_IDLE | Any | [grumpy] The moon is wrong, {Player}. It is wrong, and it is staring at me.
 OFFICER_Dryad_IDLE | Any | [grumpy] Do not speak to me of peace while that sky is red.
@@ -2090,18 +2090,18 @@ OFFICER_Dryad_MARCH | Any | [grumpy] Don't touch the plants. Don't touch me. Don
 OFFICER_Dryad_HOLD | Any | [grumpy] We hold. I glare. The moon glares back. It is a stalemate.
 OFFICER_Dryad_HOLD | Any | [grumpy] The roots are hissing. I am hissing with them.
 OFFICER_Dryad_HOLD | Any | [grumpy] Leave me with my thoughts. They are unkind tonight.
-OFFICER_Dryad_FIGHT | Any | [grumpy] Be quick, and be quiet, and be gone!
-OFFICER_Dryad_FIGHT | Any | [grumpy] The moon has stirred everything up! I will not be gentle!
-OFFICER_Dryad_FIGHT | Any | [grumpy] Strike what I mark, and do not ask me for kindness!
-OFFICER_Dryad_BOSS | Any | [grumpy] {Boss} under a red moon. I would laugh, but I can't remember how.
-OFFICER_Dryad_BOSS | Any | [grumpy] {Boss} is not what's irritating me. It's the night. {Boss} is just in it.
-OFFICER_Dryad_BOSS | Any | [grumpy] I will not cleanse {Boss}. I will let you hit it. Repeatedly.
-OFFICER_Dryad_HURT | Any | [grumpy] Do not fuss over me. I'm in no mood to be fussed over.
-OFFICER_Dryad_HURT | Any | [grumpy] Wounded. The night wins one. I'll collect later.
-OFFICER_Dryad_HURT | Any | [grumpy] Sap, bark, and rage. That is what's left.
-OFFICER_Dryad_VICTORY | Any | [grumpy] It's dead. The moon isn't. I remain displeased.
-OFFICER_Dryad_VICTORY | Any | [grumpy] Good. Now be quiet. I mean that gently.
-OFFICER_Dryad_VICTORY | Any | [grumpy] Something is down, and I'm still furious. Both are true.
+OFFICER_Dryad_FIGHT | Any | [grumpy] Strike fast! No mercy tonight!
+OFFICER_Dryad_FIGHT | Any | [grumpy] The moon stirs everything! Strike!
+OFFICER_Dryad_FIGHT | Any | [grumpy] Strike what I mark! Now!
+OFFICER_Dryad_BOSS | Any | [grumpy] {Boss}! Tonight! Strike it!
+OFFICER_Dryad_BOSS | Any | [grumpy] {Boss} is nothing! Strike it down!
+OFFICER_Dryad_BOSS | Any | [grumpy] Hit {Boss} hard! Repeatedly!
+OFFICER_Dryad_HURT | Any | [grumpy] A wound! I'm furious! Fight on!
+OFFICER_Dryad_HURT | Any | [grumpy] Do not fuss! Fight!
+OFFICER_Dryad_HURT | Any | [grumpy] Sap and rage! Still standing!
+OFFICER_Dryad_VICTORY | Any | [grumpy] It's dead! The moon's not! Still, good!
+OFFICER_Dryad_VICTORY | Any | [grumpy] Good! Be quiet now!
+OFFICER_Dryad_VICTORY | Any | [grumpy] We won! I'm still furious!
 
 OFFICER_Zoologist_IDLE | Any | [grumpy] Ugh, you guys, can you, like, not right now? The moon's giving me a headache!
 OFFICER_Zoologist_IDLE | Any | [grumpy] The wolves are all howling and I'm not even mad at them. I'm mad at the sky!
@@ -2112,18 +2112,18 @@ OFFICER_Zoologist_MARCH | Any | [grumpy] Come on, pack. Heads down. Let's just g
 OFFICER_Zoologist_HOLD | Any | [grumpy] We're staying? Ugh! Fine! But nobody touch my tail!
 OFFICER_Zoologist_HOLD | Any | [grumpy] Don't talk to me. I'm, like, brooding with the wolves.
 OFFICER_Zoologist_HOLD | Any | [grumpy] This night is so rude. Everything's so rude!
-OFFICER_Zoologist_FIGHT | Any | [grumpy] Not now! I'm literally so mad at everything! Bite them! Bite them!
-OFFICER_Zoologist_FIGHT | Any | [grumpy] Get 'em, boys! Get 'em, and also leave me alone!
-OFFICER_Zoologist_FIGHT | Any | [grumpy] I told you I was crabby! Are you listening?! No?! Wolves, bite!
-OFFICER_Zoologist_BOSS | Any | [grumpy] {Boss} is, like, the rudest thing! At the worst time! Under that moon!
-OFFICER_Zoologist_BOSS | Any | [grumpy] I hate {Boss}. I hate it so much. I hate this night so much too!
-OFFICER_Zoologist_BOSS | Any | [grumpy] Wolves, go get {Boss}! I'm too annoyed to be scared!
-OFFICER_Zoologist_HURT | Any | [grumpy] Ow! It's the moon! It's making everything hurt more! Probably!
-OFFICER_Zoologist_HURT | Any | [grumpy] Don't touch my ear! I'm not kidding tonight!
-OFFICER_Zoologist_HURT | Any | [grumpy] Seriously?! You, like, hit me?! On THIS night?!
-OFFICER_Zoologist_VICTORY | Any | [grumpy] Fine. We won. I'm still crabby. Don't talk to me.
-OFFICER_Zoologist_VICTORY | Any | [grumpy] Good. Everything's dead. Everyone leave me alone!
-OFFICER_Zoologist_VICTORY | Any | [grumpy] Cool, whatever. Wolves, treats. Everyone else, nothing.
+OFFICER_Zoologist_FIGHT | Any | [grumpy] I'm so mad! Wolves, bite!
+OFFICER_Zoologist_FIGHT | Any | [grumpy] Get 'em, boys! Now!
+OFFICER_Zoologist_FIGHT | Any | [grumpy] Not tonight! Bite them!
+OFFICER_Zoologist_BOSS | Any | [grumpy] {Boss}! Worst timing! Get it!
+OFFICER_Zoologist_BOSS | Any | [grumpy] Wolves, get {Boss}!
+OFFICER_Zoologist_BOSS | Any | [grumpy] I hate {Boss}! Fire! Bite!
+OFFICER_Zoologist_HURT | Any | [grumpy] Ow! Not tonight!
+OFFICER_Zoologist_HURT | Any | [grumpy] Hey! Don't touch my ear!
+OFFICER_Zoologist_HURT | Any | [grumpy] You hit me?! Get them!
+OFFICER_Zoologist_VICTORY | Any | [grumpy] We won! Still crabby!
+OFFICER_Zoologist_VICTORY | Any | [grumpy] Everything's dead! Good!
+OFFICER_Zoologist_VICTORY | Any | [grumpy] Done! Treats for the wolves!
 
 OFFICER_Princess_IDLE | Any | [grumpy] I'm being very civil about the sky. I want that noted.
 OFFICER_Princess_IDLE | Any | [grumpy] Please don't be pleasant to me tonight. It's very hard to stay cross when people are nice.
@@ -2134,15 +2134,15 @@ OFFICER_Princess_MARCH | Any | [grumpy] March on. Don't talk to me. I'll be perf
 OFFICER_Princess_HOLD | Any | [grumpy] We wait. I fume. It's a very royal thing to do.
 OFFICER_Princess_HOLD | Any | [grumpy] Do not cheer me up. I insist on staying exactly like this.
 OFFICER_Princess_HOLD | Any | [grumpy] I'll stand here and be cross, like a proper statue.
-OFFICER_Princess_FIGHT | Any | [grumpy] Oh, for goodness' sake! Not tonight! Make it STOP!
-OFFICER_Princess_FIGHT | Any | [grumpy] Excuse me! I'm having a rotten evening and you are making it worse!
-OFFICER_Princess_FIGHT | Any | [grumpy] Not now, please! Be efficient, and rude to the enemy on my behalf!
-OFFICER_Princess_BOSS | Any | [grumpy] {Boss}! Tonight! Of all the nights! How impolite!
-OFFICER_Princess_BOSS | Any | [grumpy] I've had a terrible day, and now {Boss}. Somebody do something rude to it, please.
-OFFICER_Princess_BOSS | Any | [grumpy] {Boss} isn't on the guest list, and I'm in a mood. Let's go.
-OFFICER_Princess_HURT | Any | [grumpy] Ow! Rude! I won't forget this! Not tonight, and not for a week!
-OFFICER_Princess_HURT | Any | [grumpy] I'm hurt, I'm cross, and I'm still, somehow, dignified!
-OFFICER_Princess_HURT | Any | [grumpy] Don't fuss! I'm irritated, not broken! Mostly!
-OFFICER_Princess_VICTORY | Any | [grumpy] Well. We won. I'm still cross, but I'll allow it.
-OFFICER_Princess_VICTORY | Any | [grumpy] Fine. Fine! Good job. Please stop looking at me like that.
-OFFICER_Princess_VICTORY | Any | [grumpy] Splendid, I suppose. Somebody take me away from this moon.
+OFFICER_Princess_FIGHT | Any | [grumpy] Not tonight! Make it stop!
+OFFICER_Princess_FIGHT | Any | [grumpy] I'm furious! Get them!
+OFFICER_Princess_FIGHT | Any | [grumpy] Be quick! And be rude to them!
+OFFICER_Princess_BOSS | Any | [grumpy] {Boss}! Tonight! Get it!
+OFFICER_Princess_BOSS | Any | [grumpy] {Boss}! Be rude to it! Fire!
+OFFICER_Princess_BOSS | Any | [grumpy] {Boss} wasn't invited! Strike!
+OFFICER_Princess_HURT | Any | [grumpy] Ow! Rude! You'll pay!
+OFFICER_Princess_HURT | Any | [grumpy] I'm hurt! I'm furious! Fight!
+OFFICER_Princess_HURT | Any | [grumpy] Don't fuss! Keep fighting!
+OFFICER_Princess_VICTORY | Any | [grumpy] We won! Well done! Finally!
+OFFICER_Princess_VICTORY | Any | [grumpy] Splendid! Now let me rest!
+OFFICER_Princess_VICTORY | Any | [grumpy] Fine! Good job! Go home!

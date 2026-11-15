@@ -18,11 +18,11 @@
   - Mixed: Twins 3/4, Plantera 2/4, EoL 2/4 (2 timeouts), Cultist 2/4.
   - Losing: Leviathan 1/4, Aureus 1/4, Ravager 0/4 (2/4 Expert+Rev), Duke Fishron 0/4 (0/4 Expert+Rev too; full wipes).
   - Pre-hardmode Calamity bosses are easy.
-- **Bugs found → `bossbugs` builder:**
-  - Deerclops IndexOutOfRange in Calamity's DeerclopsAI when its target is an NPC slot (likely real play), plus an audit of every Calamity vanilla-AI override.
-  - Moon Lord never hurts levies (0 hits in 8 fights).
-  - WoF 0–2 hits.
-  - The recorder verdict says despawn for Cultist and ML kills.
+- **Bugs found → `bossbugs` builder (all four fixed on branch `bossbugs`, not merged; results in `levy-mod/docs/boss_lab/bossbugs/RESULTS.md`):**
+  - Deerclops IndexOutOfRange: Calamity's override indexes `Main.player[NPC.target]` and Levy handed it a 300+ NPC target. Fix: a native type whose Calamity override is bound takes the Empress's flyer slot (254). The audit found exactly three such types: Deerclops, Bee, BeeSmall.
+  - Moon Lord (and WoF, Cultist, every boss) never hurting levies: a Spectator commander owns every enemy shot in single player (`owner = Main.myPlayer`) and `ModPlayer.CanHitNPC => !Active` vetoed those shots through `PlayerLoader.CanHitNPCWithProj`. Fix: `SpectatorHostileShots` detour.
+  - WoF 0–2 hits: same veto. WoF's parts do target levies (visible commander: eyes, Hungry, Leeches; Spectator: the mouth too) and its lasers are aimed at the levy each eye is locked on.
+  - Recorder verdict "despawn" for Cultist and ML kills: the closing window kept only the LAST boss to leave (the head, the pillars). Now the last killed one names the end.
 - **Per-boss rework candidates for Eve (Death-mode balance):** Fishron, Ravager, Aureus, Leviathan (dash + adds), Destroyer (body contact).
 - Lab replay site: building a capped subset (all 175 broad + 10 baseline + 5 per sweep cell, 6 Hz) as a separate artifact. The main site's file cap is 511.
 

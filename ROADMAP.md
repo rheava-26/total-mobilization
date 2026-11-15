@@ -18,6 +18,18 @@
 - Asked projparity (WoF fix or diagnosis) and levyrules (push what's proven) for a ~15-minute turnaround. Then merge, serial shipboth, ship 3.0.0.
 - **Dialogue APPROVED by Eve except battle shouts:** make them punchy and enthusiastic ("Enemy incoming! Open fire!", "Die, monster!", "I'm getting paid for this!"), not quirky. `dialogue4` builder is rewriting the combat shout pools (incl. grumpy and officer fight lines). It goes into 3.0 if done in time, otherwise 3.0.1.
 
+## 🩹 levyrules MERGED (625fd71)
+- Regen = Player.UpdateLifeRegen on the dummy (matches a player; the barracks 2× stood-down bonus kept; old Well Fed extra regen removed).
+- Potion sickness = Player.ApplyPotionDelay (60 s, 45 s for Restoration/Philosopher's Stone).
+- Fall damage and hazards on by default. "Levies can drown" option (default off, Player.CheckDrowning).
+- GradeDamageMult removed. Whips lash anything in reach.
+- Set-bonus audit: vanilla 152/152 sets + 411/411 accessories; Calamity 68/68 + 691/691; Thorium 70/71 + 262/268.
+  - Remaining Thorium gaps: ChestSummon/zephyr flags; Air Walkers/Hover Boots hover.
+- **Big hidden fixes:**
+  - vanilla gear never ran Calamity's PostUpdateEquips;
+  - the dummy's max life was 100, so "life fraction" effects saw 400%;
+  - items carried the commander's reserved slot.
+
 ## 🧭 redecompat MERGED
 - notAmmo thrown weapons. World-alter scanner catches ref-returning Tile.TileType writes (get_TileType + stind), dup and ref locals, and follows ProjectileType<T> into blasts (any mod). Redemption rows added to WorldAlterTable.tsv.
 - Modded UsesNewTargetting NPCs take the flyer slot by default (NativeSafeModdedTypes allowlist, empty).

@@ -24,7 +24,11 @@
   - WoF 0–2 hits.
   - The recorder verdict says despawn for Cultist and ML kills.
 - **Per-boss rework candidates for Eve (Death-mode balance):** Fishron, Ravager, Aureus, Leviathan (dash + adds), Destroyer (body contact).
-- Lab replay site: building a capped subset (all 175 broad + 10 baseline + 5 per sweep cell, 6 Hz) as a separate artifact. The main site's file cap is 511.
+- **Lab replay site PUBLISHED:** https://claude.ai/artifact/5bQWET74N12m4bYMbFxqqK ("Levy Lab Replays"). 245 fights, 30 sets, 6 Hz, 232 MB, 4 batches.
+  - Battery cells are capped at 10 baseline + 5 per sweep cell; all 175 broad-sweep fights are included.
+  - Headless check: 36 fights across every set, 0 page errors.
+  - Built with a patched copy of hm_site.py (scratchpad/labtools) that adds the per-cell cap.
+  - It's a separate artifact because the main site is near the 511-file version cap.
 
 ## 🚢 2.0.65 SHIPPED (11-15 ~05:40, sent to Eve) = mobslots (round 2) + fieldfix
 - shipboth 453 s: vanilla boot exc=0 (known summon-staff only); Calamity boot exc=0 failN=0 compat=1. World checks: 0 exceptions in both halves, both runs.

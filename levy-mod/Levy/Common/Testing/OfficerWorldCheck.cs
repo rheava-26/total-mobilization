@@ -23,7 +23,7 @@ namespace Levy.Common.Testing
 	///  * SWEEP: for the strongest few candidates of every stage, one conjured creature against the enemy for a few seconds: whether its own AI engaged it (logged, so a creature whose AI cannot work friendly shows up).
 	/// Throwaway soldiers, town NPCs and creatures only; nothing is saved.
 	/// </summary>
-	public class OfficerWorldCheck : ModSystem
+	public partial class OfficerWorldCheck : ModSystem
 	{
 		private static bool _armed, _done, _running; private static int _pass, _fail;
 		private static Mod _mod;
@@ -69,7 +69,7 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
-				if (n.active && !n.friendly && !n.townNPC && n.ModNPC == null && n != _target && !(n.TryGetGlobalNPC(out HarnessTarget ht) && ht.IsTarget)) n.active = false;
+				if (n.active && !n.friendly && !n.townNPC && n.ModNPC == null && n != _target && !_auditKids.Contains(i) && !(n.TryGetGlobalNPC(out HarnessTarget ht) && ht.IsTarget)) n.active = false;
 			}
 		}
 
@@ -89,6 +89,7 @@ namespace Levy.Common.Testing
 		{
 			Player p = Main.player[0];
 			p.active = true; p.dead = false; p.name = Commander;
+			Main.dayTime = true; Main.time = 18000;   // no dawn: wages fall due then and a lapsed officer is dismissed mid-check
 			if (p.statLifeMax < 500) p.statLifeMax = p.statLifeMax2 = 500;
 			p.statLife = p.statLifeMax2;
 			p.position = _cmdAt - new Vector2(p.width / 2f, p.height / 2f); p.velocity = Vector2.Zero;
@@ -122,7 +123,12 @@ namespace Levy.Common.Testing
 			var ht = _target.GetGlobalNPC<HarnessTarget>(); ht.IsTarget = true; ht.Pin = _target.position;
 		}
 
-		private static void KillEnemy() { if (_target != null) _target.active = false; _target = null; }
+		private static void KillEnemy()
+		{
+			if (_target != null) _target.active = false;
+			_target = null;
+			for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].TryGetGlobalNPC(out HarnessTarget ht) && ht.IsTarget) Main.npc[i].active = false; // the pinned enemy is found by its mark, not by a reference that may be stale
+		}
 
 		/// <summary>Everything this check made, gone: conjured creatures, officers, avatars, the enemy, projectiles.</summary>
 		private static void Cleanup()
@@ -193,7 +199,9 @@ namespace Levy.Common.Testing
 			Arena();
 			_cmdAt = new Vector2(Cx * 16f, (FloorY - 3) * 16f);
 			string only = Environment.GetEnvironmentVariable("LEVY_OFFICERWORLD_ONLY"); // lab switch: "sweep" runs only the creature sweep (with LEVY_OFFICERWORLD_TYPES = comma-separated NPCID names added to it)
-			if (only != "sweep") { RosterChecks(); ClothierScenario(); ZoologistScenario(); }
+			if (only == "audit") { AuditAll(); return; }
+			if (only == "churn") { ClothierChurn(); return; }
+			if (only != "sweep") { RosterChecks(); ClothierScenario(); ZoologistScenario(); ClothierChurn(); AuditCore(); }
 			Sweep();
 		}
 

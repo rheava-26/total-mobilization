@@ -24,8 +24,12 @@ namespace Levy.Common.Officers
 		public readonly Func<int> Conjure;
 		/// <summary>For a conjured squad: the least life and the least contact damage (before the world-progress multiply) a creature has, so a weak early creature is never weaker than the squad it replaces.</summary>
 		public readonly int MinLife, MinDamage;
-		public SummonSquad(SummonKind kind, int cap, int respawnTicks) { Kind = kind; Cap = cap; RespawnTicks = respawnTicks; Conjure = null; MinLife = 0; MinDamage = 0; }
-		public SummonSquad(Func<int> conjure, int cap, int respawnTicks, int minLife = 0, int minDamage = 0) { Kind = null; Cap = cap; RespawnTicks = respawnTicks; Conjure = conjure; MinLife = minLife; MinDamage = minDamage; }
+		/// <summary>For a conjured squad: how often a lost unit is replaced while an enemy is near (0 = the same as <see cref="RespawnTicks"/>), and how many ticks a unit may go without dealing damage in a fight before it crumbles (0 = never).</summary>
+		public readonly int CombatRespawnTicks, IdleLifeTicks;
+		public SummonSquad(SummonKind kind, int cap, int respawnTicks) { Kind = kind; Cap = cap; RespawnTicks = respawnTicks; Conjure = null; MinLife = 0; MinDamage = 0; CombatRespawnTicks = 0; IdleLifeTicks = 0; }
+		public SummonSquad(Func<int> conjure, int cap, int respawnTicks, int minLife = 0, int minDamage = 0, int combatRespawnTicks = 0, int idleLifeTicks = 0) { Kind = null; Cap = cap; RespawnTicks = respawnTicks; Conjure = conjure; MinLife = minLife; MinDamage = minDamage; CombatRespawnTicks = combatRespawnTicks; IdleLifeTicks = idleLifeTicks; }
+		/// <summary>The replacement cadence for the squad now: the combat cadence while an enemy is near, else the ordinary one.</summary>
+		public int Cadence(bool fight) => fight && CombatRespawnTicks > 0 ? CombatRespawnTicks : RespawnTicks;
 	}
 
 	/// <summary>
@@ -61,6 +65,8 @@ namespace Levy.Common.Officers
 			public List<int>[] Units;
 			/// <summary>Ticks until the next replacement of a lost unit, per squad.</summary>
 			public int[] RespawnTimer;
+			/// <summary>Whether an enemy was near the officer at the last scan, and when that scan next runs (ticks).</summary>
+			public bool Fight; public int FightScan;
 		}
 
 		public override object CreateState()
@@ -99,6 +105,7 @@ namespace Levy.Common.Officers
 			int ownerWho = avatar.whoAmI;
 			int commander = ctx.Commander?.whoAmI ?? -1;
 			SummonSquad[] squads = Squads;
+			if (--st.FightScan <= 0) { st.FightScan = LevyConstants.Summon.FightScanTicks; st.Fight = ConjuredGlobalNPC.EnemyNear(avatar); }
 
 			for (int s = 0; s < squads.Length && s < st.Units.Length; s++)
 			{
@@ -108,11 +115,12 @@ namespace Levy.Common.Officers
 					if (!IsMyLiveUnit(units[i], ownerWho)) units.RemoveAt(i);
 
 				if (st.RespawnTimer[s] > 0) st.RespawnTimer[s]--;
+				if (st.RespawnTimer[s] > squads[s].Cadence(st.Fight)) st.RespawnTimer[s] = squads[s].Cadence(st.Fight); // a fight begun mid-wait shortens it
 				if (units.Count < squads[s].Cap && st.RespawnTimer[s] <= 0)
 				{
 					int idx = SpawnSquadUnit(avatar, commander, squads[s]);
 					if (idx >= 0) units.Add(idx);
-					st.RespawnTimer[s] = squads[s].RespawnTicks; // pace retries whether or not the spawn found a slot
+					st.RespawnTimer[s] = squads[s].Cadence(st.Fight); // pace retries whether or not the spawn found a slot
 				}
 			}
 		}
@@ -153,7 +161,7 @@ namespace Levy.Common.Officers
 		{
 			if (squad.Conjure == null) return SpawnOne(avatar, commander, squad.Kind);
 			int type = squad.Conjure();
-			return type > 0 ? ConjuredGlobalNPC.Conjure(avatar, commander, type, squad.MinLife, squad.MinDamage) : -1;
+			return type > 0 ? ConjuredGlobalNPC.Conjure(avatar, commander, type, squad.MinLife, squad.MinDamage, squad.IdleLifeTicks) : -1;
 		}
 
 		/// <summary>Spawns one unit of <paramref name="kind"/> near the officer (safe placement) and binds it. Returns its whoAmI, or -1 when no slot/spot is available.</summary>

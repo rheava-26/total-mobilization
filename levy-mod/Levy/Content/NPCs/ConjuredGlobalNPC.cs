@@ -34,6 +34,10 @@ namespace Levy.Content.NPCs
 	///  * ENEMIES CHASE IT: it is a <see cref="ITargetBody"/> in <see cref="SummonedUnitSystem"/>, so the same targeting that sends enemies at soldiers sends them at it.
 	///  * NO LOOT, NO FARMING: <see cref="PreKill"/> cancels vanilla's whole death (loot, coins, banner and kill counts, event progress); <c>SpawnedFromStatue</c> and zero value back it up.
 	///  * OWNER-BOUND: it despawns the instant its officer avatar is gone; the owning kit also kills it on dismissal. Never saved. It never despawns for distance.
+	///  * WHAT IT THROWS IS THE ARMY'S TOO: a projectile it fires is adopted (<see cref="ConjuredProjectile"/>), and so is an NPC its AI spawns (a caster's Burning Sphere, Chaos Ball, Water Sphere: <see cref="IsChild"/>),
+	///    which would otherwise be a hostile NPC whose own AI homes on the nearest real player. A child runs on the same aim body, is spent by its first blow or after <see cref="LevyConstants.Summon.ConjureChildLifeTicks"/>.
+	///    A creature with no enemy to shoot at throws nothing (a shot at its idle post would fly at the officer and the commander beside him).
+	///  * IDLE DECAY: a squad that asks for it (the Clothier's) loses a creature that has dealt no damage for a while of a fight; every blow it lands, or an arrow of its that hits, starts the count again.
 	/// </summary>
 	public class ConjuredGlobalNPC : GlobalNPC, ITargetBody
 	{
@@ -50,12 +54,25 @@ namespace Levy.Content.NPCs
 		public int Target = -1;
 		/// <summary>The vanilla / modded type that was conjured (what the kit asked for).</summary>
 		public int ConjuredType;
+		/// <summary>Diagnostic for the world self-checks: blows landed by thrown orbs (children).</summary>
+		public static int ChildBlows, Raised, Crumbled;
+		/// <summary>Diagnostic: a running number given to each creature conjured (identity that survives slot reuse).</summary>
+		public int Serial;
+		/// <summary>Diagnostics: ticks without damage in a fight, and whether it sees a fight.</summary>
+		public int IdleTicksNow => _idleTicks;
+		public bool FightNow => _fight;
+		/// <summary>True for an NPC a conjured creature's own AI spawned (a caster's orb): it is the army's too, a short-lived shot, not a squad member.</summary>
+		public bool IsChild;
+		/// <summary>For a child: the whoAmI of the creature that threw it (the blows it lands count as that creature's).</summary>
+		public int ParentWho = -1;
+		/// <summary>Ticks a fight may go by without this creature dealing damage before it crumbles (0 = never).</summary>
+		public int IdleLifeTicks;
 		/// <summary>Floor of its contact blow before the world-progress multiply (0 = none). Server only.</summary>
 		public int MinDamage;
 
 		private NPC _npc;
-		private int _scan, _farTicks, _strikeCd, _immuneTime, _age;
-		private bool _deathHandled, _aiming, _idle;
+		private int _scan, _farTicks, _strikeCd, _immuneTime, _age, _idleTicks, _fightScan;
+		private bool _deathHandled, _aiming, _idle, _fight;
 		private int _side;
 		private AimBody _aim;
 		private Player _dummy;
@@ -70,7 +87,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Why the last <see cref="Conjure"/> returned -1 (diagnostics for the self-checks).</summary>
 		public static string LastFail = "";
 
-		public static int Conjure(NPC avatar, int commanderIndex, int type, int minLife = 0, int minDamage = 0)
+		public static int Conjure(NPC avatar, int commanderIndex, int type, int minLife = 0, int minDamage = 0, int idleLifeTicks = 0)
 		{
 			LastFail = "";
 			if (!LevyUtil.IsServerOrSingle || avatar == null || !avatar.active || type <= 0 || type >= NPCLoader.NPCCount) { LastFail = $"preconditions (server={LevyUtil.IsServerOrSingle} avatar={avatar?.active} type={type})"; return -1; }
@@ -81,7 +98,8 @@ namespace Levy.Content.NPCs
 			NPC n = Main.npc[idx];
 			if (n.type != type || !n.TryGetGlobalNPC(out ConjuredGlobalNPC c)) { LastFail = $"spawned type {n.type} global={n.TryGetGlobalNPC(out ConjuredGlobalNPC _)}"; n.active = false; return -1; }
 			c.Bind(n, avatar.whoAmI, commanderIndex, type);
-			c.MinDamage = minDamage;
+			c.Serial = ++Raised;
+			c.MinDamage = minDamage; c.IdleLifeTicks = idleLifeTicks;
 			if (minLife > n.lifeMax) { n.lifeMax = minLife; n.life = minLife; } // never weaker than the squad it replaces
 			n.Bottom = pos;
 			n.netUpdate = true;
@@ -94,7 +112,7 @@ namespace Levy.Content.NPCs
 		{
 			_npc = npc;
 			Active = true; OwnerWho = ownerWho; CommanderIndex = commanderIndex; ConjuredType = type;
-			Target = -1; _scan = 0; _farTicks = 0; _strikeCd = 0; _immuneTime = 0; _age = 0; _deathHandled = false; _idle = false;
+			Target = -1; _scan = 0; _farTicks = 0; _strikeCd = 0; _immuneTime = 0; _age = 0; _deathHandled = false; _idle = false; _idleTicks = 0; _fight = false; _fightScan = 0; IsChild = false; ParentWho = -1;
 			Mark(npc);
 		}
 
@@ -110,13 +128,76 @@ namespace Levy.Content.NPCs
 		/// <summary>True when this NPC is a live conjured creature of an officer.</summary>
 		public static bool IsConjured(NPC npc) => npc != null && npc.active && npc.TryGetGlobalNPC(out ConjuredGlobalNPC c) && c.Active;
 
+		/// <summary>True when a hostile the army would fight is within <see cref="LevyConstants.Summon.FightReachTiles"/> of <paramref name="officer"/> (a fight is on). Server / single player.</summary>
+		public static bool EnemyNear(NPC officer)
+		{
+			if (officer == null || !officer.active) return false;
+			float lim = LevyConstants.Summon.FightReachTiles * LevyConstants.TilePx;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC t = Main.npc[i];
+				if (!t.active || t.whoAmI == officer.whoAmI || Vector2.DistanceSquared(officer.Center, t.Center) > lim * lim) continue;
+				if (LevyUtil.IsHostileTarget(t) && !SoldierTargeting.IsNeverTarget(t) && !IsConjured(t)) return true;
+			}
+			return false;
+		}
+
+		/// <summary>An NPC a conjured creature's own AI spawns (a Burning Sphere, a Chaos Ball) is the army's: friendly, owner-bound, aimed at the enemy by its own AI through the same aim body. With no enemy to throw it at, it never appears.</summary>
+		public override void OnSpawn(NPC npc, IEntitySource source)
+		{
+			if (Active || !LevyUtil.IsServerOrSingle) return;
+			if (source is not EntitySource_Parent { Entity: NPC parent } || parent.whoAmI == npc.whoAmI || !parent.TryGetGlobalNPC(out ConjuredGlobalNPC pc) || !pc.Active) return;
+			if (pc.Target < 0 || pc.OwnerAvatar() == null) { npc.active = false; return; } // thrown at nothing: it would fly at the officer's side, where the commander stands
+			if (!ConjureRoster.ChildAiOk(npc)) { npc.active = false; return; }              // an AI never checked against the aim body would home on the nearest real player
+			Bind(npc, pc.OwnerWho, pc.CommanderIndex, npc.type);
+			IsChild = true; ParentWho = parent.whoAmI; MinDamage = 0; IdleLifeTicks = 0; Target = pc.Target;
+			npc.netUpdate = true;
+		}
+
+		/// <summary>
+		/// Whether a projectile this creature's AI just fired may fly: only at an enemy it has picked. With no enemy (its aim body stands at its post beside the officer, next to the commander) or with the shot pointed at
+		/// a real player and not at the enemy, it is cancelled.
+		/// </summary>
+		internal bool MayShoot(Projectile p)
+		{
+			if (Target < 0 || Target >= Main.maxNPCs || !Main.npc[Target].active) return false;
+			if (p.aiStyle == ProjAIStylePlayerHoming) return false; // read from Projectile.cs: this AI steers at the nearest real player in 200 px whatever its hostile flag says
+			if (p.velocity.Length() < 2f) return true;
+			NPC enemy = Main.npc[Target];
+			float aE = Angle(p.velocity, enemy.Center - p.Center);
+			for (int i = 0; i < Main.maxPlayers; i++)
+			{
+				Player pl = Main.player[i];
+				if (!pl.active || pl.dead || Vector2.Distance(pl.Center, p.Center) > 90f * 16f) continue;
+				float aP = Angle(p.velocity, pl.Center - p.Center);
+				if (aP < 20f && aP + 5f < aE) return false;
+			}
+			return true;
+		}
+
+		/// <summary>Projectile AI style 51 (the hostile Lost Soul): it homes on Main.player[] within 200 px.</summary>
+		private const int ProjAIStylePlayerHoming = 51;
+
+		private static float Angle(Vector2 a, Vector2 b)
+		{
+			if (a.LengthSquared() < 1e-6f || b.LengthSquared() < 1e-6f) return 180f;
+			return MathHelper.ToDegrees((float)Math.Acos(MathHelper.Clamp(Vector2.Dot(Vector2.Normalize(a), Vector2.Normalize(b)), -1f, 1f)));
+		}
+
+		/// <summary>This creature (or the one that threw it) just dealt damage: its idle count starts again.</summary>
+		public void NoteDamageDealt()
+		{
+			_idleTicks = 0;
+			if (IsChild && ParentWho >= 0 && ParentWho < Main.maxNPCs && Main.npc[ParentWho].TryGetGlobalNPC(out ConjuredGlobalNPC p) && p.Active) p.NoteDamageDealt();
+		}
+
 		// =====================================================================================================
 		// ITargetBody: enemies chase it exactly as they chase a soldier or a summoned unit
 		// =====================================================================================================
 		public NPC NPC => _npc;
 		public Player Dummy { get { EnsureDummy(); return _dummy; } }
 		public int TargetAggro => 0;
-		public bool IsAlive => Active && _npc != null && _npc.active && _npc.life > 0 && !_deathHandled;
+		public bool IsAlive => Active && !IsChild && _npc != null && _npc.active && _npc.life > 0 && !_deathHandled; // a thrown orb is not a body the enemy chases or a squad member
 
 		private void EnsureDummy()
 		{
@@ -228,6 +309,17 @@ namespace Levy.Content.NPCs
 			if (owner == null) { Despawn(); return false; }
 			Mark(npc); // another mod's hook may have cleared a flag; the army's creature stays the army's
 
+			if (IsChild)
+			{
+				if (_age > LevyConstants.Summon.ConjureChildLifeTicks) { Despawn(); return false; }  // a spent orb
+			}
+			else if (IdleLifeTicks > 0)
+			{
+				if (--_fightScan <= 0) { _fightScan = LevyConstants.Summon.FightScanTicks; _fight = EnemyNear(owner); }
+				if (_fight && ++_idleTicks > IdleLifeTicks) { Crumble(); return false; }           // it has dealt no damage for a while of a fight
+				int left = IdleLifeTicks - _idleTicks;
+				npc.alpha = left < 120 ? (int)(200f * (1f - left / 120f)) : 0;                       // it fades out over its last two seconds
+			}
 			if (++_scan >= LevyConstants.Summon.ScanIntervalTicks) { _scan = 0; Target = FindTarget(owner); }
 			else if (Target >= 0 && (Target >= Main.maxNPCs || !Pickable(Main.npc[Target], owner))) Target = -1;
 
@@ -272,25 +364,40 @@ namespace Levy.Content.NPCs
 		// ---- the answer to every "who is the closest player" the creature's AI asks ----
 		internal static void Hook()
 		{
+			On_NPC.Transform += TransformDetour;
 			On_NPC.TargetClosest += TargetClosestDetour;
 			On_NPC.TargetClosestUpgraded += TargetClosestUpgradedDetour;
 		}
 
 		internal static void Unhook()
 		{
+			On_NPC.Transform -= TransformDetour;
 			On_NPC.TargetClosest -= TargetClosestDetour;
 			On_NPC.TargetClosestUpgraded -= TargetClosestUpgradedDetour;
 		}
 
+		/// <summary>A creature that changes form (the Vampire Bat becoming a Vampire) is rebuilt by vanilla from its new type's defaults, which would drop the army's marks and leave a hostile enemy beside the commander: the marks are put back.</summary>
+		private static void TransformDetour(On_NPC.orig_Transform orig, NPC self, int newType)
+		{
+			if (!self.TryGetGlobalNPC(out ConjuredGlobalNPC c) || !c.Active) { orig(self, newType); return; }
+			int owner = c.OwnerWho, cmd = c.CommanderIndex, conjured = c.ConjuredType, target = c.Target, parent = c.ParentWho, idle = c.IdleLifeTicks, minDamage = c.MinDamage;
+			bool child = c.IsChild;
+			orig(self, newType);
+			if (!self.TryGetGlobalNPC(out ConjuredGlobalNPC c2)) return;
+			c2.Bind(self, owner, cmd, conjured);
+			c2.Target = target; c2.ParentWho = parent; c2.IdleLifeTicks = idle; c2.MinDamage = minDamage; c2.IsChild = child;
+			self.netUpdate = true;
+		}
+
 		private static void TargetClosestDetour(On_NPC.orig_TargetClosest orig, NPC self, bool faceTarget)
 		{
-			if (self.TryGetGlobalNPC(out ConjuredGlobalNPC c) && c._aiming) { c.AnswerTargetClosest(faceTarget); return; }
+			if (self.TryGetGlobalNPC(out ConjuredGlobalNPC c) && c.Active && c._aim != null) { c.AnswerTargetClosest(faceTarget); return; } // also when a hit re-asks (StrikeNPC): never a real player
 			orig(self, faceTarget);
 		}
 
 		private static void TargetClosestUpgradedDetour(On_NPC.orig_TargetClosestUpgraded orig, NPC self, bool faceTarget, Vector2? checkPosition)
 		{
-			if (self.TryGetGlobalNPC(out ConjuredGlobalNPC c) && c._aiming) { c.AnswerTargetClosest(faceTarget); return; }
+			if (self.TryGetGlobalNPC(out ConjuredGlobalNPC c) && c.Active && c._aim != null) { c.AnswerTargetClosest(faceTarget); return; }
 			orig(self, faceTarget, checkPosition);
 		}
 
@@ -339,6 +446,9 @@ namespace Levy.Content.NPCs
 				t.SimpleStrikeNPC(dmg, dir, false, 3f, null, true, 0f, true);
 				if (t.active) VenomSystem.OnArmyHit(t, _npc.Center);
 				_strikeCd = LevyConstants.Summon.ConjureStrikeCooldownTicks;
+				NoteDamageDealt();
+				if (IsChild) ChildBlows++;
+				if (IsChild && LevyUtil.IsProjectileNpc(_npc.type)) Despawn();                      // an orb is spent by the blow it lands
 				return;
 			}
 		}
@@ -371,6 +481,14 @@ namespace Levy.Content.NPCs
 		public override void ModifyIncomingHit(NPC npc, ref NPC.HitModifiers modifiers)
 		{
 			if (Active) modifiers.DefenseEffectiveness *= LevyUtil.ModeDefenseEffectiveness() / 0.5f;
+		}
+
+		/// <summary>Falls apart: it dealt no damage for too long of a fight. No loot, no kill count (<see cref="PreKill"/>).</summary>
+		private void Crumble()
+		{
+			Crumbled++;
+			for (int i = 0; i < 12; i++) { int d = Dust.NewDust(_npc.position, _npc.width, _npc.height, DustID.Bone, 0f, -1.5f, 100, default, 1.1f); Main.dust[d].noGravity = true; }
+			Despawn();
 		}
 
 		private void Despawn()
@@ -419,6 +537,7 @@ namespace Levy.Content.NPCs
 		{
 			bitWriter.WriteBit(Active);
 			if (!Active) return;
+			bitWriter.WriteBit(IsChild);
 			binaryWriter.Write((short)OwnerWho); binaryWriter.Write((short)CommanderIndex); binaryWriter.Write((short)Target); binaryWriter.Write((short)ConjuredType);
 		}
 
@@ -426,6 +545,7 @@ namespace Levy.Content.NPCs
 		{
 			bool a = bitReader.ReadBit();
 			if (!a) { Active = false; return; }
+			IsChild = bitReader.ReadBit();
 			OwnerWho = binaryReader.ReadInt16(); CommanderIndex = binaryReader.ReadInt16(); Target = binaryReader.ReadInt16(); ConjuredType = binaryReader.ReadInt16();
 			_npc = npc;
 			if (!Active) { Active = true; _deathHandled = false; }
@@ -442,11 +562,17 @@ namespace Levy.Content.NPCs
 		public override bool InstancePerEntity => true;
 		public bool Conjured;
 		public int CommanderIndex = -1;
+		/// <summary>whoAmI of the conjured creature that fired it (a blow that lands counts as that creature's), or -1.</summary>
+		public int SourceWho = -1;
 
 		public override void OnSpawn(Projectile projectile, IEntitySource source)
 		{
-			if (source is EntitySource_Parent { Entity: NPC npc } && npc.TryGetGlobalNPC(out ConjuredGlobalNPC c) && c.Active) Adopt(projectile, c.CommanderIndex);
-			else if (source is EntitySource_Parent { Entity: Projectile parent } && parent.TryGetGlobalProjectile(out ConjuredProjectile pp) && pp.Conjured) Adopt(projectile, pp.CommanderIndex);
+			if (source is EntitySource_Parent { Entity: NPC npc } && npc.TryGetGlobalNPC(out ConjuredGlobalNPC c) && c.Active)
+			{
+				if (!LevyUtil.IsClient && !c.MayShoot(projectile)) { projectile.active = false; return; } // no enemy to shoot at, or it would fly at a player: it never leaves the muzzle
+				Adopt(projectile, c.CommanderIndex); SourceWho = npc.whoAmI;
+			}
+			else if (source is EntitySource_Parent { Entity: Projectile parent } && parent.TryGetGlobalProjectile(out ConjuredProjectile pp) && pp.Conjured) { Adopt(projectile, pp.CommanderIndex); SourceWho = pp.SourceWho; }
 		}
 
 		private void Adopt(Projectile p, int commander)
@@ -462,6 +588,15 @@ namespace Levy.Content.NPCs
 		}
 
 		public override bool CanHitPlayer(Projectile projectile, Player target) => !Conjured;
+
+		/// <summary>Diagnostics for the world self-checks: blows a conjured creature's projectiles landed on NPCs, and the damage they did.</summary>
+		public static int HitsOnNpcs, DamageOnNpcs;
+		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
+		{
+			if (!Conjured) return;
+			HitsOnNpcs++; DamageOnNpcs += damageDone;
+			if (SourceWho >= 0 && SourceWho < Main.maxNPCs && Main.npc[SourceWho].TryGetGlobalNPC(out ConjuredGlobalNPC c) && c.Active) c.NoteDamageDealt(); // an arrow that lands keeps its archer standing
+		}
 	}
 
 	/// <summary>Per-world plumbing for <see cref="ConjuredGlobalNPC"/>: the TargetClosest answers.</summary>

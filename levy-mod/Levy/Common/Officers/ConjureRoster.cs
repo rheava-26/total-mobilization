@@ -107,6 +107,19 @@ namespace Levy.Common.Officers
 			NPCAIStyleID.Worm, NPCAIStyleID.Spider, NPCAIStyleID.Piranha, NPCAIStyleID.Jellyfish, NPCAIStyleID.Antlion, NPCAIStyleID.Mimic, NPCAIStyleID.BiomeMimic, NPCAIStyleID.FlyingFish,
 		}));
 
+		/// <summary>True when an NPC a conjured creature's own AI spawns may exist as the army's: a harmless one (no contact damage), an orb (AI style 9, read from NPC.cs: it homes on Main.player[target] only), or an AI style the swap was verified against.
+		/// Anything else (a Shadowflame Apparition's AI style, say) would run an AI nobody has checked against the aim body, so it is never spawned.</summary>
+		public static bool ChildAiOk(NPC child) => child.damage <= 0 || child.aiStyle == 9 || _aiOk.Contains(child.aiStyle);
+
+		/// <summary>Types the aim audit found cannot fight for the army, with the reason (logged by the audit): their own AI undoes the conjuring or only works inside an event.</summary>
+		public static readonly Dictionary<int, string> AimExcluded = new()
+		{
+			{ NPCID.CultistArcherBlue, "event-bound: its AI despawns it unless the Lunatic Cultist's ritual stands" },
+			{ NPCID.CultistArcherWhite, "event-bound: its AI despawns it unless the Lunatic Cultist's ritual stands" },
+			{ NPCID.RaggedCaster, "its Lost Souls (projectile AI 51) home on the nearest real player within 12 tiles and never reach the enemy" },
+			{ NPCID.RaggedCasterOpenCoat, "its Lost Souls (projectile AI 51) home on the nearest real player within 12 tiles and never reach the enemy" },
+		};
+
 		/// <summary>Types that are mini-bosses: strong, scripted, and not for an officer to conscript. Skipped unless <see cref="LevyConstants.Summon.ZoologistAllowMinibosses"/>.</summary>
 		private static readonly HashSet<int> _minibosses = new()
 		{
@@ -153,6 +166,7 @@ namespace Levy.Common.Officers
 			if (probe.dontTakeDamage || probe.immortal || probe.lifeMax <= 5 || probe.damage <= 0) { why = "no fight"; return true; }
 			if (probe.value <= 0f) { why = "no value (a boss part, a minion or an event piece)"; return true; }
 			if (!_aiOk.Contains(probe.aiStyle)) { why = "ai " + probe.aiStyle; return true; }
+			if (AimExcluded.TryGetValue(t, out string reason)) { why = "aim audit: " + reason; return true; }
 			return false;
 		}
 

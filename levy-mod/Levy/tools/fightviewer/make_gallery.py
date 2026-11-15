@@ -36,7 +36,7 @@ def summarize(rows):
     meta = hdr.get("meta") or {}
     frames = [r for r in rows if r.get("k") == "f"]
     ev = [r for r in rows if r.get("k") == "e"]
-    tally = {0: 0, 1: 0, 2: 0}
+    tally = {0: 0, 1: 0, 2: 0, 3: 0}
     has_t = False
     for f in frames:
         bs = f.get("b") or []
@@ -52,7 +52,7 @@ def summarize(rows):
     lhit = [e for e in ev if e.get("e") == "lhit"]
     boss = meta.get("bossName") or (hdr.get("boss") or "?").replace("_", " ")
     return {
-        "boss": boss, "dur": (t1 - t0) / 60.0, "pl": 100.0 * tally[2] / n, "pp": 100.0 * tally[1] / n, "pn": 100.0 * tally[0] / n,
+        "boss": boss, "dur": (t1 - t0) / 60.0, "pl": 100.0 * tally[2] / n, "pp": 100.0 * tally[1] / n, "pn": 100.0 * tally[0] / n, "ps": 100.0 * tally[3] / n,
         "hits": len(lhit), "dmg": sum(e.get("dmg", 0) for e in lhit), "deaths": sum(1 for e in ev if e.get("e") == "ldeath"),
         "meta": meta, "v": hdr.get("format", 1), "hasT": has_t, "frames": len(frames),
     }

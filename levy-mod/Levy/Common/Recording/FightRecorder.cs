@@ -84,7 +84,7 @@ namespace Levy.Common.Recording
 		/// <summary>Highest spawn serial alive when the recording started. A boss-like NPC with a HIGHER serial was spawned afterwards by someone other than this fight (the next trial); serial 0 (a worm segment that became a head: SetDefaults resets its tag) and a lower one belong to this fight.</summary>
 		private static int _startMaxSerial;
 		private static bool IsNewFightSerial(NPC n) { int sr = FightRecSpawnTag.SerialOf(n); return sr > _startMaxSerial; }
-		private static int _tkNone, _tkPlayer, _tkLevy, _lastTk = -1, _lastTl = int.MinValue, _levyHits, _levyDeaths;
+		private static int _tkNone, _tkPlayer, _tkLevy, _tkSpite, _lastTk = -1, _lastTl = int.MinValue, _levyHits, _levyDeaths;
 		private sealed class LTrack { public int Life, Max; public float X, Y; public int Who; public bool Seen; }
 		private static readonly Dictionary<int, LTrack> _lt = new();
 		private static readonly HashSet<int> _deadNoted = new();
@@ -141,6 +141,44 @@ namespace Levy.Common.Recording
 			if (n.realLife >= 0 && n.realLife < Main.maxNPCs && Main.npc[n.realLife].active && Main.npc[n.realLife].boss) return true;
 			foreach (int t in LevyConstants.Targeting.BossPartTypes) if (t == n.type) return true;
 			return BossRule.IsMainBoss(LevyUtil.RootNpc(n));
+		}
+
+		// ------------------------------------------------------------------------------------------ naming a fight with several main bosses
+		/// <summary>The main bosses of this fight so far, one entry per boss name (a worm's segments share a name), in the order they appeared.</summary>
+		private static readonly List<(int type, string name)> _fightBosses = new();
+
+		/// <summary>A boss that appeared: remembered once per name, and the fight's name is worked out again from everyone seen so far (the first boss alone names a one-boss fight).</summary>
+		private static void NoteFightBoss(NPC n)
+		{
+			string nm = n.FullName;
+			bool known = false;
+			foreach (var b in _fightBosses) if (b.type == n.type || b.name == nm) { known = true; break; }
+			if (!known) _fightBosses.Add((n.type, nm));
+			_bossNameSeen = FightName(_fightBosses);
+		}
+
+		/// <summary>The names a fight goes by: one per distinct boss name in the order seen, with the two Twins folded into "The Twins". A lone Retinazer or Spazmatism (the other not in the fight) keeps its own name.</summary>
+		internal static List<string> FightNames(List<(int type, string name)> bosses)
+		{
+			var names = new List<string>();
+			if (bosses == null) return names;
+			bool ret = false, spaz = false, twinsDone = false;
+			foreach (var b in bosses) { if (b.type == NPCID.Retinazer) ret = true; else if (b.type == NPCID.Spazmatism) spaz = true; }
+			foreach (var b in bosses)
+			{
+				if (ret && spaz && (b.type == NPCID.Retinazer || b.type == NPCID.Spazmatism)) { if (!twinsDone) { names.Add("The Twins"); twinsDone = true; } continue; }
+				if (!string.IsNullOrWhiteSpace(b.name) && !names.Contains(b.name)) names.Add(b.name);
+			}
+			return names;
+		}
+
+		/// <summary>What a fight is called: the boss's name, "The Twins" for the two of them, and for any other several main bosses all of them ("A and B", "A, B and C"). Null when there are none.</summary>
+		internal static string FightName(List<(int type, string name)> bosses)
+		{
+			var names = FightNames(bosses);
+			if (names.Count == 0) return null;
+			if (names.Count == 1) return names[0];
+			return string.Join(", ", names.GetRange(0, names.Count - 1)) + " and " + names[names.Count - 1];
 		}
 
 		private static string SafeName(string s)
@@ -329,7 +367,7 @@ namespace Levy.Common.Recording
 				_startWall = DateTime.Now; _profWindows = 0; _cmdDeaths = 0; _pDead = false; _dmg.Clear(); _dmgBoss = _dmgAll = 0; _lastDmgFlush = 0; LastResult = null;
 				_cmd = cmd; _frames = 0; _events = 0; _bossSeen = false; _bossesSeen = 0; _bossIdsSeen.Clear(); _hbDef.Clear(); _lastBossSeen = 0;
 				_items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
-				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
+				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = _tkSpite = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
 				_lbuf.Clear(); _lgear.Clear(); _prefixes.Clear(); _cmdGear = int.MinValue; _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1;
 				_startTick = (int)Main.GameUpdateCount;
@@ -343,7 +381,14 @@ namespace Levy.Common.Recording
 					float d = Vector2.DistanceSquared(n.Center, cmd.Center);
 					if (d < bd) { bd = d; nearest = n; }
 				}
-				_boss = SafeName(!string.IsNullOrWhiteSpace(name) ? name : nearest?.FullName);
+				_fightBosses.Clear();
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC n = Main.npc[i];
+					if (n.active && !n.friendly && !n.townNPC && !(n.ModNPC is SoldierNPC) && IsFightBoss(n)) NoteFightBoss(n);
+				}
+				bool several = _fightBosses.Count > 1; // several main bosses (the Twins): the fight is named for all of them, whichever one the caller or the nearest scan picked
+				_boss = SafeName(several ? FightName(_fightBosses) : !string.IsNullOrWhiteSpace(name) ? name : nearest?.FullName);
 				string stem = string.IsNullOrEmpty(fileBase) ? stamp + "_" + _boss : SafeName(fileBase);
 				string ext = _gzip ? FightRecFolder.Ext : ".jsonl";
 				_path = System.IO.Path.Combine(dir, (_gzip ? "rec_" : "") + stem + ext);
@@ -414,7 +459,7 @@ namespace Levy.Common.Recording
 				if (RosterSystem.Instance != null) foreach (var r in RosterSystem.Instance.Regulars) if (!r.Reserve) total++;
 				double secs = Elapsed / 60.0;
 				w.WriteLine("{\"k\":\"end\",\"reason\":" + FightRecFormat.Esc(reason) + ",\"ticks\":" + Elapsed + ",\"frames\":" + _frames + ",\"events\":" + _events
-					+ ",\"target\":{\"none\":" + _tkNone + ",\"player\":" + _tkPlayer + ",\"levy\":" + _tkLevy + "},\"levyHits\":" + _levyHits + ",\"levyDeaths\":" + _levyDeaths + ",\"outcome\":" + FightRecFormat.Esc(_outcome) + ",\"arenaChunks\":" + _chunks
+					+ ",\"target\":{\"none\":" + _tkNone + ",\"player\":" + _tkPlayer + ",\"levy\":" + _tkLevy + ",\"spite\":" + _tkSpite + "},\"levyHits\":" + _levyHits + ",\"levyDeaths\":" + _levyDeaths + ",\"outcome\":" + FightRecFormat.Esc(_outcome) + ",\"arenaChunks\":" + _chunks
 					+ ",\"result\":" + FightRecFormat.Esc(result) + ",\"durationSec\":" + FightRecFormat.N(secs) + ",\"bossName\":" + FightRecFormat.Esc(_bossNameSeen ?? _boss) + ",\"bosses\":" + _bossesSeen + ",\"cmdDeaths\":" + _cmdDeaths
 					+ ",\"armyAlive\":" + alive + ",\"armyTotal\":" + total + ",\"dmgBoss\":" + _dmgBoss + ",\"dmgAll\":" + _dmgAll + ",\"profiled\":" + (_profWindows > 0 ? "1" : "0") + ",\"dropped\":" + w.Dropped + ",\"capped\":" + (w.Full ? "1" : "0") + ",\"writeError\":" + FightRecFormat.Esc(w.Error) + "}", true);
 				_w = null;
@@ -674,7 +719,7 @@ namespace Levy.Common.Recording
 				bool part = !isBoss;
 				SeeEntity(n.Center.X, n.Center.Y);
 				if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
-				if (isBoss && _bossIdsSeen.Add(n.whoAmI)) { _bossesSeen++; Ev("boss", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString())); if (_bossNameSeen == null) _bossNameSeen = n.FullName; }
+				if (isBoss && _bossIdsSeen.Add(n.whoAmI)) { _bossesSeen++; Ev("boss", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString())); NoteFightBoss(n); }
 				_bossTypes.Add(n.type);
 				TargetOf(n, out int tk, out int tl);
 				f.B.Add(new double[] { n.type, n.whoAmI, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, n.life, n.lifeMax, n.ai[0], n.ai[1], n.ai[2], n.ai[3], n.target, part ? 1 : 0, tk, tl, n.width, n.height });
@@ -683,7 +728,7 @@ namespace Levy.Common.Recording
 					if (_primaryWho < 0) { _primaryWho = n.whoAmI; _primarySerial = FightRecSpawnTag.SerialOf(n); }
 					if (n.whoAmI == _primaryWho && FightRecSpawnTag.SerialOf(n) == _primarySerial)
 					{
-						if (tk == 2) _tkLevy++; else if (tk == 1) _tkPlayer++; else _tkNone++;
+						if (tk == 2) _tkLevy++; else if (tk == 3) _tkSpite++; else if (tk == 1) _tkPlayer++; else _tkNone++;
 						if (tk != _lastTk || tl != _lastTl) { _lastTk = tk; _lastTl = tl; Ev("tgt", ("kind", tk.ToString()), ("levy", tl.ToString()), ("boss", n.whoAmI.ToString())); }
 					}
 				}
@@ -723,7 +768,7 @@ namespace Levy.Common.Recording
 				NPC n = Main.npc[i];
 				if (!n.active || !(n.ModNPC is SoldierNPC s)) continue;
 				if (Math.Abs(n.Center.X - p.Center.X) > LevyRangePx || Math.Abs(n.Center.Y - p.Center.Y) > LevyRangePx) continue;
-				int id = s.Record != null ? s.Record.Id : -n.whoAmI;
+				int id = LevyId(s, n.whoAmI);
 				if (s.Record != null && !_soldiers.ContainsKey(id)) _soldiers[id] = s.Record.Name;
 				SeeEntity(n.Center.X, n.Center.Y);
 				if (el % 30 == 0) LevyBuffs(n, id, el);
@@ -731,7 +776,7 @@ namespace Levy.Common.Recording
 				Item lh = s.Dummy?.HeldItem;
 				int lflags = (Grounded(n) ? 1 : 0) | (s.IsFlying ? 2 : 0) | (s.IsAerial ? 4 : 0) | (s.IsHooking ? 8 : 0) | (s.MoveBlocked ? 16 : 0);
 				if (lh != null && !lh.IsAir && !_items.ContainsKey(lh.type)) _items[lh.type] = lh.Name;
-				f.L.Add(new double[] { id, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, lflags, n.life, (int)s.State, lh != null && !lh.IsAir ? lh.type : 0, s.WingTime, n.lifeMax, n.width, n.height });
+				f.L.Add(new double[] { id, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, lflags, n.life, s.OfficerEngaged ? (int)SoldierState.Engage : (int)s.State, lh != null && !lh.IsAir ? lh.type : 0, s.WingTime, n.lifeMax, n.width, n.height });
 			}
 			// hostile adds and minions that are not boss parts (creepers, servants, worms, bees, slimes ...)
 			int ac = 0;
@@ -772,21 +817,25 @@ namespace Levy.Common.Recording
 		}
 
 		// ------------------------------------------------------------------------------------------ boss target, levy hits and deaths
-		/// <summary>What the boss is attacking right now: kind 0 none, 1 player, 2 levy (levy = its record id, or -whoAmI without a record). Reads the targeting lock and the boss-rule spite target.</summary>
-		private static void TargetOf(NPC n, out int kind, out int levyId)
+		/// <summary>The id a levy goes by in a recording: its record id, or -whoAmI with no record. Officers all carry the same synthetic record id (-1) and militia have their own negative ids, so an officer is -OfficerIdBase - whoAmI.</summary>
+		internal const int OfficerIdBase = 100000;
+		internal static int LevyId(SoldierNPC s, int whoAmI) => s.Record == null ? -whoAmI : s.OfficerMode ? -OfficerIdBase - whoAmI : s.Record.Id;
+
+		/// <summary>What the boss is attacking right now: kind 0 none, 1 player, 2 levy (the targeting lock, or the boss's own NPC target; levy = its recording id, see <see cref="LevyId"/>), 3 spite (no real target on a levy, but the boss rule's grudge redirects its shots and dashes at one; levy = that one).</summary>
+		internal static void TargetOf(NPC n, out int kind, out int levyId)
 		{
 			kind = 0; levyId = -1;
 			try
 			{
 				var data = LevyNpcData.Of(n);
-				int st = data.SoldierTarget;
+				int st = data.SoldierTarget; bool spite = false;
 				if (!(st >= 0 && st < Main.maxNPCs && Main.npc[st].active && Main.npc[st].ModNPC is SoldierNPC))
 				{
 					st = -1;
 					if (n.target >= 300 && n.target - 300 < Main.maxNPCs && Main.npc[n.target - 300].active && Main.npc[n.target - 300].ModNPC is SoldierNPC) st = n.target - 300;
-					else { var sp = BossRule.SpiteTargetOf(n); if (sp != null && sp.NPC.active) st = sp.NPC.whoAmI; }
+					else { var sp = BossRule.SpiteTargetOf(n); if (sp != null && sp.NPC.active) { st = sp.NPC.whoAmI; spite = true; } }
 				}
-				if (st >= 0) { var s = (SoldierNPC)Main.npc[st].ModNPC; kind = 2; levyId = s.Record != null ? s.Record.Id : -st; return; }
+				if (st >= 0) { var s = (SoldierNPC)Main.npc[st].ModNPC; kind = spite ? 3 : 2; levyId = LevyId(s, st); return; }
 				if (n.target >= 0 && n.target < Main.maxPlayers) kind = 1; // the stand-in commander of a headless server flips inactive, so a valid player slot counts
 				else if (n.target == SoldierNPC.DummySlot) kind = 0;
 			}
@@ -828,7 +877,7 @@ namespace Levy.Common.Recording
 			if (!On || !(n.ModNPC is SoldierNPC s)) return;
 			try
 			{
-				int id = s.Record != null ? s.Record.Id : -n.whoAmI;
+				int id = LevyId(s, n.whoAmI);
 				if (!_deadNoted.Add(id)) return;
 				_lt.TryGetValue(id, out var t);
 				LevyHitEvent(s, n, id, t != null ? Math.Max(1, t.Life) : 1, 0, true);
@@ -847,7 +896,7 @@ namespace Levy.Common.Recording
 			{
 				NPC n = Main.npc[i];
 				if (!n.active || !(n.ModNPC is SoldierNPC s) || n.life <= 0) continue;
-				int id = s.Record != null ? s.Record.Id : -n.whoAmI;
+				int id = LevyId(s, n.whoAmI);
 				if (_deadNoted.Contains(id)) continue;
 				if (!_lt.TryGetValue(id, out var t)) { t = new LTrack { Life = n.life }; _lt[id] = t; }
 				if (n.life < t.Life) LevyHitEvent(s, n, id, t.Life - n.life, n.life, false);

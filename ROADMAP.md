@@ -14,6 +14,13 @@
 - **OPEN:** the Kite NRE is intermittent and unreproduced. Investigate with the next builder. FollowRowsWorld's timing check is wall-clock, so make it deterministic like the recorder checks.
 - Eve's Plantera 21:03: she died with Plantera at 8,849/256,396 (3.5%). The army kept firing to 5,788, then Plantera despawned (vanilla, target dead). Raised with her as a design question: should the army be able to fight on after the commander falls, for already-downed bosses only?
 - Corrected with Eve: spore gas is NOT a line. Puffs fly out in random directions at up to ~7 tiles/s, don't collide with tiles, and last 15 s (13 s live), with a 2x2-tile hurtbox and 108 damage by Calamity's design. Her bigger-arena idea is the right lever.
+- **fieldfix MERGED (11-15 ~05:30):**
+  - Thorns: tiles 32/69/352/655 break on levy contact (vanilla TouchDamageDestroyTile; NORTH_STAR exception recorded).
+  - Recorder format 9: kind 3 = spite; multi-boss names ("The Twins"); each officer gets id -100000-slot (all officers used to share id -1); officers show Engage while targeting.
+  - Officer target picks respect IsNeverTarget (they used to target the Dungeon Guardian).
+  - Off-duty banner (draw-only, 0-alloc refresh). FieldFixCheck 37/0 on both toolchains.
+  - **CORRECTION to what I told Eve:** "followers never fight bosses" was my misreading. The 21:20 "ReturnHome militia" appear only after she died and respawned at home, 1,400 tiles away (militia hunt within 120 tiles of their barracks, by design). The 20:36 "never Engage" unit was 5 officers merged into id -1; officers keep to the commander and never write Engage. Officers DO deal damage (Arms Dealer 237–800+ in 12 s). Support officers (Nurse, Angler, Clothier…) avoid fights by design. Officers have no fear meter.
+- **OPEN (pre-existing, not caught by the ship scripts):** "OFFICERKIT CHECK FAIL: short content should show whole at 300" (OfficerPanel.ListHeight). It appears in the 2.0.64 shipworld logs too; shipboth greps only fail=[1-9]/FAILURE/!!!. Fix the check or the panel, and widen the ship grep to "CHECK FAIL".
 - **`dialogue2` DRAFT DONE (branch dialogue2, 968dc58, NOT merged; awaiting Eve).** Review doc sent: scratchpad/dialogue_review.md.
   - Soldier lines 479 → 552: 329 kept, 41 tightened, 31 rewritten, 78 cut, 153 new. Officer and mutiny lines untouched.
   - Staged (commented out) lines need code: LIFE_CRYSTAL, CHEST_OPENED, ARMORY_GOT/WANT/BEST/WORST, per-drink triggers, world-tier tags, ranger/melee tags, a female tag.

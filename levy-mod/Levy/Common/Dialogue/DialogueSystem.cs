@@ -71,7 +71,7 @@ namespace Levy.Common.Dialogue
 		/// <summary>A filled line from an explicit string-keyed pool (e.g. "OFFICER_Nurse_FIGHT"), or null when the pool is missing or nothing in it fits. Same filter, placeholder and repeat rules as the trigger overload.</summary>
 		public static string PickLine(string poolKey, SoldierRecord rec, DialogueContext ctx = null, bool ignoreRepeat = false)
 		{
-			return PickFromPool(DialogueTable.Get(poolKey), rec, ctx, null, ignoreRepeat, -1, out _, true);
+			return PickFromPool(DialogueTable.Get(poolKey), rec, ctx, null, ignoreRepeat, -1, out _, true, poolKey != null && poolKey.StartsWith("MUTINY", StringComparison.OrdinalIgnoreCase));
 		}
 
 		/// <summary>A line from a trigger's pool in the dialogue file (repeats allowed), or the localization key's text when the file has none. Used by the mutineers' shouts.</summary>
@@ -96,10 +96,22 @@ namespace Levy.Common.Dialogue
 			// 1. the event in progress
 			Span<DialogueTrigger> events = stackalloc DialogueTrigger[8];
 			int eventCount = ActiveEvents(events);
-			for (int i = 0; i < eventCount && text == null; i++) text = ChatPick(events[i], s, rec, idx, tracked, avoid, now, false);
+			bool grumpy = RosterFacts.Grumpy(rec);
+			for (int i = 0; i < eventCount && text == null; i++)
+			{
+				if (grumpy && events[i] == DialogueTrigger.BLOOD_MOON && Main.rand.NextBool()) continue; // the rest of her annoyed chat should be heard too
+				text = ChatPick(events[i], s, rec, idx, tracked, avoid, now, false);
+			}
 
 			// 2. a payday / unpaid / hold-fire line from the last two minutes
 			if (text == null && tracked) text = TakeRecent(idx, rec, now);
+
+			// 2b. where his kit ranks in the army (the best-equipped, the worst, or anyone well below the average)
+			if (text == null && Main.rand.NextFloat() < LevyConstants.DialogueArmoryChance)
+			{
+				DialogueTrigger armory = ArmoryTriggerFor(rec);
+				if (armory != DialogueTrigger.IDLE) text = ChatPick(armory, s, rec, idx, tracked, avoid, now, false);
+			}
 
 			// 3. a name-drop
 			if (text == null && Main.rand.NextFloat() < LevyConstants.DialogueNamedropChance)
@@ -122,6 +134,30 @@ namespace Levy.Common.Dialogue
 			if (text == null) text = ChatPick(DialogueTrigger.IDLE, s, rec, idx, tracked, -1, now, true);
 
 			return string.IsNullOrEmpty(text) ? Localized("Silence", "...") : text;
+		}
+
+		/// <summary>The armory chat trigger for where a levy's kit ranks in his army, or IDLE (meaning none) when it is nothing special.</summary>
+		internal static DialogueTrigger ArmoryTriggerFor(SoldierRecord rec)
+		{
+			switch (RosterFacts.KitStanding(rec))
+			{
+				case RosterFacts.KitRank.Best: return DialogueTrigger.ARMORY_BEST;
+				case RosterFacts.KitRank.Worst: return DialogueTrigger.ARMORY_WORST;
+				case RosterFacts.KitRank.Below: return DialogueTrigger.ARMORY_WANT;
+				default: return DialogueTrigger.IDLE;
+			}
+		}
+
+		/// <summary>
+		/// A reaction line over a levy, outside the squad budget: the caller (commander reactions, a gear hand-out) owns the throttle. Server and single player; returns true when a line was shown.
+		/// </summary>
+		public static bool React(SoldierNPC s, DialogueTrigger trigger, DialogueContext ctx = null)
+		{
+			if (s == null || s.Record == null || s.NPC == null || !s.NPC.active || s.Hostile || LevyUtil.IsClient) return false;
+			string line = Pick(trigger, s.Record, ctx, s, false, -1, out _);
+			if (string.IsNullOrEmpty(line)) return false;
+			DeliverFloating(s, line, (byte)trigger);
+			return true;
 		}
 
 		/// <summary>
@@ -195,13 +231,15 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.OFFICER_MARCH:
 				case DialogueTrigger.NURSE_MARCH:
 				case DialogueTrigger.FLIGHT_SHOUT: case DialogueTrigger.FLIGHT_FEAR: case DialogueTrigger.TAKEOFF: case DialogueTrigger.LANDING: case DialogueTrigger.FIRESIDE: case DialogueTrigger.PASTIME: case DialogueTrigger.PASTIME_NIGHT:
+				case DialogueTrigger.LIFE_CRYSTAL: case DialogueTrigger.CHEST_OPENED: case DialogueTrigger.ARMORY_GOT:
+				case DialogueTrigger.DRINK_ALE: case DialogueTrigger.DRINK_STOUT: case DialogueTrigger.DRINK_RUM: case DialogueTrigger.DRINK_FIZZ: case DialogueTrigger.DRINK_ICEBERG:
 				case DialogueTrigger.VICTORY: return DialogueChannel.FloatingText;
 
 				case DialogueTrigger.DEATH_MESSAGE:
 				case DialogueTrigger.DESERTED:
 				case DialogueTrigger.NO_ONE_LEFT: return DialogueChannel.ChatLog;
 
-				default: return DialogueChannel.ChatWindow; // IDLE, IDLE_NIGHT, NAMEDROP, BLOOD_MOON, PARTY, GRAVEYARD, RAIN, BIOME_*, PAYDAY, UNPAID, HOLD_FIRE, EVENT_*
+				default: return DialogueChannel.ChatWindow; // IDLE, IDLE_NIGHT, NAMEDROP, BLOOD_MOON, PARTY, GRAVEYARD, RAIN, BIOME_*, PAYDAY, UNPAID, HOLD_FIRE, EVENT_*, ARMORY_WANT / BEST / WORST
 			}
 		}
 

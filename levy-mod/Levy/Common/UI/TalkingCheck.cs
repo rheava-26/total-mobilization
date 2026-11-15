@@ -325,6 +325,28 @@ namespace Levy.Common.UI
 			// every spoken group is present, and the mutineers' lines match the strings they used to be
 			foreach (var key in new[] { "IDLE", "NAMEDROP", "ENGAGE", "KILL", "HURT", "BOSS_SIGHTED", "COMRADE_DOWN", "ROUTED", "DEATH_MESSAGE", "OFFICER_MARCH", "NURSE_MARCH", "OFFICER_CHAT_FIGHT", "OFFICER_Nurse_FIGHT", "MUTINY", "MUTINY_BEGIN", "MUTINY_REFUSE", "MUTINY_CALM", "DRINK" })
 				check(DialogueTable.Get(key) != null, "the dialogue file has a group for " + key);
+			// the triggers the commander's actions, the armory and the drinks fire: each has a pool, a delivery channel and enough lines not to repeat at once
+			var fresh = new (DialogueTrigger t, int min, DialogueChannel channel)[]
+			{
+				(DialogueTrigger.LIFE_CRYSTAL, 8, DialogueChannel.FloatingText), (DialogueTrigger.CHEST_OPENED, 8, DialogueChannel.FloatingText),
+				(DialogueTrigger.ARMORY_GOT, 8, DialogueChannel.FloatingText), (DialogueTrigger.ARMORY_WANT, 6, DialogueChannel.ChatWindow),
+				(DialogueTrigger.ARMORY_BEST, 6, DialogueChannel.ChatWindow), (DialogueTrigger.ARMORY_WORST, 6, DialogueChannel.ChatWindow),
+				(DialogueTrigger.DRINK_ALE, 5, DialogueChannel.FloatingText), (DialogueTrigger.DRINK_STOUT, 5, DialogueChannel.FloatingText),
+				(DialogueTrigger.DRINK_RUM, 5, DialogueChannel.FloatingText), (DialogueTrigger.DRINK_FIZZ, 5, DialogueChannel.FloatingText),
+				(DialogueTrigger.DRINK_ICEBERG, 5, DialogueChannel.FloatingText),
+			};
+			foreach (var f in fresh)
+			{
+				var pool = DialogueTable.Get(f.t);
+				int plain = 0;
+				if (pool != null) foreach (var l in pool) if ((l.Cond & LineCond.Grumpy) == 0) plain++;
+				check(plain >= f.min, $"{f.t} has {plain} lines (needs {f.min})");
+				check(DialogueSystem.ChannelOf(f.t, out _) == f.channel, $"{f.t} is delivered through {f.channel}");
+				check(!DialogueSystem.MilitiaMayBark(f.t), $"{f.t} is not a militia trigger");
+				// the trigger name round-trips through the table's own parser, so the file can use it
+				var into = new Dictionary<string, List<DialogueLine>>(StringComparer.OrdinalIgnoreCase);
+				check(DialogueTable.Parse(null, "selfcheck", f.t + " | Any | Hello.", into) == 0 && into.ContainsKey(f.t.ToString()), $"the parser takes {f.t} as a trigger");
+			}
 			string[] cries = { "Mutiny.Cry1", "Mutiny.Cry2", "Mutiny.Cry3", "Mutiny.Cry4" };
 			var mut = DialogueTable.Get("MUTINY");
 			if (mut != null)

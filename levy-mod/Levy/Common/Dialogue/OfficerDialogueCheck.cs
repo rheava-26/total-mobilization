@@ -27,6 +27,11 @@ namespace Levy.Common.Dialogue
 					{
 						string own = OfficerChat.OwnPoolKey(def.Key, state);
 						if (DialogueTable.Get(own) == null) { failures.Add($"officer {def.Key} has no {own} lines (he falls back to the generic voice for {state})"); complete = false; continue; }
+						// a woman has an annoyed set (the Blood Moon override) in every state; a man has none, so his normal voice is never swapped
+						int grumpy = 0;
+						foreach (DialogueLine l in DialogueTable.Get(own)) if ((l.Cond & LineCond.Grumpy) != 0) grumpy++;
+						if (def.Female && grumpy < 2) failures.Add($"{own} is a woman's pool with {grumpy} annoyed lines (needs 2)");
+						if (!def.Female && grumpy > 0) failures.Add($"{own} has {grumpy} annoyed lines but {def.Key} is not marked Female");
 						string resolved = OfficerChat.ResolvePoolKey(def.Key, state);
 						if (!string.Equals(resolved, own, StringComparison.OrdinalIgnoreCase)) failures.Add($"{own} has lines but resolves to {resolved}");
 					}

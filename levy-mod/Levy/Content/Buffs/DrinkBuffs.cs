@@ -77,7 +77,7 @@ namespace Levy.Content.Buffs
 				served.Add(s);
 				n++;
 			}
-			DrinkCheers.Begin(served, commander);
+			DrinkCheers.Begin(served, commander, drink: drink);
 			return n;
 		}
 	}

@@ -6,6 +6,7 @@ using Terraria.ID;
 using Levy.Common;
 using Terraria.ModLoader;
 using Levy.Common.Dialogue;
+using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Util;
 using Levy.Content.NPCs;
@@ -32,8 +33,31 @@ namespace Levy.Content.Buffs
 		public override void OnWorldLoad() => Queue.Clear();
 		public override void OnWorldUnload() => Queue.Clear();
 
-		/// <summary>Queues the cheers and lines for the levies a round just reached.</summary>
-		public static void Begin(List<SoldierNPC> served, string commander, bool meal = false)
+		/// <summary>The dialogue pool of one particular round, by drink id (0 Ale, 1 Stout, 2 Rum, 3 Fizz, 4 Iceberg); DRINK for anything else.</summary>
+		public static DialogueTrigger TriggerFor(int drink)
+		{
+			switch (drink)
+			{
+				case 0: return DialogueTrigger.DRINK_ALE;
+				case 1: return DialogueTrigger.DRINK_STOUT;
+				case 2: return DialogueTrigger.DRINK_RUM;
+				case 3: return DialogueTrigger.DRINK_FIZZ;
+				case 4: return DialogueTrigger.DRINK_ICEBERG;
+				default: return DialogueTrigger.DRINK;
+			}
+		}
+
+		/// <summary>The cheer for this round: usually from the drink's own pool, otherwise (and always when it has none) the general DRINK pool.</summary>
+		internal static string CheerLine(int drink, SoldierRecord rec, DialogueContext ctx)
+		{
+			DialogueTrigger own = TriggerFor(drink);
+			string text = null;
+			if (own != DialogueTrigger.DRINK && Main.rand.NextFloat() < LevyConstants.DrinkOwnPoolShare) text = DialogueSystem.PickLine(own, rec, ctx);
+			return text ?? DialogueSystem.PickLine(DialogueTrigger.DRINK, rec, ctx) ?? DialogueSystem.PickLine("DRINK", rec, ctx, true);
+		}
+
+		/// <summary>Queues the cheers and lines for the levies a round just reached. <paramref name="drink"/> is the drink id (see <see cref="TriggerFor"/>), or -1 when it is not a drink.</summary>
+		public static void Begin(List<SoldierNPC> served, string commander, bool meal = false, int drink = -1)
 		{
 			if (LevyUtil.IsClient || served == null || served.Count == 0) return;
 			int now = (int)Main.GameUpdateCount;
@@ -60,7 +84,7 @@ namespace Levy.Content.Buffs
 				string mate = null;
 				if (served.Count > 1) { int o = Main.rand.Next(served.Count - 1); if (o >= i) o++; mate = served[o].Record.Name; }
 				var ctx = new DialogueContext { Player = commander, Comrade = mate };
-				string text = DialogueSystem.PickLine(DialogueTrigger.DRINK, s.Record, ctx) ?? DialogueSystem.PickLine("DRINK", s.Record, ctx, true);
+				string text = CheerLine(drink, s.Record, ctx);
 				if (string.IsNullOrEmpty(text)) continue;
 				Queue.Add(new Cue { Npc = s.NPC.whoAmI, RecordId = id, At = now + SpeakFirstTicks + k * SpeakStepTicks + Main.rand.Next(10), Speak = true, Text = text });
 			}

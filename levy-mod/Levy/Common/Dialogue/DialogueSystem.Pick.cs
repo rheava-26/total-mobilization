@@ -101,20 +101,50 @@ namespace Levy.Common.Dialogue
 		/// </summary>
 		internal static string Pick(DialogueTrigger trigger, SoldierRecord rec, DialogueContext ctx, SoldierNPC body, bool ignoreRepeat, int avoidId, out DialogueLine picked, bool mark = true)
 		{
-			return PickFromPool(PoolFor(trigger, ctx), rec, ctx, body, ignoreRepeat, avoidId, out picked, mark);
+			List<DialogueLine> pool = PoolFor(trigger, ctx);
+			// A boss with no annoyed lines of its own is answered from the generic annoyed boss set, never from the normal lines.
+			if (trigger == DialogueTrigger.BOSS && RosterFacts.Grumpy(rec) && !HasGrumpyLine(pool)) pool = DialogueTable.Get(DialogueTrigger.BOSS_SIGHTED);
+			return PickFromPool(pool, rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, GrumpyExempt(trigger));
+		}
+
+		/// <summary>The triggers the Blood Moon override leaves alone: the mutineers' fixed lines and the chat-log notices, which are not a levy speaking.</summary>
+		internal static bool GrumpyExempt(DialogueTrigger trigger)
+		{
+			switch (trigger)
+			{
+				case DialogueTrigger.MUTINY: case DialogueTrigger.MUTINY_BEGIN: case DialogueTrigger.MUTINY_REFUSE: case DialogueTrigger.MUTINY_CALM:
+				case DialogueTrigger.DEATH_MESSAGE: case DialogueTrigger.DESERTED: case DialogueTrigger.NO_ONE_LEFT:
+					return true;
+				default: return false;
+			}
+		}
+
+		private static bool HasGrumpyLine(List<DialogueLine> pool)
+		{
+			if (pool == null) return false;
+			for (int i = 0; i < pool.Count; i++) if ((pool[i].Cond & LineCond.Grumpy) != 0) return true;
+			return false;
+		}
+
+		/// <summary>Self-check hook: a line from a string-keyed pool (an officer's, a mutineer's) with the line that was picked, repeats allowed and nothing marked used.</summary>
+		internal static string PickKey(string poolKey, SoldierRecord rec, DialogueContext ctx, out DialogueLine picked)
+		{
+			return PickFromPool(DialogueTable.Get(poolKey), rec, ctx, null, true, -1, out picked, false, poolKey != null && poolKey.StartsWith("MUTINY", StringComparison.OrdinalIgnoreCase));
 		}
 
 		/// <summary>Self-check hook: the filled text of one line for this speaker, or null when its conditions or placeholders do not resolve.</summary>
 		internal static string RenderOne(DialogueLine line, SoldierRecord rec)
 		{
-			return PickFromPool(new List<DialogueLine> { line }, rec, null, null, true, -1, out _, false);
+			return PickFromPool(new List<DialogueLine> { line }, rec, null, null, true, -1, out _, false, false);
 		}
 
 		/// <summary>The shared picker: filter, placeholders and repeat cooldown over an explicit pool (a trigger's, a boss's or an officer's).</summary>
-		private static string PickFromPool(List<DialogueLine> pool, SoldierRecord rec, DialogueContext ctx, SoldierNPC body, bool ignoreRepeat, int avoidId, out DialogueLine picked, bool mark)
+		private static string PickFromPool(List<DialogueLine> pool, SoldierRecord rec, DialogueContext ctx, SoldierNPC body, bool ignoreRepeat, int avoidId, out DialogueLine picked, bool mark, bool grumpyExempt)
 		{
 			picked = null;
 			if (pool == null) return null;
+			// Blood Moon, female speaker: only the [grumpy] lines may be spoken (a pool without any stays silent for her).
+			bool grumpyOnly = !grumpyExempt && RosterFacts.Grumpy(rec);
 
 			int now = Now;
 			Fill.Begin(rec, ctx, body);
@@ -123,6 +153,7 @@ namespace Levy.Common.Dialogue
 			for (int i = 0; i < pool.Count; i++)
 			{
 				DialogueLine line = pool[i];
+				if (grumpyOnly && (line.Cond & LineCond.Grumpy) == 0) continue;
 				if (!FilterMatches(line.Filter, rec)) continue;
 				if (line.Id == avoidId) continue;
 				if (!ignoreRepeat && LineUsed.TryGetValue(line.Id, out int last) && Within(last, now, LevyConstants.LineRepeatCooldownTicks)) continue;
@@ -157,6 +188,7 @@ namespace Levy.Common.Dialogue
 		/// </summary>
 		private static List<DialogueLine> PoolFor(DialogueTrigger trigger, DialogueContext ctx)
 		{
+			if (!string.IsNullOrEmpty(ctx?.PoolKey)) { var own = DialogueTable.Get(ctx.PoolKey); if (own != null) return own; }
 			if (trigger == DialogueTrigger.BOSS)
 			{
 				string bossKey = ctx?.BossKey;

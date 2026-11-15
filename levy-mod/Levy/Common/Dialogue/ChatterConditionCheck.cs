@@ -12,7 +12,7 @@ namespace Levy.Common.Dialogue
 	/// A fake roster (a summoner, a 5-death levy, a 30-kill levy, low HP) is fed through the real line filter and every such line must resolve with the right text,
 	/// and must stay silent for a roster that does not meet its condition. Log only.
 	/// </summary>
-	public class ChatterConditionCheck : ModSystem
+	public partial class ChatterConditionCheck : ModSystem
 	{
 		public override void PostAddRecipes() => global::Levy.Common.Util.LoadSafe.Run(Core);
 
@@ -64,6 +64,7 @@ namespace Levy.Common.Dialogue
 						foreach (DialogueLine l in pool)
 						{
 							if (l.Cond == LineCond.None && (l.Needs & (LineNeeds.Tank | LineNeeds.Glutton)) == 0) continue;
+							if ((l.Cond & NewTagMask) != 0) continue; // the gender, class, world-progress and annoyed tags are checked on their own below
 							if (DialogueSystem.RenderOne(l, a) != null) failures.Add($"line '{(l.Text.Length > 28 ? l.Text.Substring(0, 28) : l.Text)}' resolved for a roster that does not meet its condition");
 						}
 
@@ -90,6 +91,7 @@ namespace Levy.Common.Dialogue
 						RosterFacts.TestHardmode = false; RosterFacts.TestGoblin = false; RosterFacts.TestBoss = false; RosterFacts.TestOfficer = null;
 						foreach (DialogueLine l in pool)
 						{
+							if ((l.Cond & NewTagMask) != 0) continue;
 							if (l.Cond == LineCond.Goblin || l.Cond == LineCond.BossFight || l.Cond == LineCond.HardmodeOfficer || (l.Needs & LineNeeds.Officer) != 0)
 								if (DialogueSystem.RenderOne(l, fit) != null) failures.Add($"line '{(l.Text.Length > 28 ? l.Text.Substring(0, 28) : l.Text)}' resolved with its condition off");
 						}
@@ -98,6 +100,7 @@ namespace Levy.Common.Dialogue
 					finally { RosterFacts.TestRoster = null; RosterFacts.TestHardmode = RosterFacts.TestGoblin = RosterFacts.TestBoss = null; RosterFacts.TestOfficer = RosterFacts.TestWorld = null; }
 					if (checkedLines < 21) failures.Add($"expected at least 21 roster-aware IDLE lines, found {checkedLines}");
 				}
+				CheckTagsAndOverride(failures, ref checkedLines);
 			}
 			catch (Exception e) { failures.Add("chatter condition check threw: " + e.GetType().Name + ": " + e.Message); }
 

@@ -34,7 +34,10 @@ namespace Levy.Common
 		MUTINY_BEGIN, MUTINY_REFUSE, MUTINY_CALM, // appended: the mutineers' lines now live in the dialogue file too
 		DRINK, // appended: a floating line over a levy when the army is served a round (see DrinkCheers)
 		FLIGHT_SHOUT, FLIGHT_FEAR, TAKEOFF, LANDING, // appended: a winged levy's shout in the air, its fear mid-flight, a complaint before take-off, relief on landing (SoldierNPC.FlightTalk.cs)
-		FIRESIDE, PASTIME, PASTIME_NIGHT // appended: talk by a campfire, talk at a kite or a cheer, and talk under the stars (Free Rein pastimes, SoldierNPC.Leisure.cs)
+		FIRESIDE, PASTIME, PASTIME_NIGHT, // appended: talk by a campfire, talk at a kite or a cheer, and talk under the stars (Free Rein pastimes, SoldierNPC.Leisure.cs)
+		LIFE_CRYSTAL, CHEST_OPENED, // appended: the commander uses a life crystal or fruit / opens a chest near the army (CommanderReactions)
+		ARMORY_GOT, ARMORY_WANT, ARMORY_BEST, ARMORY_WORST, // appended: a levy was handed better gear (floating, SoldierNPC.GearTalk.cs); right-click chat by where his kit ranks in the army
+		DRINK_ALE, DRINK_STOUT, DRINK_RUM, DRINK_FIZZ, DRINK_ICEBERG // appended: the DRINK line for one particular round (DrinkCheers.Begin knows which); DRINK is the fallback
 	}
 
 	/// <summary>Where a dialogue line is delivered.</summary>
@@ -46,5 +49,7 @@ namespace Levy.Common
 		public string Player, Comrade, Boss, Killer, Town, Wage;
 		/// <summary>Internal boss name for BOSS_x lookups (e.g. "EyeOfCthulhu").</summary>
 		public string BossKey;
+		/// <summary>An explicit pool key (an officer's own OFFICER_&lt;Key&gt;_MARCH) the line is drawn from instead of the trigger's pool, when the table has that pool.</summary>
+		public string PoolKey;
 	}
 }

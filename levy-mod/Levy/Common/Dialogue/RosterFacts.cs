@@ -31,8 +31,28 @@ namespace Levy.Common.Dialogue
 		}
 
 		// Test overrides (self-check only; null in play).
-		internal static bool? TestHardmode, TestGoblin, TestBoss;
+		internal static bool? TestHardmode, TestGoblin, TestBoss, TestBloodMoon;
 		internal static string TestOfficer, TestWorld;
+		/// <summary>Self-check only: a made-up world progress (null in play: the real flags are read).</summary>
+		internal static WorldStage? TestStage;
+
+		/// <summary>How far the world has come, for the [early] [postskeletron] [hardmode] [postplantera] [postmoonlord] tags.</summary>
+		public struct WorldStage { public bool Skeletron, Hardmode, Plantera, MoonLord; }
+
+		public static WorldStage Stage()
+		{
+			if (TestStage.HasValue) return TestStage.Value;
+			return new WorldStage { Skeletron = NPC.downedBoss3, Hardmode = Main.hardMode, Plantera = NPC.downedPlantBoss, MoonLord = NPC.downedMoonlord };
+		}
+
+		/// <summary>True while a Blood Moon is up.</summary>
+		public static bool BloodMoonNow() => TestBloodMoon ?? Main.bloodMoon;
+
+		/// <summary>
+		/// The Blood Moon override: a female levy or officer (the record's Male flag is false) speaks ONLY the [grumpy] lines for as long as the moon is up. Everything else she would say
+		/// (right-click chat and floating shouts alike) is swapped for the annoyed set; a pool with no [grumpy] line is silent for her.
+		/// </summary>
+		public static bool Grumpy(SoldierRecord r) => r != null && !r.Male && BloodMoonNow();
 
 		/// <summary>Tick the last main-boss fight ended (set by the roster when a boss dies).</summary>
 		public static int BossEndTick = int.MinValue / 2;
@@ -105,9 +125,40 @@ namespace Levy.Common.Dialogue
 			catch (Exception) { return false; }
 		}
 
+		/// <summary>A ranger: a ranged-class weapon in hand, else ranged armor on his back.</summary>
+		public static bool IsRanger(SoldierRecord r) => HasClass(r, DamageClass.Ranged);
+
+		/// <summary>A melee fighter: a melee-class weapon in hand, else melee armor on his back.</summary>
+		public static bool IsMelee(SoldierRecord r) => HasClass(r, DamageClass.Melee);
+
+		private static bool HasClass(SoldierRecord r, DamageClass want)
+		{
+			var g = r?.Gear;
+			if (g == null) return false;
+			try
+			{
+				if (g.HasWeapon) return WeaponClassifier.ItemDamageClass(g.Weapon) == want;
+				return ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs) == want;
+			}
+			catch (Exception) { return false; }
+		}
+
 		public static bool Matches(LineCond cond, SoldierRecord speaker)
 		{
 			if (speaker == null) return false;
+			if ((cond & LineCond.Grumpy) != 0 && !Grumpy(speaker)) return false;
+			if ((cond & LineCond.Female) != 0 && speaker.Male) return false;
+			if ((cond & LineCond.Ranger) != 0 && !IsRanger(speaker)) return false;
+			if ((cond & LineCond.Melee) != 0 && !IsMelee(speaker)) return false;
+			if ((cond & (LineCond.Early | LineCond.PostSkeletron | LineCond.Hardmode | LineCond.PostPlantera | LineCond.PostMoonlord)) != 0)
+			{
+				WorldStage w = Stage();
+				if ((cond & LineCond.Early) != 0 && (w.Skeletron || w.Hardmode)) return false;
+				if ((cond & LineCond.PostSkeletron) != 0 && !w.Skeletron) return false;
+				if ((cond & LineCond.Hardmode) != 0 && !w.Hardmode) return false;
+				if ((cond & LineCond.PostPlantera) != 0 && !w.Plantera) return false;
+				if ((cond & LineCond.PostMoonlord) != 0 && !w.MoonLord) return false;
+			}
 			if ((cond & LineCond.Summoner) != 0 && !IsSummoner(speaker)) return false;
 			if ((cond & LineCond.NonSummonerWithSummoner) != 0 && (IsSummoner(speaker) || !ArmyHasSummoner(speaker))) return false;
 			if ((cond & LineCond.Fragile) != 0 && !MostFragile()) return false;
@@ -136,6 +187,48 @@ namespace Levy.Common.Dialogue
 			int low = 0;
 			for (int i = 0; i < list.Count; i++) if (list[i].MaxHp < FragileHp) low++;
 			return low * 2 > list.Count;
+		}
+
+		// ---- where a levy's kit ranks in his army (ARMORY_BEST / ARMORY_WORST / ARMORY_WANT) ----
+		public enum KitRank : byte { None = 0, Best, Worst, Below }
+		/// <summary>The army needs at least this many standing regulars before anyone can be called the best or worst equipped.</summary>
+		public const int KitRankMinArmy = 4;
+		/// <summary>A levy is "below" when his kit is worth under this share of the army's average.</summary>
+		public const float KitBelowShare = 0.6f;
+
+		/// <summary>What the worn kit would sell for: the weapon, the armor and the accessories at their base value. Class-neutral, and readable from the snapshot a client holds.</summary>
+		public static long KitValue(SoldierRecord r)
+		{
+			var g = r?.Gear;
+			if (g == null) return 0;
+			long v = 0;
+			void Add(Item it) { if (it != null && !it.IsAir && it.type > 0 && it.type < ItemLoader.ItemCount) v += ContentSamples.ItemsByType[it.type].value; }
+			Add(g.Weapon); Add(g.Head); Add(g.Body); Add(g.Legs);
+			if (g.Accessories != null) foreach (Item a in g.Accessories) Add(a);
+			return v;
+		}
+
+		/// <summary>Where this levy's kit stands among the regulars of his own commander (reserves and the fallen left out). None when the army is too small or the gap too thin to say.</summary>
+		public static KitRank KitStanding(SoldierRecord speaker)
+		{
+			var list = Roster;
+			if (list == null || speaker == null || speaker.Kind != SoldierKind.Regular) return KitRank.None;
+			int n = 0; long total = 0, best = long.MinValue, worst = long.MaxValue;
+			for (int i = 0; i < list.Count; i++)
+			{
+				SoldierRecord o = list[i];
+				if (o.Reserve || o.Dead || o.CommanderName != speaker.CommanderName) continue;
+				long v = KitValue(o);
+				n++; total += v;
+				if (v > best) best = v;
+				if (v < worst) worst = v;
+			}
+			if (n < KitRankMinArmy || best <= 0) return KitRank.None;
+			long mine = KitValue(speaker);
+			if (mine == best && best > worst * 1.25) return KitRank.Best;
+			if (mine == worst && best > worst * 1.25) return KitRank.Worst;
+			if (mine < total / (float)n * KitBelowShare) return KitRank.Below;
+			return KitRank.None;
 		}
 
 		/// <summary>The levy with the most deaths (alive or dead), when it is at least 3 and not the speaker.</summary>

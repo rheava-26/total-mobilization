@@ -54,6 +54,8 @@ namespace Levy.Common.Officers
 		public int NpcType;
 		/// <summary>Localization key stem under Mods.Levy.Officers.Kit: "{Key}.Name" is the role line, "{Key}.Desc" the 1-4 sentence kit description shown in the menu.</summary>
 		public string Key;
+		/// <summary>The town NPC is a woman: her avatar's record is female, so the Blood Moon override gives her the annoyed lines (see RosterFacts.Grumpy).</summary>
+		public bool Female;
 		/// <summary>Wage and commission-fee multiplier on top of <see cref="LevyConstants.Officer.WageMult"/> (1 = standard). Bigger kits cost more.</summary>
 		public float CostMult = 1f;
 		/// <summary>Taunt weight for enemy targeting (see <see cref="LevyConstants.Officer.NurseAggro"/>).</summary>

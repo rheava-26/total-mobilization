@@ -201,6 +201,7 @@ namespace Levy.Common.Testing
 			string only = Environment.GetEnvironmentVariable("LEVY_OFFICERWORLD_ONLY"); // lab switch: "sweep" runs only the creature sweep (with LEVY_OFFICERWORLD_TYPES = comma-separated NPCID names added to it)
 			if (only == "audit") { AuditAll(); return; }
 			if (only == "churn") { ClothierChurn(); return; }
+			if (only == "core") { AuditCore(); return; } // lab: the aim audit's core set alone (LEVY_AUDIT_TYPES narrows it, LEVY_AUDIT_REPEAT=N runs each type N times)
 			if (only != "sweep") { RosterChecks(); ClothierScenario(); ZoologistScenario(); ClothierChurn(); AuditCore(); }
 			Sweep();
 		}
@@ -345,6 +346,9 @@ namespace Levy.Common.Testing
 
 			// Bestiary filter: with enough entries unlocked the pick is only from them; with none, the stage pool
 			int st = 4;
+			// "thin" is set up here, not assumed: the checks before this one fight (a Zoologist's creature, the Clothier's squad, the Whip and the Mobility checks' levies kill what they meet), and every kill, sighting and chat unlocks
+			// Bestiary entries in the world's tracker. This world is a throwaway copy that is never saved.
+			try { Main.BestiaryTracker.Reset(); } catch (Exception e) { Note("could not reset the Bestiary: " + e.Message); }
 			var nothing = ConjureRoster.BeastCandidates(st, true, out bool usedNone);
 			var all = ConjureRoster.BeastCandidates(st, false, out _);
 			Check("Zoologist: with a thin Bestiary she falls back to the whole stage pool", !usedNone && nothing.Count == all.Count);

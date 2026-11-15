@@ -19,6 +19,8 @@
 - **Dialogue APPROVED by Eve except battle shouts:** make them punchy and enthusiastic ("Enemy incoming! Open fire!", "Die, monster!", "I'm getting paid for this!"), not quirky. `dialogue4` builder is rewriting the combat shout pools (incl. grumpy and officer fight lines). It goes into 3.0 if done in time, otherwise 3.0.1.
 
 ## ⏸ RESUME HERE (Eve near usage limit, ~18:30 UTC 11-15)
+
+- 2026-11-15: **3.0.0 SENT to Eve** (both boots exc=0, 0 FAIL; shipworld was still running at send — check its result and tell Eve if anything failed). NEXT: merge dialogue4 (b45a2b3, includes dialogue3) → ship 3.0.1. Then the Fixed-replays artifact + the 3.0 battery.
 1. Check `verify-pre30.log` (scratchpad; serial shipboth on b672e07, still at build 2.0.67).
 2. projparity: waiting on the WoF fix ("the wall hurts the levies" FAIL). Merge when pushed.
 3. dialogue4: punchy shouts on top of dialogue3. Merge when pushed. dialogue3 is approved apart from the shouts.

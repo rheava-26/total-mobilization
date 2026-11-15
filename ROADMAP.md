@@ -14,6 +14,16 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🔧 destroyerdrop MERGED (42f6698)
+- **Destroyer drop = noise, not mobslots.** The same seed doesn't repeat a fight (18/40 seeds agree); 40-fight arms can't resolve <~20 points.
+  - Slots on 18.8% vs off 26.2% over 160 fights each (p=0.14), with batch-to-batch spread as large.
+  - Boots ruled out (only 5/34 levies wear them; removing them changes nothing).
+  - Stats, speed and contact frames are identical.
+  - **Lesson for the 100-fight battery: we need ≥100 per arm to see ~10-point effects.**
+- **Prime/Calamitas Clone contact doubling is from the shot-veto fix:** contact hits per touch doubled (Prime 0.73→1.59, Calamitas Clone 0.45→0.74), so 1-damage shot hits mess up the immunity bookkeeping (SoldierNPC.AfterHit). Calamitas Clone Master+Death went 19/20 → 5/20. Handed to projparity (per-slot immunity parity).
+- Fixed: Ice Rod Ice Block Projectile.Kill reading tile row -1 above the world (UseGuard.KeepProbeInWorld); Moon Lord core AIOverride nulled by Calamity's SendExtraAI on the kill tick (compat restores it). Checks mlkill/killedge in BossBugs.
+- Lab switch LEVY_MOBSLOTS=0.
+
 ## ✅ Eve's parity decisions (11-15 afternoon)
 - Knockback ON by player rules (projparity).
 - Calamity defense damage applies to levies (projparity).

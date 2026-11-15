@@ -239,6 +239,22 @@ namespace Levy.Common.Recording
 				FightRecAuto.TestMode = FightRecMode.BossFights; FightRecAuto.ClearCooldown(); Step(3, p, null);
 				TwinsAndSpite(p, cx, spawned);
 
+				// ---------- 1c. a boss is killed and other bosses leave in the same moment (Moon Lord's hands and head go with the core, the Lunar Pillars his cousin's death spawns are purged a tick later): still "won"
+				FightRecAuto.TestMode = FightRecMode.BossFights; FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int kA = SpawnBoss(cx), kB = SpawnBoss(cx, NPCID.KingSlime);
+				Step(40, p, kA);
+				Chk(FightRecorder.On, "Boss fights starts on two bosses at once");
+				ScriptHits(p, kA, 200);
+				FightRecorder.NoteBossKill(Main.npc[kA]); Main.npc[kA].life = 0; Main.npc[kA].active = false;   // the one that is killed
+				Main.npc[kB].active = false;                                                                   // the one that vanishes with it (no OnKill, life untouched)
+				int kP = SpawnBoss(cx, NPCID.LunarTowerSolar); One(p, -1, 0); Main.npc[kP].active = false;     // a boss-class NPC the kill spawned, purged a tick later
+				StepUntilStopped(p, -1, 1500);
+				string f1c = FightRecorder.LastResult;
+				Chk(f1c != null && Regex.IsMatch(Path.GetFileName(f1c), @"_won\.levyrec$"), "a kill that other bosses vanish with is a won fight, not a despawn (" + Path.GetFileName(f1c ?? "none") + ")");
+				if (f1c != null) { var l1c = ReadLines(f1c, true, out _); Chk(l1c.Exists(l => l.Contains("\"e\":\"bdeath\"") && l.Contains("\"final\":1")) && !l1c.Exists(l => l.Contains("\"e\":\"bdespawn\"") && l.Contains("\"final\":1")), "the final end event is a bdeath"); }
+				for (int q = 0; q < Main.maxNPCs; q++) if (Main.npc[q].active && !(Main.npc[q].ModNPC is SoldierNPC) && !Main.npc[q].friendly && !Main.npc[q].townNPC) Main.npc[q].active = false;
+				Step(3, p, null);
+
 				// ---------- 2. All fights: the skirmish starts it, it ends 5 s after the adds are gone, commander death makes it "lost"
 				FightRecorder.MaxFolderBytes = 0;
 				FightRecAuto.TestMode = FightRecMode.AllFights; FightRecAuto.ClearCooldown(); Step(3, p, null);

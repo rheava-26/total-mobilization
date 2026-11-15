@@ -547,6 +547,9 @@ namespace Levy.Common.Testing
 				if (placed >= accSlots) break;
 				Item it = CrMake(an);
 				int sl = SoldierGear.SlotAcc0 + placed;
+				// wings and movement boots have their own slots (the mobility-slots rule); the rest of a kit is accessories
+				if (gear.CanHold(SoldierGear.SlotWings, it)) { gear.Set(SoldierGear.SlotWings, it); gear.SetLocked(SoldierGear.SlotWings, true); continue; }
+				if (gear.CanHold(SoldierGear.SlotBoots, it)) { gear.Set(SoldierGear.SlotBoots, it); gear.SetLocked(SoldierGear.SlotBoots, true); continue; }
 				if (!gear.CanHold(sl, it)) throw new Exception("levy cannot wear accessory " + an);
 				gear.Set(sl, it); gear.SetLocked(sl, true); placed++;
 			}

@@ -77,12 +77,15 @@ report() { # $1 = label, $2 = run dir
   echo "HitParity: PASS=$(grep -c -F '[HitParity] PASS ' "$L") FAIL=$(grep -c -F '[HitParity] FAIL ' "$L")"
   grep -F "[HitParity] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[HitParity] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
+  echo "BossBugs: PASS=$(grep -c -F '[BossBugs] PASS ' "$L") FAIL=$(grep -c -F '[BossBugs] FAIL ' "$L")"
+  grep -F "[BossBugs] self-check pass=" "$L" | sed 's/^/  /'
+  grep -F '[BossBugs] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
   echo "TileSweep: PASS=$(grep -c -F '[TileSweep] PASS ' "$L") FAIL=$(grep -c -F '[TileSweep] FAIL ' "$L")"
   grep -F "[TileSweep] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[TileSweep] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
   [ -z "$(grep -F '[MechWorld] self-check pass=' "$L")" ] && echo "  !! no MechWorld summary line (check did not finish; see $2/tml/boot.out)"
   echo "other failures (fail=[1-9] / FAILURE / !!!), known summon-staff pick failure excluded:"
-  grep -E 'fail=[1-9]|FAILURE|!!!' "$L" | grep -v -E "$KNOWN_FAIL_RE" | grep -v -F -e '[MechWorld] FAIL ' -e '[SummonWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' | sed 's/^/  /' | head -20
+  grep -E 'fail=[1-9]|FAILURE|!!!' "$L" | grep -v -E "$KNOWN_FAIL_RE" | grep -v -F -e '[MechWorld] FAIL ' -e '[SummonWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' -e '[BossBugs] FAIL ' | sed 's/^/  /' | head -20
   grep -E "$KNOWN_FAIL_RE" "$L" | head -1 | sed 's/^/  (known, excluded) /'
   local ex; ex=$(grep -c -E -i "$EXC_RE" "$L"); echo "exceptions: $ex"
   grep -E -i "$EXC_RE" "$L" | head -6 | cut -c1-220 | sed 's/^/  /'

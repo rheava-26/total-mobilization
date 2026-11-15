@@ -21,6 +21,11 @@
 - Implement the staged hooks: LIFE_CRYSTAL, CHEST_OPENED, ARMORY_GOT/WANT/BEST/WORST, per-drink triggers, world-tier tags, [ranger]/[melee].
 - Restore messy shout energy (lead's note) and fix the duplicate line.
 - Review doc 2 goes to Eve before anything ships.
+- **dialogue3 DONE (branch dialogue3, 491f37d; NOT merged, awaiting Eve's listen).** Review doc 2 sent (scratchpad/dialogue_review2.md).
+  - 1794 lines; 17 officers voiced like their NPC; 28 gods lines.
+  - Blood Moon: female levies plus Nurse, Dryad, Zoologist and Princess speak only [grumpy] lines.
+  - Live hooks: CommanderReactions (life crystal/chest), GearTalk (ARMORY_GOT), per-drink cheers; tags [early]…[postmoonlord], [ranger]/[melee]. Shouts' messy energy restored.
+  - Untested live: CommanderReactions, GearTalk, per-drink selection (all try/catch). Watch on first play.
 
 ## 🎲 Eve 11-15 ~16:15
 - Approved the spawn-tick fix (Eve: "it might just be levies losing, then the boss targeting the player"; the builder must confirm which).

@@ -6,6 +6,12 @@
 
 ---
 
+## 🚢 2.0.65 SHIPPED (11-15 ~05:40, sent to Eve) = mobslots (round 2) + fieldfix
+- shipboth 453 s: vanilla boot exc=0 (known summon-staff only); Calamity boot exc=0 failN=0 compat=1. World checks: 0 exceptions in both halves, both runs.
+- Flaky checks (passed in one of two runs): SummonWorld Hornet Staff "enemy hurt (0)" (run 1 only); FieldFix militia and regular-vs-boss damage checks read 0 under load (3 of 3 runs had one or more); MobWorld "Angel flies longer than Fledgling" measured airborne ticks 34 vs 122 once (Calamity run 2; behaviour-measured; the stat wing time is right).
+- **TODO:** make the FieldFix damage checks, the MobWorld flight measure, FollowRowsWorld timing and the OFFICERKIT check deterministic, and widen the ship grep to "CHECK FAIL". Investigate the Kite NRE (2.0.64 run 1).
+- Still running: `hmreplays` (Destroyer/Aquatic Scourge baseline battery, then the hardmode sweep). Waiting on Eve: dialogue draft review, utility-shoe call (lead chose: utility shoes stay accessories), last-stand idea, pylon sentence, female blood-moon line.
+
 ## 🚢 2.0.64 SHIPPED (11-15 04:50, sent to Eve)
 - shipboth 570 s:
   - Vanilla boot exc=0 (known summon-staff pick only). Calamity boot exc=0 failN=0 compat=1.

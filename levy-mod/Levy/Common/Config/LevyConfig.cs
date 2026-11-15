@@ -78,8 +78,9 @@ namespace Levy.Common.Config
 		// ---- Hooks ------------------------------------------------------------------------------------------
 		[Header("Hooks")]
 		[DefaultValue(true)] public bool SoldiersUseHooks;
-		[DefaultValue(false)] public bool SoldiersTakeFallDamage;
-		[DefaultValue(false)] public bool SoldiersTakeTileHazards;
+		[DefaultValue(true)] public bool SoldiersTakeFallDamage;
+		[DefaultValue(true)] public bool SoldiersTakeTileHazards;
+		[DefaultValue(false)] public bool SoldiersCanDrown;
 		[DefaultValue(true)] public bool LeviesSitWhenIdle;
 		[DefaultValue(true)] public bool AmbientChatter;
 		[Range(60, 600)] [DefaultValue(200)] public int FreeReinRadius;

@@ -510,6 +510,11 @@ Mods: {
 					Tooltip: Levies take fall damage by the player's rules. Wings, a Lucky Horseshoe and water landings spare them.
 				}
 
+				SoldiersCanDrown: {
+					Label: Levies can drown
+					Tooltip: Levies lose breath under water and take damage when it runs out, by the player's rules. Gills and a Diving Helmet spare them.
+				}
+
 				AmbientChatter: {
 					Label: Idle chatter
 					Tooltip: Idle levies talk to a nearby comrade every 18 to 45 seconds. Needs a player within 70 tiles

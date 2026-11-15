@@ -39,10 +39,10 @@ namespace Levy.Common.Movement
 				if (!(sx10 > 0f && sx10 < 6f * 10f * 0.5f && sx40 > 6f * 10f)) fails.Add("an air step accelerates instead of jumping to speed");
 				var f = typeof(LevyConfig).GetField("SoldiersTakeFallDamage");
 				var dv = f?.GetCustomAttribute<DefaultValueAttribute>();
-				if (dv == null || !(dv.Value is bool b) || b) fails.Add("SoldiersTakeFallDamage must default to false");
+				if (dv == null || !(dv.Value is bool b) || !b) fails.Add("SoldiersTakeFallDamage must default to true");
 			}
 			catch (Exception e) { fails.Add("exception " + e.Message); }
-			if (fails.Count == 0) Levy.Instance?.Logger.Info("Levy mobility self-check: OK (double jump, hook path, air paths, fall damage default off)");
+			if (fails.Count == 0) Levy.Instance?.Logger.Info("Levy mobility self-check: OK (double jump, hook path, air paths, fall damage default on)");
 			else Levy.Instance?.Logger.Error("Levy mobility self-check FAILED: " + string.Join("; ", fails));
 		}
 	}

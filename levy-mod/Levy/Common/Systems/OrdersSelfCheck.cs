@@ -51,8 +51,8 @@ namespace Levy.Common.Systems
 				Check("2 the radio reaches a levy out of earshot", RosterSystem.OrderReaches(false, false, false, true), "OrderRadius " + LevyConstants.OrderRadius + " tiles -> every levy");
 				Check("2 radio rally covers a 8400-tile world", LevyUtil.WithinTiles(Vector2.Zero, new Vector2(8400f * 16f, 2400f * 16f), LevyConstants.RadioRallyRadius) && !LevyUtil.WithinTiles(Vector2.Zero, new Vector2(8400f * 16f, 0f), LevyConstants.RallyRadius));
 
-				// 3. tile hazards: off by default, spikes / thorns / meteorite / hellstone hurt by the player's tile sets
-				Check("3 hazards default off", !LevyConfig.Get.SoldiersTakeTileHazards);
+				// 3. tile hazards: on by default, spikes / thorns / meteorite / hellstone hurt by the player's tile sets
+				Check("3 hazards default on", LevyConfig.Get.SoldiersTakeTileHazards);
 				Check("3 spikes, wooden spikes, thorns, meteorite, hellstone hurt; dirt does not",
 					SoldierNPC.HurtsOnTouch(TileID.Spikes) && SoldierNPC.HurtsOnTouch(TileID.WoodenSpikes) && SoldierNPC.HurtsOnTouch(TileID.JungleThorns) && SoldierNPC.HurtsOnTouch(TileID.CorruptThorns)
 					&& SoldierNPC.HurtsOnTouch(TileID.CrimsonThorns) && SoldierNPC.HurtsOnTouch(TileID.Meteorite) && SoldierNPC.HurtsOnTouch(TileID.Hellstone) && !SoldierNPC.HurtsOnTouch(TileID.Dirt));

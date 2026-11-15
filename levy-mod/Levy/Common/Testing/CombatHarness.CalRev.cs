@@ -693,7 +693,7 @@ namespace Levy.Common.Testing
 			else if (!st.BossGone) { st.BossGone = true; st.EndTick = st.Tick; st.Result = BbIsBoss(run.Boss) ? (BbWon(run.Boss, st.BossLife, st.BossLifeMax) ? "WIN" : "DESPAWN") : e.life <= 0 ? "WIN" : "DESPAWN"; st.BossLife = BbIsBoss(run.Boss) ? 0 : Math.Max(0, e.life); }
 			int adds = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && st.AddTypes.Contains(Main.npc[i].type)) adds++;
 			st.AddsPeak = Math.Max(st.AddsPeak, adds); st.MaxAdds = st.AddsPeak;
-			CrSampleTick(st, e, bossAlive, adds); LeviProbe(st); HitParityLive(st);
+			CrSampleTick(st, e, bossAlive, adds); LeviProbe(st); BbTargetLog(st); HitParityLive(st);
 			if (run.Boss == "kslime" && st.Tick % 30 == 0)
 			{
 				// king slime probe: the crystal (Calamity's jewel) target class each half second: 0 levy, 1 player, 2 none. Totals go to the log at the end of the run through the counters below.

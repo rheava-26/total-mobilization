@@ -164,6 +164,22 @@ namespace Levy.Common.Testing
 			global::Levy.Levy.Instance.Logger.Info($"HARNESS-BB: zones tick {st.Tick} {st.Run.Boss} cmd[jungle={a.ZoneJungle} beach={a.ZoneBeach} snow={a.ZoneSnow} hallow={a.ZoneHallow}] slot255[active={b.active} jungle={b.ZoneJungle} beach={b.ZoneBeach} snow={b.ZoneSnow} hallow={b.ZoneHallow}] bossTarget={Main.npc[st.BossIdx].target} crag255={BbInBiome(b, "CalamityMod/BrimstoneCragsBiome")} sulph255={BbInBiome(b, "CalamityMod/SulphurousSeaBiome")} crag0={BbInBiome(a, "CalamityMod/BrimstoneCragsBiome")}");
 		}
 
+		private static readonly bool BbTgtLogOn = Environment.GetEnvironmentVariable("LEVY_CR_TGTLOG") == "1";
+		/// <summary>LEVY_CR_TGTLOG=1: once a second, one line per boss part: who it targets and what Levy's targeting rules say about it (downed, spectator hidden, allowlisted, owner).</summary>
+		private static void BbTargetLog(CrState st)
+		{
+			if (!BbTgtLogOn || !BbIsBoss(st.Run.Boss) || st.Tick % 60 != 5) return;
+			var sb = new System.Text.StringBuilder();
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i]; if (!n.active || !(n.type == st.BossType || st.PartTypes.Contains(n.type))) continue;
+				var d = global::Levy.Common.Globals.LevyNpcData.Of(n);
+				bool undowned = global::Levy.Common.Targeting.EnemyTargeting.IsUndownedBoss(n), allow = global::Levy.Common.Targeting.EnemyTargeting.IsAllowlisted(n), dk = global::Levy.Common.Boss.BossDownedSystem.IsBossDowned(n);
+				sb.Append($" [{CrNpcName(n.type)}#{i} tgt={n.target} lock={d.SoldierTarget} undowned={undowned} allow={allow} downedKey={dk} owner={d.BossOwner}]");
+			}
+			global::Levy.Levy.Instance.Logger.Info($"HARNESS-TGT: t={st.Tick}{sb}");
+		}
+
 		private static void BbCensus(CrState st)
 		{
 			var g = new SortedDictionary<int, (int n, long sumMax, int minMax, int maxMax, int linked)>();

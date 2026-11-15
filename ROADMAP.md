@@ -6,6 +6,14 @@
 
 ---
 
+## 🔁 hmbattery2 DONE (11-15, branch `hmbattery2`, tooling only): hardmode battery rerun after the shot-veto fix. Results: levy-mod/lab/hmbattery2/RESULTS.md
+- Projectiles land (Moon Lord 13.9k damage / 681 hits, Destroyer lasers 80/80). 344 fights (Destroyer 140, Aquatic Scourge 20, sweep 184 incl. Deerclops) + 120 control fights. No aggregate change: 22 shared bosses Master+Death 64/87 -> 62/88 wins, Expert+Rev 82/88 -> 82/88; projectile damage taken per fight 24 -> 1262. Moon Lord and Aquatic Scourge slower (90 -> 113 s, 114 -> 147 s), still 0 deaths.
+- **Destroyer baseline 38% -> 18% is NOT the veto** (veto-on control on the new build 10%). Ladder: OLD code re-run 30%, +bosshitbox 25%, +fieldfix 30%, HEAD veto-on 10%, HEAD 18%. The drop sits between the commit before the Wings/Boots slots and HEAD (mobslots + harness now filling the slots). Open: a MobilitySlots-off A/B if Eve wants it pinned. Also Plantera / Skeletron Prime / Calamitas Clone Master+Death look harder (contact damage up, n=4).
+- Harness difference to remember: since mobslots the harness puts wings and boots in the Wings/Boots slots (an accessory slot refuses them); the OLD run had them in accessory slots.
+- Recorder: spite (kind 3) never appears in the harness (0 of 344 fights); the old merged target field was the levy lock.
+- Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
+- Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
+
 ## 🚢 2.0.66 SHIPPED (11-15 ~08:55, sent to Eve): bossbugs. Vanilla/Calamity boot exc=0. World: BossBugs 25/0 and 36/0. Only failures were the known race flakes (SummonWorld Hornet, FieldFix). The exc=5 is the harmless /proc/<pid>/stat read race.
 - **checkfix MERGED after it (f5ee5e6)**; the shipworld.sh conflict was resolved to fail_lines plus the BossBugs exclusion. Verified on the merged state: vanilla and Calamity boots exc=0; all world checks pass; 0 FAIL lines and 0 exceptions in both halves (first fully clean ship signal). Battery rerun (hmbattery2) launched.
 

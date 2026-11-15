@@ -146,7 +146,7 @@ namespace Mechanization.Common
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
-				if (n.active && !n.friendly && !n.townNPC && n.ModNPC == null && n.lifeMax < 100000) n.active = false;
+				if (global::Levy.Common.Testing.WorldStep.IsNaturalHostile(n) && n.lifeMax < 100000) n.active = false;
 			}
 		}
 

@@ -99,6 +99,7 @@ namespace Levy.Common.Testing
 			{
 				if (!avatar.NPC.active || avatar.NPC.life <= 0) { town.active = false; Step(2); town = Commission(NPCID.Merchant, 0, out avatar); if (avatar == null) break; }
 				var r = AuditType(avatar, t, n, ai, ai == NPCAIStyleID.Caster ? FightTicks * 3 : FightTicks, ai == NPCAIStyleID.Caster ? IdleTicks * 2 : IdleTicks);
+				if (r.ChildrenReachedPlayerIdle > 0) Note($"aim audit: {n}: a child still in the air after the enemy was gone flew to the creature's post beside the commander ({r.ChildrenReachedPlayerIdle} ticks within 40 px of her; friendly, not a failure)");
 				run++; if (!r.Pass) { bad.Add(n + " [" + r + "]"); _mod.Logger.Info("[OfficerWorld] OBSERVED audit failure: " + r); }
 			}
 			Note($"aim audit core set: {run} creature types, {run - bad.Count} pass");

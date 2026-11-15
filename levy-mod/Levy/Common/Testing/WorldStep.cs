@@ -20,6 +20,18 @@ namespace Levy.Common.Testing
 	{
 		private static MethodInfo _update;
 
+		/// <summary>
+		/// A hostile NPC the world spawned on its own (a zombie, a slime, and with Calamity loaded its modded spawns): not friendly, not a town NPC, not one of this army's own NPC types (Levy, Mechanization, Warbands).
+		/// With an active player in it the world spawns these near her at random, and the army fights whatever hostile it sees, so a check that needs a quiet arena removes them each tick (the checks' own pinned targets are
+		/// told apart by the caller).
+		/// </summary>
+		public static bool IsNaturalHostile(NPC n)
+		{
+			if (!n.active || n.friendly || n.townNPC) return false;
+			string mod = n.ModNPC?.Mod.Name;
+			return mod != "Levy" && mod != "Mechanization" && mod != "Warbands";
+		}
+
 		/// <summary>True once a check has begun stepping the world on this test server: the server loop leaves the player slots alone from then on (cleared again when the world unloads).</summary>
 		public static volatile bool Holding;
 

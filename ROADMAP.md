@@ -14,9 +14,31 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🔍 PARITY AUDIT MERGED (a49dc30; levy-mod/docs/PARITY_AUDIT.md)
+- **Gaps, ranked:**
+  1. Debuffs/DoT never reach levies (zero debuffs in 214 recordings; contact skips OnHitPlayer; Calamity ActsLikeTownNPC blocks debuffs).
+  2. **Contact damage per hit is 3–7× the commander's** (Anahita 877 vs 166, Retinazer 898 vs 157, Spore 1,134 vs 156); contact is 81% of levy damage taken. Cause unexplained.
+  3. Calamity damage-taken hooks aren't run (armor DR, shields, parries, dodges).
+  4. Projectile per-slot immunity is folded into one window.
+  5. No knockback taken.
+  6. Environment: fall/tile hazards off by default, no drowning, lava is a flat strike.
+  7. Healing differs (flat 1 HP/s regen after 5 s; 30 s potion cadence).
+  8. Minor gear-pass skip.
+  9. Damage dealt has hidden multipliers: base grade 0.8×, Shaken 0.6×, grade aim jitter, WhipRealDamageMult 4.0.
+  10. A recorder anomaly (id -1 triple strikes).
+- **Together with projectile damage ~1:** dashes murdered levies (contact 3–7× too strong) and bullets tickled (~1). Exactly Eve's playtest read.
+- **Gaps 1–4 assigned to `projparity`** (one damage-taken pipeline via the dummy's player sequence).
+- **Gaps 5, 6, 7 and 9 are design calls for Eve.**
+- **Retune HpScalePerCp after parity lands.**
+
+## ⏸ 14:55 UTC: all 5 builders hit the 5-hour usage limit (resets 17:30 UTC)
+- destroyerdrop, spectarget, projparity, parityaudit and redemption were all cut off mid-work. Their worktrees and labs are intact (git worktree list; /home/user/lab/*). No orphan tML processes.
+- Eve renewed her limit (~15:00 UTC): all five resumed right away via SendMessage (≤1 tML each); the 17:35 check-in was cancelled. Her point stands: a reminder can't fire usefully while I'm the one rate-limited.
+
 ## 🎯 Eve caught it again: projectiles "tickle" levies (projectile damage parity)
 - Calamitas Clone Master+Death: darts, explosions, fireballs and bolts hit levies for exactly 1 damage (hundreds of hits/fight); Cataclysmic Flame ~10. Expert+Rev darts ~6. A player takes ~100+. Destroyer and WoF lasers also do 1.
 - Contact has player parity (bosshitbox), projectiles don't: the NPC damage path skips the difficulty multipliers and Calamity's scaling, and uses NPC defense. **All battery results are still generous for projectile bosses.** Rerun after the fix; the 100-fight battery waits for this.
+- Eve: "this is why projectiles felt insignificant to levies and dashes murdered them". Yes: contact had player parity (or worse, before bosshitbox) while projectiles did ~1. She asked for a sweep for other inconsistencies → `parityaudit` builder (an audit: debuffs/DoT, non-boss damage, defense/DR, damage dealt incl. WhipRealDamageMult 4.0, i-frames/knockback, healing, boss-side scaling, mobility); doc at levy-mod/docs/PARITY_AUDIT.md.
 - `projparity` builder: projectile damage to a levy = what a player with the levy's stats takes (A/B switch LEVY_PROJPARITY). It also makes levies obey Calamity ArenaWallSystem boxes (CalClone, SCal; Eve OK'd: "fix the confinement box").
 
 ## 🎯 Eve caught it: Leviathan targets the commander (lab replays)

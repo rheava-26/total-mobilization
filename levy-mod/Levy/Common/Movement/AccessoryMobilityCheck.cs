@@ -55,11 +55,8 @@ namespace Levy.Common.Movement
 				Check("Tiger Climbing Gear outranks Shoe Spikes, Angel Wings outrank both", AccessoryMobility.Value(tiger) > AccessoryMobility.Value(spikes) && AccessoryMobility.Value(wings) > AccessoryMobility.Value(ninja) && AccessoryMobility.Value(wings) > AccessoryMobility.Value(tiger));
 
 				var teS = new ArmoryTE(); teS.Deposit(Make(ItemID.BandofRegeneration)); teS.Deposit(Make(ItemID.ShoeSpikes));
-				var recS = new SoldierRecord { Id = 3, Grade = Grade.Levy };
-				var gotS = teS.TakeAccessory(recS);
-				Check("an accessory slot takes the band, not the Shoe Spikes (spikes are shoes: they go in the boots slot)", gotS != null && gotS.type == ItemID.BandofRegeneration, gotS?.Name ?? "null");
-				var gotB = teS.TakeMobility(recS, false);
-				Check("armory hands a levy Shoe Spikes for the boots slot when nothing else in stock moves", gotB != null && gotB.type == ItemID.ShoeSpikes, gotB?.Name ?? "null");
+				var gotS = teS.TakeAccessory(new SoldierRecord { Id = 3, Grade = Grade.Levy });
+				Check("armory hands a levy Shoe Spikes first when nothing else in stock moves", gotS != null && gotS.type == ItemID.ShoeSpikes, gotS?.Name ?? "null");
 
 				var te = new ArmoryTE();
 				te.Deposit(Make(ItemID.BandofRegeneration)); te.Deposit(Make(ItemID.CloudinaBottle)); te.Deposit(Make(ItemID.ObsidianShield));

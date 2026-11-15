@@ -67,7 +67,10 @@ namespace Levy.Common.Movement
 			check("no item is both wings and boots", both == 0, both.ToString());
 			check("Angel Wings, Fledgling Wings and the Jetpack are wings", new[] { ItemID.AngelWings, ItemID.CreativeWings, ItemID.Jetpack, ItemID.LongRainbowTrailWings }.All(t => MobilitySlots.IsWings(Make(t))));
 			check("Hermes, Rocket, Spectre, Lightning and Terraspark Boots are boots", new[] { ItemID.HermesBoots, ItemID.RocketBoots, ItemID.SpectreBoots, ItemID.LightningBoots, ItemID.TerrasparkBoots, ItemID.FlurryBoots }.All(t => MobilitySlots.IsBoots(Make(t))));
-			check("a shield, a bottle and a band are neither", new[] { ItemID.ObsidianShield, ItemID.CloudinaBottle, ItemID.BandofRegeneration, ItemID.ShinyRedBalloon }.All(t => !MobilitySlots.Is(Make(t))));
+			check("a shield, a bottle, a band and the utility shoes are neither", new[] { ItemID.ObsidianShield, ItemID.CloudinaBottle, ItemID.BandofRegeneration, ItemID.ShinyRedBalloon, ItemID.ShoeSpikes, ItemID.TigerClimbingGear, ItemID.Tabi, ItemID.MasterNinjaGear, ItemID.FrogLeg, ItemID.Flipper, ItemID.IceSkates, ItemID.WaterWalkingBoots, ItemID.FlowerBoots }.All(t => !MobilitySlots.Is(Make(t))));
+			var utility = new List<Item>(); for (int t = 1; t < ItemLoader.ItemCount; t++) if (ContentSamples.ItemsByType.TryGetValue(t, out Item us) && us != null && !us.IsAir && us.accessory && !us.vanity && us.shoeSlot > 0 && us.wingSlot <= 0 && !MobilitySlots.IsBoots(us)) utility.Add(us);
+			info($"UTILITY SHOES (shoeSlot > 0, no run speed or rocket flight; ordinary accessories) ({utility.Count}): " + string.Join(", ", utility.Select(i => (i.ModItem != null ? i.ModItem.Mod.Name + ":" : "") + i.Name)));
+			check("the Spectre, Lightning and Terraspark Boots stay boots although they also walk on water", MobilitySlots.IsBoots(Make(ItemID.TerrasparkBoots)) && MobilitySlots.IsBoots(Make(ItemID.WaterWalkingBoots)) == false);
 			var treads = FindModded("CalamityMod", "AngelTreads");
 			if (treads != null) check("Calamity's Angel Treads are boots", MobilitySlots.IsBoots(treads) && !MobilitySlots.IsWings(treads), $"shoeSlot={treads.shoeSlot}");
 			if (ModLoader.HasMod("ThoriumMod")) check("Thorium has boots classified", boots.Any(i => i.ModItem?.Mod.Name == "ThoriumMod"), boots.Count(i => i.ModItem?.Mod.Name == "ThoriumMod").ToString());
@@ -128,6 +131,16 @@ namespace Levy.Common.Movement
 				ArmoryTE.TestServed = new List<SoldierRecord> { levy };
 				te.IssueGear(levy);
 				check("a free accessory slot is left empty rather than given boots", levy.Gear.Boots.type == ItemID.LightningBoots && levy.Gear.Accessories.All(a => a.IsAir), $"{N(levy.Gear.Boots)} / [{Worn(levy)}]");
+			}
+			{ // Terraspark Boots in the boots slot and Master Ninja Gear in an accessory slot, both stocked
+				var te = new ArmoryTE(); te.Deposit(Make(ItemID.TerrasparkBoots)); te.Deposit(Make(ItemID.MasterNinjaGear)); te.Deposit(Make(ItemID.ShoeSpikes)); te.Deposit(Make(ItemID.BandofRegeneration));
+				var levy = new SoldierRecord { Id = 73, Grade = Grade.Champion };
+				ArmoryTE.TestServed = new List<SoldierRecord> { levy };
+				te.IssueGear(levy);
+				info($"Terraspark Boots + Master Ninja Gear stocked: boots [{N(levy.Gear.Boots)}] accessories [{Worn(levy)}]");
+				check("a levy with Terraspark Boots in his boots slot also wears Master Ninja Gear as an accessory", levy.Gear.Boots.type == ItemID.TerrasparkBoots && levy.Gear.Accessories.Any(a => a.type == ItemID.MasterNinjaGear), $"{N(levy.Gear.Boots)} / {Worn(levy)}");
+				var g = new SoldierGear();
+				check("utility shoes may be hand-placed in an accessory slot and are refused by the boots slot", g.CanHold(SoldierGear.SlotAcc0, Make(ItemID.MasterNinjaGear)) && !g.CanHold(SoldierGear.SlotBoots, Make(ItemID.MasterNinjaGear)));
 			}
 			{ // wings already worn: extra wings take no accessory slot
 				var te = new ArmoryTE(); te.Deposit(Make(ItemID.CreativeWings)); te.Deposit(Make(ItemID.BandofRegeneration));
@@ -234,7 +247,7 @@ namespace Levy.Common.Movement
 			// a kit written before the slots: wings and boots among the accessories, no wings / boots keys, the older slot count
 			var old = new SoldierGear();
 			old.Weapon = Make(ItemID.Musket);
-			old.Accessories[0] = Make(ItemID.ObsidianShield); old.Accessories[1] = Make(ItemID.AngelWings); old.Accessories[2] = Make(ItemID.SpectreBoots); old.Accessories[3] = Make(ItemID.BandofRegeneration); old.Accessories[4] = Make(ItemID.HermesBoots);
+			old.Accessories[0] = Make(ItemID.ObsidianShield); old.Accessories[1] = Make(ItemID.AngelWings); old.Accessories[2] = Make(ItemID.SpectreBoots); old.Accessories[3] = Make(ItemID.BandofRegeneration); old.Accessories[4] = Make(ItemID.HermesBoots); old.Accessories[5] = Make(ItemID.MasterNinjaGear);
 			old.SetLocked(SoldierGear.SlotAcc0 + 1, true); old.SetLocked(SoldierGear.SlotAcc0 + 2, true);
 			var tag = old.Save(); tag.Remove("wings"); tag.Remove("boots"); tag["slotCount"] = 16;
 			var ld = SoldierGear.Load(tag);
@@ -243,6 +256,7 @@ namespace Levy.Common.Movement
 			check("its best boots move to the boots slot", ld.Boots.type == ItemID.SpectreBoots && ld.Accessories[2].IsAir);
 			check("their hand-assigned locks move with them", ld.IsLocked(SoldierGear.SlotWings) && ld.IsLocked(SoldierGear.SlotBoots) && !ld.IsLocked(SoldierGear.SlotAcc0 + 1) && !ld.IsLocked(SoldierGear.SlotAcc0 + 2));
 			check("the other accessories stay where they were", ld.Accessories[0].type == ItemID.ObsidianShield && ld.Accessories[3].type == ItemID.BandofRegeneration && ld.Weapon.type == ItemID.Musket);
+			check("an old save's utility shoes (Master Ninja Gear) stay in their accessory slot", ld.Accessories[5].type == ItemID.MasterNinjaGear && ld.Boots.type != ItemID.MasterNinjaGear);
 			check("a second pair of boots stays put (the armory returns it on the gear check)", ld.Accessories[4].type == ItemID.HermesBoots);
 			var te = new ArmoryTE(); var rec = new SoldierRecord { Id = 72, Grade = Grade.Champion, Gear = ld };
 			ArmoryTE.TestServed = new List<SoldierRecord> { rec };

@@ -11,8 +11,12 @@ namespace Levy.Common.Movement
 		/// <summary>An accessory with a wing slot: vanilla and modded wings (Item.wingSlot is set by the vanilla table and by the mod's equip texture).</summary>
 		public static bool IsWings(Item it) => it != null && !it.IsAir && it.accessory && !it.vanity && it.wingSlot > 0;
 
-		/// <summary>An accessory with a shoe slot (Hermes to Terraspark Boots, Angel Treads, Thorium's boots, water walkers, skates). Never a pair of wings.</summary>
-		public static bool IsBoots(Item it) => it != null && !it.IsAir && it.accessory && !it.vanity && it.shoeSlot > 0 && it.wingSlot <= 0;
+		/// <summary>
+		/// Movement boots: an accessory with a shoe slot that makes the wearer run faster or gives rocket flight (Hermes to Terraspark Boots, Angel Treads, Thorium's boots), read as the delta a dummy shows wearing it
+		/// (<see cref="AccessoryMobility.IsRunner"/>). A shoe that only climbs, dashes, jumps, swims or walks on water (Shoe Spikes, Tabi, Master Ninja Gear, Frog Leg, Flipper, skates, water walkers) is an ordinary accessory.
+		/// A shoe that does both counts as boots. Never a pair of wings.
+		/// </summary>
+		public static bool IsBoots(Item it) => it != null && !it.IsAir && it.accessory && !it.vanity && it.shoeSlot > 0 && it.wingSlot <= 0 && AccessoryMobility.IsRunner(it);
 
 		/// <summary>Either one: such an item is never dealt into an ordinary accessory slot.</summary>
 		public static bool Is(Item it) => IsWings(it) || IsBoots(it);

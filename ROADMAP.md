@@ -14,6 +14,15 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🧭 Mod of Redemption audit MERGED (7f4285e; levy-mod/docs/redemption_compat_audit.md). EVE PLAYS IT BLIND: no Redemption names or text to Eve.
+- Loads clean on both toolchains.
+- Breaks:
+  - (1) two world-altering throwables (PlutoniumBomb, ToxicGrenade + BileLauncher) missed by the classifier;
+  - (2) Redemption marks 8 vanilla grenades/knives as ammo+notAmmo, so levies stop throwing them;
+  - (3) KS3 native-target AI crashes on target 300+ after unlock.
+- Unverified: HasValidTarget false at slot 255 (bosses may despawn); a spare/slay choice window levies could pre-empt; the Ritualist class; subworlds untested; a WhipReal Morning Star DPS drop.
+- **`redecompat` builder** is fixing all of it. General fixes too: notAmmo; the world-alter scanner's missed direct TileType write; modded UsesNewTargetting NPCs default to the flyer slot.
+
 ## 🔧 destroyerdrop MERGED (42f6698)
 - **Destroyer drop = noise, not mobslots.** The same seed doesn't repeat a fight (18/40 seeds agree); 40-fight arms can't resolve <~20 points.
   - Slots on 18.8% vs off 26.2% over 160 fights each (p=0.14), with batch-to-batch spread as large.

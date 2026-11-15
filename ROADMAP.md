@@ -42,6 +42,13 @@
 
 ## 🚢 2.0.67 SHIPPED (11-15 ~15:40): spectarget + destroyerdrop fixes. Serial shipboth 677 s: both boots exc=0; all world checks 0 exceptions. One FAIL: BossBugs spectarget, Calamity half: Spazmatism on the commander for 27/360 ticks at spawn (default target 0 before the first retarget). Sent back for a spawn-tick fix. The new `spectarget2` builder was BLOCKED: the permission classifier denied its `git checkout -B/-b spectarget2` (all variants), so no work was done. Not routed around; asked Eve to approve a rerun.
 
+## ✅ Curated replay page LIVE (sitecurate merged; main URL https://claude.ai/artifact/Q6aYA45u8MSxyB7VZxHSEH, v24)
+- 176 fights: Eve 44 + lab hardmode 114 (≤4W+4L+weird per boss, all at 2.0.66) + 3 Destroyer/Aquatic Scourge test fights + 15 outdated pre-HM.
+- Version and outdated badges come from manifest `current` + `eras` (current = "2.0.68 (not yet released)", so everything shows outdated).
+- To re-stamp after the parity release: edit data/manifest.json `current`/`eras` and republish only that file.
+- All 277 old files removed. One orphan may remain: one old file was in the listing but not in the manifest set.
+- Rebuild: curate_site.py (see the sitecurate report). The lab page (5bQWET74N12m4bYMbFxqqK) is still up as the full 2.0.66 archive; offered to delete.
+
 ## 🗂 Replay pages (Eve 11-15): why two pages? Curate, version-stamp, clear old
 - Two pages exist only because of the 511-file cap: the main one (Q6aYA45u8MSxyB7VZxHSEH: Eve's fights + old pre-HM labs) and the lab one (5bQWET74N12m4bYMbFxqqK: 2.0.66 hardmode battery).
 - `sitecurate` builder: ONE curated page on the main URL.

@@ -36,6 +36,7 @@ for run in map(Path, a.runs):
         if not mm: print("no meta in cell", nm, file=sys.stderr); continue
         slug, kit, pair, n, T = mm.groups()
         r = res.get((cid, seed), {}); result = (r.get("result") or "NORES").lower()
+        if result in ("nores", "missing"): continue   # a fight cut off by a stopped run
         d = dest / slug; d.mkdir(exist_ok=True)
         base = f"{slug}_{pair}_{kit}_s{seed}_{result}"; target = d / (base + ".levyrec"); i = 2
         while target.exists() and (str(run), target.name) not in have:

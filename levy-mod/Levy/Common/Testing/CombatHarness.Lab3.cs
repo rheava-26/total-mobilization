@@ -176,7 +176,7 @@ namespace Levy.Common.Testing
 				Mod.Logger.Info($"HARNESS-L3: arena '{kind}' built: sea {seaDepth} tiles deep, island floor row {CrF}, half-width {half}");
 				return;
 			}
-			for (int k = 1; k <= 5; k++)
+			for (int k = 1; k <= (kind.Contains("flat") ? 0 : 5); k++) // "flat" in the arena token (a3flat, a3flat@ocean): no platform rows (hmreplays battery)
 			{
 				int py = fy - rowGap * k; int gap0 = cx - half + 10 + (k * 41) % 150;
 				for (int x = cx - half + 6; x <= cx + half - 6; x++)

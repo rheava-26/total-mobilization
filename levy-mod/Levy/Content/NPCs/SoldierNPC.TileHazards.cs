@@ -41,11 +41,27 @@ namespace Levy.Content.NPCs
 			Collision.HurtTile hit = Collision.HurtTiles(NPC.position, NPC.width, NPC.height, Dummy);
 			if (hit.type < 0 || TileID.Sets.Suffocate[hit.type]) return; // suffocation tiles are the player's alone
 			int type = hit.type;
+			// Player.ApplyTouchDamage ends with the same rule: a tile in TouchDamageDestroyTile (jungle, corruption and crimson thorns) is broken by the touch. The one way the army ever breaks a tile.
+			if (TileID.Sets.TouchDamageDestroyTile[type]) BreakTouchedTile(hit.x, hit.y, type);
 			if (TileID.Sets.TouchDamageHot[type]) NPC.AddBuff(BuffID.OnFire, LevyConstants.TileHazardBurnTicks);
 			if (TileID.Sets.TouchDamageBleeding[type]) NPC.AddBuff(BuffID.Bleeding, Main.rand.Next(LevyConstants.TileHazardBleedMinTicks, LevyConstants.TileHazardBleedMaxTicks));
 			int damage = TileID.Sets.TouchDamageImmediate[type];
 			if (damage <= 0) return;
 			TakeHazardDamage(Main.DamageVar(damage, 0f), type);
+		}
+
+		/// <summary>Harness telemetry: touch-broken tiles.</summary>
+		internal int HazardBreaks;
+
+		/// <summary>The vanilla contact break: WorldGen.KillTile on the touched tile, and on a server the same kill-tile-no-item packet a client sends for its own touch. Only ever called for a TouchDamageDestroyTile tile.</summary>
+		private void BreakTouchedTile(int x, int y, int type)
+		{
+			if (!WorldGen.InWorld(x, y, 1)) return;
+			Tile t = Main.tile[x, y];
+			if (!t.HasTile || t.TileType != type) return;
+			WorldGen.KillTile(x, y, false, false, false);
+			HazardBreaks++;
+			if (Main.netMode == NetmodeID.Server && !Main.tile[x, y].HasTile) NetMessage.SendData(MessageID.TileManipulation, -1, -1, null, 4, x, y);
 		}
 
 		private void TakeHazardDamage(int damage, int tileType)

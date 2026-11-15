@@ -14,6 +14,11 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🎲 spectator3 MERGED
+- **Lost the bet:** Common/Potions/SpectatorBet.cs. Spectator (or the tick after it ends) + active boss + army seen alive this fight + no levy/militia alive + no manpower (BarracksTE.Manpower pools, reserves, mobilizable barracks) → KillMe with one of Eve's 5 lines. The Spectator tooltip gained "Fatal if your levies all fall to a boss".
+- **Spawn-tick lock not reproduced** (60+ downed runs, 0 commander ticks; the 27 ticks came after the 60-tick settle, not at spawn). The check is now 0-tolerance, keeps levies alive and logs alive count + WhyTrack reason on any commander tick. No production targeting change.
+- Full serial shipboth: 0 FAIL lines both halves; BossBugs 82/0 and 107/0.
+
 ## 🗣 Dialogue decisions (Eve 11-15) → `dialogue3` builder
 - Officers talk like the vanilla NPC they are (voice, emotions, expressions mimicked closely; style only, never vanilla lines).
 - Gods-agree lines at normal rate.

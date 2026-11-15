@@ -6,7 +6,17 @@
 
 ---
 
-## 🚢 2.0.64 (building, 11-15 early morning)
+## 🚢 2.0.64 SHIPPED (11-15 04:50, sent to Eve)
+- shipboth 570 s:
+  - Vanilla boot exc=0 (known summon-staff pick only). Calamity boot exc=0 failN=0 compat=1.
+  - Run 1 vanilla: player-safety, FollowRowsWorld (row scan 1.33 ms, a wall-clock bound under load ~19) and a one-off TileSweep NullReferenceException x24 on KiteBunnyCorrupt (silently caught; NEW, not in 2.0.63).
+  - Rerun: vanilla exc=0, all pass except the FollowRows timing. Calamity OfficerWorld aim audit 1/45 once (known load flake).
+- **OPEN:** the Kite NRE is intermittent and unreproduced. Investigate with the next builder. FollowRowsWorld's timing check is wall-clock, so make it deterministic like the recorder checks.
+- Eve's Plantera 21:03: she died with Plantera at 8,849/256,396 (3.5%). The army kept firing to 5,788, then Plantera despawned (vanilla, target dead). Raised with her as a design question: should the army be able to fight on after the commander falls, for already-downed bosses only?
+- Corrected with Eve: spore gas is NOT a line. Puffs fly out in random directions at up to ~7 tiles/s, don't collide with tiles, and last 15 s (13 s live), with a 2x2-tile hurtbox and 108 damage by Calamity's design. Her bigger-arena idea is the right lever.
+- `dialogue2` launched: a draft rewrite plus a TTS-friendly review doc for Eve; nothing ships until she approves.
+
+## (was) 2.0.64 building
 - **bosshitbox MERGED (40e1c9a):** levies take contact damage exactly where a player would. HostileContact runs the player's hit sequence (Calamity CanHitPlayer circles/states/cooldown slots) with per-slot immunity. Parity: 763,875 static positions plus 13.7–15.6M live positions, 0 mismatches after the fix (12,497 / 41,727 levy-only hits before).
   - Leviathan Expert+Rev: deaths 4.3 → 0.0 per fight, 15/15 wins.
   - Leviathan Master+Death: still 3/15 (dash and adds, not hitboxes).

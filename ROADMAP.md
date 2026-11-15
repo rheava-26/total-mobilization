@@ -14,6 +14,10 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🚀 Eve 11-15 ~18:00: SHIP NOW as Levy 3.0 (her weekly limit is close). Core bugs first, fluff waits.
+- Asked projparity (WoF fix or diagnosis) and levyrules (push what's proven) for a ~15-minute turnaround. Then merge, serial shipboth, ship 3.0.0.
+- dialogue3 is NOT in 3.0: Eve hasn't approved it yet.
+
 ## 🧭 redecompat MERGED
 - notAmmo thrown weapons. World-alter scanner catches ref-returning Tile.TileType writes (get_TileType + stind), dup and ref locals, and follows ProjectileType<T> into blasts (any mod). Redemption rows added to WorldAlterTable.tsv.
 - Modded UsesNewTargetting NPCs take the flyer slot by default (NativeSafeModdedTypes allowlist, empty).

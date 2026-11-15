@@ -440,7 +440,7 @@ def main():
             print("skip set %s: %s is not a directory" % (name, d), file=sys.stderr)
             continue
         idx = parse_index(os.path.join(d, "index.txt"))
-        files = sorted(f for f in os.listdir(d) if f.endswith(".jsonl") or f.endswith(".jsonl.gz"))
+        files = sorted(f for f in os.listdir(d) if f.endswith((".jsonl", ".jsonl.gz", ".levyrec")))
         ordered = [n for n in sorted(idx, key=lambda n: list(idx).index(n)) if n in files]
         ordered += [f for f in files if f not in ordered]
         fights = []

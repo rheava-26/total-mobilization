@@ -6,6 +6,12 @@
 
 ---
 
+## 🌿 EVE'S NOV 14 FIGHTS (2026-11-15, Drive folder "Levy Fights" only)
+- Pulled 30 .levyrec files from Drive "Levy Fights/recordings": Retinazer x4 won, Plantera x9 lost, Anahita x12 (3 won), Empress x5 lost. All Master+Death.
+- **Replay site updated** (v17, https://claude.ai/artifact/Q6aYA45u8MSxyB7VZxHSEH): new set "Your fights, Nov 14" first, default = the 21:20 Plantera loss. make_site.py set mode now accepts .levyrec (it silently skipped them before).
+- **Plantera finding:** Levy's own boss HP scaling (+2%/engaged command point, cap +80%, BossHpScalingPercentPerCp / BossHpScalingCapPercent) took Plantera from 152,617 to ~247–256k max life with her ~38–45 CP army. Her pattern: Plantera hits 25% at 0:28–0:56, then Eve dies 10–25 s later with 23–37k HP left, to Tentacle (~155) and Spore Gas (~115). The padding stretches the deadliest phase (p2 enrage) by ~100k HP. Discussing with Eve whether the scaling should weight phase-2 time or be lower for bosses whose danger is concentrated late.
+- Not yet analysed: Anahita (12) and Empress (5) sets.
+
 ## 🥊 BOSS FIGHT STATUS (2026-11-07 morning, Eve asked "progress of the bossfights?")
 - **mobility3 (agent ad664ee1175974eb2, branch `mobility3`, head 8a079a2) — MEASURED, not merged yet.** 7 bosses x flat/natural/plat4, 30s survival windows, 420 cells per mode.
   - Spectator, no mobility gear (before -> after): hits 19.1 -> 14.8, deaths/min 0.7 -> 0.2, standing still 23.4% -> 7.7%, airborne 38% -> 54%.

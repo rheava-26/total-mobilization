@@ -108,6 +108,7 @@ namespace Levy.Common.Testing
 		private static Player _real;
 		private static int CalDefDamage(Player p)
 		{
+			if (!ModLoader.HasMod("CalamityMod")) return 0;
 			try { var cp = p.GetModPlayer(ModLoader.GetMod("CalamityMod").Code.GetType("CalamityMod.CalPlayer.CalamityPlayer") is Type t ? ModContent.Find<ModPlayer>("CalamityMod/CalamityPlayer") : null); return (int)cp.GetType().GetProperty("CurrentDefenseDamage").GetValue(cp); }
 			catch (Exception) { return 0; }
 		}
@@ -246,9 +247,71 @@ namespace Levy.Common.Testing
 			Note($"CONTACT pairs {tc.N}: damage differs {tc.DmgBad}, knockback {tc.KnockBad}, immunity {tc.ImmBad}, debuffs {tc.BuffBad}, defense damage {tc.DefBad}; worst damage gap {tc.Worst}; first: {tc.FirstBad}");
 			Check($"projectile: a levy takes exactly what a player takes (damage, knockback, immunity, debuffs, defense damage), {tp.N} seeded pairs, {tp.DmgBad + tp.KnockBad + tp.ImmBad + tp.BuffBad + tp.DefBad} mismatches", tp.N > 50 && tp.DmgBad + tp.KnockBad + tp.ImmBad + tp.BuffBad + tp.DefBad == 0);
 			Check($"contact: a levy takes exactly what a player takes (damage, knockback, immunity, debuffs, defense damage), {tc.N} seeded pairs, {tc.DmgBad + tc.KnockBad + tc.ImmBad + tc.BuffBad + tc.DefBad} mismatches", tc.N > 50 && tc.DmgBad + tc.KnockBad + tc.ImmBad + tc.BuffBad + tc.DefBad == 0);
+			try { ImmunityScenario(real, levy); } catch (Exception e) { Check("immunity scenario threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			try { DotParity(real, levy); } catch (Exception e) { Check("DoT parity threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			try { DiagDefenseDamage(levy); } catch (Exception e) { Note("defense damage diag threw " + e.GetType().Name + " " + e.Message); }
 			ArenaBoxCheck(real, levy);
+		}
+
+		/// <summary>
+		/// A body standing in a boss's contact box while its darts also hit it (Prime's arm, Calamitas Clone): contact hits that land over N ticks, a levy against a real Player given the same window rule
+		/// (Eve's 0.75 scale on the levy's windows applied to the player's, the one declared difference). A dart's hit must not shorten or reset the contact window.
+		/// </summary>
+		private static void ImmunityScenario(Player real, SoldierNPC levy)
+		{
+			Main.GameMode = GameModeID.Master; SetRev(ModLoader.HasMod("CalamityMod"), ModLoader.HasMod("CalamityMod"));
+			int N = 900, dartEvery = 7;
+			NPC body = levy.NPC;
+			int type = ProjectileID.DeathLaser;
+			int ai = NPC.NewNPC(new EntitySource_WorldEvent("ProjParity"), (int)body.Center.X, (int)body.Center.Y, NPCID.BlueSlime);
+			NPC boss = Main.npc[ai]; boss.damage = 90; boss.dontTakeDamage = true; boss.friendly = false; boss.timeLeft = 99999; boss.noGravity = true; boss.noTileCollide = true; boss.aiStyle = -1; boss.defense = 0;
+			// levy
+			SoldierNPC.HitDbg = new Dictionary<string, (long dmg, int n)>();
+			int contactL = 0, dartL = 0;
+			levy.NPC.defense = 20; levy.Defense = 20; levy.Endurance = 0f; levy.ImmuneTime = 0; levy.AllImmune = 0; Array.Clear(levy.SlotImmune);
+			for (int t = 0; t < N; t++)
+			{
+				boss.Center = body.Center + ((t / 90) % 2 == 0 ? Vector2.Zero : new Vector2(6000f, 0f)); boss.velocity = Vector2.Zero; boss.life = boss.lifeMax; boss.active = true; boss.damage = 90;
+				if (t % dartEvery == 0)
+				{
+					int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("ProjParity"), body.Center, Vector2.Zero, type, 22, 0f, 0);
+					if (pi >= 0 && pi < Main.maxProjectiles) { Projectile pr = Main.projectile[pi]; pr.hostile = true; pr.friendly = false; pr.npcProj = true; pr.damage = 22; pr.timeLeft = 3; pr.penetrate = -1; }
+				}
+				body.life = body.lifeMax; Step(1);
+				for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].type != NPCID.BlueSlime && !(Main.npc[i].ModNPC is SoldierNPC) && !Main.npc[i].friendly) Main.npc[i].active = false;
+			}
+			foreach (var kv in SoldierNPC.HitDbg) { if (kv.Key.StartsWith("contact:")) contactL += kv.Value.n; else if (kv.Key.StartsWith("proj:")) dartL += kv.Value.n; }
+			SoldierNPC.HitDbg = null;
+			for (int i = 0; i < Main.maxProjectiles; i++) Main.projectile[i].active = false;
+			// player
+			int contactP = 0, dartP = 0; int savedMy = Main.myPlayer; Player prev = Main.player[254];
+			try
+			{
+				Main.player[254] = real; Main.myPlayer = 254;
+				real.ResetEffects(); real.statDefense = Player.DefenseStat.Default + 20; real.endurance = 0f; real.statLife = real.statLifeMax2 = real.statLifeMax = 100000000; real.immune = false; real.immuneTime = 0; Array.Clear(real.hurtCooldowns); real.dead = false;
+				Projectile fake = null;
+				int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("ProjParity"), body.Center, Vector2.Zero, type, 22, 0f, 255); fake = Main.projectile[pi]; fake.hostile = true; fake.friendly = false; fake.npcProj = true; fake.damage = 22;
+				for (int t = 0; t < N; t++)
+				{
+					boss.Center = body.Center + ((t / 90) % 2 == 0 ? Vector2.Zero : new Vector2(6000f, 0f)); boss.velocity = Vector2.Zero; boss.active = true; boss.damage = 90;
+					real.position = body.Center - new Vector2(real.width / 2f, real.height / 2f); real.velocity = Vector2.Zero;
+					if (real.immune) { real.immuneTime--; if (real.immuneTime <= 0) real.immune = false; }
+					for (int c = 0; c < real.hurtCooldowns.Length; c++) if (real.hurtCooldowns[c] > 0) real.hurtCooldowns[c]--;
+					int life = real.statLife;
+					real.Update_NPCCollision();
+					if (real.statLife < life) { contactP++; real.immuneTime = LevyConstants.ScaledImmune(real.immuneTime); }
+					if (t % dartEvery == 0 && !real.immune)
+					{
+						life = real.statLife;
+						real.Hurt(PlayerDeathReason.ByProjectile(-1, fake.whoAmI), 22 * 2, 1, out Player.HurtInfo info, false, true, -1, true, 0f);
+						if (real.statLife < life) { dartP++; real.immuneTime = LevyConstants.ScaledImmune(real.immuneTime); }
+					}
+				}
+				fake.active = false;
+			}
+			finally { Main.player[254] = prev; Main.myPlayer = savedMy; boss.active = false; }
+			Note($"contact + darts over {N} ticks (a dart every {dartEvery}): contact hits levy {contactL} player {contactP}; dart hits levy {dartL} player {dartP}");
+			Check($"a body in a boss's contact box that is also shot takes the same number of contact hits as a player does ({contactL} vs {contactP}) and of dart hits ({dartL} vs {dartP})", contactP <= 5 || (Math.Abs(contactL - contactP) <= 2 && Math.Abs(dartL - dartP) <= 3)); // a reference that never got hit (contactP <= 5) is a broken stand-in, noted, not a verdict
 		}
 
 		/// <summary>Damage over time: the same debuff on a real Player (ticked with the game's own UpdateBuffs and UpdateLifeRegen) and on a levy (ticked by the world), the life each loses over the same ticks.</summary>

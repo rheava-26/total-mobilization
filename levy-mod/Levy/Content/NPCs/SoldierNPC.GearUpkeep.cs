@@ -59,8 +59,9 @@ namespace Levy.Content.NPCs
 
 		private bool ComputeUpkeepNeed()
 		{
+			if (_defDamageLive) _defDamageLive = DefDamageOn && CalDefenseDamageNow() > 0; // regained: the frame can stop
 			var g = Record?.Gear; if (g == null) return false;
-			if (DefDamageOn && ModLoader.HasMod("CalamityMod")) return true; // Calamity's defense damage (taken on a hit, regained over time) lives in the player pass: the frame keeps it ticking
+			if (_defDamageLive) return true; // Calamity's defense damage (taken on a hit, regained over time) lives in the player pass: the frame keeps it ticking until it is regained
 			if (Common.Team.TeamItems.HoldsStatBuff(NPC)) return true; // a team item's mod buff raises a flag the mod's later hooks read: that needs the frame
 			if (NeedsUpkeep(g.Head) || NeedsUpkeep(g.Body) || NeedsUpkeep(g.Legs)) return true;
 			int slots = Math.Min(Record.AccessorySlots, g.Accessories.Length);
@@ -335,7 +336,7 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		internal void GearOnHurt(int damage, int attackerIndex)
 		{
-			if (_inGearHurt || damage <= 0 || !UpkeepActive || LevyUtil.IsClient || !IsAlive) return;
+			if (_inGearHurt || damage <= 0 || !HurtFrameOk || LevyUtil.IsClient || !IsAlive) return;
 			_inGearHurt = true;
 			Player d = Dummy;
 			int savedWho = d.whoAmI; Vector2 savedCenter = d.Center; int savedLife = d.statLife, savedOrbs = d.beetleOrbs, savedShields = d.solarShields;
@@ -358,7 +359,8 @@ namespace Levy.Content.NPCs
 				if (LevyConstants.PlayerParityIFrames && LevyConstants.ScaledImmune(d.immuneTime) > ImmuneTime) ImmuneTime = LevyConstants.ScaledImmune(d.immuneTime); // the real Player.Hurt window, mod additions included (never shorter than HitImmuneTicks)
 				int heal = d.statLife - (room - damage);
 				if (heal > 0 && NPC.life > 0) { NPC.life = Math.Min(NPC.lifeMax, NPC.life + heal); NPC.netUpdate = true; if (Record != null) Record.CurrentHp = NPC.life; GearUpkeep.LifeWriteBacks++; }
-				GearUpkeep.HurtCalls++;
+				GearUpkeep.HurtCalls++; _gearHurtRan = true;
+				if (DefDamageOn) { bool live = CalDefenseDamageNow() > 0; if (live != _defDamageLive) { _defDamageLive = live; StatsDirty = true; } } // the frame starts ticking while the levy carries defense damage
 			}
 			catch (Exception e)
 			{

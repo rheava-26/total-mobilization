@@ -17,7 +17,7 @@ namespace Levy.Common.Testing
 {
 	/// <summary>
 	/// WORLD-LEVEL self-check of the boss-battery fixes, logged as "[BossBugs]" lines when a world loads on a dedicated server with LEVY_SELFCHECK_WORLD=1 (the summon world check chains it; LEVY_BOSSBUGS_ONLY=1 runs it
-	/// alone; LEVY_BOSSBUGS_PART=calamity|shots|ml|wof picks one part). A flat arena, slot 0 standing in as the commander, the real Main.Update stepping the world, throwaway soldiers and bosses only; everything is removed
+	/// alone; LEVY_BOSSBUGS_PART=calamity|shots|ml|wof|mlkill|killedge picks one part). A flat arena, slot 0 standing in as the commander, the real Main.Update stepping the world, throwaway soldiers and bosses only; everything is removed
 	/// again and nothing is saved.
 	///  * CALAMITY (Calamity half only): Revengeance replaces Deerclops' and the Queen Bee's bees' AI with ones that index Main.player[NPC.target]; a 300+ NPC target (the native route) failed on an out-of-range index there every
 	///    tick and Deerclops despawned. Audits every NPCID.Sets.UsesNewTargetting type, then fights a real Deerclops and real bees against a downed-boss army and counts exceptions and the target index their AI saw.
@@ -205,6 +205,7 @@ namespace Levy.Common.Testing
 			if (only == "all" || only == "ml") { try { MoonLord(); } finally { Cleanup(); } }
 			if (only == "all" || only == "wof") { try { WallOfFlesh(); } finally { Cleanup(); } }
 			if (only == "all" || only == "mlkill") { try { MoonLordDeath(); } finally { Cleanup(); } }
+			if (only == "all" || only == "killedge") { try { IceBlockAtTheEdge(); } finally { Cleanup(); } }
 		}
 
 		// =====================================================================================================
@@ -441,6 +442,46 @@ namespace Levy.Common.Testing
 				Check("the core and its parts are gone after the kill", !core.active && !Main.npc[part[0]].active && !Main.npc[part[1]].active && !Main.npc[part[2]].active);
 			}
 			finally { On_NPC.UpdateNPC -= det; }
+		}
+
+		// =====================================================================================================
+		// AN ICE BLOCK THAT DIES PAST THE EDGE OF THE WORLD
+		// =====================================================================================================
+		/// <summary>
+		/// A levy with an Ice Rod shoots up at a boss that flies high. Vanilla Update drops a projectile that has left the world without calling Kill, but an Ice Block that crosses the top edge in the same step its
+		/// time runs out reaches Kill with its position above the world (seen at y = -19.8 px), and Kill's read of the tile under it (<c>Main.tile[(int)position.X / 16, (int)position.Y / 16]</c>, row -1) throws
+		/// IndexOutOfRange; the exception passed through UseGuard.KillDetour in a Queen Slime fight. An army round of that type must die cleanly wherever it crosses, and the block's own Kill must still run.
+		/// </summary>
+		private static void IceBlockAtTheEdge()
+		{
+			Arena(FloorY, Half);
+			PlaceCommander(0);
+			var levies = Levies(2, 3f);
+			Check("two levies spawn", levies.Count == 2);
+			Step(2);
+			int soldier = levies.Count > 0 ? levies[0].NPC.whoAmI : 0;
+			float mx = Main.maxTilesX * 16f, my = Main.maxTilesY * 16f;
+			var cases = new (string name, Vector2 at, bool army)[]
+			{
+				("above the top edge (the case seen: y = -19.8 px)", new Vector2(Cx * 16f, -19.76f), true),
+				("far above the top edge", new Vector2(Cx * 16f, -400f), true),
+				("past the left edge", new Vector2(-30f, 300f * 16f), true),
+				("past the right edge", new Vector2(mx + 30f, 300f * 16f), true),
+				("past the bottom edge", new Vector2(Cx * 16f, my + 30f), true),
+				("inside the world (nothing to clamp)", new Vector2(Cx * 16f, (FloorY - 20) * 16f), true),
+			};
+			foreach (var (name, at, army) in cases)
+			{
+				int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("BossBugsCheck"), new Vector2(Cx * 16f, (FloorY - 20) * 16f), new Vector2(0f, -19.8f), ProjectileID.IceBlock, 40, 0f, 0);
+				if (pi < 0 || pi >= Main.maxProjectiles) { Check($"Ice Block {name}: the projectile spawns", false); continue; }
+				Projectile pr = Main.projectile[pi];
+				if (army && pr.TryGetGlobalProjectile(out SoldierProjectileTag tag)) tag.SoldierIndex = soldier;
+				pr.position = at; pr.timeLeft = 0;
+				Exception thrown = null;
+				try { pr.Kill(); } catch (Exception e) { thrown = e; }
+				Check($"an army Ice Block dies cleanly {name}" + (thrown != null ? " (threw " + thrown.GetType().Name + ")" : ""), thrown == null && !pr.active);
+				pr.active = false;
+			}
 		}
 
 		// =====================================================================================================

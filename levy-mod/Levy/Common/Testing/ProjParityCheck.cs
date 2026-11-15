@@ -44,10 +44,10 @@ namespace Levy.Common.Testing
 		{
 			if (!_armed || _done || !Main.dedServ) return;
 			_done = true; _running = true;
-			bool sp = LevyUtil.SpEmulation; int gm = Main.GameMode; bool hm = Main.hardMode;
+			bool sp = LevyUtil.SpEmulation; int gm = Main.GameMode; bool hm = Main.hardMode; var rand0 = Main.rand; bool day0 = Main.dayTime; double time0 = Main.time; bool exp0 = Main.expertMode, mas0 = Main.masterMode;
 			try { LevyUtil.SpEmulation = true; Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
-			finally { _running = false; LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); Main.GameMode = gm; Main.hardMode = hm; SetRev(false, false); }
+			finally { _running = false; LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); Main.GameMode = gm; Main.hardMode = hm; SetRev(false, false); Main.rand = rand0; Main.dayTime = day0; Main.time = time0; }
 			_mod.Logger.Info($"[ProjParity] self-check pass={_pass} fail={_fail}");
 		}
 		private static void Check(string n, bool ok) { if (ok) _pass++; else _fail++; _mod.Logger.Info($"[ProjParity] {(ok ? "PASS" : "FAIL")} {n}"); }

@@ -20,6 +20,23 @@ namespace Levy.Common.Progression
 		/// <summary>Every non-Levy recipe as it was when this mod's PostAddRecipes ran, before Levy's edits: the recipe object (its index changes when other mods reorder recipes later) to (result stack, ingredient stacks).</summary>
 		public static readonly Dictionary<Recipe, (int result, int[] ing)> Snapshot = new(ReferenceEqualityComparer.Instance);
 
+		/// <summary>
+		/// Every non-Levy recipe as it stood when this mod's PostAddRecipes FINISHED (Levy's edits applied): what the recipe looks like if nobody touches it afterwards. A recipe that differs from this at check time was edited
+		/// by another mod's later hook (PostSetupRecipes, a runtime edit), so the self-check leaves it out instead of blaming Levy for it.
+		/// </summary>
+		public static readonly Dictionary<Recipe, (int result, int[] ing)> PostEdit = new(ReferenceEqualityComparer.Instance);
+
+		private void TakePostEdit()
+		{
+			PostEdit.Clear();
+			for (int r = 0; r < Recipe.numRecipes; r++)
+			{
+				Recipe rec = Main.recipe[r];
+				if (rec == null || rec.Mod == Mod) continue;
+				PostEdit[rec] = (rec.createItem.stack, rec.requiredItem.Select(i => i.stack).ToArray());
+			}
+		}
+
 		public override void AddRecipes()
 		{
 			var c = LevyProgressionConfig.Get;
@@ -64,7 +81,7 @@ namespace Levy.Common.Progression
 				if (rec == null || rec.Mod == Mod) continue;
 				Snapshot[rec] = (rec.createItem.stack, rec.requiredItem.Select(i => i.stack).ToArray());
 			}
-			if (c == null) return;
+			if (c == null) { TakePostEdit(); return; }
 
 			for (int r = 0; r < Recipe.numRecipes; r++)
 			{
@@ -105,6 +122,7 @@ namespace Levy.Common.Progression
 					}
 				}
 			}
+			TakePostEdit();
 		}
 
 		public static bool IsAmmo(Item i)

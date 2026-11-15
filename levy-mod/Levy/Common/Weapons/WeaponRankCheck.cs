@@ -147,11 +147,20 @@ namespace Levy.Common.Weapons
 
 		// ------------------------------------------------------------------ the real recipes
 
+		private static bool CraftedBySomething(int type)
+		{
+			for (int i = 0; i < Recipe.numRecipes; i++) { Recipe r = Main.recipe[i]; if (r != null && !r.Disabled && r.createItem != null && r.createItem.type == type) return true; }
+			return false;
+		}
+
 		private static void CheckRealRecipes(Action<bool, string> check)
 		{
 			check(MaterialCost.Ready, "material costs were computed from the loaded recipes");
 			if (!MaterialCost.Ready) return;
-			check(MaterialCost.Of(ItemID.Wood) == 0 && MaterialCost.Of(ItemID.IronOre) == 0, "raw items have no material cost");
+			// Raw means nothing crafts it. Another mod may add a recipe that makes Wood or Iron Ore; such an item is no longer raw, and its cost is that mod's doing, so only the items nothing crafts are held to zero.
+			var rawCandidates = new[] { ItemID.Wood, ItemID.IronOre };
+			var rawKept = rawCandidates.Where(t => !CraftedBySomething(t)).ToList();
+			check(rawKept.All(t => MaterialCost.Of(t) == 0), "raw items have no material cost" + (rawKept.Count < rawCandidates.Length ? " (" + (rawCandidates.Length - rawKept.Count) + " of " + rawCandidates.Length + " left out: another mod has a recipe that makes them)" : ""));
 			double ironBar = MaterialCost.Of(ItemID.IronBar), ironBroadsword = MaterialCost.Of(ItemID.IronBroadsword);
 			check(ironBar > 0 && ironBroadsword > 0 && ironBroadsword > ironBar, "an Iron Broadsword costs more than one Iron Bar (" + ironBroadsword + " vs " + ironBar + ")");
 			double brick = MaterialCost.Of(ItemID.HellstoneBrick), wall = MaterialCost.Of(ItemID.HellstoneBrickWall), bar = MaterialCost.Of(ItemID.HellstoneBar);

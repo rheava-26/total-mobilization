@@ -209,11 +209,15 @@ namespace Levy.Common.Testing
 			if (Part(only, "wof")) { try { WallOfFlesh(); } finally { Cleanup(); } }
 			if (Part(only, "mlkill")) { try { MoonLordDeath(); } finally { Cleanup(); } }
 			if (Part(only, "killedge")) { try { IceBlockAtTheEdge(); } finally { Cleanup(); } }
+			if (Part(only, "redemption") && ModLoader.HasMod("Redemption")) { try { RedemptionPart(); } finally { Cleanup(); } } // only when the mod is loaded
 		}
 
 		// =====================================================================================================
 		// CALAMITY: native-targeting types whose AI Calamity replaced
 		// =====================================================================================================
+		/// <summary>A type's name for the logs: vanilla's display name, a modded type's code identifier (Mod/Name), never another mod's display text.</summary>
+		private static string AuditName(int type) => type < NPCID.Count ? Lang.GetNPCNameValue(type) : (NPCLoader.GetNPC(type) is ModNPC mn ? mn.Mod.Name + "/" + mn.Name : "#" + type);
+
 		private static void Calamity()
 		{
 			if (!ModLoader.HasMod("CalamityMod")) { Note("Calamity is not loaded: the Calamity part is skipped"); return; }
@@ -226,12 +230,13 @@ namespace Levy.Common.Testing
 			{
 				if (type >= NPCID.Sets.UsesNewTargetting.Length || !NPCID.Sets.UsesNewTargetting[type]) continue;
 				NPC n = SpawnNpc(type, new Vector2((Cx + 150) * 16f, (FloorY - 30) * 16f));
-				if (n == null || n.type != type) { rows.Add(Lang.GetNPCNameValue(type) + "(" + type + "): did not spawn"); if (n != null) n.active = false; continue; }
+				if (n == null || n.type != type) { rows.Add(AuditName(type) + "(" + type + "): did not spawn"); if (n != null) n.active = false; continue; }
 				bool b = CalamityTargetingCompat.OverrideBound(n);
 				bool native = EnemyTargeting.UsesNativeTargeting(n), flyer = EnemyTargeting.UsesFlyerSlot(n);
+				bool unproven = EnemyTargeting.ModdedNativeUnproven(type); // a modded native type nobody proved safe also takes the flyer slot, whatever its AI is
 				if (b) bound++;
-				if (b ? (native || !flyer) : (!native || flyer)) wrong++;
-				rows.Add($"{Lang.GetNPCNameValue(type)}({type}): calamityOverride={b} -> {(native ? "native NPC target (300+)" : flyer ? "flyer slot 254" : "other")}");
+				if (b || unproven ? (native || !flyer) : (!native || flyer)) wrong++;
+				rows.Add($"{AuditName(type)}({type}): calamityOverride={b}{(unproven ? " moddedUnproven" : "")} -> {(native ? "native NPC target (300+)" : flyer ? "flyer slot 254" : "other")}");
 				n.active = false;
 			}
 			foreach (string r in rows) Note("audit " + r);

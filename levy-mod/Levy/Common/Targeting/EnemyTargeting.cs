@@ -80,7 +80,7 @@ namespace Levy.Common.Targeting
 		/// <summary>The slot this enemy's soldier target is swapped into.</summary>
 		internal static int SlotFor(NPC npc) => UsesFlyerSlot(npc) && FlyerSlotUsable ? FlyerSlot : SoldierNPC.DummySlot;
 		/// <summary>An enemy whose AI reads its target only through GetTargetData(): Flying-AI enemies and the boss styles in <see cref="LevyConstants.Targeting.BossFlyerSlotAiStyles"/> (Empress of Light).</summary>
-		internal static bool UsesFlyerSlot(NPC npc) => NativeBehindCalamityOverride(npc) || (!UsesNativeTargeting(npc) && (npc.aiStyle == NPCAIStyleID.Flying || _bossFlyerSlotStyles.Contains(npc.aiStyle)));
+		internal static bool UsesFlyerSlot(NPC npc) => NativeBehindCalamityOverride(npc) || (!UsesNativeTargeting(npc) && (npc.aiStyle == NPCAIStyleID.Flying || _bossFlyerSlotStyles.Contains(npc.aiStyle) || TargetReadScan.Reads(npc)));
 		/// <summary>Before any vanilla target search: a dummy parked in the flyer slot would be found as a real player.</summary>
 		private static void PreSearch() { if (_swapped && _swapSlot != SoldierNPC.DummySlot) Unswap(); }
 		/// <summary>The Player instance that legitimately lives in Main.player[255] (vanilla null player). Captured whenever the slot is in its normal state.</summary>
@@ -130,13 +130,28 @@ namespace Levy.Common.Targeting
 		/// a 300+ NPC-target index throws IndexOutOfRange every tick (Deerclops then never finished an AI pass and despawned). It takes the flyer slot, like the Empress: a real player index (254) holding the soldier's dummy
 		/// for the AI call, which GetTargetData() also resolves as a player.
 		/// </summary>
-		internal static bool NativeBehindCalamityOverride(NPC npc) => VanillaNative(npc.type) && CalamityTargetingCompat.OverrideBound(npc);
+		/// <remarks>
+		/// Also every MODDED type that carries UsesNewTargetting unless <see cref="LevyConstants.Targeting.NativeSafeModdedTypes"/> names it (<see cref="ModdedNativeUnproven"/>): the native route hands the AI a target index of 300 and up, and any AI of a mod
+		/// that indexes Main.player[NPC.target] (a boss that falls back to its own TargetClosest and then reads the player) throws on it every tick. A real player index holding the soldier's dummy is what such an AI can read.
+		/// </remarks>
+		internal static bool NativeBehindCalamityOverride(NPC npc) => VanillaNative(npc.type) && (CalamityTargetingCompat.OverrideBound(npc) || ModdedNativeUnproven(npc.type));
+
+		/// <summary>A modded NPC type with UsesNewTargetting that nobody has proven reads its target only through GetTargetData(): it takes the flyer slot, not the 300+ index.</summary>
+		/// <summary>LEVY_MODDEDNATIVE=1 gives every modded UsesNewTargetting type the native 300+ route again (A/B switch for the lab: what that route does to a boss that indexes Main.player[NPC.target]).</summary>
+		private static readonly bool _moddedNativeOld = Environment.GetEnvironmentVariable("LEVY_MODDEDNATIVE") == "1";
+		internal static bool ModdedNativeUnproven(int type)
+		{
+			if (type < NPCID.Count || !VanillaNative(type) || _moddedNativeOld) return false;
+			ModNPC mn = NPCLoader.GetNPC(type);
+			return mn == null || !LevyConstants.Targeting.NativeSafeModdedTypes.Contains(mn.Mod.Name + "/" + mn.Name);
+		}
 
 		/// <summary>Config on, not friendly, not a boss or boss part (unless its boss type is unlocked), and an AI style we verified against the chosen mechanism.</summary>
 		public static bool IsAllowlisted(NPC npc)
 		{
 			if (npc == null || !npc.active || !Enabled) return false;
 			if (npc.friendly || npc.townNPC || npc.ModNPC is SoldierNPC) return false;
+			if (HoldFire.Any && HoldFire.Holds(npc)) return false; // a choice is open on it: it keeps facing the player whose choice it is
 			int type = npc.type;
 			if (type == NPCID.WallofFlesh && WofKinOn && !WofMouthSwaps && WallHasPlayerToWalkAt(npc)) return false; // the wall's walk stays on the real player; its eyes, Hungry and Leeches are what the army draws
 			// Lunar Pillars: boss-class, but they only spawn event attacks (AI 94 reads Main.player[target] directly, swap-safe), so they take the swap without the boss unlock.
@@ -154,13 +169,13 @@ namespace Levy.Common.Targeting
 			// A boss's own minions (Servants of Cthulhu, Brain's Creepers) go after the army exactly when their boss does (config + boss already beaten, or a Spectator on a beaten boss), never earlier:
 			// the first kill of every boss is solo. Their AIs read Main.player[target] only, so they take the swap (Servants through the flyer slot, see <see cref="FlyerSlot"/>).
 			NPC owner = MinionBoss(npc);
-			if (owner != null) return BossAllowlisted(owner) && (style != NPCAIStyleID.Flying || FlyerSlotUsable);
+			if (owner != null) return BossAllowlisted(owner) && (!UsesFlyerSlot(npc) || FlyerSlotUsable);
 			// Its boss is gone (killed while the worms it spawned are still alive: Calamity's Perforator Hive leaves its worms): the add keeps the army as its target once that boss type is beaten and the army may draw it,
 			// instead of falling back to the hidden commander and digging away for lack of a target.
 			if (KinOn && npc.ModNPC != null)
 			{
 				var od = LevyNpcData.Of(npc);
-				if (od.BossOwner >= 0 && od.OwnerType >= 0 && BossDownedSystem.IsTypeDowned(od.OwnerType) && (Potions.SpectatorPlayer.AnyActive || ((_cfg ??= LevyConfig.Get) != null && _cfg.BossesTargetSoldiers)) && style != NPCAIStyleID.Flying) return true;
+				if (od.BossOwner >= 0 && od.OwnerType >= 0 && BossDownedSystem.IsTypeDowned(od.OwnerType) && (Potions.SpectatorPlayer.AnyActive || ((_cfg ??= LevyConfig.Get) != null && _cfg.BossesTargetSoldiers)) && style != NPCAIStyleID.Flying) return !TargetReadScan.Reads(npc) || FlyerSlotUsable;
 			}
 			// Flying AI (Eater of Souls, hornets, meteor heads, probes, moths...) reads its target through GetTargetData(), which rejects slot 255, so it takes the flyer slot instead.
 			if (style == NPCAIStyleID.Flying) return FlyerSlotUsable;
@@ -286,7 +301,7 @@ namespace Levy.Common.Targeting
 			if (BossPersistenceGlobalNPC.IsDaytimeExcluded(npc)) return false;
 			if (UsesNativeTargeting(npc)) return true;
 			int style = npc.aiStyle;
-			if (_bossFlyerSlotStyles.Contains(style) || NativeBehindCalamityOverride(npc)) return BossFlyerOn && FlyerSlotUsable && !_swapExcludedTypes.Contains(npc.type);
+			if (_bossFlyerSlotStyles.Contains(style) || NativeBehindCalamityOverride(npc) || TargetReadScan.Reads(npc)) return BossFlyerOn && FlyerSlotUsable && !_swapExcludedTypes.Contains(npc.type);
 			return !_swapIncompatible.Contains(style) && !_bossSwapIncompatible.Contains(style) && !_swapExcludedTypes.Contains(npc.type);
 		}
 

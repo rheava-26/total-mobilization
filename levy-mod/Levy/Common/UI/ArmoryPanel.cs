@@ -832,7 +832,7 @@ namespace Levy.Common.UI
 		{
 			if (IsArmor(it)) return CatArmor;
 			if (it.accessory) return CatAccessory;
-			if (it.ammo > 0 && !it.IsACoin) return CatAmmo;
+			if (it.ammo > 0 && !it.IsACoin && !WeaponClassifier.IsThrownConsumable(it)) return CatAmmo;
 			if (it.damage > 0 && it.pick == 0 && it.axe == 0 && it.hammer == 0 && !it.IsACoin)
 			{
 				var dc = WeaponClassifier.ItemDamageClass(it);

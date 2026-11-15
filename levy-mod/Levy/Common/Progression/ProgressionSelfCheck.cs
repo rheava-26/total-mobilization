@@ -138,11 +138,13 @@ namespace Levy.Common.Progression
 			Check("edited bar recipes count matches", ProgressionRecipes.EditedBarRecipes == (c.ChlorophyteOrePerBar < 5 ? bars.Count : 0), ProgressionRecipes.EditedBarRecipes.ToString());
 
 			// Ammo and armor: compare every vanilla/other-mod recipe against its pre-edit snapshot.
-			int ammoOk = 0, ammoBad = 0, armorOk = 0, armorBad = 0, other = 0, otherBad = 0, protectedBad = 0;
+			int ammoOk = 0, ammoBad = 0, armorOk = 0, armorBad = 0, other = 0, otherBad = 0, protectedBad = 0, foreign = 0;
 			foreach (var kv in ProgressionRecipes.Snapshot)
 			{
 				Recipe rec = kv.Key;
 				if (rec == null || rec.createItem == null || rec.Disabled) continue;   // disabled recipes (e.g. replaced by another mod) are never edited
+				// Only what Levy itself changes is checked: a recipe another mod edited after Levy's edits were made (its own PostSetupRecipes, a runtime edit) no longer matches what Levy left, whatever Levy did to it.
+				if (ProgressionRecipes.PostEdit.TryGetValue(rec, out var left) && (rec.createItem.stack != left.result || !rec.requiredItem.Select(i => i.stack).SequenceEqual(left.ing))) { foreign++; continue; }
 				Item res = rec.createItem;
 				bool isAmmo = ProgressionRecipes.IsAmmo(res);
 				bool isArmor = ProgressionRecipes.IsArmorPiece(res);
@@ -170,7 +172,7 @@ namespace Levy.Common.Progression
 			Check("ammo recipes match option", ammoBad == 0 && ammoOk > 0, $"ok={ammoOk} bad={ammoBad} mult={c.AmmoRecipeYieldMultiplier}");
 			Check("armor recipes match options", armorBad == 0 && armorOk > 0, $"ok={armorOk} bad={armorBad}");
 			Check("Spectre, Shroomite and Spooky recipes never change", protectedBad == 0);
-			Check("untouched recipes identical to vanilla", otherBad == 0, $"{other} recipes");
+			Check("untouched recipes identical to vanilla", otherBad == 0, $"{other} recipes" + (foreign > 0 ? $", {foreign} left out: another mod edited them after Levy's edits" : ""));
 			bool allDefault = c.FallenStarsPerManaCrystal == ProgConst.ManaCrystalStarsVanilla && c.AmmoRecipeYieldMultiplier == 1 && c.ChlorophyteOrePerBar == 5 && c.ChlorophyteArmorCostPercent == 100 && c.HallowedArmorCostPercent == 100 && c.SpiderArmorCostPercent == 100 && c.LevyArmorCostPercent == 100;
 			if (allDefault) Check("defaults: zero vanilla recipes edited", ProgressionRecipes.EditedAmmoRecipes + ProgressionRecipes.EditedArmorRecipes + ProgressionRecipes.EditedBarRecipes + ProgressionRecipes.EditedManaCrystalRecipes == 0);
 			else Mod.Logger.Info($"[ProgCheck] INFO edited recipes: bar={ProgressionRecipes.EditedBarRecipes} mana={ProgressionRecipes.EditedManaCrystalRecipes} ammo={ProgressionRecipes.EditedAmmoRecipes} armor={ProgressionRecipes.EditedArmorRecipes}");

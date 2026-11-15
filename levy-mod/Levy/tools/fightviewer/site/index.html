@@ -250,12 +250,13 @@ function decRows(rows,last,idx,ipos){
   const out=new Array(rows.length);
   for(let n=0;n<rows.length;n++){
     const r=rows[n]; let row;
-    if(typeof r==="number") row=last.get(r).slice();
-    else if(r[0]<0){const prev=last.get(-r[0]-1);row=prev.slice();let m=r[1],k=2;for(let i=0;m;i++,m=Math.floor(m/2))if(m%2){row[i]=ipos.has(i)?prev[i]+r[k]:r[k];k++;}}
+    if(typeof r==="number"){const prev=last.get(r); if(!prev) continue; row=prev.slice();}
+    else if(!Array.isArray(r)) row=r.r;
+    else if(r[0]<0){const prev=last.get(-r[0]-1); if(!prev) continue; row=prev.slice();let m=r[1],k=2;for(let i=0;m;i++,m=Math.floor(m/2))if(m%2){row[i]=ipos.has(i)?prev[i]+r[k]:r[k];k++;}}
     else row=r;
     last.set(row[idx],row); out[n]=row;
   }
-  return out;
+  return out.filter(Boolean);
 }
 function fromData(o){      // a data/<fight>.json file written by make_site.py
   if(!o||!o.frames||!o.frames.length) throw new Error("the data file has no frames");

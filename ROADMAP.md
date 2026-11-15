@@ -14,6 +14,14 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🗂 Replay pages (Eve 11-15): why two pages? Curate, version-stamp, clear old
+- Two pages exist only because of the 511-file cap: the main one (Q6aYA45u8MSxyB7VZxHSEH: Eve's fights + old pre-HM labs) and the lab one (5bQWET74N12m4bYMbFxqqK: 2.0.66 hardmode battery).
+- `sitecurate` builder: ONE curated page on the main URL.
+  - Contents: Eve's 44 fights; ≤2 per hardmode boss (a baseline + a notable exception, with notes); a few Destroyer/Aquatic Scourge test fights; 15 outdated pre-HM lab fights.
+  - Every fight shows its Levy version. Manifest `eras` + `current` drive "outdated" badges with the reason.
+  - current = 2.0.68 (parity, unreleased), so everything now shows outdated, honestly.
+- Plan: publish over the main URL (null out the old files). Keep the lab page as the full archive (offer to delete it). Fetched 29 old data files to scratchpad/oldfights (Eve's 14 older fights + 15 pre-HM picks).
+
 ## 🎯 spectarget MERGED
 - **Cause:** the harness (and BossDowned) marked only one half of two-part bosses as downed, so the Leviathan and Spazmatism counted as undowned. The Spectator wasn't hidden from them, they kept default target 0 (the commander) and never retargeted.
   - Seeds 2–3 only looked fine because the downed set carried over inside the server process.

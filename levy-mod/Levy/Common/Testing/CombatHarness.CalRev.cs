@@ -668,7 +668,7 @@ namespace Levy.Common.Testing
 				s.Rage0 = LevyRippers.RageActivations; s.Adr0 = LevyRippers.AdrenalineActivations; s.Dr0 = LevyRippers.DrCuts; s.Lost0 = LevyRippers.AdrenalineLost;
 				if (run.L3) Lab3Begin(run, s);
 				if (run.Pl != "") PlReset();
-				_crS = s; _cr = s; _crStarted = true; _crTickInRun = 0; SoldierNPC.HitDbg = new(); SoldierNPC.HitGapDbg = new();
+				_crS = s; _cr = s; _crStarted = true; _crTickInRun = 0; LeviReset(); SoldierNPC.HitDbg = new(); SoldierNPC.HitGapDbg = new();
 				if (run.Diag) global::Levy.Common.Potions.SpectatorDiagnostic.Set(true);
 				global::Levy.Common.Recording.FightRecAuto.Tag(("arena", run.Arena), ("seed", run.Seed), ("mode", run.Mode), ("gear", run.Gear + "_n" + run.N), ("cellkey", run.Key));
 				if (probe && !File.Exists(_crOut + ".probe.tsv")) File.WriteAllText(_crOut + ".probe.tsv", "mode\ttick\tlevy\tgear\tupkeep\trage\tadr\trageMode\tadrMode\thp\tboss\n");
@@ -685,7 +685,7 @@ namespace Levy.Common.Testing
 			else if (!st.BossGone) { st.BossGone = true; st.EndTick = st.Tick; st.Result = BbIsBoss(run.Boss) ? (BbWon(run.Boss, st.BossLife, st.BossLifeMax) ? "WIN" : "DESPAWN") : e.life <= 0 ? "WIN" : "DESPAWN"; st.BossLife = BbIsBoss(run.Boss) ? 0 : Math.Max(0, e.life); }
 			int adds = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && st.AddTypes.Contains(Main.npc[i].type)) adds++;
 			st.AddsPeak = Math.Max(st.AddsPeak, adds); st.MaxAdds = st.AddsPeak;
-			CrSampleTick(st, e, bossAlive, adds);
+			CrSampleTick(st, e, bossAlive, adds); LeviProbe(st);
 			if (run.Boss == "kslime" && st.Tick % 30 == 0)
 			{
 				// king slime probe: the crystal (Calamity's jewel) target class each half second: 0 levy, 1 player, 2 none. Totals go to the log at the end of the run through the counters below.

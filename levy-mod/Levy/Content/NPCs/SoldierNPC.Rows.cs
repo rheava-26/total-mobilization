@@ -29,6 +29,7 @@ namespace Levy.Content.NPCs
 		/// <summary>The band (tiles above the ground under it) of the spot this body is heading for or holding; int.MinValue when none. Friends read it to avoid the same band.</summary>
 		internal int RowBand => _platActive ? _rowGoalBand : int.MinValue;
 
+		private const float LaneRowBase = 3f, LaneRowDepth = 7f;
 		private const int RowColumns = 18, RowDropColumns = 6, RowEvalTicks = 70, RowHoldTicks = 150, RowThreatEvalTicks = 25;
 		private const float RowCrowdColumns = 22f, RowCrowdWeight = 3.2f, RowMoveMargin = 2.4f, RowBandTiles = 3f, RowStickyBonus = 1.6f, RowLaneTiles = 3.5f, RowLaneColumns = 26f;
 
@@ -110,6 +111,7 @@ namespace Levy.Content.NPCs
 
 			float bossX = seg.Center.X / tile, bossY = seg.Center.Y / tile;
 			Vector2 bc = seg.Center;
+			var lanes = ChargeLanes.Get();   // a charger's band (a Leviathan's own height, hovering or lining up): a row inside it is a row it will sweep, one outside is not
 			// score of standing in tile (x, y): higher is better. LOS and reach are checked separately on the best few.
 			float Score(int x, int y, int alt, out Vector2 bottom)
 			{
@@ -129,6 +131,11 @@ namespace Levy.Content.NPCs
 				float bodyY = y - 1f;
 				float dyBoss = Math.Abs(bodyY - bossY), dxBoss = Math.Abs(cx - bossX);
 				if (dyBoss < RowLaneTiles && dxBoss < RowLaneColumns) sc -= 4f * (1f - dyBoss / RowLaneTiles) * (1f - dxBoss / RowLaneColumns * 0.5f);
+				for (int li = 0; li < lanes.Count; li++)
+				{
+					float reachPx = lanes[li].Half + NPC.height * 0.5f + 8f, offPx = Math.Abs(bodyY * 16f - lanes[li].Cy);
+					if (offPx < reachPx) sc -= LaneRowBase + LaneRowDepth * (1f - offPx / reachPx);   // deeper in the band is worse, so a row near its edge beats the floor in the middle and the climb chains upward
+				}
 				if (floorBoss && alt < PlatformLaneRowTiles) sc -= worm ? 6f : 4f;
 				if (wormBand != int.MinValue && Math.Abs(wormBand - alt) < RowBandTiles && Math.Abs(cx - wormTgt.NPC.Center.X / tile) < 30f) sc -= 5f;
 				sc -= 0.12f * Math.Abs(cx - NPC.Center.X / tile);
@@ -203,6 +210,7 @@ namespace Levy.Content.NPCs
 			NPC seg = Aiming.NearestSegment(bo, NPC.Center) ?? bo;
 			float dy = Math.Abs(seg.Center.Y - NPC.Center.Y) / LevyConstants.TilePx, dx = Math.Abs(seg.Center.X - NPC.Center.X) / LevyConstants.TilePx;
 			if (dy < RowLaneTiles && dx < 18f && seg.velocity.LengthSquared() > 9f) { _rowNext = now; RowThreatEvalsS++; }
+			else if (ChargeLanes.On) { var ln = ChargeLanes.Get(); for (int i = 0; i < ln.Count; i++) if (ChargeLanes.InLane(ln[i], NPC.Center, NPC.height * 0.5f)) { _rowNext = now; RowThreatEvalsS++; break; } }
 		}
 
 		private int _rowThreatNext, _rowCandN;

@@ -25,12 +25,12 @@ namespace Levy.Common.Testing
 	public partial class CombatHarness
 	{
 		// ------------------------------------------------------------------------------------------------------------------ bosses
-		internal static bool BbIsBoss(string b) => b is "twins" or "prime" or "brim" or "cryo" or "aqua" or "cal" or "plant" or "eol" or "fish" or "qslime" or "wof";
+		internal static bool BbIsBoss(string b) => b is "twins" or "prime" or "brim" or "cryo" or "aqua" or "cal" or "plant" or "eol" or "fish" or "qslime" or "wof" or "levi";
 
 		internal static int BbType(string b) => b switch
 		{
 			"twins" => NPCID.Retinazer, "prime" => NPCID.SkeletronPrime, "brim" => CrCalNpc("BrimstoneElemental"), "cryo" => CrCalNpc("Cryogen"), "aqua" => CrCalNpc("AquaticScourgeHead"),
-			"cal" => CrCalNpc("CalamitasClone"), "plant" => NPCID.Plantera, "eol" => NPCID.HallowBoss, "fish" => NPCID.DukeFishron, "qslime" => NPCID.QueenSlimeBoss, "wof" => NPCID.WallofFlesh, _ => -1
+			"cal" => CrCalNpc("CalamitasClone"), "plant" => NPCID.Plantera, "eol" => NPCID.HallowBoss, "fish" => NPCID.DukeFishron, "qslime" => NPCID.QueenSlimeBoss, "wof" => NPCID.WallofFlesh, "levi" => CrCalNpc("Anahita"), _ => -1
 		};
 
 		private static void BbAddCal(HashSet<int> set, params string[] names) { foreach (string n in names) { int t = CrCalNpc(n); if (t > 0) set.Add(t); else global::Levy.Levy.Instance.Logger.Warn("HARNESS-BB: unknown Calamity NPC " + n); } }
@@ -53,6 +53,8 @@ namespace Levy.Common.Testing
 				case "plant": s.AddTypes.Add(NPCID.PlanterasHook); s.AddTypes.Add(NPCID.PlanterasTentacle); break;
 				case "fish": s.AddTypes.Add(NPCID.Sharkron); s.AddTypes.Add(NPCID.Sharkron2); s.AddTypes.Add(NPCID.DetonatingBubble); break;
 				case "qslime": s.AddTypes.Add(NPCID.QueenSlimeMinionBlue); s.AddTypes.Add(NPCID.QueenSlimeMinionPink); s.AddTypes.Add(NPCID.QueenSlimeMinionPurple); break;
+				case "levi": // Anahita is the spawned boss, the Leviathan joins her (death mode at once, otherwise below 40% of her life): both are parts of the one fight, the add NPCs are the aberrations
+					BbAddCal(s.PartTypes, "Anahita", "Leviathan"); BbAddCal(s.AddTypes, "AquaticAberration", "AnahitasIceShield"); s.AddTypes.Add(NPCID.DetonatingBubble); break;
 				case "wof": s.AddTypes.Add(NPCID.WallofFleshEye); s.AddTypes.Add(NPCID.TheHungry); s.AddTypes.Add(NPCID.TheHungryII); s.AddTypes.Add(NPCID.LeechHead); break;
 			}
 			return true;
@@ -79,7 +81,7 @@ namespace Levy.Common.Testing
 			try
 			{
 				if (_bbDownedType == null && ModLoader.TryGetMod("CalamityMod", out Mod cal)) _bbDownedType = cal.Code.GetType("CalamityMod.DownedBossSystem");
-				foreach (string fn in new[] { "downedAquaticScourge", "downedCryogen", "downedBrimstoneElemental", "downedCalamitasClone" })
+				foreach (string fn in new[] { "downedAquaticScourge", "downedCryogen", "downedBrimstoneElemental", "downedCalamitasClone", "downedLeviathan" })
 				{
 					var p = _bbDownedType?.GetProperty(fn, BindingFlags.Public | BindingFlags.Static);
 					if (p != null) p.SetValue(null, v); else _bbDownedType?.GetField(fn, BindingFlags.Public | BindingFlags.Static)?.SetValue(null, v);
@@ -98,7 +100,7 @@ namespace Levy.Common.Testing
 			bool flag = boss switch
 			{
 				"twins" => NPC.downedMechBoss2, "prime" => NPC.downedMechBoss3, "destroyer" => NPC.downedMechBoss1, "aqua" => BbCalGet("downedAquaticScourge"), "plant" => NPC.downedPlantBoss,
-				"cryo" => BbCalGet("downedCryogen"), "brim" => BbCalGet("downedBrimstoneElemental"), "cal" => BbCalGet("downedCalamitasClone"), "qslime" => NPC.downedQueenSlime, "fish" => NPC.downedFishron, "eol" => NPC.downedEmpressOfLight, _ => false
+				"cryo" => BbCalGet("downedCryogen"), "brim" => BbCalGet("downedBrimstoneElemental"), "cal" => BbCalGet("downedCalamitasClone"), "levi" => BbCalGet("downedLeviathan"), "qslime" => NPC.downedQueenSlime, "fish" => NPC.downedFishron, "eol" => NPC.downedEmpressOfLight, _ => false
 			};
 			return flag || (lifeMax > 0 && lastLife <= 0.25 * lifeMax);
 		}
@@ -110,7 +112,7 @@ namespace Levy.Common.Testing
 			if (r.Boss is "eol" or "qslime") p.ZoneHallow = true;
 			if (r.Boss == "cryo") p.ZoneSnow = true;
 			if (r.Boss == "plant") p.ZoneJungle = true;
-			if (r.Boss == "fish") p.ZoneBeach = true;
+			if (r.Boss is "fish" or "levi") p.ZoneBeach = true;
 			if (r.Boss is "brim" or "cal") BbSetModBiome(p, "CalamityMod/BrimstoneCragsBiome");
 			if (r.Boss == "aqua") BbSetModBiome(p, "CalamityMod/SulphurousSeaBiome");
 		}

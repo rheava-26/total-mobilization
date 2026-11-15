@@ -186,7 +186,7 @@ def analyse(rec):
     tk = Counter()
     for x in ev.get("tgt", []):
         tk[x.get("kind")] += 1
-    out["bossTargetSwitches"] = {"none": tk.get(0, 0), "commander": tk.get(1, 0), "levy": tk.get(2, 0)}
+    out["bossTargetSwitches"] = {"none": tk.get(0, 0), "commander": tk.get(1, 0), "levy": tk.get(2, 0), "spite": tk.get(3, 0)}
     if rec.end:
         t = rec.end.get("target", {})
         out["bossTargetFrames"] = t
@@ -423,11 +423,11 @@ def print_summary(rec, a, step):
         P("  first deaths: " + ", ".join("%s %s" % (fmt_t(x["t"]), x["name"]) for x in a["levyDeaths"][:6]))
     ts = a["bossTargetSwitches"]
     if ts and sum(ts.values()):
-        P("  the boss changed target %d times: to the commander %d, to a levy %d, to none %d" % (sum(ts.values()), ts["commander"], ts["levy"], ts["none"]))
+        P("  the boss changed target %d times: to the commander %d, to a levy %d, to none %d%s" % (sum(ts.values()), ts["commander"], ts["levy"], ts["none"], ", spite (redirected shots) %d" % ts["spite"] if ts.get("spite") else ""))
     bt = a.get("bossTargetFrames")
     if bt:
         tot = sum(bt.values()) or 1
-        P("  boss target by sample: commander %s, levy %s, none %s" % (pct(bt.get("player", 0), tot), pct(bt.get("levy", 0), tot), pct(bt.get("none", 0), tot)))
+        P("  boss target by sample: commander %s, levy %s, none %s%s" % (pct(bt.get("player", 0), tot), pct(bt.get("levy", 0), tot), pct(bt.get("none", 0), tot), ", spite (redirected shots) %s" % pct(bt["spite"], tot) if bt.get("spite") else ""))
 
     P("")
     P("NOTABLE")

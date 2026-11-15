@@ -32,6 +32,11 @@ namespace Levy.Common.Recording
 	///         prof (the profiler was on: /levyprof, the Toggle Levy profiler key, or automatically while an automatic recording ran, see FightRecConfig.ProfileRecordedFights; fps, ups, upd = ms per update, npc, proj, draw, ai, gear = ms, top = the biggest levy buckets, ms summed over the window, win = the window in real seconds).
 	///         end gains result (won|lost|fled|ended|interrupted: the word in the file name), durationSec, bossName, bosses, cmdDeaths, armyAlive, armyTotal, dmgBoss, dmgAll, profiled, dropped, capped, writeError.
 	///         Outcome and duration are only known at the end, so they live in the end record (and in the file name), not the header.
+	///         Format 9 separates the boss rule's spite from real targeting, names fights with several main bosses, and gives officers their own ids:
+	///         tkind 3 = spite (B[14], A[8], the tgt event's kind): the boss has no real target on a levy (the targeting lock SoldierTarget and an NPC target of 300 or more both say kind 2), but BossRule.SpiteTargetOf names a levy that is too close or does a lot of damage, and its
+	///         shots and dashes are redirected at that levy (tlevy = that levy). Kind 2 keeps meaning real targeting. Files of format 8 and older never carry kind 3: their kind 2 covers all three causes. end.target gains spite (samples of the primary boss with kind 3; levy no longer counts them).
+	///         hdr.boss, end.bossName and the file name carry every main boss of the fight: "The Twins" for Retinazer and Spazmatism, otherwise the distinct boss names joined ("A and B", "A, B and C"); a fight with one main boss is named for it as before.
+	///         Levy ids: every officer used to share the id -1 (the synthetic record's); an officer is now -100000 - its NPC slot, so each is its own row in l and in the events. Militia keep their own negative record ids (-1, -2, ... counted down per world session). An officer with an enemy in reach and a weapon up shows state Engage (L[7]); his avatar's own movement states never include Engage, so older files show officers as Follow / Search and Destroy / Idle all the time.
 	///         Older files stay readable: every new field is appended or optional.
 	///   names type id to name tables (items, npcs, projectiles, buffs, soldiers), written at the end
 	///   end   stop reason and counts
@@ -56,11 +61,11 @@ namespace Levy.Common.Recording
 
 	internal static class FightRecFormat
 	{
-		public const int Version = 8;
+		public const int Version = 9;
 		public const string SchemaP = "x,y,vx,vy,dir,flags,life,mana,immune,wingTime,rocketTime,held,mount,hookX,hookY,dashDelay";
 		public const string SchemaPFlags = "1 grounded,2 flying,4 hookOut,8 hookAttached,16 left,32 right,64 jump,128 down,256 up,512 grapple,1024 useItem,2048 dashing,4096 mounted,8192 dead";
 		public const string SchemaB = "type,id,x,y,vx,vy,life,lifeMax,ai0,ai1,ai2,ai3,target,isPart,tkind,tlevy,w,h";
-		public const string TKinds = "0 none,1 player,2 levy (tlevy = levy record id)";
+		public const string TKinds = "0 none,1 player,2 levy (the boss targets a levy: tlevy = its id),3 spite (redirected shots: the boss rule's grudge sends its projectiles and dashes at a levy that is too close or does a lot of damage; tlevy = that levy)";
 		public const string SchemaA = "type,id,x,y,vx,vy,life,lifeMax,tkind,tlevy,w,h";
 		public const string SchemaS = "type,id,x,y,w,h,realLife,flags  (a row of 3 = id,x,y: same type, size, realLife and flags as that id's last full row)";
 		public const string SFlags = "1 deals contact damage,2 does not take damage,4 body segment (realLife = the head that owns its life)";

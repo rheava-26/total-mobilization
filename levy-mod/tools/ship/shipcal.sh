@@ -20,7 +20,7 @@ if [ "${1:-}" != "--no-build" ]; then
 fi
 
 echo "== boot ($CAL_MODS) =="
-"$SHIP_DIR/tmlboot.sh" -i "$SHIPCAL" -s "$SHIPCAL/save" -m "$CAL_MODS" -p 7774 -q 10 -t 300 || echo "WARNING: boot did not reach the world menu (see $SHIPCAL/boot.out)"
+"$SHIP_DIR/tmlboot.sh" -i "$SHIPCAL" -s "$SHIPCAL/save" -m "$CAL_MODS" -p "$PORT_CAL" -q 10 -t 300 || echo "WARNING: boot did not reach the world menu (see $SHIPCAL/boot.out)"
 L="$SHIPCAL/tModLoader-Logs/server.log"
 [ -f "$L" ] || { echo "NO LOG"; exit 1; }
 EXC=$(grep -c -E -i 'xception' "$L")

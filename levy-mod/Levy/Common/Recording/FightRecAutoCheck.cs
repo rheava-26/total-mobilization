@@ -78,7 +78,7 @@ namespace Levy.Common.Recording
 					string c = Path.Combine(tmp, "c.levyrec");
 					var wc = new RecWriter(c, true, 0);
 					for (int i = 0; i < 400; i++) wc.WriteLine("{\"k\":\"f\",\"t\":" + i + "}");
-					System.Threading.Thread.Sleep(250);
+					Check(wc.Flush(), "a flush on demand returns once the file holds the queued lines");
 					string cut = Path.Combine(tmp, "cut.levyrec"); using (var src = new FileStream(c + ".part", FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) using (var dst = File.Create(cut)) src.CopyTo(dst);
 					var cl = ReadLines(cut, true, out string ce);
 					Check(cl.Count >= 390 && cl[0] == "{\"k\":\"f\",\"t\":0}", "a recording copied while still open reads back its flushed lines (" + cl.Count + ")");
@@ -235,6 +235,10 @@ namespace Levy.Common.Recording
 				Chk(!FightRecorder.On, "no new recording starts during the pause after one ends");
 				Main.npc[boss2].active = false; Step(3, p, null);
 
+				// ---------- 1b. several main bosses are one fight with all of their names; spite is its own target kind (format 9)
+				FightRecAuto.TestMode = FightRecMode.BossFights; FightRecAuto.ClearCooldown(); Step(3, p, null);
+				TwinsAndSpite(p, cx, spawned);
+
 				// ---------- 2. All fights: the skirmish starts it, it ends 5 s after the adds are gone, commander death makes it "lost"
 				FightRecorder.MaxFolderBytes = 0;
 				FightRecAuto.TestMode = FightRecMode.AllFights; FightRecAuto.ClearCooldown(); Step(3, p, null);
@@ -322,6 +326,7 @@ namespace Levy.Common.Recording
 		private void PChk(bool ok, string name) { if (ok) _ppass++; else { _pfail++; Mod.Logger.Warn("  clientprof world: FAIL " + name); } }
 
 		/// <summary>One scripted boss fight with the auto recorder, the clock stepped by hand. <paramref name="slowFrom"/>: from this tick on every tick sleeps (a lag stretch, so one profiler window reads lower fps than the rest).</summary>
+		private static long _profClock;
 		private string ProfFight(Player p, int cx, int ticks, int slowFrom, out int chatDuring, Action midFight = null)
 		{
 			FightRecAuto.ClearCooldown(); Step(3, p, null);
@@ -332,7 +337,7 @@ namespace Levy.Common.Recording
 				if (k == ticks / 2) midFight?.Invoke();
 				One(p, boss, k);
 				if (FightRecorder.On && Main.npc[boss].active && k % 7 == 0) FightRecorder.NoteDamage(Main.npc[boss], p, null, new Item(ItemID.Zenith), 220);
-				System.Threading.Thread.Sleep(k >= slowFrom ? 14 : (k % 3 == 0 ? 1 : 0));
+				_profClock += (long)((k >= slowFrom ? 14.0 : (k % 3 == 0 ? 1.0 : 0.3)) / 1000.0 * System.Diagnostics.Stopwatch.Frequency); // the profiler's windows read this clock, so a lag stretch is a stretch of ticks, not of wall-clock seconds
 			}
 			chatDuring = global::Levy.Common.Util.ClientProf.Said.Count - said0;
 			FightRecorder.NoteBossKill(Main.npc[boss]); Main.npc[boss].life = 0; Main.npc[boss].active = false;
@@ -355,7 +360,7 @@ namespace Levy.Common.Recording
 			_ppass = _pfail = 0;
 			try
 			{
-				global::Levy.Common.Util.ClientProf.TestServer = true; global::Levy.Common.Util.ClientProf.TestInterval = 0.05; global::Levy.Common.Util.ClientProf.TestAutoProfile = null; global::Levy.Common.Util.ClientProf.Said.Clear();
+				_profClock = 0; global::Levy.Common.Util.ClientProf.TestClock = () => _profClock; global::Levy.Common.Util.ClientProf.TestServer = true; global::Levy.Common.Util.ClientProf.TestInterval = 0.05; global::Levy.Common.Util.ClientProf.TestAutoProfile = null; global::Levy.Common.Util.ClientProf.Said.Clear();
 				FightRecAuto.TestFolder = good; FightRecAuto.TestDefaultDir = def; FightRecAuto.ResetMessages(); FightRecAuto.TestMode = FightRecMode.BossFights;
 
 				// ---- the key and the config
@@ -436,7 +441,7 @@ namespace Levy.Common.Recording
 				global::Levy.Common.Util.ClientProf.Disable(); global::Levy.Common.Util.ClientProf.TestAutoProfile = null;
 			}
 			if (Environment.GetEnvironmentVariable("LEVY_PROF_OVERHEAD") == "1") { try { ProfOverhead(p, cx, recs, spawned); } catch (Exception e) { Mod.Logger.Warn("[ClientProf] overhead probe threw " + e); } }
-			global::Levy.Common.Util.ClientProf.TestServer = false; global::Levy.Common.Util.ClientProf.TestInterval = null;
+			global::Levy.Common.Util.ClientProf.TestServer = false; global::Levy.Common.Util.ClientProf.TestInterval = null; global::Levy.Common.Util.ClientProf.TestClock = null;
 			if (_pfail == 0) Mod.Logger.Info($"[ClientProf] self-check pass={_ppass} fail=0");
 			else Mod.Logger.Warn($"[ClientProf] self-check pass={_ppass} fail={_pfail}");
 		}
@@ -549,10 +554,70 @@ namespace Levy.Common.Recording
 			else Mod.Logger.Warn("[FightRecAuto] size probe: no file");
 		}
 
-		// ---------------------------------------------------------------- scripting helpers
-		private static int SpawnBoss(int cx)
+		/// <summary>
+		/// Format 9: a fight with several main bosses is named for all of them (the Twins: "The Twins" in the file name, the header and the end record), and the boss-rule spite target is kind 3, apart from real targeting (kind 2).
+		/// The naming rule is checked on its own too, so a boss the check cannot spawn is still covered.
+		/// </summary>
+		private void TwinsAndSpite(Player p, int cx, List<int> levies)
 		{
-			int i = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("FightRecAutoCheck"), cx * 16 + 400, (Floor - 25) * 16, NPCID.EyeofCthulhu);
+			var twins = new List<(int, string)> { (NPCID.Retinazer, "Retinazer"), (NPCID.Spazmatism, "Spazmatism") };
+			Chk(FightRecorder.FightName(twins) == "The Twins", "the two Twins are named The Twins (" + FightRecorder.FightName(twins) + ")");
+			Chk(FightRecorder.FightName(new List<(int, string)> { (NPCID.Retinazer, "Retinazer") }) == "Retinazer", "a lone Retinazer keeps his name");
+			Chk(FightRecorder.FightName(new List<(int, string)> { (1, "A"), (2, "B") }) == "A and B" && FightRecorder.FightName(new List<(int, string)> { (1, "A"), (2, "B"), (3, "C") }) == "A, B and C", "other bosses are joined: A and B, A, B and C");
+			Chk(FightRecorder.FightName(new List<(int, string)> { (NPCID.EaterofWorldsHead, "Eater of Worlds"), (NPCID.EaterofWorldsBody, "Eater of Worlds") }) == "Eater of Worlds", "a boss with many segments is one name");
+			Chk(FightRecorder.FightName(new List<(int, string)> { (NPCID.Retinazer, "Retinazer"), (1, "X"), (NPCID.Spazmatism, "Spazmatism") }) == "The Twins and X" && FightRecorder.FightName(new List<(int, string)>()) == null, "the Twins plus another boss, and no boss at all");
+			Chk(FightRecFormat.Version >= 9 && FightRecFormat.TKinds.Contains("3 spite"), "the format documents target kind 3 (spite)");
+
+			if (levies == null || levies.Count == 0 || !Main.npc[levies[0]].active || Main.npc[levies[0]].ModNPC is not SoldierNPC sn) { Chk(false, "a levy body stands for the spite check"); return; }
+			int lv = levies[0];
+			int ret = SpawnBoss(cx, NPCID.Retinazer), spaz = SpawnBoss(cx, NPCID.Spazmatism);
+			Step(40, p, ret);
+			Chk(FightRecorder.On && FightRecorder.Auto == 1, "Boss fights starts on the Twins");
+			// the kinds, one cause at a time: the lock and an NPC target are kind 2, only the boss rule's grudge is kind 3
+			NPC rb = Main.npc[ret]; var data = global::Levy.Common.Globals.LevyNpcData.Of(rb);
+			int lockWas = data.SoldierTarget, tWas = rb.target, spT = data.SpiteTarget, spN = data.SpiteTimer;
+			data.SoldierTarget = -1; rb.target = 0; data.SpiteTarget = -1; data.SpiteTimer = 0;
+			FightRecorder.TargetOf(rb, out int kNone, out _); Chk(kNone == 1, "no levy cause: the boss is aimed at the commander (kind " + kNone + ")");
+			data.SpiteTarget = lv; data.SpiteTimer = 300;
+			FightRecorder.TargetOf(rb, out int kSpite, out int idSpite); Chk(kSpite == 3 && idSpite == FightRecorder.LevyId(sn, lv), "the boss rule's spite is kind 3 (kind " + kSpite + ")");
+			data.SoldierTarget = lv;
+			FightRecorder.TargetOf(rb, out int kLock, out _); Chk(kLock == 2, "the targeting lock stays kind 2 even with spite set (kind " + kLock + ")");
+			data.SoldierTarget = -1; rb.target = 300 + lv;
+			FightRecorder.TargetOf(rb, out int kNpc, out _); Chk(kNpc == 2, "an NPC target of 300 or more stays kind 2 (kind " + kNpc + ")");
+			rb.target = 0; data.SpiteTarget = lv; data.SpiteTimer = 300;
+			// and in the file: the grudge held for a few seconds
+			for (int k = 0; k < 120; k++) { data.SoldierTarget = -1; rb.target = 0; data.SpiteTarget = lv; data.SpiteTimer = 300; One(p, ret, k); if (k % 7 == 0) FightRecorder.NoteDamage(rb, p, null, new Item(ItemID.Zenith), 220); if (k % 4 == 0) System.Threading.Thread.Sleep(1); }
+			data.SoldierTarget = lockWas; rb.target = tWas; data.SpiteTarget = spT; data.SpiteTimer = spN;
+			FightRecorder.NoteBossKill(Main.npc[ret]); FightRecorder.NoteBossKill(Main.npc[spaz]);
+			Main.npc[ret].life = 0; Main.npc[ret].active = false; Main.npc[spaz].life = 0; Main.npc[spaz].active = false;
+			StepUntilStopped(p, -1, 1500);
+			string f = FightRecorder.LastResult;
+			Chk(f != null && Regex.IsMatch(Path.GetFileName(f), @"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}_The_Twins_won\.levyrec$"), "the Twins file is named The_Twins_won (" + Path.GetFileName(f ?? "none") + ")");
+			var lines = f != null ? ReadLines(f, true, out _) : new List<string>();
+			bool hdrOk = false, endOk = false, endSpite = false, tgt3 = false;
+			int bossEv = 0;
+			foreach (string l in lines)
+			{
+				try
+				{
+					using var d = JsonDocument.Parse(l); var r = d.RootElement; string kk = r.GetProperty("k").GetString();
+					if (kk == "hdr") hdrOk = r.GetProperty("boss").GetString() == "The_Twins" && r.GetProperty("format").GetInt32() == FightRecFormat.Version;
+					else if (kk == "end") { endOk = r.GetProperty("bossName").GetString() == "The Twins"; endSpite = r.GetProperty("target").TryGetProperty("spite", out var sp) && sp.GetInt32() > 0; }
+					else if (kk == "e") { string e = r.GetProperty("e").GetString(); if (e == "tgt" && r.GetProperty("kind").GetInt32() == 3) tgt3 = true; if (e == "boss") bossEv++; }
+				}
+				catch { }
+			}
+			Chk(hdrOk, "the header names the fight The_Twins");
+			Chk(endOk, "the end record's bossName is The Twins");
+			Chk(bossEv >= 2, "both Twins are logged as bosses (" + bossEv + ")");
+			Chk(tgt3, "a tgt event of kind 3 (spite) is written");
+			Chk(endSpite, "end.target.spite counts the spite samples");
+		}
+
+		// ---------------------------------------------------------------- scripting helpers
+		private static int SpawnBoss(int cx, int type = NPCID.EyeofCthulhu)
+		{
+			int i = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("FightRecAutoCheck"), cx * 16 + 400, (Floor - 25) * 16, type);
 			if (i >= 0) { NPC b = Main.npc[i]; b.aiStyle = -1; b.noGravity = true; b.noTileCollide = true; b.life = b.lifeMax = 2800; b.damage = 0; b.ai[3] = 4242f; }
 			return i;
 		}

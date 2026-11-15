@@ -6,6 +6,35 @@
 
 ---
 
+## 🚢 2.0.64 SHIPPED (11-15 04:50, sent to Eve)
+- shipboth 570 s:
+  - Vanilla boot exc=0 (known summon-staff pick only). Calamity boot exc=0 failN=0 compat=1.
+  - Run 1 vanilla: player-safety, FollowRowsWorld (row scan 1.33 ms, a wall-clock bound under load ~19) and a one-off TileSweep NullReferenceException x24 on KiteBunnyCorrupt (silently caught; NEW, not in 2.0.63).
+  - Rerun: vanilla exc=0, all pass except the FollowRows timing. Calamity OfficerWorld aim audit 1/45 once (known load flake).
+- **OPEN:** the Kite NRE is intermittent and unreproduced. Investigate with the next builder. FollowRowsWorld's timing check is wall-clock, so make it deterministic like the recorder checks.
+- Eve's Plantera 21:03: she died with Plantera at 8,849/256,396 (3.5%). The army kept firing to 5,788, then Plantera despawned (vanilla, target dead). Raised with her as a design question: should the army be able to fight on after the commander falls, for already-downed bosses only?
+- Corrected with Eve: spore gas is NOT a line. Puffs fly out in random directions at up to ~7 tiles/s, don't collide with tiles, and last 15 s (13 s live), with a 2x2-tile hurtbox and 108 damage by Calamity's design. Her bigger-arena idea is the right lever.
+- **fieldfix MERGED (11-15 ~05:30):**
+  - Thorns: tiles 32/69/352/655 break on levy contact (vanilla TouchDamageDestroyTile; NORTH_STAR exception recorded).
+  - Recorder format 9: kind 3 = spite; multi-boss names ("The Twins"); each officer gets id -100000-slot (all officers used to share id -1); officers show Engage while targeting.
+  - Officer target picks respect IsNeverTarget (they used to target the Dungeon Guardian).
+  - Off-duty banner (draw-only, 0-alloc refresh). FieldFixCheck 37/0 on both toolchains.
+  - **CORRECTION to what I told Eve:** "followers never fight bosses" was my misreading. The 21:20 "ReturnHome militia" appear only after she died and respawned at home, 1,400 tiles away (militia hunt within 120 tiles of their barracks, by design). The 20:36 "never Engage" unit was 5 officers merged into id -1; officers keep to the commander and never write Engage. Officers DO deal damage (Arms Dealer 237–800+ in 12 s). Support officers (Nurse, Angler, Clothier…) avoid fights by design. Officers have no fear meter.
+- **OPEN (pre-existing, not caught by the ship scripts):** "OFFICERKIT CHECK FAIL: short content should show whole at 300" (OfficerPanel.ListHeight). It appears in the 2.0.64 shipworld logs too; shipboth greps only fail=[1-9]/FAILURE/!!!. Fix the check or the panel, and widen the ship grep to "CHECK FAIL".
+- **`dialogue2` DRAFT DONE (branch dialogue2, 968dc58, NOT merged; awaiting Eve).** Review doc sent: scratchpad/dialogue_review.md.
+  - Soldier lines 479 → 552: 329 kept, 41 tightened, 31 rewritten, 78 cut, 153 new. Officer and mutiny lines untouched.
+  - Staged (commented out) lines need code: LIFE_CRYSTAL, CHEST_OPENED, ARMORY_GOT/WANT/BEST/WORST, per-drink triggers, world-tier tags, ranger/melee tags, a female tag.
+  - Lead's critique sent to Eve: right-click chat lines (IDLE, biomes, blood moon) got better in vanilla's clean style, but combat shouts lost the messy, talk-over-each-other energy from her 11-07 voice notes (e.g. "Weapons up! Mostly up. Up-ish." → "Here they come! Weapons up."). Proposal: vanilla-clean for chat, messy for shouts. One duplicated line (the heart crystal line appears twice).
+  - Asks for Eve: officer voices next? The gods-agree format regularly or only sometimes? What did "grumpy female levies on blood moon" mean?
+
+## (was) 2.0.64 building
+- **bosshitbox MERGED (40e1c9a):** levies take contact damage exactly where a player would. HostileContact runs the player's hit sequence (Calamity CanHitPlayer circles/states/cooldown slots) with per-slot immunity. Parity: 763,875 static positions plus 13.7–15.6M live positions, 0 mismatches after the fix (12,497 / 41,727 levy-only hits before).
+  - Leviathan Expert+Rev: deaths 4.3 → 0.0 per fight, 15/15 wins.
+  - Leviathan Master+Death: still 3/15 (dash and adds, not hitboxes).
+  - Recorder checks are deterministic now (RecWriter.Flush, ClientProf.TestClock).
+  - Ship scripts accept path/port overrides.
+- Levy 2.0.64 = leviathan charge lanes + bosshitbox. shipboth running. Still building: fieldfix, mobslots, hmreplays (Destroyer/AS battery first).
+
 ## 🌿 EVE'S NOV 14 FIGHTS (2026-11-15, Drive folder "Levy Fights" only)
 - Pulled 30 .levyrec files from Drive "Levy Fights/recordings": Retinazer x4 won, Plantera x9 lost, Anahita x12 (3 won), Empress x5 lost. All Master+Death.
 - **Replay site updated** (v17, https://claude.ai/artifact/Q6aYA45u8MSxyB7VZxHSEH): new set "Your fights, Nov 14" first, default = the 21:20 Plantera loss. make_site.py set mode now accepts .levyrec (it silently skipped them before).
@@ -22,6 +51,17 @@
 - **Design idea (lead, to discuss):** a Levy after-fight report showing the commander's damage vs the army's, DoT included. The vanilla DPS meter misses DoT, and Eve can't tell whether her weapons are good.
 - Eve: event fear is fine as design. "Plantera shouldn't target levies before I've beaten her": meaning unclear; asked her.
 - Cryo Slime: needs Cryogen + 2 mechs, snow biome, cavern layer, NOT PlayerSafe (placed walls behind you block it), weight 8% of cavern spawns. Cryogen's death also seeds Cryonic Ore in snow/ice at 45–70% depth.
+- **Eve 11-15 night (bed; plays tomorrow on the newest build):**
+  - Targeting rule confirmed by her and the code: an undowned boss never locks onto levies (EnemyTargeting: first kill is solo). The "levy" target% in army Plantera fights is the BossRule SPITE punishment (≤6 tiles for 1 s or ≥1% boss HP in 3 s → redirected shots/dash for 3 s), which the recorder lumps in with real targeting. fieldfix splits it out as kind 3.
+  - Morale: she'd like something on screen, but her screen is already busy; maybe an auto-rally. Not built; discuss more.
+  - Recordings: 39/40 levies wear wings, 0 wear boots, so her 34 Angel Treads are unused. → `mobslots` builder (Wings + Boots slots; reverses the old "no mobility slot" decision at her explicit request).
+  - Followers (negative ids) never fight bosses: ReturnHome 100% vs Plantera; Follow 78% at ~68 tiles vs Anahita, no Engage. → `fieldfix`.
+  - `fieldfix` also covers: thorns break on levy contact (vanilla contact rule only; an approved exception to never-alter), Twins naming, spite target kind, an off-duty banner (draw-only) when a levy/NPC is hired away.
+  - Unfinished sentence: "you can't use pylons whenever something is…". Ask her.
+  - Rigorous Destroyer/Aquatic Scourge baseline battery (fixed gear/army/arena, seeds only, ≥40 per boss, then one-variable sweeps) → redirected `hmreplays` to do this first. Machine: 4 cores, load ~19.
+  - Balance target = Death mode (Expert+Rev will be easy). Hardmode bosses need per-boss reworks for levies.
+  - **CORRECTED (Eve 11-15):** Eve's buffs. My first read used only the first buff snapshot of the 21:20 fight, which was one of her deliberately unbuffed ones. Every solo Plantera fight was fully buffed (Battle Combination, Titan Skin, Heartreach, Blurring, Shadow, Happy!, Swiftness; 20:55/21:03 also Endurance, Lifeforce, Regeneration, Wrath, Ironskin) via 30-stack infinite potions in her piggy bank, at 625 max life (~700–780 with buffs) and 55–65 defense. 20:59/21:05/21:18/21:20 and most Anahita fights were unbuffed on purpose (525 life, 47 defense). Potions aren't the gap; spore gas and adrenaline timing are. Calamity adrenaline: a full held bar gives 50% damage reduction; popping it gives +150% damage for 5 s; it charges in 30 s and resets on a hit.
+  - Status she asked about: dialogue rewrite NOT started; mobility slots now building; pylon/Officers scroll fixed in 2.0.63; shop lag fixed in 2.0.63; AlchemistNPC chooser fixed in 2.0.61; LuiAFK "open shop" never reproduced (4 shop defects fixed in 2.0.60). Ask her to retest on 2.0.63+.
 - **Site bug (Eve: "undefined is not an object", none worked):** format 8 real-game recordings carry negative ids for officers, militia and drones. make_site emitted those rows raw, and the page's decoder read any row starting with a negative number as a delta row, so it crashed. Fixed both sides (negative-key rows are wrapped as {"r":row}; the decoder skips unknown refs). Reproduced in Chromium, then verified all 30 new fights load with 0 pageerrors. Site v18.
 - **Harness replays lost:** the hardmode lab recordings (Destroyer, Leviathan, Empress, WoF batteries) didn't survive the container reset. Nothing on disk, and Drive holds only Eve's 30. Builder `hmreplays` is recording fresh ones: every boss from WoF up plus missing pre-HM, 3 fights each in Expert+Rev and Master+Death, tier gear, to /home/user/lab/hmreplays. The lead publishes in batches. **Rule from now on:** keep raw recordings from every lab run.
 

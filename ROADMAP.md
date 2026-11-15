@@ -17,6 +17,7 @@
 ## 🎯 Eve caught it again: projectiles "tickle" levies (projectile damage parity)
 - Calamitas Clone Master+Death: darts, explosions, fireballs and bolts hit levies for exactly 1 damage (hundreds of hits/fight); Cataclysmic Flame ~10. Expert+Rev darts ~6. A player takes ~100+. Destroyer and WoF lasers also do 1.
 - Contact has player parity (bosshitbox), projectiles don't: the NPC damage path skips the difficulty multipliers and Calamity's scaling, and uses NPC defense. **All battery results are still generous for projectile bosses.** Rerun after the fix; the 100-fight battery waits for this.
+- Eve: "this is why projectiles felt insignificant to levies and dashes murdered them". Yes: contact had player parity (or worse, before bosshitbox) while projectiles did ~1. She asked for a sweep for other inconsistencies → `parityaudit` builder (an audit: debuffs/DoT, non-boss damage, defense/DR, damage dealt incl. WhipRealDamageMult 4.0, i-frames/knockback, healing, boss-side scaling, mobility); doc at levy-mod/docs/PARITY_AUDIT.md.
 - `projparity` builder: projectile damage to a levy = what a player with the levy's stats takes (A/B switch LEVY_PROJPARITY). It also makes levies obey Calamity ArenaWallSystem boxes (CalClone, SCal; Eve OK'd: "fix the confinement box").
 
 ## 🎯 Eve caught it: Leviathan targets the commander (lab replays)

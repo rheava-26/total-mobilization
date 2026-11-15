@@ -440,10 +440,10 @@ namespace Levy.Common.Testing
 				// the end of the death animation: ai[0] == 2 is "death effects", ai[1] counts its ticks and the kill comes at 600
 				core.ai[0] = 2f; core.ai[1] = 595f; core.netUpdate = true;
 				Step(12);
-				Note("exceptions the three kinds of Moon Lord NPC threw during the death: " + (thrown.Count == 0 ? "none" : string.Join(", ", thrown.Select(k => k.Key + " x" + k.Value))) + (firstEx != null ? "; first: " + firstEx : ""));
-				Check("Moon Lord's death animation ends without an exception (Calamity's override AI clears itself on the server inside its own PreAI)", thrown.Count == 0);
+				Note("what the three kinds of Moon Lord NPC threw during the death: " + (thrown.Count == 0 ? "none" : string.Join(", ", thrown.Select(k => k.Key + " x" + k.Value))) + (firstEx != null ? "; first: " + firstEx : ""));
+				Check("Moon Lord's death animation ends without a throw (Calamity's override AI clears itself on the server inside its own PreAI)", thrown.Count == 0);
 				Check("the core and its parts are gone after the kill", !core.active && !Main.npc[part[0]].active && !Main.npc[part[1]].active && !Main.npc[part[2]].active);
-				Check($"the SendExtraAI hook is installed and kept the dead core's override through its own pass (kept {CalamityTargetingCompat.OverrideKept} times), so the fallback never had a NullReferenceException to answer ({CalamityTargetingCompat.DeathNreAnswered})",
+				Check($"the SendExtraAI hook is installed and kept the dead core's override through its own pass (kept {CalamityTargetingCompat.OverrideKept} times), so the fallback never had a null read to answer ({CalamityTargetingCompat.DeathNreAnswered})",
 					CalamityTargetingCompat.SendHookInstalled && CalamityTargetingCompat.OverrideKept >= 1 && CalamityTargetingCompat.DeathNreAnswered == 0);
 			}
 			finally { On_NPC.UpdateNPC -= det; }

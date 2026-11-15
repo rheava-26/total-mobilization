@@ -59,6 +59,7 @@ ENVS = {
     "LEVY_FEARMODEL": "fear model (events is the shipped one)", "LEVY_SURV": "survivability mode (formation is the shipped one)", "LEVY_UPKEEP": "0-3 gear upkeep mode",
     "LEVY_CR_EXCLUDE": "comma list of weapons never rolled by the C# pools (default UrchinMace,SaharaSlicers)", "LEVY_CR_DOWNED": "milestone flags for gated weapons, e.g. downedDoG",
     "LEVY_CR_WORMDIST": "tiles between the worm's spawn and the commander (default 80)", "LEVY_CR_STEPS": "game ticks stepped per server turn (kit sets 120; lower = slower)",
+    "LEVY_MOBSLOTS": "0 = wings and movement boots go back into ordinary accessory slots (the pre-Wings/Boots-slots rule; A/B only)", "LEVY_SPECSHOTS": "0 = a Spectator commander vetoes hostile shots at the army again (pre-2.0.66)",
 }
 BOSSES = "kslime ds eye crab eow brain hive perf qb skel sg destroyer".split()
 SPEC_KEYS = {f[0] for f in FIELDS} | set(TOKENS)

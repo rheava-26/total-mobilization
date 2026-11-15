@@ -14,6 +14,11 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🎯 Eve caught it again: projectiles "tickle" levies (projectile damage parity)
+- Calamitas Clone Master+Death: darts, explosions, fireballs and bolts hit levies for exactly 1 damage (hundreds of hits/fight); Cataclysmic Flame ~10. Expert+Rev darts ~6. A player takes ~100+. Destroyer and WoF lasers also do 1.
+- Contact has player parity (bosshitbox), projectiles don't: the NPC damage path skips the difficulty multipliers and Calamity's scaling, and uses NPC defense. **All battery results are still generous for projectile bosses.** Rerun after the fix; the 100-fight battery waits for this.
+- `projparity` builder: projectile damage to a levy = what a player with the levy's stats takes (A/B switch LEVY_PROJPARITY). It also makes levies obey Calamity ArenaWallSystem boxes (CalClone, SCal; Eve OK'd: "fix the confinement box").
+
 ## 🎯 Eve caught it: Leviathan targets the commander (lab replays)
 - Scan of all 344 rerun fights: only 3 boss-parts are on the commander >30%: Leviathan Master+Death s1 and Expert+Rev s1 (100%), Spazmatism Master+Death s1 (73%). All seed 1.
 - The commander is a hidden Spectator, so these were free wins: Leviathan Master+Death s1 landed 8 hits on levies vs 227 in s2.

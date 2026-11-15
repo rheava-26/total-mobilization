@@ -12,7 +12,7 @@ const fs = require('fs'), path = require('path');
   const browser = await chromium.launch();
   let bad = 0, n = 0;
   for (const set of man.sets) {
-    const fs_ = set.fights, picks = [];
+    const fs_ = set.fights.filter(f => fs.existsSync(path.join(site, f.file))), picks = [];
     const add = f => { if (f && !picks.includes(f)) picks.push(f); };
     add(fs_.find(f => f.mode.startsWith('Master'))); add(fs_.find(f => !f.mode.startsWith('Master'))); add([...fs_].sort((a, b) => b.bytes - a.bytes)[0]);
     for (const f of picks.slice(0, per)) {

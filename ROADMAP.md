@@ -6,6 +6,26 @@
 
 ---
 
+## 🧪 HARDMODE BATTERY RESULTS (hmreplays MERGED 155bc46; harness/tooling only; RESULTS.md in levy-mod/lab/hmreplays)
+- **Destroyer, Master+Death, fixed 34 on-tier, platforms:**
+  - Baseline: 15/40 wins = 38% (CI 24–53), median kill 67 s, 30 deaths/fight. Damage taken: head 6.7k, body 5.5k, tail ~0, projectiles 0.
+  - Army size: 12 → 0/20, 24 → 0/20, 36 → 35%.
+  - No wings 20%; flat arena 20% (weak signals at n=20).
+  - Adding levies does NOT make it harder. Below ~34 it's a wipe.
+- **Aquatic Scourge, Master+Death:** 40/40 baseline, kill 131 s, 0 deaths. 12 levies 65%; flat arena slower (187 s).
+- **Broad sweep, 3 on-tier + 1 one-tier-below fight per mode; Master+Death wins:**
+  - Strong: WoF 4/4, Queen Slime 4/4, Prime 4/4, Brimstone 4/4, Cryogen 4/4, Calamitas Clone 4/4, Golem 4/4, Moon Lord 4/4 (suspicious), PBG 3/3.
+  - Mixed: Twins 3/4, Plantera 2/4, EoL 2/4 (2 timeouts), Cultist 2/4.
+  - Losing: Leviathan 1/4, Aureus 1/4, Ravager 0/4 (2/4 Expert+Rev), Duke Fishron 0/4 (0/4 Expert+Rev too; full wipes).
+  - Pre-hardmode Calamity bosses are easy.
+- **Bugs found → `bossbugs` builder:**
+  - Deerclops IndexOutOfRange in Calamity's DeerclopsAI when its target is an NPC slot (likely real play), plus an audit of every Calamity vanilla-AI override.
+  - Moon Lord never hurts levies (0 hits in 8 fights).
+  - WoF 0–2 hits.
+  - The recorder verdict says despawn for Cultist and ML kills.
+- **Per-boss rework candidates for Eve (Death-mode balance):** Fishron, Ravager, Aureus, Leviathan (dash + adds), Destroyer (body contact).
+- Lab replay site: building a capped subset (all 175 broad + 10 baseline + 5 per sweep cell, 6 Hz) as a separate artifact. The main site's file cap is 511.
+
 ## 🚢 2.0.65 SHIPPED (11-15 ~05:40, sent to Eve) = mobslots (round 2) + fieldfix
 - shipboth 453 s: vanilla boot exc=0 (known summon-staff only); Calamity boot exc=0 failN=0 compat=1. World checks: 0 exceptions in both halves, both runs.
 - Flaky checks (passed in one of two runs): SummonWorld Hornet Staff "enemy hurt (0)" (run 1 only); FieldFix militia and regular-vs-boss damage checks read 0 under load (3 of 3 runs had one or more); MobWorld "Angel flies longer than Fledgling" measured airborne ticks 34 vs 122 once (Calamity run 2; behaviour-measured; the stat wing time is right).

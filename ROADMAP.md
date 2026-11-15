@@ -14,7 +14,7 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
-## 🚢 2.0.67 SHIPPED (11-15 ~15:40): spectarget + destroyerdrop fixes. Serial shipboth 677 s: both boots exc=0; all world checks 0 exceptions. One FAIL: BossBugs spectarget, Calamity half: Spazmatism on the commander for 27/360 ticks at spawn (default target 0 before the first retarget). Sent back to spectarget for a spawn-tick fix.
+## 🚢 2.0.67 SHIPPED (11-15 ~15:40): spectarget + destroyerdrop fixes. Serial shipboth 677 s: both boots exc=0; all world checks 0 exceptions. One FAIL: BossBugs spectarget, Calamity half: Spazmatism on the commander for 27/360 ticks at spawn (default target 0 before the first retarget). Sent back for a spawn-tick fix. The new `spectarget2` builder was BLOCKED: the permission classifier denied its `git checkout -B/-b spectarget2` (all variants), so no work was done. Not routed around; asked Eve to approve a rerun.
 
 ## 🗂 Replay pages (Eve 11-15): why two pages? Curate, version-stamp, clear old
 - Two pages exist only because of the 511-file cap: the main one (Q6aYA45u8MSxyB7VZxHSEH: Eve's fights + old pre-HM labs) and the lab one (5bQWET74N12m4bYMbFxqqK: 2.0.66 hardmode battery).

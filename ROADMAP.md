@@ -14,6 +14,10 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## ⏸ 14:55 UTC: all 5 builders hit the 5-hour usage limit (resets 17:30 UTC)
+- destroyerdrop, spectarget, projparity, parityaudit and redemption were all cut off mid-work. Their worktrees and labs are intact (git worktree list; /home/user/lab/*). No orphan tML processes.
+- A check-in is scheduled for 17:35 UTC to resume each with SendMessage (≤1 tML each).
+
 ## 🎯 Eve caught it again: projectiles "tickle" levies (projectile damage parity)
 - Calamitas Clone Master+Death: darts, explosions, fireballs and bolts hit levies for exactly 1 damage (hundreds of hits/fight); Cataclysmic Flame ~10. Expert+Rev darts ~6. A player takes ~100+. Destroyer and WoF lasers also do 1.
 - Contact has player parity (bosshitbox), projectiles don't: the NPC damage path skips the difficulty multipliers and Calamity's scaling, and uses NPC defense. **All battery results are still generous for projectile bosses.** Rerun after the fix; the 100-fight battery waits for this.

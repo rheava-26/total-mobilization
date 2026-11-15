@@ -37,6 +37,23 @@ namespace Levy.Content.NPCs
 		internal struct HitResult { public bool Ran, Dodged; public int Damage; public Player.HurtInfo Info; public int DummyImmune; }
 		internal HitResult LastProjectileResult;
 		private int _knockTicks;
+		private bool _gearHurtRan, _defDamageLive;
+		private static readonly bool CalamityLoaded = ModLoader.HasMod("CalamityMod");
+		private static System.Reflection.PropertyInfo _cdd; private static bool _cddInit; private static ModPlayer _cpBase;
+		/// <summary>The dummy's Player.Hurt can run (the hit's on-hook step): the gear frame is on, or Calamity's defense damage needs the hit replayed on the dummy.</summary>
+		private bool HurtFrameOk => UpkeepActive || (DefDamageOn && CalamityLoaded && !OfficerMode && Record != null && Dummy != null && PipelineOk);
+		/// <summary>Calamity's CurrentDefenseDamage on the dummy (0 without Calamity).</summary>
+		internal int CalDefenseDamageNow()
+		{
+			if (!CalamityLoaded || Dummy == null) return 0;
+			try
+			{
+				if (!_cddInit) { _cddInit = true; _cpBase = ModContent.Find<ModPlayer>("CalamityMod/CalamityPlayer"); _cdd = _cpBase?.GetType().GetProperty("CurrentDefenseDamage"); }
+				if (_cdd == null) return 0;
+				return (int)_cdd.GetValue(Dummy.GetModPlayer(_cpBase));
+			}
+			catch (Exception) { return 0; }
+		}
 		/// <summary>The projectile whose hit GearOnHurt is replaying on the dummy (so the on-hit hooks see a projectile, as for a player).</summary>
 		internal Projectile HurtProjectile;
 		/// <summary>The sequence's source damage for the hit GearOnHurt is replaying (Calamity's defense damage is the damage the defense mitigated: source minus final).</summary>
@@ -98,7 +115,7 @@ namespace Levy.Content.NPCs
 			Opened o = default; bool opened = false;
 			try
 			{
-				o = OpenDummy(); opened = true;
+				o = OpenDummy(); opened = true; _gearHurtRan = false;
 				d.immune = false; d.immuneTime = 0; Array.Clear(d.hurtCooldowns);
 				_buffSnap.Clear(); for (int i = 0; i < d.buffType.Length; i++) if (d.buffType[i] > 0) _buffSnap[d.buffType[i]] = d.buffTime[i];
 				var reason = a != null ? PlayerDeathReason.ByNPC(a.whoAmI) : PlayerDeathReason.ByProjectile(-1, p.whoAmI);
@@ -113,6 +130,7 @@ namespace Levy.Content.NPCs
 				if (r.Dodged)
 				{
 					SeqDodges++; r.DummyImmune = d.immuneTime;
+					if (SeqDodges <= 5) Levy.Instance?.Logger.Info($"[PlayerHit] dodge #{SeqDodges}: cancelled={info.Cancelled} dodgeable={info.Dodgeable} from {(a != null ? a.TypeName : p?.Name)} base={baseDamage} dmg={info.Damage} dummyImmune={d.immuneTime} shadow={d.shadowDodge}");
 					int t = LevyConstants.ScaledImmune(d.immuneTime);
 					if (t > 0) { if (t > ImmuneTime) ImmuneTime = t; if (t > AllImmune) AllImmune = t; }
 				}
@@ -139,7 +157,7 @@ namespace Levy.Content.NPCs
 				{
 					o = OpenDummy(); opened = true;
 					var info = res.Info;
-					if (!UpkeepActive) { if (a != null) CombinedHooks.OnHitByNPC(d, a, in info); else if (p != null) CombinedHooks.OnHitByProjectile(d, p, in info); } // the gear frame's Player.Hurt already ran them
+					if (!_gearHurtRan) { if (a != null) CombinedHooks.OnHitByNPC(d, a, in info); else if (p != null) CombinedHooks.OnHitByProjectile(d, p, in info); } // the gear frame's Player.Hurt already ran them
 					if (a != null) d.StatusFromNPC(a); else if (p != null) p.StatusPlayer(DummySlot);
 					for (int i = 0; i < d.buffType.Length; i++)
 					{

@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""Collects the headless recordings of levylab run dirs into /home/user/lab/hmreplays/recordings/<boss-slug>/ as gzip .levyrec files,
+"""Collects the headless recordings of levylab run dirs into <HM_LAB>/recordings/<boss-slug>/ as gzip .levyrec files,
 and appends one row per fight to <dest>/fights.csv (boss, pair, kit, seed, levies, result, kill seconds, levy deaths, ...).
   hm_collect.py RUN_DIR [RUN_DIR ...] [--dest /home/user/lab/hmreplays/recordings]
 A recording is matched to its fight through the cellkey in its header (the levylab cell id tcN + the seed), the cell's meta=<slug>_<kit>_<pair>_n<N>_T<tier>
 token, and the run's results.csv row. File name: <slug>_<pair>_<kit>_s<seed>_<result>.levyrec (a re-run of the same fight gets -2, -3 ...)."""
-import argparse, csv, gzip, json, re, shutil, sys
+import argparse, csv, gzip, json, os, re, shutil, sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent)); sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "Levy" / "tools" / "fightviewer"))
+import make_site
+LAB = os.environ.get("HM_LAB", "/home/user/lab/hmbattery2")   # lab root; the previous run lived in /home/user/lab/hmreplays
 
 ap = argparse.ArgumentParser()
-ap.add_argument("runs", nargs="+"); ap.add_argument("--dest", default="/home/user/lab/hmreplays/recordings")
+ap.add_argument("runs", nargs="+"); ap.add_argument("--dest", default=LAB + "/recordings")
 a = ap.parse_args()
 dest = Path(a.dest); dest.mkdir(parents=True, exist_ok=True)
-FIELDS = ["slug", "pair", "kit", "seed", "levies", "result", "sec", "deaths", "firstDeathSec", "bossMax", "bossLeft", "file", "run"]
+FIELDS = ["slug", "pair", "kit", "seed", "levies", "result", "sec", "deaths", "firstDeathSec", "bossMax", "bossLeft", "takenContact", "takenProj", "takenProjHits", "tgtLevyPct", "tgtSpitePct", "tgtPlayerPct", "format", "file", "run"]
 fc = dest / "fights.csv"
 have = set()
 if fc.exists():
@@ -43,9 +46,12 @@ for run in map(Path, a.runs):
             if (str(run), target.name) in have: break
             target = d / f"{base}-{i}.levyrec"; i += 1
         if (str(run), target.name) in have: continue
+        sm = make_site.summarize(make_site.load(str(f)))
+        tc = sum(float(r.get(k) or 0) for k in ("takenHead", "takenBody", "takenTail", "takenOtherContact")) if r else ""
         with open(f, "rb") as src, gzip.open(target, "wb", compresslevel=9) as z: shutil.copyfileobj(src, z)
         out.writerow(dict(slug=slug, pair=pair, kit=kit, seed=seed, levies=n, result=result, sec=r.get("sec", ""), deaths=r.get("deaths", ""), firstDeathSec=r.get("firstDeathSec", ""),
-                          bossMax=r.get("bossMax", ""), bossLeft=r.get("bossLeft", ""), file=str(target.relative_to(dest)), run=str(run)))
+                          bossMax=r.get("bossMax", ""), bossLeft=r.get("bossLeft", ""), takenContact=tc, takenProj=r.get("takenProj", ""), takenProjHits=r.get("takenProjHits", ""),
+                          tgtLevyPct=sm.get("pl", ""), tgtSpitePct=sm.get("ps", ""), tgtPlayerPct=sm.get("pp", ""), format=sm.get("format", ""), file=str(target.relative_to(dest)), run=str(run)))
         n_new += 1
         print("collected", target.relative_to(dest), result, r.get("sec", ""), "s", f.stat().st_size // 1024, "KB ->", target.stat().st_size // 1024, "KB")
 print(n_new, "new recordings")

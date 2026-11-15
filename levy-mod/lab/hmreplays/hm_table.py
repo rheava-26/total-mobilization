@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Per-boss summary of the recorded fights: hm_table.py [/home/user/lab/hmreplays/recordings/fights.csv]
+"""Per-boss summary of the recorded fights: hm_table.py [<HM_LAB>/recordings/fights.csv]
 fights, wins / losses / timeouts per mode (Expert+Rev, Master+Death), median kill time of the wins, mean levy deaths per fight, mean levies."""
-import csv, statistics, sys
+import os, csv, statistics, sys
 from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from hm_mk import BOSSES
 
-rows = list(csv.DictReader(open(sys.argv[1] if len(sys.argv) > 1 else "/home/user/lab/hmreplays/recordings/fights.csv")))
+rows = list(csv.DictReader(open(sys.argv[1] if len(sys.argv) > 1 else os.environ.get("HM_LAB", "/home/user/lab/hmbattery2") + "/recordings/fights.csv")))
 rows = [r for r in rows if r["result"] not in ("error", "nores")]
 PAIR = {"rev": "Exp+Rev", "mdeath": "Master+Death"}
 

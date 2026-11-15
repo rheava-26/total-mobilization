@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Battery table: hm_btable.py [/home/user/lab/hmreplays/battery/fights.csv]
+"""Battery table: hm_btable.py [<HM_LAB>/battery/fights.csv]
 per boss x cell: fights, win rate (Wilson 95% interval), kill time median / p10 / p90 of the wins, levy deaths per fight (mean), damage TAKEN by levies per fight by source
 (head / body / tail / projectile / adds, mean), mean tgtLevy% (the recorder's target field; it reads levy for the targeting lock, an NPC target >= 300 and the spite target alike)."""
-import csv, glob, json, math, re, statistics, sys
+import os, csv, glob, json, math, re, statistics, sys
 from pathlib import Path
 
-rows = [r for r in csv.DictReader(open(sys.argv[1] if len(sys.argv) > 1 else "/home/user/lab/hmreplays/battery/fights.csv")) if r["result"] in ("WIN", "LOSS", "TIMEOUT", "DESPAWN")]
+rows = [r for r in csv.DictReader(open(sys.argv[1] if len(sys.argv) > 1 else os.environ.get("HM_LAB", "/home/user/lab/hmbattery2") + "/battery/fights.csv")) if r["result"] in ("WIN", "LOSS", "TIMEOUT", "DESPAWN")]
 HIT_RE = re.compile(r"(contact|proj):(.*?)(?:/(-?\d+))?=(\d+)/(\d+)")
 
 

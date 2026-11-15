@@ -181,6 +181,7 @@ namespace Levy.Common.Weapons
 		{
 			if (IsTool(it)) return Kind.Tool;
 			if (!Candidate(it)) return Kind.None;
+			if (it.useAmmo == AmmoID.Sand || it.ammo == AmmoID.Sand) return Kind.Place; // vanilla's own flag: the Sandgun and every block it shoots lay tiles where they land
 			string key = KeyOf(it.type);
 			if (_weapon.TryGetValue(key, out Kind w)) return w;
 			if (_round.TryGetValue(key, out Kind a)) return a;

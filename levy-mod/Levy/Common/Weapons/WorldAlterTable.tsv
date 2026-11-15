@@ -8,19 +8,27 @@ W	CalamityMod/RubberMortarRound	Walls
 W	CalamityMod/Skynamite	Tiles+Walls
 W	CalamityMod/StarStruckWater	Convert
 W	CalamityMod/WulfrumDiggingTurtle	Tiles
+W	Clentaminator	Convert
+W	Clentaminator2	Convert
 W	DirtBomb	Convert+Place
+W	DirtRod	-
 W	DirtStickyBomb	Place
 W	Dynamite	Tiles+Walls
 W	HolyWater	Convert
 W	HoneyBomb	Liquid
 W	LavaBomb	Liquid
 W	MysticCoilSnake	Place
+W	PurificationPowder	-
 W	RopeCoil	Place
 W	ScarabBomb	Tiles
 W	SilkRopeCoil	Place
 W	StickyBomb	Tiles+Walls
 W	StickyDynamite	Tiles+Walls
+W	ThoriumMod/Purify	-
+W	ThoriumMod/TesterPurity	-
 W	UnholyWater	Convert
+W	ViciousPowder	-
+W	VilePowder	-
 W	VineRopeCoil	Place
 W	WebRopeCoil	Place
 W	WetBomb	Liquid
@@ -41,37 +49,30 @@ W	miningcracks_take_on_luiafk/UnlimitedStickyDynamite	Tiles+Walls
 W	miningcracks_take_on_luiafk/UnlimitedVineRopeCoil	Place
 W	miningcracks_take_on_luiafk/UnlimitedWebRopeCoil	Place
 W	miningcracks_take_on_luiafk/UnlimitedWetBombs	Liquid
-A	BlueSolution	Convert
-A	CalamityMod/AstralSolution	Convert
+A	CalamityMod/AstralSand	Place
+A	CalamityMod/Dunesand	Place
 A	CalamityMod/MortarRound	Tiles+Walls
+A	CalamityMod/PolypSand	Place
 A	CalamityMod/RubberMortarRound	Tiles+Walls
+A	CalamityMod/VolcanicSand	Place
 A	ClusterRocketII	Tiles+Walls
-A	DirtSolution	Convert
+A	CrimsandBlock	-
+A	EbonsandBlock	-
 A	HoneyRocket	Liquid+Place
 A	LavaRocket	Liquid+Place
 A	MiniNukeII	Tiles+Walls
-A	PurpleSolution	Convert
-A	RedSolution	Convert
+A	PearlsandBlock	-
 A	RocketII	Tiles+Walls
 A	RocketIV	Tiles+Walls
-A	SandSolution	Convert
-A	SnowSolution	Convert
-A	WetRocket	Liquid+Place
-A	miningcracks_take_on_luiafk/DarkGreenSolution	Convert
-A	miningcracks_take_on_luiafk/UnlimitedBlueSolution	Convert
-A	miningcracks_take_on_luiafk/UnlimitedBrownSolution	Convert
-A	miningcracks_take_on_luiafk/UnlimitedDarkGreenSolution	Convert
-A	miningcracks_take_on_luiafk/UnlimitedPurpleSolution	Convert
-A	miningcracks_take_on_luiafk/UnlimitedRedSolution	Convert
+A	SandBlock	-
+A	WetRocket	Liquid
 A	miningcracks_take_on_luiafk/UnlimitedRocketIIs	Tiles+Walls
 A	miningcracks_take_on_luiafk/UnlimitedRocketIVs	Tiles+Walls
-A	miningcracks_take_on_luiafk/UnlimitedWhiteSolution	Convert
-A	miningcracks_take_on_luiafk/UnlimitedYellowSolution	Convert
+A	miningcracks_take_on_luiafk/UnlimitedSand	-
 X	CalamityMod/FlakKraken	DryRocket	Liquid
 X	CalamityMod/Seadragon	CalamityMod/BloodfireBullet	Place
 X	CalamityMod/Seadragon	CalamityMod/MarksmanRound	Place
 X	CalamityMod/Voidragon	CalamityMod/BloodfireBullet	Place
-X	CalamityMod/Voidragon	CalamityMod/MarksmanRound	Place
 X	Celeb2	miningcracks_take_on_luiafk/UnlimitedClusterRocketIIs	Tiles+Walls
 X	Celeb2	miningcracks_take_on_luiafk/UnlimitedMiniNukeIIs	Tiles+Walls
 X	RocketLauncher	miningcracks_take_on_luiafk/UnlimitedClusterRocketIIs	Tiles+Walls
@@ -91,13 +92,10 @@ S	AdamantiteGlaive
 S	AdamantiteRepeater
 S	AleThrowingGlove
 S	Amarok
-S	AmberHook
 S	AmberMosquito
 S	AmberStaff
-S	AmethystHook
 S	AmethystStaff
 S	Anchor
-S	AntiGravityHook
 S	ApprenticeStaffT3
 S	AquaScepter
 S	Arkhalis
@@ -108,7 +106,6 @@ S	BallOHurt
 S	BallOfFuseWire
 S	BambooLeaf
 S	Bananarang
-S	BatHook
 S	BatScepter
 S	BeachBall
 S	BeamSword
@@ -129,6 +126,7 @@ S	Blowpipe
 S	BlueEgg
 S	BlueFlare
 S	BlueMoon
+S	BlueSolution
 S	Bone
 S	BoneArrow
 S	BoneDagger
@@ -197,6 +195,7 @@ S	CalamityMod/AshenStalactite
 S	CalamityMod/AstralBlaster
 S	CalamityMod/AstralPike
 S	CalamityMod/AstralScythe
+S	CalamityMod/AstralSolution
 S	CalamityMod/AstralStaff
 S	CalamityMod/AstralachneaStaff
 S	CalamityMod/AstrealDefeat
@@ -240,7 +239,6 @@ S	CalamityMod/BloodfireBullet
 S	CalamityMod/BloodsoakedCrasher
 S	CalamityMod/BloodyVein
 S	CalamityMod/BlossomFlux
-S	CalamityMod/BobbitHook
 S	CalamityMod/Bonebreaker
 S	CalamityMod/BorealisBomber
 S	CalamityMod/BotanicPiercer
@@ -731,7 +729,6 @@ S	CalamityMod/SeethingDischarge
 S	CalamityMod/SepticSkewer
 S	CalamityMod/Seraphim
 S	CalamityMod/Serpentine
-S	CalamityMod/SerpentsBite
 S	CalamityMod/ShadecrystalBarrage
 S	CalamityMod/ShaderainStaff
 S	CalamityMod/Shadethrower
@@ -955,7 +952,6 @@ S	CalamityMod/YellowSeekingMechanism
 S	CalamityMod/YharimsCrystal
 S	CalamityMod/YharonsKindleStaff
 S	CalamityMod/YinYo
-S	CandyCaneHook
 S	CandyCorn
 S	CandyCornRifle
 S	Carrot
@@ -977,11 +973,8 @@ S	ChlorophyteJackhammer
 S	ChlorophytePartisan
 S	ChlorophyteSaber
 S	ChlorophyteShotbow
-S	ChristmasHook
 S	ChristmasTreeSword
 S	ChumBucket
-S	Clentaminator
-S	Clentaminator2
 S	ClingerStaff
 S	ClockworkAssaultRifle
 S	ClosedVoidBag
@@ -1046,22 +1039,19 @@ S	DeerclopsPetItem
 S	DemonBow
 S	DemonScythe
 S	DestroyerPetItem
-S	DiamondHook
 S	DiamondStaff
-S	DirtRod
+S	DirtSolution
 S	DirtiestBlock
 S	DogWhistle
 S	Drax
 S	DripplerFlail
 S	DryBomb
-S	DualHook
 S	DukeFishronPetItem
 S	EaterOfWorldsPetItem
 S	EatersBone
 S	EbonwoodBow
 S	ElectrosphereLauncher
 S	ElfMelter
-S	EmeraldHook
 S	EmeraldStaff
 S	EmpressBlade
 S	EnchantedBoomerang
@@ -1085,7 +1075,6 @@ S	FiberglassFishingPole
 S	FireWhip
 S	FireworksLauncher
 S	Fish
-S	FishHook
 S	FisherofSouls
 S	Flairon
 S	Flamarang
@@ -1156,7 +1145,6 @@ S	GolfClubTitaniumIron
 S	GolfClubWedge
 S	GolfClubWoodDriver
 S	Gradient
-S	GrapplingHook
 S	Grenade
 S	GrenadeLauncher
 S	Gungnir
@@ -1184,13 +1172,11 @@ S	IceSickle
 S	IchorArrow
 S	IchorBullet
 S	IchorDart
-S	IlluminantHook
 S	ImpStaff
 S	InfernoFork
 S	InfluxWaver
 S	IronBow
 S	IronShortsword
-S	IvyWhip
 S	JackOLanternLauncher
 S	Javelin
 S	JestersArrow
@@ -1241,7 +1227,6 @@ S	LightsBane
 S	LizardEgg
 S	LovePotion
 S	LunarFlareBook
-S	LunarHook
 S	LunaticCultistPetItem
 S	Mace
 S	MaceWhip
@@ -1331,11 +1316,10 @@ S	PrincessWeapon
 S	ProximityMineLauncher
 S	PulseBow
 S	PumpkingPetItem
-S	PurificationPowder
+S	PurpleSolution
 S	PygmyStaff
 S	QuadBarrelShotgun
 S	QueenBeePetItem
-S	QueenSlimeHook
 S	QueenSlimePetItem
 S	QueenSpiderStaff
 S	RainbowCrystalStaff
@@ -1348,6 +1332,7 @@ S	RavenStaff
 S	RazorbladeTyphoon
 S	Razorpine
 S	RedRyder
+S	RedSolution
 S	RedsYoyo
 S	ReinforcedFishingPole
 S	ReleaseDoves
@@ -1358,13 +1343,12 @@ S	RichMahoganyBow
 S	RocketIII
 S	RocketLauncher
 S	RottenEgg
-S	RubyHook
 S	RubyStaff
 S	Ruler
 S	SDMG
+S	SandSolution
 S	Sandgun
 S	SanguineStaff
-S	SapphireHook
 S	SapphireStaff
 S	SawtoothShark
 S	ScarabFishingRod
@@ -1392,16 +1376,15 @@ S	SilverBow
 S	SilverBullet
 S	SilverShortsword
 S	SittingDucksFishingRod
-S	SkeletronHand
 S	SkeletronPetItem
 S	SkeletronPrimePetItem
 S	SkyFracture
 S	SlimeGun
-S	SlimeHook
 S	SlimeStaff
 S	SmokeBomb
 S	Smolstar
 S	SniperRifle
+S	SnowSolution
 S	Snowball
 S	SnowballCannon
 S	SnowmanCannon
@@ -1419,8 +1402,6 @@ S	SpiderStaff
 S	SpiffoPlush
 S	SpikyBall
 S	SpiritFlame
-S	SpookyHook
-S	SquirrelHook
 S	StaffofEarth
 S	StaffoftheFrostHydra
 S	Stake
@@ -1432,7 +1413,6 @@ S	StardustCellStaff
 S	StardustDragonStaff
 S	StardustDrill
 S	Starfury
-S	StaticHook
 S	StickyGlowstick
 S	StickyGrenade
 S	StinkPotion
@@ -1449,7 +1429,6 @@ S	TacticalShotgun
 S	TartarSauce
 S	TempestStaff
 S	TendonBow
-S	TendonHook
 S	TerraBlade
 S	Terragrim
 S	Terrarian
@@ -1469,7 +1448,6 @@ S	ThoriumMod/Aerial
 S	ThoriumMod/AlienResearchNotes
 S	ThoriumMod/AlmanacofAgony
 S	ThoriumMod/Alphorn
-S	ThoriumMod/AmmutsebaSash
 S	ThoriumMod/AncientCheeseBlock
 S	ThoriumMod/AncientDrachma
 S	ThoriumMod/AncientFlame
@@ -1484,7 +1462,6 @@ S	ThoriumMod/AphrodisiacVial
 S	ThoriumMod/AquaPelter
 S	ThoriumMod/AquaiteKnife
 S	ThoriumMod/AquaiteScythe
-S	ThoriumMod/AquamarineHook
 S	ThoriumMod/AquamarineStaff
 S	ThoriumMod/ArcaneAnelace
 S	ThoriumMod/ArcaneSpike
@@ -1653,7 +1630,6 @@ S	ThoriumMod/DestroyersRage
 S	ThoriumMod/DetachedBlaster
 S	ThoriumMod/DevilDagger
 S	ThoriumMod/DevilsClaw
-S	ThoriumMod/DevilsReach
 S	ThoriumMod/DevourerStaff
 S	ThoriumMod/Didgeridoo
 S	ThoriumMod/DiscardedCloth
@@ -1760,7 +1736,6 @@ S	ThoriumMod/FrostwindCymbals
 S	ThoriumMod/FrozenBalloon
 S	ThoriumMod/FrozenTiara
 S	ThoriumMod/FungalCane
-S	ThoriumMod/FungalHook
 S	ThoriumMod/FungalPopper
 S	ThoriumMod/Funggat
 S	ThoriumMod/GasContainer
@@ -1774,7 +1749,6 @@ S	ThoriumMod/GeomancersBrush
 S	ThoriumMod/GeyserStaff
 S	ThoriumMod/GhastlyFrenchHorn
 S	ThoriumMod/GhostPulseArrow
-S	ThoriumMod/GhostlyGrapple
 S	ThoriumMod/GiantGlowstick
 S	ThoriumMod/GlacialSting
 S	ThoriumMod/GlassShard
@@ -1864,7 +1838,6 @@ S	ThoriumMod/IridescentStaff
 S	ThoriumMod/IronTomahawk
 S	ThoriumMod/JarOMayo
 S	ThoriumMod/JellyPondWand
-S	ThoriumMod/JewellersWallGrip
 S	ThoriumMod/JingleBells
 S	ThoriumMod/Joyeuse
 S	ThoriumMod/JunglesWrath
@@ -1881,7 +1854,6 @@ S	ThoriumMod/LeechBolt
 S	ThoriumMod/Legacy
 S	ThoriumMod/LegionOrnament
 S	ThoriumMod/LethalInjection
-S	ThoriumMod/Leviathan
 S	ThoriumMod/Liberation
 S	ThoriumMod/LifeAndDeath
 S	ThoriumMod/LifeDisperser
@@ -1960,7 +1932,6 @@ S	ThoriumMod/NaiadShiv
 S	ThoriumMod/NanoClamCane
 S	ThoriumMod/NebulaReflection
 S	ThoriumMod/NecroticStaff
-S	ThoriumMod/NeptuneGrasp
 S	ThoriumMod/NightStaff
 S	ThoriumMod/NitrogenVial
 S	ThoriumMod/Nocturne
@@ -1981,7 +1952,6 @@ S	ThoriumMod/OmniBow
 S	ThoriumMod/OmniCannon
 S	ThoriumMod/Omniwrench
 S	ThoriumMod/OnemanQuartet
-S	ThoriumMod/OpalHook
 S	ThoriumMod/OpalStaff
 S	ThoriumMod/Organ
 S	ThoriumMod/OrichalcumPopper
@@ -2032,7 +2002,6 @@ S	ThoriumMod/ProximityMine
 S	ThoriumMod/Pungi
 S	ThoriumMod/PurifiedWater
 S	ThoriumMod/PurifiersRing
-S	ThoriumMod/Purify
 S	ThoriumMod/PyroclastStaff
 S	ThoriumMod/QuakeGauntlet
 S	ThoriumMod/QuasarsFlare
@@ -2223,7 +2192,6 @@ S	ThoriumMod/Teslanator
 S	ThoriumMod/TestNeedle
 S	ThoriumMod/TesterEmpowerment
 S	ThoriumMod/TesterProjectile
-S	ThoriumMod/TesterPurity
 S	ThoriumMod/TetherDart
 S	ThoriumMod/TheBlackBlade
 S	ThoriumMod/TheBlackBow
@@ -2350,7 +2318,6 @@ S	ThoriumMod/YarnBall
 S	ThoriumMod/YewWoodBow
 S	ThoriumMod/YewWoodFlintlock
 S	ThoriumMod/YewWoodLute
-S	ThoriumMod/ZephyrsGrip
 S	ThoriumMod/Zunpet
 S	ThoriumMod/eDarksteelBroadSword
 S	ThoriumMod/eSandStoneBow
@@ -2358,7 +2325,6 @@ S	ThoriumMod/fSandStoneSpear
 S	ThoriumMod/gDarkSteelCrossBow
 S	ThoriumMod/gSandStoneThrowingKnife
 S	ThornChakram
-S	ThornHook
 S	ThornWhip
 S	ThrowingKnife
 S	ThunderSpear
@@ -2370,7 +2336,6 @@ S	TitaniumChainsaw
 S	TitaniumDrill
 S	TitaniumRepeater
 S	TitaniumTrident
-S	TopazHook
 S	TopazStaff
 S	ToxicFlask
 S	Toxikarp
@@ -2397,8 +2362,6 @@ S	VenomArrow
 S	VenomBullet
 S	VenomStaff
 S	VenusMagnum
-S	ViciousPowder
-S	VilePowder
 S	Vilethorn
 S	VoidLens
 S	VortexBeater
@@ -2410,7 +2373,6 @@ S	WaspGun
 S	WaterBolt
 S	WaterGun
 S	WeatherPain
-S	WebSlinger
 S	WireKite
 S	WispinaBottle
 S	WoodFishingPole
@@ -2419,7 +2381,6 @@ S	WoodenArrow
 S	WoodenBoomerang
 S	WoodenBow
 S	WorldGlobe
-S	WormHook
 S	XenoStaff
 S	Xenopopper
 S	Yelets
@@ -2430,17 +2391,20 @@ S	ZephyrFish
 S	miningcracks_take_on_luiafk/ActuationRod
 S	miningcracks_take_on_luiafk/AllInOneChest
 S	miningcracks_take_on_luiafk/BuildingRod
+S	miningcracks_take_on_luiafk/DarkGreenSolution
 S	miningcracks_take_on_luiafk/DefendersForge
 S	miningcracks_take_on_luiafk/PiggySafe
 S	miningcracks_take_on_luiafk/Safe
 S	miningcracks_take_on_luiafk/UnlimitedBeenade
 S	miningcracks_take_on_luiafk/UnlimitedBlueFlares
+S	miningcracks_take_on_luiafk/UnlimitedBlueSolution
 S	miningcracks_take_on_luiafk/UnlimitedBoneArrows
 S	miningcracks_take_on_luiafk/UnlimitedBoneJavelin
 S	miningcracks_take_on_luiafk/UnlimitedBoneThrowingKnife
 S	miningcracks_take_on_luiafk/UnlimitedBones
 S	miningcracks_take_on_luiafk/UnlimitedBouncyGlowstick
 S	miningcracks_take_on_luiafk/UnlimitedBouncyGrenade
+S	miningcracks_take_on_luiafk/UnlimitedBrownSolution
 S	miningcracks_take_on_luiafk/UnlimitedCandyCorn
 S	miningcracks_take_on_luiafk/UnlimitedChlorophyteArrows
 S	miningcracks_take_on_luiafk/UnlimitedChlorophyteBullets
@@ -2454,6 +2418,7 @@ S	miningcracks_take_on_luiafk/UnlimitedCursedBullets
 S	miningcracks_take_on_luiafk/UnlimitedCursedDarts
 S	miningcracks_take_on_luiafk/UnlimitedCursedFlares
 S	miningcracks_take_on_luiafk/UnlimitedDarkBlueSolution
+S	miningcracks_take_on_luiafk/UnlimitedDarkGreenSolution
 S	miningcracks_take_on_luiafk/UnlimitedDryBombs
 S	miningcracks_take_on_luiafk/UnlimitedExplodingBullets
 S	miningcracks_take_on_luiafk/UnlimitedExplosiveJackOLantern
@@ -2495,7 +2460,9 @@ S	miningcracks_take_on_luiafk/UnlimitedPartyBullets
 S	miningcracks_take_on_luiafk/UnlimitedPlatinumCoin
 S	miningcracks_take_on_luiafk/UnlimitedPoisonDarts
 S	miningcracks_take_on_luiafk/UnlimitedPoisonKnife
+S	miningcracks_take_on_luiafk/UnlimitedPurpleSolution
 S	miningcracks_take_on_luiafk/UnlimitedRainbowFlares
+S	miningcracks_take_on_luiafk/UnlimitedRedSolution
 S	miningcracks_take_on_luiafk/UnlimitedReinforcedFishingPole
 S	miningcracks_take_on_luiafk/UnlimitedRocketIIIs
 S	miningcracks_take_on_luiafk/UnlimitedRottenEgg
@@ -2522,8 +2489,10 @@ S	miningcracks_take_on_luiafk/UnlimitedTungstenBullets
 S	miningcracks_take_on_luiafk/UnlimitedUnholyArrows
 S	miningcracks_take_on_luiafk/UnlimitedVenomArrows
 S	miningcracks_take_on_luiafk/UnlimitedVenomBullets
+S	miningcracks_take_on_luiafk/UnlimitedWhiteSolution
 S	miningcracks_take_on_luiafk/UnlimitedWoodFishingPole
 S	miningcracks_take_on_luiafk/UnlimitedWoodenArrows
+S	miningcracks_take_on_luiafk/UnlimitedYellowSolution
 S	AdamantiteOre
 S	ChlorophyteOre
 S	CobaltOre
@@ -2551,6 +2520,16 @@ S	FallenStar
 S	miningcracks_take_on_luiafk/UnlimitedFallenStars
 S	BottledWater
 S	Cobweb
+S	CalamityMod/EutrophicSand
+S	CalamityMod/SulphurousSand
+S	Ale
+S	miningcracks_take_on_luiafk/UnlimitedAle
+S	SoulofFlight
+S	SoulofFright
+S	SoulofLight
+S	SoulofMight
+S	SoulofNight
+S	SoulofSight
 S	ClusterRocketI
 S	DryRocket
 S	MiniNukeI
@@ -2570,16 +2549,11 @@ S	miningcracks_take_on_luiafk/UnlimitedMultiSolution
 S	CalamityMod/WulfrumMetalScrap
 S	ThoriumMod/SteamBattery
 E	Amarok
-E	AmberHook
-E	AmethystHook
-E	AntiGravityHook
-E	BatHook
 E	CalamityMod/AerialTracker
 E	CalamityMod/AirSpinner
 E	CalamityMod/Aorta
 E	CalamityMod/Auger
 E	CalamityMod/Basher
-E	CalamityMod/BobbitHook
 E	CalamityMod/BurningRevelation
 E	CalamityMod/Cnidarian
 E	CalamityMod/DarkSpark
@@ -2603,7 +2577,6 @@ E	CalamityMod/RelicOfConvergence
 E	CalamityMod/RelicOfDeliverance
 E	CalamityMod/Riptide
 E	CalamityMod/SanctifiedSpark
-E	CalamityMod/SerpentsBite
 E	CalamityMod/Shimmerspark
 E	CalamityMod/SmokingComet
 E	CalamityMod/SnowstormStaff
@@ -2615,42 +2588,23 @@ E	CalamityMod/TheObliterator
 E	CalamityMod/TheOracle
 E	CalamityMod/YharimsCrystal
 E	CalamityMod/YinYo
-E	CandyCaneHook
 E	Cascade
 E	Chik
-E	ChristmasHook
 E	Code1
 E	Code2
 E	CorruptYoyo
 E	CrimsonYoyo
-E	DiamondHook
-E	DualHook
-E	EmeraldHook
 E	EmpressBlade
-E	FishHook
 E	FormatC
 E	Gradient
-E	GrapplingHook
 E	HelFire
 E	HiveFive
-E	IlluminantHook
-E	IvyWhip
 E	JimsDrone
 E	JungleYoyo
 E	Kraken
-E	LunarHook
 E	MagicalHarp
-E	QueenSlimeHook
 E	Rally
 E	RedsYoyo
-E	RubyHook
-E	SapphireHook
-E	SkeletronHand
-E	SlimeHook
-E	SpookyHook
-E	SquirrelHook
-E	StaticHook
-E	TendonHook
 E	Terrarian
 E	TheEyeOfCthulhu
 E	ThoriumMod/Aerial
@@ -2667,13 +2621,9 @@ E	ThoriumMod/Scorpain
 E	ThoriumMod/Skadoosh
 E	ThoriumMod/TestNeedle
 E	ThoriumMod/TheWhirlpool
-E	ThornHook
-E	TopazHook
 E	ValkyrieYoyo
 E	Valor
-E	WebSlinger
 E	WoodYoyo
-E	WormHook
 E	Yelets
 P	AshBallFalling	Place
 P	BloodWater	Convert
@@ -3060,7 +3010,6 @@ R	CalamityMod/BlueJellyAura
 R	CalamityMod/BlunderBoosterAura
 R	CalamityMod/BlunderBoosterLightning
 R	CalamityMod/BlushieStaffProj
-R	CalamityMod/BobbitHead
 R	CalamityMod/BoltArrow
 R	CalamityMod/BonebreakerFragment1
 R	CalamityMod/BonebreakerProjectile
@@ -4499,7 +4448,6 @@ R	CalamityMod/SeraphimProjectile
 R	CalamityMod/SerpentineBody
 R	CalamityMod/SerpentineHead
 R	CalamityMod/SerpentineTail
-R	CalamityMod/SerpentsBiteHook
 R	CalamityMod/SevensStrikerBrick
 R	CalamityMod/SevensStrikerCherry
 R	CalamityMod/SevensStrikerCherrySplit
@@ -4976,7 +4924,6 @@ R	CalamityMod/WulfrumDrillProj
 R	CalamityMod/WulfrumDroid
 R	CalamityMod/WulfrumEnergyBurst
 R	CalamityMod/WulfrumFusionBolt
-R	CalamityMod/WulfrumHook
 R	CalamityMod/WulfrumKnifeProj
 R	CalamityMod/WulfrumLureSignal
 R	CalamityMod/WulfrumManaDrain
@@ -5037,7 +4984,6 @@ R	ThoriumMod/AirStrikeShieldPro
 R	ThoriumMod/AlienResearchNotesPro
 R	ThoriumMod/AlmanacofAgonyPro
 R	ThoriumMod/AlphornPro
-R	ThoriumMod/AmmutsebaSashPro
 R	ThoriumMod/AmnesiacPet
 R	ThoriumMod/AncientFirePro
 R	ThoriumMod/AncientFirePro2
@@ -5069,7 +5015,6 @@ R	ThoriumMod/AquaTyphoon2
 R	ThoriumMod/AquaiteKnifePro
 R	ThoriumMod/AquaiteKnifePro2
 R	ThoriumMod/AquaiteScythePro
-R	ThoriumMod/AquamarineHookPro
 R	ThoriumMod/AquamarineStaffPro
 R	ThoriumMod/AquamarineWineGlassPro
 R	ThoriumMod/AquamarineWineGlassPro2
@@ -5400,7 +5345,6 @@ R	ThoriumMod/DevilEffect
 R	ThoriumMod/DevilEffect2
 R	ThoriumMod/DevilsClawPro
 R	ThoriumMod/DevilsClawPro2
-R	ThoriumMod/DevilsReach
 R	ThoriumMod/DevourerStaffPro
 R	ThoriumMod/DevourerStaffPro2
 R	ThoriumMod/DevourerStaffPro3
@@ -5596,7 +5540,6 @@ R	ThoriumMod/GhastlyEffect2
 R	ThoriumMod/GhastlyFrenchHornPro
 R	ThoriumMod/GhostPulse
 R	ThoriumMod/GhostPulseArrowPro
-R	ThoriumMod/GhostlyGrappleHook
 R	ThoriumMod/GiantGlowstickPro
 R	ThoriumMod/GlacialArrow
 R	ThoriumMod/GlacierPro
@@ -5792,7 +5735,6 @@ R	ThoriumMod/JellySpawnPro
 R	ThoriumMod/JestersBell
 R	ThoriumMod/JetstreamSheathChainPro
 R	ThoriumMod/JetstreamSheathPro
-R	ThoriumMod/JewellersWallGripPro
 R	ThoriumMod/JingleBellsPro
 R	ThoriumMod/JingleBellsPro2
 R	ThoriumMod/JoyeusePro
@@ -5806,7 +5748,6 @@ R	ThoriumMod/KineticKnifePro
 R	ThoriumMod/KinetoscythePro
 R	ThoriumMod/KinetoscythePro2
 R	ThoriumMod/KrakenArm
-R	ThoriumMod/KrakenHook
 R	ThoriumMod/KunaiPro
 R	ThoriumMod/LadyLightPro
 R	ThoriumMod/LadyLightProShoot
@@ -6020,7 +5961,6 @@ R	ThoriumMod/MortarStaffPro
 R	ThoriumMod/MortarStaffPro2
 R	ThoriumMod/MortarStaffPro3
 R	ThoriumMod/MudManPro
-R	ThoriumMod/MushroomHookProjectile
 R	ThoriumMod/MuteBurst1
 R	ThoriumMod/MuteBurst2
 R	ThoriumMod/MyceliumSporePro
@@ -6039,7 +5979,6 @@ R	ThoriumMod/NecroticSkullPro
 R	ThoriumMod/NecroticSkullPro2
 R	ThoriumMod/NecroticSkullPro3
 R	ThoriumMod/NecroticStaffPro
-R	ThoriumMod/NeptuneHook
 R	ThoriumMod/NestlingAttack
 R	ThoriumMod/NightStaffPro
 R	ThoriumMod/NightStaffPro2
@@ -6089,7 +6028,6 @@ R	ThoriumMod/OmniwrenchPro
 R	ThoriumMod/OmniwrenchPro2
 R	ThoriumMod/OnemanQuartetPro
 R	ThoriumMod/OnemanQuartetPro2
-R	ThoriumMod/OpalHookPro
 R	ThoriumMod/OpalStaffPro
 R	ThoriumMod/OrbLight
 R	ThoriumMod/OrbLight2
@@ -6754,7 +6692,6 @@ R	ThoriumMod/ZRealitySlasherSlash
 R	ThoriumMod/ZTerraScythePro
 R	ThoriumMod/Zap
 R	ThoriumMod/ZephyrsGripHatchlingPro
-R	ThoriumMod/ZephyrsGripPro
 R	ThoriumMod/ZunpetPro
 R	ThoriumMod/ZunpetPro2
 R	ThoriumMod/ZunpetPro3
@@ -6807,16 +6744,6 @@ Q	CalamityMod/TrueDecaysRetort
 Q	EmpressBlade
 Q	JimsDrone
 Q	MoonLeech
-Q	ThoriumMod/AmmutsebaSashPro
-Q	ThoriumMod/AquamarineHookPro
-Q	ThoriumMod/DevilsReach
-Q	ThoriumMod/GhostlyGrappleHook
-Q	ThoriumMod/JewellersWallGripPro
-Q	ThoriumMod/KrakenHook
-Q	ThoriumMod/MushroomHookProjectile
-Q	ThoriumMod/NeptuneHook
-Q	ThoriumMod/OpalHookPro
 Q	ThoriumMod/RopePro
-Q	ThoriumMod/ZephyrsGripPro
 Q	miningcracks_take_on_luiafk/ActuatorProjectile
 Q	miningcracks_take_on_luiafk/BuildingProjectile

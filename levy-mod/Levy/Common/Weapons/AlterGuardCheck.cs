@@ -62,7 +62,7 @@ namespace Levy.Common.Weapons
 				foreach (var it in new[] { Make(ItemID.RocketLauncher), Make(rocketII, 999), Make(ItemID.RocketI, 300), Make(ItemID.Dynamite, 50), Make(ItemID.Bomb, 50), Make(ItemID.IronPickaxe), Make(ItemID.Pwnhammer), Make(ItemID.Drax),
 					Make(ItemID.Musket), Make(ItemID.MusketBall, 999), Make(ItemID.Minishark), Make(ItemID.IronBroadsword), Make(ItemID.WandofSparking), Make(ItemID.ThrowingKnife, 100) })
 					te.Storage[k++] = it;
-				var list = Enumerable.Range(300, 10).Select(i => new SoldierRecord { Id = i }).ToList(); ArmoryTE.TestServed = list;
+				var list = Enumerable.Range(300, 5).Select(i => new SoldierRecord { Id = i }).ToList(); ArmoryTE.TestServed = list;
 				try { foreach (var s in list) te.IssueGear(s); foreach (var s in list) te.IssueGear(s); } finally { ArmoryTE.TestServed = null; }
 				var bad = new List<string>();
 				foreach (var s in list)

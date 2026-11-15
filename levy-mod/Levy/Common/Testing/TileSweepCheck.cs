@@ -71,9 +71,12 @@ namespace Levy.Common.Testing
 			for (int i = 1; i < ItemLoader.ItemCount; i++)
 			{
 				if (!ContentSamples.ItemsByType.TryGetValue(i, out Item s) || s == null || s.IsAir || s.IsACoin) continue;
-				if (s.ammo > 0 && !s.notAmmo) { if (!ammoByKind.TryGetValue(s.ammo, out var l)) ammoByKind[s.ammo] = l = new List<int>(); l.Add(i); }
+				if (s.ammo > 0) { // notAmmo is no reason to skip: Sand blocks are rounds of the Sandgun
+				 if (!ammoByKind.TryGetValue(s.ammo, out var l)) ammoByKind[s.ammo] = l = new List<int>(); l.Add(i); }
+				if (s.shoot > ProjectileID.None && IsHook(s.shoot)) continue; // a grappling hook needs a real player (and throws without one) and alters nothing
 				if (s.shoot > ProjectileID.None || s.useAmmo > 0) weapons.Add(i);
 			}
+			if (!_lab) weapons = weapons.Where(w => w < ItemID.Count).ToList(); // the ship sample is vanilla only: modded projectiles throw on a stand-in player (and tML logs every throw), the lab sweep covers them
 			if (!string.IsNullOrEmpty(only)) weapons = weapons.Where(w => only.Split(',').Any(n => Lang.GetItemNameValue(w).Contains(n, StringComparison.OrdinalIgnoreCase) || KeyOf(w).Contains(n, StringComparison.OrdinalIgnoreCase))).ToList();
 			if (!_lab) { var rnd = new Random(20261114); for (int i = weapons.Count - 1; i > 0; i--) { int j = rnd.Next(i + 1); (weapons[i], weapons[j]) = (weapons[j], weapons[i]); } } // a time cut then leaves an even sample of every mod
 			Note($"candidates: {weapons.Count} items that fire something, {ammoByKind.Values.Sum(l => l.Count)} rounds in {ammoByKind.Count} kinds, {ProjectileLoader.ProjectileCount - 1} projectile types ({ProjectileID.Count - 1} vanilla)");
@@ -94,6 +97,8 @@ namespace Levy.Common.Testing
 			for (int t = 1; t < ProjectileLoader.ProjectileCount; t++)
 			{
 				if (t >= ProjectileID.Count && ProjectileLoader.GetProjectile(t) == null) continue;
+				if (IsHook(t)) continue;
+				if (!_lab && t >= ProjectileID.Count) continue;
 				if (!_lab && skipProj.Contains(WorldAlter.ProjectileKeyOf(t))) continue; // threw in the lab sweep: not run again in a boot that must stay free of exceptions
 				if (!_lab && sw.Elapsed.TotalSeconds > budgetSeconds * 0.4) break;
 				projTested++;
@@ -125,6 +130,7 @@ namespace Levy.Common.Testing
 				Item ws = ContentSamples.ItemsByType[w];
 				var rounds = new List<int>();
 				if (ws.useAmmo > 0) { if (ammoByKind.TryGetValue(ws.useAmmo, out var l)) rounds.AddRange(l); } else rounds.Add(0);
+				if (!_lab) rounds = rounds.Where(r => r < ItemID.Count).ToList();
 				if (!_lab && rounds.Count > 6) // a sample: the first and last rounds and every round the table flags (the check below must agree on each)
 				{
 					var flagged = rounds.Where(r => r > 0 && WorldAlter.Alters(ContentSamples.ItemsByType[r])).ToList();
@@ -254,6 +260,8 @@ namespace Levy.Common.Testing
 			ArmyWatch();
 		}
 
+		private static bool IsHook(int t) { try { return ContentSamples.ProjectilesByType.TryGetValue(t, out var pr) && pr != null && pr.aiStyle == ProjAIStyleID.Hook; } catch (Exception) { return false; } }
+
 		private static string TileTypeName(int t) => t < TileID.Count ? TileID.Search.GetName(t) : (TileLoader.GetTile(t)?.Name ?? "#" + t);
 
 		private static string ProjName(int t)
@@ -269,7 +277,10 @@ namespace Levy.Common.Testing
 			var bad = new List<string>();
 			foreach (var kv in seen)
 			{
-				var m = TileSandbox.Spawn(kv.Key, true);
+				// measured in the field only where a stand-in player cannot make the shot throw (and tML log it): Levy's own and Mechanization's, and the stable ones: other types are judged by the table
+				string mod = kv.Key >= ProjectileID.Count ? ProjectileLoader.GetProjectile(kv.Key)?.Mod.Name : null;
+				bool own = mod == "Levy" || mod == "Mechanization";
+				var m = own ? TileSandbox.Spawn(kv.Key, true) : new TileSandbox.Result();
 				if (Hard(m.Kind) || WorldAlter.AltersProjectile(kv.Key)) bad.Add(ProjName(kv.Key) + " x" + kv.Value + " [" + TileSandbox.KindText(m.Kind) + "]");
 			}
 			Note($"projectile types the army made during the world checks: {seen.Count} ({string.Join(", ", seen.Take(25).Select(kv => ProjName(kv.Key) + " x" + kv.Value))}{(seen.Count > 25 ? ", ..." : "")})");

@@ -13,3 +13,7 @@ Harness: `Common/Testing/ShopLagCheck.cs` (LEVY_SHOPLAG=1 lab, ship world chain)
 ## Tile sweep
 `TileSweepCheck` fires every weapon with every round (13,948 pairs) and spawns every projectile type (5,019) in a block field; `WorldAlterTable.tsv` is the result.
 Altering by itself: 43 items, 26 rounds, 17 pair rules, 113 projectile types. Cuttable decor only (grass, vines, cobweb) is kept.
+
+Calamity + Thorium + LuiAFK + Alchemist + Magic Storage, 40 levies (shipworld, median tick): conversation closed 4.76 ms; open through SetTalkNPC 19.37 ms; open with the fix 4.94 ms.
+Ship sweep is a vanilla sample (time-boxed); modded content is measured by the lab sweep, which writes the table.
+Unverified: the drawn shop window, the Armory warning window, and other mods' items the table has not seen (judged from compiled code: 90% of altering projectiles caught, 0.8% of safe ones over-flagged).

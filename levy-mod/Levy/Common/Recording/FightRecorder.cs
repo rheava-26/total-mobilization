@@ -1015,9 +1015,23 @@ namespace Levy.Common.Recording
 				_bpend.Clear();
 				return;
 			}
-			var last = _bpend[_bpend.Count - 1];
+			var flags = new bool[_bpend.Count];
+			for (int i = 0; i < flags.Length; i++) flags[i] = _bpend[i].killed;
+			var last = _bpend[FinalEndIndex(flags)];
 			WriteBossEnd(last.t, last.killed, last.tick, true); // earlier worm heads that died one after another are dropped; the final one is the outcome
 			_bpend.Clear();
+		}
+
+		/// <summary>
+		/// Which of the bosses that left in the closing window (in the order they went) names the fight's end: the last one that was KILLED, else the last one. Everything that leaves together with the kill is not a second ending:
+		/// Moon Lord's hands and head vanish with the core that died (no OnKill, last life untouched), and the Lunar Pillars spawned by the Lunatic Cultist's death are purged a tick later; taking the last entry read both
+		/// kills as a despawn. Worm heads that fall one after another are all kills, so the last of them still decides.
+		/// </summary>
+		internal static int FinalEndIndex(IReadOnlyList<bool> killed)
+		{
+			if (Environment.GetEnvironmentVariable("LEVY_RECEND") == "0") return Math.Max(0, killed.Count - 1); // A/B switch: the old rule, the last one to go
+			for (int i = killed.Count - 1; i >= 0; i--) if (killed[i]) return i;
+			return Math.Max(0, killed.Count - 1);
 		}
 
 		private static void WriteBossEnd(BTrack t, bool killed, int tick, bool final)

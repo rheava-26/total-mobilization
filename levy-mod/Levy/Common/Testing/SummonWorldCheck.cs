@@ -68,6 +68,9 @@ namespace Levy.Common.Testing
 			try { IdentityWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[IdentityWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the officer world check runs after that (never two checks stepping the world at once)
 			try { OfficerWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[OfficerWorld] check threw " + e.GetType().Name + ": " + e.Message); }
+			// the shop lag check runs after that, then the tile sweep (which also reads what the army shot during every check before it)
+			try { ShopLagCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ShopLag] check threw " + e.GetType().Name + ": " + e.Message); }
+			try { TileSweepCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[TileSweep] check threw " + e.GetType().Name + ": " + e.Message); }
 		}
 
 		private static void Check(string name, bool ok) { if (ok) _pass++; else _fail++; _mod.Logger.Info($"[SummonWorld] {(ok ? "PASS" : "FAIL")} {name}"); }

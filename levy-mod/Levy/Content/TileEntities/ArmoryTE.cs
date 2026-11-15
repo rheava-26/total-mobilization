@@ -210,11 +210,11 @@ namespace Levy.Content.TileEntities
 		private HashSet<int> AmmoIdsOnHand()
 		{
 			var set = new HashSet<int>();
-			foreach (var it in IssueAmmo) if (!IsAir(it) && it.ammo > 0) set.Add(it.ammo);
-			foreach (var it in Storage) if (!IsAir(it) && it.ammo > 0) set.Add(it.ammo);
-			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) if (!IsAir(it) && it.ammo > 0) set.Add(it.ammo);
+			foreach (var it in IssueAmmo) if (!IsAir(it) && it.ammo > 0 && !WorldAlter.Alters(it)) set.Add(it.ammo); // a round that breaks blocks is no ammo for the army
+			foreach (var it in Storage) if (!IsAir(it) && it.ammo > 0 && !WorldAlter.Alters(it)) set.Add(it.ammo);
+			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) if (!IsAir(it) && it.ammo > 0 && !WorldAlter.Alters(it)) set.Add(it.ammo);
 			var ms = MsHeart();
-			if (ms != null) set.UnionWith(MagicStorageBridge.AmmoIds(ms));
+			if (ms != null) foreach (var it in MagicStorageBridge.Snapshot(ms)) if (!IsAir(it) && it.ammo > 0 && !it.IsACoin && !WorldAlter.Alters(it)) set.Add(it.ammo);
 			return set;
 		}
 
@@ -253,7 +253,7 @@ namespace Levy.Content.TileEntities
 			int have = IsAir(pouch) ? 0 : pouch.stack;
 			Item cand = null;
 			foreach (var it in MagicStorageBridge.Snapshot(heart)) {
-				if (IsAir(it) || it.ammo != ammoId || it.IsACoin) continue;
+				if (IsAir(it) || it.ammo != ammoId || it.IsACoin || WorldAlter.AltersWith(_ammoWeapon, it)) continue;
 				if (onlyType >= 0 && it.type != onlyType) continue;
 				if (!IsAir(pouch) && pouch.type != it.type) continue;
 				if (cand == null || it.stack > cand.stack) cand = it;
@@ -466,6 +466,37 @@ namespace Levy.Content.TileEntities
 		}
 
 		private static int IndexOfRef(Item[] arr, Item it) { for (int i = 0; i < arr.Length; i++) if (ReferenceEquals(arr[i], it)) return i; return -1; }
+
+		/// <summary>
+		/// Takes every item that alters the world out of a soldier's weapon, sidearm, minion-staff and ammo slots (locked or not) and files it in storage. The pouch is judged against the weapon it feeds.
+		/// A round that fits no weapon he carries is judged alone. Returns true when anything moved.
+		/// </summary>
+		private bool PurgeAltering(SoldierGear g)
+		{
+			bool any = false;
+			bool Bad(int slot)
+			{
+				Item it = g.Get(slot); if (IsAir(it)) return false;
+				if (slot == SoldierGear.SlotAmmo)
+				{
+					Item w = g.HasWeapon && g.Weapon.useAmmo == it.ammo ? g.Weapon : g.HasSidearm && g.Sidearm.useAmmo == it.ammo ? g.Sidearm : null;
+					return WorldAlter.AltersWith(w, it);
+				}
+				return WorldAlter.Alters(it);
+			}
+			void Out(int slot)
+			{
+				if (!Bad(slot)) return;
+				Item it = g.Get(slot); g.Set(slot, new Item()); g.SetLocked(slot, false);
+				var rest = Deposit(it);
+				if (!IsAir(rest)) Item.NewItem(new Terraria.DataStructures.EntitySource_Misc("Levy.Purge"), Center, rest);
+				any = true;
+			}
+			Out(SoldierGear.SlotWeapon); Out(SoldierGear.SlotSidearm); Out(SoldierGear.SlotAmmo);
+			for (int s = SoldierGear.SlotSide2; s < SoldierGear.SlotCount; s++) Out(s);
+			if (any) MarkDirty();
+			return any;
+		}
 
 		/// <summary>Gives a soldier back what ReturnGear took from his locked slots earlier in the same tick (a Re-arm). Locks are restored.</summary>
 		private bool ReclaimLocked(SoldierGear g, int accessorySlots)
@@ -705,9 +736,9 @@ namespace Levy.Content.TileEntities
 				return AmmoShare.Limit(tpool, tusers, max, LevyConstants.AmmoFairShareFloor);
 			}
 			long pool = 0;
-			foreach (var it in IssueAmmo) if (!IsAir(it) && it.ammo == ammoId) pool += it.stack;
-			foreach (var it in Storage) if (!IsAir(it) && it.ammo == ammoId) pool += it.stack;
-			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) if (!IsAir(it) && it.ammo == ammoId) pool += it.stack;
+			foreach (var it in IssueAmmo) if (!IsAir(it) && it.ammo == ammoId && !WorldAlter.Alters(it)) pool += it.stack;
+			foreach (var it in Storage) if (!IsAir(it) && it.ammo == ammoId && !WorldAlter.Alters(it)) pool += it.stack;
+			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) if (!IsAir(it) && it.ammo == ammoId && !WorldAlter.Alters(it)) pool += it.stack;
 			int users = 0;
 			foreach (var s in ServedSoldiers()) {
 				var g = s.Gear;
@@ -1259,9 +1290,18 @@ namespace Levy.Content.TileEntities
 		/// the fair share of scarce stock is then taken per ammo type, so the best type is split evenly and the army moves on to the next best once it is gone. A pouch that already holds a type is only
 		/// topped up with that type. <see cref="TakeAmmoFor"/> also swaps a lesser type for a clearly better one.
 		/// </remarks>
+		/// <summary>The weapon the ammo being drawn is for (null when only the pouch is known): the world-alter rule is a question about the pair.</summary>
+		private static Item _ammoWeapon;
+
 		public virtual int TakeAmmo(int ammoId, Item pouch, int max, Item weapon = null)
 		{
 			if (pouch == null || ammoId <= 0 || max <= 0) return 0;
+			_ammoWeapon = weapon;
+			try { return TakeAmmoInner(ammoId, pouch, max, weapon); } finally { _ammoWeapon = null; }
+		}
+
+		private int TakeAmmoInner(int ammoId, Item pouch, int max, Item weapon)
+		{
 			if (weapon == null && !AmmoRank.Off)
 			{
 				// A caller that only knows the pouch (a levy walking in to resupply): find whose it is among the soldiers this armory serves, so his weapon steers the pick and a lesser type can be upgraded.
@@ -1295,8 +1335,13 @@ namespace Levy.Content.TileEntities
 			g.Ammo ??= new Item();
 			Item weapon = g.HasWeapon && g.Weapon.useAmmo == ammoId ? g.Weapon : g.HasSidearm && g.Sidearm.useAmmo == ammoId ? g.Sidearm : null;
 			int moved = 0;
-			if (!AmmoRank.Off && !g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(g.Ammo) && g.Ammo.ammo == ammoId) moved += UpgradeAmmo(g.Ammo, ammoId, max, weapon);
-			return moved + TakeAmmoCore(ammoId, g.Ammo, max, weapon);
+			_ammoWeapon = weapon;
+			try
+			{
+				if (!AmmoRank.Off && !g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(g.Ammo) && g.Ammo.ammo == ammoId) moved += UpgradeAmmo(g.Ammo, ammoId, max, weapon);
+				return moved + TakeAmmoCore(ammoId, g.Ammo, max, weapon);
+			}
+			finally { _ammoWeapon = null; }
 		}
 
 		private struct AmmoCand { public int Type; public float Score; }
@@ -1306,7 +1351,7 @@ namespace Levy.Content.TileEntities
 		{
 			var list = new List<AmmoCand>();
 			var seen = new HashSet<int>();
-			void Add(Item it) { if (!IsAir(it) && it.ammo == ammoId && !it.IsACoin && seen.Add(it.type)) list.Add(new AmmoCand { Type = it.type, Score = AmmoRank.Score(weapon, it) }); }
+			void Add(Item it) { if (!IsAir(it) && it.ammo == ammoId && !it.IsACoin && !WorldAlter.AltersWith(weapon, it) && seen.Add(it.type)) list.Add(new AmmoCand { Type = it.type, Score = AmmoRank.Score(weapon, it) }); }
 			foreach (var it in IssueAmmo) Add(it);
 			foreach (var it in Storage) Add(it);
 			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) Add(it);
@@ -1387,7 +1432,7 @@ namespace Levy.Content.TileEntities
 			int moved = 0;
 			for (int i = 0; i < arr.Length; i++) {
 				var it = arr[i];
-				if (IsAir(it) || it.ammo != ammoId) continue;
+				if (IsAir(it) || it.ammo != ammoId || WorldAlter.AltersWith(_ammoWeapon, it)) continue; // never a round that alters the world (with the weapon being fed, when known)
 				if (onlyType >= 0 && it.type != onlyType) continue;
 				if (!IsAir(pouch) && pouch.type != it.type) continue;
 				if (IsAir(pouch)) { pouch.SetDefaults(it.type); pouch.stack = 0; }
@@ -1513,7 +1558,7 @@ namespace Levy.Content.TileEntities
 			for (int i = 0; i < Storage.Length; i++)
 			{
 				Item it = Storage[i];
-				if (IsAir(it) || it.ammo != ammoId || it.IsACoin || it.stack <= keepRounds || IsReservedRef(it)) continue;
+				if (IsAir(it) || it.ammo != ammoId || it.IsACoin || it.stack <= keepRounds || IsReservedRef(it) || WorldAlter.Alters(it)) continue;
 				float score = it.damage * 100f + WeaponClassifier.RarityTier(it.rare);
 				if (score > bestScore) { bestScore = score; best = i; }
 			}
@@ -1998,6 +2043,9 @@ namespace Levy.Content.TileEntities
 			long pi = global::Levy.Common.Util.LevyProf.Begin();
 			void IMark(int bucket) { global::Levy.Common.Util.LevyProf.EndCount(bucket, pi); pi = global::Levy.Common.Util.LevyProf.Begin(); }
 
+			// A kit made before the world-alter rule (or hand-assigned): anything that alters the world goes back to storage and is never issued again.
+			if (PurgeAltering(g)) changed = true;
+
 			// A Re-arm in this very tick parked this soldier's hand-assigned items: take exactly those back first.
 			if (g.Reserved != null && ReclaimLocked(g, soldier.AccessorySlots)) changed = true;
 
@@ -2388,11 +2436,13 @@ namespace Levy.Content.TileEntities
 		private bool AmmoStockAtLeast(int ammoId, int min)
 		{
 			int n = 0;
-			foreach (var it in IssueAmmo) if (!IsAir(it) && it.ammo == ammoId && (n += it.stack) >= min) return true;
-			foreach (var it in Storage) if (!IsAir(it) && it.ammo == ammoId && (n += it.stack) >= min) return true;
-			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) if (!IsAir(it) && it.ammo == ammoId && (n += it.stack) >= min) return true;
+			foreach (var it in IssueAmmo) if (!IsAir(it) && it.ammo == ammoId && !WorldAlter.Alters(it) && (n += it.stack) >= min) return true;
+			foreach (var it in Storage) if (!IsAir(it) && it.ammo == ammoId && !WorldAlter.Alters(it) && (n += it.stack) >= min) return true;
+			foreach (var o in OtherNetworked()) foreach (var it in o.Storage) if (!IsAir(it) && it.ammo == ammoId && !WorldAlter.Alters(it) && (n += it.stack) >= min) return true;
 			var ms = MsHeart();
-			return ms != null && MagicStorageBridge.AmmoIds(ms).Contains(ammoId);
+			if (ms == null) return false;
+			foreach (var it in MagicStorageBridge.Snapshot(ms)) if (!IsAir(it) && it.ammo == ammoId && !it.IsACoin && !WorldAlter.Alters(it)) return true;
+			return false;
 		}
 
 		private bool UpgradeSidearm(SoldierRecord soldier)

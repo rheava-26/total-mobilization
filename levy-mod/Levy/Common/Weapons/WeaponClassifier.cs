@@ -105,6 +105,8 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		private static WeaponFamily ClassifyCore(Item item, out bool extended)
 		{
+			// The army never alters the world: explosives, tile-breaking shots, drills, picks, hammers, axes, liquid and biome guns are issued to nobody (see WorldAlter).
+			if (WorldAlter.Alters(item)) { extended = false; return WeaponFamily.Unsupported; }
 			WeaponFamily family = ClassifyFamily(item, out extended);
 			// Families that fire the item's OWN projectile (soldier shots are owned by the commander): refuse a modded shot that pins its owner's item-use state and never
 			// releases it (Mechanica's Serpent's Spear sets owner.heldProj/itemAnimation/itemTime every tick with no input check), or the commander can no longer attack.

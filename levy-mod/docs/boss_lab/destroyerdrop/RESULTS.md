@@ -51,4 +51,4 @@ Fix: a `SendExtraAI` hook in Levy's Calamity compat keeps the override through t
 ## Proof
 
 - `BossBugsWorldCheck` parts `mlkill` and `killedge` (`LEVY_BOSSBUGS_PART` now takes a comma list). Before the fixes: FAIL on the Moon Lord death (NullReferenceException x1) and on the Ice Block above the top and past the left edge (IndexOutOfRange). After: 21 PASS, 0 FAIL, no first-chance exception in the log.
-- Serial `shipboth.sh` with `SHIPWORLD_SERIAL=1` on private paths: see the final run noted in the commit log / report.
+- Serial `shipboth.sh` (`SHIPWORLD_SERIAL=1`, private paths) on the final commit: vanilla boot exc=0, Calamity boot exc=0; vanilla world 0 FAIL lines, 0 exceptions (BossBugs 39 pass), Calamity world 0 FAIL lines, 0 exceptions (BossBugs 57 pass). Only the known summon-staff pick line is excluded.

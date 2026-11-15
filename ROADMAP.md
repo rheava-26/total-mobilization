@@ -14,6 +14,19 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## ✅ Eve's parity decisions (11-15 afternoon)
+- Knockback ON by player rules (projparity).
+- Calamity defense damage applies to levies (projparity).
+- Acceptance test (Eve): the same 400-damage bullet on a levy and on a 500-HP player must deal the exact same damage in the same way (fixed RNG). Wiki checklist of player damage mechanics (projparity).
+- Fall damage and hazardous tiles ON by default.
+- Drowning by player rules, as a config option (default off).
+- Regen = the player's natural regen; potions at the player's potion-sickness rate.
+- Remove the base-grade 0.8× damage (keep worse aim). Shaken 0.6× stays. Whip 4× stays.
+- Summoners must spam whips like a player does.
+- Every armor set bonus must work on levies (audit vanilla, Calamity and Thorium).
+- → `levyrules` builder (regen/potions/fall/hazards/drowning/grade dmg/whip spam/set-bonus audit). projparity has the damage-taken pipeline.
+- Eve's read: she thought levies died fast from low defense despite life crystals and fruit. They were actually taking 3–7× contact damage and no real projectile damage.
+
 ## 🔍 PARITY AUDIT MERGED (a49dc30; levy-mod/docs/PARITY_AUDIT.md)
 - **Gaps, ranked:**
   1. Debuffs/DoT never reach levies (zero debuffs in 214 recordings; contact skips OnHitPlayer; Calamity ActsLikeTownNPC blocks debuffs).

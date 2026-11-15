@@ -26,6 +26,9 @@ namespace Levy.Common.Util
 		public static long SoldierBody, SoldierPlate; public static int SoldiersDrawn;
 		private static long _update, _hitLoop; private static int _frames, _updates;
 		private static long _lastLog;
+		/// <summary>Self-check only: when set, a profiler window's length is read from this clock (in Stopwatch ticks) instead of real time, so the check closes windows by what it steps, not by how loaded the box is. Null in the game.</summary>
+		internal static Func<long> TestClock;
+		private static long Stamp() => TestClock != null ? TestClock() : Stopwatch.GetTimestamp();
 		private static long _npcStart, _npc, _projStart, _proj;
 				private static readonly long[] _snap = new long[LevyProf.N], _now = new long[LevyProf.N];
 		// one automatic (recorded) fight, summed over its windows
@@ -167,7 +170,7 @@ namespace Levy.Common.Util
 		private static void ResetWindow()
 		{
 			_update = _npc = _proj = _hitLoop = 0; _npcStart = _projStart = 0; _updates = _frames = 0; Array.Clear(Draw, 0, Draw.Length); SoldierBody = SoldierPlate = 0; SoldiersDrawn = 0;
-			LevyProf.CopyTo(_snap); _lastLog = Stopwatch.GetTimestamp();
+			LevyProf.CopyTo(_snap); _lastLog = Stamp();
 		}
 
 		public override void PreUpdateNPCs() { if (_on) _npcStart = Stopwatch.GetTimestamp(); }
@@ -212,7 +215,7 @@ namespace Levy.Common.Util
 
 		private static void Report(bool force = false)
 		{
-			long now = Stopwatch.GetTimestamp();
+			long now = Stamp();
 			double secs = (now - _lastLog) / (double)Stopwatch.Frequency;
 			if (force ? secs < 0.5 : secs < (TestInterval ?? (_manual ? ManualIntervalSecs : AutoIntervalSecs))) return;
 			double f = 1000.0 / Stopwatch.Frequency, ups = _updates / secs, fps = _frames / secs;

@@ -22,7 +22,7 @@ echo "######## 2/4 VANILLA BOOT ########"
 ensure_install "$TML08" "$SHIPNORM" || exit 1
 mkdir -p "$VERIFY_SAVE/Mods"
 sync_tmods "$SAVE08/Mods" "$VERIFY_SAVE/Mods" "${SHIP_MODS[@]}" || exit 1
-"$SHIP_DIR/tmlboot.sh" -i "$SHIPNORM" -s "$VERIFY_SAVE" -m "Levy,Mechanization,Warbands" -p 7775 -q 12 -t 300 || echo "WARNING: boot did not reach the world menu (see $SHIPNORM/boot.out)"
+"$SHIP_DIR/tmlboot.sh" -i "$SHIPNORM" -s "$VERIFY_SAVE" -m "Levy,Mechanization,Warbands" -p "$PORT_NORM" -q 12 -t 300 || echo "WARNING: boot did not reach the world menu (see $SHIPNORM/boot.out)"
 L="$SHIPNORM/tModLoader-Logs/server.log"
 if [ -f "$L" ]; then
   EXC=$(grep -c -E -i 'xception' "$L")

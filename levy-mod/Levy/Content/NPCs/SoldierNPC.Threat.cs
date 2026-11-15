@@ -441,7 +441,7 @@ namespace Levy.Content.NPCs
 		private static Vector2 ThreatField_BodyAt(Vector2 c0, in Maneuver m, float g, int t) => ThreatField.PathAt(c0, m, g, t);
 
 		/// <summary>The dash burst is a window the body cannot be struck in (the contact and projectile gates read ImmuneTime).</summary>
-		private void DashIFrames() { if (DodgeMode >= 2 && DanceMode >= 1 && DOn(4)) ImmuneTime = Math.Max(ImmuneTime, DashIFrameTicks); }
+		private void DashIFrames() { if (DodgeMode >= 2 && DanceMode >= 1 && DOn(4)) GrantAllTypeImmunity(DashIFrameTicks); }
 
 		private void Begin(float vx, int dur, float acc = 0f) { _dodgeVx = vx; _dodgeTicks = dur; _dodgeAcc = acc; if (acc <= 0f) NPC.velocity.X = vx; }
 

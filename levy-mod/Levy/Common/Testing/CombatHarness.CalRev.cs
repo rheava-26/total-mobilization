@@ -685,7 +685,7 @@ namespace Levy.Common.Testing
 			else if (!st.BossGone) { st.BossGone = true; st.EndTick = st.Tick; st.Result = BbIsBoss(run.Boss) ? (BbWon(run.Boss, st.BossLife, st.BossLifeMax) ? "WIN" : "DESPAWN") : e.life <= 0 ? "WIN" : "DESPAWN"; st.BossLife = BbIsBoss(run.Boss) ? 0 : Math.Max(0, e.life); }
 			int adds = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && st.AddTypes.Contains(Main.npc[i].type)) adds++;
 			st.AddsPeak = Math.Max(st.AddsPeak, adds); st.MaxAdds = st.AddsPeak;
-			CrSampleTick(st, e, bossAlive, adds); LeviProbe(st);
+			CrSampleTick(st, e, bossAlive, adds); LeviProbe(st); HitParityLive(st);
 			if (run.Boss == "kslime" && st.Tick % 30 == 0)
 			{
 				// king slime probe: the crystal (Calamity's jewel) target class each half second: 0 levy, 1 player, 2 none. Totals go to the log at the end of the run through the counters below.
@@ -821,6 +821,7 @@ namespace Levy.Common.Testing
 			if (run.Dl != "") DlFinish(run, st);
 			if (run.Pl != "") PlFinish(run, st, end);
 			KitFinish(run, st);
+			HitParityLiveFinish(run);
 			BbFinish(run, st, end);
 			if (global::Levy.Common.Util.LevyProf.On) { string pl = global::Levy.Common.Util.LevyProf.Dump(end) + " path[" + global::Levy.Common.Movement.Pathfinder.StatSummary() + "] route[" + global::Levy.Common.Movement.RoutePlanner.StatSummary() + "] paircull[eligible=" + global::Levy.Common.Weapons.PairCull.Eligible + " ineligible=" + global::Levy.Common.Weapons.PairCull.Ineligible + " refused=" + global::Levy.Common.Util.LevyProf.PairsCulled + " checked=" + global::Levy.Common.Weapons.PairCull.Checked + " enabled=" + global::Levy.Common.Weapons.PairCull.Enabled + " audited=" + global::Levy.Common.Weapons.PairCull.Audited + " violations=" + global::Levy.Common.Weapons.PairCull.Violations + " maxHitExcessPx=" + global::Levy.Common.Weapons.PairCull.MaxHitExcessPx.ToString("0.0") + "] pairwhy[" + global::Levy.Common.Weapons.PairCull.WhyNotSummary(8) + "] cutchk[checked=" + SoldierNPC.CutChecked + " cut=" + SoldierNPC.CutCut + " bad=" + SoldierNPC.CutBad + "] TOP[" + global::Levy.Common.Util.LevyProf.TopTypes(end, 12) + "] " + $" projTypes={ProjectileLoader.ProjectileCount} npcTypes={NPCLoader.NPCCount} " + $" wm={SoldierNPC.WmThinks}/{SoldierNPC.WmHolds}/{SoldierNPC.WmShifts}/{SoldierNPC.WmAims}/{SoldierNPC.WmAimCalls}/{SoldierNPC.WmPierce} chk=" + global::Levy.Common.Movement.ThreatField.ChkBad + "/" + global::Levy.Common.Movement.ThreatField.ChkN; Mod.Logger.Info("PROF " + run.Key + " ms/tick " + pl); try { File.AppendAllText(_crOut + ".prof.tsv", run.Key + "\t" + pl + "\n"); } catch { } }
 			if (SoldierNPC.HitDbg != null) { try { File.AppendAllText(_crOut + ".hit.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitDbg.OrderByDescending(kv => kv.Value.dmg).Select(kv => $"{kv.Key}={kv.Value.dmg}/{kv.Value.n}")) + "\n"); } catch { } SoldierNPC.HitDbg = new(); }

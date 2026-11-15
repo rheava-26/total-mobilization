@@ -59,6 +59,12 @@ namespace Levy.Content.NPCs
 
 		// ---- damage state (set by Damage) ----
 		public int ImmuneTime;
+		/// <summary>Ticks left of an all-types window (dash, parry, Hallowed dodge): Player.SetImmuneTimeForAllTypes, which also closes every boss immunity slot.</summary>
+		public int AllImmune;
+		/// <summary>Per immunity slot ticks left (Player.hurtCooldowns): a hit that names a slot (Moon Lord, the Empress, Calamity bosses) starts only that slot's window.</summary>
+		public readonly int[] SlotImmune = new int[global::Levy.Common.Util.HostileContact.SlotCount];
+		/// <summary>An all-types immunity window: the general one and every slot (Player.SetImmuneTimeForAllTypes).</summary>
+		public void GrantAllTypeImmunity(int ticks) { ImmuneTime = Math.Max(ImmuneTime, ticks); AllImmune = Math.Max(AllImmune, ticks); }
 		public int TicksSinceDamaged = 100000;
 		public int PotionSickness;
 		public int LastAttackerIndex = -1, LastAttackerType = -1;

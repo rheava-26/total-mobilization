@@ -321,7 +321,7 @@ namespace Levy.Common.Weapons
 							if (_g.ParryContact && _body.Dummy != null)
 							{
 								int frames = LevyConstants.ArkParryIFrames + (_body.Dummy.longInvince ? LevyConstants.ArkParryIFramesCross : 0);
-								_body.ImmuneTime = Math.Max(_body.ImmuneTime, frames);
+								_body.GrantAllTypeImmunity(frames); // GiveImmuneTimeForCollisionAttack: every type
 							}
 						}
 					}

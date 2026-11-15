@@ -78,7 +78,7 @@ namespace Levy.Common.Recording
 					string c = Path.Combine(tmp, "c.levyrec");
 					var wc = new RecWriter(c, true, 0);
 					for (int i = 0; i < 400; i++) wc.WriteLine("{\"k\":\"f\",\"t\":" + i + "}");
-					System.Threading.Thread.Sleep(250);
+					Check(wc.Flush(), "a flush on demand returns once the file holds the queued lines");
 					string cut = Path.Combine(tmp, "cut.levyrec"); using (var src = new FileStream(c + ".part", FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) using (var dst = File.Create(cut)) src.CopyTo(dst);
 					var cl = ReadLines(cut, true, out string ce);
 					Check(cl.Count >= 390 && cl[0] == "{\"k\":\"f\",\"t\":0}", "a recording copied while still open reads back its flushed lines (" + cl.Count + ")");
@@ -322,6 +322,7 @@ namespace Levy.Common.Recording
 		private void PChk(bool ok, string name) { if (ok) _ppass++; else { _pfail++; Mod.Logger.Warn("  clientprof world: FAIL " + name); } }
 
 		/// <summary>One scripted boss fight with the auto recorder, the clock stepped by hand. <paramref name="slowFrom"/>: from this tick on every tick sleeps (a lag stretch, so one profiler window reads lower fps than the rest).</summary>
+		private static long _profClock;
 		private string ProfFight(Player p, int cx, int ticks, int slowFrom, out int chatDuring, Action midFight = null)
 		{
 			FightRecAuto.ClearCooldown(); Step(3, p, null);
@@ -332,7 +333,7 @@ namespace Levy.Common.Recording
 				if (k == ticks / 2) midFight?.Invoke();
 				One(p, boss, k);
 				if (FightRecorder.On && Main.npc[boss].active && k % 7 == 0) FightRecorder.NoteDamage(Main.npc[boss], p, null, new Item(ItemID.Zenith), 220);
-				System.Threading.Thread.Sleep(k >= slowFrom ? 14 : (k % 3 == 0 ? 1 : 0));
+				_profClock += (long)((k >= slowFrom ? 14.0 : (k % 3 == 0 ? 1.0 : 0.3)) / 1000.0 * System.Diagnostics.Stopwatch.Frequency); // the profiler's windows read this clock, so a lag stretch is a stretch of ticks, not of wall-clock seconds
 			}
 			chatDuring = global::Levy.Common.Util.ClientProf.Said.Count - said0;
 			FightRecorder.NoteBossKill(Main.npc[boss]); Main.npc[boss].life = 0; Main.npc[boss].active = false;
@@ -355,7 +356,7 @@ namespace Levy.Common.Recording
 			_ppass = _pfail = 0;
 			try
 			{
-				global::Levy.Common.Util.ClientProf.TestServer = true; global::Levy.Common.Util.ClientProf.TestInterval = 0.05; global::Levy.Common.Util.ClientProf.TestAutoProfile = null; global::Levy.Common.Util.ClientProf.Said.Clear();
+				_profClock = 0; global::Levy.Common.Util.ClientProf.TestClock = () => _profClock; global::Levy.Common.Util.ClientProf.TestServer = true; global::Levy.Common.Util.ClientProf.TestInterval = 0.05; global::Levy.Common.Util.ClientProf.TestAutoProfile = null; global::Levy.Common.Util.ClientProf.Said.Clear();
 				FightRecAuto.TestFolder = good; FightRecAuto.TestDefaultDir = def; FightRecAuto.ResetMessages(); FightRecAuto.TestMode = FightRecMode.BossFights;
 
 				// ---- the key and the config
@@ -436,7 +437,7 @@ namespace Levy.Common.Recording
 				global::Levy.Common.Util.ClientProf.Disable(); global::Levy.Common.Util.ClientProf.TestAutoProfile = null;
 			}
 			if (Environment.GetEnvironmentVariable("LEVY_PROF_OVERHEAD") == "1") { try { ProfOverhead(p, cx, recs, spawned); } catch (Exception e) { Mod.Logger.Warn("[ClientProf] overhead probe threw " + e); } }
-			global::Levy.Common.Util.ClientProf.TestServer = false; global::Levy.Common.Util.ClientProf.TestInterval = null;
+			global::Levy.Common.Util.ClientProf.TestServer = false; global::Levy.Common.Util.ClientProf.TestInterval = null; global::Levy.Common.Util.ClientProf.TestClock = null;
 			if (_pfail == 0) Mod.Logger.Info($"[ClientProf] self-check pass={_ppass} fail=0");
 			else Mod.Logger.Warn($"[ClientProf] self-check pass={_ppass} fail={_pfail}");
 		}

@@ -196,16 +196,19 @@ namespace Levy.Common.Testing
 			catch (Exception) { }
 		}
 
+		/// <summary>One part, or all (LEVY_BOSSBUGS_PART takes "all" or a comma list).</summary>
+		private static bool Part(string only, string name) => only == "all" || Array.IndexOf(only.Split(','), name) >= 0;
+
 		private static void Run()
 		{
 			Main.player[0] = Main.player[0] ?? new Player();
 			string only = Environment.GetEnvironmentVariable("LEVY_BOSSBUGS_PART") ?? "all";
-			if (only == "all" || only == "calamity") { try { Calamity(); } finally { Cleanup(); } }
-			if (only == "all" || only == "shots") { try { Shots(); } finally { Cleanup(); } }
-			if (only == "all" || only == "ml") { try { MoonLord(); } finally { Cleanup(); } }
-			if (only == "all" || only == "wof") { try { WallOfFlesh(); } finally { Cleanup(); } }
-			if (only == "all" || only == "mlkill") { try { MoonLordDeath(); } finally { Cleanup(); } }
-			if (only == "all" || only == "killedge") { try { IceBlockAtTheEdge(); } finally { Cleanup(); } }
+			if (Part(only, "calamity")) { try { Calamity(); } finally { Cleanup(); } }
+			if (Part(only, "shots")) { try { Shots(); } finally { Cleanup(); } }
+			if (Part(only, "ml")) { try { MoonLord(); } finally { Cleanup(); } }
+			if (Part(only, "wof")) { try { WallOfFlesh(); } finally { Cleanup(); } }
+			if (Part(only, "mlkill")) { try { MoonLordDeath(); } finally { Cleanup(); } }
+			if (Part(only, "killedge")) { try { IceBlockAtTheEdge(); } finally { Cleanup(); } }
 		}
 
 		// =====================================================================================================
@@ -440,6 +443,8 @@ namespace Levy.Common.Testing
 				Note("exceptions the three kinds of Moon Lord NPC threw during the death: " + (thrown.Count == 0 ? "none" : string.Join(", ", thrown.Select(k => k.Key + " x" + k.Value))) + (firstEx != null ? "; first: " + firstEx : ""));
 				Check("Moon Lord's death animation ends without an exception (Calamity's override AI clears itself on the server inside its own PreAI)", thrown.Count == 0);
 				Check("the core and its parts are gone after the kill", !core.active && !Main.npc[part[0]].active && !Main.npc[part[1]].active && !Main.npc[part[2]].active);
+				Check($"the SendExtraAI hook is installed and kept the dead core's override through its own pass (kept {CalamityTargetingCompat.OverrideKept} times), so the fallback never had a NullReferenceException to answer ({CalamityTargetingCompat.DeathNreAnswered})",
+					CalamityTargetingCompat.SendHookInstalled && CalamityTargetingCompat.OverrideKept >= 1 && CalamityTargetingCompat.DeathNreAnswered == 0);
 			}
 			finally { On_NPC.UpdateNPC -= det; }
 		}
@@ -470,6 +475,7 @@ namespace Levy.Common.Testing
 				("past the bottom edge", new Vector2(Cx * 16f, my + 30f), true),
 				("inside the world (nothing to clamp)", new Vector2(Cx * 16f, (FloorY - 20) * 16f), true),
 			};
+			int clamped0 = global::Levy.Common.Owner.UseGuard.Clamped;
 			foreach (var (name, at, army) in cases)
 			{
 				int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("BossBugsCheck"), new Vector2(Cx * 16f, (FloorY - 20) * 16f), new Vector2(0f, -19.8f), ProjectileID.IceBlock, 40, 0f, 0);
@@ -477,11 +483,16 @@ namespace Levy.Common.Testing
 				Projectile pr = Main.projectile[pi];
 				if (army && pr.TryGetGlobalProjectile(out SoldierProjectileTag tag)) tag.SoldierIndex = soldier;
 				pr.position = at; pr.timeLeft = 0;
+				int before = global::Levy.Common.Owner.UseGuard.Clamped;
+				bool outside = at.X < 0 || at.Y < 0 || at.X >= mx || at.Y >= my;
 				Exception thrown = null;
 				try { pr.Kill(); } catch (Exception e) { thrown = e; }
 				Check($"an army Ice Block dies cleanly {name}" + (thrown != null ? " (threw " + thrown.GetType().Name + ")" : ""), thrown == null && !pr.active);
+				int moves = global::Levy.Common.Owner.UseGuard.Clamped - before;
+				Check($"{name}: the dying block's position is moved back into the world only when it was outside ({moves} moves)", moves == (outside ? 1 : 0));
 				pr.active = false;
 			}
+			Check("the guard moved a position exactly for the five cases outside the world", global::Levy.Common.Owner.UseGuard.Clamped - clamped0 == 5);
 		}
 
 		// =====================================================================================================

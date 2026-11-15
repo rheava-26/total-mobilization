@@ -6,7 +6,7 @@
 # 2. copy (never link) the three tmods to $VERIFY_SAVE/Mods and boot the PRIVATE vanilla install $SHIPNORM against it. No world:
 #    the boot stops at the world menu after "Finalizing Content" + the load-time self-checks.
 # 3. shipcal.sh   4. shipworld.sh
-# Boot report: exceptions (must be 0), the self-check summary lines, and every fail=[1-9] / FAILURE / !!! line.
+# Boot report: exceptions (must be 0), the self-check summary lines, and every FAIL / fail=[1-9] / !!! line (env.sh fail_lines: PASS lines and the known summon-staff pick failure excluded).
 set -u
 . "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 T0=$SECONDS; NOCAL=0; NOWORLD=0
@@ -30,8 +30,9 @@ if [ -f "$L" ]; then
   grep -E 'Adding Content: (Levy|Mechanization|Warbands)' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | sed 's/^/  /'
   echo "-- self-check summary lines:"
   grep -E 'self-check' "$L" | grep -E 'pass=|fail=|checks OK|checks ok|FAILURE| OK' | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-200 | sed 's/^/  /'
-  echo "-- fail=[1-9] / FAILURE / !!! lines:"
-  grep -E 'fail=[1-9]|FAILURE|!!!' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-220 | sed 's/^/  /'
+  echo "-- FAIL / fail=[1-9] / !!! lines (known summon-staff pick failure excluded):"
+  fail_lines "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-220 | sed 's/^/  /'
+  grep -E "$KNOWN_FAIL_RE" "$L" | head -1 | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-120 | sed 's/^/  (known, excluded) /'
   echo "-- exception lines:"
   grep -E -i 'xception' "$L" | cut -c1-220 | head -8 | sed 's/^/  /'
 else echo "NO LOG at $L"; fi

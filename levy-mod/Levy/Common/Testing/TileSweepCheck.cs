@@ -59,6 +59,7 @@ namespace Levy.Common.Testing
 		private static void Run()
 		{
 			var sw = Stopwatch.StartNew();
+			if (Environment.GetEnvironmentVariable("LEVY_TILESWEEP_WINDY") == "1") { TileSandbox.SetWindyDay(true); Note("lab: Main.IsItAHappyWindyDay forced on outside the sandbox, reads " + Main.IsItAHappyWindyDay + " (a kite shot must still not throw)"); }
 			bool cal = TileSandbox.Calibrated(out string why);
 			Check("the sandbox is calibrated (a bomb changes the field, a bullet does not): " + why, cal);
 			if (!cal) return;

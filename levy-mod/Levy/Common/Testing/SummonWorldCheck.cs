@@ -28,7 +28,7 @@ namespace Levy.Common.Testing
 		private static MethodInfo _update; private static Mod _mod;
 		private static NPC _target; private static Vector2 _targetAt, _cmdAt;
 		private static bool _local; private static int _savedMy;
-		private const int FloorY = 300, Cx = 1800, Ticks = 900;
+		private const int FloorY = 300, Cx = 1800, Ticks = 900, HitBudgetFactor = 4;
 
 		public override void OnWorldLoad()
 		{
@@ -59,6 +59,8 @@ namespace Levy.Common.Testing
 		{
 			if (!_armed || _done || !Main.dedServ) return;
 			if (Environment.GetEnvironmentVariable("LEVY_WHIPONLY") == "1") { _done = true; try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the whip check alone
+			if (Environment.GetEnvironmentVariable("LEVY_TILESWEEPSHIPONLY") == "1") { _done = true; try { TileSweepCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[TileSweep] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the ship-mode tile sweep sample alone
+			if (Environment.GetEnvironmentVariable("LEVY_OFFICERONLY") == "1") { _done = true; try { OfficerWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[OfficerWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the officer world check alone
 			if (Environment.GetEnvironmentVariable("LEVY_MOBONLY") == "1") { _done = true; try { MobilityWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[MobWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the wings and boots check alone
 			if (Environment.GetEnvironmentVariable("LEVY_BOSSBUGS_ONLY") == "1") { _done = true; try { BossBugsWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[BossBugs] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the boss-bugs check alone
 			if (Environment.GetEnvironmentVariable("LEVY_FIELDFIX_ONLY") == "1") { _done = true; try { FieldFixCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[FieldFix] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the field-fix check alone
@@ -189,7 +191,9 @@ namespace Levy.Common.Testing
 			_target.noGravity = true; _target.noTileCollide = true; _target.aiStyle = -1; _target.friendly = false; _target.value = 0f; _target.Bottom = _targetAt;
 			var ht = _target.GetGlobalNPC<HarnessTarget>(); ht.IsTarget = true; ht.Pin = _target.position; // the lab's pinned dummy: no AI, no despawn
 			int firstOut = -1, bab = 0, aura = 0, aliveEnd = 0, dmg = 0;
-			for (int tick = 1; tick <= Ticks; tick++)
+			Main.rand = new Terraria.Utilities.UnifiedRandom(8100 + type); // the same random stream for the same staff, whatever else the box is doing
+			// the minions' hits are discrete and their cadence is the minion's own (a hornet darts, a flock circles first): the window is Ticks, then on (to HitBudgetFactor windows) until the first hit lands
+			for (int tick = 1; tick <= Ticks || (dmg == 0 && tick <= Ticks * HitBudgetFactor); tick++)
 			{
 				PinTarget(); // the enemy is whole at the start of every tick: what is missing at the end of it is what the levy's minions did
 				Step(1);

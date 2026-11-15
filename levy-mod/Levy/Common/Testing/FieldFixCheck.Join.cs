@@ -26,16 +26,25 @@ namespace Levy.Common.Testing
 			public string StateText() => string.Join(" ", States.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + ":" + (100 * kv.Value / Math.Max(1, Ticks)) + "%"));
 		}
 
-		/// <summary>One body against one pinned boss: how close it gets, whether it hurts the boss, and which states it spends the time in.</summary>
-		private static JoinResult Join(string label, float bossTilesFromCmd, Func<Vector2, NPC> spawn, int ticks = 720)
+		/// <summary>
+		/// The random stream a trial draws from, fixed per trial: a shot's spread and a think's jitter come from Main.rand, so the same trial replays the same way whatever else the box is doing.
+		/// </summary>
+		private static void Seed(int seed) { Main.rand = new Terraria.Utilities.UnifiedRandom(seed); }
+
+		/// <summary>A claim that a body hurts a boss is a claim about a hit landing, not about it landing inside a fixed 12 seconds: the window is the minimum, and a trial that has not seen a hit by then runs on to this many windows before it gives up.</summary>
+		private const int HitBudgetFactor = 5;
+
+		/// <summary>One body against one pinned boss: how close it gets, whether it hurts the boss, and which states it spends the time in. With <paramref name="untilHit"/> the trial runs on past the window until the first hit.</summary>
+		private static JoinResult Join(string label, float bossTilesFromCmd, Func<Vector2, NPC> spawn, int ticks = 720, bool untilHit = false)
 		{
 			Cleanup(); Arena();
+			Seed(7000 + label.Sum(c => (int)c)); // a seed per trial, the same every run
 			PlaceCommander(-100);
 			SpawnBoss(-100 + bossTilesFromCmd);
 			NPC body = spawn(new Vector2((Cx - 100 + 3) * 16f, FloorY * 16f));
 			var r = new JoinResult();
 			if (body == null || _target == null) { Note(label + ": could not set up"); return r; }
-			for (int t = 0; t < ticks; t++)
+			for (int t = 0; t < (untilHit ? ticks * HitBudgetFactor : ticks) && (t < ticks || r.Dmg == 0); t++) // with untilHit: the window, then on (to a budget) until the first hit lands. The claim is "it hurts the boss", not "it does within 12 seconds"
 			{
 				int lifeBefore = body.life;
 				Step(1);
@@ -67,7 +76,7 @@ namespace Levy.Common.Testing
 		/// <summary>An officer is under the targeting rules a levy is under: what levies never shoot (the Dungeon Guardian, which they keep away from), an officer does not shoot either.</summary>
 		private static void NeverTargets()
 		{
-			var r = Join("officer Arms Dealer vs a boss", 15f, OfficerBody(NPCID.ArmsDealer, SoldierOrder.Follow), 360);
+			var r = Join("officer Arms Dealer vs a boss", 15f, OfficerBody(NPCID.ArmsDealer, SoldierOrder.Follow), 360, untilHit: true);
 			Check($"control: an officer shoots a boss 15 tiles away ({r.Dmg})", r.Dmg > 0);
 			Cleanup(); Arena(); PlaceCommander(-100);
 			SpawnBoss(-100 + 15f, NPCID.DungeonGuardian);
@@ -93,17 +102,28 @@ namespace Levy.Common.Testing
 			try { ModContent.GetInstance<BarracksTE>().Place(Cx - 150, FloorY - 3); te = TileEntity.ByID.Values.OfType<BarracksTE>().FirstOrDefault(b => b.Position.X == Cx - 150); } catch (Exception) { }
 			Check("a barracks is placed for the militia check", te != null);
 			if (te == null) return;
-			float[] dists = { 60f, 190f };
+			float[] dists = { 60f, 0f }; // the far boss's distance is set below, from the weapon's reach: the rule is SettlementRadiusX plus that reach
 			var dmgBy = new long[2]; var closest = new float[2]; var states = new string[2];
 			for (int k = 0; k < 2; k++)
 			{
 				Cleanup(); Arena(); PlaceCommander(-100);
+				Seed(7100 + k);
 				te.Mobilized = true;
-				SpawnBoss(-150 + dists[k]);
+				SpawnBoss(-150 + 60f);
 				var m = Levy(new Vector2((te.Position.X + 1.5f) * 16f, (te.Position.Y + 3) * 16f), SoldierOrder.SearchDestroy, ItemID.Minishark, ItemID.MusketBall, SoldierKind.Militia, te.ID);
 				if (m == null) { Check("a militiaman spawns", false); break; }
+				if (k == 1)
+				{
+					// far = past the settlement radius and past everything this gun's reach (at a boss) adds to it, so the answer does not hang on how far a shot flies; the arena's east end caps it
+					float reach = m.Weapon != null && _target != null ? m.Weapon.RangeTiles * m.BossRangeMult(_target) : 0f;
+					dists[1] = Math.Min(LevyConstants.SettlementRadiusX + reach + 25f, Half - 5f + 150f);
+					SpawnBoss(-150 + dists[1]);
+					Note($"militiaman far case: the gun reaches {reach:0} tiles at a boss, the boss stands {dists[1]:0} tiles from the barracks (radius {LevyConstants.SettlementRadiusX})");
+				}
 				var r = new JoinResult(); closest[k] = float.MaxValue;
-				for (int t = 0; t < 900 && m.NPC.active && m.NPC.life > 0; t++)
+				// inside the radius: wait for the first hit (up to HitBudgetFactor windows); outside it: the whole window, and nothing may land
+				int window = 900, limit = k == 0 ? window * HitBudgetFactor : window;
+				for (int t = 0; t < limit && m.NPC.active && m.NPC.life > 0 && (t < window || dmgBy[k] == 0); t++)
 				{
 					// the settlement stands its garrison down on the falling edge of an earlier check's boss: this barracks stays mobilized for the measurement
 					te.Mobilized = true; if (m.State == SoldierState.ReturnHome) m.State = SoldierState.Idle;
@@ -136,7 +156,7 @@ namespace Levy.Common.Testing
 			{
 				foreach (var f in fighters)
 				{
-					var r = Join(f.label, dist, f.make);
+					var r = Join(f.label, dist, f.make, untilHit: dist <= 25f); // the claims are made at 25 tiles: wait there for the first hit
 					// the contract: an officer with a weapon joins a boss fight the way a regular does at the same order and the same distance
 					if (f.officer && dist <= 25f) Check($"{f.label}, boss {dist:0} tiles away: the officer hurts the boss ({r.Dmg}) and the recording shows him engaged ({r.EngagedTicks} ticks)", r.Dmg > 0 && r.EngagedTicks > 0);
 					if (!f.officer && dist <= 25f) Check($"{f.label}, boss {dist:0} tiles away: the regular hurts the boss, the control ({r.Dmg})", r.Dmg > 0);

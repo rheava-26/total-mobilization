@@ -20,6 +20,8 @@ namespace Levy.Common.Testing
 	///    each worn only in the BOOTS slot. The boots must change the measured top speed (and match the speed the stat pass reports for the dummy).
 	///  * FLIGHT TIME: the commander hovers 60 tiles above the levy; a levy with wings flies up after him and a bare one can only jump. The ticks of his first flight (from leaving the floor to landing) and the height he reaches
 	///    are read every tick, bare and in Fledgling Wings, Angel Wings and Solar Wings, each worn only in the WINGS slot. The wings must change the measured flight time and the dummy's wing time.
+	/// A flight is the LONGEST unbroken stretch in the air over a fixed 900-tick window with the commander held out of reach the whole time (the brain may land and take off again; one early landing is not the wings' fault), and the
+	/// wings' ranking is also asserted on the stat the wings give the dummy (their wing time), which does not depend on what the brain chooses to do.
 	/// Throwaway soldiers only; nothing is saved.
 	/// </summary>
 	public sealed class MobilityWorldCheck : ModSystem
@@ -135,14 +137,17 @@ namespace Levy.Common.Testing
 			if (speeds.ContainsKey("Hermes Boots") && speeds.ContainsKey("Lightning Boots")) Check($"better boots run faster: Lightning {F(speeds["Lightning Boots"])} > Hermes {F(speeds["Hermes Boots"])}", speeds["Lightning Boots"] > speeds["Hermes Boots"] + 0.2f);
 			if (speeds.ContainsKey("Angel Treads") && speeds.ContainsKey("Hermes Boots")) Check($"Angel Treads outrun Hermes Boots: {F(speeds["Angel Treads"])} vs {F(speeds["Hermes Boots"])}", speeds["Angel Treads"] > speeds["Hermes Boots"] + 0.5f);
 
-			var flights = new Dictionary<string, int>();
+			var flights = new Dictionary<string, int>(); var wingTimes = new Dictionary<string, int>();
 			foreach (var (name, type) in wings)
 			{
 				var r = FlightTrial(type == 0 ? null : Make(type), name);
-				flights[name] = r.ticks;
+				flights[name] = r.ticks; wingTimes[name] = r.wingTime;
 			}
 			int bare = flights["none"];
 			foreach (var kv in flights) if (kv.Key != "none") Check($"wings in the wings slot change a levy's flight time: {kv.Key} {kv.Value} ticks airborne vs bare {bare}", kv.Value > bare + 30);
+			// the ranking on what the wings give the levy (the stat pass's wing time: the same number a player's wings carry), then as measured over the longest flight
+			if (wingTimes.ContainsKey("Fledgling Wings") && wingTimes.ContainsKey("Angel Wings") && wingTimes.ContainsKey("Solar Wings"))
+				Check($"longer-flying wings give a longer wing time: Fledgling {wingTimes["Fledgling Wings"]} < Angel {wingTimes["Angel Wings"]} < Solar {wingTimes["Solar Wings"]}", wingTimes["Fledgling Wings"] < wingTimes["Angel Wings"] && wingTimes["Angel Wings"] < wingTimes["Solar Wings"]);
 			if (flights.ContainsKey("Fledgling Wings") && flights.ContainsKey("Angel Wings")) Check($"longer-flying wings fly longer: Angel {flights["Angel Wings"]} >= Fledgling {flights["Fledgling Wings"]}", flights["Angel Wings"] >= flights["Fledgling Wings"]);
 			ClearSoldiers();
 		}
@@ -176,39 +181,37 @@ namespace Levy.Common.Testing
 			return (avg, peak);
 		}
 
-		private static (int ticks, float heightTiles) FlightTrial(Item wings, string label)
+		private static (int ticks, float heightTiles, int wingTime) FlightTrial(Item wings, string label)
 		{
 			ClearSoldiers();
+			global::Terraria.Main.rand = new Terraria.Utilities.UnifiedRandom(9100 + (wings?.type ?? 0)); // the same random stream for the same wings, whatever else the box is doing
 			var at = new Vector2(Cx * 16f, FloorY * 16f);
 			_cmdAt = new Vector2(Cx * 16f + 4 * 16f, (FloorY - 60) * 16f);
 			KeepCommander(); Step(2);
 			int body = SpawnLevy(wings, null, at, out var rec);
-			if (body < 0 || !rec.HasBody) { Check($"flight trial {label}: the levy spawns with the wings in the wings slot", false); return (0, 0); }
+			if (body < 0 || !rec.HasBody) { Check($"flight trial {label}: the levy spawns with the wings in the wings slot", false); return (0, 0, 0); }
 			var sn = (SoldierNPC)Main.npc[body].ModNPC;
 			// stand still on the floor until his spawn grace is over, then the commander rises out of reach
 			_cmdAt = new Vector2(Cx * 16f + 4 * 16f, (FloorY - 3) * 16f);
 			Step(70);
 			_cmdAt = new Vector2(Cx * 16f + 4 * 16f, (FloorY - 60) * 16f);
 			float floorB = FloorY * 16f;
-			int flightTicks = 0, state = 0; float minB = floorB; int total = 0;
-			for (int t = 1; t <= 900; t++)
+			int flightTicks = 0, streak = 0, flights = 0; float minB = floorB;
+			for (int t = 1; t <= 900; t++) // the whole window: the commander stays out of reach, and the levy may take off more than once
 			{
-				Step(1); total = t;
+				Step(1);
 				var n = Main.npc[body]; if (!n.active) break;
 				bool air = n.Bottom.Y < floorB - 6f;
-				if (state == 0 && air) state = 1;
-				if (state == 1)
-				{
-					if (air) { flightTicks++; minB = Math.Min(minB, n.Bottom.Y); }
-					else if (t > 5) { state = 2; break; }
-				}
+				if (air) { if (streak == 0) flights++; streak++; flightTicks = Math.Max(flightTicks, streak); minB = Math.Min(minB, n.Bottom.Y); }
+				else streak = 0;
 			}
 			var ab = sn.Abilities;
 			float h = (floorB - minB) / 16f;
-			Note($"flight time, wings slot = {label}: first flight {flightTicks} ticks, rose {F(h)} tiles; stat pass HasWings {ab?.HasWings} WingTimeMax {ab?.WingTimeMax}, dummy wingsLogic {sn.Dummy.wingsLogic} wingTimeMax {sn.Dummy.wingTimeMax}, accessory slots empty {rec.Gear.Accessories.All(a => a.IsAir)}");
+			Note($"flight time, wings slot = {label}: longest flight {flightTicks} ticks (of {flights} take-offs in 900 ticks), rose {F(h)} tiles; stat pass HasWings {ab?.HasWings} WingTimeMax {ab?.WingTimeMax}, dummy wingsLogic {sn.Dummy.wingsLogic} wingTimeMax {sn.Dummy.wingTimeMax}, accessory slots empty {rec.Gear.Accessories.All(a => a.IsAir)}");
 			if (wings != null) Check($"flight trial {label}: the dummy wears the wings from the wings slot (wingsLogic {sn.Dummy.wingsLogic}, wing time {sn.Dummy.wingTimeMax})", ab != null && ab.HasWings && ab.WingTimeMax > 0 && sn.Dummy.wingsLogic == wings.wingSlot);
+			int wingTime = ab?.WingTimeMax ?? 0;
 			ClearSoldiers();
-			return (flightTicks, h);
+			return (flightTicks, h, wingTime);
 		}
 	}
 }

@@ -69,9 +69,16 @@ namespace Levy.Common.Testing
 				}
 				SoldierNPC.FrRingPointOf(0, 12, false, out float r12, out _); SoldierNPC.FrRingPointOf(0, 60, false, out float r60, out _);
 				Check("a bigger army makes a wider ring", Math.Abs(r60) > Math.Abs(r12));
-				var sw = System.Diagnostics.Stopwatch.StartNew(); for (int i = 0; i < 20; i++) FollowRows.Get(cmd, now + 1000 + i * FollowRows.RebuildTicks); sw.Stop();
-				double ms = sw.Elapsed.TotalMilliseconds / 20.0;
-				Check($"a row scan costs well under a millisecond ({ms:0.000} ms)", ms < 1.0);
+				// A wall-clock bound on a loaded box measures the box, not the scan: time many small batches and judge the quickest one. Preemption, a GC pause or a busy neighbour only ever adds time to a batch, so the minimum is the scan's own cost;
+				// a real regression slows every batch and still shows. 1 ms is about ten times the scan's cost on an idle core.
+				double ms = double.MaxValue;
+				for (int batch = 0; batch < 25; batch++)
+				{
+					var sw = System.Diagnostics.Stopwatch.StartNew(); for (int i = 0; i < 10; i++) FollowRows.Get(cmd, now + 1000 + i * FollowRows.RebuildTicks); sw.Stop(); // every call rebuilds (the tick is a rebuild interval past the last one, or earlier than it)
+					ms = Math.Min(ms, sw.Elapsed.TotalMilliseconds / 10.0);
+				}
+				FollowRows.Get(cmd, now + 1855); // the last rebuild the checks below count from
+				Check($"a row scan costs well under a millisecond ({ms:0.000} ms, best of 25 batches)", ms < 1.0);
 				// lane geometry: normal and spread stances, either side
 				bool spacing = true, start = true;
 				foreach (bool spread in new[] { false, true })

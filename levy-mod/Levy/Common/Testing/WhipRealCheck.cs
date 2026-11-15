@@ -228,7 +228,7 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
-				if (n.active && !n.friendly && !n.townNPC && n.ModNPC == null && n != _target && !(n.TryGetGlobalNPC(out HarnessTarget ht) && ht.IsTarget)) n.active = false;
+				if (WorldStep.IsNaturalHostile(n) && n != _target && !(n.TryGetGlobalNPC(out HarnessTarget ht) && ht.IsTarget)) n.active = false;
 			}
 		}
 

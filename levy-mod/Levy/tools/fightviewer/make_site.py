@@ -31,6 +31,32 @@ MAX_FILE = 14 * 1048576  # hard limit is 15 MB per data file
 MAX_TOTAL = 55 * 1048576  # hard limit is 60 MB for the site
 
 
+# ---------------------------------------------------------------- versions
+# Mechanics eras: a fight recorded on Levy <= upTo (and older than CURRENT) is outdated for that reason. The lead appends eras and updates CURRENT in
+# data/manifest.json (no data rebuild); these are the defaults a build writes.
+ERAS = [
+    {"upTo": "2.0.63", "note": "Levies were hit by bosses where you would not be."},
+    {"upTo": "2.0.65", "note": "Boss shots never hit levies when the commander had a Spectator potion."},
+    {"upTo": "2.0.67", "note": "Boss shots did about 1 damage to levies; touching a boss did 3 to 7 times too much."},
+]
+CURRENT = "2.0.68 (not yet released)"
+# recording format -> (oldest, newest) Levy version known to write it; used only when a recording carries no version
+FORMAT_VERS = {1: ("2.0.0", "2.0.12"), 2: ("2.0.0", "2.0.12"), 3: ("2.0.13", "2.0.19"), 4: ("2.0.13", "2.0.19"), 5: ("2.0.20", "2.0.20"),
+               6: ("2.0.21", "2.0.25"), 7: ("2.0.26", "2.0.40"), 8: ("2.0.41", "2.0.63"), 9: ("2.0.64", "2.0.99")}
+
+
+def version_of(hdr):
+    """(version string, about?) for a recording header: the Levy entry of the mods list (format 8+), else hdr.levy, else the newest version
+    the format number allows, flagged 'about'."""
+    for m in hdr.get("mods") or []:
+        if isinstance(m, (list, tuple)) and len(m) >= 2 and str(m[0]).lower() == "levy":
+            return str(m[1]), False
+    if hdr.get("levy"):
+        return str(hdr["levy"]), False
+    rng = FORMAT_VERS.get(hdr.get("format", 1), ("2.0.0", "2.0.12"))
+    return rng[1], True
+
+
 # ---------------------------------------------------------------- reading
 def load(path):
     op = gzip.open if path.endswith((".gz", ".levyrec")) else open
@@ -146,7 +172,9 @@ def summarize(rows):
     # a hand-made recording (/levyrec start <name>) carries its file name in hdr.boss: name the fight after the boss it actually met, or "Other fights" when none
     named = [e.get("name") for e in ev if e.get("e") == "boss" and e.get("name")]
     boss = meta.get("bossName") or (named[0] if named and not meta else None) or ("Other fights" if not meta else (hdr.get("boss") or "?").replace("_", " "))
+    ver, about = version_of(hdr)
     return {
+        "ver": ver, "verAbout": about, "date": hdr.get("date"),
         "boss": boss, "mode": mode, "arena": arena, "levies": max(n_levies, len(ids)), "result": result,
         "pl": round(100.0 * tally[2] / n, 1), "pp": round(100.0 * tally[1] / n, 1), "ps": round(100.0 * tally[3] / n, 1),
         "hits": len(lhit), "dmg": sum(e.get("dmg", 0) for e in lhit), "deaths": deaths,
@@ -522,7 +550,7 @@ def main():
             if fl:
                 sets.append({"id": st["id"], "title": st["title"], "fights": fl})
         with open(os.path.join(data, "manifest.json"), "w", encoding="utf-8") as f:
-            json.dump({"version": 1, "default": default, "sets": sets}, f, separators=(",", ":"))
+            json.dump({"version": 2, "default": default, "current": CURRENT, "eras": ERAS, "sets": sets}, f, separators=(",", ":"))
         shutil.copyfile(os.path.join(HERE, "site", "index.html"), os.path.join(root, "index.html"))
         size = total + os.path.getsize(os.path.join(data, "manifest.json")) + os.path.getsize(os.path.join(root, "index.html"))
         return count + 2, size, sum(len(s["fights"]) for s in sets)

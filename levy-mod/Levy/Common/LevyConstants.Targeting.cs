@@ -135,6 +135,18 @@ namespace Levy.Common
 			/// </summary>
 			public static readonly int[] BossFlyerSlotAiStyles = { NPCAIStyleID.EmpressOfLight };
 
+			/// <summary>
+			/// Modded types ("Mod/Name") that carry UsesNewTargetting and are PROVEN to read their target only through GetTargetData() (never Main.player[NPC.target] directly), so the native 300+ NPC-target index is safe for them.
+			/// Every other modded UsesNewTargetting type is put on the flyer slot (a real player index) instead. Empty: nothing has been proven yet.
+			/// </summary>
+			public static readonly System.Collections.Generic.HashSet<string> NativeSafeModdedTypes = new();
+
+			/// <summary>
+			/// Mods whose NPCs the slot-255 swap has been fought against in full (boss battery, labs) and works for as it is: their NPCs keep the swap even where the AI reads target validity.
+			/// Every other mod's NPC whose compiled AI reads <c>HasValidTarget</c> / <c>HasPlayerTarget</c> / <c>GetTargetData</c> takes the flyer slot (see TargetReadScan).
+			/// </summary>
+			public static readonly System.Collections.Generic.HashSet<string> SlotProvenMods = new() { "CalamityMod", "ThoriumMod", "Levy", "Mechanization", "Warbands" };
+
 			/// <summary>Boss segments that carry neither <c>boss</c> nor ShouldBeCountedAsBoss but use an allowlisted AI style (Eater of Worlds is Worm AI).</summary>
 			public static readonly int[] BossPartTypes = { NPCID.EaterofWorldsHead, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail, NPCID.TheDestroyer, NPCID.TheDestroyerBody, NPCID.TheDestroyerTail };
 

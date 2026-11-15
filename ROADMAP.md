@@ -14,6 +14,129 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🧭 redecompat MERGED
+- notAmmo thrown weapons. World-alter scanner catches ref-returning Tile.TileType writes (get_TileType + stind), dup and ref locals, and follows ProjectileType<T> into blasts (any mod). Redemption rows added to WorldAlterTable.tsv.
+- Modded UsesNewTargetting NPCs take the flyer slot by default (NativeSafeModdedTypes allowlist, empty).
+- TargetReadScan sends NPCs whose AI reads HasValidTarget/GetTargetData to the flyer slot (37/159 Redemption hostiles).
+- HoldFire hook: Redemption's two choice-moment bosses are held during their window.
+- Ritualist class stays unsupported (lead agrees: leave it benched unless Eve wants it).
+- Redemption's Morning Star DPS drop is the mod's own element scaling, which applies equally to the player.
+- Stardust Dragon owner slot 253 gets a ModPlayer.
+- **Watch:** one MobWorld "boots top speed" flake (Terraspark 1.20 vs 3.00 bare) in the builder's normal-stack run; it passed on rerun. Recheck in the next shipboth.
+
+## ⚔️ projparity CORE MERGED (0a17e66)
+- Every hostile hit on a levy runs the player's hit sequence on the gear dummy.
+- Seeded levy-vs-real-Player check (Calamity, Expert+Rev and Master+Death, defense 0/30/70, DR 0/0.2):
+  - projectile 132 pairs / 0 mismatches; contact 144 / 0;
+  - knockback, immunity, debuffs and Calamity defense damage covered by the same pairs;
+  - DoT: 15 debuffs within rounding;
+  - arena box 35/35;
+  - contact + darts window 30 vs 30.
+- **Root cause:** the NPC hit path never applied the difficulty multiplier (×2 Expert, ×3 Master) or the projectile's ModifyHitPlayer hooks.
+- **Kept differences:**
+  - The levy immunity window scale is 0.75 (LevyConstants.HitImmuneScale; the check scales the player the same way).
+  - Knockback holds steering only ~12 ticks.
+  - No-heal debuff effects are not mirrored.
+  - Summoned and conjured units are untouched.
+- A/B switches: LEVY_PLAYERHIT, PROJPARITY, HITDEBUFFS, KNOCKBACK, DEFDAMAGE, PROJSLOTS, ARENABOX.
+- Builder still finishing: before/after fights (Calamitas Clone, Destroyer, Leviathan; 4 each × 2 arms), the vanilla half of the check, the wiki checklist. Lead is running serial shipboth on the merged state.
+- **Merged-state verify (serial shipboth, 769 s):** both boots exc=0.
+  - **REGRESSION:** Calamity BossBugs "(visible commander) the wall hurts the levies (life 4000 -> 4000)". WoF lasers are aimed at levies but do no damage. Sent back to projparity. **Ship blocked.**
+  - Vanilla half: 16 caught KeyNotFound 'CalamityMod' in ProjParityCheck.CalDefDamage (test code only); sent back too.
+- Ship plan: 2.0.68 = projparity + spectator3 + levyrules (wait for levyrules so damage and healing land together).
+
+## 🎲 spectator3 MERGED
+- **Lost the bet:** Common/Potions/SpectatorBet.cs. Spectator (or the tick after it ends) + active boss + army seen alive this fight + no levy/militia alive + no manpower (BarracksTE.Manpower pools, reserves, mobilizable barracks) → KillMe with one of Eve's 5 lines. The Spectator tooltip gained "Fatal if your levies all fall to a boss".
+- **Spawn-tick lock not reproduced** (60+ downed runs, 0 commander ticks; the 27 ticks came after the 60-tick settle, not at spawn). The check is now 0-tolerance, keeps levies alive and logs alive count + WhyTrack reason on any commander tick. No production targeting change.
+- Full serial shipboth: 0 FAIL lines both halves; BossBugs 82/0 and 107/0.
+
+## 🗣 Dialogue decisions (Eve 11-15) → `dialogue3` builder
+- Officers talk like the vanilla NPC they are (voice, emotions, expressions mimicked closely; style only, never vanilla lines).
+- Gods-agree lines at normal rate.
+- **Blood Moon: female levies (and female officers whose vanilla NPC gets grumpy) have ALL their dialogue replaced by annoyed lines** (vanilla's irritable-women Blood Moon joke). Needs a [female] tag plus a picker override.
+- Implement the staged hooks: LIFE_CRYSTAL, CHEST_OPENED, ARMORY_GOT/WANT/BEST/WORST, per-drink triggers, world-tier tags, [ranger]/[melee].
+- Restore messy shout energy (lead's note) and fix the duplicate line.
+- Review doc 2 goes to Eve before anything ships.
+- **dialogue3 DONE (branch dialogue3, 491f37d; NOT merged, awaiting Eve's listen).** Review doc 2 sent (scratchpad/dialogue_review2.md).
+  - 1794 lines; 17 officers voiced like their NPC; 28 gods lines.
+  - Blood Moon: female levies plus Nurse, Dryad, Zoologist and Princess speak only [grumpy] lines.
+  - Live hooks: CommanderReactions (life crystal/chest), GearTalk (ARMORY_GOT), per-drink cheers; tags [early]…[postmoonlord], [ranger]/[melee]. Shouts' messy energy restored.
+  - Untested live: CommanderReactions, GearTalk, per-drink selection (all try/catch). Watch on first play.
+
+## 🎲 Eve 11-15 ~16:15
+- Approved the spawn-tick fix (Eve: "it might just be levies losing, then the boss targeting the player"; the builder must confirm which).
+- **NEW rule (Eve): Spectator + whole army dead + no manpower left, during a boss fight, means the player dies** (stops the exploit of dropping Spectator to finish a low-HP boss). Death messages from Eve's ideas: "lost the bet", "realized prolonged poverty would kill them", "watched their favorite team lose", "realized the levies did not know what dashes were", "had money on the levies".
+  - Both are in builder `spectator3`.
+- **"Fixed" replay artifact (Eve):** a separate page holding ONLY fights recorded on fixed versions, so she stops opening broken ones. Fill it after parity lands and the rerun is done. The curated main page keeps history with outdated stamps.
+- Eve still wants to work on the dialogue (draft is in scratchpad/dialogue_review.md, branch dialogue2; three questions open).
+- Eve: "fix anything broken, you have my permission." Post progress updates more often. If near a usage limit, pause and report; builders can be resumed.
+
+## 🧠 Eve 11-15 ~16:00
+- **Hold new boss testing** (the 100-fight battery) until the in-flight fixes land: projparity, levyrules, redecompat.
+- **Curated page per boss: 3–4 wins + 3–4 losses + the weird ones** (sent to sitecurate; ceiling ~260 files / 230 MB).
+- **Spawn-tick Spectator fix (spectarget2):** waiting on Eve's OK after the classifier blocked it.
+- **IDEA (Eve): predict a boss's dash by running its AI ahead of time ("running its AI on itself") so levies pre-emptively leave the path.**
+  - Lead's view: feasible if it's a boss-side forward simulation once per wind-up, not per levy. Snapshot the NPC, step its AI N ticks with side effects suppressed (no projectile spawns, sounds, dust or net messages; save/restore RNG; same snapshot/restore idea as UseGuard), then restore.
+  - The output is a swept-hitbox "danger corridor" that every levy checks cheaply, so the cost scales with bosses, not levies. That generalises the Leviathan charge lanes.
+  - Risks: RNG-driven choices (sample a few seeds or fall back to the lane read), AIs with side effects in odd places, and the target moving.
+  - Proposed a measurement-only prototype: prediction accuracy + cost on EoC, Leviathan, Fishron and Destroyer, with no behaviour change.
+
+## 🚢 2.0.67 SHIPPED (11-15 ~15:40): spectarget + destroyerdrop fixes. Serial shipboth 677 s: both boots exc=0; all world checks 0 exceptions. One FAIL: BossBugs spectarget, Calamity half: Spazmatism on the commander for 27/360 ticks at spawn (default target 0 before the first retarget). Sent back for a spawn-tick fix. The new `spectarget2` builder was BLOCKED: the permission classifier denied its `git checkout -B/-b spectarget2` (all variants), so no work was done. Not routed around; asked Eve to approve a rerun.
+
+## ✅ Curated replay page LIVE (sitecurate merged; main URL https://claude.ai/artifact/Q6aYA45u8MSxyB7VZxHSEH, v24)
+- 176 fights: Eve 44 + lab hardmode 114 (≤4W+4L+weird per boss, all at 2.0.66) + 3 Destroyer/Aquatic Scourge test fights + 15 outdated pre-HM.
+- Version and outdated badges come from manifest `current` + `eras` (current = "2.0.68 (not yet released)", so everything shows outdated).
+- To re-stamp after the parity release: edit data/manifest.json `current`/`eras` and republish only that file.
+- All 277 old files removed. One orphan may remain: one old file was in the listing but not in the manifest set.
+- Rebuild: curate_site.py (see the sitecurate report). The lab page (5bQWET74N12m4bYMbFxqqK) is still up as the full 2.0.66 archive; offered to delete.
+
+## 🗂 Replay pages (Eve 11-15): why two pages? Curate, version-stamp, clear old
+- Two pages exist only because of the 511-file cap: the main one (Q6aYA45u8MSxyB7VZxHSEH: Eve's fights + old pre-HM labs) and the lab one (5bQWET74N12m4bYMbFxqqK: 2.0.66 hardmode battery).
+- `sitecurate` builder: ONE curated page on the main URL.
+  - Contents: Eve's 44 fights; ≤2 per hardmode boss (a baseline + a notable exception, with notes); a few Destroyer/Aquatic Scourge test fights; 15 outdated pre-HM lab fights.
+  - Every fight shows its Levy version. Manifest `eras` + `current` drive "outdated" badges with the reason.
+  - current = 2.0.68 (parity, unreleased), so everything now shows outdated, honestly.
+- Plan: publish over the main URL (null out the old files). Keep the lab page as the full archive (offer to delete it). Fetched 29 old data files to scratchpad/oldfights (Eve's 14 older fights + 15 pre-HM picks).
+
+## 🎯 spectarget MERGED
+- **Cause:** the harness (and BossDowned) marked only one half of two-part bosses as downed, so the Leviathan and Spazmatism counted as undowned. The Spectator wasn't hidden from them, they kept default target 0 (the commander) and never retargeted.
+  - Seeds 2–3 only looked fine because the downed set carried over inside the server process.
+- **Fix:** boss families share one downed state (BossDowned.cs; Twins and Anahita/Leviathan). RecordKill waits for both halves. New BossBugs part `spectarget`.
+- **Seed 1 after the fix:** the Leviathan targets levies and the army is wiped (a real loss now). Twins: Spazmatism goes from commander/spite to the levy lock 100%.
+- Real play: the same half-recorded state could happen after a real kill, so this matters beyond the lab.
+
+## 🧭 Mod of Redemption audit MERGED (7f4285e; levy-mod/docs/redemption_compat_audit.md). EVE PLAYS IT BLIND: no Redemption names or text to Eve.
+- Loads clean on both toolchains.
+- Breaks:
+  - (1) two world-altering throwables (PlutoniumBomb, ToxicGrenade + BileLauncher) missed by the classifier;
+  - (2) Redemption marks 8 vanilla grenades/knives as ammo+notAmmo, so levies stop throwing them;
+  - (3) KS3 native-target AI crashes on target 300+ after unlock.
+- Unverified: HasValidTarget false at slot 255 (bosses may despawn); a spare/slay choice window levies could pre-empt; the Ritualist class; subworlds untested; a WhipReal Morning Star DPS drop.
+- **`redecompat` builder** is fixing all of it. General fixes too: notAmmo; the world-alter scanner's missed direct TileType write; modded UsesNewTargetting NPCs default to the flyer slot.
+
+## 🔧 destroyerdrop MERGED (42f6698)
+- **Destroyer drop = noise, not mobslots.** The same seed doesn't repeat a fight (18/40 seeds agree); 40-fight arms can't resolve <~20 points.
+  - Slots on 18.8% vs off 26.2% over 160 fights each (p=0.14), with batch-to-batch spread as large.
+  - Boots ruled out (only 5/34 levies wear them; removing them changes nothing).
+  - Stats, speed and contact frames are identical.
+  - **Lesson for the 100-fight battery: we need ≥100 per arm to see ~10-point effects.**
+- **Prime/Calamitas Clone contact doubling is from the shot-veto fix:** contact hits per touch doubled (Prime 0.73→1.59, Calamitas Clone 0.45→0.74), so 1-damage shot hits mess up the immunity bookkeeping (SoldierNPC.AfterHit). Calamitas Clone Master+Death went 19/20 → 5/20. Handed to projparity (per-slot immunity parity).
+- Fixed: Ice Rod Ice Block Projectile.Kill reading tile row -1 above the world (UseGuard.KeepProbeInWorld); Moon Lord core AIOverride nulled by Calamity's SendExtraAI on the kill tick (compat restores it). Checks mlkill/killedge in BossBugs.
+- Lab switch LEVY_MOBSLOTS=0.
+
+## ✅ Eve's parity decisions (11-15 afternoon)
+- Knockback ON by player rules (projparity).
+- Calamity defense damage applies to levies (projparity).
+- Acceptance test (Eve): the same 400-damage bullet on a levy and on a 500-HP player must deal the exact same damage in the same way (fixed RNG). Wiki checklist of player damage mechanics (projparity).
+- Fall damage and hazardous tiles ON by default.
+- Drowning by player rules, as a config option (default off).
+- Regen = the player's natural regen; potions at the player's potion-sickness rate.
+- Remove the base-grade 0.8× damage (keep worse aim). Shaken 0.6× stays. Whip 4× stays.
+- Summoners must spam whips like a player does.
+- Every armor set bonus must work on levies (audit vanilla, Calamity and Thorium).
+- → `levyrules` builder (regen/potions/fall/hazards/drowning/grade dmg/whip spam/set-bonus audit). projparity has the damage-taken pipeline.
+- Eve's read: she thought levies died fast from low defense despite life crystals and fruit. They were actually taking 3–7× contact damage and no real projectile damage.
+
 ## 🔍 PARITY AUDIT MERGED (a49dc30; levy-mod/docs/PARITY_AUDIT.md)
 - **Gaps, ranked:**
   1. Debuffs/DoT never reach levies (zero debuffs in 214 recordings; contact skips OnHitPlayer; Calamity ActsLikeTownNPC blocks debuffs).

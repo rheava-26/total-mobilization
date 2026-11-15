@@ -17,7 +17,7 @@ namespace Levy.Common.Testing
 {
 	/// <summary>
 	/// WORLD-LEVEL self-check of the boss-battery fixes, logged as "[BossBugs]" lines when a world loads on a dedicated server with LEVY_SELFCHECK_WORLD=1 (the summon world check chains it; LEVY_BOSSBUGS_ONLY=1 runs it
-	/// alone; LEVY_BOSSBUGS_PART=calamity|shots|ml|wof picks one part). A flat arena, slot 0 standing in as the commander, the real Main.Update stepping the world, throwaway soldiers and bosses only; everything is removed
+	/// alone; LEVY_BOSSBUGS_PART=calamity|shots|ml|wof|mlkill|killedge|spectarget|lostbet picks one part). A flat arena, slot 0 standing in as the commander, the real Main.Update stepping the world, throwaway soldiers and bosses only; everything is removed
 	/// again and nothing is saved.
 	///  * CALAMITY (Calamity half only): Revengeance replaces Deerclops' and the Queen Bee's bees' AI with ones that index Main.player[NPC.target]; a 300+ NPC target (the native route) failed on an out-of-range index there every
 	///    tick and Deerclops despawned. Audits every NPCID.Sets.UsesNewTargetting type, then fights a real Deerclops and real bees against a downed-boss army and counts exceptions and the target index their AI saw.
@@ -196,19 +196,30 @@ namespace Levy.Common.Testing
 			catch (Exception) { }
 		}
 
+		/// <summary>One part, or all (LEVY_BOSSBUGS_PART takes "all" or a comma list).</summary>
+		private static bool Part(string only, string name) => only == "all" || Array.IndexOf(only.Split(','), name) >= 0;
+
 		private static void Run()
 		{
 			Main.player[0] = Main.player[0] ?? new Player();
 			string only = Environment.GetEnvironmentVariable("LEVY_BOSSBUGS_PART") ?? "all";
-			if (only == "all" || only == "calamity") { try { Calamity(); } finally { Cleanup(); } }
-			if (only == "all" || only == "shots") { try { Shots(); } finally { Cleanup(); } }
-			if (only == "all" || only == "ml") { try { MoonLord(); } finally { Cleanup(); } }
-			if (only == "all" || only == "wof") { try { WallOfFlesh(); } finally { Cleanup(); } }
+			if (Part(only, "calamity")) { try { Calamity(); } finally { Cleanup(); } }
+			if (Part(only, "shots")) { try { Shots(); } finally { Cleanup(); } }
+			if (Part(only, "ml")) { try { MoonLord(); } finally { Cleanup(); } }
+			if (Part(only, "wof")) { try { WallOfFlesh(); } finally { Cleanup(); } }
+			if (Part(only, "mlkill")) { try { MoonLordDeath(); } finally { Cleanup(); } }
+			if (Part(only, "killedge")) { try { IceBlockAtTheEdge(); } finally { Cleanup(); } }
+			if (Part(only, "spectarget")) { try { SpectatorSpawnedBosses(); } finally { Cleanup(); } }
+			if (Part(only, "lostbet")) { try { LostBet(); } finally { Cleanup(); } }
+			if (Part(only, "redemption") && ModLoader.HasMod("Redemption")) { try { RedemptionPart(); } finally { Cleanup(); } } // only when the mod is loaded
 		}
 
 		// =====================================================================================================
 		// CALAMITY: native-targeting types whose AI Calamity replaced
 		// =====================================================================================================
+		/// <summary>A type's name for the logs: vanilla's display name, a modded type's code identifier (Mod/Name), never another mod's display text.</summary>
+		private static string AuditName(int type) => type < NPCID.Count ? Lang.GetNPCNameValue(type) : (NPCLoader.GetNPC(type) is ModNPC mn ? mn.Mod.Name + "/" + mn.Name : "#" + type);
+
 		private static void Calamity()
 		{
 			if (!ModLoader.HasMod("CalamityMod")) { Note("Calamity is not loaded: the Calamity part is skipped"); return; }
@@ -221,12 +232,13 @@ namespace Levy.Common.Testing
 			{
 				if (type >= NPCID.Sets.UsesNewTargetting.Length || !NPCID.Sets.UsesNewTargetting[type]) continue;
 				NPC n = SpawnNpc(type, new Vector2((Cx + 150) * 16f, (FloorY - 30) * 16f));
-				if (n == null || n.type != type) { rows.Add(Lang.GetNPCNameValue(type) + "(" + type + "): did not spawn"); if (n != null) n.active = false; continue; }
+				if (n == null || n.type != type) { rows.Add(AuditName(type) + "(" + type + "): did not spawn"); if (n != null) n.active = false; continue; }
 				bool b = CalamityTargetingCompat.OverrideBound(n);
 				bool native = EnemyTargeting.UsesNativeTargeting(n), flyer = EnemyTargeting.UsesFlyerSlot(n);
+				bool unproven = EnemyTargeting.ModdedNativeUnproven(type); // a modded native type nobody proved safe also takes the flyer slot, whatever its AI is
 				if (b) bound++;
-				if (b ? (native || !flyer) : (!native || flyer)) wrong++;
-				rows.Add($"{Lang.GetNPCNameValue(type)}({type}): calamityOverride={b} -> {(native ? "native NPC target (300+)" : flyer ? "flyer slot 254" : "other")}");
+				if (b || unproven ? (native || !flyer) : (!native || flyer)) wrong++;
+				rows.Add($"{AuditName(type)}({type}): calamityOverride={b}{(unproven ? " moddedUnproven" : "")} -> {(native ? "native NPC target (300+)" : flyer ? "flyer slot 254" : "other")}");
 				n.active = false;
 			}
 			foreach (string r in rows) Note("audit " + r);
@@ -381,6 +393,190 @@ namespace Levy.Common.Testing
 			Note("damage the levies took by source: " + (SoldierNPC.HitDbg.Count == 0 ? "none" : string.Join(", ", SoldierNPC.HitDbg.OrderByDescending(k => k.Value.dmg).Select(k => k.Key + "=" + k.Value.dmg + " (" + k.Value.n + " hits)"))));
 			Check($"Moon Lord locks onto levies ({lockedTicks} of {ticks} ticks, the first second to find them not counted)", ticks > 100 && lockedTicks * 10 >= (ticks - 60) * 8);
 			Check("every kind of shot he fired in the check was tried on a levy (" + tested.Count + " of " + kinds.Length + ")", tested.Count == kinds.Length);
+		}
+
+		// =====================================================================================================
+		// MOON LORD'S DEATH: Calamity's override AI ends the fight inside its own PreAI
+		// ==============================================================================================		}
+
+		// =====================================================================================================
+		/// <summary>
+		/// Calamity's Moon Lord override finishes the core's death animation INSIDE its AI: it deactivates the parts and the core and calls NetMessage.SendData(SyncNPC) for each. On a server that serializes the NPC,
+		/// and Calamity's SendExtraAI clears <c>AIOverride</c> of a dead NPC, so when the AI returns, CalamityVanillaAIOverrideNPC.PreAI reads the field again (<c>AIOverride.DisableMultiplayerSmoothing</c>) and throws a
+		/// NullReferenceException, once per Moon Lord kill (seen in every Moon Lord fight of the hardmode battery). Levy's PreAI detour wraps that call: it must let the death finish without an exception.
+		/// </summary>
+		private static void MoonLordDeath()
+		{
+			if (!ModLoader.HasMod("CalamityMod")) { Note("Calamity is not loaded: the Moon Lord death part is skipped"); return; }
+			Arena(FloorY, Half);
+			_spectator = true;
+			PlaceCommander(0);
+			Main.hardMode = true;
+			SetRevenge(true, true); Main.GameMode = GameModeID.Master;
+			Note($"Moon Lord death scenario: netMode {Main.netMode} (2 = dedicated server, the mode Calamity's death animation throws in), Calamity Revengeance+Death on");
+			global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(NPCID.MoonLordCore, true);
+			SetBossesTarget(true);
+			var levies = Levies(6, 3f);
+			Check("six levies spawn", levies.Count == 6);
+			Step(4);
+			NPC core = SpawnNpc(NPCID.MoonLordCore, new Vector2(Cx * 16f, (FloorY - 40) * 16f));
+			if (core == null) { Check("Moon Lord spawns", false); return; }
+			Check("Calamity's Revengeance AI is bound to Moon Lord's core", CalamityTargetingCompat.OverrideBound(core));
+			var thrown = new Dictionary<string, int>(); string firstEx = null;
+			On_NPC.hook_UpdateNPC det = (On_NPC.orig_UpdateNPC orig, NPC self, int i) =>
+			{
+				try { orig(self, i); }
+				catch (Exception e)
+				{
+					if (self.type == NPCID.MoonLordCore || self.type == NPCID.MoonLordHead || self.type == NPCID.MoonLordHand) { string k = self.TypeName + ": " + e.GetType().Name; thrown[k] = thrown.GetValueOrDefault(k) + 1; firstEx ??= k + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(); }
+					throw;
+				}
+			};
+			On_NPC.UpdateNPC += det;
+			try
+			{
+				// the parts: the core spawns its two hands and head one second in
+				int[] part = null;
+				for (int t = 0; t < 600 && part == null; t++)
+				{
+					for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && n.ModNPC is not SoldierNPC && !n.friendly && !n.townNPC) n.timeLeft = 99999; }
+					Step(1);
+					if (core.active && core.localAI[0] > 0 && core.localAI[1] > 0 && core.localAI[2] > 0) part = new[] { (int)core.localAI[0], (int)core.localAI[1], (int)core.localAI[2] };
+				}
+				Check("Moon Lord's two hands and head spawn", part != null && Main.npc[part[0]].type == NPCID.MoonLordHand && Main.npc[part[1]].type == NPCID.MoonLordHand && Main.npc[part[2]].type == NPCID.MoonLordHead);
+				if (part == null) return;
+				Check("nothing threw while the fight ran up to the kill", thrown.Count == 0);
+				// the end of the death animation: ai[0] == 2 is "death effects", ai[1] counts its ticks and the kill comes at 600
+				core.ai[0] = 2f; core.ai[1] = 595f; core.netUpdate = true;
+				Step(12);
+				Note("what the three kinds of Moon Lord NPC threw during the death: " + (thrown.Count == 0 ? "none" : string.Join(", ", thrown.Select(k => k.Key + " x" + k.Value))) + (firstEx != null ? "; first: " + firstEx : ""));
+				Check("Moon Lord's death animation ends without a throw (Calamity's override AI clears itself on the server inside its own PreAI)", thrown.Count == 0);
+				Check("the core and its parts are gone after the kill", !core.active && !Main.npc[part[0]].active && !Main.npc[part[1]].active && !Main.npc[part[2]].active);
+				Check($"the SendExtraAI hook is installed and kept the dead core's override through its own pass (kept {CalamityTargetingCompat.OverrideKept} times), so the fallback never had a null read to answer ({CalamityTargetingCompat.DeathNreAnswered})",
+					CalamityTargetingCompat.SendHookInstalled && CalamityTargetingCompat.OverrideKept >= 1 && CalamityTargetingCompat.DeathNreAnswered == 0);
+			}
+			finally { On_NPC.UpdateNPC -= det; }
+		}
+
+		// =====================================================================================================
+		// AN ICE BLOCK THAT DIES PAST THE EDGE OF THE WORLD
+		// =====================================================================================================
+		/// <summary>
+		/// A levy with an Ice Rod shoots up at a boss that flies high. Vanilla Update drops a projectile that has left the world without calling Kill, but an Ice Block that crosses the top edge in the same step its
+		/// time runs out reaches Kill with its position above the world (seen at y = -19.8 px), and Kill's read of the tile under it (<c>Main.tile[(int)position.X / 16, (int)position.Y / 16]</c>, row -1) throws
+		/// IndexOutOfRange; the exception passed through UseGuard.KillDetour in a Queen Slime fight. An army round of that type must die cleanly wherever it crosses, and the block's own Kill must still run.
+		/// </summary>
+		private static void IceBlockAtTheEdge()
+		{
+			Arena(FloorY, Half);
+			PlaceCommander(0);
+			var levies = Levies(2, 3f);
+			Check("two levies spawn", levies.Count == 2);
+			Step(2);
+			int soldier = levies.Count > 0 ? levies[0].NPC.whoAmI : 0;
+			float mx = Main.maxTilesX * 16f, my = Main.maxTilesY * 16f;
+			var cases = new (string name, Vector2 at, bool army)[]
+			{
+				("above the top edge (the case seen: y = -19.8 px)", new Vector2(Cx * 16f, -19.76f), true),
+				("far above the top edge", new Vector2(Cx * 16f, -400f), true),
+				("past the left edge", new Vector2(-30f, 300f * 16f), true),
+				("past the right edge", new Vector2(mx + 30f, 300f * 16f), true),
+				("past the bottom edge", new Vector2(Cx * 16f, my + 30f), true),
+				("inside the world (nothing to clamp)", new Vector2(Cx * 16f, (FloorY - 20) * 16f), true),
+			};
+			int clamped0 = global::Levy.Common.Owner.UseGuard.Clamped;
+			foreach (var (name, at, army) in cases)
+			{
+				int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("BossBugsCheck"), new Vector2(Cx * 16f, (FloorY - 20) * 16f), new Vector2(0f, -19.8f), ProjectileID.IceBlock, 40, 0f, 0);
+				if (pi < 0 || pi >= Main.maxProjectiles) { Check($"Ice Block {name}: the projectile spawns", false); continue; }
+				Projectile pr = Main.projectile[pi];
+				if (army && pr.TryGetGlobalProjectile(out SoldierProjectileTag tag)) tag.SoldierIndex = soldier;
+				pr.position = at; pr.timeLeft = 0;
+				int before = global::Levy.Common.Owner.UseGuard.Clamped;
+				bool outside = at.X < 0 || at.Y < 0 || at.X >= mx || at.Y >= my;
+				Exception thrown = null;
+				try { pr.Kill(); } catch (Exception e) { thrown = e; }
+				Check($"an army Ice Block dies cleanly {name}" + (thrown != null ? " (threw " + thrown.GetType().Name + ")" : ""), thrown == null && !pr.active);
+				int moves = global::Levy.Common.Owner.UseGuard.Clamped - before;
+				Check($"{name}: the dying block's position is moved back into the world only when it was outside ({moves} moves)", moves == (outside ? 1 : 0));
+				pr.active = false;
+			}
+			Check("the guard moved a position exactly for the five cases outside the world", global::Levy.Common.Owner.UseGuard.Clamped - clamped0 == 5);
+		}
+
+		// =====================================================================================================
+		// SPECTATOR vs a boss's second half: the Leviathan (summoned by Anahita through a projectile) and the second Twin
+		// =====================================================================================================
+		private static void SpectatorSpawnedBosses()
+		{
+			Arena(FloorY, Half);
+			bool cal = ModLoader.HasMod("CalamityMod");
+			SetRevenge(cal, cal); Main.GameMode = cal ? GameModeID.Master : GameModeID.Expert;
+			Main.hardMode = true;
+			var cases = new List<(string name, int first, int second)> { ("Retinazer then Spazmatism", NPCID.Retinazer, NPCID.Spazmatism) };
+			if (cal && ModContent.TryFind<ModNPC>("CalamityMod/Anahita", out var ana) && ModContent.TryFind<ModNPC>("CalamityMod/Leviathan", out var levi)) cases.Add(("Anahita then Leviathan", ana.Type, levi.Type));
+			else Note("Calamity is not loaded: only the Twins case runs");
+			int reps = int.TryParse(Environment.GetEnvironmentVariable("LEVY_BOSSBUGS_REPEAT"), out int rp) && rp > 1 ? rp : 1; // lab: sample the random boss AI many times in one boot
+			foreach (var c in Enumerable.Range(0, reps).SelectMany(_ => cases))
+			{
+				// downed+spectator: the first half is beaten in a record that never named the second (the harness's rematch state); a Spectator commander must not hold either half.
+				// undowned+visible: nothing beaten, a visible commander is targeted as usual (the first kill is solo).
+				foreach (string mode in new[] { "downed+spectator", "undowned+visible" })
+				{
+					bool down = mode.StartsWith("downed"), spec = down;
+					ClearHostiles(); RosterSystem.Instance.Regulars.RemoveAll(r => r.CommanderName == Commander);
+					for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) Main.npc[i].active = false;
+					global::Levy.Common.Boss.BossDownedSystem.ClearForTest();
+					if (down) global::Levy.Common.Boss.BossDownedSystem.SetOnlyKeyDownedForTest(c.first, true);
+					SetBossesTarget(true); _spectator = spec;
+					if (!spec) { var b = Main.player[0]; int bt = ModContent.BuffType<global::Levy.Content.Buffs.SpectatorBuff>(); if (b.HasBuff(bt)) b.ClearBuff(bt); }
+					PlaceCommander(-20);
+					var levies = Levies(8, 3f, 10f);
+					Step(4);
+					// the second half joins mid-fight with no owner NPC (Anahita's spawner is a projectile) and Terraria's default target 0: the commander
+					NPC a = SpawnNpc(c.first, new Vector2((Cx + 40) * 16f, (_floorY - 30) * 16f));
+					NPC b2 = SpawnNpc(c.second, new Vector2((Cx + 46) * 16f, (_floorY - 30) * 16f));
+					string who = c.name + " / " + mode;
+					Check($"({who}) both halves spawn", a != null && b2 != null);
+					if (a == null || b2 == null) continue;
+					b2.target = 0;
+					if (down) { EnemyTargeting.WhyTrack = new string[Main.maxNPCs]; EnemyTargeting.WhyCount = new int[Main.maxNPCs]; }
+					int ticks = 0, lockedA = 0, lockedB = 0, onCmdB = 0; var onCmdTicks = new List<string>(); int earlyCmd = 0, firstEarly = -1;
+					_perTick = () =>
+					{
+						if (!a.active || !b2.active) return;
+						a.timeLeft = b2.timeLeft = 99999; a.life = a.lifeMax; b2.life = b2.lifeMax;
+						foreach (var l in levies) if (l.NPC.active && l.NPC.life > 0) { l.NPC.life = l.NPC.lifeMax; if (l.Record != null) l.Record.CurrentHp = l.NPC.life; } // the army must stay on the field for the whole window: this measures who the boss picks, not what Calamity's lasers do to eight levies
+						if (++ticks <= 60) { if (down && ticks > 1 && !Locked(b2) && b2.target == 0) { earlyCmd++; if (firstEarly < 0) firstEarly = ticks; } return; } // a second to settle; the settling ticks are counted apart (tick 1 is the spawn state, before any AI has run)
+						if (Locked(a)) lockedA++;
+						if (Locked(b2)) lockedB++;
+						if (!Locked(b2) && b2.target == 0)
+						{
+							onCmdB++;
+							if (down && onCmdTicks.Count < 40) { int alive = 0; foreach (var l in levies) if (l.NPC.active && l.NPC.life > 0 && l.IsAlive) alive++; onCmdTicks.Add($"t{ticks}:alive={alive}/{levies.Count},bodies={EnemyTargeting.Bodies.Count},tgt={b2.target},why=[{EnemyTargeting.WhyTrack?[b2.whoAmI]}],ai1={b2.ai[1]:0}"); }
+						}
+					};
+					Step(420);
+					_perTick = null; EnemyTargeting.WhyTrack = null;
+					int n = Math.Max(1, ticks - 60);
+					if (down) Note($"({who}) settling ticks 2-60 with the boss's second half on the commander: {earlyCmd}" + (firstEarly >= 0 ? $" (first at tick {firstEarly})" : ""));
+					if (onCmdTicks.Count > 0) Note($"({who}) ticks on the commander: " + string.Join(" ", onCmdTicks));
+					Note($"({who}) first half locked on a levy {lockedA}/{n} ticks, second half {lockedB}/{n} ticks (on the commander {onCmdB}); undowned(second)={EnemyTargeting.IsUndownedBoss(b2)} hides spectator={EnemyTargeting.HidesSpectatorFrom(b2)}");
+					if (down)
+					{
+						Check($"({who}) the second half counts as beaten with the first and the Spectator is hidden from it", !EnemyTargeting.IsUndownedBoss(b2) && EnemyTargeting.HidesSpectatorFrom(b2));
+						Check($"({who}) the second half locks onto levies, never the Spectator commander, not on any tick ({lockedB}/{n} ticks, {onCmdB} on the commander)", lockedB * 10 >= n * 8 && onCmdB == 0);
+						Check($"({who}) the first half still locks onto levies", lockedA * 10 >= n * 8);
+						Check($"({who}) a downed boss's second half never has the Spectator commander as its target, from its first AI tick ({earlyCmd} settling ticks)", earlyCmd == 0);
+					}
+					else
+					{
+						Check($"({who}) an unbeaten second half is flagged and a visible commander stays its target ({lockedB}/{n} ticks on levies)", EnemyTargeting.IsUndownedBoss(b2) && lockedB * 10 <= n && onCmdB * 10 >= n * 8);
+					}
+					a.active = false; b2.active = false;
+				}
+			}
+			global::Levy.Common.Boss.BossDownedSystem.ClearForTest();
 		}
 
 		// =====================================================================================================

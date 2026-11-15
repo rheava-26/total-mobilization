@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
+using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Globals;
 using Levy.Common.Weapons;
@@ -216,8 +217,34 @@ namespace Levy.Common.Owner
 			try { orig(self, i); } finally { PutT(s, "update", type); }
 		}
 
+		/// <summary>
+		/// Projectile types whose vanilla Kill reads the tile at the projectile's own position without a range check: the Ice Rod's block (<c>Main.tile[(int)position.X / 16, (int)position.Y / 16]</c>, looking for an ice tile
+		/// to take away). Update drops a projectile that has LEFT the world without calling Kill, but a block that crosses the top edge in the same step its time runs out dies with a position above the world
+		/// (-19.8 px: tile row -1) and the read throws IndexOutOfRange. A levy shoots upward at a boss that flies high, so it happens to the army far more than to a player.
+		/// </summary>
+		private static bool ProbesTileAtPosition(int type) => type == ProjectileID.IceBlock;
+
+		/// <summary>
+		/// Puts a dying projectile's position back inside the world's tile grid (nearest tile, nothing else changes) when its type reads the tile under it. The world's outer border holds no tiles, so the read finds an
+		/// empty tile exactly as it finds one anywhere else the block dies without an ice tile under it, and the rest of Kill (effects, other mods' hooks, clearing the projectile) runs as usual.
+		/// Returns true when the position was moved.
+		/// </summary>
+		internal static bool KeepProbeInWorld(Projectile p)
+		{
+			if (!ProbesTileAtPosition(p.type)) return false;
+			float maxX = Main.maxTilesX * 16f - 1f, maxY = Main.maxTilesY * 16f - 1f;
+			Vector2 at = p.position, to = new Vector2(Math.Clamp(at.X, 0f, maxX), Math.Clamp(at.Y, 0f, maxY));
+			if (to == at) return false;
+			p.position = to;
+			Clamped++;
+			return true;
+		}
+		/// <summary>How many dying projectiles were moved back inside the world (for the world check).</summary>
+		public static int Clamped;
+
 		private static void KillDetour(On_Projectile.orig_Kill orig, Projectile self)
 		{
+			if (ProbesTileAtPosition(self.type) && IsArmyRound(self)) KeepProbeInWorld(self);
 			if (Disabled || !IsArmyRound(self)) { orig(self); return; }
 			Snap s = TakeT(self.owner); int type = self.type;
 			try { orig(self); } finally { PutT(s, "kill", type); }

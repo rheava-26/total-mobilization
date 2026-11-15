@@ -254,7 +254,7 @@ namespace Levy.Common.Weapons
 		public static bool IsThrownConsumable(Item item)
 		{
 			if (item == null || item.IsAir || !item.consumable || item.shoot <= 0) return false;
-			if (item.ammo > 0 || item.useAmmo != AmmoID.None || item.accessory || item.IsACoin || item.sentry) return false;
+			if (IsAmmo(item) || item.useAmmo != AmmoID.None || item.accessory || item.IsACoin || item.sentry) return false; // notAmmo: an item another mod made usable as ammo that is still a thrown weapon (a grenade, a knife)
 			if (item.createTile >= 0 || item.createWall >= 0 || item.healLife > 0 || item.healMana > 0 || item.buffType > 0) return false;
 			if (item.pick > 0 || item.axe > 0 || item.hammer > 0 || item.useStyle == ItemUseStyleID.None) return false;
 			if (item.CountsAsClass(DamageClass.Summon)) return false;
@@ -567,7 +567,8 @@ namespace Levy.Common.Weapons
 		public static bool IsArmorPiece(Item item, int part) => item != null && !item.IsAir && (part == 0 ? item.headSlot >= 0 : part == 1 ? item.bodySlot >= 0 : item.legSlot >= 0);
 		/// <summary>Accessories that do something on a soldier (plain stats + movement). Info/fishing/building accessories are refused.</summary>
 		public static bool IsUsefulAccessory(Item item) => item != null && !item.IsAir && item.accessory && !item.vanity && !_uselessAccessories.Contains(item.type);
-		public static bool IsAmmo(Item item) => item != null && !item.IsAir && item.ammo > 0;
+		/// <summary>A round: ammo that is not marked notAmmo. A thrown weapon another mod also lets its launchers fire (ammo > 0 and notAmmo) is still a weapon.</summary>
+		public static bool IsAmmo(Item item) => item != null && !item.IsAir && item.ammo > 0 && !item.notAmmo;
 		public static bool IsHealingPotion(Item item) => item != null && !item.IsAir && item.healLife > 0 && item.consumable;
 		/// <summary>The vanilla damage class a family belongs to: guns/bows Ranged, Magic Magic, blades/spears Melee. Null for None/Unsupported.</summary>
 		public static DamageClass FamilyDamageClass(WeaponFamily f) => f switch

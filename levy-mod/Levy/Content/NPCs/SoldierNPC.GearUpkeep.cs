@@ -60,6 +60,7 @@ namespace Levy.Content.NPCs
 		private bool ComputeUpkeepNeed()
 		{
 			var g = Record?.Gear; if (g == null) return false;
+			if (DefDamageOn && ModLoader.HasMod("CalamityMod")) return true; // Calamity's defense damage (taken on a hit, regained over time) lives in the player pass: the frame keeps it ticking
 			if (Common.Team.TeamItems.HoldsStatBuff(NPC)) return true; // a team item's mod buff raises a flag the mod's later hooks read: that needs the frame
 			if (NeedsUpkeep(g.Head) || NeedsUpkeep(g.Body) || NeedsUpkeep(g.Legs)) return true;
 			int slots = Math.Min(Record.AccessorySlots, g.Accessories.Length);
@@ -351,8 +352,8 @@ namespace Levy.Content.NPCs
 				d.statLife = room; d.immune = false; d.immuneTime = 0; d.dead = false;
 				savedOrbs = d.beetleOrbs; savedShields = d.solarShields; d.beetleOrbs = 0; d.solarShields = 0; // the beetle orb / solar shield losses on a hit are built by hand (SetsOnHurt): vanilla's own would count twice
 				NPC src = attackerIndex >= 0 && attackerIndex < Main.maxNPCs && Main.npc[attackerIndex].active ? Main.npc[attackerIndex] : null;
-				var reason = src != null ? PlayerDeathReason.ByNPC(src.whoAmI) : PlayerDeathReason.ByCustomReason(Terraria.Localization.NetworkText.FromLiteral(SoldierName));
-				var info = new Player.HurtInfo { DamageSource = reason, Damage = damage, HitDirection = src != null && src.Center.X > NPC.Center.X ? -1 : 1, CooldownCounter = -1, Dodgeable = false, Knockback = 0f, PvP = false, SoundDisabled = true, DustDisabled = true };
+				var reason = HurtProjectile != null ? PlayerDeathReason.ByProjectile(-1, HurtProjectile.whoAmI) : src != null ? PlayerDeathReason.ByNPC(src.whoAmI) : PlayerDeathReason.ByCustomReason(Terraria.Localization.NetworkText.FromLiteral(SoldierName));
+				var info = new Player.HurtInfo { DamageSource = reason, Damage = damage, SourceDamage = SeqSourceDamage > 0 ? SeqSourceDamage : damage, HitDirection = src != null && src.Center.X > NPC.Center.X ? -1 : 1, CooldownCounter = -1, Dodgeable = false, Knockback = 0f, PvP = false, SoundDisabled = true, DustDisabled = true };
 				d.Hurt(info, true);
 				if (LevyConstants.PlayerParityIFrames && LevyConstants.ScaledImmune(d.immuneTime) > ImmuneTime) ImmuneTime = LevyConstants.ScaledImmune(d.immuneTime); // the real Player.Hurt window, mod additions included (never shorter than HitImmuneTicks)
 				int heal = d.statLife - (room - damage);

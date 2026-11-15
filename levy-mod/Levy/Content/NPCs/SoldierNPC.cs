@@ -167,7 +167,7 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		internal void AllowFriendlyBuffs()
 		{
-			for (int i = 1; i < NPC.buffImmune.Length; i++) if (!Main.debuff[i]) NPC.buffImmune[i] = false;
+			for (int i = 1; i < NPC.buffImmune.Length; i++) if (!Main.debuff[i] || HitDebuffsOn) NPC.buffImmune[i] = false; // with the player hit sequence a debuff is refused only by the dummy's own gear immunity
 		}
 
 		/// <summary>Attach a record to this body (server; clients receive a visual copy via ReceiveExtraAI).</summary>
@@ -502,7 +502,7 @@ namespace Levy.Content.NPCs
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Fear, pq);
 			MindControl_Drive();
 			pq = global::Levy.Common.Util.LevyProf.Begin();
-			if (!Sit_Hold() && !Leisure_Hold() && !Fizz_Flight()) Movement_Update(); // a seated levy stays on its seat (SoldierNPC.Sit.cs); a knocked Fizzy body flies on its momentum (SoldierNPC.Fizz.cs)
+			if (!Sit_Hold() && !Leisure_Hold() && !Fizz_Flight() && !Knock_Hold()) Movement_Update(); // a seated levy stays on its seat (SoldierNPC.Sit.cs); a knocked Fizzy body flies on its momentum (SoldierNPC.Fizz.cs)
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Move, pq);
 			TickJumpEffects(); // the real OnStarted of every non-vanilla extra jump spent (SoldierNPC.JumpFx.cs)
 			TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs); a dedicated server returns at once
@@ -522,9 +522,9 @@ namespace Levy.Content.NPCs
 			PinLifeMax(); // the hit lands on the record's maximum, whatever ran since the last pin
 			Fizz_ModifyHit(ref modifiers); // a Fizzy body takes six times the knockback and its knockback immunity becomes damage reduction (SoldierNPC.Fizz.cs)
 			// NPC defense is half as effective as player defense in Classic; soldiers use the player's per-mode value.
-			modifiers.DefenseEffectiveness *= LevyUtil.ModeDefenseEffectiveness() / 0.5f;
-			if (Endurance > 0f) modifiers.FinalDamage *= 1f - Endurance; // Player.Hurt applies endurance the same way (Endurance potion, Worm Scarf, Brain of Confusion)
-			modifiers.FinalDamage *= Rippers_IncomingMult(); // a full Calamity adrenaline bar halves the hit
+			modifiers.DefenseEffectiveness *= PreResolved ? 0f : LevyUtil.ModeDefenseEffectiveness() / 0.5f; // after the player sequence the formula is already in the number
+			if (Endurance > 0f && !PreResolved) modifiers.FinalDamage *= 1f - Endurance; // Player.Hurt applies endurance the same way (Endurance potion, Worm Scarf, Brain of Confusion)
+			if (!PlayerHitOn) modifiers.FinalDamage *= Rippers_IncomingMult(); // a full Calamity adrenaline bar halves the hit (with the player sequence Calamity's own hook on the dummy does it)
 			if (Common.Options.LevyOptions.SurvOn) modifiers.FinalDamage *= 1f - Common.Options.LevyOptions.FormationDr(this); // formation defense (config FormationDefense)
 		}
 

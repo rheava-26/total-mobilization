@@ -646,7 +646,16 @@ namespace Levy.Common.Testing
 				}
 				Check($"{label}: the real commander is not written to ({ls.Writes} ticks vs control {ctlWrites})", ls.Writes <= ctlWrites);
 				Check($"{label}: no whip projectile is left after the levy is gone ({ls.Leftover} {ls.LeftoverNames})", ls.Leftover == 0);
-				if (lo != null) Check($"{label}: the levy's whip damage per second is not below the old lash's, within the run-to-run spread ({ls.DmgPerSec:0.0} vs {lo.DmgPerSec:0.0})", ls.DmgPerSec >= lo.DmgPerSec * 0.8);
+				if (lo != null)
+				{
+					// Another mod's damage rules (an element table scaling a hit by the item it came from) scale the REAL lash's hits exactly as they scale the player's, and never the old lash's (it carries no item source): the old lash is
+					// then no yardstick. The mark of it is the player's own real hit landing well under the weapon's damage; the real lash must then keep up with the player's real lash instead.
+					bool vsOld = ls.DmgPerSec >= lo.DmgPerSec * 0.8;
+					bool scaledByAnotherMod = ps.Hits > 0 && w.damage > 0 && ps.DmgPerHit < w.damage * 0.8 && ls.DmgPerHit >= ps.DmgPerHit * 0.8;
+					bool vsPlayer = scaledByAnotherMod && ls.DmgPerSec >= ps.DmgPerSec;
+					if (!vsOld && vsPlayer) Note($"   OBSERVED {label}: the player's own real hit is {ps.DmgPerHit:0.0} against a weapon damage of {w.damage}: another mod scales hits by their source item, which the old lash does not carry; the levy's lash ({ls.DmgPerSec:0.0}/s, {ls.DmgPerHit:0.0} a hit) is judged against the player's real lash ({ps.DmgPerSec:0.0}/s) instead of the old one ({lo.DmgPerSec:0.0}/s)");
+					Check($"{label}: the levy's whip damage per second is not below the old lash's, within the run-to-run spread ({ls.DmgPerSec:0.0} vs {lo.DmgPerSec:0.0})", vsOld || vsPlayer);
+				}
 			}
 			// the table the report is made of
 			Note("-- SUMMARY (per whip: levy / player)");

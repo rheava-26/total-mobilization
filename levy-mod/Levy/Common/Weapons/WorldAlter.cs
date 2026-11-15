@@ -251,9 +251,14 @@ namespace Levy.Common.Weapons
 			"KillTile", "KillWall", "PlaceTile", "PlaceWall", "ReplaceTile", "ReplaceWall", "Convert", "ConvertSkyWalls", "PoundTile", "SlopeTile", "paintTile", "paintWall", "KillTile_DropItems", "PlaceLiquid", "PlaceObject", "Place1x2",
 			"Place2x2", "PlaceChest", "ExplodeMine", "TileRunner", "digTunnel", "DestroyObject", "destroyObject", "KillActuator", "KillWire", "PlaceActuator", "PlaceWire", "ConvertTile",
 		};
-		private static readonly HashSet<string> TileSetters = new() { "set_HasTile", "set_TileType", "set_WallType", "set_LiquidAmount", "set_LiquidType", "ClearTile", "ClearEverything", "ClearMetadata" };
+		private static readonly HashSet<string> TileSetters = new() { "set_HasTile", "set_TileType", "set_WallType", "set_LiquidAmount", "set_LiquidType", "ClearTile", "ClearEverything", "ClearMetadata", "set_Slope", "set_BlockType", "set_IsHalfBlock", "set_IsActuated", "set_HasActuator", "set_TileColor", "set_WallColor" };
+		/// <summary>
+		/// Tile properties that RETURN A REFERENCE (tML: <c>ref ushort TileType</c>, <c>WallType</c>, <c>LiquidAmount</c>, and the old lower-case <c>type</c>, <c>wall</c>, <c>liquid</c>). There is no setter to find: <c>tile.TileType = x</c> compiles to a call of the getter
+		/// followed by an indirect store (<c>stind</c>) through the returned address, so a scan that only looked for <c>set_TileType</c> never saw the most direct way a mod rewrites a block.
+		/// </summary>
+		private static readonly HashSet<string> TileRefGetters = new() { "get_TileType", "get_WallType", "get_LiquidAmount", "get_type", "get_wall", "get_liquid" };
 
-		private static readonly Dictionary<short, System.Reflection.Emit.OpCode> _ops = BuildOps();
+		internal static readonly Dictionary<short, System.Reflection.Emit.OpCode> _ops = BuildOps();
 		private static Dictionary<short, System.Reflection.Emit.OpCode> BuildOps()
 		{
 			var d = new Dictionary<short, System.Reflection.Emit.OpCode>();
@@ -262,13 +267,13 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>The compiled metadata of a mod's code, read from the mod file (never loaded twice, never throws).</summary>
-		private sealed class Meta
+		internal sealed class Meta
 		{
 			public MetadataReader Reader; public PEReader Pe;
 		}
 		private static readonly Dictionary<Assembly, Meta> _meta = new();
 
-		private static Meta MetaOf(Assembly asm)
+		internal static Meta MetaOf(Assembly asm)
 		{
 			if (_meta.TryGetValue(asm, out Meta m)) return m;
 			m = null;
@@ -287,7 +292,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>Namespace, type and method name a call token names, without resolving it (resolution of generic signatures throws, and tML logs every throw). Null for anything it cannot name.</summary>
-		private static (string ns, string type, string name, MethodDefinitionHandle def)? Name(MetadataReader r, EntityHandle h)
+		internal static (string ns, string type, string name, MethodDefinitionHandle def)? Name(MetadataReader r, EntityHandle h)
 		{
 			switch (h.Kind)
 			{
@@ -309,15 +314,26 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>True when the method's IL calls one of the tile, wall or liquid APIs (or Projectile.ExplodeTiles / Liquid.AddWater); also fills <paramref name="callees"/> with the methods it calls in the same assembly.</summary>
-		private static bool MethodAlters(MethodBase m, Meta meta, List<MethodBase> callees)
+		private static bool MethodAlters(MethodBase m, Meta meta, List<MethodBase> callees, List<Type> spawned = null)
 		{
 			byte[] il; try { il = m.GetMethodBody()?.GetILAsByteArray(); } catch (Exception) { return false; }
 			if (il == null || meta == null) return false;
 			int i = 0;
+			int pendingRefs = 0; // addresses of a tile's type / wall / liquid fields on the evaluation stack that nothing has read or written through yet (a getter call pushes one, ldind pops, stind through one is a WRITE)
+			bool lastWasTileRef = false;
 			while (i < il.Length)
 			{
 				short code = il[i++]; if (code == 0xFE && i < il.Length) code = (short)(0xFE00 | il[i++]);
 				if (!_ops.TryGetValue(code, out var op)) return false;
+				string opn = op.Name;
+				if (pendingRefs > 0)
+				{
+					if (opn.StartsWith("stind.", StringComparison.Ordinal) || opn == "stobj") return true;       // tile.TileType = x, tile.WallType = x, tile.LiquidAmount = x
+					if (opn.StartsWith("ldind.", StringComparison.Ordinal) || opn == "ldobj") pendingRefs--;      // a read
+					else if (opn == "dup") pendingRefs++;                                                         // x += 1 duplicates the address: one copy is read, the other written
+					else if (lastWasTileRef && opn.StartsWith("stloc", StringComparison.Ordinal)) return true;    // the address kept in a ref local: what it is used for cannot be followed, so it counts as a write
+				}
+				lastWasTileRef = false;
 				int size = op.OperandType switch
 				{
 					OperandType.InlineNone => 0, OperandType.ShortInlineBrTarget or OperandType.ShortInlineI or OperandType.ShortInlineVar => 1, OperandType.InlineVar => 2,
@@ -328,6 +344,7 @@ namespace Levy.Common.Weapons
 					int token = BitConverter.ToInt32(il, i);
 					try
 					{
+						if (spawned != null) NoteSpawned(meta.Reader, MetadataTokens.EntityHandle(token), m, spawned);
 						var n = Name(meta.Reader, MetadataTokens.EntityHandle(token));
 						if (n != null)
 						{
@@ -336,6 +353,8 @@ namespace Levy.Common.Weapons
 							{
 								if (type == "WorldGen" && WorldGenCalls.Contains(name)) return true;
 								if (type == "Tile" && TileSetters.Contains(name)) return true;
+								if (type == "Tile" && TileRefGetters.Contains(name)) { pendingRefs++; lastWasTileRef = true; }
+								if (type == "Tilemap" && name == "set_Item") return true;
 								if (type == "Liquid" && name == "AddWater") return true;
 								if (type == "Projectile" && name == "ExplodeTiles") return true;
 							}
@@ -358,8 +377,33 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>Scans a type's own methods and the ones it calls in its own assembly (three levels): true when any reaches the tile, wall or liquid APIs.</summary>
-		private static bool ScanType(Type start)
+		/// <summary>
+		/// The projectile a call of <c>ModContent.ProjectileType&lt;T&gt;()</c> names (the way a mod's bomb spawns its explosion): added to <paramref name="spawned"/> so the scan follows into it. The shot's own code need not break a block:
+		/// the blast it spawns does.
+		/// </summary>
+		private static void NoteSpawned(MetadataReader r, EntityHandle h, MethodBase m, List<Type> spawned)
 		{
+			try
+			{
+				if (h.Kind != HandleKind.MethodSpecification || spawned.Count >= 16) return;
+				var spec = r.GetMethodSpecification((MethodSpecificationHandle)h);
+				var nm = Name(r, spec.Method);
+				if (nm == null || nm.Value.name != "ProjectileType") return;
+				var br = r.GetBlobReader(spec.Signature);
+				br.ReadByte(); if (br.ReadCompressedInteger() != 1) return;
+				byte et = br.ReadByte(); if (et != 0x12 && et != 0x11) return; // a class or value type
+				EntityHandle th = br.ReadTypeHandle();
+				if (th.Kind != HandleKind.TypeDefinition) return; // a type of this mod; a type of another assembly is not followed
+				Type t = m.Module.ResolveType(MetadataTokens.GetToken(th));
+				if (t != null && !spawned.Contains(t)) spawned.Add(t);
+			}
+			catch (Exception) { }
+		}
+
+		private static bool ScanType(Type start, HashSet<Type> visited = null)
+		{
+			visited ??= new HashSet<Type>(); if (!visited.Add(start)) return false;
+			var spawned = new List<Type>();
 			var seen = new HashSet<MethodBase>(); var queue = new Queue<(MethodBase, int)>();
 			Meta meta = MetaOf(start.Assembly);
 			if (meta == null) return true; // the code cannot be read: assume the worst
@@ -371,9 +415,10 @@ namespace Levy.Common.Weapons
 			{
 				var (m, depth) = queue.Dequeue();
 				var callees = new List<MethodBase>();
-				if (MethodAlters(m, meta, callees)) return true;
+				if (MethodAlters(m, meta, callees, spawned)) return true;
 				if (depth < 3) foreach (MethodBase c in callees) if (seen.Add(c)) queue.Enqueue((c, depth + 1));
 			}
+			foreach (Type s in spawned) if (visited.Count < 12 && ScanType(s, visited)) return true; // a projectile this one spawns (a bomb's blast)
 			return false;
 		}
 

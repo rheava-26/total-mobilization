@@ -123,7 +123,7 @@ namespace Levy.Common.Util
 			// lifeMax <= 5 marks a critter-sized target, except the damageable orbs casters throw (NPCID.Sets.ProjectileNPC, lifeMax 1): those are real, shootable threats.
 			if (!(npc.active && !npc.friendly && !npc.townNPC && (npc.lifeMax > 5 || IsProjectileNpc(npc.type)) && !npc.dontTakeDamage && !npc.immortal && !NPCID.Sets.CountsAsCritter[npc.type]))
 				return false;
-			return !IsOnNoAttackList(npc);
+			return !IsOnNoAttackList(npc) && !(Targeting.HoldFire.Any && Targeting.HoldFire.Holds(npc)); // hold fire: an enemy whose end is the player's choice is no target while the choice is open
 		}
 
 		/// <summary>True when the NPC's display name is on the commander's "leave it alone" list (config). Keeps the militia off

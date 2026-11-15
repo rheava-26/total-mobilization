@@ -73,6 +73,7 @@ namespace Levy.Common.Potions
 			Unhide(); // safety net: never let the targeting flags reach the player's own update
 			bool on = Active;
 			if (on && !_was) Anchor = Player.Center;
+			if (Player.whoAmI == Main.myPlayer || (BetHarness && Player.whoAmI == 0)) CheckBet(on || _was); // a buff cancelled or expired since the last tick still answers for what happened while it was on
 			_was = on;
 			if (!on || Player.whoAmI != Main.myPlayer) return;
 			// The first kill of every boss is solo: an unbeaten boss in the world ends the buff at once.
@@ -84,6 +85,29 @@ namespace Levy.Common.Potions
 			}
 			// no tile interaction except a Static Camera under the cursor
 			if (Player.controlUseTile && !OverStaticCamera()) Player.controlUseTile = false;
+		}
+
+		// ------------------------------------------------------------------ the bet
+
+		private bool _betArmySeen;
+		/// <summary>Self-check only: the stand-in commander in slot 0 answers for the bet as the local player does (a test server has no local player).</summary>
+		internal static bool BetHarness;
+
+		/// <summary>The army was on the field at some point of this boss fight under the Spectator (what makes its loss a lost bet).</summary>
+		internal bool BetArmySeen => _betArmySeen;
+
+		/// <summary>
+		/// Once a tick, for the local player while the Spectator is on (or was on last tick): during a boss fight, an army that was fielded and is now wiped with no manpower left kills the player (<see cref="SpectatorBet"/>).
+		/// Returns true when it did. Called from PreUpdate, so a wipe in the last tick's NPC pass is caught before the buff can be dropped.
+		/// </summary>
+		internal bool CheckBet(bool covered)
+		{
+			if (!covered || Player.dead || !SpectatorBet.AnyActiveBoss()) { _betArmySeen = false; return false; }
+			if (SpectatorBet.ArmyAlive(Player)) { _betArmySeen = true; return false; }
+			if (!SpectatorBet.Lost(Player, _betArmySeen)) return false;
+			_betArmySeen = false;
+			SpectatorBet.Kill(Player);
+			return true;
 		}
 
 		public override void PostUpdateEquips()

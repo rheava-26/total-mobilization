@@ -17,7 +17,7 @@ namespace Levy.Common.Testing
 {
 	/// <summary>
 	/// WORLD-LEVEL self-check of the boss-battery fixes, logged as "[BossBugs]" lines when a world loads on a dedicated server with LEVY_SELFCHECK_WORLD=1 (the summon world check chains it; LEVY_BOSSBUGS_ONLY=1 runs it
-	/// alone; LEVY_BOSSBUGS_PART=calamity|shots|ml|wof|mlkill|killedge picks one part). A flat arena, slot 0 standing in as the commander, the real Main.Update stepping the world, throwaway soldiers and bosses only; everything is removed
+	/// alone; LEVY_BOSSBUGS_PART=calamity|shots|ml|wof|mlkill|killedge|spectarget|lostbet picks one part). A flat arena, slot 0 standing in as the commander, the real Main.Update stepping the world, throwaway soldiers and bosses only; everything is removed
 	/// again and nothing is saved.
 	///  * CALAMITY (Calamity half only): Revengeance replaces Deerclops' and the Queen Bee's bees' AI with ones that index Main.player[NPC.target]; a 300+ NPC target (the native route) failed on an out-of-range index there every
 	///    tick and Deerclops despawned. Audits every NPCID.Sets.UsesNewTargetting type, then fights a real Deerclops and real bees against a downed-boss army and counts exceptions and the target index their AI saw.
@@ -210,6 +210,7 @@ namespace Levy.Common.Testing
 			if (Part(only, "mlkill")) { try { MoonLordDeath(); } finally { Cleanup(); } }
 			if (Part(only, "killedge")) { try { IceBlockAtTheEdge(); } finally { Cleanup(); } }
 			if (Part(only, "spectarget")) { try { SpectatorSpawnedBosses(); } finally { Cleanup(); } }
+			if (Part(only, "lostbet")) { try { LostBet(); } finally { Cleanup(); } }
 		}
 
 		// =====================================================================================================
@@ -510,7 +511,8 @@ namespace Levy.Common.Testing
 			var cases = new List<(string name, int first, int second)> { ("Retinazer then Spazmatism", NPCID.Retinazer, NPCID.Spazmatism) };
 			if (cal && ModContent.TryFind<ModNPC>("CalamityMod/Anahita", out var ana) && ModContent.TryFind<ModNPC>("CalamityMod/Leviathan", out var levi)) cases.Add(("Anahita then Leviathan", ana.Type, levi.Type));
 			else Note("Calamity is not loaded: only the Twins case runs");
-			foreach (var c in cases)
+			int reps = int.TryParse(Environment.GetEnvironmentVariable("LEVY_BOSSBUGS_REPEAT"), out int rp) && rp > 1 ? rp : 1; // lab: sample the random boss AI many times in one boot
+			foreach (var c in Enumerable.Range(0, reps).SelectMany(_ => cases))
 			{
 				// downed+spectator: the first half is beaten in a record that never named the second (the harness's rematch state); a Spectator commander must not hold either half.
 				// undowned+visible: nothing beaten, a visible commander is targeted as usual (the first kill is solo).
@@ -533,25 +535,34 @@ namespace Levy.Common.Testing
 					Check($"({who}) both halves spawn", a != null && b2 != null);
 					if (a == null || b2 == null) continue;
 					b2.target = 0;
-					int ticks = 0, lockedA = 0, lockedB = 0, onCmdB = 0;
+					if (down) { EnemyTargeting.WhyTrack = new string[Main.maxNPCs]; EnemyTargeting.WhyCount = new int[Main.maxNPCs]; }
+					int ticks = 0, lockedA = 0, lockedB = 0, onCmdB = 0; var onCmdTicks = new List<string>(); int earlyCmd = 0, firstEarly = -1;
 					_perTick = () =>
 					{
 						if (!a.active || !b2.active) return;
 						a.timeLeft = b2.timeLeft = 99999; a.life = a.lifeMax; b2.life = b2.lifeMax;
-						if (++ticks <= 60) return; // a second to settle
+						foreach (var l in levies) if (l.NPC.active && l.NPC.life > 0) { l.NPC.life = l.NPC.lifeMax; if (l.Record != null) l.Record.CurrentHp = l.NPC.life; } // the army must stay on the field for the whole window: this measures who the boss picks, not what Calamity's lasers do to eight levies
+						if (++ticks <= 60) { if (down && ticks > 1 && !Locked(b2) && b2.target == 0) { earlyCmd++; if (firstEarly < 0) firstEarly = ticks; } return; } // a second to settle; the settling ticks are counted apart (tick 1 is the spawn state, before any AI has run)
 						if (Locked(a)) lockedA++;
 						if (Locked(b2)) lockedB++;
-						if (!Locked(b2) && b2.target == 0) onCmdB++;
+						if (!Locked(b2) && b2.target == 0)
+						{
+							onCmdB++;
+							if (down && onCmdTicks.Count < 40) { int alive = 0; foreach (var l in levies) if (l.NPC.active && l.NPC.life > 0 && l.IsAlive) alive++; onCmdTicks.Add($"t{ticks}:alive={alive}/{levies.Count},bodies={EnemyTargeting.Bodies.Count},tgt={b2.target},why=[{EnemyTargeting.WhyTrack?[b2.whoAmI]}],ai1={b2.ai[1]:0}"); }
+						}
 					};
 					Step(420);
-					_perTick = null;
+					_perTick = null; EnemyTargeting.WhyTrack = null;
 					int n = Math.Max(1, ticks - 60);
+					if (down) Note($"({who}) settling ticks 2-60 with the boss's second half on the commander: {earlyCmd}" + (firstEarly >= 0 ? $" (first at tick {firstEarly})" : ""));
+					if (onCmdTicks.Count > 0) Note($"({who}) ticks on the commander: " + string.Join(" ", onCmdTicks));
 					Note($"({who}) first half locked on a levy {lockedA}/{n} ticks, second half {lockedB}/{n} ticks (on the commander {onCmdB}); undowned(second)={EnemyTargeting.IsUndownedBoss(b2)} hides spectator={EnemyTargeting.HidesSpectatorFrom(b2)}");
 					if (down)
 					{
 						Check($"({who}) the second half counts as beaten with the first and the Spectator is hidden from it", !EnemyTargeting.IsUndownedBoss(b2) && EnemyTargeting.HidesSpectatorFrom(b2));
-						Check($"({who}) the second half locks onto levies, never the Spectator commander ({lockedB}/{n} ticks, {onCmdB} on the commander)", lockedB * 10 >= n * 8 && onCmdB * 20 <= n);
+						Check($"({who}) the second half locks onto levies, never the Spectator commander, not on any tick ({lockedB}/{n} ticks, {onCmdB} on the commander)", lockedB * 10 >= n * 8 && onCmdB == 0);
 						Check($"({who}) the first half still locks onto levies", lockedA * 10 >= n * 8);
+						Check($"({who}) a downed boss's second half never has the Spectator commander as its target, from its first AI tick ({earlyCmd} settling ticks)", earlyCmd == 0);
 					}
 					else
 					{

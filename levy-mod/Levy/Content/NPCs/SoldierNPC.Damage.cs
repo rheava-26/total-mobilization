@@ -163,6 +163,7 @@ namespace Levy.Content.NPCs
 			if (projectile.TryGetGlobalProjectile<SoldierProjectileTag>(out var shooter) && shooter.SourceNpcIndex >= 0 && shooter.SourceNpcIndex < Main.maxNPCs)
 				modifiers.SourceDamage *= global::Levy.Common.Officers.PaintGlobalNPC.DamageMult(Main.npc[shooter.SourceNpcIndex]); // a paint-soaked shooter hits softer
 			if (LevyUtil.IsClient) return;
+			global::Levy.Common.Util.HostileProjectile.Modify(projectile, Dummy ?? global::Levy.Common.Util.HostileContact.Stand, ref modifiers); // the player's own projectile hit: the projectile's ModifyHitPlayer hooks and the difficulty multiplier (Common/Util/HostileProjectile.cs)
 			modifiers.FinalDamage *= global::Levy.Common.Util.BannerBuffs.Defense(CommanderIndex, global::Levy.Common.Util.BannerBuffs.BannerOf(projectile)); // the commander's banner for the shooter (Player.ApplyBannerDefenseBuff)
 			modifiers.FinalDamage *= IncomingSetScale(); // Solar shield / Beetle orbs / Paladin's Shield share (Player.ApplyVanillaHurtEffectModifiers)
 			// Attribution must exist before StrikeNPC reaches checkDead; OnHitByProjectile only fires afterwards.
@@ -177,6 +178,7 @@ namespace Levy.Content.NPCs
 			RecordProjectileAttacker(projectile);
 			if (HitDbg != null) HitDbgAdd("proj:" + projectile.Name + "<-" + LastAttackerName, damageDone);
 			AfterHit(damageDone, LastAttackerIndex);
+			if (IsAlive) global::Levy.Common.Util.HostileProjectile.OnHit(projectile, this, damageDone); // the debuffs a player would have caught from it
 		}
 
 		private void RecordProjectileAttacker(Projectile projectile)

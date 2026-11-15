@@ -14,6 +14,14 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🗣 Dialogue decisions (Eve 11-15) → `dialogue3` builder
+- Officers talk like the vanilla NPC they are (voice, emotions, expressions mimicked closely; style only, never vanilla lines).
+- Gods-agree lines at normal rate.
+- **Blood Moon: female levies (and female officers whose vanilla NPC gets grumpy) have ALL their dialogue replaced by annoyed lines** (vanilla's irritable-women Blood Moon joke). Needs a [female] tag plus a picker override.
+- Implement the staged hooks: LIFE_CRYSTAL, CHEST_OPENED, ARMORY_GOT/WANT/BEST/WORST, per-drink triggers, world-tier tags, [ranger]/[melee].
+- Restore messy shout energy (lead's note) and fix the duplicate line.
+- Review doc 2 goes to Eve before anything ships.
+
 ## 🎲 Eve 11-15 ~16:15
 - Approved the spawn-tick fix (Eve: "it might just be levies losing, then the boss targeting the player"; the builder must confirm which).
 - **NEW rule (Eve): Spectator + whole army dead + no manpower left, during a boss fight, means the player dies** (stops the exploit of dropping Spectator to finish a low-HP boss). Death messages from Eve's ideas: "lost the bet", "realized prolonged poverty would kill them", "watched their favorite team lose", "realized the levies did not know what dashes were", "had money on the levies".

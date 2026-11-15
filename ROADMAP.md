@@ -14,6 +14,24 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## ⚔️ projparity CORE MERGED (0a17e66)
+- Every hostile hit on a levy runs the player's hit sequence on the gear dummy.
+- Seeded levy-vs-real-Player check (Calamity, Expert+Rev and Master+Death, defense 0/30/70, DR 0/0.2):
+  - projectile 132 pairs / 0 mismatches; contact 144 / 0;
+  - knockback, immunity, debuffs and Calamity defense damage covered by the same pairs;
+  - DoT: 15 debuffs within rounding;
+  - arena box 35/35;
+  - contact + darts window 30 vs 30.
+- **Root cause:** the NPC hit path never applied the difficulty multiplier (×2 Expert, ×3 Master) or the projectile's ModifyHitPlayer hooks.
+- **Kept differences:**
+  - The levy immunity window scale is 0.75 (LevyConstants.HitImmuneScale; the check scales the player the same way).
+  - Knockback holds steering only ~12 ticks.
+  - No-heal debuff effects are not mirrored.
+  - Summoned and conjured units are untouched.
+- A/B switches: LEVY_PLAYERHIT, PROJPARITY, HITDEBUFFS, KNOCKBACK, DEFDAMAGE, PROJSLOTS, ARENABOX.
+- Builder still finishing: before/after fights (Calamitas Clone, Destroyer, Leviathan; 4 each × 2 arms), the vanilla half of the check, the wiki checklist. Lead is running serial shipboth on the merged state.
+- Ship plan: 2.0.68 = projparity + spectator3 + levyrules (wait for levyrules so damage and healing land together).
+
 ## 🎲 spectator3 MERGED
 - **Lost the bet:** Common/Potions/SpectatorBet.cs. Spectator (or the tick after it ends) + active boss + army seen alive this fight + no levy/militia alive + no manpower (BarracksTE.Manpower pools, reserves, mobilizable barracks) → KillMe with one of Eve's 5 lines. The Spectator tooltip gained "Fatal if your levies all fall to a boss".
 - **Spawn-tick lock not reproduced** (60+ downed runs, 0 commander ticks; the 27 ticks came after the 60-tick settle, not at spawn). The check is now 0-tolerance, keeps levies alive and logs alive count + WhyTrack reason on any commander tick. No production targeting change.

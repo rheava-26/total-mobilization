@@ -153,6 +153,9 @@ namespace Levy.Common.UI
 			for (int x = 0; x < LevyConstants.ExtraSidearms; x++) AddSlot(SoldierGear.SlotSide2 + x, "Loadout.ExtraSidearm", 12 + x * Pitch, 232);
 			Put(new Label(LevyUtil.T("Loadout.Camera"), 0.75f), 140, 214);
 			AddSlot(SoldierGear.SlotCamera, "Loadout.Camera", 140, 232);
+			Put(new Label(LevyUtil.T("Loadout.Mobility"), 0.75f), 210, 214);
+			AddSlot(SoldierGear.SlotWings, "Loadout.Wings", 210, 232);
+			AddSlot(SoldierGear.SlotBoots, "Loadout.Boots", 260, 232);
 			for (int d = 0; d < SoldierGear.DyeSlots; d++) AddDye(d, 12 + d * DyePitch, 298);
 
 			_status = Put(new Label("", 0.75f), 12, 352);

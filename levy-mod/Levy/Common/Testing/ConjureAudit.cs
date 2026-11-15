@@ -24,11 +24,11 @@ namespace Levy.Common.Testing
 		private sealed class AuditRow
 		{
 			public int Type; public string Name; public int Ai;
-			public int Utility, TypeChanges, OfficerHurt, ChildBlows, Children, ChildrenHostile, ChildrenToPlayer, ChildrenToEnemy, ChildrenOther, ChildrenReachedPlayer, ChildrenReachedEnemy, PlayerHurtTicks, Unflagged, UnflaggedHostile, Shots, ToEnemy, ToPlayer, Other, Static, IdleShots, IdleToPlayer, PlayerTargetTicks, EnemyDmg, ProjHits, ProjDmg;
+			public int Utility, TypeChanges, OfficerHurt, ChildBlows, Children, ChildrenHostile, ChildrenToPlayer, ChildrenToEnemy, ChildrenOther, ChildrenReachedPlayer, ChildrenReachedPlayerIdle, ChildrenReachedEnemy, PlayerHurtTicks, Unflagged, UnflaggedHostile, Shots, ToEnemy, ToPlayer, Other, Static, IdleShots, IdleToPlayer, PlayerTargetTicks, EnemyDmg, ProjHits, ProjDmg;
 			public bool Alive = true, Conjured = true; public string Why = "";
 			public bool Pass => Conjured && Alive && EnemyDmg > 0 && (Shots + Children == 0 || ProjHits + ChildBlows > 0) && ToPlayer == 0 && IdleShots == 0 && UnflaggedHostile == 0 && ChildrenHostile == 0 && ChildrenToPlayer == 0 && ChildrenReachedPlayer == 0 && PlayerHurtTicks == 0 && OfficerHurt == 0 && PlayerTargetTicks == 0;
 			public override string ToString() =>
-				$"{Name} (type {Type}, ai {Ai}): shots={Shots} toEnemy={ToEnemy} toPlayer={ToPlayer} other={Other} static={Static}; idleShots={IdleShots} idleToPlayer={IdleToPlayer}; ticksTargetingRealPlayer={PlayerTargetTicks}; unflaggedShots={Unflagged} (hostile {UnflaggedHostile}); spawnedNpcs={Children} (hostile {ChildrenHostile}, toEnemy {ChildrenToEnemy}, toPlayer {ChildrenToPlayer}, other {ChildrenOther}, reachedPlayer {ChildrenReachedPlayer}, reachedEnemy {ChildrenReachedEnemy}); playerHurtTicks={PlayerHurtTicks}; orbBlows={ChildBlows}; utilityNpcs={Utility}; typeChanges={TypeChanges}; officerHurtTicks={OfficerHurt}; enemyDamage={EnemyDmg} (by projectile {ProjDmg} in {ProjHits} hits); alive={Alive}{(Why.Length > 0 ? " " + Why : "")}";
+				$"{Name} (type {Type}, ai {Ai}): shots={Shots} toEnemy={ToEnemy} toPlayer={ToPlayer} other={Other} static={Static}; idleShots={IdleShots} idleToPlayer={IdleToPlayer}; ticksTargetingRealPlayer={PlayerTargetTicks}; unflaggedShots={Unflagged} (hostile {UnflaggedHostile}); spawnedNpcs={Children} (hostile {ChildrenHostile}, toEnemy {ChildrenToEnemy}, toPlayer {ChildrenToPlayer}, other {ChildrenOther}, reachedPlayer {ChildrenReachedPlayer}, reachedPlayerAfterEnemyGone {ChildrenReachedPlayerIdle}, reachedEnemy {ChildrenReachedEnemy}); playerHurtTicks={PlayerHurtTicks}; orbBlows={ChildBlows}; utilityNpcs={Utility}; typeChanges={TypeChanges}; officerHurtTicks={OfficerHurt}; enemyDamage={EnemyDmg} (by projectile {ProjDmg} in {ProjHits} hits); alive={Alive}{(Why.Length > 0 ? " " + Why : "")}";
 		}
 
 		private static float AngleBetween(Vector2 a, Vector2 b)
@@ -164,7 +164,7 @@ namespace Levy.Common.Testing
 					if (Math.Min(aE, aP) > 40f) row.ChildrenOther++; else if (aP <= 12f && aP + 20f < aE) row.ChildrenToPlayer++; else row.ChildrenToEnemy++;
 					if (trace) Note($"trace {name}: spawned NPC {k.TypeName} velocity=({k.velocity.X:0.#},{k.velocity.Y:0.#}) angleToEnemy={aE:0} angleToPlayer={aP:0} friendly={k.friendly} target={k.target}");
 				}
-				if (!_nearKids.Contains(q) && Vector2.Distance(k.Center, eve.Center) < 40f) { row.ChildrenReachedPlayer++; kids[q] = (born, 2); }
+				if (!_nearKids.Contains(q) && Vector2.Distance(k.Center, eve.Center) < 40f) { if (idle) row.ChildrenReachedPlayerIdle++; else row.ChildrenReachedPlayer++; kids[q] = (born, 2); } // once the enemy is gone a creature's child that is still in the air flies to the creature's post beside its officer, where the commander stands (see ConjuredGlobalNPC.MayShoot): friendly, harmless, counted apart. Reaching the player while there is an enemy to go for is the failure.
 				if (_target != null && _target.active && k.Hitbox.Intersects(_target.Hitbox)) row.ChildrenReachedEnemy++;
 			}
 		}

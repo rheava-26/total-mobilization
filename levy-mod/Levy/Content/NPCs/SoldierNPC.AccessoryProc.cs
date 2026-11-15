@@ -45,9 +45,9 @@ namespace Levy.Content.NPCs
 			try
 			{
 				int slots = Math.Min(Record.AccessorySlots, SoldierGear.AccessorySlots);
-				for (int i = 0; i < slots; i++)
+				for (int i = 0; i < slots + 2; i++) // the accessory slots, then the wings and the boots
 				{
-					Item it = Record.Gear.Accessories[i]; // the dummy only mirrors the first five slots
+					Item it = i < slots ? Record.Gear.Accessories[i] : (i == slots ? Record.Gear.Wings : Record.Gear.Boots); // the dummy only mirrors the first five slots
 					if (it == null || it.IsAir) continue;
 					int idx = Array.IndexOf(ProcAccessories, it.type);
 					if (idx < 0) continue;

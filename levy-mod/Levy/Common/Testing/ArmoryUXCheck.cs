@@ -87,10 +87,10 @@ namespace Levy.Common.Testing
 				check("the camera reaches clients", vis.Camera.type == gopro && Content.Items.Observe.GoProItem.Carries(vis));
 			}
 			// migration of an old save: GoPro in accessory slot 1, locked, slot still holding a real accessory beside it
-			var old = new SoldierGear(); old.Accessories[0] = Make(ItemID.HermesBoots); old.Accessories[1] = Make(gopro); old.SetLocked(SoldierGear.SlotAcc0 + 1, true);
+			var old = new SoldierGear(); old.Accessories[0] = Make(ItemID.BandofRegeneration); old.Accessories[1] = Make(gopro); old.SetLocked(SoldierGear.SlotAcc0 + 1, true);
 			var oldTag = old.Save(); oldTag.Remove("cam"); // an older save has no camera entry
 			var mig = SoldierGear.Load(oldTag);
-			check("an old save's accessory-slot GoPro moves to the camera slot", mig.Camera.type == gopro && mig.Accessories[1].IsAir && mig.Accessories[0].type == ItemID.HermesBoots && mig.IsLocked(SoldierGear.SlotCamera) && !mig.IsLocked(SoldierGear.SlotAcc0 + 1));
+			check("an old save's accessory-slot GoPro moves to the camera slot", mig.Camera.type == gopro && mig.Accessories[1].IsAir && mig.Accessories[0].type == ItemID.BandofRegeneration && mig.IsLocked(SoldierGear.SlotCamera) && !mig.IsLocked(SoldierGear.SlotAcc0 + 1));
 			var oldFull = new SoldierGear(); oldFull.Camera = Make(gopro); oldFull.Accessories[0] = Make(gopro);
 			var mig2 = SoldierGear.Load(oldFull.Save());
 			check("an accessory-slot GoPro still counts when the camera slot is taken", Content.Items.Observe.GoProItem.Carries(mig2) && mig2.Camera.type == gopro);

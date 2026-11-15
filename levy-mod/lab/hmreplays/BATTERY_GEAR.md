@@ -1,0 +1,82 @@
+# Baseline loadout (Destroyer / Aquatic Scourge battery)
+34 levies, 400 HP (15 life crystals), 200 mana, 8 x Greater Healing Potion, buffs: Ironskin, Regeneration, Endurance, Swiftness, Wrath, Rage, MagicPower, Archery, WellFed2, AmmoReservation, ManaRegeneration. Stations: campfire, heartlantern, starinabottle, sunflower, bast, sharpening, wartable, bewitching, ammobox, crystalball + honey.
+
+## The Destroyer (route tier 9.99, arena a3)
+- Ranged x12: armor Adamantite Mask / Adamantite Breastplate / Adamantite Leggings; accessories Cloud in a Bottle, Shield of Cthulhu, Molten Quiver, Band of Regeneration, Angel Wings
+  - Gatligator with Crystal Bullet
+  - CalamityMod/P90 with Crystal Bullet
+  - Megashark with Crystal Bullet
+  - Megashark with Crystal Bullet
+  - CalamityMod/P90 with Crystal Bullet
+  - CalamityMod/SpeedBlaster
+  - CalamityMod/P90 with Crystal Bullet
+  - CalamityMod/SpeedBlaster
+  - Hallowed Repeater with Jester's Arrow
+  - CalamityMod/P90 with Crystal Bullet
+  - CalamityMod/SpeedBlaster
+  - Gatligator with Crystal Bullet
+- Magic x12: armor Adamantite Headgear / Adamantite Breastplate / Adamantite Leggings; accessories Cloud in a Bottle, Shield of Cthulhu, Band of Starpower, Band of Regeneration, Angel Wings
+  - Shadowflame Hex Doll
+  - Ice Rod
+  - Crystal Storm
+  - Sky Fracture
+  - Shadowflame Hex Doll
+  - Golden Shower
+  - Meteor Staff
+  - Golden Shower
+  - Golden Shower
+  - Golden Shower
+  - Crystal Storm
+  - Meteor Staff
+- Melee x5: armor Titanium Helmet / Titanium Breastplate / Titanium Leggings; accessories Cloud in a Bottle, Shield of Cthulhu, Feral Claws, Band of Regeneration, Angel Wings
+  - Titanium Sword
+  - Adamantite Glaive
+  - Adamantite Glaive
+  - Excalibur
+  - Adamantite Sword
+- Summoner x5: armor Adamantite Helmet / Adamantite Breastplate / Adamantite Leggings; accessories Cloud in a Bottle, Shield of Cthulhu, Hermes Boots, Band of Regeneration, Angel Wings
+  - CalamityMod/GlacialEmbrace
+  - CalamityMod/DaedalusGolemStaff
+  - CalamityMod/GlacialEmbrace
+  - CalamityMod/DaedalusGolemStaff
+  - CalamityMod/ShellfishStaff
+
+## Aquatic Scourge (route tier 9.49, arena a3@ocean)
+- Ranged x12: armor Adamantite Mask / Adamantite Breastplate / Adamantite Leggings; accessories Cloud in a Bottle, Shield of Cthulhu, Molten Quiver, Band of Regeneration, Angel Wings
+  - Hallowed Repeater with Jester's Arrow
+  - Shotgun with Crystal Bullet
+  - Clockwork Assault Rifle with Crystal Bullet
+  - Gatligator with Crystal Bullet
+  - Hallowed Repeater with Jester's Arrow
+  - Gatligator with Crystal Bullet
+  - CalamityMod/P90 with Crystal Bullet
+  - Clockwork Assault Rifle with Crystal Bullet
+  - Gatligator with Crystal Bullet
+  - Shotgun with Crystal Bullet
+  - Gatligator with Crystal Bullet
+  - CalamityMod/P90 with Crystal Bullet
+- Magic x12: armor Adamantite Headgear / Adamantite Breastplate / Adamantite Leggings; accessories Cloud in a Bottle, Shield of Cthulhu, Band of Starpower, Band of Regeneration, Angel Wings
+  - Ice Rod
+  - Sky Fracture
+  - Laser Rifle
+  - Laser Rifle
+  - Ice Rod
+  - Laser Rifle
+  - Crystal Storm
+  - Ice Rod
+  - CalamityMod/EldritchTome
+  - Ice Rod
+  - Golden Shower
+  - Crystal Storm
+- Melee x5: armor Titanium Helmet / Titanium Breastplate / Titanium Leggings; accessories Cloud in a Bottle, Shield of Cthulhu, Feral Claws, Band of Regeneration, Angel Wings
+  - Titanium Sword
+  - Titanium Sword
+  - Cutlass
+  - Mythril Sword
+  - Adamantite Sword
+- Summoner x5: armor Adamantite Helmet / Adamantite Breastplate / Adamantite Leggings; accessories Cloud in a Bottle, Shield of Cthulhu, Hermes Boots, Band of Regeneration, Angel Wings
+  - CalamityMod/CausticStaff
+  - CalamityMod/BlackHawkRemote
+  - CalamityMod/BlightedSlimeStaff
+  - CalamityMod/CausticStaff
+  - CalamityMod/HauntedScroll

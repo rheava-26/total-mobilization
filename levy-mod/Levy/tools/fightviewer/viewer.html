@@ -183,8 +183,8 @@ function build(R){
   // levy display order: by first appearance, so labels are stable (L1, L2 ...)
   R.order=[...R.trL.keys()]; R.lbl=new Map(R.order.map((id,i)=>[id,"L"+(i+1)]));
   // target tally of the main boss
-  const tl={none:0,player:0,levy:0}; R.band=[]; let pk=-1,ps=0;
-  for(const f of R.frames){const b=mainBoss(f); if(!b) continue; const k=tkOf(b); tl[k===2?"levy":k===1?"player":"none"]++;
+  const tl={none:0,player:0,levy:0,spite:0}; R.band=[]; let pk=-1,ps=0;
+  for(const f of R.frames){const b=mainBoss(f); if(!b) continue; const k=tkOf(b); tl[k===3?"spite":k===2?"levy":k===1?"player":"none"]++;
     if(k!==pk){if(pk>=0)R.band.push([ps,f.t,pk]);pk=k;ps=f.t;}}
   if(pk>=0)R.band.push([ps,R.tmax+R.dt,pk]); R.tally=tl;
   // arena images: format 4+ writes several arena records (the start area, then strips as the fight moves); draw them all
@@ -206,10 +206,10 @@ function build(R){
   return R;
 }
 function summary(R){
-  const t=R.tally,n=Math.max(1,t.none+t.player+t.levy);
+  const t=R.tally,n=Math.max(1,t.none+t.player+t.levy+t.spite);
   const dmg=R.lhit.reduce((a,e)=>a+e.dmg,0);
   const h=R.hdr||{},m=h.meta||{};
-  return {boss:m.bossName||(h.boss||"?").replace(/_/g," "),dur:(R.tmax-R.tmin)/TPS,pl:100*t.levy/n,pp:100*t.player/n,pn:100*t.none/n,hits:R.lhit.length,dmg,deaths:R.ldeath.length,meta:m,v:R.v,hasT:R.hasTarget};
+  return {boss:m.bossName||(h.boss||"?").replace(/_/g," "),dur:(R.tmax-R.tmin)/TPS,pl:100*t.levy/n,pp:100*t.player/n,pn:100*t.none/n,ps:100*t.spite/n,hits:R.lhit.length,dmg,deaths:R.ldeath.length,meta:m,v:R.v,hasT:R.hasTarget};
 }
 
 // ================================================================ loading
@@ -330,7 +330,7 @@ function cardEl(ent){
     const g=ent.g,s=g.sum||{},m=s.meta||{};
     const sub=[m.arena,m.target?("target "+m.target):null,m.harness].filter(Boolean).join(" · ");
     b.innerHTML=`<b>${esc(g.title)}</b><div class="sub">${esc(sub)} · ${s.dur!=null?s.dur.toFixed(0)+" s":""}</div>`+
-      `<div class="badges">${s.hasT?`<span class="bd l" title="share of the fight the boss was aimed at a levy">levy ${s.pl.toFixed(0)}%</span><span class="bd p" title="aimed at the commander">cmd ${s.pp.toFixed(0)}%</span>`:`<span class="bd">no target data</span>`}<span class="bd h">${s.hits} hits</span><span class="bd d">${s.deaths} deaths</span></div>`;
+      `<div class="badges">${s.hasT?`<span class="bd l" title="share of the fight the boss was aimed at a levy">levy ${s.pl.toFixed(0)}%</span><span class="bd p" title="aimed at the commander">cmd ${s.pp.toFixed(0)}%</span>${s.ps>=1?`<span class="bd h" title="the boss rule redirected its shots and dashes at a levy">spite (redirected shots) ${s.ps.toFixed(0)}%</span>`:""}`:`<span class="bd">no target data</span>`}<span class="bd h">${s.hits} hits</span><span class="bd d">${s.deaths} deaths</span></div>`;
   } else if(ent.err){
     b.innerHTML=`<div class="ct"><b>${esc(ent.name)}</b><span class="res crashed">unreadable</span></div><div class="sub">${esc(ent.err)}</div>`;
   } else {
@@ -531,6 +531,7 @@ function sumCard(){
 function frameIndex(t){let lo=0,hi=D.frames.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(D.frames[m].t<=t)lo=m;else hi=m-1;}return lo;}
 function trackStart(tr,t){let lo=0,hi=tr.length;while(lo<hi){const m=(lo+hi)>>1;if(tr[m][0]<t)lo=m+1;else hi=m;}return lo;}
 const nm=(tbl,id)=>(D.names[tbl]&&D.names[tbl][id])||("#"+id);
+const LSLOT=["weapon","sidearm","head","body","legs","accessory","accessory","accessory","accessory","accessory","accessory","ammo","hook","wings","boots"]; // lgear slot names: 13 wings and 14 boots are the levy's mobility slots
 const lname=id=>(D.lbl.get(id)||("#"+id))+" "+((D.names.soldiers&&D.names.soldiers[id])||"");
 function canvasSize(c){const r=c.getBoundingClientRect();const dpr=window.devicePixelRatio||1;const w=Math.max(10,Math.round(r.width*dpr)),h=Math.max(10,Math.round(r.height*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}return {w,h,dpr};}
 function fitView(){
@@ -555,13 +556,13 @@ function hpColor(fr){fr=Math.max(0,Math.min(1,fr));const r=fr<.5?255:Math.round(
 // ================================================================ boss part readout
 function bossInfo(b){
   const k=tkOf(b);
-  return `${nm("npcs",b[0])}${b[13]?" (part)":" (boss)"}  slot ${b[1]}\nlife ${b[6]}/${b[7]}  (${(100*b[6]/Math.max(1,b[7])).toFixed(0)}%)\nai[0..3] ${b[8].toFixed(1)}, ${b[9].toFixed(1)}, ${b[10].toFixed(1)}, ${b[11].toFixed(1)}\ntarget ${D.hasTarget?(k===2?"levy "+(D.lbl.get(b[15])||b[15]):k===1?"commander":"none"):"slot "+b[12]}${b[16]?"\nhitbox "+b[16]+" x "+b[17]+" px":""}\nspeed ${(Math.hypot(b[4],b[5])*60/16).toFixed(1)} tiles/s`;
+  return `${nm("npcs",b[0])}${b[13]?" (part)":" (boss)"}  slot ${b[1]}\nlife ${b[6]}/${b[7]}  (${(100*b[6]/Math.max(1,b[7])).toFixed(0)}%)\nai[0..3] ${b[8].toFixed(1)}, ${b[9].toFixed(1)}, ${b[10].toFixed(1)}, ${b[11].toFixed(1)}\ntarget ${D.hasTarget?(k===3?"spite (redirected shots) at levy "+(D.lbl.get(b[15])||b[15]):k===2?"levy "+(D.lbl.get(b[15])||b[15]):k===1?"commander":"none"):"slot "+b[12]}${b[16]?"\nhitbox "+b[16]+" x "+b[17]+" px":""}\nspeed ${(Math.hypot(b[4],b[5])*60/16).toFixed(1)} tiles/s`;
 }
 let partsAt=-1;
 function renderParts(f){
   const el=$("parts"); if(!el) return; if(performance.now()-partsAt<120) return; partsAt=performance.now();
   const rows=(f.b||[]).slice().sort((a,b)=>a[13]-b[13]||a[1]-b[1]);
-  el.innerHTML=`<tr><th>part</th><th>life</th><th>ai0</th><th>ai1</th><th>ai2</th><th>ai3</th><th>aim</th></tr>`+rows.slice(0,40).map(b=>{const k=tkOf(b);return `<tr><td>${b[13]?"":"<b>"}${esc(nm("npcs",b[0]))}${b[13]?"":"</b>"} <span class="small">#${b[1]}</span></td><td>${b[6]}</td><td>${b[8].toFixed(1)}</td><td>${b[9].toFixed(1)}</td><td>${b[10].toFixed(1)}</td><td>${b[11].toFixed(1)}</td><td>${D.hasTarget?(k===2?"L"+((D.lbl.get(b[15])||"?").slice(1)):k===1?"cmd":"-"):"-"}</td></tr>`;}).join("")+(rows.length>40?`<tr><td colspan="7" class="small">+${rows.length-40} more</td></tr>`:"");
+  el.innerHTML=`<tr><th>part</th><th>life</th><th>ai0</th><th>ai1</th><th>ai2</th><th>ai3</th><th>aim</th></tr>`+rows.slice(0,40).map(b=>{const k=tkOf(b);return `<tr><td>${b[13]?"":"<b>"}${esc(nm("npcs",b[0]))}${b[13]?"":"</b>"} <span class="small">#${b[1]}</span></td><td>${b[6]}</td><td>${b[8].toFixed(1)}</td><td>${b[9].toFixed(1)}</td><td>${b[10].toFixed(1)}</td><td>${b[11].toFixed(1)}</td><td>${D.hasTarget?(k===3?"spite":k===2?"L"+((D.lbl.get(b[15])||"?").slice(1)):k===1?"cmd":"-"):"-"}</td></tr>`;}).join("")+(rows.length>40?`<tr><td colspan="7" class="small">+${rows.length-40} more</td></tr>`:"");
 }
 // the game's own width x height rectangle, centred on x,y (world px). Older files carry no size: a small marker instead.
 function hbox(g,sc,dpr,x,y,w,h,fill,stroke,lw,minPx){
@@ -627,6 +628,7 @@ function draw(){
     let tx=null,ty=null,col="#8a97a8";
     if(!D.hasTarget) tgtText="unknown (format 1)";
     else if(k===2){const l0=(f0.l||[]).find(l=>l[0]===mb0[15]);if(l0){const l1=byIdL.get(l0[0])||l0;tx=lerp(l0[1],l1[1],u);ty=lerp(l0[2],l1[2],u);}col="#ff5a5a";tgtText="levy "+lname(mb0[15]);}
+    else if(k===3){const l0=(f0.l||[]).find(l=>l[0]===mb0[15]);if(l0){const l1=byIdL.get(l0[0])||l0;tx=lerp(l0[1],l1[1],u);ty=lerp(l0[2],l1[2],u);}col="#ffb34d";tgtText="spite (redirected shots) at "+lname(mb0[15]);}
     else if(k===1){tx=P[0];ty=P[1];col="#4fe3ff";tgtText="commander";}
     if(tx!=null){const a=sc(bx,by),b=sc(tx,ty);g.strokeStyle=col;g.lineWidth=1.6*dpr;g.setLineDash([7*dpr,5*dpr]);g.lineDashOffset=-cur*0.6*dpr;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();g.setLineDash([]);g.lineDashOffset=0;
       g.strokeStyle=col;g.beginPath();g.arc(b[0],b[1],11*dpr,0,6.2832);g.stroke();}
@@ -637,7 +639,7 @@ function draw(){
     else{g.fillStyle=col;g.fillRect(sx-1.5*dpr,sy-1.5*dpr,3*dpr,3*dpr);}
     blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,Math.max(w,h)*cam.z/2+2),info});};
   {const byA=new Map((f1.a||[]).map(q=>[q[1],q]));
-   for(const a0 of (f0.a||[])){const a1=byA.get(a0[1])||a0;hbx(lerp(a0[2],a1[2],u),lerp(a0[3],a1[3],u),a0[10]||8,a0[11]||8,"#ffb020",false,`add ${nm("npcs",a0[0])}  slot ${a0[1]}\nlife ${a0[6]}/${a0[7]}\ntarget ${a0[8]===2?"levy "+(D.lbl.get(a0[9])||a0[9]):a0[8]===1?"commander":"none"}\nhitbox ${a0[10]} x ${a0[11]} px`);}
+   for(const a0 of (f0.a||[])){const a1=byA.get(a0[1])||a0;hbx(lerp(a0[2],a1[2],u),lerp(a0[3],a1[3],u),a0[10]||8,a0[11]||8,"#ffb020",false,`add ${nm("npcs",a0[0])}  slot ${a0[1]}\nlife ${a0[6]}/${a0[7]}\ntarget ${a0[8]===3?"spite (redirected shots) at levy "+(D.lbl.get(a0[9])||a0[9]):a0[8]===2?"levy "+(D.lbl.get(a0[9])||a0[9]):a0[8]===1?"commander":"none"}\nhitbox ${a0[10]} x ${a0[11]} px`);}
    const byS=new Map((f1.s||[]).map(q=>[q[1],q]));
    for(const s0 of (f0.s||[])){const s1=byS.get(s0[1])||s0;hbx(lerp(s0[2],s1[2],u),lerp(s0[3],s1[3],u),s0[4],s0[5],"#ffb020",!(s0[7]&1),`${s0[7]&4?"segment":"hostile"} ${nm("npcs",s0[0])}  slot ${s0[1]}\nhitbox ${s0[4]} x ${s0[5]} px\n${s0[7]&1?"deals contact damage":"no contact damage"}`);}}
   // hostiles outside the view (recorded at any distance): a marker on the frame edge pointing at each, so something firing from off-screen is never invisible
@@ -689,7 +691,7 @@ function draw(){
   renderParts(f0);
   // HUD
   const alive=(f0.l||[]).length, bossHp=mb0?`${nm("npcs",mb0[0])}  ${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(0)}%`:"";
-  const tcol=tgtText.startsWith("levy")?"#ff7b7b":tgtText==="commander"?"#6fe9ff":"#9bb0ad";
+  const tcol=tgtText.startsWith("levy")?"#ff7b7b":tgtText.startsWith("spite")?"#ffb34d":tgtText==="commander"?"#6fe9ff":"#9bb0ad";
   $("hud").innerHTML=`<div class="l"><div class="tgt" style="color:${tcol}">boss target: ${esc(tgtText)}</div>${mb0?`<div>${esc(bossHp)}</div><div class="bar"><i style="width:${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(1)}%"></i></div>`:""}</div><div style="text-align:right">levies in view ${alive}<br>${((cur-D.tmin)/TPS).toFixed(1)} s</div>`;
 }
 
@@ -701,7 +703,7 @@ function drawStrip(){
   let y=0; const Y={};
   rows.forEach((r,i)=>{Y[r[0]]=[y,r[1]*k];g.fillStyle=i%2?"#060d10":"#04090b";g.fillRect(0,y,W,r[1]*k);g.fillStyle="#4d6663";g.font=`${9*dpr}px system-ui`;g.fillText(r[0],3*dpr,y+9*dpr);y+=r[1]*k;});
   // boss target band
-  {const [y0,h]=Y.target; const col=["#2a3a3e","#2aa7c4","#e0483f"]; if(D.hasTarget) for(const s of D.band){g.fillStyle=col[s[2]];g.fillRect(X(s[0]),y0+h*0.3,Math.max(1,X(s[1])-X(s[0])),h*0.65);} else {g.fillStyle="#2a3a3e";g.fillRect(0,y0+h*.3,W,h*.65);}}
+  {const [y0,h]=Y.target; const col=["#2a3a3e","#2aa7c4","#e0483f","#e09a2a"]; if(D.hasTarget) for(const s of D.band){g.fillStyle=col[s[2]];g.fillRect(X(s[0]),y0+h*0.3,Math.max(1,X(s[1])-X(s[0])),h*0.65);} else {g.fillStyle="#2a3a3e";g.fillRect(0,y0+h*.3,W,h*.65);}}
   // levy hits: stem height by damage share of 40% of a levy's life; colour by source
   {const [y0,h]=Y.hits; for(const e of D.lhit){const fr=Math.min(1,0.25+e.dmg/Math.max(60,e.dmg*1.0+e.life)*1.5);g.fillStyle=SRC_COL[e.src]||"#fff";const x=X(e.t);g.fillRect(x-1*dpr,y0+h-fr*h*0.92,2*dpr,fr*h*0.92);}}
   {const [y0,h]=Y.deaths; g.strokeStyle="#ff3030";g.lineWidth=2*dpr;for(const e of D.ldeath){const x=X(e.t),s=Math.min(6*dpr,h*0.4),cy=y0+h/2;g.beginPath();g.moveTo(x-s,cy-s);g.lineTo(x+s,cy+s);g.moveTo(x+s,cy-s);g.lineTo(x-s,cy+s);g.stroke();}}
@@ -739,7 +741,7 @@ const f1=v=>v==null||isNaN(v)?"-":v.toFixed(1);
 function renderInfo(){
   const s=summary(D),m=(D.hdr&&D.hdr.meta)||{},h=D.hdr||{},e=D.end||{};
   const mb=D.frames.map(mainBoss).filter(Boolean); const hp0=mb.length?mb[0][6]/Math.max(1,mb[0][7]):0, hp1=mb.length?mb[mb.length-1][6]/Math.max(1,mb[mb.length-1][7]):0;
-  const t=D.tally,n=Math.max(1,t.none+t.player+t.levy);
+  const t=D.tally,n=Math.max(1,t.none+t.player+t.levy+(t.spite||0));
   let h1=`<section><h2>Fight</h2><div class="kv"><span>boss</span><span>${esc(s.boss)}</span>`+
     ["harness","arena","seed","mode","target","order","gear","cfg"].filter(k=>m[k]!=null).map(k=>`<span>${k}</span><span>${esc(m[k])}</span>`).join("")+
     `<span>game mode</span><span>${esc(h.mode||"?")}</span><span>duration</span><span>${s.dur.toFixed(1)} s (${D.frames.length} samples, ${(TPS/D.dt).toFixed(0)} Hz)</span>`+
@@ -747,8 +749,8 @@ function renderInfo(){
   // targeting
   let h2=`<section><h2>Who the boss went for</h2>`;
   if(D.hasTarget){
-    h2+=`<div class="tbar"><i style="width:${100*t.levy/n}%;background:#e0483f" title="levy"></i><i style="width:${100*t.player/n}%;background:#2aa7c4" title="commander"></i><i style="width:${100*t.none/n}%;background:#33474b" title="nobody"></i></div>`+
-      `<table><tr><td><span style="color:#ff7b7b">levy</span></td><td>${(100*t.levy/n).toFixed(1)}%</td></tr><tr><td><span style="color:#6fe9ff">commander</span></td><td>${(100*t.player/n).toFixed(1)}%</td></tr><tr><td>nobody</td><td>${(100*t.none/n).toFixed(1)}%</td></tr></table>`+
+    h2+=`<div class="tbar"><i style="width:${100*t.levy/n}%;background:#e0483f" title="levy"></i><i style="width:${100*t.player/n}%;background:#2aa7c4" title="commander"></i><i style="width:${100*(t.spite||0)/n}%;background:#e09a2a" title="spite (redirected shots)"></i><i style="width:${100*t.none/n}%;background:#33474b" title="nobody"></i></div>`+
+      `<table><tr><td><span style="color:#ff7b7b">levy</span></td><td>${(100*t.levy/n).toFixed(1)}%</td></tr><tr><td><span style="color:#6fe9ff">commander</span></td><td>${(100*t.player/n).toFixed(1)}%</td></tr>${t.spite?`<tr><td><span style="color:#ffb34d">spite (redirected shots)</span></td><td>${(100*t.spite/n).toFixed(1)}%</td></tr>`:""}<tr><td>nobody</td><td>${(100*t.none/n).toFixed(1)}%</td></tr></table>`+
       `<div class="small" style="margin-top:6px">Share of samples where the main boss was aimed at each. Levy = its targeting lock, a native NPC target or a boss-rule spite dash.</div>`;
   } else h2+=`<div class="small warn">This file is format 1: it has no levy targeting data. Only the commander-or-nothing split is visible: commander ${(100*t.player/n).toFixed(0)}%, nobody ${(100*t.none/n).toFixed(0)}%.</div>`;
   h2+="</section>";

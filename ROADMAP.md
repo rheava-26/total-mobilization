@@ -6,7 +6,217 @@
 
 ---
 
-## 🚢 2.0.64 (building, 11-15 early morning)
+## 🔁 hmbattery2 DONE (11-15, branch `hmbattery2`, tooling only): hardmode battery rerun after the shot-veto fix. Results: levy-mod/lab/hmbattery2/RESULTS.md
+- Projectiles land (Moon Lord 13.9k damage / 681 hits, Destroyer lasers 80/80). 344 fights (Destroyer 140, Aquatic Scourge 20, sweep 184 incl. Deerclops) + 120 control fights. No aggregate change: 22 shared bosses Master+Death 64/87 -> 62/88 wins, Expert+Rev 82/88 -> 82/88; projectile damage taken per fight 24 -> 1262. Moon Lord and Aquatic Scourge slower (90 -> 113 s, 114 -> 147 s), still 0 deaths.
+- **Destroyer baseline 38% -> 18% is NOT the veto** (veto-on control on the new build 10%). Ladder: OLD code re-run 30%, +bosshitbox 25%, +fieldfix 30%, HEAD veto-on 10%, HEAD 18%. The drop sits between the commit before the Wings/Boots slots and HEAD (mobslots + harness now filling the slots). Open: a MobilitySlots-off A/B if Eve wants it pinned. Also Plantera / Skeletron Prime / Calamitas Clone Master+Death look harder (contact damage up, n=4).
+- Harness difference to remember: since mobslots the harness puts wings and boots in the Wings/Boots slots (an accessory slot refuses them); the OLD run had them in accessory slots.
+- Recorder: spite (kind 3) never appears in the harness (0 of 344 fights); the old merged target field was the levy lock.
+- Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
+- Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
+
+## 🗣 Dialogue decisions (Eve 11-15) → `dialogue3` builder
+- Officers talk like the vanilla NPC they are (voice, emotions, expressions mimicked closely; style only, never vanilla lines).
+- Gods-agree lines at normal rate.
+- **Blood Moon: female levies (and female officers whose vanilla NPC gets grumpy) have ALL their dialogue replaced by annoyed lines** (vanilla's irritable-women Blood Moon joke). Needs a [female] tag plus a picker override.
+- Implement the staged hooks: LIFE_CRYSTAL, CHEST_OPENED, ARMORY_GOT/WANT/BEST/WORST, per-drink triggers, world-tier tags, [ranger]/[melee].
+- Restore messy shout energy (lead's note) and fix the duplicate line.
+- Review doc 2 goes to Eve before anything ships.
+
+## 🎲 Eve 11-15 ~16:15
+- Approved the spawn-tick fix (Eve: "it might just be levies losing, then the boss targeting the player"; the builder must confirm which).
+- **NEW rule (Eve): Spectator + whole army dead + no manpower left, during a boss fight, means the player dies** (stops the exploit of dropping Spectator to finish a low-HP boss). Death messages from Eve's ideas: "lost the bet", "realized prolonged poverty would kill them", "watched their favorite team lose", "realized the levies did not know what dashes were", "had money on the levies".
+  - Both are in builder `spectator3`.
+- **"Fixed" replay artifact (Eve):** a separate page holding ONLY fights recorded on fixed versions, so she stops opening broken ones. Fill it after parity lands and the rerun is done. The curated main page keeps history with outdated stamps.
+- Eve still wants to work on the dialogue (draft is in scratchpad/dialogue_review.md, branch dialogue2; three questions open).
+- Eve: "fix anything broken, you have my permission." Post progress updates more often. If near a usage limit, pause and report; builders can be resumed.
+
+## 🧠 Eve 11-15 ~16:00
+- **Hold new boss testing** (the 100-fight battery) until the in-flight fixes land: projparity, levyrules, redecompat.
+- **Curated page per boss: 3–4 wins + 3–4 losses + the weird ones** (sent to sitecurate; ceiling ~260 files / 230 MB).
+- **Spawn-tick Spectator fix (spectarget2):** waiting on Eve's OK after the classifier blocked it.
+- **IDEA (Eve): predict a boss's dash by running its AI ahead of time ("running its AI on itself") so levies pre-emptively leave the path.**
+  - Lead's view: feasible if it's a boss-side forward simulation once per wind-up, not per levy. Snapshot the NPC, step its AI N ticks with side effects suppressed (no projectile spawns, sounds, dust or net messages; save/restore RNG; same snapshot/restore idea as UseGuard), then restore.
+  - The output is a swept-hitbox "danger corridor" that every levy checks cheaply, so the cost scales with bosses, not levies. That generalises the Leviathan charge lanes.
+  - Risks: RNG-driven choices (sample a few seeds or fall back to the lane read), AIs with side effects in odd places, and the target moving.
+  - Proposed a measurement-only prototype: prediction accuracy + cost on EoC, Leviathan, Fishron and Destroyer, with no behaviour change.
+
+## 🚢 2.0.67 SHIPPED (11-15 ~15:40): spectarget + destroyerdrop fixes. Serial shipboth 677 s: both boots exc=0; all world checks 0 exceptions. One FAIL: BossBugs spectarget, Calamity half: Spazmatism on the commander for 27/360 ticks at spawn (default target 0 before the first retarget). Sent back for a spawn-tick fix. The new `spectarget2` builder was BLOCKED: the permission classifier denied its `git checkout -B/-b spectarget2` (all variants), so no work was done. Not routed around; asked Eve to approve a rerun.
+
+## 🗂 Replay pages (Eve 11-15): why two pages? Curate, version-stamp, clear old
+- Two pages exist only because of the 511-file cap: the main one (Q6aYA45u8MSxyB7VZxHSEH: Eve's fights + old pre-HM labs) and the lab one (5bQWET74N12m4bYMbFxqqK: 2.0.66 hardmode battery).
+- `sitecurate` builder: ONE curated page on the main URL.
+  - Contents: Eve's 44 fights; ≤2 per hardmode boss (a baseline + a notable exception, with notes); a few Destroyer/Aquatic Scourge test fights; 15 outdated pre-HM lab fights.
+  - Every fight shows its Levy version. Manifest `eras` + `current` drive "outdated" badges with the reason.
+  - current = 2.0.68 (parity, unreleased), so everything now shows outdated, honestly.
+- Plan: publish over the main URL (null out the old files). Keep the lab page as the full archive (offer to delete it). Fetched 29 old data files to scratchpad/oldfights (Eve's 14 older fights + 15 pre-HM picks).
+
+## 🎯 spectarget MERGED
+- **Cause:** the harness (and BossDowned) marked only one half of two-part bosses as downed, so the Leviathan and Spazmatism counted as undowned. The Spectator wasn't hidden from them, they kept default target 0 (the commander) and never retargeted.
+  - Seeds 2–3 only looked fine because the downed set carried over inside the server process.
+- **Fix:** boss families share one downed state (BossDowned.cs; Twins and Anahita/Leviathan). RecordKill waits for both halves. New BossBugs part `spectarget`.
+- **Seed 1 after the fix:** the Leviathan targets levies and the army is wiped (a real loss now). Twins: Spazmatism goes from commander/spite to the levy lock 100%.
+- Real play: the same half-recorded state could happen after a real kill, so this matters beyond the lab.
+
+## 🧭 Mod of Redemption audit MERGED (7f4285e; levy-mod/docs/redemption_compat_audit.md). EVE PLAYS IT BLIND: no Redemption names or text to Eve.
+- Loads clean on both toolchains.
+- Breaks:
+  - (1) two world-altering throwables (PlutoniumBomb, ToxicGrenade + BileLauncher) missed by the classifier;
+  - (2) Redemption marks 8 vanilla grenades/knives as ammo+notAmmo, so levies stop throwing them;
+  - (3) KS3 native-target AI crashes on target 300+ after unlock.
+- Unverified: HasValidTarget false at slot 255 (bosses may despawn); a spare/slay choice window levies could pre-empt; the Ritualist class; subworlds untested; a WhipReal Morning Star DPS drop.
+- **`redecompat` builder** is fixing all of it. General fixes too: notAmmo; the world-alter scanner's missed direct TileType write; modded UsesNewTargetting NPCs default to the flyer slot.
+
+## 🔧 destroyerdrop MERGED (42f6698)
+- **Destroyer drop = noise, not mobslots.** The same seed doesn't repeat a fight (18/40 seeds agree); 40-fight arms can't resolve <~20 points.
+  - Slots on 18.8% vs off 26.2% over 160 fights each (p=0.14), with batch-to-batch spread as large.
+  - Boots ruled out (only 5/34 levies wear them; removing them changes nothing).
+  - Stats, speed and contact frames are identical.
+  - **Lesson for the 100-fight battery: we need ≥100 per arm to see ~10-point effects.**
+- **Prime/Calamitas Clone contact doubling is from the shot-veto fix:** contact hits per touch doubled (Prime 0.73→1.59, Calamitas Clone 0.45→0.74), so 1-damage shot hits mess up the immunity bookkeeping (SoldierNPC.AfterHit). Calamitas Clone Master+Death went 19/20 → 5/20. Handed to projparity (per-slot immunity parity).
+- Fixed: Ice Rod Ice Block Projectile.Kill reading tile row -1 above the world (UseGuard.KeepProbeInWorld); Moon Lord core AIOverride nulled by Calamity's SendExtraAI on the kill tick (compat restores it). Checks mlkill/killedge in BossBugs.
+- Lab switch LEVY_MOBSLOTS=0.
+
+## ✅ Eve's parity decisions (11-15 afternoon)
+- Knockback ON by player rules (projparity).
+- Calamity defense damage applies to levies (projparity).
+- Acceptance test (Eve): the same 400-damage bullet on a levy and on a 500-HP player must deal the exact same damage in the same way (fixed RNG). Wiki checklist of player damage mechanics (projparity).
+- Fall damage and hazardous tiles ON by default.
+- Drowning by player rules, as a config option (default off).
+- Regen = the player's natural regen; potions at the player's potion-sickness rate.
+- Remove the base-grade 0.8× damage (keep worse aim). Shaken 0.6× stays. Whip 4× stays.
+- Summoners must spam whips like a player does.
+- Every armor set bonus must work on levies (audit vanilla, Calamity and Thorium).
+- → `levyrules` builder (regen/potions/fall/hazards/drowning/grade dmg/whip spam/set-bonus audit). projparity has the damage-taken pipeline.
+- Eve's read: she thought levies died fast from low defense despite life crystals and fruit. They were actually taking 3–7× contact damage and no real projectile damage.
+
+## 🔍 PARITY AUDIT MERGED (a49dc30; levy-mod/docs/PARITY_AUDIT.md)
+- **Gaps, ranked:**
+  1. Debuffs/DoT never reach levies (zero debuffs in 214 recordings; contact skips OnHitPlayer; Calamity ActsLikeTownNPC blocks debuffs).
+  2. **Contact damage per hit is 3–7× the commander's** (Anahita 877 vs 166, Retinazer 898 vs 157, Spore 1,134 vs 156); contact is 81% of levy damage taken. Cause unexplained.
+  3. Calamity damage-taken hooks aren't run (armor DR, shields, parries, dodges).
+  4. Projectile per-slot immunity is folded into one window.
+  5. No knockback taken.
+  6. Environment: fall/tile hazards off by default, no drowning, lava is a flat strike.
+  7. Healing differs (flat 1 HP/s regen after 5 s; 30 s potion cadence).
+  8. Minor gear-pass skip.
+  9. Damage dealt has hidden multipliers: base grade 0.8×, Shaken 0.6×, grade aim jitter, WhipRealDamageMult 4.0.
+  10. A recorder anomaly (id -1 triple strikes).
+- **Together with projectile damage ~1:** dashes murdered levies (contact 3–7× too strong) and bullets tickled (~1). Exactly Eve's playtest read.
+- **Gaps 1–4 assigned to `projparity`** (one damage-taken pipeline via the dummy's player sequence).
+- **Gaps 5, 6, 7 and 9 are design calls for Eve.**
+- **Retune HpScalePerCp after parity lands.**
+
+## ⏸ 14:55 UTC: all 5 builders hit the 5-hour usage limit (resets 17:30 UTC)
+- destroyerdrop, spectarget, projparity, parityaudit and redemption were all cut off mid-work. Their worktrees and labs are intact (git worktree list; /home/user/lab/*). No orphan tML processes.
+- Eve renewed her limit (~15:00 UTC): all five resumed right away via SendMessage (≤1 tML each); the 17:35 check-in was cancelled. Her point stands: a reminder can't fire usefully while I'm the one rate-limited.
+
+## 🎯 Eve caught it again: projectiles "tickle" levies (projectile damage parity)
+- Calamitas Clone Master+Death: darts, explosions, fireballs and bolts hit levies for exactly 1 damage (hundreds of hits/fight); Cataclysmic Flame ~10. Expert+Rev darts ~6. A player takes ~100+. Destroyer and WoF lasers also do 1.
+- Contact has player parity (bosshitbox), projectiles don't: the NPC damage path skips the difficulty multipliers and Calamity's scaling, and uses NPC defense. **All battery results are still generous for projectile bosses.** Rerun after the fix; the 100-fight battery waits for this.
+- Eve: "this is why projectiles felt insignificant to levies and dashes murdered them". Yes: contact had player parity (or worse, before bosshitbox) while projectiles did ~1. She asked for a sweep for other inconsistencies → `parityaudit` builder (an audit: debuffs/DoT, non-boss damage, defense/DR, damage dealt incl. WhipRealDamageMult 4.0, i-frames/knockback, healing, boss-side scaling, mobility); doc at levy-mod/docs/PARITY_AUDIT.md.
+- `projparity` builder: projectile damage to a levy = what a player with the levy's stats takes (A/B switch LEVY_PROJPARITY). It also makes levies obey Calamity ArenaWallSystem boxes (CalClone, SCal; Eve OK'd: "fix the confinement box").
+
+## 🎯 Eve caught it: Leviathan targets the commander (lab replays)
+- Scan of all 344 rerun fights: only 3 boss-parts are on the commander >30%: Leviathan Master+Death s1 and Expert+Rev s1 (100%), Spazmatism Master+Death s1 (73%). All seed 1.
+- The commander is a hidden Spectator, so these were free wins: Leviathan Master+Death s1 landed 8 hits on levies vs 227 in s2.
+- Corrected Leviathan Master+Death on-tier record: 2/3 legit wins (s1 doesn't count).
+- `spectarget` builder: find why a downed boss locks onto a Spectator (spawned-by-boss / second-Twin path?), fix it, add a world check, reproduce s1.
+
+## ☀️ Eve 11-15 morning
+- Calamitas Clone doubt ("did you put them in the box?"): Calamity's Rev+ CalClone ArenaWallSystem box (±2000 px around the closest player) contains PLAYERS only (ArenaWallPlayer). Levies aren't contained, but in all 4 Master+Death rerun fights no levy ever left the box region (max 50–68 tiles from start). So the box isn't why they win. Likely cause: her dashes hit one target at a time, against 34 on-tier levies. One-tier-below gear: full wipe (34/34 dead). Open idea: levies obey Calamity arena boxes like players (fair play, same as hit parity); also SupremeCalamitas.
+- **Eve asks: ≥100 fights per boss on the newest build, run gradually and equalized,** to find what's wrong per boss. Plan: after destroyerdrop, a long-running battery at ≤2 tML, mostly Master+Death (her balance target). Raw recordings stay on disk (container resets lose them!). fights.csv and the tables are committed.
+- **Mod of Redemption:** Eve will play it blind next. `redemption` builder audits it (Workshop 2893332653, anonymous DepotDownloader) for Levy breakers. Report to Eve SPOILER-FREE: problem/no-problem lines only.
+
+## 🧪 BATTERY RERUN (hmbattery2 MERGED fc48ec2; projectiles land now)
+- Overall: Master+Death wins 64/87 → 62/88 (no net change). Projectile damage per fight 24 → 1,262; contact flat.
+- **Destroyer baseline 38% → 18%**, but the controls show it's NOT the veto. The drop sits between fieldfix and current (mobslots + bossbugs non-veto parts). Controls: old 30%, +bosshitbox 25%, +fieldfix 30%, current with the veto back on 10%, current 18%.
+- Prime and Calamitas Clone contact damage doubled (unexplained). Plantera Master+Death 2/4 → 0/4.
+- Easier: Cultist 2/4 → 4/4, Leviathan 1/4 → 3/4.
+- Unchanged: Fishron 0/8, Ravager Master+Death 0/4. Moon Lord is slower (90 → 113 s) but still 4/4 with 0 deaths.
+- Deerclops 4/4 in both modes, no crash.
+- Spite = 0% in every fight. "Boss on levy" is the real lock.
+- New exceptions (silently caught): UseGuard.KillDetour IndexOutOfRange (Queen Slime); CalamityTargetingCompat.PreAiDetour → Calamity PreAI NullReference (every Moon Lord fight); plus Calamity-internal ones (PlanteraAI SolidTile, CalamityGlobalProjectile.CanHitNPC) and harness CrPinStrays.
+- **Lab replay site updated to the rerun** (same URL, https://claude.ai/artifact/5bQWET74N12m4bYMbFxqqK): 229 fights, 230 data files; 69 stale old files removed; verified 231 files.
+- `destroyerdrop` builder: bisect the Destroyer drop (mobslots on/off, boots on/off, 40 per arm) and fix the two Levy exceptions.
+
+## 🚢 2.0.66 SHIPPED (11-15 ~08:55, sent to Eve): bossbugs. Vanilla/Calamity boot exc=0. World: BossBugs 25/0 and 36/0. Only failures were the known race flakes (SummonWorld Hornet, FieldFix). The exc=5 is the harmless /proc/<pid>/stat read race.
+- **checkfix MERGED after it (f5ee5e6)**; the shipworld.sh conflict was resolved to fail_lines plus the BossBugs exclusion. Verified on the merged state: vanilla and Calamity boots exc=0; all world checks pass; 0 FAIL lines and 0 exceptions in both halves (first fully clean ship signal). Battery rerun (hmbattery2) launched.
+
+## 🐞 bossbugs MERGED (6c1f07e)
+- Deerclops, Bee and BeeSmall (types driven by a Calamity AI override) take the flyer slot 254 instead of target+300. Deerclops used to throw IndexOutOfRange and despawn. Audit result: Levy writes 300+ targets only in CompeteCore for UsesNewTargetting types, so these 3 were the only exposed ones.
+- **BIG: a Spectator commander vetoed EVERY hostile projectile hitting levies** (single player / listen host: enemy shots are owned by Main.myPlayer, and SpectatorPlayer.CanHitNPC => !Active). Fixed by the SpectatorHostileShots detour.
+  - This was the cause of Moon Lord's 0 hits (now 12,969–15,381 projectile damage per fight) and the WoF laser and Cultist 0-hit results.
+  - Real-play impact: Eve's spectator-potion mech farming had levies immune to boss projectiles.
+  - **The hmreplays battery and the earlier boss batteries used a Spectator commander, so their projectile damage was ZERO. Every result is biased easy for projectile bosses ("Destroyer projectiles 0" is this bug). RERUN needed after 2.0.66.**
+- Recorder: a kill that other bosses vanish with (ML hands, Cultist pillars) now counts as a kill.
+- The harness army now puts wings/boots in the mobility slots (the battery army had neither before).
+
+## 🧪 HARDMODE BATTERY RESULTS (hmreplays MERGED 155bc46; harness/tooling only; RESULTS.md in levy-mod/lab/hmreplays)
+- **Destroyer, Master+Death, fixed 34 on-tier, platforms:**
+  - Baseline: 15/40 wins = 38% (CI 24–53), median kill 67 s, 30 deaths/fight. Damage taken: head 6.7k, body 5.5k, tail ~0, projectiles 0.
+  - Army size: 12 → 0/20, 24 → 0/20, 36 → 35%.
+  - No wings 20%; flat arena 20% (weak signals at n=20).
+  - Adding levies does NOT make it harder. Below ~34 it's a wipe.
+- **Aquatic Scourge, Master+Death:** 40/40 baseline, kill 131 s, 0 deaths. 12 levies 65%; flat arena slower (187 s).
+- **Broad sweep, 3 on-tier + 1 one-tier-below fight per mode; Master+Death wins:**
+  - Strong: WoF 4/4, Queen Slime 4/4, Prime 4/4, Brimstone 4/4, Cryogen 4/4, Calamitas Clone 4/4, Golem 4/4, Moon Lord 4/4 (suspicious), PBG 3/3.
+  - Mixed: Twins 3/4, Plantera 2/4, EoL 2/4 (2 timeouts), Cultist 2/4.
+  - Losing: Leviathan 1/4, Aureus 1/4, Ravager 0/4 (2/4 Expert+Rev), Duke Fishron 0/4 (0/4 Expert+Rev too; full wipes).
+  - Pre-hardmode Calamity bosses are easy.
+- **Bugs found → `bossbugs` builder (all four fixed on branch `bossbugs`, not merged; results in `levy-mod/docs/boss_lab/bossbugs/RESULTS.md`):**
+  - Deerclops IndexOutOfRange: Calamity's override indexes `Main.player[NPC.target]` and Levy handed it a 300+ NPC target. Fix: a native type whose Calamity override is bound takes the Empress's flyer slot (254). The audit found exactly three such types: Deerclops, Bee, BeeSmall.
+  - Moon Lord (and WoF, Cultist, every boss) never hurting levies: a Spectator commander owns every enemy shot in single player (`owner = Main.myPlayer`) and `ModPlayer.CanHitNPC => !Active` vetoed those shots through `PlayerLoader.CanHitNPCWithProj`. Fix: `SpectatorHostileShots` detour.
+  - WoF 0–2 hits: same veto. WoF's parts do target levies (visible commander: eyes, Hungry, Leeches; Spectator: the mouth too) and its lasers are aimed at the levy each eye is locked on.
+  - Recorder verdict "despawn" for Cultist and ML kills: the closing window kept only the LAST boss to leave (the head, the pillars). Now the last killed one names the end.
+- **Per-boss rework candidates for Eve (Death-mode balance):** Fishron, Ravager, Aureus, Leviathan (dash + adds), Destroyer (body contact).
+- **Lab replay site PUBLISHED:** https://claude.ai/artifact/5bQWET74N12m4bYMbFxqqK ("Levy Lab Replays"). 245 fights, 30 sets, 6 Hz, 232 MB, 4 batches.
+  - Battery cells are capped at 10 baseline + 5 per sweep cell; all 175 broad-sweep fights are included.
+  - Headless check: 36 fights across every set, 0 page errors.
+  - Built with a patched copy of hm_site.py (scratchpad/labtools) that adds the per-cell cap.
+  - It's a separate artifact because the main site is near the 511-file version cap.
+
+## 🧹 SHIP-CHECK CLEANUP (branch `checkfix`, 11-15) = the flaky checks, root-caused
+- **Proof:** three serial runs of the full vanilla and Calamity world chains on the final code: every check passed in all six, 0 FAIL lines, 0 exceptions, OFFICERKIT clean on both boots.
+- **One race explained most of the flakes.** The test server's loop thread (`Netplay.UpdateConnectedClients`, a tight loop) clears every client-less player slot many times a second, including the stand-in commander in slot 0. Vanilla's `Projectile.Update` kills any projectile whose owner slot is inactive, and the stand-in owns every round the army fires in a check. Measured: about 5 percent of bullet updates saw the owner inactive and killed the bullet, so a levy hit a boss about 2 times in 12 s instead of about 100 (FieldFix damage per trial 20 -> 500 to 700). Which check read 0 depended on timing and box load. Not a game bug: a real player's slot is connected and never cleared.
+- **Fix:** `WorldStepStandIn` (Common/Testing/WorldStep.cs) skips `UpdateConnectedClients` once a check has stepped the world (`WorldStep.Holding`; cleared on world unload), as CombatHarness already did for its scenarios. `LEVY_WORLDSTEP_NOHOLD=1` puts the race back for A/B runs.
+- **Per check:** FieldFix (race; the far-boss militia case at 190 tiles was inside SettlementRadiusX + the gun's 145-tile boss reach, so it now stands at radius + reach + 25; hit waits run to the first hit, up to 5 windows, from a seeded `Main.rand`), MobWorld flight (longest unbroken flight in a fixed 900-tick window, plus the wing-time stat ranking), SummonWorld (wait to the first hit, seeded), FollowRows (best of 25 batches: 0.18 to 0.28 ms idle, bound 1 ms), OfficerKit (the check asked a 200 px list to show whole on a 300 px screen where the panel math rightly caps it), Zoologist "thin Bestiary" (resets the tracker instead of assuming; working bullets unlock entries), Mech turret reach and FieldFix thorns / Dungeon Guardian on Calamity (the world's own spawns, modded ones included, are cleared each tick: `WorldStep.IsNaturalHostile`), aim audit (below).
+- **Kite NRE x24 (found):** `Main.IsItAHappyWindyDay` (set from the wind) is true on some runs; a kite shot then calls `AchievementsHelper.HandleSpecialEvent(17)`, which reads `Main.Achievements`, null on a dedicated server. The sandbox shoots with the flag off. `LEVY_TILESWEEP_WINDY=1` forces it on, `LEVY_TILESWEEP_NOSHIELD=1` removes the shield (24 NullReferenceExceptions, 2 "Silently Caught" lines).
+- **Aim audit (Harpy once, Fire Imp twice):** two causes. A shot aimed at a player slipped past `ConjuredGlobalNPC.MayShoot`, whose loop skips inactive players (the race, pre-fix only). And a Fire Imp's burning sphere still in the air when the arena's enemy is removed flies to the creature's post beside the officer, where the commander stands (about 1 Fire Imp audit in 12): friendly and harmless, now counted apart as `reachedPlayerAfterEnemyGone`. Possible polish, not done: retire a child when its target is gone.
+- **Mech player-safety (drone with Handgun, once):** not reproduced in 50 isolated trials (both arms, also at night with the world's spawns left in) or 20 chain runs. The failing line was not kept. Candidates removed: the slot race and the world's own spawns hitting the stand-in.
+- Ship scripts: the failure grep is `FAIL|fail=[1-9]|!!!` minus `] PASS ` lines and the known summon-staff pick failure with its two detail lines (env.sh `fail_lines`); `shipworld.sh` takes `SHIPWORLD_SERIAL=1` and `SHIPWORLD_HALVES="van cal"` to run one tML at a time.
+
+## 🚢 2.0.65 SHIPPED (11-15 ~05:40, sent to Eve) = mobslots (round 2) + fieldfix
+- shipboth 453 s: vanilla boot exc=0 (known summon-staff only); Calamity boot exc=0 failN=0 compat=1. World checks: 0 exceptions in both halves, both runs.
+- Flaky checks (passed in one of two runs): SummonWorld Hornet Staff "enemy hurt (0)" (run 1 only); FieldFix militia and regular-vs-boss damage checks read 0 under load (3 of 3 runs had one or more); MobWorld "Angel flies longer than Fledgling" measured airborne ticks 34 vs 122 once (Calamity run 2; behaviour-measured; the stat wing time is right).
+- **DONE on branch `checkfix` (see the cleanup entry above):** the FieldFix, MobWorld, FollowRows and OFFICERKIT checks are deterministic, the ship grep catches "CHECK FAIL", and the Kite NRE is explained.
+- Still running: `hmreplays` (Destroyer/Aquatic Scourge baseline battery, then the hardmode sweep). Waiting on Eve: dialogue draft review, utility-shoe call (lead chose: utility shoes stay accessories), last-stand idea, pylon sentence, female blood-moon line.
+
+## 🚢 2.0.64 SHIPPED (11-15 04:50, sent to Eve)
+- shipboth 570 s:
+  - Vanilla boot exc=0 (known summon-staff pick only). Calamity boot exc=0 failN=0 compat=1.
+  - Run 1 vanilla: player-safety, FollowRowsWorld (row scan 1.33 ms, a wall-clock bound under load ~19) and a one-off TileSweep NullReferenceException x24 on KiteBunnyCorrupt (silently caught; NEW, not in 2.0.63).
+  - Rerun: vanilla exc=0, all pass except the FollowRows timing. Calamity OfficerWorld aim audit 1/45 once (known load flake).
+- **OPEN:** the Kite NRE is intermittent and unreproduced. Investigate with the next builder. FollowRowsWorld's timing check is wall-clock, so make it deterministic like the recorder checks.
+- Eve's Plantera 21:03: she died with Plantera at 8,849/256,396 (3.5%). The army kept firing to 5,788, then Plantera despawned (vanilla, target dead). Raised with her as a design question: should the army be able to fight on after the commander falls, for already-downed bosses only?
+- Corrected with Eve: spore gas is NOT a line. Puffs fly out in random directions at up to ~7 tiles/s, don't collide with tiles, and last 15 s (13 s live), with a 2x2-tile hurtbox and 108 damage by Calamity's design. Her bigger-arena idea is the right lever.
+- **fieldfix MERGED (11-15 ~05:30):**
+  - Thorns: tiles 32/69/352/655 break on levy contact (vanilla TouchDamageDestroyTile; NORTH_STAR exception recorded).
+  - Recorder format 9: kind 3 = spite; multi-boss names ("The Twins"); each officer gets id -100000-slot (all officers used to share id -1); officers show Engage while targeting.
+  - Officer target picks respect IsNeverTarget (they used to target the Dungeon Guardian).
+  - Off-duty banner (draw-only, 0-alloc refresh). FieldFixCheck 37/0 on both toolchains.
+  - **CORRECTION to what I told Eve:** "followers never fight bosses" was my misreading. The 21:20 "ReturnHome militia" appear only after she died and respawned at home, 1,400 tiles away (militia hunt within 120 tiles of their barracks, by design). The 20:36 "never Engage" unit was 5 officers merged into id -1; officers keep to the commander and never write Engage. Officers DO deal damage (Arms Dealer 237–800+ in 12 s). Support officers (Nurse, Angler, Clothier…) avoid fights by design. Officers have no fear meter.
+- **mobslots round 1 done (a3dd1b5 + merge d7fbb04, NOT merged yet):** Wings and Boots lock slots 16 and 17 (lgear 13/14). Picker fills them first; preferred items win; no wings/boots in normal slots.
+  - Measured peak speed: bare 3.00 → Hermes 6.00, Terraspark 6.75, Angel Treads 7.50 px/tick. Angel Wings: ~46 tiles of height.
+  - Classifier counts: vanilla 58 wings / 25 boots; with Calamity 74 / 28; with Thorium 71 / 46.
+  - **Lead's call (sent back, round 2):** the Boots slot is only run-speed/rocket boots. Utility shoes (Master Ninja Gear, Tiger Climbing Gear, Frog Gear, Shoe Spikes, Flower Boots, water walkers) go back in normal slots, so dash and climb toys aren't taken away. Also asked: is the FieldFix militia check flaky?
+- **OPEN (pre-existing, not caught by the ship scripts):** "OFFICERKIT CHECK FAIL: short content should show whole at 300" (OfficerPanel.ListHeight). It appears in the 2.0.64 shipworld logs too; shipboth greps only fail=[1-9]/FAILURE/!!!. Fix the check or the panel, and widen the ship grep to "CHECK FAIL".
+- **`dialogue2` DRAFT DONE (branch dialogue2, 968dc58, NOT merged; awaiting Eve).** Review doc sent: scratchpad/dialogue_review.md.
+  - Soldier lines 479 → 552: 329 kept, 41 tightened, 31 rewritten, 78 cut, 153 new. Officer and mutiny lines untouched.
+  - Staged (commented out) lines need code: LIFE_CRYSTAL, CHEST_OPENED, ARMORY_GOT/WANT/BEST/WORST, per-drink triggers, world-tier tags, ranger/melee tags, a female tag.
+  - Lead's critique sent to Eve: right-click chat lines (IDLE, biomes, blood moon) got better in vanilla's clean style, but combat shouts lost the messy, talk-over-each-other energy from her 11-07 voice notes (e.g. "Weapons up! Mostly up. Up-ish." → "Here they come! Weapons up."). Proposal: vanilla-clean for chat, messy for shouts. One duplicated line (the heart crystal line appears twice).
+  - Asks for Eve: officer voices next? The gods-agree format regularly or only sometimes? What did "grumpy female levies on blood moon" mean?
+
+## (was) 2.0.64 building
 - **bosshitbox MERGED (40e1c9a):** levies take contact damage exactly where a player would. HostileContact runs the player's hit sequence (Calamity CanHitPlayer circles/states/cooldown slots) with per-slot immunity. Parity: 763,875 static positions plus 13.7–15.6M live positions, 0 mismatches after the fix (12,497 / 41,727 levy-only hits before).
   - Leviathan Expert+Rev: deaths 4.3 → 0.0 per fight, 15/15 wins.
   - Leviathan Master+Death: still 3/15 (dash and adds, not hitboxes).
@@ -625,6 +835,14 @@
 - **Single-player safety:** the frame runs in slot 255 with `Main.myPlayer` faked to 255 (`SoldierMinions.BeginFake` keeps `OwnerFor` answering with the real commander) and `Main.dedServ` forced on, so `whoAmI == Main.myPlayer` blocks hit the dummy and process-wide writes (sounds, Calamity TextureAssets.FlyingCarpet / buff icons / BossHealthBarManager, dust, shaders) are skipped. Unverified on a real SP client.
 - Lab: `OwnerLab` kind `ctl` with flags `upk=0..3`, `wpn=`, `phurt=`; Calamity via `tools/lab_build.sh -N`.
 
+## 🪽 MOBILITY SLOTS (branch `mobslots`, off worktree-levy-stardust; build.txt NOT bumped; unreleased) — Eve 11-15: "horizontal plus vertical mobility are essential"
+- **Why:** her recordings: 39 of 40 levies in wings, ZERO in boots, ~34 Angel Treads unused. Wings always won the scarce accessory slots (the older MobilityFirst rule gave every levy one mobility accessory first, and wings outrank everything).
+- **What:** every levy has a WINGS slot and a BOOTS slot (open from the start, no accessory slot used). Wings = accessory with wingSlot > 0; boots = accessory with shoeSlot > 0 (read from item properties, no name list). `SoldierGear.Wings/Boots`, lock slots 16/17 (SlotCount 18), `Common/Movement/MobilitySlots.cs`, `ArmoryTE.Mobility.cs`.
+- **Picker:** IssueGear and the per-levy gear check (10-15 s) fill both slots first with the best pair (accessory score + measured movement value; boots that raise run speed or give rocket flight beat shoes that only climb/dash/jump; Preferred first, a preferred pair is never swapped out). Wings and boots are NEVER dealt into an ordinary accessory slot; spare pairs wait on the shelf. A levy in wings no longer gets a jump accessory "first" (his slots go to everything else); a levy with no wings still does.
+- **Old saves:** wings/boots found in accessory slots move to the new slots on load (locks move too); a second pair stays and the gear check shelves it. Hand placement into an accessory slot is refused for wings/boots.
+- **Open question for Eve:** shoeSlot also covers Shoe Spikes, Tiger Climbing Gear, Tabi, Master Ninja Gear, Frog Leg/Flipper/Gear, Flower Boots, skates and water walkers, so those compete for the ONE boots slot (run-speed boots win it). A levy can no longer wear Master Ninja Gear beside Terraspark Boots.
+- **Recording:** lgear slots 13 wings, 14 boots (FightRecFormat.cs, recview.py, viewer.html, site LSLOT). Checks: `[MobSlots]` (boot), `[MobWorld]` (world, LEVY_MOBONLY=1 runs it alone).
+
 ## 🧭 WORKING AGREEMENT WITH EVE (2026-10-27 → 11-04) — read before diagnosing anything
 Eve called out a systemic failure: the lead jumps to ONE hypothesis, skips testing it, ships a fix on it, and pins new bugs on whatever was just discussed (Rotted Fork: Calamity→projectile→broadsword→"it's a spear"; the turret "line": Vilethorn beam → actually the weapon's sprite). Agreed practice:
 - List EVERY plausible cause before acting (not 2-3). Separate what is observed from what is guessed. Never ship a fix on an unconfirmed cause. Don't pin a new bug on the most recent topic. Widen, don't re-narrow, when corrected.
@@ -823,7 +1041,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 
 **DONE (1.7.8–1.8.0):**
 - Drones/turrets hold fire on unbeaten bosses.
-- Exact player speed; no special mobility slot.
+- Exact player speed; no special mobility slot. (REVERSED 11-15: Eve asked for dedicated Wings and Boots slots, branch `mobslots`.)
 - Minishark not picked post-Plantera.
 - Found/dropped weapons rank a bit above crafted ones.
 - Armory filter put-back bug.
@@ -1745,7 +1963,7 @@ Eve: "I'd prefer 2.0 finished first" (finish everything before playtesting).
 
 ## 🚀 LEVY 2.0 — Eve's big batch (2026-11-05 night). "Big batch, talk before you commit." Art refs saved in scratchpad/art-refs/ (potion tier list + potion recipe sheet).
 **Decided and running now:**
-- Speed: exact player parity (levy-speed merged). Eve did NOT give levies Swiftness. No special mobility slot (the hardmode slot already covers it).
+- Speed: exact player parity (levy-speed merged). Eve did NOT give levies Swiftness. No special mobility slot (the hardmode slot already covers it). (REVERSED 11-15, see MOBILITY SLOTS.)
 - `p0-fixes`:
   - BUG: an item filtered out of the armory can't be put back.
   - Drones/turrets hold fire on bosses not yet beaten (config, default off = hold fire).

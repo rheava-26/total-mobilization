@@ -482,14 +482,19 @@ namespace Levy.Common.Testing
 			}
 		}
 
+		private static readonly HashSet<int> _crStrayWarned = new();
 		private void CrPinStrays(int keep)
 		{
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
-				if (!n.active || n.ModNPC is SoldierNPC || n.townNPC || n.friendly) continue;
-				if (i == keep || (_cr != null && (_cr.AddTypes.Contains(n.type) || _cr.PartTypes.Contains(n.type) || n.type == _cr.BossType)) || (n.TryGetGlobalNPC(out HarnessTarget ht) && ht.IsTarget)) continue;
-				n.active = false;
+				try
+				{
+					if (!n.active || n.ModNPC is SoldierNPC || n.townNPC || n.friendly) continue;
+					if (i == keep || (_cr != null && (_cr.AddTypes.Contains(n.type) || _cr.PartTypes.Contains(n.type) || n.type == _cr.BossType)) || (n.TryGetGlobalNPC(out HarnessTarget ht) && ht.IsTarget)) continue;
+					n.active = false;
+				}
+				catch (IndexOutOfRangeException e) { if (_crStrayWarned.Add(n.type)) Mod.Logger.Warn($"HARNESS-CR: stray scan skipped NPC {i} type {n.type} ({n.FullName}): {e.Message}"); } // an NPC whose per-entity global slots are not set up yet (hmreplays: Plantera fight in a3e@jungle)
 			}
 		}
 
@@ -542,6 +547,9 @@ namespace Levy.Common.Testing
 				if (placed >= accSlots) break;
 				Item it = CrMake(an);
 				int sl = SoldierGear.SlotAcc0 + placed;
+				// wings and movement boots have their own slots (the mobility-slots rule); the rest of a kit is accessories
+				if (gear.CanHold(SoldierGear.SlotWings, it)) { gear.Set(SoldierGear.SlotWings, it); gear.SetLocked(SoldierGear.SlotWings, true); continue; }
+				if (gear.CanHold(SoldierGear.SlotBoots, it)) { gear.Set(SoldierGear.SlotBoots, it); gear.SetLocked(SoldierGear.SlotBoots, true); continue; }
 				if (!gear.CanHold(sl, it)) throw new Exception("levy cannot wear accessory " + an);
 				gear.Set(sl, it); gear.SetLocked(sl, true); placed++;
 			}
@@ -685,7 +693,7 @@ namespace Levy.Common.Testing
 			else if (!st.BossGone) { st.BossGone = true; st.EndTick = st.Tick; st.Result = BbIsBoss(run.Boss) ? (BbWon(run.Boss, st.BossLife, st.BossLifeMax) ? "WIN" : "DESPAWN") : e.life <= 0 ? "WIN" : "DESPAWN"; st.BossLife = BbIsBoss(run.Boss) ? 0 : Math.Max(0, e.life); }
 			int adds = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && st.AddTypes.Contains(Main.npc[i].type)) adds++;
 			st.AddsPeak = Math.Max(st.AddsPeak, adds); st.MaxAdds = st.AddsPeak;
-			CrSampleTick(st, e, bossAlive, adds); LeviProbe(st); HitParityLive(st);
+			CrSampleTick(st, e, bossAlive, adds); LeviProbe(st); BbTargetLog(st); HitParityLive(st);
 			if (run.Boss == "kslime" && st.Tick % 30 == 0)
 			{
 				// king slime probe: the crystal (Calamity's jewel) target class each half second: 0 levy, 1 player, 2 none. Totals go to the log at the end of the run through the counters below.

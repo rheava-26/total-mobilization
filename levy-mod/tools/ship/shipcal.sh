@@ -24,10 +24,10 @@ echo "== boot ($CAL_MODS) =="
 L="$SHIPCAL/tModLoader-Logs/server.log"
 [ -f "$L" ] || { echo "NO LOG"; exit 1; }
 EXC=$(grep -c -E -i 'xception' "$L")
-FAILN=$(grep -c -E 'fail=[1-9]|FAILURE|!!!' "$L")
+FAILN=$(fail_lines "$L" | wc -l)
 COMPAT=$(grep -c -F 'Calamity targeting compat: CalamityTargeting hook installed' "$L")
 echo "CALAMITY BOOT: exc=$EXC failN=$FAILN compat=$COMPAT"
 grep -E 'Adding Content: (Levy|Mechanization|Warbands)' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | sed 's/^/  /'
 grep -E 'Levy Calamity targeting compat' "$L" | sed -E 's/^\[[^]]*\] //' | head -2 | sed 's/^/  /'
-grep -E 'fail=[1-9]|FAILURE|!!!' "$L" | cut -c1-220 | head -10 | sed 's/^/  FAIL: /'
+fail_lines "$L" | cut -c1-220 | head -10 | sed 's/^/  FAIL: /'
 grep -E -i 'xception' "$L" | cut -c1-220 | head -6 | sed 's/^/  EXC: /'

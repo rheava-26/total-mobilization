@@ -24,6 +24,12 @@ namespace Levy.Common.Recording
 				Check(!FightRecorder.LooksKilled(8000, 10200, 100, 40, 110, false), "leaving healthy right after a hit is a despawn");
 				Check(!FightRecorder.LooksKilled(45, 10200, 100, 10, 400, false), "leaving at low life with no recent hit is a despawn");
 				Check(!FightRecorder.LooksKilled(45, 10200, -1, 0, 400, false), "leaving at low life that was never hit is a despawn");
+				// the closing window of a fight: a kill that other bosses vanish with is still the fight's end (Moon Lord's core with his hands and head, the Cultist with the pillars his death spawns)
+				Check(FightRecorder.FinalEndIndex(new[] { true, false, false, false }) == 0, "a killed core and three parts that vanish with it: the kill names the end");
+				Check(FightRecorder.FinalEndIndex(new[] { true, false, false, false, false }) == 0, "a killed boss and four pillars purged after it: the kill names the end");
+				Check(FightRecorder.FinalEndIndex(new[] { true, true, true }) == 2, "worm heads that all fell: the last of them names the end");
+				Check(FightRecorder.FinalEndIndex(new[] { false, true, false }) == 1, "the last killed one wins over a later despawn");
+				Check(FightRecorder.FinalEndIndex(new[] { false, false }) == 1 && FightRecorder.FinalEndIndex(new[] { false }) == 0, "nothing killed: the last one to go names the end, as before");
 				// format 7: the hitbox rows (full and short) of other hostile NPCs round-trip, and the format self-check passes
 				Check(FightRecFormat.Version >= 7, "format version is 7 or later");
 				string fmt = FightRecFormat.SelfCheck();

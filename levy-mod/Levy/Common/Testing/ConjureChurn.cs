@@ -90,15 +90,20 @@ namespace Levy.Common.Testing
 			for (int st = 0; st <= 10; st++) foreach (var f in ConjureRoster.BeastCandidates(st, false, out _).Take(3)) if (seen.Add(f.Type)) types.Add((f.Type, f.Name, f.AiStyle));
 			foreach (int t in new[] { NPCID.FireImp, NPCID.GoblinSorcerer, NPCID.DarkCaster, NPCID.GoblinArcher, NPCID.Harpy, NPCID.Gastropod, NPCID.Necromancer, 285, 286, 471 })
 				if (seen.Add(t)) { var pr = new NPC(); pr.SetDefaults(t); types.Add((t, Lang.GetNPCNameValue(t), pr.aiStyle)); }
+			string filter = Environment.GetEnvironmentVariable("LEVY_AUDIT_TYPES"); // lab: names or ids, comma separated
+			if (!string.IsNullOrEmpty(filter)) { var want = new HashSet<string>(filter.Split(',').Select(x => x.Trim().Replace('_', ' '))); types = types.Where(x => want.Contains(x.n) || want.Contains(x.t.ToString())).ToList(); }
+			int reps = int.TryParse(Environment.GetEnvironmentVariable("LEVY_AUDIT_REPEAT"), out int rp) && rp > 1 ? rp : 1;
+			if (reps > 1) types = Enumerable.Range(0, reps).SelectMany(_ => types).ToList();
 			var bad = new List<string>(); int run = 0;
 			foreach (var (t, n, ai) in types)
 			{
 				if (!avatar.NPC.active || avatar.NPC.life <= 0) { town.active = false; Step(2); town = Commission(NPCID.Merchant, 0, out avatar); if (avatar == null) break; }
 				var r = AuditType(avatar, t, n, ai, ai == NPCAIStyleID.Caster ? FightTicks * 3 : FightTicks, ai == NPCAIStyleID.Caster ? IdleTicks * 2 : IdleTicks);
+				if (r.ChildrenReachedPlayerIdle > 0) Note($"aim audit: {n}: a child still in the air after the enemy was gone flew to the creature's post beside the commander ({r.ChildrenReachedPlayerIdle} ticks within 40 px of her; friendly, not a failure)");
 				run++; if (!r.Pass) { bad.Add(n + " [" + r + "]"); _mod.Logger.Info("[OfficerWorld] OBSERVED audit failure: " + r); }
 			}
 			Note($"aim audit core set: {run} creature types, {run - bad.Count} pass");
-			Check($"aim audit: every creature in the core set hurts the enemy with its attacks, aims none at a player and throws nothing at no enemy ({bad.Count} of {run} fail)", bad.Count == 0 && run > 30);
+			Check($"aim audit: every creature in the core set hurts the enemy with its attacks, aims none at a player and throws nothing at no enemy ({bad.Count} of {run} fail)", bad.Count == 0 && (run > 30 || !string.IsNullOrEmpty(filter)));
 			Check("aim audit: every excluded type is out of the roster", ConjureRoster.AimExcluded.Keys.All(t => ConjureRoster.AllFacts().All(f => f.Type != t)));
 			Dismiss(town);
 			KillEnemy();

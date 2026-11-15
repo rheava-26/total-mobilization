@@ -15,6 +15,8 @@ import argparse, glob, gzip, json, os, re, sys, zlib
 from collections import Counter, defaultdict
 
 TICKS = 60.0
+# levy gear (lgear) slot names; 13 and 14 are the two mobility slots (a recording from before them has neither)
+LSLOT = ["weapon", "sidearm", "head", "body", "legs", "accessory", "accessory", "accessory", "accessory", "accessory", "accessory", "ammo", "hook", "wings", "boots"]
 
 
 # ------------------------------------------------------------------ reading
@@ -184,7 +186,7 @@ def analyse(rec):
     tk = Counter()
     for x in ev.get("tgt", []):
         tk[x.get("kind")] += 1
-    out["bossTargetSwitches"] = {"none": tk.get(0, 0), "commander": tk.get(1, 0), "levy": tk.get(2, 0)}
+    out["bossTargetSwitches"] = {"none": tk.get(0, 0), "commander": tk.get(1, 0), "levy": tk.get(2, 0), "spite": tk.get(3, 0)}
     if rec.end:
         t = rec.end.get("target", {})
         out["bossTargetFrames"] = t
@@ -197,6 +199,14 @@ def analyse(rec):
         out["profile"] = analyse_profile(pr, tl)
     gear = [x for x in ev.get("gear", [])]
     out["commanderGearChanges"] = max(0, len(gear) - 1)
+    # how many levies wear wings and boots in their mobility slots (the last lgear of each levy)
+    last = {}
+    for x in ev.get("lgear", []):
+        last[x.get("id")] = x
+    if last:
+        slots = {i: {g[0] for g in x.get("g", [])} for i, x in last.items()}
+        out["levyMobility"] = {"levies": len(last), "wings": sum(1 for s in slots.values() if 13 in s), "boots": sum(1 for s in slots.values() if 14 in s),
+                               "both": sum(1 for s in slots.values() if 13 in s and 14 in s)}
     return out
 
 
@@ -339,6 +349,9 @@ def print_summary(rec, a, step):
         wp = ", ".join("%s x%d" % (rec.item(t), n) for t, n in army.get("weapons", []))
         if wp:
             P("            main weapons: %s" % wp)
+    lm = a.get("levyMobility")
+    if lm:
+        P("Mobility   %d levies seen: %d with wings, %d with boots, %d with both (the wings and boots slots, lgear 13 and 14)" % (lm["levies"], lm["wings"], lm["boots"], lm["both"]))
     c = a["commander"]
     if c:
         P("Commander  life %s  mana %s  defense %s" % (c.get("life"), c.get("mana"), c.get("defense")))
@@ -410,11 +423,11 @@ def print_summary(rec, a, step):
         P("  first deaths: " + ", ".join("%s %s" % (fmt_t(x["t"]), x["name"]) for x in a["levyDeaths"][:6]))
     ts = a["bossTargetSwitches"]
     if ts and sum(ts.values()):
-        P("  the boss changed target %d times: to the commander %d, to a levy %d, to none %d" % (sum(ts.values()), ts["commander"], ts["levy"], ts["none"]))
+        P("  the boss changed target %d times: to the commander %d, to a levy %d, to none %d%s" % (sum(ts.values()), ts["commander"], ts["levy"], ts["none"], ", spite (redirected shots) %d" % ts["spite"] if ts.get("spite") else ""))
     bt = a.get("bossTargetFrames")
     if bt:
         tot = sum(bt.values()) or 1
-        P("  boss target by sample: commander %s, levy %s, none %s" % (pct(bt.get("player", 0), tot), pct(bt.get("levy", 0), tot), pct(bt.get("none", 0), tot)))
+        P("  boss target by sample: commander %s, levy %s, none %s%s" % (pct(bt.get("player", 0), tot), pct(bt.get("levy", 0), tot), pct(bt.get("none", 0), tot), ", spite (redirected shots) %s" % pct(bt["spite"], tot) if bt.get("spite") else ""))
 
     P("")
     P("NOTABLE")

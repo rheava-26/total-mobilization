@@ -11,6 +11,7 @@ using Levy.Common.Movement;
 using Levy.Common.Officers;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
+using Levy.Common.Targeting;
 using Levy.Common.Util;
 using Levy.Common.Weapons;
 using Levy.Content.TileEntities;
@@ -54,6 +55,9 @@ namespace Levy.Content.NPCs
 		private bool _offThinkNow;
 		private int _offPatrolLeg, _offPatrolPauseUntil;
 		private int _offHubTimer; private Vector2 _offHub;
+
+		/// <summary>True while an officer has an enemy in reach and is shooting at it. His movement states are Follow / Search and Destroy / Idle (the avatar never writes Engage); the fight recorder reads this to show him engaged, as it shows a levy.</summary>
+		public bool OfficerEngaged => OfficerMode && _offTarget >= 0 && !_offRetreating;
 
 		public OfficerDef OfficerDef => _offDef ??= (OfficerTownType > 0 && OfficerRegistry.TryGet(OfficerTownType, out var d) ? d : null);
 
@@ -378,7 +382,7 @@ namespace Levy.Content.NPCs
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC t = Main.npc[i];
-				if (!t.active || !LevyUtil.IsHostileTarget(t)) continue;
+				if (!t.active || SoldierTargeting.IsNeverTarget(t)) continue;
 				if (Vector2.DistanceSquared(t.Center, around) > r) continue;
 				if (leashAround.HasValue && Vector2.DistanceSquared(t.Center, leashAround.Value) > lr) continue;
 				float d = Vector2.DistanceSquared(NPC.Center, t.Center);
@@ -642,7 +646,7 @@ namespace Levy.Content.NPCs
 
 		private bool Officer_Shootable(NPC t, float reachTiles)
 		{
-			if (!LevyUtil.IsHostileTarget(t)) return false;
+			if (SoldierTargeting.IsNeverTarget(t)) return false;
 			if (Vector2.Distance(NPC.Center, t.Center) > reachTiles * LevyConstants.TilePx) return false;
 			return Collision.CanHitLine(NPC.position, NPC.width, NPC.height, t.position, t.width, t.height);
 		}

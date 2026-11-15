@@ -215,6 +215,7 @@ namespace Levy.Content.NPCs
 		{
 			var p = Dummy;
 			p.PlayerFrame(); // also resolves head/body/legs slots and visible accessories (sets p.wings from armor[].wingSlot)
+			ApplyMobilityVisuals(p); // the wings and boots slots are not dummy armor slots
 			if (p.wings > 0) p.WingFrame(p.controlJump && NPC.velocity.Y < 0f);
 			else { p.wingFrame = 0; p.wingFrameCounter = 0; }
 		}

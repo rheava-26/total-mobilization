@@ -860,6 +860,9 @@ Mods: {
 			ExtraSidearms: Summon weapons
 			ExtraSidearm: Summon weapon
 			Camera: Camera
+			Mobility: Mobility
+			Wings: Wings
+			Boots: Boots
 			Ammo: Ammo
 			Head: Head
 			Body: Body

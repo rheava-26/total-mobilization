@@ -38,10 +38,41 @@ namespace Levy.Common.Boss
 			return key;
 		}
 
-		public static bool IsBossDowned(NPC npc) => npc != null && _downed.Count > 0 && _downed.Contains(BossDownedKey(npc));
+		/// <summary>
+		/// The other half of a two-boss fight, or -1: the Twins, and Calamity's Anahita and the Leviathan she summons (through a projectile, so no parent NPC ever names her as its owner). A fight like this
+		/// is one first kill: it counts as beaten for both halves at once, so the half that joined late (or was never named by the harness) never sees a Spectator the way an unbeaten boss does.
+		/// </summary>
+		internal static int FamilyPartner(int type)
+		{
+			if (type == NPCID.Retinazer) return NPCID.Spazmatism;
+			if (type == NPCID.Spazmatism) return NPCID.Retinazer;
+			if (type < NPCID.Count) return -1;
+			if (_anahita == -2) { _anahita = ModContent.TryFind<ModNPC>("CalamityMod/Anahita", out var a) ? a.Type : -1; _leviathan = ModContent.TryFind<ModNPC>("CalamityMod/Leviathan", out var l) ? l.Type : -1; }
+			if (type == _anahita) return _leviathan;
+			if (type == _leviathan) return _anahita;
+			return -1;
+		}
+		private static int _anahita = -2, _leviathan = -1;
+
+		private static bool TypeKeyDowned(int type)
+		{
+			if (_downed.Contains(KeyOfType(type))) return true;
+			int other = FamilyPartner(type);
+			return other >= 0 && _downed.Contains(KeyOfType(other));
+		}
+
+		public static bool IsBossDowned(NPC npc)
+		{
+			if (npc == null || _downed.Count == 0) return false;
+			if (_downed.Contains(BossDownedKey(npc))) return true;
+			NPC root = LevyUtil.RootNpc(npc);
+			int type = BossRule.TryGetRoot(root, out _, out int rootType) ? rootType : root.type;
+			int other = FamilyPartner(type);
+			return other >= 0 && _downed.Contains(KeyOfType(other));
+		}
 
 		/// <summary>Has a boss of this type been beaten in this world? Type-keyed lookup for progression gates (e.g. the officer command-slot cap); pass a boss's root NPCID (Plantera, Golem, a mech boss, MoonLordCore...). Valid on clients — the downed set syncs through WorldData.</summary>
-		public static bool IsTypeDowned(int type) => _downed.Count > 0 && _downed.Contains(KeyOfType(type));
+		public static bool IsTypeDowned(int type) => _downed.Count > 0 && TypeKeyDowned(type);
 
 		/// <summary>Server / single player, from the boss's death. Parts and segments never count; only the boss itself (the last Eater of Worlds segment, both Twins).</summary>
 		internal static void RecordKill(NPC dying)
@@ -68,6 +99,13 @@ namespace Levy.Common.Boss
 			{
 				if (!dying.boss && !NPCID.Sets.ShouldBeCountedAsBoss[type]) return;
 				if (!ReferenceEquals(LevyUtil.RootNpc(dying), dying)) return; // a segment of a larger boss; its head records the kill
+				int partner = FamilyPartner(type);
+				if (partner >= 0)
+				{
+					// Anahita and the Leviathan are one fight like the Twins: neither counts until both are down (Calamity's own LastAnLStanding).
+					if (NPC.AnyNPCs(partner)) return;
+					changed |= _downed.Add(KeyOfType(partner));
+				}
 				changed |= _downed.Add(BossDownedKey(dying));
 				LevyProgressionSystem.OnBossRecorded(BossDownedKey(dying), LevyUtil.RootNpc(dying).type);
 			}
@@ -104,14 +142,19 @@ namespace Levy.Common.Boss
 			if (changed && LevyUtil.IsServer) NetMessage.SendData(MessageID.WorldData);
 		}
 
-		public override void Unload() { _downed.Clear(); _keyCache.Clear(); }
+		public override void Unload() { _downed.Clear(); _keyCache.Clear(); _anahita = -2; _leviathan = -1; }
 
 		public override void ClearWorld() => _downed.Clear();
 
 		/// <summary>Probe seam (the boss trials): forgets every recorded kill.</summary>
 		internal static void ClearForTest() => _downed.Clear();
 		/// <summary>Probe seam (potion self-checks): marks or unmarks one boss type as beaten.</summary>
-		internal static void SetDownedForTest(int type, bool downed) { if (downed) _downed.Add(KeyOfType(type)); else _downed.Remove(KeyOfType(type)); }
+		/// <summary>Probe seam: marks exactly this one boss type's key as beaten (not its fight partner), the state a half-recorded fight leaves.</summary>
+		internal static void SetOnlyKeyDownedForTest(int type, bool downed) { if (downed) _downed.Add(KeyOfType(type)); else _downed.Remove(KeyOfType(type)); }
+		internal static void SetDownedForTest(int type, bool downed)
+		{
+			foreach (int t in new[] { type, FamilyPartner(type) }) { if (t < 0) continue; if (downed) _downed.Add(KeyOfType(t)); else _downed.Remove(KeyOfType(t)); }
+		}
 
 		// Runs after ClearWorld and after vanilla NPC.downedX flags are populated, so already-beaten bosses are allowlisted immediately.
 		public override void OnWorldLoad() => BackfillFromVanillaFlags();

@@ -148,6 +148,8 @@ namespace Levy.Common.Testing
 		public sealed class Result { public Kind Kind; public int Changed; public SortedSet<int> Made = new(); public HashSet<int> Types = new(); public string Error; public int Ticks; }
 
 		private static MethodInfo _shoot;
+		/// <summary>Sets Main's windy-day flag (what IsItAHappyWindyDay reads) and returns what it was.</summary>
+		internal static bool SetWindyDay(bool on) { bool was = Main.IsItAHappyWindyDay; Main._shouldUseWindyDayMusic = on; return was; }
 
 		/// <summary>Runs one test body inside the sandbox: <paramref name="fire"/> spawns the shot (the field is pristine), then every projectile is stepped to its end.</summary>
 		public static Result Run(Action<Player> fire, int maxTicks = 420)
@@ -156,6 +158,9 @@ namespace Levy.Common.Testing
 			if (!Main.dedServ || (Environment.GetEnvironmentVariable("LEVY_TILESWEEP") != "1" && Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") != "1")) { res.Error = "the sandbox only runs on a test server"; return res; } // it overwrites patches of the loaded world
 			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
 			Saved s = Swap(); AlterWatch.Sandbox = true;
+			// Weather is part of the shot: on a "happy windy day" (Main.IsItAHappyWindyDay) a kite shot calls AchievementsHelper.HandleSpecialEvent, which reads Main.Achievements, and a dedicated server has none (NullReferenceException,
+			// logged by tML as a "Silently Caught Exception"). The flag follows the wind, which drifts with the world clock, so whether the sweep met a windy day came down to when it ran. The sandbox shoots on a calm day.
+			bool windy = Environment.GetEnvironmentVariable("LEVY_TILESWEEP_NOSHIELD") == "1" ? Main.IsItAHappyWindyDay : SetWindyDay(false); // lab: NOSHIELD leaves the weather as it is (to show what it does)
 			try
 			{
 				if (TemplateSum() != _goldSum) { _ox = TemplateX; try { Layout(); } finally { _ox = FieldX; } Repairs++; }
@@ -187,7 +192,7 @@ namespace Levy.Common.Testing
 				for (int k = 0; k < 4; k++) for (int i = 0; i < _projs.Length; i++) { Projectile pr = _projs[i]; if (!pr.active) continue; res.Made.Add(pr.type); try { pr.Update(i); } catch (Exception) { pr.active = false; } } // children made by that last kill
 				res.Kind = Diff(out res.Changed, res.Types);
 			}
-			finally { AlterWatch.Sandbox = false; for (int i = 0; i < _projs.Length; i++) _projs[i].active = false; Restore(s); Runs++; Ms += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency; }
+			finally { SetWindyDay(windy); AlterWatch.Sandbox = false; for (int i = 0; i < _projs.Length; i++) _projs[i].active = false; Restore(s); Runs++; Ms += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency; }
 			return res;
 		}
 

@@ -53,7 +53,14 @@ namespace Levy.Common.Officers
 							if (h > screenH - 2 * global::Levy.Common.UI.OfficerPanel.EdgeMargin + 0.01f) fail.Add($"officer panel {h} tall does not fit a {screenH} px screen ({sh}p x{ui})");
 							if (list > contentH + 0.01f || list <= 0f) fail.Add($"officer list height {list} for content {contentH} on {screenH}"); // list never exceeds content
 						}
-						if (global::Levy.Common.UI.OfficerPanel.ListHeight(200f, screenH) != 200f) fail.Add("short content should show whole at " + screenH);
+						// content that fits under the header and above the bottom edge shows whole; content too tall for this screen fills what the screen leaves (never more). 100 px fits every screen this loop reaches (floor 240).
+						float room = global::Levy.Common.UI.OfficerPanel.ListHeight(1_000_000f, screenH); // what the screen leaves under the header for a list too tall to fit
+						if (global::Levy.Common.UI.OfficerPanel.ListHeight(100f, screenH) != 100f) fail.Add("short content should show whole at " + screenH);
+						foreach (float c in new[] { 200f, 1400f })
+						{
+							float want = Math.Min(c, room), got = global::Levy.Common.UI.OfficerPanel.ListHeight(c, screenH);
+							if (Math.Abs(got - want) > 0.01f) fail.Add($"officer list for content {c} on {screenH} should be {want} (whole when it fits, else the room the screen leaves), was {got}");
+						}
 					}
 				// the pylon is vanilla's: no Levy GlobalTile claims a right-click on any tile
 				foreach (var gt in ModContent.GetContent<GlobalTile>())

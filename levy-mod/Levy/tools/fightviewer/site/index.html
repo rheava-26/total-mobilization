@@ -9,7 +9,7 @@
   --bd-bg:#0a1418;--l-ink:#ff9a9a;--l-line:#5a2a2a;--p-ink:#8eeaff;--p-line:#1f5560;--h-ink:#ffd37a;--h-line:#5a4513;--d-ink:#ff6b6b;--d-line:#6a2626;
   --win:#3cff9a;--loss:#ff6b6b;--timeout:#ffb020;--fled:#c77dff;
   --stage:#03070a;--strip-a:#04090b;--strip-b:#060d10;--strip-label:#4d6663;--bar-bg:#1a2a2e;--tip-bg:#06100f;--row-line:#15252a;--warn:#ffd37a;
-  --t-levy:#ff7b7b;--t-cmd:#6fe9ff;--t-none:#9bb0ad;--tb-none:#2a3a3e;--tb-cmd:#2aa7c4;--tb-levy:#e0483f;--tbar-none:#33474b;
+  --t-levy:#ff7b7b;--t-cmd:#6fe9ff;--t-none:#9bb0ad;--tb-none:#2a3a3e;--tb-cmd:#2aa7c4;--tb-levy:#e0483f;--t-spite:#ffb34d;--tb-spite:#e09a2a;--tbar-none:#33474b;
   --src-body:#ff4d4d;--src-minion:#ffb020;--src-proj:#c77dff;--src-other:#8a97a8;
   --boss-label:#ffb4b4;--cmd-label:#a8f0ff;--flash:#ffffff;--death:#ff3030;--dash:#41e0e0;--hook:#f2d94a;--xjump:#b6ff5a;--scale:#7e9a96;--fire:#ff9f2e;
   --terr-top:#34966e;--terr-fill:#0d241f;--terr-fill2:#3c826e;--water:#103c5f;
@@ -23,7 +23,7 @@
   --bd-bg:#f0f5f4;--l-ink:#b02a2a;--l-line:#e2b0b0;--p-ink:#0a6f8a;--p-line:#a6d0dc;--h-ink:#8a5a00;--h-line:#e0c88a;--d-ink:#c01f1f;--d-line:#e4a8a8;
   --win:#0a8f50;--loss:#c01f1f;--timeout:#a86400;--fled:#7b3fc4;
   --stage:#f5faf8;--strip-a:#f1f6f5;--strip-b:#e8efed;--strip-label:#6a817d;--bar-bg:#d3e0dd;--tip-bg:#ffffff;--row-line:#dde8e5;--warn:#8a5a00;
-  --t-levy:#c03030;--t-cmd:#0a7f9c;--t-none:#55706c;--tb-none:#c3d0cd;--tb-cmd:#1f9ab8;--tb-levy:#d0443a;--tbar-none:#b8c8c5;
+  --t-levy:#c03030;--t-cmd:#0a7f9c;--t-none:#55706c;--tb-none:#c3d0cd;--tb-cmd:#1f9ab8;--tb-levy:#d0443a;--t-spite:#9a5f00;--tb-spite:#c98a1a;--tbar-none:#b8c8c5;
   --src-body:#d02a2a;--src-minion:#b86e00;--src-proj:#7b3fc4;--src-other:#6a7686;
   --boss-label:#a02020;--cmd-label:#0a6f8a;--flash:#14282a;--death:#d01818;--dash:#0a9a9a;--hook:#a68a00;--xjump:#5a9a10;--scale:#4f6a66;--fire:#c25f00;
   --terr-top:#2a8a62;--terr-fill:#c2d6cf;--terr-fill2:#4fa088;--water:#7ab4d6;
@@ -37,7 +37,7 @@
   --bd-bg:#f0f5f4;--l-ink:#b02a2a;--l-line:#e2b0b0;--p-ink:#0a6f8a;--p-line:#a6d0dc;--h-ink:#8a5a00;--h-line:#e0c88a;--d-ink:#c01f1f;--d-line:#e4a8a8;
   --win:#0a8f50;--loss:#c01f1f;--timeout:#a86400;--fled:#7b3fc4;
   --stage:#f5faf8;--strip-a:#f1f6f5;--strip-b:#e8efed;--strip-label:#6a817d;--bar-bg:#d3e0dd;--tip-bg:#ffffff;--row-line:#dde8e5;--warn:#8a5a00;
-  --t-levy:#c03030;--t-cmd:#0a7f9c;--t-none:#55706c;--tb-none:#c3d0cd;--tb-cmd:#1f9ab8;--tb-levy:#d0443a;--tbar-none:#b8c8c5;
+  --t-levy:#c03030;--t-cmd:#0a7f9c;--t-none:#55706c;--tb-none:#c3d0cd;--tb-cmd:#1f9ab8;--tb-levy:#d0443a;--t-spite:#9a5f00;--tb-spite:#c98a1a;--tbar-none:#b8c8c5;
   --src-body:#d02a2a;--src-minion:#b86e00;--src-proj:#7b3fc4;--src-other:#6a7686;
   --boss-label:#a02020;--cmd-label:#0a6f8a;--flash:#14282a;--death:#d01818;--dash:#0a9a9a;--hook:#a68a00;--xjump:#5a9a10;--scale:#4f6a66;--fire:#c25f00;
   --terr-top:#2a8a62;--terr-fill:#c2d6cf;--terr-fill2:#4fa088;--water:#7ab4d6;
@@ -89,7 +89,7 @@ canvas#view{position:absolute;inset:0;width:100%;height:100%;display:block;touch
 #hud{position:absolute;left:10px;top:8px;right:10px;pointer-events:none;font-size:12.5px;display:flex;gap:8px;justify-content:space-between;align-items:flex-start}
 #hud .l{display:flex;flex-direction:column;gap:3px}
 #hud .tgt{font-weight:650;color:var(--t-none)}
-#hud .tgt.levy{color:var(--t-levy)}#hud .tgt.cmd{color:var(--t-cmd)}
+#hud .tgt.levy{color:var(--t-levy)}#hud .tgt.spite{color:var(--t-spite)}#hud .tgt.cmd{color:var(--t-cmd)}
 #hud .bar{width:150px;height:6px;background:var(--bar-bg);border-radius:3px;overflow:hidden}
 #hud .bar i{display:block;height:100%;background:var(--red)}
 #hud .r{text-align:right}
@@ -217,7 +217,7 @@ const cam={x:0,y:0,z:0.2};
 let blips=[], manifest=null, fights=[], curFight=null, curId=null, loadSeq=0;
 
 // ================================================================ colour tokens (canvas reads the CSS custom properties)
-const TOKS=["stage","grn","cyan","red","amb","vio","proj","ink","dim","tNone","tbNone","tbCmd","tbLevy","srcBody","srcMinion","srcProj","srcOther","bossLabel","cmdLabel","flash","death","dash","hook","xjump","scale","fire","terrTop","terrFill","terrFill2","water","hpLo","hpMid","hpHi","win","timeout","loss","stripA","stripB","stripLabel","dLabelInk"];
+const TOKS=["stage","grn","cyan","red","amb","vio","proj","ink","dim","tNone","tbNone","tbCmd","tbLevy","tbSpite","srcBody","srcMinion","srcProj","srcOther","bossLabel","cmdLabel","flash","death","dash","hook","xjump","scale","fire","terrTop","terrFill","terrFill2","water","hpLo","hpMid","hpHi","win","timeout","loss","stripA","stripB","stripLabel","dLabelInk"];
 const T={}; const cssName=k=>"--"+k.replace(/[A-Z]/g,m=>"-"+m.toLowerCase());
 function loadTokens(){
   const cs=getComputedStyle(document.documentElement);
@@ -307,8 +307,8 @@ function build(R){
   R.lhit=R.events.filter(e=>e.e==="lhit"); R.ldeath=R.events.filter(e=>e.e==="ldeath");
   R.cmdHit=R.events.filter(e=>e.e==="hit");
   R.order=[...R.trL.keys()]; R.lbl=new Map(R.order.map((id,i)=>[id,"L"+(i+1)]));
-  const tl={none:0,player:0,levy:0}; R.band=[]; let pk=-1,ps=0;
-  for(const f of R.frames){const b=mainBoss(f); if(!b) continue; const k=tkOf(b); tl[k===2?"levy":k===1?"player":"none"]++;
+  const tl={none:0,player:0,levy:0,spite:0}; R.band=[]; let pk=-1,ps=0;
+  for(const f of R.frames){const b=mainBoss(f); if(!b) continue; const k=tkOf(b); tl[k===3?"spite":k===2?"levy":k===1?"player":"none"]++;
     if(k!==pk){if(pk>=0)R.band.push([ps,f.t,pk]);pk=k;ps=f.t;}}
   if(pk>=0)R.band.push([ps,R.tmax+R.dt,pk]); R.tally=tl;
   R.trA=new Map(); R.hasAdds=false; R.hasSeg=false;
@@ -328,10 +328,10 @@ function build(R){
   return R;
 }
 function summary(R){
-  const t=R.tally,n=Math.max(1,t.none+t.player+t.levy);
+  const t=R.tally,n=Math.max(1,t.none+t.player+t.levy+t.spite);
   const dmg=R.lhit.reduce((a,e)=>a+e.dmg,0);
   const h=R.hdr||{},m=h.meta||{};
-  return {boss:m.bossName||(h.boss||"?").replace(/_/g," "),dur:(R.tmax-R.tmin)/TPS,pl:100*t.levy/n,pp:100*t.player/n,pn:100*t.none/n,hits:R.lhit.length,dmg,deaths:R.ldeath.length,meta:m,v:R.v,hasT:R.hasTarget};
+  return {boss:m.bossName||(h.boss||"?").replace(/_/g," "),dur:(R.tmax-R.tmin)/TPS,pl:100*t.levy/n,pp:100*t.player/n,pn:100*t.none/n,ps:100*t.spite/n,hits:R.lhit.length,dmg,deaths:R.ldeath.length,meta:m,v:R.v,hasT:R.hasTarget};
 }
 
 // ================================================================ call it (betting game)
@@ -439,7 +439,7 @@ function renderList(){
       const b=document.createElement("button"); b.className="card"+(f.id===curId?" sel":""); b.dataset.id=f.id;
       b.innerHTML=`<div class="ct"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span></div>`+
         `<div class="sub">${esc(f.mode)} &middot; ${f.levies} levies &middot; ${esc(f.arena)} &middot; ${f.dur.toFixed(0)} s</div>`+
-        `<div class="badges">${f.hasT?`<span class="bd l" title="share of the fight the boss was aimed at a levy">boss on levies ${f.pl.toFixed(0)}%</span>`:`<span class="bd">no target data</span>`}<span class="bd h">${f.hits} hits</span><span class="bd d">${f.deaths} deaths</span></div>`+
+        `<div class="badges">${f.hasT?`<span class="bd l" title="share of the fight the boss was aimed at a levy">boss on levies ${f.pl.toFixed(0)}%</span>${f.ps>=1?`<span class="bd h" title="the boss rule redirected its shots and dashes at a levy">spite (redirected shots) ${f.ps.toFixed(0)}%</span>`:""}`:`<span class="bd">no target data</span>`}<span class="bd h">${f.hits} hits</span><span class="bd d">${f.deaths} deaths</span></div>`+
         (f.note?`<div class="note">${esc(f.note)}</div>`:"");
       b.onclick=()=>openFight(f.id); cards.appendChild(b);
     }
@@ -501,13 +501,13 @@ const lerp=(a,b,u)=>a+(b-a)*u;
 // ================================================================ boss part readout
 function bossInfo(b){
   const k=tkOf(b);
-  return `${nm("npcs",b[0])}${b[13]?" (part)":" (boss)"}  slot ${b[1]}\nlife ${b[6]}/${b[7]}  (${(100*b[6]/Math.max(1,b[7])).toFixed(0)}%)\nai[0..3] ${b[8].toFixed(1)}, ${b[9].toFixed(1)}, ${b[10].toFixed(1)}, ${b[11].toFixed(1)}\ntarget ${D.hasTarget?(k===2?"levy "+(D.lbl.get(b[15])||b[15]):k===1?"commander":"none"):"slot "+b[12]}${b[16]?"\nhitbox "+b[16]+" x "+b[17]+" px":""}\nspeed ${(Math.hypot(b[4],b[5])*60/16).toFixed(1)} tiles/s`;
+  return `${nm("npcs",b[0])}${b[13]?" (part)":" (boss)"}  slot ${b[1]}\nlife ${b[6]}/${b[7]}  (${(100*b[6]/Math.max(1,b[7])).toFixed(0)}%)\nai[0..3] ${b[8].toFixed(1)}, ${b[9].toFixed(1)}, ${b[10].toFixed(1)}, ${b[11].toFixed(1)}\ntarget ${D.hasTarget?(k===3?"spite (redirected shots) at levy "+(D.lbl.get(b[15])||b[15]):k===2?"levy "+(D.lbl.get(b[15])||b[15]):k===1?"commander":"none"):"slot "+b[12]}${b[16]?"\nhitbox "+b[16]+" x "+b[17]+" px":""}\nspeed ${(Math.hypot(b[4],b[5])*60/16).toFixed(1)} tiles/s`;
 }
 let partsAt=-1;
 function renderParts(f){
   const el=$("parts"); if(!el) return; if(performance.now()-partsAt<120) return; partsAt=performance.now();
   const rows=(f.b||[]).slice().sort((a,b)=>a[13]-b[13]||a[1]-b[1]);
-  el.innerHTML=`<tr><th>part</th><th>life</th><th>ai0</th><th>ai1</th><th>ai2</th><th>ai3</th><th>aim</th></tr>`+rows.slice(0,40).map(b=>{const k=tkOf(b);return `<tr><td>${b[13]?"":"<b>"}${esc(nm("npcs",b[0]))}${b[13]?"":"</b>"} <span class="small">#${b[1]}</span></td><td>${b[6]}</td><td>${b[8].toFixed(1)}</td><td>${b[9].toFixed(1)}</td><td>${b[10].toFixed(1)}</td><td>${b[11].toFixed(1)}</td><td>${D.hasTarget?(k===2?"L"+((D.lbl.get(b[15])||"?").slice(1)):k===1?"cmd":"-"):"-"}</td></tr>`;}).join("")+(rows.length>40?`<tr><td colspan="7" class="small">+${rows.length-40} more</td></tr>`:"");
+  el.innerHTML=`<tr><th>part</th><th>life</th><th>ai0</th><th>ai1</th><th>ai2</th><th>ai3</th><th>aim</th></tr>`+rows.slice(0,40).map(b=>{const k=tkOf(b);return `<tr><td>${b[13]?"":"<b>"}${esc(nm("npcs",b[0]))}${b[13]?"":"</b>"} <span class="small">#${b[1]}</span></td><td>${b[6]}</td><td>${b[8].toFixed(1)}</td><td>${b[9].toFixed(1)}</td><td>${b[10].toFixed(1)}</td><td>${b[11].toFixed(1)}</td><td>${D.hasTarget?(k===3?"spite":k===2?"L"+((D.lbl.get(b[15])||"?").slice(1)):k===1?"cmd":"-"):"-"}</td></tr>`;}).join("")+(rows.length>40?`<tr><td colspan="7" class="small">+${rows.length-40} more</td></tr>`:"");
 }
 function hbox(g,sc,dpr,x,y,w,h,fill,stroke,lw,minPx){
   const [sx,sy]=sc(x,y); const m=(minPx||4)*dpr;
@@ -568,6 +568,7 @@ function draw(){
     let tx=null,ty=null,col=T.tNone;
     if(!D.hasTarget) tgtText="unknown (format 1)";
     else if(k===2){const l0=(f0.l||[]).find(l=>l[0]===mb0[15]);if(l0){const l1=byIdL.get(l0[0])||l0;tx=lerp(l0[1],l1[1],u);ty=lerp(l0[2],l1[2],u);}col=T.red;tgtText="levy "+lname(mb0[15]);tgtCls="levy";}
+    else if(k===3){const l0=(f0.l||[]).find(l=>l[0]===mb0[15]);if(l0){const l1=byIdL.get(l0[0])||l0;tx=lerp(l0[1],l1[1],u);ty=lerp(l0[2],l1[2],u);}col=T.amb;tgtText="spite (redirected shots) at "+lname(mb0[15]);tgtCls="spite";}
     else if(k===1){tx=P[0];ty=P[1];col=T.cyan;tgtText="commander";tgtCls="cmd";}
     if(tx!=null){const a=sc(bx,by),b=sc(tx,ty);g.strokeStyle=col;g.lineWidth=1.6*dpr;g.setLineDash([7*dpr,5*dpr]);g.lineDashOffset=-cur*0.6*dpr;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();g.setLineDash([]);g.lineDashOffset=0;
       g.strokeStyle=col;g.beginPath();g.arc(b[0],b[1],11*dpr,0,6.2832);g.stroke();}
@@ -578,7 +579,7 @@ function draw(){
       const a1=byIdA.get(a0[1])||a0, x=lerp(a0[2],a1[2],u), y=lerp(a0[3],a1[3],u), [sx,sy]=sc(x,y), k=a0[8];
       if(showHit&&a0[10]>0){const pw=Math.max(a0[10]*cam.z*dpr,4*dpr),ph=Math.max(a0[11]*cam.z*dpr,4*dpr);g.fillStyle=al(T.amb,.14);g.fillRect(sx-pw/2,sy-ph/2,pw,ph);g.strokeStyle=T.amb;g.lineWidth=1*dpr;g.strokeRect(sx-pw/2,sy-ph/2,pw,ph);}
       const r=3.6*dpr; g.fillStyle=T.amb; g.strokeStyle=T.stage; g.lineWidth=0.8*dpr; g.beginPath();g.moveTo(sx,sy-r);g.lineTo(sx+r,sy);g.lineTo(sx,sy+r);g.lineTo(sx-r,sy);g.closePath();g.fill();g.stroke();
-      blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(8,Math.max(a0[10],a0[11])*cam.z/2+3),info:`add ${nm("npcs",a0[0])}  slot ${a0[1]}\nlife ${a0[6]}/${a0[7]}  (${(100*a0[6]/Math.max(1,a0[7])).toFixed(0)}%)\ntarget ${D.hasTarget?(k===2?"levy "+(D.lbl.get(a0[9])||a0[9]):k===1?"commander":"none"):"?"}${a0[10]?"\nhitbox "+a0[10]+" x "+a0[11]+" px":""}\nspeed ${(Math.hypot(a0[4],a0[5])*60/16).toFixed(1)} tiles/s`});
+      blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(8,Math.max(a0[10],a0[11])*cam.z/2+3),info:`add ${nm("npcs",a0[0])}  slot ${a0[1]}\nlife ${a0[6]}/${a0[7]}  (${(100*a0[6]/Math.max(1,a0[7])).toFixed(0)}%)\ntarget ${D.hasTarget?(k===3?"spite (redirected shots) at levy "+(D.lbl.get(a0[9])||a0[9]):k===2?"levy "+(D.lbl.get(a0[9])||a0[9]):k===1?"commander":"none"):"?"}${a0[10]?"\nhitbox "+a0[10]+" x "+a0[11]+" px":""}\nspeed ${(Math.hypot(a0[4],a0[5])*60/16).toFixed(1)} tiles/s`});
     }
   }
   if(D.hasSeg&&f0.s&&f0.s.length){
@@ -666,7 +667,7 @@ function drawStrip(){
   const rows=stripRows(), tot=rows.reduce((a,r)=>a+r[1],0), k=H/tot, span=Math.max(1,D.tmax-D.tmin), X=t=>(t-D.tmin)/span*(W-2)+1;
   let y=0; const Y={};
   rows.forEach((r,i)=>{Y[r[0]]=[y,r[1]*k];g.fillStyle=i%2?T.stripB:T.stripA;g.fillRect(0,y,W,r[1]*k);g.fillStyle=T.stripLabel;g.font=`${9*dpr}px system-ui`;g.fillText(r[0],3*dpr,y+9*dpr);y+=r[1]*k;});
-  {const [y0,h]=Y.target; const col=[T.tbNone,T.tbCmd,T.tbLevy]; if(D.hasTarget) for(const s of D.band){g.fillStyle=col[s[2]];g.fillRect(X(s[0]),y0+h*0.3,Math.max(1,X(s[1])-X(s[0])),h*0.65);} else {g.fillStyle=T.tbNone;g.fillRect(0,y0+h*.3,W,h*.65);}}
+  {const [y0,h]=Y.target; const col=[T.tbNone,T.tbCmd,T.tbLevy,T.tbSpite]; if(D.hasTarget) for(const s of D.band){g.fillStyle=col[s[2]];g.fillRect(X(s[0]),y0+h*0.3,Math.max(1,X(s[1])-X(s[0])),h*0.65);} else {g.fillStyle=T.tbNone;g.fillRect(0,y0+h*.3,W,h*.65);}}
   {const [y0,h]=Y.hits; for(const e of D.lhit){const fr=Math.min(1,0.25+e.dmg/Math.max(60,e.dmg*1.0+e.life)*1.5);g.fillStyle=T.src[e.src]||T.flash;const x=X(e.t);g.fillRect(x-1*dpr,y0+h-fr*h*0.92,2*dpr,fr*h*0.92);}}
   {const [y0,h]=Y.deaths; g.strokeStyle=T.death;g.lineWidth=2*dpr;for(const e of D.ldeath){const x=X(e.t),s=Math.min(6*dpr,h*0.4),cy=y0+h/2;g.beginPath();g.moveTo(x-s,cy-s);g.lineTo(x+s,cy+s);g.moveTo(x+s,cy-s);g.lineTo(x-s,cy+s);g.stroke();}}
   {const [y0,h]=Y["cmd hit"]; g.fillStyle=T.cyan;for(const e of D.cmdHit)g.fillRect(X(e.t)-1,y0+2,2*dpr,h-3);}
@@ -717,7 +718,7 @@ function cmdGearHtml(){
 function renderInfo(){
   const s=summary(D),m=(D.hdr&&D.hdr.meta)||{},h=D.hdr||{},e=D.end||{};
   const mb=D.frames.map(mainBoss).filter(Boolean); const hp0=mb.length?mb[0][6]/Math.max(1,mb[0][7]):0, hp1=mb.length?mb[mb.length-1][6]/Math.max(1,mb[mb.length-1][7]):0;
-  const t=D.tally,n=Math.max(1,t.none+t.player+t.levy);
+  const t=D.tally,n=Math.max(1,t.none+t.player+t.levy+(t.spite||0));
   const F=D.fight;
   const BE=D.bendFinal, outRow=BE?`<span>boss outcome</span><span class="${BE.e==="bdeath"?"":"warn"}">${esc(bendText(BE)).replace(/\n/g,"<br>")}</span>`:`<span>boss outcome</span><span class="small">not recorded (format ${D.v} file; format 4 adds it)</span>`;
   let h1=`<section><h2>Fight</h2><div class="kv"><span>boss</span><span>${esc(s.boss)}</span>`+(F?`<span>result</span><span>${esc(resLabel[F.result]||F.result)}</span>`:"")+outRow+
@@ -726,9 +727,9 @@ function renderInfo(){
     `<span>boss life</span><span>${(hp0*100).toFixed(0)}% to ${(hp1*100).toFixed(0)}%</span><span>ended</span><span>${esc(e.reason||"?")}</span><span>file format</span><span>${D.v}</span></div></section>`;
   let h2=`<section><h2>Who the boss went for</h2>`;
   if(D.hasTarget){
-    h2+=`<div class="tbar"><i style="width:${100*t.levy/n}%;background:var(--tb-levy)" title="levy"></i><i style="width:${100*t.player/n}%;background:var(--tb-cmd)" title="commander"></i><i style="width:${100*t.none/n}%;background:var(--tbar-none)" title="nobody"></i></div>`+
-      `<table><tr><td><span style="color:var(--t-levy)">levy</span></td><td>${(100*t.levy/n).toFixed(1)}%</td></tr><tr><td><span style="color:var(--t-cmd)">commander</span></td><td>${(100*t.player/n).toFixed(1)}%</td></tr><tr><td>nobody</td><td>${(100*t.none/n).toFixed(1)}%</td></tr></table>`+
-      `<div class="small" style="margin-top:6px">Share of samples where the main boss was aimed at each. Levy = its targeting lock, a native NPC target or a boss-rule spite dash.</div>`;
+    h2+=`<div class="tbar"><i style="width:${100*t.levy/n}%;background:var(--tb-levy)" title="levy"></i><i style="width:${100*t.player/n}%;background:var(--tb-cmd)" title="commander"></i><i style="width:${100*(t.spite||0)/n}%;background:var(--tb-spite)" title="spite (redirected shots)"></i><i style="width:${100*t.none/n}%;background:var(--tbar-none)" title="nobody"></i></div>`+
+      `<table><tr><td><span style="color:var(--t-levy)">levy</span></td><td>${(100*t.levy/n).toFixed(1)}%</td></tr><tr><td><span style="color:var(--t-cmd)">commander</span></td><td>${(100*t.player/n).toFixed(1)}%</td></tr>${t.spite?`<tr><td><span style="color:var(--t-spite)">spite (redirected shots)</span></td><td>${(100*t.spite/n).toFixed(1)}%</td></tr>`:""}<tr><td>nobody</td><td>${(100*t.none/n).toFixed(1)}%</td></tr></table>`+
+      `<div class="small" style="margin-top:6px">Share of samples where the main boss was aimed at each. Levy = its targeting lock or a native NPC target. Spite (redirected shots) = no real target on a levy, but the boss rule sends its shots and dashes at one.</div>`;
   } else h2+=`<div class="small warn">This file is format 1: it has no levy targeting data. Only the commander-or-nothing split is visible: commander ${(100*t.player/n).toFixed(0)}%, nobody ${(100*t.none/n).toFixed(0)}%.</div>`;
   h2+="</section>";
   const SL={body:"boss body part",minion:"minion contact",proj:"projectile",other:"other"}, SV={body:"--src-body",minion:"--src-minion",proj:"--src-proj",other:"--src-other"};
@@ -762,11 +763,11 @@ function buildRoster(){
 }
 function levyRowAt(id,f){return (f.l||[]).find(l=>l[0]===id)||null;}
 const itemTxt=(t,pre)=>{const pn=pre>0&&D.names.prefixes&&D.names.prefixes[pre];return (pn?pn+" ":"")+nm("items",t);};
-const LSLOT=["weapon","sidearm","head","body","legs","accessory","accessory","accessory","accessory","accessory","accessory","ammo","hook"];
+const LSLOT=["weapon","sidearm","head","body","legs","accessory","accessory","accessory","accessory","accessory","accessory","ammo","hook","wings","boots"];
 function levyGearHtml(id){
   let ev=null; for(const e of (D.lgear.get(id)||[])){if(e.t<=cur)ev=e;else break;} if(!ev) ev=(D.lgear.get(id)||[])[0]; if(!ev) return "";
   const by={}; for(const g of ev.g){const k=LSLOT[g[0]]||"slot"+g[0];(by[k]=by[k]||[]).push(itemTxt(g[1],g[2])+(g[0]===11&&g[3]>1?" x"+g[3]:""));}
-  return ["weapon","sidearm","head","body","legs","accessory","ammo","hook"].filter(k=>by[k]).map(k=>`<span>${k==="accessory"?"accessories":k}</span><span>${esc(by[k].join(", "))}</span>`).join("");
+  return ["weapon","sidearm","head","body","legs","accessory","wings","boots","ammo","hook"].filter(k=>by[k]).map(k=>`<span>${k==="accessory"?"accessories":k}</span><span>${esc(by[k].join(", "))}</span>`).join("");
 }
 function updateRoster(){
   if(!D||!$("roster")||performance.now()-rosterAt<120) return; rosterAt=performance.now();

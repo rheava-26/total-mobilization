@@ -76,6 +76,12 @@ write_enabled() { # $1 = Mods dir, rest = mod names (load order = list order)
 # ---------- log analysis (a tML log line looks like "[17:09:24.145] [Main Thread/INFO] [Levy]: text") ----------
 EXC_RE='xception|TypeLoad|MissingMethod|malformed'
 # self-check summary lines: pass=/fail= counters. "summon-staff pick self-check: N FAILURE(S)" is a known, pre-existing
-# vanilla-only failure (armory ranking), reported separately and excluded from the "unexpected" set.
-KNOWN_FAIL_RE='summon-staff pick self-check: 2 FAILURE\(S\)'
+# vanilla-only failure (armory ranking), reported separately and excluded from the "unexpected" set: its summary line and the two
+# detail lines it prints ("... self-check FAILED: summoners carry the Slime Staff although better staves are in the armory ...").
+KNOWN_FAIL_RE='summon-staff pick self-check: 2 FAILURE\(S\)|summon-staff pick self-check FAILED: summoners carry the Slime Staff although better staves'
+# What counts as a failed self-check in a tML log: any line carrying an upper-case FAIL (a "[X] FAIL name" check line, "CHECK FAIL: ...", "FAILED", "FAILURE"),
+# a "fail=N" summary with N >= 1, or the "!!!" a legacy summary ends in. A passing check line ("[X] PASS ...") never counts, even when its name says FAIL,
+# and neither does the known failure above. Lower-case "failure"/"failed" in an OBSERVED note is prose, not a verdict, and is left alone.
+FAIL_RE='fail=[1-9]|FAIL|!!!'
+fail_lines() { grep -E "$FAIL_RE" "$1" 2>/dev/null | grep -v -E '\] PASS ' | grep -v -E "$KNOWN_FAIL_RE"; }
 count_lines() { grep -c -E -i "$1" "$2" 2>/dev/null || true; }

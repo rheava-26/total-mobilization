@@ -383,7 +383,7 @@ namespace Levy.Common.Soldiers
 			var vis = new SoldierGear();
 			using (var r = new System.IO.BinaryReader(new System.IO.MemoryStream(ms.ToArray()))) vis.ReadVisual(r);
 			check("extra sidearms reach clients", vis.ExtraSidearms[0].type == ItemID.PygmyStaff && vis.ExtraSidearms[1].type == ItemID.SpiderStaff && vis.Sidearm.type == ItemID.ThornWhip);
-			check("slot count fits the lock mask", SoldierGear.SlotCount <= 16, SoldierGear.SlotCount.ToString());
+			check("slot count fits the lock mask", SoldierGear.SlotCount <= 31, SoldierGear.SlotCount.ToString());
 		}
 	}
 }

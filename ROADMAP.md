@@ -22,6 +22,17 @@
 - **Design idea (lead, to discuss):** a Levy after-fight report showing the commander's damage vs the army's, DoT included. The vanilla DPS meter misses DoT, and Eve can't tell whether her weapons are good.
 - Eve: event fear is fine as design. "Plantera shouldn't target levies before I've beaten her": meaning unclear; asked her.
 - Cryo Slime: needs Cryogen + 2 mechs, snow biome, cavern layer, NOT PlayerSafe (placed walls behind you block it), weight 8% of cavern spawns. Cryogen's death also seeds Cryonic Ore in snow/ice at 45–70% depth.
+- **Eve 11-15 night (bed; plays tomorrow on the newest build):**
+  - Targeting rule confirmed by her and the code: an undowned boss never locks onto levies (EnemyTargeting: first kill is solo). The "levy" target% in army Plantera fights is the BossRule SPITE punishment (≤6 tiles for 1 s or ≥1% boss HP in 3 s → redirected shots/dash for 3 s), which the recorder lumps in with real targeting. fieldfix splits it out as kind 3.
+  - Morale: she'd like something on screen, but her screen is already busy; maybe an auto-rally. Not built; discuss more.
+  - Recordings: 39/40 levies wear wings, 0 wear boots, so her 34 Angel Treads are unused. → `mobslots` builder (Wings + Boots slots; reverses the old "no mobility slot" decision at her explicit request).
+  - Followers (negative ids) never fight bosses: ReturnHome 100% vs Plantera; Follow 78% at ~68 tiles vs Anahita, no Engage. → `fieldfix`.
+  - `fieldfix` also covers: thorns break on levy contact (vanilla contact rule only; an approved exception to never-alter), Twins naming, spite target kind, an off-duty banner (draw-only) when a levy/NPC is hired away.
+  - Unfinished sentence: "you can't use pylons whenever something is…". Ask her.
+  - Rigorous Destroyer/Aquatic Scourge baseline battery (fixed gear/army/arena, seeds only, ≥40 per boss, then one-variable sweeps) → redirected `hmreplays` to do this first. Machine: 4 cores, load ~19.
+  - Balance target = Death mode (Expert+Rev will be easy). Hardmode bosses need per-boss reworks for levies.
+  - Eve's buffs vs Plantera: Mining, Shine, Summoning, Clairvoyance etc. NO Lifeforce/Endurance/Ironskin/Regeneration/Wrath/Rage. Calamity adrenaline: holding a full bar = 50% DR; popping it = +150% damage for 5 s; it charges in 30 s and resets on a hit.
+  - Status she asked about: dialogue rewrite NOT started; mobility slots now building; pylon/Officers scroll fixed in 2.0.63; shop lag fixed in 2.0.63; AlchemistNPC chooser fixed in 2.0.61; LuiAFK "open shop" never reproduced (4 shop defects fixed in 2.0.60). Ask her to retest on 2.0.63+.
 - **Site bug (Eve: "undefined is not an object", none worked):** format 8 real-game recordings carry negative ids for officers, militia and drones. make_site emitted those rows raw, and the page's decoder read any row starting with a negative number as a delta row, so it crashed. Fixed both sides (negative-key rows are wrapped as {"r":row}; the decoder skips unknown refs). Reproduced in Chromium, then verified all 30 new fights load with 0 pageerrors. Site v18.
 - **Harness replays lost:** the hardmode lab recordings (Destroyer, Leviathan, Empress, WoF batteries) didn't survive the container reset. Nothing on disk, and Drive holds only Eve's 30. Builder `hmreplays` is recording fresh ones: every boss from WoF up plus missing pre-HM, 3 fights each in Expert+Rev and Master+Death, tier gear, to /home/user/lab/hmreplays. The lead publishes in batches. **Rule from now on:** keep raw recordings from every lab run.
 

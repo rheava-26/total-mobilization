@@ -5,7 +5,8 @@
 # Each half runs on its own private copy of the tML install + a copied Mods folder (ports 7872 vanilla, 7873 Calamity), so the two
 # servers (and any lab server) never share a log or a file. With LEVY_SELFCHECK_WORLD=1 the world checks run themselves once a world
 # loads: Mechanization's MechWorldCheck (which calls Levy's SummonWorldCheck at its end) and LEVY_MECHWORLD_EXIT=1 stops the server.
-# Overrides: VAN_MODS / CAL_MODS (comma lists), SHIPWORLD_SETTLE (seconds, default 25), SHIPWORLD_TIMEOUT.
+# Overrides: VAN_MODS / CAL_MODS (comma lists), SHIPWORLD_SETTLE (seconds, default 25), SHIPWORLD_TIMEOUT,
+#   SHIPWORLD_HALVES (default "van cal": which halves to run), SHIPWORLD_SERIAL=1 (run them one after another: one tML process at a time on a loaded box).
 set -u
 . "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 TMO=${SHIPWORLD_TIMEOUT:-480}; SETTLE=${SHIPWORLD_SETTLE:-25}
@@ -39,19 +40,23 @@ prep() { # $1 = name, $2 = tML base install, $3 = source Mods dir, $4 = mod list
   copy_fresh "$WORLD" "$run/ShipWorld.wld"
   echo "$run"
 }
-VR=$(prep van "$TML08" "$VERIFY_SAVE/Mods"); CR=$(prep cal "$TML10" "$SHIPCAL/save/Mods")
+HALVES=${SHIPWORLD_HALVES:-van cal}; VR=; CR=
+case " $HALVES " in *" van "*) VR=$(prep van "$TML08" "$VERIFY_SAVE/Mods");; esac
+case " $HALVES " in *" cal "*) CR=$(prep cal "$TML10" "$SHIPCAL/save/Mods");; esac
 
 run_half() { # $1 = run dir, $2 = port, $3 = mod list
   "$SHIP_DIR/tmlboot.sh" -i "$1/tml" -s "$1/save" -m "$3" -w "$1/ShipWorld.wld" -p "$2" \
       -e "LEVY_SELFCHECK_WORLD=1 LEVY_MECHWORLD_EXIT=1" -x '\[MechWorld\] self-check pass=' -q "$SETTLE" -t "$TMO" > "$1/half.out" 2>&1
   echo $? > "$1/half.rc"
 }
-echo "== booting ShipWorld: vanilla ($PORT_WVAN) and Calamity ($PORT_WCAL) in parallel =="
-T0=$SECONDS
-run_half "$VR" "$PORT_WVAN" "$VAN_MODS" & P1=$!
-run_half "$CR" "$PORT_WCAL" "$CAL_MODS" & P2=$!
-wait $P1 $P2
-echo "both halves done in $((SECONDS - T0))s"
+echo "== booting ShipWorld: halves [$HALVES] ($PORT_WVAN vanilla, $PORT_WCAL Calamity), $([ "${SHIPWORLD_SERIAL:-0}" = 1 ] && echo one after another || echo in parallel) =="
+T0=$SECONDS; PIDS=()
+for h in $HALVES; do
+  case $h in van) set -- "$VR" "$PORT_WVAN" "$VAN_MODS";; cal) set -- "$CR" "$PORT_WCAL" "$CAL_MODS";; *) continue;; esac
+  if [ "${SHIPWORLD_SERIAL:-0}" = 1 ]; then run_half "$@"; else run_half "$@" & PIDS+=($!); fi
+done
+[ ${#PIDS[@]} -gt 0 ] && wait "${PIDS[@]}"
+echo "halves done in $((SECONDS - T0))s"
 
 # ---- 3. report ----
 report() { # $1 = label, $2 = run dir
@@ -81,14 +86,15 @@ report() { # $1 = label, $2 = run dir
   grep -F "[TileSweep] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[TileSweep] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
   [ -z "$(grep -F '[MechWorld] self-check pass=' "$L")" ] && echo "  !! no MechWorld summary line (check did not finish; see $2/tml/boot.out)"
-  echo "other failures (fail=[1-9] / FAILURE / !!!), known summon-staff pick failure excluded:"
-  grep -E 'fail=[1-9]|FAILURE|!!!' "$L" | grep -v -E "$KNOWN_FAIL_RE" | grep -v -F -e '[MechWorld] FAIL ' -e '[SummonWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' | sed 's/^/  /' | head -20
+  echo "other failures (any FAIL / fail=[1-9] / !!! line not listed above), known summon-staff pick failure excluded:"
+  fail_lines "$L" | grep -v -F -e '[MechWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' | sed 's/^/  /' | head -20
   grep -E "$KNOWN_FAIL_RE" "$L" | head -1 | sed 's/^/  (known, excluded) /'
+  echo "FAIL lines in the whole log (known excluded): $(fail_lines "$L" | wc -l)"
   local ex; ex=$(grep -c -E -i "$EXC_RE" "$L"); echo "exceptions: $ex"
   grep -E -i "$EXC_RE" "$L" | head -6 | cut -c1-220 | sed 's/^/  /'
   echo "player-safety: PASS=$(grep -c -F '[MechWorld] PASS player-safety' "$L") FAIL=$(grep -c -F '[MechWorld] FAIL player-safety' "$L")"
   grep -F '[MechWorld] FAIL' "$L" | head -10 | cut -c1-220 | sed 's/^/  /'
   echo "distinct self-check summary lines: $(grep -E 'self-check.*(pass=|fail=|ok|OK|FAILURE)' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | sort -u | wc -l)"
 }
-report "VANILLA ($VAN_MODS)" "$VR"
-report "CALAMITY ($CAL_MODS)" "$CR"
+case " $HALVES " in *" van "*) report "VANILLA ($VAN_MODS)" "$VR";; esac
+case " $HALVES " in *" cal "*) report "CALAMITY ($CAL_MODS)" "$CR";; esac

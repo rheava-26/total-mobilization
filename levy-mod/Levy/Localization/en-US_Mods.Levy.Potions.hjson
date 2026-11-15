@@ -6,6 +6,7 @@ SpectatorPotion: {
 		Enemies ignore you
 		You cannot fight or build
 		Ends against a boss you have not beaten
+		Fatal if your levies all fall to a boss
 		'''
 }
 
@@ -38,6 +39,14 @@ SeekerBuff: {
 AutonomousBuff: {
 	DisplayName: Autonomous
 	Description: Fearless. Falls back to heal and goes for the biggest threat
+}
+
+LostBet: {
+	Bet1: "{0} lost the bet."
+	Bet2: "{0} realized prolonged poverty would kill them."
+	Bet3: "{0} watched their favorite team lose."
+	Bet4: "{0} realized the levies did not know what dashes were."
+	Bet5: "{0} had money on the levies."
 }
 
 SpectatorRefused: Too soon after damage.

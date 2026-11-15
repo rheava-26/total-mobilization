@@ -223,6 +223,10 @@ def enc_rows(rows, last, idx, ipos):
         key = r[idx]
         prev = last.get(key)
         last[key] = r
+        if key < 0 and idx == 0:
+            # format 8: officers, militia and drones carry negative ids; a bare row starting with a negative number would read as a delta row
+            out.append({"r": r})
+            continue
         if prev is None or len(prev) != len(r) or key < 0:
             out.append(r)
             continue

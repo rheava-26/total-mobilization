@@ -30,6 +30,9 @@
   - Summoned and conjured units are untouched.
 - A/B switches: LEVY_PLAYERHIT, PROJPARITY, HITDEBUFFS, KNOCKBACK, DEFDAMAGE, PROJSLOTS, ARENABOX.
 - Builder still finishing: before/after fights (Calamitas Clone, Destroyer, Leviathan; 4 each × 2 arms), the vanilla half of the check, the wiki checklist. Lead is running serial shipboth on the merged state.
+- **Merged-state verify (serial shipboth, 769 s):** both boots exc=0.
+  - **REGRESSION:** Calamity BossBugs "(visible commander) the wall hurts the levies (life 4000 -> 4000)". WoF lasers are aimed at levies but do no damage. Sent back to projparity. **Ship blocked.**
+  - Vanilla half: 16 caught KeyNotFound 'CalamityMod' in ProjParityCheck.CalDefDamage (test code only); sent back too.
 - Ship plan: 2.0.68 = projparity + spectator3 + levyrules (wait for levyrules so damage and healing land together).
 
 ## 🎲 spectator3 MERGED

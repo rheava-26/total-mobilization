@@ -124,10 +124,16 @@ namespace Levy.Common
 			public static readonly int[] SwapIncompatibleAiStyles = { NPCAIStyleID.Flying };
 
 			/// <summary>
-			/// Styles an unlocked boss (BossesTargetSoldiers) still never takes the swap for, on top of <see cref="SwapIncompatibleAiStyles"/>. Empress of Light (120) reads its
-			/// target only through GetTargetData() (12 call sites) without carrying UsesNewTargetting, so slot 255 reads as "no target" and she would idle.
+			/// Styles an unlocked boss (BossesTargetSoldiers) still never takes the swap for, on top of <see cref="SwapIncompatibleAiStyles"/>. None at present: Empress of Light (120)
+			/// reads its target only through GetTargetData(), which treats slot 255 as "no target", so she takes the flyer slot instead (<see cref="BossFlyerSlotAiStyles"/>).
 			/// </summary>
-			public static readonly int[] BossSwapIncompatibleAiStyles = { NPCAIStyleID.EmpressOfLight };
+			public static readonly int[] BossSwapIncompatibleAiStyles = { };
+
+			/// <summary>
+			/// Boss styles whose AI reads its target only through GetTargetData() (slot 255 reads "no target") and does not carry UsesNewTargetting: an unlocked boss of these styles gets the soldier's
+			/// dummy in the last real player slot for its AI call, exactly like the Flying-AI enemies (see EnemyTargeting.FlyerSlot). Empress of Light (120).
+			/// </summary>
+			public static readonly int[] BossFlyerSlotAiStyles = { NPCAIStyleID.EmpressOfLight };
 
 			/// <summary>Boss segments that carry neither <c>boss</c> nor ShouldBeCountedAsBoss but use an allowlisted AI style (Eater of Worlds is Worm AI).</summary>
 			public static readonly int[] BossPartTypes = { NPCID.EaterofWorldsHead, NPCID.EaterofWorldsBody, NPCID.EaterofWorldsTail, NPCID.TheDestroyer, NPCID.TheDestroyerBody, NPCID.TheDestroyerTail };

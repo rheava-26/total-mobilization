@@ -137,6 +137,9 @@ namespace Levy.Common.Testing
 			float n = Main.maxTilesX / 4200f; n *= n;
 			int band = (int)(60f + 10f * n + Main.worldSurface / 6.0) + 2;
 			_crCx = _cx; int cx = _cx, half = kind.Contains("uw") ? 900 : 110, fy; // "uw": a long Underworld corridor (the wall walks the whole way)
+			// "@ocean" = the arena stands inside the ocean strip (x within 400 tiles of the world edge), where Calamity's Duke Fishron / Leviathan / Old Duke read a target as "in the ocean"; "@crag" = at Underworld depth (Brimstone Crags height).
+			bool atOcean = kind.Contains("@ocean"), atCrag = kind.Contains("@crag");
+			if (atOcean) { _crCx = cx = 200; }
 			// arena token: a3 | a3e (sealed), optional rN suffix = rows N tiles apart (a3r6, a3er5); default 7 (lab 3)
 			int rowGap = 7; var rm = System.Text.RegularExpressions.Regex.Match(kind, @"r(\d+)$"); if (rm.Success) rowGap = Math.Clamp(int.Parse(rm.Groups[1].Value), 3, 12); L3RowGap = rowGap;
 			bool sealedBox = kind.StartsWith("a3e");
@@ -148,7 +151,7 @@ namespace Levy.Common.Testing
 			}
 			else
 			{
-				fy = kind.Contains("uw") ? Main.maxTilesY - 60 : Math.Clamp(band + 75, 100, Main.maxTilesY - 120); // "uw": the arena stands in the Underworld (Wall of Flesh)
+				fy = kind.Contains("uw") || atCrag ? Main.maxTilesY - 60 : Math.Clamp(band + 75, 100, Main.maxTilesY - 120); // "uw": the arena stands in the Underworld (Wall of Flesh)
 				FaFill(cx - half - 20, fy - 90, cx + half + 20, fy - 1, false);
 				FaFill(cx - half - 20, fy, cx + half + 20, fy + 25, true);
 				FaFill(cx - half - 1, fy - 90, cx - half - 1, fy + 25, true);

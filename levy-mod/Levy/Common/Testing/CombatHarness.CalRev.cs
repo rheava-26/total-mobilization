@@ -255,7 +255,7 @@ namespace Levy.Common.Testing
 				On_NPC.UpdateNPC += CrNpcUpdateDetour;
 				On_Projectile.Update += CrProjUpdateDetour;
 				On_Player.Update += CrPlayerUpdate;
-				BbInstall();
+				BbInstall(); global::Levy.Common.Targeting.EnemyTargeting.AiProbe = BbBiomeProbe;
 			}
 			CrSp = Environment.GetEnvironmentVariable("LEVY_CR_SP") == "1";
 			global::Levy.Common.Util.LevyUtil.SpEmulation = CrSp;
@@ -270,7 +270,7 @@ namespace Levy.Common.Testing
 			if (!_crHooked) return;
 			_crHooked = false;
 			try { On_Projectile.Damage -= CrDamageTimer; On_NPC.StrikeNPC_HitInfo_bool_bool -= CrStrikeDetour; On_NPC.UpdateNPC -= CrNpcUpdateDetour; On_Projectile.Update -= CrProjUpdateDetour; On_Player.Update -= CrPlayerUpdate; } catch { }
-			BbRemove();
+			BbRemove(); global::Levy.Common.Targeting.EnemyTargeting.AiProbe = null;
 		}
 
 		// -------------------------------------------------------------------------------------------------- Calamity switches
@@ -466,7 +466,8 @@ namespace Levy.Common.Testing
 			if (_crI < 0) return;
 			if (_crI >= _crRuns.Count) { try { File.WriteAllText(_crOut + ".done", "1"); } catch { } Finish("calrev complete"); return; }
 			CrRun run = _crRuns[_crI];
-			Main.dayTime = false; Main.time = 16200; Main.raining = false; Main.bloodMoon = false; Main.eclipse = false;
+			if (Environment.GetEnvironmentVariable("LEVY_CR_DAY") == "1") { Main.dayTime = true; Main.time = 20000; } else { Main.dayTime = false; Main.time = 16200; } // LEVY_CR_DAY=1: a midday fight (Empress of Light daytime enrage)
+			Main.raining = false; Main.bloodMoon = false; Main.eclipse = false;
 			try
 			{
 				if (!_crStarted && _crArenaBuilt != run.Arena) CrBuildArena(run.Arena);
@@ -706,7 +707,7 @@ namespace Levy.Common.Testing
 				}
 				Mod.Logger.Info($"HARNESS-SG: tick {st.Tick}{sb}");
 			}
-			CrOrderProbe(st); BbZoneLog(st);
+			CrOrderProbe(st); BbZoneLog(st); BbEolProjCensus(st);
 			if (run.Boss == "wof") CrWofProbe(st);
 			int alive = 0;
 			foreach (var l in st.Levies)

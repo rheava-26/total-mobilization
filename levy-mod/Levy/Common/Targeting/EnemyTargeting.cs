@@ -55,6 +55,9 @@ namespace Levy.Common.Targeting
 		private static readonly HashSet<int> _bossParts = new(LevyConstants.Targeting.BossPartTypes);
 		private static readonly HashSet<int> _swapExcludedTypes = new(LevyConstants.Targeting.SwapExcludedTypes);
 		private static readonly HashSet<int> _bossSwapIncompatible = new(LevyConstants.Targeting.BossSwapIncompatibleAiStyles);
+		/// <summary>LEVY_EOLFLY=0 keeps Empress-style bosses off the flyer slot (A/B switch for labs).</summary>
+		internal static readonly bool BossFlyerOn = Environment.GetEnvironmentVariable("LEVY_EOLFLY") != "0";
+		private static readonly HashSet<int> _bossFlyerSlotStyles = new(LevyConstants.Targeting.BossFlyerSlotAiStyles);
 		private static readonly HashSet<int> _eventTowers = new(LevyConstants.Targeting.EventTowerTypes);
 
 		// Scratch for one Compete call: the soldiers in reach, as (index into Bodies, NPC index, weighted distance). Compete is never re-entered, so one set is enough.
@@ -75,7 +78,9 @@ namespace Levy.Common.Targeting
 		private static Player _null254;
 		internal static bool FlyerSlotUsable => (_swapped && _swapSlot == FlyerSlot) || (Main.player[FlyerSlot] != null && !Main.player[FlyerSlot].active);
 		/// <summary>The slot this enemy's soldier target is swapped into.</summary>
-		internal static int SlotFor(NPC npc) => npc.aiStyle == NPCAIStyleID.Flying && !UsesNativeTargeting(npc) && FlyerSlotUsable ? FlyerSlot : SoldierNPC.DummySlot;
+		internal static int SlotFor(NPC npc) => UsesFlyerSlot(npc) && FlyerSlotUsable ? FlyerSlot : SoldierNPC.DummySlot;
+		/// <summary>An enemy whose AI reads its target only through GetTargetData(): Flying-AI enemies and the boss styles in <see cref="LevyConstants.Targeting.BossFlyerSlotAiStyles"/> (Empress of Light).</summary>
+		internal static bool UsesFlyerSlot(NPC npc) => !UsesNativeTargeting(npc) && (npc.aiStyle == NPCAIStyleID.Flying || _bossFlyerSlotStyles.Contains(npc.aiStyle));
 		/// <summary>Before any vanilla target search: a dummy parked in the flyer slot would be found as a real player.</summary>
 		private static void PreSearch() { if (_swapped && _swapSlot != SoldierNPC.DummySlot) Unswap(); }
 		/// <summary>The Player instance that legitimately lives in Main.player[255] (vanilla null player). Captured whenever the slot is in its normal state.</summary>
@@ -275,6 +280,7 @@ namespace Levy.Common.Targeting
 			if (BossPersistenceGlobalNPC.IsDaytimeExcluded(npc)) return false;
 			if (UsesNativeTargeting(npc)) return true;
 			int style = npc.aiStyle;
+			if (_bossFlyerSlotStyles.Contains(style)) return BossFlyerOn && FlyerSlotUsable && !_swapExcludedTypes.Contains(npc.type);
 			return !_swapIncompatible.Contains(style) && !_bossSwapIncompatible.Contains(style) && !_swapExcludedTypes.Contains(npc.type);
 		}
 
@@ -582,6 +588,8 @@ namespace Levy.Common.Targeting
 		// =====================================================================================================
 		/// <summary>True while a soldier's dummy stands in Main.player[255] for an enemy's AI call.</summary>
 		internal static bool IsSwapped => _swapped;
+		/// <summary>Lab telemetry: called after an enemy's AI call, while its soldier's dummy is still in the slot. Null outside labs.</summary>
+		internal static Action<NPC> AiProbe;
 		internal static string WhyLast => _why;
 		/// <summary>LEVY_SWAPFIX=0 restores the old behaviour (a re-lock inside an AI call keeps the previous soldier's dummy in slot 255). A/B switch.</summary>
 		internal static readonly bool SwapFixOn = Environment.GetEnvironmentVariable("LEVY_SWAPFIX") != "0";
@@ -798,7 +806,9 @@ namespace Levy.Common.Targeting
 				// chases the null player at (0,0) or a stranger that inherited the index.
 				int staleTarget = native ? data.SoldierTarget + 300 : EnemyTargeting.SlotFor(npc);
 				EnemyTargeting.SetLock(npc, data, -1);
-				if (npc.target == staleTarget) EnemyTargeting.Retarget(npc);
+				// A flyer-slot enemy (Flying AI, Empress of Light) was handed target 255 by the last PostAI as its "locked on a soldier" sentinel. With that soldier gone, 255 reads "no target" to GetTargetData() and
+				// these AIs do not re-search mid-attack (the Empress's dash then ran on an invalid target: her velocity blew up to NaN and she sat idle for the rest of the fight), so search again now.
+				if (npc.target == staleTarget || (!native && EnemyTargeting.UsesFlyerSlot(npc) && npc.target == SoldierNPC.DummySlot)) EnemyTargeting.Retarget(npc);
 				body = EnemyTargeting.LiveTarget(data.SoldierTarget);
 				if (body == null) return;
 			}
@@ -835,10 +845,11 @@ namespace Levy.Common.Targeting
 					$"tick={Main.GameUpdateCount} target={tg} lock={d.SoldierTarget} swapped={EnemyTargeting.IsSwapped} plActive={pl.active} plDead={pl.dead} dx={(pl.position.X - npc.position.X) / 16f:0}t dy={(pl.position.Y - npc.position.Y) / 16f:0}t ai1={npc.ai[1]} ai2={npc.ai[2]} why={EnemyTargeting.WhyLast}";
 			}
 			if (EnemyTargeting.WhyTrack != null && EnemyTargeting.TgtTrace[npc.whoAmI] != null) EnemyTargeting.TgtTrace[npc.whoAmI] += " postAI=" + npc.target;
+			EnemyTargeting.AiProbe?.Invoke(npc);
 			EnemyTargeting.ReturnWallTarget();
 			EnemyTargeting.Unswap();
 			// A flyer was aimed through the flyer slot for this AI call only; outside it, "locked on a soldier" reads as 255 like every other swapped enemy.
-			if (npc.target == EnemyTargeting.FlyerSlot && npc.aiStyle == NPCAIStyleID.Flying && LevyNpcData.Of(npc).SoldierTarget >= 0) npc.target = SoldierNPC.DummySlot;
+			if (npc.target == EnemyTargeting.FlyerSlot && EnemyTargeting.UsesFlyerSlot(npc) && LevyNpcData.Of(npc).SoldierTarget >= 0) npc.target = SoldierNPC.DummySlot;
 		}
 	}
 }

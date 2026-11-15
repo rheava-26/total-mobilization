@@ -324,6 +324,17 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>
+		/// A throwaway owner slot (the dragon's, <see cref="DragonOwner"/>) holds the Player the game made for it before any mod was loaded, which carries no ModPlayer set. A mod's OnSpawn hook that reads
+		/// <c>GetModPlayer</c> of a projectile's owner (an element table that asks what the owner wears) throws on it for every segment spawned. Such a slot gets a Player made with every loaded mod's ModPlayers, once.
+		/// </summary>
+		private static void ReadyOwnerSlot(int slot)
+		{
+			Player p = Main.player[slot], reference = Main.player[0];
+			if (p == null || reference == null || p.active || global::Levy.Common.Owner.SoldierOwner.IsDummy(p)) return;
+			if (p.ModPlayers.Length != reference.ModPlayers.Length) Main.player[slot] = new Player();
+		}
+
+		/// <summary>
 		/// Creates one minion owned by 255 (a Stardust Dragon segment: by <see cref="DragonOwner"/>) and tagged with the soldier. NewProjectile only assigns ai[] and syncs when Owner == Main.myPlayer,
 		/// so the machine claims that slot for the call (restored in the finally); the tag is applied in OnSpawn via <see cref="PendingBody"/> so the very first spawn packet already names the soldier.
 		/// <paramref name="ai0"/> is only meaningful for a dragon segment: the index of the segment ahead of it (vanilla turns it into that segment's UUID).
@@ -331,6 +342,7 @@ namespace Levy.Common.Weapons
 		private static Projectile NewMinion(SoldierNPC s, Vector2 pos, int type, int damage, float knockback, float ai1, float ai0 = 0f)
 		{
 			int savedMyPlayer = Main.myPlayer, ownerSlot = OwnerSlotFor(type);
+			if (ownerSlot != Slot) ReadyOwnerSlot(ownerSlot);
 			PendingBody = s;
 			try
 			{

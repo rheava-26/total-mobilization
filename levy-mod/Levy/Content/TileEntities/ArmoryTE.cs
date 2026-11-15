@@ -1647,7 +1647,7 @@ namespace Levy.Content.TileEntities
 				sub = (it.headSlot >= 0 ? 0 : it.bodySlot >= 0 ? 1 : 2) + (it.vanity ? 3 : 0);
 			}
 			else if (it.accessory) { group = GroupAccessory; sub = it.vanity ? 1 : 0; }
-			else if (it.ammo > 0 && !it.IsACoin) group = GroupAmmo;
+			else if (it.ammo > 0 && !it.IsACoin && !WeaponClassifier.IsThrownConsumable(it)) group = GroupAmmo; // a thrown stack another mod also made ammo sorts with the weapons
 			else if (it.damage > 0 && it.pick == 0 && it.axe == 0 && it.hammer == 0 && !it.IsACoin) { group = GroupWeapon; sub = WeaponClassifier.IsIssuableWeapon(it) ? 0 : 1; }
 			else if (it.healLife > 0 || it.healMana > 0 || (it.buffType > 0 && it.consumable)) group = GroupPotion;
 			else group = GroupOther;

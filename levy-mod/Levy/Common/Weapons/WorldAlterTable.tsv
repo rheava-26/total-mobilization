@@ -49,6 +49,18 @@ W	miningcracks_take_on_luiafk/UnlimitedStickyDynamite	Tiles+Walls
 W	miningcracks_take_on_luiafk/UnlimitedVineRopeCoil	Place
 W	miningcracks_take_on_luiafk/UnlimitedWebRopeCoil	Place
 W	miningcracks_take_on_luiafk/UnlimitedWetBombs	Liquid
+W	Redemption/MiniWarhead	Tiles+Walls
+W	Redemption/OreBomb	Convert+Place
+W	Redemption/PlutoniumBomb	-
+W	Redemption/TerraBombaCorruption	-
+W	Redemption/TerraBombaCrimson	-
+W	Redemption/TerraBombaDirt	-
+W	Redemption/TerraBombaGlowingMushroom	-
+W	Redemption/TerraBombaHallow	-
+W	Redemption/TerraBombaPurity	-
+W	Redemption/TerraBombaSand	-
+W	Redemption/TerraBombaSnow	-
+W	Redemption/ToxicGrenade	-
 A	CalamityMod/AstralSand	Place
 A	CalamityMod/Dunesand	Place
 A	CalamityMod/MortarRound	Tiles+Walls
@@ -69,6 +81,7 @@ A	WetRocket	Liquid
 A	miningcracks_take_on_luiafk/UnlimitedRocketIIs	Tiles+Walls
 A	miningcracks_take_on_luiafk/UnlimitedRocketIVs	Tiles+Walls
 A	miningcracks_take_on_luiafk/UnlimitedSand	-
+A	Redemption/ToxicGrenade	-
 X	CalamityMod/FlakKraken	DryRocket	Liquid
 X	CalamityMod/Seadragon	CalamityMod/BloodfireBullet	Place
 X	CalamityMod/Seadragon	CalamityMod/MarksmanRound	Place
@@ -2738,6 +2751,29 @@ P	WetMine	Liquid
 P	WetRocket	Liquid
 P	WetSnowmanRocket	Liquid
 P	miningcracks_take_on_luiafk/DarkGreenSolutionProjectile	Convert
+P	Redemption/AncientGoldCoinPileBall	Place
+P	Redemption/AngelErhan_Proj	Convert
+P	Redemption/BleachedSolution_Proj	Convert
+P	Redemption/IrradiatedSandBall	Place
+P	Redemption/MiniWarhead_Proj	Tiles+Walls
+P	Redemption/OreBomb_Proj	Convert+Place
+P	Redemption/OrePowder_Proj	Convert
+P	Redemption/PlutoniumBomb_Proj	Convert
+P	Redemption/PlutoniumBoom	Convert
+P	Redemption/ShadestoneRubbleBall	Place
+P	Redemption/TerraBombaCorruption_Proj	Convert
+P	Redemption/TerraBombaCrimson_Proj	Convert
+P	Redemption/TerraBombaDirt_Proj	Convert
+P	Redemption/TerraBombaGlowingMushroom_Proj	Convert
+P	Redemption/TerraBombaHallow_Proj	Convert
+P	Redemption/TerraBombaPurity_Proj	Convert
+P	Redemption/TerraBombaSand_Proj	Convert
+P	Redemption/TerraBombaSnow_Proj	Convert
+P	Redemption/ToxicGas_Proj	Convert
+P	Redemption/WickerManEmberExplosion_Visual	Convert
+P	Redemption/XenoSplat	Convert
+P	Redemption/XenoSplat_Small	Convert
+P	Redemption/XenomiteGas_Proj	Convert
 R	AlchemistNPCLite/CorrosiveFlask
 R	AlchemistNPCLite/CorrosiveFlaskCloud
 R	AlchemistNPCLite/Gemstone

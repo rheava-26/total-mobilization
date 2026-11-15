@@ -108,6 +108,13 @@ namespace Levy.Common.Testing
 				if (_lab && !threw) foreach (int col in TileSandbox.Zones.Skip(1)) { if (Hard(k)) break; var more = TileSandbox.Spawn(t, false, 300, col); k |= more.Kind; if (more.Error != null) threw = true; } // lab: also over the Corruption, Crimson, Hallow and jungle patches
 				if (threw) pThrew.Add(t);
 				if (debugProj.Length > 0 && debugProj.Any(d => ProjName(t).Equals(d, StringComparison.OrdinalIgnoreCase))) Note($"projectile {ProjName(t)}: plain {TileSandbox.KindText(plain.Kind)} ({plain.Changed} tiles, {plain.Ticks} ticks, error {plain.Error ?? "none"}, made {string.Join(",", plain.Made.Select(ProjName))}, tile types {string.Join(",", plain.Types.Select(TileTypeName))}); army-flagged {TileSandbox.KindText(army.Kind)} ({army.Changed} tiles)");
+				// A modded projectile that altered the field once, with no tile call anywhere in its own compiled code, may only have been caught by something else changing the field during its run (a mod's own tile
+				// spread, a random roll in another system). It stays "altering" only when it alters the field again on two more spawns.
+				if (_lab && Hard(k) && t >= ProjectileID.Count && WorldAlter.ScanProjectileOnly(t) == Kind.None)
+				{
+					Kind again = Kind.None; for (int rep = 0; rep < 2; rep++) { again |= TileSandbox.Spawn(t, false, 300).Kind | TileSandbox.Spawn(t, true, 300).Kind; if (Hard(again)) break; }
+					if (!Hard(again)) { Note($"flickered: {WorldAlter.ProjectileKeyOf(t)} altered the field once ({TileSandbox.KindText(k)}) and not on two more spawns: counted as safe"); k = Kind.None; }
+				}
 				if (Hard(k)) pAlter[t] = k; else { pSafe.Add(t); if (k != Kind.None) softProj++; }
 				if (t >= ProjectileID.Count)
 				{

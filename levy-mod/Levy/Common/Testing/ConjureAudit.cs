@@ -61,7 +61,7 @@ namespace Levy.Common.Testing
 			int officerLife = avatar.NPC.life, extensions = 0, wasType = type;
 			for (int tick = 0; tick < fightTicks + idleTicks; tick++)
 			{
-				if (tick == fightTicks && extensions < 3 && row.Shots + row.Children > 0 && (ConjuredProjectile.HitsOnNpcs - hits0) + (ConjuredGlobalNPC.ChildBlows - blows0) == 0) { extensions++; fightTicks += 600; } // it has thrown or shot and nothing has landed yet: give it more time to land one
+				if (tick == fightTicks && extensions < 6 && row.Shots + row.Children > 0 && (ConjuredProjectile.HitsOnNpcs - hits0) + (ConjuredGlobalNPC.ChildBlows - blows0) == 0) { extensions++; fightTicks += 600; } // it has thrown or shot and nothing has landed yet: give it more time to land one
 				bool idle = tick >= fightTicks;
 				if (tick == fightTicks) { KillEnemy(); for (int q = 0; q < Main.maxNPCs; q++) if (Main.npc[q].active && Main.npc[q].TryGetGlobalNPC(out HarnessTarget hz) && hz.IsTarget) { if (trace) Note("trace: a pinned enemy (slot " + q + ") survived KillEnemy; removed"); Main.npc[q].active = false; } _cmdAt = eveBeside; for (int i = 0; i < Main.maxProjectiles; i++) { Main.projectile[i].active = false; seen[i] = false; } }
 				Step(1);
@@ -129,7 +129,7 @@ namespace Levy.Common.Testing
 
 		private static HashSet<int> _avatarTypes;
 		/// <summary>NPCs a creature under audit spawned (a caster's orbs): the stranger sweep must leave them be while they are watched.</summary>
-		private static readonly HashSet<int> _auditKids = new();
+		private static readonly HashSet<int> _auditKids = new(), _nearKids = new(); // _nearKids: thrown from within 10 tiles of the player (it was already beside her)
 
 		/// <summary>Finds NPCs that appeared next to the creature this tick (not the officer, the enemy or a squad member), classifies each one's flight after its first AI tick, and tracks whether it reaches the player or the enemy.</summary>
 		private static void AuditChildren(AuditRow row, NPC creature, NPC avatarNpc, Dictionary<int, (int born, int stage)> kids, int tick, bool idle, bool trace, string name)
@@ -145,7 +145,7 @@ namespace Levy.Common.Testing
 				if (Vector2.Distance(k.Center, creature.Center) > 200f) continue;
 				if (OfficerSystem.Data(k) != null && OfficerSystem.Data(k).Enrolled) continue;
 				if (k.TryGetGlobalNPC(out ConjuredGlobalNPC cg0) && cg0.Active && !cg0.IsChild) continue; // a squad member, not something the creature threw
-				kids[q] = (tick, 0); _auditKids.Add(q);
+				kids[q] = (tick, 0); _auditKids.Add(q); if (Vector2.Distance(k.Center, eve.Center) < 160f) _nearKids.Add(q); else _nearKids.Remove(q);
 				if (k.damage <= 0) { row.Utility++; if (!k.friendly) row.ChildrenHostile++; kids[q] = (tick, 1); continue; } // a harmless helper (a shield): not an attack, but never hostile
 				row.Children++;
 				bool hostile = !k.friendly; if (hostile) row.ChildrenHostile++;
@@ -164,7 +164,7 @@ namespace Levy.Common.Testing
 					if (Math.Min(aE, aP) > 40f) row.ChildrenOther++; else if (aP <= 12f && aP + 20f < aE) row.ChildrenToPlayer++; else row.ChildrenToEnemy++;
 					if (trace) Note($"trace {name}: spawned NPC {k.TypeName} velocity=({k.velocity.X:0.#},{k.velocity.Y:0.#}) angleToEnemy={aE:0} angleToPlayer={aP:0} friendly={k.friendly} target={k.target}");
 				}
-				if (Vector2.Distance(k.Center, eve.Center) < 40f) { row.ChildrenReachedPlayer++; kids[q] = (born, 2); }
+				if (!_nearKids.Contains(q) && Vector2.Distance(k.Center, eve.Center) < 40f) { row.ChildrenReachedPlayer++; kids[q] = (born, 2); }
 				if (_target != null && _target.active && k.Hitbox.Intersects(_target.Hitbox)) row.ChildrenReachedEnemy++;
 			}
 		}

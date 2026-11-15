@@ -55,7 +55,12 @@ namespace Levy.Content.NPCs
 		/// <summary>The vanilla / modded type that was conjured (what the kit asked for).</summary>
 		public int ConjuredType;
 		/// <summary>Diagnostic for the world self-checks: blows landed by thrown orbs (children).</summary>
-		public static int ChildBlows;
+		public static int ChildBlows, Raised, Crumbled;
+		/// <summary>Diagnostic: a running number given to each creature conjured (identity that survives slot reuse).</summary>
+		public int Serial;
+		/// <summary>Diagnostics: ticks without damage in a fight, and whether it sees a fight.</summary>
+		public int IdleTicksNow => _idleTicks;
+		public bool FightNow => _fight;
 		/// <summary>True for an NPC a conjured creature's own AI spawned (a caster's orb): it is the army's too, a short-lived shot, not a squad member.</summary>
 		public bool IsChild;
 		/// <summary>For a child: the whoAmI of the creature that threw it (the blows it lands count as that creature's).</summary>
@@ -93,6 +98,7 @@ namespace Levy.Content.NPCs
 			NPC n = Main.npc[idx];
 			if (n.type != type || !n.TryGetGlobalNPC(out ConjuredGlobalNPC c)) { LastFail = $"spawned type {n.type} global={n.TryGetGlobalNPC(out ConjuredGlobalNPC _)}"; n.active = false; return -1; }
 			c.Bind(n, avatar.whoAmI, commanderIndex, type);
+			c.Serial = ++Raised;
 			c.MinDamage = minDamage; c.IdleLifeTicks = idleLifeTicks;
 			if (minLife > n.lifeMax) { n.lifeMax = minLife; n.life = minLife; } // never weaker than the squad it replaces
 			n.Bottom = pos;
@@ -480,6 +486,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Falls apart: it dealt no damage for too long of a fight. No loot, no kill count (<see cref="PreKill"/>).</summary>
 		private void Crumble()
 		{
+			Crumbled++;
 			for (int i = 0; i < 12; i++) { int d = Dust.NewDust(_npc.position, _npc.width, _npc.height, DustID.Bone, 0f, -1.5f, 100, default, 1.1f); Main.dust[d].noGravity = true; }
 			Despawn();
 		}

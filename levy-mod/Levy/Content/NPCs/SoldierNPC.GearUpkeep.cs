@@ -139,6 +139,7 @@ namespace Levy.Content.NPCs
 			var prev = GearUpkeep.Body; GearUpkeep.Body = this;
 			int spawnStart = GearUpkeep.Spawned.Count;
 			long pf = global::Levy.Common.Util.LevyProf.Begin();
+			bool campfire0 = Main.SceneMetrics.HasCampfire, lantern0 = Main.SceneMetrics.HasHeartLantern; // gear may raise the local scene's flags (Calamity's The Camper); they are the levy's, not the commander's
 			try
 			{
 				d.Center = NPC.Center;
@@ -198,6 +199,7 @@ namespace Levy.Content.NPCs
 				_modRegenDelta = 0;
 				if (d.lifeRegen > regen0) { _buffLifeRegen += d.lifeRegen - regen0; _modRegenDelta = d.lifeRegen - regen0; } // already inside Player.lifeRegen: the regeneration pass must not count it again
 				Common.Team.TeamItems.LevyThoriumEquips(this, d, ref _buffLifeRegen); // Thorium's Ring of Unity and life recovery for the dummy
+				GearBuffsToBody(d, campfire0, lantern0);
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfPost, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// The dummy never runs ItemCheck, so it never "uses" its weapon; mod hooks that key off the first frame of an item use (Calamity spends rogue stealth there) see the soldier's use as it begins.
 				int animSaved = d.itemAnimation, animMaxSaved = d.itemAnimationMax, timeSaved = d.itemTime;
@@ -217,6 +219,7 @@ namespace Levy.Content.NPCs
 			}
 			finally
 			{
+				Main.SceneMetrics.HasCampfire = campfire0; Main.SceneMetrics.HasHeartLantern = lantern0;
 				if (frameAimed) { Main.screenPosition = savedScreen; Main.mouseX = savedMx; Main.mouseY = savedMy; }
 				ExitFrameSlot(fs); // the real Main.myPlayer / Main.player[255] first: RestoreThorium finds the commander through them
 				d.whoAmI = savedWho; d.Center = savedCenter;

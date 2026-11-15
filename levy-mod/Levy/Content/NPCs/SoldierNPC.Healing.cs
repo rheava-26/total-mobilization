@@ -34,6 +34,24 @@ namespace Levy.Content.NPCs
 		/// <summary>Harness switch: LEVY_REGEN=flat runs the old flat regeneration (1 HP a second after 5 s) for a before/after reading.</summary>
 		internal static bool FlatRegenLab = Environment.GetEnvironmentVariable("LEVY_REGEN") == "flat";
 
+		/// <summary>Stations the worn gear itself provides (Calamity's The Camper lights the Campfire and the Heart Lamp for its wearer): added to the stations the levy stands beside.</summary>
+		private StationFlags _gearStations;
+
+		/// <summary>
+		/// What gear hands its wearer through buffs and the scene flags, which on a levy would be thrown away with the dummy's vanilla buffs at the next frame: the Campfire and the Heart Lamp (their regeneration is the regeneration pass's
+		/// station flags) and the food buffs (Well Fed, Plenty Satisfied, Exquisitely Stuffed move to the body, where ApplyPotionBuffs reads them).
+		/// </summary>
+		private void GearBuffsToBody(Player d, bool campfire0, bool lantern0)
+		{
+			var scene = Main.SceneMetrics; StationFlags f = StationFlags.None;
+			if (d.HasBuff(BuffID.Campfire) || (scene.HasCampfire && !campfire0)) f |= StationFlags.Campfire;
+			if (d.HasBuff(BuffID.HeartLamp) || (scene.HasHeartLantern && !lantern0)) f |= StationFlags.HeartLantern;
+			_gearStations = f;
+			if (LevyUtil.IsClient) return;
+			foreach (int food in new[] { BuffID.WellFed, BuffID.WellFed2, BuffID.WellFed3 })
+				if (d.HasBuff(food)) { NPC.AddBuff(food, 180); StatsDirty = true; }
+		}
+
 		/// <summary>Called by the stat pass after the equips: the regeneration the gear left on the dummy.</summary>
 		private void NoteRegenBase(Player d) => _regenBase = Math.Max(0, d.lifeRegen);
 
@@ -99,8 +117,9 @@ namespace Levy.Content.NPCs
 			var scene = Main.SceneMetrics; bool camp0 = scene.HasCampfire, lantern0 = scene.HasHeartLantern;
 			try
 			{
-				scene.HasCampfire = (Stations & StationFlags.Campfire) != 0;
-				scene.HasHeartLantern = (Stations & StationFlags.HeartLantern) != 0;
+				StationFlags stations = Stations | _gearStations;
+				scene.HasCampfire = (stations & StationFlags.Campfire) != 0;
+				scene.HasHeartLantern = (stations & StationFlags.HeartLantern) != 0;
 				InFrame(() => d.UpdateLifeRegen());
 			}
 			finally { scene.HasCampfire = camp0; scene.HasHeartLantern = lantern0; d.sitting.isSitting = wasSitting; d.sleeping.isSleeping = wasSleeping; }

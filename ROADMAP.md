@@ -14,6 +14,16 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🧭 redecompat MERGED
+- notAmmo thrown weapons. World-alter scanner catches ref-returning Tile.TileType writes (get_TileType + stind), dup and ref locals, and follows ProjectileType<T> into blasts (any mod). Redemption rows added to WorldAlterTable.tsv.
+- Modded UsesNewTargetting NPCs take the flyer slot by default (NativeSafeModdedTypes allowlist, empty).
+- TargetReadScan sends NPCs whose AI reads HasValidTarget/GetTargetData to the flyer slot (37/159 Redemption hostiles).
+- HoldFire hook: Redemption's two choice-moment bosses are held during their window.
+- Ritualist class stays unsupported (lead agrees: leave it benched unless Eve wants it).
+- Redemption's Morning Star DPS drop is the mod's own element scaling, which applies equally to the player.
+- Stardust Dragon owner slot 253 gets a ModPlayer.
+- **Watch:** one MobWorld "boots top speed" flake (Terraspark 1.20 vs 3.00 bare) in the builder's normal-stack run; it passed on rerun. Recheck in the next shipboth.
+
 ## ⚔️ projparity CORE MERGED (0a17e66)
 - Every hostile hit on a levy runs the player's hit sequence on the gear dummy.
 - Seeded levy-vs-real-Player check (Calamity, Expert+Rev and Master+Death, defense 0/30/70, DR 0/0.2):

@@ -14,6 +14,7 @@
   --boss-label:#ffb4b4;--cmd-label:#a8f0ff;--flash:#ffffff;--death:#ff3030;--dash:#41e0e0;--hook:#f2d94a;--xjump:#b6ff5a;--scale:#7e9a96;--fire:#ff9f2e;
   --terr-top:#34966e;--terr-fill:#0d241f;--terr-fill2:#3c826e;--water:#103c5f;
   --hp-lo:#ff4646;--hp-mid:#ffe046;--hp-hi:#3cf46a;
+  --old-ink:#ffc266;--old-line:#7a5a1e;--old-bg:#241c0a;--ver-ink:#9fd2cc;
 }
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
   color-scheme:light;
@@ -28,6 +29,7 @@
   --boss-label:#a02020;--cmd-label:#0a6f8a;--flash:#14282a;--death:#d01818;--dash:#0a9a9a;--hook:#a68a00;--xjump:#5a9a10;--scale:#4f6a66;--fire:#c25f00;
   --terr-top:#2a8a62;--terr-fill:#c2d6cf;--terr-fill2:#4fa088;--water:#7ab4d6;
   --hp-lo:#d02a2a;--hp-mid:#c79a00;--hp-hi:#1fa060;
+  --old-ink:#7a4a00;--old-line:#d9b36a;--old-bg:#fff1d6;--ver-ink:#1d5c55;
 }}
 :root[data-theme="light"]{
   color-scheme:light;
@@ -42,6 +44,7 @@
   --boss-label:#a02020;--cmd-label:#0a6f8a;--flash:#14282a;--death:#d01818;--dash:#0a9a9a;--hook:#a68a00;--xjump:#5a9a10;--scale:#4f6a66;--fire:#c25f00;
   --terr-top:#2a8a62;--terr-fill:#c2d6cf;--terr-fill2:#4fa088;--water:#7ab4d6;
   --hp-lo:#d02a2a;--hp-mid:#c79a00;--hp-hi:#1fa060;
+  --old-ink:#7a4a00;--old-line:#d9b36a;--old-bg:#fff1d6;--ver-ink:#1d5c55;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
@@ -78,6 +81,13 @@ details.grp>summary{cursor:pointer;color:var(--dim);font-size:11.5px;text-transf
 .badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
 .bd{font-size:11.5px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);background:var(--bd-bg);font-variant-numeric:tabular-nums}
 .bd.l{color:var(--l-ink);border-color:var(--l-line)}.bd.p{color:var(--p-ink);border-color:var(--p-line)}.bd.h{color:var(--h-ink);border-color:var(--h-line)}.bd.d{color:var(--d-ink);border-color:var(--d-line)}
+.bd.v{color:var(--ver-ink)}
+.bd.o{color:var(--old-ink);border-color:var(--old-line);background:var(--old-bg);font-weight:650}
+#intro{margin:0;color:var(--dim);font-size:13px}
+.setintro{color:var(--dim);font-size:12px;margin:0 4px 8px}
+.grph{color:var(--ink);font-size:12px;font-weight:650;margin:6px 2px 0;padding-top:6px;border-top:1px solid var(--row-line)}
+.grph .small{display:block;font-weight:400}
+#fightHead .ho{font-size:13px;color:var(--old-ink);overflow-wrap:anywhere}
 .listfoot{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 #fightHead{display:flex;flex-direction:column;gap:4px;padding:2px 2px 8px}
 #fightHead .ht{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -171,6 +181,7 @@ body.big #strip,body.big .legend{display:none}
     <h1>LEVY FIGHT REPLAYS</h1>
     <span id="meta"></span>
   </div>
+  <p id="intro">Curated fights. Each fight shows the Levy version it was recorded on; outdated fights are marked.</p>
   <button id="listBtn" aria-expanded="false">Fights <span id="listBtnSub"></span></button>
   <noscript><p class="warn">This page needs JavaScript to draw the replays.</p></noscript>
   <div id="body">
@@ -386,10 +397,20 @@ function setRec(R,name,f){
   selL=null; cur=D.tmin; camMode="fit"; $("followBoss").classList.remove("on"); fitView(); renderInfo(); drawStrip(); draw(); syncUI();
   if(call.on&&!call.pick) setPlaying(false); else if(!RM) setPlaying(true);
 }
+function vkey(v){return (String(v||"").split(" ")[0].match(/\d+/g)||[]).slice(0,3).map(Number);}
+function vcmp(a,b){a=vkey(a);b=vkey(b);for(let i=0;i<3;i++){const d=(a[i]||0)-(b[i]||0);if(d)return d;}return 0;}
+function verText(f){return f&&f.ver?"Levy "+(f.verAbout?"about ":"")+f.ver:"";}
+function isOutdated(f){return !!(f&&f.ver&&manifest&&manifest.current&&vcmp(f.ver,manifest.current)<0);}
+function eraNote(f){if(!isOutdated(f))return "";const e=(manifest.eras||[]).slice().sort((a,b)=>vcmp(a.upTo,b.upTo)).find(x=>vcmp(f.ver,x.upTo)<=0);return e?e.note:"";}
+function verBadges(f){
+  if(!f||!f.ver)return "";
+  const out=isOutdated(f),n=eraNote(f);
+  return `<span class="bd v" title="the Levy version this fight was recorded on">${esc(verText(f))}</span>`+(out?`<span class="bd o" title="${esc((n?n+" ":"")+"Current: Levy "+manifest.current+".")}">outdated</span>`:"");
+}
 function head(f,name,s){
   const el=$("fightHead");
   if(!f){el.innerHTML=`<div class="ht"><b>${esc(name||s.boss)}</b><span class="hs">local recording &middot; ${s.dur.toFixed(0)} s</span></div>`;return;}
-  el.innerHTML=`<div class="ht"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span><span class="hs">${esc(f.mode)} &middot; ${f.levies} levies &middot; ${esc(f.arena)} &middot; ${f.dur.toFixed(0)} s &middot; ${esc(setTitleOf(f))}</span></div>`+(f.note?`<div class="hn">${esc(f.note)}</div>`:"");
+  el.innerHTML=`<div class="ht"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span><span class="hs">${esc(f.mode)} &middot; ${f.levies} levies &middot; ${esc(f.arena)} &middot; ${f.dur.toFixed(0)} s &middot; ${esc(setTitleOf(f))}</span><span class="badges" style="margin:0">${verBadges(f)}</span></div>`+(isOutdated(f)?`<div class="ho">Outdated${eraNote(f)?": "+esc(eraNote(f)):"."} Current: Levy ${esc(manifest.current)}.</div>`:"")+(f.note?`<div class="hn">${esc(f.note)}</div>`:"");
 }
 function loadLocal(file){
   file.text().then(t=>{curId=null;document.querySelectorAll(".card").forEach(c=>c.classList.remove("sel"));setRec(parseRec(t),file.name,null);$("app").classList.remove("showlist");}).catch(err=>showMsg("Could not read that file: "+err.message,"err"));
@@ -433,13 +454,15 @@ function renderList(){
   for(const s of manifest.sets){
     const list=s.fights.filter(f=>(!bs||f.boss===bs)&&(!rs||f.result===rs)); if(!list.length) continue; shown+=list.length;
     const d=document.createElement("details"); d.className="grp"; d.open=true;
-    d.innerHTML=`<summary>${esc(s.title)} (${list.length})</summary><div class="cards"></div>`;
-    const cards=d.querySelector(".cards");
+    d.innerHTML=`<summary>${esc(s.title)} (${list.length})</summary>`+(s.intro?`<p class="setintro">${esc(s.intro)}</p>`:"")+`<div class="cards"></div>`;
+    const cards=d.querySelector(".cards"); let lastG=null;
     for(const f of list){
+      const g=s.groupBy==="day"?String(f.date||"").slice(0,10):s.groupBy==="boss"?f.boss:null;
+      if(g!==null&&g!==lastG){lastG=g;const h=document.createElement("div");h.className="grph";const gn=s.groupBy==="boss"&&s.groupNotes&&s.groupNotes[g];h.innerHTML=esc(g||"Undated")+(gn?`<span class="small">${esc(gn)}</span>`:"");cards.appendChild(h);}
       const b=document.createElement("button"); b.className="card"+(f.id===curId?" sel":""); b.dataset.id=f.id;
       b.innerHTML=`<div class="ct"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span></div>`+
         `<div class="sub">${esc(f.mode)} &middot; ${f.levies} levies &middot; ${esc(f.arena)} &middot; ${f.dur.toFixed(0)} s</div>`+
-        `<div class="badges">${f.hasT?`<span class="bd l" title="share of the fight the boss was aimed at a levy">boss on levies ${f.pl.toFixed(0)}%</span>${f.ps>=1?`<span class="bd h" title="the boss rule redirected its shots and dashes at a levy">spite (redirected shots) ${f.ps.toFixed(0)}%</span>`:""}`:`<span class="bd">no target data</span>`}<span class="bd h">${f.hits} hits</span><span class="bd d">${f.deaths} deaths</span></div>`+
+        `<div class="badges">${verBadges(f)}${f.hasT?`<span class="bd l" title="share of the fight the boss was aimed at a levy">boss on levies ${f.pl.toFixed(0)}%</span>${f.ps>=1?`<span class="bd h" title="the boss rule redirected its shots and dashes at a levy">spite (redirected shots) ${f.ps.toFixed(0)}%</span>`:""}`:`<span class="bd">no target data</span>`}<span class="bd h">${f.hits} hits</span><span class="bd d">${f.deaths} deaths</span></div>`+
         (f.note?`<div class="note">${esc(f.note)}</div>`:"");
       b.onclick=()=>openFight(f.id); cards.appendChild(b);
     }

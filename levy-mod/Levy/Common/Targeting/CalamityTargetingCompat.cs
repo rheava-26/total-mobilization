@@ -1,9 +1,11 @@
 using System;
+using System.IO;
 using System.Reflection;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using Terraria;
 using Terraria.ModLoader;
+using Terraria.ModLoader.IO;
 using Levy.Common.Util;
 
 namespace Levy.Common.Targeting
@@ -20,9 +22,12 @@ namespace Levy.Common.Targeting
 	public class CalamityTargetingCompat : ModSystem
 	{
 		private delegate bool OrigPreAI(GlobalNPC self, NPC npc);
+		private delegate void OrigSendExtraAI(GlobalNPC self, NPC npc, BitWriter bits, BinaryWriter writer);
 		private static readonly bool[] _hid = new bool[Main.maxNPCs + 1];
 		public static bool Installed { get; private set; }
 		public static bool AiHookInstalled { get; private set; }
+		/// <summary>The SendExtraAI hook that keeps a dead NPC's override through its own AI pass (see <see cref="SendExtraAiDetour"/>) is installed.</summary>
+		public static bool SendHookInstalled { get; private set; }
 		/// <summary>LEVY_CALOVERRIDESLOT=0 turns the flyer-slot route for Calamity-driven native types off (A/B switch for the lab and the world check).</summary>
 		internal static readonly bool OverrideSlotOn = Environment.GetEnvironmentVariable("LEVY_CALOVERRIDESLOT") != "0";
 		private static GlobalNPC _overrideGlobal;
@@ -58,7 +63,9 @@ namespace Levy.Common.Targeting
 				if (g != null && cal.TryFind("CalamityVanillaAIOverrideNPC", out GlobalNPC og)) { _overrideGlobal = og; _overrideField = g.GetField("AIOverride", BindingFlags.Public | BindingFlags.Instance); }
 				MethodInfo pre = g?.GetMethod("PreAI", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(NPC) }, null);
 				if (pre != null) { MonoModHooks.Add(pre, (Func<OrigPreAI, GlobalNPC, NPC, bool>)PreAiDetour); AiHookInstalled = true; }
-				Mod.Logger.Info($"Levy Calamity targeting compat: CalamityTargeting hook {(Installed ? "installed" : "NOT found")}, PreAI hook {(AiHookInstalled ? "installed" : "NOT found")}");
+				MethodInfo send = g?.GetMethod("SendExtraAI", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(NPC), typeof(BitWriter), typeof(BinaryWriter) }, null);
+				if (send != null && pre != null && _overrideField != null) { MonoModHooks.Add(send, (Action<OrigSendExtraAI, GlobalNPC, NPC, BitWriter, BinaryWriter>)SendExtraAiDetour); SendHookInstalled = true; }
+				Mod.Logger.Info($"Levy Calamity targeting compat: CalamityTargeting hook {(Installed ? "installed" : "NOT found")}, PreAI hook {(AiHookInstalled ? "installed" : "NOT found")}, SendExtraAI hook {(SendHookInstalled ? "installed" : "NOT found")}");
 			}
 			catch (Exception e) { Mod.Logger.Warn("Levy Calamity targeting compat failed: " + e); }
 		}
@@ -93,10 +100,36 @@ namespace Levy.Common.Targeting
 			EnemyTargeting.CompeteAfterExternalSearch(npc);
 		}
 
+		/// <summary>The NPC (whoAmI) whose Calamity PreAI is running right now, or -1.</summary>
+		private static int _inPreAi = -1;
+		/// <summary>How many times a dead NPC's override was put back after its own AI cleared it, and how many NullReferenceExceptions the fallback below answered (lab counters for the world check).</summary>
+		public static int OverrideKept, DeathNreAnswered;
+
+		/// <summary>
+		/// Moon Lord's override AI finishes the core's death INSIDE the AI pass: it deactivates the parts and the core and calls NetMessage.SendData(SyncNPC) for each (the dedicated-server path). SendData runs Calamity's
+		/// SendExtraAI, which clears <c>AIOverride</c> of an NPC that is no longer active. When the AI returns, CalamityVanillaAIOverrideNPC.PreAI reads the field once more (<c>AIOverride.DisableMultiplayerSmoothing</c>)
+		/// and throws a NullReferenceException, on the last tick of every Moon Lord kill on a server (in single player SendData does nothing and the field stays set).
+		/// While an NPC's own PreAI is running, the SendExtraAI hook below lets Calamity write its packet as it always does and puts the override back afterwards, so the pass finishes with the same field a single-player
+		/// pass has. Nothing runs the override again: the NPC is dead.
+		/// </summary>
+		private static void SendExtraAiDetour(OrigSendExtraAI orig, GlobalNPC self, NPC npc, BitWriter bits, BinaryWriter writer)
+		{
+			if (_overrideField == null || npc == null || npc.whoAmI != _inPreAi) { orig(self, npc, bits, writer); return; }
+			object bound = _overrideField.GetValue(self);
+			orig(self, npc, bits, writer);
+			if (bound != null && _overrideField.GetValue(self) == null) { _overrideField.SetValue(self, bound); OverrideKept++; }
+		}
+
 		private static bool PreAiDetour(OrigPreAI orig, GlobalNPC self, NPC npc)
 		{
 			try { EnemyTargetingGlobalNPC.Prepare(npc); } catch (Exception) { }
-			return orig(self, npc);
+			object bound = _overrideField?.GetValue(self);
+			int outer = _inPreAi; _inPreAi = npc.whoAmI;
+			try { return orig(self, npc); }
+			// Fallback for a Calamity whose SendExtraAI could not be hooked: the same exception, answered only when it is provably this one (the override was bound when the pass began, is cleared now, and the NPC
+			// is dead). The pass has run, so the vanilla AI it replaces is skipped. Any other NullReferenceException (the override still bound, or a live NPC) is not this and goes on up.
+			catch (NullReferenceException) when (bound != null && _overrideField.GetValue(self) == null && (!npc.active || npc.life <= 0)) { DeathNreAnswered++; return false; }
+			finally { _inPreAi = outer; }
 		}
 	}
 }

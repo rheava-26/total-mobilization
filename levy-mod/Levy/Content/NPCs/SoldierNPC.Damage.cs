@@ -71,6 +71,7 @@ namespace Levy.Content.NPCs
 		// ------------------------------------------------------------------------------------------------------
 		private void ContactDamage()
 		{
+			if (AllImmune > 0 && HostileContact.Parity && HostileContact.Slots) return; // an all-types window closes the general window and every slot
 			Rectangle mine = NPC.Hitbox;
 			float cx = NPC.Center.X, cy = NPC.Center.Y;
 			float halfW = NPC.width * 0.5f + LevyConstants.ContactBroadPhasePx, halfH = NPC.height * 0.5f + LevyConstants.ContactBroadPhasePx;

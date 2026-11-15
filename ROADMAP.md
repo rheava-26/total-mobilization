@@ -6,6 +6,15 @@
 
 ---
 
+## 🐞 bossbugs MERGED (6c1f07e) → Levy 2.0.66 ship running
+- Deerclops, Bee and BeeSmall (types driven by a Calamity AI override) take the flyer slot 254 instead of target+300. Deerclops used to throw IndexOutOfRange and despawn. Audit result: Levy writes 300+ targets only in CompeteCore for UsesNewTargetting types, so these 3 were the only exposed ones.
+- **BIG: a Spectator commander vetoed EVERY hostile projectile hitting levies** (single player / listen host: enemy shots are owned by Main.myPlayer, and SpectatorPlayer.CanHitNPC => !Active). Fixed by the SpectatorHostileShots detour.
+  - This was the cause of Moon Lord's 0 hits (now 12,969–15,381 projectile damage per fight) and the WoF laser and Cultist 0-hit results.
+  - Real-play impact: Eve's spectator-potion mech farming had levies immune to boss projectiles.
+  - **The hmreplays battery and the earlier boss batteries used a Spectator commander, so their projectile damage was ZERO. Every result is biased easy for projectile bosses ("Destroyer projectiles 0" is this bug). RERUN needed after 2.0.66.**
+- Recorder: a kill that other bosses vanish with (ML hands, Cultist pillars) now counts as a kill.
+- The harness army now puts wings/boots in the mobility slots (the battery army had neither before).
+
 ## 🧪 HARDMODE BATTERY RESULTS (hmreplays MERGED 155bc46; harness/tooling only; RESULTS.md in levy-mod/lab/hmreplays)
 - **Destroyer, Master+Death, fixed 34 on-tier, platforms:**
   - Baseline: 15/40 wins = 38% (CI 24–53), median kill 67 s, 30 deaths/fight. Damage taken: head 6.7k, body 5.5k, tail ~0, projectiles 0.

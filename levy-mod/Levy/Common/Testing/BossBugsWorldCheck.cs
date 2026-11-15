@@ -209,6 +209,7 @@ namespace Levy.Common.Testing
 			if (Part(only, "wof")) { try { WallOfFlesh(); } finally { Cleanup(); } }
 			if (Part(only, "mlkill")) { try { MoonLordDeath(); } finally { Cleanup(); } }
 			if (Part(only, "killedge")) { try { IceBlockAtTheEdge(); } finally { Cleanup(); } }
+			if (Part(only, "spectarget")) { try { SpectatorSpawnedBosses(); } finally { Cleanup(); } }
 		}
 
 		// =====================================================================================================
@@ -390,6 +391,8 @@ namespace Levy.Common.Testing
 
 		// =====================================================================================================
 		// MOON LORD'S DEATH: Calamity's override AI ends the fight inside its own PreAI
+		// ==============================================================================================		}
+
 		// =====================================================================================================
 		/// <summary>
 		/// Calamity's Moon Lord override finishes the core's death animation INSIDE its AI: it deactivates the parts and the core and calls NetMessage.SendData(SyncNPC) for each. On a server that serializes the NPC,
@@ -493,6 +496,71 @@ namespace Levy.Common.Testing
 				pr.active = false;
 			}
 			Check("the guard moved a position exactly for the five cases outside the world", global::Levy.Common.Owner.UseGuard.Clamped - clamped0 == 5);
+		}
+
+		// =====================================================================================================
+		// SPECTATOR vs a boss's second half: the Leviathan (summoned by Anahita through a projectile) and the second Twin
+		// =====================================================================================================
+		private static void SpectatorSpawnedBosses()
+		{
+			Arena(FloorY, Half);
+			bool cal = ModLoader.HasMod("CalamityMod");
+			SetRevenge(cal, cal); Main.GameMode = cal ? GameModeID.Master : GameModeID.Expert;
+			Main.hardMode = true;
+			var cases = new List<(string name, int first, int second)> { ("Retinazer then Spazmatism", NPCID.Retinazer, NPCID.Spazmatism) };
+			if (cal && ModContent.TryFind<ModNPC>("CalamityMod/Anahita", out var ana) && ModContent.TryFind<ModNPC>("CalamityMod/Leviathan", out var levi)) cases.Add(("Anahita then Leviathan", ana.Type, levi.Type));
+			else Note("Calamity is not loaded: only the Twins case runs");
+			foreach (var c in cases)
+			{
+				// downed+spectator: the first half is beaten in a record that never named the second (the harness's rematch state); a Spectator commander must not hold either half.
+				// undowned+visible: nothing beaten, a visible commander is targeted as usual (the first kill is solo).
+				foreach (string mode in new[] { "downed+spectator", "undowned+visible" })
+				{
+					bool down = mode.StartsWith("downed"), spec = down;
+					ClearHostiles(); RosterSystem.Instance.Regulars.RemoveAll(r => r.CommanderName == Commander);
+					for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) Main.npc[i].active = false;
+					global::Levy.Common.Boss.BossDownedSystem.ClearForTest();
+					if (down) global::Levy.Common.Boss.BossDownedSystem.SetOnlyKeyDownedForTest(c.first, true);
+					SetBossesTarget(true); _spectator = spec;
+					if (!spec) { var b = Main.player[0]; int bt = ModContent.BuffType<global::Levy.Content.Buffs.SpectatorBuff>(); if (b.HasBuff(bt)) b.ClearBuff(bt); }
+					PlaceCommander(-20);
+					var levies = Levies(8, 3f, 10f);
+					Step(4);
+					// the second half joins mid-fight with no owner NPC (Anahita's spawner is a projectile) and Terraria's default target 0: the commander
+					NPC a = SpawnNpc(c.first, new Vector2((Cx + 40) * 16f, (_floorY - 30) * 16f));
+					NPC b2 = SpawnNpc(c.second, new Vector2((Cx + 46) * 16f, (_floorY - 30) * 16f));
+					string who = c.name + " / " + mode;
+					Check($"({who}) both halves spawn", a != null && b2 != null);
+					if (a == null || b2 == null) continue;
+					b2.target = 0;
+					int ticks = 0, lockedA = 0, lockedB = 0, onCmdB = 0;
+					_perTick = () =>
+					{
+						if (!a.active || !b2.active) return;
+						a.timeLeft = b2.timeLeft = 99999; a.life = a.lifeMax; b2.life = b2.lifeMax;
+						if (++ticks <= 60) return; // a second to settle
+						if (Locked(a)) lockedA++;
+						if (Locked(b2)) lockedB++;
+						if (!Locked(b2) && b2.target == 0) onCmdB++;
+					};
+					Step(420);
+					_perTick = null;
+					int n = Math.Max(1, ticks - 60);
+					Note($"({who}) first half locked on a levy {lockedA}/{n} ticks, second half {lockedB}/{n} ticks (on the commander {onCmdB}); undowned(second)={EnemyTargeting.IsUndownedBoss(b2)} hides spectator={EnemyTargeting.HidesSpectatorFrom(b2)}");
+					if (down)
+					{
+						Check($"({who}) the second half counts as beaten with the first and the Spectator is hidden from it", !EnemyTargeting.IsUndownedBoss(b2) && EnemyTargeting.HidesSpectatorFrom(b2));
+						Check($"({who}) the second half locks onto levies, never the Spectator commander ({lockedB}/{n} ticks, {onCmdB} on the commander)", lockedB * 10 >= n * 8 && onCmdB * 20 <= n);
+						Check($"({who}) the first half still locks onto levies", lockedA * 10 >= n * 8);
+					}
+					else
+					{
+						Check($"({who}) an unbeaten second half is flagged and a visible commander stays its target ({lockedB}/{n} ticks on levies)", EnemyTargeting.IsUndownedBoss(b2) && lockedB * 10 <= n && onCmdB * 10 >= n * 8);
+					}
+					a.active = false; b2.active = false;
+				}
+			}
+			global::Levy.Common.Boss.BossDownedSystem.ClearForTest();
 		}
 
 		// =====================================================================================================

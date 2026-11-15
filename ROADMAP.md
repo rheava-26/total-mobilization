@@ -14,6 +14,13 @@
 - Bugs seen (silently caught): Projectile.Kill via UseGuard.KillDetour (Queen Slime), Calamity PreAI NRE through CalamityTargetingCompat on Moon Lord, Plantera AI SolidTile out of range, harness CrPinStrays line 488.
 - Site: /home/user/lab/hmbattery2/site b01-b04 (229 fights, 192 MB). Test world LevyTest.wld is gone after the container reset; the lab uses ShipWorld.wld.
 
+## 🎯 spectarget MERGED
+- **Cause:** the harness (and BossDowned) marked only one half of two-part bosses as downed, so the Leviathan and Spazmatism counted as undowned. The Spectator wasn't hidden from them, they kept default target 0 (the commander) and never retargeted.
+  - Seeds 2–3 only looked fine because the downed set carried over inside the server process.
+- **Fix:** boss families share one downed state (BossDowned.cs; Twins and Anahita/Leviathan). RecordKill waits for both halves. New BossBugs part `spectarget`.
+- **Seed 1 after the fix:** the Leviathan targets levies and the army is wiped (a real loss now). Twins: Spazmatism goes from commander/spite to the levy lock 100%.
+- Real play: the same half-recorded state could happen after a real kill, so this matters beyond the lab.
+
 ## 🧭 Mod of Redemption audit MERGED (7f4285e; levy-mod/docs/redemption_compat_audit.md). EVE PLAYS IT BLIND: no Redemption names or text to Eve.
 - Loads clean on both toolchains.
 - Breaks:

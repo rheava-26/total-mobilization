@@ -24,7 +24,8 @@ namespace Levy.Common.UI
 		public const int Height_ = 24;
 		private readonly LevyButton _minus, _plus;
 		private readonly UIPanel _box;
-		private readonly UISearchBar _input;
+		private readonly LevyTextInput _input;
+		private readonly NumberEditModel _num;
 		private readonly Label _shown;
 		public Func<float> Get;
 		public Action<float> Set;
@@ -34,13 +35,15 @@ namespace Levy.Common.UI
 		public float OffAt = float.NegativeInfinity;
 		public string OffText = "";
 		public bool Typing => _input.IsWritingText;
+		/// <summary>Ends typing the way a click elsewhere does: the number is settled (an empty box restores the last valid value).</summary>
 		public void StopTypingIfAny() { if (_input.IsWritingText) _input.ToggleTakingText(); }
 		private float _lastShown = float.NaN;
-		private bool _lastTyping;
+		private bool _lastTyping, _lastHint;
 
 		public NumberField(float width, float min, float max, float step, bool whole, Func<float> get, Action<float> set)
 		{
 			Min = min; Max = max; Step = step; Whole = whole; Get = get; Set = set;
+			_num = new NumberEditModel(min, max, whole, 0f);
 			Width.Set(width, 0f); Height.Set(Height_, 0f);
 			_minus = new LevyButton("-", LevyConstants.UI.ButtonTextScale, 24, Height_, () => Nudge(-1));
 			_plus = new LevyButton("+", LevyConstants.UI.ButtonTextScale, 24, Height_, () => Nudge(1));
@@ -52,15 +55,15 @@ namespace Levy.Common.UI
 			_shown = new Label("", 0.8f);
 			_shown.HAlign = 0.5f; _shown.VAlign = 0.5f;
 			_box.Append(_shown);
-			_input = new UISearchBar(Language.GetText("Mods.Levy.Rules.TypeNumber"), 0.8f);
+			_input = new LevyTextInput(Language.GetText("Mods.Levy.Rules.TypeNumber"), 0.8f, _num.Box) { SelectAllOnFocus = true };
 			_input.Left.Set(4, 0f); _input.Width.Set(-8, 1f); _input.Height.Set(0, 1f);
-			_input.OnContentsChanged += OnTyped;
-			_input.OnCanceledTakingInput += () => { if (_input.IsWritingText) _input.ToggleTakingText(); };
-			_box.OnLeftClick += (e, el) => { if (!_input.IsWritingText) { _input.SetContents(Format(Get()), true); _input.ToggleTakingText(); } };
+			_input.FocusText = () => { SyncModel(); _num.SyncValue(Get()); return _num.FocusText; };
+			_input.RawEdit = raw => { var v = _num.Edit(raw); if (v.HasValue) Apply(v.Value); };       // a complete in-range number applies as you type
+			_input.OnEndTakingInput += Finish;                                                         // Enter, Esc, a click elsewhere, Buy / Add (StopTypingIfAny)
+			_box.OnLeftClick += (e, el) => { if (!_input.IsWritingText) _input.ToggleTakingText(); };
 			Append(_minus); Append(_box); Append(_plus);
 		}
 
-		private string Format(float v) => Whole ? ((int)Math.Round(v)).ToString(CultureInfo.InvariantCulture) : v.ToString("0.##", CultureInfo.InvariantCulture);
 
 		private void Nudge(int dir)
 		{
@@ -79,14 +82,23 @@ namespace Levy.Common.UI
 			if (Math.Abs(v - Get()) > 1e-6f) Set(v);
 		}
 
-		private void OnTyped(string text)
+		/// <summary>Keep the number rules in step with the public fields (RulesView sets OffAt and OffText after construction).</summary>
+		private void SyncModel() { _num.Min = Min; _num.Max = Max; _num.Whole = Whole; _num.OffAt = OffAt; _num.OffText = OffText; }
+
+		/// <summary>Typing ended: clamp what was typed into range and apply it; an empty box leaves the bound value as it was.</summary>
+		private void Finish()
 		{
-			if (float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v)) Apply(v);
+			SyncModel();
+			bool empty = _num.Box.IsEmpty;
+			float v = _num.Commit();
+			if (!empty) Apply(v);
+			_num.SyncValue(Get());
 		}
 
 		public override void Update(GameTime gameTime)
 		{
 			base.Update(gameTime);
+			SyncModel();
 			if (_input.IsWritingText && Main.mouseLeft && Main.mouseLeftRelease && !_box.ContainsPoint(Main.MouseScreen)) _input.ToggleTakingText();
 			float v = Get();
 			bool typing = _input.IsWritingText;
@@ -97,7 +109,8 @@ namespace Levy.Common.UI
 			else
 			{
 				if (_box.HasChild(_input)) { _box.RemoveChild(_input); _box.Append(_shown); _lastShown = float.NaN; }
-				if (v != _lastShown || _lastTyping) { _lastShown = v; _shown.SetText(v <= OffAt ? OffText : Format(v)); }
+				_num.SyncValue(v);
+				if (v != _lastShown || _lastTyping) { _lastShown = v; var (text, hint) = _num.Display(Language.GetTextValue("Mods.Levy.Rules.TypeNumber")); _shown.SetText(text); _shown.TextColor = hint ? Color.Gray : Color.White; }
 			}
 			_lastTyping = typing;
 			_minus.Enabled = v > (float.IsNegativeInfinity(OffAt) ? Min : OffAt);

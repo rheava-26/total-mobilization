@@ -285,22 +285,31 @@ namespace Levy.Content.NPCs
 		// Main.myPlayer already is 255 and only the array slot is lent. Every other mod's ModPlayer hook dispatched for the dummy inside the frame passes the IdentityGuard (hidden or mirrored view), so a mod
 		// that reads Main.LocalPlayer, or closes a panel when the local player is not in conversation, never mistakes the dummy for the human at the keyboard.
 		// ------------------------------------------------------------------------------------------------------------
-		private struct FrameSlot { public Player Backup; public int MyPlayer, FakeToken, GuardMark; public float Volume; public bool Active, Ded; }
+		private struct FrameSlot { public Player Backup; public int MyPlayer, FakeToken, GuardMark; public float Volume; public bool Active, Ded, Gate; }
 
 		private FrameSlot EnterFrameSlot()
 		{
 			if (GearUpkeep.LegacySlot) { Dummy.whoAmI = WeaponUse.OwnerFor(this); return default; } // HARNESS A/B only (env LEVY_UPKEEP_LEGACYSLOT=1): the first version's borrowed commander slot
-			var f = new FrameSlot { Active = true, Backup = Main.player[DummySlot], MyPlayer = Main.myPlayer, Volume = Main.soundVolume, Ded = Main.dedServ, GuardMark = global::Levy.Common.Owner.IdentityGuard.Mark() };
-			Dummy.whoAmI = DummySlot;
-			Main.player[DummySlot] = Dummy;
-			f.FakeToken = SoldierMinions.BeginFake(f.MyPlayer);
-			Main.myPlayer = DummySlot;
-			// Local-player blocks also write PROCESS-WIDE state the dummy has no business touching: Calamity swaps TextureAssets.FlyingCarpet / the buff icons and sets BossHealthBarManager flags under
-			// "!Main.dedServ && whoAmI == Main.myPlayer"; sounds, dust, shaders and UI sit behind the same test. The frame runs as a dedicated server does (which is how every measurement here was taken) so
-			// none of that fires; restored in the finally. The frame is synchronous on the main thread.
-			Main.dedServ = true;
-			if (!f.Ded) Main.soundVolume = 0f;
-			return f;
+			var f = new FrameSlot { Active = true, Gate = SaveGate.Enter(), Backup = Main.player[DummySlot], MyPlayer = Main.myPlayer, Volume = Main.soundVolume, Ded = Main.dedServ, GuardMark = global::Levy.Common.Owner.IdentityGuard.Mark() }; // the gate first: tML's character save may not start while the globals below are lent (SaveGate)
+			try
+			{
+				Dummy.whoAmI = DummySlot;
+				Main.player[DummySlot] = Dummy;
+				f.FakeToken = SoldierMinions.BeginFake(f.MyPlayer);
+				Main.myPlayer = DummySlot;
+				// Local-player blocks also write PROCESS-WIDE state the dummy has no business touching: Calamity swaps TextureAssets.FlyingCarpet / the buff icons and sets BossHealthBarManager flags under
+				// "!Main.dedServ && whoAmI == Main.myPlayer"; sounds, dust, shaders and UI sit behind the same test. The frame runs as a dedicated server does (which is how every measurement here was taken) so
+				// none of that fires; restored in the finally. The frame is synchronous on the main thread.
+				Main.dedServ = true;
+				if (!f.Ded) Main.soundVolume = 0f;
+				return f;
+			}
+			catch
+			{
+				Main.myPlayer = f.MyPlayer; Main.dedServ = f.Ded; Main.soundVolume = f.Volume; Main.player[DummySlot] = f.Backup ?? Main.player[DummySlot];
+				SaveGate.Exit(f.Gate);
+				throw;
+			}
 		}
 
 		private void ExitFrameSlot(FrameSlot f)
@@ -313,6 +322,7 @@ namespace Levy.Content.NPCs
 			Main.dedServ = f.Ded;
 			Main.soundVolume = f.Volume;
 			Dummy.whoAmI = DummySlot;
+			SaveGate.Exit(f.Gate); // last: the globals are the real ones again
 		}
 
 		private void RunHook(Action a)

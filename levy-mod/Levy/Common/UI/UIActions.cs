@@ -338,6 +338,24 @@ namespace Levy.Common.UI
 			p.Send();
 		}
 
+		/// <summary>
+		/// Takes what a levy carries from the armory screen. Single player does it at once and puts the item in the player's pack; a multiplayer client sends <see cref="LevyPacket.ArmoryTakeHeld"/>
+		/// and the server does it (the item drops at the player's feet and is picked up at once), so the one real item moves exactly once whoever clicks.
+		/// </summary>
+		public static void TakeHeld(ArmoryTE te, InUseEntry e)
+		{
+			if (te == null || !e.Takeable || e.Item == null || e.Item.IsAir) return;
+			if (Single)
+			{
+				if (te.TakeHeld(e.SoldierId, e.Slot, e.Item.type, out Item taken, out _) == TakeHeldResult.Ok) { ArmoryTE.GiveToPlayer(Me, taken, direct: true); SoundEngine.PlaySound(SoundID.Grab); }
+				return;
+			}
+			var p = LevyPackets.New(LevyPacket.ArmoryTakeHeld);
+			p.Write(te.ID); p.Write(e.SoldierId); p.Write((byte)e.Slot); p.Write(e.Item.type);
+			p.Send();
+			SoundEngine.PlaySound(SoundID.Grab);
+		}
+
 		// ------------------------------------------------------------------ soldier loadout
 		/// <summary>
 		/// Hand-equip: the loadout panel has already put <paramref name="item"/> into the slot (taken from the mouse, so it came out of

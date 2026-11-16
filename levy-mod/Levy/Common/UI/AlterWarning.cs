@@ -17,18 +17,19 @@ using Levy.Common.Weapons;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// THE DEPOSIT WARNING. Putting an item in the Armory that breaks blocks or otherwise alters the world (<see cref="WorldAlter"/>) opens a popup the player has to click away: it names the item, says what it does and that
-	/// levies will never use it. "Don't show again for this item" remembers it for this character. It is only ever shown to the person who made the deposit (the local client), never from a script or a server action:
+	/// THE BLOCK-BREAKING WARNING (Eve, 2026-11-16). Putting an item in the Armory that breaks blocks or otherwise alters the world (<see cref="WorldAlter"/>) opens a window with Confirm and Cancel: it names the item and says what it does.
+	/// Confirm is the player's yes for that weapon (<see cref="WorldAlterConsent"/>): levies may use it from then on, and break blocks the way a player's use would, and the window never asks again for it in this world.
+	/// Cancel changes nothing (the item stays in storage, unissued, and the window asks again next time it is deposited). It is only ever shown to the person who made the deposit (the local client), never from a script or a server action:
 	/// <see cref="Note"/> is called from the shift-click, the Deposit junk button and a click that drops a held item into a cell.
 	/// The warning state (<see cref="Pending"/>) is plain data so the self-check can read it without drawing anything; the window itself is built when the first frame that draws it needs it.
 	/// </summary>
 	public class AlterWarning : ModSystem
 	{
-		/// <summary>One item the open warning is about: its type, name and the one-line reason.</summary>
+		/// <summary>One item the open warning is about: its type, name and the one-line reason. <see cref="Breaks"/> picks the wording of the title (break blocks / alter the world).</summary>
 		public readonly struct Entry
 		{
-			public readonly int Type; public readonly string Name, Reason;
-			public Entry(int type, string name, string reason) { Type = type; Name = name; Reason = reason; }
+			public readonly int Type; public readonly string Name, Reason; public readonly bool Breaks;
+			public Entry(int type, string name, string reason, bool breaks) { Type = type; Name = name; Reason = reason; Breaks = breaks; }
 		}
 
 		/// <summary>What the open warning lists (empty: none is open).</summary>
@@ -40,16 +41,16 @@ namespace Levy.Common.UI
 
 		private UserInterface _ui; private WarnState _state;
 
-		/// <summary>The entries that would be warned about for these items: flagged, not dismissed on this character, one per item type.</summary>
-		public static List<Entry> Collect(IEnumerable<Item> items, HashSet<string> dismissed)
+		/// <summary>The entries that would be warned about for these items: flagged, not yet confirmed in this world, not a tool, one per item type.</summary>
+		public static List<Entry> Collect(IEnumerable<Item> items)
 		{
 			var res = new List<Entry>(); var seen = new HashSet<int>();
 			foreach (Item it in items)
 			{
 				if (it == null || it.IsAir || !seen.Add(it.type)) continue;
+				if (!WorldAlter.NeedsConsent(it)) continue;
 				string reason = WorldAlter.ReasonText(it); if (reason == null) continue;
-				if (dismissed != null && dismissed.Contains(WorldAlter.KeyOf(it.type))) continue;
-				res.Add(new Entry(it.type, it.Name, reason));
+				res.Add(new Entry(it.type, it.Name, reason, (WorldAlter.Hard(WorldAlter.KindOf(it)) & ~(WorldAlter.Kind.Tiles | WorldAlter.Kind.Walls)) == WorldAlter.Kind.None));
 			}
 			return res;
 		}
@@ -61,25 +62,29 @@ namespace Levy.Common.UI
 		public static void NoteMany(IEnumerable<Item> deposited)
 		{
 			if (Main.dedServ || Main.gameMenu) return;
-			if (NoteFor(deposited, Main.LocalPlayer?.GetModPlayer<AlterWarnPlayer>()?.Dismissed)) SoundEngine.PlaySound(SoundID.MenuOpen);
+			if (NoteFor(deposited)) SoundEngine.PlaySound(SoundID.MenuOpen);
 		}
 
-		/// <summary>The warning logic with the dismissed set passed in (the self-check drives it without a player). True when a warning is now open.</summary>
-		public static bool NoteFor(IEnumerable<Item> deposited, HashSet<string> dismissed)
+		/// <summary>The warning logic (the self-check drives it without a player). True when a warning is now open.</summary>
+		public static bool NoteFor(IEnumerable<Item> deposited)
 		{
-			var fresh = Collect(deposited, dismissed);
+			var fresh = Collect(deposited);
 			if (fresh.Count == 0) return false;
 			foreach (Entry e in fresh) if (!Pending.Any(p => p.Type == e.Type)) Pending.Add(e);
 			Opened++;
 			return true;
 		}
 
-		/// <summary>Closes the warning; with <paramref name="never"/> the listed items are not warned about again on this character.</summary>
-		public static void Dismiss(bool never)
+		/// <summary>Confirm: the listed items are allowed in this world (levies may use them and will damage terrain with them). The window closes.</summary>
+		public static void Confirm()
 		{
-			if (never) { var pl = Main.LocalPlayer?.GetModPlayer<AlterWarnPlayer>(); if (pl != null) foreach (Entry e in Pending) pl.Dismissed.Add(WorldAlter.KeyOf(e.Type)); }
+			var types = Pending.Select(e => e.Type).ToList();
 			Pending.Clear();
+			WorldAlterConsent.Confirm(types);
 		}
+
+		/// <summary>Cancel: nothing changes. The window closes.</summary>
+		public static void Cancel() => Pending.Clear();
 
 		public override void OnWorldUnload() { Pending.Clear(); _state = null; _ui?.SetState(null); }
 
@@ -116,23 +121,26 @@ namespace Levy.Common.UI
 				RemoveAllChildren();
 				Count = Pending.Count;
 				int rows = Math.Min(MaxRows, Pending.Count); int extra = Pending.Count - rows;
-				float w = 360f, h = 96f + rows * 34f + (extra > 0 ? 18f : 0f) + 36f;
+				bool breaks = Pending.All(e => e.Breaks);
+				const float titleH = 66f;
+				float w = 380f, h = 20f + titleH + rows * 34f + (extra > 0 ? 18f : 0f) + 44f;
 				var dim = new UIPanel { BackgroundColor = Color.Black * 0.45f, BorderColor = Color.Transparent };
 				dim.Width.Set(0, 1f); dim.Height.Set(0, 1f); Append(dim);
 				var panel = new UIPanel { BackgroundColor = new Color(18, 24, 50) * 0.97f };
 				panel.Width.Set(w, 0f); panel.Height.Set(h, 0f); panel.HAlign = 0.5f; panel.VAlign = 0.4f; panel.SetPadding(10f);
 				Append(panel);
-				var head = new UIText(LevyUtil.T(Pending.Count == 1 ? "UI2.AlterWarnTitleOne" : "UI2.AlterWarnTitleMany"), 0.9f) { HAlign = 0f };
-				head.Top.Set(0, 0f); panel.Append(head);
+				string key = (Pending.Count == 1 ? "UI2.AlterWarnTitleOne" : "UI2.AlterWarnTitleMany") + (breaks ? "" : "Other");
+				var head = new UIText(LevyUtil.T(key), 0.85f) { IsWrapped = true, WrappedTextBottomPadding = 0f };
+				head.Width.Set(0, 1f); head.Height.Set(titleH, 0f); head.Top.Set(0, 0f); panel.Append(head);
 				for (int i = 0; i < rows; i++)
 				{
-					var row = new Row(Pending[i]); row.Top.Set(28f + i * 34f, 0f); panel.Append(row);
+					var row = new Row(Pending[i]); row.Top.Set(titleH + 4f + i * 34f, 0f); panel.Append(row);
 				}
-				if (extra > 0) { var more = new UIText(LevyUtil.T("UI2.AlterWarnMore", extra), 0.75f); more.Top.Set(28f + rows * 34f + 2f, 0f); panel.Append(more); }
-				var ok = new LevyButton(LevyUtil.T("UI2.AlterWarnOk"), LevyConstants.UI.ButtonTextScale, 80f, 28f, () => Dismiss(false));
+				if (extra > 0) { var more = new UIText(LevyUtil.T("UI2.AlterWarnMore", extra), 0.75f); more.Top.Set(titleH + 4f + rows * 34f + 2f, 0f); panel.Append(more); }
+				var ok = new LevyButton(LevyUtil.T("UI2.AlterWarnOk"), LevyConstants.UI.ButtonTextScale, 110f, 28f, Confirm);
 				ok.Left.Set(0f, 0f); ok.VAlign = 1f; panel.Append(ok);
-				var never = new LevyButton(LevyUtil.T(Pending.Count == 1 ? "UI2.AlterWarnNeverOne" : "UI2.AlterWarnNeverMany"), LevyConstants.UI.ButtonTextScale, w - 100f - 20f, 28f, () => Dismiss(true));
-				never.Left.Set(90f, 0f); never.VAlign = 1f; panel.Append(never);
+				var cancel = new LevyButton(LevyUtil.T("UI2.AlterWarnCancel"), LevyConstants.UI.ButtonTextScale, 110f, 28f, Cancel);
+				cancel.Left.Set(120f, 0f); cancel.VAlign = 1f; panel.Append(cancel);
 				Recalculate();
 			}
 		}
@@ -154,13 +162,5 @@ namespace Levy.Common.UI
 				Terraria.Utils.DrawBorderString(sb, _e.Reason, new Vector2(r.X + 38f, r.Y + 15f), new Color(255, 200, 120), 0.7f);
 			}
 		}
-	}
-
-	/// <summary>Per character: the items the player asked not to be warned about again (by item key).</summary>
-	public class AlterWarnPlayer : ModPlayer
-	{
-		public readonly HashSet<string> Dismissed = new();
-		public override void SaveData(TagCompound tag) { if (Dismissed.Count > 0) tag["alterWarnOff"] = Dismissed.ToList(); }
-		public override void LoadData(TagCompound tag) { Dismissed.Clear(); foreach (string s in tag.GetList<string>("alterWarnOff")) Dismissed.Add(s); }
 	}
 }

@@ -14,7 +14,7 @@ using Terraria.ModLoader;
 namespace Levy.Common.Weapons
 {
 	/// <summary>
-	/// THE ARMY NEVER ALTERS THE WORLD (Eve, 2026-11-14). No levy, officer, militia, drone or turret uses anything that breaks tiles or walls, places or moves liquid, converts or paints the world, or mines:
+	/// WORLD-ALTERING WEAPONS ARE ALLOWED ONLY AFTER THE PLAYER CONFIRMS THE BLOCK-BREAKING WARNING FOR THAT WEAPON (Eve, 2026-11-16; <see cref="WorldAlterConsent"/>). Until then: no levy, officer, militia, drone or turret uses anything that breaks tiles or walls, places or moves liquid, converts or paints the world, or mines:
 	/// explosives, tile-breaking rockets and rounds, drills, picks, hammers, axes, sand and ice guns, solutions. <see cref="Alters(Item)"/> is the one question every pick path asks (weapon classifier, allocation, sidearms,
 	/// ammo, drone and turret arsenals, officer kits, the armory's deposit warning); <see cref="AltersWith"/> asks it of a (weapon, round) pair.
 	/// <para/>How it knows. The answer is MEASURED, not listed: <c>TileSweepCheck</c> fires every weapon with every round of its kind (and spawns every projectile type) into a block field and compares the field tile by tile;
@@ -144,7 +144,10 @@ namespace Levy.Common.Weapons
 		// ------------------------------------------------------------------------------------------------------ the questions
 
 		/// <summary>True when using this item, or anything it fires, can change the world. Never true for air, armor, accessories or placeable blocks.</summary>
-		public static bool Alters(Item it) => Hard(KindOf(it)) != Kind.None;
+		public static bool Alters(Item it) => Hard(KindOf(it)) != Kind.None && !WorldAlterConsent.Has(it.type);
+
+		/// <summary>True when the scanner flags this item and the player has not confirmed the block-breaking warning for it: the one question the warning window asks. A tool is never offered (a levy has no use for one).</summary>
+		public static bool NeedsConsent(Item it) => Hard(KindOf(it)) != Kind.None && !IsTool(it) && !WorldAlterConsent.Has(it.type);
 
 		/// <summary>The kinds of world change using this item causes by itself (any round included), or None.</summary>
 		public static Kind KindOf(Item it)
@@ -201,9 +204,9 @@ namespace Levy.Common.Weapons
 		public static Kind KindWith(Item weapon, Item ammo)
 		{
 			if (Disabled) return Kind.None;
-			Kind k = KindOf(weapon); if (k != Kind.None) return k;
+			Kind k = KindOf(weapon); if (k != Kind.None && !WorldAlterConsent.Has(weapon.type)) return k; // what the player confirmed counts as ordinary
 			if (ammo == null || ammo.IsAir) return Kind.None;
-			k = KindOf(ammo); if (k != Kind.None) return k;
+			k = KindOf(ammo); if (k != Kind.None && !WorldAlterConsent.Has(ammo.type)) return k;
 			if (weapon == null || weapon.IsAir) return Kind.None; // a round judged alone (the pouch of a levy whose weapon is not known)
 			lock (Gate)
 			{
@@ -212,7 +215,7 @@ namespace Levy.Common.Weapons
 				_pairCache.TryGetValue((weapon.type, ammo.type), out c);
 				if (_pair.TryGetValue((KeyOf(weapon.type), KeyOf(ammo.type)), out Kind x)) c = x;
 				_pairCache[(weapon.type, ammo.type)] = c;
-				return c;
+				return c != Kind.None && (WorldAlterConsent.Has(weapon.type) || WorldAlterConsent.Has(ammo.type)) ? Kind.None : c;
 			}
 		}
 

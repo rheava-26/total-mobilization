@@ -46,7 +46,7 @@ namespace Levy.Common.UI
 		private int _shownCapacity = -1, _shownCenters = -1;
 		private long _shownValue = -1;
 		private UIPanel _searchBox;
-		private UISearchBar _search;
+		private LevyTextInput _search;
 		private RaritySwatch[] _swatches;
 		/// <summary>The targeted-reforge panel beside the armory (open while the player is setting up a run).</summary>
 		private ReforgePanel _reforgePanel;
@@ -449,7 +449,7 @@ namespace Levy.Common.UI
 					if (cell == ArmoryView.Spacer) continue;
 					UIElement slot;
 					if (cell >= 0) slot = MakeSlot(arr, cell, 0, null, storageHint);
-					else { int k = ~cell; if (k >= _out.Count) continue; slot = new OutSlot(_out[k], Scale); }
+					else { int k = ~cell; if (k >= _out.Count) continue; slot = new OutSlot(_out[k], Scale, e => UIActions.TakeHeld(Te, e)); }
 					slot.Left.Set(c * Pitch, 0f);
 					row.Append(slot);
 				}
@@ -543,17 +543,19 @@ namespace Levy.Common.UI
 		}
 
 		/// <summary>
-		/// A read-only cell for an item that is out of the racks: gear a levy carries (green) or a weapon lent to a drone (amber). It sits where nothing can be dragged, taken or dropped; the item is drawn faded and the tooltip
-		/// names the holder. Drawn with the vanilla slot texture and item icon, so it is the same size and look as a stored item's cell.
+		/// A cell for an item that is out of the racks: gear a levy carries (green) or a weapon lent to a drone (amber). Nothing can be dropped on it. A click on a carried item takes it: it moves to the player and
+		/// the levy gets the armory's next pick (<see cref="ArmoryTE.TakeHeld"/>); a loan is read-only. The item is drawn faded and the tooltip names the holder. Drawn with the vanilla slot texture and item icon, so it is the same size and look as a stored item's cell.
 		/// </summary>
 		private sealed class OutSlot : UIElement
 		{
 			private readonly InUseEntry _e;
 			private readonly float _scale;
 
-			public OutSlot(InUseEntry e, float scale)
+			private readonly Action<InUseEntry> _onTake;
+
+			public OutSlot(InUseEntry e, float scale, Action<InUseEntry> onTake = null)
 			{
-				_e = e; _scale = scale;
+				_e = e; _scale = scale; _onTake = onTake;
 				float size = 52f * scale;
 				Width.Set(size, 0f); Height.Set(size, 0f);
 			}
@@ -581,7 +583,9 @@ namespace Levy.Common.UI
 					Main.LocalPlayer.mouseInterface = true;
 					var shown = item.Clone();
 					Main.HoverItem = shown; Main.hoverItemName = item.Name;
-					ArmoryOutTip.Set(shown, HolderLine(), lent ? LevyConstants.UI.ArmoryLentText : LevyConstants.UI.ArmoryCarriedText);
+					bool takeable = _e.Takeable && _onTake != null;
+					ArmoryOutTip.Set(shown, takeable ? HolderLine() + "\n" + LevyUtil.T("UI2.ArmoryTakeHint", _e.Holder) : HolderLine(), lent ? LevyConstants.UI.ArmoryLentText : LevyConstants.UI.ArmoryCarriedText);
+					if (takeable && Main.mouseLeft && Main.mouseLeftRelease) { Main.mouseLeftRelease = false; _onTake(_e); }
 				}
 			}
 		}
@@ -599,7 +603,7 @@ namespace Levy.Common.UI
 			_searchBox.Width.Set(sortLeft - LevyConstants.UI.ArmorySearchGap - LevyConstants.UI.ArmorySearchLeft, 0f);
 			_searchBox.Height.Set(LevyConstants.UI.ArmorySearchHeight, 0f);
 			_searchBox.BackgroundColor = new Color(20, 26, 52) * 0.9f;
-			_search = new UISearchBar(Language.GetText("Mods.Levy.UI2.ArmorySearch"), LevyConstants.UI.ButtonTextScale + 0.05f);
+			_search = new LevyTextInput(Language.GetText("Mods.Levy.UI2.ArmorySearch"), LevyConstants.UI.ButtonTextScale + 0.05f);
 			_search.Left.Set(LevyConstants.UI.ArmorySearchInset, 0f);
 			_search.Width.Set(-2f * LevyConstants.UI.ArmorySearchInset, 1f); _search.Height.Set(0f, 1f);
 			_search.OnContentsChanged += OnSearchChanged;

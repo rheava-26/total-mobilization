@@ -56,6 +56,8 @@ namespace Levy.Common.Weapons
 		public static bool Begin(Projectile p, Rectangle val, out float loX, out float hiX, out float loY, out float hiY)
 		{
 			loX = hiX = loY = hiY = 0f;
+			_colliderMode = false; _hostileRect = false;
+			if (p.hostile && !p.friendly && p.damage > 0 && HostileOn && !Audit) return BeginHostile(p, val, out loX, out hiX, out loY, out hiY);
 			if (!p.friendly || p.hostile || p.damage <= 0) return false;
 			if (!p.TryGetGlobalProjectile(out SoldierProjectileTag t)) return false;
 			if (t.SoldierIndex < 0 && t.CommanderIndex < 0 && !t.DroneShot) return false;
@@ -67,6 +69,45 @@ namespace Levy.Common.Weapons
 			}
 			loX = val.X - m; hiX = val.X + val.Width + m; loY = val.Y - m; hiY = val.Y + val.Height + m;
 			return true;
+		}
+
+		/// <summary>On unless LEVY_PAIRCULL_HOSTILE=0 (A/B): the cull also covers HOSTILE projectiles, for the pairs with a levy body.</summary>
+		public static readonly bool HostileOn = Requested && Environment.GetEnvironmentVariable("LEVY_PAIRCULL_HOSTILE") != "0";
+		/// <summary>Lab counters: hostile pairs skipped by the rectangle test and by the projectile's own Colliding, and pairs the Colliding test let through.</summary>
+		public static long HostileRectCulled, HostileColCulled, HostileColPassed;
+		private static bool _colliderMode;
+		private static Projectile _colP;
+		private static Rectangle _colVal;
+
+		/// <summary>
+		/// A HOSTILE shot (a boss's spores, seeds, thorns, deathrays) is asked about every NPC slot too, and the army's levies fill most of them: with 500 spores in the air and 150 levies that is 75 000 pairs a tick, each one dispatched through
+		/// every GlobalNPC.CanBeHitByProjectile and GlobalProjectile.CanHitNPC of every loaded mod before vanilla tests the hitbox. For a pair with a levy body (never another NPC) the hit test is decided first, here: a shot whose test is the plain
+		/// rectangle overlap is skipped when the body's rectangle is farther than a margin from its hitbox (the same proof as the army's own shots), and any other modded shot is asked its own <c>Projectile.Colliding</c>, the very call vanilla makes
+		/// right after the hooks, and skipped when that says no. A pair that collides goes on through every hook exactly as before. A vanilla shot with a special shape (lasers, beams, whips) is never touched.
+		/// </summary>
+		private static bool BeginHostile(Projectile p, Rectangle val, out float loX, out float hiX, out float loY, out float hiY)
+		{
+			loX = hiX = loY = hiY = 0f;
+			if (!p.TryGetGlobalProjectile(out SoldierProjectileTag t)) return false;
+			int mode = t.HostileCull(p, out float m);
+			if (mode == 0) return false;
+			if (mode == 2) { _colliderMode = true; _colP = p; _colVal = val; return true; } // loX..hiY stay 0: Far ignores them in this mode
+			loX = val.X - m; hiX = val.X + val.Width + m; loY = val.Y - m; hiY = val.Y + val.Height + m;
+			_hostileRect = true;
+			return true;
+		}
+		private static bool _hostileRect;
+
+		/// <summary>The hostile classification: 0 never cull, 1 rectangle test (margin out), 2 ask the projectile's own Colliding.</summary>
+		internal static int ClassifyHostile(Projectile p, out float margin)
+		{
+			margin = 0f;
+			int t = p.type;
+			if (t <= 0 || p.ModProjectile == null && t >= ProjectileID.Count) return 0;
+			if (Array.IndexOf(SpecialStyles, p.aiStyle) >= 0 || ProjectileID.Sets.IsAWhip[t]) return 0;
+			if (t < ProjectileID.Count) { if (Array.IndexOf(SpecialTypes, t) >= 0) return 0; if (GlobalCollides(p)) return 2; margin = MarginPx; return 1; }
+			if (Overrides(p.ModProjectile.GetType(), "Colliding") || GlobalCollides(p)) return 2;
+			margin = MarginPx; return 1;
 		}
 
 		/// <summary>Decides, for one projectile (cached on its tag until its type or AI style changes), whether its hit test is the plain rectangle overlap. Returns the margin to add to its hitbox, or 0.</summary>
@@ -94,6 +135,18 @@ namespace Levy.Common.Weapons
 		[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 		public static bool Far(NPC n, float loX, float hiX, float loY, float hiY)
 		{
+			if (_colliderMode)
+			{
+				if (n.ModNPC is not Content.NPCs.SoldierNPC) return false;
+				try
+				{
+					var r = new Rectangle((int)(n.position.X + n.netOffset.X) - 8, (int)(n.position.Y + n.netOffset.Y) - 8, n.width + 16, n.height + 16); // 8 px of slack: the game widens one NPC type's box
+					if (_colP.Colliding(_colVal, r)) { HostileColPassed++; return false; }
+					HostileColCulled++; return true;
+				}
+				catch (Exception) { return false; }
+			}
+			if (_hostileRect && n.ModNPC is not Content.NPCs.SoldierNPC) return false;
 			float l = n.position.X + n.netOffset.X, t = n.position.Y + n.netOffset.Y;
 			if (l + n.width < loX | l > hiX | t + n.height < loY | t > hiY)
 			{

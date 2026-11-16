@@ -20,8 +20,7 @@
 
 ## ⏸ RESUME HERE (Eve near usage limit, ~18:30 UTC 11-15)
 
-### Eve's 3.0.1 playtest notes (2026-11-16)
-Builders out 19:20 UTC: perfboss (#1), perfmap (#2), weaponorigin (#4 and #3, Dreadmine), armoryui (#5, #6), playerswap resumed (save safety). The lag popup (#7) is under discussion; #9 is not yet checked.
+### Eve's 3.0.1 playtest notes (2026-11-16), all to do
 1. PERF "boss cyberattacks": idle levies near a boss lag the game badly, worse up close, and worst with many projectiles (Plantera spores). She demobilizes before every boss fight. Builder: perf-profile.
 2. PERF map: clicking a pylon on the map slows the game hugely, EVEN WITH NO LEVIES MOBILIZED (likely our pylon/map code).
 3. PERF Dreadmine Staff (Calamity sentry): dozens of sea mines lag the game. Do levies spawn too many? Check our summoner/sentry caps vs the player's.

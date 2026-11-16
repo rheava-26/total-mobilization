@@ -59,6 +59,13 @@ namespace Levy.Common.Globals
 			if (p.type != _cullType || p.aiStyle != _cullStyle) { _cullMargin = PairCull.Classify(p); _cullType = p.type; _cullStyle = p.aiStyle; }
 			return _cullMargin;
 		}
+		private int _hostMode, _hostType = -1, _hostStyle; private float _hostMargin;
+		/// <summary>PairCull, hostile shots: the cached verdict (see <see cref="PairCull.ClassifyHostile"/>).</summary>
+		internal int HostileCull(Projectile p, out float margin)
+		{
+			if (p.type != _hostType || p.aiStyle != _hostStyle) { _hostMode = PairCull.ClassifyHostile(p, out _hostMargin); _hostType = p.type; _hostStyle = p.aiStyle; }
+			margin = _hostMargin; return _hostMode;
+		}
 		/// <summary>Set once a reflected soldier shot has been re-aimed at its firing soldier (so the bounce-back hits the unit, not the commander).</summary>
 		private bool _reflectRedirected;
 

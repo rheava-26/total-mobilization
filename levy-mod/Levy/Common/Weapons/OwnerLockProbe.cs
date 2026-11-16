@@ -103,6 +103,80 @@ namespace Levy.Common.Weapons
 			return result;
 		}
 
+		private static readonly Dictionary<int, bool> _drawCache = new();
+		/// <summary>
+		/// True when the projectile's own modded DRAW code reads its owner: <c>Main.player[...]</c> (Calamity's flails and holdouts take <c>Owner</c> from it) or <c>Main.GetPlayerArmPosition</c> (the end of every flail chain). The draw runs outside
+		/// the projectile's update, where the owner is the real commander standing wherever the commander stands: the chain of a levy's flail would be drawn across the screen to the commander.
+		/// </summary>
+		public static bool ReadsOwnerAtDraw(int projType)
+		{
+			if (_drawCache.TryGetValue(projType, out bool cached)) return cached;
+			bool result = false;
+			try
+			{
+				ModProjectile mod = WeaponClassifier.ProjectileSample(projType)?.ModProjectile;
+				if (mod != null)
+				{
+					EnsureReflection();
+					var sink = new HashSet<string>(); _sink = sink;
+					var visited = new HashSet<MethodBase>(); var found = new HashSet<FieldInfo>();
+					try
+					{
+						for (Type t = mod.GetType(); t != null && t != typeof(ModProjectile) && t != typeof(object); t = t.BaseType)
+						{
+							const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+							foreach (MethodInfo m in t.GetMethods(flags))
+								if (m.Name == "PreDraw" || m.Name == "PostDraw" || m.Name == "PreDrawExtras" || m.Name.StartsWith("Draw", StringComparison.Ordinal)) Scan(m, 0, visited, found);
+						}
+					}
+					finally { _sink = null; }
+					result = sink.Contains("player") || sink.Contains("GetPlayerArmPosition");
+				}
+			}
+			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: owner-draw probe failed for projectile {projType}: {e.Message}"); }
+			_drawCache[projType] = result;
+			return result;
+		}
+
+		private static byte[] _btnCache = new byte[0];
+		/// <summary>
+		/// True when the modded projectile's own AI reads its owner's use buttons: <c>Player.channel</c> / <c>controlUseItem</c> / <c>controlUseTile</c>, Calamity's <c>CantUseHoldout</c>, or the raw <c>Main.mouseLeft</c> / <c>mouseRight</c>.
+		/// A soldier's shot is owned by the commander, so such an AI follows the COMMANDER's buttons (down whenever she fires her own weapon): a charge-and-release holdout charges as long as she holds hers, a mace flail never leaves its spin.
+		/// Answered from a per-type array (this is asked for every soldier shot every tick).
+		/// </summary>
+		public static bool ReadsUseButtons(int projType)
+		{
+			if (projType < 0) return false;
+			if (projType >= _btnCache.Length) Array.Resize(ref _btnCache, Math.Max(projType + 1, ProjectileLoader.ProjectileCount + 1));
+			byte c = _btnCache[projType];
+			if (c != 0) return c == 2;
+			bool result = false;
+			try
+			{
+				ModProjectile mod = WeaponClassifier.ProjectileSample(projType)?.ModProjectile;
+				if (mod != null)
+				{
+					EnsureReflection();
+					var sink = new HashSet<string>(); _sink = sink;
+					var visited = new HashSet<MethodBase>(); var found = new HashSet<FieldInfo>();
+					try
+					{
+						for (Type t = mod.GetType(); t != null && t != typeof(ModProjectile) && t != typeof(object); t = t.BaseType)
+						{
+							const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+							foreach (MethodInfo m in t.GetMethods(flags))
+								if (m.Name == "PreAI" || m.Name == "AI" || m.Name == "PostAI" || m.Name == "HoldoutAI" || m.Name == "KillHoldoutLogic" || m.Name == "ManageHoldout") Scan(m, 0, visited, found);
+						}
+					}
+					finally { _sink = null; }
+					result = found.Contains(_channel) || found.Contains(_controlUseItem) || sink.Contains("mouseLeft") || sink.Contains("mouseRight") || sink.Contains("CantUseHoldout");
+				}
+			}
+			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: use-button probe failed for projectile {projType}: {e.Message}"); }
+			_btnCache[projType] = (byte)(result ? 2 : 1);
+			return result;
+		}
+
 		private static readonly Dictionary<int, bool> _boundCache = new();
 		/// <summary>
 		/// True for a modded projectile a held modded weapon's holdout spawns whose own AI stays bound to that holder: it reads its owner's use button (Rancor's magic circle dies the moment the owner lets go) or finds its parent

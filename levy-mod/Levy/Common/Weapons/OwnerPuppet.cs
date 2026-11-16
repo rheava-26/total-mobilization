@@ -21,6 +21,12 @@ namespace Levy.Common.Weapons
 	///   bit 32: LIFE ROUTING. For the length of the pass the owner's life and max life ARE the soldier's (so "below half health", "already full" and the clamp at max all read the soldier's), and whatever the pass
 	///          raised them by - lifesteal: vanilla Vampire Knives' VampireHeal bolt, Thorium HealLife on its weapon hit, Player.Heal, a bare statLife += - is the soldier's own gain: the commander's real life is put back
 	///          untouched and the soldier is given the gain (with the floating "+N" on him). The owner's lifesteal budget (Player.lifeSteal) is the soldier's own for the pass (<see cref="LifeStealPool"/>) and the commander's is put back in the finally. Heals meant for the commander (a soldier's ally heal) run inside <see cref="BeginAllow"/>, which puts his real life and place back.
+	///   bit 64: DRAW. Main.DrawProjDirect of a soldier shot whose draw code reads its owner's place (a flail's chain ends at <c>Main.GetPlayerArmPosition(projectile)</c>, a held gun is drawn from the owner's arm) runs with the owner's
+	///          transform on the soldier (<see cref="BeginDraw"/>), so the chain runs to the levy and not across the screen to the commander. Only shots whose own draw code reads the owner (<see cref="OwnerLockProbe.ReadsOwnerAtDraw"/>) are moved.
+	///   bit 128: USE BUTTONS. A soldier's modded shot whose own AI reads its owner's use buttons (<c>Player.channel</c> / <c>controlUseItem</c>, Calamity's <c>CantUseHoldout</c>: a gun holdout that charges while the button is down, a mace flail that spins
+	///          while it is held and is thrown when it is let go) reads the COMMANDER's buttons, which are down whenever the commander is firing her own weapon: the levy's holdout then charges for as long as she holds hers and its
+	///          shots come out when she lets go, and its flail spins on the spot and never throws. For the length of that shot's update the owner's buttons read as a soldier's shot sees them with a commander who is not holding anything
+	///          (the button up, the use released), which is what the weapons were measured with (<see cref="ModShotKinds"/>), and are put back in the same finally. Only shots whose own AI reads the buttons are touched (<see cref="OwnerLockProbe.ReadsUseButtons"/>).
 	///   bit 8: Thorium's cached "local ThoriumPlayer" (PlayerHelper.localThoriumPlayer) is pointed at the soldier dummy's ThoriumPlayer around the Shoot hooks in WeaponUse.TryRealShoot and inside puppeted Damage / Kill
 	///          (GetThoriumPlayer returns that cache for any player whose whoAmI == Main.myPlayer, which the dummy is given for the call).
 	/// Only the transform is moved: the Player object, its ModPlayers, buffs and life stay the commander's, so loot credit and boss-kill resolution still run under the real player.
@@ -31,7 +37,7 @@ namespace Levy.Common.Weapons
 	public class OwnerPuppet : ModSystem
 	{
 		/// <summary>Effective bit mask, read on the hot path. Written only by <see cref="Refresh"/>.</summary>
-		internal static int Mask = 63;
+		internal static int Mask = 255;
 		private static bool _envSet; private static int _envMask; private static bool _cfgOn = true; private static bool _hooked;
 		internal static int UnpuppetedOwner, UnpuppetedBody; // soldier shots seen with no active owner / no live body (harness diagnostics)
 		internal static int Swaps, Restores, ThSwaps, Inherited, NetGuards, MaxDepth; // counters for the harness
@@ -42,7 +48,7 @@ namespace Levy.Common.Weapons
 
 		/// <summary>Called by the config on load / change with the cached server-side switch.</summary>
 		internal static void SetConfig(bool on) { _cfgOn = on; Refresh(); }
-		private static void Refresh() => Mask = _envSet ? _envMask : (_cfgOn ? 63 : 0);
+		private static void Refresh() => Mask = _envSet ? _envMask : (_cfgOn ? 255 : 0);
 
 		public override void Load()
 		{
@@ -53,6 +59,7 @@ namespace Levy.Common.Weapons
 			On_Projectile.Damage += DamageDetour;
 			On_Projectile.Kill += KillDetour;
 			On_Projectile.Update += UpdateDetour;
+			if (!Main.dedServ) On_Main.DrawProjDirect += DrawDirectDetour;
 			On_NetMessage.SendData += SendDataDetour;
 			On_Player.HealEffect += HealEffectDetour;
 			_hooked = true;
@@ -61,8 +68,8 @@ namespace Levy.Common.Weapons
 
 		public override void Unload()
 		{
-			if (_hooked) { On_Projectile.Damage -= DamageDetour; On_Projectile.Kill -= KillDetour; On_Projectile.Update -= UpdateDetour; On_NetMessage.SendData -= SendDataDetour; On_Player.HealEffect -= HealEffectDetour; }
-			_hooked = false; _envSet = false; _cfgOn = true; Mask = 63; _depth = 0; Context = null; _curTp = null; LifeStealPool.Unload();
+			if (_hooked) { On_Projectile.Damage -= DamageDetour; On_Projectile.Kill -= KillDetour; On_Projectile.Update -= UpdateDetour; if (!Main.dedServ) On_Main.DrawProjDirect -= DrawDirectDetour; On_NetMessage.SendData -= SendDataDetour; On_Player.HealEffect -= HealEffectDetour; }
+			_hooked = false; _envSet = false; _cfgOn = true; Mask = 255; _depth = 0; Context = null; _curTp = null; LifeStealPool.Unload();
 		}
 
 		private static bool Puppetable(Projectile p, out Player owner, out SoldierNPC body)
@@ -80,7 +87,9 @@ namespace Levy.Common.Weapons
 		/// <summary>One open swap: what the owner's transform and the Thorium cache were when this call entered.</summary>
 		private struct Frame { public bool Moved; public Player P; public Vector2 Pos, Vel, Old; public int Dir; public object Th; public SoldierNPC PrevCtx; public bool Route; public int Life, LifeMax, SolLife, Allow; public SoldierNPC Body; public float Pool, MyPool; public Player MyP; public SoldierNPC Outer;
 			/// <summary>The cursor puppet (CombatFix.Cursor): the commander's cursor and Calamity's per-player cursor offset as this pass found them.</summary>
-			public bool Cur; public Vector2 CurScreen, CurDelta; public int CurMx, CurMy; public float CurRot; public object CurCal; }
+			public bool Cur; public Vector2 CurScreen, CurDelta; public int CurMx, CurMy; public float CurRot; public object CurCal;
+			/// <summary>The use-button puppet: the commander's buttons as this pass found them.</summary>
+			public bool Btn, BCh, BUse, BTile, BRel; }
 
 		private const int MaxFrames = 32;
 		private static readonly Frame[] _stack = new Frame[MaxFrames];
@@ -107,6 +116,13 @@ namespace Levy.Common.Weapons
 			}
 			_depth++; if (_depth > MaxDepth) MaxDepth = _depth;
 			Context = body;
+			// the commander's use buttons read as a levy's shot has always expected them (up) for a modded shot whose own AI reads them (see bit 128)
+			if (bit == 4 && (m & 128) != 0 && self.ModProjectile != null && OwnerLockProbe.ReadsUseButtons(self.type) && (p.channel || p.controlUseItem || p.controlUseTile || !p.releaseUseItem))
+			{
+				f.Btn = true; f.BCh = p.channel; f.BUse = p.controlUseItem; f.BTile = p.controlUseTile; f.BRel = p.releaseUseItem;
+				p.channel = false; p.controlUseItem = false; p.controlUseTile = false; p.releaseUseItem = true;
+				ButtonPuppets++;
+			}
 			if (moveTransform) { Swaps++; p.Center = body.NPC.Center; p.oldPosition = p.position; p.velocity = body.NPC.velocity; p.direction = body.NPC.direction == 0 ? 1 : body.NPC.direction; }
 			// the commander's CURSOR is the soldier's target for any hook of a shot whose own code reads a cursor (its AI, its hit and kill hooks): without it the shot reads wherever the commander's mouse is
 			if (CombatFix.On(CombatFix.Cursor) && self.ModProjectile != null && !ModShotKinds.Off && OwnerLockProbe.ReadsCursor(self.type))
@@ -132,6 +148,7 @@ namespace Levy.Common.Weapons
 					Main.screenPosition = f.CurScreen; Main.mouseX = f.CurMx; Main.mouseY = f.CurMy;
 					if (f.CurCal != null) AltPolicies.SetCalAimPublic(f.CurCal, f.CurDelta, f.CurRot);
 				}
+				if (f.Btn) { f.P.channel = f.BCh; f.P.controlUseItem = f.BUse; f.P.controlUseTile = f.BTile; f.P.releaseUseItem = f.BRel; }
 				if (f.Moved) { f.P.position = f.Pos; f.P.velocity = f.Vel; f.P.oldPosition = f.Old; f.P.direction = f.Dir; Restores++; }
 				if (f.Route) CloseRoute(ref f);
 			}
@@ -294,6 +311,39 @@ namespace Levy.Common.Weapons
 		{
 			if (Mask == 0 || !Enter(self, 4)) { orig(self, i); return; }
 			try { orig(self, i); } finally { Exit(); }
+		}
+
+		// ---- bit 64: draw ----
+		/// <summary>One open draw puppet (a draw never nests inside an update pass, and one projectile draws at a time).</summary>
+		private static bool _drawOpen; private static Player _drawP; private static Vector2 _drawPos, _drawVel, _drawOld; private static int _drawDir;
+		internal static int DrawPuppets, ButtonPuppets;
+
+		/// <summary>
+		/// Moves the owner's transform onto the soldier for the length of one projectile's draw, when the shot is a soldier's and its own draw code reads its owner. Returns false when nothing was moved (no call to <see cref="EndDraw"/> then).
+		/// <paramref name="force"/> is the harness (a dedicated server never draws): it works whatever the mask says.
+		/// </summary>
+		internal static bool BeginDraw(Projectile p, bool force = false)
+		{
+			if (_drawOpen || ((Mask & 64) == 0 && !force) || p == null || !p.active || p.ModProjectile == null || p.owner < 0 || p.owner >= Main.maxPlayers) return false;
+			if (!OwnerLockProbe.ReadsOwnerAtDraw(p.type) || !Puppetable(p, out Player owner, out SoldierNPC body)) return false;
+			_drawOpen = true; _drawP = owner; _drawPos = owner.position; _drawVel = owner.velocity; _drawOld = owner.oldPosition; _drawDir = owner.direction;
+			owner.Center = body.NPC.Center; owner.oldPosition = owner.position; owner.velocity = body.NPC.velocity; owner.direction = body.NPC.direction == 0 ? 1 : body.NPC.direction;
+			DrawPuppets++;
+			return true;
+		}
+
+		internal static void EndDraw()
+		{
+			if (!_drawOpen) return;
+			_drawOpen = false;
+			_drawP.position = _drawPos; _drawP.velocity = _drawVel; _drawP.oldPosition = _drawOld; _drawP.direction = _drawDir; _drawP = null;
+		}
+
+		private static void DrawDirectDetour(On_Main.orig_DrawProjDirect orig, Main self, Projectile proj)
+		{
+			bool moved = false;
+			try { moved = BeginDraw(proj); } catch (Exception) { moved = false; EndDraw(); }
+			try { orig(self, proj); } finally { if (moved) EndDraw(); }
 		}
 
 		/// <summary>Player-state messages (4 SyncPlayer, 13 PlayerControls) carry the player's position. If one is sent while that player's transform is puppeted (a hook calling NetMessage.SendData), send it with the real transform.</summary>

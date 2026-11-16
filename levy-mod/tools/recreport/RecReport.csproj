@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Command-line fight analyzer: the very source files the mod runs after a fight (no game types in them), compiled into a console tool.
+       Build and run with the .NET 10 SDK: dotnet run with this project and the arguments of Program.cs.
+       The files that are compiled in: the reader, the report builder with the fight history, and the line-breaking detector. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>12</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>RecReport</RootNamespace>
+    <NoWarn>CS0649;CS0169;CS0414;CS8981</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Levy/Common/Recording/FightAnalysis.cs" Link="FightAnalysis.cs" />
+    <Compile Include="../../Levy/Common/Recording/FightReport.cs" Link="FightReport.cs" />
+    <Compile Include="../../Levy/Common/Recording/LineBreak.cs" Link="LineBreak.cs" />
+    <Compile Include="../../Levy/Common/Recording/FightReportSelfTest.cs" Link="FightReportSelfTest.cs" />
+  </ItemGroup>
+</Project>

@@ -20,6 +20,12 @@ namespace Levy.Common.Recording
 		/// <summary>While a recording started by the setting above runs, the Levy profiler measures it and the numbers go into the recording. Nothing is printed during the fight; one line follows it.</summary>
 		[DefaultValue(true)] public bool ProfileRecordedFights = true;
 
+		[Header("Report")]
+		/// <summary>When a boss fight ends, two to four plain lines in chat: how it went, your damage, what killed you, what happened to the army. The full report is a text file next to the recording and is written either way.</summary>
+		[DefaultValue(true)] public bool PostFightSummary = true;
+		/// <summary>One warning ("The line is breaking!") when most of the army is shaken or falling fast while a boss lives. Shown over your head and once in chat, at most once a minute. It changes nothing about the fight.</summary>
+		[DefaultValue(true)] public bool LineBreakingWarning = true;
+
 		[Header("Limits")]
 		/// <summary>Largest size one recording may reach on disk (compressed). Recording stops when it is reached.</summary>
 		[Range(5, 1000)] [DefaultValue(200)] public int MaxFileSizeMB = 200;

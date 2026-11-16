@@ -52,7 +52,7 @@ namespace Levy.Common.Recording
 		private static DateTime _startWall;
 		private static int _cmdDeaths; private static bool _pDead;
 		private static int _lastDmgFlush;
-		private sealed class DmgAcc { public long Dmg; public int Hits; }
+		private sealed class DmgAcc { public long Dmg; public int Hits, Crits; }
 		private static readonly Dictionary<string, DmgAcc> _dmg = new();
 		private static long _dmgBoss, _dmgAll;
 		/// <summary>The last header written (the self-check parses it back).</summary>
@@ -106,7 +106,7 @@ namespace Levy.Common.Recording
 		private static int _ex0, _ey0, _ex1, _ey1;
 		private static string _camName;
 		private static int _camId = -1;
-		private sealed class BTrack { public int Slot, Type, Serial, Life, Max; public float X, Y; public bool Seen; public string Name; public int HitT = -1, HitDmg, HitType = -1; public string HitSrc = "other", HitName = ""; }
+		private sealed class BTrack { public int Mil; public int Slot, Type, Serial, Life, Max; public float X, Y; public bool Seen; public string Name; public int HitT = -1, HitDmg, HitType = -1; public string HitSrc = "other", HitName = ""; }
 		private static readonly Dictionary<int, BTrack> _bt = new();
 		private static readonly Dictionary<int, (int tick, int dmg, string src, int type, string name)> _bhook = new();
 		private static readonly HashSet<int> _bkilled = new();
@@ -272,14 +272,60 @@ namespace Levy.Common.Recording
 			catch { return "{}"; }
 		}
 
+		// ---- format 10: Calamity's stealth, the commander's death source, boss life milestones
+		private static bool _calOn;
+		private static int _killTick = -100000, _kn = -1, _kp = -1, _ko = -1, _kd; private static string _kc;
+
+		/// <summary>0 not a stealth strike, 1 Calamity flagged it a stealth strike, 2 it came out of one (a spawned projectile). Without Calamity always 0.</summary>
+		internal static int StealthKind(Projectile p)
+		{
+			try { bool s = global::Levy.Common.Testing.HarnessCalamityProbe.IsStealthStrike(p, out bool sub); return s ? 1 : sub ? 2 : 0; }
+			catch (Exception) { return 0; }
+		}
+
+		/// <summary>Once a second: the commander's stealth bar (a Calamity rogue wearing the set; the bar does not exist otherwise).</summary>
+		private static void StealthSample(Player p)
+		{
+			if (!_calOn) return;
+			try
+			{
+				float[] st = global::Levy.Common.Testing.HarnessCalamityProbe.Stealth(p);
+				if (st == null || st[1] <= 0f) return;
+				int pct = (int)Math.Round(100f * Math.Min(1f, Math.Max(0f, st[0] / st[1])));
+				Ev("stl", ("s", pct.ToString()), ("m", ((int)Math.Round(st[1] * 100f)).ToString()));
+			}
+			catch (Exception) { }
+		}
+
+		/// <summary>The line-breaking warning was shown: why, and the army at that moment (levies near the commander, how many shaken or routed, how many fallen so far).</summary>
+		public static void NoteWarning(string why, int n, int broken, int deaths)
+		{
+			if (!On || _w == null) return;
+			Ev("lbw", ("why", FightRecFormat.Esc(why ?? "")), ("n", n.ToString()), ("broken", broken.ToString()), ("deaths", deaths.ToString()));
+		}
+
+		/// <summary>ModPlayer.Kill of the commander: what the game says killed it. The cdeath event written a tick later carries it.</summary>
+		public static void NoteKill(Player p, double damage, Terraria.DataStructures.PlayerDeathReason r)
+		{
+			if (!On || p != _cmd || r == null) return;
+			try
+			{
+				_killTick = Elapsed; _kd = (int)Math.Round(damage); _kc = null; _kn = -1; _kp = -1; _ko = r.SourceOtherIndex;
+				int ni = r.SourceNPCIndex; if (ni >= 0 && ni < Main.maxNPCs) { _kn = Main.npc[ni].type; _npcs[_kn] = Main.npc[ni].FullName; }
+				if (r.SourceProjectileType > 0) { _kp = r.SourceProjectileType; if (!_projs.ContainsKey(_kp)) _projs[_kp] = Lang.GetProjectileName(_kp).Value; }
+				if (_kn < 0 && _kp <= 0 && _ko < 0) { string t = r.GetDeathText(p.name).ToString(); _kc = t; }
+			}
+			catch (Exception) { }
+		}
+
 		/// <summary>One hit on a boss (or its parts) or on an add, from the GlobalNPC hooks: who dealt it (cmd, levy, drone, other), its damage class, the item or projectile, the damage actually done. Added up and written once a second as dmg events.</summary>
-		internal static void NoteDamage(NPC npc, Player byPlayer, Projectile proj, Item item, int dmg)
+		internal static void NoteDamage(NPC npc, Player byPlayer, Projectile proj, Item item, int dmg, bool crit = false)
 		{
 			if (!On || dmg <= 0 || npc == null) return;
 			try
 			{
 				bool boss = IsBossOrPart(npc);
-				string owner, cls, kind; int type;
+				string owner, cls, kind; int type; int srcItem = 0, ss = 0;
 				if (proj != null)
 				{
 					proj.TryGetGlobalProjectile(out SoldierProjectileTag tag);
@@ -290,16 +336,18 @@ namespace Levy.Common.Recording
 					else owner = "other";
 					cls = ClassName(proj.DamageType); kind = "proj"; type = proj.type;
 					if (!_projs.ContainsKey(type)) _projs[type] = Lang.GetProjectileName(type).Value;
+					if (owner == "cmd" && proj.TryGetGlobalProjectile(out FightRecProjTag pt) && pt.SrcItem > 0) { srcItem = pt.SrcItem; if (!_items.ContainsKey(srcItem)) _items[srcItem] = Lang.GetItemNameValue(srcItem); }
+					if (_calOn && (owner == "cmd" || owner == "levy")) ss = StealthKind(proj);
 				}
 				else
 				{
 					owner = byPlayer != null && global::Levy.Common.Owner.SoldierOwner.IsDummy(byPlayer) ? "levy" : byPlayer != null && byPlayer == _cmd ? "cmd" : "other";
-					cls = ClassName(item?.DamageType); kind = "item"; type = item != null ? item.type : 0;
+					cls = ClassName(item?.DamageType); kind = "item"; type = item != null ? item.type : 0; srcItem = type;
 					if (item != null && !_items.ContainsKey(type)) _items[type] = item.Name;
 				}
-				string key = owner + "|" + cls + "|" + kind + "|" + type + "|" + (boss ? 1 : 0);
+				string key = owner + "|" + cls + "|" + kind + "|" + type + "|" + (boss ? 1 : 0) + "|" + srcItem + "|" + ss;
 				if (!_dmg.TryGetValue(key, out var a)) _dmg[key] = a = new DmgAcc();
-				a.Dmg += dmg; a.Hits++; _dmgAll += dmg; if (boss) _dmgBoss += dmg;
+				a.Dmg += dmg; a.Hits++; if (crit) a.Crits++; _dmgAll += dmg; if (boss) _dmgBoss += dmg;
 			}
 			catch { }
 		}
@@ -314,7 +362,7 @@ namespace Levy.Common.Recording
 			{
 				string[] k = kv.Key.Split('|');
 				if (!first) sb.Append(','); first = false;
-				sb.Append('[').Append(FightRecFormat.Esc(k[0])).Append(',').Append(FightRecFormat.Esc(k[1])).Append(',').Append(FightRecFormat.Esc(k[2])).Append(',').Append(k[3]).Append(',').Append(k[4]).Append(',').Append(kv.Value.Dmg).Append(',').Append(kv.Value.Hits).Append(']');
+				sb.Append('[').Append(FightRecFormat.Esc(k[0])).Append(',').Append(FightRecFormat.Esc(k[1])).Append(',').Append(FightRecFormat.Esc(k[2])).Append(',').Append(k[3]).Append(',').Append(k[4]).Append(',').Append(kv.Value.Dmg).Append(',').Append(kv.Value.Hits).Append(',').Append(k[5]).Append(',').Append(k[6]).Append(',').Append(kv.Value.Crits).Append(']');
 			}
 			_dmg.Clear();
 			Ev("dmg", ("d", sb.Append(']').ToString()));
@@ -370,7 +418,7 @@ namespace Levy.Common.Recording
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = _tkSpite = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
 				_lbuf.Clear(); _lgear.Clear(); _prefixes.Clear(); _cmdGear = int.MinValue; _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1;
-				_startTick = (int)Main.GameUpdateCount;
+				_startTick = (int)Main.GameUpdateCount; _calOn = ModLoader.HasMod("CalamityMod") && global::Levy.Common.Testing.HarnessCalamityProbe.Available; _killTick = -100000;
 				_startMaxSerial = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) _startMaxSerial = Math.Max(_startMaxSerial, FightRecSpawnTag.SerialOf(Main.npc[i]));
 				string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 				NPC nearest = null; float bd = float.MaxValue;
@@ -481,7 +529,10 @@ namespace Levy.Common.Recording
 					string to = discard ? null : FightRecFolder.FileName(dir, _startWall, FileLabel(), result);
 					long folderCap = MaxFolderBytes > 0 ? MaxFolderBytes : ConfigFolderBytes();
 					int frames = _frames; string why = reason;
-					w.Close(to, done => Finished(w, done, discard, dir, folderCap, why, frames), sync);
+					// the post-fight report: a boss fight of a player's own game (a dedicated test server only when the self-check asks), never a world closing
+					bool report = !discard && !Headless && _bossesSeen > 0 && reason != "world unloaded" && reason != "unloaded" && (!Main.dedServ || FightRecPost.TestForce);
+					bool chat = report && FightRecPost.SummaryOn();
+					w.Close(to, done => Finished(w, done, discard, dir, folderCap, why, frames, report, chat), sync);
 					final = discard ? null : to;
 				}
 			}
@@ -493,7 +544,7 @@ namespace Levy.Common.Recording
 		}
 
 		/// <summary>Runs on the writer thread once the file is closed and renamed: drops a too-short file, trims the folder to its cap, and reports a write problem to chat.</summary>
-		private static void Finished(RecWriter w, string path, bool discard, string dir, long folderCap, string reason, int frames)
+		private static void Finished(RecWriter w, string path, bool discard, string dir, long folderCap, string reason, int frames, bool report = false, bool chat = false)
 		{
 			try
 			{
@@ -503,6 +554,7 @@ namespace Levy.Common.Recording
 				Levy.Instance?.Logger.Info("[FightRec] saved " + path + " (" + reason + ", " + frames + " samples, " + (w.FileBytes / 1024) + " KB on disk from " + (w.RawBytes / 1024) + " KB, folder " + (total / 1048576) + " MB, " + gone + " old removed" + (w.Dropped > 0 ? ", " + w.Dropped + " lines dropped" : "") + ")");
 				if (w.Error != null) FightRecAuto.Post("Fight recording hit a write error (" + w.Error + "). The file may be cut short.", true);
 				if (gone > 0) FightRecAuto.Post("Removed " + gone + " old recording" + (gone == 1 ? "" : "s") + " to keep the folder under " + (folderCap / 1048576) + " MB.", false);
+				if (report && w.Error == null) FightRecPost.Begin(path, dir, chat);
 			}
 			catch (Exception e) { Levy.Instance?.Logger.Warn("[FightRec] finishing failed: " + e.Message); }
 		}
@@ -675,7 +727,14 @@ namespace Levy.Common.Recording
 			f.P = new double[] { p.Center.X, p.Center.Y, p.velocity.X, p.velocity.Y, p.direction, flags, p.statLife, p.statMana, p.immuneTime, p.wingTime, p.rocketTime,
 				held != null && !held.IsAir ? held.type : 0, p.mount.Active ? p.mount.Type : -1, hookPos.X, hookPos.Y, p.dashDelay };
 			if (held != null && !held.IsAir && !_items.ContainsKey(held.type)) _items[held.type] = held.Name;
-			if (p.dead && !_pDead) { _cmdDeaths++; Ev("cdeath", ("x", FightRecFormat.N(p.Center.X)), ("y", FightRecFormat.N(p.Center.Y)), ("n", _cmdDeaths.ToString())); }
+			if (p.dead && !_pDead)
+			{
+				_cmdDeaths++;
+				if (Elapsed - _killTick <= 120)
+					Ev("cdeath", ("x", FightRecFormat.N(p.Center.X)), ("y", FightRecFormat.N(p.Center.Y)), ("n", _cmdDeaths.ToString()), ("kn", _kn.ToString()), ("kp", _kp.ToString()), ("ko", _ko.ToString()), ("kc", FightRecFormat.Esc(_kc ?? "")), ("kd", _kd.ToString()));
+				else Ev("cdeath", ("x", FightRecFormat.N(p.Center.X)), ("y", FightRecFormat.N(p.Center.Y)), ("n", _cmdDeaths.ToString()));
+				_killTick = -100000;
+			}
 			_pDead = p.dead;
 
 			// events
@@ -693,7 +752,7 @@ namespace Levy.Common.Recording
 			_pHookOut = hookOut; _pHookAtt = hookAtt;
 			if (p.itemAnimation > _pAnim && held != null && !held.IsAir) Ev("use", ("item", ItemName(held)), ("mana", p.statMana.ToString()));
 			_pAnim = p.itemAnimation;
-			if (el % 60 == 0) { WriteBuffs(p, el); CommanderGear(p); }
+			if (el % 60 == 0) { WriteBuffs(p, el); CommanderGear(p); StealthSample(p); }
 			AccessoryEvents(p);
 
 			// bosses and parts
@@ -979,6 +1038,7 @@ namespace Levy.Common.Recording
 					else { t.HitT = el; t.HitDmg = t.Life - n.life; t.HitSrc = "other"; t.HitType = -1; t.HitName = ""; }
 				}
 				t.Life = n.life; t.Max = n.lifeMax; t.X = n.Center.X; t.Y = n.Center.Y; t.Seen = true;
+				if (i == _primaryWho && t.Max > 0 && n.life > 0) BossMilestones(t, n);
 				if (!(Headless && IsNewFightSerial(n))) alive = true;
 			}
 			_bgone.Clear();
@@ -986,6 +1046,22 @@ namespace Levy.Common.Recording
 			foreach (int id in _bgone) { var t = _bt[id]; _bt.Remove(id); BossGone(t, el); _bkilled.Remove(id); _bhook.Remove(id); }
 			_bAlive = alive;
 			FlushBossEnd(false);
+		}
+
+		private static readonly int[] MilestonePcts = { 75, 50, 25, 10 };
+		/// <summary>The primary boss's life crossed 75, 50, 25 or 10 percent: one bph event each, with the army and the commander at that moment (what a "phase" is for a report: the boss's own phases are not readable from outside).</summary>
+		private static void BossMilestones(BTrack t, NPC n)
+		{
+			int pct = (int)(100L * n.life / Math.Max(1, n.lifeMax));
+			for (int k = 0; k < MilestonePcts.Length; k++)
+			{
+				int bit = 1 << k;
+				if (pct <= MilestonePcts[k] && (t.Mil & bit) == 0)
+				{
+					t.Mil |= bit;
+					Ev("bph", ("pct", MilestonePcts[k].ToString()), ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString()), ("army", _lt.Count.ToString()), ("hp", (_cmd != null ? _cmd.statLife : 0).ToString()));
+				}
+			}
 		}
 
 		private static void BossGone(BTrack t, int el)

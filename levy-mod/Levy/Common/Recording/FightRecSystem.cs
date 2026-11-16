@@ -68,14 +68,14 @@ namespace Levy.Common.Recording
 		{
 			if (!FightRecorder.On) return;
 			FightRecorder.NoteBossSource(npc, "item", item.type, item.Name);
-			FightRecorder.NoteDamage(npc, player, null, item, damageDone);
+			FightRecorder.NoteDamage(npc, player, null, item, damageDone, hit.Crit);
 		}
 
 		public override void OnHitByProjectile(NPC npc, Projectile projectile, NPC.HitInfo hit, int damageDone)
 		{
 			if (!FightRecorder.On) return;
 			FightRecorder.NoteBossSource(npc, "proj", projectile.type, Terraria.Lang.GetProjectileName(projectile.type).Value);
-			FightRecorder.NoteDamage(npc, null, projectile, null, damageDone);
+			FightRecorder.NoteDamage(npc, null, projectile, null, damageDone, hit.Crit);
 		}
 
 		public override void OnKill(NPC npc)
@@ -100,8 +100,27 @@ namespace Levy.Common.Recording
 		public static int SerialOf(NPC n) => n.TryGetGlobalNPC(out FightRecSpawnTag t) ? t.Serial : 0;
 	}
 
+	/// <summary>Remembers which item fired a projectile (and which one fired the projectile that spawned it), while a recording runs, so the report can name the weapon of a hit and not only the item in the hand. Format 10.</summary>
+	public class FightRecProjTag : GlobalProjectile
+	{
+		public override bool InstancePerEntity => true;
+		public int SrcItem;
+		public override bool AppliesToEntity(Projectile entity, bool lateInstantiation) => lateInstantiation && entity.friendly && !entity.hostile;
+		public override void OnSpawn(Projectile projectile, Terraria.DataStructures.IEntitySource source)
+		{
+			if (!FightRecorder.On) return;
+			if (source is Terraria.DataStructures.EntitySource_ItemUse use && use.Item != null && !use.Item.IsAir) SrcItem = use.Item.type;
+			else if (source is Terraria.DataStructures.EntitySource_Parent par && par.Entity is Projectile parent && parent.TryGetGlobalProjectile(out FightRecProjTag pt)) SrcItem = pt.SrcItem;
+		}
+	}
+
 	public class FightRecPlayer : ModPlayer
 	{
+		public override void Kill(double damage, int hitDirection, bool pvp, Terraria.DataStructures.PlayerDeathReason damageSource)
+		{
+			if (FightRecorder.On) FightRecorder.NoteKill(Player, damage, damageSource);
+		}
+
 		public override void OnHurt(Player.HurtInfo info)
 		{
 			if (!FightRecorder.On) return;

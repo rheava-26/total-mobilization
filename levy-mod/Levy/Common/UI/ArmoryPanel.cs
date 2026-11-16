@@ -46,7 +46,7 @@ namespace Levy.Common.UI
 		private int _shownCapacity = -1, _shownCenters = -1;
 		private long _shownValue = -1;
 		private UIPanel _searchBox;
-		private UISearchBar _search;
+		private LevyTextInput _search;
 		private RaritySwatch[] _swatches;
 		/// <summary>The targeted-reforge panel beside the armory (open while the player is setting up a run).</summary>
 		private ReforgePanel _reforgePanel;
@@ -603,7 +603,7 @@ namespace Levy.Common.UI
 			_searchBox.Width.Set(sortLeft - LevyConstants.UI.ArmorySearchGap - LevyConstants.UI.ArmorySearchLeft, 0f);
 			_searchBox.Height.Set(LevyConstants.UI.ArmorySearchHeight, 0f);
 			_searchBox.BackgroundColor = new Color(20, 26, 52) * 0.9f;
-			_search = new UISearchBar(Language.GetText("Mods.Levy.UI2.ArmorySearch"), LevyConstants.UI.ButtonTextScale + 0.05f);
+			_search = new LevyTextInput(Language.GetText("Mods.Levy.UI2.ArmorySearch"), LevyConstants.UI.ButtonTextScale + 0.05f);
 			_search.Left.Set(LevyConstants.UI.ArmorySearchInset, 0f);
 			_search.Width.Set(-2f * LevyConstants.UI.ArmorySearchInset, 1f); _search.Height.Set(0f, 1f);
 			_search.OnContentsChanged += OnSearchChanged;

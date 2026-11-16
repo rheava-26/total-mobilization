@@ -62,7 +62,7 @@ namespace Levy.Common.Potions
 			private UIPanel _panel;
 			private readonly UIGrid _grid = new();
 			private readonly UIScrollbar _bar = new();
-			private UISearchBar _search;
+			private LevyTextInput _search;
 			private Action<int> _pick;
 			private List<int> _all = new();
 			private string _term = "";
@@ -79,7 +79,7 @@ namespace Levy.Common.Potions
 				Append(_panel);
 				var title = new UIText(LevyUtil.T("Potions.SeekerPrompt"), 0.9f); _panel.Append(title);
 				var box = new UIPanel(); box.SetPadding(0); box.Top.Set(26, 0f); box.Width.Set(w - 120, 0f); box.Height.Set(28, 0f); box.BackgroundColor = new Color(10, 14, 34) * 0.9f;
-				_search = new UISearchBar(Language.GetText("Mods.Levy.Logistics.FindSearch"), 0.8f);
+				_search = new LevyTextInput(Language.GetText("Mods.Levy.Logistics.FindSearch"), 0.8f);
 				_search.Left.Set(6, 0f); _search.Width.Set(-12, 1f); _search.Height.Set(0, 1f);
 				_search.OnContentsChanged += s => { _term = (s ?? "").Trim().ToLowerInvariant(); _fillWait = 8; }; // the grid is rebuilt a moment after the last keystroke, not once per letter
 				_search.OnCanceledTakingInput += () => { if (_search.IsWritingText) _search.ToggleTakingText(); };

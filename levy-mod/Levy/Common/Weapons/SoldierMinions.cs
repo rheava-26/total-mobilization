@@ -292,6 +292,9 @@ namespace Levy.Common.Weapons
 		// Spawning (server / single player)
 		// =====================================================================================================
 		/// <summary>The vanilla cast of one staff: the minion(s) it makes, with the starting ai[1] / localAI[0] Player.ItemCheck_Shoot / SpawnMinionOnCursor give them. Returns false when nothing was created.</summary>
+		/// <summary>Lab counters (the summon-loop check reads them): casts of a minion staff, helper swings of a full flock, sentry plantings.</summary>
+		internal static int CastTally, HelperTally, SentryTally;
+
 		internal static bool Summon(SoldierNPC s, Item weapon, int damage)
 		{
 			int shoot = weapon.shoot;
@@ -513,6 +516,7 @@ namespace Levy.Common.Weapons
 			if (!Helpers.TryGetValue(weapon.type, out HelperInfo info)) Helpers[weapon.type] = info = new HelperInfo();
 			if (!info.Seen && info.Probes >= 2) return;
 			if (!info.Seen) info.Probes++;
+			HelperTally++; // the staff's own Shoot really runs
 			foreach (Projectile p in RunShoot(s, weapon, damage, out _))
 			{
 				if (!p.active) continue;

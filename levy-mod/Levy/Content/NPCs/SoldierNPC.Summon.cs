@@ -124,6 +124,21 @@ namespace Levy.Content.NPCs
 		/// A vanilla minion staff fields the staff's real projectiles (<see cref="SoldierMinions"/>); anything else keeps the <see cref="SoldierMinion"/> stand-in.
 		/// </summary>
 		private readonly List<List<int>> _flocks = new();
+		/// <summary>
+		/// A modded staff whose cast takes no minion slot and ends by itself (Calamity's Borealis Bomber, Slime Puppet Staff, Cinders of Lament: a bomber, a puppet or a fist that lives a few seconds). A player holding the staff
+		/// casts it again and again while she fights and never otherwise, at the staff's own use time; a flock count cannot "fill" it, so the soldier does the same: in combat only, no faster than the staff's use time.
+		/// </summary>
+		/// <summary>Measurement switch (env LEVY_SUMMON_OLD=1): casts and helper swings without the combat rule, for the before / after of the summon-loop check.</summary>
+		internal static readonly bool SummonOld = Environment.GetEnvironmentVariable("LEVY_SUMMON_OLD") == "1";
+
+		internal static bool TransientStaff(Item weapon)
+		{
+			if (SummonOld || weapon == null || weapon.shoot < ProjectileID.Count || weapon.sentry) return false;
+			if (SoldierMinions.CastSlots.ContainsKey(weapon.type)) return false;
+			Projectile sample = WeaponClassifier.ProjectileSample(weapon.shoot);
+			return sample != null && sample.minion && sample.minionSlots <= SoldierMinions.ChildSlotMin;
+		}
+
 		private void MaintainMinions()
 		{
 			if (_minionSpawnCd > 0) _minionSpawnCd--;
@@ -201,6 +216,7 @@ namespace Levy.Content.NPCs
 			if (_minionScratch.Count >= desired || _minionSpawnCd > 0) return;
 			if (!CrowdBudget.MayAddProjectiles()) return; // the army entity budget: no new minion while the game is short of free projectile slots
 			SpawnMinion(weapon, damage);
+			SoldierMinions.CastTally++;
 			CrowdBudget.NoteAdded();
 		}
 
@@ -247,17 +263,20 @@ namespace Levy.Content.NPCs
 			}
 			SoldierMinions.MaintainCompanion(this, weapon, _minionScratch);
 			// a full flock: a staff whose shot takes no slot may still make a helper when swung again (see SoldierMinions.Helper)
-			if (have + perCast > want + LevyConstants.MinionSlotEpsilon && _minionScratch.Count > 0 && _minionSpawnCd <= 0 && --_helperCd <= 0)
+			bool fighting = SentryInCombat() || SummonOld, transient = TransientStaff(weapon);
+			if (have + perCast > want + LevyConstants.MinionSlotEpsilon && _minionScratch.Count > 0 && _minionSpawnCd <= 0 && fighting && --_helperCd <= 0) // a player swings the staff again to help a full flock while she fights, not while she stands about
 			{
 				_helperCd = LevyConstants.MinionHelperPasses;
 				if (CrowdBudget.MayAddProjectiles(1)) SoldierMinions.Helper(this, weapon, damage);
 			}
 			// the count guard keeps a staff whose minion reports no slot cost from casting without end
 			if (_minionSpawnCd > 0 || have + perCast > want + LevyConstants.MinionSlotEpsilon || _minionScratch.Count >= LevyConstants.MinionControllerMaxPerSoldier * 2) return;
+			if (transient && !fighting) return; // a self-ending cast is made while fighting only
 
 			if (!CrowdBudget.MayAddProjectiles(Math.Max(1, (int)Math.Ceiling(perCast)))) return; // the army entity budget
-			_minionSpawnCd = LevyConstants.MinionSpawnCooldownTicks;
+			_minionSpawnCd = transient ? Math.Max(LevyConstants.MinionSpawnCooldownTicks, weapon.useTime) : LevyConstants.MinionSpawnCooldownTicks;
 			if (!SoldierMinions.Summon(this, weapon, damage)) return;
+			SoldierMinions.CastTally++;
 			CrowdBudget.NoteAdded();
 			// a short cast animation when the staff is the weapon in hand
 			if (!UsingSidearm && ItemAnimation <= 0 && ReferenceEquals(weapon, Record?.Gear?.Weapon)) { ItemAnimation = ItemAnimationMax = Math.Max(1, weapon.useAnimation); NPC.netUpdate = true; }
@@ -411,6 +430,7 @@ namespace Levy.Content.NPCs
 				return false;
 			}
 			DudTrace.Note(weapon, replacing != null ? "sentry-replant" : "sentry-plant");
+			SoldierMinions.SentryTally++;
 			replacing?.Kill();
 			Projectile p = WeaponUse.Spawn(this, pos, vel, weapon.shoot, SentryDamage(weapon), weapon.knockBack, DamageClass.Summon, ai0, ai1, 0f);
 			if (p == null) { DudTrace.Note(weapon, "sentry-spawn-null"); _sentryCd = LevyConstants.SentryRetryTicks; return false; }

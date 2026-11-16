@@ -28,7 +28,7 @@ namespace Levy.Common.Testing
 	public partial class IdentityWorldCheck : ModSystem
 	{
 		private static bool _armed, _done, _running, _spNet; private static int _calls, _pass, _fail;
-		private static Mod _mod; private static int _savedMy, _savedNet;
+		private static Mod _mod; private static int _savedMy, _savedNet, _my; private static bool _cmdHolds; // the stand-in commander holds her own use button (channel + controlUseItem) while NPCs and projectiles update
 		private const int FloorY = 300, Cx = 1800;
 		private static Vector2 _cmdAt;
 		private static NPC _brewer; private static Vector2 _brewerAt;
@@ -52,9 +52,9 @@ namespace Levy.Common.Testing
 
 		// the server drops a slot with no connection every tick, and the NPCs despawn with nobody on: slot 0 is kept alive and made local only while NPCs and projectiles update
 		public override void PostUpdatePlayers() { if (_running && Main.player[0] != null) Main.player[0].active = true; }
-		public override void PreUpdateNPCs() { if (!_running) return; Main.player[0].active = true; Pin(); PinSweepTarget(); _savedMy = Main.myPlayer; Main.myPlayer = 0; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; PhaseOpen(); }
+		public override void PreUpdateNPCs() { if (!_running) return; Main.player[0].active = true; if (_cmdHolds) { Main.player[0].channel = true; Main.player[0].controlUseItem = true; } Pin(); PinSweepTarget(); _savedMy = Main.myPlayer; Main.myPlayer = _my; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; PhaseOpen(); }
 		public override void PostUpdateNPCs() { if (!_running) return; PhaseClose("npcs"); Main.myPlayer = _savedMy; Main.netMode = _savedNet; }
-		public override void PreUpdateProjectiles() { if (!_running) return; Main.player[0].active = true; _savedMy = Main.myPlayer; Main.myPlayer = 0; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; PhaseOpen(); }
+		public override void PreUpdateProjectiles() { if (!_running) return; Main.player[0].active = true; if (_cmdHolds) { Main.player[0].channel = true; Main.player[0].controlUseItem = true; } _savedMy = Main.myPlayer; Main.myPlayer = _my; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; PhaseOpen(); }
 		public override void PostUpdateProjectiles() { if (!_running) return; PhaseClose("projectiles"); Main.myPlayer = _savedMy; Main.netMode = _savedNet; }
 
 		/// <summary>Runs now when this boot armed it (the summon world check calls this at its end, so the checks run one after another).</summary>
@@ -165,13 +165,24 @@ namespace Levy.Common.Testing
 			Arena();
 			_cmdAt = new Vector2(Cx * 16f, (FloorY - 3) * 16f);
 			ClearSoldiers();
-			AlchemistMenu();
+			if (Environment.GetEnvironmentVariable("LEVY_ORIGIN_ALONE") != "1")
+			{
+				AlchemistMenu();
+				ClearSoldiers();
+				IdentityProbes();
+				ClearSoldiers();
+				GearParity();
+				ClearSoldiers();
+				SafetySweepLevies();
+				ClearSoldiers();
+			}
+			OriginSweep();
 			ClearSoldiers();
-			IdentityProbes();
+			DreadmineCount();
 			ClearSoldiers();
-			GearParity();
+			SummonLoopSweep();
 			ClearSoldiers();
-			SafetySweepLevies();
+			SentryProbe();
 			ClearSoldiers();
 		}
 

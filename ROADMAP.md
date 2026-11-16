@@ -20,6 +20,17 @@
 
 ## ⏸ RESUME HERE (Eve near usage limit, ~18:30 UTC 11-15)
 
+### Eve's 3.0.1 playtest notes (2026-11-16), all to do
+1. PERF "boss cyberattacks": idle levies near a boss lag the game badly, worse up close, and worst with many projectiles (Plantera spores). She demobilizes before every boss fight. Builder: perf-profile.
+2. PERF map: clicking a pylon on the map slows the game hugely, EVEN WITH NO LEVIES MOBILIZED (likely our pylon/map code).
+3. PERF Dreadmine Staff (Calamity sentry): dozens of sea mines lag the game. Do levies spawn too many? Check our summoner/sentry caps vs the player's.
+4. WEAPONS FIRE FROM THE PLAYER: (a) the Calamity weapon crafted from Magna Cannon + Opal Striker + Core of Calamity; (b) the Great Sand Shark weapon crafted with Grand Scale (a tumbleweed). Levies can't use them; shots come out of Eve.
+5. Block-breaking weapon warning: change "you can't use this" into "HEY, THIS WILL BREAK BLOCKS, BE CAREFUL" with a cancel option (the player decides).
+6. ARMORY: take weapons directly from the armory screen even if a levy is holding them.
+7. Post-fight LAG POPUP (her design): shortly after a laggy boss fight ends, offer: a) lower levy graphics, b) fewer live levies + a reserve bank that instantly replaces the dead, c) fewer command points, d) it's fine, e) open settings. Discuss first (my view: a/b/d/e yes; c contradicts the tenet; b is a real mechanic worth building).
+8. New fights from Eve to review (not uploaded yet).
+9. Progression-break check (Calamity's recipes, not ours): Astral Slime → Slime → shimmer to Scoria (Luminite?); Lihzahrd boulder bricks → Death Whistle (Ravager) early; a magic book craftable early. Report only; we don't patch Calamity.
+
 - 2026-11-15: **3.0.0 SENT to Eve** (both boots exc=0, 0 FAIL; shipworld was still running at send — check its result and tell Eve if anything failed). NEXT: merge dialogue4 (b45a2b3, includes dialogue3) → ship 3.0.1. Then the Fixed-replays artifact + the 3.0 battery.
 - 🛡 SAVE-SAFETY (top priority after 3.0.1): the DoT and defense-damage steps (and the old gear frame) swap Main.myPlayer to a scratch slot; tML's autosave crashed once in Player.SavePlayer during a heavy test. Builder 'playerswap' dispatched (reproduce, fix, prove). Ship as 3.0.2.
 - projparity DONE (db523fa3). Not done: before/after fights (LevyTest.wld fixture is gone, needs rebuilding), the wiki checklist, Black Belt/Brain of Confusion dodges, no-heal debuffs.

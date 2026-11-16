@@ -44,7 +44,32 @@ namespace Levy.Common.Testing
 			if (!Main.dedServ || Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") != "1") return;
 			try { MonoModHooks.Add(typeof(WorldGen).GetMethod("SaveAndQuit", BindingFlags.Public | BindingFlags.Static), (Action<Action<Action>, Action>)QuitDetour); }
 			catch (Exception e) { Mod.Logger.Warn("[SwapRace] could not hook WorldGen.SaveAndQuit: " + e.Message); }
+			// tML's own autosave is queued on the thread pool by Player.KillMe for the local player (and by the ten-minute timer on a client). A test server has no achievement manager, so that save throws on a pool
+			// thread with no catch and ends the process. While the check's server stubs are in place the queued save is counted and waited for; at any time on a test server a throw from it is logged, not fatal.
+			try { MonoModHooks.Add(typeof(WorldGen).GetMethod("saveToonWhilePlaying", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes), (Action<Action>)QueueDetour); }
+			catch (Exception e) { Mod.Logger.Warn("[SwapRace] could not hook WorldGen.saveToonWhilePlaying: " + e.Message); }
+			try { MonoModHooks.Add(typeof(WorldGen).GetMethod("saveToonWhilePlayingCallBack", BindingFlags.Public | BindingFlags.Static), (Action<Action<object>, object>)CallbackDetour); }
+			catch (Exception e) { Mod.Logger.Warn("[SwapRace] could not hook WorldGen.saveToonWhilePlayingCallBack: " + e.Message); }
 		}
+		private static volatile bool _stubs;      // the check's server stubs (achievement manager, mapEnabled, ActivePlayerFileData) are in place
+		private static int _pending, _poolThrew, _queuedLate; private static int _loggedQueue, _loggedThrow;
+		private static void QueueDetour(Action orig)
+		{
+			if (_stubs) Interlocked.Increment(ref _pending); else Interlocked.Increment(ref _queuedLate);
+			if (Interlocked.Exchange(ref _loggedQueue, 1) == 0) Mod_Log("tML queued a character autosave on the thread pool (first one; Player.KillMe of the local player does this) from: " + (Environment.StackTrace ?? "").Replace("\n", " | ").Replace("\r", ""));
+			orig();
+		}
+		private static void CallbackDetour(Action<object> orig, object ctx)
+		{
+			try { orig(ctx); }
+			catch (Exception e)
+			{
+				Interlocked.Increment(ref _poolThrew);
+				if (Interlocked.Exchange(ref _loggedThrow, 1) == 0) Mod_Log("an autosave tML queued threw on the pool and was caught (a test server has no achievement manager; first one): " + e.GetType().Name + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim());
+			}
+			finally { int n; do { n = Volatile.Read(ref _pending); } while (n > 0 && Interlocked.CompareExchange(ref _pending, n - 1, n) != n); }
+		}
+		private static void Mod_Log(string s) => ModContent.GetInstance<SwapRaceCheck>()?.Mod.Logger.Info("[SwapRace] OBSERVED " + s);
 		private static void QuitDetour(Action<Action> orig, Action cb) { if (_guard) { Interlocked.Increment(ref _quitCalls); return; } orig(cb); }
 
 		public override void OnWorldLoad()
@@ -63,8 +88,16 @@ namespace Levy.Common.Testing
 			bool sp = LevyUtil.SpEmulation; int my0 = Main.myPlayer; var afd = Main.ActivePlayerFileData; _orig255 = Main.player[Main.maxPlayers];
 			try { LevyUtil.SpEmulation = true; Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
-			finally { _running = false; Probing = false; _guard = false; try { _achField?.SetValue(Main.instance, _achOrig); Main.mapEnabled = _mapOrig; } catch (Exception) { } LevyUtil.SpEmulation = sp; Main.myPlayer = my0; Main.ActivePlayerFileData = afd; Main.netMode = NetmodeID.Server; Cleanup(); SaveGate.Enabled = Environment.GetEnvironmentVariable("LEVY_SAVEGATE") != "0"; }
+			finally { _running = false; Probing = false; _guard = false; DrainSaves(); try { _achField?.SetValue(Main.instance, _achOrig); Main.mapEnabled = _mapOrig; } catch (Exception) { } _stubs = false; LevyUtil.SpEmulation = sp; Main.myPlayer = my0; Main.ActivePlayerFileData = afd; Main.netMode = NetmodeID.Server; Cleanup(); SaveGate.Enabled = Environment.GetEnvironmentVariable("LEVY_SAVEGATE") != "0"; }
 			_mod.Logger.Info($"[SwapRace] self-check pass={_pass} fail={_fail}");
+		}
+		/// <summary>No save this check started or provoked may still be running or queued when the stubs come out: waits for the pool's saves (up to 15 s, noted when it gives up).</summary>
+		private static void DrainSaves()
+		{
+			long t0 = Stopwatch.GetTimestamp();
+			while (Volatile.Read(ref _pending) > 0 && Stopwatch.GetElapsedTime(t0).TotalSeconds < 15) Thread.Sleep(5);
+			int left = Volatile.Read(ref _pending);
+			Note($"saves queued on the pool and finished before the stubs were removed: waited {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms, {left} still pending, {_poolThrew} threw (caught), {_queuedLate} queued with no stubs");
 		}
 		private static void Check(string n, bool ok) { if (ok) _pass++; else _fail++; _mod.Logger.Info($"[SwapRace] {(ok ? "PASS" : "FAIL")} {n}"); }
 		private static void Note(string s) => _mod.Logger.Info("[SwapRace] OBSERVED " + s);
@@ -126,11 +159,10 @@ namespace Levy.Common.Testing
 		private sealed class Phase
 		{
 			public string Name; public bool Gate;
-			public long Samples, SwappedSamples, Runs; public double WindowSumUs, WindowMaxUs, ElapsedMs, SwappedMs;
+			public long Samples, SwappedSamples, Runs; public double WindowSumUs, WindowMaxUs, ElapsedMs;
 			public long Saves, SaveThrows; public string FirstThrow;
 			public long Points, MyWrong, LocalWrong, Slot255Wrong, OnWorker; public int Quits;
 			public long DotDamage, DotTicks; public double TickAvgMs, TickMaxMs; public long GateSwaps, GateWaits; public double GateMaxWaitMs, GateMaxSaveMs;
-			public int Exceptions;
 		}
 
 		private static Phase RunPhase(string name, bool gate, List<SoldierNPC> levies, NPC attacker, bool withSaver, int dotTicks)
@@ -149,7 +181,7 @@ namespace Levy.Common.Testing
 			volatile_stop = false; Probing = withSaver; _guard = true;
 
 			// the sampler: polls Main.myPlayer, never takes the gate (it measures the exposure itself)
-			long total = 0, swSamples = 0, runs = 0; double winSum = 0, winMax = 0, swMs = 0; var t0all = Stopwatch.GetTimestamp(); double elapsedMs = 0;
+			long total = 0, swSamples = 0, runs = 0; double winSum = 0, winMax = 0; var t0all = Stopwatch.GetTimestamp(); double elapsedMs = 0;
 			var sampler = new Thread(() =>
 			{
 				bool inSw = false; long runStart = 0; long n = 0, sw = 0, r = 0; double sum = 0, mx = 0;
@@ -168,7 +200,7 @@ namespace Levy.Common.Testing
 			{
 				while (!volatile_stop)
 				{
-					try { WorldGen.saveToonWhilePlayingCallBack(null); saves++; } // tML's autosave entry: Player.SavePlayer(Main.ActivePlayerFileData)
+					try { Player.SavePlayer(Main.ActivePlayerFileData); saves++; } // what tML's autosave callback runs (WorldGen.saveToonWhilePlayingCallBack), called on this thread and caught
 					catch (Exception e) { throws++; firstThrow ??= e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(); }
 					Thread.Sleep(12);
 				}
@@ -196,7 +228,7 @@ namespace Levy.Common.Testing
 				sampler.Join(); if (withSaver) saver.Join(15000);
 				_guard = false;
 			}
-			ph.Samples = total; ph.SwappedSamples = swSamples; ph.Runs = runs; ph.WindowSumUs = winSum; ph.WindowMaxUs = winMax; ph.ElapsedMs = elapsedMs; ph.SwappedMs = elapsedMs * (total > 0 ? (double)swSamples / total : 0);
+			ph.Samples = total; ph.SwappedSamples = swSamples; ph.Runs = runs; ph.WindowSumUs = winSum; ph.WindowMaxUs = winMax; ph.ElapsedMs = elapsedMs; 
 			ph.Saves = saves; ph.SaveThrows = throws; ph.FirstThrow = firstThrow;
 			ph.Points = Interlocked.Read(ref _points); ph.MyWrong = Interlocked.Read(ref _myWrong); ph.LocalWrong = Interlocked.Read(ref _localWrong); ph.Slot255Wrong = Interlocked.Read(ref _slot255Wrong); ph.OnWorker = Interlocked.Read(ref _onWorkerThread); ph.Quits = _quitCalls;
 			ph.DotDamage = SoldierNPC.DotDamage - dot0; ph.DotTicks = SoldierNPC.DotTicks - dt0;
@@ -240,6 +272,7 @@ namespace Levy.Common.Testing
 			// a dedicated server never builds the achievement manager (Main.Initialize does, for a client), and Player.SavePlayer's first line is Main.Achievements.Save(): lend it one for the check
 			var achField = typeof(Main).GetField("_achievements", BindingFlags.Instance | BindingFlags.NonPublic); _achOrig = achField?.GetValue(Main.instance); _achField = achField;
 			if (achField != null && _achOrig == null) achField.SetValue(Main.instance, new Terraria.Achievements.AchievementManager());
+			_stubs = true;
 			_mapOrig = Main.mapEnabled; Main.mapEnabled = false; // Main.Map.Save() throws on a server (no map textures; tML swallows it and logs a Silently Caught Exception): out of the check, so the exception count stays a real count
 			Note($"{levies.Count} levies, {ticks} DoT ticks each (every 4th also a hit sequence); Main.myPlayer = {Main.myPlayer}, dedServ = {Main.dedServ}, gate hooked = {SaveGateSystem.Hooked}, Calamity = {ModLoader.HasMod("CalamityMod")}, upkeep active on the first levy = {levies[0].UpkeepActive}");
 
@@ -257,6 +290,7 @@ namespace Levy.Common.Testing
 			Check($"gate on: the save path never saw a swapped Main.myPlayer ({guarded.MyWrong}), Main.LocalPlayer ({guarded.LocalWrong}) or lent slot 255 ({guarded.Slot255Wrong}) in {guarded.Points} probe points", guarded.Points >= 9 && guarded.MyWrong == 0 && guarded.LocalWrong == 0 && guarded.Slot255Wrong == 0);
 			Check($"gate on: the damage over time loses exactly what it loses with no save running ({guarded.DotDamage} vs {baseline.DotDamage} life over {guarded.DotTicks} steps)", guarded.DotTicks == baseline.DotTicks && guarded.DotDamage == baseline.DotDamage && baseline.DotDamage > 0);
 			Check($"gate on: Main.myPlayer is back to {Main.myPlayer} and slot 255 is the one it was", Main.myPlayer == 0 && ReferenceEquals(Main.player[Main.maxPlayers], _orig255));
+			if (Environment.GetEnvironmentVariable("LEVY_SWAPRACE_QUEUE") == "1") { Note("REPRO knob: queueing tML's own autosave on the thread pool as Player.KillMe does for the local player"); WorldGen.saveToonWhilePlaying(); }
 			if (raw != null) Check($"repro phase: same damage over time as the baseline ({raw.DotDamage} vs {baseline.DotDamage}): the gate moves no number", raw.DotTicks == baseline.DotTicks && raw.DotDamage == baseline.DotDamage);
 		}
 	}

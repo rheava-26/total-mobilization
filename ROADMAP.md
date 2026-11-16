@@ -20,6 +20,10 @@
 
 ## ⏸ RESUME HERE (Eve near usage limit, ~18:30 UTC 11-15)
 
+### Eve's 46 fights on 3.0.0 (2026-11-15/16, Master+Death; analysis files in scratchpad eve_recs2_prof.txt and eve_recs2_fights.txt)
+- PERF (from the recordings' own profiler): the IDLE army costs ~5 ms per update with zero levies in the arena. Golem 09:35 upd 10 ms (ai 4.3, gear 2.9) vs Golem 09:47 after demobilizing upd 6.8 (ai 1.2, gear 0.7). Top buckets: ai, stats (~3 ms per update), then g.reset/g.misc/g.equips/dmg. FPS collapses: Plantera with 34 levies near and ~120 projectiles gives ~40 fps, min 2-10; draw +2-5 ms with 34 levies on screen. Sent to perfboss.
+- Results: the army carries when present (Aureus 54-61 s at 86-90% levy damage vs 190-320 s solo). Plantera lost at 3%, 2% and 15% with the army doing 72-88%; Eve dies near the end. Destroyer lost at 28% (12/34 alive). Prime 336 s, 6 cmd deaths, 15% left. Golem solo lost at 1-2% three times, then won solo. Ravager solo did nothing (89-100% left). Fishron solo 51-62%. Cultist solo 74%. Many fights were solo with the army mobilized but absent: pure lag cost.
+- Progression-break research agent dispatched (Calamity recipes and drops plus armor options).
 ### Eve's 3.0.1 playtest notes (2026-11-16)
 Builders out 19:20 UTC: perfboss (#1), perfmap (#2), weaponorigin (#4 and #3, Dreadmine), armoryui (#5, #6), playerswap resumed (save safety). The lag popup (#7) is under discussion; #9 is not yet checked.
 1. PERF "boss cyberattacks": idle levies near a boss lag the game badly, worse up close, and worst with many projectiles (Plantera spores). She demobilizes before every boss fight. Builder: perf-profile.

@@ -20,6 +20,14 @@
 
 ## ⏸ RESUME HERE (Eve near usage limit, ~18:30 UTC 11-15)
 
+### Eve's decisions and asks (2026-11-16 evening)
+- RESERVE BANK: build it as an OPTION (off by default), for when lag is too much. Not yet dispatched.
+- POST-FIGHT REPORT + full FIGHT ANALYZER + "the line is breaking" warning: YES. Builder 'fightreport' dispatched. Part 0 first rules out Levy breaking Calamity rogue stealth: Eve runs a stealth build almost entirely, and her DPS is flat.
+- PERFORMANCE ANALYZER like RimWorld's (all lag causes; always-on profiler writing a rolling perf log into the synced recordings folder so I can watch via Drive): YES. Hold until perfboss reports (it overlaps the profiler code), then dispatch. The lag popup builds on it.
+- SPECTATOR + DRONES: bosses target drones forever, so the lost-bet never triggers and Spectator is pointless. Proposed: once levies are gone and manpower is out, the bet is lost even if drones remain. Awaiting Eve's OK.
+- IDEA: a rogue stealth weapon that throws GBU laser-guided bombs (Eve loves it). Backlog; probably Mechanization. Discuss.
+- Calamity Golem skip (Astral Ore → Scoria pickaxe; Eidolist tablets → Cultist): Calamity's, not ours. Offered to draft a report to the Calamity devs.
+- Eve is doing a /levyprof map run now for the no-levy pylon lag.
 ### Eve's 46 fights on 3.0.0 (2026-11-15/16, Master+Death; analysis files in scratchpad eve_recs2_prof.txt and eve_recs2_fights.txt)
 - PERF (from the recordings' own profiler): the IDLE army costs ~5 ms per update with zero levies in the arena. Golem 09:35 upd 10 ms (ai 4.3, gear 2.9) vs Golem 09:47 after demobilizing upd 6.8 (ai 1.2, gear 0.7). Top buckets: ai, stats (~3 ms per update), then g.reset/g.misc/g.equips/dmg. FPS collapses: Plantera with 34 levies near and ~120 projectiles gives ~40 fps, min 2-10; draw +2-5 ms with 34 levies on screen. Sent to perfboss.
 - Results: the army carries when present (Aureus 54-61 s at 86-90% levy damage vs 190-320 s solo). Plantera lost at 3%, 2% and 15% with the army doing 72-88%; Eve dies near the end. Destroyer lost at 28% (12/34 alive). Prime 336 s, 6 cmd deaths, 15% left. Golem solo lost at 1-2% three times, then won solo. Ravager solo did nothing (89-100% left). Fishron solo 51-62%. Cultist solo 74%. Many fights were solo with the army mobilized but absent: pure lag cost.

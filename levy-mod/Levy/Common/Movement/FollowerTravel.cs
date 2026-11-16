@@ -114,6 +114,13 @@ namespace Levy.Common.Movement
 			var roster = RosterSystem.Instance;
 			if (roster == null) return;
 			var regulars = roster.Regulars;
+			// Everyone arrives at the same spot beside the commander, so the ground search (up to ~0.8 ms where no floor is in reach) runs once per teleport, not once per follower.
+			bool searched = false, found = false; Vector2 arrival = default;
+			bool Arrival(out Vector2 at)
+			{
+				if (!searched) { searched = true; found = FindSafeGround(commander.Center, StandingSpotRadiusTiles, out arrival); }
+				at = arrival; return found;
+			}
 			for (int i = 0; i < regulars.Count; i++)
 			{
 				var rec = regulars[i];
@@ -122,7 +129,7 @@ namespace Levy.Common.Movement
 				if (!rec.HasBody) continue;
 				if (Main.npc[rec.BodyIndex].ModNPC is not SoldierNPC body || !body.IsAlive) continue;
 				if (body.State == SoldierState.Routed || body.State == SoldierState.ReturnHome || body.State == SoldierState.Desert || body.State == SoldierState.Dead) continue;
-				if (!FindSafeGround(commander.Center, StandingSpotRadiusTiles, out var spot)) continue;
+				if (!Arrival(out var spot)) continue;
 				Place(body, spot);
 			}
 			// his officers on a Follow order come too (one that was told to hold, patrol or stand down stays where its order has it)
@@ -131,7 +138,7 @@ namespace Levy.Common.Movement
 				NPC n = Main.npc[i];
 				if (!n.active || n.ModNPC is not SoldierNPC avatar || !avatar.OfficerMode || !avatar.IsAlive || avatar.Record == null) continue;
 				if (avatar.Record.Order != SoldierOrder.Follow || !string.Equals(avatar.Record.CommanderName, commander.name, StringComparison.Ordinal)) continue;
-				if (!FindSafeGround(commander.Center, StandingSpotRadiusTiles, out var spot)) continue;
+				if (!Arrival(out var spot)) continue;
 				Place(avatar, spot);
 			}
 		}

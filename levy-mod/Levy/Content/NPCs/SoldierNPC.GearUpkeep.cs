@@ -88,6 +88,48 @@ namespace Levy.Content.NPCs
 			if (GearUpkeep.Timing) { GearUpkeep.Ticks += Stopwatch.GetTimestamp() - t0; GearUpkeep.Frames++; }
 		}
 
+		// ------------------------------------------------------------------------------------------------------------
+		// DORMANCY. The frame is the dearest thing an idle levy does: a whole Player.Update's worth of equip hooks, every tick, for every levy in modded gear, wherever the fight is. A levy that has been calm for
+		// DormantCalmTicks (nothing targeted, nothing hit it, nothing swung, no enemy it would fight within DormantHostileTiles) has nothing the frame could change: every counter and cooldown is long settled. It then
+		// runs the frame every DormantGearEvery-th tick (the four per-tick timers the frame owns are stepped by the ticks it skipped, so they land where a full-rate run leaves them) and takes its stat pass every
+		// DormantStatsTicks instead of every 60. The first thing that is not calm (an enemy within range, a target, a hit, a swing) puts it back on the full rate that same tick and refreshes its stats at once.
+		// LEVY_GEARDORMANT=0 (or LEVY_OPT=0) turns it off.
+		// ------------------------------------------------------------------------------------------------------------
+		internal static bool DormancyOn = global::Levy.Common.Util.LevyProf.Opt && Environment.GetEnvironmentVariable("LEVY_GEARDORMANT") != "0"; // not readonly: the PerfBoss lab flips it to time the same scene with and without
+		private const int DormantCalmTicks = 360, DormantGearEvery = 8, DormantStatsTicks = 120;
+		private const float DormantHostileTiles = 110f;
+		private int _calmTicks, _gearSkipped; private bool _wasDormant;
+		/// <summary>Lab counters: frames skipped, and levies that went dormant / woke.</summary>
+		internal static long DormantSkips, DormantSleeps, DormantWakes;
+		/// <summary>Lab: levy-ticks by the first reason a levy was not calm (0 calm, 1 hostile body, 5 engaged, 6 target, 7 hit lately, 8 swinging, 9 enemy near, 10 threat near, 11 defense damage).</summary>
+		internal static readonly long[] DormantWhy = new long[12];
+
+		private bool UpdateGearDormancy()
+		{
+			int why = Hostile ? 1 : OfficerMode ? 2 : Record == null ? 3 : MindControlled ? 4 : State == SoldierState.Engage || State == SoldierState.Shaken || State == SoldierState.Routed ? 5 : TargetIndex >= 0 ? 6
+				: TicksSinceDamaged < DormantCalmTicks ? 7 : ItemAnimation > 0 || AttackCooldown > 0 ? 8 : _nearestHostileTiles < DormantHostileTiles ? 9 : _threatTiles < DormantHostileTiles ? 10 : _defDamageLive ? 11 : 0;
+			DormantWhy[why]++;
+			bool calm = why == 0;
+			if (!calm)
+			{
+				_calmTicks = 0;
+				if (_wasDormant) { _wasDormant = false; StatsDirty = true; DormantWakes++; }
+				return false;
+			}
+			if (_calmTicks < DormantCalmTicks) { _calmTicks++; return false; }
+			if (!DormancyOn) return false;
+			if (!_wasDormant) { _wasDormant = true; DormantSleeps++; }
+			return true;
+		}
+
+		/// <summary>A dormant levy's frame is due every <see cref="DormantGearEvery"/>-th tick (staggered by body); the ticks in between are counted so the frame's timers catch up.</summary>
+		private bool GearDormantDue()
+		{
+			if ((int)((Main.GameUpdateCount + (uint)NPC.whoAmI) % DormantGearEvery) == 0) return true;
+			_gearSkipped++; DormantSkips++;
+			return false;
+		}
+
 		private int[] _nzIdx = new int[32], _nzVal = new int[32];
 
 		/// <summary>Remembers the non-zero entries of <paramref name="counts"/> (indices and values); returns how many.</summary>
@@ -152,10 +194,11 @@ namespace Levy.Content.NPCs
 
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfSlot, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// The timers Player.Update counts down once a tick.
-				if (d.petalTimer > 0) d.petalTimer--;
-				if (d.shadowDodgeTimer > 0) d.shadowDodgeTimer--;
-				if (d.boneGloveTimer > 0) d.boneGloveTimer--;
-				if (d.crystalLeafCooldown > 0) d.crystalLeafCooldown--;
+				int steps = 1 + _gearSkipped; _gearSkipped = 0; // a dormant levy skipped some ticks: the timers step by all of them
+				if (d.petalTimer > 0) d.petalTimer = Math.Max(0, d.petalTimer - steps);
+				if (d.shadowDodgeTimer > 0) d.shadowDodgeTimer = Math.Max(0, d.shadowDodgeTimer - steps);
+				if (d.boneGloveTimer > 0) d.boneGloveTimer = Math.Max(0, d.boneGloveTimer - steps);
+				if (d.crystalLeafCooldown > 0) d.crystalLeafCooldown = Math.Max(0, d.crystalLeafCooldown - steps);
 
 				// ResetEffects ends in ResetProjectileCaches, which zeroes the owned counts: put them back (PrepareCountsOncePerTick filled them) or the Stardust Guardian is cast every tick.
 				// (The array is one int per projectile type, thousands with Calamity, and all but a few entries are zero: only the non-zero ones are saved and put back; a full-array copy twice per soldier per tick was a measurable slice of the army's tick.)

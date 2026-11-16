@@ -487,8 +487,9 @@ namespace Levy.Content.NPCs
 			pd = global::Levy.Common.Util.LevyProf.Begin();
 			// The once-a-second stat refresh is staggered by body index: an army summoned or loaded in one tick otherwise refreshes all together, one tick in sixty carrying the whole army's re-equip (a ~10 ms tick).
 			if (!_statsPhased) { _statsPhased = true; if (global::Levy.Common.Util.LevyProf.Opt) _statsTimer = NPC.whoAmI * 7 % 60; }
-			if (StatsDirty || ++_statsTimer >= 60) { _statsTimer = 0; RefreshStats(); }
-			else if (_upkeepGear) GearTick(); // per-tick gear upkeep (SoldierNPC.GearUpkeep.cs); RefreshStats ran the same frame this tick when it was due
+			bool dormant = UpdateGearDormancy(); // a levy that has stood calm and far from every enemy for a while (SoldierNPC.GearUpkeep.cs)
+			if (StatsDirty || ++_statsTimer >= (dormant ? DormantStatsTicks : 60)) { _statsTimer = 0; RefreshStats(); }
+			else if (_upkeepGear) { if (!dormant || GearDormantDue()) GearTick(); } // per-tick gear upkeep (SoldierNPC.GearUpkeep.cs); RefreshStats ran the same frame this tick when it was due
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Stats, pd);
 			pd = global::Levy.Common.Util.LevyProf.Begin();
 			Rippers_Tick(); // Calamity's Rage and Adrenaline (SoldierNPC.Rippers.cs)

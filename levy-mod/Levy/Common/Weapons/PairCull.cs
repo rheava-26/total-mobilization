@@ -72,7 +72,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>On unless LEVY_PAIRCULL_HOSTILE=0 (A/B): the cull also covers HOSTILE projectiles, for the pairs with a levy body.</summary>
-		public static readonly bool HostileOn = Requested && Environment.GetEnvironmentVariable("LEVY_PAIRCULL_HOSTILE") != "0";
+		public static bool HostileOn = Requested && Environment.GetEnvironmentVariable("LEVY_PAIRCULL_HOSTILE") != "0"; // not readonly: the PerfBoss lab flips it to time the same scene with and without
 		/// <summary>Lab counters: hostile pairs skipped by the rectangle test and by the projectile's own Colliding, and pairs the Colliding test let through.</summary>
 		public static long HostileRectCulled, HostileColCulled, HostileColPassed;
 		private static bool _colliderMode;

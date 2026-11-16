@@ -15,7 +15,7 @@ namespace Levy.Common.Weapons
 	///  * <see cref="ModShotKind.Shortsword"/>: a Calamity <c>BaseShortswordProjectile</c> blade (a stab that exists for 12 ticks next to its owner): the soldier stabs with Levy's own thrust at blade reach.
 	///  * <see cref="ModShotKind.ArkSwing"/>: a Calamity Ark (Fractured Ark ... Ark of the Cosmos): the item's shot is a placeholder and its Shoot hook spawns a swung blade anchored to its owner, or (right button) a parry holdout. The soldier swings, parries and empowers the next swings like a player (<see cref="ArkSwings"/>).
 	///  * <see cref="ModShotKind.BiomeBlade"/>: a Calamity Biome Blade (Broken, Biome, Omega, Four Seasons Galaxia): the item carries attunements and its Shoot hook spawns the attunement's blade. The soldier attunes to the biome and uses the attunement's real attacks (<see cref="BiomeBlades"/>).
-	///  Not a kind: a Calamity mace flail (<c>BaseMaceFlailProjectile</c> / <c>BaseFlailProjectile</c>: spun by its owner, thrown at the cursor when the button is let go) also reads the owner's button but is NOT held. The commander never holds the button,
+	///  Not a kind: a Calamity mace flail (<c>BaseMaceFlailProjectile</c> / <c>BaseFlailProjectile</c>: spun by its owner, thrown at the cursor when the button is let go) also reads the owner's button but is NOT held. A plain shot reads the owner's button as up whatever the commander is doing (OwnerPuppet bit 128),
 	///  so a plain shot spins through its windup and throws at once; with the cursor on the target (<see cref="SteerToTargetProjectile"/>) the throw lands. Holding it as a melee holdout was measured worse (it stood at 7 tiles, below the throw's reach).
 	/// </summary>
 	public enum ModShotKind { None, Holdout, Shortsword, ArkSwing, BiomeBlade }

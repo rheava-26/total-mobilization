@@ -265,6 +265,7 @@ Mods: {
 			SoldierNPC.DisplayName: Soldier
 			SummonedUnitNPC.DisplayName: Summoned Unit
 			HarnessCharger.DisplayName: Harness Charger
+			PerfTestNpc.DisplayName: Perf Test Npc
 		}
 
 		Projectiles: {
@@ -285,6 +286,7 @@ Mods: {
 			HarnessBeam.DisplayName: Harness Beam
 			LevySentryBanner.DisplayName: Levy Sentry
 			SapperCharge.DisplayName: Sapper Charge
+			PerfTestProj.DisplayName: Perf Test Proj
 		}
 
 		Keybinds: {

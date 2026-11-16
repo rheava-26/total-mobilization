@@ -1,0 +1,43 @@
+# Keys here are relative to Mods.Levy.Configs.PerfConfig (the performance analyzer).
+DisplayName: Levy: Performance
+
+Headers: {
+	Analyzer: Performance log
+	LagPopup: After a laggy fight
+	Effects: Army effects
+}
+
+PerfLogAlwaysOn: {
+	Label: Record a performance log
+	Tooltip: Writes a window of numbers every eight seconds to the perf folder next to the recordings. Type /levyperf to see the last minute.
+}
+
+PerfLogDays: {
+	Label: Days to keep the log
+	Tooltip: Older log files are deleted.
+}
+
+PerfLogMaxMB: {
+	Label: Largest log folder (MB)
+	Tooltip: The oldest log files are deleted first when the folder is over this size.
+}
+
+MeasureOtherModHooks: {
+	Label: Measure other mods' AI hooks
+	Tooltip: Times the NPC and projectile AI hooks other mods add, so the log can name them. Needs a reload.
+}
+
+LagPopup: {
+	Label: Show a note after a laggy fight
+	Tooltip: After a boss fight that ran badly, a small window says where the time went.
+}
+
+LagPopupDontAskAgain: {
+	Label: Never ask about lag
+	Tooltip: Set by Don't ask again in the note.
+}
+
+LevyEffects: {
+	Label: Army effects
+	Tooltip: Reduced hides nameplates and thins the dust levy weapons throw. The army fights the same.
+}

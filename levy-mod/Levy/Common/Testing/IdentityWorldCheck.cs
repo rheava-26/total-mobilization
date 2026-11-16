@@ -180,6 +180,10 @@ namespace Levy.Common.Testing
 			ClearSoldiers();
 			DreadmineCount();
 			ClearSoldiers();
+			SummonLoopSweep();
+			ClearSoldiers();
+			SentryProbe();
+			ClearSoldiers();
 		}
 
 		// ---------------------------------------------------------------------------------------------- what other mods' ModPlayers see

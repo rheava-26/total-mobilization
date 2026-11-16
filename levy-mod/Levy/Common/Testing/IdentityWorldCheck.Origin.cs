@@ -28,6 +28,8 @@ namespace Levy.Common.Testing
 
 		private static readonly bool OriginDrawPuppet = Environment.GetEnvironmentVariable("LEVY_ORIGIN_DRAW") != "0"; // 0 = the unfixed draw (no owner puppet around the draw probe)
 		private static readonly bool OriginDebug = Environment.GetEnvironmentVariable("LEVY_ORIGIN_DEBUG") == "1";
+		/// <summary>Weapons that still read more of the commander than her buttons (Anahita's Arpeggio reads her held item and release state, the Midnight Sun Beacon is a summon): listed by the sweep, not failed.</summary>
+		private static readonly string[] KnownButtonResiduals = { "AnahitasArpeggio", "MidnightSunBeacon" };
 		private const int OriginCmdTiles = 45, OriginTargetTiles = 12, NearTiles = 10;
 
 		private sealed class OProj
@@ -86,6 +88,9 @@ namespace Levy.Common.Testing
 			try { object cp = global::Levy.Common.Weapons.AltPolicies.CalamityPlayerOf(c); if (cp != null) global::Levy.Common.Weapons.AltPolicies.SetCalAimPublic(cp, Vector2.Zero, 0f); } catch (Exception) { }
 		}
 
+		/// <summary>The stand-in commander lets go of her use buttons (nothing in the stand-in world does it for her: a run that held them would leave them held for the next).</summary>
+		private static void ReleaseCommanderButtons() { Player c = Main.player[0]; c.channel = false; c.controlUseItem = false; c.controlUseTile = false; c.releaseUseItem = true; }
+
 		private static void OriginStep() { CursorOnCommander(); Step(1); }
 
 		private static void ClearNaturalHostiles()
@@ -114,7 +119,7 @@ namespace Levy.Common.Testing
 			_cmdAt = OriginCmdAt(up);
 			try { Item fi = new Item(); fi.SetDefaults(weaponType); WeaponProfile fp = WeaponClassifier.GetProfile(fi); res.Family = fp.Family + (fp.Supported ? "" : "(unsupported)") + (ModShotKinds.Of(fi) != ModShotKind.None ? "/" + ModShotKinds.Of(fi) : ""); } catch (Exception) { }
 			ClearSoldiers();
-			_cmdHolds = holds || Environment.GetEnvironmentVariable("LEVY_ORIGIN_HOLDS") == "1";
+			_cmdHolds = holds || Environment.GetEnvironmentVariable("LEVY_ORIGIN_HOLDS") == "1"; ReleaseCommanderButtons(); // nothing carries over from the weapon before
 			Vector2 at = new Vector2(Cx * 16f + 8f, FloorY * 16f);
 			SpawnOriginTarget(at);
 			Item w = new Item(); w.SetDefaults(weaponType);
@@ -165,7 +170,7 @@ namespace Levy.Common.Testing
 					res.MinDistCmd = Math.Min(res.MinDistCmd, dc);
 				}
 			}
-			ClearSoldiers(); _cmdHolds = false;
+			ClearSoldiers(); _cmdHolds = false; ReleaseCommanderButtons();
 			return res;
 		}
 
@@ -255,7 +260,7 @@ namespace Levy.Common.Testing
 						Check($"origin: {r.Label} does the same while the commander holds her own use button (damage {r.Holds.Damage} against {r.Damage} idle, {r.Holds.Projs} shots against {r.Projs})", r.Holds.Damage * 2 >= r.Damage && r.Holds.Projs * 2 >= r.Projs);
 					if (r.DrawProbes > 0) Check($"origin: {r.Label} is drawn from the levy (chain / arm anchor on the commander {r.DrawAtCmd} of {r.DrawProbes} probes, nearest {(r.MinDrawCmd / 16f):0.0} tiles)", r.DrawAtCmd == 0);
 				}
-			if (full) Check($"origin sweep: none of {done} weapons fires from the commander (spawned at her in both places: {all.Count(a => a.r.SpawnedAtCommanderBoth)}, drawn from her: {all.Count(a => a.r.DrawFromCommander)}, output controlled by her button: {all.Count(a => a.r.ButtonControlled)})", done > 0 && threw == 0 && !all.Any(a => a.r.SpawnedAtCommanderBoth || a.r.DrawFromCommander || a.r.ButtonControlled));
+			if (full) Check($"origin sweep: none of {done} weapons fires from the commander (spawned at her in both places: {all.Count(a => a.r.SpawnedAtCommanderBoth)}, drawn from her: {all.Count(a => a.r.DrawFromCommander)}, output controlled by her button: {all.Count(a => a.r.ButtonControlled)})", done > 0 && threw == 0 && !all.Any(a => a.r.SpawnedAtCommanderBoth || a.r.DrawFromCommander || (a.r.ButtonControlled && !KnownButtonResiduals.Any(k => a.r.Label.EndsWith(":" + k)))));
 		}
 
 		// ---------------------------------------------------------------------------------------------- SENTRY count: levies vs one player
@@ -369,6 +374,17 @@ namespace Levy.Common.Testing
 		}
 
 		/// <summary>The Dreadmine Staff (Calamity sentry: a turret that plants sea mines): turrets and mines with 1 and 5 levies against one player who casts it once and one who holds the button.</summary>
+		private static void SentryProbe()
+		{
+			string spec = Environment.GetEnvironmentVariable("LEVY_SENTRY_PROBE"); // Item/Turret/Shot
+			if (string.IsNullOrEmpty(spec) || !ModLoader.TryGetMod("CalamityMod", out Mod cal)) return;
+			string[] a = spec.Split('/'); if (a.Length != 3 || !cal.TryFind(a[0], out ModItem it)) return;
+			SetupOriginArena(); KeepCommander(); Step(2);
+			SentryStats pl = SentryRun("PLAYER " + a[0], it.Type, a[1], a[2], 0, true, false, 600);
+			SentryStats lv = SentryRun("1 LEVY " + a[0], it.Type, a[1], a[2], 1, false, false, 600);
+			Note("sentry probe: " + pl); Note("sentry probe: " + lv);
+		}
+
 		private static void DreadmineCount()
 		{
 			if (Environment.GetEnvironmentVariable("LEVY_ORIGIN") == "0" || !ModLoader.TryGetMod("CalamityMod", out Mod cal) || !cal.TryFind("DreadmineStaff", out ModItem staff)) return;

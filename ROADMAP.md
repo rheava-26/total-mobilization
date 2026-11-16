@@ -23,7 +23,7 @@
 ### Eve's decisions and asks (2026-11-16 evening)
 - RESERVE BANK: build it as an OPTION (off by default), for when lag is too much. Not yet dispatched.
 - POST-FIGHT REPORT + full FIGHT ANALYZER + "the line is breaking" warning: YES. Builder 'fightreport' dispatched. Part 0 first rules out Levy breaking Calamity rogue stealth: Eve runs a stealth build almost entirely, and her DPS is flat.
-- PERFORMANCE ANALYZER like RimWorld's (all lag causes; always-on profiler writing a rolling perf log into the synced recordings folder so I can watch via Drive): YES. Hold until perfboss reports (it overlaps the profiler code), then dispatch. The lag popup builds on it.
+- PERFORMANCE ANALYZER like RimWorld's: builder 'perfanalyzer' DISPATCHED ~23:20. Always-on (<0.1 ms/tick) rolling perf log in recordings/perf, per-mod attribution (NPC/proj AI, map/UI layers), /levyperf view, honest post-fight lag popup (Levy-caused → lower levy effects / it's fine / settings; other mod → names it). Reserve-bank option hook left for later; no 'fewer CP' option.
 - SPECTATOR + DRONES: bosses target drones forever, so the lost-bet never triggers and Spectator is pointless. Proposed: once levies are gone and manpower is out, the bet is lost even if drones remain. Awaiting Eve's OK.
 - IDEA: a rogue stealth weapon that throws GBU laser-guided bombs (Eve loves it). Backlog; probably Mechanization. Discuss.
 - Calamity Golem skip (Astral Ore → Scoria pickaxe; Eidolist tablets → Cultist): Calamity's, not ours. Offered to draft a report to the Calamity devs.

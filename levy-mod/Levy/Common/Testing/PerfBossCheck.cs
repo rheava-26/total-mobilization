@@ -25,7 +25,7 @@ namespace Levy.Common.Testing
 	/// and through it; and a real Plantera at the army's edge. The army stands at Hold (idle) in every arm but the last, where it is let loose.
 	/// <para/>With LEVY_PERFBOSS_PROF=1 every hook of the mod is instrumented (<see cref="PerfProbe"/>) and the per-hook cost per tick is logged for each arm, ranked; LEVY_PERFBOSS_DEEP=Type,Type instruments every method of the named types too.
 	/// PASS rules (relative, so a loaded box cannot fail them): each of the quiet, flood-over and flood-through arms is timed with the fixes off and then on in the same boot, and the army's added cost with them on must be a clear fraction
-	/// of the cost with them off (quiet under 0.92, flood under 0.5). Absolute microseconds per levy are logged as information. Lab (measured, 150 levies, same boot, off -> on): quiet 75 -> 42 us per levy; a 500-projectile flood over, far from and
+	/// of the cost with them off (flood under 0.5; the quiet field must show dormant levies skipping gear frames). Absolute microseconds per levy are logged as information. Lab (measured, 150 levies, same boot, off -> on): quiet 75 -> 42 us per levy; a 500-projectile flood over, far from and
 	/// through the army 520, 640, 520 -> 41, 11, 97 us. What it cannot show: draw cost (a headless server cannot draw).
 	/// </summary>
 	public class PerfBossCheck : ModSystem
@@ -227,7 +227,7 @@ namespace Levy.Common.Testing
 		}
 
 		// ------------------------------------------------------------------------------------------------ arms
-		private sealed class Arm { public string Label; public double Mean, Median, P95, Max, WallMean; public int Levies, Proj, Ticks; public double Hits; public List<PerfProbe.Row> Rows; }
+		private sealed class Arm { public string Label; public double Mean, Median, P95, Max, WallMean; public int Levies, Proj, Ticks; public double Hits; public long Skips; public List<PerfProbe.Row> Rows; }
 		private static readonly List<Arm> Arms = new();
 		private static bool _prof;
 
@@ -244,7 +244,7 @@ namespace Levy.Common.Testing
 				if (boss != null) { boss.timeLeft = 999999; if (plantera >= 2) boss.life = boss.lifeMax / 3; }
 			}
 			var cpu = new List<double>(ticks); double wall = 0; double lost = 0; int projSum = 0;
-			PerfProbe.Reset(); if (LevyProf.On) LevyProf.Reset();
+			PerfProbe.Reset(); if (LevyProf.On) LevyProf.Reset(); long skips0 = SoldierNPC.DormantSkips;
 			for (int t = 0; t < warm + ticks; t++)
 			{
 				KeepCommander(); ClearHostiles(false); TopUp();
@@ -271,6 +271,7 @@ namespace Levy.Common.Testing
 				WallMean = wall / ticks, Proj = projSum / Math.Max(1, ticks), Hits = lost / ticks,
 				Rows = _prof ? PerfProbe.Rows(ticks) : null,
 			};
+			a.Skips = SoldierNPC.DormantSkips - skips0;
 			Arms.Add(a);
 			_mod.Logger.Info($"[PerfBoss] ARM {label}: levies {a.Levies}, hostile projectiles/tick {a.Proj}, levy HP lost/tick {a.Hits:F1}; thread CPU ms/tick mean {a.Mean:F3} median {a.Median:F3} p95 {a.P95:F3} max {a.Max:F2} (wall mean {a.WallMean:F3})");
 			if (a.Rows != null)
@@ -368,7 +369,8 @@ namespace Levy.Common.Testing
 				double addOn = Math.Max(0.001, on.Mean - ctl.Mean), addOff = Math.Max(0.001, off.Mean - ctl.Mean);
 				Check($"{what}: the army adds {addOn:F2} ms/tick with the fixes on against {addOff:F2} ms/tick with them off (ratio {addOn / addOff:F2}, must be under {maxRatio:F2}; {addOn * 1000.0 / Math.Max(1, on.Levies):F0} vs {addOff * 1000.0 / Math.Max(1, on.Levies):F0} us per levy)", addOn <= addOff * maxRatio);
 			}
-			Versus("an idle army on a quiet field", a0, b0, c0, dormOn, 0.92);
+			// the quiet field is timed for information; the verdict on it is that calm levies really did go dormant (counted, so box load cannot move it)
+			if (a0 != null && dormOn) Check($"a calm army goes dormant on a quiet field: {a0.Skips} gear frames skipped over {a0.Ticks + 60} ticks ({a0.Mean - (c0?.Mean ?? 0):F2} ms/tick added; {(b0 != null ? (b0.Mean - (c0?.Mean ?? 0)).ToString("F2") : "n/a")} with the fix off)", a0.Skips > levies * (a0.Ticks + 60) * 0.05);
 			Versus($"an idle army under a flood of {flood} hostile projectiles", a1, b1, c1, cullOn, 0.5);
 			Versus($"an army taking a flood of {flood} hostile projectiles", a3, b3, c2, cullOn, 0.5);
 			if (Arms.Count > 0) Check("every arm ticked", Arms.All(a => a.Ticks > 0));

@@ -65,6 +65,7 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_MOBONLY") == "1") { _done = true; try { MobilityWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[MobWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the wings and boots check alone
 			if (Environment.GetEnvironmentVariable("LEVY_BOSSBUGS_ONLY") == "1") { _done = true; try { BossBugsWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[BossBugs] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the boss-bugs check alone
 			if (Environment.GetEnvironmentVariable("LEVY_SWAPRACE_ONLY") == "1") { _done = true; try { SwapRaceCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SwapRace] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the save-race check alone
+			if (Environment.GetEnvironmentVariable("LEVY_PYLONCLICK_ONLY") == "1") { _done = true; try { if (Environment.GetEnvironmentVariable("LEVY_PYLONCLICK_AFTER") == "shop") ShopLagCheck.RunIfArmed(); PylonClickCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PylonClick] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the pylon click check alone (LEVY_PYLONCLICK_AFTER=shop: right after the shop check, as the chain runs it)
 			if (Environment.GetEnvironmentVariable("LEVY_FIELDFIX_ONLY") == "1") { _done = true; try { FieldFixCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[FieldFix] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the field-fix check alone
 			_done = true; _running = true;
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation;
@@ -84,6 +85,7 @@ namespace Levy.Common.Testing
 			try { FieldFixCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[FieldFix] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the shop lag check runs after that, then the tile sweep (which also reads what the army shot during every check before it)
 			try { ShopLagCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ShopLag] check threw " + e.GetType().Name + ": " + e.Message); }
+			try { PylonClickCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PylonClick] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { HitParityCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[HitParity] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { ProjParityCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ProjParity] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { SwapRaceCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SwapRace] check threw " + e.GetType().Name + ": " + e.Message); }

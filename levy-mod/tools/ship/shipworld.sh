@@ -79,6 +79,9 @@ report() { # $1 = label, $2 = run dir
   echo "ShopLag: PASS=$(grep -c -F '[ShopLag] PASS ' "$L") FAIL=$(grep -c -F '[ShopLag] FAIL ' "$L")"
   grep -F "[ShopLag] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[ShopLag] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
+  echo "PylonClick: PASS=$(grep -c -F '[PylonClick] PASS ' "$L") FAIL=$(grep -c -F '[PylonClick] FAIL ' "$L")"
+  grep -F "[PylonClick] self-check pass=" "$L" | sed 's/^/  /'
+  grep -F '[PylonClick] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
   echo "HitParity: PASS=$(grep -c -F '[HitParity] PASS ' "$L") FAIL=$(grep -c -F '[HitParity] FAIL ' "$L")"
   grep -F "[HitParity] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[HitParity] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
@@ -96,7 +99,7 @@ report() { # $1 = label, $2 = run dir
   grep -F '[TileSweep] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
   [ -z "$(grep -F '[MechWorld] self-check pass=' "$L")" ] && echo "  !! no MechWorld summary line (check did not finish; see $2/tml/boot.out)"
   echo "other failures (any FAIL / fail=[1-9] / !!! line not listed above), known summon-staff pick failure excluded:"
-  fail_lines "$L" | grep -v -F -e '[MechWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' -e '[BossBugs] FAIL ' -e '[SwapRace] FAIL ' -e '[LevyRules] FAIL ' | sed 's/^/  /' | head -20
+  fail_lines "$L" | grep -v -F -e '[MechWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[PylonClick] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' -e '[BossBugs] FAIL ' -e '[SwapRace] FAIL ' -e '[LevyRules] FAIL ' | sed 's/^/  /' | head -20
   grep -E "$KNOWN_FAIL_RE" "$L" | head -1 | sed 's/^/  (known, excluded) /'
   echo "FAIL lines in the whole log (known excluded): $(fail_lines "$L" | wc -l)"
   local ex; ex=$(grep -c -E -i "$EXC_RE" "$L"); echo "exceptions: $ex"

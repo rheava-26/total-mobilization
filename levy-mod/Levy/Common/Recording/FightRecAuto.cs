@@ -34,7 +34,7 @@ namespace Levy.Common.Recording
 		private static readonly Dictionary<string, string> _tags = new();
 		private static int _seq, _cooldownUntil, _quiet;
 		private static bool _announced, _recovered;
-		private static readonly ConcurrentQueue<(string text, bool warn)> _posts = new();
+		private static readonly ConcurrentQueue<(string text, bool warn, bool once, Color? color)> _posts = new();
 		private static readonly HashSet<string> _said = new();
 		/// <summary>Chat lines the self-check saw (warnings are queued from any thread and shown on the game thread).</summary>
 		public static readonly List<string> Said = new();
@@ -54,7 +54,14 @@ namespace Levy.Common.Recording
 		{
 			if (string.IsNullOrEmpty(text)) return;
 			Levy.Instance?.Logger.Info("[FightRec] " + text);
-			_posts.Enqueue((text, warn));
+			_posts.Enqueue((text, warn, true, null));
+		}
+
+		/// <summary>A line for the player's chat that is shown every time it is posted (the post-fight summary repeats from fight to fight), from any thread.</summary>
+		public static void PostLine(string text, Color color)
+		{
+			if (string.IsNullOrEmpty(text)) return;
+			_posts.Enqueue((text, false, false, color));
 		}
 
 		/// <summary>Game thread, every tick: shows queued lines.</summary>
@@ -62,9 +69,9 @@ namespace Levy.Common.Recording
 		{
 			while (_posts.TryDequeue(out var m))
 			{
-				if (!_said.Add(m.text)) continue;
+				if (m.once && !_said.Add(m.text)) continue;
 				Said.Add(m.text);
-				if (!Main.dedServ) Main.NewText(m.text, m.warn ? Color.OrangeRed : Color.LightGray);
+				if (!Main.dedServ) Main.NewText(m.text, m.color ?? (m.warn ? Color.OrangeRed : Color.LightGray));
 			}
 		}
 

@@ -37,6 +37,12 @@ namespace Levy.Common.Recording
 	///         shots and dashes are redirected at that levy (tlevy = that levy). Kind 2 keeps meaning real targeting. Files of format 8 and older never carry kind 3: their kind 2 covers all three causes. end.target gains spite (samples of the primary boss with kind 3; levy no longer counts them).
 	///         hdr.boss, end.bossName and the file name carry every main boss of the fight: "The Twins" for Retinazer and Spazmatism, otherwise the distinct boss names joined ("A and B", "A, B and C"); a fight with one main boss is named for it as before.
 	///         Levy ids: every officer used to share the id -1 (the synthetic record's); an officer is now -100000 - its NPC slot, so each is its own row in l and in the events. Militia keep their own negative record ids (-1, -2, ... counted down per world session). An officer with an enemy in reach and a weapon up shows state Engage (L[7]); his avatar's own movement states never include Engage, so older files show officers as Follow / Search and Destroy / Idle all the time.
+	///         Format 10 adds what the post-fight report needs about the commander's own damage (every field appended):
+	///         dmg rows grow from 7 to 10 numbers, [owner, class, src, type, onBoss, damage, hits, srcItem, ss, crits]: srcItem = the item that fired the projectile (the item of the EntitySource_ItemUse the projectile was born from, or of its parent
+	///         projectile; for a melee hit the item itself; 0 = not known, the reader then falls back to the held item); ss = Calamity's stealth flag on the projectile (0 no, 1 stealth strike, 2 a projectile spawned by a stealth strike; always 0 without
+	///         Calamity); crits = how many of the hits were critical. The same item, projectile type and stealth state share a row; rows of 7 numbers are older files (stealth and crit unknown).
+	///         stl: once a second, the commander's Calamity stealth bar, only while it exists (s = percent full 0 to 100, m = the bar's size times 100). bph: the primary boss's life crossed 75, 50, 25 or 10 percent (pct, npc, name, id, army = levies tracked
+	///         near the commander at that moment, hp = the commander's life). cdeath gains the death's own source when the game named one: kn (enemy type, -1 none), kp (projectile type, -1 none), ko (other source index, -1 none), kc (a custom death text), kd (damage).
 	///         Older files stay readable: every new field is appended or optional.
 	///   names type id to name tables (items, npcs, projectiles, buffs, soldiers), written at the end
 	///   end   stop reason and counts
@@ -61,7 +67,7 @@ namespace Levy.Common.Recording
 
 	internal static class FightRecFormat
 	{
-		public const int Version = 9;
+		public const int Version = 10;
 		public const string SchemaP = "x,y,vx,vy,dir,flags,life,mana,immune,wingTime,rocketTime,held,mount,hookX,hookY,dashDelay";
 		public const string SchemaPFlags = "1 grounded,2 flying,4 hookOut,8 hookAttached,16 left,32 right,64 jump,128 down,256 up,512 grapple,1024 useItem,2048 dashing,4096 mounted,8192 dead";
 		public const string SchemaB = "type,id,x,y,vx,vy,life,lifeMax,ai0,ai1,ai2,ai3,target,isPart,tkind,tlevy,w,h";

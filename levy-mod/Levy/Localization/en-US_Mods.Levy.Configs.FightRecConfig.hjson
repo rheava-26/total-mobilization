@@ -3,6 +3,7 @@ DisplayName: Levy: Fight recorder
 
 Headers: {
 	Recording: Recording
+	Report: Fight report
 	Limits: Limits
 }
 
@@ -14,6 +15,16 @@ RecordFightsAutomatically: {
 ProfileRecordedFights: {
 	Label: Profile recorded fights
 	Tooltip: Measures where the time goes during each recorded fight and saves it in the recording. One line in chat when the fight ends.
+}
+
+PostFightSummary: {
+	Label: Post-fight summary in chat
+	Tooltip: When a boss fight ends, a few lines in chat: the result, your damage per second, what killed you and how the army held. The full report is saved as a text file next to the recording.
+}
+
+LineBreakingWarning: {
+	Label: Warn when the line is breaking
+	Tooltip: Shows "The line is breaking!" over your head and in chat when most of the army is shaken or falling fast in a boss fight. At most once a minute.
 }
 
 RecordingFolder: {

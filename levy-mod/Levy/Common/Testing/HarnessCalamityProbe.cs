@@ -51,7 +51,7 @@ namespace Levy.Common.Testing
 			catch (Exception) { _ok = false; }
 		}
 
-		private static object CalPlayer(Player p) { try { return _getModPlayer.Invoke(p, new object[] { _cpBase }); } catch (Exception) { return null; } }
+		private static object CalPlayer(Player p) { try { if (_cpBase.Index >= p.ModPlayers.Length) return null; return _getModPlayer.Invoke(p, new object[] { _cpBase }); } catch (Exception) { return null; } }
 
 		/// <summary>Stealth {current, max} of this player's CalamityPlayer, or null when unreadable.</summary>
 		public static float[] Stealth(Player p)
@@ -59,6 +59,14 @@ namespace Levy.Common.Testing
 			Init(); if (!_ok || p == null) return null;
 			object c = CalPlayer(p); if (c == null) return null;
 			try { return new[] { (float)_stealth.GetValue(c), (float)_stealthMax.GetValue(c) }; } catch (Exception) { return null; }
+		}
+
+		/// <summary>Sets this player's current stealth (a world check starts every measurement from empty). False when unreadable.</summary>
+		public static bool SetStealth(Player p, float value)
+		{
+			Init(); if (!_ok || p == null) return false;
+			object c = CalPlayer(p); if (c == null) return false;
+			try { _stealth.SetValue(c, value); return true; } catch (Exception) { return false; }
 		}
 
 		public static bool StealthStrikeAvailable(Player p)

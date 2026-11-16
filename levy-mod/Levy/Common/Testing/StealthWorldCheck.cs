@@ -338,6 +338,9 @@ namespace Levy.Common.Testing
 			Check($"a levy carrying the Elephant Killer leaves the commander's stealth bar alone (it reached {peak:0.##} of {max:0.##} in 400 ticks standing; {shots} ticks with its projectile out)", peak >= max - 1e-3f);
 		}
 
+		/// <summary>Within 3 percent (Calamity's own damage numbers drift by a point or two when a timed effect on the stand-in runs out).</summary>
+		private static bool Near(double x, double y) => Math.Abs(x - y) <= 0.03 * Math.Max(1.0, Math.Max(Math.Abs(x), Math.Abs(y)));
+
 		private static void Run()
 		{
 			Main.player[0] = Main.player[0] ?? new Player();
@@ -352,7 +355,8 @@ namespace Levy.Common.Testing
 			Main.rand = new Terraria.Utilities.UnifiedRandom(9100);
 			_t1 = MakeTarget(_t1At); _t2 = MakeTarget(_t2At);
 			if (_t1 == null || _t2 == null) { Check("the enemies spawn", false); return; }
-			Step(60);
+			for (int i = 0; i < Player.MaxBuffs; i++) { p.buffType[i] = 0; p.buffTime[i] = 0; } // whatever the checks before this one left on the stand-in (a potion buff counts down for minutes)
+			Step(240);
 			float[] s0 = Bar();
 			Note($"the commander's update reached: equips {UpdateEnd.Equips}, misc effects {UpdateEnd.Misc}, movement {UpdateEnd.Move}, its last hook {UpdateEnd.Ends}, of {_steps} steps; held {Main.player[0].HeldItem.Name}, myPlayer {Main.myPlayer}");
 			Check($"the commander's own update runs to its end every tick ({UpdateEnd.Move} of {_steps})", UpdateEnd.Move >= _steps - 2 && _steps > 50);
@@ -390,9 +394,9 @@ namespace Levy.Common.Testing
 			Check($"a strike hits harder than a plain throw (projectile damage {a.StrikeProjDmg:0.##} vs {a.NormalProjDmg:0.##})", a.StrikeProjDmg >= 2.5 * a.NormalProjDmg && a.NormalProjDmg > 0);
 			Check($"the commander's throws reach the enemy ({a.StrikeHitMean:0.##} and {a.NormalHitMean:0.##} a hit)", a.StrikeHitMean > 0 && a.NormalHitMean > 0);
 			// the army must change nothing
-			Check($"the measurement repeats with no army (fill {a.ChargeStand}/{c.ChargeStand}, {a.ChargeMove}/{c.ChargeMove}; strike damage {a.StrikeProjDmg:0.##}/{c.StrikeProjDmg:0.##})", Math.Abs(a.ChargeStand - c.ChargeStand) <= 1 && Math.Abs(a.ChargeMove - c.ChargeMove) <= 1 && Math.Abs(a.StrikeProjDmg - c.StrikeProjDmg) < 0.5 && Math.Abs(a.NormalProjDmg - c.NormalProjDmg) < 0.5);
+			Check($"the measurement repeats with no army (fill {a.ChargeStand}/{c.ChargeStand}, {a.ChargeMove}/{c.ChargeMove}; strike damage {a.StrikeProjDmg:0.##}/{c.StrikeProjDmg:0.##})", Math.Abs(a.ChargeStand - c.ChargeStand) <= 1 && Math.Abs(a.ChargeMove - c.ChargeMove) <= 1 && Near(a.StrikeProjDmg, c.StrikeProjDmg) && Near(a.NormalProjDmg, c.NormalProjDmg));
 			Check($"with the army: the bar fills as fast (standing {a.ChargeStand} vs {b.ChargeStand}, moving {a.ChargeMove} vs {b.ChargeMove})", Math.Abs(a.ChargeStand - b.ChargeStand) <= 1 && Math.Abs(a.ChargeMove - b.ChargeMove) <= 1 && b.ChargeStandMax - b.ChargeStandMin <= 3);
-			Check($"with the army: a strike does the same damage ({a.StrikeProjDmg:0.##} vs {b.StrikeProjDmg:0.##}; plain {a.NormalProjDmg:0.##} vs {b.NormalProjDmg:0.##})", Math.Abs(a.StrikeProjDmg - b.StrikeProjDmg) < 0.5 && Math.Abs(a.NormalProjDmg - b.NormalProjDmg) < 0.5);
+			Check($"with the army: a strike does the same damage ({a.StrikeProjDmg:0.##} vs {b.StrikeProjDmg:0.##}; plain {a.NormalProjDmg:0.##} vs {b.NormalProjDmg:0.##})", Near(a.StrikeProjDmg, b.StrikeProjDmg) && Near(a.NormalProjDmg, b.NormalProjDmg));
 			Check($"with the army: a strike is still flagged and spends the bar ({b.StrikeFlagged}/{b.Strikes}; {b.BarBeforeStrike:0.##} -> {b.BarAfterStrike:0.##}; plain throws flagged {b.NormalFlagged})", b.Strikes == a.Strikes && b.StrikeFlagged == b.Strikes && b.NormalFlagged == 0 && b.BarBeforeStrike >= b.BarMax - 1e-3f && b.BarAfterStrike <= 0.05f * b.BarMax);
 			Check($"with the army: the same bar size ({a.BarMax:0.##} vs {b.BarMax:0.##})", Math.Abs(a.BarMax - b.BarMax) < 1e-3f);
 			Check($"the levies run Calamity's stealth too (a levy bar of {b.LevyStealthMax:0.##})", b.LevyStealthMax > 0);

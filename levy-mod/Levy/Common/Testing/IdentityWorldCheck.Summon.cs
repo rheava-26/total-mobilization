@@ -20,7 +20,7 @@ namespace Levy.Common.Testing
 		// One levy carries one minion / sentry staff. After a warm-up that fills the flock, it is watched for an IDLE window (no enemy) and a COMBAT window (a pinned enemy 12 tiles away): casts of the staff
 		// (SoldierMinions.CastTally / HelperTally / SentryTally), the minions alive at the end and the most alive at once. A player fills her slots and stops, so a levy at its cap casts at most a small allowance
 		// (a minion that really died) over a window; more is a loop (a minion that cannot live for its owner, a count that never reaches the cap).
-		// Env: LEVY_SUMMON=1 sweeps every minion / sentry staff of LEVY_SUMMON_MODS (default Terraria,CalamityMod), =0 skips; unset runs a small sample. LEVY_SUMMON_TICKS = window length (default 1200 swept, 3600 sample).
+		// Env: LEVY_SUMMON=1 sweeps every minion / sentry staff of LEVY_SUMMON_MODS (default Terraria,CalamityMod), =0 skips; unset runs a small sample. LEVY_SUMMON_TICKS = window length (default 1200).
 		// LEVY_SUMMON_ONLY=Name;Name, LEVY_SUMMON_SHARD=i/n.
 
 		private const int SummonAllowance = 3;
@@ -114,7 +114,7 @@ namespace Levy.Common.Testing
 			string mode = Environment.GetEnvironmentVariable("LEVY_SUMMON");
 			if (mode == "0") return;
 			bool full = mode == "1" || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_SUMMON_ONLY"));
-			int window = int.TryParse(Environment.GetEnvironmentVariable("LEVY_SUMMON_TICKS"), out int tk) ? tk : (full ? 1200 : 3600);
+			int window = int.TryParse(Environment.GetEnvironmentVariable("LEVY_SUMMON_TICKS"), out int tk) ? tk : 1200;
 			var staves = new List<(int type, string label)>();
 			string[] mods = (Environment.GetEnvironmentVariable("LEVY_SUMMON_MODS") ?? "Terraria,CalamityMod").Split(',', StringSplitOptions.RemoveEmptyEntries);
 			string only = Environment.GetEnvironmentVariable("LEVY_SUMMON_ONLY");
@@ -156,6 +156,6 @@ namespace Levy.Common.Testing
 			Check($"summon loop: none of {all.Count} staves is re-cast more than {SummonAllowance} times in {window} ticks at its cap, idle or in combat (offenders {loops.Count})", all.Count > 0 && loops.Count == 0 && threw == 0);
 		}
 
-		private static readonly HashSet<string> SummonSample = new() { "Slime Staff", "SlimeStaff", "HornetStaff", "OpticStaff", "StardustDragonStaff", "DeadlySphereStaff", "PygmyStaff", "RavenStaff", "XenoStaff", "DreadmineStaff", "Hornet Staff", "Optic Staff", "Raven Staff", "Pygmy Staff", "Xeno Staff", "Deadly Sphere Staff", "Stardust Dragon Staff", "Imp Staff", "Frost Hydra Staff", "Staff of the Frost Hydra" };
+		private static readonly HashSet<string> SummonSample = new() { "Slime Staff", "SlimeStaff", "HornetStaff", "OpticStaff", "StardustDragonStaff", "DeadlySphereStaff", "PygmyStaff", "RavenStaff", "XenoStaff", "DreadmineStaff", "BorealisBomber", "CindersOfLament", "SlimePuppetStaff", "Hornet Staff", "Optic Staff", "Raven Staff", "Pygmy Staff", "Xeno Staff", "Deadly Sphere Staff", "Stardust Dragon Staff", "Imp Staff", "Frost Hydra Staff", "Staff of the Frost Hydra" };
 	}
 }

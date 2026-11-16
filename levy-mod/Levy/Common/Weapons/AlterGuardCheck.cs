@@ -14,7 +14,7 @@ namespace Levy.Common.Weapons
 	/// <summary>
 	/// Boot self-check of THE ARMY NEVER ALTERS THE WORLD (no world needed; the measured half is TileSweepCheck). Logs "Levy world-alter self-check: pass=N fail=M". It checks that the classifier flags the canonical
 	/// breakers (explosives, tile-breaking rounds, pick / hammer / drill) and nothing ordinary, that no pick path can select a flagged item (weapon classifier, hand assignment, allocation, sidearms, ammo, drone and turret
-	/// arsenal, lent rounds), that a kit made before the rule is emptied of them, that the deposit warning fires for exactly the flagged items and honours "don't show again", and that the identity guard's talk mirror
+	/// arsenal, lent rounds), that a kit made before the rule is emptied of them, that the block-breaking warning fires for exactly the flagged weapons, that Cancel keeps one out and Confirm lets levies use it, and that the identity guard's talk mirror
 	/// writes the field and not SetTalkNPC.
 	/// </summary>
 	public class AlterGuardCheck : ModSystem
@@ -102,20 +102,65 @@ namespace Levy.Common.Weapons
 			});
 			Guarded("warning", () =>
 			{
-				var items = new[] { Make(ItemID.Musket), Make(ItemID.Dynamite, 3), Make(rocketII, 100), Make(ItemID.Dynamite, 1) };
-				var all = AlterWarning.Collect(items, null);
-				Check(all.Count == 2 && all.Any(e => e.Type == ItemID.Dynamite) && all.Any(e => e.Type == rocketII) && all.All(e => !string.IsNullOrEmpty(e.Reason)), "the deposit warning lists exactly the breakers, once each, with a reason (" + string.Join(", ", all.Select(e => e.Name)) + ")");
-				var off = new HashSet<string> { WorldAlter.KeyOf(ItemID.Dynamite) };
-				var rest = AlterWarning.Collect(items, off);
-				Check(rest.Count == 1 && rest[0].Type == rocketII, "an item marked \"don't show again\" is left out of the warning");
-				Check(AlterWarning.Collect(new[] { Make(ItemID.Musket), Make(ItemID.IronBroadsword), Make(ItemID.MusketBall, 50) }, null).Count == 0, "ordinary items raise no warning");
+				var items = new[] { Make(ItemID.Musket), Make(ItemID.Dynamite, 3), Make(rocketII, 100), Make(ItemID.Dynamite, 1), Make(ItemID.IronPickaxe) };
+				var all = AlterWarning.Collect(items);
+				Check(all.Count == 2 && all.Any(e => e.Type == ItemID.Dynamite) && all.Any(e => e.Type == rocketII) && all.All(e => !string.IsNullOrEmpty(e.Reason)), "the block-breaking warning lists exactly the breakers, once each, with a reason, and no tool (" + string.Join(", ", all.Select(e => e.Name)) + ")");
+				Check(AlterWarning.Collect(new[] { Make(ItemID.Musket), Make(ItemID.IronBroadsword), Make(ItemID.MusketBall, 50) }).Count == 0, "ordinary items raise no warning");
 				AlterWarning.Pending.Clear(); int opened = AlterWarning.Opened;
-				AlterWarning.NoteFor(items, null);
-				Check(AlterWarning.Active && AlterWarning.Pending.Count == 2 && AlterWarning.Opened == opened + 1, "a deposit of breakers opens the warning (pending " + AlterWarning.Pending.Count + ")");
-				AlterWarning.Dismiss(false);
-				Check(!AlterWarning.Active, "clicking OK closes it");
-				AlterWarning.NoteFor(new[] { Make(ItemID.Musket) }, null);
+				AlterWarning.NoteFor(items);
+				Check(AlterWarning.Active && AlterWarning.Pending.Count == 2 && AlterWarning.Opened == opened + 1, "the warning appears for a known block-breaking weapon (Dynamite): pending " + AlterWarning.Pending.Count);
+				AlterWarning.Cancel();
+				Check(!AlterWarning.Active, "clicking Cancel closes it");
+				AlterWarning.NoteFor(new[] { Make(ItemID.Musket) });
 				Check(!AlterWarning.Active, "a deposit of ordinary items opens nothing");
+			});
+			Guarded("consent", () =>
+			{
+				int dyn = ItemID.Dynamite;
+				WorldAlterConsent.Revoke(dyn); WorldAlterConsent.Revoke(rocketII);
+				try
+				{
+					// Cancel keeps it out
+					AlterWarning.Pending.Clear(); AlterWarning.NoteFor(new[] { Make(dyn, 20) }); AlterWarning.Cancel();
+					Check(WorldAlter.Alters(Make(dyn)) && !WorldAlterConsent.Has(dyn) && !WeaponClassifier.IsIssuableWeapon(Make(dyn, 20)) && !ThrownBlastGuardProjectile.ShotIsConsented(ProjectileID.Dynamite), "after Cancel the weapon is still kept out (flagged, not issuable, its blast still guarded)");
+					var stay = new ArmoryTE(); stay.Storage[0] = Make(dyn, 20);
+					var sCancel = new SoldierRecord { Id = 810 }; ArmoryTE.TestServed = new List<SoldierRecord> { sCancel };
+					try { stay.IssueGear(sCancel); } finally { ArmoryTE.TestServed = null; }
+					Check(!sCancel.Gear.AllItems().Any(i => i.type == dyn) && stay.CountInStorage(dyn) == 20, "after Cancel a levy is issued no Dynamite and it stays in storage");
+					Check(AlterWarning.Collect(new[] { Make(dyn) }).Count == 1, "after Cancel the warning asks again next time");
+
+					// Confirm lets levies use it
+					AlterWarning.Pending.Clear(); AlterWarning.NoteFor(new[] { Make(dyn, 20) });
+					AlterWarning.Confirm();
+					Check(!AlterWarning.Active && WorldAlterConsent.Has(dyn), "clicking Confirm closes the warning and records the item");
+					Check(!WorldAlter.Alters(Make(dyn)) && WeaponClassifier.IsIssuableWeapon(Make(dyn, 20)) && ThrownBlastGuardProjectile.ShotIsConsented(ProjectileID.Dynamite), "after Confirm the weapon is an ordinary issuable weapon and its blast is not guarded");
+					Check(AlterWarning.Collect(new[] { Make(dyn) }).Count == 0, "after Confirm the warning does not ask again for it");
+					var te = new ArmoryTE(); te.Storage[0] = Make(dyn, 20);
+					var lev = new SoldierRecord { Id = 811 }; ArmoryTE.TestServed = new List<SoldierRecord> { lev };
+					try { te.IssueGear(lev); } finally { ArmoryTE.TestServed = null; }
+					Check(lev.Gear.AllItems().Any(i => i.type == dyn), "after Confirm a levy is issued the Dynamite (carries " + N(lev.Gear.Weapon) + " / " + N(lev.Gear.Sidearm) + ")");
+					Check(WorldAlter.Alters(Make(ItemID.Bomb)), "confirming one weapon does not free another (Bomb is still flagged)");
+					Check(!WorldAlterConsent.Has(ItemID.IronPickaxe) && !WorldAlterConsent.Grant(new int[] { ItemID.IronPickaxe, ItemID.Musket }) && WorldAlter.Alters(Make(ItemID.IronPickaxe)), "a tool and an ordinary item can never be confirmed");
+					// a round: the pair rule follows the confirmed round
+					Check(WorldAlter.AltersWith(Make(ItemID.RocketLauncher), Make(rocketII)), "Rocket II is still a breaker for a Rocket Launcher before it is confirmed");
+					WorldAlterConsent.Grant(new int[] { rocketII });
+					Check(!WorldAlter.AltersWith(Make(ItemID.RocketLauncher), Make(rocketII)), "after Rocket II is confirmed a Rocket Launcher may fire it");
+					// saved with the world
+					var tag = new Terraria.ModLoader.IO.TagCompound();
+					var sys = ModContent.GetInstance<WorldAlterConsent>();
+					sys.SaveWorldData(tag);
+					WorldAlterConsent.Revoke(dyn); WorldAlterConsent.Revoke(rocketII);
+					Check(!WorldAlterConsent.Has(dyn) && WorldAlter.Alters(Make(dyn)), "a withdrawn confirmation flags the weapon again");
+					sys.LoadWorldData(tag);
+					Check(WorldAlterConsent.Has(dyn) && WorldAlterConsent.Has(rocketII), "the confirmed items come back from the saved world");
+					// sent to a joining client
+					using var ms = new System.IO.MemoryStream(); using var w = new System.IO.BinaryWriter(ms);
+					sys.NetSend(w); w.Flush(); WorldAlterConsent.Revoke(dyn); WorldAlterConsent.Revoke(rocketII); ms.Position = 0;
+					sys.NetReceive(new System.IO.BinaryReader(ms));
+					Check(WorldAlterConsent.Has(dyn) && WorldAlterConsent.Has(rocketII), "a joining client receives the confirmed items");
+				}
+				finally { WorldAlterConsent.Revoke(dyn); WorldAlterConsent.Revoke(rocketII); }
+				Check(WorldAlter.Alters(Make(dyn)) && WorldAlter.Alters(Make(rocketII, 50)) && WorldAlterConsent.Count == 0, "the check leaves nothing confirmed");
 			});
 			Guarded("mirror", () =>
 			{

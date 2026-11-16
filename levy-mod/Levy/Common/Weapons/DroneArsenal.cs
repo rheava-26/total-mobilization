@@ -50,6 +50,9 @@ namespace Levy.Common.Weapons
 		private static readonly Dictionary<int, bool> _mountable = new();
 		private static readonly Dictionary<int, int> _defaultAmmo = new();
 
+		/// <summary>Forgets the cached mount verdicts and default rounds (the player confirmed or withdrew a world-altering weapon).</summary>
+		public static void ForgetCaches() { _mountable.Clear(); _defaultAmmo.Clear(); }
+
 		// ---------------------------------------------------------------------------------------------------- eligibility
 
 		/// <summary>

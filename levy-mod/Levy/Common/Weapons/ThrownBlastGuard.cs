@@ -1,4 +1,5 @@
 using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Globals;
 
@@ -9,12 +10,28 @@ namespace Levy.Common.Weapons
 	/// <see cref="GlobalTile.CanExplode"/> for every tile; this guard answers "no" for the length of a Kill() of any shot a soldier or a combat drone fires
 	/// (thrown bombs, gun ordnance such as Rocket III/IV, Mini Nukes, Cluster Rockets and their fragments — and the Celebration Mk2's rockets, which explode
 	/// tiles through Projectile.Kill's own type list without being flagged explosive at all). The flag only matters when something actually explodes tiles, so
-	/// guarding a non-explosive shot is a harmless no-op. Other explosions are never touched.
+	/// guarding a non-explosive shot is a harmless no-op. Other explosions are never touched, and neither is a shot of an item the player confirmed in the block-breaking warning (<see cref="WorldAlterConsent"/>).
 	/// </summary>
 	public class ThrownBlastGuardProjectile : GlobalProjectile
 	{
 		/// <summary>True only between PreKill and OnKill of a guarded projectile (Projectile.Kill runs both in one call, so nothing else can explode meanwhile).</summary>
 		internal static bool Guarding;
+
+		/// <summary>The projectile types fired by an item the player confirmed (the block-breaking warning): their blasts break blocks as a player's would, so they are not guarded.</summary>
+		private static readonly System.Collections.Generic.HashSet<int> ConsentedShots = new();
+
+		/// <summary>Rebuilds <see cref="ConsentedShots"/> from the confirmed items (called whenever that set changes).</summary>
+		internal static void RebuildConsentedShots()
+		{
+			ConsentedShots.Clear();
+			foreach (string key in WorldAlterConsent.All)
+			{
+				int t = WorldAlter.ItemFromKey(key);
+				if (t > 0 && ContentSamples.ItemsByType.TryGetValue(t, out Item s) && s != null && s.shoot > ProjectileID.None) ConsentedShots.Add(s.shoot);
+			}
+		}
+
+		public static bool ShotIsConsented(int projectileType) => ConsentedShots.Count > 0 && ConsentedShots.Contains(projectileType);
 
 		public override bool AppliesToEntity(Projectile entity, bool lateInstantiation) => true;
 
@@ -24,7 +41,7 @@ namespace Levy.Common.Weapons
 			// for this (possibly legitimate, non-soldier) explosion.
 			Guarding = false;
 			if (!LevyConstants.ThrownBlastsHarmTiles && projectile.TryGetGlobalProjectile(out SoldierProjectileTag tag)
-				&& (tag.DroneShot || tag.IsSoldierShot))
+				&& (tag.DroneShot || tag.IsSoldierShot) && !ShotIsConsented(projectile.type))
 				Guarding = true; // every soldier and drone shot is guarded whatever it is: some rockets (the Celebration Mk2's, 716/718) explode tiles through Projectile.Kill's own type list, which the old Sets.Explosive/aiStyle test missed
 			return true;
 		}

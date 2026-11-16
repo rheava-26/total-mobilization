@@ -8,6 +8,7 @@ using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameContent.Tile_Entities;
+using Terraria.Chat;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Movement;
@@ -53,10 +54,19 @@ namespace Levy.Common.Testing
 			if (!_armed || _done || !Main.dedServ) return;
 			_done = true; _running = true;
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation;
+			On_ChatHelper.SendChatMessageToClient += RefusalSpy;
 			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
-			finally { _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; }
+			finally { On_ChatHelper.SendChatMessageToClient -= RefusalSpy; _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; }
 			_mod.Logger.Info($"[PylonClick] self-check pass={_pass} fail={_fail}");
+		}
+
+		private static int _refusals; private static readonly HashSet<string> RefusalKeys = new();
+		/// <summary>Logs why vanilla refused a pylon request (its chat line to the client; the stand-in has no socket, so the send itself is skipped).</summary>
+		private static void RefusalSpy(On_ChatHelper.orig_SendChatMessageToClient orig, Terraria.Localization.NetworkText text, Color color, int playerId)
+		{
+			_refusals++; string t = text?.ToString() ?? "?";
+			if (RefusalKeys.Add(t)) _mod.Logger.Info("[PylonClick] OBSERVED vanilla refused a pylon request: \"" + t + "\"");
 		}
 
 		private static void Check(string name, bool ok) { if (ok) _pass++; else _fail++; _mod.Logger.Info($"[PylonClick] {(ok ? "PASS" : "FAIL")} {name}"); }
@@ -94,6 +104,13 @@ namespace Levy.Common.Testing
 			try
 			{
 				RefreshVanillaPylons(); // an earlier check of the same boot may have removed its pylons without a refresh: vanilla refuses a second pylon of a type it still lists
+				{
+					var left = new List<string>(); int projs = 0;
+					for (int i = 0; i < Main.maxNPCs; i++) { NPC n0 = Main.npc[i]; if (n0.active && !n0.townNPC) left.Add((n0.ModNPC?.Name ?? n0.TypeName) + (n0.friendly ? "(f)" : "") + "@" + (int)(n0.Center.X / 16f) + "," + (int)(n0.Center.Y / 16f)); }
+					for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active) projs++;
+					Player c0 = Main.player[0];
+					Note($"before the scene: {left.Count} non-town NPCs [{string.Join(" ", left.Take(12))}], {projs} projectiles, commander at {(int)(c0.Center.X / 16f)},{(int)(c0.Center.Y / 16f)} life {c0.statLife}/{c0.statLifeMax2} dead {c0.dead} channel {c0.channel} use {c0.controlUseItem} myPlayer {Main.myPlayer} time {Main.time:0} day {Main.dayTime} hardMode {Main.hardMode}");
+				}
 				int barType = ModContent.TileType<BarracksTile>(), armType = ModContent.TileType<ArmoryTile>();
 				var barracks = new List<BarracksTE>(); var armories = new List<ArmoryTE>();
 				foreach (int bx in new[] { 600, 1000 })

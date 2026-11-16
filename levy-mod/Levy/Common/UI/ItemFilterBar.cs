@@ -10,13 +10,13 @@ using Levy.Common.Util;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// The Items tab's search row, as one reusable element: a search box (<see cref="UISearchBar"/> keeps typing away from game hotkeys), a "Type: X" button that cycles the kinds (right-click goes back) and a Clear button.
+	/// The Items tab's search row, as one reusable element: a search box (<see cref="LevyTextInput"/> keeps typing away from game hotkeys), a "Type: X" button that cycles the kinds (right-click goes back) and a Clear button.
 	/// The Buy, Sell and Find lists of the logistics screen share it; the owner calls <see cref="Matches"/> per item and refreshes on <see cref="Changed"/>.
 	/// </summary>
 	public class ItemFilterBar : UIElement
 	{
 		public const int TypeWidth = 190, ClearWidth = 60, Gap = 8, RowHeight = 26;
-		private readonly UIPanel _box = new(); private readonly UISearchBar _search; private readonly LevyButton _typeBtn, _clearBtn;
+		private readonly UIPanel _box = new(); private readonly LevyTextInput _search; private readonly LevyButton _typeBtn, _clearBtn;
 		private readonly FilterCat[] _cats = ItemFilter.Cats();
 		private int _idx; private string _term = ""; private string[] _words = Array.Empty<string>();
 		public event Action Changed;
@@ -30,7 +30,7 @@ namespace Levy.Common.UI
 		{
 			Width.Set(width, 0f); Height.Set(RowHeight, 0f);
 			_box.SetPadding(0); _box.Width.Set(width - TypeWidth - ClearWidth - 2 * Gap, 0f); _box.Height.Set(RowHeight, 0f); _box.BackgroundColor = new Color(20, 26, 52) * 0.9f;
-			_search = new UISearchBar(Language.GetText(searchKey), LevyConstants.UI.ButtonTextScale + 0.05f);
+			_search = new LevyTextInput(Language.GetText(searchKey), LevyConstants.UI.ButtonTextScale + 0.05f);
 			_search.Left.Set(LevyConstants.UI.ArmorySearchInset, 0f); _search.Width.Set(-2f * LevyConstants.UI.ArmorySearchInset, 1f); _search.Height.Set(0f, 1f);
 			_search.OnContentsChanged += s => { _term = (s ?? "").Trim().ToLowerInvariant(); _words = ItemFilter.Words(_term); Changed?.Invoke(); Refresh(); };
 			_search.OnCanceledTakingInput += () => _search.SetContents("", true);
@@ -52,7 +52,7 @@ namespace Levy.Common.UI
 
 		private void Refresh()
 		{
-			if (_typeBtn == null || _clearBtn == null) return; // UISearchBar can fire OnContentsChanged during construction
+			if (_typeBtn == null || _clearBtn == null) return; // LevyTextInput can fire OnContentsChanged during construction
 			_typeBtn.SetText(LevyUtil.T("UI2.ArmoryCategory", _idx == 0 ? LevyUtil.T("UI2.FilterAny") : LevyUtil.T("Logistics.Kind" + Cat)));
 			_typeBtn.Lit = _idx != 0; _clearBtn.Enabled = Active;
 		}

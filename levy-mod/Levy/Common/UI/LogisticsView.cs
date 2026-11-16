@@ -44,7 +44,7 @@ namespace Levy.Common.UI
 		private LogisticsOrder _draft = new(); private int _selectedId; private bool _selectLatest;
 		private int _seenVersion = -1, _lineHash;
 		private LevyButton _modeBtn, _buyBtn, _pauseBtn, _deleteBtn, _saveBtn;
-		private NumberField _totalField, _budgetField;
+		private NumberField _totalField, _budgetField, _ruleCountField, _ruleBudgetField;
 		private Label _statusLbl, _rulesLbl, _note;
 
 		// ---- craft browser (the second pane of the orders page)
@@ -105,7 +105,7 @@ namespace Levy.Common.UI
 		}
 
 		/// <summary>Ends typing in whichever search box has focus.</summary>
-		public void StopTyping() { _craftFilter?.StopTyping(); _craftField?.StopTypingIfAny(); _buyFilter?.StopTyping(); _sellFilter?.StopTyping(); _findFilter?.StopTyping(); }
+		public void StopTyping() { _craftFilter?.StopTyping(); _craftField?.StopTypingIfAny(); _totalField?.StopTypingIfAny(); _budgetField?.StopTypingIfAny(); _ruleCountField?.StopTypingIfAny(); _ruleBudgetField?.StopTypingIfAny(); _buyFilter?.StopTyping(); _sellFilter?.StopTyping(); _findFilter?.StopTyping(); }
 
 		/// <summary>Called when the panel points at an armory.</summary>
 		public void Bind()
@@ -378,12 +378,12 @@ namespace Levy.Common.UI
 			_kindBtn = new LevyButton("", LevyConstants.UI.ButtonTextScale, 150, 24, () => { _rule.Kind = (byte)((_rule.Kind + 1) % 3); _rule.Type = 0; RebuildItemCell(); }, L("KindHint")); _kindBtn.Top.Set(20, 0f); pg.Append(_kindBtn);
 			_itemCellHost = new UIElement(); _itemCellHost.Left.Set(160, 0f); _itemCellHost.Top.Set(14, 0f); _itemCellHost.Width.Set(200, 0f); _itemCellHost.Height.Set(38, 0f); pg.Append(_itemCellHost);
 			var cl = new Label(L("Count"), 0.8f); cl.Top.Set(62, 0f); pg.Append(cl);
-			var count = new NumberField(150, 1, 9999, 5, true, () => _rule.Count, v => _rule.Count = (int)v); count.Left.Set(60, 0f); count.Top.Set(58, 0f); pg.Append(count);
+			var count = new NumberField(150, 1, 9999, 5, true, () => _rule.Count, v => _rule.Count = (int)v); count.Left.Set(60, 0f); count.Top.Set(58, 0f); pg.Append(count); _ruleCountField = count;
 			var bl = new Label(L("Budget"), 0.8f); bl.Left.Set(224, 0f); bl.Top.Set(62, 0f); pg.Append(bl);
-			var budget = new NumberField(130, 0, 9999, 1, true, () => _rule.Budget / 10000f, v => _rule.Budget = (long)v * 10000L); budget.Left.Set(284, 0f); budget.Top.Set(58, 0f); pg.Append(budget);
+			var budget = new NumberField(130, 0, 9999, 1, true, () => _rule.Budget / 10000f, v => _rule.Budget = (long)v * 10000L); budget.Left.Set(284, 0f); budget.Top.Set(58, 0f); pg.Append(budget); _ruleBudgetField = budget;
 			var gl = new Label(L("Gold"), 0.75f); gl.Left.Set(420, 0f); gl.Top.Set(62, 0f); pg.Append(gl);
-			_buyNowBtn = new LevyButton(L("BuyNow"), LevyConstants.UI.ButtonTextScale, 120, 26, () => { if (Te != null) { LogisticsActions.BuyNow(Te, new BuyRule { Kind = _rule.Kind, Type = _rule.Type, Count = _rule.Count, Budget = _rule.Budget }); _offerTick = -1000; } }, L("BuyNowHint")); _buyNowBtn.Top.Set(92, 0f); pg.Append(_buyNowBtn);
-			_addRuleBtn = new LevyButton(L("AddToOrder"), LevyConstants.UI.ButtonTextScale, 170, 26, () => { if (_draft.Rules.Count < 8) { _draft.Rules.Add(new BuyRule { Kind = _rule.Kind, Type = _rule.Type, Count = _rule.Count, Budget = _rule.Budget }); Main.NewText(L("RuleAdded", _draft.Rules.Count), 160, 220, 160); } }, L("AddToOrderHint")); _addRuleBtn.Left.Set(128, 0f); _addRuleBtn.Top.Set(92, 0f); pg.Append(_addRuleBtn);
+			_buyNowBtn = new LevyButton(L("BuyNow"), LevyConstants.UI.ButtonTextScale, 120, 26, () => { _ruleCountField.StopTypingIfAny(); _ruleBudgetField.StopTypingIfAny(); if (Te != null) { LogisticsActions.BuyNow(Te, new BuyRule { Kind = _rule.Kind, Type = _rule.Type, Count = _rule.Count, Budget = _rule.Budget }); _offerTick = -1000; } }, L("BuyNowHint")); _buyNowBtn.Top.Set(92, 0f); pg.Append(_buyNowBtn);
+			_addRuleBtn = new LevyButton(L("AddToOrder"), LevyConstants.UI.ButtonTextScale, 170, 26, () => { _ruleCountField.StopTypingIfAny(); _ruleBudgetField.StopTypingIfAny(); if (_draft.Rules.Count < 8) { _draft.Rules.Add(new BuyRule { Kind = _rule.Kind, Type = _rule.Type, Count = _rule.Count, Budget = _rule.Budget }); Main.NewText(L("RuleAdded", _draft.Rules.Count), 160, 220, 160); } }, L("AddToOrderHint")); _addRuleBtn.Left.Set(128, 0f); _addRuleBtn.Top.Set(92, 0f); pg.Append(_addRuleBtn);
 			_buyInfo = new Label("", 0.75f); _buyInfo.Left.Set(304, 0f); _buyInfo.Top.Set(98, 0f); pg.Append(_buyInfo);
 			_offersHdr = new Label(L("Offers"), 0.8f); _offersHdr.Top.Set(124, 0f); pg.Append(_offersHdr);
 			_buyFilter = new ItemFilterBar(620, "Mods.Levy.Logistics.OfferSearch"); _buyFilter.Top.Set(142, 0f); _buyFilter.Changed += () => _offerReshow = true; pg.Append(_buyFilter);

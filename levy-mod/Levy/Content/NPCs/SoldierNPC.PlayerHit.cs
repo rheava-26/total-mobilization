@@ -211,6 +211,7 @@ namespace Levy.Content.NPCs
 			for (int i = 0; i < NPC.maxBuffs; i++) if (NPC.buffType[i] > 0 && NPC.buffTime[i] > 0 && Main.debuff[NPC.buffType[i]]) { any = true; break; }
 			if (!any) { _dotCount = 0; DotDefenseDown = 0; return; }
 			Player s = _dotScratch ??= new Player { whoAmI = Main.maxPlayers, active = true, width = 20, height = 42 };
+			bool gate = SaveGate.Enter(); // tML's character save runs on its own thread: it may not start while Main.myPlayer is lent (SaveGate)
 			Player prev = Main.player[Main.maxPlayers]; int prevMy = Main.myPlayer;
 			try
 			{
@@ -233,7 +234,7 @@ namespace Levy.Content.NPCs
 				}
 			}
 			catch (Exception e) { SeqErrors++; if (GearUpkeep.WarnOnce(e)) Levy.Instance?.Logger.Warn("Levy: the damage-over-time step threw on a soldier (once per kind): " + e); }
-			finally { Main.player[Main.maxPlayers] = prev; Main.myPlayer = prevMy; }
+			finally { Main.player[Main.maxPlayers] = prev; Main.myPlayer = prevMy; SaveGate.Exit(gate); }
 		}
 	}
 

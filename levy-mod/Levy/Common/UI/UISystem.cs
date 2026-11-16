@@ -69,6 +69,9 @@ namespace Levy.Common.UI
 			LevyPackets.Register(LevyPacket.ArmorySlotSet, HandleArmorySlotSet);
 			LevyPackets.Register(LevyPacket.ArmorySort, HandleArmorySort);
 			LevyPackets.Register(LevyPacket.ArmoryRulesSet, HandleArmoryRulesSet);
+			LevyPackets.Register(LevyPacket.ArmoryTakeHeld, HandleArmoryTakeHeld);
+			LevyPackets.Register(LevyPacket.ArmoryInUseRequest, HandleArmoryInUseRequest);
+			LevyPackets.Register(LevyPacket.ArmoryInUseList, HandleArmoryInUseList);
 		}
 
 		public override void PostSetupContent()
@@ -386,6 +389,37 @@ namespace Levy.Common.UI
 			if (!LevyUtil.WithinTiles(Main.player[fromWhoAmI].Center, armory.Center, LevyConstants.UI.ArmoryEditRangeTiles)) return;
 			armory.SetRules(ArmoryRules.FromBytes(bytes));
 			armory.Sync();
+		}
+
+		/// <summary>Server: a client clicked an item a levy carries. Payload: int armoryId, int soldierId, byte slot, int itemType. The item drops at the sender's feet (the one real item); the sender then gets the fresh list.</summary>
+		private static void HandleArmoryTakeHeld(BinaryReader reader, int fromWhoAmI)
+		{
+			int armoryId = reader.ReadInt32(); int soldierId = reader.ReadInt32(); int slot = reader.ReadByte(); int type = reader.ReadInt32();
+			if (Main.netMode != NetmodeID.Server) return;
+			if (!TileEntity.ByID.TryGetValue(armoryId, out var te) || te is not ArmoryTE armory) return;
+			if (fromWhoAmI < 0 || fromWhoAmI >= Main.maxPlayers || !Main.player[fromWhoAmI].active) return;
+			if (!LevyUtil.WithinTiles(Main.player[fromWhoAmI].Center, armory.Center, LevyConstants.UI.ArmoryEditRangeTiles)) return;
+			if (armory.TakeHeld(soldierId, slot, type, out Item taken, out _) == TakeHeldResult.Ok) ArmoryTE.GiveToPlayer(Main.player[fromWhoAmI], taken, direct: false);
+			armory.SendInUseTo(fromWhoAmI);
+		}
+
+		/// <summary>Server: the armory panel of a client asks for the items that are out of the racks. Payload: int armoryId.</summary>
+		private static void HandleArmoryInUseRequest(BinaryReader reader, int fromWhoAmI)
+		{
+			int armoryId = reader.ReadInt32();
+			if (Main.netMode != NetmodeID.Server) return;
+			if (!TileEntity.ByID.TryGetValue(armoryId, out var te) || te is not ArmoryTE armory) return;
+			if (fromWhoAmI < 0 || fromWhoAmI >= Main.maxPlayers || !Main.player[fromWhoAmI].active) return;
+			if (!LevyUtil.WithinTiles(Main.player[fromWhoAmI].Center, armory.Center, LevyConstants.UI.ArmoryEditRangeTiles)) return;
+			armory.SendInUseTo(fromWhoAmI);
+		}
+
+		/// <summary>Client: the server's list of items out of an armory's racks. Payload: ArmoryTE.WriteInUse.</summary>
+		private static void HandleArmoryInUseList(BinaryReader reader, int fromWhoAmI)
+		{
+			int armoryId = reader.ReadInt32();
+			if (Main.netMode != NetmodeID.MultiplayerClient) return;
+			if (TileEntity.ByID.TryGetValue(armoryId, out var te) && te is ArmoryTE armory) armory.ReadInUse(reader);
 		}
 
 		/// <summary>Server: a client set one armory slot. Payload: int armoryId, byte region, short slot, Item (ItemIO, stack).</summary>

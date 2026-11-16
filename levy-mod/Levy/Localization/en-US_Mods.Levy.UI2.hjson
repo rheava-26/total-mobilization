@@ -18,6 +18,7 @@ ArmoryInUse: "{0} in use"
 ArmoryShownInUse: Showing {0} of {1}, {2} in use
 ArmoryCarriedBy: Carried by {0}
 ArmoryLentTo: Lent to {0}
+ArmoryTakeHint: Click to take it. {0} gets the armory's next pick.
 ArmoryDroneName: Combat Drone
 ArmoryCapacity: "{0} slots"
 ArmoryCapacityCenters: "{0} slots (+{1} from {2} Logistical Centers)"
@@ -200,12 +201,13 @@ State: {
 	Mutiny: In mutiny
 }
 
-AlterWarnTitleOne: Levies will never use this
-AlterWarnTitleMany: Levies will never use these
+AlterWarnTitleOne: This weapon breaks blocks. Levies using it will damage terrain. Continue?
+AlterWarnTitleMany: These weapons break blocks. Levies using them will damage terrain. Continue?
+AlterWarnTitleOneOther: This weapon alters the world. Levies using it will change terrain. Continue?
+AlterWarnTitleManyOther: These weapons alter the world. Levies using them will change terrain. Continue?
 AlterWarnMore: and {0} more
-AlterWarnOk: OK
-AlterWarnNeverOne: Don't show again for this item
-AlterWarnNeverMany: Don't show again for these items
+AlterWarnOk: Confirm
+AlterWarnCancel: Cancel
 AlterReasonTool: Mines or breaks blocks.
 AlterReasonBreak: Breaks blocks.
 AlterReasonLiquid: Places or moves liquid.

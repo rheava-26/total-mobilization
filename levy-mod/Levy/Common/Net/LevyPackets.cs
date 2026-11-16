@@ -50,6 +50,9 @@ namespace Levy.Common.Net
 	///  ObserveRequest: byte kind(0 stop,1 camera,2 GoPro levy,3 list cameras), int id   (Observe) — the server then streams sections (RemoteClient.CheckSection) and the target position
 	///  MindControlSet: bool on, int soldierId, bool viaDeath       (Observe) — server validates the levy is the sender's; without death it needs a Mind Link in the inventory
 	///  MindInput: byte keys(1 left,2 right,4 jump,8 down,16 use,32 alt), float aimX, float aimY   (Observe) — sent when it changes or every 10 ticks
+	///  AlterConsent: byte count, then count x string item key  (WorldAlterConsent) — the sender confirmed the block-breaking warning for those items; the server records only items the scanner flags, saves them with the world and re-sends the world data to everyone
+	///  ArmoryTakeHeld: int armoryId, int soldierId, byte slot (SoldierGear.Slot*), int itemType  (UI) — take what a levy carries; the server checks the armory serves him and the slot still holds that type, empties the slot, lets the armory re-issue him, and drops the exact item at the sender's feet
+	///  ArmoryInUseRequest: int armoryId  (UI) — the armory panel asks (about every 30 ticks while open) for the items that are out of its racks
 	/// Server -> client:
 	///  LogisticsSnapshot: OrderBook.WriteBook   (Logistics) — the whole order book, with each order's status and materials checklist
 	///  RosterSnapshot: int count, then per record: SoldierRecord.WriteSnapshot   (Roster; also sent via ModSystem.NetSend on join)
@@ -62,6 +65,7 @@ namespace Levy.Common.Net
 	///  CompanionEffect: byte kind, then a payload the companion defines                    (Compat) — to one client; Levy only routes it to the handler the companion registered
 	///  ObserveList: int count, then per camera: int id, short tileX, short tileY, string label   (Observe)
 	///  ObservePos: byte kind(1 camera,2 levy,3 mind), int id, float x, float y   (Observe) — the watched target's world position, every 6 ticks
+	///  ArmoryInUseList: int armoryId, int count, then per entry: byte kind(0 carried,1 lent), int soldierId (-1 for a loan), byte slot (255 for a loan), string holder, Item via ItemIO.Send(writeStack:true)   (UI) — answer to ArmoryInUseRequest
 	///  TeamEffect / TeamRequest: byte kind, then a payload   (Team, see TeamNet) — server -> one client: a team-item effect on the player; client -> server: a team-item reaction the player's own client owns
 	/// </summary>
 	public enum LevyPacket : byte
@@ -78,6 +82,9 @@ namespace Levy.Common.Net
 		MapOrder, ObserveRequest, MindControlSet, MindInput, // client -> server: Command & Observe (Common/Observe)
 		DrinkRound, // client -> server: byte drink(0 Ale,1 Stout,2 Rum,3 Fizz Tank,4 Magma Crucible,5..8 meals) - the server serves the round to the sender's levies in range
 		MeteorBeacon, // client -> server: no payload - the server drops a meteor if it is night and the sender holds a beacon use
+		AlterConsent, // client -> server: byte count, then count x string item key - the player confirmed the block-breaking warning for those items (WorldAlterConsent); the server re-checks and re-sends the world data
+		ArmoryTakeHeld, // client -> server: take a levy's carried item from the armory screen (layout above); appended so no existing value moves
+		ArmoryInUseRequest, // client -> server: int armoryId - asks for the list of items out of the racks (answered with ArmoryInUseList)
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
 		CompanionEffect, // server -> one client: an effect a companion mod (Thorium compat) lays on a player; its own handler decodes the payload
 		LogisticsOrderEdit, // client -> server: save / delete / pause / resume a craft order (see LogisticsActions)
@@ -93,6 +100,7 @@ namespace Levy.Common.Net
 		LogisticsToStorage, // client -> server: preview / confirm "send the rest to storage", or send the selected slots (layout in LogisticsActions)
 		LogisticsStoragePreview, // server -> one client: the list "send the rest to storage" would move (StorageSend.Preview)
 		StripKit, // client -> server: int soldierId, bool issue - false strips the levy's whole kit to his Armory and stops issue, true issues him a kit again
+		ArmoryInUseList, // server -> one client: the items out of an armory's racks (layout above)
 	}
 
 	public static class LevyPackets

@@ -96,6 +96,9 @@ namespace Levy.Common.Weapons
 
 		public static WeaponFamily Classify(Item item) => ClassifyCore(item, out _);
 
+		/// <summary>Drops every cached per-type profile (the player confirmed or withdrew a world-altering weapon: what was cached as unsupported must be asked again).</summary>
+		public static void ForgetProfiles() => _profiles.Clear();
+
 		/// <summary>
 		/// Accepts the long tail on purpose: every ammo type (bullets and arrows keep their families, everything else fires like a gun), any mana
 		/// weapon that shoots, melee swings/thrusts, and finally any plain shooter, all fired through the real shoot pipeline. Rejects what a

@@ -63,7 +63,7 @@ namespace Levy.Common.Testing
 		/// <summary>True while the check steps the world (the stand-in commander counts as online, natural spawns are cleared).</summary>
 		public static bool Running => _running;
 
-		private static void Check(string name, bool ok) { if (ok) _pass++; else _fail++; _mod.Logger.Info($"[BossBugs] {(ok ? "PASS" : "FAIL")} {name}"); }
+		private static void Check(string name, bool ok, Func<string> why = null) { if (ok) _pass++; else _fail++; _mod.Logger.Info($"[BossBugs] {(ok ? "PASS" : "FAIL")} {name}{(!ok && why != null ? " :: " + why() : "")}"); }
 		private static void Note(string s) => _mod.Logger.Info("[BossBugs] OBSERVED " + s);
 
 		// =====================================================================================================
@@ -590,6 +590,8 @@ namespace Levy.Common.Testing
 			SetRevenge(true, true); Main.GameMode = ModLoader.HasMod("CalamityMod") ? GameModeID.Master : GameModeID.Expert;
 			global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(NPCID.WallofFlesh, true);
 			SetBossesTarget(true);
+			int wofReps = int.TryParse(Environment.GetEnvironmentVariable("LEVY_BOSSBUGS_REPEAT"), out int wr) && wr > 1 ? wr : 1; // lab: sample the part many times in one boot
+			for (int rep = 0; rep < wofReps; rep++)
 			foreach (bool spectator in new[] { false, true })
 			{
 				ClearHostiles(); RosterSystem.Instance.Regulars.RemoveAll(r => r.CommanderName == Commander);
@@ -599,6 +601,10 @@ namespace Levy.Common.Testing
 				string who = spectator ? "Spectator commander" : "visible commander";
 				PlaceCommander(-6);
 				var levies = Levies(10, 3f, -6f);
+				// A levy with no weapon keeps away from what it cannot fight and the wall walks no faster than a levy runs, so unarmed levies simply stay ahead of it for the whole window (observed:
+				// they end 50+ tiles ahead and nothing of the wall ever touches them). A tall wall of brick behind the army (lab: LEVY_BOSSBUGS_WOFBARRIER=0 removes it) leaves them nowhere to go, so the wall arrives.
+				bool barrier = Environment.GetEnvironmentVariable("LEVY_BOSSBUGS_WOFBARRIER") != "0";
+				if (barrier) for (int bx = Cx - 27; bx <= Cx - 26; bx++) for (int by = fy - 119; by < fy; by++) { Tile bt = Main.tile[bx, by]; bt.ClearEverything(); bt.HasTile = true; bt.TileType = TileID.GrayBrick; bt.BlockType = BlockType.Solid; }
 				Step(4);
 				NPC.SpawnWOF(Main.player[0].position);
 				int wi = Main.wofNPCIndex;
@@ -610,6 +616,9 @@ namespace Levy.Common.Testing
 				var act = new Dictionary<int, int>(); var lck = new Dictionary<int, int>();
 				int[] kinds = { NPCID.WallofFlesh, NPCID.WallofFleshEye, NPCID.TheHungry, NPCID.TheHungryII, NPCID.LeechHead };
 				int lev0 = levies.Sum(l => l.NPC.life); int wofTick = 0;
+				// a levy the wall nearly kills is topped up again (the damage is counted as it lands): the wall's pass over the army takes ~1200 ticks and a levy dead in the first 100 leaves no reach window to judge
+				var prevLife = new Dictionary<SoldierNPC, int>(); int dmgTaken = 0;
+				float minDist = float.MaxValue; int minDistTick = -1, nearTicks = 0; long swStart = System.Diagnostics.Stopwatch.GetTimestamp();
 				var shots = new Dictionary<int, int>(); var shotMin = new Dictionary<int, float>(); var seenLaser = new HashSet<int>(); var aimErrs = new List<float>();
 				_perTick = () =>
 				{
@@ -644,6 +653,16 @@ namespace Levy.Common.Testing
 						if (near > 35f * 16f) continue;
 						act[n.type] = act.GetValueOrDefault(n.type) + 1; if (Locked(n)) lck[n.type] = lck.GetValueOrDefault(n.type) + 1;
 					}
+					float wd = float.MaxValue; foreach (var l in levies) if (l.NPC.active) wd = Math.Min(wd, Math.Abs(wall.Center.X - l.NPC.Center.X));
+					if (wd < minDist) { minDist = wd; minDistTick = wofTick; }
+					if (wd < 35f * 16f) nearTicks++;
+					foreach (var l in levies)
+					{
+						if (!l.NPC.active) continue;
+						if (prevLife.TryGetValue(l, out int pl) && l.NPC.life < pl) dmgTaken += pl - l.NPC.life;
+						if (l.NPC.life < l.NPC.lifeMax / 3) { l.NPC.life = l.NPC.lifeMax; if (l.Record != null) l.Record.CurrentHp = l.NPC.lifeMax; }
+						prevLife[l] = l.NPC.life;
+					}
 					wall.life = wall.lifeMax; // the army here has no weapons: the wall stays up for the whole window
 					if (++wofTick % 300 == 0)
 					{
@@ -651,20 +670,26 @@ namespace Levy.Common.Testing
 						Note($"({who}) tick {wofTick}: wall at x={(wall.Center.X / 16f - Cx):0} y={(wall.Center.Y / 16f - fy):0} v=({wall.velocity.X:0.0},{wall.velocity.Y:0.0}) target={wall.target} ai0={wall.ai[0]:0} ai1={wall.ai[1]:0} ai2={wall.ai[2]:0}; {nh} Hungry, nearest {(hd / 16f):0} tiles from a levy; levies at x={(levies[0].NPC.Center.X / 16f - Cx):0}..{(levies[levies.Count - 1].NPC.Center.X / 16f - Cx):0}");
 					}
 				};
+				// the window ends on conditions, not a tick count: at least 1500 ticks, then until the wall has been within reach of the army (eyes and mouth in 35 tiles for 100+ ticks) and has hurt it, capped at 6000
 				Step(1500);
+				while (wofTick < 6000 && !(act.GetValueOrDefault(NPCID.WallofFleshEye) > 100 && act.GetValueOrDefault(NPCID.WallofFlesh) > 100 && dmgTaken > 0)) Step(100);
 				_perTick = null;
-				int lev1 = levies.Sum(l => l.NPC.active ? l.NPC.life : 0);
+				if (barrier) for (int bx = Cx - 27; bx <= Cx - 26; bx++) for (int by = fy - 119; by < fy; by++) { Tile bt = Main.tile[bx, by]; bt.ClearEverything(); }
+				int lev1 = lev0 - dmgTaken;
 				string Row(int t) => $"{Lang.GetNPCNameValue(t)} {lck.GetValueOrDefault(t)}/{act.GetValueOrDefault(t)} ticks locked on a levy while one is within 35 tiles sideways";
 				Note($"({who}) {string.Join("; ", kinds.Select(Row))}");
 				Note($"({who}) hostile projectiles seen (ticks, closest approach to a levy in tiles): " + (shots.Count == 0 ? "none" : string.Join(", ", shots.Select(k => Lang.GetProjectileName(k.Key).Value + "(" + k.Key + ")=" + k.Value + " / " + (shotMin[k.Key] / 16f).ToString("0.0")))));
 				Note($"({who}) damage the levies took by source: " + (SoldierNPC.HitDbg.Count == 0 ? "none" : string.Join(", ", SoldierNPC.HitDbg.OrderByDescending(k => k.Value.dmg).Select(k => k.Key + "=" + k.Value.dmg + " (" + k.Value.n + " hits)"))) + $"; levy life {lev0} -> {lev1}");
 				Check($"({who}) the lasers the eyes fire are aimed at the levy each eye is locked on ({aimErrs.Count} sampled, worst {(aimErrs.Count > 0 ? aimErrs.Max() : 0):0} deg off)", aimErrs.Count == 0 || aimErrs.Max() <= 12f);
-				Check($"({who}) the Wall of Flesh's eyes lock onto levies", act.GetValueOrDefault(NPCID.WallofFleshEye) > 100 && lck.GetValueOrDefault(NPCID.WallofFleshEye) * 10 >= act.GetValueOrDefault(NPCID.WallofFleshEye) * 6);
+				double wallMs = (System.Diagnostics.Stopwatch.GetTimestamp() - swStart) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+				string Diag() => $"rep {rep}; {wallMs / Math.Max(1, wofTick):0.00} ms/tick, {wofTick} ticks; wall now at ({(wall.Center.X / 16f - Cx):0},{(wall.Center.Y / 16f - fy):0}) target={wall.target}; closest wall-to-levy sideways {(minDist / 16f):0.0} tiles at tick {minDistTick}, {nearTicks} ticks within 35 tiles; levies active {levies.Count(l => l.NPC.active)}/{levies.Count} at x={(levies.Where(l => l.NPC.active).Select(l => l.NPC.Center.X / 16f - Cx).DefaultIfEmpty(0).Min()):0}..{(levies.Where(l => l.NPC.active).Select(l => l.NPC.Center.X / 16f - Cx).DefaultIfEmpty(0).Max()):0} y={(levies.Where(l => l.NPC.active).Select(l => l.NPC.Center.Y / 16f - fy).DefaultIfEmpty(0).Average()):0}; eyes {lck.GetValueOrDefault(NPCID.WallofFleshEye)}/{act.GetValueOrDefault(NPCID.WallofFleshEye)} locked/active, Hungry {lck.GetValueOrDefault(NPCID.TheHungry)}/{act.GetValueOrDefault(NPCID.TheHungry)}, mouth {lck.GetValueOrDefault(NPCID.WallofFlesh)}/{act.GetValueOrDefault(NPCID.WallofFlesh)}; shots {string.Join(",", shots.Select(k => k.Key + "=" + k.Value))}; hits {(SoldierNPC.HitDbg == null || SoldierNPC.HitDbg.Count == 0 ? "none" : string.Join(",", SoldierNPC.HitDbg.Select(k => k.Key + "=" + k.Value.dmg + "/" + k.Value.n)))}";
+				Note($"({who}) rep {rep}: {wallMs / Math.Max(1, wofTick):0.00} ms/tick, {wofTick} ticks, closest wall-to-levy sideways {(minDist / 16f):0.0} tiles, {nearTicks} ticks within 35 tiles, levy life {lev0} -> {lev1}");
+				Check($"({who}) the Wall of Flesh's eyes lock onto levies", act.GetValueOrDefault(NPCID.WallofFleshEye) > 100 && lck.GetValueOrDefault(NPCID.WallofFleshEye) * 10 >= act.GetValueOrDefault(NPCID.WallofFleshEye) * 6, Diag);
 				int hungry = act.GetValueOrDefault(NPCID.TheHungry) + act.GetValueOrDefault(NPCID.TheHungryII), hungryL = lck.GetValueOrDefault(NPCID.TheHungry) + lck.GetValueOrDefault(NPCID.TheHungryII);
 				Check($"({who}) the Hungry (when any are out) lock onto levies", hungry == 0 || hungryL * 10 >= hungry * 6);
 				if (spectator) Check($"({who}) the mouth walks at the levies when there is no visible player", act.GetValueOrDefault(NPCID.WallofFlesh) > 100 && lck.GetValueOrDefault(NPCID.WallofFlesh) * 10 >= act.GetValueOrDefault(NPCID.WallofFlesh) * 6);
 				else Check($"({who}) the mouth keeps walking at the visible player", act.GetValueOrDefault(NPCID.WallofFlesh) > 100 && lck.GetValueOrDefault(NPCID.WallofFlesh) * 10 < act.GetValueOrDefault(NPCID.WallofFlesh) * 4);
-				Check($"({who}) the wall hurts the levies (life {lev0} -> {lev1})", lev1 < lev0);
+				Check($"({who}) the wall hurts the levies (life {lev0} -> {lev1})", lev1 < lev0, Diag);
 				SoldierNPC.HitDbg = null;
 			}
 		}

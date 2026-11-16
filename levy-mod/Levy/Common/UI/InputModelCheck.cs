@@ -53,7 +53,7 @@ namespace Levy.Common.UI
 
 				// Budget field: 0..9999 gold, 51 -> 5 -> empty
 				m = new NumberEditModel(0, 9999, true, 51); m.Focus();
-				m.Edit("5");                                          // the selection is replaced by the typed 5
+				m.Edit("515");                                        // the game returns old text + the typed 5; the selection is replaced
 				Check(m.Box.Text == "5" && m.Value == 5, "budget: typing 5 over 51");
 				Key(m, '\b');
 				Check(m.Box.Text == "" && m.Focused, "budget: backspacing 5 leaves it empty and still focused");

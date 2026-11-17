@@ -18,7 +18,7 @@ namespace Levy.Common.Boss
 	/// </summary>
 	public static class BossRule
 	{
-		/// <summary>Main-boss root types (LevyConstants.MainBosses) for O(1) lookups.</summary>
+		/// <summary>Main-boss root types (LevyConstants.MainBosses, plus the modded ones <see cref="ModdedMainBosses"/> registers) for O(1) lookups.</summary>
 		public static readonly HashSet<int> MainBossSet = new(LevyConstants.MainBosses);
 		/// <summary>Bosses whose dashes may be aimed at a spite target (LevyConstants.DashAllowlist).</summary>
 		public static readonly HashSet<int> DashSet = new(LevyConstants.DashAllowlist);

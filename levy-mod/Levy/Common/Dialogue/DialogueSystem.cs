@@ -32,6 +32,7 @@ namespace Levy.Common.Dialogue
 		{
 			if (s == null || s.Record == null || s.NPC == null || !s.NPC.active || s.Hostile) return; // a hostile body speaks through its band, not the levy table
 			if (LevyUtil.IsClient) return; // the server decides and tells the clients
+			if (global::Levy.Common.Death.NoxusFights.Hush && ChannelOf(trigger, out _) != DialogueChannel.ChatLog) { global::Levy.Common.Death.NoxusFights.HushDropped++; return; } // silent through the fight
 			SoldierRecord rec = s.Record;
 			if (rec.Kind == SoldierKind.Militia && !MilitiaMayBark(trigger)) return;
 			int idx = s.NPC.whoAmI;
@@ -84,7 +85,7 @@ namespace Levy.Common.Dialogue
 		public static string ChatLine(SoldierNPC s)
 		{
 			SoldierRecord rec = s?.Record;
-			if (rec == null || s.NPC == null) return Localized("Silence", "...");
+			if (rec == null || s.NPC == null || global::Levy.Common.Death.NoxusFights.Hush) return Localized("Silence", "...");
 			int idx = s.NPC.whoAmI;
 			bool tracked = (uint)idx < MaxBodies;
 			int now = Now;
@@ -154,6 +155,7 @@ namespace Levy.Common.Dialogue
 		public static bool React(SoldierNPC s, DialogueTrigger trigger, DialogueContext ctx = null)
 		{
 			if (s == null || s.Record == null || s.NPC == null || !s.NPC.active || s.Hostile || LevyUtil.IsClient) return false;
+			if (global::Levy.Common.Death.NoxusFights.Hush) { global::Levy.Common.Death.NoxusFights.HushDropped++; return false; }
 			string line = Pick(trigger, s.Record, ctx, s, false, -1, out _);
 			if (string.IsNullOrEmpty(line)) return false;
 			DeliverFloating(s, line, (byte)trigger);
@@ -186,15 +188,17 @@ namespace Levy.Common.Dialogue
 		public static void Emote(SoldierNPC s, int emoteId)
 		{
 			if (s == null || s.NPC == null || !s.NPC.active) return;
+			if (global::Levy.Common.Death.NoxusFights.Hush) { global::Levy.Common.Death.NoxusFights.HushDropped++; return; }
 			if (Main.netMode == NetmodeID.MultiplayerClient) return; // EmoteBubble.NewBubble does nothing on a client
 			EmoteBubble.NewBubble(emoteId, new WorldUIAnchor(s.NPC), LevyConstants.DialogueEmoteBubbleTicks);
 		}
 
 		/// <summary>Show floating text over a soldier: in single player directly, on a server through the Bark packet. No budget.</summary>
-		public static void FloatingText(SoldierNPC s, string text) => DeliverFloating(s, text, byte.MaxValue);
+		public static void FloatingText(SoldierNPC s, string text) { if (HushHolds()) return; DeliverFloating(s, text, byte.MaxValue); }
+		private static bool HushHolds() { if (!global::Levy.Common.Death.NoxusFights.Hush) return false; global::Levy.Common.Death.NoxusFights.HushDropped++; return true; }
 
 		/// <summary>As <see cref="FloatingText(SoldierNPC, string)"/>, coloured for the trigger that produced the line.</summary>
-		public static void FloatingText(SoldierNPC s, string text, DialogueTrigger trigger) => DeliverFloating(s, text, (byte)trigger);
+		public static void FloatingText(SoldierNPC s, string text, DialogueTrigger trigger) { if (HushHolds()) return; DeliverFloating(s, text, (byte)trigger); }
 
 		/// <summary>Random soldier name from vanilla town-NPC name lists.</summary>
 		public static string RandomSoldierName(bool male) => DialogueNames.RandomSoldierName(male);

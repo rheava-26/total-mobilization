@@ -16,6 +16,8 @@ namespace Levy.Content.NPCs
 	public partial class SoldierNPC
 	{
 		internal static int ZoneMode = Environment.GetEnvironmentVariable("LEVY_ZONE") == "0" ? 0 : 1;
+		/// <summary>True while this body is bound by the fight zone (self-checks).</summary>
+		internal bool InBossFightZone => FightZone((int)Main.GameUpdateCount, out _);
 		/// <summary>Harness telemetry: goals pulled in, walk-backs started.</summary>
 		internal static int ZoneClampsS, ZoneReturnsS;
 		private int _zoneCheckTick = -100000; private bool _zoneActive; private Vector2 _zoneCentre;

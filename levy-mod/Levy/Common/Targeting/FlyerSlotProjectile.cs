@@ -21,12 +21,13 @@ namespace Levy.Common.Targeting
 
 		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)
 		{
+			global::Levy.Common.Util.HookProbe.FlyerAi++;
 			if (!self.active || !self.hostile || (int)self.ai[0] != EnemyTargeting.FlyerSlot) { orig(self); return; }
 			DbgSeen++;
 			if (!EnemyTargeting.Enabled || !EnemyTargeting.BossFlyerOn || EnemyTargeting.IsSwapped || !EnemyTargeting.FlyerSlotUsable) { DbgBlocked++; orig(self); return; }
 			ITargetBody body = BodyFor(self);
 			if (body == null) { DbgNoBody++; orig(self); return; }
-			DbgSwapped++;
+			DbgSwapped++; global::Levy.Common.Util.HookProbe.FlyerActed++;
 			EnemyTargeting.Swap(body, EnemyTargeting.FlyerSlot);
 			try { orig(self); }
 			finally { EnemyTargeting.Unswap(); }

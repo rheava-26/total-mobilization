@@ -147,6 +147,7 @@ namespace Levy.Common.Audio
 
 		static void ProjAI(On_Projectile.orig_AI orig, Projectile self)
 		{
+			global::Levy.Common.Util.HookProbe.SoundAi++;
 			int was = kind;
 			if (was == 0) kind = ProjKind(self);
 			try { orig(self); } finally { kind = was; }
@@ -155,6 +156,7 @@ namespace Levy.Common.Audio
 		/// <summary>The whole update, not only the AI: a levy's projectile also makes sounds when it hits (the strike, the enemy's hurt and death sound) and from its on-hit hooks.</summary>
 		static void ProjUpdate(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
+			global::Levy.Common.Util.HookProbe.SoundUpdate++;
 			int was = kind;
 			if (was == 0) kind = ProjKind(self);
 			try { orig(self, i); } finally { kind = was; }

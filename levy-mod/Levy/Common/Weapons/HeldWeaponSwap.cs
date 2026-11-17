@@ -726,6 +726,7 @@ namespace Levy.Common.Weapons
 
 		private static void LoaderAiDetour(Action<Projectile> orig, Projectile self)
 		{
+			global::Levy.Common.Util.HookProbe.HeldLoader++;
 			// a lash (vanilla or modded) is wrapped here too: Projectile.Update runs every projectile's AI through ProjectileLoader.ProjectileAI, and the vanilla whip AI reads its owner's use animation and arm
 			if (!HeldWeapons.IsChainOwner(self.owner) || _wrapDepth != 0 || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain || !(RealWhips.IsWhipProjectile(self) || (self.ModProjectile != null && g.ModHolder))) { orig(self); return; }
 			_wrapDepth++;
@@ -757,6 +758,7 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self)
 		{
+			global::Levy.Common.Util.HookProbe.HeldVanilla++;
 			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
 			_wrapDepth++;
 			try { HeldWeapons.RunAi(pp => orig(pp), self, g); }
@@ -765,6 +767,7 @@ namespace Levy.Common.Weapons
 
 		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)
 		{
+			global::Levy.Common.Util.HookProbe.HeldAi++;
 			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
 			_wrapDepth++;
 			try { HeldWeapons.RunAi(pp => orig(pp), self, g); }

@@ -59,7 +59,7 @@ namespace Levy.Common.Weapons
 			try
 			{
 				EnemyTargeting.Swap(body); // dummy -> Main.player[255]
-				swapped = true;
+				swapped = true; global::Levy.Common.Util.HookProbe.MiscActed++;
 				if (p.owner != Slot) p.owner = Slot; // on a dedicated server a soldier shot is already owned by 255
 				orig(p);
 			}
@@ -107,6 +107,7 @@ namespace Levy.Common.Weapons
 
 		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)
 		{
+			global::Levy.Common.Util.HookProbe.MiscAi++;
 			if (MiscProjSwap.WantsAnchor(self)) MiscProjSwap.RunAi(orig, self);
 			else orig(self);
 		}

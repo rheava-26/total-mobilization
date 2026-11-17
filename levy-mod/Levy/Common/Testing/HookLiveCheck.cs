@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ModLoader;
 
@@ -22,6 +23,24 @@ namespace Levy.Common.Testing
 		/// <summary>Detours that may legitimately have no calls in the ship chain: "Type.Method" -> the scenario that runs them, and why the chain does not. Keep every entry honest: a listed hook that DID run fails the check (the entry is stale).</summary>
 		private static readonly Dictionary<string, string> NotInChain = new()
 		{
+			// ---- client only: a dedicated server draws nothing, plays no sound, saves no player file; the ship world is a dedicated server. Scenario: a real client session (the client profiler, draw and audio hooks are installed only there)
+			{ "ClientProf.DoUpdate", "client only: the client-side profiler is not installed on a server" }, { "ClientProf.DoDraw", "client only" }, { "ClientProf.DrawNpcs", "client only" }, { "ClientProf.DrawProj", "client only" },
+			{ "ClientProf.DrawDust", "client only" }, { "ClientProf.DrawGore", "client only" }, { "ClientProf.DrawInterface", "client only" }, { "ClientProf.DrawPlayers", "client only" }, { "ClientProf.DamageTimer", "client only" },
+			{ "PerfAnalyzer.DoDraw", "client only: draw timing" }, { "PerfAnalyzer.DrawNpcs", "client only" }, { "PerfAnalyzer.DrawProjectiles", "client only" }, { "PerfAnalyzer.DrawDust", "client only" }, { "PerfAnalyzer.DrawGore", "client only" },
+			{ "PerfAnalyzer.DrawInterface", "client only" }, { "PerfAnalyzer.DrawPlayers", "client only" }, { "PerfAnalyzer.ModifyLayers", "client only: map layer timing (the check wraps layers itself through PerfAnalyzer.WrapLayers)" },
+			{ "ViewBiome.DoDraw", "client only: the camera view's biome swap" }, { "ViewBiome.UpdateAudio", "client only" },
+			{ "OwnerPuppet.DrawDirectDetour", "client only: a held shot's draw" }, { "SoldierHooks.DrawDirectDetour", "client only: a hook projectile's draw" },
+			{ "AudioCapLog.EngineUpdate", "client only, and only with LEVY_AUDIOCAP=1" }, { "ArmySoundThrottle.NpcAI", "client only: the sound throttle is not installed on a server (its projectile update hook is: it is checked in [IdentityWorld] deadhooks)" },
+			{ "ArmySoundThrottle.Play", "client only: a server plays no sound" },
+			{ "SaveGateSystem.Detour1", "client only: a character file save (one overload of the two runs per tML version; the other is the one installed)" },
+			// ---- a mod the ship chain does not load
+			{ "PlayerBardCompat.Detour", "needs ThoriumMod: the ship chain does not load it" }, { "TeamThorium.HandleNearbyDetour", "needs ThoriumMod: the ship chain does not load it" },
+			// ---- Calamity only: required whenever Calamity is loaded (the Calamity half of the chain)
+			{ "CalamityTargetingCompat.PreAiDetour", "needs CalamityMod: the vanilla half does not load it" }, { "CalamityTargetingCompat.SendExtraAiDetour", "needs CalamityMod: the vanilla half does not load it" },
+			// ---- scenarios the ship world does not stage (each fires in play)
+			{ "FollowerTravelSystem.Player_Spawn", "a real player respawning: the ship world's commander is a stand-in that never respawns" },
+			{ "TeamNebula.Hook", "a real player wearing Nebula armor picking up a booster: not staged" }, { "TeamSpectre.Hook", "a real player in Spectre armor healing from a ghost: not staged" },
+			{ "WarbandsLab.KeepStandIn", "Warbands' own lab seam (UpdateConnectedClients), installed only by its lab runs" }, { "SpawnSampler.KeepGoing", "Warbands' own lab seam (UpdateConnectedClients), installed only by its lab runs" },
 		};
 
 		/// <summary>Projectile.AI is a one-line stub the JIT inlines into Projectile.Update, so a detour on it is never called. It is kept as a fallback beside the VanillaAI and ProjectileLoader.ProjectileAI detours of the same wrapper; the wrapper is live when any one of them runs.</summary>
@@ -37,12 +56,33 @@ namespace Levy.Common.Testing
 			"IdentityGuard.Wrap (other mods' ModPlayer hooks): [IdentityWorld] identity guard census",
 		};
 
+		/// <summary>Drives the detours that only particular game calls reach, once each, so they are counted: a retarget by an NPC that uses the upgraded or the invasion / non-bee search, an NPC transforming, the player's heal text, a chat line. Each call runs the original too, harmlessly, on a pinned slime.</summary>
+		private static void Exercise(Mod mod)
+		{
+			try
+			{
+				Main.NewText("HookLive");
+				Vector2 at = Main.player[0] != null ? Main.player[0].Center : new Vector2(1800 * 16f, 290 * 16f);
+				int i = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("HookLive"), (int)at.X, (int)at.Y, Terraria.ID.NPCID.GreenSlime);
+				if (i >= 0 && i < Main.maxNPCs)
+				{
+					NPC n = Main.npc[i];
+					n.TargetClosestUpgraded(); Terraria.Utilities.NPCUtils.TargetClosestNonBees(n); Terraria.Utilities.NPCUtils.TargetClosestOldOnesInvasion(n);
+					n.Transform(Terraria.ID.NPCID.BlueSlime);
+					n.active = false;
+				}
+				if (Main.player[0] != null) Main.player[0].HealEffect(1, false);
+			}
+			catch (Exception e) { mod.Logger.Info("[HookLive] OBSERVED exercise threw " + e.GetType().Name + ": " + e.Message); }
+		}
+
 		public static void Run(Mod mod)
 		{
 			if (Environment.GetEnvironmentVariable("LEVY_HOOKLIVE") == "0") return;
 			_pass = _fail = 0;
 			int unreadable = 0; var live = new List<string>(); var dead = new List<string>(); var listedDead = new List<string>(); int total = 0;
 			var byType = new Dictionary<string, List<(string method, int hits)>>();
+			Exercise(mod);
 			foreach (Mod m in ModLoader.Mods.Where(x => x.Name == "Levy" || x.Name == "Mechanization" || x.Name == "Warbands"))
 			{
 				Type[] types; try { types = m.Code.GetTypes(); } catch (ReflectionTypeLoadException e) { types = e.Types.Where(t => t != null).ToArray(); } catch (Exception) { types = Type.EmptyTypes; }
@@ -51,7 +91,7 @@ namespace Levy.Common.Testing
 					FieldInfo[] fields; try { fields = t.GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly); } catch (Exception) { unreadable++; continue; } // a type that names a weak-referenced mod that is not loaded (MagicStorage, Thorium) cannot be reflected
 					foreach (FieldInfo f in fields)
 					{
-						if (f.FieldType != typeof(int) || !f.Name.StartsWith("_hl_")) continue;
+						if (!f.Name.StartsWith("_hl_") || f.FieldType != typeof(int)) continue; // the name first: the type of another field may name an unloaded weak reference
 						string meth = f.Name.Substring(4); int us = meth.LastIndexOf('_'); if (us > 0 && int.TryParse(meth.Substring(us + 1), out _)) meth = meth.Substring(0, us);
 						int hits = (int)f.GetValue(null); total++;
 						string key = t.DeclaringType != null ? t.DeclaringType.Name + "." + t.Name + "." + meth : t.Name + "." + meth;
@@ -59,6 +99,7 @@ namespace Levy.Common.Testing
 						if (!byType.TryGetValue(m.Name + ":" + t.FullName, out var list)) byType[m.Name + ":" + t.FullName] = list = new();
 						list.Add((meth, hits));
 						bool listed = NotInChain.TryGetValue(shortKey, out string why) || NotInChain.TryGetValue(key, out why);
+						if (listed && why.StartsWith("needs CalamityMod") && ModLoader.HasMod("CalamityMod")) listed = false; // the scenario is loaded: it must run
 						if (hits > 0) { live.Add(m.Name + ":" + shortKey + "=" + hits); if (listed) Check(mod, $"hooklive: {m.Name}:{shortKey} is listed as not running in the chain ({why}) but ran {hits} times: remove it from the list", false); }
 						else if (listed) listedDead.Add(m.Name + ":" + shortKey + " [" + why + "]");
 						else if (IsAiStub(shortKey)) { /* judged with its family below */ }

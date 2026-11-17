@@ -85,6 +85,15 @@ chk(eps[0]["cmdDeaths"] == 0 and eps[1]["name"] == "Eye of Cthulhu", "her later 
 last = eps[0]["rows"][-1]
 chk(last["k"] == "end" and last["result"] == "won" and last["bossName"] == "Lunatic Cultist" and last["reclassified"] == 1, "the new end record says won, bossName Lunatic Cultist")
 chk(eps[0]["rows"][0].get("split", {}).get("episode") == 1 and eps[0]["rows"][1]["k"] != "e", "the episode names where it came from")
+# each fight carries the time it began; a cut fight is not cut again; the split file is named for that minute
+rows[0]["date"] = "2026-11-16T22:11:33"
+eps_d = R.episodes(rows)
+chk(eps_d[0]["rows"][0]["date"] == "2026-11-16T22:11:33" and eps_d[1]["rows"][0]["date"] > "2026-11-16T22:24" and eps_d[1]["rows"][0]["split"]["srcDate"] == "2026-11-16T22:11:33",
+    "each fight's header date is when it began (%s, %s)" % (eps_d[0]["rows"][0]["date"], eps_d[1]["rows"][0]["date"]))
+chk(R.file_name("cultist_pillars_2211.levyrec", eps_d[1]).startswith(eps_d[1]["rows"][0]["date"][:10] + "_" + eps_d[1]["rows"][0]["date"][11:16].replace(":", "-") + "_Eye_of_Cthulhu_"),
+    "a split file is named for the minute its fight began (%s)" % R.file_name("cultist_pillars_2211.levyrec", eps_d[1]))
+again = R.episodes(eps_d[1]["rows"])
+chk(len(again) == 1 and again[0].get("whole"), "a fight already cut out comes back whole")
 # pillars only: no fight at all
 only = rec([frame(t, [brow(SOLAR, 115)]) for t in range(0, 4000, 20)], [{"k": "e", "t": 0, "e": "boss", "npc": SOLAR, "name": "Solar Pillar", "id": 115}])
 chk(R.episode_spans(only) == [], "pillars standing alone are no fight")

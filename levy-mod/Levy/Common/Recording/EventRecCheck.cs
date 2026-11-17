@@ -281,6 +281,22 @@ namespace Levy.Common.Recording
 				Chk(!EventRecorder.On, "the same Blood Moon is not recorded again after the army was lost");
 				Main.bloodMoon = false; FightRecAutoCheck.Step(40, p, null);
 
+				// ---------- 9b. the Old One's Army sentry mode stands the regulars down on purpose: that is not the army gone
+				bool oldSentry = LevyConfig.Get.OldOnesArmyUsesLevySentries;
+				try
+				{
+					LevyConfig.Get.OldOnesArmyUsesLevySentries = true;
+					int ooaLevy = MakeLevy(p, recs, spawned, new Vector2((cx - 4) * 16f, Floor * 16f), "Pvt. Sentry", ItemID.SpaceGun);
+					EventRecorder.ClearCooldown(); Terraria.GameContent.Events.DD2Event.Ongoing = true; FightRecAutoCheck.Step(40, p, null);
+					Chk(EventRecorder.On && EventRecorder.MainEvent == "oldonesarmy", "the Old One's Army starts an event recording");
+					for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) Main.npc[i].active = false; // the stand-down takes the bodies off the field
+					FightRecAutoCheck.Step(700, p, null);
+					Chk(EventRecorder.On, "with the regulars stood down by the sentry mode the recording does not end as the army gone");
+					Terraria.GameContent.Events.DD2Event.Ongoing = false; StepUntilStopped(p, 200);
+					Chk(EventRecorder.LastResult == "ended", "an Old One's Army that stopped with no win or loss reads ended (" + EventRecorder.LastResult + ")");
+				}
+				finally { LevyConfig.Get.OldOnesArmyUsesLevySentries = oldSentry; Terraria.GameContent.Events.DD2Event.Ongoing = false; }
+
 				// ---------- 10. Calamity's Acid Rain (reflection, only when Calamity is loaded): won when its kill points run out
 				var acidOn = AcidField("AcidRainEventIsOngoing"); var acidPts = AcidField("AccumulatedKillPoints");
 				if (acidOn != null && acidPts != null)

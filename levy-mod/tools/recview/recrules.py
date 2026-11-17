@@ -229,7 +229,8 @@ def file_name(src_name, ep):
 # and the format 12 block at the top of FightRecFormat.cs. Keep the two identical.
 #
 # EVENT RESULT RULE  (won | survived | lost | ended | interrupted)
-#   lost         the army was gone: no levy or militia body anywhere for 90 s (ARMY_GONE_TICKS) while an event still ran.
+#   lost         the army was gone: no levy or militia body anywhere for 90 s (ARMY_GONE_TICKS) while an event still ran (never when the recording
+#                had no levy at all, nor while the Old One's Army sentry mode stood the regulars down on purpose).
 #   interrupted  the world closed (or the file was cut short: no end record).
 #   survived     the 60 minute cap (EVENT_MAX_TICKS) or the file size cap stopped it.
 #   ended        the setting went off, a write failed.

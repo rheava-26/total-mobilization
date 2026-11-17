@@ -413,7 +413,8 @@ namespace Levy.Common.Recording
 			// the army: every levy or militia body anywhere
 			int army = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) army++;
 			_armyNow = army; if (army > _armyPeak) _armyPeak = army;
-			if (army > 0 || _armyPeak == 0) _armyGoneSince = -1;
+			// no army ever (nothing to lose), or the Old One's Army sentry mode has stood the regulars down on purpose: the army is not gone
+			if (army > 0 || _armyPeak == 0 || global::Levy.Common.Events.OldOnesArmySystem.Active) _armyGoneSince = -1;
 			else if (_armyGoneSince < 0) _armyGoneSince = el;
 			int grace = TestArmyGoneTicks > 0 ? TestArmyGoneTicks : ArmyGoneTicks;
 			if (_active.Count == 0) { Stop("event over"); return; }

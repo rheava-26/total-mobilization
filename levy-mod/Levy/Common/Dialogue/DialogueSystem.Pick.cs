@@ -163,6 +163,12 @@ namespace Levy.Common.Dialogue
 			return PickFromPool(new List<DialogueLine> { line }, rec, null, null, true, -1, out _, false, false);
 		}
 
+		/// <summary>Self-check hook: as <see cref="RenderOne"/>, with a context (for {Comrade} and the like) and outside the Blood Moon override, as the rift pools are picked.</summary>
+		internal static string RenderOneCtx(DialogueLine line, SoldierRecord rec, DialogueContext ctx)
+		{
+			return PickFromPool(new List<DialogueLine> { line }, rec, ctx, null, true, -1, out _, false, true);
+		}
+
 		/// <summary>The shared picker: filter, placeholders and repeat cooldown over an explicit pool (a trigger's, a boss's or an officer's).</summary>
 		private static string PickFromPool(List<DialogueLine> pool, SoldierRecord rec, DialogueContext ctx, SoldierNPC body, bool ignoreRepeat, int avoidId, out DialogueLine picked, bool mark, bool grumpyExempt)
 		{

@@ -255,7 +255,13 @@ namespace Levy.Common.Dialogue
 				if (p == null || !p.active || p.dead) continue;
 				if (CommanderReactions.Enqueue(p, DialogueTrigger.RIFT_PANIC, LevyConstants.RiftPanicSpeakers, now, LevyConstants.RiftPanicStepTicks)) PanicRounds++;
 			}
-			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.WorldData);
+			if (Main.netMode == NetmodeID.Server && AnyClient()) NetMessage.SendData(MessageID.WorldData); // the clients learn who was away
+		}
+
+		private static bool AnyClient()
+		{
+			for (int i = 0; i < Main.maxPlayers; i++) if (Netplay.Clients[i] != null && Netplay.Clients[i].IsConnected()) return true;
+			return false;
 		}
 
 		/// <summary>World check hook: the panic clock as if the covering had just ended (or cleared).</summary>

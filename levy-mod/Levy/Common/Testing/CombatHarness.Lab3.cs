@@ -263,6 +263,7 @@ namespace Levy.Common.Testing
 		{
 			for (int i = 0; i < spec.LifeCrystals; i++) RosterSystem.Instance.FeedCrystal(rec, ItemID.LifeCrystal);
 			for (int i = 0; i < spec.ManaCrystals; i++) RosterSystem.Instance.FeedCrystal(rec, ItemID.ManaCrystal);
+			for (int i = 0; i < spec.LifeFruit; i++) RosterSystem.Instance.FeedCrystal(rec, ItemID.LifeFruit);
 			rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana;
 		}
 

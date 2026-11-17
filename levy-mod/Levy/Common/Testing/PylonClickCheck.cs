@@ -8,6 +8,7 @@ using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameContent.Tile_Entities;
+using Terraria.Chat;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Movement;
@@ -53,10 +54,42 @@ namespace Levy.Common.Testing
 			if (!_armed || _done || !Main.dedServ) return;
 			_done = true; _running = true;
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation;
+			On_ChatHelper.SendChatMessageToClient += RefusalSpy;
 			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
-			finally { _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; }
+			finally { On_ChatHelper.SendChatMessageToClient -= RefusalSpy; _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; }
 			_mod.Logger.Info($"[PylonClick] self-check pass={_pass} fail={_fail}");
+		}
+
+		private static int _refusals; private static readonly HashSet<string> RefusalKeys = new();
+		/// <summary>Logs why vanilla refused a pylon request (its chat line to the client; the stand-in has no socket, so the send itself is skipped).</summary>
+		private static void RefusalSpy(On_ChatHelper.orig_SendChatMessageToClient orig, Terraria.Localization.NetworkText text, Color color, int playerId)
+		{
+			_refusals++; string t = text?.ToString() ?? "?";
+			if (RefusalKeys.Add(t)) { _mod.Logger.Info("[PylonClick] OBSERVED vanilla refused a pylon request: \"" + t + "\""); Diag("at the first refusal"); }
+		}
+
+		/// <summary>What vanilla's pylon test sees: every town-like NPC (home tile, homeless, distance from home) against each listed pylon's scan rectangle, and where the commander stands.</summary>
+		private static void Diag(string tag)
+		{
+			try
+			{
+				var sb = new System.Text.StringBuilder();
+				Player c = Main.player[0];
+				sb.Append($"commander {(int)(c.Center.X / 16f)},{(int)(c.Center.Y / 16f)} talkNPC {c.talkNPC} dead {c.dead}; scan {Main.buffScanAreaWidth}x{Main.buffScanAreaHeight}; anyDanger {NPC.AnyDanger(false, true)} invasion {Main.invasionType} time {Main.time:0} day {Main.dayTime} bloodMoon {Main.bloodMoon} raining {Main.raining}; pylons");
+				foreach (var pi in Main.PylonSystem.Pylons) sb.Append($" [{pi.PositionInTiles.X},{pi.PositionInTiles.Y} {pi.TypeOfPylon} inReach {c.InInteractionRange(pi.PositionInTiles.X, pi.PositionInTiles.Y, TileReachCheckSettings.Pylons)} enough2 {TeleportPylonsSystem.DoesPositionHaveEnoughNPCs(2, pi.PositionInTiles)}]");
+				sb.Append("; town-like NPCs");
+				int n = 0, soldiers = 0;
+				for (int i = 0; i < 200; i++)
+				{
+					NPC t = Main.npc[i]; if (!t.active || !t.isLikeATownNPC) continue; n++;
+					if (t.ModNPC is global::Levy.Content.NPCs.SoldierNPC) { soldiers++; continue; }
+					sb.Append($" [#{i} {(t.ModNPC?.Name ?? t.TypeName)} home {t.homeTileX},{t.homeTileY} homeless {t.homeless} at {(int)(t.Center.X / 16f)},{(int)(t.Center.Y / 16f)} dist {Vector2.Distance(new Vector2(t.homeTileX, t.homeTileY), t.Center / 16f):0.0} life {t.life}/{t.lifeMax}]");
+				}
+				sb.Append($"; {n} in all, {soldiers} of them levies");
+				_mod.Logger.Info("[PylonClick] OBSERVED census " + tag + ": " + sb);
+			}
+			catch (Exception e) { _mod.Logger.Info("[PylonClick] census failed " + e.Message); }
 		}
 
 		private static void Check(string name, bool ok) { if (ok) _pass++; else _fail++; _mod.Logger.Info($"[PylonClick] {(ok ? "PASS" : "FAIL")} {name}"); }
@@ -80,10 +113,20 @@ namespace Levy.Common.Testing
 				t.GetMethod(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null)?.Invoke(sys, null);
 		}
 
+		// Vanilla sweeps every town NPC's housing once per Main.checkForSpawns (7200 ticks) and turns every one without a valid room (chair, table, door, torch: this scene has none) homeless, and a homeless NPC does not count for a pylon. The counter is global and keeps what every earlier check of the boot ticked, so where the sweep lands in this scene moved whenever an earlier check changed its length. The scene holds the counter at 0.
+		private static int _spawnTimer, _tickNo; private static string _phase = "setup"; private static readonly HashSet<int> _flipped = new(); private static List<NPC> _watch = new();
 		private static List<double> Ticks(int n)
 		{
 			var l = new List<double>(n);
-			for (int i = 0; i < n; i++) { Main.player[0].active = true; long t0 = Stopwatch.GetTimestamp(); WorldStep.Update(); l.Add(Ms(Stopwatch.GetTimestamp() - t0)); }
+			for (int i = 0; i < n; i++)
+			{
+				Main.player[0].active = true; if (_watch.Count > 0) Main.checkForSpawns = 0; long t0 = Stopwatch.GetTimestamp(); WorldStep.Update(); l.Add(Ms(Stopwatch.GetTimestamp() - t0)); _tickNo++;
+				foreach (NPC w in _watch) if (!_flipped.Contains(w.whoAmI) && w.active && w.homeless)
+				{
+					_flipped.Add(w.whoAmI); Player c = Main.player[0];
+					Note($"town NPC #{w.whoAmI} {w.TypeName} turned homeless at world tick {_tickNo} (phase \"{_phase}\", {i + 1} of {n} ticks into this step): time {Main.time:0} day {Main.dayTime} raining {Main.raining} eclipse {Main.eclipse} slimeRain {Main.slimeRain} bloodMoon {Main.bloodMoon}; npc at {(int)(w.Center.X / 16f)},{(int)(w.Center.Y / 16f)} home {w.homeTileX},{w.homeTileY} ai0 {w.ai[0]:0} ai1 {w.ai[1]:0} life {w.life}; commander at {(int)(c.Center.X / 16f)},{(int)(c.Center.Y / 16f)}");
+				}
+			}
 			return l;
 		}
 
@@ -94,6 +137,13 @@ namespace Levy.Common.Testing
 			try
 			{
 				RefreshVanillaPylons(); // an earlier check of the same boot may have removed its pylons without a refresh: vanilla refuses a second pylon of a type it still lists
+				{
+					var left = new List<string>(); int projs = 0;
+					for (int i = 0; i < Main.maxNPCs; i++) { NPC n0 = Main.npc[i]; if (n0.active && !n0.townNPC) left.Add((n0.ModNPC?.Name ?? n0.TypeName) + (n0.friendly ? "(f)" : "") + (n0.boss ? "(BOSS)" : "") + (NPCID.Sets.DangerThatPreventsOtherDangers[n0.type] ? "(DANGER)" : "") + "@" + (int)(n0.Center.X / 16f) + "," + (int)(n0.Center.Y / 16f)); }
+					for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active) projs++;
+					Player c0 = Main.player[0];
+					Note($"before the scene: {left.Count} non-town NPCs [{string.Join(" ", left.Take(12))}], {projs} projectiles, commander at {(int)(c0.Center.X / 16f)},{(int)(c0.Center.Y / 16f)} life {c0.statLife}/{c0.statLifeMax2} dead {c0.dead} channel {c0.channel} use {c0.controlUseItem} myPlayer {Main.myPlayer} anyDanger {NPC.AnyDanger(false, true)} invasion {Main.invasionType} snowMoon {Main.snowMoon} pumpkinMoon {Main.pumpkinMoon} dd2 {Terraria.GameContent.Events.DD2Event.Ongoing} talkNPC {c0.talkNPC} time {Main.time:0} day {Main.dayTime} hardMode {Main.hardMode}");
+				}
 				int barType = ModContent.TileType<BarracksTile>(), armType = ModContent.TileType<ArmoryTile>();
 				var barracks = new List<BarracksTE>(); var armories = new List<ArmoryTE>();
 				foreach (int bx in new[] { 600, 1000 })
@@ -134,11 +184,13 @@ namespace Levy.Common.Testing
 				var sysT = typeof(TeleportPylonsSystem);
 				log.Info("[PylonClick] vanilla TeleportPylonsSystem methods: " + string.Join("; ", sysT.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly).Select(m => m.Name + "(" + string.Join(",", m.GetParameters().Select(q => q.ParameterType.Name)) + ")")));
 				Note($"scene: {barracks.Count} barracks, {armories.Count} armories, {pylons.Count} of the {all.Count} listed pylons are this scene's, {townNpcs.Count} town NPCs");
+				Note($"vanilla housing sweep counter Main.checkForSpawns = {Main.checkForSpawns} of {7200.0 / Math.Max(WorldGen.GetWorldUpdateRate(), 0.001):0} when the scene starts (the sweep makes every town NPC without a valid room homeless)"); Diag("after the scene is built"); _watch = townNpcs; _flipped.Clear(); _tickNo = 0; _spawnTimer = Main.checkForSpawns;
 				Check($"vanilla lists both of the scene's pylons ({all.Count} listed in all)", pylons.Count == 2);
 				if (pylons.Count < 2) return;
 
 				p.position = new Vector2(610 * 16f, (FloorY - 4) * 16f); p.statLife = p.statLifeMax2 = Math.Max(p.statLifeMax2, 400);
 				Ticks(30);
+				Diag("after 30 ticks, before the first click");
 
 				var armArr = armories; var barArr = barracks;
 				foreach (int levies in new[] { 0, 40 })
@@ -153,8 +205,8 @@ namespace Levy.Common.Testing
 						rec.CurrentHp = rec.MaxHp; roster.Regulars.Add(rec); recs.Add(rec);
 						roster.SpawnBody(rec, new Vector2((home.Position.X + 12 + i % 8) * 16f, (FloorY - 4) * 16f));
 					}
-					roster.PreUpdateNPCs(); Ticks(30);
-					string arm = levies == 0 ? "no army" : levies + " levies";
+					_phase = levies + " levies just spawned"; roster.PreUpdateNPCs(); Ticks(30);
+					string arm = levies == 0 ? "no army" : levies + " levies"; _phase = arm;
 					var baseline = Ticks(120);
 					// the vanilla request, as the map layer makes it on a click: ask the pylon system to teleport the player to the other pylon (12 times, alternating; the first two are warm-up: JIT)
 					var handle = sysT.GetMethod("HandleTeleportRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -205,7 +257,7 @@ namespace Levy.Common.Testing
 				foreach (var (i, j, w, h) in placed) for (int x = i; x < i + w; x++) for (int y = j; y < j + h; y++) if (WorldGen.InWorld(x, y)) Main.tile[x, y].ClearEverything();
 				foreach (var id in new List<int>(TileEntity.ByID.Keys)) { var te = TileEntity.ByID[id]; if (te is BarracksTE || te is ArmoryTE || te is TETeleportationPylon) { TileEntity.ByID.Remove(id); TileEntity.ByPosition.Remove(te.Position); } }
 				try { RefreshVanillaPylons(); } catch { }
-				p.active = pWas;
+				p.active = pWas; _watch = new List<NPC>(); Main.checkForSpawns = _spawnTimer;
 				_mod.Logger.Info("[PylonClick] done");
 			}
 		}

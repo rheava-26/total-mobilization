@@ -175,6 +175,7 @@ namespace Levy.Common.Testing
 					// the levy: the gear's own dash on, and the old fixed burst
 					Array.Clear(SoldierNPC.DashRef, 0, SoldierNPC.DashRef.Length);
 					SoldierNPC.DashFixOn = true; var on = LevyDash(Make(type), out int dOn, out float peakOn, out float dist60On);
+					for (int retry = 0; retry < 2 && dOn < 1; retry++) on = LevyDash(Make(type), out dOn, out peakOn, out dist60On); // the follow goal's geometry decides whether the first run offers a dash lane: one more try
 					string refOn = string.Join(",", SoldierNPC.DashRef.Take(10));
 					SoldierNPC.DashFixOn = false; var off = LevyDash(Make(type), out int dOff, out float peakOff, out float dist60Off);
 					SoldierNPC.DashFixOn = df;

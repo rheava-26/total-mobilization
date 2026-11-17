@@ -299,7 +299,7 @@ namespace Levy.Common.Testing
 		{
 			int rounds = int.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFAN_ROUNDS"), out int rr) && rr > 0 ? rr : 12;
 			AnalyzerArmsOne(ticks, flood, rounds, 0);
-			try { AnalyzerWrapAB(ticks, flood, int.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFAN_ABROUNDS"), out int ar) && ar > 0 ? ar : 24); } catch (Exception e) { Note("wrap A/B did not run: " + e.Message); }
+			if (Environment.GetEnvironmentVariable("LEVY_PERFAN_AB") == "1") try { AnalyzerWrapAB(ticks, flood, int.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFAN_ABROUNDS"), out int ar) && ar > 0 ? ar : 24); } catch (Exception e) { Note("wrap A/B did not run: " + e.Message); }
 		}
 
 		/// <summary>Same boot, four arms in rotating order: (0) analyzer off, global AI hook wraps removed; (1) analyzer off, wraps in place; (2) analyzer on, wraps removed; (3) analyzer on, wraps in place. Differences against arm 0, per round, with their standard error.</summary>

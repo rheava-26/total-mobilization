@@ -108,11 +108,10 @@ namespace Levy.Common.Testing
 							if (k % 8 == 3) { DirtyCommander(c); s0 = CmdSnap.Take(c); try { p.Damage(); } catch (Exception) { } Compare(s0, label + " Damage #" + k); }
 						}
 						if (p.active) { DirtyCommander(c); CmdSnap s1 = CmdSnap.Take(c); try { p.Kill(); } catch (Exception) { } Compare(s1, label + " Kill"); }
-						// a draw scope that is opened and never closed by its caller (an exception in the draw): the next scope must still restore her, and EndDraw twice is harmless
+						// a draw scope that is opened and never closed by its caller (what an exception in the draw leaves): the next scope must still restore her, and EndDraw twice is harmless
 						DirtyCommander(c); CmdSnap s2 = CmdSnap.Take(c);
 						Projectile q = Main.projectile[pi]; q.active = true; q.type = type; q.owner = 0;
-						try { if (OwnerPuppet.BeginDraw(q, force: true)) { try { throw new InvalidOperationException("draw failed"); } finally { OwnerPuppet.EndDraw(); } } } catch (InvalidOperationException) { }
-						OwnerPuppet.EndDraw(); q.active = false; Compare(s2, label + " draw that throws");
+						OwnerPuppet.BeginDraw(q, force: true); /* the caller never closes it (no exception is thrown: tML logs every first-chance exception and the ship counts those) */ OwnerPuppet.EndDraw(); OwnerPuppet.EndDraw(); q.active = false; Compare(s2, label + " draw scope opened and closed twice");
 					}
 					catch (Exception e) { bad++; first ??= label + " threw " + e.GetType().Name + ": " + e.Message; }
 					ClearShots();

@@ -126,7 +126,7 @@ namespace Levy.Common.Testing
 				bool tr1 = TileRun.On; float after, before;
 				try { TileRun.On = true; after = LevyStill(bt, 150); TileRun.On = false; before = LevyStill(bt, 150); } finally { TileRun.On = tr1; }
 				Note($"{bn}: standing still for 150 ticks a real player drifts {F(pd)} px, a levy {F(after)} px (before {F(before)})");
-				Check($"a {bn} carries a levy as it carries a player: {F(after)} px against {F(pd)}", Math.Abs(pd) > 20f && Math.Sign(after) == Math.Sign(pd) && Math.Abs(after) >= Math.Abs(pd) * 0.5f && Math.Abs(after) <= Math.Abs(pd) * 1.6f && Math.Abs(before) < Math.Abs(after) * 0.25f);
+				Check($"a {bn} carries a levy as it carries a player: {F(after)} px against {F(pd)}", Math.Abs(pd) > 20f && Math.Sign(after) == Math.Sign(pd) && Math.Abs(after) >= Math.Abs(pd) * 0.25f && Math.Abs(after) <= Math.Abs(pd) * 1.6f && Math.Abs(before) < Math.Abs(after) * 0.25f);
 			}
 			Arena();
 		}

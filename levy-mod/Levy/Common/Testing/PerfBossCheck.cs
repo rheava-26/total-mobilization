@@ -433,6 +433,55 @@ namespace Levy.Common.Testing
 			Check($"the analyzer's own code adds under 0.1 ms per tick with {levies} levies and {flood} projectiles on the field ({analyticTotal * 1000:F0} us from timing its calls one by one, window close {perTickClose * 1000:F0} us)", analyticTotal < 0.1);
 		}
 
+		/// <summary>
+		/// The stat pass (the gear frame of a levy in tick-dependent gear: a player's ResetEffects, UpdateEquips, armor sets and every mod's PostUpdateEquips / PostUpdateMiscEffects) timed on the standing army with no projectile alive and with
+		/// 900 alive, in thread CPU time, the two interleaved three times and the best of each kept. Nothing is stepped between the calls, so only the pass itself is timed. Eve's pillar fights had 340 to 480 shots in the air
+		/// with every levy running this pass every tick: a per-levy walk over the shots costs levies x shots. PASS: the pass with 900 shots alive costs under 3 times the pass with none (same boot, so box load cannot fail it).
+		/// </summary>
+		private static void GearScaling()
+		{
+			var sample = Army.Where(s => s != null && s.NPC.active && s.UpkeepActive).Take(12).ToList();
+			if (sample.Count < 4) { Note($"gear frame scaling: only {sample.Count} levies run the per-tick gear frame here; not measured"); return; }
+			var made = new List<int>();
+			double Pass()
+			{
+				long c0 = LevyProf.ThreadCpuNs(), w0 = Stopwatch.GetTimestamp();
+				for (int r = 0; r < 8; r++) foreach (var s in sample) { s.StatsDirty = true; s.RefreshStats(); }
+				long c1 = LevyProf.ThreadCpuNs(), w1 = Stopwatch.GetTimestamp();
+				double ns = c0 >= 0 && c1 >= 0 ? c1 - c0 : (w1 - w0) * 1e9 / Stopwatch.Frequency;
+				return ns / 1000.0 / (8 * sample.Count); // us per levy pass
+			}
+			void Shots(bool on)
+			{
+				foreach (int i in made) if (i >= 0 && i < Main.maxProjectiles) Main.projectile[i].active = false;
+				made.Clear(); if (!on) return;
+				int keep = Main.myPlayer; Main.myPlayer = 0;
+				try
+				{
+					for (int k = 0; k < 900; k++)
+					{
+						int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("PerfBoss"), new Vector2((Cx - Half + (k % 300)) * 16f, (FloorY - 30 - k / 300 * 4) * 16f), Vector2.Zero, k % 2 == 0 ? ProjectileID.Bullet : ProjectileID.WoodenArrowFriendly, 10, 0f, 0);
+						if (pi < 0 || pi >= Main.maxProjectiles) break;
+						Main.projectile[pi].timeLeft = 100000; made.Add(pi);
+					}
+				}
+				finally { Main.myPlayer = keep; }
+			}
+			double none = double.MaxValue, many = double.MaxValue; int alive = 0;
+			try
+			{
+				Pass(); // warm
+				for (int rep = 0; rep < 3; rep++)
+				{
+					Shots(false); none = Math.Min(none, Pass());
+					Shots(true); alive = made.Count; many = Math.Min(many, Pass());
+				}
+			}
+			finally { Shots(false); }
+			Note($"gear frame scaling: {sample.Count} levies, {none:F1} us per levy pass with no shots alive, {many:F1} us with {alive} alive");
+			Check($"a levy's stat pass does not grow with the shots alive ({many:F1} us with {alive} alive against {none:F1} us with none; ratio {many / Math.Max(0.001, none):F2}, must be under 3)", alive >= 800 && many < 3 * none);
+		}
+
 		private static void Run()
 		{
 			int levies = int.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFBOSS_LEVIES"), out int lv) && lv > 0 ? lv : 150;
@@ -496,6 +545,9 @@ namespace Levy.Common.Testing
 				}
 			}
 			finally { global::Levy.Common.Weapons.PairCull.HostileOn = hostileWas; SoldierNPC.DormancyOn = dormWas; }
+
+			// ---- the gear frame against the number of shots alive (lagsweep 11-17): an engaged levy runs a player's whole equipment pass every tick, so anything in it that walks every projectile grows with the army's own shots
+			if (Want("gearscale")) { try { GearScaling(); } catch (Exception e) { Check("gear frame scaling threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); } }
 
 			// ---- the always-on performance analyzer's own cost: the same army and the same flood, timed with the analyzer attached and removed in turn
 			if (Want("analyzer")) { try { AnalyzerArms(ticks, flood); } catch (Exception e) { Check("analyzer arms threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); } }

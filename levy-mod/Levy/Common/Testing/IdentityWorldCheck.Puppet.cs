@@ -71,7 +71,7 @@ namespace Levy.Common.Testing
 					if (btn.Count >= cap && draw.Count >= cap) break;
 				}
 				types.AddRange(btn); types.AddRange(draw.Where(d => btn.All(b => b.Item1 != d.Item1)));
-				foreach (int vt in new[] { ProjectileID.Bullet, ProjectileID.RocketI, ProjectileID.WoodenArrowFriendly, ProjectileID.VampireHeal }) types.Add((vt, "vanilla:" + ProjectileID.Search.GetName(vt)));
+				foreach (int vt in new[] { ProjectileID.Bullet, ProjectileID.RocketI, ProjectileID.WoodenArrowFriendly, ProjectileID.VampireHeal, ProjectileID.Spear, ProjectileID.Mace, ProjectileID.MonkStaffT1, ProjectileID.VortexBeater, ProjectileID.Flamelash }) types.Add((vt, "vanilla:" + ProjectileID.Search.GetName(vt)));
 				OwnerPuppet.Mask = 255;
 				SetupOriginArena(); ClearSoldiers(); ReleaseCommanderButtons(); _cmdHolds = false;
 				Vector2 at = new Vector2(Cx * 16f + 8f, FloorY * 16f);

@@ -243,9 +243,9 @@ namespace Levy.Common.Testing
 		}
 
 		// ---------------------------------------------------------------------------------------------- attack
-		private static (int projs, long damage, int firstShotTick) MindWeaponRun(Item w, int ammo, bool onEnemy, int ticks)
+		private static (int projs, long damage, int firstShotTick) MindWeaponRun(Item w, int ammo, bool onEnemy, int ticks, bool dead = false)
 		{
-			ClearSoldiers(); MindGiveLink();
+			ClearSoldiers(); MindGiveLink(); _mindDead = dead; Main.player[0].dead = dead;
 			Vector2 at = new Vector2(Cx * 16f + 8f, FloorY * 16f);
 			SpawnOriginTarget(at);
 			Vector2 aim = _sweepTargetAt - new Vector2(0f, 24f);
@@ -257,7 +257,7 @@ namespace Levy.Common.Testing
 			Main.npc[body].Bottom = at; rec.HoldPos = Main.npc[body].Center;
 			Main.rand = new Terraria.Utilities.UnifiedRandom(777);
 			KeepCommander(); PinSweepTarget(); Step(20);
-			if (!MindControl.Begin(Main.player[0], rec.Id, false)) throw new Exception("mind link refused");
+			if (!MindControl.Begin(Main.player[0], rec.Id, dead)) throw new Exception("mind link refused");
 			int projs = 0, first = -1; long dmg = 0; var live = new Dictionary<int, (int type, int id)>();
 			for (int t = 0; t < ticks; t++)
 			{
@@ -273,11 +273,11 @@ namespace Levy.Common.Testing
 					live[i] = (p.type, p.identity); projs++; if (first < 0) first = t;
 				}
 			}
-			MindControl.End(0); ClearSoldiers();
+			MindControl.End(0); ClearSoldiers(); _mindDead = false; Main.player[0].dead = false;
 			return (projs, dmg, first);
 		}
 
-		private static void MindAttackAudit(bool chk)
+		private static void MindAttackAudit(bool chk, bool deadRun = false)
 		{
 			var ammoByKind = AmmoByKind();
 			var list = new List<(int type, string label)>();
@@ -299,8 +299,8 @@ namespace Levy.Common.Testing
 					Item sample = ContentSamples.ItemsByType[type];
 					int ammo = sample.useAmmo > 0 && ammoByKind.TryGetValue(sample.useAmmo, out int a) ? a : 0;
 					Item w1 = MindItem(type), w2 = MindItem(type);
-					var empty = MindWeaponRun(w1, ammo, false, 90);
-					var onEnemy = MindWeaponRun(w2, ammo, true, 90);
+					var empty = MindWeaponRun(w1, ammo, false, 90, deadRun);
+					var onEnemy = MindWeaponRun(w2, ammo, true, 90, deadRun);
 					OResult ai = OriginOne(type, ammo, label, 90);
 					bool fires = empty.projs > 0 || onEnemy.projs > 0;
 					bool aiFires = ai.Projs > 0;
@@ -311,8 +311,9 @@ namespace Levy.Common.Testing
 				}
 				catch (Exception e) { bad++; failed.Add(label + " threw " + e.GetType().Name); sb.Append($"\n    {label} threw {e.GetType().Name}: {e.Message}"); }
 			}
-			Note($"mind attack audit ({list.Count} weapons, attack button held 90 ticks at the cursor): works {ok}, broken {bad}:{sb}");
-			if (chk) Check($"mind control fires every weapon a levy fires on its own, at the cursor ({ok} of {list.Count}; broken: {string.Join(", ", failed)})", bad == 0);
+			string who = deadRun ? "the commander DEAD (death link)" : "the commander alive (Mind Link item)";
+			Note($"mind attack audit, {who} ({list.Count} weapons, attack button held 90 ticks at the cursor): works {ok}, broken {bad}:{sb}");
+			if (chk) Check($"mind control fires every weapon a levy fires on its own, at the cursor, {who} ({ok} of {list.Count}; broken: {string.Join(", ", failed)})", bad == 0);
 		}
 
 		// ---------------------------------------------------------------------------------------------- lifecycle
@@ -418,6 +419,30 @@ namespace Levy.Common.Testing
 
 		private static int ammoByKindFirst(int ammoItem) => ammoItem;
 
+		private static int _mindSyncSlot = -1, _mindSyncCount;
+		private static void MindSendDataDetour(On_NetMessage.orig_SendData orig, int msgType, int remoteClient, int ignoreClient, Terraria.Localization.NetworkText text, int number, float number2, float number3, float number4, int number5, int number6, int number7)
+		{
+			if (msgType == MessageID.SyncNPC && number == _mindSyncSlot) _mindSyncCount++;
+			orig(msgType, remoteClient, ignoreClient, text, number, number2, number3, number4, number5, number6, number7);
+		}
+
+		/// <summary>How often the server sends the driven body to her client: a body that streams only now and then reaches a client late, and the camera of a client follows exactly that body.</summary>
+		private static void MindSyncAudit(bool chk)
+		{
+			Vector2 at = new Vector2(Cx * 16f + 8f, FloorY * 16f);
+			ClearSoldiers(); MindGiveLink(); SpawnOriginTarget(at); _sweepTarget.active = false;
+			SoldierRecord rec = MindRecord(MindItem(ItemID.CopperShortsword), 0, null, null, null);
+			RosterSystem.Instance.Regulars.Add(rec);
+			int body = RosterSystem.Instance.SpawnBody(rec, at); Main.npc[body].Bottom = at;
+			KeepCommander(); Step(20); MindControl.Begin(Main.player[0], rec.Id, false); Step(3);
+			_mindSyncSlot = body; _mindSyncCount = 0; On_NetMessage.SendData += MindSendDataDetour;
+			try { for (int t = 0; t < 120; t++) { MindControl.SetInput(0, K(r: t < 60, l: t >= 60)); Step(1); ClearNaturalHostiles(); } }
+			finally { On_NetMessage.SendData -= MindSendDataDetour; _mindSyncSlot = -1; }
+			MindControl.End(0); ClearSoldiers();
+			Note($"mind body syncs sent to her client while she runs it (120 ticks): {_mindSyncCount}");
+			if (chk) Check($"mind control: the driven body is sent to her client every tick it moves ({_mindSyncCount} syncs in 120 ticks)", _mindSyncCount >= 110);
+		}
+
 		private static void MindSweep()
 		{
 			if (Environment.GetEnvironmentVariable("LEVY_MIND") == "0" || !Main.dedServ) return;
@@ -427,6 +452,11 @@ namespace Levy.Common.Testing
 			try { MindMovementAudit(chk); } catch (Exception e) { Check("mind movement audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			ClearSoldiers();
 			try { MindAttackAudit(chk); } catch (Exception e) { Check("mind attack audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
+			ClearSoldiers();
+			try { MindAttackAudit(chk, true); } catch (Exception e) { Check("mind attack audit (dead commander) threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
+			_mindDead = false; Main.player[0].dead = false;
+			ClearSoldiers();
+			try { MindSyncAudit(chk); } catch (Exception e) { Check("mind sync audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			ClearSoldiers();
 			try { MindLifecycleAudit(chk); } catch (Exception e) { Check("mind lifecycle audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			ClearSoldiers();

@@ -27,6 +27,8 @@ namespace Levy.Common.Weapons
 	///          while it is held and is thrown when it is let go) reads the COMMANDER's buttons, which are down whenever the commander is firing her own weapon: the levy's holdout then charges for as long as she holds hers and its
 	///          shots come out when she lets go, and its flail spins on the spot and never throws. For the length of that shot's update the owner's buttons read as a soldier's shot sees them with a commander who is not holding anything
 	///          (the button up, the use released), which is what the weapons were measured with (<see cref="ModShotKinds"/>), and are put back in the same finally. Only shots whose own AI reads the buttons are touched (<see cref="OwnerLockProbe.ReadsUseButtons"/>).
+	///   bit 256: LIVE OWNER. While the commander is dead (the mind-control death link drives a levy then) every shot of that levy is still owned by her, and a great many modded projectiles end themselves at once when their owner is
+	///          dead (Calamity's holdouts and summons: <c>if (Owner.dead) Kill()</c>): Tumbleweed, Ice Barrage and Undine's Retribution made nothing or hit nothing. For the length of each puppeted pass of a soldier's shot the owner reads as alive, and is put back dead in the same finally.
 	///   bit 8: Thorium's cached "local ThoriumPlayer" (PlayerHelper.localThoriumPlayer) is pointed at the soldier dummy's ThoriumPlayer around the Shoot hooks in WeaponUse.TryRealShoot and inside puppeted Damage / Kill
 	///          (GetThoriumPlayer returns that cache for any player whose whoAmI == Main.myPlayer, which the dummy is given for the call).
 	/// Only the transform is moved: the Player object, its ModPlayers, buffs and life stay the commander's, so loot credit and boss-kill resolution still run under the real player.
@@ -37,10 +39,10 @@ namespace Levy.Common.Weapons
 	public class OwnerPuppet : ModSystem
 	{
 		/// <summary>Effective bit mask, read on the hot path. Written only by <see cref="Refresh"/>.</summary>
-		internal static int Mask = 255;
+		internal static int Mask = 511;
 		private static bool _envSet; private static int _envMask; private static bool _cfgOn = true; private static bool _hooked;
 		internal static int UnpuppetedOwner, UnpuppetedBody; // soldier shots seen with no active owner / no live body (harness diagnostics)
-		internal static int Swaps, Restores, ThSwaps, Inherited, NetGuards, MaxDepth; // counters for the harness
+		internal static int LiveOwnerPasses; internal static int Swaps, Restores, ThSwaps, Inherited, NetGuards, MaxDepth; // counters for the harness
 		/// <summary>The soldier whose projectile is inside a puppeted call right now (null otherwise).</summary>
 		internal static SoldierNPC Context;
 		/// <summary>True when bit 16 is on and a puppeted call is running: an untagged friendly projectile spawned now belongs to that soldier.</summary>
@@ -48,7 +50,7 @@ namespace Levy.Common.Weapons
 
 		/// <summary>Called by the config on load / change with the cached server-side switch.</summary>
 		internal static void SetConfig(bool on) { _cfgOn = on; Refresh(); }
-		private static void Refresh() => Mask = _envSet ? _envMask : (_cfgOn ? 255 : 0);
+		private static void Refresh() => Mask = _envSet ? _envMask : (_cfgOn ? 511 : 0);
 
 		public override void Load()
 		{
@@ -69,7 +71,7 @@ namespace Levy.Common.Weapons
 		public override void Unload()
 		{
 			if (_hooked) { On_Projectile.Damage -= DamageDetour; On_Projectile.Kill -= KillDetour; On_Projectile.Update -= UpdateDetour; if (!Main.dedServ) On_Main.DrawProjDirect -= DrawDirectDetour; On_NetMessage.SendData -= SendDataDetour; On_Player.HealEffect -= HealEffectDetour; }
-			_hooked = false; _envSet = false; _cfgOn = true; Mask = 255; _depth = 0; Context = null; _curTp = null; LifeStealPool.Unload();
+			_hooked = false; _envSet = false; _cfgOn = true; Mask = 511; _depth = 0; Context = null; _curTp = null; LifeStealPool.Unload();
 		}
 
 		private static bool Puppetable(Projectile p, out Player owner, out SoldierNPC body)
@@ -85,7 +87,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>One open swap: what the owner's transform and the Thorium cache were when this call entered.</summary>
-		private struct Frame { public bool Moved; public Player P; public Vector2 Pos, Vel, Old; public int Dir; public object Th; public SoldierNPC PrevCtx; public bool Route; public int Life, LifeMax, SolLife, Allow; public SoldierNPC Body; public float Pool, MyPool; public Player MyP; public SoldierNPC Outer;
+		private struct Frame { public bool Moved; public Player P; public Vector2 Pos, Vel, Old; public int Dir; public object Th; public SoldierNPC PrevCtx; public bool Route; public int Life, LifeMax, SolLife, Allow; public SoldierNPC Body; public float Pool, MyPool; public Player MyP; public SoldierNPC Outer; public bool WasDead, WasGhost;
 			/// <summary>The cursor puppet (CombatFix.Cursor): the commander's cursor and Calamity's per-player cursor offset as this pass found them.</summary>
 			public bool Cur; public Vector2 CurScreen, CurDelta; public int CurMx, CurMy; public float CurRot; public object CurCal;
 			/// <summary>The use-button puppet: the commander's buttons as this pass found them.</summary>
@@ -105,7 +107,8 @@ namespace Levy.Common.Weapons
 			ref Frame f = ref _stack[_depth];
 			f.Moved = moveTransform; f.P = p; f.Pos = p.position; f.Vel = p.velocity; f.Old = p.oldPosition; f.Dir = p.direction;
 			f.PrevCtx = Context; f.Th = swapCache ? SwapThorium(body.Dummy) : null;
-			f.Body = body; f.Route = route; f.Allow = 0;
+			f.Body = body; f.Route = route; f.Allow = 0; f.WasDead = false; f.WasGhost = false;
+			if ((m & 256) != 0 && (p.dead || p.ghost)) { f.WasDead = p.dead; f.WasGhost = p.ghost; p.dead = false; p.ghost = false; LiveOwnerPasses++; }
 			if (route)
 			{
 				f.Life = p.statLife; f.LifeMax = p.statLifeMax2; // as this pass found him (the commander's own, or an enclosing pass's soldier)
@@ -152,7 +155,7 @@ namespace Levy.Common.Weapons
 				if (f.Moved) { f.P.position = f.Pos; f.P.velocity = f.Vel; f.P.oldPosition = f.Old; f.P.direction = f.Dir; Restores++; }
 				if (f.Route) CloseRoute(ref f);
 			}
-			finally { if (f.Route) ClosePool(ref f); RestoreThorium(f.Th); Context = f.PrevCtx; f = default; }
+			finally { if (f.WasDead) f.P.dead = true; if (f.WasGhost) f.P.ghost = true; if (f.Route) ClosePool(ref f); RestoreThorium(f.Th); Context = f.PrevCtx; f = default; }
 		}
 
 

@@ -94,6 +94,7 @@ namespace Levy.Common.Observe
 
 		private static void Push(int who, bool sections)
 		{
+			if (Main.netMode == NetmodeID.Server && !Netplay.Clients[who].IsConnected()) return; // a player slot with no connection has nobody to send to (a lab stand-in)
 			if (!Target(who, out byte kind, out int id, out Vector2 pos)) return;
 			if (sections) RemoteClient.CheckSection(who, pos, 1);
 			var p = LevyPackets.New(LevyPacket.ObservePos); p.Write(kind); p.Write(id); p.Write(pos.X); p.Write(pos.Y); p.Send(who);

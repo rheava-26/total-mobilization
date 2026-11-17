@@ -103,7 +103,7 @@ namespace Levy.Content.NPCs
 				int mana0 = d.statMana;
 				fs = EnterFrameSlot();
 				thorium = OwnerPuppet.SwapThorium(d, true);
-				Main.screenPosition = Vector2.Zero; Main.mouseX = (int)aim.X; Main.mouseY = (int)aim.Y;
+				global::Levy.Common.Owner.AimView.Set(aim, NPC.Center);
 				d.KeyDoubleTap(Main.ReversedUpDownArmorSetBonuses ? 1 : 0);
 				ran = true;
 				if (Record != null && d.statMana != mana0) Record.Mana = Math.Clamp(Record.Mana + (d.statMana - mana0), 0, Record.MaxMana);

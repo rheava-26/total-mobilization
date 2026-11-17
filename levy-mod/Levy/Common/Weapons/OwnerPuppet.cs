@@ -129,7 +129,7 @@ namespace Levy.Common.Weapons
 			{
 				Vector2 at = body.AimCursor();
 				f.Cur = true; f.CurScreen = Main.screenPosition; f.CurMx = Main.mouseX; f.CurMy = Main.mouseY;
-				Main.screenPosition = Vector2.Zero; Main.mouseX = (int)at.X; Main.mouseY = (int)at.Y;
+				global::Levy.Common.Owner.AimView.Set(at, body.NPC.Center);
 				f.CurCal = AltPolicies.CalamityPlayerOf(p);
 				if (f.CurCal != null) { (f.CurDelta, f.CurRot) = AltPolicies.GetCalAimPublic(f.CurCal); AltPolicies.SetCalAimPublic(f.CurCal, at - p.MountedCenter); }
 				SoldierNPC.CursorPuppets++;

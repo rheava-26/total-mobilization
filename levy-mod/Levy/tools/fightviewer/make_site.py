@@ -49,7 +49,9 @@ ERAS = [
 CURRENT = "2.0.68 (not yet released)"
 # recording format -> (oldest, newest) Levy version known to write it; used only when a recording carries no version
 FORMAT_VERS = {1: ("2.0.0", "2.0.12"), 2: ("2.0.0", "2.0.12"), 3: ("2.0.13", "2.0.19"), 4: ("2.0.13", "2.0.19"), 5: ("2.0.20", "2.0.20"),
-               6: ("2.0.21", "2.0.25"), 7: ("2.0.26", "2.0.40"), 8: ("2.0.41", "2.0.63"), 9: ("2.0.64", "2.0.99"), 10: ("3.0.0", "3.0.9"), 11: ("3.0.10", "3.9.99")}
+               6: ("2.0.21", "2.0.25"), 7: ("2.0.26", "2.0.40"), 8: ("2.0.41", "2.0.63"), 9: ("2.0.64", "2.0.99"), 10: ("3.0.0", "3.0.9"), 11: ("3.0.10", "3.9.99"), 12: ("3.0.10", "3.9.99")}
+EVENT_MAX_FACTOR = 60    # an event recording (format 12, 5 Hz, up to an hour) may be thinned to one sample every 12 s to fit a data file
+EVENT_HZ = 1             # the default rate of an event's data file (the page interpolates between samples)
 
 
 def version_of(hdr):
@@ -83,7 +85,7 @@ def episode_list(path):
     """[(suffix, rows)] for one recording: the whole file, or, when it holds event NPCs (Celestial Pillars and the like that older recorders kept
     in the fight), its fights apart, suffix -ep1, -ep2 ... (see tools/recview/recrules.py)."""
     rows = load(path)
-    if recrules is None or not any(r.get("k") == "f" for r in rows):
+    if recrules is None or not any(r.get("k") == "f" for r in rows) or recrules.is_event_recording(rows):
         return [("", rows)]
     eps = recrules.episodes(rows)
     if len(eps) == 1 and eps[0].get("whole"):
@@ -132,8 +134,27 @@ def main_boss(f):
     return bs[0] if bs else None
 
 
+def summarize_event(rows, hdr):
+    """Format 12 event recording: the manifest row of the Events section (event name, duration, result, kills, levy deaths, miniboss kills)."""
+    c = recrules.classify_event(rows)
+    ids = set()
+    for f in rows:
+        if f.get("k") == "f":
+            for l in f.get("l") or []:
+                ids.add(l[0])
+    ver, about = version_of(hdr)
+    res = {"won": "win", "lost": "loss"}.get(c["result"], c["result"])
+    return {"ver": ver, "verAbout": about, "date": hdr.get("date"), "kind": "event", "event": c["main"], "boss": c["name"], "mode": hdr.get("mode") or "?",
+            "arena": ", ".join(recrules.event_name(x) for x in c["seen"]), "levies": len(ids), "result": res, "rule": c["result"], "dur": c["dur"],
+            "kills": c["kills"], "miniKills": c["minibossKills"], "deaths": c["levyDeaths"], "waveMax": c["waveMax"],
+            "hits": sum(1 for r in rows if r.get("k") == "e" and r.get("e") == "lhit"), "dmg": 0, "pl": 0, "pp": 0, "ps": 0, "hasT": False, "bossEnd": None,
+            "format": hdr.get("format", 12), "seed": None, "gear": None, "cmdDeaths": sum(1 for r in rows if r.get("k") == "e" and r.get("e") == "cdeath")}
+
+
 def summarize(rows):
     hdr = next((r for r in rows if r.get("k") == "hdr"), {})
+    if recrules is not None and recrules.is_event_recording(hdr):
+        return summarize_event(rows, hdr)
     meta = hdr.get("meta") or {}
     frames = [r for r in rows if r.get("k") == "f"]
     ev = [r for r in rows if r.get("k") == "e"]
@@ -312,7 +333,7 @@ def convert(rows, factor):
     hz = hdr.get("hz", 30)
     out = {
         "v": 4,
-        "hdr": {k: hdr[k] for k in ("format", "meta", "mode", "boss", "stateNames", "levy", "date", "split") if k in hdr},
+        "hdr": {k: hdr[k] for k in ("format", "meta", "mode", "boss", "stateNames", "levy", "date", "split", "kind", "event", "eventName", "events", "roster", "wave", "worldW", "worldH") if k in hdr},
         "frames": [],
         "events": [shrink_event(e) for e in rows if e.get("k") == "e"],
     }
@@ -333,6 +354,14 @@ def convert(rows, factor):
         r = next((x for x in rows if x.get("k") == k), None)
         if r:
             out[k] = {kk: vv for kk, vv in r.items() if kk != "k"}
+    # format 12: enemy importance by type (0 normal, 1 miniboss, 2 boss; the last nt line of a type wins)
+    nt = {}
+    for r in rows:
+        if r.get("k") == "nt":
+            nt[str(r["type"])] = r.get("imp", 0)
+            out.setdefault("names", {}).setdefault("npcs", {}).setdefault(str(r["type"]), r.get("name"))
+    if nt:
+        out["nt"] = nt
     # terrain: format 4 writes several arena records (start area, growth strips, camera view); the page merges them. Older files have one.
     arenas = [{kk: vv for kk, vv in r.items() if kk != "k"} for r in rows if r.get("k") == "arena"]
     if arenas:
@@ -420,10 +449,24 @@ def pick_auto(sums, seen_keys, per_cell, max_n):
     return chosen
 
 
-RES_TXT = {"win": "boss killed", "loss": "the fight was lost", "timeout": "time ran out", "fled": "the boss left with the commander alive", "despawn": "the boss left", "ended": "recording ended"}
+RES_TXT = {"win": "boss killed", "loss": "the fight was lost", "timeout": "time ran out", "fled": "the boss left with the commander alive", "despawn": "the boss left", "ended": "recording ended",
+           "survived": "the event ran out", "interrupted": "the world closed"}
+
+
+def event_note(s):
+    """One line for an event recording: result, length, waves, kills, levy deaths."""
+    word = {"win": "Won", "loss": "The army was wiped", "survived": "Survived", "ended": "Ended", "interrupted": "The world closed"}.get(s["result"], s["result"])
+    bits = ["%s after %d min %02d s." % (word, int(s["dur"]) // 60, int(s["dur"]) % 60)]
+    if s.get("waveMax"):
+        bits.append("Reached wave %d." % s["waveMax"])
+    bits.append("%d enemies killed, %d of them minibosses or bosses." % (s.get("kills", 0), s.get("miniKills", 0)))
+    bits.append("%d levy deaths." % s.get("deaths", 0))
+    return " ".join(bits)
 
 
 def auto_note(s):
+    if s.get("kind") == "event":
+        return event_note(s)
     bits = ["%s, %d levies, %s%s." % (s["mode"], s["levies"], s["arena"].lower(), (", seed " + str(s["seed"])) if s.get("seed") else "")]
     bits.append("%s after %.0f s." % (RES_TXT.get(s["result"], s["result"]).capitalize(), s["dur"]))
     if s["levies"]:
@@ -469,12 +512,13 @@ def main():
         s = summarize(rows)
         hdr = next((r for r in rows if r.get("k") == "hdr"), {})
         hz0 = hdr.get("hz", 30)
-        factor = max(1, -(-hz0 // a.hz))
+        event = hdr.get("kind") == "event"
+        factor = max(1, -(-hz0 // (min(a.hz, EVENT_HZ) if event else a.hz)))
         while True:
             blob = dump(convert(rows, factor))
-            if len(blob) <= MAX_FILE or factor >= 8:
+            if len(blob) <= MAX_FILE or factor >= (EVENT_MAX_FACTOR if event else 8):
                 break
-            factor += 1
+            factor = factor + 1 if not event else factor * 2
         del rows
         base = re.sub(r"\.(jsonl(\.gz)?|levyrec)$", "", fn) + suffix
         fid = slug(setname) + "__" + slug(base)
@@ -537,6 +581,13 @@ def main():
                 all_fights += fights
             print("more %-24s %3d fights" % (boss, len(fights)), file=sys.stderr)
 
+    # event recordings (format 12) get their own section at the top of the list, whatever set they came from
+    evs = [f for st in manifest_sets for f in st["fights"] if f.get("kind") == "event"]
+    if evs:
+        for st in manifest_sets:
+            st["fights"] = [f for f in st["fights"] if f.get("kind") != "event"]
+        manifest_sets[:] = [{"id": "events", "title": "Events", "kind": "event", "intro": "Whole events: every levy, militia outpost and enemy, from the start of the event to its end.",
+                             "fights": sorted(evs, key=lambda f: f.get("date") or "", reverse=True)}] + [st for st in manifest_sets if st["fights"]]
     fixed = os.path.getsize(os.path.join(HERE, "site", "index.html")) + 400 * len(all_fights)
     if not a.batches:
         # keep the site under the host's size limit: thin the biggest recordings one step at a time (15 Hz -> 10 -> 7.5 Hz)

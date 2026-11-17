@@ -94,8 +94,12 @@ def build_blob(args):
     rows = dict(ms.episode_list(path))[suffix]     # a recording that holds event NPCs (Celestial Pillars ...) is cut into its fights: suffix -ep1, -ep2 ...
     hdr = next((r for r in rows if r.get("k") == "hdr"), {})
     hz0 = hdr.get("hz", 30)
-    factor = max(1, -(-hz0 // hz_target))
+    event = hdr.get("kind") == "event"
+    factor = max(1, -(-hz0 // (min(hz_target, ms.EVENT_HZ) if event else hz_target)))
     blob = ms.dump(ms.convert(rows, factor))
+    while event and len(blob) > ms.MAX_FILE and factor < ms.EVENT_MAX_FACTOR:
+        factor *= 2
+        blob = ms.dump(ms.convert(rows, factor))
     return blob, max(1, hz0 // factor)
 
 
@@ -264,7 +268,7 @@ def main():
                 e = info["end"] = dict(e, result=s["rule"])      # the rule on the recording itself beats the word an older recorder wrote
             if e.get("result") in ("won", "lost", "fled"):
                 s["result"] = {"won": "win", "lost": "loss", "fled": "fled"}[e["result"]]
-            s["note"] = eve_note(info, s)
+            s["note"] = ms.event_note(s) if s.get("kind") == "event" else eve_note(info, s)
             s["mode"] = s["mode"] if s["mode"] != "?" else "Master+Death"
             ents.append({"set": "eve", "path": os.path.join(a.eve_recs, fn), "suffix": suffix, "id": "eve__" + slug(re.sub(r"\.levyrec$", "", fn) + suffix), "f": s, "src": fn + suffix})
 
@@ -361,11 +365,15 @@ def main():
 
     def srt_new(es):
         return sorted(es, key=lambda e: e["f"].get("date") or "", reverse=True)
+    for e in ents:
+        if e["set"] == "eve" and e["f"].get("kind") == "event":
+            e["set"] = "events"
+    events = srt_new([e for e in ents if e["set"] == "events"])
     eve = srt_new([e for e in ents if e["set"] == "eve"])
     lab = [e for e in ents if e["set"] == "lab"]
     test = [e for e in ents if e["set"] == "test"]
     old = sorted([e for e in ents if e["set"] == "old"], key=lambda e: (e["f"]["boss"], e["f"].get("date") or ""))
-    sets = [
+    sets = ([{"id": "events", "title": "Events", "kind": "event", "intro": "Whole events: every levy, militia outpost and enemy, from the start of the event to its end.", "fights": [e["f"] for e in events]}] if events else []) + [
         {"id": "eve", "title": "Your fights", "intro": "Everything you recorded, newest first.", "groupBy": "day", "fights": [e["f"] for e in eve]},
         {"id": "lab", "title": "Lab: hardmode bosses", "intro": "Levy 2.0.66 sweep: 34 levies, a standing Spectator commander. Up to 4 wins and 4 losses per boss, Master+Death first, plus every odd fight.",
          "groupBy": "boss", "groupNotes": bnotes, "fights": [e["f"] for e in lab]},
@@ -374,7 +382,7 @@ def main():
     ]
     # default: Eve's most recent Plantera loss
     pl = [e for e in eve if e["f"]["boss"] == "Plantera" and e["f"]["result"] == "loss"]
-    default = pl[0]["id"] if pl else eve[0]["id"]
+    default = pl[0]["id"] if pl else (eve or events)[0]["id"]
     man = {"version": 2, "default": default, "current": ms.CURRENT, "eras": ms.ERAS, "sets": sets}
     json.dump(man, open(os.path.join(out, "data", "manifest.json"), "w"), separators=(",", ":"))
     shutil.copyfile(os.path.join(HERE, "site", "index.html"), os.path.join(out, "index.html"))

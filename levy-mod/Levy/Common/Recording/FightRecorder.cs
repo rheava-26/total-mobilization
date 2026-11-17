@@ -734,13 +734,14 @@ namespace Levy.Common.Recording
 		public const int FarCellW = 50, FarCellH = 40, FarX = 60, FarY = 40, FarCellsPerSample = 4, MoveX = 100, MoveY = 60;
 		private static readonly HashSet<long> _farCells = new(), _farCentres = new(), _moveCells = new();
 		private static readonly Queue<long> _farQ = new();
+		private static readonly List<(float x, float y, bool far)> _anch = new();
 		private static readonly HashSet<int> _ntSeen = new();
 
 		/// <summary>A levy outside the recorded area: queue the grid cells around it that the covered area does not hold yet (arena records with far = 1; the viewer leaves them out of the first fit).</summary>
 		private static void WantFarTerrain(float px, float py, int rx = FarX, int ry = FarY, bool far = true)
 		{
 			int tx = (int)(px / 16f), ty = (int)(py / 16f);
-			if (_hasCover && tx - rx >= _cx0 && tx + rx < _cx1 && ty - ry >= _cy0 && ty + ry < _cy1) return;
+			if (_hasCover && tx - GrowMargin >= _cx0 && tx + GrowMargin < _cx1 && ty - GrowMargin >= _cy0 && ty + GrowMargin < _cy1) return; // inside the captured area (it grows to hold what is near)
 			// a centre cell whose window was queued already (with at least this reach) needs no work
 			long ck = ((long)(tx / FarCellW) << 34) ^ ((long)(ty / FarCellH) << 4) ^ (far ? 1 : 0);
 			if (!_farCentres.Add(ck)) return;
@@ -802,7 +803,7 @@ namespace Levy.Common.Recording
 			var f = new RecFrame { T = el };
 			_ex0 = _ey0 = int.MaxValue; _ex1 = _ey1 = int.MinValue; SeeEntity(p.Center.X, p.Center.Y);
 			// format 12: wherever the commander goes (a fight that travels 1400 tiles), the terrain around her is captured in cells once the area the recording started from cannot grow that far
-			WantFarTerrain(p.Center.X, p.Center.Y, MoveX, MoveY, far: false);
+			_anch.Clear(); _anch.Add((p.Center.X, p.Center.Y, false));
 			bool grounded = Grounded(p) || p.sliding;
 			// hook
 			bool hookOut = false, hookAtt = false; Vector2 hookPos = Vector2.Zero;
@@ -871,7 +872,7 @@ namespace Levy.Common.Recording
 				if (isBoss) { anyBoss = true; if (_primaryWho >= 0 && IsNewFightSerial(n)) otherSerial = true; }
 				bool part = !isBoss;
 				SeeEntity(n.Center.X, n.Center.Y);
-				if (isBoss) WantFarTerrain(n.Center.X, n.Center.Y, MoveX, MoveY, far: false); // and wherever the boss goes
+				if (isBoss) _anch.Add((n.Center.X, n.Center.Y, false)); // and wherever the boss goes
 				if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
 				if (isBoss && _bossIdsSeen.Add(n.whoAmI)) { _bossesSeen++; Ev("boss", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString())); NoteFightBoss(n); }
 				_bossTypes.Add(n.type);
@@ -934,7 +935,7 @@ namespace Levy.Common.Recording
 				NPC n = Main.npc[i];
 				if (!n.active || !(n.ModNPC is SoldierNPC s)) continue;
 				// format 12: every levy is recorded wherever it stands; one outside the captured terrain gets terrain cells of its own
-				if (Math.Abs(n.Center.X - p.Center.X) > LevyRangePx || Math.Abs(n.Center.Y - p.Center.Y) > LevyRangePx) WantFarTerrain(n.Center.X, n.Center.Y);
+				if (Math.Abs(n.Center.X - p.Center.X) > LevyRangePx || Math.Abs(n.Center.Y - p.Center.Y) > LevyRangePx) _anch.Add((n.Center.X, n.Center.Y, true));
 				int id = LevyId(s, n.whoAmI);
 				if (s.Record != null && !_soldiers.ContainsKey(id)) _soldiers[id] = s.Record.Name;
 				SeeEntity(n.Center.X, n.Center.Y);
@@ -981,6 +982,8 @@ namespace Levy.Common.Recording
 			}
 			_inA.Clear();
 			GrowTerrain();
+			// after the captured area grew: what is still outside it gets cells (the commander and bosses a wide window, far levies a smaller one)
+			foreach (var a in _anch) { if (a.far) WantFarTerrain(a.x, a.y); else WantFarTerrain(a.x, a.y, MoveX, MoveY, far: false); }
 			PumpFarTerrain();
 			Line(FightRecFormat.Frame(f));
 			_frames++;

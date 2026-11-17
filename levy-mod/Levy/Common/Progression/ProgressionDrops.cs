@@ -87,7 +87,7 @@ namespace Levy.Common.Progression
 		static readonly Dictionary<int, bool> materialCache = new();
 
 		public override void PostSetupRecipes() => Ensure();
-		public override void Unload() { chained.Clear(); rerolled.Clear(); materialCache.Clear(); baseMaterials = null; done = false; ArmyRules = RareRules = LuminiteRules = FragmentRules = 0; }
+		public override void Unload() { chained.Clear(); rerolled.Clear(); materialCache.Clear(); baseMaterials = null; NotArmyAnyMore.Clear(); done = false; ArmyRules = RareRules = LuminiteRules = FragmentRules = 0; }
 
 		/// <summary>An ore, bar or crafting material (not weapons, armor, pets, trophies or coins). A base-game item is a material when a base-game recipe uses it: another mod's recipe that
 		/// takes a boss mask or a trophy (Fargo's Mutant Mod) does not make it a boss material. A mod's item is a material when any recipe uses it.</summary>
@@ -101,7 +101,7 @@ namespace Levy.Common.Progression
 		}
 
 		static HashSet<int> baseMaterials;
-		/// <summary>Base-game items a base-game recipe uses (its ingredients and the members of its recipe groups), disabled recipes included: the same set whatever other mods are loaded.</summary>
+		/// <summary>Base-game items an enabled base-game recipe uses (its ingredients and the members of its recipe groups), the way tModLoader marks materials but counting base-game recipes only.</summary>
 		internal static HashSet<int> BaseGameMaterials()
 		{
 			if (baseMaterials != null) return baseMaterials;
@@ -109,7 +109,7 @@ namespace Levy.Common.Progression
 			for (int i = 0; i < Recipe.numRecipes; i++)
 			{
 				Recipe r = Main.recipe[i];
-				if (r == null || r.Mod != null) continue;
+				if (r == null || r.Mod != null || r.Disabled) continue;
 				foreach (Item ing in r.requiredItem) if (ing != null && ing.type > 0 && ing.type < ItemID.Count) s.Add(ing.type);
 				foreach (int g in r.acceptedGroups) if (g >= 0) groups.Add(g);
 			}
@@ -118,6 +118,25 @@ namespace Levy.Common.Progression
 			if (Recipe.numRecipes > 0) baseMaterials = s; // before the recipes exist, do not keep an empty answer
 			return s;
 		}
+
+		/// <summary>The recipes that use an item, as "result (mod, disabled)" (self-check detail).</summary>
+		internal static string UsedBy(int itemId, int max = 6)
+		{
+			var l = new List<string>();
+			for (int i = 0; i < Recipe.numRecipes && l.Count < max; i++)
+			{
+				Recipe r = Main.recipe[i];
+				if (r == null) continue;
+				bool uses = false;
+				foreach (Item ing in r.requiredItem) if (ing != null && ing.type == itemId) { uses = true; break; }
+				if (!uses) foreach (int g in r.acceptedGroups) if (g >= 0 && RecipeGroup.recipeGroups.TryGetValue(g, out var grp) && grp.ContainsItem(itemId)) { uses = true; break; }
+				if (uses) l.Add(Lang.GetItemNameValue(r.createItem.type) + " (" + (r.Mod?.Name ?? "base game") + (r.Disabled ? ", disabled" : "") + ")");
+			}
+			return string.Join("; ", l);
+		}
+
+		/// <summary>Base-game boss drops that another mod's recipe made a material: the army loot bonus no longer applies to them (diagnostics, filled by <see cref="Ensure"/>).</summary>
+		internal static readonly HashSet<int> NotArmyAnyMore = new();
 
 		/// <summary>Base-game items that other mods' recipes make materials but the base game does not (diagnostics: these get no army bonus as boss drops).</summary>
 		internal static List<int> ThirdPartyOnlyMaterials()
@@ -161,6 +180,7 @@ namespace Levy.Common.Progression
 			{
 				bool frag = Array.IndexOf(Fragments, obo.itemId) >= 0;
 				bool army = boss && IsMaterial(obo.itemId);
+				if (boss && !army && obo.itemId > 0 && obo.itemId < ItemID.Count && ItemID.Sets.IsAMaterial[obo.itemId]) NotArmyAnyMore.Add(obo.itemId);
 				if ((frag || army) && chained.Add(rule))
 				{
 					var p = obo.parameters;
@@ -177,6 +197,7 @@ namespace Levy.Common.Progression
 			{
 				bool lum = cd.itemId == ItemID.LunarOre;
 				bool army = boss && IsMaterial(cd.itemId);
+				if (boss && !army && cd.itemId > 0 && cd.itemId < ItemID.Count && ItemID.Sets.IsAMaterial[cd.itemId]) NotArmyAnyMore.Add(cd.itemId);
 				if ((lum || army) && chained.Add(rule))
 				{
 					int mn = cd.amountDroppedMinimum, mx = cd.amountDroppedMaximum;

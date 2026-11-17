@@ -45,7 +45,7 @@ namespace Levy.Common.Weapons
 		internal static bool WantsAnchor(Projectile p) =>
 			IsAnchoredType(p.type) && p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex >= 0;
 
-		internal static void RunAi(Action<Projectile> orig, Projectile p)
+		internal static void RunAi(On_Projectile.orig_AI orig, Projectile p)
 		{
 			SoldierNPC body = BodyOf(p);
 			if (body == null)
@@ -94,12 +94,11 @@ namespace Levy.Common.Weapons
 	/// <summary>Installs the Projectile.AI wrapper for the Zenith swords and keeps slot 255 clean around the projectile phase.</summary>
 	public class MiscProjSwapSystem : ModSystem
 	{
-		public override void Load() { On_Projectile.AI += AiDetour; On_Projectile.VanillaAI += VanillaAiDetour; }
+		public override void Load() => On_Projectile.AI += AiDetour;
 
 		public override void Unload()
 		{
 			On_Projectile.AI -= AiDetour;
-			On_Projectile.VanillaAI -= VanillaAiDetour;
 			EnemyTargeting.EnsureSlotRestored();
 		}
 
@@ -108,14 +107,7 @@ namespace Levy.Common.Weapons
 
 		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)
 		{
-			if (MiscProjSwap.WantsAnchor(self)) MiscProjSwap.RunAi(p => orig(p), self);
-			else orig(self);
-		}
-
-		/// <summary>Projectile.AI is a one-line stub the JIT inlines into Projectile.Update, so its detour is never reached once Update is hot; the same wrapper on VanillaAI (the body the loader calls) is. Whichever fires first opens the swap, the other passes through.</summary>
-		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self)
-		{
-			if (!EnemyTargeting.IsSwapped && MiscProjSwap.WantsAnchor(self)) MiscProjSwap.RunAi(p => orig(p), self);
+			if (MiscProjSwap.WantsAnchor(self)) MiscProjSwap.RunAi(orig, self);
 			else orig(self);
 		}
 	}

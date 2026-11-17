@@ -26,7 +26,7 @@ namespace Levy.Common.Perf
 	/// </summary>
 	public partial class PerfAnalyzer : ModSystem
 	{
-		public const int SampleEvery = 11, LevySampleEvery = 66, DrawSampleEvery = 4, LogFlushSecs = 9;
+		public const int SampleEvery = 11, LevySampleEvery = 264, DrawSampleEvery = 4, LogFlushSecs = 9;
 		public const double WindowSecs = 8.0;
 		private static readonly double Freq = Stopwatch.Frequency;
 

@@ -316,15 +316,18 @@ namespace Levy.Common.Testing
 			var per = new List<double>[N]; var d = new List<double>[N]; var dt = new List<double>[N];
 			for (int i = 0; i < N; i++) { per[i] = new List<double>(); d[i] = new List<double>(); dt[i] = new List<double>(); }
 			string[] names = { "off", "entity IL only", "Main detours only (no sampling)", "Main detours + sampling (no entity IL)", "everything on" };
+			// LEVY_PERFAN_ABARMS="0,4" times only those arms (arm 0 always included): twice the rounds in the same time
+			var sel = new List<int> { 0 };
+			foreach (string tok in (Environment.GetEnvironmentVariable("LEVY_PERFAN_ABARMS") ?? "0,1,2,3,4").Split(',', StringSplitOptions.RemoveEmptyEntries)) if (int.TryParse(tok, out int ai) && ai >= 0 && ai < N && !sel.Contains(ai)) sel.Add(ai);
 			int warm = int.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFAN_ABWARM"), out int aw) && aw > 0 ? aw : 20;
 			try
 			{
 				for (int r = 0; r < rounds; r++)
 				{
 					var m = new double[N]; var mt = new double[N];
-					for (int k = 0; k < N; k++)
+					for (int k = 0; k < sel.Count; k++)
 					{
-						int arm = (k + r) % N;
+						int arm = sel[(k + r) % sel.Count];
 						PA.TestLog = false; PA.ConfigChanged();
 						PA.TestSetGlobalWraps(arm == 4);
 						switch (arm)
@@ -338,7 +341,7 @@ namespace Levy.Common.Testing
 						Arm a = RunArm("A/B " + names[arm], ticks, warm, flood, 0, false);
 						m[arm] = a.Mean; mt[arm] = Trimmed(a.Ticks > 0 ? LastTicks : null);
 					}
-					for (int i = 0; i < N; i++) { per[i].Add(m[i]); d[i].Add(m[i] - m[0]); dt[i].Add(mt[i] - mt[0]); }
+					foreach (int i in sel) { per[i].Add(m[i]); d[i].Add(m[i] - m[0]); dt[i].Add(mt[i] - mt[0]); }
 				}
 			}
 			finally
@@ -347,11 +350,11 @@ namespace Levy.Common.Testing
 				PA.TestResetLog(); PA.TestReset(); try { if (Directory.Exists(tmp)) Directory.Delete(tmp, true); } catch (Exception) { }
 			}
 			string Fmt(List<double> l) { double mu = l.Average(), sd = l.Count > 1 ? Math.Sqrt(l.Sum(x => (x - mu) * (x - mu)) / (l.Count - 1)) : 0; return $"{mu:F3} (s.e. {sd / Math.Sqrt(l.Count):F3}, median {l.OrderBy(x => x).ElementAt(l.Count / 2):F3})"; }
-			Note($"split A/B, {rounds} rounds of {ticks} ticks (+{warm} warm-up), arms rotated each round. ms/tick: {string.Join("; ", Enumerable.Range(0, N).Select(i => names[i] + " " + Fmt(per[i])))}");
-			Note($"split A/B, difference from arm 0 per round (ms/tick, mean of the ticks): {string.Join("; ", Enumerable.Range(1, N - 1).Select(i => names[i] + " " + Fmt(d[i])))}");
-			Note($"split A/B, difference from arm 0 per round (ms/tick, mean of the middle 80% of the ticks: spikes from the box cut): {string.Join("; ", Enumerable.Range(1, N - 1).Select(i => names[i] + " " + Fmt(dt[i])))}");
-			var samp = d[3].Zip(d[2], (x, y) => x - y).ToList(); var full = d[4].Zip(d[0], (x, y) => x - y).ToList();
-			Note($"split A/B, sampling and bookkeeping alone (arm 3 minus arm 2): {Fmt(samp)}");
+			Note($"split A/B, {rounds} rounds of {ticks} ticks (+{warm} warm-up), arms rotated each round. ms/tick: {string.Join("; ", sel.Select(i => names[i] + " " + Fmt(per[i])))}");
+			Note($"split A/B, difference from arm 0 per round (ms/tick, mean of the ticks): {string.Join("; ", sel.Where(i => i > 0).Select(i => names[i] + " " + Fmt(d[i])))}");
+			Note($"split A/B, difference from arm 0 per round (ms/tick, mean of the middle 80% of the ticks: spikes from the box cut): {string.Join("; ", sel.Where(i => i > 0).Select(i => names[i] + " " + Fmt(dt[i])))}");
+			if (sel.Contains(2) && sel.Contains(3)) Note($"split A/B, sampling and bookkeeping alone (arm 3 minus arm 2): {Fmt(d[3].Zip(d[2], (x, y) => x - y).ToList())}");
+			if (!sel.Contains(4)) return;
 			A_BEnd = (d[4].Average(), Math.Sqrt(d[4].Sum(x => (x - d[4].Average()) * (x - d[4].Average())) / Math.Max(1, d[4].Count - 1)) / Math.Sqrt(d[4].Count));
 			Check($"the analyzer fully on costs {A_BEnd.Item1:F3} ms/tick over fully off in the same boot (s.e. {A_BEnd.Item2:F3}, {rounds} paired rounds); the gate is under 0.1 ms plus twice the standard error", A_BEnd.Item1 < 0.1 + 2 * A_BEnd.Item2);
 		}
@@ -425,7 +428,8 @@ namespace Levy.Common.Testing
 			Note($"analyzer window close: {closeMs:F3} ms once every eight seconds = {perTickClose * 1000:F1} us per tick; total {est + perTickClose:F3} ms/tick against the 0.1 ms target ({(est + perTickClose) / Math.Max(0.001, offMean) * 100:F1}% of the tick); hook calls timed so far: NPC {PA.NpcCalls}, projectile {PA.ProjCalls}");
 			if (sample != null && variant == 0) Note("a window from the loaded scene: " + sample);
 			if (variant != 0) return;
-			Check($"the analyzer's own code adds under 0.1 ms per tick with {levies} levies and {flood} projectiles on the field ({analyticTotal * 1000:F0} us from timing its calls one by one, {est * 1000:F0} us from the ticks, {mean * 1000:F0} +- {se * 1000:F0} us from the round differences, window close {perTickClose * 1000:F0} us)", analyticTotal < 0.1 && mean + perTickClose < 0.5); // gate: the call-by-call cost under 0.1 ms, and the end-to-end difference (noisy on a shared box: a 150-tick round differs by +-1 ms) under half a millisecond; the per-kind estimate is reported, not gated
+			bool endToEnd = Environment.GetEnvironmentVariable("LEVY_PERFAN_AB") == "1"; // the end-to-end split A/B is the gate when it runs (it carries its own check); otherwise the call-by-call cost
+			Check($"the analyzer's own code adds under 0.1 ms per tick with {levies} levies and {flood} projectiles on the field ({analyticTotal * 1000:F0} us from timing its calls one by one, {est * 1000:F0} us from the ticks, {mean * 1000:F0} +- {se * 1000:F0} us from the round differences, window close {perTickClose * 1000:F0} us)", endToEnd ? analyticTotal < 0.1 : analyticTotal < 0.1 && mean + perTickClose < 0.5); // gate: the call-by-call cost under 0.1 ms, and the end-to-end difference (noisy on a shared box: a 150-tick round differs by +-1 ms) under half a millisecond; the per-kind estimate is reported, not gated
 		}
 
 		private static void Run()

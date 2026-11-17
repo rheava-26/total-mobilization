@@ -302,7 +302,7 @@ namespace Levy.Common.Weapons
 					var pouch = s.Record.Gear.Ammo;
 					return pouch != null && !pouch.IsAir && pouch.stack > 0 && pouch.ammo == profile.UseAmmo && (pouch.shoot > 0 || item.shoot > 0);
 				case WeaponFamily.Magic:
-					return s.Record.Mana >= ManaCostOf(s, item);
+					return UseCycle.MidBurst(s, item) || s.Record.Mana >= ManaCostOf(s, item); // the rest of a paid-for animation needs no more mana
 				case WeaponFamily.HeldWeapon:
 					if (profile.UseAmmo > 0) { var hp = s.Record.Gear.Ammo; return hp != null && !hp.IsAir && hp.stack > 0 && hp.ammo == profile.UseAmmo; }
 					return s.Record.Mana >= ManaCostOf(s, item);
@@ -402,8 +402,8 @@ namespace Levy.Common.Weapons
 
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, pouch.type);
-			bool fired = TryRealShoot(s, item, profile, target, pouch.type, muzzle, vel, projType, damage, knockback);
-			if (!fired && !_altActive) fired = FirePlain(s, item, profile, target, muzzle, vel, projType, damage, knockback);
+			bool fired = TryRealShoot(s, item, profile, target, pouch.type, muzzle, vel, projType, damage, knockback, out bool declined);
+			if (!fired && !_altActive && !declined) fired = FirePlain(s, item, profile, target, muzzle, vel, projType, damage, knockback); // the weapon chose no shot: a player gets none either
 			if (!fired) return Dud(s, item); // nothing came out: keep the ammo, hold
 
 			if (ConsumesAmmo(s, item, pouch))
@@ -438,7 +438,8 @@ namespace Levy.Common.Weapons
 
 		private static bool FireMagic(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
 		{
-			int cost = ManaCostOf(s, item);
+			// A player pays a staff's mana once, when the use starts (Player.ItemCheck_CheckCanUse); the further shots of the same animation (Nucleosynthesis's four beams, a burst tome) are free.
+			int cost = UseCycle.MidBurst(s, item) ? 0 : ManaCostOf(s, item);
 			if (s.Record.Mana < cost) { DudTrace.Note(item, "mana-short"); return false; }
 			int projType = item.shoot;
 			if (projType <= 0) return Dud(s, item);
@@ -449,8 +450,8 @@ namespace Levy.Common.Weapons
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, -1);
 			ItemShots.PreShoot(s, projType); // vanilla's kill-the-previous-one rule (Rainbow Gun) runs before any shot path spawns
-			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack);
-			if (!fired && !_altActive) fired = FirePlain(s, item, profile, target, muzzle, vel, projType, damage, item.knockBack);
+			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack, out bool declined);
+			if (!fired && !_altActive && !declined) fired = FirePlain(s, item, profile, target, muzzle, vel, projType, damage, item.knockBack); // the weapon chose no shot: a player gets none either
 			if (!fired) { DudTrace.Note(item, "magic-nothing-spawned"); return Dud(s, item); } // nothing came out: keep the mana, hold
 			DudTrace.Note(item, "magic-fired");
 			s.Record.Mana -= cost;
@@ -539,11 +540,19 @@ namespace Levy.Common.Weapons
 		/// Fires through the weapon's own hooks: CombinedHooks.ModifyShootStats then CombinedHooks.Shoot (ModItem/GlobalItem/ModPlayer Shoot) with the
 		/// soldier's dummy as the player, exactly the pair Player.ItemCheck_Shoot calls. Projectiles the hooks spawned are re-owned and tagged.
 		/// When the hooks leave the default shot to us (they return true) the weapon's vanilla special (Daedalus Stormbow rain, Blood Rain Bow) or the
-		/// profile's multishot spread is fired with the hook-modified stats. Returns false when nothing was fired and the caller should use the
-		/// plain manual path: feature disabled, no dummy, or the hooks returned false without spawning anything.
+		/// profile's multishot spread is fired with the hook-modified stats. Returns false when nothing was fired.
+		/// <para/>The hooks run inside the player use cycle of this shot (<see cref="UseCycle"/>: itemAnimation, itemTime, ItemUsesThisAnimation and reuseDelay as Player.ItemCheck has them when it
+		/// shoots), after the weapon's own CanShoot, so a weapon that picks its projectile from the animation (Nucleosynthesis) or skips a tick fires exactly what it fires for a player.
+		/// <paramref name="declined"/> is true when the hooks ran and the weapon itself chose to make nothing (CanShoot false, or Shoot returned false and spawned nothing): a player gets nothing from
+		/// that shot, so the caller must NOT fire the item's <c>shoot</c> in its place (for a modded weapon that is often a placeholder: Nucleosynthesis's is a wooden arrow). It is false when the
+		/// hooks could not run (feature off, no dummy) or threw: there the caller's own manual path is the fallback.
 		/// </summary>
-		private static bool TryRealShoot(SoldierNPC s, Item item, WeaponProfile profile, NPC target, int ammoItemId, Vector2 muzzle, Vector2 vel, int projType, int damage, float knockback)
+		private static bool TryRealShoot(SoldierNPC s, Item item, WeaponProfile profile, NPC target, int ammoItemId, Vector2 muzzle, Vector2 vel, int projType, int damage, float knockback) =>
+			TryRealShoot(s, item, profile, target, ammoItemId, muzzle, vel, projType, damage, knockback, out _);
+
+		private static bool TryRealShoot(SoldierNPC s, Item item, WeaponProfile profile, NPC target, int ammoItemId, Vector2 muzzle, Vector2 vel, int projType, int damage, float knockback, out bool declined)
 		{
+			declined = false;
 			if (!LevyConfig.Get.RealWeaponShoot) return false;
 			Player d = s.Dummy;
 			if (d == null || item == null || item.IsAir) return false;
@@ -553,9 +562,10 @@ namespace Levy.Common.Weapons
 
 			int savedWho = d.whoAmI, savedDir = d.direction; Vector2 savedCenter = d.Center; bool savedUse = d.controlUseItem;
 			Vector2 pos = muzzle, v = vel; int type = projType, dmg = damage; float kb = knockback;
-			bool useDefault = false, threw = false;
+			bool useDefault = false, threw = false, canShoot = true;
 			object thoriumPrev = null;
 			AltPolicies.AimScope aim = default;
+			UseCycle.Scope cycle = default;
 			try
 			{
 				// The cursor is on the target while the hooks run (items that place or steer something at the cursor then act on the enemy, as for a player aiming).
@@ -567,17 +577,22 @@ namespace Levy.Common.Weapons
 				if (!ReferenceEquals(d.inventory[0], item)) d.inventory[0] = item;
 				d.selectedItem = 0;
 				thoriumPrev = OwnerPuppet.SwapThorium(d); // experiment (harness-gated): SetLocalThoriumPlayer(dummy's) AFTER d.whoAmI == Main.myPlayer (its own guard)
-				bool track = Testing.CombatHarness.CmdTrack; Vector2 dv0 = track ? d.velocity : default, cv0 = track ? Main.player[0].velocity : default, cp0 = track ? Main.player[0].position : default;
-				CombinedHooks.ModifyShootStats(d, item, ref pos, ref v, ref type, ref dmg, ref kb);
-				if (track && (d.velocity != dv0 || Main.player[0].velocity != cv0 || Main.player[0].position != cp0))
-					ModContent.GetInstance<Levy>()?.Logger.Info($"[CmdTrack] ModifyShootStats of {item.Name}: dummy.velocity {dv0}->{d.velocity}; whoAmI={d.whoAmI} sameAsSlot={ReferenceEquals(Main.player[d.whoAmI], d)}; player0.velocity {cv0}->{Main.player[0].velocity}; player0.position {cp0}->{Main.player[0].position}");
+				cycle = UseCycle.Enter(s, d, item); // itemAnimation / itemTime / ItemUsesThisAnimation / reuseDelay as the player's ItemCheck has them at this shot
 				// Hold-to-fire weapons (modded channeled guns) only spawn their shot while the owner's use button is down: the soldier is firing.
 				d.controlUseItem = true;
-				var source = new EntitySource_ItemUse_WithAmmo(d, item, ammoItemId);
-				useDefault = CombinedHooks.Shoot(d, item, source, pos, v, type, dmg, kb);
+				canShoot = CombinedHooks.CanShoot(d, item); // Player.ItemCheck_Shoot asks it first: false = no shot from this use
+				if (canShoot)
+				{
+					bool track = Testing.CombatHarness.CmdTrack; Vector2 dv0 = track ? d.velocity : default, cv0 = track ? Main.player[0].velocity : default, cp0 = track ? Main.player[0].position : default;
+					CombinedHooks.ModifyShootStats(d, item, ref pos, ref v, ref type, ref dmg, ref kb);
+					if (track && (d.velocity != dv0 || Main.player[0].velocity != cv0 || Main.player[0].position != cp0))
+						ModContent.GetInstance<Levy>()?.Logger.Info($"[CmdTrack] ModifyShootStats of {item.Name}: dummy.velocity {dv0}->{d.velocity}; whoAmI={d.whoAmI} sameAsSlot={ReferenceEquals(Main.player[d.whoAmI], d)}; player0.velocity {cv0}->{Main.player[0].velocity}; player0.position {cp0}->{Main.player[0].position}");
+					var source = new EntitySource_ItemUse_WithAmmo(d, item, ammoItemId);
+					useDefault = CombinedHooks.Shoot(d, item, source, pos, v, type, dmg, kb);
+				}
 			}
 			catch (Exception) { threw = true; }
-			finally { aim.Dispose(); OwnerPuppet.RestoreThorium(thoriumPrev); d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; d.controlUseItem = savedUse; }
+			finally { cycle.Dispose(); aim.Dispose(); OwnerPuppet.RestoreThorium(thoriumPrev); d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; d.controlUseItem = savedUse; }
 
 			DamageClass dmgType = profile.Family == WeaponFamily.Broadsword ? (item.DamageType ?? DamageClass.Melee) : profile.DamageType;
 			int adopted = 0;
@@ -591,8 +606,8 @@ namespace Levy.Common.Weapons
 			}
 			// A hook that threw may already have fired: keep what it spawned rather than firing a second shot on top of it.
 			if (threw) { DudTrace.Note(item, "hooks-threw"); return adopted > 0; }
-			if (adopted == 0) DudTrace.Note(item, useDefault ? "hooks-0-default" : "hooks-0-nodefault");
-			if (!useDefault) return adopted > 0;
+			if (adopted == 0) DudTrace.Note(item, !canShoot ? "hooks-0-cannotshoot" : useDefault ? "hooks-0-default" : "hooks-0-nodefault");
+			if (!useDefault) { declined = adopted == 0; return adopted > 0; } // the weapon made its own shot, or chose to make none this use: never a stand-in on top
 
 			DefaultShoot(s, item, profile, target, pos, v, type, dmg, kb);
 			return true;
@@ -712,8 +727,8 @@ namespace Levy.Common.Weapons
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimThrow(s, muzzle, target, projType, item.shootSpeed);
 			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier)); // a bomb item has no damage: the blast writes its own (PrepareBombToBlow)
-			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack);
-			if (!fired) fired = FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile) > 0;
+			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack, out bool declined);
+			if (!fired && !declined) fired = FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile) > 0;
 			if (!fired) return Dud(s, item); // nothing came out: keep the stack, hold
 
 			FinishUse(s, item, vel); // before the stack can empty: the cooldown and use sound come from the item
@@ -752,8 +767,8 @@ namespace Levy.Common.Weapons
 			if (projType == ProjectileID.VampireKnife) fired = FireVampireKnives(s, muzzle, vel, damage, item.knockBack) > 0;
 			else
 			{
-				fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack);
-				if (!fired) fired = FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile) > 0;
+				fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack, out bool declined);
+				if (!fired && !declined) fired = FireSpread(s, muzzle, vel, projType, damage, item.knockBack, profile) > 0;
 			}
 			if (!fired) return Dud(s, item); // nothing came out: hold
 			FinishUse(s, item, vel);
@@ -892,7 +907,7 @@ namespace Levy.Common.Weapons
 				if (item.type == ItemID.IceSickle) damage = Math.Max(1, (int)(damage * 0.67)); // Player.ItemCheck_Shoot: totalDamage * 0.67
 				Vector2 vel = Aiming.SolveIntercept(s.NPC.Center, speed, target.Center, target.velocity, WeaponClassifier.ProjectileHasGravity(item.shoot), LevyConstants.ArrowGravity, LevyConstants.ArrowGravityDelayTicks);
 				DamageClass beamType = item.DamageType ?? DamageClass.Melee;
-				if (!TryRealShoot(s, item, profile, target, 0, s.NPC.Center, vel, item.shoot, damage, item.knockBack)
+				if (!TryRealShoot(s, item, profile, target, 0, s.NPC.Center, vel, item.shoot, damage, item.knockBack, out bool declined) && !declined // the blade chose no projectile this swing: the swing alone, as for a player
 					&& !SkyDrop.TryFire(s, item, profile, target, s.NPC.Center, vel, item.shoot, damage, item.knockBack))
 					Spawn(s, s.NPC.Center, vel, item.shoot, damage, item.knockBack, beamType);
 			}
@@ -1047,7 +1062,7 @@ namespace Levy.Common.Weapons
 		internal static void FinishUse(SoldierNPC s, Item item, Vector2 aimVel)
 		{
 			// A running animation keeps going (burst weapons fire several shots per animation, one every useTime); a new use starts a fresh one.
-			if (s.ItemAnimation <= 0) { s.ItemAnimation = s.ItemAnimationMax = Math.Max(Math.Max(1, item.useAnimation), SwingFloor(item)); s.UsesThisAnimation = 0; }
+			if (s.ItemAnimation <= 0) { s.ItemAnimation = s.ItemAnimationMax = UseCycle.AnimationFor(item); s.UsesThisAnimation = 0; } // the same animation UseCycle showed the shot's hooks
 			s.UsesThisAnimation++;
 			s.AttackCooldown = Math.Max(Math.Max(1, item.useTime), SwingFloor(item));
 			s.LastUseTick = Main.GameUpdateCount; // gear upkeep shows the dummy a "first frame of a use" next tick (Calamity consumes stealth off it)

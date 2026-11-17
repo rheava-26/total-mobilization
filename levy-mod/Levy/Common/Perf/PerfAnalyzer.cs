@@ -140,7 +140,7 @@ namespace Levy.Common.Perf
 			try
 			{
 				_tick++; _army = false; _gsp = 0;
-				_sample = _tick % SampleEvery == 0;
+				_sample = !TestNoSample && _tick % SampleEvery == 0;
 				if (_sample)
 				{
 					_userProf = ClientProf.IsRunning || LevyProf.OnFromStart;
@@ -506,6 +506,14 @@ namespace Levy.Common.Perf
 		internal static bool TestFault; internal static bool LastTickSampled, LastTickLevy;
 		internal static long DustThinned;
 		internal static void TestWrapContent() => WrapContent();
+		/// <summary>Self-check A/B only: attach just the pieces asked for (the entity IL edits, the Main detours), and with noSample never sample.</summary>
+		internal static bool TestNoSample;
+		internal static void TestPieces(bool il, bool main, bool noSample)
+		{
+			TestNoSample = noSample;
+			if (il) AttachContext(); else DetachContext();
+			if (main) AttachTiming(); else DetachTiming();
+		}
 		internal static void TestCommit(PerfWindow w) { Commit(w); }
 		internal static void TestSetArmyCtx(bool on) { _army = on; }
 	}

@@ -267,6 +267,7 @@ namespace Levy.Common.Testing
 					int pj = 0; for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active && Main.projectile[i].hostile) pj++; projSum += pj;
 				}
 			}
+			LastTicks = cpu;
 			var sorted = cpu.OrderBy(x => x).ToList();
 			var a = new Arm
 			{
@@ -302,37 +303,61 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_PERFAN_AB") == "1") try { AnalyzerWrapAB(ticks, flood, int.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFAN_ABROUNDS"), out int ar) && ar > 0 ? ar : 24); } catch (Exception e) { Note("wrap A/B did not run: " + e.Message); }
 		}
 
-		/// <summary>Same boot, four arms in rotating order: (0) analyzer off, global AI hook wraps removed; (1) analyzer off, wraps in place; (2) analyzer on, wraps removed; (3) analyzer on, wraps in place. Differences against arm 0, per round, with their standard error.</summary>
+		/// <summary>
+		/// Same boot, the analyzer split into its pieces, one arm each, in an order rotated every round so a box that speeds up or slows down cannot favour one arm. Every arm is timed in thread CPU time per tick and compared with arm 0
+		/// of the same round (paired differences, standard error over the rounds). Arms: (0) analyzer off, nothing attached; (1) the entity IL edits only (NPC.UpdateNPC, Projectile.Update); (2) the Main detours only, no sampling;
+		/// (3) the Main detours with the sampling and bookkeeping, no entity IL; (4) everything the analyzer does, global hook wraps included.
+		/// </summary>
 		private static void AnalyzerWrapAB(int ticks, int flood, int rounds)
 		{
 			string tmp = Path.Combine(Path.GetTempPath(), "levy_perfan_ab_" + Guid.NewGuid().ToString("N").Substring(0, 8));
 			PA.TestServer = true; PA.TestLogDir = tmp; PA.TestWindowSecs = 1e9;
-			var per = new List<double>[4]; var d = new List<double>[4];
-			for (int i = 0; i < 4; i++) { per[i] = new List<double>(); d[i] = new List<double>(); }
-			string[] names = { "off, no wraps", "off, wraps in place", "on, no wraps", "on, wraps in place" };
+			const int N = 5;
+			var per = new List<double>[N]; var d = new List<double>[N]; var dt = new List<double>[N];
+			for (int i = 0; i < N; i++) { per[i] = new List<double>(); d[i] = new List<double>(); dt[i] = new List<double>(); }
+			string[] names = { "off", "entity IL only", "Main detours only (no sampling)", "Main detours + sampling (no entity IL)", "everything on" };
+			int warm = int.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFAN_ABWARM"), out int aw) && aw > 0 ? aw : 20;
 			try
 			{
 				for (int r = 0; r < rounds; r++)
 				{
-					var m = new double[4];
-					for (int k = 0; k < 4; k++)
+					var m = new double[N]; var mt = new double[N];
+					for (int k = 0; k < N; k++)
 					{
-						int arm = (k + r) % 4; bool on = arm >= 2, wraps = arm == 1 || arm == 3;
-						PA.TestSetGlobalWraps(wraps); PA.TestLog = on; PA.ConfigChanged();
-						m[arm] = RunArm("A/B " + names[arm], ticks, 30, flood, 0, false).Mean;
+						int arm = (k + r) % N;
+						PA.TestLog = false; PA.ConfigChanged();
+						PA.TestSetGlobalWraps(arm == 4);
+						switch (arm)
+						{
+							case 0: PA.TestPieces(false, false, true); break;
+							case 1: PA.TestPieces(true, false, true); break;
+							case 2: PA.TestPieces(false, true, true); break;
+							case 3: PA.TestPieces(false, true, false); break;
+							default: PA.TestPieces(true, true, false); break;
+						}
+						Arm a = RunArm("A/B " + names[arm], ticks, warm, flood, 0, false);
+						m[arm] = a.Mean; mt[arm] = Trimmed(a.Ticks > 0 ? LastTicks : null);
 					}
-					for (int i = 0; i < 4; i++) { per[i].Add(m[i]); d[i].Add(m[i] - m[0]); }
+					for (int i = 0; i < N; i++) { per[i].Add(m[i]); d[i].Add(m[i] - m[0]); dt[i].Add(mt[i] - mt[0]); }
 				}
 			}
 			finally
 			{
-				PA.TestSetGlobalWraps(true); PA.TestLog = false; PA.ConfigChanged(); PA.TestServer = false; PA.TestWindowSecs = null; PA.TestLogDir = null;
+				PA.TestSetGlobalWraps(true); PA.TestNoSample = false; PA.TestLog = false; PA.ConfigChanged(); PA.TestServer = false; PA.TestWindowSecs = null; PA.TestLogDir = null;
 				PA.TestResetLog(); PA.TestReset(); try { if (Directory.Exists(tmp)) Directory.Delete(tmp, true); } catch (Exception) { }
 			}
 			string Fmt(List<double> l) { double mu = l.Average(), sd = l.Count > 1 ? Math.Sqrt(l.Sum(x => (x - mu) * (x - mu)) / (l.Count - 1)) : 0; return $"{mu:F3} (s.e. {sd / Math.Sqrt(l.Count):F3}, median {l.OrderBy(x => x).ElementAt(l.Count / 2):F3})"; }
-			Note($"wrap A/B, {rounds} rounds of {ticks} ticks, arms rotated each round. ms/tick: {string.Join("; ", Enumerable.Range(0, 4).Select(i => names[i] + " " + Fmt(per[i])))}");
-			Note($"wrap A/B, difference from arm 0 per round: {string.Join("; ", Enumerable.Range(1, 3).Select(i => names[i] + " " + Fmt(d[i])))}");
+			Note($"split A/B, {rounds} rounds of {ticks} ticks (+{warm} warm-up), arms rotated each round. ms/tick: {string.Join("; ", Enumerable.Range(0, N).Select(i => names[i] + " " + Fmt(per[i])))}");
+			Note($"split A/B, difference from arm 0 per round (ms/tick, mean of the ticks): {string.Join("; ", Enumerable.Range(1, N - 1).Select(i => names[i] + " " + Fmt(d[i])))}");
+			Note($"split A/B, difference from arm 0 per round (ms/tick, mean of the middle 80% of the ticks: spikes from the box cut): {string.Join("; ", Enumerable.Range(1, N - 1).Select(i => names[i] + " " + Fmt(dt[i])))}");
+			var samp = d[3].Zip(d[2], (x, y) => x - y).ToList(); var full = d[4].Zip(d[0], (x, y) => x - y).ToList();
+			Note($"split A/B, sampling and bookkeeping alone (arm 3 minus arm 2): {Fmt(samp)}");
+			A_BEnd = (d[4].Average(), Math.Sqrt(d[4].Sum(x => (x - d[4].Average()) * (x - d[4].Average())) / Math.Max(1, d[4].Count - 1)) / Math.Sqrt(d[4].Count));
+			Check($"the analyzer fully on costs {A_BEnd.Item1:F3} ms/tick over fully off in the same boot (s.e. {A_BEnd.Item2:F3}, {rounds} paired rounds); the gate is under 0.1 ms plus twice the standard error", A_BEnd.Item1 < 0.1 + 2 * A_BEnd.Item2);
 		}
+		private static (double, double) A_BEnd;
+		private static double Trimmed(List<double> l) { if (l == null || l.Count == 0) return 0; var s = l.OrderBy(x => x).ToList(); int cut = s.Count / 10; return s.Skip(cut).Take(s.Count - 2 * cut).Average(); }
+		private static List<double> LastTicks;
 
 		private static void AnalyzerArmsOne(int ticks, int flood, int rounds, int variant)
 		{

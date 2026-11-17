@@ -133,7 +133,6 @@ namespace Levy.Common.Testing
 				Note("deadhooks: three levies each with the Zenith and the Laser Machinegun, 150 ticks each: " + HookProbe.Describe(d1));
 				Check($"deadhooks: the held-weapon wrapper is entered through a hook that fires (Projectile.AI {HookProbe.Part(d1, "HeldAi")} / VanillaAI {HookProbe.Part(d1, "HeldVanilla")} / loader {HookProbe.Part(d1, "HeldLoader")} entries)", HookProbe.Part(d1, "HeldAi") + HookProbe.Part(d1, "HeldVanilla") > 0);
 				Check($"deadhooks: the Zenith swords were anchored to their levy by the wrapper ({HookProbe.Part(d1, "MiscActed")} wrapped AI calls)", HookProbe.Part(d1, "MiscActed") > 0);
-				Check($"deadhooks: a soldier shot's AI runs with its levy's weapon in the owner's hand ({HookProbe.Part(d1, "ViewActed")} calls, {HookProbe.Part(d1, "ViewMismatch")} where Player.HeldItem was not the levy's item)", HookProbe.Part(d1, "ViewActed") > 0 && HookProbe.Part(d1, "ViewMismatch") == 0);
 				if (HookProbe.SoundWatch)
 					Check($"deadhooks: the army sound throttle's projectile update hook fires ({HookProbe.Part(d1, "SoundUpdate")} updates) and a levy shot's AI runs classified as army ({HookProbe.Part(d1, "SoundInAi")} AI calls classified, {HookProbe.Part(d1, "SoundOutAi")} not)", HookProbe.Part(d1, "SoundUpdate") > 0 && HookProbe.Part(d1, "SoundInAi") > 0 && HookProbe.Part(d1, "SoundOutAi") == 0);
 				else Note("deadhooks: the army sound throttle is not installed on this machine (client only); its projectile hook is checked where LEVY_SELFCHECK_WORLD installs it");
@@ -185,6 +184,9 @@ namespace Levy.Common.Testing
 					}
 					catch (Exception e) { Note($"deadhooks: holdout {label} threw {e.GetType().Name}: {e.Message} @ {(e.StackTrace ?? "").Split('\n')[0].Trim()}"); }
 				}
+				int[] dAll = HookProbe.Delta(start);
+				if (list.Count > 0 && pick.Count > 0)
+					Check($"deadhooks: a soldier shot whose AI reads the owner's hand runs with its levy's weapon there ({HookProbe.Part(dAll, "ViewActed")} calls over {pick.Count} weapons, {HookProbe.Part(dAll, "ViewMismatch")} where Player.HeldItem was not the levy's item)", HookProbe.Part(dAll, "ViewActed") > 0 && HookProbe.Part(dAll, "ViewMismatch") == 0);
 				Note("deadhooks: totals: " + HookProbe.Snapshot());
 			}
 			finally { _spNet = false; _sweepTarget = null; ClearSoldiers(); ReleaseCommanderButtons(); }

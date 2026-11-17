@@ -34,6 +34,9 @@ namespace Levy.Common.Testing
 		{
 			if (!Main.dedServ || Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") != "1" || Environment.GetEnvironmentVariable("LEVY_SUMMONWORLD") == "0") return;
 			_mod = Mod; _armed = true; _done = false; _calls = 0; _pass = _fail = 0;
+			// the chain places test tile entities and stands a stand-in commander in slot 0: a world autosave that lands in the middle of it (the chain takes minutes on a loaded box, the timer is ten) would save that
+			// stand-in state and crashed the server in ModTileEntity.WriteExtraData. The ship world is never saved.
+			try { Main.autoSave = false; } catch (Exception) { }
 			Main.OnTickForThirdPartySoftwareOnly += Drive;
 		}
 		public override void OnWorldUnload() { try { Main.OnTickForThirdPartySoftwareOnly -= Drive; } catch { } _armed = false; }

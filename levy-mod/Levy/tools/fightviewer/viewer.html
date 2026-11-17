@@ -281,7 +281,12 @@ function computeCard(R,name,mtime){
   const bossHdr=h.boss&&h.boss!=="none"?String(h.boss).replace(/_/g," "):null;
   c.boss=(e&&e.bossName)||m.bossName||bossHdr||String(m.label||fi.boss||"Fight").replace(/_/g," ");
   c.when=h.date&&!isNaN(Date.parse(h.date))?Date.parse(h.date):(fi.date!=null?fi.date:(mtime!=null?mtime:null));
-  let res=e&&e.result; if(!res&&e) res=e.outcome==="killed"?"won":e.outcome==="despawn"?"fled":"ended";
+  let res=e&&e.result;
+  if(!res&&e){   // no result word in the file: the recorder's rule. A boss that leaves is lost when the commander fell within 60 s before it went, fled when she was alive and well
+    if(e.outcome==="killed") res="won";
+    else if(e.outcome==="despawn"){const be=(R.events||[]).filter(x=>x.e==="bdespawn").pop(),bt=be?be.t:null;res=bt!=null&&(R.events||[]).some(x=>x.e==="cdeath"&&bt-x.t>=-10&&bt-x.t<=3600)?"lost":"fled";}
+    else res="ended";
+  }
   if(!res) res=fi.crashed?"crashed":(R.cut?"cut":(fi.result||"unknown"));
   c.result=res;
   const first=R.frames[0].t,last=R.frames[R.frames.length-1].t;

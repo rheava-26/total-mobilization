@@ -29,7 +29,7 @@ namespace Levy.Common.Recording
 		/// <summary>Self-check: stand-ins for the config's recording folder and for the default folder.</summary>
 		public static string TestFolder, TestDefaultDir;
 
-		public const int ScanEvery = 10, QuietTicks = 300, CooldownTicks = 600, BossRangeTiles = 250, ArmyRangeTiles = 60, MinThreats = 3, BigThreatLife = 1500;
+		public const int ScanEvery = 10, QuietTicks = 300, CooldownTicks = 600, BossGoneCooldownTicks = 60, BossRangeTiles = 250, ArmyRangeTiles = 60, MinThreats = 3, BigThreatLife = 1500;
 
 		private static readonly Dictionary<string, string> _tags = new();
 		private static int _seq, _cooldownUntil, _quiet;
@@ -98,7 +98,7 @@ namespace Levy.Common.Recording
 		/// <summary>The recorder stopped: a pause before the next automatic start, so a leftover add or the next wave of the same fight does not open a file at once.</summary>
 		public static void RecorderStopped(string reason)
 		{
-			int pause = reason == "stopped by command" ? 1800 : reason == "write error" || reason == "size limit" ? 3600 : CooldownTicks;
+			int pause = reason == "stopped by command" ? 1800 : reason == "write error" || reason == "size limit" ? 3600 : reason == "boss gone" && FightRecorder.Auto == 1 ? BossGoneCooldownTicks : CooldownTicks;
 			if (!Headless) _cooldownUntil = (int)Main.GameUpdateCount + pause;
 			_quiet = 0;
 		}

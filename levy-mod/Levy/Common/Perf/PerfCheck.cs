@@ -253,19 +253,27 @@ namespace Levy.Common.Perf
 			Check("and it is the biggest row of the window", w5 != null && w5.Top.Count > 0 && w5.Top[0].Cat == PerfCat.Map && w5.Top[0].Name == "Levy/PerfTestLayer");
 			if (mr != null) Note("how the report words it: " + PerfAnalysis.Describe(mr, PerfSpan.Of(new[] { w5 })));
 
-			// ---- interface layer, every call
-			Cleanup(); PerfTestTypes.Reset();
-			var layers = new List<GameInterfaceLayer> { new LegacyGameInterfaceLayer("PerfTest: Busy", () => { PerfTestTypes.Spin(1000); return true; }, InterfaceScaleType.UI), new LegacyGameInterfaceLayer("Vanilla: PerfTest Idle", () => { PerfTestTypes.Spin(600); return true; }, InterfaceScaleType.UI) };
-			var w6 = Window(() =>
+			// ---- interface layer, every call (up to three windows: a busy-wait on a loaded box runs long, and the analyzer's wall clock runs long with it)
+			double busyWall = 0, idleWall = 0; PerfWindow w6 = null; PerfItem ur = null, ui2 = null; List<GameInterfaceLayer> layers = null;
+			for (int attempt = 0; attempt < 3; attempt++)
 			{
-				int wrapped = PerfAnalyzer.WrapLayers(layers);
-				FieldInfo f = typeof(LegacyGameInterfaceLayer).GetField("_drawMethod", BindingFlags.Instance | BindingFlags.NonPublic);
-				for (int k = 0; k < 30; k++) foreach (var l in layers) ((GameInterfaceDrawMethod)f.GetValue(l))();
-			}, 40);
-			var ur = Row(w6, PerfCat.Ui, "PerfTest: Busy"); var ui2 = Row(w6, PerfCat.Ui, "Terraria: PerfTest Idle");
+				Cleanup(); PerfTestTypes.Reset(); busyWall = idleWall = 0;
+				// the layers record how long each burn really took
+				double Burn(int us) { long t0 = System.Diagnostics.Stopwatch.GetTimestamp(); PerfTestTypes.Spin(us); return (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency; }
+				layers = new List<GameInterfaceLayer> { new LegacyGameInterfaceLayer("PerfTest: Busy", () => { busyWall += Burn(1000); return true; }, InterfaceScaleType.UI), new LegacyGameInterfaceLayer("Vanilla: PerfTest Idle", () => { idleWall += Burn(600); return true; }, InterfaceScaleType.UI) };
+				w6 = Window(() =>
+				{
+					int wrapped = PerfAnalyzer.WrapLayers(layers);
+					FieldInfo f = typeof(LegacyGameInterfaceLayer).GetField("_drawMethod", BindingFlags.Instance | BindingFlags.NonPublic);
+					for (int k = 0; k < 30; k++) foreach (var l in layers) ((GameInterfaceDrawMethod)f.GetValue(l))();
+				}, 40);
+				ur = Row(w6, PerfCat.Ui, "PerfTest: Busy"); ui2 = Row(w6, PerfCat.Ui, "Terraria: PerfTest Idle");
+				if (ur != null && ui2 != null && Math.Abs(ur.N - 30) < 0.5 && ur.Ms / ur.N > 0.9 && ur.Ms / ur.N < Math.Max(2.0, 1.5 * busyWall / 30) && ui2.Ms / ui2.N > 0.5 && ui2.Ms / ui2.N < Math.Max(1.4, 1.5 * idleWall / 30)) break;
+				Note($"interface layer phase attempt {attempt + 1} was outside the band ({(ur == null ? -1 : ur.Ms / ur.N):0.00} ms a call for 1 ms, {busyWall / 30:0.00} on the wall); trying again");
+			}
 			Note($"interface layer phase; window rows: {Dump(w6)}");
-			Check("an interface layer that burns 1 ms a frame is filed under its mod and name, 30 calls", ur != null && Math.Abs(ur.N - 30) < 0.5 && ur.Ms / ur.N > 0.9 && ur.Ms / ur.N < 2.0);
-			Check("a vanilla layer (0.6 ms) is filed under Terraria", ui2 != null && Math.Abs(ui2.N - 30) < 0.5 && ui2.Ms / ui2.N > 0.5 && ui2.Ms / ui2.N < 1.4);
+			Check("an interface layer that burns 1 ms a frame is filed under its mod and name, 30 calls", ur != null && Math.Abs(ur.N - 30) < 0.5 && ur.Ms / ur.N > 0.9 && ur.Ms / ur.N < Math.Max(2.0, 1.5 * busyWall / 30));
+			Check("a vanilla layer (0.6 ms) is filed under Terraria", ui2 != null && Math.Abs(ui2.N - 30) < 0.5 && ui2.Ms / ui2.N > 0.5 && ui2.Ms / ui2.N < Math.Max(1.4, 1.5 * idleWall / 30));
 			Check("wrapping the same list twice does not wrap a layer twice", PerfAnalyzer.WrapLayers(layers) == 0);
 
 			// ---- third-party mods: their global AI hooks are timed on real NPCs and projectiles

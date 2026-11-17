@@ -136,7 +136,7 @@ namespace Levy.Common.Testing
 			RosterSystem.Instance.Regulars.Add(rec);
 			int body = RosterSystem.Instance.SpawnBody(rec, at);
 			if (body < 0 || !rec.HasBody) return null;
-			Main.npc[body].Bottom = at;
+			if (order != SoldierOrder.Regroup) Main.npc[body].Bottom = at; // a Regroup levy keeps the spot the spawn gave it (beside the commander)
 			if (hp > 0) { Main.npc[body].lifeMax = Main.npc[body].life = hp; rec.CurrentHp = hp; }
 			return Main.npc[body].ModNPC as SoldierNPC;
 		}

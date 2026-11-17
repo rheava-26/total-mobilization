@@ -152,9 +152,10 @@ namespace Levy.Common.Testing
 				Check("(Regroup) a boss is alive but far from an unengaged levy: Search & destroy", a.EffOrder == SoldierOrder.SearchDestroy, () => "eff " + a.EffOrder + " state " + a.State + " dist " + (Vector2.Distance(boss.Center, a.NPC.Center) / 16f).ToString("0"));
 
 				// ---- the fight reaches the levy: Free rein
-				boss.Center = a.NPC.Center + new Vector2(25 * 16f, -10 * 16f); boss.velocity = Vector2.Zero;
+				Note($"regroup: levy at {(a.NPC.Center / 16f).ToPoint()} commander at {(me.Center / 16f).ToPoint()} boss at {(boss.Center / 16f).ToPoint()}");
+				_perTick = () => { if (boss.active) { boss.life = boss.lifeMax; boss.timeLeft = 99999; boss.Center = a.NPC.Center + new Vector2(25 * 16f, -10 * 16f); boss.velocity = Vector2.Zero; } };
 				Step(40);
-				Check("(Regroup) a boss fight with the levy in it: Free rein", a.EffOrder == SoldierOrder.FreeRein && (a.State == SoldierState.FreeRein || a.State == SoldierState.Engage), () => "eff " + a.EffOrder + " state " + a.State);
+				Check("(Regroup) a boss fight with the levy in it: Free rein", a.EffOrder == SoldierOrder.FreeRein && (a.State == SoldierState.FreeRein || a.State == SoldierState.Engage), () => "eff " + a.EffOrder + " state " + a.State + " bossActive " + boss.active + " fight " + SoldierNPC.BossFightNow + " dist " + (Vector2.Distance(boss.Center, a.NPC.Center) / 16f).ToString("0") + " isBoss " + boss.boss + " type " + boss.type + " isFightBoss " + global::Levy.Common.Recording.FightRecorder.IsFightBoss(boss));
 				Check("(Regroup) the levy in the fight does not teleport to the commander (Free rein never hops)", !SoldierNPC.CatchUpOrder(a.EffOrder));
 				Check("(Regroup) the order audit still accepts the body in the fight", a.ObeysOrder(SoldierOrder.Regroup, out why), () => why);
 

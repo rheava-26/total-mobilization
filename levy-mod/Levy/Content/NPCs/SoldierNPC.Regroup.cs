@@ -37,6 +37,8 @@ namespace Levy.Content.NPCs
 			}
 		}
 
+		internal static void InvalidateBossFight() => _bfStamp = uint.MaxValue;
+
 		private bool _rgFree;
 
 		/// <summary>The order the roaming brain reads: the record's order, except Regroup, which is Free Rein while this levy is in a boss fight and Search &amp; Destroy otherwise.</summary>
@@ -66,5 +68,14 @@ namespace Levy.Content.NPCs
 			for (int i = 0; i < _bfPos.Count; i++) if (Vector2.DistanceSquared(_bfPos[i], NPC.Center) <= reach) return true;
 			return false;
 		}
+	}
+}
+
+namespace Levy.Content.NPCs
+{
+	/// <summary>Drops the once-a-tick boss-fight reading before each NPC update, so a boss that spawned or died is seen by the very next think whatever the tick counter does.</summary>
+	public class RegroupFightSystem : Terraria.ModLoader.ModSystem
+	{
+		public override void PreUpdateNPCs() => SoldierNPC.InvalidateBossFight();
 	}
 }

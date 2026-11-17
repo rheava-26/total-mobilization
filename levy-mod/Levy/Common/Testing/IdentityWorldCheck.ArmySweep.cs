@@ -243,16 +243,19 @@ namespace Levy.Common.Testing
 
 		private static void NoAchievements(On_AchievementsHelper.orig_HandleSpecialEvent orig, Player player, int eventID) { }
 
-		private sealed class ArmyRow { public string Label, Name, Cls, Fam, Status, Probe = "", Cause = "", ShootName = ""; public ArmyRes Player, A, B; public double RatioA, RatioB; }
+		private sealed class ArmyRow { public string Label, Name, Cls, Fam, Status, Probe = "", Cause = "", ShootName = ""; public bool Summons; public ArmyRes Player, A, B; public double RatioA, RatioB; }
 
 		private static string ArmyProjName(int type) => type <= 0 ? "" : type >= ProjectileID.Count ? (ProjectileLoader.GetProjectile(type)?.Name ?? type.ToString()) : ProjectileID.Search.GetName(type);
+
+		/// <summary>A summon (minion staff or sentry): its shot is the minion it keeps up, which a levy and the stand-in may each have made before the counted ticks, so the placeholder rule does not judge it.</summary>
+		private static bool ArmySummons(Item s) => s.sentry || (s.DamageType?.CountsAsClass(DamageClass.Summon) ?? false) || (s.shoot > 0 && ContentSamples.ProjectilesByType.TryGetValue(s.shoot, out Projectile sp) && (sp.minion || sp.sentry || sp.minionSlots > 0f));
 
 		/// <summary>
 		/// The levy fired the item's own <c>shoot</c> while the stand-in player, holding the same weapon on the same dummy, never did: that is Levy firing the field in place of the weapon's real shot (a modded
 		/// weapon's Shoot that picks the projectile itself and returns false leaves <c>shoot</c> as a placeholder; Nucleosynthesis's is a wooden arrow). Never allowed, whatever the damage says.
 		/// </summary>
 		private static bool ArmyPlaceholder(ArmyRow r, ArmyRes levy) =>
-			!string.IsNullOrEmpty(r.ShootName) && r.Player.Projs > 0 && !r.Player.Types.ContainsKey(r.ShootName) && levy.Types.TryGetValue(r.ShootName, out int n) && n > 0;
+			!r.Summons && !string.IsNullOrEmpty(r.ShootName) && r.Player.Projs > 0 && !r.Player.Types.ContainsKey(r.ShootName) && levy.Types.TryGetValue(r.ShootName, out int n) && n > 0;
 
 		/// <summary>The use-cycle weapons' proof: the shots of the item's own use, in the order they appeared, the first <paramref name="k"/>.</summary>
 		private static List<string> ArmyUseSeq(ArmyRes res, string[] own, string shootName, int k) => res.Seq.Where(t => own.Contains(t) || t == shootName).Take(k).ToList();
@@ -318,7 +321,7 @@ namespace Levy.Common.Testing
 				{
 					Item sample = ContentSamples.ItemsByType[type];
 					int ammo = sample.useAmmo > 0 && ammoByKind.TryGetValue(sample.useAmmo, out int at) ? at : 0;
-					var row = new ArmyRow { Label = label, Name = name, Cls = (sample.DamageType?.Name ?? "?").Replace("DamageClass", ""), ShootName = ArmyProjName(sample.shoot) };
+					var row = new ArmyRow { Label = label, Name = name, Cls = (sample.DamageType?.Name ?? "?").Replace("DamageClass", ""), ShootName = ArmyProjName(sample.shoot), Summons = ArmySummons(sample) };
 					try { row.Probe = sample.shoot > 0 ? $"shot reads cursor {OwnerLockProbe.ReadsCursor(sample.shoot)}, reads buttons {OwnerLockProbe.ReadsUseButtons(sample.shoot)}, locks owner {OwnerLockProbe.LocksOwner(sample.shoot)}" : "no shot"; } catch (Exception) { row.Probe = "probe threw"; }
 					try { Item fi = new Item(); fi.SetDefaults(type); WeaponProfile fp = WeaponClassifier.GetProfile(fi); row.Fam = fp.Family + (fp.Supported ? "" : "(unsupported)") + (ModShotKinds.Of(fi) != ModShotKind.None ? "/" + ModShotKinds.Of(fi) : ""); } catch (Exception) { row.Fam = "?"; }
 					row.A = ArmyOne(type, ammo, ticks, false, false);

@@ -231,8 +231,11 @@ namespace Levy.Common.Recording
 				Chk(f1 != null && File.Exists(f1) && f1.StartsWith(good), "the file is saved in the chosen folder");
 				Chk(f1 != null && Regex.IsMatch(Path.GetFileName(f1), @"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}_Eye_of_Cthulhu_won\.levyrec$"), "the file is named date_time_Boss_outcome.levyrec (" + Path.GetFileName(f1 ?? "none") + ")");
 				VerifyFile(f1, "boss", 1, "Eye of Cthulhu", "won");
-				int boss2 = SpawnBoss(cx); Step(100, p, boss2);
-				Chk(!FightRecorder.On, "no new recording starts during the pause after one ends");
+				int boss2 = SpawnBoss(cx); Step(30, p, boss2);
+				Chk(!FightRecorder.On, "no new recording starts in the first second after one ends");
+				Step(70, p, boss2);
+				Chk(FightRecorder.On, "a boss fight that follows within seconds (Duke Fishron coming back while the pillars stand) gets its own recording");
+				if (FightRecorder.On) FightRecorder.Stop("self-check next");
 				Main.npc[boss2].active = false; Step(3, p, null);
 
 				// ---------- 1b. several main bosses are one fight with all of their names; spite is its own target kind (format 9)

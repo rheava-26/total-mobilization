@@ -127,12 +127,12 @@ namespace Levy.Common.Perf
 
 		// ------------------------------------------------------------------------------------------ the update and the draw
 		private static void DoUpdate(On_Main.orig_DoUpdate orig, Main self, ref GameTime gameTime)
-		{
+		{ _hl_DoUpdate_2++;
 			if (_dead) { orig(self, ref gameTime); return; }
 			long t0 = Begin();
 			try { orig(self, ref gameTime); }
 			finally { End(t0); }
-		}
+		} private static int _hl_DoUpdate_2;
 
 		/// <summary>The start of one game update. Decides whether this one is sampled and, when it is, switches Levy's own bucket timers on for its length.</summary>
 		private static long Begin()
@@ -172,7 +172,7 @@ namespace Levy.Common.Perf
 		internal static void TestEnd(long t0) { if (t0 != 0) End(t0); }
 
 		private static void DoDraw(On_Main.orig_DoDraw orig, Main self, GameTime gameTime)
-		{
+		{ _hl_DoDraw_1++;
 			if (_dead) { orig(self, gameTime); return; }
 			long t0;
 			try { _frame++; _dsp = 0; _dsample = _frame % DrawSampleEvery == 0; t0 = Stopwatch.GetTimestamp(); } catch (Exception e) { Fail("draw begin", e); orig(self, gameTime); return; }
@@ -182,20 +182,20 @@ namespace Levy.Common.Perf
 				try { long dt = Stopwatch.GetTimestamp() - t0; _drawTicks += dt; _frames++; if (dt > _worstFrame) _worstFrame = dt; if (_dsample) _sFrames++; _dsample = false; }
 				catch (Exception e) { Fail("draw end", e); }
 			}
-		}
+		} private static int _hl_DoDraw_1;
 
-		private static void DrawNpcs(On_Main.orig_DrawNPCs orig, Main self, bool behindTiles) { if (_dead) { orig(self, behindTiles); return; } long t0 = Stopwatch.GetTimestamp(); try { orig(self, behindTiles); } finally { _draw[0] += Stopwatch.GetTimestamp() - t0; } }
-		private static void DrawProjectiles(On_Main.orig_DrawProjectiles orig, Main self) { if (_dead) { orig(self); return; } long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { _draw[1] += Stopwatch.GetTimestamp() - t0; } }
-		private static void DrawDust(On_Main.orig_DrawDust orig, Main self) { if (_dead) { orig(self); return; } long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { _draw[2] += Stopwatch.GetTimestamp() - t0; } }
-		private static void DrawGore(On_Main.orig_DrawGore orig, Main self) { if (_dead) { orig(self); return; } long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { _draw[3] += Stopwatch.GetTimestamp() - t0; } }
-		private static void DrawInterface(On_Main.orig_DrawInterface orig, Main self, GameTime gameTime) { if (_dead) { orig(self, gameTime); return; } long t0 = Stopwatch.GetTimestamp(); try { orig(self, gameTime); } finally { _draw[4] += Stopwatch.GetTimestamp() - t0; } }
-		private static void DrawPlayers(On_Main.orig_DrawPlayers_AfterProjectiles orig, Main self) { if (_dead) { orig(self); return; } long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { _draw[5] += Stopwatch.GetTimestamp() - t0; } }
+		private static void DrawNpcs(On_Main.orig_DrawNPCs orig, Main self, bool behindTiles) { _hl_DrawNpcs_6++; if (_dead) { orig(self, behindTiles); return; } long t0 = Stopwatch.GetTimestamp(); try { orig(self, behindTiles); } finally { _draw[0] += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DrawNpcs_6;
+		private static void DrawProjectiles(On_Main.orig_DrawProjectiles orig, Main self) { _hl_DrawProjectiles_8++; if (_dead) { orig(self); return; } long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { _draw[1] += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DrawProjectiles_8;
+		private static void DrawDust(On_Main.orig_DrawDust orig, Main self) { _hl_DrawDust_3++; if (_dead) { orig(self); return; } long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { _draw[2] += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DrawDust_3;
+		private static void DrawGore(On_Main.orig_DrawGore orig, Main self) { _hl_DrawGore_4++; if (_dead) { orig(self); return; } long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { _draw[3] += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DrawGore_4;
+		private static void DrawInterface(On_Main.orig_DrawInterface orig, Main self, GameTime gameTime) { _hl_DrawInterface_5++; if (_dead) { orig(self, gameTime); return; } long t0 = Stopwatch.GetTimestamp(); try { orig(self, gameTime); } finally { _draw[4] += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DrawInterface_5;
+		private static void DrawPlayers(On_Main.orig_DrawPlayers_AfterProjectiles orig, Main self) { _hl_DrawPlayers_7++; if (_dead) { orig(self); return; } long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { _draw[5] += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DrawPlayers_7;
 
 		private static int DustNew(On_Dust.orig_NewDust orig, Vector2 pos, int w, int h, int type, float sx, float sy, int alpha, Color c, float scale)
-		{
+		{ _hl_DustNew_9++;
 			if (_army && !_dead && (++_dustN % 3) != 0) { DustThinned++; return Main.maxDust; } // the game's own "no dust" answer: callers index Main.dust[maxDust], a spare slot
 			return orig(pos, w, h, type, sx, sy, alpha, c, scale);
-		}
+		} private static int _hl_DustNew_9;
 
 		// ------------------------------------------------------------------------------------------ attaching
 		private static void AttachTiming()

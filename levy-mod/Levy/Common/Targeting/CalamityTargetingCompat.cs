@@ -113,15 +113,15 @@ namespace Levy.Common.Targeting
 		/// pass has. Nothing runs the override again: the NPC is dead.
 		/// </summary>
 		private static void SendExtraAiDetour(OrigSendExtraAI orig, GlobalNPC self, NPC npc, BitWriter bits, BinaryWriter writer)
-		{
+		{ _hl_SendExtraAiDetour_2++;
 			if (_overrideField == null || npc == null || npc.whoAmI != _inPreAi) { orig(self, npc, bits, writer); return; }
 			object bound = _overrideField.GetValue(self);
 			orig(self, npc, bits, writer);
 			if (bound != null && _overrideField.GetValue(self) == null) { _overrideField.SetValue(self, bound); OverrideKept++; }
-		}
+		} private static int _hl_SendExtraAiDetour_2;
 
 		private static bool PreAiDetour(OrigPreAI orig, GlobalNPC self, NPC npc)
-		{
+		{ _hl_PreAiDetour_1++;
 			try { EnemyTargetingGlobalNPC.Prepare(npc); } catch (Exception) { }
 			object bound = _overrideField?.GetValue(self);
 			int outer = _inPreAi; _inPreAi = npc.whoAmI;
@@ -130,6 +130,6 @@ namespace Levy.Common.Targeting
 			// is dead). The pass has run, so the vanilla AI it replaces is skipped. Any other NullReferenceException (the override still bound, or a live NPC) is not this and goes on up.
 			catch (NullReferenceException) when (bound != null && _overrideField.GetValue(self) == null && (!npc.active || npc.life <= 0)) { DeathNreAnswered++; return false; }
 			finally { _inPreAi = outer; }
-		}
+		} private static int _hl_PreAiDetour_1;
 	}
 }

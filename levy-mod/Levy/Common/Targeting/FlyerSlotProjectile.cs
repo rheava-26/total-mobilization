@@ -16,17 +16,31 @@ namespace Levy.Common.Targeting
 	{
 		internal static int DbgSeen, DbgSwapped, DbgNoBody, DbgBlocked;
 
-		public override void Load() => On_Projectile.AI += AiDetour;
-		public override void Unload() => On_Projectile.AI -= AiDetour;
-
-		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)
+		public override void Load()
 		{
-			if (!self.active || !self.hostile || (int)self.ai[0] != EnemyTargeting.FlyerSlot) { orig(self); return; }
+			On_Projectile.AI += AiDetour;
+			On_Projectile.VanillaAI += VanillaAiDetour;
+			global::Levy.Common.Weapons.ProjAiHooks.AddLoader(LoaderAiDetour, "the flyer-slot bolts");
+		}
+		public override void Unload() { On_Projectile.AI -= AiDetour; On_Projectile.VanillaAI -= VanillaAiDetour; }
+
+		// Projectile.AI is inlined into Projectile.Update (a detour on it never runs), so the wrapper also stands on VanillaAI and on ProjectileLoader.ProjectileAI (the only one that reaches a modded bolt's PreAI: Calamity runs
+		// the Empress's Prismatic Bolt from its GlobalProjectile.PreAI). The first one that runs swaps; a nested one sees the swap (EnemyTargeting.IsSwapped) and passes straight through.
+		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self) { _hl_AiDetour_1++; global::Levy.Common.Util.HookProbe.FlyerAi++; if (!Wants(self)) orig(self); else Go(pp => orig(pp), self); } private static int _hl_AiDetour_1;
+		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self) { _hl_VanillaAiDetour_3++; global::Levy.Common.Util.HookProbe.FlyerVanilla++; if (!Wants(self)) orig(self); else Go(pp => orig(pp), self); } private static int _hl_VanillaAiDetour_3;
+		private static void LoaderAiDetour(Action<Projectile> orig, Projectile self) { _hl_LoaderAiDetour_2++; global::Levy.Common.Util.HookProbe.FlyerLoader++; if (!Wants(self)) orig(self); else Go(orig, self); } private static int _hl_LoaderAiDetour_2;
+
+		/// <summary>The cheap test every projectile passes: a hostile projectile whose ai[0] names the flyer slot.</summary>
+		private static bool Wants(Projectile self) => self.hostile && self.active && (int)self.ai[0] == EnemyTargeting.FlyerSlot && !global::Levy.Common.Weapons.ProjAiHooks.Off;
+
+		private static void Go(Action<Projectile> orig, Projectile self)
+		{
+			if (!Wants(self)) { orig(self); return; }
 			DbgSeen++;
 			if (!EnemyTargeting.Enabled || !EnemyTargeting.BossFlyerOn || EnemyTargeting.IsSwapped || !EnemyTargeting.FlyerSlotUsable) { DbgBlocked++; orig(self); return; }
 			ITargetBody body = BodyFor(self);
 			if (body == null) { DbgNoBody++; orig(self); return; }
-			DbgSwapped++;
+			DbgSwapped++; global::Levy.Common.Util.HookProbe.FlyerActed++;
 			EnemyTargeting.Swap(body, EnemyTargeting.FlyerSlot);
 			try { orig(self); }
 			finally { EnemyTargeting.Unswap(); }

@@ -51,11 +51,12 @@ namespace Levy.Common.Observe
 			Active = false;
 		}
 
+		private static int _hl_DustHook_1, _hl_GoreHook_1;
 		private static int DustHook(On_Dust.orig_NewDust orig, Vector2 position, int width, int height, int type, float speedX, float speedY, int alpha, Color newColor, float scale)
-			=> SkipFx ? Main.maxDust : orig(position, width, height, type, speedX, speedY, alpha, newColor, scale);
+		{ _hl_DustHook_1++; return SkipFx ? Main.maxDust : orig(position, width, height, type, speedX, speedY, alpha, newColor, scale); }
 
 		private static int GoreHook(On_Gore.orig_NewGore_IEntitySource_Vector2_Vector2_int_float orig, IEntitySource source, Vector2 position, Vector2 velocity, int type, float scale)
-			=> SkipFx ? Main.maxGore : orig(source, position, velocity, type, scale);
+		{ _hl_GoreHook_1++; return SkipFx ? Main.maxGore : orig(source, position, velocity, type, scale); }
 
 		private static void OnPostDraw(GameTime gt) => RestoreSize();
 

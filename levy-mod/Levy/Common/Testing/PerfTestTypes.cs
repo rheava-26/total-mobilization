@@ -17,8 +17,11 @@ namespace Levy.Common.Testing
 		public static bool Loaded => Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") == "1";
 		public static volatile int NpcUs, ProjUs, GlobUs, LayerUs;
 		public static long NpcCalls, ProjCalls, GlobCalls, LayerCalls;
-		public static void Spin(int us) { if (us <= 0) return; long end = Stopwatch.GetTimestamp() + us * Stopwatch.Frequency / 1000000; while (Stopwatch.GetTimestamp() < end) { } }
-		public static void Reset() { NpcUs = ProjUs = GlobUs = LayerUs = 0; NpcCalls = ProjCalls = GlobCalls = LayerCalls = 0; }
+		/// <summary>Wall-clock milliseconds the busy-waits of the current phase actually took (a call preempted by a loaded box runs longer than asked). The analyzer measures wall time too, so its row is judged against this, and against the nominal burn from below.</summary>
+		public static double WallMs;
+		/// <summary>Busy-wait for <paramref name="us"/> microseconds of wall clock; records how long it really took.</summary>
+		public static void Spin(int us) { if (us <= 0) return; long t0 = Stopwatch.GetTimestamp(); long end = t0 + us * Stopwatch.Frequency / 1000000; long now; while ((now = Stopwatch.GetTimestamp()) < end) { } WallMs += (now - t0) * 1000.0 / Stopwatch.Frequency; }
+		public static void Reset() { NpcUs = ProjUs = GlobUs = LayerUs = 0; NpcCalls = ProjCalls = GlobCalls = LayerCalls = 0; WallMs = 0; }
 	}
 
 	public class PerfTestNpc : ModNPC

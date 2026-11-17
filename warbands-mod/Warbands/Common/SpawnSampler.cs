@@ -23,7 +23,7 @@ namespace Warbands.Common
 		private static bool _inDrive, _driving; private static System.Reflection.MethodInfo _upd;
 		private delegate void OrigUpdateConnectedClients();
 		private delegate void HookUpdateConnectedClients(OrigUpdateConnectedClients orig);
-		private static void KeepGoing(OrigUpdateConnectedClients orig) { if (_driving) return; orig(); }
+		private static void KeepGoing(OrigUpdateConnectedClients orig) { _hl_KeepGoing_1++; if (_driving) return; orig(); } private static int _hl_KeepGoing_1;
 		public override void Load()
 		{
 			if (!Wanted || !Main.dedServ) return;

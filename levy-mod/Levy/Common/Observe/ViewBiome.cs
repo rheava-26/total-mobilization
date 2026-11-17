@@ -88,8 +88,9 @@ namespace Levy.Common.Observe
 			finally { BiomeMirror.Copy(_real, me); }
 		}
 
-		private static void DoDraw(On_Main.orig_DoDraw orig, Main self, Microsoft.Xna.Framework.GameTime gameTime) => WithViewZones(() => orig(self, gameTime));
-		private static void UpdateAudio(On_Main.orig_UpdateAudio orig, Main self) => WithViewZones(() => orig(self));
+		private static int _hl_DoDraw_1, _hl_UpdateAudio_1;
+		private static void DoDraw(On_Main.orig_DoDraw orig, Main self, Microsoft.Xna.Framework.GameTime gameTime) { _hl_DoDraw_1++; WithViewZones(() => orig(self, gameTime)); }
+		private static void UpdateAudio(On_Main.orig_UpdateAudio orig, Main self) { _hl_UpdateAudio_1++; WithViewZones(() => orig(self)); }
 
 		/// <summary>Boot check: the swap puts the view's zones on a player and the real ones back, flag for flag.</summary>
 		internal static bool SelfCheck(out string why)

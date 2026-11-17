@@ -112,7 +112,8 @@ namespace Levy.Common.Util
 			catch (Exception e) { Mod.Logger.Warn("Levy: save gate hook failed: " + e.Message); }
 		}
 
-		private static void Detour2(OrigSave orig, PlayerFileData file, bool skipMapSave) => SaveGate.RunSave(() => orig(file, skipMapSave));
-		private static void Detour1(Action<PlayerFileData> orig, PlayerFileData file) => SaveGate.RunSave(() => orig(file));
+		private static int _hl_Detour2_1, _hl_Detour1_1;
+		private static void Detour2(OrigSave orig, PlayerFileData file, bool skipMapSave) { _hl_Detour2_1++; SaveGate.RunSave(() => orig(file, skipMapSave)); }
+		private static void Detour1(Action<PlayerFileData> orig, PlayerFileData file) { _hl_Detour1_1++; SaveGate.RunSave(() => orig(file)); }
 	}
 }

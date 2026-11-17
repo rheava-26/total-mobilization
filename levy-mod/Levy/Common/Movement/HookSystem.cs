@@ -129,19 +129,19 @@ namespace Levy.Common.Movement
 		// the hook projectile's Update, inside the owner frame
 		// ---------------------------------------------------------------------------------------------
 		private static void DrawDirectDetour(On_Main.orig_DrawProjDirect orig, Main self, Projectile proj)
-		{
+		{ _hl_DrawDirectDetour_1++;
 			bool swapped = false; HookTag tag = null;
 			try { swapped = proj != null && proj.active && Main.projHook[proj.type] && proj.TryGetGlobalProjectile(out tag) && tag.Soldier >= 0 && tag.BeginDrawSwap(proj); }
 			catch (Exception) { swapped = false; }
 			try { orig(self, proj); }
 			finally { if (swapped) HookTag.EndDrawSwap(); }
-		}
+		} private static int _hl_DrawDirectDetour_1;
 
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
-		{
+		{ _hl_UpdateDetour_3++;
 			if (!self.active || self.type >= Main.projHook.Length || !Main.projHook[self.type] || !self.TryGetGlobalProjectile(out HookTag tag) || tag.Soldier < 0) { orig(self, i); return; }
 			RunHook(orig, self, i, tag);
-		}
+		} private static int _hl_UpdateDetour_3;
 
 		private static void RunHook(On_Projectile.orig_Update orig, Projectile p, int i, HookTag tag)
 		{
@@ -166,12 +166,12 @@ namespace Levy.Common.Movement
 		// multiplayer: a soldier's hook is server-side only. Clients get the soldier through NPC sync and draw the chain from SendExtraAI.
 		// ---------------------------------------------------------------------------------------------
 		private static void SendDetour(On_NetMessage.orig_SendData orig, int msgType, int remoteClient, int ignoreClient, Terraria.Localization.NetworkText text, int number, float number2, float number3, float number4, int number5, int number6, int number7)
-		{
+		{ _hl_SendDetour_2++;
 			if (msgType == MessageID.PlayerControls) { if (OwnerSlots.IsPooled(number)) { NetSuppressed++; return; } }                                    // 13: the dummy's controls
 			else if (msgType == MessageID.SyncProjectile) { if (number >= 0 && number < Main.maxProjectiles && Main.projectile[number].TryGetGlobalProjectile(out HookTag t) && t.Soldier >= 0) { NetSuppressed++; return; } } // 27: the hook itself
 			else if (msgType == MessageID.KillProjectile) { if (OwnerSlots.IsPooled((int)number2)) { NetSuppressed++; return; } }                         // 29: its removal (owner in number2)
 			else if (msgType == MessageID.TeleportEntity) { if (OwnerSlots.IsPooled((int)number2)) { NetSuppressed++; return; } }                         // 65: a hook teleport of the dummy
 			orig(msgType, remoteClient, ignoreClient, text, number, number2, number3, number4, number5, number6, number7);
-		}
+		} private static int _hl_SendDetour_2;
 	}
 }

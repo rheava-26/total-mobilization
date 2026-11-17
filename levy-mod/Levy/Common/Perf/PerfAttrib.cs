@@ -205,11 +205,11 @@ namespace Levy.Common.Perf
 		}
 
 		private static void ModifyLayers(OrigModifyLayers orig, List<GameInterfaceLayer> layers)
-		{
+		{ _hl_ModifyLayers_1++;
 			orig(layers);
 			if (!TimingOn || _dead) return;
 			try { WrapLayers(layers); } catch (Exception e) { Fail("layers", e); }
-		}
+		} private static int _hl_ModifyLayers_1;
 
 		/// <summary>Swaps each interface layer's draw delegate for a timing one. Public to the self-check: it builds a layer list of its own.</summary>
 		internal static int WrapLayers(List<GameInterfaceLayer> layers)

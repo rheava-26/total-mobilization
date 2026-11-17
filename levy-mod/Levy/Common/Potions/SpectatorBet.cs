@@ -70,6 +70,12 @@ namespace Levy.Common.Potions
 		/// <summary>The lost-bet verdict for one tick: true when the player has lost it (an army that was on the field is wiped and no manpower is left).</summary>
 		public static bool Lost(Player p, bool armySeen) => armySeen && !ArmyAlive(p) && !CanFieldMore(p);
 
+		/// <summary>"{name} forfeited."</summary>
+		public static string ForfeitMessage(string playerName) => LevyUtil.T("Potions.Forfeit", playerName);
+
+		/// <summary>Kills the player for taking the Spectator off during a boss fight.</summary>
+		public static void Forfeit(Player p) => p.KillMe(PlayerDeathReason.ByCustomReason(NetworkText.FromLiteral(ForfeitMessage(p.name))), 9999.0, 0);
+
 		/// <summary>Kills the player with one of the lost-bet messages (a random one when <paramref name="pick"/> is negative).</summary>
 		public static void Kill(Player p, int pick = -1)
 		{

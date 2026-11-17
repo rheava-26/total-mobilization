@@ -10,10 +10,10 @@ namespace Levy.Common.Dialogue
 	/// What is read (all public in NoxusBoss; every member is optional, a missing one reads as off and is named in <see cref="Problem"/>):
 	///   PostMLRiftAppearanceSystem (a ModSystem; Core.World.GameScenes.AvatarAppearances): static AvatarHasCoveredMoon (saved, true once the sun has been covered after Moon Lord),
 	///     instance Ongoing / EventTimer (the covering scene in progress, about 27 s) and WaitingToStart (armed by the Moon Lord kill).
-	///   RiftEclipseManagementSystem.RiftEclipseOngoing (static; Core.World.GameScenes.RiftEclipse): the covered sky as the mod applies it (false during its two god fights and for good once the last is beaten).
+	///   RiftEclipseManagementSystem.RiftEclipseOngoing (static; Core.World.GameScenes.RiftEclipse): the covered sky as the mod applies it (off during some of its own fights, and once the sky is freed).
 	///   RiftEclipseSnowSystem.SnowHeight (static float, 0 to 10): snow lying on the surface. Rain under the covered sky falls as snow.
 	///   RiftEclipseFogEventManager.EventOngoing (static): the fog event (late game).
-	///   Mod.Call("GetBossDefeated", "avatarofemptiness"): the covered sky is gone for good.
+	///   Mod.Call("GetBossDefeated", "avatarofemptiness"): the sky has been freed for good.
 	/// Reads are cached per game tick. Self-checks set the Test* overrides (null in play) or drive the real members through <see cref="SetReal"/>.
 	/// </summary>
 	public static class RiftSky
@@ -114,10 +114,10 @@ namespace Levy.Common.Dialogue
 		/// <summary>The sun has been covered in this world (saved by NoxusBoss; stays true after the sky is freed: see <see cref="Defeated"/>).</summary>
 		public static bool Covered { get { if (TestCovered.HasValue) return TestCovered.Value; Refresh(); return _cCovered; } }
 
-		/// <summary>NoxusBoss's own "covered sky is on" (false during its god fights). Read for the self-check report; the mood keys on <see cref="Covered"/> and <see cref="Defeated"/>.</summary>
+		/// <summary>NoxusBoss's own "covered sky is on" (off during some of its fights). Read for the self-check report; the mood keys on <see cref="Covered"/> and <see cref="Defeated"/>.</summary>
 		public static bool RiftOngoing { get { Refresh(); return _cRift; } }
 
-		/// <summary>The covered sky is gone for good (the boss behind it is beaten). Read through the mod's own call, at most once a second.</summary>
+		/// <summary>The covered sky is gone for good. Read through the mod's own call, at most once a second.</summary>
 		public static bool Defeated
 		{
 			get

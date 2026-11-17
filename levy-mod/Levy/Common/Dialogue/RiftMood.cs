@@ -241,6 +241,7 @@ namespace Levy.Common.Dialogue
 			Changes++;
 			Seen = true; DaysSince = 0;
 			_panicUntil = now + LevyConstants.RiftPanicTicks;
+			if (LevyUtil.IsClient) return; // a client hears who was away from the server (NetReceive)
 			Away.Clear(); AwayAsked.Clear();
 			try
 			{
@@ -248,7 +249,6 @@ namespace Levy.Common.Dialogue
 				if (roster != null) foreach (SoldierRecord r in roster) if (r.Dead || r.Reserve) Away.Add(r.Id);
 			}
 			catch (Exception) { }
-			if (LevyUtil.IsClient) return;
 			for (int i = 0; i < Main.maxPlayers; i++)
 			{
 				Player p = Main.player[i];

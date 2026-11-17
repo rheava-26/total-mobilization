@@ -22,7 +22,7 @@ namespace Levy.Common.Movement
 		public bool HasDash;
 		/// <summary>The dash the gear gives, as a player's dash behaves: the speed it starts at (px/tick), the factor its speed decays by while above the run speed (0.96, or 0.94 for the shield and solar dashes), and the ticks of recovery after it.
 		/// Zero speed when there is no dash. Read from Player.dashType (Tabi, Master Ninja Gear, Shield of Cthulhu, Solar Flare, Crystal Assassin) and from Calamity's accessory dashes (Asgardian Aegis, Statis' Ninja Belt, Elysian Aegis ...).</summary>
-		public float DashSpeed, DashSlow = 0.96f; public int DashDelay = 20;
+		public float DashSpeed, DashSlow = 0.96f, DashHighDecay = 0.992f, DashSplit = 12f; public int DashDelay = 20;
 		/// <summary>The run numbers a player's Player.Update leaves for HorizontalMovement, after the multipliers (move speed, Magiluminescence, Shadow armor): the ground run cap (maxRunSpeed), the sprint (accRunSpeed), the acceleration and the braking.
 		/// The floor under the feet changes them (asphalt, honey, ice: <see cref="TileRun"/>).</summary>
 		public float GroundRun = 3f, SprintRun = 3f, RunAcceleration = 0.08f, RunSlowdown = 0.2f;
@@ -46,31 +46,61 @@ namespace Levy.Common.Movement
 		/// </summary>
 		public static float PlayerTopRunSpeed(Player dummy) { PlayerRun(dummy, out float g, out float sp, out _, out _); return Math.Max(g, sp); }
 
-		/// <summary>The four run numbers (ground cap, sprint, acceleration, braking) as <see cref="PlayerTopRunSpeed"/> derives them; the dummy's own fields are left as they were.</summary>
-		public static void PlayerRun(Player dummy, out float groundRun, out float sprint, out float accel, out float slowdown)
+		/// <summary>
+		/// The four run numbers (ground cap, sprint, acceleration, braking) as <see cref="PlayerTopRunSpeed"/> derives them; the dummy's own fields are left as they were. With a <paramref name="floor"/> the floor's effect is applied
+		/// where Player.Update applies it: after the move-speed and armor multipliers and BEFORE the mods' PostUpdateRunSpeeds (so a mod that scales the run on top of asphalt, or sets its own sprint, sees what a player's mod sees).
+		/// </summary>
+		public static void PlayerRun(Player dummy, out float groundRun, out float sprint, out float accel, out float slowdown, TileRun.Floor floor = TileRun.Floor.Plain)
 		{
 			float maxRun0 = dummy.maxRunSpeed, accRun0 = dummy.accRunSpeed, accel0 = dummy.runAcceleration, slow0 = dummy.runSlowdown;
+			bool sticky0 = dummy.sticky, power0 = dummy.powerrun, slip0 = dummy.slippy, slip20 = dummy.slippy2, sand0 = dummy.runningOnSand;
 			try
 			{
 				dummy.runAcceleration *= dummy.moveSpeed; dummy.maxRunSpeed *= dummy.moveSpeed;
 				if (dummy.hasMagiluminescence) { dummy.runAcceleration *= 1.75f; dummy.maxRunSpeed *= 1.15f; dummy.accRunSpeed *= 1.15f; dummy.runSlowdown *= 1.75f; }
 				if (dummy.shadowArmor) { dummy.runAcceleration *= 1.75f; dummy.maxRunSpeed *= 1.15f; dummy.accRunSpeed *= 1.15f; dummy.runSlowdown *= 1.75f; }
+				if (floor != TileRun.Floor.Plain)
+				{
+					dummy.sticky = floor == TileRun.Floor.Honey; dummy.powerrun = floor == TileRun.Floor.Asphalt; dummy.slippy = floor == TileRun.Floor.Ice; dummy.slippy2 = floor == TileRun.Floor.FrozenSlime; dummy.runningOnSand = floor == TileRun.Floor.Sand;
+					if (dummy.sticky) { dummy.maxRunSpeed *= 0.25f; dummy.runAcceleration *= 0.25f; dummy.runSlowdown *= 2f; }
+					else if (dummy.powerrun) { dummy.maxRunSpeed *= TileRun.AsphaltTop; dummy.runSlowdown *= TileRun.AsphaltBrake; }
+					else if (dummy.runningOnSand && dummy.desertBoots) { const float k = 1.75f; dummy.maxRunSpeed *= k; dummy.accRunSpeed *= k; dummy.runAcceleration *= k; dummy.runSlowdown *= k; }
+					else if (dummy.slippy2) { dummy.runAcceleration *= 0.6f; dummy.runSlowdown = 0f; if (dummy.iceSkate) { dummy.runAcceleration *= TileRun.SkateAccel; dummy.maxRunSpeed *= 1.25f; } }
+					else if (dummy.slippy) { dummy.runAcceleration *= 0.7f; if (dummy.iceSkate) { dummy.runAcceleration *= TileRun.SkateAccel; dummy.maxRunSpeed *= 1.25f; } else dummy.runSlowdown *= 0.1f; }
+				}
 				try { PlayerLoader.PostUpdateRunSpeeds(dummy); } catch { } // a mod's own run-speed rule (boots, armor sets, accessories); one that throws on the dummy simply does not count
 				groundRun = dummy.maxRunSpeed; sprint = dummy.accRunSpeed; accel = dummy.runAcceleration; slowdown = dummy.runSlowdown;
 			}
-			finally { dummy.maxRunSpeed = maxRun0; dummy.accRunSpeed = accRun0; dummy.runAcceleration = accel0; dummy.runSlowdown = slow0; }
+			finally { dummy.maxRunSpeed = maxRun0; dummy.accRunSpeed = accRun0; dummy.runAcceleration = accel0; dummy.runSlowdown = slow0; dummy.sticky = sticky0; dummy.powerrun = power0; dummy.slippy = slip0; dummy.slippy2 = slip20; dummy.runningOnSand = sand0; }
+		}
+
+		/// <summary>The dummy these abilities were read from, kept to read the run on a special floor on demand (the dummy's raw run fields stay as the gear pass left them until the next read).</summary>
+		private Player _src; private readonly float[] _fg = new float[8], _fs = new float[8], _fa = new float[8], _fb = new float[8]; private readonly bool[] _fok = new bool[8];
+
+		/// <summary>The run numbers on a floor, as a player's run would be there (<see cref="PlayerRun"/> with the floor); the plain ground's own numbers for plain ground or when the dummy is gone.</summary>
+		public void RunOn(TileRun.Floor kind, out float ground, out float sprint, out float accel, out float slowdown)
+		{
+			int k = (int)kind;
+			if (kind == TileRun.Floor.Plain || _src == null || k >= _fok.Length) { ground = GroundRun; sprint = SprintRun; accel = RunAcceleration; slowdown = RunSlowdown; return; }
+			if (!_fok[k])
+			{
+				try { PlayerRun(_src, out _fg[k], out _fs[k], out _fa[k], out _fb[k], kind); }
+				catch (Exception) { _fg[k] = GroundRun; _fs[k] = SprintRun; _fa[k] = RunAcceleration; _fb[k] = RunSlowdown; }
+				_fok[k] = true;
+			}
+			ground = _fg[k]; sprint = _fs[k]; accel = _fa[k]; slowdown = _fb[k];
 		}
 
 		/// <summary>The dash of the dummy's gear: Player.dashType's own numbers (Player.DashMovement), else a Calamity accessory dash.</summary>
 		private static void ReadDash(Player d, MovementAbilities a)
 		{
-			a.DashSpeed = 0f; a.DashSlow = 0.96f; a.DashDelay = 20;
+			a.DashSpeed = 0f; a.DashSlow = 0.96f; a.DashHighDecay = 0.992f; a.DashSplit = 12f; a.DashDelay = 20;
 			if (d.dashType > 0)
 			{
 				switch (d.dashType)
 				{
-					case 2: a.DashSpeed = 14.5f; a.DashSlow = 0.94f; a.DashDelay = 30; break; // Shield of Cthulhu
-					case 3: a.DashSpeed = 21.9f; a.DashSlow = 0.94f; a.DashDelay = 20; break; // Solar Flare
+					case 2: a.DashSpeed = 14.5f; a.DashSlow = 0.94f; a.DashHighDecay = 0.985f; a.DashDelay = 30; break; // Shield of Cthulhu
+					case 3: a.DashSpeed = 21.9f; a.DashSlow = 0.94f; a.DashHighDecay = 0.985f; a.DashSplit = 14f; a.DashDelay = 20; break; // Solar Flare
 					default: a.DashSpeed = 16.9f; break;                                          // Tabi, Master Ninja Gear, Crystal Assassin
 				}
 				a.HasDash = true; return;
@@ -86,6 +116,7 @@ namespace Levy.Common.Movement
 		{
 			var a = new MovementAbilities();
 			if (dummy == null) return a;
+			a._src = dummy;
 
 			a.WalkSpeed = MathHelper.Clamp(dummy.moveSpeed, LevyConstants.Movement.MinWalkSpeedMult, LevyConstants.Movement.MaxWalkSpeedMult);
 			PlayerRun(dummy, out a.GroundRun, out a.SprintRun, out a.RunAcceleration, out a.RunSlowdown);

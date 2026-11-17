@@ -536,13 +536,13 @@ namespace Levy.Content.NPCs
 			{
 				if (profile)
 				{
-					// a player's dash (Player.DashMovement): the speed starts at the gear's dash speed, decays by 0.992 a tick while above 12 and by the dash's own factor below it, and ends at the run speed
+					// a player's dash (Player.DashMovement): the speed starts at the gear's dash speed, decays by the dash's own factor while above its split speed (0.992 above 12, 0.985 for the shield and the solar dash) and by the slower factor below it, and ends at the run speed
 					bool stopped = _dashAge >= 2 && Math.Abs(npc.velocity.X) < Math.Max(2f, _dashV * 0.4f);
 					if (!grounded || air || npc.wet || stopped) { _dashTicks = 0; npc.netUpdate = true; return false; }
 					_dashAge++;
 					float runTop = Math.Max(3f, Abilities.MaxRunSpeed);
 					_dashDist += _dashV;
-					float v = _dashV > 12f ? _dashV * 0.992f : _dashV * Abilities.DashSlow;
+					float v = _dashV > Abilities.DashSplit ? _dashV * Abilities.DashHighDecay : _dashV * Abilities.DashSlow;
 					if (v <= runTop || _dashDist >= _dashCapPx) { _dashTicks = 0; npc.velocity.X = _dashDir * Math.Min(_dashV, Math.Max(runTop, _dashDist >= _dashCapPx ? 6f : runTop)); npc.netUpdate = true; return false; }
 					_dashV = v; npc.velocity.X = _dashDir * v;
 					return true;

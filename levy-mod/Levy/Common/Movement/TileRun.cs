@@ -6,7 +6,7 @@ namespace Levy.Common.Movement
 {
 	/// <summary>
 	/// What the floor under a runner does to its run, the way Player.Update applies it after the gear (the dummy a levy wears never runs that part, which is why asphalt did nothing for a levy):
-	/// asphalt (<c>Player.powerrun</c>) multiplies the ground run cap by 3.5 and doubles the braking, honey blocks (<c>sticky</c>) quarter the cap and the acceleration, ice (<c>slippy</c>, <see cref="TileID.Sets.IceSkateSlippery"/>)
+	/// asphalt (<c>Player.powerrun</c>) multiplies the ground run cap by 3.5 (2.25 with Calamity) and doubles the braking (not with Calamity), honey blocks (<c>sticky</c>) quarter the cap and the acceleration, ice (<c>slippy</c>, <see cref="TileID.Sets.IceSkateSlippery"/>)
 	/// and frozen slime (<c>slippy2</c>) cut the acceleration and the braking (Ice Skates give acceleration x3.5 and a 25% higher cap), and Desert Boots on sand make everything x1.75.
 	/// The sprint (accRunSpeed, the boots' own number) is NOT scaled by asphalt, so a player tops out at the larger of the two, as in <c>HorizontalMovement</c>.
 	/// The floor is found the way <c>Player.FloorVisuals</c> finds it: the solid tile under the centre of the feet, else the one to its left, else its right (a platform is not a floor tile).
@@ -20,6 +20,16 @@ namespace Levy.Common.Movement
 		public const float CapPx = 16f;
 		/// <summary>The least a slippery floor brakes (a multiple of the normal braking): a player's 0.1 would have a levy slide far past the spot it was walking to.</summary>
 		public const float MinBrake = 0.3f;
+
+		private static bool? _cal;
+		private static bool Calamity => _cal ??= global::Terraria.ModLoader.ModLoader.HasMod("CalamityMod");
+		/// <summary>
+		/// The multipliers Player.Update applies on these floors. Calamity rewrites three of them in Player.Update's IL (its RunSpeedAdjustments: asphalt's top speed x2.25 for x3.5 and its braking x1 for x2, Ice Skates' acceleration x2.1 on ice and frozen slime
+		/// for x3.5), which the levy's copy of the rule does not run, so it takes the same numbers when Calamity is loaded.
+		/// </summary>
+		public static float AsphaltTop => Calamity ? 2.25f : 3.5f;
+		public static float AsphaltBrake => Calamity ? 1f : 2f;
+		public static float SkateAccel => Calamity ? 2.1f : 3.5f;
 
 		public enum Floor : byte { Plain, Asphalt, Honey, Ice, FrozenSlime, Sand, Conveyor }
 
@@ -43,28 +53,16 @@ namespace Levy.Common.Movement
 		}
 
 		/// <summary>
-		/// The run on this floor: the top speed (px/tick), the factor on the acceleration and the factor on the braking.
-		/// Plain ground gives <see cref="MovementAbilities.MaxRunSpeed"/>, 1 and 1.
+		/// The run on this floor: the top speed (px/tick), the factor on the acceleration and the factor on the braking, each read the way a player's run is there (the floor applied, then the mods' run-speed hooks:
+		/// <see cref="MovementAbilities.RunOn"/>), so a mod that adds to the run or sets its own sprint counts exactly as it does for a player. Plain ground gives <see cref="MovementAbilities.MaxRunSpeed"/>, 1 and 1.
 		/// </summary>
 		public static void Resolve(MovementAbilities ab, Floor kind, out float top, out float accelMul, out float brakeMul)
 		{
-			float ground = ab.GroundRun, sprint = ab.SprintRun;
-			accelMul = 1f; brakeMul = 1f;
-			switch (kind)
-			{
-				case Floor.Honey: ground *= 0.25f; accelMul = 0.25f; brakeMul = 2f; top = ground; break; // the speed is clamped to the quartered cap, the sprint cannot carry past it
-				case Floor.Asphalt: ground *= 3.5f; brakeMul = 2f; top = Math.Max(ground, sprint); break;
-				case Floor.Sand: ground *= 1.75f; sprint *= 1.75f; accelMul = 1.75f; brakeMul = 1.75f; top = Math.Max(ground, sprint); break;
-				case Floor.FrozenSlime:
-					accelMul = 0.6f; brakeMul = 0f;
-					if (ab.IceSkate) { accelMul *= 3.5f; ground *= 1.25f; }
-					top = Math.Max(ground, sprint); break;
-				case Floor.Ice:
-					accelMul = 0.7f;
-					if (ab.IceSkate) { accelMul *= 3.5f; ground *= 1.25f; } else brakeMul = 0.1f;
-					top = Math.Max(ground, sprint); break;
-				default: top = Math.Max(ground, sprint); break;
-			}
+			if (kind == Floor.Plain) { top = ab.MaxRunSpeed; accelMul = 1f; brakeMul = 1f; return; }
+			ab.RunOn(kind, out float ground, out float sprint, out float accel, out float slow);
+			top = kind == Floor.Honey ? ground : Math.Max(ground, sprint); // honey clamps the speed to its quartered cap, the sprint cannot carry past it
+			accelMul = ab.RunAcceleration > 0.0001f ? accel / ab.RunAcceleration : 1f;
+			brakeMul = ab.RunSlowdown > 0.0001f ? slow / ab.RunSlowdown : 1f;
 			top = Math.Clamp(top, LevyConstants.Movement.MinRunSpeed * 0.25f, CapPx);
 			if (brakeMul < MinBrake) brakeMul = MinBrake;
 		}

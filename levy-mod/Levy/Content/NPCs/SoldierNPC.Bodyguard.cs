@@ -18,7 +18,7 @@ namespace Levy.Content.NPCs
 	/// </summary>
 	public partial class SoldierNPC
 	{
-		private int _bgDir, _bgHoldUntil, _bgActiveUntil, _bgLaneDir, _bgLaneUntil; private bool _bgLaneOn;
+		private int _bgDir, _bgHoldUntil, _bgActiveUntil, _bgLaneDir, _bgLaneUntil, _bgDwellUntil; private bool _bgLaneOn; private Vector2 _bgLaneDest;
 		/// <summary>Harness telemetry: decoy legs started, thinks spent holding at the far end, lane sidesteps.</summary>
 		internal int BgLegs, BgFlips, BgHolds, BgLaneStepsN;
 		/// <summary>True while this levy is running the decoy rule (a boss has it in its sights, or it is still in the grace after).</summary>
@@ -92,7 +92,10 @@ namespace Levy.Content.NPCs
 			if (br.X - tl.X > 2f * m) dest.X = MathHelper.Clamp(dest.X, tl.X + m, br.X - m);
 		}
 
-		/// <summary>A levy that is not the target steps across the line from each boss to the levy it has in its sights, and stays across it while that line is still near.</summary>
+		/// <summary>
+		/// A levy that is not the target steps across the line from each boss to the levy it has in its sights, and stays across it while that line is still near. The lane swings faster than a levy walks, so he steps off at
+		/// <see cref="Bodyguard.LaneTriggerTiles"/>, goes until he is <see cref="Bodyguard.LaneHalfTiles"/> + <see cref="Bodyguard.LaneExtraTiles"/> clear, and stays where he stopped for <see cref="Bodyguard.LaneDwellTicks"/> ticks rather than being walked back into it.
+		/// </summary>
 		private void KeepOffTheLane(int now, System.Collections.Generic.List<Bodyguard.Pair> pairs)
 		{
 			float tile = LevyConstants.TilePx; Vector2 here = NPC.Center;
@@ -106,7 +109,7 @@ namespace Levy.Content.NPCs
 				Vector2 a = boss.Center, b = tgt.Center;
 				if (Vector2.Distance(a, b) < Bodyguard.LaneMinLenTiles * tile) continue;
 				float d = Bodyguard.DistToSegmentTiles(here, a, b, out float along, out Vector2 closest);
-				float need = Bodyguard.LaneHalfTiles + (_bgLaneOn ? Bodyguard.LaneExtraTiles : 0f);
+				float need = Bodyguard.LaneTriggerTiles + (_bgLaneOn ? Bodyguard.LaneExtraTiles : 0f);
 				if (d >= need || along <= 0.04f || along >= 0.96f) continue;
 				Vector2 nrm = here - closest; float nl = nrm.Length();
 				if (nl < 1f) { Vector2 ab = b - a; nrm = new Vector2(-ab.Y, ab.X); nl = nrm.Length(); } // standing on the line itself: either side
@@ -115,14 +118,20 @@ namespace Levy.Content.NPCs
 				if (Math.Abs(nrm.X) < Bodyguard.LaneMinNormalX) continue; // a line along the ground cannot be left by walking
 				if (d < worst) { worst = d; side = nrm.X >= 0f ? 1 : -1; near = true; }
 			}
-			if (!near) { _bgLaneOn = false; return; }
+			if (!near)
+			{
+				// off the lane: he stays where he stepped for a moment, then the order's own goal takes over again
+				if (_bgLaneOn && now < _bgDwellUntil) { SetGoal(_bgLaneDest); _platActive = false; WhyB = Why.BLane; return; }
+				_bgLaneOn = false; return;
+			}
 			if (_bgLaneOn && now < _bgLaneUntil && _bgLaneDir != 0) side = _bgLaneDir; // keep the side it chose: no flipping while the lane drifts
-			int clear = (int)Math.Ceiling(Bodyguard.LaneHalfTiles + Bodyguard.LaneExtraTiles + 2f - Math.Min(worst, Bodyguard.LaneHalfTiles));
-			clear = Math.Clamp(clear, 3, 9);
-			if (!TryFlatStep(side, clear, out Vector2 dest)) { _bgLaneOn = false; return; }
+			int clear = (int)Math.Ceiling((Bodyguard.LaneHalfTiles + Bodyguard.LaneExtraTiles + 2f - Math.Min(worst, Bodyguard.LaneHalfTiles + Bodyguard.LaneExtraTiles)) );
+			clear = Math.Clamp(clear + 3, 5, 12);
+			if (!TryFlatStep(side, clear, out Vector2 dest) && !TryFlatStep(-side, clear, out dest)) { _bgLaneOn = false; return; }
 			ClampToArenaBox(ref dest);
 			ApplyChaseClamp(ref dest);
-			if (!_bgLaneOn) { _bgLaneOn = true; _bgLaneDir = side; _bgLaneUntil = now + 45; }
+			if (!_bgLaneOn) { _bgLaneOn = true; _bgLaneDir = side; _bgLaneUntil = now + 60; }
+			_bgLaneDest = dest; _bgDwellUntil = now + Bodyguard.LaneDwellTicks;
 			SetGoal(dest); _platActive = false; WhyB = Why.BLane; BgLaneStepsN++; Bodyguard.LaneSteps++;
 		}
 	}

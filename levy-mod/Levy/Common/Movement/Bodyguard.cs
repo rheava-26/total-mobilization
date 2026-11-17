@@ -26,8 +26,9 @@ namespace Levy.Common.Movement
 		/// <summary>The decoy's leg (tiles), how long a chosen direction is held (ticks), how long it keeps running after the boss looked away, the clump it flees (tiles) and the distance from the commander it stops at when the fight zone does not set one.</summary>
 		public const int LegTiles = 12, HoldTicks = 90, GraceTicks = 45;
 		public const float ClumpRadiusTiles = 22f, ClumpMinOthers = 2f, StopTilesNoZone = 60f;
-		/// <summary>The lane between a boss and the levy it targets: half width (tiles), the extra a levy must clear before it stops sidestepping, the shortest lane worth leaving, and the flattest line a walk can leave.</summary>
-		public const float LaneHalfTiles = 3.5f, LaneExtraTiles = 1.5f, LaneMinLenTiles = 8f, LaneMinNormalX = 0.35f;
+		/// <summary>The lane between a boss and the levy it targets: its half width (tiles; the width a check counts a levy as standing on it), how close a levy may stand before it steps off (a body and a half of margin, the lane moves faster than a levy walks),
+		/// the extra it must be clear by before it stops sidestepping, how long it stays where it stepped (ticks), the shortest lane worth leaving, and the flattest line a walk can leave.</summary>
+		public const float LaneHalfTiles = 3.5f, LaneTriggerTiles = 5.5f, LaneExtraTiles = 2f, LaneMinLenTiles = 8f, LaneMinNormalX = 0.35f; public const int LaneDwellTicks = 60;
 
 		public struct Pair { public int Boss, Body; public bool Spite; }
 		private static readonly List<Pair> Cur = new(8);

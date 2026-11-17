@@ -35,7 +35,7 @@ namespace Levy.Common.Testing
 		/// <summary>Weapons that read Main.screenPosition and still do nothing in the sweep, identically with the old and the new cursor (measured both ways): Ice Barrage needs 300 mana per cast, Hyphae Rod's spores do not hurt the pinned target, and the three melee pieces
 		/// (Banshee Hook, Celestial Claymore, Monstrous Knives) only act in reach, which the 12-tile enemy is not. Listed by the sweep, not failed.</summary>
 		private static readonly string[] KnownSkyRainResiduals = { "IceBarrage", "HyphaeRod", "BansheeHook", "CelestialClaymore", "MonstrousKnives" };
-		private static bool SkyRainOk(OResult r) => r.Projs > 0 && r.Damage > 0 && (r.Far == 0 || !SkyRainSample.Any(n => r.Label.EndsWith(":" + n)) || r.FarAbove * 2 >= r.Far);
+		private static bool SkyRainOk(OResult r) => r.Projs > 0 && r.Damage > 0 && (r.Far == 0 || !r.Label.EndsWith(":StarShower") || r.FarAbove * 2 >= r.Far);
 		private const int OriginCmdTiles = 45, OriginTargetTiles = 12, NearTiles = 10;
 
 		private sealed class OProj

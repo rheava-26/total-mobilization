@@ -92,7 +92,7 @@ namespace Levy.Common.Testing
 			p.active = true; p.dead = _mindDead; p.name = "IdentityTester";
 			if (p.statLifeMax < 500) p.statLifeMax = p.statLifeMax2 = 500;
 			p.statLife = p.statLifeMax2;
-			p.position = _cmdAt - new Vector2(p.width / 2f, p.height / 2f); p.velocity = Vector2.Zero;
+			p.position = _cmdAt - new Vector2(p.width / 2f, p.height / 2f); p.velocity = Vector2.Zero; p.fallStart = p.fallStart2 = (int)(p.position.Y / 16f);
 			if (_brewer != null && _brewer.active) p.SetTalkNPC(_brewer.whoAmI, true); // the commander is in conversation with the Brewer
 		}
 

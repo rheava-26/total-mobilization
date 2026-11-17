@@ -146,6 +146,7 @@ namespace Levy.Common.Testing
 				Main.myPlayer = savedMy; p.selectedItem = savedSel; for (int i = 0; i < savedArmor.Length; i++) p.armor[i] = savedArmor[i];
 				PlayerInput.Triggers.Current.Left = PlayerInput.Triggers.Current.Right = PlayerInput.Triggers.Current.Jump = PlayerInput.Triggers.Current.Down = false;
 				p.controlLeft = p.controlRight = p.controlJump = p.controlDown = false; p.position = savedPos; p.velocity = Vector2.Zero;
+				p.fallStart = p.fallStart2 = (int)(p.position.Y / 16f); p.jump = 0; p.dashDelay = 0; p.dashTime = 0; p.wingTime = 0; p.immune = false;
 			}
 			return tr;
 		}

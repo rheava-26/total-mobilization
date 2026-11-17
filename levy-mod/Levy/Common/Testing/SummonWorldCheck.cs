@@ -62,6 +62,7 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_WHIPONLY") == "1") { _done = true; try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the whip check alone
 			if (Environment.GetEnvironmentVariable("LEVY_TILESWEEPSHIPONLY") == "1") { _done = true; try { TileSweepCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[TileSweep] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the ship-mode tile sweep sample alone
 			if (Environment.GetEnvironmentVariable("LEVY_OFFICERONLY") == "1") { _done = true; try { OfficerWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[OfficerWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the officer world check alone
+			if (Environment.GetEnvironmentVariable("LEVY_BODYGUARD_ONLY") == "1") { _done = true; try { BodyguardWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[Bodyguard] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the bodyguard world check alone
 			if (Environment.GetEnvironmentVariable("LEVY_MOBONLY") == "1") { _done = true; try { MobilityWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[MobWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the wings and boots check alone
 			if (Environment.GetEnvironmentVariable("LEVY_BOSSBUGS_ONLY") == "1") { _done = true; try { BossBugsWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[BossBugs] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the boss-bugs check alone
 			if (Environment.GetEnvironmentVariable("LEVY_PERFAN_ONLY") == "1") { _done = true; try { global::Levy.Common.Perf.PerfWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfAnalyzer] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the performance analyzer check alone
@@ -82,6 +83,8 @@ namespace Levy.Common.Testing
 			try { OfficerWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[OfficerWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the wings and boots check runs after that (never two checks stepping the world at once)
 			try { MobilityWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[MobWorld] check threw " + e.GetType().Name + ": " + e.Message); }
+			// the bodyguard check runs after that (a boss that hunts one levy: it leads the boss away from the commander)
+			try { BodyguardWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[Bodyguard] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the whip world check runs next (never two checks stepping the world at once)
 			try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the field-fix check (thorn contact break, officers in a boss fight, the off-duty banner) runs after that

@@ -126,7 +126,7 @@ namespace Levy.Common.Movement
 			float run = Math.Max(0f, RunValue(it) - RunValue(wings)), dash = DashValue(it);
 			if (run <= 0f && dash <= 0f) return 0f;
 			float other = Math.Max(0f, Value(it) - RunValue(it) - (IsDash(it) ? LevyConstants.Armory.MobilityDashOrdinary : 0f));
-			return run + dash + other;
+			return run + dash + other * 0.25f; // a tie-break only: a dash with a wall climb on it is not worth more than boots that outrun it
 		}
 
 		/// <summary>0 for nothing. Wings (4) outrank flight-plus-sprint boots (Spectre and up) and jump bundles (3), which outrank Rocket Boots, Frog Leg and a single bottle (about 1), which outrank sprint-only boots.</summary>

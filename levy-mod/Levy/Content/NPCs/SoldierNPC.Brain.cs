@@ -284,7 +284,7 @@ namespace Levy.Content.NPCs
 					break;
 			}
 
-			if (State != SoldierState.Dead && State != SoldierState.Desert) ApplyFightZone(now);
+			if (State != SoldierState.Dead && State != SoldierState.Desert) { ApplyBodyguard(now); ApplyFightZone(now); } // a boss's target draws it away from the army (SoldierNPC.Bodyguard.cs), inside the fight zone
 			HangWatch.Brain(-1, 0); // this think finished (a stall after this point is not in the brain)
 			if (!NPC.active) return; // despawned this think
 			if (State != prevState) StateTimer = 0;
@@ -1948,7 +1948,7 @@ namespace Levy.Content.NPCs
 			return true;
 		}
 
-		private void ApplyChaseClamp(ref Vector2 goal)
+		private void ApplyChaseClamp(ref Vector2 goal, bool skipFollow = false)
 		{
 			if (HoldPosition) ClampToCircle(ref goal, Record.HoldPos, LevyConstants.HoldChaseLimit);
 			if ((Record.Order == SoldierOrder.Patrol || (IsMilitia && !Roaming)) && TryNearestPatrolPoint(out var post)) ClampToCircle(ref goal, post, LevyConstants.PostChaseLimit);
@@ -1961,7 +1961,7 @@ namespace Levy.Content.NPCs
 					goal.X = MathHelper.Clamp(goal.X, home.Center.X - r, home.Center.X + r);
 				}
 			}
-			if (IsRegular && Record.Order == SoldierOrder.Follow && !HoldPosition)
+			if (!skipFollow && IsRegular && Record.Order == SoldierOrder.Follow && !HoldPosition)
 			{
 				var cmd = Commander;
 				if (cmd != null) ClampToCircle(ref goal, cmd.Center, FollowChaseLimitTiles);

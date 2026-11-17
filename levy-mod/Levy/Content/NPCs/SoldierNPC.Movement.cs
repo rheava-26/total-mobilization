@@ -40,10 +40,10 @@ namespace Levy.Content.NPCs
 		// ---- travel dash (a player's dash profile) and the floor under the feet ----
 		private float _dashV, _dashDist, _dashCapPx; private int _dashAge, _dashTravelCd;
 		/// <summary>Harness switch (LEVY_DASHFIX=0): the travel dash is the old fixed burst of <see cref="DashSpeedPx"/> for <see cref="DashBurstTicks"/> instead of the gear's own dash.</summary>
-		internal static readonly bool DashFix = Environment.GetEnvironmentVariable("LEVY_DASHFIX") != "0";
+		internal static bool DashFixOn = Environment.GetEnvironmentVariable("LEVY_DASHFIX") != "0";
 		private TileRun.Floor _floorKind; private int _floorType = -1; private float _floorBrake = 1f; private int _floorTick = -100;
 		/// <summary>Harness telemetry: ticks spent on each special floor, and travel dashes started.</summary>
-		internal int FloorTicks, TravelDashes; internal float FloorTop;
+		internal int FloorTicks, TravelDashes, OldDashes; internal float FloorTop;
 		// ---- aerial state (wings / extra jumps / rocket boots; see UpdateAerial) ----
 		private MovementAbilities _kitRef; private int _kitRocketMax; private bool _kitAny;
 		private int _rocketTime; private float _drainAcc;
@@ -529,7 +529,7 @@ namespace Levy.Content.NPCs
 		private bool TickDash(Vector2 goal, float dx, float dy, bool grounded, bool air)
 		{
 			NPC npc = NPC;
-			bool profile = DashFix && Abilities != null && Abilities.DashSpeed > 0f;
+			bool profile = DashFixOn && Abilities != null && Abilities.DashSpeed > 0f;
 			if (_dashTicks > 0)
 			{
 				if (profile)
@@ -574,7 +574,7 @@ namespace Levy.Content.NPCs
 			}
 			else
 			{
-				_dashTicks = DashBurstTicks;
+				_dashTicks = DashBurstTicks; OldDashes++;
 				_dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1);
 			}
 			npc.direction = dir; npc.spriteDirection = dir;

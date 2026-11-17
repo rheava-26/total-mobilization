@@ -59,6 +59,32 @@ namespace Levy.Common.Compat.Calamity
 		/// <summary>True while a Calamity arena box is up.</summary>
 		public static bool Active { get { if (!On) return false; Init(); return _ok && Boxes() != null; } }
 
+		/// <summary>The walls of the active box that holds <paramref name="npc"/> (the first one that would hold a player standing there), so a goal can be chosen inside them. False with no box up.</summary>
+		public static bool TryBounds(NPC npc, out Vector2 topLeft, out Vector2 bottomRight)
+		{
+			topLeft = bottomRight = default;
+			if (!On || npc == null) return false;
+			Init();
+			if (!_ok) return false;
+			IList boxes = Boxes();
+			if (boxes == null) return false;
+			try
+			{
+				_stand ??= new Player { active = true };
+				for (int i = 0; i < boxes.Count; i++)
+				{
+					object box = boxes[i];
+					if (box == null) continue;
+					_stand.width = npc.width; _stand.height = npc.height; _stand.position = npc.position;
+					if (!(bool)_should.Invoke(box, new object[] { _stand })) continue;
+					topLeft = (Vector2)_topLeft.GetValue(box); bottomRight = (Vector2)_bottomRight.GetValue(box);
+					return true;
+				}
+			}
+			catch (Exception) { }
+			return false;
+		}
+
 		/// <summary>Holds <paramref name="npc"/> inside every active box that would hold a player standing there (ArenaWallPlayer.ContainPlayerLogic). Call after the body's movement for the tick is decided, before it is applied.</summary>
 		public static void Contain(NPC npc)
 		{

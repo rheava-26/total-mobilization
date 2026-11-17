@@ -24,7 +24,7 @@ namespace Levy.Common.Testing
 	/// wings' ranking is also asserted on the stat the wings give the dummy (their wing time), which does not depend on what the brain chooses to do.
 	/// Throwaway soldiers only; nothing is saved.
 	/// </summary>
-	public sealed class MobilityWorldCheck : ModSystem
+	public sealed partial class MobilityWorldCheck : ModSystem
 	{
 		private static bool _armed, _done, _running; private static int _pass, _fail;
 		private static Mod _mod; private static Vector2 _cmdAt; private static int _savedMy;
@@ -75,12 +75,12 @@ namespace Levy.Common.Testing
 			p.position = _cmdAt - new Vector2(p.width / 2f, p.height / 2f); p.velocity = Vector2.Zero;
 		}
 
-		private static void Arena()
+		private static void Arena(int floorTile = TileID.GrayBrick)
 		{
 			for (int i = Cx - Half; i <= Cx + Half; i++)
 			{
 				for (int j = FloorY - 90; j < FloorY; j++) { Tile t = Main.tile[i, j]; t.ClearEverything(); }
-				Tile f = Main.tile[i, FloorY]; f.ClearEverything(); f.HasTile = true; f.TileType = TileID.GrayBrick; f.BlockType = BlockType.Solid;
+				Tile f = Main.tile[i, FloorY]; f.ClearEverything(); f.HasTile = true; f.TileType = (ushort)floorTile; f.BlockType = BlockType.Solid;
 				for (int j = FloorY + 1; j < FloorY + 4; j++) { Tile u = Main.tile[i, j]; u.ClearEverything(); u.HasTile = true; u.TileType = TileID.GrayBrick; u.BlockType = BlockType.Solid; }
 			}
 		}
@@ -150,6 +150,10 @@ namespace Levy.Common.Testing
 				Check($"longer-flying wings give a longer wing time: Fledgling {wingTimes["Fledgling Wings"]} < Angel {wingTimes["Angel Wings"]} < Solar {wingTimes["Solar Wings"]}", wingTimes["Fledgling Wings"] < wingTimes["Angel Wings"] && wingTimes["Angel Wings"] < wingTimes["Solar Wings"]);
 			if (flights.ContainsKey("Fledgling Wings") && flights.ContainsKey("Angel Wings")) Check($"longer-flying wings fly longer: Angel {flights["Angel Wings"]} >= Fledgling {flights["Fledgling Wings"]}", flights["Angel Wings"] >= flights["Fledgling Wings"]);
 			ClearSoldiers();
+			Arena();
+			try { FloorTrials(); } catch (Exception e) { Check("floor trials threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
+			try { DashTrials(); } catch (Exception e) { Check("dash trials threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
+			ClearSoldiers(); Arena();
 		}
 
 		private static (float avg, float peak) SpeedTrial(Item boots, string label)

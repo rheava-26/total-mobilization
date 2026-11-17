@@ -152,7 +152,9 @@ namespace Levy.Content.NPCs
 		/// <summary>Makes <paramref name="counts"/> hold exactly what <see cref="SaveOwnedCounts"/> saw: everything cleared, then the saved entries put back.</summary>
 		private void RestoreOwnedCounts(int[] counts, int n)
 		{
-			Array.Clear(counts, 0, counts.Length);
+			// ResetEffects has just zeroed the array (ResetProjectileCaches), so a full clear is a second write of thousands of zeros per soldier per tick: only the entries still set are cleared (a vectorised read finds them).
+			var span = new Span<int>(counts); int off = 0;
+			while (off < span.Length) { int i = span.Slice(off).IndexOfAnyExcept(0); if (i < 0) break; off += i; span[off] = 0; off++; }
 			for (int k = 0; k < n; k++) counts[_nzIdx[k]] = _nzVal[k];
 		}
 

@@ -31,7 +31,7 @@ namespace Levy.Common.Perf
 			if (_dead) { _eT0 = 0; return; }
 			try
 			{
-				if (EffectsReduced) _army = n.ModNPC is SoldierNPC;
+				if (ThinCtx) _army = n.ModNPC is SoldierNPC;
 				if (_sample && n.active) { _eG0 = _globAcc; _gsp = 0; _eT0 = Stopwatch.GetTimestamp(); } else _eT0 = 0;
 			}
 			catch (Exception e) { Fail("npc enter", e); }
@@ -58,7 +58,8 @@ namespace Levy.Common.Perf
 			try
 			{
 				bool timed = _sample && p.active;
-				if (EffectsReduced || timed) { _eArmy = IsArmyShot(p); if (EffectsReduced) _army = _eArmy; }
+				bool thin = ThinCtx;
+				if (thin || timed) { _eArmy = IsArmyShot(p); if (thin) _army = _eArmy; }
 				if (timed) { _eG0 = _globAcc; _gsp = 0; _eT0 = Stopwatch.GetTimestamp(); } else _eT0 = 0;
 			}
 			catch (Exception e) { Fail("proj enter", e); }

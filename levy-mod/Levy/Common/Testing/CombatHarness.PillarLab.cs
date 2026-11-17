@@ -23,10 +23,10 @@ namespace Levy.Common.Testing
 		/// <summary>The pillar's enemies (heads only for the worms) and whether each one flies.</summary>
 		private static (int type, bool flies)[] PwPool(string b) => b switch
 		{
-			"solarp" => new[] { (NPCID.SolarCorite, true), (NPCID.SolarSolenian, false), (NPCID.SolarDrakomire, false), (NPCID.SolarSroller, false), (NPCID.SolarSpearman, false), (NPCID.SolarDrakomireRider, true), (NPCID.SolarCrawltipedeHead, true) },
-			"nebulap" => new[] { (NPCID.NebulaBrain, true), (NPCID.NebulaHeadcrab, true), (NPCID.NebulaBeast, false), (NPCID.NebulaSoldier, false) },
-			"vortexp" => new[] { (NPCID.VortexHornetQueen, true), (NPCID.VortexHornet, true), (NPCID.VortexRifleman, false), (NPCID.VortexSoldier, false) },
-			"stardustp" => new[] { (NPCID.StardustCellBig, true), (NPCID.StardustJellyfishBig, true), (NPCID.StardustSpiderBig, false), (NPCID.StardustSoldier, false), (NPCID.StardustWormHead, true) },
+			"solarp" => new (int, bool)[] { (NPCID.SolarCorite, true), (NPCID.SolarSolenian, false), (NPCID.SolarDrakomire, false), (NPCID.SolarSroller, false), (NPCID.SolarSpearman, false), (NPCID.SolarDrakomireRider, true), (NPCID.SolarCrawltipedeHead, true) },
+			"nebulap" => new (int, bool)[] { (NPCID.NebulaBrain, true), (NPCID.NebulaHeadcrab, true), (NPCID.NebulaBeast, false), (NPCID.NebulaSoldier, false) },
+			"vortexp" => new (int, bool)[] { (NPCID.VortexHornetQueen, true), (NPCID.VortexHornet, true), (NPCID.VortexRifleman, false), (NPCID.VortexSoldier, false) },
+			"stardustp" => new (int, bool)[] { (NPCID.StardustCellBig, true), (NPCID.StardustJellyfishBig, true), (NPCID.StardustSpiderBig, false), (NPCID.StardustSoldier, false), (NPCID.StardustWormHead, true) },
 			_ => Array.Empty<(int, bool)>()
 		};
 

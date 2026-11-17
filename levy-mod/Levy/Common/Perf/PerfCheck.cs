@@ -287,6 +287,26 @@ namespace Levy.Common.Perf
 			PerfAnalyzer.TestReduced = false; PerfAnalyzer.ConfigChanged();
 			Check("full effects drop nothing", !PerfAnalyzer.EffectsReduced);
 
+			// ---- under pressure (a screen already full of dust or gore), full effects thin only what the army's own updates add, and only cosmetics
+			try
+			{
+				PerfAnalyzer.TestPressure = true; PerfAnalyzer.TestTickPressure();
+				long pd0 = PerfAnalyzer.DustThinnedPressure, g0 = PerfAnalyzer.GoreThinned;
+				PerfAnalyzer.TestSetArmyCtx(true);
+				for (int i = 0; i < 30; i++) Dust.NewDust(new Vector2(Cx * 16f, Cy * 16f), 4, 4, DustID.Torch);
+				for (int i = 0; i < 30; i++) Gore.NewGore(new EntitySource_WorldEvent("PerfAn"), new Vector2(Cx * 16f, Cy * 16f), Vector2.Zero, 1);
+				long pd = PerfAnalyzer.DustThinnedPressure - pd0, pg = PerfAnalyzer.GoreThinned - g0;
+				PerfAnalyzer.TestSetArmyCtx(false);
+				for (int i = 0; i < 30; i++) { Dust.NewDust(new Vector2(Cx * 16f, Cy * 16f), 4, 4, DustID.Torch); Gore.NewGore(new EntitySource_WorldEvent("PerfAn"), new Vector2(Cx * 16f, Cy * 16f), Vector2.Zero, 1); }
+				Check($"with the screen full, two of every three army dust particles ({pd} of 30) and one of every two army gore pieces ({pg} of 30) are dropped", pd == 20 && pg == 15);
+				Check("and nothing made outside an army update", PerfAnalyzer.DustThinnedPressure - pd0 == pd && PerfAnalyzer.GoreThinned - g0 == pg);
+				PerfAnalyzer.TestPressure = false; PerfAnalyzer.TestTickPressure(); PerfAnalyzer.TestSetArmyCtx(true);
+				long q0 = PerfAnalyzer.DustThinned, q1 = PerfAnalyzer.GoreThinned;
+				for (int i = 0; i < 30; i++) { Dust.NewDust(new Vector2(Cx * 16f, Cy * 16f), 4, 4, DustID.Torch); Gore.NewGore(new EntitySource_WorldEvent("PerfAn"), new Vector2(Cx * 16f, Cy * 16f), Vector2.Zero, 1); }
+				Check("and with the screen not full, full effects drop nothing the army makes", PerfAnalyzer.DustThinned == q0 && PerfAnalyzer.GoreThinned == q1);
+			}
+			finally { PerfAnalyzer.TestSetArmyCtx(false); PerfAnalyzer.TestPressure = null; PerfAnalyzer.TestTickPressure(); }
+
 			// ---- a fault in the analyzer turns the analyzer off and nothing else
 			Cleanup(); PerfAnalyzer.TestReset(); PerfAnalyzer.TestFault = true;
 			Tick(40);

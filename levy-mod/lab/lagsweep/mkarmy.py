@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """mkarmy.py: Eve's army files for the lagsweep pillar lab (run from anywhere; writes next to this script).
   eve45.json   her 34 recorded levies plus copies of levies 1-11 (her 11-17 pillar fights had 44-46 levies), the base of every pillar cell
-  eve45_drop_<slug>.json   eve45 with every levy whose weapon or sidearm names <slug> taken out (the "one or two weapons" hypothesis)
+  eve45_drop_<slug>.json   eve45 with every levy whose weapon, sidearm or ammo names <slug> taken out (the "one or two weapons" hypothesis)
   eve45_minus<N>.json      eve45 with N levies taken out at random (seeded), the same count as a weapon drop: the control for it
 Usage: mkarmy.py [drop SLUG[,SLUG...]] [minus N]"""
 import json, random, sys, re
@@ -22,7 +22,7 @@ while args:
     k = args.pop(0)
     if k == "drop":
         slugs = args.pop(0).split(",")
-        keep = [l for l in army if not any(s.lower() in (l.get("weapon", "") + " " + str(l.get("side", ""))).lower() for s in slugs)]
+        keep = [l for l in army if not any(s.lower() in (l.get("weapon", "") + " " + str(l.get("side", "")) + " " + str(l.get("ammo", ""))).lower() for s in slugs)]
         write("eve45_drop_" + re.sub(r"\W", "", "_".join(slugs)) + ".json", keep, f"eve45 without the levies carrying {slugs} ({len(army) - len(keep)} taken out)")
     elif k == "minus":
         n = int(args.pop(0)); rnd = random.Random(17); drop = set(rnd.sample(range(len(army)), n))

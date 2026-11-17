@@ -90,7 +90,7 @@ namespace Levy.Common.Perf
 			{
 				if (log) AttachTiming(); else DetachTiming();
 				if (log || reduced) AttachContext(); else DetachContext();
-				if (reduced) AttachDust(); else DetachDust();
+				if (log || reduced) AttachDust(); else DetachDust(); // reduced effects thin the army's dust always, the pressure rule only while the screen is full (both need the army context above)
 				_logDir = null; // the folder is looked up again
 			}
 			catch (Exception e) { Fail("config", e); }
@@ -115,6 +115,7 @@ namespace Levy.Common.Perf
 			try
 			{
 				if (_tick % 60 == 0) ScanBoss();
+				if (_tick % 15 == 0 && _attachedDust) MeasurePressure();
 				if (!_dead) PerfPopup.Tick();
 			}
 			catch (Exception e) { Fail("tick", e); }
@@ -196,8 +197,37 @@ namespace Levy.Common.Perf
 
 		private static int DustNew(On_Dust.orig_NewDust orig, Vector2 pos, int w, int h, int type, float sx, float sy, int alpha, Color c, float scale)
 		{
-			if (_army && !_dead && (++_dustN % 3) != 0) { DustThinned++; return Main.maxDust; } // the game's own "no dust" answer: callers index Main.dust[maxDust], a spare slot
+			if (_army && !_dead && (EffectsReduced || DustPressure) && (++_dustN % 3) != 0) { DustThinned++; if (!EffectsReduced) DustThinnedPressure++; return Main.maxDust; } // the game's own "no dust" answer: callers index Main.dust[maxDust], a spare slot
 			return orig(pos, w, h, type, sx, sy, alpha, c, scale);
+		}
+
+		// ------------------------------------------------------------------------------------------ effects under pressure (cosmetic only)
+		/// <summary>
+		/// The screen is already full of particles: 2,500 dust or 400 gore alive (Eve's 11-17 pillar fights held 3,000 to 5,800 dust and gore pinned at the 600 cap, against about 360 and 45 in a smooth fight). While it is,
+		/// two of every three dust particles made inside a levy's update or an army shot's are dropped, and one of every two gore pieces, exactly as "Lower levy effects" thins dust. Damage, hits, projectiles and everything
+		/// a fight does are untouched: only particles and gore the army's own updates would add on top of a full screen. Checked every 15 updates; a client only (a server makes neither).
+		/// </summary>
+		public const int DustPressureAt = 2500, GorePressureAt = 400;
+		internal static bool DustPressure, GorePressure;
+		internal static long DustThinnedPressure, GoreThinned;
+		private static int _goreN;
+		/// <summary>Self-check: pressure forced on or off (null = measured).</summary>
+		internal static bool? TestPressure;
+
+		private static void MeasurePressure()
+		{
+			if (TestPressure.HasValue) { DustPressure = GorePressure = TestPressure.Value; return; }
+			if (Main.dedServ) { DustPressure = GorePressure = false; return; }
+			int d = 0, g = 0;
+			for (int i = 0; i < Main.maxDust; i++) if (Main.dust[i] != null && Main.dust[i].active) d++;
+			for (int i = 0; i < Main.maxGore; i++) if (Main.gore[i] != null && Main.gore[i].active) g++;
+			DustPressure = d >= DustPressureAt; GorePressure = g >= GorePressureAt;
+		}
+
+		private static int GoreNew(On_Gore.orig_NewGore_IEntitySource_Vector2_Vector2_int_float orig, Terraria.DataStructures.IEntitySource source, Vector2 pos, Vector2 vel, int type, float scale)
+		{
+			if (_army && !_dead && GorePressure && (++_goreN % 2) != 0) { GoreThinned++; return Main.maxGore; } // the game's own "no gore" answer (a server returns it): callers index Main.gore[maxGore], a spare slot
+			return orig(source, pos, vel, type, scale);
 		}
 
 		// ------------------------------------------------------------------------------------------ attaching
@@ -220,8 +250,8 @@ namespace Levy.Common.Perf
 		internal static int AttachCount;
 		private static void AttachContext() { if (_attachedCtx) return; AttachCount++; AttachEntityUpdates(); _attachedCtx = true; }
 		private static void DetachContext() { if (!_attachedCtx) return; DetachList(_ilCtx); _attachedCtx = false; }
-		private static void AttachDust() { if (_attachedDust) return; On_Dust.NewDust += DustNew; _attachedDust = true; }
-		private static void DetachDust() { if (!_attachedDust) return; On_Dust.NewDust -= DustNew; _attachedDust = false; }
+		private static void AttachDust() { if (_attachedDust) return; On_Dust.NewDust += DustNew; On_Gore.NewGore_IEntitySource_Vector2_Vector2_int_float += GoreNew; _attachedDust = true; }
+		private static void DetachDust() { if (!_attachedDust) return; On_Dust.NewDust -= DustNew; On_Gore.NewGore_IEntitySource_Vector2_Vector2_int_float -= GoreNew; _attachedDust = false; DustPressure = GorePressure = false; }
 
 		private static void Detach()
 		{
@@ -317,7 +347,7 @@ namespace Levy.Common.Perf
 			{
 				Utc = DateTime.UtcNow, Tick = (long)Main.GameUpdateCount, Secs = secs, Updates = _updates, Frames = _frames, SampledUpdates = _sUpdates, SampledFrames = _sFrames,
 				Fps = _frames / secs, Ups = _updates / secs, UpdMs = Ms(_updTicks) / upd, DrawMs = Ms(_drawTicks) / frm, WorstUpdMs = Ms(_worstUpd), WorstFrameMs = Ms(_worstFrame),
-				Focus = Main.hasFocus, NetMode = Main.netMode, Effects = EffectsReduced ? 1 : 0,
+				Focus = Main.hasFocus, NetMode = Main.netMode, Effects = EffectsReduced ? 1 : 0, FrameSkip = Main.dedServ ? -1 : (int)Main.FrameSkipMode,
 			};
 			for (int i = 0; i < 6; i++) w.DrawSplit[i] = Ms(_draw[i]) / frm;
 			w.UpdSplit[0] = Ms(_npcPhase) / upd; w.UpdSplit[1] = Ms(_projPhase) / upd;
@@ -519,5 +549,8 @@ namespace Levy.Common.Perf
 		}
 		internal static void TestCommit(PerfWindow w) { Commit(w); }
 		internal static void TestSetArmyCtx(bool on) { _army = on; }
+		/// <summary>True while dust made now would be thinned (effects reduced or the screen full): the army context is set.</summary>
+		internal static bool ThinCtx => EffectsReduced || DustPressure || GorePressure;
+		internal static void TestTickPressure() => MeasurePressure();
 	}
 }

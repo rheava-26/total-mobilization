@@ -1,0 +1,13 @@
+# lagsweep A/B: Eve's army (45 levies) in a Solar Pillar scene, 40 s per fight; base / without the top two weapons (Apathanull, Sprouting Arrow: 8 levies) / 8 levies out at random
+# plus one Nebula Pillar and one Plaguebringer fight with the base army. Run with LEVY_CROWD=1 (CPU census); lab/lagsweep/crowd.py RUN prints the table.
+fight	solarp	mdeath	1	2400	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve45.json	pw=30	meta=base
+fight	solarp	mdeath	2	2400	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve45.json	pw=30	meta=base
+fight	solarp	mdeath	3	2400	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve45.json	pw=30	meta=base
+fight	solarp	mdeath	1	2400	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve45_drop_Apathanull_SproutingArrow.json	pw=30	meta=droptop2
+fight	solarp	mdeath	2	2400	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve45_drop_Apathanull_SproutingArrow.json	pw=30	meta=droptop2
+fight	solarp	mdeath	3	2400	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve45_drop_Apathanull_SproutingArrow.json	pw=30	meta=droptop2
+fight	solarp	mdeath	1	2400	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve45_minus8.json	pw=30	meta=minus8
+fight	solarp	mdeath	2	2400	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve45_minus8.json	pw=30	meta=minus8
+fight	solarp	mdeath	3	2400	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve45_minus8.json	pw=30	meta=minus8
+fight	nebulap	mdeath	1	2400	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve45.json	pw=30	meta=nebula
+fight	pbg	mdeath	1	2400	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve45.json	bhp=4	meta=pbg

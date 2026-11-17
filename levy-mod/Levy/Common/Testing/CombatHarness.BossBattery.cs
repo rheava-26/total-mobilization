@@ -362,7 +362,8 @@ namespace Levy.Common.Testing
 			catch (Exception e) { Mod.Logger.Warn("HARNESS-BB: finish row failed: " + e.Message); }
 		}
 
-		private void BbStartFight(CrRun run) { _bb = new BbStats(); BbImmMode = string.IsNullOrEmpty(run.Imm) ? "shared" : run.Imm; }
+		private void BbStartFight(CrRun run) { _bb = PwIsPillar(run.Boss) && string.IsNullOrEmpty(run.Imm) ? null : new BbStats(); // a pillar fight is a cost lab: the per-shot immunity census (its own Colliding pass over every part, per shot) stays off unless imm= asks for it
+			 BbImmMode = string.IsNullOrEmpty(run.Imm) ? "shared" : run.Imm; }
 		private void BbEndFight() { _bb = null; BbImmMode = "shared"; }
 	}
 }

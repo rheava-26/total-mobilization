@@ -118,6 +118,11 @@ namespace Levy.Common.Perf
 					case PopupOption.ItsFine: _snoozeUntil = Now.AddSeconds(PerfThresholds.FineGapSecs); break;
 					case PopupOption.DontAskAgain: SetDontAsk(); Say("The lag note will not show again. Turn it back on in the Levy performance settings."); break;
 					case PopupOption.OpenSettings: OpenSettings(); break;
+					case PopupOption.FrameSkipSubtle:
+						Main.FrameSkipMode = Terraria.Enums.FrameSkipMode.Subtle;
+						if (!Main.dedServ) Main.SaveSettings();
+						Say("Frame Skip is set to Subtle. In a heavy fight the game now slows down instead of dropping frames. Change it in Settings, Video.");
+						break;
 				}
 			}
 			catch (Exception e) { Levy.Instance?.Logger.Warn("[PerfAnalyzer] popup action " + o + " failed: " + e.Message); }

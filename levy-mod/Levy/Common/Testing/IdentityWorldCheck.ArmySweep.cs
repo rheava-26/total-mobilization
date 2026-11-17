@@ -62,12 +62,14 @@ namespace Levy.Common.Testing
 			{ "cosmolight", "a utility item, not a weapon" },
 		};
 
+		private static readonly Dictionary<string, int> _armyAmmo = new();
 		private static readonly bool ArmyDebug = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_DEBUG") == "1";
 		private static string ArmyKey(string s) => new string(s.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
 
 		private sealed class ArmyRes
 		{
 			public string Who = ""; public int Uses, Projs, AtCmd, NearCmdTicks, Engage, Ran, MaxMinions, MaxSentries, Hits; public long Dmg; public double SpawnActor, SpawnCmd; public string End = ""; public string Err;
+			public double ProjMsTick, LevyMsTick, ProjAlive, DustPerSec, GorePerSec; public int ProjPeak; // ARMY SWEEP COST (IdentityWorldCheck.ArmyCost.cs)
 			public Dictionary<string, int> Types = new(); public Dictionary<string, (int hits, long dmg)> ByProj = new(); public Dictionary<string, int> States = new(); public int DummyMinions, DummyTurrets; public float MinX = 1e9f, MaxX = -1e9f;
 			public double UsesPerSec => Uses * 60.0 / Math.Max(1, Ran);
 			public double AvgActor => Projs == 0 ? -1 : SpawnActor / Projs / 16.0; public double AvgCmd => Projs == 0 ? -1 : SpawnCmd / Projs / 16.0;
@@ -79,9 +81,13 @@ namespace Levy.Common.Testing
 		private static List<(int type, string label, string name)> ArmyResolve(string[] names)
 		{
 			var res = new List<(int, string, string)>();
-			foreach (string n in names)
+			_armyAmmo.Clear();
+			foreach (string n0 in names)
 			{
+				// "Weapon@Ammo" (LEVY_ARMYSWEEP_ONLY): the weapon fires this ammo instead of the plainest of its kind (Realm Ravager@Chlorophyte Bullet)
+				string n = n0, am = null; int at = n0.IndexOf('@'); if (at > 0) { n = n0.Substring(0, at); am = n0.Substring(at + 1); }
 				string k = ArmyKey(n); bool any = false;
+				if (am != null) for (int i = 1; i < ItemLoader.ItemCount; i++) if (ContentSamples.ItemsByType.TryGetValue(i, out Item ai) && ai != null && ai.ammo > 0 && (ArmyKey(ai.Name) == ArmyKey(am) || ai.ModItem != null && ArmyKey(ai.ModItem.Name) == ArmyKey(am))) { _armyAmmo[k] = i; break; }
 				for (int i = 1; i < ItemLoader.ItemCount; i++)
 				{
 					if (!ContentSamples.ItemsByType.TryGetValue(i, out Item s) || s == null || s.IsAir || s.damage <= 0 || s.accessory || s.ammo > 0 || s.pick > 0 || s.axe > 0 || s.hammer > 0) continue;
@@ -165,13 +171,14 @@ namespace Levy.Common.Testing
 				else
 				{
 					rec = MakeOriginRecord(w, ammoType); rec.Order = Enum.TryParse(Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ORDER"), out SoldierOrder so) ? so : SoldierOrder.Hold; RosterSystem.Instance.Regulars.Add(rec); // Hold: a levy that stays where it is posted fights there, whatever the 60 tiles to her commander would do to a follower
-					body = RosterSystem.Instance.SpawnBody(rec, at);
+					body = RosterSystem.Instance.SpawnBody(rec, at); _costBody = body;
 					if (body < 0 || !rec.HasBody) throw new Exception("levy did not spawn");
 					Main.npc[body].Bottom = at; rec.HoldPos = Main.npc[body].Center;
 				}
 				Main.rand = new Terraria.Utilities.UnifiedRandom(777);
 				KeepCommander(); PinSweepTarget(); CursorOnCommander(); Step(20);
 				for (int i = 0; i < Main.maxProjectiles; i++) Main.projectile[i].active = false;
+				CostReset();
 				var live = new Dictionary<int, int>(); uint prevUse = 0; int prevAnim = 0; ArmySweepTally.Hits = 0; ArmySweepTally.Damage = 0; ArmySweepTally.ByProj = new(); ArmyReadDamage(new ArmyRes());
 				for (int k = 0; k < ticks; k++)
 				{
@@ -216,14 +223,15 @@ namespace Levy.Common.Testing
 						if (!player && dc < NearTiles * 16f && dc < da) { res.NearCmdTicks++; if (ArmyDebug && res.NearCmdTicks <= 6) Note($"  armydbg near commander t={k} {p.ModProjectile?.Name ?? p.type.ToString()} owner={p.owner} age={p.timeLeft} pos-levy=({(p.Center.X - actor.X) / 16f:0.0},{(p.Center.Y - actor.Y) / 16f:0.0}) pos-cmd=({(p.Center.X - cmd.X) / 16f:0.0},{(p.Center.Y - cmd.Y) / 16f:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.0},{p.ai[1]:0.0})"); }
 						if (ArmyDebug && k % 100 == 50 && (p.minion || p.sentry || p.minionSlots > 0f)) Note($"  armydbg {(player ? "player" : "levy")} t={k} {p.ModProjectile?.Name ?? p.type.ToString()} owner={p.owner} dmg={p.damage} friendly={p.friendly} pos-target=({(p.Center.X - _sweepTarget.Center.X) / 16f:0.0},{(p.Center.Y - _sweepTarget.Center.Y) / 16f:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.0},{p.ai[1]:0.0}) localAI=({p.localAI[0]:0.0},{p.localAI[1]:0.0}) tl={p.timeLeft}");
 					}
-					res.MaxMinions = Math.Max(res.MaxMinions, minions); res.MaxSentries = Math.Max(res.MaxSentries, sentries);
+					res.MaxMinions = Math.Max(res.MaxMinions, minions); res.MaxSentries = Math.Max(res.MaxSentries, sentries); res.ProjPeak = Math.Max(res.ProjPeak, live.Count);
 				}
+				CostRead(res, res.Ran);
 				res.Hits = ArmySweepTally.Hits; res.Dmg = Math.Max(res.Dmg, ArmySweepTally.Damage); res.ByProj = new Dictionary<string, (int, long)>(ArmySweepTally.ByProj);
 			}
 			catch (Exception e) { res.Err = e.GetType().Name + ": " + e.Message + " @ " + string.Join(" < ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())); }
 			finally
 			{
-				ArmySweepTally.On = false;
+				ArmySweepTally.On = false; _costBody = -1;
 				if (player) { _my = 0; if (scratch != null && ReferenceEquals(Main.player[255], scratch)) Main.player[255] = saved255; global::Levy.Common.Targeting.EnemyTargeting.ResetState(); }
 				ClearSoldiers(); _cmdHolds = false; ReleaseCommanderButtons(); _cmdAt = OriginCmdAt();
 			}
@@ -249,13 +257,15 @@ namespace Levy.Common.Testing
 			var ammoByKind = AmmoByKind(); var rows = new List<ArmyRow>(); var sw = Stopwatch.StartNew();
 			SetupOriginArena(); _spNet = false;
 			On_AchievementsHelper.HandleSpecialEvent += NoAchievements; // a yoyo throw tells the achievement system, which a headless server has not built
+			CostAttach();
 			try
 			{
 				KeepCommander(); Step(2);
-				foreach (var (type, label, name) in weapons)
+				foreach (var (type, label0, name) in weapons)
 				{
-					Item sample = ContentSamples.ItemsByType[type];
-					int ammo = sample.useAmmo > 0 && ammoByKind.TryGetValue(sample.useAmmo, out int at) ? at : 0;
+					Item sample = ContentSamples.ItemsByType[type]; string label = label0;
+					int ammo = _armyAmmo.TryGetValue(ArmyKey(name), out int forced) ? forced : sample.useAmmo > 0 && ammoByKind.TryGetValue(sample.useAmmo, out int at) ? at : 0;
+					if (_armyAmmo.ContainsKey(ArmyKey(name))) label += "@" + ContentSamples.ItemsByType[ammo].Name;
 					var row = new ArmyRow { Label = label, Name = name, Cls = (sample.DamageType?.Name ?? "?").Replace("DamageClass", "") };
 					try { row.Probe = sample.shoot > 0 ? $"shot reads cursor {OwnerLockProbe.ReadsCursor(sample.shoot)}, reads buttons {OwnerLockProbe.ReadsUseButtons(sample.shoot)}, locks owner {OwnerLockProbe.LocksOwner(sample.shoot)}" : "no shot"; } catch (Exception) { row.Probe = "probe threw"; }
 					try { Item fi = new Item(); fi.SetDefaults(type); WeaponProfile fp = WeaponClassifier.GetProfile(fi); row.Fam = fp.Family + (fp.Supported ? "" : "(unsupported)") + (ModShotKinds.Of(fi) != ModShotKind.None ? "/" + ModShotKinds.Of(fi) : ""); } catch (Exception) { row.Fam = "?"; }
@@ -266,17 +276,29 @@ namespace Levy.Common.Testing
 					Note($"army sweep {row.Status} {row.Label} [{row.Cls}, {row.Fam}; {row.Probe}] ratio idle {row.RatioA:0.00} / commander holding {row.RatioB:0.00} {row.Cause} || {row.Player} || {row.A} || {row.B}");
 				}
 			}
-			finally { _sweepTarget = null; On_AchievementsHelper.HandleSpecialEvent -= NoAchievements; }
+			finally { _sweepTarget = null; On_AchievementsHelper.HandleSpecialEvent -= NoAchievements; CostDetach(); }
 			sw.Stop();
 			Note($"army sweep: {rows.Count} weapons, {ticks} ticks per run, {sw.ElapsedMilliseconds / 1000} s: OK {rows.Count(r => r.Status == "OK")}, WEAK {rows.Count(r => r.Status == "WEAK")}, BROKEN {rows.Count(r => r.Status == "BROKEN")}, NOREF {rows.Count(r => r.Status == "NOREF")}");
 			Note("army sweep table (name | status | worst ratio | player dmg | levy dmg idle | levy dmg commander holding | cause):");
 			foreach (var r in rows) Note($"army row {r.Label} | {r.Status} | {Math.Min(r.RatioA, r.RatioB):0.00} | {r.Player.Dmg} | {r.A.Dmg} | {r.B.Dmg} | {r.Cause}{(ArmyCoveredElsewhere.TryGetValue(ArmyKey(r.Name), out string c1) ? " | COVERED BY " + c1 : ArmyNotMeasurable.TryGetValue(ArmyKey(r.Name), out string c2) ? " | NOT MEASURABLE: " + c2 : "")}");
+			ArmyCostTable(rows, ticks);
 			foreach (var r in rows)
 			{
 				if (ArmyCoveredElsewhere.TryGetValue(ArmyKey(r.Name), out string cov)) { Note($"army sweep: {r.Label} is covered by {cov} ({r.Status}, ratio {Math.Min(r.RatioA, r.RatioB):0.00})"); continue; }
 				if (ArmyNotMeasurable.TryGetValue(ArmyKey(r.Name), out string nm2)) { Note($"army sweep: {r.Label} is not measurable here: {nm2}"); continue; }
 				if (r.Status == "NOREF" || reportOnly) continue; // the full sweep reports; the ship subset (and a named re-check) fails
 				Check($"army: {r.Label} works in levy hands ({r.Status}: ratio idle {r.RatioA:0.00}, commander holding {r.RatioB:0.00}; levy damage {r.A.Dmg}/{r.B.Dmg}, player {r.Player.Dmg}; from commander {r.A.FromCommander || r.B.FromCommander})", r.Status == "OK");
+			}
+		}
+
+		/// <summary>The per-weapon cost table (ARMY SWEEP COST), ranked by the levy's whole cost per tick (its shots plus its own update), one "army cost" line per weapon and the levy-over-player overhead per shot.</summary>
+		private static void ArmyCostTable(List<ArmyRow> rows, int ticks)
+		{
+			Note("army cost table, ranked (weapon | levy ms/tick total | shots ms/tick | levy body ms/tick | shots alive mean/peak | dust/s | gore/s | us per shot levy / player | player shots ms/tick | levy dps idle):");
+			foreach (var r in rows.OrderByDescending(r => r.A.ProjMsTick + r.A.LevyMsTick))
+			{
+				double usL = r.A.ProjAlive > 0 ? r.A.ProjMsTick * 1000 / r.A.ProjAlive : 0, usP = r.Player.ProjAlive > 0 ? r.Player.ProjMsTick * 1000 / r.Player.ProjAlive : 0;
+				Note($"army cost {r.Label} | {r.A.ProjMsTick + r.A.LevyMsTick:0.000} | {r.A.ProjMsTick:0.000} | {r.A.LevyMsTick:0.000} | {r.A.ProjAlive:0.0}/{r.A.ProjPeak} | {r.A.DustPerSec:0} | {r.A.GorePerSec:0.0} | {usL:0.0} / {usP:0.0} | {r.Player.ProjMsTick:0.000} | {r.A.Dmg * 60.0 / Math.Max(1, r.A.Ran):0}");
 			}
 		}
 

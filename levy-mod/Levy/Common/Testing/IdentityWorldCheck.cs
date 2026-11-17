@@ -182,6 +182,8 @@ namespace Levy.Common.Testing
 			ClearSoldiers();
 			SummonLoopSweep();
 			ClearSoldiers();
+			PuppetCommanderCheck();
+			ClearSoldiers();
 			SentryProbe();
 			ClearSoldiers();
 		}

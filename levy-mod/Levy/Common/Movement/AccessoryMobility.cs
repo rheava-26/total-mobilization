@@ -11,6 +11,8 @@ namespace Levy.Common.Movement
 	public static class AccessoryMobility
 	{
 		private static readonly Dictionary<int, (int jumps, bool wings, float value)> Cache = new();
+		/// <summary>Per item type: the run part of its value (sprint gain and rocket flight), whether it dashes and how fast, read with <see cref="Cache"/>.</summary>
+		private static readonly Dictionary<int, (float run, float dash, float dashSpeed)> Horiz = new();
 		/// <summary>Item types that raise a dummy's top run speed or give rocket flight (read together with <see cref="Cache"/>).</summary>
 		private static readonly HashSet<int> Runners = new();
 		private static Player _dummy;
@@ -73,6 +75,13 @@ namespace Levy.Common.Movement
 				var c = new Item(); c.SetDefaults(it.type);
 				var w = Snap(_dummy, c);
 				if (w.ab.MaxRunSpeed - bare.ab.MaxRunSpeed > 0.05f || w.rocketTime > bare.rocketTime || w.rocketTier > bare.rocketTier) Runners.Add(it.type);
+				{
+					float run = 0f, dRun0 = w.ab.MaxRunSpeed - bare.ab.MaxRunSpeed;
+					if (w.rocketTime > bare.rocketTime || w.rocketTier > bare.rocketTier) run += 1f + Math.Min(Math.Max(w.rocketTier - 1, 0), 2);
+					if (dRun0 > 0f) run += Math.Min(dRun0, 4f) * 0.2f;
+					bool dashes = w.ab.HasDash && !bare.ab.HasDash;
+					Horiz[it.type] = (run, dashes ? LevyConstants.Armory.MobilityDashValue : 0f, dashes ? w.ab.DashSpeed : 0f);
+				}
 				int jumps = Math.Max(0, w.ab.ExtraJumps - bare.ab.ExtraJumps);
 				bool wings = it.wingSlot > 0 || (w.ab.HasWings && !bare.ab.HasWings);
 				float v;
@@ -85,7 +94,7 @@ namespace Levy.Common.Movement
 					float dRun = w.ab.MaxRunSpeed - bare.ab.MaxRunSpeed; if (dRun > 0f) v += Math.Min(dRun, 4f) * 0.2f;
 					// jump height (Frog Leg, balloons, Amphibian Boots)
 					float dJump = w.ab.JumpTiles - bare.ab.JumpTiles; if (dJump > 0f) v += Math.Min(dJump, 6f) * 0.25f;
-					if (w.ab.HasDash && !bare.ab.HasDash) v += 0.3f;
+					if (w.ab.HasDash && !bare.ab.HasDash) v += LevyConstants.Armory.MobilityDashOrdinary;
 					// wall climb gear (Player.spikedBoots: Shoe Spikes, Climbing Claws, Tiger Climbing Gear, Master Ninja Gear, mods): a levy with it climbs any wall on a long trip
 					if (w.ab.SpikedBoots > bare.ab.SpikedBoots) v += LevyConstants.Armory.MobilityClimbValue + (w.ab.SpikedBoots >= 2 ? LevyConstants.Armory.MobilityClimbHoldBonus : 0f);
 					if (v > 0f && ((w.ab.NoFallDamage && !bare.ab.NoFallDamage) || w.ab.ExtraFall > bare.ab.ExtraFall)) v += 0.1f;
@@ -96,6 +105,28 @@ namespace Levy.Common.Movement
 			catch (Exception) { try { _dummy?.ResetEffects(); } catch (Exception) { } }
 			Cache[it.type] = res;
 			return res;
+		}
+
+		/// <summary>True when wearing the item gives a dummy a dash it did not have: Tabi, Master Ninja Gear, Shield of Cthulhu, Solar Flare, Crystal Assassin or a Calamity dash accessory. Never a pair of wings.</summary>
+		public static bool IsDash(Item it) { if (it == null || it.IsAir || !it.accessory || it.vanity || it.wingSlot > 0) return false; ReadAll(it); return Horiz.TryGetValue(it.type, out var h) && h.dash > 0f; }
+
+		/// <summary>The run part of an item's movement value (sprint gain, rocket flight), 0 when it does not make a wearer run faster.</summary>
+		public static float RunValue(Item it) { if (it == null || it.IsAir || !it.accessory || it.vanity) return 0f; ReadAll(it); return Horiz.TryGetValue(it.type, out var h) ? h.run : 0f; }
+
+		/// <summary>The dash part of an item's movement value, scaled by how fast its dash starts (0 for no dash).</summary>
+		public static float DashValue(Item it) { if (!IsDash(it)) return 0f; var h = Horiz[it.type]; return h.dash + Math.Min(h.dashSpeed, 24f) * LevyConstants.Armory.MobilityDashSpeedWeight; }
+
+		/// <summary>
+		/// What an item adds to the HORIZONTAL slot (boots or a dash) beside the wings the levy wears: the run value it has over what the wings already give (a pair like Seraph Tracers that also run leaves boots with nothing to add),
+		/// plus the dash value, plus the item's other movement value (jump height, wall climb) as a tie-break. Zero for an item that adds no horizontal mobility.
+		/// </summary>
+		public static float HorizontalValue(Item it, Item wings)
+		{
+			if (it == null || it.IsAir || !it.accessory || it.vanity) return 0f;
+			float run = Math.Max(0f, RunValue(it) - RunValue(wings)), dash = DashValue(it);
+			if (run <= 0f && dash <= 0f) return 0f;
+			float other = Math.Max(0f, Value(it) - RunValue(it) - (IsDash(it) ? LevyConstants.Armory.MobilityDashOrdinary : 0f));
+			return run + dash + other;
 		}
 
 		/// <summary>0 for nothing. Wings (4) outrank flight-plus-sprint boots (Spectre and up) and jump bundles (3), which outrank Rocket Boots, Frog Leg and a single bottle (about 1), which outrank sprint-only boots.</summary>

@@ -550,7 +550,7 @@ function evBuild(R){
   else if(R.nt) for(const [t,v] of Object.entries(R.nt)) R.imp.set(+t,v);
   if(!R.isEvent) return;
   R.waves=R.events.filter(e=>e.e==="wave"); R.ekill=R.events.filter(e=>e.e==="ekill"); R.kc=R.events.filter(e=>e.e==="kc");
-  R.evMarks=R.events.filter(e=>e.e==="evstart"||e.e==="evend"); R.outposts=R.events.filter(e=>e.e==="outposts");
+  R.evMarks=R.events.filter(e=>e.e==="evstart"||e.e==="evend"); R.outposts=R.events.filter(e=>e.e==="outposts"); R.prog=R.events.filter(e=>e.e==="prog");
   R.miniCount=R.frames.map(f=>{let n=0;for(const a of (f.a||[]))if((R.imp.get(a[0])||0)>=1)n++;return n;});
   R.enemyCount=R.frames.map(f=>(f.a||[]).length);
 }
@@ -565,10 +565,11 @@ function fmtClock(ticks){const s=Math.max(0,Math.floor(ticks/TPS)),h=Math.floor(
 function evWaveAt(t){let w=(D.hdr&&D.hdr.wave)||0;for(const e of D.waves){if(e.t<=t)w=e.n;else break;}return w;}
 function evKillsAt(t){let k=0,m=0,kt=-1;for(const e of D.kc){if(e.t<=t){k=e.n;m=e.mini||0;kt=e.t;}else break;}for(const e of D.ekill){if(e.t>kt&&e.t<=t)m++;}return [k,m];}
 function evName(){const h=D.hdr||{},e=D.end||{};return e.eventName||h.eventName||(h.meta&&h.meta.eventName)||"Event";}
+function evProgAt(t){let p=null;for(const e of (D.prog||[])){if(e.t<=t)p=e;else break;}return p;}
 function evHud(f0){
-  const w=evWaveAt(cur),[k,m]=evKillsAt(cur),as=f0.a||[];
+  const w=evWaveAt(cur),[k,m]=evKillsAt(cur),as=f0.a||[],pg=evProgAt(cur);
   const minis=as.filter(a=>impOf(a[0])>=1).slice(0,4).map(a=>`${esc(nm("npcs",a[0]))} ${(100*a[6]/Math.max(1,a[7])).toFixed(0)}%`);
-  return `<div class="l"><div class="tgt">${esc(evName())}${w?" &middot; wave "+w:""}</div>${minis.length?`<div class="hpt">${minis.join("<br>")}</div>`:""}</div>`+
+  return `<div class="l"><div class="tgt">${esc(evName())}${w?" &middot; wave "+w:""}${pg&&!w?` &middot; ${pg.left} of ${pg.of} left`:""}</div>${minis.length?`<div class="hpt">${minis.join("<br>")}</div>`:""}</div>`+
     `<div class="r">levies standing ${(f0.l||[]).length}<br>enemies ${as.length}${D.offCount?` (${D.offCount} highlighted off-screen)`:""}<br>kills ${k} &middot; minibosses ${m}<br>${fmtClock(cur-D.tmin)} / ${fmtClock(D.tmax-D.tmin)}</div>`;
 }
 // fit an event: where the army stood (5th to 95th percentile of every levy sample, and the commander); levies and highlighted enemies outside get edge markers

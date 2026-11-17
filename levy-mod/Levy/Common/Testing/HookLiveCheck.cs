@@ -41,13 +41,15 @@ namespace Levy.Common.Testing
 		{
 			if (Environment.GetEnvironmentVariable("LEVY_HOOKLIVE") == "0") return;
 			_pass = _fail = 0;
-			var live = new List<string>(); var dead = new List<string>(); var listedDead = new List<string>(); int total = 0;
+			int unreadable = 0; var live = new List<string>(); var dead = new List<string>(); var listedDead = new List<string>(); int total = 0;
 			var byType = new Dictionary<string, List<(string method, int hits)>>();
 			foreach (Mod m in ModLoader.Mods.Where(x => x.Name == "Levy" || x.Name == "Mechanization" || x.Name == "Warbands"))
 			{
-				Type[] types; try { types = m.Code.GetTypes(); } catch (ReflectionTypeLoadException e) { types = e.Types.Where(t => t != null).ToArray(); }
+				Type[] types; try { types = m.Code.GetTypes(); } catch (ReflectionTypeLoadException e) { types = e.Types.Where(t => t != null).ToArray(); } catch (Exception) { types = Type.EmptyTypes; }
 				foreach (Type t in types)
-					foreach (FieldInfo f in t.GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly))
+				{
+					FieldInfo[] fields; try { fields = t.GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly); } catch (Exception) { unreadable++; continue; } // a type that names a weak-referenced mod that is not loaded (MagicStorage, Thorium) cannot be reflected
+					foreach (FieldInfo f in fields)
 					{
 						if (f.FieldType != typeof(int) || !f.Name.StartsWith("_hl_")) continue;
 						string meth = f.Name.Substring(4); int us = meth.LastIndexOf('_'); if (us > 0 && int.TryParse(meth.Substring(us + 1), out _)) meth = meth.Substring(0, us);
@@ -62,6 +64,7 @@ namespace Levy.Common.Testing
 						else if (IsAiStub(shortKey)) { /* judged with its family below */ }
 						else dead.Add(m.Name + ":" + shortKey);
 					}
+				}
 			}
 			// a Projectile.AI stub detour is dead by construction; its wrapper is live when a sibling hook point of the same type ran
 			foreach (var kv in byType)
@@ -75,7 +78,7 @@ namespace Levy.Common.Testing
 				if (sibs.Count == 0) Check(mod, $"hooklive: {type} has a Projectile.AI detour and no VanillaAI / ProjectileLoader sibling (a wrapper on the inlined stub alone never runs)", false);
 				else Check(mod, $"hooklive: {type} wrapper runs through a hook point that fires (AI stub {stub.hits}, " + string.Join(", ", sibs.Select(x => x.method + " " + x.hits)) + ")", anyLive);
 			}
-			mod.Logger.Info($"[HookLive] OBSERVED {total} detour counters in Levy, Mechanization and Warbands: {live.Count} ran, {listedDead.Count} listed as not running in the chain, {dead.Count} dead");
+			mod.Logger.Info($"[HookLive] OBSERVED {total} detour counters in Levy, Mechanization and Warbands: {live.Count} ran, {listedDead.Count} listed as not running in the chain, {dead.Count} dead; {unreadable} types name a mod that is not loaded and cannot be read");
 			mod.Logger.Info("[HookLive] OBSERVED not run in the chain (each with its scenario): " + (listedDead.Count == 0 ? "none" : string.Join("; ", listedDead)));
 			mod.Logger.Info("[HookLive] OBSERVED IL patches (installed at load, exercised by the named checks): " + string.Join("; ", IlPatches));
 			foreach (string d in dead) Check(mod, $"hooklive: {d} ran at least once during the chain (or is listed with its scenario)", false);

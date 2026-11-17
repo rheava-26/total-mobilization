@@ -670,6 +670,7 @@ namespace Levy.Common.Weapons
 		public override void Load()
 		{
 			On_Projectile.AI += AiDetour;
+			On_Projectile.VanillaAI += VanillaAiDetour;
 			// A MODDED projectile's AI (PreAI / AI / PostAI) is run by ProjectileLoader.ProjectileAI, not by Projectile.AI(): a modded holder (ModShotKinds.Holdout) is wrapped there.
 			try
 			{
@@ -685,6 +686,7 @@ namespace Levy.Common.Weapons
 		public override void Unload()
 		{
 			On_Projectile.AI -= AiDetour;
+			On_Projectile.VanillaAI -= VanillaAiDetour;
 			On_Projectile.Damage -= DamageDetour;
 			On_Projectile.Update -= ChainUpdateDetour;
 			HeldWeapons.Reset();
@@ -747,6 +749,18 @@ namespace Levy.Common.Weapons
 				orig(self, i);
 			}
 			finally { if (aliased) SoldierMinions.EnsureAliasRestored(); }
+		}
+
+		/// <summary>
+		/// Projectile.AI is a one-line stub (<c>ProjectileLoader.ProjectileAI(this)</c>) that the JIT inlines into Projectile.Update, so a detour on it is never reached once Update has been tiered up (observed: 0 calls over thousands of projectile updates
+		/// while a detour on <c>Projectile.VanillaAI</c>, the body the loader calls for a vanilla projectile, saw every one). The same wrapper therefore also sits on VanillaAI; whichever fires first opens the swap and the other passes straight through (_wrapDepth).
+		/// </summary>
+		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self)
+		{
+			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
+			_wrapDepth++;
+			try { HeldWeapons.RunAi(pp => orig(pp), self, g); }
+			finally { _wrapDepth--; }
 		}
 
 		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)

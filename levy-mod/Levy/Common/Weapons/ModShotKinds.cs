@@ -67,6 +67,13 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		private static readonly HashSet<string> HeldItemRateRouted = new() { "IonBlaster", "PhalanxSurge", "ApoctosisArray" };
 
+		/// <summary>
+		/// Hold-to-charge grenades whose AI reads the owner's raw left button, the owner's held item (<c>Owner.HeldItem.useAnimation</c>) and the owner's cursor (Calamity's Doomsday Device). As a plain shot the commander's hand supplied all three:
+		/// an empty hand has useAnimation 0, so the throw completion divided by zero and the grenade's position went NaN (0 damage in 600 ticks, against 144 for a player). Held, the levy's dummy owns the grenade: its own item, button and cursor.
+		/// Switch: LEVY_DEADHOOKS_OFF=1 routes it plain again.
+		/// </summary>
+		private static readonly HashSet<string> HeldGrenadeRouted = new() { "DoomsdayDevice" };
+
 		/// <summary>Measurement switch (env LEVY_HOLD_FORCE=Name1,Name2 or "all"): routes these Calamity holdouts through the held path as if they were in <see cref="HoldoutRouted"/> (A/B runs of a weapon that is not routed yet).</summary>
 		private static readonly string _force = Environment.GetEnvironmentVariable("LEVY_HOLD_FORCE");
 		private static bool ForceHold(string name) => !string.IsNullOrEmpty(_force) && (_force == "all" || ("," + _force + ",").Contains("," + name + ","));
@@ -84,6 +91,8 @@ namespace Levy.Common.Weapons
 		{
 			// TitaniumRailgun: the scope charges while the button is down (ai1 = 60 ticks to full charge, 18 minimum) and fires on the release; held without a release it never fires (4.97 dmg/s per levy vs a x40 Eye).
 			["TitaniumRailgun"] = new ChargePlan(66, 20),
+			// DoomsdayDevice: the grenade charges while the button is down (about 30 ticks to full charge once the wind-up is done) and is thrown when it is let go; the linger covers the throw so the next one is cast after it has left the hand.
+			["DoomsdayDevice"] = new ChargePlan(70, 90),
 		};
 		internal static ChargePlan ChargeRelease(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && ChargeReleaseTable.TryGetValue(item.ModItem.Name, out ChargePlan p) ? p : null;
 
@@ -145,6 +154,7 @@ namespace Levy.Common.Weapons
 			if (mace) return ModShotKind.None; // thrown at the cursor, not held (see the class summary)
 			// A held / charge-and-release holdout reads its owner's button (and is the weapon's own shot).
 			// Only holdouts measured as duds as plain shots are routed (see HoldoutRouted); everything else keeps the plain shot, which already works for it.
+			if (item.ModItem?.Mod.Name == "CalamityMod" && !ProjAiHooks.Off && HeldGrenadeRouted.Contains(item.ModItem.Name) && item.channel && item.shoot > 0 && sample?.ModProjectile != null) return ModShotKind.Holdout;
 			if (item.ModItem?.Mod.Name == "CalamityMod" && (HoldoutRouted.Contains(item.ModItem.Name) || (!ProjAiHooks.Off && HeldItemRateRouted.Contains(item.ModItem.Name)) || ForceHold(item.ModItem.Name)) && item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
 				&& (item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)))
 				return ModShotKind.Holdout;

@@ -47,13 +47,11 @@ namespace Levy.Common.Testing
 			"Cosmolight", "Radiant Star", "Star of Destruction", "Shard of Antumbra", "Cranium Smasher", "Plaguenade", "The Syringe", "System Bane", "Infected Remote", "Wulfrum Controller", "Samsara Slicer", "Subduction Slicer", "Stellar Knife", "Phantasmal Ruin",
 		};
 		/// <summary>The sample the ship world runs (every other weapon is behind LEVY_ARMYSWEEP=1).</summary>
-		private static readonly string[] ArmyShip = { "Terra Blade", "Vernal Bolter", "Sniper Rifle", "Stellar Knife", "Morning Star", "Infested Clawmerang" };
+		private static readonly string[] ArmyShip = { "Terra Blade", "Vernal Bolter", "Sniper Rifle", "Stellar Knife", "Morning Star", "Infested Clawmerang", "Wingman", "Doomsday Device" };
 		/// <summary>Weapons whose levy fix belongs to another builder: measured and listed, never failed here.</summary>
 		private static readonly Dictionary<string, string> ArmyCoveredElsewhere = new()
 		{
 			{ "starshower", "deusmind (a sky-falling weapon: the levy's shot never appears)" },
-			{ "wingman", "megagun (a two-gun holdout: the second holdout is left outside the held chain)" },
-			{ "doomsdaydevice", "megagun (a channel charge-and-release grenade that reads its owner's held item)" },
 		};
 		/// <summary>Weapons this headless run cannot measure for a reason of the harness, not the levy: listed, never failed.</summary>
 		private static readonly Dictionary<string, string> ArmyNotMeasurable = new()

@@ -105,9 +105,21 @@ namespace Levy.Common.Weapons
 			}
 			if (!p.active || p.type != item.shoot) { DudTrace.Note(item, "held-spawn-dud"); return WeaponUse.Dud(s, item); }
 			DudTrace.Note(item, "held-spawn");
+			if (DudTrace.On && ProjectileID.Sets.NeedsUUID[p.type]) DudTrace.Note(item, "uuid who=" + p.whoAmI + " id=" + p.identity + " uuid=" + p.projUUID + " lookup=" + Projectile.GetByUUID(p.owner, p.whoAmI) + " owner=" + p.owner);
+			SetUpHolder(s, item, p, dir);
+			// a weapon whose Shoot hook makes more than one holdout (Wingman holds one gun in each hand) has them all in the chain, fed and ended together: a second holdout left outside the chain reads the empty slot 255 and dies on its first tick
+			foreach (Projectile extra in _extraHolders) if (extra.active) SetUpHolder(s, item, extra, dir);
+			_extraHolders.Clear();
+			_holder[idx] = i;
+			return true;
+		}
+
+		private static readonly List<Projectile> _extraHolders = new();
+
+		private static void SetUpHolder(SoldierNPC s, Item item, Projectile p, Vector2 dir)
+		{
 			JoinChain(s, p, item);
 			if (ModShotKinds.ChainExtras(item)) FixIdentity(p);
-			if (DudTrace.On && ProjectileID.Sets.NeedsUUID[p.type]) DudTrace.Note(item, "uuid who=" + p.whoAmI + " id=" + p.identity + " uuid=" + p.projUUID + " lookup=" + Projectile.GetByUUID(p.owner, p.whoAmI) + " owner=" + p.owner);
 			if (p.TryGetGlobalProjectile(out HeldWeaponProjectile hg))
 			{
 				hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(item.shoot); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0;
@@ -115,8 +127,6 @@ namespace Levy.Common.Weapons
 				if (hg.ModHolder && ModShotKinds.CursorScriptOf(item) is CursorScript cs) hg.Script = cs;
 			}
 			p.direction = dir.X < 0f ? -1 : 1;
-			_holder[idx] = i;
-			return true;
 		}
 
 		/// <summary>
@@ -126,14 +136,16 @@ namespace Levy.Common.Weapons
 		private static Projectile SpawnViaHooks(SoldierNPC s, Item item, Vector2 vel, int damage, int ownerSlot)
 		{
 			if (s.Dummy == null || item.shoot <= 0) return null;
+			_extraHolders.Clear();
 			List<Projectile> made = ShootHooks(s, item, vel, damage, ownerSlot, false, null, out bool threw);
 			Projectile holder = null;
 			foreach (Projectile c in made)
 			{
 				if (c.type == item.shoot && c.owner == ownerSlot && holder == null) holder = c; // the holdout joins the chain in TryFire
+				else if (c.type == item.shoot && c.owner == ownerSlot && ModShotKinds.Of(item) == ModShotKind.Holdout) _extraHolders.Add(c); // a second holdout of the same weapon (TryFire puts it in the chain too)
 				else WeaponUse.TagSoldierProjectile(s, c, item.DamageType ?? DamageClass.Default); // anything else the hook fired is an ordinary soldier shot
 			}
-			if (threw && holder != null) holder.Kill();
+			if (threw) { if (holder != null) holder.Kill(); foreach (Projectile x in _extraHolders) if (x.active) x.Kill(); _extraHolders.Clear(); }
 			return threw ? null : holder;
 		}
 

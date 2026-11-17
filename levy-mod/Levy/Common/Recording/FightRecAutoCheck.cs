@@ -255,6 +255,79 @@ namespace Levy.Common.Recording
 				for (int q = 0; q < Main.maxNPCs; q++) if (Main.npc[q].active && !(Main.npc[q].ModNPC is SoldierNPC) && !Main.npc[q].friendly && !Main.npc[q].townNPC) Main.npc[q].active = false;
 				Step(3, p, null);
 
+				// ---------- 1d. the Lunatic Cultist's win is not swallowed by the pillars: they are an event, not a boss. The kill ends the fight and the file is "won" although the pillars still stand
+				FightRecAuto.TestMode = FightRecMode.BossFights; FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int cB = SpawnBoss(cx, NPCID.CultistBoss);
+				Step(40, p, cB);
+				Chk(FightRecorder.On && FightRecorder.Auto == 1, "Boss fights starts on the Lunatic Cultist");
+				ScriptHits(p, cB, 200);
+				FightRecorder.NoteBossKill(Main.npc[cB]); Main.npc[cB].life = 0; Main.npc[cB].active = false;
+				int[] pil = { SpawnBoss(cx, NPCID.LunarTowerSolar), SpawnBoss(cx, NPCID.LunarTowerVortex), SpawnBoss(cx, NPCID.LunarTowerNebula), SpawnBoss(cx, NPCID.LunarTowerStardust) };
+				int pillarTicks = StepUntilStopped(p, -1, 2400);
+				string f1d = FightRecorder.LastResult;
+				Chk(!FightRecorder.On && pillarTicks <= 420, "the recording ends about 5 seconds after the Cultist falls while four pillars stand (" + pillarTicks + " ticks)");
+				Chk(f1d != null && Regex.IsMatch(Path.GetFileName(f1d), @"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}_Lunatic_Cultist_won\.levyrec$"), "the Cultist's fight is named for her alone and won (" + Path.GetFileName(f1d ?? "none") + ")");
+				if (f1d != null) { var l1d = ReadLines(f1d, true, out _); Chk(!l1d.Exists(l => l.Contains("Solar Pillar") && l.Contains("\"e\":\"boss\"")) && l1d.Exists(l => l.Contains("\"e\":\"bdeath\"") && l.Contains("\"final\":1")), "no pillar is a boss of the fight and the Cultist's death is its final end"); }
+				foreach (int q in pil) if (q >= 0) Main.npc[q].active = false;
+				Step(3, p, null);
+				// a pillar that stands alone is no boss: it neither starts a boss-fight recording nor keeps one alive
+				FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int pillar = SpawnBoss(cx, NPCID.LunarTowerNebula); Step(120, p, null);
+				Chk(!FightRecorder.On, "Boss fights does not record a Celestial Pillar standing alone");
+				Main.npc[pillar].active = false; Step(3, p, null);
+
+				// ---------- 1e. the commander falls and the boss leaves: lost. The commander alive and the boss leaves: fled
+				FightRecAuto.TestMode = FightRecMode.BossFights; FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int dB = SpawnBoss(cx);
+				Step(40, p, dB); ScriptHits(p, dB, 200);
+				p.dead = true; Step(4, p, dB);
+				Main.npc[dB].active = false; Step(3, p, null); p.dead = false;
+				StepUntilStopped(p, -1, 1500);
+				string f1e = FightRecorder.LastResult;
+				Chk(f1e != null && Regex.IsMatch(Path.GetFileName(f1e), @"_Eye_of_Cthulhu_lost\.levyrec$"), "the commander fell and the boss left: lost (" + Path.GetFileName(f1e ?? "none") + ")");
+				if (f1e != null) { var l1e = ReadLines(f1e, true, out _); Chk(l1e.Exists(l => l.Contains("\"e\":\"cdeath\"")) && l1e.Exists(l => l.Contains("\"e\":\"bdespawn\"") && l.Contains("\"final\":1")) && l1e.Exists(l => l.Contains("\"k\":\"end\"") && l.Contains("\"result\":\"lost\"") && l.Contains("\"outcome\":\"despawn\"")), "its end says despawn, result lost, and a cdeath is on record"); }
+				FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int eB = SpawnBoss(cx);
+				Step(40, p, eB); ScriptHits(p, eB, 200);
+				Main.npc[eB].active = false;
+				StepUntilStopped(p, -1, 1500);
+				string f1f = FightRecorder.LastResult;
+				Chk(f1f != null && Regex.IsMatch(Path.GetFileName(f1f), @"_Eye_of_Cthulhu_fled\.levyrec$"), "the commander alive and the boss leaves: fled (" + Path.GetFileName(f1f ?? "none") + ")");
+
+				// ---------- 1g. format 11: the commander's own projectiles are in the frames, the army's shots (same owner slot) are not
+				FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int gB = SpawnBoss(cx);
+				Step(40, p, gB);
+				int mine = Projectile.NewProjectile(new Terraria.DataStructures.EntitySource_WorldEvent("FightRecAutoCheck"), p.Center + new Vector2(60, -20), new Vector2(8, 0), ProjectileID.MagicMissile, 40, 1f, p.whoAmI);
+				int theirs = Projectile.NewProjectile(new Terraria.DataStructures.EntitySource_WorldEvent("FightRecAutoCheck"), p.Center + new Vector2(-60, -20), new Vector2(-8, 0), ProjectileID.MagicMissile, 40, 1f, p.whoAmI);
+				if (theirs >= 0 && Main.projectile[theirs].TryGetGlobalProjectile(out global::Levy.Common.Globals.SoldierProjectileTag shotTag)) shotTag.SoldierIndex = 3;
+				Step(30, p, gB);
+				if (mine >= 0) Main.projectile[mine].active = false; if (theirs >= 0) Main.projectile[theirs].active = false;
+				ScriptHits(p, gB, 60);
+				FightRecorder.NoteBossKill(Main.npc[gB]); Main.npc[gB].life = 0; Main.npc[gB].active = false;
+				StepUntilStopped(p, -1, 1500);
+				string f1g = FightRecorder.LastResult;
+				if (f1g != null)
+				{
+					int withC = 0, maxRows = 0, wrongType = 0, noC = 0; string hdrFmt = null;
+					foreach (string l in ReadLines(f1g, true, out _))
+					{
+						try
+						{
+							using var d = JsonDocument.Parse(l); var r = d.RootElement; string k = r.GetProperty("k").GetString();
+							if (k == "hdr") hdrFmt = r.GetProperty("format").GetInt32().ToString();
+							if (k != "f") continue;
+							if (r.TryGetProperty("c", out var c)) { withC++; maxRows = Math.Max(maxRows, c.GetArrayLength()); foreach (var row in c.EnumerateArray()) { if (row.GetArrayLength() != 7 || row[0].GetInt32() != ProjectileID.MagicMissile) wrongType++; } }
+							else noC++;
+						}
+						catch { }
+					}
+					Chk(hdrFmt == FightRecFormat.Version.ToString() && FightRecFormat.Version >= 11, "the header says format " + FightRecFormat.Version);
+					Chk(mine >= 0 && theirs >= 0 && withC >= 5 && maxRows == 1 && wrongType == 0, "frames carry the commander's own shot and not the soldier-tagged one (frames with c " + withC + ", most rows " + maxRows + ", odd rows " + wrongType + ")");
+					Chk(noC > 0, "a frame with no commander projectile has no c key (" + noC + " such frames)");
+				}
+				else Chk(false, "commander projectile recording was saved");
+
 				// ---------- 2. All fights: the skirmish starts it, it ends 5 s after the adds are gone, commander death makes it "lost"
 				FightRecorder.MaxFolderBytes = 0;
 				FightRecAuto.TestMode = FightRecMode.AllFights; FightRecAuto.ClearCooldown(); Step(3, p, null);

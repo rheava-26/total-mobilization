@@ -36,6 +36,8 @@ namespace Levy.Common.Recording
 		public bool HasEnd;
 		public string[] StateNames = { "Idle", "Follow", "Patrol", "Engage", "Haul", "Resupply", "Shaken", "Routed", "ReturnHome", "Dead", "Desert", "SearchDestroy", "FreeRein", "Mutiny" };
 		public readonly Dictionary<int, string> Items = new(), Npcs = new(), Projs = new();
+		/// <summary>Items recorded as hit sources that are not usable weapons (accessories and effects); their hits are grouped as accessory effects.</summary>
+		public readonly HashSet<int> NonWeapons = new();
 
 		// the commander's damage on bosses
 		public readonly Dictionary<string, WeaponStat> Weapons = new();
@@ -223,6 +225,7 @@ namespace Levy.Common.Recording
 				foreach (var p in o.EnumerateObject()) if (int.TryParse(p.Name, NumberStyles.Integer, CultureInfo.InvariantCulture, out int id) && p.Value.ValueKind == JsonValueKind.String) into[id] = p.Value.GetString();
 			}
 			Fill("items", st.Items); Fill("npcs", st.Npcs); Fill("projectiles", st.Projs);
+			if (r.TryGetProperty("nonweapons", out var nw) && nw.ValueKind == JsonValueKind.Array) foreach (var e in nw.EnumerateArray()) if (e.ValueKind == JsonValueKind.Number && e.TryGetInt32(out int id)) st.NonWeapons.Add(id);
 		}
 
 		private static void End(FightStats st, JsonElement r)
@@ -358,8 +361,9 @@ namespace Levy.Common.Recording
 					{
 						if (!row.Boss) { st.CmdAddDmg += row.Dmg; continue; }
 						anyCmdBoss = true;
-						int item = row.SrcItem > 0 ? row.SrcItem : (row.Src == "item" && row.Type > 0 ? row.Type : HeldMode(st, ev.Tick - 60, ev.Tick));
-						string key = st.ItemName(item);
+						// the recorded firing item decides; the held item stands in only for a recording that predates the field, never for a hit whose source was recorded as none
+						int item = row.SrcItem > 0 ? row.SrcItem : (row.Src == "item" && row.Type > 0 ? row.Type : row.Ext ? 0 : HeldMode(st, ev.Tick - 60, ev.Tick));
+						string key = item <= 0 && row.Ext ? "Accessory effects" : st.NonWeapons.Contains(item) ? "Accessory effects (" + st.ItemName(item) + ")" : st.ItemName(item);
 						if (!st.Weapons.TryGetValue(key, out var ws)) st.Weapons[key] = ws = new WeaponStat { Name = key, Item = item };
 						ws.Dmg += row.Dmg; ws.Hits += row.Hits; st.CmdBossDmg += row.Dmg; st.CmdBossHits += row.Hits;
 						if (row.Ext)

@@ -73,18 +73,45 @@ namespace Levy.Common.Potions
 			Unhide(); // safety net: never let the targeting flags reach the player's own update
 			bool on = Active;
 			if (on && !_was) Anchor = Player.Center;
-			if (Player.whoAmI == Main.myPlayer || (BetHarness && Player.whoAmI == 0)) CheckBet(on || _was); // a buff cancelled or expired since the last tick still answers for what happened while it was on
+			bool local = Player.whoAmI == Main.myPlayer || (BetHarness && Player.whoAmI == 0);
+			if (local && CheckForfeit(on)) { _was = false; return; }
+			if (local) CheckBet(on || _was); // a buff cancelled or expired since the last tick still answers for what happened while it was on
 			_was = on;
 			if (!on || Player.whoAmI != Main.myPlayer) return;
 			// The first kill of every boss is solo: an unbeaten boss in the world ends the buff at once.
 			if (!Main.dedServ && global::Levy.Common.Targeting.EnemyTargeting.FindUndownedBoss() != null)
 			{
-				Player.ClearBuff(ModContent.BuffType<SpectatorBuff>());
+				EndBuff();
 				CombatText.NewText(Player.getRect(), new Color(255, 120, 100), global::Levy.Common.Util.LevyUtil.T("Potions.SpectatorBossEnds"));
 				return;
 			}
 			// no tile interaction except a Static Camera under the cursor
 			if (Player.controlUseTile && !OverStaticCamera()) Player.controlUseTile = false;
+		}
+
+		// ------------------------------------------------------------------ the forfeit
+
+		private int _lastLeft;
+		private bool _selfEnd;
+		/// <summary>Ends the buff on the mod's own rules (damage taken, an unbeaten boss, a long teleport): not the player's doing, so not a forfeit.</summary>
+		private void EndBuff() { _selfEnd = true; Player.ClearBuff(ModContent.BuffType<SpectatorBuff>()); }
+
+		/// <summary>The most game ticks that can be left on the buff when it ran out by itself (it ticks down once per player update after this check).</summary>
+		internal const int ExpirySlackTicks = 2;
+
+		/// <summary>
+		/// Once a tick for the local player. Removing the buff (right-click cancel or any removal that is not the mod's own rules or the timer running out) while a boss is alive kills the player at once.
+		/// Returns true when it did. A buff that ran out of time had at most <see cref="ExpirySlackTicks"/> left when last seen and is not a forfeit.
+		/// </summary>
+		internal bool CheckForfeit(bool on)
+		{
+			if (on) { int i = Player.FindBuffIndex(ModContent.BuffType<SpectatorBuff>()); _lastLeft = i >= 0 ? Player.buffTime[i] : 0; return false; }
+			bool removed = _was, self = _selfEnd, expired = _lastLeft <= ExpirySlackTicks;
+			_selfEnd = false;
+			if (!removed || self || expired || Player.dead || !SpectatorBet.AnyActiveBoss()) return false;
+			_betArmySeen = false;
+			SpectatorBet.Forfeit(Player);
+			return true;
 		}
 
 		// ------------------------------------------------------------------ the bet
@@ -137,7 +164,7 @@ namespace Levy.Common.Potions
 		public override void PostHurt(Player.HurtInfo info)
 		{
 			LastHurtTick = Main.GameUpdateCount;
-			if (Active) Player.ClearBuff(ModContent.BuffType<SpectatorBuff>());
+			if (Active) EndBuff();
 		}
 
 		// ------------------------------------------------------------------ items
@@ -180,7 +207,7 @@ namespace Levy.Common.Potions
 			// A short hop moves the tether anchor to where the Spectator now stands; a long one (see PotionConstants.TeleportEndTiles) ends the buff.
 			if (_haveLast && TeleportResponse(_lastCenter, Player.Center, ref Anchor, out bool end))
 			{
-				if (end) { Player.ClearBuff(ModContent.BuffType<SpectatorBuff>()); _haveLast = false; return; }
+				if (end) { EndBuff(); _haveLast = false; return; }
 			}
 			_lastCenter = Player.Center; _haveLast = true;
 			Vector2 v = Player.velocity;

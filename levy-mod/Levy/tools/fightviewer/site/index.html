@@ -4,7 +4,7 @@
 :root{
   color-scheme:dark;
   --bg:#05090b;--panel:#0b1317;--panel2:#0f1a1f;--line:#1c2e33;--ink:#cfe3df;--dim:#7e9a96;
-  --grn:#3cff9a;--cyan:#4fe3ff;--red:#ff4d4d;--amb:#ffb020;--vio:#c77dff;--proj:#ff9f2e;
+  --grn:#3cff9a;--cyan:#4fe3ff;--red:#ff4d4d;--amb:#ffb020;--vio:#c77dff;--proj:#ff9f2e;--cshot:#ff6ad5;
   --btn:#12222a;--btn-hover:#18313b;--btn-active:#1d3b47;--on-bg:#16403a;--on-line:#2c7a64;
   --bd-bg:#0a1418;--l-ink:#ff9a9a;--l-line:#5a2a2a;--p-ink:#8eeaff;--p-line:#1f5560;--h-ink:#ffd37a;--h-line:#5a4513;--d-ink:#ff6b6b;--d-line:#6a2626;
   --win:#3cff9a;--loss:#ff6b6b;--timeout:#ffb020;--fled:#c77dff;
@@ -19,7 +19,7 @@
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
   color-scheme:light;
   --bg:#eef3f1;--panel:#ffffff;--panel2:#f3f7f6;--line:#c9d8d4;--ink:#14282a;--dim:#4f6a66;
-  --grn:#0a8f50;--cyan:#0a7f9c;--red:#d02a2a;--amb:#b86e00;--vio:#7b3fc4;--proj:#c25f00;
+  --grn:#0a8f50;--cyan:#0a7f9c;--red:#d02a2a;--amb:#b86e00;--vio:#7b3fc4;--proj:#c25f00;--cshot:#b0238f;
   --btn:#e3ecea;--btn-hover:#d6e3e0;--btn-active:#c8d9d5;--on-bg:#cdeede;--on-line:#2c9a74;
   --bd-bg:#f0f5f4;--l-ink:#b02a2a;--l-line:#e2b0b0;--p-ink:#0a6f8a;--p-line:#a6d0dc;--h-ink:#8a5a00;--h-line:#e0c88a;--d-ink:#c01f1f;--d-line:#e4a8a8;
   --win:#0a8f50;--loss:#c01f1f;--timeout:#a86400;--fled:#7b3fc4;
@@ -34,7 +34,7 @@
 :root[data-theme="light"]{
   color-scheme:light;
   --bg:#eef3f1;--panel:#ffffff;--panel2:#f3f7f6;--line:#c9d8d4;--ink:#14282a;--dim:#4f6a66;
-  --grn:#0a8f50;--cyan:#0a7f9c;--red:#d02a2a;--amb:#b86e00;--vio:#7b3fc4;--proj:#c25f00;
+  --grn:#0a8f50;--cyan:#0a7f9c;--red:#d02a2a;--amb:#b86e00;--vio:#7b3fc4;--proj:#c25f00;--cshot:#b0238f;
   --btn:#e3ecea;--btn-hover:#d6e3e0;--btn-active:#c8d9d5;--on-bg:#cdeede;--on-line:#2c9a74;
   --bd-bg:#f0f5f4;--l-ink:#b02a2a;--l-line:#e2b0b0;--p-ink:#0a6f8a;--p-line:#a6d0dc;--h-ink:#8a5a00;--h-line:#e0c88a;--d-ink:#c01f1f;--d-line:#e4a8a8;
   --win:#0a8f50;--loss:#c01f1f;--timeout:#a86400;--fled:#7b3fc4;
@@ -57,6 +57,7 @@ button,select,label.btn{background:var(--btn);color:var(--ink);border:1px solid 
 button:hover,label.btn:hover{background:var(--btn-hover)}
 button:active{background:var(--btn-active)}
 button.on{background:var(--on-bg);border-color:var(--on-line)}
+button:disabled{opacity:.45;cursor:default}
 button:focus-visible,select:focus-visible,input:focus-visible,label.btn:focus-within{outline:2px solid var(--cyan);outline-offset:1px}
 input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 label.btn{position:relative;display:inline-flex;align-items:center;justify-content:center}
@@ -208,9 +209,9 @@ body.big #strip,body.big .legend{display:none}
           <button id="fit" title="show the whole arena">Fit</button>
           <button id="bigBtn" title="fill the screen with the radar">Full screen</button>
           <button id="followBoss" title="camera follows the boss">Follow boss</button>
-          <button id="tBoss" class="on" title="fading trails behind boss parts">Boss trails</button><button id="tLevy" class="on" title="fading trails behind levies">Levy trails</button><button id="tAdd" title="fading trails behind adds and minions">Add trails</button><button id="tProj" class="on" title="streaks behind projectiles">Proj trails</button><button id="hitBtn" class="on" title="draw the real hitbox rectangles">Hitboxes</button>
+          <button id="tBoss" class="on" title="fading trails behind boss parts">Boss trails</button><button id="tLevy" class="on" title="fading trails behind levies">Levy trails</button><button id="tAdd" title="fading trails behind adds and minions">Add trails</button><button id="tProj" class="on" title="streaks behind projectiles">Proj trails</button><button id="hitBtn" class="on" title="draw the real hitbox rectangles">Hitboxes</button><button id="tCmd" class="on" title="the commander's own projectiles (recordings of format 11 and later)">Commander shots</button>
           <button id="labelBtn" title="levy numbers">Labels</button>
-          <div class="legend"><span><i style="background:var(--grn)"></i>levy (colour = HP)</span><span><i style="background:var(--red)"></i>boss / part</span><span><i style="background:var(--amb)"></i>add / minion</span><span><i style="background:var(--cyan)"></i>commander</span><span><i style="background:var(--proj)"></i>projectile</span><span><i class="sq" style="background:var(--red)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span></div>
+          <div class="legend"><span><i style="background:var(--grn)"></i>levy (colour = HP)</span><span><i style="background:var(--red)"></i>boss / part</span><span><i style="background:var(--amb)"></i>add / minion</span><span><i style="background:var(--cyan)"></i>commander</span><span><i style="background:var(--proj)"></i>projectile</span><span><i style="background:var(--cshot)"></i>commander shot</span><span><i class="sq" style="background:var(--red)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span></div>
         </div>
       </div>
       <div id="info"></div>
@@ -223,12 +224,12 @@ const $=id=>document.getElementById(id);
 const TPS=60, TILE=16;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const RM=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
-let D=null, playing=false, cur=0, last=0, camMode="fit", trBoss=true, trLevy=true, trProj=true, showHit=true, showLabels=false, trAdd=false, selL=null;
+let D=null, playing=false, cur=0, last=0, camMode="fit", trBoss=true, trLevy=true, trProj=true, showHit=true, showLabels=false, trAdd=false, showCmdP=true, selL=null;
 const cam={x:0,y:0,z:0.2};
 let blips=[], manifest=null, fights=[], curFight=null, curId=null, loadSeq=0;
 
 // ================================================================ colour tokens (canvas reads the CSS custom properties)
-const TOKS=["stage","grn","cyan","red","amb","vio","proj","ink","dim","tNone","tbNone","tbCmd","tbLevy","tbSpite","srcBody","srcMinion","srcProj","srcOther","bossLabel","cmdLabel","flash","death","dash","hook","xjump","scale","fire","terrTop","terrFill","terrFill2","water","hpLo","hpMid","hpHi","win","timeout","loss","stripA","stripB","stripLabel","dLabelInk"];
+const TOKS=["stage","grn","cyan","red","amb","vio","proj","cshot","ink","dim","tNone","tbNone","tbCmd","tbLevy","tbSpite","srcBody","srcMinion","srcProj","srcOther","bossLabel","cmdLabel","flash","death","dash","hook","xjump","scale","fire","terrTop","terrFill","terrFill2","water","hpLo","hpMid","hpHi","win","timeout","loss","stripA","stripB","stripLabel","dLabelInk"];
 const T={}; const cssName=k=>"--"+k.replace(/[A-Z]/g,m=>"-"+m.toLowerCase());
 function loadTokens(){
   const cs=getComputedStyle(document.documentElement);
@@ -275,7 +276,9 @@ function fromData(o){      // a data/<fight>.json file written by make_site.py
   return {hdr:o.hdr||null,arena:o.arena||null,arenas:o.arenas||(o.arena?[o.arena]:[]),cam:o.cam||null,frames:o.frames,events:o.events||[],names:o.names||{items:{},npcs:{},projectiles:{},buffs:{},soldiers:{}},end:o.end||null};
 }
 const tkOf=b=>b.length>14?b[14]:((b[12]>=0&&b[12]<255)?1:0);
-function mainBoss(f){const bs=f.b||[];for(const b of bs) if(!b[13]) return b; return bs[0]||null;}
+// event NPCs (Celestial Pillars, Martian Saucer, Flying Dutchman, Pumpkin/Frost Moon bosses) are never the main boss: same list as tools/recview/recrules.py
+const EVENT_NPC=new Set([517,422,507,493,392,393,394,395,491,492,325,327,328,344,345,346]);
+function mainBoss(f){const bs=(f.b||[]).filter(b=>!EVENT_NPC.has(b[0]));for(const b of bs) if(!b[13]) return b; return bs[0]||null;}
 function makeArena(R){
   const A=R.terr; R.arenaImg=null; if(!A) return;
   const c=document.createElement("canvas"); c.width=A.w; c.height=A.h; const g=c.getContext("2d"); const im=g.createImageData(A.w,A.h);
@@ -329,6 +332,7 @@ function build(R){
   R.lbuf=new Map(); for(const e of R.events) if(e.e==="lbuf"){let a=R.lbuf.get(e.id);if(!a)R.lbuf.set(e.id,a=[]);a.push(e);}
   R.lhitBy=new Map(); for(const e of R.lhit){let a=R.lhitBy.get(e.id);if(!a)R.lhitBy.set(e.id,a=[]);a.push(e);}
   R.fellBy=new Map(); for(const e of R.ldeath) if(!R.fellBy.has(e.id)) R.fellBy.set(e.id,e);
+  R.hasCmd=R.frames.some(f=>f.c&&f.c.length);
   mergeTerrain(R); makeArena(R);
   // boss outcome (format 4) and levy totals
   R.bend=R.events.filter(e=>e.e==="bdeath"||e.e==="bdespawn");
@@ -394,6 +398,7 @@ function setRec(R,name,f){
   $("meta").textContent=[name,s.boss,m.arena,h.mode].filter(Boolean).join("  |  ");
   head(f,name,s);
   hideMsg(); setPlaying(false);
+  {const cb=$("tCmd"); cb.disabled=!D.hasCmd; cb.title=D.hasCmd?"the commander's own projectiles, not the army's":"this recording has no commander projectile data (format 11 and later)";}
   selL=null; cur=D.tmin; camMode="fit"; $("followBoss").classList.remove("on"); fitView(); renderInfo(); drawStrip(); draw(); syncUI();
   if(call.on&&!call.pick) setPlaying(false); else if(!RM) setPlaying(true);
 }
@@ -584,6 +589,20 @@ function draw(){
     }
     const [sx,sy,rr]=hbox(g,sc,dpr,x,y,j[6],j[7],al(T.proj,.35),T.proj,1,3);
     blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,rr/dpr+3),info:`projectile ${nm("projectiles",j[0])}\ndamage ${j[5]}${j[6]?"\nhitbox "+j[6]+" x "+j[7]+" px":""}\nspeed ${(Math.hypot(j[3],j[4])*60/16).toFixed(1)} tiles/s`});
+  }
+  if(showCmdP&&D.hasCmd&&f0.c&&f0.c.length){
+    // format 11 key c: the commander's own projectiles [type,x,y,vx,vy,w,h]; the army's shots are not in it
+    const dt=cur-f0.t;
+    for(const q of f0.c){
+      const x=q[1]+q[3]*dt, y=q[2]+q[4]*dt;
+      if(trProj&&(q[3]||q[4])){
+        const a=sc(x,y);
+        for(let k=1;k<=4;k++){const b=sc(x-q[3]*k*3,y-q[4]*k*3);g.strokeStyle=T.cshot;g.globalAlpha=0.5*(1-(k-1)/4);g.lineWidth=Math.max(1.5,(q[6]||6)*cam.z*dpr*0.5);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();a[0]=b[0];a[1]=b[1];}
+        g.globalAlpha=1;
+      }
+      const [sx,sy,rr]=hbox(g,sc,dpr,x,y,q[5],q[6],al(T.cshot,.35),T.cshot,1,3);
+      blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,rr/dpr+3),info:`commander projectile ${nm("projectiles",q[0])}${q[5]?"\nhitbox "+q[5]+" x "+q[6]+" px":""}\nspeed ${(Math.hypot(q[3],q[4])*60/16).toFixed(1)} tiles/s`});
+    }
   }
   let tgtText="none", tgtCls="";
   if(mb0){
@@ -844,7 +863,7 @@ $("scrub").oninput=e=>{if(!D)return;cur=D.tmin+e.target.value/1000*(D.tmax-D.tmi
 $("fit").onclick=()=>{if(D){camMode="fit";$("followBoss").classList.remove("on");fitView();draw();}};
 $("followBoss").onclick=()=>{if(!D)return;camMode=camMode==="boss"?"free":"boss";$("followBoss").classList.toggle("on",camMode==="boss");if(camMode==="boss"&&cam.z<0.25)cam.z=0.3;draw();};
 const tog=(id,get,set)=>{$(id).onclick=()=>{set(!get());$(id).classList.toggle("on",get());draw();};};
-tog("tBoss",()=>trBoss,v=>trBoss=v);tog("tAdd",()=>trAdd,v=>trAdd=v);tog("tLevy",()=>trLevy,v=>trLevy=v);tog("tProj",()=>trProj,v=>trProj=v);tog("hitBtn",()=>showHit,v=>showHit=v);
+tog("tBoss",()=>trBoss,v=>trBoss=v);tog("tAdd",()=>trAdd,v=>trAdd=v);tog("tLevy",()=>trLevy,v=>trLevy=v);tog("tProj",()=>trProj,v=>trProj=v);tog("hitBtn",()=>showHit,v=>showHit=v);tog("tCmd",()=>showCmdP,v=>showCmdP=v);
 $("labelBtn").onclick=()=>{showLabels=!showLabels;$("labelBtn").classList.toggle("on",showLabels);draw();};
 $("prevEv").onclick=()=>jumpEvent(-1); $("nextEv").onclick=()=>jumpEvent(1);
 window.addEventListener("keydown",e=>{const tg=e.target.tagName;if(tg==="SELECT"||tg==="BUTTON"||tg==="INPUT"&&e.target.type!=="range")return;

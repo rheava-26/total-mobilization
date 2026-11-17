@@ -254,7 +254,7 @@ namespace Levy.Common.Recording
 			{
 				L("The boss's life");
 				foreach (var m in s.Milestones) L("  Down to " + m.pct + "% at " + FightStats.Clock(m.sec) + ", " + m.army + " levies in the arena.");
-				foreach (var p in s.Phases) L("  " + FightStats.Clock(p.tick / 60.0) + ": " + p.what + ".");
+				foreach (var p in s.Phases.Where(p => !(s.Milestones.Count > 0 && System.Text.RegularExpressions.Regex.IsMatch(p.what, @"^\d+% life$")))) L("  " + FightStats.Clock(p.tick / 60.0) + ": " + p.what + ".");
 				L();
 			}
 

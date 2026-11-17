@@ -175,6 +175,7 @@ namespace Levy.Content.NPCs
 					case SoldierOrder.ReturnToBarracks: State = SoldierState.ReturnHome; break;
 					case SoldierOrder.SearchDestroy: State = SoldierState.SearchDestroy; break;
 					case SoldierOrder.FreeRein: State = SoldierState.FreeRein; break;
+					case SoldierOrder.Regroup: State = EffOrder == SoldierOrder.FreeRein ? SoldierState.FreeRein : SoldierState.SearchDestroy; break;
 					default: State = SoldierState.Idle; break;
 				}
 			}
@@ -214,6 +215,7 @@ namespace Levy.Content.NPCs
 				case SoldierOrder.ReturnToBarracks: HoldPosition = false; SetState(SoldierState.ReturnHome); break;
 				case SoldierOrder.SearchDestroy: HoldPosition = false; SetState(SoldierState.SearchDestroy); break;
 				case SoldierOrder.FreeRein: HoldPosition = false; SetState(SoldierState.FreeRein); break;
+				case SoldierOrder.Regroup: HoldPosition = false; SetState(EffOrder == SoldierOrder.FreeRein ? SoldierState.FreeRein : SoldierState.SearchDestroy); break;
 			}
 			_lastSeenState = State;
 		}
@@ -551,6 +553,7 @@ namespace Levy.Content.NPCs
 				case SoldierOrder.Patrol: return SoldierState.Patrol;
 				case SoldierOrder.SearchDestroy: return SoldierState.SearchDestroy;
 				case SoldierOrder.FreeRein: return SoldierState.FreeRein;
+				case SoldierOrder.Regroup: return EffOrder == SoldierOrder.FreeRein ? SoldierState.FreeRein : SoldierState.SearchDestroy;
 				case SoldierOrder.ReturnToBarracks:
 				{
 					if (Home == null)
@@ -2552,10 +2555,10 @@ namespace Levy.Content.NPCs
 		}
 
 		// ---- 11. Search & Destroy / Free Rein ----
-		private bool FreeReining => IsRegular && Record.Order == SoldierOrder.FreeRein;
+		private bool FreeReining => IsRegular && EffOrder == SoldierOrder.FreeRein;
 		/// <summary>On a roaming order (Search &amp; Destroy or Free Rein): bounded by <see cref="RoamLeashTiles"/> around <see cref="RoamAnchor"/>.</summary>
 		/// <remarks>Militia roam only while mustered out: a body walking home on stand-down (State ReturnHome) is not roaming.</remarks>
-		private bool Roaming => IsRegular ? (Record.Order == SoldierOrder.SearchDestroy || Record.Order == SoldierOrder.FreeRein)
+		private bool Roaming => IsRegular ? (EffOrder == SoldierOrder.SearchDestroy || EffOrder == SoldierOrder.FreeRein)
 			: IsMilitia && Record.Order == SoldierOrder.SearchDestroy && State != SoldierState.ReturnHome;
 		private int RoamLeashTiles => FreeReining ? FreeReinLeash : IsMilitia ? LevyConstants.MilitiaLeashTiles : LevyConstants.SearchLeashTiles;
 		private Vector2 RoamAnchor() => FreeReining ? FreeReinBase() : SearchAnchor();

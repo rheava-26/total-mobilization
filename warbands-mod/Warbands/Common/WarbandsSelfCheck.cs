@@ -10,7 +10,7 @@ using Warbands.Content.NPCs;
 namespace Warbands.Common
 {
 	/// <summary>Boot self-check ("[Warbands] self-check ..." lines, headless server boots; env WARBANDS_CHECK=0 skips): config defaults, roster data against the real item tables and Levy's tiers, the stat rules, and a live band soldier.</summary>
-	public class WarbandsSelfCheck : ModSystem
+	public partial class WarbandsSelfCheck : ModSystem
 	{
 		int pass, fail;
 		void Check(string name, bool ok, string detail = "")
@@ -194,19 +194,7 @@ namespace Warbands.Common
 			}
 			catch (Exception e) { Check("speech bubbles", false, e.GetType().Name + ": " + e.Message); }
 
-			// no new natural band while a boss is alive (a band already out is not removed)
-			try
-			{
-				var cfgB = WarbandsConfig.Get; int slot = -1;
-				for (int i = Main.maxNPCs - 1; i >= 0 && slot < 0; i--) if (!Main.npc[i].active) slot = i;
-				bool idle = !BandSpawner.NaturalSpawnBlocked(cfgB);
-				if (slot >= 0) { var bn = Main.npc[slot]; bn.SetDefaults(NPCID.EyeofCthulhu); bn.active = true; }
-				bool held = BandSpawner.NaturalSpawnBlocked(cfgB);
-				if (slot >= 0) Main.npc[slot].active = false;
-				bool freed = !BandSpawner.NaturalSpawnBlocked(cfgB);
-				Check("a live boss holds natural bands back, and releases them when it is gone", slot >= 0 && idle && held && freed, $"idle={idle} held={held} freed={freed}");
-			}
-			catch (Exception e) { Check("boss hold", false, e.GetType().Name + ": " + e.Message); }
+			RunBandChecks();
 
 			// a live band soldier from every role of one roster
 			try

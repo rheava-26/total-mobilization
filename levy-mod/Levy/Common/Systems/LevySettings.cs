@@ -217,7 +217,7 @@ namespace Levy.Common.Systems
 			"EnemiesTargetSoldiers", "UseVanillaStatPipeline", "ClassMatchIssue", "WeaponRanking", "SkipArmoredWeapons", "AimAccuracy", "AutoUpgradeWeapons", "RealWeaponShoot", "AutoFeedCrystals",
 			"ArmoryTurnsStarsIntoMana", "SoldiersTriggerPressurePlates", "SoldierEffectsAtSoldier", "RealGearUpkeep", "SoldiersUseHooks", "ExtraTargetingAiStyles",
 			"DoNotAttackNpcNames", "WageMultiplier", "AutoMusterDefault", "MilitiaFieldCap", "WageMutiny", "NurseHealsSoldiers", "Spoils", "MagicStorageSupply", "LeviesAtStart", "LeviesByEndOfPreHardmode",
-			"LeviesByEndOfHardmode", "LeviesByEndOfPostMoonLord", "MaxLevies", "Nameplates", "MilitiaDeathMessages", "RegularDeathMessages",
+			"LeviesByEndOfHardmode", "LeviesByEndOfPostMoonLord", "MaxLevies", "Nameplates", "MilitiaDeathMessages", "RegularDeathMessages", "CustomDeathMessagePercent",
 			"ArmyEntityBudget", "ReservedProjectileSlots", "ReservedNpcSlots", "ArmySoundVolume",
 		};
 

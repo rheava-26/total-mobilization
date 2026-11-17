@@ -1042,16 +1042,13 @@ namespace Levy.Common.Systems
 			{
 				rec.RespawnTimer = LevyConstants.RegularRespawnTicks;
 				if (hardcore && Regulars.Remove(rec)) Memorial.Add(rec);
-				if (LevyConfig.Get.RegularDeathMessages) DialogueSystem.ChatLog(DialogueTrigger.DEATH_MESSAGE, rec, ctx);
+				PostDeathLine(body, rec, ctx, LevyConfig.Get.RegularDeathMessages);
 				if (hardcore) LevyUtil.Chat(LevyUtil.T("Roster.Memorial", rec.Name));
 			}
 			else
 			{
-				switch (LevyConfig.Get.MilitiaDeathMessages)
-				{
-					case MilitiaDeathMessageMode.Individual: DialogueSystem.ChatLog(DialogueTrigger.DEATH_MESSAGE, rec, ctx); break;
-					// Count mode: SettlementSystem.OnMilitiaBodyDied owns MilitiaLostThisEvent and reports it at stand down.
-				}
+				// Count mode: SettlementSystem.OnMilitiaBodyDied owns MilitiaLostThisEvent and reports it at stand down; an individual line posts only when asked for (Individual mode, custom text, a Noxus fight).
+				PostDeathLine(body, rec, ctx, LevyConfig.Get.MilitiaDeathMessages == MilitiaDeathMessageMode.Individual);
 				SettlementSystem.Instance.OnMilitiaBodyDied(home, rec, body);
 			}
 
@@ -1061,6 +1058,19 @@ namespace Levy.Common.Systems
 			FearSystem.OnComradeDied(body);
 			npc.life = 0;
 			if (rec.Kind == SoldierKind.Regular) SendRosterSnapshot(); // militia are not in the regulars list
+		}
+
+		/// <summary>The one death line a fallen levy posts: its custom death text, the themed line, or nothing (see <see cref="Common.Death.LevyDeathPost"/>). A Nameless Deity or Avatar of Emptiness fight posts every death.</summary>
+		private static void PostDeathLine(SoldierNPC body, SoldierRecord rec, DialogueContext ctx, bool genericOn)
+		{
+			var cfg = LevyConfig.Get;
+			bool nox = Common.Death.NoxusFights.Active;
+			string custom = nox || cfg.CustomDeathMessagePercent > 0 ? body.CustomDeathText() : null;
+			switch (Common.Death.LevyDeathPost.Decide(custom != null, nox, cfg.CustomDeathMessagePercent, Main.rand.NextFloat(), genericOn))
+			{
+				case Common.Death.LevyDeathPost.Verdict.Custom: Common.Death.LevyDeathPost.Note(custom); LevyUtil.Chat(custom, new Microsoft.Xna.Framework.Color(225, 25, 25)); break;
+				case Common.Death.LevyDeathPost.Verdict.Themed: DialogueSystem.ChatLog(DialogueTrigger.DEATH_MESSAGE, rec, ctx, force: true); break;
+			}
 		}
 
 		private static string KillerText(int killerNpcType, string killerName)

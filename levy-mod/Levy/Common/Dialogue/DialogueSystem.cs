@@ -164,10 +164,10 @@ namespace Levy.Common.Dialogue
 		/// Chat-log notice (muster, deaths, desertions...). No budget. Server and single player only: the server broadcasts.
 		/// A Regular's death message obeys LevyConfig.RegularDeathMessages; a militia death message is only posted in Individual mode.
 		/// </summary>
-		public static void ChatLog(DialogueTrigger trigger, SoldierRecord rec, DialogueContext ctx = null)
+		public static void ChatLog(DialogueTrigger trigger, SoldierRecord rec, DialogueContext ctx = null, bool force = false)
 		{
 			if (LevyUtil.IsClient) return;
-			if (trigger == DialogueTrigger.DEATH_MESSAGE && rec != null)
+			if (trigger == DialogueTrigger.DEATH_MESSAGE && rec != null && !force)
 			{
 				LevyConfig cfg = LevyConfig.Get;
 				if (cfg != null)
@@ -178,6 +178,7 @@ namespace Levy.Common.Dialogue
 			string line = PickLine(trigger, rec, ctx);
 			if (string.IsNullOrEmpty(line)) return;
 			// Deaths use the vanilla death-message red; everything else the mod's gold (LevyUtil's default).
+			if (trigger == DialogueTrigger.DEATH_MESSAGE) global::Levy.Common.Death.LevyDeathPost.Note(line);
 			LevyUtil.Chat(line, trigger == DialogueTrigger.DEATH_MESSAGE ? new Color(225, 25, 25) : null);
 		}
 

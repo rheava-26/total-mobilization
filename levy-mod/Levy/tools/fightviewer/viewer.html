@@ -164,7 +164,9 @@ function parseRec(text){
   return R;
 }
 const tkOf=b=>b.length>14?b[14]:((b[12]>=0&&b[12]<255)?1:0);
-function mainBoss(f){const bs=f.b||[];for(const b of bs) if(!b[13]) return b; return bs[0]||null;}
+// event NPCs (Celestial Pillars, Martian Saucer, Flying Dutchman, Pumpkin/Frost Moon bosses) are never the main boss: same list as tools/recview/recrules.py
+const EVENT_NPC=new Set([517,422,507,493,392,393,394,395,491,492,325,327,328,344,345,346]);
+function mainBoss(f){const bs=(f.b||[]).filter(b=>!EVENT_NPC.has(b[0]));for(const b of bs) if(!b[13]) return b; return bs[0]||null;}
 function build(R){
   R.v=(R.hdr&&R.hdr.format)||1;
   R.hasTarget=R.frames.some(f=>(f.b||[]).some(b=>b.length>14));
@@ -281,7 +283,12 @@ function computeCard(R,name,mtime){
   const bossHdr=h.boss&&h.boss!=="none"?String(h.boss).replace(/_/g," "):null;
   c.boss=(e&&e.bossName)||m.bossName||bossHdr||String(m.label||fi.boss||"Fight").replace(/_/g," ");
   c.when=h.date&&!isNaN(Date.parse(h.date))?Date.parse(h.date):(fi.date!=null?fi.date:(mtime!=null?mtime:null));
-  let res=e&&e.result; if(!res&&e) res=e.outcome==="killed"?"won":e.outcome==="despawn"?"fled":"ended";
+  let res=e&&e.result;
+  if(!res&&e){   // no result word in the file: the recorder's rule. A boss that leaves is lost when the commander fell within 60 s before it went, fled when she was alive and well
+    if(e.outcome==="killed") res="won";
+    else if(e.outcome==="despawn"){const be=(R.events||[]).filter(x=>x.e==="bdespawn").pop(),bt=be?be.t:null;res=bt!=null&&(R.events||[]).some(x=>x.e==="cdeath"&&bt-x.t>=-10&&bt-x.t<=3600)?"lost":"fled";}
+    else res="ended";
+  }
   if(!res) res=fi.crashed?"crashed":(R.cut?"cut":(fi.result||"unknown"));
   c.result=res;
   const first=R.frames[0].t,last=R.frames[R.frames.length-1].t;

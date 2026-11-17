@@ -86,7 +86,7 @@ namespace Levy.Content.NPCs
 			if (_lzMode == 0) return;
 			bool threat = fleeIdx >= 0 || TargetIndex >= 0 || nearestHostileTiles < LevyConstants.SitWakeEnemyTiles || State == SoldierState.Engage || State == SoldierState.Shaken
 				|| State == SoldierState.Routed || State == SoldierState.Desert || State == SoldierState.Dead;
-			if (threat || !LeisureOn || !FreeReining || OfficerMode || Record == null || MutinySystem.IsMutinous(Record) || BeingTalkedTo || TicksSinceDamaged < LevyConstants.ThinkIntervalTicks * 2)
+			if (threat || !LeisureOn || !FreeReining || Record?.Order == SoldierOrder.Regroup || OfficerMode || Record == null || MutinySystem.IsMutinous(Record) || BeingTalkedTo || TicksSinceDamaged < LevyConstants.ThinkIntervalTicks * 2)
 				Leisure_StopAt(now, true);
 		}
 
@@ -104,7 +104,7 @@ namespace Levy.Content.NPCs
 		private bool Leisure_Think(int now, float nearestHostileTiles)
 		{
 			if (!FreeReining || LevyUtil.IsClient) return false;
-			if (!LeisureOn || FreeReinLegacy || OfficerMode || HoldPosition || Record == null) { Leisure_Stop(); return false; }
+			if (!LeisureOn || FreeReinLegacy || OfficerMode || HoldPosition || Record == null || Record.Order == SoldierOrder.Regroup) { Leisure_Stop(); return false; }
 			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
 			try { return Leisure_ThinkCore(now, nearestHostileTiles); }
 			finally { LeisureTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; LeisureCalls++; }

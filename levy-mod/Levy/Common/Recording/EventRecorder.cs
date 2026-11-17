@@ -60,14 +60,13 @@ namespace Levy.Common.Recording
 		private static readonly Dictionary<string, string> _results = new();
 		private static readonly HashSet<string> _blocked = new();
 		private static int _cooldownUntil, _waveMax, _lastWave = -1, _lastInvSize, _lastInvType, _lastAcidPts = -1, _acidStartPts = -1, _armyGoneSince = -1, _armyPeak, _armyNow;
-		private static bool _moonFinal, _dd2Won, _dd2Lost, _pillarsUp;
+		private static bool _moonFinal, _dd2Won, _dd2Lost;
 		private static int _kills, _miniKills, _bossKills, _levyHits, _levyDeaths, _cmdDeaths; private static bool _pDead;
 		private static long _dmgAll;
 
 		// names and importance
 		private static readonly Dictionary<int, string> _items = new(), _npcs = new(), _projs = new(), _soldiers = new(), _prefixes = new();
 		private static readonly Dictionary<int, int> _imp = new(), _typeLife = new();
-		private static int _impStamp;
 
 		// levy tracking
 		private sealed class LTrack { public int Life; public bool Seen; }
@@ -280,8 +279,8 @@ namespace Levy.Common.Recording
 				_frames = _events = _chunks = 0; _kills = _miniKills = _bossKills = _levyHits = _levyDeaths = _cmdDeaths = 0; _pDead = false; _dmgAll = 0;
 				_items.Clear(); _npcs.Clear(); _projs.Clear(); _soldiers.Clear(); _prefixes.Clear(); _imp.Clear(); _typeLife.Clear(); _lt.Clear(); _deadNoted.Clear(); _projHit.Clear(); _lgear.Clear(); _hbDef.Clear(); _dmg.Clear();
 				_cells.Clear(); _centres.Clear(); _cellQ.Clear(); _levySlots.Clear(); _seen.Clear(); _results.Clear(); _prevActive.Clear();
-				_waveMax = 0; _lastWave = -1; _lastInvSize = Main.invasionSize; _lastInvType = Main.invasionType; _lastAcidPts = -1; _acidStartPts = -1; _armyGoneSince = -1; _armyPeak = 0; _moonFinal = false; _dd2Won = _dd2Lost = false; _pillarsUp = false;
-				_lastDmgFlush = 0; _lastProg = -100000; _outpostHash = 0; _impStamp = 0;
+				_waveMax = 0; _lastWave = -1; _lastInvSize = Main.invasionSize; _lastInvType = Main.invasionType; _lastAcidPts = -1; _acidStartPts = -1; _armyGoneSince = -1; _armyPeak = 0; _moonFinal = false; _dd2Won = _dd2Lost = false;
+				_lastDmgFlush = 0; _lastProg = -100000; _outpostHash = 0;
 				_costTicks = _costMax = _costSamples = _sampleTicks = 0; _costN = 0; Array.Clear(_hist); PartL = PartA = PartJ = PartW = PartPoll = PartLevyPoll = 0;
 				_startId = _mainId = eventId;
 				string stamp = _startWall.ToString("yyyy-MM-dd_HH-mm");
@@ -402,7 +401,6 @@ namespace Levy.Common.Recording
 				else if (_lastAcidPts >= 0 && _active.Contains("acidrain")) Ev("prog", ("left", Math.Max(0, _lastAcidPts).ToString()), ("of", Math.Max(_acidStartPts, _lastAcidPts).ToString()));
 				Ev("kc", ("n", _kills.ToString()), ("mini", _miniKills.ToString()), ("army", _armyNow.ToString()));
 			}
-			bool pillarNow = _active.Contains("pillars"); if (pillarNow) _pillarsUp = true;
 			foreach (string id in _prevActive)
 			{
 				if (_active.Contains(id)) continue;

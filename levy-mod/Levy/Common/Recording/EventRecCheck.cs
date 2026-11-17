@@ -363,11 +363,15 @@ namespace Levy.Common.Recording
 			long disk = new FileInfo(f).Length; double min = Ticks / 3600.0;
 			double mbHour = disk / min * 60.0 / 1048576.0;
 			// a load-robust yardstick from the same boot: what the game spends updating these 60 levies (NPC.UpdateNPC), per tick
-			var armySlots = new List<int>(); for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) armySlots.Add(i);
-			long a0 = System.Diagnostics.Stopwatch.GetTimestamp();
-			for (int k = 0; k < 300; k++) { foreach (int i in armySlots) { NPC n = Main.npc[i]; if (n.active) n.UpdateNPC(i); } p.active = true; }
-			double armyUs = (System.Diagnostics.Stopwatch.GetTimestamp() - a0) * 1e6 / System.Diagnostics.Stopwatch.Frequency / 300.0;
-			parts += $"; the same {armySlots.Count} levies' own update (NPC.UpdateNPC) costs {armyUs:0} us per tick on this boot, so the recorder adds {100.0 * EventRecorder.LastMeanUs / Math.Max(1, armyUs):0.0}% to it";
+			// vanilla only: with Calamity the first updates of freshly made bodies on a client-less server log Calamity's own InModBiome index errors (reported separately), which this yardstick must not add to the ship log
+			if (!ModLoader.HasMod("CalamityMod"))
+			{
+				var armySlots = new List<int>(); for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) armySlots.Add(i);
+				long a0 = System.Diagnostics.Stopwatch.GetTimestamp();
+				for (int k = 0; k < 300; k++) { foreach (int i in armySlots) { NPC n = Main.npc[i]; if (n.active) n.UpdateNPC(i); } p.active = true; }
+				double armyUs = (System.Diagnostics.Stopwatch.GetTimestamp() - a0) * 1e6 / System.Diagnostics.Stopwatch.Frequency / 300.0;
+				parts += $"; the same {armySlots.Count} levies' own update (NPC.UpdateNPC) costs {armyUs:0} us per tick on this boot, so the recorder adds {100.0 * EventRecorder.LastMeanUs / Math.Max(1, armyUs):0.0}% to it";
+			}
 			var h = EventRecorder.LastHist; int tot = 0; foreach (int x in h) tot += x;
 			string hist = ""; for (int b = 0; b < h.Length; b++) hist += (b < EventRecorder.CostEdgesUs.Length ? "<" + EventRecorder.CostEdgesUs[b] : ">=" + EventRecorder.CostEdgesUs[b - 1]) + "us:" + h[b] + " ";
 			int slow = 0; for (int b = 7; b < h.Length; b++) slow += h[b];

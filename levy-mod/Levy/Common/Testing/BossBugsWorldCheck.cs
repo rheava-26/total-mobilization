@@ -133,6 +133,7 @@ namespace Levy.Common.Testing
 				CommanderName = Commander, CommanderIndex = 0, LifeCrystals = LevyConstants.MaxLifeCrystals, ManaCrystals = 9, HomeBarracksId = -1, StoodDown = false,
 			};
 			rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana; rec.Order = order;
+			if (order == SoldierOrder.Regroup) { var gun = new Item(); gun.SetDefaults(ItemID.Minishark); var ball = new Item(); ball.SetDefaults(ItemID.MusketBall); ball.stack = 999; rec.Gear.Weapon = gun; rec.Gear.Ammo = ball; } // a Regroup levy is armed: an unarmed body never reads its order
 			RosterSystem.Instance.Regulars.Add(rec);
 			int body = RosterSystem.Instance.SpawnBody(rec, at);
 			if (body < 0 || !rec.HasBody) return null;

@@ -17,12 +17,16 @@ namespace Levy.Content.NPCs
 		internal bool DiedOfDot;
 		private static Player _deathScratch;
 		internal static long DeathTexts;
+		internal static readonly bool DeathDebug = Environment.GetEnvironmentVariable("LEVY_DEATHDBG") == "1";
 
 		/// <summary>True for the scratch players the damage-over-time step and the death text run on (their lethal tick must never be a local-player death).</summary>
 		internal static bool IsScratch(Player p) => p != null && (ReferenceEquals(p, _dotScratch) || ReferenceEquals(p, _deathScratch));
 		private static PlayerDeathReason _scratchReason; private static double _scratchDamage; private static int _scratchDir;
 		/// <summary>The scratch player was told to die: vanilla's own reason for the tick (the "other" reason 8 for most damage over time, 9 for poison, 10 for electrified) is kept for <see cref="CustomDeathText"/>.</summary>
 		internal static void NoteScratchKill(PlayerDeathReason reason, double dmg, int dir) { _scratchReason = reason; _scratchDamage = dmg; _scratchDir = dir; }
+
+		/// <summary>A reason a mod wrote its own text into (PlayerDeathReason.ByCustomReason): it names no NPC, projectile, player or vanilla "other" cause. (The reason's own custom-text property reads empty for a networked text, so the absence of every source is the test.)</summary>
+		internal static bool IsCustomReason(PlayerDeathReason r) => r != null && r.SourceNPCIndex < 0 && r.SourceOtherIndex < 0 && r.SourcePlayerIndex < 0 && r.SourceProjectileLocalIndex < 0;
 
 		/// <summary>The custom death text for this body's death, with its name filled in; null when it has none.</summary>
 		internal string CustomDeathText()
@@ -52,8 +56,9 @@ namespace Levy.Content.NPCs
 				s.position = NPC.position; s.width = NPC.width; s.height = NPC.height;
 				if (k > 0) s.UpdateBuffs(Main.maxPlayers); // the mods' debuff flags (ModBuff.Update) are what their PreKill reads
 				bool playSound = false, genGore = false;
-				PlayerLoader.PreKill(s, damage, dir, false, ref playSound, ref genGore, ref reason);
-				if (!string.IsNullOrEmpty(reason.SourceCustomReason)) { text = reason.GetDeathText(Record.Name).ToString(); DeathTexts++; }
+				bool pk = PlayerLoader.PreKill(s, damage, dir, false, ref playSound, ref genGore, ref reason);
+				if (DeathDebug) Levy.Instance?.Logger.Info($"[DeathText] debuffs {k} dot {dot} damage {damage} dir {dir} other {reason.SourceOtherIndex} custom {IsCustomReason(reason)} prekill {pk} text '{reason.GetDeathText(Record.Name)}'");
+				if (IsCustomReason(reason)) { text = reason.GetDeathText(Record.Name).ToString(); DeathTexts++; }
 			}
 			catch (Exception e) { if (GearUpkeep.WarnOnce(e)) Levy.Instance?.Logger.Warn("Levy: the custom death text step threw (once per kind): " + e); text = null; }
 			finally

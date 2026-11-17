@@ -26,11 +26,15 @@ namespace Levy.Common.Testing
 			try
 			{
 				s.Record.Name = name;
+				Step(3); // the body's first ticks clear the debuff immunities other mods' SetDefaults gave it (Calamity's), as in a real fight
 				s.NPC.life = 1; s.Record.CurrentHp = 1; s.NPC.GivenName = name;
 				int posted0 = LevyDeathPost.Posted; LevyDeathPost.LastPosted = null;
+				long dt0 = SoldierNPC.DotTicks, dd0 = SoldierNPC.DotDamage;
 				s.NPC.AddBuff(buff, 3600);
+				bool had = s.NPC.HasBuff(buff);
 				for (int t = 0; t < 40 && s.IsAlive; t++) { Step(30); if (s.NPC.life > 1) { s.NPC.life = 1; s.Record.CurrentHp = 1; } }
 				died = !s.IsAlive;
+				if (!died) Note($"death text: the levy did not die: buff added {had}, still on {s.NPC.HasBuff(buff)}, life {s.NPC.life}, dot ticks {SoldierNPC.DotTicks - dt0}, dot damage {SoldierNPC.DotDamage - dd0}, immune {s.NPC.buffImmune[buff]}, alive {s.IsAlive}, active {s.NPC.active}");
 				if (LevyDeathPost.Posted > posted0) line = LevyDeathPost.LastPosted ?? "";
 			}
 			finally { Remove(s); }

@@ -232,6 +232,17 @@ namespace Levy.Common.Progression
 			var ex2 = new ExtraAmountRule { ItemId = ItemID.FragmentSolar, Fragment = true, Average = () => 40 };
 			Check("fragment bonus = multiplier - 1 (no army)", Math.Abs(ex2.Bonus(p) - Math.Max(0f, c.LunarFragmentDropMultiplier - 1f)) < 1e-9);
 			Check("ore, bar and fragment are boss materials; boss mask and coin are not", ProgressionDropsSystem.IsMaterial(ItemID.ChlorophyteOre) && ProgressionDropsSystem.IsMaterial(ItemID.HallowedBar) && ProgressionDropsSystem.IsMaterial(ItemID.FragmentNebula) && !ProgressionDropsSystem.IsMaterial(ItemID.SkeletronPrimeMask) && !ProgressionDropsSystem.IsMaterial(ItemID.GoldCoin), $"ore {ProgressionDropsSystem.IsMaterial(ItemID.ChlorophyteOre)} bar {ProgressionDropsSystem.IsMaterial(ItemID.HallowedBar)} frag {ProgressionDropsSystem.IsMaterial(ItemID.FragmentNebula)} sword {ProgressionDropsSystem.IsMaterial(ItemID.SkeletronPrimeMask)} coin {ProgressionDropsSystem.IsMaterial(ItemID.GoldCoin)}");
+			{
+				// a base-game item another mod's recipe uses (Fargo's takes boss masks and trophies) stays what the base game says it is; the masks and trophies of every vanilla boss are never materials
+				var only = ProgressionDropsSystem.ThirdPartyOnlyMaterials();
+				var leaked = only.Where(ProgressionDropsSystem.IsMaterial).ToList();
+				Check("base-game items only other mods' recipes use are not boss materials", leaked.Count == 0, $"{only.Count} such items ({string.Join(", ", only.Take(8).Select(t => Lang.GetItemNameValue(t)))}{(only.Count > 8 ? ", ..." : "")}), {leaked.Count} still counted");
+				int[] vanity = { ItemID.SkeletronPrimeMask, ItemID.EyeMask, ItemID.SkeletronMask, ItemID.PlanteraMask, ItemID.GolemMask, ItemID.BossMaskMoonlord, ItemID.EyeofCthulhuTrophy, ItemID.SkeletronPrimeTrophy, ItemID.MoonLordTrophy };
+				var bad = vanity.Where(ProgressionDropsSystem.IsMaterial).Select(t => Lang.GetItemNameValue(t)).ToList();
+				Check("base-game boss masks and trophies are not boss materials, whatever other mods craft from them", bad.Count == 0, bad.Count == 0 ? "" : string.Join(", ", bad));
+				var bars = new[] { ItemID.IronBar, ItemID.HallowedBar, ItemID.SoulofMight, ItemID.ShadowScale, ItemID.TissueSample, ItemID.BeetleHusk, ItemID.Ectoplasm, ItemID.TurtleShell, ItemID.LunarOre }.Where(t => !ProgressionDropsSystem.IsMaterial(t)).Select(t => Lang.GetItemNameValue(t)).ToList();
+				Check("base-game boss materials stay materials (bars, souls, scales, husks, ectoplasm, luminite)", bars.Count == 0, bars.Count == 0 ? "" : string.Join(", ", bars));
+			}
 			Check("chlorophyte density cap follows config", ProgMath.ChlorophyteCaps(40, 130, c.ChlorophyteChunkScale).nearCap == (int)(40 * c.ChlorophyteChunkScale), $"scale {c.ChlorophyteChunkScale}, growth x{c.ChlorophyteGrowthMultiplier}");
 		}
 

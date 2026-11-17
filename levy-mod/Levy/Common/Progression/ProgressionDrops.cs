@@ -87,16 +87,44 @@ namespace Levy.Common.Progression
 		static readonly Dictionary<int, bool> materialCache = new();
 
 		public override void PostSetupRecipes() => Ensure();
-		public override void Unload() { chained.Clear(); rerolled.Clear(); materialCache.Clear(); done = false; ArmyRules = RareRules = LuminiteRules = FragmentRules = 0; }
+		public override void Unload() { chained.Clear(); rerolled.Clear(); materialCache.Clear(); baseMaterials = null; done = false; ArmyRules = RareRules = LuminiteRules = FragmentRules = 0; }
 
-		/// <summary>An ore, bar or crafting material (not weapons, armor, pets, trophies or coins).</summary>
+		/// <summary>An ore, bar or crafting material (not weapons, armor, pets, trophies or coins). A base-game item is a material when a base-game recipe uses it: another mod's recipe that
+		/// takes a boss mask or a trophy (Fargo's Mutant Mod) does not make it a boss material. A mod's item is a material when any recipe uses it.</summary>
 		public static bool IsMaterial(int itemId)
 		{
 			if (materialCache.TryGetValue(itemId, out bool m)) return m;
 			m = false;
 			if (itemId > 0 && itemId < ItemLoader.ItemCount && ContentSamples.ItemsByType.TryGetValue(itemId, out Item it))
-				m = it.material || (it.createTile >= 0 && TileID.Sets.Ore[it.createTile]);
+				m = (itemId < ItemID.Count ? BaseGameMaterials().Contains(itemId) : it.material) || (it.createTile >= 0 && TileID.Sets.Ore[it.createTile]);
 			return materialCache[itemId] = m;
+		}
+
+		static HashSet<int> baseMaterials;
+		/// <summary>Base-game items a base-game recipe uses (its ingredients and the members of its recipe groups), disabled recipes included: the same set whatever other mods are loaded.</summary>
+		internal static HashSet<int> BaseGameMaterials()
+		{
+			if (baseMaterials != null) return baseMaterials;
+			var s = new HashSet<int>(); var groups = new HashSet<int>();
+			for (int i = 0; i < Recipe.numRecipes; i++)
+			{
+				Recipe r = Main.recipe[i];
+				if (r == null || r.Mod != null) continue;
+				foreach (Item ing in r.requiredItem) if (ing != null && ing.type > 0 && ing.type < ItemID.Count) s.Add(ing.type);
+				foreach (int g in r.acceptedGroups) if (g >= 0) groups.Add(g);
+			}
+			foreach (var grp in RecipeGroup.recipeGroups.Values)
+				if (groups.Contains(grp.RegisteredId)) foreach (int t in grp.ValidItems) if (t > 0 && t < ItemID.Count) s.Add(t);
+			if (Recipe.numRecipes > 0) baseMaterials = s; // before the recipes exist, do not keep an empty answer
+			return s;
+		}
+
+		/// <summary>Base-game items that other mods' recipes make materials but the base game does not (diagnostics: these get no army bonus as boss drops).</summary>
+		internal static List<int> ThirdPartyOnlyMaterials()
+		{
+			var l = new List<int>(); var b = BaseGameMaterials();
+			for (int t = 1; t < ItemID.Count; t++) if (ItemID.Sets.IsAMaterial[t] && !b.Contains(t) && ContentSamples.ItemsByType.TryGetValue(t, out Item it) && !(it.createTile >= 0 && TileID.Sets.Ore[it.createTile])) l.Add(t);
+			return l;
 		}
 
 		public static void Ensure()

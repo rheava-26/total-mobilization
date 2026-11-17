@@ -71,14 +71,14 @@ namespace Levy.Common.Recording
 			Exception mx = null; bool ok = false;
 			try
 			{
-				Levy.Common.Weapons.SoldierMinions.SaveBuffs(lg);
+				global::Levy.Common.Weapons.SoldierMinions.SaveBuffs(lg);
 				lg.buffType[max + 21] = 0; lg.buffType[3] = BuffID.Wrath;
-				Levy.Common.Weapons.SoldierMinions.RestoreBuffs(lg);
+				global::Levy.Common.Weapons.SoldierMinions.RestoreBuffs(lg);
 				ok = lg.buffType[max + 21] == BuffID.Regeneration && lg.buffTime[max + 21] == 77 && lg.buffType[3] == BuffID.Swiftness;
 				Player sh = new Player(); sh.buffType = new int[44]; sh.buffTime = new int[44];
-				Levy.Common.Weapons.SoldierMinions.RestoreBuffs(sh); // a longer save put back onto a shorter dummy fills what fits
+				global::Levy.Common.Weapons.SoldierMinions.RestoreBuffs(sh); // a longer save put back onto a shorter dummy fills what fits
 				ok &= sh.buffType[3] == BuffID.Swiftness;
-				sh.buffType[43] = BuffID.Shine; Levy.Common.Weapons.SoldierMinions.SaveBuffs(sh); sh.buffType[43] = 0; Levy.Common.Weapons.SoldierMinions.RestoreBuffs(sh);
+				sh.buffType[43] = BuffID.Shine; global::Levy.Common.Weapons.SoldierMinions.SaveBuffs(sh); sh.buffType[43] = 0; global::Levy.Common.Weapons.SoldierMinions.RestoreBuffs(sh);
 				ok &= sh.buffType[43] == BuffID.Shine;
 			}
 			catch (Exception e) { mx = e; }

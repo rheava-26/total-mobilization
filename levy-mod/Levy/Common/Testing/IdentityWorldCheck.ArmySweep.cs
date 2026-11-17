@@ -21,7 +21,13 @@ namespace Levy.Common.Testing
 	public sealed class ArmySweepTally : GlobalNPC
 	{
 		public static bool On; public static int Target = -1; public static int Hits; public static long Damage;
+		public static Dictionary<string, (int hits, long dmg)> ByProj = new();
 		public override void HitEffect(NPC npc, NPC.HitInfo hit) { if (On && npc.whoAmI == Target) { Hits++; Damage += hit.Damage; } }
+		public override void OnHitByProjectile(NPC npc, Projectile projectile, NPC.HitInfo hit, int damageDone)
+		{
+			if (!On || npc.whoAmI != Target) return;
+			string n = projectile.ModProjectile?.Name ?? ProjectileID.Search.GetName(projectile.type); ByProj.TryGetValue(n, out var e); ByProj[n] = (e.hits + 1, e.dmg + damageDone);
+		}
 	}
 
 	public partial class IdentityWorldCheck
@@ -41,9 +47,20 @@ namespace Levy.Common.Testing
 			"Cosmolight", "Radiant Star", "Star of Destruction", "Shard of Antumbra", "Cranium Smasher", "Plaguenade", "The Syringe", "System Bane", "Infected Remote", "Wulfrum Controller", "Samsara Slicer", "Subduction Slicer", "Stellar Knife", "Phantasmal Ruin",
 		};
 		/// <summary>The sample the ship world runs (every other weapon is behind LEVY_ARMYSWEEP=1).</summary>
-		private static readonly string[] ArmyShip = { "Terra Blade", "Wingman", "Vernal Bolter", "Sniper Rifle", "Stellar Knife", "Dreadmine Staff" };
+		private static readonly string[] ArmyShip = { "Terra Blade", "Vernal Bolter", "Sniper Rifle", "Stellar Knife", "Morning Star", "Infested Clawmerang" };
 		/// <summary>Weapons whose levy fix belongs to another builder: measured and listed, never failed here.</summary>
-		private static readonly Dictionary<string, string> ArmyCoveredElsewhere = new() { { "starshower", "deusmind" } };
+		private static readonly Dictionary<string, string> ArmyCoveredElsewhere = new()
+		{
+			{ "starshower", "deusmind (a sky-falling weapon: the levy's shot never appears)" },
+			{ "wingman", "megagun (a two-gun holdout: the second holdout is left outside the held chain)" },
+			{ "doomsdaydevice", "megagun (a channel charge-and-release grenade that reads its owner's held item)" },
+		};
+		/// <summary>Weapons this headless run cannot measure for a reason of the harness, not the levy: listed, never failed.</summary>
+		private static readonly Dictionary<string, string> ArmyNotMeasurable = new()
+		{
+			{ "pulseturretremote", "its turret loads its own texture on the firing tick, which a server with no graphics device cannot do (both the levy's and the stand-in's turret stand and never fire)" },
+			{ "cosmolight", "a utility item, not a weapon" },
+		};
 
 		private static readonly bool ArmyDebug = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_DEBUG") == "1";
 		private static string ArmyKey(string s) => new string(s.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
@@ -51,11 +68,11 @@ namespace Levy.Common.Testing
 		private sealed class ArmyRes
 		{
 			public string Who = ""; public int Uses, Projs, AtCmd, NearCmdTicks, Engage, Ran, MaxMinions, MaxSentries, Hits; public long Dmg; public double SpawnActor, SpawnCmd; public string End = ""; public string Err;
-			public Dictionary<string, int> Types = new(); public Dictionary<string, int> States = new(); public int DummyMinions, DummyTurrets; public float MinX = 1e9f, MaxX = -1e9f;
+			public Dictionary<string, int> Types = new(); public Dictionary<string, (int hits, long dmg)> ByProj = new(); public Dictionary<string, int> States = new(); public int DummyMinions, DummyTurrets; public float MinX = 1e9f, MaxX = -1e9f;
 			public double UsesPerSec => Uses * 60.0 / Math.Max(1, Ran);
 			public double AvgActor => Projs == 0 ? -1 : SpawnActor / Projs / 16.0; public double AvgCmd => Projs == 0 ? -1 : SpawnCmd / Projs / 16.0;
 			public bool FromCommander => AtCmd > 0 || NearCmdTicks >= 12; // first seen at her, or lingering around her (a shot that merely flies past on a ricochet is geometry)
-			public override string ToString() => $"{Who}: uses/s {UsesPerSec:0.00}, projs {Projs}, spawn {AvgActor:0.0} tiles from the actor / {AvgCmd:0.0} from the commander, hits {Hits}, damage {Dmg}, minions {MaxMinions} (slots {DummyMinions}), sentries {MaxSentries} (slots {DummyTurrets}), engaged {Engage}/{Ran} (states {string.Join(",", States.Select(kv => kv.Key + ":" + kv.Value))}; x {MinX:0.0}..{MaxX:0.0} tiles from start){(Err != null ? ", THREW " + Err : "")} [{string.Join(",", Types.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + "x" + kv.Value))}]";
+			public override string ToString() => $"{Who}: uses/s {UsesPerSec:0.00}, projs {Projs}, spawn {AvgActor:0.0} tiles from the actor / {AvgCmd:0.0} from the commander, hits {Hits}, damage {Dmg}, minions {MaxMinions} (slots {DummyMinions}), sentries {MaxSentries} (slots {DummyTurrets}), engaged {Engage}/{Ran} (states {string.Join(",", States.Select(kv => kv.Key + ":" + kv.Value))}; x {MinX:0.0}..{MaxX:0.0} tiles from start){(Err != null ? ", THREW " + Err : "")} [{string.Join(",", Types.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + "x" + kv.Value))}] hit by [{string.Join(",", ByProj.OrderByDescending(kv => kv.Value.dmg).Take(4).Select(kv => kv.Key + ":" + kv.Value.hits + "h/" + kv.Value.dmg))}]";
 		}
 
 		/// <summary>Weapons by display name from every loaded mod (vanilla included).</summary>
@@ -95,10 +112,11 @@ namespace Levy.Common.Testing
 		private static void ArmyPlayerUse(Player p, Item it, Vector2 at, Vector2 aim, int k)
 		{
 			p.position = at - new Vector2(p.width / 2f, p.height); p.velocity = Vector2.Zero; p.statMana = p.statManaMax2; p.statLife = p.statLifeMax2;
-			bool press = it.autoReuse || it.channel || k % 2 == 0;
+			bool grenade = it.channel && it.noUseGraphic && it.useStyle == ItemUseStyleID.Swing; // a held-then-thrown grenade (Doomsday Device) is charged with the button down and thrown on the release
+			bool press = grenade ? k % 60 < 40 : (it.autoReuse || it.channel || k % 2 == 0);
 			if ((it.sentry || it.buffType > 0 && it.shoot > 0 && (it.DamageType?.CountsAsClass(DamageClass.Summon) ?? false)) && p.ownedProjectileCounts.Length > 0) { int mine = 0; for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && q.owner == 255 && (it.sentry ? q.sentry : q.minion)) mine++; } if (mine > 0 && it.sentry) press = false; } // a player does not recast a sentry that is standing
 			Main.screenPosition = p.Center - new Vector2(Main.screenWidth / 2f, Main.screenHeight / 2f); Main.mouseX = (int)(aim.X - Main.screenPosition.X); Main.mouseY = (int)(aim.Y - Main.screenPosition.Y);
-			try { int myp = Main.myPlayer; int cap1 = p.maxMinions, cap2 = p.maxTurrets; Main.myPlayer = 255; p.ResetEffects(); p.maxMinions = cap1; p.maxTurrets = cap2; p.UpdateBuffs(255); Main.myPlayer = myp; } catch (Exception) { }
+
 			p.controlUseItem = press; p.controlUseTile = false; p.channel = press && it.channel; p.releaseUseItem = true;
 			try { PlayerInput.Triggers.Current.MouseLeft = press; } catch { }
 			Main.mouseLeft = press; Main.mouseLeftRelease = !press;
@@ -135,7 +153,7 @@ namespace Levy.Common.Testing
 			bool close = !w.noMelee || w.shoot <= 0 || ItemID.Sets.Yoyo[w.type] || ItemID.Sets.Spears[w.type]; // a blade or spear is used next to the enemy (5 tiles), a shooter from 12 tiles
 			SpawnOriginTarget(close ? at - new Vector2(7 * 16f, 0f) : at); _sweepTarget.boss = true;
 			Player scratch = null, saved255 = null; int body = -1; SoldierRecord rec = null;
-			ArmySweepTally.Target = _sweepTarget.whoAmI; ArmySweepTally.On = true;
+			ArmySweepTally.Target = _sweepTarget.whoAmI; ArmySweepTally.On = true; ArmySweepTally.ByProj = new();
 			try
 			{
 				if (player)
@@ -154,7 +172,7 @@ namespace Levy.Common.Testing
 				Main.rand = new Terraria.Utilities.UnifiedRandom(777);
 				KeepCommander(); PinSweepTarget(); CursorOnCommander(); Step(20);
 				for (int i = 0; i < Main.maxProjectiles; i++) Main.projectile[i].active = false;
-				var live = new Dictionary<int, int>(); uint prevUse = 0; int prevAnim = 0; ArmySweepTally.Hits = 0; ArmySweepTally.Damage = 0; ArmyReadDamage(new ArmyRes());
+				var live = new Dictionary<int, int>(); uint prevUse = 0; int prevAnim = 0; ArmySweepTally.Hits = 0; ArmySweepTally.Damage = 0; ArmySweepTally.ByProj = new(); ArmyReadDamage(new ArmyRes());
 				for (int k = 0; k < ticks; k++)
 				{
 					Vector2 actor;
@@ -200,7 +218,7 @@ namespace Levy.Common.Testing
 					}
 					res.MaxMinions = Math.Max(res.MaxMinions, minions); res.MaxSentries = Math.Max(res.MaxSentries, sentries);
 				}
-				res.Hits = ArmySweepTally.Hits; res.Dmg = Math.Max(res.Dmg, ArmySweepTally.Damage);
+				res.Hits = ArmySweepTally.Hits; res.Dmg = Math.Max(res.Dmg, ArmySweepTally.Damage); res.ByProj = new Dictionary<string, (int, long)>(ArmySweepTally.ByProj);
 			}
 			catch (Exception e) { res.Err = e.GetType().Name + ": " + e.Message + " @ " + string.Join(" < ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())); }
 			finally
@@ -252,10 +270,11 @@ namespace Levy.Common.Testing
 			sw.Stop();
 			Note($"army sweep: {rows.Count} weapons, {ticks} ticks per run, {sw.ElapsedMilliseconds / 1000} s: OK {rows.Count(r => r.Status == "OK")}, WEAK {rows.Count(r => r.Status == "WEAK")}, BROKEN {rows.Count(r => r.Status == "BROKEN")}, NOREF {rows.Count(r => r.Status == "NOREF")}");
 			Note("army sweep table (name | status | worst ratio | player dmg | levy dmg idle | levy dmg commander holding | cause):");
-			foreach (var r in rows) Note($"army row {r.Label} | {r.Status} | {Math.Min(r.RatioA, r.RatioB):0.00} | {r.Player.Dmg} | {r.A.Dmg} | {r.B.Dmg} | {r.Cause}");
+			foreach (var r in rows) Note($"army row {r.Label} | {r.Status} | {Math.Min(r.RatioA, r.RatioB):0.00} | {r.Player.Dmg} | {r.A.Dmg} | {r.B.Dmg} | {r.Cause}{(ArmyCoveredElsewhere.TryGetValue(ArmyKey(r.Name), out string c1) ? " | COVERED BY " + c1 : ArmyNotMeasurable.TryGetValue(ArmyKey(r.Name), out string c2) ? " | NOT MEASURABLE: " + c2 : "")}");
 			foreach (var r in rows)
 			{
-				if (ArmyCoveredElsewhere.TryGetValue(ArmyKey(r.Name), out string cov)) { Note($"army sweep: {r.Label} is covered by {cov} ({r.Status})"); continue; }
+				if (ArmyCoveredElsewhere.TryGetValue(ArmyKey(r.Name), out string cov)) { Note($"army sweep: {r.Label} is covered by {cov} ({r.Status}, ratio {Math.Min(r.RatioA, r.RatioB):0.00})"); continue; }
+				if (ArmyNotMeasurable.TryGetValue(ArmyKey(r.Name), out string nm2)) { Note($"army sweep: {r.Label} is not measurable here: {nm2}"); continue; }
 				if (r.Status == "NOREF" || reportOnly) continue; // the full sweep reports; the ship subset (and a named re-check) fails
 				Check($"army: {r.Label} works in levy hands ({r.Status}: ratio idle {r.RatioA:0.00}, commander holding {r.RatioB:0.00}; levy damage {r.A.Dmg}/{r.B.Dmg}, player {r.Player.Dmg}; from commander {r.A.FromCommander || r.B.FromCommander})", r.Status == "OK");
 			}

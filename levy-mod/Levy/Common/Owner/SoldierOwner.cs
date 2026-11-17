@@ -150,7 +150,7 @@ namespace Levy.Common.Owner
 	}
 
 	/// <summary>
-	/// Stops a soldier's dummy from running the local-player death path. A real item can kill its user (Martyr's Chalice spends life), and vanilla then runs tombstone, coin drop and, on a server, SavePlayer and a process abort.
+	/// Stops a soldier's dummy (and the scratch players of its damage-over-time step) from running the local-player death path. A real item can kill its user (Martyr's Chalice spends life), and vanilla then runs tombstone, coin drop and, on a server, SavePlayer and a process abort.
 	/// Also owns the per-tick safety net for the frame stack.
 	/// </summary>
 	public sealed class KillMeGuard : ModSystem
@@ -164,6 +164,7 @@ namespace Levy.Common.Owner
 		private static void Detour(On_Player.orig_KillMe orig, Player self, Terraria.DataStructures.PlayerDeathReason reason, double dmg, int hitDirection, bool pvp)
 		{
 			if (SoldierOwner.IsDummy(self)) { Blocked++; self.statLife = Math.Max(1, self.statLife); self.dead = false; return; }
+			if (global::Levy.Content.NPCs.SoldierNPC.IsScratch(self)) { Blocked++; global::Levy.Content.NPCs.SoldierNPC.NoteScratchKill(reason, dmg, hitDirection); self.dead = false; return; } // a levy's damage-over-time step: the reason is kept for its death text, its life stays at or below 0 so the step counts the loss, and the local-player death never runs
 			orig(self, reason, dmg, hitDirection, pvp);
 		}
 	}

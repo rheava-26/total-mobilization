@@ -96,9 +96,9 @@ namespace Levy.Common.Testing
 					_perTick = () => { if (boss != null && boss.active) { boss.life = boss.lifeMax; boss.timeLeft = 99999; } };
 					BetStep(30);
 					int kills0 = _betKills;
-					string who = dropAfterWipe ? "the Spectator is cancelled right after the wipe" : "the Spectator is cancelled before the wipe";
+					string who = dropAfterWipe ? "the Spectator is cancelled right after the wipe" : "the Spectator runs out before the wipe";
 					if (dropAfterWipe) { WipeArmy(levies); _spectator = false; me.ClearBuff(bt); BetStep(3); Check($"({who}) the death still fires", _betKills > kills0); }
-					else { _spectator = false; me.ClearBuff(bt); BetStep(3); WipeArmy(levies); BetStep(3); Check($"({who}) no death", _betKills == kills0); }
+					else { _spectator = false; int ix = me.FindBuffIndex(bt); if (ix >= 0) me.buffTime[ix] = 1; BetStep(1); me.ClearBuff(bt); BetStep(3); WipeArmy(levies); BetStep(3); Check($"({who}) no death", _betKills == kills0); } // (a cancel during the fight is a forfeit: see Forfeit())
 					_perTick = null; if (boss != null) boss.active = false;
 				}
 

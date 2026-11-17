@@ -44,6 +44,8 @@ namespace Warbands.Common
 		public bool Leaving; public uint LeaveTick;
 		/// <summary>Event bands: the band rallies on the Flying Dutchman (Anchor follows the ship's ground and members stay within 70 tiles of it).</summary>
 		public bool Rally;
+		/// <summary>Formed by a summoning item (the player's own call): never held back by a boss fight.</summary>
+		public bool Summoned;
 		public bool IsEvent => Type != null && Type.Event != EventKind.None;
 
 		public static BandBrain Create(BandRoster type, int stage, int startSize, Vector2 anchor, int id = 0, bool neutral = false)

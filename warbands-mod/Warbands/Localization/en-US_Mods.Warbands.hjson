@@ -32,8 +32,13 @@ Configs: {
 		}
 
 		NoSpawnsDuringBosses: {
-			Label: No new bands during bosses
-			Tooltip: While a boss is alive no new band forms. Bands already out stay and keep fighting.
+			Label: No bands during boss fights
+			Tooltip: While a boss fight is on, and for a while after it, no natural or event band forms and bands already out stay at their camps. Summoned bands are not held.
+		}
+
+		BossGraceSeconds: {
+			Label: Boss fight grace
+			Tooltip: Seconds after the last boss falls during which bands are still held back.
 		}
 
 		BandSizeMin: {
@@ -129,6 +134,16 @@ Configs: {
 		EventSlimeRain: {
 			Label: Ninja clan
 			Tooltip: A ninja clan joins a Slime Rain.
+		}
+
+		EventSandstormChancePercent: {
+			Label: Sandstorm band chance
+			Tooltip: Chance, in percent, that a sandstorm sends a band. Rolled once when the sandstorm starts.
+		}
+
+		EventSandstormCooldownMinutes: {
+			Label: Sandstorm band cooldown
+			Tooltip: Minutes after a sandstorm band forms before another sandstorm may send one.
 		}
 
 		EventBandCooldownSeconds: {

@@ -127,6 +127,9 @@ body.call #callBtn{background:var(--on-bg);border-color:var(--on-line)}
 .spin{width:30px;height:30px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--grn);animation:sp 0.9s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion: reduce){.spin{animation:none}}
+#viewNote{position:absolute;right:10px;bottom:8px;pointer-events:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:11.5px;color:var(--dim)}
+#viewNote div{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:2px 7px;opacity:.92}
+#viewNote[hidden]{display:none}
 #tip{position:absolute;pointer-events:none;background:var(--tip-bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:12px;white-space:pre;display:none;z-index:5;max-width:90%}
 #controls{padding:8px 10px 10px;background:var(--panel);border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;display:flex;flex-direction:column;gap:8px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -194,7 +197,7 @@ body.big #strip,body.big .legend{display:none}
     <main id="main">
       <div id="fightHead"></div>
       <div id="callBar" role="group" aria-label="Call it"><span id="callTxt">Call it before you watch:</span><button class="pick" data-p="win">Win</button><button class="pick" data-p="loss">Loss</button><button class="pick" data-p="weird">Something weird</button><button id="callNext">Another fight</button><button id="callReveal">Reveal</button><span class="sc" id="callScore"></span></div>
-      <div id="stage"><canvas id="view"></canvas><div id="hud"></div><div id="msg" class="show"><div class="spin"></div><div id="msgText">Loading ...</div></div><div id="tip"></div></div>
+      <div id="stage"><canvas id="view"></canvas><div id="hud"></div><div id="viewNote" hidden></div><div id="msg" class="show"><div class="spin"></div><div id="msgText">Loading ...</div></div><div id="tip"></div></div>
       <div id="controls">
         <div class="row">
           <button id="play" style="min-width:76px">Play</button>
@@ -206,7 +209,7 @@ body.big #strip,body.big .legend{display:none}
         </div>
         <canvas id="strip" aria-label="timeline"></canvas>
         <div class="row">
-          <button id="fit" title="show the whole arena">Fit</button>
+          <button id="fit" title="frame the fight">Fit</button>
           <button id="bigBtn" title="fill the screen with the radar">Full screen</button>
           <button id="followBoss" title="camera follows the boss">Follow boss</button>
           <button id="tBoss" class="on" title="fading trails behind boss parts">Boss trails</button><button id="tLevy" class="on" title="fading trails behind levies">Levy trails</button><button id="tAdd" title="fading trails behind adds and minions">Add trails</button><button id="tProj" class="on" title="streaks behind projectiles">Proj trails</button><button id="hitBtn" class="on" title="draw the real hitbox rectangles">Hitboxes</button><button id="tCmd" class="on" title="the commander's own projectiles (recordings of format 11 and later)">Commander shots</button>
@@ -276,7 +279,9 @@ function fromData(o){      // a data/<fight>.json file written by make_site.py
   return {hdr:o.hdr||null,arena:o.arena||null,arenas:o.arenas||(o.arena?[o.arena]:[]),cam:o.cam||null,frames:o.frames,events:o.events||[],names:o.names||{items:{},npcs:{},projectiles:{},buffs:{},soldiers:{}},end:o.end||null,nt:o.nt||null};
 }
 const tkOf=b=>b.length>14?b[14]:((b[12]>=0&&b[12]<255)?1:0);
-function mainBoss(f){const bs=f.b||[];for(const b of bs) if(!b[13]) return b; return bs[0]||null;}
+// event NPCs (Celestial Pillars, Martian Saucer, Flying Dutchman, Pumpkin/Frost Moon bosses) are never the main boss: same list as tools/recview/recrules.py
+const EVENT_NPC=new Set([517,422,507,493,392,393,394,395,491,492,325,327,328,344,345,346]);
+function mainBoss(f){const bs=(f.b||[]).filter(b=>!EVENT_NPC.has(b[0]));for(const b of bs) if(!b[13]) return b; return bs[0]||null;}
 function makeArena(R){
   makeExtraTerrain(R);
   const A=R.terr; R.arenaImg=null; if(!A) return;
@@ -633,9 +638,46 @@ function trackStart(tr,t){let lo=0,hi=tr.length;while(lo<hi){const m=(lo+hi)>>1;
 const nm=(tbl,id)=>(D.names[tbl]&&D.names[tbl][id])||("#"+id);
 const lname=id=>(D.lbl.get(id)||("#"+id))+" "+((D.names.soldiers&&D.names.soldiers[id])||"");
 function canvasSize(c){const r=c.getBoundingClientRect();const dpr=window.devicePixelRatio||1;const w=Math.max(10,Math.round(r.width*dpr)),h=Math.max(10,Math.round(r.height*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}return {w,h,dpr};}
+// The fight's own box (px), cached per recording: the main boss while it stands plus the living commander near it (2-98% of each axis; a fight
+// that roams wider than MAXW x MAXH tiles gets the stretch where most of it happened), widened by recorded levies near that and by the terrain
+// right around it. A long approach flight, a respawn at base and event NPCs (pillars) stay out. null when no main boss was recorded.
+// Also says whether the fight area has terrain and whether levies were recorded near it.
+function fightBox(R){
+  if(R._fit!==undefined) return R._fit;
+  const NEAR=60*TILE, CMD=100*TILE, EDGE=20*TILE, MAXW=1100*TILE, MAXH=620*TILE, xs=[],ys=[], lx=[],ly=[];
+  for(const f of R.frames){const b=mainBoss(f); if(!b||b[13]) continue; xs.push(b[2]);ys.push(b[3]);
+    if(!(f.p[5]&8192)&&Math.abs(f.p[0]-b[2])<=CMD&&Math.abs(f.p[1]-b[3])<=CMD){xs.push(f.p[0]);ys.push(f.p[1]);}}
+  if(!xs.length) return R._fit=null;
+  const srt=a=>a.slice().sort((m,n)=>m-n), pc=(a,q)=>a[Math.max(0,Math.min(a.length-1,Math.round(q*(a.length-1))))];
+  const span=(a,L)=>{a=srt(a); let lo=pc(a,.02),hi=pc(a,.98); if(hi-lo<=L) return [lo,hi,lo,hi];
+    let best=0,bi=0,bj=0; for(let i=0,j=0;i<a.length;i++){while(j+1<a.length&&a[j+1]-a[i]<=L)j++; if(j-i>best){best=j-i;bi=i;bj=j;}} return [a[bi],a[bj],lo,hi];};
+  let [x0,x1,fx0,fx1]=span(xs,MAXW), [y0,y1,fy0,fy1]=span(ys,MAXH), near=false;
+  for(const tr of R.trL.values()) for(const t of tr){
+    if(t[1]>=fx0-NEAR&&t[1]<=fx1+NEAR&&t[2]>=fy0-NEAR&&t[2]<=fy1+NEAR) near=true;
+    if(t[1]>=x0-NEAR&&t[1]<=x1+NEAR&&t[2]>=y0-NEAR&&t[2]<=y1+NEAR){lx.push(t[1]);ly.push(t[2]);}}
+  if(lx.length){const a=srt(lx),c=srt(ly);x0=Math.min(x0,pc(a,.02));x1=Math.max(x1,pc(a,.98));y0=Math.min(y0,pc(c,.02));y1=Math.max(y1,pc(c,.98));}
+  let terr=false; const box=[x0,y0,x1,y1];
+  for(const a of (R.arenas||[])){ if(!a||!(a.w>0&&a.h>0)) continue;
+    const ax0=a.x0*TILE,ax1=(a.x0+a.w)*TILE,ay0=a.y0*TILE,ay1=(a.y0+a.h)*TILE;
+    if(ax1<box[0]-NEAR||ax0>box[2]+NEAR||ay1<box[1]-NEAR||ay0>box[3]+NEAR) continue; terr=true;
+    const bx0=Math.max(box[0]-EDGE,ax0),bx1=Math.min(box[2]+EDGE,ax1),by0=Math.max(box[1]-EDGE,ay0),by1=Math.min(box[3]+EDGE,ay1);
+    if(bx0<bx1&&by0<by1){x0=Math.min(x0,bx0);x1=Math.max(x1,bx1);y0=Math.min(y0,by0);y1=Math.max(y1,by1);}}
+  return R._fit={x0,y0,x1,y1,terr,leviesAway:R.levyTotal>0&&!near};
+}
+function fitNotes(){
+  const el=$("viewNote"); if(!el) return; const B=D&&fightBox(D), n=[];
+  if(D&&(B?!B.terr:!D.terr)) n.push("No terrain recorded here");
+  if(B&&B.leviesAway) n.push("Levies were out of the recorder's range");
+  el.innerHTML=n.map(t=>`<div>${esc(t)}</div>`).join(""); el.hidden=!n.length;
+}
 function fitView(){
   if(D&&D.isEvent){evFit();return;}
   const {w,h}=canvasSize($("view")); let x0=1e12,y0=1e12,x1=-1e12,y1=-1e12;
+  fitNotes();
+  const B=fightBox(D);
+  if(B){x0=B.x0-8*TILE;x1=B.x1+8*TILE;y0=B.y0-8*TILE;y1=B.y1+8*TILE;
+    if(x1-x0<400){const c=(x0+x1)/2;x0=c-200;x1=c+200;} if(y1-y0<300){const c=(y0+y1)/2;y0=c-150;y1=c+150;}
+    cam.x=(x0+x1)/2; cam.y=(y0+y1)/2; cam.z=Math.min(w/(x1-x0),h/(y1-y0))*0.98; return;}
   const T0=D.terr, tx0=T0?T0.x0*TILE:0, ty0=T0?T0.y0*TILE:0, tx1=T0?(T0.x0+T0.w)*TILE:0, ty1=T0?(T0.y0+T0.h)*TILE:0, far=1500;
   const xs=[],ys=[]; const add=(x,y)=>{xs.push(x);ys.push(y);};
   for(const t of D.trP) add(t[1],t[2]);
@@ -793,7 +835,7 @@ function draw(){
     const part=!!b0[13];
     const [bx,by,rr]=hbox(g,sc,dpr,x,y,b0[16],b0[17],al(T.red,part?.22:.14),T.red,part?1.2:2,part?5:9);
     g.fillStyle=T.red; g.beginPath();g.arc(bx,by,(part?1.6:3)*dpr,0,6.2832);g.fill();
-    if(!part&&mb0&&b0[1]===mb0[1]){g.fillStyle=T.bossLabel;g.font=`${11*dpr}px system-ui`;g.fillText(nm("npcs",b0[0]),bx+rr+4*dpr,by-rr*0.6);}
+    if(!part&&((mb0&&b0[1]===mb0[1])||EVENT_NPC.has(b0[0]))){g.fillStyle=T.bossLabel;g.font=`${11*dpr}px system-ui`;g.fillText(nm("npcs",b0[0]),bx+rr+4*dpr,by-rr*0.6);}
     blips.push({x:bx/dpr,y:by/dpr,r:Math.max(9,rr/dpr+3),info:bossInfo(b0)});
   }
   for(const e of evWindow(D.lhit,cur-20,cur)){ if(e.t>cur||cur-e.t>20) continue; const [sx,sy]=sc(e.x,e.y),a=(cur-e.t)/20,col=T.src[e.src]||T.flash;

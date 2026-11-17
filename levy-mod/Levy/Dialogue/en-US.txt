@@ -15,6 +15,7 @@
 #               BIOME_OCEAN BIOME_UNDERGROUND
 #               PAYDAY UNPAID DESERTED MUSTER STAND_DOWN NO_ONE_LEFT
 #               EVENT_GOBLINS EVENT_PIRATES EVENT_ECLIPSE EVENT_PUMPKIN EVENT_FROST EVENT_MARTIANS EVENT_OLDONES EVENT_FROSTLEGION
+#               ECLIPSE_END   (a Solar Eclipse just ended; a few levies near their commander say something, once per eclipse)
 #               ENGAGE KILL HURT LOW_HP OUT_OF_AMMO HOLD_FIRE
 #               BOSS_SIGHTED   (any main boss comes into view; also the fallback when a boss has no lines of its own)
 #               BOSS_<name>    (one boss; <name> is the vanilla NPC internal name: KingSlime EyeofCthulhu EaterofWorldsHead
@@ -41,7 +42,7 @@
 # WHERE A LINE SHOWS UP
 #   Right-click chat:   IDLE IDLE_NIGHT NAMEDROP BLOOD_MOON PARTY GRAVEYARD RAIN BIOME_* PAYDAY UNPAID HOLD_FIRE EVENT_* ARMORY_WANT ARMORY_BEST ARMORY_WORST
 #   Emote bubble + a small floating line:   ENGAGE KILL HURT LOW_HP OUT_OF_AMMO SHAKEN COMRADE_HIT MUSTER STAND_DOWN PROMOTED VETERAN
-#   Floating line over the head:   BOSS_SIGHTED BOSS_* COMRADE_DOWN ROUTED RALLIED VICTORY LIFE_CRYSTAL CHEST_OPENED ARMORY_GOT DRINK* (and EVENT_* for the militia)
+#   Floating line over the head:   BOSS_SIGHTED BOSS_* COMRADE_DOWN ROUTED RALLIED VICTORY LIFE_CRYSTAL CHEST_OPENED ARMORY_GOT DRINK* ECLIPSE_END (and EVENT_* for the militia)
 #   Chat log:   DEATH_MESSAGE DESERTED NO_ONE_LEFT
 #   Floating line over the head, in a mutiny:   MUTINY (the cries) MUTINY_BEGIN (the first shout) MUTINY_REFUSE (an order is refused) MUTINY_CALM (back to work once paid)
 #   Officers:   a floating line while marching comes from his own OFFICER_<Officer>_MARCH pool (OFFICER_MARCH and NURSE_MARCH when he has none).
@@ -471,6 +472,14 @@ EVENT_ECLIPSE | Any | Solar eclipse! Frankenstein, a guy with a chainsaw, and so
 EVENT_ECLIPSE | Any | The sun's gone dark and the monsters are out in the daytime! That's new and I hate it!
 EVENT_ECLIPSE | Any | Everybody inside! Everybody outside! Somebody decide!
 EVENT_ECLIPSE | Any | Is that a swamp thing?! It's daytime! It's not allowed in the daytime!
+ECLIPSE_END | Any | It's over! The sun made it! I knew it would! I didn't know it would!
+ECLIPSE_END | Any | No more chainsaw guy! No more Mothron! Just regular dark, {Player}! I love regular dark!
+ECLIPSE_END | Any | Last time the sun went out like that I was in Peru! It came back then too!
+ECLIPSE_END | Any | {Glutton} took every kill in that eclipse! Every single one! Greedy!
+ECLIPSE_END | Greenhorn | Is it over? Is the sun okay? Somebody check on the sun!
+ECLIPSE_END | Sellsword | The sun's off its break! Somebody paid it! Was it you, {Player}?!
+ECLIPSE_END | Zealot | I told everyone the sun would come back! Put that in my review, {Player}!
+ECLIPSE_END | Cynic | Eclipse is done. Great. Whatever's next will be worse.
 
 EVENT_PUMPKIN | Any | The pumpkins have faces! The pumpkins have TEETH!
 EVENT_PUMPKIN | Any | Pumpkin Moon! Every year the same pumpkins, and every year they're angrier!
@@ -1250,6 +1259,8 @@ EVENT_ECLIPSE | Any | [grumpy] The sun's out and it's dark and it's all wrong! I
 EVENT_ECLIPSE | Any | [grumpy] Monsters in daylight, a mood in the dark, and nobody's asking me!
 EVENT_ECLIPSE | Any | [grumpy] Whoever's in charge of the sky, I'd like a word! A loud word!
 EVENT_ECLIPSE | Any | [grumpy] Don't speak to me! Day, night, eclipse, I don't care!
+ECLIPSE_END | Any | [grumpy] Eclipse over, straight into a Blood Moon! Who is booking these?!
+ECLIPSE_END | Any | [grumpy] Finally, the sun's done being weird! Now the moon's doing it! Unbelievable!
 EVENT_PUMPKIN | Any | [grumpy] Pumpkins! Of course! A night for pumpkins and bad moods!
 EVENT_PUMPKIN | Any | [grumpy] I've never hated a vegetable so much!
 EVENT_PUMPKIN | Any | [grumpy] If a pumpkin looks at me funny, I'm going to be funnier!

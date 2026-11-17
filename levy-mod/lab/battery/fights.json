@@ -1,0 +1,11400 @@
+[
+ {
+  "run": "/home/user/lab/battery/runs/fights_eve",
+  "cell": "c0",
+  "seed": 1,
+  "army": "eve",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 45.6,
+  "levies": 34,
+  "deaths": 30,
+  "firstDeathSec": "11.1",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 381385.0,
+  "potionsDrunk": "26",
+  "weaponDmg": "Morning_Star@44=83976 Morning_Star@55=64484 Dark_Harvest@46=32628 Dark_Harvest@3=32408 Morning_Star@46=25513 Dark_Harvest=24265 C:Apathanull@28=14756 C:Apathanull@59=12912 Sniper_Rifle@82=12598 C:HavocsBreath@82=8128 C:RegulusRiot@Flawless=7316 C:Wingman@28=7038 C:Apathanull@26=5721 C:RealmRavager@17=5634 Stake_Launcher@37=5395 C:TrueArkoftheAncients@37=5014 Terra_Blade@46=4413 C:TrueArkoftheAncients@60=4289 C:VernalBolter@82=3778 C:Apathanull@37=3657 C:Malevolence@55=3538 C:TheSyringe@Flawless=2967 Terra_Blade@4=2907 C:Wingman@83=2580 Terra_Blade@55=2419 C:DoomsdayDevice@Flawless=1246 C:TheMicrowave@55=976 C:StarShower@26=829 C:StarShower@55=0",
+  "deathTimes": "11.1,12.1,12.2,13.4,17.9,18.0,18.0,18.1,20.0,20.2,20.2,20.3,20.4,22.5,22.5,22.5,22.6,22.9,22.9,23.0,24.8,31.1,31.2,33.0,33.1,35.3,35.4,45.2,45.4,45.4",
+  "classDmg": "P=349739 -=31646",
+  "dmgRMES": [
+   "39071",
+   "47493",
+   "20018",
+   "263274"
+  ],
+  "armyDps": 8363.7,
+  "perLevyDps": 246.0,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.755,
+    "Follow": 0.238,
+    "Resupply": 0.007
+   },
+   "notEngagedPct": 24.5,
+   "farOver50tilesPct": 36.6,
+   "meanDistToBoss": 44.4,
+   "crowdedPct": 51.5,
+   "deaths": [
+    [
+     664,
+     1,
+     928,
+     "boss"
+    ],
+    [
+     727,
+     6,
+     930,
+     "minion"
+    ],
+    [
+     728,
+     27,
+     930,
+     "minion"
+    ],
+    [
+     805,
+     19,
+     928,
+     "boss"
+    ],
+    [
+     1073,
+     34,
+     928,
+     "boss"
+    ],
+    [
+     1078,
+     13,
+     928,
+     "boss"
+    ],
+    [
+     1080,
+     8,
+     928,
+     "boss"
+    ],
+    [
+     1083,
+     11,
+     928,
+     "boss"
+    ],
+    [
+     1199,
+     12,
+     928,
+     "boss"
+    ],
+    [
+     1211,
+     25,
+     928,
+     "boss"
+    ],
+    [
+     1212,
+     21,
+     928,
+     "boss"
+    ],
+    [
+     1215,
+     24,
+     928,
+     "boss"
+    ],
+    [
+     1221,
+     7,
+     935,
+     "minion"
+    ],
+    [
+     1347,
+     4,
+     928,
+     "boss"
+    ],
+    [
+     1347,
+     33,
+     935,
+     "minion"
+    ],
+    [
+     1350,
+     5,
+     928,
+     "boss"
+    ],
+    [
+     1353,
+     28,
+     928,
+     "boss"
+    ],
+    [
+     1374,
+     26,
+     935,
+     "minion"
+    ],
+    [
+     1375,
+     23,
+     935,
+     "minion"
+    ],
+    [
+     1376,
+     10,
+     935,
+     "minion"
+    ],
+    [
+     1488,
+     16,
+     928,
+     "boss"
+    ],
+    [
+     1867,
+     32,
+     928,
+     "boss"
+    ],
+    [
+     1872,
+     3,
+     935,
+     "minion"
+    ],
+    [
+     1981,
+     22,
+     928,
+     "boss"
+    ],
+    [
+     1983,
+     9,
+     928,
+     "boss"
+    ],
+    [
+     2117,
+     14,
+     928,
+     "boss"
+    ],
+    [
+     2120,
+     31,
+     935,
+     "minion"
+    ],
+    [
+     2711,
+     30,
+     928,
+     "boss"
+    ],
+    [
+     2721,
+     20,
+     928,
+     "boss"
+    ],
+    [
+     2722,
+     2,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 19189,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     10879
+    ],
+    [
+     "other/-1/-1",
+     3716
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     3524
+    ],
+    [
+     "minion/Ravager/-1",
+     736
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     202
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_ravager_1.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_eve",
+  "cell": "c0",
+  "seed": 3,
+  "army": "eve",
+  "boss": "ravager",
+  "result": "LOSS",
+  "sec": 57.6,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "12.9",
+  "bossMax": 320160.0,
+  "bossLeft": 167649.0,
+  "dmgBoss": 271574.0,
+  "potionsDrunk": "30",
+  "weaponDmg": "Dark_Harvest@46=56331 Morning_Star@55=52528 Morning_Star@44=31455 Dark_Harvest=17603 C:RealmRavager@17=12487 Dark_Harvest@3=11365 C:Apathanull@28=10277 Sniper_Rifle@82=9185 Morning_Star@46=9103 C:TrueArkoftheAncients@60=8192 C:RegulusRiot@Flawless=5840 C:Apathanull@59=5642 C:Wingman@28=5390 C:TrueArkoftheAncients@37=5097 C:TheSyringe@Flawless=4720 Terra_Blade@46=4499 Stake_Launcher@37=4488 C:Apathanull@26=3360 Terra_Blade@55=3105 C:Wingman@83=2118 C:TheMicrowave@55=1810 Terra_Blade@4=1619 C:Apathanull@37=1577 C:HavocsBreath@82=1123 C:VernalBolter@82=984 C:Malevolence@55=877 C:StarShower@26=530 C:DoomsdayDevice@Flawless=269 C:StarShower@55=0",
+  "deathTimes": "12.9,12.9,12.9,12.9,12.9,16.1,16.1,16.1,16.1,16.1,16.1,16.2,16.2,16.3,16.3,18.4,18.4,20.3,20.4,20.6,20.6,22.6,24.3,24.6,26.2,26.3,26.4,26.4,26.5,35.0,37.2,37.3,37.8,57.6",
+  "classDmg": "P=237144 -=34430",
+  "dmgRMES": [
+   "29144",
+   "28894",
+   "24322",
+   "178385"
+  ],
+  "armyDps": 4714.8,
+  "perLevyDps": 138.7,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.848,
+    "Follow": 0.147,
+    "Resupply": 0.005
+   },
+   "notEngagedPct": 15.2,
+   "farOver50tilesPct": 38.9,
+   "meanDistToBoss": 44.4,
+   "crowdedPct": 58.1,
+   "deaths": [
+    [
+     749,
+     40,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     51,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     56,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     61,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     66,
+     928,
+     "boss"
+    ],
+    [
+     941,
+     63,
+     928,
+     "boss"
+    ],
+    [
+     942,
+     68,
+     928,
+     "boss"
+    ],
+    [
+     943,
+     62,
+     928,
+     "boss"
+    ],
+    [
+     944,
+     47,
+     928,
+     "boss"
+    ],
+    [
+     944,
+     58,
+     928,
+     "boss"
+    ],
+    [
+     944,
+     67,
+     928,
+     "boss"
+    ],
+    [
+     947,
+     59,
+     928,
+     "boss"
+    ],
+    [
+     950,
+     45,
+     928,
+     "boss"
+    ],
+    [
+     955,
+     49,
+     928,
+     "boss"
+    ],
+    [
+     957,
+     42,
+     928,
+     "boss"
+    ],
+    [
+     1079,
+     52,
+     928,
+     "boss"
+    ],
+    [
+     1080,
+     65,
+     928,
+     "boss"
+    ],
+    [
+     1195,
+     60,
+     928,
+     "boss"
+    ],
+    [
+     1201,
+     57,
+     928,
+     "boss"
+    ],
+    [
+     1211,
+     50,
+     928,
+     "boss"
+    ],
+    [
+     1211,
+     53,
+     928,
+     "boss"
+    ],
+    [
+     1331,
+     35,
+     935,
+     "minion"
+    ],
+    [
+     1437,
+     39,
+     928,
+     "boss"
+    ],
+    [
+     1453,
+     38,
+     928,
+     "boss"
+    ],
+    [
+     1550,
+     48,
+     928,
+     "boss"
+    ],
+    [
+     1558,
+     44,
+     928,
+     "boss"
+    ],
+    [
+     1562,
+     55,
+     928,
+     "boss"
+    ],
+    [
+     1563,
+     41,
+     928,
+     "boss"
+    ],
+    [
+     1570,
+     43,
+     935,
+     "minion"
+    ],
+    [
+     2080,
+     54,
+     928,
+     "boss"
+    ],
+    [
+     2212,
+     46,
+     935,
+     "minion"
+    ],
+    [
+     2215,
+     64,
+     935,
+     "minion"
+    ],
+    [
+     2245,
+     37,
+     935,
+     "minion"
+    ],
+    [
+     3436,
+     36,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 21099,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     16172
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     2489
+    ],
+    [
+     "other/-1/-1",
+     1800
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     414
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     224
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_ravager_3.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_eve",
+  "cell": "c1",
+  "seed": 2,
+  "army": "eve",
+  "boss": "eol",
+  "result": "LOSS",
+  "sec": 38.4,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "7.0",
+  "bossMax": 212415.0,
+  "bossLeft": 158904.0,
+  "dmgBoss": 187467.0,
+  "potionsDrunk": "31",
+  "weaponDmg": "Morning_Star@44=26513 Dark_Harvest@46=20608 Dark_Harvest@3=17735 Morning_Star@55=11547 C:Apathanull@28=10874 C:RealmRavager@17=9464 C:Apathanull@59=9102 C:RegulusRiot@Flawless=8752 Sniper_Rifle@82=6913 Stake_Launcher@37=6136 C:TrueArkoftheAncients@37=6088 Morning_Star@46=6079 Dark_Harvest=5835 C:TheSyringe@Flawless=5470 C:Apathanull@26=5051 Terra_Blade@4=4391 Terra_Blade@46=4370 C:Apathanull@37=3913 C:Wingman@83=2929 C:Wingman@28=2700 Terra_Blade@55=2569 C:TrueArkoftheAncients@60=2127 C:StarShower@26=1888 C:HavocsBreath@82=1825 C:VernalBolter@82=1588 C:Malevolence@55=1306 C:TheMicrowave@55=1036 C:DoomsdayDevice@Flawless=658 C:StarShower@55=0",
+  "deathTimes": "7.0,7.1,7.1,7.1,13.0,13.3,14.3,19.8,20.5,21.2,21.2,21.2,21.2,21.2,21.2,22.2,22.2,22.3,22.9,23.0,23.0,23.7,23.7,23.7,26.5,27.9,29.1,30.2,30.7,31.0,33.0,35.1,38.3,38.4",
+  "classDmg": "P=158103 -=29364",
+  "dmgRMES": [
+   "27232",
+   "36457",
+   "20581",
+   "88317"
+  ],
+  "armyDps": 4882.0,
+  "perLevyDps": 143.6,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.538,
+    "Engage": 0.462
+   },
+   "notEngagedPct": 53.8,
+   "farOver50tilesPct": 31.3,
+   "meanDistToBoss": 41.3,
+   "crowdedPct": 41.3,
+   "deaths": [
+    [
+     399,
+     93,
+     636,
+     "boss"
+    ],
+    [
+     402,
+     76,
+     636,
+     "boss"
+    ],
+    [
+     403,
+     81,
+     636,
+     "boss"
+    ],
+    [
+     403,
+     94,
+     636,
+     "boss"
+    ],
+    [
+     756,
+     97,
+     636,
+     "boss"
+    ],
+    [
+     778,
+     74,
+     636,
+     "boss"
+    ],
+    [
+     834,
+     73,
+     636,
+     "boss"
+    ],
+    [
+     1168,
+     99,
+     636,
+     "boss"
+    ],
+    [
+     1208,
+     96,
+     636,
+     "boss"
+    ],
+    [
+     1249,
+     77,
+     636,
+     "boss"
+    ],
+    [
+     1250,
+     89,
+     636,
+     "boss"
+    ],
+    [
+     1250,
+     101,
+     636,
+     "boss"
+    ],
+    [
+     1251,
+     82,
+     636,
+     "boss"
+    ],
+    [
+     1251,
+     92,
+     636,
+     "boss"
+    ],
+    [
+     1252,
+     102,
+     636,
+     "boss"
+    ],
+    [
+     1309,
+     80,
+     636,
+     "boss"
+    ],
+    [
+     1313,
+     84,
+     636,
+     "boss"
+    ],
+    [
+     1314,
+     88,
+     636,
+     "boss"
+    ],
+    [
+     1353,
+     91,
+     636,
+     "boss"
+    ],
+    [
+     1358,
+     79,
+     636,
+     "boss"
+    ],
+    [
+     1359,
+     78,
+     636,
+     "boss"
+    ],
+    [
+     1398,
+     98,
+     636,
+     "boss"
+    ],
+    [
+     1400,
+     90,
+     636,
+     "boss"
+    ],
+    [
+     1403,
+     75,
+     636,
+     "boss"
+    ],
+    [
+     1566,
+     72,
+     636,
+     "boss"
+    ],
+    [
+     1652,
+     71,
+     636,
+     "boss"
+    ],
+    [
+     1722,
+     100,
+     636,
+     "boss"
+    ],
+    [
+     1792,
+     87,
+     636,
+     "boss"
+    ],
+    [
+     1822,
+     86,
+     636,
+     "boss"
+    ],
+    [
+     1840,
+     95,
+     636,
+     "boss"
+    ],
+    [
+     1956,
+     70,
+     636,
+     "boss"
+    ],
+    [
+     2084,
+     69,
+     636,
+     "boss"
+    ],
+    [
+     2277,
+     83,
+     636,
+     "boss"
+    ],
+    [
+     2283,
+     85,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 22238,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Sun Dance",
+     8045
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     7499
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     4384
+    ],
+    [
+     "body/Empress of Light/-1",
+     1840
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     470
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_eol_2.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_eve",
+  "cell": "c2",
+  "seed": 1,
+  "army": "eve_brimflame",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 41.8,
+  "levies": 34,
+  "deaths": 27,
+  "firstDeathSec": "11.4",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 381854.0,
+  "potionsDrunk": "27",
+  "weaponDmg": "Morning_Star@44=71457 Morning_Star@55=57905 Dark_Harvest@46=54407 Morning_Star@46=28955 Dark_Harvest@3=27563 Dark_Harvest=27203 C:Apathanull@28=15453 C:RealmRavager@17=12359 C:Apathanull@59=10479 C:RegulusRiot@Flawless=9858 C:Wingman@28=7633 C:Apathanull@37=6094 Sniper_Rifle@82=6006 Stake_Launcher@37=5649 C:Apathanull@26=5646 C:TheSyringe@Flawless=4742 C:TrueArkoftheAncients@60=4710 C:TrueArkoftheAncients@37=4449 C:Wingman@83=3540 C:HavocsBreath@82=3488 Terra_Blade@46=3082 C:VernalBolter@82=2747 C:Malevolence@55=2473 C:TheMicrowave@55=1827 Terra_Blade@4=1585 C:DoomsdayDevice@Flawless=1279 Terra_Blade@55=1265 C:StarShower@55=0 C:StarShower@26=0",
+  "deathTimes": "11.4,12.6,15.7,15.8,18.2,18.2,18.3,18.3,18.3,18.3,20.2,20.2,22.0,22.0,22.1,22.1,24.8,24.8,25.0,25.1,25.1,26.8,26.8,26.9,28.9,30.2,32.1",
+  "classDmg": "P=347574 -=34280",
+  "dmgRMES": [
+   "32722",
+   "48845",
+   "16918",
+   "267490"
+  ],
+  "armyDps": 9135.3,
+  "perLevyDps": 268.7,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.697,
+    "Follow": 0.299,
+    "Resupply": 0.003
+   },
+   "notEngagedPct": 30.3,
+   "farOver50tilesPct": 34.7,
+   "meanDistToBoss": 42.5,
+   "crowdedPct": 57.0,
+   "deaths": [
+    [
+     661,
+     106,
+     930,
+     "minion"
+    ],
+    [
+     736,
+     129,
+     928,
+     "boss"
+    ],
+    [
+     922,
+     118,
+     928,
+     "boss"
+    ],
+    [
+     925,
+     107,
+     928,
+     "boss"
+    ],
+    [
+     1072,
+     108,
+     928,
+     "boss"
+    ],
+    [
+     1072,
+     134,
+     928,
+     "boss"
+    ],
+    [
+     1074,
+     105,
+     928,
+     "boss"
+    ],
+    [
+     1074,
+     116,
+     928,
+     "boss"
+    ],
+    [
+     1074,
+     125,
+     928,
+     "boss"
+    ],
+    [
+     1075,
+     111,
+     928,
+     "boss"
+    ],
+    [
+     1187,
+     110,
+     928,
+     "boss"
+    ],
+    [
+     1188,
+     136,
+     928,
+     "boss"
+    ],
+    [
+     1295,
+     123,
+     928,
+     "boss"
+    ],
+    [
+     1297,
+     128,
+     928,
+     "boss"
+    ],
+    [
+     1301,
+     117,
+     928,
+     "boss"
+    ],
+    [
+     1304,
+     121,
+     928,
+     "boss"
+    ],
+    [
+     1463,
+     126,
+     928,
+     "boss"
+    ],
+    [
+     1468,
+     113,
+     928,
+     "boss"
+    ],
+    [
+     1475,
+     122,
+     928,
+     "boss"
+    ],
+    [
+     1486,
+     109,
+     935,
+     "minion"
+    ],
+    [
+     1486,
+     135,
+     935,
+     "minion"
+    ],
+    [
+     1583,
+     131,
+     928,
+     "boss"
+    ],
+    [
+     1585,
+     132,
+     928,
+     "boss"
+    ],
+    [
+     1590,
+     127,
+     935,
+     "minion"
+    ],
+    [
+     1710,
+     115,
+     928,
+     "boss"
+    ],
+    [
+     1792,
+     112,
+     935,
+     "minion"
+    ],
+    [
+     1904,
+     130,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 17288,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     11736
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     2534
+    ],
+    [
+     "other/-1/-1",
+     2216
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     367
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     225
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_ravager_1.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_eve",
+  "cell": "c2",
+  "seed": 3,
+  "army": "eve_brimflame",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 38.5,
+  "levies": 34,
+  "deaths": 27,
+  "firstDeathSec": "17.9",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 384482.0,
+  "potionsDrunk": "25",
+  "weaponDmg": "Morning_Star@44=69382 Dark_Harvest@46=68371 Morning_Star@55=58637 Dark_Harvest=40095 Dark_Harvest@3=24088 Morning_Star@46=20623 C:Apathanull@28=13196 C:Apathanull@59=11809 C:RealmRavager@17=8097 C:RegulusRiot@Flawless=7509 Sniper_Rifle@82=7325 C:TheSyringe@Flawless=6537 C:TrueArkoftheAncients@60=5994 C:TrueArkoftheAncients@37=5959 C:Wingman@28=5466 Stake_Launcher@37=5138 C:Malevolence@55=4774 C:VernalBolter@82=3913 C:Apathanull@37=3606 C:Wingman@83=2839 Terra_Blade@4=2489 C:Apathanull@26=2316 C:HavocsBreath@82=1932 Terra_Blade@46=1803 Terra_Blade@55=1389 C:TheMicrowave@55=900 C:DoomsdayDevice@Flawless=295 C:StarShower@55=0 C:StarShower@26=0",
+  "deathTimes": "17.9,17.9,17.9,17.9,17.9,18.1,20.4,20.5,20.5,20.5,20.5,20.5,20.6,20.6,20.7,23.3,23.4,25.3,27.2,27.4,27.5,27.6,29.8,30.1,30.1,30.1,30.1",
+  "classDmg": "P=354218 -=30264",
+  "dmgRMES": [
+   "31179",
+   "39232",
+   "18534",
+   "281196"
+  ],
+  "armyDps": 9986.5,
+  "perLevyDps": 293.7,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.705,
+    "Follow": 0.293,
+    "Resupply": 0.002
+   },
+   "notEngagedPct": 29.5,
+   "farOver50tilesPct": 40.6,
+   "meanDistToBoss": 46.2,
+   "crowdedPct": 54.6,
+   "deaths": [
+    [
+     1053,
+     157,
+     928,
+     "boss"
+    ],
+    [
+     1053,
+     165,
+     928,
+     "boss"
+    ],
+    [
+     1054,
+     161,
+     928,
+     "boss"
+    ],
+    [
+     1054,
+     170,
+     928,
+     "boss"
+    ],
+    [
+     1055,
+     164,
+     928,
+     "boss"
+    ],
+    [
+     1062,
+     147,
+     928,
+     "boss"
+    ],
+    [
+     1204,
+     162,
+     928,
+     "boss"
+    ],
+    [
+     1207,
+     144,
+     928,
+     "boss"
+    ],
+    [
+     1207,
+     146,
+     928,
+     "boss"
+    ],
+    [
+     1207,
+     169,
+     928,
+     "boss"
+    ],
+    [
+     1209,
+     159,
+     928,
+     "boss"
+    ],
+    [
+     1211,
+     160,
+     928,
+     "boss"
+    ],
+    [
+     1214,
+     150,
+     928,
+     "boss"
+    ],
+    [
+     1215,
+     151,
+     928,
+     "boss"
+    ],
+    [
+     1222,
+     138,
+     928,
+     "boss"
+    ],
+    [
+     1376,
+     156,
+     928,
+     "boss"
+    ],
+    [
+     1380,
+     145,
+     928,
+     "boss"
+    ],
+    [
+     1498,
+     149,
+     928,
+     "boss"
+    ],
+    [
+     1613,
+     141,
+     928,
+     "boss"
+    ],
+    [
+     1623,
+     140,
+     928,
+     "boss"
+    ],
+    [
+     1631,
+     168,
+     935,
+     "minion"
+    ],
+    [
+     1632,
+     142,
+     935,
+     "minion"
+    ],
+    [
+     1769,
+     143,
+     935,
+     "minion"
+    ],
+    [
+     1782,
+     139,
+     928,
+     "boss"
+    ],
+    [
+     1782,
+     166,
+     935,
+     "minion"
+    ],
+    [
+     1783,
+     148,
+     928,
+     "boss"
+    ],
+    [
+     1783,
+     152,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 17493,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     12308
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     2614
+    ],
+    [
+     "other/-1/-1",
+     2403
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     146
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     22
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_ravager_3.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_eve",
+  "cell": "c3",
+  "seed": 2,
+  "army": "eve_brimflame",
+  "boss": "eol",
+  "result": "LOSS",
+  "sec": 80.2,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "6.9",
+  "bossMax": 212415.0,
+  "bossLeft": 15387.0,
+  "dmgBoss": 304547.0,
+  "potionsDrunk": "25",
+  "weaponDmg": "Dark_Harvest@46=93965 Dark_Harvest@3=70454 Morning_Star@44=27900 Dark_Harvest=19715 C:Apathanull@26=13666 C:Apathanull@59=10446 C:Apathanull@28=6905 Morning_Star@46=5612 C:RegulusRiot@Flawless=5476 C:TrueArkoftheAncients@60=4960 Morning_Star@55=4811 C:Apathanull@37=4590 Terra_Blade@55=4437 C:Wingman@28=4349 Terra_Blade@46=3892 C:RealmRavager@17=3006 C:TheSyringe@Flawless=2916 Terra_Blade@4=2903 Sniper_Rifle@82=2827 C:TrueArkoftheAncients@37=2636 C:TheMicrowave@55=2612 C:VernalBolter@82=1799 C:Wingman@83=1504 C:Malevolence@55=1446 Stake_Launcher@37=1446 C:HavocsBreath@82=274 C:StarShower@55=0 C:StarShower@26=0 C:DoomsdayDevice@Flawless=0",
+  "deathTimes": "6.9,7.0,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,11.8,11.8,11.8,12.3,12.4,12.8,12.8,13.0,13.3,13.3,19.6,20.6,22.0,22.2,23.7,26.8,28.8,30.9,37.2,42.3,46.4,57.2,68.7,80.2",
+  "classDmg": "P=289945 -=14602",
+  "dmgRMES": [
+   "10798",
+   "41460",
+   "21440",
+   "222457"
+  ],
+  "armyDps": 3797.3,
+  "perLevyDps": 111.7,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.625,
+    "Engage": 0.374,
+    "Resupply": 0.0
+   },
+   "notEngagedPct": 62.6,
+   "farOver50tilesPct": 40.3,
+   "meanDistToBoss": 44.8,
+   "crowdedPct": 21.6,
+   "deaths": [
+    [
+     394,
+     183,
+     636,
+     "boss"
+    ],
+    [
+     398,
+     178,
+     636,
+     "boss"
+    ],
+    [
+     407,
+     194,
+     636,
+     "boss"
+    ],
+    [
+     407,
+     196,
+     636,
+     "boss"
+    ],
+    [
+     409,
+     181,
+     636,
+     "boss"
+    ],
+    [
+     409,
+     195,
+     636,
+     "boss"
+    ],
+    [
+     409,
+     199,
+     636,
+     "boss"
+    ],
+    [
+     410,
+     182,
+     636,
+     "boss"
+    ],
+    [
+     410,
+     184,
+     636,
+     "boss"
+    ],
+    [
+     410,
+     193,
+     636,
+     "boss"
+    ],
+    [
+     687,
+     177,
+     636,
+     "boss"
+    ],
+    [
+     687,
+     198,
+     636,
+     "boss"
+    ],
+    [
+     687,
+     203,
+     636,
+     "boss"
+    ],
+    [
+     717,
+     204,
+     636,
+     "boss"
+    ],
+    [
+     723,
+     175,
+     636,
+     "boss"
+    ],
+    [
+     747,
+     192,
+     636,
+     "boss"
+    ],
+    [
+     747,
+     201,
+     636,
+     "boss"
+    ],
+    [
+     757,
+     200,
+     636,
+     "boss"
+    ],
+    [
+     777,
+     176,
+     636,
+     "boss"
+    ],
+    [
+     777,
+     202,
+     636,
+     "boss"
+    ],
+    [
+     1151,
+     189,
+     636,
+     "boss"
+    ],
+    [
+     1213,
+     174,
+     636,
+     "boss"
+    ],
+    [
+     1299,
+     179,
+     636,
+     "boss"
+    ],
+    [
+     1308,
+     186,
+     636,
+     "boss"
+    ],
+    [
+     1400,
+     180,
+     636,
+     "boss"
+    ],
+    [
+     1583,
+     190,
+     636,
+     "boss"
+    ],
+    [
+     1707,
+     191,
+     636,
+     "boss"
+    ],
+    [
+     1830,
+     172,
+     636,
+     "boss"
+    ],
+    [
+     2209,
+     185,
+     636,
+     "boss"
+    ],
+    [
+     2517,
+     187,
+     636,
+     "boss"
+    ],
+    [
+     2759,
+     173,
+     636,
+     "boss"
+    ],
+    [
+     3410,
+     197,
+     636,
+     "boss"
+    ],
+    [
+     4098,
+     188,
+     636,
+     "boss"
+    ],
+    [
+     4788,
+     171,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 20566,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Sun Dance",
+     5642
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     5060
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     5007
+    ],
+    [
+     "body/Empress of Light/-1",
+     4353
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     504
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_eol_2.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_eve",
+  "cell": "c0",
+  "seed": 2,
+  "army": "eve",
+  "boss": "ravager",
+  "result": "LOSS",
+  "sec": 46.5,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "11.7",
+  "bossMax": 320160.0,
+  "bossLeft": 138292.0,
+  "dmgBoss": 294893.0,
+  "potionsDrunk": "31",
+  "weaponDmg": "Morning_Star@44=51628 Dark_Harvest@46=49226 Dark_Harvest=45222 Morning_Star@55=37498 C:Apathanull@28=11052 Dark_Harvest@3=10666 Sniper_Rifle@82=9795 C:Apathanull@59=9050 C:TrueArkoftheAncients@60=8479 Morning_Star@46=8471 C:TrueArkoftheAncients@37=7375 C:Wingman@83=6609 C:RegulusRiot@Flawless=6566 Stake_Launcher@37=5909 C:RealmRavager@17=5447 C:TheSyringe@Flawless=3765 C:HavocsBreath@82=3304 C:Wingman@28=2824 Terra_Blade@46=2229 C:Malevolence@55=1869 C:Apathanull@37=1746 C:TheMicrowave@55=1456 C:Apathanull@26=1252 Terra_Blade@55=1249 Terra_Blade@4=992 C:StarShower@26=533 C:DoomsdayDevice@Flawless=512 C:VernalBolter@82=169 C:StarShower@55=0",
+  "deathTimes": "11.7,12.4,12.9,12.9,13.0,14.2,15.5,15.5,17.5,17.5,17.5,17.6,19.6,19.6,19.7,22.8,22.9,22.9,26.8,26.9,26.9,27.3,28.9,29.0,31.0,31.0,31.1,31.1,33.0,33.1,38.1,38.2,42.6,46.5",
+  "classDmg": "P=265920 -=28973",
+  "dmgRMES": [
+   "26493",
+   "33066",
+   "21780",
+   "202711"
+  ],
+  "armyDps": 6341.8,
+  "perLevyDps": 186.5,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.805,
+    "Follow": 0.19,
+    "Resupply": 0.005
+   },
+   "notEngagedPct": 19.5,
+   "farOver50tilesPct": 38.3,
+   "meanDistToBoss": 45.0,
+   "crowdedPct": 58.0,
+   "deaths": [
+    [
+     699,
+     22,
+     930,
+     "minion"
+    ],
+    [
+     744,
+     6,
+     930,
+     "minion"
+    ],
+    [
+     772,
+     1,
+     928,
+     "boss"
+    ],
+    [
+     772,
+     32,
+     928,
+     "boss"
+    ],
+    [
+     778,
+     13,
+     928,
+     "boss"
+    ],
+    [
+     849,
+     21,
+     931,
+     "minion"
+    ],
+    [
+     926,
+     24,
+     928,
+     "boss"
+    ],
+    [
+     929,
+     28,
+     928,
+     "boss"
+    ],
+    [
+     1047,
+     18,
+     928,
+     "boss"
+    ],
+    [
+     1049,
+     8,
+     928,
+     "boss"
+    ],
+    [
+     1049,
+     9,
+     928,
+     "boss"
+    ],
+    [
+     1054,
+     11,
+     928,
+     "boss"
+    ],
+    [
+     1177,
+     16,
+     928,
+     "boss"
+    ],
+    [
+     1177,
+     25,
+     928,
+     "boss"
+    ],
+    [
+     1178,
+     29,
+     928,
+     "boss"
+    ],
+    [
+     1364,
+     33,
+     928,
+     "boss"
+    ],
+    [
+     1375,
+     12,
+     935,
+     "minion"
+    ],
+    [
+     1375,
+     17,
+     935,
+     "minion"
+    ],
+    [
+     1604,
+     23,
+     928,
+     "boss"
+    ],
+    [
+     1612,
+     20,
+     928,
+     "boss"
+    ],
+    [
+     1615,
+     34,
+     935,
+     "minion"
+    ],
+    [
+     1637,
+     19,
+     935,
+     "minion"
+    ],
+    [
+     1734,
+     7,
+     935,
+     "minion"
+    ],
+    [
+     1740,
+     10,
+     928,
+     "boss"
+    ],
+    [
+     1856,
+     30,
+     928,
+     "boss"
+    ],
+    [
+     1858,
+     15,
+     928,
+     "boss"
+    ],
+    [
+     1862,
+     14,
+     935,
+     "minion"
+    ],
+    [
+     1862,
+     26,
+     935,
+     "minion"
+    ],
+    [
+     1977,
+     31,
+     928,
+     "boss"
+    ],
+    [
+     1987,
+     5,
+     928,
+     "boss"
+    ],
+    [
+     2286,
+     3,
+     928,
+     "boss"
+    ],
+    [
+     2288,
+     2,
+     928,
+     "boss"
+    ],
+    [
+     2555,
+     4,
+     928,
+     "boss"
+    ],
+    [
+     2788,
+     27,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 21318,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     15093
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     3281
+    ],
+    [
+     "other/-1/-1",
+     2108
+    ],
+    [
+     "minion/Ravager/-1",
+     391
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     359
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_ravager_2.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_eve",
+  "cell": "c1",
+  "seed": 1,
+  "army": "eve",
+  "boss": "eol",
+  "result": "LOSS",
+  "sec": 62.4,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "6.9",
+  "bossMax": 212415.0,
+  "bossLeft": 83421.0,
+  "dmgBoss": 252536.0,
+  "potionsDrunk": "26",
+  "weaponDmg": "Dark_Harvest@46=75219 Dark_Harvest@3=32070 Morning_Star@44=27016 Dark_Harvest=16728 Morning_Star@55=12532 C:Apathanull@28=9474 C:RegulusRiot@Flawless=8601 C:TheSyringe@Flawless=8429 C:Apathanull@59=7075 C:TrueArkoftheAncients@37=6913 C:RealmRavager@17=6418 C:TheMicrowave@55=6069 C:TrueArkoftheAncients@60=4712 Terra_Blade@4=4576 C:Apathanull@37=3289 Morning_Star@46=3107 C:Wingman@28=3032 Sniper_Rifle@82=2856 Terra_Blade@55=2796 C:VernalBolter@82=2121 C:Wingman@83=1793 C:Apathanull@26=1743 C:Malevolence@55=1690 C:StarShower@26=1268 Stake_Launcher@37=1209 Terra_Blade@46=916 C:HavocsBreath@82=736 C:DoomsdayDevice@Flawless=148 C:StarShower@55=0",
+  "deathTimes": "6.9,6.9,7.0,7.1,7.1,7.1,7.1,7.1,7.1,12.2,12.7,13.5,13.7,18.3,23.7,23.7,23.8,24.8,25.3,25.5,26.3,26.3,27.2,27.8,28.1,33.8,38.3,38.3,39.2,41.0,41.6,42.5,50.2,62.4",
+  "classDmg": "P=228740 -=23796",
+  "dmgRMES": [
+   "15030",
+   "27674",
+   "25982",
+   "166672"
+  ],
+  "armyDps": 4047.1,
+  "perLevyDps": 119.0,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.636,
+    "Engage": 0.364
+   },
+   "notEngagedPct": 63.6,
+   "farOver50tilesPct": 39.1,
+   "meanDistToBoss": 44.9,
+   "crowdedPct": 34.5,
+   "deaths": [
+    [
+     394,
+     42,
+     636,
+     "boss"
+    ],
+    [
+     394,
+     60,
+     636,
+     "boss"
+    ],
+    [
+     399,
+     36,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     45,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     48,
+     636,
+     "boss"
+    ],
+    [
+     405,
+     47,
+     636,
+     "boss"
+    ],
+    [
+     405,
+     54,
+     636,
+     "boss"
+    ],
+    [
+     405,
+     59,
+     636,
+     "boss"
+    ],
+    [
+     405,
+     63,
+     636,
+     "boss"
+    ],
+    [
+     708,
+     57,
+     636,
+     "boss"
+    ],
+    [
+     738,
+     62,
+     636,
+     "boss"
+    ],
+    [
+     790,
+     46,
+     636,
+     "boss"
+    ],
+    [
+     798,
+     58,
+     636,
+     "boss"
+    ],
+    [
+     1078,
+     43,
+     636,
+     "boss"
+    ],
+    [
+     1398,
+     40,
+     636,
+     "boss"
+    ],
+    [
+     1401,
+     39,
+     636,
+     "boss"
+    ],
+    [
+     1407,
+     64,
+     636,
+     "boss"
+    ],
+    [
+     1468,
+     37,
+     636,
+     "boss"
+    ],
+    [
+     1496,
+     44,
+     636,
+     "boss"
+    ],
+    [
+     1510,
+     65,
+     636,
+     "boss"
+    ],
+    [
+     1556,
+     68,
+     636,
+     "boss"
+    ],
+    [
+     1558,
+     50,
+     636,
+     "boss"
+    ],
+    [
+     1608,
+     67,
+     636,
+     "boss"
+    ],
+    [
+     1649,
+     55,
+     636,
+     "boss"
+    ],
+    [
+     1664,
+     38,
+     636,
+     "boss"
+    ],
+    [
+     2007,
+     41,
+     636,
+     "boss"
+    ],
+    [
+     2278,
+     51,
+     636,
+     "boss"
+    ],
+    [
+     2279,
+     49,
+     636,
+     "boss"
+    ],
+    [
+     2328,
+     52,
+     636,
+     "boss"
+    ],
+    [
+     2436,
+     56,
+     636,
+     "boss"
+    ],
+    [
+     2473,
+     66,
+     636,
+     "boss"
+    ],
+    [
+     2530,
+     53,
+     636,
+     "boss"
+    ],
+    [
+     2988,
+     61,
+     636,
+     "boss"
+    ],
+    [
+     3722,
+     35,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 21081,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     5584
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     5575
+    ],
+    [
+     "proj/Empress of Light/Sun Dance",
+     5061
+    ],
+    [
+     "body/Empress of Light/-1",
+     3840
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     1021
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_eol_1.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_eve",
+  "cell": "c1",
+  "seed": 3,
+  "army": "eve",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 62.5,
+  "levies": 34,
+  "deaths": 30,
+  "firstDeathSec": "7.1",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 327035.0,
+  "potionsDrunk": "26",
+  "weaponDmg": "Morning_Star@44=60137 Dark_Harvest@46=58643 Dark_Harvest@3=40757 C:RealmRavager@17=24164 Dark_Harvest=23205 C:Apathanull@59=17568 C:RegulusRiot@Flawless=13757 C:Apathanull@28=12380 C:TheSyringe@Flawless=10807 Terra_Blade@4=10670 C:Malevolence@55=9074 C:VernalBolter@82=6308 Terra_Blade@46=6282 C:TrueArkoftheAncients@37=5139 Terra_Blade@55=4693 C:Apathanull@37=3488 C:Wingman@28=3346 C:Wingman@83=3151 Morning_Star@46=2027 Morning_Star@55=2022 C:Apathanull@26=1975 C:StarShower@26=1911 Sniper_Rifle@82=1832 C:TheMicrowave@55=1440 Stake_Launcher@37=1423 C:HavocsBreath@82=692 C:DoomsdayDevice@Flawless=144 C:TrueArkoftheAncients@60=0 C:StarShower@55=0",
+  "deathTimes": "7.1,7.1,7.1,7.1,7.1,7.1,12.5,12.8,12.8,13.0,16.1,27.6,27.6,29.9,30.1,30.2,34.9,34.9,36.6,37.7,41.6,42.0,42.3,42.6,44.3,44.3,44.5,44.8,45.6,60.3",
+  "classDmg": "P=281824 -=45211",
+  "dmgRMES": [
+   "43493",
+   "43819",
+   "28224",
+   "186791"
+  ],
+  "armyDps": 5232.6,
+  "perLevyDps": 153.9,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.552,
+    "Engage": 0.448,
+    "Resupply": 0.0
+   },
+   "notEngagedPct": 55.2,
+   "farOver50tilesPct": 41.1,
+   "meanDistToBoss": 46.1,
+   "crowdedPct": 31.0,
+   "deaths": [
+    [
+     402,
+     93,
+     636,
+     "boss"
+    ],
+    [
+     402,
+     94,
+     636,
+     "boss"
+    ],
+    [
+     403,
+     82,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     79,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     88,
+     636,
+     "boss"
+    ],
+    [
+     405,
+     97,
+     636,
+     "boss"
+    ],
+    [
+     728,
+     73,
+     636,
+     "boss"
+    ],
+    [
+     748,
+     92,
+     636,
+     "boss"
+    ],
+    [
+     748,
+     96,
+     636,
+     "boss"
+    ],
+    [
+     758,
+     74,
+     636,
+     "boss"
+    ],
+    [
+     945,
+     72,
+     636,
+     "boss"
+    ],
+    [
+     1633,
+     99,
+     636,
+     "boss"
+    ],
+    [
+     1637,
+     90,
+     636,
+     "boss"
+    ],
+    [
+     1773,
+     81,
+     636,
+     "boss"
+    ],
+    [
+     1785,
+     98,
+     636,
+     "boss"
+    ],
+    [
+     1790,
+     91,
+     636,
+     "boss"
+    ],
+    [
+     2072,
+     89,
+     636,
+     "boss"
+    ],
+    [
+     2074,
+     102,
+     636,
+     "boss"
+    ],
+    [
+     2177,
+     76,
+     636,
+     "boss"
+    ],
+    [
+     2242,
+     78,
+     636,
+     "boss"
+    ],
+    [
+     2475,
+     77,
+     636,
+     "boss"
+    ],
+    [
+     2498,
+     101,
+     636,
+     "boss"
+    ],
+    [
+     2519,
+     100,
+     636,
+     "boss"
+    ],
+    [
+     2537,
+     87,
+     636,
+     "boss"
+    ],
+    [
+     2634,
+     75,
+     636,
+     "boss"
+    ],
+    [
+     2635,
+     80,
+     636,
+     "boss"
+    ],
+    [
+     2649,
+     83,
+     636,
+     "boss"
+    ],
+    [
+     2668,
+     86,
+     636,
+     "boss"
+    ],
+    [
+     2717,
+     70,
+     636,
+     "boss"
+    ],
+    [
+     3599,
+     71,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 20534,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     6517
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     5750
+    ],
+    [
+     "proj/Empress of Light/Sun Dance",
+     3906
+    ],
+    [
+     "body/Empress of Light/-1",
+     3006
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     1355
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_eol_3.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_eve",
+  "cell": "c2",
+  "seed": 2,
+  "army": "eve_brimflame",
+  "boss": "ravager",
+  "result": "LOSS",
+  "sec": 88.6,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "10.9",
+  "bossMax": 320160.0,
+  "bossLeft": 76630.0,
+  "dmgBoss": 353444.0,
+  "potionsDrunk": "21",
+  "weaponDmg": "Dark_Harvest@46=85058 Dark_Harvest@3=51517 Dark_Harvest=27708 Morning_Star@44=25325 C:Apathanull@28=19333 Morning_Star@46=17951 Morning_Star@55=15864 C:Apathanull@59=15060 C:TrueArkoftheAncients@37=12131 C:RegulusRiot@Flawless=9514 C:HavocsBreath@82=7917 Sniper_Rifle@82=7679 C:RealmRavager@17=7488 C:TheMicrowave@55=6948 Stake_Launcher@37=6350 C:TrueArkoftheAncients@60=6128 C:Wingman@28=5859 C:Apathanull@37=5130 C:Apathanull@26=3966 Terra_Blade@55=3104 C:Wingman@83=3054 C:TheSyringe@Flawless=2624 C:VernalBolter@82=2353 C:Malevolence@55=2156 Terra_Blade@4=1794 Terra_Blade@46=1081 C:DoomsdayDevice@Flawless=352 C:StarShower@55=0 C:StarShower@26=0",
+  "deathTimes": "10.9,11.4,13.2,13.2,15.8,15.8,16.6,18.9,19.1,19.1,19.1,19.1,19.1,19.1,19.1,19.1,21.4,23.6,23.8,25.5,25.8,25.8,28.9,28.9,29.1,29.2,37.9,42.9,49.1,56.3,62.1,62.2,84.4,88.6",
+  "classDmg": "P=326740 -=26704",
+  "dmgRMES": [
+   "33943",
+   "52402",
+   "31186",
+   "223423"
+  ],
+  "armyDps": 3989.2,
+  "perLevyDps": 117.3,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.638,
+    "Follow": 0.36,
+    "Resupply": 0.002
+   },
+   "notEngagedPct": 36.2,
+   "farOver50tilesPct": 32.6,
+   "meanDistToBoss": 42.8,
+   "crowdedPct": 34.3,
+   "deaths": [
+    [
+     629,
+     108,
+     928,
+     "boss"
+    ],
+    [
+     659,
+     129,
+     928,
+     "boss"
+    ],
+    [
+     770,
+     104,
+     928,
+     "boss"
+    ],
+    [
+     772,
+     124,
+     930,
+     "minion"
+    ],
+    [
+     923,
+     106,
+     928,
+     "boss"
+    ],
+    [
+     923,
+     111,
+     928,
+     "boss"
+    ],
+    [
+     974,
+     118,
+     928,
+     "boss"
+    ],
+    [
+     1113,
+     115,
+     928,
+     "boss"
+    ],
+    [
+     1122,
+     110,
+     928,
+     "boss"
+    ],
+    [
+     1122,
+     126,
+     928,
+     "boss"
+    ],
+    [
+     1123,
+     112,
+     928,
+     "boss"
+    ],
+    [
+     1123,
+     116,
+     928,
+     "boss"
+    ],
+    [
+     1123,
+     127,
+     928,
+     "boss"
+    ],
+    [
+     1123,
+     128,
+     928,
+     "boss"
+    ],
+    [
+     1123,
+     130,
+     928,
+     "boss"
+    ],
+    [
+     1123,
+     136,
+     928,
+     "boss"
+    ],
+    [
+     1259,
+     123,
+     928,
+     "boss"
+    ],
+    [
+     1392,
+     122,
+     928,
+     "boss"
+    ],
+    [
+     1406,
+     125,
+     935,
+     "minion"
+    ],
+    [
+     1508,
+     133,
+     928,
+     "boss"
+    ],
+    [
+     1523,
+     105,
+     928,
+     "boss"
+    ],
+    [
+     1523,
+     132,
+     928,
+     "boss"
+    ],
+    [
+     1709,
+     135,
+     928,
+     "boss"
+    ],
+    [
+     1712,
+     107,
+     935,
+     "minion"
+    ],
+    [
+     1723,
+     114,
+     935,
+     "minion"
+    ],
+    [
+     1727,
+     113,
+     935,
+     "minion"
+    ],
+    [
+     2254,
+     109,
+     928,
+     "boss"
+    ],
+    [
+     2554,
+     131,
+     935,
+     "minion"
+    ],
+    [
+     2923,
+     117,
+     928,
+     "boss"
+    ],
+    [
+     3354,
+     120,
+     935,
+     "minion"
+    ],
+    [
+     3706,
+     103,
+     928,
+     "boss"
+    ],
+    [
+     3709,
+     119,
+     935,
+     "minion"
+    ],
+    [
+     5044,
+     121,
+     928,
+     "boss"
+    ],
+    [
+     5295,
+     134,
+     935,
+     "minion"
+    ]
+   ],
+   "levyHitDmg": 18749,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     10566
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     4239
+    ],
+    [
+     "other/-1/-1",
+     2937
+    ],
+    [
+     "minion/Ravager/-1",
+     791
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     178
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_ravager_2.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_eve",
+  "cell": "c3",
+  "seed": 1,
+  "army": "eve_brimflame",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 49.6,
+  "levies": 34,
+  "deaths": 26,
+  "firstDeathSec": "7.1",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 325302.0,
+  "potionsDrunk": "29",
+  "weaponDmg": "Dark_Harvest@3=44894 Morning_Star@44=44037 Dark_Harvest@46=35529 Dark_Harvest=20915 C:Apathanull@28=18883 C:Apathanull@26=17733 C:Apathanull@59=16070 C:Apathanull@37=16019 C:RealmRavager@17=15798 Sniper_Rifle@82=15285 C:RegulusRiot@Flawless=11332 C:TrueArkoftheAncients@37=8592 Stake_Launcher@37=8454 Terra_Blade@4=7365 C:Wingman@28=6872 Morning_Star@55=5905 Terra_Blade@55=4765 C:TrueArkoftheAncients@60=4626 C:HavocsBreath@82=4065 Morning_Star@46=3641 Terra_Blade@46=3380 C:Wingman@83=2960 C:TheSyringe@Flawless=2897 C:TheMicrowave@55=2135 C:VernalBolter@82=1965 C:Malevolence@55=1185 C:StarShower@55=0 C:StarShower@26=0 C:DoomsdayDevice@Flawless=0",
+  "deathTimes": "7.1,7.1,7.1,12.7,12.7,12.7,12.8,27.4,27.4,27.5,28.9,29.5,31.4,32.2,32.8,33.2,34.7,35.7,36.0,36.2,36.6,40.3,40.6,41.1,41.8,48.3",
+  "classDmg": "P=281490 -=43812",
+  "dmgRMES": [
+   "46752",
+   "78537",
+   "30863",
+   "154921"
+  ],
+  "armyDps": 6558.5,
+  "perLevyDps": 192.9,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.536,
+    "Engage": 0.464
+   },
+   "notEngagedPct": 53.6,
+   "farOver50tilesPct": 37.7,
+   "meanDistToBoss": 44.2,
+   "crowdedPct": 36.9,
+   "deaths": [
+    [
+     401,
+     144,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     162,
+     636,
+     "boss"
+    ],
+    [
+     405,
+     149,
+     636,
+     "boss"
+    ],
+    [
+     737,
+     160,
+     636,
+     "boss"
+    ],
+    [
+     737,
+     164,
+     636,
+     "boss"
+    ],
+    [
+     742,
+     143,
+     636,
+     "boss"
+    ],
+    [
+     746,
+     165,
+     636,
+     "boss"
+    ],
+    [
+     1623,
+     169,
+     636,
+     "boss"
+    ],
+    [
+     1623,
+     170,
+     636,
+     "boss"
+    ],
+    [
+     1629,
+     138,
+     636,
+     "boss"
+    ],
+    [
+     1712,
+     147,
+     636,
+     "boss"
+    ],
+    [
+     1749,
+     146,
+     636,
+     "boss"
+    ],
+    [
+     1861,
+     159,
+     636,
+     "boss"
+    ],
+    [
+     1907,
+     148,
+     636,
+     "boss"
+    ],
+    [
+     1944,
+     161,
+     636,
+     "boss"
+    ],
+    [
+     1967,
+     141,
+     636,
+     "boss"
+    ],
+    [
+     2059,
+     156,
+     636,
+     "boss"
+    ],
+    [
+     2120,
+     166,
+     636,
+     "boss"
+    ],
+    [
+     2135,
+     152,
+     636,
+     "boss"
+    ],
+    [
+     2148,
+     145,
+     636,
+     "boss"
+    ],
+    [
+     2174,
+     167,
+     636,
+     "boss"
+    ],
+    [
+     2398,
+     150,
+     636,
+     "boss"
+    ],
+    [
+     2415,
+     142,
+     636,
+     "boss"
+    ],
+    [
+     2446,
+     140,
+     636,
+     "boss"
+    ],
+    [
+     2485,
+     139,
+     636,
+     "boss"
+    ],
+    [
+     2878,
+     153,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 19951,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Sun Dance",
+     5755
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     5353
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     4776
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     2122
+    ],
+    [
+     "body/Empress of Light/-1",
+     1945
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_eol_1.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_eve",
+  "cell": "c3",
+  "seed": 3,
+  "army": "eve_brimflame",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 57.7,
+  "levies": 34,
+  "deaths": 32,
+  "firstDeathSec": "12.2",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 329429.0,
+  "potionsDrunk": "33",
+  "weaponDmg": "Dark_Harvest@46=58766 Morning_Star@44=55476 Dark_Harvest@3=50129 Dark_Harvest=20498 C:Apathanull@28=13848 C:RealmRavager@17=12018 C:Apathanull@26=11539 C:Apathanull@59=9576 C:Wingman@28=8398 C:Apathanull@37=7474 Sniper_Rifle@82=7279 C:TrueArkoftheAncients@37=7212 C:RegulusRiot@Flawless=6849 C:TheMicrowave@55=6505 C:VernalBolter@82=6295 C:TheSyringe@Flawless=5566 Terra_Blade@46=5461 Morning_Star@46=5126 C:TrueArkoftheAncients@60=4975 C:Wingman@83=4478 C:HavocsBreath@82=4448 Stake_Launcher@37=4055 C:Malevolence@55=4038 Morning_Star@55=3237 Terra_Blade@4=3025 Terra_Blade@55=2969 C:DoomsdayDevice@Flawless=189 C:StarShower@55=0 C:StarShower@26=0",
+  "deathTimes": "12.2,12.3,12.3,12.4,12.5,12.8,13.4,13.5,13.5,13.5,19.5,19.7,20.3,21.2,21.2,21.2,22.5,26.7,27.5,27.6,27.6,28.8,32.0,32.7,36.3,37.5,40.0,41.9,49.1,52.6,56.5,56.5",
+  "classDmg": "P=291690 -=37739",
+  "dmgRMES": [
+   "38133",
+   "55313",
+   "30147",
+   "193232"
+  ],
+  "armyDps": 5709.3,
+  "perLevyDps": 167.9,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.57,
+    "Engage": 0.43
+   },
+   "notEngagedPct": 57.0,
+   "farOver50tilesPct": 32.3,
+   "meanDistToBoss": 42.2,
+   "crowdedPct": 27.4,
+   "deaths": [
+    [
+     707,
+     195,
+     636,
+     "boss"
+    ],
+    [
+     715,
+     194,
+     636,
+     "boss"
+    ],
+    [
+     718,
+     198,
+     636,
+     "boss"
+    ],
+    [
+     719,
+     199,
+     636,
+     "boss"
+    ],
+    [
+     728,
+     180,
+     636,
+     "boss"
+    ],
+    [
+     748,
+     193,
+     636,
+     "boss"
+    ],
+    [
+     779,
+     186,
+     636,
+     "boss"
+    ],
+    [
+     787,
+     192,
+     636,
+     "boss"
+    ],
+    [
+     788,
+     175,
+     636,
+     "boss"
+    ],
+    [
+     788,
+     176,
+     636,
+     "boss"
+    ],
+    [
+     1150,
+     196,
+     636,
+     "boss"
+    ],
+    [
+     1162,
+     203,
+     636,
+     "boss"
+    ],
+    [
+     1197,
+     181,
+     636,
+     "boss"
+    ],
+    [
+     1249,
+     190,
+     636,
+     "boss"
+    ],
+    [
+     1250,
+     179,
+     636,
+     "boss"
+    ],
+    [
+     1252,
+     178,
+     636,
+     "boss"
+    ],
+    [
+     1325,
+     184,
+     636,
+     "boss"
+    ],
+    [
+     1578,
+     182,
+     636,
+     "boss"
+    ],
+    [
+     1629,
+     200,
+     636,
+     "boss"
+    ],
+    [
+     1631,
+     183,
+     636,
+     "boss"
+    ],
+    [
+     1632,
+     177,
+     636,
+     "boss"
+    ],
+    [
+     1708,
+     204,
+     636,
+     "boss"
+    ],
+    [
+     1900,
+     191,
+     636,
+     "boss"
+    ],
+    [
+     1937,
+     201,
+     636,
+     "boss"
+    ],
+    [
+     2158,
+     189,
+     636,
+     "boss"
+    ],
+    [
+     2230,
+     174,
+     636,
+     "boss"
+    ],
+    [
+     2379,
+     172,
+     636,
+     "boss"
+    ],
+    [
+     2489,
+     173,
+     636,
+     "boss"
+    ],
+    [
+     2923,
+     185,
+     636,
+     "boss"
+    ],
+    [
+     3131,
+     188,
+     636,
+     "boss"
+    ],
+    [
+     3368,
+     197,
+     636,
+     "boss"
+    ],
+    [
+     3368,
+     202,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 20980,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Sun Dance",
+     9556
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     5179
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     4177
+    ],
+    [
+     "body/Empress of Light/-1",
+     1287
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     781
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_eol_3.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c0",
+  "seed": 4,
+  "army": "eve",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 35.4,
+  "levies": 34,
+  "deaths": 27,
+  "firstDeathSec": "16.0",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 382249.0,
+  "potionsDrunk": "30",
+  "weaponDmg": "Morning_Star@55=69967 Morning_Star@44=69839 Dark_Harvest@46=58340 Dark_Harvest=40797 Morning_Star@46=29191 Dark_Harvest@3=16387 C:Apathanull@59=12503 C:Wingman@28=10207 C:Apathanull@28=8128 C:Wingman@83=7766 Sniper_Rifle@82=7065 Stake_Launcher@37=6604 C:RegulusRiot@Flawless=5926 C:TheSyringe@Flawless=5437 C:Apathanull@37=4872 C:TrueArkoftheAncients@60=4414 C:TrueArkoftheAncients@37=4209 C:Malevolence@55=2946 C:RealmRavager@17=2848 C:HavocsBreath@82=2767 Terra_Blade@4=2487 Terra_Blade@46=2381 C:Apathanull@26=2295 C:VernalBolter@82=2048 Terra_Blade@55=1752 C:StarShower@26=717 C:DoomsdayDevice@Flawless=243 C:TheMicrowave@55=113 C:StarShower@55=0",
+  "deathTimes": "16.0,18.6,18.6,18.7,18.7,18.7,18.8,20.8,20.8,20.9,24.6,26.8,26.9,28.2,28.7,30.2,32.4,32.4,32.4,32.4,32.5,32.5,32.6,32.6,32.6,32.7,34.7",
+  "classDmg": "P=348209 -=34040",
+  "dmgRMES": [
+   "24278",
+   "46488",
+   "15356",
+   "284521"
+  ],
+  "armyDps": 10798.0,
+  "perLevyDps": 317.6,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.801,
+    "Follow": 0.195,
+    "Resupply": 0.004
+   },
+   "notEngagedPct": 19.9,
+   "farOver50tilesPct": 35.2,
+   "meanDistToBoss": 43.9,
+   "crowdedPct": 69.1,
+   "deaths": [
+    [
+     957,
+     19,
+     928,
+     "boss"
+    ],
+    [
+     1116,
+     21,
+     927,
+     "minion"
+    ],
+    [
+     1117,
+     13,
+     928,
+     "boss"
+    ],
+    [
+     1118,
+     23,
+     928,
+     "boss"
+    ],
+    [
+     1122,
+     33,
+     928,
+     "boss"
+    ],
+    [
+     1123,
+     28,
+     928,
+     "boss"
+    ],
+    [
+     1125,
+     30,
+     928,
+     "boss"
+    ],
+    [
+     1246,
+     15,
+     928,
+     "boss"
+    ],
+    [
+     1249,
+     8,
+     928,
+     "boss"
+    ],
+    [
+     1250,
+     5,
+     935,
+     "minion"
+    ],
+    [
+     1473,
+     11,
+     928,
+     "boss"
+    ],
+    [
+     1609,
+     32,
+     935,
+     "minion"
+    ],
+    [
+     1610,
+     4,
+     935,
+     "minion"
+    ],
+    [
+     1690,
+     18,
+     935,
+     "minion"
+    ],
+    [
+     1718,
+     6,
+     935,
+     "minion"
+    ],
+    [
+     1808,
+     7,
+     928,
+     "boss"
+    ],
+    [
+     1940,
+     12,
+     928,
+     "boss"
+    ],
+    [
+     1940,
+     14,
+     928,
+     "boss"
+    ],
+    [
+     1940,
+     26,
+     928,
+     "boss"
+    ],
+    [
+     1944,
+     34,
+     928,
+     "boss"
+    ],
+    [
+     1946,
+     10,
+     928,
+     "boss"
+    ],
+    [
+     1946,
+     29,
+     935,
+     "minion"
+    ],
+    [
+     1956,
+     20,
+     928,
+     "boss"
+    ],
+    [
+     1956,
+     24,
+     928,
+     "boss"
+    ],
+    [
+     1957,
+     16,
+     928,
+     "boss"
+    ],
+    [
+     1961,
+     2,
+     935,
+     "minion"
+    ],
+    [
+     2078,
+     9,
+     935,
+     "minion"
+    ]
+   ],
+   "levyHitDmg": 18904,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     10989
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     3987
+    ],
+    [
+     "other/-1/-1",
+     3489
+    ],
+    [
+     "minion/Ravager/-1",
+     184
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     129
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_ravager_4.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c0",
+  "seed": 5,
+  "army": "eve",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 38.7,
+  "levies": 34,
+  "deaths": 22,
+  "firstDeathSec": "11.6",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 365421.0,
+  "potionsDrunk": "26",
+  "weaponDmg": "Dark_Harvest@46=70595 Morning_Star@55=59943 Morning_Star@44=59278 Dark_Harvest=39384 Morning_Star@46=35489 Dark_Harvest@3=28140 C:RealmRavager@17=11516 Sniper_Rifle@82=11350 C:HavocsBreath@82=6631 C:Apathanull@28=5372 C:RegulusRiot@Flawless=4560 Stake_Launcher@37=3789 C:Apathanull@26=3356 C:TrueArkoftheAncients@60=3227 C:TrueArkoftheAncients@37=3077 C:Wingman@28=2806 Terra_Blade@55=2398 C:TheMicrowave@55=1970 Terra_Blade@4=1926 C:Wingman@83=1800 C:Apathanull@59=1765 C:TheSyringe@Flawless=1440 C:Malevolence@55=1243 C:Apathanull@37=1063 C:StarShower@26=1016 C:VernalBolter@82=827 Terra_Blade@46=781 C:DoomsdayDevice@Flawless=679 C:StarShower@55=0",
+  "deathTimes": "11.6,13.1,13.7,13.7,13.7,13.8,15.2,15.2,15.2,15.2,15.3,17.4,17.5,17.6,19.7,19.8,22.0,23.8,23.8,25.8,31.9,33.7",
+  "classDmg": "P=335493 -=29928",
+  "dmgRMES": [
+   "35356",
+   "17178",
+   "13379",
+   "292829"
+  ],
+  "armyDps": 9442.4,
+  "perLevyDps": 277.7,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.683,
+    "Follow": 0.311,
+    "Resupply": 0.005
+   },
+   "notEngagedPct": 31.7,
+   "farOver50tilesPct": 39.2,
+   "meanDistToBoss": 46.0,
+   "crowdedPct": 43.8,
+   "deaths": [
+    [
+     674,
+     59,
+     928,
+     "boss"
+    ],
+    [
+     767,
+     67,
+     928,
+     "boss"
+    ],
+    [
+     799,
+     50,
+     928,
+     "boss"
+    ],
+    [
+     800,
+     36,
+     928,
+     "boss"
+    ],
+    [
+     801,
+     41,
+     928,
+     "boss"
+    ],
+    [
+     807,
+     47,
+     928,
+     "boss"
+    ],
+    [
+     891,
+     43,
+     928,
+     "boss"
+    ],
+    [
+     891,
+     55,
+     928,
+     "boss"
+    ],
+    [
+     891,
+     57,
+     928,
+     "boss"
+    ],
+    [
+     891,
+     68,
+     928,
+     "boss"
+    ],
+    [
+     899,
+     63,
+     928,
+     "boss"
+    ],
+    [
+     1025,
+     42,
+     928,
+     "boss"
+    ],
+    [
+     1026,
+     60,
+     928,
+     "boss"
+    ],
+    [
+     1032,
+     51,
+     928,
+     "boss"
+    ],
+    [
+     1158,
+     62,
+     928,
+     "boss"
+    ],
+    [
+     1167,
+     39,
+     928,
+     "boss"
+    ],
+    [
+     1296,
+     45,
+     928,
+     "boss"
+    ],
+    [
+     1405,
+     64,
+     928,
+     "boss"
+    ],
+    [
+     1409,
+     44,
+     928,
+     "boss"
+    ],
+    [
+     1527,
+     40,
+     928,
+     "boss"
+    ],
+    [
+     1891,
+     37,
+     928,
+     "boss"
+    ],
+    [
+     1999,
+     48,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 15866,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     11966
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     2021
+    ],
+    [
+     "other/-1/-1",
+     1300
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     340
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     239
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_ravager_5.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c0",
+  "seed": 6,
+  "army": "eve",
+  "boss": "ravager",
+  "result": "LOSS",
+  "sec": 66.8,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "10.9",
+  "bossMax": 320160.0,
+  "bossLeft": 81370.0,
+  "dmgBoss": 353977.0,
+  "potionsDrunk": "30",
+  "weaponDmg": "Dark_Harvest@46=49926 Morning_Star@55=47289 Morning_Star@46=41922 Dark_Harvest@3=35103 Morning_Star@44=34593 Sniper_Rifle@82=19832 Stake_Launcher@37=17163 Dark_Harvest=17156 C:Wingman@28=11241 C:HavocsBreath@82=10099 C:RealmRavager@17=9551 C:RegulusRiot@Flawless=8655 C:TrueArkoftheAncients@37=5997 C:Wingman@83=5095 C:Apathanull@37=4702 C:TheSyringe@Flawless=4584 Terra_Blade@4=4434 Terra_Blade@46=3830 C:TrueArkoftheAncients@60=3580 C:Apathanull@28=3275 C:TheMicrowave@55=3114 C:Apathanull@59=2925 C:Malevolence@55=2855 Terra_Blade@55=2724 C:VernalBolter@82=1899 C:DoomsdayDevice@Flawless=944 C:Apathanull@26=805 C:StarShower@26=684 C:StarShower@55=0",
+  "deathTimes": "10.9,11.5,12.9,12.9,12.9,13.8,18.7,20.9,21.0,21.1,23.1,23.1,23.3,24.9,25.0,25.1,27.0,27.0,27.1,29.4,31.1,31.2,31.2,39.4,45.5,47.2,49.4,49.4,52.2,54.1,54.1,54.2,54.2,66.8",
+  "classDmg": "P=302990 -=50987",
+  "dmgRMES": [
+   "61399",
+   "28727",
+   "23679",
+   "225989"
+  ],
+  "armyDps": 5299.1,
+  "perLevyDps": 155.9,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.898,
+    "Follow": 0.099,
+    "Resupply": 0.003
+   },
+   "notEngagedPct": 10.2,
+   "farOver50tilesPct": 28.2,
+   "meanDistToBoss": 39.9,
+   "crowdedPct": 65.1,
+   "deaths": [
+    [
+     632,
+     74,
+     928,
+     "boss"
+    ],
+    [
+     665,
+     72,
+     930,
+     "minion"
+    ],
+    [
+     749,
+     85,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     90,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     95,
+     928,
+     "boss"
+    ],
+    [
+     807,
+     69,
+     935,
+     "minion"
+    ],
+    [
+     1099,
+     81,
+     928,
+     "boss"
+    ],
+    [
+     1232,
+     76,
+     928,
+     "boss"
+    ],
+    [
+     1240,
+     98,
+     928,
+     "boss"
+    ],
+    [
+     1243,
+     77,
+     928,
+     "boss"
+    ],
+    [
+     1365,
+     88,
+     935,
+     "minion"
+    ],
+    [
+     1365,
+     100,
+     935,
+     "minion"
+    ],
+    [
+     1378,
+     80,
+     935,
+     "minion"
+    ],
+    [
+     1471,
+     101,
+     928,
+     "boss"
+    ],
+    [
+     1475,
+     75,
+     928,
+     "boss"
+    ],
+    [
+     1482,
+     87,
+     928,
+     "boss"
+    ],
+    [
+     1595,
+     94,
+     928,
+     "boss"
+    ],
+    [
+     1596,
+     89,
+     928,
+     "boss"
+    ],
+    [
+     1601,
+     93,
+     928,
+     "boss"
+    ],
+    [
+     1743,
+     92,
+     935,
+     "minion"
+    ],
+    [
+     1846,
+     102,
+     935,
+     "minion"
+    ],
+    [
+     1848,
+     91,
+     928,
+     "boss"
+    ],
+    [
+     1850,
+     96,
+     928,
+     "boss"
+    ],
+    [
+     2343,
+     73,
+     928,
+     "boss"
+    ],
+    [
+     2707,
+     82,
+     935,
+     "minion"
+    ],
+    [
+     2811,
+     71,
+     928,
+     "boss"
+    ],
+    [
+     2941,
+     79,
+     935,
+     "minion"
+    ],
+    [
+     2941,
+     86,
+     935,
+     "minion"
+    ],
+    [
+     3112,
+     70,
+     935,
+     "minion"
+    ],
+    [
+     3226,
+     78,
+     928,
+     "boss"
+    ],
+    [
+     3226,
+     99,
+     928,
+     "boss"
+    ],
+    [
+     3227,
+     83,
+     928,
+     "boss"
+    ],
+    [
+     3227,
+     97,
+     928,
+     "boss"
+    ],
+    [
+     3988,
+     84,
+     935,
+     "minion"
+    ]
+   ],
+   "levyHitDmg": 21361,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     9184
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     6310
+    ],
+    [
+     "other/-1/-1",
+     3948
+    ],
+    [
+     "minion/Ravager/-1",
+     1800
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     96
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_ravager_6.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c0",
+  "seed": 7,
+  "army": "eve",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 34.4,
+  "levies": 34,
+  "deaths": 23,
+  "firstDeathSec": "10.9",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 384924.0,
+  "potionsDrunk": "27",
+  "weaponDmg": "Morning_Star@44=79513 Dark_Harvest@46=69713 Morning_Star@55=65616 Dark_Harvest=33061 Dark_Harvest@3=27929 Morning_Star@46=21038 C:RegulusRiot@Flawless=10100 C:TrueArkoftheAncients@37=9000 Stake_Launcher@37=8564 C:RealmRavager@17=7252 Sniper_Rifle@82=6757 C:Wingman@28=6471 C:TheSyringe@Flawless=5311 C:TrueArkoftheAncients@60=4284 C:Apathanull@28=4106 C:HavocsBreath@82=3472 C:Apathanull@59=3270 C:Wingman@83=2990 Terra_Blade@4=2856 C:Apathanull@37=2617 C:Malevolence@55=2409 Terra_Blade@46=2215 C:TheMicrowave@55=1403 Terra_Blade@55=1173 C:Apathanull@26=1114 C:DoomsdayDevice@Flawless=1088 C:VernalBolter@82=966 C:StarShower@26=636 C:StarShower@55=0",
+  "deathTimes": "10.9,12.5,18.1,18.2,18.3,18.3,18.3,18.4,20.5,20.5,20.6,20.6,20.6,20.6,20.7,22.5,22.7,25.0,27.4,27.4,27.6,27.6,29.9",
+  "classDmg": "P=355507 -=29417",
+  "dmgRMES": [
+   "29420",
+   "21204",
+   "20931",
+   "296870"
+  ],
+  "armyDps": 11189.7,
+  "perLevyDps": 329.1,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.732,
+    "Follow": 0.266,
+    "Resupply": 0.003
+   },
+   "notEngagedPct": 26.8,
+   "farOver50tilesPct": 38.6,
+   "meanDistToBoss": 44.6,
+   "crowdedPct": 52.6,
+   "deaths": [
+    [
+     630,
+     108,
+     928,
+     "boss"
+    ],
+    [
+     728,
+     134,
+     928,
+     "boss"
+    ],
+    [
+     1067,
+     136,
+     928,
+     "boss"
+    ],
+    [
+     1073,
+     111,
+     928,
+     "boss"
+    ],
+    [
+     1074,
+     112,
+     928,
+     "boss"
+    ],
+    [
+     1078,
+     122,
+     928,
+     "boss"
+    ],
+    [
+     1079,
+     110,
+     928,
+     "boss"
+    ],
+    [
+     1081,
+     105,
+     928,
+     "boss"
+    ],
+    [
+     1210,
+     128,
+     928,
+     "boss"
+    ],
+    [
+     1211,
+     123,
+     928,
+     "boss"
+    ],
+    [
+     1214,
+     130,
+     928,
+     "boss"
+    ],
+    [
+     1215,
+     106,
+     928,
+     "boss"
+    ],
+    [
+     1215,
+     131,
+     928,
+     "boss"
+    ],
+    [
+     1217,
+     129,
+     928,
+     "boss"
+    ],
+    [
+     1218,
+     132,
+     928,
+     "boss"
+    ],
+    [
+     1331,
+     127,
+     928,
+     "boss"
+    ],
+    [
+     1338,
+     107,
+     928,
+     "boss"
+    ],
+    [
+     1477,
+     125,
+     935,
+     "minion"
+    ],
+    [
+     1623,
+     109,
+     928,
+     "boss"
+    ],
+    [
+     1623,
+     135,
+     935,
+     "minion"
+    ],
+    [
+     1633,
+     126,
+     928,
+     "boss"
+    ],
+    [
+     1636,
+     117,
+     935,
+     "minion"
+    ],
+    [
+     1775,
+     115,
+     935,
+     "minion"
+    ]
+   ],
+   "levyHitDmg": 16826,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     11306
+    ],
+    [
+     "other/-1/-1",
+     2987
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     2533
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_ravager_7.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c0",
+  "seed": 8,
+  "army": "eve",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 43.2,
+  "levies": 34,
+  "deaths": 28,
+  "firstDeathSec": "17.8",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 386986.0,
+  "potionsDrunk": "28",
+  "weaponDmg": "Morning_Star@44=80323 Dark_Harvest@46=47879 Dark_Harvest=43976 Morning_Star@55=43096 Dark_Harvest@3=25075 C:Apathanull@59=15725 C:Apathanull@28=13170 Sniper_Rifle@82=10364 C:RegulusRiot@Flawless=9589 Morning_Star@46=9428 Stake_Launcher@37=9117 C:Apathanull@37=8823 C:RealmRavager@17=8735 C:Wingman@28=8162 C:TheSyringe@Flawless=7300 C:TrueArkoftheAncients@37=7103 C:TheMicrowave@55=5385 C:Wingman@83=5143 C:Malevolence@55=5033 C:VernalBolter@82=4690 C:HavocsBreath@82=4218 C:TrueArkoftheAncients@60=3450 C:Apathanull@26=3019 Terra_Blade@46=2557 Terra_Blade@4=2263 Terra_Blade@55=1735 C:StarShower@26=1105 C:DoomsdayDevice@Flawless=523 C:StarShower@55=0",
+  "deathTimes": "17.8,17.9,18.0,20.1,20.3,20.3,24.9,24.9,24.9,24.9,25.0,25.0,25.0,25.1,25.1,25.1,25.1,25.1,25.2,27.3,29.7,29.8,30.1,32.6,32.6,34.4,34.5,42.5",
+  "classDmg": "P=346177 -=40809",
+  "dmgRMES": [
+   "42157",
+   "55147",
+   "22493",
+   "249777"
+  ],
+  "armyDps": 8958.0,
+  "perLevyDps": 263.5,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.823,
+    "Follow": 0.175,
+    "Resupply": 0.002
+   },
+   "notEngagedPct": 17.7,
+   "farOver50tilesPct": 31.9,
+   "meanDistToBoss": 42.5,
+   "crowdedPct": 59.9,
+   "deaths": [
+    [
+     1049,
+     151,
+     928,
+     "boss"
+    ],
+    [
+     1052,
+     165,
+     928,
+     "boss"
+    ],
+    [
+     1059,
+     166,
+     928,
+     "boss"
+    ],
+    [
+     1186,
+     164,
+     928,
+     "boss"
+    ],
+    [
+     1195,
+     167,
+     928,
+     "boss"
+    ],
+    [
+     1196,
+     141,
+     935,
+     "minion"
+    ],
+    [
+     1472,
+     162,
+     928,
+     "boss"
+    ],
+    [
+     1472,
+     170,
+     928,
+     "boss"
+    ],
+    [
+     1475,
+     157,
+     928,
+     "boss"
+    ],
+    [
+     1475,
+     160,
+     928,
+     "boss"
+    ],
+    [
+     1476,
+     149,
+     928,
+     "boss"
+    ],
+    [
+     1478,
+     144,
+     928,
+     "boss"
+    ],
+    [
+     1480,
+     146,
+     928,
+     "boss"
+    ],
+    [
+     1483,
+     150,
+     928,
+     "boss"
+    ],
+    [
+     1485,
+     147,
+     928,
+     "boss"
+    ],
+    [
+     1486,
+     142,
+     928,
+     "boss"
+    ],
+    [
+     1486,
+     168,
+     928,
+     "boss"
+    ],
+    [
+     1487,
+     158,
+     928,
+     "boss"
+    ],
+    [
+     1489,
+     161,
+     928,
+     "boss"
+    ],
+    [
+     1618,
+     137,
+     935,
+     "minion"
+    ],
+    [
+     1760,
+     169,
+     935,
+     "minion"
+    ],
+    [
+     1768,
+     143,
+     928,
+     "boss"
+    ],
+    [
+     1783,
+     159,
+     935,
+     "minion"
+    ],
+    [
+     1932,
+     156,
+     928,
+     "boss"
+    ],
+    [
+     1934,
+     140,
+     928,
+     "boss"
+    ],
+    [
+     2044,
+     153,
+     928,
+     "boss"
+    ],
+    [
+     2051,
+     139,
+     928,
+     "boss"
+    ],
+    [
+     2531,
+     155,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 20099,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     13532
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     3772
+    ],
+    [
+     "other/-1/-1",
+     2473
+    ],
+    [
+     "minion/Ravager/-1",
+     322
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_ravager_8.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c1",
+  "seed": 4,
+  "army": "eve",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 69.9,
+  "levies": 34,
+  "deaths": 32,
+  "firstDeathSec": "7.1",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 339218.0,
+  "potionsDrunk": "29",
+  "weaponDmg": "Morning_Star@44=78247 Dark_Harvest@3=64234 Dark_Harvest@46=58711 C:Apathanull@28=18151 Dark_Harvest=17068 C:RegulusRiot@Flawless=17007 C:Apathanull@59=13337 C:RealmRavager@17=6194 C:Apathanull@37=6141 Morning_Star@46=6132 Morning_Star@55=6046 C:Apathanull@26=5797 C:Wingman@28=5417 Terra_Blade@55=5126 C:TheSyringe@Flawless=4293 Stake_Launcher@37=3535 C:TrueArkoftheAncients@60=3193 C:HavocsBreath@82=3085 Terra_Blade@4=2919 Sniper_Rifle@82=2523 C:TrueArkoftheAncients@37=2271 C:StarShower@26=2000 Terra_Blade@46=1797 C:VernalBolter@82=1541 C:Wingman@83=1534 C:TheMicrowave@55=1268 C:Malevolence@55=1185 C:DoomsdayDevice@Flawless=466 C:StarShower@55=0",
+  "deathTimes": "7.1,7.1,7.1,7.1,12.3,12.4,12.5,13.0,13.1,13.3,13.5,13.7,13.7,15.9,16.1,25.3,25.5,30.0,30.1,31.4,33.8,34.1,34.1,34.8,35.0,37.4,40.0,41.3,54.7,62.0,62.1,68.8",
+  "classDmg": "P=317257 -=21961",
+  "dmgRMES": [
+   "18063",
+   "52377",
+   "16574",
+   "230438"
+  ],
+  "armyDps": 4852.9,
+  "perLevyDps": 142.7,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.603,
+    "Engage": 0.396,
+    "Resupply": 0.001
+   },
+   "notEngagedPct": 60.4,
+   "farOver50tilesPct": 38.4,
+   "meanDistToBoss": 44.3,
+   "crowdedPct": 22.4,
+   "deaths": [
+    [
+     401,
+     184,
+     636,
+     "boss"
+    ],
+    [
+     403,
+     196,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     178,
+     636,
+     "boss"
+    ],
+    [
+     405,
+     183,
+     636,
+     "boss"
+    ],
+    [
+     718,
+     194,
+     636,
+     "boss"
+    ],
+    [
+     720,
+     195,
+     636,
+     "boss"
+    ],
+    [
+     728,
+     204,
+     636,
+     "boss"
+    ],
+    [
+     757,
+     192,
+     636,
+     "boss"
+    ],
+    [
+     762,
+     176,
+     636,
+     "boss"
+    ],
+    [
+     777,
+     174,
+     636,
+     "boss"
+    ],
+    [
+     787,
+     175,
+     636,
+     "boss"
+    ],
+    [
+     798,
+     181,
+     636,
+     "boss"
+    ],
+    [
+     799,
+     182,
+     636,
+     "boss"
+    ],
+    [
+     932,
+     198,
+     636,
+     "boss"
+    ],
+    [
+     942,
+     172,
+     636,
+     "boss"
+    ],
+    [
+     1493,
+     201,
+     636,
+     "boss"
+    ],
+    [
+     1506,
+     177,
+     636,
+     "boss"
+    ],
+    [
+     1776,
+     191,
+     636,
+     "boss"
+    ],
+    [
+     1786,
+     190,
+     636,
+     "boss"
+    ],
+    [
+     1863,
+     193,
+     636,
+     "boss"
+    ],
+    [
+     2003,
+     199,
+     636,
+     "boss"
+    ],
+    [
+     2023,
+     179,
+     636,
+     "boss"
+    ],
+    [
+     2025,
+     180,
+     636,
+     "boss"
+    ],
+    [
+     2064,
+     202,
+     636,
+     "boss"
+    ],
+    [
+     2076,
+     203,
+     636,
+     "boss"
+    ],
+    [
+     2222,
+     186,
+     636,
+     "boss"
+    ],
+    [
+     2377,
+     200,
+     636,
+     "boss"
+    ],
+    [
+     2457,
+     189,
+     636,
+     "boss"
+    ],
+    [
+     3257,
+     173,
+     636,
+     "boss"
+    ],
+    [
+     3696,
+     171,
+     636,
+     "boss"
+    ],
+    [
+     3704,
+     197,
+     636,
+     "boss"
+    ],
+    [
+     4108,
+     185,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 22058,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Sun Dance",
+     8439
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     5577
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     4600
+    ],
+    [
+     "body/Empress of Light/-1",
+     2668
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     774
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_eol_4.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c1",
+  "seed": 5,
+  "army": "eve",
+  "boss": "eol",
+  "result": "LOSS",
+  "sec": 47.9,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "6.8",
+  "bossMax": 212415.0,
+  "bossLeft": 172398.0,
+  "dmgBoss": 172304.0,
+  "potionsDrunk": "32",
+  "weaponDmg": "Dark_Harvest@3=28706 Morning_Star@44=16393 Dark_Harvest=11786 Dark_Harvest@46=11443 C:Apathanull@59=11282 C:Apathanull@28=10147 C:Apathanull@37=7828 Morning_Star@46=7728 C:TheSyringe@Flawless=5985 C:RealmRavager@17=5406 Sniper_Rifle@82=5274 C:RegulusRiot@Flawless=5035 C:TrueArkoftheAncients@60=4415 C:VernalBolter@82=4109 Morning_Star@55=3916 Terra_Blade@4=3740 C:TrueArkoftheAncients@37=3714 C:HavocsBreath@82=3651 C:Malevolence@55=3520 Stake_Launcher@37=3434 C:Apathanull@26=2888 Terra_Blade@46=2496 C:Wingman@83=2471 C:Wingman@28=2294 C:TheMicrowave@55=1700 C:StarShower@26=1690 Terra_Blade@55=1046 C:DoomsdayDevice@Flawless=207 C:StarShower@55=0",
+  "deathTimes": "6.8,12.4,12.9,13.0,13.2,13.3,13.8,13.8,16.2,16.2,16.2,16.2,16.2,16.2,23.7,23.8,24.0,24.6,25.5,25.6,26.8,27.0,27.0,30.2,31.8,31.9,33.5,33.9,34.0,34.8,35.5,36.5,42.1,47.9",
+  "classDmg": "P=149184 -=23120",
+  "dmgRMES": [
+   "25394",
+   "38600",
+   "17111",
+   "79972"
+  ],
+  "armyDps": 3597.2,
+  "perLevyDps": 105.8,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.535,
+    "Engage": 0.465
+   },
+   "notEngagedPct": 53.5,
+   "farOver50tilesPct": 38.6,
+   "meanDistToBoss": 45.3,
+   "crowdedPct": 39.2,
+   "deaths": [
+    [
+     387,
+     230,
+     636,
+     "boss"
+    ],
+    [
+     725,
+     225,
+     636,
+     "boss"
+    ],
+    [
+     751,
+     237,
+     636,
+     "boss"
+    ],
+    [
+     758,
+     228,
+     636,
+     "boss"
+    ],
+    [
+     770,
+     210,
+     636,
+     "boss"
+    ],
+    [
+     778,
+     226,
+     636,
+     "boss"
+    ],
+    [
+     804,
+     209,
+     636,
+     "boss"
+    ],
+    [
+     806,
+     215,
+     636,
+     "boss"
+    ],
+    [
+     950,
+     212,
+     636,
+     "boss"
+    ],
+    [
+     950,
+     216,
+     636,
+     "boss"
+    ],
+    [
+     950,
+     217,
+     636,
+     "boss"
+    ],
+    [
+     950,
+     218,
+     636,
+     "boss"
+    ],
+    [
+     950,
+     233,
+     636,
+     "boss"
+    ],
+    [
+     951,
+     224,
+     636,
+     "boss"
+    ],
+    [
+     1400,
+     229,
+     636,
+     "boss"
+    ],
+    [
+     1407,
+     235,
+     636,
+     "boss"
+    ],
+    [
+     1418,
+     238,
+     636,
+     "boss"
+    ],
+    [
+     1455,
+     208,
+     636,
+     "boss"
+    ],
+    [
+     1511,
+     232,
+     636,
+     "boss"
+    ],
+    [
+     1512,
+     214,
+     636,
+     "boss"
+    ],
+    [
+     1586,
+     205,
+     636,
+     "boss"
+    ],
+    [
+     1599,
+     236,
+     636,
+     "boss"
+    ],
+    [
+     1600,
+     234,
+     636,
+     "boss"
+    ],
+    [
+     1789,
+     206,
+     636,
+     "boss"
+    ],
+    [
+     1887,
+     207,
+     636,
+     "boss"
+    ],
+    [
+     1892,
+     211,
+     636,
+     "boss"
+    ],
+    [
+     1989,
+     220,
+     636,
+     "boss"
+    ],
+    [
+     2015,
+     213,
+     636,
+     "boss"
+    ],
+    [
+     2020,
+     227,
+     636,
+     "boss"
+    ],
+    [
+     2068,
+     221,
+     636,
+     "boss"
+    ],
+    [
+     2109,
+     223,
+     636,
+     "boss"
+    ],
+    [
+     2171,
+     222,
+     636,
+     "boss"
+    ],
+    [
+     2507,
+     219,
+     636,
+     "boss"
+    ],
+    [
+     2850,
+     231,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 22048,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Sun Dance",
+     9178
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     5340
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     5142
+    ],
+    [
+     "body/Empress of Light/-1",
+     1724
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     664
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_eol_5.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c1",
+  "seed": 6,
+  "army": "eve",
+  "boss": "eol",
+  "result": "LOSS",
+  "sec": 56.9,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "7.1",
+  "bossMax": 212415.0,
+  "bossLeft": 68433.0,
+  "dmgBoss": 271796.0,
+  "potionsDrunk": "30",
+  "weaponDmg": "Dark_Harvest@46=50687 Morning_Star@44=38730 Dark_Harvest@3=38107 Dark_Harvest=21952 Morning_Star@55=19606 C:Apathanull@28=15575 C:Apathanull@59=13141 C:RegulusRiot@Flawless=10155 C:TrueArkoftheAncients@37=7349 Morning_Star@46=7149 C:Apathanull@37=6413 C:Apathanull@26=5122 Sniper_Rifle@82=4168 C:Wingman@28=4128 C:TheSyringe@Flawless=3726 C:VernalBolter@82=3696 C:TrueArkoftheAncients@60=3414 Terra_Blade@55=3197 Terra_Blade@46=2817 C:RealmRavager@17=2684 C:TheMicrowave@55=1906 Terra_Blade@4=1858 C:Wingman@83=1742 Stake_Launcher@37=1618 C:Malevolence@55=1018 C:StarShower@26=1004 C:HavocsBreath@82=640 C:DoomsdayDevice@Flawless=194 C:StarShower@55=0",
+  "deathTimes": "7.1,7.1,7.1,7.1,7.2,12.7,13.2,13.3,13.3,13.3,13.3,17.6,18.5,19.1,24.6,24.7,25.4,26.3,28.2,31.4,31.8,31.8,31.8,32.8,34.9,36.5,39.9,40.7,46.6,46.9,47.8,54.2,56.1,56.9",
+  "classDmg": "P=254344 -=17452",
+  "dmgRMES": [
+   "13824",
+   "47125",
+   "20541",
+   "176231"
+  ],
+  "armyDps": 4776.7,
+  "perLevyDps": 140.5,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.623,
+    "Engage": 0.377,
+    "Resupply": 0.0
+   },
+   "notEngagedPct": 62.3,
+   "farOver50tilesPct": 39.5,
+   "meanDistToBoss": 44.8,
+   "crowdedPct": 32.9,
+   "deaths": [
+    [
+     404,
+     249,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     250,
+     636,
+     "boss"
+    ],
+    [
+     405,
+     262,
+     636,
+     "boss"
+    ],
+    [
+     406,
+     254,
+     636,
+     "boss"
+    ],
+    [
+     412,
+     246,
+     636,
+     "boss"
+    ],
+    [
+     743,
+     266,
+     636,
+     "boss"
+    ],
+    [
+     773,
+     267,
+     636,
+     "boss"
+    ],
+    [
+     774,
+     263,
+     636,
+     "boss"
+    ],
+    [
+     776,
+     252,
+     636,
+     "boss"
+    ],
+    [
+     777,
+     245,
+     636,
+     "boss"
+    ],
+    [
+     778,
+     248,
+     636,
+     "boss"
+    ],
+    [
+     1033,
+     261,
+     636,
+     "boss"
+    ],
+    [
+     1090,
+     251,
+     636,
+     "boss"
+    ],
+    [
+     1124,
+     272,
+     636,
+     "boss"
+    ],
+    [
+     1457,
+     243,
+     636,
+     "boss"
+    ],
+    [
+     1461,
+     244,
+     636,
+     "boss"
+    ],
+    [
+     1505,
+     258,
+     636,
+     "boss"
+    ],
+    [
+     1557,
+     259,
+     636,
+     "boss"
+    ],
+    [
+     1670,
+     240,
+     636,
+     "boss"
+    ],
+    [
+     1864,
+     269,
+     636,
+     "boss"
+    ],
+    [
+     1885,
+     241,
+     636,
+     "boss"
+    ],
+    [
+     1886,
+     264,
+     636,
+     "boss"
+    ],
+    [
+     1886,
+     271,
+     636,
+     "boss"
+    ],
+    [
+     1946,
+     247,
+     636,
+     "boss"
+    ],
+    [
+     2074,
+     268,
+     636,
+     "boss"
+    ],
+    [
+     2171,
+     242,
+     636,
+     "boss"
+    ],
+    [
+     2371,
+     270,
+     636,
+     "boss"
+    ],
+    [
+     2423,
+     257,
+     636,
+     "boss"
+    ],
+    [
+     2774,
+     255,
+     636,
+     "boss"
+    ],
+    [
+     2790,
+     253,
+     636,
+     "boss"
+    ],
+    [
+     2844,
+     256,
+     636,
+     "boss"
+    ],
+    [
+     3231,
+     265,
+     636,
+     "boss"
+    ],
+    [
+     3343,
+     239,
+     636,
+     "boss"
+    ],
+    [
+     3393,
+     260,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 22286,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     6720
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     5956
+    ],
+    [
+     "proj/Empress of Light/Sun Dance",
+     5724
+    ],
+    [
+     "body/Empress of Light/-1",
+     2357
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     1529
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_eol_6.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c1",
+  "seed": 7,
+  "army": "eve",
+  "boss": "eol",
+  "result": "LOSS",
+  "sec": 59.7,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "7.1",
+  "bossMax": 212415.0,
+  "bossLeft": 19921.0,
+  "dmgBoss": 311076.0,
+  "potionsDrunk": "26",
+  "weaponDmg": "Morning_Star@44=58416 Dark_Harvest@46=56651 Dark_Harvest@3=48575 C:RealmRavager@17=20831 Dark_Harvest=18822 C:Apathanull@59=15818 C:Apathanull@28=13492 C:RegulusRiot@Flawless=11313 Morning_Star@55=8511 C:TheSyringe@Flawless=7723 Terra_Blade@46=4764 Morning_Star@46=4624 C:TrueArkoftheAncients@37=4167 Terra_Blade@55=4128 Terra_Blade@4=4055 C:TheMicrowave@55=3916 C:Wingman@28=3547 C:Malevolence@55=3513 C:Apathanull@37=3126 C:TrueArkoftheAncients@60=2874 Sniper_Rifle@82=2434 C:StarShower@26=2081 C:Apathanull@26=1786 C:HavocsBreath@82=1774 Stake_Launcher@37=1553 C:VernalBolter@82=1529 C:Wingman@83=897 C:DoomsdayDevice@Flawless=156 C:StarShower@55=0",
+  "deathTimes": "7.1,7.1,7.1,7.1,7.1,7.1,7.1,11.2,12.2,12.5,12.9,13.2,16.1,16.2,23.8,25.1,33.4,34.0,34.3,34.8,36.3,36.8,37.8,41.4,41.8,42.1,42.2,42.7,48.6,54.9,55.7,55.7,57.6,59.7",
+  "classDmg": "P=273563 -=37513",
+  "dmgRMES": [
+   "31634",
+   "40747",
+   "23904",
+   "195599"
+  ],
+  "armyDps": 5210.7,
+  "perLevyDps": 153.3,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.569,
+    "Engage": 0.431
+   },
+   "notEngagedPct": 56.9,
+   "farOver50tilesPct": 37.6,
+   "meanDistToBoss": 44.8,
+   "crowdedPct": 26.2,
+   "deaths": [
+    [
+     402,
+     292,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     283,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     285,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     286,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     297,
+     636,
+     "boss"
+    ],
+    [
+     405,
+     298,
+     636,
+     "boss"
+    ],
+    [
+     405,
+     301,
+     636,
+     "boss"
+    ],
+    [
+     647,
+     303,
+     636,
+     "boss"
+    ],
+    [
+     710,
+     296,
+     636,
+     "boss"
+    ],
+    [
+     725,
+     300,
+     636,
+     "boss"
+    ],
+    [
+     751,
+     306,
+     636,
+     "boss"
+    ],
+    [
+     771,
+     280,
+     636,
+     "boss"
+    ],
+    [
+     945,
+     278,
+     636,
+     "boss"
+    ],
+    [
+     947,
+     276,
+     636,
+     "boss"
+    ],
+    [
+     1408,
+     277,
+     636,
+     "boss"
+    ],
+    [
+     1484,
+     288,
+     636,
+     "boss"
+    ],
+    [
+     1984,
+     305,
+     636,
+     "boss"
+    ],
+    [
+     2015,
+     295,
+     636,
+     "boss"
+    ],
+    [
+     2036,
+     302,
+     636,
+     "boss"
+    ],
+    [
+     2065,
+     304,
+     636,
+     "boss"
+    ],
+    [
+     2156,
+     293,
+     636,
+     "boss"
+    ],
+    [
+     2188,
+     282,
+     636,
+     "boss"
+    ],
+    [
+     2244,
+     279,
+     636,
+     "boss"
+    ],
+    [
+     2460,
+     275,
+     636,
+     "boss"
+    ],
+    [
+     2486,
+     284,
+     636,
+     "boss"
+    ],
+    [
+     2506,
+     294,
+     636,
+     "boss"
+    ],
+    [
+     2508,
+     274,
+     636,
+     "boss"
+    ],
+    [
+     2540,
+     281,
+     636,
+     "boss"
+    ],
+    [
+     2892,
+     287,
+     636,
+     "boss"
+    ],
+    [
+     3270,
+     291,
+     636,
+     "boss"
+    ],
+    [
+     3317,
+     290,
+     636,
+     "boss"
+    ],
+    [
+     3318,
+     299,
+     636,
+     "boss"
+    ],
+    [
+     3434,
+     289,
+     636,
+     "boss"
+    ],
+    [
+     3557,
+     273,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 21795,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     9009
+    ],
+    [
+     "proj/Empress of Light/Sun Dance",
+     4225
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     3865
+    ],
+    [
+     "body/Empress of Light/-1",
+     3727
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     969
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_eol_7.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c1",
+  "seed": 8,
+  "army": "eve",
+  "boss": "eol",
+  "result": "LOSS",
+  "sec": 62.3,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "12.9",
+  "bossMax": 212415.0,
+  "bossLeft": 62283.0,
+  "dmgBoss": 275269.0,
+  "potionsDrunk": "34",
+  "weaponDmg": "Dark_Harvest@46=51784 Dark_Harvest@3=48626 Morning_Star@44=28857 Dark_Harvest=21340 Morning_Star@55=10036 Terra_Blade@4=9780 C:TrueArkoftheAncients@37=8322 C:RegulusRiot@Flawless=7349 Stake_Launcher@37=6863 Morning_Star@46=6772 C:Apathanull@59=6552 C:Wingman@28=6336 C:RealmRavager@17=6261 C:Apathanull@37=5951 C:Apathanull@28=5910 C:Wingman@83=5820 C:VernalBolter@82=4813 C:HavocsBreath@82=4662 Sniper_Rifle@82=4606 Terra_Blade@46=4079 C:TheMicrowave@55=3855 C:TheSyringe@Flawless=3153 C:TrueArkoftheAncients@60=3089 C:Apathanull@26=3034 Terra_Blade@55=2902 C:Malevolence@55=2875 C:StarShower@26=1190 C:DoomsdayDevice@Flawless=452 C:StarShower@55=0",
+  "deathTimes": "12.9,13.1,13.2,13.3,13.4,13.5,13.5,13.7,13.8,14.2,16.1,19.2,24.2,24.9,25.4,26.3,26.3,27.3,27.9,32.0,33.8,36.4,36.7,37.4,37.6,39.4,40.0,41.6,41.8,46.8,50.0,55.4,59.6,62.3",
+  "classDmg": "P=247903 -=27366",
+  "dmgRMES": [
+   "30080",
+   "34793",
+   "32027",
+   "167415"
+  ],
+  "armyDps": 4418.4,
+  "perLevyDps": 130.0,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.564,
+    "Engage": 0.436
+   },
+   "notEngagedPct": 56.4,
+   "farOver50tilesPct": 36.2,
+   "meanDistToBoss": 44.4,
+   "crowdedPct": 36.6,
+   "deaths": [
+    [
+     752,
+     320,
+     636,
+     "boss"
+    ],
+    [
+     761,
+     316,
+     636,
+     "boss"
+    ],
+    [
+     769,
+     330,
+     636,
+     "boss"
+    ],
+    [
+     777,
+     331,
+     636,
+     "boss"
+    ],
+    [
+     784,
+     326,
+     636,
+     "boss"
+    ],
+    [
+     786,
+     314,
+     636,
+     "boss"
+    ],
+    [
+     790,
+     327,
+     636,
+     "boss"
+    ],
+    [
+     798,
+     336,
+     636,
+     "boss"
+    ],
+    [
+     803,
+     318,
+     636,
+     "boss"
+    ],
+    [
+     831,
+     311,
+     636,
+     "boss"
+    ],
+    [
+     942,
+     315,
+     636,
+     "boss"
+    ],
+    [
+     1127,
+     313,
+     636,
+     "boss"
+    ],
+    [
+     1428,
+     329,
+     636,
+     "boss"
+    ],
+    [
+     1474,
+     337,
+     636,
+     "boss"
+    ],
+    [
+     1503,
+     312,
+     636,
+     "boss"
+    ],
+    [
+     1553,
+     339,
+     636,
+     "boss"
+    ],
+    [
+     1556,
+     328,
+     636,
+     "boss"
+    ],
+    [
+     1615,
+     317,
+     636,
+     "boss"
+    ],
+    [
+     1652,
+     319,
+     636,
+     "boss"
+    ],
+    [
+     1895,
+     309,
+     636,
+     "boss"
+    ],
+    [
+     2006,
+     334,
+     636,
+     "boss"
+    ],
+    [
+     2162,
+     323,
+     636,
+     "boss"
+    ],
+    [
+     2181,
+     332,
+     636,
+     "boss"
+    ],
+    [
+     2221,
+     308,
+     636,
+     "boss"
+    ],
+    [
+     2231,
+     338,
+     636,
+     "boss"
+    ],
+    [
+     2340,
+     335,
+     636,
+     "boss"
+    ],
+    [
+     2380,
+     310,
+     636,
+     "boss"
+    ],
+    [
+     2472,
+     340,
+     636,
+     "boss"
+    ],
+    [
+     2488,
+     324,
+     636,
+     "boss"
+    ],
+    [
+     2786,
+     321,
+     636,
+     "boss"
+    ],
+    [
+     2980,
+     322,
+     636,
+     "boss"
+    ],
+    [
+     3302,
+     325,
+     636,
+     "boss"
+    ],
+    [
+     3556,
+     333,
+     636,
+     "boss"
+    ],
+    [
+     3713,
+     307,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 23160,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     7328
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     6929
+    ],
+    [
+     "proj/Empress of Light/Sun Dance",
+     6649
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     1384
+    ],
+    [
+     "body/Empress of Light/-1",
+     870
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_eol_8.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c2",
+  "seed": 4,
+  "army": "eve_brimflame",
+  "boss": "ravager",
+  "result": "LOSS",
+  "sec": 82.2,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "10.9",
+  "bossMax": 320160.0,
+  "bossLeft": 102216.0,
+  "dmgBoss": 301195.0,
+  "potionsDrunk": "31",
+  "weaponDmg": "Morning_Star@55=79478 Dark_Harvest@3=42098 Dark_Harvest@46=37327 Morning_Star@44=33401 C:HavocsBreath@82=11379 Dark_Harvest=11050 C:Wingman@28=8702 C:TrueArkoftheAncients@60=8198 C:Apathanull@26=7579 Sniper_Rifle@82=7578 C:RealmRavager@17=7407 C:Apathanull@59=7090 Stake_Launcher@37=6221 Morning_Star@46=4784 C:RegulusRiot@Flawless=3832 C:TheMicrowave@55=3473 C:TrueArkoftheAncients@37=3308 C:TheSyringe@Flawless=3259 C:Apathanull@28=2940 C:Apathanull@37=2937 C:VernalBolter@82=2527 Terra_Blade@46=2381 C:Wingman@83=1707 Terra_Blade@4=1099 C:Malevolence@55=742 Terra_Blade@55=697 C:DoomsdayDevice@Flawless=1 C:StarShower@55=0 C:StarShower@26=0",
+  "deathTimes": "10.9,11.0,12.6,12.6,12.6,12.6,12.6,12.6,12.6,12.6,12.6,12.6,12.6,12.6,12.6,12.6,12.6,12.6,12.6,14.8,15.1,23.3,25.4,25.4,25.5,25.5,25.6,27.6,28.0,30.4,35.1,46.7,52.2,82.2",
+  "classDmg": "P=272542 -=28653",
+  "dmgRMES": [
+   "35854",
+   "30955",
+   "19156",
+   "208138"
+  ],
+  "armyDps": 3664.2,
+  "perLevyDps": 107.8,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.762,
+    "Follow": 0.237,
+    "Resupply": 0.001
+   },
+   "notEngagedPct": 23.8,
+   "farOver50tilesPct": 39.5,
+   "meanDistToBoss": 45.9,
+   "crowdedPct": 61.1,
+   "deaths": [
+    [
+     629,
+     344,
+     928,
+     "boss"
+    ],
+    [
+     636,
+     357,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     341,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     343,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     346,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     348,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     350,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     351,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     352,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     354,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     356,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     364,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     365,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     366,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     368,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     369,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     370,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     373,
+     928,
+     "boss"
+    ],
+    [
+     736,
+     374,
+     928,
+     "boss"
+    ],
+    [
+     864,
+     371,
+     928,
+     "boss"
+    ],
+    [
+     882,
+     367,
+     928,
+     "boss"
+    ],
+    [
+     1374,
+     353,
+     928,
+     "boss"
+    ],
+    [
+     1500,
+     363,
+     928,
+     "boss"
+    ],
+    [
+     1501,
+     347,
+     928,
+     "boss"
+    ],
+    [
+     1509,
+     361,
+     928,
+     "boss"
+    ],
+    [
+     1510,
+     345,
+     928,
+     "boss"
+    ],
+    [
+     1511,
+     372,
+     935,
+     "minion"
+    ],
+    [
+     1633,
+     359,
+     928,
+     "boss"
+    ],
+    [
+     1659,
+     360,
+     928,
+     "boss"
+    ],
+    [
+     1800,
+     349,
+     928,
+     "boss"
+    ],
+    [
+     2084,
+     342,
+     935,
+     "minion"
+    ],
+    [
+     2782,
+     355,
+     935,
+     "minion"
+    ],
+    [
+     3108,
+     358,
+     928,
+     "boss"
+    ],
+    [
+     4911,
+     362,
+     935,
+     "minion"
+    ]
+   ],
+   "levyHitDmg": 20451,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     13249
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     3009
+    ],
+    [
+     "other/-1/-1",
+     2721
+    ],
+    [
+     "minion/Ravager/-1",
+     503
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     501
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_ravager_4.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c2",
+  "seed": 5,
+  "army": "eve_brimflame",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 34.4,
+  "levies": 34,
+  "deaths": 22,
+  "firstDeathSec": "13.5",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 378324.0,
+  "potionsDrunk": "25",
+  "weaponDmg": "Morning_Star@44=56454 Dark_Harvest@46=51041 Morning_Star@55=50012 Dark_Harvest=32825 Dark_Harvest@3=26192 Morning_Star@46=23417 C:Apathanull@28=17171 C:TrueArkoftheAncients@37=16511 C:Apathanull@59=14809 C:RealmRavager@17=14078 Sniper_Rifle@82=10744 C:Apathanull@26=9049 C:Wingman@28=8942 C:Apathanull@37=8226 Stake_Launcher@37=6735 C:Wingman@83=5777 C:TrueArkoftheAncients@60=4445 C:TheSyringe@Flawless=4291 C:RegulusRiot@Flawless=3659 Terra_Blade@4=2766 Terra_Blade@46=2292 Terra_Blade@55=2276 C:Malevolence@55=2204 C:DoomsdayDevice@Flawless=2020 C:HavocsBreath@82=1050 C:VernalBolter@82=952 C:TheMicrowave@55=386 C:StarShower@55=0 C:StarShower@26=0",
+  "deathTimes": "13.5,13.5,16.2,18.5,20.8,22.6,22.7,22.7,22.9,22.9,22.9,22.9,25.0,25.0,25.2,25.2,25.3,27.1,27.3,29.4,29.5,29.5",
+  "classDmg": "P=334492 -=43832",
+  "dmgRMES": [
+   "35763",
+   "63974",
+   "28676",
+   "239941"
+  ],
+  "armyDps": 10997.8,
+  "perLevyDps": 323.5,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.697,
+    "Follow": 0.299,
+    "Resupply": 0.004
+   },
+   "notEngagedPct": 30.3,
+   "farOver50tilesPct": 33.9,
+   "meanDistToBoss": 42.7,
+   "crowdedPct": 50.4,
+   "deaths": [
+    [
+     788,
+     382,
+     928,
+     "boss"
+    ],
+    [
+     789,
+     407,
+     928,
+     "boss"
+    ],
+    [
+     950,
+     402,
+     928,
+     "boss"
+    ],
+    [
+     1087,
+     399,
+     928,
+     "boss"
+    ],
+    [
+     1226,
+     397,
+     928,
+     "boss"
+    ],
+    [
+     1332,
+     379,
+     928,
+     "boss"
+    ],
+    [
+     1340,
+     395,
+     928,
+     "boss"
+    ],
+    [
+     1341,
+     400,
+     928,
+     "boss"
+    ],
+    [
+     1349,
+     378,
+     928,
+     "boss"
+    ],
+    [
+     1349,
+     403,
+     928,
+     "boss"
+    ],
+    [
+     1349,
+     406,
+     928,
+     "boss"
+    ],
+    [
+     1352,
+     385,
+     928,
+     "boss"
+    ],
+    [
+     1476,
+     381,
+     928,
+     "boss"
+    ],
+    [
+     1478,
+     384,
+     928,
+     "boss"
+    ],
+    [
+     1488,
+     383,
+     928,
+     "boss"
+    ],
+    [
+     1488,
+     404,
+     928,
+     "boss"
+    ],
+    [
+     1495,
+     388,
+     935,
+     "minion"
+    ],
+    [
+     1605,
+     408,
+     928,
+     "boss"
+    ],
+    [
+     1613,
+     380,
+     928,
+     "boss"
+    ],
+    [
+     1742,
+     387,
+     928,
+     "boss"
+    ],
+    [
+     1746,
+     398,
+     928,
+     "boss"
+    ],
+    [
+     1747,
+     386,
+     935,
+     "minion"
+    ]
+   ],
+   "levyHitDmg": 14933,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     9507
+    ],
+    [
+     "other/-1/-1",
+     2318
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     2232
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     540
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     336
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_ravager_5.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c2",
+  "seed": 6,
+  "army": "eve_brimflame",
+  "boss": "ravager",
+  "result": "LOSS",
+  "sec": 55.1,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "10.8",
+  "bossMax": 320160.0,
+  "bossLeft": 89526.0,
+  "dmgBoss": 336157.0,
+  "potionsDrunk": "29",
+  "weaponDmg": "Morning_Star@44=73298 Dark_Harvest@46=49939 Morning_Star@55=39428 Dark_Harvest@3=34453 Dark_Harvest=24929 Morning_Star@46=24400 C:Apathanull@28=12368 C:Apathanull@59=11077 C:RealmRavager@17=6415 C:Wingman@83=5977 Stake_Launcher@37=5883 Sniper_Rifle@82=5579 C:HavocsBreath@82=5283 C:Apathanull@26=4806 C:Apathanull@37=4696 C:TrueArkoftheAncients@37=4458 C:RegulusRiot@Flawless=4447 C:Wingman@28=4394 C:TrueArkoftheAncients@60=3850 C:TheSyringe@Flawless=3430 Terra_Blade@4=2257 Terra_Blade@55=1929 Terra_Blade@46=1802 C:Malevolence@55=530 C:VernalBolter@82=493 C:DoomsdayDevice@Flawless=36 C:StarShower@55=0 C:TheMicrowave@55=0 C:StarShower@26=0",
+  "deathTimes": "10.8,10.9,12.9,12.9,12.9,12.9,12.9,12.9,12.9,12.9,16.4,18.5,22.8,23.0,23.0,23.0,26.8,26.8,26.8,26.8,26.8,26.9,26.9,26.9,27.0,29.1,29.1,29.1,29.1,29.3,31.3,42.6,52.9,55.1",
+  "classDmg": "P=310362 -=25795",
+  "dmgRMES": [
+   "24183",
+   "43318",
+   "14296",
+   "246447"
+  ],
+  "armyDps": 6100.9,
+  "perLevyDps": 179.4,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.784,
+    "Follow": 0.213,
+    "Resupply": 0.003
+   },
+   "notEngagedPct": 21.6,
+   "farOver50tilesPct": 38.7,
+   "meanDistToBoss": 44.6,
+   "crowdedPct": 67.4,
+   "deaths": [
+    [
+     628,
+     440,
+     928,
+     "boss"
+    ],
+    [
+     630,
+     412,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     418,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     419,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     421,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     422,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     427,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     430,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     431,
+     928,
+     "boss"
+    ],
+    [
+     749,
+     434,
+     928,
+     "boss"
+    ],
+    [
+     959,
+     436,
+     928,
+     "boss"
+    ],
+    [
+     1087,
+     437,
+     928,
+     "boss"
+    ],
+    [
+     1345,
+     429,
+     928,
+     "boss"
+    ],
+    [
+     1356,
+     416,
+     928,
+     "boss"
+    ],
+    [
+     1356,
+     420,
+     928,
+     "boss"
+    ],
+    [
+     1356,
+     428,
+     928,
+     "boss"
+    ],
+    [
+     1584,
+     441,
+     928,
+     "boss"
+    ],
+    [
+     1585,
+     417,
+     928,
+     "boss"
+    ],
+    [
+     1586,
+     433,
+     928,
+     "boss"
+    ],
+    [
+     1586,
+     442,
+     928,
+     "boss"
+    ],
+    [
+     1587,
+     432,
+     928,
+     "boss"
+    ],
+    [
+     1589,
+     413,
+     928,
+     "boss"
+    ],
+    [
+     1591,
+     435,
+     928,
+     "boss"
+    ],
+    [
+     1594,
+     424,
+     928,
+     "boss"
+    ],
+    [
+     1595,
+     438,
+     928,
+     "boss"
+    ],
+    [
+     1723,
+     410,
+     928,
+     "boss"
+    ],
+    [
+     1723,
+     423,
+     928,
+     "boss"
+    ],
+    [
+     1724,
+     411,
+     928,
+     "boss"
+    ],
+    [
+     1725,
+     409,
+     928,
+     "boss"
+    ],
+    [
+     1737,
+     415,
+     935,
+     "minion"
+    ],
+    [
+     1856,
+     414,
+     928,
+     "boss"
+    ],
+    [
+     2534,
+     439,
+     935,
+     "minion"
+    ],
+    [
+     3152,
+     426,
+     935,
+     "minion"
+    ],
+    [
+     3285,
+     425,
+     935,
+     "minion"
+    ]
+   ],
+   "levyHitDmg": 20746,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     14907
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     3302
+    ],
+    [
+     "other/-1/-1",
+     1913
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     444
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     180
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_ravager_6.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c2",
+  "seed": 7,
+  "army": "eve_brimflame",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 69.8,
+  "levies": 34,
+  "deaths": 32,
+  "firstDeathSec": "11.4",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 366544.0,
+  "potionsDrunk": "30",
+  "weaponDmg": "Dark_Harvest@3=53388 Dark_Harvest@46=52276 Dark_Harvest=50132 Morning_Star@44=48411 Morning_Star@55=47289 C:RealmRavager@17=11629 Sniper_Rifle@82=10737 C:Apathanull@37=9303 Stake_Launcher@37=9177 C:HavocsBreath@82=8678 C:Apathanull@26=7761 C:TheSyringe@Flawless=7742 C:Apathanull@59=7404 C:RegulusRiot@Flawless=6260 Morning_Star@46=5518 C:Apathanull@28=4912 Terra_Blade@4=4467 C:TrueArkoftheAncients@37=4275 C:TrueArkoftheAncients@60=3437 C:Wingman@28=3049 C:Wingman@83=2427 C:VernalBolter@82=2306 Terra_Blade@55=1848 Terra_Blade@46=1558 C:DoomsdayDevice@Flawless=1039 C:Malevolence@55=777 C:TheMicrowave@55=744 C:StarShower@55=0 C:StarShower@26=0",
+  "deathTimes": "11.4,13.8,13.8,13.8,13.9,13.9,16.4,18.6,18.6,18.7,18.7,20.9,20.9,20.9,21.0,23.1,23.1,23.4,25.6,25.6,25.7,25.7,25.7,25.8,25.8,25.8,27.8,28.3,42.7,44.6,51.0,59.4",
+  "classDmg": "P=330960 -=35584",
+  "dmgRMES": [
+   "43304",
+   "34856",
+   "16329",
+   "257014"
+  ],
+  "armyDps": 5251.3,
+  "perLevyDps": 154.5,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.742,
+    "Follow": 0.257,
+    "Resupply": 0.001
+   },
+   "notEngagedPct": 25.8,
+   "farOver50tilesPct": 33.9,
+   "meanDistToBoss": 44.0,
+   "crowdedPct": 40.9,
+   "deaths": [
+    [
+     659,
+     461,
+     928,
+     "boss"
+    ],
+    [
+     804,
+     475,
+     928,
+     "boss"
+    ],
+    [
+     805,
+     455,
+     928,
+     "boss"
+    ],
+    [
+     807,
+     468,
+     928,
+     "boss"
+    ],
+    [
+     811,
+     463,
+     928,
+     "boss"
+    ],
+    [
+     814,
+     466,
+     928,
+     "boss"
+    ],
+    [
+     959,
+     445,
+     928,
+     "boss"
+    ],
+    [
+     1094,
+     462,
+     928,
+     "boss"
+    ],
+    [
+     1095,
+     457,
+     928,
+     "boss"
+    ],
+    [
+     1097,
+     452,
+     928,
+     "boss"
+    ],
+    [
+     1099,
+     444,
+     928,
+     "boss"
+    ],
+    [
+     1232,
+     467,
+     928,
+     "boss"
+    ],
+    [
+     1232,
+     471,
+     928,
+     "boss"
+    ],
+    [
+     1232,
+     476,
+     928,
+     "boss"
+    ],
+    [
+     1235,
+     447,
+     928,
+     "boss"
+    ],
+    [
+     1362,
+     448,
+     928,
+     "boss"
+    ],
+    [
+     1363,
+     446,
+     928,
+     "boss"
+    ],
+    [
+     1380,
+     473,
+     928,
+     "boss"
+    ],
+    [
+     1512,
+     449,
+     928,
+     "boss"
+    ],
+    [
+     1514,
+     451,
+     928,
+     "boss"
+    ],
+    [
+     1521,
+     465,
+     928,
+     "boss"
+    ],
+    [
+     1522,
+     450,
+     928,
+     "boss"
+    ],
+    [
+     1522,
+     472,
+     928,
+     "boss"
+    ],
+    [
+     1525,
+     464,
+     928,
+     "boss"
+    ],
+    [
+     1526,
+     454,
+     928,
+     "boss"
+    ],
+    [
+     1528,
+     453,
+     935,
+     "minion"
+    ],
+    [
+     1644,
+     470,
+     928,
+     "boss"
+    ],
+    [
+     1675,
+     456,
+     935,
+     "minion"
+    ],
+    [
+     2541,
+     459,
+     935,
+     "minion"
+    ],
+    [
+     2653,
+     443,
+     935,
+     "minion"
+    ],
+    [
+     3036,
+     474,
+     935,
+     "minion"
+    ],
+    [
+     3543,
+     469,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 19819,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     13522
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     3927
+    ],
+    [
+     "other/-1/-1",
+     1812
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     346
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     212
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_ravager_7.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c2",
+  "seed": 8,
+  "army": "eve_brimflame",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 64.0,
+  "levies": 34,
+  "deaths": 32,
+  "firstDeathSec": "12.9",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 376693.0,
+  "potionsDrunk": "30",
+  "weaponDmg": "Dark_Harvest@46=66102 Morning_Star@44=55141 Morning_Star@55=50996 Morning_Star@46=45719 Dark_Harvest@3=42041 Dark_Harvest=25601 C:RealmRavager@17=10534 C:TrueArkoftheAncients@37=8211 C:Apathanull@26=7314 Sniper_Rifle@82=6403 C:Apathanull@37=5778 C:Apathanull@28=5757 C:RegulusRiot@Flawless=5298 C:TrueArkoftheAncients@60=5288 C:Wingman@28=4300 C:TheSyringe@Flawless=4252 C:Apathanull@59=4230 Stake_Launcher@37=4060 Terra_Blade@4=3735 C:Wingman@83=3525 C:TheMicrowave@55=3449 Terra_Blade@55=2633 C:Malevolence@55=2282 C:HavocsBreath@82=1848 Terra_Blade@46=1592 C:VernalBolter@82=527 C:DoomsdayDevice@Flawless=77 C:StarShower@55=0 C:StarShower@26=0",
+  "deathTimes": "12.9,13.1,15.7,18.0,20.2,20.3,20.3,20.3,20.3,22.2,22.3,22.3,22.5,22.5,22.5,22.5,22.5,22.6,24.7,24.7,24.8,24.8,27.8,27.8,27.8,30.8,30.8,37.9,40.4,41.4,53.5,53.6",
+  "classDmg": "P=347679 -=29014",
+  "dmgRMES": [
+   "25654",
+   "30904",
+   "24908",
+   "285600"
+  ],
+  "armyDps": 5885.8,
+  "perLevyDps": 173.1,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.698,
+    "Follow": 0.299,
+    "Resupply": 0.003
+   },
+   "notEngagedPct": 30.2,
+   "farOver50tilesPct": 35.1,
+   "meanDistToBoss": 42.8,
+   "crowdedPct": 41.5,
+   "deaths": [
+    [
+     751,
+     506,
+     928,
+     "boss"
+    ],
+    [
+     761,
+     509,
+     928,
+     "boss"
+    ],
+    [
+     921,
+     497,
+     928,
+     "boss"
+    ],
+    [
+     1058,
+     493,
+     928,
+     "boss"
+    ],
+    [
+     1190,
+     502,
+     928,
+     "boss"
+    ],
+    [
+     1196,
+     499,
+     928,
+     "boss"
+    ],
+    [
+     1196,
+     501,
+     928,
+     "boss"
+    ],
+    [
+     1197,
+     481,
+     928,
+     "boss"
+    ],
+    [
+     1198,
+     491,
+     928,
+     "boss"
+    ],
+    [
+     1308,
+     490,
+     928,
+     "boss"
+    ],
+    [
+     1313,
+     482,
+     928,
+     "boss"
+    ],
+    [
+     1318,
+     487,
+     928,
+     "boss"
+    ],
+    [
+     1326,
+     504,
+     928,
+     "boss"
+    ],
+    [
+     1326,
+     510,
+     928,
+     "boss"
+    ],
+    [
+     1327,
+     485,
+     928,
+     "boss"
+    ],
+    [
+     1327,
+     500,
+     928,
+     "boss"
+    ],
+    [
+     1328,
+     505,
+     928,
+     "boss"
+    ],
+    [
+     1332,
+     478,
+     928,
+     "boss"
+    ],
+    [
+     1459,
+     483,
+     928,
+     "boss"
+    ],
+    [
+     1459,
+     486,
+     928,
+     "boss"
+    ],
+    [
+     1464,
+     489,
+     928,
+     "boss"
+    ],
+    [
+     1464,
+     492,
+     928,
+     "boss"
+    ],
+    [
+     1647,
+     488,
+     928,
+     "boss"
+    ],
+    [
+     1647,
+     498,
+     928,
+     "boss"
+    ],
+    [
+     1648,
+     480,
+     928,
+     "boss"
+    ],
+    [
+     1823,
+     484,
+     928,
+     "boss"
+    ],
+    [
+     1824,
+     503,
+     935,
+     "minion"
+    ],
+    [
+     2252,
+     479,
+     928,
+     "boss"
+    ],
+    [
+     2404,
+     496,
+     928,
+     "boss"
+    ],
+    [
+     2460,
+     477,
+     935,
+     "minion"
+    ],
+    [
+     3186,
+     508,
+     928,
+     "boss"
+    ],
+    [
+     3192,
+     495,
+     935,
+     "minion"
+    ]
+   ],
+   "levyHitDmg": 19576,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     12160
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     4441
+    ],
+    [
+     "other/-1/-1",
+     2642
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     182
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     151
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_ravager_8.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c3",
+  "seed": 4,
+  "army": "eve_brimflame",
+  "boss": "eol",
+  "result": "LOSS",
+  "sec": 51.8,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "7.1",
+  "bossMax": 212415.0,
+  "bossLeft": 64192.0,
+  "dmgBoss": 272347.0,
+  "potionsDrunk": "31",
+  "weaponDmg": "Morning_Star@44=53888 Dark_Harvest@46=42411 Dark_Harvest@3=22462 Sniper_Rifle@82=14685 Morning_Star@55=14669 C:Apathanull@26=14528 C:Apathanull@59=13482 C:Apathanull@37=11239 Morning_Star@46=10708 Stake_Launcher@37=9068 C:Apathanull@28=7871 C:Malevolence@55=6707 C:RealmRavager@17=6277 C:TrueArkoftheAncients@60=6176 C:TrueArkoftheAncients@37=5683 C:RegulusRiot@Flawless=5474 C:TheMicrowave@55=5458 Dark_Harvest=4188 C:TheSyringe@Flawless=3372 C:VernalBolter@82=3330 C:Wingman@28=2811 C:HavocsBreath@82=2496 Terra_Blade@55=1649 C:Wingman@83=1581 Terra_Blade@4=1041 Terra_Blade@46=960 C:DoomsdayDevice@Flawless=133 C:StarShower@55=0 C:StarShower@26=0",
+  "deathTimes": "7.1,7.1,12.0,12.0,13.8,13.9,19.7,22.6,23.4,27.6,27.7,27.8,27.9,29.6,30.5,30.5,30.7,31.6,31.8,32.4,32.7,32.9,33.7,34.1,34.5,35.5,35.9,36.0,37.8,38.5,39.7,40.1,41.9,51.8",
+  "classDmg": "P=243621 -=28726",
+  "dmgRMES": [
+   "42563",
+   "51512",
+   "20967",
+   "148326"
+  ],
+  "armyDps": 5257.7,
+  "perLevyDps": 154.6,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.521,
+    "Follow": 0.478,
+    "Resupply": 0.001
+   },
+   "notEngagedPct": 47.9,
+   "farOver50tilesPct": 39.2,
+   "meanDistToBoss": 45.9,
+   "crowdedPct": 36.1,
+   "deaths": [
+    [
+     403,
+     512,
+     636,
+     "boss"
+    ],
+    [
+     405,
+     526,
+     636,
+     "boss"
+    ],
+    [
+     698,
+     523,
+     636,
+     "boss"
+    ],
+    [
+     699,
+     544,
+     636,
+     "boss"
+    ],
+    [
+     807,
+     517,
+     636,
+     "boss"
+    ],
+    [
+     812,
+     522,
+     636,
+     "boss"
+    ],
+    [
+     1162,
+     540,
+     636,
+     "boss"
+    ],
+    [
+     1334,
+     536,
+     636,
+     "boss"
+    ],
+    [
+     1384,
+     520,
+     636,
+     "boss"
+    ],
+    [
+     1635,
+     539,
+     636,
+     "boss"
+    ],
+    [
+     1642,
+     513,
+     636,
+     "boss"
+    ],
+    [
+     1645,
+     543,
+     636,
+     "boss"
+    ],
+    [
+     1651,
+     537,
+     636,
+     "boss"
+    ],
+    [
+     1754,
+     538,
+     636,
+     "boss"
+    ],
+    [
+     1807,
+     535,
+     636,
+     "boss"
+    ],
+    [
+     1810,
+     541,
+     636,
+     "boss"
+    ],
+    [
+     1821,
+     531,
+     636,
+     "boss"
+    ],
+    [
+     1871,
+     519,
+     636,
+     "boss"
+    ],
+    [
+     1886,
+     525,
+     636,
+     "boss"
+    ],
+    [
+     1921,
+     516,
+     636,
+     "boss"
+    ],
+    [
+     1938,
+     530,
+     636,
+     "boss"
+    ],
+    [
+     1950,
+     521,
+     636,
+     "boss"
+    ],
+    [
+     2002,
+     534,
+     636,
+     "boss"
+    ],
+    [
+     2026,
+     542,
+     636,
+     "boss"
+    ],
+    [
+     2049,
+     518,
+     636,
+     "boss"
+    ],
+    [
+     2106,
+     515,
+     636,
+     "boss"
+    ],
+    [
+     2131,
+     527,
+     636,
+     "boss"
+    ],
+    [
+     2135,
+     532,
+     636,
+     "boss"
+    ],
+    [
+     2248,
+     524,
+     636,
+     "boss"
+    ],
+    [
+     2285,
+     529,
+     636,
+     "boss"
+    ],
+    [
+     2360,
+     528,
+     636,
+     "boss"
+    ],
+    [
+     2386,
+     511,
+     636,
+     "boss"
+    ],
+    [
+     2494,
+     533,
+     636,
+     "boss"
+    ],
+    [
+     3083,
+     514,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 21695,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     9450
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     5292
+    ],
+    [
+     "proj/Empress of Light/Sun Dance",
+     3422
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     1842
+    ],
+    [
+     "body/Empress of Light/-1",
+     1689
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_eol_4.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c3",
+  "seed": 5,
+  "army": "eve_brimflame",
+  "boss": "eol",
+  "result": "LOSS",
+  "sec": 48.2,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "12.5",
+  "bossMax": 212415.0,
+  "bossLeft": 114891.0,
+  "dmgBoss": 215263.0,
+  "potionsDrunk": "34",
+  "weaponDmg": "Morning_Star@44=47986 Dark_Harvest@46=33550 Dark_Harvest=21209 Dark_Harvest@3=11511 C:TrueArkoftheAncients@37=8980 C:Apathanull@26=7987 C:Apathanull@37=7005 C:TheMicrowave@55=6811 C:Apathanull@59=6567 Morning_Star@55=6371 C:Apathanull@28=6038 C:RealmRavager@17=5831 C:RegulusRiot@Flawless=5534 C:Wingman@28=4684 Sniper_Rifle@82=4330 C:TrueArkoftheAncients@60=3888 C:VernalBolter@82=3478 Terra_Blade@4=3404 C:Malevolence@55=3373 Morning_Star@46=3090 C:TheSyringe@Flawless=2758 Stake_Launcher@37=2468 Terra_Blade@55=2117 C:Wingman@83=2079 Terra_Blade@46=2002 C:HavocsBreath@82=1916 C:DoomsdayDevice@Flawless=296 C:StarShower@55=0 C:StarShower@26=0",
+  "deathTimes": "12.5,12.7,12.7,12.7,12.7,12.7,12.8,12.9,13.2,13.2,13.3,13.3,13.3,13.4,13.9,19.8,20.6,21.2,22.1,22.1,22.1,22.1,22.3,22.9,22.9,23.0,23.6,27.9,30.1,42.0,44.9,45.0,46.9,48.2",
+  "classDmg": "P=195581 -=19682",
+  "dmgRMES": [
+   "21396",
+   "34360",
+   "27202",
+   "123717"
+  ],
+  "armyDps": 4466.0,
+  "perLevyDps": 131.4,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.587,
+    "Engage": 0.413
+   },
+   "notEngagedPct": 58.7,
+   "farOver50tilesPct": 32.9,
+   "meanDistToBoss": 42.9,
+   "crowdedPct": 34.8,
+   "deaths": [
+    [
+     728,
+     557,
+     636,
+     "boss"
+    ],
+    [
+     737,
+     565,
+     636,
+     "boss"
+    ],
+    [
+     737,
+     568,
+     636,
+     "boss"
+    ],
+    [
+     737,
+     577,
+     636,
+     "boss"
+    ],
+    [
+     740,
+     569,
+     636,
+     "boss"
+    ],
+    [
+     741,
+     572,
+     636,
+     "boss"
+    ],
+    [
+     745,
+     553,
+     636,
+     "boss"
+    ],
+    [
+     752,
+     570,
+     636,
+     "boss"
+    ],
+    [
+     767,
+     551,
+     636,
+     "boss"
+    ],
+    [
+     772,
+     574,
+     636,
+     "boss"
+    ],
+    [
+     773,
+     556,
+     636,
+     "boss"
+    ],
+    [
+     773,
+     558,
+     636,
+     "boss"
+    ],
+    [
+     775,
+     564,
+     636,
+     "boss"
+    ],
+    [
+     782,
+     552,
+     636,
+     "boss"
+    ],
+    [
+     811,
+     555,
+     636,
+     "boss"
+    ],
+    [
+     1165,
+     550,
+     636,
+     "boss"
+    ],
+    [
+     1214,
+     549,
+     636,
+     "boss"
+    ],
+    [
+     1249,
+     560,
+     636,
+     "boss"
+    ],
+    [
+     1303,
+     554,
+     636,
+     "boss"
+    ],
+    [
+     1303,
+     546,
+     636,
+     "boss"
+    ],
+    [
+     1305,
+     578,
+     636,
+     "boss"
+    ],
+    [
+     1305,
+     575,
+     636,
+     "boss"
+    ],
+    [
+     1313,
+     566,
+     636,
+     "boss"
+    ],
+    [
+     1351,
+     567,
+     636,
+     "boss"
+    ],
+    [
+     1352,
+     573,
+     636,
+     "boss"
+    ],
+    [
+     1356,
+     547,
+     636,
+     "boss"
+    ],
+    [
+     1392,
+     562,
+     636,
+     "boss"
+    ],
+    [
+     1649,
+     559,
+     636,
+     "boss"
+    ],
+    [
+     1784,
+     548,
+     636,
+     "boss"
+    ],
+    [
+     2500,
+     545,
+     636,
+     "boss"
+    ],
+    [
+     2670,
+     571,
+     636,
+     "boss"
+    ],
+    [
+     2678,
+     576,
+     636,
+     "boss"
+    ],
+    [
+     2794,
+     563,
+     636,
+     "boss"
+    ],
+    [
+     2871,
+     561,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 21110,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Sun Dance",
+     10705
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     6058
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     3610
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     452
+    ],
+    [
+     "body/Empress of Light/-1",
+     285
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_eol_5.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c3",
+  "seed": 6,
+  "army": "eve_brimflame",
+  "boss": "eol",
+  "result": "LOSS",
+  "sec": 57.8,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "7.0",
+  "bossMax": 212415.0,
+  "bossLeft": 37236.0,
+  "dmgBoss": 281034.0,
+  "potionsDrunk": "27",
+  "weaponDmg": "Dark_Harvest@46=65325 Morning_Star@55=39517 Morning_Star@44=31704 Dark_Harvest@3=24003 C:Apathanull@26=14924 C:RegulusRiot@Flawless=12563 Dark_Harvest=11213 C:Apathanull@37=10883 C:RealmRavager@17=9420 Morning_Star@46=7302 C:Apathanull@28=6785 C:TrueArkoftheAncients@60=6170 C:Apathanull@59=6010 Terra_Blade@4=5879 C:TheSyringe@Flawless=5833 C:VernalBolter@82=3249 C:TrueArkoftheAncients@37=2871 Terra_Blade@55=2554 Sniper_Rifle@82=2443 C:HavocsBreath@82=2414 C:TheMicrowave@55=2347 C:Wingman@28=2294 C:Wingman@83=1560 Terra_Blade@46=1491 C:Malevolence@55=1183 Stake_Launcher@37=1097 C:StarShower@55=0 C:StarShower@26=0 C:DoomsdayDevice@Flawless=0",
+  "deathTimes": "7.0,7.2,7.2,7.2,7.2,8.8,11.2,11.3,11.8,11.8,12.3,13.0,13.0,20.6,21.4,22.4,23.2,27.5,27.5,27.5,27.5,27.5,27.5,27.7,31.6,32.4,32.5,33.5,36.0,41.9,42.7,43.7,54.3,57.8",
+  "classDmg": "P=259484 -=21550",
+  "dmgRMES": [
+   "19806",
+   "42456",
+   "21312",
+   "179064"
+  ],
+  "armyDps": 4862.2,
+  "perLevyDps": 143.0,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.574,
+    "Engage": 0.426,
+    "Resupply": 0.0
+   },
+   "notEngagedPct": 57.4,
+   "farOver50tilesPct": 38.4,
+   "meanDistToBoss": 45.1,
+   "crowdedPct": 28.7,
+   "deaths": [
+    [
+     398,
+     604,
+     636,
+     "boss"
+    ],
+    [
+     407,
+     586,
+     636,
+     "boss"
+    ],
+    [
+     407,
+     607,
+     636,
+     "boss"
+    ],
+    [
+     409,
+     589,
+     636,
+     "boss"
+    ],
+    [
+     409,
+     592,
+     636,
+     "boss"
+    ],
+    [
+     503,
+     591,
+     636,
+     "boss"
+    ],
+    [
+     647,
+     588,
+     636,
+     "boss"
+    ],
+    [
+     655,
+     606,
+     636,
+     "boss"
+    ],
+    [
+     683,
+     612,
+     636,
+     "boss"
+    ],
+    [
+     684,
+     599,
+     636,
+     "boss"
+    ],
+    [
+     716,
+     584,
+     636,
+     "boss"
+    ],
+    [
+     757,
+     608,
+     636,
+     "boss"
+    ],
+    [
+     759,
+     587,
+     636,
+     "boss"
+    ],
+    [
+     1212,
+     609,
+     636,
+     "boss"
+    ],
+    [
+     1260,
+     582,
+     636,
+     "boss"
+    ],
+    [
+     1324,
+     590,
+     636,
+     "boss"
+    ],
+    [
+     1372,
+     597,
+     636,
+     "boss"
+    ],
+    [
+     1630,
+     581,
+     636,
+     "boss"
+    ],
+    [
+     1630,
+     585,
+     636,
+     "boss"
+    ],
+    [
+     1630,
+     594,
+     636,
+     "boss"
+    ],
+    [
+     1630,
+     601,
+     636,
+     "boss"
+    ],
+    [
+     1630,
+     603,
+     636,
+     "boss"
+    ],
+    [
+     1630,
+     611,
+     636,
+     "boss"
+    ],
+    [
+     1641,
+     580,
+     636,
+     "boss"
+    ],
+    [
+     1876,
+     583,
+     636,
+     "boss"
+    ],
+    [
+     1919,
+     598,
+     636,
+     "boss"
+    ],
+    [
+     1927,
+     596,
+     636,
+     "boss"
+    ],
+    [
+     1986,
+     602,
+     636,
+     "boss"
+    ],
+    [
+     2136,
+     593,
+     636,
+     "boss"
+    ],
+    [
+     2494,
+     610,
+     636,
+     "boss"
+    ],
+    [
+     2540,
+     595,
+     636,
+     "boss"
+    ],
+    [
+     2600,
+     605,
+     636,
+     "boss"
+    ],
+    [
+     3236,
+     579,
+     636,
+     "boss"
+    ],
+    [
+     3445,
+     600,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 20666,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     5629
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     5407
+    ],
+    [
+     "proj/Empress of Light/Sun Dance",
+     5304
+    ],
+    [
+     "body/Empress of Light/-1",
+     4043
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     283
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_eol_6.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c3",
+  "seed": 7,
+  "army": "eve_brimflame",
+  "boss": "eol",
+  "result": "LOSS",
+  "sec": 59.7,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "6.8",
+  "bossMax": 212415.0,
+  "bossLeft": 92627.0,
+  "dmgBoss": 239530.0,
+  "potionsDrunk": "32",
+  "weaponDmg": "Dark_Harvest@46=43917 Dark_Harvest@3=37063 Morning_Star@44=32203 C:Apathanull@59=11854 C:Apathanull@28=11811 C:Apathanull@26=9008 C:TheSyringe@Flawless=8580 Morning_Star@46=8367 Dark_Harvest=8223 C:Apathanull@37=7653 C:RealmRavager@17=5450 C:RegulusRiot@Flawless=5396 C:HavocsBreath@82=5370 Morning_Star@55=5298 C:TrueArkoftheAncients@60=4762 Sniper_Rifle@82=4459 C:Wingman@28=4330 C:TheMicrowave@55=4122 C:Malevolence@55=3447 Stake_Launcher@37=3151 Terra_Blade@55=3111 C:TrueArkoftheAncients@37=2887 Terra_Blade@46=2794 Terra_Blade@4=2109 C:Wingman@83=2073 C:VernalBolter@82=2046 C:DoomsdayDevice@Flawless=46 C:StarShower@55=0 C:StarShower@26=0",
+  "deathTimes": "6.8,12.2,12.2,12.2,13.1,13.1,13.2,13.3,13.4,13.8,20.1,20.2,22.1,22.2,23.1,23.1,24.3,26.4,26.5,29.4,30.4,31.0,33.0,38.7,39.1,39.3,39.3,42.9,43.9,50.9,51.8,52.0,57.5,59.7",
+  "classDmg": "P=214638 -=24892",
+  "dmgRMES": [
+   "23923",
+   "46729",
+   "19785",
+   "135071"
+  ],
+  "armyDps": 4012.2,
+  "perLevyDps": 118.0,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.571,
+    "Engage": 0.429
+   },
+   "notEngagedPct": 57.1,
+   "farOver50tilesPct": 44.6,
+   "meanDistToBoss": 48.3,
+   "crowdedPct": 26.5,
+   "deaths": [
+    [
+     384,
+     628,
+     636,
+     "boss"
+    ],
+    [
+     707,
+     637,
+     636,
+     "boss"
+    ],
+    [
+     707,
+     645,
+     636,
+     "boss"
+    ],
+    [
+     707,
+     646,
+     636,
+     "boss"
+    ],
+    [
+     762,
+     623,
+     636,
+     "boss"
+    ],
+    [
+     764,
+     626,
+     636,
+     "boss"
+    ],
+    [
+     772,
+     625,
+     636,
+     "boss"
+    ],
+    [
+     776,
+     636,
+     636,
+     "boss"
+    ],
+    [
+     782,
+     638,
+     636,
+     "boss"
+    ],
+    [
+     808,
+     624,
+     636,
+     "boss"
+    ],
+    [
+     1181,
+     632,
+     636,
+     "boss"
+    ],
+    [
+     1191,
+     620,
+     636,
+     "boss"
+    ],
+    [
+     1303,
+     641,
+     636,
+     "boss"
+    ],
+    [
+     1310,
+     640,
+     636,
+     "boss"
+    ],
+    [
+     1363,
+     642,
+     636,
+     "boss"
+    ],
+    [
+     1365,
+     622,
+     636,
+     "boss"
+    ],
+    [
+     1436,
+     633,
+     636,
+     "boss"
+    ],
+    [
+     1561,
+     635,
+     636,
+     "boss"
+    ],
+    [
+     1570,
+     621,
+     636,
+     "boss"
+    ],
+    [
+     1740,
+     618,
+     636,
+     "boss"
+    ],
+    [
+     1802,
+     634,
+     636,
+     "boss"
+    ],
+    [
+     1839,
+     616,
+     636,
+     "boss"
+    ],
+    [
+     1958,
+     643,
+     636,
+     "boss"
+    ],
+    [
+     2297,
+     614,
+     636,
+     "boss"
+    ],
+    [
+     2324,
+     644,
+     636,
+     "boss"
+    ],
+    [
+     2335,
+     631,
+     636,
+     "boss"
+    ],
+    [
+     2338,
+     619,
+     636,
+     "boss"
+    ],
+    [
+     2552,
+     617,
+     636,
+     "boss"
+    ],
+    [
+     2611,
+     615,
+     636,
+     "boss"
+    ],
+    [
+     3034,
+     639,
+     636,
+     "boss"
+    ],
+    [
+     3084,
+     629,
+     636,
+     "boss"
+    ],
+    [
+     3097,
+     627,
+     636,
+     "boss"
+    ],
+    [
+     3427,
+     613,
+     636,
+     "boss"
+    ],
+    [
+     3561,
+     630,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 22591,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Sun Dance",
+     8193
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     6945
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     5172
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     1544
+    ],
+    [
+     "body/Empress of Light/-1",
+     737
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_eol_7.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c3",
+  "seed": 8,
+  "army": "eve_brimflame",
+  "boss": "eol",
+  "result": "LOSS",
+  "sec": 58.2,
+  "levies": 34,
+  "deaths": 34,
+  "firstDeathSec": "7.1",
+  "bossMax": 212415.0,
+  "bossLeft": 35231.0,
+  "dmgBoss": 294266.0,
+  "potionsDrunk": "28",
+  "weaponDmg": "Dark_Harvest@46=55351 Dark_Harvest@3=50178 Morning_Star@44=43985 C:Apathanull@26=15093 C:Apathanull@37=13526 C:RegulusRiot@Flawless=12778 C:Apathanull@59=12044 Dark_Harvest=11562 Morning_Star@55=10989 C:Apathanull@28=10965 Sniper_Rifle@82=8901 C:TheSyringe@Flawless=8271 C:Wingman@28=6530 Morning_Star@46=5138 C:TrueArkoftheAncients@37=3655 Terra_Blade@55=3245 C:VernalBolter@82=3243 C:TrueArkoftheAncients@60=3073 C:RealmRavager@17=2822 Terra_Blade@46=2670 C:HavocsBreath@82=2242 Terra_Blade@4=1865 C:Malevolence@55=1826 C:Wingman@83=1711 Stake_Launcher@37=1623 C:TheMicrowave@55=929 C:DoomsdayDevice@Flawless=51 C:StarShower@55=0 C:StarShower@26=0",
+  "deathTimes": "7.1,7.1,7.1,7.1,7.2,11.4,12.0,12.0,12.6,12.8,12.8,12.9,13.7,22.4,26.9,27.4,28.7,30.0,30.2,30.5,30.8,32.7,32.7,34.2,35.4,36.3,41.6,42.2,42.3,43.5,44.9,46.9,51.6,58.2",
+  "classDmg": "P=266031 -=28235",
+  "dmgRMES": [
+   "20657",
+   "59869",
+   "15437",
+   "177203"
+  ],
+  "armyDps": 5056.1,
+  "perLevyDps": 148.7,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.589,
+    "Engage": 0.411
+   },
+   "notEngagedPct": 58.9,
+   "farOver50tilesPct": 39.6,
+   "meanDistToBoss": 45.3,
+   "crowdedPct": 32.6,
+   "deaths": [
+    [
+     403,
+     658,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     657,
+     636,
+     "boss"
+    ],
+    [
+     404,
+     662,
+     636,
+     "boss"
+    ],
+    [
+     406,
+     670,
+     636,
+     "boss"
+    ],
+    [
+     407,
+     654,
+     636,
+     "boss"
+    ],
+    [
+     659,
+     659,
+     636,
+     "boss"
+    ],
+    [
+     696,
+     674,
+     636,
+     "boss"
+    ],
+    [
+     698,
+     656,
+     636,
+     "boss"
+    ],
+    [
+     732,
+     667,
+     636,
+     "boss"
+    ],
+    [
+     747,
+     651,
+     636,
+     "boss"
+    ],
+    [
+     748,
+     675,
+     636,
+     "boss"
+    ],
+    [
+     750,
+     680,
+     636,
+     "boss"
+    ],
+    [
+     798,
+     652,
+     636,
+     "boss"
+    ],
+    [
+     1319,
+     676,
+     636,
+     "boss"
+    ],
+    [
+     1593,
+     660,
+     636,
+     "boss"
+    ],
+    [
+     1623,
+     655,
+     636,
+     "boss"
+    ],
+    [
+     1697,
+     677,
+     636,
+     "boss"
+    ],
+    [
+     1775,
+     666,
+     636,
+     "boss"
+    ],
+    [
+     1792,
+     650,
+     636,
+     "boss"
+    ],
+    [
+     1805,
+     679,
+     636,
+     "boss"
+    ],
+    [
+     1827,
+     669,
+     636,
+     "boss"
+    ],
+    [
+     1937,
+     671,
+     636,
+     "boss"
+    ],
+    [
+     1941,
+     648,
+     636,
+     "boss"
+    ],
+    [
+     2029,
+     665,
+     636,
+     "boss"
+    ],
+    [
+     2101,
+     653,
+     636,
+     "boss"
+    ],
+    [
+     2158,
+     649,
+     636,
+     "boss"
+    ],
+    [
+     2471,
+     672,
+     636,
+     "boss"
+    ],
+    [
+     2512,
+     678,
+     636,
+     "boss"
+    ],
+    [
+     2516,
+     668,
+     636,
+     "boss"
+    ],
+    [
+     2587,
+     673,
+     636,
+     "boss"
+    ],
+    [
+     2669,
+     663,
+     636,
+     "boss"
+    ],
+    [
+     2792,
+     661,
+     636,
+     "boss"
+    ],
+    [
+     3075,
+     664,
+     636,
+     "boss"
+    ],
+    [
+     3469,
+     647,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 21509,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     7747
+    ],
+    [
+     "proj/Empress of Light/Sun Dance",
+     5045
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     4609
+    ],
+    [
+     "body/Empress of Light/-1",
+     2718
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     1390
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/eve_brimflame_eol_8.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c4",
+  "seed": 1,
+  "army": "optimal",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 29.3,
+  "levies": 34,
+  "deaths": 21,
+  "firstDeathSec": "12.0",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 336861.0,
+  "potionsDrunk": "21",
+  "weaponDmg": "Morning_Star@Legendary=178809 C:StarSputter@Unreal=66227 Vortex_Beater@Unreal=42526 Solar_Eruption@Godly=28803 Chlorophyte_Saber@Legendary=20496 Daybreak@Godly=0",
+  "deathTimes": "12.0,12.2,12.3,12.9,12.9,13.0,13.0,13.1,13.1,13.2,13.2,13.2,13.2,13.3,15.8,16.0,16.0,18.6,18.6,18.7,18.8",
+  "classDmg": "P=228108 -=108753",
+  "dmgRMES": [
+   "108753",
+   "0",
+   "49299",
+   "178809"
+  ],
+  "armyDps": 11497.0,
+  "perLevyDps": 338.1,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.549,
+    "Engage": 0.451
+   },
+   "notEngagedPct": 54.9,
+   "farOver50tilesPct": 41.9,
+   "meanDistToBoss": 49.1,
+   "crowdedPct": 49.9,
+   "deaths": [
+    [
+     696,
+     697,
+     930,
+     "minion"
+    ],
+    [
+     711,
+     688,
+     927,
+     "minion"
+    ],
+    [
+     716,
+     696,
+     928,
+     "boss"
+    ],
+    [
+     751,
+     707,
+     928,
+     "boss"
+    ],
+    [
+     752,
+     706,
+     928,
+     "boss"
+    ],
+    [
+     758,
+     709,
+     928,
+     "boss"
+    ],
+    [
+     760,
+     712,
+     928,
+     "boss"
+    ],
+    [
+     761,
+     705,
+     928,
+     "boss"
+    ],
+    [
+     761,
+     711,
+     928,
+     "boss"
+    ],
+    [
+     767,
+     694,
+     930,
+     "minion"
+    ],
+    [
+     768,
+     691,
+     928,
+     "boss"
+    ],
+    [
+     769,
+     698,
+     928,
+     "boss"
+    ],
+    [
+     772,
+     692,
+     930,
+     "minion"
+    ],
+    [
+     775,
+     695,
+     928,
+     "boss"
+    ],
+    [
+     925,
+     687,
+     928,
+     "boss"
+    ],
+    [
+     938,
+     690,
+     935,
+     "minion"
+    ],
+    [
+     938,
+     693,
+     935,
+     "minion"
+    ],
+    [
+     1096,
+     708,
+     928,
+     "boss"
+    ],
+    [
+     1096,
+     713,
+     928,
+     "boss"
+    ],
+    [
+     1097,
+     714,
+     928,
+     "boss"
+    ],
+    [
+     1105,
+     689,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 14798,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     9664
+    ],
+    [
+     "minion/Ravager/-1",
+     2464
+    ],
+    [
+     "other/-1/-1",
+     1732
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     392
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     314
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ravager_1.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c4",
+  "seed": 2,
+  "army": "optimal",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 27.8,
+  "levies": 34,
+  "deaths": 22,
+  "firstDeathSec": "8.0",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 327235.0,
+  "potionsDrunk": "22",
+  "weaponDmg": "Morning_Star@Legendary=193269 C:StarSputter@Unreal=56904 Vortex_Beater@Unreal=35821 Chlorophyte_Saber@Legendary=21204 Solar_Eruption@Godly=20037 Daybreak@Godly=0",
+  "deathTimes": "8.0,8.0,9.4,9.4,12.2,12.2,12.3,12.3,12.5,13.0,13.0,13.0,13.1,13.1,13.1,13.1,13.3,13.3,13.4,16.4,23.4,23.4",
+  "classDmg": "P=234510 -=92725",
+  "dmgRMES": [
+   "92725",
+   "0",
+   "41241",
+   "193269"
+  ],
+  "armyDps": 11771.0,
+  "perLevyDps": 346.2,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.597,
+    "Engage": 0.403
+   },
+   "notEngagedPct": 59.7,
+   "farOver50tilesPct": 43.6,
+   "meanDistToBoss": 49.7,
+   "crowdedPct": 56.1,
+   "deaths": [
+    [
+     456,
+     728,
+     930,
+     "minion"
+    ],
+    [
+     456,
+     741,
+     930,
+     "minion"
+    ],
+    [
+     540,
+     723,
+     928,
+     "boss"
+    ],
+    [
+     540,
+     731,
+     928,
+     "boss"
+    ],
+    [
+     713,
+     722,
+     930,
+     "minion"
+    ],
+    [
+     713,
+     726,
+     930,
+     "minion"
+    ],
+    [
+     717,
+     724,
+     930,
+     "minion"
+    ],
+    [
+     717,
+     730,
+     928,
+     "boss"
+    ],
+    [
+     731,
+     742,
+     928,
+     "boss"
+    ],
+    [
+     760,
+     740,
+     928,
+     "boss"
+    ],
+    [
+     761,
+     739,
+     928,
+     "boss"
+    ],
+    [
+     761,
+     747,
+     928,
+     "boss"
+    ],
+    [
+     763,
+     745,
+     928,
+     "boss"
+    ],
+    [
+     764,
+     744,
+     928,
+     "boss"
+    ],
+    [
+     765,
+     748,
+     928,
+     "boss"
+    ],
+    [
+     766,
+     746,
+     928,
+     "boss"
+    ],
+    [
+     774,
+     725,
+     930,
+     "minion"
+    ],
+    [
+     777,
+     732,
+     930,
+     "minion"
+    ],
+    [
+     784,
+     721,
+     930,
+     "minion"
+    ],
+    [
+     962,
+     743,
+     928,
+     "boss"
+    ],
+    [
+     1383,
+     727,
+     928,
+     "boss"
+    ],
+    [
+     1383,
+     729,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 14697,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     10226
+    ],
+    [
+     "minion/Ravager/-1",
+     2569
+    ],
+    [
+     "other/-1/-1",
+     1239
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     553
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     90
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ravager_2.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c4",
+  "seed": 3,
+  "army": "optimal",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 31.1,
+  "levies": 34,
+  "deaths": 22,
+  "firstDeathSec": "8.1",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 330087.0,
+  "potionsDrunk": "23",
+  "weaponDmg": "Morning_Star@Legendary=177808 C:StarSputter@Unreal=56242 Vortex_Beater@Unreal=40377 Solar_Eruption@Godly=29070 Chlorophyte_Saber@Legendary=26590 Daybreak@Godly=0",
+  "deathTimes": "8.1,13.0,13.0,13.0,13.0,13.0,13.1,13.1,13.1,13.2,13.2,13.2,13.2,13.2,13.3,13.3,14.5,22.4,22.5,24.7,24.8,26.7",
+  "classDmg": "P=233468 -=96619",
+  "dmgRMES": [
+   "96619",
+   "0",
+   "55660",
+   "177808"
+  ],
+  "armyDps": 10613.7,
+  "perLevyDps": 312.2,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.586,
+    "Engage": 0.414
+   },
+   "notEngagedPct": 58.6,
+   "farOver50tilesPct": 42.8,
+   "meanDistToBoss": 49.3,
+   "crowdedPct": 48.6,
+   "deaths": [
+    [
+     463,
+     776,
+     929,
+     "minion"
+    ],
+    [
+     760,
+     778,
+     928,
+     "boss"
+    ],
+    [
+     760,
+     779,
+     928,
+     "boss"
+    ],
+    [
+     761,
+     756,
+     928,
+     "boss"
+    ],
+    [
+     761,
+     774,
+     928,
+     "boss"
+    ],
+    [
+     761,
+     780,
+     928,
+     "boss"
+    ],
+    [
+     762,
+     773,
+     928,
+     "boss"
+    ],
+    [
+     764,
+     775,
+     928,
+     "boss"
+    ],
+    [
+     767,
+     755,
+     928,
+     "boss"
+    ],
+    [
+     769,
+     781,
+     928,
+     "boss"
+    ],
+    [
+     770,
+     759,
+     928,
+     "boss"
+    ],
+    [
+     770,
+     765,
+     928,
+     "boss"
+    ],
+    [
+     771,
+     766,
+     930,
+     "minion"
+    ],
+    [
+     773,
+     764,
+     928,
+     "boss"
+    ],
+    [
+     774,
+     758,
+     928,
+     "boss"
+    ],
+    [
+     775,
+     760,
+     928,
+     "boss"
+    ],
+    [
+     847,
+     761,
+     928,
+     "boss"
+    ],
+    [
+     1322,
+     762,
+     928,
+     "boss"
+    ],
+    [
+     1331,
+     763,
+     928,
+     "boss"
+    ],
+    [
+     1458,
+     777,
+     935,
+     "minion"
+    ],
+    [
+     1467,
+     782,
+     928,
+     "boss"
+    ],
+    [
+     1583,
+     757,
+     935,
+     "minion"
+    ]
+   ],
+   "levyHitDmg": 15478,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     10133
+    ],
+    [
+     "other/-1/-1",
+     2109
+    ],
+    [
+     "minion/Ravager/-1",
+     1392
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     1137
+    ],
+    [
+     "minion/Ravager/-1",
+     288
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ravager_3.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c4",
+  "seed": 4,
+  "army": "optimal",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 27.2,
+  "levies": 34,
+  "deaths": 22,
+  "firstDeathSec": "9.4",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 329220.0,
+  "potionsDrunk": "21",
+  "weaponDmg": "Morning_Star@Legendary=175774 C:StarSputter@Unreal=69920 Vortex_Beater@Unreal=40941 Solar_Eruption@Godly=22733 Chlorophyte_Saber@Legendary=19852 Daybreak@Godly=0",
+  "deathTimes": "9.4,9.4,12.3,12.3,12.3,12.3,12.3,12.3,12.3,12.3,13.2,14.1,14.3,14.3,14.9,15.2,15.2,15.2,25.3,25.4,25.5,25.6",
+  "classDmg": "P=218359 -=110861",
+  "dmgRMES": [
+   "110861",
+   "0",
+   "42585",
+   "175774"
+  ],
+  "armyDps": 12103.7,
+  "perLevyDps": 356.0,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.573,
+    "Engage": 0.427
+   },
+   "notEngagedPct": 57.3,
+   "farOver50tilesPct": 43.4,
+   "meanDistToBoss": 49.5,
+   "crowdedPct": 55.9,
+   "deaths": [
+    [
+     540,
+     791,
+     928,
+     "boss"
+    ],
+    [
+     540,
+     796,
+     928,
+     "boss"
+    ],
+    [
+     718,
+     789,
+     928,
+     "boss"
+    ],
+    [
+     718,
+     792,
+     930,
+     "minion"
+    ],
+    [
+     718,
+     794,
+     930,
+     "minion"
+    ],
+    [
+     718,
+     795,
+     928,
+     "boss"
+    ],
+    [
+     718,
+     797,
+     928,
+     "boss"
+    ],
+    [
+     718,
+     798,
+     928,
+     "boss"
+    ],
+    [
+     718,
+     799,
+     928,
+     "boss"
+    ],
+    [
+     718,
+     800,
+     928,
+     "boss"
+    ],
+    [
+     768,
+     793,
+     930,
+     "minion"
+    ],
+    [
+     825,
+     808,
+     931,
+     "minion"
+    ],
+    [
+     838,
+     790,
+     928,
+     "boss"
+    ],
+    [
+     838,
+     810,
+     928,
+     "boss"
+    ],
+    [
+     872,
+     816,
+     928,
+     "boss"
+    ],
+    [
+     889,
+     807,
+     928,
+     "boss"
+    ],
+    [
+     890,
+     812,
+     928,
+     "boss"
+    ],
+    [
+     891,
+     814,
+     928,
+     "boss"
+    ],
+    [
+     1499,
+     815,
+     928,
+     "boss"
+    ],
+    [
+     1500,
+     809,
+     928,
+     "boss"
+    ],
+    [
+     1511,
+     813,
+     935,
+     "minion"
+    ],
+    [
+     1515,
+     811,
+     935,
+     "minion"
+    ]
+   ],
+   "levyHitDmg": 14678,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     8655
+    ],
+    [
+     "minion/Ravager/-1",
+     2118
+    ],
+    [
+     "other/-1/-1",
+     1384
+    ],
+    [
+     "minion/Ravager/-1",
+     721
+    ],
+    [
+     "minion/Ravager/-1",
+     568
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ravager_4.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c4",
+  "seed": 5,
+  "army": "optimal",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 27.2,
+  "levies": 34,
+  "deaths": 20,
+  "firstDeathSec": "8.0",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 348703.0,
+  "potionsDrunk": "21",
+  "weaponDmg": "Morning_Star@Legendary=159072 C:StarSputter@Unreal=87846 Vortex_Beater@Unreal=59122 Solar_Eruption@Godly=22089 Chlorophyte_Saber@Legendary=20574 Daybreak@Godly=0",
+  "deathTimes": "8.0,9.2,12.2,12.3,12.3,12.3,12.3,12.3,13.1,13.4,18.1,18.1,18.1,18.1,18.2,20.1,20.1,20.2,20.2,24.6",
+  "classDmg": "P=201735 -=146968",
+  "dmgRMES": [
+   "146968",
+   "0",
+   "42663",
+   "159072"
+  ],
+  "armyDps": 12820.0,
+  "perLevyDps": 377.1,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.508,
+    "Follow": 0.492
+   },
+   "notEngagedPct": 49.2,
+   "farOver50tilesPct": 40.8,
+   "meanDistToBoss": 47.9,
+   "crowdedPct": 58.6,
+   "deaths": [
+    [
+     458,
+     849,
+     929,
+     "minion"
+    ],
+    [
+     527,
+     833,
+     930,
+     "minion"
+    ],
+    [
+     710,
+     824,
+     927,
+     "minion"
+    ],
+    [
+     716,
+     823,
+     928,
+     "boss"
+    ],
+    [
+     716,
+     826,
+     928,
+     "boss"
+    ],
+    [
+     716,
+     827,
+     928,
+     "boss"
+    ],
+    [
+     716,
+     829,
+     928,
+     "boss"
+    ],
+    [
+     716,
+     831,
+     928,
+     "boss"
+    ],
+    [
+     763,
+     832,
+     928,
+     "boss"
+    ],
+    [
+     780,
+     845,
+     928,
+     "boss"
+    ],
+    [
+     1061,
+     841,
+     928,
+     "boss"
+    ],
+    [
+     1062,
+     844,
+     928,
+     "boss"
+    ],
+    [
+     1063,
+     846,
+     928,
+     "boss"
+    ],
+    [
+     1066,
+     825,
+     928,
+     "boss"
+    ],
+    [
+     1068,
+     830,
+     928,
+     "boss"
+    ],
+    [
+     1182,
+     847,
+     928,
+     "boss"
+    ],
+    [
+     1183,
+     842,
+     928,
+     "boss"
+    ],
+    [
+     1187,
+     850,
+     928,
+     "boss"
+    ],
+    [
+     1190,
+     843,
+     928,
+     "boss"
+    ],
+    [
+     1456,
+     848,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 14312,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     10752
+    ],
+    [
+     "minion/Ravager/-1",
+     1163
+    ],
+    [
+     "other/-1/-1",
+     1130
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     544
+    ],
+    [
+     "minion/Ravager/-1",
+     286
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ravager_5.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c5",
+  "seed": 1,
+  "army": "optimal",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 32.3,
+  "levies": 34,
+  "deaths": 6,
+  "firstDeathSec": "6.9",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 317479.0,
+  "potionsDrunk": "22",
+  "weaponDmg": "C:StarSputter@Unreal=155425 Morning_Star@Legendary=84986 Vortex_Beater@Unreal=63662 Chlorophyte_Saber@Legendary=6761 Solar_Eruption@Godly=6645 Daybreak@Godly=0",
+  "deathTimes": "6.9,21.3,22.6,27.8,30.2,30.7",
+  "classDmg": "P=98392 -=219087",
+  "dmgRMES": [
+   "219087",
+   "0",
+   "13406",
+   "84986"
+  ],
+  "armyDps": 9829.1,
+  "perLevyDps": 289.1,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.534,
+    "Engage": 0.466
+   },
+   "notEngagedPct": 53.4,
+   "farOver50tilesPct": 51.6,
+   "meanDistToBoss": 52.7,
+   "crowdedPct": 53.4,
+   "deaths": [
+    [
+     393,
+     867,
+     636,
+     "boss"
+    ],
+    [
+     1257,
+     866,
+     636,
+     "boss"
+    ],
+    [
+     1333,
+     879,
+     636,
+     "boss"
+    ],
+    [
+     1644,
+     884,
+     636,
+     "boss"
+    ],
+    [
+     1791,
+     882,
+     636,
+     "boss"
+    ],
+    [
+     1822,
+     880,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 13814,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     5415
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     5297
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     1881
+    ],
+    [
+     "body/Empress of Light/-1",
+     1221
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_eol_1.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c5",
+  "seed": 2,
+  "army": "optimal",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 48.5,
+  "levies": 34,
+  "deaths": 28,
+  "firstDeathSec": "7.0",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 314478.0,
+  "potionsDrunk": "26",
+  "weaponDmg": "Morning_Star@Legendary=203680 C:StarSputter@Unreal=69198 Vortex_Beater@Unreal=27392 Solar_Eruption@Godly=9872 Chlorophyte_Saber@Legendary=4336 Daybreak@Godly=0",
+  "deathTimes": "7.0,7.0,7.0,7.0,7.1,7.2,7.2,7.2,9.1,9.3,22.7,24.6,26.4,28.0,28.2,28.6,28.6,28.8,29.2,31.0,32.9,36.6,37.4,42.3,45.7,45.7,47.5,48.3",
+  "classDmg": "P=217888 -=96590",
+  "dmgRMES": [
+   "96590",
+   "0",
+   "14208",
+   "203680"
+  ],
+  "armyDps": 6484.1,
+  "perLevyDps": 190.7,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.722,
+    "Engage": 0.278
+   },
+   "notEngagedPct": 72.2,
+   "farOver50tilesPct": 54.6,
+   "meanDistToBoss": 53.9,
+   "crowdedPct": 45.5,
+   "deaths": [
+    [
+     396,
+     916,
+     636,
+     "boss"
+    ],
+    [
+     397,
+     910,
+     636,
+     "boss"
+    ],
+    [
+     397,
+     918,
+     636,
+     "boss"
+    ],
+    [
+     399,
+     899,
+     636,
+     "boss"
+    ],
+    [
+     405,
+     914,
+     636,
+     "boss"
+    ],
+    [
+     407,
+     909,
+     636,
+     "boss"
+    ],
+    [
+     407,
+     911,
+     636,
+     "boss"
+    ],
+    [
+     407,
+     917,
+     636,
+     "boss"
+    ],
+    [
+     521,
+     900,
+     636,
+     "boss"
+    ],
+    [
+     534,
+     892,
+     636,
+     "boss"
+    ],
+    [
+     1337,
+     913,
+     636,
+     "boss"
+    ],
+    [
+     1455,
+     896,
+     636,
+     "boss"
+    ],
+    [
+     1559,
+     901,
+     636,
+     "boss"
+    ],
+    [
+     1657,
+     915,
+     636,
+     "boss"
+    ],
+    [
+     1667,
+     902,
+     636,
+     "boss"
+    ],
+    [
+     1693,
+     897,
+     636,
+     "boss"
+    ],
+    [
+     1695,
+     898,
+     636,
+     "boss"
+    ],
+    [
+     1708,
+     895,
+     636,
+     "boss"
+    ],
+    [
+     1732,
+     893,
+     636,
+     "boss"
+    ],
+    [
+     1838,
+     912,
+     636,
+     "boss"
+    ],
+    [
+     1952,
+     891,
+     636,
+     "boss"
+    ],
+    [
+     2172,
+     908,
+     636,
+     "boss"
+    ],
+    [
+     2223,
+     887,
+     636,
+     "boss"
+    ],
+    [
+     2513,
+     889,
+     636,
+     "boss"
+    ],
+    [
+     2719,
+     904,
+     636,
+     "boss"
+    ],
+    [
+     2720,
+     894,
+     636,
+     "boss"
+    ],
+    [
+     2827,
+     886,
+     636,
+     "boss"
+    ],
+    [
+     2873,
+     905,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 21721,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     7403
+    ],
+    [
+     "body/Empress of Light/-1",
+     5364
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     5009
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     3844
+    ],
+    [
+     "proj/Empress of Light/Sun Dance",
+     101
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_eol_2.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c5",
+  "seed": 3,
+  "army": "optimal",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 39.8,
+  "levies": 34,
+  "deaths": 28,
+  "firstDeathSec": "7.2",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 325250.0,
+  "potionsDrunk": "30",
+  "weaponDmg": "Morning_Star@Legendary=208457 C:StarSputter@Unreal=61200 Vortex_Beater@Unreal=37909 Solar_Eruption@Godly=13254 Chlorophyte_Saber@Legendary=3659 Daybreak@Godly=771",
+  "deathTimes": "7.2,7.2,7.3,7.3,17.0,17.9,18.0,18.9,18.9,18.9,19.0,19.0,21.1,22.0,24.5,24.9,25.0,25.9,26.0,27.3,27.3,27.8,33.1,33.1,35.7,35.7,38.5,40.0",
+  "classDmg": "P=226141 -=99109",
+  "dmgRMES": [
+   "99109",
+   "0",
+   "17684",
+   "208457"
+  ],
+  "armyDps": 8172.1,
+  "perLevyDps": 240.4,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.686,
+    "Engage": 0.314
+   },
+   "notEngagedPct": 68.6,
+   "farOver50tilesPct": 40.3,
+   "meanDistToBoss": 46.5,
+   "crowdedPct": 35.1,
+   "deaths": [
+    [
+     407,
+     945,
+     636,
+     "boss"
+    ],
+    [
+     411,
+     947,
+     636,
+     "boss"
+    ],
+    [
+     413,
+     946,
+     636,
+     "boss"
+    ],
+    [
+     416,
+     950,
+     636,
+     "boss"
+    ],
+    [
+     998,
+     944,
+     636,
+     "boss"
+    ],
+    [
+     1053,
+     952,
+     636,
+     "boss"
+    ],
+    [
+     1057,
+     929,
+     636,
+     "boss"
+    ],
+    [
+     1113,
+     935,
+     636,
+     "boss"
+    ],
+    [
+     1113,
+     932,
+     636,
+     "boss"
+    ],
+    [
+     1114,
+     933,
+     636,
+     "boss"
+    ],
+    [
+     1117,
+     931,
+     636,
+     "boss"
+    ],
+    [
+     1117,
+     934,
+     636,
+     "boss"
+    ],
+    [
+     1246,
+     926,
+     636,
+     "boss"
+    ],
+    [
+     1296,
+     936,
+     636,
+     "boss"
+    ],
+    [
+     1449,
+     928,
+     636,
+     "boss"
+    ],
+    [
+     1469,
+     949,
+     636,
+     "boss"
+    ],
+    [
+     1478,
+     943,
+     636,
+     "boss"
+    ],
+    [
+     1533,
+     948,
+     636,
+     "boss"
+    ],
+    [
+     1535,
+     951,
+     636,
+     "boss"
+    ],
+    [
+     1614,
+     927,
+     636,
+     "boss"
+    ],
+    [
+     1614,
+     930,
+     636,
+     "boss"
+    ],
+    [
+     1646,
+     925,
+     636,
+     "boss"
+    ],
+    [
+     1961,
+     923,
+     636,
+     "boss"
+    ],
+    [
+     1962,
+     921,
+     636,
+     "boss"
+    ],
+    [
+     2117,
+     939,
+     636,
+     "boss"
+    ],
+    [
+     2120,
+     938,
+     636,
+     "boss"
+    ],
+    [
+     2288,
+     922,
+     636,
+     "boss"
+    ],
+    [
+     2380,
+     920,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 22687,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     13649
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     6478
+    ],
+    [
+     "body/Empress of Light/-1",
+     1684
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     876
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_eol_3.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c5",
+  "seed": 4,
+  "army": "optimal",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 33.1,
+  "levies": 34,
+  "deaths": 15,
+  "firstDeathSec": "7.1",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 313036.0,
+  "potionsDrunk": "19",
+  "weaponDmg": "C:StarSputter@Unreal=128556 Morning_Star@Legendary=120017 Vortex_Beater@Unreal=55533 Chlorophyte_Saber@Legendary=4526 Solar_Eruption@Godly=4404 Daybreak@Godly=0",
+  "deathTimes": "7.1,7.1,21.9,22.5,27.0,27.1,27.2,27.6,27.6,27.8,28.0,32.6,32.9,33.1,33.2",
+  "classDmg": "P=128947 -=184089",
+  "dmgRMES": [
+   "184089",
+   "0",
+   "8930",
+   "120017"
+  ],
+  "armyDps": 9457.3,
+  "perLevyDps": 278.2,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.57,
+    "Engage": 0.43
+   },
+   "notEngagedPct": 57.0,
+   "farOver50tilesPct": 45.3,
+   "meanDistToBoss": 49.7,
+   "crowdedPct": 49.8,
+   "deaths": [
+    [
+     403,
+     977,
+     636,
+     "boss"
+    ],
+    [
+     403,
+     984,
+     636,
+     "boss"
+    ],
+    [
+     1290,
+     979,
+     636,
+     "boss"
+    ],
+    [
+     1330,
+     968,
+     636,
+     "boss"
+    ],
+    [
+     1599,
+     965,
+     636,
+     "boss"
+    ],
+    [
+     1603,
+     985,
+     636,
+     "boss"
+    ],
+    [
+     1609,
+     978,
+     636,
+     "boss"
+    ],
+    [
+     1634,
+     967,
+     636,
+     "boss"
+    ],
+    [
+     1636,
+     963,
+     636,
+     "boss"
+    ],
+    [
+     1646,
+     959,
+     636,
+     "boss"
+    ],
+    [
+     1657,
+     981,
+     636,
+     "boss"
+    ],
+    [
+     1935,
+     982,
+     636,
+     "boss"
+    ],
+    [
+     1951,
+     983,
+     636,
+     "boss"
+    ],
+    [
+     1966,
+     961,
+     636,
+     "boss"
+    ],
+    [
+     1971,
+     960,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 16123,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     6859
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     6078
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     1797
+    ],
+    [
+     "body/Empress of Light/-1",
+     1389
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_eol_4.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_r2",
+  "cell": "c5",
+  "seed": 5,
+  "army": "optimal",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 38.1,
+  "levies": 34,
+  "deaths": 21,
+  "firstDeathSec": "6.8",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 312167.0,
+  "potionsDrunk": "29",
+  "weaponDmg": "C:StarSputter@Unreal=132675 Morning_Star@Legendary=118650 Vortex_Beater@Unreal=50996 Chlorophyte_Saber@Legendary=5717 Solar_Eruption@Godly=4129 Daybreak@Godly=0",
+  "deathTimes": "6.8,6.8,17.8,17.8,17.9,17.9,18.8,18.8,18.9,18.9,21.0,26.9,30.2,30.2,30.4,30.7,30.8,32.7,35.3,36.0,37.1",
+  "classDmg": "P=128496 -=183671",
+  "dmgRMES": [
+   "183671",
+   "0",
+   "9846",
+   "118650"
+  ],
+  "armyDps": 8193.4,
+  "perLevyDps": 241.0,
+  "rec": {
+   "stateShare": {
+    "Follow": 0.621,
+    "Engage": 0.379
+   },
+   "notEngagedPct": 62.1,
+   "farOver50tilesPct": 53.6,
+   "meanDistToBoss": 53.7,
+   "crowdedPct": 47.6,
+   "deaths": [
+    [
+     384,
+     1011,
+     636,
+     "boss"
+    ],
+    [
+     384,
+     1018,
+     636,
+     "boss"
+    ],
+    [
+     1047,
+     993,
+     636,
+     "boss"
+    ],
+    [
+     1048,
+     1012,
+     636,
+     "boss"
+    ],
+    [
+     1052,
+     1003,
+     636,
+     "boss"
+    ],
+    [
+     1054,
+     997,
+     636,
+     "boss"
+    ],
+    [
+     1106,
+     1002,
+     636,
+     "boss"
+    ],
+    [
+     1107,
+     998,
+     636,
+     "boss"
+    ],
+    [
+     1111,
+     999,
+     636,
+     "boss"
+    ],
+    [
+     1112,
+     995,
+     636,
+     "boss"
+    ],
+    [
+     1239,
+     994,
+     636,
+     "boss"
+    ],
+    [
+     1594,
+     1019,
+     636,
+     "boss"
+    ],
+    [
+     1788,
+     1016,
+     636,
+     "boss"
+    ],
+    [
+     1791,
+     1013,
+     636,
+     "boss"
+    ],
+    [
+     1804,
+     1015,
+     636,
+     "boss"
+    ],
+    [
+     1822,
+     1017,
+     636,
+     "boss"
+    ],
+    [
+     1823,
+     1020,
+     636,
+     "boss"
+    ],
+    [
+     1942,
+     1014,
+     636,
+     "boss"
+    ],
+    [
+     2097,
+     996,
+     636,
+     "boss"
+    ],
+    [
+     2139,
+     1000,
+     636,
+     "boss"
+    ],
+    [
+     2202,
+     1008,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 20993,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     13986
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     4894
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     1214
+    ],
+    [
+     "body/Empress of Light/-1",
+     899
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_eol_5.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_optr",
+  "cell": "c0",
+  "seed": 1,
+  "army": "optimal_ranged",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 31.6,
+  "levies": 34,
+  "deaths": 19,
+  "firstDeathSec": "11.5",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 374634.0,
+  "potionsDrunk": "27",
+  "weaponDmg": "Morning_Star@Legendary=104801 Vortex_Beater@Unreal=76776 C:RealmRavager@Unreal=55886 C:StarSputter@Unreal=54897 C:RegulusRiot@Flawless=42487 C:AstralBlaster@Unreal=39787",
+  "deathTimes": "11.5,12.0,12.0,12.1,14.6,17.7,17.9,20.7,20.7,23.9,24.3,24.3,24.3,30.6,30.6,30.6,30.6,30.6,30.6",
+  "classDmg": "-=227346 P=147288",
+  "dmgRMES": [
+   "227346",
+   "0",
+   "0",
+   "104801"
+  ],
+  "armyDps": 11855.5,
+  "perLevyDps": 348.7,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.725,
+    "Follow": 0.275
+   },
+   "notEngagedPct": 27.5,
+   "farOver50tilesPct": 28.6,
+   "meanDistToBoss": 42.0,
+   "crowdedPct": 64.7,
+   "deaths": [
+    [
+     690,
+     19,
+     928,
+     "boss"
+    ],
+    [
+     718,
+     13,
+     928,
+     "boss"
+    ],
+    [
+     719,
+     5,
+     928,
+     "boss"
+    ],
+    [
+     724,
+     12,
+     928,
+     "boss"
+    ],
+    [
+     876,
+     34,
+     928,
+     "boss"
+    ],
+    [
+     1062,
+     6,
+     928,
+     "boss"
+    ],
+    [
+     1073,
+     17,
+     928,
+     "boss"
+    ],
+    [
+     1241,
+     2,
+     928,
+     "boss"
+    ],
+    [
+     1242,
+     8,
+     928,
+     "boss"
+    ],
+    [
+     1434,
+     14,
+     928,
+     "boss"
+    ],
+    [
+     1457,
+     1,
+     935,
+     "minion"
+    ],
+    [
+     1457,
+     3,
+     935,
+     "minion"
+    ],
+    [
+     1457,
+     4,
+     935,
+     "minion"
+    ],
+    [
+     1834,
+     7,
+     928,
+     "boss"
+    ],
+    [
+     1834,
+     9,
+     928,
+     "boss"
+    ],
+    [
+     1834,
+     11,
+     928,
+     "boss"
+    ],
+    [
+     1834,
+     15,
+     928,
+     "boss"
+    ],
+    [
+     1834,
+     18,
+     928,
+     "boss"
+    ],
+    [
+     1834,
+     23,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 17517,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     12098
+    ],
+    [
+     "other/-1/-1",
+     4018
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     990
+    ],
+    [
+     "minion/Ravager/-1",
+     306
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     86
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ranged_ravager_1.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_optr",
+  "cell": "c0",
+  "seed": 2,
+  "army": "optimal_ranged",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 33.4,
+  "levies": 34,
+  "deaths": 26,
+  "firstDeathSec": "10.2",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 379339.0,
+  "potionsDrunk": "27",
+  "weaponDmg": "Morning_Star@Legendary=111914 Vortex_Beater@Unreal=77590 C:StarSputter@Unreal=60909 C:RealmRavager@Unreal=56948 C:AstralBlaster@Unreal=41402 C:RegulusRiot@Flawless=30576",
+  "deathTimes": "10.2,10.2,12.9,13.0,13.0,13.0,13.0,15.6,15.6,19.0,19.0,19.0,19.0,19.6,19.8,24.9,25.0,25.0,25.4,28.3,28.5,30.4,30.4,32.9,32.9,33.2",
+  "classDmg": "-=236849 P=142490",
+  "dmgRMES": [
+   "236849",
+   "0",
+   "0",
+   "111914"
+  ],
+  "armyDps": 11357.5,
+  "perLevyDps": 334.0,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.695,
+    "Follow": 0.305
+   },
+   "notEngagedPct": 30.5,
+   "farOver50tilesPct": 30.6,
+   "meanDistToBoss": 41.6,
+   "crowdedPct": 58.4,
+   "deaths": [
+    [
+     592,
+     52,
+     928,
+     "boss"
+    ],
+    [
+     593,
+     54,
+     928,
+     "boss"
+    ],
+    [
+     753,
+     65,
+     928,
+     "boss"
+    ],
+    [
+     757,
+     46,
+     928,
+     "boss"
+    ],
+    [
+     758,
+     67,
+     928,
+     "boss"
+    ],
+    [
+     759,
+     68,
+     928,
+     "boss"
+    ],
+    [
+     760,
+     39,
+     930,
+     "minion"
+    ],
+    [
+     916,
+     50,
+     928,
+     "boss"
+    ],
+    [
+     917,
+     47,
+     928,
+     "boss"
+    ],
+    [
+     1118,
+     35,
+     928,
+     "boss"
+    ],
+    [
+     1118,
+     40,
+     930,
+     "minion"
+    ],
+    [
+     1118,
+     45,
+     928,
+     "boss"
+    ],
+    [
+     1118,
+     48,
+     928,
+     "boss"
+    ],
+    [
+     1155,
+     36,
+     935,
+     "minion"
+    ],
+    [
+     1165,
+     41,
+     935,
+     "minion"
+    ],
+    [
+     1475,
+     49,
+     928,
+     "boss"
+    ],
+    [
+     1477,
+     56,
+     928,
+     "boss"
+    ],
+    [
+     1478,
+     57,
+     928,
+     "boss"
+    ],
+    [
+     1504,
+     55,
+     935,
+     "minion"
+    ],
+    [
+     1676,
+     64,
+     935,
+     "minion"
+    ],
+    [
+     1689,
+     37,
+     935,
+     "minion"
+    ],
+    [
+     1800,
+     43,
+     928,
+     "boss"
+    ],
+    [
+     1800,
+     51,
+     928,
+     "boss"
+    ],
+    [
+     1951,
+     53,
+     928,
+     "boss"
+    ],
+    [
+     1953,
+     44,
+     928,
+     "boss"
+    ],
+    [
+     1968,
+     38,
+     935,
+     "minion"
+    ]
+   ],
+   "levyHitDmg": 19260,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     14081
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     2004
+    ],
+    [
+     "minion/Ravager/-1",
+     1635
+    ],
+    [
+     "other/-1/-1",
+     1278
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     176
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ranged_ravager_2.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_optr",
+  "cell": "c0",
+  "seed": 3,
+  "army": "optimal_ranged",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 33.9,
+  "levies": 34,
+  "deaths": 28,
+  "firstDeathSec": "8.0",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 327943.0,
+  "potionsDrunk": "32",
+  "weaponDmg": "Morning_Star@Legendary=164496 C:StarSputter@Unreal=41797 Vortex_Beater@Unreal=34739 C:AstralBlaster@Unreal=32788 C:RealmRavager@Unreal=29022 C:RegulusRiot@Flawless=25101",
+  "deathTimes": "8.0,8.0,10.1,10.1,10.2,12.6,12.8,12.8,12.8,12.8,12.8,12.8,12.8,12.8,12.9,13.0,13.0,13.1,14.0,14.0,14.6,14.6,14.6,14.7,18.0,18.1,18.2,21.6",
+  "classDmg": "-=138346 P=189597",
+  "dmgRMES": [
+   "138346",
+   "0",
+   "0",
+   "164496"
+  ],
+  "armyDps": 9673.8,
+  "perLevyDps": 284.5,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.68,
+    "Follow": 0.32
+   },
+   "notEngagedPct": 32.0,
+   "farOver50tilesPct": 33.5,
+   "meanDistToBoss": 44.2,
+   "crowdedPct": 51.4,
+   "deaths": [
+    [
+     455,
+     87,
+     930,
+     "minion"
+    ],
+    [
+     456,
+     75,
+     930,
+     "minion"
+    ],
+    [
+     582,
+     74,
+     928,
+     "boss"
+    ],
+    [
+     583,
+     91,
+     928,
+     "boss"
+    ],
+    [
+     588,
+     71,
+     928,
+     "boss"
+    ],
+    [
+     735,
+     83,
+     928,
+     "boss"
+    ],
+    [
+     743,
+     73,
+     928,
+     "boss"
+    ],
+    [
+     743,
+     78,
+     928,
+     "boss"
+    ],
+    [
+     746,
+     81,
+     928,
+     "boss"
+    ],
+    [
+     747,
+     79,
+     928,
+     "boss"
+    ],
+    [
+     747,
+     88,
+     928,
+     "boss"
+    ],
+    [
+     748,
+     69,
+     928,
+     "boss"
+    ],
+    [
+     748,
+     76,
+     928,
+     "boss"
+    ],
+    [
+     748,
+     77,
+     928,
+     "boss"
+    ],
+    [
+     753,
+     100,
+     928,
+     "boss"
+    ],
+    [
+     757,
+     101,
+     928,
+     "boss"
+    ],
+    [
+     757,
+     102,
+     928,
+     "boss"
+    ],
+    [
+     766,
+     85,
+     928,
+     "boss"
+    ],
+    [
+     818,
+     98,
+     930,
+     "minion"
+    ],
+    [
+     818,
+     99,
+     930,
+     "minion"
+    ],
+    [
+     853,
+     86,
+     928,
+     "boss"
+    ],
+    [
+     854,
+     70,
+     928,
+     "boss"
+    ],
+    [
+     856,
+     82,
+     928,
+     "boss"
+    ],
+    [
+     857,
+     80,
+     928,
+     "boss"
+    ],
+    [
+     1057,
+     89,
+     928,
+     "boss"
+    ],
+    [
+     1066,
+     90,
+     928,
+     "boss"
+    ],
+    [
+     1068,
+     84,
+     928,
+     "boss"
+    ],
+    [
+     1276,
+     72,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 20260,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     15116
+    ],
+    [
+     "other/-1/-1",
+     2456
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     1166
+    ],
+    [
+     "minion/Ravager/-1",
+     1108
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     226
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ranged_ravager_3.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_optr",
+  "cell": "c0",
+  "seed": 4,
+  "army": "optimal_ranged",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 27.4,
+  "levies": 34,
+  "deaths": 7,
+  "firstDeathSec": "12.8",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 380252.0,
+  "potionsDrunk": "16",
+  "weaponDmg": "C:StarSputter@Unreal=79752 Morning_Star@Legendary=77750 Vortex_Beater@Unreal=70006 C:AstralBlaster@Unreal=56983 C:RealmRavager@Unreal=49827 C:RegulusRiot@Flawless=45934",
+  "deathTimes": "12.8,13.5,18.5,20.6,20.7,25.3,25.3",
+  "classDmg": "-=256568 P=123684",
+  "dmgRMES": [
+   "256568",
+   "0",
+   "0",
+   "77750"
+  ],
+  "armyDps": 13877.8,
+  "perLevyDps": 408.2,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.748,
+    "Follow": 0.252
+   },
+   "notEngagedPct": 25.2,
+   "farOver50tilesPct": 25.8,
+   "meanDistToBoss": 39.5,
+   "crowdedPct": 65.7,
+   "deaths": [
+    [
+     749,
+     112,
+     928,
+     "boss"
+    ],
+    [
+     790,
+     133,
+     928,
+     "boss"
+    ],
+    [
+     1091,
+     113,
+     928,
+     "boss"
+    ],
+    [
+     1215,
+     110,
+     928,
+     "boss"
+    ],
+    [
+     1221,
+     119,
+     928,
+     "boss"
+    ],
+    [
+     1498,
+     132,
+     928,
+     "boss"
+    ],
+    [
+     1499,
+     134,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 9963,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     6482
+    ],
+    [
+     "other/-1/-1",
+     2030
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     858
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     492
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     101
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ranged_ravager_4.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_optr",
+  "cell": "c0",
+  "seed": 5,
+  "army": "optimal_ranged",
+  "boss": "ravager",
+  "result": "WIN",
+  "sec": 32.5,
+  "levies": 34,
+  "deaths": 23,
+  "firstDeathSec": "9.4",
+  "bossMax": 320160.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 372083.0,
+  "potionsDrunk": "26",
+  "weaponDmg": "Morning_Star@Legendary=111437 C:StarSputter@Unreal=71223 Vortex_Beater@Unreal=54107 C:AstralBlaster@Unreal=49633 C:RealmRavager@Unreal=47353 C:RegulusRiot@Flawless=38330",
+  "deathTimes": "9.4,10.1,10.2,12.6,12.6,14.9,18.0,18.0,18.0,18.0,18.0,18.0,18.0,20.5,23.3,23.6,26.0,26.3,28.6,31.7,31.7,31.7,31.8",
+  "classDmg": "-=222316 P=149767",
+  "dmgRMES": [
+   "222316",
+   "0",
+   "0",
+   "111437"
+  ],
+  "armyDps": 11448.7,
+  "perLevyDps": 336.7,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.704,
+    "Follow": 0.296
+   },
+   "notEngagedPct": 29.6,
+   "farOver50tilesPct": 30.7,
+   "meanDistToBoss": 41.2,
+   "crowdedPct": 57.3,
+   "deaths": [
+    [
+     539,
+     144,
+     928,
+     "boss"
+    ],
+    [
+     581,
+     156,
+     928,
+     "boss"
+    ],
+    [
+     588,
+     147,
+     928,
+     "boss"
+    ],
+    [
+     735,
+     145,
+     928,
+     "boss"
+    ],
+    [
+     735,
+     167,
+     928,
+     "boss"
+    ],
+    [
+     873,
+     170,
+     928,
+     "boss"
+    ],
+    [
+     1056,
+     159,
+     928,
+     "boss"
+    ],
+    [
+     1057,
+     139,
+     928,
+     "boss"
+    ],
+    [
+     1057,
+     143,
+     928,
+     "boss"
+    ],
+    [
+     1058,
+     141,
+     928,
+     "boss"
+    ],
+    [
+     1058,
+     149,
+     928,
+     "boss"
+    ],
+    [
+     1058,
+     150,
+     928,
+     "boss"
+    ],
+    [
+     1059,
+     142,
+     928,
+     "boss"
+    ],
+    [
+     1208,
+     166,
+     928,
+     "boss"
+    ],
+    [
+     1376,
+     137,
+     928,
+     "boss"
+    ],
+    [
+     1393,
+     148,
+     935,
+     "minion"
+    ],
+    [
+     1539,
+     155,
+     928,
+     "boss"
+    ],
+    [
+     1557,
+     169,
+     935,
+     "minion"
+    ],
+    [
+     1692,
+     140,
+     928,
+     "boss"
+    ],
+    [
+     1878,
+     146,
+     928,
+     "boss"
+    ],
+    [
+     1880,
+     138,
+     928,
+     "boss"
+    ],
+    [
+     1882,
+     152,
+     928,
+     "boss"
+    ],
+    [
+     1885,
+     151,
+     928,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 18286,
+   "topHitSrc": [
+    [
+     "body/Ravager/-1",
+     14385
+    ],
+    [
+     "other/-1/-1",
+     2285
+    ],
+    [
+     "minion/Rock Pillar/-1",
+     1294
+    ],
+    [
+     "proj/Flame Pillar/Blue Flame",
+     274
+    ],
+    [
+     "minion/Flame Pillar/-1",
+     48
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ranged_ravager_5.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_optr",
+  "cell": "c1",
+  "seed": 1,
+  "army": "optimal_ranged",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 27.0,
+  "levies": 34,
+  "deaths": 12,
+  "firstDeathSec": "9.2",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 349157.0,
+  "potionsDrunk": "25",
+  "weaponDmg": "C:StarSputter@Unreal=102283 Morning_Star@Legendary=65592 C:AstralBlaster@Unreal=64545 Vortex_Beater@Unreal=46021 C:RealmRavager@Unreal=40126 C:RegulusRiot@Flawless=30590",
+  "deathTimes": "9.2,9.2,9.8,9.9,9.9,10.0,25.9,26.4,26.4,27.0,27.2,27.3",
+  "classDmg": "-=252975 P=96182",
+  "dmgRMES": [
+   "252975",
+   "0",
+   "0",
+   "65592"
+  ],
+  "armyDps": 12931.7,
+  "perLevyDps": 380.3,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.535,
+    "Follow": 0.465
+   },
+   "notEngagedPct": 46.5,
+   "farOver50tilesPct": 40.6,
+   "meanDistToBoss": 47.3,
+   "crowdedPct": 51.6,
+   "deaths": [
+    [
+     529,
+     172,
+     636,
+     "boss"
+    ],
+    [
+     530,
+     189,
+     636,
+     "boss"
+    ],
+    [
+     567,
+     184,
+     636,
+     "boss"
+    ],
+    [
+     572,
+     190,
+     636,
+     "boss"
+    ],
+    [
+     575,
+     178,
+     636,
+     "boss"
+    ],
+    [
+     576,
+     181,
+     636,
+     "boss"
+    ],
+    [
+     1535,
+     186,
+     636,
+     "boss"
+    ],
+    [
+     1561,
+     183,
+     636,
+     "boss"
+    ],
+    [
+     1565,
+     174,
+     636,
+     "boss"
+    ],
+    [
+     1596,
+     185,
+     636,
+     "boss"
+    ],
+    [
+     1608,
+     175,
+     636,
+     "boss"
+    ],
+    [
+     1617,
+     188,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 15457,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     6943
+    ],
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     5121
+    ],
+    [
+     "body/Empress of Light/-1",
+     3270
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     123
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ranged_eol_1.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_optr",
+  "cell": "c1",
+  "seed": 2,
+  "army": "optimal_ranged",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 22.3,
+  "levies": 34,
+  "deaths": 10,
+  "firstDeathSec": "7.0",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 351014.0,
+  "potionsDrunk": "26",
+  "weaponDmg": "C:StarSputter@Unreal=89283 C:AstralBlaster@Unreal=64426 Morning_Star@Legendary=52915 C:RegulusRiot@Flawless=51947 C:RealmRavager@Unreal=46317 Vortex_Beater@Unreal=46126",
+  "deathTimes": "7.0,18.0,18.0,18.7,20.3,20.3,20.4,20.4,20.4,22.1",
+  "classDmg": "-=246152 P=104862",
+  "dmgRMES": [
+   "246152",
+   "0",
+   "0",
+   "52915"
+  ],
+  "armyDps": 15740.5,
+  "perLevyDps": 463.0,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.558,
+    "Follow": 0.442
+   },
+   "notEngagedPct": 44.2,
+   "farOver50tilesPct": 33.4,
+   "meanDistToBoss": 46.2,
+   "crowdedPct": 56.3,
+   "deaths": [
+    [
+     398,
+     211,
+     636,
+     "boss"
+    ],
+    [
+     1058,
+     219,
+     636,
+     "boss"
+    ],
+    [
+     1061,
+     225,
+     636,
+     "boss"
+    ],
+    [
+     1102,
+     238,
+     636,
+     "boss"
+    ],
+    [
+     1198,
+     215,
+     636,
+     "boss"
+    ],
+    [
+     1199,
+     212,
+     636,
+     "boss"
+    ],
+    [
+     1200,
+     236,
+     636,
+     "boss"
+    ],
+    [
+     1202,
+     207,
+     636,
+     "boss"
+    ],
+    [
+     1202,
+     210,
+     636,
+     "boss"
+    ],
+    [
+     1303,
+     223,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 15829,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     11413
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     2686
+    ],
+    [
+     "body/Empress of Light/-1",
+     1730
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ranged_eol_2.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_optr",
+  "cell": "c1",
+  "seed": 3,
+  "army": "optimal_ranged",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 26.5,
+  "levies": 34,
+  "deaths": 11,
+  "firstDeathSec": "18.0",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 349372.0,
+  "potionsDrunk": "27",
+  "weaponDmg": "C:StarSputter@Unreal=103401 C:AstralBlaster@Unreal=63269 Vortex_Beater@Unreal=58104 Morning_Star@Legendary=55875 C:RealmRavager@Unreal=47376 C:RegulusRiot@Flawless=21347",
+  "deathTimes": "18.0,18.0,20.4,20.4,20.4,22.1,22.9,24.5,26.0,26.4,26.7",
+  "classDmg": "-=272150 P=77222",
+  "dmgRMES": [
+   "272150",
+   "0",
+   "0",
+   "55875"
+  ],
+  "armyDps": 13183.8,
+  "perLevyDps": 387.8,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.528,
+    "Follow": 0.472
+   },
+   "notEngagedPct": 47.2,
+   "farOver50tilesPct": 44.3,
+   "meanDistToBoss": 50.0,
+   "crowdedPct": 54.4,
+   "deaths": [
+    [
+     1059,
+     256,
+     636,
+     "boss"
+    ],
+    [
+     1061,
+     244,
+     636,
+     "boss"
+    ],
+    [
+     1201,
+     245,
+     636,
+     "boss"
+    ],
+    [
+     1201,
+     253,
+     636,
+     "boss"
+    ],
+    [
+     1201,
+     259,
+     636,
+     "boss"
+    ],
+    [
+     1306,
+     251,
+     636,
+     "boss"
+    ],
+    [
+     1355,
+     248,
+     636,
+     "boss"
+    ],
+    [
+     1449,
+     241,
+     636,
+     "boss"
+    ],
+    [
+     1540,
+     254,
+     636,
+     "boss"
+    ],
+    [
+     1564,
+     249,
+     636,
+     "boss"
+    ],
+    [
+     1582,
+     250,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 17114,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     12804
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     4024
+    ],
+    [
+     "body/Empress of Light/-1",
+     286
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ranged_eol_3.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_optr",
+  "cell": "c1",
+  "seed": 4,
+  "army": "optimal_ranged",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 27.4,
+  "levies": 34,
+  "deaths": 16,
+  "firstDeathSec": "18.0",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 349113.0,
+  "potionsDrunk": "27",
+  "weaponDmg": "C:StarSputter@Unreal=106084 C:AstralBlaster@Unreal=63929 Vortex_Beater@Unreal=58352 Morning_Star@Legendary=51824 C:RealmRavager@Unreal=44429 C:RegulusRiot@Flawless=24495",
+  "deathTimes": "18.0,18.9,19.1,19.1,20.3,21.6,22.9,23.0,23.0,24.5,25.3,26.0,26.3,27.0,27.2,27.4",
+  "classDmg": "-=272794 P=76319",
+  "dmgRMES": [
+   "272794",
+   "0",
+   "0",
+   "51824"
+  ],
+  "armyDps": 12741.4,
+  "perLevyDps": 374.7,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.514,
+    "Follow": 0.486
+   },
+   "notEngagedPct": 48.6,
+   "farOver50tilesPct": 40.1,
+   "meanDistToBoss": 48.7,
+   "crowdedPct": 53.5,
+   "deaths": [
+    [
+     1058,
+     293,
+     636,
+     "boss"
+    ],
+    [
+     1111,
+     295,
+     636,
+     "boss"
+    ],
+    [
+     1121,
+     274,
+     636,
+     "boss"
+    ],
+    [
+     1123,
+     285,
+     636,
+     "boss"
+    ],
+    [
+     1196,
+     286,
+     636,
+     "boss"
+    ],
+    [
+     1276,
+     289,
+     636,
+     "boss"
+    ],
+    [
+     1354,
+     281,
+     636,
+     "boss"
+    ],
+    [
+     1356,
+     282,
+     636,
+     "boss"
+    ],
+    [
+     1360,
+     277,
+     636,
+     "boss"
+    ],
+    [
+     1450,
+     294,
+     636,
+     "boss"
+    ],
+    [
+     1494,
+     273,
+     636,
+     "boss"
+    ],
+    [
+     1540,
+     290,
+     636,
+     "boss"
+    ],
+    [
+     1554,
+     292,
+     636,
+     "boss"
+    ],
+    [
+     1599,
+     278,
+     636,
+     "boss"
+    ],
+    [
+     1608,
+     291,
+     636,
+     "boss"
+    ],
+    [
+     1622,
+     279,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 18054,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     12124
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     4896
+    ],
+    [
+     "body/Empress of Light/-1",
+     1025
+    ],
+    [
+     "proj/Empress of Light/Everlasting Rainbow",
+     9
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ranged_eol_4.levyrec"
+ },
+ {
+  "run": "/home/user/lab/battery/runs/fights_optr",
+  "cell": "c1",
+  "seed": 5,
+  "army": "optimal_ranged",
+  "boss": "eol",
+  "result": "WIN",
+  "sec": 21.4,
+  "levies": 34,
+  "deaths": 1,
+  "firstDeathSec": "20.0",
+  "bossMax": 212415.0,
+  "bossLeft": 0.0,
+  "dmgBoss": 351393.0,
+  "potionsDrunk": "8",
+  "weaponDmg": "C:StarSputter@Unreal=88307 C:AstralBlaster@Unreal=60547 Morning_Star@Legendary=58158 Vortex_Beater@Unreal=51087 C:RegulusRiot@Flawless=50526 C:RealmRavager@Unreal=42768",
+  "deathTimes": "20.0",
+  "classDmg": "-=242709 P=108684",
+  "dmgRMES": [
+   "242709",
+   "0",
+   "0",
+   "58158"
+  ],
+  "armyDps": 16420.2,
+  "perLevyDps": 482.9,
+  "rec": {
+   "stateShare": {
+    "Engage": 0.581,
+    "Follow": 0.419
+   },
+   "notEngagedPct": 41.9,
+   "farOver50tilesPct": 22.0,
+   "meanDistToBoss": 40.7,
+   "crowdedPct": 66.1,
+   "deaths": [
+    [
+     1175,
+     308,
+     636,
+     "boss"
+    ]
+   ],
+   "levyHitDmg": 5256,
+   "topHitSrc": [
+    [
+     "proj/Empress of Light/Ethereal Lance",
+     3155
+    ],
+    [
+     "proj/Empress of Light/Prismatic Bolt",
+     1967
+    ],
+    [
+     "body/Empress of Light/-1",
+     134
+    ]
+   ]
+  },
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/battery_recs/optimal_ranged_eol_5.levyrec"
+ }
+]

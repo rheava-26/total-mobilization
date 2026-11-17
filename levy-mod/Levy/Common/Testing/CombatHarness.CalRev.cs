@@ -55,6 +55,7 @@ namespace Levy.Common.Testing
 		{
 			public char Cls; public string Weapon, Ammo; public string[] Armor = Array.Empty<string>(), Acc = Array.Empty<string>();
 			public int LifeCrystals, ManaCrystals, Potions; public string Potion = ""; public bool ManAtArms, Tank;
+			public string Side = "", Hook = ""; public int LifeFruit; // lab kit (lv=): a per-levy sidearm and grappling hook, and Life Fruit fed after the crystals
 			public int Hp => 100 + 20 * LifeCrystals; public int Mana => 20 + 20 * ManaCrystals;
 			public string Describe() => $"{Cls}:{Weapon}{(string.IsNullOrEmpty(Ammo) ? "" : "/" + Ammo)}|{string.Join("+", Armor.Select(a => a.Split(' ')[0]).Distinct())}|{(Acc.Length == 0 ? "-" : string.Join("+", Acc))}|{(ManAtArms ? "MaA" : "Lv")}|{Hp}hp/{Mana}mp|{Potions}x{Potion}";
 		}
@@ -161,7 +162,35 @@ namespace Levy.Common.Testing
 			if (!_crNameIds.TryGetValue(name, out int id)) throw new Exception("unknown item '" + name + "'");
 			return id;
 		}
-		private static Item CrMake(string name, int stack = 1) { var it = new Item(); it.SetDefaults(CrItemId(name)); it.stack = stack; return it; }
+		/// <summary>An item by name; "Name@Prefix" also reforges it (lab kit armies carry the prefixes of a real loadout). The prefix is a PrefixID name ("Godly", "Menacing") or a modded one ("CalamityMod/Flawless" or bare "Flawless").</summary>
+		private static Item CrMake(string name, int stack = 1)
+		{
+			string pre = null; int at = name.IndexOf('@');
+			if (at >= 0) { pre = name.Substring(at + 1); name = name.Substring(0, at); }
+			var it = new Item(); it.SetDefaults(CrItemId(name)); it.stack = stack;
+			if (!string.IsNullOrEmpty(pre)) CrApplyPrefix(it, pre);
+			return it;
+		}
+		private static readonly HashSet<string> _crPrefixWarned = new();
+		private static void CrApplyPrefix(Item it, string pre)
+		{
+			int id = -1; string key = pre.Replace(" ", "").Replace("_", "");
+			var ids = new List<int>();
+			if (int.TryParse(pre, NumberStyles.Integer, CultureInfo.InvariantCulture, out int num)) ids.Add(num); // a prefix id (vanilla ids are the same in every game)
+			else if (pre.Contains('/')) { if (ModContent.TryFind(pre, out ModPrefix mp)) ids.Add(mp.Type); }
+			else
+			{
+				foreach (string k in new[] { key, key + "2" }) // vanilla names the accessory twin of a weapon prefix with a 2 (Hasty2, Quick2, Deadly2)
+				{
+					var f = typeof(PrefixID).GetField(k, BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase);
+					if (f != null && f.FieldType != typeof(int[])) ids.Add(Convert.ToInt32(f.GetValue(null)));
+				}
+				foreach (var mp in ModContent.GetContent<ModPrefix>()) if (string.Equals(mp.Name, key, StringComparison.OrdinalIgnoreCase)) ids.Add(mp.Type);
+			}
+			bool ok = false;
+			foreach (int c in ids) { if (c > 0 && it.Prefix(c) && it.prefix == c) { ok = true; id = c; break; } }
+			if (!ok && _crPrefixWarned.Add(it.Name + "@" + pre)) global::Levy.Levy.Instance.Logger.Warn($"HARNESS-KIT: prefix {pre} (id {id}) did not apply to {it.Name}");
+		}
 
 		private static bool CrPost(string boss) => boss == "brain" || boss == "eow";
 
@@ -552,6 +581,16 @@ namespace Levy.Common.Testing
 				if (gear.CanHold(SoldierGear.SlotBoots, it)) { gear.Set(SoldierGear.SlotBoots, it); gear.SetLocked(SoldierGear.SlotBoots, true); continue; }
 				if (!gear.CanHold(sl, it)) throw new Exception("levy cannot wear accessory " + an);
 				gear.Set(sl, it); gear.SetLocked(sl, true); placed++;
+			}
+			if (!string.IsNullOrEmpty(spec.Side))
+			{
+				Item sd = CrMake(spec.Side);
+				if (gear.CanHold(SoldierGear.SlotSidearm, sd)) { gear.Sidearm = sd; gear.SetLocked(SoldierGear.SlotSidearm, true); } else Mod.Logger.Warn($"HARNESS-KIT: levy {spec.Cls} {spec.Weapon} cannot hold sidearm {spec.Side}");
+			}
+			if (!string.IsNullOrEmpty(spec.Hook))
+			{
+				Item hk = CrMake(spec.Hook);
+				if (gear.CanHold(SoldierGear.SlotHook, hk)) { gear.Hook = hk; gear.SetLocked(SoldierGear.SlotHook, true); } else Mod.Logger.Warn($"HARNESS-KIT: levy cannot hold hook {spec.Hook}");
 			}
 			if (run.HookItem != "")
 			{

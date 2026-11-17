@@ -227,7 +227,7 @@ namespace Levy.Content.NPCs
 			if (!_offThinkNow && now % LevyConstants.ThinkIntervalTicks != ThinkOffset) return; // decide on the soldiers' cadence; the movement walks the last goal in between
 			_offThinkNow = false;
 
-			SoldierOrder order = Record.Order;
+			SoldierOrder order = EffOrder;
 			bool support = (_offDef?.Posture ?? OfficerPosture.Frontline) == OfficerPosture.Support;
 			Vector2 goal; SoldierState st; bool go;
 			if (_offRetreating && order != SoldierOrder.ReturnToBarracks)

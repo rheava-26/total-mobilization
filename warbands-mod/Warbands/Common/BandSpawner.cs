@@ -19,7 +19,7 @@ namespace Warbands.Common
 	public class BandSpawner : ModSystem
 	{
 		public const int RollTicks = 60 * 60;
-		private int _timer; private bool _forced;
+		private int _timer; private static bool _forced;
 		public static int BandsSpawned;
 		public const int MaxBand = 8;
 
@@ -53,15 +53,22 @@ namespace Warbands.Common
 			bool force = !_forced && Environment.GetEnvironmentVariable("WARBANDS_FORCE") == "1" && Main.GameUpdateCount > 600;
 			if (!force && ++_timer < RollTicks) return;
 			_timer = 0;
+			Roll(force);
+		}
+
+		/// <summary>One natural roll (the once-a-minute body of PostUpdateWorld, also run by the self-check): true when a band formed.</summary>
+		public static bool Roll(bool force)
+		{
+			var cfg = WarbandsConfig.Get; if (cfg == null || !cfg.Enabled) return false;
 			int stage = Stage.Current;
-			if (!force && stage < cfg.FirstStage) return;
-			if (ActiveBands() >= cfg.MaxWorldBands) return;
-			if (!force && NaturalSpawnBlocked(cfg)) return; // a boss fight is not interrupted by a new band (bands already out stay)
-			if (!force && (Main.eclipse || Main.bloodMoon || Main.pumpkinMoon || Main.snowMoon || Terraria.GameContent.Events.DD2Event.Ongoing || Main.invasionType > 0)) return;
+			if (!force && stage < cfg.FirstStage) return false;
+			if (ActiveBands() >= cfg.MaxWorldBands) return false;
+			if (!force && NaturalSpawnBlocked(cfg)) return false; // a boss fight is not interrupted by a new band (bands already out stay)
+			if (!force && (Main.eclipse || Main.bloodMoon || Main.pumpkinMoon || Main.snowMoon || Terraria.GameContent.Events.DD2Event.Ongoing || Main.invasionType > 0)) return false;
 			if (force) // headless test: no player is online, so a stand-in at the world spawn takes the roll
 			{
 				bool any = false; for (int i = 0; i < Main.maxPlayers; i++) if (Main.player[i].active) any = true;
-				if (!any) { var fake = new Player(); fake.position = new Vector2(Main.spawnTileX * 16, (Main.spawnTileY - 3) * 16); fake.width = 20; fake.height = 42; _forced = true; SpawnBand(fake, stage, 4); return; }
+				if (!any) { var fake = new Player(); fake.position = new Vector2(Main.spawnTileX * 16, (Main.spawnTileY - 3) * 16); fake.width = 20; fake.height = 42; _forced = true; return SpawnBand(fake, stage, 4); }
 			}
 			for (int i = 0; i < Main.maxPlayers; i++)
 			{
@@ -69,12 +76,13 @@ namespace Warbands.Common
 				if (!p.active || p.dead || p.townNPCs > 0 && !force) continue;
 				if (!force && BandsNear(p.Center, NearBandTiles) >= cfg.MaxActiveBands) continue; // a band already out near this player: it is the local rare enemy, no second one on top
 				if (!force && Main.rand.NextFloat() * 100f >= cfg.NaturalChancePercentPerMinute) continue;
-				if (SpawnBand(p, stage, null)) { _forced = true; break; }
+				if (SpawnBand(p, stage, null)) { _forced = true; return true; }
 			}
+			return false;
 		}
 
-		/// <summary>True while a natural band may not form because a boss is alive (config NoSpawnsDuringBosses). Bands already out are untouched.</summary>
-		public static bool NaturalSpawnBlocked(WarbandsConfig cfg) => cfg != null && cfg.NoSpawnsDuringBosses && BossAlive();
+		/// <summary>True while a natural or event band may not form because a boss fight is on or ended less than BossGraceSeconds ago (config NoSpawnsDuringBosses). Bands already out are untouched here; they stop hunting (BandLevyNPC).</summary>
+		public static bool NaturalSpawnBlocked(WarbandsConfig cfg) => BossFight.Held(cfg);
 
 		/// <summary>Any boss (vanilla or modded: NPC.boss) alive in the world.</summary>
 		public static bool BossAlive()
@@ -184,7 +192,9 @@ namespace Warbands.Common
 		{
 			var type = BandTypes.FromIndex(typeIdx); if (type == null || p == null || !p.active) return false;
 			var cfg = WarbandsConfig.Get; if (cfg == null) return false;
-			return SpawnBand(p, type, cfg.SummonedBandSize, 24, 34, false);
+			bool ok = SpawnBand(p, type, cfg.SummonedBandSize, 24, 34, false);
+			if (ok && LastBrain != null) LastBrain.Summoned = true;
+			return ok;
 		}
 
 		/// <summary>True when nothing solid (a platform or a tree top does not count) lies over tile column <paramref name="x"/> from row <paramref name="y"/> up to 40 tiles: the spot is under the open sky.</summary>

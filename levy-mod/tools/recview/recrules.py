@@ -18,7 +18,7 @@ Pumpkin Moon / Frost Moon wave bosses never start, extend or merge into a boss f
 fight, so a Lunatic Cultist win became "Cultist, Solar Pillar, ... lost" and a pillar standing from the start glued every later boss into one
 file. episodes() cuts such a file where no real boss stood for longer than the recorder's own grace and reads each part by the rule above.
 """
-import copy, re
+import copy, datetime, re
 
 TICKS = 60
 LOST_WINDOW = 60 * TICKS          # FightRecorder.LostWindowTicks
@@ -141,7 +141,8 @@ def episodes(rows, force=False):
     """Split a recording into its fights. Only a recording that contains event NPCs (pillars and the like) is split; any other comes back whole as one
     episode (rows untouched, end.result re-read by the rule). Each episode is a dict(rows, name, result, ...) whose rows form a complete recording of
     its own (ticks re-based to 0, one synthesized end record carrying the result, hdr.split saying where it came from)."""
-    if not (force or has_event_npcs(rows)):
+    hdr = next((r for r in rows if r.get("k") == "hdr"), {})
+    if not (force or has_event_npcs(rows)) or (hdr.get("split") and not force):   # an episode already cut out stays whole
         return [{"rows": rows, "whole": True, **classify(rows)}]
     spans = episode_spans(rows)
     if not spans:
@@ -150,6 +151,46 @@ def episodes(rows, force=False):
     for n, (s, e) in enumerate(spans, 1):
         out.append(_cut(rows, s, e, n, len(spans)))
     return out
+
+
+ARENA_NEAR = 60                   # tiles: an arena record this close to the action stays with a split fight
+CMD_NEAR = 100                    # tiles: the commander counts as in the fight only this close to the main boss (not on her way there, not respawned at base)
+
+
+def action_points(rows):
+    """[(x, y)] in tiles where the fight happened: the main boss in every frame it stood (event NPCs left out), and the living commander in
+    those frames when she was within CMD_NEAR tiles of it."""
+    pts = []
+    for f in _frames(rows):
+        mb = next((b for b in f.get("b", []) if b[13] == 0 and not is_event_npc(b[0])), None)
+        if mb is None:
+            continue
+        bx, by = mb[2] / 16.0, mb[3] / 16.0
+        pts.append((bx, by))
+        p = f.get("p") or []
+        if len(p) > 5 and not int(p[5]) & DEAD_FLAG:
+            cx, cy = p[0] / 16.0, p[1] / 16.0
+            if abs(cx - bx) <= CMD_NEAR and abs(cy - by) <= CMD_NEAR:
+                pts.append((cx, cy))
+    return pts
+
+
+def fight_arenas(rows, near=ARENA_NEAR):
+    """The arena (terrain) records that touch the fight: those overlapping or within `near` tiles of an action point. A recording split from a
+    long one carries every arena of its source (older recorders captured terrain only where the recording began), so a fight held far from
+    there keeps none, and the page says no terrain was recorded instead of framing a map from somewhere else."""
+    arenas = [r for r in rows if r.get("k") == "arena"]
+    pts = action_points(rows)
+    if not pts:
+        return arenas
+    pts = pts[::max(1, len(pts) // 4000)]
+    keep = []
+    for a in arenas:
+        x0, y0 = a.get("x0", 0) - near, a.get("y0", 0) - near
+        x1, y1 = a.get("x0", 0) + a.get("w", 0) + near, a.get("y0", 0) + a.get("h", 0) + near
+        if any(x0 <= x <= x1 and y0 <= y <= y1 for x, y in pts):
+            keep.append(a)
+    return keep
 
 
 def _shift(o, base, keys=("t",)):
@@ -201,10 +242,19 @@ def _cut(rows, s, e, n, total):
     meta["bossName"] = name
     new_hdr["meta"] = meta
     new_hdr["split"] = {"episode": n, "of": total, "t0": s, "t1": e}
+    if hdr.get("date"):                       # the episode's own start time, so each fight shows (and sorts by) when it began
+        try:
+            d0 = datetime.datetime.fromisoformat(hdr["date"])
+            new_hdr["date"] = (d0 + datetime.timedelta(seconds=round(s / TICKS))).isoformat(timespec="seconds")
+            new_hdr["split"]["srcDate"] = hdr["date"]
+        except (TypeError, ValueError):
+            pass
     out = [new_hdr]
+    # only the terrain this fight touched (the source carries every arena of the whole recording)
+    near = set(id(a) for a in fight_arenas([r for r in rows if r.get("k") == "arena"] + fr))
     for r in rows:
         k = r.get("k")
-        if k in ("arena", "cam", "names"):
+        if k in ("cam", "names") or (k == "arena" and id(r) in near):
             out.append(r)
     out.extend(_shift(f, s) for f in fr)
     out.extend(_shift(x, s) for x in ev)
@@ -217,9 +267,12 @@ def _cut(rows, s, e, n, total):
 
 
 def file_name(src_name, ep):
-    """YYYY-MM-DD_HH-MM_Boss_result.levyrec for an episode (the source's stamp is kept; -N marks later episodes of the same minute)."""
+    """YYYY-MM-DD_HH-MM_Boss_result[_epN].levyrec for an episode: the stamp is the minute the fight began (from its header), else the source's stamp; _epN marks which fight of the source it was."""
     m = re.match(r"^(\d{4}-\d{2}-\d{2}_\d{2}-\d{2})_", src_name)
-    stamp = m.group(1) if m else "split"
+    date = ((ep.get("rows") or [{}])[0].get("date") or "") if ep.get("rows") else ""
+    dm = re.match(r"^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})", date)
+    # the episode's own start minute when the header has it (a source named without a stamp gets one), else the source's stamp
+    stamp = ("%s_%s-%s" % dm.groups()) if dm else (m.group(1) if m else "split")
     safe = re.sub(r"[^A-Za-z0-9]", "_", ep.get("name") or "Fight")
     return "%s_%s_%s%s.levyrec" % (stamp, safe, ep["result"], "" if ep.get("of", 1) == 1 else "_ep%d" % ep["episode"])
 

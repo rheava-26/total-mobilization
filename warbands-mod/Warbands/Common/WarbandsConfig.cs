@@ -19,8 +19,11 @@ namespace Warbands.Common
 		/// <summary>Chance per real minute, in percent, that a band forms near a player standing in the open. Rolled once per minute per player, only when fewer than the maximum number of bands are out. (Named afresh when the default went from 4 to 12, so a saved config does not hold the old figure.)</summary>
 		[Range(0f, 100f)] [DefaultValue(12f)] public float NaturalChancePercentPerMinute;
 
-		/// <summary>No new natural band forms while any boss is alive (a band already out stays and keeps fighting). Summoned bands and event bands are not held back.</summary>
+		/// <summary>While a boss fight is on (the rule Levy's fight recorder uses) and for the grace window after it: no natural or event band forms, and a band already out stays at its camp instead of hunting. Summoned bands are the player's own choice and are not held.</summary>
 		[DefaultValue(true)] public bool NoSpawnsDuringBosses;
+
+		/// <summary>Seconds after the last boss of a fight falls during which bands are still held back.</summary>
+		[Range(0, 600)] [DefaultValue(90)] public int BossGraceSeconds;
 
 		[Range(1, 12)] [DefaultValue(3)] public int BandSizeMin;
 		[Range(1, 12)] [DefaultValue(5)] public int BandSizeMax;
@@ -70,6 +73,12 @@ namespace Warbands.Common
 		[DefaultValue(true)] public bool EventPirates;
 		[DefaultValue(true)] public bool EventSandstorm;
 		[DefaultValue(true)] public bool EventSlimeRain;
+
+		/// <summary>Chance, in percent, that a Sandstorm sends a band at all. Rolled once when the sandstorm starts.</summary>
+		[Range(0f, 100f)] [DefaultValue(35f)] public float EventSandstormChancePercent;
+
+		/// <summary>Real minutes that must pass after one Sandstorm band formed before another sandstorm may send one.</summary>
+		[Range(0, 240)] [DefaultValue(20)] public int EventSandstormCooldownMinutes;
 
 		/// <summary>Seconds between one event band being beaten and the next forming, while the event lasts.</summary>
 		[Range(10, 600)] [DefaultValue(90)] public int EventBandCooldownSeconds;

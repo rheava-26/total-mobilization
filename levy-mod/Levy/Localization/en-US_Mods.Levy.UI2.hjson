@@ -128,6 +128,8 @@ SearchDestroyHint: Regulars within 150 tiles roam outward from the settlement hu
 SearchDestroyHintRadio: Every Regular, anywhere, roams outward from the settlement hunting enemies, keeping their standoff. Any that end up more than 60 tiles from you and out of sight teleport to you.
 FreeReinHint: Regulars within 150 tiles act fully on their own. They roam far from you and the settlement, follow the fighting, and keep their standoff. They never teleport to you.
 FreeReinHintRadio: Every Regular, anywhere, acts fully on its own. They roam far from you and the settlement, follow the fighting, and keep their standoff. They never teleport to you.
+RegroupHint: Regulars within 150 tiles hunt like Search & destroy. Respawned levies appear beside you. During a boss fight they act on their own like Free rein.
+RegroupHintRadio: Every Regular, anywhere, hunts like Search & destroy. Respawned levies appear beside you. During a boss fight they act on their own like Free rein.
 FocusDesignate: Click an enemy, a critter, or a spot to attack. Right-click or press Escape to cancel.
 FocusCursorHint: Click a target or a spot to attack
 FocusCancelled: Focus attack cancelled.

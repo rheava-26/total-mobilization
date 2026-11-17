@@ -88,6 +88,15 @@ chk(eps[0]["cmdDeaths"] == 0 and eps[1]["name"] == "Eye of Cthulhu", "her later 
 last = eps[0]["rows"][-1]
 chk(last["k"] == "end" and last["result"] == "won" and last["bossName"] == "Lunatic Cultist" and last["reclassified"] == 1, "the new end record says won, bossName Lunatic Cultist")
 chk(eps[0]["rows"][0].get("split", {}).get("episode") == 1 and eps[0]["rows"][1]["k"] != "e", "the episode names where it came from")
+# each fight carries the time it began; a cut fight is not cut again; the split file is named for that minute
+rows[0]["date"] = "2026-11-16T22:11:33"
+eps_d = R.episodes(rows)
+chk(eps_d[0]["rows"][0]["date"] == "2026-11-16T22:11:33" and eps_d[1]["rows"][0]["date"] > "2026-11-16T22:24" and eps_d[1]["rows"][0]["split"]["srcDate"] == "2026-11-16T22:11:33",
+    "each fight's header date is when it began (%s, %s)" % (eps_d[0]["rows"][0]["date"], eps_d[1]["rows"][0]["date"]))
+chk(R.file_name("cultist_pillars_2211.levyrec", eps_d[1]).startswith(eps_d[1]["rows"][0]["date"][:10] + "_" + eps_d[1]["rows"][0]["date"][11:16].replace(":", "-") + "_Eye_of_Cthulhu_"),
+    "a split file is named for the minute its fight began (%s)" % R.file_name("cultist_pillars_2211.levyrec", eps_d[1]))
+again = R.episodes(eps_d[1]["rows"])
+chk(len(again) == 1 and again[0].get("whole"), "a fight already cut out comes back whole")
 # pillars only: no fight at all
 only = rec([frame(t, [brow(SOLAR, 115)]) for t in range(0, 4000, 20)], [{"k": "e", "t": 0, "e": "boss", "npc": SOLAR, "name": "Solar Pillar", "id": 115}])
 chk(R.episode_spans(only) == [], "pillars standing alone are no fight")
@@ -98,6 +107,7 @@ chk(len(R.episodes(rec(fr_alive, ev_fled))) == 1 and R.episodes(rec(fr_alive, ev
 import make_site as ms
 s = ms.summarize(rec(fr, ev_lost))
 chk(s["result"] == "loss" and s["rule"] == "lost" and s["cmdDeaths"] == 1, "make_site: a boss that left after her fall is a loss, not 'despawn' (%s)" % s["result"])
+chk(ms.main_boss(frame(0, [brow(SOLAR, 115), brow(EOC, 7)]))[0] == EOC and ms.main_boss(frame(0, [brow(SOLAR, 115)])) is None, "make_site: a pillar is never the main boss")
 s2 = ms.summarize(rec(fr_alive, ev_fled))
 chk(s2["result"] == "fled", "make_site: boss left, commander alive: fled (%s)" % s2["result"])
 cfr = [frame(t, [brow(EOC, 7)], c=[[85, 1000.4 + t, 480.6, 12.34, -1.0, 16, 16], [85, 1100, 400, 0, 0, 16, 16]]) for t in range(0, 40, 2)]

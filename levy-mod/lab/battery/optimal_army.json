@@ -1,0 +1,813 @@
+{
+ "note": "The optimal 34-levy army at Eve's tier (post Golem, Plaguebringer, Ravager, Astrum Deus, Lunatic Cultist, pillars up; no Moon Lord,\nno Duke Fishron or Empress drops). Same grade (Levy), same slots as Eve's levies: weapon + sidearm, 3 armor, 2 accessories + wings + boots + hook.\nWeapons: the top measured levy DPS at boss defense 50 (specs/battery_dps*.yaml; whips from docs/ARMYSWEEP_DPS.tsv because the\ndummy trial cannot measure them), at most 6 levies per weapon so no single weapon's static hit cooldown is shared by the whole army.\nExcluded: weapons broken or suspect in levy hands (Apoctosis Array reads 41k DPS, Doomsday Device / Star Shower / Ultimus Cleaver 0,\nWingman half rate, the weak spears) and pure-contact blades (Psycho Knife: it has to touch the boss).",
+ "accSlots": 2,
+ "honey": true,
+ "stations": [
+  "campfire",
+  "heartlantern",
+  "starinabottle",
+  "sunflower",
+  "bast",
+  "sharpening",
+  "wartable",
+  "bewitching",
+  "ammobox",
+  "crystalball"
+ ],
+ "stationLevel": 2,
+ "buffs": [],
+ "levies": [
+  {
+   "id": 1,
+   "cls": "E",
+   "weapon": "Daybreak@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1452
+  },
+  {
+   "id": 2,
+   "cls": "E",
+   "weapon": "Daybreak@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1452
+  },
+  {
+   "id": 3,
+   "cls": "E",
+   "weapon": "Daybreak@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1452
+  },
+  {
+   "id": 4,
+   "cls": "E",
+   "weapon": "Daybreak@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1452
+  },
+  {
+   "id": 5,
+   "cls": "E",
+   "weapon": "Daybreak@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1452
+  },
+  {
+   "id": 6,
+   "cls": "E",
+   "weapon": "Daybreak@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1452
+  },
+  {
+   "id": 7,
+   "cls": "E",
+   "weapon": "Solar Eruption@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1407
+  },
+  {
+   "id": 8,
+   "cls": "E",
+   "weapon": "Solar Eruption@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1407
+  },
+  {
+   "id": 9,
+   "cls": "E",
+   "weapon": "Solar Eruption@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1407
+  },
+  {
+   "id": 10,
+   "cls": "E",
+   "weapon": "Solar Eruption@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1407
+  },
+  {
+   "id": 11,
+   "cls": "E",
+   "weapon": "Solar Eruption@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1407
+  },
+  {
+   "id": 12,
+   "cls": "E",
+   "weapon": "Solar Eruption@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1407
+  },
+  {
+   "id": 13,
+   "cls": "E",
+   "weapon": "Chlorophyte Saber@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1149
+  },
+  {
+   "id": 14,
+   "cls": "E",
+   "weapon": "Chlorophyte Saber@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1149
+  },
+  {
+   "id": 15,
+   "cls": "E",
+   "weapon": "Chlorophyte Saber@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1149
+  },
+  {
+   "id": 16,
+   "cls": "E",
+   "weapon": "Chlorophyte Saber@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1149
+  },
+  {
+   "id": 17,
+   "cls": "E",
+   "weapon": "Chlorophyte Saber@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1149
+  },
+  {
+   "id": 18,
+   "cls": "E",
+   "weapon": "Chlorophyte Saber@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 1149
+  },
+  {
+   "id": 19,
+   "cls": "S",
+   "weapon": "Morning Star@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Papyrus Scarab@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 979,
+   "side": "Stardust Cell Staff@Ruthless"
+  },
+  {
+   "id": 20,
+   "cls": "S",
+   "weapon": "Morning Star@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Papyrus Scarab@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 979,
+   "side": "Stardust Cell Staff@Ruthless"
+  },
+  {
+   "id": 21,
+   "cls": "S",
+   "weapon": "Morning Star@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Papyrus Scarab@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 979,
+   "side": "Stardust Cell Staff@Ruthless"
+  },
+  {
+   "id": 22,
+   "cls": "S",
+   "weapon": "Morning Star@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Papyrus Scarab@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 979,
+   "side": "Stardust Cell Staff@Ruthless"
+  },
+  {
+   "id": 23,
+   "cls": "S",
+   "weapon": "Morning Star@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Papyrus Scarab@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 979,
+   "side": "Stardust Cell Staff@Ruthless"
+  },
+  {
+   "id": 24,
+   "cls": "S",
+   "weapon": "Morning Star@Legendary",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Papyrus Scarab@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 979,
+   "side": "Stardust Cell Staff@Ruthless"
+  },
+  {
+   "id": 25,
+   "cls": "R",
+   "weapon": "CalamityMod/StarSputter@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 828
+  },
+  {
+   "id": 26,
+   "cls": "R",
+   "weapon": "CalamityMod/StarSputter@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 828
+  },
+  {
+   "id": 27,
+   "cls": "R",
+   "weapon": "CalamityMod/StarSputter@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 828
+  },
+  {
+   "id": 28,
+   "cls": "R",
+   "weapon": "CalamityMod/StarSputter@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 828
+  },
+  {
+   "id": 29,
+   "cls": "R",
+   "weapon": "CalamityMod/StarSputter@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 828
+  },
+  {
+   "id": 30,
+   "cls": "R",
+   "weapon": "CalamityMod/StarSputter@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 828
+  },
+  {
+   "id": 31,
+   "cls": "R",
+   "weapon": "Vortex Beater@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 808,
+   "ammo": "CalamityMod/BubonicRound"
+  },
+  {
+   "id": 32,
+   "cls": "R",
+   "weapon": "Vortex Beater@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 808,
+   "ammo": "CalamityMod/BubonicRound"
+  },
+  {
+   "id": 33,
+   "cls": "R",
+   "weapon": "Vortex Beater@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 808,
+   "ammo": "CalamityMod/BubonicRound"
+  },
+  {
+   "id": 34,
+   "cls": "R",
+   "weapon": "Vortex Beater@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 808,
+   "ammo": "CalamityMod/BubonicRound"
+  }
+ ]
+}

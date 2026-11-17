@@ -43,6 +43,7 @@ namespace Levy.Common.Testing
 			SetBossesTarget(true);
 			On_Player.KillMe += BetKillMeDetour; _betHooked = true;
 			var bar = TestTileEntities.Add<BarracksTE>(BetBarracksId, new Point16(Cx - 30, FloorY - 3)); bar.TownName = "BetCheckTown";
+			SaveHoldCheck.ProbeMidCheck("BossBugs bet barracks");
 			Player me = Main.player[0];
 			int bt = ModContent.BuffType<global::Levy.Content.Buffs.SpectatorBuff>();
 			try

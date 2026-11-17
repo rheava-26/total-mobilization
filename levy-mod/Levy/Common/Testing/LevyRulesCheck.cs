@@ -394,6 +394,7 @@ namespace Levy.Common.Testing
 				armory = TestTileEntities.Add<ArmoryTE>(armoryId, new Point16((int)(at.X / 16f) + 1, (int)(at.Y / 16f) - 3)); // built as a placed one: the world save can write it (TestTileEntities)
 				armory.FitPotions();
 				armory.IssuePotions[0] = Make(ItemID.HealingPotion, 30);
+				if (!stone) SaveHoldCheck.ProbeMidCheck("LevyRules potion armory"); // where the 11-17 autosave landed: a save now must neither throw nor run
 				int expectDelay = s.PotionDelayFor(Make(ItemID.HealingPotion));
 				s.PotionSickness = 0;
 				Vector2 stand = s.NPC.position;

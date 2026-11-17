@@ -275,3 +275,134 @@ def file_name(src_name, ep):
     stamp = ("%s_%s-%s" % dm.groups()) if dm else (m.group(1) if m else "split")
     safe = re.sub(r"[^A-Za-z0-9]", "_", ep.get("name") or "Fight")
     return "%s_%s_%s%s.levyrec" % (stamp, safe, ep["result"], "" if ep.get("of", 1) == 1 else "_ep%d" % ep["episode"])
+
+
+# ------------------------------------------------------------------ format 12: event recordings
+# The C# originals are EventRecorder (DecideRecording, EventResult, DecideInvasion, DecideAcid, BaseImportance, FallbackMini, MinibossTypes, Priority)
+# and the format 12 block at the top of FightRecFormat.cs. Keep the two identical.
+#
+# EVENT RESULT RULE  (won | survived | lost | ended | interrupted)
+#   lost         the army was gone: no levy or militia body anywhere for 90 s (ARMY_GONE_TICKS) while an event still ran (never when the recording
+#                had no levy at all, nor while the Old One's Army sentry mode stood the regulars down on purpose).
+#   interrupted  the world closed (or the file was cut short: no end record).
+#   survived     the 60 minute cap (EVENT_MAX_TICKS) or the file size cap stopped it.
+#   ended        the setting went off, a write failed.
+#   otherwise    the MAIN event's own result when it ended: invasions won when their size ran out (else ended); the Pumpkin and Frost Moons won when
+#                wave 15 was reached before dawn, else survived; the Old One's Army won / lost (the crystal) / ended; the Celestial Pillars won;
+#                Acid Rain won when the last points seen were at most 10 % of the start and at most 2, else survived; Blood Moon and Solar Eclipse survived.
+#   The MAIN event is the first in EVENT_PRIORITY that the recording saw.
+EVENT_PRIORITY = ["pillars", "martianmadness", "pirates", "goblinarmy", "frostlegion", "oldonesarmy", "pumpkinmoon", "frostmoon", "acidrain", "solareclipse", "bloodmoon"]
+EVENT_NAMES = {"goblinarmy": "Goblin Army", "frostlegion": "Frost Legion", "pirates": "Pirate Invasion", "martianmadness": "Martian Madness", "pumpkinmoon": "Pumpkin Moon",
+               "frostmoon": "Frost Moon", "solareclipse": "Solar Eclipse", "oldonesarmy": "Old One's Army", "bloodmoon": "Blood Moon", "pillars": "Celestial Pillars", "acidrain": "Acid Rain"}
+ARMY_GONE_TICKS = 90 * TICKS        # EventRecorder.ArmyGoneTicks
+EVENT_MAX_TICKS = 60 * 60 * TICKS   # EventRecorder.MaxTicks
+FINAL_MOON_WAVE = 15
+# importance: 2 boss, 1 miniboss, 0 normal (EventRecorder.BaseImportance and the fallback)
+PILLARS = frozenset([517, 422, 507, 493])
+BETSY = 551
+MINIBOSS_TYPES = frozenset([471, 491, 492, 392, 393, 394, 395, 325, 327, 328, 344, 346, 345, 477, 564, 565, 576, 577, 618])
+FALLBACK_RATIO, FALLBACK_MIN_LIFE, FALLBACK_MIN_TYPES = 6, 1000, 3
+
+
+def event_name(eid):
+    return EVENT_NAMES.get(eid, eid or "Event")
+
+
+def is_event_recording(rows_or_hdr):
+    hdr = rows_or_hdr if isinstance(rows_or_hdr, dict) else next((r for r in rows_or_hdr if r.get("k") == "hdr"), {})
+    return hdr.get("kind") == "event"
+
+
+def invasion_result(size_after):
+    return "won" if size_after <= 0 else "ended"
+
+
+def moon_result(wave_max):
+    return "won" if wave_max >= FINAL_MOON_WAVE else "survived"
+
+
+def dd2_result(won, lost):
+    return "won" if won else "lost" if lost else "ended"
+
+
+def acid_result(start_pts, last_pts):
+    return "won" if last_pts is not None and 0 <= last_pts <= max(2, (start_pts or 0) // 10) else "survived"
+
+
+def decide_recording(reason, main_result):
+    """EventRecorder.DecideRecording. reason None = no end record (the file was cut short)."""
+    if reason == "army gone":
+        return "lost"
+    if reason in ("world unloaded", "unloaded", None):
+        return "interrupted"
+    if reason in ("time limit", "size limit"):
+        return "survived"
+    if reason == "event over":
+        return main_result or "ended"
+    return "ended"
+
+
+def fallback_mini(life_max, median):
+    return median > 0 and life_max >= FALLBACK_MIN_LIFE and life_max >= FALLBACK_RATIO * median
+
+
+def normal_median(imp, life):
+    """Median of the largest life of every ordinary type (imp 0); 0 with fewer than FALLBACK_MIN_TYPES types."""
+    v = sorted(life[t] for t in life if imp.get(t) == 0)
+    return v[len(v) // 2] if len(v) >= FALLBACK_MIN_TYPES else 0
+
+
+def base_importance(npc_type, boss_flag=False):
+    if npc_type in PILLARS or npc_type == BETSY:
+        return 2
+    if npc_type in MINIBOSS_TYPES:
+        return 1
+    return 2 if boss_flag else 0
+
+
+def importance_table(rows):
+    """{type: imp} of a format 12 recording: the header roster, then every nt line (a later line wins)."""
+    out = {}
+    hdr = next((r for r in rows if r.get("k") == "hdr"), {})
+    for t, v in (hdr.get("roster") or {}).items():
+        out[int(t)] = v.get("imp", 1)
+    for r in rows:
+        if r.get("k") == "nt":
+            out[r["type"]] = r.get("imp", 0)
+    return out
+
+
+def classify_event(rows):
+    """The result of an event recording read from the file: per-event results from evend events (and end.results), the main event by priority, the reason
+    from the end record (none: cut short, interrupted). Returns dict(result, main, name, results, reason, waveMax, kills, minibossKills, levyDeaths, dur, seen)."""
+    hdr = next((r for r in rows if r.get("k") == "hdr"), {})
+    end = next((r for r in reversed(rows) if r.get("k") == "end"), None)
+    ev = _events(rows)
+    seen = list(hdr.get("events") or ([hdr["event"]] if hdr.get("event") else []))
+    results = {}
+    wave_max = hdr.get("wave", 0) or 0
+    for e in ev:
+        k = e.get("e")
+        if k == "evstart" and e.get("ev") not in seen:
+            seen.append(e["ev"])
+        elif k == "evend":
+            results[e.get("ev")] = e.get("result")
+        elif k == "wave":
+            wave_max = max(wave_max, e.get("n", 0))
+    if end:
+        for k2, v in (end.get("results") or {}).items():
+            results.setdefault(k2, v)
+    pri = [x for x in EVENT_PRIORITY if x in seen] or [hdr.get("event")]
+    main = pri[0]
+    reason = end.get("reason") if end else None
+    result = decide_recording(reason, results.get(main))
+    fr = _frames(rows)
+    dur = ((fr[-1]["t"] - fr[0]["t"]) / TICKS) if fr else 0
+    kills = (end or {}).get("kills")
+    mini = (end or {}).get("minibossKills")
+    if kills is None:
+        kc = [e for e in ev if e.get("e") == "kc"]
+        kills = kc[-1].get("n", 0) if kc else 0
+        mini = sum(1 for e in ev if e.get("e") == "ekill" and e.get("imp") == 1)
+    return {"result": result, "main": main, "name": event_name(main), "results": results, "reason": reason, "waveMax": wave_max, "kills": kills or 0,
+            "minibossKills": mini or 0, "levyDeaths": sum(1 for e in ev if e.get("e") == "ldeath"), "dur": round(dur, 1), "seen": seen}

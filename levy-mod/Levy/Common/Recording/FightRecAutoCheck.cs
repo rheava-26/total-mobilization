@@ -29,7 +29,7 @@ namespace Levy.Common.Recording
 		private static string NewTemp() { string d = Path.Combine(Path.GetTempPath(), "levy_fightrec_check_" + Guid.NewGuid().ToString("N").Substring(0, 8)); Directory.CreateDirectory(d); return d; }
 		private static void Rm(string d) { try { Directory.Delete(d, true); } catch { } }
 
-		private static List<string> ReadLines(string path, bool gz, out string err)
+		internal static List<string> ReadLines(string path, bool gz, out string err)
 		{
 			err = null; var l = new List<string>();
 			try
@@ -175,7 +175,7 @@ namespace Levy.Common.Recording
 
 		private int _pass, _fail;
 		private void Chk(bool ok, string name) { if (ok) _pass++; else { _fail++; Mod.Logger.Warn("  fightrecauto world: FAIL " + name); } }
-		private const int Floor = 120;
+		internal const int Floor = 120;
 		private static System.Reflection.FieldInfo _clock;
 
 		private void RunWorld()
@@ -212,6 +212,7 @@ namespace Levy.Common.Recording
 				Chk(spawned.Count == 2, "two levy bodies stand next to the commander");
 
 				FightRecAuto.TestClient = true; FightRecAuto.TestFolder = good; FightRecAuto.TestDefaultDir = def; FightRecAuto.ResetMessages();
+				EventRecorder.TestEnabled = false; // the boss checks run with no event recording (a world that loads during a Blood Moon must not change them); EventRecCheck turns it on
 				FightRecorder.MaxFolderBytes = 0; FightRecorder.MaxFileBytes = 0; FightRecorder.ForceSync = true; RecWriter.FlushMs = 20;
 
 				// ---------- 1. Boss fights: a skirmish does not start it, the boss does, a killed boss is "won"
@@ -394,12 +395,15 @@ namespace Levy.Common.Recording
 				Chk(!FightRecorder.On && FightRecAuto.Said.Exists(m => m.Contains("could not start") || m.Contains("recording is off")), "with no writable folder at all it does not record and says why");
 				Main.npc[boss].active = false;
 				RunProf(p, cx, good, def, recs, spawned);
+				if (Environment.GetEnvironmentVariable("LEVY_EVENTREC") != "0") EventRecCheck.Run(Mod, p, cx, good, recs, spawned);
 				if (Environment.GetEnvironmentVariable("LEVY_FIGHTRECAUTO_SIZEPROBE") == "1") SizeProbe(p, cx, good, recs, spawned);
 			}
 			catch (Exception e) { _fail++; Mod.Logger.Warn("  fightrecauto world: threw " + e); }
 			finally
 			{
 				try { if (FightRecorder.On) FightRecorder.Stop("self-check over"); } catch { }
+				try { if (EventRecorder.On) EventRecorder.Stop("self-check over"); } catch { }
+				EventRecorder.TestEnabled = null; EventRecorder.TestMaxTicks = 0; EventRecorder.TestArmyGoneTicks = 0;
 				FightRecAuto.TestClient = false; FightRecAuto.TestMode = null; FightRecAuto.TestFolder = FightRecAuto.TestDefaultDir = null; FightRecAuto.ResetMessages();
 				FightRecorder.MaxFolderBytes = 0; FightRecorder.MaxFileBytes = 0; FightRecorder.ForceSync = false; RecWriter.FlushMs = oldFlush;
 				foreach (int i in spawned) { try { Main.npc[i].active = false; } catch { } }
@@ -720,14 +724,14 @@ namespace Levy.Common.Recording
 			return -1;
 		}
 
-		private static int SpawnBoss(int cx, int type = NPCID.EyeofCthulhu)
+		internal static int SpawnBoss(int cx, int type = NPCID.EyeofCthulhu)
 		{
 			int i = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("FightRecAutoCheck"), cx * 16 + 400, (Floor - 25) * 16, type);
 			if (i >= 0) { NPC b = Main.npc[i]; b.aiStyle = -1; b.noGravity = true; b.noTileCollide = true; b.life = b.lifeMax = 2800; b.damage = 0; b.ai[3] = 4242f; }
 			return i;
 		}
 
-		private static List<int> SpawnAdds(int cx, int n)
+		internal static List<int> SpawnAdds(int cx, int n)
 		{
 			var l = new List<int>();
 			for (int k = 0; k < n; k++)
@@ -738,15 +742,15 @@ namespace Levy.Common.Recording
 			return l;
 		}
 
-		private static void KillAdds(List<int> adds) { foreach (int i in adds) Main.npc[i].active = false; adds.Clear(); }
+		internal static void KillAdds(List<int> adds) { foreach (int i in adds) Main.npc[i].active = false; adds.Clear(); }
 
 		/// <summary>Advances the game clock by hand and runs what the system runs every tick. Keeps the scripted boss and commander in place.</summary>
-		private static void Step(int ticks, Player p, int? boss)
+		internal static void Step(int ticks, Player p, int? boss)
 		{
 			for (int k = 0; k < ticks; k++) One(p, boss ?? -1, k);
 		}
 
-		private static void One(Player p, int boss, int k)
+		internal static void One(Player p, int boss, int k)
 		{
 			_clock ??= typeof(Main).GetField("_gameUpdateCount", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 			_clock.SetValue(null, Main.GameUpdateCount + 1u);
@@ -762,7 +766,7 @@ namespace Levy.Common.Recording
 		}
 
 		/// <summary>The commander and an unnamed shooter hit the boss every few ticks while the clock runs; one commander hit; real-time pauses so the writer thread can flush.</summary>
-		private static void ScriptHits(Player p, int boss, int ticks, int sleep = 1)
+		internal static void ScriptHits(Player p, int boss, int ticks, int sleep = 1)
 		{
 			for (int k = 0; k < ticks; k++)
 			{
@@ -777,7 +781,7 @@ namespace Levy.Common.Recording
 			}
 		}
 
-		private static int StepUntilStopped(Player p, int boss, int max)
+		internal static int StepUntilStopped(Player p, int boss, int max)
 		{
 			int n = 0;
 			while (FightRecorder.On && n < max) { One(p, boss, n); n++; }

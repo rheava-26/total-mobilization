@@ -55,6 +55,37 @@ namespace Levy.Common.Recording
 	///         Everscream, Ice Queen, Santa-NK1). They never start a boss recording, keep one running, merge into one or add to its name, so the Cultist's win ends when the Cultist falls and the pillars it calls are not part of it. Their hitboxes still appear (key s, and a for those that
 	///         touch-damage). No automatic recording of an event on its own: "Record fights automatically: all fights" still records the skirmish around the commander, under the label of the event or "Fight", as it always did; "boss fights" does not record pillars.
 	///         Older files stay readable: every new field is appended or optional.
+	///         Format 12 adds EVENT RECORDINGS (EventRecorder) and wider coverage of boss recordings. Every field is appended or optional; a reader of format 11 still reads a format 12 fight recording.
+	///         hdr.kind: "fight" (the boss / skirmish recorder) or "event". hdr.imp names the importance levels "0 normal,1 miniboss,2 boss".
+	///         nt line (any recording): {"k":"nt","type","name","imp"} the first time an enemy type is seen (a fight recording: in a or s; an event: any enemy). A later nt line for the same type wins (the event fallback below can raise a type to miniboss).
+	///         Fight recordings: l carries EVERY levy wherever it stands (it used to stop at 120 tiles from the commander); a levy outside the captured terrain gets 50 x 40 tile cells around it (60 tiles each side, 40 above and below), arena records with far = 1
+	///         that a viewer keeps out of its first fit. Officers, militia and drones as before. TERRAIN WHEREVER THE FIGHT GOES: the commander and every main boss get 50 x 40 tile cells around them (100 tiles each side, 60 above and below)
+	///         whenever they stand outside the captured area, so a fight that travels (1400 tiles to a boss) never plays in a black void; these arena records carry moved = 1. At most 4 cells a sample.
+	///         EVENT RECORDING (hdr.kind "event", file event_ID_YYYY-MM-DD_HH-MM_result.levyrec, auto 3): the whole world, not the commander's surroundings. 5 Hz (EventRecorder.SampleEvery 12). Header: event (id), eventName, events (ids running at the start),
+	///         roster {type: {name, imp}} (the event's own minibosses and bosses), wave (NPC.waveNumber at the start), worldW / worldH (tiles), army, the schemas. meta.trigger = "event".
+	///           ids: goblinarmy, frostlegion, pirates, martianmadness (Main.invasionType with invasionSize > 0), pumpkinmoon, frostmoon, solareclipse, bloodmoon (Main flags), oldonesarmy (DD2Event.Ongoing),
+	///           pillars (NPC.LunarApocalypseIsUp or any Celestial Pillar standing), acidrain (Calamity's AcidRainEvent.AcidRainEventIsOngoing, by reflection; never without Calamity).
+	///           frame f: t, p (the commander, SchemaP with only x,y,vx,vy,dir,flags 1/1024/4096/8192,life,mana,held,mount filled), l (every levy and militia body), a (every hostile NPC that is not a worm body segment, any distance; SchemaA),
+	///           s (worm body segments, SchemaS short / full rows as in format 7), j (hostile projectiles within about 100 tiles of a levy or the commander, at most 300). Positions are whole pixels.
+	///           terrain: arena records of 50 x 40 tile cells, captured once each, around every levy, the commander, every militia outpost and every enemy, wherever they move during the recording (100 tiles each side, 50 above and below), at most 6 cells a tick.
+	///           events: evstart / evend (another event begins or one ends inside the recording; evend carries its result), wave (n, ev: the moons and the Old One's Army), prog every 10 s (left, of: an invasion's size, Acid Rain's points),
+	///           kc every 10 s (n kills so far, mini miniboss kills, army = bodies standing), ekill (a miniboss or boss died: npc, name, id, imp, x, y, max), outposts (o = [[barracksId,x,y,mobilized,militia,town],..], at the start and when they change),
+	///           lhit (id, dmg, src body|proj|other, by boss|miniboss|enemy|world, npc, proj, life, max, x, y, kill), ldeath, lgear, cdeath, dmg once a second (rows as format 10; field 4 is the target's importance 0/1/2, field 8 always 0).
+	///           end: kind event, reason, result, durationSec, event (the main event), eventName (= bossName), eventsSeen, results {id: result}, waveMax, kills, minibossKills, bossKills, levyHits, levyDeaths, cmdDeaths, armyPeak, armyAlive, armyTotal,
+	///           arenaChunks, dmgAll, cpu {meanUs per tick while recording, maxMs worst tick, sampleUs per sample, hist = ticks by cost with the bucket edges histUs}, dropped, capped, writeError.
+	///         EVENT START: the "Record events" setting is on (default) and an event runs; checked every 30 ticks, so turning the setting on during an event starts one. A recording that stopped because the army was gone or a cap was reached
+	///           does not start again for that event until it has ended. One recording at a time: an event that starts while one runs is part of it (evstart). The MAIN event is the first in this order that the recording saw:
+	///           pillars, martianmadness, pirates, goblinarmy, frostlegion, oldonesarmy, pumpkinmoon, frostmoon, acidrain, solareclipse, bloodmoon. It names the file and decides the result.
+	///         EVENT END: every event it saw is over ("event over"); the army is gone: no levy or militia body anywhere for 90 s while an event runs (EventRecorder.ArmyGoneTicks; a regular respawns after 60 s, so nobody came back; a recording that never had a levy, and the
+	///           Old One's Army while its sentry mode stands the regulars down on purpose, never count as gone); the 60 minute cap
+	///           (EventRecorder.MaxTicks: about 36 MB of gzip at 60 levies, 100 enemies and 100 hostile projectiles all moving, measured by the world self-check); the size cap of the setting; the setting switched off; the world closing.
+	///         EVENT RESULT RULE (EventRecorder.DecideRecording / EventResult, tools/recview/recrules.py event_result): lost = the army was gone. interrupted = the world closed. survived = the 60 minute cap or the file size cap stopped it.
+	///           ended = the setting went off, a write failed. Otherwise the main event's own result when it ended: an invasion is won when its size ran out (the game clears it at 0), ended when something else removed it; the Pumpkin Moon and
+	///           Frost Moon are won when wave 15 (the last) was reached before dawn, survived when dawn came first; the Old One's Army is won (DD2Event.WonThisRun), lost (LostThisRun: the crystal fell) or ended; the Celestial Pillars are won
+	///           (all four down); Acid Rain is won when the last points seen were at most 10 % of the start (and at most 2), survived when Calamity ended it for no kills or no rain; the Blood Moon and the Solar Eclipse are survived.
+	///         IMPORTANCE (imp): 2 boss = NPC.boss, counted as a boss, a fight boss, the Celestial Pillars, Betsy; 1 miniboss = the hand list (EventRecorder.MinibossTypes: Goblin Summoner, Flying Dutchman and cannons, Martian Saucer and parts,
+	///           Mourning Wood, Pumpking and its blade, Everscream, Santa-NK1, Ice Queen, Mothron, Dark Mage T1/T3, Ogre T2/T3, Dreadnautilus; with Calamity Cragmaw Mire, Nuclear Terror, Mauler) or, in an event recording, the FALLBACK:
+	///           once 3 ordinary types have been seen, a type whose largest life is at least 6 times their median and at least 1000; 0 normal otherwise. A boss that appears during an event still gets its own fight recording.
 	///   names type id to name tables (items, npcs, projectiles, buffs, soldiers), written at the end
 	///   end   stop reason and counts
 	/// All positions are world pixels (centers). Plain data; nothing here touches the game, so it can self-check at boot.
@@ -80,7 +111,7 @@ namespace Levy.Common.Recording
 
 	internal static class FightRecFormat
 	{
-		public const int Version = 11;
+		public const int Version = 12;
 		public const string SchemaP = "x,y,vx,vy,dir,flags,life,mana,immune,wingTime,rocketTime,held,mount,hookX,hookY,dashDelay";
 		public const string SchemaPFlags = "1 grounded,2 flying,4 hookOut,8 hookAttached,16 left,32 right,64 jump,128 down,256 up,512 grapple,1024 useItem,2048 dashing,4096 mounted,8192 dead";
 		public const string SchemaB = "type,id,x,y,vx,vy,life,lifeMax,ai0,ai1,ai2,ai3,target,isPart,tkind,tlevy,w,h";
@@ -91,6 +122,7 @@ namespace Levy.Common.Recording
 		public const string SchemaJ = "type,x,y,vx,vy,damage,w,h";
 		public const string SchemaC = "type,x,y,vx,vy,w,h";
 		public const string SchemaL = "id,x,y,vx,vy,flags,life,state,held,wingTime,lifeMax,w,h";
+		public const string ImpNames = "0 normal,1 miniboss,2 boss";
 		public const string SchemaLFlags = "1 grounded,2 flying,4 aerial,8 hooking,16 blocked";
 
 		public static string N(double v)

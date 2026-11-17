@@ -78,7 +78,7 @@ details.grp>summary{cursor:pointer;color:var(--dim);font-size:11.5px;text-transf
 .card .sub{color:var(--dim);font-size:12px;margin-top:1px}
 .card .note{color:var(--ink);font-size:12px;margin-top:6px;opacity:.92;overflow-wrap:anywhere}
 .res{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:99px;padding:0 8px;white-space:nowrap}
-.res.win{color:var(--win)}.res.loss{color:var(--loss)}.res.timeout{color:var(--timeout)}.res.fled{color:var(--fled)}.res.despawn{color:var(--timeout)}.res.ended{color:var(--dim)}
+.res.win{color:var(--win)}.res.loss{color:var(--loss)}.res.timeout{color:var(--timeout)}.res.fled{color:var(--fled)}.res.despawn{color:var(--timeout)}.res.ended{color:var(--dim)}.res.survived{color:var(--fled)}.res.interrupted{color:var(--dim)}
 .badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
 .bd{font-size:11.5px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);background:var(--bd-bg);font-variant-numeric:tabular-nums}
 .bd.l{color:var(--l-ink);border-color:var(--l-line)}.bd.p{color:var(--p-ink);border-color:var(--p-line)}.bd.h{color:var(--h-ink);border-color:var(--h-line)}.bd.d{color:var(--d-ink);border-color:var(--d-line)}
@@ -190,7 +190,7 @@ body.big #strip,body.big .legend{display:none}
   <noscript><p class="warn">This page needs JavaScript to draw the replays.</p></noscript>
   <div id="body">
     <nav id="list" aria-label="Recorded fights">
-      <div class="filters"><button id="callBtn" title="hide the results, pick a fight and call the outcome">Call it</button><select id="fBoss" aria-label="filter by boss"><option value="">All bosses</option></select><select id="fRes" aria-label="filter by result"><option value="">Any result</option><option value="win">Win</option><option value="loss">Loss</option><option value="timeout">Timeout</option><option value="fled">Fled</option><option value="despawn">Boss left</option></select></div>
+      <div class="filters"><button id="callBtn" title="hide the results, pick a fight and call the outcome">Call it</button><select id="fBoss" aria-label="filter by boss"><option value="">All bosses</option></select><select id="fRes" aria-label="filter by result"><option value="">Any result</option><option value="win">Win</option><option value="loss">Loss</option><option value="timeout">Timeout</option><option value="fled">Fled</option><option value="despawn">Boss left</option><option value="survived">Survived</option></select></div>
       <div id="groups"><p class="small">Loading the fight list ...</p></div>
       <div class="listfoot"><label class="btn">Open a local recording (.jsonl)<input id="file" type="file" accept=".jsonl,.json,.txt"></label><span class="small">Or drop a recording on the radar.</span></div>
     </nav>
@@ -203,7 +203,7 @@ body.big #strip,body.big .legend{display:none}
           <button id="play" style="min-width:76px">Play</button>
           <button id="prevEv" title="previous hit or death">&#9664; hit</button>
           <button id="nextEv" title="next hit or death">hit &#9654;</button>
-          <label class="small">speed <select id="speed"><option value="0.5">0.5x</option><option value="1">1x</option><option value="2" selected>2x</option><option value="4">4x</option><option value="8">8x</option></select></label>
+          <label class="small">speed <select id="speed"><option value="0.5">0.5x</option><option value="1">1x</option><option value="2" selected>2x</option><option value="4">4x</option><option value="8">8x</option><option value="16">16x</option><option value="32">32x</option><option value="64">64x</option></select></label>
           <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="seek">
           <span id="time">0.00 / 0.00 s</span>
         </div>
@@ -254,7 +254,7 @@ function parseRec(text){   // a raw FightRecorder .jsonl (local file)
   for(const line of text.split("\n")){
     const s=line.trim(); if(!s) continue;
     let o; try{o=JSON.parse(s);}catch(e){continue;}
-    switch(o.k){case "hdr":R.hdr=o;break;case "arena":R.arena=o;R.arenas.push(o);break;case "cam":R.cam=o;break;case "f":R.frames.push(o);break;case "e":R.events.push(o);break;case "names":R.names=o;break;case "end":R.end=o;break;}
+    switch(o.k){case "hdr":R.hdr=o;break;case "arena":R.arena=o;R.arenas.push(o);break;case "cam":R.cam=o;break;case "f":R.frames.push(o);break;case "e":R.events.push(o);break;case "names":R.names=o;break;case "nt":(R.nt=R.nt||[]).push(o);break;case "end":R.end=o;break;}
   }
   if(!R.frames.length) throw new Error("no frames in file");
   return R;
@@ -276,13 +276,14 @@ function decRows(rows,last,idx,ipos){
 function fromData(o){      // a data/<fight>.json file written by make_site.py
   if(!o||!o.frames||!o.frames.length) throw new Error("the data file has no frames");
   if(o.v>=2){const L=new Map(),B=new Map(),AA=new Map(),SS=new Map(),pl=new Set([1,2]),pb=new Set([2,3]);for(const f of o.frames){if(f.l)f.l=decRows(f.l,L,0,pl);if(f.b)f.b=decRows(f.b,B,1,pb);if(f.a)f.a=decRows(f.a,AA,1,pb);if(f.s)f.s=decRows(f.s,SS,1,pb);}}
-  return {hdr:o.hdr||null,arena:o.arena||null,arenas:o.arenas||(o.arena?[o.arena]:[]),cam:o.cam||null,frames:o.frames,events:o.events||[],names:o.names||{items:{},npcs:{},projectiles:{},buffs:{},soldiers:{}},end:o.end||null};
+  return {hdr:o.hdr||null,arena:o.arena||null,arenas:o.arenas||(o.arena?[o.arena]:[]),cam:o.cam||null,frames:o.frames,events:o.events||[],names:o.names||{items:{},npcs:{},projectiles:{},buffs:{},soldiers:{}},end:o.end||null,nt:o.nt||null};
 }
 const tkOf=b=>b.length>14?b[14]:((b[12]>=0&&b[12]<255)?1:0);
 // event NPCs (Celestial Pillars, Martian Saucer, Flying Dutchman, Pumpkin/Frost Moon bosses) are never the main boss: same list as tools/recview/recrules.py
 const EVENT_NPC=new Set([517,422,507,493,392,393,394,395,491,492,325,327,328,344,345,346]);
 function mainBoss(f){const bs=(f.b||[]).filter(b=>!EVENT_NPC.has(b[0]));for(const b of bs) if(!b[13]) return b; return bs[0]||null;}
 function makeArena(R){
+  makeExtraTerrain(R);
   const A=R.terr; R.arenaImg=null; if(!A) return;
   const c=document.createElement("canvas"); c.width=A.w; c.height=A.h; const g=c.getContext("2d"); const im=g.createImageData(A.w,A.h);
   const grid=A.grid, top=rgb(T.terrTop), fill=rgb(T.terrFill), f2=rgb(T.terrFill2), wat=rgb(T.water);
@@ -297,11 +298,12 @@ function makeArena(R){
 }
 // format 4 writes several arena records (the start area, then strips as the fight moves, plus a Static Camera view); older files have one. All are merged into one grid.
 function mergeTerrain(R){
-  const AS=(R.arenas&&R.arenas.length?R.arenas:(R.arena?[R.arena]:[])).filter(a=>a&&a.rows&&a.w>0&&a.h>0); R.terr=null;
+  const ALL=(R.arenas&&R.arenas.length?R.arenas:(R.arena?[R.arena]:[])).filter(a=>a&&a.rows&&a.w>0&&a.h>0); R.terr=null;
+  const AS=ALL.filter(a=>!a.far&&!a.moved); R.extraArenas=ALL.filter(a=>a.far||a.moved);   // format 12: cells around far levies and where the fight travelled
   if(!AS.length) return;
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
   for(const a of AS){x0=Math.min(x0,a.x0);y0=Math.min(y0,a.y0);x1=Math.max(x1,a.x0+a.w);y1=Math.max(y1,a.y0+a.h);}
-  const W=x1-x0,H=y1-y0; if(W*H>4e6||W<=0||H<=0) return;
+  const W=x1-x0,H=y1-y0; if(W*H>4e6||W<=0||H<=0){R.extraArenas=ALL;return;}
   const grid=new Uint8Array(W*H);
   for(const a of AS){
     for(let r=0;r<a.rows.length&&r<a.h;r++){const row=a.rows[r]; let x=a.x0-x0; const base=(a.y0-y0+r)*W;
@@ -330,12 +332,14 @@ function build(R){
   if(pk>=0)R.band.push([ps,R.tmax+R.dt,pk]); R.tally=tl;
   R.trA=new Map(); R.hasAdds=false; R.hasSeg=false;
   for(const f of R.frames) if(f.s&&f.s.length){R.hasSeg=true;break;}
-  for(const f of R.frames) for(const a of (f.a||[])){R.hasAdds=true;let t=R.trA.get(a[1]);if(!t)R.trA.set(a[1],t=[]);t.push([f.t,a[2],a[3]]);}
+  const isEv=!!(R.hdr&&R.hdr.kind==="event");
+  for(const f of R.frames) for(const a of (f.a||[])){R.hasAdds=true;if(isEv)break;let t=R.trA.get(a[1]);if(!t)R.trA.set(a[1],t=[]);t.push([f.t,a[2],a[3]]);}
   R.gearCmd=R.events.filter(e=>e.e==="gear"); R.lgear=new Map(); for(const e of R.events) if(e.e==="lgear"){let a=R.lgear.get(e.id);if(!a)R.lgear.set(e.id,a=[]);a.push(e);}
   R.lbuf=new Map(); for(const e of R.events) if(e.e==="lbuf"){let a=R.lbuf.get(e.id);if(!a)R.lbuf.set(e.id,a=[]);a.push(e);}
   R.lhitBy=new Map(); for(const e of R.lhit){let a=R.lhitBy.get(e.id);if(!a)R.lhitBy.set(e.id,a=[]);a.push(e);}
   R.fellBy=new Map(); for(const e of R.ldeath) if(!R.fellBy.has(e.id)) R.fellBy.set(e.id,e);
   R.hasCmd=R.frames.some(f=>f.c&&f.c.length);
+  evBuild(R);
   mergeTerrain(R); makeArena(R);
   // boss outcome (format 4) and levy totals
   R.bend=R.events.filter(e=>e.e==="bdeath"||e.e==="bdespawn");
@@ -394,7 +398,7 @@ function showMsg(text,kind,retry){
 function hideMsg(){$("msg").className="";}
 
 // ================================================================ loading
-const resLabel={win:"win",loss:"loss",timeout:"timeout",fled:"fled",despawn:"boss left",ended:"ended"};
+const resLabel={win:"win",loss:"loss",timeout:"timeout",fled:"fled",despawn:"boss left",ended:"ended",survived:"survived",interrupted:"interrupted"};
 function setRec(R,name,f){
   D=build(R); D.fight=f||null;
   const h=D.hdr||{},m=h.meta||{},s=summary(D);
@@ -417,6 +421,7 @@ function verBadges(f){
 }
 function head(f,name,s){
   const el=$("fightHead");
+  if(f&&f.kind==="event"){evHead(f,el);return;}
   if(!f){el.innerHTML=`<div class="ht"><b>${esc(name||s.boss)}</b><span class="hs">local recording &middot; ${s.dur.toFixed(0)} s</span></div>`;return;}
   el.innerHTML=`<div class="ht"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span><span class="hs">${esc(f.mode)} &middot; ${f.levies} levies &middot; ${esc(f.arena)} &middot; ${f.dur.toFixed(0)} s &middot; ${esc(setTitleOf(f))}</span><span class="badges" style="margin:0">${verBadges(f)}</span></div>`+(isOutdated(f)?`<div class="ho">Outdated${eraNote(f)?": "+esc(eraNote(f)):"."} Current: Levy ${esc(manifest.current)}.</div>`:"")+(f.note?`<div class="hn">${esc(f.note)}</div>`:"");
 }
@@ -468,6 +473,7 @@ function renderList(){
       const g=s.groupBy==="day"?String(f.date||"").slice(0,10):s.groupBy==="boss"?f.boss:null;
       if(g!==null&&g!==lastG){lastG=g;const h=document.createElement("div");h.className="grph";const gn=s.groupBy==="boss"&&s.groupNotes&&s.groupNotes[g];h.innerHTML=esc(g||"Undated")+(gn?`<span class="small">${esc(gn)}</span>`:"");cards.appendChild(h);}
       const b=document.createElement("button"); b.className="card"+(f.id===curId?" sel":""); b.dataset.id=f.id;
+      if(f.kind==="event"){b.innerHTML=evCard(f);b.onclick=()=>openFight(f.id);cards.appendChild(b);continue;}
       b.innerHTML=`<div class="ct"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span></div>`+
         `<div class="sub">${esc(f.mode)} &middot; ${f.levies} levies &middot; ${esc(f.arena)} &middot; ${f.dur.toFixed(0)} s</div>`+
         `<div class="badges">${verBadges(f)}${f.hasT?`<span class="bd l" title="share of the fight the boss was aimed at a levy">boss on levies ${f.pl.toFixed(0)}%</span>${f.ps>=1?`<span class="bd h" title="the boss rule redirected its shots and dashes at a levy">spite (redirected shots) ${f.ps.toFixed(0)}%</span>`:""}`:`<span class="bd">no target data</span>`}<span class="bd h">${f.hits} hits</span><span class="bd d">${f.deaths} deaths</span></div>`+
@@ -499,6 +505,131 @@ async function init(){
   curId=id; renderList();
   const c=document.querySelector(".card.sel"); if(c&&window.innerWidth>820) c.scrollIntoView({block:"nearest"});
   openFight(id);
+}
+
+// ================================================================ events (format 12): one wide recording of a whole event
+// Everything event-specific lives in these functions; the rest of the page calls them through one-line hooks (evBuild, evFit, drawEvStrip, renderEventInfo,
+// drawAddMark, makeExtraTerrain / drawExtraTerrain, evHud, evCard, evHead), so the boss-fight paths stay as they were.
+const IMPN=["normal","miniboss","boss"];
+function evBuild(R){
+  const h=R.hdr||{}; R.isEvent=h.kind==="event"; R.imp=new Map();
+  for(const [t,v] of Object.entries(h.roster||{})) R.imp.set(+t,(v&&v.imp)||1);
+  if(Array.isArray(R.nt)) for(const o of R.nt) R.imp.set(o.type,o.imp||0);
+  else if(R.nt) for(const [t,v] of Object.entries(R.nt)) R.imp.set(+t,v);
+  if(!R.isEvent) return;
+  R.waves=R.events.filter(e=>e.e==="wave"); R.ekill=R.events.filter(e=>e.e==="ekill"); R.kc=R.events.filter(e=>e.e==="kc");
+  R.evMarks=R.events.filter(e=>e.e==="evstart"||e.e==="evend"); R.outposts=R.events.filter(e=>e.e==="outposts"); R.prog=R.events.filter(e=>e.e==="prog");
+  R.miniCount=R.frames.map(f=>{let n=0;for(const a of (f.a||[]))if((R.imp.get(a[0])||0)>=1)n++;return n;});
+  R.enemyCount=R.frames.map(f=>(f.a||[]).length);
+}
+const impOf=t=>(D&&D.imp&&D.imp.get(t))||0;
+// the events of a time-sorted list with t0 <= t <= t1 (binary search: a long event has tens of thousands of hits)
+function evWindow(arr,t0,t1){
+  let lo=0,hi=arr.length;while(lo<hi){const m=(lo+hi)>>1;if(arr[m].t<t0)lo=m+1;else hi=m;}
+  let a=lo,b=arr.length;while(a<b){const m=(a+b)>>1;if(arr[m].t<=t1)a=m+1;else b=m;}
+  return arr.slice(lo,a);
+}
+function fmtClock(ticks){const s=Math.max(0,Math.floor(ticks/TPS)),h=Math.floor(s/3600),m=Math.floor(s/60)%60;return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(s%60).padStart(2,"0");}
+function evWaveAt(t){let w=(D.hdr&&D.hdr.wave)||0;for(const e of D.waves){if(e.t<=t)w=e.n;else break;}return w;}
+function evKillsAt(t){let k=0,m=0,kt=-1;for(const e of D.kc){if(e.t<=t){k=e.n;m=e.mini||0;kt=e.t;}else break;}for(const e of D.ekill){if(e.t>kt&&e.t<=t)m++;}return [k,m];}
+function evName(){const h=D.hdr||{},e=D.end||{};return e.eventName||h.eventName||(h.meta&&h.meta.eventName)||"Event";}
+function evProgAt(t){let p=null;for(const e of (D.prog||[])){if(e.t<=t)p=e;else break;}return p;}
+function evHud(f0){
+  const w=evWaveAt(cur),[k,m]=evKillsAt(cur),as=f0.a||[],pg=evProgAt(cur);
+  const minis=as.filter(a=>impOf(a[0])>=1).slice(0,4).map(a=>`${esc(nm("npcs",a[0]))} ${(100*a[6]/Math.max(1,a[7])).toFixed(0)}%`);
+  return `<div class="l"><div class="tgt">${esc(evName())}${w?" &middot; wave "+w:""}${pg&&!w?` &middot; ${pg.left} of ${pg.of} left`:""}</div>${minis.length?`<div class="hpt">${minis.join("<br>")}</div>`:""}</div>`+
+    `<div class="r">levies standing ${(f0.l||[]).length}<br>enemies ${as.length}${D.offCount?` (${D.offCount} highlighted off-screen)`:""}<br>kills ${k} &middot; minibosses ${m}<br>${fmtClock(cur-D.tmin)} / ${fmtClock(D.tmax-D.tmin)}</div>`;
+}
+// fit an event: where the army stood (5th to 95th percentile of every levy sample, and the commander); levies and highlighted enemies outside get edge markers
+function evFit(){
+  const {w,h}=canvasSize($("view")); const xs=[],ys=[]; const step=Math.max(1,Math.floor(D.frames.length/400));
+  for(let i=0;i<D.frames.length;i+=step){const f=D.frames[i];xs.push(f.p[0]);ys.push(f.p[1]);for(const l of (f.l||[])){xs.push(l[1]);ys.push(l[2]);}}
+  if(!xs.length){cam.x=0;cam.y=0;cam.z=0.2;return;}
+  const pc=(a,q)=>{a=a.slice().sort((m,n)=>m-n);return a[Math.max(0,Math.min(a.length-1,Math.floor(q*(a.length-1))))];};
+  let x0=pc(xs,.05),x1=pc(xs,.95),y0=pc(ys,.05),y1=pc(ys,.95); const pad=30*TILE; x0-=pad;x1+=pad;y0-=pad;y1+=pad;
+  if(x1-x0<800){const c=(x0+x1)/2;x0=c-400;x1=c+400;} if(y1-y0<500){const c=(y0+y1)/2;y0=c-250;y1=c+250;}
+  cam.x=(x0+x1)/2; cam.y=(y0+y1)/2; cam.z=Math.min(w/(x1-x0),h/(y1-y0))*0.98;
+}
+// enemy marker: a boss or miniboss gets a highlighted ring, a filled star and its name and life always; an ordinary enemy is a small plain diamond (its name on hover)
+function drawAddMark(g,sx,sy,a0,dpr){
+  const imp=impOf(a0[0]);
+  if(imp>=1){
+    const col=imp>=2?T.red:T.vio, r=(imp>=2?9:7)*dpr, fr=a0[6]/Math.max(1,a0[7]);
+    g.save(); g.strokeStyle=col; g.lineWidth=2*dpr; g.globalAlpha=.9; g.beginPath(); g.arc(sx,sy,r+5*dpr,0,6.2832); g.stroke();
+    g.fillStyle=col; g.beginPath(); for(let k=0;k<10;k++){const ang=-1.5708+k*0.6283,rr=k%2?r*0.45:r;g.lineTo(sx+Math.cos(ang)*rr,sy+Math.sin(ang)*rr);} g.closePath(); g.fill(); g.strokeStyle=T.stage; g.lineWidth=1*dpr; g.stroke();
+    g.globalAlpha=1; g.fillStyle=T.bossLabel; g.font=`600 ${11*dpr}px system-ui`; const lab=nm("npcs",a0[0]); g.fillText(lab,sx+r+8*dpr,sy-2*dpr);
+    const bw=Math.max(40*dpr,g.measureText(lab).width); g.fillStyle=al(T.ink,.25); g.fillRect(sx+r+8*dpr,sy+3*dpr,bw,3*dpr); g.fillStyle=hpColor(fr); g.fillRect(sx+r+8*dpr,sy+3*dpr,bw*Math.max(0,Math.min(1,fr)),3*dpr);
+    g.restore(); return;
+  }
+  const r=(D.isEvent?2.8:3.6)*dpr; g.fillStyle=T.amb; g.strokeStyle=T.stage; g.lineWidth=0.8*dpr; g.beginPath();g.moveTo(sx,sy-r);g.lineTo(sx+r,sy);g.lineTo(sx,sy+r);g.lineTo(sx-r,sy);g.closePath();g.fill();g.stroke();
+}
+// terrain the merged grid does not hold: cells around far levies (far), where the fight travelled (moved), or a whole event too wide for one grid. Drawn in blocks of 400 x 400 tiles.
+function makeExtraTerrain(R){
+  R.extraImgs=[]; const AS=R.extraArenas||[]; if(!AS.length) return;
+  const B=400, blocks=new Map();
+  for(const a of AS){if(!a.rows||a.w<=0||a.h<=0)continue;const k=Math.floor(a.x0/B)+","+Math.floor(a.y0/B);let b=blocks.get(k);if(!b)blocks.set(k,b={x0:1e9,y0:1e9,x1:-1e9,y1:-1e9,as:[]});b.as.push(a);b.x0=Math.min(b.x0,a.x0);b.y0=Math.min(b.y0,a.y0);b.x1=Math.max(b.x1,a.x0+a.w);b.y1=Math.max(b.y1,a.y0+a.h);}
+  const top=rgb(T.terrTop), fill=rgb(T.terrFill), f2=rgb(T.terrFill2), wat=rgb(T.water);
+  for(const b of blocks.values()){
+    const W=b.x1-b.x0,H=b.y1-b.y0; if(W<=0||H<=0||W*H>4e6) continue;
+    const grid=new Uint8Array(W*H);
+    for(const a of b.as) for(let r=0;r<a.rows.length&&r<a.h;r++){const row=a.rows[r];let x=a.x0-b.x0;const base=(a.y0-b.y0+r)*W;for(let i=0;i+1<row.length;i+=2){const code=row[i],run=row[i+1];if(code)grid.fill(code,base+x,base+x+run);x+=run;}}
+    const c=document.createElement("canvas"); c.width=W; c.height=H; const g=c.getContext("2d"); const im=g.createImageData(W,H);
+    const put=(x,y,k,al2)=>{const o=(y*W+x)*4;im.data[o]=k[0];im.data[o+1]=k[1];im.data[o+2]=k[2];im.data[o+3]=al2;};
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c0=grid[y*W+x];if(!c0)continue;
+      if(c0===1){const tp=y===0||!grid[(y-1)*W+x]||grid[(y-1)*W+x]===3;put(x,y,tp?top:fill,255);} else if(c0===2)put(x,y,f2,255); else put(x,y,wat,170);}
+    g.putImageData(im,0,0); R.extraImgs.push({x0:b.x0,y0:b.y0,w:W,h:H,img:c});
+  }
+}
+function drawExtraTerrain(g,sc,W,H){
+  for(const b of (D.extraImgs||[])){const [sx,sy]=sc(b.x0*TILE,b.y0*TILE),ww=b.w*TILE*cam.z,hh=b.h*TILE*cam.z;if(sx>W||sy>H||sx+ww<0||sy+hh<0)continue;g.drawImage(b.img,sx,sy,ww,hh);}
+}
+// the timeline of an event: waves, kills, minibosses standing, levy hits, levy deaths (binned per pixel, so an hour of hits draws as fast as a minute)
+function drawEvStrip(){
+  const c=$("strip"); const {w:W,h:H,dpr}=canvasSize(c); const g=c.getContext("2d"); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,W,H);
+  const rows=[["wave",14],["kills",20],["minibosses",16],["levy hits",22],["deaths",14]], tot=rows.reduce((a,r)=>a+r[1],0), k=H/tot, span=Math.max(1,D.tmax-D.tmin), X=t=>(t-D.tmin)/span*(W-2)+1;
+  let y=0; const Y={};
+  rows.forEach((r,i)=>{Y[r[0]]=[y,r[1]*k];g.fillStyle=i%2?T.stripB:T.stripA;g.fillRect(0,y,W,r[1]*k);g.fillStyle=T.stripLabel;g.font=`${9*dpr}px system-ui`;g.fillText(r[0],3*dpr,y+9*dpr);y+=r[1]*k;});
+  {const [y0,h]=Y.wave; let lastX=-1e9; g.font=`600 ${9*dpr}px system-ui`; for(const e of D.waves){const x=X(e.t);g.fillStyle=T.vio;g.fillRect(x,y0+2,1*dpr,h-3);if(x-lastX>18*dpr){g.fillText(String(e.n),x+2*dpr,y0+h-3*dpr);lastX=x;}}}
+  {const [y0,h]=Y.kills; let prev=0,pt=D.tmin; g.fillStyle=T.win; const rate=[]; let mx=1; for(const e of D.kc){const d=Math.max(0,e.n-prev),dt=Math.max(1,e.t-pt);rate.push([pt,e.t,d/dt]);mx=Math.max(mx,d/dt);prev=e.n;pt=e.t;}
+    for(const r of rate){const x0=X(r[0]),x1=X(r[1]),hh=(h-3)*r[2]/mx;g.fillRect(x0,y0+h-hh,Math.max(1,x1-x0),hh);}
+    for(const e of D.ekill){const x=X(e.t);g.fillStyle=e.imp>=2?T.red:T.vio;g.beginPath();g.moveTo(x,y0+1);g.lineTo(x+4*dpr,y0+1);g.lineTo(x,y0+6*dpr);g.closePath();g.fill();}}
+  {const [y0,h]=Y.minibosses; const n=D.frames.length, mx=Math.max(1,...D.miniCount.slice(0,1)), cols=Math.min(W,n); let peak=1; for(const v of D.miniCount)peak=Math.max(peak,v);
+    g.fillStyle=al(T.vio,.8); for(let px=0;px<cols;px++){const i=Math.floor(px/cols*n),v=D.miniCount[i];if(!v)continue;const x=X(D.frames[i].t),hh=(h-3)*v/peak;g.fillRect(x,y0+h-hh,Math.max(1,W/cols),hh);}}
+  {const [y0,h]=Y["levy hits"]; const bins=new Float32Array(Math.max(1,W)); let mx=1; for(const e of D.lhit){const b=Math.min(W-1,Math.max(0,Math.floor(X(e.t))));bins[b]+=e.dmg;mx=Math.max(mx,bins[b]);}
+    g.fillStyle=T.srcProj; for(let x=0;x<W;x++){if(!bins[x])continue;const hh=Math.max(1,(h-3)*Math.sqrt(bins[x]/mx));g.fillRect(x,y0+h-hh,1,hh);}}
+  {const [y0,h]=Y.deaths; const bins=new Uint16Array(Math.max(1,W)); for(const e of D.ldeath){bins[Math.min(W-1,Math.max(0,Math.floor(X(e.t))))]++;} g.fillStyle=T.death;
+    for(let x=0;x<W;x++){if(!bins[x])continue;const hh=Math.min(h-3,(3+bins[x]*2)*dpr);g.fillRect(x-1,y0+h-hh,2*dpr,hh);}}
+  for(const e of (D.evMarks||[])){const x=X(e.t);g.fillStyle=e.e==="evend"?T.timeout:T.cyan;g.fillRect(x-1*dpr,0,2*dpr,H);g.font=`600 ${9*dpr}px system-ui`;const lab=(e.e==="evend"?"end ":"")+(e.name||e.ev)+(e.result?" "+e.result:"");g.fillText(lab,Math.min(x+4*dpr,W-g.measureText(lab).width-2),H-3*dpr);}
+  const x=X(cur);g.fillStyle=T.ink;g.fillRect(x-1*dpr,0,2*dpr,H);
+}
+function evCard(f){
+  return `<div class="ct"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span></div>`+
+    `<div class="sub">${fmtClock((f.dur||0)*TPS)} &middot; ${f.levies} levies${f.waveMax?" &middot; wave "+f.waveMax:""}${f.arena&&f.arena!==f.boss?" &middot; "+esc(f.arena):""}</div>`+
+    `<div class="badges">${verBadges(f)}<span class="bd l">${f.kills} kills</span><span class="bd h">${f.miniKills} miniboss kills</span><span class="bd d">${f.deaths} levy deaths</span></div>`+(f.note?`<div class="note">${esc(f.note)}</div>`:"");
+}
+function evHead(f,el){
+  el.innerHTML=`<div class="ht"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span><span class="hs">event &middot; ${fmtClock((f.dur||0)*TPS)} &middot; ${f.levies} levies &middot; ${f.kills} kills &middot; ${f.miniKills} miniboss kills &middot; ${f.deaths} levy deaths</span><span class="badges" style="margin:0">${verBadges(f)}</span></div>`+(f.note?`<div class="hn">${esc(f.note)}</div>`:"");
+}
+function renderEventInfo(){
+  const h=D.hdr||{},e=D.end||{};
+  const kinds=new Map(); for(const f of D.frames) for(const a of (f.a||[])){const im=impOf(a[0]);if(!kinds.has(a[0]))kinds.set(a[0],im);}
+  const hi=[...kinds.entries()].filter(([t,v])=>v>=1).map(([t,v])=>`${esc(nm("npcs",t))} (${IMPN[v]})`);
+  const kills=D.ekill.map(x=>`<tr><td>${fmtClock(x.t-D.tmin)}</td><td>${esc(x.name||nm("npcs",x.npc))}</td><td>${IMPN[x.imp]||x.imp}</td></tr>`).join("");
+  const res=e.results?Object.entries(e.results).map(([k,v])=>`${esc(k)} ${esc(v)}`).join(", "):"";
+  const per=new Map(); for(const id of D.order) per.set(id,{hits:0,dmg:0,deaths:0});
+  for(const x of D.lhit){const p=per.get(x.id)||(per.set(x.id,{hits:0,dmg:0,deaths:0}),per.get(x.id));p.hits++;p.dmg+=x.dmg;}
+  for(const x of D.ldeath){const p=per.get(x.id);if(p)p.deaths++;}
+  const worst=[...per.entries()].sort((a,b)=>b[1].deaths-a[1].deaths||b[1].dmg-a[1].dmg).slice(0,12);
+  const ops=(D.outposts&&D.outposts.length)?D.outposts[D.outposts.length-1].o||[]:[];
+  $("info").innerHTML=`<section><h2>Event</h2><div class="kv"><span>event</span><span>${esc(evName())}</span><span>result</span><span>${esc(e.result||"?")}${res?" ("+res+")":""}</span><span>ended</span><span>${esc(e.reason||"cut short")}</span>`+
+    `<span>duration</span><span>${fmtClock(D.tmax-D.tmin)} (${D.frames.length} samples)</span><span>waves</span><span>${e.waveMax||D.waves.length?(e.waveMax||evWaveAt(D.tmax)):"-"}</span><span>kills</span><span>${e.kills!=null?e.kills:evKillsAt(D.tmax)[0]} (${e.minibossKills!=null?e.minibossKills:D.ekill.length} minibosses, ${e.bossKills||0} bosses)</span>`+
+    `<span>army</span><span>${D.order.length} levies seen${e.armyPeak?", at most "+e.armyPeak+" at once":""}</span><span>outposts</span><span>${ops.length?ops.map(o=>esc(o[5]||"#"+o[0])+(o[3]?" (mobilized, "+o[4]+" militia)":"")).join(", "):"none"}</span>`+
+    `<span>game mode</span><span>${esc(h.mode||"?")}</span>${e.cpu?`<span>recorder cost</span><span>${e.cpu.meanUs} us per tick, worst ${e.cpu.maxMs} ms</span>`:""}</div></section>`+
+    `<section><h2>Highlighted enemies</h2><div class="small">${hi.length?hi.join(", "):"none seen"}</div>${kills?`<table style="margin-top:8px"><tr><th>time</th><th>killed</th><th></th></tr>${kills}</table>`:""}</section>`+
+    `<section><h2>Levy hits and deaths</h2><div class="kv"><span>hits taken</span><span>${D.lhit.length} (${D.lhit.reduce((a,x)=>a+x.dmg,0)} damage)</span><span>deaths</span><span>${D.ldeath.length}</span></div>`+
+    `<table style="margin-top:8px"><tr><th>levy</th><th>hits</th><th>dmg</th><th>deaths</th></tr>${worst.map(([id,p])=>`<tr><td>${esc(lname(id))}</td><td>${p.hits}</td><td>${p.dmg}</td><td>${p.deaths}</td></tr>`).join("")}</table></section>`+
+    (typeof buildRoster==="function"?`<section style="grid-column:1/-1"><h2>Levies</h2><div id="roster" class="roster"></div><div id="lsel"></div></section>`:"");
+  if(typeof buildRoster==="function") buildRoster();
 }
 
 // ================================================================ helpers
@@ -540,6 +671,7 @@ function fitNotes(){
   el.innerHTML=n.map(t=>`<div>${esc(t)}</div>`).join(""); el.hidden=!n.length;
 }
 function fitView(){
+  if(D&&D.isEvent){evFit();return;}
   const {w,h}=canvasSize($("view")); let x0=1e12,y0=1e12,x1=-1e12,y1=-1e12;
   fitNotes();
   const B=fightBox(D);
@@ -601,6 +733,7 @@ function draw(){
   const sc=(x,y)=>w2s(x,y,W,H);
   g.imageSmoothingEnabled=false;
   if(D.arenaImg){const A=D.terr;const [sx,sy]=sc(A.x0*TILE,A.y0*TILE);g.drawImage(D.arenaImg,sx,sy,A.w*TILE*cam.z,A.h*TILE*cam.z);}
+  drawExtraTerrain(g,sc,W,H);
   const ctr=mb0?sc(lerp(mb0[2],(byIdB.get(mb0[1])||mb0)[2],u),lerp(mb0[3],(byIdB.get(mb0[1])||mb0)[3],u)):sc(P[0],P[1]);
   g.lineWidth=1*dpr; g.strokeStyle=al(T.grn,.22); g.setLineDash([4*dpr,6*dpr]);
   for(const tiles of [15,30,60]){g.beginPath();g.arc(ctr[0],ctr[1],tiles*TILE*cam.z,0,6.2832);g.stroke();}
@@ -660,7 +793,7 @@ function draw(){
     for(const a0 of (f0.a||[])){
       const a1=byIdA.get(a0[1])||a0, x=lerp(a0[2],a1[2],u), y=lerp(a0[3],a1[3],u), [sx,sy]=sc(x,y), k=a0[8];
       if(showHit&&a0[10]>0){const pw=Math.max(a0[10]*cam.z*dpr,4*dpr),ph=Math.max(a0[11]*cam.z*dpr,4*dpr);g.fillStyle=al(T.amb,.14);g.fillRect(sx-pw/2,sy-ph/2,pw,ph);g.strokeStyle=T.amb;g.lineWidth=1*dpr;g.strokeRect(sx-pw/2,sy-ph/2,pw,ph);}
-      const r=3.6*dpr; g.fillStyle=T.amb; g.strokeStyle=T.stage; g.lineWidth=0.8*dpr; g.beginPath();g.moveTo(sx,sy-r);g.lineTo(sx+r,sy);g.lineTo(sx,sy+r);g.lineTo(sx-r,sy);g.closePath();g.fill();g.stroke();
+      drawAddMark(g,sx,sy,a0,dpr);
       blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(8,Math.max(a0[10],a0[11])*cam.z/2+3),info:`add ${nm("npcs",a0[0])}  slot ${a0[1]}\nlife ${a0[6]}/${a0[7]}  (${(100*a0[6]/Math.max(1,a0[7])).toFixed(0)}%)\ntarget ${D.hasTarget?(k===3?"spite (redirected shots) at levy "+(D.lbl.get(a0[9])||a0[9]):k===2?"levy "+(D.lbl.get(a0[9])||a0[9]):k===1?"commander":"none"):"?"}${a0[10]?"\nhitbox "+a0[10]+" x "+a0[11]+" px":""}\nspeed ${(Math.hypot(a0[4],a0[5])*60/16).toFixed(1)} tiles/s`});
     }
   }
@@ -680,9 +813,10 @@ function draw(){
       const ex=Math.max(10*dpr,Math.min(W-10*dpr,sx)), ey=Math.max(10*dpr,Math.min(H-10*dpr,sy)), ang=Math.atan2(sy-ey,sx-ex), r=6*dpr;
       g.fillStyle=col; g.globalAlpha=.85; g.beginPath(); g.moveTo(ex+Math.cos(ang)*r,ey+Math.sin(ang)*r); g.lineTo(ex+Math.cos(ang+2.5)*r,ey+Math.sin(ang+2.5)*r); g.lineTo(ex+Math.cos(ang-2.5)*r,ey+Math.sin(ang-2.5)*r); g.closePath(); g.fill(); g.globalAlpha=1;
       blips.push({x:ex/dpr,y:ey/dpr,r:10,info:info+"\n(off-screen, "+(Math.hypot(sx-ex,sy-ey)/(TILE*cam.z*dpr)).toFixed(0)+" tiles away)"});};
-    for(const a0 of (f0.a||[])) mark(a0[2],a0[3],T.amb,`add ${nm("npcs",a0[0])}`);
-    for(const s0 of (f0.s||[])) mark(s0[2],s0[3],T.amb,`hostile ${nm("npcs",s0[0])}`);
-    for(const j of (f0.j||[])) mark(j[1],j[2],T.proj,`projectile ${nm("projectiles",j[0])}  damage ${j[5]}`);
+    for(const a0 of (f0.a||[])) if(!D.isEvent||impOf(a0[0])>=1) mark(a0[2],a0[3],impOf(a0[0])>=1?T.vio:T.amb,`${impOf(a0[0])>=1?IMPN[impOf(a0[0])]:"add"} ${nm("npcs",a0[0])}`);
+    if(D.isEvent) for(const l of (f0.l||[])) mark(l[1],l[2],T.grn,`levy ${lname(l[0])}`);
+    if(!D.isEvent) for(const s0 of (f0.s||[])) mark(s0[2],s0[3],T.amb,`hostile ${nm("npcs",s0[0])}`);
+    if(!D.isEvent) for(const j of (f0.j||[])) mark(j[1],j[2],T.proj,`projectile ${nm("projectiles",j[0])}  damage ${j[5]}`);
     D.offCount=off;}
   const states=(D.hdr&&D.hdr.stateNames||"").split(",");
   for(const l0 of (f0.l||[])){
@@ -704,9 +838,9 @@ function draw(){
     if(!part&&((mb0&&b0[1]===mb0[1])||EVENT_NPC.has(b0[0]))){g.fillStyle=T.bossLabel;g.font=`${11*dpr}px system-ui`;g.fillText(nm("npcs",b0[0]),bx+rr+4*dpr,by-rr*0.6);}
     blips.push({x:bx/dpr,y:by/dpr,r:Math.max(9,rr/dpr+3),info:bossInfo(b0)});
   }
-  for(const e of D.lhit){ if(e.t>cur||cur-e.t>20) continue; const [sx,sy]=sc(e.x,e.y),a=(cur-e.t)/20,col=T.src[e.src]||T.flash;
+  for(const e of evWindow(D.lhit,cur-20,cur)){ if(e.t>cur||cur-e.t>20) continue; const [sx,sy]=sc(e.x,e.y),a=(cur-e.t)/20,col=T.src[e.src]||T.flash;
     g.strokeStyle=col;g.globalAlpha=1-a;g.lineWidth=2.4*dpr;g.beginPath();g.arc(sx,sy,(8+a*26)*dpr,0,6.2832);g.stroke();g.fillStyle=T.flash;g.beginPath();g.arc(sx,sy,(5-a*3)*dpr,0,6.2832);g.fill();g.globalAlpha=1;}
-  for(const e of D.ldeath){ if(e.t>cur) continue; const [sx,sy]=sc(e.x,e.y),age=(cur-e.t)/TPS,alp=age<4?1:0.45,s=9*dpr*(age<0.4?1+(0.4-age)*2:1);
+  for(const e of (D.isEvent?evWindow(D.ldeath,cur-60*TPS,cur):D.ldeath)){ if(e.t>cur) continue; const [sx,sy]=sc(e.x,e.y),age=(cur-e.t)/TPS,alp=age<4?1:0.45,s=9*dpr*(age<0.4?1+(0.4-age)*2:1);
     g.strokeStyle=T.death;g.globalAlpha=alp;g.lineWidth=3*dpr;g.beginPath();g.moveTo(sx-s,sy-s);g.lineTo(sx+s,sy+s);g.moveTo(sx+s,sy-s);g.lineTo(sx-s,sy+s);g.stroke();
     if(showLabels){g.fillStyle=T.dLabelInk;g.font=`${10*dpr}px system-ui`;g.fillText((D.lbl.get(e.id)||"#"+e.id)+" fell",sx+s+2*dpr,sy);} g.globalAlpha=1;}
   const hid=document.body.classList.contains("callhide");
@@ -739,12 +873,14 @@ function draw(){
   const tot=Math.max(D.levyTotal,1), alive=Math.max(0,tot-fell), bE=D.bendFinal&&cur>=D.bendFinal.t?D.bendFinal:null;
   const outHtml=bE?`<div class="out ${bE.e==="bdeath"?"k":"d"}">${bE.e==="bdeath"?"Boss killed":"Boss left (despawn)"}</div>`:"";
   const bossHp=mb0?`${nm("npcs",mb0[0])}  ${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(0)}%`:"";
+  if(D.isEvent){$("hud").innerHTML=evHud(f0);return;}
   $("hud").innerHTML=`<div class="l"><div class="tgt ${tgtCls}">boss target: ${esc(tgtText)}</div>${outHtml}${mb0?`<div class="hpt">${esc(bossHp)}</div><div class="bar"><i style="width:${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(1)}%"></i></div>`:""}</div><div class="r">levies alive ${alive} of ${tot}<br>${D.hasAdds?`adds alive ${(f0.a||[]).length}${D.hasSeg?` + ${(f0.s||[]).length} other hitboxes`:""}${D.offCount?` (${D.offCount} off-screen)`:""}<br>`:""}${((cur-D.tmin)/TPS).toFixed(1)} s</div>`;
 }
 
 // ================================================================ timeline strip
 function stripRows(){return [["target",16],["hits",30],["deaths",14],["cmd hit",10],["cmd moves",14]];}
 function drawStrip(){
+  if(D&&D.isEvent){drawEvStrip();return;}
   const c=$("strip"); const {w:W,h:H,dpr}=canvasSize(c); const g=c.getContext("2d"); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,W,H); if(!D) return;
   const rows=stripRows(), tot=rows.reduce((a,r)=>a+r[1],0), k=H/tot, span=Math.max(1,D.tmax-D.tmin), X=t=>(t-D.tmin)/span*(W-2)+1;
   let y=0; const Y={};
@@ -798,6 +934,7 @@ function cmdGearHtml(){
   return `<section><h2>Commander gear</h2><div class="kv">${html||"<span>-</span><span>empty</span>"}</div>${D.gearCmd.length>1?`<div class="small" style="margin-top:6px">Changed ${D.gearCmd.length-1} time${D.gearCmd.length>2?"s":""} during the fight; the list is the start.</div>`:""}</section>`;
 }
 function renderInfo(){
+  if(D.isEvent){renderEventInfo();return;}
   const s=summary(D),m=(D.hdr&&D.hdr.meta)||{},h=D.hdr||{},e=D.end||{};
   const mb=D.frames.map(mainBoss).filter(Boolean); const hp0=mb.length?mb[0][6]/Math.max(1,mb[0][7]):0, hp1=mb.length?mb[mb.length-1][6]/Math.max(1,mb[mb.length-1][7]):0;
   const t=D.tally,n=Math.max(1,t.none+t.player+t.levy+(t.spite||0));
@@ -895,7 +1032,7 @@ function computeStats(){
 // ================================================================ controls
 function syncUI(){
   if(!D)return; const span=D.tmax-D.tmin||1; $("scrub").value=Math.round((cur-D.tmin)/span*1000);
-  $("time").textContent=`${((cur-D.tmin)/TPS).toFixed(1)} / ${(span/TPS).toFixed(1)} s`;
+  $("time").textContent=D.isEvent?`${fmtClock(cur-D.tmin)} / ${fmtClock(span)}`:`${((cur-D.tmin)/TPS).toFixed(1)} / ${(span/TPS).toFixed(1)} s`;
 }
 function setPlaying(v){playing=v;$("play").textContent=v?"Pause":"Play";last=performance.now();}
 $("play").onclick=()=>{if(D){if(!playing&&cur>=D.tmax)cur=D.tmin;setPlaying(!playing);}};

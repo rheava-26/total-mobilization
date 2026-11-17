@@ -230,7 +230,7 @@ namespace Levy.Content.NPCs
 					DotDamage += loss;
 					NPC.life -= loss; NPC.netUpdate = true;
 					if (Record != null) Record.CurrentHp = Math.Max(0, NPC.life);
-					if (NPC.life <= 0) { NPC.life = 0; NPC.checkDead(); }
+					if (NPC.life <= 0) { NPC.life = 0; DiedOfDot = true; NPC.checkDead(); }
 				}
 			}
 			catch (Exception e) { SeqErrors++; if (GearUpkeep.WarnOnce(e)) Levy.Instance?.Logger.Warn("Levy: the damage-over-time step threw on a soldier (once per kind): " + e); }

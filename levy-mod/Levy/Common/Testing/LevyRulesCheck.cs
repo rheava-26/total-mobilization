@@ -168,6 +168,7 @@ namespace Levy.Common.Testing
 			if (W("whip")) { try { WhipPart(); } finally { Cleanup(); } }
 			if (W("sets")) { try { SetsPart(); } finally { Cleanup(); } }
 			if (W("acc")) { try { AccessoriesPart(); } finally { Cleanup(); } }
+			if (W("death")) { try { DeathPart(); } finally { Cleanup(); } }
 		}
 
 		// =====================================================================================================

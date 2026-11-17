@@ -98,13 +98,13 @@ namespace Warbands.Common
 			// ---- after Plantera ----
 			T("ChlorophyteWardens", BandBiome.Jungle, 5, "Chlorophyte Wardens", "Warden", "Battle Standard", "Wardens' Battle Standard", true, "Turn back. The grove is closed.", "Wardens", 120, 220, 70,
 				new[] { ("Wood", 8), ("JungleSpores", 6) }, new[] { ("ChlorophyteOre", 40, 70), ("JungleSpores", 6, 12) }, 100000,
-				R("ChlorophyteShotbow", "HolyArrow", Chlorophyte), E("TerraBlade", Chlorophyte), M("NettleBurst", Chlorophyte), R("ChlorophyteShotbow", "HolyArrow", Chlorophyte)),
+				R("ChlorophyteShotbow", "HolyArrow", Chlorophyte), E("ChlorophyteClaymore", Chlorophyte), M("LeafBlower", Chlorophyte), R("VenusMagnum", "ChlorophyteBullet", Chlorophyte)),
 			T("ShroomiteRaiders", BandBiome.Mushroom, 5, "Shroomite Raiders", "Raider", "Battle Standard", "Shroomite Raiders' Standard", false, null, null, 70, 120, 230,
 				new[] { ("Wood", 8), ("GlowingMushroom", 10) }, new[] { ("ShroomiteBar", 6, 10), ("GlowingMushroom", 30, 60) }, 120000,
-				R("Megashark", "ChlorophyteBullet", Shroomite), R("Megashark", "ChlorophyteBullet", Shroomite), M("NettleBurst", Shroomite), E("TerraBlade", Shroomite)),
+				R("Megashark", "ChlorophyteBullet", Shroomite), R("GrenadeLauncher", "RocketI", Shroomite), M("WaspGun", Shroomite), E("ChlorophytePartisan", Shroomite)),
 			T("FrostLegion", BandBiome.Snow, 5, "Frost Legion", "Legionnaire", "Challenge Flag", "Frost Legion Flag", false, null, null, 170, 220, 255,
 				new[] { ("Wood", 8), ("IceBlock", 8) }, new[] { ("ChlorophyteBar", 4, 8), ("IceBlock", 30, 60) }, 120000,
-				R("ChlorophyteShotbow", "FrostburnArrow", Frost), E("TerraBlade", Frost), M("NettleBurst", Frost), R("Megashark", "ChlorophyteBullet", Frost)),
+				R("ChlorophyteShotbow", "FrostburnArrow", Frost), E("ChlorophyteSaber", Frost), M("LeafBlower", Frost), R("Megashark", "ChlorophyteBullet", Frost)),
 			T("DungeonRitualists", BandBiome.Dungeon, 5, "Dungeon Ritualists", "Ritualist", "Effigy", "Ritualists' Effigy", true, "Turn back. The rite is not finished.", "Zealots", 140, 150, 230,
 				new[] { ("Wood", 8), ("Bone", 10) }, new[] { ("Ectoplasm", 6, 10), ("GoldenKey", 1, 2) }, 120000,
 				M("ShadowbeamStaff", Spectre), M("SpectreStaff", Spectre), E("Muramasa", Spectre), R("ChlorophyteShotbow", "HolyArrow", Spectre)),
@@ -112,7 +112,7 @@ namespace Warbands.Common
 			// ---- after Golem: the circle outside the Dungeon ----
 			T("CultistArchers", BandBiome.Dungeon, 6, "Cultist Archers", "Cultist", "Effigy", "Cultist Archers' Sigil", false, null, "Zealots", 70, 90, 220,
 				new[] { ("Wood", 8), ("Bone", 10), ("Silk", 4) }, new[] { ("LunarTabletFragment", 4, 8), ("Ectoplasm", 4, 8) }, 150000,
-				R("ChlorophyteShotbow", "HolyArrow", Cult), R("ChlorophyteShotbow", "HolyArrow", Cult), M("NettleBurst", Cult), R("Megashark", "ChlorophyteBullet", Cult)),
+				R("ChlorophyteShotbow", "HolyArrow", Cult), R("ChlorophyteShotbow", "HolyArrow", Cult), M("LeafBlower", Cult), R("Megashark", "ChlorophyteBullet", Cult)),
 		};
 
 		/// <summary>Adds the tier material to a type's Work Bench recipe: a band's summoning item needs a material of the band's own stage (the world must already have it).</summary>

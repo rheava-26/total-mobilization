@@ -247,6 +247,18 @@ namespace Warbands.Common
 			return k switch { EventKind.Goblins => c.EventGoblins, EventKind.Pirates => c.EventPirates, EventKind.Sandstorm => c.EventSandstorm, EventKind.SlimeRain => c.EventSlimeRain, _ => false };
 		}
 
+		/// <summary>Game tick the last Sandstorm band formed; uint.MaxValue = none this session.</summary>
+		public static uint LastSandstormBand = uint.MaxValue;
+
+		/// <summary>Whether a Sandstorm that just began sends a band: the cooldown since the last Sandstorm band has run out, and the roll (<paramref name="roll01"/>, 0..1) is under the configured chance. Every other kind always sends one.</summary>
+		public static bool SandstormAllowed(WarbandsConfig cfg, uint now, float roll01)
+		{
+			if (cfg == null) return true;
+			uint cool = 3600u * (uint)System.Math.Max(0, cfg.EventSandstormCooldownMinutes);
+			if (LastSandstormBand != uint.MaxValue && now >= LastSandstormBand && now - LastSandstormBand < cool) return false;
+			return roll01 * 100f < cfg.EventSandstormChancePercent;
+		}
+
 		public static bool Active(EventKind k) => k switch
 		{
 			EventKind.Goblins => Main.invasionType == InvasionID.GoblinArmy && Main.invasionSize > 0,
@@ -313,11 +325,11 @@ namespace Warbands.Common
 	/// <summary>The event-band ticker (server and single player): forms a band while an event is on, removes it when the event ends, rallies the Flying Dutchman's boarders.</summary>
 	public class EventBandSystem : ModSystem
 	{
-		private class State { public bool WasActive; public uint NextAt; public int Spawned; public int BandId; }
+		private class State { public bool WasActive, Skip; public uint NextAt; public int Spawned; public int BandId; }
 		private readonly State[] _st = { null, new State(), new State(), new State(), new State() };
 		public const int SightTiles = 80;
 
-		public override void OnWorldLoad() { for (int i = 1; i < _st.Length; i++) _st[i] = new State(); }
+		public override void OnWorldLoad() { for (int i = 1; i < _st.Length; i++) _st[i] = new State(); EventBands.LastSandstormBand = uint.MaxValue; }
 
 		public override void PostUpdateWorld()
 		{
@@ -329,18 +341,21 @@ namespace Warbands.Common
 				var kind = (EventKind)ki; var s = _st[ki];
 				bool active = EventBands.Enabled(kind) && EventBands.Active(kind);
 				if (!active) { if (s.WasActive) Mod.Logger.Info($"[Warbands] event {kind} over"); s.WasActive = false; s.BandId = 0; continue; }
-				if (!s.WasActive) { Mod.Logger.Info($"[Warbands] event {kind} on (stage {Stage.Current})"); s.WasActive = true; s.Spawned = 0; s.NextAt = now + 60u * 10; s.BandId = 0; } // the first band comes ten seconds into the event
+				if (!s.WasActive) { Mod.Logger.Info($"[Warbands] event {kind} on (stage {Stage.Current})"); s.WasActive = true; s.Spawned = 0; s.NextAt = now + 60u * 10; s.BandId = 0; s.Skip = false; // the first band comes ten seconds into the event
+					if (kind == EventKind.Sandstorm) { s.Skip = !EventBands.SandstormAllowed(cfg, now, Main.rand.NextFloat()); Mod.Logger.Info($"[Warbands] sandstorm band roll: {(s.Skip ? "no band this sandstorm" : "a band will form")} (chance {cfg.EventSandstormChancePercent:0}%, cooldown {cfg.EventSandstormCooldownMinutes} min)"); } }
+				if (s.Skip) continue;
 				if (s.BandId != 0)
 				{
 					if (BandBrain.All.ContainsKey(s.BandId)) continue; // one band at a time per event
 					s.BandId = 0; s.NextAt = now + 60u * (uint)Math.Max(10, cfg.EventBandCooldownSeconds);
 				}
 				if (BandOut(kind) || s.Spawned >= cfg.EventBandMaxPerEvent || now < s.NextAt) continue;
+				if (BossFight.Held(cfg)) { s.NextAt = now + 60u * 5; continue; } // a boss fight is not interrupted by an event band (and none forms in the grace window after it)
 				var who = new List<Player>();
 				for (int i = 0; i < Main.maxPlayers; i++) if (EventBands.Qualifies(kind, Main.player[i])) who.Add(Main.player[i]);
 				if (who.Count == 0) continue;
 				var p = who[Main.rand.Next(who.Count)];
-				if (EventBands.TrySpawn(kind, p) && BandSpawner.LastBrain != null) { s.BandId = BandSpawner.LastBrain.Id; s.Spawned++; }
+				if (EventBands.TrySpawn(kind, p) && BandSpawner.LastBrain != null) { s.BandId = BandSpawner.LastBrain.Id; s.Spawned++; if (kind == EventKind.Sandstorm) EventBands.LastSandstormBand = now; }
 				else { s.NextAt = now + 60u * 4; Mod.Logger.Info($"[Warbands] event {kind}: no band formed this try (no footing near the player)"); } // try again shortly
 			}
 			Tend(now);

@@ -73,8 +73,8 @@ namespace Warbands.Common
 			}
 		}
 
-		/// <summary>True while a natural band may not form because a boss is alive (config NoSpawnsDuringBosses). Bands already out are untouched.</summary>
-		public static bool NaturalSpawnBlocked(WarbandsConfig cfg) => cfg != null && cfg.NoSpawnsDuringBosses && BossAlive();
+		/// <summary>True while a natural or event band may not form because a boss fight is on or ended less than BossGraceSeconds ago (config NoSpawnsDuringBosses). Bands already out are untouched here; they stop hunting (BandLevyNPC).</summary>
+		public static bool NaturalSpawnBlocked(WarbandsConfig cfg) => BossFight.Held(cfg);
 
 		/// <summary>Any boss (vanilla or modded: NPC.boss) alive in the world.</summary>
 		public static bool BossAlive()
@@ -184,7 +184,9 @@ namespace Warbands.Common
 		{
 			var type = BandTypes.FromIndex(typeIdx); if (type == null || p == null || !p.active) return false;
 			var cfg = WarbandsConfig.Get; if (cfg == null) return false;
-			return SpawnBand(p, type, cfg.SummonedBandSize, 24, 34, false);
+			bool ok = SpawnBand(p, type, cfg.SummonedBandSize, 24, 34, false);
+			if (ok && LastBrain != null) LastBrain.Summoned = true;
+			return ok;
 		}
 
 		/// <summary>True when nothing solid (a platform or a tree top does not count) lies over tile column <paramref name="x"/> from row <paramref name="y"/> up to 40 tiles: the spot is under the open sky.</summary>

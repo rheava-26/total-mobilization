@@ -212,6 +212,7 @@ namespace Levy.Common.Testing
 			if (Part(only, "spectarget")) { try { SpectatorSpawnedBosses(); } finally { Cleanup(); } }
 			if (Part(only, "lostbet")) { try { LostBet(); } finally { Cleanup(); } }
 			if (Part(only, "redemption") && ModLoader.HasMod("Redemption")) { try { RedemptionPart(); } finally { Cleanup(); } } // only when the mod is loaded
+			if (Part(only, "starsriver") && SrLoaded) { try { StarsRiverPart(); } finally { Cleanup(); } } // only when StarsAbove or StarlightRiver is loaded
 		}
 
 		// =====================================================================================================

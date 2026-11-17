@@ -197,7 +197,7 @@ namespace Levy.Common.Perf
 
 			// ---- a global hook: its time is charged to its mod and taken out of the NPC's owner
 			// A busy-wait is wall-clock time, so a world autosave or a GC pause that lands inside the window inflates it. Judge the best of three windows.
-			PerfWindow w4 = null; double burned4 = 0; PerfRow gm = null, nm4 = null;
+			PerfWindow w4 = null; double burned4 = 0; PerfItem gm = null, nm4 = null;
 			for (int attempt = 0; attempt < 3; attempt++)
 			{
 				Cleanup(); PerfTestTypes.Reset(); PerfTestTypes.GlobUs = 400; PerfTestTypes.NpcUs = 0;

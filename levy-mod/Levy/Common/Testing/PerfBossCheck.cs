@@ -299,6 +299,39 @@ namespace Levy.Common.Testing
 		{
 			int rounds = int.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFAN_ROUNDS"), out int rr) && rr > 0 ? rr : 12;
 			AnalyzerArmsOne(ticks, flood, rounds, 0);
+			try { AnalyzerWrapAB(ticks, flood, int.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFAN_ABROUNDS"), out int ar) && ar > 0 ? ar : 24); } catch (Exception e) { Note("wrap A/B did not run: " + e.Message); }
+		}
+
+		/// <summary>Same boot, four arms in rotating order: (0) analyzer off, global AI hook wraps removed; (1) analyzer off, wraps in place; (2) analyzer on, wraps removed; (3) analyzer on, wraps in place. Differences against arm 0, per round, with their standard error.</summary>
+		private static void AnalyzerWrapAB(int ticks, int flood, int rounds)
+		{
+			string tmp = Path.Combine(Path.GetTempPath(), "levy_perfan_ab_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+			PA.TestServer = true; PA.TestLogDir = tmp; PA.TestWindowSecs = 1e9;
+			var per = new List<double>[4]; var d = new List<double>[4];
+			for (int i = 0; i < 4; i++) { per[i] = new List<double>(); d[i] = new List<double>(); }
+			string[] names = { "off, no wraps", "off, wraps in place", "on, no wraps", "on, wraps in place" };
+			try
+			{
+				for (int r = 0; r < rounds; r++)
+				{
+					var m = new double[4];
+					for (int k = 0; k < 4; k++)
+					{
+						int arm = (k + r) % 4; bool on = arm >= 2, wraps = arm == 1 || arm == 3;
+						PA.TestSetGlobalWraps(wraps); PA.TestLog = on; PA.ConfigChanged();
+						m[arm] = RunArm("A/B " + names[arm], ticks, 30, flood, 0, false).Mean;
+					}
+					for (int i = 0; i < 4; i++) { per[i].Add(m[i]); d[i].Add(m[i] - m[0]); }
+				}
+			}
+			finally
+			{
+				PA.TestSetGlobalWraps(true); PA.TestLog = false; PA.ConfigChanged(); PA.TestServer = false; PA.TestWindowSecs = null; PA.TestLogDir = null;
+				PA.TestResetLog(); PA.TestReset(); try { if (Directory.Exists(tmp)) Directory.Delete(tmp, true); } catch (Exception) { }
+			}
+			string Fmt(List<double> l) { double mu = l.Average(), sd = l.Count > 1 ? Math.Sqrt(l.Sum(x => (x - mu) * (x - mu)) / (l.Count - 1)) : 0; return $"{mu:F3} (s.e. {sd / Math.Sqrt(l.Count):F3}, median {l.OrderBy(x => x).ElementAt(l.Count / 2):F3})"; }
+			Note($"wrap A/B, {rounds} rounds of {ticks} ticks, arms rotated each round. ms/tick: {string.Join("; ", Enumerable.Range(0, 4).Select(i => names[i] + " " + Fmt(per[i])))}");
+			Note($"wrap A/B, difference from arm 0 per round: {string.Join("; ", Enumerable.Range(1, 3).Select(i => names[i] + " " + Fmt(d[i])))}");
 		}
 
 		private static void AnalyzerArmsOne(int ticks, int flood, int rounds, int variant)

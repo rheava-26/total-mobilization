@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
 using Terraria;
 using Terraria.Map;
 using Terraria.ModLoader;
@@ -102,27 +103,46 @@ namespace Levy.Common.Perf
 		/// <summary>Methods wrapped, methods that could not be, per kind (the self-check and the log report them).</summary>
 		internal static int WrappedGlobals, FailedGlobals, WrappedLayers, FailedLayers;
 
-		/// <summary>Puts a call to <paramref name="enter"/> at the start of the method and one to <paramref name="exit"/> before every return, with the slot as their argument.</summary>
-		internal static bool Wrap(MethodBase m, MethodInfo enter, MethodInfo exit, int slot)
+		private sealed class WrapSpec { public MethodBase M; public MethodInfo Enter, Exit; public int Slot; public bool Global; public IDisposable Hook; }
+		private static readonly List<WrapSpec> _wrapSpecs = new();
+
+		private static IDisposable MakeWrapHook(WrapSpec w) => new ILHook(w.M, il =>
+		{
+			var ins = il.Instrs; if (ins.Count == 0) return;
+			for (int i = ins.Count - 1; i >= 0; i--)
+			{
+				if (ins[i].OpCode != OpCodes.Ret) continue;
+				Instruction ret = ins[i]; ret.OpCode = OpCodes.Ldc_I4; ret.Operand = w.Slot; // the ret stays the branch target: it becomes the slot push, then the exit call and a fresh ret
+				ins.Insert(i + 1, Instruction.Create(OpCodes.Call, il.Import(w.Exit))); ins.Insert(i + 2, Instruction.Create(OpCodes.Ret));
+			}
+			ins.Insert(0, Instruction.Create(OpCodes.Ldc_I4, w.Slot)); ins.Insert(1, Instruction.Create(OpCodes.Call, il.Import(w.Enter)));
+		});
+
+		/// <summary>Puts a call to <paramref name="enter"/> at the start of the method and one to <paramref name="exit"/> before every return, with the slot as their argument. The edit is an ILHook the analyzer keeps, so it can be taken off again.</summary>
+		internal static bool Wrap(MethodBase m, MethodInfo enter, MethodInfo exit, int slot, bool global = false)
 		{
 			if (!_wrapped.Add(m)) return true;
 			try
 			{
-				MonoModHooks.Modify(m, il =>
-				{
-					var ins = il.Instrs; if (ins.Count == 0) return;
-					for (int i = ins.Count - 1; i >= 0; i--)
-					{
-						if (ins[i].OpCode != OpCodes.Ret) continue;
-						Instruction ret = ins[i]; ret.OpCode = OpCodes.Ldc_I4; ret.Operand = slot; // the ret stays the branch target: it becomes the slot push, then the exit call and a fresh ret
-						ins.Insert(i + 1, Instruction.Create(OpCodes.Call, il.Import(exit))); ins.Insert(i + 2, Instruction.Create(OpCodes.Ret));
-					}
-					ins.Insert(0, Instruction.Create(OpCodes.Ldc_I4, slot)); ins.Insert(1, Instruction.Create(OpCodes.Call, il.Import(enter)));
-				});
+				var w = new WrapSpec { M = m, Enter = enter, Exit = exit, Slot = slot, Global = global };
+				w.Hook = MakeWrapHook(w); _wrapSpecs.Add(w);
 				return true;
 			}
 			catch (Exception) { return false; }
 		}
+
+		/// <summary>Self-check only: takes the global AI hook wraps off (false) or puts them back (true), so the cost of wrapping can be measured in one boot.</summary>
+		internal static void TestSetGlobalWraps(bool on)
+		{
+			foreach (var w in _wrapSpecs)
+			{
+				if (!w.Global) continue;
+				if (on && w.Hook == null) w.Hook = MakeWrapHook(w);
+				else if (!on && w.Hook != null) { try { w.Hook.Dispose(); } catch (Exception) { } w.Hook = null; }
+			}
+		}
+
+		internal static void DisposeWraps() { foreach (var w in _wrapSpecs) { try { w.Hook?.Dispose(); } catch (Exception) { } w.Hook = null; } _wrapSpecs.Clear(); _wrapped.Clear(); }
 
 		/// <summary>After content has loaded: wrap map layers and global hooks, and hook the interface layer list.</summary>
 		private static void WrapContent()
@@ -160,7 +180,7 @@ namespace Levy.Common.Perf
 				{
 					MethodInfo m = t.GetMethod(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly, null, new[] { arg }, null);
 					if (m == null || m.IsAbstract) continue;
-					if (Wrap(m, HEnterM, HExitM, Slot(PerfCat.Glob, mod))) WrappedGlobals++; else FailedGlobals++;
+					if (Wrap(m, HEnterM, HExitM, Slot(PerfCat.Glob, mod), true)) WrappedGlobals++; else FailedGlobals++;
 				}
 				catch (Exception) { FailedGlobals++; }
 			}

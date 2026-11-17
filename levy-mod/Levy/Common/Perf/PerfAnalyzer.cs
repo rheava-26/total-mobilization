@@ -70,6 +70,7 @@ namespace Levy.Common.Perf
 		public override void Unload()
 		{
 			try { Detach(); FlushLog(true); } catch (Exception) { }
+			try { DisposeWraps(); } catch (Exception) { }
 			Recent.Clear(); Last = null; LastVerdict = null; _dead = false; DeadWhy = null;
 		}
 

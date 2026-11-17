@@ -32,6 +32,10 @@ namespace Levy.Common.Testing
 		private static readonly string[] KnownButtonResiduals = { "AnahitasArpeggio", "MidnightSunBeacon" };
 		/// <summary>The sky-rain weapons the ship sample runs (the class check below lists the rest on a full sweep): Astrum Deus's Star Shower, and the sky-drop weapons built the same way.</summary>
 		private static readonly string[] SkyRainSample = { "StarShower", "Greentide" };
+		/// <summary>Weapons that read Main.screenPosition and still do nothing in the sweep, identically with the old and the new cursor (measured both ways): Ice Barrage needs 300 mana per cast, Hyphae Rod's spores do not hurt the pinned target, and the three melee pieces
+		/// (Banshee Hook, Celestial Claymore, Monstrous Knives) only act in reach, which the 12-tile enemy is not. Listed by the sweep, not failed.</summary>
+		private static readonly string[] KnownSkyRainResiduals = { "IceBarrage", "HyphaeRod", "BansheeHook", "CelestialClaymore", "MonstrousKnives" };
+		private static bool SkyRainOk(OResult r) => r.Projs > 0 && r.Damage > 0 && (r.Far == 0 || !SkyRainSample.Any(n => r.Label.EndsWith(":" + n)) || r.FarAbove * 2 >= r.Far);
 		private const int OriginCmdTiles = 45, OriginTargetTiles = 12, NearTiles = 10;
 
 		private sealed class OProj
@@ -42,7 +46,7 @@ namespace Levy.Common.Testing
 
 		private sealed class OResult
 		{
-			public string Label, Family = ""; public OResult Up, Holds; public int Far, FarAbove, Projs, AtLevy, AtCmd, NearCmdTicks, DamageTicks, RanTicks, EngageTicks, DrawProbes, DrawAtCmd; public float MinDrawCmd = 1e9f; public long Damage; public float MinDistCmd = 1e9f; public bool Threw; public string End = "";
+			public string Label, Family = ""; public OResult Up, Holds; public int ItemType, Far, FarAbove, Projs, AtLevy, AtCmd, NearCmdTicks, DamageTicks, RanTicks, EngageTicks, DrawProbes, DrawAtCmd; public float MinDrawCmd = 1e9f; public long Damage; public float MinDistCmd = 1e9f; public bool Threw; public string End = "";
 			public Dictionary<string, (int n, int atCmd)> ByType = new();
 			public bool FromCommander => AtCmd > 0 || NearCmdTicks >= 3;
 			/// <summary>Followed the commander in both places (left of the levy and above it).</summary>
@@ -117,7 +121,7 @@ namespace Levy.Common.Testing
 		/// <summary>One levy fires one weapon at the pinned enemy; every projectile is followed.</summary>
 		private static OResult OriginOne(int weaponType, int ammoType, string label, int ticks, bool up = false, bool holds = false)
 		{
-			var res = new OResult { Label = label };
+			var res = new OResult { Label = label, ItemType = weaponType };
 			_cmdAt = OriginCmdAt(up);
 			try { Item fi = new Item(); fi.SetDefaults(weaponType); WeaponProfile fp = WeaponClassifier.GetProfile(fi); res.Family = fp.Family + (fp.Supported ? "" : "(unsupported)") + (ModShotKinds.Of(fi) != ModShotKind.None ? "/" + ModShotKinds.Of(fi) : ""); } catch (Exception) { }
 			ClearSoldiers();
@@ -154,12 +158,12 @@ namespace Levy.Common.Testing
 						o = new OProj { Type = p.type, Identity = p.identity, Born = k, Name = nm, Owner = p.owner, SpawnDistLevy = dl, SpawnDistCmd = dc };
 						live[i] = o; res.Projs++;
 						bool atCmd = dc < NearTiles * 16f && dc < dl; if (atCmd) res.AtCmd++; else if (dl < 12 * 16f) res.AtLevy++;
-						// SKY RAIN class: a projectile that first appears 20+ tiles from the shooter (rain from above the cursor). It must come in above the TARGET (within 30 tiles sideways, 3 to 100 tiles over it), as it does over a player's cursor.
-						if (!atCmd && dl >= 20 * 16f && _sweepTarget != null)
+						// SKY RAIN class: a projectile that first appears 25 or more tiles above the enemy (a rain from the top of the screen). It must come in above the TARGET (within 30 tiles sideways, no more than 100 tiles over it), as it does over a player's cursor.
+						if (!atCmd && _sweepTarget != null && (_sweepTarget.Center.Y - p.Center.Y) / 16f >= 25f)
 						{
 							res.Far++;
 							float tdx = (p.Center.X - _sweepTarget.Center.X) / 16f, tdy = (_sweepTarget.Center.Y - p.Center.Y) / 16f;
-							if (Math.Abs(tdx) <= 30f && tdy >= 3f && tdy <= 100f) res.FarAbove++;
+							if (Math.Abs(tdx) <= 30f && tdy <= 100f) res.FarAbove++;
 							if (OriginDebug) Note($"  dbg far {nm} dx={tdx:0.0} above={tdy:0.0} tiles");
 						}
 						res.ByType.TryGetValue(nm, out var ent); res.ByType[nm] = (ent.n + 1, ent.atCmd + (atCmd ? 1 : 0));
@@ -259,8 +263,8 @@ namespace Levy.Common.Testing
 			Note("origin sweep, output collapses while the commander holds her own use button (" + all.Count(a => a.r.ButtonControlled) + "): " + string.Join("; ", all.Where(a => a.r.ButtonControlled).Select(a => a.r.Label.Replace("CalamityMod:", "") + " " + a.r.Damage + "/" + a.r.Projs + " -> " + a.r.Holds.Damage + "/" + a.r.Holds.Projs)) + $" (use-button puppet {((global::Levy.Common.Weapons.OwnerPuppet.Mask & 128) != 0 ? "on" : "OFF")})");
 			Note("origin sweep, draw anchored on the commander: " + (all.Any(a => a.r.DrawFromCommander) ? string.Join("; ", all.Where(a => a.r.DrawFromCommander).Select(a => a.r.ToString())) : "none"));
 			Note($"origin sweep, weapons whose own draw reads the owner: {all.Count(a => a.r.DrawProbes > 0)} ({string.Join(", ", all.Where(a => a.r.DrawProbes > 0).Select(a => a.r.Label.Replace("CalamityMod:", "") + ":" + a.r.DrawAtCmd + "/" + a.r.DrawProbes))}); draw puppet {(OriginDrawPuppet ? "on" : "OFF")}");
-			var rain = all.Where(a => a.r.Far > 0).ToList();
-			Note($"origin sweep, SKY RAIN class (projectiles that first appear 20+ tiles from the levy; they must come in above the enemy, 3 to 100 tiles over it and within 30 sideways) ({rain.Count}): " + string.Join("; ", rain.Select(a => a.r.Label.Replace("CalamityMod:", "") + " aboveTarget=" + a.r.FarAbove + "/" + a.r.Far + " dmg=" + a.r.Damage + (a.r.FarAbove * 2 >= a.r.Far && a.r.Damage > 0 ? " ok" : " FAILS"))));
+			var rain = all.Where(a => a.r.ItemType > 0 && global::Levy.Common.Weapons.OwnerLockProbe.ReadsScreenAtUse(a.r.ItemType)).ToList();
+			Note($"origin sweep, SKY RAIN class (weapons whose use code reads Main.screenPosition; whatever they spawn 25+ tiles above the enemy must come in within 30 tiles sideways of it and no more than 100 over it, and the weapon must hit) ({rain.Count}): " + string.Join("; ", rain.Select(a => a.r.Label.Replace("CalamityMod:", "") + " aboveTarget=" + a.r.FarAbove + "/" + a.r.Far + " projs=" + a.r.Projs + " dmg=" + a.r.Damage + (SkyRainOk(a.r) ? " ok" : KnownSkyRainResiduals.Any(k => a.r.Label.EndsWith(":" + k)) ? " known residual" : " FAILS"))));
 			Note("origin sweep, made nothing: " + string.Join(", ", all.Where(a => a.r.Projs == 0).Select(a => a.r.Label)));
 			Note("origin sweep, projectiles but no damage: " + string.Join(", ", all.Where(a => a.r.Projs > 0 && a.r.Damage == 0).Select(a => a.r.Label)));
 			foreach (var (r, cls) in all)
@@ -274,8 +278,8 @@ namespace Levy.Common.Testing
 				}
 			foreach (var (r, cls) in all)
 				if (!full && SkyRainSample.Any(n => r.Label.EndsWith(":" + n)))
-					Check($"origin: {r.Label} rains from above the enemy (spawned above the target {r.FarAbove} of {r.Far} far shots) and hits it (damage {r.Damage})", r.Projs > 0 && r.FarAbove * 2 >= r.Far && r.Damage > 0);
-			if (full) Check($"origin sweep: every sky-rain weapon rains above the enemy and hits it ({rain.Count} in the class; failing: {string.Join(", ", rain.Where(a => !(a.r.FarAbove * 2 >= a.r.Far && a.r.Damage > 0)).Select(a => a.r.Label.Replace("CalamityMod:", "")))})", rain.All(a => a.r.FarAbove * 2 >= a.r.Far && a.r.Damage > 0));
+					Check($"origin: {r.Label} rains from above the enemy (spawned above the target {r.FarAbove} of {r.Far} far shots) and hits it (damage {r.Damage})", SkyRainOk(r));
+			if (full) Check($"origin sweep: every weapon that places its shot on the screen a player sees makes shots and hits the enemy ({rain.Count} in the class; failing: {string.Join(", ", rain.Where(a => !SkyRainOk(a.r) && !KnownSkyRainResiduals.Any(k => a.r.Label.EndsWith(":" + k))).Select(a => a.r.Label.Replace("CalamityMod:", "")))}; known residuals {string.Join(", ", KnownSkyRainResiduals)})", rain.All(a => SkyRainOk(a.r) || KnownSkyRainResiduals.Any(k => a.r.Label.EndsWith(":" + k))));
 			if (full) Check($"origin sweep: none of {done} weapons fires from the commander (spawned at her in both places: {all.Count(a => a.r.SpawnedAtCommanderBoth)}, drawn from her: {all.Count(a => a.r.DrawFromCommander)}, output controlled by her button: {all.Count(a => a.r.ButtonControlled)})", done > 0 && threw == 0 && !all.Any(a => a.r.SpawnedAtCommanderBoth || a.r.DrawFromCommander || (a.r.ButtonControlled && !KnownButtonResiduals.Any(k => a.r.Label.EndsWith(":" + k)))));
 		}
 

@@ -103,6 +103,41 @@ namespace Levy.Common.Weapons
 			return result;
 		}
 
+		private static readonly Dictionary<int, bool> _screenCache = new();
+		/// <summary>
+		/// True when the modded ITEM's own use code places its shot relative to the screen a player sees (<c>Main.screenPosition</c>: Star Shower's stars fall from the top edge of the screen onto the cursor). The levy aims from the screen a player
+		/// would have (<see cref="Levy.Common.Owner.AimView"/>); this is the class the origin sweep checks for "rains above the target and hits it".
+		/// </summary>
+		public static bool ReadsScreenAtUse(int itemType)
+		{
+			if (_screenCache.TryGetValue(itemType, out bool cached)) return cached;
+			bool result = false;
+			try
+			{
+				ModItem mod = Terraria.ID.ContentSamples.ItemsByType.TryGetValue(itemType, out Item smp) ? smp.ModItem : null;
+				if (mod != null)
+				{
+					EnsureReflection();
+					var sink = new HashSet<string>(); _sink = sink;
+					var visited = new HashSet<MethodBase>(); var found = new HashSet<FieldInfo>();
+					try
+					{
+						for (Type t = mod.GetType(); t != null && t != typeof(ModItem) && t != typeof(object); t = t.BaseType)
+						{
+							const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+							foreach (MethodInfo m in t.GetMethods(flags))
+								if (m.Name == "Shoot" || m.Name == "ModifyShootStats" || m.Name == "UseItem" || m.Name == "CanUseItem") Scan(m, 0, visited, found);
+						}
+					}
+					finally { _sink = null; }
+					result = sink.Contains("screenPosition") || sink.Contains("get_screenPosition");
+				}
+			}
+			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: screen probe failed for item {itemType}: {e.Message}"); }
+			_screenCache[itemType] = result;
+			return result;
+		}
+
 		private static readonly Dictionary<int, bool> _drawCache = new();
 		/// <summary>
 		/// True when the projectile's own modded DRAW code reads its owner: <c>Main.player[...]</c> (Calamity's flails and holdouts take <c>Owner</c> from it) or <c>Main.GetPlayerArmPosition</c> (the end of every flail chain). The draw runs outside

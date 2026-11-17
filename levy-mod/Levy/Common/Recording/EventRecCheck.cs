@@ -81,6 +81,12 @@ namespace Levy.Common.Recording
 			return false;
 		}
 
+		private static System.Reflection.FieldInfo AcidField(string name)
+		{
+			try { return ModLoader.TryGetMod("CalamityMod", out Mod cal) ? cal.Code?.GetType("CalamityMod.Events.AcidRainEvent")?.GetField(name, System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public) : null; }
+			catch { return null; }
+		}
+
 		private static int SpawnNpc(int x, int y, int type, int life = 0)
 		{
 			int i = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("EventRecCheck"), x, y, type);
@@ -112,6 +118,7 @@ namespace Levy.Common.Recording
 		{
 			Main.invasionType = 0; Main.invasionSize = 0; Main.invasionSizeStart = 0; Main.pumpkinMoon = false; Main.snowMoon = false; Main.bloodMoon = false; Main.eclipse = false;
 			NPC.waveNumber = 0; NPC.waveKills = 0; NPC.LunarApocalypseIsUp = false;
+			try { AcidField("AcidRainEventIsOngoing")?.SetValue(null, false); } catch { }
 		}
 
 		public static void Run(Mod mod, Player p, int cx, string dir, List<SoldierRecord> recs, List<int> spawned)
@@ -273,6 +280,19 @@ namespace Levy.Common.Recording
 				FightRecAutoCheck.Step(200, p, null);
 				Chk(!EventRecorder.On, "the same Blood Moon is not recorded again after the army was lost");
 				Main.bloodMoon = false; FightRecAutoCheck.Step(40, p, null);
+
+				// ---------- 10. Calamity's Acid Rain (reflection, only when Calamity is loaded): won when its kill points run out
+				var acidOn = AcidField("AcidRainEventIsOngoing"); var acidPts = AcidField("AccumulatedKillPoints");
+				if (acidOn != null && acidPts != null)
+				{
+					MakeLevy(p, recs, spawned, new Vector2((cx - 3) * 16f, Floor * 16f), "Pvt. Acid", ItemID.SpaceGun); // the army-wiped check removed every body
+					EventRecorder.ClearCooldown(); acidOn.SetValue(null, true); acidPts.SetValue(null, 40); FightRecAutoCheck.Step(40, p, null);
+					Chk(EventRecorder.On && EventRecorder.MainEvent == "acidrain", "Calamity's Acid Rain starts an event recording");
+					acidPts.SetValue(null, 12); FightRecAutoCheck.Step(400, p, null); acidPts.SetValue(null, 1); FightRecAutoCheck.Step(20, p, null);
+					acidPts.SetValue(null, 0); acidOn.SetValue(null, false); StepUntilStopped(p, 200);
+					Chk(EventRecorder.LastResult == "won" && (EventRecorder.LastPath ?? "").Contains("event_acidrain_"), "Acid Rain whose points ran out is won (" + EventRecorder.LastResult + ")");
+				}
+				else _mod.Logger.Info("[EventRec] OBSERVED Acid Rain not checked: Calamity is not loaded");
 			}
 			catch (Exception e) { _fail++; _mod.Logger.Warn("[EventRec] FAIL threw " + e); }
 			finally

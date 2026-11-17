@@ -223,11 +223,12 @@ namespace Levy.Common.Testing
 					for (int i = 0; i < 8; i++) { string t = DialogueSystem.ChatLine(s); if (RiftMoodCheck.IsRiftText(t)) riftChat++; else { otherChat++; other ??= t; } }
 				}
 				Check($"in the tense days every right-click chat is a rift line ({riftChat} rift, {otherChat} other{(other != null ? ": " + other : "")})", riftChat > 0 && otherChat == 0);
+				DialogueSystem.ResetRuntime(); // the chat sampling above used up the rift lines' repeat cooldowns; the ambient minutes start fresh, as the control did
 				d0 = DialogueSystem.FloatingDelivered; a0 = SoldierNPC.ChatterLines;
 				Step(7200);
 				int tense = DialogueSystem.FloatingDelivered - d0, tenseSaid = SoldierNPC.ChatterLines - a0;
 				Note($"tense, two minutes: {tenseSaid} ambient lines picked, {tense} floating lines out (control {control})");
-				Check($"the tense army is much quieter ({tense} floating lines against {control})", tense <= control * 0.6f);
+				Check($"the tense army is much quieter, but not mute ({tense} floating lines against {control}; {tenseSaid} picked)", tense <= control * 0.6f && tenseSaid > 0);
 			}
 			finally
 			{

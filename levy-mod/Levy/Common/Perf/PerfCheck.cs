@@ -238,7 +238,7 @@ namespace Levy.Common.Perf
 			var w7 = Window(() =>
 			{
 				for (int i = 0; i < 24; i++) SpawnNpc(i % 2 == 0 ? NPCID.BlueSlime : NPCID.Zombie, i * 2);
-				for (int i = 0; i < 40; i++) SpawnProj(ProjectileID.Bullet, false, i);
+				for (int i = 0; i < 40; i++) { int pj = SpawnProj(ProjectileID.Bullet, false, i); if (pj >= 0) { Main.projectile[pj].timeLeft = 100000; Main.projectile[pj].tileCollide = false; Main.projectile[pj].penetrate = -1; } } // pinned: a loaded mod's own hooks may remove a bullet at rest, and the window must still carry its count
 			}, 280, false);
 			long timedBefore = PerfAnalyzer.Timed;
 			Note($"real NPCs and projectiles, global hooks of every loaded mod: {Dump(w7)}; wrapped hook calls timed {PerfAnalyzer.Timed}");
@@ -246,7 +246,7 @@ namespace Levy.Common.Perf
 			Note("global hook rows: " + (globs.Count == 0 ? "none" : string.Join("; ", globs.Select(t => $"{t.Name} {t.Ms:0.00} ms x{t.N:0}"))));
 			if (cal) Check("with Calamity loaded its global AI hooks are timed on real NPCs (a row for CalamityMod)", globs.Any(t => t.Name == "CalamityMod" && t.N > 0));
 			Check("the NPCs and projectiles of the base game are filed under Terraria", Row(w7, PerfCat.Npc, "Terraria") != null && Row(w7, PerfCat.Proj, "Terraria") != null);
-			Check("the window carries the counts and the context", w7.Npcs >= 20 && w7.Projs >= 30 && w7.Updates >= 280 && !string.IsNullOrEmpty(w7.ToJson()));
+			Check($"the window carries the counts and the context (NPCs {w7.Npcs}, projectiles {w7.Projs}, updates {w7.Updates})", w7.Npcs >= 20 && w7.Projs >= 30 && w7.Updates >= 280 && !string.IsNullOrEmpty(w7.ToJson()));
 
 			// ---- dust thinning while effects are reduced
 			PerfAnalyzer.TestReduced = true; PerfAnalyzer.ConfigChanged();

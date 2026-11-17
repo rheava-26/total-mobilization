@@ -174,7 +174,7 @@ namespace Levy.Common.Perf
 		{
 			if (_dead) { orig(self, gameTime); return; }
 			long t0;
-			try { _frame++; _dsample = _frame % DrawSampleEvery == 0; t0 = Stopwatch.GetTimestamp(); } catch (Exception e) { Fail("draw begin", e); orig(self, gameTime); return; }
+			try { _frame++; _dsp = 0; _dsample = _frame % DrawSampleEvery == 0; t0 = Stopwatch.GetTimestamp(); } catch (Exception e) { Fail("draw begin", e); orig(self, gameTime); return; }
 			try { orig(self, gameTime); }
 			finally
 			{

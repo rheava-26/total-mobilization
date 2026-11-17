@@ -122,18 +122,20 @@ namespace Levy.Common.Audio
 		public override void Load()
 		{
 			isServer = Main.dedServ;
-			if (Main.dedServ && !Diag) return;
+			// A dedicated server plays no sound: it installs only the projectile-update classifier, and only for the self-check world, so the check can see it fire (HookProbe.SoundUpdate).
+			if (Main.dedServ && !Diag) { if (Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") == "1") { On_Projectile.Update += ProjUpdate; global::Levy.Common.Util.HookProbe.SoundWatch = true; } return; }
+			// No On_Projectile.AI detour: that stub is inlined into Projectile.Update and never called. ProjUpdate wraps the WHOLE update, AI included, so a projectile's AI sounds are classified by it.
 			On_NPC.AI += NpcAI;
-			On_Projectile.AI += ProjAI;
 			On_Projectile.Update += ProjUpdate;
+			global::Levy.Common.Util.HookProbe.SoundWatch = true;
 			On_SoundEngine.PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback += Play;
 		}
 
 		public override void Unload()
 		{
-			if (Main.dedServ && !Diag) return;
+			global::Levy.Common.Util.HookProbe.SoundWatch = false;
+			if (Main.dedServ && !Diag) { On_Projectile.Update -= ProjUpdate; return; }
 			On_NPC.AI -= NpcAI;
-			On_Projectile.AI -= ProjAI;
 			On_Projectile.Update -= ProjUpdate;
 			On_SoundEngine.PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback -= Play;
 		}
@@ -145,20 +147,15 @@ namespace Levy.Common.Audio
 			try { orig(self); } finally { kind = was; }
 		}
 
-		static void ProjAI(On_Projectile.orig_AI orig, Projectile self)
-		{
-			global::Levy.Common.Util.HookProbe.SoundAi++;
-			int was = kind;
-			if (was == 0) kind = ProjKind(self);
-			try { orig(self); } finally { kind = was; }
-		}
+		/// <summary>The kind of army entity whose update is running right now (0 = none), for the world check.</summary>
+		internal static int CurrentKind => kind;
 
 		/// <summary>The whole update, not only the AI: a levy's projectile also makes sounds when it hits (the strike, the enemy's hurt and death sound) and from its on-hit hooks.</summary>
 		static void ProjUpdate(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
 			global::Levy.Common.Util.HookProbe.SoundUpdate++;
 			int was = kind;
-			if (was == 0) kind = ProjKind(self);
+			if (was == 0) { kind = ProjKind(self); if (kind != 0) global::Levy.Common.Util.HookProbe.SoundClassified++; }
 			try { orig(self, i); } finally { kind = was; }
 		}
 

@@ -45,7 +45,7 @@ namespace Levy.Common.Weapons
 		internal static bool WantsAnchor(Projectile p) =>
 			IsAnchoredType(p.type) && p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex >= 0;
 
-		internal static void RunAi(On_Projectile.orig_AI orig, Projectile p)
+		internal static void RunAi(Action<Projectile> orig, Projectile p)
 		{
 			SoldierNPC body = BodyOf(p);
 			if (body == null)
@@ -87,6 +87,7 @@ namespace Levy.Common.Weapons
 		public override bool PreAI(Projectile projectile)
 		{
 			if (projectile.direction == 0) MiscProjSwap.SeedSentryDirection(projectile);
+			if (global::Levy.Common.Util.HookProbe.SoundWatch && projectile.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.SoldierIndex >= 0) { if (global::Levy.Common.Audio.ArmySoundThrottle.CurrentKind != 0) global::Levy.Common.Util.HookProbe.SoundInAi++; else global::Levy.Common.Util.HookProbe.SoundOutAi++; }
 			return true;
 		}
 	}
@@ -94,22 +95,39 @@ namespace Levy.Common.Weapons
 	/// <summary>Installs the Projectile.AI wrapper for the Zenith swords and keeps slot 255 clean around the projectile phase.</summary>
 	public class MiscProjSwapSystem : ModSystem
 	{
-		public override void Load() => On_Projectile.AI += AiDetour;
+		/// <summary>Above zero while the wrapper is inside orig on this thread: the three hook points (Projectile.AI, VanillaAI, ProjectileLoader.ProjectileAI) nest, and only the first one wraps (see <see cref="ProjAiHooks"/>).</summary>
+		[ThreadStatic] private static int _depth;
+
+		public override void Load()
+		{
+			On_Projectile.AI += AiDetour;
+			On_Projectile.VanillaAI += VanillaAiDetour;
+			ProjAiHooks.AddLoader(LoaderAiDetour, "the Zenith anchor");
+		}
 
 		public override void Unload()
 		{
 			On_Projectile.AI -= AiDetour;
+			On_Projectile.VanillaAI -= VanillaAiDetour;
 			EnemyTargeting.EnsureSlotRestored();
 		}
 
 		public override void PreUpdateProjectiles() => EnemyTargeting.EnsureSlotRestored();
 		public override void PostUpdateProjectiles() => EnemyTargeting.EnsureSlotRestored();
 
-		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)
+		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self) { global::Levy.Common.Util.HookProbe.MiscAi++; if (!Wants(self)) orig(self); else Go(pp => orig(pp), self); }
+		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self) { global::Levy.Common.Util.HookProbe.MiscVanilla++; if (!Wants(self)) orig(self); else Go(pp => orig(pp), self); }
+		private static void LoaderAiDetour(Action<Projectile> orig, Projectile self) { global::Levy.Common.Util.HookProbe.MiscLoader++; if (!Wants(self)) orig(self); else Go(orig, self); }
+
+		/// <summary>The cheap test every projectile passes: a Zenith sword of a soldier, not already inside the wrapper.</summary>
+		private static bool Wants(Projectile self) => self.type == Terraria.ID.ProjectileID.FinalFractal && _depth == 0 && !ProjAiHooks.Off && self.active && MiscProjSwap.WantsAnchor(self);
+
+		private static void Go(Action<Projectile> orig, Projectile self)
 		{
-			global::Levy.Common.Util.HookProbe.MiscAi++;
-			if (MiscProjSwap.WantsAnchor(self)) MiscProjSwap.RunAi(orig, self);
-			else orig(self);
+			if (!Wants(self)) { orig(self); return; }
+			_depth++;
+			try { MiscProjSwap.RunAi(orig, self); }
+			finally { _depth--; }
 		}
 	}
 }

@@ -173,41 +173,42 @@ namespace Levy.Common.Perf
 			PerfTestTypes.Reset(); PerfTestTypes.NpcUs = 1000; PerfTestTypes.NpcCalls = 0;
 			var w1 = Window(() => SpawnNpc(ModContent.NPCType<PerfTestNpc>()), 210);
 			double burned1 = PerfTestTypes.NpcCalls * 1.0; // ms, one per call
+			double wall1 = Math.Max(burned1, PerfTestTypes.WallMs); // what the busy-waits really took: a loaded box preempts them, and the analyzer's wall clock sees that too
 			var nt = Row(w1, PerfCat.NpcType, "Levy/PerfTestNpc"); var nm = Row(w1, PerfCat.Npc, "Levy");
 			Note($"NPC phase: {PerfTestTypes.NpcCalls} calls of 1 ms; window updates {w1?.Updates} sampled {w1?.SampledUpdates}, timed NPC calls {PerfAnalyzer.NpcCalls}, context attached {PerfAnalyzer.AttachCount} time(s); window rows: {Dump(w1)}");
-			Check("a test NPC that burns 1 ms an update shows as NPC Levy/PerfTestNpc at about the cost burned", nt != null && nt.Ms > 0.6 * burned1 && nt.Ms < 1.6 * burned1);
-			Check("and the same cost on the Levy mod row", nm != null && nm.Ms > 0.6 * burned1 && nm.Ms < 1.6 * burned1);
+			Check("a test NPC that burns 1 ms an update shows as NPC Levy/PerfTestNpc at about the cost burned", nt != null && nt.Ms > 0.6 * burned1 && nt.Ms < 1.6 * wall1);
+			Check("and the same cost on the Levy mod row", nm != null && nm.Ms > 0.6 * burned1 && nm.Ms < 1.6 * wall1);
 			Check("and it is the biggest row of the window", w1 != null && w1.Top.Count > 0 && w1.Top[0].Name.StartsWith("Levy") && !w1.Top.Any(t => !t.Name.StartsWith("Levy") && t.Ms > 0.5 * (nm?.Ms ?? 1e9) && !PerfCat.IsDrill(t.Cat)));
 
 			// ---- projectile update
 			Cleanup(); PerfTestTypes.Reset(); PerfTestTypes.ProjUs = 600;
 			var w2 = Window(() => SpawnProj(ModContent.ProjectileType<PerfTestProj>(), false), 210);
-			double burned2 = PerfTestTypes.ProjCalls * 0.6;
+			double burned2 = PerfTestTypes.ProjCalls * 0.6; double wall2 = Math.Max(burned2, PerfTestTypes.WallMs);
 			var pt = Row(w2, PerfCat.ProjType, "Levy/PerfTestProj"); var pm = Row(w2, PerfCat.Proj, "Levy");
 			Note($"projectile phase: {PerfTestTypes.ProjCalls} calls of 0.6 ms; window rows: {Dump(w2)}");
-			Check("a test projectile that burns 0.6 ms an update shows as projectile Levy/PerfTestProj at about the cost burned", pt != null && pt.Ms > 0.6 * burned2 && pt.Ms < 1.6 * burned2);
+			Check("a test projectile that burns 0.6 ms an update shows as projectile Levy/PerfTestProj at about the cost burned", pt != null && pt.Ms > 0.6 * burned2 && pt.Ms < 1.6 * wall2);
 			Check("and on the Levy projectile row, not on the army row", pm != null && pm.Ms > 0.6 * burned2 && Row(w2, PerfCat.Army, "all") == null);
 
 			// ---- an army shot
 			Cleanup(); PerfTestTypes.Reset(); PerfTestTypes.ProjUs = 600;
 			var w3 = Window(() => SpawnProj(ModContent.ProjectileType<PerfTestProj>(), true), 210);
-			double burned3 = PerfTestTypes.ProjCalls * 0.6; var am = Row(w3, PerfCat.Army, "all");
+			double burned3 = PerfTestTypes.ProjCalls * 0.6; double wall3 = Math.Max(burned3, PerfTestTypes.WallMs); var am = Row(w3, PerfCat.Army, "all");
 			Note($"army shot phase: {PerfTestTypes.ProjCalls} calls; window rows: {Dump(w3)}");
-			Check("the same projectile fired by the army lands on the army row", am != null && am.Ms > 0.6 * burned3 && am.Ms < 1.6 * burned3 && Row(w3, PerfCat.Proj, "Levy") == null);
+			Check("the same projectile fired by the army lands on the army row", am != null && am.Ms > 0.6 * burned3 && am.Ms < 1.6 * wall3 && Row(w3, PerfCat.Proj, "Levy") == null);
 
 			// ---- a global hook: its time is charged to its mod and taken out of the NPC's owner
 			// A busy-wait is wall-clock time, so a world autosave or a GC pause that lands inside the window inflates it. Judge the best of three windows.
-			PerfWindow w4 = null; double burned4 = 0; PerfItem gm = null, nm4 = null;
+			PerfWindow w4 = null; double burned4 = 0, wall4 = 0; PerfItem gm = null, nm4 = null;
 			for (int attempt = 0; attempt < 3; attempt++)
 			{
 				Cleanup(); PerfTestTypes.Reset(); PerfTestTypes.GlobUs = 400; PerfTestTypes.NpcUs = 0;
 				w4 = Window(() => SpawnNpc(ModContent.NPCType<PerfTestNpc>()), 210);
-				burned4 = PerfTestTypes.GlobCalls * 0.4; gm = Row(w4, PerfCat.Glob, "Levy"); nm4 = Row(w4, PerfCat.Npc, "Levy");
-				if (gm != null && gm.Ms > 0.6 * burned4 && gm.Ms < 1.6 * burned4) break;
+				burned4 = PerfTestTypes.GlobCalls * 0.4; wall4 = Math.Max(burned4, PerfTestTypes.WallMs); gm = Row(w4, PerfCat.Glob, "Levy"); nm4 = Row(w4, PerfCat.Npc, "Levy");
+				if (gm != null && gm.Ms > 0.6 * burned4 && gm.Ms < 1.6 * wall4) break;
 				Note($"global hook phase attempt {attempt + 1} was outside the band ({gm?.Ms:0.0} ms for {burned4:0.0} burned); trying again");
 			}
 			Note($"global hook phase: {PerfTestTypes.GlobCalls} calls of 0.4 ms; window rows: {Dump(w4)}");
-			Check("a GlobalNPC hook that burns 0.4 ms an update shows as a global hook of Levy at about the cost burned", gm != null && gm.Ms > 0.6 * burned4 && gm.Ms < 1.6 * burned4);
+			Check("a GlobalNPC hook that burns 0.4 ms an update shows as a global hook of Levy at about the cost burned", gm != null && gm.Ms > 0.6 * burned4 && gm.Ms < 1.6 * wall4);
 			Check("and its time is taken out of the NPC's own row (that row stays small)", nm4 == null || nm4.Ms < 0.5 * gm.Ms);
 
 			// ---- map layer, every call
@@ -219,8 +220,9 @@ namespace Levy.Common.Perf
 				for (int i = 0; i < 40; i++) layer.Draw(ref ctx, ref text);
 			}, 40);
 			var mr = Row(w5, PerfCat.Map, "Levy/PerfTestLayer");
-			Note($"map layer phase: {PerfTestTypes.LayerCalls} calls of 1.5 ms; window rows: {Dump(w5)}");
-			Check("a map layer that burns 1.5 ms a frame shows as map layer Levy/PerfTestLayer, 40 calls at about 1.5 ms", mr != null && Math.Abs(mr.N - 40) < 0.5 && mr.Ms / mr.N > 1.4 && mr.Ms / mr.N < 2.3);
+			double layerWall = PerfTestTypes.WallMs / Math.Max(1, PerfTestTypes.LayerCalls); // ms a call really took
+			Note($"map layer phase: {PerfTestTypes.LayerCalls} calls of 1.5 ms (really {layerWall:0.00} ms each); window rows: {Dump(w5)}");
+			Check("a map layer that burns 1.5 ms a frame shows as map layer Levy/PerfTestLayer, 40 calls at about 1.5 ms", mr != null && Math.Abs(mr.N - 40) < 0.5 && mr.Ms / mr.N > 1.4 && mr.Ms / mr.N < Math.Max(2.3, 1.5 * layerWall));
 			Check("and it is the biggest row of the window", w5 != null && w5.Top.Count > 0 && w5.Top[0].Cat == PerfCat.Map && w5.Top[0].Name == "Levy/PerfTestLayer");
 			if (mr != null) Note("how the report words it: " + PerfAnalysis.Describe(mr, PerfSpan.Of(new[] { w5 })));
 

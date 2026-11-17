@@ -11,9 +11,12 @@ namespace Levy.Common.Util
 		public static int MiscAi, MiscVanilla, MiscLoader, MiscActed;
 		public static int FlyerAi, FlyerVanilla, FlyerLoader, FlyerActed;
 		public static int SoundAi, SoundUpdate, SoundClassified;
-		public static int ViewAi, ViewVanilla, ViewLoader, ViewActed;
+		public static int ViewAi, ViewVanilla, ViewLoader, ViewActed, ViewMismatch;
+		public static int SoundInAi, SoundOutAi;
+		/// <summary>Set by ArmySoundThrottle when its projectile detour is installed (a client always, a server only for the self-check world): the army-kind probe in the soldier-shot PreAI then counts.</summary>
+		public static bool SoundWatch;
 
-		private static readonly System.Reflection.FieldInfo[] _f = typeof(HookProbe).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+		private static readonly System.Reflection.FieldInfo[] _f = System.Array.FindAll(typeof(HookProbe).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static), f => f.FieldType == typeof(int));
 		/// <summary>All counters, for before / after deltas.</summary>
 		public static int[] Snap() { var a = new int[_f.Length]; for (int i = 0; i < a.Length; i++) a[i] = (int)_f[i].GetValue(null); return a; }
 		public static int[] Delta(int[] since) { var a = Snap(); for (int i = 0; i < a.Length; i++) a[i] -= since[i]; return a; }

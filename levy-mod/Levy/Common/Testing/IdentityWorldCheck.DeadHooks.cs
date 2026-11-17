@@ -129,6 +129,11 @@ namespace Levy.Common.Testing
 				Note("deadhooks: three levies each with the Zenith and the Laser Machinegun, 150 ticks each: " + HookProbe.Describe(d1));
 				Check($"deadhooks: the held-weapon wrapper is entered through a hook that fires (Projectile.AI {HookProbe.Part(d1, "HeldAi")} / VanillaAI {HookProbe.Part(d1, "HeldVanilla")} / loader {HookProbe.Part(d1, "HeldLoader")} entries)", HookProbe.Part(d1, "HeldAi") + HookProbe.Part(d1, "HeldVanilla") > 0);
 				Check($"deadhooks: the Zenith swords were anchored to their levy by the wrapper ({HookProbe.Part(d1, "MiscActed")} wrapped AI calls)", HookProbe.Part(d1, "MiscActed") > 0);
+				Check($"deadhooks: a soldier shot's AI runs with its levy's weapon in the owner's hand ({HookProbe.Part(d1, "ViewActed")} calls, {HookProbe.Part(d1, "ViewMismatch")} where Player.HeldItem was not the levy's item)", HookProbe.Part(d1, "ViewActed") > 0 && HookProbe.Part(d1, "ViewMismatch") == 0);
+				if (HookProbe.SoundWatch)
+					Check($"deadhooks: the army sound throttle's projectile update hook fires ({HookProbe.Part(d1, "SoundUpdate")} updates) and a levy shot's AI runs classified as army ({HookProbe.Part(d1, "SoundInAi")} AI calls classified, {HookProbe.Part(d1, "SoundOutAi")} not)", HookProbe.Part(d1, "SoundUpdate") > 0 && HookProbe.Part(d1, "SoundInAi") > 0 && HookProbe.Part(d1, "SoundOutAi") == 0);
+				else Note("deadhooks: the army sound throttle is not installed on this machine (client only); its projectile hook is checked where LEVY_SELFCHECK_WORLD installs it");
+				ZenithPhase();
 
 				FlyerPhase(out int[] d2, out string flyNote);
 				Note("deadhooks: flyer-slot bolts: " + flyNote);
@@ -167,6 +172,36 @@ namespace Levy.Common.Testing
 				Note("deadhooks: totals: " + HookProbe.Snapshot());
 			}
 			finally { _spNet = false; _sweepTarget = null; ClearSoldiers(); ReleaseCommanderButtons(); }
+		}
+
+		/// <summary>One levy with the Zenith, the commander 45 tiles to the left: where do the swords orbit, and what do they do to the enemy.</summary>
+		private static void ZenithPhase()
+		{
+			_cmdAt = OriginCmdAt(); ClearSoldiers(); ReleaseCommanderButtons();
+			Vector2 at = new Vector2(Cx * 16f + 8f, FloorY * 16f);
+			SpawnOriginTarget(at);
+			Item w = new Item(); w.SetDefaults(ItemID.Zenith);
+			SoldierRecord rec = MakeOriginRecord(w, 0); rec.Name = "Pvt. Zenith"; RosterSystem.Instance.Regulars.Add(rec);
+			int b = RosterSystem.Instance.SpawnBody(rec, at); if (b < 0 || !rec.HasBody) { Note("deadhooks: zenith levy did not spawn"); return; }
+			Main.npc[b].Bottom = at; Main.rand = new Terraria.Utilities.UnifiedRandom(777);
+			KeepCommander(); PinSweepTarget(); CursorOnCommander(); Step(10);
+			long dmg = 0; int orbit = 0, nearCmd = 0; float maxFromLevy = 0f;
+			for (int k = 0; k < 300; k++)
+			{
+				foreach (var r in RosterSystem.Instance.Regulars) r.Mana = r.MaxMana;
+				CursorOnCommander(); Step(1); ClearNaturalHostiles();
+				if (_sweepTarget != null && _sweepTarget.active) { int d = _sweepTarget.lifeMax - _sweepTarget.life; if (d > 0) dmg += d; }
+				Vector2 cmdC = Main.player[0].Center, levyC = Main.npc[b].Center;
+				for (int i = 0; i < Main.maxProjectiles; i++)
+				{
+					Projectile p = Main.projectile[i];
+					if (!p.active || p.type != ProjectileID.FinalFractal || !p.TryGetGlobalProjectile(out SoldierProjectileTag tag) || tag.SoldierIndex != b) continue;
+					orbit++; float dl = Vector2.Distance(p.Center, levyC), dc = Vector2.Distance(p.Center, cmdC); maxFromLevy = Math.Max(maxFromLevy, dl); if (dc < dl) nearCmd++;
+				}
+			}
+			ClearSoldiers();
+			Note($"deadhooks: Zenith, one levy, commander 45 tiles away, 300 ticks: sword ticks {orbit}, nearer the commander than the levy {nearCmd}, farthest from the levy {maxFromLevy / 16f:0.0} tiles, damage to the enemy {dmg}{(ProjAiHooks.Off ? " [revived hooks OFF]" : "")}");
+			Check($"deadhooks: the Zenith's swords orbit their levy, not the commander ({nearCmd} of {orbit} sword ticks nearer her)", orbit == 0 || nearCmd == 0);
 		}
 
 		/// <summary>A hostile projectile whose ai[0] is the flyer slot (what an Empress of Light bolt carries) is fired near a levy; it must be run with that levy in slot 254, so Calamity's bolt steers at the levy and not at the world origin.</summary>

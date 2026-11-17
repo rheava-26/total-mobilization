@@ -578,6 +578,7 @@ namespace Levy.Common.Weapons
 				d.selectedItem = 0;
 				thoriumPrev = OwnerPuppet.SwapThorium(d); // experiment (harness-gated): SetLocalThoriumPlayer(dummy's) AFTER d.whoAmI == Main.myPlayer (its own guard)
 				cycle = UseCycle.Enter(s, d, item); // itemAnimation / itemTime / ItemUsesThisAnimation / reuseDelay as the player's ItemCheck has them at this shot
+				if (UseCycle.StartsUse(s)) UseCycle.StartUseHook(d, item); // a new use: the weapon's own UseAnimation runs first, as in Player.ApplyItemAnimation
 				// Hold-to-fire weapons (modded channeled guns) only spawn their shot while the owner's use button is down: the soldier is firing.
 				d.controlUseItem = true;
 				canShoot = CombinedHooks.CanShoot(d, item); // Player.ItemCheck_Shoot asks it first: false = no shot from this use
@@ -916,6 +917,7 @@ namespace Levy.Common.Weapons
 			SwordBeams.TryFire(s, item, profile, target);
 			s.BeginSwing();
 			FinishUse(s, item, toTarget);
+			s.SwingStartTick(target); // the swing's first tick of the weapon's own MeleeEffects (the rest run in ProcessSwing)
 			return true;
 		}
 
@@ -1002,7 +1004,8 @@ namespace Levy.Common.Weapons
 			if (RealThrow(item))
 			{
 				if (!RealCanUse(s, item)) { s.AttackCooldown = 4; return false; }
-				if (TryRealShoot(s, item, profile, target, 0, muzzle, vel, item.shoot, damage, item.knockBack)) { FinishUse(s, item, vel); return true; }
+				if (TryRealShoot(s, item, profile, target, 0, muzzle, vel, item.shoot, damage, item.knockBack, out bool declined)) { FinishUse(s, item, vel); return true; }
+				if (declined) return Dud(s, item); // the weapon chose no throw this use: a player gets none, so no stand-in either
 			}
 			Projectile p = Spawn(s, muzzle, vel, ModContent.ProjectileType<SoldierBoomerang>(), damage, item.knockBack, item.DamageType ?? DamageClass.Melee, s.NPC.whoAmI, item.type, 0f);
 			if (p == null) return Dud(s, item);

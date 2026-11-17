@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using Terraria;
+using Terraria.ModLoader;
 using Levy.Content.NPCs;
 
 namespace Levy.Common.Weapons
@@ -46,23 +47,36 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>The dummy in the use state of the levy's current shot of <paramref name="item"/>; dispose to put the dummy's own state back.</summary>
-		public static Scope Enter(SoldierNPC s, Player d, Item item) => new Scope(s, d, item);
+		public static Scope Enter(SoldierNPC s, Player d, Item item) => new Scope(s, d, item, false);
+
+		/// <summary>The dummy in the use state of the tick the levy's running animation is on now (the per-tick swing hooks): itemAnimation = the levy's, itemTime = what is left of the use time.</summary>
+		public static Scope EnterTick(SoldierNPC s, Player d, Item item) => new Scope(s, d, item, true);
+
+		/// <summary>
+		/// <c>ItemLoader.UseAnimation</c>, which Player.ApplyItemAnimation runs as every use starts (before the animation is set and before the shot): weapons reset their own per-swing state there
+		/// (Greatsword of Judgement's swing clock and beam flag). The caller has the dummy standing in as the player. Never throws.
+		/// </summary>
+		public static void StartUseHook(Player d, Item item)
+		{
+			if (d == null || item == null || item.IsAir) return;
+			try { ItemLoader.UseAnimation(item, d); } catch (Exception) { }
+		}
 
 		public readonly struct Scope : IDisposable
 		{
 			private readonly Player _d;
 			private readonly int _anim, _animMax, _time, _timeMax, _reuse, _uses;
 
-			public Scope(SoldierNPC s, Player d, Item item)
+			public Scope(SoldierNPC s, Player d, Item item, bool currentTick)
 			{
 				_d = d;
 				if (d == null || item == null) { _anim = _animMax = _time = _timeMax = _reuse = _uses = 0; return; }
 				_anim = d.itemAnimation; _animMax = d.itemAnimationMax; _time = d.itemTime; _timeMax = d.itemTimeMax; _reuse = d.reuseDelay; _uses = d.ItemUsesThisAnimation;
-				bool fresh = StartsUse(s);
-				int anim = fresh ? AnimationFor(item) : s.ItemAnimation;
+				bool fresh = !currentTick && StartsUse(s);
+				int anim = fresh ? AnimationFor(item) : Math.Max(0, s.ItemAnimation);
 				d.itemAnimation = anim;
 				d.itemAnimationMax = fresh ? anim : Math.Max(anim, s.ItemAnimationMax);
-				d.itemTime = 0; // the shot is made on the tick itemTime reached 0 (ApplyItemTime sets it after)
+				d.itemTime = currentTick ? Math.Max(0, s.AttackCooldown) : 0; // a shot is made on the tick itemTime reached 0 (ApplyItemTime sets it after); between shots it counts down
 				d.itemTimeMax = Math.Max(1, item.useTime);
 				d.reuseDelay = Math.Max(0, item.reuseDelay); // ApplyItemAnimation sets it at the use start; it only counts down once the animation is over
 				SetUsesThisAnimation(d, fresh ? 0 : Math.Max(0, s.UsesThisAnimation));

@@ -364,6 +364,15 @@ namespace Levy.Content.NPCs
 			SwingSpecialSpent = false;
 		}
 
+		/// <summary>The weapon's own swing hooks for the first tick of a swing (the tick it starts on, at the full animation), which <see cref="ProcessSwing"/> runs for every later tick.</summary>
+		internal void SwingStartTick(NPC target)
+		{
+			Item item = WeaponUse.HeldItem(this);
+			if (item == null || item.IsAir || ItemAnimation <= 0) return;
+			Rectangle box = SwingHitbox(item);
+			if (box.Width > 0 && box.Height > 0) MeleeEffects.SwingTick(this, item, box, target);
+		}
+
 		/// <summary>Hits every hostile NPC whose hitbox meets the swing rectangle, once per swing.</summary>
 		private void ProcessSwing(NPC primary)
 		{
@@ -371,6 +380,7 @@ namespace Levy.Content.NPCs
 			if (item == null || item.IsAir) return;
 			Rectangle box = SwingHitbox(item);
 			if (box.Width <= 0 || box.Height <= 0) return;
+			MeleeEffects.SwingTick(this, item, box, primary); // the weapon's own per-tick swing hooks, as Player.ItemCheck runs them every tick of the animation
 			if (Hostile) { HostileSwing(item, box); return; } // HOSTILE SEAM: the swing hurts the player's side
 			int dmg = Math.Max(1, (int)(WeaponDamage(item) * DamageMultiplier));
 			int critChance = -1;

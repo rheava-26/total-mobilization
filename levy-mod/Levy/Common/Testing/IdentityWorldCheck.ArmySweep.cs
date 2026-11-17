@@ -196,7 +196,7 @@ namespace Levy.Common.Testing
 						Main.screenPosition = scratch.Center - new Vector2(Main.screenWidth / 2f, Main.screenHeight / 2f); Main.mouseX = (int)(_sweepTarget.Center.X - Main.screenPosition.X); Main.mouseY = (int)(_sweepTarget.Center.Y - Main.screenPosition.Y);
 						Step(1); actor = scratch.Center;
 					}
-					else { rec.Mana = rec.MaxMana; OriginStep(); actor = Main.npc[body].Center; }
+					else { if (!_armyNoManaRefill || k == 0) rec.Mana = rec.MaxMana; OriginStep(); actor = Main.npc[body].Center; }
 					ClearNaturalHostiles(); ArmyReadDamage(res);
 					if (!player)
 					{
@@ -212,7 +212,7 @@ namespace Levy.Common.Testing
 					for (int i = 0; i < Main.maxProjectiles; i++)
 					{
 						Projectile p = Main.projectile[i];
-						if (!p.active || p.hostile) { live.Remove(i); continue; }
+						if (!p.active || p.hostile || ((p.type == ProjectileID.FallingStarSpawner || p.type == ProjectileID.FallingStar) && p.type != w.shoot)) { live.Remove(i); continue; } // the night sky's own falling stars are not anyone's shot
 						if (p.minion || p.minionSlots > 0f) minions++;
 						if (p.sentry) sentries++;
 						float da = Vector2.Distance(p.Center, actor), dc = Vector2.Distance(p.Center, cmd);
@@ -257,9 +257,9 @@ namespace Levy.Common.Testing
 		/// <summary>The use-cycle weapons' proof: the shots of the item's own use, in the order they appeared, the first <paramref name="k"/>.</summary>
 		private static List<string> ArmyUseSeq(ArmyRes res, string[] own, string shootName, int k) => res.Seq.Where(t => own.Contains(t) || t == shootName).Take(k).ToList();
 
-		private static void ArmyUseCycleCheck(ArmyRow r)
+		private static void ArmyUseCycleCheck(ArmyRow r, string[] given = null)
 		{
-			if (!ArmyUseCycle.TryGetValue(ArmyKey(r.Name), out string[] own)) return;
+			string[] own = given; if (own == null && !ArmyUseCycle.TryGetValue(ArmyKey(r.Name), out own)) return;
 			const int K = 8;
 			var p = ArmyUseSeq(r.Player, own, r.ShootName, K); var a = ArmyUseSeq(r.A, own, r.ShootName, K); var b = ArmyUseSeq(r.B, own, r.ShootName, K);
 			int Count(ArmyRes x) => own.Sum(t => x.Types.TryGetValue(t, out int c) ? c : 0);

@@ -78,6 +78,42 @@ namespace Levy.Common.Weapons
 			return done;
 		}
 
+		private static bool[] _tickBefore;
+
+		/// <summary>
+		/// The weapon's own per-tick swing hooks (<c>CombinedHooks.MeleeEffects</c>: ModItem, GlobalItem and ModPlayer MeleeEffects), which Player.ItemCheck runs on every tick of a melee animation with the
+		/// player in that tick's use state. Weapons spawn projectiles there on chosen ticks of the animation (Ultimus Cleaver's five sparks at 90/70/50/30/10 %, Greatsword of Judgement's beam at 65 %): a levy's
+		/// swing runs it the same way, the dummy standing in as the player at the levy's animation tick with the cursor on the target. What it spawns is tagged as the soldier's. Never throws.
+		/// </summary>
+		public static void SwingTick(SoldierNPC s, Item item, Rectangle box, NPC target)
+		{
+			Player d = s?.Dummy;
+			if (d == null || item == null || item.IsAir || item.noMelee || item.damage < 0 || s.ItemAnimation <= 0 || !LevyConfig.Get.RealWeaponShoot) return; // vanilla: no MeleeEffects for a noMelee item or outside the animation
+			bool[] before = _tickBefore ??= new bool[Main.maxProjectiles];
+			for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
+			int savedWho = d.whoAmI, savedDir = d.direction, savedSel = d.selectedItem; Vector2 savedCenter = d.Center; Item saved0 = d.inventory[0];
+			AltPolicies.AimScope aim = default; UseCycle.Scope cycle = default;
+			try
+			{
+				d.whoAmI = WeaponUse.OwnerFor(s); // hooks spawn with player.whoAmI and often test whoAmI == Main.myPlayer
+				d.Center = s.NPC.Center;
+				d.direction = s.NPC.direction == 0 ? 1 : s.NPC.direction;
+				if (!ReferenceEquals(d.inventory[0], item)) d.inventory[0] = item;
+				d.selectedItem = 0;
+				if (target != null) aim = new AltPolicies.AimScope(d, target.Center);
+				cycle = UseCycle.EnterTick(s, d, item);
+				CombinedHooks.MeleeEffects(d, item, box);
+			}
+			catch (Exception) { }
+			finally { cycle.Dispose(); aim.Dispose(); d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; d.selectedItem = savedSel; d.inventory[0] = saved0; }
+			DamageClass cls = item.DamageType ?? DamageClass.Melee;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (p.active && !before[i]) WeaponUse.TagSoldierProjectile(s, p, cls);
+			}
+		}
+
 		/// <summary>Damage multipliers vanilla applies per item in ProcessHitAgainstNPC before the strike (Breaker Blade, Keybrand).</summary>
 		private static void ItemDamageModifiers(Item item, NPC n, ref NPC.HitModifiers mods)
 		{

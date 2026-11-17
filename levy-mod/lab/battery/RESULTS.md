@@ -79,3 +79,6 @@ Gear (one line each):
 - Fight specs: specs/fights_eve.tsv, fights_round2.tsv, fights_opt.tsv, fights_optr.tsv (mkfights.py); DPS trials specs/battery_dps.yaml and battery_dps2.yaml.
 - Run: `levy-mod/lab/levylab run SPEC --jobs 1 --rec 99`, then `collect.py RUN --dest DIR` (gzip .levyrec named army_boss_seed + fights.json), `table.py` and `summarize.py`. Results of these runs: fights.json.
 - The first optimal run (Daybreak and Solar Eruption without their prefix) also won 6/6 and is not in the table.
+
+## Ship-world check (serial, private paths, this branch)
+Builds 0 errors on both toolchains; vanilla and Calamity boots exc=0. World checks: every group passes except PerfAnalyzer (4 FAIL vanilla, 3 FAIL Calamity). Those checks burn a fixed wall-clock time in a test NPC and expect 0.6-1.6x of it back; on the loaded box (load 24-28) the 1 ms burn read 2.0 ms. The code changed on this branch is harness-only (lab kit loader, prefix helper, dummy defense) and runs only inside a calrev spec. The "exceptions" counted are the PerfAnalyzer's deliberate self-check fault and a /proc read of a vanished process. Log: scratchpad battery-ship.log.

@@ -32,6 +32,9 @@ namespace Levy.Common.Compat.Calamity
 			catch (Exception) { _ok = false; }
 		}
 
+		/// <summary>True when CalamityMod is loaded.</summary>
+		public static bool Loaded => ModLoader.HasMod("CalamityMod");
+
 		/// <summary>True when an accessory on <paramref name="d"/> set a Calamity dash; <paramref name="speed"/> is that dash's start speed (px/tick, as its own CalculateDashSpeed answers).</summary>
 		public static bool TryRead(Player d, out float speed)
 		{

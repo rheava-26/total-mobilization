@@ -22,7 +22,7 @@ namespace Levy.Common.Movement
 		public bool HasDash;
 		/// <summary>The dash the gear gives, as a player's dash behaves: the speed it starts at (px/tick), the factor its speed decays by while above the run speed (0.96, or 0.94 for the shield and solar dashes), and the ticks of recovery after it.
 		/// Zero speed when there is no dash. Read from Player.dashType (Tabi, Master Ninja Gear, Shield of Cthulhu, Solar Flare, Crystal Assassin) and from Calamity's accessory dashes (Asgardian Aegis, Statis' Ninja Belt, Elysian Aegis ...).</summary>
-		public float DashSpeed, DashSlow = 0.96f, DashHighDecay = 0.992f, DashSplit = 12f; public int DashDelay = 20;
+		public float DashSpeed, DashSlow = 0.96f, DashHighDecay = 0.992f, DashSplit = 12f, DashEarlyDecay = 1f; public int DashDelay = 20, DashEarlyTicks;
 		/// <summary>The run numbers a player's Player.Update leaves for HorizontalMovement, after the multipliers (move speed, Magiluminescence, Shadow armor): the ground run cap (maxRunSpeed), the sprint (accRunSpeed), the acceleration and the braking.
 		/// The floor under the feet changes them (asphalt, honey, ice: <see cref="TileRun"/>).</summary>
 		public float GroundRun = 3f, SprintRun = 3f, RunAcceleration = 0.08f, RunSlowdown = 0.2f;
@@ -94,7 +94,7 @@ namespace Levy.Common.Movement
 		/// <summary>The dash of the dummy's gear: Player.dashType's own numbers (Player.DashMovement), else a Calamity accessory dash.</summary>
 		private static void ReadDash(Player d, MovementAbilities a)
 		{
-			a.DashSpeed = 0f; a.DashSlow = 0.96f; a.DashHighDecay = 0.992f; a.DashSplit = 12f; a.DashDelay = 20;
+			a.DashSpeed = 0f; a.DashSlow = 0.96f; a.DashHighDecay = 0.992f; a.DashSplit = 12f; a.DashEarlyDecay = 1f; a.DashEarlyTicks = 0; a.DashDelay = 20;
 			if (d.dashType > 0)
 			{
 				switch (d.dashType)
@@ -103,9 +103,13 @@ namespace Levy.Common.Movement
 					case 3: a.DashSpeed = 21.9f; a.DashSlow = 0.94f; a.DashHighDecay = 0.985f; a.DashSplit = 14f; a.DashDelay = 20; break; // Solar Flare
 					default: a.DashSpeed = 16.9f; break;                                          // Tabi, Master Ninja Gear, Crystal Assassin
 				}
+				// Calamity rewrites the Tabi / Master Ninja Gear dash (CalamityPlayerMiscEffects, "Tabi/Master Ninja Gear dash change"): the speed doubles on the first frame, then x0.95 a tick for 12 ticks and x0.75 a tick after,
+				// so a real Calamity player's dash starts near 32 px/tick and is spent in about 15 ticks; a levy holding the same gear gets the same profile.
+				if (d.dashType == 1 && global::Levy.Common.Compat.Calamity.CalamityDashes.Loaded && !global::Levy.Common.Compat.Calamity.CalamityDashes.TryRead(d, out _))
+				{ a.DashSpeed = 31.9f; a.DashEarlyTicks = 12; a.DashEarlyDecay = 0.95f; a.DashHighDecay = 0.744f; a.DashSlow = 0.72f; }
 				a.HasDash = true; return;
 			}
-			if (global::Levy.Common.Compat.Calamity.CalamityDashes.TryRead(d, out float v)) { a.DashSpeed = Math.Clamp(v, 8f, LevyConstants.Movement.DashMaxSpeedPx); a.HasDash = true; }
+			if (global::Levy.Common.Compat.Calamity.CalamityDashes.TryRead(d, out float v)) { a.DashSpeed = Math.Clamp(v, 8f, LevyConstants.Movement.DashMaxSpeedPx); a.DashHighDecay = 0.985f; a.DashSlow = 0.94f; a.HasDash = true; } // Calamity's own dash decay: x0.985 above 12 px/tick, x0.94 above the run speed
 		}
 
 		/// <summary>

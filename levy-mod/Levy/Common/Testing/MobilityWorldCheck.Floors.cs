@@ -123,10 +123,12 @@ namespace Levy.Common.Testing
 			foreach (var (bn, bt) in new[] { ("right belt", TileID.ConveyorBeltRight), ("left belt", TileID.ConveyorBeltLeft) })
 			{
 				var pv = PlayerTrace(null, bt, 150, idle: true); float pd = pv.Sum();
-				bool tr1 = TileRun.On; float after, before;
-				try { TileRun.On = true; after = LevyStill(bt, 150); TileRun.On = false; before = LevyStill(bt, 150); } finally { TileRun.On = tr1; }
-				Note($"{bn}: standing still for 150 ticks a real player drifts {F(pd)} px, a levy {F(after)} px (before {F(before)})");
-				Check($"a {bn} carries a levy as it carries a player: {F(after)} px against {F(pd)}", Math.Abs(pd) > 20f && Math.Sign(after) == Math.Sign(pd) && Math.Abs(after) >= Math.Abs(pd) * 0.25f && Math.Abs(after) <= Math.Abs(pd) * 1.6f && Math.Abs(before) < Math.Abs(after) * 0.25f);
+				bool tr1 = TileRun.On; float after, before, ctlOn, ctlOff;
+				try { TileRun.On = true; after = LevyStill(bt, 150); ctlOn = LevyStill(TileID.GrayBrick, 150); TileRun.On = false; before = LevyStill(bt, 150); ctlOff = LevyStill(TileID.GrayBrick, 150); } finally { TileRun.On = tr1; }
+				// the levy's own idling drift is measured on a plain floor in the same run (same seed, same ticks) and taken off: what is left is the belt
+				float effOn = after - ctlOn, effOff = before - ctlOff;
+				Note($"{bn}: standing still for 150 ticks a real player drifts {F(pd)} px; a levy drifts {F(after)} px on the belt and {F(ctlOn)} on plain floor (belt effect {F(effOn)}); with the floor rule off {F(before)} and {F(ctlOff)} (belt effect {F(effOff)})");
+				Check($"a {bn} carries a levy in the direction it carries a player, and only with the floor rule on: effect {F(effOn)} px (rule off {F(effOff)}) against a player's {F(pd)}", Math.Abs(pd) > 20f && Math.Sign(effOn) == Math.Sign(pd) && Math.Abs(effOn) >= Math.Abs(pd) * 0.3f && Math.Abs(effOff) < Math.Abs(effOn) * 0.35f);
 			}
 			Arena();
 		}
@@ -134,6 +136,7 @@ namespace Levy.Common.Testing
 		private static float LevyStill(int floorTile, int ticks)
 		{
 			ClearSoldiers(); Arena(floorTile);
+			Main.rand = new Terraria.Utilities.UnifiedRandom(4242);
 			var at = new Vector2(Cx * 16f, FloorY * 16f);
 			_cmdAt = new Vector2(at.X - 30 * 16f, FloorY * 16f - 21f); // well away from him (a commander on top of him shoves him aside), and he is on Hold
 			KeepCommander(); Step(2);
@@ -181,7 +184,7 @@ namespace Levy.Common.Testing
 					SoldierNPC.DashFixOn = df;
 					Note($"{name}: real player dash peak {F(pPeak)} px/tick, {F(pDist60)} px in the first 60 ticks of it ({F(pDist100)} in 100); levy with the gear's dash: peak {F(peakOn)}, {dOn} dashes, {F(dist60On)} px in the 60 ticks after the first; levy with the old fixed burst: peak {F(peakOff)}, {dOff} dashes, {F(dist60Off)} px; dash gate (asked,cooling,ground,state,retreat,goal,turn,lane short,lane blocked,started) with the gear's dash {refOn}");
 					Check($"{name} in a levy's horizontal slot makes him dash: peak {F(peakOn)} px/tick over a bare run's {F(bare.top)}, {dOn} dashes", dOn >= 1 && peakOn >= bare.top + 5f);
-					if ((type == ItemID.Tabi || type == ItemID.MasterNinjaGear || type == ItemID.EoCShield) && !ModLoader.HasMod("CalamityMod")) // Calamity rewrites a player's vanilla dash speed (its own dash code): observed above, compared only without it
+					if ((type == ItemID.Tabi || type == ItemID.MasterNinjaGear || type == ItemID.EoCShield)) // with Calamity a player's vanilla dash is Calamity's rewritten one, and so is a levy's
 						Check($"{name}: a levy's dash starts at the speed a player's does ({F(peakOn)} vs {F(pPeak)} px/tick) and covers ground to the goal, up to a free dash's ({F(dist60On)} vs {F(pDist60)} px in 60 ticks)", pPeak > 8f && peakOn >= pPeak * 0.8f && dist60On >= pDist60 * 0.3f && dist60On <= pDist60 * 1.5f);
 				}
 			}

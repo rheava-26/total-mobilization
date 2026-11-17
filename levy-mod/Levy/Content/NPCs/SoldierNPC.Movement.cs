@@ -542,7 +542,7 @@ namespace Levy.Content.NPCs
 					_dashAge++;
 					float runTop = Math.Max(3f, Abilities.MaxRunSpeed);
 					_dashDist += _dashV;
-					float v = _dashV > Abilities.DashSplit ? _dashV * Abilities.DashHighDecay : _dashV * Abilities.DashSlow;
+					float v = _dashAge <= Abilities.DashEarlyTicks ? _dashV * Abilities.DashEarlyDecay : _dashV > Abilities.DashSplit ? _dashV * Abilities.DashHighDecay : _dashV * Abilities.DashSlow;
 					if (v <= runTop || _dashDist >= _dashCapPx) { _dashTicks = 0; npc.velocity.X = _dashDir * Math.Min(_dashV, Math.Max(runTop, _dashDist >= _dashCapPx ? 6f : runTop)); npc.netUpdate = true; return false; }
 					_dashV = v; npc.velocity.X = _dashDir * v;
 					return true;

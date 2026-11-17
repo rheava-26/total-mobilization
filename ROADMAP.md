@@ -20,6 +20,11 @@
 
 ## ⏸ RESUME HERE (Eve near usage limit, ~18:30 UTC 11-15)
 
+### 2026-11-17 ~03:30: Eve on 3.0.6 (many new fights: Plaguebringer Goliath ×11, Martian Saucer, Deus win, Duke)
+- PERF CONFIRMED in her real game: 34 levies near the fight → PBG fps 56-57, upd 7.5-8.6 ms (old fights with 34 near: fps 35-42, upd 10-13). The idle army: ai+gear 2.6 ms (was ~7.2). Deus with 34 near: fps 50 (was 40-44).
+- Reports work. Her damage is 96-97% stealth strikes (Doomsday Device ~3.5-5.1k per stealth hit). PBG 5/11 won. The line broke ~0:26 in PBG fights; 31-34 levies fell; 0% shaken (morale holds; the army is simply killed). Deus win: the army was wiped at 0:30 and respawns trickled in and died until 1:30 (Regroup & engage should help).
+- Eve asks: (1) Astrum Deus "star shower" weapon broken; (2) MIND CONTROL "extremely wonky" → builder 'deusmind'. (3) NEW ORDER "Regroup & engage" (S&D behaviour; respawning levies teleport to the commander; Free-rein behaviour during boss fights); (4) Spectator: cancelling the buff mid-battle → instant death "<player> forfeited."; (5) the drones rule approved ("go ahead") → builder 'regroup' (also fixes report cosmetics: duplicate boss-life lines, non-weapons in "By weapon").
+- The guided-bomb weapon was a JOKE (dropped). Reserve bank stays at the back of the backlog.
 ### 2026-11-17 ~01:10
 - 6 new fights (3.0.0, Master+Death): Queen Bee, EoC and the Twins killed almost entirely by the army; 3 Golem WINS with the army (her DPS 163-584; fps 21-56, still pre-perf-fix). Eve will A/B an old version vs the new one herself and send the results.
 - Gear advice given (from Calamity source): she has NO damage emblem (Rogue Emblem, +15% rogue). The Bandit sells Glove of Precision (post-Plantera) and Ethereal Extorter (post-Golem, now available). The Plaguebringer miniboss drops Plagued Fuel Pack (+8% rogue, +10% stealth regen, dash). She runs 3 mobility accessories plus Celestial Shell.
@@ -29,7 +34,7 @@
 - POST-FIGHT REPORT + full FIGHT ANALYZER + "the line is breaking" warning: YES. Builder 'fightreport' dispatched. Part 0 first rules out Levy breaking Calamity rogue stealth: Eve runs a stealth build almost entirely, and her DPS is flat.
 - PERFORMANCE ANALYZER like RimWorld's: builder 'perfanalyzer' DISPATCHED ~23:20. Always-on (<0.1 ms/tick) rolling perf log in recordings/perf, per-mod attribution (NPC/proj AI, map/UI layers), /levyperf view, honest post-fight lag popup (Levy-caused → lower levy effects / it's fine / settings; other mod → names it). Reserve-bank option hook left for later; no 'fewer CP' option.
 - SPECTATOR + DRONES: bosses target drones forever, so the lost-bet never triggers and Spectator is pointless. Proposed: once levies are gone and manpower is out, the bet is lost even if drones remain. Awaiting Eve's OK.
-- IDEA: a rogue stealth weapon that throws GBU laser-guided bombs (Eve loves it). Backlog; probably Mechanization. Discuss.
+- (dropped: the GBU bomb weapon was a joke)
 - Calamity Golem skip (Astral Ore → Scoria pickaxe; Eidolist tablets → Cultist): Calamity's, not ours. Offered to draft a report to the Calamity devs.
 - BUG (Eve): some summoner levies keep re-summoning minions for no reason. Folded into weaponorigin's scope (summon counts vs a player): scan every staff idle/combat, flag re-casts at cap and resummon loops, match player rules, add a permanent check.
 - ✅ perfboss part 1 merged (727dcfc): a hostile projectile vs a levy is now decided by the hit test BEFORE the mod hooks. 150 levies × 500 projectiles: +85-100 ms/tick → +10-21 ms/tick. Idle-army dormancy (gear frame at 1/8 rate + stats every 2 s when calm for 6 s with no enemy within 110 tiles; instant wake) is written, still being proven (one WoF fail is being A/B'd). ETA ~1 h. **3.0.4 SENT** ~22:35 (numfield + perfmap + projectile fix; 3.0.3 was verified green and never sent). Verify: all gameplay checks green on both halves; PerfBoss budget FAILs (idle army 92-133 µs vs 60/120 budgets under load ~25-30) are expected until part 2. Asked the builder for load-robust budgets plus a shipworld summary line. Next: 3.0.5 = idle-army dormancy.

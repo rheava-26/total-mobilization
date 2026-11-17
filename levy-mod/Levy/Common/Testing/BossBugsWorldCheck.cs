@@ -211,6 +211,9 @@ namespace Levy.Common.Testing
 			if (Part(only, "killedge")) { try { IceBlockAtTheEdge(); } finally { Cleanup(); } }
 			if (Part(only, "spectarget")) { try { SpectatorSpawnedBosses(); } finally { Cleanup(); } }
 			if (Part(only, "lostbet")) { try { LostBet(); } finally { Cleanup(); } }
+			if (Part(only, "forfeit")) { try { Forfeit(); } finally { Cleanup(); } }
+			if (Part(only, "drones")) { try { DronesDoNotHoldTheBet(); } finally { Cleanup(); } }
+			if (Part(only, "regroup")) { try { RegroupOrder(); } finally { Cleanup(); } }
 			if (Part(only, "redemption") && ModLoader.HasMod("Redemption")) { try { RedemptionPart(); } finally { Cleanup(); } } // only when the mod is loaded
 		}
 

@@ -2,6 +2,8 @@
 
 Persistent memory for the Calamity lore threads in Eve's main chat. If she just brought lore back up, read section 8 first.
 
+Why this file exists: the 11-10 lore thread was lost when the conversation was summarised. Later, Claude nodded along instead of checking what Eve was referring to. This file and section 8 are the fix.
+
 **Tags.** CANON = the mod's own text, as reported in the thread (reverify exact wording before relying on it). EVE = Eve's idea. PITCH = the assistant's invention, an offer. UNSURE = source unclear, or it survives only in a compaction summary.
 
 **Voice-to-text names.** Yaram, Yarim, Yeren, Yerem, Yoram, Urim = Yharim. Drayden = Draedon. Sylvia, Silvia = Silva. Azaferd, Azophyr = Azafure. Elnaris = Ilmeris. Amida, Midas = Amidias (the Sea King). Anita = Anahita. Glorified = chlorophyte. Mexican invasion = Martians.
@@ -117,7 +119,10 @@ Persistent memory for the Calamity lore threads in Eve's main chat. If she just 
 ## 6. Other things Eve noticed
 
 - **Martians:** almost no lore. The probe senses growing power and scouts for resources; the saucer core says "otherworldly creatures" destroyed their world. (CANON) Refugees.
-- **Nukes:** Calamity's "nukes" (Ravager, Magnomaly Cannon, Ares's Gauss Nuke, Plaguebringer) are big homing explosives, not fission. Eve once argued that real fission bombs would work. The lost thread covered the Skyfin Bomber, spent fuel rods, and acid-rain nukes. (UNSURE)
+- **Nukes:**
+  - **Original discussion (details lost).** The "nukes in Terraria" talk happened before the surviving transcript. Only a recap line remains: the Skyfin Bomber, the spent nuclear fuel rod and the Plague Nuke, discussed as nukes being a functional tool. Eve remembers the conclusion as "it would probably work, but it feels like a bit much." Acid-rain nukes in the Sulphurous Sea also came up. (UNSURE: everything beyond the recap line is lost)
+  - **Eve, 17 Nov.** Plague nukes are a biological weapon, not a nuclear one, and mind-controlled bees fire them. That makes Draedon the superweapon supplier to every side of the war. It explains why Yharim was angry with him, and why everyone was losing. (EVE)
+  - **Assistant's answer.** By their in-game names, Calamity's "nukes" are mostly big homing explosives, not fission bombs: Ravager's homing nukes, the Magnomaly Cannon, Ares's Gauss Nuke and Plaguebringer's hive nukes. (CANON names)
 - **Doomsday Device joke:** an alien device with a quantum bomb inside, and you just throw it. Excalibur still stuck in its rock. (EVE) "Activate it" sits in the idea pile only.
 - **Golem's respect:** Yharim laughs at Golem all game, yet it outclasses his mechs, though not the Exo Mechs. Gameplay or lore? (EVE)
 - **Draedon arming everyone:** "giving them superweapons", a fantasy series' worth of wars. (EVE)

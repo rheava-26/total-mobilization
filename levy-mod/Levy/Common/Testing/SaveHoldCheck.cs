@@ -121,7 +121,8 @@ namespace Levy.Common.Testing
 			{
 				lock (TileEntity.EntityCreationLock) TileEntity.ByID[raw.ID] = raw;
 				Check("an armory built with new is not save-safe (type byte 0, no mod)", !TestTileEntities.IsSaveSafe(raw), TestTileEntities.Describe(raw));
-				string r = SaveTileEntitiesInMemory(out _);
+				string r;
+				using (new Logging.QuietExceptionHandle()) r = SaveTileEntitiesInMemory(out _); // the throw is expected here: kept out of tML's caught-error log
 				Check("with it in ByID the tile-entity save throws NotImplemented from ModTileEntity.WriteExtraData (the 11-17 crash)", r != null && r.StartsWith("NotImplemented") && r.Contains("WriteExtraData"), r ?? "it saved");
 
 				// 2. the hold: the autosave's own callback on a pool thread saves nothing and does not throw, even with the unsafe armory in
@@ -173,8 +174,11 @@ namespace Levy.Common.Testing
 				}
 				Check($"(autosave {(start ? "on" : "off")} before) after the hold autosave is back and no hold is open", Main.autoSave == start && SaveHold.Depth == 0 && !SaveHold.Locked && SaveHold.FreeForOtherThreads());
 				bool threw = false;
-				try { using (SaveHold.Begin("throws")) throw new InvalidOperationException("probe"); }
-				catch (InvalidOperationException) { threw = true; }
+				using (new Logging.QuietExceptionHandle()) // the throw is the test: kept out of tML's caught-error log
+				{
+					try { using (SaveHold.Begin("throws")) throw new InvalidOperationException("probe"); }
+					catch (InvalidOperationException) { threw = true; }
+				}
 				Check($"(autosave {(start ? "on" : "off")} before) a check that throws out of its hold still gives the autosave back", threw && Main.autoSave == start && SaveHold.Depth == 0 && SaveHold.FreeForOtherThreads());
 			}
 			Main.autoSave = auto0;

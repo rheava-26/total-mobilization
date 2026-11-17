@@ -104,6 +104,7 @@ chk(len(R.episodes(rec(fr_alive, ev_fled))) == 1 and R.episodes(rec(fr_alive, ev
 import make_site as ms
 s = ms.summarize(rec(fr, ev_lost))
 chk(s["result"] == "loss" and s["rule"] == "lost" and s["cmdDeaths"] == 1, "make_site: a boss that left after her fall is a loss, not 'despawn' (%s)" % s["result"])
+chk(ms.main_boss(frame(0, [brow(SOLAR, 115), brow(EOC, 7)]))[0] == EOC and ms.main_boss(frame(0, [brow(SOLAR, 115)])) is None, "make_site: a pillar is never the main boss")
 s2 = ms.summarize(rec(fr_alive, ev_fled))
 chk(s2["result"] == "fled", "make_site: boss left, commander alive: fled (%s)" % s2["result"])
 cfr = [frame(t, [brow(EOC, 7)], c=[[85, 1000.4 + t, 480.6, 12.34, -1.0, 16, 16], [85, 1100, 400, 0, 0, 16, 16]]) for t in range(0, 40, 2)]

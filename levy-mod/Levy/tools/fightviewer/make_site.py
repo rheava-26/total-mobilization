@@ -125,7 +125,8 @@ def tkind(b):
 
 
 def main_boss(f):
-    bs = f.get("b") or []
+    # event NPCs (Celestial Pillars and the like) are never the main boss, so a fight cut from a pillar recording reads its real boss
+    bs = [b for b in (f.get("b") or []) if not (recrules and recrules.is_event_npc(b[0]))]
     for b in bs:
         if not b[13]:
             return b

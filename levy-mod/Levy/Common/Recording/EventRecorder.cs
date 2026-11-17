@@ -24,8 +24,10 @@ namespace Levy.Common.Recording
 	internal static class EventRecorder
 	{
 		// ------------------------------------------------------------------------------------------ rules (keep identical to recrules.py)
-		/// <summary>One sample every 6 ticks: 10 Hz.</summary>
-		public const int SampleEvery = 6;
+		/// <summary>One sample every 12 ticks: 5 Hz (the viewer interpolates; an hour of a big event stays near 35 MB).</summary>
+		public const int SampleEvery = 12;
+		/// <summary>The event state (which events run, results, waves, the army count) is read every this many ticks.</summary>
+		public const int StateEvery = 10;
 		/// <summary>Hard cap: 60 minutes of event (about 30 MB at 60 levies and a full enemy cap; see FightRecFormat).</summary>
 		public const int MaxTicks = 60 * 60 * 60;
 		/// <summary>The army is gone: no levy or militia body anywhere for 90 s while the event still runs. A fallen regular respawns after 60 s (LevyConstants.RegularRespawnTicks), so 90 s means nobody came back.</summary>
@@ -80,12 +82,18 @@ namespace Levy.Common.Recording
 		private static int _lastDmgFlush, _lastProg, _outpostHash;
 
 		// terrain grid
-		private static readonly HashSet<long> _cells = new();
+		private static readonly HashSet<long> _cells = new(), _centres = new();
 		private static readonly Queue<long> _cellQ = new();
 		private static readonly HashSet<int> _projCells = new();
 
 		// cost
 		private static long _costTicks, _costMax, _costSamples, _sampleTicks; private static int _costN;
+		/// <summary>Per-tick cost histogram, microseconds: under 25, 50, 100, 250, 500, 1000, 2000, 5000, 10000, and above.</summary>
+		internal static readonly int[] CostEdgesUs = { 25, 50, 100, 250, 500, 1000, 2000, 5000, 10000 };
+		private static readonly int[] _hist = new int[10];
+		/// <summary>Self-check: time the parts of a sample (levies, enemies, projectiles, the write) in Stopwatch ticks.</summary>
+		public static bool ProfileParts; public static long PartL, PartA, PartJ, PartW, PartPoll, PartLevyPoll;
+		public static int[] LastHist = new int[10];
 
 		public static string Path => _path;
 		public static int Elapsed => (int)(Main.GameUpdateCount - (uint)_startTick);
@@ -271,10 +279,10 @@ namespace Levy.Common.Recording
 				_startWall = DateTime.Now; _startTick = (int)Main.GameUpdateCount; _cmd = cmd;
 				_frames = _events = _chunks = 0; _kills = _miniKills = _bossKills = _levyHits = _levyDeaths = _cmdDeaths = 0; _pDead = false; _dmgAll = 0;
 				_items.Clear(); _npcs.Clear(); _projs.Clear(); _soldiers.Clear(); _prefixes.Clear(); _imp.Clear(); _typeLife.Clear(); _lt.Clear(); _deadNoted.Clear(); _projHit.Clear(); _lgear.Clear(); _hbDef.Clear(); _dmg.Clear();
-				_cells.Clear(); _cellQ.Clear(); _seen.Clear(); _results.Clear(); _prevActive.Clear();
+				_cells.Clear(); _centres.Clear(); _cellQ.Clear(); _levySlots.Clear(); _seen.Clear(); _results.Clear(); _prevActive.Clear();
 				_waveMax = 0; _lastWave = -1; _lastInvSize = Main.invasionSize; _lastInvType = Main.invasionType; _lastAcidPts = -1; _acidStartPts = -1; _armyGoneSince = -1; _armyPeak = 0; _moonFinal = false; _dd2Won = _dd2Lost = false; _pillarsUp = false;
 				_lastDmgFlush = 0; _lastProg = -100000; _outpostHash = 0; _impStamp = 0;
-				_costTicks = _costMax = _costSamples = _sampleTicks = 0; _costN = 0;
+				_costTicks = _costMax = _costSamples = _sampleTicks = 0; _costN = 0; Array.Clear(_hist); PartL = PartA = PartJ = PartW = PartPoll = PartLevyPoll = 0;
 				_startId = _mainId = eventId;
 				string stamp = _startWall.ToString("yyyy-MM-dd_HH-mm");
 				_path = System.IO.Path.Combine(_dir, "event_" + eventId + "_" + stamp + (_gzip ? FightRecFolder.Ext : ".jsonl"));
@@ -329,9 +337,11 @@ namespace Levy.Common.Recording
 				if (_cmd == null) { Stop("player gone"); return; }
 				if (!Enabled) { Stop("turned off"); return; }
 				int el = Elapsed;
-				PollState(el);
-				if (!On) return;
+				long q0 = ProfileParts ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+				if (el % StateEvery == 0) { PollState(el); if (!On) return; }
+				long q1 = ProfileParts ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
 				PollLevies();
+				if (ProfileParts) { long q2 = System.Diagnostics.Stopwatch.GetTimestamp(); PartPoll += q1 - q0; PartLevyPoll += q2 - q1; }
 				if (_w.Error != null) { Stop("write error"); return; }
 				if (_w.Full) { Stop("size limit"); return; }
 				if (el >= (TestMaxTicks > 0 ? TestMaxTicks : MaxTicks)) { Stop("time limit"); return; }
@@ -349,7 +359,12 @@ namespace Levy.Common.Recording
 			catch (Exception e) { Levy.Instance?.Logger.Warn("[EventRec] tick failed, stopping: " + e); Stop("error: " + e.Message); }
 			finally
 			{
-				long dt = System.Diagnostics.Stopwatch.GetTimestamp() - t0; _costTicks += dt; _costN++; if (dt > _costMax) _costMax = dt;
+				// the recorder's own cost per tick; the tick that closes the file is not counted (the writer thread finishes the file)
+				if (On)
+				{
+					long dt = System.Diagnostics.Stopwatch.GetTimestamp() - t0; _costTicks += dt; _costN++; if (dt > _costMax) _costMax = dt;
+					double us = dt * 1e6 / System.Diagnostics.Stopwatch.Frequency; int b = 0; while (b < CostEdgesUs.Length && us >= CostEdgesUs[b]) b++; _hist[b]++;
+				}
 			}
 		}
 
@@ -460,11 +475,12 @@ namespace Levy.Common.Recording
 				var res = new StringBuilder("{"); bool first = true; foreach (var kv in _results) { if (!first) res.Append(','); first = false; res.Append(FightRecFormat.Esc(kv.Key)).Append(':').Append(FightRecFormat.Esc(kv.Value)); } res.Append('}');
 				double f = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
 				LastMeanUs = _costN > 0 ? _costTicks * f * 1000.0 / _costN : 0; LastMaxMs = _costMax * f; LastSampleUs = _costSamples > 0 ? _sampleTicks * f * 1000.0 / _costSamples : 0;
+				LastHist = (int[])_hist.Clone();
 				w.WriteLine("{\"k\":\"end\",\"kind\":\"event\",\"reason\":" + FightRecFormat.Esc(reason) + ",\"ticks\":" + Elapsed + ",\"frames\":" + _frames + ",\"events\":" + _events + ",\"result\":" + FightRecFormat.Esc(result)
 					+ ",\"durationSec\":" + FightRecFormat.N(Elapsed / 60.0) + ",\"event\":" + FightRecFormat.Esc(_mainId) + ",\"eventName\":" + FightRecFormat.Esc(DisplayName(_mainId)) + ",\"bossName\":" + FightRecFormat.Esc(DisplayName(_mainId))
 					+ ",\"eventsSeen\":[" + string.Join(",", _seen.ConvertAll(FightRecFormat.Esc)) + "],\"results\":" + res + ",\"waveMax\":" + _waveMax + ",\"kills\":" + _kills + ",\"minibossKills\":" + _miniKills + ",\"bossKills\":" + _bossKills
 					+ ",\"levyHits\":" + _levyHits + ",\"levyDeaths\":" + _levyDeaths + ",\"cmdDeaths\":" + _cmdDeaths + ",\"armyPeak\":" + _armyPeak + ",\"armyAlive\":" + _armyNow + ",\"armyTotal\":" + total + ",\"arenaChunks\":" + _chunks + ",\"dmgAll\":" + _dmgAll
-					+ ",\"cpu\":{\"meanUs\":" + FightRecFormat.N(LastMeanUs) + ",\"maxMs\":" + FightRecFormat.N(LastMaxMs) + ",\"sampleUs\":" + FightRecFormat.N(LastSampleUs) + "},\"dropped\":" + w.Dropped + ",\"capped\":" + (w.Full ? "1" : "0") + ",\"writeError\":" + FightRecFormat.Esc(w.Error) + "}", true);
+					+ ",\"cpu\":{\"meanUs\":" + FightRecFormat.N(LastMeanUs) + ",\"maxMs\":" + FightRecFormat.N(LastMaxMs) + ",\"sampleUs\":" + FightRecFormat.N(LastSampleUs) + ",\"histUs\":[" + string.Join(",", CostEdgesUs) + "],\"hist\":[" + string.Join(",", _hist) + "]},\"dropped\":" + w.Dropped + ",\"capped\":" + (w.Full ? "1" : "0") + ",\"writeError\":" + FightRecFormat.Esc(w.Error) + "}", true);
 				if (!_gzip) { w.Close(null, null, true); final = _path; if (discard) { try { File.Delete(_path); } catch { } final = null; } }
 				else
 				{
@@ -573,10 +589,13 @@ namespace Levy.Common.Recording
 			_levyHits++;
 		}
 
+		/// <summary>The NPC slots of the levy bodies at the last sample: the hit poll walks only these (a body that appeared since is picked up at the next sample).</summary>
+		private static readonly List<int> _levySlots = new();
+
 		private static void PollLevies()
 		{
 			foreach (var t in _lt.Values) t.Seen = false;
-			for (int i = 0; i < Main.maxNPCs; i++)
+			foreach (int i in _levySlots)
 			{
 				NPC n = Main.npc[i];
 				if (!n.active || !(n.ModNPC is SoldierNPC s) || n.life <= 0) continue;
@@ -664,6 +683,7 @@ namespace Levy.Common.Recording
 		private static void WantTerrain(float px, float py)
 		{
 			int tx = (int)(px / 16f), ty = (int)(py / 16f);
+			if (!_centres.Add(CellKey(tx / CellW, ty / CellH))) return; // the window around this cell was queued already
 			int cx0 = Math.Max(0, (tx - TerrX) / CellW), cx1 = Math.Min((Main.maxTilesX - 1) / CellW, (tx + TerrX) / CellW);
 			int cy0 = Math.Max(0, (ty - TerrY) / CellH), cy1 = Math.Min((Main.maxTilesY - 1) / CellH, (ty + TerrY) / CellH);
 			for (int cx = cx0; cx <= cx1; cx++)
@@ -723,58 +743,102 @@ namespace Levy.Common.Recording
 			Ev("outposts", ("o", sb.Append(']').ToString()));
 		}
 
+		private static readonly StringBuilder _sb = new(65536);
+		private static readonly char[] _dig = new char[12];
+		/// <summary>An integer in invariant digits (no culture minus sign, no allocation).</summary>
+		private static void I(StringBuilder sb, int v)
+		{
+			if (v == 0) { sb.Append('0'); return; }
+			long x = v; if (x < 0) { sb.Append('-'); x = -x; }
+			int n = 0; while (x > 0) { _dig[n++] = (char)('0' + x % 10); x /= 10; }
+			while (n > 0) sb.Append(_dig[--n]);
+		}
+		/// <summary>A value to one decimal ("3", "-1.5").</summary>
+		private static void D1(StringBuilder sb, float v)
+		{
+			if (float.IsNaN(v) || float.IsInfinity(v)) { sb.Append('0'); return; }
+			int t = (int)Math.Round(v * 10f);
+			if (t % 10 == 0) { I(sb, t / 10); return; }
+			if (t < 0) { sb.Append('-'); t = -t; }
+			I(sb, t / 10); sb.Append('.').Append((char)('0' + t % 10));
+		}
+		private static void C(StringBuilder sb) => sb.Append(',');
+
 		private static void Sample(int el)
 		{
 			Player p = _cmd;
-			var f = new RecFrame { T = el };
+			var sb = _sb; sb.Clear();
 			Item held = p.HeldItem;
 			bool grounded = Math.Abs(p.velocity.Y) < 0.01f;
 			int flags = (grounded ? 1 : 0) | (p.controlUseItem ? 1024 : 0) | (p.mount.Active ? 4096 : 0) | (p.dead ? 8192 : 0);
-			f.P = new double[] { (int)p.Center.X, (int)p.Center.Y, Math.Round(p.velocity.X, 1), Math.Round(p.velocity.Y, 1), p.direction, flags, p.statLife, p.statMana, 0, 0, 0, held != null && !held.IsAir ? held.type : 0, p.mount.Active ? p.mount.Type : -1, 0, 0, 0 };
-			if (held != null && !held.IsAir && !_items.ContainsKey(held.type)) _items[held.type] = held.Name;
+			int heldType = held != null && !held.IsAir ? held.type : 0;
+			if (heldType > 0 && !_items.ContainsKey(heldType)) _items[heldType] = held.Name;
+			// p: SchemaP, the commander (x,y,vx,vy,dir,flags,life,mana,immune 0,wingTime 0,rocketTime 0,held,mount,hookX 0,hookY 0,dashDelay 0)
+			sb.Append("{\"k\":\"f\",\"t\":"); I(sb, el); sb.Append(",\"p\":[");
+			I(sb, (int)p.Center.X); C(sb); I(sb, (int)p.Center.Y); C(sb); D1(sb, p.velocity.X); C(sb); D1(sb, p.velocity.Y); C(sb); I(sb, p.direction); C(sb); I(sb, flags); C(sb); I(sb, p.statLife); C(sb); I(sb, p.statMana);
+			sb.Append(",0,0,0,"); I(sb, heldType); C(sb); I(sb, p.mount.Active ? p.mount.Type : -1); sb.Append(",0,0,0]");
 			if (p.dead && !_pDead) { _cmdDeaths++; Ev("cdeath", ("x", ((int)p.Center.X).ToString()), ("y", ((int)p.Center.Y).ToString()), ("n", _cmdDeaths.ToString())); }
 			_pDead = p.dead;
 			_projCells.Clear();
 			void Anchor(float x, float y) { WantTerrain(x, y); int k = ((int)(x / ProjCellPx) << 16) ^ (int)(y / ProjCellPx); _projCells.Add(k); }
 			if (!p.dead) Anchor(p.Center.X, p.Center.Y);
 			bool gearTick = el % 60 < SampleEvery;
-			// every levy and militia body, wherever it is
+			long z0 = ProfileParts ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+			// l: every levy and militia body, wherever it is (SchemaL)
+			bool first = true; _levySlots.Clear();
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
 				if (!n.active || !(n.ModNPC is SoldierNPC s)) continue;
+				_levySlots.Add(i);
 				int id = FightRecorder.LevyId(s, n.whoAmI);
 				if (s.Record != null && !_soldiers.ContainsKey(id)) _soldiers[id] = s.Record.Name;
 				Anchor(n.Center.X, n.Center.Y);
 				if (gearTick) LevyGear(s, id);
 				Item lh = s.Dummy?.HeldItem;
+				int lt = lh != null && !lh.IsAir ? lh.type : 0;
+				if (lt > 0 && !_items.ContainsKey(lt)) _items[lt] = lh.Name;
 				int lflags = (Math.Abs(n.velocity.Y) < 0.01f ? 1 : 0) | (s.IsFlying ? 2 : 0) | (s.IsAerial ? 4 : 0) | (s.IsHooking ? 8 : 0) | (s.MoveBlocked ? 16 : 0);
-				if (lh != null && !lh.IsAir && !_items.ContainsKey(lh.type)) _items[lh.type] = lh.Name;
-				f.L.Add(new double[] { id, (int)n.Center.X, (int)n.Center.Y, Math.Round(n.velocity.X, 1), Math.Round(n.velocity.Y, 1), lflags, n.life, s.OfficerEngaged ? (int)SoldierState.Engage : (int)s.State, lh != null && !lh.IsAir ? lh.type : 0, s.WingTime, n.lifeMax, n.width, n.height });
+				sb.Append(first ? ",\"l\":[[" : ",["); first = false;
+				I(sb, id); C(sb); I(sb, (int)n.Center.X); C(sb); I(sb, (int)n.Center.Y); C(sb); D1(sb, n.velocity.X); C(sb); D1(sb, n.velocity.Y); C(sb); I(sb, lflags); C(sb); I(sb, n.life); C(sb);
+				I(sb, s.OfficerEngaged ? (int)SoldierState.Engage : (int)s.State); C(sb); I(sb, lt); C(sb); I(sb, s.WingTime); C(sb); I(sb, n.lifeMax); C(sb); I(sb, n.width); C(sb); I(sb, n.height); sb.Append(']');
 			}
-			// every enemy, wherever it is: heads and single bodies in a, worm body segments as hitbox rows in s
+			if (!first) sb.Append(']');
+			long z1 = ProfileParts ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+			// a: every enemy that is not a worm body segment, wherever it is (SchemaA); s: worm body segments (SchemaS: full rows when new or changed, else [id,x,y])
+			first = true; var segs = _segRows; segs.Clear();
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
 				if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC || n.type <= 0 || n.lifeMax <= 5 || NPCID.Sets.CountsAsCritter[n.type]) continue;
-				if (n.dontCountMe && n.damage <= 0 && !(n.realLife >= 0)) continue;
-				bool seg = n.realLife >= 0 && n.realLife != n.whoAmI;
-				if (seg)
+				if (n.dontCountMe && n.damage <= 0 && n.realLife < 0) continue;
+				if (n.realLife >= 0 && n.realLife != n.whoAmI) { segs.Add(i); continue; }
+				int imp = Imp(n);
+				if (imp >= 1) WantTerrain(n.Center.X, n.Center.Y);
+				Target(n, out int tk, out int tl);
+				sb.Append(first ? ",\"a\":[[" : ",["); first = false;
+				I(sb, n.type); C(sb); I(sb, i); C(sb); I(sb, (int)n.Center.X); C(sb); I(sb, (int)n.Center.Y); C(sb); D1(sb, n.velocity.X); C(sb); D1(sb, n.velocity.Y); C(sb); I(sb, n.life); C(sb); I(sb, n.lifeMax); C(sb);
+				I(sb, tk); C(sb); I(sb, tl); C(sb); I(sb, n.width); C(sb); I(sb, n.height); sb.Append(']');
+			}
+			if (!first) sb.Append(']');
+			if (segs.Count > 0)
+			{
+				sb.Append(",\"s\":[");
+				for (int k = 0; k < segs.Count; k++)
 				{
+					NPC n = Main.npc[segs[k]]; int i = segs[k];
+					if (k > 0) C(sb);
 					int fl = (n.damage > 0 ? 1 : 0) | (n.dontTakeDamage ? 2 : 0) | 4;
 					long def = ((((long)n.type * 4099 + n.width) * 4099 + n.height) * 4099 + (n.realLife + 1)) * 8 + fl;
 					if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
-					if (_hbDef.TryGetValue(i, out long old) && old == def) f.S.Add(new double[] { i, (int)n.Center.X, (int)n.Center.Y });
-					else { _hbDef[i] = def; f.S.Add(new double[] { n.type, i, (int)n.Center.X, (int)n.Center.Y, n.width, n.height, n.realLife, fl }); }
-					continue;
+					if (_hbDef.TryGetValue(i, out long old) && old == def) { sb.Append('['); I(sb, i); C(sb); I(sb, (int)n.Center.X); C(sb); I(sb, (int)n.Center.Y); sb.Append(']'); }
+					else { _hbDef[i] = def; sb.Append('['); I(sb, n.type); C(sb); I(sb, i); C(sb); I(sb, (int)n.Center.X); C(sb); I(sb, (int)n.Center.Y); C(sb); I(sb, n.width); C(sb); I(sb, n.height); C(sb); I(sb, n.realLife); C(sb); I(sb, fl); sb.Append(']'); }
 				}
-				int imp = Imp(n);
-				if (imp >= 1) WantTerrain(n.Center.X, n.Center.Y);
-				FightRecorder.TargetOf(n, out int tk, out int tl);
-				f.A.Add(new double[] { n.type, n.whoAmI, (int)n.Center.X, (int)n.Center.Y, Math.Round(n.velocity.X, 1), Math.Round(n.velocity.Y, 1), n.life, n.lifeMax, tk, tl, n.width, n.height });
+				sb.Append(']');
 			}
-			// hostile projectiles near the army or the commander (within ~100 tiles), at most MaxProj
-			int pc = 0;
+			long z2 = ProfileParts ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+			// j: hostile projectiles near the army or the commander (within ~100 tiles), at most MaxProj (SchemaJ)
+			int pc = 0; first = true;
 			for (int i = 0; i < Main.maxProjectiles && pc < MaxProj; i++)
 			{
 				Projectile pr = Main.projectile[i];
@@ -783,11 +847,29 @@ namespace Levy.Common.Recording
 				for (int dx = -1; dx <= 1 && !near; dx++) for (int dy = -1; dy <= 1 && !near; dy++) if (_projCells.Contains(((cx + dx) << 16) ^ (cy + dy))) near = true;
 				if (!near) continue;
 				if (!_projs.ContainsKey(pr.type)) _projs[pr.type] = Lang.GetProjectileName(pr.type).Value;
-				f.J.Add(new double[] { pr.type, (int)pr.Center.X, (int)pr.Center.Y, Math.Round(pr.velocity.X, 1), Math.Round(pr.velocity.Y, 1), pr.damage, pr.width, pr.height });
+				sb.Append(first ? ",\"j\":[[" : ",["); first = false;
+				I(sb, pr.type); C(sb); I(sb, (int)pr.Center.X); C(sb); I(sb, (int)pr.Center.Y); C(sb); D1(sb, pr.velocity.X); C(sb); D1(sb, pr.velocity.Y); C(sb); I(sb, pr.damage); C(sb); I(sb, pr.width); C(sb); I(sb, pr.height); sb.Append(']');
 				pc++;
 			}
-			Line(FightRecFormat.Frame(f));
+			if (!first) sb.Append(']');
+			sb.Append('}');
+			long z3 = ProfileParts ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+			Line(sb.ToString());
 			_frames++;
+			if (ProfileParts) { long z4 = System.Diagnostics.Stopwatch.GetTimestamp(); PartL += z1 - z0; PartA += z2 - z1; PartJ += z3 - z2; PartW += z4 - z3; }
+		}
+		private static readonly List<int> _segRows = new();
+
+		/// <summary>What an enemy attacks (SchemaA tkind / tlevy): 2 a levy (the targeting lock, or an NPC target of 300 and up), 1 a player, 0 none. The boss rule's spite (kind 3) is a boss matter and is left to the boss recorder.</summary>
+		private static void Target(NPC n, out int kind, out int levyId)
+		{
+			kind = 0; levyId = -1;
+			int st = -1;
+			try { st = LevyNpcData.Of(n).SoldierTarget; } catch { }
+			if (!(st >= 0 && st < Main.maxNPCs && Main.npc[st].active && Main.npc[st].ModNPC is SoldierNPC))
+				st = n.target >= 300 && n.target - 300 < Main.maxNPCs && Main.npc[n.target - 300].active && Main.npc[n.target - 300].ModNPC is SoldierNPC ? n.target - 300 : -1;
+			if (st >= 0) { kind = 2; levyId = FightRecorder.LevyId((SoldierNPC)Main.npc[st].ModNPC, st); return; }
+			if (n.target >= 0 && n.target < Main.maxPlayers) kind = 1;
 		}
 
 		private static string GearItem(Item it, int slot)

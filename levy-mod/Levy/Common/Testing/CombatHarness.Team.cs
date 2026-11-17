@@ -123,7 +123,7 @@ namespace Levy.Common.Testing
 			ClearAll(); SpBuildFloor("run");
 			TmCmd.active = true; TmCmd.dead = false; TmCmd.name = CommanderName; // before the levies spawn: they look their commander up by name
 			TmCmd.statLife = TmCmd.statLifeMax = TmCmd.statLifeMax2 = 500;
-			for (int i = 0; i < Player.MaxBuffs; i++) { TmCmd.buffType[i] = 0; TmCmd.buffTime[i] = 0; }
+			for (int i = 0; i < TmCmd.buffType.Length; i++) { TmCmd.buffType[i] = 0; TmCmd.buffTime[i] = 0; }
 			for (int i = 3; i < 10; i++) TmCmd.armor[i] = new Item();
 			TmCmd.lifeSteal = 0f; TmCmd.immune = false; TmCmd.immuneTime = 0;
 			_tmEquipCmd = equipCmd;
@@ -139,7 +139,7 @@ namespace Levy.Common.Testing
 		private string TmCmdBuffs()
 		{
 			var l = new List<string>();
-			for (int q = 0; q < Player.MaxBuffs; q++) if (TmCmd.buffType[q] > 0) l.Add(TmCmd.buffType[q] + ":" + TmCmd.buffTime[q]);
+			for (int q = 0; q < TmCmd.buffType.Length; q++) if (TmCmd.buffType[q] > 0) l.Add(TmCmd.buffType[q] + ":" + TmCmd.buffTime[q]);
 			return string.Join(",", l);
 		}
 		private static string TmFlag(string field, Player p) { var f = TeamItems.ModFlag("CalamityMod", "CalamityMod.CalPlayer.CalamityPlayer", field); return f == null ? "?" : f(p).ToString(); }

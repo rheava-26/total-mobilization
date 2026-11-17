@@ -43,6 +43,48 @@ namespace Levy.Common.Recording
 			return l;
 		}
 
+		/// <summary>The recorder's buff list and the minion buff save / restore walk a Player's own buff arrays, whatever Player.MaxBuffs says: shorter (44, a Player built before a mod raised the slot
+		/// count) and longer (a buff in a slot past 44 is still recorded) than MaxBuffs, mismatched type / time lengths, and a save on a long dummy restored onto a short one.</summary>
+		internal static void BuffSlotChecks(Action<bool, string> Check)
+		{
+			int max = Player.MaxBuffs;
+			var dict = new Dictionary<int, string>();
+			Player p = new Player();
+			Check(p.buffType.Length == max && p.buffTime.Length == max, $"a Player built after load has Player.MaxBuffs buff slots ({p.buffType.Length} / {p.buffTime.Length} vs {max})");
+			foreach (int len in new[] { 44, 22, max, max + 22 })
+			{
+				p.buffType = new int[len]; p.buffTime = new int[len];
+				p.buffType[len - 1] = BuffID.Regeneration; p.buffTime[len - 1] = 600; p.buffType[0] = BuffID.Swiftness; p.buffTime[0] = 60;
+				string s = null; Exception ex = null;
+				try { s = FightRecorder.BuffList(p, dict); } catch (Exception e) { ex = e; }
+				Check(ex == null && s == "[[" + BuffID.Swiftness + ",60],[" + BuffID.Regeneration + ",600]]", $"the recorder's buff list reads a {len}-slot Player with MaxBuffs {max}, the last slot included ({ex?.GetType().Name ?? s})");
+			}
+			p.buffType = new int[max + 10]; p.buffTime = new int[max];
+			p.buffType[max - 1] = BuffID.Ironskin; p.buffTime[max - 1] = 30; p.buffType[max + 5] = BuffID.Shine;
+			{ string s = null; Exception ex = null; try { s = FightRecorder.BuffList(p, dict); } catch (Exception e) { ex = e; } Check(ex == null && s == "[[" + BuffID.Ironskin + ",30]]", $"the recorder's buff list stops at the shorter of the type and time arrays ({ex?.GetType().Name ?? s})"); }
+			p.buffType = new int[max]; p.buffTime = new int[max];
+			Check(FightRecorder.BuffList(p, dict) == null, "no buffs: no buff record");
+			Check(dict.ContainsKey(BuffID.Regeneration) && dict.ContainsKey(BuffID.Swiftness), "the buffs it saw are named for the recording's name table");
+			// the minion buff save / restore (SoldierMinions) on dummies of either length
+			Player lg = new Player(); lg.buffType = new int[max + 22]; lg.buffTime = new int[max + 22];
+			lg.buffType[max + 21] = BuffID.Regeneration; lg.buffTime[max + 21] = 77; lg.buffType[3] = BuffID.Swiftness; lg.buffTime[3] = 5;
+			Exception mx = null; bool ok = false;
+			try
+			{
+				Levy.Common.Weapons.SoldierMinions.SaveBuffs(lg);
+				lg.buffType[max + 21] = 0; lg.buffType[3] = BuffID.Wrath;
+				Levy.Common.Weapons.SoldierMinions.RestoreBuffs(lg);
+				ok = lg.buffType[max + 21] == BuffID.Regeneration && lg.buffTime[max + 21] == 77 && lg.buffType[3] == BuffID.Swiftness;
+				Player sh = new Player(); sh.buffType = new int[44]; sh.buffTime = new int[44];
+				Levy.Common.Weapons.SoldierMinions.RestoreBuffs(sh); // a longer save put back onto a shorter dummy fills what fits
+				ok &= sh.buffType[3] == BuffID.Swiftness;
+				sh.buffType[43] = BuffID.Shine; Levy.Common.Weapons.SoldierMinions.SaveBuffs(sh); sh.buffType[43] = 0; Levy.Common.Weapons.SoldierMinions.RestoreBuffs(sh);
+				ok &= sh.buffType[43] == BuffID.Shine;
+			}
+			catch (Exception e) { mx = e; }
+			Check(mx == null && ok, $"the minion buff save / restore round-trips dummies of {max + 22} and 44 slots ({mx?.GetType().Name ?? ok.ToString()})");
+		}
+
 		// ============================================================================================ boot
 		public override void PostSetupRecipes()
 		{
@@ -157,6 +199,8 @@ namespace Levy.Common.Recording
 					&& FightRecorder.ClassName(DamageClass.Summon) == "summon" && FightRecorder.ClassName(DamageClass.SummonMeleeSpeed) == "summon" && FightRecorder.ClassName(DamageClass.Default) == "other" && FightRecorder.ClassName(null) == "other", "damage classes get their usual words");
 				string key = "Mods.Levy.Configs.FightRecConfig.RecordFightsAutomatically.Label";
 				Check(Language.Exists(key) && Language.Exists("Mods.Levy.Configs.FightRecMode.BossFights.Label"), "config labels exist in the language files");
+				// ---- buff slots: a mod's ExtraPlayerBuffSlots makes Player.MaxBuffs larger than the arrays of a Player built before load (a server's slots), and a Player built after load has more than 44
+				BuffSlotChecks(Check);
 			}
 			catch (Exception e) { fails.Add("threw " + e.GetType().Name + ": " + e.Message + " " + e.StackTrace?.Split('\n')[0]); }
 			finally { if (tmp != null) Rm(tmp); }

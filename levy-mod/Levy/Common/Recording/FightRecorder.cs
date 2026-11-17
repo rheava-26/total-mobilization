@@ -1340,17 +1340,26 @@ namespace Levy.Common.Recording
 
 		private static void WriteBuffs(Player p, int el)
 		{
+			string b = BuffList(p, _buffs);
+			if (b != null) Ev("buffs", ("b", b));
+		}
+
+		/// <summary>The player's active buffs as "[[type,time],...]" (null when none), naming each new type into <paramref name="names"/>. Walks the arrays' own length, not Player.MaxBuffs:
+		/// a mod's ExtraPlayerBuffSlots raises MaxBuffs after load, and a Player built before that (a server's player slots) keeps 44.</summary>
+		internal static string BuffList(Player p, Dictionary<int, string> names)
+		{
 			var sb = new StringBuilder("[");
 			bool first = true;
-			for (int i = 0; i < Player.MaxBuffs; i++)
+			int nb = Math.Min(p.buffType.Length, p.buffTime.Length);
+			for (int i = 0; i < nb; i++)
 			{
 				if (p.buffType[i] <= 0) continue;
-				if (!_buffs.ContainsKey(p.buffType[i])) _buffs[p.buffType[i]] = Lang.GetBuffName(p.buffType[i]);
+				if (names != null && !names.ContainsKey(p.buffType[i])) names[p.buffType[i]] = Lang.GetBuffName(p.buffType[i]);
 				if (!first) sb.Append(','); first = false;
 				sb.Append('[').Append(p.buffType[i]).Append(',').Append(p.buffTime[i]).Append(']');
 			}
 			sb.Append(']');
-			if (!first) Ev("buffs", ("b", sb.ToString()));
+			return first ? null : sb.ToString();
 		}
 
 		private static void AccessoryEvents(Player p)

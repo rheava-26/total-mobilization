@@ -111,6 +111,13 @@ namespace Levy.Common.Testing
 				catch (Exception e) { if (self.type == type) { string k = e.GetType().Name + " " + (e.StackTrace ?? "").Split('\n')[0].Trim(); thrown[k] = thrown.GetValueOrDefault(k) + 1; } throw; }
 			};
 			On_NPC.UpdateNPC += det;
+			int killCalls = 0; string killHow = "";
+			On_Player.hook_KillMe killDet = (On_Player.orig_KillMe orig, Player self, Terraria.DataStructures.PlayerDeathReason reason, double dmg, int dir, bool pvp) =>
+			{
+				if (self.whoAmI != 0) { orig(self, reason, dmg, dir, pvp); return; }
+				killCalls++; if (killHow == "") killHow = $"dmg {dmg}, sourceNpc {reason.SourceNPCIndex}{(reason.SourceNPCIndex >= 0 && reason.SourceNPCIndex < Main.maxNPCs ? " (" + Main.npc[reason.SourceNPCIndex].ModNPC?.Name + ")" : "")}, customReason {(reason.GetType().GetField("_sourceCustomReason", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(reason) != null)}, sourceProj {reason.SourceProjectileType}";
+			};
+			On_Player.KillMe += killDet;
 			try
 			{
 				_watched.Add(type);
@@ -154,12 +161,12 @@ namespace Levy.Common.Testing
 				int levAlive = levies.Count(l => l.NPC.active);
 				Note($"{label}: after {N} ticks: boss alive {alive} ticks (gone={gone}), life {(boss.active ? boss.life : -1)}/{lifeMax0} (min {minLife}), damage taken {lifeMax0 - minLife}, immune ticks {dontTake}, CanBeChasedBy false ticks {untargetable}, locked on a levy {lockedTicks} ticks (first at {firstLockTick}), in BossRule.LiveBosses {liveBossTicks} ticks");
 				Note($"{label}: army: {levAlive} of {levies.Count} levies alive, life lost {lost}; AI calls {aiCalls}, locked {lockedAi}, locked with no valid target {invalid}, out-of-range target index {badIndex}, AI errors [{string.Join("; ", thrown.Select(kv => kv.Value + "x " + kv.Key))}]");
-				Note($"{label}: the commander took damage on {cmdHits} ticks"); Note($"{label}: recorder: On at start {recOnAtStart}, BossSeen during the fight {recSeen}, FightRecorder.On now {FightRecorder.On}");
+				Note($"{label}: the commander took damage on {cmdHits} ticks; KillMe calls swallowed {killCalls} first: {killHow}"); Note($"{label}: recorder: On at start {recOnAtStart}, BossSeen during the fight {recSeen}, FightRecorder.On now {FightRecorder.On}");
 				Check(label + ": its AI throws nothing", thrown.Count == 0);
 				Check(label + ": the boss is still present at the end (or died fighting)", !gone || minLife <= 0);
 				boss.active = false;
 			}
-			finally { On_NPC.UpdateNPC -= det; _watched.Remove(type); EnemyTargeting.AiProbe = null; }
+			finally { On_NPC.UpdateNPC -= det; On_Player.KillMe -= killDet; _watched.Remove(type); EnemyTargeting.AiProbe = null; }
 		}
 	}
 }

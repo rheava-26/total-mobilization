@@ -135,14 +135,14 @@ namespace Levy.Common.Testing
 		{
 			ClearSoldiers(); Arena(floorTile);
 			var at = new Vector2(Cx * 16f, FloorY * 16f);
-			_cmdAt = at + new Vector2(0f, -3 * 16f);
+			_cmdAt = new Vector2(at.X - 30 * 16f, FloorY * 16f - 21f); // well away from him (a commander on top of him shoves him aside), and he is on Hold
 			KeepCommander(); Step(2);
 			int body = SpawnLevy(null, null, at, out var rec);
 			if (body < 0 || !rec.HasBody) { Check("a belt trial levy spawns", false); return 0f; }
 			rec.Order = SoldierOrder.Hold;
 			Step(60);
 			float x0 = Main.npc[body].position.X;
-			for (int t = 0; t < ticks; t++) { _cmdAt = new Vector2(Main.npc[body].Center.X, (FloorY - 3) * 16f); Step(1); }
+			for (int t = 0; t < ticks; t++) Step(1);
 			float d = Main.npc[body].position.X - x0;
 			ClearSoldiers();
 			return d;

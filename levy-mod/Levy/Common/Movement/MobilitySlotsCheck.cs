@@ -272,17 +272,19 @@ namespace Levy.Common.Movement
 		// ------------------------------------------------------------------ the horizontal slot takes a dash
 		private static void Dashes(CheckFn check, Action<string> info)
 		{
-			var dashItems = new List<Item>();
-			for (int t = 1; t < ItemLoader.ItemCount; t++) if (ContentSamples.ItemsByType.TryGetValue(t, out Item s) && s != null && !s.IsAir && MobilitySlots.IsDash(s)) dashItems.Add(s);
-			info($"DASH items classified ({dashItems.Count}): " + string.Join(", ", dashItems.Select(i => (i.ModItem != null ? i.ModItem.Mod.Name + ":" : "") + i.Name)));
+			// the census is the named dash accessories and a few that are not: reading an item means a dummy wears it, and a Calamity accessory such as the Frozen Cube spawns a projectile when worn, which a boot-time census of every accessory would trip
+			var named = new List<Item> { Make(ItemID.Tabi), Make(ItemID.MasterNinjaGear), Make(ItemID.EoCShield) };
+			var calNames = new[] { "AsgardianAegis", "ElysianAegis", "StatisNinjaBelt", "StatisVoidSash", "EvasionScarf", "CounterScarf", "OrnateShield", "DeepDiver", "V8Engine", "V8000Engine", "AsgardsValor", "ShieldoftheHighRuler" };
+			if (ModLoader.HasMod("CalamityMod")) foreach (var n in calNames) { var it = FindModded("CalamityMod", n); if (it != null) named.Add(it); }
+			var dashItems = named.Where(MobilitySlots.IsDash).ToList();
+			info($"DASH items read ({dashItems.Count} of {named.Count} named): " + string.Join(", ", dashItems.Select(i => (i.ModItem != null ? i.ModItem.Mod.Name + ":" : "") + i.Name)));
 			check("Tabi, Master Ninja Gear and the Shield of Cthulhu are dash accessories", new[] { ItemID.Tabi, ItemID.MasterNinjaGear, ItemID.EoCShield }.All(t => MobilitySlots.IsDash(Make(t))), string.Join(",", new[] { ItemID.Tabi, ItemID.MasterNinjaGear, ItemID.EoCShield }.Select(t => MobilitySlots.IsDash(Make(t)))));
 			check("boots, wings, balloons, bottles, a shield and the climbing shoes are not dash accessories", new[] { ItemID.HermesBoots, ItemID.AngelWings, ItemID.ShinyRedBalloon, ItemID.CloudinaBottle, ItemID.ObsidianShield, ItemID.ShoeSpikes, ItemID.FrogLeg, ItemID.BandofRegeneration }.All(t => !MobilitySlots.IsDash(Make(t))));
 			if (ModLoader.HasMod("CalamityMod"))
 			{
-				var names = new[] { "AsgardianAegis", "ElysianAegis", "StatisNinjaBelt", "StatisVoidSash", "EvasionScarf", "CounterScarf", "OrnateShield", "DeepDiver", "V8Engine", "V8000Engine", "AsgardsValor" };
-				var found = names.Select(n => (n, it: FindModded("CalamityMod", n))).Where(x => x.it != null).ToList();
-				var notDash = found.Where(x => !MobilitySlots.IsDash(x.it)).Select(x => x.n).ToList();
-				info($"Calamity dash accessories: {found.Count} of {names.Length} found, not read as a dash: [{string.Join(", ", notDash)}]");
+				var found = named.Where(i => i.ModItem != null).ToList();
+				var notDash = found.Where(i => !MobilitySlots.IsDash(i)).Select(i => i.Name).ToList();
+				info($"Calamity dash accessories: {found.Count} of {calNames.Length} found, not read as a dash: [{string.Join(", ", notDash)}]");
 				check("every Calamity dash accessory is read as a dash (its CalamityPlayer.DashID, not dashType)", found.Count >= 8 && notDash.Count == 0, string.Join(",", notDash));
 				var treads = FindModded("CalamityMod", "AngelTreads");
 				if (treads != null) check("Angel Treads are boots and not a dash", MobilitySlots.IsBoots(treads) && !MobilitySlots.IsDash(treads));

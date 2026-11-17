@@ -137,6 +137,7 @@ namespace Levy.Common.Testing
 					Check($"deadhooks: the army sound throttle's projectile update hook fires ({HookProbe.Part(d1, "SoundUpdate")} updates) and a levy shot's AI runs classified as army ({HookProbe.Part(d1, "SoundInAi")} AI calls classified, {HookProbe.Part(d1, "SoundOutAi")} not)", HookProbe.Part(d1, "SoundUpdate") > 0 && HookProbe.Part(d1, "SoundInAi") > 0 && HookProbe.Part(d1, "SoundOutAi") == 0);
 				else Note("deadhooks: the army sound throttle is not installed on this machine (client only); its projectile hook is checked where LEVY_SELFCHECK_WORLD installs it");
 				ZenithPhase();
+				if (ModLoader.TryGetMod("CalamityMod", out Mod calMod)) AimPhase(calMod, ammoByKind);
 
 				FlyerPhase(out int[] d2, out string flyNote);
 				Note("deadhooks: flyer-slot bolts: " + flyNote);
@@ -190,6 +191,56 @@ namespace Levy.Common.Testing
 				Note("deadhooks: totals: " + HookProbe.Snapshot());
 			}
 			finally { _spNet = false; _sweepTarget = null; ClearSoldiers(); ReleaseCommanderButtons(); }
+		}
+
+		/// <summary>
+		/// The aim a levy's shot reads. (1) Calamity's Auger and Holofibre Immolator holdouts and the Doomsday Device turn "owner to cursor" into a direction: a held levy's cursor must be a valid point away from the levy, so none of its projectiles
+		/// ever has a NaN position, velocity or rotation. (2) The Conference Call drops its sky bullets over the cursor's world X (Main.mouseX): the commander's cursor is parked 150 tiles to the left of the levy, and every bullet must still
+		/// come from over the levy and its target, never over her cursor.
+		/// </summary>
+		private static void AimPhase(Mod cal, Dictionary<int, int> ammoByKind)
+		{
+			int bullet = ammoByKind.TryGetValue(AmmoID.Bullet, out int bu) ? bu : 0;
+			foreach (string nm in new[] { "Auger", "HolofibreImmolator", "DoomsdayDevice", "ConferenceCall" })
+			{
+				if (!cal.TryFind(nm, out ModItem mi)) continue;
+				try
+				{
+					_cmdAt = OriginCmdAt(); ClearSoldiers(); ReleaseCommanderButtons();
+					Vector2 at = new Vector2(Cx * 16f + 8f, FloorY * 16f);
+					SpawnOriginTarget(at);
+					Item w = new Item(); w.SetDefaults(mi.Type);
+					int ammo = w.useAmmo > 0 && ammoByKind.TryGetValue(w.useAmmo, out int a) ? a : (nm == "ConferenceCall" ? bullet : 0);
+					SoldierRecord rec = MakeOriginRecord(w, ammo); rec.Name = "Pvt. Aim"; RosterSystem.Instance.Regulars.Add(rec);
+					int b = RosterSystem.Instance.SpawnBody(rec, at); if (b < 0 || !rec.HasBody) { Note($"deadhooks: aim: {nm} levy did not spawn"); continue; }
+					Main.npc[b].Bottom = at; Main.rand = new Terraria.Utilities.UnifiedRandom(777);
+					KeepCommander(); PinSweepTarget(); Step(10);
+					int nan = 0, seenN = 0, nearLevy = 0, nearCursor = 0; var seen = new HashSet<(int, int)>(); float cursorX = at.X - 150f * 16f;
+					for (int k = 0; k < 240; k++)
+					{
+						foreach (var r in RosterSystem.Instance.Regulars) r.Mana = r.MaxMana;
+						Main.player[0].statManaMax2 = 200; Main.player[0].statMana = 200;
+						Main.screenPosition = Vector2.Zero; Main.mouseX = (int)cursorX; Main.mouseY = (int)(FloorY * 16f - 200f); // the commander's cursor, far to the left of the fight
+						Step(1); ClearNaturalHostiles();
+						for (int i = 0; i < Main.maxProjectiles; i++)
+						{
+							Projectile p = Main.projectile[i];
+							if (!p.active || !p.TryGetGlobalProjectile(out SoldierProjectileTag tag) || tag.SoldierIndex != b) continue;
+							if (!float.IsFinite(p.position.X) || !float.IsFinite(p.position.Y) || !float.IsFinite(p.velocity.X) || !float.IsFinite(p.velocity.Y) || !float.IsFinite(p.rotation)) nan++;
+							if (nm == "ConferenceCall" && seen.Add((i, p.identity)))
+							{
+								seenN++; float dx = Math.Abs(p.Center.X - at.X) / 16f, dc = Math.Abs(p.Center.X - cursorX) / 16f;
+								if (dx < 40f) nearLevy++; if (dc < 40f) nearCursor++;
+							}
+						}
+					}
+					ClearSoldiers();
+					Note($"deadhooks: aim: {nm}, one levy, the commander's cursor 150 tiles to the left, 240 ticks: {nan} projectile ticks with a NaN position, velocity or rotation" + (nm == "ConferenceCall" ? $"; {seenN} bullets first seen, {nearLevy} within 40 tiles (horizontally) of the levy, {nearCursor} within 40 tiles of her cursor" : ""));
+					Check($"deadhooks: {nm} in levy hands has no NaN projectile ({nan} ticks)", nan == 0);
+					if (nm == "ConferenceCall" && seenN > 0) Check($"deadhooks: ConferenceCall's bullets come from over its levy and target, not over the commander's cursor ({nearLevy} of {seenN} within 40 tiles of the levy, {nearCursor} within 40 tiles of her cursor)", nearCursor == 0 && nearLevy * 10 >= seenN * 9);
+				}
+				catch (Exception e) { Note($"deadhooks: aim: {nm} threw {e.GetType().Name}: {e.Message}"); }
+			}
 		}
 
 		/// <summary>One levy with the Zenith, the commander 45 tiles to the left: where do the swords orbit, and what do they do to the enemy.</summary>

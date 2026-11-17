@@ -268,6 +268,8 @@ namespace Levy.Common.Weapons
 			return s;
 		}
 
+		private static readonly bool DbgNaN = Environment.GetEnvironmentVariable("LEVY_DEADHOOKS_DEBUG") == "1";
+
 		internal static void RunAi(Action<Projectile> orig, Projectile p, HeldWeaponProjectile g)
 		{
 			bool authority = LevyUtil.IsServerOrSingle;
@@ -369,6 +371,10 @@ namespace Levy.Common.Weapons
 				p.direction = dir.X < 0f ? -1 : 1;
 				Vector2 cursor = body.NPC.Center + dir * Math.Max(LevyConstants.HeldAimMinDistPx, AimDistance(body));
 				if (g.Script != null && TargetOf(body) is NPC scriptTarget) cursor = g.Script.At(scriptTarget.Center, Main.GameUpdateCount);
+				// a held AI that turns "owner to cursor" into a direction (Calamity's Auger and Holofibre holdouts: Utils.DirectionTo(Owner.Center, cursor)) divides by the distance: a cursor that is not a number, or sits on the owner, gives a NaN
+				// direction and a thrown ArithmeticException every tick. The cursor is always a valid point away from the soldier, on the way to its target (or the way it faces).
+				if (!float.IsFinite(cursor.X) || !float.IsFinite(cursor.Y) || (cursor - body.NPC.Center).LengthSquared() < 16f * 16f)
+					cursor = body.NPC.Center + (float.IsFinite(dir.X) && float.IsFinite(dir.Y) && dir.LengthSquared() > 0.0001f ? Vector2.Normalize(dir) : Vector2.UnitX * (body.NPC.direction == 0 ? 1 : body.NPC.direction)) * Math.Max(LevyConstants.HeldAimMinDistPx, 64f);
 				Main.mouseX = (int)(cursor.X - Main.screenPosition.X);
 				Main.mouseY = (int)(cursor.Y - Main.screenPosition.Y);
 				if (p.owner != Slot && !ReferenceEquals(Main.player[p.owner], d)) { SoldierMinions.AliasDummy(p.owner, d); aliasWho = d.whoAmI; d.whoAmI = p.owner; aliased = true; } // a UUID-bound chain: the dummy also stands in the chain's own slot
@@ -384,7 +390,7 @@ namespace Levy.Common.Weapons
 				if (g.Biome != 0) BiomeBlades.PreAi(body, p, g, button);
 				before = _before ??= new bool[Main.maxProjectiles];
 				for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
-				orig(p);
+				if (!DbgNaN) orig(p); else { try { orig(p); } catch (ArithmeticException ex) { ModContent.GetInstance<Levy>()?.Logger.Info($"[DeadHooks] NaN in {p.ModProjectile?.Name} ai: cursor={cursor} dir={dir} dummyCenter={d.Center} mounted={d.MountedCenter} soldier={body.NPC.Center} calAim={(calPlayer != null ? AltPolicies.GetCalAimPublic(calPlayer).Item1.ToString() : "-")} ex={ex.StackTrace?.Split((char)10)[1]?.Trim()}"); } }
 				if (release && p.active && !g.CycleRelease) { g.HeldTicks = 0; p.Kill(); } // the release: the charged shot is made while the soldier is still the owner (dummy swapped in, cursor on the target)
 			}
 			finally

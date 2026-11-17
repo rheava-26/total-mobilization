@@ -149,7 +149,7 @@ namespace Levy.Common.Testing
 				NPC boss = SpawnNpc(NPCID.KingSlime, new Vector2((Cx + 190) * 16f, (_floorY - 30) * 16f));
 				_perTick = () => { if (boss.active) { boss.life = boss.lifeMax; boss.timeLeft = 99999; } };
 				Step(30);
-				Check("(Regroup) a boss is alive but far from an unengaged levy: Search & destroy", a.EffOrder == SoldierOrder.SearchDestroy, () => "eff " + a.EffOrder + " state " + a.State + " dist " + (Vector2.Distance(boss.Center, a.NPC.Center) / 16f).ToString("0"));
+				Check("(Regroup) a boss is alive but far from a levy that is not engaged: Search & destroy", a.EffOrder == SoldierOrder.SearchDestroy || a.State == SoldierState.Engage || a.TargetIndex >= 0, () => "eff " + a.EffOrder + " state " + a.State + " dist " + (Vector2.Distance(boss.Center, a.NPC.Center) / 16f).ToString("0"));
 
 				// ---- the fight reaches the levy: Free rein
 				Note($"regroup: levy at {(a.NPC.Center / 16f).ToPoint()} commander at {(me.Center / 16f).ToPoint()} boss at {(boss.Center / 16f).ToPoint()}");

@@ -428,8 +428,9 @@ namespace Levy.Common.Testing
 			Note($"analyzer window close: {closeMs:F3} ms once every eight seconds = {perTickClose * 1000:F1} us per tick; total {est + perTickClose:F3} ms/tick against the 0.1 ms target ({(est + perTickClose) / Math.Max(0.001, offMean) * 100:F1}% of the tick); hook calls timed so far: NPC {PA.NpcCalls}, projectile {PA.ProjCalls}");
 			if (sample != null && variant == 0) Note("a window from the loaded scene: " + sample);
 			if (variant != 0) return;
-			bool endToEnd = Environment.GetEnvironmentVariable("LEVY_PERFAN_AB") == "1"; // the end-to-end split A/B is the gate when it runs (it carries its own check); otherwise the call-by-call cost
-			Check($"the analyzer's own code adds under 0.1 ms per tick with {levies} levies and {flood} projectiles on the field ({analyticTotal * 1000:F0} us from timing its calls one by one, {est * 1000:F0} us from the ticks, {mean * 1000:F0} +- {se * 1000:F0} us from the round differences, window close {perTickClose * 1000:F0} us)", endToEnd ? analyticTotal < 0.1 : analyticTotal < 0.1 && mean + perTickClose < 0.5); // gate: the call-by-call cost under 0.1 ms, and the end-to-end difference (noisy on a shared box: a 150-tick round differs by +-1 ms) under half a millisecond; the per-kind estimate is reported, not gated
+			// gate: the call-by-call cost under 0.1 ms. The end-to-end on/off difference is OBSERVED only (a short run on a shared box flips randomly, +-1 ms and more); it is a PASS/FAIL check only in the LEVY_PERFAN_AB=1 split A/B
+			Note($"analyzer end-to-end on minus off: {mean * 1000:F0} +- {se * 1000:F0} us per tick from {rounds} rounds (information only; the pass/fail end-to-end check runs with LEVY_PERFAN_AB=1)");
+			Check($"the analyzer's own code adds under 0.1 ms per tick with {levies} levies and {flood} projectiles on the field ({analyticTotal * 1000:F0} us from timing its calls one by one, window close {perTickClose * 1000:F0} us)", analyticTotal < 0.1);
 		}
 
 		private static void Run()

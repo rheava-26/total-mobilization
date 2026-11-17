@@ -15,7 +15,7 @@ namespace Levy.Common.Testing
 {
 	/// <summary>
 	/// LAB KIT hooks (measurement only; driven by levy-mod/lab/levylab). Two small, general additions to the calrev harness:
-	///   lv=&lt;file.json&gt;  load the army and its supplies from data: levies[] (cls, weapon, ammo, armor[], acc[], lc, mc, potions, potion), accSlots, buffs[] (BuffID names or Mod/Name),
+	///   lv=&lt;file.json&gt;  load the army and its supplies from data: levies[] (cls, weapon, ammo, armor[], acc[], lc, mc, potions, potion; optional side (sidearm), hook, lf (Life Fruit); any item name may carry "@Prefix"), accSlots, buffs[] (BuffID names or Mod/Name),
 	///                     stations[] (campfire, sunflower, bast, sharpening, wartable, bewitching, ammobox, crystalball, heartlantern, starinabottle; null = by stationLevel) and honey.
 	///                     New gear, potion and station presets therefore need no C# change. Unknown item names are logged ("HARNESS-KIT: missing") and dropped.
 	///   tag=&lt;id&gt;       an opaque cell id that goes into the run key, so a driver can map every result row back to its cell.
@@ -25,9 +25,9 @@ namespace Levy.Common.Testing
 	{
 		internal sealed class KitLevy
 		{
-			public string cls = "R", weapon = "", ammo = "", potion = "Healing Potion";
+			public string cls = "R", weapon = "", ammo = "", potion = "Healing Potion", side = "", hook = "";
 			public string[] armor = Array.Empty<string>(), acc = Array.Empty<string>();
-			public int lc = 15, mc = 9, potions = 8;
+			public int lc = 15, mc = 9, potions = 8, lf;
 		}
 
 		internal sealed class KitData
@@ -45,7 +45,7 @@ namespace Levy.Common.Testing
 		{
 			var d = JsonSerializer.Deserialize<KitData>(File.ReadAllText(path), new JsonSerializerOptions { IncludeFields = true, PropertyNameCaseInsensitive = true });
 			d.levies = d.levies.Where(l => KitKnown(l.weapon)).ToList();
-			foreach (var l in d.levies) { l.armor = l.armor.Where(KitKnown).ToArray(); l.acc = l.acc.Where(KitKnown).ToArray(); if (!KitKnown(l.ammo)) l.ammo = ""; if (!KitKnown(l.potion)) l.potion = "Healing Potion"; }
+			foreach (var l in d.levies) { l.armor = l.armor.Where(KitKnown).ToArray(); l.acc = l.acc.Where(KitKnown).ToArray(); if (!KitKnown(l.ammo)) l.ammo = ""; if (!KitKnown(l.potion)) l.potion = "Healing Potion"; if (!KitKnown(l.side)) l.side = ""; if (!KitKnown(l.hook)) l.hook = ""; }
 			var ids = new List<int>();
 			foreach (string b in d.buffs ?? Array.Empty<string>())
 			{
@@ -61,7 +61,8 @@ namespace Levy.Common.Testing
 
 		internal static List<CrLevySpec> KitSpecs(KitData d) => d.levies.Select(l => new CrLevySpec
 		{
-			Cls = char.ToUpperInvariant(l.cls[0]), Weapon = l.weapon, Ammo = l.ammo, Armor = l.armor, Acc = l.acc, LifeCrystals = l.lc, ManaCrystals = l.mc, Potions = l.potions, Potion = l.potion, ManAtArms = false
+			Cls = char.ToUpperInvariant(l.cls[0]), Weapon = l.weapon, Ammo = l.ammo, Armor = l.armor, Acc = l.acc, LifeCrystals = l.lc, ManaCrystals = l.mc, Potions = l.potions, Potion = l.potion, ManAtArms = false,
+			Side = l.side ?? "", Hook = l.hook ?? "", LifeFruit = l.lf
 		}).ToList();
 
 		private static HashSet<string> _kitSt;

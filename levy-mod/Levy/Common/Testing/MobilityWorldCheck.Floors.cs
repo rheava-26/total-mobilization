@@ -122,13 +122,13 @@ namespace Levy.Common.Testing
 			// conveyor belts: a body standing still on one is carried (a player is; a levy was not)
 			foreach (var (bn, bt) in new[] { ("right belt", TileID.ConveyorBeltRight), ("left belt", TileID.ConveyorBeltLeft) })
 			{
-				var pv = PlayerTrace(null, bt, 150, idle: true); float pd = pv.Sum();
+				var pv = PlayerTrace(null, bt, 150, idle: true); float pd = pv.Take(30).Sum(); // a short window: held longer, a levy walks back to his post against the belt, and a player does not
 				bool tr1 = TileRun.On; float after, before, ctlOn, ctlOff;
-				try { TileRun.On = true; after = LevyStill(bt, 150); ctlOn = LevyStill(TileID.GrayBrick, 150); TileRun.On = false; before = LevyStill(bt, 150); ctlOff = LevyStill(TileID.GrayBrick, 150); } finally { TileRun.On = tr1; }
+				try { TileRun.On = true; after = LevyStill(bt, 30); ctlOn = LevyStill(TileID.GrayBrick, 30); TileRun.On = false; before = LevyStill(bt, 30); ctlOff = LevyStill(TileID.GrayBrick, 30); } finally { TileRun.On = tr1; }
 				// the levy's own idling drift is measured on a plain floor in the same run (same seed, same ticks) and taken off: what is left is the belt
 				float effOn = after - ctlOn, effOff = before - ctlOff;
-				Note($"{bn}: standing still for 150 ticks a real player drifts {F(pd)} px; a levy drifts {F(after)} px on the belt and {F(ctlOn)} on plain floor (belt effect {F(effOn)}); with the floor rule off {F(before)} and {F(ctlOff)} (belt effect {F(effOff)})");
-				Check($"a {bn} carries a levy in the direction it carries a player, and only with the floor rule on: effect {F(effOn)} px (rule off {F(effOff)}) against a player's {F(pd)}", Math.Abs(pd) > 20f && Math.Sign(effOn) == Math.Sign(pd) && Math.Abs(effOn) >= Math.Abs(pd) * 0.3f && Math.Abs(effOff) < Math.Abs(effOn) * 0.35f);
+				Note($"{bn}: standing still for 30 ticks a real player drifts {F(pd)} px; a levy drifts {F(after)} px on the belt and {F(ctlOn)} on plain floor (belt effect {F(effOn)}); with the floor rule off {F(before)} and {F(ctlOff)} (belt effect {F(effOff)})");
+				Check($"a {bn} carries a levy in the direction it carries a player, and only with the floor rule on: effect {F(effOn)} px (rule off {F(effOff)}) against a player's {F(pd)}", Math.Abs(pd) > 20f && Math.Sign(effOn) == Math.Sign(pd) && Math.Abs(effOn) >= Math.Abs(pd) * 0.5f && Math.Abs(effOff) < Math.Abs(effOn) * 0.35f);
 			}
 			Arena();
 		}

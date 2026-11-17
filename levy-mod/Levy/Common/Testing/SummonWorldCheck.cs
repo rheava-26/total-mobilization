@@ -58,6 +58,12 @@ namespace Levy.Common.Testing
 		public static void RunIfArmed()
 		{
 			if (!_armed || _done || !Main.dedServ) return;
+			SaveHoldCheck.RunIfArmed(); // saving mid-check, before the chain opens its hold (it runs once per boot: with Mechanization its world check already ran it)
+			using (SaveHold.Begin("SummonWorld")) RunChain(); // no world save runs while the checks own the world; the autosave is given back however the chain ends
+		}
+
+		private static void RunChain()
+		{
 			if (Environment.GetEnvironmentVariable("LEVY_RULES_ONLY") == "1") { _done = true; try { LevyRulesCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LevyRules] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the army-follows-the-player's-rules check alone
 			if (Environment.GetEnvironmentVariable("LEVY_WHIPONLY") == "1") { _done = true; try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the whip check alone
 			if (Environment.GetEnvironmentVariable("LEVY_TILESWEEPSHIPONLY") == "1") { _done = true; try { TileSweepCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[TileSweep] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the ship-mode tile sweep sample alone

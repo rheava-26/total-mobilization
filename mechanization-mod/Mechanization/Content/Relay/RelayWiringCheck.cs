@@ -36,9 +36,10 @@ namespace Mechanization.Content.Relay
 			try
 			{
 				int y = 300;
-				var bar = new BarracksTE { Position = new Point16(2000, y), TownName = "RelayCheck" }; bar.ID = 900101; TileEntity.ByID[bar.ID] = bar; made.Add(bar);
-				var arm = new ArmoryTE { Position = new Point16(2004, y) }; arm.ID = 900102; TileEntity.ByID[arm.ID] = arm; made.Add(arm);
-				var relay = new ArmoryRelayTE { Position = new Point16(3600, y) }; relay.ID = 900103; TileEntity.ByID[relay.ID] = relay; made.Add(relay); // 1,596 tiles from the Armory
+				// built as placed ones (TestTileEntities): the world save can write them
+				var bar = global::Levy.Common.Testing.TestTileEntities.Add<BarracksTE>(900101, new Point16(2000, y)); bar.TownName = "RelayCheck"; made.Add(bar);
+				var arm = global::Levy.Common.Testing.TestTileEntities.Add<ArmoryTE>(900102, new Point16(2004, y)); made.Add(arm);
+				var relay = global::Levy.Common.Testing.TestTileEntities.Add<ArmoryRelayTE>(900103, new Point16(3600, y)); made.Add(relay); // 1,596 tiles from the Armory
 				TeleportPylonInfo Py(int x) => new TeleportPylonInfo { PositionInTiles = new Point16(x, y), TypeOfPylon = TeleportPylonType.SurfacePurity };
 				var sys = SettlementSystem.Instance;
 				SettlementSystem.PylonListOverride = new List<TeleportPylonInfo> { Py(2100), Py(3605) }; // one inside the settlement box (100 tiles from the barracks, 96 from the armory), one beside the relay
@@ -59,7 +60,7 @@ namespace Mechanization.Content.Relay
 				Check("a spot 45 tiles from the relay is inside its 50-tile serve radius", ArmoryRelays.LinkedFor(relay.Center + new Vector2(16f * 45, 0f)).Count == 1);
 			}
 			catch (Exception e) { Check("threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
-			finally { SettlementSystem.PylonListOverride = null; foreach (var t in made) TileEntity.ByID.Remove(t.ID); ArmoryRelays.Invalidate(); }
+			finally { SettlementSystem.PylonListOverride = null; foreach (var t in made) global::Levy.Common.Testing.TestTileEntities.Remove(t); ArmoryRelays.Invalidate(); }
 			Mod.Logger.Info($"[RelayNet] self-check pass={pass} fail={fail}");
 		}
 

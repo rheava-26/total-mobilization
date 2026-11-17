@@ -24,7 +24,7 @@ namespace Levy.Common.Testing
 		// =====================================================================================================
 		private static BarracksTE NewBetBarracks()
 		{
-			var bar = new BarracksTE { Position = new Point16(Cx - 30, FloorY - 3), TownName = "BetCheckTown" }; bar.ID = BetBarracksId; TileEntity.ByID[BetBarracksId] = bar;
+			var bar = TestTileEntities.Add<BarracksTE>(BetBarracksId, new Point16(Cx - 30, FloorY - 3)); bar.TownName = "BetCheckTown";
 			return bar;
 		}
 
@@ -41,7 +41,7 @@ namespace Levy.Common.Testing
 		private static void BetSceneEnd()
 		{
 			if (_betHooked) { On_Player.KillMe -= BetKillMeDetour; _betHooked = false; }
-			TileEntity.ByID.Remove(BetBarracksId);
+			if (TileEntity.ByID.TryGetValue(BetBarracksId, out var betBar)) TestTileEntities.Remove(betBar);
 			global::Levy.Common.Boss.BossDownedSystem.ClearForTest();
 		}
 

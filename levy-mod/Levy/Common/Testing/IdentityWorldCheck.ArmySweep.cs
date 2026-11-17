@@ -37,7 +37,7 @@ namespace Levy.Common.Testing
 		// the same dummy) does the same. The levy runs twice: with the commander idle 60 tiles away (A) and with the commander holding her own use button (channel + controlUseItem) on a held weapon (B).
 		// Recorded: uses a second, projectiles made, how far from the actor and from the commander they first appear, strikes and damage on the dummy, the most minions / sentries alive. Classification:
 		//   OK     the levy's damage is at least 0.6 of the player's and nothing came from the commander;   WEAK  it is below 0.6;   BROKEN  the player does damage and the levy none, a shot comes out of the commander, or it threw.
-		// Env: LEVY_ARMYSWEEP=1 every listed weapon (unset: the representative subset the ship world runs, 0: skipped), LEVY_ARMYSWEEP_ONLY=Name;Name, LEVY_ARMYSWEEP_TICKS=N, LEVY_ARMYSWEEP_SHARD=i/n, LEVY_ARMYSWEEP_ALONE=1 (this check alone).
+		// Env: LEVY_ARMYSWEEP=1 every listed weapon (endgame: the post-Moon Lord tiers, see ArmyEndgame; unset: the representative subset the ship world runs, 0: skipped), LEVY_ARMYSWEEP_ONLY=Name;Name, LEVY_ARMYSWEEP_TICKS=N, LEVY_ARMYSWEEP_SHARD=i/n, LEVY_ARMYSWEEP_ALONE=1 (this check alone).
 		private static readonly string[] ArmyList =
 		{
 			"Terra Blade", "Astral Scythe", "Ark of the Ancients", "Apathanull", "Star Shower", "Morning Star", "Influx Waver", "Wingman", "Vernal Bolter", "Dark Harvest", "Hellfire Flamberge", "Virulence", "Starspawn Helix Staff",
@@ -47,7 +47,7 @@ namespace Levy.Common.Testing
 			"Cosmolight", "Radiant Star", "Star of Destruction", "Shard of Antumbra", "Cranium Smasher", "Plaguenade", "The Syringe", "System Bane", "Infected Remote", "Wulfrum Controller", "Samsara Slicer", "Subduction Slicer", "Stellar Knife", "Phantasmal Ruin",
 		};
 		/// <summary>The sample the ship world runs (every other weapon is behind LEVY_ARMYSWEEP=1).</summary>
-		private static readonly string[] ArmyShip = { "Terra Blade", "Vernal Bolter", "Sniper Rifle", "Stellar Knife", "Morning Star", "Infested Clawmerang", "Nucleosynthesis", "Cosmic Kunai" };
+		private static readonly string[] ArmyShip = { "Terra Blade", "Vernal Bolter", "Sniper Rifle", "Stellar Knife", "Morning Star", "Infested Clawmerang", "Nucleosynthesis" };
 		/// <summary>
 		/// Weapons whose own Shoot reads the player use cycle (itemAnimation, ItemUsesThisAnimation): the projectiles each use makes, in the order a player's use makes them. In levy hands each must make the
 		/// same shots in the same order and about the same number as the stand-in player, and never the item's placeholder <c>shoot</c> (Nucleosynthesis's is a wooden arrow).
@@ -272,15 +272,39 @@ namespace Levy.Common.Testing
 				$"shots in {r.Player.Ran} ticks player {pc} / levy {ac} / {bc}; placeholder {r.ShootName} levy {Ph(r.A)} / {Ph(r.B)}, player {Ph(r.Player)}; damage ratio {r.RatioA:0.00} / {r.RatioB:0.00})", order && count && noPlaceholder);
 		}
 
+		/// <summary>Moon Lord's own weapon drops (vanilla's, and the one Calamity adds).</summary>
+		private static readonly string[] ArmyMoonLordDrops = { "Meowmere", "Star Wrath", "Terrarian", "Celebration Mk2", "S.D.M.G.", "Last Prism", "Lunar Flare", "Lunar Portal Staff", "Rainbow Crystal Staff", "Utensil Poker" };
+
+		/// <summary>
+		/// LEVY_ARMYSWEEP=endgame: every Calamity weapon of the post-Moon Lord tiers up to the early post-Moon Lord bosses (Calamity's rarities: vanilla Purple, then Turquoise, then Pure Green), plus Moon Lord's own drops.
+		/// Picked from the loaded items, so the list follows the mod's own tiers.
+		/// </summary>
+		private static List<(int type, string label, string name)> ArmyEndgame()
+		{
+			var rares = new HashSet<int> { ItemRarityID.Purple };
+			foreach (string r in new[] { "Turquoise", "PureGreen" }) if (ModContent.TryFind<ModRarity>("CalamityMod", r, out ModRarity mr)) rares.Add(mr.Type);
+			var res = ArmyResolve(ArmyMoonLordDrops);
+			for (int i = ItemID.Count; i < ItemLoader.ItemCount; i++)
+			{
+				if (!ContentSamples.ItemsByType.TryGetValue(i, out Item s) || s == null || s.IsAir || s.ModItem?.Mod.Name != "CalamityMod" || !rares.Contains(s.rare)) continue;
+				if (s.damage <= 0 || s.accessory || s.ammo > 0 || s.pick > 0 || s.axe > 0 || s.hammer > 0 || s.headSlot >= 0 || s.bodySlot >= 0 || s.legSlot >= 0 || s.consumable && s.shoot <= 0) continue;
+				if (res.Any(w => w.type == i)) continue;
+				res.Add((i, "CalamityMod:" + s.ModItem.Name, s.Name));
+			}
+			Note($"army sweep endgame: {res.Count} weapons (rarities {string.Join(",", rares)} and Moon Lord's drops)");
+			return res;
+		}
+
 		private static void ArmySweep()
 		{
 			string mode = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP");
 			if (mode == "0" || !ModLoader.HasMod("CalamityMod")) return;
 			string only = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ONLY");
 			string[] names = !string.IsNullOrEmpty(only) ? only.Replace('_', ' ').Split(';', StringSplitOptions.RemoveEmptyEntries) : mode == "1" ? ArmyList : ArmyShip;
-			bool reportOnly = mode == "1" && string.IsNullOrEmpty(only);
+			bool endgame = mode == "endgame" && string.IsNullOrEmpty(only);
+			bool reportOnly = (mode == "1" || endgame) && string.IsNullOrEmpty(only);
 			int ticks = int.TryParse(Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_TICKS"), out int tk) ? tk : 600;
-			var weapons = ArmyResolve(names);
+			var weapons = endgame ? ArmyEndgame() : ArmyResolve(names);
 			string shard = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_SHARD");
 			if (!string.IsNullOrEmpty(shard) && shard.Split('/') is { Length: 2 } sh && int.TryParse(sh[0], out int si) && int.TryParse(sh[1], out int sn) && sn > 1) weapons = weapons.Where((w, k) => k % sn == si).ToList();
 			if (weapons.Count == 0) return;

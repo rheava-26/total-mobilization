@@ -1,0 +1,12 @@
+# Keys here are relative to Mods.Levy.Configs.LevyEffectsQuality (the choices of "Army effects").
+Full: {
+	Label: Full
+	Tooltip: ""
+}
+
+Reduced: {
+	Label: Reduced
+	Tooltip: ""
+}
+
+Tooltip: ""

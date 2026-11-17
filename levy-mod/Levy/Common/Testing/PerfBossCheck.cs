@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using PA = Levy.Common.Perf.PerfAnalyzer;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -227,7 +229,7 @@ namespace Levy.Common.Testing
 		}
 
 		// ------------------------------------------------------------------------------------------------ arms
-		private sealed class Arm { public string Label; public double Mean, Median, P95, Max, WallMean; public int Levies, Proj, Ticks; public double Hits; public long Skips; public List<PerfProbe.Row> Rows; }
+		private sealed class Arm { public List<double> SList = new(), UList = new(), LList = new(); public string Label; public double Mean, Median, P95, Max, WallMean; public int Levies, Proj, Ticks; public double Hits; public long Skips; public List<PerfProbe.Row> Rows; }
 		private static readonly List<Arm> Arms = new();
 		private static bool _prof;
 
@@ -243,7 +245,7 @@ namespace Levy.Common.Testing
 				boss = NPC.NewNPCDirect(new EntitySource_WorldEvent("PerfBoss"), new Vector2(_armyHi + 30f * 16f, (FloorY - 12) * 16f), NPCID.Plantera);
 				if (boss != null) { boss.timeLeft = 999999; if (plantera >= 2) boss.life = boss.lifeMax / 3; }
 			}
-			var cpu = new List<double>(ticks); double wall = 0; double lost = 0; int projSum = 0;
+			var cpu = new List<double>(ticks); var cpuS = new List<double>(); var cpuU = new List<double>(); var cpuL = new List<double>(); double wall = 0; double lost = 0; int projSum = 0;
 			PerfProbe.Reset(); if (LevyProf.On) LevyProf.Reset(); long skips0 = SoldierNPC.DormantSkips;
 			for (int t = 0; t < warm + ticks; t++)
 			{
@@ -261,9 +263,11 @@ namespace Levy.Common.Testing
 				{
 					double wms = (w1 - w0) * 1000.0 / Stopwatch.Frequency; wall += wms;
 					cpu.Add(c0 >= 0 && c1 >= 0 ? (c1 - c0) / 1e6 : wms);
+					if (PA.TimingOn) (PA.LastTickLevy ? cpuL : PA.LastTickSampled ? cpuS : cpuU).Add(cpu[cpu.Count - 1]);
 					int pj = 0; for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active && Main.projectile[i].hostile) pj++; projSum += pj;
 				}
 			}
+			LastTicks = cpu;
 			var sorted = cpu.OrderBy(x => x).ToList();
 			var a = new Arm
 			{
@@ -271,7 +275,7 @@ namespace Levy.Common.Testing
 				WallMean = wall / ticks, Proj = projSum / Math.Max(1, ticks), Hits = lost / ticks,
 				Rows = _prof ? PerfProbe.Rows(ticks) : null,
 			};
-			a.Skips = SoldierNPC.DormantSkips - skips0;
+			a.Skips = SoldierNPC.DormantSkips - skips0; a.SList = cpuS; a.UList = cpuU; a.LList = cpuL;
 			Arms.Add(a);
 			_mod.Logger.Info($"[PerfBoss] ARM {label}: levies {a.Levies}, hostile projectiles/tick {a.Proj}, levy HP lost/tick {a.Hits:F1}; thread CPU ms/tick mean {a.Mean:F3} median {a.Median:F3} p95 {a.P95:F3} max {a.Max:F2} (wall mean {a.WallMean:F3})");
 			if (a.Rows != null)
@@ -284,6 +288,149 @@ namespace Levy.Common.Testing
 			if (boss != null) { _mod.Logger.Info($"[PerfBoss]   {label}: Plantera alive={boss.active} life={boss.life}/{boss.lifeMax}"); boss.active = false; }
 			_floodTarget = 0; _keepNpc.Clear();
 			return a;
+		}
+
+		/// <summary>
+		/// The cost of the always-on analyzer. The scene is the army of the arms above with the hostile projectile flood over it (about 650 entities a tick). Rounds alternate an arm with the analyzer attached and one without
+		/// (the order flips every round so a box that speeds up or slows down cannot favour one side); each arm is timed in thread CPU time per tick. What is measured is the work the analyzer adds to a tick: its detours on the
+		/// update, on every NPC and on every projectile, the sampled ticks (one in eleven: clock reads around every NPC and projectile, Levy's own bucket timers), and the army-shot tests. What it cannot measure: the draw hooks (nothing is drawn here,
+		/// they cost two clock reads per frame piece, a few microseconds a frame), and the window close (timed on its own and spread over the 480 ticks of a window).
+		/// </summary>
+		private static void AnalyzerArms(int ticks, int flood)
+		{
+			int rounds = int.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFAN_ROUNDS"), out int rr) && rr > 0 ? rr : 12;
+			AnalyzerArmsOne(ticks, flood, rounds, 0);
+			if (Environment.GetEnvironmentVariable("LEVY_PERFAN_AB") == "1") try { AnalyzerWrapAB(ticks, flood, int.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFAN_ABROUNDS"), out int ar) && ar > 0 ? ar : 24); } catch (Exception e) { Note("wrap A/B did not run: " + e.Message); }
+		}
+
+		/// <summary>
+		/// Same boot, the analyzer split into its pieces, one arm each, in an order rotated every round so a box that speeds up or slows down cannot favour one arm. Every arm is timed in thread CPU time per tick and compared with arm 0
+		/// of the same round (paired differences, standard error over the rounds). Arms: (0) analyzer off, nothing attached; (1) the entity IL edits only (NPC.UpdateNPC, Projectile.Update); (2) the Main detours only, no sampling;
+		/// (3) the Main detours with the sampling and bookkeeping, no entity IL; (4) everything the analyzer does, global hook wraps included.
+		/// </summary>
+		private static void AnalyzerWrapAB(int ticks, int flood, int rounds)
+		{
+			string tmp = Path.Combine(Path.GetTempPath(), "levy_perfan_ab_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+			PA.TestServer = true; PA.TestLogDir = tmp; PA.TestWindowSecs = 1e9;
+			const int N = 5;
+			var per = new List<double>[N]; var d = new List<double>[N]; var dt = new List<double>[N];
+			for (int i = 0; i < N; i++) { per[i] = new List<double>(); d[i] = new List<double>(); dt[i] = new List<double>(); }
+			string[] names = { "off", "entity IL only", "Main detours only (no sampling)", "Main detours + sampling (no entity IL)", "everything on" };
+			// LEVY_PERFAN_ABARMS="0,4" times only those arms (arm 0 always included): twice the rounds in the same time
+			var sel = new List<int> { 0 };
+			foreach (string tok in (Environment.GetEnvironmentVariable("LEVY_PERFAN_ABARMS") ?? "0,1,2,3,4").Split(',', StringSplitOptions.RemoveEmptyEntries)) if (int.TryParse(tok, out int ai) && ai >= 0 && ai < N && !sel.Contains(ai)) sel.Add(ai);
+			int warm = int.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFAN_ABWARM"), out int aw) && aw > 0 ? aw : 20;
+			try
+			{
+				for (int r = 0; r < rounds; r++)
+				{
+					var m = new double[N]; var mt = new double[N];
+					for (int k = 0; k < sel.Count; k++)
+					{
+						int arm = sel[(k + r) % sel.Count];
+						PA.TestLog = false; PA.ConfigChanged();
+						PA.TestSetGlobalWraps(arm == 4);
+						switch (arm)
+						{
+							case 0: PA.TestPieces(false, false, true); break;
+							case 1: PA.TestPieces(true, false, true); break;
+							case 2: PA.TestPieces(false, true, true); break;
+							case 3: PA.TestPieces(false, true, false); break;
+							default: PA.TestPieces(true, true, false); break;
+						}
+						Arm a = RunArm("A/B " + names[arm], ticks, warm, flood, 0, false);
+						m[arm] = a.Mean; mt[arm] = Trimmed(a.Ticks > 0 ? LastTicks : null);
+					}
+					foreach (int i in sel) { per[i].Add(m[i]); d[i].Add(m[i] - m[0]); dt[i].Add(mt[i] - mt[0]); }
+				}
+			}
+			finally
+			{
+				PA.TestSetGlobalWraps(true); PA.TestNoSample = false; PA.TestLog = false; PA.ConfigChanged(); PA.TestServer = false; PA.TestWindowSecs = null; PA.TestLogDir = null;
+				PA.TestResetLog(); PA.TestReset(); try { if (Directory.Exists(tmp)) Directory.Delete(tmp, true); } catch (Exception) { }
+			}
+			string Fmt(List<double> l) { double mu = l.Average(), sd = l.Count > 1 ? Math.Sqrt(l.Sum(x => (x - mu) * (x - mu)) / (l.Count - 1)) : 0; return $"{mu:F3} (s.e. {sd / Math.Sqrt(l.Count):F3}, median {l.OrderBy(x => x).ElementAt(l.Count / 2):F3})"; }
+			Note($"split A/B, {rounds} rounds of {ticks} ticks (+{warm} warm-up), arms rotated each round. ms/tick: {string.Join("; ", sel.Select(i => names[i] + " " + Fmt(per[i])))}");
+			Note($"split A/B, difference from arm 0 per round (ms/tick, mean of the ticks): {string.Join("; ", sel.Where(i => i > 0).Select(i => names[i] + " " + Fmt(d[i])))}");
+			Note($"split A/B, difference from arm 0 per round (ms/tick, mean of the middle 80% of the ticks: spikes from the box cut): {string.Join("; ", sel.Where(i => i > 0).Select(i => names[i] + " " + Fmt(dt[i])))}");
+			if (sel.Contains(2) && sel.Contains(3)) Note($"split A/B, sampling and bookkeeping alone (arm 3 minus arm 2): {Fmt(d[3].Zip(d[2], (x, y) => x - y).ToList())}");
+			if (!sel.Contains(4)) return;
+			A_BEnd = (d[4].Average(), Math.Sqrt(d[4].Sum(x => (x - d[4].Average()) * (x - d[4].Average())) / Math.Max(1, d[4].Count - 1)) / Math.Sqrt(d[4].Count));
+			Check($"the analyzer fully on costs {A_BEnd.Item1:F3} ms/tick over fully off in the same boot (s.e. {A_BEnd.Item2:F3}, {rounds} paired rounds); the gate is under 0.1 ms plus twice the standard error", A_BEnd.Item1 < 0.1 + 2 * A_BEnd.Item2);
+		}
+		private static (double, double) A_BEnd;
+		private static double Trimmed(List<double> l) { if (l == null || l.Count == 0) return 0; var s = l.OrderBy(x => x).ToList(); int cut = s.Count / 10; return s.Skip(cut).Take(s.Count - 2 * cut).Average(); }
+		private static List<double> LastTicks;
+
+		private static void AnalyzerArmsOne(int ticks, int flood, int rounds, int variant)
+		{
+			string tmp = Path.Combine(Path.GetTempPath(), "levy_perfan_cost_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+			PA.TestServer = true; PA.TestLogDir = tmp; PA.TestWindowSecs = 1e9;
+			var offTicks = new List<double>(); var diffs = new List<double>(); var uOn = new List<double>(); var sOn = new List<double>(); var lOn = new List<double>(); double closeMs = 0; string sample = null; double offMean = 0, onMean = 0; int offN = 0, onN = 0;
+			try
+			{
+				for (int r = 0; r < rounds; r++)
+				{
+					double a = 0, b = 0;
+					for (int half = 0; half < 2; half++)
+					{
+						bool attached = (half == 0) == (r % 2 == 0);
+						PA.TestLog = attached; PA.ConfigChanged();
+						Arm arm = RunArm(attached ? "analyzer ON" : "analyzer OFF", ticks, 30, flood, 0, false);
+						if (attached) { b = arm.Mean; onMean += arm.Mean; onN++; uOn.AddRange(arm.UList); sOn.AddRange(arm.SList); lOn.AddRange(arm.LList); }
+						else { a = arm.Mean; offMean += arm.Mean; offN++; offTicks.Add(arm.Mean); }
+						if (attached && r == rounds - 1)
+						{
+							long t0 = Stopwatch.GetTimestamp(); var w = PA.TestClose(); closeMs = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
+							if (w != null) sample = w.ToJson();
+						}
+					}
+					diffs.Add(b - a);
+				}
+			}
+			finally
+			{
+				PA.TestLog = false; PA.ConfigChanged(); PA.TestServer = false; PA.TestWindowSecs = null; PA.TestLogDir = null;
+				PA.TestResetLog(); PA.TestReset(); try { if (Directory.Exists(tmp)) Directory.Delete(tmp, true); } catch (Exception) { }
+			}
+			offMean /= Math.Max(1, offN); onMean /= Math.Max(1, onN);
+			double mean = diffs.Average(), sd = diffs.Count > 1 ? Math.Sqrt(diffs.Sum(d => (d - mean) * (d - mean)) / (diffs.Count - 1)) : 0, se = sd / Math.Sqrt(diffs.Count);
+			var sorted = diffs.OrderBy(d => d).ToList(); double median = sorted[sorted.Count / 2];
+			double perTickClose = closeMs / 480.0; int levies = Army.Count(s => s.NPC.active); double analyticTotal = 1e9;
+			// the same number from the ticks themselves: the analyzer costs a little on every tick (its detours), more on the one tick in eleven it samples, and more again on the one in 66 that also times Levy's own buckets
+			double Mean(List<double> l) => l.Count > 0 ? l.Average() : 0;
+			double Sem(List<double> l) { if (l.Count < 2) return 0; double m = l.Average(); return Math.Sqrt(l.Sum(x => (x - m) * (x - m)) / (l.Count - 1)) / Math.Sqrt(l.Count); }
+			double u = Mean(uOn), s1 = Mean(sOn), l1 = Mean(lOn);
+			double perTickDetour = u - offMean, extraS = s1 - u, extraL = l1 - u;
+			double pS = (1.0 / PA.SampleEvery) - (1.0 / PA.LevySampleEvery), pL = 1.0 / PA.LevySampleEvery;
+			double est = perTickDetour + extraS * pS + extraL * pL;
+			double estSe = Math.Sqrt(Math.Pow(Sem(uOn), 2) + Math.Pow(pS * Math.Sqrt(Math.Pow(Sem(sOn), 2) + Math.Pow(Sem(uOn), 2)), 2) + Math.Pow(pL * Math.Sqrt(Math.Pow(Sem(lOn), 2) + Math.Pow(Sem(uOn), 2)), 2)) + 0.0;
+			Note($"analyzer cost (variant {variant}) over {rounds} alternating rounds of {ticks} ticks with {levies} levies and {flood} hostile projectiles: off mean {offMean:F3} ms/tick, on mean {onMean:F3} ms/tick; on minus off per round [{string.Join(", ", diffs.Select(d => d.ToString("F3")))}] mean {mean:F3} (s.e. {se:F3}), median {median:F3} ms/tick");
+			Note($"analyzer cost by kind of tick (thread CPU ms/tick): unsampled ticks {u:F3} (n {uOn.Count}), sampled ticks {s1:F3} (n {sOn.Count}), sampled ticks that also time Levy's buckets {l1:F3} (n {lOn.Count}); with the analyzer off {offMean:F3}. The detours add {perTickDetour:F3} to every tick, sampling adds {extraS:F3} to one tick in {PA.SampleEvery}, Levy's buckets add {extraL:F3} to one in {PA.LevySampleEvery}: {est:F3} ms/tick on average (s.e. about {estSe:F3})");
+			// the analyzer's own code, call by call, on this scene's real NPC and projectile: deterministic where the end-to-end numbers above carry the box's noise
+			double[] mb = null; NPC bn = null; Projectile bp = null;
+			for (int i = 0; i < Main.maxNPCs && bn == null; i++) if (Main.npc[i].active) bn = Main.npc[i];
+			for (int i = 0; i < Main.maxProjectiles && bp == null; i++) if (Main.projectile[i].active) bp = Main.projectile[i];
+			if (bn == null) bn = Main.npc[0]; if (bp == null) bp = Main.projectile[0];
+			bool wasT = PA.TestServer; PA.TestServer = true; PA.TestLog = true; PA.ConfigChanged(); bool wasActive = bn.active; bn.active = true;
+			try { mb = PA.MicroBench(bn, bp); } finally { bn.active = wasActive; PA.TestLog = false; PA.ConfigChanged(); PA.TestServer = wasT; }
+			if (mb != null)
+			{
+				int activeNpc = 0, activeProj = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) activeNpc++; for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active) activeProj++;
+				double hookCalls = 1435; // wrapped global AI hook calls a tick in this scene (counted in the PerfAnalyzer world check: about 400000 over 280 ticks)
+				double unsampledUs = (Main.maxNPCs * mb[0] + Main.maxProjectiles * mb[1] + hookCalls * mb[2]) / 1000.0;
+				double sampledExtraUs = (activeNpc * Math.Max(0, mb[3] - mb[0]) + activeProj * Math.Max(0, mb[4] - mb[1]) + hookCalls * Math.Max(0, mb[5] - mb[2])) / 1000.0;
+				double levyExtraMs = extraL; // measured: Levy's own bucket timers, on the one tick in 66
+				double analytic = unsampledUs / 1000.0 + sampledExtraUs / 1000.0 / PA.SampleEvery + Math.Max(0, levyExtraMs) / PA.LevySampleEvery + 0.0002;
+				Note($"analyzer own code, ns per enter+exit pair: NPC {mb[0]:F1} (sampled {mb[3]:F1}), projectile {mb[1]:F1} (sampled {mb[4]:F1}), wrapped global hook {mb[2]:F1} (sampled {mb[5]:F1}), one clock read {mb[6]:F1}. This scene: {Main.maxNPCs} NPC slots ({activeNpc} active), {Main.maxProjectiles} projectile slots ({activeProj} active), about {hookCalls:F0} global hook calls a tick: {unsampledUs:F1} us on every tick, {sampledExtraUs:F1} us more on one tick in {PA.SampleEvery}, Levy's bucket timers {levyExtraMs * 1000:F0} us more on one in {PA.LevySampleEvery}: {analytic * 1000:F1} us a tick on average, plus the window close {perTickClose * 1000:F1} us");
+				analyticTotal = analytic + perTickClose;
+			}
+			Note($"analyzer window close: {closeMs:F3} ms once every eight seconds = {perTickClose * 1000:F1} us per tick; total {est + perTickClose:F3} ms/tick against the 0.1 ms target ({(est + perTickClose) / Math.Max(0.001, offMean) * 100:F1}% of the tick); hook calls timed so far: NPC {PA.NpcCalls}, projectile {PA.ProjCalls}");
+			if (sample != null && variant == 0) Note("a window from the loaded scene: " + sample);
+			if (variant != 0) return;
+			// gate: the call-by-call cost under 0.1 ms. The end-to-end on/off difference is OBSERVED only (a short run on a shared box flips randomly, +-1 ms and more); it is a PASS/FAIL check only in the LEVY_PERFAN_AB=1 split A/B
+			Note($"analyzer end-to-end on minus off: {mean * 1000:F0} +- {se * 1000:F0} us per tick from {rounds} rounds (information only; the pass/fail end-to-end check runs with LEVY_PERFAN_AB=1)");
+			Check($"the analyzer's own code adds under 0.1 ms per tick with {levies} levies and {flood} projectiles on the field ({analyticTotal * 1000:F0} us from timing its calls one by one, window close {perTickClose * 1000:F0} us)", analyticTotal < 0.1);
 		}
 
 		private static void Run()
@@ -349,6 +496,9 @@ namespace Levy.Common.Testing
 				}
 			}
 			finally { global::Levy.Common.Weapons.PairCull.HostileOn = hostileWas; SoldierNPC.DormancyOn = dormWas; }
+
+			// ---- the always-on performance analyzer's own cost: the same army and the same flood, timed with the analyzer attached and removed in turn
+			if (Want("analyzer")) { try { AnalyzerArms(ticks, flood); } catch (Exception e) { Check("analyzer arms threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); } }
 
 			// ---- verdicts: what the army adds, per levy
 			string Add(string what, Arm a, Arm c)

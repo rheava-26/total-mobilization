@@ -26,7 +26,7 @@ namespace Levy.Common.UI
 			if (s?.Record == null || spriteBatch == null || Main.dedServ) return;
 			if (s.Hostile) { s.DrawHostilePlate(spriteBatch, screenPos); return; } // HOSTILE SEAM: a red plate, always shown
 			bool forced = UISystem.NameplatesForced; // War Horn toggle: show every plate even in a crowd
-			if (!forced && !LevyConfig.Get.Nameplates) return;
+			if (!forced && (!LevyConfig.Get.Nameplates || global::Levy.Common.Perf.PerfAnalyzer.EffectsReduced)) return; // Army effects: Reduced hides the plates
 			if (!forced && Math.Max(UISystem.SoldiersOnScreenLastFrame, _drawnLastFrame) > LevyConstants.NameplateHideAbove) return;
 
 			var npc = s.NPC;

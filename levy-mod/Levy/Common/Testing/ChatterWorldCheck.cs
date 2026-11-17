@@ -129,6 +129,7 @@ namespace Levy.Common.Testing
 			CommanderReactions.Reset();
 			Step(60);
 			Eclipse();
+			Rift(army);
 			Upgrades(army);
 		}
 
@@ -169,6 +170,72 @@ namespace Levy.Common.Testing
 			e0 = CommanderReactions.EclipseEndings;
 			CommanderReactions.Reset(); Main.eclipse = false; Step(150);
 			Check($"a world loaded after an eclipse is not an ending ({CommanderReactions.EclipseEndings - e0} endings)", CommanderReactions.EclipseEndings == e0);
+		}
+
+		/// <summary>
+		/// The rift sky (Wrath of the Gods), with real levies and real ticks. With NoxusBoss loaded the real covering scene is started (its timer set as the mod's own start sets it) and run to its end;
+		/// without it the same moments are driven through the overrides. Ambient chatter is forced on and two minutes of it are counted with no mood (the control), then while the sun is covered
+		/// (nothing may be said: no line, no float, right-click "..."), then the burst after (the levies near the commander, one after another), then two tense minutes (fewer lines, every chat line a rift line).
+		/// </summary>
+		private static void Rift(List<SoldierNPC> army)
+		{
+			bool real = RiftSky.Installed && RiftSky.Problem.Length == 0;
+			Note(real ? "NoxusBoss is loaded: the real covering scene is run" : "NoxusBoss is not loaded: the covering is driven through the overrides (" + RiftSky.Problem + ")");
+			int chat0 = SoldierNPC.ChatterOverride; bool rain0 = Main.raining;
+			SoldierNPC.ChatterOverride = 1; Main.raining = false;
+			try
+			{
+				Main.dayTime = true; Main.time = 9000; RiftMood.Reset(); DialogueSystem.ResetRuntime();
+				int d0 = DialogueSystem.FloatingDelivered, a0 = SoldierNPC.ChatterLines;
+				Step(7200);
+				int control = DialogueSystem.FloatingDelivered - d0, controlSaid = SoldierNPC.ChatterLines - a0;
+				Note($"control, no mood, two minutes: {controlSaid} ambient lines picked, {control} floating lines out");
+				Check($"with no rift the army chats as usual ({control} floating lines in two minutes)", control >= 6 && RiftMood.Phase == RiftPhase.None);
+
+				// the covering
+				Main.dayTime = true; Main.time = 9000;
+				if (real) Check("the real covering scene starts", RiftSky.SetReal(eventTimer: 1));
+				else { RiftSky.TestInstalled = true; RiftSky.TestDefeated = false; RiftSky.TestCovered = false; RiftSky.TestTransition = true; }
+				Step(2);
+				Check($"while the sun is covered the mood is Silent ({RiftMood.Phase})", RiftMood.Phase == RiftPhase.Silent);
+				d0 = DialogueSystem.FloatingDelivered; a0 = SoldierNPC.ChatterLines; int ch0 = RiftMood.Changes, pr0 = RiftMood.PanicRounds, pl0 = RiftMood.PanicLines;
+				string chat = army.Count > 0 ? DialogueSystem.ChatLine(army[0]) : null;
+				int scene = 0;
+				if (real) { while (RiftSky.Transition && scene < 2400) { Step(1); scene++; } }
+				else { Step(1500); scene = 1500; }
+				int silentOut = DialogueSystem.FloatingDelivered - d0, silentSaid = SoldierNPC.ChatterLines - a0;
+				Check($"while the sun was covered ({scene} ticks) nobody said anything ({silentSaid} lines picked, {silentOut} floats out, right-click \"{chat}\")", silentOut == 0 && silentSaid == 0 && chat == "..." && scene >= 1000);
+
+				// the end: the burst
+				if (!real) { RiftSky.TestTransition = false; RiftSky.TestCovered = true; }
+				Step(20 + LevyConstants.RiftPanicSpeakers * LevyConstants.RiftPanicStepTicks + 60);
+				int burst = RiftMood.PanicLines - pl0;
+				Check($"the covering ends once and the levies near the commander react ({RiftMood.Changes - ch0} endings, {RiftMood.PanicRounds - pr0} rounds, {burst} worried lines)", RiftMood.Changes == ch0 + 1 && RiftMood.PanicRounds == pr0 + 1 && burst == Math.Min(LevyConstants.RiftPanicSpeakers, army.Count));
+				Check($"after the covering the sky reads covered and the mood is Tense ({RiftMood.Phase}, covered={RiftSky.Covered})", RiftSky.Covered && RiftMood.Phase == RiftPhase.Tense && RiftMood.PanicNow);
+				if (real) Note($"NoxusBoss's own rift flag after the scene: {RiftSky.RiftOngoing}");
+
+				// the tense days
+				RiftMood.SetPanic(false); DialogueSystem.ResetRuntime();
+				int riftChat = 0, otherChat = 0; string other = null;
+				foreach (SoldierNPC s in army)
+				{
+					if (s == null || !s.NPC.active) continue;
+					for (int i = 0; i < 8; i++) { string t = DialogueSystem.ChatLine(s); if (RiftMoodCheck.IsRiftText(t)) riftChat++; else { otherChat++; other ??= t; } }
+				}
+				Check($"in the tense days every right-click chat is a rift line ({riftChat} rift, {otherChat} other{(other != null ? ": " + other : "")})", riftChat > 0 && otherChat == 0);
+				d0 = DialogueSystem.FloatingDelivered; a0 = SoldierNPC.ChatterLines;
+				Step(7200);
+				int tense = DialogueSystem.FloatingDelivered - d0, tenseSaid = SoldierNPC.ChatterLines - a0;
+				Note($"tense, two minutes: {tenseSaid} ambient lines picked, {tense} floating lines out (control {control})");
+				Check($"the tense army is much quieter ({tense} floating lines against {control})", tense <= control * 0.6f);
+			}
+			finally
+			{
+				if (real) RiftSky.SetReal(covered: false, eventTimer: 0, waiting: false, snowHeight: 0f);
+				RiftSky.ClearOverrides(); RiftMood.Reset(); DialogueSystem.ResetRuntime();
+				SoldierNPC.ChatterOverride = chat0; Main.raining = rain0;
+				Main.dayTime = true; Main.time = 15000;
+			}
 		}
 
 		private static int SentSince(int from) => SharedUpgradeNotice.Sent.Count - from;

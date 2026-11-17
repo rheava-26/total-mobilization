@@ -355,7 +355,14 @@ namespace Levy.Common.Dialogue
 			return k;
 		}
 
-		private static bool Contains(DialogueTrigger t, string text)
+		/// <summary>World-check hook: a filled line that could only have come from one of the rift pools.</summary>
+		internal static bool IsRiftText(string text)
+		{
+			foreach (DialogueTrigger t in Rift) if (Contains(t, text)) return true;
+			return false;
+		}
+
+		internal static bool Contains(DialogueTrigger t, string text)
 		{
 			var pool = DialogueTable.Get(t);
 			if (pool == null || text == null) return false;

@@ -28,7 +28,7 @@ namespace Levy.Common.Testing
 	public partial class IdentityWorldCheck : ModSystem
 	{
 		private static bool _armed, _done, _running, _spNet; private static int _calls, _pass, _fail;
-		private static Mod _mod; private static int _savedMy, _savedNet, _my; private static bool _cmdHolds; // the stand-in commander holds her own use button (channel + controlUseItem) while NPCs and projectiles update
+		private static Mod _mod; private static int _savedMy, _savedNet, _my; private static bool _cmdHolds, _mindDead; // the stand-in commander holds her own use button (channel + controlUseItem) while NPCs and projectiles update
 		private const int FloorY = 300, Cx = 1800;
 		private static Vector2 _cmdAt;
 		private static NPC _brewer; private static Vector2 _brewerAt;
@@ -89,7 +89,7 @@ namespace Levy.Common.Testing
 		private static void KeepCommander()
 		{
 			Player p = Main.player[0];
-			p.active = true; p.dead = false; p.name = "IdentityTester";
+			p.active = true; p.dead = _mindDead; p.name = "IdentityTester";
 			if (p.statLifeMax < 500) p.statLifeMax = p.statLifeMax2 = 500;
 			p.statLife = p.statLifeMax2;
 			p.position = _cmdAt - new Vector2(p.width / 2f, p.height / 2f); p.velocity = Vector2.Zero;

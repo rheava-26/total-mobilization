@@ -100,12 +100,12 @@ namespace Levy.Common.Observe
 		}
 
 		/// <summary>The link was just made or moved: the player's client is told at once (and its sections are marked loaded).</summary>
-		internal static void PushNow(int who) { if (Main.netMode == NetmodeID.Server && who >= 0 && who < Main.maxPlayers) Push(who, true); }
+		internal static void PushNow(int who) { if (Main.netMode == NetmodeID.Server && who >= 0 && who < Main.maxPlayers && Netplay.Clients[who].IsConnected()) Push(who, true); }
 
 		/// <summary>The server ended this player's mind link (the levy fell with no next one, or the player respawned): kind 4 tells the client to stop at once instead of waiting out the quiet-stream timeout.</summary>
 		internal static void NotifyMindEnded(int who)
 		{
-			if (Main.netMode != NetmodeID.Server || who < 0 || who >= Main.maxPlayers) return;
+			if (Main.netMode != NetmodeID.Server || who < 0 || who >= Main.maxPlayers || !Netplay.Clients[who].IsConnected()) return;
 			var p = LevyPackets.New(LevyPacket.ObservePos); p.Write((byte)4); p.Write(0); p.Write(0f); p.Write(0f); p.Send(who);
 		}
 

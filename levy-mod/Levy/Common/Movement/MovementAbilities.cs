@@ -36,11 +36,38 @@ namespace Levy.Common.Movement
 		/// the flag multipliers (Magiluminescence, Shadow armor: x1.15 on both), then every ModPlayer.PostUpdateRunSpeeds. The player tops out at the larger of the two.
 		/// The dummy's own fields are left as they were (a second read must not scale twice).
 		/// </summary>
+		private static System.Reflection.FieldInfo _calMsb; private static bool _calMsbTried;
+		/// <summary>Calamity's own run-speed bonus on this player (CalamityPlayer.moveSpeedBonus), 0 without Calamity.</summary>
+		public static float CalMoveBonus(Player p)
+		{
+			try
+			{
+				object cp = global::Levy.Common.Weapons.AltPolicies.CalamityPlayerOf(p); if (cp == null) return 0f;
+				if (!_calMsbTried) { _calMsbTried = true; _calMsb = cp.GetType().GetField("moveSpeedBonus"); }
+				return _calMsb == null ? 0f : Convert.ToSingle(_calMsb.GetValue(cp));
+			}
+			catch (Exception) { return 0f; }
+		}
+
+		/// <summary>
+		/// Calamity's UpdateEquips raises the boots' sprint speed by its run-speed bonus (accRunSpeed += accRunSpeed * moveSpeedBonus * 0.16, never below half of it). On a real player that runs after the boots set accRunSpeed; on
+		/// the dummy the bonus is only known once the equip pass is over, so the sprint speed is left as the boots set it. Applied here to the copy of the numbers the movement reads (Hermes Boots at +50%: 6.0 -> 6.48).
+		/// </summary>
+		public static void ApplyCalamityRunBonus(Player d)
+		{
+			float bonus = CalMoveBonus(d);
+			if (bonus == 0f || d.accRunSpeed <= 0f) return;
+			float min = d.accRunSpeed * 0.5f;
+			d.accRunSpeed += d.accRunSpeed * bonus * 0.16f;
+			if (d.accRunSpeed < min) d.accRunSpeed = min;
+		}
+
 		public static float PlayerTopRunSpeed(Player dummy)
 		{
 			float maxRun0 = dummy.maxRunSpeed, accRun0 = dummy.accRunSpeed, accel0 = dummy.runAcceleration, slow0 = dummy.runSlowdown;
 			try
 			{
+				ApplyCalamityRunBonus(dummy);
 				dummy.runAcceleration *= dummy.moveSpeed; dummy.maxRunSpeed *= dummy.moveSpeed;
 				if (dummy.hasMagiluminescence) { dummy.runAcceleration *= 1.75f; dummy.maxRunSpeed *= 1.15f; dummy.accRunSpeed *= 1.15f; dummy.runSlowdown *= 1.75f; }
 				if (dummy.shadowArmor) { dummy.runAcceleration *= 1.75f; dummy.maxRunSpeed *= 1.15f; dummy.accRunSpeed *= 1.15f; dummy.runSlowdown *= 1.75f; }

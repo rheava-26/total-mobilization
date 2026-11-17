@@ -124,7 +124,7 @@ namespace Levy.Content.NPCs
 		{
 			if (_mindWas) return;
 			_mindWas = true;
-			HoldPosition = false; ClearGoal(); TargetIndex = -1; _focusBare = false;
+			HoldPosition = false; ClearGoal(); TargetIndex = -1; _focusBare = false; _mindDashLeft = 0;
 			_path.Clear(); _dashTicks = 0; _dodgeTicks = 0; _fallThroughTicks = 0; _flying = false; _blocked = false; _blockedHard = false;
 			if (_hkPhase != HookPhase.Idle) { try { HookReset(false); } catch (Exception) { } }
 			Sit_Stop();
@@ -136,6 +136,7 @@ namespace Levy.Content.NPCs
 		private void MindRelease()
 		{
 			ClearGoal(); TargetIndex = -1; MindSide = -1; HoldPosition = false;
+			NPC.noGravity = false; WantsToFallThrough = false;
 			if (Dummy != null) { Dummy.controlLeft = Dummy.controlRight = Dummy.controlJump = Dummy.controlDown = Dummy.controlUp = false; Dummy.releaseLeft = Dummy.releaseRight = Dummy.releaseJump = true; Dummy.dashTime = 0; Dummy.jump = 0; }
 			if (Weapon != null) UpdateSidearm();
 			NPC.netUpdate = true;

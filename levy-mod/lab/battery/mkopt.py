@@ -8,8 +8,8 @@ import json
 from pathlib import Path
 H = Path(__file__).resolve().parent
 WEAPONS = [  # (weapon, class, ammo, count, measured levy DPS at def 50)
-    ('Daybreak@Legendary', 'E', '', 6, 1452),
-    ('Solar Eruption@Legendary', 'E', '', 6, 1407),
+    ('Daybreak@Godly', 'E', '', 6, 1452),
+    ('Solar Eruption@Godly', 'E', '', 6, 1407),
     ('Chlorophyte Saber@Legendary', 'E', '', 6, 1149),
     ('Morning Star@Legendary', 'S', '', 6, 979),          # ARMYSWEEP_DPS (idle commander); 0 in the dummy trial, which cannot measure whips
     ('CalamityMod/StarSputter@Unreal', 'R', '', 6, 828),

@@ -662,6 +662,11 @@ Mods: {
 					Tooltip: A chat line when a Regular dies.
 				}
 
+				CustomDeathMessagePercent: {
+					Label: Custom death message chance
+					Tooltip: Chance, in percent, that a levy killed by something with its own death text posts that text. Shown even when death messages are off. Always 100 during a Nameless Deity or Avatar of Emptiness fight.
+				}
+
 				DoNotAttackNpcNames: {
 					Label: Do Not Attack Npc Names
 					Tooltip: ""

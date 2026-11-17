@@ -96,7 +96,7 @@ namespace Warbands.Content.NPCs
 		public override bool CheckDead() => true;
 		public override bool PreKill() => true;
 		public override bool? CanBeHitByItem(Player player, Item item) => null;
-		public override bool? CanBeHitByProjectile(Projectile projectile) => null;
+		public override bool? CanBeHitByProjectile(Projectile projectile) => BandProjectileGuard.IsBandShot(projectile) ? false : null; // a band's own shots (children included) never land on a band body
 		public override bool CanHitPlayer(Player target, ref int cooldownSlot) => false;
 		public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) => false;
 		public override bool CanChat() => false;
@@ -224,7 +224,7 @@ namespace Warbands.Content.NPCs
 			if (near == null)
 			{
 				// nobody within 120 tiles: a hostile band hunts the nearest of the player's side within the hunt range (config), off screen or not
-				if (!HuntLegacy && band.Aggro && !band.IsEvent && Hunt(band, (uint)now)) return;
+				if (!HuntLegacy && band.Aggro && !band.IsEvent && !(!band.Summoned && BossFight.HeldCached(WarbandsConfig.Get)) && Hunt(band, (uint)now)) return; // a boss fight (and its grace window) keeps a band at its camp: it does not walk in on the fight
 				// nobody to hunt: camp at the spot the band formed
 				HostileIdleState(); HostileDropTarget();
 				if (Vector2.Distance(NPC.Center, band.Anchor) > 8f * 16f) HostileGoTo(band.Anchor); else HostileStop();

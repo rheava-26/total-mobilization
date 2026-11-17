@@ -122,15 +122,15 @@ namespace Warbands.Common
 			B(BandBiome.Underworld, 3, "Ashland scavengers", R("PalladiumRepeater", "HellfireArrow", Molten), E("Excalibur", Molten), M("CursedFlames", Molten)),
 
 			// ---- stage 5: after Plantera ----
-			B(BandBiome.Forest, 5, "Forest deserters", R("Megashark", "ChlorophyteBullet", Turtle), R("ChlorophyteShotbow", "HolyArrow", Chlorophyte), E("TerraBlade", Turtle), M("NettleBurst", Chlorophyte)),
-			B(BandBiome.Underground, 5, "Cavern prospectors", R("Megashark", "ChlorophyteBullet", Chlorophyte), M("NettleBurst", Chlorophyte), E("TerraBlade", Chlorophyte)),
-			B(BandBiome.Corruption, 5, "Corruption cultists", M("NettleBurst", Chlorophyte), R("Megashark", "CursedBullet", Turtle), E("TerraBlade", Turtle)),
-			B(BandBiome.Crimson, 5, "Crimson cultists", M("NettleBurst", Chlorophyte), R("Megashark", "IchorBullet", Turtle), E("TerraBlade", Turtle)),
-			B(BandBiome.Desert, 5, "Dune raiders", R("Megashark", "ChlorophyteBullet", Turtle), E("TerraBlade", Turtle), M("NettleBurst", Chlorophyte)),
-			B(BandBiome.Snow, 5, "Tundra trappers", R("ChlorophyteShotbow", "FrostburnArrow", Frost), E("TerraBlade", Frost), M("NettleBurst", Frost)),
-			B(BandBiome.Jungle, 5, "Jungle brigands", R("ChlorophyteShotbow", "HolyArrow", Chlorophyte), E("TerraBlade", Chlorophyte), M("NettleBurst", Chlorophyte)),
-			B(BandBiome.Hallow, 5, "Pearl-wood skirmishers", R("Megashark", "ChlorophyteBullet", Hallowed), E("TerraBlade", Hallowed), M("NettleBurst", Hallowed)),
-			B(BandBiome.Underworld, 5, "Ashland scavengers", R("Megashark", "ChlorophyteBullet", Molten), E("TerraBlade", Molten), M("NettleBurst", Molten)),
+			B(BandBiome.Forest, 5, "Forest deserters", R("Megashark", "ChlorophyteBullet", Turtle), R("ChlorophyteShotbow", "HolyArrow", Chlorophyte), E("ChlorophyteClaymore", Turtle), M("LeafBlower", Chlorophyte)),
+			B(BandBiome.Underground, 5, "Cavern prospectors", R("Megashark", "ChlorophyteBullet", Chlorophyte), M("LeafBlower", Chlorophyte), E("ChlorophytePartisan", Chlorophyte)),
+			B(BandBiome.Corruption, 5, "Corruption cultists", M("WaspGun", Chlorophyte), R("Megashark", "CursedBullet", Turtle), E("ChlorophyteSaber", Turtle)),
+			B(BandBiome.Crimson, 5, "Crimson cultists", M("LeafBlower", Chlorophyte), R("VenusMagnum", "IchorBullet", Turtle), E("Seedler", Turtle)),
+			B(BandBiome.Desert, 5, "Dune raiders", R("Megashark", "ChlorophyteBullet", Turtle), E("ChlorophyteClaymore", Turtle), M("LeafBlower", Chlorophyte)),
+			B(BandBiome.Snow, 5, "Tundra trappers", R("ChlorophyteShotbow", "FrostburnArrow", Frost), E("ChlorophyteSaber", Frost), M("WaspGun", Frost)),
+			B(BandBiome.Jungle, 5, "Jungle brigands", R("ChlorophyteShotbow", "HolyArrow", Chlorophyte), E("Seedler", Chlorophyte), M("LeafBlower", Chlorophyte)),
+			B(BandBiome.Hallow, 5, "Pearl-wood skirmishers", R("VenusMagnum", "ChlorophyteBullet", Hallowed), E("ChlorophytePartisan", Hallowed), M("LeafBlower", Hallowed)),
+			B(BandBiome.Underworld, 5, "Ashland scavengers", R("GrenadeLauncher", "RocketI", Molten), E("ChlorophyteClaymore", Molten), M("WaspGun", Molten)),
 		};
 
 		/// <summary>The roster for a biome at a stage: the highest stage at or below it that has one. Null only if the biome has no roster at all.</summary>

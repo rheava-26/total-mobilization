@@ -20,6 +20,10 @@
 
 ## ⏸ RESUME HERE (Eve near usage limit, ~18:30 UTC 11-15)
 
+### 2026-11-17 ~01:10
+- 6 new fights (3.0.0, Master+Death): Queen Bee, EoC and the Twins killed almost entirely by the army; 3 Golem WINS with the army (her DPS 163-584; fps 21-56, still pre-perf-fix). Eve will A/B an old version vs the new one herself and send the results.
+- Gear advice given (from Calamity source): she has NO damage emblem (Rogue Emblem, +15% rogue). The Bandit sells Glove of Precision (post-Plantera) and Ethereal Extorter (post-Golem, now available). The Plaguebringer miniboss drops Plagued Fuel Pack (+8% rogue, +10% stealth regen, dash). She runs 3 mobility accessories plus Celestial Shell.
+- Lore chat (Silva/Abyss). Offered a spoiler-gated Calamity lore digest (scratchpad only, never git).
 ### Eve's decisions and asks (2026-11-16 evening)
 - RESERVE BANK: build it as an OPTION (off by default), for when lag is too much. Not yet dispatched.
 - POST-FIGHT REPORT + full FIGHT ANALYZER + "the line is breaking" warning: YES. Builder 'fightreport' dispatched. Part 0 first rules out Levy breaking Calamity rogue stealth: Eve runs a stealth build almost entirely, and her DPS is flat.

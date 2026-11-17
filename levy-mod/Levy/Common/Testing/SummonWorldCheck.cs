@@ -34,6 +34,9 @@ namespace Levy.Common.Testing
 		{
 			if (!Main.dedServ || Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") != "1" || Environment.GetEnvironmentVariable("LEVY_SUMMONWORLD") == "0") return;
 			_mod = Mod; _armed = true; _done = false; _calls = 0; _pass = _fail = 0;
+			// the chain places test tile entities and stands a stand-in commander in slot 0: a world autosave that lands in the middle of it (the chain takes minutes on a loaded box, the timer is ten) would save that
+			// stand-in state and crashed the server in ModTileEntity.WriteExtraData. The ship world is never saved.
+			try { Main.autoSave = false; } catch (Exception) { }
 			Main.OnTickForThirdPartySoftwareOnly += Drive;
 		}
 		public override void OnWorldUnload() { try { Main.OnTickForThirdPartySoftwareOnly -= Drive; } catch { } _armed = false; }
@@ -58,6 +61,12 @@ namespace Levy.Common.Testing
 		public static void RunIfArmed()
 		{
 			if (!_armed || _done || !Main.dedServ) return;
+			SaveHoldCheck.RunIfArmed(); // saving mid-check, before the chain opens its hold (it runs once per boot: with Mechanization its world check already ran it)
+			using (SaveHold.Begin("SummonWorld")) RunChain(); // no world save runs while the checks own the world; the autosave is given back however the chain ends
+		}
+
+		private static void RunChain()
+		{
 			if (Environment.GetEnvironmentVariable("LEVY_RULES_ONLY") == "1") { _done = true; try { LevyRulesCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LevyRules] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the army-follows-the-player's-rules check alone
 			if (Environment.GetEnvironmentVariable("LEVY_WHIPONLY") == "1") { _done = true; try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the whip check alone
 			if (Environment.GetEnvironmentVariable("LEVY_TILESWEEPSHIPONLY") == "1") { _done = true; try { TileSweepCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[TileSweep] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the ship-mode tile sweep sample alone
@@ -65,6 +74,7 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_MOBONLY") == "1") { _done = true; try { MobilityWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[MobWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the wings and boots check alone
 			if (Environment.GetEnvironmentVariable("LEVY_BOSSBUGS_ONLY") == "1") { _done = true; try { BossBugsWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[BossBugs] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the boss-bugs check alone
 			if (Environment.GetEnvironmentVariable("LEVY_PERFAN_ONLY") == "1") { _done = true; try { global::Levy.Common.Perf.PerfWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfAnalyzer] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the performance analyzer check alone
+			if (Environment.GetEnvironmentVariable("LEVY_CHATTER_ONLY") == "1") { _done = true; try { ChatterWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ChatterWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the eclipse-end and shared-upgrade chat check alone
 			if (Environment.GetEnvironmentVariable("LEVY_LINEWATCH_ONLY") == "1") { _done = true; try { LineWatchWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LineWatch] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the line-breaking warning check alone
 			if (Environment.GetEnvironmentVariable("LEVY_STEALTH_ONLY") == "1") { _done = true; try { StealthWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[StealthWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the Calamity stealth check alone
 			if (Environment.GetEnvironmentVariable("LEVY_SWAPRACE_ONLY") == "1") { _done = true; try { SwapRaceCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SwapRace] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the save-race check alone
@@ -96,11 +106,14 @@ namespace Levy.Common.Testing
 			try { LevyRulesCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LevyRules] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { StealthWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[StealthWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { LineWatchWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LineWatch] check threw " + e.GetType().Name + ": " + e.Message); }
+			try { ChatterWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ChatterWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { TileSweepCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[TileSweep] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the boss-fight cost check runs last: it spawns the biggest army of any check and floods the field with hostile projectiles
 			try { PerfBossCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfBoss] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the performance analyzer check runs after it: it attaches the analyzer's detours to the process, and its fault test removes them again
 			try { global::Levy.Common.Perf.PerfWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfAnalyzer] check threw " + e.GetType().Name + ": " + e.Message); }
+			// the hook liveness check reads every detour's call counter once the whole chain has run
+			try { HookLiveCheck.Run(_mod); } catch (Exception e) { _mod.Logger.Warn("[HookLive] check threw " + e.GetType().Name + ": " + e.Message); }
 		}
 
 		private static void Check(string name, bool ok) { if (ok) _pass++; else _fail++; _mod.Logger.Info($"[SummonWorld] {(ok ? "PASS" : "FAIL")} {name}"); }

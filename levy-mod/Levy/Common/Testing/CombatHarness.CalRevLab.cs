@@ -429,6 +429,7 @@ namespace Levy.Common.Testing
 			id = 0;
 			try
 			{
+				int at = name.IndexOf('@'); if (at >= 0) name = name.Substring(0, at); // "Name@Prefix" (lab kit)
 				if (name.Contains('/')) { if (ModContent.TryFind(name, out ModItem mi)) { id = mi.Type; return true; } return false; }
 				id = CrItemId(name); return true;
 			}

@@ -32,16 +32,16 @@ namespace Levy.Common.Movement
 		}
 
 		private static void Player_Teleport(On_Player.orig_Teleport orig, Player self, Vector2 newPos, int style, int extraInfo)
-		{
+		{ _hl_Player_Teleport_3++;
 			orig(self, newPos, style, extraInfo);
 			AfterTravel(self);
-		}
+		} private static int _hl_Player_Teleport_3;
 
 		private static void Player_Spawn(On_Player.orig_Spawn orig, Player self, PlayerSpawnContext context)
-		{
+		{ _hl_Player_Spawn_2++;
 			orig(self, context);
 			AfterTravel(self);
-		}
+		} private static int _hl_Player_Spawn_2;
 
 		private static void AfterTravel(Player player)
 		{
@@ -51,13 +51,13 @@ namespace Levy.Common.Movement
 		}
 
 		private static bool Collision_SwitchTiles(On_Collision.orig_SwitchTiles_Entity_Vector2_int_int_Vector2_int orig, Entity entity, Vector2 position, int width, int height, Vector2 oldPosition, int objType)
-		{
+		{ _hl_Collision_SwitchTiles_1++;
 			if (objType == 2 && entity is NPC npc && npc.ModNPC is SoldierNPC)
 			{
 				var cfg = LevyConfig.Get;
 				if (cfg != null && !cfg.SoldiersTriggerPressurePlates) return false;
 			}
 			return orig(entity, position, width, height, oldPosition, objType);
-		}
+		} private static int _hl_Collision_SwitchTiles_1;
 	}
 }

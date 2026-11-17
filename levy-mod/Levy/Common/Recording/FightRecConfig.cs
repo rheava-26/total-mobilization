@@ -15,6 +15,8 @@ namespace Levy.Common.Recording
 		[Header("Recording")]
 		[DefaultValue(FightRecMode.BossFights)] [DrawTicks] public FightRecMode RecordFightsAutomatically;
 		/// <summary>Empty = the Levy/Recordings folder inside the tModLoader save folder.</summary>
+		/// <summary>One wide recording of every event (invasions, moons, the Eclipse, the Old One's Army, the Blood Moon, the Celestial Pillars, Calamity's Acid Rain): the whole army, every enemy, until the event ends.</summary>
+		[DefaultValue(true)] public bool RecordEvents = true;
 		[DefaultValue("")] public string RecordingFolder = "";
 
 		/// <summary>While a recording started by the setting above runs, the Levy profiler measures it and the numbers go into the recording. Nothing is printed during the fight; one line follows it.</summary>

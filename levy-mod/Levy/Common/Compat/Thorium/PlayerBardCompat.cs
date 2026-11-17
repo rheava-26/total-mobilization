@@ -41,14 +41,14 @@ namespace Levy.Common.Compat.Thorium
 		}
 
 		private static void Detour(Orig_ApplyEmpowerments orig, BardItem self, Player bard, Player target)
-		{
+		{ _hl_Detour_1++;
 			orig(self, bard, target); // Thorium's own empowerment of the players, untouched
 			if (!ThoriumCompatSystem.Active || Main.dedServ) return;
 			// This method also runs on every client for OTHER players' notes (target = the local player): only the local player's own note, once, reaches his soldiers.
 			if (bard != Main.LocalPlayer || target != bard) return;
 			try { Reach(self, bard); }
 			catch (Exception e) { Levy.Instance.Logger.Warn("Levy/Thorium compat: the player's empowerments failed to reach the soldiers: " + e.Message); }
-		}
+		} private static int _hl_Detour_1;
 
 		private static void Reach(BardItem bi, Player bard)
 		{

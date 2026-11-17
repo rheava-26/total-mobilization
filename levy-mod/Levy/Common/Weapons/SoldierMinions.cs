@@ -1051,10 +1051,10 @@ namespace Levy.Common.Weapons
 		}
 
 		private static int UuidDetour(On_Projectile.orig_GetByUUID_int_int orig, int owner, int uuid)
-		{
+		{ _hl_UuidDetour_2++;
 			int r = orig(owner, uuid);
 			return r >= 0 || owner != SoldierNPC.DummySlot ? r : SoldierMinions.UuidLookup(owner, uuid);
-		}
+		} private static int _hl_UuidDetour_2;
 
 		public override void Unload()
 		{
@@ -1084,13 +1084,14 @@ namespace Levy.Common.Weapons
 		}
 
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
-		{
+		{ _hl_UpdateDetour_1++;
 			HangWatch.Proj(self); // diagnostic breadcrumb (see HangWatch): which projectile's Update started last
 			if (self.minion ? SoldierMinions.IsDriven(self) : (self.owner == SoldierNPC.DummySlot && SoldierMinions.IsDrivenChild(self))) SoldierMinions.RunUpdate(orig, self, i);
 			else orig(self, i);
-		}
+		} private static int _hl_UpdateDetour_1;
 
-		private static int StrikeDetour(On_NPC.orig_StrikeNPC_HitInfo_bool_bool orig, NPC self, NPC.HitInfo hit, bool fromNet, bool noPlayerInteraction) =>
-			SoldierMinions.RunStrike(orig, self, hit, fromNet, noPlayerInteraction);
+		private static int _hl_StrikeDetour_1;
+		private static int StrikeDetour(On_NPC.orig_StrikeNPC_HitInfo_bool_bool orig, NPC self, NPC.HitInfo hit, bool fromNet, bool noPlayerInteraction)
+		{ _hl_StrikeDetour_1++; return SoldierMinions.RunStrike(orig, self, hit, fromNet, noPlayerInteraction); }
 	}
 }

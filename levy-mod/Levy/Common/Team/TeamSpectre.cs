@@ -39,11 +39,11 @@ namespace Levy.Common.Team
 		}
 
 		private static void Hook(On_Projectile.orig_ghostHeal orig, Projectile self, int dmg, Vector2 position, Entity victim)
-		{
+		{ _hl_Hook_1++;
 			try { if (TryLevy(self, dmg, position)) return; }
 			catch (Exception e) { TeamItems.WarnOnce("spectre heal hook", e); }
 			orig(self, dmg, position, victim);
-		}
+		} private static int _hl_Hook_1;
 
 		/// <summary>The most wounded levy of the projectile's owner within reach, and how much life he is missing. Null when none.</summary>
 		public static SoldierNPC MostWoundedLevy(Player owner, Vector2 from, float range, out int missing)

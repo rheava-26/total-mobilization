@@ -1,0 +1,69 @@
+name: battery_dps2
+mods: calamity
+arena: a3
+seeds: 1
+tipsy:
+  warm: 600
+  win: 1200
+  dist: [20]
+  motion: [static]
+  size: [boss]
+  arms: {d50: {}}
+  every: {def: 50}
+  weapons:
+    - {name: "Psycho Knife", cls: E, kind: "Psycho Knife", every: {pin: 0}}
+    - {name: "Chlorophyte Saber", cls: E, kind: "Chlorophyte Saber", every: {pin: 0}}
+    - {name: "CalamityMod/TheMicrowave", cls: E, kind: "The Microwave", every: {pin: 0}}
+    - {name: "Kraken", cls: E, kind: "Kraken", every: {pin: 0}}
+    - {name: "Vampire Knives", cls: E, kind: "Vampire Knives", every: {pin: 0}}
+    - {name: "CalamityMod/GrandGuardian", cls: E, kind: "Grand Guardian", every: {pin: 0}}
+    - {name: "CalamityMod/TenebreusTides", cls: E, kind: "Tenebreus Tides", every: {pin: 0}}
+    - {name: "CalamityMod/StarSputter", cls: R, kind: "Star Sputter"}
+    - {name: "Vortex Beater", cls: R, kind: "Vortex Beater", ammo: "CalamityMod/BubonicRound"}
+    - {name: "Chain Gun", cls: R, kind: "Chain Gun", ammo: "CalamityMod/BubonicRound"}
+    - {name: "CalamityMod/AstralBlaster", cls: R, kind: "Astral Blaster", ammo: "CalamityMod/BubonicRound"}
+    - {name: "Xenopopper", cls: R, kind: "Xenopopper", ammo: "CalamityMod/BubonicRound"}
+    - {name: "CalamityMod/AuroraBlazer", cls: R, kind: "Aurora Blazer", ammo: "Gel"}
+    - {name: "Candy Corn Rifle", cls: R, kind: "Candy Corn Rifle", ammo: "Candy Corn"}
+    - {name: "Tactical Shotgun", cls: R, kind: "Tactical Shotgun", ammo: "CalamityMod/BubonicRound"}
+    - {name: "CalamityMod/Malevolence", cls: R, kind: "Malevolence", ammo: "CalamityMod/CinderArrow"}
+    - {name: "CalamityMod/RealmRavager", cls: R, kind: "Realm Ravager", ammo: "CalamityMod/BubonicRound"}
+    - {name: "Stake Launcher", cls: R, kind: "Stake Launcher", ammo: "Stake"}
+    - {name: "Sniper Rifle", cls: R, kind: "Sniper Rifle", ammo: "CalamityMod/BubonicRound"}
+    - {name: "CalamityMod/NullificationPistol", cls: R, kind: "Nullification Pistol"}
+    - {name: "CalamityMod/ArcNovaDiffuser", cls: R, kind: "Arc Nova Diffuser"}
+    - {name: "CalamityMod/AstralStaff", cls: M, kind: "Astral Staff"}
+    - {name: "Nebula Arcanum", cls: M, kind: "Nebula Arcanum"}
+    - {name: "Nebula Blaze", cls: M, kind: "Nebula Blaze"}
+    - {name: "CalamityMod/InfernalRift", cls: M, kind: "Infernal Rift"}
+    - {name: "Charged Blaster Cannon", cls: M, kind: "Charged Blaster Cannon"}
+    - {name: "Laser Machinegun", cls: M, kind: "Laser Machinegun"}
+    - {name: "Heat Ray", cls: M, kind: "Heat Ray"}
+    - {name: "CalamityMod/ApoctosisArray", cls: M, kind: "Apoctosis Array"}
+    - {name: "CalamityMod/Apathanull", cls: M, kind: "Apathanull"}
+    - {name: "Razorpine", cls: M, kind: "Razorpine"}
+    - {name: "CalamityMod/StarShower", cls: M, kind: "Star Shower"}
+    - {name: "CalamityMod/Wingman", cls: M, kind: "Wingman"}
+    - {name: "CalamityMod/StarspawnHelixStaff", cls: S, kind: "Starspawn Helix Staff"}
+    - {name: "Stardust Cell Staff", cls: S, kind: "Stardust Cell Staff"}
+    - {name: "Stardust Dragon Staff", cls: S, kind: "Stardust Dragon Staff"}
+    - {name: "Morning Star", cls: S, kind: "Morning Star"}
+    - {name: "Dark Harvest", cls: S, kind: "Dark Harvest"}
+    - {name: "Deadly Sphere Staff", cls: S, kind: "Deadly Sphere Staff"}
+    - {name: "Xeno Staff", cls: S, kind: "Xeno Staff"}
+    - {name: "Raven Staff", cls: S, kind: "Raven Staff"}
+    - {name: "CalamityMod/CraniumSmasher", cls: T, kind: "Cranium Smasher"}
+    - {name: "CalamityMod/CorpusAvertor", cls: T, kind: "Corpus Avertor"}
+    - {name: "CalamityMod/ShardofAntumbra", cls: T, kind: "Shard of Antumbra"}
+    - {name: "CalamityMod/StellarKnife", cls: T, kind: "Stellar Knife"}
+    - {name: "CalamityMod/DoomsdayDevice", cls: T, kind: "Doomsday Device"}
+    - {name: "CalamityMod/RegulusRiot", cls: T, kind: "Regulus Riot"}
+    - {name: "CalamityMod/TheSyringe", cls: T, kind: "The Syringe"}
+    - {name: "Chain Gun", cls: R, kind: "ammo Chain Gun", ammo: "CalamityMod/BubonicRound"}
+    - {name: "Chain Gun", cls: R, kind: "ammo Chain Gun", ammo: "CalamityMod/HyperiusBullet"}
+    - {name: "Chain Gun", cls: R, kind: "ammo Chain Gun", ammo: "Venom Bullet"}
+    - {name: "Chain Gun", cls: R, kind: "ammo Chain Gun", ammo: "Chlorophyte Bullet"}
+    - {name: "CalamityMod/Malevolence", cls: R, kind: "ammo Malevolence", ammo: "CalamityMod/CinderArrow"}
+    - {name: "CalamityMod/Malevolence", cls: R, kind: "ammo Malevolence", ammo: "CalamityMod/VeriumBolt"}
+    - {name: "CalamityMod/Malevolence", cls: R, kind: "ammo Malevolence", ammo: "CalamityMod/SproutingArrow"}
+    - {name: "CalamityMod/Malevolence", cls: R, kind: "ammo Malevolence", ammo: "Holy Arrow"}

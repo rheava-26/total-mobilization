@@ -159,6 +159,9 @@ namespace Levy.Common.Testing
 					if (!ContentSamples.ItemsByType.TryGetValue(i, out Item s) || s == null || s.IsAir || s.ModItem?.Mod != cal || !s.channel || s.shoot <= 0 || s.damage <= 0) continue;
 					weapons.Add((i, "CalamityMod:" + s.ModItem.Name)); n++;
 				}
+				// the two weapons the designer still saw "fire from the commander" in 3.0.8: the plant flamethrower (Flamethrower + Meowthrower + Living Shards) and the Mythril / Dubious Plating / Mysterious Circuitry magic gun (the old Gauss Pistol)
+				foreach (string nm in new[] { "WildfireBloom", "Vulcan" })
+					if (cal.TryFind(nm, out ModItem mi) && !weapons.Any(w => w.type == mi.Type)) weapons.Add((mi.Type, "CalamityMod:" + nm));
 			}
 			if (!string.IsNullOrEmpty(only)) { string[] names = only.Split(';', StringSplitOptions.RemoveEmptyEntries); weapons = weapons.Where(w => names.Any(n => w.label.EndsWith(":" + n))).ToList(); }
 			if (weapons.Count == 0) return;

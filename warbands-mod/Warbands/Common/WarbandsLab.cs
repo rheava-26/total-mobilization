@@ -55,7 +55,7 @@ namespace Warbands.Common
 
 		private delegate void OrigUpdateConnectedClients();
 		private delegate void HookUpdateConnectedClients(OrigUpdateConnectedClients orig);
-		private static void KeepStandIn(OrigUpdateConnectedClients orig) { if (On && _armedStatic) return; orig(); }
+		private static void KeepStandIn(OrigUpdateConnectedClients orig) { _hl_KeepStandIn_1++; if (On && _armedStatic) return; orig(); } private static int _hl_KeepStandIn_1;
 		private static bool _armedStatic;
 
 		private static void DriveServer()

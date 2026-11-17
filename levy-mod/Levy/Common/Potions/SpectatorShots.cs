@@ -33,9 +33,9 @@ namespace Levy.Common.Potions
 		}
 
 		private static bool? Detour(OrigCanHit orig, Player owner, Projectile proj, NPC target)
-		{
+		{ _hl_Detour_1++;
 			if (proj != null && proj.hostile && !proj.friendly && SpectatorPlayer.IsSpectator(owner)) return null;
 			return orig(owner, proj, target);
-		}
+		} private static int _hl_Detour_1;
 	}
 }

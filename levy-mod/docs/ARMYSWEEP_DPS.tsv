@@ -1,0 +1,54 @@
+weapon	status_before	ratio_before	status_after	ratio_after	player_dmg_600t	levy_dmg_idle_600t	levy_dmg_cmd_holding_600t	levy_dps_idle	note
+Terraria:Terra Blade	OK	0.92	OK	0.89	3221	2857	2901 |	286	
+CalamityMod:AstralScythe	OK	0.60	WEAK	0.58	7878	4579	4674	458	ratio 0.58
+CalamityMod:TrueArkoftheAncients	OK	1.17	OK	1.16	6208	7253	7187 |	725	
+CalamityMod:Apathanull	OK	0.81	OK	0.80	13294	11051	10675 |	1105	
+CalamityMod:StarShower	BROKEN	0.00	BROKEN	0.00	17210	0	0	0	no damage idle; no damage with the commander holding | COVERED BY deusmind (a sky-falling weapon: the levy's shot never appears)
+Terraria:Morning Star	OK	3.59	OK	3.50	2795	9788	11068 |	979	
+Terraria:Influx Waver	OK	0.89	OK	0.90	6025	5452	5503 |	545	
+CalamityMod:Wingman	WEAK	0.46	WEAK	0.45	8200	3686	3690	369	ratio 0.45 | COVERED BY megagun (a two-gun holdout: the second holdout is left outside the held chain)
+CalamityMod:VernalBolter	OK	0.86	OK	0.80	4731	3795	3874 |	380	
+Terraria:Dark Harvest	OK	4.18	OK	4.16	2108	8780	8772 |	878	
+CalamityMod:HellfireFlamberge	OK	0.90	OK	0.91	5119	4672	4672 |	467	
+CalamityMod:Virulence	OK	0.88	OK	0.92	3809	3496	3490 |	350	
+CalamityMod:StarspawnHelixStaff	OK	1074.00	OK	1067.00	0	1067	1085	107	reference player did no damage
+Terraria:The Eye of Cthulhu	OK	53.14	OK	51.15	84	4326	4297 |	433	
+Terraria:Christmas Tree Sword	OK	1.28	OK	1.21	5117	6166	6298 |	617	
+CalamityMod:GalvanizingGlaive	WEAK	0.18	WEAK	0.17	19624	3387	3365	339	ratio 0.17
+CalamityMod:HavocsBreath	OK	0.91	OK	0.89	6392	5690	5676 |	569	
+CalamityMod:VulcaniteLance	WEAK	0.20	WEAK	0.22	10369	2238	2241	224	ratio 0.22
+CalamityMod:Malevolence	OK	0.88	OK	0.85	10102	8572	8907 |	857	
+CalamityMod:BotanicPiercer	WEAK	0.30	WEAK	0.29	8827	2574	2583	257	ratio 0.29
+CalamityMod:Greentide	OK	0.87	OK	0.89	5265	4709	4665 |	471	
+Terraria:Death Sickle	OK	1.91	OK	1.96	1637	3213	3306 |	321	
+CalamityMod:HellionFlowerSpear	WEAK	0.44	WEAK	0.43	6472	2775	2779	278	ratio 0.43
+CalamityMod:TheMicrowave	OK	2.40	OK	2.33	2570	5981	6039 |	598	
+CalamityMod:NullificationPistol	OK	0.63	OK	0.69	8256	5672	5667 |	567	
+Terraria:Sniper Rifle	OK	0.61	OK	0.73	4222	3084	3070 |	308	
+CalamityMod:PulseTurretRemote	NOREF	0.00	NOREF	0.00	0	0	0	0	reference player did no damage | NOT MEASURABLE: its turret loads its own texture on the firing tick, which a server with no graphics device cannot do (both the levy's and the stand-in's turret stand and never fire)
+CalamityMod:RubicoPrime	OK	0.60	OK	0.66	4837	3212	3190 |	321	
+CalamityMod:DreadmineStaff	WEAK	0.36	WEAK	0.29	3948	1157	1445	116	ratio 0.29
+Terraria:Desert Tiger Staff	OK	1845.00	OK	1856.00	0	1866	1856	187	reference player did no damage
+CalamityMod:DoomsdayDevice	BROKEN	0.00	BROKEN	0.00	141	0	0	0	no damage idle; no damage with the commander holding | COVERED BY megagun (a channel charge-and-release grenade that reads its owner's held item)
+Terraria:Frostbrand	OK	1.23	OK	1.31	1766	2310	2325 |	231	
+CalamityMod:DefectiveSphere	WEAK	0.22	OK	0.78	5103	4364	3988 |	436	
+CalamityMod:RegulusRiot	OK	0.86	OK	0.89	7557	6801	6753 |	680	
+CalamityMod:HeavenfallenStardisk	OK	1.63	OK	1.62	3078	4997	5044 |	500	
+Terraria:Deadly Sphere Staff	WEAK	0.47	WEAK	0.50	1586	790	790	79	ratio 0.50
+CalamityMod:Brimlash	OK	0.85	OK	0.77	3880	3003	3184 |	300	
+Terraria:Staff of Earth	OK	0.81	OK	0.66	5397	3601	3566 |	360	
+CalamityMod:FuelCellBundle	OK	707.00	OK	690.00	0	690	703	69	reference player did no damage
+Terraria:Xenopopper	OK	3715.00	OK	3690.00	0	3842	3690	384	reference player did no damage
+CalamityMod:RadiantStar	OK	1.82	OK	1.36	6151	8370	9450 |	837	
+CalamityMod:StarofDestruction	OK	1.00	OK	0.87	5812	5100	5060 |	510	
+CalamityMod:ShardofAntumbra	OK	0.94	OK	0.91	7793	7134	7087 |	713	
+CalamityMod:CraniumSmasher	OK	0.61	OK	0.70	6847	4972	4820 |	497	
+CalamityMod:Plaguenade	OK	0.93	OK	0.91	9971	9111	9684 |	911	
+CalamityMod:TheSyringe	OK	0.85	OK	0.94	8988	9820	8429 |	982	
+CalamityMod:SystemBane	WEAK	0.37	WEAK	0.37	34019	12524	12663	1252	ratio 0.37
+CalamityMod:InfectedRemote	NOREF	0.00	NOREF	0.00	0	0	0	0	reference player did no damage
+CalamityMod:WulfrumController	OK	189.00	OK	189.00	0	192	189	19	reference player did no damage
+CalamityMod:SamsaraSlicer	OK	0.89	OK	0.89	4792	4317	4241 |	432	
+CalamityMod:SubductionSlicer	WEAK	0.29	OK	0.84	5838	4882	4892 |	488	
+CalamityMod:StellarKnife	OK	0.71	OK	0.71	4986	3518	3621 |	352	
+CalamityMod:PhantasmalRuin	OK	0.92	OK	0.93	5000	4692	4646 |	469	

@@ -23,17 +23,20 @@ namespace Levy.Common.Recording
 			FightRecAuto.Pump();
 			if (!FightRecorder.On) FightRecAuto.Update(); // setting off and LEVY_REC_DIR unset: a config read and an enum test
 			if (FightRecorder.On) { FightRecorder.Tick(); if (FightRecorder.On) FightRecAuto.Watch(); }
+			EventRecorder.Step(); // the event recording runs beside the boss recorder (format 12)
 		}
 
 		public override void OnWorldUnload()
 		{
 			if (FightRecorder.On) FightRecorder.Stop("world unloaded"); // finishes the file before the world goes (the writer is joined)
+			if (EventRecorder.On) EventRecorder.Stop("world unloaded");
 			FightRecAuto.ResetMessages();
 		}
 
 		public override void Unload()
 		{
 			if (FightRecorder.On) FightRecorder.Stop("unloaded");
+			if (EventRecorder.On) EventRecorder.Stop("unloaded");
 		}
 	}
 
@@ -45,11 +48,13 @@ namespace Levy.Common.Recording
 		public override void ModifyHitByProjectile(NPC npc, Projectile projectile, ref NPC.HitModifiers modifiers)
 		{
 			if (FightRecorder.On && projectile.hostile) FightRecorder.NoteLevyProjectile(npc, projectile);
+			if (EventRecorder.On && projectile.hostile) EventRecorder.NoteLevyProjectile(npc, projectile);
 		}
 
 		public override bool CheckDead(NPC npc)
 		{
 			if (FightRecorder.On) FightRecorder.NoteLevyDeath(npc);
+			if (EventRecorder.On) EventRecorder.NoteLevyDeath(npc);
 			return true;
 		}
 	}
@@ -66,6 +71,7 @@ namespace Levy.Common.Recording
 
 		public override void OnHitByItem(NPC npc, Player player, Item item, NPC.HitInfo hit, int damageDone)
 		{
+			if (EventRecorder.On) EventRecorder.NoteDamage(npc, player, null, item, damageDone, hit.Crit);
 			if (!FightRecorder.On) return;
 			FightRecorder.NoteBossSource(npc, "item", item.type, item.Name);
 			FightRecorder.NoteDamage(npc, player, null, item, damageDone, hit.Crit);
@@ -73,6 +79,7 @@ namespace Levy.Common.Recording
 
 		public override void OnHitByProjectile(NPC npc, Projectile projectile, NPC.HitInfo hit, int damageDone)
 		{
+			if (EventRecorder.On) EventRecorder.NoteDamage(npc, null, projectile, null, damageDone, hit.Crit);
 			if (!FightRecorder.On) return;
 			FightRecorder.NoteBossSource(npc, "proj", projectile.type, Terraria.Lang.GetProjectileName(projectile.type).Value);
 			FightRecorder.NoteDamage(npc, null, projectile, null, damageDone, hit.Crit);
@@ -81,6 +88,7 @@ namespace Levy.Common.Recording
 		public override void OnKill(NPC npc)
 		{
 			if (FightRecorder.On) FightRecorder.NoteBossKill(npc);
+			if (EventRecorder.On) EventRecorder.NoteKill(npc);
 		}
 	}
 
@@ -108,7 +116,7 @@ namespace Levy.Common.Recording
 		public override bool AppliesToEntity(Projectile entity, bool lateInstantiation) => lateInstantiation && entity.friendly && !entity.hostile;
 		public override void OnSpawn(Projectile projectile, Terraria.DataStructures.IEntitySource source)
 		{
-			if (!FightRecorder.On) return;
+			if (!FightRecorder.On && !EventRecorder.On) return;
 			if (source is Terraria.DataStructures.EntitySource_ItemUse use && use.Item != null && !use.Item.IsAir) SrcItem = use.Item.type;
 			else if (source is Terraria.DataStructures.EntitySource_Parent par && par.Entity is Projectile parent && parent.TryGetGlobalProjectile(out FightRecProjTag pt)) SrcItem = pt.SrcItem;
 		}

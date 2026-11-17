@@ -10,10 +10,12 @@ using Levy.Content.NPCs;
 namespace Levy.Common.Dialogue
 {
 	/// <summary>
-	/// What the army says about the things the commander does in front of it: using a life crystal or fruit (LIFE_CRYSTAL), opening a chest (CHEST_OPENED).
+	/// What the army says about the things the commander does in front of it: using a life crystal or fruit (LIFE_CRYSTAL), opening a chest (CHEST_OPENED), and the end of a Solar Eclipse it lived through beside him (ECLIPSE_END).
 	/// Server and single player only. The commander's own state is read where the game logic runs (the server sees a player's max life and open chest through the normal player sync),
 	/// so nothing is sent from the client and no item hook can miss a crystal used by another mod's item. A levy of that commander within reach speaks a floating line; a few at a time,
 	/// one after another, under a cooldown per trigger so looting a whole house is not a running commentary.
+	/// The eclipse line fires on the tick <c>Main.eclipse</c> goes from true to false (vanilla ends an eclipse at nightfall; a mod or a command can end it by day), once per ending: the first tick of a world only records
+	/// what is going on, so loading into a world is never an ending.
 	/// </summary>
 	public class CommanderReactions : ModSystem
 	{
@@ -25,18 +27,22 @@ namespace Levy.Common.Dialogue
 		private static readonly List<SoldierNPC> Scratch = new();
 		private const int Never = int.MinValue / 2, StepTicks = 28, SettleTicks = 180;
 		private static int _crystalAt = Never, _chestAt = Never;
+		private static bool _eclipsePrimed, _eclipseWas;
 
 		/// <summary>Self-check and harness telemetry: reactions started since boot.</summary>
 		internal static int CrystalReactions, ChestReactions;
+		/// <summary>Self-check telemetry: eclipse endings seen, endings that had an army to react, and eclipse-end lines actually spoken.</summary>
+		internal static int EclipseEndings, EclipseEndReactions, EclipseEndLines;
 
 		public override void OnWorldLoad() { Reset(); }
 		public override void OnWorldUnload() { Reset(); }
 
-		private static void Reset()
+		internal static void Reset()
 		{
 			Array.Clear(Last);
 			Queue.Clear();
 			_crystalAt = _chestAt = Never;
+			_eclipsePrimed = _eclipseWas = false;
 		}
 
 		public override void PostUpdateEverything()
@@ -48,6 +54,9 @@ namespace Levy.Common.Dialogue
 
 		private static void Tick(int now)
 		{
+			bool eclipse = Main.eclipse;
+			if (_eclipsePrimed && _eclipseWas && !eclipse) EclipseEnded(now);
+			_eclipseWas = eclipse; _eclipsePrimed = true;
 			for (int i = 0; i < Main.maxPlayers; i++)
 			{
 				Player p = Main.player[i];
@@ -68,8 +77,22 @@ namespace Levy.Common.Dialogue
 				if ((uint)c.Npc >= Main.maxNPCs) continue;
 				NPC n = Main.npc[c.Npc];
 				if (!n.active || n.ModNPC is not SoldierNPC s2 || s2.Record == null || s2.Record.Id != c.RecordId || !s2.IsAlive) continue;
-				DialogueSystem.React(s2, c.Trigger, new DialogueContext { Player = c.Commander });
+				if (DialogueSystem.React(s2, c.Trigger, new DialogueContext { Player = c.Commander }) && c.Trigger == DialogueTrigger.ECLIPSE_END) EclipseEndLines++;
 			}
+		}
+
+		/// <summary>The eclipse just ended: a few levies near each commander say so. One ending, one round of lines per army.</summary>
+		private static void EclipseEnded(int now)
+		{
+			EclipseEndings++;
+			bool any = false;
+			for (int i = 0; i < Main.maxPlayers; i++)
+			{
+				Player p = Main.player[i];
+				if (!p.active || p.dead) continue;
+				if (Enqueue(p, DialogueTrigger.ECLIPSE_END, LevyConstants.EclipseEndSpeakers, now)) any = true;
+			}
+			if (any) EclipseEndReactions++;
 		}
 
 		private static void Crystal(Player p, int now)

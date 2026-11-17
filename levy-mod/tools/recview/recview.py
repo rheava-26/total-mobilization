@@ -7,12 +7,20 @@
   recview.py FILE --json                the summary as JSON (for scripts)
   recview.py FILE --raw hdr|end|names   print one raw record
 
+  recview.py FILE --episodes            the fights inside one recording (event NPCs such as the Celestial Pillars never count as a boss), each read by the result rule
+  recview.py FILE --scan [--top 15]     suspicious moments: idle levies with enemies in range, stuck levies, one-hit deaths, shots appearing at the commander,
+                                        levies far from the fight, damage outliers for one weapon (with a folder and --all: every recording)
+  recview.py FILE --split OUTDIR        write each of those fights as its own .levyrec in OUTDIR (the original is never touched)
+
 Reads .levyrec (gzip of JSON lines), .jsonl.gz and plain .jsonl. A file cut short by a crash (gzip not closed, no end record) is read as far
 as it goes and says so. Positions are world pixels, times are seconds from the start of the recording (ticks / 60).
 Format reference: the comment at the top of FightRecFormat.cs in the Levy mod.
 """
 import argparse, glob, gzip, json, os, re, sys, zlib
 from collections import Counter, defaultdict
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import recrules
 
 TICKS = 60.0
 # levy gear (lgear) slot names; 13 and 14 are the two mobility slots (a recording from before them has neither)
@@ -92,6 +100,15 @@ def analyse(rec):
     out = {"file": os.path.basename(rec.path), "truncated": rec.note, "frames": len(rec.frames)}
     out["header"] = {k: h.get(k) for k in ("format", "date", "world", "player", "boss", "mode", "levy", "auto", "meta", "headless", "gzip")}
     out["mods"] = h.get("mods", [])
+    c = recrules.classify(rec.rows)
+    out["rule"] = {"result": c["result"], "outcome": c["outcome"], "deadAtEnd": c["deadAtEnd"], "lastDeathTick": c["lastDeath"], "eventNpcs": recrules.has_event_npcs(rec.rows) and not h.get("split")}
+    cp = [len(f.get("c", [])) for f in rec.frames]
+    out["commanderProjectiles"] = {"format11": any(cp), "framesWith": sum(1 for n in cp if n), "mostRows": max(cp) if cp else 0}
+    if recrules.is_event_recording(h):
+        out["event"] = recrules.classify_event(rec.rows)
+        imp = recrules.importance_table(rec.rows)
+        out["event"]["minibosses"] = sorted({rec.npc(t) for t, v in imp.items() if v == 1})
+        out["event"]["bosses"] = sorted({rec.npc(t) for t, v in imp.items() if v == 2})
     out["army"] = h.get("army", {})
     out["commander"] = h.get("cmd", {})
     out["end"] = {k: e.get(k) for k in ("result", "outcome", "reason", "durationSec", "ticks", "frames", "events", "cmdDeaths", "levyDeaths", "levyHits",
@@ -121,7 +138,9 @@ def analyse(rec):
     src = defaultdict(lambda: [0, 0])      # (owner, kind, type, boss) -> dmg, hits
     for x in ev.get("dmg", []):
         for row in x.get("d", []):
-            owner, cls, kind, typ, boss, d, hits = row
+            if len(row) < 7:
+                continue
+            owner, cls, kind, typ, boss, d, hits = row[:7]   # format 10 appends srcItem, ss, crits (and later formats may append more): only the first 7 are needed here
             dmg[(owner, cls, "boss" if boss else "add")][0] += d
             dmg[(owner, cls, "boss" if boss else "add")][1] += hits
             src[(owner, kind, typ, boss)][0] += d
@@ -338,8 +357,25 @@ def print_summary(rec, a, step):
     if not fight or fight == "none":
         fight = (h.get("meta", {}).get("label") or "fight").replace("_", " ") + " (no boss)"
     P("Fight      %s   (%s)   difficulty %s" % (fight, "automatic, " + str(h.get("meta", {}).get("setting", "")) + ", started by " + str(h.get("meta", {}).get("trigger", "?")) if h.get("auto") else "started by hand or a harness", h.get("mode", "?")))
+    ev12 = a.get("event")
+    if ev12:
+        P("Event      %s (%s)   result %s (%s)   duration %s   waves to %s   kills %s (minibosses %s)   levy deaths %s" % (ev12["name"], ", ".join(recrules.event_name(x) for x in ev12["seen"]), ev12["result"],
+          ev12["reason"] or "cut short", fmt_t(e.get("ticks", 0)), ev12["waveMax"] or "-", ev12["kills"], ev12["minibossKills"], ev12["levyDeaths"]))
+        if ev12["minibosses"] or ev12["bosses"]:
+            P("            highlighted: %s" % ", ".join(ev12["bosses"] + ev12["minibosses"]))
+        cpu = e.get("cpu") or {}
+        if cpu:
+            P("            recorder cost: %s us per tick on average, worst tick %s ms" % (cpu.get("meanUs"), cpu.get("maxMs")))
     res = e.get("result")
     P("Outcome    %s   (boss %s, %s)   duration %s   recorder format %s" % (res or "unknown", e.get("outcome", "?"), e.get("reason", "?"), fmt_t(e.get("ticks", 0)) if e else "?", h.get("format", "?")))
+    rl = a.get("rule", {})
+    if rl and e and not ev12 and res in ("won", "lost", "fled", "ended") and rl["result"] != res and not rl.get("eventNpcs"):
+        P("            read by the result rule: %s (the file says %s)" % (rl["result"], res))
+    if rl.get("eventNpcs"):
+        P("            this recording holds event NPCs (Celestial Pillars and the like): run with --episodes to see the fights apart")
+    cpj = a.get("commanderProjectiles", {})
+    if cpj.get("format11"):
+        P("Commander  own projectiles recorded in %d samples, at most %d at once (format 11 key c)" % (cpj["framesWith"], cpj["mostRows"]))
     P("Levy %s   %d mods: %s" % (h.get("levy", "?"), len(a["mods"]), ", ".join("%s %s" % (m[0], m[1]) for m in a["mods"])))
     army = a["army"]
     if army:
@@ -443,6 +479,196 @@ def print_summary(rec, a, step):
     P("")
 
 
+
+# ------------------------------------------------------------------ anomaly scan (--scan)
+SCAN_ENEMY_TILES = 30        # an enemy this close counts as "in range"
+SCAN_IDLE_SECS = 10          # a levy not engaging with an enemy in range this long
+SCAN_STUCK_SECS = 15         # a levy that moved less than a tile this long while the commander moved 20+ tiles
+SCAN_FAR_TILES = 150         # a regular levy this far from the commander and every enemy ...
+SCAN_FAR_SECS = 20           # ... this long (60 s in an event recording) while the fight goes on
+SCAN_ONEHIT = 0.9            # a death from one hit of at least 90 % of the levy's full life
+SCAN_SPIKE = 10              # a weapon's damage per hit at least 10 times its own median (or the army's median weapon)
+NOT_IDLE = {"Engage", "Shaken", "Routed", "Resupply", "Dead", "Haul", "Desert", "Mutiny", "ReturnHome"}
+
+
+def _expand_s(frames):
+    defs = {}
+    out = []
+    for f in frames:
+        rows = []
+        for r in f.get("s", []) or []:
+            if len(r) >= 8:
+                defs[r[1]] = r
+                rows.append((r[2], r[3]))
+            elif len(r) == 3 and r[0] in defs:
+                rows.append((r[1], r[2]))
+        out.append(rows)
+    return out
+
+
+def scan(rec, hz=2.0):
+    """Suspicious moments in one recording: [dict(t, kind, what, score)], biggest score first. Frames are thinned to hz samples a second."""
+    import bisect
+    h = rec.hdr
+    states = (h.get("stateNames") or "").split(",")
+    event = recrules.is_event_recording(h)
+    frames = rec.frames
+    if not frames:
+        return []
+    segs = _expand_s(frames)
+    dt = (frames[1]["t"] - frames[0]["t"]) if len(frames) > 1 else 2
+    step = max(1, int(round(TICKS / hz / max(1, dt))))
+    idx = list(range(0, len(frames), step))
+    T = 16.0
+    cell = SCAN_ENEMY_TILES * T
+    R2 = cell ** 2
+    out = []
+    idle, far = {}, {}
+    hist = defaultdict(list)          # levy id -> [(t, x, y)]
+    lifemax = {}
+    names = rec.soldier
+    for n in idx:
+        f = frames[n]
+        t = f["t"]
+        p = f.get("p", [0, 0])
+        en = [(b[2], b[3]) for b in f.get("b", []) or []] + [(a[2], a[3]) for a in f.get("a", []) or []] + segs[n]
+        boss_alive = any(len(b) > 13 and b[13] == 0 for b in f.get("b", []) or [])
+        grid = defaultdict(list)
+        for x, y in en:
+            grid[(int(x // cell), int(y // cell))].append((x, y))
+        for l in f.get("l", []) or []:
+            lid, x, y = l[0], l[1], l[2]
+            lifemax[lid] = max(lifemax.get(lid, 0), l[10] if len(l) > 10 else l[6])
+            hist[lid].append((t, x, y))
+            cx, cy = int(x // cell), int(y // cell)
+            near = False
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    for (ex, ey) in grid.get((cx + dx, cy + dy), ()):
+                        if (ex - x) ** 2 + (ey - y) ** 2 <= R2:
+                            near = True
+                            break
+            st = states[l[7]] if 0 <= l[7] < len(states) else str(l[7])
+            # 1. idle with an enemy in range
+            if near and st not in NOT_IDLE and l[6] > 0:
+                idle.setdefault(lid, [t, st])
+            elif lid in idle:
+                t0, st0 = idle.pop(lid)
+                if t - t0 >= SCAN_IDLE_SECS * TICKS:
+                    out.append({"t": t0, "kind": "idle", "levy": lid, "what": "%s stood %s for %s with an enemy within %d tiles" % (names(lid), st0, fmt_t(t - t0), SCAN_ENEMY_TILES), "score": (t - t0) / TICKS})
+            # 5. a regular far from the fight
+            if lid > 0 and (boss_alive or event) and en:
+                dc = ((p[0] - x) ** 2 + (p[1] - y) ** 2) ** .5 / T
+                de = min(((ex - x) ** 2 + (ey - y) ** 2) ** .5 for ex, ey in en) / T
+                if dc > SCAN_FAR_TILES and de > SCAN_FAR_TILES:
+                    far.setdefault(lid, [t, dc])
+                elif lid in far:
+                    t0, d0 = far.pop(lid)
+                    if t - t0 >= (60 if event else SCAN_FAR_SECS) * TICKS:
+                        out.append({"t": t0, "kind": "far", "levy": lid, "what": "%s was %.0f tiles from the commander and every enemy for %s" % (names(lid), d0, fmt_t(t - t0)), "score": (t - t0) / TICKS / 2})
+    tend = frames[-1]["t"]
+    for lid, (t0, st0) in idle.items():
+        if tend - t0 >= SCAN_IDLE_SECS * TICKS:
+            out.append({"t": t0, "kind": "idle", "levy": lid, "what": "%s stood %s for %s with an enemy within %d tiles (to the end)" % (names(lid), st0, fmt_t(tend - t0), SCAN_ENEMY_TILES), "score": (tend - t0) / TICKS})
+    for lid, (t0, d0) in far.items():
+        if tend - t0 >= (60 if event else SCAN_FAR_SECS) * TICKS:
+            out.append({"t": t0, "kind": "far", "levy": lid, "what": "%s was %.0f tiles from the commander and every enemy for %s (to the end)" % (names(lid), d0, fmt_t(tend - t0)), "score": (tend - t0) / TICKS / 2})
+    # 2. stuck: moved under a tile in SCAN_STUCK_SECS while the commander moved 20+ tiles
+    ptr = [(frames[i]["t"], frames[i]["p"][0], frames[i]["p"][1]) for i in idx]
+    pt = [x[0] for x in ptr]
+    for lid, hs in hist.items():
+        i0 = 0
+        reported_until = -1
+        for i1 in range(len(hs)):
+            while hs[i1][0] - hs[i0][0] > SCAN_STUCK_SECS * TICKS:
+                i0 += 1
+            if hs[i1][0] - hs[i0][0] < SCAN_STUCK_SECS * TICKS - 2 * TICKS / hz or hs[i0][0] <= reported_until:
+                continue
+            xs = [q[1] for q in hs[i0:i1 + 1]]
+            ys = [q[2] for q in hs[i0:i1 + 1]]
+            if max(xs) - min(xs) > T or max(ys) - min(ys) > T:
+                continue
+            a, b = bisect.bisect_left(pt, hs[i0][0]), bisect.bisect_right(pt, hs[i1][0])
+            seg = ptr[a:b]
+            if not seg:
+                continue
+            cm = max(abs(q[1] - seg[0][1]) + abs(q[2] - seg[0][2]) for q in seg) / T
+            if cm >= 20:
+                out.append({"t": hs[i0][0], "kind": "stuck", "levy": lid, "what": "%s did not move a tile for %d s while the commander moved %.0f tiles" % (names(lid), SCAN_STUCK_SECS, cm), "score": SCAN_STUCK_SECS * 0.8})
+                reported_until = hs[i1][0]
+    # 3. one-hit deaths
+    for x in rec.events:
+        if x.get("e") == "lhit" and x.get("kill"):
+            mx = x.get("max") or lifemax.get(x["id"], 0)
+            if mx and x.get("dmg", 0) >= SCAN_ONEHIT * mx:
+                src = rec.proj(x["proj"]) if x.get("proj", -1) > 0 else rec.npc(x["npc"]) if x.get("npc", -1) > 0 else "something"
+                out.append({"t": x["t"], "kind": "onehit", "levy": x["id"], "what": "%s died to one hit of %s from %s (full life %s)" % (names(x["id"]), x.get("dmg"), src, mx), "score": 6})
+    # 4. commander projectiles that appear at the commander while she is not using an item
+    prev = {}
+    cmdshots, first_t = Counter(), {}
+    for f in frames:
+        c = f.get("c")
+        cnt = Counter(q[0] for q in c) if c else Counter()
+        p = f.get("p", [])
+        using = len(p) > 5 and int(p[5]) & 1024
+        if c and not using:
+            for q in c:
+                if cnt[q[0]] > prev.get(q[0], 0) and (q[1] - p[0]) ** 2 + (q[2] - p[1]) ** 2 <= (3 * T) ** 2 and abs(q[3]) + abs(q[4]) > 4:
+                    cmdshots[q[0]] += 1
+                    first_t.setdefault(q[0], f["t"])
+        prev = cnt
+    for typ, k in cmdshots.items():
+        if k >= 5:
+            out.append({"t": first_t[typ], "kind": "cmdshot", "what": "%d %s shots appeared at the commander while she was not using an item" % (k, rec.proj(typ)), "score": min(20, 3 + k / 5)})
+    # 6. damage outliers: a second whose damage per hit is SCAN_SPIKE times the weapon's median; and levy weapons far above the army's median weapon
+    per = defaultdict(list)
+    for x in rec.events:
+        if x.get("e") != "dmg":
+            continue
+        for row in x.get("d", []):
+            if len(row) < 7 or not row[6]:
+                continue
+            item = row[7] if len(row) > 7 and row[7] else (row[3] if row[2] == "item" else 0)
+            per[(row[0], row[2], row[3], item)].append((x["t"], row[5] / row[6], row[5], row[6]))
+
+    def wname(k):
+        w = rec.item(k[2]) if k[1] == "item" else rec.proj(k[2])
+        return (rec.item(k[3]) + " / " + w) if k[3] and k[1] != "item" else w
+    meds = {}
+    for k, v in per.items():
+        ph = sorted(q[1] for q in v)
+        meds[k] = ph[len(ph) // 2]
+        if len(v) >= 5:
+            for t, phit, dm, hits in v:
+                if phit >= SCAN_SPIKE * max(1, meds[k]) and dm >= 500:
+                    out.append({"t": t, "kind": "spike", "what": "%s (%s) did %d damage in %d hits, %.0f per hit, %.0fx its median" % (wname(k), k[0], dm, hits, phit, phit / max(1, meds[k])), "score": min(25, phit / max(1, meds[k]))})
+    levy_w = [m for k, m in meds.items() if k[0] == "levy" and len(per[k]) >= 3]
+    if len(levy_w) >= 4:
+        am = sorted(levy_w)[len(levy_w) // 2]
+        for k, m in meds.items():
+            if k[0] == "levy" and len(per[k]) >= 3 and m >= SCAN_SPIKE * max(1, am):
+                tot = sum(q[2] for q in per[k])
+                out.append({"t": per[k][0][0], "kind": "weapon", "what": "levy weapon %s hits for %.0f (median per hit), %.0fx the army's median weapon (%.0f); %d damage in all" % (wname(k), m, m / max(1, am), am, tot), "score": min(25, m / max(1, am))})
+    out.sort(key=lambda d: (-d["score"], d["t"]))
+    return out
+
+
+def print_scan(rec, top=15):
+    found = scan(rec)
+    kinds = Counter(d["kind"] for d in found)
+    print("%s: %d suspicious moments (%s)" % (os.path.basename(rec.path), len(found), ", ".join("%s %d" % kv for kv in kinds.most_common()) or "none"))
+    shown, per = 0, Counter()   # the top ones, at most 4 of each kind so one noisy kind does not hide the rest
+    for d in found:
+        if shown >= top:
+            break
+        if per[d["kind"]] >= 4:
+            continue
+        per[d["kind"]] += 1
+        shown += 1
+        print("  %7s  %-8s %s" % (fmt_t(d["t"]), d["kind"], d["what"]))
+    return found
+
+
 def list_folder(path):
     files = sorted(glob.glob(os.path.join(path, "*.levyrec")) + glob.glob(os.path.join(path, "*.jsonl.gz")) + glob.glob(os.path.join(path, "*.jsonl")), key=lambda f: os.path.basename(f))
     print("%d recordings in %s" % (len(files), path))
@@ -455,12 +681,39 @@ def list_folder(path):
     return files
 
 
+def write_levyrec(path, rows):
+    with gzip.open(path, "wt", encoding="utf-8") as g:
+        for r in rows:
+            g.write(json.dumps(r, separators=(",", ":")) + "\n")
+
+
+def print_episodes(rec, split_dir):
+    eps = recrules.episodes(rec.rows)
+    base = os.path.basename(rec.path)
+    end = rec.end or {}
+    print("%s: file says %s; %d fight%s inside" % (base, end.get("result", "?"), len(eps), "" if len(eps) == 1 else "s"))
+    for e in eps:
+        if e.get("whole"):
+            print("  whole file: %s (outcome %s, commander deaths %d)%s" % (e["result"], e["outcome"], e["cmdDeaths"], "" if e["result"] == end.get("result") else "  [the file says %s]" % end.get("result")))
+            continue
+        print("  %d/%d  %-34s %s to %s  %-6s outcome %-7s commander deaths %d%s" % (e["episode"], e["of"], e["name"][:34], fmt_t(e["start"]), fmt_t(e["end"]), e["result"], e["outcome"], e["cmdDeaths"], "  (dead when it left)" if e["deadAtEnd"] else ""))
+        if split_dir:
+            os.makedirs(split_dir, exist_ok=True)
+            out = os.path.join(split_dir, recrules.file_name(base, e))
+            write_levyrec(out, e["rows"])
+            print("       wrote %s" % out)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Summarize Levy fight recordings.")
     ap.add_argument("paths", nargs="+")
+    ap.add_argument("--episodes", action="store_true", help="list the fights inside each recording (event NPCs such as the Celestial Pillars are never a boss) with the result of each")
+    ap.add_argument("--split", metavar="OUTDIR", help="with --episodes: write every fight as its own .levyrec into OUTDIR")
     ap.add_argument("--timeline", type=float, default=10, help="seconds between timeline rows")
     ap.add_argument("--json", action="store_true", help="print the summary as JSON")
     ap.add_argument("--raw", choices=("hdr", "end", "names"), help="print one raw record")
+    ap.add_argument("--scan", action="store_true", help="list suspicious moments: idle levies with enemies in range, stuck levies, one-hit deaths, shots appearing at the commander, levies far from the fight, damage outliers")
+    ap.add_argument("--top", type=int, default=15, help="with --scan: findings shown per recording")
     ap.add_argument("--all", action="store_true", help="with a folder: summarize every recording, not only the newest")
     a = ap.parse_args()
     files = []
@@ -480,6 +733,14 @@ def main():
             continue
         if a.raw:
             print(json.dumps({"hdr": rec.hdr, "end": rec.end, "names": rec.names}[a.raw], indent=1))
+            continue
+        if a.episodes or a.split:
+            print_episodes(rec, a.split)
+            continue
+        if a.scan:
+            found = print_scan(rec, a.top)
+            if a.json:
+                results.append({"file": os.path.basename(f), "findings": found})
             continue
         an = analyse(rec)
         results.append(an)

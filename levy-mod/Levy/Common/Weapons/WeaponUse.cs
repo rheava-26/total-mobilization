@@ -559,7 +559,9 @@ namespace Levy.Common.Weapons
 			try
 			{
 				// The cursor is on the target while the hooks run (items that place or steer something at the cursor then act on the enemy, as for a player aiming).
+				// A hook that reads the cursor (Calamity's Conference Call drops its sky bullets over Main.mouseX) must read the soldier's aim and never the commander's: with no target the cursor goes a screen ahead along the shot.
 				if (target != null) aim = new AltPolicies.AimScope(d, target.Center);
+				else if (vel.LengthSquared() > 0.0001f && float.IsFinite(vel.X) && float.IsFinite(vel.Y)) aim = new AltPolicies.AimScope(d, muzzle + Vector2.Normalize(vel) * 600f);
 				// Hooks spawn their projectiles with player.whoAmI as the owner: make that the soldier owner so ai[] is assigned and the spawn is synced.
 				d.whoAmI = OwnerFor(s);
 				d.Center = s.NPC.Center;
@@ -959,6 +961,22 @@ namespace Levy.Common.Weapons
 		public static int BoomerangCap(Item item) => item != null && LevyConstants.BoomerangMaxOutByItem.TryGetValue(item.type, out int n) ? n : LevyConstants.BoomerangMaxOut;
 
 		/// <summary>Throws the soldier's boomerang at the target unless the allowed number are already out.</summary>
+		private static readonly bool _realThrowOff = Environment.GetEnvironmentVariable("LEVY_REAL_THROW") == "0";
+		/// <summary>A modded boomerang-style item whose own shot is thrown through its real hooks (not a blade stab, not a held shot that pins its owner).</summary>
+		internal static bool RealThrow(Item item) => !_realThrowOff && item != null && item.type >= ItemID.Count && item.shoot > 0 && ModShotKinds.Of(item) == ModShotKind.None && !OwnerLockProbe.LocksOwner(item.shoot);
+
+		/// <summary>The item's own use gate for this soldier (Player.ItemCheck_CheckCanUse: CanUseItem with the dummy's owned-projectile count of the item's shot as this soldier has it).</summary>
+		private static bool RealCanUse(SoldierNPC s, Item item)
+		{
+			Player d = s.Dummy; if (d == null) return false;
+			int n = 0, idx = s.NPC.whoAmI;
+			for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && q.type == item.shoot && q.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.SoldierIndex == idx) n++; }
+			int[] c = d.ownedProjectileCounts; int saved = item.shoot < c.Length ? c[item.shoot] : 0; if (item.shoot < c.Length) c[item.shoot] = n;
+			try { return CombinedHooks.CanUseItem(d, item); }
+			catch (Exception) { return false; }
+			finally { if (item.shoot < c.Length) c[item.shoot] = saved; }
+		}
+
 		private static bool ThrowBoomerang(SoldierNPC s, Item item, WeaponProfile profile, NPC target)
 		{
 			if (s.CountAnchored<SoldierBoomerang>() >= BoomerangCap(item)) { s.AttackCooldown = 6; return false; }
@@ -967,6 +985,12 @@ namespace Levy.Common.Weapons
 			Vector2 muzzle = Muzzle(s);
 			Vector2 vel = AimShot(s, muzzle, target, item.shoot, speed, -1);
 			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
+			// A modded rogue / ranged boomerang makes its own projectiles (Defective Sphere's four sphere kinds, Subduction Slicer's shards): the soldier throws the item's real shot through its own hooks, as often as the item's own CanUseItem allows (how many may be out), like a player. The generic SoldierBoomerang below stays for vanilla boomerangs and as the fallback.
+			if (RealThrow(item))
+			{
+				if (!RealCanUse(s, item)) { s.AttackCooldown = 4; return false; }
+				if (TryRealShoot(s, item, profile, target, 0, muzzle, vel, item.shoot, damage, item.knockBack)) { FinishUse(s, item, vel); return true; }
+			}
 			Projectile p = Spawn(s, muzzle, vel, ModContent.ProjectileType<SoldierBoomerang>(), damage, item.knockBack, item.DamageType ?? DamageClass.Melee, s.NPC.whoAmI, item.type, 0f);
 			if (p == null) return Dud(s, item);
 			FinishUse(s, item, vel);

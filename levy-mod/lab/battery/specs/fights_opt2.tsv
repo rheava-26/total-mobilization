@@ -1,0 +1,10 @@
+fight	ravager	mdeath	1	21600	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-a018a87be4cc0046e/levy-mod/lab/battery/optimal_army.json	meta=bat_optimal_ravager
+fight	ravager	mdeath	2	21600	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-a018a87be4cc0046e/levy-mod/lab/battery/optimal_army.json	meta=bat_optimal_ravager
+fight	ravager	mdeath	3	21600	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-a018a87be4cc0046e/levy-mod/lab/battery/optimal_army.json	meta=bat_optimal_ravager
+fight	ravager	mdeath	4	21600	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-a018a87be4cc0046e/levy-mod/lab/battery/optimal_army.json	meta=bat_optimal_ravager
+fight	ravager	mdeath	5	21600	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-a018a87be4cc0046e/levy-mod/lab/battery/optimal_army.json	meta=bat_optimal_ravager
+fight	eol	mdeath	1	18000	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-a018a87be4cc0046e/levy-mod/lab/battery/optimal_army.json	meta=bat_optimal_eol
+fight	eol	mdeath	2	18000	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-a018a87be4cc0046e/levy-mod/lab/battery/optimal_army.json	meta=bat_optimal_eol
+fight	eol	mdeath	3	18000	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-a018a87be4cc0046e/levy-mod/lab/battery/optimal_army.json	meta=bat_optimal_eol
+fight	eol	mdeath	4	18000	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-a018a87be4cc0046e/levy-mod/lab/battery/optimal_army.json	meta=bat_optimal_eol
+fight	eol	mdeath	5	18000	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-a018a87be4cc0046e/levy-mod/lab/battery/optimal_army.json	meta=bat_optimal_eol

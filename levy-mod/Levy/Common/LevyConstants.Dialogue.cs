@@ -18,6 +18,8 @@ namespace Levy.Common
 		/// <summary>The commander's reactions: life crystal (cooldown, speakers) and chest (cooldown, chance, reach in tiles).</summary>
 		public const int CrystalReactCooldownTicks = 60 * 20, CrystalReactSpeakers = 3, ChestReactCooldownTicks = 60 * 40, ReactReachTiles = 36;
 		public const float ChestReactChance = 0.6f;
+		/// <summary>How many levies near their commander speak when a Solar Eclipse ends.</summary>
+		public const int EclipseEndSpeakers = 3;
 		/// <summary>The share of drink rounds whose cheer comes from the drink's own pool (DRINK_ALE and so on) when it has one; the rest use the general DRINK pool.</summary>
 		public const float DrinkOwnPoolShare = 0.65f;
 		/// <summary>Chance that an applicable biome or situation line is used instead of falling through to IDLE.</summary>

@@ -36,8 +36,8 @@ namespace Levy.Common.Testing
 			{
 				const int idA = 900001, idB = 900002, idC = 900003, idArA = 900011, idArB = 900012;
 				int ax = 500, bx = 900, y = 300; // 400 tiles apart
-				BarracksTE Bar(int id, int x, string name) { var t = new BarracksTE { Position = new Point16(x, y), TownName = name, Treasury = 50_000_000 }; t.ID = id; TileEntity.ByID[id] = t; made.Add(t); return t; }
-				ArmoryTE Arm(int id, int x) { var t = new ArmoryTE { Position = new Point16(x + 4, y) }; t.ID = id; TileEntity.ByID[id] = t; made.Add(t); return t; }
+				BarracksTE Bar(int id, int x, string name) { var t = TestTileEntities.Add<BarracksTE>(id, new Point16(x, y)); t.TownName = name; t.Treasury = 50_000_000; made.Add(t); return t; }
+				ArmoryTE Arm(int id, int x) { var t = TestTileEntities.Add<ArmoryTE>(id, new Point16(x + 4, y)); made.Add(t); return t; }
 				var A = Bar(idA, ax, "PylonCheckWest"); var B = Bar(idB, bx, "PylonCheckEast");
 				var armA = Arm(idArA, ax); var armB = Arm(idArB, bx);
 				NPC Town(int type, BarracksTE home)
@@ -126,7 +126,7 @@ namespace Levy.Common.Testing
 			finally
 			{
 				SettlementSystem.PylonListOverride = null; SettlementSystem.PylonValidOverride = null;
-				foreach (var t in made) TileEntity.ByID.Remove(t.ID);
+				foreach (var t in made) TestTileEntities.Remove(t);
 				foreach (var n in npcs) { n.active = false; n.townNPC = false; }
 			}
 			Mod.Logger.Info($"[PylonLink] self-check pass={pass} fail={fail}");

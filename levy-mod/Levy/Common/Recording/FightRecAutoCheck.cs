@@ -29,7 +29,7 @@ namespace Levy.Common.Recording
 		private static string NewTemp() { string d = Path.Combine(Path.GetTempPath(), "levy_fightrec_check_" + Guid.NewGuid().ToString("N").Substring(0, 8)); Directory.CreateDirectory(d); return d; }
 		private static void Rm(string d) { try { Directory.Delete(d, true); } catch { } }
 
-		private static List<string> ReadLines(string path, bool gz, out string err)
+		internal static List<string> ReadLines(string path, bool gz, out string err)
 		{
 			err = null; var l = new List<string>();
 			try
@@ -175,7 +175,7 @@ namespace Levy.Common.Recording
 
 		private int _pass, _fail;
 		private void Chk(bool ok, string name) { if (ok) _pass++; else { _fail++; Mod.Logger.Warn("  fightrecauto world: FAIL " + name); } }
-		private const int Floor = 120;
+		internal const int Floor = 120;
 		private static System.Reflection.FieldInfo _clock;
 
 		private void RunWorld()
@@ -212,6 +212,7 @@ namespace Levy.Common.Recording
 				Chk(spawned.Count == 2, "two levy bodies stand next to the commander");
 
 				FightRecAuto.TestClient = true; FightRecAuto.TestFolder = good; FightRecAuto.TestDefaultDir = def; FightRecAuto.ResetMessages();
+				EventRecorder.TestEnabled = false; // the boss checks run with no event recording (a world that loads during a Blood Moon must not change them); EventRecCheck turns it on
 				FightRecorder.MaxFolderBytes = 0; FightRecorder.MaxFileBytes = 0; FightRecorder.ForceSync = true; RecWriter.FlushMs = 20;
 
 				// ---------- 1. Boss fights: a skirmish does not start it, the boss does, a killed boss is "won"
@@ -231,8 +232,11 @@ namespace Levy.Common.Recording
 				Chk(f1 != null && File.Exists(f1) && f1.StartsWith(good), "the file is saved in the chosen folder");
 				Chk(f1 != null && Regex.IsMatch(Path.GetFileName(f1), @"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}_Eye_of_Cthulhu_won\.levyrec$"), "the file is named date_time_Boss_outcome.levyrec (" + Path.GetFileName(f1 ?? "none") + ")");
 				VerifyFile(f1, "boss", 1, "Eye of Cthulhu", "won");
-				int boss2 = SpawnBoss(cx); Step(100, p, boss2);
-				Chk(!FightRecorder.On, "no new recording starts during the pause after one ends");
+				int boss2 = SpawnBoss(cx); Step(30, p, boss2);
+				Chk(!FightRecorder.On, "no new recording starts in the first second after one ends");
+				Step(70, p, boss2);
+				Chk(FightRecorder.On, "a boss fight that follows within seconds (Duke Fishron coming back while the pillars stand) gets its own recording");
+				if (FightRecorder.On) FightRecorder.Stop("self-check next");
 				Main.npc[boss2].active = false; Step(3, p, null);
 
 				// ---------- 1b. several main bosses are one fight with all of their names; spite is its own target kind (format 9)
@@ -254,6 +258,78 @@ namespace Levy.Common.Recording
 				if (f1c != null) { var l1c = ReadLines(f1c, true, out _); Chk(l1c.Exists(l => l.Contains("\"e\":\"bdeath\"") && l.Contains("\"final\":1")) && !l1c.Exists(l => l.Contains("\"e\":\"bdespawn\"") && l.Contains("\"final\":1")), "the final end event is a bdeath"); }
 				for (int q = 0; q < Main.maxNPCs; q++) if (Main.npc[q].active && !(Main.npc[q].ModNPC is SoldierNPC) && !Main.npc[q].friendly && !Main.npc[q].townNPC) Main.npc[q].active = false;
 				Step(3, p, null);
+
+				// ---------- 1d. the Lunatic Cultist's win is not swallowed by the pillars: they are an event, not a boss. The kill ends the fight and the file is "won" although the pillars still stand
+				FightRecAuto.TestMode = FightRecMode.BossFights; FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int cB = SpawnBoss(cx, NPCID.CultistBoss);
+				Step(40, p, cB);
+				Chk(FightRecorder.On && FightRecorder.Auto == 1, "Boss fights starts on the Lunatic Cultist");
+				ScriptHits(p, cB, 200);
+				FightRecorder.NoteBossKill(Main.npc[cB]); Main.npc[cB].life = 0; Main.npc[cB].active = false;
+				int[] pil = { SpawnBoss(cx, NPCID.LunarTowerSolar), SpawnBoss(cx, NPCID.LunarTowerVortex), SpawnBoss(cx, NPCID.LunarTowerNebula), SpawnBoss(cx, NPCID.LunarTowerStardust) };
+				int pillarTicks = StepUntilStopped(p, -1, 2400);
+				string f1d = FightRecorder.LastResult;
+				Chk(!FightRecorder.On && pillarTicks <= 420, "the recording ends about 5 seconds after the Cultist falls while four pillars stand (" + pillarTicks + " ticks)");
+				Chk(f1d != null && Regex.IsMatch(Path.GetFileName(f1d), @"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}_Lunatic_Cultist_won\.levyrec$"), "the Cultist's fight is named for her alone and won (" + Path.GetFileName(f1d ?? "none") + ")");
+				if (f1d != null) { var l1d = ReadLines(f1d, true, out _); Chk(!l1d.Exists(l => l.Contains("Solar Pillar") && l.Contains("\"e\":\"boss\"")) && l1d.Exists(l => l.Contains("\"e\":\"bdeath\"") && l.Contains("\"final\":1")), "no pillar is a boss of the fight and the Cultist's death is its final end"); }
+				foreach (int q in pil) if (q >= 0) Main.npc[q].active = false;
+				Step(3, p, null);
+				// a pillar that stands alone is no boss: it neither starts a boss-fight recording nor keeps one alive
+				FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int pillar = SpawnBoss(cx, NPCID.LunarTowerNebula); Step(120, p, null);
+				Chk(!FightRecorder.On, "Boss fights does not record a Celestial Pillar standing alone");
+				Main.npc[pillar].active = false; Step(3, p, null);
+
+				// ---------- 1e. the commander falls and the boss leaves: lost. The commander alive and the boss leaves: fled
+				FightRecAuto.TestMode = FightRecMode.BossFights; FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int dB = SpawnBoss(cx);
+				Step(40, p, dB); ScriptHits(p, dB, 200);
+				p.dead = true; Step(4, p, dB);
+				Main.npc[dB].active = false; Step(3, p, null); p.dead = false;
+				StepUntilStopped(p, -1, 1500);
+				string f1e = FightRecorder.LastResult;
+				Chk(f1e != null && Regex.IsMatch(Path.GetFileName(f1e), @"_Eye_of_Cthulhu_lost\.levyrec$"), "the commander fell and the boss left: lost (" + Path.GetFileName(f1e ?? "none") + ")");
+				if (f1e != null) { var l1e = ReadLines(f1e, true, out _); Chk(l1e.Exists(l => l.Contains("\"e\":\"cdeath\"")) && l1e.Exists(l => l.Contains("\"e\":\"bdespawn\"") && l.Contains("\"final\":1")) && l1e.Exists(l => l.Contains("\"k\":\"end\"") && l.Contains("\"result\":\"lost\"") && l.Contains("\"outcome\":\"despawn\"")), "its end says despawn, result lost, and a cdeath is on record"); }
+				FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int eB = SpawnBoss(cx);
+				Step(40, p, eB); ScriptHits(p, eB, 200);
+				Main.npc[eB].active = false;
+				StepUntilStopped(p, -1, 1500);
+				string f1f = FightRecorder.LastResult;
+				Chk(f1f != null && Regex.IsMatch(Path.GetFileName(f1f), @"_Eye_of_Cthulhu_fled\.levyrec$"), "the commander alive and the boss leaves: fled (" + Path.GetFileName(f1f ?? "none") + ")");
+
+				// ---------- 1g. format 11: the commander's own projectiles are in the frames, the army's shots (same owner slot) are not
+				FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int gB = SpawnBoss(cx);
+				Step(40, p, gB);
+				int mine = PlaceShot(p, new Vector2(60, -20), new Vector2(8, 0), false);
+				int theirs = PlaceShot(p, new Vector2(-60, -20), new Vector2(-8, 0), true);
+				Step(30, p, gB);
+				if (mine >= 0) Main.projectile[mine].active = false; if (theirs >= 0) Main.projectile[theirs].active = false;
+				ScriptHits(p, gB, 60);
+				FightRecorder.NoteBossKill(Main.npc[gB]); Main.npc[gB].life = 0; Main.npc[gB].active = false;
+				StepUntilStopped(p, -1, 1500);
+				string f1g = FightRecorder.LastResult;
+				if (f1g != null)
+				{
+					int withC = 0, maxRows = 0, wrongType = 0, noC = 0; string hdrFmt = null;
+					foreach (string l in ReadLines(f1g, true, out _))
+					{
+						try
+						{
+							using var d = JsonDocument.Parse(l); var r = d.RootElement; string k = r.GetProperty("k").GetString();
+							if (k == "hdr") hdrFmt = r.GetProperty("format").GetInt32().ToString();
+							if (k != "f") continue;
+							if (r.TryGetProperty("c", out var c)) { withC++; maxRows = Math.Max(maxRows, c.GetArrayLength()); foreach (var row in c.EnumerateArray()) { if (row.GetArrayLength() != 7 || row[0].GetInt32() != ProjectileID.MagicMissile) wrongType++; } }
+							else noC++;
+						}
+						catch { }
+					}
+					Chk(hdrFmt == FightRecFormat.Version.ToString() && FightRecFormat.Version >= 11, "the header says format " + FightRecFormat.Version);
+					Chk(mine >= 0 && theirs >= 0 && withC >= 5 && maxRows == 1 && wrongType == 0, "frames carry the commander's own shot and not the soldier-tagged one (frames with c " + withC + ", most rows " + maxRows + ", odd rows " + wrongType + ")");
+					Chk(noC > 0, "a frame with no commander projectile has no c key (" + noC + " such frames)");
+				}
+				else Chk(false, "commander projectile recording was saved");
 
 				// ---------- 2. All fights: the skirmish starts it, it ends 5 s after the adds are gone, commander death makes it "lost"
 				FightRecorder.MaxFolderBytes = 0;
@@ -319,12 +395,15 @@ namespace Levy.Common.Recording
 				Chk(!FightRecorder.On && FightRecAuto.Said.Exists(m => m.Contains("could not start") || m.Contains("recording is off")), "with no writable folder at all it does not record and says why");
 				Main.npc[boss].active = false;
 				RunProf(p, cx, good, def, recs, spawned);
+				if (Environment.GetEnvironmentVariable("LEVY_EVENTREC") != "0") EventRecCheck.Run(Mod, p, cx, good, recs, spawned);
 				if (Environment.GetEnvironmentVariable("LEVY_FIGHTRECAUTO_SIZEPROBE") == "1") SizeProbe(p, cx, good, recs, spawned);
 			}
 			catch (Exception e) { _fail++; Mod.Logger.Warn("  fightrecauto world: threw " + e); }
 			finally
 			{
 				try { if (FightRecorder.On) FightRecorder.Stop("self-check over"); } catch { }
+				try { if (EventRecorder.On) EventRecorder.Stop("self-check over"); } catch { }
+				EventRecorder.TestEnabled = null; EventRecorder.TestMaxTicks = 0; EventRecorder.TestArmyGoneTicks = 0;
 				FightRecAuto.TestClient = false; FightRecAuto.TestMode = null; FightRecAuto.TestFolder = FightRecAuto.TestDefaultDir = null; FightRecAuto.ResetMessages();
 				FightRecorder.MaxFolderBytes = 0; FightRecorder.MaxFileBytes = 0; FightRecorder.ForceSync = false; RecWriter.FlushMs = oldFlush;
 				foreach (int i in spawned) { try { Main.npc[i].active = false; } catch { } }
@@ -631,14 +710,28 @@ namespace Levy.Common.Recording
 		}
 
 		// ---------------------------------------------------------------- scripting helpers
-		private static int SpawnBoss(int cx, int type = NPCID.EyeofCthulhu)
+		/// <summary>A friendly projectile owned by the commander's slot put straight into a free slot (no spawn hooks: other mods' OnSpawn hooks need a real player); soldier-tagged when asked.</summary>
+		private static int PlaceShot(Player p, Vector2 off, Vector2 vel, bool soldier)
+		{
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				if (Main.projectile[i].active) continue;
+				var pr = new Projectile(); pr.SetDefaults(ProjectileID.MagicMissile);
+				pr.whoAmI = i; pr.owner = p.whoAmI; pr.friendly = true; pr.hostile = false; pr.damage = 40; pr.Center = p.Center + off; pr.velocity = vel; pr.timeLeft = 600; pr.active = true;
+				if (soldier && pr.TryGetGlobalProjectile(out global::Levy.Common.Globals.SoldierProjectileTag tag)) tag.SoldierIndex = 3;
+				Main.projectile[i] = pr; return i;
+			}
+			return -1;
+		}
+
+		internal static int SpawnBoss(int cx, int type = NPCID.EyeofCthulhu)
 		{
 			int i = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("FightRecAutoCheck"), cx * 16 + 400, (Floor - 25) * 16, type);
 			if (i >= 0) { NPC b = Main.npc[i]; b.aiStyle = -1; b.noGravity = true; b.noTileCollide = true; b.life = b.lifeMax = 2800; b.damage = 0; b.ai[3] = 4242f; }
 			return i;
 		}
 
-		private static List<int> SpawnAdds(int cx, int n)
+		internal static List<int> SpawnAdds(int cx, int n)
 		{
 			var l = new List<int>();
 			for (int k = 0; k < n; k++)
@@ -649,15 +742,15 @@ namespace Levy.Common.Recording
 			return l;
 		}
 
-		private static void KillAdds(List<int> adds) { foreach (int i in adds) Main.npc[i].active = false; adds.Clear(); }
+		internal static void KillAdds(List<int> adds) { foreach (int i in adds) Main.npc[i].active = false; adds.Clear(); }
 
 		/// <summary>Advances the game clock by hand and runs what the system runs every tick. Keeps the scripted boss and commander in place.</summary>
-		private static void Step(int ticks, Player p, int? boss)
+		internal static void Step(int ticks, Player p, int? boss)
 		{
 			for (int k = 0; k < ticks; k++) One(p, boss ?? -1, k);
 		}
 
-		private static void One(Player p, int boss, int k)
+		internal static void One(Player p, int boss, int k)
 		{
 			_clock ??= typeof(Main).GetField("_gameUpdateCount", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 			_clock.SetValue(null, Main.GameUpdateCount + 1u);
@@ -673,7 +766,7 @@ namespace Levy.Common.Recording
 		}
 
 		/// <summary>The commander and an unnamed shooter hit the boss every few ticks while the clock runs; one commander hit; real-time pauses so the writer thread can flush.</summary>
-		private static void ScriptHits(Player p, int boss, int ticks, int sleep = 1)
+		internal static void ScriptHits(Player p, int boss, int ticks, int sleep = 1)
 		{
 			for (int k = 0; k < ticks; k++)
 			{
@@ -688,7 +781,7 @@ namespace Levy.Common.Recording
 			}
 		}
 
-		private static int StepUntilStopped(Player p, int boss, int max)
+		internal static int StepUntilStopped(Player p, int boss, int max)
 		{
 			int n = 0;
 			while (FightRecorder.On && n < max) { One(p, boss, n); n++; }

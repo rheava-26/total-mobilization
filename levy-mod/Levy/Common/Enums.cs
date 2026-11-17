@@ -9,8 +9,9 @@ namespace Levy.Common
 
 	/// <summary>Standing orders for Regulars. Militia always patrol/engage at their settlement. HoldBanners: stand at the nearest Holding Banner (SoldierNPC.Banner.cs); with none placed it is Hold.</summary>
 	/// <summary>SearchDestroy roams outward from the settlement / commander hunting enemies (bounded leash, standoff rules intact).
+	/// Regroup is Search & Destroy until a boss fight is on, then Free Rein for the levies in that fight (SoldierNPC.Regroup.cs); a levy that respawns under it appears beside the commander.
 	/// FreeRein is the same hunt unleashed: it ranges across the whole region on its own, tied to no player and no short anchor (standoff rules intact).</summary>
-	public enum SoldierOrder : byte { Follow = 0, Hold = 1, Patrol = 2, ReturnToBarracks = 3, SearchDestroy = 4, FreeRein = 5, GoTo = 6, HoldBanners = 7 }
+	public enum SoldierOrder : byte { Follow = 0, Hold = 1, Patrol = 2, ReturnToBarracks = 3, SearchDestroy = 4, FreeRein = 5, GoTo = 6, HoldBanners = 7, Regroup = 8 }
 
 	public enum WeaponFamily : byte { None = 0, Gun = 1, Bow = 2, Magic = 3, Broadsword = 4, Shortsword = 5, Spear = 6, Unsupported = 7, Summon = 8, Whip = 9, Boomerang = 10, Yoyo = 11, Flail = 12, Sentry = 13, HeldWeapon = 14, Thrown = 15, ThrownMelee = 16 }
 
@@ -37,7 +38,8 @@ namespace Levy.Common
 		FIRESIDE, PASTIME, PASTIME_NIGHT, // appended: talk by a campfire, talk at a kite or a cheer, and talk under the stars (Free Rein pastimes, SoldierNPC.Leisure.cs)
 		LIFE_CRYSTAL, CHEST_OPENED, // appended: the commander uses a life crystal or fruit / opens a chest near the army (CommanderReactions)
 		ARMORY_GOT, ARMORY_WANT, ARMORY_BEST, ARMORY_WORST, // appended: a levy was handed better gear (floating, SoldierNPC.GearTalk.cs); right-click chat by where his kit ranks in the army
-		DRINK_ALE, DRINK_STOUT, DRINK_RUM, DRINK_FIZZ, DRINK_ICEBERG // appended: the DRINK line for one particular round (DrinkCheers.Begin knows which); DRINK is the fallback
+		DRINK_ALE, DRINK_STOUT, DRINK_RUM, DRINK_FIZZ, DRINK_ICEBERG, // appended: the DRINK line for one particular round (DrinkCheers.Begin knows which); DRINK is the fallback
+		ECLIPSE_END // appended: a Solar Eclipse just ended with the army near its commander (CommanderReactions)
 	}
 
 	/// <summary>Where a dialogue line is delivered.</summary>

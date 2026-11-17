@@ -54,7 +54,7 @@ namespace Levy.Common.Testing
 				ok &= LevyDeathPost.Decide(false, true, 0, 0.99f, false) == LevyDeathPost.Verdict.Themed;   // a Noxus fight: always, whatever the settings
 				ok &= LevyDeathPost.Decide(true, true, 0, 0.99f, false) == LevyDeathPost.Verdict.Custom;
 				Check("death text: the decision table (custom text beats off, the percent is honoured, a Nameless Deity or Avatar fight always posts)", ok);
-				Check("death text: the default chance is 30%", pct0 == 30 || pct0 == cfg.CustomDeathMessagePercent);
+				Check("death text: the default chance is 30%", pct0 == 30);
 
 				cfg.RegularDeathMessages = false; cfg.CustomDeathMessagePercent = 100; NoxusFights.Override = false;
 				// a vanilla debuff has no custom text: nothing posts with death messages off

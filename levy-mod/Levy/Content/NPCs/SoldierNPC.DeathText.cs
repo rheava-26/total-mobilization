@@ -18,6 +18,12 @@ namespace Levy.Content.NPCs
 		private static Player _deathScratch;
 		internal static long DeathTexts;
 
+		/// <summary>True for the scratch players the damage-over-time step and the death text run on (their lethal tick must never be a local-player death).</summary>
+		internal static bool IsScratch(Player p) => p != null && (ReferenceEquals(p, _dotScratch) || ReferenceEquals(p, _deathScratch));
+		private static PlayerDeathReason _scratchReason; private static double _scratchDamage; private static int _scratchDir;
+		/// <summary>The scratch player was told to die: vanilla's own reason for the tick (the "other" reason 8 for most damage over time, 9 for poison, 10 for electrified) is kept for <see cref="CustomDeathText"/>.</summary>
+		internal static void NoteScratchKill(PlayerDeathReason reason, double dmg, int dir) { _scratchReason = reason; _scratchDamage = dmg; _scratchDir = dir; }
+
 		/// <summary>The custom death text for this body's death, with its name filled in; null when it has none.</summary>
 		internal string CustomDeathText()
 		{
@@ -25,7 +31,8 @@ namespace Levy.Content.NPCs
 			PlayerDeathReason reason;
 			bool dot = DiedOfDot;
 			NPC killer = !dot && LastAttackerIndex >= 0 && LastAttackerIndex < Main.maxNPCs && Main.npc[LastAttackerIndex].active ? Main.npc[LastAttackerIndex] : null;
-			if (dot) reason = PlayerDeathReason.ByOther(8);
+			double damage = dot ? 10.0 : 100.0; int dir = 0;
+			if (dot) { reason = _scratchReason ?? PlayerDeathReason.ByOther(8); if (_scratchReason != null) { damage = _scratchDamage; dir = _scratchDir; } _scratchReason = null; }
 			else if (killer != null && killer.type >= Terraria.ID.NPCID.Count) reason = PlayerDeathReason.ByNPC(killer.whoAmI); // only another mod's creature can name its own death text; vanilla's is the themed line
 			else return null;
 			Player s = _deathScratch ??= new Player { whoAmI = Main.maxPlayers, active = true, width = 20, height = 42 };
@@ -45,7 +52,7 @@ namespace Levy.Content.NPCs
 				s.position = NPC.position; s.width = NPC.width; s.height = NPC.height;
 				if (k > 0) s.UpdateBuffs(Main.maxPlayers); // the mods' debuff flags (ModBuff.Update) are what their PreKill reads
 				bool playSound = false, genGore = false;
-				PlayerLoader.PreKill(s, dot ? 10.0 : 100.0, 0, false, ref playSound, ref genGore, ref reason);
+				PlayerLoader.PreKill(s, damage, dir, false, ref playSound, ref genGore, ref reason);
 				if (!string.IsNullOrEmpty(reason.SourceCustomReason)) { text = reason.GetDeathText(Record.Name).ToString(); DeathTexts++; }
 			}
 			catch (Exception e) { if (GearUpkeep.WarnOnce(e)) Levy.Instance?.Logger.Warn("Levy: the custom death text step threw (once per kind): " + e); text = null; }

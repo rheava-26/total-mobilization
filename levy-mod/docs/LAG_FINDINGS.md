@@ -6,6 +6,8 @@ Eve's log: `levyperf-2026-11-17.jsonl` (Levy 3.0.8, Calamity Master, about 50 mo
 
 It is not one or two weapons. In a pillar event every levy is in the fight at once, and an engaged levy costs about 230 microseconds of every game update on Eve's machine (about 150 for the levy body, most of it the per-tick gear frame, and about 80 for its shots). Forty-five of them put the update at 16 to 17 ms. That is the edge of the 16.7 ms a frame has, and with the game's Frame Skip set to On the game answers an update that runs long by keeping every update and dropping the drawing: the frame rate falls off a cliff from 60 to 2 to 5 while the game keeps 58 updates a second. A few levies dying takes the update back under the edge, which is why "when a couple of levies die it runs smooth" is a true observation with the wrong cause. In the lab, taking out the 8 levies that carry the two costliest weapons and taking out 8 levies at random save the same time (20% and 22%).
 
+What changed: the lag popup now recognises that pattern and offers to switch Frame Skip to Subtle (her own numbers give about 35 fps at 0.6 game speed instead of 3 to 5 fps), the log's Levy bucket numbers are no longer eleven times too high during recorded fights, and the army's own dust and gore are thinned while the screen is already full of them. The per-levy cost of an engaged army is unchanged: most of it is a real player's equipment pass per levy, mostly Calamity's own per-player code, and running it less often would change what the gear does.
+
 ## 1. What the log shows (OBSERVED)
 
 ### The frame rate is a cliff, not a slope
@@ -105,15 +107,64 @@ Sampling profile of the same scene (EventPipe, `lab/perf/profile.sh`; the harnes
 
 ## 3. Per-weapon cost (army sweep)
 
-SWEEP_TABLE
+The army sweep (`IdentityWorldCheck.ArmySweep.cs`) now records, for every weapon, the cost of its run: wall ms per tick inside the updates of the shots (every friendly projectile: shots, minions, their bolts), ms per tick of the levy body's own update (its AI and gear frame), shots alive (mean and peak), Dust.NewDust and Gore.NewGore calls per second (a server makes neither, so these are the calls a client would have made), and the cost per shot for the levy and for a real player firing the same weapon at the same dummy. One levy, the boss dummy 12 tiles away, 600 ticks, Calamity, the same boot for every weapon (`LEVY_ARMYSWEEP=1 LEVY_ARMYSWEEP_ALONE=1 LEVY_ARMYSWEEP_ONLY=$(python3 lab/lagsweep/sweeplist.py)`, `Weapon@Ammo` picks the ammo). Her army's weapons plus every pair her log flagged, 58 weapon runs (Cosmolight is a utility item); ranked by the levy's whole cost per tick (excerpt; the full table is in the run log, `army cost` lines):
+
+| weapon | levy ms/tick (shots + body) | shots alive mean/peak | dust/s | gore/s | us per shot, levy / player | player's shots ms/tick |
+|---|---|---|---|---|---|---|
+| Plaguenade | 1.84 (1.67 + 0.17) | 189 / 258 | 275 | 0 | 8.8 / 6.8 | 1.68 |
+| Terra Blade | 0.78 (0.44 + 0.34) | 1.7 / 2 | 509 | 0 | 262 / 82 | 0.25 |
+| Apathanull | 0.73 (0.57 + 0.16) | 5.3 / 6 | 636 | 0 | 107 / 55 | 0.31 |
+| System Bane | 0.57 (0.40 + 0.16) | 28 / 56 | 152 | 0 | 14 / 14 | 0.44 |
+| The Syringe | 0.51 (0.37 + 0.14) | 14 / 18 | 251 | 0 | 26 / 9 | 0.14 |
+| Radiant Star | 0.47 (0.32 + 0.15) | 17 / 29 | 574 | 13 | 19 / 12 | 0.20 |
+| Shard of Antumbra | 0.45 (0.32 + 0.13) | 7 / 9 | 251 | 0 | 44 / 34 | 0.25 |
+| Havoc's Breath | 0.41 (0.27 + 0.13) | 9 / 16 | 281 | 0 | 30 / 52 | 0.52 |
+| Dreadmine Staff | 0.25 (0.16 + 0.10) | 22 / 26 | 255 | 0.6 | 7 / 7 | 0.17 |
+| Vernal Bolter @ Sprouting Arrow | 0.27 (0.14 + 0.13) | 2.8 / 6 | 540 | 0 | 50 / 113 | 0.09 |
+| Malevolence @ Sprouting Arrow | 0.27 (0.10 + 0.16) | 2.4 / 6 | 439 | 0 | 44 / 106 | 0.06 |
+| Realm Ravager @ Chlorophyte Bullet | 0.21 (0.08 + 0.13) | 1.5 / 4 | 1,127 | 0 | 53 / 65 | 0.05 |
+| Nebula Arcanum | 0.25 (0.12 + 0.14) | 3.3 / 8 | 654 | 3.4 | 36 / 21 | 0.19 |
+| Starspawn Helix Staff | 0.16 (0.07 + 0.09) | 1.0 / 2 | 18 | 0 | 69 / 83 | 0.08 |
+| Pulse Turret Remote | 0.13 (0.03 + 0.11) | 0.5 / 2 | 11 | 0 | 51 / 98 | 0.10 |
+| median of the 58 runs | about 0.22 | | | | | |
+
+What it says. One weapon stands out on its own: **Plaguenade**, 1.8 ms a tick for one levy, eight times the median, because one throw makes a swarm of bees that live for seconds (189 alive on average). A player throwing it costs the same (1.68 ms), so it is the weapon, not the levy layer; a levy is a player, and the sweep confirms parity. Several weapons cost a levy two to three times what they cost a player per shot (Terra Blade 262 against 82 us, Apathanull 107 against 55, The Syringe 26 against 9): the held-swing and cursor puppets around a levy's shot. Those are real Levy overheads, but on one or two shots alive they are a fraction of a millisecond.
+
+Rolled up over her army (count of each primary weapon in `eve45.json` times its single-levy cost): Terra Blade 3.9 (5 levies), Apathanull 3.6 (5), Ark of the Ancients 2.5 (6), The Syringe 1.0, Wingman 1.0, Dark Harvest 0.9, everything else under 0.7, total about 17 ms of single-levy cost on this box. The top two weapons are 44% of it because they are carried by ten levies, not because each is unusual; the scene test above (8 levies out by weapon or at random: the same saving) is the direct answer. Two notes on the table: the sweep list has Malevolence twice and the second Sniper Rifle pair took the first one's ammo (a dictionary keyed by weapon name), so Sniper Rifle @ Musket Ball was not measured separately.
+
+**Her hypothesis, answered.** "One or two weapons cause the lag" is not what the data shows. No projectile type was more than 0.4 ms of a 15.9 ms laggy update in her log, every flagged type cost the same per shot in smooth and laggy windows, and in the lab taking out the levies carrying the two costliest weapons saved the same as taking out the same number of random levies. The one weapon that is individually heavy is Plaguenade (1.8 ms per levy carrying it), and it was in her log as a minority (PlaguenadeBee up to 0.9 ms in one window). What makes "a couple of levies die and it is smooth" true is the cliff: at 16 to 17 ms per update with Frame Skip On, removing a millisecond or two takes the game from 3 fps back to 30.
 
 ## 4. What changed on this branch
 
-FIXES_TABLE
+None of these touches damage, hits, projectiles, targets or what a levy does.
+
+**Frame Skip advice (the change that moves her frame rate).** The analyzer now logs the game's Frame Skip setting in every window (`"fs"` in the context, -1 in old lines). When a laggy fight shows the Frame Skip On pattern (laggy windows mostly with Frame Skip On, median under 20 fps with 50 or more updates a second), the verdict adds two lines ("Frame Skip is On: when an update runs long, the game drops frames to keep full speed." / "Set to Subtle, the game slows down instead and keeps drawing.") and the popup offers **Set Frame Skip to Subtle** first, which sets the game's own option and saves the settings. Her setting is her choice: nothing changes unless she presses it. On her own numbers (15.9 ms update, 12.0 ms draw in the laggy windows) that is about 35 fps at 0.6 game speed instead of 3 to 5 fps at full speed (INFERRED from the decompiled loop and her times; a headless server cannot draw).
+
+**Levy's bucket numbers in the log are per update again.** With a recorded fight's profiling (or /levyprof) on, the "lv" buckets were 11 times too high (`PerfAnalyzer.End` counted only sampled updates). This is why the log said "stats 37 ms" inside 17 ms updates.
+
+**Army dust and gore thinned on a full screen (cosmetic).** While 2,500 dust or 400 gore are already alive, two of every three dust particles and one of every two gore pieces made inside a levy's update or an army shot's update are dropped (the game's own "no dust / no gore" answer). Outside that, nothing is dropped; "Lower levy effects" still thins army dust always. Her laggy windows held 3,111 dust and 390 gore on average (5,800 and the 600 cap at the peak) against 357 and 45 in smooth ones; dust and gore drawing was 0.43 ms of the 12 ms frame, so this is a small, safe saving on the draw, not the fix.
+
+**Gear frame: the owned-projectile counts.** After ResetEffects (which already zeroes the array) the frame cleared the whole per-type array again, thousands of entries per levy per tick; it now clears only entries still set. Same state, written the same way (the values are restored from the same saved list).
+
+**Lab only:** the pillar scene, Eve's army at 45, the per-weapon cost columns, the A/B spec and table script, and the per-shot immunity census switched off in pillar scenes (it cost 11% of a lab tick).
+
+### Before and after, same scene (Solar Pillar, her 45 levies, 3 seeds each, CPU ms per tick)
+
+| build | CPU ms/tick (NPCs + projectiles) | per fight | army shots | army damage/s |
+|---|---|---|---|---|
+| before (this branch with the gear frame change reverted) | 14.86 (8.77 + 5.07) | 14.9, 15.2, 14.7 | 324 | 40,114 |
+| after | 14.28 (8.45 + 4.83) | 14.3, 13.9, 14.4 | 309 | 38,980 |
+| before again, right after | 12.80 (7.66 + 4.27) | 13.9, 12.7, 12.8 | 280 | 37,426 |
+
+The server-side change is inside the box's drift (two runs of the same "before" build differ by 2 ms on a box at load 20-30): the gear frame's count copy was 0.11 ms a tick in the profiled lab, so no server-side saving was expected, and none is claimed. Damage per second is the same within seed noise (38,980 against 40,114 and 37,426); the changes cannot alter it by construction (the gear frame writes the same values, the rest is client-side drawing and a setting). The update-side cost of an engaged army is unchanged; what changes for Eve is how the game spends a slow update (the Frame Skip choice) and how much dust and gore it draws on a full screen.
 
 ## 5. Checks added
 
-CHECKS_TABLE
+- `[PerfAnalyzer]` world check: a test NPC burns 0.3 ms an update inside Levy's "ai" bucket; the window must read 0.15 to 0.6 ms per update with the profiler off **and with the player's profiler on** (before the fix the second read about 3.3).
+- `[PerfAnalyzer]` world check: with the screen full (pressure forced), two of three army dust particles and one of two army gore pieces are dropped, nothing outside an army update, and nothing when the screen is not full.
+- `PerfSelfTest` (boot): Frame Skip On with 3 fps and 58 updates offers Subtle first; Subtle, Off, unknown, or a slow-update fight (30 fps, 40 updates) do not; the lines stay short; the log keeps the setting and an old line reads as unknown. The option-count guard now expects six options.
+- `[PerfBoss]` world check, **the culprit path bounded**: a levy's stat pass (the gear frame) timed in thread CPU on the standing army with 0 and with 900 shots alive, interleaved, best of three: the pass with 900 alive must cost under 3 times the pass with none. An engaged levy runs this pass every tick, so a walk over every shot added to it (or to a mod hook it runs) would cost levies x shots; this fails it.
+- Army sweep: the cost columns ride on every sweep run (`army cost` lines, ranked).
 
 ## 6. INFERRED, not measured here
 

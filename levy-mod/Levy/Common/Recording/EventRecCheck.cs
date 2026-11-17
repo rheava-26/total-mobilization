@@ -220,6 +220,10 @@ namespace Levy.Common.Recording
 				FightRecAutoCheck.Step(40, p, boss);
 				Chk(EventRecorder.On && FightRecorder.On, "a boss during the event gets its own recording and the event recording keeps running");
 				FightRecAutoCheck.ScriptHits(p, boss, 300);
+				// the fight travels: the commander (and the boss with her) goes 1400 tiles away mid-recording, then comes back
+				Vector2 home = p.position; int travelX = Math.Max(60, cx - 1400);
+				p.position = new Vector2(travelX * 16f, (Floor - 3) * 16f); FightRecAutoCheck.ScriptHits(p, boss, 240);
+				p.position = home; FightRecAutoCheck.ScriptHits(p, boss, 60);
 				FightRecorder.NoteBossKill(Main.npc[boss]); Main.npc[boss].life = 0; Main.npc[boss].active = false;
 				FightRecAutoCheck.StepUntilStopped(p, -1, 1500);
 				string bossFile = FightRecorder.LastResult;
@@ -227,9 +231,12 @@ namespace Levy.Common.Recording
 				var rb = Read(bossFile);
 				Chk(rb.HasHdr && rb.Hdr.GetProperty("kind").GetString() == "fight" && LevyFar(rb, farId, (cx + 1000) * 16f), "the boss recording (kind fight) carries the levy 1500 tiles away");
 				Chk(ArenaCovers(rb, farX, farY - 2, far: true), "the boss recording has terrain around the far levy (far cells)");
+				Chk(ArenaCovers(rb, travelX, Floor - 3) && ArenaCovers(rb, travelX + 80, Floor - 3) && ArenaCovers(rb, travelX, Floor - 40), "the boss recording has terrain where the commander travelled mid-fight, 1400 tiles from the start (" + rb.Arenas.Count + " arena records)");
 				FightRecAuto.TestMode = FightRecMode.Off;
 				Main.invasionSize = 0; Main.invasionType = 0; StepUntilStopped(p, 200);
 				Chk(EventRecorder.LastResult == "won", "that Goblin Army is won too (" + EventRecorder.LastResult + ")");
+				var r5 = Read(EventRecorder.LastPath);
+				Chk(ArenaCovers(r5, travelX, Floor - 3) && ArenaCovers(r5, travelX + 80, Floor - 3), "the event recording has terrain where the commander travelled mid-event");
 
 				// ---------- 6. the setting turned on during an event starts a recording; turning it off ends it as ended
 				EventRecorder.ClearCooldown(); EventRecorder.TestEnabled = false;

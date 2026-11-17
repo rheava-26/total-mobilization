@@ -449,7 +449,7 @@ namespace Levy.Common.Recording
 				_items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = _tkSpite = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
-				_lbuf.Clear(); _lgear.Clear(); _prefixes.Clear(); _cmdGear = int.MinValue; _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1; _farCells.Clear(); _farQ.Clear(); _ntSeen.Clear();
+				_lbuf.Clear(); _lgear.Clear(); _prefixes.Clear(); _cmdGear = int.MinValue; _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1; _farCells.Clear(); _farQ.Clear(); _ntSeen.Clear(); _farCentres.Clear(); _moveCells.Clear();
 				_startTick = (int)Main.GameUpdateCount; _calOn = ModLoader.HasMod("CalamityMod") && global::Levy.Common.Testing.HarnessCalamityProbe.Available; _killTick = -100000;
 				_startMaxSerial = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) _startMaxSerial = Math.Max(_startMaxSerial, FightRecSpawnTag.SerialOf(Main.npc[i]));
 				string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -731,24 +731,27 @@ namespace Levy.Common.Recording
 		}
 
 		// ---- format 12: terrain around levies far from the fight, and a name / importance line per enemy type
-		public const int FarCellW = 50, FarCellH = 40, FarX = 60, FarY = 40, FarCellsPerSample = 4;
-		private static readonly HashSet<long> _farCells = new();
+		public const int FarCellW = 50, FarCellH = 40, FarX = 60, FarY = 40, FarCellsPerSample = 4, MoveX = 100, MoveY = 60;
+		private static readonly HashSet<long> _farCells = new(), _farCentres = new(), _moveCells = new();
 		private static readonly Queue<long> _farQ = new();
 		private static readonly HashSet<int> _ntSeen = new();
 
 		/// <summary>A levy outside the recorded area: queue the grid cells around it that the covered area does not hold yet (arena records with far = 1; the viewer leaves them out of the first fit).</summary>
-		private static void WantFarTerrain(float px, float py)
+		private static void WantFarTerrain(float px, float py, int rx = FarX, int ry = FarY, bool far = true)
 		{
 			int tx = (int)(px / 16f), ty = (int)(py / 16f);
-			if (_hasCover && tx - FarX >= _cx0 && tx + FarX < _cx1 && ty - FarY >= _cy0 && ty + FarY < _cy1) return;
-			int cx0 = Math.Max(0, (tx - FarX) / FarCellW), cx1 = Math.Min((Main.maxTilesX - 1) / FarCellW, (tx + FarX) / FarCellW);
-			int cy0 = Math.Max(0, (ty - FarY) / FarCellH), cy1 = Math.Min((Main.maxTilesY - 1) / FarCellH, (ty + FarY) / FarCellH);
+			if (_hasCover && tx - rx >= _cx0 && tx + rx < _cx1 && ty - ry >= _cy0 && ty + ry < _cy1) return;
+			// a centre cell whose window was queued already (with at least this reach) needs no work
+			long ck = ((long)(tx / FarCellW) << 34) ^ ((long)(ty / FarCellH) << 4) ^ (far ? 1 : 0);
+			if (!_farCentres.Add(ck)) return;
+			int cx0 = Math.Max(0, (tx - rx) / FarCellW), cx1 = Math.Min((Main.maxTilesX - 1) / FarCellW, (tx + rx) / FarCellW);
+			int cy0 = Math.Max(0, (ty - ry) / FarCellH), cy1 = Math.Min((Main.maxTilesY - 1) / FarCellH, (ty + ry) / FarCellH);
 			for (int cx = cx0; cx <= cx1; cx++)
 				for (int cy = cy0; cy <= cy1; cy++)
 				{
 					int x0 = cx * FarCellW, y0 = cy * FarCellH;
 					if (_hasCover && x0 >= _cx0 && x0 + FarCellW <= _cx1 && y0 >= _cy0 && y0 + FarCellH <= _cy1) continue;
-					long k = ((long)cx << 32) | (uint)cy; if (_farCells.Add(k)) _farQ.Enqueue(k);
+					long k = ((long)cx << 32) | (uint)cy; if (_farCells.Add(k)) { _farQ.Enqueue(k); if (!far) _moveCells.Add(k); }
 				}
 		}
 
@@ -759,7 +762,7 @@ namespace Levy.Common.Recording
 				long k = _farQ.Dequeue(); int cx = (int)(k >> 32), cy = (int)(k & 0xffffffff);
 				int x0 = cx * FarCellW, y0 = cy * FarCellH, x1 = Math.Min(Main.maxTilesX, x0 + FarCellW), y1 = Math.Min(Main.maxTilesY, y0 + FarCellH);
 				string a = EventRecorder.TerrainChunk(x0, y0, x1, y1);
-				Line(a.Substring(0, a.Length - 1) + ",\"far\":1}"); _chunks++;
+				Line(a.Substring(0, a.Length - 1) + (_moveCells.Remove(k) ? ",\"moved\":1}" : ",\"far\":1}")); _chunks++;
 			}
 		}
 
@@ -798,6 +801,8 @@ namespace Levy.Common.Recording
 			Player p = _cmd;
 			var f = new RecFrame { T = el };
 			_ex0 = _ey0 = int.MaxValue; _ex1 = _ey1 = int.MinValue; SeeEntity(p.Center.X, p.Center.Y);
+			// format 12: wherever the commander goes (a fight that travels 1400 tiles), the terrain around her is captured in cells once the area the recording started from cannot grow that far
+			WantFarTerrain(p.Center.X, p.Center.Y, MoveX, MoveY, far: false);
 			bool grounded = Grounded(p) || p.sliding;
 			// hook
 			bool hookOut = false, hookAtt = false; Vector2 hookPos = Vector2.Zero;
@@ -866,6 +871,7 @@ namespace Levy.Common.Recording
 				if (isBoss) { anyBoss = true; if (_primaryWho >= 0 && IsNewFightSerial(n)) otherSerial = true; }
 				bool part = !isBoss;
 				SeeEntity(n.Center.X, n.Center.Y);
+				if (isBoss) WantFarTerrain(n.Center.X, n.Center.Y, MoveX, MoveY, far: false); // and wherever the boss goes
 				if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
 				if (isBoss && _bossIdsSeen.Add(n.whoAmI)) { _bossesSeen++; Ev("boss", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString())); NoteFightBoss(n); }
 				_bossTypes.Add(n.type);

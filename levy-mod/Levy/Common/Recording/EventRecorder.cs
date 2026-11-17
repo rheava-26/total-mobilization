@@ -35,7 +35,7 @@ namespace Levy.Common.Recording
 		/// <summary>A recording that ends this soon (an event flag that flickered) is not kept.</summary>
 		public const int MinKeepTicks = 300;
 		public const int PollEvery = 30, CooldownTicks = 120, MaxProj = 300, ProjCellPx = 100 * 16, FinalMoonWave = 15;
-		/// <summary>Terrain is captured in a grid of cells of this many tiles around every levy, militia outpost, the commander and every miniboss or boss: a window of TerrX x TerrY tiles each side.</summary>
+		/// <summary>Terrain is captured in a grid of cells of this many tiles around every levy, militia outpost, enemy and the commander, wherever they go: a window of TerrX x TerrY tiles each side.</summary>
 		public const int CellW = 50, CellH = 40, TerrX = 100, TerrY = 50, CellsPerTick = 6;
 
 		// ------------------------------------------------------------------------------------------ self-check overrides
@@ -814,7 +814,7 @@ namespace Levy.Common.Recording
 				if (n.dontCountMe && n.damage <= 0 && n.realLife < 0) continue;
 				if (n.realLife >= 0 && n.realLife != n.whoAmI) { segs.Add(i); continue; }
 				int imp = Imp(n);
-				if (imp >= 1) WantTerrain(n.Center.X, n.Center.Y);
+				WantTerrain(n.Center.X, n.Center.Y); // terrain wherever the fight goes: around every enemy too (each 50 x 40 cell's window is queued once)
 				Target(n, out int tk, out int tl);
 				sb.Append(first ? ",\"a\":[[" : ",["); first = false;
 				I(sb, n.type); C(sb); I(sb, i); C(sb); I(sb, (int)n.Center.X); C(sb); I(sb, (int)n.Center.Y); C(sb); D1(sb, n.velocity.X); C(sb); D1(sb, n.velocity.Y); C(sb); I(sb, n.life); C(sb); I(sb, n.lifeMax); C(sb);

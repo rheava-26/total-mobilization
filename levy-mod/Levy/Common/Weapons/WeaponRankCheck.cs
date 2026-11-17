@@ -143,6 +143,45 @@ namespace Levy.Common.Weapons
 			check(!cost.ContainsKey(70) && cost.Count > 0, "an item made only of worthless things costs nothing to make (no entry, a lookup gives 0)");
 			check(cost.TryGetValue(60, out double c60) && cost.TryGetValue(61, out double c61) && c60 > 0 && c61 > 0 && !double.IsNaN(c60) && !double.IsInfinity(c60) && passes <= 130, "a loop that multiplies material stays finite and positive and stops (" + passes + " passes)");
 			check(Near(cost.GetValueOrDefault(10), 100), "the multiplying loop does not touch the raw chain");
+			CheckSolverSideRoutes(check);
+		}
+
+		/// <summary>Another mod's side route must not drag a cost down: a junk item worth nothing that recycles into a bar (the Iron Bar from three worthless chunks), a route through things made only of
+		/// worthless items, a recipe group with a worthless member, a mod's recipe for an item the base game crafts; and what must survive that: an item whose only routes are worthless, a mod item's
+		/// only recipe, a cheaper route through something of value, and a worthless side ingredient next to a valuable one.</summary>
+		private static void CheckSolverSideRoutes(Action<bool, string> check)
+		{
+			// 101 ore (100), 102 a junk chunk (0, raw), 103 wood (0, raw), 104 a wooden thing (value 50, made only of wood), 105 a gem (60, raw)
+			var values = new Dictionary<int, long> { [101] = 100, [102] = 0, [103] = 0, [104] = 50, [105] = 60, [110] = 500, [111] = 900 };
+			CostRecipe ByMod(CostRecipe r) { r.Modded = true; return r; }
+			var recs = new List<CostRecipe>
+			{
+				R(110, 1, (101, 3)), ByMod(R(110, 1, (102, 3))),                         // 110 bar: three ore (base game) or three junk chunks (a mod): the ore prices it
+				R(111, 1, (110, 8)),                                                   // 111 sword: eight bars
+				R(104, 1, (103, 4)),                                                   // 104: four wood (worthless, and it has no other route: costs nothing)
+				ByMod(R(120, 1, (101, 2))), ByMod(R(120, 1, (104, 3))),                    // 120 (a mod item): two ore, or three wooden things (a worthless route): the ore prices it
+				ByMod(R(121, 1, (102, 5))),                                              // 121 (a mod item): only junk: a real craft that costs nothing
+				ByMod(R(122, 1, (101, 1))), ByMod(R(122, 1, (105, 1), (103, 9))),          // 122: one ore (100), or a gem plus nine wood (60): the cheaper route through something of value wins
+				ByMod(R(124, 1, (101, 2))),                                              // 124: two ore; 124 with a group slot that accepts the junk chunk: worthless, set aside
+				ByMod(R(125, 1, (103, 1))), ByMod(R(125, 1, (102, 1))),                    // 125: two worthless routes and no other: costs nothing, nothing breaks
+				ByMod(R(126, 1, (105, 2))), R(126, 1, (101, 5)),                         // 126: a mod's cheaper recipe (120) for an item the base game makes from five ore (500): the base game's route
+			};
+			var grp = new CostRecipe { Out = 124, OutStack = 1, Modded = true }; grp.Ing.Add((101, 1, new[] { 102 })); recs.Add(grp);
+			var cost = MaterialCost.Solve(recs, t => values.TryGetValue(t, out long v) ? v : 0L, out _);
+			int pm = MaterialCost.PrunedModded, pw = MaterialCost.PrunedWorthless;
+			check(Near(cost.GetValueOrDefault(110), 300), "a bar keeps the cost of its ore when a mod recycles worthless chunks into it (" + cost.GetValueOrDefault(110) + ")");
+			check(cost.GetValueOrDefault(111) > cost.GetValueOrDefault(110) && Near(cost.GetValueOrDefault(111), 2400), "a sword of eight bars costs more than a bar (" + cost.GetValueOrDefault(111) + " vs " + cost.GetValueOrDefault(110) + ")");
+			check(!cost.ContainsKey(104), "an item made only of worthless things still costs nothing");
+			check(Near(cost.GetValueOrDefault(120), 200), "a route through things made only of worthless items does not undercut a route through ore (" + cost.GetValueOrDefault(120) + ")");
+			check(!cost.ContainsKey(121) && !cost.ContainsKey(125), "a mod item whose only routes are worthless costs nothing");
+			check(Near(cost.GetValueOrDefault(122), 60), "a cheaper route with something of value in it still wins (" + cost.GetValueOrDefault(122) + ")");
+			check(Near(cost.GetValueOrDefault(124), 200), "a recipe-group slot that accepts a worthless item is a worthless route when a valuable one exists (" + cost.GetValueOrDefault(124) + ")");
+			check(Near(cost.GetValueOrDefault(126), 500), "a mod's recipe for an item the base game crafts is set aside (" + cost.GetValueOrDefault(126) + ")");
+			check(pm == 2 && pw == 2, "the side routes set aside: 2 mod recipes for base-game items, 2 worthless routes (" + pm + ", " + pw + ")");
+			// with nothing to set aside, the result is exactly the plain solve
+			var plain = new List<CostRecipe> { R(110, 1, (101, 3)), R(111, 1, (110, 8)), R(104, 1, (103, 4)) };
+			var a = MaterialCost.Solve(plain, t => values.TryGetValue(t, out long v) ? v : 0L, out _); var b = MaterialCost.SolveAll(plain, t => values.TryGetValue(t, out long v) ? v : 0L);
+			check(a.Count == b.Count && a.All(kv => b.TryGetValue(kv.Key, out double x) && Near(x, kv.Value)), "with no side routes the table is the plain solve");
 		}
 
 		// ------------------------------------------------------------------ the real recipes
@@ -162,7 +201,11 @@ namespace Levy.Common.Weapons
 			var rawKept = rawCandidates.Where(t => !CraftedBySomething(t)).ToList();
 			check(rawKept.All(t => MaterialCost.Of(t) == 0), "raw items have no material cost" + (rawKept.Count < rawCandidates.Length ? " (" + (rawCandidates.Length - rawKept.Count) + " of " + rawCandidates.Length + " left out: another mod has a recipe that makes them)" : ""));
 			double ironBar = MaterialCost.Of(ItemID.IronBar), ironBroadsword = MaterialCost.Of(ItemID.IronBroadsword);
-			check(ironBar > 0 && ironBroadsword > 0 && ironBroadsword > ironBar, "an Iron Broadsword costs more than one Iron Bar (" + ironBroadsword + " vs " + ironBar + ")");
+			check(ironBar > 0 && ironBroadsword > 0 && ironBroadsword > ironBar, "an Iron Broadsword costs more than one Iron Bar (" + ironBroadsword + " vs " + ironBar + ")" + (ironBar > 0 ? "" : Explain(ItemID.IronBar)));
+			// every base-game bar keeps the cost of its base-game recipe, whatever other mods add (the cost of three ores, or of the base recipe's ingredients)
+			int[] bars = { ItemID.CopperBar, ItemID.TinBar, ItemID.IronBar, ItemID.LeadBar, ItemID.SilverBar, ItemID.TungstenBar, ItemID.GoldBar, ItemID.PlatinumBar, ItemID.DemoniteBar, ItemID.CrimtaneBar, ItemID.HellstoneBar, ItemID.CobaltBar, ItemID.PalladiumBar, ItemID.MythrilBar, ItemID.OrichalcumBar, ItemID.AdamantiteBar, ItemID.TitaniumBar, ItemID.ChlorophyteBar };
+			var cheapBars = bars.Where(t => !(MaterialCost.Of(t) > 0)).Select(t => Lang.GetItemNameValue(t)).ToList();
+			check(cheapBars.Count == 0, "every base-game bar has a material cost (" + (cheapBars.Count == 0 ? "all " + bars.Length : string.Join(", ", cheapBars) + " have none") + ")");
 			double brick = MaterialCost.Of(ItemID.HellstoneBrick), wall = MaterialCost.Of(ItemID.HellstoneBrickWall), bar = MaterialCost.Of(ItemID.HellstoneBar);
 			check(bar > 0 && brick > 0 && wall > 0, "Hellstone Bar, Brick and Brick Wall all have a cost (" + bar + ", " + brick + ", " + wall + ") " + Explain(ItemID.Hellstone) + Explain(ItemID.Obsidian));
 			check(wall <= brick / 4d * 1.0001 + 1e-6 || wall <= brick, "a Hellstone Brick Wall costs no more than the brick it is made from (" + wall + " vs " + brick + ")");

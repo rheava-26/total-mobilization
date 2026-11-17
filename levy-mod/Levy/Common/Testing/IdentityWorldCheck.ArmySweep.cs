@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.GameContent.Achievements;
 using Terraria.GameInput;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -44,16 +45,17 @@ namespace Levy.Common.Testing
 		/// <summary>Weapons whose levy fix belongs to another builder: measured and listed, never failed here.</summary>
 		private static readonly Dictionary<string, string> ArmyCoveredElsewhere = new() { { "starshower", "deusmind" } };
 
+		private static readonly bool ArmyDebug = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_DEBUG") == "1";
 		private static string ArmyKey(string s) => new string(s.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
 
 		private sealed class ArmyRes
 		{
 			public string Who = ""; public int Uses, Projs, AtCmd, NearCmdTicks, Engage, Ran, MaxMinions, MaxSentries, Hits; public long Dmg; public double SpawnActor, SpawnCmd; public string End = ""; public string Err;
-			public Dictionary<string, int> Types = new(); public Dictionary<string, int> States = new(); public float MinX = 1e9f, MaxX = -1e9f;
+			public Dictionary<string, int> Types = new(); public Dictionary<string, int> States = new(); public int DummyMinions, DummyTurrets; public float MinX = 1e9f, MaxX = -1e9f;
 			public double UsesPerSec => Uses * 60.0 / Math.Max(1, Ran);
 			public double AvgActor => Projs == 0 ? -1 : SpawnActor / Projs / 16.0; public double AvgCmd => Projs == 0 ? -1 : SpawnCmd / Projs / 16.0;
 			public bool FromCommander => AtCmd > 0 || NearCmdTicks >= 3;
-			public override string ToString() => $"{Who}: uses/s {UsesPerSec:0.00}, projs {Projs}, spawn {AvgActor:0.0} tiles from the actor / {AvgCmd:0.0} from the commander, hits {Hits}, damage {Dmg}, minions {MaxMinions}, sentries {MaxSentries}, engaged {Engage}/{Ran} (states {string.Join(",", States.Select(kv => kv.Key + ":" + kv.Value))}; x {MinX:0.0}..{MaxX:0.0} tiles from start){(Err != null ? ", THREW " + Err : "")} [{string.Join(",", Types.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + "x" + kv.Value))}]";
+			public override string ToString() => $"{Who}: uses/s {UsesPerSec:0.00}, projs {Projs}, spawn {AvgActor:0.0} tiles from the actor / {AvgCmd:0.0} from the commander, hits {Hits}, damage {Dmg}, minions {MaxMinions} (slots {DummyMinions}), sentries {MaxSentries} (slots {DummyTurrets}), engaged {Engage}/{Ran} (states {string.Join(",", States.Select(kv => kv.Key + ":" + kv.Value))}; x {MinX:0.0}..{MaxX:0.0} tiles from start){(Err != null ? ", THREW " + Err : "")} [{string.Join(",", Types.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + "x" + kv.Value))}]";
 		}
 
 		/// <summary>Weapons by display name from every loaded mod (vanilla included).</summary>
@@ -69,7 +71,11 @@ namespace Levy.Common.Testing
 					if (ArmyKey(s.Name) != k && !(s.ModItem != null && ArmyKey(s.ModItem.Name) == k)) continue;
 					res.Add((i, (s.ModItem?.Mod.Name ?? "Terraria") + ":" + (s.ModItem?.Name ?? s.Name), s.Name)); any = true;
 				}
-				if (!any) Note("army sweep: no weapon named '" + n + "' in this load");
+				if (!any)
+				{
+					Item util = null; for (int i = 1; i < ItemLoader.ItemCount && util == null; i++) if (ContentSamples.ItemsByType.TryGetValue(i, out Item u) && u != null && !u.IsAir && ArmyKey(u.Name) == k) util = u;
+					Note("army sweep: " + (util != null ? $"'{n}' is not a weapon (damage {util.damage}, use style {util.useStyle}, channel {util.channel}: a utility item, nothing to compare)" : "no item named '" + n + "' in this load"));
+				}
 			}
 			return res;
 		}
@@ -90,12 +96,14 @@ namespace Levy.Common.Testing
 		{
 			p.position = at - new Vector2(p.width / 2f, p.height); p.velocity = Vector2.Zero; p.statMana = p.statManaMax2; p.statLife = p.statLifeMax2;
 			bool press = it.autoReuse || it.channel || k % 2 == 0;
-			Main.screenPosition = Vector2.Zero; Main.mouseX = (int)aim.X; Main.mouseY = (int)aim.Y;
+			if ((it.sentry || it.buffType > 0 && it.shoot > 0 && (it.DamageType?.CountsAsClass(DamageClass.Summon) ?? false)) && p.ownedProjectileCounts.Length > 0) { int mine = 0; for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && q.owner == 255 && (it.sentry ? q.sentry : q.minion)) mine++; } if (mine > 0 && it.sentry) press = false; } // a player does not recast a sentry that is standing
+			Main.screenPosition = p.Center - new Vector2(Main.screenWidth / 2f, Main.screenHeight / 2f); Main.mouseX = (int)(aim.X - Main.screenPosition.X); Main.mouseY = (int)(aim.Y - Main.screenPosition.Y);
+			try { int myp = Main.myPlayer; int cap1 = p.maxMinions, cap2 = p.maxTurrets; Main.myPlayer = 255; p.ResetEffects(); p.maxMinions = cap1; p.maxTurrets = cap2; p.UpdateBuffs(255); Main.myPlayer = myp; } catch (Exception) { }
 			p.controlUseItem = press; p.controlUseTile = false; p.channel = press && it.channel; p.releaseUseItem = true;
 			try { PlayerInput.Triggers.Current.MouseLeft = press; } catch { }
 			Main.mouseLeft = press; Main.mouseLeftRelease = !press;
 			p.direction = aim.X >= p.Center.X ? 1 : -1;
-			try { object cp = global::Levy.Common.Weapons.AltPolicies.CalamityPlayerOf(p); if (cp != null) global::Levy.Common.Weapons.AltPolicies.SetCalAimPublic(cp, aim - p.MountedCenter); } catch (Exception) { }
+			try { object cp = global::Levy.Common.Weapons.AltPolicies.CalamityPlayerOf(p); if (cp != null) global::Levy.Common.Weapons.AltPolicies.SetCalAimPublic(cp, aim - p.MountedCenter, (aim - p.MountedCenter).ToRotation()); } catch (Exception) { }
 			int saved = Main.myPlayer;
 			try
 			{
@@ -105,7 +113,7 @@ namespace Levy.Common.Testing
 						if (m.Name == "ItemCheck") { var ps = m.GetParameters(); if (ps.Length == 0) { _itemCheck = m; _itemCheckTakesInt = false; break; } if (ps.Length == 1 && ps[0].ParameterType == typeof(int)) { _itemCheck = m; _itemCheckTakesInt = true; } }
 				_itemCheck.Invoke(p, _itemCheckTakesInt ? new object[] { 255 } : null);
 			}
-			catch (Exception e) { var ie = e is TargetInvocationException && e.InnerException != null ? e.InnerException : e; if (!(ie.StackTrace ?? "").Contains("ItemCheck_PlayInstruments")) throw ie; }
+			catch (Exception e) { var ie = e is TargetInvocationException && e.InnerException != null ? e.InnerException : e; if (!(ie.StackTrace ?? "").Contains("ItemCheck_PlayInstruments")) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ie).Throw(); }
 			finally { Main.myPlayer = saved; }
 		}
 
@@ -116,7 +124,7 @@ namespace Levy.Common.Testing
 			int d = _sweepTarget.lifeMax - _sweepTarget.life; if (d > 0) { res.Dmg += d; _sweepTarget.life = _sweepTarget.lifeMax; }
 		}
 
-		private static ArmyRes ArmyOne(int weaponType, int ammoType, int ticks, bool player, bool cmdHolds)
+		private static ArmyRes ArmyOne(int weaponType, int ammoType, int ticks, bool player, bool cmdHolds, int minionCap = 1, int turretCap = 1)
 		{
 			var res = new ArmyRes { Who = player ? "player" : (cmdHolds ? "levy, commander holding her button" : "levy, commander idle 60 tiles away") };
 			ClearSoldiers();
@@ -124,7 +132,7 @@ namespace Levy.Common.Testing
 			_cmdHolds = cmdHolds && !player; ReleaseCommanderButtons();
 			Vector2 at = new Vector2(Cx * 16f + 8f, FloorY * 16f);
 			Item w = new Item(); w.SetDefaults(weaponType);
-			bool close = !w.noMelee || w.shoot <= 0; // a blade or spear is used next to the enemy (5 tiles), a shooter from 12 tiles
+			bool close = !w.noMelee || w.shoot <= 0 || ItemID.Sets.Yoyo[w.type] || ItemID.Sets.Spears[w.type]; // a blade or spear is used next to the enemy (5 tiles), a shooter from 12 tiles
 			SpawnOriginTarget(close ? at - new Vector2(7 * 16f, 0f) : at); _sweepTarget.boss = true;
 			Player scratch = null, saved255 = null; int body = -1; SoldierRecord rec = null;
 			ArmySweepTally.Target = _sweepTarget.whoAmI; ArmySweepTally.On = true;
@@ -134,7 +142,7 @@ namespace Levy.Common.Testing
 				{
 					saved255 = Main.player[255]; scratch = new Player { whoAmI = 255, name = "ArmyScratch" }; scratch.ResetEffects();
 					Main.player[255] = scratch; _my = 255; if (Main.GameViewMatrix == null) Main.GameViewMatrix = new Terraria.Graphics.SpriteViewMatrix(null);
-					ArmyPlayerSetup(scratch, w, ammoType, ArmyPlayerAt(close, at));
+					ArmyPlayerSetup(scratch, w, ammoType, ArmyPlayerAt(close, at)); scratch.maxMinions = Math.Max(1, minionCap); scratch.maxTurrets = Math.Max(1, turretCap);
 				}
 				else
 				{
@@ -154,8 +162,9 @@ namespace Levy.Common.Testing
 					{
 						ArmyPlayerUse(scratch, w, ArmyPlayerAt(close, at), _sweepTarget.Center, k);
 						if (scratch.itemAnimation > prevAnim) res.Uses++; prevAnim = scratch.itemAnimation;
+						scratch.numMinions = 0; scratch.slotsMinions = 0f; Array.Clear(scratch.ownedProjectileCounts, 0, scratch.ownedProjectileCounts.Length); // a player's own per-tick reset: the projectile pass below counts them again
 						ArmyReadDamage(res);
-						Main.screenPosition = Vector2.Zero; Main.mouseX = (int)_sweepTarget.Center.X; Main.mouseY = (int)_sweepTarget.Center.Y;
+						Main.screenPosition = scratch.Center - new Vector2(Main.screenWidth / 2f, Main.screenHeight / 2f); Main.mouseX = (int)(_sweepTarget.Center.X - Main.screenPosition.X); Main.mouseY = (int)(_sweepTarget.Center.Y - Main.screenPosition.Y);
 						Step(1); actor = scratch.Center;
 					}
 					else { rec.Mana = rec.MaxMana; OriginStep(); actor = Main.npc[body].Center; }
@@ -165,6 +174,7 @@ namespace Levy.Common.Testing
 						if (!Main.npc[body].active || Main.npc[body].ModNPC is not SoldierNPC soldier) { res.End = "levyGone"; break; }
 						if (soldier.LastUseTick != prevUse) { if (prevUse != 0) res.Uses++; prevUse = soldier.LastUseTick; }
 						if (soldier.State == SoldierState.Engage) res.Engage++;
+						if (soldier.Dummy != null) { res.DummyMinions = soldier.Dummy.maxMinions; res.DummyTurrets = soldier.Dummy.maxTurrets; }
 						res.States[soldier.State.ToString()] = res.States.TryGetValue(soldier.State.ToString(), out int sc) ? sc + 1 : 1; float dx = (Main.npc[body].Center.X - at.X) / 16f; res.MinX = Math.Min(res.MinX, dx); res.MaxX = Math.Max(res.MaxX, dx);
 						actor = Main.npc[body].Center;
 					}
@@ -185,12 +195,13 @@ namespace Levy.Common.Testing
 							if (!player && dc < NearTiles * 16f && dc < da) res.AtCmd++;
 						}
 						if (!player && dc < NearTiles * 16f && dc < da) res.NearCmdTicks++;
+						if (ArmyDebug && k % 100 == 50 && (p.minion || p.sentry || p.minionSlots > 0f)) Note($"  armydbg {(player ? "player" : "levy")} t={k} {p.ModProjectile?.Name ?? p.type.ToString()} owner={p.owner} dmg={p.damage} friendly={p.friendly} pos-target=({(p.Center.X - _sweepTarget.Center.X) / 16f:0.0},{(p.Center.Y - _sweepTarget.Center.Y) / 16f:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.0},{p.ai[1]:0.0}) localAI=({p.localAI[0]:0.0},{p.localAI[1]:0.0}) tl={p.timeLeft}");
 					}
 					res.MaxMinions = Math.Max(res.MaxMinions, minions); res.MaxSentries = Math.Max(res.MaxSentries, sentries);
 				}
 				res.Hits = ArmySweepTally.Hits; res.Dmg = Math.Max(res.Dmg, ArmySweepTally.Damage);
 			}
-			catch (Exception e) { res.Err = e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(); }
+			catch (Exception e) { res.Err = e.GetType().Name + ": " + e.Message + " @ " + string.Join(" < ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())); }
 			finally
 			{
 				ArmySweepTally.On = false;
@@ -199,6 +210,8 @@ namespace Levy.Common.Testing
 			}
 			return res;
 		}
+
+		private static void NoAchievements(On_AchievementsHelper.orig_HandleSpecialEvent orig, Player player, int eventID) { }
 
 		private sealed class ArmyRow { public string Label, Name, Cls, Fam, Status, Cause = ""; public ArmyRes Player, A, B; public double RatioA, RatioB; }
 
@@ -216,6 +229,7 @@ namespace Levy.Common.Testing
 			if (weapons.Count == 0) return;
 			var ammoByKind = AmmoByKind(); var rows = new List<ArmyRow>(); var sw = Stopwatch.StartNew();
 			SetupOriginArena(); _spNet = false;
+			On_AchievementsHelper.HandleSpecialEvent += NoAchievements; // a yoyo throw tells the achievement system, which a headless server has not built
 			try
 			{
 				KeepCommander(); Step(2);
@@ -225,14 +239,14 @@ namespace Levy.Common.Testing
 					int ammo = sample.useAmmo > 0 && ammoByKind.TryGetValue(sample.useAmmo, out int at) ? at : 0;
 					var row = new ArmyRow { Label = label, Name = name, Cls = (sample.DamageType?.Name ?? "?").Replace("DamageClass", "") };
 					try { Item fi = new Item(); fi.SetDefaults(type); WeaponProfile fp = WeaponClassifier.GetProfile(fi); row.Fam = fp.Family + (fp.Supported ? "" : "(unsupported)") + (ModShotKinds.Of(fi) != ModShotKind.None ? "/" + ModShotKinds.Of(fi) : ""); } catch (Exception) { row.Fam = "?"; }
-					row.Player = ArmyOne(type, ammo, ticks, true, false);
 					row.A = ArmyOne(type, ammo, ticks, false, false);
 					row.B = ArmyOne(type, ammo, ticks, false, true);
+					row.Player = ArmyOne(type, ammo, ticks, true, false, Math.Max(row.A.DummyMinions, row.B.DummyMinions), Math.Max(row.A.DummyTurrets, row.B.DummyTurrets)); // the stand-in gets the minion and sentry slots the levy's own player has
 					ArmyClassify(row); rows.Add(row);
 					Note($"army sweep {row.Status} {row.Label} [{row.Cls}, {row.Fam}] ratio idle {row.RatioA:0.00} / commander holding {row.RatioB:0.00} {row.Cause} || {row.Player} || {row.A} || {row.B}");
 				}
 			}
-			finally { _sweepTarget = null; }
+			finally { _sweepTarget = null; On_AchievementsHelper.HandleSpecialEvent -= NoAchievements; }
 			sw.Stop();
 			Note($"army sweep: {rows.Count} weapons, {ticks} ticks per run, {sw.ElapsedMilliseconds / 1000} s: OK {rows.Count(r => r.Status == "OK")}, WEAK {rows.Count(r => r.Status == "WEAK")}, BROKEN {rows.Count(r => r.Status == "BROKEN")}, NOREF {rows.Count(r => r.Status == "NOREF")}");
 			Note("army sweep table (name | status | worst ratio | player dmg | levy dmg idle | levy dmg commander holding | cause):");

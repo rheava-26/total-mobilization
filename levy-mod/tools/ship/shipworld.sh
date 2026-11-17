@@ -12,6 +12,7 @@ set -u
 TMO=${SHIPWORLD_TIMEOUT:-480}; SETTLE=${SHIPWORLD_SETTLE:-25}
 VAN_MODS=${VAN_MODS:-Levy,Mechanization,Warbands}
 CAL_MODS=${CAL_MODS:-CalamityModMusic,CalamityMod,Levy,Mechanization,Warbands}
+WOT_MODS=${WOT_MODS:-CalamityModMusic,CalamityMod,Daybreak,Luminance,SubworldLibrary,NoxusBoss,Fargowiltas,miningcracks_take_on_luiafk,Levy,Mechanization,Warbands}   # optional "wot" half (shipwotg.sh --world, SHIPWORLD_HALVES=wot)
 WORLD=$LAB/world/ShipWorld.wld
 mkdir -p "$LAB/world"
 
@@ -44,6 +45,8 @@ HALVES=${SHIPWORLD_HALVES:-van cal}; VR=; CR=
 case " $HALVES " in *" van "*) VR=$(prep van "$TML08" "$VERIFY_SAVE/Mods");; esac
 case " $HALVES " in *" cal "*) CR=$(prep cal "$TML10" "$SHIPCAL/save/Mods");; esac
 
+case " $HALVES " in *" wot "*) WR=$(prep wot "$TML10" "$WOTG_HOME/save/Mods");; esac
+
 run_half() { # $1 = run dir, $2 = port, $3 = mod list
   "$SHIP_DIR/tmlboot.sh" -i "$1/tml" -s "$1/save" -m "$3" -w "$1/ShipWorld.wld" -p "$2" \
       -e "LEVY_SELFCHECK_WORLD=1 LEVY_MECHWORLD_EXIT=1" -x '\[MechWorld\] self-check pass=' -q "$SETTLE" -t "$TMO" > "$1/half.out" 2>&1
@@ -52,7 +55,7 @@ run_half() { # $1 = run dir, $2 = port, $3 = mod list
 echo "== booting ShipWorld: halves [$HALVES] ($PORT_WVAN vanilla, $PORT_WCAL Calamity), $([ "${SHIPWORLD_SERIAL:-0}" = 1 ] && echo one after another || echo in parallel) =="
 T0=$SECONDS; PIDS=()
 for h in $HALVES; do
-  case $h in van) set -- "$VR" "$PORT_WVAN" "$VAN_MODS";; cal) set -- "$CR" "$PORT_WCAL" "$CAL_MODS";; *) continue;; esac
+  case $h in van) set -- "$VR" "$PORT_WVAN" "$VAN_MODS";; cal) set -- "$CR" "$PORT_WCAL" "$CAL_MODS";; wot) set -- "$WR" "$PORT_WWOT" "$WOT_MODS";; *) continue;; esac
   if [ "${SHIPWORLD_SERIAL:-0}" = 1 ]; then run_half "$@"; else run_half "$@" & PIDS+=($!); fi
 done
 [ ${#PIDS[@]} -gt 0 ] && wait "${PIDS[@]}"
@@ -128,3 +131,4 @@ report() { # $1 = label, $2 = run dir
 }
 case " $HALVES " in *" van "*) report "VANILLA ($VAN_MODS)" "$VR";; esac
 case " $HALVES " in *" cal "*) report "CALAMITY ($CAL_MODS)" "$CR";; esac
+case " $HALVES " in *" wot "*) report "WOTG ($WOT_MODS)" "$WR";; esac

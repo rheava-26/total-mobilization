@@ -210,6 +210,26 @@ namespace Levy.Common.Perf
 			Check("a GlobalNPC hook that burns 0.4 ms an update shows as a global hook of Levy at about the cost burned", gm != null && gm.Ms > 0.6 * burned4 && gm.Ms < 1.6 * burned4);
 			Check("and its time is taken out of the NPC's own row (that row stays small)", nm4 == null || nm4.Ms < 0.5 * gm.Ms);
 
+			// ---- Levy's own buckets are ms per update whether or not the player's profiler is on. With it on (and with a recorded fight's in-fight profiling) the bucket timers run on every update, and the
+			// window used to divide them by the sampled updates only: Eve's 11-17 log read "stats 37 ms" per update inside updates of 17 ms.
+			foreach (bool user in new[] { false, true })
+			{
+				double ai = 0; PerfWindow wl = null;
+				for (int attempt = 0; attempt < 3; attempt++)
+				{
+					Cleanup(); PerfTestTypes.Reset(); PerfTestTypes.NpcUs = 300; PerfTestTypes.NpcAsLevy = true;
+					bool tsWas = global::Levy.Common.Util.ClientProf.TestServer;
+					if (user) { global::Levy.Common.Util.ClientProf.TestServer = true; global::Levy.Common.Util.ClientProf.Enable(chat: false); }
+					try { wl = Window(() => SpawnNpc(ModContent.NPCType<PerfTestNpc>()), 264); }
+					finally { if (user) { global::Levy.Common.Util.ClientProf.Disable(); global::Levy.Common.Util.ClientProf.TestServer = tsWas; } PerfTestTypes.NpcAsLevy = false; }
+					ai = wl?.Levy.FirstOrDefault(kv => kv.Key == "ai").Value ?? 0;
+					if (ai > 0.15 && ai < 0.6) break;
+				}
+				Note($"Levy bucket phase ({(user ? "the player's profiler on" : "profiler off")}): ai {ai:0.000} ms per update for 0.3 ms burned an update; buckets {string.Join(", ", wl?.Levy.Select(kv => kv.Key + " " + kv.Value.ToString("0.000")) ?? Array.Empty<string>())}");
+				Check($"Levy's own bucket reads the time per update ({(user ? "with the player's profiler on" : "profiler off")}: ai {ai:0.000} ms for 0.3 ms burned)", ai > 0.15 && ai < 0.6);
+			}
+			Cleanup(); PerfTestTypes.Reset();
+
 			// ---- map layer, every call
 			Cleanup(); PerfTestTypes.Reset(); PerfTestTypes.LayerUs = 1500;
 			ModMapLayer layer = ModContent.GetContent<ModMapLayer>().FirstOrDefault(l => l is PerfTestLayer);

@@ -16,9 +16,11 @@ namespace Levy.Common.Testing
 	{
 		public static bool Loaded => Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") == "1";
 		public static volatile int NpcUs, ProjUs, GlobUs, LayerUs;
+		/// <summary>The test NPC's busy time is timed into Levy's own "ai" bucket, the way a levy's AI is (the bucket check).</summary>
+		public static volatile bool NpcAsLevy;
 		public static long NpcCalls, ProjCalls, GlobCalls, LayerCalls;
 		public static void Spin(int us) { if (us <= 0) return; long end = Stopwatch.GetTimestamp() + us * Stopwatch.Frequency / 1000000; while (Stopwatch.GetTimestamp() < end) { } }
-		public static void Reset() { NpcUs = ProjUs = GlobUs = LayerUs = 0; NpcCalls = ProjCalls = GlobCalls = LayerCalls = 0; }
+		public static void Reset() { NpcUs = ProjUs = GlobUs = LayerUs = 0; NpcAsLevy = false; NpcCalls = ProjCalls = GlobCalls = LayerCalls = 0; }
 	}
 
 	public class PerfTestNpc : ModNPC
@@ -30,7 +32,12 @@ namespace Levy.Common.Testing
 			NPC.width = NPC.height = 16; NPC.lifeMax = NPC.life = 10; NPC.damage = 0; NPC.friendly = true; NPC.noGravity = true; NPC.noTileCollide = true; NPC.knockBackResist = 0f; NPC.aiStyle = -1; NPC.dontTakeDamage = true; NPC.dontCountMe = true;
 		}
 		public override bool CheckActive() => false;
-		public override void AI() { NPC.velocity = Vector2.Zero; NPC.timeLeft = 99999; PerfTestTypes.NpcCalls++; PerfTestTypes.Spin(PerfTestTypes.NpcUs); }
+		public override void AI()
+		{
+			NPC.velocity = Vector2.Zero; NPC.timeLeft = 99999; PerfTestTypes.NpcCalls++;
+			if (!PerfTestTypes.NpcAsLevy) { PerfTestTypes.Spin(PerfTestTypes.NpcUs); return; }
+			long t0 = global::Levy.Common.Util.LevyProf.Begin(); PerfTestTypes.Spin(PerfTestTypes.NpcUs); global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.AI, t0);
+		}
 	}
 
 	public class PerfTestProj : ModProjectile

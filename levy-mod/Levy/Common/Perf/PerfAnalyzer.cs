@@ -159,7 +159,10 @@ namespace Levy.Common.Perf
 				long now = Stopwatch.GetTimestamp(), dt = now - t0;
 				_updTicks += dt; _updates++; if (dt > _worstUpd) _worstUpd = dt;
 				LastTickSampled = _sample; LastTickLevy = _sample && LevyProf.On;
-				if (_sample) { _sUpdates++; if (LevyProf.On) _bUpdates++; if (!_userProf) LevyProf.On = false; }
+				// Levy's bucket timers ran for this update: count it. While the player's profiler or a recorded fight's profiling is on they run on EVERY update, not only on the sampled ones, so counting
+				// only sampled updates divided a whole window's bucket time by one update in eleven (Eve's 11-17 log: "stats 37 ms" per update inside a 17 ms update).
+				if (LevyProf.On) _bUpdates++;
+				if (_sample) { _sUpdates++; if (!_userProf) LevyProf.On = false; }
 				_sample = false;
 				double win = TestWindowSecs ?? WindowSecs;
 				if ((now - _winStart) >= win * Freq) CloseWindow(now);

@@ -312,7 +312,7 @@ def convert(rows, factor):
     hz = hdr.get("hz", 30)
     out = {
         "v": 4,
-        "hdr": {k: hdr[k] for k in ("format", "meta", "mode", "boss", "stateNames", "levy", "date", "split", "mods", "auto") if k in hdr},
+        "hdr": {k: hdr[k] for k in ("format", "meta", "mode", "boss", "stateNames", "levy", "date", "split") if k in hdr},
         "frames": [],
         "events": [shrink_event(e) for e in rows if e.get("k") == "e"],
     }

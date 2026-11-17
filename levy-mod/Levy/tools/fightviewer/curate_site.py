@@ -142,7 +142,7 @@ def eve_note(info, s):
     fled = e.get("result") == "fled"
     dur = e.get("durationSec") or s["dur"]
     boss = s["boss"]
-    bits = ["%s in %.0f s." % ("Won" if won else "Lost", dur) if won else ("The boss left at %.0f s with you alive." % dur if fled else "Lost at %.0f s." % dur)]
+    bits = ["%s in %.0f s." % ("Won" if won else "Lost", dur) if won else ("The boss left at %.0f s with you alive." % dur if fled else ("The recording ended at %.0f s." % dur if e.get("result") == "ended" else "Lost at %.0f s." % dur))]
     if not won and info["life"] is not None:
         bits.append("%s had %.0f%% life left." % (boss, 100 * info["life"]))
     if info["cdeaths"]:

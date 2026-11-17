@@ -500,11 +500,13 @@ namespace Levy.Content.NPCs
 			if (!IsAlive) return;
 			if ((int)Main.GameUpdateCount % LevyConstants.ThinkIntervalTicks == ThinkOffset && !MindControlled) Brain_Think(); // a mind-controlled body takes orders from its player (Common/Observe)
 			pq = global::Levy.Common.Util.LevyProf.Begin();
-			Fear_Update();
+			bool mind = MindDirect; // a player's keys drive this body: its own fear, goals, routes, hooks and dodges stay out of it (SoldierNPC.MindDrive.cs)
+			if (!mind) Fear_Update();
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Fear, pq);
 			MindControl_Drive();
 			pq = global::Levy.Common.Util.LevyProf.Begin();
-			if (!Sit_Hold() && !Leisure_Hold() && !Fizz_Flight() && !Knock_Hold()) Movement_Update(); // a seated levy stays on its seat (SoldierNPC.Sit.cs); a knocked Fizzy body flies on its momentum (SoldierNPC.Fizz.cs)
+			if (mind) MindMove();
+			else if (!Sit_Hold() && !Leisure_Hold() && !Fizz_Flight() && !Knock_Hold()) Movement_Update(); // a seated levy stays on its seat (SoldierNPC.Sit.cs); a knocked Fizzy body flies on its momentum (SoldierNPC.Fizz.cs)
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Move, pq);
 			TickJumpEffects(); // the real OnStarted of every non-vanilla extra jump spent (SoldierNPC.JumpFx.cs)
 			TickMovementFx(); // cosmetic dust and sound only (SoldierNPC.MovementFx.cs); a dedicated server returns at once

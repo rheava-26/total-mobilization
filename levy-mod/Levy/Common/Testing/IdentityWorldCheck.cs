@@ -178,6 +178,9 @@ namespace Levy.Common.Testing
 			}
 			OriginSweep();
 			ClearSoldiers();
+			MindSweep();
+			ClearSoldiers();
+			if (Environment.GetEnvironmentVariable("LEVY_ORIGIN_ALONE") == "1") return;
 			DreadmineCount();
 			ClearSoldiers();
 			SummonLoopSweep();

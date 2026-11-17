@@ -43,7 +43,7 @@ namespace Levy.Common.Observe
 		public static bool TryViewCenter(out Vector2 c) { c = _lastCenter; return Kind != ViewKind.None && _haveLast; }
 
 		private static Vector2 _remotePos, _lastCenter; private static uint _remoteTick = uint.MaxValue; private static bool _haveLast;
-		private static int _bodyCache = -1; private static bool _closeMenu; private static uint _nextAuto; private static bool _optOut;
+		private static int _bodyCache = -1; private static bool _closeMenu; private static uint _nextAuto; private static bool _optOut, _deathPicked;
 
 
 		public override void Load()
@@ -122,6 +122,13 @@ namespace Levy.Common.Observe
 			ArenaView.Leave();
 		}
 
+		/// <summary>The view follows the levy the link is on now (after the controlled levy fell and the next was handed over).</summary>
+		private static void FollowLink(int id)
+		{
+			if (id == TargetId && MindControl.LocalSoldierId == id) return;
+			TargetId = id; MindControl.LocalSoldierId = id; _bodyCache = -1; _haveLast = false;
+		}
+
 		public static void OnMindEnd()
 		{
 			MindControl.LocalSoldierId = -1;
@@ -132,7 +139,8 @@ namespace Levy.Common.Observe
 		public static void OnServerPos(byte kind, int id, Vector2 pos)
 		{
 			_remotePos = pos; _remoteTick = Main.GameUpdateCount;
-			if (kind == 3 && Kind == ViewKind.Mind) { TargetId = id; MindControl.LocalSoldierId = id; } // the server moved the link to the next levy
+			if (kind == 4) { if (Kind == ViewKind.Mind) OnMindEnd(); return; } // the server ended the link: stop following and sending input now
+			if (kind == 3 && Kind == ViewKind.Mind) { FollowLink(id); } // the server moved the link to the next levy
 		}
 
 		// =====================================================================================================
@@ -267,16 +275,21 @@ namespace Levy.Common.Observe
 		{
 			if (Main.dedServ || Main.gameMenu) return;
 			var me = Main.LocalPlayer;
-			if (!me.dead) _optOut = false;
-			// dying hands you a levy
-			if (me.dead && Kind != ViewKind.Mind && ObserveConfig.Get != null && ObserveConfig.Get.MindControlOnDeath && MindControl.LocalSoldierId < 0 && !_optOut && Main.GameUpdateCount >= _nextAuto)
+			if (!me.dead) { _optOut = false; _deathPicked = false; }
+			// dying hands you a levy, once per death: when that levy falls the server hands over the next one, and when there is none the view stays released (no key re-links it)
+			if (me.dead && Kind != ViewKind.Mind && ObserveConfig.Get != null && ObserveConfig.Get.MindControlOnDeath && MindControl.LocalSoldierId < 0 && !_optOut && !_deathPicked && Main.GameUpdateCount >= _nextAuto)
 			{
 				_nextAuto = Main.GameUpdateCount + 60u; // a refusal is not retried every frame
 				int id = MindControl.PickNext(me, -1, -1, me.Center);
-				if (id >= 0) MindControl.RequestBegin(id, true);
+				if (id >= 0) { _deathPicked = true; MindControl.RequestBegin(id, true); }
 			}
 			if (Kind == ViewKind.Mind && MindControl.LocalViaDeath && !me.dead) { MindControl.RequestEnd(); }
-			if (Kind == ViewKind.Mind && Main.netMode == NetmodeID.SinglePlayer && MindControl.LinkOfPlayer(Main.myPlayer) == null) OnMindEnd(); // the server side ended it
+			if (Kind == ViewKind.Mind && Main.netMode == NetmodeID.SinglePlayer)
+			{
+				var link = MindControl.LinkOfPlayer(Main.myPlayer);
+				if (link == null) OnMindEnd(); // the server side ended it
+				else FollowLink(link.SoldierId); // the link moved to the next levy while the controlled one fell
+			}
 			if (Kind == ViewKind.None) { HideHud = false; return; }
 			if (Kind != ViewKind.Mind && me.dead) { Exit(); return; }
 
@@ -287,8 +300,10 @@ namespace Levy.Common.Observe
 			if (esc || back) { if (esc) _closeMenu = true; Exit(); return; }
 			if (!typing)
 			{
-				if (Main.keyState.IsKeyDown(Keys.Right) && !Main.oldKeyState.IsKeyDown(Keys.Right)) Cycle(1);
-				if (Main.keyState.IsKeyDown(Keys.Left) && !Main.oldKeyState.IsKeyDown(Keys.Left)) Cycle(-1);
+				// while driving a levy the arrow keys are movement keys: switching levies is Page Up / Page Down there
+				Keys next = Kind == ViewKind.Mind ? Keys.PageDown : Keys.Right, prev = Kind == ViewKind.Mind ? Keys.PageUp : Keys.Left;
+				if (Main.keyState.IsKeyDown(next) && !Main.oldKeyState.IsKeyDown(next)) Cycle(1);
+				if (Main.keyState.IsKeyDown(prev) && !Main.oldKeyState.IsKeyDown(prev)) Cycle(-1);
 			}
 			if (Kind == ViewKind.Camera && PlayerInput.ScrollWheelDelta != 0)
 			{

@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Levy.Common;
+using Levy.Common.Observe;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
 using Levy.Common.Weapons;
@@ -27,6 +28,7 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		internal Vector2 AimCursor()
 		{
+			if (Record != null && MindDirect && MindControl.LinkOf(Record.Id) is { } ml) return ml.In.Aim; // driven by a player: the cursor is her cursor
 			uint now = Main.GameUpdateCount + 1u;
 			int ti = TargetIndex;
 			if (ti >= 0 && ti < Main.maxNPCs && Main.npc[ti].active) { _cursorHold = Main.npc[ti].Center; _cursorHoldTick = now; return _cursorHold; }

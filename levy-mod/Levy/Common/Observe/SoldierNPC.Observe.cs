@@ -6,6 +6,7 @@ using Levy.Common.Movement;
 using Levy.Common.Observe;
 using Levy.Common.Targeting;
 using Levy.Common.Util;
+using Levy.Common.Owner;
 using Levy.Common.Weapons;
 
 namespace Levy.Content.NPCs
@@ -62,9 +63,14 @@ namespace Levy.Content.NPCs
 
 		// ---- mind control ----
 		private bool _mindWas;
+		private bool _mindPJump, _mindPL, _mindPR, _mindPHook, _mindPSwap;
+		/// <summary>The hand the player chose with the hotbar keys: -1 the brain's own pick, 0 the main weapon, 1 the sidearm.</summary>
+		internal int MindSide = -1;
 
 		/// <summary>True while a player's input drives this soldier.</summary>
 		public bool MindControlled => Record != null && MindControl.LinkOf(Record.Id) != null;
+		/// <summary>Driven by the direct controller (movement and attack straight from the keys), not the old goal-steered drive kept for the audit's "before" numbers.</summary>
+		internal bool MindDirect => !MindControl.Legacy && MindControlled;
 
 		partial void MindControl_Drive();
 		partial void MindControl_Act();
@@ -74,9 +80,10 @@ namespace Levy.Content.NPCs
 			var link = Record == null ? null : MindControl.LinkOf(Record.Id);
 			if (link == null)
 			{
-				if (_mindWas) { _mindWas = false; ClearGoal(); TargetIndex = -1; NPC.netUpdate = true; } // released: the brain takes the next think
+				if (_mindWas) { _mindWas = false; MindRelease(); } // released: the brain takes the next think
 				return;
 			}
+			if (!MindControl.Legacy) { MindBegin(); return; }
 			_mindWas = true;
 			var inp = link.In;
 			HoldPosition = false;
@@ -99,6 +106,7 @@ namespace Levy.Content.NPCs
 
 		partial void MindControl_Act()
 		{
+			if (!MindControl.Legacy) return;
 			var link = Record == null ? null : MindControl.LinkOf(Record.Id);
 			if (link == null) return;
 			var inp = link.In;
@@ -109,6 +117,28 @@ namespace Levy.Content.NPCs
 				try { WeaponUse.TryAttack(this, SoldierTargeting.FocusPhantom(inp.Aim, NPC.Center)); }
 				catch (Exception e) { MindControl.Warn(e); }
 			}
+		}
+
+		/// <summary>The first tick of a link: everything the brain was doing is dropped, so no goal, route, hook plan or dash of its own is left to steer the body.</summary>
+		private void MindBegin()
+		{
+			if (_mindWas) return;
+			_mindWas = true;
+			HoldPosition = false; ClearGoal(); TargetIndex = -1; _focusBare = false;
+			_path.Clear(); _dashTicks = 0; _dodgeTicks = 0; _fallThroughTicks = 0; _flying = false; _blocked = false; _blockedHard = false;
+			if (_hkPhase != HookPhase.Idle) { try { HookReset(false); } catch (Exception) { } }
+			Sit_Stop();
+			_mindPJump = _mindPL = _mindPR = _mindPHook = false; MindSide = -1;
+			NPC.netUpdate = true;
+		}
+
+		/// <summary>The link ended (released, respawn, the levy was handed on): the player's keys are let go and the body goes back to the brain.</summary>
+		private void MindRelease()
+		{
+			ClearGoal(); TargetIndex = -1; MindSide = -1; HoldPosition = false;
+			if (Dummy != null) { Dummy.controlLeft = Dummy.controlRight = Dummy.controlJump = Dummy.controlDown = Dummy.controlUp = false; Dummy.releaseLeft = Dummy.releaseRight = Dummy.releaseJump = true; Dummy.dashTime = 0; Dummy.jump = 0; }
+			if (Weapon != null) UpdateSidearm();
+			NPC.netUpdate = true;
 		}
 	}
 }

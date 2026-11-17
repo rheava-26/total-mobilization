@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Boss;
@@ -165,7 +166,7 @@ namespace Levy.Common.Recording
 			return n.realLife == n.whoAmI && NPCID.Sets.BossHeadTextures[n.type] >= 0;
 		}
 
-		private static bool IsBossOrPart(NPC n)
+		internal static bool IsBossOrPart(NPC n)
 		{
 			if (IsEventNpc(n.type)) return false;
 			if (n.boss || NPCID.Sets.ShouldBeCountedAsBoss[n.type]) return true;
@@ -220,7 +221,7 @@ namespace Levy.Common.Recording
 		}
 
 		/// <summary>The folder a recording goes in: the harness override, else the config's folder (default Levy/Recordings in the save folder), falling back to the default with a chat warning. Null when nothing is writable.</summary>
-		private static string Dir(out string warn)
+		internal static string Dir(out string warn)
 		{
 			warn = null;
 			if (OutDirOverride != null)
@@ -234,8 +235,8 @@ namespace Levy.Common.Recording
 			return d;
 		}
 
-		private static long ConfigFileBytes() { try { return Math.Max(1, FightRecConfig.Get?.MaxFileSizeMB ?? 200) * 1048576L; } catch { return 200L * 1048576; } }
-		private static long ConfigFolderBytes() { try { return Math.Max(1, FightRecConfig.Get?.MaxFolderSizeMB ?? 2048) * 1048576L; } catch { return 2048L * 1048576; } }
+		internal static long ConfigFileBytes() { try { return Math.Max(1, FightRecConfig.Get?.MaxFileSizeMB ?? 200) * 1048576L; } catch { return 200L * 1048576; } }
+		internal static long ConfigFolderBytes() { try { return Math.Max(1, FightRecConfig.Get?.MaxFolderSizeMB ?? 2048) * 1048576L; } catch { return 2048L * 1048576; } }
 
 		/// <summary>Damage-class word of an item or projectile: summon, magic, ranged, melee (whips count as summon), else the class's own name lower-cased ("rogue", "throwing").</summary>
 		internal static string ClassName(DamageClass dc)
@@ -277,7 +278,7 @@ namespace Levy.Common.Recording
 		}
 
 		/// <summary>The army at the start: how many levies stand in the world, split by the damage class of their main weapon and by grade, plus the most common weapons (item ids).</summary>
-		private static string ArmySummary()
+		internal static string ArmySummary(Dictionary<int, string> items = null)
 		{
 			try
 			{
@@ -291,7 +292,7 @@ namespace Levy.Common.Recording
 					string c = wpn != null && !wpn.IsAir ? ClassName(wpn.DamageType) : "unarmed";
 					cls[c] = cls.TryGetValue(c, out int v) ? v + 1 : 1;
 					string g = s.Record.Grade.ToString(); grades[g] = grades.TryGetValue(g, out v) ? v + 1 : 1;
-					if (wpn != null && !wpn.IsAir) { weapons[wpn.type] = weapons.TryGetValue(wpn.type, out v) ? v + 1 : 1; if (!_items.ContainsKey(wpn.type)) _items[wpn.type] = wpn.Name; }
+					if (wpn != null && !wpn.IsAir) { weapons[wpn.type] = weapons.TryGetValue(wpn.type, out v) ? v + 1 : 1; var names = items ?? _items; if (!names.ContainsKey(wpn.type)) names[wpn.type] = wpn.Name; }
 				}
 				var top = new List<KeyValuePair<int, int>>(weapons); top.Sort((a, b2) => b2.Value.CompareTo(a.Value));
 				var sb = new StringBuilder("{\"n\":" + n + ",\"avgLife\":" + (n > 0 ? hp / n : 0) + ",\"classes\":{");
@@ -408,7 +409,7 @@ namespace Levy.Common.Recording
 			Ev("prof", ("fps", FightRecFormat.N(fps)), ("ups", FightRecFormat.N(ups)), ("upd", FightRecFormat.N(updMs)), ("npc", FightRecFormat.N(npcMs)), ("proj", FightRecFormat.N(projMs)), ("draw", FightRecFormat.N(drawMs)), ("ai", FightRecFormat.N(aiMs)), ("gear", FightRecFormat.N(gearMs)), ("top", FightRecFormat.Esc(levyTop ?? "")), ("win", FightRecFormat.N(winSecs)));
 		}
 
-		private static string ModList(out string gameMode)
+		internal static string ModList(out string gameMode)
 		{
 			var sb = new StringBuilder("[");
 			bool first = true;
@@ -448,7 +449,7 @@ namespace Levy.Common.Recording
 				_items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = _tkSpite = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
-				_lbuf.Clear(); _lgear.Clear(); _prefixes.Clear(); _cmdGear = int.MinValue; _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1;
+				_lbuf.Clear(); _lgear.Clear(); _prefixes.Clear(); _cmdGear = int.MinValue; _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1; _farCells.Clear(); _farQ.Clear(); _ntSeen.Clear();
 				_startTick = (int)Main.GameUpdateCount; _calOn = ModLoader.HasMod("CalamityMod") && global::Levy.Common.Testing.HarnessCalamityProbe.Available; _killTick = -100000;
 				_startMaxSerial = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) _startMaxSerial = Math.Max(_startMaxSerial, FightRecSpawnTag.SerialOf(Main.npc[i]));
 				string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -477,14 +478,14 @@ namespace Levy.Common.Recording
 				string mods = ModList(out string mode);
 				string ver = Levy.Instance?.Version?.ToString() ?? "?";
 				string metaJson = FightRecFormat.MetaJson(meta);
-				string hdr = ("{\"k\":\"hdr\",\"format\":" + FightRecFormat.Version + ",\"meta\":" + metaJson + ",\"headless\":" + (Headless ? "1" : "0") + ",\"levy\":" + FightRecFormat.Esc(ver) + ",\"mods\":" + mods + ",\"mode\":" + FightRecFormat.Esc(mode)
+				string hdr = ("{\"k\":\"hdr\",\"format\":" + FightRecFormat.Version + ",\"kind\":\"fight\",\"meta\":" + metaJson + ",\"headless\":" + (Headless ? "1" : "0") + ",\"levy\":" + FightRecFormat.Esc(ver) + ",\"mods\":" + mods + ",\"mode\":" + FightRecFormat.Esc(mode)
 					+ ",\"boss\":" + FightRecFormat.Esc(_boss) + ",\"player\":" + FightRecFormat.Esc(cmd.name) + ",\"startTick\":" + _startTick + ",\"hz\":" + (60 / SampleEvery)
 					+ ",\"world\":" + FightRecFormat.Esc(Main.worldName) + ",\"date\":" + FightRecFormat.Esc(DateTime.Now.ToString("s"))
 					+ ",\"stateNames\":" + FightRecFormat.Esc(string.Join(",", Enum.GetNames(typeof(SoldierState))))
 					+ ",\"schemaP\":" + FightRecFormat.Esc(FightRecFormat.SchemaP) + ",\"flagsP\":" + FightRecFormat.Esc(FightRecFormat.SchemaPFlags)
 					+ ",\"schemaB\":" + FightRecFormat.Esc(FightRecFormat.SchemaB) + ",\"schemaJ\":" + FightRecFormat.Esc(FightRecFormat.SchemaJ)
 					+ ",\"tkinds\":" + FightRecFormat.Esc(FightRecFormat.TKinds) + ",\"schemaA\":" + FightRecFormat.Esc(FightRecFormat.SchemaA) + ",\"schemaL\":" + FightRecFormat.Esc(FightRecFormat.SchemaL) + ",\"flagsL\":" + FightRecFormat.Esc(FightRecFormat.SchemaLFlags)
-					+ ",\"auto\":" + _auto + ",\"gzip\":" + (_gzip ? "1" : "0") + ",\"cmd\":" + CommanderSummary(cmd) + ",\"army\":" + ArmySummary() + extra + "}");
+					+ ",\"imp\":" + FightRecFormat.Esc(FightRecFormat.ImpNames) + ",\"auto\":" + _auto + ",\"gzip\":" + (_gzip ? "1" : "0") + ",\"cmd\":" + CommanderSummary(cmd) + ",\"army\":" + ArmySummary() + extra + "}");
 				LastHeader = hdr;
 				_w.WriteLine(hdr, true);
 				WriteArena(cmd);
@@ -729,6 +730,46 @@ namespace Levy.Common.Recording
 			Cover(FloorStep(_ex0 - m), FloorStep(_ey0 - m), CeilStep(_ex1 + m + 1), CeilStep(_ey1 + m + 1));
 		}
 
+		// ---- format 12: terrain around levies far from the fight, and a name / importance line per enemy type
+		public const int FarCellW = 50, FarCellH = 40, FarX = 60, FarY = 40, FarCellsPerSample = 4;
+		private static readonly HashSet<long> _farCells = new();
+		private static readonly Queue<long> _farQ = new();
+		private static readonly HashSet<int> _ntSeen = new();
+
+		/// <summary>A levy outside the recorded area: queue the grid cells around it that the covered area does not hold yet (arena records with far = 1; the viewer leaves them out of the first fit).</summary>
+		private static void WantFarTerrain(float px, float py)
+		{
+			int tx = (int)(px / 16f), ty = (int)(py / 16f);
+			if (_hasCover && tx - FarX >= _cx0 && tx + FarX < _cx1 && ty - FarY >= _cy0 && ty + FarY < _cy1) return;
+			int cx0 = Math.Max(0, (tx - FarX) / FarCellW), cx1 = Math.Min((Main.maxTilesX - 1) / FarCellW, (tx + FarX) / FarCellW);
+			int cy0 = Math.Max(0, (ty - FarY) / FarCellH), cy1 = Math.Min((Main.maxTilesY - 1) / FarCellH, (ty + FarY) / FarCellH);
+			for (int cx = cx0; cx <= cx1; cx++)
+				for (int cy = cy0; cy <= cy1; cy++)
+				{
+					int x0 = cx * FarCellW, y0 = cy * FarCellH;
+					if (_hasCover && x0 >= _cx0 && x0 + FarCellW <= _cx1 && y0 >= _cy0 && y0 + FarCellH <= _cy1) continue;
+					long k = ((long)cx << 32) | (uint)cy; if (_farCells.Add(k)) _farQ.Enqueue(k);
+				}
+		}
+
+		private static void PumpFarTerrain()
+		{
+			for (int n = 0; n < FarCellsPerSample && _farQ.Count > 0; n++)
+			{
+				long k = _farQ.Dequeue(); int cx = (int)(k >> 32), cy = (int)(k & 0xffffffff);
+				int x0 = cx * FarCellW, y0 = cy * FarCellH, x1 = Math.Min(Main.maxTilesX, x0 + FarCellW), y1 = Math.Min(Main.maxTilesY, y0 + FarCellH);
+				string a = EventRecorder.TerrainChunk(x0, y0, x1, y1);
+				Line(a.Substring(0, a.Length - 1) + ",\"far\":1}"); _chunks++;
+			}
+		}
+
+		/// <summary>The first time a hostile type is seen: its name and importance (0 normal, 1 miniboss, 2 boss) as an nt line, so the viewer can label it before the names table at the end.</summary>
+		private static void NoteType(NPC n)
+		{
+			if (!_ntSeen.Add(n.type)) return;
+			Line("{\"k\":\"nt\",\"type\":" + n.type + ",\"name\":" + FightRecFormat.Esc(n.FullName) + ",\"imp\":" + EventRecorder.BaseImportance(n) + "}");
+		}
+
 		// ------------------------------------------------------------------------------------------ sampling
 		private static bool Grounded(Entity e) => Math.Abs(e.velocity.Y) < 0.01f;
 
@@ -886,7 +927,8 @@ namespace Levy.Common.Recording
 			{
 				NPC n = Main.npc[i];
 				if (!n.active || !(n.ModNPC is SoldierNPC s)) continue;
-				if (Math.Abs(n.Center.X - p.Center.X) > LevyRangePx || Math.Abs(n.Center.Y - p.Center.Y) > LevyRangePx) continue;
+				// format 12: every levy is recorded wherever it stands; one outside the captured terrain gets terrain cells of its own
+				if (Math.Abs(n.Center.X - p.Center.X) > LevyRangePx || Math.Abs(n.Center.Y - p.Center.Y) > LevyRangePx) WantFarTerrain(n.Center.X, n.Center.Y);
 				int id = LevyId(s, n.whoAmI);
 				if (s.Record != null && !_soldiers.ContainsKey(id)) _soldiers[id] = s.Record.Name;
 				SeeEntity(n.Center.X, n.Center.Y);
@@ -906,6 +948,7 @@ namespace Levy.Common.Recording
 				if (Math.Abs(n.Center.X - p.Center.X) > AddRangePx || Math.Abs(n.Center.Y - p.Center.Y) > AddRangePx) continue;
 				if (IsBossOrPart(n)) continue;
 				if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
+				NoteType(n);
 				TargetOf(n, out int atk, out int atl);
 				SeeEntity(n.Center.X, n.Center.Y);
 				f.A.Add(new double[] { n.type, n.whoAmI, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, n.life, n.lifeMax, atk, atl, n.width, n.height });
@@ -925,12 +968,14 @@ namespace Levy.Common.Recording
 				long def = ((((long)n.type * 4099 + n.width) * 4099 + n.height) * 4099 + (rl + 1)) * 8 + fl;
 				int ix = (int)Math.Round(n.Center.X), iy = (int)Math.Round(n.Center.Y);
 				if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
+				NoteType(n);
 				if (_hbDef.TryGetValue(i, out long old) && old == def) f.S.Add(new double[] { i, ix, iy });
 				else { _hbDef[i] = def; f.S.Add(new double[] { n.type, i, ix, iy, n.width, n.height, rl, fl }); }
 				hc++;
 			}
 			_inA.Clear();
 			GrowTerrain();
+			PumpFarTerrain();
 			Line(FightRecFormat.Frame(f));
 			_frames++;
 		}

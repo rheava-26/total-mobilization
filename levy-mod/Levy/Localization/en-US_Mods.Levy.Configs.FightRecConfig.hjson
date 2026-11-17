@@ -12,6 +12,11 @@ RecordFightsAutomatically: {
 	Tooltip: Saves a recording of each fight. All fights also saves fights your army joins.
 }
 
+RecordEvents: {
+	Label: Record events
+	Tooltip: Saves one recording of each event with the whole army and every enemy. Runs until the event ends.
+}
+
 ProfileRecordedFights: {
 	Label: Profile recorded fights
 	Tooltip: Measures where the time goes during each recorded fight and saves it in the recording. One line in chat when the fight ends.

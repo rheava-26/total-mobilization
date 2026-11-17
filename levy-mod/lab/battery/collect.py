@@ -25,7 +25,7 @@ for run in map(Path, a.runs):
         mm = re.search(r'meta=bat_(\w+?)_(ravager|eol)\b', cells[r['cell']]['name'])
         if not mm: continue
         army, boss = mm.groups()
-        n = 1 + sum(1 for f in fights if f['army'] == army and f['boss'] == boss)
+        n = int(r['seed'])  # file name carries the seed
         row = dict(run=str(run), cell=r['cell'], seed=int(r['seed']), army=army, boss=boss, result=r['result'], sec=float(r['sec'] or 0), levies=int(r['n'] or 0), deaths=int(r['deaths'] or 0),
                    firstDeathSec=r['firstDeathSec'], bossMax=float(r['bossMax'] or 0), bossLeft=float(r['bossLeft'] or 0), dmgBoss=float(r['dmgBoss'] or 0), potionsDrunk=r['potionsDrunk'],
                    weaponDmg=r['weaponDmg'], deathTimes=r['deathTimes'], classDmg=r['classDmg'], dmgRMES=[r['dmgR'], r['dmgM'], r['dmgE'], r['dmgS']])

@@ -298,6 +298,7 @@ namespace Levy.Common.Testing
 				{
 					Item sample = ContentSamples.ItemsByType[type];
 					int ammo = sample.useAmmo > 0 && ammoByKind.TryGetValue(sample.useAmmo, out int a) ? a : 0;
+					if (Environment.GetEnvironmentVariable("LEVY_MIND_DEBUG") == "1") Note($"  dbg mind attack: {label} ({(deadRun ? "dead" : "alive")})");
 					Item w1 = MindItem(type), w2 = MindItem(type);
 					var empty = MindWeaponRun(w1, ammo, false, 90, deadRun);
 					var onEnemy = MindWeaponRun(w2, ammo, true, 90, deadRun);

@@ -50,5 +50,20 @@ namespace Levy.Common
 		public const float ChatterPlayerTiles = 70f, ChatterComradeTiles = 14f;
 		/// <summary>Chance that an ambient line is a name-drop (an aimed line about a town NPC) instead of plain idle talk.</summary>
 		public const float ChatterNamedropChance = 0.25f;
+
+		// ---- the rift sky (Common/Dialogue/RiftMood.cs; Wrath of the Gods only) ----
+		/// <summary>Dawns after the sun is covered that the army stays shaken (the tense mood); after that it settles into a lasting quiet. Shock lines stop, "what now" lines start from <see cref="RiftLaterFromDay"/>.</summary>
+		public const int RiftTenseDays = 3, RiftLaterFromDay = 2;
+		/// <summary>The burst right after the sun is covered: levies near each commander, one after another; then this long of worried talk in place of the rift chat.</summary>
+		public const int RiftPanicSpeakers = 4, RiftPanicStepTicks = 75, RiftPanicTicks = 60 * 90;
+		/// <summary>A levy who was dead or in reserve when the sun went asks what happened, with this chance, until he has asked this many times.</summary>
+		public const float RiftAwayChance = 0.7f;
+		public const int RiftAwayLines = 2;
+		/// <summary>How often a rift chat line is about the cold (snow falling or lying on the surface), the other classes, the first shock, or "what now".</summary>
+		public const float RiftColdChance = 0.55f, RiftRespectChance = 0.2f, RiftShockChance = 0.45f, RiftLaterChance = 0.35f;
+		/// <summary>Snow this deep on the surface (the mod's own 0 to 10 scale) counts as cold even when none is falling.</summary>
+		public const float RiftSnowLyingHeight = 1.5f;
+		/// <summary>Share of floating lines still spoken under the rift. Chatter: ambient, camp, drinks and reactions. Barks: combat shouts. Big: boss sightings, a comrade down, routs, victory.</summary>
+		public const float RiftTenseChatterShare = 0.3f, RiftSettledChatterShare = 0.5f, RiftTenseBarkShare = 0.6f, RiftSettledBarkShare = 0.8f, RiftTenseBigShare = 0.85f;
 	}
 }

@@ -27,6 +27,9 @@ namespace Levy.Common.Dialogue
 		// Public contract
 		// =====================================================================================================
 
+		/// <summary>Floating lines that went out (after the rift mood's thinning). Self-check and world-check telemetry.</summary>
+		internal static int FloatingDelivered;
+
 		/// <summary>Deliver a line for a trigger through its default channel, subject to the squad budget.</summary>
 		public static void Bark(SoldierNPC s, DialogueTrigger trigger, DialogueContext ctx = null)
 		{
@@ -37,8 +40,10 @@ namespace Levy.Common.Dialogue
 			int idx = s.NPC.whoAmI;
 			if ((uint)idx >= MaxBodies) return;
 			int now = Now;
+			DialogueChannel channel = ChannelOf(trigger, out int emote);
+			if (channel != DialogueChannel.ChatLog && RiftMood.Hushed) return; // the sun is being covered: not a sound
 
-			switch (ChannelOf(trigger, out int emote))
+			switch (channel)
 			{
 				case DialogueChannel.ChatLog:
 					ChatLog(trigger, rec, ctx);
@@ -71,6 +76,10 @@ namespace Levy.Common.Dialogue
 		/// <summary>A filled line from an explicit string-keyed pool (e.g. "OFFICER_Nurse_FIGHT"), or null when the pool is missing or nothing in it fits. Same filter, placeholder and repeat rules as the trigger overload.</summary>
 		public static string PickLine(string poolKey, SoldierRecord rec, DialogueContext ctx = null, bool ignoreRepeat = false)
 		{
+			// A trigger's own pool asked for by name (the drink fallback, the mutineers) goes through the rift routing like the trigger itself.
+			if (RiftMood.Phase != RiftPhase.None && poolKey != null && Enum.TryParse(poolKey, true, out DialogueTrigger named) && Enum.IsDefined(typeof(DialogueTrigger), named)
+				&& RiftMood.Route(named) != RiftRoute.Normal)
+				return Pick(named, rec, ctx, null, ignoreRepeat, -1, out _);
 			return PickFromPool(DialogueTable.Get(poolKey), rec, ctx, null, ignoreRepeat, -1, out _, true, poolKey != null && poolKey.StartsWith("MUTINY", StringComparison.OrdinalIgnoreCase));
 		}
 
@@ -187,6 +196,7 @@ namespace Levy.Common.Dialogue
 		{
 			if (s == null || s.NPC == null || !s.NPC.active) return;
 			if (Main.netMode == NetmodeID.MultiplayerClient) return; // EmoteBubble.NewBubble does nothing on a client
+			if (RiftMood.Hushed) return;
 			EmoteBubble.NewBubble(emoteId, new WorldUIAnchor(s.NPC), LevyConstants.DialogueEmoteBubbleTicks);
 		}
 
@@ -234,6 +244,7 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.FLIGHT_SHOUT: case DialogueTrigger.FLIGHT_FEAR: case DialogueTrigger.TAKEOFF: case DialogueTrigger.LANDING: case DialogueTrigger.FIRESIDE: case DialogueTrigger.PASTIME: case DialogueTrigger.PASTIME_NIGHT:
 				case DialogueTrigger.LIFE_CRYSTAL: case DialogueTrigger.CHEST_OPENED: case DialogueTrigger.ARMORY_GOT: case DialogueTrigger.ECLIPSE_END:
 				case DialogueTrigger.DRINK_ALE: case DialogueTrigger.DRINK_STOUT: case DialogueTrigger.DRINK_RUM: case DialogueTrigger.DRINK_FIZZ: case DialogueTrigger.DRINK_ICEBERG:
+				case DialogueTrigger.RIFT_PANIC: case DialogueTrigger.RIFT_CAMP:
 				case DialogueTrigger.VICTORY: return DialogueChannel.FloatingText;
 
 				case DialogueTrigger.DEATH_MESSAGE:
@@ -394,6 +405,8 @@ namespace Levy.Common.Dialogue
 		private static void DeliverFloating(SoldierNPC s, string text, byte triggerByte)
 		{
 			if (s == null || s.NPC == null || !s.NPC.active || string.IsNullOrEmpty(text)) return;
+			if (!RiftMood.AllowFloating(triggerByte)) return; // under the rift sky the army says less (and nothing while the sun is covered)
+			FloatingDelivered++;
 			if (Main.netMode == NetmodeID.Server)
 			{
 				int idx = s.NPC.whoAmI;

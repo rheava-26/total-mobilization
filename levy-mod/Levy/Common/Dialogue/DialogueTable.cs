@@ -11,7 +11,7 @@ namespace Levy.Common.Dialogue
 
 	/// <summary>Context placeholders a line needs before it can be spoken. {Player} is always satisfiable and not listed.</summary>
 	[Flags]
-	public enum LineNeeds : ushort { None = 0, Name = 1, Comrade = 2, Boss = 4, Killer = 8, Town = 16, Wage = 32, Tank = 64, Glutton = 128, WorldName = 256, Officer = 512 }
+	public enum LineNeeds : ushort { None = 0, Name = 1, Comrade = 2, Boss = 4, Killer = 8, Town = 16, Wage = 32, Tank = 64, Glutton = 128, WorldName = 256, Officer = 512, Mage = 1024, Summoner = 2048, Ranger = 4096, Melee = 8192 }
 
 	/// <summary>
 	/// Conditions a line can demand, written as a [tag] at the start of its text. Several tags join with a plus: [hardmode+ranger]. Every tag must hold.
@@ -25,7 +25,7 @@ namespace Levy.Common.Dialogue
 		Female = 512, Ranger = 1024, Melee = 2048, Early = 4096, PostSkeletron = 8192, Hardmode = 16384, PostPlantera = 32768, PostMoonlord = 65536, Grumpy = 131072,
 	}
 
-	public enum PlaceholderKind : byte { Literal = 0, Player, Name, Comrade, Boss, Killer, Town, Wage, TownNpc, Tank, TankDeaths, TankHe, Glutton, GluttonKills, WorldName, Officer }
+	public enum PlaceholderKind : byte { Literal = 0, Player, Name, Comrade, Boss, Killer, Town, Wage, TownNpc, Tank, TankDeaths, TankHe, Glutton, GluttonKills, WorldName, Officer, Mage, Summoner, Ranger, Melee }
 
 	/// <summary>One literal run or one placeholder of a parsed line.</summary>
 	public struct LinePart
@@ -331,6 +331,10 @@ namespace Levy.Common.Dialogue
 						case PlaceholderKind.Glutton: case PlaceholderKind.GluttonKills: needs |= LineNeeds.Glutton; break;
 						case PlaceholderKind.WorldName: needs |= LineNeeds.WorldName; break;
 						case PlaceholderKind.Officer: needs |= LineNeeds.Officer; break;
+						case PlaceholderKind.Mage: needs |= LineNeeds.Mage; break;
+						case PlaceholderKind.Summoner: needs |= LineNeeds.Summoner; break;
+						case PlaceholderKind.Ranger: needs |= LineNeeds.Ranger; break;
+						case PlaceholderKind.Melee: needs |= LineNeeds.Melee; break;
 						case PlaceholderKind.TownNpc: if (!npcs.Contains(npcType)) npcs.Add(npcType); break;
 					}
 					i = close + 1;
@@ -362,6 +366,10 @@ namespace Levy.Common.Dialogue
 				case "officer": kind = PlaceholderKind.Officer; return true;
 				case "glutton": kind = PlaceholderKind.Glutton; return true;
 				case "gluttonkills": kind = PlaceholderKind.GluttonKills; return true;
+				case "mage": kind = PlaceholderKind.Mage; return true;
+				case "summoner": kind = PlaceholderKind.Summoner; return true;
+				case "ranger": kind = PlaceholderKind.Ranger; return true;
+				case "melee": kind = PlaceholderKind.Melee; return true;
 			}
 			if (TownNpcByName.TryGetValue(name, out npcType)) { kind = PlaceholderKind.TownNpc; return true; }
 			kind = PlaceholderKind.Literal;

@@ -38,6 +38,8 @@
 #               OFFICER_MARCH NURSE_MARCH   (what an officer says on the march when he has no voice of his own for it)
 #               OFFICER_<Officer>_<STATE>   (an officer's own voice; STATE is IDLE MARCH HOLD FIGHT BOSS HURT VICTORY)
 #               OFFICER_CHAT_<STATE>        (the officer voice used when an officer has no lines of his own for that STATE)
+#               RIFT_PANIC RIFT_SHOCK RIFT_ABSENT RIFT_COLD RIFT_LATER RIFT_RESPECT RIFT_IDLE RIFT_CAMP   (Wrath of the Gods only: the covered sky after
+#                               Moon Lord; part 15 explains when each is used and which pools they stand in for)
 #
 # WHERE A LINE SHOWS UP
 #   Right-click chat:   IDLE IDLE_NIGHT NAMEDROP BLOOD_MOON PARTY GRAVEYARD RAIN BIOME_* PAYDAY UNPAID HOLD_FIRE EVENT_* ARMORY_WANT ARMORY_BEST ARMORY_WORST
@@ -60,6 +62,7 @@
 #   {Tank} {TankHe} {TankDeaths}        the levy with the most deaths ("he's"/"she's"); only 3 or more, never the speaker
 #   {Glutton} {GluttonKills}            the levy with the most kills; only 25 or more, never the speaker
 #   {WorldName} the world's name           {Officer}  the role of a commissioned officer, e.g. Painter
+#   {Mage} {Summoner} {Ranger} {Melee}  another standing levy of that class in the speaker's army (one at random); the line is skipped when there is none
 #   Town NPCs (the line only fires while that NPC lives in the world):
 #   {Guide} {Nurse} {ArmsDealer} {Demolitionist} {Merchant} {Dryad} {Clothier} {PartyGirl} {Tavernkeep} {TaxCollector}
 #   {Mechanic} {GoblinTinkerer} {Wizard} {Steampunker} {Cyborg} {Pirate} {Truffle} {Stylist} {Angler} {DyeTrader}
@@ -99,6 +102,7 @@
 #  12. Officers on the march                              OFFICER_MARCH and NURSE_MARCH
 #  13. Officer chat, generic                              OFFICER_CHAT_<STATE>, used when an officer has no voice of his own
 #  14. Officer voices                                     one block per officer, OFFICER_<Officer>_<STATE>, then the women's annoyed sets
+#  15. The rift sky                                       RIFT_* (Wrath of the Gods only)
 #
 # EDITING WITHOUT REBUILDING THE MOD
 #   1. In game (single player, or on the server) type  /levydialogue export  . It copies this file to
@@ -2157,3 +2161,134 @@ OFFICER_Princess_HURT | Any | [grumpy] Don't fuss! Keep fighting!
 OFFICER_Princess_VICTORY | Any | [grumpy] We won! Well done! Finally!
 OFFICER_Princess_VICTORY | Any | [grumpy] Splendid! Now let me rest!
 OFFICER_Princess_VICTORY | Any | [grumpy] Fine! Good job! Go home!
+
+
+# ============================================================================================================
+# 15. THE RIFT SKY (Wrath of the Gods only; nothing here is read without it)
+# After Moon Lord the mod covers the sun. While that happens the levies say nothing. Right after, the levies near each commander
+# speak a RIFT_PANIC line one after another, and for the next ninety seconds their chat is worried (RIFT_PANIC too).
+# From then on, for as long as the sky stays covered, every calm or joking pool (IDLE IDLE_NIGHT NAMEDROP BLOOD_MOON PARTY GRAVEYARD RAIN
+# BIOME_* ARMORY_WANT ARMORY_BEST ARMORY_WORST) is answered from these pools instead, camp and drink talk (FIRESIDE PASTIME PASTIME_NIGHT DRINK*)
+# from RIFT_CAMP, and LIFE_CRYSTAL CHEST_OPENED ARMORY_GOT ECLIPSE_END TAKEOFF LANDING FLIGHT_FEAR go quiet. Combat, boss, pay, mutiny and officer
+# lines keep their own pools; fewer of every floating line are said out loud. The Blood Moon's annoyed set does not apply to these pools.
+#   RIFT_ABSENT    a levy who was dead or in reserve when the sun went (until he has asked twice)
+#   RIFT_COLD      snow falling, or lying on the ground, and the speaker on the surface
+#   RIFT_RESPECT   unsettled respect for the other classes ({Mage} {Summoner} {Ranger} {Melee} name a levy of that class in his army)
+#   RIFT_SHOCK     the first three days only
+#   RIFT_LATER     from the second dawn on
+#   RIFT_IDLE      the rest, and the fallback for all of them
+#   RIFT_CAMP      by the fire, at a pastime, over a drink ({Comrade} is the levy he is talking to)
+# The voice: quieter and more formal, still the same people. No jokes about the sky.
+# ============================================================================================================
+
+# ---------------------------------------------------------------- RIFT_PANIC (floating, right after the sun is covered)
+RIFT_PANIC | Any | Where did the sun go? {Player}, where did the sun go?
+RIFT_PANIC | Any | Is that a hole? That's a hole. There's a hole in the sky.
+RIFT_PANIC | Any | Nobody move. I don't know why. Just nobody move.
+RIFT_PANIC | Any | It's the middle of the day and it's getting dark.
+RIFT_PANIC | Any | Did everyone feel that? The ground felt that.
+RIFT_PANIC | Greenhorn | Is it supposed to do that, {Player}? Please tell me it's supposed to do that.
+RIFT_PANIC | Greenhorn | I want to go home. I don't know if home is still there.
+RIFT_PANIC | Sellsword | That's not in the contract. Nothing like that is in the contract.
+RIFT_PANIC | Zealot | Not even Rigroth the Undying saw this coming. I'm sure of it.
+RIFT_PANIC | Zealot | Stay calm. Stay calm. I'm calm. Someone tell me I'm calm.
+RIFT_PANIC | Cynic | I said it would go badly. I didn't mean the sun.
+RIFT_PANIC | Cynic | Well. That's the sun gone, then.
+RIFT_PANIC | Veteran | Eyes on me, all of you! Stay together. Stay together.
+RIFT_PANIC | Veteran | I've seen a lot of skies. Not this one.
+
+# ---------------------------------------------------------------- RIFT_SHOCK (the first days)
+RIFT_SHOCK | Any | Where did the sun go?
+RIFT_SHOCK | Any | It was there yesterday. The sun. It was right there.
+RIFT_SHOCK | Any | The birds stopped. Did anyone else notice the birds stopped?
+RIFT_SHOCK | Any | I had a lot to say this morning. I can't remember any of it.
+RIFT_SHOCK | Greenhorn | Excuse me, {Player}. Is the sun coming back? I'd just like to know.
+RIFT_SHOCK | Greenhorn | I keep looking up. I know I shouldn't. I keep doing it.
+RIFT_SHOCK | Sellsword | I'll be honest, {Player}. I don't know what to charge for this.
+RIFT_SHOCK | Sellsword | My rates assumed a sun. I'll need some time with my rates.
+RIFT_SHOCK | Zealot | I've prayed on it. Nobody answered. That has never happened before.
+RIFT_SHOCK | Zealot | The boss mentioned a bonus for courage. I believe I'll be needing it.
+RIFT_SHOCK | Cynic | I used to complain about the heat. I'd like to formally take that back.
+RIFT_SHOCK | Cynic | Don't ask me what it is. I don't think anyone knows what it is.
+RIFT_SHOCK | Veteran | Keep your voice down. I don't know why. It feels right.
+RIFT_SHOCK | Veteran | Whatever happened, it happened while we were looking the other way.
+
+# ---------------------------------------------------------------- RIFT_ABSENT (dead or in reserve when the sun went)
+RIFT_ABSENT | Any | What happened while I was gone?
+RIFT_ABSENT | Any | I was out for one day. One day. What happened?
+RIFT_ABSENT | Any | Last thing I remember, I was dying. That part was normal. This isn't.
+RIFT_ABSENT | Any | When I left, there was a sun. I'm fairly sure there was a sun.
+RIFT_ABSENT | Greenhorn | I came back and the sky was wrong. Is it the sky, or is it me?
+RIFT_ABSENT | Sellsword | Nobody told me about any of this. I'd have asked for more.
+RIFT_ABSENT | Zealot | I step away for a little while and this happens. I'm not blaming anyone.
+RIFT_ABSENT | Cynic | Can somebody catch me up? Slowly, please.
+RIFT_ABSENT | Veteran | I leave you lot alone for a moment. {Player}, what did we do?
+
+# ---------------------------------------------------------------- RIFT_COLD (snow on the surface)
+RIFT_COLD | Any | It's snowing. It's not supposed to snow here.
+RIFT_COLD | Any | It's cold, {Player}. It's very cold.
+RIFT_COLD | Any | The grass is gone. Everything up here is going white.
+RIFT_COLD | Any | I can see my breath in the middle of the day. I don't like that.
+RIFT_COLD | Any | {Mage}, could you do the fire thing? Just for a minute. Just for our hands.
+RIFT_COLD | Greenhorn | My fingers are going numb. I can still fire. I think I can still fire.
+RIFT_COLD | Sellsword | Hazard pay. For the cold. I'm only asking.
+RIFT_COLD | Zealot | The cold is a test. I am passing it. Slowly.
+RIFT_COLD | Cynic | No sun, and now no warmth. I'm noticing a pattern.
+RIFT_COLD | Veteran | Keep moving and keep your hands in your sleeves. The cold takes its time, but it gets there.
+
+# ---------------------------------------------------------------- RIFT_LATER (from the second dawn)
+RIFT_LATER | Any | Are we going to do anything about this, or...
+RIFT_LATER | Any | {Player}. With respect. Is there a plan?
+RIFT_LATER | Any | We've gotten used to it. I don't think we should have gotten used to it.
+RIFT_LATER | Any | Has it moved? I check every morning. It hasn't moved.
+RIFT_LATER | Greenhorn | I'll follow you up there if you ask, {Player}. Please don't ask yet.
+RIFT_LATER | Sellsword | If there's a job to fix the sky, I'd like to hear the terms first.
+RIFT_LATER | Zealot | Whatever you decide, {Player}, I'm with you. I'd just like to know what you decide.
+RIFT_LATER | Cynic | We could wait for it to leave. That's a plan. It's a bad plan.
+RIFT_LATER | Veteran | Everyone's waiting for an order and nobody wants to ask. So I'm asking.
+
+# ---------------------------------------------------------------- RIFT_RESPECT (the other classes, seen differently)
+RIFT_RESPECT | Any | [non-summoner] Maybe summoners weren't that bad. Were they?
+RIFT_RESPECT | Any | {Mage} hasn't missed a shot in a while. I didn't know mages had that in them.
+RIFT_RESPECT | Any | {Mage} brought me water this morning. Didn't say anything. Just brought it.
+RIFT_RESPECT | Any | {Summoner}'s little ones stand in front of us now. I've stopped saying anything about it.
+RIFT_RESPECT | Any | {Melee} went right up to the front yesterday. Not forty feet away. Right up to it.
+RIFT_RESPECT | Any | I used to joke about {Ranger}'s bullets. Let them turn corners. I don't mind anymore.
+RIFT_RESPECT | Any | {Tank} keeps going down first so the rest of us don't. I've stopped laughing about it.
+RIFT_RESPECT | Any | [mage] Everyone's been kind to me lately. I don't like what that means.
+RIFT_RESPECT | Zealot | [non-summoner] I may have been unkind about the summoners. I'd like that noted somewhere quietly.
+RIFT_RESPECT | Cynic | {Glutton} is still taking all the kills. Good. Somebody should.
+RIFT_RESPECT | Veteran | {Summoner}. Whatever you're doing back there, keep doing it.
+
+# ---------------------------------------------------------------- RIFT_IDLE (quiet talk; the fallback for every rift pool)
+RIFT_IDLE | Any | ...
+RIFT_IDLE | Any | ...Sorry. Did you need something?
+RIFT_IDLE | Any | Mm.
+RIFT_IDLE | Any | So... what now, exactly?
+RIFT_IDLE | Any | It's very quiet up here now. No birds. Nothing.
+RIFT_IDLE | Any | Good morning, {Player}. If it's morning. I can't tell anymore.
+RIFT_IDLE | Any | Nobody's been arguing lately. I think that's worse.
+RIFT_IDLE | Any | {Player}. Ready when you are.
+RIFT_IDLE | Any | I keep my weapon close at night now. During the day too.
+RIFT_IDLE | Greenhorn | I'm fine, {Player}. I'm fine. Thank you for asking.
+RIFT_IDLE | Greenhorn | I stopped counting the blocks in the wall. It doesn't feel important anymore.
+RIFT_IDLE | Sellsword | I haven't asked about my wages in a while. You may have noticed.
+RIFT_IDLE | Sellsword | Pay me when you can, {Player}. I'm not going anywhere. Where would I go?
+RIFT_IDLE | Zealot | I'm still proud to serve. I'm only saying it more quietly now.
+RIFT_IDLE | Zealot | I haven't quoted Mother Gnash in days. It didn't seem the time.
+RIFT_IDLE | Cynic | I'd make a joke. I can't think of one.
+RIFT_IDLE | Cynic | You can tell how bad it is. I've stopped complaining.
+RIFT_IDLE | Veteran | Get some rest when you can, {Player}. We'll keep watch.
+RIFT_IDLE | Veteran | Stay close to the others. Nobody walks alone anymore.
+
+# ---------------------------------------------------------------- RIFT_CAMP (by the fire, at a pastime, over a drink)
+RIFT_CAMP | Any | Sit with me a while, {Comrade}. You don't have to talk.
+RIFT_CAMP | Any | {Comrade}, come closer to the fire. It's the only warm thing left.
+RIFT_CAMP | Any | Nobody's telling stories tonight. That's fine, {Comrade}. That's fine.
+RIFT_CAMP | Any | Thank you, {Comrade}. Really. Thank you.
+RIFT_CAMP | Any | ...
+RIFT_CAMP | Greenhorn | {Comrade}, do you think it'll be gone by morning? You don't have to answer.
+RIFT_CAMP | Sellsword | Have this one, {Comrade}. No charge.
+RIFT_CAMP | Zealot | I'd say a blessing, {Comrade}, but I don't know who's listening.
+RIFT_CAMP | Cynic | Don't look up, {Comrade}. Look at the fire. The fire's still the fire.
+RIFT_CAMP | Veteran | Get some sleep, {Comrade}. I'll stay up.

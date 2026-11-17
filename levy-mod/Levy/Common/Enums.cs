@@ -37,7 +37,8 @@ namespace Levy.Common
 		FIRESIDE, PASTIME, PASTIME_NIGHT, // appended: talk by a campfire, talk at a kite or a cheer, and talk under the stars (Free Rein pastimes, SoldierNPC.Leisure.cs)
 		LIFE_CRYSTAL, CHEST_OPENED, // appended: the commander uses a life crystal or fruit / opens a chest near the army (CommanderReactions)
 		ARMORY_GOT, ARMORY_WANT, ARMORY_BEST, ARMORY_WORST, // appended: a levy was handed better gear (floating, SoldierNPC.GearTalk.cs); right-click chat by where his kit ranks in the army
-		DRINK_ALE, DRINK_STOUT, DRINK_RUM, DRINK_FIZZ, DRINK_ICEBERG // appended: the DRINK line for one particular round (DrinkCheers.Begin knows which); DRINK is the fallback
+		DRINK_ALE, DRINK_STOUT, DRINK_RUM, DRINK_FIZZ, DRINK_ICEBERG, // appended: the DRINK line for one particular round (DrinkCheers.Begin knows which); DRINK is the fallback
+		ECLIPSE_END // appended: a Solar Eclipse just ended with the army near its commander (CommanderReactions)
 	}
 
 	/// <summary>Where a dialogue line is delivered.</summary>

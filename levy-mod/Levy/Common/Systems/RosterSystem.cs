@@ -311,7 +311,7 @@ namespace Levy.Common.Systems
 			var rec = NewRecord(grade);
 			rec.HomeBarracksId = home.ID; rec.HomePos = home.Position;
 			rec.CommanderName = commander.name; rec.CommanderIndex = commander.whoAmI;
-			rec.Order = SoldierOrder.Follow; rec.StoodDown = false;
+			rec.Order = ArmyOnRegroup(commander) ? SoldierOrder.Regroup : SoldierOrder.Follow; rec.StoodDown = false;
 			ArmoryOf(home)?.IssueGear(rec);
 			Regulars.Add(rec);
 			SpawnBody(rec, home.MusterPoint); // -1 under the render cap: the deployment loop picks it up later
@@ -486,7 +486,7 @@ namespace Levy.Common.Systems
 			if (CommandPointsUsed + rec.CommandPointCost > CommandPoints) { if (!_reserveBatch) SendToPlayer(commander, LevyUtil.T("UI.NotEnoughCp")); return false; }
 
 			rec.Reserve = false;
-			rec.Order = SoldierOrder.Follow; rec.StoodDown = false;
+			rec.Order = ArmyOnRegroup(commander) ? SoldierOrder.Regroup : SoldierOrder.Follow; rec.StoodDown = false;
 			if (!rec.Dead)
 			{
 				ArmoryOf(HomeOf(rec))?.IssueGear(rec);
@@ -636,6 +636,7 @@ namespace Levy.Common.Systems
 			if (ActiveBodyCount >= LevyConfig.Get.RenderCap) return -1;
 			int type = ModContent.NPCType<SoldierNPC>();
 			if (type <= 0) return -1;
+			if (rec.Order == SoldierOrder.Regroup && RegroupSpot(rec, out Vector2 beside)) position = beside; // Regroup: a levy that returns to duty appears beside its commander
 			position = SafeSpawnPosition(position); // never materialise inside a fight (falls back to the asked position)
 			int idx = NPC.NewNPC(new EntitySource_WorldEvent("Levy:Soldier"), (int)position.X, (int)position.Y, type);
 			if (idx < 0 || idx >= Main.maxNPCs) return -1;
@@ -647,6 +648,23 @@ namespace Levy.Common.Systems
 			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, idx);
 			_bodies.Add(body);
 			return idx;
+		}
+
+		/// <summary>The ground beside the commander of a Regroup levy (the follower-teleport search); false with no commander in the world or no ground near him.</summary>
+		internal static bool RegroupSpot(SoldierRecord rec, out Vector2 spot)
+		{
+			spot = default;
+			Player cmd = OnlineCommander(rec);
+			if (cmd == null || !cmd.active || cmd.dead) return false;
+			return Movement.FollowerTravel.FindSafeGround(cmd.Center, LevyConstants.Movement.StandingSpotRadiusTiles, out spot);
+		}
+
+		/// <summary>True when most of this commander's regulars in the field are on the Regroup order: a levy raised now joins it.</summary>
+		private bool ArmyOnRegroup(Player commander)
+		{
+			int total = 0, rg = 0;
+			foreach (var r in RegularsOf(commander)) { if (r.Reserve) continue; total++; if (r.Order == SoldierOrder.Regroup) rg++; }
+			return total > 0 && rg * 2 > total;
 		}
 
 		// ---- safe spawn placement ----

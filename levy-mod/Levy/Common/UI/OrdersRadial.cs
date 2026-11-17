@@ -18,7 +18,7 @@ namespace Levy.Common.UI
 	/// </summary>
 	public class OrdersRadial : UIState
 	{
-		private const int Count = 14;
+		private const int Count = 15;
 		private const float GrowStep = 1.04f;
 		private const int MaxGrowSteps = 60;
 		private static float _radX, _radY;
@@ -121,6 +121,7 @@ namespace Levy.Common.UI
 			_buttons[10].Set(LevyUtil.T("UI.Rearm"), true, LevyUtil.T("UI.RearmHint"));
 			_buttons[12].Set(LevyUtil.T("Observe.SendToPoint"), true, LevyUtil.T("Observe.SendToPointHint"));
 			_buttons[13].Set(LevyUtil.T("Banner.Order"), true, LevyUtil.T(_radio ? "Banner.OrderHintRadio" : "Banner.OrderHint"));
+			_buttons[14].Set(LevyUtil.T("UI.Regroup"), true, LevyUtil.T(_radio ? "UI2.RegroupHintRadio" : "UI2.RegroupHint"));
 			_buttons[11].Set(LevyUtil.T(UISystem.NameplatesForced ? "UI.NamesOff" : "UI.NamesOn"), true, LevyUtil.T("UI.NamesHint"));
 		}
 
@@ -144,6 +145,7 @@ namespace Levy.Common.UI
 				case 10: UIActions.Rearm(); break;
 				case 11: UISystem.Instance.ToggleNameplates(); break;
 				case 13: UIActions.Order(SoldierOrder.HoldBanners, _radio); break;
+				case 14: UIActions.Order(SoldierOrder.Regroup, _radio); break;
 				case 12: UISystem.Instance.CloseRadial(); global::Levy.Common.Observe.MapOrder.BeginPick(false); return;
 			}
 			UISystem.Instance.CloseRadial();

@@ -71,6 +71,7 @@ namespace Levy.Common.Recording
 		private static int _pJump, _pAnim, _pDashDelay, _pTimeDash;
 		private static bool _pFly, _pHookOut, _pHookAtt;
 		private static readonly Dictionary<int, bool> _pXJump = new();
+		private static readonly HashSet<int> _nonWeapons = new();
 		private static readonly Dictionary<int, string> _items = new(), _npcs = new(), _projs = new(), _buffs = new(), _soldiers = new();
 		private static int[] _accLast = new int[10];
 		private static readonly HashSet<int> _bossIdsSeen = new();
@@ -318,6 +319,14 @@ namespace Levy.Common.Recording
 			catch (Exception) { }
 		}
 
+		/// <summary>An item that fired or landed a hit: its name, and whether it is a usable weapon (damage and a use style, not an accessory). The names record lists the rest as nonweapons so the report groups their hits as accessory effects.</summary>
+		private static void NoteSrcItem(int type)
+		{
+			if (type <= 0) return;
+			if (!_items.ContainsKey(type)) _items[type] = Lang.GetItemNameValue(type);
+			try { Item it = ContentSamples.ItemsByType[type]; if (it.accessory || it.damage <= 0 || it.useStyle <= 0) _nonWeapons.Add(type); } catch { }
+		}
+
 		/// <summary>One hit on a boss (or its parts) or on an add, from the GlobalNPC hooks: who dealt it (cmd, levy, drone, other), its damage class, the item or projectile, the damage actually done. Added up and written once a second as dmg events.</summary>
 		internal static void NoteDamage(NPC npc, Player byPlayer, Projectile proj, Item item, int dmg, bool crit = false)
 		{
@@ -336,7 +345,7 @@ namespace Levy.Common.Recording
 					else owner = "other";
 					cls = ClassName(proj.DamageType); kind = "proj"; type = proj.type;
 					if (!_projs.ContainsKey(type)) _projs[type] = Lang.GetProjectileName(type).Value;
-					if (owner == "cmd" && proj.TryGetGlobalProjectile(out FightRecProjTag pt) && pt.SrcItem > 0) { srcItem = pt.SrcItem; if (!_items.ContainsKey(srcItem)) _items[srcItem] = Lang.GetItemNameValue(srcItem); }
+					if (owner == "cmd" && proj.TryGetGlobalProjectile(out FightRecProjTag pt) && pt.SrcItem > 0) { srcItem = pt.SrcItem; NoteSrcItem(srcItem); }
 					if (_calOn && (owner == "cmd" || owner == "levy")) ss = StealthKind(proj);
 				}
 				else
@@ -344,6 +353,7 @@ namespace Levy.Common.Recording
 					owner = byPlayer != null && global::Levy.Common.Owner.SoldierOwner.IsDummy(byPlayer) ? "levy" : byPlayer != null && byPlayer == _cmd ? "cmd" : "other";
 					cls = ClassName(item?.DamageType); kind = "item"; type = item != null ? item.type : 0; srcItem = type;
 					if (item != null && !_items.ContainsKey(type)) _items[type] = item.Name;
+					if (item != null) NoteSrcItem(type);
 				}
 				string key = owner + "|" + cls + "|" + kind + "|" + type + "|" + (boss ? 1 : 0) + "|" + srcItem + "|" + ss;
 				if (!_dmg.TryGetValue(key, out var a)) _dmg[key] = a = new DmgAcc();
@@ -414,7 +424,7 @@ namespace Levy.Common.Recording
 				_gzip = GzipOverride ?? (!Headless && OutDirOverride == null);
 				_startWall = DateTime.Now; _profWindows = 0; _cmdDeaths = 0; _pDead = false; _dmg.Clear(); _dmgBoss = _dmgAll = 0; _lastDmgFlush = 0; LastResult = null;
 				_cmd = cmd; _frames = 0; _events = 0; _bossSeen = false; _bossesSeen = 0; _bossIdsSeen.Clear(); _hbDef.Clear(); _lastBossSeen = 0;
-				_items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
+				_nonWeapons.Clear(); _items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = _tkSpite = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
 				_lbuf.Clear(); _lgear.Clear(); _prefixes.Clear(); _cmdGear = int.MinValue; _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1;
@@ -502,7 +512,7 @@ namespace Levy.Common.Recording
 				FlushDmg(Elapsed, true);
 				result = ResultWord(reason);
 				discard = (Headless && _frames < 90) || (_auto != 0 && Elapsed < MinKeepTicks && _bossesSeen == 0);
-				w.WriteLine("{\"k\":\"names\",\"items\":" + Names(_items) + ",\"npcs\":" + Names(_npcs) + ",\"projectiles\":" + Names(_projs) + ",\"buffs\":" + Names(_buffs) + ",\"soldiers\":" + Names(_soldiers) + ",\"prefixes\":" + Names(_prefixes) + "}", true);
+				w.WriteLine("{\"k\":\"names\",\"items\":" + Names(_items) + ",\"npcs\":" + Names(_npcs) + ",\"projectiles\":" + Names(_projs) + ",\"buffs\":" + Names(_buffs) + ",\"soldiers\":" + Names(_soldiers) + ",\"prefixes\":" + Names(_prefixes) + ",\"nonweapons\":[" + string.Join(",", _nonWeapons) + "]}", true);
 				int alive = 0, total = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) alive++;
 				if (RosterSystem.Instance != null) foreach (var r in RosterSystem.Instance.Regulars) if (!r.Reserve) total++;
 				double secs = Elapsed / 60.0;

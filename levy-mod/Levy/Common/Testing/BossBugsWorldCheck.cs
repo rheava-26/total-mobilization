@@ -216,6 +216,7 @@ namespace Levy.Common.Testing
 			if (Part(only, "drones")) { try { DronesDoNotHoldTheBet(); } finally { Cleanup(); } }
 			if (Part(only, "regroup")) { try { RegroupOrder(); } finally { Cleanup(); } }
 			if (Part(only, "redemption") && ModLoader.HasMod("Redemption")) { try { RedemptionPart(); } finally { Cleanup(); } } // only when the mod is loaded
+			if (Array.IndexOf(only.Split(','), "noxus") >= 0 && ModLoader.HasMod("NoxusBoss")) { try { NoxusPart(); } finally { Cleanup(); } } // Wrath of the Gods reconnaissance: only when asked for by name (never part of "all") and the mod is loaded
 		}
 
 		// =====================================================================================================

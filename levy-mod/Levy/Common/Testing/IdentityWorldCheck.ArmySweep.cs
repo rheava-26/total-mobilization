@@ -54,7 +54,7 @@ namespace Levy.Common.Testing
 			public Dictionary<string, int> Types = new(); public Dictionary<string, int> States = new(); public int DummyMinions, DummyTurrets; public float MinX = 1e9f, MaxX = -1e9f;
 			public double UsesPerSec => Uses * 60.0 / Math.Max(1, Ran);
 			public double AvgActor => Projs == 0 ? -1 : SpawnActor / Projs / 16.0; public double AvgCmd => Projs == 0 ? -1 : SpawnCmd / Projs / 16.0;
-			public bool FromCommander => AtCmd > 0 || NearCmdTicks >= 3;
+			public bool FromCommander => AtCmd > 0 || NearCmdTicks >= 12; // first seen at her, or lingering around her (a shot that merely flies past on a ricochet is geometry)
 			public override string ToString() => $"{Who}: uses/s {UsesPerSec:0.00}, projs {Projs}, spawn {AvgActor:0.0} tiles from the actor / {AvgCmd:0.0} from the commander, hits {Hits}, damage {Dmg}, minions {MaxMinions} (slots {DummyMinions}), sentries {MaxSentries} (slots {DummyTurrets}), engaged {Engage}/{Ran} (states {string.Join(",", States.Select(kv => kv.Key + ":" + kv.Value))}; x {MinX:0.0}..{MaxX:0.0} tiles from start){(Err != null ? ", THREW " + Err : "")} [{string.Join(",", Types.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + "x" + kv.Value))}]";
 		}
 
@@ -193,8 +193,9 @@ namespace Levy.Common.Testing
 							live[i] = p.identity; res.Projs++; res.SpawnActor += da; res.SpawnCmd += dc;
 							string nm = p.ModProjectile?.Name ?? ProjectileID.Search.GetName(p.type); res.Types[nm] = res.Types.TryGetValue(nm, out int c0) ? c0 + 1 : 1;
 							if (!player && dc < NearTiles * 16f && dc < da) res.AtCmd++;
+							if (ArmyDebug && res.Projs <= 5) Note($"  armydbg first sight {(player ? "player" : "levy")} t={k} {nm} owner={p.owner} pos=({p.Center.X:0.0},{p.Center.Y:0.0}) actor=({actor.X:0.0},{actor.Y:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) dmg={p.damage} ai=({p.ai[0]:0.0},{p.ai[1]:0.0}) tagged={(p.TryGetGlobalProjectile(out SoldierProjectileTag tg0) && tg0.SoldierIndex >= 0)}");
 						}
-						if (!player && dc < NearTiles * 16f && dc < da) res.NearCmdTicks++;
+						if (!player && dc < NearTiles * 16f && dc < da) { res.NearCmdTicks++; if (ArmyDebug && res.NearCmdTicks <= 6) Note($"  armydbg near commander t={k} {p.ModProjectile?.Name ?? p.type.ToString()} owner={p.owner} age={p.timeLeft} pos-levy=({(p.Center.X - actor.X) / 16f:0.0},{(p.Center.Y - actor.Y) / 16f:0.0}) pos-cmd=({(p.Center.X - cmd.X) / 16f:0.0},{(p.Center.Y - cmd.Y) / 16f:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.0},{p.ai[1]:0.0})"); }
 						if (ArmyDebug && k % 100 == 50 && (p.minion || p.sentry || p.minionSlots > 0f)) Note($"  armydbg {(player ? "player" : "levy")} t={k} {p.ModProjectile?.Name ?? p.type.ToString()} owner={p.owner} dmg={p.damage} friendly={p.friendly} pos-target=({(p.Center.X - _sweepTarget.Center.X) / 16f:0.0},{(p.Center.Y - _sweepTarget.Center.Y) / 16f:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.0},{p.ai[1]:0.0}) localAI=({p.localAI[0]:0.0},{p.localAI[1]:0.0}) tl={p.timeLeft}");
 					}
 					res.MaxMinions = Math.Max(res.MaxMinions, minions); res.MaxSentries = Math.Max(res.MaxSentries, sentries);
@@ -213,7 +214,7 @@ namespace Levy.Common.Testing
 
 		private static void NoAchievements(On_AchievementsHelper.orig_HandleSpecialEvent orig, Player player, int eventID) { }
 
-		private sealed class ArmyRow { public string Label, Name, Cls, Fam, Status, Cause = ""; public ArmyRes Player, A, B; public double RatioA, RatioB; }
+		private sealed class ArmyRow { public string Label, Name, Cls, Fam, Status, Probe = "", Cause = ""; public ArmyRes Player, A, B; public double RatioA, RatioB; }
 
 		private static void ArmySweep()
 		{
@@ -238,12 +239,13 @@ namespace Levy.Common.Testing
 					Item sample = ContentSamples.ItemsByType[type];
 					int ammo = sample.useAmmo > 0 && ammoByKind.TryGetValue(sample.useAmmo, out int at) ? at : 0;
 					var row = new ArmyRow { Label = label, Name = name, Cls = (sample.DamageType?.Name ?? "?").Replace("DamageClass", "") };
+					try { row.Probe = sample.shoot > 0 ? $"shot reads cursor {OwnerLockProbe.ReadsCursor(sample.shoot)}, reads buttons {OwnerLockProbe.ReadsUseButtons(sample.shoot)}, locks owner {OwnerLockProbe.LocksOwner(sample.shoot)}" : "no shot"; } catch (Exception) { row.Probe = "probe threw"; }
 					try { Item fi = new Item(); fi.SetDefaults(type); WeaponProfile fp = WeaponClassifier.GetProfile(fi); row.Fam = fp.Family + (fp.Supported ? "" : "(unsupported)") + (ModShotKinds.Of(fi) != ModShotKind.None ? "/" + ModShotKinds.Of(fi) : ""); } catch (Exception) { row.Fam = "?"; }
 					row.A = ArmyOne(type, ammo, ticks, false, false);
 					row.B = ArmyOne(type, ammo, ticks, false, true);
 					row.Player = ArmyOne(type, ammo, ticks, true, false, Math.Max(row.A.DummyMinions, row.B.DummyMinions), Math.Max(row.A.DummyTurrets, row.B.DummyTurrets)); // the stand-in gets the minion and sentry slots the levy's own player has
 					ArmyClassify(row); rows.Add(row);
-					Note($"army sweep {row.Status} {row.Label} [{row.Cls}, {row.Fam}] ratio idle {row.RatioA:0.00} / commander holding {row.RatioB:0.00} {row.Cause} || {row.Player} || {row.A} || {row.B}");
+					Note($"army sweep {row.Status} {row.Label} [{row.Cls}, {row.Fam}; {row.Probe}] ratio idle {row.RatioA:0.00} / commander holding {row.RatioB:0.00} {row.Cause} || {row.Player} || {row.A} || {row.B}");
 				}
 			}
 			finally { _sweepTarget = null; On_AchievementsHelper.HandleSpecialEvent -= NoAchievements; }

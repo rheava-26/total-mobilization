@@ -89,8 +89,9 @@ def vkey(v):
 
 # ---------------------------------------------------------------- jobs (run in a pool)
 def build_blob(args):
-    path, hz_target = args
-    rows = ms.load(path)
+    path, hz_target = args[0], args[1]
+    suffix = args[2] if len(args) > 2 else ""
+    rows = dict(ms.episode_list(path))[suffix]     # a recording that holds event NPCs (Celestial Pillars ...) is cut into its fights: suffix -ep1, -ep2 ...
     hdr = next((r for r in rows if r.get("k") == "hdr"), {})
     hz0 = hdr.get("hz", 30)
     factor = max(1, -(-hz0 // hz_target))
@@ -99,7 +100,17 @@ def build_blob(args):
 
 
 def scan_rec(path):
-    rows = ms.load(path)
+    """One info dict per fight in the recording (several when it held event NPCs that older recorders kept in the fight)."""
+    eps = ms.episode_list(path)
+    out = []
+    for suffix, rows in eps:
+        info = _scan_rows(rows)
+        info["suffix"] = suffix
+        out.append(info)
+    return out
+
+
+def _scan_rows(rows):
     s = ms.summarize(rows)
     hdr = next((r for r in rows if r.get("k") == "hdr"), {})
     ev = [r for r in rows if r.get("k") == "e"]
@@ -128,9 +139,10 @@ def scan_rec(path):
 def eve_note(info, s):
     e = info["end"]
     won = e.get("result") == "won"
+    fled = e.get("result") == "fled"
     dur = e.get("durationSec") or s["dur"]
     boss = s["boss"]
-    bits = ["%s in %.0f s." % ("Won" if won else "Lost", dur) if won else "Lost at %.0f s." % dur]
+    bits = ["%s in %.0f s." % ("Won" if won else "Lost", dur) if won else ("The boss left at %.0f s with you alive." % dur if fled else "Lost at %.0f s." % dur)]
     if not won and info["life"] is not None:
         bits.append("%s had %.0f%% life left." % (boss, 100 * info["life"]))
     if info["cdeaths"]:
@@ -241,15 +253,20 @@ def main():
     infos = {}
     with Pool(a.jobs) as pool:
         res = pool.map(scan_rec, [os.path.join(a.eve_recs, f) for f in recs])
-    for fn, info in zip(recs, res):
-        s = info["s"]; e = info["end"]
-        s["boss"] = ALIAS.get(e.get("bossName") or s["boss"], e.get("bossName") or s["boss"])
-        s["boss"] = ALIAS.get(s["boss"], s["boss"])
-        if e.get("result") in ("won", "lost"):
-            s["result"] = "win" if e["result"] == "won" else "loss"
-        s["note"] = eve_note(info, s)
-        s["mode"] = s["mode"] if s["mode"] != "?" else "Master+Death"
-        ents.append({"set": "eve", "path": os.path.join(a.eve_recs, fn), "id": "eve__" + slug(re.sub(r"\.levyrec$", "", fn)), "f": s, "src": fn})
+    for fn, infos in zip(recs, res):
+        for info in infos:
+            suffix = info["suffix"]
+            s = info["s"]; e = info["end"]
+            s["boss"] = ALIAS.get(e.get("bossName") or s["boss"], e.get("bossName") or s["boss"])
+            s["boss"] = ALIAS.get(s["boss"], s["boss"])
+            # the recorder's own word, read by the result rule (a boss that leaves after the commander fell is a loss, with her alive it is fled)
+            if s.get("rule"):
+                e = info["end"] = dict(e, result=s["rule"])      # the rule on the recording itself beats the word an older recorder wrote
+            if e.get("result") in ("won", "lost", "fled"):
+                s["result"] = {"won": "win", "lost": "loss", "fled": "fled"}[e["result"]]
+            s["note"] = eve_note(info, s)
+            s["mode"] = s["mode"] if s["mode"] != "?" else "Master+Death"
+            ents.append({"set": "eve", "path": os.path.join(a.eve_recs, fn), "suffix": suffix, "id": "eve__" + slug(re.sub(r"\.levyrec$", "", fn) + suffix), "f": s, "src": fn + suffix})
 
     # --- Eve's older fights and the outdated pre-hardmode lab fights (already converted)
     oldm = json.load(open(a.old_manifest))
@@ -300,11 +317,11 @@ def main():
                      "f": {"boss": BOSS[boss][0], "note": note, "result": r["result"].lower(), "_row": r}})
 
     # --- make the data
-    jobs = [(e["path"], a.hz) for e in ents if "path" in e]
+    jobs = [(e["path"], a.hz, e.get("suffix", "")) for e in ents if "path" in e]
     blobs, hzs = {}, {}
     steps = [a.hz, 10, 6]
     level = {e["id"]: 0 for e in ents if "path" in e}
-    paths = {e["id"]: e["path"] for e in ents if "path" in e}
+    paths = {e["id"]: (e["path"], e.get("suffix", "")) for e in ents if "path" in e}
     with Pool(a.jobs) as pool:
         for e, (blob, hz) in zip([e for e in ents if "path" in e], pool.map(build_blob, jobs)):
             blobs[e["id"]] = blob; hzs[e["id"]] = hz
@@ -319,11 +336,11 @@ def main():
                 break
             big = max(cand, key=lambda i: len(blobs[i]))
             level[big] += 1
-            blobs[big], hzs[big] = build_blob((paths[big], steps[level[big]]))
+            blobs[big], hzs[big] = build_blob((paths[big][0], steps[level[big]], paths[big][1]))
             print("thinned %s to %d Hz" % (big, hzs[big]), file=sys.stderr)
     # summaries for the lab/test fights (need the recording itself)
     with Pool(a.jobs) as pool:
-        sums = pool.map(scan_rec, [e["path"] for e in ents if e["set"] in ("lab", "test")])
+        sums = [x[0] for x in pool.map(scan_rec, [e["path"] for e in ents if e["set"] in ("lab", "test")])]
     for e, info in zip([e for e in ents if e["set"] in ("lab", "test")], sums):
         s = info["s"]; f = e["f"]
         row = f.pop("_row")

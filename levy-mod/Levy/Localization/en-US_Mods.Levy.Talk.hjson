@@ -12,3 +12,5 @@ TakeAllHint: Move everything this levy carries into your pack.
 TookAll: Took {0} items.
 NothingToTake: Nothing to take.
 LockHint: Items you place stay put. Taken slots may be refilled.
+SharedRage: "Your levies feel the {0} too: Rage lasts {1} more second."
+SharedAdrenaline: "Your levies feel the {0} too: +{1}% Adrenaline damage and +{2}% damage reduction."

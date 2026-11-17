@@ -169,6 +169,35 @@ namespace Levy.Common.Compat.Calamity
 		public static void GrantBoosters(Player p) { Init(); object cp = Of(p); if (cp == null || _boosters == null) return; foreach (FieldInfo f in _boosters) f?.SetValue(cp, true); }
 		public static int BoosterCount(object cp) { int n = 0; if (cp != null && _boosters != null) foreach (FieldInfo f in _boosters) if (f != null && (bool)f.GetValue(cp)) n++; return n; }
 
+		/// <summary>The Calamity item that sets each upgrade, in the same order as the six flags (the first three are Rage, the last three Adrenaline).</summary>
+		public static readonly string[] BoosterItems = { "MushroomPlasmaRoot", "InfernalBlood", "RedLightningContainer", "ElectrolyteGelPack", "StarlightFuelCell", "Ectoheart" };
+		public const int BoosterSlots = 6;
+		/// <summary>The six upgrades a CalamityPlayer carries, as bits (bit i = the flag of <see cref="BoosterItems"/>[i]).</summary>
+		public static int BoosterMask(object cp)
+		{
+			int m = 0;
+			try { if (cp != null && _boosters != null) for (int i = 0; i < _boosters.Length; i++) if (_boosters[i] != null && (bool)_boosters[i].GetValue(cp)) m |= 1 << i; }
+			catch (Exception e) { Warn("BoosterMask", e); }
+			return m;
+		}
+		/// <summary>Harness: set one upgrade flag on a CalamityPlayer.</summary>
+		public static void SetBooster(object cp, int i, bool v) { Init(); if (cp != null && _boosters != null && (uint)i < (uint)_boosters.Length) _boosters[i]?.SetValue(cp, v); }
+
+		/// <summary>Calamity's per-upgrade numbers (BalancingConstants): Rage seconds, Adrenaline damage and damage reduction as fractions. Calamity 2.x values when a member is missing.</summary>
+		public static float RageSecondsPerBooster => Balance("RageDurationPerBooster", 60f) / 60f;
+		public static float AdrenalineDamagePerBooster => Balance("AdrenalineDamagePerBooster", 0.2f);
+		public static float AdrenalineDrPerBooster => Balance("AdrenalineDRPerBooster", 0.05f);
+		private static float Balance(string field, float fallback)
+		{
+			try
+			{
+				if (!ModLoader.TryGetMod("CalamityMod", out Mod cal) || cal.Code == null) return fallback;
+				object v = cal.Code.GetType("CalamityMod.Balancing.BalancingConstants")?.GetField(field, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(null);
+				return v == null ? fallback : Convert.ToSingle(v);
+			}
+			catch (Exception) { return fallback; }
+		}
+
 		/// <summary>A rogue (Calamity gave the dummy a stealth bar): max stealth above zero.</summary>
 		public static bool IsRogue(object cp) { try { return cp != null && _stealthMax != null && (float)_stealthMax.GetValue(cp) > 0f; } catch (Exception) { return false; } }
 		public static float Stealth(object cp) { try { return _stealth == null ? 0f : (float)_stealth.GetValue(cp); } catch (Exception) { return 0f; } }

@@ -569,7 +569,9 @@ namespace Levy.Common.Weapons
 			try
 			{
 				// The cursor is on the target while the hooks run (items that place or steer something at the cursor then act on the enemy, as for a player aiming).
+				// A hook that reads the cursor (Calamity's Conference Call drops its sky bullets over Main.mouseX) must read the soldier's aim and never the commander's: with no target the cursor goes a screen ahead along the shot.
 				if (target != null) aim = new AltPolicies.AimScope(d, target.Center);
+				else if (vel.LengthSquared() > 0.0001f && float.IsFinite(vel.X) && float.IsFinite(vel.Y)) aim = new AltPolicies.AimScope(d, muzzle + Vector2.Normalize(vel) * 600f);
 				// Hooks spawn their projectiles with player.whoAmI as the owner: make that the soldier owner so ai[] is assigned and the spawn is synced.
 				d.whoAmI = OwnerFor(s);
 				d.Center = s.NPC.Center;

@@ -378,7 +378,7 @@ namespace Levy.Content.NPCs
 
 		/// <summary>A creature that changes form (the Vampire Bat becoming a Vampire) is rebuilt by vanilla from its new type's defaults, which would drop the army's marks and leave a hostile enemy beside the commander: the marks are put back.</summary>
 		private static void TransformDetour(On_NPC.orig_Transform orig, NPC self, int newType)
-		{
+		{ _hl_TransformDetour_3++;
 			if (!self.TryGetGlobalNPC(out ConjuredGlobalNPC c) || !c.Active) { orig(self, newType); return; }
 			int owner = c.OwnerWho, cmd = c.CommanderIndex, conjured = c.ConjuredType, target = c.Target, parent = c.ParentWho, idle = c.IdleLifeTicks, minDamage = c.MinDamage;
 			bool child = c.IsChild;
@@ -387,19 +387,19 @@ namespace Levy.Content.NPCs
 			c2.Bind(self, owner, cmd, conjured);
 			c2.Target = target; c2.ParentWho = parent; c2.IdleLifeTicks = idle; c2.MinDamage = minDamage; c2.IsChild = child;
 			self.netUpdate = true;
-		}
+		} private static int _hl_TransformDetour_3;
 
 		private static void TargetClosestDetour(On_NPC.orig_TargetClosest orig, NPC self, bool faceTarget)
-		{
+		{ _hl_TargetClosestDetour_1++;
 			if (self.TryGetGlobalNPC(out ConjuredGlobalNPC c) && c.Active && c._aim != null) { c.AnswerTargetClosest(faceTarget); return; } // also when a hit re-asks (StrikeNPC): never a real player
 			orig(self, faceTarget);
-		}
+		} private static int _hl_TargetClosestDetour_1;
 
 		private static void TargetClosestUpgradedDetour(On_NPC.orig_TargetClosestUpgraded orig, NPC self, bool faceTarget, Vector2? checkPosition)
-		{
+		{ _hl_TargetClosestUpgradedDetour_2++;
 			if (self.TryGetGlobalNPC(out ConjuredGlobalNPC c) && c.Active && c._aim != null) { c.AnswerTargetClosest(faceTarget); return; }
 			orig(self, faceTarget, checkPosition);
-		}
+		} private static int _hl_TargetClosestUpgradedDetour_2;
 
 		/// <summary>The creature's "target the closest player" is the dummy standing on its enemy: the same fields vanilla's search would have filled in.</summary>
 		private void AnswerTargetClosest(bool faceTarget)

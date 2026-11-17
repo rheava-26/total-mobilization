@@ -53,31 +53,32 @@ namespace Levy.Common.Progression
 			On_Terraria_Chat_ChatHelper_BroadcastChatMessage_Safe();
 		}
 
+		private static int _hl_Lambda_Broadcast, _hl_Lambda_NewText, _hl_Lambda_Achievement;
 		static void On_Terraria_Chat_ChatHelper_BroadcastChatMessage_Safe()
 		{
-			Terraria.Chat.On_ChatHelper.BroadcastChatMessage += (orig, text, color, excl) => { if (Simulating) return; orig(text, color, excl); };
-			On_Main.NewText_string_byte_byte_byte += (orig, s, r, g, b) => { if (Simulating) return; orig(s, r, g, b); };
-			On_AchievementsHelper.NotifyProgressionEvent += (orig, id) => { if (Simulating) return; orig(id); };
+			Terraria.Chat.On_ChatHelper.BroadcastChatMessage += (orig, text, color, excl) => { _hl_Lambda_Broadcast++; if (Simulating) return; orig(text, color, excl); };
+			On_Main.NewText_string_byte_byte_byte += (orig, s, r, g, b) => { _hl_Lambda_NewText++; if (Simulating) return; orig(s, r, g, b); };
+			On_AchievementsHelper.NotifyProgressionEvent += (orig, id) => { _hl_Lambda_Achievement++; if (Simulating) return; orig(id); };
 			Terraria.Audio.On_SoundEngine.PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback += (Terraria.Audio.On_SoundEngine.orig_PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback orig, ref Terraria.Audio.SoundStyle st, Microsoft.Xna.Framework.Vector2? pos, Terraria.Audio.SoundUpdateCallback cb) => Simulating ? default(ReLogic.Utilities.SlotId) : orig(ref st, pos, cb);
 		}
 
 		static void KillTileDetour(On_WorldGen.orig_KillTile orig, int i, int j, bool fail, bool effectOnly, bool noItem)
-		{
+		{ _hl_KillTileDetour_3++;
 			if (Simulating) return;
 			orig(i, j, fail, effectOnly, noItem);
-		}
+		} private static int _hl_KillTileDetour_3;
 
 		static void Mod_Log(string s) { ModContent.GetInstance<Levy>().Logger.Info("[OrbLoot] " + s); }
 
 		static int InnerDetour(On_Item.orig_NewItem_Inner orig, IEntitySource src, int X, int Y, int W, int H, Item clone, int type, int stack, bool noBroadcast, int pfix, bool noGrab, bool reverse)
-		{
+		{ _hl_InnerDetour_2++;
 			if (Simulating) { _cur?.Add(new Cap { Src = src, X = X, Y = Y, W = W, H = H, Type = type, Stack = stack, Prefix = pfix, Clone = clone?.Clone() }); return Main.maxItems; }
 			if (_real) _realDrops++;
 			return orig(src, X, Y, W, H, clone, type, stack, noBroadcast, pfix, noGrab, reverse);
-		}
+		} private static int _hl_InnerDetour_2;
 
 		static void CheckOrbDetour(On_WorldGen.orig_CheckOrb orig, int i, int j, int type)
-		{
+		{ _hl_CheckOrbDetour_1++;
 			if (Simulating || _real || Main.netMode == NetmodeID.MultiplayerClient) { orig(i, j, type); return; }
 			var cfg = LevyProgressionConfig.Get;
 			int extra = cfg != null && cfg.OrbLootScaling ? ExtraRolls(ActiveLevies(i, j), cfg.LeviesPerExtraOrbRoll) : 0;
@@ -109,7 +110,7 @@ namespace Levy.Common.Progression
 				LastBankRolls++;
 				foreach (var c in roll) { LastBankItems++; if (c.Clone != null) Item.NewItem(c.Src, c.X, c.Y, c.W, c.H, c.Clone); else Item.NewItem(c.Src, c.X, c.Y, c.W, c.H, c.Type, c.Stack, false, c.Prefix); }
 			}
-		}
+		} private static int _hl_CheckOrbDetour_1;
 
 		public override void Unload()
 		{

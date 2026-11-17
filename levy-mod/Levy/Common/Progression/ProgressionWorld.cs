@@ -32,11 +32,11 @@ namespace Levy.Common.Progression
 
 		/// <summary>Vanilla density limits for Chlorophyte (WorldGen.Chlorophyte), scaled. At scale 1 this is identical to vanilla.</summary>
 		static bool ChlorophyteDetour(Terraria.On_WorldGen.orig_Chlorophyte orig, int i, int j)
-		{
+		{ _hl_ChlorophyteDetour_1++;
 			var c = LevyProgressionConfig.Get;
 			if (c == null || c.ChlorophyteChunkScale <= 1f) return orig(i, j);
 			return Allowed(i, j, c.ChlorophyteChunkScale);
-		}
+		} private static int _hl_ChlorophyteDetour_1;
 
 		public static void Limits(int j, out int near, out int far, out int nearR, out int farR)
 		{

@@ -34,6 +34,9 @@ namespace Levy.Common.Testing
 		{
 			if (!Main.dedServ || Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") != "1" || Environment.GetEnvironmentVariable("LEVY_SUMMONWORLD") == "0") return;
 			_mod = Mod; _armed = true; _done = false; _calls = 0; _pass = _fail = 0;
+			// the chain places test tile entities and stands a stand-in commander in slot 0: a world autosave that lands in the middle of it (the chain takes minutes on a loaded box, the timer is ten) would save that
+			// stand-in state and crashed the server in ModTileEntity.WriteExtraData. The ship world is never saved.
+			try { Main.autoSave = false; } catch (Exception) { }
 			Main.OnTickForThirdPartySoftwareOnly += Drive;
 		}
 		public override void OnWorldUnload() { try { Main.OnTickForThirdPartySoftwareOnly -= Drive; } catch { } _armed = false; }
@@ -109,6 +112,8 @@ namespace Levy.Common.Testing
 			try { PerfBossCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfBoss] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the performance analyzer check runs after it: it attaches the analyzer's detours to the process, and its fault test removes them again
 			try { global::Levy.Common.Perf.PerfWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfAnalyzer] check threw " + e.GetType().Name + ": " + e.Message); }
+			// the hook liveness check reads every detour's call counter once the whole chain has run
+			try { HookLiveCheck.Run(_mod); } catch (Exception e) { _mod.Logger.Warn("[HookLive] check threw " + e.GetType().Name + ": " + e.Message); }
 		}
 
 		private static void Check(string name, bool ok) { if (ok) _pass++; else _fail++; _mod.Logger.Info($"[SummonWorld] {(ok ? "PASS" : "FAIL")} {name}"); }

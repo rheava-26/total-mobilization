@@ -179,11 +179,11 @@ namespace Levy.Common.Util
 		public override void PostUpdateProjectiles() { if (_on && _projStart != 0) { _proj += Stopwatch.GetTimestamp() - _projStart; _projStart = 0; } }
 
 		private static void DoUpdate(On_Main.orig_DoUpdate orig, Main self, ref GameTime gameTime)
-		{
+		{ _hl_DoUpdate_3++;
 			long t0 = Stopwatch.GetTimestamp();
 			try { orig(self, ref gameTime); }
 			finally { EndUpdate(t0); }
-		}
+		} private static int _hl_DoUpdate_3;
 
 		private static void EndUpdate(long t0)
 		{
@@ -197,19 +197,19 @@ namespace Levy.Common.Util
 		internal static void TestFrame(long ticks) { if (_on) { Draw[0] += ticks; _frames++; } }
 
 		private static void DoDraw(On_Main.orig_DoDraw orig, Main self, GameTime gameTime)
-		{
+		{ _hl_DoDraw_2++;
 			long t0 = Stopwatch.GetTimestamp();
 			try { orig(self, gameTime); }
 			finally { Draw[0] += Stopwatch.GetTimestamp() - t0; _frames++; }
-		}
+		} private static int _hl_DoDraw_2;
 
-		private static void DrawNpcs(On_Main.orig_DrawNPCs orig, Main self, bool behindTiles) { long t0 = Stopwatch.GetTimestamp(); try { orig(self, behindTiles); } finally { Draw[1] += Stopwatch.GetTimestamp() - t0; } }
-		private static void DrawProj(On_Main.orig_DrawProjectiles orig, Main self) { long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { Draw[2] += Stopwatch.GetTimestamp() - t0; } }
-		private static void DrawDust(On_Main.orig_DrawDust orig, Main self) { long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { Draw[3] += Stopwatch.GetTimestamp() - t0; } }
-		private static void DrawGore(On_Main.orig_DrawGore orig, Main self) { long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { Draw[4] += Stopwatch.GetTimestamp() - t0; } }
-		private static void DrawInterface(On_Main.orig_DrawInterface orig, Main self, GameTime gameTime) { long t0 = Stopwatch.GetTimestamp(); try { orig(self, gameTime); } finally { Draw[5] += Stopwatch.GetTimestamp() - t0; } }
-		private static void DrawPlayers(On_Main.orig_DrawPlayers_AfterProjectiles orig, Main self) { long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { Draw[6] += Stopwatch.GetTimestamp() - t0; } }
-		private static void DamageTimer(On_Projectile.orig_Damage orig, Projectile self) { long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { _hitLoop += Stopwatch.GetTimestamp() - t0; } }
+		private static void DrawNpcs(On_Main.orig_DrawNPCs orig, Main self, bool behindTiles) { _hl_DrawNpcs_7++; long t0 = Stopwatch.GetTimestamp(); try { orig(self, behindTiles); } finally { Draw[1] += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DrawNpcs_7;
+		private static void DrawProj(On_Main.orig_DrawProjectiles orig, Main self) { _hl_DrawProj_9++; long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { Draw[2] += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DrawProj_9;
+		private static void DrawDust(On_Main.orig_DrawDust orig, Main self) { _hl_DrawDust_4++; long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { Draw[3] += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DrawDust_4;
+		private static void DrawGore(On_Main.orig_DrawGore orig, Main self) { _hl_DrawGore_5++; long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { Draw[4] += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DrawGore_5;
+		private static void DrawInterface(On_Main.orig_DrawInterface orig, Main self, GameTime gameTime) { _hl_DrawInterface_6++; long t0 = Stopwatch.GetTimestamp(); try { orig(self, gameTime); } finally { Draw[5] += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DrawInterface_6;
+		private static void DrawPlayers(On_Main.orig_DrawPlayers_AfterProjectiles orig, Main self) { _hl_DrawPlayers_8++; long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { Draw[6] += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DrawPlayers_8;
+		private static void DamageTimer(On_Projectile.orig_Damage orig, Projectile self) { _hl_DamageTimer_1++; long t0 = Stopwatch.GetTimestamp(); try { orig(self); } finally { _hitLoop += Stopwatch.GetTimestamp() - t0; } } private static int _hl_DamageTimer_1;
 
 		private static string Ms(double v) => v.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
 

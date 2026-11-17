@@ -42,7 +42,7 @@ namespace Levy.Common.Testing
 			global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(NPCID.KingSlime, true); // a beaten boss: a Spectator may stand in its fight
 			SetBossesTarget(true);
 			On_Player.KillMe += BetKillMeDetour; _betHooked = true;
-			var bar = new BarracksTE { Position = new Point16(Cx - 30, FloorY - 3), TownName = "BetCheckTown" }; bar.ID = BetBarracksId; TileEntity.ByID[BetBarracksId] = bar;
+			var bar = TestTileEntities.Add<BarracksTE>(BetBarracksId, new Point16(Cx - 30, FloorY - 3)); bar.TownName = "BetCheckTown";
 			Player me = Main.player[0];
 			int bt = ModContent.BuffType<global::Levy.Content.Buffs.SpectatorBuff>();
 			try
@@ -117,7 +117,7 @@ namespace Levy.Common.Testing
 			finally
 			{
 				if (_betHooked) { On_Player.KillMe -= BetKillMeDetour; _betHooked = false; }
-				TileEntity.ByID.Remove(BetBarracksId);
+				if (TileEntity.ByID.TryGetValue(BetBarracksId, out var betBar)) TestTileEntities.Remove(betBar);
 				global::Levy.Common.Boss.BossDownedSystem.ClearForTest();
 			}
 		}

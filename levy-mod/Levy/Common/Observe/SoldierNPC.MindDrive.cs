@@ -31,6 +31,7 @@ namespace Levy.Content.NPCs
 			MindInputState s = link.In;
 			NPC npc = NPC; Player d = Dummy;
 			MindMoves++;
+			if (MindDebug && (npc.velocity.X - _mindLastVx) * (_mindLastVx == 0f ? 1f : Math.Sign(_mindLastVx)) > 0.6f && !s.Left && !s.Right) Levy.Instance.Logger.Info($"[MindDbg] velocity changed between ticks: I left {_mindLastVx:0.00}, now {npc.velocity.X:0.00} hk={_hkPhase} dashTicks={_dashTicks} state={State} order={Record.Order} retreat={Retreating} tick={Main.GameUpdateCount}");
 			HasMoveGoal = false; HoldPosition = false;
 			npc.noGravity = true;
 
@@ -38,7 +39,7 @@ namespace Levy.Content.NPCs
 			bool hookEdge = s.Hook && !_mindPHook; _mindPHook = s.Hook;
 			// standing: the body's engine leaves a little downward speed (its own gravity, added after the AI) on the floor, so "on the ground" is the AI's own test, not vy == 0
 			bool onSlope = npc.velocity.Y > 0f && npc.velocity.Y < 2.2f && !npc.wet && Collision.SolidCollision(new Vector2(npc.position.X, npc.Bottom.Y), npc.width, 4);
-			bool grounded0 = npc.velocity.Y == 0f || onSlope;
+			bool grounded0 = npc.velocity.Y == 0f || onSlope; MindGrounded = grounded0;
 			if (hookEdge && HookUsable && _hkPhase == HookPhase.Idle) { try { HookLabStart(HookReason.GoalAbove, s.Aim); } catch (Exception e) { MindControl.Warn(e); } }
 			if (_hkPhase != HookPhase.Idle)
 			{
@@ -77,6 +78,7 @@ namespace Levy.Content.NPCs
 					{
 						float over = d.GetWingStats(d.wingsLogic).AccRunSpeedOverride;
 						if (over > 0f) d.accRunSpeed = Math.Max(d.accRunSpeed, over * (1f + 0.16f * global::Levy.Common.Movement.MovementAbilities.CalMoveBonus(d)));
+						if (MindDebug && MindDbgCount % 20 == 0) Levy.Instance.Logger.Info($"[MindDbg] wings: override={over} accRun={d.accRunSpeed} maxRun={d.maxRunSpeed} accel={d.runAcceleration} vx={d.velocity.X:0.00} wingTime={d.wingTime}/{d.wingTimeMax}");
 					}
 					d.UpdateJumpHeight();
 					if (!_mindDashBroken)
@@ -106,7 +108,7 @@ namespace Levy.Content.NPCs
 				d.velocity = npc.velocity;
 				if (d.direction != 0) { npc.direction = d.direction; npc.spriteDirection = d.direction; }
 			}
-			_mindPL = s.Left; _mindPR = s.Right; _mindPJump = s.Jump;
+			_mindPL = s.Left; _mindPR = s.Right; _mindPJump = s.Jump; _mindLastVx = npc.velocity.X;
 			WantsToFallThrough = s.Down; if (s.Down) _fallThroughTicks = 2;
 			StepUp();
 			MirrorDummyControlsMind(in s);
@@ -126,6 +128,7 @@ namespace Levy.Content.NPCs
 			catch (Exception) { return 0f; }
 		}
 
+		private float _mindLastVx; internal bool MindGrounded;
 		private bool _mindDashBroken; private int _mindTapDir, _mindDashLeft; private uint _mindTapAt;
 
 		/// <summary>Double tap a direction with a dash accessory on: the body bursts at the dash speed for the dash's length, as the player's dash does.</summary>

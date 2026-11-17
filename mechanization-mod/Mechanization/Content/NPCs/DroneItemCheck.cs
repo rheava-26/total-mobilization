@@ -119,7 +119,7 @@ namespace Mechanization.Content.NPCs
 				}
 
 				// ---- it arms itself from the Armory in reach, without taking the weapon ----
-				var armory = new ArmoryTE { Position = new Point16(x0 + 6, y0 - 3) }; armory.ID = 970001; TileEntity.ByID[armory.ID] = armory; armories.Add(armory);
+				var armory = global::Levy.Common.Testing.TestTileEntities.Add<ArmoryTE>(970001, new Point16(x0 + 6, y0 - 3)); armories.Add(armory); // built as a placed one: the world save can write it
 				armory.IssueWeapons[0] = new Item(ItemID.Handgun);
 				drone.RefreshFieldWeapon();
 				Check("it mounts the Armory's best spare weapon", drone.FieldWeaponType == ItemID.Handgun);
@@ -182,7 +182,7 @@ namespace Mechanization.Content.NPCs
 				try
 				{
 					for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is DroneNPC d && d.IsField) Main.npc[i].active = false;
-					foreach (ArmoryTE a in armories) TileEntity.ByID.Remove(a.ID);
+					foreach (ArmoryTE a in armories) global::Levy.Common.Testing.TestTileEntities.Remove(a);
 					for (int i = 0; i < Main.maxItems; i++) if (Main.item[i].active && Main.item[i].type == ModContent.ItemType<DroneItem>()) Main.item[i].active = false;
 					foreach (Point p in touched) { Tile t = Main.tile[p.X, p.Y]; t.HasTile = false; t.TileFrameX = 0; t.TileFrameY = 0; }
 					sys.OnWorldUnload();

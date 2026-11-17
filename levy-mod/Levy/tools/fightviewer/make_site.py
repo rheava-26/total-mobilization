@@ -23,12 +23,19 @@ The whole <outdir> is what gets published (static files, relative URLs only). Ol
 import argparse, glob, gzip, json, os, re, shutil, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# the recorder's fight rules (result word, event NPCs, splitting a recording into its fights) live with the offline tool
+sys.path.insert(0, os.path.join(HERE, "..", "..", "..", "tools", "recview"))
+try:
+    import recrules
+except ImportError:      # the page still builds without it; results then come from the old frame-based reading
+    recrules = None
 TITLES = {"eve": "Eve's fights", "rec2": "Recorder test", "lab1": "Lab 1", "lab2": "Lab 2", "lab3": "Lab 3", "worm": "Worm round", "worm5": "Worm round", "options": "Options", "vert1": "Movement lab", "moblab": "Mobility gear lab", "adds": "Boss minions", "wormdodge": "Worm dodge lab", "wormbody": "Worm body lab", "eowrev": "Eater of Worlds: Rev vs Death", "deathladder": "Death EoW gear ladder", "paladin": "Paladin's Shield lab"}
 MODES = {"exp": "Expert", "rev": "Rev", "death": "Death", "revoff": "Rev, rage off", "mdeath": "Master+Death"}
 ARENAS = {"surf": "Surface", "ug": "Underground"}
 FLED_PX = 50000          # a boss that ends this far from where it began has left the fight
 MAX_FILE = 14 * 1048576  # hard limit is 15 MB per data file
-MAX_TOTAL = 55 * 1048576  # hard limit is 60 MB for the site
+MAX_TOTAL = 55 * 1048576  # hard limit is 60 MB for the site (curate_site.py works to its own, larger --max-mb)
+MAX_C_ROWS = 120         # format 11 key c (the commander's own projectiles): rows kept per sample; 0 drops the layer. --cmd-cap changes it
 
 
 # ---------------------------------------------------------------- versions
@@ -42,7 +49,7 @@ ERAS = [
 CURRENT = "2.0.68 (not yet released)"
 # recording format -> (oldest, newest) Levy version known to write it; used only when a recording carries no version
 FORMAT_VERS = {1: ("2.0.0", "2.0.12"), 2: ("2.0.0", "2.0.12"), 3: ("2.0.13", "2.0.19"), 4: ("2.0.13", "2.0.19"), 5: ("2.0.20", "2.0.20"),
-               6: ("2.0.21", "2.0.25"), 7: ("2.0.26", "2.0.40"), 8: ("2.0.41", "2.0.63"), 9: ("2.0.64", "2.0.99")}
+               6: ("2.0.21", "2.0.25"), 7: ("2.0.26", "2.0.40"), 8: ("2.0.41", "2.0.63"), 9: ("2.0.64", "2.0.99"), 10: ("3.0.0", "3.0.9"), 11: ("3.0.10", "3.9.99")}
 
 
 def version_of(hdr):
@@ -70,6 +77,18 @@ def load(path):
                 except ValueError:
                     pass
     return rows
+
+
+def episode_list(path):
+    """[(suffix, rows)] for one recording: the whole file, or, when it holds event NPCs (Celestial Pillars and the like that older recorders kept
+    in the fight), its fights apart, suffix -ep1, -ep2 ... (see tools/recview/recrules.py)."""
+    rows = load(path)
+    if recrules is None or not any(r.get("k") == "f" for r in rows):
+        return [("", rows)]
+    eps = recrules.episodes(rows)
+    if len(eps) == 1 and eps[0].get("whole"):
+        return [("", rows)]
+    return [("-ep%d" % e["episode"], e["rows"]) for e in eps]
 
 
 def parse_index(path):
@@ -106,7 +125,8 @@ def tkind(b):
 
 
 def main_boss(f):
-    bs = f.get("b") or []
+    # event NPCs (Celestial Pillars and the like) are never the main boss, so a fight cut from a pillar recording reads its real boss
+    bs = [b for b in (f.get("b") or []) if not (recrules and recrules.is_event_npc(b[0]))]
     for b in bs:
         if not b[13]:
             return b
@@ -167,6 +187,12 @@ def summarize(rows):
         result = "timeout"
     else:
         result = "ended"
+    # a recording of real play (the automatic recorder, format 8+) is read by the recorder's result rule: the commander's fall makes a boss that leaves a LOSS, not "the boss left"
+    cmd_deaths = sum(1 for e in ev if e.get("e") == "cdeath")
+    rule = None
+    if recrules is not None and hdr.get("auto") in (1, 2) and any(e.get("e") in ("bdeath", "bdespawn", "boss") for e in ev):
+        rule = recrules.classify(rows)
+        result = {"won": "win", "lost": "loss", "fled": "fled"}.get(rule["result"], "ended")
     mode = MODES.get(meta.get("mode")) or (hdr.get("mode") or "?").replace("Expert+Revengeance", "Rev")
     arena = ARENAS.get(meta.get("arena"), meta.get("arena") or "?")
     # a hand-made recording (/levyrec start <name>) carries its file name in hdr.boss: name the fight after the boss it actually met, or "Other fights" when none
@@ -181,6 +207,7 @@ def summarize(rows):
         "dur": round(dur, 1), "hasT": any(len(b) > 14 for f in frames for b in (f.get("b") or [])[:1]),
         "bossEnd": ({"kind": "killed" if fin["e"] == "bdeath" else "despawn", "t": round(fin["t"] / 60.0, 1)} if fin else None),
         "format": hdr.get("format", 1), "seed": meta.get("seed"), "gear": meta.get("gear"),
+        "cmdDeaths": cmd_deaths, "rule": rule["result"] if rule else None,
     }
 
 
@@ -239,6 +266,9 @@ def shrink_frame(f):
         o["s"] = [[int(round(v)) for v in r] for r in f["s"]]
     if f.get("j"):
         o["j"] = [row(j, ints=(1, 2)) for j in f["j"]]
+    if f.get("c") and MAX_C_ROWS > 0:
+        # the commander's own projectiles: [type,x,y,vx,vy,w,h], positions and sizes as integers, velocity to a tenth; the nearest-listed MAX_C_ROWS stay
+        o["c"] = [row(c, ints=(0, 1, 2, 5, 6), ones=(3, 4)) for c in f["c"][:MAX_C_ROWS]]
     return o
 
 
@@ -283,7 +313,7 @@ def convert(rows, factor):
     hz = hdr.get("hz", 30)
     out = {
         "v": 4,
-        "hdr": {k: hdr[k] for k in ("format", "meta", "mode", "boss", "stateNames", "levy", "date") if k in hdr},
+        "hdr": {k: hdr[k] for k in ("format", "meta", "mode", "boss", "stateNames", "levy", "date", "split") if k in hdr},
         "frames": [],
         "events": [shrink_event(e) for e in rows if e.get("k") == "e"],
     }
@@ -305,7 +335,9 @@ def convert(rows, factor):
         if r:
             out[k] = {kk: vv for kk, vv in r.items() if kk != "k"}
     # terrain: format 4 writes several arena records (start area, growth strips, camera view); the page merges them. Older files have one.
-    arenas = [{kk: vv for kk, vv in r.items() if kk != "k"} for r in rows if r.get("k") == "arena"]
+    # A fight split from a longer recording keeps only the arenas near its own action (files split before recrules did this carry them all).
+    ar_rows = recrules.fight_arenas(rows) if (recrules is not None and hdr.get("split")) else [r for r in rows if r.get("k") == "arena"]
+    arenas = [{kk: vv for kk, vv in r.items() if kk != "k"} for r in ar_rows]
     if arenas:
         out["arenas"] = arenas
     return out
@@ -391,7 +423,7 @@ def pick_auto(sums, seen_keys, per_cell, max_n):
     return chosen
 
 
-RES_TXT = {"win": "boss killed", "loss": "every levy fell", "timeout": "time ran out", "fled": "the boss flew off", "despawn": "the boss left", "ended": "recording ended"}
+RES_TXT = {"win": "boss killed", "loss": "the fight was lost", "timeout": "time ran out", "fled": "the boss left with the commander alive", "despawn": "the boss left", "ended": "recording ended"}
 
 
 def auto_note(s):
@@ -405,6 +437,7 @@ def auto_note(s):
 
 
 def main():
+    global MAX_C_ROWS
     ap = argparse.ArgumentParser(description="Build the hosted Levy fight-replay site.")
     ap.add_argument("outdir")
     ap.add_argument("sets", nargs="*", metavar="name=dir")
@@ -412,9 +445,11 @@ def main():
     ap.add_argument("--auto", action="append", default=[], metavar="dir", help="add a spread of fights from every recording under this folder (repeatable): one set per boss, up to --per-cell per boss x mode x result")
     ap.add_argument("--per-cell", type=int, default=2)
     ap.add_argument("--max-auto", type=int, default=110, help="cap on the number of auto-picked fights")
+    ap.add_argument("--cmd-cap", type=int, default=MAX_C_ROWS, help="most commander projectiles kept per sample (format 11 key c); 0 drops the layer to save space")
     ap.add_argument("--cache", default=None, help="file that caches the summaries of the --auto candidates")
     ap.add_argument("--batches", type=float, default=0, metavar="MB", help="split the site into publishable batches of at most MB megabytes of data (and 250 files): <outdir>/b01, b02, ...; each holds index.html, the manifest of everything up to that batch and only its own data files, so publishing them in order to the same URL builds the full page")
     a = ap.parse_args()
+    MAX_C_ROWS = max(0, a.cmd_cap)
 
     out = os.path.abspath(a.outdir)
     shutil.rmtree(out, ignore_errors=True)
@@ -426,8 +461,11 @@ def main():
     by_set = {}
 
     def add_fight(setname, setid, settitle, path, fights, note=None, auto=False, s=None):
+        for suffix, rows in episode_list(path):
+            add_episode(setname, setid, settitle, path, fights, note, auto, suffix, rows)
+
+    def add_episode(setname, setid, settitle, path, fights, note, auto, suffix, rows):
         fn = os.path.basename(path)
-        rows = load(path)
         if not any(r.get("k") == "f" for r in rows):
             print("skip (no frames):", fn, file=sys.stderr)
             return
@@ -441,7 +479,7 @@ def main():
                 break
             factor += 1
         del rows
-        base = re.sub(r"\.(jsonl(\.gz)?|levyrec)$", "", fn)
+        base = re.sub(r"\.(jsonl(\.gz)?|levyrec)$", "", fn) + suffix
         fid = slug(setname) + "__" + slug(base)
         n = 2
         while fid in seen:
@@ -459,8 +497,8 @@ def main():
                 print("note: %s computed %s, index says %s" % (fn, s["result"], note["result"]), file=sys.stderr)
                 text = (text or "") + " (Viewer verdict for this recording: %s.)" % s["result"]
         blobs[fid] = blob
-        paths[fid] = (path, factor, hz0)
-        s.update({"id": fid, "file": "data/%s.json" % fid, "bytes": len(blob), "hz": max(1, hz0 // factor), "note": text, "src": fn})
+        paths[fid] = (path, factor, hz0, suffix)
+        s.update({"id": fid, "file": "data/%s.json" % fid, "bytes": len(blob), "hz": max(1, hz0 // factor), "note": text, "src": fn + suffix})
         fights.append(s)
         seen_keys.add(dkey(s))
 
@@ -510,10 +548,10 @@ def main():
             if not cand:
                 break
             f = max(cand, key=lambda f: f["bytes"])
-            path, factor, hz0 = paths[f["id"]]
-            blob = dump(convert(load(path), factor + 1))
+            path, factor, hz0, suffix = paths[f["id"]]
+            blob = dump(convert(dict(episode_list(path))[suffix], factor + 1))
             blobs[f["id"]] = blob
-            paths[f["id"]] = (path, factor + 1, hz0)
+            paths[f["id"]] = (path, factor + 1, hz0, suffix)
             f["bytes"] = len(blob)
             f["hz"] = max(1, hz0 // (factor + 1))
             print("thinned %s to %d Hz (site was over budget)" % (f["src"], f["hz"]), file=sys.stderr)

@@ -133,10 +133,11 @@ namespace Levy.Common.Testing
 				CommanderName = Commander, CommanderIndex = 0, LifeCrystals = LevyConstants.MaxLifeCrystals, ManaCrystals = 9, HomeBarracksId = -1, StoodDown = false,
 			};
 			rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana; rec.Order = order;
+			if (order == SoldierOrder.Regroup) { var gun = new Item(); gun.SetDefaults(ItemID.Minishark); var ball = new Item(); ball.SetDefaults(ItemID.MusketBall); ball.stack = 999; rec.Gear.Weapon = gun; rec.Gear.Ammo = ball; } // a Regroup levy is armed: an unarmed body never reads its order
 			RosterSystem.Instance.Regulars.Add(rec);
 			int body = RosterSystem.Instance.SpawnBody(rec, at);
 			if (body < 0 || !rec.HasBody) return null;
-			Main.npc[body].Bottom = at;
+			if (order != SoldierOrder.Regroup) Main.npc[body].Bottom = at; // a Regroup levy keeps the spot the spawn gave it (beside the commander)
 			if (hp > 0) { Main.npc[body].lifeMax = Main.npc[body].life = hp; rec.CurrentHp = hp; }
 			return Main.npc[body].ModNPC as SoldierNPC;
 		}
@@ -211,6 +212,9 @@ namespace Levy.Common.Testing
 			if (Part(only, "killedge")) { try { IceBlockAtTheEdge(); } finally { Cleanup(); } }
 			if (Part(only, "spectarget")) { try { SpectatorSpawnedBosses(); } finally { Cleanup(); } }
 			if (Part(only, "lostbet")) { try { LostBet(); } finally { Cleanup(); } }
+			if (Part(only, "forfeit")) { try { Forfeit(); } finally { Cleanup(); } }
+			if (Part(only, "drones")) { try { DronesDoNotHoldTheBet(); } finally { Cleanup(); } }
+			if (Part(only, "regroup")) { try { RegroupOrder(); } finally { Cleanup(); } }
 			if (Part(only, "redemption") && ModLoader.HasMod("Redemption")) { try { RedemptionPart(); } finally { Cleanup(); } } // only when the mod is loaded
 		}
 

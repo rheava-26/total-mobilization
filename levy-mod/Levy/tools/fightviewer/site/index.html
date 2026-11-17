@@ -4,7 +4,7 @@
 :root{
   color-scheme:dark;
   --bg:#05090b;--panel:#0b1317;--panel2:#0f1a1f;--line:#1c2e33;--ink:#cfe3df;--dim:#7e9a96;
-  --grn:#3cff9a;--cyan:#4fe3ff;--red:#ff4d4d;--amb:#ffb020;--vio:#c77dff;--proj:#ff9f2e;
+  --grn:#3cff9a;--cyan:#4fe3ff;--red:#ff4d4d;--amb:#ffb020;--vio:#c77dff;--proj:#ff9f2e;--cshot:#ff6ad5;
   --btn:#12222a;--btn-hover:#18313b;--btn-active:#1d3b47;--on-bg:#16403a;--on-line:#2c7a64;
   --bd-bg:#0a1418;--l-ink:#ff9a9a;--l-line:#5a2a2a;--p-ink:#8eeaff;--p-line:#1f5560;--h-ink:#ffd37a;--h-line:#5a4513;--d-ink:#ff6b6b;--d-line:#6a2626;
   --win:#3cff9a;--loss:#ff6b6b;--timeout:#ffb020;--fled:#c77dff;
@@ -19,7 +19,7 @@
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
   color-scheme:light;
   --bg:#eef3f1;--panel:#ffffff;--panel2:#f3f7f6;--line:#c9d8d4;--ink:#14282a;--dim:#4f6a66;
-  --grn:#0a8f50;--cyan:#0a7f9c;--red:#d02a2a;--amb:#b86e00;--vio:#7b3fc4;--proj:#c25f00;
+  --grn:#0a8f50;--cyan:#0a7f9c;--red:#d02a2a;--amb:#b86e00;--vio:#7b3fc4;--proj:#c25f00;--cshot:#b0238f;
   --btn:#e3ecea;--btn-hover:#d6e3e0;--btn-active:#c8d9d5;--on-bg:#cdeede;--on-line:#2c9a74;
   --bd-bg:#f0f5f4;--l-ink:#b02a2a;--l-line:#e2b0b0;--p-ink:#0a6f8a;--p-line:#a6d0dc;--h-ink:#8a5a00;--h-line:#e0c88a;--d-ink:#c01f1f;--d-line:#e4a8a8;
   --win:#0a8f50;--loss:#c01f1f;--timeout:#a86400;--fled:#7b3fc4;
@@ -34,7 +34,7 @@
 :root[data-theme="light"]{
   color-scheme:light;
   --bg:#eef3f1;--panel:#ffffff;--panel2:#f3f7f6;--line:#c9d8d4;--ink:#14282a;--dim:#4f6a66;
-  --grn:#0a8f50;--cyan:#0a7f9c;--red:#d02a2a;--amb:#b86e00;--vio:#7b3fc4;--proj:#c25f00;
+  --grn:#0a8f50;--cyan:#0a7f9c;--red:#d02a2a;--amb:#b86e00;--vio:#7b3fc4;--proj:#c25f00;--cshot:#b0238f;
   --btn:#e3ecea;--btn-hover:#d6e3e0;--btn-active:#c8d9d5;--on-bg:#cdeede;--on-line:#2c9a74;
   --bd-bg:#f0f5f4;--l-ink:#b02a2a;--l-line:#e2b0b0;--p-ink:#0a6f8a;--p-line:#a6d0dc;--h-ink:#8a5a00;--h-line:#e0c88a;--d-ink:#c01f1f;--d-line:#e4a8a8;
   --win:#0a8f50;--loss:#c01f1f;--timeout:#a86400;--fled:#7b3fc4;
@@ -57,6 +57,7 @@ button,select,label.btn{background:var(--btn);color:var(--ink);border:1px solid 
 button:hover,label.btn:hover{background:var(--btn-hover)}
 button:active{background:var(--btn-active)}
 button.on{background:var(--on-bg);border-color:var(--on-line)}
+button:disabled{opacity:.45;cursor:default}
 button:focus-visible,select:focus-visible,input:focus-visible,label.btn:focus-within{outline:2px solid var(--cyan);outline-offset:1px}
 input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 label.btn{position:relative;display:inline-flex;align-items:center;justify-content:center}
@@ -126,6 +127,9 @@ body.call #callBtn{background:var(--on-bg);border-color:var(--on-line)}
 .spin{width:30px;height:30px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--grn);animation:sp 0.9s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion: reduce){.spin{animation:none}}
+#viewNote{position:absolute;right:10px;bottom:8px;pointer-events:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:11.5px;color:var(--dim)}
+#viewNote div{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:2px 7px;opacity:.92}
+#viewNote[hidden]{display:none}
 #tip{position:absolute;pointer-events:none;background:var(--tip-bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:12px;white-space:pre;display:none;z-index:5;max-width:90%}
 #controls{padding:8px 10px 10px;background:var(--panel);border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;display:flex;flex-direction:column;gap:8px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -193,7 +197,7 @@ body.big #strip,body.big .legend{display:none}
     <main id="main">
       <div id="fightHead"></div>
       <div id="callBar" role="group" aria-label="Call it"><span id="callTxt">Call it before you watch:</span><button class="pick" data-p="win">Win</button><button class="pick" data-p="loss">Loss</button><button class="pick" data-p="weird">Something weird</button><button id="callNext">Another fight</button><button id="callReveal">Reveal</button><span class="sc" id="callScore"></span></div>
-      <div id="stage"><canvas id="view"></canvas><div id="hud"></div><div id="msg" class="show"><div class="spin"></div><div id="msgText">Loading ...</div></div><div id="tip"></div></div>
+      <div id="stage"><canvas id="view"></canvas><div id="hud"></div><div id="viewNote" hidden></div><div id="msg" class="show"><div class="spin"></div><div id="msgText">Loading ...</div></div><div id="tip"></div></div>
       <div id="controls">
         <div class="row">
           <button id="play" style="min-width:76px">Play</button>
@@ -205,12 +209,12 @@ body.big #strip,body.big .legend{display:none}
         </div>
         <canvas id="strip" aria-label="timeline"></canvas>
         <div class="row">
-          <button id="fit" title="show the whole arena">Fit</button>
+          <button id="fit" title="frame the fight">Fit</button>
           <button id="bigBtn" title="fill the screen with the radar">Full screen</button>
           <button id="followBoss" title="camera follows the boss">Follow boss</button>
-          <button id="tBoss" class="on" title="fading trails behind boss parts">Boss trails</button><button id="tLevy" class="on" title="fading trails behind levies">Levy trails</button><button id="tAdd" title="fading trails behind adds and minions">Add trails</button><button id="tProj" class="on" title="streaks behind projectiles">Proj trails</button><button id="hitBtn" class="on" title="draw the real hitbox rectangles">Hitboxes</button>
+          <button id="tBoss" class="on" title="fading trails behind boss parts">Boss trails</button><button id="tLevy" class="on" title="fading trails behind levies">Levy trails</button><button id="tAdd" title="fading trails behind adds and minions">Add trails</button><button id="tProj" class="on" title="streaks behind projectiles">Proj trails</button><button id="hitBtn" class="on" title="draw the real hitbox rectangles">Hitboxes</button><button id="tCmd" class="on" title="the commander's own projectiles (recordings of format 11 and later)">Commander shots</button>
           <button id="labelBtn" title="levy numbers">Labels</button>
-          <div class="legend"><span><i style="background:var(--grn)"></i>levy (colour = HP)</span><span><i style="background:var(--red)"></i>boss / part</span><span><i style="background:var(--amb)"></i>add / minion</span><span><i style="background:var(--cyan)"></i>commander</span><span><i style="background:var(--proj)"></i>projectile</span><span><i class="sq" style="background:var(--red)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span></div>
+          <div class="legend"><span><i style="background:var(--grn)"></i>levy (colour = HP)</span><span><i style="background:var(--red)"></i>boss / part</span><span><i style="background:var(--amb)"></i>add / minion</span><span><i style="background:var(--cyan)"></i>commander</span><span><i style="background:var(--proj)"></i>projectile</span><span><i style="background:var(--cshot)"></i>commander shot</span><span><i class="sq" style="background:var(--red)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span></div>
         </div>
       </div>
       <div id="info"></div>
@@ -223,12 +227,12 @@ const $=id=>document.getElementById(id);
 const TPS=60, TILE=16;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const RM=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
-let D=null, playing=false, cur=0, last=0, camMode="fit", trBoss=true, trLevy=true, trProj=true, showHit=true, showLabels=false, trAdd=false, selL=null;
+let D=null, playing=false, cur=0, last=0, camMode="fit", trBoss=true, trLevy=true, trProj=true, showHit=true, showLabels=false, trAdd=false, showCmdP=true, selL=null;
 const cam={x:0,y:0,z:0.2};
 let blips=[], manifest=null, fights=[], curFight=null, curId=null, loadSeq=0;
 
 // ================================================================ colour tokens (canvas reads the CSS custom properties)
-const TOKS=["stage","grn","cyan","red","amb","vio","proj","ink","dim","tNone","tbNone","tbCmd","tbLevy","tbSpite","srcBody","srcMinion","srcProj","srcOther","bossLabel","cmdLabel","flash","death","dash","hook","xjump","scale","fire","terrTop","terrFill","terrFill2","water","hpLo","hpMid","hpHi","win","timeout","loss","stripA","stripB","stripLabel","dLabelInk"];
+const TOKS=["stage","grn","cyan","red","amb","vio","proj","cshot","ink","dim","tNone","tbNone","tbCmd","tbLevy","tbSpite","srcBody","srcMinion","srcProj","srcOther","bossLabel","cmdLabel","flash","death","dash","hook","xjump","scale","fire","terrTop","terrFill","terrFill2","water","hpLo","hpMid","hpHi","win","timeout","loss","stripA","stripB","stripLabel","dLabelInk"];
 const T={}; const cssName=k=>"--"+k.replace(/[A-Z]/g,m=>"-"+m.toLowerCase());
 function loadTokens(){
   const cs=getComputedStyle(document.documentElement);
@@ -275,7 +279,9 @@ function fromData(o){      // a data/<fight>.json file written by make_site.py
   return {hdr:o.hdr||null,arena:o.arena||null,arenas:o.arenas||(o.arena?[o.arena]:[]),cam:o.cam||null,frames:o.frames,events:o.events||[],names:o.names||{items:{},npcs:{},projectiles:{},buffs:{},soldiers:{}},end:o.end||null};
 }
 const tkOf=b=>b.length>14?b[14]:((b[12]>=0&&b[12]<255)?1:0);
-function mainBoss(f){const bs=f.b||[];for(const b of bs) if(!b[13]) return b; return bs[0]||null;}
+// event NPCs (Celestial Pillars, Martian Saucer, Flying Dutchman, Pumpkin/Frost Moon bosses) are never the main boss: same list as tools/recview/recrules.py
+const EVENT_NPC=new Set([517,422,507,493,392,393,394,395,491,492,325,327,328,344,345,346]);
+function mainBoss(f){const bs=(f.b||[]).filter(b=>!EVENT_NPC.has(b[0]));for(const b of bs) if(!b[13]) return b; return bs[0]||null;}
 function makeArena(R){
   const A=R.terr; R.arenaImg=null; if(!A) return;
   const c=document.createElement("canvas"); c.width=A.w; c.height=A.h; const g=c.getContext("2d"); const im=g.createImageData(A.w,A.h);
@@ -329,6 +335,7 @@ function build(R){
   R.lbuf=new Map(); for(const e of R.events) if(e.e==="lbuf"){let a=R.lbuf.get(e.id);if(!a)R.lbuf.set(e.id,a=[]);a.push(e);}
   R.lhitBy=new Map(); for(const e of R.lhit){let a=R.lhitBy.get(e.id);if(!a)R.lhitBy.set(e.id,a=[]);a.push(e);}
   R.fellBy=new Map(); for(const e of R.ldeath) if(!R.fellBy.has(e.id)) R.fellBy.set(e.id,e);
+  R.hasCmd=R.frames.some(f=>f.c&&f.c.length);
   mergeTerrain(R); makeArena(R);
   // boss outcome (format 4) and levy totals
   R.bend=R.events.filter(e=>e.e==="bdeath"||e.e==="bdespawn");
@@ -394,6 +401,7 @@ function setRec(R,name,f){
   $("meta").textContent=[name,s.boss,m.arena,h.mode].filter(Boolean).join("  |  ");
   head(f,name,s);
   hideMsg(); setPlaying(false);
+  {const cb=$("tCmd"); cb.disabled=!D.hasCmd; cb.title=D.hasCmd?"the commander's own projectiles, not the army's":"this recording has no commander projectile data (format 11 and later)";}
   selL=null; cur=D.tmin; camMode="fit"; $("followBoss").classList.remove("on"); fitView(); renderInfo(); drawStrip(); draw(); syncUI();
   if(call.on&&!call.pick) setPlaying(false); else if(!RM) setPlaying(true);
 }
@@ -499,8 +507,45 @@ function trackStart(tr,t){let lo=0,hi=tr.length;while(lo<hi){const m=(lo+hi)>>1;
 const nm=(tbl,id)=>(D.names[tbl]&&D.names[tbl][id])||("#"+id);
 const lname=id=>(D.lbl.get(id)||("#"+id))+" "+((D.names.soldiers&&D.names.soldiers[id])||"");
 function canvasSize(c){const r=c.getBoundingClientRect();const dpr=window.devicePixelRatio||1;const w=Math.max(10,Math.round(r.width*dpr)),h=Math.max(10,Math.round(r.height*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}return {w,h,dpr};}
+// The fight's own box (px), cached per recording: the main boss while it stands plus the living commander near it (2-98% of each axis; a fight
+// that roams wider than MAXW x MAXH tiles gets the stretch where most of it happened), widened by recorded levies near that and by the terrain
+// right around it. A long approach flight, a respawn at base and event NPCs (pillars) stay out. null when no main boss was recorded.
+// Also says whether the fight area has terrain and whether levies were recorded near it.
+function fightBox(R){
+  if(R._fit!==undefined) return R._fit;
+  const NEAR=60*TILE, CMD=100*TILE, EDGE=20*TILE, MAXW=1100*TILE, MAXH=620*TILE, xs=[],ys=[], lx=[],ly=[];
+  for(const f of R.frames){const b=mainBoss(f); if(!b||b[13]) continue; xs.push(b[2]);ys.push(b[3]);
+    if(!(f.p[5]&8192)&&Math.abs(f.p[0]-b[2])<=CMD&&Math.abs(f.p[1]-b[3])<=CMD){xs.push(f.p[0]);ys.push(f.p[1]);}}
+  if(!xs.length) return R._fit=null;
+  const srt=a=>a.slice().sort((m,n)=>m-n), pc=(a,q)=>a[Math.max(0,Math.min(a.length-1,Math.round(q*(a.length-1))))];
+  const span=(a,L)=>{a=srt(a); let lo=pc(a,.02),hi=pc(a,.98); if(hi-lo<=L) return [lo,hi,lo,hi];
+    let best=0,bi=0,bj=0; for(let i=0,j=0;i<a.length;i++){while(j+1<a.length&&a[j+1]-a[i]<=L)j++; if(j-i>best){best=j-i;bi=i;bj=j;}} return [a[bi],a[bj],lo,hi];};
+  let [x0,x1,fx0,fx1]=span(xs,MAXW), [y0,y1,fy0,fy1]=span(ys,MAXH), near=false;
+  for(const tr of R.trL.values()) for(const t of tr){
+    if(t[1]>=fx0-NEAR&&t[1]<=fx1+NEAR&&t[2]>=fy0-NEAR&&t[2]<=fy1+NEAR) near=true;
+    if(t[1]>=x0-NEAR&&t[1]<=x1+NEAR&&t[2]>=y0-NEAR&&t[2]<=y1+NEAR){lx.push(t[1]);ly.push(t[2]);}}
+  if(lx.length){const a=srt(lx),c=srt(ly);x0=Math.min(x0,pc(a,.02));x1=Math.max(x1,pc(a,.98));y0=Math.min(y0,pc(c,.02));y1=Math.max(y1,pc(c,.98));}
+  let terr=false; const box=[x0,y0,x1,y1];
+  for(const a of (R.arenas||[])){ if(!a||!(a.w>0&&a.h>0)) continue;
+    const ax0=a.x0*TILE,ax1=(a.x0+a.w)*TILE,ay0=a.y0*TILE,ay1=(a.y0+a.h)*TILE;
+    if(ax1<box[0]-NEAR||ax0>box[2]+NEAR||ay1<box[1]-NEAR||ay0>box[3]+NEAR) continue; terr=true;
+    const bx0=Math.max(box[0]-EDGE,ax0),bx1=Math.min(box[2]+EDGE,ax1),by0=Math.max(box[1]-EDGE,ay0),by1=Math.min(box[3]+EDGE,ay1);
+    if(bx0<bx1&&by0<by1){x0=Math.min(x0,bx0);x1=Math.max(x1,bx1);y0=Math.min(y0,by0);y1=Math.max(y1,by1);}}
+  return R._fit={x0,y0,x1,y1,terr,leviesAway:R.levyTotal>0&&!near};
+}
+function fitNotes(){
+  const el=$("viewNote"); if(!el) return; const B=D&&fightBox(D), n=[];
+  if(D&&(B?!B.terr:!D.terr)) n.push("No terrain recorded here");
+  if(B&&B.leviesAway) n.push("Levies were out of the recorder's range");
+  el.innerHTML=n.map(t=>`<div>${esc(t)}</div>`).join(""); el.hidden=!n.length;
+}
 function fitView(){
   const {w,h}=canvasSize($("view")); let x0=1e12,y0=1e12,x1=-1e12,y1=-1e12;
+  fitNotes();
+  const B=fightBox(D);
+  if(B){x0=B.x0-8*TILE;x1=B.x1+8*TILE;y0=B.y0-8*TILE;y1=B.y1+8*TILE;
+    if(x1-x0<400){const c=(x0+x1)/2;x0=c-200;x1=c+200;} if(y1-y0<300){const c=(y0+y1)/2;y0=c-150;y1=c+150;}
+    cam.x=(x0+x1)/2; cam.y=(y0+y1)/2; cam.z=Math.min(w/(x1-x0),h/(y1-y0))*0.98; return;}
   const T0=D.terr, tx0=T0?T0.x0*TILE:0, ty0=T0?T0.y0*TILE:0, tx1=T0?(T0.x0+T0.w)*TILE:0, ty1=T0?(T0.y0+T0.h)*TILE:0, far=1500;
   const xs=[],ys=[]; const add=(x,y)=>{xs.push(x);ys.push(y);};
   for(const t of D.trP) add(t[1],t[2]);
@@ -585,6 +630,20 @@ function draw(){
     const [sx,sy,rr]=hbox(g,sc,dpr,x,y,j[6],j[7],al(T.proj,.35),T.proj,1,3);
     blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,rr/dpr+3),info:`projectile ${nm("projectiles",j[0])}\ndamage ${j[5]}${j[6]?"\nhitbox "+j[6]+" x "+j[7]+" px":""}\nspeed ${(Math.hypot(j[3],j[4])*60/16).toFixed(1)} tiles/s`});
   }
+  if(showCmdP&&D.hasCmd&&f0.c&&f0.c.length){
+    // format 11 key c: the commander's own projectiles [type,x,y,vx,vy,w,h]; the army's shots are not in it
+    const dt=cur-f0.t;
+    for(const q of f0.c){
+      const x=q[1]+q[3]*dt, y=q[2]+q[4]*dt;
+      if(trProj&&(q[3]||q[4])){
+        const a=sc(x,y);
+        for(let k=1;k<=4;k++){const b=sc(x-q[3]*k*3,y-q[4]*k*3);g.strokeStyle=T.cshot;g.globalAlpha=0.5*(1-(k-1)/4);g.lineWidth=Math.max(1.5,(q[6]||6)*cam.z*dpr*0.5);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();a[0]=b[0];a[1]=b[1];}
+        g.globalAlpha=1;
+      }
+      const [sx,sy,rr]=hbox(g,sc,dpr,x,y,q[5],q[6],al(T.cshot,.35),T.cshot,1,3);
+      blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,rr/dpr+3),info:`commander projectile ${nm("projectiles",q[0])}${q[5]?"\nhitbox "+q[5]+" x "+q[6]+" px":""}\nspeed ${(Math.hypot(q[3],q[4])*60/16).toFixed(1)} tiles/s`});
+    }
+  }
   let tgtText="none", tgtCls="";
   if(mb0){
     const k=tkOf(mb0), b1=byIdB.get(mb0[1])||mb0; const bx=lerp(mb0[2],b1[2],u),by=lerp(mb0[3],b1[3],u);
@@ -642,7 +701,7 @@ function draw(){
     const part=!!b0[13];
     const [bx,by,rr]=hbox(g,sc,dpr,x,y,b0[16],b0[17],al(T.red,part?.22:.14),T.red,part?1.2:2,part?5:9);
     g.fillStyle=T.red; g.beginPath();g.arc(bx,by,(part?1.6:3)*dpr,0,6.2832);g.fill();
-    if(!part&&mb0&&b0[1]===mb0[1]){g.fillStyle=T.bossLabel;g.font=`${11*dpr}px system-ui`;g.fillText(nm("npcs",b0[0]),bx+rr+4*dpr,by-rr*0.6);}
+    if(!part&&((mb0&&b0[1]===mb0[1])||EVENT_NPC.has(b0[0]))){g.fillStyle=T.bossLabel;g.font=`${11*dpr}px system-ui`;g.fillText(nm("npcs",b0[0]),bx+rr+4*dpr,by-rr*0.6);}
     blips.push({x:bx/dpr,y:by/dpr,r:Math.max(9,rr/dpr+3),info:bossInfo(b0)});
   }
   for(const e of D.lhit){ if(e.t>cur||cur-e.t>20) continue; const [sx,sy]=sc(e.x,e.y),a=(cur-e.t)/20,col=T.src[e.src]||T.flash;
@@ -844,7 +903,7 @@ $("scrub").oninput=e=>{if(!D)return;cur=D.tmin+e.target.value/1000*(D.tmax-D.tmi
 $("fit").onclick=()=>{if(D){camMode="fit";$("followBoss").classList.remove("on");fitView();draw();}};
 $("followBoss").onclick=()=>{if(!D)return;camMode=camMode==="boss"?"free":"boss";$("followBoss").classList.toggle("on",camMode==="boss");if(camMode==="boss"&&cam.z<0.25)cam.z=0.3;draw();};
 const tog=(id,get,set)=>{$(id).onclick=()=>{set(!get());$(id).classList.toggle("on",get());draw();};};
-tog("tBoss",()=>trBoss,v=>trBoss=v);tog("tAdd",()=>trAdd,v=>trAdd=v);tog("tLevy",()=>trLevy,v=>trLevy=v);tog("tProj",()=>trProj,v=>trProj=v);tog("hitBtn",()=>showHit,v=>showHit=v);
+tog("tBoss",()=>trBoss,v=>trBoss=v);tog("tAdd",()=>trAdd,v=>trAdd=v);tog("tLevy",()=>trLevy,v=>trLevy=v);tog("tProj",()=>trProj,v=>trProj=v);tog("hitBtn",()=>showHit,v=>showHit=v);tog("tCmd",()=>showCmdP,v=>showCmdP=v);
 $("labelBtn").onclick=()=>{showLabels=!showLabels;$("labelBtn").classList.toggle("on",showLabels);draw();};
 $("prevEv").onclick=()=>jumpEvent(-1); $("nextEv").onclick=()=>jumpEvent(1);
 window.addEventListener("keydown",e=>{const tg=e.target.tagName;if(tg==="SELECT"||tg==="BUTTON"||tg==="INPUT"&&e.target.type!=="range")return;

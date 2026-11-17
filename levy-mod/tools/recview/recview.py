@@ -7,12 +7,18 @@
   recview.py FILE --json                the summary as JSON (for scripts)
   recview.py FILE --raw hdr|end|names   print one raw record
 
+  recview.py FILE --episodes            the fights inside one recording (event NPCs such as the Celestial Pillars never count as a boss), each read by the result rule
+  recview.py FILE --split OUTDIR        write each of those fights as its own .levyrec in OUTDIR (the original is never touched)
+
 Reads .levyrec (gzip of JSON lines), .jsonl.gz and plain .jsonl. A file cut short by a crash (gzip not closed, no end record) is read as far
 as it goes and says so. Positions are world pixels, times are seconds from the start of the recording (ticks / 60).
 Format reference: the comment at the top of FightRecFormat.cs in the Levy mod.
 """
 import argparse, glob, gzip, json, os, re, sys, zlib
 from collections import Counter, defaultdict
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import recrules
 
 TICKS = 60.0
 # levy gear (lgear) slot names; 13 and 14 are the two mobility slots (a recording from before them has neither)
@@ -92,6 +98,10 @@ def analyse(rec):
     out = {"file": os.path.basename(rec.path), "truncated": rec.note, "frames": len(rec.frames)}
     out["header"] = {k: h.get(k) for k in ("format", "date", "world", "player", "boss", "mode", "levy", "auto", "meta", "headless", "gzip")}
     out["mods"] = h.get("mods", [])
+    c = recrules.classify(rec.rows)
+    out["rule"] = {"result": c["result"], "outcome": c["outcome"], "deadAtEnd": c["deadAtEnd"], "lastDeathTick": c["lastDeath"], "eventNpcs": recrules.has_event_npcs(rec.rows) and not h.get("split")}
+    cp = [len(f.get("c", [])) for f in rec.frames]
+    out["commanderProjectiles"] = {"format11": any(cp), "framesWith": sum(1 for n in cp if n), "mostRows": max(cp) if cp else 0}
     out["army"] = h.get("army", {})
     out["commander"] = h.get("cmd", {})
     out["end"] = {k: e.get(k) for k in ("result", "outcome", "reason", "durationSec", "ticks", "frames", "events", "cmdDeaths", "levyDeaths", "levyHits",
@@ -121,7 +131,9 @@ def analyse(rec):
     src = defaultdict(lambda: [0, 0])      # (owner, kind, type, boss) -> dmg, hits
     for x in ev.get("dmg", []):
         for row in x.get("d", []):
-            owner, cls, kind, typ, boss, d, hits = row
+            if len(row) < 7:
+                continue
+            owner, cls, kind, typ, boss, d, hits = row[:7]   # format 10 appends srcItem, ss, crits (and later formats may append more): only the first 7 are needed here
             dmg[(owner, cls, "boss" if boss else "add")][0] += d
             dmg[(owner, cls, "boss" if boss else "add")][1] += hits
             src[(owner, kind, typ, boss)][0] += d
@@ -340,6 +352,14 @@ def print_summary(rec, a, step):
     P("Fight      %s   (%s)   difficulty %s" % (fight, "automatic, " + str(h.get("meta", {}).get("setting", "")) + ", started by " + str(h.get("meta", {}).get("trigger", "?")) if h.get("auto") else "started by hand or a harness", h.get("mode", "?")))
     res = e.get("result")
     P("Outcome    %s   (boss %s, %s)   duration %s   recorder format %s" % (res or "unknown", e.get("outcome", "?"), e.get("reason", "?"), fmt_t(e.get("ticks", 0)) if e else "?", h.get("format", "?")))
+    rl = a.get("rule", {})
+    if rl and e and res in ("won", "lost", "fled", "ended") and rl["result"] != res and not rl.get("eventNpcs"):
+        P("            read by the result rule: %s (the file says %s)" % (rl["result"], res))
+    if rl.get("eventNpcs"):
+        P("            this recording holds event NPCs (Celestial Pillars and the like): run with --episodes to see the fights apart")
+    cpj = a.get("commanderProjectiles", {})
+    if cpj.get("format11"):
+        P("Commander  own projectiles recorded in %d samples, at most %d at once (format 11 key c)" % (cpj["framesWith"], cpj["mostRows"]))
     P("Levy %s   %d mods: %s" % (h.get("levy", "?"), len(a["mods"]), ", ".join("%s %s" % (m[0], m[1]) for m in a["mods"])))
     army = a["army"]
     if army:
@@ -455,9 +475,34 @@ def list_folder(path):
     return files
 
 
+def write_levyrec(path, rows):
+    with gzip.open(path, "wt", encoding="utf-8") as g:
+        for r in rows:
+            g.write(json.dumps(r, separators=(",", ":")) + "\n")
+
+
+def print_episodes(rec, split_dir):
+    eps = recrules.episodes(rec.rows)
+    base = os.path.basename(rec.path)
+    end = rec.end or {}
+    print("%s: file says %s; %d fight%s inside" % (base, end.get("result", "?"), len(eps), "" if len(eps) == 1 else "s"))
+    for e in eps:
+        if e.get("whole"):
+            print("  whole file: %s (outcome %s, commander deaths %d)%s" % (e["result"], e["outcome"], e["cmdDeaths"], "" if e["result"] == end.get("result") else "  [the file says %s]" % end.get("result")))
+            continue
+        print("  %d/%d  %-34s %s to %s  %-6s outcome %-7s commander deaths %d%s" % (e["episode"], e["of"], e["name"][:34], fmt_t(e["start"]), fmt_t(e["end"]), e["result"], e["outcome"], e["cmdDeaths"], "  (dead when it left)" if e["deadAtEnd"] else ""))
+        if split_dir:
+            os.makedirs(split_dir, exist_ok=True)
+            out = os.path.join(split_dir, recrules.file_name(base, e))
+            write_levyrec(out, e["rows"])
+            print("       wrote %s" % out)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Summarize Levy fight recordings.")
     ap.add_argument("paths", nargs="+")
+    ap.add_argument("--episodes", action="store_true", help="list the fights inside each recording (event NPCs such as the Celestial Pillars are never a boss) with the result of each")
+    ap.add_argument("--split", metavar="OUTDIR", help="with --episodes: write every fight as its own .levyrec into OUTDIR")
     ap.add_argument("--timeline", type=float, default=10, help="seconds between timeline rows")
     ap.add_argument("--json", action="store_true", help="print the summary as JSON")
     ap.add_argument("--raw", choices=("hdr", "end", "names"), help="print one raw record")
@@ -480,6 +525,9 @@ def main():
             continue
         if a.raw:
             print(json.dumps({"hdr": rec.hdr, "end": rec.end, "names": rec.names}[a.raw], indent=1))
+            continue
+        if a.episodes or a.split:
+            print_episodes(rec, a.split)
             continue
         an = analyse(rec)
         results.append(an)

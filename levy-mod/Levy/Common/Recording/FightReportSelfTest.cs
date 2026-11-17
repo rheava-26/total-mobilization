@@ -24,6 +24,7 @@ namespace Levy.Common.Recording
 			public int Levies = 20;          // levies at the start
 			public bool Collapse = true;     // eight shaken from 20 s, fourteen fall from 24 s on, the commander dies at 58 s
 			public int Seconds = 60;
+			public bool Acc;                 // accessory-effect hits (an accessory source, one with no source) and "N% life" phase lines beside the milestones
 		}
 
 		internal static List<string> Build(Script sc)
@@ -45,6 +46,7 @@ namespace Levy.Common.Recording
 				string rows = sc.Ext
 					? "[\"cmd\",\"rogue\",\"proj\",9001,1,3000,3,1000,1,1],[\"cmd\",\"rogue\",\"proj\",9001,1,500,5,1000,0,2],[\"cmd\",\"melee\",\"item\",2000,1,700,7,2000,0,1],[\"levy\",\"ranged\",\"proj\",14,1,2000,20,0,0,0],[\"cmd\",\"rogue\",\"proj\",9001,0,90,1,1000,0,0]"
 					: "[\"cmd\",\"rogue\",\"proj\",9001,1,3500,8],[\"cmd\",\"melee\",\"item\",2000,1,700,7],[\"levy\",\"ranged\",\"proj\",14,1,2000,20],[\"cmd\",\"rogue\",\"proj\",9001,0,90,1]";
+				if (sc.Acc && sc.Ext) rows += ",[\"cmd\",\"rogue\",\"proj\",9100,1,400,1,5000,0,0],[\"cmd\",\"melee\",\"proj\",9101,1,343,1,0,0,0]";
 				Ev(t, "{\"k\":\"e\",\"t\":" + t + ",\"e\":\"dmg\",\"d\":[" + rows + "]}");
 				if (sc.Ext) Ev(t, "{\"k\":\"e\",\"t\":" + t + ",\"e\":\"stl\",\"s\":" + (sec % 20 < 10 ? 100 : 40) + ",\"m\":80}");
 			}
@@ -71,7 +73,8 @@ namespace Levy.Common.Recording
 			}
 			while (ei < evKeys.Count) { foreach (string e in events[evKeys[ei]]) L.Add(e); ei++; }
 			L.Add("{\"k\":\"e\",\"t\":" + ticks + ",\"e\":\"bdespawn\",\"npc\":262,\"name\":\"Plantera\",\"id\":1,\"x\":0,\"y\":0,\"life\":200,\"max\":10000,\"final\":1}");
-			L.Add("{\"k\":\"names\",\"items\":{\"1000\":\"Iron Francisca\",\"2000\":\"Spear of Destiny\"},\"npcs\":{\"262\":\"Plantera\"},\"projectiles\":{\"777\":\"Spore Gas\",\"9001\":\"Francisca\"},\"buffs\":{},\"soldiers\":{},\"prefixes\":{}}");
+			if (sc.Acc) { L.Add("{\"k\":\"e\",\"t\":" + (12 * 60) + ",\"e\":\"bph\",\"pct\":75}"); L.Add("{\"k\":\"e\",\"t\":" + (30 * 60) + ",\"e\":\"bph\",\"pct\":50,\"what\":\"Plantera enters phase two\"}"); }
+			L.Add("{\"k\":\"names\",\"items\":{\"1000\":\"Iron Francisca\",\"2000\":\"Spear of Destiny\",\"5000\":\"Abyssal Mirror\",\"6000\":\"Advanced Portable Remote Storage Access\"},\"nonweapons\":[5000,6000],\"npcs\":{\"262\":\"Plantera\"},\"projectiles\":{\"777\":\"Spore Gas\",\"9001\":\"Francisca\"},\"buffs\":{},\"soldiers\":{},\"prefixes\":{}}");
 			L.Add("{\"k\":\"end\",\"reason\":\"boss gone\",\"ticks\":" + ticks + ",\"frames\":" + (ticks / 2) + ",\"events\":0,\"outcome\":\"despawn\",\"result\":\"" + (sc.Collapse ? "lost" : "won") + "\",\"durationSec\":" + sc.Seconds + ",\"bossName\":\"Plantera\",\"bosses\":1,\"cmdDeaths\":" + (sc.Collapse ? 1 : 0) + ",\"armyAlive\":0,\"armyTotal\":" + sc.Levies + ",\"dmgBoss\":0,\"dmgAll\":0}");
 			return L;
 		}
@@ -125,6 +128,14 @@ namespace Levy.Common.Recording
 				Chk(ol.Count == 3 && ol[0] == "Plantera, lost at 2%. Your damage: 3,570 per second.", "an older file's first line has no stealth sentence: " + (ol.Count > 0 ? ol[0] : ""));
 				string ofull = FightReport.Full(o, null);
 				Chk(ofull.Contains("not recorded in this file") && ofull.Contains("first recorded fight"), "an older file's report says what was not recorded");
+
+				// ---- accessory effects are not weapons, and a life milestone is listed once
+				var ac = FightRecReader.ReadLines(Build(new Script { Acc = true }));
+				Chk(ac.Weapons.TryGetValue("Accessory effects (Abyssal Mirror)", out var am) && am.Hits == 51 && am.Dmg == 400 * 51, "a hit sourced to an accessory is grouped as its accessory effect");
+				Chk(ac.Weapons.TryGetValue("Accessory effects", out var ae) && ae.Dmg == 343 * 51 && !ac.Weapons.ContainsKey("Advanced Portable Remote Storage Access") && !ac.Weapons.ContainsKey("Abyssal Mirror"), "a hit with no recorded source is not charged to the held item");
+				Chk(ac.Weapons.TryGetValue("Iron Francisca", out var af) && af.Dmg == 3500 * 51 && ac.Weapons.TryGetValue("Spear of Destiny", out var asp) && asp.Dmg == 700 * 51, "real weapons keep their own damage");
+				string afull = FightReport.Full(ac, null);
+				Chk(!afull.Contains("0:12: 75% life") && afull.Contains("Plantera enters phase two") && afull.Contains("Down to"), "a life milestone appears once, with the levy count, and a named phase stays");
 
 				// ---- a steady fight never breaks
 				var st = FightRecReader.ReadLines(Build(new Script { Collapse = false }));

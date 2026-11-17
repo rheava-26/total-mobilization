@@ -168,6 +168,7 @@ namespace Levy.Common.Testing
 			if (W("whip")) { try { WhipPart(); } finally { Cleanup(); } }
 			if (W("sets")) { try { SetsPart(); } finally { Cleanup(); } }
 			if (W("acc")) { try { AccessoriesPart(); } finally { Cleanup(); } }
+			if (W("death")) { try { DeathPart(); } finally { Cleanup(); } }
 		}
 
 		// =====================================================================================================
@@ -389,10 +390,11 @@ namespace Levy.Common.Testing
 			{
 				if (stone) s.Record.Gear.Accessories[0] = Make(ItemID.PhilosophersStone);
 				s.StatsDirty = true; Step(10); s.RefreshStats(); s.RefreshStats();
-				armory = new ArmoryTE { Position = new Point16((int)(at.X / 16f) + 1, (int)(at.Y / 16f) - 3) };
-				armoryId = 900000 + (stone ? 1 : 0); armory.ID = armoryId; TileEntity.ByID[armoryId] = armory;
+				armoryId = 900000 + (stone ? 1 : 0);
+				armory = TestTileEntities.Add<ArmoryTE>(armoryId, new Point16((int)(at.X / 16f) + 1, (int)(at.Y / 16f) - 3)); // built as a placed one: the world save can write it (TestTileEntities)
 				armory.FitPotions();
 				armory.IssuePotions[0] = Make(ItemID.HealingPotion, 30);
+				if (!stone) SaveHoldCheck.ProbeMidCheck("LevyRules potion armory"); // where the 11-17 autosave landed: a save now must neither throw nor run
 				int expectDelay = s.PotionDelayFor(Make(ItemID.HealingPotion));
 				s.PotionSickness = 0;
 				Vector2 stand = s.NPC.position;
@@ -413,7 +415,7 @@ namespace Levy.Common.Testing
 				Note($"potion cadence [{name}]: {drinks} potions drunk in {Window} ticks ({Window / 60.0:0} s), first at tick {firstTick}, gap to the second {firstGap} ticks (the Player's delay {expectDelay}; the old cadence was 1800)");
 				Check($"potion cadence [{name}]: the levy drinks no faster than the potion sickness lets a Player ({drinks} drunk, {expectDrinks} possible)", drinks >= 1 && drinks <= expectDrinks + 0 && firstGap >= expectDelay - 2 && (firstGap <= expectDelay + 60));
 			}
-			finally { _perTick = null; if (armoryId >= 0) TileEntity.ByID.Remove(armoryId); Remove(s); }
+			finally { _perTick = null; TestTileEntities.Remove(armory); Remove(s); }
 		}
 
 		// =====================================================================================================

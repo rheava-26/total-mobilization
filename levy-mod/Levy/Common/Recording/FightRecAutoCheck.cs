@@ -301,9 +301,8 @@ namespace Levy.Common.Recording
 				FightRecAuto.ClearCooldown(); Step(3, p, null);
 				int gB = SpawnBoss(cx);
 				Step(40, p, gB);
-				int mine = Projectile.NewProjectile(new Terraria.DataStructures.EntitySource_WorldEvent("FightRecAutoCheck"), p.Center + new Vector2(60, -20), new Vector2(8, 0), ProjectileID.MagicMissile, 40, 1f, p.whoAmI);
-				int theirs = Projectile.NewProjectile(new Terraria.DataStructures.EntitySource_WorldEvent("FightRecAutoCheck"), p.Center + new Vector2(-60, -20), new Vector2(-8, 0), ProjectileID.MagicMissile, 40, 1f, p.whoAmI);
-				if (theirs >= 0 && Main.projectile[theirs].TryGetGlobalProjectile(out global::Levy.Common.Globals.SoldierProjectileTag shotTag)) shotTag.SoldierIndex = 3;
+				int mine = PlaceShot(p, new Vector2(60, -20), new Vector2(8, 0), false);
+				int theirs = PlaceShot(p, new Vector2(-60, -20), new Vector2(-8, 0), true);
 				Step(30, p, gB);
 				if (mine >= 0) Main.projectile[mine].active = false; if (theirs >= 0) Main.projectile[theirs].active = false;
 				ScriptHits(p, gB, 60);
@@ -707,6 +706,20 @@ namespace Levy.Common.Recording
 		}
 
 		// ---------------------------------------------------------------- scripting helpers
+		/// <summary>A friendly projectile owned by the commander's slot put straight into a free slot (no spawn hooks: other mods' OnSpawn hooks need a real player); soldier-tagged when asked.</summary>
+		private static int PlaceShot(Player p, Vector2 off, Vector2 vel, bool soldier)
+		{
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				if (Main.projectile[i].active) continue;
+				var pr = new Projectile(); pr.SetDefaults(ProjectileID.MagicMissile);
+				pr.whoAmI = i; pr.owner = p.whoAmI; pr.friendly = true; pr.hostile = false; pr.damage = 40; pr.Center = p.Center + off; pr.velocity = vel; pr.timeLeft = 600; pr.active = true;
+				if (soldier && pr.TryGetGlobalProjectile(out global::Levy.Common.Globals.SoldierProjectileTag tag)) tag.SoldierIndex = 3;
+				Main.projectile[i] = pr; return i;
+			}
+			return -1;
+		}
+
 		private static int SpawnBoss(int cx, int type = NPCID.EyeofCthulhu)
 		{
 			int i = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("FightRecAutoCheck"), cx * 16 + 400, (Floor - 25) * 16, type);

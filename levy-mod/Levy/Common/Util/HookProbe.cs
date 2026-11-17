@@ -13,6 +13,7 @@ namespace Levy.Common.Util
 		public static int SoundAi, SoundUpdate, SoundClassified;
 		public static int ViewAi, ViewVanilla, ViewLoader, ViewActed, ViewMismatch;
 		public static int SoundInAi, SoundOutAi;
+		public static string ViewLast = "";
 		/// <summary>Set by ArmySoundThrottle when its projectile detour is installed (a client always, a server only for the self-check world): the army-kind probe in the soldier-shot PreAI then counts.</summary>
 		public static bool SoundWatch;
 

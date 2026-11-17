@@ -725,21 +725,21 @@ namespace Levy.Common.Weapons
 		}
 
 		private static void LoaderAiDetour(Action<Projectile> orig, Projectile self)
-		{
+		{ _hl_LoaderAiDetour_4++;
 			global::Levy.Common.Util.HookProbe.HeldLoader++;
 			// a lash (vanilla or modded) is wrapped here too: Projectile.Update runs every projectile's AI through ProjectileLoader.ProjectileAI, and the vanilla whip AI reads its owner's use animation and arm
 			if (!HeldWeapons.IsChainOwner(self.owner) || _wrapDepth != 0 || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain || !(RealWhips.IsWhipProjectile(self) || (self.ModProjectile != null && g.ModHolder))) { orig(self); return; }
 			_wrapDepth++;
 			try { HeldWeapons.RunAi(orig, self, g); }
 			finally { _wrapDepth--; }
-		}
+		} private static int _hl_LoaderAiDetour_4;
 
 		/// <summary>
 		/// Projectile.Update ends with <c>if (owner &lt; 255 &amp;&amp; !Main.player[owner].active) Kill();</c>: a chain that lives in the throwaway slot below 255 (a UUID-bound holdout, see <see cref="HeldWeapons.OwnerSlotFor"/>) would be
 		/// killed by that line every tick, because the slot's Player is only the soldier's dummy while the AI runs. Its whole Update runs with the dummy standing in the slot (what the dragons' Update wrapper does).
 		/// </summary>
 		private static void ChainUpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
-		{
+		{ _hl_ChainUpdateDetour_2++;
 			if (self.owner == SoldierNPC.DummySlot || !self.active || !HeldWeapons.IsChainOwner(self.owner) || !LevyUtil.IsServerOrSingle || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain
 				|| !self.TryGetGlobalProjectile(out SoldierProjectileTag tag) || tag.SoldierIndex < 0 || tag.SoldierIndex >= Main.maxNPCs || Main.npc[tag.SoldierIndex].ModNPC is not SoldierNPC s || s.Dummy == null || !s.IsAlive)
 			{ orig(self, i); return; }
@@ -750,29 +750,29 @@ namespace Levy.Common.Weapons
 				orig(self, i);
 			}
 			finally { if (aliased) SoldierMinions.EnsureAliasRestored(); }
-		}
+		} private static int _hl_ChainUpdateDetour_2;
 
 		/// <summary>
 		/// Projectile.AI is a one-line stub (<c>ProjectileLoader.ProjectileAI(this)</c>) that the JIT inlines into Projectile.Update, so a detour on it is never reached once Update has been tiered up (observed: 0 calls over thousands of projectile updates
 		/// while a detour on <c>Projectile.VanillaAI</c>, the body the loader calls for a vanilla projectile, saw every one). The same wrapper therefore also sits on VanillaAI; whichever fires first opens the swap and the other passes straight through (_wrapDepth).
 		/// </summary>
 		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self)
-		{
+		{ _hl_VanillaAiDetour_5++;
 			global::Levy.Common.Util.HookProbe.HeldVanilla++;
 			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
 			_wrapDepth++;
 			try { HeldWeapons.RunAi(pp => orig(pp), self, g); }
 			finally { _wrapDepth--; }
-		}
+		} private static int _hl_VanillaAiDetour_5;
 
 		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)
-		{
+		{ _hl_AiDetour_1++;
 			global::Levy.Common.Util.HookProbe.HeldAi++;
 			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
 			_wrapDepth++;
 			try { HeldWeapons.RunAi(pp => orig(pp), self, g); }
 			finally { _wrapDepth--; }
-		}
+		} private static int _hl_AiDetour_1;
 
 		/// <summary>
 		/// The ONE Projectile.Damage detour of the mod. A chain projectile (held-weapon beam) is handed to the real player for the call; a driven minion in the middle of its own Update
@@ -780,7 +780,7 @@ namespace Levy.Common.Weapons
 		/// arithmetic keeps running against the dummy, unchanged (see SoldierMinions.RunDamage / RunStrike). Everything else is vanilla.
 		/// </summary>
 		private static void DamageDetour(On_Projectile.orig_Damage orig, Projectile self)
-		{
+		{ _hl_DamageDetour_3++;
 			if (ShouldWrap(self, out HeldWeaponProjectile g))
 			{
 				_wrapDepth++;
@@ -794,7 +794,7 @@ namespace Levy.Common.Weapons
 				finally { _wrapDepth--; }
 			}
 			else orig(self);
-		}
+		} private static int _hl_DamageDetour_3;
 
 		/// <summary>True for a driven minion inside its own Update on the server / single player, and not nested in another wrapper. The frame test is a single reference compare and is false for almost every call.</summary>
 		private static bool WantsMinionWindow(Projectile p) => SoldierMinions.IsFrameProjectile(p) && _wrapDepth == 0 && LevyUtil.IsServerOrSingle;

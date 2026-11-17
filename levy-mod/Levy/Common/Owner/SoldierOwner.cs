@@ -162,10 +162,10 @@ namespace Levy.Common.Owner
 		public override void PreUpdateNPCs() { if (SoldierOwner.Depth > 0) SoldierOwner.Reset(); }
 
 		private static void Detour(On_Player.orig_KillMe orig, Player self, Terraria.DataStructures.PlayerDeathReason reason, double dmg, int hitDirection, bool pvp)
-		{
+		{ _hl_Detour_1++;
 			if (SoldierOwner.IsDummy(self)) { Blocked++; self.statLife = Math.Max(1, self.statLife); self.dead = false; return; }
 			if (global::Levy.Content.NPCs.SoldierNPC.IsScratch(self)) { Blocked++; global::Levy.Content.NPCs.SoldierNPC.NoteScratchKill(reason, dmg, hitDirection); self.dead = false; return; } // a levy's damage-over-time step: the reason is kept for its death text, its life stays at or below 0 so the step counts the loss, and the local-player death never runs
 			orig(self, reason, dmg, hitDirection, pvp);
-		}
+		} private static int _hl_Detour_1;
 	}
 }

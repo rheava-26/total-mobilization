@@ -254,6 +254,6 @@ namespace Levy.Content.NPCs
 			}
 			catch (Exception e) { Mod.Logger.Warn("Levy: damage-over-time hook failed: " + e.Message); }
 		}
-		private static void Detour(Orig orig, NPC self) { if (self.ModNPC is SoldierNPC) return; orig(self); }
+		private static void Detour(Orig orig, NPC self) { _hl_Detour_1++; if (self.ModNPC is SoldierNPC) return; orig(self); } private static int _hl_Detour_1;
 	}
 }

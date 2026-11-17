@@ -17,6 +17,7 @@ namespace Levy.Common.Weapons
 	public class SoldierHeldViewSystem : ModSystem
 	{
 		[ThreadStatic] private static int _depth;
+		private static readonly bool Dbg = Environment.GetEnvironmentVariable("LEVY_DEADHOOKS_DEBUG") == "1";
 
 		public override void Load()
 		{
@@ -31,15 +32,15 @@ namespace Levy.Common.Weapons
 			On_Projectile.VanillaAI -= VanillaAiDetour;
 		}
 
-		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self) { HookProbe.ViewAi++; if (!Wants(self, out SoldierNPC b, out Item it)) orig(self); else Run(pp => orig(pp), self, b, it); }
-		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self) { HookProbe.ViewVanilla++; if (!Wants(self, out SoldierNPC b, out Item it)) orig(self); else Run(pp => orig(pp), self, b, it); }
-		private static void LoaderAiDetour(Action<Projectile> orig, Projectile self) { HookProbe.ViewLoader++; if (!Wants(self, out SoldierNPC b, out Item it)) orig(self); else Run(orig, self, b, it); }
+		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self) { _hl_AiDetour_1++; HookProbe.ViewAi++; if (!Wants(self, out SoldierNPC b, out Item it)) orig(self); else Run(pp => orig(pp), self, b, it); } private static int _hl_AiDetour_1;
+		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self) { _hl_VanillaAiDetour_3++; HookProbe.ViewVanilla++; if (!Wants(self, out SoldierNPC b, out Item it)) orig(self); else Run(pp => orig(pp), self, b, it); } private static int _hl_VanillaAiDetour_3;
+		private static void LoaderAiDetour(Action<Projectile> orig, Projectile self) { _hl_LoaderAiDetour_2++; HookProbe.ViewLoader++; if (!Wants(self, out SoldierNPC b, out Item it)) orig(self); else Run(orig, self, b, it); } private static int _hl_LoaderAiDetour_2;
 
 		/// <summary>A soldier's plain shot (tagged, owner a player slot, not a held chain) with a live soldier that carries a weapon.</summary>
 		private static bool Wants(Projectile p, out SoldierNPC body, out Item item)
 		{
 			body = null; item = null;
-			if (_depth != 0 || ProjAiHooks.Off || !p.active || p.owner < 0 || p.owner >= Main.maxPlayers + 1) return false;
+			if (_depth != 0 || ProjAiHooks.Off || !p.active || p.owner < 0 || p.owner >= Main.maxPlayers + 1 || p.ModProjectile == null || !OwnerLockProbe.ReadsHeldItem(p.type)) return false;
 			if (!p.TryGetGlobalProjectile(out SoldierProjectileTag tag) || tag.SoldierIndex < 0) return false;
 			if (p.TryGetGlobalProjectile(out HeldWeaponProjectile g) && g.Chain) return false;
 			body = MiscProjSwap.BodyOf(p);
@@ -61,6 +62,7 @@ namespace Levy.Common.Weapons
 				HookProbe.ViewActed++;
 				if (!ReferenceEquals(owner.HeldItem, item)) HookProbe.ViewMismatch++;
 				orig(p);
+				if (Dbg && Main.GameUpdateCount % 60 == 0) HookProbe.ViewLast = $"{p.ModProjectile?.Name} owner={p.owner} sel={sel} saved={saved?.Name} levyItem={item.Name} ua={item.useAnimation} heldNow={owner.HeldItem?.Name} fireRate={p.ModProjectile?.GetType().GetProperty("fireRate")?.GetValue(p.ModProjectile)}";
 			}
 			finally { owner.inventory[sel] = saved; _depth--; }
 		}

@@ -60,6 +60,13 @@ namespace Levy.Common.Weapons
 			"YharimsCrystal", "Starmageddon",
 		};
 
+		/// <summary>
+		/// Calamity's plain-shot gun holdouts whose fire rate is <c>Owner.HeldItem.useAnimation</c> (Ion Blaster, Phalanx Surge, Apoctosis Array). As plain shots they were owned by the commander and read HER hand: with it empty the rate was 0, so one
+		/// holdout fired every tick (measured, one levy against a pinned enemy for 300 ticks: Ion Blaster 174,255, Phalanx Surge 1,253,093, Apoctosis Array 346,975 damage, against 1,492 / 6,621 / 3,396 for a player using the same weapon), and with
+		/// anything else in her hand the rate was that item's. Held, the levy's own weapon is the item in the dummy's hand and the weapon fires at its real rate (1,300 / 7,031 / 3,137 in the same run). Switch: LEVY_DEADHOOKS_OFF=1 routes them plain again.
+		/// </summary>
+		private static readonly HashSet<string> HeldItemRateRouted = new() { "IonBlaster", "PhalanxSurge", "ApoctosisArray" };
+
 		/// <summary>Measurement switch (env LEVY_HOLD_FORCE=Name1,Name2 or "all"): routes these Calamity holdouts through the held path as if they were in <see cref="HoldoutRouted"/> (A/B runs of a weapon that is not routed yet).</summary>
 		private static readonly string _force = Environment.GetEnvironmentVariable("LEVY_HOLD_FORCE");
 		private static bool ForceHold(string name) => !string.IsNullOrEmpty(_force) && (_force == "all" || ("," + _force + ",").Contains("," + name + ","));
@@ -138,7 +145,7 @@ namespace Levy.Common.Weapons
 			if (mace) return ModShotKind.None; // thrown at the cursor, not held (see the class summary)
 			// A held / charge-and-release holdout reads its owner's button (and is the weapon's own shot).
 			// Only holdouts measured as duds as plain shots are routed (see HoldoutRouted); everything else keeps the plain shot, which already works for it.
-			if (item.ModItem?.Mod.Name == "CalamityMod" && (HoldoutRouted.Contains(item.ModItem.Name) || ForceHold(item.ModItem.Name)) && item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
+			if (item.ModItem?.Mod.Name == "CalamityMod" && (HoldoutRouted.Contains(item.ModItem.Name) || (!ProjAiHooks.Off && HeldItemRateRouted.Contains(item.ModItem.Name)) || ForceHold(item.ModItem.Name)) && item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
 				&& (item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)))
 				return ModShotKind.Holdout;
 			return ModShotKind.None;

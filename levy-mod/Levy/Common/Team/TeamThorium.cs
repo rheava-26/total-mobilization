@@ -39,11 +39,11 @@ namespace Levy.Common.Team
 		}
 
 		private static void HandleNearbyDetour(Action<ThoriumPlayer> orig, ThoriumPlayer self)
-		{
+		{ _hl_HandleNearbyDetour_1++;
 			orig(self);
 			try { ShareFromLevies(self); }
 			catch (Exception e) { TeamItems.WarnOnce("bard accessory share", e); }
-		}
+		} private static int _hl_HandleNearbyDetour_1;
 
 		/// <summary>The levy whose equip frame is running, when <paramref name="p"/> is his dummy; null for a real player.</summary>
 		private static SoldierNPC FrameBody(Player p) => GearUpkeep.Body != null && GearUpkeep.Body.Dummy == p ? GearUpkeep.Body : null;

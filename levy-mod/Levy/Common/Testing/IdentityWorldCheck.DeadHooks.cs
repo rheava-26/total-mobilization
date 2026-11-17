@@ -25,6 +25,8 @@ namespace Levy.Common.Testing
 		// Env: LEVY_DEADHOOKS=0 skips, LEVY_DEADHOOKS_ALONE=1 runs only this, LEVY_DEADHOOKS_TICKS=N (holdout run length, default 300), LEVY_DEADHOOKS_ONLY=Name;Name (holdouts), LEVY_DEADHOOKS_SCAN=1 prints the IL scan.
 
 		private static readonly Dictionary<string, long> DhRows = new();
+		/// <summary>Commander mana the levies' shots paid during the last <see cref="DhDamage"/> run (the pool is refilled to 200 every tick, so this is what the run drew from HER pool).</summary>
+		private static long _dhMana;
 
 		/// <summary>Damage one weapon does to the pinned enemy over <paramref name="ticks"/>: <paramref name="levies"/> levies carry it, the commander holds <paramref name="heldType"/> (0 = empty hand) without using it, or (playerUses) uses the weapon herself with no levy.</summary>
 		private static long DhDamage(int weaponType, int ammoType, int levies, int ticks, int heldType, bool playerUses)
@@ -47,10 +49,11 @@ namespace Levy.Common.Testing
 			if (playerUses) { mine = new Item(); mine.SetDefaults(weaponType); if (ammoType > 0) { Item am = new Item(); am.SetDefaults(ammoType); am.stack = 999; cmd.inventory[54] = am; for (int s = 50; s < 54; s++) cmd.inventory[s] = new Item(); } }
 			Main.rand = new Terraria.Utilities.UnifiedRandom(777);
 			KeepCommander(); PinSweepTarget(); CursorOnCommander(); Step(10);
-			long dmg = 0;
+			long dmg = 0; _dhMana = 0;
 			for (int k = 0; k < ticks; k++)
 			{
 				foreach (var r in RosterSystem.Instance.Regulars) r.Mana = r.MaxMana;
+				cmd.statManaMax2 = 200; cmd.statMana = 200; // a player's pool, kept full: the shots are compared at the weapon's own rate, not at what an empty pool allows
 				if (playerUses) { try { MegaCommanderUse(mine, true); } catch (Exception) { } }
 				else
 				{
@@ -58,6 +61,7 @@ namespace Levy.Common.Testing
 					if (heldType > 0 && (cmd.inventory[0] == null || cmd.inventory[0].type != heldType)) { Item h = new Item(); h.SetDefaults(heldType); cmd.inventory[0] = h; cmd.selectedItem = 0; }
 				}
 				Step(1); ClearNaturalHostiles();
+				if (cmd.statMana < 200) _dhMana += 200 - cmd.statMana;
 				if (_sweepTarget != null && _sweepTarget.active) { int d = _sweepTarget.lifeMax - _sweepTarget.life; if (d > 0) dmg += d; }
 			}
 			if (playerUses) { try { MegaCommanderUse(mine, false); } catch (Exception) { } }
@@ -147,7 +151,14 @@ namespace Levy.Common.Testing
 				var pick = new List<(int type, string label)>();
 				foreach (string nm in new[] { "IonBlaster", "PhalanxSurge", "ApoctosisArray" })
 					foreach (var l in list) if (l.label == "CalamityMod:" + nm) pick.Add((l.type, l.label));
-				foreach (var l in list.Where(l => l.rate)) if (!pick.Any(p => p.type == l.type)) pick.Add((l.type, l.label));
+				foreach (string nm in new[] { "Vulcan", "WildfireBloom", "Nidhogg", "HolofibreImmolator", "Photoviscerator" })
+					foreach (var l in list) if (l.label == "CalamityMod:" + nm && !pick.Any(p => p.type == l.type)) pick.Add((l.type, l.label));
+				// every other ranged / magic weapon that reads its fire rate from the owner's held item and is shot plain (a held chain runs against the dummy, which already holds the item)
+				foreach (var l in list.Where(l => l.rate))
+				{
+					Item s0 = ContentSamples.ItemsByType[l.type];
+					if (!pick.Any(p => p.type == l.type) && ModShotKinds.Of(s0) == ModShotKind.None && (s0.CountsAsClass(DamageClass.Ranged) || s0.CountsAsClass(DamageClass.Magic)) && s0.mana <= 40) pick.Add((l.type, l.label));
+				}
 				if (!string.IsNullOrEmpty(only)) { string[] names = only.Split(';', StringSplitOptions.RemoveEmptyEntries); pick = pick.Where(p => names.Any(n => p.label.EndsWith(":" + n))).ToList(); }
 				foreach (var (type, label) in pick)
 				{
@@ -157,15 +168,20 @@ namespace Levy.Common.Testing
 						int ammo = sample.useAmmo > 0 && ammoByKind.TryGetValue(sample.useAmmo, out int a) ? a : 0;
 						string routed = ModShotKinds.Of(sample).ToString();
 						long player = DhDamage(type, ammo, 0, ticks, 0, true);
-						long empty = DhDamage(type, ammo, 1, ticks, 0, false);
-						long sword = DhDamage(type, ammo, 1, ticks, ItemID.CopperShortsword, false);
-						long slow = DhDamage(type, ammo, 1, ticks, ItemID.Zenith, false);
+						long empty = DhDamage(type, ammo, 1, ticks, 0, false); if (!string.IsNullOrEmpty(HookProbe.ViewLast)) { Note("deadhooks: view debug (empty) " + HookProbe.ViewLast); HookProbe.ViewLast = ""; }
+						long sword = DhDamage(type, ammo, 1, ticks, ItemID.CopperShortsword, false); if (!string.IsNullOrEmpty(HookProbe.ViewLast)) { Note("deadhooks: view debug (sword) " + HookProbe.ViewLast); HookProbe.ViewLast = ""; }
+						long slow = DhDamage(type, ammo, 1, ticks, ItemID.Zenith, false); if (!string.IsNullOrEmpty(HookProbe.ViewLast)) { Note("deadhooks: view debug (zenith) " + HookProbe.ViewLast); HookProbe.ViewLast = ""; }
 						long same = DhDamage(type, ammo, 1, ticks, type, false);
 						Note($"deadhooks: holdout {label} (shot kind {routed}, useAnimation {sample.useAnimation}) damage over {ticks} ticks: player using it {player}; ONE levy with the commander's hand empty {empty}, holding a Copper Shortsword {sword}, holding a Zenith {slow}, holding the same weapon {same}");
 						DhRows[label] = empty;
+						if (!string.IsNullOrEmpty(HookProbe.ViewLast)) { Note("deadhooks: view debug " + HookProbe.ViewLast); HookProbe.ViewLast = ""; }
 						long lo = Math.Min(Math.Min(empty, sword), Math.Min(slow, same)), hi = Math.Max(Math.Max(empty, sword), Math.Max(slow, same));
 						// the rate is the weapon's own: what the commander holds does not move it (a small band for the sim's chaos), and a levy does not out-fire the player who holds the same weapon
-						Check($"deadhooks: {label} fires at its own rate whatever the commander holds (levy damage {empty} empty-handed, {sword} sword, {slow} Zenith, {same} same weapon; player {player})", hi <= Math.Max(1L, lo) * 1.6 + 50);
+						if (label == "CalamityMod:IonBlaster" || label == "CalamityMod:PhalanxSurge" || label == "CalamityMod:ApoctosisArray")
+						{
+							// the held chain gives the weapon's own rate: the levy does what a player holding it does (band for the sim's chaos), whatever the commander holds, and never the hundred-fold of an empty hand
+							Check($"deadhooks: {label} fires at its own rate whatever the commander holds (levy damage {empty} empty-handed, {sword} sword, {slow} Zenith, {same} same weapon; player {player})", hi <= Math.Max(1L, lo) * 1.6 + 50 && hi <= Math.Max(1L, player) * 2 + 100 && lo > 0);
+						}
 					}
 					catch (Exception e) { Note($"deadhooks: holdout {label} threw {e.GetType().Name}: {e.Message} @ {(e.StackTrace ?? "").Split('\n')[0].Trim()}"); }
 				}

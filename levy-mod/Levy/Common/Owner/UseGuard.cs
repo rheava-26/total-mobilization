@@ -210,12 +210,12 @@ namespace Levy.Common.Owner
 		private static int _aiOwner = -1, _aiDepth;
 
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
-		{
+		{ _hl_UpdateDetour_5++;
 			if (Disabled || !IsArmyRound(self)) { orig(self, i); return; }
 			Snap s = TakeT(self.owner); GuardedUpdates++;
 			int type = self.type;
 			try { orig(self, i); } finally { PutT(s, "update", type); }
-		}
+		} private static int _hl_UpdateDetour_5;
 
 		/// <summary>
 		/// Projectile types whose vanilla Kill reads the tile at the projectile's own position without a range check: the Ice Rod's block (<c>Main.tile[(int)position.X / 16, (int)position.Y / 16]</c>, looking for an ice tile
@@ -243,40 +243,40 @@ namespace Levy.Common.Owner
 		public static int Clamped;
 
 		private static void KillDetour(On_Projectile.orig_Kill orig, Projectile self)
-		{
+		{ _hl_KillDetour_2++;
 			if (ProbesTileAtPosition(self.type) && IsArmyRound(self)) KeepProbeInWorld(self);
 			if (Disabled || !IsArmyRound(self)) { orig(self); return; }
 			Snap s = TakeT(self.owner); int type = self.type;
 			try { orig(self); } finally { PutT(s, "kill", type); }
-		}
+		} private static int _hl_KillDetour_2;
 
 		private static void DamageDetour(On_Projectile.orig_Damage orig, Projectile self)
-		{
+		{ _hl_DamageDetour_1++;
 			if (Disabled || !IsArmyRound(self)) { orig(self); return; }
 			Snap s = TakeT(self.owner); int type = self.type;
 			try { orig(self); } finally { PutT(s, "damage", type); }
-		}
+		} private static int _hl_DamageDetour_1;
 
 		/// <summary>A body of the army: a levy or officer (SoldierNPC) or a machine of the companion mod (a drone, a turret).</summary>
 		private static bool IsArmyNpc(NPC n) => n.ModNPC is SoldierNPC || n.ModNPC?.Mod.Name == "Mechanization";
 
 		private static void NpcAiDetour(Action<NPC> orig, NPC self)
-		{
+		{ _hl_NpcAiDetour_4++;
 			if (Disabled || !IsArmyNpc(self)) { orig(self); return; }
 			int owner = SoldierMinions.TrueMyPlayer; // what WeaponUse.OwnerFor answers for every body: the real local player
 			if (!RealOwner(owner) || (_aiDepth > 0 && _aiOwner == owner)) { orig(self); return; }
 			Snap s = TakeT(owner); Scopes++;
 			int prevOwner = _aiOwner; _aiOwner = owner; _aiDepth++;
 			try { orig(self); } finally { _aiDepth--; _aiOwner = prevOwner; PutT(s, "soldierAI", 0); }
-		}
+		} private static int _hl_NpcAiDetour_4;
 
 		private static int NewProjectileDetour(On_Projectile.orig_NewProjectile_IEntitySource_float_float_float_float_int_int_float_int_float_float_float orig, IEntitySource source, float x, float y, float sx, float sy, int type, int damage, float kb, int owner, float ai0, float ai1, float ai2)
-		{
+		{ _hl_NewProjectileDetour_3++;
 			if (Disabled || !RealOwner(owner) || (_aiDepth > 0 && _aiOwner == owner) || source is not EntitySource_Parent { Entity: NPC army } || !IsArmyNpc(army))
 				return orig(source, x, y, sx, sy, type, damage, kb, owner, ai0, ai1, ai2);
 			Snap s = TakeT(owner); Scopes++;
 			try { return orig(source, x, y, sx, sy, type, damage, kb, owner, ai0, ai1, ai2); } finally { PutT(s, "spawn", type); }
-		}
+		} private static int _hl_NewProjectileDetour_3;
 
 		public override void PreUpdateNPCs() { _aiDepth = 0; _aiOwner = -1; }
 	}

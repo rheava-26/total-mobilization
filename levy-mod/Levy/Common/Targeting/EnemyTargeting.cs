@@ -334,7 +334,7 @@ namespace Levy.Common.Targeting
 		}
 
 		private static void TargetClosest_Detour(On_NPC.orig_TargetClosest orig, NPC self, bool faceTarget)
-		{
+		{ _hl_TargetClosest_Detour_4++;
 			bool netBefore = self.netUpdate;
 			PreSearch();
 			if (DiagOn) Potions.SpectatorDiagnostic.NoteDetour(self, "TargetClosest");
@@ -349,20 +349,20 @@ namespace Levy.Common.Targeting
 					self.netUpdate = netBefore; // vanilla flagged a sync only because its interim player pick differed from the soldier we kept
 			}
 			finally { if (hid) Potions.SpectatorPlayer.ReleaseAll(); }
-		}
+		} private static int _hl_TargetClosest_Detour_4;
 
 		private static void TargetClosestUpgraded_Detour(On_NPC.orig_TargetClosestUpgraded orig, NPC self, bool faceTarget, Vector2? checkPosition)
-		{
+		{ _hl_TargetClosestUpgraded_Detour_3++;
 			PreSearch();
 			if (DiagOn) Potions.SpectatorDiagnostic.NoteDetour(self, "TargetClosestUpgraded");
 			bool hid = HidesSpectatorFrom(self);
 			if (hid) Potions.SpectatorPlayer.HideAll();
 			try { orig(self, faceTarget, checkPosition); Compete(self, faceTarget, checkPosition ?? self.Center, manhattan: false, float.PositiveInfinity); }
 			finally { if (hid) Potions.SpectatorPlayer.ReleaseAll(); }
-		}
+		} private static int _hl_TargetClosestUpgraded_Detour_3;
 
 		private static void TargetClosestOldOnes_Detour(On_NPCUtils.orig_TargetClosestOldOnesInvasion orig, NPC searcher, bool faceTarget, Vector2? checkPosition)
-		{
+		{ _hl_TargetClosestOldOnes_Detour_2++;
 			PreSearch();
 			if (DiagOn) Potions.SpectatorDiagnostic.NoteDetour(searcher, "OldOnes");
 			bool hid = HidesSpectatorFrom(searcher);
@@ -374,17 +374,17 @@ namespace Levy.Common.Targeting
 				Compete(searcher, faceTarget, searcher.Center, manhattan: false, LevyConstants.Targeting.OldOnesSoldierRangePx);
 			}
 			finally { if (hid) Potions.SpectatorPlayer.ReleaseAll(); }
-		}
+		} private static int _hl_TargetClosestOldOnes_Detour_2;
 
 		private static void TargetClosestNonBees_Detour(On_NPCUtils.orig_TargetClosestNonBees orig, NPC searcher, bool faceTarget, Vector2? checkPosition)
-		{
+		{ _hl_TargetClosestNonBees_Detour_1++;
 			PreSearch();
 			if (DiagOn) Potions.SpectatorDiagnostic.NoteDetour(searcher, "NonBees");
 			bool hid = HidesSpectatorFrom(searcher);
 			if (hid) Potions.SpectatorPlayer.HideAll();
 			try { orig(searcher, faceTarget, checkPosition); Compete(searcher, faceTarget, searcher.Center, manhattan: false, float.PositiveInfinity); }
 			finally { if (hid) Potions.SpectatorPlayer.ReleaseAll(); }
-		}
+		} private static int _hl_TargetClosestNonBees_Detour_1;
 
 		/// <summary>
 		/// After a vanilla search: decide army or commander, then which soldier, and point the enemy at the chosen soldier. Returns true when a soldier was chosen.

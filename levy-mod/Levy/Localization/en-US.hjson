@@ -869,7 +869,7 @@ Mods: {
 			Camera: Camera
 			Mobility: Mobility
 			Wings: Wings
-			Boots: Boots
+			Boots: Boots or dash
 			Ammo: Ammo
 			Head: Head
 			Body: Body

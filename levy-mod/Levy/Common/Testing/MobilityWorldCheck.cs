@@ -122,6 +122,12 @@ namespace Levy.Common.Testing
 			Main.player[0] = Main.player[0] ?? new Player();
 			Arena();
 			ClearSoldiers();
+			string part = Environment.GetEnvironmentVariable("LEVY_MOBPART") ?? "all"; // lab: "dash" or "floors" alone
+			if (part == "dash" || part == "floors")
+			{
+				try { if (part == "dash") DashTrials(); else FloorTrials(); } catch (Exception e) { Check(part + " trials threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
+				ClearSoldiers(); return;
+			}
 			var boots = new List<(string name, int type)> { ("none", 0), ("Hermes Boots", ItemID.HermesBoots), ("Lightning Boots", ItemID.LightningBoots), ("Terraspark Boots", ItemID.TerrasparkBoots) };
 			if (ModLoader.TryGetMod("CalamityMod", out Mod cal) && cal.TryFind<ModItem>("AngelTreads", out var treads)) boots.Add(("Angel Treads", treads.Type));
 			var wings = new List<(string name, int type)> { ("none", 0), ("Fledgling Wings", ItemID.CreativeWings), ("Angel Wings", ItemID.AngelWings), ("Solar Wings", ItemID.WingsSolar) };

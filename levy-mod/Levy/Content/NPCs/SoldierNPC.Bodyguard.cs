@@ -20,7 +20,7 @@ namespace Levy.Content.NPCs
 	{
 		private int _bgDir, _bgHoldUntil, _bgActiveUntil, _bgLaneDir, _bgLaneUntil; private bool _bgLaneOn;
 		/// <summary>Harness telemetry: decoy legs started, thinks spent holding at the far end, lane sidesteps.</summary>
-		internal int BgLegs, BgHolds, BgLaneStepsN;
+		internal int BgLegs, BgFlips, BgHolds, BgLaneStepsN;
 		/// <summary>True while this levy is running the decoy rule (a boss has it in its sights, or it is still in the grace after).</summary>
 		internal bool BodyguardRunning => _bgActiveUntil != 0 && (int)Main.GameUpdateCount < _bgActiveUntil;
 
@@ -67,7 +67,7 @@ namespace Levy.Content.NPCs
 				if (Bodyguard.ClumpCentre(this, out Vector2 k)) { float dxk = here.X - k.X; if (Math.Abs(dxk) > 2f * tile) s += 0.5f * Math.Sign(dxk); }
 				if (s == 0f) { s = Math.Sign(here.X - boss.Center.X); if (s == 0f) s = (NPC.whoAmI & 1) == 0 ? 1f : -1f; }
 				int nd = s > 0f ? 1 : -1;
-				if (nd != _bgDir || fresh) BgLegs++;
+				if (fresh) BgLegs++; else if (nd != _bgDir) { BgLegs++; BgFlips++; }
 				_bgDir = nd; _bgHoldUntil = now + Bodyguard.HoldTicks;
 			}
 			if (FarFromCommander(out _)) { ClearGoal(); _platActive = false; WhyB = Why.BBodyguard; BgHolds++; Bodyguard.Holds++; return; } // as far out as the fight lets it: stand and keep shooting

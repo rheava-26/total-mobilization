@@ -8,6 +8,8 @@ using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Levy.Common.Boss;
+using Levy.Common.Globals;
 using Levy.Common.Movement;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
@@ -33,6 +35,8 @@ namespace Levy.Common.Testing
 		private static Mod _mod; private static Vector2 _cmdAt; private static int _savedMy;
 		private const int FloorY = 300, Cx = 1800, Half = 270;
 		private const string Commander = "BodyguardTester";
+		/// <summary>A boss moving this fast (px/tick) is charging.</summary>
+		private const float ChargeSpeed = 8f;
 
 		public override void OnWorldLoad()
 		{
@@ -106,6 +110,7 @@ namespace Levy.Common.Testing
 				for (int i = 0; i < Main.maxProjectiles; i++) Main.projectile[i].active = false;
 				try { var b = Main.player[0]; int bt = ModContent.BuffType<global::Levy.Content.Buffs.SpectatorBuff>(); if (b.HasBuff(bt)) b.ClearBuff(bt); } catch (Exception) { }
 				var cfg = global::Levy.Common.Config.LevyConfig.Get; if (cfg != null && _savedBossTarget.HasValue) { cfg.BossesTargetSoldiers = _savedBossTarget.Value; _savedBossTarget = null; }
+				BossDownedSystem.SetDownedForTest(NPCID.EyeofCthulhu, false);
 			}
 			catch (Exception) { }
 		}
@@ -142,8 +147,8 @@ namespace Levy.Common.Testing
 		// ---------------------------------------------------------------------------------------------- one arm
 		private sealed class Result
 		{
-			public int Mode, Seed, PairTicks, Deaths, Pass12, Pass20, Legs, HeldTicks, Episodes, LaneTicks, Ticks;
-			public double LaneSum; public long Damage, DecoySteps, LaneSteps;
+			public int Mode, Seed, PairTicks, Deaths, Pass12, Pass20, Legs, Flips, HeldTicks, Episodes, LaneTicks, Ticks, Shots;
+			public double LaneSum, OthersSum, BossPeak; public long Damage, DecoySteps, LaneSteps;
 			public readonly List<float> DC = new(), DK = new(), Growth = new(), GrowthK = new();
 			public bool BossAlive; public float MinGoalMargin = float.MaxValue; public int GoalsOutside, GoalsSeen;
 		}
@@ -160,6 +165,7 @@ namespace Levy.Common.Testing
 			_cmdAt = new Vector2(Cx * 16f, (FloorY - 3) * 16f);
 			Main.GameMode = GameModeID.Master;
 			SetBossesTarget(true);
+			BossDownedSystem.SetDownedForTest(NPCID.EyeofCthulhu, true); // the first kill of a boss is solo: it only hunts levies once it has been beaten in the world
 			KeepCommander(); Step(2);
 			var levies = new List<SoldierNPC>();
 			float[] offs = { -36, -30, -24, -18, -12, -6, 6, 12, 18, 24, 30, 36 };
@@ -168,24 +174,25 @@ namespace Levy.Common.Testing
 			if (boxed && TryMakeBox(out box, out boxList, out boxTl, out boxBr)) { }
 			Step(90); // let them settle into the follow order
 			long bg0 = Bodyguard.DecoySteps, lane0 = Bodyguard.LaneSteps;
-			int legs0 = levies.Sum(l => l.BgLegs);
-			int i0 = NPC.NewNPC(new EntitySource_WorldEvent("BodyguardCheck"), (int)((Cx + 10) * 16f), (int)((FloorY - 40) * 16f), NPCID.EyeofCthulhu);
+			int legs0 = levies.Sum(l => l.BgLegs), flips0 = levies.Sum(l => l.BgFlips);
+			int i0 = NPC.NewNPC(new EntitySource_WorldEvent("BodyguardCheck"), (int)((Cx - 8) * 16f), (int)((FloorY - 40) * 16f), NPCID.EyeofCthulhu);
 			if (i0 < 0 || i0 >= Main.maxNPCs) { Check("the Eye of Cthulhu spawns", false); if (box != null) boxList.Remove(box); return r; }
 			NPC boss = Main.npc[i0]; boss.timeLeft = 99999; boss.netOffset = Vector2.Zero;
 			boss.lifeMax = 400000; boss.life = (int)(boss.lifeMax * 0.45f); // under half: the charging phase
 			int life0 = boss.life;
 			var epis = new Dictionary<int, Epi>();
 			bool in12 = false, in20 = false;
-			var alive0 = levies.Count;
+			var alive0 = levies.Count; var seenShots = new HashSet<int>();
 			for (int t = 0; t < ticks; t++)
 			{
 				Step(1);
+				for (int pj = 0; pj < Main.maxProjectiles; pj++) { var pr0 = Main.projectile[pj]; if (pr0.active && pr0.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex >= 0 && seenShots.Add(pr0.identity * 4096 + pr0.type % 4096)) r.Shots++; }
 				if (!boss.active || boss.type != NPCID.EyeofCthulhu) break;
 				boss.timeLeft = 99999; boss.dontTakeDamage = false;
 				r.Ticks++;
 				Vector2 cmd = Main.player[0].Center;
 				// charge passes near the commander
-				float bdc = Vector2.Distance(boss.Center, cmd) / 16f; bool charging = boss.velocity.Length() >= 10f;
+				float bdc = Vector2.Distance(boss.Center, cmd) / 16f; float bsp = boss.velocity.Length(); r.BossPeak = Math.Max(r.BossPeak, bsp); bool charging = bsp >= ChargeSpeed;
 				if (charging && bdc <= 12f && !in12) { r.Pass12++; in12 = true; } else if (bdc > 17f) in12 = false;
 				if (charging && bdc <= 20f && !in20) { r.Pass20++; in20 = true; } else if (bdc > 26f) in20 = false;
 				// the pairs
@@ -202,14 +209,15 @@ namespace Levy.Common.Testing
 					// others on the line between the boss and the hunted levy
 					if (Vector2.Distance(boss.Center, x.Center) >= Bodyguard.LaneMinLenTiles * 16f)
 					{
-						int on = 0;
+						int on = 0, others = 0;
 						for (int k = 0; k < levies.Count; k++)
 						{
 							var b = levies[k].NPC; if (!b.active || b.life <= 0 || b.whoAmI == x.whoAmI) continue;
+							others++;
 							float d = Bodyguard.DistToSegmentTiles(b.Center, boss.Center, x.Center, out float al, out _);
 							if (d < Bodyguard.LaneHalfTiles && al > 0.04f && al < 0.96f) on++;
 						}
-						r.LaneSum += on; r.LaneTicks++;
+						r.LaneSum += on; r.OthersSum += others; r.LaneTicks++;
 					}
 					int key = x.whoAmI;
 					if (!epis.TryGetValue(key, out var e) || t - e.Last > 20) e = new Epi { Start = t, DC0 = dc, DK0 = dk };
@@ -232,7 +240,7 @@ namespace Levy.Common.Testing
 			}
 			r.BossAlive = boss.active; r.Damage = Math.Max(0, life0 - boss.life);
 			r.Deaths = alive0 - levies.Count(l => l.NPC.active && l.NPC.life > 0);
-			r.Legs = levies.Sum(l => l.BgLegs) - legs0; r.DecoySteps = Bodyguard.DecoySteps - bg0; r.LaneSteps = Bodyguard.LaneSteps - lane0; r.HeldTicks = levies.Sum(l => l.BgHolds);
+			r.Legs = levies.Sum(l => l.BgLegs) - legs0; r.Flips = levies.Sum(l => l.BgFlips) - flips0; r.DecoySteps = Bodyguard.DecoySteps - bg0; r.LaneSteps = Bodyguard.LaneSteps - lane0; r.HeldTicks = levies.Sum(l => l.BgHolds);
 			if (box != null) boxList.Remove(box);
 			Cleanup();
 			return r;
@@ -278,7 +286,7 @@ namespace Levy.Common.Testing
 			Report("flat arena, twelve Follow levies, Eye of Cthulhu charging", off, on);
 
 			foreach (var arm in new[] { ("off", off), ("on", on) })
-				Note($"rule {arm.Item1}: per-seed targeted ticks [{string.Join(", ", arm.Item2.Select(x => x.PairTicks))}], boss damage [{string.Join(", ", arm.Item2.Select(x => x.Damage))}], deaths [{string.Join(", ", arm.Item2.Select(x => x.Deaths))}]");
+				Note($"rule {arm.Item1}: per-seed targeted ticks [{string.Join(", ", arm.Item2.Select(x => x.PairTicks))}], shots [{string.Join(", ", arm.Item2.Select(x => x.Shots))}], deaths [{string.Join(", ", arm.Item2.Select(x => x.Deaths))}]");
 
 			int pt0 = off.Sum(x => x.PairTicks), pt1 = on.Sum(x => x.PairTicks);
 			Check($"a real boss locks onto levies in this scene (targeted levy ticks: rule off {pt0}, on {pt1})", pt0 >= 150 && pt1 >= 150);
@@ -289,15 +297,15 @@ namespace Levy.Common.Testing
 			double g0 = Mean(off.SelectMany(x => x.Growth)), g1 = Mean(on.SelectMany(x => x.Growth));
 			int e0 = off.Sum(x => x.Episodes), e1 = on.Sum(x => x.Episodes);
 			Check($"over a two-second hunt the levy's distance from the commander grows more with the rule on: mean change {F(g0)} -> {F(g1)} tiles ({e0} and {e1} hunts)", e0 >= 3 && e1 >= 3 && g1 >= g0 + 1.0);
-			double l0 = off.Sum(x => x.LaneSum) / Math.Max(1, off.Sum(x => x.LaneTicks)), l1 = on.Sum(x => x.LaneSum) / Math.Max(1, on.Sum(x => x.LaneTicks));
-			Check($"fewer levies stand on the line between the boss and the levy it hunts with the rule on: {F(l0)} -> {F(l1)} per tick", l0 < 0.05 || l1 <= l0 * 0.75);
-			long d0 = off.Sum(x => x.Damage), d1 = on.Sum(x => x.Damage);
-			Check($"the army keeps fighting while it moves: boss damage {d0} -> {d1} over the same ticks", d1 >= d0 * 0.6);
+			double l0 = off.Sum(x => x.LaneSum) / Math.Max(1, off.Sum(x => x.OthersSum)), l1 = on.Sum(x => x.LaneSum) / Math.Max(1, on.Sum(x => x.OthersSum));
+			Check($"a smaller share of the other levies stands on the line between the boss and the levy it hunts with the rule on: {F(l0 * 100)}% -> {F(l1 * 100)}% of them per tick", l0 < 0.01 || l1 <= l0 * 0.75);
+			long d0 = off.Sum(x => x.Shots), d1 = on.Sum(x => x.Shots);
+			Check($"the army keeps fighting while it moves: shots fired {d0} -> {d1} over the same ticks", d0 > 50 && d1 >= d0 * 0.7);
 			Check($"nobody dies for it: deaths {off.Sum(x => x.Deaths)} -> {on.Sum(x => x.Deaths)}", on.Sum(x => x.Deaths) <= off.Sum(x => x.Deaths));
 			double pass12a = off.Sum(x => x.Pass12), pass12b = on.Sum(x => x.Pass12);
 			Check($"charges passing within 12 tiles of the commander do not rise: {pass12a} -> {pass12b}", pass12b <= pass12a + 1);
-			double legsPerHunted = on.Sum(x => x.Legs) / Math.Max(1.0, on.Sum(x => x.PairTicks) / 60.0);
-			Check($"no oscillation: {F(legsPerHunted)} direction changes per hunted-levy second", legsPerHunted <= 0.5);
+			double flipsPerHunted = on.Sum(x => x.Flips) / Math.Max(1.0, on.Sum(x => x.PairTicks) / 60.0);
+			Check($"no oscillation: {F(flipsPerHunted)} turns per hunted-levy second ({on.Sum(x => x.Flips)} turns, {on.Sum(x => x.Legs)} legs started)", flipsPerHunted <= 0.15);
 			Check($"the decoy moves and the lane sidestep moves are used (decoy steps {on.Sum(x => x.DecoySteps)}, lane steps {on.Sum(x => x.LaneSteps)}); with the rule off none are", on.Sum(x => x.DecoySteps) > 0 && off.Sum(x => x.DecoySteps) == 0 && off.Sum(x => x.LaneSteps) == 0);
 
 			if (ModLoader.HasMod("CalamityMod"))
@@ -316,7 +324,7 @@ namespace Levy.Common.Testing
 			{
 				var dc = rs.SelectMany(x => x.DC).ToList(); var dk = rs.SelectMany(x => x.DK).ToList();
 				Note($"{label}: rule {n}: hunted levy distance from the commander (tiles) mean {F(Mean(dc))} p25 {F(Pct(dc, .25))} median {F(Pct(dc, .5))} p75 {F(Pct(dc, .75))} p90 {F(Pct(dc, .9))}; from the other levies' centroid mean {F(Mean(dk))} p25 {F(Pct(dk, .25))} median {F(Pct(dk, .5))} p75 {F(Pct(dk, .75))} p90 {F(Pct(dk, .9))}; hunted ticks {rs.Sum(x => x.PairTicks)}");
-				Note($"{label}: rule {n}: two-second hunts {rs.Sum(x => x.Episodes)}, distance from the commander changes by {F(Mean(rs.SelectMany(x => x.Growth)))} tiles, from the centroid by {F(Mean(rs.SelectMany(x => x.GrowthK)))} tiles; others on the boss-to-levy line {F(rs.Sum(x => x.LaneSum) / Math.Max(1, rs.Sum(x => x.LaneTicks)))} per tick over {rs.Sum(x => x.LaneTicks)} ticks; charge passes within 12 / 20 tiles of the commander {rs.Sum(x => x.Pass12)} / {rs.Sum(x => x.Pass20)} over {rs.Sum(x => x.Ticks)} boss ticks; boss damage {rs.Sum(x => x.Damage)}; deaths {rs.Sum(x => x.Deaths)}; direction changes {rs.Sum(x => x.Legs)}, holds {rs.Sum(x => x.HeldTicks)}, decoy steps {rs.Sum(x => x.DecoySteps)}, lane steps {rs.Sum(x => x.LaneSteps)}");
+				Note($"{label}: rule {n}: two-second hunts {rs.Sum(x => x.Episodes)}, distance from the commander changes by {F(Mean(rs.SelectMany(x => x.Growth)))} tiles, from the centroid by {F(Mean(rs.SelectMany(x => x.GrowthK)))} tiles; others on the boss-to-levy line {F(rs.Sum(x => x.LaneSum) / Math.Max(1, rs.Sum(x => x.LaneTicks)))} per tick ({F(100.0 * rs.Sum(x => x.LaneSum) / Math.Max(1, rs.Sum(x => x.OthersSum)))}% of the other levies) over {rs.Sum(x => x.LaneTicks)} ticks; charge passes within 12 / 20 tiles of the commander {rs.Sum(x => x.Pass12)} / {rs.Sum(x => x.Pass20)} over {rs.Sum(x => x.Ticks)} boss ticks; shots fired {rs.Sum(x => x.Shots)}, boss life lost {rs.Sum(x => x.Damage)}; deaths {rs.Sum(x => x.Deaths)}; legs started {rs.Sum(x => x.Legs)} (turns {rs.Sum(x => x.Flips)}), boss peak speed {F(rs.Max(x => x.BossPeak))} px/tick, holds {rs.Sum(x => x.HeldTicks)}, decoy steps {rs.Sum(x => x.DecoySteps)}, lane steps {rs.Sum(x => x.LaneSteps)}");
 			}
 			Line("off", off); Line("on", on);
 		}

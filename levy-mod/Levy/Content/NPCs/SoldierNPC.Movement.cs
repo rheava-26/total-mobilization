@@ -44,6 +44,8 @@ namespace Levy.Content.NPCs
 		private TileRun.Floor _floorKind; private int _floorType = -1; private float _floorBrake = 1f; private int _floorTick = -100;
 		/// <summary>Harness telemetry: ticks spent on each special floor, and travel dashes started.</summary>
 		internal int FloorTicks, TravelDashes, OldDashes; internal float FloorTop;
+		/// <summary>Harness telemetry: why a travel dash was not started, army-wide: 0 asked, 1 cooling down, 2 not grounded or door, 3 state, 4 retreating, 5 goal too near, far or off the level, 6 mid-turn, 7 lane too short, 8 lane not clear, 9 started.</summary>
+		internal static readonly int[] DashRef = new int[12];
 		// ---- aerial state (wings / extra jumps / rocket boots; see UpdateAerial) ----
 		private MovementAbilities _kitRef; private int _kitRocketMax; private bool _kitAny;
 		private int _rocketTime; private float _drainAcc;
@@ -553,18 +555,22 @@ namespace Levy.Content.NPCs
 				if (_dashTicks == 0) npc.netUpdate = true;
 				return true;
 			}
-			if (_dashCooldown > 0 || (profile && _dashTravelCd > 0) || Abilities == null || !Abilities.HasDash || !grounded || air || npc.wet || _doorBusy > 0) return false;
+			if (Abilities == null || !Abilities.HasDash) return false;
+			DashRef[0]++;
+			if (_dashCooldown > 0 || (profile && _dashTravelCd > 0)) { DashRef[1]++; return false; }
+			if (!grounded || air || npc.wet || _doorBusy > 0) { DashRef[2]++; return false; }
 			if (!(State == SoldierState.Follow || State == SoldierState.SearchDestroy || State == SoldierState.FreeRein
-				|| (State == SoldierState.Engage && _engMode == EngageMode.Approach))) return false;
-			if (Retreating) return false;
+				|| (State == SoldierState.Engage && _engMode == EngageMode.Approach))) { DashRef[3]++; return false; }
+			if (Retreating) { DashRef[4]++; return false; }
 			float adx = Math.Abs(dx);
-			if (adx < DashMinGoalTiles * 16f || adx > DashMaxGoalTiles * 16f || Math.Abs(dy) > DashMaxRiseTiles * 16f) return false;
+			if (adx < DashMinGoalTiles * 16f || adx > DashMaxGoalTiles * 16f || Math.Abs(dy) > DashMaxRiseTiles * 16f) { DashRef[5]++; return false; }
 			int dir = dx >= 0f ? 1 : -1;
-			if (Math.Abs(npc.velocity.X) > 0.5f && Math.Sign(npc.velocity.X) == -dir) return false; // mid-turn: wait for the body to face the goal
+			if (Math.Abs(npc.velocity.X) > 0.5f && Math.Sign(npc.velocity.X) == -dir) { DashRef[6]++; return false; } // mid-turn: wait for the body to face the goal
 			// the lane is checked as far as the dash will go: the gear's dash carries a player tens of tiles, so it stops at the goal or where the checked lane ends
 			int laneTiles = profile ? Math.Min(DashTravelLaneTiles, (int)(adx / 16f) - 2) : DashLaneTiles;
-			if (laneTiles < DashLaneTiles) return false;
-			if (!DashLaneClear(dir, laneTiles)) return false;
+			if (laneTiles < DashLaneTiles) { DashRef[7]++; return false; }
+			if (!DashLaneClear(dir, laneTiles)) { DashRef[8]++; return false; }
+			DashRef[9]++;
 			_dashDir = dir; _dashAge = 0; _dashDist = 0f;
 			if (profile)
 			{

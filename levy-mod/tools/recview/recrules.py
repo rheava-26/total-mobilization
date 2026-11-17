@@ -153,6 +153,46 @@ def episodes(rows, force=False):
     return out
 
 
+ARENA_NEAR = 60                   # tiles: an arena record this close to the action stays with a split fight
+CMD_NEAR = 100                    # tiles: the commander counts as in the fight only this close to the main boss (not on her way there, not respawned at base)
+
+
+def action_points(rows):
+    """[(x, y)] in tiles where the fight happened: the main boss in every frame it stood (event NPCs left out), and the living commander in
+    those frames when she was within CMD_NEAR tiles of it."""
+    pts = []
+    for f in _frames(rows):
+        mb = next((b for b in f.get("b", []) if b[13] == 0 and not is_event_npc(b[0])), None)
+        if mb is None:
+            continue
+        bx, by = mb[2] / 16.0, mb[3] / 16.0
+        pts.append((bx, by))
+        p = f.get("p") or []
+        if len(p) > 5 and not int(p[5]) & DEAD_FLAG:
+            cx, cy = p[0] / 16.0, p[1] / 16.0
+            if abs(cx - bx) <= CMD_NEAR and abs(cy - by) <= CMD_NEAR:
+                pts.append((cx, cy))
+    return pts
+
+
+def fight_arenas(rows, near=ARENA_NEAR):
+    """The arena (terrain) records that touch the fight: those overlapping or within `near` tiles of an action point. A recording split from a
+    long one carries every arena of its source (older recorders captured terrain only where the recording began), so a fight held far from
+    there keeps none, and the page says no terrain was recorded instead of framing a map from somewhere else."""
+    arenas = [r for r in rows if r.get("k") == "arena"]
+    pts = action_points(rows)
+    if not pts:
+        return arenas
+    pts = pts[::max(1, len(pts) // 4000)]
+    keep = []
+    for a in arenas:
+        x0, y0 = a.get("x0", 0) - near, a.get("y0", 0) - near
+        x1, y1 = a.get("x0", 0) + a.get("w", 0) + near, a.get("y0", 0) + a.get("h", 0) + near
+        if any(x0 <= x <= x1 and y0 <= y <= y1 for x, y in pts):
+            keep.append(a)
+    return keep
+
+
 def _shift(o, base, keys=("t",)):
     o = dict(o)
     for k in keys:
@@ -210,9 +250,11 @@ def _cut(rows, s, e, n, total):
         except (TypeError, ValueError):
             pass
     out = [new_hdr]
+    # only the terrain this fight touched (the source carries every arena of the whole recording)
+    near = set(id(a) for a in fight_arenas([r for r in rows if r.get("k") == "arena"] + fr))
     for r in rows:
         k = r.get("k")
-        if k in ("arena", "cam", "names"):
+        if k in ("cam", "names") or (k == "arena" and id(r) in near):
             out.append(r)
     out.extend(_shift(f, s) for f in fr)
     out.extend(_shift(x, s) for x in ev)

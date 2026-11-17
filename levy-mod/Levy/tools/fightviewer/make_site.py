@@ -335,7 +335,9 @@ def convert(rows, factor):
         if r:
             out[k] = {kk: vv for kk, vv in r.items() if kk != "k"}
     # terrain: format 4 writes several arena records (start area, growth strips, camera view); the page merges them. Older files have one.
-    arenas = [{kk: vv for kk, vv in r.items() if kk != "k"} for r in rows if r.get("k") == "arena"]
+    # A fight split from a longer recording keeps only the arenas near its own action (files split before recrules did this carry them all).
+    ar_rows = recrules.fight_arenas(rows) if (recrules is not None and hdr.get("split")) else [r for r in rows if r.get("k") == "arena"]
+    arenas = [{kk: vv for kk, vv in r.items() if kk != "k"} for r in ar_rows]
     if arenas:
         out["arenas"] = arenas
     return out

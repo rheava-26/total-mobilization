@@ -120,7 +120,7 @@ details summary{cursor:pointer;color:var(--dim);font-size:12px;text-transform:up
         <button id="play" style="min-width:76px">Play</button>
         <button id="prevEv" title="previous hit or death">&#9664; hit</button>
         <button id="nextEv" title="next hit or death">hit &#9654;</button>
-        <label class="small">speed <select id="speed"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option><option value="8">8x</option></select></label>
+        <label class="small">speed <select id="speed"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option><option value="8">8x</option><option value="16">16x</option><option value="32">32x</option><option value="64">64x</option></select></label>
         <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="seek">
         <span id="time">0.00 / 0.00 s</span>
       </div>
@@ -158,7 +158,7 @@ function parseRec(text){
   for(const line of text.split("\n")){
     const s=line.trim(); if(!s) continue;
     let o; try{o=JSON.parse(s);}catch(e){continue;}
-    switch(o.k){case "hdr":R.hdr=o;break;case "arena":(R.arenas||(R.arenas=[])).push(o);if(!R.arena)R.arena=o;break;case "f":if(o.s){const o2=[];for(const q of o.s){if(q.length>=8){R.sdef.set(q[1],q);o2.push(q);}else{const d=R.sdef.get(q[0]);if(d)o2.push([d[0],q[0],q[1],q[2],d[4],d[5],d[6],d[7]]);}}o.s=o2;}R.frames.push(o);break;case "e":R.events.push(o);break;case "names":R.names=o;break;case "end":R.end=o;break;}
+    switch(o.k){case "hdr":R.hdr=o;break;case "arena":(R.arenas||(R.arenas=[])).push(o);if(!R.arena)R.arena=o;break;case "f":if(o.s){const o2=[];for(const q of o.s){if(q.length>=8){R.sdef.set(q[1],q);o2.push(q);}else{const d=R.sdef.get(q[0]);if(d)o2.push([d[0],q[0],q[1],q[2],d[4],d[5],d[6],d[7]]);}}o.s=o2;}R.frames.push(o);break;case "e":R.events.push(o);break;case "names":R.names=o;break;case "nt":(R.nt=R.nt||[]).push(o);break;case "end":R.end=o;break;}
   }
   if(!R.frames.length) throw new Error("no frames in file");
   return R;
@@ -203,6 +203,7 @@ function build(R){
     const b=R.arenaBox||(R.arenaBox={x0:A.x0,y0:A.y0,x1:A.x0+A.w,y1:A.y0+A.h});
     b.x0=Math.min(b.x0,A.x0);b.y0=Math.min(b.y0,A.y0);b.x1=Math.max(b.x1,A.x0+A.w);b.y1=Math.max(b.y1,A.y0+A.h);
   }
+  evBuild(R);
   return R;
 }
 function summary(R){
@@ -219,7 +220,7 @@ const fmtT=ticks=>{const s=Math.max(0,Math.round(ticks/TPS));return Math.floor(s
 const fmtDur=sec=>{const s=Math.max(0,Math.round(sec));return Math.floor(s/60)+":"+pad2(s%60);};
 const fmtN=n=>n==null||isNaN(n)?"-":Math.round(n).toLocaleString("en-US");
 const fmtDate=ms=>{if(ms==null)return "";const d=new Date(ms);return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;};
-const RES_LABEL={won:"won",lost:"lost",fled:"fled",ended:"ended",interrupted:"interrupted",crashed:"crashed",cut:"cut short",unknown:"unknown"};
+const RES_LABEL={won:"won",lost:"lost",fled:"fled",ended:"ended",survived:"survived",interrupted:"interrupted",crashed:"crashed",cut:"cut short",unknown:"unknown"};
 const resLabel=r=>RES_LABEL[r]||String(r);
 let toastT=null;
 function toast(msg,ms){const t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>{t.style.display="none";},ms||6000);}
@@ -532,6 +533,136 @@ function sumCard(){
   return s;
 }
 
+// the event layer below draws with these (the replay site reads the same names from its light / dark tokens)
+const T={red:"#ff4d4d",vio:"#c77dff",bossLabel:"#ffb4b4",ink:"#cfe3df",stage:"#03070a",amb:"#ffb020",win:"#3cff9a",stripA:"#04090b",stripB:"#060d10",stripLabel:"#4d6663",
+  srcProj:"#ff9f2e",death:"#ff6b6b",timeout:"#ffb020",cyan:"#4fe3ff",grn:"#3cff9a",terrTop:"#34966e",terrFill:"#0d241f",terrFill2:"#3c826e",water:"#103c5f"};
+function rgb(hex){const m=/^#?([0-9a-f]{6})$/i.exec(hex||"");const h=m?m[1]:"888888";return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+const al=(hex,a)=>{const c=rgb(hex);return `rgba(${c[0]},${c[1]},${c[2]},${a})`;};
+function verBadges(){return "";}
+// ================================================================ events (format 12): one wide recording of a whole event
+// Everything event-specific lives in these functions; the rest of the page calls them through one-line hooks (evBuild, evFit, drawEvStrip, renderEventInfo,
+// drawAddMark, makeExtraTerrain / drawExtraTerrain, evHud, evCard, evHead), so the boss-fight paths stay as they were.
+const IMPN=["normal","miniboss","boss"];
+function evBuild(R){
+  const h=R.hdr||{}; R.isEvent=h.kind==="event"; R.imp=new Map();
+  for(const [t,v] of Object.entries(h.roster||{})) R.imp.set(+t,(v&&v.imp)||1);
+  if(Array.isArray(R.nt)) for(const o of R.nt) R.imp.set(o.type,o.imp||0);
+  else if(R.nt) for(const [t,v] of Object.entries(R.nt)) R.imp.set(+t,v);
+  if(!R.isEvent) return;
+  R.waves=R.events.filter(e=>e.e==="wave"); R.ekill=R.events.filter(e=>e.e==="ekill"); R.kc=R.events.filter(e=>e.e==="kc");
+  R.evMarks=R.events.filter(e=>e.e==="evstart"||e.e==="evend"); R.outposts=R.events.filter(e=>e.e==="outposts");
+  R.miniCount=R.frames.map(f=>{let n=0;for(const a of (f.a||[]))if((R.imp.get(a[0])||0)>=1)n++;return n;});
+  R.enemyCount=R.frames.map(f=>(f.a||[]).length);
+}
+const impOf=t=>(D&&D.imp&&D.imp.get(t))||0;
+// the events of a time-sorted list with t0 <= t <= t1 (binary search: a long event has tens of thousands of hits)
+function evWindow(arr,t0,t1){
+  let lo=0,hi=arr.length;while(lo<hi){const m=(lo+hi)>>1;if(arr[m].t<t0)lo=m+1;else hi=m;}
+  let a=lo,b=arr.length;while(a<b){const m=(a+b)>>1;if(arr[m].t<=t1)a=m+1;else b=m;}
+  return arr.slice(lo,a);
+}
+function fmtClock(ticks){const s=Math.max(0,Math.floor(ticks/TPS)),h=Math.floor(s/3600),m=Math.floor(s/60)%60;return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(s%60).padStart(2,"0");}
+function evWaveAt(t){let w=(D.hdr&&D.hdr.wave)||0;for(const e of D.waves){if(e.t<=t)w=e.n;else break;}return w;}
+function evKillsAt(t){let k=0,m=0,kt=-1;for(const e of D.kc){if(e.t<=t){k=e.n;m=e.mini||0;kt=e.t;}else break;}for(const e of D.ekill){if(e.t>kt&&e.t<=t)m++;}return [k,m];}
+function evName(){const h=D.hdr||{},e=D.end||{};return e.eventName||h.eventName||(h.meta&&h.meta.eventName)||"Event";}
+function evHud(f0){
+  const w=evWaveAt(cur),[k,m]=evKillsAt(cur),as=f0.a||[];
+  const minis=as.filter(a=>impOf(a[0])>=1).slice(0,4).map(a=>`${esc(nm("npcs",a[0]))} ${(100*a[6]/Math.max(1,a[7])).toFixed(0)}%`);
+  return `<div class="l"><div class="tgt">${esc(evName())}${w?" &middot; wave "+w:""}</div>${minis.length?`<div class="hpt">${minis.join("<br>")}</div>`:""}</div>`+
+    `<div class="r">levies standing ${(f0.l||[]).length}<br>enemies ${as.length}${D.offCount?` (${D.offCount} highlighted off-screen)`:""}<br>kills ${k} &middot; minibosses ${m}<br>${fmtClock(cur-D.tmin)} / ${fmtClock(D.tmax-D.tmin)}</div>`;
+}
+// fit an event: where the army stood (5th to 95th percentile of every levy sample, and the commander); levies and highlighted enemies outside get edge markers
+function evFit(){
+  const {w,h}=canvasSize($("view")); const xs=[],ys=[]; const step=Math.max(1,Math.floor(D.frames.length/400));
+  for(let i=0;i<D.frames.length;i+=step){const f=D.frames[i];xs.push(f.p[0]);ys.push(f.p[1]);for(const l of (f.l||[])){xs.push(l[1]);ys.push(l[2]);}}
+  if(!xs.length){cam.x=0;cam.y=0;cam.z=0.2;return;}
+  const pc=(a,q)=>{a=a.slice().sort((m,n)=>m-n);return a[Math.max(0,Math.min(a.length-1,Math.floor(q*(a.length-1))))];};
+  let x0=pc(xs,.05),x1=pc(xs,.95),y0=pc(ys,.05),y1=pc(ys,.95); const pad=30*TILE; x0-=pad;x1+=pad;y0-=pad;y1+=pad;
+  if(x1-x0<800){const c=(x0+x1)/2;x0=c-400;x1=c+400;} if(y1-y0<500){const c=(y0+y1)/2;y0=c-250;y1=c+250;}
+  cam.x=(x0+x1)/2; cam.y=(y0+y1)/2; cam.z=Math.min(w/(x1-x0),h/(y1-y0))*0.98;
+}
+// enemy marker: a boss or miniboss gets a highlighted ring, a filled star and its name and life always; an ordinary enemy is a small plain diamond (its name on hover)
+function drawAddMark(g,sx,sy,a0,dpr){
+  const imp=impOf(a0[0]);
+  if(imp>=1){
+    const col=imp>=2?T.red:T.vio, r=(imp>=2?9:7)*dpr, fr=a0[6]/Math.max(1,a0[7]);
+    g.save(); g.strokeStyle=col; g.lineWidth=2*dpr; g.globalAlpha=.9; g.beginPath(); g.arc(sx,sy,r+5*dpr,0,6.2832); g.stroke();
+    g.fillStyle=col; g.beginPath(); for(let k=0;k<10;k++){const ang=-1.5708+k*0.6283,rr=k%2?r*0.45:r;g.lineTo(sx+Math.cos(ang)*rr,sy+Math.sin(ang)*rr);} g.closePath(); g.fill(); g.strokeStyle=T.stage; g.lineWidth=1*dpr; g.stroke();
+    g.globalAlpha=1; g.fillStyle=T.bossLabel; g.font=`600 ${11*dpr}px system-ui`; const lab=nm("npcs",a0[0]); g.fillText(lab,sx+r+8*dpr,sy-2*dpr);
+    const bw=Math.max(40*dpr,g.measureText(lab).width); g.fillStyle=al(T.ink,.25); g.fillRect(sx+r+8*dpr,sy+3*dpr,bw,3*dpr); g.fillStyle=hpColor(fr); g.fillRect(sx+r+8*dpr,sy+3*dpr,bw*Math.max(0,Math.min(1,fr)),3*dpr);
+    g.restore(); return;
+  }
+  const r=(D.isEvent?2.8:3.6)*dpr; g.fillStyle=T.amb; g.strokeStyle=T.stage; g.lineWidth=0.8*dpr; g.beginPath();g.moveTo(sx,sy-r);g.lineTo(sx+r,sy);g.lineTo(sx,sy+r);g.lineTo(sx-r,sy);g.closePath();g.fill();g.stroke();
+}
+// terrain the merged grid does not hold: cells around far levies (far), where the fight travelled (moved), or a whole event too wide for one grid. Drawn in blocks of 400 x 400 tiles.
+function makeExtraTerrain(R){
+  R.extraImgs=[]; const AS=R.extraArenas||[]; if(!AS.length) return;
+  const B=400, blocks=new Map();
+  for(const a of AS){if(!a.rows||a.w<=0||a.h<=0)continue;const k=Math.floor(a.x0/B)+","+Math.floor(a.y0/B);let b=blocks.get(k);if(!b)blocks.set(k,b={x0:1e9,y0:1e9,x1:-1e9,y1:-1e9,as:[]});b.as.push(a);b.x0=Math.min(b.x0,a.x0);b.y0=Math.min(b.y0,a.y0);b.x1=Math.max(b.x1,a.x0+a.w);b.y1=Math.max(b.y1,a.y0+a.h);}
+  const top=rgb(T.terrTop), fill=rgb(T.terrFill), f2=rgb(T.terrFill2), wat=rgb(T.water);
+  for(const b of blocks.values()){
+    const W=b.x1-b.x0,H=b.y1-b.y0; if(W<=0||H<=0||W*H>4e6) continue;
+    const grid=new Uint8Array(W*H);
+    for(const a of b.as) for(let r=0;r<a.rows.length&&r<a.h;r++){const row=a.rows[r];let x=a.x0-b.x0;const base=(a.y0-b.y0+r)*W;for(let i=0;i+1<row.length;i+=2){const code=row[i],run=row[i+1];if(code)grid.fill(code,base+x,base+x+run);x+=run;}}
+    const c=document.createElement("canvas"); c.width=W; c.height=H; const g=c.getContext("2d"); const im=g.createImageData(W,H);
+    const put=(x,y,k,al2)=>{const o=(y*W+x)*4;im.data[o]=k[0];im.data[o+1]=k[1];im.data[o+2]=k[2];im.data[o+3]=al2;};
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c0=grid[y*W+x];if(!c0)continue;
+      if(c0===1){const tp=y===0||!grid[(y-1)*W+x]||grid[(y-1)*W+x]===3;put(x,y,tp?top:fill,255);} else if(c0===2)put(x,y,f2,255); else put(x,y,wat,170);}
+    g.putImageData(im,0,0); R.extraImgs.push({x0:b.x0,y0:b.y0,w:W,h:H,img:c});
+  }
+}
+function drawExtraTerrain(g,sc,W,H){
+  for(const b of (D.extraImgs||[])){const [sx,sy]=sc(b.x0*TILE,b.y0*TILE),ww=b.w*TILE*cam.z,hh=b.h*TILE*cam.z;if(sx>W||sy>H||sx+ww<0||sy+hh<0)continue;g.drawImage(b.img,sx,sy,ww,hh);}
+}
+// the timeline of an event: waves, kills, minibosses standing, levy hits, levy deaths (binned per pixel, so an hour of hits draws as fast as a minute)
+function drawEvStrip(){
+  const c=$("strip"); const {w:W,h:H,dpr}=canvasSize(c); const g=c.getContext("2d"); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,W,H);
+  const rows=[["wave",14],["kills",20],["minibosses",16],["levy hits",22],["deaths",14]], tot=rows.reduce((a,r)=>a+r[1],0), k=H/tot, span=Math.max(1,D.tmax-D.tmin), X=t=>(t-D.tmin)/span*(W-2)+1;
+  let y=0; const Y={};
+  rows.forEach((r,i)=>{Y[r[0]]=[y,r[1]*k];g.fillStyle=i%2?T.stripB:T.stripA;g.fillRect(0,y,W,r[1]*k);g.fillStyle=T.stripLabel;g.font=`${9*dpr}px system-ui`;g.fillText(r[0],3*dpr,y+9*dpr);y+=r[1]*k;});
+  {const [y0,h]=Y.wave; let lastX=-1e9; g.font=`600 ${9*dpr}px system-ui`; for(const e of D.waves){const x=X(e.t);g.fillStyle=T.vio;g.fillRect(x,y0+2,1*dpr,h-3);if(x-lastX>18*dpr){g.fillText(String(e.n),x+2*dpr,y0+h-3*dpr);lastX=x;}}}
+  {const [y0,h]=Y.kills; let prev=0,pt=D.tmin; g.fillStyle=T.win; const rate=[]; let mx=1; for(const e of D.kc){const d=Math.max(0,e.n-prev),dt=Math.max(1,e.t-pt);rate.push([pt,e.t,d/dt]);mx=Math.max(mx,d/dt);prev=e.n;pt=e.t;}
+    for(const r of rate){const x0=X(r[0]),x1=X(r[1]),hh=(h-3)*r[2]/mx;g.fillRect(x0,y0+h-hh,Math.max(1,x1-x0),hh);}
+    for(const e of D.ekill){const x=X(e.t);g.fillStyle=e.imp>=2?T.red:T.vio;g.beginPath();g.moveTo(x,y0+1);g.lineTo(x+4*dpr,y0+1);g.lineTo(x,y0+6*dpr);g.closePath();g.fill();}}
+  {const [y0,h]=Y.minibosses; const n=D.frames.length, mx=Math.max(1,...D.miniCount.slice(0,1)), cols=Math.min(W,n); let peak=1; for(const v of D.miniCount)peak=Math.max(peak,v);
+    g.fillStyle=al(T.vio,.8); for(let px=0;px<cols;px++){const i=Math.floor(px/cols*n),v=D.miniCount[i];if(!v)continue;const x=X(D.frames[i].t),hh=(h-3)*v/peak;g.fillRect(x,y0+h-hh,Math.max(1,W/cols),hh);}}
+  {const [y0,h]=Y["levy hits"]; const bins=new Float32Array(Math.max(1,W)); let mx=1; for(const e of D.lhit){const b=Math.min(W-1,Math.max(0,Math.floor(X(e.t))));bins[b]+=e.dmg;mx=Math.max(mx,bins[b]);}
+    g.fillStyle=T.srcProj; for(let x=0;x<W;x++){if(!bins[x])continue;const hh=Math.max(1,(h-3)*Math.sqrt(bins[x]/mx));g.fillRect(x,y0+h-hh,1,hh);}}
+  {const [y0,h]=Y.deaths; const bins=new Uint16Array(Math.max(1,W)); for(const e of D.ldeath){bins[Math.min(W-1,Math.max(0,Math.floor(X(e.t))))]++;} g.fillStyle=T.death;
+    for(let x=0;x<W;x++){if(!bins[x])continue;const hh=Math.min(h-3,(3+bins[x]*2)*dpr);g.fillRect(x-1,y0+h-hh,2*dpr,hh);}}
+  for(const e of (D.evMarks||[])){const x=X(e.t);g.fillStyle=e.e==="evend"?T.timeout:T.cyan;g.fillRect(x-1*dpr,0,2*dpr,H);g.font=`600 ${9*dpr}px system-ui`;const lab=(e.e==="evend"?"end ":"")+(e.name||e.ev)+(e.result?" "+e.result:"");g.fillText(lab,Math.min(x+4*dpr,W-g.measureText(lab).width-2),H-3*dpr);}
+  const x=X(cur);g.fillStyle=T.ink;g.fillRect(x-1*dpr,0,2*dpr,H);
+}
+function evCard(f){
+  return `<div class="ct"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span></div>`+
+    `<div class="sub">${fmtClock((f.dur||0)*TPS)} &middot; ${f.levies} levies${f.waveMax?" &middot; wave "+f.waveMax:""}${f.arena&&f.arena!==f.boss?" &middot; "+esc(f.arena):""}</div>`+
+    `<div class="badges">${verBadges(f)}<span class="bd l">${f.kills} kills</span><span class="bd h">${f.miniKills} miniboss kills</span><span class="bd d">${f.deaths} levy deaths</span></div>`+(f.note?`<div class="note">${esc(f.note)}</div>`:"");
+}
+function evHead(f,el){
+  el.innerHTML=`<div class="ht"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span><span class="hs">event &middot; ${fmtClock((f.dur||0)*TPS)} &middot; ${f.levies} levies &middot; ${f.kills} kills &middot; ${f.miniKills} miniboss kills &middot; ${f.deaths} levy deaths</span><span class="badges" style="margin:0">${verBadges(f)}</span></div>`+(f.note?`<div class="hn">${esc(f.note)}</div>`:"");
+}
+function renderEventInfo(){
+  const h=D.hdr||{},e=D.end||{};
+  const kinds=new Map(); for(const f of D.frames) for(const a of (f.a||[])){const im=impOf(a[0]);if(!kinds.has(a[0]))kinds.set(a[0],im);}
+  const hi=[...kinds.entries()].filter(([t,v])=>v>=1).map(([t,v])=>`${esc(nm("npcs",t))} (${IMPN[v]})`);
+  const kills=D.ekill.map(x=>`<tr><td>${fmtClock(x.t-D.tmin)}</td><td>${esc(x.name||nm("npcs",x.npc))}</td><td>${IMPN[x.imp]||x.imp}</td></tr>`).join("");
+  const res=e.results?Object.entries(e.results).map(([k,v])=>`${esc(k)} ${esc(v)}`).join(", "):"";
+  const per=new Map(); for(const id of D.order) per.set(id,{hits:0,dmg:0,deaths:0});
+  for(const x of D.lhit){const p=per.get(x.id)||(per.set(x.id,{hits:0,dmg:0,deaths:0}),per.get(x.id));p.hits++;p.dmg+=x.dmg;}
+  for(const x of D.ldeath){const p=per.get(x.id);if(p)p.deaths++;}
+  const worst=[...per.entries()].sort((a,b)=>b[1].deaths-a[1].deaths||b[1].dmg-a[1].dmg).slice(0,12);
+  const ops=(D.outposts&&D.outposts.length)?D.outposts[D.outposts.length-1].o||[]:[];
+  $("info").innerHTML=`<section><h2>Event</h2><div class="kv"><span>event</span><span>${esc(evName())}</span><span>result</span><span>${esc(e.result||"?")}${res?" ("+res+")":""}</span><span>ended</span><span>${esc(e.reason||"cut short")}</span>`+
+    `<span>duration</span><span>${fmtClock(D.tmax-D.tmin)} (${D.frames.length} samples)</span><span>waves</span><span>${e.waveMax||D.waves.length?(e.waveMax||evWaveAt(D.tmax)):"-"}</span><span>kills</span><span>${e.kills!=null?e.kills:evKillsAt(D.tmax)[0]} (${e.minibossKills!=null?e.minibossKills:D.ekill.length} minibosses, ${e.bossKills||0} bosses)</span>`+
+    `<span>army</span><span>${D.order.length} levies seen${e.armyPeak?", at most "+e.armyPeak+" at once":""}</span><span>outposts</span><span>${ops.length?ops.map(o=>esc(o[5]||"#"+o[0])+(o[3]?" (mobilized, "+o[4]+" militia)":"")).join(", "):"none"}</span>`+
+    `<span>game mode</span><span>${esc(h.mode||"?")}</span>${e.cpu?`<span>recorder cost</span><span>${e.cpu.meanUs} us per tick, worst ${e.cpu.maxMs} ms</span>`:""}</div></section>`+
+    `<section><h2>Highlighted enemies</h2><div class="small">${hi.length?hi.join(", "):"none seen"}</div>${kills?`<table style="margin-top:8px"><tr><th>time</th><th>killed</th><th></th></tr>${kills}</table>`:""}</section>`+
+    `<section><h2>Levy hits and deaths</h2><div class="kv"><span>hits taken</span><span>${D.lhit.length} (${D.lhit.reduce((a,x)=>a+x.dmg,0)} damage)</span><span>deaths</span><span>${D.ldeath.length}</span></div>`+
+    `<table style="margin-top:8px"><tr><th>levy</th><th>hits</th><th>dmg</th><th>deaths</th></tr>${worst.map(([id,p])=>`<tr><td>${esc(lname(id))}</td><td>${p.hits}</td><td>${p.dmg}</td><td>${p.deaths}</td></tr>`).join("")}</table></section>`+
+    (typeof buildRoster==="function"?`<section style="grid-column:1/-1"><h2>Levies</h2><div id="roster" class="roster"></div><div id="lsel"></div></section>`:"");
+  if(typeof buildRoster==="function") buildRoster();
+}
+
 // ================================================================ helpers
 function frameIndex(t){let lo=0,hi=D.frames.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(D.frames[m].t<=t)lo=m;else hi=m-1;}return lo;}
 function trackStart(tr,t){let lo=0,hi=tr.length;while(lo<hi){const m=(lo+hi)>>1;if(tr[m][0]<t)lo=m+1;else hi=m;}return lo;}
@@ -540,6 +671,7 @@ const LSLOT=["weapon","sidearm","head","body","legs","accessory","accessory","ac
 const lname=id=>(D.lbl.get(id)||("#"+id))+" "+((D.names.soldiers&&D.names.soldiers[id])||"");
 function canvasSize(c){const r=c.getBoundingClientRect();const dpr=window.devicePixelRatio||1;const w=Math.max(10,Math.round(r.width*dpr)),h=Math.max(10,Math.round(r.height*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}return {w,h,dpr};}
 function fitView(){
+  if(D&&D.isEvent){evFit();return;}
   const {w,h}=canvasSize($("view")); let x0=1e12,y0=1e12,x1=-1e12,y1=-1e12;
   const ext=(x,y)=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);};
   // frame the action: the 3rd to 97th percentile of where the levies, the commander and the main boss were (a worm that swings far away must not shrink the picture)
@@ -645,6 +777,7 @@ function draw(){
     blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,Math.max(w,h)*cam.z/2+2),info});};
   {const byA=new Map((f1.a||[]).map(q=>[q[1],q]));
    for(const a0 of (f0.a||[])){const a1=byA.get(a0[1])||a0;hbx(lerp(a0[2],a1[2],u),lerp(a0[3],a1[3],u),a0[10]||8,a0[11]||8,"#ffb020",false,`add ${nm("npcs",a0[0])}  slot ${a0[1]}\nlife ${a0[6]}/${a0[7]}\ntarget ${a0[8]===3?"spite (redirected shots) at levy "+(D.lbl.get(a0[9])||a0[9]):a0[8]===2?"levy "+(D.lbl.get(a0[9])||a0[9]):a0[8]===1?"commander":"none"}\nhitbox ${a0[10]} x ${a0[11]} px`);}
+   for(const a0 of (f0.a||[])){if(impOf(a0[0])<1)continue;const a1=byA.get(a0[1])||a0;const [sx,sy]=sc(lerp(a0[2],a1[2],u),lerp(a0[3],a1[3],u));drawAddMark(g,sx,sy,a0,dpr);}
    const byS=new Map((f1.s||[]).map(q=>[q[1],q]));
    for(const s0 of (f0.s||[])){const s1=byS.get(s0[1])||s0;hbx(lerp(s0[2],s1[2],u),lerp(s0[3],s1[3],u),s0[4],s0[5],"#ffb020",!(s0[7]&1),`${s0[7]&4?"segment":"hostile"} ${nm("npcs",s0[0])}  slot ${s0[1]}\nhitbox ${s0[4]} x ${s0[5]} px\n${s0[7]&1?"deals contact damage":"no contact damage"}`);}}
   // hostiles outside the view (recorded at any distance): a marker on the frame edge pointing at each, so something firing from off-screen is never invisible
@@ -652,9 +785,10 @@ function draw(){
       const ex=Math.max(10*dpr,Math.min(W-10*dpr,sx)), ey=Math.max(10*dpr,Math.min(H-10*dpr,sy)), ang=Math.atan2(sy-ey,sx-ex), r=6*dpr;
       g.fillStyle=col; g.globalAlpha=.85; g.beginPath(); g.moveTo(ex+Math.cos(ang)*r,ey+Math.sin(ang)*r); g.lineTo(ex+Math.cos(ang+2.5)*r,ey+Math.sin(ang+2.5)*r); g.lineTo(ex+Math.cos(ang-2.5)*r,ey+Math.sin(ang-2.5)*r); g.closePath(); g.fill(); g.globalAlpha=1;
       blips.push({x:ex/dpr,y:ey/dpr,r:10,info:info+"\n(off-screen, "+(Math.hypot(sx-ex,sy-ey)/(16*cam.z*dpr)).toFixed(0)+" tiles away)"});};
-    for(const a0 of (f0.a||[])) mark(a0[2],a0[3],"#ffb020",`add ${nm("npcs",a0[0])}`);
-    for(const s0 of (f0.s||[])) mark(s0[2],s0[3],"#ffb020",`hostile ${nm("npcs",s0[0])}`);
-    for(const j of (f0.j||[])) mark(j[1],j[2],"#ff9f2e",`projectile ${nm("projectiles",j[0])}  damage ${j[5]}`);
+    for(const a0 of (f0.a||[])) if(!D.isEvent||impOf(a0[0])>=1) mark(a0[2],a0[3],impOf(a0[0])>=1?"#c77dff":"#ffb020",`${impOf(a0[0])>=1?IMPN[impOf(a0[0])]:"add"} ${nm("npcs",a0[0])}`);
+    if(D.isEvent) for(const l of (f0.l||[])) mark(l[1],l[2],"#3cff9a",`levy ${lname(l[0])}`);
+    if(!D.isEvent) for(const s0 of (f0.s||[])) mark(s0[2],s0[3],"#ffb020",`hostile ${nm("npcs",s0[0])}`);
+    if(!D.isEvent) for(const j of (f0.j||[])) mark(j[1],j[2],"#ff9f2e",`projectile ${nm("projectiles",j[0])}  damage ${j[5]}`);
     }
   // levies
   const states=(D.hdr&&D.hdr.stateNames||"").split(",");
@@ -678,9 +812,9 @@ function draw(){
     blips.push({x:bx/dpr,y:by/dpr,r:Math.max(9,rr/dpr+3),info:bossInfo(b0)});
   }
   // hit flashes and death marks (events carry their own position)
-  for(const e of D.lhit){ if(e.t>cur||cur-e.t>20) continue; const [sx,sy]=sc(e.x,e.y),a=(cur-e.t)/20,col=SRC_COL[e.src]||"#fff";
+  for(const e of evWindow(D.lhit,cur-20,cur)){ if(e.t>cur||cur-e.t>20) continue; const [sx,sy]=sc(e.x,e.y),a=(cur-e.t)/20,col=SRC_COL[e.src]||"#fff";
     g.strokeStyle=col;g.globalAlpha=1-a;g.lineWidth=2.4*dpr;g.beginPath();g.arc(sx,sy,(8+a*26)*dpr,0,6.2832);g.stroke();g.fillStyle="#fff";g.beginPath();g.arc(sx,sy,(5-a*3)*dpr,0,6.2832);g.fill();g.globalAlpha=1;}
-  for(const e of D.ldeath){ if(e.t>cur) continue; const [sx,sy]=sc(e.x,e.y),age=(cur-e.t)/TPS,al=age<4?1:0.45,s=9*dpr*(age<0.4?1+(0.4-age)*2:1);
+  for(const e of (D.isEvent?evWindow(D.ldeath,cur-60*TPS,cur):D.ldeath)){ if(e.t>cur) continue; const [sx,sy]=sc(e.x,e.y),age=(cur-e.t)/TPS,al=age<4?1:0.45,s=9*dpr*(age<0.4?1+(0.4-age)*2:1);
     g.strokeStyle="#ff3030";g.globalAlpha=al;g.lineWidth=3*dpr;g.beginPath();g.moveTo(sx-s,sy-s);g.lineTo(sx+s,sy+s);g.moveTo(sx+s,sy-s);g.lineTo(sx-s,sy+s);g.stroke();
     if(showLabels){g.fillStyle="#ff9a9a";g.font=`${10*dpr}px system-ui`;g.fillText((D.lbl.get(e.id)||"#"+e.id)+" fell",sx+s+2*dpr,sy);} g.globalAlpha=1;}
   // commander
@@ -697,12 +831,14 @@ function draw(){
   // HUD
   const alive=(f0.l||[]).length, bossHp=mb0?`${nm("npcs",mb0[0])}  ${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(0)}%`:"";
   const tcol=tgtText.startsWith("levy")?"#ff7b7b":tgtText.startsWith("spite")?"#ffb34d":tgtText==="commander"?"#6fe9ff":"#9bb0ad";
+  if(D.isEvent){$("hud").innerHTML=evHud(f0);return;}
   $("hud").innerHTML=`<div class="l"><div class="tgt" style="color:${tcol}">boss target: ${esc(tgtText)}</div>${mb0?`<div>${esc(bossHp)}</div><div class="bar"><i style="width:${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(1)}%"></i></div>`:""}</div><div style="text-align:right">levies in view ${alive}<br>${((cur-D.tmin)/TPS).toFixed(1)} s</div>`;
 }
 
 // ================================================================ timeline strip
 function stripRows(){return [["target",16],["hits",30],["deaths",14],["cmd hit",10],["cmd moves",14]];}
 function drawStrip(){
+  if(D&&D.isEvent){drawEvStrip();return;}
   const c=$("strip"); const {w:W,h:H,dpr}=canvasSize(c); const g=c.getContext("2d"); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,W,H); if(!D) return;
   const rows=stripRows(), tot=rows.reduce((a,r)=>a+r[1],0), k=H/tot, span=Math.max(1,D.tmax-D.tmin), X=t=>(t-D.tmin)/span*(W-2)+1;
   let y=0; const Y={};
@@ -744,6 +880,7 @@ function jumpEvent(dir){
 // ================================================================ info panel
 const f1=v=>v==null||isNaN(v)?"-":v.toFixed(1);
 function renderInfo(){
+  if(D.isEvent){renderEventInfo();return;}
   const s=summary(D),m=(D.hdr&&D.hdr.meta)||{},h=D.hdr||{},e=D.end||{};
   const mb=D.frames.map(mainBoss).filter(Boolean); const hp0=mb.length?mb[0][6]/Math.max(1,mb[0][7]):0, hp1=mb.length?mb[mb.length-1][6]/Math.max(1,mb[mb.length-1][7]):0;
   const t=D.tally,n=Math.max(1,t.none+t.player+t.levy+(t.spite||0));
@@ -797,7 +934,7 @@ function computeStats(){
 // ================================================================ controls
 function syncUI(){
   if(!D)return; const span=D.tmax-D.tmin||1; $("scrub").value=Math.round((cur-D.tmin)/span*1000);
-  $("time").textContent=`${((cur-D.tmin)/TPS).toFixed(1)} / ${(span/TPS).toFixed(1)} s`;
+  $("time").textContent=D.isEvent?`${fmtClock(cur-D.tmin)} / ${fmtClock(span)}`:`${((cur-D.tmin)/TPS).toFixed(1)} / ${(span/TPS).toFixed(1)} s`;
 }
 function setPlaying(v){playing=v;$("play").textContent=v?"Pause":"Play";last=performance.now();}
 $("play").onclick=()=>{if(D){if(!playing&&cur>=D.tmax)cur=D.tmin;setPlaying(!playing);}};

@@ -622,8 +622,8 @@ function renderEventInfo(){
     `<section><h2>Highlighted enemies</h2><div class="small">${hi.length?hi.join(", "):"none seen"}</div>${kills?`<table style="margin-top:8px"><tr><th>time</th><th>killed</th><th></th></tr>${kills}</table>`:""}</section>`+
     `<section><h2>Levy hits and deaths</h2><div class="kv"><span>hits taken</span><span>${D.lhit.length} (${D.lhit.reduce((a,x)=>a+x.dmg,0)} damage)</span><span>deaths</span><span>${D.ldeath.length}</span></div>`+
     `<table style="margin-top:8px"><tr><th>levy</th><th>hits</th><th>dmg</th><th>deaths</th></tr>${worst.map(([id,p])=>`<tr><td>${esc(lname(id))}</td><td>${p.hits}</td><td>${p.dmg}</td><td>${p.deaths}</td></tr>`).join("")}</table></section>`+
-    `<section style="grid-column:1/-1"><h2>Levies</h2><div id="roster" class="roster"></div><div id="lsel"></div></section>`;
-  buildRoster();
+    (typeof buildRoster==="function"?`<section style="grid-column:1/-1"><h2>Levies</h2><div id="roster" class="roster"></div><div id="lsel"></div></section>`:"");
+  if(typeof buildRoster==="function") buildRoster();
 }
 
 // ================================================================ helpers

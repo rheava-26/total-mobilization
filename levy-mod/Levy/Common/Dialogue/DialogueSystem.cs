@@ -232,7 +232,7 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.OFFICER_MARCH:
 				case DialogueTrigger.NURSE_MARCH:
 				case DialogueTrigger.FLIGHT_SHOUT: case DialogueTrigger.FLIGHT_FEAR: case DialogueTrigger.TAKEOFF: case DialogueTrigger.LANDING: case DialogueTrigger.FIRESIDE: case DialogueTrigger.PASTIME: case DialogueTrigger.PASTIME_NIGHT:
-				case DialogueTrigger.LIFE_CRYSTAL: case DialogueTrigger.CHEST_OPENED: case DialogueTrigger.ARMORY_GOT:
+				case DialogueTrigger.LIFE_CRYSTAL: case DialogueTrigger.CHEST_OPENED: case DialogueTrigger.ARMORY_GOT: case DialogueTrigger.ECLIPSE_END:
 				case DialogueTrigger.DRINK_ALE: case DialogueTrigger.DRINK_STOUT: case DialogueTrigger.DRINK_RUM: case DialogueTrigger.DRINK_FIZZ: case DialogueTrigger.DRINK_ICEBERG:
 				case DialogueTrigger.VICTORY: return DialogueChannel.FloatingText;
 
@@ -478,6 +478,7 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.FLIGHT_SHOUT: return new Color(255, 245, 170);
 				case DialogueTrigger.EVENT_GOBLINS: case DialogueTrigger.EVENT_PIRATES: case DialogueTrigger.EVENT_ECLIPSE: case DialogueTrigger.EVENT_PUMPKIN:
 				case DialogueTrigger.EVENT_FROST: case DialogueTrigger.EVENT_MARTIANS: case DialogueTrigger.EVENT_OLDONES: case DialogueTrigger.EVENT_FROSTLEGION:
+				case DialogueTrigger.ECLIPSE_END:
 					return new Color(255, 240, 200);
 				default: return new Color(235, 235, 235);
 			}

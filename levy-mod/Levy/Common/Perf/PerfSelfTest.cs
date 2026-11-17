@@ -99,7 +99,7 @@ namespace Levy.Common.Perf
 			}
 			finally { PerfAnalysis.ReserveBankAvailable = reserve; }
 			var all = Enum.GetValues(typeof(PopupOption)).Cast<PopupOption>().Select(o => o.ToString()).ToList();
-			Chk(all.Count == 5 && !all.Any(n => n.IndexOf("command", StringComparison.OrdinalIgnoreCase) >= 0 || n.IndexOf("point", StringComparison.OrdinalIgnoreCase) >= 0), "no option about command points exists (" + string.Join(",", all) + ")");
+			Chk(all.Count == 6 && !all.Any(n => n.IndexOf("command", StringComparison.OrdinalIgnoreCase) >= 0 || n.IndexOf("point", StringComparison.OrdinalIgnoreCase) >= 0), "no option about command points exists (" + string.Join(",", all) + ")");
 
 			// ---- the popup's rules
 			DateTime now = new DateTime(2026, 11, 16, 12, 0, 0, DateTimeKind.Utc), never = DateTime.MinValue;

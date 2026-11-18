@@ -113,7 +113,7 @@ namespace Levy.Common.Testing
 				Player p = Main.player[0]; p.active = true; p.dead = false; p.name = _name;
 				if (p.statLifeMax < 400) p.statLifeMax = p.statLifeMax2 = 400; p.statLife = p.statLifeMax2;
 				p.Bottom = _cmdAt; p.velocity = Vector2.Zero; p.fallStart = p.fallStart2 = (int)(_cmdAt.Y / 16f); p.noFallDmg = true;
-				for (int k = 0; k < Main.maxNPCs; k++) { NPC e = Main.npc[k]; if (e.active && WorldStep.IsNaturalHostile(e)) e.active = false; }
+				for (int k = 0; k < Main.maxNPCs; k++) { NPC e = Main.npc[k]; if (e.active && WorldStep.IsNaturalHostile(e) && !(_keepDuke && (e.type == RiftSky.DukeType || e.ModNPC?.Mod.Name == RiftSky.ModName))) e.active = false; }
 				WorldStep.Update();
 			}
 		}
@@ -237,9 +237,14 @@ namespace Levy.Common.Testing
 				int dukeTicks = 0;
 				if (realDuke)
 				{
+					_keepDuke = true; // the arena clearing in Step would take the Old Duke and NoxusBoss's own NPCs for natural spawns
 					int di = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent(), (int)_cmdAt.X + 400, (int)_cmdAt.Y - 300, RiftSky.DukeType);
 					Note($"a real Old Duke is spawned (slot {di}); NoxusBoss is left to run its scene");
-					while (!RiftSky.DukeKilled && dukeTicks < 900) { RiftStep(1); dukeTicks++; }
+					while (!RiftSky.DukeKilled && dukeTicks < 900)
+					{
+						RiftStep(1); dukeTicks++;
+						if (dukeTicks == 5 || dukeTicks == 120) { NPC d = di >= 0 && di < Main.maxNPCs ? Main.npc[di] : null; Note($"Old Duke after {dukeTicks} ticks: active={d?.active} type ok={d?.type == RiftSky.DukeType} ai0={d?.ai[0]} ai2={d?.ai[2]} scale={d?.scale:F2} immune={d?.dontTakeDamage}"); }
+					}
 					Check($"NoxusBoss's own scene takes the Old Duke ({dukeTicks} ticks, flag={RiftSky.DukeKilled})", RiftSky.DukeKilled);
 				}
 				else
@@ -255,6 +260,7 @@ namespace Levy.Common.Testing
 			}
 			finally
 			{
+				_keepDuke = false;
 				if (real) RiftSky.SetReal(covered: false, eventTimer: 0, waiting: false, snowHeight: 0f, dukeKilled: false);
 				try { for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && (n.type == RiftSky.DukeType || n.ModNPC?.Mod.Name == RiftSky.ModName)) n.active = false; } } catch (Exception) { }
 				RiftSky.ClearOverrides(); RiftMood.Reset(); DialogueSystem.ResetRuntime();
@@ -265,6 +271,7 @@ namespace Levy.Common.Testing
 
 		private const int RiftWindow = 60 * 180;
 		private static int _bandsCleared;
+		private static bool _keepDuke;
 
 		/// <summary>Real ticks for the rift section, with the arena kept to the army: besides the world's own spawns (Step clears those) a Warbands band can spawn on the arena and fight the levies,
 		/// which stops their chatter and kills them (seen in a ship-world run). Band members within 250 tiles are removed each tick. NoxusBoss's own NPCs are left alone.</summary>

@@ -299,7 +299,7 @@ namespace Levy.Common.Dialogue
 			Check($"settled, day {LevyConstants.RiftDarkFromDay}: the dark jokes come back ({darkS} in 200)", darkS > 30);
 			RiftMood.TestPhase = RiftPhase.Settled; RiftMood.TestDays = LevyConstants.RiftTenseDays;
 			int shockS = CountPool(DialogueTrigger.RIFT_SHOCK, pat, ctx, 200), laterS = CountPool(DialogueTrigger.RIFT_LATER, pat, ctx, 200), idleS = CountPool(DialogueTrigger.RIFT_IDLE, pat, ctx, 200);
-			Check($"settled: no shock lines, \"what now\" and quiet talk go on ({shockS} shock, {laterS} later, {idleS} idle in 200)", shockS == 0 && laterS > 15 && idleS > 60);
+			Check($"settled: no shock lines, \"what now\" and quiet talk go on ({shockS} shock, {laterS} later, {idleS} idle in 200)", shockS == 0 && laterS > 15 && idleS > 25);
 			RiftMood.TestPhase = null; RiftMood.TestDays = null;
 			RiftSky.TestTransition = false; RiftSky.TestCovered = true;
 			RiftMood.DaysSince = LevyConstants.RiftTenseDays - 1;

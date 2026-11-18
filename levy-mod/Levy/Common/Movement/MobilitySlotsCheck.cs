@@ -37,6 +37,7 @@ namespace Levy.Common.Movement
 				Preferred(Check, Info);
 				Upgrades(Check, Info);
 				Migration(Check, Info);
+				Dashes(Check, Info);
 				RoundTrips(Check);
 			}
 			catch (Exception e) { Check("self-check ran", false, e.GetType().Name + ": " + e.Message + "\n" + e.StackTrace); }
@@ -140,7 +141,7 @@ namespace Levy.Common.Movement
 				info($"Terraspark Boots + Master Ninja Gear stocked: boots [{N(levy.Gear.Boots)}] accessories [{Worn(levy)}]");
 				check("a levy with Terraspark Boots in his boots slot also wears Master Ninja Gear as an accessory", levy.Gear.Boots.type == ItemID.TerrasparkBoots && levy.Gear.Accessories.Any(a => a.type == ItemID.MasterNinjaGear), $"{N(levy.Gear.Boots)} / {Worn(levy)}");
 				var g = new SoldierGear();
-				check("utility shoes may be hand-placed in an accessory slot and are refused by the boots slot", g.CanHold(SoldierGear.SlotAcc0, Make(ItemID.MasterNinjaGear)) && !g.CanHold(SoldierGear.SlotBoots, Make(ItemID.MasterNinjaGear)));
+				check("utility shoes may be hand-placed in an accessory slot; the boots slot refuses the ones that neither run nor dash and takes a dash", g.CanHold(SoldierGear.SlotAcc0, Make(ItemID.MasterNinjaGear)) && g.CanHold(SoldierGear.SlotAcc0, Make(ItemID.ShoeSpikes)) && !g.CanHold(SoldierGear.SlotBoots, Make(ItemID.ShoeSpikes)) && g.CanHold(SoldierGear.SlotBoots, Make(ItemID.MasterNinjaGear)));
 			}
 			{ // wings already worn: extra wings take no accessory slot
 				var te = new ArmoryTE(); te.Deposit(Make(ItemID.CreativeWings)); te.Deposit(Make(ItemID.BandofRegeneration));
@@ -266,6 +267,116 @@ namespace Levy.Common.Movement
 			var plain = new SoldierGear(); plain.Accessories[0] = Make(ItemID.BandofRegeneration);
 			var pl = SoldierGear.Load(plain.Save());
 			check("an old save with no wings or boots loads unchanged", !pl.HasWings && !pl.HasBoots && pl.Accessories[0].type == ItemID.BandofRegeneration);
+		}
+
+		// ------------------------------------------------------------------ the horizontal slot takes a dash
+		private static void Dashes(CheckFn check, Action<string> info)
+		{
+			// the census is the named dash accessories and a few that are not: reading an item means a dummy wears it, and a Calamity accessory such as the Frozen Cube spawns a projectile when worn, which a boot-time census of every accessory would trip
+			var named = new List<Item> { Make(ItemID.Tabi), Make(ItemID.MasterNinjaGear), Make(ItemID.EoCShield) };
+			var calNames = new[] { "AsgardianAegis", "ElysianAegis", "StatisNinjaBelt", "StatisVoidSash", "EvasionScarf", "CounterScarf", "OrnateShield", "DeepDiver", "V8Engine", "V8000Engine", "AsgardsValor", "ShieldoftheHighRuler" };
+			if (ModLoader.HasMod("CalamityMod")) foreach (var n in calNames) { var it = FindModded("CalamityMod", n); if (it != null) named.Add(it); }
+			var dashItems = named.Where(MobilitySlots.IsDash).ToList();
+			info($"DASH items read ({dashItems.Count} of {named.Count} named): " + string.Join(", ", dashItems.Select(i => (i.ModItem != null ? i.ModItem.Mod.Name + ":" : "") + i.Name)));
+			check("Tabi, Master Ninja Gear and the Shield of Cthulhu are dash accessories", new[] { ItemID.Tabi, ItemID.MasterNinjaGear, ItemID.EoCShield }.All(t => MobilitySlots.IsDash(Make(t))), string.Join(",", new[] { ItemID.Tabi, ItemID.MasterNinjaGear, ItemID.EoCShield }.Select(t => MobilitySlots.IsDash(Make(t)))));
+			check("boots, wings, balloons, bottles, a shield and the climbing shoes are not dash accessories", new[] { ItemID.HermesBoots, ItemID.AngelWings, ItemID.ShinyRedBalloon, ItemID.CloudinaBottle, ItemID.ObsidianShield, ItemID.ShoeSpikes, ItemID.FrogLeg, ItemID.BandofRegeneration }.All(t => !MobilitySlots.IsDash(Make(t))));
+			if (ModLoader.HasMod("CalamityMod"))
+			{
+				var found = named.Where(i => i.ModItem != null).ToList();
+				var notDash = found.Where(i => !MobilitySlots.IsDash(i)).Select(i => i.Name).ToList();
+				info($"Calamity dash accessories: {found.Count} of {calNames.Length} found, not read as a dash: [{string.Join(", ", notDash)}]");
+				check("every Calamity dash accessory is read as a dash (its CalamityPlayer.DashID, not dashType)", found.Count >= 8 && notDash.Count == 0, string.Join(",", notDash));
+				var treads = FindModded("CalamityMod", "AngelTreads");
+				if (treads != null) check("Angel Treads are boots and not a dash", MobilitySlots.IsBoots(treads) && !MobilitySlots.IsDash(treads));
+			}
+
+			var g = new SoldierGear();
+			check("the horizontal slot takes a dash and runner boots; the wings slot refuses a dash; an ordinary slot still takes one", g.CanHold(SoldierGear.SlotBoots, Make(ItemID.Tabi)) && g.CanHold(SoldierGear.SlotBoots, Make(ItemID.HermesBoots)) && !g.CanHold(SoldierGear.SlotWings, Make(ItemID.Tabi)) && g.CanHold(SoldierGear.SlotAcc0, Make(ItemID.Tabi)) && !g.CanHold(SoldierGear.SlotBoots, Make(ItemID.ShinyRedBalloon)) && !g.CanHold(SoldierGear.SlotBoots, Make(ItemID.CloudinaBottle)));
+			float H(int t, Item wings = null) => AccessoryMobility.HorizontalValue(Make(t), wings);
+			info($"horizontal values (no wings): Hermes {H(ItemID.HermesBoots):0.00}, Rocket {H(ItemID.RocketBoots):0.00}, Spectre {H(ItemID.SpectreBoots):0.00}, Lightning {H(ItemID.LightningBoots):0.00}, Terraspark {H(ItemID.TerrasparkBoots):0.00}, Tabi {H(ItemID.Tabi):0.00}, Master Ninja {H(ItemID.MasterNinjaGear):0.00}, Shield of Cthulhu {H(ItemID.EoCShield):0.00}, Shoe Spikes {H(ItemID.ShoeSpikes):0.00}, Frog Leg {H(ItemID.FrogLeg):0.00}");
+			check("a dash adds more horizontal mobility than Hermes Boots; Spectre, Lightning and Terraspark Boots add more than a dash; Shoe Spikes and a Frog Leg add none", H(ItemID.Tabi) > H(ItemID.HermesBoots) && H(ItemID.SpectreBoots) > H(ItemID.Tabi) && H(ItemID.LightningBoots) > H(ItemID.Tabi) && H(ItemID.TerrasparkBoots) > H(ItemID.Tabi) && H(ItemID.ShoeSpikes) == 0f && H(ItemID.FrogLeg) == 0f);
+
+			{ // Hermes Boots and a Tabi stocked: the dash gets the slot
+				var te = new ArmoryTE(); te.Deposit(Make(ItemID.HermesBoots)); te.Deposit(Make(ItemID.Tabi));
+				var levy = new SoldierRecord { Id = 81, Grade = Grade.Levy };
+				ArmoryTE.TestServed = new List<SoldierRecord> { levy };
+				te.IssueGear(levy);
+				info($"Hermes Boots + Tabi stocked: horizontal [{N(levy.Gear.Boots)}] accessories [{Worn(levy)}]");
+				check("with Hermes Boots and a Tabi stocked the dash takes the horizontal slot", levy.Gear.Boots.type == ItemID.Tabi, N(levy.Gear.Boots));
+			}
+			{ // Lightning Boots outrun a dash
+				var te = new ArmoryTE(); te.Deposit(Make(ItemID.LightningBoots)); te.Deposit(Make(ItemID.Tabi));
+				var levy = new SoldierRecord { Id = 82, Grade = Grade.Champion };
+				ArmoryTE.TestServed = new List<SoldierRecord> { levy };
+				te.IssueGear(levy);
+				check("Lightning Boots keep the horizontal slot against a Tabi, which is worn as an ordinary accessory", levy.Gear.Boots.type == ItemID.LightningBoots && levy.Gear.Accessories.Any(a => a.type == ItemID.Tabi), $"{N(levy.Gear.Boots)} / {Worn(levy)}");
+			}
+			{ // a dash in the slot is replaced by boots that outrun it on the gear check, and the dash goes back to the shelf
+				var te = new ArmoryTE(); te.Deposit(Make(ItemID.TerrasparkBoots));
+				var levy = new SoldierRecord { Id = 83, Grade = Grade.Levy };
+				levy.Gear.Boots = Make(ItemID.Tabi);
+				ArmoryTE.TestServed = new List<SoldierRecord> { levy };
+				te.UpgradeAccessories(levy);
+				check("Terraspark Boots replace a Tabi in the horizontal slot on the gear check", levy.Gear.Boots.type == ItemID.TerrasparkBoots, N(levy.Gear.Boots));
+				check("the Tabi taken out is on the shelf or in an ordinary slot", te.Storage.Any(i => !i.IsAir && i.type == ItemID.Tabi) || levy.Gear.Accessories.Any(a => a.type == ItemID.Tabi));
+			}
+			{ // a hand-placed dash is never swapped
+				var te = new ArmoryTE(); te.Deposit(Make(ItemID.TerrasparkBoots));
+				var levy = new SoldierRecord { Id = 84, Grade = Grade.Levy };
+				ArmoryTE.TestServed = new List<SoldierRecord> { levy };
+				levy.Gear.TrySet(SoldierGear.SlotBoots, Make(ItemID.Tabi), levy.AccessorySlots, out _);
+				te.UpgradeAccessories(levy); te.IssueGear(levy);
+				check("a hand-placed Tabi stays in the horizontal slot", levy.Gear.Boots.type == ItemID.Tabi && levy.Gear.IsLocked(SoldierGear.SlotBoots), N(levy.Gear.Boots));
+			}
+			{ // balloons and bottles still go to the ordinary slots and still count as a double jump
+				var te = new ArmoryTE(); te.Deposit(Make(ItemID.ShinyRedBalloon)); te.Deposit(Make(ItemID.CloudinaBottle)); te.Deposit(Make(ItemID.Tabi)); te.Deposit(Make(ItemID.HermesBoots)); te.Deposit(Make(ItemID.ObsidianShield));
+				var levy = new SoldierRecord { Id = 85, Grade = Grade.Champion };
+				ArmoryTE.TestServed = new List<SoldierRecord> { levy };
+				te.IssueGear(levy);
+				info($"balloon, bottle, Tabi, Hermes, shield stocked (Champion): horizontal [{N(levy.Gear.Boots)}] accessories [{Worn(levy)}]");
+				check("a balloon and a bottle are worn in ordinary accessory slots beside a dash in the horizontal slot", levy.Gear.Boots.type == ItemID.Tabi && levy.Gear.Accessories.Any(a => a.type == ItemID.ShinyRedBalloon) && levy.Gear.Accessories.Any(a => a.type == ItemID.CloudinaBottle) && NoMobilityWorn(levy), $"{N(levy.Gear.Boots)} / {Worn(levy)}");
+				check("neither the horizontal slot nor the wings slot ever takes a balloon or a bottle", !MobilitySlots.IsHorizontal(Make(ItemID.ShinyRedBalloon)) && !MobilitySlots.IsHorizontal(Make(ItemID.CloudinaBottle)) && !MobilitySlots.IsWings(Make(ItemID.ShinyRedBalloon)) && AccessoryMobility.Is(Make(ItemID.ShinyRedBalloon)) && AccessoryMobility.Is(Make(ItemID.CloudinaBottle)));
+				var d = new Player(); d.ResetEffects(); for (int i = 0; i < d.armor.Length; i++) d.armor[i] = new Item(); d.armor[3] = Make(ItemID.CloudinaBottle); d.armor[4] = Make(ItemID.ShinyRedBalloon);
+				global::Levy.Common.Util.DummyEquip.SafeUpdateEquips(d, 250);
+				var ab = MovementAbilities.FromDummy(d);
+				check($"a dummy in a bottle and a balloon has the double jump and the jump height ({ab.ExtraJumps} extra jumps, {ab.JumpTiles} tiles)", ab.ExtraJumps >= 1 && ab.JumpTiles > LevyConstants.Movement.BaseJumpTiles);
+			}
+			{ // old save: a dash worn as an ordinary accessory, no runner boots
+				var old = new SoldierGear(); old.Weapon = Make(ItemID.Musket);
+				old.Accessories[0] = Make(ItemID.ObsidianShield); old.Accessories[1] = Make(ItemID.Tabi); old.Accessories[2] = Make(ItemID.ShinyRedBalloon);
+				var tag = old.Save(); tag.Remove("wings"); tag.Remove("boots"); tag["slotCount"] = 16;
+				var ld = SoldierGear.Load(tag);
+				check("an old save's Tabi (an ordinary accessory) moves to the empty horizontal slot, freeing the slot", ld.Boots.type == ItemID.Tabi && ld.Accessories[1].IsAir && ld.Accessories[0].type == ItemID.ObsidianShield && ld.Accessories[2].type == ItemID.ShinyRedBalloon, $"{N(ld.Boots)} / {string.Join(", ", ld.Accessories.Take(4).Select(N))}");
+				var old2 = new SoldierGear(); old2.Accessories[0] = Make(ItemID.SpectreBoots); old2.Accessories[1] = Make(ItemID.Tabi);
+				var tag2 = old2.Save(); tag2.Remove("wings"); tag2.Remove("boots"); tag2["slotCount"] = 16;
+				var ld2 = SoldierGear.Load(tag2);
+				check("an old save with Spectre Boots and a Tabi keeps the boots in the slot and the Tabi in its accessory slot", ld2.Boots.type == ItemID.SpectreBoots && ld2.Accessories[1].type == ItemID.Tabi, $"{N(ld2.Boots)} / {N(ld2.Accessories[1])}");
+				var te = new ArmoryTE(); var rec = new SoldierRecord { Id = 86, Grade = Grade.Champion, Gear = ld };
+				ArmoryTE.TestServed = new List<SoldierRecord> { rec };
+				te.UpgradeAccessories(rec);
+				check("the gear check on that kit changes nothing it should not", rec.Gear.Boots.type == ItemID.Tabi && rec.Gear.Accessories.Any(a => a.type == ItemID.ShinyRedBalloon), $"{N(rec.Gear.Boots)} / {Worn(rec)}");
+			}
+			{ // wings that already run (Seraph Tracers): the horizontal slot prefers a dash to boots that add nothing
+				var seraph = FindModded("CalamityMod", "SeraphTracers");
+				if (seraph == null) info("Seraph Tracers: Calamity not loaded, skipped");
+				else
+				{
+					info($"Seraph Tracers: wings={MobilitySlots.IsWings(seraph)}, run value {AccessoryMobility.RunValue(seraph):0.00}; horizontal value of Hermes beside them {AccessoryMobility.HorizontalValue(Make(ItemID.HermesBoots), seraph):0.00}, of Tabi {AccessoryMobility.HorizontalValue(Make(ItemID.Tabi), seraph):0.00}");
+					check("Seraph Tracers are wings, they run, and Hermes Boots beside them add no horizontal mobility", MobilitySlots.IsWings(seraph) && AccessoryMobility.RunValue(seraph) > 0.5f && AccessoryMobility.HorizontalValue(Make(ItemID.HermesBoots), seraph) <= 0.01f);
+					var te = new ArmoryTE(); te.Deposit(Make(ItemID.HermesBoots)); te.Deposit(Make(ItemID.Tabi));
+					var levy = new SoldierRecord { Id = 87, Grade = Grade.Levy };
+					levy.Gear.Wings = Make(seraph.type);
+					ArmoryTE.TestServed = new List<SoldierRecord> { levy };
+					te.IssueGear(levy);
+					check("a levy in Seraph Tracers is given the Tabi, not the Hermes Boots", levy.Gear.Boots.type == ItemID.Tabi, N(levy.Gear.Boots));
+					var te2 = new ArmoryTE(); te2.Deposit(Make(ItemID.Tabi));
+					var levy2 = new SoldierRecord { Id = 88, Grade = Grade.Levy };
+					levy2.Gear.Wings = Make(seraph.type); levy2.Gear.Boots = Make(ItemID.HermesBoots);
+					ArmoryTE.TestServed = new List<SoldierRecord> { levy2 };
+					te2.UpgradeAccessories(levy2);
+					check("a levy in Seraph Tracers and Hermes Boots swaps the boots for a stocked Tabi on the gear check", levy2.Gear.Boots.type == ItemID.Tabi, N(levy2.Gear.Boots));
+				}
+			}
 		}
 
 		// ------------------------------------------------------------------ save, copy, network

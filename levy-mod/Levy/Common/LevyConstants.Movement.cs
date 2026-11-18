@@ -407,6 +407,9 @@ namespace Levy.Common
 			public const int DashMaxRiseTiles = 1;
 			/// <summary>Columns ahead that must be flat, open, floored and lava-free.</summary>
 			public const int DashLaneTiles = 7;
+			/// <summary>A travel dash follows a player's dash: it starts at the gear's dash speed (capped here) and decays the way Player.DashMovement does, over a lane that is checked this far ahead, ending at the goal.</summary>
+			public const float DashMaxSpeedPx = 34f;
+			public const int DashTravelLaneTiles = 24, DashTravelCooldownTicks = 90, DashTravelCooldownJitterTicks = 90;
 
 			// ---- movement visuals (cosmetic only: dust, gore and sound that mirror the movement state; never read back by movement) ----
 			/// <summary>Boot flame / wing dust cadence (ticks). Vanilla emits every tick of a thrust; half the rate reads the same and halves the dust.</summary>

@@ -121,7 +121,7 @@ namespace Levy.Common.Soldiers
 			if (slot == SlotHook) return global::Levy.Common.Movement.HookInfo.IsHookItem(item) && item.stack <= 1;
 			if (slot == SlotCamera) return item.ModItem is global::Levy.Content.Items.Observe.GoProItem && item.stack <= 1;
 			if (slot == SlotWings) return item.stack <= 1 && global::Levy.Common.Movement.MobilitySlots.IsWings(item) && WeaponClassifier.IsUsefulAccessory(item);
-			if (slot == SlotBoots) return item.stack <= 1 && global::Levy.Common.Movement.MobilitySlots.IsBoots(item) && WeaponClassifier.IsUsefulAccessory(item);
+			if (slot == SlotBoots) return item.stack <= 1 && global::Levy.Common.Movement.MobilitySlots.IsHorizontal(item) && WeaponClassifier.IsUsefulAccessory(item);
 			// Only a thrown consumable may be a stack: it is carried (and used up) as one. Every other weapon is a single item.
 			if (item.stack > 1 && !(slot == SlotWeapon && WeaponClassifier.Classify(item) == WeaponFamily.Thrown)) return false;
 			if (slot == SlotWeapon) return WeaponClassifier.IsIssuableWeapon(item) && IsSupportedFamily(WeaponClassifier.Classify(item));
@@ -328,7 +328,7 @@ namespace Levy.Common.Soldiers
 		}
 
 		/// <summary>
-		/// A kit saved before the mobility slots: the first pair of wings in an accessory slot moves to the empty wings slot and the best pair of boots to the empty boots slot (each with its hand-assigned lock),
+		/// A kit saved before the mobility slots: the first pair of wings in an accessory slot moves to the empty wings slot and the best pair of boots (or, with none, the best dash accessory) to the empty boots slot (each with its hand-assigned lock),
 		/// which frees the accessory slot for an ordinary accessory. A second pair of wings or boots stays where it is (the armory takes it back to the shelf on the levy's next look). Returns true when anything moved.
 		/// </summary>
 		public bool MigrateMobility()
@@ -342,8 +342,9 @@ namespace Levy.Common.Soldiers
 				for (int i = 0; i < Accessories.Length; i++)
 				{
 					var a = Accessories[i];
-					if (Empty(a) || !(wings ? global::Levy.Common.Movement.MobilitySlots.IsWings(a) : global::Levy.Common.Movement.MobilitySlots.IsBoots(a))) continue;
+					if (Empty(a) || !(wings ? global::Levy.Common.Movement.MobilitySlots.IsWings(a) : global::Levy.Common.Movement.MobilitySlots.IsHorizontal(a))) continue;
 					float sc = a.rare * 1000f + a.value * 0.001f; // an old kit had at most one or two of them: the rarer one is the better one
+					if (!wings) sc = global::Levy.Common.Movement.AccessoryMobility.HorizontalValue(a, Wings) * 100000f + sc; // the one that adds the most horizontal mobility first (a pair of runner boots over a dash when the wings do not run)
 					if (sc > bestScore) { bestScore = sc; best = i; }
 				}
 				if (best < 0) continue;

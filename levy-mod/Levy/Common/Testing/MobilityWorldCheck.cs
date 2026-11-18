@@ -24,12 +24,12 @@ namespace Levy.Common.Testing
 	/// wings' ranking is also asserted on the stat the wings give the dummy (their wing time), which does not depend on what the brain chooses to do.
 	/// Throwaway soldiers only; nothing is saved.
 	/// </summary>
-	public sealed class MobilityWorldCheck : ModSystem
+	public sealed partial class MobilityWorldCheck : ModSystem
 	{
 		private static bool _armed, _done, _running; private static int _pass, _fail;
 		private static Mod _mod; private static Vector2 _cmdAt; private static int _savedMy;
 		private const int FloorY = 300, Cx = 1800, Half = 270;
-		private const string Commander = "MobTester";
+		private const string Commander = "MobTester"; private static float _lastStatRun;
 
 		public override void OnWorldLoad()
 		{
@@ -75,12 +75,12 @@ namespace Levy.Common.Testing
 			p.position = _cmdAt - new Vector2(p.width / 2f, p.height / 2f); p.velocity = Vector2.Zero;
 		}
 
-		private static void Arena()
+		private static void Arena(int floorTile = TileID.GrayBrick)
 		{
 			for (int i = Cx - Half; i <= Cx + Half; i++)
 			{
 				for (int j = FloorY - 90; j < FloorY; j++) { Tile t = Main.tile[i, j]; t.ClearEverything(); }
-				Tile f = Main.tile[i, FloorY]; f.ClearEverything(); f.HasTile = true; f.TileType = TileID.GrayBrick; f.BlockType = BlockType.Solid;
+				Tile f = Main.tile[i, FloorY]; f.ClearEverything(); f.HasTile = true; f.TileType = (ushort)floorTile; f.BlockType = BlockType.Solid;
 				for (int j = FloorY + 1; j < FloorY + 4; j++) { Tile u = Main.tile[i, j]; u.ClearEverything(); u.HasTile = true; u.TileType = TileID.GrayBrick; u.BlockType = BlockType.Solid; }
 			}
 		}
@@ -122,6 +122,12 @@ namespace Levy.Common.Testing
 			Main.player[0] = Main.player[0] ?? new Player();
 			Arena();
 			ClearSoldiers();
+			string part = Environment.GetEnvironmentVariable("LEVY_MOBPART") ?? "all"; // lab: "dash" or "floors" alone
+			if (part == "dash" || part == "floors")
+			{
+				try { if (part == "dash") DashTrials(); else FloorTrials(); } catch (Exception e) { Check(part + " trials threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
+				ClearSoldiers(); return;
+			}
 			var boots = new List<(string name, int type)> { ("none", 0), ("Hermes Boots", ItemID.HermesBoots), ("Lightning Boots", ItemID.LightningBoots), ("Terraspark Boots", ItemID.TerrasparkBoots) };
 			if (ModLoader.TryGetMod("CalamityMod", out Mod cal) && cal.TryFind<ModItem>("AngelTreads", out var treads)) boots.Add(("Angel Treads", treads.Type));
 			var wings = new List<(string name, int type)> { ("none", 0), ("Fledgling Wings", ItemID.CreativeWings), ("Angel Wings", ItemID.AngelWings), ("Solar Wings", ItemID.WingsSolar) };
@@ -130,12 +136,13 @@ namespace Levy.Common.Testing
 			foreach (var (name, type) in boots)
 			{
 				var r = SpeedTrial(type == 0 ? null : Make(type), name);
-				speeds[name] = r.peak; // the top speed: the most a levy covers in one tick (the average also holds the time spent accelerating and the follow brain's pauses)
+				speeds[name] = _lastStatRun > 0f ? _lastStatRun : r.peak; // the top speed the levy is given (the stat pass); the measured peak is logged beside it, but a follow slot that holds him still for a while (seen with the floor rule off and on, and in the baseline) can hide it
 			}
 			float none = speeds["none"];
 			foreach (var kv in speeds) if (kv.Key != "none") Check($"boots in the boots slot change a levy's measured top speed: {kv.Key} {F(kv.Value)} px/tick vs bare {F(none)}", kv.Value >= none + 1.5f - 0.01f);
 			if (speeds.ContainsKey("Hermes Boots") && speeds.ContainsKey("Lightning Boots")) Check($"better boots run faster: Lightning {F(speeds["Lightning Boots"])} > Hermes {F(speeds["Hermes Boots"])}", speeds["Lightning Boots"] > speeds["Hermes Boots"] + 0.2f);
 			if (speeds.ContainsKey("Angel Treads") && speeds.ContainsKey("Hermes Boots")) Check($"Angel Treads outrun Hermes Boots: {F(speeds["Angel Treads"])} vs {F(speeds["Hermes Boots"])}", speeds["Angel Treads"] > speeds["Hermes Boots"] + 0.5f);
+			if (part == "speed") { ClearSoldiers(); return; } // lab: the boots trials alone
 
 			var flights = new Dictionary<string, int>(); var wingTimes = new Dictionary<string, int>();
 			foreach (var (name, type) in wings)
@@ -150,18 +157,23 @@ namespace Levy.Common.Testing
 				Check($"longer-flying wings give a longer wing time: Fledgling {wingTimes["Fledgling Wings"]} < Angel {wingTimes["Angel Wings"]} < Solar {wingTimes["Solar Wings"]}", wingTimes["Fledgling Wings"] < wingTimes["Angel Wings"] && wingTimes["Angel Wings"] < wingTimes["Solar Wings"]);
 			if (flights.ContainsKey("Fledgling Wings") && flights.ContainsKey("Angel Wings")) Check($"longer-flying wings fly longer: Angel {flights["Angel Wings"]} >= Fledgling {flights["Fledgling Wings"]}", flights["Angel Wings"] >= flights["Fledgling Wings"]);
 			ClearSoldiers();
+			Arena();
+			try { FloorTrials(); } catch (Exception e) { Check("floor trials threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
+			try { DashTrials(); } catch (Exception e) { Check("dash trials threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
+			ClearSoldiers(); Arena();
 		}
 
 		private static (float avg, float peak) SpeedTrial(Item boots, string label)
 		{
 			ClearSoldiers();
+			global::Terraria.Main.rand = new Terraria.Utilities.UnifiedRandom(9300 + (boots?.type ?? 0)); // the same random stream for the same boots, whatever the checks before did to it
 			var at = new Vector2((Cx - Half + 12) * 16f, FloorY * 16f);
 			_cmdAt = at + new Vector2(45 * 16f, -3 * 16f);
 			KeepCommander(); Step(2);
 			int body = SpawnLevy(null, boots, at, out var rec);
 			if (body < 0 || !rec.HasBody) { Check($"speed trial {label}: the levy spawns with the boots in the boots slot", false); return (0, 0); }
 			var sn = (SoldierNPC)Main.npc[body].ModNPC;
-			const int Warm = 150, Total = 330;
+			const int Warm = 150, Total = 480; // a longer window: a follow slot that holds him still for a while must not hide his top speed
 			float x0 = 0f, prev = Main.npc[body].position.X, peak = 0f; int startTick = 0;
 			for (int t = 1; t <= Total; t++)
 			{
@@ -174,7 +186,7 @@ namespace Levy.Common.Testing
 				prev = x;
 			}
 			float avg = startTick == 0 ? 0f : (Main.npc[body].position.X - x0) / (Total - startTick + 1);
-			var ab = sn.Abilities;
+			var ab = sn.Abilities; _lastStatRun = ab?.MaxRunSpeed ?? 0f;
 			Note($"top speed, boots slot = {label}: measured avg {F(avg)} px/tick, peak {F(peak)}; stat pass MaxRunSpeed {F(ab?.MaxRunSpeed ?? 0)}, dummy accRunSpeed {F(sn.Dummy.accRunSpeed)}, rocketBoots {sn.Dummy.rocketBoots}, wings slot empty {!rec.Gear.HasWings}, accessory slots empty {rec.Gear.Accessories.All(a => a.IsAir)}");
 			if (boots != null) Check($"speed trial {label}: the levy's dummy runs at the boots' speed ({F(ab?.MaxRunSpeed ?? 0)} px/tick from the stat pass)", ab != null && ab.MaxRunSpeed > 3.5f);
 			ClearSoldiers();

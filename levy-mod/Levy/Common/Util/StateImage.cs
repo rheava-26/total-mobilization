@@ -34,6 +34,7 @@ namespace Levy.Common.Util
 		public readonly int RawBytes;
 		/// <summary>Each raw field: name, offset in the object, size, and its position in the raw buffer.</summary>
 		public readonly string[] RawNames = Array.Empty<string>(); public readonly int[] RawOff = Array.Empty<int>(), RawSize = Array.Empty<int>(), RawBuf = Array.Empty<int>();
+		public readonly Type[] RawTypes = Array.Empty<Type>();
 		public int NRaw => RawNames.Length;
 
 		private static readonly Dictionary<(Type, bool), TypePlan> Cache = new();
@@ -85,10 +86,10 @@ namespace Levy.Common.Util
 					}
 					if (cs >= 0) { ro.Add(cs); rl.Add(ce - cs); rb.Add(pos); pos += ce - cs; }
 					RangeOff = ro.ToArray(); RangeLen = rl.ToArray(); RangeBuf = rb.ToArray(); RawBytes = pos;
-					RawNames = new string[rawF.Count]; RawOff = new int[rawF.Count]; RawSize = new int[rawF.Count]; RawBuf = new int[rawF.Count];
+					RawNames = new string[rawF.Count]; RawOff = new int[rawF.Count]; RawSize = new int[rawF.Count]; RawBuf = new int[rawF.Count]; RawTypes = new Type[rawF.Count];
 					for (int k = 0; k < rawF.Count; k++)
 					{
-						RawNames[k] = rawF[k].f.Name; RawOff[k] = rawF[k].off; RawSize[k] = rawF[k].size;
+						RawNames[k] = rawF[k].f.Name; RawOff[k] = rawF[k].off; RawSize[k] = rawF[k].size; RawTypes[k] = rawF[k].f.FieldType;
 						int r = Array.FindLastIndex(RangeOff, x => x <= rawF[k].off); RawBuf[k] = RangeBuf[r] + rawF[k].off - RangeOff[r];
 					}
 					// no reference may sit inside a range
@@ -99,7 +100,7 @@ namespace Levy.Common.Util
 				{
 					global::Levy.Levy.Instance?.Logger.Warn("Levy: state image could not lay out " + t.FullName + " raw (" + e.Message + "); field by field instead");
 					rawOk = false; vals.Clear(); refs.Clear();
-					RangeOff = RangeLen = RangeBuf = Array.Empty<int>(); RawBytes = 0; RawNames = Array.Empty<string>(); RawOff = RawSize = RawBuf = Array.Empty<int>();
+					RangeOff = RangeLen = RangeBuf = Array.Empty<int>(); RawBytes = 0; RawNames = Array.Empty<string>(); RawOff = RawSize = RawBuf = Array.Empty<int>(); RawTypes = Array.Empty<Type>();
 				}
 			}
 			if (!rawOk) Walk(t, root, "", false, 0, vals, refs);
@@ -298,6 +299,10 @@ namespace Levy.Common.Util
 		public bool[] NoFollow;
 		/// <summary>Leaves not compared (<see cref="StateImage.Mask"/>): value / reference slot indices, or the whole node.</summary>
 		public int[] XV, XR; public bool XAll;
+		/// <summary>Leaves the gear build was seen to write (<see cref="StateImage.LearnWrites"/>): the whole node (arrays), value slots, reference slots, raw fields.</summary>
+		public bool WAll; public bool[] WV, WR, WRaw;
+		/// <summary>Raw fields the build counts down by one each time it runs (a cooldown), and a scratch of the fields nothing outside the build touched since the last image.</summary>
+		public bool[] WDown, NoDown, UT, DownActive, DownNeg; public sbyte[] LastStep;
 		/// <summary>Leaves a merged restore leaves at their current value (a subset of the uncompared ones).</summary>
 		public int[] KV, KR; public bool KAll;
 		/// <summary>Kept leaves a full build must not write (class 2; class 3 leaves are stepped by the caller).</summary>
@@ -380,7 +385,7 @@ namespace Levy.Common.Util
 		private void Fill(ImgNode n, object o, string path, int depth)
 		{
 			_seen[o] = n; n.Index = _order.Count; _order.Add(n); Nodes++;
-			n.Obj = o; n.Path = path; n.Depth = depth; n.Stamp = _stamp; n.Shared = false; n.XV = n.XR = n.KV = n.KR = n.CV = n.CR = null; n.XAll = n.KAll = false; n.CmpSeg = n.ResSeg = n.CRaw = null;
+			n.Obj = o; n.Path = path; n.Depth = depth; n.Stamp = _stamp; n.Shared = false; n.XV = n.XR = n.KV = n.KR = n.CV = n.CR = null; n.XAll = n.KAll = false; n.CmpSeg = n.ResSeg = n.CRaw = null; n.WAll = false; n.WV = n.WR = n.WRaw = n.WDown = n.NoDown = n.UT = n.DownActive = n.DownNeg = null; n.LastStep = null;
 			Type t = o.GetType();
 			if (t.IsArray)
 			{
@@ -555,6 +560,23 @@ namespace Levy.Common.Util
 		public ImgNode FailAt;
 		/// <summary>Lab: when set, every node's recapture time is added here by path.</summary>
 		public Dictionary<string, long> ProfileInto;
+		/// <summary>Re-captures only the listed nodes, from the objects they were last captured from (no shape check: the caller takes a full image often enough to follow a re-created object).</summary>
+		public void RecaptureOnly(int[] only)
+		{
+			foreach (int i in only)
+			{
+				var n = _order[i]; object o = n.Obj;
+				if (n.IsArr)
+				{
+					var a = (Array)o; if (a.Length != n.Len) continue;
+					if (n.Um != null) { n.Copy = n.Um.Copy(a, n.Copy); continue; }
+					if (n.P != null) for (int e = 0; e < n.Len; e++) { n.P.CapV(a, e, n.V, e * n.P.NV); n.P.CapR(a, e, n.R, e * n.P.NR); }
+					else Array.Copy(a, n.R, n.Len);
+				}
+				else { n.P.CapV(o, 0, n.V, 0); n.P.CapR(o, 0, n.R, 0); RawCap(n, o); }
+			}
+		}
+
 		public bool Recapture()
 		{
 			FailAt = null;
@@ -967,6 +989,193 @@ namespace Levy.Common.Util
 			}
 		}
 
+
+		// ------------------------------------------------------------------------------------------------------------
+		// The approximate gear frame (SoldierNPC.GearApprox.cs): what the build writes, learned from images taken either side of it, and written back on the ticks it does not run
+		// ------------------------------------------------------------------------------------------------------------
+		/// <summary>This image (after a build) against <paramref name="pre"/> (aligned, before it): every leaf that differs is marked as written by the build. Marks accumulate until the shape is captured afresh.</summary>
+		public bool LearnWrites(StateImage pre)
+		{
+			bool grew = false;
+			for (int i = 0; i < _order.Count; i++)
+			{
+				var y = _order[i]; var x = pre._order[i];
+				if (y.WAll) continue;
+				if (y.IsArr)
+				{
+					bool d;
+					if (y.Um != null) d = !y.Um.Same(x.Copy, y.Copy);
+					else
+					{
+						d = !x.V.AsSpan().SequenceEqual(y.V);
+						for (int k = 0; !d && k < y.R.Length; k++) d = y.Kid[k] == null && !RefSame(x.R[k], y.R[k], false);
+					}
+					if (d) { y.WAll = true; grew = true; }
+					continue;
+				}
+				if (!x.V.AsSpan().SequenceEqual(y.V)) for (int k = 0; k < y.V.Length; k++) if (x.V[k] != y.V[k] && !(y.WV != null && y.WV[k])) { (y.WV ??= new bool[y.V.Length])[k] = true; grew = true; }
+				for (int k = 0; k < y.R.Length; k++) if (y.Kid[k] == null && !RefSame(x.R[k], y.R[k], false) && !(y.WR != null && y.WR[k])) { (y.WR ??= new bool[y.R.Length])[k] = true; grew = true; }
+				var p = y.P;
+				if (p.NRaw > 0 && x.Raw != null && y.Raw != null && !x.Raw.AsSpan().SequenceEqual(y.Raw))
+					for (int k = 0; k < p.NRaw; k++)
+						if (!(y.WRaw != null && y.WRaw[k]) && !x.Raw.AsSpan(p.RawBuf[k], p.RawSize[k]).SequenceEqual(y.Raw.AsSpan(p.RawBuf[k], p.RawSize[k]))) { (y.WRaw ??= new bool[p.NRaw])[k] = true; grew = true; }
+			}
+			return grew;
+		}
+
+		/// <summary>This image (the last build's result) against <paramref name="pre"/> (aligned, taken where the next build starts): marks the raw fields nothing outside the build changed in between.</summary>
+		public void MarkUntouched(StateImage pre)
+		{
+			for (int i = 0; i < _order.Count; i++)
+			{
+				var y = _order[i]; var x = pre._order[i];
+				if (y.IsArr || y.P.NRaw == 0 || x.Raw == null || y.Raw == null) { y.UT = null; continue; }
+				var p = y.P; var ut = y.UT != null && y.UT.Length == p.NRaw ? y.UT : (y.UT = new bool[p.NRaw]);
+				for (int k = 0; k < p.NRaw; k++) ut[k] = x.Raw.AsSpan(p.RawBuf[k], p.RawSize[k]).SequenceEqual(y.Raw.AsSpan(p.RawBuf[k], p.RawSize[k]));
+			}
+		}
+
+		/// <summary>
+		/// After a build (this, aligned with <paramref name="pre"/> and marked by <see cref="MarkUntouched"/> against the last build): an int or float field nothing else touched that the build moved by exactly one. Down by one is a
+		/// cooldown (marked: a served tick counts it down itself); up by one is a counter whose threshold the build tests (its name goes into <paramref name="up"/>). Returns true when a new cooldown was found.
+		/// </summary>
+		public bool DetectCounters(StateImage pre, List<string> up)
+		{
+			bool grew = false;
+			for (int i = 0; i < _order.Count; i++)
+			{
+				var y = _order[i]; var x = pre._order[i];
+				if (y.UT == null || y.IsArr || x.Raw == null || y.Raw == null) continue;
+				var p = y.P;
+				for (int k = 0; k < p.NRaw && k < y.UT.Length; k++)
+				{
+					Type t = p.RawTypes[k];
+					if (t != typeof(int) && t != typeof(float)) continue;
+					var last = y.LastStep ??= new sbyte[p.NRaw];
+					double a, b;
+					if (t == typeof(int)) { a = BitConverter.ToInt32(x.Raw, p.RawBuf[k]); b = BitConverter.ToInt32(y.Raw, p.RawBuf[k]); }
+					else { a = BitConverter.ToSingle(x.Raw, p.RawBuf[k]); b = BitConverter.ToSingle(y.Raw, p.RawBuf[k]); }
+					double step = b - a;
+					if (y.WDown != null && y.WDown[k])
+					{
+						// a known cooldown: is the build counting it down now (a floored one sits at zero), and does it go below zero
+						(y.DownActive ??= new bool[p.NRaw])[k] = step == -1;
+						if (step == -1 && b < 0) (y.DownNeg ??= new bool[p.NRaw])[k] = true;
+					}
+					if (!y.UT[k]) { last[k] = 0; continue; } // something outside the build set it (a hook raising a cooldown): a new run starts
+					if (step == -1)
+					{
+						// down by one on two builds in a row, and never raised by the build: a cooldown (a stat that went down by one once, or flips between two values, is not)
+						if (last[k] == -1 && !(y.NoDown != null && y.NoDown[k]) && !(y.WDown != null && y.WDown[k])) { (y.WDown ??= new bool[p.NRaw])[k] = true; (y.DownActive ??= new bool[p.NRaw])[k] = true; if (b < 0) (y.DownNeg ??= new bool[p.NRaw])[k] = true; grew = true; }
+						last[k] = -1;
+					}
+					else if (step > 0)
+					{
+						(y.NoDown ??= new bool[p.NRaw])[k] = true;
+						if (y.WDown != null && y.WDown[k]) { y.WDown[k] = false; grew = true; }
+						if (step == 1 && last[k] == 1 && up != null) { y.Names(); up.Add(y.LeafRaw[k]); } // up by one on two builds in a row: a counter the build climbs
+						last[k] = (sbyte)(step == 1 ? 1 : 0);
+					}
+					else last[k] = 0;
+				}
+			}
+			return grew;
+		}
+
+		/// <summary>A cooldown a served tick counts down: the field, and the node that says whether the build is counting it now and whether it goes below zero.</summary>
+		public readonly struct Cool { public readonly object O; public readonly int Off, K; public readonly bool F; public readonly ImgNode N; public Cool(object o, int off, bool f, ImgNode n, int k) { O = o; Off = off; F = f; N = n; K = k; } }
+
+		/// <summary>The cooldowns found (<see cref="DetectCounters"/>), for a served tick to count down.</summary>
+		public List<Cool> Cooldowns()
+		{
+			var l = new List<Cool>();
+			foreach (var n in _order) if (n.WDown != null) for (int k = 0; k < n.WDown.Length; k++) if (n.WDown[k]) l.Add(new Cool(n.Obj, n.P.RawOff[k], n.P.RawTypes[k] == typeof(float), n, k));
+			return l;
+		}
+
+		/// <summary>Counts each cooldown the last build was counting down by one, as the build does: to zero, or past it when the build was seen to go below zero.</summary>
+		public static void StepCooldowns(List<Cool> l)
+		{
+			foreach (var c in l)
+			{
+				var n = c.N; if (n.DownActive == null || !n.DownActive[c.K]) continue;
+				bool neg = n.DownNeg != null && n.DownNeg[c.K];
+				ref byte b = ref Unsafe.Add(ref TypePlan.RawRef(c.O), c.Off);
+				if (c.F) { ref float v = ref Unsafe.As<byte, float>(ref b); if (neg || v > 0f) v -= 1f; }
+				else { ref int v = ref Unsafe.As<byte, int>(ref b); if (neg || v > 0) v--; }
+			}
+		}
+
+		/// <summary>Number of leaves marked written (lab).</summary>
+		public int WrittenLeaves
+		{
+			get
+			{
+				int c = 0;
+				foreach (var n in _order)
+				{
+					if (n.WAll) { c++; continue; }
+					if (n.WV != null) foreach (bool b in n.WV) if (b) c++;
+					if (n.WR != null) foreach (bool b in n.WR) if (b) c++;
+					if (n.WRaw != null) foreach (bool b in n.WRaw) if (b) c++;
+				}
+				return c;
+			}
+		}
+
+		/// <summary>The written leaves by name (lab).</summary>
+		public IEnumerable<string> WrittenNames()
+		{
+			foreach (var n in _order)
+			{
+				if (n.WAll) { yield return n.Path + "[]"; continue; }
+				if (n.WV == null && n.WR == null && n.WRaw == null) continue;
+				n.Names();
+				if (n.WV != null) for (int k = 0; k < n.WV.Length; k++) if (n.WV[k]) yield return n.LeafV[k];
+				if (n.WR != null) for (int k = 0; k < n.WR.Length; k++) if (n.WR[k]) yield return n.LeafR[k];
+				if (n.WRaw != null) for (int k = 0; k < n.WRaw.Length; k++) if (n.WRaw[k]) yield return n.LeafRaw[k];
+			}
+		}
+
+		/// <summary>
+		/// Marks every node so that <see cref="RestoreInto"/> writes back only the learned written leaves, minus those <paramref name="keep"/> names (state other code moves every tick: the body's motion, life, buffs, the tail's meters).
+		/// Returns the nodes to write and fills <paramref name="live"/> with each node's object.
+		/// </summary>
+		public int[] WriteMask(Func<string, bool> keep, out object[] live, Func<string, bool> always = null)
+		{
+			var list = new List<int>(); live = new object[_order.Count];
+			var kv = new List<int>(); var kr = new List<int>();
+			for (int i = 0; i < _order.Count; i++)
+			{
+				var n = _order[i]; live[i] = n.Obj;
+				n.XV = n.XR = n.KV = n.KR = n.CV = n.CR = null; n.XAll = false; n.KAll = true; n.CmpSeg = n.CRaw = null; n.ResSeg = null;
+				if (n.IsArr)
+				{
+					if ((n.WAll || (always != null && always(n.Path))) && !keep(n.Path)) { n.KAll = false; list.Add(i); }
+					continue;
+				}
+				if (n.WV == null && n.WR == null && n.WRaw == null && (always == null || n.Depth > 0)) continue;
+				n.Names(); kv.Clear(); kr.Clear(); bool any = false;
+				for (int k = 0; k < n.V.Length; k++) { bool w = ((n.WV != null && n.WV[k]) || (always != null && always(n.LeafV[k]))) && !keep(n.LeafV[k]); if (w) any = true; else kv.Add(k); }
+				for (int k = 0; k < n.R.Length; k++) { bool w = n.Kid[k] == null && n.WR != null && n.WR[k] && !keep(n.LeafR[k]); if (w) any = true; else kr.Add(k); }
+				var p = n.P;
+				if (p.NRaw > 0)
+				{
+					var cut = new bool[p.NRaw];
+					for (int k = 0; k < p.NRaw; k++) { bool w = ((n.WRaw != null && n.WRaw[k]) || (always != null && always(n.LeafRaw[k]))) && !(n.WDown != null && n.WDown[k]) && !keep(n.LeafRaw[k]); if (w) any = true; else cut[k] = true; }
+					n.ResSeg = Segments(p, cut, true);
+				}
+				if (!any) continue;
+				n.KAll = false;
+				if (kv.Count > 0) n.KV = kv.ToArray();
+				if (kr.Count > 0) n.KR = kr.ToArray();
+				list.Add(i);
+			}
+			return list.ToArray();
+		}
+
+		/// <summary>The object each node was captured from (after a <see cref="Recapture"/>, the live ones).</summary>
+		public void LiveObjects(object[] into) { for (int i = 0; i < _order.Count && i < into.Length; i++) into[i] = _order[i].Obj; }
 
 		public int NodeCount => _order.Count;
 		public IEnumerable<(string path, long leaves)> NodeList() { foreach (var n in _order) yield return (n.Path, n.IsArr && n.Um != null ? n.Len : n.V.Length + n.R.Length + (n.IsArr ? 0 : n.P.NRaw)); }

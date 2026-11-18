@@ -5,6 +5,7 @@ Headers: {
 	Analyzer: Performance log
 	LagPopup: After a laggy fight
 	Effects: Army effects
+	Speed: Speed in big fights
 }
 
 PerfLogAlwaysOn: {
@@ -40,4 +41,18 @@ LagPopupDontAskAgain: {
 LevyEffects: {
 	Label: Army effects
 	Tooltip: Reduced hides nameplates and thins the dust levy weapons throw. The army fights the same.
+}
+
+GearUpdateIntervalWhenFighting: {
+	Label: Gear update interval when fighting
+	Tooltip:
+		'''
+		How often a fighting levy recalculates his gear's stats, in ticks. 1 is every tick, as a player does.
+		Higher is faster in big fights. Rage, Adrenaline, stealth and cooldowns still run every tick, and a change of gear, buffs or held weapon recalculates at once.
+		'''
+}
+
+FrameSkip: {
+	Label: Frame Skip
+	Tooltip: The game's Frame Skip setting. Subtle keeps the picture moving in heavy fights by slowing the game slightly.
 }

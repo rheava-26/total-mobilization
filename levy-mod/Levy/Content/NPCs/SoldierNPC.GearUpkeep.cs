@@ -183,7 +183,7 @@ namespace Levy.Content.NPCs
 			object thorium = null;
 			FrameSlot fs = default;
 			Vector2 savedScreen = Main.screenPosition; int savedMx = Main.mouseX, savedMy = Main.mouseY; bool frameAimed = false;
-			var prev = GearUpkeep.Body; GearUpkeep.Body = this;
+			var prev = GearUpkeep.Body; GearUpkeep.Body = this; GearUpkeep.FrameCalls++;
 			int spawnStart = GearUpkeep.Spawned.Count;
 			long pf = global::Levy.Common.Util.LevyProf.Begin();
 			int frameKind = 0; long ft0 = GearUpkeep.Timing ? Stopwatch.GetTimestamp() : 0L;
@@ -215,11 +215,20 @@ namespace Levy.Content.NPCs
 				}
 				else
 				{
-					gc?.BeforeBuild();
-					long bt0 = GearUpkeep.Timing ? Stopwatch.GetTimestamp() : 0L;
-					GearBuild(d, savedNum, savedSlots, hs, ha, ref pf);
-					if (GearUpkeep.Timing) { GearCache.BuildTicks += Stopwatch.GetTimestamp() - bt0; GearCache.BuildN++; }
-					if (gc != null) { gc.AfterBuild(this, d, campfire0, lantern0); GearCache.Fulls++; frameKind = 2; }
+					// the approximate frame (SoldierNPC.GearApprox.cs): a fighting levy rebuilds every N ticks and keeps the last build's stats in between; a stat refresh or a dormant levy's frame always builds
+					int gi = GearApprox.Interval;
+					GearApprox ga = GearApproxEligible(gi) ? (_ga ??= new GearApprox()) : null;
+					if (ga != null && !_gearFullNext && !_gearDormant && (GearApprox.Probe ? GearApproxProbeTick(ga, d, gi, savedNum, savedSlots, hs, ha, ref pf) : ga.TryServe(this, d, gi))) frameKind = 3;
+					else
+					{
+						ga?.BeforeBuild(this, d);
+						gc?.BeforeBuild();
+						long bt0 = GearUpkeep.Timing ? Stopwatch.GetTimestamp() : 0L;
+						GearBuild(d, savedNum, savedSlots, hs, ha, ref pf);
+						if (GearUpkeep.Timing) { GearCache.BuildTicks += Stopwatch.GetTimestamp() - bt0; GearCache.BuildN++; }
+						if (gc != null) { gc.AfterBuild(this, d, campfire0, lantern0); GearCache.Fulls++; frameKind = 2; }
+						if (ga != null) { ga.AfterBuild(this, d, campfire0, lantern0); frameKind = 4; }
+					}
 				}
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfSets, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// Player.Update's tail: the mod hooks that read the finished equip pass. Calamity regenerates rogue stealth in the last.
@@ -243,7 +252,7 @@ namespace Levy.Content.NPCs
 				}
 				else { d.itemAnimation = 0; d.itemAnimationMax = 0; d.itemTime = 0; }
 				Rippers_Restore(); // ResetEffects cleared Calamity's Rage / Adrenaline mode flags; Calamity's fill/burn step (in PostUpdateMiscEffects) reads them
-				RunHook(() => PlayerLoader.PostUpdateMiscEffects(d));
+				RunHook(() => PlayerLoader.PostUpdateMiscEffects(d)); GearUpkeep.TailRuns++;
 				d.itemAnimation = animSaved; d.itemAnimationMax = animMaxSaved; d.itemTime = timeSaved;
 				NoteRegenBase(d);
 				if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 5); 
@@ -260,7 +269,8 @@ namespace Levy.Content.NPCs
 				AdoptUpkeepSpawns(spawnStart);
 				WriteBackVitals(d, life0, mana0);
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfExit, pf);
-				if (frameKind != 0 && GearUpkeep.Timing) { long dt = Stopwatch.GetTimestamp() - ft0; if (frameKind == 1) GearCache.HitTicks += dt; else GearCache.FullTicks += dt; }
+				LastFrameKind = frameKind;
+				if (frameKind != 0 && GearUpkeep.Timing) { long dt = Stopwatch.GetTimestamp() - ft0; if (frameKind == 1) GearCache.HitTicks += dt; else if (frameKind == 2) GearCache.FullTicks += dt; else if (frameKind == 3) GearApprox.ServedFrameTicks += dt; else GearApprox.FullFrameTicks += dt; }
 			}
 		}
 
@@ -489,6 +499,8 @@ namespace Levy.Content.NPCs
 		/// <summary>The soldier whose frame is running (the projectile catcher records into <see cref="Spawned"/> only then).</summary>
 		internal static SoldierNPC Body;
 		internal static readonly List<int> Spawned = new();
+		/// <summary>Checks: gear frames started, and frames that reached the tail (PostUpdateMiscEffects).</summary>
+		internal static long FrameCalls, TailRuns;
 
 		// counters (harness)
 		/// <summary>Frame timing is lab-only (LEVY_PROF / LEVY_HARNESS): two clock reads per soldier per tick are not free.</summary>
@@ -513,6 +525,8 @@ namespace Levy.Content.NPCs
 		private static readonly Dictionary<long, (uint windowStart, int n)> _churn = new();
 		private static readonly Dictionary<int, uint> _bound = new();
 		public static readonly Dictionary<int, int> OwnerBoundTypes = new();
+		/// <summary>The type is held as owner-bound right now (no side effects: the churn count is not touched).</summary>
+		internal static bool BoundNow(int type) => _bound.TryGetValue(type, out uint until) && Main.GameUpdateCount < until;
 		internal static bool OwnerBound(int type, int soldier)
 		{
 			long key = type * 4096L + soldier; // counted per soldier: an army of Gelatin wearers is a lot of spawns, but each casts only one in forty ticks

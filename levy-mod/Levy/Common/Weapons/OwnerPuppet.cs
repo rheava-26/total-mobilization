@@ -302,6 +302,7 @@ namespace Levy.Common.Weapons
 
 		private static void DamageDetour(On_Projectile.orig_Damage orig, Projectile self)
 		{ _hl_DamageDetour_1++;
+			if (SwapProf.On) { DamageTimed(orig, self); return; }
 			if (Mask == 0 || !Enter(self, 1)) { orig(self); return; }
 			try { orig(self); } finally { Exit(); }
 		} private static int _hl_DamageDetour_1;
@@ -312,9 +313,32 @@ namespace Levy.Common.Weapons
 		} private static int _hl_KillDetour_4;
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
 		{ _hl_UpdateDetour_6++;
+			if (SwapProf.On) { UpdateTimed(orig, self, i); return; }
 			if (Mask == 0 || !Enter(self, 4)) { orig(self, i); return; }
 			try { orig(self, i); } finally { Exit(); }
 		} private static int _hl_UpdateDetour_6;
+
+		// ---- lab (LEVY_SWAPPROF=1): the swap's own cost against the whole update of a soldier's shot
+		private static void UpdateTimed(On_Projectile.orig_Update orig, Projectile self, int i)
+		{
+			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+			bool entered = Mask != 0 && Enter(self, 4);
+			long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+			if (!entered) { SwapProf.EnterMiss += t1 - t0; orig(self, i); return; }
+			long t2 = 0;
+			try { orig(self, i); }
+			finally { t2 = System.Diagnostics.Stopwatch.GetTimestamp(); Exit(); long t3 = System.Diagnostics.Stopwatch.GetTimestamp(); SwapProf.UpdSwap += (t1 - t0) + (t3 - t2); SwapProf.UpdTotal += t3 - t0; SwapProf.UpdN++; }
+		}
+		private static void DamageTimed(On_Projectile.orig_Damage orig, Projectile self)
+		{
+			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+			bool entered = Mask != 0 && Enter(self, 1);
+			long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+			if (!entered) { orig(self); return; }
+			long t2 = 0;
+			try { orig(self); }
+			finally { t2 = System.Diagnostics.Stopwatch.GetTimestamp(); Exit(); long t3 = System.Diagnostics.Stopwatch.GetTimestamp(); SwapProf.DamSwap += (t1 - t0) + (t3 - t2); SwapProf.DamN++; }
+		}
 
 		// ---- bit 64: draw ----
 		/// <summary>One open draw puppet (a draw never nests inside an update pass, and one projectile draws at a time).</summary>
@@ -430,5 +454,13 @@ namespace Levy.Common.Weapons
 			catch (Exception) { }
 			finally { _curTp = tok.Prev; }
 		}
+	}
+
+	/// <summary>Lab (LEVY_SWAPPROF=1): what the owner swaps around a soldier's shot cost, against the shot's whole update (Stopwatch ticks).</summary>
+	internal static class SwapProf
+	{
+		internal static bool On = System.Environment.GetEnvironmentVariable("LEVY_SWAPPROF") == "1";
+		internal static long UpdSwap, UpdTotal, UpdN, DamSwap, DamN, EnterMiss, GuardSwap, GuardN, ViewSwap, ViewN;
+		internal static void Reset() { UpdSwap = UpdTotal = UpdN = DamSwap = DamN = EnterMiss = GuardSwap = GuardN = ViewSwap = ViewN = 0; }
 	}
 }

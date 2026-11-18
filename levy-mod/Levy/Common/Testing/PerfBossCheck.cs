@@ -30,7 +30,7 @@ namespace Levy.Common.Testing
 	/// of the cost with them off (flood under 0.5; the quiet field must show dormant levies skipping gear frames). Absolute microseconds per levy are logged as information. Lab (measured, 150 levies, same boot, off -> on): quiet 75 -> 42 us per levy; a 500-projectile flood over, far from and
 	/// through the army 520, 640, 520 -> 41, 11, 97 us. What it cannot show: draw cost (a headless server cannot draw).
 	/// </summary>
-	public class PerfBossCheck : ModSystem
+	public partial class PerfBossCheck : ModSystem
 	{
 		private static bool _armed, _done, _running, _lab; private static int _calls, _pass, _fail;
 		private static Mod _mod; private static int _savedMy;
@@ -548,6 +548,7 @@ namespace Levy.Common.Testing
 			finally { global::Levy.Common.Weapons.PairCull.HostileOn = hostileWas; SoldierNPC.DormancyOn = dormWas; }
 
 			// ---- the gear frame against the number of shots alive (lagsweep 11-17): an engaged levy runs a player's whole equipment pass every tick, so anything in it that walks every projectile grows with the army's own shots
+			if (Want("gearapprox")) { try { GearApproxChecks(); } catch (Exception e) { Check("approximate gear frame checks threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); } }
 			if (Want("gearscale")) { try { GearScaling(); } catch (Exception e) { Check("gear frame scaling threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); } }
 
 			// ---- the always-on performance analyzer's own cost: the same army and the same flood, timed with the analyzer attached and removed in turn

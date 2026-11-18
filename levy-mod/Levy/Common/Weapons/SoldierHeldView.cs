@@ -51,6 +51,7 @@ namespace Levy.Common.Weapons
 
 		private static void Run(Action<Projectile> orig, Projectile p, SoldierNPC body, Item item)
 		{
+			long v0 = SwapProf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
 			Player owner = Main.player[p.owner];
 			int sel = owner?.selectedItem ?? -1;
 			if (owner == null || sel < 0 || sel >= owner.inventory.Length) { orig(p); return; }
@@ -61,6 +62,7 @@ namespace Levy.Common.Weapons
 				owner.inventory[sel] = item;
 				HookProbe.ViewActed++;
 				if (!ReferenceEquals(owner.HeldItem, item)) HookProbe.ViewMismatch++;
+				if (SwapProf.On) { SwapProf.ViewSwap += System.Diagnostics.Stopwatch.GetTimestamp() - v0; SwapProf.ViewN++; }
 				orig(p);
 				if (Dbg && Main.GameUpdateCount % 60 == 0) HookProbe.ViewLast = $"{p.ModProjectile?.Name} owner={p.owner} sel={sel} saved={saved?.Name} levyItem={item.Name} ua={item.useAnimation} heldNow={owner.HeldItem?.Name} fireRate={p.ModProjectile?.GetType().GetProperty("fireRate")?.GetValue(p.ModProjectile)}";
 			}

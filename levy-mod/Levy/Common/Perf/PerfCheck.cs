@@ -147,11 +147,46 @@ namespace Levy.Common.Perf
 		private static string Dump(PerfWindow w) => w == null ? "no window" : string.Join("; ", w.Top.Take(6).Select(t => $"{t.Cat} {t.Name} {t.Ms:0.0} ms x{t.N:0}"));
 
 		// ------------------------------------------------------------------------------------------ the check
+		/// <summary>The "Speed in big fights" settings: Frame Skip reads and writes the game's own setting (and is not stored in Levy's file); the gear interval has its default and is what the gear frame uses.</summary>
+		private static void SpeedSettings()
+		{
+			var c = PerfConfig.Get;
+			if (c == null) { Check("the performance settings are loaded", false); return; }
+			var was = Main.FrameSkipMode;
+			try
+			{
+				bool ok = true; var seen = new List<string>();
+				foreach (var (choice, mode) in new[] { (FrameSkipChoice.Subtle, Terraria.Enums.FrameSkipMode.Subtle), (FrameSkipChoice.Off, Terraria.Enums.FrameSkipMode.Off), (FrameSkipChoice.On, Terraria.Enums.FrameSkipMode.On) })
+				{
+					c.FrameSkip = choice;
+					ok &= Main.FrameSkipMode == mode && c.FrameSkip == choice; seen.Add(choice + "->" + Main.FrameSkipMode);
+				}
+				Main.FrameSkipMode = Terraria.Enums.FrameSkipMode.Subtle;
+				ok &= c.FrameSkip == FrameSkipChoice.Subtle;
+				Check("Frame Skip in Levy's settings sets the game's Frame Skip and shows it (" + string.Join(", ", seen) + ")", ok);
+				string json = Newtonsoft.Json.JsonConvert.SerializeObject(c);
+				Check("Frame Skip is the game's setting, not stored in Levy's settings file", !json.Contains("\"FrameSkip\"") && json.Contains("GearUpdateIntervalWhenFighting"));
+			}
+			finally { Main.FrameSkipMode = was; }
+			var attr = typeof(PerfConfig).GetField(nameof(PerfConfig.GearUpdateIntervalWhenFighting)).GetCustomAttribute<DefaultValueAttribute>();
+			int keep = c.GearUpdateIntervalWhenFighting, hi = Content.NPCs.SoldierNPC.GearApprox.HarnessInterval;
+			try
+			{
+				Content.NPCs.SoldierNPC.GearApprox.HarnessInterval = 0;
+				c.GearUpdateIntervalWhenFighting = 5; int read = Content.NPCs.SoldierNPC.GearApprox.Interval;
+				c.GearUpdateIntervalWhenFighting = 1; int one = Content.NPCs.SoldierNPC.GearApprox.Interval;
+				bool env = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_GEARINTERVAL"));
+				Check($"\"Gear update interval when fighting\" defaults to {Content.NPCs.SoldierNPC.GearApproxDefaultInterval} and is what the gear frame uses (5 reads {read}, 1 reads {one})", attr != null && (int)attr.Value == Content.NPCs.SoldierNPC.GearApproxDefaultInterval && (env || (read == 5 && one == 1)));
+			}
+			finally { c.GearUpdateIntervalWhenFighting = keep; Content.NPCs.SoldierNPC.GearApprox.HarnessInterval = hi; }
+		}
+
 		private static void Run(string tmp)
 		{
 			PerfAnalyzer.TestServer = true; PerfAnalyzer.TestLog = true; PerfAnalyzer.TestLogDir = tmp; PerfAnalyzer.TestWindowSecs = 1e9;
 			PerfAnalyzer.TestRevive(); PerfAnalyzer.ConfigChanged();
 			Check("the analyzer attaches on a server when the check asks (timing on)", PerfAnalyzer.TimingOn);
+			SpeedSettings();
 			PerfAnalyzer.TestWrapContent();
 			Note($"wrapped {PerfAnalyzer.WrappedLayers} map layer draws and {PerfAnalyzer.WrappedGlobals} global AI hooks; {PerfAnalyzer.FailedLayers + PerfAnalyzer.FailedGlobals} could not be wrapped; mods loaded: {string.Join(",", ModLoader.Mods.Where(m => m.Name != "ModLoader").Select(m => m.Name))}");
 			Check("the test layer and Levy's own map layers were wrapped", PerfAnalyzer.WrappedLayers >= 2);

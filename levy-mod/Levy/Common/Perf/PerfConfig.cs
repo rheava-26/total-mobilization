@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using Newtonsoft.Json;
+using Terraria;
 using Terraria.ModLoader;
 using Terraria.ModLoader.Config;
 
@@ -6,6 +8,9 @@ namespace Levy.Common.Perf
 {
 	/// <summary>How much of the army's visual effects are drawn. Reduced hides nameplates and thins the dust levy weapons throw; it changes nothing about what the army does.</summary>
 	public enum LevyEffectsQuality { Full = 0, Reduced = 1 }
+
+	/// <summary>The game's own Frame Skip setting, shown in Levy's settings (the order the choices are listed in).</summary>
+	public enum FrameSkipChoice { On = 0, Subtle = 1, Off = 2 }
 
 	/// <summary>Client-side settings of the performance analyzer. Field names are saved in the player's config file: never rename or remove one.</summary>
 	public class PerfConfig : ModConfig
@@ -35,5 +40,29 @@ namespace Levy.Common.Perf
 		[Header("Effects")]
 		/// <summary>Reduced hides nameplates and thins the dust levy weapons throw. The army fights exactly the same.</summary>
 		[DefaultValue(LevyEffectsQuality.Full)] [DrawTicks] public LevyEffectsQuality LevyEffects;
+
+		[Header("Speed")]
+		/// <summary>
+		/// How often a fighting levy rebuilds its gear's stats (the equipment pass: ResetEffects, buffs, equips, armor sets), in ticks. 1 rebuilds every tick, as a player does. Above 1 the stats of the last rebuild
+		/// are kept in between while the per-tick part (Rage, Adrenaline, stealth, cooldowns) still runs every tick, and a change of gear, buffs, held weapon or a life step rebuilds at once (SoldierNPC.GearApprox.cs).
+		/// </summary>
+		[Range(1, 8)] [DefaultValue(Content.NPCs.SoldierNPC.GearApproxDefaultInterval)] [Slider] public int GearUpdateIntervalWhenFighting;
+
+		/// <summary>The game's own Frame Skip setting (Settings, Video), read and written here and saved the game's way. Not stored in this config.</summary>
+		[JsonIgnore] [ShowDespiteJsonIgnore] [DrawTicks]
+		public FrameSkipChoice FrameSkip
+		{
+			get => Main.FrameSkipMode switch { Terraria.Enums.FrameSkipMode.Subtle => FrameSkipChoice.Subtle, Terraria.Enums.FrameSkipMode.Off => FrameSkipChoice.Off, _ => FrameSkipChoice.On };
+			set => SetFrameSkip(value);
+		}
+
+		/// <summary>Sets the game's Frame Skip and saves the game's settings, as the Video menu does. Nothing is saved on a server.</summary>
+		internal static void SetFrameSkip(FrameSkipChoice v)
+		{
+			var mode = v switch { FrameSkipChoice.Subtle => Terraria.Enums.FrameSkipMode.Subtle, FrameSkipChoice.Off => Terraria.Enums.FrameSkipMode.Off, _ => Terraria.Enums.FrameSkipMode.On };
+			if (Main.FrameSkipMode == mode) return;
+			Main.FrameSkipMode = mode;
+			if (!Main.dedServ) { try { Main.SaveSettings(); } catch (System.Exception e) { Levy.Instance?.Logger.Warn("Levy: saving the Frame Skip setting failed: " + e.Message); } }
+		}
 	}
 }

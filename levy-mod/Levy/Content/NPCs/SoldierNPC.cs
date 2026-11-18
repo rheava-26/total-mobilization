@@ -360,8 +360,10 @@ namespace Levy.Content.NPCs
 						// the per-tick gear frame (SoldierNPC.GearUpkeep.cs) IS the stat pass for these soldiers: same steps, plus the timers, buffs and the mod hooks Player.Update runs
 						GearUpkeep.PrepareCountsOncePerTick();
 						long t0 = GearUpkeep.Timing ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
+						_gearFullNext = true; // a stat refresh always builds in full (SoldierNPC.GearApprox.cs)
 						try { GearFrame(); _upkeepFails = 0; framed = true; }
 						catch (Exception e) { UpkeepFailed(e); }
+						finally { _gearFullNext = false; }
 						if (GearUpkeep.Timing) { GearUpkeep.Ticks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; GearUpkeep.Frames++; }
 					}
 					if (!framed)
@@ -488,6 +490,7 @@ namespace Levy.Content.NPCs
 			// The once-a-second stat refresh is staggered by body index: an army summoned or loaded in one tick otherwise refreshes all together, one tick in sixty carrying the whole army's re-equip (a ~10 ms tick).
 			if (!_statsPhased) { _statsPhased = true; if (global::Levy.Common.Util.LevyProf.Opt) _statsTimer = NPC.whoAmI * 7 % 60; }
 			bool dormant = UpdateGearDormancy(); // a levy that has stood calm and far from every enemy for a while (SoldierNPC.GearUpkeep.cs)
+			_gearDormant = dormant;
 			if (StatsDirty || ++_statsTimer >= (dormant ? DormantStatsTicks : 60)) { _statsTimer = 0; RefreshStats(); }
 			else if (_upkeepGear) { if (!dormant || GearDormantDue()) GearTick(); } // per-tick gear upkeep (SoldierNPC.GearUpkeep.cs); RefreshStats ran the same frame this tick when it was due
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.Stats, pd);

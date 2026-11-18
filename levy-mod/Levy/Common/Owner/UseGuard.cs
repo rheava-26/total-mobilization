@@ -212,9 +212,17 @@ namespace Levy.Common.Owner
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
 		{ _hl_UpdateDetour_5++;
 			if (Disabled || !IsArmyRound(self)) { orig(self, i); return; }
+			long g0 = global::Levy.Common.Weapons.SwapProf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
 			Snap s = TakeT(self.owner); GuardedUpdates++;
 			int type = self.type;
-			try { orig(self, i); } finally { PutT(s, "update", type); }
+			long g1 = global::Levy.Common.Weapons.SwapProf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+			try { orig(self, i); }
+			finally
+			{
+				long g2 = global::Levy.Common.Weapons.SwapProf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+				PutT(s, "update", type);
+				if (global::Levy.Common.Weapons.SwapProf.On) { global::Levy.Common.Weapons.SwapProf.GuardSwap += (g1 - g0) + (System.Diagnostics.Stopwatch.GetTimestamp() - g2); global::Levy.Common.Weapons.SwapProf.GuardN++; }
+			}
 		} private static int _hl_UpdateDetour_5;
 
 		/// <summary>

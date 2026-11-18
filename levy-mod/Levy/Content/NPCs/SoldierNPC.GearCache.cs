@@ -55,7 +55,7 @@ namespace Levy.Content.NPCs
 				"P._advancedShadows", "P.shadowPos", "P.shadowRotation", "P.shadowOrigin", "P.shadowDirection", "P.itemFlamePos", "P.speedSlice", "P.hermesStepSound", "P.dye", "P.miscDyes", "P.hideVisibleAccessory", "P.inventoryChestStack",
 				"P.mount._debugDraw", "P.mount._defaultDelegatesData", "ModAccessorySlotPlayer.exLoadouts", "UnloadedPlayer.", "CalamityPlayer.DoGCartSegments", "CalamityPlayer.subtitleColors", "CalamityPlayer.SeenDraedonDialogs", "ProgressionPlayer.AmmoObtained",
 			};
-			private static bool SkipPath(string path)
+			internal static bool SkipPath(string path)
 			{
 				foreach (var p in SkipPrefixes) if (path.StartsWith(p, StringComparison.Ordinal)) return true;
 				return path.EndsWith(".<StatsModifiedBy>k__BackingField", StringComparison.Ordinal);
@@ -69,7 +69,7 @@ namespace Levy.Content.NPCs
 			// Leaves
 			// ------------------------------------------------------------------------------------------------------------
 			/// <summary>Kept: the current value stays (Levy writes it, or the tail evolves it), and the build must not write it (checked at every full build).</summary>
-			private static readonly HashSet<string> Keep = new()
+			internal static readonly HashSet<string> Keep = new()
 			{
 				"P.oldPosition", "P.oldVelocity", // Levy moves the body; the dummy follows it every tick (position and velocity themselves are read by the build: compared)
 				"P.lifeRegenCount", // Levy's regeneration clock (SoldierNPC.Healing.cs); lifeRegenTime is read by a debuff's Update: compared
@@ -80,7 +80,7 @@ namespace Levy.Content.NPCs
 				"CalamityPlayer.rage", "CalamityPlayer.adrenaline", "CalamityPlayer.rageCombatFrames", "CalamityPlayer.adrenalinePauseTimer", "CalamityPlayer.persecutedEnchantSummonTimer", "CalamityPlayer.stealthUIAlpha", "CalamityPlayer.rogueStealth",
 			};
 			/// <summary>Kept and stepped by <see cref="Step"/>: the build's own per-tick counters.</summary>
-			private static readonly HashSet<string> Stepped = new() { "CalamityPlayer.ViridVanguardRotation", "CalamityPlayer.ViridVanguardRotationToAdd", "CalamityPlayer.ViridVanguardActiveCooldown", "CalamityPlayer.ViridVanguardActiveAttackerThisFrame" };
+			internal static readonly HashSet<string> Stepped = new() { "CalamityPlayer.ViridVanguardRotation", "CalamityPlayer.ViridVanguardRotationToAdd", "CalamityPlayer.ViridVanguardActiveCooldown", "CalamityPlayer.ViridVanguardActiveAttackerThisFrame" };
 			/// <summary>Not compared: the build overwrites them before anything reads them (the tail changes them every tick: rogue stealth raises the rogue damage and lowers aggro). Restored from the build's image.</summary>
 			private static readonly HashSet<string> Rebuilt = new() { "P.aggro", "CalamityPlayer.stealthDamage" };
 			private static bool RebuiltNode(string path) => path == "P.damageData" || path.StartsWith("P.damageData.", StringComparison.Ordinal);
@@ -210,13 +210,13 @@ namespace Levy.Content.NPCs
 			// What the build reads outside the dummy
 			// ------------------------------------------------------------------------------------------------------------
 			private static FieldInfo _bossesField; private static bool _bossesLooked;
-			private static bool CalBosses()
+			internal static bool CalBosses()
 			{
 				if (!_bossesLooked) { _bossesLooked = true; try { _bossesField = ModLoader.TryGetMod("CalamityMod", out Mod cal) ? cal.Code?.GetType("CalamityMod.CalPlayer.CalamityPlayer")?.GetField("areThereAnyDamnBosses", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static) : null; } catch { } }
 				try { return _bossesField != null && (bool)_bossesField.GetValue(null); } catch { return false; }
 			}
 
-			private static long KeyOf(SoldierNPC s, Player d)
+			internal static long KeyOf(SoldierNPC s, Player d)
 			{
 				var h = new HashCode();
 				var sm = Main.SceneMetrics;
@@ -277,7 +277,7 @@ namespace Levy.Content.NPCs
 			}
 
 			/// <summary>A Virid Vanguard blade in the world: Calamity's ResetEffects asks every player whether one of theirs is attacking, which a cached tick does not repeat. Once a tick.</summary>
-			private static bool ViridBladeAlive()
+			internal static bool ViridBladeAlive()
 			{
 				LookVirid();
 				if (_vvBlade < 0) return false;
@@ -286,19 +286,24 @@ namespace Levy.Content.NPCs
 				return _vvAlive;
 			}
 
-			/// <summary>Calamity's ResetEffects, its three per-tick lines for the Virid Vanguard, verbatim (no blade alive: none of the dummy's is attacking).</summary>
-			private void Step(SoldierNPC s, Player d)
+			private void Step(SoldierNPC s, Player d) => StepVirid(ref _cp, d);
+
+			/// <summary>The Virid Vanguard's item type (-1 without Calamity).</summary>
+			internal static int ViridItem { get { LookVirid(); return _vvItem; } }
+
+			/// <summary>Calamity's ResetEffects, its three per-tick lines for the Virid Vanguard, verbatim (no blade alive: none of the dummy's is attacking). <paramref name="cp"/> caches the dummy's CalamityPlayer.</summary>
+			internal static void StepVirid(ref ModPlayer cp, Player d)
 			{
 				LookVirid();
 				if (_calPlayer == null) return;
-				if (_cp == null) foreach (var mp in d.ModPlayers) if (mp.GetType() == _calPlayer) { _cp = mp; break; }
-				if (_cp == null) return;
-				_vvAtkSet(_cp, false);
-				_vvRotSet(_cp, MathHelper.WrapAngle(_vvRotGet(_cp) + _vvAddGet(_cp)));
-				_vvAddSet(_cp, _vvIdle);
-				float cd = _vvCdGet(_cp); // a float in Calamity (decremented and incremented by one)
-				if (d.HeldItem.type == _vvItem) { if (cd > 0) { cd--; _vvCdSet(_cp, cd); } }
-				else if (cd >= 0 && cd < _vvCdMax) { cd++; _vvCdSet(_cp, cd); }
+				if (cp == null) foreach (var mp in d.ModPlayers) if (mp.GetType() == _calPlayer) { cp = mp; break; }
+				if (cp == null) return;
+				_vvAtkSet(cp, false);
+				_vvRotSet(cp, MathHelper.WrapAngle(_vvRotGet(cp) + _vvAddGet(cp)));
+				_vvAddSet(cp, _vvIdle);
+				float cd = _vvCdGet(cp); // a float in Calamity (decremented and incremented by one)
+				if (d.HeldItem.type == _vvItem) { if (cd > 0) { cd--; _vvCdSet(cp, cd); } }
+				else if (cd >= 0 && cd < _vvCdMax) { cd++; _vvCdSet(cp, cd); }
 			}
 
 			// ------------------------------------------------------------------------------------------------------------

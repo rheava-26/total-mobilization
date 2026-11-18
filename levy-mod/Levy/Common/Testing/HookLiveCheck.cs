@@ -55,6 +55,7 @@ namespace Levy.Common.Testing
 			"AllyHealHook / MedicalBagHook (Thorium): Thorium is not in the ship chain",
 			"PerfEntityHooks / PerfAttrib ILHooks: [PerfAnalyzer]",
 			"IdentityGuard.Wrap (other mods' ModPlayer hooks): [IdentityWorld] identity guard census",
+			"CalamityLevyPatches (Calamity: AndroombaRightClick, AbyssEffects light levels, UpdateDrawingParameters, ResetEffects projectile Any, for levy dummies): [PerfBoss] Calamity patch checks",
 		};
 
 		/// <summary>Drives the detours that only particular game calls reach, once each, so they are counted: a retarget by an NPC that uses the upgraded or the invasion / non-bee search, an NPC transforming, the player's heal text, a chat line. Each call runs the original too, harmlessly, on a pinned slime.</summary>

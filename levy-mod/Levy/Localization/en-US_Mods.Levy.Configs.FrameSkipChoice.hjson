@@ -1,0 +1,17 @@
+# Keys here are relative to Mods.Levy.Configs.FrameSkipChoice (the choices of "Frame Skip").
+On: {
+	Label: On
+	Tooltip: ""
+}
+
+Subtle: {
+	Label: Subtle
+	Tooltip: ""
+}
+
+Off: {
+	Label: Off
+	Tooltip: ""
+}
+
+Tooltip: ""

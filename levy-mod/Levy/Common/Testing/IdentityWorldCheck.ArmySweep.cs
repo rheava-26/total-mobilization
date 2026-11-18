@@ -75,12 +75,12 @@ namespace Levy.Common.Testing
 
 		private sealed class ArmyRes
 		{
-			public string Who = ""; public int Uses, Projs, AtCmd, NearCmdTicks, Engage, Ran, MaxMinions, MaxSentries, Hits; public long Dmg; public double SpawnActor, SpawnCmd; public string End = ""; public string Err;
+			public string Who = ""; public int Uses, Projs, AtCmd, NearCmdTicks, MaxLinger, Engage, Ran, MaxMinions, MaxSentries, Hits; public long Dmg; public double SpawnActor, SpawnCmd; public string End = ""; public string Err;
 			public List<string> Seq = new(); // the first projectiles seen, by type, in the order they appeared
 			public Dictionary<string, int> Types = new(); public Dictionary<string, (int hits, long dmg)> ByProj = new(); public Dictionary<string, int> States = new(); public int DummyMinions, DummyTurrets; public float MinX = 1e9f, MaxX = -1e9f;
 			public double UsesPerSec => Uses * 60.0 / Math.Max(1, Ran);
 			public double AvgActor => Projs == 0 ? -1 : SpawnActor / Projs / 16.0; public double AvgCmd => Projs == 0 ? -1 : SpawnCmd / Projs / 16.0;
-			public bool FromCommander => AtCmd > 0 || NearCmdTicks >= 12; // first seen at her, or lingering around her (a shot that merely flies past on a ricochet is geometry)
+			public bool FromCommander => AtCmd > 0 || MaxLinger >= 12; // first seen at her, or ONE shot lingering around her (a shot that flies past her, as a piercing beam fired 45 tiles her way does, is geometry)
 			public override string ToString() => $"{Who}: uses/s {UsesPerSec:0.00}, projs {Projs}, spawn {AvgActor:0.0} tiles from the actor / {AvgCmd:0.0} from the commander, hits {Hits}, damage {Dmg}, minions {MaxMinions} (slots {DummyMinions}), sentries {MaxSentries} (slots {DummyTurrets}), engaged {Engage}/{Ran} (states {string.Join(",", States.Select(kv => kv.Key + ":" + kv.Value))}; x {MinX:0.0}..{MaxX:0.0} tiles from start){(Err != null ? ", THREW " + Err : "")} [{string.Join(",", Types.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + "x" + kv.Value))}] hit by [{string.Join(",", ByProj.OrderByDescending(kv => kv.Value.dmg).Take(4).Select(kv => kv.Key + ":" + kv.Value.hits + "h/" + kv.Value.dmg))}]";
 		}
 
@@ -181,7 +181,7 @@ namespace Levy.Common.Testing
 				Main.rand = new Terraria.Utilities.UnifiedRandom(777);
 				KeepCommander(); PinSweepTarget(); CursorOnCommander(); Step(20);
 				for (int i = 0; i < Main.maxProjectiles; i++) Main.projectile[i].active = false;
-				var live = new Dictionary<int, int>(); uint prevUse = 0; int prevAnim = 0; ArmySweepTally.Hits = 0; ArmySweepTally.Damage = 0; ArmySweepTally.ByProj = new(); ArmyReadDamage(new ArmyRes());
+				var live = new Dictionary<int, int>(); var linger = new Dictionary<int, (Vector2 at, int ticks)>(); uint prevUse = 0; int prevAnim = 0; ArmySweepTally.Hits = 0; ArmySweepTally.Damage = 0; ArmySweepTally.ByProj = new(); ArmyReadDamage(new ArmyRes());
 				for (int k = 0; k < ticks; k++)
 				{
 					Vector2 actor;
@@ -210,11 +210,11 @@ namespace Levy.Common.Testing
 					for (int i = 0; i < Main.maxProjectiles; i++)
 					{
 						Projectile p = Main.projectile[i];
-						if (!p.active || p.hostile || ((p.type == ProjectileID.FallingStarSpawner || p.type == ProjectileID.FallingStar) && p.type != w.shoot)) { live.Remove(i); continue; } // the night sky's own falling stars are not anyone's shot
+						if (!p.active || p.hostile || ((p.type == ProjectileID.FallingStarSpawner || p.type == ProjectileID.FallingStar) && p.type != w.shoot)) { live.Remove(i); linger.Remove(i); continue; } // the night sky's own falling stars are not anyone's shot
 						if (p.minion || p.minionSlots > 0f) minions++;
 						if (p.sentry) sentries++;
 						float da = Vector2.Distance(p.Center, actor), dc = Vector2.Distance(p.Center, cmd);
-						if (live.TryGetValue(i, out int idn) && idn != p.identity) live.Remove(i);
+						if (live.TryGetValue(i, out int idn) && idn != p.identity) { live.Remove(i); linger.Remove(i); }
 						if (!live.ContainsKey(i))
 						{
 							live[i] = p.identity; res.Projs++; res.SpawnActor += da; res.SpawnCmd += dc;
@@ -222,7 +222,7 @@ namespace Levy.Common.Testing
 							if (!player && dc < NearTiles * 16f && dc < da) res.AtCmd++;
 							if (ArmyDebug && res.Projs <= 5) Note($"  armydbg first sight {(player ? "player" : "levy")} t={k} {nm} owner={p.owner} pos=({p.Center.X:0.0},{p.Center.Y:0.0}) actor=({actor.X:0.0},{actor.Y:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) dmg={p.damage} ai=({p.ai[0]:0.0},{p.ai[1]:0.0}) tagged={(p.TryGetGlobalProjectile(out SoldierProjectileTag tg0) && tg0.SoldierIndex >= 0)}");
 						}
-						if (!player && dc < NearTiles * 16f && dc < da) { res.NearCmdTicks++; if (ArmyDebug && res.NearCmdTicks <= 6) Note($"  armydbg near commander t={k} {p.ModProjectile?.Name ?? p.type.ToString()} owner={p.owner} age={p.timeLeft} pos-levy=({(p.Center.X - actor.X) / 16f:0.0},{(p.Center.Y - actor.Y) / 16f:0.0}) pos-cmd=({(p.Center.X - cmd.X) / 16f:0.0},{(p.Center.Y - cmd.Y) / 16f:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.0},{p.ai[1]:0.0})"); }
+						if (!player && dc < NearTiles * 16f && dc < da) { res.NearCmdTicks++; if (!linger.TryGetValue(i, out var lg)) lg = (p.Center, 0); if (Vector2.Distance(p.Center, lg.at) < 48f) { lg.ticks++; res.MaxLinger = Math.Max(res.MaxLinger, lg.ticks); } linger[i] = lg; if (ArmyDebug && res.NearCmdTicks <= 6) Note($"  armydbg near commander t={k} {p.ModProjectile?.Name ?? p.type.ToString()} owner={p.owner} age={p.timeLeft} pos-levy=({(p.Center.X - actor.X) / 16f:0.0},{(p.Center.Y - actor.Y) / 16f:0.0}) pos-cmd=({(p.Center.X - cmd.X) / 16f:0.0},{(p.Center.Y - cmd.Y) / 16f:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.0},{p.ai[1]:0.0})"); }
 						if (ArmyDebug && k % 100 == 50 && (p.minion || p.sentry || p.minionSlots > 0f)) Note($"  armydbg {(player ? "player" : "levy")} t={k} {p.ModProjectile?.Name ?? p.type.ToString()} owner={p.owner} dmg={p.damage} friendly={p.friendly} pos-target=({(p.Center.X - _sweepTarget.Center.X) / 16f:0.0},{(p.Center.Y - _sweepTarget.Center.Y) / 16f:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.0},{p.ai[1]:0.0}) localAI=({p.localAI[0]:0.0},{p.localAI[1]:0.0}) tl={p.timeLeft}");
 					}
 					res.MaxMinions = Math.Max(res.MaxMinions, minions); res.MaxSentries = Math.Max(res.MaxSentries, sentries);

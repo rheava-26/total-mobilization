@@ -113,7 +113,7 @@ namespace Levy.Common.Testing
 				Player p = Main.player[0]; p.active = true; p.dead = false; p.name = _name;
 				if (p.statLifeMax < 400) p.statLifeMax = p.statLifeMax2 = 400; p.statLife = p.statLifeMax2;
 				p.Bottom = _cmdAt; p.velocity = Vector2.Zero; p.fallStart = p.fallStart2 = (int)(_cmdAt.Y / 16f); p.noFallDmg = true;
-				for (int k = 0; k < Main.maxNPCs; k++) { NPC e = Main.npc[k]; if (e.active && WorldStep.IsNaturalHostile(e)) e.active = false; }
+				for (int k = 0; k < Main.maxNPCs; k++) { NPC e = Main.npc[k]; if (e.active && WorldStep.IsNaturalHostile(e) && !(_keepDuke && (e.type == RiftSky.DukeType || e.ModNPC?.Mod.Name == RiftSky.ModName))) e.active = false; }
 				WorldStep.Update();
 			}
 		}
@@ -129,6 +129,7 @@ namespace Levy.Common.Testing
 			CommanderReactions.Reset();
 			Step(60);
 			Eclipse();
+			Rift(army);
 			Upgrades(army);
 		}
 
@@ -169,6 +170,139 @@ namespace Levy.Common.Testing
 			e0 = CommanderReactions.EclipseEndings;
 			CommanderReactions.Reset(); Main.eclipse = false; Step(150);
 			Check($"a world loaded after an eclipse is not an ending ({CommanderReactions.EclipseEndings - e0} endings)", CommanderReactions.EclipseEndings == e0);
+		}
+
+		/// <summary>
+		/// The rift sky (Wrath of the Gods), with real levies and real ticks. With NoxusBoss loaded the real covering scene is started (its timer set as the mod's own start sets it) and run to its end;
+		/// without it the same moments are driven through the overrides. Ambient chatter is forced on and two minutes of it are counted with no mood (the control), then while the sun is covered
+		/// (nothing may be said: no line, no float, right-click "..."), then the burst after (the levies near the commander, one after another), then two tense minutes (fewer lines, every chat line a rift line).
+		/// </summary>
+		private static void Rift(List<SoldierNPC> army)
+		{
+			bool real = RiftSky.Installed && RiftSky.Problem.Length == 0;
+			Note(real ? "NoxusBoss is loaded: the real covering scene is run" : "NoxusBoss is not loaded: the covering is driven through the overrides (" + RiftSky.Problem + ")");
+			int chat0 = SoldierNPC.ChatterOverride; bool rain0 = Main.raining;
+			SoldierNPC.ChatterOverride = 1; Main.raining = false;
+			try
+			{
+				Main.dayTime = true; Main.time = 9000; RiftMood.Reset(); DialogueSystem.ResetRuntime();
+				int d0 = DialogueSystem.FloatingDelivered, a0 = SoldierNPC.ChatterLines;
+				RiftStep(RiftWindow);
+				int control = DialogueSystem.FloatingDelivered - d0, controlSaid = SoldierNPC.ChatterLines - a0;
+				Note($"control, no mood, three minutes: {controlSaid} ambient lines picked, {control} floating lines out = {control / 3f:F1} lines a minute from {Standing(army)} standing levies ({_bandsCleared} band members cleared from the arena)");
+				Check($"with no rift the army chats as usual ({control} floating lines in three minutes)", control >= 5 && RiftMood.Phase == RiftPhase.None);
+
+				// the covering
+				Main.dayTime = true; Main.time = 9000;
+				if (real) Check("the real covering scene starts", RiftSky.SetReal(eventTimer: 1));
+				else { RiftSky.TestInstalled = true; RiftSky.TestDefeated = false; RiftSky.TestCovered = false; RiftSky.TestTransition = true; }
+				RiftStep(2);
+				Check($"while the sun is covered the mood is Silent ({RiftMood.Phase})", RiftMood.Phase == RiftPhase.Silent);
+				d0 = DialogueSystem.FloatingDelivered; a0 = SoldierNPC.ChatterLines; int ch0 = RiftMood.Changes, pr0 = RiftMood.PanicRounds, pl0 = RiftMood.PanicLines;
+				string chat = army.Count > 0 ? DialogueSystem.ChatLine(army[0]) : null;
+				int scene = 0;
+				if (real) { while (RiftSky.Transition && scene < 2400) { RiftStep(1); scene++; } }
+				else { RiftStep(1500); scene = 1500; }
+				int silentOut = DialogueSystem.FloatingDelivered - d0, silentSaid = SoldierNPC.ChatterLines - a0;
+				Check($"while the sun was covered ({scene} ticks) nobody said anything ({silentSaid} lines picked, {silentOut} floats out, right-click \"{chat}\")", silentOut == 0 && silentSaid == 0 && chat == "..." && scene >= 1000);
+
+				// the end: the burst
+				if (!real) { RiftSky.TestTransition = false; RiftSky.TestCovered = true; }
+				RiftStep(20 + LevyConstants.RiftPanicSpeakers * LevyConstants.RiftPanicStepTicks + 60);
+				int burst = RiftMood.PanicLines - pl0;
+				Note($"at the end of the covering: {Standing(army)} of {army.Count} levies standing near the commander");
+				Check($"the covering ends once and the levies near the commander react ({RiftMood.Changes - ch0} endings, {RiftMood.PanicRounds - pr0} rounds, {burst} worried lines)", RiftMood.Changes == ch0 + 1 && RiftMood.PanicRounds == pr0 + 1 && burst == Math.Min(LevyConstants.RiftPanicSpeakers, army.Count));
+				Check($"after the covering the sky reads covered and the mood is Tense ({RiftMood.Phase}, covered={RiftSky.Covered})", RiftSky.Covered && RiftMood.Phase == RiftPhase.Tense && RiftMood.PanicNow);
+				if (real) Note($"NoxusBoss's own rift flag after the scene: {RiftSky.RiftOngoing}");
+
+				// the tense days
+				RiftMood.SetPanic(false); DialogueSystem.ResetRuntime();
+				int riftChat = 0, otherChat = 0; string other = null;
+				foreach (SoldierNPC s in army)
+				{
+					if (s == null || !s.NPC.active) continue;
+					for (int i = 0; i < 8; i++) { string t = DialogueSystem.ChatLine(s); if (RiftMoodCheck.IsRiftText(t)) riftChat++; else { otherChat++; other ??= t; } }
+				}
+				Check($"in the tense days every right-click chat is a rift line ({riftChat} rift, {otherChat} other{(other != null ? ": " + other : "")})", riftChat > 0 && otherChat == 0);
+				DialogueSystem.ResetRuntime(); // the chat sampling above used up the rift lines' repeat cooldowns; the ambient minutes start fresh, as the control did
+				d0 = DialogueSystem.FloatingDelivered; a0 = SoldierNPC.ChatterLines;
+				RiftStep(RiftWindow);
+				int tense = DialogueSystem.FloatingDelivered - d0, tenseSaid = SoldierNPC.ChatterLines - a0;
+				Note($"tense, three minutes: {tenseSaid} ambient lines picked, {tense} floating lines out = {tense / 3f:F1} a minute (control {control / 3f:F1}), {Standing(army)} standing");
+				Check($"the tense army is much quieter, but not mute ({tense} floating lines against {control}; {tenseSaid} picked)", tense <= control * 0.6f && tenseSaid > 0);
+
+				// the sky swallows the Old Duke in front of the army
+				int de0 = RiftMood.DukeEndings, dr0 = RiftMood.DukeRounds, dl0 = RiftMood.DukeLines;
+				bool realDuke = real && RiftSky.DukeType >= 0 && !RiftSky.DukeKilled;
+				int dukeTicks = 0;
+				if (realDuke)
+				{
+					_keepDuke = true; // the arena clearing in Step would take the Old Duke and NoxusBoss's own NPCs for natural spawns
+					int di = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent(), (int)_cmdAt.X + 400, (int)_cmdAt.Y - 300, RiftSky.DukeType);
+					Note($"a real Old Duke is spawned (slot {di}); NoxusBoss is left to run its scene");
+					while (!RiftSky.DukeKilled && dukeTicks < 900)
+					{
+						RiftStep(1); dukeTicks++;
+						if (dukeTicks == 5 || dukeTicks == 120) { NPC d = di >= 0 && di < Main.maxNPCs ? Main.npc[di] : null; Note($"Old Duke after {dukeTicks} ticks: active={d?.active} type ok={d?.type == RiftSky.DukeType} ai0={d?.ai[0]} ai2={d?.ai[2]} scale={d?.scale:F2} immune={d?.dontTakeDamage}"); }
+					}
+					Check($"NoxusBoss's own scene takes the Old Duke ({dukeTicks} ticks, flag={RiftSky.DukeKilled})", RiftSky.DukeKilled);
+				}
+				else
+				{
+					Note("the Old Duke is driven through the overrides" + (real ? " (Calamity's Old Duke is not loaded)" : ""));
+					RiftSky.TestDukeAt = _cmdAt + new Vector2(400f, -300f);
+					RiftSky.TestDukeAlive = true; RiftStep(60); RiftSky.TestDukeAlive = false; RiftSky.TestDukeKilled = true;
+				}
+				RiftStep(20 + LevyConstants.RiftDukeSpeakers * LevyConstants.RiftDukeStepTicks + 60);
+				int dukeLines = RiftMood.DukeLines - dl0;
+				Check($"when the sky swallows the boss the levies who saw it are shocked ({RiftMood.DukeEndings - de0} endings, {RiftMood.DukeRounds - dr0} rounds, {dukeLines} lines)", RiftMood.DukeEndings == de0 + 1 && RiftMood.DukeRounds == dr0 + 1 && dukeLines == Math.Min(LevyConstants.RiftDukeSpeakers, Standing(army)));
+				RiftStep(600);
+				Check($"and only once ({RiftMood.DukeEndings - de0} endings ten seconds later)", RiftMood.DukeEndings == de0 + 1);
+				// the same far from the army: an ending, but nobody saw it
+				RiftSky.TestDukeKilled = false; RiftStep(5);
+				RiftSky.TestDukeAt = _cmdAt + new Vector2(LevyConstants.RiftDukeReachTiles * 16f * 2.5f, 0f);
+				RiftSky.TestDukeAlive = true; RiftStep(30); RiftSky.TestDukeAlive = false; RiftSky.TestDukeKilled = true;
+				int far0 = RiftMood.DukeLines, farR = RiftMood.DukeRounds;
+				RiftStep(20 + LevyConstants.RiftDukeSpeakers * LevyConstants.RiftDukeStepTicks + 60);
+				Check($"swallowed {LevyConstants.RiftDukeReachTiles * 2.5f:F0} tiles from the army it is an ending nobody saw ({RiftMood.DukeEndings - de0} endings, {RiftMood.DukeRounds - farR} rounds, {RiftMood.DukeLines - far0} lines)", RiftMood.DukeEndings == de0 + 2 && RiftMood.DukeRounds == farR && RiftMood.DukeLines == far0);
+			}
+			finally
+			{
+				_keepDuke = false;
+				if (real) RiftSky.SetReal(covered: false, eventTimer: 0, waiting: false, snowHeight: 0f, dukeKilled: false);
+				try { for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && (n.type == RiftSky.DukeType || n.ModNPC?.Mod.Name == RiftSky.ModName)) n.active = false; } } catch (Exception) { }
+				RiftSky.ClearOverrides(); RiftMood.Reset(); DialogueSystem.ResetRuntime();
+				SoldierNPC.ChatterOverride = chat0; Main.raining = rain0;
+				Main.dayTime = true; Main.time = 15000;
+			}
+		}
+
+		private const int RiftWindow = 60 * 180;
+		private static int _bandsCleared;
+		private static bool _keepDuke;
+
+		/// <summary>Real ticks for the rift section, with the arena kept to the army: besides the world's own spawns (Step clears those) a Warbands band can spawn on the arena and fight the levies,
+		/// which stops their chatter and kills them (seen in a ship-world run). Band members within 250 tiles are removed each tick. NoxusBoss's own NPCs are left alone.</summary>
+		private static void RiftStep(int n)
+		{
+			for (int t = 0; t < n; t++)
+			{
+				for (int k = 0; k < Main.maxNPCs; k++)
+				{
+					NPC e = Main.npc[k];
+					if (!e.active || e.ModNPC == null || e.ModNPC.Mod.Name != "Warbands") continue;
+					if (Math.Abs(e.Center.X - _cmdAt.X) < 250 * 16f) { e.active = false; _bandsCleared++; }
+				}
+				Step(1);
+			}
+		}
+
+		/// <summary>Levies of the check's army standing (alive, not in reserve) within reaction reach of the commander.</summary>
+		private static int Standing(List<SoldierNPC> army)
+		{
+			int n = 0; float reach = LevyConstants.ReactReachTiles * LevyConstants.TilePx;
+			foreach (SoldierNPC s in army) if (s != null && s.NPC.active && s.IsAlive && s.Record != null && !s.Record.Reserve && Vector2.Distance(s.NPC.Center, _cmdAt) <= reach) n++;
+			return n;
 		}
 
 		private static int SentSince(int from) => SharedUpgradeNotice.Sent.Count - from;

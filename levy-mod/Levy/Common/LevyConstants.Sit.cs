@@ -26,7 +26,7 @@ namespace Levy.Common
 		public const float SitArriveXPx = 14f, SitArriveYPx = 20f;
 		/// <summary>Seated levies within this many tiles of each other chat: one speaks to the nearest every random interval between the two tick values, and only while a player is within <see cref="SitChatPlayerTiles"/>.</summary>
 		public const float SitChatTiles = 12f, SitChatPlayerTiles = 100f;
-		public const int SitChatMinTicks = 60 * 8, SitChatMaxTicks = 60 * 24;
+		public const int SitChatMinTicks = 60 * 20, SitChatMaxTicks = 60 * 50;
 		/// <summary>How long the speaker's emote bubble stays up (ticks).</summary>
 		public const int SitChatEmoteTicks = 120;
 	}

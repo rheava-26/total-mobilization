@@ -231,6 +231,29 @@ namespace Levy.Common.Dialogue
 			return KitRank.None;
 		}
 
+		public enum MateClass : byte { Mage, Summoner, Ranger, Melee }
+
+		/// <summary>
+		/// A standing levy of that class to name in a line ({Mage} {Summoner} {Ranger} {Melee}): a regular of the speaker's own commander, not dead, not in reserve, never the speaker.
+		/// One of them at random when there are several; null when there is none (the line is then skipped).
+		/// </summary>
+		public static SoldierRecord ClassMate(SoldierRecord speaker, MateClass cls)
+		{
+			var list = Roster;
+			if (list == null) return null;
+			SoldierRecord pick = null; int seen = 0;
+			for (int i = 0; i < list.Count; i++)
+			{
+				SoldierRecord r = list[i];
+				if (r == null || ReferenceEquals(r, speaker) || r.Dead || r.Reserve || string.IsNullOrWhiteSpace(r.Name)) continue;
+				if (speaker != null && r.CommanderName != speaker.CommanderName) continue;
+				bool match = cls switch { MateClass.Mage => IsMage(r), MateClass.Summoner => IsSummoner(r), MateClass.Ranger => IsRanger(r), _ => IsMelee(r) };
+				if (!match) continue;
+				if (Main.rand.Next(++seen) == 0) pick = r; // reservoir pick: each candidate equally likely
+			}
+			return pick;
+		}
+
 		/// <summary>The levy with the most deaths (alive or dead), when it is at least 3 and not the speaker.</summary>
 		public static SoldierRecord DeathLeader(SoldierRecord speaker)
 		{

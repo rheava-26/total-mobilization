@@ -118,7 +118,7 @@ namespace Levy.Common.Dialogue
 				foreach (DialogueTrigger t in Enum.GetValues(typeof(DialogueTrigger)))
 				{
 					string key = t.ToString();
-					if (t == DialogueTrigger.BOSS || t == DialogueTrigger.FLIGHT_SHOUT || key.StartsWith("OFFICER_CHAT_") || key.StartsWith("DRINK_") || GrumpyExemptKeys.Contains(key)) continue;
+					if (t == DialogueTrigger.BOSS || t == DialogueTrigger.FLIGHT_SHOUT || key.StartsWith("OFFICER_CHAT_") || key.StartsWith("DRINK_") || GrumpyExemptKeys.Contains(key) || RiftMood.IsRift(t)) continue; // the rift pools outrank the Blood Moon (RiftMoodCheck)
 					var pool = DialogueTable.Get(t);
 					int n = 0;
 					if (pool != null) foreach (DialogueLine l in pool) if ((l.Cond & LineCond.Grumpy) != 0) n++;

@@ -101,10 +101,35 @@ namespace Levy.Common.Dialogue
 		/// </summary>
 		internal static string Pick(DialogueTrigger trigger, SoldierRecord rec, DialogueContext ctx, SoldierNPC body, bool ignoreRepeat, int avoidId, out DialogueLine picked, bool mark = true)
 		{
+			switch (RiftMood.Route(trigger))
+			{
+				case RiftRoute.Silent: case RiftRoute.Hush: picked = null; return null;
+				case RiftRoute.Chat: return PickRift(rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, false);
+				case RiftRoute.Camp: return PickRift(rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, true);
+			}
 			List<DialogueLine> pool = PoolFor(trigger, ctx);
 			// A boss with no annoyed lines of its own is answered from the generic annoyed boss set, never from the normal lines.
 			if (trigger == DialogueTrigger.BOSS && RosterFacts.Grumpy(rec) && !HasGrumpyLine(pool)) pool = DialogueTable.Get(DialogueTrigger.BOSS_SIGHTED);
 			return PickFromPool(pool, rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, GrumpyExempt(trigger));
+		}
+
+		/// <summary>
+		/// Under the rift sky: the first rift pool in <see cref="RiftMood.ChatOrder"/> with a line for this speaker. The rift voice outranks the Blood Moon's annoyed set (a Blood Moon under the
+		/// covered sky is no time for it), so these pools are picked grumpy-exempt.
+		/// </summary>
+		private static string PickRift(SoldierRecord rec, DialogueContext ctx, SoldierNPC body, bool ignoreRepeat, int avoidId, out DialogueLine picked, bool mark, bool camp)
+		{
+			picked = null;
+			int n = RiftMood.ChatOrder(rec, body, camp);
+			for (int i = 0; i < n; i++)
+			{
+				DialogueTrigger t = RiftMood.OrderAt(i);
+				string text = PickFromPool(DialogueTable.Get(t), rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, true);
+				if (text == null) continue;
+				if (mark && t == DialogueTrigger.RIFT_ABSENT) RiftMood.NoteAway(rec);
+				return text;
+			}
+			return null;
 		}
 
 		/// <summary>The triggers the Blood Moon override leaves alone: the mutineers' fixed lines and the chat-log notices, which are not a levy speaking.</summary>
@@ -115,7 +140,7 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.MUTINY: case DialogueTrigger.MUTINY_BEGIN: case DialogueTrigger.MUTINY_REFUSE: case DialogueTrigger.MUTINY_CALM:
 				case DialogueTrigger.DEATH_MESSAGE: case DialogueTrigger.DESERTED: case DialogueTrigger.NO_ONE_LEFT:
 					return true;
-				default: return false;
+				default: return RiftMood.IsRift(trigger);
 			}
 		}
 
@@ -136,6 +161,12 @@ namespace Levy.Common.Dialogue
 		internal static string RenderOne(DialogueLine line, SoldierRecord rec)
 		{
 			return PickFromPool(new List<DialogueLine> { line }, rec, null, null, true, -1, out _, false, false);
+		}
+
+		/// <summary>Self-check hook: as <see cref="RenderOne"/>, with a context (for {Comrade} and the like) and outside the Blood Moon override, as the rift pools are picked.</summary>
+		internal static string RenderOneCtx(DialogueLine line, SoldierRecord rec, DialogueContext ctx)
+		{
+			return PickFromPool(new List<DialogueLine> { line }, rec, ctx, null, true, -1, out _, false, true);
 		}
 
 		/// <summary>The shared picker: filter, placeholders and repeat cooldown over an explicit pool (a trigger's, a boss's or an officer's).</summary>
@@ -249,6 +280,7 @@ namespace Levy.Common.Dialogue
 			private SoldierRecord _tank, _glutton;
 			private string _world, _officer;
 			private string _player;
+			private string _mage, _summoner, _ranger, _melee;
 
 			public void Begin(SoldierRecord rec, DialogueContext ctx, SoldierNPC body)
 			{
@@ -256,12 +288,13 @@ namespace Levy.Common.Dialogue
 				_resolved = LineNeeds.None;
 				_name = _comrade = _boss = _killer = _town = _wage = _player = null;
 				_tank = _glutton = null; _world = _officer = null;
+				_mage = _summoner = _ranger = _melee = null;
 			}
 
 			public bool Can(LineNeeds needs)
 			{
 				if (needs == LineNeeds.None) return true;
-				for (int bit = 1; bit <= (int)LineNeeds.Officer; bit <<= 1)
+				for (int bit = 1; bit <= (int)LineNeeds.Melee; bit <<= 1)
 					if (((int)needs & bit) != 0 && Value((LineNeeds)bit) == null) return false;
 				return true;
 			}
@@ -285,6 +318,10 @@ namespace Levy.Common.Dialogue
 							case LineNeeds.Glutton: _glutton = RosterFacts.KillLeader(_rec); break;
 							case LineNeeds.WorldName: _world = NonEmpty(RosterFacts.WorldName()); break;
 							case LineNeeds.Officer: _officer = NonEmpty(RosterFacts.OfficerName()); break;
+							case LineNeeds.Mage: _mage = RosterFacts.ClassMate(_rec, RosterFacts.MateClass.Mage)?.Name; break;
+							case LineNeeds.Summoner: _summoner = RosterFacts.ClassMate(_rec, RosterFacts.MateClass.Summoner)?.Name; break;
+							case LineNeeds.Ranger: _ranger = RosterFacts.ClassMate(_rec, RosterFacts.MateClass.Ranger)?.Name; break;
+							case LineNeeds.Melee: _melee = RosterFacts.ClassMate(_rec, RosterFacts.MateClass.Melee)?.Name; break;
 						}
 					}
 					catch (Exception)
@@ -304,6 +341,10 @@ namespace Levy.Common.Dialogue
 					case LineNeeds.Glutton: return _glutton?.Name;
 					case LineNeeds.WorldName: return _world;
 					case LineNeeds.Officer: return _officer;
+					case LineNeeds.Mage: return _mage;
+					case LineNeeds.Summoner: return _summoner;
+					case LineNeeds.Ranger: return _ranger;
+					case LineNeeds.Melee: return _melee;
 					default: return _wage;
 				}
 			}
@@ -358,6 +399,10 @@ namespace Levy.Common.Dialogue
 						case PlaceholderKind.Officer: Scratch.Append(Value(LineNeeds.Officer)); break;
 						case PlaceholderKind.Glutton: Scratch.Append(Value(LineNeeds.Glutton)); break;
 						case PlaceholderKind.GluttonKills: Scratch.Append(_glutton?.Kills ?? 0); break;
+						case PlaceholderKind.Mage: Scratch.Append(Value(LineNeeds.Mage)); break;
+						case PlaceholderKind.Summoner: Scratch.Append(Value(LineNeeds.Summoner)); break;
+						case PlaceholderKind.Ranger: Scratch.Append(Value(LineNeeds.Ranger)); break;
+						case PlaceholderKind.Melee: Scratch.Append(Value(LineNeeds.Melee)); break;
 						case PlaceholderKind.TownNpc:
 						{
 							int idx = NPC.FindFirstNPC(p.NpcType);

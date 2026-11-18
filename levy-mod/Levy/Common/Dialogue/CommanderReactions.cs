@@ -77,7 +77,12 @@ namespace Levy.Common.Dialogue
 				if ((uint)c.Npc >= Main.maxNPCs) continue;
 				NPC n = Main.npc[c.Npc];
 				if (!n.active || n.ModNPC is not SoldierNPC s2 || s2.Record == null || s2.Record.Id != c.RecordId || !s2.IsAlive) continue;
-				if (DialogueSystem.React(s2, c.Trigger, new DialogueContext { Player = c.Commander }) && c.Trigger == DialogueTrigger.ECLIPSE_END) EclipseEndLines++;
+				if (DialogueSystem.React(s2, c.Trigger, new DialogueContext { Player = c.Commander }))
+				{
+					if (c.Trigger == DialogueTrigger.ECLIPSE_END) EclipseEndLines++;
+					else if (c.Trigger == DialogueTrigger.RIFT_PANIC) RiftMood.PanicLines++;
+					else if (c.Trigger == DialogueTrigger.RIFT_DUKE) RiftMood.DukeLines++;
+				}
 			}
 		}
 
@@ -109,8 +114,8 @@ namespace Levy.Common.Dialogue
 			if (Enqueue(p, DialogueTrigger.CHEST_OPENED, speakers, now)) { _chestAt = now; ChestReactions++; }
 		}
 
-		/// <summary>Picks up to <paramref name="speakers"/> levies of this commander who are near him and standing, and queues their lines one after another.</summary>
-		private static bool Enqueue(Player p, DialogueTrigger trigger, int speakers, int now)
+		/// <summary>Picks up to <paramref name="speakers"/> levies of this commander who are near him and standing, and queues their lines one after another (<paramref name="step"/> ticks apart; the rift mood uses it for the burst after the sun is covered).</summary>
+		internal static bool Enqueue(Player p, DialogueTrigger trigger, int speakers, int now, int step = StepTicks)
 		{
 			Scratch.Clear();
 			float reach = LevyConstants.ReactReachTiles * LevyConstants.TilePx;
@@ -124,7 +129,27 @@ namespace Levy.Common.Dialogue
 			for (int i = Scratch.Count - 1; i > 0; i--) { int j = Main.rand.Next(i + 1); (Scratch[i], Scratch[j]) = (Scratch[j], Scratch[i]); }
 			int n = Math.Min(speakers, Scratch.Count);
 			for (int k = 0; k < n; k++)
-				Queue.Add(new Cue { Npc = Scratch[k].NPC.whoAmI, RecordId = Scratch[k].Record.Id, At = now + 20 + k * StepTicks + Main.rand.Next(12), Trigger = trigger, Commander = p.name });
+				Queue.Add(new Cue { Npc = Scratch[k].NPC.whoAmI, RecordId = Scratch[k].Record.Id, At = now + 20 + k * step + Main.rand.Next(12), Trigger = trigger, Commander = p.name });
+			Scratch.Clear();
+			return true;
+		}
+
+		/// <summary>Up to <paramref name="speakers"/> standing regulars (of any commander) within <paramref name="reachTiles"/> of a spot in the world, queued one after another: the levies who saw something happen there.</summary>
+		internal static bool EnqueueNear(Vector2 spot, float reachTiles, DialogueTrigger trigger, int speakers, int now, int step)
+		{
+			Scratch.Clear();
+			float reach = reachTiles * LevyConstants.TilePx;
+			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
+			{
+				if (!s.IsAlive || !s.IsRegular || s.Record.Reserve) continue;
+				if (Vector2.Distance(s.NPC.Center, spot) > reach) continue;
+				Scratch.Add(s);
+			}
+			if (Scratch.Count == 0) return false;
+			for (int i = Scratch.Count - 1; i > 0; i--) { int j = Main.rand.Next(i + 1); (Scratch[i], Scratch[j]) = (Scratch[j], Scratch[i]); }
+			int n = Math.Min(speakers, Scratch.Count);
+			for (int k = 0; k < n; k++)
+				Queue.Add(new Cue { Npc = Scratch[k].NPC.whoAmI, RecordId = Scratch[k].Record.Id, At = now + 20 + k * step + Main.rand.Next(12), Trigger = trigger, Commander = Scratch[k].Record.CommanderName });
 			Scratch.Clear();
 			return true;
 		}

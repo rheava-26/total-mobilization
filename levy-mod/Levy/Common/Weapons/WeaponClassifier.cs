@@ -371,8 +371,28 @@ namespace Levy.Common.Weapons
 			p.MeleeReachTiles = p.RangeTiles;
 			if (p.Family == WeaponFamily.Broadsword) ApplyProjectileMelee(src, p);
 			ApplyLongReach(src, p);
+			ApplyAnchoredSwing(src, p);
 			return p;
 		}
+
+		/// <summary>
+		/// Modded melee weapons whose item shot is a placeholder: the item's own Shoot / use hook spawns the real blow, a slash that circles its wielder and never flies. Classified by the placeholder's flight they stood off at
+		/// caster range and swung at the air (0 damage in the army sweep while a player at blade range hits). The soldier fights them at the slash's reach instead. Mod -> item internal name -> reach in tiles
+		/// (read from the slash's own code: its distance from the wielder plus half its size, rounded down).
+		/// </summary>
+		private static readonly Dictionary<string, Dictionary<string, int>> AnchoredSwingReach = new()
+		{
+			["StarsAbove"] = new() { ["BloodBlade"] = 5, ["BurningDesire"] = 5, ["Umbra"] = 5, ["SakuraVengeance"] = 5 },
+		};
+
+		private static void ApplyAnchoredSwing(Item src, WeaponProfile p)
+		{
+			if (src.ModItem == null || !AnchoredSwingReach.TryGetValue(src.ModItem.Mod.Name, out var t) || !t.TryGetValue(src.ModItem.Name, out int reach)) return;
+			p.RangeTiles = reach; p.MeleeReachTiles = reach; p.BossReachMult = 1f; p.OpensEarly = false;
+		}
+
+		/// <summary>Self-check hook: true when this item is fought at a slash's reach (<see cref="AnchoredSwingReach"/>).</summary>
+		internal static bool IsAnchoredSwing(Item item) => item?.ModItem != null && AnchoredSwingReach.TryGetValue(item.ModItem.Mod.Name, out var t) && t.ContainsKey(item.ModItem.Name);
 
 		/// <summary>
 		/// A broadsword whose swing launches a real friendly projectile gets FiresProjectileMelee and the projectile's reach as RangeTiles (never below the

@@ -166,6 +166,7 @@ namespace Levy.Common.Weapons
 			Item saved0 = d.inventory[0]; bool savedUse = d.controlUseItem, savedChannel = d.channel;
 			Vector2 pos = s.NPC.Center, v = vel; int type = item.shoot, dmg = damage; float kb = item.knockBack;
 			bool swapped = false;
+			UseCycle.Scope cycle = default;
 			try
 			{
 				EnemyTargeting.Swap(s); // dummy -> Main.player[255], at the soldier
@@ -173,6 +174,7 @@ namespace Levy.Common.Weapons
 				if (ownerSlot != Slot) SoldierMinions.AliasDummy(ownerSlot, d); // a UUID-bound holdout lives in the throwaway slot below 255 (see OwnerSlotFor)
 				d.whoAmI = ownerSlot; Main.myPlayer = ownerSlot;
 				d.inventory[0] = item; d.selectedItem = 0;
+				cycle = UseCycle.Enter(s, d, item); // the use state Player.ItemCheck shoots in (itemAnimation, itemTime, ItemUsesThisAnimation, reuseDelay)
 				d.statManaMax2 = Math.Max(1, s.Record.MaxMana); d.statMana = Math.Clamp(s.Record.Mana, 0, d.statManaMax2);
 				d.controlUseItem = true; d.channel = true;
 				d.altFunctionUse = alt ? 2 : 0;
@@ -187,6 +189,7 @@ namespace Levy.Common.Weapons
 			catch (Exception) { threw = true; }
 			finally
 			{
+				cycle.Dispose();
 				d.whoAmI = savedWho; Main.myPlayer = savedMy; d.selectedItem = savedSel; d.inventory[0] = saved0; d.controlUseItem = savedUse; d.channel = savedChannel; d.altFunctionUse = savedAlt;
 				if (item.mana > 0) s.Record.Mana = Math.Clamp(d.statMana, 0, Math.Max(0, s.Record.MaxMana));
 				d.statMana = savedMana; d.statManaMax2 = savedManaMax;

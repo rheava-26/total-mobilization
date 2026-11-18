@@ -37,7 +37,7 @@ namespace Levy.Common.Testing
 		// the same dummy) does the same. The levy runs twice: with the commander idle 60 tiles away (A) and with the commander holding her own use button (channel + controlUseItem) on a held weapon (B).
 		// Recorded: uses a second, projectiles made, how far from the actor and from the commander they first appear, strikes and damage on the dummy, the most minions / sentries alive. Classification:
 		//   OK     the levy's damage is at least 0.6 of the player's and nothing came from the commander;   WEAK  it is below 0.6;   BROKEN  the player does damage and the levy none, a shot comes out of the commander, or it threw.
-		// Env: LEVY_ARMYSWEEP=1 every listed weapon (unset: the representative subset the ship world runs, 0: skipped), LEVY_ARMYSWEEP_ONLY=Name;Name, LEVY_ARMYSWEEP_TICKS=N, LEVY_ARMYSWEEP_SHARD=i/n, LEVY_ARMYSWEEP_ALONE=1 (this check alone).
+		// Env: LEVY_ARMYSWEEP=1 every listed weapon (endgame: the post-Moon Lord tiers, see ArmyEndgame; unset: the representative subset the ship world runs, 0: skipped), LEVY_ARMYSWEEP_ONLY=Name;Name, LEVY_ARMYSWEEP_TICKS=N, LEVY_ARMYSWEEP_SHARD=i/n, LEVY_ARMYSWEEP_ALONE=1 (this check alone).
 		private static readonly string[] ArmyList =
 		{
 			"Terra Blade", "Astral Scythe", "Ark of the Ancients", "Apathanull", "Star Shower", "Morning Star", "Influx Waver", "Wingman", "Vernal Bolter", "Dark Harvest", "Hellfire Flamberge", "Virulence", "Starspawn Helix Staff",
@@ -47,7 +47,17 @@ namespace Levy.Common.Testing
 			"Cosmolight", "Radiant Star", "Star of Destruction", "Shard of Antumbra", "Cranium Smasher", "Plaguenade", "The Syringe", "System Bane", "Infected Remote", "Wulfrum Controller", "Samsara Slicer", "Subduction Slicer", "Stellar Knife", "Phantasmal Ruin",
 		};
 		/// <summary>The sample the ship world runs (every other weapon is behind LEVY_ARMYSWEEP=1).</summary>
-		private static readonly string[] ArmyShip = { "Terra Blade", "Vernal Bolter", "Sniper Rifle", "Stellar Knife", "Morning Star", "Infested Clawmerang", "Wingman", "Doomsday Device" };
+		private static readonly string[] ArmyShip = { "Terra Blade", "Vernal Bolter", "Sniper Rifle", "Stellar Knife", "Morning Star", "Infested Clawmerang", "Wingman", "Doomsday Device", "Nucleosynthesis" };
+		/// <summary>
+		/// Weapons whose own Shoot reads the player use cycle (itemAnimation, ItemUsesThisAnimation): the projectiles each use makes, in the order a player's use makes them. In levy hands each must make the
+		/// same shots in the same order and about the same number as the stand-in player, and never the item's placeholder <c>shoot</c> (Nucleosynthesis's is a wooden arrow).
+		/// Found by reading every Calamity weapon's Shoot / ModifyShootStats for itemAnimation, itemAnimationMax, itemTime, ItemUsesThisAnimation and useLimitPerAnimation: these two READ them (the rest only write itemTime).
+		/// </summary>
+		private static readonly Dictionary<string, string[]> ArmyUseCycle = new()
+		{
+			{ "nucleosynthesis", new[] { "SolarElementalBeam", "NebulaElementalBeam", "VortexElementalBeam", "StardustElementalBeam" } }, // itemAnimation 16, 12, 8, 4 of a 16-tick animation; any other tick: no shot
+			{ "cosmickunai", new[] { "CosmicKunaiProj" } }, // four kunai a use (useLimitPerAnimation); ItemUsesThisAnimation == 4 closes a stealth salvo
+		};
 		/// <summary>Weapons whose levy fix belongs to another builder: measured and listed, never failed here.</summary>
 		private static readonly Dictionary<string, string> ArmyCoveredElsewhere = new()
 		{
@@ -65,11 +75,12 @@ namespace Levy.Common.Testing
 
 		private sealed class ArmyRes
 		{
-			public string Who = ""; public int Uses, Projs, AtCmd, NearCmdTicks, Engage, Ran, MaxMinions, MaxSentries, Hits; public long Dmg; public double SpawnActor, SpawnCmd; public string End = ""; public string Err;
+			public string Who = ""; public int Uses, Projs, AtCmd, NearCmdTicks, MaxLinger, Engage, Ran, MaxMinions, MaxSentries, Hits; public long Dmg; public double SpawnActor, SpawnCmd; public string End = ""; public string Err;
+			public List<string> Seq = new(); // the first projectiles seen, by type, in the order they appeared
 			public Dictionary<string, int> Types = new(); public Dictionary<string, (int hits, long dmg)> ByProj = new(); public Dictionary<string, int> States = new(); public int DummyMinions, DummyTurrets; public float MinX = 1e9f, MaxX = -1e9f;
 			public double UsesPerSec => Uses * 60.0 / Math.Max(1, Ran);
 			public double AvgActor => Projs == 0 ? -1 : SpawnActor / Projs / 16.0; public double AvgCmd => Projs == 0 ? -1 : SpawnCmd / Projs / 16.0;
-			public bool FromCommander => AtCmd > 0 || NearCmdTicks >= 12; // first seen at her, or lingering around her (a shot that merely flies past on a ricochet is geometry)
+			public bool FromCommander => AtCmd > 0 || MaxLinger >= 12; // first seen at her, or ONE shot lingering around her (a shot that flies past her, as a piercing beam fired 45 tiles her way does, is geometry)
 			public override string ToString() => $"{Who}: uses/s {UsesPerSec:0.00}, projs {Projs}, spawn {AvgActor:0.0} tiles from the actor / {AvgCmd:0.0} from the commander, hits {Hits}, damage {Dmg}, minions {MaxMinions} (slots {DummyMinions}), sentries {MaxSentries} (slots {DummyTurrets}), engaged {Engage}/{Ran} (states {string.Join(",", States.Select(kv => kv.Key + ":" + kv.Value))}; x {MinX:0.0}..{MaxX:0.0} tiles from start){(Err != null ? ", THREW " + Err : "")} [{string.Join(",", Types.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + "x" + kv.Value))}] hit by [{string.Join(",", ByProj.OrderByDescending(kv => kv.Value.dmg).Take(4).Select(kv => kv.Key + ":" + kv.Value.hits + "h/" + kv.Value.dmg))}]";
 		}
 
@@ -170,7 +181,7 @@ namespace Levy.Common.Testing
 				Main.rand = new Terraria.Utilities.UnifiedRandom(777);
 				KeepCommander(); PinSweepTarget(); CursorOnCommander(); Step(20);
 				for (int i = 0; i < Main.maxProjectiles; i++) Main.projectile[i].active = false;
-				var live = new Dictionary<int, int>(); uint prevUse = 0; int prevAnim = 0; ArmySweepTally.Hits = 0; ArmySweepTally.Damage = 0; ArmySweepTally.ByProj = new(); ArmyReadDamage(new ArmyRes());
+				var live = new Dictionary<int, int>(); var linger = new Dictionary<int, (Vector2 at, int ticks)>(); uint prevUse = 0; int prevAnim = 0; ArmySweepTally.Hits = 0; ArmySweepTally.Damage = 0; ArmySweepTally.ByProj = new(); ArmyReadDamage(new ArmyRes());
 				for (int k = 0; k < ticks; k++)
 				{
 					Vector2 actor;
@@ -183,7 +194,7 @@ namespace Levy.Common.Testing
 						Main.screenPosition = scratch.Center - new Vector2(Main.screenWidth / 2f, Main.screenHeight / 2f); Main.mouseX = (int)(_sweepTarget.Center.X - Main.screenPosition.X); Main.mouseY = (int)(_sweepTarget.Center.Y - Main.screenPosition.Y);
 						Step(1); actor = scratch.Center;
 					}
-					else { rec.Mana = rec.MaxMana; OriginStep(); actor = Main.npc[body].Center; }
+					else { if (!_armyNoManaRefill || k == 0) rec.Mana = rec.MaxMana; OriginStep(); actor = Main.npc[body].Center; }
 					ClearNaturalHostiles(); ArmyReadDamage(res);
 					if (!player)
 					{
@@ -199,19 +210,19 @@ namespace Levy.Common.Testing
 					for (int i = 0; i < Main.maxProjectiles; i++)
 					{
 						Projectile p = Main.projectile[i];
-						if (!p.active || p.hostile) { live.Remove(i); continue; }
+						if (!p.active || p.hostile || ((p.type == ProjectileID.FallingStarSpawner || p.type == ProjectileID.FallingStar) && p.type != w.shoot)) { live.Remove(i); linger.Remove(i); continue; } // the night sky's own falling stars are not anyone's shot
 						if (p.minion || p.minionSlots > 0f) minions++;
 						if (p.sentry) sentries++;
 						float da = Vector2.Distance(p.Center, actor), dc = Vector2.Distance(p.Center, cmd);
-						if (live.TryGetValue(i, out int idn) && idn != p.identity) live.Remove(i);
+						if (live.TryGetValue(i, out int idn) && idn != p.identity) { live.Remove(i); linger.Remove(i); }
 						if (!live.ContainsKey(i))
 						{
 							live[i] = p.identity; res.Projs++; res.SpawnActor += da; res.SpawnCmd += dc;
-							string nm = p.ModProjectile?.Name ?? ProjectileID.Search.GetName(p.type); res.Types[nm] = res.Types.TryGetValue(nm, out int c0) ? c0 + 1 : 1;
+							string nm = p.ModProjectile?.Name ?? ProjectileID.Search.GetName(p.type); res.Types[nm] = res.Types.TryGetValue(nm, out int c0) ? c0 + 1 : 1; if (res.Seq.Count < 200) res.Seq.Add(nm);
 							if (!player && dc < NearTiles * 16f && dc < da) res.AtCmd++;
 							if (ArmyDebug && res.Projs <= 5) Note($"  armydbg first sight {(player ? "player" : "levy")} t={k} {nm} owner={p.owner} pos=({p.Center.X:0.0},{p.Center.Y:0.0}) actor=({actor.X:0.0},{actor.Y:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) dmg={p.damage} ai=({p.ai[0]:0.0},{p.ai[1]:0.0}) tagged={(p.TryGetGlobalProjectile(out SoldierProjectileTag tg0) && tg0.SoldierIndex >= 0)}");
 						}
-						if (!player && dc < NearTiles * 16f && dc < da) { res.NearCmdTicks++; if (ArmyDebug && res.NearCmdTicks <= 6) Note($"  armydbg near commander t={k} {p.ModProjectile?.Name ?? p.type.ToString()} owner={p.owner} age={p.timeLeft} pos-levy=({(p.Center.X - actor.X) / 16f:0.0},{(p.Center.Y - actor.Y) / 16f:0.0}) pos-cmd=({(p.Center.X - cmd.X) / 16f:0.0},{(p.Center.Y - cmd.Y) / 16f:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.0},{p.ai[1]:0.0})"); }
+						if (!player && dc < NearTiles * 16f && dc < da) { res.NearCmdTicks++; if (!linger.TryGetValue(i, out var lg)) lg = (p.Center, 0); if (Vector2.Distance(p.Center, lg.at) < 48f) { lg.ticks++; res.MaxLinger = Math.Max(res.MaxLinger, lg.ticks); } linger[i] = lg; if (ArmyDebug && res.NearCmdTicks <= 6) Note($"  armydbg near commander t={k} {p.ModProjectile?.Name ?? p.type.ToString()} owner={p.owner} age={p.timeLeft} pos-levy=({(p.Center.X - actor.X) / 16f:0.0},{(p.Center.Y - actor.Y) / 16f:0.0}) pos-cmd=({(p.Center.X - cmd.X) / 16f:0.0},{(p.Center.Y - cmd.Y) / 16f:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.0},{p.ai[1]:0.0})"); }
 						if (ArmyDebug && k % 100 == 50 && (p.minion || p.sentry || p.minionSlots > 0f)) Note($"  armydbg {(player ? "player" : "levy")} t={k} {p.ModProjectile?.Name ?? p.type.ToString()} owner={p.owner} dmg={p.damage} friendly={p.friendly} pos-target=({(p.Center.X - _sweepTarget.Center.X) / 16f:0.0},{(p.Center.Y - _sweepTarget.Center.Y) / 16f:0.0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.0},{p.ai[1]:0.0}) localAI=({p.localAI[0]:0.0},{p.localAI[1]:0.0}) tl={p.timeLeft}");
 					}
 					res.MaxMinions = Math.Max(res.MaxMinions, minions); res.MaxSentries = Math.Max(res.MaxSentries, sentries);
@@ -230,7 +241,60 @@ namespace Levy.Common.Testing
 
 		private static void NoAchievements(On_AchievementsHelper.orig_HandleSpecialEvent orig, Player player, int eventID) { }
 
-		private sealed class ArmyRow { public string Label, Name, Cls, Fam, Status, Probe = "", Cause = ""; public ArmyRes Player, A, B; public double RatioA, RatioB; }
+		private sealed class ArmyRow { public string Label, Name, Cls, Fam, Status, Probe = "", Cause = "", ShootName = ""; public bool Summons; public ArmyRes Player, A, B; public double RatioA, RatioB; }
+
+		private static string ArmyProjName(int type) => type <= 0 ? "" : type >= ProjectileID.Count ? (ProjectileLoader.GetProjectile(type)?.Name ?? type.ToString()) : ProjectileID.Search.GetName(type);
+
+		/// <summary>A summon (minion staff or sentry): its shot is the minion it keeps up, which a levy and the stand-in may each have made before the counted ticks, so the placeholder rule does not judge it.</summary>
+		private static bool ArmySummons(Item s) => s.sentry || (s.DamageType?.CountsAsClass(DamageClass.Summon) ?? false) || (s.shoot > 0 && ContentSamples.ProjectilesByType.TryGetValue(s.shoot, out Projectile sp) && (sp.minion || sp.sentry || sp.minionSlots > 0f));
+
+		/// <summary>
+		/// The levy fired the item's own <c>shoot</c> while the stand-in player, holding the same weapon on the same dummy, never did: that is Levy firing the field in place of the weapon's real shot (a modded
+		/// weapon's Shoot that picks the projectile itself and returns false leaves <c>shoot</c> as a placeholder; Nucleosynthesis's is a wooden arrow). Never allowed, whatever the damage says.
+		/// </summary>
+		private static bool ArmyPlaceholder(ArmyRow r, ArmyRes levy) =>
+			!r.Summons && !string.IsNullOrEmpty(r.ShootName) && r.Player.Projs > 0 && !r.Player.Types.ContainsKey(r.ShootName) && levy.Types.TryGetValue(r.ShootName, out int n) && n > 0;
+
+		/// <summary>The use-cycle weapons' proof: the shots of the item's own use, in the order they appeared, the first <paramref name="k"/>.</summary>
+		private static List<string> ArmyUseSeq(ArmyRes res, string[] own, string shootName, int k) => res.Seq.Where(t => own.Contains(t) || t == shootName).Take(k).ToList();
+
+		private static void ArmyUseCycleCheck(ArmyRow r, string[] given = null)
+		{
+			string[] own = given; if (own == null && !ArmyUseCycle.TryGetValue(ArmyKey(r.Name), out own)) return;
+			const int K = 8;
+			var p = ArmyUseSeq(r.Player, own, r.ShootName, K); var a = ArmyUseSeq(r.A, own, r.ShootName, K); var b = ArmyUseSeq(r.B, own, r.ShootName, K);
+			int Count(ArmyRes x) => own.Sum(t => x.Types.TryGetValue(t, out int c) ? c : 0);
+			int pc = Count(r.Player), ac = Count(r.A), bc = Count(r.B);
+			int Ph(ArmyRes x) => !string.IsNullOrEmpty(r.ShootName) && !own.Contains(r.ShootName) && x.Types.TryGetValue(r.ShootName, out int c) ? c : 0;
+			bool order = p.Count >= Math.Min(K, own.Length) && a.SequenceEqual(p) && b.SequenceEqual(p);
+			bool count = pc > 0 && ac >= 0.8 * pc && bc >= 0.8 * pc;
+			bool noPlaceholder = Ph(r.A) == 0 && Ph(r.B) == 0;
+			Check($"army use cycle: {r.Label} makes its own shots in a player's order and number in levy hands (order player [{string.Join(",", p)}] / levy idle [{string.Join(",", a)}] / commander holding [{string.Join(",", b)}]; " +
+				$"shots in {r.Player.Ran} ticks player {pc} / levy {ac} / {bc}; placeholder {r.ShootName} levy {Ph(r.A)} / {Ph(r.B)}, player {Ph(r.Player)}; damage ratio {r.RatioA:0.00} / {r.RatioB:0.00})", order && count && noPlaceholder);
+		}
+
+		/// <summary>Moon Lord's own weapon drops (vanilla's, and the one Calamity adds).</summary>
+		private static readonly string[] ArmyMoonLordDrops = { "Meowmere", "Star Wrath", "Terrarian", "Celebration Mk2", "S.D.M.G.", "Last Prism", "Lunar Flare", "Lunar Portal Staff", "Rainbow Crystal Staff", "Utensil Poker" };
+
+		/// <summary>
+		/// LEVY_ARMYSWEEP=endgame: every Calamity weapon of the post-Moon Lord tiers up to the early post-Moon Lord bosses (Calamity's rarities: vanilla Purple, then Turquoise, then Pure Green), plus Moon Lord's own drops.
+		/// Picked from the loaded items, so the list follows the mod's own tiers.
+		/// </summary>
+		private static List<(int type, string label, string name)> ArmyEndgame()
+		{
+			var rares = new HashSet<int> { ItemRarityID.Purple };
+			foreach (string r in new[] { "Turquoise", "PureGreen" }) if (ModContent.TryFind<ModRarity>("CalamityMod", r, out ModRarity mr)) rares.Add(mr.Type);
+			var res = ArmyResolve(ArmyMoonLordDrops);
+			for (int i = ItemID.Count; i < ItemLoader.ItemCount; i++)
+			{
+				if (!ContentSamples.ItemsByType.TryGetValue(i, out Item s) || s == null || s.IsAir || s.ModItem?.Mod.Name != "CalamityMod" || !rares.Contains(s.rare)) continue;
+				if (s.damage <= 0 || s.accessory || s.ammo > 0 || s.pick > 0 || s.axe > 0 || s.hammer > 0 || s.headSlot >= 0 || s.bodySlot >= 0 || s.legSlot >= 0 || s.consumable && s.shoot <= 0) continue;
+				if (res.Any(w => w.type == i)) continue;
+				res.Add((i, "CalamityMod:" + s.ModItem.Name, s.Name));
+			}
+			Note($"army sweep endgame: {res.Count} weapons (rarities {string.Join(",", rares)} and Moon Lord's drops)");
+			return res;
+		}
 
 		private static void ArmySweep()
 		{
@@ -238,9 +302,10 @@ namespace Levy.Common.Testing
 			if (mode == "0" || !ModLoader.HasMod("CalamityMod")) return;
 			string only = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ONLY");
 			string[] names = !string.IsNullOrEmpty(only) ? only.Replace('_', ' ').Split(';', StringSplitOptions.RemoveEmptyEntries) : mode == "1" ? ArmyList : ArmyShip;
-			bool reportOnly = mode == "1" && string.IsNullOrEmpty(only);
+			bool endgame = mode == "endgame" && string.IsNullOrEmpty(only);
+			bool reportOnly = (mode == "1" || endgame) && string.IsNullOrEmpty(only);
 			int ticks = int.TryParse(Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_TICKS"), out int tk) ? tk : 600;
-			var weapons = ArmyResolve(names);
+			var weapons = endgame ? ArmyEndgame() : ArmyResolve(names);
 			string shard = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_SHARD");
 			if (!string.IsNullOrEmpty(shard) && shard.Split('/') is { Length: 2 } sh && int.TryParse(sh[0], out int si) && int.TryParse(sh[1], out int sn) && sn > 1) weapons = weapons.Where((w, k) => k % sn == si).ToList();
 			if (weapons.Count == 0) return;
@@ -254,7 +319,7 @@ namespace Levy.Common.Testing
 				{
 					Item sample = ContentSamples.ItemsByType[type];
 					int ammo = sample.useAmmo > 0 && ammoByKind.TryGetValue(sample.useAmmo, out int at) ? at : 0;
-					var row = new ArmyRow { Label = label, Name = name, Cls = (sample.DamageType?.Name ?? "?").Replace("DamageClass", "") };
+					var row = new ArmyRow { Label = label, Name = name, Cls = (sample.DamageType?.Name ?? "?").Replace("DamageClass", ""), ShootName = ArmyProjName(sample.shoot), Summons = ArmySummons(sample) };
 					try { row.Probe = sample.shoot > 0 ? $"shot reads cursor {OwnerLockProbe.ReadsCursor(sample.shoot)}, reads buttons {OwnerLockProbe.ReadsUseButtons(sample.shoot)}, locks owner {OwnerLockProbe.LocksOwner(sample.shoot)}" : "no shot"; } catch (Exception) { row.Probe = "probe threw"; }
 					try { Item fi = new Item(); fi.SetDefaults(type); WeaponProfile fp = WeaponClassifier.GetProfile(fi); row.Fam = fp.Family + (fp.Supported ? "" : "(unsupported)") + (ModShotKinds.Of(fi) != ModShotKind.None ? "/" + ModShotKinds.Of(fi) : ""); } catch (Exception) { row.Fam = "?"; }
 					row.A = ArmyOne(type, ammo, ticks, false, false);
@@ -262,6 +327,7 @@ namespace Levy.Common.Testing
 					row.Player = ArmyOne(type, ammo, ticks, true, false, Math.Max(row.A.DummyMinions, row.B.DummyMinions), Math.Max(row.A.DummyTurrets, row.B.DummyTurrets)); // the stand-in gets the minion and sentry slots the levy's own player has
 					ArmyClassify(row); rows.Add(row);
 					Note($"army sweep {row.Status} {row.Label} [{row.Cls}, {row.Fam}; {row.Probe}] ratio idle {row.RatioA:0.00} / commander holding {row.RatioB:0.00} {row.Cause} || {row.Player} || {row.A} || {row.B}");
+					Note($"army seq {row.Label}: player [{string.Join(",", row.Player.Seq.Take(12))}] || levy idle [{string.Join(",", row.A.Seq.Take(12))}] || commander holding [{string.Join(",", row.B.Seq.Take(12))}]");
 				}
 			}
 			finally { _sweepTarget = null; On_AchievementsHelper.HandleSpecialEvent -= NoAchievements; }
@@ -274,6 +340,7 @@ namespace Levy.Common.Testing
 				if (ArmyCoveredElsewhere.TryGetValue(ArmyKey(r.Name), out string cov)) { Note($"army sweep: {r.Label} is covered by {cov} ({r.Status}, ratio {Math.Min(r.RatioA, r.RatioB):0.00})"); continue; }
 				if (ArmyNotMeasurable.TryGetValue(ArmyKey(r.Name), out string nm2)) { Note($"army sweep: {r.Label} is not measurable here: {nm2}"); continue; }
 				if (r.Status == "NOREF" || reportOnly) continue; // the full sweep reports; the ship subset (and a named re-check) fails
+				ArmyUseCycleCheck(r);
 				Check($"army: {r.Label} works in levy hands ({r.Status}: ratio idle {r.RatioA:0.00}, commander holding {r.RatioB:0.00}; levy damage {r.A.Dmg}/{r.B.Dmg}, player {r.Player.Dmg}; from commander {r.A.FromCommander || r.B.FromCommander})", r.Status == "OK");
 			}
 		}
@@ -286,6 +353,7 @@ namespace Levy.Common.Testing
 			var causes = new List<string>();
 			if (r.A.Err != null || r.B.Err != null) causes.Add("threw " + (r.A.Err ?? r.B.Err));
 			if (r.A.FromCommander || r.B.FromCommander) causes.Add("fires from the commander");
+			if (ArmyPlaceholder(r, r.A) || ArmyPlaceholder(r, r.B)) causes.Add($"fires the item's placeholder shot {r.ShootName}, which the player never fires");
 			if (!pOk)
 			{
 				r.Status = causes.Count > 0 ? "BROKEN" : (r.A.Dmg > 0 || r.B.Dmg > 0 ? "OK" : "NOREF");

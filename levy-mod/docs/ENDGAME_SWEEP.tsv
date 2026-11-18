@@ -1,0 +1,167 @@
+weapon	class	family	status_before	ratio_before	status_after	ratio_after	player_dmg_600t	levy_dmg_idle_600t	levy_dmg_cmd_holding_600t	sweep_cause	cause_note
+Terraria:Meowmere	Melee	Broadsword	OK	0.69	OK	0.71	11140	7875	7911		
+Terraria:Star Wrath	Melee	Broadsword	WEAK	0.46	OK	0.61	18636	11325	11917		
+Terraria:Terrarian	MeleeNoSpeed	Yoyo	WEAK	0.47	WEAK	0.45	10717	4908	4820	ratio 0.45	STAND-IN: the levy throws Levy's own SoldierYoyo; the Terrarian beams never spawn
+Terraria:Celebration Mk2	Ranged	HeldWeapon	OK	1.32	OK	1.20	5132	6181	6913		
+Terraria:S.D.M.G.	Ranged	Gun	OK	0.80	OK	0.85	12352	10468	10497		
+Terraria:Last Prism	Magic	HeldWeapon	OK	14246.00	OK	14227.00	0	14227	14462	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+Terraria:Lunar Flare	Magic	Magic	OK	0.78	OK	0.83	20686	17415	17104		
+Terraria:Lunar Portal Staff	Summon	Sentry	WEAK	0.38	WEAK	0.38	5037	1902	1889	ratio 0.38	SENTRY PLACEMENT: the levy plants the sentry at its own feet, about 19-27 tiles off the dummy; the stand-in plants it at the cursor on the dummy
+Terraria:Rainbow Crystal Staff	Summon	Sentry	WEAK	0.43	WEAK	0.43	18308	8573	7789	ratio 0.43	SENTRY PLACEMENT: the levy plants the sentry at its own feet, about 19-27 tiles off the dummy; the stand-in plants it at the cursor on the dummy
+CalamityMod:UtensilPoker	Rogue	Magic	OK	0.95	OK	0.93	11771	11052	10950		
+CalamityMod:PhalanxSurge	Ranged	HeldWeapon/Holdout	OK	205.22	OK	0.72	21039	15399	15095		deadhooks (merged): fires at its real rate now (the old 200x came from reading the commander's held item)
+CalamityMod:PlasmaCaster	Magic	Magic	OK	0.90	OK	0.80	21185	17095	16899		
+CalamityMod:PulseDragon	MeleeNoSpeed	Boomerang	WEAK	0.23	WEAK	0.36	15909	5706	6270	ratio 0.36	STAND-IN: classified Boomerang and the item's own shot locks its owner, so the levy throws Levy's generic SoldierBoomerang; none of the weapon's own projectiles
+CalamityMod:SnakeEyes	Summon	Summon	OK	1736.00	OK	1754.00	0	1754	1784	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:WavePounder	Rogue	Magic	WEAK	0.51	WEAK	0.54	26057	14682	14201	ratio 0.54	STANDOFF: as many shots as the player, fewer hits: the levy holds about 27 tiles off a boss-flagged target (the stand-in 12), past the shots' life or homing reach
+CalamityMod:AethersWhisper	Magic	Magic	OK	1.10	OK	1.02	18963	19407	19381		
+CalamityMod:AlphaDraconis	Magic	Magic	OK	0.91	OK	0.91	22389	20811	20413		
+CalamityMod:AuguroftheVoid	Magic	Magic	WEAK	0.56	WEAK	0.56	28961	16838	16291	ratio 0.56	STANDOFF: as many shots as the player, fewer hits: the levy holds about 27 tiles off a boss-flagged target (the stand-in 12), past the shots' life or homing reach
+CalamityMod:Biofusillade	Magic	Magic	OK	0.88	OK	0.91	23777	21596	21695		
+CalamityMod:ChronomancersScythe	Magic	HeldWeapon/Holdout	OK	13774.00	OK	11448.00	0	13519	11448	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:CosmicRainbow	Magic	Magic	OK	0.92	OK	0.89	19357	17652	17324		
+CalamityMod:DarkSpark	Magic	HeldWeapon/Holdout	NOREF	0.00	NOREF	0.00	0	0	0	reference player did no damage	NOT MEASURABLE: the headless stand-in player does no damage either
+CalamityMod:Effervescence	Magic	Magic	OK	0.77	OK	0.70	25606	17941	19858		
+CalamityMod:EidolicWail	Magic	Magic	BROKEN	1.25	BROKEN	1.21	27738	36384	33624	fires from the commander	OK under the corrected commander rule (their piercing shots only fly past her): re-run 0.94 / 0.81 / 1.39
+CalamityMod:EidolonStaff	Magic	Magic	OK	0.92	OK	0.94	33427	32277	31538		
+CalamityMod:EventHorizon	Magic	Magic	WEAK	0.51	WEAK	0.53	43276	23784	22776	ratio 0.53	STANDOFF: as many shots as the player, fewer hits: the levy holds about 27 tiles off a boss-flagged target (the stand-in 12), past the shots' life or homing reach
+CalamityMod:FatesReveal	Magic	Magic	OK	0.77	OK	0.86	29720	29122	25704		
+CalamityMod:Genesis	Magic	HeldWeapon/Holdout	WEAK	0.57	WEAK	0.56	26520	14891	15587	ratio 0.56	STANDOFF: as many shots as the player, fewer hits: the levy holds about 27 tiles off a boss-flagged target (the stand-in 12), past the shots' life or homing reach
+CalamityMod:GhastlyVisage	Magic	HeldWeapon/Holdout	OK	0.93	OK	0.92	32001	31003	29482		
+CalamityMod:MadAlchemistsCocktailGlove	Magic	Magic	OK	0.83	OK	0.88	25917	22855	22842		
+CalamityMod:MagneticMeltdown	Magic	Magic	OK	0.76	OK	0.76	26548	20114	22228		
+CalamityMod:Mistlestorm	Magic	Magic	OK	0.82	OK	0.80	36599	29479	29332		
+CalamityMod:NanoPurge	Magic	HeldWeapon/Holdout	OK	0.81	OK	0.74	29119	22489	21597		
+CalamityMod:NuclearFury	Magic	Magic	OK	0.89	OK	0.90	16422	15182	14799		
+CalamityMod:Nucleosynthesis	Magic	Magic	WEAK	0.20	OK	0.87	22475	19500	20720		FIXED (use cycle): Shoot picks the beam from itemAnimation 16/12/8/4 and returns false; the levy shot with itemAnimation 0, Shoot declined and Levy fired the placeholder wooden arrow
+CalamityMod:PhantasmalFury	Magic	Magic	WEAK	0.44	WEAK	0.42	54119	23317	22835	ratio 0.42	STANDOFF: as many shots as the player, fewer hits: the levy holds about 27 tiles off a boss-flagged target (the stand-in 12), past the shots' life or homing reach
+CalamityMod:PurgeGuzzler	Magic	Magic	BROKEN	0.00	BROKEN	0.00	22100	0	0	no damage idle; no damage with the commander holding	HOLDOUT AS PLAIN SHOT: the shot is a holdout a player keeps alive by holding; classified Magic and not in HoldoutRouted, the levy fires bare holdouts that make no lasers
+CalamityMod:RecitationoftheBeast	Magic	Magic	OK	0.91	OK	0.93	19353	18338	18036		
+CalamityMod:RougeSlash	Magic	Magic	OK	0.91	OK	0.90	29410	26656	26370		
+CalamityMod:SanguineFlare	Magic	Magic	OK	25826.00	OK	26158.00	0	26271	26158	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:ShadowboltStaff	Magic	Magic	OK	0.93	OK	0.91	29232	26632	26508		
+CalamityMod:TacticiansTrumpCard	Magic	Magic	OK	0.87	OK	0.91	19345	17991	17570		
+CalamityMod:Teslastaff	Magic	HeldWeapon/Holdout	OK	148.07	OK	149.88	351	52608	58348		
+CalamityMod:ThePrince	Magic	Magic	OK	1.29	OK	1.32	12829	17480	16921		
+CalamityMod:ThornBlossom	Magic	Magic	WEAK	0.57	WEAK	0.54	28285	16511	15393	ratio 0.54	STANDOFF: as many shots as the player, fewer hits: the levy holds about 27 tiles off a boss-flagged target (the stand-in 12), past the shots' life or homing reach
+CalamityMod:UltraLiquidator	Magic	Magic	OK	0.69	OK	0.68	17717	12090	12473		
+CalamityMod:UnstableCastersGauntlet	Magic	HeldWeapon/Holdout	NOREF	0.00	NOREF	0.00	0	0	0	reference player did no damage	NOT MEASURABLE: the headless stand-in player does no damage either
+CalamityMod:VenusianTrident	Magic	Magic	OK	0.93	OK	0.91	32999	30423	30074		
+CalamityMod:Viscera	Magic	Magic	OK	0.87	OK	0.90	17221	16104	15535		
+CalamityMod:VitriolicViper	Magic	HeldWeapon/Holdout	OK	29492.00	OK	30922.00	0	31906	30922	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:Volterion	Magic	HeldWeapon/Holdout	OK	0.88	OK	0.92	44718	41029	41329		
+CalamityMod:ArkoftheElements	MeleeNoSpeed	HeldWeapon/ArkSwing	OK	1.14	OK	1.13	25096	28927	28280		
+CalamityMod:BansheeHook	Melee	Spear	WEAK	0.11	WEAK	0.11	59148	6421	6554	ratio 0.11	STAND-IN: the thrust is Levy's SoldierThrust; the spear's own extra projectiles never spawn
+CalamityMod:BurningRevelation	MeleeNoSpeed	Yoyo	OK	0.82	OK	0.82	19639	16194	16233		
+CalamityMod:CrescentMoon	MeleeNoSpeed	HeldWeapon/Holdout	OK	0.92	OK	0.90	119286	108116	107469		
+CalamityMod:DeathsAscension	Melee	HeldWeapon/Holdout	OK	35258.00	OK	35356.00	0	36087	35356	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:DefiledGreatsword	Melee	Broadsword	OK	0.74	OK	0.76	18638	14096	14145		
+CalamityMod:DevilsSunrise	MeleeNoSpeed	HeldWeapon/Holdout	OK	23098.00	OK	23083.00	0	23418	23083	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:EmpyreanKnives	MeleeNoSpeed	Magic	OK	0.95	OK	0.86	22937	20107	19674		
+CalamityMod:FourSeasonsGalaxia	Melee	HeldWeapon/BiomeBlade	OK	3.17	OK	3.16	6528	20642	20674		
+CalamityMod:GalactusBlade	Melee	Broadsword	WEAK	0.11	OK	0.81	33182	27369	26922		FIXED (use cycle): the comets come from MeleeEffects on a swing clock that UseAnimation resets; a levy ran neither
+CalamityMod:GalileoGladius	TrueMelee	Boomerang	WEAK	0.32	WEAK	0.37	41532	15570	15717	ratio 0.37	STAND-IN: classified Boomerang and the item's own shot locks its owner, so the levy throws Levy's generic SoldierBoomerang; none of the weapon's own projectiles
+CalamityMod:GildedProboscis	TrueMeleeNoSpeed	Boomerang	OK	30933.00	OK	31224.00	0	33169	31224	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:GrandDad	TrueMelee	HeldWeapon/Holdout	BROKEN	0.00	BROKEN	0.00	27718	0	0	no damage idle; no damage with the commander holding	held melee holdout (routed held) deals nothing to the dummy; cause not isolated
+CalamityMod:GreatswordofJudgement	Melee	Broadsword	BROKEN	0.00	WEAK	0.56	25886	14624	14709	ratio 0.56	IMPROVED (use cycle: MeleeEffects + UseAnimation now run, the beam comes out); the rest: the blade hits through its own UseItemHitbox/CanHitNPC, which a levy swing does not use
+CalamityMod:HolyCollider	TrueMelee	Boomerang	OK	26422.00	OK	30338.00	0	30338	35244	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:InsidiousImpaler	MeleeNoSpeed	Magic	OK	0.92	OK	0.91	26444	24158	24169		
+CalamityMod:Lacerator	MeleeNoSpeed	Yoyo	OK	14.15	OK	14.62	826	12080	12077		
+CalamityMod:LifehuntScythe	Melee	Broadsword	OK	1.01	OK	1.04	21518	22648	22472		
+CalamityMod:Lightspeed	TrueMelee	HeldWeapon/Holdout	OK	0.96	OK	0.95	29940	28940	28580		
+CalamityMod:LionHeart	TrueMelee	Broadsword	OK	63114.00	OK	62097.00	0	62907	62097	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:MirrorBlade	TrueMelee	Boomerang	OK	5448.00	OK	7158.00	0	7854	7158	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:Mourningstar	MeleeNoSpeed	Boomerang	WEAK	0.12	WEAK	0.07	27529	1880	3556	ratio 0.07	STAND-IN: classified Boomerang and the item's own shot locks its owner, so the levy throws Levy's generic SoldierBoomerang; none of the weapon's own projectiles
+CalamityMod:NeptunesBounty	Melee	Boomerang	WEAK	0.13	WEAK	0.13	26262	5389	3314	ratio 0.13	STAND-IN: classified Boomerang and the item's own shot locks its owner, so the levy throws Levy's generic SoldierBoomerang; none of the weapon's own projectiles
+CalamityMod:PhosphorescentGauntlet	TrueMeleeNoSpeed	Magic	NOREF	0.00	NOREF	0.00	0	0	0	reference player did no damage	NOT MEASURABLE: the headless stand-in player does no damage either
+CalamityMod:RemsRevenge	MeleeNoSpeed	Magic	OK	54147.00	OK	54539.00	0	54539	54726	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:SeekingScorcher	MeleeNoSpeed	Boomerang	OK	1.20	OK	0.73	18026	13094	16276		
+CalamityMod:SkytideDragoon	Melee	Boomerang	WEAK	0.03	WEAK	0.02	137442	3611	3300	ratio 0.02	STAND-IN: classified Boomerang and the item's own shot locks its owner, so the levy throws Levy's generic SoldierBoomerang; none of the weapon's own projectiles
+CalamityMod:SolsticeClaymore	Melee	Broadsword	OK	0.92	OK	0.86	10549	9215	9093		
+CalamityMod:StellarContempt	MeleeNoSpeed	Magic	OK	0.90	OK	0.88	19677	17425	17318		
+CalamityMod:StellarStriker	TrueMelee	Boomerang	OK	805.00	OK	998.00	0	1016	998	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:Swordsplosion	Melee	Broadsword	OK	0.87	OK	0.91	4658	4523	4221		
+CalamityMod:Terratomere	Melee	Boomerang	WEAK	0.08	WEAK	0.10	21153	2170	2259	ratio 0.10	STAND-IN: classified Boomerang and the item's own shot locks its owner, so the levy throws Levy's generic SoldierBoomerang; none of the weapon's own projectiles
+CalamityMod:TerrorBlade	Melee	Broadsword	BROKEN	1.04	BROKEN	0.99	24629	25095	24397	fires from the commander	OK under the corrected commander rule (their piercing shots only fly past her): re-run 0.94 / 0.81 / 1.39
+CalamityMod:TheLastMourning	TrueMelee	Broadsword	BROKEN	63642.00	BROKEN	65414.00	0	66926	65414	fires from the commander; reference player did no damage	COMMANDER: one shot stays within 3 tiles of the commander for 12+ ticks (an owner-anchored AI); pre-existing, cause not isolated
+CalamityMod:TheMutilator	TrueMelee	Boomerang	OK	11155.00	OK	13075.00	0	13920	13075	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:VanishingPoint	Melee	Spear	WEAK	0.49	WEAK	0.50	12277	6176	6217	ratio 0.50	STAND-IN: the thrust is Levy's SoldierThrust; the spear's own extra projectiles never spawn
+CalamityMod:VoidEdge	Melee	Broadsword	OK	0.91	OK	0.91	20833	19273	18895		
+CalamityMod:AngelicShotgun	Ranged	Gun	OK	0.78	OK	0.76	26591	20161	20961		
+CalamityMod:ArterialAssault	Ranged	Bow	OK	0.93	OK	0.96	15889	15428	15224		
+CalamityMod:AstrealDefeat	Ranged	Bow	WEAK	0.27	WEAK	0.28	25058	8127	7038	ratio 0.28	STANDOFF: as many shots as the player, fewer hits: the levy holds about 27 tiles off a boss-flagged target (the stand-in 12), past the shots' life or homing reach
+CalamityMod:Auralis	Ranged	Gun	OK	0.91	OK	0.95	15419	15384	14702		
+CalamityMod:BarracudaGun	Ranged	Magic	BROKEN	0.00	BROKEN	0.00	23591	0	230573	no damage idle	OWNER STATE: the fish use vanilla's Piranha Gun AI, alive only while the OWNER channels; levy shots are owned by the commander (idle 0, commander holding 9x)
+CalamityMod:BlissfulBombardier	Ranged	HeldWeapon/Holdout	OK	0.86	OK	0.85	16221	14105	13778		
+CalamityMod:BloodBoiler	Ranged	Magic	OK	0.89	OK	0.93	16716	15618	15518		
+CalamityMod:ChromaticEruption	Ranged	HeldWeapon/Holdout	OK	0.84	OK	0.77	16779	14404	12946		
+CalamityMod:ClockworkBow	Ranged	HeldWeapon/Holdout	NOREF	0.00	NOREF	0.00	0	0	0	reference player did no damage	NOT MEASURABLE: the headless stand-in player does no damage either
+CalamityMod:CorinthPrime	Ranged	Gun	OK	0.73	OK	0.74	24986	18466	19561		
+CalamityMod:DaemonsFlame	Ranged	HeldWeapon/Holdout	OK	25474.00	OK	24935.00	0	25158	24935	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:FetidEmesis	Ranged	Gun	BROKEN	0.00	BROKEN	0.00	36437	0	0	no damage idle; no damage with the commander holding	HOLDOUT AS PLAIN SHOT: the shot is a holdout gun; classified Gun and not in HoldoutRouted, the levy fires bare holdouts that make no bullets
+CalamityMod:FreedomStar	Ranged	HeldWeapon/Holdout	OK	0.93	OK	0.91	13831	13196	12647		
+CalamityMod:GoldenEagle	Ranged	Gun	OK	0.70	OK	0.75	16581	12405	12789		
+CalamityMod:HalleysInferno	Ranged	Gun	NOREF	0.00	NOREF	0.00	0	0	0	reference player did no damage	NOT MEASURABLE: the headless stand-in player does no damage either
+CalamityMod:HandheldTank	Ranged	Gun	OK	0.76	OK	0.69	17976	12644	12386		
+CalamityMod:Monsoon	Ranged	Bow	OK	0.91	OK	0.93	38917	37380	36102		
+CalamityMod:NettlevineGreatbow	Ranged	Bow	OK	0.79	OK	0.77	16376	12675	13396		
+CalamityMod:OntologicalDespoiler	Ranged	Magic	OK	94641.00	OK	95113.00	0	95671	95113	reference player did no damage	plain-shot holdout: keeps its plain shot (a refusal while a holdout of its type is out under the shared owner is not a decline)
+CalamityMod:OnyxChainBlaster	Ranged	Gun	OK	0.81	OK	0.79	16642	13198	13717		
+CalamityMod:PearlGod	Ranged	Gun	OK	0.75	OK	0.76	26855	20934	20461		
+CalamityMod:PlanetaryAnnihilation	Ranged	Bow	OK	0.92	OK	0.88	23030	20321	20321		
+CalamityMod:PridefulHuntersPlanarRipper	Ranged	Gun	OK	0.91	OK	0.93	18411	17203	17073		
+CalamityMod:PristineFury	Ranged	Gun	OK	0.91	OK	0.91	27370	25282	24940		
+CalamityMod:Seadragon	Ranged	HeldWeapon/Holdout	OK	0.98	OK	0.93	16533	15562	15457		
+CalamityMod:SepticSkewer	Ranged	Magic	OK	1.97	OK	1.87	21992	41052	41127		
+CalamityMod:Shredder	Ranged	Gun	BROKEN	0.85	BROKEN	0.89	12044	10659	11042	fires from the commander	OK under the corrected commander rule (their piercing shots only fly past her): re-run 0.94 / 0.81 / 1.39
+CalamityMod:Spyker	Ranged	Gun	OK	0.83	OK	0.85	27008	23281	22833		
+CalamityMod:Starfleet	Ranged	Gun	NOREF	0.00	NOREF	0.00	0	0	0	reference player did no damage	NOT MEASURABLE: the headless stand-in player does no damage either
+CalamityMod:SulphuricAcidCannon	Ranged	Gun	OK	0.86	OK	0.84	33769	28438	28307		
+CalamityMod:SuperradiantSlaughterer	Ranged	HeldWeapon/Holdout	OK	11261.00	OK	7263.00	0	7263	10972	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:TauCannon	Ranged	HeldWeapon/Holdout	NOREF	0.00	NOREF	0.00	0	0	0	reference player did no damage	NOT MEASURABLE: the headless stand-in player does no damage either
+CalamityMod:TelluricGlare	Ranged	Bow	OK	0.91	OK	0.91	24716	22757	22549		
+CalamityMod:TheMaelstrom	Ranged	HeldWeapon/Holdout	OK	0.70	OK	0.80	30876	24745	25482		
+CalamityMod:TheSevensStriker	Ranged	Unsupported(unsupported)	NOREF	0.00	NOREF	0.00	0	0	0	reference player did no damage	UNSUPPORTED by the classifier: never issued to a levy
+CalamityMod:TheStorm	Ranged	Bow	OK	0.93	OK	0.91	30198	27794	27550		
+CalamityMod:BloodsoakedCrasher	Rogue	Magic	OK	0.90	OK	0.91	38911	35309	35535		
+CalamityMod:CelestialReaper	Rogue	Magic	OK	0.85	OK	0.84	14061	12190	11874		
+CalamityMod:CosmicKunai	Rogue	Magic	WEAK	0.05	WEAK	0.05	21014	1103	1006	ratio 0.05	STANDOFF: as many shots as the player, fewer hits: the levy holds about 27 tiles off a boss-flagged target (the stand-in 12), past the shots' life or homing reach
+CalamityMod:DeepSeaDumbbell	Rogue	Magic	BROKEN	1.14	BROKEN	1.23	18756	23103	23825	fires from the commander	COMMANDER: one shot stays within 3 tiles of the commander for 12+ ticks (an owner-anchored AI); pre-existing, cause not isolated
+CalamityMod:GhoulishGouger	Rogue	Magic	OK	0.90	OK	0.90	28918	26318	26048		
+CalamityMod:JawsOfOblivion	Rogue	Magic	OK	0.69	OK	0.70	39812	29000	27919		
+CalamityMod:LunarKunai	Rogue	Magic	OK	0.85	OK	0.84	20034	16904	16914		
+CalamityMod:MoltenAmputator	Rogue	Magic	OK	0.79	OK	0.80	37098	29914	29818		
+CalamityMod:ProfanedPartisan	Rogue	Magic	OK	0.72	OK	0.80	13032	10951	10485		
+CalamityMod:RealityRupture	Rogue	Magic	OK	0.87	OK	0.87	27217	23742	23695		
+CalamityMod:ReboundingRainbow	Rogue	Magic	OK	0.97	OK	0.95	25175	23887	24412		
+CalamityMod:SealedSingularity	Rogue	Unsupported(unsupported)	BROKEN	0.00	BROKEN	0.00	8903	0	0	no damage idle; no damage with the commander holding	UNSUPPORTED by the classifier: never issued to a levy
+CalamityMod:ShatteredDawn	Rogue	Magic	OK	0.87	OK	0.85	29857	25481	25347		
+CalamityMod:TarragonThrowingDart	Rogue	Magic	OK	0.89	OK	0.94	20768	19683	19490		
+CalamityMod:TheOldReaper	Rogue	Unsupported(unsupported)	BROKEN	0.00	BROKEN	0.00	1535	0	0	no damage idle; no damage with the commander holding	UNSUPPORTED by the classifier: never issued to a levy
+CalamityMod:ToxicantTwister	Rogue	Magic	OK	0.84	OK	0.81	46806	38768	37797		
+CalamityMod:TwistingThunder	Rogue	Magic	OK	0.82	OK	0.61	25383	16475	15509		
+CalamityMod:Valediction	Rogue	Magic	OK	0.65	OK	0.66	27463	18535	18224		
+CalamityMod:Vega	Rogue	Magic	OK	0.88	OK	0.92	33296	30776	30729		
+CalamityMod:AquasScepter	Summon	Sentry	OK	0.91	WEAK	0.20	4633	940	4239	ratio 0.20	HARNESS KNIFE-EDGE: the cloud lands 18.7-18.8 tiles from the dummy and strikes within 300 px (18.75 tiles); the idle run fell 0.1 tile outside (base and fix runs flip on sub-pixel cast positions)
+CalamityMod:CadaverousCarrion	Summon	Sentry	NOREF	0.00	NOREF	0.00	0	0	0	reference player did no damage	NOT MEASURABLE: the headless stand-in player does no damage either
+CalamityMod:CalamarisLament	Summon	Summon	OK	0.69	OK	0.69	5471	3851	3767		
+CalamityMod:Cosmilamp	Summon	Summon	OK	2538.00	OK	2549.00	0	2550	2549	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:DazzlingStabberStaff	Summon	Summon	OK	4.07	OK	4.16	207	892	862		
+CalamityMod:DragonbloodDisgorger	Summon	Summon	OK	9911.00	OK	9959.00	0	12860	9959	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:EtherealSubjugator	Summon	Summon	OK	2385.00	OK	2414.00	0	2447	2414	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:FlowersOfMortality	Summon	Summon	OK	2071.00	BROKEN	2058.00	0	2059	2058	fires from the commander; reference player did no damage	OK under the corrected commander rule (re-run); the headless stand-in does no damage, so no ratio
+CalamityMod:GammaHeart	Summon	Summon	OK	3048.00	OK	2930.00	0	3109	2930	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:GuidelightofOblivion	Summon	Sentry	OK	0.87	OK	0.88	3424	3009	3139		
+CalamityMod:KingofConstellationsTenryu	Summon	Summon	OK	15453.00	OK	17653.00	0	20108	17653	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:LegionofCelestia	Summon	Summon	OK	1.09	OK	1.09	3157	3444	3460		
+CalamityMod:MutatedTruffle	Summon	Summon	BROKEN	6234.00	BROKEN	6231.00	0	6231	6631	fires from the commander; reference player did no damage	COMMANDER: one shot stays within 3 tiles of the commander for 12+ ticks (an owner-anchored AI); pre-existing, cause not isolated
+CalamityMod:SanctifiedSpark	Summon	Sentry	OK	6685.00	OK	6761.00	0	6761	6777	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:Sirius	Summon	Summon	OK	2340.00	OK	2317.00	0	2372	2317	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:StellarTorusStaff	Summon	Summon	OK	1943.00	OK	2359.00	0	2359	2397	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:TacticalPlagueEngine	Summon	Summon	OK	1672.00	OK	1683.00	0	1683	1709	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:ViridVanguard	Summon	Summon	NOREF	0.00	NOREF	0.00	0	0	0	reference player did no damage (KeyNotFoundException: The given key 'CalamityMod/HeldItem' was not present in the dictionary. @ at CalamityMod.CalamityKeybindsExtensions.JustPressedKeybind(Item item) in CalamityMod/CalamityKeybinds.cs:line 132 < at CalamityMod.Items.Weapons.Summon.ViridVanguard.HoldItem(Player player) in CalamityMod/Items/Weapons/Summon/ViridVanguard.cs:line 98 < at Terraria.ModLoader.ItemLoader.HoldItem(Item item, Player player) in tModLoader\Terraria\ModLoader\ItemLoader.cs:line 379)	NOT MEASURABLE: the stand-in threw (Calamity keybinds are not registered on a server)
+CalamityMod:VoidConcentrationStaff	Summon	Summon	OK	4198.00	OK	4166.00	0	5338	4166	reference player did no damage	NOT MEASURABLE: the levy does damage, the headless stand-in none
+CalamityMod:WarloksMoonFist	Summon	Summon	OK	0.99	OK	0.98	11356	11222	11176		
+CalamityMod:ClaretCannon	Average	Unsupported(unsupported)	BROKEN	0.00	BROKEN	0.00	1724	0	0	no damage idle; no damage with the commander holding	UNSUPPORTED by the classifier: never issued to a levy
+CalamityMod:RelicOfDeliverance	Average	Unsupported(unsupported)	NOREF	0.00	NOREF	0.00	0	0	0	reference player did no damage	UNSUPPORTED by the classifier: never issued to a levy
+CalamityMod:StratusSphere	Average	Unsupported(unsupported)	BROKEN	0.00	BROKEN	0.00	8468	0	0	no damage idle; no damage with the commander holding	UNSUPPORTED by the classifier: never issued to a levy

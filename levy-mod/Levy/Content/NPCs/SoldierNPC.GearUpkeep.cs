@@ -218,7 +218,7 @@ namespace Levy.Content.NPCs
 					// the approximate frame (SoldierNPC.GearApprox.cs): a fighting levy rebuilds every N ticks and keeps the last build's stats in between; a stat refresh or a dormant levy's frame always builds
 					int gi = GearApprox.Interval;
 					GearApprox ga = GearApproxEligible(gi) ? (_ga ??= new GearApprox()) : null;
-					if (ga != null && !_gearFullNext && !_gearDormant && (GearApprox.Probe ? GearApproxProbeTick(ga, d, gi, savedNum, savedSlots, hs, ha, ref pf) : ga.TryServe(this, d, gi))) frameKind = 3;
+					if (ga != null && !_gearFullNext && !_gearDormant && (GearApprox.Probe && (GearApprox.ProbeOnly == null || GearApprox.ProbeOnly.Contains(NPC.whoAmI)) ? GearApproxProbeTick(ga, d, gi, savedNum, savedSlots, hs, ha, ref pf) : ga.TryServe(this, d, gi))) frameKind = 3;
 					else
 					{
 						ga?.BeforeBuild(this, d);

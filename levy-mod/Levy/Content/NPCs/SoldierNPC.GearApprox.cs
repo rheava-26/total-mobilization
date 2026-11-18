@@ -25,7 +25,7 @@ namespace Levy.Content.NPCs
 	public partial class SoldierNPC
 	{
 		/// <summary>The default of "Gear update interval when fighting" (chosen by measurement: docs/LAG_FINDINGS.md, section 8).</summary>
-		public const int GearApproxDefaultInterval = 3;
+		public const int GearApproxDefaultInterval = 4;
 
 		private GearApprox _ga;
 		/// <summary>Checks: how the last gear frame went (0 none / exact frame, 2 cache build, 3 served by the approximate frame, 4 built with the approximate frame on).</summary>
@@ -59,6 +59,8 @@ namespace Levy.Content.NPCs
 			/// <summary>LEVY_GA_RNGEXEMPT=1 (lab): a build that draws random numbers keeps the levy on the exact frame. Off: such a build is approximated like any other (its draws pick cosmetic variants: the Yoyo Bag's counterweight, set dust); one that casts something is caught by the spawn check.</summary>
 			/// <summary>Lab: every served tick also runs the full build and compares (<see cref="GearApproxProbeTick"/>).</summary>
 			internal static bool Probe = Environment.GetEnvironmentVariable("LEVY_GEARAPPROX_PROBE") == "1";
+			/// <summary>Checks: the probe compares only these bodies (null: every levy).</summary>
+			internal static HashSet<int> ProbeOnly;
 			internal static bool RngExempt = Environment.GetEnvironmentVariable("LEVY_GA_RNGEXEMPT") == "1";
 			private const int LearnBuilds = 4;
 			/// <summary>Every how many full builds the learning images are taken (a leaf the tail starts moving later is caught at the next learning build); in between only the written-back leaves are imaged.</summary>
@@ -78,7 +80,7 @@ namespace Levy.Content.NPCs
 			// ------------------------------------------------------------------------------------------------------------
 			private readonly StateImage _pre = new() { Skip = GearCache.SkipPath }, _post = new() { Skip = GearCache.SkipPath };
 			private readonly List<object> _roots = new(); private readonly List<string> _names = new();
-			private int[] _write; private object[] _live;
+			private int[] _write, _writeSet; private object[] _live;
 			private bool _ready, _learnThis, _exempt, _havePost, _sigSet; private int _learned, _sinceLearn, _hot;
 			private readonly Dictionary<string, int> _upRuns = new(); private readonly List<string> _upKeys = new();
 			private List<StateImage.Cool> _cool = new(); private readonly List<string> _up = new();
@@ -241,7 +243,8 @@ namespace Levy.Content.NPCs
 				if (!_learnThis && _ready)
 				{
 					// between learning builds the image is taken again without learning: Recapture follows an object the build made anew (ResetEffects re-creates some of its lists and arrays) so a served tick writes into the live one
-					if (_post.Take(_roots, _names)) _post.LiveObjects(_live); else { _ready = false; _learned = 0; ShapeResets++; }
+					// only the written-back nodes and the path to them are imaged; a list or array the build made anew is followed to the new object
+					if (_post.RecaptureSet(_writeSet)) _post.LiveObjects(_live); else if (_post.Take(_roots, _names)) _post.LiveObjects(_live); else { _ready = false; _learned = 0; ShapeResets++; }
 					PostTicks += Stopwatch.GetTimestamp() - t0;
 					_campfire = Main.SceneMetrics.HasCampfire && !campfire0; _lantern = Main.SceneMetrics.HasHeartLantern && !lantern0;
 					_buffLifeRegen = s._buffLifeRegen;
@@ -267,7 +270,7 @@ namespace Levy.Content.NPCs
 						}
 						_learned++;
 						if (remask && _ready) _hot = 4; // something new was learned: the next few builds learn too
-						if (_learned >= LearnBuilds && (remask || !_ready)) { long m0 = Stopwatch.GetTimestamp(); _write = _post.WriteMask(Keep, out _live, Always); _cool = _post.Cooldowns(); _ready = true; Masks++; MaskTicks += Stopwatch.GetTimestamp() - m0; }
+						if (_learned >= LearnBuilds && (remask || !_ready)) { long m0 = Stopwatch.GetTimestamp(); _write = _post.WriteMask(Keep, out _live, Always); _writeSet = _post.WithAncestors(_write); _cool = _post.Cooldowns(); _ready = true; Masks++; MaskTicks += Stopwatch.GetTimestamp() - m0; }
 					}
 					else { _learned = 0; _ready = false; }
 					LearnTicks += Stopwatch.GetTimestamp() - t1;

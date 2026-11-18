@@ -293,6 +293,8 @@ namespace Levy.Common.Util
 		// arrays: Um = raw-byte copy of an unmanaged array; otherwise P is the element plan (struct elements, Elem = true) or null (reference elements: R holds them)
 		public ArrOps Um; public Array Copy; public int Len; public bool IsArr;
 		public int Stamp, Index; public bool Shared;
+		/// <summary>The node whose reference led here (-1 for a root).</summary>
+		public int Parent = -1;
 		/// <summary>The last non-null reference of each slot that was not followed (so a recapture only re-asks the rules for a new object).</summary>
 		public object[] NF;
 		/// <summary>Reference slots never followed (an image's <see cref="StateImage.Skip"/> path, or the depth limit).</summary>
@@ -378,7 +380,7 @@ namespace Levy.Common.Util
 				if (n == null || !ReferenceEquals(n.Obj, o)) n = new ImgNode();
 				if (i < Roots.Count) Roots[i] = n; else Roots.Add(n);
 				if (_seen.TryGetValue(o, out var dup)) { Roots[i] = dup; continue; }
-				Fill(n, o, names[i], 0);
+				n.Parent = -1; Fill(n, o, names[i], 0);
 			}
 		}
 
@@ -429,7 +431,7 @@ namespace Levy.Common.Util
 				ImgNode kn = n.Kid[k];
 				if (kn == null || !ReferenceEquals(kn.Obj, c) || kn.Stamp == _stamp) kn = new ImgNode();
 				n.Kid[k] = kn;
-				Fill(kn, c, path + "." + RefName(n, k), depth + 1);
+				kn.Parent = n.Index; Fill(kn, c, path + "." + RefName(n, k), depth + 1);
 			}
 		}
 
@@ -575,6 +577,53 @@ namespace Levy.Common.Util
 				}
 				else { n.P.CapV(o, 0, n.V, 0); n.P.CapR(o, 0, n.R, 0); RawCap(n, o); }
 			}
+		}
+
+		/// <summary>The listed nodes and every node on the path from a root to them, in capture order (for <see cref="RecaptureSet"/>).</summary>
+		public int[] WithAncestors(int[] nodes)
+		{
+			var mark = new bool[_order.Count];
+			foreach (int i in nodes) for (int j = i; j >= 0 && !mark[j]; j = _order[j].Parent) mark[j] = true;
+			var l = new List<int>(); for (int i = 0; i < mark.Length; i++) if (mark[i]) l.Add(i);
+			return l.ToArray();
+		}
+
+		/// <summary>
+		/// <see cref="Recapture"/> on the listed nodes only (a set closed under parents, in capture order): their values are captured again and a followed reference that now points at another object of the same type is
+		/// re-bound to it, so a list or array the build makes anew is the one captured and written back. False when the shape changed (take a full image).
+		/// </summary>
+		public bool RecaptureSet(int[] set)
+		{
+			FailAt = null;
+			foreach (int i in set)
+			{
+				var n = _order[i]; object o = n.Obj;
+				if (n.IsArr)
+				{
+					var a = (Array)o; if (a.Length != n.Len) { FailAt = n; return false; }
+					if (n.Um != null) { n.Copy = n.Um.Copy(a, n.Copy); continue; }
+					if (n.P != null) for (int e = 0; e < n.Len; e++) { n.P.CapV(a, e, n.V, e * n.P.NV); n.P.CapR(a, e, n.R, e * n.P.NR); }
+					else Array.Copy(a, n.R, n.Len);
+				}
+				else { n.P.CapV(o, 0, n.V, 0); n.P.CapR(o, 0, n.R, 0); RawCap(n, o); }
+				var kid = n.Kid; var r = n.R;
+				for (int k = 0; k < kid.Length; k++)
+				{
+					object c = r[k]; var kn = kid[k];
+					if (kn != null)
+					{
+						if (ReferenceEquals(c, kn.Obj)) continue;
+						if (c == null || kn.Shared || c.GetType() != kn.Obj.GetType() || (c is Array ca && ca.Length != kn.Len)) { FailAt = kn; return false; }
+						kn.Obj = c;
+					}
+					else if (c != null && !ReferenceEquals(c, n.NF[k]))
+					{
+						if (!n.NoFollow[k] && ImgRules.Follow(o, c.GetType())) { FailAt = n; return false; }
+						n.NF[k] = c;
+					}
+				}
+			}
+			return true;
 		}
 
 		public bool Recapture()

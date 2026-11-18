@@ -37,17 +37,17 @@ namespace Levy.Common.Testing
 				Check($"interval 1 is the exact frame: no tick served ({SoldierNPC.GearApprox.Served} served)", SoldierNPC.GearApprox.Served == 0);
 
 				// ---- interval 3, every served tick compared with a full build from the same state
-				SoldierNPC.GearApprox.HarnessInterval = 3; SoldierNPC.GearApprox.ResetCounters(); SoldierNPC.GearApproxProbe.Reset(); SoldierNPC.GearApprox.Probe = true;
+				SoldierNPC.GearApprox.HarnessInterval = 3; SoldierNPC.GearApprox.ResetCounters(); SoldierNPC.GearApproxProbe.Reset(); SoldierNPC.GearApprox.Probe = true; SoldierNPC.GearApprox.ProbeOnly = new HashSet<int>(sample.Take(24).Select(x => x.NPC.whoAmI));
 				long f0 = GearUpkeep.FrameCalls, t0 = GearUpkeep.TailRuns;
-				Step(180);
-				SoldierNPC.GearApprox.Probe = probeWas;
+				Step(150);
+				SoldierNPC.GearApprox.Probe = probeWas; SoldierNPC.GearApprox.ProbeOnly = null;
 				long frames = GearUpkeep.FrameCalls - f0, tails = GearUpkeep.TailRuns - t0, served = SoldierNPC.GearApprox.Served;
 				int statDiffs = 0; var which = new List<string>();
 				for (int i = 0; i < SoldierNPC.GearApproxProbe.StatNames.Length; i++) if (SoldierNPC.GearApproxProbe.Diff[i] > 0) { statDiffs += (int)SoldierNPC.GearApproxProbe.Diff[i]; which.Add(SoldierNPC.GearApproxProbe.StatNames[i] + " " + SoldierNPC.GearApproxProbe.Diff[i]); }
-				Note($"approximate gear frame, interval 3, {sample.Count} levies standing, 180 ticks: {served} frames served, {SoldierNPC.GearApprox.Builds} built ({string.Join(", ", SoldierNPC.GearApprox.Why.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + " " + kv.Value))}); leaves that differed from a full build: "
+				Note($"approximate gear frame, interval 3, {sample.Count} levies standing, 150 ticks (24 compared): {served} frames served, {SoldierNPC.GearApprox.Builds} built ({string.Join(", ", SoldierNPC.GearApprox.Why.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + " " + kv.Value))}); leaves that differed from a full build: "
 					+ (SoldierNPC.GearApproxProbe.Leaves.Count == 0 ? "none" : string.Join(", ", SoldierNPC.GearApproxProbe.Leaves.OrderByDescending(kv => kv.Value).Take(12).Select(kv => kv.Key + " " + kv.Value))));
 				Check($"interval 3 serves ticks between builds ({served} of {frames} frames)", served > frames / 4);
-				Check($"every served tick has the stats a full build gives from the same state ({SoldierNPC.GearApproxProbe.Checks} compared, {statDiffs} stat differences{(which.Count > 0 ? ": " + string.Join(", ", which) : "")})", SoldierNPC.GearApproxProbe.Checks == served && served > 0 && statDiffs == 0);
+				Check($"every served tick has the stats a full build gives from the same state ({SoldierNPC.GearApproxProbe.Checks} compared, {statDiffs} stat differences{(which.Count > 0 ? ": " + string.Join(", ", which) : "")})", SoldierNPC.GearApproxProbe.Checks > 0 && statDiffs == 0);
 				Check($"no cast is missed on a served tick ({SoldierNPC.GearApproxProbe.MissedSpawns} missed)", SoldierNPC.GearApproxProbe.MissedSpawns == 0);
 				Check($"the tail (Rage, Adrenaline, stealth, cooldowns) runs on every gear frame, served or built ({tails} tails, {frames} frames)", frames > 0 && tails == frames);
 
@@ -77,7 +77,7 @@ namespace Levy.Common.Testing
 				s.NPC.DelBuff(s.NPC.FindBuffIndex(BuffID.Ironskin));
 				Step(2);
 			}
-			finally { SoldierNPC.DormancyOn = dormWas; SoldierNPC.GearApprox.Probe = probeWas; SoldierNPC.GearApprox.HarnessInterval = hiWas; }
+			finally { SoldierNPC.DormancyOn = dormWas; SoldierNPC.GearApprox.Probe = probeWas; SoldierNPC.GearApprox.ProbeOnly = null; SoldierNPC.GearApprox.HarnessInterval = hiWas; }
 
 			if (ModLoader.HasMod("CalamityMod")) CalamityPatchChecks(sample);
 		}

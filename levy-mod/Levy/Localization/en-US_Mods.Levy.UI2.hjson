@@ -1,7 +1,6 @@
 # Levy interface strings added by the UI module. Keys are relative to Mods.Levy.UI2.
 ArmoryTitle: Armory
 Close: Close
-ReforgeFloor: Floor: {0}
 ReforgeFloorGood: Good
 ReforgeFloorGreat: Great
 ReforgeFloorSuperb: Superb

@@ -31,8 +31,14 @@ Any: Any
 ClassHint: Only weapons of this class.
 CategoryHint: Only weapons of this type, such as bows.
 Goal: Roll for
-GoalHint: A floor rerolls each weapon until its modifier is in the top slice of what it can roll. A named modifier rerolls until that one comes up.
-GoalPrefix: Modifier: {0}
+FloorHint_0: Rerolls each weapon until its modifier is in the top half of what it can roll.
+FloorHint_1: Rerolls each weapon until its modifier is in the top quarter of what it can roll.
+FloorHint_2: Rerolls each weapon until its modifier is in the top tenth of what it can roll.
+FloorHint_3: Rerolls each weapon until it has the best modifier it can roll.
+Modifier: Or modifier
+ModifierHint: Rerolls each weapon until this modifier comes up. Weapons that cannot take it are left alone.
+ModifierNone: None
+ModifierNoneAvailable: No weapons chosen
 PrefixOption: "{0} ({1})"
 Cap: Spend at most
 CapHint: The run stops before it spends more than this.

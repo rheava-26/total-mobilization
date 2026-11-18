@@ -59,6 +59,12 @@ namespace Levy.Common.Weapons
 
 		public bool IsPicked(byte region, int slot) => Picks.Contains((region, (short)slot));
 
+		/// <summary>Rolls for floor <paramref name="index"/> (0 Good .. 3 Best). A named modifier chosen before is dropped.</summary>
+		public void SetFloor(int index) { Goal = ReforgeGoal.Floor; FloorIndex = Math.Max(0, index); }
+
+		/// <summary>Rolls for one named modifier.</summary>
+		public void SetPrefix(int prefixId) { Goal = ReforgeGoal.Prefix; PrefixId = prefixId; }
+
 		/// <summary>Picks the weapon if it is not picked, unpicks it if it is. False when the pick list is full.</summary>
 		public bool TogglePick(byte region, int slot)
 		{

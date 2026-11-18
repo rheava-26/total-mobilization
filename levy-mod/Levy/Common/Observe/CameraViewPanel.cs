@@ -89,7 +89,7 @@ namespace Levy.Common.Observe
 				close.Left.Set(W - 36, 0f); close.Top.Set(6, 0f);
 				_panel.Append(close);
 
-				_list = new UIList { ListPadding = 4f };
+				_list = ChoicePopup.KeepOrder(new UIList { ListPadding = 4f });
 				_list.Left.Set(Margin, 0f); _list.Top.Set(44, 0f); _list.Width.Set(W - Margin * 2 - 22, 0f); _list.Height.Set(H - 44 - 84, 0f);
 				_bar = new UIScrollbar();
 				_bar.Left.Set(W - Margin - 18, 0f); _bar.Top.Set(48, 0f); _bar.Height.Set(H - 44 - 92, 0f);

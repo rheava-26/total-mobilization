@@ -53,6 +53,7 @@ namespace Levy.Common.Dialogue
 		internal static int Changes, PanicRounds, PanicLines, FloatingHeld, DukeEndings, DukeRounds, DukeLines;
 		private static bool _dukePrimed, _dukeWasKilled;
 		private static int _dukeSeenAt = Never;
+		private static Microsoft.Xna.Framework.Vector2 _dukeSpot;
 
 		private static int Now => (int)Main.GameUpdateCount;
 		private static int Days => TestDays ?? DaysSince;
@@ -251,18 +252,14 @@ namespace Levy.Common.Dialogue
 		private static void DukeTick(int now)
 		{
 			if (LevyUtil.IsClient) return;
-			if (RiftSky.DukeInScene) _dukeSeenAt = now;
+			if (RiftSky.DukeInScene(out var spot)) { _dukeSeenAt = now; _dukeSpot = spot; }
 			bool killed = RiftSky.DukeKilled;
 			if (!_dukePrimed) { _dukePrimed = true; _dukeWasKilled = killed; return; }
 			if (killed && !_dukeWasKilled && (uint)(now - _dukeSeenAt) <= (uint)LevyConstants.RiftDukeSeenTicks)
 			{
 				DukeEndings++;
-				for (int i = 0; i < Main.maxPlayers; i++)
-				{
-					Player p = Main.player[i];
-					if (p == null || !p.active || p.dead) continue;
-					if (CommanderReactions.Enqueue(p, DialogueTrigger.RIFT_DUKE, LevyConstants.RiftDukeSpeakers, now, LevyConstants.RiftDukeStepTicks)) DukeRounds++;
-				}
+				// the levies who saw it: within reach of where it was swallowed, whoever their commander
+				if (CommanderReactions.EnqueueNear(_dukeSpot, LevyConstants.RiftDukeReachTiles, DialogueTrigger.RIFT_DUKE, LevyConstants.RiftDukeSpeakers, now, LevyConstants.RiftDukeStepTicks)) DukeRounds++;
 			}
 			_dukeWasKilled = killed;
 		}

@@ -133,5 +133,25 @@ namespace Levy.Common.Dialogue
 			Scratch.Clear();
 			return true;
 		}
+
+		/// <summary>Up to <paramref name="speakers"/> standing regulars (of any commander) within <paramref name="reachTiles"/> of a spot in the world, queued one after another: the levies who saw something happen there.</summary>
+		internal static bool EnqueueNear(Vector2 spot, float reachTiles, DialogueTrigger trigger, int speakers, int now, int step)
+		{
+			Scratch.Clear();
+			float reach = reachTiles * LevyConstants.TilePx;
+			foreach (SoldierNPC s in RosterSystem.Instance.ActiveBodies())
+			{
+				if (!s.IsAlive || !s.IsRegular || s.Record.Reserve) continue;
+				if (Vector2.Distance(s.NPC.Center, spot) > reach) continue;
+				Scratch.Add(s);
+			}
+			if (Scratch.Count == 0) return false;
+			for (int i = Scratch.Count - 1; i > 0; i--) { int j = Main.rand.Next(i + 1); (Scratch[i], Scratch[j]) = (Scratch[j], Scratch[i]); }
+			int n = Math.Min(speakers, Scratch.Count);
+			for (int k = 0; k < n; k++)
+				Queue.Add(new Cue { Npc = Scratch[k].NPC.whoAmI, RecordId = Scratch[k].Record.Id, At = now + 20 + k * step + Main.rand.Next(12), Trigger = trigger, Commander = Scratch[k].Record.CommanderName });
+			Scratch.Clear();
+			return true;
+		}
 	}
 }

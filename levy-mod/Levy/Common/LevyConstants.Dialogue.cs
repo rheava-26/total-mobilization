@@ -59,6 +59,8 @@ namespace Levy.Common
 		public const float RiftPowerChance = 0.25f, RiftDarkChance = 0.4f;
 		/// <summary>The burst when the sky swallows a boss in front of the army: speakers near each commander, ticks between them, and how recently the boss must have been seen.</summary>
 		public const int RiftDukeSpeakers = 4, RiftDukeStepTicks = 55, RiftDukeSeenTicks = 180;
+		/// <summary>Levies within this many tiles of where the boss was swallowed saw it.</summary>
+		public const float RiftDukeReachTiles = 60f;
 		/// <summary>The burst right after the sun is covered: levies near each commander, one after another; then this long of worried talk in place of the rift chat.</summary>
 		public const int RiftPanicSpeakers = 4, RiftPanicStepTicks = 75, RiftPanicTicks = 60 * 90;
 		/// <summary>A levy who was dead or in reserve when the sun went asks what happened, with this chance, until he has asked this many times.</summary>

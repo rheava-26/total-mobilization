@@ -154,17 +154,18 @@ namespace Levy.Common.Dialogue
 		/// <summary>The NPC type of Calamity's Old Duke, or -1 when Calamity (or that NPC) is not loaded.</summary>
 		public static int DukeType { get { Resolve(); return _dukeType; } }
 
-		/// <summary>An Old Duke is alive right now and the sky will take it (NoxusBoss runs that scene while the flag is off and the sky is not freed).</summary>
-		public static bool DukeInScene
+		/// <summary>An Old Duke is alive right now and the sky will take it (NoxusBoss runs that scene while the flag is off and the sky is not freed). <paramref name="at"/> is where it is.</summary>
+		public static bool DukeInScene(out Microsoft.Xna.Framework.Vector2 at)
 		{
-			get
-			{
-				if (TestDukeAlive.HasValue) return TestDukeAlive.Value;
-				if (!Resolve() || _dukeType < 0 || DukeKilled || Defeated) return false;
-				for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n != null && n.active && n.type == _dukeType) return true; }
-				return false;
-			}
+			at = TestDukeAt;
+			if (TestDukeAlive.HasValue) return TestDukeAlive.Value;
+			if (!Resolve() || _dukeType < 0 || DukeKilled || Defeated) return false;
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n != null && n.active && n.type == _dukeType) { at = n.Center; return true; } }
+			return false;
 		}
+
+		/// <summary>Self-check: where an overridden Old Duke stands.</summary>
+		internal static Microsoft.Xna.Framework.Vector2 TestDukeAt;
 
 		/// <summary>Self-check and world-check hook: write the real NoxusBoss members (null leaves one alone). Returns false when NoxusBoss or a member is missing.</summary>
 		internal static bool SetReal(bool? covered = null, int? eventTimer = null, bool? waiting = null, float? snowHeight = null, bool? dukeKilled = null)
@@ -192,6 +193,6 @@ namespace Levy.Common.Dialogue
 			return (Read(_covered, false), Read(_ongoing, false), Read(_eventTimer, 0), Read(_waiting, false), Read(_riftOngoing, false), Read(_snowHeight, 0f), Read(_fog, false));
 		}
 
-		internal static void ClearOverrides() { TestInstalled = TestTransition = TestCovered = TestDefeated = TestSnowing = TestDukeKilled = TestDukeAlive = null; TestSnowHeight = null; _cacheTick = uint.MaxValue; _defeatTick = uint.MaxValue; }
+		internal static void ClearOverrides() { TestInstalled = TestTransition = TestCovered = TestDefeated = TestSnowing = TestDukeKilled = TestDukeAlive = null; TestSnowHeight = null; TestDukeAt = default; _cacheTick = uint.MaxValue; _defeatTick = uint.MaxValue; }
 	}
 }

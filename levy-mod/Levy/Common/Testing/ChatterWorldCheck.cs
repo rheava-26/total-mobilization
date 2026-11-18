@@ -250,13 +250,21 @@ namespace Levy.Common.Testing
 				else
 				{
 					Note("the Old Duke is driven through the overrides" + (real ? " (Calamity's Old Duke is not loaded)" : ""));
+					RiftSky.TestDukeAt = _cmdAt + new Vector2(400f, -300f);
 					RiftSky.TestDukeAlive = true; RiftStep(60); RiftSky.TestDukeAlive = false; RiftSky.TestDukeKilled = true;
 				}
 				RiftStep(20 + LevyConstants.RiftDukeSpeakers * LevyConstants.RiftDukeStepTicks + 60);
 				int dukeLines = RiftMood.DukeLines - dl0;
-				Check($"when the sky swallows the boss the levies near the commander are shocked ({RiftMood.DukeEndings - de0} endings, {RiftMood.DukeRounds - dr0} rounds, {dukeLines} lines)", RiftMood.DukeEndings == de0 + 1 && RiftMood.DukeRounds == dr0 + 1 && dukeLines == Math.Min(LevyConstants.RiftDukeSpeakers, Standing(army)));
+				Check($"when the sky swallows the boss the levies who saw it are shocked ({RiftMood.DukeEndings - de0} endings, {RiftMood.DukeRounds - dr0} rounds, {dukeLines} lines)", RiftMood.DukeEndings == de0 + 1 && RiftMood.DukeRounds == dr0 + 1 && dukeLines == Math.Min(LevyConstants.RiftDukeSpeakers, Standing(army)));
 				RiftStep(600);
 				Check($"and only once ({RiftMood.DukeEndings - de0} endings ten seconds later)", RiftMood.DukeEndings == de0 + 1);
+				// the same far from the army: an ending, but nobody saw it
+				RiftSky.TestDukeKilled = false; RiftStep(5);
+				RiftSky.TestDukeAt = _cmdAt + new Vector2(LevyConstants.RiftDukeReachTiles * 16f * 2.5f, 0f);
+				RiftSky.TestDukeAlive = true; RiftStep(30); RiftSky.TestDukeAlive = false; RiftSky.TestDukeKilled = true;
+				int far0 = RiftMood.DukeLines, farR = RiftMood.DukeRounds;
+				RiftStep(20 + LevyConstants.RiftDukeSpeakers * LevyConstants.RiftDukeStepTicks + 60);
+				Check($"swallowed {LevyConstants.RiftDukeReachTiles * 2.5f:F0} tiles from the army it is an ending nobody saw ({RiftMood.DukeEndings - de0} endings, {RiftMood.DukeRounds - farR} rounds, {RiftMood.DukeLines - far0} lines)", RiftMood.DukeEndings == de0 + 2 && RiftMood.DukeRounds == farR && RiftMood.DukeLines == far0);
 			}
 			finally
 			{

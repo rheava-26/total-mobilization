@@ -26,7 +26,9 @@ namespace Levy.Common.Dialogue
 	///   (right-click and ambient chat, situations, biomes, name-drops, armory talk, the Blood Moon chat), camp and drink talk becomes RIFT_CAMP, the commander reactions, gear thanks and flight
 	///   chatter go quiet, and the floating lines that remain are thinned (<see cref="AllowFloating"/>). Combat barks, boss lines, pay, mutiny and officer voices keep their own pools.
 	///   Within the rift chat: a levy who was dead or in reserve when the sun went asks what happened (RIFT_ABSENT), the cold when snow falls or lies on the surface (RIFT_COLD),
-	///   unsettled respect for the other classes (RIFT_RESPECT), the first shock in the tense days (RIFT_SHOCK), "what now" from day <see cref="LevyConstants.RiftLaterFromDay"/> (RIFT_LATER), and quiet talk (RIFT_IDLE).
+	///   unsettled respect for the other classes (RIFT_RESPECT), the first shock in the tense days (RIFT_SHOCK), "what now" from day <see cref="LevyConstants.RiftLaterFromDay"/> (RIFT_LATER),
+	///   weary talk of their own strength from day <see cref="LevyConstants.RiftPowerFromDay"/> (RIFT_POWER), dark humour once settled, from day <see cref="LevyConstants.RiftDarkFromDay"/> (RIFT_DARK), and quiet talk (RIFT_IDLE).
+	///   And when the sky swallows the Old Duke in front of the army, a burst of shocked lines from the levies near each commander (RIFT_DUKE).
 	/// The day count, whether the sky has been seen and who was away are saved with the world and sent to clients.
 	/// </summary>
 	public class RiftMood : ModSystem
@@ -48,7 +50,9 @@ namespace Levy.Common.Dialogue
 		internal static bool? TestPanic, TestSurface;
 		internal static int? TestDays;
 		/// <summary>Coverings seen ending, panic rounds started (an army was near), panic lines spoken, floating lines held back by the mood.</summary>
-		internal static int Changes, PanicRounds, PanicLines, FloatingHeld;
+		internal static int Changes, PanicRounds, PanicLines, FloatingHeld, DukeEndings, DukeRounds, DukeLines;
+		private static bool _dukePrimed, _dukeWasKilled;
+		private static int _dukeSeenAt = Never;
 
 		private static int Now => (int)Main.GameUpdateCount;
 		private static int Days => TestDays ?? DaysSince;
@@ -69,7 +73,7 @@ namespace Levy.Common.Dialogue
 		/// <summary>The worried talk right after the covering.</summary>
 		public static bool PanicNow => TestPanic ?? (_panicUntil != Never && (uint)(_panicUntil - Now) <= (uint)LevyConstants.RiftPanicTicks);
 
-		internal static bool IsRift(DialogueTrigger t) => t >= DialogueTrigger.RIFT_PANIC && t <= DialogueTrigger.RIFT_CAMP;
+		internal static bool IsRift(DialogueTrigger t) => t >= DialogueTrigger.RIFT_PANIC && t <= DialogueTrigger.RIFT_DUKE;
 
 		/// <summary>Chat-log notices: not a levy speaking, never touched.</summary>
 		internal static bool IsNotice(DialogueTrigger t) => t == DialogueTrigger.DEATH_MESSAGE || t == DialogueTrigger.DESERTED || t == DialogueTrigger.NO_ONE_LEFT;
@@ -109,7 +113,7 @@ namespace Levy.Common.Dialogue
 		// The rift chat
 		// =====================================================================================================
 
-		private static readonly DialogueTrigger[] Order = new DialogueTrigger[8];
+		private static readonly DialogueTrigger[] Order = new DialogueTrigger[12];
 
 		/// <summary>The rift pools to try, in order, for this speaker right now. RIFT_IDLE is always last.</summary>
 		internal static int ChatOrder(SoldierRecord rec, SoldierNPC body, bool camp)
@@ -122,7 +126,9 @@ namespace Levy.Common.Dialogue
 			if (Main.rand.NextFloat() < LevyConstants.RiftRespectChance) Order[n++] = DialogueTrigger.RIFT_RESPECT;
 			RiftPhase ph = Phase;
 			if (ph == RiftPhase.Tense && Main.rand.NextFloat() < LevyConstants.RiftShockChance) Order[n++] = DialogueTrigger.RIFT_SHOCK;
+			if (Days >= LevyConstants.RiftDarkFromDay && Main.rand.NextFloat() < LevyConstants.RiftDarkChance) Order[n++] = DialogueTrigger.RIFT_DARK;
 			if (Days >= LevyConstants.RiftLaterFromDay && Main.rand.NextFloat() < LevyConstants.RiftLaterChance) Order[n++] = DialogueTrigger.RIFT_LATER;
+			if (Days >= LevyConstants.RiftPowerFromDay && Main.rand.NextFloat() < LevyConstants.RiftPowerChance) Order[n++] = DialogueTrigger.RIFT_POWER;
 			Order[n++] = DialogueTrigger.RIFT_IDLE;
 			return n;
 		}
@@ -165,13 +171,14 @@ namespace Levy.Common.Dialogue
 			bool tense = ph == RiftPhase.Tense;
 			switch (t)
 			{
-				case DialogueTrigger.RIFT_PANIC: case DialogueTrigger.MUTINY: return 1f;
+				case DialogueTrigger.RIFT_PANIC: case DialogueTrigger.RIFT_DUKE: case DialogueTrigger.MUTINY: return 1f;
 				case DialogueTrigger.FLIGHT_SHOUT: return tense ? 0f : 0.25f;
 				case DialogueTrigger.IDLE: case DialogueTrigger.IDLE_NIGHT: case DialogueTrigger.NAMEDROP: case DialogueTrigger.FIRESIDE: case DialogueTrigger.PASTIME: case DialogueTrigger.PASTIME_NIGHT:
 				case DialogueTrigger.DRINK: case DialogueTrigger.DRINK_ALE: case DialogueTrigger.DRINK_STOUT: case DialogueTrigger.DRINK_RUM: case DialogueTrigger.DRINK_FIZZ: case DialogueTrigger.DRINK_ICEBERG:
 				case DialogueTrigger.LIFE_CRYSTAL: case DialogueTrigger.CHEST_OPENED: case DialogueTrigger.ARMORY_GOT: case DialogueTrigger.ECLIPSE_END:
 				case DialogueTrigger.TAKEOFF: case DialogueTrigger.LANDING: case DialogueTrigger.FLIGHT_FEAR:
 				case DialogueTrigger.RIFT_SHOCK: case DialogueTrigger.RIFT_ABSENT: case DialogueTrigger.RIFT_COLD: case DialogueTrigger.RIFT_LATER: case DialogueTrigger.RIFT_RESPECT: case DialogueTrigger.RIFT_IDLE: case DialogueTrigger.RIFT_CAMP:
+				case DialogueTrigger.RIFT_DARK: case DialogueTrigger.RIFT_POWER:
 					return tense ? LevyConstants.RiftTenseChatterShare : LevyConstants.RiftSettledChatterShare;
 				case DialogueTrigger.BOSS_SIGHTED: case DialogueTrigger.BOSS: case DialogueTrigger.COMRADE_DOWN: case DialogueTrigger.ROUTED: case DialogueTrigger.RALLIED: case DialogueTrigger.VICTORY:
 				case DialogueTrigger.EVENT_GOBLINS: case DialogueTrigger.EVENT_PIRATES: case DialogueTrigger.EVENT_ECLIPSE: case DialogueTrigger.EVENT_PUMPKIN:
@@ -211,6 +218,7 @@ namespace Levy.Common.Dialogue
 		{
 			DaysSince = 0; Seen = false; Away.Clear(); AwayAsked.Clear();
 			_panicUntil = Never; _primed = false; _wasTransition = false; _lastDay = false;
+			_dukePrimed = false; _dukeWasKilled = false; _dukeSeenAt = Never;
 		}
 
 		public override void PostUpdateEverything()
@@ -233,6 +241,30 @@ namespace Levy.Common.Dialogue
 				_lastDay = Main.dayTime;
 			}
 			if (covered && !trans && !Seen) { Seen = true; DaysSince = 0; } // first sight of a sky already covered (a save from before Levy, or a world joined late)
+			DukeTick(now);
+		}
+
+		/// <summary>
+		/// The sky swallows the Old Duke: NoxusBoss's saved flag turns on while an Old Duke was in the scene a moment ago. The first tick of a world only records the flag, so loading a world
+		/// where it already happened is not an ending. Server and single player: the levies near each commander react.
+		/// </summary>
+		private static void DukeTick(int now)
+		{
+			if (LevyUtil.IsClient) return;
+			if (RiftSky.DukeInScene) _dukeSeenAt = now;
+			bool killed = RiftSky.DukeKilled;
+			if (!_dukePrimed) { _dukePrimed = true; _dukeWasKilled = killed; return; }
+			if (killed && !_dukeWasKilled && (uint)(now - _dukeSeenAt) <= (uint)LevyConstants.RiftDukeSeenTicks)
+			{
+				DukeEndings++;
+				for (int i = 0; i < Main.maxPlayers; i++)
+				{
+					Player p = Main.player[i];
+					if (p == null || !p.active || p.dead) continue;
+					if (CommanderReactions.Enqueue(p, DialogueTrigger.RIFT_DUKE, LevyConstants.RiftDukeSpeakers, now, LevyConstants.RiftDukeStepTicks)) DukeRounds++;
+				}
+			}
+			_dukeWasKilled = killed;
 		}
 
 		/// <summary>The sun has just been covered: the clock starts, the absent are noted, and the levies near each commander react.</summary>

@@ -41,7 +41,8 @@ namespace Levy.Common
 		DRINK_ALE, DRINK_STOUT, DRINK_RUM, DRINK_FIZZ, DRINK_ICEBERG, // appended: the DRINK line for one particular round (DrinkCheers.Begin knows which); DRINK is the fallback
 		ECLIPSE_END, // appended: a Solar Eclipse just ended with the army near its commander (CommanderReactions)
 		// appended: the rift sky of Wrath of the Gods (RiftMood). While it hangs over the world the calm and joking pools are routed to these.
-		RIFT_PANIC, RIFT_SHOCK, RIFT_ABSENT, RIFT_COLD, RIFT_LATER, RIFT_RESPECT, RIFT_IDLE, RIFT_CAMP
+		RIFT_PANIC, RIFT_SHOCK, RIFT_ABSENT, RIFT_COLD, RIFT_LATER, RIFT_RESPECT, RIFT_IDLE, RIFT_CAMP,
+		RIFT_DARK, RIFT_POWER, RIFT_DUKE // appended: dark humour once the army settles, weary talk of its own strength, and the shock when the sky swallows a boss
 	}
 
 	/// <summary>Where a dialogue line is delivered.</summary>

@@ -42,11 +42,11 @@ namespace Levy.Common
 
 		// ---- ambient chatter (Content/NPCs/SoldierNPC.Chatter.cs): a calm levy says a line to a comrade now and then ----
 		/// <summary>The first line after a levy turns calm, then the gap between lines (ticks, random in range). Only while a player is within <see cref="ChatterPlayerTiles"/>.</summary>
-		public const int ChatterFirstMinTicks = 60 * 4, ChatterFirstMaxTicks = 60 * 14, ChatterMinTicks = 60 * 18, ChatterMaxTicks = 60 * 45;
+		public const int ChatterFirstMinTicks = 60 * 10, ChatterFirstMaxTicks = 60 * 30, ChatterMinTicks = 60 * 40, ChatterMaxTicks = 60 * 90;
 		/// <summary>After a fight ends the gap shortens to this range for <see cref="ChatterAfterFightWindowTicks"/>.</summary>
-		public const int ChatterAfterFightMinTicks = 60 * 5, ChatterAfterFightMaxTicks = 60 * 14, ChatterAfterFightWindowTicks = 60 * 30;
+		public const int ChatterAfterFightMinTicks = 60 * 12, ChatterAfterFightMaxTicks = 60 * 30, ChatterAfterFightWindowTicks = 60 * 30;
 		/// <summary>A levy hit this recently stays quiet. A squad (one commander's levies) shares a minimum gap between ambient lines.</summary>
-		public const int ChatterQuietTicks = 60 * 3, ChatterSquadGapTicks = 150;
+		public const int ChatterQuietTicks = 60 * 3, ChatterSquadGapTicks = 360;
 		public const float ChatterPlayerTiles = 70f, ChatterComradeTiles = 14f;
 		/// <summary>Chance that an ambient line is a name-drop (an aimed line about a town NPC) instead of plain idle talk.</summary>
 		public const float ChatterNamedropChance = 0.25f;
@@ -54,6 +54,11 @@ namespace Levy.Common
 		// ---- the rift sky (Common/Dialogue/RiftMood.cs; Wrath of the Gods only) ----
 		/// <summary>Dawns after the sun is covered that the army stays shaken (the tense mood); after that it settles into a lasting quiet. Shock lines stop, "what now" lines start from <see cref="RiftLaterFromDay"/>.</summary>
 		public const int RiftTenseDays = 3, RiftLaterFromDay = 2;
+		/// <summary>Weary talk of the army's own strength from this dawn on; dark humour from this one (the army has settled).</summary>
+		public const int RiftPowerFromDay = 1, RiftDarkFromDay = 3;
+		public const float RiftPowerChance = 0.25f, RiftDarkChance = 0.4f;
+		/// <summary>The burst when the sky swallows a boss in front of the army: speakers near each commander, ticks between them, and how recently the boss must have been seen.</summary>
+		public const int RiftDukeSpeakers = 4, RiftDukeStepTicks = 55, RiftDukeSeenTicks = 180;
 		/// <summary>The burst right after the sun is covered: levies near each commander, one after another; then this long of worried talk in place of the rift chat.</summary>
 		public const int RiftPanicSpeakers = 4, RiftPanicStepTicks = 75, RiftPanicTicks = 60 * 90;
 		/// <summary>A levy who was dead or in reserve when the sun went asks what happened, with this chance, until he has asked this many times.</summary>

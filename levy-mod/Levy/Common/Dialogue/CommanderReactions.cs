@@ -81,6 +81,7 @@ namespace Levy.Common.Dialogue
 				{
 					if (c.Trigger == DialogueTrigger.ECLIPSE_END) EclipseEndLines++;
 					else if (c.Trigger == DialogueTrigger.RIFT_PANIC) RiftMood.PanicLines++;
+					else if (c.Trigger == DialogueTrigger.RIFT_DUKE) RiftMood.DukeLines++;
 				}
 			}
 		}

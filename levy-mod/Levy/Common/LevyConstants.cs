@@ -207,7 +207,7 @@ namespace Levy.Common
 		};
 
 		// ---------- Dialogue budget ----------
-		public const int FloatingLineIntervalTicks = 150;
+		public const int FloatingLineIntervalTicks = 300;
 		public const int EmotePerSoldierTicks = 60 * 5;
 		public const int LineRepeatCooldownTicks = 60 * 120;
 		public const int NameplateHideAbove = 20;

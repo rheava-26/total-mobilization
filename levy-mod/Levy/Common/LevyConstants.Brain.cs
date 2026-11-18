@@ -8,7 +8,7 @@ namespace Levy.Common
 		public const int MeleeAcquireRangeTiles = 20;
 		/// <summary>Followers never chase farther than this from their commander.</summary>
 		public const int FollowChaseLimit = 30;
-		public const int EngageBarkCooldownTicks = 60 * 20;
+		public const int EngageBarkCooldownTicks = 60 * 30;
 		/// <summary>How far one step away from a hostile that got inside the standoff reaches.</summary>
 		public const int KiteStepAwayTiles = 6;
 		public const int StrafeTiles = 2;

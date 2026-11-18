@@ -14,6 +14,9 @@ namespace Levy.Common.Dialogue
 	///   RiftEclipseSnowSystem.SnowHeight (static float, 0 to 10): snow lying on the surface. Rain under the covered sky falls as snow.
 	///   RiftEclipseFogEventManager.EventOngoing (static): the fog event (late game).
 	///   Mod.Call("GetBossDefeated", "avatarofemptiness"): the sky has been freed for good.
+	///   WorldSaveSystem.AvatarHasKilledOldDuke (static; Core.World.WorldSaving): set when the sky swallows Calamity's Old Duke (NoxusBoss takes over that NPC's AI while the sky is not
+	///     freed and the flag is off; the NPC is CalamityMod/OldDuke, found by name).
+
 	/// Reads are cached per game tick. Self-checks set the Test* overrides (null in play) or drive the real members through <see cref="SetReal"/>.
 	/// </summary>
 	public static class RiftSky
@@ -23,15 +26,17 @@ namespace Levy.Common.Dialogue
 		internal const string ManagementType = "NoxusBoss.Core.World.GameScenes.RiftEclipse.RiftEclipseManagementSystem";
 		internal const string SnowType = "NoxusBoss.Core.World.GameScenes.RiftEclipse.RiftEclipseSnowSystem";
 		internal const string FogType = "NoxusBoss.Core.World.GameScenes.RiftEclipse.RiftEclipseFogEventManager";
+		internal const string SaveType = "NoxusBoss.Core.World.WorldSaving.WorldSaveSystem";
 
 		// ---- self-check overrides (null in play) ----
-		internal static bool? TestInstalled, TestTransition, TestCovered, TestDefeated, TestSnowing;
+		internal static bool? TestInstalled, TestTransition, TestCovered, TestDefeated, TestSnowing, TestDukeKilled, TestDukeAlive;
 		internal static float? TestSnowHeight;
 
 		private static bool _resolved, _installed;
 		private static Mod _mod;
 		private static object _appearance;
-		private static PropertyInfo _covered, _ongoing, _eventTimer, _waiting, _riftOngoing, _snowHeight, _fog;
+		private static PropertyInfo _covered, _ongoing, _eventTimer, _waiting, _riftOngoing, _snowHeight, _fog, _dukeKilled;
+		private static int _dukeType = -1;
 		/// <summary>What could not be found (empty when everything resolved, "not installed" without the mod).</summary>
 		public static string Problem { get; private set; } = "";
 		/// <summary>The members found, for the self-check report.</summary>
@@ -56,7 +61,7 @@ namespace Levy.Common.Dialogue
 				_installed = true;
 				Assembly code = _mod.Code;
 				var problems = new System.Text.StringBuilder(); var found = new System.Text.StringBuilder();
-				Type app = code?.GetType(AppearanceType), man = code?.GetType(ManagementType), snow = code?.GetType(SnowType), fog = code?.GetType(FogType);
+				Type app = code?.GetType(AppearanceType), man = code?.GetType(ManagementType), snow = code?.GetType(SnowType), fog = code?.GetType(FogType), save = code?.GetType(SaveType);
 				const BindingFlags S = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, I = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 				_covered = Prop(app, "AvatarHasCoveredMoon", S, typeof(bool), problems, found);
 				_ongoing = Prop(app, "Ongoing", I, typeof(bool), problems, found);
@@ -65,6 +70,8 @@ namespace Levy.Common.Dialogue
 				_riftOngoing = Prop(man, "RiftEclipseOngoing", S, typeof(bool), problems, found);
 				_snowHeight = Prop(snow, "SnowHeight", S, typeof(float), problems, found);
 				_fog = Prop(fog, "EventOngoing", S, typeof(bool), problems, found);
+				_dukeKilled = Prop(save, "AvatarHasKilledOldDuke", S, typeof(bool), problems, found);
+				if (ModContent.TryFind("CalamityMod", "OldDuke", out ModNPC duke)) { _dukeType = duke.Type; found.Append("CalamityMod/OldDuke, "); }
 				if (app != null)
 					foreach (ModSystem sys in _mod.GetContent<ModSystem>())
 						if (sys.GetType() == app) { _appearance = sys; break; }
@@ -141,8 +148,26 @@ namespace Levy.Common.Dialogue
 		/// <summary>The late-game fog event is on.</summary>
 		public static bool Fog { get { Refresh(); return _cFog; } }
 
+		/// <summary>The sky has swallowed the Old Duke in this world (NoxusBoss's saved flag).</summary>
+		public static bool DukeKilled { get { if (TestDukeKilled.HasValue) return TestDukeKilled.Value; if (!Resolve()) return false; return Read(_dukeKilled, false); } }
+
+		/// <summary>The NPC type of Calamity's Old Duke, or -1 when Calamity (or that NPC) is not loaded.</summary>
+		public static int DukeType { get { Resolve(); return _dukeType; } }
+
+		/// <summary>An Old Duke is alive right now and the sky will take it (NoxusBoss runs that scene while the flag is off and the sky is not freed).</summary>
+		public static bool DukeInScene
+		{
+			get
+			{
+				if (TestDukeAlive.HasValue) return TestDukeAlive.Value;
+				if (!Resolve() || _dukeType < 0 || DukeKilled || Defeated) return false;
+				for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n != null && n.active && n.type == _dukeType) return true; }
+				return false;
+			}
+		}
+
 		/// <summary>Self-check and world-check hook: write the real NoxusBoss members (null leaves one alone). Returns false when NoxusBoss or a member is missing.</summary>
-		internal static bool SetReal(bool? covered = null, int? eventTimer = null, bool? waiting = null, float? snowHeight = null)
+		internal static bool SetReal(bool? covered = null, int? eventTimer = null, bool? waiting = null, float? snowHeight = null, bool? dukeKilled = null)
 		{
 			if (!Resolve()) return false;
 			bool ok = true;
@@ -152,6 +177,7 @@ namespace Levy.Common.Dialogue
 				if (eventTimer.HasValue) { if (_eventTimer?.SetMethod == null || _appearance == null) ok = false; else _eventTimer.SetValue(_appearance, eventTimer.Value); }
 				if (waiting.HasValue) { if (_waiting?.SetMethod == null || _appearance == null) ok = false; else _waiting.SetValue(_appearance, waiting.Value); }
 				if (snowHeight.HasValue) { if (_snowHeight?.SetMethod == null) ok = false; else _snowHeight.SetValue(null, snowHeight.Value); }
+				if (dukeKilled.HasValue) { if (_dukeKilled?.SetMethod == null) ok = false; else _dukeKilled.SetValue(null, dukeKilled.Value); }
 			}
 			catch (Exception) { ok = false; }
 			_cacheTick = uint.MaxValue; _defeatTick = uint.MaxValue;
@@ -166,6 +192,6 @@ namespace Levy.Common.Dialogue
 			return (Read(_covered, false), Read(_ongoing, false), Read(_eventTimer, 0), Read(_waiting, false), Read(_riftOngoing, false), Read(_snowHeight, 0f), Read(_fog, false));
 		}
 
-		internal static void ClearOverrides() { TestInstalled = TestTransition = TestCovered = TestDefeated = TestSnowing = null; TestSnowHeight = null; _cacheTick = uint.MaxValue; _defeatTick = uint.MaxValue; }
+		internal static void ClearOverrides() { TestInstalled = TestTransition = TestCovered = TestDefeated = TestSnowing = TestDukeKilled = TestDukeAlive = null; TestSnowHeight = null; _cacheTick = uint.MaxValue; _defeatTick = uint.MaxValue; }
 	}
 }

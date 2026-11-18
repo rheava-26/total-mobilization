@@ -31,7 +31,7 @@ namespace Levy.Common.Dialogue
 			return r;
 		}
 
-		private static readonly DialogueTrigger[] Rift = { DialogueTrigger.RIFT_PANIC, DialogueTrigger.RIFT_SHOCK, DialogueTrigger.RIFT_ABSENT, DialogueTrigger.RIFT_COLD, DialogueTrigger.RIFT_LATER, DialogueTrigger.RIFT_RESPECT, DialogueTrigger.RIFT_IDLE, DialogueTrigger.RIFT_CAMP };
+		private static readonly DialogueTrigger[] Rift = { DialogueTrigger.RIFT_PANIC, DialogueTrigger.RIFT_SHOCK, DialogueTrigger.RIFT_ABSENT, DialogueTrigger.RIFT_COLD, DialogueTrigger.RIFT_LATER, DialogueTrigger.RIFT_RESPECT, DialogueTrigger.RIFT_IDLE, DialogueTrigger.RIFT_CAMP, DialogueTrigger.RIFT_DARK, DialogueTrigger.RIFT_POWER, DialogueTrigger.RIFT_DUKE };
 
 		private void Core()
 		{
@@ -93,11 +93,13 @@ namespace Levy.Common.Dialogue
 				RiftMood.Reset(); int c0 = RiftMood.Changes;
 				RiftSky.SetReal(covered: false, eventTimer: 5); RiftMood.Tick(1000);
 				RiftSky.SetReal(covered: true, eventTimer: 0); RiftMood.Tick(1001);
+				bool dk0 = RiftSky.DukeKilled; RiftSky.SetReal(dukeKilled: true); bool dk1 = RiftSky.DukeKilled; RiftSky.SetReal(dukeKilled: false);
+				Check($"the swallowed-boss flag is read and can be driven (off={!dk0}, on={dk1}); the Old Duke type is {(RiftSky.DukeType >= 0 ? "found" : "missing")}", !dk0 && dk1 && (RiftSky.DukeType >= 0 || !ModLoader.HasMod("CalamityMod")));
 				Check($"the watcher sees the real scene end: one covering, the panic clock started, day 0 (changes {RiftMood.Changes - c0}, panic={RiftMood.PanicNow}, days={RiftMood.DaysSince})", RiftMood.Changes == c0 + 1 && RiftMood.Seen && RiftMood.DaysSince == 0);
 			}
 			finally
 			{
-				RiftSky.SetReal(covered: false, eventTimer: 0, waiting: false, snowHeight: 0f);
+				RiftSky.SetReal(covered: false, eventTimer: 0, waiting: false, snowHeight: 0f, dukeKilled: false);
 				RiftMood.Reset();
 			}
 			var back = RiftSky.ReadReal();
@@ -113,13 +115,13 @@ namespace Levy.Common.Dialogue
 			catch (Exception e) { Note("could not read the packed file: " + e.Message); }
 			Check($"the packed dialogue file parses with no bad line ({bad} rejected)", bad == 0);
 			int total = 0;
-			var mins = new Dictionary<DialogueTrigger, int> { [DialogueTrigger.RIFT_PANIC] = 10, [DialogueTrigger.RIFT_SHOCK] = 10, [DialogueTrigger.RIFT_ABSENT] = 6, [DialogueTrigger.RIFT_COLD] = 8, [DialogueTrigger.RIFT_LATER] = 6, [DialogueTrigger.RIFT_RESPECT] = 8, [DialogueTrigger.RIFT_IDLE] = 15, [DialogueTrigger.RIFT_CAMP] = 8 };
+			var mins = new Dictionary<DialogueTrigger, int> { [DialogueTrigger.RIFT_PANIC] = 10, [DialogueTrigger.RIFT_SHOCK] = 10, [DialogueTrigger.RIFT_ABSENT] = 6, [DialogueTrigger.RIFT_COLD] = 8, [DialogueTrigger.RIFT_LATER] = 6, [DialogueTrigger.RIFT_RESPECT] = 8, [DialogueTrigger.RIFT_IDLE] = 15, [DialogueTrigger.RIFT_CAMP] = 8, [DialogueTrigger.RIFT_DARK] = 10, [DialogueTrigger.RIFT_POWER] = 6, [DialogueTrigger.RIFT_DUKE] = 6 };
 			foreach (DialogueTrigger t in Rift)
 			{
 				int n = DialogueTable.Get(t)?.Count ?? 0; total += n;
 				Check($"{t} has {n} lines (needs {mins[t]})", n >= mins[t]);
 			}
-			Check($"{total} rift lines in all (60 to 120)", total >= 60 && total <= 120);
+			Check($"{total} rift lines in all (60 to 150)", total >= 60 && total <= 150);
 
 			// every line: ASCII, short, no annoyed tag, every placeholder filled for a speaker it suits
 			var mia = Make("Mia", Temperament.Greenhorn, ItemID.WandofSparking);
@@ -141,7 +143,7 @@ namespace Levy.Common.Dialogue
 					string who = t + ": " + (l.Text.Length > 36 ? l.Text.Substring(0, 36) : l.Text);
 					bool ascii = true; foreach (char ch in l.Text) if (ch < 32 || ch > 126) ascii = false;
 					if (!ascii) Check(who + " is plain ASCII", false);
-					if (l.Text.Length > 110) Check($"{who} is short ({l.Text.Length} chars)", false);
+					if (l.Text.Length > 60) Check($"{who} is short ({l.Text.Length} chars, 60 at most)", false);
 					if ((l.Cond & LineCond.Grumpy) != 0) Check(who + " carries no [grumpy] tag", false);
 					string got = null;
 					foreach (SoldierRecord sp in army)
@@ -286,6 +288,15 @@ namespace Levy.Common.Dialogue
 			RiftMood.TestDays = LevyConstants.RiftLaterFromDay;
 			int laterT2 = CountPool(DialogueTrigger.RIFT_LATER, pat, ctx, 200);
 			Check($"tense, day {LevyConstants.RiftLaterFromDay}: \"what now\" lines start ({laterT2} in 200)", laterT2 > 15);
+			// weary strength from the first dawn, dark humour only once settled
+			RiftMood.TestDays = 0;
+			int pow0 = CountPool(DialogueTrigger.RIFT_POWER, pat, ctx, 200), dark0 = CountPool(DialogueTrigger.RIFT_DARK, pat, ctx, 200);
+			RiftMood.TestDays = LevyConstants.RiftPowerFromDay;
+			int pow1 = CountPool(DialogueTrigger.RIFT_POWER, pat, ctx, 200), dark1 = CountPool(DialogueTrigger.RIFT_DARK, pat, ctx, 200);
+			Check($"day 0 has no weary-strength and no dark lines; from day {LevyConstants.RiftPowerFromDay} the weary ones come, still no dark ones ({pow0}/{dark0} then {pow1}/{dark1} in 200)", pow0 == 0 && dark0 == 0 && pow1 > 15 && dark1 == 0);
+			RiftMood.TestPhase = RiftPhase.Settled; RiftMood.TestDays = LevyConstants.RiftDarkFromDay;
+			int darkS = CountPool(DialogueTrigger.RIFT_DARK, pat, ctx, 200);
+			Check($"settled, day {LevyConstants.RiftDarkFromDay}: the dark jokes come back ({darkS} in 200)", darkS > 30);
 			RiftMood.TestPhase = RiftPhase.Settled; RiftMood.TestDays = LevyConstants.RiftTenseDays;
 			int shockS = CountPool(DialogueTrigger.RIFT_SHOCK, pat, ctx, 200), laterS = CountPool(DialogueTrigger.RIFT_LATER, pat, ctx, 200), idleS = CountPool(DialogueTrigger.RIFT_IDLE, pat, ctx, 200);
 			Check($"settled: no shock lines, \"what now\" and quiet talk go on ({shockS} shock, {laterS} later, {idleS} idle in 200)", shockS == 0 && laterS > 15 && idleS > 60);
@@ -305,6 +316,21 @@ namespace Levy.Common.Dialogue
 			Check($"a levy who was away asks what happened, {LevyConstants.RiftAwayLines} times, then has caught up ({absent} asked, still away={RiftMood.Away.Contains(pat.Id)})", absent == LevyConstants.RiftAwayLines && !RiftMood.Away.Contains(pat.Id));
 			Check("a levy who was there never asks", CountPool(DialogueTrigger.RIFT_ABSENT, mia, ctx, 100) == 0);
 			DialogueSystem.ResetRuntime();
+
+			// the sky swallows the Old Duke: one ending only when it was in the scene a moment ago, and never on a world's first tick
+			RiftSky.TestDukeKilled = false; RiftSky.TestDukeAlive = false;
+			int de0 = RiftMood.DukeEndings;
+			RiftMood.Reset(); RiftSky.TestDukeKilled = true; RiftMood.Tick(3000); RiftMood.Tick(3001);
+			Check($"a world loaded with the flag already on is not an ending ({RiftMood.DukeEndings - de0})", RiftMood.DukeEndings == de0);
+			RiftMood.Reset(); RiftSky.TestDukeKilled = false; RiftSky.TestDukeAlive = true; RiftMood.Tick(3100); RiftMood.Tick(3101);
+			RiftSky.TestDukeAlive = false; RiftSky.TestDukeKilled = true; RiftMood.Tick(3102);
+			Check($"the flag turning on just after the boss was in the scene is one ending ({RiftMood.DukeEndings - de0})", RiftMood.DukeEndings == de0 + 1);
+			RiftMood.Reset(); RiftSky.TestDukeKilled = false; RiftSky.TestDukeAlive = true; RiftMood.Tick(3200);
+			RiftSky.TestDukeAlive = false; RiftMood.Tick(3201); RiftSky.TestDukeKilled = true; RiftMood.Tick(3201 + LevyConstants.RiftDukeSeenTicks + 30);
+			Check($"the flag turning on long after the boss was last seen is not ({RiftMood.DukeEndings - de0 - 1})", RiftMood.DukeEndings == de0 + 1);
+			string duke = DialogueSystem.Pick(DialogueTrigger.RIFT_DUKE, pat, ctx, null, true, -1, out _, false);
+			Check($"the shocked burst draws from RIFT_DUKE ({duke}) and is never thinned", duke != null && RiftMood.AllowFloating((byte)DialogueTrigger.RIFT_DUKE));
+			RiftSky.TestDukeKilled = null; RiftSky.TestDukeAlive = null; RiftMood.Reset();
 
 			// the cold: snow falling or lying, on the surface
 			RiftSky.TestSnowing = true; RiftMood.TestSurface = true;

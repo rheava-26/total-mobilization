@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Levy.Common.Globals;
 using Levy.Common.Recording;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
@@ -144,18 +145,38 @@ namespace Levy.Common.Testing
 			Check($"no StarsAbove / StarlightRiver accessory or armour set worn by a levy changes the commander ({cmdTouched})", cmdTouched == 0);
 		}
 
+		/// <summary>An armed levy, built as <see cref="RunWeapon"/> builds one: the weapon (and ammo) are on the record, locked, before the body spawns.</summary>
+		private static SoldierNPC SrArmedLevy(Vector2 at, int weaponType, int ammoType, SoldierOrder order, int hp)
+		{
+			var rec = new SoldierRecord
+			{
+				Id = RosterSystem.Instance.NextId++, Kind = SoldierKind.Regular, Grade = Grade.Levy, Temperament = Temperament.Sellsword, Male = true, Name = "Pvt. BossBugs",
+				CommanderName = Commander, CommanderIndex = 0, LifeCrystals = LevyConstants.MaxLifeCrystals, ManaCrystals = 9, HomeBarracksId = -1, StoodDown = false,
+			};
+			rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana; rec.Order = order;
+			Item w = new Item(); w.SetDefaults(weaponType); rec.Gear.Weapon = w; rec.Gear.SetLocked(SoldierGear.SlotWeapon, true);
+			if (ammoType > 0) { Item am = new Item(); am.SetDefaults(ammoType); am.stack = Math.Min(999, am.maxStack); rec.Gear.Ammo = am; rec.Gear.SetLocked(SoldierGear.SlotAmmo, true); }
+			rec.LoadoutLocked = true;
+			RosterSystem.Instance.Regulars.Add(rec);
+			int body = RosterSystem.Instance.SpawnBody(rec, at);
+			if (body < 0 || !rec.HasBody) return null;
+			Main.npc[body].Bottom = at;
+			if (hp > 0) { Main.npc[body].lifeMax = Main.npc[body].life = hp; rec.CurrentHp = hp; }
+			return Main.npc[body].ModNPC as SoldierNPC;
+		}
+
 		// ---------------------------------------------------------------------------------------------------- weapons fixed for levies
 		/// <summary>One levy carrying <paramref name="itemType"/>, posted on Hold, against a pinned enemy <paramref name="tiles"/> to his right: damage dealt, and how far from him his towers stand.</summary>
 		private static (long dmg, int hits, float farthestSentryTiles, int sentries) SrFight(int itemType, float tiles, int ticks)
 		{
 			Cleanup(); Arena(FloorY, Half); PlaceCommander(-60);
-			var s = Levy(new Vector2(Cx * 16f, _floorY * 16f));
+			var s = SrArmedLevy(new Vector2(Cx * 16f, _floorY * 16f), itemType, 0, SoldierOrder.Hold, 4000);
 			if (s == null) return (-1, 0, -1f, 0);
-			Item w = new Item(); w.SetDefaults(itemType); s.Record.Gear.Weapon = w; s.Record.Gear.SetLocked(SoldierGear.SlotWeapon, true); s.Record.LoadoutLocked = true; s.StatsDirty = true;
 			Vector2 at = new Vector2((Cx + tiles) * 16f, _floorY * 16f);
 			NPC t = SpawnNpc(NPCID.GreenSlime, at);
 			if (t == null) return (-1, 0, -1f, 0);
-			t.lifeMax = t.life = 1_000_000; t.defense = 0; t.damage = 0; t.knockBackResist = 0f; t.aiStyle = -1; t.noGravity = true; t.width = 64; t.height = 96; t.Bottom = at;
+			t.lifeMax = t.life = 1_000_000; t.defense = 0; t.damage = 0; t.knockBackResist = 0f; t.aiStyle = -1; t.noGravity = true; t.noTileCollide = true; t.friendly = false; t.value = 0f; t.width = 64; t.height = 96; t.Bottom = at;
+			var ht = t.GetGlobalNPC<HarnessTarget>(); ht.IsTarget = true; ht.Pin = t.position;
 			int ti = t.whoAmI; StarsRiverTally.Watch.Clear(); StarsRiverTally.Watch.Add(ti); StarsRiverTally.Hits = 0; StarsRiverTally.Damage = 0;
 			float far = -1f; int sentries = 0;
 			_perTick = () =>
@@ -229,13 +250,12 @@ namespace Levy.Common.Testing
 				string name = isControl ? "control (vanilla Eye of Cthulhu)" : AuditName(type);
 				Cleanup(); Arena(FloorY, Half);
 				PlaceCommander(-90);
-				var levies = Levies(8, 3f);
-				for (int k = 0; k < levies.Count; k++)
+				var levies = new List<SoldierNPC>();
+				for (int k = 0; k < 8; k++)
 				{
-					var l = levies[k]; l.NPC.lifeMax = l.NPC.life = 900000; l.Record.CurrentHp = 900000;
-					Item w = new Item(); w.SetDefaults(k % 2 == 0 ? ItemID.Megashark : ItemID.TerraBlade); l.Record.Gear.Weapon = w; l.Record.Gear.SetLocked(SoldierGear.SlotWeapon, true);
-					if (w.useAmmo > 0) { Item am = new Item(); am.SetDefaults(ItemID.ChlorophyteBullet); am.stack = 999; l.Record.Gear.Ammo = am; l.Record.Gear.SetLocked(SoldierGear.SlotAmmo, true); }
-					l.Record.LoadoutLocked = true; l.StatsDirty = true;
+					bool gun = k % 2 == 0;
+					var l = SrArmedLevy(new Vector2((Cx + (k - 4) * 3f) * 16f, _floorY * 16f), gun ? ItemID.Megashark : ItemID.TerraBlade, gun ? ItemID.ChlorophyteBullet : 0, SoldierOrder.Hold, 900000);
+					if (l != null) levies.Add(l);
 				}
 				Step(2);
 				var start = levies.Select(l => l.NPC.Center).ToArray();

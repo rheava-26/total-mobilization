@@ -186,6 +186,7 @@ namespace Levy.Content.NPCs
 			var prev = GearUpkeep.Body; GearUpkeep.Body = this;
 			int spawnStart = GearUpkeep.Spawned.Count;
 			long pf = global::Levy.Common.Util.LevyProf.Begin();
+			int frameKind = 0; long ft0 = GearUpkeep.Timing ? Stopwatch.GetTimestamp() : 0L;
 			bool campfire0 = Main.SceneMetrics.HasCampfire, lantern0 = Main.SceneMetrics.HasHeartLantern; // gear may raise the local scene's flags (Calamity's The Camper); they are the levy's, not the commander's
 			try
 			{
@@ -203,46 +204,23 @@ namespace Levy.Content.NPCs
 				if (d.boneGloveTimer > 0) d.boneGloveTimer = Math.Max(0, d.boneGloveTimer - steps);
 				if (d.crystalLeafCooldown > 0) d.crystalLeafCooldown = Math.Max(0, d.crystalLeafCooldown - steps);
 
-				// ResetEffects ends in ResetProjectileCaches, which zeroes the owned counts: put them back (PrepareCountsOncePerTick filled them) or the Stardust Guardian is cast every tick.
-				// (The array is one int per projectile type, thousands with Calamity, and all but a few entries are zero: only the non-zero ones are saved and put back; a full-array copy twice per soldier per tick was a measurable slice of the army's tick.)
-				int[] counts = d.ownedProjectileCounts;
-				int nz = 0;
-				if (global::Levy.Common.Util.LevyProf.Opt) nz = SaveOwnedCounts(counts);
-				else { if (_upkeepCounts == null || _upkeepCounts.Length != counts.Length) _upkeepCounts = new int[counts.Length]; Array.Copy(counts, _upkeepCounts, counts.Length); }
-				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfCopy, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
-				ResetPotionDelayModifier(d);
-				d.ResetEffects();
-				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfReset, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
-				if (global::Levy.Common.Util.LevyProf.Opt) RestoreOwnedCounts(d.ownedProjectileCounts, nz); else Array.Copy(_upkeepCounts, d.ownedProjectileCounts, counts.Length);
-				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfCopy, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
-				d.numMinions = savedNum; d.slotsMinions = savedSlots; d.highestStormTigerGemOriginalDamage = hs; d.highestAbigailCounterOriginalDamage = ha;
-				if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 1); 
-
-				// Buffs: only the mod's. A vanilla buff on the dummy comes from a set bonus whose stat side is built by hand (ApplyPotionBuffs / ApplySetStats), which would count twice.
-				RunHook(() =>
+				// THE BUILD (ResetEffects, buffs, equips, sets, stations, potions): served from the gear cache when nothing it reads has changed since its last full run (SoldierNPC.GearCache.cs)
+				GearCache gc = GearCacheEligible ? (_gc ??= new GearCache()) : null;
+				bool cachedBuild = gc != null && gc.Begin(this, d);
+				if (cachedBuild)
 				{
-					for (int b = 0; b < d.buffType.Length; b++) if (d.buffType[b] > 0 && d.buffType[b] < BuffID.Count && !(GearUpkeep.Mode == 3 && d.buffType[b] == BuffID.LeafCrystal)) d.DelBuff(b);
-					PlayerLoader.PreUpdateBuffs(d);
-					for (int b = 0; b < d.buffType.Length; b++) if (d.buffType[b] > 0) { d.UpdateBuffs(ownerSlot); break; }
-					PlayerLoader.PostUpdateBuffs(d);
-				});
-
-				if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 2); 
-				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfBuffs, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
-				// Spore Sac keeps its hand-made trap cap per soldier (AccessoryProc.cs): its real step is held back by lifting the item out of the slot for the call, so nothing is spawned only to be removed.
-				Item sac = null; int sacSlot = -1;
-				if (GearUpkeep.Mode != 3) for (int a = 3; a < 3 + DummyAccessorySlots && a < d.armor.Length; a++) if (d.armor[a] != null && d.armor[a].type == ItemID.SporeSac) { sac = d.armor[a]; sacSlot = a; d.armor[a] = _blankSlot; break; }
-				try { d.UpdateEquips(ownerSlot); }
-				finally { if (sacSlot >= 0) d.armor[sacSlot] = sac; }
-				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfEquips, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
-				ApplyExtraAccessories(d);
-				// The sets Levy builds by hand (Chlorophyte leaf, Stardust Guardian) run on a slot nobody holds, so vanilla's own cast (a minion bound to the commander) never fires.
-				UpdateDummyArmorSets((WearsChlorophyteSet || WearsStardustSet) && GearUpkeep.Mode != 3 ? DummySlot - 2 : ownerSlot);
-				if (GearUpkeep.Mode != 3) for (int b = 0; b < d.buffType.Length; b++) if (d.buffType[b] == BuffID.LeafCrystal) d.DelBuff(b);
-				try { StationBuffSystem.Apply(d, Stations); } catch (Exception e) { Levy.Instance.Logger.Warn("Levy: station buffs failed on a soldier: " + e.Message); }
-				try { _buffLifeRegen = ApplyPotionBuffs(d); } catch (Exception e) { _buffLifeRegen = 0; Levy.Instance.Logger.Warn("Levy: potion buffs failed on a soldier: " + e.Message); }
-
-				if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 3); 
+					if (GearCacheParity.On) GearCacheParityTick(gc, d, savedNum, savedSlots, hs, ha, ref pf); // lab: the full build too, compared field by field; the full result stays
+					else gc.Apply(this, d);
+					GearCache.Hits++; frameKind = 1;
+				}
+				else
+				{
+					gc?.BeforeBuild();
+					long bt0 = GearUpkeep.Timing ? Stopwatch.GetTimestamp() : 0L;
+					GearBuild(d, savedNum, savedSlots, hs, ha, ref pf);
+					if (GearUpkeep.Timing) { GearCache.BuildTicks += Stopwatch.GetTimestamp() - bt0; GearCache.BuildN++; }
+					if (gc != null) { gc.AfterBuild(this, d, campfire0, lantern0); GearCache.Fulls++; frameKind = 2; }
+				}
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfSets, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// Player.Update's tail: the mod hooks that read the finished equip pass. Calamity regenerates rogue stealth in the last.
 				// What the mods' PostUpdateEquips add to lifeRegen (Calamity adds the regeneration of its buffs and gear here, a dummy never runs Player.UpdateLifeRegen) is the levy's regeneration, in the same units as the Campfire's.
@@ -282,7 +260,54 @@ namespace Levy.Content.NPCs
 				AdoptUpkeepSpawns(spawnStart);
 				WriteBackVitals(d, life0, mana0);
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfExit, pf);
+				if (frameKind != 0 && GearUpkeep.Timing) { long dt = Stopwatch.GetTimestamp() - ft0; if (frameKind == 1) GearCache.HitTicks += dt; else GearCache.FullTicks += dt; }
 			}
+		}
+
+		/// <summary>The build half of the frame: ResetEffects (the owned-projectile counts and minion tallies put back after it), the mod buffs, UpdateEquips, the extra accessories, the armor sets, the station and potion stats.</summary>
+		private void GearBuild(Player d, int savedNum, float savedSlots, int hs, int ha, ref long pf)
+		{
+			const int ownerSlot = DummySlot;
+			// ResetEffects ends in ResetProjectileCaches, which zeroes the owned counts: put them back (PrepareCountsOncePerTick filled them) or the Stardust Guardian is cast every tick.
+			// (The array is one int per projectile type, thousands with Calamity, and all but a few entries are zero: only the non-zero ones are saved and put back; a full-array copy twice per soldier per tick was a measurable slice of the army's tick.)
+			int[] counts = d.ownedProjectileCounts;
+			int nz = 0;
+			if (global::Levy.Common.Util.LevyProf.Opt) nz = SaveOwnedCounts(counts);
+			else { if (_upkeepCounts == null || _upkeepCounts.Length != counts.Length) _upkeepCounts = new int[counts.Length]; Array.Copy(counts, _upkeepCounts, counts.Length); }
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfCopy, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
+			ResetPotionDelayModifier(d);
+			d.ResetEffects();
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfReset, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
+			if (global::Levy.Common.Util.LevyProf.Opt) RestoreOwnedCounts(d.ownedProjectileCounts, nz); else Array.Copy(_upkeepCounts, d.ownedProjectileCounts, counts.Length);
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfCopy, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
+			d.numMinions = savedNum; d.slotsMinions = savedSlots; d.highestStormTigerGemOriginalDamage = hs; d.highestAbigailCounterOriginalDamage = ha;
+			if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 1); 
+
+			// Buffs: only the mod's. A vanilla buff on the dummy comes from a set bonus whose stat side is built by hand (ApplyPotionBuffs / ApplySetStats), which would count twice.
+			RunHook(() =>
+			{
+				for (int b = 0; b < d.buffType.Length; b++) if (d.buffType[b] > 0 && d.buffType[b] < BuffID.Count && !(GearUpkeep.Mode == 3 && d.buffType[b] == BuffID.LeafCrystal)) d.DelBuff(b);
+				PlayerLoader.PreUpdateBuffs(d);
+				for (int b = 0; b < d.buffType.Length; b++) if (d.buffType[b] > 0) { d.UpdateBuffs(ownerSlot); break; }
+				PlayerLoader.PostUpdateBuffs(d);
+			});
+
+			if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 2); 
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfBuffs, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
+			// Spore Sac keeps its hand-made trap cap per soldier (AccessoryProc.cs): its real step is held back by lifting the item out of the slot for the call, so nothing is spawned only to be removed.
+			Item sac = null; int sacSlot = -1;
+			if (GearUpkeep.Mode != 3) for (int a = 3; a < 3 + DummyAccessorySlots && a < d.armor.Length; a++) if (d.armor[a] != null && d.armor[a].type == ItemID.SporeSac) { sac = d.armor[a]; sacSlot = a; d.armor[a] = _blankSlot; break; }
+			try { d.UpdateEquips(ownerSlot); }
+			finally { if (sacSlot >= 0) d.armor[sacSlot] = sac; }
+			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfEquips, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
+			ApplyExtraAccessories(d);
+			// The sets Levy builds by hand (Chlorophyte leaf, Stardust Guardian) run on a slot nobody holds, so vanilla's own cast (a minion bound to the commander) never fires.
+			UpdateDummyArmorSets((WearsChlorophyteSet || WearsStardustSet) && GearUpkeep.Mode != 3 ? DummySlot - 2 : ownerSlot);
+			if (GearUpkeep.Mode != 3) for (int b = 0; b < d.buffType.Length; b++) if (d.buffType[b] == BuffID.LeafCrystal) d.DelBuff(b);
+			try { StationBuffSystem.Apply(d, Stations); } catch (Exception e) { Levy.Instance.Logger.Warn("Levy: station buffs failed on a soldier: " + e.Message); }
+			try { _buffLifeRegen = ApplyPotionBuffs(d); } catch (Exception e) { _buffLifeRegen = 0; Levy.Instance.Logger.Warn("Levy: potion buffs failed on a soldier: " + e.Message); }
+
+			if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 3); 
 		}
 
 		// ------------------------------------------------------------------------------------------------------------

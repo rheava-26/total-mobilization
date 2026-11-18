@@ -87,8 +87,7 @@ namespace Levy.Common.Owner
 				if (!r.Ded) Main.soundVolume = 0f;
 				if (opts.Aim.HasValue)
 				{
-					Main.screenPosition = Vector2.Zero;
-					Main.mouseX = (int)opts.Aim.Value.X; Main.mouseY = (int)opts.Aim.Value.Y; r.MouseTouched = true;
+					AimView.Set(opts.Aim.Value, body.NPC.Center); r.MouseTouched = true;
 				}
 				r.Thorium = OwnerPuppet.SwapThorium(d, true);
 			}

@@ -18,10 +18,14 @@ namespace Levy.Common.Observe
 	public struct MindInputState
 	{
 		public bool Left, Right, Jump, Down, Use, Alt;
+		/// <summary>The grapple key (E) is held this frame.</summary>
+		public bool Hook;
+		/// <summary>Hotbar choice held this frame: 0 none, 1 the main weapon, 2 the sidearm.</summary>
+		public byte Slot;
 		public Vector2 Aim;
 
-		public byte Pack() => (byte)((Left ? 1 : 0) | (Right ? 2 : 0) | (Jump ? 4 : 0) | (Down ? 8 : 0) | (Use ? 16 : 0) | (Alt ? 32 : 0));
-		public static MindInputState Unpack(byte b, Vector2 aim) => new MindInputState { Left = (b & 1) != 0, Right = (b & 2) != 0, Jump = (b & 4) != 0, Down = (b & 8) != 0, Use = (b & 16) != 0, Alt = (b & 32) != 0, Aim = aim };
+		public ushort Pack() => (ushort)((Left ? 1 : 0) | (Right ? 2 : 0) | (Jump ? 4 : 0) | (Down ? 8 : 0) | (Use ? 16 : 0) | (Alt ? 32 : 0) | (Hook ? 64 : 0) | ((Slot & 3) << 7));
+		public static MindInputState Unpack(ushort b, Vector2 aim) => new MindInputState { Left = (b & 1) != 0, Right = (b & 2) != 0, Jump = (b & 4) != 0, Down = (b & 8) != 0, Use = (b & 16) != 0, Alt = (b & 32) != 0, Hook = (b & 64) != 0, Slot = (byte)((b >> 7) & 3), Aim = aim };
 		public bool SameAs(in MindInputState o) => Pack() == o.Pack() && Vector2.DistanceSquared(Aim, o.Aim) < 64f;
 	}
 
@@ -45,6 +49,8 @@ namespace Levy.Common.Observe
 		private static readonly MindLink[] ByPlayer = new MindLink[256];
 		private static readonly Dictionary<int, MindLink> BySoldier = new();
 		private static bool _warned;
+		/// <summary>Harness only: LEVY_MIND_LEGACY=1 runs the old goal-steered drive (the audit's "before" numbers).</summary>
+		internal static readonly bool Legacy = Environment.GetEnvironmentVariable("LEVY_MIND_LEGACY") == "1";
 
 		// ---- local (client / single player) ----
 		public static int LocalSoldierId = -1; public static bool LocalViaDeath;
@@ -75,6 +81,7 @@ namespace Levy.Common.Observe
 			var old = LinkOf(soldierId); if (old != null) End(old.Player); // one driver per soldier
 			var l = new MindLink { Player = p.whoAmI, SoldierId = soldierId, ViaDeath = viaDeath, InTick = Main.GameUpdateCount };
 			ByPlayer[p.whoAmI] = l; BySoldier[soldierId] = l;
+			if (Main.netMode == NetmodeID.Server) ObserveNet.PushNow(p.whoAmI); // the client learns which levy it drives now, not up to ten ticks later
 			return true;
 		}
 
@@ -102,14 +109,16 @@ namespace Levy.Common.Observe
 				var l = ByPlayer[i]; if (l == null) continue;
 				var p = i < Main.maxPlayers ? Main.player[i] : null;
 				if (p == null || !p.active) { End(i); continue; }
-				if (l.ViaDeath && !p.dead) { End(i); continue; }
+				if (l.ViaDeath && !p.dead) { End(i); if (Main.netMode == NetmodeID.Server) ObserveNet.NotifyMindEnded(i); continue; }
 				var rec = RosterSystem.Instance?.FindById(l.SoldierId);
 				var body = rec == null ? null : BodyOf(rec);
 				if (body == null || !body.IsAlive)
 				{
+					// the controlled levy fell: a player who is dead is handed the next levy on purpose (the client follows it, see ObserveSystem), otherwise the link ends and the client is told so
 					int next = l.ViaDeath ? PickNext(p, l.SoldierId, -1) : -1;
 					End(i);
 					if (next >= 0) Begin(p, next, true);
+					else if (Main.netMode == NetmodeID.Server) ObserveNet.NotifyMindEnded(i);
 					continue;
 				}
 				if (Main.netMode == NetmodeID.Server && Main.GameUpdateCount - l.InTick > 30u) l.In = default; // input went quiet: let go of the keys
@@ -210,7 +219,9 @@ namespace Levy.Common.Observe
 		public static MindInputState Sample()
 		{
 			var t = Terraria.GameInput.PlayerInput.Triggers.Current;
-			return new MindInputState { Left = t.Left, Right = t.Right, Jump = t.Jump, Down = t.Down, Use = t.MouseLeft, Alt = t.MouseRight, Aim = Main.MouseWorld };
+			var k = Main.keyState;
+			byte slot = (byte)(k.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.D1) ? 1 : k.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.D2) ? 2 : 0);
+			return new MindInputState { Left = t.Left, Right = t.Right, Jump = t.Jump, Down = t.Down, Use = t.MouseLeft, Alt = t.MouseRight, Hook = t.Grapple, Slot = slot, Aim = Main.MouseWorld };
 		}
 
 		/// <summary>Called every frame while the local player is controlling: hands the input to the server (or the local link).</summary>
@@ -239,7 +250,7 @@ namespace Levy.Common.Observe
 
 		private static void OnInput(BinaryReader r, int who)
 		{
-			byte b = r.ReadByte(); float x = r.ReadSingle(), y = r.ReadSingle();
+			ushort b = r.ReadUInt16(); float x = r.ReadSingle(), y = r.ReadSingle();
 			if (float.IsNaN(x) || float.IsNaN(y)) return;
 			SetInput(who, MindInputState.Unpack(b, new Vector2(x, y)));
 		}

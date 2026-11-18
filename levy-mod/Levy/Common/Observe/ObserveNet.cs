@@ -94,9 +94,20 @@ namespace Levy.Common.Observe
 
 		private static void Push(int who, bool sections)
 		{
+			if (Main.netMode == NetmodeID.Server && !Netplay.Clients[who].IsConnected()) return; // a player slot with no connection has nobody to send to (a lab stand-in)
 			if (!Target(who, out byte kind, out int id, out Vector2 pos)) return;
 			if (sections) RemoteClient.CheckSection(who, pos, 1);
 			var p = LevyPackets.New(LevyPacket.ObservePos); p.Write(kind); p.Write(id); p.Write(pos.X); p.Write(pos.Y); p.Send(who);
+		}
+
+		/// <summary>The link was just made or moved: the player's client is told at once (and its sections are marked loaded).</summary>
+		internal static void PushNow(int who) { if (Main.netMode == NetmodeID.Server && who >= 0 && who < Main.maxPlayers && Netplay.Clients[who].IsConnected()) Push(who, true); }
+
+		/// <summary>The server ended this player's mind link (the levy fell with no next one, or the player respawned): kind 4 tells the client to stop at once instead of waiting out the quiet-stream timeout.</summary>
+		internal static void NotifyMindEnded(int who)
+		{
+			if (Main.netMode != NetmodeID.Server || who < 0 || who >= Main.maxPlayers || !Netplay.Clients[who].IsConnected()) return;
+			var p = LevyPackets.New(LevyPacket.ObservePos); p.Write((byte)4); p.Write(0); p.Write(0f); p.Write(0f); p.Send(who);
 		}
 
 		public static void ServerTick()

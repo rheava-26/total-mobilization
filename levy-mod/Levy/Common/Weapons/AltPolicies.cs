@@ -519,8 +519,7 @@ namespace Levy.Common.Weapons
 				if (dummy == null) return;
 				_on = true;
 				_screen = Main.screenPosition; _mx = Main.mouseX; _my = Main.mouseY;
-				Main.screenPosition = Vector2.Zero;
-				Main.mouseX = (int)worldPoint.X; Main.mouseY = (int)worldPoint.Y;
+				global::Levy.Common.Owner.AimView.Set(worldPoint, dummy.Center);
 				_calPlayer = CalamityPlayerOf(dummy);
 				if (_calPlayer != null) { (_delta, _rot) = GetCalAim(_calPlayer); SetCalAim(_calPlayer, worldPoint - dummy.MountedCenter); }
 			}
@@ -758,7 +757,7 @@ namespace Levy.Common.Weapons
 			}
 			_on = true;
 			_screen = Main.screenPosition; _mx = Main.mouseX; _my = Main.mouseY;
-			Main.screenPosition = Vector2.Zero; Main.mouseX = (int)at.X; Main.mouseY = (int)at.Y;
+			global::Levy.Common.Owner.AimView.Set(at, Main.npc[tag.SoldierIndex].Center);
 			_cal = p.owner >= 0 && p.owner < Main.maxPlayers ? AltPolicies.CalamityPlayerOf(Main.player[p.owner]) : null;
 			if (_cal != null) { (_delta, _rot) = AltPolicies.GetCalAimPublic(_cal); AltPolicies.SetCalAimPublic(_cal, at - Main.player[p.owner].MountedCenter); }
 			return true;

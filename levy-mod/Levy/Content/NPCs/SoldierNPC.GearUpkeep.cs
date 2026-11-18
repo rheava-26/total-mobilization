@@ -190,7 +190,7 @@ namespace Levy.Content.NPCs
 				d.Center = NPC.Center;
 				fs = EnterFrameSlot();
 				thorium = OwnerPuppet.SwapThorium(d, true);
-				{ NPC aimAt = KeyTarget(); if (aimAt != null) { Main.screenPosition = Vector2.Zero; Main.mouseX = (int)aimAt.Center.X; Main.mouseY = (int)aimAt.Center.Y; frameAimed = true; } } // the cursor is on the enemy (Prismatic lasers and the Forbidden Circlet read it)
+				{ NPC aimAt = KeyTarget(); if (aimAt != null) { global::Levy.Common.Owner.AimView.Set(aimAt.Center, NPC.Center); frameAimed = true; } } // the cursor is on the enemy (Prismatic lasers and the Forbidden Circlet read it)
 
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfSlot, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// The timers Player.Update counts down once a tick.

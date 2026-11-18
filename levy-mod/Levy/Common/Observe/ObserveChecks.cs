@@ -101,21 +101,22 @@ namespace Levy.Common.Observe
 		{
 			// pack / unpack of every key combination and the aim point
 			bool all = true;
-			for (int m = 0; m < 64; m++)
+			for (int m = 0; m < 512; m++)
 			{
-				var s = MindInputState.Unpack((byte)m, new Vector2(12.5f, -3f));
+				if (((m >> 7) & 3) == 3) continue; // hotbar choice is 0 none, 1 main, 2 sidearm
+				var s = MindInputState.Unpack((ushort)m, new Vector2(12.5f, -3f));
 				if (s.Pack() != m) all = false;
 			}
-			Check(all, "all 64 key combinations survive pack/unpack");
+			Check(all, "all key, grapple and hotbar combinations survive pack/unpack");
 
 			// the MindInput packet payload, written and read back in the documented order (byte flags, float x, float y)
 			using (var ms = new MemoryStream())
 			{
-				var s = new MindInputState { Left = true, Jump = true, Use = true, Aim = new Vector2(1234.5f, 678.25f) };
+				var s = new MindInputState { Left = true, Jump = true, Use = true, Hook = true, Slot = 2, Aim = new Vector2(1234.5f, 678.25f) };
 				using (var w = new BinaryWriter(ms, System.Text.Encoding.UTF8, true)) { w.Write(s.Pack()); w.Write(s.Aim.X); w.Write(s.Aim.Y); }
 				ms.Position = 0; using var r = new BinaryReader(ms);
-				var back = MindInputState.Unpack(r.ReadByte(), new Vector2(r.ReadSingle(), r.ReadSingle()));
-				Check(back.Left && back.Jump && back.Use && !back.Right && !back.Down && !back.Alt && back.Aim == s.Aim, "the MindInput payload round-trips");
+				var back = MindInputState.Unpack(r.ReadUInt16(), new Vector2(r.ReadSingle(), r.ReadSingle()));
+				Check(back.Left && back.Jump && back.Use && back.Hook && back.Slot == 2 && !back.Right && !back.Down && !back.Alt && back.Aim == s.Aim, "the MindInput payload round-trips");
 			}
 
 			var c = new Vector2(1000f, 800f);

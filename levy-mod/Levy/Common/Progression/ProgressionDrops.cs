@@ -89,14 +89,14 @@ namespace Levy.Common.Progression
 		public override void PostSetupRecipes() => Ensure();
 		public override void Unload() { chained.Clear(); rerolled.Clear(); materialCache.Clear(); baseMaterials = null; NotArmyAnyMore.Clear(); done = false; ArmyRules = RareRules = LuminiteRules = FragmentRules = 0; }
 
-		/// <summary>An ore, bar or crafting material (not weapons, armor, pets, trophies or coins). A base-game item is a material when a base-game recipe uses it: another mod's recipe that
-		/// takes a boss mask or a trophy (Fargo's Mutant Mod) does not make it a boss material. A mod's item is a material when any recipe uses it.</summary>
+		/// <summary>An ore, bar or crafting material (not weapons, armor, pets, trophies or coins). <c>Item.material</c>, narrowed for a base-game item to the ones a base-game recipe uses:
+		/// another mod's recipe that takes a boss mask, a trophy or a treasure bag (Fargo's Mutant Mod) does not make it a boss material. A mod's item keeps <c>Item.material</c>.</summary>
 		public static bool IsMaterial(int itemId)
 		{
 			if (materialCache.TryGetValue(itemId, out bool m)) return m;
 			m = false;
 			if (itemId > 0 && itemId < ItemLoader.ItemCount && ContentSamples.ItemsByType.TryGetValue(itemId, out Item it))
-				m = (itemId < ItemID.Count ? BaseGameMaterials().Contains(itemId) : it.material) || (it.createTile >= 0 && TileID.Sets.Ore[it.createTile]);
+				m = (it.material && (itemId >= ItemID.Count || BaseGameMaterials().Contains(itemId))) || (it.createTile >= 0 && TileID.Sets.Ore[it.createTile]);
 			return materialCache[itemId] = m;
 		}
 

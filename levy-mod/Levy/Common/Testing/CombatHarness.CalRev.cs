@@ -878,7 +878,7 @@ namespace Levy.Common.Testing
 			_cr = null; _crS = null; _crStarted = false; _crI++;
 			if (run.Dl != "") DlEnd();
 			if (run.Pl != "") PlEnd();
-			CrResetDowned(); CrSetHpScale(null); CrSetFear(null); CrSetOptions(null); BbEndFight(); BbEnd(); PwEnd(run); GcFinish(run);
+			CrResetDowned(); CrSetHpScale(null); CrSetFear(null); CrSetOptions(null); BbEndFight(); BbEnd(); PwEnd(run); GcFinish(run); GearCacheProbe.Finish(run.Key, _crOut);
 			if (run.Diag) global::Levy.Common.Potions.SpectatorDiagnostic.Set(false);
 			ClearAll(); CrPurgeNpcs();
 		}

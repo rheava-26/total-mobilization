@@ -195,6 +195,7 @@ namespace Levy.Content.NPCs
 				{ NPC aimAt = KeyTarget(); if (aimAt != null) { global::Levy.Common.Owner.AimView.Set(aimAt.Center, NPC.Center); frameAimed = true; } } // the cursor is on the enemy (Prismatic lasers and the Forbidden Circlet read it)
 
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfSlot, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
+				if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 0); // lab probe (LEVY_GCPROBE=1): images the dummy at each phase boundary
 				// The timers Player.Update counts down once a tick.
 				int steps = 1 + _gearSkipped; _gearSkipped = 0; // a dormant levy skipped some ticks: the timers step by all of them
 				if (d.petalTimer > 0) d.petalTimer = Math.Max(0, d.petalTimer - steps);
@@ -215,6 +216,7 @@ namespace Levy.Content.NPCs
 				if (global::Levy.Common.Util.LevyProf.Opt) RestoreOwnedCounts(d.ownedProjectileCounts, nz); else Array.Copy(_upkeepCounts, d.ownedProjectileCounts, counts.Length);
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfCopy, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				d.numMinions = savedNum; d.slotsMinions = savedSlots; d.highestStormTigerGemOriginalDamage = hs; d.highestAbigailCounterOriginalDamage = ha;
+				if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 1); 
 
 				// Buffs: only the mod's. A vanilla buff on the dummy comes from a set bonus whose stat side is built by hand (ApplyPotionBuffs / ApplySetStats), which would count twice.
 				RunHook(() =>
@@ -225,6 +227,7 @@ namespace Levy.Content.NPCs
 					PlayerLoader.PostUpdateBuffs(d);
 				});
 
+				if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 2); 
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfBuffs, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// Spore Sac keeps its hand-made trap cap per soldier (AccessoryProc.cs): its real step is held back by lifting the item out of the slot for the call, so nothing is spawned only to be removed.
 				Item sac = null; int sacSlot = -1;
@@ -239,6 +242,7 @@ namespace Levy.Content.NPCs
 				try { StationBuffSystem.Apply(d, Stations); } catch (Exception e) { Levy.Instance.Logger.Warn("Levy: station buffs failed on a soldier: " + e.Message); }
 				try { _buffLifeRegen = ApplyPotionBuffs(d); } catch (Exception e) { _buffLifeRegen = 0; Levy.Instance.Logger.Warn("Levy: potion buffs failed on a soldier: " + e.Message); }
 
+				if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 3); 
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfSets, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// Player.Update's tail: the mod hooks that read the finished equip pass. Calamity regenerates rogue stealth in the last.
 				// What the mods' PostUpdateEquips add to lifeRegen (Calamity adds the regeneration of its buffs and gear here, a dummy never runs Player.UpdateLifeRegen) is the levy's regeneration, in the same units as the Campfire's.
@@ -248,6 +252,7 @@ namespace Levy.Content.NPCs
 				if (d.lifeRegen > regen0) { _buffLifeRegen += d.lifeRegen - regen0; _modRegenDelta = d.lifeRegen - regen0; } // already inside Player.lifeRegen: the regeneration pass must not count it again
 				Common.Team.TeamItems.LevyThoriumEquips(this, d, ref _buffLifeRegen); // Thorium's Ring of Unity and life recovery for the dummy
 				GearBuffsToBody(d, campfire0, lantern0);
+				if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 4); 
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfPost, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 				// The dummy never runs ItemCheck, so it never "uses" its weapon; mod hooks that key off the first frame of an item use (Calamity spends rogue stealth there) see the soldier's use as it begins.
 				int animSaved = d.itemAnimation, animMaxSaved = d.itemAnimationMax, timeSaved = d.itemTime;
@@ -263,6 +268,7 @@ namespace Levy.Content.NPCs
 				RunHook(() => PlayerLoader.PostUpdateMiscEffects(d));
 				d.itemAnimation = animSaved; d.itemAnimationMax = animMaxSaved; d.itemTime = timeSaved;
 				NoteRegenBase(d);
+				if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 5); 
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfMisc, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
 			}
 			finally

@@ -18,9 +18,11 @@ namespace Levy.Common.Testing
 		public static volatile int NpcUs, ProjUs, GlobUs, LayerUs;
 		/// <summary>The test NPC's busy time is timed into Levy's own "ai" bucket, the way a levy's AI is (the bucket check).</summary>
 		public static volatile bool NpcAsLevy;
+		/// <summary>Wall time the test NPC actually spent in its busy-waits as Levy's "ai" bucket (Stopwatch ticks): what the bucket must read, preemption included.</summary>
+		public static long NpcSpinTicks;
 		public static long NpcCalls, ProjCalls, GlobCalls, LayerCalls;
 		public static void Spin(int us) { if (us <= 0) return; long end = Stopwatch.GetTimestamp() + us * Stopwatch.Frequency / 1000000; while (Stopwatch.GetTimestamp() < end) { } }
-		public static void Reset() { NpcUs = ProjUs = GlobUs = LayerUs = 0; NpcAsLevy = false; NpcCalls = ProjCalls = GlobCalls = LayerCalls = 0; }
+		public static void Reset() { NpcUs = ProjUs = GlobUs = LayerUs = 0; NpcAsLevy = false; NpcSpinTicks = 0; NpcCalls = ProjCalls = GlobCalls = LayerCalls = 0; }
 	}
 
 	public class PerfTestNpc : ModNPC
@@ -36,7 +38,7 @@ namespace Levy.Common.Testing
 		{
 			NPC.velocity = Vector2.Zero; NPC.timeLeft = 99999; PerfTestTypes.NpcCalls++;
 			if (!PerfTestTypes.NpcAsLevy) { PerfTestTypes.Spin(PerfTestTypes.NpcUs); return; }
-			long t0 = global::Levy.Common.Util.LevyProf.Begin(); PerfTestTypes.Spin(PerfTestTypes.NpcUs); global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.AI, t0);
+			long t0 = global::Levy.Common.Util.LevyProf.Begin(), s0 = Stopwatch.GetTimestamp(); PerfTestTypes.Spin(PerfTestTypes.NpcUs); PerfTestTypes.NpcSpinTicks += Stopwatch.GetTimestamp() - s0; global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.AI, t0);
 		}
 	}
 

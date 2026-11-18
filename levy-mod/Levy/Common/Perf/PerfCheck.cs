@@ -214,7 +214,7 @@ namespace Levy.Common.Perf
 			// window used to divide them by the sampled updates only: Eve's 11-17 log read "stats 37 ms" per update inside updates of 17 ms.
 			foreach (bool user in new[] { false, true })
 			{
-				double ai = 0; PerfWindow wl = null;
+				double ai = 0, spent = 0; PerfWindow wl = null;
 				for (int attempt = 0; attempt < 3; attempt++)
 				{
 					Cleanup(); PerfTestTypes.Reset(); PerfTestTypes.NpcUs = 300; PerfTestTypes.NpcAsLevy = true;
@@ -223,10 +223,12 @@ namespace Levy.Common.Perf
 					try { wl = Window(() => SpawnNpc(ModContent.NPCType<PerfTestNpc>()), 264); }
 					finally { if (user) { global::Levy.Common.Util.ClientProf.Disable(); global::Levy.Common.Util.ClientProf.TestServer = tsWas; } PerfTestTypes.NpcAsLevy = false; }
 					ai = wl?.Levy.FirstOrDefault(kv => kv.Key == "ai").Value ?? 0;
-					if (ai > 0.15 && ai < 0.6) break;
+					spent = PerfTestTypes.NpcSpinTicks * 1000.0 / Stopwatch.Frequency / Math.Max(1, PerfTestTypes.NpcCalls); // what the busy-wait really took per update on this box, preemption included
+					if (ai > 0.5 * spent && ai < 2.0 * spent) break;
 				}
-				Note($"Levy bucket phase ({(user ? "the player's profiler on" : "profiler off")}): ai {ai:0.000} ms per update for 0.3 ms burned an update; buckets {string.Join(", ", wl?.Levy.Select(kv => kv.Key + " " + kv.Value.ToString("0.000")) ?? Array.Empty<string>())}");
-				Check($"Levy's own bucket reads the time per update ({(user ? "with the player's profiler on" : "profiler off")}: ai {ai:0.000} ms for 0.3 ms burned)", ai > 0.15 && ai < 0.6);
+				Note($"Levy bucket phase ({(user ? "the player's profiler on" : "profiler off")}): ai {ai:0.000} ms per update for {spent:0.000} ms spent an update (0.3 ms asked); buckets {string.Join(", ", wl?.Levy.Select(kv => kv.Key + " " + kv.Value.ToString("0.000")) ?? Array.Empty<string>())}");
+				// against the time really spent (a loaded box stretches a busy-wait; the bug read eleven times the time)
+				Check($"Levy's own bucket reads the time per update ({(user ? "with the player's profiler on" : "profiler off")}: ai {ai:0.000} ms for {spent:0.000} ms spent, must be within half to twice)", spent > 0 && ai > 0.5 * spent && ai < 2.0 * spent);
 			}
 			Cleanup(); PerfTestTypes.Reset();
 

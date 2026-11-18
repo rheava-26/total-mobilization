@@ -610,10 +610,25 @@ namespace Levy.Common.Weapons
 			// A hook that threw may already have fired: keep what it spawned rather than firing a second shot on top of it.
 			if (threw) { DudTrace.Note(item, "hooks-threw"); return adopted > 0; }
 			if (adopted == 0) DudTrace.Note(item, !canShoot ? "hooks-0-cannotshoot" : useDefault ? "hooks-0-default" : "hooks-0-nodefault");
-			if (!useDefault) { declined = adopted == 0; return adopted > 0; } // the weapon made its own shot, or chose to make none this use: never a stand-in on top
+			if (!useDefault) { declined = adopted == 0 && !SharedOwnerRefusal(s, item, profile); return adopted > 0; } // the weapon made its own shot, or chose to make none this use: never a stand-in on top
+
 
 			DefaultShoot(s, item, profile, target, pos, v, type, dmg, kb);
 			return true;
+		}
+
+		/// <summary>
+		/// A refusal that may not be the weapon's own choice for THIS levy: every levy shot is owned by the same slot (<see cref="OwnerFor"/>, the commander's in single player), so a one-at-a-time guard in the weapon's
+		/// Shoot or CanShoot ("no new holdout while one of mine is out": Ontological Despoiler, Fetid Emesis) sees every other levy's and the commander's shots as its own and says no. While a shot of the item's own
+		/// type is alive under that slot the refusal is not treated as a decline, so the plain-shot weapons keep their plain shot (ModShotKinds: a holdout not routed through the held chain fires as a plain shot by
+		/// design). A swing never takes this way out: the blade's own swing and MeleeEffects make its shots. A genuine decline (nothing of the type is out: Nucleosynthesis between its beams) stays a decline.
+		/// </summary>
+		private static bool SharedOwnerRefusal(SoldierNPC s, Item item, WeaponProfile profile)
+		{
+			if (item == null || item.shoot <= 0 || profile == null || profile.Family == WeaponFamily.Broadsword) return false;
+			int owner = OwnerFor(s);
+			for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && q.type == item.shoot && q.owner == owner) return true; }
+			return false;
 		}
 
 		/// <summary>The shot Player.ItemCheck_Shoot makes after the hooks return true: a sky-drop weapon's rain, else the weapon's other hard-coded vanilla special, else the (multishot) default.</summary>

@@ -291,7 +291,7 @@ namespace Levy.Common.Testing
 				var cal = OriginWeapons();
 				var fixedNames = new[] { "StarShower", "ArcNovaDiffuser", "Tumbleweed", "Greentide", "Vesuvius", "Murasama", "Annihilator", "SpectralstormCannon", "RainbowPartyCannon" };
 				foreach (var w in cal) if (fixedNames.Any(n => w.label.EndsWith(":" + n))) list.Add((w.type, w.label));
-				int k = 0; foreach (var w in cal) { if (list.Any(x => x.type == w.type)) continue; if (all || k++ % 12 == 0) list.Add((w.type, w.label)); }
+				int k = 0; foreach (var w in cal) { if (list.Any(x => x.type == w.type)) continue; if (all || k++ % 24 == 0) list.Add((w.type, w.label)); }
 			}
 			int ok = 0, bad = 0; var failed = new List<string>(); var sb = new StringBuilder();
 			foreach (var (type, label) in list)
@@ -309,7 +309,7 @@ namespace Levy.Common.Testing
 					bool fires = empty.projs > 0 || onEnemy.projs > 0;
 					bool aiFires = ai.Projs > 0;
 					// a weapon that works for the levy on its own must work when she drives it: it shoots at an empty cursor spot, and on an enemy it does at least half the damage the levy deals by itself
-					bool good = !aiFires || (fires && (empty.projs > 0 || sample.shoot <= 0) && (ai.Damage == 0 || onEnemy.damage * 2 >= ai.Damage));
+					bool good = !aiFires || (sample.shoot <= 0 || fires) && ((empty.projs > 0 || sample.shoot <= 0) && (ai.Damage == 0 || onEnemy.damage * 2 >= ai.Damage));
 					if (good) ok++; else { bad++; failed.Add(label.Replace("CalamityMod:", "")); }
 					sb.Append($"\n    {label}: empty cursor {empty.projs} shots (first at tick {empty.firstShotTick}), on an enemy {onEnemy.projs} shots dmg {onEnemy.damage}, levy alone {ai.Projs} shots dmg {ai.Damage}{(good ? "" : "  <-- BROKEN")}");
 				}

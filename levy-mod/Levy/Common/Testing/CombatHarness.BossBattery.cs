@@ -26,13 +26,14 @@ namespace Levy.Common.Testing
 	{
 		// ------------------------------------------------------------------------------------------------------------------ bosses
 		internal static bool BbIsBoss(string b) => b is "twins" or "prime" or "brim" or "cryo" or "aqua" or "cal" or "plant" or "eol" or "fish" or "qslime" or "wof" or "levi"
-			or "aureus" or "pbg" or "ravager" or "golem" or "cultist" or "ml" or "deer"; // the last seven: headless replay recordings (hmreplays)
+			or "aureus" or "pbg" or "ravager" or "golem" or "cultist" or "ml" or "deer" // the last seven: headless replay recordings (hmreplays)
+			or "solarp" or "nebulap" or "vortexp" or "stardustp"; // the Celestial Pillars with their enemy waves (CombatHarness.PillarLab.cs)
 
 		internal static int BbType(string b) => b switch
 		{
 			"twins" => NPCID.Retinazer, "prime" => NPCID.SkeletronPrime, "brim" => CrCalNpc("BrimstoneElemental"), "cryo" => CrCalNpc("Cryogen"), "aqua" => CrCalNpc("AquaticScourgeHead"),
 			"cal" => CrCalNpc("CalamitasClone"), "plant" => NPCID.Plantera, "eol" => NPCID.HallowBoss, "fish" => NPCID.DukeFishron, "qslime" => NPCID.QueenSlimeBoss, "wof" => NPCID.WallofFlesh, "levi" => CrCalNpc("Anahita"),
-			"aureus" => CrCalNpc("AstrumAureus"), "pbg" => CrCalNpc("PlaguebringerGoliath"), "ravager" => CrCalNpc("RavagerBody"), "golem" => NPCID.Golem, "cultist" => NPCID.CultistBoss, "ml" => NPCID.MoonLordCore, "deer" => NPCID.Deerclops, _ => -1
+			"aureus" => CrCalNpc("AstrumAureus"), "pbg" => CrCalNpc("PlaguebringerGoliath"), "ravager" => CrCalNpc("RavagerBody"), "golem" => NPCID.Golem, "cultist" => NPCID.CultistBoss, "ml" => NPCID.MoonLordCore, "deer" => NPCID.Deerclops, _ => PwTower(b)
 		};
 
 		private static void BbAddCal(HashSet<int> set, params string[] names) { foreach (string n in names) { int t = CrCalNpc(n); if (t > 0) set.Add(t); else global::Levy.Levy.Instance.Logger.Warn("HARNESS-BB: unknown Calamity NPC " + n); } }
@@ -41,6 +42,7 @@ namespace Levy.Common.Testing
 		private static bool BbSetup(CrState s, CrRun run)
 		{
 			if (!BbIsBoss(run.Boss)) return false;
+			if (PwIsPillar(run.Boss)) { PwSetup(s, run); return true; }
 			switch (run.Boss)
 			{
 				case "twins": s.PartTypes.Add(NPCID.Retinazer); s.PartTypes.Add(NPCID.Spazmatism); break;
@@ -128,6 +130,7 @@ namespace Levy.Common.Testing
 			if (r.Boss is "fish" or "levi") p.ZoneBeach = true;
 			if (r.Boss is "brim" or "cal") BbSetModBiome(p, "CalamityMod/BrimstoneCragsBiome");
 			if (r.Boss == "aqua") BbSetModBiome(p, "CalamityMod/SulphurousSeaBiome");
+			PwZones(p, r);
 		}
 
 		private static bool BbInBiome(Player p, string name) { try { return ModContent.TryFind(name, out ModBiome mb) && p.InModBiome(mb); } catch { return false; } }
@@ -359,7 +362,8 @@ namespace Levy.Common.Testing
 			catch (Exception e) { Mod.Logger.Warn("HARNESS-BB: finish row failed: " + e.Message); }
 		}
 
-		private void BbStartFight(CrRun run) { _bb = new BbStats(); BbImmMode = string.IsNullOrEmpty(run.Imm) ? "shared" : run.Imm; }
+		private void BbStartFight(CrRun run) { _bb = PwIsPillar(run.Boss) && string.IsNullOrEmpty(run.Imm) ? null : new BbStats(); // a pillar fight is a cost lab: the per-shot immunity census (its own Colliding pass over every part, per shot) stays off unless imm= asks for it
+			 BbImmMode = string.IsNullOrEmpty(run.Imm) ? "shared" : run.Imm; }
 		private void BbEndFight() { _bb = null; BbImmMode = "shared"; }
 	}
 }

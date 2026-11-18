@@ -231,6 +231,28 @@ namespace Levy.Common.Perf
 			Check("a GlobalNPC hook that burns 0.4 ms an update shows as a global hook of Levy at about the cost burned", gm != null && gm.Ms > 0.6 * burned4 && gm.Ms < 1.6 * wall4);
 			Check("and its time is taken out of the NPC's own row (that row stays small)", nm4 == null || nm4.Ms < 0.5 * gm.Ms);
 
+			// ---- Levy's own buckets are ms per update whether or not the player's profiler is on. With it on (and with a recorded fight's in-fight profiling) the bucket timers run on every update, and the
+			// window used to divide them by the sampled updates only: Eve's 11-17 log read "stats 37 ms" per update inside updates of 17 ms.
+			foreach (bool user in new[] { false, true })
+			{
+				double ai = 0, spent = 0; PerfWindow wl = null;
+				for (int attempt = 0; attempt < 3; attempt++)
+				{
+					Cleanup(); PerfTestTypes.Reset(); PerfTestTypes.NpcUs = 300; PerfTestTypes.NpcAsLevy = true;
+					bool tsWas = global::Levy.Common.Util.ClientProf.TestServer;
+					if (user) { global::Levy.Common.Util.ClientProf.TestServer = true; global::Levy.Common.Util.ClientProf.Enable(chat: false); }
+					try { wl = Window(() => SpawnNpc(ModContent.NPCType<PerfTestNpc>()), 264); }
+					finally { if (user) { global::Levy.Common.Util.ClientProf.Disable(); global::Levy.Common.Util.ClientProf.TestServer = tsWas; } PerfTestTypes.NpcAsLevy = false; }
+					ai = wl?.Levy.FirstOrDefault(kv => kv.Key == "ai").Value ?? 0;
+					spent = PerfTestTypes.NpcSpinTicks * 1000.0 / Stopwatch.Frequency / Math.Max(1, PerfTestTypes.NpcCalls); // what the busy-wait really took per update on this box, preemption included
+					if (ai > 0.5 * spent && ai < 2.0 * spent) break;
+				}
+				Note($"Levy bucket phase ({(user ? "the player's profiler on" : "profiler off")}): ai {ai:0.000} ms per update for {spent:0.000} ms spent an update (0.3 ms asked); buckets {string.Join(", ", wl?.Levy.Select(kv => kv.Key + " " + kv.Value.ToString("0.000")) ?? Array.Empty<string>())}");
+				// against the time really spent (a loaded box stretches a busy-wait; the bug read eleven times the time)
+				Check($"Levy's own bucket reads the time per update ({(user ? "with the player's profiler on" : "profiler off")}: ai {ai:0.000} ms for {spent:0.000} ms spent, must be within half to twice)", spent > 0 && ai > 0.5 * spent && ai < 2.0 * spent);
+			}
+			Cleanup(); PerfTestTypes.Reset();
+
 			// ---- map layer, every call
 			ModMapLayer layer = ModContent.GetContent<ModMapLayer>().FirstOrDefault(l => l is PerfTestLayer);
 			PerfWindow w5 = null; PerfItem mr = null;
@@ -303,6 +325,26 @@ namespace Levy.Common.Perf
 			Check("and none outside a levy's update (" + (PerfAnalyzer.DustThinned - d0 - thinned) + ")", PerfAnalyzer.DustThinned - d0 == thinned);
 			PerfAnalyzer.TestReduced = false; PerfAnalyzer.ConfigChanged();
 			Check("full effects drop nothing", !PerfAnalyzer.EffectsReduced);
+
+			// ---- under pressure (a screen already full of dust or gore), full effects thin only what the army's own updates add, and only cosmetics
+			try
+			{
+				PerfAnalyzer.TestPressure = true; PerfAnalyzer.TestTickPressure();
+				long pd0 = PerfAnalyzer.DustThinnedPressure, g0 = PerfAnalyzer.GoreThinned;
+				PerfAnalyzer.TestSetArmyCtx(true);
+				for (int i = 0; i < 30; i++) Dust.NewDust(new Vector2(Cx * 16f, Cy * 16f), 4, 4, DustID.Torch);
+				for (int i = 0; i < 30; i++) Gore.NewGore(new EntitySource_WorldEvent("PerfAn"), new Vector2(Cx * 16f, Cy * 16f), Vector2.Zero, 1);
+				long pd = PerfAnalyzer.DustThinnedPressure - pd0, pg = PerfAnalyzer.GoreThinned - g0;
+				PerfAnalyzer.TestSetArmyCtx(false);
+				for (int i = 0; i < 30; i++) { Dust.NewDust(new Vector2(Cx * 16f, Cy * 16f), 4, 4, DustID.Torch); Gore.NewGore(new EntitySource_WorldEvent("PerfAn"), new Vector2(Cx * 16f, Cy * 16f), Vector2.Zero, 1); }
+				Check($"with the screen full, two of every three army dust particles ({pd} of 30) and one of every two army gore pieces ({pg} of 30) are dropped", pd == 20 && pg == 15);
+				Check("and nothing made outside an army update", PerfAnalyzer.DustThinnedPressure - pd0 == pd && PerfAnalyzer.GoreThinned - g0 == pg);
+				PerfAnalyzer.TestPressure = false; PerfAnalyzer.TestTickPressure(); PerfAnalyzer.TestSetArmyCtx(true);
+				long q0 = PerfAnalyzer.DustThinned, q1 = PerfAnalyzer.GoreThinned;
+				for (int i = 0; i < 30; i++) { Dust.NewDust(new Vector2(Cx * 16f, Cy * 16f), 4, 4, DustID.Torch); Gore.NewGore(new EntitySource_WorldEvent("PerfAn"), new Vector2(Cx * 16f, Cy * 16f), Vector2.Zero, 1); }
+				Check("and with the screen not full, full effects drop nothing the army makes", PerfAnalyzer.DustThinned == q0 && PerfAnalyzer.GoreThinned == q1);
+			}
+			finally { PerfAnalyzer.TestSetArmyCtx(false); PerfAnalyzer.TestPressure = null; PerfAnalyzer.TestTickPressure(); }
 
 			// ---- a fault in the analyzer turns the analyzer off and nothing else
 			Cleanup(); PerfAnalyzer.TestReset(); PerfAnalyzer.TestFault = true;

@@ -1,0 +1,1010 @@
+{
+ "source": "2026-11-16_22-08_Empress_of_Light_lost.levyrec",
+ "note": "eve40 with every Calamity item swapped for a vanilla one of the same job (the gear-cost lab, with and without Calamity)",
+ "accSlots": 2,
+ "honey": true,
+ "stations": [
+  "campfire",
+  "heartlantern",
+  "starinabottle",
+  "sunflower",
+  "bast",
+  "sharpening",
+  "wartable",
+  "bewitching",
+  "ammobox",
+  "crystalball"
+ ],
+ "stationLevel": 2,
+ "buffs": [],
+ "levies": [
+  {
+   "id": 1,
+   "weapon": "Dark Harvest@46",
+   "cls": "S",
+   "weaponName": "Dark Harvest",
+   "armor": [
+    "Spooky Helmet",
+    "Spooky Breastplate",
+    "Spooky Leggings"
+   ],
+   "acc": [
+    "Butterfly Wings@80",
+    "Spectre Boots@78",
+    "Necromantic Scroll@78",
+    "Shiny Stone@70"
+   ],
+   "hook": "Grappling Hook",
+   "lc": 15,
+   "lf": 12,
+   "recordedLifeMax": 460,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 2,
+   "weapon": "Terra Blade@46",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Mothron Wings@65",
+    "Terraspark Boots",
+    "Yoyo Bag@Dauntless",
+    "Avenger Emblem"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 10,
+   "recordedLifeMax": 450,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 3,
+   "weapon": "Terra Blade@55",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Butterfly Wings",
+    "Terraspark Boots",
+    "Yoyo Bag@63",
+    "Power Glove"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 10,
+   "recordedLifeMax": 450,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 4,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Butterfly Wings",
+    "Terraspark Boots",
+    "Avenger Emblem",
+    "Charm of Myths@Silent"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 10,
+   "recordedLifeMax": 450,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 5,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Scale Mail",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Spooky Wings@79",
+    "Terraspark Boots",
+    "Avenger Emblem",
+    "Warrior Emblem@Silent"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 9,
+   "recordedLifeMax": 445,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 6,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Scale Mail",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Spooky Wings@72",
+    "Terraspark Boots",
+    "Avenger Emblem",
+    "Warrior Emblem@73"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 7,
+   "weapon": "Chain Gun",
+   "cls": "R",
+   "weaponName": "Chain Gun",
+   "armor": [
+    "Shroomite Headgear",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Spooky Wings@75",
+    "Terraspark Boots",
+    "Avenger Emblem",
+    "Celestial Stone"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": "Chlorophyte Bullet"
+  },
+  {
+   "id": 8,
+   "weapon": "Chain Gun",
+   "cls": "R",
+   "weaponName": "Chain Gun",
+   "armor": [
+    "Shroomite Headgear",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Mothron Wings",
+    "Terraspark Boots",
+    "Molten Quiver@65",
+    "Ranger Emblem@72"
+   ],
+   "ammo": "Chlorophyte Bullet",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 9,
+   "weapon": "Nebula Arcanum",
+   "cls": "M",
+   "weaponName": "Nebula Arcanum",
+   "armor": [
+    "Spectre Mask",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Spooky Wings",
+    "Terraspark Boots",
+    "Celestial Cuffs@63",
+    "Sorcerer Emblem@75"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 10,
+   "weapon": "Nebula Arcanum",
+   "cls": "M",
+   "weaponName": "Nebula Arcanum",
+   "side": "Terra Blade@44",
+   "armor": [
+    "Spectre Mask",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Bat Wings@65",
+    "Terraspark Boots",
+    "Celestial Cuffs@80",
+    "Sorcerer Emblem@75"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 11,
+   "weapon": "Stake Launcher@37",
+   "cls": "R",
+   "weaponName": "Stake Launcher",
+   "armor": [
+    "Shroomite Headgear",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Harpy Wings@Invigorating",
+    "Terraspark Boots",
+    "Ranger Emblem@71",
+    "Moon Stone@76"
+   ],
+   "ammo": "Stake",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 12,
+   "weapon": "Chain Gun",
+   "cls": "R",
+   "weaponName": "Chain Gun",
+   "side": "Death Sickle@81",
+   "armor": [
+    "Shroomite Mask",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Bat Wings@71",
+    "Terraspark Boots",
+    "Ranger Emblem@Dauntless",
+    "Moon Stone@Silent"
+   ],
+   "ammo": "Chlorophyte Bullet",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 13,
+   "weapon": "Chain Gun",
+   "cls": "R",
+   "weaponName": "Chain Gun",
+   "armor": [
+    "Shroomite Headgear",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Bat Wings@Dauntless",
+    "Terraspark Boots",
+    "Ranger Emblem",
+    "Moon Stone@69"
+   ],
+   "ammo": "Chlorophyte Bullet",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 14,
+   "weapon": "Sniper Rifle@82",
+   "cls": "R",
+   "weaponName": "Sniper Rifle",
+   "armor": [
+    "Shroomite Headgear",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Fairy Wings@74",
+    "Terraspark Boots",
+    "Moon Stone@64",
+    "Avenger Emblem"
+   ],
+   "ammo": "Musket Ball",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 15,
+   "weapon": "Chain Gun",
+   "cls": "R",
+   "weaponName": "Chain Gun",
+   "side": "Influx Waver@55",
+   "armor": [
+    "Chlorophyte Helmet",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Avenger Emblem",
+    "Terraspark Boots",
+    "Moon Stone@71",
+    "Ranger Emblem"
+   ],
+   "ammo": "Chlorophyte Bullet",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 16,
+   "weapon": "Terra Blade@4",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Chlorophyte Mask",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Bat Wings@Dauntless",
+    "Terraspark Boots",
+    "Moon Stone@62",
+    "Titan Glove@69"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 17,
+   "weapon": "Morning Star@44",
+   "cls": "S",
+   "weaponName": "Morning Star",
+   "armor": [
+    "Spooky Helmet",
+    "Spooky Breastplate",
+    "Spooky Leggings"
+   ],
+   "acc": [
+    "Avenger Emblem",
+    "Terraspark Boots",
+    "Celestial Stone",
+    "Shiny Stone@75"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 18,
+   "weapon": "Dark Harvest@3",
+   "cls": "S",
+   "weaponName": "Dark Harvest",
+   "armor": [
+    "Spooky Helmet",
+    "Spooky Breastplate",
+    "Spooky Leggings"
+   ],
+   "acc": [
+    "Butterfly Wings@73",
+    "Spectre Boots",
+    "Shiny Stone@Invigorating",
+    "Avenger Emblem"
+   ],
+   "hook": "Emerald Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 19,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Chlorophyte Mask",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Bat Wings@65",
+    "Terraspark Boots",
+    "Moon Stone@74",
+    "Yoyo Bag@65"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 20,
+   "weapon": "Nebula Arcanum",
+   "cls": "M",
+   "weaponName": "Nebula Arcanum",
+   "armor": [
+    "Spectre Hood",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Bat Wings@72",
+    "Terraspark Boots",
+    "Moon Stone@79",
+    "Celestial Cuffs@75"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 21,
+   "weapon": "Nebula Arcanum",
+   "cls": "M",
+   "weaponName": "Nebula Arcanum",
+   "armor": [
+    "Spectre Hood",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Harpy Wings@69",
+    "Sorcerer Emblem@75",
+    "Celestial Cuffs@66"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 22,
+   "weapon": "Morning Star@55",
+   "cls": "S",
+   "weaponName": "Morning Star",
+   "armor": [
+    "Spooky Helmet",
+    "Spooky Breastplate",
+    "Spooky Leggings"
+   ],
+   "acc": [
+    "Bat Wings@63",
+    "Shiny Stone@64",
+    "Apprentice's Scarf@Silent"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 23,
+   "weapon": "Nebula Arcanum",
+   "cls": "M",
+   "weaponName": "Nebula Arcanum",
+   "armor": [
+    "Chlorophyte Headgear",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Harpy Wings@66",
+    "Terraspark Boots",
+    "Sorcerer Emblem@75",
+    "Celestial Cuffs"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 24,
+   "weapon": "Nebula Arcanum",
+   "cls": "M",
+   "weaponName": "Nebula Arcanum",
+   "armor": [
+    "Chlorophyte Headgear",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Harpy Wings@74",
+    "Moon Stone",
+    "Nature's Gift"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 25,
+   "weapon": "Nebula Arcanum",
+   "cls": "M",
+   "weaponName": "Nebula Arcanum",
+   "side": "Christmas Tree Sword@55",
+   "armor": [
+    "Chlorophyte Headgear",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Angel Wings@62",
+    "Terraspark Boots",
+    "Sorcerer Emblem@70",
+    "Celestial Cuffs@67"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 26,
+   "weapon": "Nebula Arcanum",
+   "cls": "M",
+   "weaponName": "Nebula Arcanum",
+   "armor": [
+    "Chlorophyte Headgear",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Harpy Wings@Invigorating",
+    "Terraspark Boots",
+    "Moon Stone",
+    "Avenger Emblem"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 27,
+   "weapon": "Dark Harvest",
+   "cls": "S",
+   "weaponName": "Dark Harvest",
+   "side": "Deadly Sphere Staff@55",
+   "armor": [
+    "Spooky Helmet",
+    "Spooky Breastplate",
+    "Spooky Leggings"
+   ],
+   "acc": [
+    "Avenger Emblem",
+    "Terraspark Boots",
+    "Shiny Stone@64",
+    "Charm of Myths@66"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 5,
+   "recordedLifeMax": 425,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 28,
+   "weapon": "Chain Gun",
+   "cls": "R",
+   "weaponName": "Chain Gun",
+   "armor": [
+    "Shroomite Headgear",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Harpy Wings@68",
+    "Moon Stone",
+    "Avenger Emblem"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 5,
+   "recordedLifeMax": 425,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": "Chlorophyte Bullet"
+  },
+  {
+   "id": 29,
+   "weapon": "Chain Gun",
+   "cls": "R",
+   "weaponName": "Chain Gun",
+   "armor": [
+    "Shroomite Headgear",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Fairy Wings@67",
+    "Terraspark Boots",
+    "Avenger Emblem",
+    "Celestial Stone"
+   ],
+   "hook": "Slime Hook",
+   "lc": 15,
+   "lf": 4,
+   "recordedLifeMax": 420,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": "Chlorophyte Bullet"
+  },
+  {
+   "id": 30,
+   "weapon": "Nebula Arcanum",
+   "cls": "M",
+   "weaponName": "Nebula Arcanum",
+   "armor": [
+    "Spectre Mask",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Bat Wings@72",
+    "Terraspark Boots",
+    "Nature's Gift@Silent",
+    "Moon Stone@Invigorating"
+   ],
+   "hook": "Slime Hook",
+   "lc": 15,
+   "lf": 4,
+   "recordedLifeMax": 420,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 31,
+   "weapon": "Morning Star@46",
+   "cls": "S",
+   "weaponName": "Morning Star",
+   "armor": [
+    "Spooky Helmet",
+    "Spooky Breastplate",
+    "Spooky Leggings"
+   ],
+   "acc": [
+    "Harpy Wings@78",
+    "Apprentice's Scarf",
+    "Avenger Emblem"
+   ],
+   "hook": "Slime Hook",
+   "lc": 15,
+   "lf": 4,
+   "recordedLifeMax": 420,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 32,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Chlorophyte Mask",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Harpy Wings@69",
+    "Terraspark Boots",
+    "Warrior Emblem@68",
+    "Yoyo Bag@65"
+   ],
+   "hook": "Slime Hook",
+   "lc": 15,
+   "lf": 4,
+   "recordedLifeMax": 420,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 33,
+   "weapon": "Chain Gun",
+   "cls": "R",
+   "weaponName": "Chain Gun",
+   "armor": [
+    "Frost Helmet",
+    "Frost Breastplate",
+    "Frost Leggings"
+   ],
+   "acc": [
+    "Fairy Wings@76",
+    "Terraspark Boots",
+    "Moon Stone@69",
+    "Avenger Emblem"
+   ],
+   "hook": "Slime Hook",
+   "lc": 15,
+   "lf": 4,
+   "recordedLifeMax": 420,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": "Chlorophyte Bullet"
+  },
+  {
+   "id": 34,
+   "weapon": "Nebula Arcanum",
+   "cls": "M",
+   "weaponName": "Nebula Arcanum",
+   "armor": [
+    "Spectre Hood",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Butterfly Wings@78",
+    "Moon Stone@64",
+    "Avenger Emblem"
+   ],
+   "hook": "Grappling Hook",
+   "lc": 15,
+   "lf": 4,
+   "recordedLifeMax": 420,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 100,
+   "weapon": "Dark Harvest@46",
+   "cls": "S",
+   "weaponName": "Dark Harvest",
+   "armor": [
+    "Spooky Helmet",
+    "Spooky Breastplate",
+    "Spooky Leggings"
+   ],
+   "acc": [
+    "Butterfly Wings@80",
+    "Spectre Boots@78",
+    "Necromantic Scroll@78",
+    "Shiny Stone@70"
+   ],
+   "hook": "Grappling Hook",
+   "lc": 15,
+   "lf": 12,
+   "recordedLifeMax": 460,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 101,
+   "weapon": "Terra Blade@46",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Mothron Wings@65",
+    "Terraspark Boots",
+    "Yoyo Bag@Dauntless",
+    "Avenger Emblem"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 10,
+   "recordedLifeMax": 450,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 102,
+   "weapon": "Terra Blade@55",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Butterfly Wings",
+    "Terraspark Boots",
+    "Yoyo Bag@63",
+    "Power Glove"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 10,
+   "recordedLifeMax": 450,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 103,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Butterfly Wings",
+    "Terraspark Boots",
+    "Avenger Emblem",
+    "Charm of Myths@Silent"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 10,
+   "recordedLifeMax": 450,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 104,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Scale Mail",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Spooky Wings@79",
+    "Terraspark Boots",
+    "Avenger Emblem",
+    "Warrior Emblem@Silent"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 9,
+   "recordedLifeMax": 445,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  },
+  {
+   "id": 105,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Scale Mail",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Spooky Wings@72",
+    "Terraspark Boots",
+    "Avenger Emblem",
+    "Warrior Emblem@73"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "ammo": null
+  }
+ ],
+ "notes": []
+}

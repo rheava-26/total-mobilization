@@ -75,6 +75,8 @@ namespace Levy.Common.Perf
 		public int Npcs, Projs, Dust, Gore, Levies, Minions;
 		/// <summary>The boss within reach of the player ("" none), a boss elsewhere in the world, 0 no map / 1 minimap or overlay / 2 fullscreen map, the held item.</summary>
 		public string Boss = "", BossFar = ""; public int Map; public int Held; public string HeldName = ""; public int NetMode; public int Effects;
+		/// <summary>The game's Frame Skip setting (0 Off, 1 On, 2 Subtle; -1 not known: a server, an old log).</summary>
+		public int FrameSkip = -1;
 		/// <summary>Levy's own buckets, ms per update (the biggest).</summary>
 		public List<KeyValuePair<string, double>> Levy = new();
 		public List<PerfItem> Top = new();
@@ -107,7 +109,7 @@ namespace Levy.Common.Perf
 			  .Append(",\"su\":").Append(SampledUpdates).Append(",\"sf\":").Append(SampledFrames);
 			sb.Append(",\"ds\":[").Append(string.Join(",", DrawSplit.Select(v => N(v)))).Append("],\"us\":[").Append(string.Join(",", UpdSplit.Select(v => N(v)))).Append(']');
 			sb.Append(",\"cnt\":{\"npc\":").Append(Npcs).Append(",\"proj\":").Append(Projs).Append(",\"dust\":").Append(Dust).Append(",\"gore\":").Append(Gore).Append(",\"levy\":").Append(Levies).Append(",\"minion\":").Append(Minions).Append('}');
-			sb.Append(",\"ctx\":{\"boss\":").Append(Esc(Boss)).Append(",\"far\":").Append(Esc(BossFar)).Append(",\"map\":").Append(Map).Append(",\"held\":").Append(Held).Append(",\"hn\":").Append(Esc(HeldName)).Append(",\"nm\":").Append(NetMode).Append(",\"fx\":").Append(Effects).Append('}');
+			sb.Append(",\"ctx\":{\"boss\":").Append(Esc(Boss)).Append(",\"far\":").Append(Esc(BossFar)).Append(",\"map\":").Append(Map).Append(",\"held\":").Append(Held).Append(",\"hn\":").Append(Esc(HeldName)).Append(",\"nm\":").Append(NetMode).Append(",\"fx\":").Append(Effects).Append(",\"fs\":").Append(FrameSkip).Append('}');
 			sb.Append(",\"lv\":[");
 			for (int i = 0; i < Levy.Count; i++) { if (i > 0) sb.Append(','); sb.Append('[').Append(Esc(Levy[i].Key)).Append(',').Append(N(Levy[i].Value)).Append(']'); }
 			sb.Append("],\"top\":[");
@@ -133,7 +135,7 @@ namespace Levy.Common.Perf
 				if (r.TryGetProperty("cnt", out var c)) { w.Npcs = (int)Dbl(c, "npc"); w.Projs = (int)Dbl(c, "proj"); w.Dust = (int)Dbl(c, "dust"); w.Gore = (int)Dbl(c, "gore"); w.Levies = (int)Dbl(c, "levy"); w.Minions = (int)Dbl(c, "minion"); }
 				if (r.TryGetProperty("ctx", out var x))
 				{
-					w.Boss = Str(x, "boss"); w.BossFar = Str(x, "far"); w.Map = (int)Dbl(x, "map"); w.Held = (int)Dbl(x, "held"); w.HeldName = Str(x, "hn"); w.NetMode = (int)Dbl(x, "nm"); w.Effects = (int)Dbl(x, "fx");
+					w.Boss = Str(x, "boss"); w.BossFar = Str(x, "far"); w.Map = (int)Dbl(x, "map"); w.Held = (int)Dbl(x, "held"); w.HeldName = Str(x, "hn"); w.NetMode = (int)Dbl(x, "nm"); w.Effects = (int)Dbl(x, "fx"); w.FrameSkip = (int)Dbl(x, "fs", -1);
 				}
 				if (r.TryGetProperty("lv", out var lv)) foreach (var e in lv.EnumerateArray()) w.Levy.Add(new KeyValuePair<string, double>(e[0].GetString(), e[1].GetDouble()));
 				if (r.TryGetProperty("top", out var top)) foreach (var e in top.EnumerateArray()) w.Top.Add(new PerfItem(e[0].GetString(), e[1].GetString(), e[2].GetDouble(), e[3].GetDouble()));
@@ -241,7 +243,7 @@ namespace Levy.Common.Perf
 		public const double PopupGapSecs = 600, FineGapSecs = 1800;
 	}
 
-	internal enum PopupOption { LowerLevyEffects, ReserveBank, ItsFine, DontAskAgain, OpenSettings }
+	internal enum PopupOption { LowerLevyEffects, ReserveBank, ItsFine, DontAskAgain, OpenSettings, FrameSkipSubtle }
 	internal enum LagKind { Smooth, TooShort, Levy, OtherMod, BaseGame, Unknown }
 
 	/// <summary>What the analyzer concluded about one fight and what the popup should say.</summary>
@@ -259,6 +261,8 @@ namespace Levy.Common.Perf
 		/// <summary>The options the popup offers, in order. Empty when no popup is to be shown.</summary>
 		public List<PopupOption> Options = new();
 		public bool ShowPopup => Options.Count > 0;
+		/// <summary>The laggy windows show the Frame Skip On pattern (frames dropped, updates kept) with Frame Skip set to On.</summary>
+		public bool FrameSkipOn;
 	}
 
 	internal static class PerfAnalysis
@@ -287,6 +291,7 @@ namespace Levy.Common.Perf
 			PopupOption.ItsFine => "It's fine",
 			PopupOption.DontAskAgain => "Don't ask again",
 			PopupOption.OpenSettings => "Open Levy settings",
+			PopupOption.FrameSkipSubtle => "Set Frame Skip to Subtle",
 			_ => o.ToString(),
 		};
 
@@ -313,6 +318,33 @@ namespace Levy.Common.Perf
 
 		/// <summary>The decision about one fight: laggy or not, the cause, and the popup's words and options.</summary>
 		public static LagVerdict Judge(IList<PerfWindow> fight)
+		{
+			var v = JudgeCause(fight);
+			if (v.Laggy) FrameSkipAdvice(v, fight);
+			return v;
+		}
+
+		/// <summary>
+		/// The game's Frame Skip set to On runs every update at full speed and drops the drawing when an update takes longer than a frame (16.7 ms): the frame rate then falls from 60 to a few frames a second while the updates
+		/// stay near 60 (Eve's 11-17 pillar fights: 58 updates and 2 to 5 frames a second at 16 to 17 ms an update). Set to Subtle (the game's default) or Off, the game slows down instead and keeps drawing. When the laggy windows
+		/// show that pattern with Frame Skip On, the verdict says so and offers to switch it to Subtle. The player's own setting, changed only by the button.
+		/// </summary>
+		private static void FrameSkipAdvice(LagVerdict v, IList<PerfWindow> fight)
+		{
+			var laggy = fight.Where(w => w != null && w.Focus && w.Secs > 0 && w.Frames > 0 && w.Updates > 0 && (w.Fps < PerfThresholds.LagFps || w.Ups < PerfThresholds.LagUps)).ToList();
+			double secs = laggy.Sum(w => w.Secs); if (secs <= 0) return;
+			double onSecs = laggy.Where(w => w.FrameSkip == 1).Sum(w => w.Secs);
+			if (onSecs < 0.5 * secs) return;
+			double fps = WeightedMedian(laggy, w => w.Fps), ups = WeightedMedian(laggy, w => w.Ups);
+			if (!(fps < 20 && ups >= 50)) return; // the frames were dropped and the updates kept: the Frame Skip pattern
+			v.FrameSkipOn = true;
+			v.Detail = v.Detail.Concat(new[] { "Frame Skip is On: when an update runs long, the game drops frames to keep full speed.", "Set to Subtle, the game slows down instead and keeps drawing." }).ToArray();
+			v.Options.Insert(0, PopupOption.FrameSkipSubtle);
+			if (!v.Options.Contains(PopupOption.ItsFine)) v.Options.Add(PopupOption.ItsFine);
+			if (string.IsNullOrEmpty(v.Headline)) v.Headline = "That fight got laggy.";
+		}
+
+		private static LagVerdict JudgeCause(IList<PerfWindow> fight)
 		{
 			var v = new LagVerdict();
 			var ws = fight.Where(w => w != null && w.Focus && w.Secs > 0 && w.Frames > 0 && w.Updates > 0).ToList();

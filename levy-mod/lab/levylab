@@ -183,6 +183,8 @@ def load_spec(path):
         rows = [l.split("\t") for l in text.splitlines() if l.strip() and not l.startswith("#")]
         if rows and rows[0][0] == "fight":
             spec = {"raw": rows}
+            m = re.search(r"^#\s*mods:\s*(\w+)", text, re.M)   # raw lines: a "# mods: vanilla" comment picks the mod set (default calamity)
+            if m: spec["mods"] = m[1]
         else:
             hdr = rows[0]; cells = []
             for r in rows[1:]:

@@ -1,0 +1,5 @@
+# gear-cost lab, Calamity loaded: her 40 levies in vanilla-swapped gear and in her own gear
+fight	solarp	mdeath	1	1800	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve40v.json	pw=30	meta=cal_vgear
+fight	solarp	mdeath	2	1800	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve40v.json	pw=30	meta=cal_vgear
+fight	solarp	mdeath	1	1800	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve40.json	pw=30	meta=cal_evegear
+fight	solarp	mdeath	2	1800	cmd=near	order=follow	arena=a3	lv=/home/user/total-mobilization/.claude/worktrees/agent-ad2bd09bc80aa200e/levy-mod/lab/lagsweep/eve40.json	pw=30	meta=cal_evegear

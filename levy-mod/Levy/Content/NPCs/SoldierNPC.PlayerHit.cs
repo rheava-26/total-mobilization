@@ -200,6 +200,17 @@ namespace Levy.Content.NPCs
 		internal static long DotTicks, DotDamage;
 
 		/// <summary>
+		/// Base-game buffs the game flags as debuffs only so they cannot be clicked off, that never take life or defense: the station and candle buffs (Happy! from a Sunflower, Cozy Fire, Heart Lamp, Star in a Bottle,
+		/// the Peace, Water and Shadow Candles, a monster banner) and the two sickness timers. A levy standing at the army's stations carries Happy! and Cozy Fire for good, and each of them made the step below run a
+		/// whole player's ResetEffects, buff and regeneration pass on the scratch player every tick for every levy (lagsweep 11-17: 6.6 us a levy a tick on a plain load, 39 to 56 us with Calamity, about 2 ms a tick for
+		/// 40 levies) to take nothing. With only these on the body the step is the no-debuff case. A modded debuff, or any other base-game one, still runs it. LEVY_DOTHARMLESS=0 runs it for these too (A/B).
+		/// The world check runs the full step with these buffs and asserts it takes no life and no defense, with and without Calamity.
+		/// </summary>
+		internal static bool HarmlessSkipOn = Environment.GetEnvironmentVariable("LEVY_DOTHARMLESS") != "0";
+		internal static readonly int[] HarmlessDebuffs = { BuffID.Sunflower, BuffID.Campfire, BuffID.HeartLamp, BuffID.StarInBottle, BuffID.PeaceCandle, BuffID.WaterCandle, BuffID.ShadowCandle, BuffID.MonsterBanner, BuffID.PotionSickness, BuffID.ManaSickness };
+		internal static bool IsHarmlessDebuff(int type) => Array.IndexOf(HarmlessDebuffs, type) >= 0;
+
+		/// <summary>
 		/// The debuffs on the body, run through the game's own player rules: a scratch Player holds the same debuffs, UpdateBuffs and UpdateLifeRegen run on it (vanilla's switch and every ModBuff / ModPlayer
 		/// life-regen hook, Calamity's included) and the life it loses is the body's loss, one point per 120 units of negative regeneration as for a player. The NPC's own damage over time is switched
 		/// off for a levy (<see cref="LevyDotSystem"/>), whose numbers differ per mod.
@@ -208,7 +219,7 @@ namespace Levy.Content.NPCs
 		{
 			if (!HitDebuffsOn || LevyUtil.IsClient || !IsAlive) return;
 			bool any = false;
-			for (int i = 0; i < NPC.maxBuffs; i++) if (NPC.buffType[i] > 0 && NPC.buffTime[i] > 0 && Main.debuff[NPC.buffType[i]]) { any = true; break; }
+			for (int i = 0; i < NPC.maxBuffs; i++) { int b = NPC.buffType[i]; if (b > 0 && NPC.buffTime[i] > 0 && Main.debuff[b] && !(HarmlessSkipOn && IsHarmlessDebuff(b))) { any = true; break; } }
 			if (!any) { _dotCount = 0; DotDefenseDown = 0; return; }
 			Player s = _dotScratch ??= new Player { whoAmI = Main.maxPlayers, active = true, width = 20, height = 42 };
 			_scratchReason = null;

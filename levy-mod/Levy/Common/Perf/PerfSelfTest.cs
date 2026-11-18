@@ -46,6 +46,15 @@ namespace Levy.Common.Perf
 			Chk(close.Kind == LagKind.Levy, "Levy at 35% against a mod at 30%: the army is named");
 			var baseG = PerfAnalysis.Judge(Fight(20, 30, 60, 0.0, null, 0));
 			Chk(baseG.Kind == LagKind.BaseGame && Opts(baseG) == "ItsFine,DontAskAgain,OpenSettings" && baseG.Detail[0].Contains("base game"), "laggy with nothing but the base game: the base game is named (" + baseG.Kind + ")");
+			// ---- Frame Skip On: the frames are dropped and the updates kept (Eve's 11-17 pillar fights: 58 updates, 2 to 5 frames a second)
+			List<PerfWindow> Fs(int mode, double fps, double ups) { var l = Fight(20, fps, ups, 0.45, "CalamityMod", 0.1); foreach (var fw in l) fw.FrameSkip = mode; return l; }
+			var fsOn = PerfAnalysis.Judge(Fs(1, 3, 58));
+			Chk(fsOn.FrameSkipOn && Opts(fsOn) == "FrameSkipSubtle,LowerLevyEffects,ItsFine,DontAskAgain,OpenSettings" && fsOn.Detail.Any(d => d.StartsWith("Frame Skip is On")), "Frame Skip On with frames dropped and updates kept: Subtle is offered first (" + Opts(fsOn) + ")");
+			Chk(!PerfAnalysis.Judge(Fs(2, 3, 58)).FrameSkipOn && !PerfAnalysis.Judge(Fs(0, 3, 58)).FrameSkipOn && !PerfAnalysis.Judge(Fs(-1, 3, 58)).FrameSkipOn, "not with Frame Skip Subtle, Off or not known");
+			Chk(!PerfAnalysis.Judge(Fs(1, 30, 40)).FrameSkipOn, "not when the updates were slow too (the game was slowing down, not dropping frames)");
+			Chk(fsOn.Detail.All(d => d.Length <= 140), "and the lines stay short");
+			var wfs = Fs(1, 3, 58)[0]; var wfs2 = PerfWindow.FromJson(wfs.ToJson());
+			Chk(wfs2 != null && wfs2.FrameSkip == 1 && PerfWindow.FromJson(wfs.ToJson().Replace(",\"fs\":1", "")).FrameSkip == -1, "the log keeps the Frame Skip setting, and an older line reads as not known");
 			var none = new List<PerfWindow>(); for (int i = 0; i < 20; i++) { var wn = PerfAnalysis.Synth(8, 30, 60, 0, null, 0); wn.Top.Clear(); none.Add(wn); }
 			var unk = PerfAnalysis.Judge(none);
 			Chk(unk.Laggy && unk.Kind == LagKind.Unknown && !unk.ShowPopup, "laggy with nothing attributed: no popup (a popup that blames nobody helps nobody)");
@@ -90,7 +99,7 @@ namespace Levy.Common.Perf
 			}
 			finally { PerfAnalysis.ReserveBankAvailable = reserve; }
 			var all = Enum.GetValues(typeof(PopupOption)).Cast<PopupOption>().Select(o => o.ToString()).ToList();
-			Chk(all.Count == 5 && !all.Any(n => n.IndexOf("command", StringComparison.OrdinalIgnoreCase) >= 0 || n.IndexOf("point", StringComparison.OrdinalIgnoreCase) >= 0), "no option about command points exists (" + string.Join(",", all) + ")");
+			Chk(all.Count == 6 && !all.Any(n => n.IndexOf("command", StringComparison.OrdinalIgnoreCase) >= 0 || n.IndexOf("point", StringComparison.OrdinalIgnoreCase) >= 0), "no option about command points exists (" + string.Join(",", all) + ")");
 
 			// ---- the popup's rules
 			DateTime now = new DateTime(2026, 11, 16, 12, 0, 0, DateTimeKind.Utc), never = DateTime.MinValue;

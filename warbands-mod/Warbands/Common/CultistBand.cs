@@ -12,8 +12,11 @@ namespace Warbands.Common
 	/// <summary>
 	/// The Lunatic Cultist's circle.
 	///  * Lunatic Devotees keep chanting (vanilla AI, untouched) and cast while they do: every 1.5 to 2.5 seconds, with a player or levy within 45 tiles and a clear line, a slow homing stardust orb (DevoteOrb) with damage from BandStats at the world's stage.
-	///  * Cultist Archers fight as a band that runs Levy's soldier brain: the first tick a vanilla archer exists near a player or levy within 70 tiles, it is replaced by a BandLevyNPC cultist archer of the "Cultist Archers" type, joining the circle's band.
-	/// Switch: WarbandsConfig.CultistBand.
+	///  * OPT-IN (WarbandsConfig.CultistArcherBand, off by default): Cultist Archers fight as a band that runs Levy's soldier brain: the first tick a vanilla archer exists near a player or levy within 70 tiles,
+	///    it is replaced by a BandLevyNPC cultist archer of the "Cultist Archers" type, joining the circle's band. Off, the archers are vanilla's. Archers converted before the switch went off are ordinary band
+	///    members (bands are not saved with the world): they fight on until they die or despawn, and no new archer is converted.
+	/// Switches: WarbandsConfig.CultistBand (the devotees' casting) and WarbandsConfig.CultistArcherBand (the archers), each on its own.
+	/// The summonable "Cultist Archers" band type is separate and unaffected.
 	/// </summary>
 	public class CultistBandGlobal : GlobalNPC
 	{
@@ -21,13 +24,15 @@ namespace Warbands.Common
 		private int _timer = 1;
 
 		public static bool IsArcher(int type) => type == NPCID.CultistArcherBlue || type == NPCID.CultistArcherWhite;
+		/// <summary>True when vanilla Cultist Archers are turned into a band: only with the archer switch on and the Levy brain on.</summary>
+		public static bool ConvertsArchers(WarbandsConfig cfg) => cfg != null && cfg.CultistArcherBand && cfg.LevyBrain;
 		public static int Converted;
 
 		public override void PostAI(NPC npc)
 		{
-			var cfg = WarbandsConfig.Get; if (cfg == null || !cfg.CultistBand || Main.netMode == NetmodeID.MultiplayerClient) return;
-			if (npc.type == NPCID.CultistDevote) DevoteCast(npc);
-			else if (IsArcher(npc.type) && cfg.LevyBrain) ConvertArcher(npc);
+			var cfg = WarbandsConfig.Get; if (cfg == null || Main.netMode == NetmodeID.MultiplayerClient) return;
+			if (npc.type == NPCID.CultistDevote) { if (cfg.CultistBand) DevoteCast(npc); }
+			else if (IsArcher(npc.type) && ConvertsArchers(cfg)) ConvertArcher(npc);
 		}
 
 		private void DevoteCast(NPC npc)

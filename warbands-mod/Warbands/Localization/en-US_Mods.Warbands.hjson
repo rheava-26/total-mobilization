@@ -107,8 +107,13 @@ Configs: {
 		}
 
 		CultistBand: {
-			Label: Cultist band
-			Tooltip: Cultist Archers fight as a band. Lunatic Devotees cast while they chant.
+			Label: Devotee casting
+			Tooltip: Lunatic Devotees cast homing orbs while they chant.
+		}
+
+		CultistArcherBand: {
+			Label: Cultist Archer band
+			Tooltip: Cultist Archers at the ritual fight as a band. Off, they are the usual Cultist Archers.
 		}
 
 		EventBands: {

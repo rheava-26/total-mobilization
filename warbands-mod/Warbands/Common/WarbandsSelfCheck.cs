@@ -28,10 +28,21 @@ namespace Warbands.Common
 			Mod.Logger.Info($"[Warbands] self-check done pass={pass} fail={fail}");
 		}
 
+		/// <summary>ConvertsArchers with the two cultist switches set as given (Levy brain on); the config is restored.</summary>
+		private static bool ArcherSwitchCase(WarbandsConfig c, bool archers, bool casting)
+		{
+			bool a = c.CultistArcherBand, k = c.CultistBand, b = c.LevyBrain;
+			try { c.CultistArcherBand = archers; c.CultistBand = casting; c.LevyBrain = true; return CultistBandGlobal.ConvertsArchers(c); }
+			finally { c.CultistArcherBand = a; c.CultistBand = k; c.LevyBrain = b; }
+		}
+
 		private void Run()
 		{
 			var c = WarbandsConfig.Get;
 			Check("config loaded with shipped defaults", c != null && c.Enabled && c.FirstStage == 1 && c.BandSizeMin == 3 && c.BandSizeMax == 5 && c.MaxActiveBands == 1 && Math.Abs(c.LootSharePercent - 35f) < 1e-3f && c.CultistBand);
+			Check("vanilla Cultist Archers by default: the archer band switch is off and nothing converts them", c != null && !c.CultistArcherBand && !CultistBandGlobal.ConvertsArchers(c));
+			Check("the archer band switch is separate from devotee casting: archers on with casting off converts, archers off with casting on does not",
+				c != null && ArcherSwitchCase(c, archers: true, casting: false) && !ArcherSwitchCase(c, archers: false, casting: true));
 			Check("natural spawn chance default is 12% per minute and bosses hold new bands back", c != null && Math.Abs(c.NaturalChancePercentPerMinute - 12f) < 1e-3f && c.NoSpawnsDuringBosses);
 
 			try { ProgressionTier.EnsureBuilt(); } catch { }

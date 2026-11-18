@@ -149,10 +149,12 @@ namespace Levy.Common.Testing
 			bool? bts = global::Levy.Common.Config.LevyConfig.Get?.BossesTargetSoldiers;
 			Note($"bosses: {bosses.Count} [{string.Join(",", bosses.Select(AuditName))}]; bosses target soldiers = {bts}");
 			int ticks = int.TryParse(Environment.GetEnvironmentVariable("LEVY_SR_BOSS_TICKS"), out int tk) ? tk : 720;
-			int spawned = 0, hit = 0, recognised = 0, threwLevy = 0, carried = 0;
-			foreach (int type in bosses)
+			int spawned = 0, hit = 0, recognised = 0, threwLevy = 0, carried = 0; long controlHits = -1;
+			// the control: a vanilla boss through the same harness, so "the army never hit it" can be read as the boss's doing and not the harness's
+			foreach (int type in bosses.Prepend(NPCID.EyeofCthulhu))
 			{
-				string name = AuditName(type);
+				bool isControl = type == NPCID.EyeofCthulhu;
+				string name = isControl ? "control (vanilla Eye of Cthulhu)" : AuditName(type);
 				Cleanup(); Arena(FloorY, Half);
 				PlaceCommander(-90);
 				var levies = Levies(8, 3f);
@@ -168,10 +170,10 @@ namespace Levy.Common.Testing
 				SrExcStart(); NPC boss = null; int thrown = 0;
 				try { boss = SpawnNpc(type, new Vector2((Cx + 25) * 16f, (_floorY - 20) * 16f)); } catch (Exception e) { thrown++; Note($"boss {name}: spawn threw {e.GetType().Name}: {e.Message}"); }
 				if (boss == null || boss.type != type) { var ex0 = SrExcStop(); Note($"boss {name}: did not spawn [{SrExcText(ex0)}]"); continue; }
-				spawned++;
+				if (!isControl) spawned++;
 				int bossIdx = boss.whoAmI; StarsRiverTally.Watch.Clear(); StarsRiverTally.Watch.Add(bossIdx); StarsRiverTally.Hits = 0; StarsRiverTally.Damage = 0;
 				bool rec = FightRecorder.IsFightBoss(boss);
-				int alive = 0, locked = 0, immune = 0, jumps = 0, maxAway = 0, levyGone = 0, engaged = 0; var last = start.ToArray(); bool gone = false; int goneAt = -1; Vector2 bossMin = boss.Center, bossMax = boss.Center;
+				int alive = 0, locked = 0, immune = 0, jumps = 0, maxAway = 0, levyGone = 0, engaged = 0, shots = 0; var seenShots = new HashSet<int>(); var last = start.ToArray(); bool gone = false; int goneAt = -1; Vector2 bossMin = boss.Center, bossMax = boss.Center;
 				_perTick = () =>
 				{
 					NPC b = Main.npc[bossIdx];
@@ -186,22 +188,28 @@ namespace Levy.Common.Testing
 						last[k] = n.Center;
 						if (sn.TargetIndex == bossIdx || (sn.TargetIndex >= 0 && sn.TargetIndex < Main.maxNPCs && Main.npc[sn.TargetIndex].realLife == bossIdx)) engaged++;
 					}
+					for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && q.friendly && q.TryGetGlobalProjectile(out global::Levy.Common.Globals.SoldierProjectileTag tg) && tg.SoldierIndex >= 0 && seenShots.Add(q.identity)) shots++; }
 				};
 				thrown += SrStep(ticks);
 				_perTick = null;
 				var ex = SrExcStop();
 				levyGone = levies.Count(l => !l.NPC.active || l.NPC.ModNPC is not SoldierNPC);
 				bool levyThrew = ex.Keys.Any(k => k.Contains(" Levy.") || k.Contains("at Levy."));
-				if (StarsRiverTally.Hits > 0) hit++;
-				if (rec) recognised++;
-				if (levyThrew) threwLevy++;
-				if (jumps > 0 || levyGone > 0) carried++;
-				Note($"boss {name}: alive {alive}/{ticks} ticks{(gone ? $" (gone at {goneAt})" : "")}, army hits {StarsRiverTally.Hits} for {StarsRiverTally.Damage}, levy-target ticks {engaged}, locked on a levy {locked}, untouchable {immune}, recorder sees a boss {rec}, " +
+				if (isControl) controlHits = StarsRiverTally.Hits;
+				else
+				{
+					if (StarsRiverTally.Hits > 0) hit++;
+					if (rec) recognised++;
+					if (levyThrew) threwLevy++;
+					if (jumps > 0 || levyGone > 0) carried++;
+				}
+				Note($"boss {name}: alive {alive}/{ticks} ticks{(gone ? $" (gone at {goneAt})" : "")}, army shots {shots}, army hits {StarsRiverTally.Hits} for {StarsRiverTally.Damage}, levy-target ticks {engaged}, locked on a levy {locked}, untouchable {immune}, recorder sees a boss {rec}, " +
 					$"boss moved x {(bossMin.X - (Cx + 25) * 16f) / 16f:0}..{(bossMax.X - (Cx + 25) * 16f) / 16f:0} y {(bossMin.Y - (_floorY - 20) * 16f) / 16f:0}..{(bossMax.Y - (_floorY - 20) * 16f) / 16f:0} tiles, levy jumps >25 tiles {jumps}, levies farthest {maxAway} tiles, levies gone {levyGone}, steps thrown {thrown}, exceptions [{SrExcText(ex)}]");
 				StarsRiverTally.Watch.Clear();
-				for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && n.ModNPC is ModNPC m && SrMods.Contains(m.Mod.Name)) n.active = false; }
+				for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && (n.ModNPC is ModNPC m && SrMods.Contains(m.Mod.Name) || n.type == NPCID.EyeofCthulhu || n.type == NPCID.ServantofCthulhu)) n.active = false; }
 			}
 			Note($"bosses: {spawned}/{bosses.Count} spawned, the army hit {hit}, the recorder sees {recognised} as bosses, Levy code threw on {threwLevy}, levies carried off or lost on {carried}");
+			Check($"the harness control: the army hits a vanilla boss on the same arena ({controlHits} hits)", controlHits > 0);
 			Check($"every StarsAbove / StarlightRiver boss that spawns is seen as a boss by the fight recorder ({recognised}/{spawned})", recognised == spawned);
 			Check($"no Levy code throws while the army fights a StarsAbove / StarlightRiver boss ({threwLevy})", threwLevy == 0);
 		}

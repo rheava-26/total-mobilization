@@ -241,3 +241,74 @@ Fields that change between one frame's start and the next (share of 14,990 conse
 It cannot pay for itself. An engaged levy moves on three ticks in four and the build reads its motion; a quarter of her army's builds draw random numbers every tick (Beetle armor, Yoyo Bag, the Chlorophyte and Plaguebringer sets); and checking ~300 objects (about 30 KB) per levy costs ~25 us a tick and recording a new reference after a miss ~50 us, against a 63-72 us build. Even a served frame still pays the tail (~40 us). So the cache stays **off** (`LEVY_GEARCACHE=1` turns it on for a lab) and nothing a levy does changes on this branch.
 
 Where the engaged frame's cost is, then: the build is the game's and Calamity's own per-player code, run for every levy because every levy is a player; the tail is Calamity's per-tick player step. Within "same behaviour, no patches into Calamity" the frame is irreducible. The two Calamity patches (the visual-only hooks, about 0.3 ms at 40 levies; the projectile `Any` in ResetEffects, about 3% of the tick: section 2b) were not done and not re-measured here.
+
+## 8. The approved levers (lag3, 11-18)
+
+Eve approved small accuracy trade-offs ("I'll take the downgrade a little bit… anything to not have 3 frames") and the two Calamity patches. Lab: the Solar Pillar scene, `eve45.json` (her army, 45 levies), `pw=45`, Calamity, Master + Death, 1,800 ticks a fight, one tML server, same boot for every arm. Specs `lab/lagsweep/l3_*.tsv` (harness tokens `gi=N` gear interval, `gl=N` learning interval, `cp=0` Calamity patches bypassed). CPU and microseconds per gear frame come from the harness's own timers (`HARNESS-GA`); "us/frame" is the whole gear frame per levy per tick.
+
+Before and after, same boot, 3 seeds per arm (`l3_ab.tsv`):
+
+| arm | gear frame, us per levy per tick | of which the build | frames served | CPU ms/tick (NPCs + projectiles) | army damage/s | levy deaths |
+|---|---|---|---|---|---|---|
+| before (patches off, interval 1) | 95.0 (100.5, 98.4, 86.2) | 57.5 | - | 14.70 | 42,823 | 5 |
+| Calamity patches | 75.5 (72.2, 72.9, 81.4) | 41.0 | - | 13.98 | 40,511 | 2 |
+| patches + interval 3 | 78.0 (82.3, 76.4, 75.2) | 48.3 | 43% | 13.99 | 39,964 | 3 |
+| **patches + interval 4 (default)** | **70.3** (70.5, 69.7, 70.8) | 48.2 | 48% | 13.75 | 42,683 | 3 |
+| patches + interval 6 | 68.4 (67.8, 68.7, 68.8) | 50.5 | 54% | 13.32 | 40,326 | 5 |
+
+About 43 levies were alive on average, so per tick: **the Calamity patches save 0.84 ms, interval 4 another 0.22 ms: 1.06 ms of gear frame a tick** (the CPU census moved 14.70 → 13.75 ms, inside this box's drift but the same way). Damage per second and deaths are the same within seed noise (deaths in this lab follow the box's load: section 2b). An earlier run (`l3_swapprof.tsv`, profilers on) gave the same order: before 101 us, patches 84, interval 4 75, interval 6 73.
+
+Estimated frame rate with Frame Skip On, from section 1 (her laggy windows: 15.9 ms of update, of which levy bodies 6.6 ms; the lab's levy bodies are 7.2 ms of 14.7, so the saving scales to about 0.95 ms on her machine): about 15.0 ms an update, which is still in the 14-15.5 ms band (median 9.4 fps) instead of the 15.5-17 band (3 fps). It does not reach the 12 ms edge where the game draws at full rate. With Frame Skip Subtle the same fight is about one update and one frame every 27 ms: about 37 fps at 0.62 game speed (35 fps at 0.6 before).
+
+
+### 8a. Approximate gear frame for fighting levies (`SoldierNPC.GearApprox.cs`)
+
+Setting: **Levy: Performance → Speed in big fights → Gear update interval when fighting** (1-8, default 4; 1 is the exact, every-tick frame). Dormant levies and stat refreshes always build in full.
+
+How it works. A fighting levy runs the build half of the gear frame (ResetEffects, buffs, equips, armor sets, stations, potions) on one tick in N, staggered by body index so the army's builds spread evenly. On the ticks between, the leaves the last build wrote are written back from an image taken right after that build, and the tail (PostUpdateEquips, Calamity's PostUpdateMiscEffects: Rage, Adrenaline, stealth, TimeHolding, cooldowns) runs as every tick. So the stats a levy fights with are always exactly the stats of a full build at most N-1 ticks old: never above or below what a player in that gear and state had then.
+
+- **Which leaves are written back** is learned per levy: the dummy (Player, its 66 ModPlayers, worn ModItems) is imaged before and after its first four builds and then every eighth (StateImage); every leaf that differs is "written by the build". The core stats ResetEffects resets (life regeneration, defense, damage classes, speed, endurance, minion slots...) are always written back, so a tail that adds to one of them only now and then cannot add up. Never written back: what other code moves every tick (the body's motion, life, mana, buff timers, wing and rocket time, the tail's meters).
+- **Buff timers** count down on a served tick as the buff pass would; a buff about to run out forces the build that removes it.
+- **Cooldowns the build counts down** (an accessory's `cooldown--` in UpdateAccessory, found as a field nothing else touched that the build lowered by one on two builds running, and never raised) are counted down on served ticks too, to zero or past it as the build was seen to do. The drift probe caught this on Void of Calamity, whose cooldown otherwise ran N times slower.
+- **Forced full build on any input change**: worn gear and every stat refresh (once a second and whenever the stats are marked dirty), the dummy's buffs (added or removed), the body's buffs (potions, stations, banners), the held weapon, a 5% step of life or a 10% step of mana, armor-set state, sidearm, defense damage, mount, and the world flags the build reads (day, weather, events, Calamity's boss flag; once a tick).
+- **Exact frame kept** for a levy whose build casts a projectile (Plaguebringer and Mollusk sets, the Chlorophyte set with Soul of Cryogen) or counts a counter up to a threshold (the Beetle sets): a served tick could not repeat those. Gear seen to do it is remembered, so the next levy in the same gear starts exact. Builds that only draw random numbers (the Yoyo Bag's counterweight type, set dust) are approximated.
+- Calamity's Virid Vanguard counters, which its ResetEffects steps every tick, are stepped by the same statements; a levy holding the Virid Vanguard while one of its blades is out builds every tick.
+
+**Drift probe** (`LEVY_GEARAPPROX_PROBE=1`): on every served tick the full build also runs from the same state and the two are compared stat by stat and leaf by leaf; the served result stays. Her army, Solar Pillar, interval 4, 1,200 ticks: 24,676 served ticks compared; the stats (defense, endurance, movement, regeneration, wing time, minion slots, mana, damage, crit and attack speed of every class, armor penetration) differed in 8 (0.03%): the Plague Reaper set's ranged bonus, 4 higher and 4 lower. 2 casts a full build would have made came on served ticks.
+
+What drifts (the only differences left, all reaction timing):
+- **Bonuses that switch with state the build reads each tick**: the Plague Reaper set's toggled ranged bonus (+60% damage, +20 crit, and its vision flags) and the Reaver set's decaying defense and damage bonus start and end up to N-1 ticks late (both directions for Plague Reaper; Reaver's ending is late, so up to N-1 ticks of the higher value). 0.03% of served ticks at interval 4; the Reaver case showed in earlier probe runs (11 of 24,584).
+- **Motion-reactive accessories** follow the body's motion at the last build: anything the build computes from velocity or standing still (Shiny Stone's regeneration while still, Calamity's camper glow) lags up to N-1 ticks. None changed a stat in the probe's 24,676 comparisons beyond the above.
+- **Wing time** is not touched: it is the body's (kept live, never written back); the wings' maximum is a build stat and stays exact.
+- **Cosmetic**: the Yoyo Bag's counterweight type and set dust draws (random numbers not drawn on a served tick); the honey flag (Levy sets it again each tick after the frame).
+- **Minions and casts**: 2 casts in 24,584 served ticks would have come on a served tick (a rare cast before the gear was marked exact).
+
+**Default 4, and why.** Interval 2 and 3 cost more than they save (98 and 78 us against 75.5 exact): every full build pays about 35 us of imaging and checking (`before` 14 us, `after` 21 us in `HARNESS-GA`), and a served tick still costs about 41 us (the tail, the frame's own setup, the write-back). From 4 on it pays: 70 us at 4, 68 at 6. Six buys another 2 us a levy (0.08 ms a tick) for half again the lag; 4 keeps the longest a stat can trail its cause at 3 ticks (50 ms). About a quarter of her army keeps the exact frame (Beetle sets, Plaguebringer and Mollusk sets, a Chlorophyte set that casts), which is why at most half the frames are served.
+
+What the lever is worth, honestly: about 0.2 ms a tick at 45 levies. With the Calamity patches the build itself fell from 57 to 41 us, so there is less left to skip; the per-tick tail (about 30 us) is the larger half of a levy's gear frame now and it runs every tick by design.
+
+### 8b. Calamity patches for levy dummies (`Common/Compat/Calamity/CalamityLevyPatches.cs`)
+
+Found by name (no reference to Calamity); nothing is patched without it; `LEVY_CALPATCH=0` turns them off. Each patch first asks "is this a levy dummy" (`SoldierOwner.IsDummy`) and is otherwise transparent.
+- `AndroombaRightClick`: skipped for a dummy (the local player's right-click on a friendly Androomba; walks every NPC).
+- `AbyssEffects`: its first call, `SetAbyssLightLevels`, is skipped for a dummy (the abyss darkness and glow numbers, read only by the lighting and the darkness shader). The abyss's breath, defense and life loss below it still run.
+- `UpdateDrawingParameters`: a levy is drawn with its dummy, so its Rover Drive / Lunic Corps / Profaned / Sponge shield visuals need it; it is skipped for a dummy only on a dedicated server, where nothing is drawn.
+- `ResetEffects`' `Main.projectile.Any(...)` (Virid Vanguard Zenith slash, 1,000 slots for every player every tick): inside a levy's gear frame the same predicate is asked of the slots that held an active Virid Vanguard blade (a list made once a tick, remade when a blade is spawned). The predicate requires an active blade, so the answer is the same.
+
+The `[LevyRules]` set and accessory parity check leaves out the four abyss lighting numbers while the patches are in force (they are the skipped call's output, read only by the lighting); the gear frame check below compares everything else.
+
+The projectile `Any` was the large one: inside the build it cost about 13 us per levy per tick (build 60 → 46 us in the same boot), more than the 3% of the tick the sampling profile gave.
+
+### 8c. The soldier shot swaps: measured, not cut
+
+`LEVY_SWAPPROF=1` times the owner swaps around every soldier shot (OwnerPuppet's transform, life routing, cursor and button puppets; UseGuard's snapshot; the held-item view) against the shot's whole update. Her army, Solar Pillar, 15 fights: owner swaps around the update pass 0.21-0.31 ms a tick, around the hit pass 0.21-0.43 ms, UseGuard 0.04-0.06 ms, the held-item view 0 (no plain-shot holdouts in her army), against 3.2-6.0 ms a tick of soldier shot updates (240-340 shot updates and 340-680 hit passes a tick). So the swaps are about 12-14% of the army's shot time (13 to 17 us per levy per tick of about 110-130). About half of it is the hit pass's swap opened inside the update pass of the same shot (Projectile.Damage runs every tick for every friendly shot, about 2 per shot update): it re-sets what the update pass already set. Skipping it is not provably identical: the life routing then gives a lifesteal heal to the soldier at the end of the update instead of right after the hit (the "+N" and the soldier's life move later in the same update, and a second lifesteal check in that update would read the healed life), and Thorium's local-player cache is only swapped by the hit pass. Not cut; worth about 0.3 ms a tick at 45 levies if Eve accepts that timing difference.
+
+### 8d. Frame Skip in Levy's settings
+
+**Levy: Performance → Speed in big fights → Frame Skip: On / Subtle / Off**, with the hint "The game's Frame Skip setting. Subtle keeps the picture moving in heavy fights by slowing the game slightly." It reads and writes the game's own `Main.FrameSkipMode` and saves it the game's way (`Main.SaveSettings`, not on a server); it is not stored in Levy's file. The lag popup's "Set Frame Skip to Subtle" uses the same path.
+
+### 8e. Checks
+
+- `[PerfBoss]` (ship world, standing army): interval 1 serves nothing; interval 3 serves ticks, every compared served tick has exactly a full build's stats (nothing moves, so any difference is an error), no cast is missed, the tail runs on every frame; a change of gear and a buff on the body each rebuild on the very next tick (Ironskin's +8 defense is there at once). With Calamity: one gear frame run twice from the same state (dummy, ModPlayers, items, random generator), patches bypassed and in force, leaves the same dummy outside the lighting numbers; the skipped calls are reached for dummies; every patched projectile question is also asked of the whole array and gives the same answer.
+- `[PerfAnalyzer]`: Frame Skip in Levy's settings sets and shows the game's setting and is not stored in Levy's file; the gear interval has its default and is the one the frame uses.
+- Ship world (serial, both halves): **0 FAIL**, 2,057 PASS (`SHIPWORLD_SERIAL=1`, 1,183 s; the known summon-staff pick line excluded as always). The first run had 6: the three `[LevyRules]` parity lines (the abyss lighting numbers the patch skips, now left out of that check), the patch-name check and the drawing-parameters difference on a server (both in the new check itself), and the quiet-field dormancy check (an enemy stood near the army in that run; 8,803 frames skipped on the rerun).

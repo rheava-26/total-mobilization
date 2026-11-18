@@ -91,16 +91,17 @@ namespace Levy.Common.Testing
 			int body = RosterSystem.Instance.SpawnBody(rec, at);
 			if (body < 0 || !rec.HasBody) throw new Exception("levy did not spawn");
 			NPC n = Main.npc[body]; n.Bottom = at; rec.HoldPos = n.Center;
-			KeepCommander(); Step(30);
+			// the world's own spawns are removed from the first tick on: a slime that reaches the body before the script starts knocks it into the run (a 4.4 px/tick start on 11-18)
+			KeepCommander(); for (int t = 0; t < 30; t++) { Step(1); MindClearSpawns(); }
 			if (!MindControl.Begin(Main.player[0], rec.Id, false)) throw new Exception("mind link refused");
-			for (int t = 0; t < 3; t++) { MindControl.SetInput(0, K()); Step(1); }
+			for (int t = 0; t < 3; t++) { MindControl.SetInput(0, K()); Step(1); MindClearSpawns(); }
 			n.velocity = Vector2.Zero; n.Bottom = at;
 			for (int t = 0; t < ticks; t++)
 			{
 				rec.Mana = rec.MaxMana;
 				MindControl.SetInput(0, inp(t));
 				each?.Invoke(t);
-				Step(1); ClearNaturalHostiles(); // nothing the world spawns may hit the body she drives
+				Step(1); MindClearSpawns(); // nothing the world spawns may hit the body she drives
 				if (!n.active) break;
 				tr.Add(n.Center.X - at.X, n.Bottom.Y - floor, n.velocity.X, n.velocity.Y, n.direction);
 			}
@@ -149,6 +150,14 @@ namespace Levy.Common.Testing
 				p.fallStart = p.fallStart2 = (int)(p.position.Y / 16f); p.jump = 0; p.dashDelay = 0; p.dashTime = 0; p.wingTime = 0; p.immune = false;
 			}
 			return tr;
+		}
+
+		/// <summary>Spawns removed during the movement traces (the audit notes the count).</summary>
+		private static int _mindSpawnsCleared;
+		private static void MindClearSpawns()
+		{
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && n != _sweepTarget && WorldStep.IsNaturalHostile(n)) _mindSpawnsCleared++; }
+			ClearNaturalHostiles();
 		}
 
 		private static MindInputState K(bool l = false, bool r = false, bool j = false, bool d = false, bool use = false, Vector2 aim = default) => new MindInputState { Left = l, Right = r, Jump = j, Down = d, Use = use, Aim = aim };
@@ -245,6 +254,9 @@ namespace Levy.Common.Testing
 		}
 
 		// ---------------------------------------------------------------------------------------------- attack
+		/// <summary>Rounds the world made that a weapon run saw and did not count (by name, for the audit's note).</summary>
+		private static readonly List<string> MindStrays = new();
+
 		private static (int projs, long damage, int firstShotTick) MindWeaponRun(Item w, int ammo, bool onEnemy, int ticks, bool dead = false)
 		{
 			ClearSoldiers(); MindGiveLink(); _mindDead = dead; Main.player[0].dead = dead;
@@ -272,7 +284,11 @@ namespace Levy.Common.Testing
 					Projectile p = Main.projectile[i];
 					if (!p.active || p.hostile) { live.Remove(i); continue; }
 					if (live.TryGetValue(i, out var o) && o.type == p.type && o.id == p.identity) continue;
-					live[i] = (p.type, p.identity); projs++; if (first < 0) first = t;
+					live[i] = (p.type, p.identity);
+					// a round the world made (a falling star from the top of the world) is not the levy's: it first appears more than 100 tiles above the cursor or 100 tiles to the side of both the levy and the cursor
+					Vector2 lc = Main.npc[body].active ? Main.npc[body].Center : at;
+					if ((aim.Y - p.Center.Y) / 16f > 100f || Math.Min(Math.Abs(p.Center.X - lc.X), Math.Abs(p.Center.X - aim.X)) / 16f > 100f) { MindStrays.Add(p.ModProjectile?.Name ?? ProjectileID.Search.GetName(p.type)); continue; }
+					projs++; if (first < 0) first = t;
 				}
 			}
 			MindControl.End(0); ClearSoldiers(); _mindDead = false; Main.player[0].dead = false;
@@ -302,16 +318,20 @@ namespace Levy.Common.Testing
 					int ammo = sample.useAmmo > 0 && ammoByKind.TryGetValue(sample.useAmmo, out int a) ? a : 0;
 					if (Environment.GetEnvironmentVariable("LEVY_MIND_DEBUG") == "1") Note($"  dbg mind attack: {label} ({(deadRun ? "dead" : "alive")})");
 					Item w1 = MindItem(type), w2 = MindItem(type);
+					// a weapon whose own use gate is shut in this world (Murasama before the Devourer of Gods: its CanUseItem) is used by nobody, a player included: there is nothing to compare
+					if (global::Levy.Common.Weapons.ModWeaponGates.Locked(w1)) { sb.Append($"\n    {label}: skipped (its own use gate is shut in this world: a player cannot use it either)"); ok++; continue; }
+					MindStrays.Clear();
 					var empty = MindWeaponRun(w1, ammo, false, 90, deadRun);
 					var onEnemy = MindWeaponRun(w2, ammo, true, 90, deadRun);
 					OResult ai = OriginOne(type, ammo, label, 90);
 					if (sample.sentry || sample.mana >= 200) { sb.Append($"\n    {label}: skipped (a sentry, or {sample.mana} mana a cast, which a levy's mana pool does not hold)"); ok++; continue; }
 					bool fires = empty.projs > 0 || onEnemy.projs > 0;
-					bool aiFires = ai.Projs > 0;
+					int aiProjs = ai.Projs - Math.Max(0, ai.Far - ai.FarAbove); // the levy alone: rounds that first appeared high over the enemy outside the sky-rain window are the world's (a falling star), not his
+					bool aiFires = aiProjs > 0;
 					// a weapon that works for the levy on its own must work when she drives it: it shoots at an empty cursor spot, and on an enemy it does at least half the damage the levy deals by itself
 					bool good = !aiFires || (sample.shoot <= 0 || fires) && ((empty.projs > 0 || sample.shoot <= 0) && (ai.Damage == 0 || onEnemy.damage * 2 >= ai.Damage));
 					if (good) ok++; else { bad++; failed.Add(label.Replace("CalamityMod:", "")); }
-					sb.Append($"\n    {label}: empty cursor {empty.projs} shots (first at tick {empty.firstShotTick}), on an enemy {onEnemy.projs} shots dmg {onEnemy.damage}, levy alone {ai.Projs} shots dmg {ai.Damage}{(good ? "" : "  <-- BROKEN")}");
+					sb.Append($"\n    {label}: empty cursor {empty.projs} shots (first at tick {empty.firstShotTick}), on an enemy {onEnemy.projs} shots dmg {onEnemy.damage}, levy alone {aiProjs} shots dmg {ai.Damage}{(good ? "" : $"  <-- BROKEN (levy alone fired: {string.Join(", ", ai.ByType.Select(kv => kv.Key + " x" + kv.Value.n))})")}{(MindStrays.Count > 0 ? $" (not counted, the world's: {string.Join(", ", MindStrays)})" : "")}{(aiProjs != ai.Projs ? $" (not counted for the levy alone: {ai.Projs - aiProjs} first seen far over the enemy)" : "")}");
 				}
 				catch (Exception e) { bad++; failed.Add(label + " threw " + e.GetType().Name); sb.Append($"\n    {label} threw {e.GetType().Name}: {e.Message}"); }
 			}
@@ -453,7 +473,9 @@ namespace Levy.Common.Testing
 			bool legacy = MindLegacy, chk = !legacy;
 			Note($"mind sweep: drive = {(legacy ? "LEGACY goal-steered" : "direct")}");
 			SetupOriginArena(); KeepCommander(); Step(2);
+			_mindSpawnsCleared = 0;
 			try { MindMovementAudit(chk); } catch (Exception e) { Check("mind movement audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
+			Note($"mind movement audit: {_mindSpawnsCleared} world spawns removed while the driven bodies ran");
 			ClearSoldiers();
 			try { MindAttackAudit(chk); } catch (Exception e) { Check("mind attack audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			ClearSoldiers();

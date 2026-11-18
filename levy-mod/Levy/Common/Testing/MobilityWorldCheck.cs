@@ -63,7 +63,15 @@ namespace Levy.Common.Testing
 
 		private static void Step(int n)
 		{
-			for (int i = 0; i < n; i++) { KeepCommander(); WorldStep.Update(); }
+			for (int i = 0; i < n; i++) { KeepCommander(); WorldStep.Update(); ClearSpawns(); }
+		}
+
+		/// <summary>World spawns removed so far. The arena is a quiet test strip: a slime or a zombie the world spawns there turns a run into a fight (the levy's goal becomes the enemy, and the dash and run checks read that).
+		/// The check spawns no NPC of its own, so every natural hostile goes.</summary>
+		internal static int SpawnsCleared; internal static readonly System.Collections.Generic.List<string> SpawnsSeen = new();
+		private static void ClearSpawns()
+		{
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && WorldStep.IsNaturalHostile(n)) { n.active = false; SpawnsCleared++; if (SpawnsSeen.Count < 12) SpawnsSeen.Add(n.FullName); } }
 		}
 
 		private static void KeepCommander()

@@ -24,7 +24,8 @@ namespace Levy.Common.Testing
 		private static readonly Dictionary<string, string> NotInChain = new()
 		{
 			// ---- client only: a dedicated server draws nothing, plays no sound, saves no player file; the ship world is a dedicated server. Scenario: a real client session (the client profiler, draw and audio hooks are installed only there)
-			{ "ClientProf.DoUpdate", "client only: the client-side profiler is not installed on a server" }, { "ClientProf.DoDraw", "client only" }, { "ClientProf.DrawNpcs", "client only" }, { "ClientProf.DrawProj", "client only" },
+			// (ClientProf.DoUpdate is not listed: the perf check's profiler-on arm, "Levy bucket phase", installs the profiler on the test server for one window through ClientProf.TestServer, so it runs in the chain; it only times Main.DoUpdate)
+			{ "ClientProf.DoDraw", "client only: the client-side profiler's draw timing; a server draws nothing" }, { "ClientProf.DrawNpcs", "client only" }, { "ClientProf.DrawProj", "client only" },
 			{ "ClientProf.DrawDust", "client only" }, { "ClientProf.DrawGore", "client only" }, { "ClientProf.DrawInterface", "client only" }, { "ClientProf.DrawPlayers", "client only" }, { "ClientProf.DamageTimer", "client only" },
 			{ "PerfAnalyzer.DoDraw", "client only: draw timing" }, { "PerfAnalyzer.DrawNpcs", "client only" }, { "PerfAnalyzer.DrawProjectiles", "client only" }, { "PerfAnalyzer.DrawDust", "client only" }, { "PerfAnalyzer.DrawGore", "client only" },
 			{ "PerfAnalyzer.DrawInterface", "client only" }, { "PerfAnalyzer.DrawPlayers", "client only" }, { "PerfAnalyzer.ModifyLayers", "client only: map layer timing (the check wraps layers itself through PerfAnalyzer.WrapLayers)" },

@@ -189,6 +189,7 @@ namespace Levy.Common.Testing
 				}
 			}
 			finally { SoldierNPC.DashFixOn = df; }
+			Note($"world spawns removed from the arena so far: {SpawnsCleared} [{string.Join(", ", SpawnsSeen)}]");
 			Arena();
 		}
 

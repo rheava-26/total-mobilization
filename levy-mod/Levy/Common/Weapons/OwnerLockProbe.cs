@@ -19,7 +19,7 @@ namespace Levy.Common.Weapons
 	internal static class OwnerLockProbe
 	{
 		private static readonly Dictionary<int, bool> _cache = new();
-		private static FieldInfo _heldProj, _itemAnimation, _itemTime, _controlUseItem, _channel;
+		private static FieldInfo _heldProj, _itemAnimation, _itemTime, _controlUseItem, _channel, _selectedItem;
 		private static Dictionary<short, OpCode> _opcodes;
 		/// <summary>While a cursor probe runs: every method name called and every Terraria.Main field read by the scanned IL.</summary>
 		private static HashSet<string> _sink;
@@ -170,6 +170,40 @@ namespace Levy.Common.Weapons
 			}
 			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: owner-draw probe failed for projectile {projType}: {e.Message}"); }
 			_drawCache[projType] = result;
+			return result;
+		}
+
+		private static byte[] _heldCache = new byte[0];
+		/// <summary>
+		/// True when the modded projectile's own AI reads its owner's held item (<c>Player.HeldItem</c> / <c>selectedItem</c>: Calamity's gun holdouts take their fire rate from <c>Owner.HeldItem.useAnimation</c> and end when the
+		/// held item's type changes). A soldier's shot is owned by the commander, so such an AI reads the COMMANDER's hand; <see cref="SoldierHeldViewSystem"/> shows it the soldier's weapon instead.
+		/// Answered from a per-type array (asked for every soldier shot every tick).
+		/// </summary>
+		public static bool ReadsHeldItem(int projType)
+		{
+			if (projType < 0) return false;
+			if (projType >= _heldCache.Length) Array.Resize(ref _heldCache, Math.Max(projType + 1, ProjectileLoader.ProjectileCount + 1));
+			byte c = _heldCache[projType];
+			if (c != 0) return c == 2;
+			bool result = false;
+			try
+			{
+				ModProjectile mod = WeaponClassifier.ProjectileSample(projType)?.ModProjectile;
+				if (mod != null)
+				{
+					EnsureReflection();
+					var visited = new HashSet<MethodBase>(); var found = new HashSet<FieldInfo>();
+					for (Type t = mod.GetType(); t != null && t != typeof(ModProjectile) && t != typeof(object); t = t.BaseType)
+					{
+						const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+						foreach (MethodInfo m in t.GetMethods(flags))
+							if (m.Name == "PreAI" || m.Name == "AI" || m.Name == "PostAI" || m.Name == "HoldoutAI" || m.Name == "KillHoldoutLogic" || m.Name == "ManageHoldout" || m.Name == "Update") Scan(m, 0, visited, found);
+					}
+					result = found.Contains(_selectedItem);
+				}
+			}
+			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: held-item probe failed for projectile {projType}: {e.Message}"); }
+			_heldCache[projType] = (byte)(result ? 2 : 1);
 			return result;
 		}
 
@@ -401,6 +435,7 @@ namespace Levy.Common.Weapons
 			_itemTime = typeof(Player).GetField("itemTime", f);
 			_controlUseItem = typeof(Player).GetField("controlUseItem", f);
 			_channel = typeof(Player).GetField("channel", f);
+			_selectedItem = typeof(Player).GetField("selectedItem", f);
 			_opcodes = new Dictionary<short, OpCode>();
 			foreach (FieldInfo fi in typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static))
 				if (fi.GetValue(null) is OpCode oc) _opcodes[oc.Value] = oc;
@@ -450,6 +485,7 @@ namespace Levy.Common.Weapons
 							{
 								MethodBase callee = module.ResolveMethod(token, typeArgs, null);
 								if (callee != null) _sink?.Add(callee.Name);
+								if (callee != null && callee.Name == "get_HeldItem" && callee.DeclaringType == typeof(Player)) found.Add(_selectedItem); // a read of Player.HeldItem
 								if (callee != null && callee.Name == "CantUseHoldout") found.Add(_channel); // Calamity's PlayerUtils.CantUseHoldout reads Player.channel for the projectile
 								if (callee != null && callee.DeclaringType != null && callee.DeclaringType.IsAssignableFrom(method.DeclaringType)
 									&& callee.DeclaringType != typeof(ModProjectile) && callee.DeclaringType != typeof(object))
@@ -466,6 +502,7 @@ namespace Levy.Common.Weapons
 		/// <summary>Writes to the use-state fields count as pinning; reads of the use-button fields count as the release.</summary>
 		private static void AddFieldUse(FieldInfo fi, bool isStore, HashSet<FieldInfo> found)
 		{
+			if (!isStore && fi == _selectedItem) { found.Add(fi); return; }
 			if (isStore) { if (fi == _heldProj || fi == _itemAnimation || fi == _itemTime) found.Add(fi); }
 			else if (fi == _controlUseItem || fi == _channel) found.Add(fi);
 		}

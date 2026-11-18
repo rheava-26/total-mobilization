@@ -25,8 +25,23 @@ SHIPCAL="${SHIPCAL:-$U/shipcal}"                     # Calamity (tML 2026.10): t
 VERIFY_SAVE="${VERIFY_SAVE:-$U/tml-save-verify}"         # save dir the vanilla boot runs against (Mods/ holds the built tmods)
 LAB="${LAB:-$U/lab/shipworld}"                   # shipworld: world/ShipWorld.wld + per-run private installs
 
+# OPTIONAL third configuration "wotg" (shipwotg.sh): Calamity + Wrath of the Gods (NoxusBoss) + Luminance + Fargo's + Luiafk + our three, on the Calamity toolchain.
+# A private tML 2026.10 copy + save dir; the extra third-party tmods come from $MODCACHE/<Mod>/<tML version>/<Mod>.tmod (DepotDownloader, tML app 1281930, anonymous).
+WOTG_HOME="${WOTG_HOME:-$U/shipwotg}"                # install copy (tML 2026.10) with save/ inside
+WOTG_LAB="${WOTG_LAB:-$U/lab/shipwotg}"              # world checks / lab runs for this configuration
+WOTG_TMODS=(
+  "NoxusBoss:$MODCACHE/NoxusBoss/2026.4/NoxusBoss.tmod"           # Calamity: Wrath of the Gods 1.2.31, workshop 2995193002
+  "Luminance:$MODCACHE/Luminance/2026.4/Luminance.tmod"           # 1.0.14, workshop 3222493606
+  "Daybreak:$MODCACHE/Daybreak/2026.4/Daybreak.tmod"              # 2.4.0, workshop 3478363753 (NoxusBoss hard dependency)
+  "SubworldLibrary:$MODCACHE/SubworldLibrary/2026.6/SubworldLibrary.tmod"   # 2.3.0.1, workshop 2785100219 (NoxusBoss hard dependency)
+  "Fargowiltas:$MODCACHE/Fargowiltas/2026.2/Fargowiltas.tmod"     # Fargo's Mutant Mod 3.3.6.7, workshop 2570931073
+  "miningcracks_take_on_luiafk:$MODCACHE/miningcracks_take_on_luiafk.tmod"   # 1.2.5
+)
+WOTG_SOULS_TMOD="$MODCACHE/FargowiltasSouls/2026.3/FargowiltasSouls.tmod"    # Fargo's Souls 1.7.3.9, workshop 2815540735 (optional: WOTG_SOULS=1)
+
 # Ports (override PORT_* to run beside another builder's ship run): shipcal boot, shipboth vanilla boot, shipworld world-making / vanilla half / Calamity half
 PORT_CAL="${PORT_CAL:-7774}"; PORT_NORM="${PORT_NORM:-7775}"; PORT_GEN="${PORT_GEN:-7871}"; PORT_WVAN="${PORT_WVAN:-7872}"; PORT_WCAL="${PORT_WCAL:-7873}"
+PORT_WOTG="${PORT_WOTG:-7776}"; PORT_WWOT="${PORT_WWOT:-7874}"   # wotg boot / wotg world half
 
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 

@@ -70,7 +70,7 @@ namespace Levy.Common.Audio
 		}
 
 		static void EngineUpdate(On_SoundEngine.orig_Update orig)
-		{
+		{ _hl_EngineUpdate_1++;
 			if (On && haveBase && !Main.gameMenu)
 			{
 				upd++;
@@ -83,7 +83,7 @@ namespace Levy.Common.Audio
 			}
 			orig();
 			if (On) Flush();
-		}
+		} private static int _hl_EngineUpdate_1;
 
 		static void Flush()
 		{

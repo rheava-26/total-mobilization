@@ -19,6 +19,7 @@ namespace Levy.Content.NPCs
 			SoldierOrder.SearchDestroy => SoldierState.SearchDestroy,
 			SoldierOrder.FreeRein => SoldierState.FreeRein,
 			SoldierOrder.HoldBanners => SoldierState.Idle,
+			SoldierOrder.Regroup => SoldierState.SearchDestroy,
 			_ => null,
 		};
 
@@ -40,6 +41,7 @@ namespace Levy.Content.NPCs
 			if (State == SoldierState.Engage || State == SoldierState.Haul || State == SoldierState.Resupply) return true;
 			SoldierState? want = StateAfterOrder(order);
 			if (want.HasValue && State == want.Value) return true;
+			if (order == SoldierOrder.Regroup && State == SoldierState.FreeRein) return true; // a boss fight is on: the order reads as Free Rein for the levies in it
 			// the brain re-derives the state from the order every think: an idle spot (arrived home, nobody to follow, a hold post) is also what the order asks for there
 			if (order == SoldierOrder.HoldBanners && State == SoldierState.Follow) return true; // on the march to its banner stand
 			if (State == SoldierState.Idle && (order == SoldierOrder.Hold || order == SoldierOrder.ReturnToBarracks || Commander == null || Home == null)) return true;

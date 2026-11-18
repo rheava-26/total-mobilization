@@ -154,7 +154,7 @@ namespace Levy.Content.NPCs
 				anchor = cmd.Bottom; radius = LevyConstants.SitFollowRadiusTiles;
 				SitWhy = "calm follow"; return true;
 			}
-			if (os == SoldierState.FreeRein && Leisure_SitWanted(now, ref anchor, ref radius)) { SitWhy = "free rein pastime"; return true; }
+			if (os == SoldierState.FreeRein && Record.Order != SoldierOrder.Regroup && Leisure_SitWanted(now, ref anchor, ref radius)) { SitWhy = "free rein pastime"; return true; }
 			return SitNo("state " + os);
 		}
 

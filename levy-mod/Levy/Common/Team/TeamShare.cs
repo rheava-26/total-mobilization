@@ -31,12 +31,12 @@ namespace Levy.Common.Team
 		public static int TypeOf(int kind) => kind == 0 ? BuffID.NebulaUpLife1 : kind == 1 ? BuffID.NebulaUpDmg1 : BuffID.NebulaUpMana1;
 
 		private static void Hook(On_Player.orig_NebulaLevelup orig, Player self, int type)
-		{
+		{ _hl_Hook_1++;
 			orig(self, type);
 			if (_suppress || !TeamItems.IsLocal(self) || KindOf(type) < 0) return;
 			try { TeamNet.RequestNebula(self, type); }
 			catch (Exception e) { TeamItems.WarnOnce("nebula share", e); }
-		}
+		} private static int _hl_Hook_1;
 
 		/// <summary>Server / single player: the commander took a booster; his levies within 700 px of him get it.</summary>
 		public static void ShareFromPlayer(Player p, int buffType)
@@ -84,7 +84,7 @@ namespace Levy.Common.Team
 		public static void Uninstall() { if (!Installed) return; On_Player.RefreshInfoAccsFromTeamPlayers -= Hook; Installed = false; }
 
 		private static void Hook(On_Player.orig_RefreshInfoAccsFromTeamPlayers orig, Player self)
-		{
+		{ _hl_Hook_2++;
 			orig(self);
 			if (self.whoAmI != Main.myPlayer || Main.dedServ) return;
 			try
@@ -93,7 +93,7 @@ namespace Levy.Common.Team
 				for (int i = 0; i < _items.Count; i++) self.RefreshInfoAccsFromItemType(_items[i]);
 			}
 			catch (Exception e) { TeamItems.WarnOnce("info accessory share", e); }
-		}
+		} private static int _hl_Hook_2;
 
 		/// <summary>The accessory items carried by the commander's levies within 800 px (refreshed twice a second).</summary>
 		public static void Gather(Player p)

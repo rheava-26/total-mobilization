@@ -115,6 +115,7 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool Nameplates;
 		[DefaultValue(MilitiaDeathMessageMode.Count)] [DrawTicks] public MilitiaDeathMessageMode MilitiaDeathMessages;
 		[DefaultValue(true)] public bool RegularDeathMessages;
+		[Range(0, 100)] [DefaultValue(30)] public int CustomDeathMessagePercent;
 
 		// ---- Crowd ------------------------------------------------------------------------------------------
 		[Header("Crowd")]

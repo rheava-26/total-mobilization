@@ -122,46 +122,45 @@ namespace Levy.Common.Audio
 		public override void Load()
 		{
 			isServer = Main.dedServ;
-			if (Main.dedServ && !Diag) return;
+			// A dedicated server plays no sound: it installs only the projectile-update classifier, and only for the self-check world, so the check can see it fire (HookProbe.SoundUpdate).
+			if (Main.dedServ && !Diag) { if (Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") == "1") { On_Projectile.Update += ProjUpdate; global::Levy.Common.Util.HookProbe.SoundWatch = true; } return; }
+			// No On_Projectile.AI detour: that stub is inlined into Projectile.Update and never called. ProjUpdate wraps the WHOLE update, AI included, so a projectile's AI sounds are classified by it.
 			On_NPC.AI += NpcAI;
-			On_Projectile.AI += ProjAI;
 			On_Projectile.Update += ProjUpdate;
+			global::Levy.Common.Util.HookProbe.SoundWatch = true;
 			On_SoundEngine.PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback += Play;
 		}
 
 		public override void Unload()
 		{
-			if (Main.dedServ && !Diag) return;
+			global::Levy.Common.Util.HookProbe.SoundWatch = false;
+			if (Main.dedServ && !Diag) { On_Projectile.Update -= ProjUpdate; return; }
 			On_NPC.AI -= NpcAI;
-			On_Projectile.AI -= ProjAI;
 			On_Projectile.Update -= ProjUpdate;
 			On_SoundEngine.PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback -= Play;
 		}
 
 		static void NpcAI(On_NPC.orig_AI orig, NPC self)
-		{
+		{ _hl_NpcAI_1++;
 			int was = kind;
 			if (was == 0) kind = NpcKind(self);
 			try { orig(self); } finally { kind = was; }
-		}
+		} private static int _hl_NpcAI_1;
 
-		static void ProjAI(On_Projectile.orig_AI orig, Projectile self)
-		{
-			int was = kind;
-			if (was == 0) kind = ProjKind(self);
-			try { orig(self); } finally { kind = was; }
-		}
+		/// <summary>The kind of army entity whose update is running right now (0 = none), for the world check.</summary>
+		internal static int CurrentKind => kind;
 
 		/// <summary>The whole update, not only the AI: a levy's projectile also makes sounds when it hits (the strike, the enemy's hurt and death sound) and from its on-hit hooks.</summary>
 		static void ProjUpdate(On_Projectile.orig_Update orig, Projectile self, int i)
-		{
+		{ _hl_ProjUpdate_3++;
+			global::Levy.Common.Util.HookProbe.SoundUpdate++;
 			int was = kind;
-			if (was == 0) kind = ProjKind(self);
+			if (was == 0) { kind = ProjKind(self); if (kind != 0) global::Levy.Common.Util.HookProbe.SoundClassified++; }
 			try { orig(self, i); } finally { kind = was; }
-		}
+		} private static int _hl_ProjUpdate_3;
 
 		static SlotId Play(On_SoundEngine.orig_PlaySound_refSoundStyle_Nullable1_SoundUpdateCallback orig, ref SoundStyle style, Vector2? position, SoundUpdateCallback cb)
-		{
+		{ _hl_Play_2++;
 			if (Diag && isServer) { AudioCapLog.OnPlay(ref style, position, inArmy); int n0 = (int)Main.GameUpdateCount; bool a0 = inArmy; int k0 = kind == 0 ? KOther : kind; bool ok = !a0 || Admit(ref style, position, n0, true) > 0f; DiagTick(n0, style.SoundPath ?? "", a0, ok, k0); return SlotId.Invalid; }
 			if (AudioCapLog.On && !isServer) AudioCapLog.OnPlay(ref style, position, inArmy);
 			if (!inArmy || Main.gameMenu) return orig(ref style, position, cb);
@@ -171,7 +170,7 @@ namespace Levy.Common.Audio
 			vol *= KindGain(kind) * UserVolume();
 			if (vol < 0.999f) { var quieter = style.WithVolumeScale(vol); return orig(ref quieter, position, cb); }
 			return orig(ref style, position, cb);
-		}
+		} private static int _hl_Play_2;
 
 		/// <summary>Window bookkeeping plus <see cref="Decide"/> for one army sound; returns the volume scale (0 = drop) and records the play when admitted.</summary>
 		static float Admit(ref SoundStyle style, Vector2? position, int now, bool ignoreDistance)

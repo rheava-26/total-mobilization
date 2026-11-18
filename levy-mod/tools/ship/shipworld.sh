@@ -12,6 +12,7 @@ set -u
 TMO=${SHIPWORLD_TIMEOUT:-480}; SETTLE=${SHIPWORLD_SETTLE:-25}
 VAN_MODS=${VAN_MODS:-Levy,Mechanization,Warbands}
 CAL_MODS=${CAL_MODS:-CalamityModMusic,CalamityMod,Levy,Mechanization,Warbands}
+WOT_MODS=${WOT_MODS:-CalamityModMusic,CalamityMod,Daybreak,Luminance,SubworldLibrary,NoxusBoss,Fargowiltas,miningcracks_take_on_luiafk,Levy,Mechanization,Warbands}   # optional "wot" half (shipwotg.sh --world, SHIPWORLD_HALVES=wot)
 WORLD=$LAB/world/ShipWorld.wld
 mkdir -p "$LAB/world"
 
@@ -44,6 +45,8 @@ HALVES=${SHIPWORLD_HALVES:-van cal}; VR=; CR=
 case " $HALVES " in *" van "*) VR=$(prep van "$TML08" "$VERIFY_SAVE/Mods");; esac
 case " $HALVES " in *" cal "*) CR=$(prep cal "$TML10" "$SHIPCAL/save/Mods");; esac
 
+case " $HALVES " in *" wot "*) WR=$(prep wot "$TML10" "$WOTG_HOME/save/Mods");; esac
+
 run_half() { # $1 = run dir, $2 = port, $3 = mod list
   "$SHIP_DIR/tmlboot.sh" -i "$1/tml" -s "$1/save" -m "$3" -w "$1/ShipWorld.wld" -p "$2" \
       -e "LEVY_SELFCHECK_WORLD=1 LEVY_MECHWORLD_EXIT=1" -x '\[MechWorld\] self-check pass=' -q "$SETTLE" -t "$TMO" > "$1/half.out" 2>&1
@@ -52,7 +55,7 @@ run_half() { # $1 = run dir, $2 = port, $3 = mod list
 echo "== booting ShipWorld: halves [$HALVES] ($PORT_WVAN vanilla, $PORT_WCAL Calamity), $([ "${SHIPWORLD_SERIAL:-0}" = 1 ] && echo one after another || echo in parallel) =="
 T0=$SECONDS; PIDS=()
 for h in $HALVES; do
-  case $h in van) set -- "$VR" "$PORT_WVAN" "$VAN_MODS";; cal) set -- "$CR" "$PORT_WCAL" "$CAL_MODS";; *) continue;; esac
+  case $h in van) set -- "$VR" "$PORT_WVAN" "$VAN_MODS";; cal) set -- "$CR" "$PORT_WCAL" "$CAL_MODS";; wot) set -- "$WR" "$PORT_WWOT" "$WOT_MODS";; *) continue;; esac
   if [ "${SHIPWORLD_SERIAL:-0}" = 1 ]; then run_half "$@"; else run_half "$@" & PIDS+=($!); fi
 done
 [ ${#PIDS[@]} -gt 0 ] && wait "${PIDS[@]}"
@@ -94,10 +97,17 @@ report() { # $1 = label, $2 = run dir
   echo "LevyRules: PASS=$(grep -c -F '[LevyRules] PASS ' "$L") FAIL=$(grep -c -F '[LevyRules] FAIL ' "$L")"
   grep -F "[LevyRules] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[LevyRules] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
+  echo "SaveHold (a world save mid-check: fixtures save-safe, the autosave held off and given back): PASS=$(grep -c -F '[SaveHold] PASS ' "$L") FAIL=$(grep -c -F '[SaveHold] FAIL ' "$L")"
+  grep -F "[SaveHold] self-check pass=" "$L" | sed 's/^/  /'
+  grep -F '[SaveHold] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
   echo "PerfBoss: PASS=$(grep -c -F '[PerfBoss] PASS ' "$L") FAIL=$(grep -c -F '[PerfBoss] FAIL ' "$L")"
   grep -F "[PerfBoss] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[PerfBoss] OBSERVED' "$L" | head -8 | cut -c1-240 | sed 's/^/  /'
   grep -F '[PerfBoss] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
+  echo "HookLive (every detour of Levy, Mechanization and Warbands ran during the chain, or is listed with the scenario that needs it): PASS=$(grep -c -F '[HookLive] PASS ' "$L") FAIL=$(grep -c -F '[HookLive] FAIL ' "$L")"
+  grep -F "[HookLive] self-check pass=" "$L" | sed 's/^/  /'
+  grep -F "[HookLive] OBSERVED" "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-1200 | sed 's/^/  /'
+  grep -F '[HookLive] FAIL' "$L" | head -20 | cut -c1-260 | sed 's/^/  /'
   echo "PerfAnalyzer (always-on profiler: attribution by mod, fault safety, fights and popup, rolling log; its cost on and off is the [PerfBoss] analyzer line): PASS=$(grep -c -F '[PerfAnalyzer] PASS ' "$L") FAIL=$(grep -c -F '[PerfAnalyzer] FAIL ' "$L")"
   grep -F "[PerfAnalyzer] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[PerfAnalyzer] OBSERVED' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-520 | head -24 | sed 's/^/  /'
@@ -114,10 +124,18 @@ report() { # $1 = label, $2 = run dir
   echo "LineWatch (the line-breaking warning with a real army): PASS=$(grep -c -F '[LineWatch] PASS ' "$L") FAIL=$(grep -c -F '[LineWatch] FAIL ' "$L")"
   grep -F "[LineWatch] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[LineWatch] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
+  echo "EventRec (event recordings: Goblin Army, Pumpkin Moon, pillars, a boss alongside, caps, army wiped, a fight that travels, cost): PASS=$(grep -c -F '[EventRec] PASS ' "$L") FAIL=$(grep -c -F '[EventRec] FAIL ' "$L")"
+  grep -F "[EventRec] world self-check pass=" "$L" | sed 's/^/  /'
+  grep -F '[EventRec] OBSERVED' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-700 | sed 's/^/  /'
+  grep -F '[EventRec] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
+  grep -F "[FightRecAuto] world self-check pass=" "$L" | sed 's/^/  /'
+  echo "ChatterWorld (eclipse-end chatter, shared-upgrade lines): PASS=$(grep -c -F '[ChatterWorld] PASS ' "$L") FAIL=$(grep -c -F '[ChatterWorld] FAIL ' "$L")"
+  grep -F "[ChatterWorld] self-check pass=" "$L" | sed 's/^/  /'
+  grep -F '[ChatterWorld] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
   echo "FightReport (boot self-check of the analyzer): $(grep -F '[FightReport] self-check pass=' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | head -1)"
   [ -z "$(grep -F '[MechWorld] self-check pass=' "$L")" ] && echo "  !! no MechWorld summary line (check did not finish; see $2/tml/boot.out)"
   echo "other failures (any FAIL / fail=[1-9] / !!! line not listed above), known summon-staff pick failure excluded:"
-  fail_lines "$L" | grep -v -F -e '[MechWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[PylonClick] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' -e '[BossBugs] FAIL ' -e '[SwapRace] FAIL ' -e '[LevyRules] FAIL ' -e '[PerfBoss] FAIL ' -e '[StealthWorld] FAIL ' -e '[LineWatch] FAIL ' -e '[PerfAnalyzer] FAIL ' | sed 's/^/  /' | head -20
+  fail_lines "$L" | grep -v -F -e '[MechWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[PylonClick] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' -e '[BossBugs] FAIL ' -e '[SwapRace] FAIL ' -e '[LevyRules] FAIL ' -e '[PerfBoss] FAIL ' -e '[StealthWorld] FAIL ' -e '[LineWatch] FAIL ' -e '[PerfAnalyzer] FAIL ' -e '[ChatterWorld] FAIL ' -e '[SaveHold] FAIL ' -e '[EventRec] FAIL ' -e '[HookLive] FAIL ' | sed 's/^/  /' | head -20
   grep -E "$KNOWN_FAIL_RE" "$L" | head -1 | sed 's/^/  (known, excluded) /'
   echo "FAIL lines in the whole log (known excluded): $(fail_lines "$L" | wc -l)"
   local ex; ex=$(grep -c -E -i "$EXC_RE" "$L"); echo "exceptions: $ex"
@@ -128,3 +146,4 @@ report() { # $1 = label, $2 = run dir
 }
 case " $HALVES " in *" van "*) report "VANILLA ($VAN_MODS)" "$VR";; esac
 case " $HALVES " in *" cal "*) report "CALAMITY ($CAL_MODS)" "$CR";; esac
+case " $HALVES " in *" wot "*) report "WOTG ($WOT_MODS)" "$WR";; esac

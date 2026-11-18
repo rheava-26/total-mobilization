@@ -333,7 +333,7 @@ namespace Levy.Common.UI
 				(DialogueTrigger.ARMORY_BEST, 6, DialogueChannel.ChatWindow), (DialogueTrigger.ARMORY_WORST, 6, DialogueChannel.ChatWindow),
 				(DialogueTrigger.DRINK_ALE, 5, DialogueChannel.FloatingText), (DialogueTrigger.DRINK_STOUT, 5, DialogueChannel.FloatingText),
 				(DialogueTrigger.DRINK_RUM, 5, DialogueChannel.FloatingText), (DialogueTrigger.DRINK_FIZZ, 5, DialogueChannel.FloatingText),
-				(DialogueTrigger.DRINK_ICEBERG, 5, DialogueChannel.FloatingText),
+				(DialogueTrigger.DRINK_ICEBERG, 5, DialogueChannel.FloatingText), (DialogueTrigger.ECLIPSE_END, 6, DialogueChannel.FloatingText),
 			};
 			foreach (var f in fresh)
 			{

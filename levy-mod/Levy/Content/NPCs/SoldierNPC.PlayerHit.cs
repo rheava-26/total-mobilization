@@ -211,6 +211,7 @@ namespace Levy.Content.NPCs
 			for (int i = 0; i < NPC.maxBuffs; i++) if (NPC.buffType[i] > 0 && NPC.buffTime[i] > 0 && Main.debuff[NPC.buffType[i]]) { any = true; break; }
 			if (!any) { _dotCount = 0; DotDefenseDown = 0; return; }
 			Player s = _dotScratch ??= new Player { whoAmI = Main.maxPlayers, active = true, width = 20, height = 42 };
+			_scratchReason = null;
 			bool gate = SaveGate.Enter(); // tML's character save runs on its own thread: it may not start while Main.myPlayer is lent (SaveGate)
 			Player prev = Main.player[Main.maxPlayers]; int prevMy = Main.myPlayer;
 			try
@@ -230,7 +231,7 @@ namespace Levy.Content.NPCs
 					DotDamage += loss;
 					NPC.life -= loss; NPC.netUpdate = true;
 					if (Record != null) Record.CurrentHp = Math.Max(0, NPC.life);
-					if (NPC.life <= 0) { NPC.life = 0; NPC.checkDead(); }
+					if (NPC.life <= 0) { NPC.life = 0; DiedOfDot = true; NPC.checkDead(); }
 				}
 			}
 			catch (Exception e) { SeqErrors++; if (GearUpkeep.WarnOnce(e)) Levy.Instance?.Logger.Warn("Levy: the damage-over-time step threw on a soldier (once per kind): " + e); }
@@ -253,6 +254,6 @@ namespace Levy.Content.NPCs
 			}
 			catch (Exception e) { Mod.Logger.Warn("Levy: damage-over-time hook failed: " + e.Message); }
 		}
-		private static void Detour(Orig orig, NPC self) { if (self.ModNPC is SoldierNPC) return; orig(self); }
+		private static void Detour(Orig orig, NPC self) { _hl_Detour_1++; if (self.ModNPC is SoldierNPC) return; orig(self); } private static int _hl_Detour_1;
 	}
 }

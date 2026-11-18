@@ -37,11 +37,11 @@ namespace Levy.Common.Owner
 		}
 
 		private static void Detour(On_Netplay.orig_UpdateConnectedClients orig)
-		{
+		{ _hl_Detour_1++;
 			if (!Monitor.TryEnter(Gate, TimeoutMs)) { SkippedPasses++; return; }
 			try { orig(); }
 			finally { Monitor.Exit(Gate); }
-		}
+		} private static int _hl_Detour_1;
 
 		/// <summary>Main thread: take the lock for a frame. False when it could not be had within the timeout.</summary>
 		internal static bool TryEnter()

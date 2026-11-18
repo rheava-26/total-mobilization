@@ -63,11 +63,15 @@ namespace Mechanization.Common
 			if (!_armed || _done || !Main.dedServ) return;
 			if (++_calls < 4) return;
 			_done = true;
-			_running = true;
-			try { Run(); }
-			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
-			_running = false;
-			try { Levy.Common.Testing.SummonWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[MechWorld] Levy summon world check threw " + e.GetType().Name + ": " + e.Message); } // Levy's own world check runs after this one: the server stops right below
+			global::Levy.Common.Testing.SaveHoldCheck.RunIfArmed(); // saving mid-check, before the hold below opens
+			using (global::Levy.Common.Testing.SaveHold.Begin("MechWorld")) // no world save runs while the checks own the world; the autosave is given back however they end
+			{
+				_running = true;
+				try { Run(); }
+				catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
+				_running = false;
+				try { Levy.Common.Testing.SummonWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[MechWorld] Levy summon world check threw " + e.GetType().Name + ": " + e.Message); } // Levy's own world check runs after this one: the server stops right below
+			}
 			_mod.Logger.Info($"[MechWorld] self-check pass={_pass} fail={_fail}");
 			if (Environment.GetEnvironmentVariable("LEVY_MECHWORLD_EXIT") == "1") { try { Netplay.SaveOnServerExit = false; Netplay.Disconnect = true; } catch { } }
 		}

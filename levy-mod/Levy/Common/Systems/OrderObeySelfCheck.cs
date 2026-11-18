@@ -149,8 +149,7 @@ namespace Levy.Common.Systems
 
 				// 10. world load: tile-entity ids are renumbered on load (or not in yet), so the saved barracks id is stale; the levy must still be matched to its barracks by position and obey Return
 				{
-					var te = new Content.TileEntities.BarracksTE { Position = new Terraria.DataStructures.Point16(700, 300) };
-					te.ID = 9001; Terraria.DataStructures.TileEntity.ByID[te.ID] = te; Terraria.DataStructures.TileEntity.ByPosition[te.Position] = te;
+					var te = global::Levy.Common.Testing.TestTileEntities.Add<Content.TileEntities.BarracksTE>(9001, new Terraria.DataStructures.Point16(700, 300), byPosition: true); // built as a placed one: the world save can write it
 					try
 					{
 						Reset(rec, body, SoldierState.Follow, seated: false);
@@ -162,7 +161,7 @@ namespace Levy.Common.Systems
 						bool b2 = rec.HomeBarracksId == te.ID && body.Home == te;
 						Check("10 after a world load the levy is matched to its barracks by position and Return reaches it", a && b2, $"homeId={rec.HomeBarracksId} expected {te.ID}");
 					}
-					finally { Terraria.DataStructures.TileEntity.ByID.Remove(te.ID); Terraria.DataStructures.TileEntity.ByPosition.Remove(te.Position); rec.HomePos = Terraria.DataStructures.Point16.NegativeOne; rec.HomeBarracksId = -1; }
+					finally { global::Levy.Common.Testing.TestTileEntities.Remove(te); rec.HomePos = Terraria.DataStructures.Point16.NegativeOne; rec.HomeBarracksId = -1; }
 				}
 
 				// 9. the packet handlers are registered

@@ -14,7 +14,7 @@ namespace Levy.Content.NPCs
 		/// <summary>True when the levy hopped to the commander this think (the caller ends the think).</summary>
 		private bool SearchCatchUp(int now)
 		{
-			if (!IsRegular || Record == null || !CatchUpOrder(Record.Order)) return false; // Free Rein, Hold and militia never teleport
+			if (!IsRegular || Record == null || !CatchUpOrder(EffOrder)) return false; // Free Rein, Hold and militia never teleport
 			Player cmd = Commander;
 			if (cmd == null || cmd.dead) return false;
 			if (!SearchCatchUpDue(LevyUtil.TileDistance(NPC.Center, cmd.Center), now - _lastTeleportTick, VisibleToAnyPlayer())) return false;

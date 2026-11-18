@@ -165,6 +165,9 @@ namespace Levy.Common.Testing
 			Arena();
 			_cmdAt = new Vector2(Cx * 16f, (FloorY - 3) * 16f);
 			ClearSoldiers();
+			if (Environment.GetEnvironmentVariable("LEVY_MEGAGUN_ALONE") == "1") { MegagunCheck(); ClearSoldiers(); return; }
+			if (Environment.GetEnvironmentVariable("LEVY_DEADHOOKS_ALONE") == "1") { DeadHooksCheck(); ClearSoldiers(); return; }
+			if (Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ALONE") == "1") { ArmySweep(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_ORIGIN_ALONE") != "1")
 			{
 				AlchemistMenu();
@@ -187,7 +190,13 @@ namespace Levy.Common.Testing
 			ClearSoldiers();
 			PuppetCommanderCheck();
 			ClearSoldiers();
+			MegagunCheck();
+			ClearSoldiers();
+			DeadHooksCheck();
+			ClearSoldiers();
 			SentryProbe();
+			ClearSoldiers();
+			ArmySweep();
 			ClearSoldiers();
 		}
 

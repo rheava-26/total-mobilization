@@ -381,8 +381,9 @@ namespace Levy.Common.Testing
 						else { a = arm.Mean; offMean += arm.Mean; offN++; offTicks.Add(arm.Mean); }
 						if (attached && r == rounds - 1)
 						{
-							long t0 = Stopwatch.GetTimestamp(); var w = PA.TestClose(); closeMs = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
-							if (w != null) sample = w.ToJson();
+							// wall clock, so a descheduled thread inflates it: the cost of the close is the cheapest of three
+							closeMs = double.MaxValue;
+							for (int rep = 0; rep < 3; rep++) { long t0 = Stopwatch.GetTimestamp(); var w = PA.TestClose(); closeMs = Math.Min(closeMs, (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency); if (w != null && sample == null) sample = w.ToJson(); }
 						}
 					}
 					diffs.Add(b - a);
@@ -413,7 +414,7 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxProjectiles && bp == null; i++) if (Main.projectile[i].active) bp = Main.projectile[i];
 			if (bn == null) bn = Main.npc[0]; if (bp == null) bp = Main.projectile[0];
 			bool wasT = PA.TestServer; PA.TestServer = true; PA.TestLog = true; PA.ConfigChanged(); bool wasActive = bn.active; bn.active = true;
-			try { mb = PA.MicroBench(bn, bp); } finally { bn.active = wasActive; PA.TestLog = false; PA.ConfigChanged(); PA.TestServer = wasT; }
+			try { for (int rep = 0; rep < 5; rep++) { double[] one = PA.MicroBench(bn, bp); if (one == null) continue; if (mb == null) mb = one; else for (int q = 0; q < mb.Length; q++) mb[q] = Math.Min(mb[q], one[q]); } /* the cost of the code is its cheapest run: a preempted run only adds */ } finally { bn.active = wasActive; PA.TestLog = false; PA.ConfigChanged(); PA.TestServer = wasT; }
 			if (mb != null)
 			{
 				int activeNpc = 0, activeProj = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) activeNpc++; for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active) activeProj++;

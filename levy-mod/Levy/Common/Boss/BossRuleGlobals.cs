@@ -67,16 +67,16 @@ namespace Levy.Common.Boss
 		// own detour only touches a boss whose type is unlocked (BossesTargetSoldiers) and stands down for this NPC while its dash swap is active
 		// (EnemyTargeting.Compete / EnemyTargetingGlobalNPC.PreAI check IsDashSwapping / DashSwapDue), so the two never fight over an NPC or the slot.
 		private static void Hook_TargetClosest(On_NPC.orig_TargetClosest orig, NPC self, bool faceTarget)
-		{
+		{ _hl_Hook_TargetClosest_1++;
 			orig(self, faceTarget);
 			BossRuleGlobalNPC.AfterVanillaTargeting(self, faceTarget);
-		}
+		} private static int _hl_Hook_TargetClosest_1;
 
 		private static void Hook_TargetClosestUpgraded(On_NPC.orig_TargetClosestUpgraded orig, NPC self, bool faceTarget, Vector2? checkPosition)
-		{
+		{ _hl_Hook_TargetClosestUpgraded_2++;
 			orig(self, faceTarget, checkPosition);
 			BossRuleGlobalNPC.AfterVanillaTargeting(self, faceTarget);
-		}
+		} private static int _hl_Hook_TargetClosestUpgraded_2;
 	}
 
 	/// <summary>

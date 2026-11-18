@@ -181,7 +181,7 @@ namespace Levy.Content.NPCs
 			NPC.life = Math.Clamp(record.CurrentHp <= 0 ? NPC.lifeMax : record.CurrentHp, 1, NPC.lifeMax);
 			NPC.GivenName = record.Name;
 			ThinkOffset = NPC.whoAmI % LevyConstants.ThinkIntervalTicks;
-			State = SoldierState.Idle; StateTimer = 0; TargetIndex = -1; HasMoveGoal = false; _deathHandled = false;
+			State = SoldierState.Idle; StateTimer = 0; TargetIndex = -1; HasMoveGoal = false; _deathHandled = false; DiedOfDot = false;
 			HoldPosition = record.Order == SoldierOrder.Hold || record.Order == SoldierOrder.HoldBanners;
 			EnsureDummy();
 			ApplyLooks();

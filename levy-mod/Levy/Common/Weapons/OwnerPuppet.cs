@@ -294,27 +294,27 @@ namespace Levy.Common.Weapons
 		}
 
 		private static void HealEffectDetour(On_Player.orig_HealEffect orig, Player self, int healAmount, bool broadcast)
-		{
+		{ _hl_HealEffectDetour_3++;
 			if (_depth > 0 && (Mask & 32) != 0 && Routing(self)) return; // the number is shown on the soldier who earns it (GiveToSoldier)
 			if (self.whoAmI == Main.myPlayer) { if (_depth > 0) HealTextOpenUnrouted++; else HealTextOutside++; } // diagnostics for the harness
 			orig(self, healAmount, broadcast);
-		}
+		} private static int _hl_HealEffectDetour_3;
 
 		private static void DamageDetour(On_Projectile.orig_Damage orig, Projectile self)
-		{
+		{ _hl_DamageDetour_1++;
 			if (Mask == 0 || !Enter(self, 1)) { orig(self); return; }
 			try { orig(self); } finally { Exit(); }
-		}
+		} private static int _hl_DamageDetour_1;
 		private static void KillDetour(On_Projectile.orig_Kill orig, Projectile self)
-		{
+		{ _hl_KillDetour_4++;
 			if (Mask == 0 || !Enter(self, 2)) { orig(self); return; }
 			try { orig(self); } finally { Exit(); }
-		}
+		} private static int _hl_KillDetour_4;
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
-		{
+		{ _hl_UpdateDetour_6++;
 			if (Mask == 0 || !Enter(self, 4)) { orig(self, i); return; }
 			try { orig(self, i); } finally { Exit(); }
-		}
+		} private static int _hl_UpdateDetour_6;
 
 		// ---- bit 64: draw ----
 		/// <summary>One open draw puppet (a draw never nests inside an update pass, and one projectile draws at a time).</summary>
@@ -343,15 +343,15 @@ namespace Levy.Common.Weapons
 		}
 
 		private static void DrawDirectDetour(On_Main.orig_DrawProjDirect orig, Main self, Projectile proj)
-		{
+		{ _hl_DrawDirectDetour_2++;
 			bool moved = false;
 			try { moved = BeginDraw(proj); } catch (Exception) { moved = false; EndDraw(); }
 			try { orig(self, proj); } finally { if (moved) EndDraw(); }
-		}
+		} private static int _hl_DrawDirectDetour_2;
 
 		/// <summary>Player-state messages (4 SyncPlayer, 13 PlayerControls) carry the player's position. If one is sent while that player's transform is puppeted (a hook calling NetMessage.SendData), send it with the real transform.</summary>
 		private static void SendDataDetour(On_NetMessage.orig_SendData orig, int msgType, int remoteClient, int ignoreClient, Terraria.Localization.NetworkText text, int number, float number2, float number3, float number4, int number5, int number6, int number7)
-		{
+		{ _hl_SendDataDetour_5++;
 			if (_depth > 0 && (msgType == MessageID.PlayerHeal || msgType == MessageID.SpiritHeal) && number >= 0 && number < Main.maxPlayers && Routing(Main.player[number])) return; // a routed heal is the soldier's, not the commander's
 			if (_depth == 0 || (msgType != 4 && msgType != 13)) { orig(msgType, remoteClient, ignoreClient, text, number, number2, number3, number4, number5, number6, number7); return; }
 			int first = -1;
@@ -363,7 +363,7 @@ namespace Levy.Common.Weapons
 			p.position = b.Pos; p.velocity = b.Vel; p.oldPosition = b.Old; p.direction = b.Dir;
 			try { orig(msgType, remoteClient, ignoreClient, text, number, number2, number3, number4, number5, number6, number7); }
 			finally { p.position = pos; p.velocity = vel; p.oldPosition = old; p.direction = dir; }
-		}
+		} private static int _hl_SendDataDetour_5;
 
 		// ---- Thorium local-player cache: PlayerHelper.SetLocalThoriumPlayer (Thorium's own API; reflection so Levy has no compile-time Thorium dependency) ----
 		private static MethodInfo _setLocal; private static ModPlayer _tpl; private static bool _tried;

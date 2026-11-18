@@ -105,9 +105,21 @@ namespace Levy.Common.Weapons
 			}
 			if (!p.active || p.type != item.shoot) { DudTrace.Note(item, "held-spawn-dud"); return WeaponUse.Dud(s, item); }
 			DudTrace.Note(item, "held-spawn");
+			if (DudTrace.On && ProjectileID.Sets.NeedsUUID[p.type]) DudTrace.Note(item, "uuid who=" + p.whoAmI + " id=" + p.identity + " uuid=" + p.projUUID + " lookup=" + Projectile.GetByUUID(p.owner, p.whoAmI) + " owner=" + p.owner);
+			SetUpHolder(s, item, p, dir);
+			// a weapon whose Shoot hook makes more than one holdout (Wingman holds one gun in each hand) has them all in the chain, fed and ended together: a second holdout left outside the chain reads the empty slot 255 and dies on its first tick
+			foreach (Projectile extra in _extraHolders) if (extra.active) SetUpHolder(s, item, extra, dir);
+			_extraHolders.Clear();
+			_holder[idx] = i;
+			return true;
+		}
+
+		private static readonly List<Projectile> _extraHolders = new();
+
+		private static void SetUpHolder(SoldierNPC s, Item item, Projectile p, Vector2 dir)
+		{
 			JoinChain(s, p, item);
 			if (ModShotKinds.ChainExtras(item)) FixIdentity(p);
-			if (DudTrace.On && ProjectileID.Sets.NeedsUUID[p.type]) DudTrace.Note(item, "uuid who=" + p.whoAmI + " id=" + p.identity + " uuid=" + p.projUUID + " lookup=" + Projectile.GetByUUID(p.owner, p.whoAmI) + " owner=" + p.owner);
 			if (p.TryGetGlobalProjectile(out HeldWeaponProjectile hg))
 			{
 				hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(item.shoot); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0;
@@ -115,8 +127,6 @@ namespace Levy.Common.Weapons
 				if (hg.ModHolder && ModShotKinds.CursorScriptOf(item) is CursorScript cs) hg.Script = cs;
 			}
 			p.direction = dir.X < 0f ? -1 : 1;
-			_holder[idx] = i;
-			return true;
 		}
 
 		/// <summary>
@@ -126,14 +136,16 @@ namespace Levy.Common.Weapons
 		private static Projectile SpawnViaHooks(SoldierNPC s, Item item, Vector2 vel, int damage, int ownerSlot)
 		{
 			if (s.Dummy == null || item.shoot <= 0) return null;
+			_extraHolders.Clear();
 			List<Projectile> made = ShootHooks(s, item, vel, damage, ownerSlot, false, null, out bool threw);
 			Projectile holder = null;
 			foreach (Projectile c in made)
 			{
 				if (c.type == item.shoot && c.owner == ownerSlot && holder == null) holder = c; // the holdout joins the chain in TryFire
+				else if (c.type == item.shoot && c.owner == ownerSlot && ModShotKinds.Of(item) == ModShotKind.Holdout) _extraHolders.Add(c); // a second holdout of the same weapon (TryFire puts it in the chain too)
 				else WeaponUse.TagSoldierProjectile(s, c, item.DamageType ?? DamageClass.Default); // anything else the hook fired is an ordinary soldier shot
 			}
-			if (threw && holder != null) holder.Kill();
+			if (threw) { if (holder != null) holder.Kill(); foreach (Projectile x in _extraHolders) if (x.active) x.Kill(); _extraHolders.Clear(); }
 			return threw ? null : holder;
 		}
 
@@ -256,6 +268,8 @@ namespace Levy.Common.Weapons
 			return s;
 		}
 
+		private static readonly bool DbgNaN = Environment.GetEnvironmentVariable("LEVY_DEADHOOKS_DEBUG") == "1";
+
 		internal static void RunAi(Action<Projectile> orig, Projectile p, HeldWeaponProjectile g)
 		{
 			bool authority = LevyUtil.IsServerOrSingle;
@@ -357,6 +371,10 @@ namespace Levy.Common.Weapons
 				p.direction = dir.X < 0f ? -1 : 1;
 				Vector2 cursor = body.NPC.Center + dir * Math.Max(LevyConstants.HeldAimMinDistPx, AimDistance(body));
 				if (g.Script != null && TargetOf(body) is NPC scriptTarget) cursor = g.Script.At(scriptTarget.Center, Main.GameUpdateCount);
+				// a held AI that turns "owner to cursor" into a direction (Calamity's Auger and Holofibre holdouts: Utils.DirectionTo(Owner.Center, cursor)) divides by the distance: a cursor that is not a number, or sits on the owner, gives a NaN
+				// direction and a thrown ArithmeticException every tick. The cursor is always a valid point away from the soldier, on the way to its target (or the way it faces).
+				if (!float.IsFinite(cursor.X) || !float.IsFinite(cursor.Y) || (cursor - body.NPC.Center).LengthSquared() < 16f * 16f)
+					cursor = body.NPC.Center + (float.IsFinite(dir.X) && float.IsFinite(dir.Y) && dir.LengthSquared() > 0.0001f ? Vector2.Normalize(dir) : Vector2.UnitX * (body.NPC.direction == 0 ? 1 : body.NPC.direction)) * Math.Max(LevyConstants.HeldAimMinDistPx, 64f);
 				Main.mouseX = (int)(cursor.X - Main.screenPosition.X);
 				Main.mouseY = (int)(cursor.Y - Main.screenPosition.Y);
 				if (p.owner != Slot && !ReferenceEquals(Main.player[p.owner], d)) { SoldierMinions.AliasDummy(p.owner, d); aliasWho = d.whoAmI; d.whoAmI = p.owner; aliased = true; } // a UUID-bound chain: the dummy also stands in the chain's own slot
@@ -372,7 +390,7 @@ namespace Levy.Common.Weapons
 				if (g.Biome != 0) BiomeBlades.PreAi(body, p, g, button);
 				before = _before ??= new bool[Main.maxProjectiles];
 				for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
-				orig(p);
+				if (!DbgNaN) orig(p); else { try { orig(p); } catch (ArithmeticException ex) { ModContent.GetInstance<Levy>()?.Logger.Info($"[DeadHooks] NaN in {p.ModProjectile?.Name} ai: cursor={cursor} dir={dir} dummyCenter={d.Center} mounted={d.MountedCenter} soldier={body.NPC.Center} calAim={(calPlayer != null ? AltPolicies.GetCalAimPublic(calPlayer).Item1.ToString() : "-")} ex={ex.StackTrace?.Split((char)10)[1]?.Trim()}"); } }
 				if (release && p.active && !g.CycleRelease) { g.HeldTicks = 0; p.Kill(); } // the release: the charged shot is made while the soldier is still the owner (dummy swapped in, cursor on the target)
 			}
 			finally
@@ -670,6 +688,7 @@ namespace Levy.Common.Weapons
 		public override void Load()
 		{
 			On_Projectile.AI += AiDetour;
+			On_Projectile.VanillaAI += VanillaAiDetour;
 			// A MODDED projectile's AI (PreAI / AI / PostAI) is run by ProjectileLoader.ProjectileAI, not by Projectile.AI(): a modded holder (ModShotKinds.Holdout) is wrapped there.
 			try
 			{
@@ -685,6 +704,7 @@ namespace Levy.Common.Weapons
 		public override void Unload()
 		{
 			On_Projectile.AI -= AiDetour;
+			On_Projectile.VanillaAI -= VanillaAiDetour;
 			On_Projectile.Damage -= DamageDetour;
 			On_Projectile.Update -= ChainUpdateDetour;
 			HeldWeapons.Reset();
@@ -723,20 +743,21 @@ namespace Levy.Common.Weapons
 		}
 
 		private static void LoaderAiDetour(Action<Projectile> orig, Projectile self)
-		{
+		{ _hl_LoaderAiDetour_4++;
+			global::Levy.Common.Util.HookProbe.HeldLoader++;
 			// a lash (vanilla or modded) is wrapped here too: Projectile.Update runs every projectile's AI through ProjectileLoader.ProjectileAI, and the vanilla whip AI reads its owner's use animation and arm
 			if (!HeldWeapons.IsChainOwner(self.owner) || _wrapDepth != 0 || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain || !(RealWhips.IsWhipProjectile(self) || (self.ModProjectile != null && g.ModHolder))) { orig(self); return; }
 			_wrapDepth++;
 			try { HeldWeapons.RunAi(orig, self, g); }
 			finally { _wrapDepth--; }
-		}
+		} private static int _hl_LoaderAiDetour_4;
 
 		/// <summary>
 		/// Projectile.Update ends with <c>if (owner &lt; 255 &amp;&amp; !Main.player[owner].active) Kill();</c>: a chain that lives in the throwaway slot below 255 (a UUID-bound holdout, see <see cref="HeldWeapons.OwnerSlotFor"/>) would be
 		/// killed by that line every tick, because the slot's Player is only the soldier's dummy while the AI runs. Its whole Update runs with the dummy standing in the slot (what the dragons' Update wrapper does).
 		/// </summary>
 		private static void ChainUpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
-		{
+		{ _hl_ChainUpdateDetour_2++;
 			if (self.owner == SoldierNPC.DummySlot || !self.active || !HeldWeapons.IsChainOwner(self.owner) || !LevyUtil.IsServerOrSingle || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain
 				|| !self.TryGetGlobalProjectile(out SoldierProjectileTag tag) || tag.SoldierIndex < 0 || tag.SoldierIndex >= Main.maxNPCs || Main.npc[tag.SoldierIndex].ModNPC is not SoldierNPC s || s.Dummy == null || !s.IsAlive)
 			{ orig(self, i); return; }
@@ -747,15 +768,29 @@ namespace Levy.Common.Weapons
 				orig(self, i);
 			}
 			finally { if (aliased) SoldierMinions.EnsureAliasRestored(); }
-		}
+		} private static int _hl_ChainUpdateDetour_2;
 
-		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)
-		{
+		/// <summary>
+		/// Projectile.AI is a one-line stub (<c>ProjectileLoader.ProjectileAI(this)</c>) that the JIT inlines into Projectile.Update, so a detour on it is never reached once Update has been tiered up (observed: 0 calls over thousands of projectile updates
+		/// while a detour on <c>Projectile.VanillaAI</c>, the body the loader calls for a vanilla projectile, saw every one). The same wrapper therefore also sits on VanillaAI; whichever fires first opens the swap and the other passes straight through (_wrapDepth).
+		/// </summary>
+		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self)
+		{ _hl_VanillaAiDetour_5++;
+			global::Levy.Common.Util.HookProbe.HeldVanilla++;
 			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
 			_wrapDepth++;
 			try { HeldWeapons.RunAi(pp => orig(pp), self, g); }
 			finally { _wrapDepth--; }
-		}
+		} private static int _hl_VanillaAiDetour_5;
+
+		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self)
+		{ _hl_AiDetour_1++;
+			global::Levy.Common.Util.HookProbe.HeldAi++;
+			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
+			_wrapDepth++;
+			try { HeldWeapons.RunAi(pp => orig(pp), self, g); }
+			finally { _wrapDepth--; }
+		} private static int _hl_AiDetour_1;
 
 		/// <summary>
 		/// The ONE Projectile.Damage detour of the mod. A chain projectile (held-weapon beam) is handed to the real player for the call; a driven minion in the middle of its own Update
@@ -763,7 +798,7 @@ namespace Levy.Common.Weapons
 		/// arithmetic keeps running against the dummy, unchanged (see SoldierMinions.RunDamage / RunStrike). Everything else is vanilla.
 		/// </summary>
 		private static void DamageDetour(On_Projectile.orig_Damage orig, Projectile self)
-		{
+		{ _hl_DamageDetour_3++;
 			if (ShouldWrap(self, out HeldWeaponProjectile g))
 			{
 				_wrapDepth++;
@@ -777,7 +812,7 @@ namespace Levy.Common.Weapons
 				finally { _wrapDepth--; }
 			}
 			else orig(self);
-		}
+		} private static int _hl_DamageDetour_3;
 
 		/// <summary>True for a driven minion inside its own Update on the server / single player, and not nested in another wrapper. The frame test is a single reference compare and is false for almost every call.</summary>
 		private static bool WantsMinionWindow(Projectile p) => SoldierMinions.IsFrameProjectile(p) && _wrapDepth == 0 && LevyUtil.IsServerOrSingle;

@@ -220,8 +220,10 @@ namespace Levy.Content.NPCs
 			if (!HitDebuffsOn || LevyUtil.IsClient || !IsAlive) return;
 			bool any = false;
 			for (int i = 0; i < NPC.maxBuffs; i++) { int b = NPC.buffType[i]; if (b > 0 && NPC.buffTime[i] > 0 && Main.debuff[b] && !(HarmlessSkipOn && IsHarmlessDebuff(b))) { any = true; break; } }
-			if (!any) { _dotCount = 0; DotDefenseDown = 0; return; }
+			// The scratch player is made on the first call whatever the buffs, as before the harmless skip existed: making a Player has a side effect that changes how pillar fights go (lagsweep 11-17, 2 seeds x 6
+			// variants: without it 24 to 40 of 40 levies died in 30 s, with it 1 to 8, whether or not the step then runs). Until that side effect is understood the skip keeps it.
 			Player s = _dotScratch ??= new Player { whoAmI = Main.maxPlayers, active = true, width = 20, height = 42 };
+			if (!any) { _dotCount = 0; DotDefenseDown = 0; return; }
 			_scratchReason = null;
 			bool gate = SaveGate.Enter(); // tML's character save runs on its own thread: it may not start while Main.myPlayer is lent (SaveGate)
 			Player prev = Main.player[Main.maxPlayers]; int prevMy = Main.myPlayer;

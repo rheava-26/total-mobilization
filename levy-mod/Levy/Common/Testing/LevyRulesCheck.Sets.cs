@@ -123,7 +123,7 @@ namespace Levy.Common.Testing
 				foreach (ModPlayer mp in m.GetContent<ModPlayer>())
 				{
 					var fs = mp.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-						.Where(f => !f.IsStatic && !f.IsInitOnly && (f.FieldType == typeof(bool) || f.FieldType == typeof(int) || f.FieldType == typeof(float) || f.FieldType == typeof(double) || f.FieldType == typeof(byte) || f.FieldType == typeof(short) || f.FieldType == typeof(long) || f.FieldType == typeof(StatModifier))).ToArray();
+						.Where(f => !f.IsStatic && !f.IsInitOnly && !(m.Name == "CalamityMod" && global::Levy.Common.Compat.Calamity.CalamityLevyPatches.LightingOnly(f.Name)) && (f.FieldType == typeof(bool) || f.FieldType == typeof(int) || f.FieldType == typeof(float) || f.FieldType == typeof(double) || f.FieldType == typeof(byte) || f.FieldType == typeof(short) || f.FieldType == typeof(long) || f.FieldType == typeof(StatModifier))).ToArray();
 					if (fs.Length > 0) _modPlayers.Add((m, mp, fs));
 				}
 			}

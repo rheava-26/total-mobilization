@@ -108,7 +108,7 @@ namespace Levy.Common.Testing
 					CalamityLevyPatches.Bypass = false; s.TestGearFrame();
 					var b = new StateImage(); b.Capture(roots, names);
 					var diffs = new List<string>(); a.DiffInto(b, diffs, 64);
-					diffs.RemoveAll(x => lighting.Contains(x));
+					diffs.RemoveAll(x => lighting.Contains(x) || (Main.netMode == NetmodeID.Server && x.StartsWith("CalamityPlayer.drawingParameters", StringComparison.Ordinal))); // the shield visuals are skipped where nothing draws
 					if (diffs.Count == 0) same++; else { differ++; foreach (var x in diffs) leaves[x] = leaves.TryGetValue(x, out int c) ? c + 1 : 1; }
 				}
 				Step2(60); // the army as it stands, the patches in force, every projectile question checked against the original

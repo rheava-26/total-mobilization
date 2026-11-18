@@ -38,14 +38,17 @@ namespace Levy.Common.Compat.Calamity
 
 		private static int _bladeType = -1;
 
+		/// <summary>CalamityPlayer fields the skipped calls would have set for a dummy, read only by the lighting, the darkness shader and the shield drawing: a parity check leaves them out while the patches are in force.</summary>
+		internal static bool LightingOnly(string field) => On && !Bypass && Installed.Count > 0 && (field == "abyssDarkness" || field == "abyssPlayerGlowMultiplier" || field == "abyssFlashlightWidthMultiplier" || field == "darknessIntensity");
+
 		public override void Load()
 		{
 			if (!On || !ModLoader.TryGetMod("CalamityMod", out Mod cal) || cal.Code == null) return;
 			Type cp = cal.Code.GetType("CalamityMod.CalPlayer.CalamityPlayer");
 			if (cp == null) { Mod.Logger.Warn("Levy: Calamity patches: CalamityPlayer not found, none installed"); return; }
 			const BindingFlags all = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-			TryPatch(cp.GetMethod("AndroombaRightClick", all, null, Type.EmptyTypes, null), "AndroombaRightClick", il => SkipForDummy(il, nameof(SkipAndroomba)));
-			TryPatch(cp.GetMethod("UpdateDrawingParameters", all, null, Type.EmptyTypes, null), "UpdateDrawingParameters", il => SkipForDummy(il, nameof(SkipDrawing)));
+			TryPatch(cp.GetMethod("AndroombaRightClick", all, null, Type.EmptyTypes, null), "AndroombaRightClick", il => SkipForDummy(il, nameof(SkipAndroomba), "AndroombaRightClick"));
+			TryPatch(cp.GetMethod("UpdateDrawingParameters", all, null, Type.EmptyTypes, null), "UpdateDrawingParameters", il => SkipForDummy(il, nameof(SkipDrawing), "UpdateDrawingParameters"));
 			TryPatch(cp.GetMethod("AbyssEffects", all, null, Type.EmptyTypes, null), "AbyssEffects", PatchAbyss);
 			TryPatch(cp.GetMethod("ResetEffects", all, null, Type.EmptyTypes, null), "ResetEffects", PatchResetAny);
 		}
@@ -74,7 +77,7 @@ namespace Levy.Common.Compat.Calamity
 		public static bool SkipDrawing(ModPlayer mp) { if (Main.netMode != NetmodeID.Server || !IsDummy(mp)) return false; DrawSkips++; return true; }
 
 		/// <summary>At the method's start: <c>if (Test(this)) return;</c></summary>
-		private void SkipForDummy(ILContext il, string test)
+		private void SkipForDummy(ILContext il, string test, string name)
 		{
 			var c = new ILCursor(il);
 			var go = c.DefineLabel();
@@ -83,7 +86,7 @@ namespace Levy.Common.Compat.Calamity
 			c.Emit(OpCodes.Brfalse_S, go);
 			c.Emit(OpCodes.Ret);
 			c.MarkLabel(go);
-			lock (Installed) Installed.Add(il.Method.Name);
+			lock (Installed) if (!Installed.Contains(name)) Installed.Add(name);
 		}
 
 		// ------------------------------------------------------------------------------------------------------------
@@ -99,7 +102,7 @@ namespace Levy.Common.Compat.Calamity
 			var orig = _lightOrig = ResolveLight(target);
 			if (orig == null) { Mod.Logger.Warn("Levy: Calamity patch AbyssEffects: SetAbyssLightLevels not resolved, skipped"); return; }
 			c.Next.Operand = il.Import(typeof(CalamityLevyPatches).GetMethod(nameof(LightLevels), BindingFlags.Public | BindingFlags.Static));
-			lock (Installed) Installed.Add("AbyssEffects");
+			lock (Installed) if (!Installed.Contains("AbyssEffects")) Installed.Add("AbyssEffects");
 		}
 
 		private static MethodInfo _lightOrig;
@@ -131,7 +134,7 @@ namespace Levy.Common.Compat.Calamity
 				found++; c.Index++;
 			}
 			if (found != 1) Mod.Logger.Warn("Levy: Calamity patch ResetEffects: " + found + " projectile Any calls (expected 1)" + (found == 0 ? ", skipped" : ""));
-			if (found > 0) lock (Installed) Installed.Add("ResetEffects.Any");
+			if (found > 0) lock (Installed) if (!Installed.Contains("ResetEffects.Any")) Installed.Add("ResetEffects.Any");
 		}
 
 		private static readonly List<int> _blades = new();

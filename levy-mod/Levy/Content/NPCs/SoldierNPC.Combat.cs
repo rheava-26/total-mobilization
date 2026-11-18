@@ -369,6 +369,7 @@ namespace Levy.Content.NPCs
 		{
 			Item item = WeaponUse.HeldItem(this);
 			if (item == null || item.IsAir) return;
+			if (item.noMelee && WeaponClassifier.IsAnchoredSwing(item)) return; // its blow is the slash its Shoot hook spawned; the item itself has no melee hitbox for a player either
 			Rectangle box = SwingHitbox(item);
 			if (box.Width <= 0 || box.Height <= 0) return;
 			if (Hostile) { HostileSwing(item, box); return; } // HOSTILE SEAM: the swing hurts the player's side

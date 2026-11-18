@@ -9,6 +9,7 @@ using Levy.Common.Recording;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Common.Targeting;
+using Levy.Common.Weapons;
 using Levy.Content.NPCs;
 
 namespace Levy.Common.Testing
@@ -67,6 +68,7 @@ namespace Levy.Common.Testing
 			Arena(FloorY, Half);
 			string only = Environment.GetEnvironmentVariable("LEVY_SR_PART") ?? "all";
 			if (Part(only, "gear")) { try { SrGear(); } finally { Cleanup(); } }
+			if (Part(only, "weapons")) { try { SrWeapons(); } finally { Cleanup(); } }
 			if (Part(only, "boss")) { try { SrBosses(); } finally { Cleanup(); } }
 		}
 
@@ -78,12 +80,13 @@ namespace Levy.Common.Testing
 
 		private static void SrGear()
 		{
-			var acc = new List<int>(); var heads = new List<int>(); var bodies = new List<int>(); var legs = new List<int>();
+			int notWorn = 0; var acc = new List<int>(); var heads = new List<int>(); var bodies = new List<int>(); var legs = new List<int>();
 			for (int t = ItemID.Count; t < ItemLoader.ItemCount; t++)
 			{
 				if (!ContentSamples.ItemsByType.TryGetValue(t, out Item s) || s == null || s.IsAir || s.ModItem == null || !SrMods.Contains(s.ModItem.Mod.Name)) continue;
-				if (s.accessory) acc.Add(t);
-				else if (s.headSlot > 0) heads.Add(t); else if (s.bodySlot > 0) bodies.Add(t); else if (s.legSlot > 0) legs.Add(t);
+				var probe = new SoldierGear(); Item it0 = new Item(); it0.SetDefaults(t);
+				if (s.accessory) { if (probe.CanHold(SoldierGear.SlotAcc0, it0) || global::Levy.Common.Movement.MobilitySlots.Is(it0) && WeaponClassifier.IsUsefulAccessory(it0)) acc.Add(t); else notWorn++; }
+				else if (s.headSlot > 0 && !s.vanity) heads.Add(t); else if (s.bodySlot > 0 && !s.vanity) bodies.Add(t); else if (s.legSlot > 0 && !s.vanity) legs.Add(t);
 			}
 			// armour sets: the head's own IsArmorSet decides (no names guessed)
 			var sets = new List<(int h, int b, int l)>();
@@ -91,6 +94,12 @@ namespace Levy.Common.Testing
 			{
 				Item hi = new Item(); hi.SetDefaults(h);
 				foreach (int b in bodies) { Item bi = new Item(); bi.SetDefaults(b); foreach (int l in legs) { Item li = new Item(); li.SetDefaults(l); bool set = false; try { set = (hi.ModItem?.IsArmorSet(hi, bi, li) ?? false) || (bi.ModItem?.IsArmorSet(hi, bi, li) ?? false) || (li.ModItem?.IsArmorSet(hi, bi, li) ?? false); } catch (Exception) { } if (set) sets.Add((h, b, l)); } }
+			}
+			Note($"gear: {notWorn} accessories a levy never wears (vanity, information, listed harmful) left out");
+			if (ModLoader.TryGetMod("StarlightRiver", out Mod slr) && slr.TryFind("BloodlessAmulet", out ModItem amulet))
+			{
+				Item am = new Item(); am.SetDefaults(amulet.Type);
+				Check("a levy never wears an accessory that sets its wearer's life to 0 (StarlightRiver BloodlessAmulet: refused by the accessory slot)", !new SoldierGear().CanHold(SoldierGear.SlotAcc0, am) && !WeaponClassifier.IsUsefulAccessory(am));
 			}
 			Note($"gear: {acc.Count} accessories, {heads.Count}/{bodies.Count}/{legs.Count} head/body/leg pieces, {sets.Count} armour sets");
 
@@ -133,6 +142,56 @@ namespace Levy.Common.Testing
 			Check($"no StarsAbove / StarlightRiver accessory or armour set takes a levy away ({gone})", gone == 0);
 			Check($"no StarsAbove / StarlightRiver accessory or armour set gives a levy nonsense stats ({nonsense})", nonsense == 0);
 			Check($"no StarsAbove / StarlightRiver accessory or armour set worn by a levy changes the commander ({cmdTouched})", cmdTouched == 0);
+		}
+
+		// ---------------------------------------------------------------------------------------------------- weapons fixed for levies
+		/// <summary>One levy carrying <paramref name="itemType"/>, posted on Hold, against a pinned enemy <paramref name="tiles"/> to his right: damage dealt, and how far from him his towers stand.</summary>
+		private static (long dmg, int hits, float farthestSentryTiles, int sentries) SrFight(int itemType, float tiles, int ticks)
+		{
+			Cleanup(); Arena(FloorY, Half); PlaceCommander(-60);
+			var s = Levy(new Vector2(Cx * 16f, _floorY * 16f));
+			if (s == null) return (-1, 0, -1f, 0);
+			Item w = new Item(); w.SetDefaults(itemType); s.Record.Gear.Weapon = w; s.Record.Gear.SetLocked(SoldierGear.SlotWeapon, true); s.Record.LoadoutLocked = true; s.StatsDirty = true;
+			Vector2 at = new Vector2((Cx + tiles) * 16f, _floorY * 16f);
+			NPC t = SpawnNpc(NPCID.GreenSlime, at);
+			if (t == null) return (-1, 0, -1f, 0);
+			t.lifeMax = t.life = 1_000_000; t.defense = 0; t.damage = 0; t.knockBackResist = 0f; t.aiStyle = -1; t.noGravity = true; t.width = 64; t.height = 96; t.Bottom = at;
+			int ti = t.whoAmI; StarsRiverTally.Watch.Clear(); StarsRiverTally.Watch.Add(ti); StarsRiverTally.Hits = 0; StarsRiverTally.Damage = 0;
+			float far = -1f; int sentries = 0;
+			_perTick = () =>
+			{
+				NPC n = Main.npc[ti]; if (n.active) { n.Bottom = at; n.velocity = Vector2.Zero; n.life = n.lifeMax; n.timeLeft = 999; }
+				for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && q.sentry && q.TryGetGlobalProjectile(out global::Levy.Common.Globals.SoldierProjectileTag tg) && tg.SoldierIndex == s.NPC.whoAmI) { sentries = Math.Max(sentries, 1); far = Math.Max(far, Vector2.Distance(q.Center, s.NPC.Center) / 16f); } }
+			};
+			SrStep(ticks); _perTick = null;
+			var r = (StarsRiverTally.Damage, StarsRiverTally.Hits, far, sentries);
+			StarsRiverTally.Watch.Clear();
+			return r;
+		}
+
+		private static void SrWeapons()
+		{
+			// swords whose real blow is a slash circling the wielder: fought at the slash's reach (WeaponClassifier.AnchoredSwingReach), they land
+			if (ModLoader.TryGetMod("StarsAbove", out Mod sa))
+			{
+				foreach (string n in new[] { "BloodBlade", "BurningDesire", "Umbra", "SakuraVengeance" })
+				{
+					if (!sa.TryFind(n, out ModItem mi)) { Note("StarsAbove/" + n + " not found"); continue; }
+					Item probe = new Item(); probe.SetDefaults(mi.Type);
+					var prof = WeaponClassifier.GetProfile(probe);
+					var (dmg, hits, _, _) = SrFight(mi.Type, 3f, 300);
+					Note($"weapon StarsAbove/{n}: family {prof.Family}, reach {prof.RangeTiles} tiles, anchored swing {WeaponClassifier.IsAnchoredSwing(probe)}; levy on Hold 3 tiles from a pinned enemy: {hits} hits, {dmg} damage in 300 ticks");
+					Check($"StarsAbove/{n} is fought at its slash's reach and lands in levy hands ({prof.RangeTiles} tiles, {dmg} damage)", WeaponClassifier.IsAnchoredSwing(probe) && prof.RangeTiles <= 6 && dmg > 0);
+				}
+			}
+			// a modded sentry that places itself at its owner's cursor on spawn goes down beside its levy, not at the commander's cursor
+			if (ModLoader.TryGetMod("StarlightRiver", out Mod slr) && slr.TryFind("HeartStatueSentryItem", out ModItem hs))
+			{
+				int before = SoldierNPC.ModdedSentrySpawns;
+				var (dmg, hits, far, sentries) = SrFight(hs.Type, 6f, 240);
+				Note($"weapon StarlightRiver/HeartStatueSentryItem: towers {sentries}, farthest {far:0.0} tiles from the levy, modded-sentry spawns {SoldierNPC.ModdedSentrySpawns - before}, hits {hits}, damage {dmg}");
+				Check($"a modded sentry that places itself at its owner's cursor goes down beside its levy ({far:0.0} tiles)", sentries > 0 && far >= 0f && far <= 12f);
+			}
 		}
 
 		// ---------------------------------------------------------------------------------------------------- bosses

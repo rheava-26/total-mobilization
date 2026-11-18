@@ -589,7 +589,17 @@ namespace Levy.Common.Weapons
 		public static bool IsIssuableWeapon(Item item) => item != null && !item.IsAir && GetProfile(item).Supported;
 		public static bool IsArmorPiece(Item item, int part) => item != null && !item.IsAir && (part == 0 ? item.headSlot >= 0 : part == 1 ? item.bodySlot >= 0 : item.legSlot >= 0);
 		/// <summary>Accessories that do something on a soldier (plain stats + movement). Info/fishing/building accessories are refused.</summary>
-		public static bool IsUsefulAccessory(Item item) => item != null && !item.IsAir && item.accessory && !item.vanity && !_uselessAccessories.Contains(item.type);
+		public static bool IsUsefulAccessory(Item item) => item != null && !item.IsAir && item.accessory && !item.vanity && !_uselessAccessories.Contains(item.type) && !HarmfulModAccessory(item);
+
+		/// <summary>
+		/// Modded accessories that are harmful on a soldier, by mod and internal name (the modded half of the "harmful or pointless" list above). Mod -> names.
+		/// StarlightRiver BloodlessAmulet: sets its wearer's life to 0 every tick and keeps a player alive through that mod's own barrier shield, which a soldier does not have: the levy wearing it died at once (world gear check).
+		/// </summary>
+		private static readonly Dictionary<string, HashSet<string>> HarmfulModAccessories = new()
+		{
+			["StarlightRiver"] = new() { "BloodlessAmulet" },
+		};
+		internal static bool HarmfulModAccessory(Item item) => item.ModItem != null && HarmfulModAccessories.TryGetValue(item.ModItem.Mod.Name, out var set) && set.Contains(item.ModItem.Name);
 		/// <summary>A round: ammo that is not marked notAmmo. A thrown weapon another mod also lets its launchers fire (ammo > 0 and notAmmo) is still a weapon.</summary>
 		public static bool IsAmmo(Item item) => item != null && !item.IsAir && item.ammo > 0 && !item.notAmmo;
 		public static bool IsHealingPotion(Item item) => item != null && !item.IsAir && item.healLife > 0 && item.consumable;

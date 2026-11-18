@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using Terraria;
 using Terraria.ID;
@@ -35,6 +36,7 @@ namespace Levy.Common.UI
 			}
 			Guard("chat bar queue", () => CheckQueue(Check));
 			Guard("chat bar draw rules", () => CheckBarTiming(Check));
+			Guard("chat bar wrapping", () => CheckWrap(Mod, Check));
 			Guard("close up", () => CheckCloseUp(Check));
 			Guard("inventory rules", () => CheckInventory(Check));
 			Guard("armory locks", () => CheckArmoryLocks(Check));
@@ -97,15 +99,31 @@ namespace Levy.Common.UI
 				q.Tick(201, s => dist[s]);
 				check(q.Active.Exists(e => e.Speaker == 51) && !q.Active.Exists(e => e.Speaker == 50), "the nearest waiting line takes the free slot, not the farther one");
 			}
-			// One bar per speaker: a weaker line is refused while the old one types; an equal or stronger one replaces it; a finished bar may be replaced by anything.
+			// One bar per speaker: a weaker line is refused while the old one types; a stronger one replaces it; a bar that has been read may be replaced by anything.
 			{
 				var q = new ChatBarQueue();
 				q.Enqueue(1, "a long enough first line to still be typing", LevyConstants.ChatBarPriorityNotice, 0, 3f);
 				q.Tick(1, s => 3f);
 				check(!q.Enqueue(1, "weak", 1, 2, 3f), "a weaker line is refused while the speaker's bar is still typing");
 				check(q.Enqueue(1, "strong", LevyConstants.ChatBarPriorityBig, 3, 3f) && q.Active.Count == 1 && q.Active[0].Text == "strong", "a stronger line replaces the speaker's bar");
-				int done = 3 + q.Active[0].RevealTicks + 1;
-				check(q.Enqueue(1, "after", 1, done, 3f) && q.Active.Count == 1 && q.Active[0].Text == "after", "a finished bar is replaced by any new line");
+				int read = 3 + q.Active[0].ReadTicks;
+				check(q.Enqueue(1, "after", 1, read, 3f) && q.Active.Count == 1 && q.Active[0].Text == "after", "a bar that has been read is replaced by any new line");
+			}
+			// A long line is never cut off by the same speaker's next line: the next one waits until the first has been read, then takes the bar.
+			{
+				var q = new ChatBarQueue();
+				string first = "Commander, I am telling you, and I want this on the record, that the slime from earlier was looking at me funny and nobody believes me!";
+				q.Enqueue(1, first, 1, 0, 3f);
+				q.Tick(1, s => 3f);
+				var bar = q.Active[0];
+				int typed = 1 + bar.RevealTicks + 1;
+				q.Enqueue(1, "Another thing!", 1, typed, 3f);
+				q.Tick(typed, s => 3f);
+				check(q.Active.Count == 1 && q.Active[0].Text == first, "the speaker's next line does not replace a long bar that has finished typing but not been read");
+				int readAt = 1 + bar.ReadTicks;
+				check(bar.Alpha(readAt - 1) == 1f, "the bar is fully shown for its whole reading time");
+				q.Tick(readAt, s => 3f);
+				check(q.Active.Count == 1 && q.Active[0].Text == "Another thing!", "once the first line has been read, the waiting line takes the speaker's bar");
 			}
 			// Range, empty text, vanished speaker, stale waiting line.
 			{
@@ -137,6 +155,61 @@ namespace Levy.Common.UI
 			check(mono && e.RevealedChars(100 + e.RevealTicks + 1) == e.Text.Length, "the typewriter only moves forward and ends on the full text");
 			check(e.Alpha(100) == 1f && e.Alpha(100 + e.LifeTicks - 1) > 0f && e.Alpha(100 + e.LifeTicks) == 0f, "the bar is opaque while shown, fades, then ends");
 			check(e.LifeTicks > e.RevealTicks, "the bar stays after the last character types");
+		}
+
+		// ------------------------------------------------------------------ chat bar wrapping
+		/// <summary>
+		/// The wrap the bars draw with (ChatWrap.Fit, the same call as ChatBars), measured with an estimate of the mouse font (7 px a character at scale 1, 9 for wide letters) since a server has no fonts.
+		/// Every dialogue line in the table, with a long name in each slot, keeps every character; very long lines and long words are kept too; reading time grows with length.
+		/// </summary>
+		private static void CheckWrap(Mod mod, Action<bool, string> check)
+		{
+			float sc = LevyConstants.ChatBarTextScale;
+			Func<string, float> measure = s => { float w = 0f; foreach (char c in s) w += (c == 'W' || c == 'M' || c == 'm' || c == 'w') ? 9f : 7f; return w * sc; };
+			string Fill(string t) => System.Text.RegularExpressions.Regex.Replace(t ?? "", "\\{[^}]*\\}", "Bartholomew-Featherstonehaugh");
+			string NoSpace(string t) => new string((t ?? "").Where(ch => !char.IsWhiteSpace(ch)).ToArray());
+			int lines = 0, lost = 0, tooWide = 0, maxRows = 0; string worst = null;
+			foreach (var kv in DialogueTable.Lines)
+				foreach (var l in kv.Value)
+				{
+					string text = Fill(l.Text); if (text.Length == 0) continue;
+					lines++;
+					var rows = ChatWrap.Fit(text, measure, LevyConstants.ChatBarTextWidth, LevyConstants.ChatBarWideTextWidth, LevyConstants.ChatBarPreferredRows, out float w);
+					if (NoSpace(string.Concat(rows)) != NoSpace(text)) { lost++; worst ??= text; }
+					if (w > LevyConstants.ChatBarWideTextWidth + 0.5f) tooWide++;
+					maxRows = Math.Max(maxRows, rows.Count);
+				}
+			check(lines > 500, $"the dialogue table is loaded for the wrap check ({lines} lines)");
+			check(lost == 0, $"every dialogue line keeps every character on its bar ({lost} of {lines} lost text; first: {worst})");
+			check(tooWide == 0, $"no bar is wider than {LevyConstants.ChatBarWideTextWidth} px of text ({tooWide})");
+			mod.Logger.Info($"Levy chat bar wrap: OBSERVED {lines} dialogue lines with long names, at most {maxRows} rows on a bar");
+
+			// the old wrap kept 3 rows of 230 px and dropped the rest; these keep all of it
+			string longLine = string.Join(" ", Enumerable.Repeat("Rigroth the Undying would NOT support sentry staves and neither would I,", 8));
+			var lr = ChatWrap.Fit(longLine, measure, LevyConstants.ChatBarTextWidth, LevyConstants.ChatBarWideTextWidth, LevyConstants.ChatBarPreferredRows, out float lw);
+			check(NoSpace(string.Concat(lr)) == NoSpace(longLine) && lr.Count > LevyConstants.ChatBarPreferredRows && lw <= LevyConstants.ChatBarWideTextWidth + 0.5f, $"a {longLine.Length}-character line keeps every word, on {lr.Count} rows at most {LevyConstants.ChatBarWideTextWidth} px wide");
+			var mid = ChatWrap.Fit(new string('a', 5) + " " + string.Join(" ", Enumerable.Repeat("abcdefg", 18)), measure, LevyConstants.ChatBarTextWidth, LevyConstants.ChatBarWideTextWidth, LevyConstants.ChatBarPreferredRows, out float mw);
+			check(mid.Count <= LevyConstants.ChatBarPreferredRows && mw > LevyConstants.ChatBarTextWidth, $"a line too long for 3 rows at {LevyConstants.ChatBarTextWidth} px widens the bar instead of adding a 4th row ({mid.Count} rows, {mw:0} px)");
+			var shortRows = ChatWrap.Fit("Hi!", measure, LevyConstants.ChatBarTextWidth, LevyConstants.ChatBarWideTextWidth, LevyConstants.ChatBarPreferredRows, out float sw);
+			check(shortRows.Count == 1 && shortRows[0] == "Hi!" && sw < 40f, "a short line is one row and the bar is sized to it");
+			string word = new string('Z', 90);
+			var wr = ChatWrap.Wrap("A " + word + " B", measure, LevyConstants.ChatBarTextWidth);
+			bool rowsFit = wr.All(r => measure(r) <= LevyConstants.ChatBarTextWidth + 0.5f);
+			check(NoSpace(string.Concat(wr)) == NoSpace("A " + word + " B") && rowsFit, "a word wider than a row is split across rows, nothing lost");
+			check(ChatWrap.Wrap("", measure, 100).Count == 0 && ChatWrap.Wrap("   ", measure, 100).Count == 0, "blank text wraps to no rows");
+			check(ChatWrap.Wrap("one\\ntwo", measure, 400).Count == 1 && ChatWrap.Wrap("one\ntwo", measure, 400).Count == 2, "a line break in the text starts a new row");
+
+			// reading time: proportional to length, and every bar lives at least its reading time
+			check(ChatWrap.ReadTicks(200) > ChatWrap.ReadTicks(100) && ChatWrap.ReadTicks(100) > ChatWrap.ReadTicks(20), "reading time grows with the line");
+			var e200 = new ChatBarEntry { Text = new string('x', 200), Shown = 0 };
+			var e20 = new ChatBarEntry { Text = new string('x', 20), Shown = 0 };
+			check(e200.LifeTicks >= 200 * 60 / 16 && e200.LifeTicks > e200.RevealTicks + LevyConstants.ChatBarHoldBaseTicks, $"a 200-character bar stays long enough to read at 16 characters a second ({e200.LifeTicks} ticks)");
+			check(e20.LifeTicks >= 120 && e20.LifeTicks < e200.LifeTicks, $"a 20-character bar stays at least two seconds and less than a long one ({e20.LifeTicks} ticks)");
+			// the typewriter reaches the last row of a wrapped line before the bar starts to fade
+			var rowsT = ChatWrap.Fit(longLine, measure, LevyConstants.ChatBarTextWidth, LevyConstants.ChatBarWideTextWidth, LevyConstants.ChatBarPreferredRows, out _);
+			var eL = new ChatBarEntry { Text = longLine, Shown = 0 };
+			int total = 0; foreach (var r in rowsT) total += r.Length;
+			check(total <= longLine.Length && eL.RevealedChars(eL.RevealTicks) >= total && eL.RevealTicks < eL.ReadTicks, "the typewriter shows every row of a long line before the bar fades");
 		}
 
 		// ------------------------------------------------------------------ Close up

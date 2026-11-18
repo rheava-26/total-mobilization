@@ -29,8 +29,14 @@ namespace Levy.Common.Dialogue
 		/// <summary>Ticks the typewriter needs for the whole line.</summary>
 		public int RevealTicks => (int)Math.Ceiling(Text.Length / LevyConstants.ChatBarCharsPerTick);
 
+		/// <summary>Ticks from taking a slot until the line has been read: the typewriter plus a beat, or the reading time for its length, whichever is longer.</summary>
+		public int ReadTicks => Math.Max(RevealTicks + LevyConstants.ChatBarHoldBaseTicks, global::Levy.Common.UI.ChatWrap.ReadTicks(Text.Length));
+
 		/// <summary>Ticks the bar lives once it takes a slot, fade included.</summary>
-		public int LifeTicks => RevealTicks + Math.Min(LevyConstants.ChatBarHoldMaxTicks, LevyConstants.ChatBarHoldBaseTicks + Text.Length * LevyConstants.ChatBarHoldPerCharTicks) + LevyConstants.ChatBarFadeTicks;
+		public int LifeTicks => ReadTicks + LevyConstants.ChatBarFadeTicks;
+
+		/// <summary>True once the bar has been up for its reading time.</summary>
+		public bool IsRead(int now) => Shown >= 0 && now - Shown >= ReadTicks;
 
 		/// <summary>1 while fully shown, ramping to 0 over the fade; 0 once the bar is over.</summary>
 		public float Alpha(int now)
@@ -47,7 +53,8 @@ namespace Levy.Common.Dialogue
 
 	/// <summary>
 	/// The chat-bar scheduler: decides which lines get one of the few on-screen bars. Pure logic (no Terraria), so the boot self-check can drive it.
-	/// Rules: one line per speaker; a line from a speaker already on a bar replaces it only when it is at least as important or the old bar has finished typing;
+	/// Rules: one line per speaker; a line from a speaker already on a bar replaces it at once only when it is more important or the old bar has been up for its reading time;
+	/// otherwise a weaker line is refused while the old bar types, and any other waits until the old bar has been read;
 	/// speakers beyond range are never shown; when the slots are full, a waiting line bumps the weakest bar only if it is more important and that bar has been up long enough to be read;
 	/// otherwise it waits (nearest and most important first) and goes stale after ChatBarWaitExpireTicks.
 	/// </summary>
@@ -73,12 +80,16 @@ namespace Levy.Common.Dialogue
 			ChatBarEntry live = Find(Active, speaker);
 			if (live != null)
 			{
+				if (priority > live.Priority || live.IsRead(now))
+				{
+					Active.Remove(live);
+					e.Shown = now; // the speaker keeps its slot with the new line
+					Active.Add(e);
+					return true;
+				}
 				bool finishedTyping = now - live.Shown >= live.RevealTicks;
 				if (priority < live.Priority && !finishedTyping) return false;
-				Active.Remove(live);
-				e.Shown = now; // the speaker keeps its slot with the new line
-				Active.Add(e);
-				return true;
+				// otherwise the line waits below until the speaker's bar has been read
 			}
 
 			ChatBarEntry wait = Find(Waiting, speaker);
@@ -106,7 +117,10 @@ namespace Levy.Common.Dialogue
 			{
 				var e = Waiting[i];
 				float d = distTiles(e.Speaker);
-				if (d < 0f || d > RangeTiles || now - e.Queued > LevyConstants.ChatBarWaitExpireTicks) { Waiting.RemoveAt(i); Dropped++; continue; }
+				// a line waiting behind its own speaker's bar (one per speaker) is not stale: it goes up as soon as that bar has been read
+				ChatBarEntry own = Find(Active, e.Speaker);
+				bool behindOwn = own != null && !own.IsRead(now);
+				if (d < 0f || d > RangeTiles || (!behindOwn && now - Math.Max(e.Queued, own != null ? own.Shown + own.ReadTicks : e.Queued) > LevyConstants.ChatBarWaitExpireTicks)) { Waiting.RemoveAt(i); Dropped++; continue; }
 				e.DistTiles = d;
 			}
 			Promote(now);
@@ -116,7 +130,10 @@ namespace Levy.Common.Dialogue
 		{
 			while (Waiting.Count > 0)
 			{
-				ChatBarEntry best = Best(Waiting);
+				ChatBarEntry best = BestReady(now);
+				if (best == null) break;
+				ChatBarEntry own = Find(Active, best.Speaker);
+				if (own != null) { Active.Remove(own); Take(best, now); continue; } // the speaker's last line has been read: the next one takes its bar
 				if (Active.Count < MaxVisible) { Take(best, now); continue; }
 				ChatBarEntry weakest = Worst(Active);
 				bool bumpable = best.Priority > weakest.Priority && now - weakest.Shown >= LevyConstants.ChatBarMinShowTicks;
@@ -145,10 +162,16 @@ namespace Levy.Common.Dialogue
 			return null;
 		}
 
-		private static ChatBarEntry Best(List<ChatBarEntry> list)
+		/// <summary>The best waiting line whose speaker has no bar still being read.</summary>
+		private ChatBarEntry BestReady(int now)
 		{
 			ChatBarEntry b = null;
-			foreach (var e in list) if (b == null || e.Score > b.Score) b = e;
+			foreach (var e in Waiting)
+			{
+				ChatBarEntry own = Find(Active, e.Speaker);
+				if (own != null && !own.IsRead(now)) continue;
+				if (b == null || e.Score > b.Score) b = e;
+			}
 			return b;
 		}
 

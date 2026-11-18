@@ -200,10 +200,35 @@ namespace Warbands.Common
 				for (int i = 0; i < sample.Length; i++) list.Add(new BandBubbles.Bubble { Npc = i, Band = 1, Text = sample[i], Name = "Name", Start = (uint)(100 + i * 5), Life = BandBubbles.LifeFor(sample[i]) });
 				BandBubbles.Layout(list, b => new Microsoft.Xna.Framework.Vector2(1000f + b.Npc * 40f, 500f), BandBubbles.EstimateMeasure);
 				int overlaps = 0; for (int i = 0; i < list.Count; i++) for (int j = i + 1; j < list.Count; j++) if (list[i].Rect.Intersects(list[j].Rect)) overlaps++;
-				bool within = true; foreach (var b in list) if (b.Lines == null || b.Lines.Length > BandBubbles.MaxLines || b.Size.X > BandBubbles.MaxWidthPx + BandBubbles.PadPx * 2 + 1) within = false;
-				Check("speech bubbles: six lines said at once, 40 px apart, do not overlap and fit four lines of 210 px", overlaps == 0 && within, $"overlaps={overlaps} within={within}");
+				bool within = true; foreach (var b in list) if (b.Lines == null || b.Lines.Length == 0 || b.Lines.Length > BandBubbles.PreferredLines || b.Size.X > BandBubbles.WideWidthPx + BandBubbles.PadPx * 2 + 1) within = false;
+				Check("speech bubbles: six lines said at once, 40 px apart, do not overlap and fit three rows", overlaps == 0 && within, $"overlaps={overlaps} within={within}");
 			}
 			catch (Exception e) { Check("speech bubbles", false, e.GetType().Name + ": " + e.Message); }
+
+			// speech bubbles keep every word: every chatter line (with long names filled in) and a very long line; the reading time grows with the line
+			try
+			{
+				Func<string, float> measure = s => { float w = 0f; foreach (char ch in s) w += (ch == 'W' || ch == 'M' || ch == 'm' || ch == 'w') ? 9f : 7f; return w * BandBubbles.TextScale; };
+				string NoSpace(string t) => new string((t ?? "").Where(ch => !char.IsWhiteSpace(ch)).ToArray());
+				int lines = 0, lost = 0, oneRowEmpty = 0, maxRows = 0; string first = null;
+				foreach (var kv in BandChatter.Lines)
+					foreach (var raw in kv.Value)
+					{
+						string text = System.Text.RegularExpressions.Regex.Replace(raw ?? "", "\\{[^}]*\\}", "Bartholomew-Featherstonehaugh");
+						if (text.Length == 0) continue;
+						lines++;
+						BandBubbles.WrapWith(measure, text, out string[] rows);
+						if (rows.Length == 0) oneRowEmpty++;
+						if (NoSpace(string.Concat(rows)) != NoSpace(text)) { lost++; first ??= text; }
+						maxRows = Math.Max(maxRows, rows.Length);
+					}
+				string longLine = string.Join(" ", Enumerable.Repeat("Pell! Pell, behind you, no, the OTHER behind you, the one with the spear!", 6));
+				BandBubbles.WrapWith(measure, longLine, out string[] lr);
+				Check("speech bubbles keep every word of every chatter line (the old bubble dropped its last row, so a one-row line drew empty)", lines > 50 && lost == 0 && oneRowEmpty == 0, $"lines={lines} lost={lost} empty={oneRowEmpty} most rows={maxRows} first lost: {first}");
+				Check("a very long bubble line keeps every word on extra rows", NoSpace(string.Concat(lr)) == NoSpace(longLine) && lr.Length > BandBubbles.PreferredLines, $"{longLine.Length} chars -> {lr.Length} rows");
+				Check("a bubble stays long enough to read: longer lines stay longer, no 6-second cap", BandBubbles.LifeFor(new string('x', 120)) > BandBubbles.LifeFor(new string('x', 60)) && BandBubbles.LifeFor(new string('x', 120)) >= 120 * 60 / 16 && BandBubbles.LifeFor("Hi") >= 150, $"60 chars {BandBubbles.LifeFor(new string('x', 60))} ticks, 120 chars {BandBubbles.LifeFor(new string('x', 120))} ticks");
+			}
+			catch (Exception e) { Check("speech bubble wrapping", false, e.GetType().Name + ": " + e.Message); }
 
 			RunBandChecks();
 

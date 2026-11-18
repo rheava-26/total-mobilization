@@ -102,17 +102,16 @@ namespace Levy.Common.UI
 				var lay = e.Layout as BarLayout;
 				if (lay == null)
 				{
-					string[] rows = Utils.WordwrapString(e.Text, font, (int)(LevyConstants.ChatBarMaxTextWidth / sc), LevyConstants.ChatBarMaxRows, out int count);
-					var list = new List<string>(count);
-					for (int k = 0; k <= count && k < rows.Length; k++) if (!string.IsNullOrEmpty(rows[k])) list.Add(rows[k].TrimEnd()); // count is the LAST row index (vanilla convention), not the row count
-					float w = 0f;
-					foreach (string r in list) w = Math.Max(w, font.MeasureString(r).X * sc);
+					// every word of the line is shown: the bar widens to fit it in a few rows, and a very long line takes more rows
+					var list = ChatWrap.Fit(e.Text, s => font.MeasureString(s).X * sc, LevyConstants.ChatBarTextWidth, LevyConstants.ChatBarWideTextWidth, LevyConstants.ChatBarPreferredRows, out float w);
 					lay = new BarLayout { Rows = list.ToArray(), W = (int)Math.Ceiling(w) + pad * 2, H = (int)Math.Ceiling(list.Count * font.LineSpacing * sc * 0.92f) + pad * 2 };
 					e.Layout = lay;
 				}
 
 				Vector2 head = new Vector2(n.Center.X, n.Top.Y) - Main.screenPosition;
 				var rect = new Rectangle((int)(head.X - lay.W * 0.5f), (int)(head.Y - LevyConstants.ChatBarHeadGap - lay.H), lay.W, lay.H);
+				var view = VisibleArea();
+				rect.X = (int)ChatWrap.ClampInto(rect.X, rect.Width, view.Left, view.Right); // a speaker at the screen edge keeps the whole bar on screen
 				for (int guard = 0; guard < 8; guard++)
 				{
 					bool hit = false;
@@ -120,10 +119,19 @@ namespace Levy.Common.UI
 						if (p.Intersects(rect)) { rect.Y = p.Y - rect.Height - LevyConstants.ChatBarStackGap; hit = true; break; }
 					if (!hit) break;
 				}
+				rect.Y = Math.Max(rect.Y, view.Top);
 				placed.Add(rect);
 
 				DrawBar(sb, px, font, sc, rect, head, lay, e.RevealedChars(now), alpha);
 			}
+		}
+
+		/// <summary>The part of the screen the Game-scale layer shows (zoom shrinks it around the centre), less a margin.</summary>
+		public static Rectangle VisibleArea()
+		{
+			float z = Math.Max(0.1f, Main.GameViewMatrix?.Zoom.X ?? 1f);
+			float hw = Main.screenWidth * 0.5f / z, hh = Main.screenHeight * 0.5f / z, m = LevyConstants.ChatBarScreenMargin;
+			return new Rectangle((int)(Main.screenWidth * 0.5f - hw + m), (int)(Main.screenHeight * 0.5f - hh + m), (int)(hw * 2 - 2 * m), (int)(hh * 2 - 2 * m));
 		}
 
 		private static void DrawBar(SpriteBatch sb, Texture2D px, DynamicSpriteFont font, float sc, Rectangle rect, Vector2 head, BarLayout lay, int revealed, float alpha)
@@ -141,7 +149,7 @@ namespace Levy.Common.UI
 			{
 				string row = lay.Rows[r];
 				int take = Math.Min(left, row.Length);
-				left -= row.Length + 1; // the space the wrap swallowed
+				left -= row.Length; // the rows hold no more characters than the text, so the last row is complete by the time the typewriter ends
 				string shown = row.Substring(0, take);
 				Vector2 pos = new Vector2(rect.X + LevyConstants.ChatBarPad, rect.Y + LevyConstants.ChatBarPad + r * lineH);
 				Utils.DrawBorderStringFourWay(sb, font, shown, pos.X, pos.Y, Ink * alpha, new Color(8, 18, 50) * alpha, Vector2.Zero, sc);

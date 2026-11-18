@@ -64,8 +64,11 @@ namespace Warbands.Common
 		/// <summary>Soldiers a summoning item calls before the army bonus (one more per ten active levies, at most 8 in all).</summary>
 		[Range(1, 8)] [DefaultValue(4)] public int SummonedBandSize;
 
-		/// <summary>The Lunatic Cultist's Archers and Devotees fight as a band: archers strafe and hover, devotees close in and cast.</summary>
+		/// <summary>Lunatic Devotees cast slow homing orbs while they chant. (The field keeps its old name so saved configs keep their value.)</summary>
 		[DefaultValue(true)] public bool CultistBand;
+
+		/// <summary>Cultist Archers at the ritual are replaced by a band that runs the Levy brain. Off: vanilla's Cultist Archers. Needs the Levy brain.</summary>
+		[DefaultValue(false)] public bool CultistArcherBand;
 
 		/// <summary>Event bands: a band that joins a Goblin Army, a Pirate Invasion, a Sandstorm or a Slime Rain while it lasts. Always hostile, part of the event, gone when it ends. Needs the Levy brain.</summary>
 		[DefaultValue(true)] public bool EventBands;

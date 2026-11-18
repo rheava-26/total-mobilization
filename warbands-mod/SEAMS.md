@@ -29,7 +29,7 @@ Still Levy's own and unchanged: pathing, hooks, wings, double jumps, platform dr
 ## Not done
 
 - Summon staffs and sentries on a hostile body (rosters carry guns, bows, staves that fire, blades).
-- The Cultist circle's flight is replaced by the levy brain for archers (no `Hover` movement mode was added to Levy).
+- With the opt-in "Cultist Archer band" switch on, the Cultist circle's flight is replaced by the levy brain for archers (no `Hover` movement mode was added to Levy). Off by default: vanilla archers.
 - Visuals are unverified headless (the draw path cannot run on a dedicated server).
 
 ## Phase 3 (Warbands 0.2.0): three more small seams, all marked HOSTILE SEAM

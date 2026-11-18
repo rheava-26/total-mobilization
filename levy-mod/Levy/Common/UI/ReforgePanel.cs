@@ -14,7 +14,8 @@ using Levy.Content.TileEntities;
 namespace Levy.Common.UI
 {
 	/// <summary>
-	/// The reforge panel beside the armory: which weapons (levies' hands, recent deposits, hand-picked in the grid, a class or category), what to roll for (today's floor or one named prefix), a spending cap,
+	/// The reforge panel beside the armory: which weapons (levies' hands, recent deposits, hand-picked in the grid, a class or category), what to roll for (a row of the four floors, always in view, or one named
+	/// prefix from its own list), a spending cap,
 	/// and a live preview ("12 weapons, about 3 gold") above the Reforge button. It edits a <see cref="ReforgePlan"/> and hands it to <see cref="ArmoryEditNet.RunReforge"/>; nothing here rolls anything itself.
 	/// </summary>
 	public class ReforgePanel : UIPanel
@@ -26,8 +27,9 @@ namespace Levy.Common.UI
 		private readonly ChoicePopup _popup = new();
 		private readonly LevyButton[] _modes = new LevyButton[4];
 		private readonly LevyButton _pickToggle, _pickClear, _run, _close;
-		private readonly DropButton _recent, _class, _cat, _goal, _cap;
-		private readonly Label _recentLabel, _classLabel, _catLabel, _goalLabel, _capLabel, _modeNote;
+		private readonly LevyButton[] _floors = new LevyButton[LevyConstants.UI.ReforgeFloorNameKey.Length];
+		private readonly DropButton _recent, _class, _cat, _modifier, _cap;
+		private readonly Label _recentLabel, _classLabel, _catLabel, _goalLabel, _modifierLabel, _capLabel, _modeNote;
 		private readonly Label _pv1, _pv2, _pv3, _pv4;
 
 		/// <summary>The plan being edited; kept while the armory screen lives.</summary>
@@ -82,9 +84,20 @@ namespace Levy.Common.UI
 			_cat.Left.Set(PanelWidth - Pad - 160, 0f); _cat.Top.Set(y, 0f); Append(_cat);
 			y += 36;
 
-			_goalLabel = Lbl("Reforge.Goal", y + 4);
-			_goal = new DropButton(160, GoalText, d => Choose(d, GoalChoices()), LevyUtil.T("Reforge.GoalHint"));
-			_goal.Left.Set(PanelWidth - Pad - 160, 0f); _goal.Top.Set(y, 0f); Append(_goal);
+			// what to roll for: the floors are a row of buttons that never leaves view; a named modifier is a separate list below it
+			_goalLabel = Lbl("Reforge.Goal", y);
+			y += 20;
+			int nf = _floors.Length; float fw = (PanelWidth - 2 * Pad - (nf - 1) * 4) / (float)nf;
+			for (int i = 0; i < nf; i++)
+			{
+				int idx = i;
+				var b = new LevyButton(FloorName(i), LevyConstants.UI.ButtonTextScale, fw, 24, () => { Plan.SetFloor(idx); Refresh(true); }, LevyUtil.T("Reforge.FloorHint_" + i));
+				b.Left.Set(Pad + i * (fw + 4), 0f); b.Top.Set(y, 0f); Append(b); _floors[i] = b;
+			}
+			y += 30;
+			_modifierLabel = Lbl("Reforge.Modifier", y + 4);
+			_modifier = new DropButton(160, ModifierText, d => Choose(d, ModifierChoices()), LevyUtil.T("Reforge.ModifierHint"));
+			_modifier.Left.Set(PanelWidth - Pad - 160, 0f); _modifier.Top.Set(y, 0f); Append(_modifier);
 			y += 30;
 			_capLabel = Lbl("Reforge.Cap", y + 4);
 			_cap = new DropButton(160, () => Plan.CapCopper <= 0 ? LevyUtil.T("Reforge.NoCap") : LevyUtil.Coins(Plan.CapCopper), d => Choose(d, CapChoices()), LevyUtil.T("Reforge.CapHint"));
@@ -179,29 +192,23 @@ namespace Levy.Common.UI
 			return l;
 		}
 
-		private string GoalText()
-		{
-			if (Plan.Goal == ReforgeGoal.Prefix) return LevyUtil.T("Reforge.GoalPrefix", ArmoryTE.PrefixName(Plan.PrefixId));
-			return LevyUtil.T("UI2.ReforgeFloor", LevyUtil.T("UI2." + LevyConstants.UI.ReforgeFloorNameKey[Math.Clamp(Plan.FloorIndex, 0, LevyConstants.UI.ReforgeFloorNameKey.Length - 1)]));
-		}
+		private static string FloorName(int i) => LevyUtil.T("UI2." + LevyConstants.UI.ReforgeFloorNameKey[i]);
 
-		/// <summary>Today's four floors, then every prefix the targeted weapons can take (with how many of them can).</summary>
-		private List<(string, Action, bool)> GoalChoices()
+		private string ModifierText() => Plan.Goal == ReforgeGoal.Prefix ? ArmoryTE.PrefixName(Plan.PrefixId) : LevyUtil.T("Reforge.ModifierNone");
+
+		/// <summary>Only the named modifiers the targeted weapons can take (with how many of them can), most widely available first. The floors live in their own row and are never in this list.</summary>
+		private List<(string, Action, bool)> ModifierChoices()
 		{
 			var l = new List<(string, Action, bool)>();
-			for (int i = 0; i < LevyConstants.UI.ReforgeFloorNameKey.Length; i++)
-			{
-				int idx = i;
-				l.Add((LevyUtil.T("UI2.ReforgeFloor", LevyUtil.T("UI2." + LevyConstants.UI.ReforgeFloorNameKey[i])), () => { Plan.Goal = ReforgeGoal.Floor; Plan.FloorIndex = idx; Refresh(true); }, Plan.Goal == ReforgeGoal.Floor && Plan.FloorIndex == i));
-			}
 			if (Te != null)
 			{
 				foreach (var (pid, n) in Te.ValidPrefixesFor(Plan))
 				{
 					int id = pid;
-					l.Add((LevyUtil.T("Reforge.PrefixOption", ArmoryTE.PrefixName(id), n), () => { Plan.Goal = ReforgeGoal.Prefix; Plan.PrefixId = id; Refresh(true); }, Plan.Goal == ReforgeGoal.Prefix && Plan.PrefixId == id));
+					l.Add((LevyUtil.T("Reforge.PrefixOption", ArmoryTE.PrefixName(id), n), () => { Plan.SetPrefix(id); Refresh(true); }, Plan.Goal == ReforgeGoal.Prefix && Plan.PrefixId == id));
 				}
 			}
+			if (l.Count == 0) l.Add((LevyUtil.T("Reforge.ModifierNoneAvailable"), null, false));
 			return l;
 		}
 
@@ -231,6 +238,8 @@ namespace Levy.Common.UI
 			bool narrow = !picked;
 			_class.Enabled = _cat.Enabled = narrow;
 			_classLabel.TextColor = _catLabel.TextColor = narrow ? Color.White : new Color(120, 126, 150);
+			for (int i = 0; i < _floors.Length; i++) _floors[i].Lit = plan.Goal == ReforgeGoal.Floor && plan.FloorIndex == i;
+			_modifier.Lit = plan.Goal == ReforgeGoal.Prefix;
 			if (force) _previewTick = 0;
 		}
 

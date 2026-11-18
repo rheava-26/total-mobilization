@@ -501,20 +501,43 @@ namespace Warbands.Common
 				},
 			});
 
-			// 11: the Lunatic Cultist's circle
-			int castsBefore = 0; int convBefore = 0; int orbs = 0;
+			// 11: the Lunatic Cultist's circle, shipped defaults: devotees cast, the archer stays a vanilla Cultist Archer
+			int castsBefore = 0; int convBefore = 0; int orbs = 0; int archer = -1; int vanillaTicks = 0;
 			_trials.Add(new Trial
 			{
-				Name = "cultists: Devotees keep chanting and cast homing orbs; Cultist Archers become a levy-AI band", Max = 900,
+				Name = "cultists (defaults): Devotees keep chanting and cast homing orbs; the Cultist Archer stays vanilla", Max = 900,
 				Setup = () =>
 				{
-					ArmPlayer(Gold, 400, 0, "DemonBow", "FlamingArrow"); _accuracy = 0f; castsBefore = CultistBandGlobal.Casts; convBefore = CultistBandGlobal.Converted; orbs = 0;
+					ArmPlayer(Gold, 400, 0, "DemonBow", "FlamingArrow"); _accuracy = 0f; castsBefore = CultistBandGlobal.Casts; convBefore = CultistBandGlobal.Converted; orbs = 0; vanillaTicks = 0;
 					var src = new Terraria.DataStructures.EntitySource_WorldEvent();
 					int a = NPC.NewNPC(src, (int)PlayerPos.X + 25 * 16, (int)PlayerPos.Y, NPCID.CultistDevote); if (a >= 0 && a < Main.maxNPCs) { Main.npc[a].target = 0; }
+					archer = NPC.NewNPC(src, (int)PlayerPos.X - 25 * 16, (int)PlayerPos.Y, NPCID.CultistArcherBlue); if (archer >= 0 && archer < Main.maxNPCs) { Main.npc[archer].target = 0; }
+				},
+				Tick = t =>
+				{
+					for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active && Main.projectile[i].type == ModContent.ProjectileType<Content.Projectiles.DevoteOrb>()) orbs++;
+					if (archer >= 0 && archer < Main.maxNPCs && Main.npc[archer].active && Main.npc[archer].type == NPCID.CultistArcherBlue) vanillaTicks++;
+					return t >= 240 && CultistBandGlobal.Casts > castsBefore;
+				},
+				Result = () => (CultistBandGlobal.Casts > castsBefore && CultistBandGlobal.Converted == convBefore && Levies().Count == 0 && vanillaTicks >= 60,
+					$"devotee casts {CultistBandGlobal.Casts - castsBefore}, archers converted {CultistBandGlobal.Converted - convBefore}, levy-AI cultists {Levies().Count}, ticks the archer was vanilla {vanillaTicks}, orb frames {orbs}"),
+			});
+
+			// 11b: the archer band switched on: the archer becomes a levy-AI band member
+			bool savedArchers = false;
+			_trials.Add(new Trial
+			{
+				Name = "cultists (archer band on): a Cultist Archer becomes a levy-AI band member", Max = 600,
+				Setup = () =>
+				{
+					var cfg = WarbandsConfig.Get; savedArchers = cfg.CultistArcherBand; cfg.CultistArcherBand = true;
+					ArmPlayer(Gold, 400, 0, "DemonBow", "FlamingArrow"); _accuracy = 0f; convBefore = CultistBandGlobal.Converted;
+					var src = new Terraria.DataStructures.EntitySource_WorldEvent();
 					int b = NPC.NewNPC(src, (int)PlayerPos.X - 25 * 16, (int)PlayerPos.Y, NPCID.CultistArcherBlue); if (b >= 0 && b < Main.maxNPCs) { Main.npc[b].target = 0; }
 				},
-				Tick = t => { for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active && Main.projectile[i].type == ModContent.ProjectileType<Content.Projectiles.DevoteOrb>()) orbs++; return CultistBandGlobal.Casts > castsBefore && CultistBandGlobal.Converted > convBefore; },
-				Result = () => (CultistBandGlobal.Casts > castsBefore && CultistBandGlobal.Converted > convBefore && Levies().Count > 0, $"devotee casts {CultistBandGlobal.Casts - castsBefore}, archers converted {CultistBandGlobal.Converted - convBefore}, levy-AI cultists {Levies().Count}, orb frames {orbs}"),
+				Tick = t => CultistBandGlobal.Converted > convBefore,
+				Result = () => (CultistBandGlobal.Converted > convBefore && Levies().Count > 0, $"archers converted {CultistBandGlobal.Converted - convBefore}, levy-AI cultists {Levies().Count}"),
+				Cleanup = () => { var cfg = WarbandsConfig.Get; if (cfg != null) cfg.CultistArcherBand = savedArchers; },
 			});
 
 			// 12: the recipes

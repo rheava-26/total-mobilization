@@ -27,10 +27,11 @@ namespace Warbands.Common
 		}
 
 		public static readonly List<Bubble> Active = new();
-		public const int MaxWidthPx = 210, MaxLines = 4, PadPx = 5, GapPx = 3, NameLinePx = 13;
+		/// <summary>Text row width a bubble starts at, the widest it grows to so a line fits in <see cref="PreferredLines"/> rows (a longer line takes more rows; no text is ever dropped), padding, gaps.</summary>
+		public const int MaxWidthPx = 210, WideWidthPx = 360, PreferredLines = 3, PadPx = 5, GapPx = 3, NameLinePx = 13, ScreenMarginPx = 6;
 		public const float TextScale = 0.9f;
-		/// <summary>Ticks a line stays: time to read it (about 20 characters a second plus a beat), at least 2.5 s, at most 6 s.</summary>
-		public static int LifeFor(string text) => Math.Max(150, Math.Min(360, 105 + 4 * (text?.Length ?? 0)));
+		/// <summary>Ticks a line stays: time to read it (Levy's reading time, 15 characters a second plus a beat), at least 2.5 s.</summary>
+		public static int LifeFor(string text) => Math.Max(150, Levy.Common.UI.ChatWrap.ReadTicks(text?.Length ?? 0));
 
 		public static void Add(int npc, int band, string name, string text, Color tint, uint now)
 		{
@@ -44,20 +45,16 @@ namespace Warbands.Common
 		/// <summary>Measures a line wrapped to <see cref="MaxWidthPx"/>: its lines and its size in pixels, name line included.</summary>
 		public delegate Vector2 Measure(string text, out string[] lines);
 
-		/// <summary>Estimate for a machine with no fonts (the headless lab): 6.3 px a character at scale 1, wrapped on spaces.</summary>
-		public static Vector2 EstimateMeasure(string text, out string[] lines)
+		/// <summary>Wraps a line with the given measure (pixels at <see cref="TextScale"/>): every word kept, widening up to <see cref="WideWidthPx"/> before adding rows.</summary>
+		public static Vector2 WrapWith(Func<string, float> measure, string text, out string[] lines)
 		{
-			float cw = 6.3f * TextScale; int perLine = Math.Max(8, (int)(MaxWidthPx / cw));
-			var l = new List<string>(); string cur = "";
-			foreach (var w in text.Split(' '))
-			{
-				if (cur.Length > 0 && cur.Length + 1 + w.Length > perLine) { l.Add(cur); cur = w; } else cur = cur.Length == 0 ? w : cur + " " + w;
-				if (l.Count >= MaxLines) break;
-			}
-			if (cur.Length > 0 && l.Count < MaxLines) l.Add(cur);
-			lines = l.ToArray(); float wmax = 0f; foreach (var s in lines) wmax = Math.Max(wmax, s.Length * cw);
-			return new Vector2(wmax, lines.Length * 17f * TextScale);
+			var rows = Levy.Common.UI.ChatWrap.Fit(text ?? "", measure, MaxWidthPx, WideWidthPx, PreferredLines, out float w);
+			lines = rows.ToArray();
+			return new Vector2(w, lines.Length * 17f * TextScale);
 		}
+
+		/// <summary>Estimate for a machine with no fonts (the headless lab): 6.3 px a character at scale 1. Same wrapping as the screen.</summary>
+		public static Vector2 EstimateMeasure(string text, out string[] lines) => WrapWith(s => s.Length * 6.3f * TextScale, text, out lines);
 
 		/// <summary>Places every bubble: centred over its anchor (the top of its speaker's head), newest nearest the speaker, each older one moved up until it clears every bubble already placed. Fills <see cref="Bubble.Rect"/>. Returns the number of bubbles that had to move.</summary>
 		public static int Layout(List<Bubble> bubbles, Func<Bubble, Vector2?> anchorOf, Measure measure)
@@ -99,10 +96,7 @@ namespace Warbands.Common
 		private static Vector2 FontMeasure(string text, out string[] lines)
 		{
 			var font = FontAssets.MouseText.Value;
-			string[] wrapped = Utils.WordwrapString(text, font, (int)(MaxWidthPx / TextScale), MaxLines, out int count);
-			var l = new List<string>(); for (int i = 0; i < count && i < wrapped.Length; i++) if (wrapped[i] != null) l.Add(wrapped[i]);
-			lines = l.ToArray(); float wmax = 0f; foreach (var s in lines) wmax = Math.Max(wmax, font.MeasureString(s).X * TextScale);
-			return new Vector2(wmax, lines.Length * 17f * TextScale);
+			return WrapWith(s => font.MeasureString(s).X * TextScale, text, out lines);
 		}
 
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)
@@ -132,6 +126,8 @@ namespace Warbands.Common
 				if (b.Rect.IsEmpty || !b.Rect.Intersects(view)) continue;
 				float age = now - b.Start, a = Math.Min(1f, Math.Min(age / 8f, (b.Life - age) / 24f)); if (a <= 0f) continue;
 				var r = b.Rect; var sr = new Rectangle(r.X - (int)Main.screenPosition.X, r.Y - (int)Main.screenPosition.Y, r.Width, r.Height);
+				var vis = Levy.Common.UI.ChatBars.VisibleArea(); // keep the whole bubble on screen when its speaker is at the edge
+				sr.X = (int)Levy.Common.UI.ChatWrap.ClampInto(sr.X, sr.Width, vis.Left, vis.Right); sr.Y = Math.Max(sr.Y, vis.Top);
 				Color edge = Color.Lerp(b.Tint, Color.White, 0.45f);
 				// plate: near-black, so the light text has the same contrast on a bright or a dark background
 				sb.Draw(px, new Rectangle(sr.X - 1, sr.Y - 1, sr.Width + 2, sr.Height + 2), edge * (0.85f * a));

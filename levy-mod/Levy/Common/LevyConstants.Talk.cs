@@ -16,15 +16,18 @@ namespace Levy.Common
 		public const float ChatBarRangeTiles = 70f;
 		/// <summary>Typewriter speed: characters revealed per tick (0.75 = 45 per second).</summary>
 		public const float ChatBarCharsPerTick = 0.75f;
-		/// <summary>After the last character shows, the bar stays this many ticks plus ChatBarHoldPerCharTicks per character (capped).</summary>
-		public const int ChatBarHoldBaseTicks = 90, ChatBarHoldPerCharTicks = 2, ChatBarHoldMaxTicks = 60 * 5;
+		/// <summary>After the last character shows, the bar stays at least this many ticks (longer when <see cref="ChatReadTicksPerChar"/> says the line needs it).</summary>
+		public const int ChatBarHoldBaseTicks = 90;
+		/// <summary>Reading time for speech over a head (Levy bars and Warbands bubbles): a base plus ticks a character (4 = 15 characters a second), at most 20 seconds. See ChatWrap.ReadTicks.</summary>
+		public const int ChatReadBaseTicks = 90, ChatReadTicksPerChar = 4, ChatReadMaxTicks = 60 * 20;
 		/// <summary>Fade-out length (ticks).</summary>
 		public const int ChatBarFadeTicks = 18;
 		/// <summary>Priorities: chatter, announcements, big moments.</summary>
 		public const int ChatBarPriorityChatter = 1, ChatBarPriorityNotice = 2, ChatBarPriorityBig = 3;
-		/// <summary>Bar layout: text scale, widest text row (px), most rows, padding, gap above the speaker's head, gap between stacked bars.</summary>
+		/// <summary>Bar layout: text scale; text row width (px) the bar starts at, the widest it grows to so a line fits in the preferred rows (a longer line takes more rows, never loses text);
+		/// padding, gap above the speaker's head, gap between stacked bars, margin kept from the screen edge.</summary>
 		public const float ChatBarTextScale = 0.82f;
-		public const int ChatBarMaxTextWidth = 230, ChatBarMaxRows = 3, ChatBarPad = 6, ChatBarHeadGap = 46, ChatBarStackGap = 3;
+		public const int ChatBarTextWidth = 230, ChatBarWideTextWidth = 420, ChatBarPreferredRows = 3, ChatBarPad = 6, ChatBarHeadGap = 46, ChatBarStackGap = 3, ChatBarScreenMargin = 6;
 
 		// ---------- talking ----------
 		/// <summary>A levy being talked to walks to within this many tiles of the player and stops.</summary>

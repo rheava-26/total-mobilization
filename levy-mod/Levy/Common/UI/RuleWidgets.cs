@@ -139,10 +139,16 @@ namespace Levy.Common.UI
 		}
 	}
 
-	/// <summary>A pop-up list of choices placed under a button. One click picks; a click anywhere else closes it. Long lists scroll with the wheel.</summary>
+	/// <summary>A pop-up list of choices placed under a button. One click picks; a click anywhere else closes it. Long lists scroll with the wheel. Options keep the order they were given in.</summary>
 	public class ChoicePopup : UIPanel
 	{
-		private readonly UIList _list = new();
+		private readonly UIList _list = KeepOrder(new UIList());
+
+		/// <summary>
+		/// Makes <paramref name="list"/> show its items in the order they were added. A plain <see cref="UIList"/> re-sorts on every Add with a comparer that calls every pair equal, and .NET's
+		/// unstable sort then shuffles any list longer than 16 entries (the reforge goal list buried its floors among the modifiers this way).
+		/// </summary>
+		public static UIList KeepOrder(UIList list) { list.ManualSortMethod = _ => { }; return list; }
 		private readonly UIScrollbar _bar = new();
 		public bool Open => Parent != null;
 

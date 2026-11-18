@@ -40,6 +40,7 @@ namespace Levy.Common.Testing
 				Guard("plan wire", () => CheckPlanWire(Check));
 				Guard("target selection", () => CheckSelection(Check));
 				Guard("prefix goal", () => CheckPrefixGoal(Check));
+				Guard("goal menu", () => CheckGoalMenu(Check, Mod));
 				Guard("spending cap", () => CheckCap(Check));
 				Guard("preview and old reforge", () => CheckPreviewAndLegacy(Check));
 				Guard("vanity round trips", () => CheckVanityRoundTrips(Check));
@@ -107,6 +108,61 @@ namespace Levy.Common.Testing
 				check(f.Selected(new ReforgePlan { Mode = ReforgeMode.Recent, RecentDays = 7, ClassKey = "magic" }).Count == 0, "Recent + magic finds nothing recent that is magic");
 				var all = f.Selected(new ReforgePlan { Mode = ReforgeMode.Group });
 				check(all.Count == 14, "Group with no filter = every reforgeable weapon (14), never the Torch or the favourite: " + all.Count);
+			}
+			finally { f.Release(); }
+		}
+
+		/// <summary>
+		/// The reforge goal is two controls: a row of floor buttons that is always in view and a list that holds only named modifiers. Choice lists keep the order they are given in, even past
+		/// 16 entries (a plain UIList shuffles those, which buried the floors among the modifiers).
+		/// </summary>
+		private static void CheckGoalMenu(Action<bool, string> check, Mod mod)
+		{
+			// a plain UIList with 40 entries added in order, as the old goal list was built (OBSERVED, logged, not a verdict)
+			var plain = new Terraria.GameContent.UI.Elements.UIList();
+			var entries = new List<Terraria.UI.UIElement>();
+			for (int i = 0; i < 40; i++) entries.Add(new Terraria.UI.UIElement());
+			foreach (var e in entries) plain.Add(e);
+			var order = plain.ToList();
+			var pos = new List<int>();
+			for (int i = 0; i < 4; i++) pos.Add(order.IndexOf(entries[i]));
+			int moved = 0; for (int i = 0; i < 40; i++) if (!ReferenceEquals(order[i], entries[i])) moved++;
+			mod.Logger.Info($"Levy reforge goal menu: OBSERVED a plain 40-entry UIList moves {moved} of 40 entries; the first four (where the floors were) land at {string.Join(",", pos)}");
+
+			var kept = global::Levy.Common.UI.ChoicePopup.KeepOrder(new Terraria.GameContent.UI.Elements.UIList());
+			var entries2 = new List<Terraria.UI.UIElement>();
+			for (int i = 0; i < 40; i++) entries2.Add(new Terraria.UI.UIElement());
+			foreach (var e in entries2) kept.Add(e);
+			var keptOrder = kept.ToList();
+			bool same = keptOrder.Count == 40;
+			for (int i = 0; same && i < 40; i++) same = ReferenceEquals(keptOrder[i], entries2[i]);
+			check(same, "a choice list keeps all 40 entries in the order they were added");
+
+			// a floor button sets that floor and drops a named modifier
+			var plan = new ReforgePlan();
+			plan.SetPrefix(PrefixID.Legendary);
+			check(plan.Goal == ReforgeGoal.Prefix && plan.PrefixId == PrefixID.Legendary, "choosing a named modifier sets the prefix goal");
+			for (int i = 0; i < LevyConstants.UI.ReforgeFloorNameKey.Length; i++)
+			{
+				plan.SetPrefix(PrefixID.Legendary);
+				plan.SetFloor(i);
+				check(plan.Goal == ReforgeGoal.Floor && plan.FloorIndex == i, $"floor button {i} sets floor {i} and clears the named modifier");
+				check(Terraria.Localization.Language.Exists("Mods.Levy.Reforge.FloorHint_" + i), $"floor button {i} has a hint");
+				check(Terraria.Localization.Language.Exists("Mods.Levy.UI2." + LevyConstants.UI.ReforgeFloorNameKey[i]), $"floor button {i} has a name");
+			}
+			foreach (string k in new[] { "Goal", "Modifier", "ModifierHint", "ModifierNone", "ModifierNoneAvailable", "PrefixOption" })
+				check(Terraria.Localization.Language.Exists("Mods.Levy.Reforge." + k), "reforge text " + k + " exists");
+
+			// the modifier list holds real prefixes only, most widely available first, and is long enough that the old shuffle applied
+			var f = ReforgeFixture.Build(10_000_000);
+			try
+			{
+				var mods = f.Armory.ValidPrefixesFor(new ReforgePlan { Mode = ReforgeMode.Group });
+				check(mods.Count > 16, $"the modifier list for the fixture hoard has more than 16 entries ({mods.Count})");
+				bool sorted = true;
+				for (int i = 1; i < mods.Count; i++) if (mods[i].weapons > mods[i - 1].weapons) sorted = false;
+				check(sorted, "the modifier list is ordered most widely available first");
+				check(mods.All(m => m.id > 0 && m.id < PrefixLoader.PrefixCount), "the modifier list holds only real prefixes");
 			}
 			finally { f.Release(); }
 		}

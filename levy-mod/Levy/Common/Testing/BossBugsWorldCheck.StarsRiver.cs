@@ -171,6 +171,19 @@ namespace Levy.Common.Testing
 
 		private static void SrWeapons()
 		{
+			// weapons measured unusable in levy hands: never issued (ModWeaponGates.UnusableByLevies); every row names a real item of its mod, so a renamed item is noticed
+			int rows = 0, found = 0, locked = 0; var missing = new List<string>();
+			foreach (var (mod, name) in ModWeaponGates.UnusableRows())
+			{
+				if (!ModLoader.TryGetMod(mod, out Mod m)) continue;
+				rows++;
+				if (!m.TryFind(name, out ModItem mi)) { missing.Add(mod + "/" + name); continue; }
+				found++;
+				Item it = new Item(); it.SetDefaults(mi.Type);
+				if (ModWeaponGates.Locked(it)) locked++; else missing.Add(mod + "/" + name + " (not locked)");
+			}
+			Note($"unusable-by-levies table: {rows} rows for loaded mods, {found} found, {locked} not issued [{string.Join(", ", missing)}]");
+			Check($"every weapon measured unusable in levy hands is a real item and is never issued ({locked}/{rows})", rows > 0 && locked == rows);
 			// swords whose real blow is a slash circling the wielder: fought at the slash's reach (WeaponClassifier.AnchoredSwingReach), they land
 			if (ModLoader.TryGetMod("StarsAbove", out Mod sa))
 			{

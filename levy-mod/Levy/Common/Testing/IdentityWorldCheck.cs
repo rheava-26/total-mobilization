@@ -168,6 +168,7 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_MEGAGUN_ALONE") == "1") { MegagunCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_DEADHOOKS_ALONE") == "1") { DeadHooksCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ALONE") == "1") { ArmySweep(); ClearSoldiers(); return; }
+			if (Environment.GetEnvironmentVariable("LEVY_SR_ALONE") == "1") { StarsRiverCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_ORIGIN_ALONE") != "1")
 			{
 				AlchemistMenu();
@@ -194,6 +195,8 @@ namespace Levy.Common.Testing
 			SentryProbe();
 			ClearSoldiers();
 			ArmySweep();
+			ClearSoldiers();
+			StarsRiverCheck(); // only with StarsAbove or StarlightRiver loaded
 			ClearSoldiers();
 		}
 

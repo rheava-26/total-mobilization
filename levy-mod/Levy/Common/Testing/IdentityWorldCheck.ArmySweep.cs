@@ -164,7 +164,7 @@ namespace Levy.Common.Testing
 			Vector2 at = new Vector2(Cx * 16f + 8f, FloorY * 16f);
 			Item w = new Item(); w.SetDefaults(weaponType);
 			bool close = !w.noMelee || w.shoot <= 0 || ItemID.Sets.Yoyo[w.type] || ItemID.Sets.Spears[w.type]; // a blade or spear is used next to the enemy (5 tiles), a shooter from 12 tiles
-				if (!close && ArmyReachPlace) { try { close = WeaponClassifier.GetProfile(w).RangeTiles <= 10; } catch (Exception) { } } // a short-reach weapon (a slash that circles its wielder): the enemy stands inside the levy's own reach, so a levy posted on Hold is measured fighting, not waiting
+				if (!close && (ArmyReachPlace || WeaponClassifier.IsAnchoredSwing(w))) { try { close = WeaponClassifier.GetProfile(w).RangeTiles <= 10; } catch (Exception) { } } // a short-reach weapon (a slash that circles its wielder): the enemy stands inside the levy's own reach, so a levy posted on Hold is measured fighting, not waiting
 			SpawnOriginTarget(close ? at - new Vector2(7 * 16f, 0f) : at); _sweepTarget.boss = true;
 			Player scratch = null, saved255 = null; int body = -1; SoldierRecord rec = null;
 			ArmySweepTally.Target = _sweepTarget.whoAmI; ArmySweepTally.On = true; ArmySweepTally.ByProj = new();

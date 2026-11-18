@@ -72,6 +72,18 @@ namespace Levy.Common.Testing
 			if (st.Tick == 1) { GcInstall(); PerfProbe.On = false; }
 			if (st.Tick == 360) { PerfProbe.Reset(); PerfProbe.On = true; _gcTicks = 0; _gcLevyTicks = 0; }
 			if (st.Tick > 360) { _gcTicks++; foreach (var l in st.Levies) if (!l.Dead) _gcLevyTicks++; }
+			if (st.Tick % 300 == 0 && st.Tick >= 600)
+			{
+				// which debuffs the levy bodies carry (each one makes the damage-over-time step run for that levy every tick)
+				var h = new Dictionary<string, int>(); int with = 0, bodies = 0;
+				foreach (var l in st.Levies)
+				{
+					if (l.Dead) continue; NPC n = Main.npc[l.Idx]; if (!n.active || n.ModNPC is not SoldierNPC) continue; bodies++; bool any = false;
+					for (int i = 0; i < NPC.maxBuffs; i++) { int b = n.buffType[i]; if (b <= 0 || n.buffTime[i] <= 0 || !Main.debuff[b]) continue; any = true; string nm = b < Terraria.ID.BuffID.Count ? Terraria.ID.BuffID.Search.GetName(b) : BuffLoader.GetBuff(b)?.FullName ?? b.ToString(); h[nm] = h.TryGetValue(nm, out int c) ? c + 1 : 1; }
+					if (any) with++;
+				}
+				global::Levy.Levy.Instance.Logger.Info($"HARNESS-GC: tick {st.Tick}: {with}/{bodies} levies carry a debuff: " + string.Join(", ", h.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + " " + kv.Value)));
+			}
 		}
 
 		private void GcFinish(CrRun run)

@@ -351,6 +351,30 @@ namespace Levy.Common.Testing
 			}
 			foreach (string r in rows) Note($"DoT over {ticks} ticks: " + r);
 			Check($"damage over time: a levy loses what a player loses holding the same debuff ({n0} debuffs, {bad} differ)", bad == 0);
+
+			// The station and candle buffs the game flags as debuffs (Happy!, Cozy Fire, Heart Lamp, ...) skip the damage-over-time step (lagsweep 11-17: it ran a whole player pass per levy per tick for nothing).
+			// Proof that skipping changes nothing: the full step, run with all of them on the body, takes no life and no defense; and with the skip on, the step does not run at all.
+			{
+				NPC body = levy.NPC; bool skipWas = SoldierNPC.HarmlessSkipOn;
+				try
+				{
+					body.life = body.lifeMax = 100000; Array.Clear(body.buffType); Array.Clear(body.buffTime); levy.NPC.defense = 0; levy.Defense = 0;
+					foreach (int hb in SoldierNPC.HarmlessDebuffs) { body.buffImmune[hb] = false; body.AddBuff(hb, 600); }
+					int on = 0; foreach (int hb in SoldierNPC.HarmlessDebuffs) if (body.HasBuff(hb) && Main.debuff[hb]) on++;
+					SoldierNPC.HarmlessSkipOn = false;
+					long t0 = SoldierNPC.DotTicks; int l0 = body.life; int defDown = 0;
+					for (int i = 0; i < 240; i++) { Main.myPlayer = 0; levy.DebuffDot(); Main.myPlayer = savedMy; defDown = Math.Max(defDown, levy.DotDefenseDown); }
+					long ranFull = SoldierNPC.DotTicks - t0; int lostFull = l0 - body.life;
+					SoldierNPC.HarmlessSkipOn = true;
+					long t1 = SoldierNPC.DotTicks; int l1 = body.life;
+					for (int i = 0; i < 240; i++) { Main.myPlayer = 0; levy.DebuffDot(); Main.myPlayer = savedMy; }
+					long ranSkip = SoldierNPC.DotTicks - t1; int lostSkip = l1 - body.life;
+					Note($"harmless debuffs: {on} flagged as debuffs on the body; full step ran {ranFull} times over 240 ticks, life lost {lostFull}, most defense taken {defDown}; with the skip it ran {ranSkip} times, life lost {lostSkip}");
+					Check($"the station and candle buffs flagged as debuffs take no life and no defense through the full damage-over-time step ({on} on the body, {lostFull} life and {defDown} defense over 240 ticks)", on >= 4 && ranFull >= 240 && lostFull == 0 && defDown == 0);
+					Check($"and with only those on the body the step is skipped ({ranSkip} runs, {lostSkip} life)", ranSkip == 0 && lostSkip == 0);
+				}
+				finally { SoldierNPC.HarmlessSkipOn = skipWas; body.life = body.lifeMax; Array.Clear(body.buffType); Array.Clear(body.buffTime); }
+			}
 		}
 
 		private static void DiagDefenseDamage(SoldierNPC levy)

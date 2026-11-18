@@ -36,7 +36,13 @@ while args:
         def vanilla(l):
             l = dict(l); c = l.get("cls", "R")
             if any(cal(a) for a in l.get("armor", [])): l["armor"] = SETS[c]
-            l["acc"] = [("Butterfly Wings" if "Wings" in a else "Terraspark Boots" if ("Treads" in a or "Boots" in a) else "Avenger Emblem") if cal(a) else a for a in l.get("acc", [])]
+            acc = [a for a in l.get("acc", [])]; pool = ["Avenger Emblem", "Celestial Stone", "Charm of Myths", "Star Veil", "Frozen Turtle Shell", "Papyrus Scarab"]
+            for i, a in enumerate(acc):
+                if not cal(a): continue
+                if "Wings" in a: acc[i] = "Butterfly Wings" if not any("Wings" in b for b in acc if not cal(b)) else next(p for p in pool if p not in acc)
+                elif "Treads" in a or "Boots" in a: acc[i] = "Terraspark Boots" if "Terraspark Boots" not in acc else next(p for p in pool if p not in acc)
+                else: acc[i] = next(p for p in pool if p not in acc and p.split("@")[0] not in [b.split("@")[0] for b in acc])
+            l["acc"] = acc
             if cal(l.get("weapon")): w, am = WEAP[c]; l["weapon"] = w; l["weaponName"] = w; l["ammo"] = am; l["cls"] = "R" if c == "T" else c
             if cal(l.get("ammo")): l["ammo"] = "Chlorophyte Arrow"
             if cal(l.get("side")): l.pop("side", None)

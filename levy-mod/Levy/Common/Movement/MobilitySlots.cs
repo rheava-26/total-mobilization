@@ -5,6 +5,7 @@ namespace Levy.Common.Movement
 	/// <summary>
 	/// Which items belong in a levy's two dedicated mobility slots. Read from the item's own equip slots, never from a list of names, so every modded pair of wings and boots is found the way a vanilla one is:
 	/// wings are accessories with a wing slot, boots are accessories with a shoe slot. A levy wears one of each besides his ordinary accessories.
+	/// The second slot is the HORIZONTAL one: it takes runner boots or a dash accessory, whichever gives the levy more horizontal mobility (<see cref="AccessoryMobility.HorizontalValue"/>).
 	/// </summary>
 	public static class MobilitySlots
 	{
@@ -21,7 +22,16 @@ namespace Levy.Common.Movement
 		/// </summary>
 		public static bool IsBoots(Item it) => On && it != null && !it.IsAir && it.accessory && !it.vanity && it.shoeSlot > 0 && it.wingSlot <= 0 && AccessoryMobility.IsRunner(it);
 
-		/// <summary>Either one: such an item is never dealt into an ordinary accessory slot.</summary>
+		/// <summary>Lab-only A/B switch: <c>LEVY_DASHSLOT=0</c> puts the boots slot back to runner boots only (a dash accessory is an ordinary accessory again).</summary>
+		internal static readonly bool DashOn = System.Environment.GetEnvironmentVariable("LEVY_DASHSLOT") != "0";
+
+		/// <summary>An accessory that gives a dash (Tabi, Master Ninja Gear, Shield of Cthulhu, Solar Flare, Crystal Assassin, Calamity's dash accessories), read as the delta a dummy shows wearing it. Never a pair of wings.</summary>
+		public static bool IsDash(Item it) => On && DashOn && it != null && !it.IsAir && it.accessory && !it.vanity && it.wingSlot <= 0 && AccessoryMobility.IsDash(it);
+
+		/// <summary>What the horizontal (boots) slot accepts: runner boots or a dash accessory.</summary>
+		public static bool IsHorizontal(Item it) => IsBoots(it) || IsDash(it);
+
+		/// <summary>Wings or runner boots: such an item is never dealt into an ordinary accessory slot. (A dash accessory may go either way: the horizontal slot when it adds the most there, else an ordinary slot.)</summary>
 		public static bool Is(Item it) => IsWings(it) || IsBoots(it);
 	}
 }

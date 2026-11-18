@@ -37,6 +37,15 @@ namespace Levy.Content.NPCs
 		private Vector2 _wedgeAnchor; private int _wedgeTimer, _wedgeWindows; private bool _wedgeShuffled, _wedgeForcePath;
 		private int _dodgeTicks, _dodgeCooldown; private float _dodgeVx;
 		private int _dashTicks, _dashCooldown, _dashDir;
+		// ---- travel dash (a player's dash profile) and the floor under the feet ----
+		private float _dashV, _dashDist, _dashCapPx; private int _dashAge, _dashTravelCd;
+		/// <summary>Harness switch (LEVY_DASHFIX=0): the travel dash is the old fixed burst of <see cref="DashSpeedPx"/> for <see cref="DashBurstTicks"/> instead of the gear's own dash.</summary>
+		internal static bool DashFixOn = Environment.GetEnvironmentVariable("LEVY_DASHFIX") != "0";
+		private TileRun.Floor _floorKind; private int _floorType = -1; private float _floorBrake = 1f; private int _floorTick = -100;
+		/// <summary>Harness telemetry: ticks spent on each special floor, and travel dashes started.</summary>
+		internal int FloorTicks, TravelDashes, OldDashes; internal float FloorTop;
+		/// <summary>Harness telemetry: why a travel dash was not started, army-wide: 0 asked, 1 cooling down, 2 not grounded or door, 3 state, 4 retreating, 5 goal too near, far or off the level, 6 mid-turn, 7 lane too short, 8 lane not clear, 9 started.</summary>
+		internal static readonly int[] DashRef = new int[12];
 		// ---- aerial state (wings / extra jumps / rocket boots; see UpdateAerial) ----
 		private MovementAbilities _kitRef; private int _kitRocketMax; private bool _kitAny;
 		private int _rocketTime; private float _drainAcc;
@@ -77,6 +86,7 @@ namespace Levy.Content.NPCs
 			bool onSlope = MobilityMode >= 1 && npc.velocity.Y > 0f && npc.velocity.Y < 2.2f && !npc.wet && Collision.SolidCollision(new Vector2(npc.position.X, npc.Bottom.Y), npc.width, 4);
 			bool grounded = (npc.velocity.Y == 0f || onSlope) && !(_wasAirborne && HeadOnCeiling());
 			RefreshKit();
+			RefreshFloor(grounded);
 			if (npc.lavaWet && !npc.lavaImmune) LavaEscape(); // a Magma Shot body swims it instead (SwimAssist)
 			if (grounded)
 			{
@@ -100,6 +110,7 @@ namespace Levy.Content.NPCs
 			if (_fallThroughTicks > 0) { _fallThroughTicks--; WantsToFallThrough = _fallThroughTicks > 0; }
 			else WantsToFallThrough = false;
 			if (_dashCooldown > 0) _dashCooldown--;
+			if (_dashTravelCd > 0) _dashTravelCd--;
 			if (_hkPhase == HookPhase.Idle && _rtHookWant) RouteHookTick(grounded);
 			if (_hkPhase == HookPhase.Idle && _hkTrigTicks > 0) HookEvaluate(); // a trigger that held long enough becomes a plan and a cast (SoldierNPC.Hook.cs)
 			if (_hkPhase == HookPhase.Idle) { FallCatchCheck(); HookFollowCommander(); }
@@ -154,8 +165,10 @@ namespace Levy.Content.NPCs
 				bool close = Math.Abs(_pathFromRoute && !TravelLegacy.On && HasMoveGoal ? MoveGoal.X - npc.Center.X : dx) < WalkWithinTiles * 16 && !Retreating; // a retreat always runs, however short the step; on a planned route the waypoints are close together, the leg end is what counts
 				bool walk = reversing || (close && !(PathSearch.Travel6On && _pathFromRoute && RouteFlying && !grounded)) || State == SoldierState.Idle || State == SoldierState.Patrol;   // (a glide to a landing does not slow to a stroll for its last six tiles)
 				maxSpeed = walk ? WalkSpeedPx * Abilities.WalkSpeed : Abilities.MaxRunSpeed; // MaxRunSpeed already carries moveSpeed the way Player.Update applies it (not on the sprint)
+				float floorAccel = 1f;
+				if (!walk && grounded && _floorKind != TileRun.Floor.Plain && TileRun.On) { TileRun.Resolve(Abilities, _floorKind, out maxSpeed, out floorAccel, out _); FloorTicks++; FloorTop = maxSpeed; } // asphalt, honey, ice: what the floor does to a run (SoldierNPC.TileRun in Common/Movement)
 				if (State == SoldierState.Routed && !walk) maxSpeed *= LevyConstants.RoutedSpeedMult;
-				accel = walk ? WalkAccel : RunAccel;
+				accel = (walk ? WalkAccel : RunAccel) * floorAccel;
 				Point feet = TileNav.FeetTile(npc.Bottom);
 				int ax = (int)((npc.Center.X + dir * (npc.width / 2f + LookAheadPx)) / 16f);
 				ScanAhead(feet.X, ax, feet.Y, dir, grounded, dy, ref jumpTiles, ref wantFly, ref flyUp);
@@ -518,8 +531,22 @@ namespace Levy.Content.NPCs
 		private bool TickDash(Vector2 goal, float dx, float dy, bool grounded, bool air)
 		{
 			NPC npc = NPC;
+			bool profile = DashFixOn && Abilities != null && Abilities.DashSpeed > 0f;
 			if (_dashTicks > 0)
 			{
+				if (profile)
+				{
+					// a player's dash (Player.DashMovement): the speed starts at the gear's dash speed, decays by the dash's own factor while above its split speed (0.992 above 12, 0.985 for the shield and the solar dash) and by the slower factor below it, and ends at the run speed
+					bool stopped = _dashAge >= 2 && Math.Abs(npc.velocity.X) < Math.Max(2f, _dashV * 0.4f);
+					if (!grounded || air || npc.wet || stopped) { _dashTicks = 0; npc.netUpdate = true; return false; }
+					_dashAge++;
+					float runTop = Math.Max(3f, Abilities.MaxRunSpeed);
+					_dashDist += _dashV;
+					float v = _dashAge <= Abilities.DashEarlyTicks ? _dashV * Abilities.DashEarlyDecay : _dashV > Abilities.DashSplit ? _dashV * Abilities.DashHighDecay : _dashV * Abilities.DashSlow;
+					if (v <= runTop || _dashDist >= _dashCapPx) { _dashTicks = 0; npc.velocity.X = _dashDir * Math.Min(_dashV, Math.Max(runTop, _dashDist >= _dashCapPx ? 6f : runTop)); npc.netUpdate = true; return false; }
+					_dashV = v; npc.velocity.X = _dashDir * v;
+					return true;
+				}
 				// a burst ends early if the body left the ground, got wet, or hit something (the speed collapsed)
 				bool hit = DashBurstTicks - _dashTicks >= 2 && Math.Abs(npc.velocity.X) < DashSpeedPx * 0.4f;
 				if (!grounded || air || npc.wet || hit) { _dashTicks = 0; npc.netUpdate = true; return false; }
@@ -528,29 +555,46 @@ namespace Levy.Content.NPCs
 				if (_dashTicks == 0) npc.netUpdate = true;
 				return true;
 			}
-			if (_dashCooldown > 0 || Abilities == null || !Abilities.HasDash || !grounded || air || npc.wet || _doorBusy > 0) return false;
+			if (Abilities == null || !Abilities.HasDash) return false;
+			DashRef[0]++;
+			if (_dashCooldown > 0 || (profile && _dashTravelCd > 0)) { DashRef[1]++; return false; }
+			if (!grounded || air || npc.wet || _doorBusy > 0) { DashRef[2]++; return false; }
 			if (!(State == SoldierState.Follow || State == SoldierState.SearchDestroy || State == SoldierState.FreeRein
-				|| (State == SoldierState.Engage && _engMode == EngageMode.Approach))) return false;
-			if (Retreating) return false;
+				|| (State == SoldierState.Engage && _engMode == EngageMode.Approach))) { DashRef[3]++; return false; }
+			if (Retreating) { DashRef[4]++; return false; }
 			float adx = Math.Abs(dx);
-			if (adx < DashMinGoalTiles * 16f || adx > DashMaxGoalTiles * 16f || Math.Abs(dy) > DashMaxRiseTiles * 16f) return false;
+			if (adx < DashMinGoalTiles * 16f || adx > DashMaxGoalTiles * 16f || Math.Abs(dy) > DashMaxRiseTiles * 16f) { DashRef[5]++; return false; }
 			int dir = dx >= 0f ? 1 : -1;
-			if (Math.Abs(npc.velocity.X) > 0.5f && Math.Sign(npc.velocity.X) == -dir) return false; // mid-turn: wait for the body to face the goal
-			if (!DashLaneClear(dir)) return false;
-			_dashDir = dir; _dashTicks = DashBurstTicks;
-			_dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1);
+			if (Math.Abs(npc.velocity.X) > 0.5f && Math.Sign(npc.velocity.X) == -dir) { DashRef[6]++; return false; } // mid-turn: wait for the body to face the goal
+			// the lane is checked as far as the dash will go: the gear's dash carries a player tens of tiles, so it stops at the goal or where the checked lane ends
+			int laneTiles = profile ? Math.Min(DashTravelLaneTiles, (int)(adx / 16f) - 2) : DashLaneTiles;
+			if (laneTiles < DashLaneTiles) { DashRef[7]++; return false; }
+			if (!DashLaneClear(dir, laneTiles)) { DashRef[8]++; return false; }
+			DashRef[9]++;
+			_dashDir = dir; _dashAge = 0; _dashDist = 0f;
+			if (profile)
+			{
+				_dashTicks = 600; _dashV = Math.Min(Abilities.DashSpeed, DashMaxSpeedPx); _dashCapPx = laneTiles * 16f;
+				_dashTravelCd = DashTravelCooldownTicks + Main.rand.Next(DashTravelCooldownJitterTicks + 1);
+				TravelDashes++;
+			}
+			else
+			{
+				_dashTicks = DashBurstTicks; OldDashes++;
+				_dashCooldown = DashCooldownTicks + Main.rand.Next(DashCooldownJitterTicks + 1);
+			}
 			npc.direction = dir; npc.spriteDirection = dir;
-			npc.velocity.X = dir * DashSpeedPx;
+			npc.velocity.X = dir * (profile ? _dashV : DashSpeedPx);
 			npc.netUpdate = true;
 			return true;
 		}
 
 		/// <summary>The next <see cref="DashLaneTiles"/> columns are level with the feet, open to head height, floored and free of lava and deep water.</summary>
-		private bool DashLaneClear(int dir)
+		private bool DashLaneClear(int dir, int tiles = DashLaneTiles)
 		{
-			if (MobilityMode >= 1) return SurfaceLane(dir, DashLaneTiles, true);
+			if (MobilityMode >= 1) return SurfaceLane(dir, tiles, true);
 			Point feet = TileNav.FeetTile(NPC.Bottom);
-			for (int i = 1; i <= DashLaneTiles; i++)
+			for (int i = 1; i <= tiles; i++)
 			{
 				int x = feet.X + dir * i;
 				if (TileNav.IsSolid(x, feet.Y) || TileNav.IsSolid(x, feet.Y - 1) || TileNav.IsSolid(x, feet.Y - 2)) return false;
@@ -584,6 +628,23 @@ namespace Levy.Content.NPCs
 			return g > 0f ? g : DefaultGravity;
 		}
 
+		/// <summary>The floor kind under the feet, read every few ticks (a grounded body only): asphalt, honey, ice, frozen slime and (with Desert Boots) sand change the run; a conveyor belt carries the body as it carries a player.</summary>
+		private void RefreshFloor(bool grounded)
+		{
+			if (!TileRun.On || Abilities == null) { _floorKind = TileRun.Floor.Plain; _floorBrake = 1f; return; }
+			if (!grounded) { if (_floorKind != TileRun.Floor.Plain) { _floorKind = TileRun.Floor.Plain; _floorBrake = 1f; } return; }
+			uint now = Main.GameUpdateCount;
+			if ((int)now - _floorTick >= 4 || _floorTick > (int)now)
+			{
+				_floorTick = (int)now;
+				_floorType = TileRun.FloorType(NPC);
+				_floorKind = TileRun.Kind(_floorType, Abilities);
+				if (_floorKind == TileRun.Floor.Plain) _floorBrake = 1f;
+				else { TileRun.Resolve(Abilities, _floorKind, out _, out _, out _floorBrake); }
+			}
+			if (_floorType > 0 && _floorType < TileID.Sets.ConveyorDirection.Length && TileID.Sets.ConveyorDirection[_floorType] != 0) Collision.StepConveyorBelt(NPC, 1f);
+		}
+
 		private void Accelerate(int dir, float maxSpeed, float accel)
 		{
 			float v = NPC.velocity.X;
@@ -596,7 +657,8 @@ namespace Levy.Content.NPCs
 
 		private void Decelerate()
 		{
-			NPC.velocity.X *= StopDecel;
+			// the floor's braking: asphalt and honey brake twice as hard, ice and frozen slime hold the speed (the factor is on the 0.2 that StopDecel takes off a tick)
+			NPC.velocity.X *= _floorBrake == 1f ? StopDecel : MathHelper.Clamp(1f - (1f - StopDecel) * _floorBrake, 0.2f, 0.995f);
 			if (Math.Abs(NPC.velocity.X) < StopBelowPx) NPC.velocity.X = 0f;
 		}
 

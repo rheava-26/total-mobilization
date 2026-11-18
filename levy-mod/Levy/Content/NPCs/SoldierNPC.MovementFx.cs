@@ -6,6 +6,7 @@ using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
+using Levy.Common.Movement;
 using Levy.Common.Util;
 using static Levy.Common.LevyConstants.Movement;
 
@@ -73,7 +74,7 @@ namespace Levy.Content.NPCs
 				thrustWing = rising && kitWings;
 				thrustRocket = rising && !kitWings && kitRocket;
 				jumpFired = airborne && _fxPrevAirborne && !kitWings && !kitRocket && npc.velocity.Y - _fxPrevVy < -FxClientJumpKickPx;
-				dashing = !airborne && Math.Abs(npc.velocity.X) >= FxClientDashSpeedPx;
+				dashing = !airborne && Math.Abs(npc.velocity.X) >= (TileRun.On && Math.Abs(npc.velocity.X) > FxClientDashSpeedPx && TileRun.FloorType(npc) == TileID.Asphalt ? 13f : FxClientDashSpeedPx); // a run on asphalt is faster than the old dash burst
 			}
 			_fxPrevAirborne = airborne; _fxPrevVy = npc.velocity.Y;
 			bool dashStart = dashing && !_fxDashPrev;

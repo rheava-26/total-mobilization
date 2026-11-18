@@ -62,6 +62,8 @@ namespace Levy.Common
 			public const float MobilitySlotValueWeight = 150f;
 			/// <summary>Score added to boots that raise the run speed or give rocket flight: above an upgrade chain (5000 per level), below a Preferred pick, so the boots slot never goes to a shoe that does not make a levy faster while real boots are stocked.</summary>
 			public const float MobilityRunnerBoots = 100000f;
+			/// <summary>A dash accessory in the horizontal slot: its base movement value and the extra per px/tick of start speed (a Tabi dash, 16.9, reads about 1.35; Hermes Boots read 0.6, Lightning Boots and up read 2.7 and more). In an ordinary accessory slot a dash counts this much.</summary>
+			public const float MobilityDashValue = 1f, MobilityDashSpeedWeight = 0.02f, MobilityDashOrdinary = 0.3f;
 		}
 
 		// ---------- HP / mana ----------

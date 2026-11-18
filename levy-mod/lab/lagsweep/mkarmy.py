@@ -27,3 +27,19 @@ while args:
     elif k == "minus":
         n = int(args.pop(0)); rnd = random.Random(17); drop = set(rnd.sample(range(len(army)), n))
         write(f"eve45_minus{n}.json", [l for i, l in enumerate(army) if i not in drop], f"eve45 with {n} levies taken out at random (seed 17)")
+    elif k == "gearcost":
+        # the gear-cost labs: eve40 (her first 40) and eve40v (the same 40 with every Calamity item swapped for a vanilla one of the same job), so the same army runs with and without Calamity
+        SETS = {"E": ["Beetle Helmet", "Beetle Shell", "Beetle Leggings"], "R": ["Shroomite Headgear", "Shroomite Breastplate", "Shroomite Leggings"], "M": ["Spectre Hood", "Spectre Robe", "Spectre Pants"],
+                "S": ["Spooky Helmet", "Spooky Breastplate", "Spooky Leggings"], "T": ["Shroomite Headgear", "Shroomite Breastplate", "Shroomite Leggings"]}
+        WEAP = {"E": ("Terra Blade", None), "R": ("Chain Gun", "Chlorophyte Bullet"), "M": ("Nebula Arcanum", None), "S": ("Morning Star", None), "T": ("Chain Gun", "Chlorophyte Bullet")}
+        cal = lambda x: isinstance(x, str) and x.startswith("CalamityMod/")
+        def vanilla(l):
+            l = dict(l); c = l.get("cls", "R")
+            if any(cal(a) for a in l.get("armor", [])): l["armor"] = SETS[c]
+            l["acc"] = [("Butterfly Wings" if "Wings" in a else "Terraspark Boots" if ("Treads" in a or "Boots" in a) else "Avenger Emblem") if cal(a) else a for a in l.get("acc", [])]
+            if cal(l.get("weapon")): w, am = WEAP[c]; l["weapon"] = w; l["weaponName"] = w; l["ammo"] = am; l["cls"] = "R" if c == "T" else c
+            if cal(l.get("ammo")): l["ammo"] = "Chlorophyte Arrow"
+            if cal(l.get("side")): l.pop("side", None)
+            return l
+        write("eve40.json", army[:40], "Eve's army, the first 40 of eve45 (the gear-cost lab)")
+        write("eve40v.json", [vanilla(l) for l in army[:40]], "eve40 with every Calamity item swapped for a vanilla one of the same job (the gear-cost lab, with and without Calamity)")

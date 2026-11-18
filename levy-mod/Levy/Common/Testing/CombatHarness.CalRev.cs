@@ -754,7 +754,7 @@ namespace Levy.Common.Testing
 				}
 				Mod.Logger.Info($"HARNESS-SG: tick {st.Tick}{sb}");
 			}
-			CrOrderProbe(st); BbZoneLog(st); BbEolProjCensus(st); PwTick(st);
+			CrOrderProbe(st); BbZoneLog(st); BbEolProjCensus(st); PwTick(st); GcTick(st);
 			if (run.Boss == "wof") CrWofProbe(st);
 			int alive = 0;
 			foreach (var l in st.Levies)
@@ -878,7 +878,7 @@ namespace Levy.Common.Testing
 			_cr = null; _crS = null; _crStarted = false; _crI++;
 			if (run.Dl != "") DlEnd();
 			if (run.Pl != "") PlEnd();
-			CrResetDowned(); CrSetHpScale(null); CrSetFear(null); CrSetOptions(null); BbEndFight(); BbEnd(); PwEnd(run);
+			CrResetDowned(); CrSetHpScale(null); CrSetFear(null); CrSetOptions(null); BbEndFight(); BbEnd(); PwEnd(run); GcFinish(run);
 			if (run.Diag) global::Levy.Common.Potions.SpectatorDiagnostic.Set(false);
 			ClearAll(); CrPurgeNpcs();
 		}

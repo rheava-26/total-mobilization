@@ -111,6 +111,9 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < n; i++)
 			{
 				Player p = Main.player[0]; p.active = true; p.dead = false; p.name = _name;
+				// The check's levies have no barracks, so every dawn counts them unpaid; the check's own day flips (and a world left at night by an earlier check) make two dawns, and on the second
+				// each rolls 25% to desert (seen in a ship-world run: 3 of 6 walked off before the rift). Wages are not what this check is about: they are kept paid.
+				foreach (SoldierRecord r in RosterSystem.Instance.Regulars) if (r.CommanderName == Commander) r.DaysUnpaid = 0;
 				if (p.statLifeMax < 400) p.statLifeMax = p.statLifeMax2 = 400; p.statLife = p.statLifeMax2;
 				p.Bottom = _cmdAt; p.velocity = Vector2.Zero; p.fallStart = p.fallStart2 = (int)(_cmdAt.Y / 16f); p.noFallDmg = true;
 				for (int k = 0; k < Main.maxNPCs; k++) { NPC e = Main.npc[k]; if (e.active && WorldStep.IsNaturalHostile(e) && !(_keepDuke && (e.type == RiftSky.DukeType || e.ModNPC?.Mod.Name == RiftSky.ModName))) e.active = false; }
@@ -207,11 +210,12 @@ namespace Levy.Common.Testing
 				Check($"while the sun was covered ({scene} ticks) nobody said anything ({silentSaid} lines picked, {silentOut} floats out, right-click \"{chat}\")", silentOut == 0 && silentSaid == 0 && chat == "..." && scene >= 1000);
 
 				// the end: the burst
+				int atEnd = Standing(army);
 				if (!real) { RiftSky.TestTransition = false; RiftSky.TestCovered = true; }
 				RiftStep(20 + LevyConstants.RiftPanicSpeakers * LevyConstants.RiftPanicStepTicks + 60);
 				int burst = RiftMood.PanicLines - pl0;
-				Note($"at the end of the covering: {Standing(army)} of {army.Count} levies standing near the commander");
-				Check($"the covering ends once and the levies near the commander react ({RiftMood.Changes - ch0} endings, {RiftMood.PanicRounds - pr0} rounds, {burst} worried lines)", RiftMood.Changes == ch0 + 1 && RiftMood.PanicRounds == pr0 + 1 && burst == Math.Min(LevyConstants.RiftPanicSpeakers, army.Count));
+				Note($"at the end of the covering: {atEnd} of {army.Count} levies standing near the commander ({Standing(army)} after the burst)");
+				Check($"the covering ends once and the levies near the commander react ({RiftMood.Changes - ch0} endings, {RiftMood.PanicRounds - pr0} rounds, {burst} worried lines from {atEnd} standing)", RiftMood.Changes == ch0 + 1 && RiftMood.PanicRounds == pr0 + 1 && burst == Math.Min(LevyConstants.RiftPanicSpeakers, atEnd) && atEnd >= LevyConstants.RiftPanicSpeakers);
 				Check($"after the covering the sky reads covered and the mood is Tense ({RiftMood.Phase}, covered={RiftSky.Covered})", RiftSky.Covered && RiftMood.Phase == RiftPhase.Tense && RiftMood.PanicNow);
 				if (real) Note($"NoxusBoss's own rift flag after the scene: {RiftSky.RiftOngoing}");
 

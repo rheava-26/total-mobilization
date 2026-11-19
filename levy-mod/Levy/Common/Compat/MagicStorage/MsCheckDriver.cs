@@ -124,6 +124,10 @@ namespace Levy.Common.Compat.MagicStorageLink
 				LogisticsRunner.RunOn(o, armory);
 				Check(o.Complete && armory.CountInStorage(ItemID.IronBroadsword) == 5, "the order made 5 swords into the armory from network bars (done " + o.Lines[0].Done + ", armory holds " + armory.CountInStorage(ItemID.IronBroadsword) + ", status " + o.Status + ")");
 				Check(net.Count(ItemID.IronBar) == per * 6 - per * 5, "the network paid exactly " + per * 5 + " bars (left " + net.Count(ItemID.IronBar) + ")");
+
+				// Magic Storage's Crafting Interface crafting with armory racks (its own craft code, a second network)
+				MsCraftCheck.Run(Check, placed, (x, y, t) =>
+					t == typeof(ArmoryTE) ? Place<ArmoryTE>(placed, x, y) : t == typeof(TEArmoryHeart) ? Place<TEArmoryHeart>(placed, x, y) : t == typeof(TEStorageHeart) ? Place<TEStorageHeart>(placed, x, y) : Place<TECheckUnit>(placed, x, y));
 			}
 			catch (Exception e) { failures.Add($"threw {e.GetType().Name}: {e.Message} {string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(4).Select(l => l.Trim()))}"); }
 			finally

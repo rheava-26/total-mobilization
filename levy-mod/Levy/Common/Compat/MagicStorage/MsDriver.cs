@@ -24,9 +24,13 @@ namespace Levy.Common.Compat.MagicStorageLink
 			NetworkStocks.HasStation = HasStation;
 			NetworkStocks.ItemTypes = ItemTypes;
 			NetworkStocks.CanDecraft = CanDecraft;
+			// the Crafting Interface draws on armory racks: a network with an Armory Heart lists the armory module (ArmoryCraftLink)
+			var getModules = typeof(TEStorageHeart).GetMethod(nameof(TEStorageHeart.GetModules), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, Type.EmptyTypes, null);
+			if (getModules == null) throw new InvalidOperationException("TEStorageHeart.GetModules not found");
+			MonoModHooks.Add(getModules, (Func<ArmoryCraftLink.OrigGetModules, TEStorageHeart, IEnumerable<global::MagicStorage.EnvironmentModule>>)ArmoryCraftLink.GetModulesDetour);
 		}
 
-		public static void Unregister() { ResetCache(); NetworkStocks.Provider = null; NetworkStocks.HasStation = null; NetworkStocks.ItemTypes = null; NetworkStocks.CanDecraft = null; }
+		public static void Unregister() { ArmoryCraftLink.ResetForTest(); ResetCache(); NetworkStocks.Provider = null; NetworkStocks.HasStation = null; NetworkStocks.ItemTypes = null; NetworkStocks.CanDecraft = null; }
 
 		/// <summary>True when a Decrafting Interface (Magic Storage's shimmer module) is joined to the armory's network.</summary>
 		private static bool CanDecraft(ArmoryTE a)

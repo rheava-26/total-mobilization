@@ -42,6 +42,9 @@ WOTG_SOULS_TMOD="$MODCACHE/FargowiltasSouls/2026.3/FargowiltasSouls.tmod"    # F
 # Ports (override PORT_* to run beside another builder's ship run): shipcal boot, shipboth vanilla boot, shipworld world-making / vanilla half / Calamity half
 PORT_CAL="${PORT_CAL:-7774}"; PORT_NORM="${PORT_NORM:-7775}"; PORT_GEN="${PORT_GEN:-7871}"; PORT_WVAN="${PORT_WVAN:-7872}"; PORT_WCAL="${PORT_WCAL:-7873}"
 PORT_WOTG="${PORT_WOTG:-7776}"; PORT_WWOT="${PORT_WWOT:-7874}"   # wotg boot / wotg world half
+# OPTIONAL configuration "ms" (shipms.sh, SHIPMS=1 in shipboth.sh): Calamity + Magic Storage + our three, boot self-checks only (Levy's Magic Storage half: Armory Heart, crafting with armory racks).
+MS_HOME="${MS_HOME:-$U/shipms}"                      # install copy (tML 2026.10) with save/ inside
+PORT_MS="${PORT_MS:-7777}"
 
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 

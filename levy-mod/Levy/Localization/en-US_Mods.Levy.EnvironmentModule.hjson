@@ -1,0 +1,4 @@
+ArmoryRacksModule: {
+	DisplayName: Armory racks
+	DisabledTooltip: Needs an Armory Heart connected to this network.
+}

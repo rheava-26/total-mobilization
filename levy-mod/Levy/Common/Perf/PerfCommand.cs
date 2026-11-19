@@ -28,6 +28,7 @@ namespace Levy.Common.Perf
 					if (v == null) { caller.Reply("No boss fight has been judged yet.", Color.LightGray); return; }
 					caller.Reply($"{v.Boss}: {v.FightSecs:0} seconds, {(v.Laggy ? "laggy" : "smooth")}. Median {v.MedianFps:0} fps and {v.MedianUps:0} updates per second; {v.LaggyShare * 100:0}% of the fight was under 40 fps or 55 updates per second.", Color.LightGoldenrodYellow);
 					if (v.Laggy) foreach (string d in v.Detail) caller.Reply(d, Color.LightGoldenrodYellow);
+					if (!v.Laggy && v.Weapons.Count > 0) foreach (string d in PerfAnalysis.WeaponLines(new PerfSpan { Weapons = v.Weapons, WeaponAttribMs = v.WeaponAttribMs, Levies = v.Levies }, "this fight")) caller.Reply(d, Color.LightGoldenrodYellow);
 					if (v.Laggy && v.ByMod.Count > 0) caller.Reply("Cost by mod: " + string.Join(", ", v.ByMod.Take(5).Select(kv => $"{(kv.Key == "Terraria" ? "base game" : kv.Key)} {kv.Value / Math.Max(1e-6, v.TotalMsPerSec) * 100:0}%")) + ".", Color.LightGoldenrodYellow);
 					return;
 				}

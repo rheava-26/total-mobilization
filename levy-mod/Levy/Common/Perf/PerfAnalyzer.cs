@@ -316,7 +316,7 @@ namespace Levy.Common.Perf
 			int nc = NPCLoader.NPCCount + 16, pc = ProjectileLoader.ProjectileCount + 16;
 			if (_typeNpcT.Length != nc) { _typeNpcT = new long[nc]; _typeNpcN = new long[nc]; } else { Array.Clear(_typeNpcT, 0, nc); Array.Clear(_typeNpcN, 0, nc); }
 			if (_typeProjT.Length != pc) { _typeProjT = new long[pc]; _typeProjN = new long[pc]; } else { Array.Clear(_typeProjT, 0, pc); Array.Clear(_typeProjN, 0, pc); }
-			ResetSlots();
+			ResetSlots(); ResetWeapons();
 			LevyProf.CopyTo(_lvSnap);
 			_winBoss = ""; _winBossFar = "";
 		}
@@ -375,6 +375,7 @@ namespace Levy.Common.Perf
 			items.Sort((a, b) => b.Ms.CompareTo(a.Ms));
 			if (items.Count > 18) items.RemoveRange(18, items.Count - 18);
 			w.Top = items;
+			BuildWeapons(w);
 			return w;
 		}
 
@@ -449,7 +450,15 @@ namespace Levy.Common.Perf
 		{
 			return "{\"k\":\"fight\",\"t\":" + PerfWindow.Esc(DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture)) + ",\"boss\":" + PerfWindow.Esc(v.Boss) + ",\"secs\":" + (int)v.FightSecs
 				+ ",\"laggy\":" + (v.Laggy ? 1 : 0) + ",\"kind\":" + PerfWindow.Esc(v.Kind.ToString()) + ",\"share\":" + (int)Math.Round(v.LaggyShare * 100) + ",\"medfps\":" + Math.Round(v.MedianFps, 1).ToString(System.Globalization.CultureInfo.InvariantCulture)
-				+ ",\"levy\":" + (int)Math.Round(v.LevyShare * 100) + ",\"top\":" + PerfWindow.Esc(v.TopMod) + ",\"topshare\":" + (int)Math.Round(v.TopShare * 100) + ",\"popup\":" + (v.ShowPopup ? 1 : 0) + "}";
+				+ ",\"levy\":" + (int)Math.Round(v.LevyShare * 100) + ",\"top\":" + PerfWindow.Esc(v.TopMod) + ",\"topshare\":" + (int)Math.Round(v.TopShare * 100) + ",\"popup\":" + (v.ShowPopup ? 1 : 0) + WeaponJson(v) + "}";
+		}
+
+		/// <summary>The fight's levy weapons for the log line: all of them together (ms per update) and the top five as [name, levies, ms per update, share of the army %].</summary>
+		private static string WeaponJson(LagVerdict v)
+		{
+			if (v.Weapons == null || v.Weapons.Count == 0) return "";
+			var inv = System.Globalization.CultureInfo.InvariantCulture; double tot = Math.Max(1e-9, v.WeaponAttribMs);
+			return ",\"wpa\":" + Math.Round(v.WeaponAttribMs, 3).ToString(inv) + ",\"wpn\":[" + string.Join(",", v.Weapons.Take(5).Select(r => "[" + PerfWindow.Esc(r.Name) + "," + Math.Round(r.Levies, 1).ToString(inv) + "," + Math.Round(r.Ms, 3).ToString(inv) + "," + (int)Math.Round(r.Ms / tot * 100) + "]")) + "]";
 		}
 
 		// ------------------------------------------------------------------------------------------ the log

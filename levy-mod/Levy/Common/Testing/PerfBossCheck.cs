@@ -553,6 +553,8 @@ namespace Levy.Common.Testing
 
 			// ---- the always-on performance analyzer's own cost: the same army and the same flood, timed with the analyzer attached and removed in turn
 			if (Want("analyzer")) { try { AnalyzerArms(ticks, flood); } catch (Exception e) { Check("analyzer arms threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); } }
+			// ---- the analyzer's per-weapon cost: what it attributes, that it adds up, and what it costs
+			if (Want("weapons")) { try { WeaponAttribution(ticks); } catch (Exception e) { Check("weapon attribution threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); } }
 
 			// ---- verdicts: what the army adds, per levy
 			string Add(string what, Arm a, Arm c)

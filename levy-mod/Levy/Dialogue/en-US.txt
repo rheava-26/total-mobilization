@@ -2369,8 +2369,8 @@ RIFT_BLOOD | Veteran | Back to back. Nobody leaves the light.
 RIFT_BLOOD | Veteran | Worst night I've had. And I've had nights.
 
 # ---------------------------------------------------------------- RIFT_GROW1 (it has grown)
-RIFT_GROW1 | Any | Is it closer, or am I imagining it?
-RIFT_GROW1 | Any | It's closer. Don't tell me it isn't.
+RIFT_GROW1 | Any | It's lower than yesterday. I'm sure of it.
+RIFT_GROW1 | Any | Nobody say it's the same size. It isn't.
 RIFT_GROW1 | Any | It's half the sky now. It was a hole.
 RIFT_GROW1 | Any | It moved. I watched it move.
 RIFT_GROW1 | Any | Since when is it that big?

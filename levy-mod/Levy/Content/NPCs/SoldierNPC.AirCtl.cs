@@ -38,6 +38,8 @@ namespace Levy.Content.NPCs
 		private int _wingMark; private bool _airGrounded;
 		/// <summary>Airborne fight ticks by cause: aerial mode for a target overhead, an aerial pursuit, a perch flown to, the boss dance's lift, unknown aerial (0..4), a powered flight to a goal (5), anything else (jumps, dodge hops, falls) (6).</summary>
 		internal static readonly long[] StatAirWhy = new long[7];
+		/// <summary>Wing ticks spent by cause: the five aerial causes, a powered flight to a goal (5), a dodge's wing hold (6), anything else: flaps and thrusts of the dodge, lava escapes (7).</summary>
+		internal static readonly long[] StatWingWhy = new long[8];
 		internal byte _altWhy;
 		private static uint _bossSeenTick = uint.MaxValue; private static bool _bossSeen;
 
@@ -52,7 +54,7 @@ namespace Levy.Content.NPCs
 			if (!_bossSeen || NPC.life <= 0 || OfficerMode) return;
 			StatFightTicks++;
 			int spent = _wingMark - _wingTime;
-			if (spent > 0) StatWingSpent += spent;
+			if (spent > 0) { StatWingSpent += spent; StatWingWhy[_aerial ? Math.Min((int)_altWhy, 4) : _flying ? 5 : _wingHoldTicks > 0 ? 6 : 7] += spent; }
 			bool hooked = _hkPhase == HookPhase.InFlight || _hkPhase == HookPhase.Reel;
 			if (_airGrounded || NPC.velocity.Y == 0f || NPC.wet || hooked) return;
 			StatAirTicks++;

@@ -22,10 +22,14 @@ namespace Levy.Common.Testing
 	{
 		public static bool On; public static int Target = -1; public static int Hits; public static long Damage;
 		public static Dictionary<string, (int hits, long dmg)> ByProj = new();
-		public override void HitEffect(NPC npc, NPC.HitInfo hit) { if (On && npc.whoAmI == Target) { Hits++; Damage += hit.Damage; } }
+		/// <summary>The rogue sweep's extra pinned enemies (IdentityWorldCheck.ArmyRogue.cs): their hits count too, and hits by Calamity stealth strikes are counted per projectile (a ricochet is a strike's second and later hit).</summary>
+		public static HashSet<int> Extra = new(); public static bool Rogue; public static int StrikeHits; public static Dictionary<int, int> StrikeHitsByProj = new();
+		private static bool Counts(NPC npc) => npc.whoAmI == Target || Extra.Contains(npc.whoAmI);
+		public override void HitEffect(NPC npc, NPC.HitInfo hit) { if (On && Counts(npc)) { Hits++; Damage += hit.Damage; } }
 		public override void OnHitByProjectile(NPC npc, Projectile projectile, NPC.HitInfo hit, int damageDone)
 		{
-			if (!On || npc.whoAmI != Target) return;
+			if (!On || !Counts(npc)) return;
+			if (Rogue && HarnessCalamityProbe.IsStealthStrike(projectile, out _)) { StrikeHits++; StrikeHitsByProj.TryGetValue(projectile.whoAmI, out int sh); StrikeHitsByProj[projectile.whoAmI] = sh + 1; }
 			string n = projectile.ModProjectile?.Name ?? ProjectileID.Search.GetName(projectile.type); ByProj.TryGetValue(n, out var e); ByProj[n] = (e.hits + 1, e.dmg + damageDone);
 		}
 	}
@@ -124,12 +128,13 @@ namespace Levy.Common.Testing
 		}
 
 		/// <summary>One real-player tick of use: autoReuse and channel weapons hold the button, the rest press on alternate ticks (a release between presses, as a finger does).</summary>
-		private static void ArmyPlayerUse(Player p, Item it, Vector2 at, Vector2 aim, int k)
+		private static void ArmyPlayerUse(Player p, Item it, Vector2 at, Vector2 aim, int k, int forcePress = -1)
 		{
 			p.position = at - new Vector2(p.width / 2f, p.height); p.velocity = Vector2.Zero; p.statMana = p.statManaMax2; p.statLife = p.statLifeMax2;
 			bool grenade = it.channel && it.noUseGraphic && it.useStyle == ItemUseStyleID.Swing; // a held-then-thrown grenade (Doomsday Device) is charged with the button down and thrown on the release
-			bool press = grenade ? k % 60 < 40 : (it.autoReuse || it.channel || k % 2 == 0);
+			bool press = grenade ? GrenadeInHand(255, it.shoot, out bool fullCharge) == null || !fullCharge : (it.autoReuse || it.channel || k % 2 == 0); // a grenade is held until its charge is full and let go (RogueGrenade: a full charge is the player's throw)
 			if ((it.sentry || it.buffType > 0 && it.shoot > 0 && (it.DamageType?.CountsAsClass(DamageClass.Summon) ?? false)) && p.ownedProjectileCounts.Length > 0) { int mine = 0; for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && q.owner == 255 && (it.sentry ? q.sentry : q.minion)) mine++; } if (mine > 0 && it.sentry) press = false; } // a player does not recast a sentry that is standing
+			if (forcePress >= 0) press = forcePress == 1; // the rogue sweep's stand-in decides its own button (IdentityWorldCheck.ArmyRogue.cs)
 			Main.screenPosition = p.Center - new Vector2(Main.screenWidth / 2f, Main.screenHeight / 2f); Main.mouseX = (int)(aim.X - Main.screenPosition.X); Main.mouseY = (int)(aim.Y - Main.screenPosition.Y);
 
 			p.controlUseItem = press; p.controlUseTile = false; p.channel = press && it.channel; p.releaseUseItem = true;
@@ -308,6 +313,7 @@ namespace Levy.Common.Testing
 		{
 			string mode = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP");
 			if (mode == "0" || !ModLoader.HasMod("CalamityMod")) return;
+			if (Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ROGUE") == "1") { ArmyRogueSweep(); return; } // the rogue stealth sweep (IdentityWorldCheck.ArmyRogue.cs)
 			string only = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ONLY");
 			string[] names = !string.IsNullOrEmpty(only) ? only.Replace('_', ' ').Split(';', StringSplitOptions.RemoveEmptyEntries) : mode == "1" ? ArmyList : ArmyShip;
 			bool endgame = mode == "endgame" && string.IsNullOrEmpty(only);
@@ -339,6 +345,7 @@ namespace Levy.Common.Testing
 					Note($"army sweep {row.Status} {row.Label} [{row.Cls}, {row.Fam}; {row.Probe}] ratio idle {row.RatioA:0.00} / commander holding {row.RatioB:0.00} {row.Cause} || {row.Player} || {row.A} || {row.B}");
 					Note($"army seq {row.Label}: player [{string.Join(",", row.Player.Seq.Take(12))}] || levy idle [{string.Join(",", row.A.Seq.Take(12))}] || commander holding [{string.Join(",", row.B.Seq.Take(12))}]");
 				}
+				if ((string.IsNullOrEmpty(mode) && string.IsNullOrEmpty(only)) || Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ROGUECHECK") == "1") ArmyRogueChecks(); // the ship's rogue stealth checks (IdentityWorldCheck.ArmyRogue.cs)
 			}
 			finally { _sweepTarget = null; On_AchievementsHelper.HandleSpecialEvent -= NoAchievements; CostDetach(); }
 			sw.Stop();

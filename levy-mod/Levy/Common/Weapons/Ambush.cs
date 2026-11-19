@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Terraria;
+using Rip = Levy.Common.Compat.Calamity.LevyRippers;
 
 namespace Levy.Common.Weapons
 {
@@ -54,7 +55,7 @@ namespace Levy.Common.Weapons
 		{
 			if (!Log || Main.GameUpdateCount - _logAt < 600) return;
 			_logAt = Main.GameUpdateCount;
-			ModLoaderLog($"AMBUSH-STAT fall={ThinksFall} charge={ThinksCharge} strike={ThinksStrike} inReach={ThinksInReach} chargeTilesMean={(ThinksCharge > 0 ? ChargeTilesSum / ThinksCharge : 0):0.0} fallbacks={FallBacks} charges={Charges} strikes={Strikes} thrown={StrikesThrown} cycles={Cycles} repicks={Repicks} fireHolds={FireHolds} skipDying={SkipDying} skipCmd={SkipCommander} modeAligned={ModeAligned} rage={global::Levy.Common.Compat.Calamity.LevyRippers.RageActivations} adr={global::Levy.Common.Compat.Calamity.LevyRippers.AdrenalineActivations} rogueAligned={global::Levy.Common.Compat.Calamity.LevyRippers.RogueAligned} rogueTimeouts={global::Levy.Common.Compat.Calamity.LevyRippers.RogueTimeouts} barStrikes={global::Levy.Common.Compat.Calamity.LevyRippers.Strikes} boosted={global::Levy.Common.Compat.Calamity.LevyRippers.StrikesBoosted}");
+			ModLoaderLog($"AMBUSH-STAT fall={ThinksFall} charge={ThinksCharge} strike={ThinksStrike} inReach={ThinksInReach} chargeTilesMean={(ThinksCharge > 0 ? ChargeTilesSum / ThinksCharge : 0):0.0} fallbacks={FallBacks} charges={Charges} strikes={Strikes} thrown={StrikesThrown} cycles={Cycles} repicks={Repicks} fireHolds={FireHolds} skipDying={SkipDying} skipCmd={SkipCommander} modeAligned={ModeAligned} rage={Rip.RageActivations} adr={Rip.AdrenalineActivations} rogueAligned={Rip.RogueAligned} rogueTimeouts={Rip.RogueTimeouts} barStrikes={Rip.Strikes} boosted={Rip.StrikesBoosted}");
 		}
 
 		private static void ModLoaderLog(string s) => Terraria.ModLoader.ModContent.GetInstance<global::Levy.Levy>()?.Logger.Info(s);

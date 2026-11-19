@@ -384,12 +384,13 @@ namespace Levy.Content.NPCs
 			if (Weapon == null || !Weapon.Supported) return;
 			NPC target = idx >= 0 ? Main.npc[idx] : SoldierTargeting.FocusPhantom(s.Aim, NPC.Center);
 			if (Weapon.Family == WeaponFamily.Broadsword && ItemAnimation > 0) ProcessSwing(target);
-			if (!s.Use || Weapon.IsDeployer) return;
+			if (!(s.Use || s.Alt) || Weapon.IsDeployer) return;
 			float prev = Aiming.ExtraErrorScale;
 			Aiming.ExtraErrorScale = 0f; // the cursor is where the shot goes: no grade wobble, no lead error
+			WeaponUse.MindAltMode = s.Use ? 1 : 2; // her buttons choose the primary or the right-click, not the soldier's alt-fire policy
 			try { if (WeaponUse.TryAttack(this, target)) MindShots++; }
 			catch (Exception e) { MindControl.Warn(e); }
-			finally { Aiming.ExtraErrorScale = prev; }
+			finally { Aiming.ExtraErrorScale = prev; WeaponUse.MindAltMode = 0; }
 		}
 	}
 }

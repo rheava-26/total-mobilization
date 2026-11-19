@@ -75,6 +75,7 @@ namespace Levy.Content.NPCs
 			Movement_UpdateCore();
 			FlightTalkTick();
 			AirPost();   // SoldierNPC.AirCtl.cs: lava catch, wing hold / release, telemetry (last word on the air velocity)
+			AirStatTick();
 		}
 
 		private void Movement_UpdateCore()
@@ -98,6 +99,7 @@ namespace Levy.Content.NPCs
 			}
 			else if (AerialGroundY == float.MinValue) AerialGroundY = npc.Bottom.Y;
 			_wasAirborne = !grounded;
+			_wingMark = _wingTime; _airGrounded = grounded;
 			TickGoalJumpDebounce(grounded);
 			bool air = UpdateAerial(grounded);
 			if (_gapAssist > 0 && !air) TickGapAssist(grounded);
@@ -781,7 +783,11 @@ namespace Levy.Content.NPCs
 			if (_wingTime > 0)
 			{
 				// budget in hand after an aerial climb: come down under control rather than plunge
-				if (_aerialClimbed && NPC.velocity.Y > AerialDescendSpeedPx) NPC.velocity.Y = AerialDescendSpeedPx;
+				if (_aerialClimbed && NPC.velocity.Y > AerialDescendSpeedPx)
+				{
+					NPC.velocity.Y = AerialDescendSpeedPx;
+					if (GroundFirst) SpendFlight(true, HoverWingDrain); // a held descent is flight: a player feathers the jump key (or holds a hover) to come down slowly
+				}
 				return;
 			}
 			if (NPC.velocity.Y > GlideFallSpeed) NPC.velocity.Y = GlideFallSpeed;
@@ -896,9 +902,23 @@ namespace Levy.Content.NPCs
 			}
 
 			float desired = MathHelper.Clamp(dy * AerialClimbGain, -AerialClimbSpeedPx, AerialDescendSpeedPx);
-			if (vy <= desired + AerialThrustDeadbandPx) { Glide(false); return; } // already rising as fast as wanted (or falling gently): coast
 			bool wing = Abilities.HasWings && _wingTime > WingBudgetReserveTicks;
 			bool rocket = !wing && _rocketTime > 0; // boots only once the wings are out, as in vanilla
+			// Only hover wings hold a hover (down + jump) for a player. Other wings and rocket boots climb while jump is held and fall when it is let go,
+			// so without hover gear the altitude is a climb to it, a fall through it and another climb: every thrust tick costs a full tick of flight time.
+			if (GroundFirst && !(wing && Abilities.CanHover))
+			{
+				if (!needUp) return; // jump let go: the body falls under gravity, as a player's does, and spends nothing
+				if (!wing && !rocket || CeilingAbove()) { _aerialSpent = true; return; }
+				float up = vy + Math.Max(-AerialClimbSpeedPx - vy, -AerialClimbAccel);
+				if (Math.Abs(up) < AerialMinVyPx) up = -AerialMinVyPx;
+				npc.velocity.Y = up - g;
+				SpendFlight(wing, AerialClimbDrain);
+				_aerialVisualTicks = AerialVisualHoldTicks; _usedRocket = rocket; NoHoverClimbTicks++;
+				if (((uint)Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)AerialNetSyncTicks == 0) npc.netUpdate = true;
+				return;
+			}
+			if (vy <= desired + AerialThrustDeadbandPx) { Glide(false); return; } // already rising as fast as wanted (or falling gently): coast
 			if (!wing && !rocket)
 			{
 				if (needUp) _aerialSpent = true; // dry before the altitude: land, recharge, wait out the cooldown
@@ -910,10 +930,16 @@ namespace Levy.Content.NPCs
 			float post = vy + Math.Max(desired - vy, -AerialClimbAccel); // vertical speed after this tick's gravity
 			if (Math.Abs(post) < AerialMinVyPx) post = -AerialMinVyPx;   // never exactly 0: that reads as standing on the ground
 			npc.velocity.Y = post - g;
-			SpendFlight(wing, desired < AerialClimbDrainBelowVy ? AerialClimbDrain : AerialHoverDrain);
+			SpendFlight(wing, desired < AerialClimbDrainBelowVy ? AerialClimbDrain : GroundFirst ? HoverWingDrain : AerialHoverDrain);
 			_aerialVisualTicks = AerialVisualHoldTicks; _usedRocket = rocket;
 			if (((uint)Main.GameUpdateCount + (uint)npc.whoAmI) % (uint)AerialNetSyncTicks == 0) npc.netUpdate = true;
 		}
+
+		/// <summary>LEVY_GROUNDED=0 restores the old air rules (any wings hover, the boss dance lifts every flier, a target overhead is climbed to even when it can be shot from the floor).</summary>
+		internal static readonly bool GroundFirst = Environment.GetEnvironmentVariable("LEVY_GROUNDED") != "0";
+		/// <summary>Vanilla's hover costs half a tick of wing time a tick (Player.WingMovement, down held, no sideways key; Calamity's Hadarian Wings give the same half back).</summary>
+		private const float HoverWingDrain = 0.5f;
+		internal static long NoHoverClimbTicks;
 
 		/// <summary>Burns flight budget in fractions (hover feathering costs less than a tick of climb).</summary>
 		private void SpendFlight(bool wing, float amount)

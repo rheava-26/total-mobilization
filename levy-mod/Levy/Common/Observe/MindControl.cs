@@ -18,14 +18,16 @@ namespace Levy.Common.Observe
 	public struct MindInputState
 	{
 		public bool Left, Right, Jump, Down, Use, Alt;
+		/// <summary>The up key is held this frame (a rope is climbed with it).</summary>
+		public bool Up;
 		/// <summary>The grapple key (E) is held this frame.</summary>
 		public bool Hook;
 		/// <summary>Hotbar choice held this frame: 0 none, 1 the main weapon, 2 the sidearm.</summary>
 		public byte Slot;
 		public Vector2 Aim;
 
-		public ushort Pack() => (ushort)((Left ? 1 : 0) | (Right ? 2 : 0) | (Jump ? 4 : 0) | (Down ? 8 : 0) | (Use ? 16 : 0) | (Alt ? 32 : 0) | (Hook ? 64 : 0) | ((Slot & 3) << 7));
-		public static MindInputState Unpack(ushort b, Vector2 aim) => new MindInputState { Left = (b & 1) != 0, Right = (b & 2) != 0, Jump = (b & 4) != 0, Down = (b & 8) != 0, Use = (b & 16) != 0, Alt = (b & 32) != 0, Hook = (b & 64) != 0, Slot = (byte)((b >> 7) & 3), Aim = aim };
+		public ushort Pack() => (ushort)((Left ? 1 : 0) | (Right ? 2 : 0) | (Jump ? 4 : 0) | (Down ? 8 : 0) | (Use ? 16 : 0) | (Alt ? 32 : 0) | (Hook ? 64 : 0) | ((Slot & 3) << 7) | (Up ? 512 : 0));
+		public static MindInputState Unpack(ushort b, Vector2 aim) => new MindInputState { Left = (b & 1) != 0, Right = (b & 2) != 0, Jump = (b & 4) != 0, Down = (b & 8) != 0, Use = (b & 16) != 0, Alt = (b & 32) != 0, Hook = (b & 64) != 0, Slot = (byte)((b >> 7) & 3), Up = (b & 512) != 0, Aim = aim };
 		public bool SameAs(in MindInputState o) => Pack() == o.Pack() && Vector2.DistanceSquared(Aim, o.Aim) < 64f;
 	}
 
@@ -221,7 +223,7 @@ namespace Levy.Common.Observe
 			var t = Terraria.GameInput.PlayerInput.Triggers.Current;
 			var k = Main.keyState;
 			byte slot = (byte)(k.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.D1) ? 1 : k.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.D2) ? 2 : 0);
-			return new MindInputState { Left = t.Left, Right = t.Right, Jump = t.Jump, Down = t.Down, Use = t.MouseLeft, Alt = t.MouseRight, Hook = t.Grapple, Slot = slot, Aim = Main.MouseWorld };
+			return new MindInputState { Left = t.Left, Right = t.Right, Jump = t.Jump, Down = t.Down, Up = t.Up, Use = t.MouseLeft, Alt = t.MouseRight, Hook = t.Grapple, Slot = slot, Aim = Main.MouseWorld };
 		}
 
 		/// <summary>Called every frame while the local player is controlling: hands the input to the server (or the local link).</summary>

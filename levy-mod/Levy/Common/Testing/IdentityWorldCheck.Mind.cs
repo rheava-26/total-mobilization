@@ -87,6 +87,7 @@ namespace Levy.Common.Testing
 			Vector2 at = new Vector2(Cx * 16f + 8f, floor);
 			SpawnOriginTarget(at); _sweepTarget.active = false;
 			SoldierRecord rec = MindRecord(weapon, 0, boots, wings, acc); recOut = rec;
+			if (_mindHookGear != null) { rec.Gear.Set(SoldierGear.SlotHook, _mindHookGear.Clone()); rec.Gear.SetLocked(SoldierGear.SlotHook, true); }
 			RosterSystem.Instance.Regulars.Add(rec);
 			int body = RosterSystem.Instance.SpawnBody(rec, at);
 			if (body < 0 || !rec.HasBody) throw new Exception("levy did not spawn");
@@ -476,6 +477,8 @@ namespace Levy.Common.Testing
 			_mindSpawnsCleared = 0;
 			try { MindMovementAudit(chk); } catch (Exception e) { Check("mind movement audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			Note($"mind movement audit: {_mindSpawnsCleared} world spawns removed while the driven bodies ran");
+			ClearSoldiers();
+			try { MindAirAudit(chk); } catch (Exception e) { Check("mind air audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			ClearSoldiers();
 			try { MindAttackAudit(chk); } catch (Exception e) { Check("mind attack audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			ClearSoldiers();

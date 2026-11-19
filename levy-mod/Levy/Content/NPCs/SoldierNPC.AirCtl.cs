@@ -33,6 +33,32 @@ namespace Levy.Content.NPCs
 		/// <summary>Fight telemetry (the lab kit reads and resets these): body-ticks hooked (cast flying or reeling), hanging on purpose, wings held, wings released, lava catches.</summary>
 		internal static long StatHookedTicks, StatHangTicks, StatWingHoldTicks, StatWingRelTicks, StatLavaCatches, StatLavaDangerTicks, StatEscapeTicks;
 
+		/// <summary>Fight telemetry for the air rules (the lab kit reads and resets these): levy-ticks alive while a boss lives, of them airborne, wing ticks spent, and ticks held in a hover (aloft, |vy| under 0.6, flight spent) split by whether the wings can hover for a player.</summary>
+		internal static long StatFightTicks, StatAirTicks, StatWingSpent, StatHoverTicks, StatHoverNoGear;
+		private int _wingMark; private bool _airGrounded;
+		private static uint _bossSeenTick = uint.MaxValue; private static bool _bossSeen;
+
+		private void AirStatTick()
+		{
+			uint now = Main.GameUpdateCount;
+			if (_bossSeenTick != now)
+			{
+				_bossSeenTick = now; _bossSeen = false;
+				for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].boss) { _bossSeen = true; break; }
+			}
+			if (!_bossSeen || NPC.life <= 0 || OfficerMode) return;
+			StatFightTicks++;
+			int spent = _wingMark - _wingTime;
+			if (spent > 0) StatWingSpent += spent;
+			bool hooked = _hkPhase == HookPhase.InFlight || _hkPhase == HookPhase.Reel;
+			if (_airGrounded || NPC.velocity.Y == 0f || NPC.wet || hooked) return;
+			StatAirTicks++;
+			if (spent > 0 || _drainAcc > 0f && _aerial)
+			{
+				if (Math.Abs(NPC.velocity.Y) < 0.6f && !_flying) { StatHoverTicks++; if (Abilities != null && !Abilities.CanHover) StatHoverNoGear++; }
+			}
+		}
+
 		/// <summary>True while the body falls at the wing's held speed: spent wings glide, and a held wing (the dodge's hold) does the same with flight time left.</summary>
 		private bool WingGlideCap => Abilities != null && Abilities.HasWings && !_flying && (_wingTime <= 0 || _wingHoldTicks > 0);
 

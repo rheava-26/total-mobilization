@@ -979,6 +979,7 @@ namespace Levy.Content.NPCs
 			{
 				float reach = rangeTiles * LevyConstants.ShootableRangeFrac * (_altHeld ? LevyConstants.Movement.AerialHoldRangeMult : LevyConstants.Movement.AerialCommitRangeMult);
 				if (Aiming.TilesToHitbox(NPC.Center, seg) > reach) { _altHeld = false; return; } // not close enough yet: the approach handles it
+				if (GroundFirst && ShootsFromFloor(seg, rangeTiles)) { _altHeld = false; return; } // a player with a gun stays on the floor when the shot is there from it: no wing time spent on a target in reach
 			}
 
 			float capped = FiringAltitude(seg, standoffTiles, melee, out bool truncated);
@@ -988,6 +989,15 @@ namespace Levy.Content.NPCs
 			if (groundY - capped < LevyConstants.Movement.AerialClimbBenefitTiles * tilePx) { _altHeld = false; return; }
 			if (RoofOverhead()) { _altHeld = false; return; } // indoors: the ground rules (and the way out) apply
 			WantsAltitude = true; AltitudeBottomY = capped; _altHeld = true;
+		}
+
+		/// <summary>The target is in reach, with a firing line, from where the body stands (or, aloft, from the floor under it): a ranged soldier has no reason to fly for it.</summary>
+		private bool ShootsFromFloor(NPC seg, float rangeTiles)
+		{
+			Vector2 from = NPC.Center;
+			if (NPC.velocity.Y != 0f && AerialGroundY != float.MinValue) from = new Vector2(NPC.Center.X, AerialGroundY - BodyHeight * 0.5f);
+			if (Aiming.TilesToHitbox(from, seg) > rangeTiles * LevyConstants.ShootableRangeFrac) return false;
+			return ShotIgnoresTiles() || Aiming.HasLineOfSight(from + (WeaponUse.Muzzle(this) - NPC.Center), seg.Center);
 		}
 
 		/// <summary>A grounded body with a solid tile within RoofProbeTiles above its head: it is in a room or under an overhang, and a climb would only spend the flight on the ceiling. (A handful of tile reads per think, only for a soldier that is about to commit to a climb.)</summary>

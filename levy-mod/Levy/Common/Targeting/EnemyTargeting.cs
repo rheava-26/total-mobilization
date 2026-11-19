@@ -468,7 +468,7 @@ namespace Levy.Common.Targeting
 			int n = 0, nearSoldiers = 0, nearest = -1; float dMin = float.PositiveInfinity;
 			for (int pass = 0; pass < 2; pass++)
 			{
-			if (pass == 1 && (!tiered || n > 0 || vanillaIsPlayer || lost || IsBossBodyOrPart(npc))) break;
+				if (pass == 1 && (!tiered || n > 0 || vanillaIsPlayer || lost || IsBossBodyOrPart(npc))) break;
 			for (int i = 0; i < Bodies.Count; i++)
 			{
 				ITargetBody body = Bodies[i];

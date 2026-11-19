@@ -79,9 +79,11 @@ namespace Levy.Common.Testing
 					{
 						PlaceCommander(0);
 						if (arm == "levies") foreach (var l in Levies(6, 3f, 12f)) l.NPC.immortal = true; // the army 12 tiles off (kept alive for the watch); the machines right under the boss, far closer to it than anything else
-						Step(2);
 						Vector2 spawnAt = _cmdAt + new Vector2(0, -30 * 16f);
 						var machines = Machines(spawnAt + new Vector2(0, 6 * 16f), 3, 3);
+						Step(2);
+						// counted before the boss arrives: a boss can destroy every machine during the watch
+						int liveAtStart = LiveMachines(); bool machineBodies = EnemyTargeting.Bodies.Exists(bd => EnemyTargeting.IsMachineBody(bd.NPC));
 						NPC boss = SpawnNpc(type, spawnAt);
 						if (boss == null || boss.type != type) { Check($"(Priority) {name} [{arm}]: spawns", false); continue; }
 						int who = boss.whoAmI;
@@ -109,9 +111,9 @@ namespace Levy.Common.Testing
 							else if (b.target == 0) onPlayer++;
 						}
 						int live = LiveMachines();
-						string seen = $"{ticks} ticks: on a levy {onLevy}, on the commander {onPlayer}, on a machine {bossOnMachine}; adds on a machine {familyOnMachine} of {family} add-ticks; {machines.Count} machines spawned, {live} live";
+						string seen = $"{ticks} ticks: on a levy {onLevy}, on the commander {onPlayer}, on a machine {bossOnMachine}; adds on a machine {familyOnMachine} of {family} add-ticks; {machines.Count} machines spawned, {liveAtStart} live target bodies when the boss came, {live} live after";
 						Note($"(Priority) {name} [{arm}]: {seen}");
-						Check($"(Priority) {name} [{arm}]: the machines are live target bodies", live > 0 && EnemyTargeting.Bodies.Exists(bd => EnemyTargeting.IsMachineBody(bd.NPC)), () => seen);
+						Check($"(Priority) {name} [{arm}]: the machines are live target bodies when the boss arrives", liveAtStart > 0 && machineBodies, () => seen);
 						Check($"(Priority) {name} [{arm}]: the boss never locks a drone or turret", bossOnMachine == 0, () => seen);
 						if (arm != "spectator") Check($"(Priority) {name} [{arm}]: its adds never lock a drone or turret while a player or levy is valid", familyOnMachine == 0, () => seen);
 						if (arm == "levies") Check($"(Priority) {name} [{arm}]: it fights the levies or the commander", onLevy + onPlayer >= ticks / 2, () => seen);

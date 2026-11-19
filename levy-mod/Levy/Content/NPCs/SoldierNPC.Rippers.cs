@@ -85,7 +85,9 @@ namespace Levy.Content.NPCs
 				{
 					// hold the full bar until the next throw is a stealth strike, so the whole boosted window starts with it; never forever
 					bool aligned = LevyRippers.StealthStrikeReady(cp);
+					if (AmLive) aligned = aligned && AmStrikeWindow; // an ambusher: in the strike window, in reach, the strike about to go (SoldierNPC.Ambush.cs)
 					go = aligned || ++_rogueHold > LevyRippers.RogueHoldTicks;
+					if (aligned && AmLive) global::Levy.Common.Weapons.Ambush.ModeAligned++;
 					if (go) { if (aligned) LevyRippers.RogueAligned++; else LevyRippers.RogueTimeouts++; }
 				}
 				if (go)

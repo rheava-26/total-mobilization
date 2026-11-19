@@ -32,10 +32,10 @@ namespace Levy.Common.Testing
 
 		private sealed class RogueRes
 		{
-			public string Who = "", Notes = ""; public long Dmg; public int Hits, Throws, Strikes, Flagged, Moving, Partial, NearWaits, StrikeHits, Ricochets, MaxChain, Ran, BarFullTicks, Holds, HoldAnim, HoldTicks, StrikeProjs; public float BarMax; public string Err;
+			public string Who = "", Notes = "", Trace = ""; public long Dmg; public int Hits, Throws, Strikes, Flagged, Moving, Partial, NearWaits, StrikeHits, Ricochets, MaxChain, Ran, BarFullTicks, Holds, HoldAnim, HoldTicks, StrikeProjs, Shots, Struck, Cycles, AmStrikes, ChargeThrows; public float BarMax; public string Err;
 			public double PerMin(int n) => n * 3600.0 / Math.Max(1, Ran);
 			public double Dps => Dmg * 60.0 / Math.Max(1, Ran);
-			public override string ToString() => $"{Who}: dps {Dps:0}, throws {Throws}, strikes {Strikes} ({PerMin(Strikes):0.0}/min), strike hits {StrikeHits}, ricochets {Ricochets} (longest chain {MaxChain}), flagged shots {Flagged}, hits {Hits}, moving {Moving} ticks, bar {BarMax:0.##} full {BarFullTicks}/{Ran} ticks, policy holds {Holds}{(HoldTicks > 0 ? $", grenade held {HoldTicks} ticks ({HoldAnim} with the use animation running)" : "")}{(Notes.Length > 0 ? " [" + Notes + "]" : "")}{(Err != null ? ", THREW " + Err : "")}";
+			public override string ToString() => $"{Who}: dps {Dps:0}, throws {Throws}, strikes {Strikes} ({PerMin(Strikes):0.0}/min), strike hits {StrikeHits}, ricochets {Ricochets} (longest chain {MaxChain}), flagged shots {Flagged}, hits {Hits}, moving {Moving} ticks, struck {Struck}/{Shots} shots ({PerMin(Struck):0.0}/min), ambush cycles {Cycles} strikes {AmStrikes} throws while charging {ChargeThrows}, bar {BarMax:0.##} full {BarFullTicks}/{Ran} ticks, policy holds {Holds}{(HoldTicks > 0 ? $", grenade held {HoldTicks} ticks ({HoldAnim} with the use animation running)" : "")}{(Notes.Length > 0 ? " [" + Notes + "]" : "")}{(Err != null ? ", THREW " + Err : "")}";
 		}
 
 		/// <summary>Pins the rogue sweep's extra enemies in place at full life (called with the sweep target's pin, before the NPCs update).</summary>
@@ -118,6 +118,8 @@ namespace Levy.Common.Testing
 			Player scratch = null, saved255 = null; int body = -1; SoldierRecord rec = null; SoldierNPC soldier = null;
 			ArmySweepTally.Target = _sweepTarget.whoAmI; ArmySweepTally.Rogue = true;
 			int holds0 = StealthPolicy.Holds, near0 = StealthPolicy.NearFull, fin0 = StealthPolicy.Finishes, full0 = RogueGrenade.FullThrows, gw0 = RogueGrenade.GraceWaits;
+			int shoot = int.TryParse(Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ROGUE_SHOOT"), out int sh) ? sh : 0; // the target fires a slow aimed laser every N ticks (0: harmless): how often is the actor hit
+			var shots = new HashSet<int>();
 			try
 			{
 				if (player)
@@ -152,6 +154,14 @@ namespace Levy.Common.Testing
 				int prevAnim = 0; uint prevUse = 0; bool prevReady = false; float prevBar = 0f;
 				for (int k = 0; k < ticks; k++)
 				{
+					Rectangle actorBox = player ? scratch.Hitbox : Main.npc[body].Hitbox;
+					if (shoot > 0 && k % shoot == shoot / 2)
+					{
+						Vector2 from = _sweepTarget.Center, to = actorBox.Center.ToVector2();
+						Vector2 v = to - from; v = v.LengthSquared() > 1f ? Vector2.Normalize(v) * 7f : new Vector2(7f, 0f);
+						int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("IdentityWorldCheck"), from, v, ProjectileID.DeathLaser, 1, 0f, Main.myPlayer);
+						if (pi >= 0 && pi < Main.maxProjectiles) { Projectile q = Main.projectile[pi]; q.hostile = true; q.friendly = false; q.tileCollide = false; q.timeLeft = 240; shots.Add(q.identity); res.Shots++; }
+					}
 					if (player)
 					{
 						RogueStandInUpdate(scratch);
@@ -172,11 +182,25 @@ namespace Levy.Common.Testing
 					}
 					else
 					{
+						AmbushPhase ph0 = soldier.AmPhase; uint use0 = soldier.LastUseTick;
 						rec.Mana = rec.MaxMana; OriginStep();
 						if (!Main.npc[body].active || Main.npc[body].ModNPC is not SoldierNPC) { res.Err = "levy gone"; break; }
+						if (soldier.LastUseTick != use0 && use0 != 0 && (ph0 == AmbushPhase.FallBack || ph0 == AmbushPhase.Charge) && (soldier.AmPhase == AmbushPhase.FallBack || soldier.AmPhase == AmbushPhase.Charge) && !grenade) res.ChargeThrows++;
+						if (shoot > 0 && soldier.TicksSinceDamaged == 0) res.Struck++;
+						Main.npc[body].life = Main.npc[body].lifeMax;
 						if (grenade && soldier.Dummy != null && GrenadeInHand(soldier.Dummy.whoAmI, w.shoot, out _) != null) res.HoldTicks++;
 						if (!grenade && soldier.LastUseTick != prevUse) { if (prevUse != 0) res.Throws++; prevUse = soldier.LastUseTick; }
 						if (Math.Abs(Main.npc[body].velocity.X) > 0.1f || Math.Abs(Main.npc[body].velocity.Y) > 0.1f) res.Moving++;
+					}
+					if (shoot > 0)
+					{
+						Rectangle box = player ? scratch.Hitbox : Main.npc[body].Hitbox;
+						for (int i = 0; i < Main.maxProjectiles; i++)
+						{
+							Projectile q = Main.projectile[i];
+							if (!q.active || !q.hostile || !shots.Contains(q.identity)) continue;
+							if (q.Hitbox.Intersects(box)) { if (player) res.Struck++; q.active = false; shots.Remove(q.identity); }
+						}
 					}
 					ClearNaturalHostiles(); ArmyReadDamage(new ArmyRes());
 					res.Ran++;
@@ -199,6 +223,7 @@ namespace Levy.Common.Testing
 				}
 				res.Dmg = ArmySweepTally.Damage; res.Hits = ArmySweepTally.Hits; res.StrikeHits = ArmySweepTally.StrikeHits;
 				for (int i = 0; i < Main.maxProjectiles; i++) EndChain(i);
+				if (soldier != null) { res.Cycles = soldier.AmCycles; res.AmStrikes = soldier.AmStrikes; res.Trace = string.Join(">", soldier.AmTrace.Select(p => p.ToString())); }
 				res.Holds = StealthPolicy.Holds - holds0; res.NearWaits = StealthPolicy.NearFull - near0; res.Notes = $"near-full waits {StealthPolicy.NearFull - near0}, finishes {StealthPolicy.Finishes - fin0}, grenade full-charge throws {RogueGrenade.FullThrows - full0}, grace ticks {RogueGrenade.GraceWaits - gw0}";
 			}
 			catch (Exception e) { res.Err = e.GetType().Name + ": " + e.Message + " @ " + string.Join(" < ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())); }
@@ -291,8 +316,26 @@ namespace Levy.Common.Testing
 			RogueHoldProbe(sk);
 			var a = ArmyRogueOne(sk, "levy", 0, 90, 1f);
 			Check($"rogue: a levy with a full stealth bar throws a real stealth strike (Stellar Knife: strikes {a.Strikes}, Calamity-flagged shots {a.Flagged}){(a.Err != null ? " THREW " + a.Err : "")}", a.Err == null && a.Strikes >= 1 && a.Flagged >= 1);
+			Check($"rogue ambush: a Stellar Knife levy (its plain throws beat the strike) throws at its own rate and runs no ambush cycle (phases '{a.Trace}')", a.Err == null && a.Trace.Length == 0 && a.Cycles == 0);
+			AmbushCycleCheck();
 			var c = ArmyRogueOne(dd, "levy", 3, 900);
 			Check($"rogue: a Doomsday Device levy winds up, lets go on a full charge, and its stealth strikes ricochet (throws {c.Throws}, partial-charge throws {c.Partial}, strikes {c.Strikes}, strike hits {c.StrikeHits}, ricochets {c.Ricochets}, longest chain {c.MaxChain}; {c.Notes}){(c.Err != null ? " THREW " + c.Err : "")}", c.Err == null && c.Throws >= 6 && c.Partial == 0 && c.Strikes >= 3 && c.Ricochets >= 6);
+		}
+
+		/// <summary>
+		/// The ambush cycle (SoldierNPC.Ambush.cs) on a levy whose weapon wants its strike, against the boss-flagged dummy: it falls back, charges standing still, strikes, and falls back again, at least twice,
+		/// and never throws while falling back or charging (a plain throw would empty the bar).
+		/// </summary>
+		private static void AmbushCycleCheck()
+		{
+			if (Ambush.Mode <= 0) { Note("rogue ambush: LEVY_AMBUSH=0, the cycle check is skipped"); return; }
+			int w = RogueItem("ShinobiBlade");
+			if (w <= 0) { Check("rogue ambush: the Shinobi Blade exists", false); return; }
+			var m = ArmyRogueOne(w, "levy", 0, 1200);
+			string seq = "FallBack>Charge>Strike>FallBack";
+			string tail = m.Trace.Length > 160 ? "..." + m.Trace.Substring(m.Trace.Length - 160) : m.Trace;
+			Check($"rogue ambush: a Shinobi Blade levy cycles fall back > charge > strike > fall back (cycles {m.Cycles}, strikes in the window {m.AmStrikes}, bar strikes {m.Strikes}, throws while falling back or charging {m.ChargeThrows}, moving {m.Moving}/{m.Ran} ticks; phases {tail}){(m.Err != null ? " THREW " + m.Err : "")}",
+				m.Err == null && m.Trace.Contains(seq) && m.Cycles >= 2 && m.Strikes >= 2 && m.ChargeThrows == 0);
 		}
 
 		/// <summary>The stealth policy's own answers for a levy holding a weapon thrown at its own rate (Stellar Knife), with its bar set: nearly full waits, half full throws, full throws (a strike), nearly full on a dying target throws.</summary>
@@ -348,7 +391,7 @@ namespace Levy.Common.Testing
 						Note($"rogue fill ({(acc > 0 ? ContentSamples.ItemsByType[acc].Name : "no accessory")}): stand-in standing {f[0]} ticks, moving {f[1]}; levy standing {f[2]} ({f[4]} moving), walking {f[3]} ({f[5]} moving)");
 					}
 				}
-				Note("rogue sweep table (weapon | scene | actor | dps | throws | strikes | strikes/min | strike hits | ricochets | longest chain | bar full ticks | policy holds | moving ticks):");
+				Note($"rogue sweep table, ambush mode {Ambush.Mode} (weapon | scene | actor | dps | throws | strikes | strikes/min | strike hits | ricochets | longest chain | bar full ticks | policy holds | moving ticks | struck/min | ambush cycles):");
 				foreach (var (type, label, name) in weapons)
 				{
 					foreach (int adds in new[] { 0, 3 })
@@ -357,7 +400,7 @@ namespace Levy.Common.Testing
 						var rows = new[] { ArmyRogueOne(type, "levy", adds, ticks), ArmyRogueOne(type, "wait", adds, ticks), ArmyRogueOne(type, "spam", adds, ticks) };
 						double best = Math.Max(1, Math.Max(rows[1].Dmg, rows[2].Dmg));
 						Note($"rogue sweep {label} {scene}: levy / best player {rows[0].Dmg / best:0.00} (wait {rows[1].Dmg / best:0.00} spam {rows[2].Dmg / best:0.00} of best) || {rows[0]} || {rows[1]} || {rows[2]}");
-						foreach (var r in rows) Note($"rogue row {label} | {scene} | {r.Who} | {r.Dps:0} | {r.Throws} | {r.Strikes} | {r.PerMin(r.Strikes):0.0} | {r.StrikeHits} | {r.Ricochets} | {r.MaxChain} | {r.BarFullTicks} | {r.Holds} | {r.Moving}{(r.Err != null ? " | THREW " + r.Err : "")}");
+						foreach (var r in rows) Note($"rogue row {label} | {scene} | {r.Who} | {r.Dps:0} | {r.Throws} | {r.Strikes} | {r.PerMin(r.Strikes):0.0} | {r.StrikeHits} | {r.Ricochets} | {r.MaxChain} | {r.BarFullTicks} | {r.Holds} | {r.Moving} | {r.PerMin(r.Struck):0.0} | {r.Cycles}{(r.Err != null ? " | THREW " + r.Err : "")}");
 					}
 				}
 			}

@@ -31,6 +31,8 @@ namespace Levy.Common.Perf
 		internal static bool ArmyNoticeShown; internal static int ArmyStep;
 		internal static bool? TestArmyDontAsk;
 		private static bool _live;
+		/// <summary>Self-check: the popup's clock and counters, saved and given back by a check that shows a popup, so the next check starts from the same state.</summary>
+		internal static (DateTime last, DateTime snooze, int shown, bool notice) TestState { get => (_lastShown, _snoozeUntil, Shown, ArmyNoticeShown); set { _lastShown = value.last; _snoozeUntil = value.snooze; Shown = value.shown; ArmyNoticeShown = value.notice; _pending = null; } }
 		private static bool ArmyDontAsk { get { if (TestArmyDontAsk.HasValue) return TestArmyDontAsk.Value; try { return PerfConfig.Get?.ArmyNoticeDontAskAgain ?? false; } catch (Exception) { return false; } } }
 		private static DateTime _lastShown = DateTime.MinValue, _snoozeUntil = DateTime.MinValue;
 		private static LagVerdict _pending; private static uint _showAtTick; private static uint _hideAtTick;

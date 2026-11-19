@@ -237,7 +237,7 @@ namespace Levy.Common.Testing
 
 		private static void NoticeChecks()
 		{
-			bool tm = PerfPopup.TestMode, shown = PerfPopup.ArmyNoticeShown; bool? dont = PerfPopup.TestArmyDontAsk;
+			bool tm = PerfPopup.TestMode; bool? dont = PerfPopup.TestArmyDontAsk; var popupState = PerfPopup.TestState; // the popup's clock is put back: the analyzer check after this one rate-limits on it
 			try
 			{
 				PerfPopup.TestMode = true; PerfPopup.ArmyNoticeShown = false; PerfPopup.TestArmyDontAsk = false;
@@ -251,9 +251,12 @@ namespace Levy.Common.Testing
 				Check("live notice: Don't ask again silences the army note, not the lag note", PerfPopup.TestArmyDontAsk == true);
 				PerfPopup.ArmyNoticeShown = false;
 				Check("live notice: and it stays silent after that", PerfPopup.CheckLive(w, 45) == null);
+				var before = PerfPopup.TestState; PerfPopup.TestState = popupState; var after = PerfPopup.TestState;
+				Check("the popup's clock and counters are given back for the next check", after.last == popupState.last && after.snooze == popupState.snooze && after.shown == popupState.shown && after.notice == popupState.notice);
+				PerfPopup.TestState = before;
 				PerfPopup.Hide();
 			}
-			finally { PerfPopup.TestMode = tm; PerfPopup.ArmyNoticeShown = shown; PerfPopup.TestArmyDontAsk = dont; }
+			finally { PerfPopup.Hide(); PerfPopup.TestMode = tm; PerfPopup.TestArmyDontAsk = dont; PerfPopup.TestState = popupState; }
 			string help = LevyUtil.T("UI2.ActiveArmyHelp");
 			Check("the \"?\" says what it does (" + help + ")", help == "Set how many soldiers fight at once. When one falls, the next in reserve takes their place right away. Fewer soldiers on the field means less lag.");
 			Check("the settings have a label and the waiting state has words", LevyUtil.T("UI2.WaitingInReserve") == "Waiting in reserve" && LevyUtil.T("Roster.ActiveArmySet", 20).Contains("20") && !LevyUtil.T("UI2.ActiveArmyAll").StartsWith("Mods."));

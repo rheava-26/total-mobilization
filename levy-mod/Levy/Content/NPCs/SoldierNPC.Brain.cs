@@ -983,6 +983,12 @@ namespace Levy.Content.NPCs
 			}
 
 			float capped = FiringAltitude(seg, standoffTiles, melee, out bool truncated);
+			if (GroundFirst && !melee)
+			{
+				// a gun needs the target in reach, not level with it: climb only to the lowest height the shot reaches from (less flight spent, and further from the boss's own lane)
+				float reachPx = rangeTiles * LevyConstants.ShootableRangeFrac * 0.9f * LevyConstants.TilePx, dxPx = Math.Abs(seg.Center.X - NPC.Center.X);
+				if (reachPx > dxPx + LevyConstants.TilePx) capped = Math.Max(capped, seg.Center.Y + MathF.Sqrt(reachPx * reachPx - dxPx * dxPx) + BodyHeight * 0.5f);
+			}
 			// melee must actually reach its target; a jump-only kit has no hover, so it only goes when it can fully get there
 			if (truncated && (melee || !AerialSustained)) { _altHeld = false; return; }
 			float groundY = AerialGroundY == float.MinValue ? NPC.Bottom.Y : AerialGroundY;

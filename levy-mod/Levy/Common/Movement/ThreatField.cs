@@ -127,6 +127,11 @@ namespace Levy.Common.Movement
 		/// <summary>Harness switch (LEVY_HOSTILE_DODGE=0): a hostile soldier ignores the player's side's shots again (the field then lists only hostile projectiles, as before).</summary>
 		public static bool HostileDodgeOn = Environment.GetEnvironmentVariable("LEVY_HOSTILE_DODGE") != "0";
 
+		/// <summary>Homing shots are predicted on the arc they are turning on (LEVY_PROJTURN=0: straight lines, as before). Turn rates under ProjTurnMinRad are a straight shot; the arc is kept for ProjTurnCapRad of heading change.</summary>
+		public static bool ProjTurnOn = Environment.GetEnvironmentVariable("LEVY_PROJTURN") != "0";
+		private const float ProjTurnMinRad = 0.004f, ProjTurnMaxRad = 0.2f, ProjTurnCapRad = 1.6f;
+		public static long ProjTurning;
+
 		public static List<Threat> Snapshot()
 		{
 			uint now = Main.GameUpdateCount;
@@ -153,7 +158,19 @@ namespace Levy.Common.Movement
 				}
 				Vector2 v = p.velocity;
 				if (v.LengthSquared() < LevyConstants.Movement.DodgeMinProjectileSpeed * LevyConstants.Movement.DodgeMinProjectileSpeed) continue;
-				Snap.Add(new Threat { P = p.Center, V = v * (1f + p.extraUpdates), Half = new Vector2(p.width, p.height) * 0.5f, Weight = p.damage, PlayerSide = theirs });
+				var pt = new Threat { P = p.Center, V = v * (1f + p.extraUpdates), Half = new Vector2(p.width, p.height) * 0.5f, Weight = p.damage, PlayerSide = theirs };
+				if (ProjTurnOn)
+				{
+					// a homing shot bends: the turn its heading has been making since the field last looked is carried forward on an arc (as a worm head's is), so a dodge is judged against where the shot will curve, not the straight line
+					float ang = v.ToRotation();
+					if (PrevAngTick[i] != 0 && now - PrevAngTick[i] <= 8u && now > PrevAngTick[i])
+					{
+						float w = MathHelper.WrapAngle(ang - PrevAng[i]) / (now - PrevAngTick[i]);
+						if (Math.Abs(w) > ProjTurnMinRad) { pt.Turn = MathHelper.Clamp(w, -ProjTurnMaxRad, ProjTurnMaxRad); pt.TurnT = ProjTurnCapRad / Math.Abs(pt.Turn); ProjTurning++; }
+					}
+					PrevAng[i] = ang; PrevAngTick[i] = now;
+				}
+				Snap.Add(pt);
 			}
 			float minSq = LevyConstants.Movement.DodgeNpcMinSpeed * LevyConstants.Movement.DodgeNpcMinSpeed, heavyMinSq = LevyConstants.Movement.DodgeHeavyMinSpeed * LevyConstants.Movement.DodgeHeavyMinSpeed;
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -346,6 +363,7 @@ namespace Levy.Common.Movement
 				}
 				Vector2 end = ThreatAt(t, horizon);
 				float r = reach + Math.Max(t.Half.X, t.Half.Y);
+				if (t.Turn != 0f && t.Gy <= 0f) { Vector2 mid = ThreatAt(t, horizon / 2); if (SegDistSq(t.P, mid, c) <= r * r || SegDistSq(mid, end, c) <= r * r) into.Add(t); continue; }   // an arc: two chords
 				if (SegDistSq(t.P, end, c) <= r * r) into.Add(t);
 			}
 		}

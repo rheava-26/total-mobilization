@@ -139,7 +139,39 @@ namespace Levy.Common.Boss
 			Seed(NPC.downedEmpressOfLight, NPCID.HallowBoss);
 			Seed(NPC.downedAncientCultist, NPCID.CultistBoss);
 			Seed(NPC.downedMoonlord, NPCID.MoonLordCore);
+			changed |= BackfillCalamity();
 			if (changed && LevyUtil.IsServer) NetMessage.SendData(MessageID.WorldData);
+		}
+
+		/// <summary>Calamity's own per-boss downed flags (CalamityMod.DownedBossSystem._downedX), so a Calamity boss beaten before Levy recorded kills counts as beaten too. Read by reflection; a missing flag or type is skipped.</summary>
+		private static readonly (string flag, string[] npcs)[] CalamityDowned =
+		{
+			("DesertScourge", new[] { "DesertScourgeHead" }), ("Crabulon", new[] { "Crabulon" }), ("HiveMind", new[] { "HiveMind" }), ("Perforator", new[] { "PerforatorHive" }),
+			("SlimeGod", new[] { "SlimeGodCore" }), ("Cryogen", new[] { "Cryogen" }), ("AquaticScourge", new[] { "AquaticScourgeHead" }), ("BrimstoneElemental", new[] { "BrimstoneElemental" }),
+			("CalamitasClone", new[] { "CalamitasClone" }), ("Leviathan", new[] { "Anahita", "Leviathan" }), ("AstrumAureus", new[] { "AstrumAureus" }), ("Plaguebringer", new[] { "PlaguebringerGoliath" }),
+			("Ravager", new[] { "RavagerBody" }), ("AstrumDeus", new[] { "AstrumDeusHead" }), ("Guardians", new[] { "ProfanedGuardianCommander" }), ("Dragonfolly", new[] { "Dragonfolly" }),
+			("Providence", new[] { "Providence" }), ("CeaselessVoid", new[] { "CeaselessVoid" }), ("StormWeaver", new[] { "StormWeaverHead" }), ("Signus", new[] { "Signus" }),
+			("Polterghast", new[] { "Polterghast" }), ("BoomerDuke", new[] { "OldDuke" }), ("DoG", new[] { "DevourerofGodsHead" }), ("Yharon", new[] { "Yharon" }),
+			("ExoMechs", new[] { "AresBody", "ThanatosHead", "Apollo", "Artemis" }), ("Calamitas", new[] { "SupremeCalamitas" }), ("PrimordialWyrm", new[] { "PrimordialWyrmHead" }),
+		};
+
+		private static bool BackfillCalamity()
+		{
+			if (!ModLoader.TryGetMod("CalamityMod", out Mod cal)) return false;
+			bool changed = false;
+			try
+			{
+				System.Type sys = cal.Code?.GetType("CalamityMod.DownedBossSystem");
+				if (sys == null) return false;
+				foreach (var (flag, npcs) in CalamityDowned)
+				{
+					var f = sys.GetField("_downed" + flag, System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+					if (f == null || f.FieldType != typeof(bool) || !(bool)f.GetValue(null)) continue;
+					foreach (string n in npcs) if (cal.TryFind(n, out ModNPC mn)) changed |= _downed.Add(KeyOfType(mn.Type));
+				}
+			}
+			catch (System.Exception e) { Levy.Instance?.Logger.Warn("Levy: reading Calamity's downed flags failed; Calamity bosses count as beaten once Levy sees them die: " + e.Message); }
+			return changed;
 		}
 
 		public override void Unload() { _downed.Clear(); _keyCache.Clear(); _anahita = -2; _leviathan = -1; }

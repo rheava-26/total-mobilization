@@ -38,6 +38,13 @@ namespace Levy.Common
 			public const float ArmyPullRadiusPx = 700f;
 			/// <summary>Penalty on the commander's weighted distance per soldier inside <see cref="ArmyPullRadiusPx"/> (a cluster of soldiers outweighs one player). 0 switches the collective pull off.</summary>
 			public const float ArmyPullPerSoldierPx = 40f;
+			/// <summary>
+			/// After the commander dies, a boss beaten before in this world keeps fighting the levies only while one stands within this many tiles of it; past it the fight is over and the boss leaves.
+			/// 200 tiles is about a screen and a half each way at 1080p: wider than any levy's reach into a fight (a levy that close is in the fight), well inside the leashes boss AIs run on their own targets
+			/// (Dragonfolly's 350, Calamity's ~400-tile despawn ranges), so a fleeing boss is never pinned by an army it can no longer see.
+			/// </summary>
+			public const int LostFightLeashTiles = 200;
+			public const float LostFightLeashPx = LostFightLeashTiles * 16f;
 			/// <summary>Soldiers counted for the collective pull stop here (so the penalty tops out at this x <see cref="ArmyPullPerSoldierPx"/> px).</summary>
 			public const int ArmyPullMaxSoldiers = 8;
 			/// <summary>Each (enemy, soldier) pair gets a fixed random offset of up to +/- this many px, so enemies do not all rank the soldiers in the same order. Ties and near-ties only; the load terms below do the real spreading.</summary>

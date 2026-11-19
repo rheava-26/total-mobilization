@@ -489,6 +489,18 @@ namespace Mechanization.Content.NPCs
 		public override bool? CanBeHitByItem(Player player, Item item) => false;                 // no friendly fire from the owner's tools
 		public override bool? CanBeHitByProjectile(Projectile projectile) => projectile.friendly && !projectile.hostile ? false : null; // hostile projectiles hit; friendly ones do not
 
+		/// <summary>
+		/// A hostile shot hits this machine for what it would do to a player standing here, as it does a levy (Levy's HostileProjectile): the x2 every hostile projectile gets against a player, the
+		/// projectile's own player-hit hooks and the difficulty multiplier. Without it a boss shot stored at its classic damage (Calamitas Clone's dart is 22; Calamity leaves the Expert x2 and more to the
+		/// player hook) hit a drone or turret for the bare number minus its defense: about 1.
+		/// </summary>
+		public override void ModifyHitByProjectile(Projectile projectile, ref NPC.HitModifiers modifiers)
+		{
+			if (!projectile.hostile || projectile.friendly) return;
+			modifiers.SourceDamage *= global::Levy.Common.LevyConstants.HostileProjectileDamageMult;
+			if (!LevyUtil.IsClient) global::Levy.Common.Util.HostileProjectile.Modify(projectile, global::Levy.Common.Util.HostileContact.Stand, ref modifiers);
+		}
+
 		public override void HitEffect(NPC.HitInfo hit)
 		{
 			if (Main.netMode == NetmodeID.Server) return;

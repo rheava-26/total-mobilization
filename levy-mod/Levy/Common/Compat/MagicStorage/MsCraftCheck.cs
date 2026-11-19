@@ -36,7 +36,16 @@ namespace Levy.Common.Compat.MagicStorageLink
 			heart.ComponentManager.Link(ah);
 			ArmoryCraftLink.ResetForTest();
 			check(ReferenceEquals(ah.Armory, armory), "craft: the Armory Heart serves the armory beside it");
-			check(heart.GetModules().Any(m => m is ArmoryRacksModule), "craft: a network with an Armory Heart lists the armory module (no Environment Simulator)");
+			ArmoryCraftLink.ForceOn = null;
+			if (!global::Levy.Common.Config.LevyConfig.Get.MagicStorageArmoryCrafting)
+				check(!ArmoryCraftLink.Enabled && !heart.GetModules().Any(m => m is ArmoryRacksModule), "craft: off by default: the network does not list the armory module");
+			ArmoryCraftLink.ForceOn = true;
+			try { RunOn(check, armory, ah, heart, unit); } finally { ArmoryCraftLink.ForceOn = null; }
+		}
+
+		private static void RunOn(Action<bool, string> check, ArmoryTE armory, TEArmoryHeart ah, TEStorageHeart heart, TECheckUnit unit)
+		{
+			check(heart.GetModules().Any(m => m is ArmoryRacksModule), "craft: switched on, a network with an Armory Heart lists the armory module (no Environment Simulator)");
 
 			Recipe rec = null;
 			for (int i = 0; i < Recipe.numRecipes; i++) if (Main.recipe[i].createItem.type == ItemID.TrueExcalibur && Main.recipe[i].requiredItem.Any(r => r.type == ItemID.Excalibur)) { rec = Main.recipe[i]; break; }

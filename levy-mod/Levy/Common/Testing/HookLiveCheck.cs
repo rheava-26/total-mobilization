@@ -36,6 +36,8 @@ namespace Levy.Common.Testing
 			{ "SaveGateSystem.Detour1", "client only: a character file save (one overload of the two runs per tML version; the other is the one installed)" },
 			// ---- a mod the ship chain does not load
 			{ "ArmoryCraftLink.GetModulesDetour", "needs MagicStorage: the ship chain does not load it (the optional shipms.sh boot check drives it: Levy Magic Storage self-check, [MsCraft])" },
+			{ "ArmoryCraftLink.CraftDetour", "needs MagicStorage: the ship chain does not load it (the optional shipms.sh world check drives it: [MsWorldCraft])" },
+			{ "ArmoryCraftLink.WithdrawModuleDetour", "needs MagicStorage: the ship chain does not load it (the optional shipms.sh world check drives it: [MsWorldCraft])" },
 			{ "PlayerBardCompat.Detour", "needs ThoriumMod: the ship chain does not load it" }, { "TeamThorium.HandleNearbyDetour", "needs ThoriumMod: the ship chain does not load it" },
 			// ---- Calamity only: required whenever Calamity is loaded (the Calamity half of the chain)
 			{ "CalamityTargetingCompat.PreAiDetour", "needs CalamityMod: the vanilla half does not load it" }, { "CalamityTargetingCompat.SendExtraAiDetour", "needs CalamityMod: the vanilla half does not load it" },

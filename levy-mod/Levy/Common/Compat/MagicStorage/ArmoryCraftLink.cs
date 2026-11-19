@@ -45,13 +45,93 @@ namespace Levy.Common.Compat.MagicStorageLink
 	[JITWhenModsEnabled("MagicStorage")]
 	public static class ArmoryCraftLink
 	{
-		private sealed class Link { public ArmoryTE A; public Item Backing; public Item Proxy; public int Snap; }
+		private sealed class Link { public ArmoryTE A; public Item Backing; public Item Proxy; public int Snap; public int Type, Prefix; } // Type/Prefix: what was offered (the proxy itself turns to air once Magic Storage uses it up)
 
 		private static readonly object Gate = new();
 		private static readonly Dictionary<Item, Link> ByBacking = new(ReferenceEqualityComparer.Instance), ByProxy = new(ReferenceEqualityComparer.Instance);
 		private static readonly Dictionary<int, Item[]> Published = new();
 		private static readonly List<(ArmoryTE a, int type)> Returns = new();
 		private static ArmoryTE _weaponFrom;
+
+		/// <summary>The server config "Magic Storage crafts with armory racks" (off by default), or the self-checks' override.</summary>
+		public static bool Enabled { get { if (ForceOn.HasValue) return ForceOn.Value; try { return global::Levy.Common.Config.LevyConfig.Get.MagicStorageArmoryCrafting; } catch (Exception) { return false; } } }
+		/// <summary>Self-check seam: pins <see cref="Enabled"/> (null = the config).</summary>
+		internal static bool? ForceOn;
+		/// <summary>Self-check seam: the network does not list the module at all (the state her client was in when a craft used an armory sword unseen).</summary>
+		internal static bool TestHideModule;
+
+		private static readonly Dictionary<int, int> _short = new();
+		private static void NoteShort(int type, int n) { if (n > 0) _short[type] = (_short.TryGetValue(type, out int c) ? c : 0) + n; }
+
+		internal delegate void OrigCraft(int toCraft);
+		/// <summary>
+		/// Detour on <c>CraftingGUI.Craft</c> (the Craft button's entry, whatever the network's modules are): before Magic Storage crafts, every proxy is lowered to what its rack item really holds, so an
+		/// armory item that left the racks, was issued, reserved or favorited cannot be crafted with; after, the racks are paid and, should anything have been used with nothing behind it, the results of those
+		/// crafts are taken back, so a craft never yields a result an armory did not pay for.
+		/// </summary>
+		internal static void CraftDetour(OrigCraft orig, int toCraft)
+		{
+			_hl_CraftDetour_1++;
+			if (Main.netMode == NetmodeID.MultiplayerClient) { orig(toCraft); return; }
+			Recipe recipe = null;
+			try { recipe = _selRecipe?.GetValue(null) as Recipe; } catch (Exception) { }
+			lock (Gate) { _short.Clear(); }
+			Validate();
+			orig(toCraft);
+			Dictionary<int, int> shortBy;
+			lock (Gate) { ReconcileLocked(); shortBy = new Dictionary<int, int>(_short); _short.Clear(); }
+			if (shortBy.Count > 0 && recipe != null) ClawBack(recipe, shortBy);
+		}
+		private static int _hl_CraftDetour_1;
+
+		internal delegate Item OrigWithdrawModule(Item toWithdraw, bool wasAlreadyCloned);
+		/// <summary>
+		/// Detour on <c>CraftingGUI.TryToWithdrawFromModuleItems</c>: the Crafting Interface's result slot (and the Decrafting Interface's) hands the player a module item when the network itself has none, cloning it
+		/// and lowering the module's copy. No module hook runs. Before: every proxy is lowered to what its rack item holds. After: the racks pay at once, and whatever they could not pay is taken off what the player gets.
+		/// </summary>
+		internal static Item WithdrawModuleDetour(OrigWithdrawModule orig, Item toWithdraw, bool wasAlreadyCloned)
+		{
+			_hl_WithdrawModuleDetour_1++;
+			if (Main.netMode == NetmodeID.MultiplayerClient) return orig(toWithdraw, wasAlreadyCloned);
+			lock (Gate) { _short.Clear(); }
+			Validate();
+			Item got = orig(toWithdraw, wasAlreadyCloned);
+			int unpaid;
+			lock (Gate) { ReconcileLocked(); unpaid = got == null || got.IsAir ? 0 : (_short.TryGetValue(got.type, out int c) ? c : 0); _short.Clear(); }
+			if (unpaid > 0)
+			{
+				int k = Math.Min(unpaid, got.stack); got.stack -= k; if (got.stack <= 0) got.TurnToAir(); ClawedBack += k;
+				Warn($"{k} {Lang.GetItemNameValue(toWithdraw.type)} withheld from a withdrawal: the armory no longer had them");
+			}
+			return got;
+		}
+		private static int _hl_WithdrawModuleDetour_1;
+		private static System.Reflection.FieldInfo _selRecipeField; // looked up on first use: a static initializer naming a Magic Storage type would run whenever anything reads this class (the hook census does, with Magic Storage absent)
+		private static System.Reflection.FieldInfo _selRecipe => _selRecipeField ??= typeof(CraftingGUI).GetField("selectedRecipe", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+		/// <summary>Results taken back after a craft that used armory items with nothing behind them (must stay 0).</summary>
+		public static long ClawedBack;
+
+		private static void ClawBack(Recipe recipe, Dictionary<int, int> shortBy)
+		{
+			int crafts = 0;
+			foreach (var kv in shortBy)
+			{
+				int need = recipe.requiredItem.Where(r => r.type == kv.Key).Sum(r => r.stack);
+				crafts = Math.Max(crafts, need > 0 ? (kv.Value + need - 1) / need : kv.Value);
+			}
+			int want = crafts * Math.Max(1, recipe.createItem.stack), got = 0;
+			var heart = StoragePlayer.LocalPlayer?.GetStorageHeart();
+			if (heart != null)
+			{
+				var look = new Item(); look.SetDefaults(recipe.createItem.type); look.stack = want;
+				try { using (MagicStorage.Common.Systems.SecuritySystem.CreateAccessContext()) { var w = heart.TryWithdraw(look, false); if (w != null && !w.IsAir) got += w.stack; } } catch (Exception) { }
+			}
+			var inv = Main.LocalPlayer?.inventory;
+			if (inv != null) for (int i = 0; i < inv.Length && got < want; i++)
+				if (!inv[i].IsAir && inv[i].type == recipe.createItem.type) { int k = Math.Min(inv[i].stack, want - got); inv[i].stack -= k; if (inv[i].stack <= 0) inv[i].TurnToAir(); got += k; }
+			ClawedBack += got;
+			Warn($"{got} of {want} {Lang.GetItemNameValue(recipe.createItem.type)} taken back: the craft used armory items that were no longer on the racks");
+		}
 
 		/// <summary>Items taken off armory racks by crafts, proxies consumed with nothing behind them (must stay 0), crafted weapons sent back to an armory.</summary>
 		public static long Taken, Shortfall, Returned;
@@ -89,7 +169,10 @@ namespace Levy.Common.Compat.MagicStorageLink
 		{
 			_hl_GetModulesDetour_1++;
 			var mods = orig(self);
-			if (Main.netMode == NetmodeID.MultiplayerClient || ArmoriesOf(self).Count == 0) return mods;
+			if (Main.netMode == NetmodeID.MultiplayerClient || TestHideModule) return mods;
+			bool live; lock (Gate) live = ByProxy.Count > 0;
+			// listed while it offers armory items, AND while any proxy it handed out is still alive: a proxy left in Magic Storage's lists must keep reaching the hooks that pay for it or retire it
+			if (!live && (!Enabled || ArmoriesOf(self).Count == 0)) return mods;
 			var mine = ModContent.GetInstance<ArmoryRacksModule>();
 			return mine == null ? mods : mods.Where(m => m.Type != mine.Type).Append(mine);
 		}
@@ -100,13 +183,13 @@ namespace Levy.Common.Compat.MagicStorageLink
 		/// <summary>The proxies offered for this heart (published by <see cref="Sync"/>; safe from any thread).</summary>
 		public static IEnumerable<Item> Offered(TEStorageHeart heart)
 		{
-			if (heart == null || Main.netMode == NetmodeID.MultiplayerClient) return Array.Empty<Item>();
+			if (heart == null || Main.netMode == NetmodeID.MultiplayerClient || !Enabled) return Array.Empty<Item>();
 			lock (Gate) return Published.TryGetValue(heart.ID, out var arr) ? arr : Array.Empty<Item>();
 		}
 
 		private static bool Alive(ArmoryTE a) => a != null && TileEntity.ByID.TryGetValue(a.ID, out var te) && ReferenceEquals(te, a);
 
-		private static bool Valid(Link l) => Alive(l.A) && !l.Backing.IsAir && l.Backing.type == l.Proxy.type && l.Backing.prefix == l.Proxy.prefix && l.A.OnRacks(l.Backing) && l.A.CraftOffers(l.Backing);
+		private static bool Valid(Link l) => Enabled && Alive(l.A) && !l.Backing.IsAir && l.Backing.type == l.Type && l.Backing.prefix == l.Prefix && l.A.OnRacks(l.Backing) && l.A.CraftOffers(l.Backing);
 
 		private static int StackOf(Item proxy) => proxy.IsAir ? 0 : Math.Max(0, proxy.stack);
 
@@ -121,7 +204,7 @@ namespace Levy.Common.Compat.MagicStorageLink
 				if (d <= 0) { l.Snap = cur; continue; }
 				int took = Valid(l) ? l.A.TakeForCraft(l.Backing, d) : 0;
 				Taken += took;
-				if (took < d) { Shortfall += d - took; Warn($"a craft used {d} {Lang.GetItemNameValue(l.Proxy.type)} from an armory, {took} were there"); }
+				if (took < d) { Shortfall += d - took; Warn($"a craft used {d} {Lang.GetItemNameValue(l.Type)} from an armory, {took} were there"); NoteShort(l.Type, d - took); }
 				l.Snap = cur;
 			}
 		}
@@ -139,7 +222,7 @@ namespace Levy.Common.Compat.MagicStorageLink
 				_weaponFrom = null;
 				var seen = new HashSet<Link>();
 				var offered = new List<Item>();
-				foreach (var a in ArmoriesOf(heart))
+				foreach (var a in Enabled ? ArmoriesOf(heart) : new List<ArmoryTE>()) // switched off: every proxy is retired below
 				{
 					if (!Alive(a)) continue;
 					foreach (var arr in a.CraftRacks())
@@ -147,17 +230,17 @@ namespace Levy.Common.Compat.MagicStorageLink
 						{
 							Item it = arr[i];
 							if (!a.CraftOffers(it)) continue;
-							if (ByBacking.TryGetValue(it, out var l) && (!ReferenceEquals(l.A, a) || l.Proxy.IsAir || l.Proxy.type != it.type || l.Proxy.prefix != it.prefix)) { changed.Add(l.Proxy.type); Drop(l); l = null; }
+							if (ByBacking.TryGetValue(it, out var l) && (!ReferenceEquals(l.A, a) || l.Proxy.IsAir || l.Type != it.type || l.Prefix != it.prefix)) { changed.Add(l.Type); Drop(l); l = null; }
 							if (l == null)
 							{
-								l = new Link { A = a, Backing = it, Proxy = it.Clone(), Snap = it.stack };
+								l = new Link { A = a, Backing = it, Proxy = it.Clone(), Snap = it.stack, Type = it.type, Prefix = it.prefix };
 								ByBacking[it] = l; ByProxy[l.Proxy] = l; changed.Add(it.type);
 							}
 							else if (l.Proxy.stack != it.stack || l.Snap != it.stack) { l.Proxy.stack = it.stack; l.Snap = it.stack; changed.Add(it.type); }
 							seen.Add(l); offered.Add(l.Proxy);
 						}
 				}
-				foreach (var l in ByProxy.Values.Where(x => !seen.Contains(x)).ToList()) { changed.Add(l.Proxy.type); Drop(l); }
+				foreach (var l in ByProxy.Values.Where(x => !seen.Contains(x)).ToList()) { changed.Add(l.Type); Drop(l); }
 				Published[heart.ID] = offered.ToArray();
 			}
 			if (refreshUi && changed.Count > 0)
@@ -191,7 +274,7 @@ namespace Levy.Common.Compat.MagicStorageLink
 				if (!ByProxy.TryGetValue(item, out var l)) return;
 				int took = Valid(l) ? l.A.TakeForCraft(l.Backing, n) : 0;
 				Taken += took;
-				if (took < n) { Shortfall += n - took; Warn($"a craft used {n} {Lang.GetItemNameValue(item.type)} from an armory, {took} were there"); }
+				if (took < n) { Shortfall += n - took; Warn($"a craft used {n} {Lang.GetItemNameValue(l.Type)} from an armory, {took} were there"); NoteShort(l.Type, n - took); }
 				l.Snap = Math.Max(0, StackOf(item) - n); // the stack the proxy will have once Magic Storage has taken them
 				if (item.damage > 0 && item.maxStack == 1) _weaponFrom = l.A;
 			}
@@ -243,7 +326,7 @@ namespace Levy.Common.Compat.MagicStorageLink
 		/// <summary>Self-check seam: forgets every proxy (each is turned to air first) and the counters.</summary>
 		internal static void ResetForTest()
 		{
-			lock (Gate) { foreach (var l in ByProxy.Values.ToList()) Drop(l); Published.Clear(); Returns.Clear(); _weaponFrom = null; Taken = Shortfall = Returned = 0; _armHeart = -1; _arm = new(); }
+			lock (Gate) { foreach (var l in ByProxy.Values.ToList()) Drop(l); Published.Clear(); Returns.Clear(); _weaponFrom = null; Taken = Shortfall = Returned = ClawedBack = 0; _short.Clear(); TestHideModule = false; _armHeart = -1; _arm = new(); }
 		}
 
 		private static void Warn(string what) { try { Levy.Instance?.Logger.Warn("Levy/MagicStorage crafting: " + what); } catch (Exception) { } }

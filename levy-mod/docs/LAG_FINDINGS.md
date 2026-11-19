@@ -441,3 +441,5 @@ Nothing else provably identical worth 0.2 ms turned up:
 - The miss path on non-army projectiles costs 0.04.
 - The update swap is 0.22, every tick, by design.
 - The gear frame (section 8) is the rest.
+
+**Ship world** (serial, both halves, `SHIPWORLD_SERIAL=1 SHIPWORLD_TIMEOUT=1500`, 1,260 s): **0 FAIL**, 2,073 PASS (the known summon-staff pick line excluded as always). The new checks pass in both halves (the cursor-shot and compiled-accessor checks need Calamity: the Calamity half); the attribution cost on the ship army is 4.1 us per tick at 45 levies and 300 shots.

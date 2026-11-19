@@ -20,6 +20,8 @@ namespace Levy.Content.NPCs
 		internal static int FollowRowsMode = Environment.GetEnvironmentVariable("LEVY_FOLLOWROWS") == "0" ? 0 : 1;
 		/// <summary>Harness telemetry: claims made, claims broken, rows struck off as unreachable.</summary>
 		internal static int FrPicksS, FrBreaksS, FrFailsS;
+		/// <summary>Checks: this levy holds a lane on a follow row.</summary>
+		internal bool InFollowRow => _frY != int.MinValue;
 		private int _frY = int.MinValue, _frLane = -1, _frNextPick, _frReachCheck, _frOffSince, _frBadY = int.MinValue, _frBadUntil;
 		/// <summary>The feet-tile y of the row this levy follows on (int.MinValue when it has none); the harness and friends read it.</summary>
 		internal int FollowRowY => _frY;

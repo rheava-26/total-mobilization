@@ -26,7 +26,7 @@ namespace Levy.Common.Dialogue
 		public static int TierSeen, IceSeen;
 		private static int _pendingTier, _pendingIce;
 		private static bool _skyPrimed, _wasBlood;
-		private static int _scareAt = Never, _fogSince = Never;
+		private static int _scareAt = Never, _fogSince = Never, _fogEndedAt = Never;
 		private static readonly byte[] ScKind = new byte[Main.maxNPCs];
 		private static readonly float[] ScAi0 = new float[Main.maxNPCs];
 		private static readonly Vector2[] ScPos = new Vector2[Main.maxNPCs];
@@ -95,7 +95,7 @@ namespace Levy.Common.Dialogue
 		private static void SkyReset()
 		{
 			TierSeen = IceSeen = 0; _pendingTier = _pendingIce = 0;
-			_skyPrimed = false; _wasBlood = false; _scareAt = Never; _fogSince = Never;
+			_skyPrimed = false; _wasBlood = false; _scareAt = Never; _fogSince = Never; _fogEndedAt = Never;
 			Array.Clear(ScKind); Array.Clear(ScAi0);
 		}
 
@@ -118,7 +118,7 @@ namespace Levy.Common.Dialogue
 			}
 			_wasBlood = blood;
 			bool fog = RiftSky.Fog && InMood;
-			if (fog && _fogSince == Never) _fogSince = now; else if (!fog) _fogSince = Never;
+			if (fog && _fogSince == Never) _fogSince = now; else if (!fog) { if (_fogSince != Never) _fogEndedAt = now; _fogSince = Never; }
 			ScanScares(now, InMood);
 		}
 
@@ -165,6 +165,9 @@ namespace Levy.Common.Dialogue
 			foreach (string p in _despair) if (p.Length >= 6 && text.StartsWith(p, StringComparison.Ordinal) && p != text) return true;
 			return false;
 		}
+
+		/// <summary>The half minute after the fog lifts: drifted levies walk back to their usual places instead of staying where the follow slack left them.</summary>
+		public static bool FogRegrouping(int now) => _fogEndedAt != Never && (uint)(now - _fogEndedAt) < 60u * 30u;
 
 		/// <summary>A few levies near each commander, one after another.</summary>
 		private static void Burst(DialogueTrigger pool, int speakers, int now)

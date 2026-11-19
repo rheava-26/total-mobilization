@@ -253,11 +253,25 @@ namespace Levy.Common.Testing
 				for (int round = 0; round < 6; round++) // one chat per levy a round, fresh repeat cooldowns each round: the pool is not drained by the sampling itself
 				{
 					DialogueSystem.ResetRuntime();
-					foreach (SoldierNPC s in army) { if (s == null || !s.NPC.active) continue; string t = DialogueSystem.ChatLine(s); chats++; if (RiftMoodCheck.Contains(DialogueTrigger.RIFT_BLOOD, t)) bloodChat++; }
+					foreach (SoldierNPC s in army) { if (s == null || !s.NPC.active) continue; string t = DialogueSystem.ChatLine(s); chats++; if (RiftMoodCheck.Contains(DialogueTrigger.RIFT_BLOOD, t) || RiftMoodCheck.Contains(DialogueTrigger.RIFT_HUSH, t)) bloodChat++; }
 				}
-				Check($"and most right-click chat is about it ({bloodChat} of {chats})", chats > 0 && bloodChat * 2 > chats);
+				Check($"and most right-click chat is about it or silence ({bloodChat} of {chats})", chats > 0 && bloodChat * 2 > chats);
 				Main.bloodMoon = false; Main.dayTime = true; Main.time = 9000; RiftSky.TestIntensity = null; RiftSky.TestIceCover = null; DialogueSystem.ResetRuntime();
 				RiftStep(5);
+
+				// the fog pulls the army apart: mean distance from the commander, clear, then deep in the fog
+				RiftStep(300);
+				float clear = MeanSpread(army, 60);
+				RiftSky.TestFog = true; RiftStep(LevyConstants.RiftFogDriftTicks + 600);
+				float foggy = MeanSpread(army, 60);
+				{
+					var sb = new System.Text.StringBuilder();
+					foreach (SoldierNPC s in army) if (s != null && s.NPC.active) sb.Append($"{s.State}/{(s.InFollowRow ? "row" : "-")}/drift {RiftMood.FogDriftTiles(s.Record, s.TargetIndex >= 0, (int)Main.GameUpdateCount):F1}/dx {(s.NPC.Center.X - _cmdAt.X) / 16f:F0}; ");
+					Note("in the fog: " + sb);
+				}
+				RiftSky.TestFog = null; RiftStep(900);
+				float after = MeanSpread(army, 60);
+				Check($"in the fog the idle army drifts out from the commander ({clear:F1} tiles clear, {foggy:F1} in the fog, {after:F1} once it lifts)", foggy >= clear + 1f && after < foggy - 0.5f);
 
 				// a scare in the fog: with NoxusBoss, a real fog tree set down by the commander
 				if (real && RiftSky.FogwoodType >= 0)
@@ -342,6 +356,18 @@ namespace Levy.Common.Testing
 				}
 				Step(1);
 			}
+		}
+
+		/// <summary>Mean horizontal distance (tiles) of the standing army from the commander over <paramref name="ticks"/> real ticks.</summary>
+		private static float MeanSpread(List<SoldierNPC> army, int ticks)
+		{
+			double sum = 0; int n = 0;
+			for (int t = 0; t < ticks; t++)
+			{
+				RiftStep(1);
+				foreach (SoldierNPC s in army) if (s != null && s.NPC.active && s.IsAlive) { sum += Math.Abs(s.NPC.Center.X - _cmdAt.X) / 16.0; n++; }
+			}
+			return n == 0 ? 0f : (float)(sum / n);
 		}
 
 		/// <summary>Levies of the check's army standing (alive, not in reserve) within reaction reach of the commander.</summary>

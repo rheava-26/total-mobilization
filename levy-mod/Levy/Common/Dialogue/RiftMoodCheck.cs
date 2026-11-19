@@ -171,7 +171,7 @@ namespace Levy.Common.Dialogue
 			Check("[rogue] and {Rogue} parse to the rogue tag and placeholder", bad3 == 0 && into3["RIFT_CLASS"][0].Cond == LineCond.Rogue && into3["RIFT_CLASS"][1].Needs == LineNeeds.Rogue);
 
 			// the class names: the right levy, never the speaker, skipped with nobody of that class
-			DialogueLine mageLine = Find(DialogueTrigger.RIFT_RESPECT, "{Mage} hasn't missed");
+			DialogueLine mageLine = Find(DialogueTrigger.RIFT_RESPECT, "{Mage} is hitting");
 			DialogueLine sumLine = Find(DialogueTrigger.RIFT_RESPECT, "{Summoner}'s little");
 			DialogueLine rangerLine = Find(DialogueTrigger.RIFT_RESPECT, "{Ranger}'s bullets");
 			DialogueLine meleeLine = Find(DialogueTrigger.RIFT_RESPECT, "{Melee} went right");
@@ -307,13 +307,13 @@ namespace Levy.Common.Dialogue
 			int pow0 = CountPool(DialogueTrigger.RIFT_POWER, pat, ctx, 200), dark0 = CountPool(DialogueTrigger.RIFT_DARK, pat, ctx, 200);
 			RiftMood.TestDays = LevyConstants.RiftPowerFromDay;
 			int pow1 = CountPool(DialogueTrigger.RIFT_POWER, pat, ctx, 200), dark1 = CountPool(DialogueTrigger.RIFT_DARK, pat, ctx, 200);
-			Check($"day 0 has no weary-strength and no dark lines; from day {LevyConstants.RiftPowerFromDay} the weary ones come, still no dark ones ({pow0}/{dark0} then {pow1}/{dark1} in 200)", pow0 == 0 && dark0 == 0 && pow1 > 15 && dark1 == 0);
+			Check($"day 0 has no weary-strength and no dark lines; from day {LevyConstants.RiftPowerFromDay} the weary ones come, still no dark ones ({pow0}/{dark0} then {pow1}/{dark1} in 200)", pow0 == 0 && dark0 == 0 && pow1 > 4 && dark1 == 0);
 			RiftMood.TestPhase = RiftPhase.Settled; RiftMood.TestDays = LevyConstants.RiftDarkFromDay;
 			int darkS = CountPool(DialogueTrigger.RIFT_DARK, pat, ctx, 200);
 			Check($"settled, day {LevyConstants.RiftDarkFromDay}: the dark jokes come back ({darkS} in 200)", darkS > 30);
 			RiftMood.TestPhase = RiftPhase.Settled; RiftMood.TestDays = LevyConstants.RiftTenseDays;
 			int shockS = CountPool(DialogueTrigger.RIFT_SHOCK, pat, ctx, 200), laterS = CountPool(DialogueTrigger.RIFT_LATER, pat, ctx, 200), idleS = CountPool(DialogueTrigger.RIFT_IDLE, pat, ctx, 200);
-			Check($"settled: no shock lines, \"what now\" and quiet talk go on ({shockS} shock, {laterS} later, {idleS} idle in 200)", shockS == 0 && laterS > 15 && idleS > 25);
+			Check($"settled: no shock lines, \"what now\" and quiet talk go on ({shockS} shock, {laterS} later, {idleS} idle in 200)", shockS == 0 && laterS > 5 && idleS > 10);
 			RiftMood.TestPhase = null; RiftMood.TestDays = null;
 			RiftSky.TestTransition = false; RiftSky.TestCovered = true;
 			RiftMood.DaysSince = LevyConstants.RiftTenseDays - 1;

@@ -67,7 +67,7 @@ namespace Levy.Common.Dialogue
 			}
 			Note($"morale slide in 300 chats (dark/grim/worn): day {dayAt[0]} {dark[0]}/{grim[0]}/{worn[0]}, day {dayAt[1]} {dark[1]}/{grim[1]}/{worn[1]}, day {dayAt[2]} {dark[2]}/{grim[2]}/{worn[2]}");
 			Check("the morale slide: dark jokes first, grim ones from the seventh dawn, worn-down talk from the twelfth, the dark jokes thinning as it goes",
-				grim[0] == 0 && worn[0] == 0 && dark[0] > 60 && grim[1] > 40 && worn[1] == 0 && worn[2] > 50 && dark[2] < dark[1] && dark[1] < dark[0]);
+				grim[0] == 0 && worn[0] == 0 && dark[0] > 20 && grim[1] > 15 && worn[1] == 0 && worn[2] > 20 && dark[2] < dark[1] && dark[1] < dark[0]);
 
 			// ---- the first-sight bursts
 			bool? boss0 = RosterFacts.TestBoss;

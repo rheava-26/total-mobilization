@@ -38,7 +38,7 @@ namespace Levy.Common.Perf
 		private static volatile bool _dead; private static bool _attachedCtx, _attachedTiming, _attachedDust;
 		internal static string DeadWhy;
 		/// <summary>Self-check: allow the analyzer on a dedicated server (it never runs there otherwise), and replace the window length and the config.</summary>
-		internal static bool TestServer = Environment.GetEnvironmentVariable("LEVY_PERFAN_SERVER") == "1", EchoToLog = Environment.GetEnvironmentVariable("LEVY_PERFAN_ECHO") == "1"; internal static double? TestWindowSecs; internal static bool? TestLog, TestReduced; internal static string TestLogDir;
+		internal static bool TestServer = Environment.GetEnvironmentVariable("LEVY_PERFAN_SERVER") == "1", EchoToLog = Environment.GetEnvironmentVariable("LEVY_PERFAN_ECHO") == "1"; internal static double? TestWindowSecs = double.TryParse(Environment.GetEnvironmentVariable("LEVY_PERFAN_WIN"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double lw) && lw > 0 ? lw : null; internal static bool? TestLog, TestReduced; internal static string TestLogDir;
 		private static long _tick, _frame; private static bool _sample, _dsample;
 		private static long _winStart, _updTicks, _drawTicks, _worstUpd, _worstFrame, _npcPhase, _projPhase, _npcStart, _projStart;
 		private static int _updates, _frames, _sUpdates, _sFrames, _bUpdates;

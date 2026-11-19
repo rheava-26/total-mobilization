@@ -16,7 +16,7 @@ namespace Levy.Common.Dialogue
 	public enum RiftPhase : byte { None = 0, Silent, Tense, Settled }
 
 	/// <summary>Where a trigger's line comes from under the rift sky.</summary>
-	public enum RiftRoute : byte { Normal = 0, Silent, Chat, Camp, Hush }
+	public enum RiftRoute : byte { Normal = 0, Silent, Chat, Camp, Hush, Boss }
 
 	/// <summary>
 	/// THE RIFT MOOD. With Wrath of the Gods, once Moon Lord falls and the sun is covered, the levies change how they talk (see <see cref="RiftSky"/> for what is read).
@@ -74,7 +74,7 @@ namespace Levy.Common.Dialogue
 		/// <summary>The worried talk right after the covering.</summary>
 		public static bool PanicNow => TestPanic ?? (_panicUntil != Never && (uint)(_panicUntil - Now) <= (uint)LevyConstants.RiftPanicTicks);
 
-		internal static bool IsRift(DialogueTrigger t) => t >= DialogueTrigger.RIFT_PANIC && t <= DialogueTrigger.RIFT_WORN;
+		internal static bool IsRift(DialogueTrigger t) => t >= DialogueTrigger.RIFT_PANIC && t <= DialogueTrigger.RIFT_HABIT;
 
 		/// <summary>Chat-log notices: not a levy speaking, never touched.</summary>
 		internal static bool IsNotice(DialogueTrigger t) => t == DialogueTrigger.DEATH_MESSAGE || t == DialogueTrigger.DESERTED || t == DialogueTrigger.NO_ONE_LEFT;
@@ -103,6 +103,8 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.FIRESIDE: case DialogueTrigger.PASTIME: case DialogueTrigger.PASTIME_NIGHT:
 				case DialogueTrigger.DRINK: case DialogueTrigger.DRINK_ALE: case DialogueTrigger.DRINK_STOUT: case DialogueTrigger.DRINK_RUM: case DialogueTrigger.DRINK_FIZZ: case DialogueTrigger.DRINK_ICEBERG:
 					return RiftRoute.Camp;
+				case DialogueTrigger.BOSS_SIGHTED: case DialogueTrigger.BOSS:
+					return RiftRoute.Boss;
 				case DialogueTrigger.LIFE_CRYSTAL: case DialogueTrigger.CHEST_OPENED: case DialogueTrigger.ARMORY_GOT: case DialogueTrigger.ECLIPSE_END:
 				case DialogueTrigger.TAKEOFF: case DialogueTrigger.LANDING: case DialogueTrigger.FLIGHT_FEAR: case DialogueTrigger.FLIGHT_SHOUT:
 					return RiftRoute.Hush;
@@ -126,6 +128,9 @@ namespace Levy.Common.Dialogue
 			SkyOrder(ref n, body); // a Blood Moon, the fog, the growing rift, the ice (RiftMood.Sky.cs)
 			if (Cold(body) && Main.rand.NextFloat() < LevyConstants.RiftColdChance) Order[n++] = DialogueTrigger.RIFT_COLD;
 			if (Main.rand.NextFloat() < LevyConstants.RiftRespectChance) Order[n++] = DialogueTrigger.RIFT_RESPECT;
+			if (Main.rand.NextFloat() < LevyConstants.RiftTownChance) Order[n++] = DialogueTrigger.RIFT_TOWN;
+			if (Main.rand.NextFloat() < LevyConstants.RiftClassChance) Order[n++] = DialogueTrigger.RIFT_CLASS;
+			if (Main.rand.NextFloat() < LevyConstants.RiftHabitChance) Order[n++] = DialogueTrigger.RIFT_HABIT;
 			RiftPhase ph = Phase;
 			if (ph == RiftPhase.Tense && Main.rand.NextFloat() < LevyConstants.RiftShockChance) Order[n++] = DialogueTrigger.RIFT_SHOCK;
 			MoraleOrder(ref n); // the worn-down and bitter lines, and the jokes getting darker (RiftMood.Sky.cs)
@@ -182,8 +187,9 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.TAKEOFF: case DialogueTrigger.LANDING: case DialogueTrigger.FLIGHT_FEAR:
 				case DialogueTrigger.RIFT_SHOCK: case DialogueTrigger.RIFT_ABSENT: case DialogueTrigger.RIFT_COLD: case DialogueTrigger.RIFT_LATER: case DialogueTrigger.RIFT_RESPECT: case DialogueTrigger.RIFT_IDLE: case DialogueTrigger.RIFT_CAMP:
 				case DialogueTrigger.RIFT_DARK: case DialogueTrigger.RIFT_POWER: case DialogueTrigger.RIFT_FOG: case DialogueTrigger.RIFT_GRIM: case DialogueTrigger.RIFT_WORN:
+				case DialogueTrigger.RIFT_HUSH: case DialogueTrigger.RIFT_ANGRY: case DialogueTrigger.RIFT_TOWN: case DialogueTrigger.RIFT_CLASS: case DialogueTrigger.RIFT_HABIT:
 					return tense ? LevyConstants.RiftTenseChatterShare : LevyConstants.RiftSettledChatterShare;
-				case DialogueTrigger.BOSS_SIGHTED: case DialogueTrigger.BOSS: case DialogueTrigger.COMRADE_DOWN: case DialogueTrigger.ROUTED: case DialogueTrigger.RALLIED: case DialogueTrigger.VICTORY:
+				case DialogueTrigger.BOSS_SIGHTED: case DialogueTrigger.BOSS: case DialogueTrigger.RIFT_BOSS: case DialogueTrigger.COMRADE_DOWN: case DialogueTrigger.ROUTED: case DialogueTrigger.RALLIED: case DialogueTrigger.VICTORY:
 				case DialogueTrigger.EVENT_GOBLINS: case DialogueTrigger.EVENT_PIRATES: case DialogueTrigger.EVENT_ECLIPSE: case DialogueTrigger.EVENT_PUMPKIN:
 				case DialogueTrigger.EVENT_FROST: case DialogueTrigger.EVENT_MARTIANS: case DialogueTrigger.EVENT_OLDONES: case DialogueTrigger.EVENT_FROSTLEGION:
 					return tense ? LevyConstants.RiftTenseBigShare : 1f;

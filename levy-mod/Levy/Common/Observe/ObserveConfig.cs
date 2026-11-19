@@ -21,5 +21,9 @@ namespace Levy.Common.Observe
 		[Header("Seeker")]
 		/// <summary>How bright the Seeker's outlines are. 1 is the brightest; lower lets the ore show through.</summary>
 		[Range(0.05f, 1f)] [Increment(0.05f)] [DefaultValue(0.35f)] public float SeekerOutlineBrightness;
+
+		[Header("ChatBars")]
+		/// <summary>Under the Wrath of the Gods rift, silences and despairing lines tremble a little on the chat bar.</summary>
+		[DefaultValue(true)] public bool ShakingChatText;
 	}
 }

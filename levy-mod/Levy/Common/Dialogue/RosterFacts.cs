@@ -131,6 +131,14 @@ namespace Levy.Common.Dialogue
 		/// <summary>A melee fighter: a melee-class weapon in hand, else melee armor on his back.</summary>
 		public static bool IsMelee(SoldierRecord r) => HasClass(r, DamageClass.Melee);
 
+		/// <summary>A rogue (Calamity's class): a rogue weapon in hand. False without Calamity.</summary>
+		public static bool IsRogue(SoldierRecord r)
+		{
+			var g = r?.Gear;
+			if (g == null || !g.HasWeapon) return false;
+			try { return ExtraDamageClasses.IsRogue(WeaponClassifier.ItemDamageClass(g.Weapon)); } catch (Exception) { return false; }
+		}
+
 		private static bool HasClass(SoldierRecord r, DamageClass want)
 		{
 			var g = r?.Gear;
@@ -150,6 +158,7 @@ namespace Levy.Common.Dialogue
 			if ((cond & LineCond.Female) != 0 && speaker.Male) return false;
 			if ((cond & LineCond.Ranger) != 0 && !IsRanger(speaker)) return false;
 			if ((cond & LineCond.Melee) != 0 && !IsMelee(speaker)) return false;
+			if ((cond & LineCond.Rogue) != 0 && !IsRogue(speaker)) return false;
 			if ((cond & (LineCond.Early | LineCond.PostSkeletron | LineCond.Hardmode | LineCond.PostPlantera | LineCond.PostMoonlord)) != 0)
 			{
 				WorldStage w = Stage();
@@ -231,7 +240,7 @@ namespace Levy.Common.Dialogue
 			return KitRank.None;
 		}
 
-		public enum MateClass : byte { Mage, Summoner, Ranger, Melee }
+		public enum MateClass : byte { Mage, Summoner, Ranger, Melee, Rogue }
 
 		/// <summary>
 		/// A standing levy of that class to name in a line ({Mage} {Summoner} {Ranger} {Melee}): a regular of the speaker's own commander, not dead, not in reserve, never the speaker.
@@ -247,7 +256,7 @@ namespace Levy.Common.Dialogue
 				SoldierRecord r = list[i];
 				if (r == null || ReferenceEquals(r, speaker) || r.Dead || r.Reserve || string.IsNullOrWhiteSpace(r.Name)) continue;
 				if (speaker != null && r.CommanderName != speaker.CommanderName) continue;
-				bool match = cls switch { MateClass.Mage => IsMage(r), MateClass.Summoner => IsSummoner(r), MateClass.Ranger => IsRanger(r), _ => IsMelee(r) };
+				bool match = cls switch { MateClass.Mage => IsMage(r), MateClass.Summoner => IsSummoner(r), MateClass.Ranger => IsRanger(r), MateClass.Rogue => IsRogue(r), _ => IsMelee(r) };
 				if (!match) continue;
 				if (Main.rand.Next(++seen) == 0) pick = r; // reservoir pick: each candidate equally likely
 			}

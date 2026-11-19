@@ -75,6 +75,17 @@ namespace Levy.Common
 		/// <summary>A scare in the fog: levies within this many tiles of it saw it, and the next scare waits this long.</summary>
 		public const float RiftScareReachTiles = 60f;
 		public const int RiftScareCooldownTicks = 60 * 20;
+		/// <summary>A Blood Moon under the rift: this share of a levy's chat is only "...", and a woman (angry on a Blood Moon, as vanilla's women are) speaks the angry set this often.</summary>
+		public const float RiftHushChance = 0.3f, RiftAngryChance = 0.7f;
+		/// <summary>Under the rift a boss sighting is grim and irritated this often (else the usual boss lines). Rift chat names a town NPC this often (only lines whose NPC lives).</summary>
+		public const float RiftBossChance = 0.75f, RiftTownChance = 0.18f;
+		/// <summary>Rift chat about the classes (a levy's own and the others'), and a temperament's small habit (a prayer, a watch, counting coin), this often.</summary>
+		public const float RiftClassChance = 0.3f, RiftHabitChance = 0.2f;
+		/// <summary>The fog: an idle levy's follow slot drifts outward over this many ticks to 2 to 5 tiles (by the levy), never while it fights.</summary>
+		public const int RiftFogDriftTicks = 60 * 40;
+		public const float RiftFogDriftMinTiles = 2f, RiftFogDriftMaxTiles = 5f;
+		/// <summary>Chat bar jitter: the offset changes every this many ticks.</summary>
+		public const int ChatShakeStepTicks = 4;
 		/// <summary>The burst right after the sun is covered: levies near each commander, one after another; then this long of worried talk in place of the rift chat.</summary>
 		public const int RiftPanicSpeakers = 4, RiftPanicStepTicks = 75, RiftPanicTicks = 60 * 90;
 		/// <summary>A levy who was dead or in reserve when the sun went asks what happened, with this chance, until he has asked this many times.</summary>

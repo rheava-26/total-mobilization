@@ -26,7 +26,7 @@ namespace Levy.Common.Dialogue
 		public static int TierSeen, IceSeen;
 		private static int _pendingTier, _pendingIce;
 		private static bool _skyPrimed, _wasBlood;
-		private static int _scareAt = Never;
+		private static int _scareAt = Never, _fogSince = Never;
 		private static readonly byte[] ScKind = new byte[Main.maxNPCs];
 		private static readonly float[] ScAi0 = new float[Main.maxNPCs];
 		private static readonly Vector2[] ScPos = new Vector2[Main.maxNPCs];
@@ -95,7 +95,7 @@ namespace Levy.Common.Dialogue
 		private static void SkyReset()
 		{
 			TierSeen = IceSeen = 0; _pendingTier = _pendingIce = 0;
-			_skyPrimed = false; _wasBlood = false; _scareAt = Never;
+			_skyPrimed = false; _wasBlood = false; _scareAt = Never; _fogSince = Never;
 			Array.Clear(ScKind); Array.Clear(ScAi0);
 		}
 
@@ -117,7 +117,53 @@ namespace Levy.Common.Dialogue
 				if (blood && !_wasBlood) Burst(DialogueTrigger.RIFT_BLOOD, LevyConstants.RiftBloodSpeakers, now);
 			}
 			_wasBlood = blood;
+			bool fog = RiftSky.Fog && InMood;
+			if (fog && _fogSince == Never) _fogSince = now; else if (!fog) _fogSince = Never;
 			ScanScares(now, InMood);
+		}
+
+		/// <summary>
+		/// The fog pulls the army apart: tiles an idle levy's follow slot sits further from the commander, growing over <see cref="LevyConstants.RiftFogDriftTicks"/> of fog to 2 to 5
+		/// tiles (each levy its own, by record id). Nothing while it has a target, out of the fog, or with no rift mood. Server and single player (the follow logic runs there).
+		/// </summary>
+		public static float FogDriftTiles(SoldierRecord rec, bool fighting, int now)
+		{
+			if (fighting || rec == null || _fogSince == Never) return 0f;
+			float t = Math.Min(1f, Math.Max(0f, (now - _fogSince) / (float)LevyConstants.RiftFogDriftTicks));
+			float own = ((uint)rec.Id * 2654435761u >> 24) / 255f;
+			return t * (LevyConstants.RiftFogDriftMinTiles + own * (LevyConstants.RiftFogDriftMaxTiles - LevyConstants.RiftFogDriftMinTiles));
+		}
+
+		/// <summary>
+		/// How much a chat-bar line trembles (client): under the rift, a "..." or an action line ("*...*") the most; on a Blood Moon under it the despairing and angry lines a little.
+		/// Off with the client setting, and with no rift mood.
+		/// </summary>
+		public static float ShakeFor(string text)
+		{
+			if (string.IsNullOrEmpty(text)) return 0f;
+			try { if (global::Levy.Common.Observe.ObserveConfig.Get != null && !global::Levy.Common.Observe.ObserveConfig.Get.ShakingChatText) return 0f; } catch (Exception) { }
+			if (!InMood) return 0f;
+			if (text.StartsWith("...", StringComparison.Ordinal) || (text.StartsWith("*", StringComparison.Ordinal) && BloodNow)) return 1f;
+			if (BloodNow && DespairText(text)) return 0.6f;
+			return 0f;
+		}
+
+		private static HashSet<string> _despair; private static int _despairOf = -1;
+		/// <summary>A line of the Blood Moon, angry, silent or worn-down pools (placeholder lines are matched by their literal start).</summary>
+		internal static bool DespairText(string text)
+		{
+			if (_despair == null || _despairOf != DialogueTable.LineCount)
+			{
+				_despair = new HashSet<string>(StringComparer.Ordinal); _despairOf = DialogueTable.LineCount;
+				foreach (DialogueTrigger t in new[] { DialogueTrigger.RIFT_BLOOD, DialogueTrigger.RIFT_ANGRY, DialogueTrigger.RIFT_HUSH, DialogueTrigger.RIFT_WORN })
+				{
+					var pool = DialogueTable.Get(t);
+					if (pool != null) foreach (DialogueLine l in pool) { int b = l.Text.IndexOf('{'); _despair.Add(b < 0 ? l.Text : l.Text.Substring(0, b)); }
+				}
+			}
+			if (_despair.Contains(text)) return true;
+			foreach (string p in _despair) if (p.Length >= 6 && text.StartsWith(p, StringComparison.Ordinal) && p != text) return true;
+			return false;
 		}
 
 		/// <summary>A few levies near each commander, one after another.</summary>

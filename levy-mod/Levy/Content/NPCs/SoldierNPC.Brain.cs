@@ -2279,6 +2279,7 @@ namespace Levy.Content.NPCs
 				slotTiles = RingedSlot(slotIdx / 2, LevyConstants.CloseUpFollowStartTiles, LevyConstants.CloseUpFollowStepTiles, (int)((LevyConstants.CloseUpFollowMaxTiles - LevyConstants.CloseUpFollowStartTiles) / LevyConstants.CloseUpFollowStepTiles) + 1);
 				slotSide = (slotIdx & 1) == 0 ? -facing : facing;
 			}
+			slotTiles += global::Levy.Common.Dialogue.RiftMood.FogDriftTiles(Record, TargetIndex >= 0, now); // the rift's fog: an idle levy drifts a few tiles further out (0 otherwise)
 			Vector2 cmdBase = cmd.Bottom;
 			if (cmd.gravDir < 0f && FollowerTravel.FindGroundBelow(cmd.Center, out Vector2 under)) cmdBase = under; // a commander walking on a ceiling (Gravitation Potion): wait on the ground beneath them, never path up to the ceiling
 			Vector2 slot = cmdBase + new Vector2(slotSide * slotTiles * LevyConstants.TilePx, 0f);

@@ -9,6 +9,8 @@ namespace Levy.Common.Dialogue
 		/// <summary>NPC index of the speaker.</summary>
 		public int Speaker;
 		public string Text = "";
+		/// <summary>How much the text jitters on the bar (0 none, 1 the most): the rift's "..." lines and the despairing lines of a Blood Moon under it.</summary>
+		public float Shake;
 		/// <summary>1 chatter, 2 notice, 3 big moment. Higher outranks lower for slots.</summary>
 		public int Priority;
 		/// <summary>Tick the line was queued.</summary>
@@ -72,10 +74,10 @@ namespace Levy.Common.Dialogue
 		public void Clear() { Active.Clear(); Waiting.Clear(); Dropped = 0; }
 
 		/// <summary>Queue a line. Returns false when it was refused outright (empty text, or a weaker line from a speaker whose bar is still typing).</summary>
-		public bool Enqueue(int speaker, string text, int priority, int now, float distTiles)
+		public bool Enqueue(int speaker, string text, int priority, int now, float distTiles, float shake = 0f)
 		{
 			if (string.IsNullOrEmpty(text) || distTiles > RangeTiles) return false;
-			var e = new ChatBarEntry { Speaker = speaker, Text = text, Priority = priority, Queued = now, DistTiles = distTiles };
+			var e = new ChatBarEntry { Speaker = speaker, Text = text, Priority = priority, Queued = now, DistTiles = distTiles, Shake = shake };
 
 			ChatBarEntry live = Find(Active, speaker);
 			if (live != null)

@@ -746,6 +746,7 @@ Mods: {
 				Headers: {
 					ArenaView: Arena View Header
 					Seeker: Seeker
+					ChatBars: Chat Bars
 				}
 
 				ArenaZoomPerSide: {
@@ -766,6 +767,11 @@ Mods: {
 				SeekerOutlineBrightness: {
 					Label: Seeker Outline Brightness
 					Tooltip: Lower values let the ore show through
+				}
+
+				ShakingChatText: {
+					Label: Shaking Chat Text
+					Tooltip: Under the Wrath of the Gods rift, some lines tremble on the chat bar
 				}
 			}
 		}

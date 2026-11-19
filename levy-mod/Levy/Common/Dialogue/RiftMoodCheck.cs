@@ -32,7 +32,8 @@ namespace Levy.Common.Dialogue
 		}
 
 		private static readonly DialogueTrigger[] Rift = { DialogueTrigger.RIFT_PANIC, DialogueTrigger.RIFT_SHOCK, DialogueTrigger.RIFT_ABSENT, DialogueTrigger.RIFT_COLD, DialogueTrigger.RIFT_LATER, DialogueTrigger.RIFT_RESPECT, DialogueTrigger.RIFT_IDLE, DialogueTrigger.RIFT_CAMP, DialogueTrigger.RIFT_DARK, DialogueTrigger.RIFT_POWER, DialogueTrigger.RIFT_DUKE,
-			DialogueTrigger.RIFT_BLOOD, DialogueTrigger.RIFT_GROW1, DialogueTrigger.RIFT_GROW2, DialogueTrigger.RIFT_GROW3, DialogueTrigger.RIFT_ICE, DialogueTrigger.RIFT_FROZEN, DialogueTrigger.RIFT_FOG, DialogueTrigger.RIFT_SCARE, DialogueTrigger.RIFT_GRIM, DialogueTrigger.RIFT_WORN };
+			DialogueTrigger.RIFT_BLOOD, DialogueTrigger.RIFT_GROW1, DialogueTrigger.RIFT_GROW2, DialogueTrigger.RIFT_GROW3, DialogueTrigger.RIFT_ICE, DialogueTrigger.RIFT_FROZEN, DialogueTrigger.RIFT_FOG, DialogueTrigger.RIFT_SCARE, DialogueTrigger.RIFT_GRIM, DialogueTrigger.RIFT_WORN,
+			DialogueTrigger.RIFT_HUSH, DialogueTrigger.RIFT_ANGRY, DialogueTrigger.RIFT_BOSS, DialogueTrigger.RIFT_TOWN, DialogueTrigger.RIFT_CLASS, DialogueTrigger.RIFT_HABIT };
 
 		private void Core()
 		{
@@ -118,13 +119,14 @@ namespace Levy.Common.Dialogue
 			int total = 0;
 			var mins = new Dictionary<DialogueTrigger, int> { [DialogueTrigger.RIFT_PANIC] = 10, [DialogueTrigger.RIFT_SHOCK] = 10, [DialogueTrigger.RIFT_ABSENT] = 6, [DialogueTrigger.RIFT_COLD] = 8, [DialogueTrigger.RIFT_LATER] = 6, [DialogueTrigger.RIFT_RESPECT] = 8, [DialogueTrigger.RIFT_IDLE] = 15, [DialogueTrigger.RIFT_CAMP] = 8, [DialogueTrigger.RIFT_DARK] = 10, [DialogueTrigger.RIFT_POWER] = 6, [DialogueTrigger.RIFT_DUKE] = 6,
 				[DialogueTrigger.RIFT_BLOOD] = 12, [DialogueTrigger.RIFT_GROW1] = 8, [DialogueTrigger.RIFT_GROW2] = 8, [DialogueTrigger.RIFT_GROW3] = 8, [DialogueTrigger.RIFT_ICE] = 6, [DialogueTrigger.RIFT_FROZEN] = 6,
-				[DialogueTrigger.RIFT_FOG] = 8, [DialogueTrigger.RIFT_SCARE] = 6, [DialogueTrigger.RIFT_GRIM] = 8, [DialogueTrigger.RIFT_WORN] = 8 };
+				[DialogueTrigger.RIFT_FOG] = 8, [DialogueTrigger.RIFT_SCARE] = 6, [DialogueTrigger.RIFT_GRIM] = 8, [DialogueTrigger.RIFT_WORN] = 8,
+				[DialogueTrigger.RIFT_HUSH] = 4, [DialogueTrigger.RIFT_ANGRY] = 10, [DialogueTrigger.RIFT_BOSS] = 12, [DialogueTrigger.RIFT_TOWN] = 12, [DialogueTrigger.RIFT_CLASS] = 12, [DialogueTrigger.RIFT_HABIT] = 10 };
 			foreach (DialogueTrigger t in Rift)
 			{
 				int n = DialogueTable.Get(t)?.Count ?? 0; total += n;
 				Check($"{t} has {n} lines (needs {mins[t]})", n >= mins[t]);
 			}
-			Check($"{total} rift lines in all (200 to 320)", total >= 200 && total <= 320);
+			Check($"{total} rift lines in all (300 to 420)", total >= 300 && total <= 420);
 
 			// every line: ASCII, short, no annoyed tag, every placeholder filled for a speaker it suits
 			var mia = Make("Mia", Temperament.Greenhorn, ItemID.WandofSparking);
@@ -137,7 +139,7 @@ namespace Levy.Common.Dialogue
 			var army = new List<SoldierRecord> { mia, sam, rae, mel, pat, tess, gus };
 			RosterFacts.TestRoster = army;
 			var ctx = new DialogueContext { Player = "Cap", Comrade = "Bo" };
-			int filled = 0;
+			int filled = 0, townLines = 0, rogueLines = 0;
 			foreach (DialogueTrigger t in Rift)
 			{
 				var pool = DialogueTable.Get(t); if (pool == null) continue;
@@ -148,6 +150,9 @@ namespace Levy.Common.Dialogue
 					if (!ascii) Check(who + " is plain ASCII", false);
 					if (l.Text.Length > 60) Check($"{who} is short ({l.Text.Length} chars, 60 at most)", false);
 					if ((l.Cond & LineCond.Grumpy) != 0) Check(who + " carries no [grumpy] tag", false);
+					// a line naming a town NPC needs that NPC alive (none at boot): it must have parsed the NPC; a rogue line needs a rogue class (Calamity)
+					if (l.NpcTypes.Length > 0) { townLines++; filled++; continue; }
+					if (((l.Cond & LineCond.Rogue) != 0 || (l.Needs & LineNeeds.Rogue) != 0) ) { rogueLines++; filled++; continue; }
 					string got = null;
 					foreach (SoldierRecord sp in army)
 					{
@@ -160,7 +165,10 @@ namespace Levy.Common.Dialogue
 					else filled++;
 				}
 			}
-			Check($"every rift line fills for a levy it suits ({filled} of {total})", filled == total);
+			Check($"every rift line fills for a levy it suits ({filled} of {total}; {townLines} town lines parsed their NPC, {rogueLines} rogue lines need a rogue weapon, checked by tag below)", filled == total && townLines >= 12 && rogueLines >= 3);
+			var into3 = new Dictionary<string, List<DialogueLine>>(StringComparer.OrdinalIgnoreCase);
+			int bad3 = DialogueTable.Parse(null, "riftcheck3", "RIFT_CLASS | Any | [rogue] a\nRIFT_CLASS | Any | {Rogue} b", into3);
+			Check("[rogue] and {Rogue} parse to the rogue tag and placeholder", bad3 == 0 && into3["RIFT_CLASS"][0].Cond == LineCond.Rogue && into3["RIFT_CLASS"][1].Needs == LineNeeds.Rogue);
 
 			// the class names: the right levy, never the speaker, skipped with nobody of that class
 			DialogueLine mageLine = Find(DialogueTrigger.RIFT_RESPECT, "{Mage} hasn't missed");
@@ -271,7 +279,7 @@ namespace Levy.Common.Dialogue
 					else if (route == RiftRoute.Hush) { if (a != null) { hushedSpoke++; leak ??= "hushed " + t + ": " + a; } }
 				}
 			}
-			foreach (DialogueTrigger t in new[] { DialogueTrigger.ENGAGE, DialogueTrigger.KILL, DialogueTrigger.HURT, DialogueTrigger.COMRADE_DOWN, DialogueTrigger.BOSS_SIGHTED, DialogueTrigger.PAYDAY, DialogueTrigger.UNPAID, DialogueTrigger.VICTORY, DialogueTrigger.DEATH_MESSAGE })
+			foreach (DialogueTrigger t in new[] { DialogueTrigger.ENGAGE, DialogueTrigger.KILL, DialogueTrigger.HURT, DialogueTrigger.COMRADE_DOWN, DialogueTrigger.PAYDAY, DialogueTrigger.UNPAID, DialogueTrigger.VICTORY, DialogueTrigger.DEATH_MESSAGE })
 			{
 				combatPools++;
 				string a = DialogueSystem.Pick(t, pat, ctx, null, true, -1, out DialogueLine pl, false);
@@ -279,7 +287,10 @@ namespace Levy.Common.Dialogue
 			}
 			Check($"in the tense days every calm and joking pool answers only from the rift pools ({routed} rift lines, {leaked} leaks{(leak != null ? ": " + leak : "")})", routed > 100 && leaked == 0);
 			Check($"the crystal, chest, gear, eclipse-end and flight lines go quiet ({hushedSpoke} spoken)", hushedSpoke == 0);
-			Check($"combat, boss, pay, victory and death lines keep their own pools ({combatOk}/{combatPools})", combatOk == combatPools);
+			Check($"combat, pay, victory and death lines keep their own pools ({combatOk}/{combatPools})", combatOk == combatPools);
+			int grimBoss = 0, plainBoss = 0;
+			for (int i = 0; i < 200; i++) { DialogueSystem.Pick(DialogueTrigger.BOSS_SIGHTED, pat, ctx, null, true, -1, out DialogueLine pb, false); if (In(DialogueTrigger.RIFT_BOSS, pb)) grimBoss++; else if (In(DialogueTrigger.BOSS_SIGHTED, pb)) plainBoss++; }
+			Check($"under the rift a boss is met grimly about {LevyConstants.RiftBossChance:P0} of the time ({grimBoss} grim, {plainBoss} usual in 200)", grimBoss > 120 && grimBoss < 180 && plainBoss > 20);
 			string drink = DialogueSystem.PickLine("DRINK", pat, ctx, true);
 			Check($"the drink fallback asked for by name answers from the camp pools ({drink})", drink != null && (Contains(DialogueTrigger.RIFT_CAMP, drink) || Contains(DialogueTrigger.RIFT_IDLE, drink)));
 			string mut = DialogueSystem.PickLine("MUTINY", pat, ctx, true);

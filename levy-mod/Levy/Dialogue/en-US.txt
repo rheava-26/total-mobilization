@@ -39,8 +39,9 @@
 #               OFFICER_<Officer>_<STATE>   (an officer's own voice; STATE is IDLE MARCH HOLD FIGHT BOSS HURT VICTORY)
 #               OFFICER_CHAT_<STATE>        (the officer voice used when an officer has no lines of his own for that STATE)
 #               RIFT_PANIC RIFT_SHOCK RIFT_ABSENT RIFT_COLD RIFT_POWER RIFT_LATER RIFT_DARK RIFT_RESPECT RIFT_IDLE RIFT_CAMP RIFT_DUKE
-#               RIFT_BLOOD RIFT_GROW1 RIFT_GROW2 RIFT_GROW3 RIFT_ICE RIFT_FROZEN RIFT_FOG RIFT_SCARE RIFT_GRIM RIFT_WORN   (Wrath of the Gods only: the covered
-#                               sky after Moon Lord; parts 15 and 15b explain when each is used and which pools they stand in for)
+#               RIFT_BLOOD RIFT_GROW1 RIFT_GROW2 RIFT_GROW3 RIFT_ICE RIFT_FROZEN RIFT_FOG RIFT_SCARE RIFT_GRIM RIFT_WORN
+#               RIFT_HUSH RIFT_ANGRY RIFT_BOSS RIFT_TOWN RIFT_CLASS RIFT_HABIT   (Wrath of the Gods only: the covered
+#                               sky after Moon Lord; parts 15, 15b and 15c explain when each is used and which pools they stand in for)
 #
 # WHERE A LINE SHOWS UP
 #   Right-click chat:   IDLE IDLE_NIGHT NAMEDROP BLOOD_MOON PARTY GRAVEYARD RAIN BIOME_* PAYDAY UNPAID HOLD_FIRE EVENT_* ARMORY_WANT ARMORY_BEST ARMORY_WORST
@@ -2186,7 +2187,7 @@ OFFICER_Princess_VICTORY | Any | [grumpy] Fine! Good job! Go home!
 # ============================================================================================================
 
 # ---------------------------------------------------------------- RIFT_PANIC (floating, right after the sun is covered)
-RIFT_PANIC | Any | Where did the sun go? {Player}, where did it go?
+RIFT_PANIC | Any | The sun! {Player}, the sun's gone!
 RIFT_PANIC | Any | Is that a hole? There's a hole in the sky.
 RIFT_PANIC | Any | Nobody move. I don't know why. Just don't.
 RIFT_PANIC | Any | It's midday and it's getting dark.
@@ -2202,7 +2203,7 @@ RIFT_PANIC | Veteran | Eyes on me! Stay together. Stay together.
 RIFT_PANIC | Veteran | I've seen a lot of skies. Not this one.
 
 # ---------------------------------------------------------------- RIFT_SHOCK (the first days)
-RIFT_SHOCK | Any | Where did the sun go?
+RIFT_SHOCK | Any | Nobody's seen the sun since. Nobody.
 RIFT_SHOCK | Any | It was there yesterday. Right there.
 RIFT_SHOCK | Any | The birds stopped. Did you notice?
 RIFT_SHOCK | Any | I had things to say this morning. They're gone.
@@ -2218,7 +2219,7 @@ RIFT_SHOCK | Veteran | Keep your voice down. It feels right.
 RIFT_SHOCK | Veteran | It happened while we were looking away.
 
 # ---------------------------------------------------------------- RIFT_ABSENT (dead or in reserve when the sun went)
-RIFT_ABSENT | Any | What happened while I was gone?
+RIFT_ABSENT | Any | Somebody explain the sky. I was out a day.
 RIFT_ABSENT | Any | I was out one day. One day. What happened?
 RIFT_ABSENT | Any | Last I remember, I was dying. That was normal.
 RIFT_ABSENT | Any | When I left, there was a sun. I'm fairly sure.
@@ -2241,8 +2242,8 @@ RIFT_COLD | Cynic | No sun, now no warmth. I see a pattern.
 RIFT_COLD | Veteran | Keep moving. The cold takes its time.
 
 # ---------------------------------------------------------------- RIFT_POWER (from the first dawn: their own strength, said wearily)
-RIFT_POWER | Any | All this power, and we can't even undo this.
-RIFT_POWER | Any | We're stronger than we've ever been. Doesn't feel like it.
+RIFT_POWER | Any | We can kill anything. Can't fix that, though.
+RIFT_POWER | Any | Best we've ever fought. Worst we've ever felt.
 RIFT_POWER | Any | We killed the big one. The sky didn't notice.
 RIFT_POWER | Any | {Mage} can split stone now. Can't light the sky.
 RIFT_POWER | Greenhorn | Best gear I've ever had. Still scared.
@@ -2252,7 +2253,7 @@ RIFT_POWER | Cynic | We're strong. Strong enough to stand here.
 RIFT_POWER | Veteran | I could level a hill with this. Wouldn't help.
 
 # ---------------------------------------------------------------- RIFT_LATER (from the second dawn)
-RIFT_LATER | Any | Are we going to do anything about this, or...
+RIFT_LATER | Any | So we're just living under it now?
 RIFT_LATER | Any | {Player}. With respect. Is there a plan?
 RIFT_LATER | Any | We've gotten used to it. We shouldn't have.
 RIFT_LATER | Any | Has it moved? I check every morning. No.
@@ -2279,8 +2280,8 @@ RIFT_DARK | Cynic | I said we were doomed. Nobody lets me enjoy it.
 RIFT_DARK | Veteran | I've fought worse. Can't remember when.
 
 # ---------------------------------------------------------------- RIFT_RESPECT (the other classes, seen differently)
-RIFT_RESPECT | Any | [non-summoner] Maybe summoners weren't that bad. Were they?
-RIFT_RESPECT | Any | {Mage} hasn't missed a shot in a while. Who knew.
+RIFT_RESPECT | Any | [non-summoner] I owe a summoner an apology. Several.
+RIFT_RESPECT | Any | {Mage} is hitting everything lately. Everything.
 RIFT_RESPECT | Any | {Mage} brought me water. Didn't say anything.
 RIFT_RESPECT | Any | {Summoner}'s little ones stand in front of us now.
 RIFT_RESPECT | Any | {Melee} went right up to the front. Right up.
@@ -2495,3 +2496,127 @@ RIFT_IDLE | Veteran | Keep your head down. Literally.
 RIFT_CAMP | Any | Sit closer, {Comrade}. It's cold. That's all.
 RIFT_CAMP | Cynic | Don't tell me it'll be fine, {Comrade}.
 RIFT_CAMP | Veteran | Eat something, {Comrade}. That's an order.
+
+# ============================================================================================================
+# 15c. THE RIFT SKY: BLOOD MOONS, BOSSES, THE TOWN, THE CLASSES, HABITS (Wrath of the Gods only)
+#   RIFT_HUSH     a Blood Moon under the rift: about three chats in ten are only this (repeats allowed)
+#   RIFT_ANGRY    a Blood Moon under the rift, a woman speaking (angry, as vanilla's women are on a Blood Moon); also her line in the rising burst
+#   RIFT_BOSS     a boss sighted under the rift, most of the time (a woman on a Blood Moon keeps her annoyed boss lines)
+#   RIFT_TOWN     the town NPCs, named (a line only fires while that NPC lives)
+#   RIFT_CLASS    the classes: a levy's own ([melee] [ranger] [mage] [summoner] [rogue]) and the others' ({Melee} {Ranger} {Mage} {Summoner} {Rogue})
+#   RIFT_HABIT    each temperament's small habits under the rift
+# A normal Blood Moon, without the rift, is left as it is.
+# ============================================================================================================
+
+# ---------------------------------------------------------------- RIFT_HUSH
+RIFT_HUSH | Any | ...
+RIFT_HUSH | Any | ......
+RIFT_HUSH | Any | *heavy breathing*
+RIFT_HUSH | Any | ...don't.
+RIFT_HUSH | Any | *teeth chattering*
+RIFT_HUSH | Any | ...not again.
+
+# ---------------------------------------------------------------- RIFT_ANGRY
+RIFT_ANGRY | Any | Make it stop. Somebody make it stop!
+RIFT_ANGRY | Any | Rain, dark, cold, and that thing. Every night!
+RIFT_ANGRY | Any | Don't touch me. Don't talk to me.
+RIFT_ANGRY | Any | If one more thing screams out there, so will I.
+RIFT_ANGRY | Any | Soaked to the bone, and done with all of it.
+RIFT_ANGRY | Any | Get that torch out of my face!
+RIFT_ANGRY | Any | It's closer than last night. Don't argue.
+RIFT_ANGRY | Any | Who decided we live like this? Who?
+RIFT_ANGRY | Greenhorn | I'm not scared anymore. I'm furious.
+RIFT_ANGRY | Sellsword | Triple pay. Tonight. Not a copper less.
+RIFT_ANGRY | Zealot | Mother Gnash can explain this to my face.
+RIFT_ANGRY | Cynic | Oh, wonderful. Another one. Perfect.
+RIFT_ANGRY | Veteran | Stand your post and leave me be.
+
+# ---------------------------------------------------------------- RIFT_BLOOD, on edge
+RIFT_BLOOD | Any | Something touched my boot. Something touched my boot!
+RIFT_BLOOD | Any | Stop whistling. Whatever that is, stop it.
+RIFT_BLOOD | Any | Footsteps. Ours. I hope they're ours.
+RIFT_BLOOD | Greenhorn | Was that you? Please say that was you.
+RIFT_BLOOD | Cynic | I'd scream, but the rain's louder.
+RIFT_BLOOD | Veteran | Nobody sleeps. Nobody.
+
+# ---------------------------------------------------------------- RIFT_BOSS
+RIFT_BOSS | Any | Another one. Of course there is.
+RIFT_BOSS | Any | Fine. Let's get it over with.
+RIFT_BOSS | Any | Something else that wants us dead. Great.
+RIFT_BOSS | Any | Kill it fast. I want to sit down.
+RIFT_BOSS | Any | Big. Everything's big now.
+RIFT_BOSS | Any | [summoner] My minions will handle it. I'll handle the crying.
+RIFT_BOSS | Any | [summoner] I'll let the staff decide. It's smarter than me.
+RIFT_BOSS | Any | [mage] Right. Fire. Or ice. Wait, which one is this?
+RIFT_BOSS | Any | [mage] Spell's ready. I think. Stand back. Further.
+RIFT_BOSS | Any | [melee] I'll get close. Closer than last time. Promise.
+RIFT_BOSS | Any | [ranger] Shoot it till it stops. Same as always.
+RIFT_BOSS | Any | [rogue] I'll throw things at it. It's what I do.
+RIFT_BOSS | Greenhorn | I'm too tired to be scared of this one.
+RIFT_BOSS | Sellsword | This one's extra. It should be extra.
+RIFT_BOSS | Zealot | Rigroth the Undying would be annoyed too.
+RIFT_BOSS | Cynic | A boss. In this weather. Lovely.
+RIFT_BOSS | Veteran | Same as always. Keep your heads down.
+
+# ---------------------------------------------------------------- RIFT_TOWN
+RIFT_TOWN | Any | Bought a stack of torches off {Merchant}. Still dark.
+RIFT_TOWN | Any | {Nurse} patched me up without a word.
+RIFT_TOWN | Any | {ArmsDealer} gave me extra rounds. Didn't charge.
+RIFT_TOWN | Any | {Demolitionist} keeps lighting fuses for the warmth.
+RIFT_TOWN | Any | {Dryad} won't go outside anymore.
+RIFT_TOWN | Any | {Guide} says it gets better. He doesn't sound sure.
+RIFT_TOWN | Any | {Tavernkeep} stopped watering the drinks.
+RIFT_TOWN | Any | {GoblinTinkerer} built a brighter lamp. Not bright enough.
+RIFT_TOWN | Any | {Painter} only paints suns now.
+RIFT_TOWN | Any | {Angler} hasn't caught a thing since the lake froze.
+RIFT_TOWN | Any | {Clothier} knitted me a scarf. Best thing I own.
+RIFT_TOWN | Any | {Wizard} stared at the sky for an hour. Then went in.
+RIFT_TOWN | Any | {Stylist} offered a haircut. I asked what for.
+RIFT_TOWN | Any | {PartyGirl} hasn't thrown a party in weeks.
+RIFT_TOWN | Any | {Mechanic} wired lamps all over town. Still dark.
+RIFT_TOWN | Any | {TaxCollector} still collects. Some things never change.
+RIFT_TOWN | Any | {WitchDoctor} burns something every night. Smells awful.
+RIFT_TOWN | Any | {Cyborg} says his sensors can't read the sky.
+
+# ---------------------------------------------------------------- RIFT_CLASS
+RIFT_CLASS | Any | [melee] I'm swinging closer now. No point hanging back.
+RIFT_CLASS | Any | [melee] My sword's the only warm thing I hold.
+RIFT_CLASS | Any | [ranger] Counted my ammo twice. It's never enough now.
+RIFT_CLASS | Any | [ranger] Can't aim at what I can't see. And I can't see.
+RIFT_CLASS | Any | [mage] My mana's fine. It's everything else.
+RIFT_CLASS | Any | [mage] I tried a light spell. The dark ate it.
+RIFT_CLASS | Any | [summoner] My minions won't leave my side now. Same.
+RIFT_CLASS | Any | [summoner] Even the summons look nervous.
+RIFT_CLASS | Any | [rogue] Nobody sneaks up on anybody here. Too quiet.
+RIFT_CLASS | Any | [rogue] Threw my last dagger at a shadow. It was a shadow.
+RIFT_CLASS | Any | {Melee} stands at the front every time now.
+RIFT_CLASS | Any | {Ranger} cleans that gun every night. Every night.
+RIFT_CLASS | Any | {Mage} lit the camp for us. Nobody laughed this time.
+RIFT_CLASS | Any | {Summoner}'s minions keep us company at night.
+RIFT_CLASS | Any | {Rogue} keeps vanishing. I hope it's on purpose.
+RIFT_CLASS | Any | [non-mage] Mages used to be the joke. Not anymore.
+RIFT_CLASS | Any | [non-summoner] I take back the summon jokes. Most of them.
+RIFT_CLASS | Cynic | {Melee} charged again. Brave, or tired. Same thing now.
+RIFT_CLASS | Veteran | Good shooting, {Ranger}. I mean it.
+
+# ---------------------------------------------------------------- RIFT_HABIT
+RIFT_HABIT | Zealot | *murmurs a short prayer*
+RIFT_HABIT | Zealot | *touches an old charm, twice*
+RIFT_HABIT | Zealot | *bows toward the dark, then thinks better of it*
+RIFT_HABIT | Veteran | *watches the treeline without blinking*
+RIFT_HABIT | Veteran | *checks the perimeter again*
+RIFT_HABIT | Sellsword | *counts coins. Counts them again.*
+RIFT_HABIT | Sellsword | *bites a coin to check it's real*
+RIFT_HABIT | Greenhorn | *sticks close to the nearest torch*
+RIFT_HABIT | Greenhorn | *flinches at a sound nobody else heard*
+RIFT_HABIT | Cynic | *sighs at the sky*
+RIFT_HABIT | Cynic | *mutters something rude at the rift*
+RIFT_HABIT | Any | *rubs hands together for warmth*
+RIFT_HABIT | Any | *pulls the collar up and says nothing*
+
+# ---------------------------------------------------------------- RIFT_FOG, drifting apart
+RIFT_FOG | Any | Where'd everyone go? I was right behind you.
+RIFT_FOG | Any | I can't see you. Say something.
+RIFT_FOG | Any | I keep drifting off. I don't mean to.
+RIFT_FOG | Any | I was standing right here. Wasn't I?
+RIFT_FOG | Greenhorn | {Player}? You're further than I thought.

@@ -122,8 +122,12 @@ namespace Levy.Common.Compat.MagicStorageLink
 			var ctxType = gui.GetNestedType("CraftingContext", BindingFlags.NonPublic) ?? throw new InvalidOperationException("CraftingGUI.CraftingContext not found");
 			var ctx = Activator.CreateInstance(ctxType, true);
 			var modules = heart.GetModules().ToArray();
-			var sandbox = (EnvironmentSandbox)Activator.CreateInstance(typeof(EnvironmentSandbox), I, null, new object[] { Main.LocalPlayer, heart }, null);
-			proxies ??= modules.SelectMany(m => m.GetAdditionalItems(sandbox) ?? Array.Empty<Item>()).Where(i => i.type > ItemID.None && i.stack > 0).ToList();
+			object sandbox = Activator.CreateInstance(typeof(EnvironmentSandbox), I, null, new object[] { Main.LocalPlayer, heart }, null); // boxed: a lambda capturing the struct itself would give Levy a type with a Magic Storage value-type field, which fails to load without Magic Storage
+			if (proxies == null)
+			{
+				proxies = new List<Item>();
+				foreach (var m in modules) foreach (var i in m.GetAdditionalItems((EnvironmentSandbox)sandbox) ?? Array.Empty<Item>()) if (i.type > ItemID.None && i.stack > 0) proxies.Add(i);
+			}
 			var heartItems = heart.GetStoredItems().Select(i => i.Clone()).ToList();
 			var source = heartItems.Concat(proxies).ToList();
 			var fromModule = heartItems.Select(_ => false).Concat(proxies.Select(_ => true)).ToList();

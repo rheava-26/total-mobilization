@@ -106,7 +106,19 @@ namespace Levy.Common.Dialogue
 				case RiftRoute.Silent: case RiftRoute.Hush: picked = null; return null;
 				case RiftRoute.Chat: return PickRift(rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, false);
 				case RiftRoute.Camp: return PickRift(rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, true);
+				case RiftRoute.Flight:
+					// flying under the rift: no thrill left, only this
+					return PickFromPool(DialogueTable.Get(DialogueTrigger.RIFT_FLIGHT), rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, true);
+				case RiftRoute.Boss:
+					// under the rift a boss is met grimly; a woman on a Blood Moon keeps her annoyed boss lines
+					if (!RosterFacts.Grumpy(rec) && Main.rand.NextFloat() < LevyConstants.RiftBossChance)
+					{
+						string grim = PickFromPool(DialogueTable.Get(DialogueTrigger.RIFT_BOSS), rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, true);
+						if (grim != null) return grim;
+					}
+					break;
 			}
+			if (trigger == DialogueTrigger.RIFT_BLOOD && RosterFacts.Grumpy(rec)) trigger = DialogueTrigger.RIFT_ANGRY; // the Blood Moon's burst, from a woman: angry
 			List<DialogueLine> pool = PoolFor(trigger, ctx);
 			// A boss with no annoyed lines of its own is answered from the generic annoyed boss set, never from the normal lines.
 			if (trigger == DialogueTrigger.BOSS && RosterFacts.Grumpy(rec) && !HasGrumpyLine(pool)) pool = DialogueTable.Get(DialogueTrigger.BOSS_SIGHTED);
@@ -120,6 +132,20 @@ namespace Levy.Common.Dialogue
 		private static string PickRift(SoldierRecord rec, DialogueContext ctx, SoldierNPC body, bool ignoreRepeat, int avoidId, out DialogueLine picked, bool mark, bool camp)
 		{
 			picked = null;
+			if (RiftMood.BloodNow)
+			{
+				// a Blood Moon under the rift: the women are angry, and many of the rest have nothing left to say
+				if (RosterFacts.Grumpy(rec) && Main.rand.NextFloat() < LevyConstants.RiftAngryChance)
+				{
+					string angry = PickFromPool(DialogueTable.Get(DialogueTrigger.RIFT_ANGRY), rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, true);
+					if (angry != null) return angry;
+				}
+				else if (Main.rand.NextFloat() < LevyConstants.RiftHushChance)
+				{
+					string hush = PickFromPool(DialogueTable.Get(DialogueTrigger.RIFT_HUSH), rec, ctx, body, true, -1, out picked, false, true); // silences repeat freely
+					if (hush != null) return hush;
+				}
+			}
 			int n = RiftMood.ChatOrder(rec, body, camp);
 			for (int i = 0; i < n; i++)
 			{
@@ -280,7 +306,7 @@ namespace Levy.Common.Dialogue
 			private SoldierRecord _tank, _glutton;
 			private string _world, _officer;
 			private string _player;
-			private string _mage, _summoner, _ranger, _melee;
+			private string _mage, _summoner, _ranger, _melee, _rogue;
 
 			public void Begin(SoldierRecord rec, DialogueContext ctx, SoldierNPC body)
 			{
@@ -288,13 +314,13 @@ namespace Levy.Common.Dialogue
 				_resolved = LineNeeds.None;
 				_name = _comrade = _boss = _killer = _town = _wage = _player = null;
 				_tank = _glutton = null; _world = _officer = null;
-				_mage = _summoner = _ranger = _melee = null;
+				_mage = _summoner = _ranger = _melee = _rogue = null;
 			}
 
 			public bool Can(LineNeeds needs)
 			{
 				if (needs == LineNeeds.None) return true;
-				for (int bit = 1; bit <= (int)LineNeeds.Melee; bit <<= 1)
+				for (int bit = 1; bit <= (int)LineNeeds.Rogue; bit <<= 1)
 					if (((int)needs & bit) != 0 && Value((LineNeeds)bit) == null) return false;
 				return true;
 			}
@@ -322,6 +348,7 @@ namespace Levy.Common.Dialogue
 							case LineNeeds.Summoner: _summoner = RosterFacts.ClassMate(_rec, RosterFacts.MateClass.Summoner)?.Name; break;
 							case LineNeeds.Ranger: _ranger = RosterFacts.ClassMate(_rec, RosterFacts.MateClass.Ranger)?.Name; break;
 							case LineNeeds.Melee: _melee = RosterFacts.ClassMate(_rec, RosterFacts.MateClass.Melee)?.Name; break;
+							case LineNeeds.Rogue: _rogue = RosterFacts.ClassMate(_rec, RosterFacts.MateClass.Rogue)?.Name; break;
 						}
 					}
 					catch (Exception)
@@ -345,6 +372,7 @@ namespace Levy.Common.Dialogue
 					case LineNeeds.Summoner: return _summoner;
 					case LineNeeds.Ranger: return _ranger;
 					case LineNeeds.Melee: return _melee;
+					case LineNeeds.Rogue: return _rogue;
 					default: return _wage;
 				}
 			}
@@ -403,6 +431,7 @@ namespace Levy.Common.Dialogue
 						case PlaceholderKind.Summoner: Scratch.Append(Value(LineNeeds.Summoner)); break;
 						case PlaceholderKind.Ranger: Scratch.Append(Value(LineNeeds.Ranger)); break;
 						case PlaceholderKind.Melee: Scratch.Append(Value(LineNeeds.Melee)); break;
+						case PlaceholderKind.Rogue: Scratch.Append(Value(LineNeeds.Rogue)); break;
 						case PlaceholderKind.TownNpc:
 						{
 							int idx = NPC.FindFirstNPC(p.NpcType);

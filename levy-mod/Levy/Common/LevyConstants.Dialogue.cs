@@ -61,6 +61,31 @@ namespace Levy.Common
 		public const int RiftDukeSpeakers = 4, RiftDukeStepTicks = 55, RiftDukeSeenTicks = 180;
 		/// <summary>Levies within this many tiles of where the boss was swallowed saw it.</summary>
 		public const float RiftDukeReachTiles = 60f;
+
+		// ---- round two (RiftMood.Sky.cs) ----
+		/// <summary>The long slide: from these dawns the jokes turn grim, then the army is worn down. The dark jokes thin out as the grim ones take over.</summary>
+		public const int RiftGrimFromDay = 7, RiftWornFromDay = 12;
+		public const float RiftDarkChanceLate = 0.2f, RiftDarkChanceWorn = 0.1f, RiftGrimChance = 0.35f, RiftWornChance = 0.4f;
+		/// <summary>The rift's growth tiers by NoxusBoss's intensity (0.143 after Moon Lord, rising with Calamity's later bosses to 1): tier 2 from this value, tier 3, tier 4.</summary>
+		public const float RiftTier2At = 0.25f, RiftTier3At = 0.55f, RiftTier4At = 0.8f;
+		/// <summary>How often rift chat is about the Blood Moon (while one is up), the fog (while it is up), the rift's size (from tier 2), or the ice (once water freezes).</summary>
+		public const float RiftBloodChance = 0.7f, RiftFogChance = 0.6f, RiftGrowChance = 0.35f, RiftIceChance = 0.3f;
+		/// <summary>Speakers in each burst: the first sight of a bigger rift, the first frozen water, a Blood Moon rising under the rift, a scare in the fog.</summary>
+		public const int RiftGrowSpeakers = 3, RiftIceSpeakers = 2, RiftBloodSpeakers = 3, RiftScareSpeakers = 3, RiftBurstStepTicks = 70;
+		/// <summary>A scare in the fog: levies within this many tiles of it saw it, and the next scare waits this long.</summary>
+		public const float RiftScareReachTiles = 60f;
+		public const int RiftScareCooldownTicks = 60 * 20;
+		/// <summary>A Blood Moon under the rift: this share of a levy's chat is only "...", and a woman (angry on a Blood Moon, as vanilla's women are) speaks the angry set this often.</summary>
+		public const float RiftHushChance = 0.3f, RiftAngryChance = 0.7f;
+		/// <summary>Under the rift a boss sighting is grim and irritated this often (else the usual boss lines). Rift chat names a town NPC this often (only lines whose NPC lives).</summary>
+		public const float RiftBossChance = 0.75f, RiftTownChance = 0.18f;
+		/// <summary>Rift chat about the classes (a levy's own and the others'), and a temperament's small habit (a prayer, a watch, counting coin), this often.</summary>
+		public const float RiftClassChance = 0.3f, RiftHabitChance = 0.2f;
+		/// <summary>The fog: an idle levy's follow slot drifts outward over this many ticks to 2 to 5 tiles (by the levy), never while it fights.</summary>
+		public const int RiftFogDriftTicks = 60 * 40;
+		public const float RiftFogDriftMinTiles = 2f, RiftFogDriftMaxTiles = 5f;
+		/// <summary>Chat bar jitter: the offset changes every this many ticks.</summary>
+		public const int ChatShakeStepTicks = 4;
 		/// <summary>The burst right after the sun is covered: levies near each commander, one after another; then this long of worried talk in place of the rift chat.</summary>
 		public const int RiftPanicSpeakers = 4, RiftPanicStepTicks = 75, RiftPanicTicks = 60 * 90;
 		/// <summary>A levy who was dead or in reserve when the sun went asks what happened, with this chance, until he has asked this many times.</summary>

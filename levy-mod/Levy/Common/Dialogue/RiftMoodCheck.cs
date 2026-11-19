@@ -15,7 +15,7 @@ namespace Levy.Common.Dialogue
 	/// untouched; shock lines only while tense, "what now" lines only from the later day; the absent and cold pools; the rift voice over the Blood Moon's; and the floating share per phase.
 	/// Every global it touches (RNG, the roster, the overrides, the real NoxusBoss members, Main.raining) is put back.
 	/// </summary>
-	public class RiftMoodCheck : ModSystem
+	public partial class RiftMoodCheck : ModSystem
 	{
 		private int _pass, _fail;
 
@@ -31,7 +31,9 @@ namespace Levy.Common.Dialogue
 			return r;
 		}
 
-		private static readonly DialogueTrigger[] Rift = { DialogueTrigger.RIFT_PANIC, DialogueTrigger.RIFT_SHOCK, DialogueTrigger.RIFT_ABSENT, DialogueTrigger.RIFT_COLD, DialogueTrigger.RIFT_LATER, DialogueTrigger.RIFT_RESPECT, DialogueTrigger.RIFT_IDLE, DialogueTrigger.RIFT_CAMP, DialogueTrigger.RIFT_DARK, DialogueTrigger.RIFT_POWER, DialogueTrigger.RIFT_DUKE };
+		private static readonly DialogueTrigger[] Rift = { DialogueTrigger.RIFT_PANIC, DialogueTrigger.RIFT_SHOCK, DialogueTrigger.RIFT_ABSENT, DialogueTrigger.RIFT_COLD, DialogueTrigger.RIFT_LATER, DialogueTrigger.RIFT_RESPECT, DialogueTrigger.RIFT_IDLE, DialogueTrigger.RIFT_CAMP, DialogueTrigger.RIFT_DARK, DialogueTrigger.RIFT_POWER, DialogueTrigger.RIFT_DUKE,
+			DialogueTrigger.RIFT_BLOOD, DialogueTrigger.RIFT_GROW1, DialogueTrigger.RIFT_GROW2, DialogueTrigger.RIFT_GROW3, DialogueTrigger.RIFT_ICE, DialogueTrigger.RIFT_FROZEN, DialogueTrigger.RIFT_FOG, DialogueTrigger.RIFT_SCARE, DialogueTrigger.RIFT_GRIM, DialogueTrigger.RIFT_WORN,
+			DialogueTrigger.RIFT_HUSH, DialogueTrigger.RIFT_ANGRY, DialogueTrigger.RIFT_BOSS, DialogueTrigger.RIFT_TOWN, DialogueTrigger.RIFT_CLASS, DialogueTrigger.RIFT_HABIT, DialogueTrigger.RIFT_FLIGHT };
 
 		private void Core()
 		{
@@ -115,13 +117,16 @@ namespace Levy.Common.Dialogue
 			catch (Exception e) { Note("could not read the packed file: " + e.Message); }
 			Check($"the packed dialogue file parses with no bad line ({bad} rejected)", bad == 0);
 			int total = 0;
-			var mins = new Dictionary<DialogueTrigger, int> { [DialogueTrigger.RIFT_PANIC] = 10, [DialogueTrigger.RIFT_SHOCK] = 10, [DialogueTrigger.RIFT_ABSENT] = 6, [DialogueTrigger.RIFT_COLD] = 8, [DialogueTrigger.RIFT_LATER] = 6, [DialogueTrigger.RIFT_RESPECT] = 8, [DialogueTrigger.RIFT_IDLE] = 15, [DialogueTrigger.RIFT_CAMP] = 8, [DialogueTrigger.RIFT_DARK] = 10, [DialogueTrigger.RIFT_POWER] = 6, [DialogueTrigger.RIFT_DUKE] = 6 };
+			var mins = new Dictionary<DialogueTrigger, int> { [DialogueTrigger.RIFT_PANIC] = 10, [DialogueTrigger.RIFT_SHOCK] = 10, [DialogueTrigger.RIFT_ABSENT] = 6, [DialogueTrigger.RIFT_COLD] = 8, [DialogueTrigger.RIFT_LATER] = 6, [DialogueTrigger.RIFT_RESPECT] = 8, [DialogueTrigger.RIFT_IDLE] = 15, [DialogueTrigger.RIFT_CAMP] = 8, [DialogueTrigger.RIFT_DARK] = 10, [DialogueTrigger.RIFT_POWER] = 6, [DialogueTrigger.RIFT_DUKE] = 6,
+				[DialogueTrigger.RIFT_BLOOD] = 12, [DialogueTrigger.RIFT_GROW1] = 8, [DialogueTrigger.RIFT_GROW2] = 8, [DialogueTrigger.RIFT_GROW3] = 8, [DialogueTrigger.RIFT_ICE] = 6, [DialogueTrigger.RIFT_FROZEN] = 6,
+				[DialogueTrigger.RIFT_FOG] = 8, [DialogueTrigger.RIFT_SCARE] = 6, [DialogueTrigger.RIFT_GRIM] = 8, [DialogueTrigger.RIFT_WORN] = 8,
+				[DialogueTrigger.RIFT_HUSH] = 4, [DialogueTrigger.RIFT_BOSS] = 12, [DialogueTrigger.RIFT_TOWN] = 12, [DialogueTrigger.RIFT_CLASS] = 12, [DialogueTrigger.RIFT_HABIT] = 10, [DialogueTrigger.RIFT_FLIGHT] = 6, [DialogueTrigger.RIFT_ANGRY] = 20 };
 			foreach (DialogueTrigger t in Rift)
 			{
 				int n = DialogueTable.Get(t)?.Count ?? 0; total += n;
 				Check($"{t} has {n} lines (needs {mins[t]})", n >= mins[t]);
 			}
-			Check($"{total} rift lines in all (60 to 150)", total >= 60 && total <= 150);
+			Check($"{total} rift lines in all (300 to 450)", total >= 300 && total <= 450);
 
 			// every line: ASCII, short, no annoyed tag, every placeholder filled for a speaker it suits
 			var mia = Make("Mia", Temperament.Greenhorn, ItemID.WandofSparking);
@@ -134,7 +139,7 @@ namespace Levy.Common.Dialogue
 			var army = new List<SoldierRecord> { mia, sam, rae, mel, pat, tess, gus };
 			RosterFacts.TestRoster = army;
 			var ctx = new DialogueContext { Player = "Cap", Comrade = "Bo" };
-			int filled = 0;
+			int filled = 0, townLines = 0, rogueLines = 0;
 			foreach (DialogueTrigger t in Rift)
 			{
 				var pool = DialogueTable.Get(t); if (pool == null) continue;
@@ -145,6 +150,9 @@ namespace Levy.Common.Dialogue
 					if (!ascii) Check(who + " is plain ASCII", false);
 					if (l.Text.Length > 60) Check($"{who} is short ({l.Text.Length} chars, 60 at most)", false);
 					if ((l.Cond & LineCond.Grumpy) != 0) Check(who + " carries no [grumpy] tag", false);
+					// a line naming a town NPC needs that NPC alive (none at boot): it must have parsed the NPC; a rogue line needs a rogue class (Calamity)
+					if (l.NpcTypes.Length > 0) { townLines++; filled++; continue; }
+					if (((l.Cond & LineCond.Rogue) != 0 || (l.Needs & LineNeeds.Rogue) != 0) ) { rogueLines++; filled++; continue; }
 					string got = null;
 					foreach (SoldierRecord sp in army)
 					{
@@ -157,11 +165,14 @@ namespace Levy.Common.Dialogue
 					else filled++;
 				}
 			}
-			Check($"every rift line fills for a levy it suits ({filled} of {total})", filled == total);
+			Check($"every rift line fills for a levy it suits ({filled} of {total}; {townLines} town lines parsed their NPC, {rogueLines} rogue lines need a rogue weapon, checked by tag below)", filled == total && townLines >= 12 && rogueLines >= 3);
+			var into3 = new Dictionary<string, List<DialogueLine>>(StringComparer.OrdinalIgnoreCase);
+			int bad3 = DialogueTable.Parse(null, "riftcheck3", "RIFT_CLASS | Any | [rogue] a\nRIFT_CLASS | Any | {Rogue} b", into3);
+			Check("[rogue] and {Rogue} parse to the rogue tag and placeholder", bad3 == 0 && into3["RIFT_CLASS"][0].Cond == LineCond.Rogue && into3["RIFT_CLASS"][1].Needs == LineNeeds.Rogue);
 
 			// the class names: the right levy, never the speaker, skipped with nobody of that class
-			DialogueLine mageLine = Find(DialogueTrigger.RIFT_RESPECT, "{Mage} hasn't missed");
-			DialogueLine sumLine = Find(DialogueTrigger.RIFT_RESPECT, "{Summoner}'s little");
+			DialogueLine mageLine = Find(DialogueTrigger.RIFT_RESPECT, "{Mage} is hitting");
+			DialogueLine sumLine = Find(DialogueTrigger.RIFT_RESPECT, "{Summoner}'s minions take");
 			DialogueLine rangerLine = Find(DialogueTrigger.RIFT_RESPECT, "{Ranger}'s bullets");
 			DialogueLine meleeLine = Find(DialogueTrigger.RIFT_RESPECT, "{Melee} went right");
 			string byPat = mageLine != null ? PickOne(mageLine, pat, ctx) : null, byMia = mageLine != null ? PickOne(mageLine, mia, ctx) : null;
@@ -268,15 +279,23 @@ namespace Levy.Common.Dialogue
 					else if (route == RiftRoute.Hush) { if (a != null) { hushedSpoke++; leak ??= "hushed " + t + ": " + a; } }
 				}
 			}
-			foreach (DialogueTrigger t in new[] { DialogueTrigger.ENGAGE, DialogueTrigger.KILL, DialogueTrigger.HURT, DialogueTrigger.COMRADE_DOWN, DialogueTrigger.BOSS_SIGHTED, DialogueTrigger.PAYDAY, DialogueTrigger.UNPAID, DialogueTrigger.VICTORY, DialogueTrigger.DEATH_MESSAGE })
+			foreach (DialogueTrigger t in new[] { DialogueTrigger.ENGAGE, DialogueTrigger.KILL, DialogueTrigger.HURT, DialogueTrigger.COMRADE_DOWN, DialogueTrigger.PAYDAY, DialogueTrigger.UNPAID, DialogueTrigger.VICTORY, DialogueTrigger.DEATH_MESSAGE })
 			{
 				combatPools++;
 				string a = DialogueSystem.Pick(t, pat, ctx, null, true, -1, out DialogueLine pl, false);
 				if (a != null && In(t, pl)) combatOk++;
 			}
 			Check($"in the tense days every calm and joking pool answers only from the rift pools ({routed} rift lines, {leaked} leaks{(leak != null ? ": " + leak : "")})", routed > 100 && leaked == 0);
-			Check($"the crystal, chest, gear, eclipse-end and flight lines go quiet ({hushedSpoke} spoken)", hushedSpoke == 0);
-			Check($"combat, boss, pay, victory and death lines keep their own pools ({combatOk}/{combatPools})", combatOk == combatPools);
+			Check($"the crystal, chest and gear lines and the flying whoops go quiet ({hushedSpoke} spoken)", hushedSpoke == 0);
+			int flown = 0, flyOther = 0;
+			foreach (DialogueTrigger ft in new[] { DialogueTrigger.TAKEOFF, DialogueTrigger.FLIGHT_FEAR, DialogueTrigger.LANDING })
+				for (int i = 0; i < 20; i++) { DialogueSystem.Pick(ft, pat, ctx, null, true, -1, out DialogueLine pf, false); if (In(DialogueTrigger.RIFT_FLIGHT, pf)) flown++; else flyOther++; }
+			string ecl = DialogueSystem.Pick(DialogueTrigger.ECLIPSE_END, pat, ctx, null, true, -1, out DialogueLine pe, false);
+			Check($"flying under the rift is answered from the flight set ({flown} of 60, {flyOther} other); a solar eclipse ending keeps its own lines ({ecl})", flown == 60 && ecl != null && In(DialogueTrigger.ECLIPSE_END, pe));
+			Check($"combat, pay, victory and death lines keep their own pools ({combatOk}/{combatPools})", combatOk == combatPools);
+			int grimBoss = 0, plainBoss = 0;
+			for (int i = 0; i < 200; i++) { DialogueSystem.Pick(DialogueTrigger.BOSS_SIGHTED, pat, ctx, null, true, -1, out DialogueLine pb, false); if (In(DialogueTrigger.RIFT_BOSS, pb)) grimBoss++; else if (In(DialogueTrigger.BOSS_SIGHTED, pb)) plainBoss++; }
+			Check($"under the rift a boss is met grimly about {LevyConstants.RiftBossChance:P0} of the time ({grimBoss} grim, {plainBoss} usual in 200)", grimBoss > 120 && grimBoss < 180 && plainBoss > 20);
 			string drink = DialogueSystem.PickLine("DRINK", pat, ctx, true);
 			Check($"the drink fallback asked for by name answers from the camp pools ({drink})", drink != null && (Contains(DialogueTrigger.RIFT_CAMP, drink) || Contains(DialogueTrigger.RIFT_IDLE, drink)));
 			string mut = DialogueSystem.PickLine("MUTINY", pat, ctx, true);
@@ -293,13 +312,13 @@ namespace Levy.Common.Dialogue
 			int pow0 = CountPool(DialogueTrigger.RIFT_POWER, pat, ctx, 200), dark0 = CountPool(DialogueTrigger.RIFT_DARK, pat, ctx, 200);
 			RiftMood.TestDays = LevyConstants.RiftPowerFromDay;
 			int pow1 = CountPool(DialogueTrigger.RIFT_POWER, pat, ctx, 200), dark1 = CountPool(DialogueTrigger.RIFT_DARK, pat, ctx, 200);
-			Check($"day 0 has no weary-strength and no dark lines; from day {LevyConstants.RiftPowerFromDay} the weary ones come, still no dark ones ({pow0}/{dark0} then {pow1}/{dark1} in 200)", pow0 == 0 && dark0 == 0 && pow1 > 15 && dark1 == 0);
+			Check($"day 0 has no weary-strength and no dark lines; from day {LevyConstants.RiftPowerFromDay} the weary ones come, still no dark ones ({pow0}/{dark0} then {pow1}/{dark1} in 200)", pow0 == 0 && dark0 == 0 && pow1 > 4 && dark1 == 0);
 			RiftMood.TestPhase = RiftPhase.Settled; RiftMood.TestDays = LevyConstants.RiftDarkFromDay;
 			int darkS = CountPool(DialogueTrigger.RIFT_DARK, pat, ctx, 200);
-			Check($"settled, day {LevyConstants.RiftDarkFromDay}: the dark jokes come back ({darkS} in 200)", darkS > 30);
+			Check($"settled, day {LevyConstants.RiftDarkFromDay}: the dark jokes come back ({darkS} in 200)", darkS > 12);
 			RiftMood.TestPhase = RiftPhase.Settled; RiftMood.TestDays = LevyConstants.RiftTenseDays;
 			int shockS = CountPool(DialogueTrigger.RIFT_SHOCK, pat, ctx, 200), laterS = CountPool(DialogueTrigger.RIFT_LATER, pat, ctx, 200), idleS = CountPool(DialogueTrigger.RIFT_IDLE, pat, ctx, 200);
-			Check($"settled: no shock lines, \"what now\" and quiet talk go on ({shockS} shock, {laterS} later, {idleS} idle in 200)", shockS == 0 && laterS > 15 && idleS > 25);
+			Check($"settled: no shock lines, \"what now\" and quiet talk go on ({shockS} shock, {laterS} later, {idleS} idle in 200)", shockS == 0 && laterS > 5 && idleS > 10);
 			RiftMood.TestPhase = null; RiftMood.TestDays = null;
 			RiftSky.TestTransition = false; RiftSky.TestCovered = true;
 			RiftMood.DaysSince = LevyConstants.RiftTenseDays - 1;
@@ -331,6 +350,8 @@ namespace Levy.Common.Dialogue
 			string duke = DialogueSystem.Pick(DialogueTrigger.RIFT_DUKE, pat, ctx, null, true, -1, out _, false);
 			Check($"the shocked burst draws from RIFT_DUKE ({duke}) and is never thinned", duke != null && RiftMood.AllowFloating((byte)DialogueTrigger.RIFT_DUKE));
 			RiftSky.TestDukeKilled = null; RiftSky.TestDukeAlive = null; RiftMood.Reset();
+
+			SkyChecks(pat, ctx);
 
 			// the cold: snow falling or lying, on the surface
 			RiftSky.TestSnowing = true; RiftMood.TestSurface = true;

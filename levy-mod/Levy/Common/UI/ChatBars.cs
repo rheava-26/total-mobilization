@@ -37,7 +37,7 @@ namespace Levy.Common.UI
 				case DialogueTrigger.RALLIED: case DialogueTrigger.VICTORY: case DialogueTrigger.FLIGHT_SHOUT:
 				case DialogueTrigger.EVENT_GOBLINS: case DialogueTrigger.EVENT_PIRATES: case DialogueTrigger.EVENT_ECLIPSE: case DialogueTrigger.EVENT_PUMPKIN:
 				case DialogueTrigger.EVENT_FROST: case DialogueTrigger.EVENT_MARTIANS: case DialogueTrigger.EVENT_OLDONES: case DialogueTrigger.EVENT_FROSTLEGION:
-				case DialogueTrigger.ECLIPSE_END: case DialogueTrigger.RIFT_PANIC: case DialogueTrigger.RIFT_DUKE:
+				case DialogueTrigger.ECLIPSE_END: case DialogueTrigger.RIFT_PANIC: case DialogueTrigger.RIFT_DUKE: case DialogueTrigger.RIFT_BLOOD: case DialogueTrigger.RIFT_SCARE: case DialogueTrigger.RIFT_GROW1: case DialogueTrigger.RIFT_GROW2: case DialogueTrigger.RIFT_GROW3: case DialogueTrigger.RIFT_ICE: case DialogueTrigger.RIFT_FROZEN:
 					return LevyConstants.ChatBarPriorityNotice;
 				default: return LevyConstants.ChatBarPriorityChatter;
 			}
@@ -48,7 +48,7 @@ namespace Levy.Common.UI
 		{
 			if (Main.dedServ || Main.netMode == Terraria.ID.NetmodeID.Server || string.IsNullOrEmpty(text)) return;
 			if (npcIndex < 0 || npcIndex >= Main.maxNPCs || !LevyUtil.IsOnScreen(hitbox)) return;
-			Queue.Enqueue(npcIndex, text, PriorityOf(triggerByte), (int)Main.GameUpdateCount, DistanceTiles(npcIndex));
+			Queue.Enqueue(npcIndex, text, PriorityOf(triggerByte), (int)Main.GameUpdateCount, DistanceTiles(npcIndex), global::Levy.Common.Dialogue.RiftMood.ShakeFor(text));
 		}
 
 		/// <summary>Distance from the local player to a speaker in tiles; negative when the speaker is gone.</summary>
@@ -122,8 +122,21 @@ namespace Levy.Common.UI
 				rect.Y = Math.Max(rect.Y, view.Top);
 				placed.Add(rect);
 
-				DrawBar(sb, px, font, sc, rect, head, lay, e.RevealedChars(now), alpha);
+				DrawBar(sb, px, font, sc, rect, head, lay, e.RevealedChars(now), alpha, e.Shake, e.Speaker, now);
 			}
+		}
+
+		/// <summary>
+		/// A small, cheap tremor for a shaking row: at most one pixel each way, a new offset every <see cref="LevyConstants.ChatShakeStepTicks"/> ticks, from a hash of the tick, the speaker and
+		/// the row (no RNG, no allocation). <paramref name="shake"/> is the share of steps that move at all.
+		/// </summary>
+		internal static Vector2 Jitter(float shake, int speaker, int row, int now)
+		{
+			if (shake <= 0f) return Vector2.Zero;
+			uint h = (uint)(now / LevyConstants.ChatShakeStepTicks) * 2654435761u ^ (uint)speaker * 2246822519u ^ (uint)row * 3266489917u;
+			h ^= h >> 15; h *= 2246822519u; h ^= h >> 13;
+			if ((h % 100u) >= (uint)(shake * 75f)) return Vector2.Zero;
+			return new Vector2((int)((h >> 8) % 3u) - 1, (int)((h >> 12) % 3u) - 1);
 		}
 
 		/// <summary>The part of the screen the Game-scale layer shows (zoom shrinks it around the centre), less a margin.</summary>
@@ -134,7 +147,7 @@ namespace Levy.Common.UI
 			return new Rectangle((int)(Main.screenWidth * 0.5f - hw + m), (int)(Main.screenHeight * 0.5f - hh + m), (int)(hw * 2 - 2 * m), (int)(hh * 2 - 2 * m));
 		}
 
-		private static void DrawBar(SpriteBatch sb, Texture2D px, DynamicSpriteFont font, float sc, Rectangle rect, Vector2 head, BarLayout lay, int revealed, float alpha)
+		private static void DrawBar(SpriteBatch sb, Texture2D px, DynamicSpriteFont font, float sc, Rectangle rect, Vector2 head, BarLayout lay, int revealed, float alpha, float shake = 0f, int speaker = 0, int now = 0)
 		{
 			// body, 1 px edge, a short tail pointing at the speaker
 			sb.Draw(px, new Rectangle(rect.X - 1, rect.Y - 1, rect.Width + 2, rect.Height + 2), Edge * (alpha * 0.9f));
@@ -151,7 +164,7 @@ namespace Levy.Common.UI
 				int take = Math.Min(left, row.Length);
 				left -= row.Length; // the rows hold no more characters than the text, so the last row is complete by the time the typewriter ends
 				string shown = row.Substring(0, take);
-				Vector2 pos = new Vector2(rect.X + LevyConstants.ChatBarPad, rect.Y + LevyConstants.ChatBarPad + r * lineH);
+				Vector2 pos = new Vector2(rect.X + LevyConstants.ChatBarPad, rect.Y + LevyConstants.ChatBarPad + r * lineH) + Jitter(shake, speaker, r, now);
 				Utils.DrawBorderStringFourWay(sb, font, shown, pos.X, pos.Y, Ink * alpha, new Color(8, 18, 50) * alpha, Vector2.Zero, sc);
 			}
 		}

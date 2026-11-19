@@ -16,6 +16,9 @@ namespace Levy.Common.Dialogue
 	///   Mod.Call("GetBossDefeated", "avatarofemptiness"): the sky has been freed for good.
 	///   WorldSaveSystem.AvatarHasKilledOldDuke (static; Core.World.WorldSaving): set when the sky swallows Calamity's Old Duke (NoxusBoss takes over that NPC's AI while the sky is not
 	///     freed and the flag is off; the NPC is CalamityMod/OldDuke, found by name).
+	///   RiftEclipseManagementSystem.IntensityInterpolant (static float, 0.143 after Moon Lord up to 1 as Calamity's later bosses fall): how big and close the rift has grown.
+	///   RiftEclipseSnowSystem.IceCanCoverWater / IceCanFreezeAllWater (static): still water freezes over / all water freezes.
+	///   Fog creatures, NoxusBoss NPCs found by name: Fogwood (ai[0] 0 creeping, 1 its scream when it reaches its target) and Mirrorwalker (vanishes when reached, blacking out the screen).
 
 	/// Reads are cached per game tick. Self-checks set the Test* overrides (null in play) or drive the real members through <see cref="SetReal"/>.
 	/// </summary>
@@ -29,14 +32,16 @@ namespace Levy.Common.Dialogue
 		internal const string SaveType = "NoxusBoss.Core.World.WorldSaving.WorldSaveSystem";
 
 		// ---- self-check overrides (null in play) ----
-		internal static bool? TestInstalled, TestTransition, TestCovered, TestDefeated, TestSnowing, TestDukeKilled, TestDukeAlive;
+		internal static bool? TestInstalled, TestTransition, TestCovered, TestDefeated, TestSnowing, TestDukeKilled, TestDukeAlive, TestIceCover, TestIceAll, TestFog;
+		internal static float? TestIntensity;
 		internal static float? TestSnowHeight;
 
 		private static bool _resolved, _installed;
 		private static Mod _mod;
 		private static object _appearance;
 		private static PropertyInfo _covered, _ongoing, _eventTimer, _waiting, _riftOngoing, _snowHeight, _fog, _dukeKilled;
-		private static int _dukeType = -1;
+		private static int _dukeType = -1, _fogwoodType = -1, _mirrorType = -1;
+		private static PropertyInfo _intensity, _iceCover, _iceAll;
 		/// <summary>What could not be found (empty when everything resolved, "not installed" without the mod).</summary>
 		public static string Problem { get; private set; } = "";
 		/// <summary>The members found, for the self-check report.</summary>
@@ -72,6 +77,11 @@ namespace Levy.Common.Dialogue
 				_fog = Prop(fog, "EventOngoing", S, typeof(bool), problems, found);
 				_dukeKilled = Prop(save, "AvatarHasKilledOldDuke", S, typeof(bool), problems, found);
 				if (ModContent.TryFind("CalamityMod", "OldDuke", out ModNPC duke)) { _dukeType = duke.Type; found.Append("CalamityMod/OldDuke, "); }
+				_intensity = Prop(man, "IntensityInterpolant", S, typeof(float), problems, found);
+				_iceCover = Prop(snow, "IceCanCoverWater", S, typeof(bool), problems, found);
+				_iceAll = Prop(snow, "IceCanFreezeAllWater", S, typeof(bool), problems, found);
+				if (_mod.TryFind("Fogwood", out ModNPC fw)) { _fogwoodType = fw.Type; found.Append("Fogwood, "); } else problems.Append("Fogwood NPC missing; ");
+				if (_mod.TryFind("Mirrorwalker", out ModNPC mw)) { _mirrorType = mw.Type; found.Append("Mirrorwalker, "); } else problems.Append("Mirrorwalker NPC missing; ");
 				if (app != null)
 					foreach (ModSystem sys in _mod.GetContent<ModSystem>())
 						if (sys.GetType() == app) { _appearance = sys; break; }
@@ -146,7 +156,35 @@ namespace Levy.Common.Dialogue
 		public static bool Snowing { get { if (TestSnowing.HasValue) return TestSnowing.Value; return Covered && !Defeated && Main.raining; } }
 
 		/// <summary>The late-game fog event is on.</summary>
-		public static bool Fog { get { Refresh(); return _cFog; } }
+		public static bool Fog { get { if (TestFog.HasValue) return TestFog.Value; Refresh(); return _cFog; } }
+
+		/// <summary>How big and close the rift has grown: NoxusBoss's intensity (0 without the mod; 0.143 after Moon Lord, up to 1). Read without Calamity it stays at the first step.</summary>
+		public static float Intensity { get { if (TestIntensity.HasValue) return TestIntensity.Value; if (!Resolve()) return 0f; return ReadCached(ref _cIntensity, ref _intensityTick, _intensity); } }
+
+		/// <summary>Still water freezes over under the rift.</summary>
+		public static bool IceCover { get { if (TestIceCover.HasValue) return TestIceCover.Value; if (!Resolve()) return false; return ReadCachedBool(ref _cIceCover, ref _iceTick1, _iceCover); } }
+
+		/// <summary>All water, the oceans too, freezes under the rift.</summary>
+		public static bool IceAll { get { if (TestIceAll.HasValue) return TestIceAll.Value; if (!Resolve()) return false; return ReadCachedBool(ref _cIceAll, ref _iceTick2, _iceAll); } }
+
+		public static int FogwoodType { get { Resolve(); return _fogwoodType; } }
+		public static int MirrorwalkerType { get { Resolve(); return _mirrorType; } }
+
+		private static float _cIntensity; private static bool _cIceCover, _cIceAll;
+		private static uint _intensityTick = uint.MaxValue, _iceTick1 = uint.MaxValue, _iceTick2 = uint.MaxValue;
+		// these walk Calamity's boss flags inside NoxusBoss: read at most once a second
+		private static float ReadCached(ref float cache, ref uint at, PropertyInfo p)
+		{
+			uint now = Main.GameUpdateCount;
+			if (at == uint.MaxValue || now - at >= 60u) { at = now; cache = Read(p, 0f); }
+			return cache;
+		}
+		private static bool ReadCachedBool(ref bool cache, ref uint at, PropertyInfo p)
+		{
+			uint now = Main.GameUpdateCount;
+			if (at == uint.MaxValue || now - at >= 60u) { at = now; cache = Read(p, false); }
+			return cache;
+		}
 
 		/// <summary>The sky has swallowed the Old Duke in this world (NoxusBoss's saved flag).</summary>
 		public static bool DukeKilled { get { if (TestDukeKilled.HasValue) return TestDukeKilled.Value; if (!Resolve()) return false; return Read(_dukeKilled, false); } }
@@ -193,6 +231,6 @@ namespace Levy.Common.Dialogue
 			return (Read(_covered, false), Read(_ongoing, false), Read(_eventTimer, 0), Read(_waiting, false), Read(_riftOngoing, false), Read(_snowHeight, 0f), Read(_fog, false));
 		}
 
-		internal static void ClearOverrides() { TestInstalled = TestTransition = TestCovered = TestDefeated = TestSnowing = TestDukeKilled = TestDukeAlive = null; TestSnowHeight = null; TestDukeAt = default; _cacheTick = uint.MaxValue; _defeatTick = uint.MaxValue; }
+		internal static void ClearOverrides() { TestInstalled = TestTransition = TestCovered = TestDefeated = TestSnowing = TestDukeKilled = TestDukeAlive = TestIceCover = TestIceAll = TestFog = null; TestSnowHeight = TestIntensity = null; TestDukeAt = default; _intensityTick = _iceTick1 = _iceTick2 = uint.MaxValue; _cacheTick = uint.MaxValue; _defeatTick = uint.MaxValue; }
 	}
 }

@@ -2280,6 +2280,8 @@ namespace Levy.Content.NPCs
 				slotTiles = RingedSlot(slotIdx / 2, LevyConstants.CloseUpFollowStartTiles, LevyConstants.CloseUpFollowStepTiles, (int)((LevyConstants.CloseUpFollowMaxTiles - LevyConstants.CloseUpFollowStartTiles) / LevyConstants.CloseUpFollowStepTiles) + 1);
 				slotSide = (slotIdx & 1) == 0 ? -facing : facing;
 			}
+			float fogDrift = global::Levy.Common.Dialogue.RiftMood.FogDriftTiles(Record, TargetIndex >= 0, now); // the rift's fog: an idle levy drifts a few tiles further out (0 otherwise)
+			slotTiles += fogDrift;
 			Vector2 cmdBase = cmd.Bottom;
 			if (cmd.gravDir < 0f && FollowerTravel.FindGroundBelow(cmd.Center, out Vector2 under)) cmdBase = under; // a commander walking on a ceiling (Gravitation Potion): wait on the ground beneath them, never path up to the ceiling
 			Vector2 slot = cmdBase + new Vector2(slotSide * slotTiles * LevyConstants.TilePx, 0f);
@@ -2290,6 +2292,7 @@ namespace Levy.Content.NPCs
 			// Spread out needs the same: slots are 6 tiles apart, so a 4 / 6 tile slack would let neighbours stop on one spot.
 			float stopTiles = Record.CloseUp ? LevyConstants.CloseUpFollowStopTiles : Record.SpreadOut ? LevyConstants.SpreadOutFollowStopTiles : LevyConstants.FollowDistance / 3f;
 			float startTiles = Record.CloseUp ? LevyConstants.CloseUpFollowStartMoveTiles : Record.SpreadOut ? LevyConstants.SpreadOutFollowStartMoveTiles : LevyConstants.FollowDistance / 2f;
+			if (fogDrift > 0f || global::Levy.Common.Dialogue.RiftMood.FogRegrouping(now)) { stopTiles = Math.Min(stopTiles, 1.5f); startTiles = Math.Min(startTiles, stopTiles + 1f); } // in the fog (and just after) the drift is walked out and back, not absorbed by the follow slack
 			if (HasMoveGoal)
 			{
 				if (dSlot < stopTiles) ClearGoal();
@@ -2778,6 +2781,8 @@ namespace Levy.Content.NPCs
 			float spacing = n > 1 ? Math.Min(nominal, 2f * half / (n - 1)) : nominal;
 			_idleSlotCompressed = spacing < LevyConstants.DispersionMinGapTiles * SpreadMult;
 			float x = centreX + (rank - (n - 1) * 0.5f) * spacing * tilePx;
+			float drift = global::Levy.Common.Dialogue.RiftMood.FogDriftTiles(Record, TargetIndex >= 0, (int)Main.GameUpdateCount); // the rift's fog: idle levies drift a few tiles further apart (0 otherwise)
+			if (drift > 0f) x += (x > centreX || (x == centreX && (NPC.whoAmI & 1) == 0) ? 1f : -1f) * drift * tilePx;
 			if (HoldPosition) x = MathHelper.Clamp(x, Record.HoldPos.X - (LevyConstants.HoldChaseLimit - 1f) * tilePx, Record.HoldPos.X + (LevyConstants.HoldChaseLimit - 1f) * tilePx);
 			_idleSlotX = x;
 		}

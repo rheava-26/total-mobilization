@@ -44,6 +44,9 @@ namespace Levy.Common.Weapons
 			object cp = LevyRippers.Of(s.Dummy);
 			if (cp == null || !LevyRippers.IsRogue(cp)) { s.StealthHoldRun = 0; return false; } // no stealth bar (no rogue armor): nothing to wait for
 			if (HeldWeapons.LiveHolder(s, item) != null) { s.StealthHoldRun = 0; return false; } // in the hand already: keep feeding it (a wind-up cut short is a weak, bar-emptying throw)
+			int am = s.AmbushGate(item, cp); // the ambush cycle (Ambush.cs): falling back and charging hold, the strike window throws
+			if (am == 1) { Ambush.FireHolds++; return true; }
+			if (am == 0) { s.StealthHoldRun = 0; s.StealthSaveRun = 0; return false; }
 			if (RogueGrenade.Is(item))
 			{
 				if (RogueGrenade.StartNow(s, item, cp) || s.StealthHoldRun >= MaxHoldTicks) { s.StealthHoldRun = 0; return false; }
@@ -60,7 +63,7 @@ namespace Levy.Common.Weapons
 			}
 			if (Rules && Force != 2)
 			{
-				if (Finishing(s, item, target)) { s.StealthHoldRun = 0; Finishes++; return false; } // two plain throws kill it: a strike would land on a corpse
+				if (Finishing(s, item, target, FinishThrows)) { s.StealthHoldRun = 0; Finishes++; return false; } // two plain throws kill it: a strike would land on a corpse
 				if (UnderPressure(s)) { s.StealthHoldRun = 0; Pressured++; return false; } // hurt and being hit: damage now, not in a second
 			}
 			float max = LevyRippers.StealthMax(cp);
@@ -76,13 +79,13 @@ namespace Levy.Common.Weapons
 			return true;
 		}
 
-		/// <summary>The target (its whole body, for a worm) has no more life than <see cref="FinishThrows"/> plain throws of this weapon.</summary>
-		private static bool Finishing(SoldierNPC s, Item item, NPC target)
+		/// <summary>The target (its whole body, for a worm) has no more life than <paramref name="throws"/> plain throws of this weapon.</summary>
+		internal static bool Finishing(SoldierNPC s, Item item, NPC target, float throws)
 		{
 			NPC whole = target.realLife >= 0 && target.realLife < Main.maxNPCs && Main.npc[target.realLife].active ? Main.npc[target.realLife] : target;
 			if (whole.lifeMax <= 5 || whole.dontTakeDamage) return false;
 			float plain = Math.Max(1f, s.WeaponDamage(item) * s.DamageMultiplier - whole.defense * 0.5f);
-			return whole.life <= plain * FinishThrows;
+			return whole.life <= plain * throws;
 		}
 
 		/// <summary>The levy is below <see cref="PressureLife"/> of its life and was hit in the last <see cref="PressureTicks"/> ticks.</summary>

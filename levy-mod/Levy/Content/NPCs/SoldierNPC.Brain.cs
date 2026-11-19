@@ -927,6 +927,7 @@ namespace Levy.Content.NPCs
 				if (now - _lastEngageBarkTick >= LevyConstants.EngageBarkCooldownTicks) { _lastEngageBarkTick = now; DialogueSystem.Bark(this, DialogueTrigger.ENGAGE, MakeContext()); }
 			}
 
+			if (AmbushGoal(target, now)) return true; // a Calamity rogue whose strike is worth it works the ambush cycle (SoldierNPC.Ambush.cs)
 			if (PositionsAsMelee)
 			{
 				// never charge a boss / a hit that would maim us: prefer a safe mob in reach, else MeleeGoal holds a cautious distance

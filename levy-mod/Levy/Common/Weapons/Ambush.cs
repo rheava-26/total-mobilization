@@ -21,15 +21,16 @@ namespace Levy.Common.Weapons
 		/// <summary>Env LEVY_AMBUSH_PLAIN: plain throws after the strike before falling back (default 2).</summary>
 		internal static readonly int PlainAfter = Math.Max(0, Read("LEVY_AMBUSH_PLAIN", 2));
 
-		/// <summary>Weapons measured to lose with the cycle (rogue army sweep, ambush on against off): they keep the old behaviour. Item full name (Mod/Item).</summary>
+		/// <summary>Weapons measured to lose with the cycle (the rogue army sweep and the Ravager lab, ambush on against off): they keep the old behaviour. Item full name (Mod/Item).</summary>
 		internal static readonly HashSet<string> Off = new(StringComparer.Ordinal)
 		{
+			"CalamityMod/BallisticPoisonBomb", // sweep x1.25-1.40, but against Ravager (2 levies, 8 fights) 116 dps on against 176 off: its plain bombs' clouds on the boss's limbs outdo the strikes in a real fight
 		};
 
 		/// <summary>A boss (or a hard hitter's) danger radius in tiles from its hitbox: the charge spot is at least this far. Bigger bodies push it out.</summary>
-		internal const float SafeTilesBoss = 16f, SafeTilesMob = 9f, SafeTilesMax = 30f;
+		internal const float SafeTilesBoss = 14f, SafeTilesMob = 9f, SafeTilesMax = 20f, SafeSizeFrac = 0.1f;
 		/// <summary>The charge spot sits this far past the danger radius when the weapon reaches that far (a strike from where the bar was charged needs no run in).</summary>
-		internal const float ChargeSlackTiles = 4f;
+		internal const float ChargeSlackTiles = 2f, DriftTiles = 6f;
 		/// <summary>Bounds (ticks): a fall back that has not arrived charges where it is; a charge that never fills strikes anyway; a strike window that never lands falls back.</summary>
 		internal const int FallBackMaxTicks = 180, ChargeMaxTicks = 600, StrikeMaxTicks = 300, PlainWindowTicks = 150;
 		/// <summary>A target this close (tiles from its hitbox, as a share of the danger radius) to a charging levy sends it back.</summary>
@@ -43,6 +44,20 @@ namespace Levy.Common.Weapons
 
 		/// <summary>Lab counters: phase entries, completed cycles (fall back -> charge -> strike -> fall back), strikes thrown in the window, fire holds while falling back or charging, cycles skipped and why, spots re-picked.</summary>
 		internal static int FallBacks, Charges, Strikes, Cycles, StrikesThrown, FireHolds, SkipDying, SkipCommander, Repicks, ModeAligned;
+		/// <summary>Lab telemetry (env LEVY_AMBUSH_LOG=1): thinks spent in each phase, strike thinks in reach, and the summed distance (tiles) to the target's hitbox while charging; logged every 10 s of game time.</summary>
+		internal static long ThinksFall, ThinksCharge, ThinksStrike, ThinksInReach; internal static double ChargeTilesSum;
+		internal static readonly bool Log = Environment.GetEnvironmentVariable("LEVY_AMBUSH_LOG") == "1";
+		private static uint _logAt;
+
+		/// <summary>Writes the telemetry line every 600 ticks (lab only).</summary>
+		internal static void MaybeLog()
+		{
+			if (!Log || Main.GameUpdateCount - _logAt < 600) return;
+			_logAt = Main.GameUpdateCount;
+			ModLoaderLog($"AMBUSH-STAT fall={ThinksFall} charge={ThinksCharge} strike={ThinksStrike} inReach={ThinksInReach} chargeTilesMean={(ThinksCharge > 0 ? ChargeTilesSum / ThinksCharge : 0):0.0} fallbacks={FallBacks} charges={Charges} strikes={Strikes} thrown={StrikesThrown} cycles={Cycles} repicks={Repicks} fireHolds={FireHolds} skipDying={SkipDying} skipCmd={SkipCommander} modeAligned={ModeAligned} rage={global::Levy.Common.Compat.Calamity.LevyRippers.RageActivations} adr={global::Levy.Common.Compat.Calamity.LevyRippers.AdrenalineActivations} rogueAligned={global::Levy.Common.Compat.Calamity.LevyRippers.RogueAligned} rogueTimeouts={global::Levy.Common.Compat.Calamity.LevyRippers.RogueTimeouts} barStrikes={global::Levy.Common.Compat.Calamity.LevyRippers.Strikes} boosted={global::Levy.Common.Compat.Calamity.LevyRippers.StrikesBoosted}");
+		}
+
+		private static void ModLoaderLog(string s) => Terraria.ModLoader.ModContent.GetInstance<global::Levy.Levy>()?.Logger.Info(s);
 
 		private static int Read(string n, int d) { string v = Environment.GetEnvironmentVariable(n); return !string.IsNullOrEmpty(v) && int.TryParse(v, out int x) ? x : d; }
 

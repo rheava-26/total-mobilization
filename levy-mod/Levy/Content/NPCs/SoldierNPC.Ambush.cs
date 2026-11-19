@@ -83,7 +83,7 @@ namespace Levy.Content.NPCs
 		{
 			bool danger = target.boss || LevyUtil.IsBossNpc(target) || target.damage >= LevyConstants.StrafeDangerDamage;
 			float size = Math.Max(target.width, target.height) / LevyConstants.TilePx;
-			return Math.Min(Ambush.SafeTilesMax, (danger ? Ambush.SafeTilesBoss : Ambush.SafeTilesMob) + size * 0.25f);
+			return Math.Min(Ambush.SafeTilesMax, (danger ? Ambush.SafeTilesBoss : Ambush.SafeTilesMob) + size * Ambush.SafeSizeFrac);
 		}
 
 		/// <summary>
@@ -91,6 +91,22 @@ namespace Levy.Content.NPCs
 		/// (the cycle is off, skipped, or the strike window is still closing in through the usual approach search).
 		/// </summary>
 		private bool AmbushGoal(NPC target, int now)
+		{
+			bool r = AmbushGoalBody(target, now);
+			if (Ambush.Log && AmPhase != AmbushPhase.Off)
+			{
+				switch (AmPhase)
+				{
+					case AmbushPhase.FallBack: Ambush.ThinksFall++; break;
+					case AmbushPhase.Charge: Ambush.ThinksCharge++; Ambush.ChargeTilesSum += Aiming.TilesToHitbox(NPC.Center, Aiming.NearestSegment(target, NPC.Center) ?? target); break;
+					case AmbushPhase.Strike: Ambush.ThinksStrike++; if (AmStrikeWindow) Ambush.ThinksInReach++; break;
+				}
+				Ambush.MaybeLog();
+			}
+			return r;
+		}
+
+		private bool AmbushGoalBody(NPC target, int now)
 		{
 			Item item = WeaponUse.HeldItem(this);
 			if (now < _amOffUntil || !AmbushWanted(target, item, out object cp)) { if (AmPhase != AmbushPhase.Off) AmSet(AmbushPhase.Off, now); return false; }
@@ -155,7 +171,7 @@ namespace Levy.Content.NPCs
 			{
 				if (ready) AmSet(AmbushPhase.Strike, now);
 				else if (now - _amPhaseAt > Ambush.ChargeMaxTicks) AmSet(AmbushPhase.Strike, now);
-				else if (dT < safe * Ambush.CrowdedFrac || (TicksSinceDamaged < Ambush.HitRepickTicks && now - _amPhaseAt > Ambush.HitRepickTicks))
+				else if (dT < safe * Ambush.CrowdedFrac || dT > chargeAt + Ambush.DriftTiles || (TicksSinceDamaged < Ambush.HitRepickTicks && now - _amPhaseAt > Ambush.HitRepickTicks))
 				{
 					// the target came close or something hit the levy: another spot (this think walks to it; with none it holds)
 					Ambush.Repicks++; AmSet(AmbushPhase.FallBack, now);

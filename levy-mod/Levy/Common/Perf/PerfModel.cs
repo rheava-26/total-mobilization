@@ -62,9 +62,24 @@ namespace Levy.Common.Perf
 		}
 	}
 
+	/// <summary>One levy weapon's cost in a window (or a span): the levies holding it, ms per update of their bodies and of their shots, shots alive, and its costliest projectile type.</summary>
+	internal sealed class WeaponRow
+	{
+		public string Name = ""; public double Levies, BodyMs, ShotMs, Shots; public string TopProj = ""; public double TopProjMs;
+		public double Ms => BodyMs + ShotMs;
+		public double MsPerLevy => Levies >= 0.05 ? Ms / Levies : 0;
+	}
+
 	/// <summary>One profiling window (a few seconds of play).</summary>
 	internal sealed class PerfWindow
 	{
+		public const int MaxWeaponRows = 8;
+		/// <summary>Levy weapons, ms per update, biggest first (<see cref="MaxWeaponRows"/> at most); empty when no levy was timed.</summary>
+		public List<WeaponRow> Weapons = new();
+		/// <summary>ms per update charged to all levy weapons (every one, not only the rows kept).</summary>
+		public double WeaponAttribMs;
+		/// <summary>What the attribution is checked against, ms per update: levy bodies and army shots with other mods' hooks taken out (the analyzer's own rows), other mods' hooks on them, and the owner swaps around the shots. Null when not measured.</summary>
+		public double[] ArmyRefMs;
 		public DateTime Utc; public long Tick; public double Secs = 8;
 		public double Fps, Ups, UpdMs, DrawMs, WorstUpdMs, WorstFrameMs; public int Updates, Frames, SampledUpdates, SampledFrames;
 		public bool Focus = true;
@@ -112,7 +127,20 @@ namespace Levy.Common.Perf
 			sb.Append(",\"ctx\":{\"boss\":").Append(Esc(Boss)).Append(",\"far\":").Append(Esc(BossFar)).Append(",\"map\":").Append(Map).Append(",\"held\":").Append(Held).Append(",\"hn\":").Append(Esc(HeldName)).Append(",\"nm\":").Append(NetMode).Append(",\"fx\":").Append(Effects).Append(",\"fs\":").Append(FrameSkip).Append('}');
 			sb.Append(",\"lv\":[");
 			for (int i = 0; i < Levy.Count; i++) { if (i > 0) sb.Append(','); sb.Append('[').Append(Esc(Levy[i].Key)).Append(',').Append(N(Levy[i].Value)).Append(']'); }
-			sb.Append("],\"top\":[");
+			sb.Append(']');
+			if (Weapons.Count > 0 || WeaponAttribMs > 0)
+			{
+				sb.Append(",\"wpa\":").Append(N(WeaponAttribMs, 3));
+				if (ArmyRefMs != null) sb.Append(",\"wpr\":[").Append(string.Join(",", ArmyRefMs.Select(v => N(v, 3)))).Append(']');
+				sb.Append(",\"wp\":[");
+				for (int i = 0; i < Weapons.Count; i++)
+				{
+					var r = Weapons[i]; if (i > 0) sb.Append(',');
+					sb.Append('[').Append(Esc(r.Name)).Append(',').Append(N(r.Levies, 1)).Append(',').Append(N(r.BodyMs, 3)).Append(',').Append(N(r.ShotMs, 3)).Append(',').Append(N(r.Shots, 1)).Append(',').Append(Esc(r.TopProj)).Append(',').Append(N(r.TopProjMs, 3)).Append(']');
+				}
+				sb.Append(']');
+			}
+			sb.Append(",\"top\":[");
 			for (int i = 0; i < Top.Count; i++) { if (i > 0) sb.Append(','); sb.Append('[').Append(Esc(Top[i].Cat)).Append(',').Append(Esc(Top[i].Name)).Append(',').Append(N(Top[i].Ms, 1)).Append(',').Append(N(Top[i].N, 0)).Append(']'); }
 			return sb.Append("]}").ToString();
 		}
@@ -138,6 +166,9 @@ namespace Levy.Common.Perf
 					w.Boss = Str(x, "boss"); w.BossFar = Str(x, "far"); w.Map = (int)Dbl(x, "map"); w.Held = (int)Dbl(x, "held"); w.HeldName = Str(x, "hn"); w.NetMode = (int)Dbl(x, "nm"); w.Effects = (int)Dbl(x, "fx"); w.FrameSkip = (int)Dbl(x, "fs", -1);
 				}
 				if (r.TryGetProperty("lv", out var lv)) foreach (var e in lv.EnumerateArray()) w.Levy.Add(new KeyValuePair<string, double>(e[0].GetString(), e[1].GetDouble()));
+				w.WeaponAttribMs = Dbl(r, "wpa");
+				if (r.TryGetProperty("wpr", out var wpr)) w.ArmyRefMs = wpr.EnumerateArray().Select(e => e.GetDouble()).ToArray();
+				if (r.TryGetProperty("wp", out var wp)) foreach (var e in wp.EnumerateArray()) w.Weapons.Add(new WeaponRow { Name = e[0].GetString(), Levies = e[1].GetDouble(), BodyMs = e[2].GetDouble(), ShotMs = e[3].GetDouble(), Shots = e[4].GetDouble(), TopProj = e[5].GetString(), TopProjMs = e[6].GetDouble() });
 				if (r.TryGetProperty("top", out var top)) foreach (var e in top.EnumerateArray()) w.Top.Add(new PerfItem(e[0].GetString(), e[1].GetString(), e[2].GetDouble(), e[3].GetDouble()));
 				return w;
 			}
@@ -185,10 +216,13 @@ namespace Levy.Common.Perf
 		public readonly Dictionary<(string cat, string name), PerfItem> Items = new();
 		public readonly Dictionary<string, double> LevyBuckets = new(); // ms per update, weighted
 		public string Boss = "";
+		/// <summary>Levy weapons over the span, ms per update weighted by the updates of each window, biggest first; and all levy weapons together.</summary>
+		public List<WeaponRow> Weapons = new(); public double WeaponAttribMs;
 
 		public static PerfSpan Of(IEnumerable<PerfWindow> windows)
 		{
 			var s = new PerfSpan(); double wUpd = 0, wDraw = 0; double bucketWeight = 0; var bossSecs = new Dictionary<string, double>();
+			var wacc = new Dictionary<string, WeaponRow>(); var pacc = new Dictionary<(string, string), double>(); double wa = 0;
 			foreach (var w in windows)
 			{
 				if (w == null || w.Secs <= 0) continue;
@@ -207,6 +241,13 @@ namespace Levy.Common.Perf
 				}
 				foreach (var kv in w.Levy) { s.LevyBuckets.TryGetValue(kv.Key, out double a); s.LevyBuckets[kv.Key] = a + kv.Value * w.Updates; }
 				bucketWeight += w.Updates;
+				wa += w.WeaponAttribMs * w.Updates;
+				foreach (var r in w.Weapons)
+				{
+					if (!wacc.TryGetValue(r.Name, out var acc)) wacc[r.Name] = acc = new WeaponRow { Name = r.Name };
+					acc.Levies += r.Levies * w.Updates; acc.BodyMs += r.BodyMs * w.Updates; acc.ShotMs += r.ShotMs * w.Updates; acc.Shots += r.Shots * w.Updates;
+					if (!string.IsNullOrEmpty(r.TopProj)) { var key = (r.Name, r.TopProj); pacc.TryGetValue(key, out double pm); pacc[key] = pm + r.TopProjMs * w.Updates; }
+				}
 				if (!string.IsNullOrEmpty(w.Boss)) { bossSecs.TryGetValue(w.Boss, out double b); bossSecs[w.Boss] = b + w.Secs; }
 			}
 			if (s.Secs <= 0) return s;
@@ -218,6 +259,17 @@ namespace Levy.Common.Perf
 			if (bucketWeight > 0) foreach (var k in s.LevyBuckets.Keys.ToList()) s.LevyBuckets[k] /= bucketWeight;
 			s.TotalMsPerSec = s.UpdMs * s.Ups + s.DrawMs * s.Fps;
 			if (bossSecs.Count > 0) s.Boss = bossSecs.OrderByDescending(kv => kv.Value).First().Key;
+			if (s.Updates > 0)
+			{
+				double u = s.Updates;
+				foreach (var r in wacc.Values)
+				{
+					r.Levies /= u; r.BodyMs /= u; r.ShotMs /= u; r.Shots /= u;
+					var best = pacc.Where(kv => kv.Key.Item1 == r.Name).OrderByDescending(kv => kv.Value).FirstOrDefault();
+					if (best.Key.Item2 != null) { r.TopProj = best.Key.Item2; r.TopProjMs = best.Value / u; }
+				}
+				s.Weapons = wacc.Values.OrderByDescending(r => r.Ms).ToList(); s.WeaponAttribMs = wa / u;
+			}
 			return s;
 		}
 
@@ -263,6 +315,8 @@ namespace Levy.Common.Perf
 		public bool ShowPopup => Options.Count > 0;
 		/// <summary>The laggy windows show the Frame Skip On pattern (frames dropped, updates kept) with Frame Skip set to On.</summary>
 		public bool FrameSkipOn;
+		/// <summary>The levy weapons over the whole fight, ms per update, biggest first, and all of them together (empty when no levy was timed).</summary>
+		public List<WeaponRow> Weapons = new(); public double WeaponAttribMs; public double Levies;
 	}
 
 	internal static class PerfAnalysis
@@ -321,6 +375,7 @@ namespace Levy.Common.Perf
 		{
 			var v = JudgeCause(fight);
 			if (v.Laggy) FrameSkipAdvice(v, fight);
+			WeaponAdvice(v, fight);
 			return v;
 		}
 
@@ -342,6 +397,35 @@ namespace Levy.Common.Perf
 			v.Options.Insert(0, PopupOption.FrameSkipSubtle);
 			if (!v.Options.Contains(PopupOption.ItsFine)) v.Options.Add(PopupOption.ItsFine);
 			if (string.IsNullOrEmpty(v.Headline)) v.Headline = "That fight got laggy.";
+		}
+
+		/// <summary>
+		/// The levy weapons that cost the most over the fight (every focused window, not only the laggy ones): the verdict keeps them for the log and /levyperf fight, and a laggy fight's words name the top three with their share of
+		/// the army's cost, plus a weapon that costs each levy holding it at least twice the army's average.
+		/// </summary>
+		private static void WeaponAdvice(LagVerdict v, IList<PerfWindow> fight)
+		{
+			var span = PerfSpan.Of(fight.Where(w => w != null && w.Focus && w.Secs > 0 && w.Updates > 0));
+			v.Weapons = span.Weapons; v.WeaponAttribMs = span.WeaponAttribMs; v.Levies = span.Levies;
+			if (!v.Laggy) return;
+			var lines = WeaponLines(span, "this fight");
+			if (lines.Count > 0) v.Detail = v.Detail.Concat(lines).ToArray();
+		}
+
+		private static string Ms(double v) => v.ToString(v < 0.995 ? "0.00" : "0.0", CultureInfo.InvariantCulture);
+
+		/// <summary>"Heaviest levy weapons this fight: Terra Blade (5 levies) 1.2 ms/tick, 18% of the army; ..." and, for a weapon that costs each levy at least twice the army's average, "Dearest per levy: ...". Empty without data.</summary>
+		public static List<string> WeaponLines(PerfSpan s, string when, int n = 3)
+		{
+			var o = new List<string>(); double tot = s.WeaponAttribMs;
+			if (s.Weapons.Count == 0 || tot <= 0.005) return o;
+			var top = s.Weapons.Where(r => r.Ms >= 0.005).Take(n).ToList(); if (top.Count == 0) return o;
+			string L(double l) => l < 1.5 ? "1 levy" : l.ToString("0", CultureInfo.InvariantCulture) + " levies";
+			o.Add("Heaviest levy weapons " + when + ": " + string.Join("; ", top.Select((r, i) => r.Name + " (" + L(r.Levies) + ") " + Ms(r.Ms) + " ms/tick, " + (r.Ms / tot * 100).ToString("0", CultureInfo.InvariantCulture) + (i == 0 ? "% of the army" : "%"))) + ".");
+			double levies = Math.Max(1, s.Levies), avg = tot / levies;
+			var dear = s.Weapons.Where(r => r.Levies >= 0.5 && r.MsPerLevy >= 0.1 && r.MsPerLevy >= 2 * avg).OrderByDescending(r => r.MsPerLevy).FirstOrDefault();
+			if (dear != null) o.Add("Dearest per levy: " + dear.Name + ", " + Ms(dear.MsPerLevy) + " ms/tick for each levy holding it, " + (dear.MsPerLevy / avg).ToString("0.0", CultureInfo.InvariantCulture) + " times the army's average of " + Ms(avg) + ".");
+			return o;
 		}
 
 		private static LagVerdict JudgeCause(IList<PerfWindow> fight)
@@ -484,6 +568,7 @@ namespace Levy.Common.Perf
 				var items = s.Items.Values.Where(it => !PerfCat.IsDrill(it.Cat) || true).OrderByDescending(it => it.Ms).Take(rows).ToList();
 				if (items.Count > 0) o.Add("Biggest single costs: " + string.Join("; ", items.Select(it => Describe(it, s))) + ".");
 			}
+			if (!s.Legacy) o.AddRange(WeaponLines(s, "in the last minute", 5));
 			var lv = s.LevyBuckets.OrderByDescending(kv => kv.Value).Where(kv => kv.Value >= 0.005).Take(6).ToList();
 			if (lv.Count > 0) o.Add("Levy buckets, ms per update: " + string.Join(", ", lv.Select(kv => kv.Key + " " + kv.Value.ToString("0.00", CultureInfo.InvariantCulture))) + ".");
 			return o;

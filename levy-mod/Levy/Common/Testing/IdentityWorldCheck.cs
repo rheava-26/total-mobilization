@@ -167,6 +167,7 @@ namespace Levy.Common.Testing
 			ClearSoldiers();
 			if (Environment.GetEnvironmentVariable("LEVY_MEGAGUN_ALONE") == "1") { MegagunCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_DEADHOOKS_ALONE") == "1") { DeadHooksCheck(); ClearSoldiers(); return; }
+			if (Environment.GetEnvironmentVariable("LEVY_NESTSKIP_ALONE") == "1") { NestSkipCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ALONE") == "1") { UseCycleProbe(); ClearSoldiers(); ArmySweep(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_ORIGIN_ALONE") != "1")
 			{
@@ -189,6 +190,8 @@ namespace Levy.Common.Testing
 			SummonLoopSweep();
 			ClearSoldiers();
 			PuppetCommanderCheck();
+			ClearSoldiers();
+			NestSkipCheck();
 			ClearSoldiers();
 			MegagunCheck();
 			ClearSoldiers();

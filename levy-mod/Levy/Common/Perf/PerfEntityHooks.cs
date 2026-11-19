@@ -25,6 +25,8 @@ namespace Levy.Common.Perf
 
 		/// <summary>True for a projectile fired by a levy, an officer or another army body (the same test the army's own profiler uses).</summary>
 		private static bool IsArmyShot(Projectile p) => p.TryGetGlobalProjectile(out SoldierProjectileTag t) && (t.SoldierIndex >= 0 || t.CommanderIndex >= 0);
+		/// <summary>The same test, with the firing levy's NPC slot (-1 for an officer's or a summoned unit's shot).</summary>
+		private static bool IsArmyShot(Projectile p, out int soldier) { soldier = -1; if (!p.TryGetGlobalProjectile(out SoldierProjectileTag t)) return false; soldier = t.SoldierIndex; return t.SoldierIndex >= 0 || t.CommanderIndex >= 0; }
 
 		public static void NpcEnter(NPC n)
 		{
@@ -42,8 +44,9 @@ namespace Levy.Common.Perf
 			try
 			{
 				_army = false; long t0 = _eT0; if (t0 == 0) return; _eT0 = 0;
-				long dt = Stopwatch.GetTimestamp() - t0 - (_globAcc - _eG0); if (dt < 0) dt = 0;
+				long incl = Stopwatch.GetTimestamp() - t0, dt = incl - (_globAcc - _eG0); if (dt < 0) dt = 0;
 				int type = n.type, o = NpcOwner(type);
+				if (WeaponsOn && n.ModNPC is SoldierNPC s) NoteLevy(n, s, incl, dt);
 				_npcT[o] += dt; _npcN[o]++; NpcCalls++;
 				var tt = _typeNpcT; if (type < tt.Length) { tt[type] += dt; _typeNpcN[type]++; }
 			}
@@ -59,7 +62,7 @@ namespace Levy.Common.Perf
 			{
 				bool timed = _sample && p.active;
 				bool thin = ThinCtx;
-				if (thin || timed) { _eArmy = IsArmyShot(p); if (thin) _army = _eArmy; }
+				if (thin || timed) { _eArmy = IsArmyShot(p, out _eSoldier); if (thin) _army = _eArmy; }
 				if (timed) { _eG0 = _globAcc; _gsp = 0; _eT0 = Stopwatch.GetTimestamp(); } else _eT0 = 0;
 			}
 			catch (Exception e) { Fail("proj enter", e); }
@@ -70,9 +73,9 @@ namespace Levy.Common.Perf
 			try
 			{
 				_army = false; long t0 = _eT0; if (t0 == 0) return; _eT0 = 0;
-				long dt = Stopwatch.GetTimestamp() - t0 - (_globAcc - _eG0); if (dt < 0) dt = 0;
+				long incl = Stopwatch.GetTimestamp() - t0, dt = incl - (_globAcc - _eG0); if (dt < 0) dt = 0;
 				int type = p.type; ProjCalls++;
-				if (_eArmy) { _armyT += dt; _armyN++; }
+				if (_eArmy) { _armyT += dt; _armyN++; if (WeaponsOn) NoteShot(_eSoldier, type, incl, dt); }
 				else { int o = ProjOwner(type); _projT[o] += dt; _projN[o]++; }
 				var tt = _typeProjT; if (type < tt.Length) { tt[type] += dt; _typeProjN[type]++; }
 			}

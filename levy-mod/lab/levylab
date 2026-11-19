@@ -43,6 +43,7 @@ FIELDS = [  # name, default, description
 ]
 # any field below is also accepted as a top-level spec key and becomes a harness token k=v
 TOKENS = {
+    "ns": "0 = keep the hit pass's owner swap nested inside a shot's update pass, 1 = skip it (default: LEVY_NESTSKIP, on)",
     "n": "levy count override for the C# rolls (use `levies:` for data presets)", "bhp": "boss life multiplier (bhp=0.5 halves it)", "bdef": "boss defense forced to N",
     "dr": "every hit on a levy cut by this fraction (a stand-in for a dodge patch)", "hpx": "levy life multiplier (C# rolls)", "hpscale": "HP scale knob", "fear": "fear multiplier",
     "fm": "fear model override", "surv": "survivability model override", "vet": "veterancy level", "mp": "mana points for every levy", "food": "1 Well Fed | 2 Plenty Satisfied on every levy",

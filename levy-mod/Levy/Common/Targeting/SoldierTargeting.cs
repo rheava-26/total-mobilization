@@ -213,6 +213,8 @@ namespace Levy.Common.Targeting
 		private static readonly uint[] _neverStamp = new uint[Main.maxNPCs];
 		private static readonly int[] _neverType = new int[Main.maxNPCs];
 		private static readonly bool[] _neverValue = new bool[Main.maxNPCs];
+		/// <summary>Self-check: forget the per-tick answers (a check that sets an NPC up and hits it within one tick).</summary>
+		internal static void TestForgetNeverCache() => System.Array.Clear(_neverStamp, 0, _neverStamp.Length);
 
 		/// <summary>Things a soldier never shoots at: non-hostiles, invulnerable set pieces, disguised mimics, bound NPCs, boss hooks, projectile-NPCs, summoned blades, flee targets.</summary>
 		public static bool IsNeverTarget(NPC npc)

@@ -91,7 +91,9 @@ namespace Levy.Common.Weapons
 			/// <summary>The cursor puppet (CombatFix.Cursor): the commander's cursor and Calamity's per-player cursor offset as this pass found them.</summary>
 			public bool Cur; public Vector2 CurScreen, CurDelta; public int CurMx, CurMy; public float CurRot; public object CurCal;
 			/// <summary>The use-button puppet: the commander's buttons as this pass found them.</summary>
-			public bool Btn, BCh, BUse, BTile, BRel; }
+			public bool Btn, BCh, BUse, BTile, BRel;
+			/// <summary>The projectile and the pass (bit 1, 2 or 4) this frame was opened for.</summary>
+			public Projectile Proj; public int Bit; }
 
 		private const int MaxFrames = 32;
 		private static readonly Frame[] _stack = new Frame[MaxFrames];
@@ -105,7 +107,7 @@ namespace Levy.Common.Weapons
 			bool moveTransform = (m & bit) != 0, swapCache = (m & 8) != 0 && bit != 4, inherit = (m & 16) != 0, route = (m & 32) != 0 && self.type != ProjectileID.SpiritHeal; // a Spectre-armor spirit bolt goes to the most wounded ALLY (an ally heal, not the wearer's lifesteal): left as it was
 			if (!(moveTransform || swapCache || inherit || route) || _depth >= MaxFrames || !Puppetable(self, out Player p, out SoldierNPC body)) return false;
 			ref Frame f = ref _stack[_depth];
-			f.Moved = moveTransform; f.P = p; f.Pos = p.position; f.Vel = p.velocity; f.Old = p.oldPosition; f.Dir = p.direction;
+			f.Moved = moveTransform; f.P = p; f.Pos = p.position; f.Vel = p.velocity; f.Old = p.oldPosition; f.Dir = p.direction; f.Proj = self; f.Bit = bit;
 			f.PrevCtx = Context; f.Th = swapCache ? SwapThorium(body.Dummy) : null;
 			f.Body = body; f.Route = route; f.Allow = 0; f.WasDead = false; f.WasGhost = false;
 			if ((m & 256) != 0 && (p.dead || p.ghost)) { f.WasDead = p.dead; f.WasGhost = p.ghost; p.dead = false; p.ghost = false; LiveOwnerPasses++; }
@@ -300,8 +302,66 @@ namespace Levy.Common.Weapons
 			orig(self, healAmount, broadcast);
 		} private static int _hl_HealEffectDetour_3;
 
+		/// <summary>
+		/// THE NESTED HIT PASS. Projectile.Update runs the shot's hit pass (Projectile.Damage) inside itself, about twice a shot update; the update pass has already put the owner on the soldier, so a second swap for the hit pass
+		/// would write the same transform, the same life and lifesteal budget and the same live owner again and put them back at its end. It is skipped when the open frame is this very shot's update pass and everything the hit pass's
+		/// entry would write is still in place (the transform, the soldier's max life, the owner alive, and, for a shot that reads the cursor, the commander's cursor and Calamity's aim already on the levy's target). What changes: a lifesteal gain made by the hit stays in the owner's life (the soldier's, for the pass)
+		/// until the update pass closes, and the soldier is given it then, in the same tick, instead of right after the hit; the totals are the same (both paths add the gain with the same cap). Thorium's local-player cache,
+		/// which only the hit pass swaps, is still swapped around the call. LEVY_NESTSKIP=0 turns it off (lab A/B, the parity check).
+		/// </summary>
+		internal static bool NestSkipOn = Environment.GetEnvironmentVariable("LEVY_NESTSKIP") != "0";
+		internal static int NestSkips, NestFull;
+
+		/// <summary>Lab (LEVY_SWAPPROF=1): why a hit pass inside an open frame was not skipped (0 another pass or projectile, 1 cursor puppet, 2 mask, 3 owner, 4 body, 5 transform moved, 6 max life).</summary>
+		internal static readonly long[] NestWhy = new long[7];
+		private static bool No(int why) { if (SwapProf.On) NestWhy[why]++; return false; }
+
+		private static bool CanSkipNested(Projectile self)
+		{
+			if (!NestSkipOn || _depth <= 0) return false;
+			ref Frame f = ref _stack[_depth - 1];
+			if (f.Bit != 4 || !ReferenceEquals(f.Proj, self) || f.Body == null) return No(0);
+			int m = Mask;
+			if (((m & 1) != 0) != ((m & 4) != 0)) return No(2); // the hit pass would move the transform where the update pass did not, or the other way round
+			Player p = f.P;
+			if (p == null || !p.active || p.dead || p.ghost || self.owner != p.whoAmI || !ReferenceEquals(Main.player[self.owner], p)) return No(3);
+			if (!self.TryGetGlobalProjectile(out SoldierProjectileTag t) || !ReferenceEquals(EnemyTargeting.LiveBody(t.SoldierIndex), f.Body) || ReferenceEquals(f.Body.Dummy, p)) return No(4);
+			NPC b = f.Body.NPC;
+			if (f.Moved)
+			{
+				Vector2 pos = p.position; p.Center = b.Center; bool same = p.position == pos; p.position = pos; // the hit pass's own write, compared and undone
+				if (!same || p.velocity != b.velocity || p.direction != (b.direction == 0 ? 1 : b.direction) || p.oldPosition != p.position) return No(5);
+			}
+			if (f.Route && p.statLifeMax2 != Math.Max(1, b.lifeMax)) return No(6);
+			if (f.Cur)
+			{
+				// the cursor puppet: the hit pass's entry would aim the commander's cursor (and Calamity's per-player aim) at the levy's target again; skipped only when they already read exactly that. Its one call to the
+				// levy's AimCursor is made here instead (the same call the entry makes: it holds the target's place for the fallback)
+				Vector2 at = f.Body.AimCursor(), sp = global::Levy.Common.Owner.AimView.ScreenFor(b.Center);
+				if (Main.screenPosition != sp || Main.mouseX != (int)(at.X - sp.X) || Main.mouseY != (int)(at.Y - sp.Y)) return No(1);
+				if (f.CurCal != null)
+				{
+					Vector2 want = at - p.MountedCenter; var (d, r) = AltPolicies.GetCalAimPublic(f.CurCal);
+					if (d != want || r != want.ToRotation()) return No(1);
+				}
+				SoldierNPC.CursorPuppets++;
+			}
+			return true;
+		}
+
 		private static void DamageDetour(On_Projectile.orig_Damage orig, Projectile self)
 		{ _hl_DamageDetour_1++;
+			long s0 = SwapProf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+			if (Mask != 0 && CanSkipNested(self))
+			{
+				NestSkips++;
+				object th = (Mask & 8) != 0 ? SwapThorium(_stack[_depth - 1].Body.Dummy) : null; // only the hit pass swaps Thorium's cache: kept
+				long s1 = SwapProf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+				try { orig(self); } finally { long s2 = SwapProf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0; RestoreThorium(th); if (SwapProf.On) { SwapProf.SkipSwap += (s1 - s0) + (System.Diagnostics.Stopwatch.GetTimestamp() - s2); SwapProf.SkipN++; } }
+				return;
+			}
+			if (SwapProf.On) SwapProf.SkipSwap += System.Diagnostics.Stopwatch.GetTimestamp() - s0; // the test that did not skip is part of the hit pass's swap cost too
+			if (_depth > 0) NestFull++;
 			if (SwapProf.On) { DamageTimed(orig, self); return; }
 			if (Mask == 0 || !Enter(self, 1)) { orig(self); return; }
 			try { orig(self); } finally { Exit(); }
@@ -314,9 +374,20 @@ namespace Levy.Common.Weapons
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
 		{ _hl_UpdateDetour_6++;
 			if (SwapProf.On) { UpdateTimed(orig, self, i); return; }
+			if (Mask != 0 && global::Levy.Common.Perf.PerfAnalyzer.SampleArmy) { UpdateSampled(orig, self, i); return; }
 			if (Mask == 0 || !Enter(self, 4)) { orig(self, i); return; }
 			try { orig(self, i); } finally { Exit(); }
 		} private static int _hl_UpdateDetour_6;
+
+		/// <summary>The performance analyzer's sampled update (one in eleven): the swap around a soldier shot's update is timed and charged to the levy's weapon. Otherwise the same as the plain path.</summary>
+		private static void UpdateSampled(On_Projectile.orig_Update orig, Projectile self, int i)
+		{
+			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+			if (!Enter(self, 4)) { orig(self, i); return; }
+			long t1 = System.Diagnostics.Stopwatch.GetTimestamp(); int soldier = Context?.NPC.whoAmI ?? -1;
+			try { orig(self, i); }
+			finally { long t2 = System.Diagnostics.Stopwatch.GetTimestamp(); Exit(); global::Levy.Common.Perf.PerfAnalyzer.NoteSwap(soldier, (t1 - t0) + (System.Diagnostics.Stopwatch.GetTimestamp() - t2)); }
+		}
 
 		// ---- lab (LEVY_SWAPPROF=1): the swap's own cost against the whole update of a soldier's shot
 		private static void UpdateTimed(On_Projectile.orig_Update orig, Projectile self, int i)
@@ -460,7 +531,7 @@ namespace Levy.Common.Weapons
 	internal static class SwapProf
 	{
 		internal static bool On = System.Environment.GetEnvironmentVariable("LEVY_SWAPPROF") == "1";
-		internal static long UpdSwap, UpdTotal, UpdN, DamSwap, DamN, EnterMiss, GuardSwap, GuardN, ViewSwap, ViewN;
-		internal static void Reset() { UpdSwap = UpdTotal = UpdN = DamSwap = DamN = EnterMiss = GuardSwap = GuardN = ViewSwap = ViewN = 0; }
+		internal static long UpdSwap, UpdTotal, UpdN, DamSwap, DamN, EnterMiss, GuardSwap, GuardN, ViewSwap, ViewN, SkipSwap, SkipN;
+		internal static void Reset() { UpdSwap = UpdTotal = UpdN = DamSwap = DamN = EnterMiss = GuardSwap = GuardN = ViewSwap = ViewN = SkipSwap = SkipN = 0; }
 	}
 }

@@ -312,3 +312,134 @@ The projectile `Any` was the large one: inside the build it cost about 13 us per
 - `[PerfBoss]` (ship world, standing army): interval 1 serves nothing; interval 3 serves ticks, every compared served tick has exactly a full build's stats (nothing moves, so any difference is an error), no cast is missed, the tail runs on every frame; a change of gear and a buff on the body each rebuild on the very next tick (Ironskin's +8 defense is there at once). With Calamity: one gear frame run twice from the same state (dummy, ModPlayers, items, random generator), patches bypassed and in force, leaves the same dummy outside the lighting numbers; the skipped calls are reached for dummies; every patched projectile question is also asked of the whole array and gives the same answer.
 - `[PerfAnalyzer]`: Frame Skip in Levy's settings sets and shows the game's setting and is not stored in Levy's file; the gear interval has its default and is the one the frame uses.
 - Ship world (serial, both halves): **0 FAIL**, 2,057 PASS (`SHIPWORLD_SERIAL=1`, 1,183 s; the known summon-staff pick line excluded as always). The first run had 6: the three `[LevyRules]` parity lines (the abyss lighting numbers the patch skips, now left out of that check), the patch-name check and the drawing-parameters difference on a server (both in the new check itself), and the quiet-field dormancy check (an enemy stood near the army in that run; 8,803 frames skipped on the rerun).
+
+
+## 9. Her own culprits, and the swap (lag4, 11-19)
+
+Eve still feels "a couple of weapons are the problem". The lab can't see her machine, so the analyzer now measures it in her own fights. Lab: the Solar Pillar scene, `pw=45`, Calamity, Master + Death, 1,800 ticks a fight, one tML server, one server at a time.
+
+### 9a. Per-weapon cost in the always-on analyzer (`Common/Perf/PerfWeapons.cs`)
+
+On the sampled updates (one in eleven), each levy's own update (AI and gear frame, with other mods' hooks on it) and each update of its shots (AI, the hit pass and its swaps, with other mods' hooks) are charged to the weapon the levy holds right then. That's its sidearm when it's fighting with the sidearm. The owner swap around each shot's update is timed too: it sits outside the timed body (`OwnerPuppet.UpdateSampled`). Per weapon, each window keeps:
+- the levies holding it;
+- ms per update of their bodies and of their shots;
+- shots alive;
+- the projectile type that costs it the most.
+
+The log stores these as `"wp"`: `[name, levies, body ms, shot ms, shots alive, top projectile, its ms]`, the 8 biggest. It also stores `"wpa"` (all levy weapons together, ms per update) and `"wpr"` (the reference it's checked against: levy bodies and army shots without other mods' hooks, those hooks, the swaps). The fight's log line carries `"wpn"`: the top 5 as `[name, levies, ms, % of the army]`.
+
+What she sees:
+- `/levyperf`, over the last minute, and `/levyperf fight`.
+- In the lag popup of a laggy fight, a line like this one from her army in the lab: "Heaviest levy weapons this fight: Apathanull (5 levies) 2.3 ms/tick, 19% of the army; Dark Harvest (4 levies) 2.0 ms/tick, 16%; Morning Star (3 levies) 1.3 ms/tick, 11%."
+- When one weapon costs each levy holding it at least twice the army's average (and at least 0.1 ms), a second line, for example: "Dearest per levy: Plaguenade, 2.0 ms/tick for each levy holding it, 8.0 times the army's average of 0.25." Her army in the lab has no such weapon: the dearest per levy is Dark Harvest at 0.51 ms against an average of 0.27.
+
+One approximation: a shot is charged to the weapon its levy holds when the shot updates. A summoner's Dreadmines from its sidearm land on its Morning Star once it switches back.
+
+**Checks** (`[PerfBoss]`, the engaged ship-world army with Plantera; `PerfSelfTest` at boot):
+- Every kit weapon has a row with a quarter of the levies.
+- The weapons together come to the analyzer's own army rows: 4.392 ms/tick against 4.355 from the levy and army-shot rows, plus 0.037 of swaps.
+- The rows survive the log's round trip, and an old line reads as none.
+- A laggy fight's popup names the three heaviest with their share. The exact words and the "dearest per levy" line are checked on synthetic windows.
+
+**Cost**, timed call by call on a real levy and shot, with the attribution on and off:
+- levy body pair: 85 → 100 ns;
+- shot pair: 91 → 110 ns;
+- swap timing: 126 ns;
+- window rows: 1.3 us a window.
+
+That's **4.0 us per tick at 45 levies and 300 shots** (13 us at 150 and 1,000), against the 0.1 ms bar. In the pillar lab the attributed total matches the census of the NPC and projectile phases (her army 12.4 against 13.5 ms/tick CPU; Apathanull 23.2 against 21.9). Lab only: `LEVY_PERFAN_SERVER=1 LEVY_PERFAN_ECHO=1 LEVY_PERFAN_WIN=2` writes 2 s windows into the server log (`[PerfWin]`). `lab/lagsweep/l4_weapons.py` tabulates them.
+
+### 9b. The nested hit-pass swap (approved): skipped (`OwnerPuppet.CanSkipNested`)
+
+`Projectile.Update` runs the shot's hit pass inside itself, about twice per shot update. The update pass has already put the owner on the levy. The hit pass's own swap now runs only when something it would write has changed. It's skipped when:
+- the open frame is this shot's update pass;
+- the transform, the levy's max life and the live owner are still in place;
+- for a shot that reads the cursor, the commander's cursor and Calamity's aim already point at the levy's target. The levy's `AimCursor` is called once here, as the entry would.
+
+Thorium's local-player cache, which only the hit pass swaps, is still swapped around the call. A lifesteal gain stays in the owner's life (the levy's, for the pass) until the update pass closes, and the levy gets it then, in the same tick. `LEVY_NESTSKIP=0` turns the skip off, and the harness token `ns=0|1` sets it per fight.
+
+**Measured** (her 45 levies, 3 seeds per arm, same boot; `LEVY_SWAPPROF=1`, which times the swaps directly; ms per tick):
+
+| arm | hit passes a tick | hit-pass swaps | skip tests and skipped passes | together |
+|---|---|---|---|---|
+| kept (`ns=0`) | 636-650 | 0.315-0.324 | 0.045 (the test's clock reads) | 0.365 |
+| skipped (`ns=1`) | 592-638 skipped, 0.3 kept | 0.000 | 0.168-0.178 | 0.173 |
+| skipped, with the compiled Calamity accessors (9d) | 568-620 skipped | 0.000 | 0.140-0.148 | 0.145 |
+
+**Saving: about 0.2 ms per tick at 45 levies.** That's 0.22 as timed, about 0.17 once the extra clock reads of the timing itself are taken out. This is less than section 8's estimate of 0.3, because the test that proves the skip safe costs about 0.24 us per pass against 0.5 us for the swap. A first version that left cursor-reading shots alone skipped only two thirds of the passes and saved 0.06 ms. The cursor shots (148 passes a tick in her army) were the dearest passes.
+
+**Proof:**
+- `[IdentityWorld]` nested hit pass, with Calamity:
+  - **Lifesteal totals:** a levy shot with three hit passes per update heals its owner on every hit (Player.Heal, and a bare `statLife +=`), from 20% and from 94% life. Over 8 updates, with the skip on and off from the same state: the same levy life after (400 = 400), the same hits (24), the same routed life, the commander's life untouched. With Player.Heal, every life a hit saw is the same. With a bare `+=`, a later hit in the same update reads the unclamped life until the update ends; the levy's total is clamped the same.
+  - Six cursor-reading Calamity shots (Anomaly's Nanogun, Auger, Countermeasure Mitt, Hydraulic Volt Crasher, Phaseslayer, Pulse Grenade), seeded the same, end with the same place, velocity, AI state, damage to the target and commander cursor (32 passes skipped).
+  - Skipped with the skip on (96 passes), never with it off.
+- **Armysweep ship subset** (the same boot setup, `LEVY_ARMYSWEEP_ALONE=1`, `LEVY_NESTSKIP=0` then `1`): all nine stay OK, `pass=13 fail=0` both. Ratios (min of idle and commander-holding):
+
+| weapon | ratio kept → skipped | levy damage, idle |
+|---|---|---|
+| Terra Blade | 0.94 → 0.91 | 2,897 → 2,906 |
+| Vernal Bolter | 0.80 → 0.82 | 3,936 → 3,853 |
+| Sniper Rifle | 0.88 → 0.78 | 3,040 → 3,004 |
+| Stellar Knife | 0.74 → 0.75 | 4,015 → 3,756 |
+| Morning Star | 3.54 → 3.60 | 10,632 → 10,522 |
+| Infested Clawmerang | 0.80 → 0.87 | 507 → 518 |
+| Wingman | 0.88 → 0.87 | 7,467 → 7,487 |
+| Doomsday Device | 16.3 → 15.1 | 2,181 → 2,181 |
+| Nucleosynthesis | 0.87 → 0.83 | 20,368 → 19,719 |
+
+  The ratios move by as much as the stand-in player's own damage does between two boots (Sniper Rifle's player run, a path the skip doesn't touch, went 3,466 → 3,848). The sweep isn't bit-deterministic across boots; no ratio moved beyond that.
+
+### 9c. Her hypothesis in the lab: every levy holding one heavy weapon
+
+The base is `eve45.json`, her 45 levies with her armor, accessories and stations. In each arm every levy holds one of the heaviest weapons of the section 3 sweep, with no sidearm. `dr=0.95` (every hit on a levy cut by 95%) keeps all 45 alive and engaged; without it, five of the eight armies were wiped in 10 to 26 s. 3 seeds each, `lab/lagsweep/l4_weapons.tsv`, `mkweap.py`. Numbers are from the analyzer's own attribution:
+
+| every levy holds | army ms/tick (bodies + shots) | **ms/tick per levy** (seeds) | shots alive | costliest projectile, ms/tick | CPU ms/tick, NPC + projectile phases |
+|---|---|---|---|---|---|
+| Apathanull | 23.2 (5.3 + 17.9) | **0.515** (0.518, 0.525, 0.500) | 287 | Cosmic Tentacle 15.1 | 21.9 |
+| Shard of Antumbra | 23.1 (5.8 + 17.3) | **0.513** (0.521, 0.493, 0.525) | 318 | Antumbra Shard 15.2 | 24.2 |
+| Havoc's Breath (Gel) | 21.9 (6.7 + 15.2) | **0.487** (0.499, 0.471, 0.491) | 377 | Brimstone Fire 13.7 | 24.1 |
+| System Bane | 18.4 (5.7 + 12.8) | **0.409** (0.415, 0.409, 0.404) | 820 | System Bane Lightning 6.5 | 19.8 |
+| Radiant Star | 16.7 (6.0 + 10.7) | **0.371** (0.380, 0.366, 0.368) | 764 | Radiant Star 5.9 | 18.2 |
+| Plaguenade | 16.2 (6.0 + 10.2) | **0.360** (0.356, 0.368, 0.355) | 986 | Plaguenade Bee 8.9 | 17.5 |
+| The Syringe | 14.1 (5.9 + 8.2) | **0.313** (0.315, 0.321, 0.302) | 668 | Syringe Cinder 4.2 | 15.9 |
+| *her own army* | 12.4 (3.7 + 6.1) | **0.276** (0.274, 0.276, 0.278) | 254 | Cosmic Tentacle 1.5 | 13.5 |
+| Terra Blade | 8.4 (5.5 + 2.9) | **0.186** (0.183, 0.191, 0.186) | 115 | Terra Blade beam 1.5 | 10.6 |
+
+What it says:
+- The dearest weapon costs a levy **1.9 times** her mixed army's average. The cheapest costs **0.7 times**.
+- An army of only Apathanull would run about 11 ms per tick more than hers. A single Apathanull levy in her army costs about 0.25 ms more than an average one.
+- Taking out "a couple of levies" holding the worst weapon saves about 1 ms. Taking out a couple at random saves about 0.55. Both are enough near the 16.7 ms cliff (section 1), which is why the observation feels true.
+- In her own army no weapon is an outlier. Per levy: Dark Harvest 0.51, Apathanull 0.47, Morning Star 0.45, Malevolence 0.37, Star Shower 0.25, Wingman 0.22, Terra Blade 0.16, Ark of the Ancients 0.12, against an average of 0.27. The cost is spread.
+- Plaguenade is the dearest weapon in the one-levy sweep, but not here. Its bees die on hits in a crowded fight; 986 alive for 45 levies is 22 a levy, against 191 on a lone dummy.
+
+**Pathological in levy hands but not in player hands? No.** The same eight weapons in the army sweep's cost table, this build, one levy against one stand-in player at the same dummy, us per shot, levy / player:
+
+| weapon | us per shot, levy / player | ratio |
+|---|---|---|
+| Plaguenade | 8.2 / 5.7 | 1.4 |
+| Terra Blade | 33 / 24 | 1.4 |
+| Apathanull | 56 / 50 | 1.1 |
+| Shard of Antumbra | 27 / 27 | 1.0 |
+| System Bane | 11.0 / 10.5 | 1.05 |
+| Radiant Star | 11.8 / 10.5 | 1.1 |
+| The Syringe | 9.9 / 10.1 | 1.0 |
+| Havoc's Breath | 19.7 / 22.6 | 0.9 |
+
+Section 3's 2 to 3 times for Terra Blade, Apathanull and The Syringe (262 / 82, 107 / 55, 26 / 9) did not come back. That sweep ran on a box at load 20 to 30, and per-shot costs over 1 or 2 shots alive move with it. What makes Apathanull, Antumbra and Havoc's Breath dear is their own shots, the same in a player's hands: Cosmic Tentacle 94 us a shot (section 2), Antumbra shards and Brimstone fire at 13 to 15 ms per tick for 45 levies.
+
+### 9d. Anything else, behaviour-identical (`AltPolicies`): compiled accessors, about 0.06 ms
+
+The cursor puppet calls `Player.GetModPlayer<CalamityPlayer>` through `MethodInfo.Invoke` (an argument array each call). It also reads and writes Calamity's per-player aim (`mouseWorldDeltaFromPlayer`, `mouseRotationFromPlayer`) through `FieldInfo` (boxing). Both happen around every update and hit pass of a cursor-reading shot. They're now compiled delegates over the same call and the same fields, with reflection as the fallback. `LEVY_CALFAST=0` restores plain reflection.
+
+- **Check:** writes by one read back through the other, and both find the same CalamityPlayer.
+- **Measured** (her army, 2 runs x 3 seeds per arm, `LEVY_SWAPPROF=1`): the update swap fell from 0.85 to 0.75 us a shot and the skip test from 0.30 to 0.245 us a pass. That's **about 0.06 ms per tick**.
+
+That's under the 0.2 ms bar on its own. It's kept because it is exact and it is part of what brings the swap saving to 0.2. To drop it, revert the commit.
+
+Nothing else provably identical worth 0.2 ms turned up:
+- UseGuard costs 0.05 ms a tick.
+- The miss path on non-army projectiles costs 0.04.
+- The update swap is 0.22, every tick, by design.
+- The gear frame (section 8) is the rest.
+
+**Ship world** (serial, both halves, `SHIPWORLD_SERIAL=1 SHIPWORLD_TIMEOUT=1500`, 1,260 s): **0 FAIL**, 2,073 PASS (the known summon-staff pick line excluded as always). The new checks pass in both halves (the cursor-shot and compiled-accessor checks need Calamity: the Calamity half); the attribution cost on the ship army is 4.1 us per tick at 45 levies and 300 shots.

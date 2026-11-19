@@ -15,6 +15,8 @@ namespace Levy.Common.Perf
 		private static List<PerfWindow> Fight(int n, double fps, double ups, double levy, string mod, double modShare, double secs = 8) { var l = new List<PerfWindow>(); for (int i = 0; i < n; i++) l.Add(PerfAnalysis.Synth(secs, fps, ups, levy, mod, modShare)); return l; }
 		private static string Opts(LagVerdict v) => string.Join(",", v.Options);
 
+		private static bool FightLineHasWeapons(LagVerdict v) => PerfAnalyzer.FightLine(v).Contains(",\"wpa\":10,\"wpn\":[[\"Terra Blade\",10,3,30],[\"Plaguenade\",1,2,20]");
+
 		public static int Run(List<string> fails)
 		{
 			int pass = 0;
@@ -55,6 +57,14 @@ namespace Levy.Common.Perf
 			Chk(fsOn.Detail.All(d => d.Length <= 140), "and the lines stay short");
 			var wfs = Fs(1, 3, 58)[0]; var wfs2 = PerfWindow.FromJson(wfs.ToJson());
 			Chk(wfs2 != null && wfs2.FrameSkip == 1 && PerfWindow.FromJson(wfs.ToJson().Replace(",\"fs\":1", "")).FrameSkip == -1, "the log keeps the Frame Skip setting, and an older line reads as not known");
+			// per-weapon cost: the rows survive the log, a laggy fight names the heaviest three with their share of the army, and a weapon dear per levy is named on its own
+			List<PerfWindow> Wf() { var l = Fs(1, 3, 58); foreach (var fw in l) { fw.WeaponAttribMs = 10; fw.Weapons = new List<WeaponRow> { new() { Name = "Terra Blade", Levies = 10, BodyMs = 2, ShotMs = 1, Shots = 4, TopProj = "Terraria/TerraBeam", TopProjMs = 0.6 }, new() { Name = "Plaguenade", Levies = 1, BodyMs = 0.2, ShotMs = 1.8, Shots = 190, TopProj = "CalamityMod/PlaguenadeBee", TopProjMs = 1.5 }, new() { Name = "Wingman", Levies = 8, BodyMs = 1.2, ShotMs = 0.4, Shots = 6 }, new() { Name = "Dark Harvest (sidearm)", Levies = 4, BodyMs = 0.5, ShotMs = 0.3 } }; fw.Levies = 40; } return l; }
+			var wfa = Wf(); var wback = PerfWindow.FromJson(wfa[0].ToJson()); var wold = PerfWindow.FromJson(Fs(1, 3, 58)[0].ToJson());
+			Chk(wback != null && wback.Weapons.Count == 4 && wback.Weapons[1].Name == "Plaguenade" && Math.Abs(wback.Weapons[1].ShotMs - 1.8) < 1e-6 && wback.Weapons[1].TopProj == "CalamityMod/PlaguenadeBee" && Math.Abs(wback.WeaponAttribMs - 10) < 1e-6 && wold != null && wold.Weapons.Count == 0, "the weapon rows survive the log, and a line without them reads as none");
+			var wv = PerfAnalysis.Judge(wfa); string wl = wv.Detail.FirstOrDefault(d => d.StartsWith("Heaviest levy weapons this fight: ")) ?? "";
+			Chk(wl == "Heaviest levy weapons this fight: Terra Blade (10 levies) 3.0 ms/tick, 30% of the army; Plaguenade (1 levy) 2.0 ms/tick, 20%; Wingman (8 levies) 1.6 ms/tick, 16%.", "a laggy fight names the heaviest levy weapons (" + wl + ")");
+			Chk(wv.Detail.Any(d => d == "Dearest per levy: Plaguenade, 2.0 ms/tick for each levy holding it, 8.0 times the army's average of 0.25."), "and a weapon that costs each levy far more than the average (" + string.Join(" | ", wv.Detail.Where(d => d.StartsWith("Dearest"))) + ")");
+			Chk(!PerfAnalysis.Judge(Fs(1, 3, 58)).Detail.Any(d => d.Contains("levy weapons")) && FightLineHasWeapons(wv), "no weapon line without weapon rows, and the fight's log line carries them");
 			var none = new List<PerfWindow>(); for (int i = 0; i < 20; i++) { var wn = PerfAnalysis.Synth(8, 30, 60, 0, null, 0); wn.Top.Clear(); none.Add(wn); }
 			var unk = PerfAnalysis.Judge(none);
 			Chk(unk.Laggy && unk.Kind == LagKind.Unknown && !unk.ShowPopup, "laggy with nothing attributed: no popup (a popup that blames nobody helps nobody)");

@@ -40,8 +40,8 @@
 #               OFFICER_CHAT_<STATE>        (the officer voice used when an officer has no lines of his own for that STATE)
 #               RIFT_PANIC RIFT_SHOCK RIFT_ABSENT RIFT_COLD RIFT_POWER RIFT_LATER RIFT_DARK RIFT_RESPECT RIFT_IDLE RIFT_CAMP RIFT_DUKE
 #               RIFT_BLOOD RIFT_GROW1 RIFT_GROW2 RIFT_GROW3 RIFT_ICE RIFT_FROZEN RIFT_FOG RIFT_SCARE RIFT_GRIM RIFT_WORN
-#               RIFT_HUSH RIFT_ANGRY RIFT_BOSS RIFT_TOWN RIFT_CLASS RIFT_HABIT   (Wrath of the Gods only: the covered
-#                               sky after Moon Lord; parts 15, 15b and 15c explain when each is used and which pools they stand in for)
+#               RIFT_HUSH RIFT_ANGRY RIFT_BOSS RIFT_TOWN RIFT_CLASS RIFT_HABIT RIFT_FLIGHT   (Wrath of the Gods only: the covered
+#                               sky after Moon Lord; parts 15 to 15d explain when each is used and which pools they stand in for)
 #
 # WHERE A LINE SHOWS UP
 #   Right-click chat:   IDLE IDLE_NIGHT NAMEDROP BLOOD_MOON PARTY GRAVEYARD RAIN BIOME_* PAYDAY UNPAID HOLD_FIRE EVENT_* ARMORY_WANT ARMORY_BEST ARMORY_WORST
@@ -2283,7 +2283,7 @@ RIFT_DARK | Veteran | I've fought worse. Can't remember when.
 RIFT_RESPECT | Any | [non-summoner] I owe a summoner an apology. Several.
 RIFT_RESPECT | Any | {Mage} is hitting everything lately. Everything.
 RIFT_RESPECT | Any | {Mage} brought me water. Didn't say anything.
-RIFT_RESPECT | Any | {Summoner}'s little ones stand in front of us now.
+RIFT_RESPECT | Any | {Summoner}'s minions take the first hit now. Every time.
 RIFT_RESPECT | Any | {Melee} went right up to the front. Right up.
 RIFT_RESPECT | Any | {Ranger}'s bullets turn corners. I don't mind now.
 RIFT_RESPECT | Any | {Tank} goes down first so we don't. Not funny now.
@@ -2545,7 +2545,7 @@ RIFT_BOSS | Any | Fine. Let's get it over with.
 RIFT_BOSS | Any | Something else that wants us dead. Great.
 RIFT_BOSS | Any | Kill it fast. I want to sit down.
 RIFT_BOSS | Any | Big. Everything's big now.
-RIFT_BOSS | Any | [summoner] My minions will handle it. I'll handle the crying.
+RIFT_BOSS | Any | [summoner] Minions are deployed. Scaling is the sky's problem.
 RIFT_BOSS | Any | [summoner] I'll let the staff decide. It's smarter than me.
 RIFT_BOSS | Any | [mage] Right. Fire. Or ice. Wait, which one is this?
 RIFT_BOSS | Any | [mage] Spell's ready. I think. Stand back. Further.
@@ -2620,3 +2620,44 @@ RIFT_FOG | Any | I can't see you. Say something.
 RIFT_FOG | Any | I keep drifting off. I don't mean to.
 RIFT_FOG | Any | I was standing right here. Wasn't I?
 RIFT_FOG | Greenhorn | {Player}? You're further than I thought.
+
+# ============================================================================================================
+# 15d. THE RIFT SKY: MORE BLOOD MOON ANGER, FLYING, SUMMONERS (Wrath of the Gods only)
+#   (the women's anger on a Blood Moon under the rift has more lines here, in RIFT_ANGRY)
+#   RIFT_FLIGHT   flying under the rift: TAKEOFF, FLIGHT_FEAR and LANDING are answered from here (and nobody whoops)
+# Summoners are the army's tech enthusiasts: minions, sentries, staves and whips, never anything cute.
+# ============================================================================================================
+
+# ---------------------------------------------------------------- RIFT_ANGRY, more (a woman on a Blood Moon under the rift)
+RIFT_ANGRY | Any | What. What do you want.
+RIFT_ANGRY | Any | Back off. I mean it.
+RIFT_ANGRY | Any | Say one more cheerful thing. Go on.
+RIFT_ANGRY | Any | Don't stand behind me. Ever.
+RIFT_ANGRY | Any | I'm fine. Stop asking if I'm fine.
+RIFT_ANGRY | Any | Touch my gear again and lose a hand.
+RIFT_ANGRY | Any | Quiet. I'm listening for something.
+RIFT_ANGRY | Any | {Player}. Whatever it is, make it quick.
+RIFT_ANGRY | Greenhorn | I'm not jumpy. You're jumpy.
+RIFT_ANGRY | Sellsword | Pay me and leave me alone. In that order.
+RIFT_ANGRY | Zealot | Mother Gnash isn't happy either. Move.
+RIFT_ANGRY | Cynic | Wow. Great. Another night under that.
+RIFT_ANGRY | Veteran | Eyes open, mouths shut. All of you.
+
+# ---------------------------------------------------------------- RIFT_FLIGHT
+RIFT_FLIGHT | Any | ...
+RIFT_FLIGHT | Any | ......
+RIFT_FLIGHT | Any | Don't look down. Don't look up either.
+RIFT_FLIGHT | Any | Eyes forward. Eyes forward.
+RIFT_FLIGHT | Any | ...I don't want to be any closer to it.
+RIFT_FLIGHT | Any | Keep low. Please keep low.
+RIFT_FLIGHT | Any | ...ground. Ground soon.
+RIFT_FLIGHT | Any | ...we're down. Good.
+RIFT_FLIGHT | Cynic | Flying. Toward that. Great idea.
+RIFT_FLIGHT | Veteran | Low and quick. Nobody sightsees.
+
+# ---------------------------------------------------------------- summoners, tech enthusiasts
+RIFT_CLASS | Any | [summoner] Three sentries up. The sky doesn't care about uptime.
+RIFT_CLASS | Any | [summoner] Whip, staff, minions. Fully optimized. Still cold.
+RIFT_CLASS | Any | [summoner] My minion setup is flawless. The world isn't.
+RIFT_CLASS | Any | Let's see {Summoner}'s staff patch the sky. Go on.
+RIFT_BOSS | Any | [summoner] Sentries placed. Minions queued. Moving on.

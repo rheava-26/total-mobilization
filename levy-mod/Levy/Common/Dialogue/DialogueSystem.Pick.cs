@@ -106,6 +106,9 @@ namespace Levy.Common.Dialogue
 				case RiftRoute.Silent: case RiftRoute.Hush: picked = null; return null;
 				case RiftRoute.Chat: return PickRift(rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, false);
 				case RiftRoute.Camp: return PickRift(rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, true);
+				case RiftRoute.Flight:
+					// flying under the rift: no thrill left, only this
+					return PickFromPool(DialogueTable.Get(DialogueTrigger.RIFT_FLIGHT), rec, ctx, body, ignoreRepeat, avoidId, out picked, mark, true);
 				case RiftRoute.Boss:
 					// under the rift a boss is met grimly; a woman on a Blood Moon keeps her annoyed boss lines
 					if (!RosterFacts.Grumpy(rec) && Main.rand.NextFloat() < LevyConstants.RiftBossChance)

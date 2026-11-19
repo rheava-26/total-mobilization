@@ -106,6 +106,8 @@ namespace Levy.Common.Dialogue
 			Check($"a Blood Moon under the rift: about three chats in ten are silences ({hush}/300), a man is never angry ({angryM}), a woman mostly is ({angryF}/300), and her rising-moon line is angry ({burstF})",
 				hush > 60 && hush < 120 && angryM == 0 && angryF > 170 && In(DialogueTrigger.RIFT_ANGRY, pbf));
 			RosterFacts.TestBloodMoon = null; RiftMood.TestBlood = false;
+			int calmF = 0; for (int i = 0; i < 300; i++) { DialogueSystem.Pick(DialogueTrigger.IDLE, fay, ctx, null, true, -1, out DialogueLine pfz, false); if (In(DialogueTrigger.RIFT_ANGRY, pfz)) calmF++; }
+			Check($"outside a Blood Moon a woman follows the normal rift mood: no angry lines ({calmF}/300)", calmF == 0);
 			Check("with no Blood Moon there are no silences and no anger", CountPool(DialogueTrigger.RIFT_HUSH, pat, ctx, 200) == 0 && CountPool(DialogueTrigger.RIFT_ANGRY, fay, ctx, 200) == 0);
 			RiftMood.TestBlood = null;
 

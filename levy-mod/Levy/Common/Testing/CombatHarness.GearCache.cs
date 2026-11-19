@@ -14,14 +14,14 @@ namespace Levy.Common.Testing
 	/// </summary>
 	public partial class CombatHarness
 	{
-		private static bool? _gchDefault; private static uint _gchTick0;
+		private static bool? _gchDefault, _nsDefault; private static uint _gchTick0;
 
 		private void GchBegin(CrRun run)
 		{
 			_gchDefault ??= SoldierNPC.GearCache.On;
 			SoldierNPC.GearCache.On = run.Gc == "0" ? false : run.Gc == "1" ? true : _gchDefault.Value;
 			SoldierNPC.GearCache.ResetCounters(); GearCacheParity.Reset();
-			Weapons.SwapProf.Reset(); _gchTick0 = Main.GameUpdateCount; Compat.Calamity.CalamityLevyPatches.Bypass = run.Cp == "0";
+			Weapons.SwapProf.Reset(); _gchTick0 = Main.GameUpdateCount; Compat.Calamity.CalamityLevyPatches.Bypass = run.Cp == "0"; _nsDefault ??= Weapons.OwnerPuppet.NestSkipOn; Weapons.OwnerPuppet.NestSkipOn = run.Ns == "0" ? false : run.Ns == "1" ? true : _nsDefault.Value;
 			SoldierNPC.GearApprox.HarnessInterval = run.Gi > 0 ? run.Gi : 0; SoldierNPC.GearApprox.LearnEvery = run.Gl > 0 ? run.Gl : SoldierNPC.GearApprox.LearnEveryDefault; SoldierNPC.GearApprox.ResetCounters(); SoldierNPC.GearApproxProbe.Reset();
 			GearCacheReadScan.Run(m => Mod.Logger.Info(m));
 			GearUpkeep.Ticks = 0; GearUpkeep.Frames = 0;
@@ -61,7 +61,7 @@ namespace Levy.Common.Testing
 				if (Weapons.SwapProf.On)
 				{
 					double tk = Math.Max(1, Main.GameUpdateCount - _gchTick0), ms = 1000.0 / Stopwatch.Frequency;
-					Mod.Logger.Info($"HARNESS-SWAP: {run.Key} ticks={tk} shotUpdates/tick={(Weapons.SwapProf.UpdN / tk).ToString("0.0", inv)} shotUpdate ms/tick={(Weapons.SwapProf.UpdTotal * ms / tk).ToString("0.000", inv)} ownerSwap(update) ms/tick={(Weapons.SwapProf.UpdSwap * ms / tk).ToString("0.000", inv)} ownerSwap(hit) ms/tick={(Weapons.SwapProf.DamSwap * ms / tk).ToString("0.000", inv)} hits/tick={(Weapons.SwapProf.DamN / tk).ToString("0.0", inv)} useGuard ms/tick={(Weapons.SwapProf.GuardSwap * ms / tk).ToString("0.000", inv)} heldView ms/tick={(Weapons.SwapProf.ViewSwap * ms / tk).ToString("0.000", inv)} views/tick={(Weapons.SwapProf.ViewN / tk).ToString("0.0", inv)} notPuppetable ms/tick={(Weapons.SwapProf.EnterMiss * ms / tk).ToString("0.000", inv)}");
+					Mod.Logger.Info($"HARNESS-SWAP: {run.Key} ticks={tk} shotUpdates/tick={(Weapons.SwapProf.UpdN / tk).ToString("0.0", inv)} shotUpdate ms/tick={(Weapons.SwapProf.UpdTotal * ms / tk).ToString("0.000", inv)} ownerSwap(update) ms/tick={(Weapons.SwapProf.UpdSwap * ms / tk).ToString("0.000", inv)} ownerSwap(hit) ms/tick={(Weapons.SwapProf.DamSwap * ms / tk).ToString("0.000", inv)} hits/tick={(Weapons.SwapProf.DamN / tk).ToString("0.0", inv)} useGuard ms/tick={(Weapons.SwapProf.GuardSwap * ms / tk).ToString("0.000", inv)} heldView ms/tick={(Weapons.SwapProf.ViewSwap * ms / tk).ToString("0.000", inv)} views/tick={(Weapons.SwapProf.ViewN / tk).ToString("0.0", inv)} notPuppetable ms/tick={(Weapons.SwapProf.EnterMiss * ms / tk).ToString("0.000", inv)} nestSkip(test+skip) ms/tick={(Weapons.SwapProf.SkipSwap * ms / tk).ToString("0.000", inv)} nestSkips/tick={(Weapons.SwapProf.SkipN / tk).ToString("0.0", inv)}");
 				}
 				Mod.Logger.Info($"HARNESS-CALPATCH: {run.Key} bypass={Compat.Calamity.CalamityLevyPatches.Bypass} androombaSkips={Compat.Calamity.CalamityLevyPatches.AndroombaSkips} lightSkips={Compat.Calamity.CalamityLevyPatches.LightSkips} drawSkips={Compat.Calamity.CalamityLevyPatches.DrawSkips} anyServed={Compat.Calamity.CalamityLevyPatches.AnyServed} anyFull={Compat.Calamity.CalamityLevyPatches.AnyFull} listBuilds={Compat.Calamity.CalamityLevyPatches.ListBuilds}");
 				Mod.Logger.Info("HARNESS-GA: build reasons: " + string.Join(", ", SoldierNPC.GearApprox.Why.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + " " + kv.Value)));

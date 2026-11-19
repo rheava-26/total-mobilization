@@ -1,0 +1,1097 @@
+{
+ "source": "2026-11-16_22-08_Empress_of_Light_lost.levyrec",
+ "note": "eve45 with every levy holding Terra Blade and no sidearm (lag4 weapon experiment)",
+ "accSlots": 2,
+ "honey": true,
+ "stations": [
+  "campfire",
+  "heartlantern",
+  "starinabottle",
+  "sunflower",
+  "bast",
+  "sharpening",
+  "wartable",
+  "bewitching",
+  "ammobox",
+  "crystalball"
+ ],
+ "stationLevel": 2,
+ "buffs": [],
+ "levies": [
+  {
+   "id": 1,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Spooky Helmet",
+    "Spooky Breastplate",
+    "Spooky Leggings"
+   ],
+   "acc": [
+    "Butterfly Wings@80",
+    "Spectre Boots@78",
+    "Necromantic Scroll@78",
+    "Shiny Stone@70"
+   ],
+   "hook": "Grappling Hook",
+   "lc": 15,
+   "lf": 12,
+   "recordedLifeMax": 460,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 2,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Mothron Wings@65",
+    "CalamityMod/AngelTreads@71",
+    "Yoyo Bag@Dauntless",
+    "CalamityMod/TrinketofChi@69"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 10,
+   "recordedLifeMax": 450,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 3,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@76",
+    "CalamityMod/AngelTreads@66",
+    "Yoyo Bag@63",
+    "Power Glove"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 10,
+   "recordedLifeMax": 450,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 4,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Silent",
+    "CalamityMod/AngelTreads@71",
+    "CalamityMod/InfectedJewel@71",
+    "Charm of Myths@Silent"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 10,
+   "recordedLifeMax": 450,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 5,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Scale Mail",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Spooky Wings@79",
+    "CalamityMod/AngelTreads@65",
+    "CalamityMod/GrandGelatin@73",
+    "Warrior Emblem@Silent"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 9,
+   "recordedLifeMax": 445,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 6,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Scale Mail",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Spooky Wings@72",
+    "CalamityMod/AngelTreads@63",
+    "CalamityMod/GrandGelatin@77",
+    "Warrior Emblem@73"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 7,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "CalamityMod/ReaverHeadTank",
+    "CalamityMod/ReaverScaleMail",
+    "CalamityMod/ReaverCuisses"
+   ],
+   "acc": [
+    "Spooky Wings@75",
+    "CalamityMod/AngelTreads@63",
+    "CalamityMod/GrandGelatin@77",
+    "CalamityMod/RogueEmblem@70"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 8,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Shroomite Headgear",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Mothron Wings",
+    "CalamityMod/AngelTreads@72",
+    "Molten Quiver@65",
+    "Ranger Emblem@72"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 9,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Spectre Mask",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Spooky Wings",
+    "CalamityMod/AngelTreads@71",
+    "Celestial Cuffs@63",
+    "Sorcerer Emblem@75"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 10,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Spectre Mask",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Bat Wings@65",
+    "CalamityMod/AngelTreads@74",
+    "Celestial Cuffs@80",
+    "Sorcerer Emblem@75"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 11,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Shroomite Headgear",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Harpy Wings@Invigorating",
+    "CalamityMod/AngelTreads@70",
+    "Ranger Emblem@71",
+    "Moon Stone@76"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 12,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Shroomite Mask",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Bat Wings@71",
+    "CalamityMod/AngelTreads@70",
+    "Ranger Emblem@Dauntless",
+    "Moon Stone@Silent"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 13,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "CalamityMod/PlagueReaperMask",
+    "CalamityMod/PlagueReaperVest",
+    "CalamityMod/PlagueReaperStriders"
+   ],
+   "acc": [
+    "Bat Wings@Dauntless",
+    "CalamityMod/AngelTreads@75",
+    "Ranger Emblem",
+    "Moon Stone@69"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 14,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "CalamityMod/PlagueReaperMask",
+    "CalamityMod/PlagueReaperVest",
+    "CalamityMod/PlagueReaperStriders"
+   ],
+   "acc": [
+    "Fairy Wings@74",
+    "CalamityMod/AngelTreads",
+    "Moon Stone@64",
+    "CalamityMod/VoidofCalamity"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 15,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Chlorophyte Helmet",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "CalamityMod/SoulofCryogen@68",
+    "CalamityMod/AngelTreads@72",
+    "Moon Stone@71",
+    "Ranger Emblem"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 16,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Chlorophyte Mask",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Bat Wings@Dauntless",
+    "CalamityMod/AngelTreads",
+    "Moon Stone@62",
+    "Titan Glove@69"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 17,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "CalamityMod/PlaguebringerVisor",
+    "CalamityMod/PlaguebringerCarapace",
+    "CalamityMod/PlaguebringerPistons"
+   ],
+   "acc": [
+    "CalamityMod/AureateBooster",
+    "CalamityMod/AngelTreads",
+    "CalamityMod/JellyChargedBattery@62",
+    "Shiny Stone@75"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 18,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "CalamityMod/PlaguebringerVisor",
+    "CalamityMod/PlaguebringerCarapace",
+    "CalamityMod/PlaguebringerPistons"
+   ],
+   "acc": [
+    "Butterfly Wings@73",
+    "Spectre Boots",
+    "Shiny Stone@Invigorating",
+    "CalamityMod/JellyChargedBattery@63"
+   ],
+   "hook": "Emerald Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 19,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Chlorophyte Mask",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Bat Wings@65",
+    "CalamityMod/AngelTreads",
+    "Moon Stone@74",
+    "Yoyo Bag@65"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 20,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Spectre Hood",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Bat Wings@72",
+    "CalamityMod/AngelTreads@73",
+    "Moon Stone@79",
+    "Celestial Cuffs@75"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 21,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Spectre Hood",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Harpy Wings@69",
+    "Sorcerer Emblem@75",
+    "Celestial Cuffs@66"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 22,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Spooky Helmet",
+    "Spooky Breastplate",
+    "Spooky Leggings"
+   ],
+   "acc": [
+    "Bat Wings@63",
+    "Shiny Stone@64",
+    "Apprentice's Scarf@Silent"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 23,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Chlorophyte Headgear",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Harpy Wings@66",
+    "CalamityMod/AngelTreads@64",
+    "Sorcerer Emblem@75",
+    "Celestial Cuffs"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 24,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Chlorophyte Headgear",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Harpy Wings@74",
+    "Moon Stone",
+    "Nature's Gift"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 25,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Chlorophyte Headgear",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Angel Wings@62",
+    "CalamityMod/AngelTreads",
+    "Sorcerer Emblem@70",
+    "Celestial Cuffs@67"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 26,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Chlorophyte Headgear",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Harpy Wings@Invigorating",
+    "CalamityMod/AngelTreads",
+    "Moon Stone",
+    "CalamityMod/ManaPolarizer@Silent"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 6,
+   "recordedLifeMax": 430,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 27,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "CalamityMod/MolluskShellmet",
+    "CalamityMod/MolluskShellplate",
+    "CalamityMod/MolluskShelleggings"
+   ],
+   "acc": [
+    "CalamityMod/AureateBooster",
+    "CalamityMod/AngelTreads",
+    "Shiny Stone@64",
+    "Charm of Myths@66"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 5,
+   "recordedLifeMax": 425,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 28,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "CalamityMod/UmbraphileHood",
+    "CalamityMod/UmbraphileRegalia",
+    "CalamityMod/UmbraphileBoots"
+   ],
+   "acc": [
+    "Harpy Wings@68",
+    "Moon Stone",
+    "CalamityMod/CoinofDeceit@62"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 5,
+   "recordedLifeMax": 425,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 29,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "CalamityMod/ReaverHeadMobility",
+    "CalamityMod/ReaverScaleMail",
+    "CalamityMod/ReaverCuisses"
+   ],
+   "acc": [
+    "Fairy Wings@67",
+    "CalamityMod/AngelTreads@77",
+    "CalamityMod/RogueEmblem@78",
+    "CalamityMod/ElectriciansGlove@Silent"
+   ],
+   "hook": "Slime Hook",
+   "lc": 15,
+   "lf": 4,
+   "recordedLifeMax": 420,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 30,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Spectre Mask",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Bat Wings@72",
+    "CalamityMod/AngelTreads",
+    "Nature's Gift@Silent",
+    "Moon Stone@Invigorating"
+   ],
+   "hook": "Slime Hook",
+   "lc": 15,
+   "lf": 4,
+   "recordedLifeMax": 420,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 31,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Spooky Helmet",
+    "Spooky Breastplate",
+    "Spooky Leggings"
+   ],
+   "acc": [
+    "Harpy Wings@78",
+    "Apprentice's Scarf",
+    "CalamityMod/JellyChargedBattery"
+   ],
+   "hook": "Slime Hook",
+   "lc": 15,
+   "lf": 4,
+   "recordedLifeMax": 420,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 32,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Chlorophyte Mask",
+    "Chlorophyte Plate Mail",
+    "Chlorophyte Greaves"
+   ],
+   "acc": [
+    "Harpy Wings@69",
+    "CalamityMod/AngelTreads@64",
+    "Warrior Emblem@68",
+    "Yoyo Bag@65"
+   ],
+   "hook": "Slime Hook",
+   "lc": 15,
+   "lf": 4,
+   "recordedLifeMax": 420,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 33,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Frost Helmet",
+    "Frost Breastplate",
+    "Frost Leggings"
+   ],
+   "acc": [
+    "Fairy Wings@76",
+    "CalamityMod/AngelTreads@75",
+    "Moon Stone@69",
+    "CalamityMod/RogueEmblem@Dauntless"
+   ],
+   "hook": "Slime Hook",
+   "lc": 15,
+   "lf": 4,
+   "recordedLifeMax": 420,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 34,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "CalamityMod/BrimflameCowl",
+    "CalamityMod/BrimflameRobes",
+    "CalamityMod/BrimflameBoots"
+   ],
+   "acc": [
+    "Butterfly Wings@78",
+    "Moon Stone@64",
+    "CalamityMod/ManaPolarizer@63"
+   ],
+   "hook": "Grappling Hook",
+   "lc": 15,
+   "lf": 4,
+   "recordedLifeMax": 420,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 100,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Spooky Helmet",
+    "Spooky Breastplate",
+    "Spooky Leggings"
+   ],
+   "acc": [
+    "Butterfly Wings@80",
+    "Spectre Boots@78",
+    "Necromantic Scroll@78",
+    "Shiny Stone@70"
+   ],
+   "hook": "Grappling Hook",
+   "lc": 15,
+   "lf": 12,
+   "recordedLifeMax": 460,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 101,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Mothron Wings@65",
+    "CalamityMod/AngelTreads@71",
+    "Yoyo Bag@Dauntless",
+    "CalamityMod/TrinketofChi@69"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 10,
+   "recordedLifeMax": 450,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 102,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@76",
+    "CalamityMod/AngelTreads@66",
+    "Yoyo Bag@63",
+    "Power Glove"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 10,
+   "recordedLifeMax": 450,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 103,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Silent",
+    "CalamityMod/AngelTreads@71",
+    "CalamityMod/InfectedJewel@71",
+    "Charm of Myths@Silent"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 10,
+   "recordedLifeMax": 450,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 104,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Scale Mail",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Spooky Wings@79",
+    "CalamityMod/AngelTreads@65",
+    "CalamityMod/GrandGelatin@73",
+    "Warrior Emblem@Silent"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 9,
+   "recordedLifeMax": 445,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 105,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Scale Mail",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Spooky Wings@72",
+    "CalamityMod/AngelTreads@63",
+    "CalamityMod/GrandGelatin@77",
+    "Warrior Emblem@73"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 106,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "CalamityMod/ReaverHeadTank",
+    "CalamityMod/ReaverScaleMail",
+    "CalamityMod/ReaverCuisses"
+   ],
+   "acc": [
+    "Spooky Wings@75",
+    "CalamityMod/AngelTreads@63",
+    "CalamityMod/GrandGelatin@77",
+    "CalamityMod/RogueEmblem@70"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 107,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Shroomite Headgear",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Mothron Wings",
+    "CalamityMod/AngelTreads@72",
+    "Molten Quiver@65",
+    "Ranger Emblem@72"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 108,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Spectre Mask",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Spooky Wings",
+    "CalamityMod/AngelTreads@71",
+    "Celestial Cuffs@63",
+    "Sorcerer Emblem@75"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 109,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Spectre Mask",
+    "Spectre Robe",
+    "Spectre Pants"
+   ],
+   "acc": [
+    "Bat Wings@65",
+    "CalamityMod/AngelTreads@74",
+    "Celestial Cuffs@80",
+    "Sorcerer Emblem@75"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 110,
+   "weapon": "Terra Blade",
+   "cls": "E",
+   "weaponName": "Terra Blade",
+   "armor": [
+    "Shroomite Headgear",
+    "Shroomite Breastplate",
+    "Shroomite Leggings"
+   ],
+   "acc": [
+    "Harpy Wings@Invigorating",
+    "CalamityMod/AngelTreads@70",
+    "Ranger Emblem@71",
+    "Moon Stone@76"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 7,
+   "recordedLifeMax": 435,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  }
+ ],
+ "notes": []
+}

@@ -334,13 +334,16 @@ namespace Levy.Common.Weapons
 
 		private static void DamageDetour(On_Projectile.orig_Damage orig, Projectile self)
 		{ _hl_DamageDetour_1++;
+			long s0 = SwapProf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
 			if (Mask != 0 && CanSkipNested(self))
 			{
 				NestSkips++;
 				object th = (Mask & 8) != 0 ? SwapThorium(_stack[_depth - 1].Body.Dummy) : null; // only the hit pass swaps Thorium's cache: kept
-				try { orig(self); } finally { RestoreThorium(th); }
+				long s1 = SwapProf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+				try { orig(self); } finally { long s2 = SwapProf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0; RestoreThorium(th); if (SwapProf.On) { SwapProf.SkipSwap += (s1 - s0) + (System.Diagnostics.Stopwatch.GetTimestamp() - s2); SwapProf.SkipN++; } }
 				return;
 			}
+			if (SwapProf.On) SwapProf.SkipSwap += System.Diagnostics.Stopwatch.GetTimestamp() - s0; // the test that did not skip is part of the hit pass's swap cost too
 			if (_depth > 0) NestFull++;
 			if (SwapProf.On) { DamageTimed(orig, self); return; }
 			if (Mask == 0 || !Enter(self, 1)) { orig(self); return; }
@@ -511,7 +514,7 @@ namespace Levy.Common.Weapons
 	internal static class SwapProf
 	{
 		internal static bool On = System.Environment.GetEnvironmentVariable("LEVY_SWAPPROF") == "1";
-		internal static long UpdSwap, UpdTotal, UpdN, DamSwap, DamN, EnterMiss, GuardSwap, GuardN, ViewSwap, ViewN;
-		internal static void Reset() { UpdSwap = UpdTotal = UpdN = DamSwap = DamN = EnterMiss = GuardSwap = GuardN = ViewSwap = ViewN = 0; }
+		internal static long UpdSwap, UpdTotal, UpdN, DamSwap, DamN, EnterMiss, GuardSwap, GuardN, ViewSwap, ViewN, SkipSwap, SkipN;
+		internal static void Reset() { UpdSwap = UpdTotal = UpdN = DamSwap = DamN = EnterMiss = GuardSwap = GuardN = ViewSwap = ViewN = SkipSwap = SkipN = 0; }
 	}
 }

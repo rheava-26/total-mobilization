@@ -305,30 +305,47 @@ namespace Levy.Common.Weapons
 		/// <summary>
 		/// THE NESTED HIT PASS. Projectile.Update runs the shot's hit pass (Projectile.Damage) inside itself, about twice a shot update; the update pass has already put the owner on the soldier, so a second swap for the hit pass
 		/// would write the same transform, the same life and lifesteal budget and the same live owner again and put them back at its end. It is skipped when the open frame is this very shot's update pass and everything the hit pass's
-		/// entry would write is still in place (the transform, the soldier's max life, the owner alive, no cursor puppet open). What changes: a lifesteal gain made by the hit stays in the owner's life (the soldier's, for the pass)
+		/// entry would write is still in place (the transform, the soldier's max life, the owner alive, and, for a shot that reads the cursor, the commander's cursor and Calamity's aim already on the levy's target). What changes: a lifesteal gain made by the hit stays in the owner's life (the soldier's, for the pass)
 		/// until the update pass closes, and the soldier is given it then, in the same tick, instead of right after the hit; the totals are the same (both paths add the gain with the same cap). Thorium's local-player cache,
 		/// which only the hit pass swaps, is still swapped around the call. LEVY_NESTSKIP=0 turns it off (lab A/B, the parity check).
 		/// </summary>
 		internal static bool NestSkipOn = Environment.GetEnvironmentVariable("LEVY_NESTSKIP") != "0";
 		internal static int NestSkips, NestFull;
 
+		/// <summary>Lab (LEVY_SWAPPROF=1): why a hit pass inside an open frame was not skipped (0 another pass or projectile, 1 cursor puppet, 2 mask, 3 owner, 4 body, 5 transform moved, 6 max life).</summary>
+		internal static readonly long[] NestWhy = new long[7];
+		private static bool No(int why) { if (SwapProf.On) NestWhy[why]++; return false; }
+
 		private static bool CanSkipNested(Projectile self)
 		{
 			if (!NestSkipOn || _depth <= 0) return false;
 			ref Frame f = ref _stack[_depth - 1];
-			if (f.Bit != 4 || !ReferenceEquals(f.Proj, self) || f.Cur || f.Body == null) return false;
+			if (f.Bit != 4 || !ReferenceEquals(f.Proj, self) || f.Body == null) return No(0);
 			int m = Mask;
-			if (((m & 1) != 0) != ((m & 4) != 0)) return false; // the hit pass would move the transform where the update pass did not, or the other way round
+			if (((m & 1) != 0) != ((m & 4) != 0)) return No(2); // the hit pass would move the transform where the update pass did not, or the other way round
 			Player p = f.P;
-			if (p == null || !p.active || p.dead || p.ghost || self.owner != p.whoAmI || !ReferenceEquals(Main.player[self.owner], p)) return false;
-			if (!self.TryGetGlobalProjectile(out SoldierProjectileTag t) || !ReferenceEquals(EnemyTargeting.LiveBody(t.SoldierIndex), f.Body) || ReferenceEquals(f.Body.Dummy, p)) return false;
+			if (p == null || !p.active || p.dead || p.ghost || self.owner != p.whoAmI || !ReferenceEquals(Main.player[self.owner], p)) return No(3);
+			if (!self.TryGetGlobalProjectile(out SoldierProjectileTag t) || !ReferenceEquals(EnemyTargeting.LiveBody(t.SoldierIndex), f.Body) || ReferenceEquals(f.Body.Dummy, p)) return No(4);
 			NPC b = f.Body.NPC;
 			if (f.Moved)
 			{
 				Vector2 pos = p.position; p.Center = b.Center; bool same = p.position == pos; p.position = pos; // the hit pass's own write, compared and undone
-				if (!same || p.velocity != b.velocity || p.direction != (b.direction == 0 ? 1 : b.direction) || p.oldPosition != p.position) return false;
+				if (!same || p.velocity != b.velocity || p.direction != (b.direction == 0 ? 1 : b.direction) || p.oldPosition != p.position) return No(5);
 			}
-			if (f.Route && p.statLifeMax2 != Math.Max(1, b.lifeMax)) return false;
+			if (f.Route && p.statLifeMax2 != Math.Max(1, b.lifeMax)) return No(6);
+			if (f.Cur)
+			{
+				// the cursor puppet: the hit pass's entry would aim the commander's cursor (and Calamity's per-player aim) at the levy's target again; skipped only when they already read exactly that. Its one call to the
+				// levy's AimCursor is made here instead (the same call the entry makes: it holds the target's place for the fallback)
+				Vector2 at = f.Body.AimCursor(), sp = global::Levy.Common.Owner.AimView.ScreenFor(b.Center);
+				if (Main.screenPosition != sp || Main.mouseX != (int)(at.X - sp.X) || Main.mouseY != (int)(at.Y - sp.Y)) return No(1);
+				if (f.CurCal != null)
+				{
+					Vector2 want = at - p.MountedCenter; var (d, r) = AltPolicies.GetCalAimPublic(f.CurCal);
+					if (d != want || r != want.ToRotation()) return No(1);
+				}
+				SoldierNPC.CursorPuppets++;
+			}
 			return true;
 		}
 

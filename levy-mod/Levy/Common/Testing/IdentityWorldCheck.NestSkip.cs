@@ -83,6 +83,40 @@ namespace Levy.Common.Testing
 					}
 				Check($"nested hit pass: a levy's lifesteal is the same with the nested swap skipped and kept ({cases} cases: Player.Heal and a bare statLife +=, with room and at the cap; the levy's life after, the hits, the commander's life, and with Player.Heal every life a hit saw){(first != null ? " FIRST: " + first : "")}", fails == 0 && cases == 4);
 				Check($"nested hit pass: skipped with the skip on ({skipsOn} hit passes) and never with it off ({skipsOff})", skipsOn > 0 && skipsOff == 0);
+
+				// shots whose own code reads the cursor (the hit pass's entry would aim the commander's cursor again): the same shot from the same state, skip on and off, must end in the same place with the same AI state,
+				// and leave the commander's cursor and the screen where they were
+				var cursorTypes = new List<int>();
+				for (int ty = ProjectileID.Count; ty < ProjectileLoader.ProjectileCount && cursorTypes.Count < 6; ty++)
+					if (ContentSamples.ProjectilesByType.TryGetValue(ty, out Projectile smp) && smp.ModProjectile != null && smp.friendly && smp.damage >= 0 && OwnerLockProbe.ReadsCursor(ty)) cursorTypes.Add(ty);
+				int cFails = 0, cSkips = 0, cRuns = 0; string cFirst = null;
+				foreach (int ty in cursorTypes)
+				{
+					var res = new string[2];
+					for (int arm = 0; arm < 2; arm++)
+					{
+						OwnerPuppet.NestSkipOn = arm == 1; KeepCommander();
+						b.life = b.lifeMax; Main.screenPosition = Vector2.Zero; Main.mouseX = 100; Main.mouseY = 100;
+						SpawnOriginTarget(b.Bottom); NPC tg = _sweepTarget;
+						Main.rand = new Terraria.Utilities.UnifiedRandom(4242);
+						Main.myPlayer = 0; int sk0 = OwnerPuppet.NestSkips;
+						int pi = Projectile.NewProjectile(new EntitySource_Misc("NestSkip"), tg.Center - new Vector2(40f, 0f), new Vector2(4f, 0f), ty, 20, 0f, 0);
+						Projectile p = Main.projectile[pi]; p.GetGlobalProjectile<SoldierProjectileTag>().SoldierIndex = body; p.timeLeft = Math.Max(p.timeLeft, 60);
+						string err = null;
+						for (int k = 0; k < 8 && p.active; k++)
+						{
+							tg.life = tg.lifeMax; global::Levy.Common.Targeting.SoldierTargeting.TestForgetNeverCache();
+							try { p.Update(pi); } catch (Exception e) { err = e.GetType().Name; break; }
+						}
+						res[arm] = $"active {p.active} pos {p.position} vel {p.velocity} ai {p.ai[0]},{p.ai[1]},{p.ai[2]} local {p.localAI[0]},{p.localAI[1]} target life {tg.lifeMax - tg.life} cursor {Main.screenPosition} {Main.mouseX},{Main.mouseY}{(err != null ? " threw " + err : "")}";
+						if (arm == 1) cSkips += OwnerPuppet.NestSkips - sk0;
+						p.active = false; tg.active = false; _sweepTarget = null; Main.myPlayer = my;
+					}
+					cRuns++;
+					if (res[0] != res[1]) { cFails++; cFirst ??= $"{ProjectileLoader.GetProjectile(ty)?.Name}: kept [{res[0]}] skipped [{res[1]}]"; }
+				}
+				Note($"nested hit pass, cursor-reading shots: {cRuns} types ({string.Join(", ", cursorTypes.Select(ty => ProjectileLoader.GetProjectile(ty)?.Name))}), {cSkips} hit passes skipped");
+				if (cRuns > 0) Check($"nested hit pass: {cRuns} cursor-reading shots end the same with the skip on and off (place, velocity, AI state, the target's damage, the commander's cursor){(cFirst != null ? " FIRST: " + cFirst : "")}", cFails == 0);
 			}
 			catch (Exception e) { Check("nested hit pass threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			finally { if (_sweepTarget != null) _sweepTarget.active = false; _sweepTarget = null; OwnerPuppet.NestSkipOn = was; Main.myPlayer = my; NestSkipTestHeal.Proj = -1; NestSkipTestHeal.Heal = 0; ClearShots(); }

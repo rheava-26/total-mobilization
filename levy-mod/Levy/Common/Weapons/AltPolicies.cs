@@ -534,7 +534,29 @@ namespace Levy.Common.Weapons
 		// ---------------------------------------------------------------------------------------------
 		// Reflection into other mods' ModPlayers (no compile-time reference to Calamity)
 		// ---------------------------------------------------------------------------------------------
-		private sealed class ModPlayerAccess { public ModPlayer Base; public MethodInfo Get; public Type Type; }
+		private sealed class ModPlayerAccess { public ModPlayer Base; public MethodInfo Get; public Type Type; public Func<Player, object> Fast; }
+
+		/// <summary>
+		/// Compiled accessors (the same call and the same fields as the reflection they stand in for, without MethodInfo.Invoke's argument array and FieldInfo's boxing): the cursor puppet reads and writes Calamity's
+		/// per-player aim around every update and hit pass of a cursor-reading levy shot, a few hundred times a tick in a big fight. LEVY_CALFAST=0 keeps plain reflection (lab A/B).
+		/// </summary>
+		internal static bool FastAccess = Environment.GetEnvironmentVariable("LEVY_CALFAST") != "0";
+		private static Func<object, T> FieldGetter<T>(FieldInfo f)
+		{
+			if (f == null || f.FieldType != typeof(T) || f.IsStatic || f.DeclaringType.IsValueType) return null;
+			try { var o = System.Linq.Expressions.Expression.Parameter(typeof(object)); return System.Linq.Expressions.Expression.Lambda<Func<object, T>>(System.Linq.Expressions.Expression.Field(System.Linq.Expressions.Expression.Convert(o, f.DeclaringType), f), o).Compile(); }
+			catch (Exception) { return null; }
+		}
+		private static Action<object, T> FieldSetter<T>(FieldInfo f)
+		{
+			if (f == null || f.FieldType != typeof(T) || f.IsStatic || f.IsInitOnly || f.DeclaringType.IsValueType) return null;
+			try
+			{
+				var o = System.Linq.Expressions.Expression.Parameter(typeof(object)); var v = System.Linq.Expressions.Expression.Parameter(typeof(T));
+				return System.Linq.Expressions.Expression.Lambda<Action<object, T>>(System.Linq.Expressions.Expression.Assign(System.Linq.Expressions.Expression.Field(System.Linq.Expressions.Expression.Convert(o, f.DeclaringType), f), v), o, v).Compile();
+			}
+			catch (Exception) { return null; }
+		}
 		private static readonly Dictionary<string, ModPlayerAccess> _mp = new();
 		private static readonly Dictionary<string, MemberInfo> _meters = new();
 
@@ -553,6 +575,8 @@ namespace Levy.Common.Weapons
 					{
 						MethodInfo g = typeof(Player).GetMethods().First(mi => mi.Name == "GetModPlayer" && mi.IsGenericMethodDefinition && mi.GetParameters().Length == 1).MakeGenericMethod(t);
 						acc = new ModPlayerAccess { Base = b, Get = g, Type = t };
+						try { var pp = System.Linq.Expressions.Expression.Parameter(typeof(Player)); acc.Fast = System.Linq.Expressions.Expression.Lambda<Func<Player, object>>(System.Linq.Expressions.Expression.Convert(System.Linq.Expressions.Expression.Call(pp, g, System.Linq.Expressions.Expression.Constant(b, t)), typeof(object)), pp).Compile(); }
+						catch (Exception) { acc.Fast = null; }
 					}
 				}
 			}
@@ -568,12 +592,13 @@ namespace Levy.Common.Weapons
 		{
 			ModPlayerAccess a = Access(mod, type);
 			if (a == null || p == null) return null;
-			try { return a.Get.Invoke(p, new object[] { a.Base }); } catch (Exception) { return null; }
+			try { return FastAccess && a.Fast != null ? a.Fast(p) : a.Get.Invoke(p, new object[] { a.Base }); } catch (Exception) { return null; }
 		}
 
 		internal static object CalamityPlayerOf(Player p) => PlayerOf(p, CalMod, CalPlayerType);
 
 		private static FieldInfo _fMouseRight, _fDelta, _fRot;
+		private static Func<object, Vector2> _gDelta; private static Func<object, float> _gRot; private static Action<object, Vector2> _sDelta; private static Action<object, float> _sRot;
 		private static bool _calFieldsTried;
 		private static void CalFields()
 		{
@@ -583,6 +608,7 @@ namespace Levy.Common.Weapons
 			if (t == null) return;
 			const BindingFlags f = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 			_fMouseRight = t.GetField("mouseRight", f); _fDelta = t.GetField("mouseWorldDeltaFromPlayer", f); _fRot = t.GetField("mouseRotationFromPlayer", f);
+			_gDelta = FieldGetter<Vector2>(_fDelta); _gRot = FieldGetter<float>(_fRot); _sDelta = FieldSetter<Vector2>(_fDelta); _sRot = FieldSetter<float>(_fRot);
 		}
 
 		/// <summary>Sets <c>CalamityPlayer.mouseRight</c> on a dummy. False when Calamity is not loaded.</summary>
@@ -607,14 +633,27 @@ namespace Levy.Common.Weapons
 		private static (Vector2, float) GetCalAim(object cp)
 		{
 			CalFields();
-			try { return (_fDelta != null ? (Vector2)_fDelta.GetValue(cp) : default, _fRot != null ? (float)_fRot.GetValue(cp) : 0f); } catch (Exception) { return (default, 0f); }
+			try
+			{
+				bool fast = FastAccess;
+				Vector2 d = _fDelta == null ? default : fast && _gDelta != null ? _gDelta(cp) : (Vector2)_fDelta.GetValue(cp);
+				float r = _fRot == null ? 0f : fast && _gRot != null ? _gRot(cp) : (float)_fRot.GetValue(cp);
+				return (d, r);
+			}
+			catch (Exception) { return (default, 0f); }
 		}
 
 		private static void SetCalAim(object cp, Vector2 delta) => SetCalAim(cp, delta, delta.ToRotation());
 		private static void SetCalAim(object cp, Vector2 delta, float rot)
 		{
 			CalFields();
-			try { _fDelta?.SetValue(cp, delta); _fRot?.SetValue(cp, rot); } catch (Exception) { }
+			try
+			{
+				bool fast = FastAccess;
+				if (_fDelta != null) { if (fast && _sDelta != null) _sDelta(cp, delta); else _fDelta.SetValue(cp, delta); }
+				if (_fRot != null) { if (fast && _sRot != null) _sRot(cp, rot); else _fRot.SetValue(cp, rot); }
+			}
+			catch (Exception) { }
 		}
 
 		/// <summary>The Calamity-reported cursor offset of a dummy (self checks).</summary>

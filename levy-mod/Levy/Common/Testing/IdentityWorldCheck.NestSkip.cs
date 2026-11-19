@@ -116,6 +116,22 @@ namespace Levy.Common.Testing
 					if (res[0] != res[1]) { cFails++; cFirst ??= $"{ProjectileLoader.GetProjectile(ty)?.Name}: kept [{res[0]}] skipped [{res[1]}]"; }
 				}
 				Note($"nested hit pass, cursor-reading shots: {cRuns} types ({string.Join(", ", cursorTypes.Select(ty => ProjectileLoader.GetProjectile(ty)?.Name))}), {cSkips} hit passes skipped");
+				// the compiled Calamity accessors write and read the very fields the reflection does
+				object cal = AltPolicies.CalamityPlayerOf(Main.player[0]);
+				if (cal != null)
+				{
+					bool fastWas = AltPolicies.FastAccess; var keep = AltPolicies.GetCalAimPublic(cal); bool same = true;
+					try
+					{
+						var d = new Vector2(123.5f, -7.25f);
+						AltPolicies.FastAccess = true; AltPolicies.SetCalAimPublic(cal, d, 0.5f); AltPolicies.FastAccess = false; var r1 = AltPolicies.GetCalAimPublic(cal);
+						AltPolicies.SetCalAimPublic(cal, -d, -0.5f); AltPolicies.FastAccess = true; var r2 = AltPolicies.GetCalAimPublic(cal);
+						AltPolicies.FastAccess = false; object viaRefl = AltPolicies.CalamityPlayerOf(Main.player[0]); AltPolicies.FastAccess = true; object viaFast = AltPolicies.CalamityPlayerOf(Main.player[0]);
+						same = r1 == (d, 0.5f) && r2 == (-d, -0.5f) && ReferenceEquals(viaRefl, viaFast) && viaFast != null;
+					}
+					finally { AltPolicies.FastAccess = fastWas; AltPolicies.SetCalAimPublic(cal, keep.Item1, keep.Item2); }
+					Check("the compiled Calamity accessors (the levy's CalamityPlayer, its cursor aim) read and write what the reflection reads and writes", same);
+				}
 				if (cRuns > 0) Check($"nested hit pass: {cRuns} cursor-reading shots end the same with the skip on and off (place, velocity, AI state, the target's damage, the commander's cursor){(cFirst != null ? " FIRST: " + cFirst : "")}", cFails == 0);
 			}
 			catch (Exception e) { Check("nested hit pass threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }

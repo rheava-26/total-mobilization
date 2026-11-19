@@ -642,6 +642,11 @@ Mods: {
 					Tooltip: Armories within 50 tiles of a Magic Storage network arm soldiers from it when their own shelves run dry. Needs Magic Storage
 				}
 
+				MagicStorageArmoryCrafting: {
+					Label: Magic Storage crafts with armory racks
+					Tooltip: The Crafting Interface of a network with an Armory Heart uses the armory's storage and weapon rack as ingredients. A weapon crafted from an armory weapon goes back to that armory. Single player
+				}
+
 				LogisticsReachesPylons: {
 					Label: Logistics reaches shopkeepers through pylons
 					Tooltip: An Armory within 60 tiles of a working pylon also trades with shopkeepers near any other working pylon

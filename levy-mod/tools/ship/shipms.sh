@@ -36,4 +36,20 @@ grep -E 'Adding Content: (MagicStorage|Levy|Mechanization|Warbands)' "$L" | sed 
 grep -E 'Levy Magic Storage self-check|Levy/MagicStorage compat|\[MsCraft\]' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-400 | sed 's/^/  /'
 fail_lines "$L" | cut -c1-220 | head -20 | sed 's/^/  FAIL: /'
 grep -E -i "$EXC_RE" "$L" | cut -c1-220 | head -12 | sed 's/^/  EXC: /'
-[ "$MSOK" -ge 1 ] && [ "$EXC" = 0 ] || exit 1
+RC=0; [ "$MSOK" -ge 1 ] && [ "$EXC" = 0 ] || RC=1
+
+# In a world: the Crafting Interface's own Craft entry (CraftingGUI.Craft) after Magic Storage's refresh code, on a real Storage Heart tile ([MsWorldCraft]). Needs the ship world (shipworld.sh makes it).
+W="$LAB/world/ShipWorld.wld"
+if [ -f "$W" ]; then
+  copy_fresh "$W" "$MS_HOME/MsWorld.wld"
+  echo "== world craft ($MS_MODS, ShipWorld copy) =="
+  "$SHIP_DIR/tmlboot.sh" -i "$MS_HOME" -s "$MS_HOME/save" -m "$MS_MODS" -w "$MS_HOME/MsWorld.wld" -p "$PORT_MSW" -e "LEVY_MSCRAFT_WORLD=1 LEVY_MSCRAFT_EXIT=1" \
+      -x '\[MsWorldCraft\] self-check pass=' -q 5 -t 600 || echo "WARNING: world boot ended early (see $MS_HOME/boot.out)"
+  L="$MS_HOME/tModLoader-Logs/server.log"
+  WP=$(grep -c -F '[MsWorldCraft] PASS ' "$L"); WF=$(grep -c -F '[MsWorldCraft] FAIL ' "$L"); WEXC=$(grep -c -E -i "$EXC_RE" "$L")
+  echo "MS WORLD CRAFT: PASS=$WP FAIL=$WF exc=$WEXC"
+  grep -E '\[MsWorldCraft\] (FAIL|OBSERVED|self-check)' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-400 | sed 's/^/  /'
+  grep -E -i "$EXC_RE" "$L" | cut -c1-220 | head -8 | sed 's/^/  EXC: /'
+  [ "$WP" -ge 1 ] && [ "$WF" = 0 ] || RC=1
+else echo "MS WORLD CRAFT: skipped (no $W; run shipworld.sh first)"; fi
+exit $RC

@@ -44,7 +44,7 @@ PORT_CAL="${PORT_CAL:-7774}"; PORT_NORM="${PORT_NORM:-7775}"; PORT_GEN="${PORT_G
 PORT_WOTG="${PORT_WOTG:-7776}"; PORT_WWOT="${PORT_WWOT:-7874}"   # wotg boot / wotg world half
 # OPTIONAL configuration "ms" (shipms.sh, SHIPMS=1 in shipboth.sh): Calamity + Magic Storage + our three, boot self-checks only (Levy's Magic Storage half: Armory Heart, crafting with armory racks).
 MS_HOME="${MS_HOME:-$U/shipms}"                      # install copy (tML 2026.10) with save/ inside
-PORT_MS="${PORT_MS:-7777}"
+PORT_MS="${PORT_MS:-7777}"; PORT_MSW="${PORT_MSW:-7778}"   # ms boot / ms world craft
 
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 

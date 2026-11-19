@@ -53,6 +53,11 @@ namespace Levy.Common.Compat.MagicStorageLink
 		private static readonly List<(ArmoryTE a, int type)> Returns = new();
 		private static ArmoryTE _weaponFrom;
 
+		/// <summary>The server config "Magic Storage crafts with armory racks" (off by default), or the self-checks' override.</summary>
+		public static bool Enabled { get { if (ForceOn.HasValue) return ForceOn.Value; try { return global::Levy.Common.Config.LevyConfig.Get.MagicStorageArmoryCrafting; } catch (Exception) { return false; } } }
+		/// <summary>Self-check seam: pins <see cref="Enabled"/> (null = the config).</summary>
+		internal static bool? ForceOn;
+
 		/// <summary>Items taken off armory racks by crafts, proxies consumed with nothing behind them (must stay 0), crafted weapons sent back to an armory.</summary>
 		public static long Taken, Shortfall, Returned;
 
@@ -89,7 +94,10 @@ namespace Levy.Common.Compat.MagicStorageLink
 		{
 			_hl_GetModulesDetour_1++;
 			var mods = orig(self);
-			if (Main.netMode == NetmodeID.MultiplayerClient || ArmoriesOf(self).Count == 0) return mods;
+			if (Main.netMode == NetmodeID.MultiplayerClient) return mods;
+			bool live; lock (Gate) live = ByProxy.Count > 0;
+			// listed while it offers armory items, AND while any proxy it handed out is still alive: a proxy left in Magic Storage's lists must keep reaching the hooks that pay for it or retire it
+			if (!live && (!Enabled || ArmoriesOf(self).Count == 0)) return mods;
 			var mine = ModContent.GetInstance<ArmoryRacksModule>();
 			return mine == null ? mods : mods.Where(m => m.Type != mine.Type).Append(mine);
 		}
@@ -100,13 +108,13 @@ namespace Levy.Common.Compat.MagicStorageLink
 		/// <summary>The proxies offered for this heart (published by <see cref="Sync"/>; safe from any thread).</summary>
 		public static IEnumerable<Item> Offered(TEStorageHeart heart)
 		{
-			if (heart == null || Main.netMode == NetmodeID.MultiplayerClient) return Array.Empty<Item>();
+			if (heart == null || Main.netMode == NetmodeID.MultiplayerClient || !Enabled) return Array.Empty<Item>();
 			lock (Gate) return Published.TryGetValue(heart.ID, out var arr) ? arr : Array.Empty<Item>();
 		}
 
 		private static bool Alive(ArmoryTE a) => a != null && TileEntity.ByID.TryGetValue(a.ID, out var te) && ReferenceEquals(te, a);
 
-		private static bool Valid(Link l) => Alive(l.A) && !l.Backing.IsAir && l.Backing.type == l.Proxy.type && l.Backing.prefix == l.Proxy.prefix && l.A.OnRacks(l.Backing) && l.A.CraftOffers(l.Backing);
+		private static bool Valid(Link l) => Enabled && Alive(l.A) && !l.Backing.IsAir && l.Backing.type == l.Proxy.type && l.Backing.prefix == l.Proxy.prefix && l.A.OnRacks(l.Backing) && l.A.CraftOffers(l.Backing);
 
 		private static int StackOf(Item proxy) => proxy.IsAir ? 0 : Math.Max(0, proxy.stack);
 
@@ -139,7 +147,7 @@ namespace Levy.Common.Compat.MagicStorageLink
 				_weaponFrom = null;
 				var seen = new HashSet<Link>();
 				var offered = new List<Item>();
-				foreach (var a in ArmoriesOf(heart))
+				foreach (var a in Enabled ? ArmoriesOf(heart) : new List<ArmoryTE>()) // switched off: every proxy is retired below
 				{
 					if (!Alive(a)) continue;
 					foreach (var arr in a.CraftRacks())

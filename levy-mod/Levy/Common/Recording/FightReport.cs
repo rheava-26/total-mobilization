@@ -152,8 +152,9 @@ namespace Levy.Common.Recording
 			if (s.Army.Count > 0 && s.ArmyStart > 0)
 			{
 				string br = s.BreakSec >= 0 ? "broke at " + FightStats.Clock(s.BreakSec) : "held";
-				lines.Add("Army: " + s.ArmyStart + " to " + s.ArmyEnd + ", " + br + ".");
+				lines.Add("Army: " + s.ArmyStart + " to " + s.ArmyEnd + ", " + br + "." + (s.HpScalePct > 0 ? " " + ScaleLine(s) : ""));
 			}
+			else if (s.HpScalePct > 0) lines.Add(ScaleLine(s));
 			if (prior != null && prior.Count > 0 && lines.Count < 4)
 			{
 				var best = prior.Where(p => p.Dps > 0).OrderByDescending(p => p.Dps).FirstOrDefault();
@@ -168,6 +169,9 @@ namespace Levy.Common.Recording
 			return lines;
 		}
 
+		/// <summary>"Boss life scaled +80% for 40 command points."</summary>
+		internal static string ScaleLine(FightStats s) => "Boss life scaled +" + s.HpScalePct + "% for " + s.HpScaleCp + " command " + Plural(s.HpScaleCp, "point", "points") + ".";
+
 		private static string Row(params string[] cols) => string.Join("  ", cols);
 
 		/// <summary>The full report file.</summary>
@@ -179,6 +183,7 @@ namespace Levy.Common.Recording
 			L(s.Boss + ", " + oc);
 			L("Recorded " + (s.Date ?? "unknown date").Replace('T', ' ') + (string.IsNullOrEmpty(s.Player) ? "" : ", " + s.Player) + (string.IsNullOrEmpty(s.Mode) ? "" : ", " + s.Mode) + ", " + FightStats.Clock(s.DurationSec) + " long.");
 			L("Recording format " + s.Format + (s.Format < 10 ? ": made before stealth, crit and weapon fields were recorded, so those numbers are marked not recorded." : "."));
+			if (s.HpScalePct > 0) L(ScaleLine(s));
 			L();
 
 			L("What you did to the boss");

@@ -170,7 +170,9 @@ namespace Levy.Common
 		public const int RedirectEveryNth = 3;
 		public const int RedirectDurationTicks = 180;
 		public const float HpScalePerCp = 0.02f;
-		public const float HpScaleCap = 0.80f;
+		/// <summary>Boss life scaling cap by progression (Boss Checklist scale, see ProgressionTier): from this progress on, a boss gains at most this fraction of its base life.
+		/// Pre-Hardmode, Hardmode, Golem, Moon Lord, Providence, Devourer of Gods, Yharon and beyond.</summary>
+		public static readonly (float from, float cap)[] HpScaleCapBands = { (0f, 0.8f), (7f, 1.2f), (13f, 1.6f), (18f, 2.2f), (19f, 2.8f), (21f, 3.4f), (22f, 4.0f) };
 		public static readonly int[] DashAllowlist = { NPCID.EyeofCthulhu, NPCID.Retinazer, NPCID.Spazmatism, NPCID.DukeFishron, NPCID.SkeletronHead };
 
 		// ---------- Fear ----------

@@ -210,7 +210,7 @@ namespace Levy.Common.Boss
 
 		/// <summary>
 		/// Called whenever a soldier damages an enemy. On a main boss: the soldier's command points join the fight once
-		/// (+BossHpScalingPercentPerCp % of base life per CP, capped at BossHpScalingCapPercent %), and the hit is recorded for
+		/// (+BossHpScalingPercentPerCp % of base life per CP, capped by <see cref="HpCapFor"/>), and the hit is recorded for
 		/// spite. Eater of Worlds: engagement is per worm fight, the scaling lands on the segment that was hit.
 		/// </summary>
 		public static void OnSoldierDamagedNpc(NPC target, SoldierNPC soldier, int damage)
@@ -236,9 +236,10 @@ namespace Levy.Common.Boss
 
 			var cfg = LevyConfig.Get;
 			float perCp = cfg.BossHpScalingPercentPerCp / 100f;
-			float cap = Math.Max(0f, cfg.BossHpScalingCapPercent / 100f);
+			float cap = HpCapFor(root);
 			float fraction = Math.Min(engagedCp * perCp, cap);
-			ApplyScaling(eow ? target : root, fraction);
+			ApplyScaling(eow ? target : root, fraction, engagedCp);
+			NoteFightScale((int)Math.Round(fraction * 100f), engagedCp);
 
 			if (damage > 0 && cfg.BossesPunishSoldiers && soldier.NPC != null) RecordDamage(data, soldier.NPC.whoAmI, damage);
 		}
@@ -258,6 +259,40 @@ namespace Levy.Common.Boss
 			return true;
 		}
 
+		/// <summary>The scaling cap for a boss (a fraction of base life): the config override when it is above 0, else the band of <see cref="LevyConstants.HpScaleCapBands"/>
+		/// for the furthest of the world's progress and the boss's own place on the progression scale (the first fight against a band's boss already counts as that band).</summary>
+		public static float HpCapFor(NPC root)
+		{
+			int ov = LevyConfig.Get.BossHpScalingCapPercent;
+			if (ov > 0) return ov / 100f;
+			float p = Weapons.WeaponRank.Progress();
+			if (root != null) p = Math.Max(p, BossTierCached(root.type));
+			return BandCap(p);
+		}
+
+		/// <summary>The cap fraction of the progression band <paramref name="progress"/> falls in.</summary>
+		internal static float BandCap(float progress)
+		{
+			var bands = LevyConstants.HpScaleCapBands;
+			float cap = bands[0].cap;
+			for (int i = 0; i < bands.Length; i++) if (progress >= bands[i].from) cap = bands[i].cap;
+			return cap;
+		}
+
+		private static readonly Dictionary<int, float> _bossTier = new();
+		private static float BossTierCached(int type)
+		{
+			if (!_bossTier.TryGetValue(type, out float t)) _bossTier[type] = t = Weapons.ProgressionTier.BossTier(type);
+			return t;
+		}
+
+		// ---- the current fight's scaling, for the fight report (the server notes it as it scales; a multiplayer client hears it through the BossLifeMax packet) ----
+		/// <summary>The largest scaling this fight reached, in percent of base life, and the command points engaged when it did.</summary>
+		public static int FightScalePct, FightScaleCp;
+		internal static void NoteFightScale(int pct, int cp) { if (pct > FightScalePct || (pct == FightScalePct && cp > FightScaleCp)) { FightScalePct = pct; FightScaleCp = cp; } }
+		/// <summary>A new recording starts: forget the last fight's scaling.</summary>
+		public static void ResetFightScale() { FightScalePct = 0; FightScaleCp = 0; }
+
 		/// <summary>The life an engagement adds to a boss of <paramref name="baseLifeMax"/>: engaged command points times the per-CP share, held under the cap (both fractions).</summary>
 		internal static int ScaledAdd(int baseLifeMax, int engagedCp, float perCp, float cap) => (int)(Math.Max(1, baseLifeMax) * Math.Min(engagedCp * perCp, Math.Max(0f, cap)));
 
@@ -270,7 +305,7 @@ namespace Levy.Common.Boss
 		/// <summary>Same NPC for scaling purposes. Eater of Worlds segments turn into heads/tails with a bare type change (NPC.cs 45852/45866) and keep their life.</summary>
 		private static bool SameScalingKind(int a, int b) => a == b || (IsEowSegment(a) && IsEowSegment(b));
 
-		internal static void ApplyScaling(NPC npc, float fraction)
+		internal static void ApplyScaling(NPC npc, float fraction, int engagedCp = 0)
 		{
 			if (npc == null || !npc.active || fraction <= 0f) return;
 			if (!_scale.TryGetValue(npc.whoAmI, out var st) || !SameScalingKind(st.Type, npc.type) || npc.lifeMax < st.BaseLifeMax + st.AppliedAdd)
@@ -286,7 +321,7 @@ namespace Levy.Common.Boss
 				if (Main.netMode == NetmodeID.Server)
 				{
 					var p = LevyPackets.New(LevyPacket.BossLifeMax);
-					p.Write((short)npc.whoAmI); p.Write(npc.lifeMax); p.Send();
+					p.Write((short)npc.whoAmI); p.Write(npc.lifeMax); p.Write((short)Math.Min(short.MaxValue, (int)Math.Round(fraction * 100f))); p.Write((short)Math.Min(short.MaxValue, engagedCp)); p.Send();
 				}
 			}
 			_scale[npc.whoAmI] = st;
@@ -360,7 +395,7 @@ namespace Levy.Common.Boss
 		internal static void ClearAll()
 		{
 			LiveBosses.Clear(); LiveBodies.Clear(); _scale.Clear(); _pruneBuffer.Clear();
-			_eowEngagedIds.Clear(); _eowEngagedCp = 0;
+			_eowEngagedIds.Clear(); _eowEngagedCp = 0; _bossTier.Clear(); ResetFightScale();
 			TerrorTable.ClearCaches();
 		}
 	}

@@ -33,6 +33,8 @@ namespace Levy.Common.Recording
 		public string File, Boss, Player, Mode, World, Date, Result = "ended", Outcome = "none";
 		public int Format, CmdDeaths, Auto;
 		public double DurationSec;
+		/// <summary>How far the army's engagement raised the boss's life (percent of base life, 0 when it did not or the file predates the field) and the command points engaged.</summary>
+		public int HpScalePct, HpScaleCp;
 		public bool HasEnd;
 		public string[] StateNames = { "Idle", "Follow", "Patrol", "Engage", "Haul", "Resupply", "Shaken", "Routed", "ReturnHome", "Dead", "Desert", "SearchDestroy", "FreeRein", "Mutiny" };
 		public readonly Dictionary<int, string> Items = new(), Npcs = new(), Projs = new();
@@ -234,6 +236,7 @@ namespace Levy.Common.Recording
 			st.Result = Str(r, "result", st.Result); st.Outcome = Str(r, "outcome", "none"); st.DurationSec = Dbl(r, "durationSec", Int(r, "ticks") / 60.0); st.CmdDeaths = Int(r, "cmdDeaths");
 			string bn = Str(r, "bossName"); if (!string.IsNullOrEmpty(bn)) st.Boss = bn;
 			st.AllBossDmg = Math.Max(st.AllBossDmg, (long)Dbl(r, "dmgBoss"));
+			st.HpScalePct = Int(r, "hpScalePct"); st.HpScaleCp = Int(r, "hpScaleCp");
 		}
 
 		private static void Frame(FightStats st, JsonElement r, ref int prevFrame, ref int lastSec, ref double lastFrac)

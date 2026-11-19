@@ -867,6 +867,7 @@ namespace Levy.Content.NPCs
 			if (_airJumpCooldown > 0) _airJumpCooldown--;
 			if (_aerialVisualTicks > 0) _aerialVisualTicks--;
 			_aerial = false;
+			if (!float.IsNaN(LabAltitudeY)) { WantsAltitude = true; AltitudeBottomY = LabAltitudeY; }
 			if (!WantsAltitude || !_kitAny || _aerialSpent || State == SoldierState.Routed || State == SoldierState.Dead) return false;
 			if (grounded && (_aerialCooldown > 0 || AltitudeBottomY > NPC.Bottom.Y - AerialClimbBenefitTiles * 16f)) return false;
 			_aerial = true;
@@ -940,6 +941,9 @@ namespace Levy.Content.NPCs
 		/// <summary>Vanilla's hover costs half a tick of wing time a tick (Player.WingMovement, down held, no sideways key; Calamity's Hadarian Wings give the same half back).</summary>
 		private const float HoverWingDrain = 0.5f;
 		internal static long NoHoverClimbTicks;
+		/// <summary>HARNESS: an altitude the body is told to hold (feet Y), whatever the brain wants; NaN = none.</summary>
+		internal float LabAltitudeY = float.NaN;
+		internal int LabWingTime => _wingTime;
 
 		/// <summary>Burns flight budget in fractions (hover feathering costs less than a tick of climb).</summary>
 		private void SpendFlight(bool wing, float amount)

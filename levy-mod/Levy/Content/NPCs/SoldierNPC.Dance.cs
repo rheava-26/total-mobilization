@@ -94,7 +94,7 @@ namespace Levy.Content.NPCs
 			hoverPx = Math.Min(hoverPx, AerialMaxReachTiles * LevyConstants.MaxReachUseFrac * LevyConstants.TilePx);
 			if (hoverPx < LevyConstants.Movement.AerialClimbBenefitTiles * LevyConstants.TilePx) return;
 			if (_aerialCooldown > DanceFlightRelaunchTicks) _aerialCooldown = DanceFlightRelaunchTicks;
-			WantsAltitude = true; AltitudeBottomY = groundY - hoverPx; _altHeld = true; DanceFlights++;
+			WantsAltitude = true; _altWhy = 4; AltitudeBottomY = groundY - hoverPx; _altHeld = true; DanceFlights++;
 		}
 
 		private int _cornerUntil, _cornerDir; internal int DanceCorners, DanceOvers;

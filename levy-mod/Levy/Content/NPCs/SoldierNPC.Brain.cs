@@ -988,7 +988,7 @@ namespace Levy.Content.NPCs
 			float groundY = AerialGroundY == float.MinValue ? NPC.Bottom.Y : AerialGroundY;
 			if (groundY - capped < LevyConstants.Movement.AerialClimbBenefitTiles * tilePx) { _altHeld = false; return; }
 			if (RoofOverhead()) { _altHeld = false; return; } // indoors: the ground rules (and the way out) apply
-			WantsAltitude = true; AltitudeBottomY = capped; _altHeld = true;
+			WantsAltitude = true; AltitudeBottomY = capped; _altHeld = true; _altWhy = 1;
 		}
 
 		/// <summary>The target is in reach, with a firing line, from where the body stands (or, aloft, from the floor under it): a ranged soldier has no reason to fly for it.</summary>
@@ -1070,7 +1070,7 @@ namespace Levy.Content.NPCs
 			float side = seg.Center.X >= NPC.Center.X ? 1f : -1f;
 			Vector2 goal = new Vector2(dxTiles > holdTiles ? seg.Center.X - side * holdTiles * tilePx : NPC.Center.X, NPC.Bottom.Y);
 			ApplyChaseClamp(ref goal);
-			WantsAltitude = true; AltitudeBottomY = capped; _altHeld = true;
+			WantsAltitude = true; AltitudeBottomY = capped; _altHeld = true; _altWhy = 2;
 			_engMode = EngageMode.Hold; _engPathOk = false;
 			SetGoal(goal);
 			return true;
@@ -1502,7 +1502,7 @@ namespace Levy.Content.NPCs
 					return false;
 				}
 				_engMode = EngageMode.Approach; _engPathOk = !air; // a gear climb is flown straight at the perch, not routed over the ground
-				if (air) { WantsAltitude = true; AltitudeBottomY = _perchGoal.Y - LevyConstants.AirPerchHoverAboveTiles * tilePx; }
+				if (air) { WantsAltitude = true; _altWhy = 3; AltitudeBottomY = _perchGoal.Y - LevyConstants.AirPerchHoverAboveTiles * tilePx; }
 				SetGoal(_perchGoal);
 				return true;
 			}
@@ -1604,7 +1604,7 @@ namespace Levy.Content.NPCs
 				_perchNextTick = now + LevyConstants.PerchRelocateCooldownTicks;
 				if (cover) _coverNextTick = now + LevyConstants.CoverRelocateCooldownTicks;
 				_engMode = EngageMode.Approach; _engPathOk = !viaAir;
-				if (viaAir) { WantsAltitude = true; AltitudeBottomY = bottom.Y - LevyConstants.AirPerchHoverAboveTiles * tilePx; }
+				if (viaAir) { WantsAltitude = true; _altWhy = 3; AltitudeBottomY = bottom.Y - LevyConstants.AirPerchHoverAboveTiles * tilePx; }
 				SetGoal(bottom);
 				return true;
 			}

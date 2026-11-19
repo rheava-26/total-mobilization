@@ -36,6 +36,9 @@ namespace Levy.Content.NPCs
 		/// <summary>Fight telemetry for the air rules (the lab kit reads and resets these): levy-ticks alive while a boss lives, of them airborne, wing ticks spent, and ticks held in a hover (aloft, |vy| under 0.6, flight spent) split by whether the wings can hover for a player.</summary>
 		internal static long StatFightTicks, StatAirTicks, StatWingSpent, StatHoverTicks, StatHoverNoGear;
 		private int _wingMark; private bool _airGrounded;
+		/// <summary>Airborne fight ticks by cause: aerial mode for a target overhead, an aerial pursuit, a perch flown to, the boss dance's lift, unknown aerial (0..4), a powered flight to a goal (5), anything else (jumps, dodge hops, falls) (6).</summary>
+		internal static readonly long[] StatAirWhy = new long[7];
+		internal byte _altWhy;
 		private static uint _bossSeenTick = uint.MaxValue; private static bool _bossSeen;
 
 		private void AirStatTick()
@@ -53,6 +56,7 @@ namespace Levy.Content.NPCs
 			bool hooked = _hkPhase == HookPhase.InFlight || _hkPhase == HookPhase.Reel;
 			if (_airGrounded || NPC.velocity.Y == 0f || NPC.wet || hooked) return;
 			StatAirTicks++;
+			if (_aerial) StatAirWhy[Math.Min((int)_altWhy, 4)]++; else if (_flying) StatAirWhy[5]++; else StatAirWhy[6]++;
 			if (spent > 0 || _drainAcc > 0f && _aerial)
 			{
 				if (Math.Abs(NPC.velocity.Y) < 0.6f && !_flying) { StatHoverTicks++; if (Abilities != null && !Abilities.CanHover) StatHoverNoGear++; }

@@ -477,7 +477,7 @@ def collect(rundir, outs, wall, nf, jobs):
                 if c in r: row[c] = r[c]
             for tk, tv in (tipsy.get(r["key"]) or {}).items():
                 if tk not in ("key", "tag", "seed"): row["tp_" + tk if tk in ("w", "c", "d", "m", "z", "b", "x") else tk] = tv
-            row.update(**{c: k.get(c, "") for c in ("hkCasts", "hookedSec", "hangSec", "wingHoldSec", "wingRelSec", "lavaCatches", "airPct", "wingSpentSec", "hoverSec", "hoverNoGearSec", "fightLevySec", "threatScans", "dodges", "dodgePartial", "dodgeNoBetter")}, rankSum=k.get("rankSum", ""), weaponDmg=k.get("weaponDmg", ""), classDmg=k.get("classDmg", ""), deathTimes=k.get("deathTimes", ""), job=o.parent.name)
+            row.update(**{c: k.get(c, "") for c in ("hkCasts", "hookedSec", "hangSec", "wingHoldSec", "wingRelSec", "lavaCatches", "airPct", "wingSpentSec", "hoverSec", "hoverNoGearSec", "fightLevySec", "threatScans", "dodges", "dodgePartial", "dodgeNoBetter", "airWhy")}, rankSum=k.get("rankSum", ""), weaponDmg=k.get("weaponDmg", ""), classDmg=k.get("classDmg", ""), deathTimes=k.get("deathTimes", ""), job=o.parent.name)
             if r["result"] == "ERROR": row["note"] = r.get("perLevy", "")
             rows.append(row)
     want = {(c["id"], int(s)) for c in json.loads((rundir / "cells.json").read_text())["cells"] for s in c["seeds"]}

@@ -296,6 +296,8 @@ namespace Levy.Common.Targeting
 		private static bool BossAllowlisted(NPC npc)
 		{
 			if (!BossAggroUnlocked(npc)) return false;
+			// The commander (every real player) is dead or gone: the fight is lost. The boss is not handed to the army; its own AI sees no live player, leaves and despawns as it does with no levies.
+			if (LostFightOn && !AnyLivePlayer()) return false;
 			// Skeletron / Skeletron Prime must not be drawn onto the army once it is daytime: they enrage lethally at dawn and would
 			// endlessly massacre the deathless, respawning soldiers. At day they fight the commander as vanilla and despawn on vanilla's terms.
 			if (BossPersistenceGlobalNPC.IsDaytimeExcluded(npc)) return false;
@@ -649,6 +651,26 @@ namespace Levy.Common.Targeting
 			if (_nullPlayer == null || ReferenceEquals(cur, _nullPlayer)) { _nullPlayer = cur; return; }
 			if (IsAnyDummy(cur)) Main.player[SoldierNPC.DummySlot] = _nullPlayer;
 			else _nullPlayer = cur; // tModLoader re-creates the slot on load; adopt whatever legitimately lives there
+		}
+
+		/// <summary>
+		/// True while a real player is alive: active, not dead, not a ghost (a Spectator hidden for a target search counts as alive), and not a levy's stand-in lent into the flyer slot. With none, a boss's fight
+		/// is lost: it is not drawn onto the army (<see cref="BossAllowlisted"/>) nor kept alive by it (BossPersistenceGlobalNPC), so it flees and despawns on its own AI's terms.
+		/// </summary>
+		/// <summary>LEVY_LOSTFIGHT=0 turns the lost-fight rule off (A/B switch for the lab and the world check): a boss stays on the army after the commander dies.</summary>
+		internal static readonly bool LostFightOn = Environment.GetEnvironmentVariable("LEVY_LOSTFIGHT") != "0";
+
+		internal static bool AnyLivePlayer()
+		{
+			for (int i = 0; i < Main.maxPlayers; i++)
+			{
+				Player p = Main.player[i];
+				if (p == null || !p.active) continue;
+				if (p.dead || p.ghost) { if (p.TryGetModPlayer(out Potions.SpectatorPlayer sp) && sp.Hidden) return true; continue; }
+				if (i == FlyerSlot && IsAnyDummy(p)) continue;
+				return true;
+			}
+			return false;
 		}
 
 		private static bool IsAnyDummy(Player p)

@@ -24,7 +24,7 @@ namespace Levy.Common.Systems
 		private static readonly Dictionary<string, int> _armyCaps = new();
 
 		private struct Opening { public string Commander; public Vector2 Spot; public bool UseSpot; }
-		/// <summary>Places freed this tick by a soldier who fell while his commander has an active army size; filled at the end of the same tick (<see cref="PostUpdateEverything"/>).</summary>
+		/// <summary>Places freed this tick by a soldier who fell while his commander has an active army size; filled after the NPC phase or at the end of the same tick (<see cref="DrainOpenings"/>).</summary>
 		private readonly List<Opening> _openings = new();
 		private readonly List<SoldierRecord> _armyScratch = new();
 

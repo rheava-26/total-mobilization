@@ -443,3 +443,53 @@ Nothing else provably identical worth 0.2 ms turned up:
 - The gear frame (section 8) is the rest.
 
 **Ship world** (serial, both halves, `SHIPWORLD_SERIAL=1 SHIPWORLD_TIMEOUT=1500`, 1,260 s): **0 FAIL**, 2,073 PASS (the known summon-staff pick line excluded as always). The new checks pass in both halves (the cursor-shot and compiled-accessor checks need Calamity: the Calamity half); the attribution cost on the ship army is 4.1 us per tick at 45 levies and 300 shots.
+
+
+## 10. Active army size: the player's own lever (activecap, 11-19)
+
+Eve asked for a tool she chooses: "you can set an amount of levies that can be active at once, and when one dies, it's immediately replaced by the next levy, who takes their place and spawns in immediately", and for the game to say flat out when the army is more than her computer can run.
+
+### How it works (`Common/Systems/RosterSystem.ActiveArmy.cs`)
+
+The active army size is how many of one commander's Regulars have a body in the field at once. It is off by default (0: everyone fights). The rest stay on active duty: paid, holding their command points, taking orders, kit on the record. They simply have no body, the way soldiers over the render cap always waited. It is built on the existing deployment and reserve code, not beside it: `SpawnBody` refuses a body while the commander's field is full, so the respawn path, Remobilize and the deployment pass all respect it without changes of their own; lowering the size benches the lowest-priority soldiers in the field the way `Demobilize` does (live HP onto the record, the body retired, the kit kept), without putting them in the reserve.
+
+Who fights first is the deployment order, now with tie-breaks: the order (Follow with the commander online, then Patrol, then the rest), then grade (Champions, then Men-at-Arms), then enlistment. Officers, militia and drones are never limited.
+
+When a fielded soldier falls, his place is filled the same tick (after the NPC phase, before the deployment pass, and again at the end of the tick for deaths in the projectile phase) by the next soldier waiting, where the fallen one stood. Under Regroup he appears beside the commander (the existing Regroup spawn), and after a lava, drowning or thorn death he comes in where deployment would put him instead of on the hazard. The existing safe-spawn rule still keeps him out of a knot of enemies. A replacement is a living soldier who was waiting: the fallen one still costs his barracks one manpower and waits out his own respawn timer, then waits again if the field is full.
+
+The size is a setting of this computer, like Frame Skip: **Levy: Performance → Speed in big fights → Active army size**, sent to the server when the player enters a world and whenever it changes. It can also be set from three places:
+- the Barracks, on the reserve row beside Stand down all / Remobilize all: `-` `Active: 25` `+` `?` (Shift steps by 5; clicking the size clears it). The "?" says: "Set how many soldiers fight at once. When one falls, the next in reserve takes their place right away. Fewer soldiers on the field means less lag." A soldier waiting reads "Waiting in reserve" on his card.
+- the lag popup after a laggy fight where the army was the cost: a line "About N soldiers at once would run smoothly here. Set an active army size?", a `-` N `+` `?` stepper set to the suggestion, and a "Set active army to N" button (the old reserve-bank hook, now real).
+- the live notice (below).
+
+### The game says it flat out (`PerfAnalysis.ArmyNotice`, `PerfPopup.CheckLive`)
+
+As each 8-second analyzer window closes, once a session: if the whole window ran at 14 ms an update or more (or with Frame Skip Subtle under 0.8 of full speed), the army's own cost was at least 30% of the update, and at least ten of the player's soldiers were in the field, the corner window opens at once, mid-fight: "Your army is more than this computer can run smoothly (about N soldiers at once). Set an active army size?" with the same stepper and **Set active army to N** / **Open Levy settings** / **Don't ask again** (its own setting, so it does not silence the post-fight note). It stays up through the fight; the post-fight note still hides when a boss comes near.
+
+**The suggestion.** The army's measured cost per update (its bodies, its shots, other mods' hooks on them and the owner swaps: the weapon attribution's reference) shared over the soldier bodies it was measured on is the cost of one soldier; enough of the player's own soldiers come off to bring the update to 12 ms (with Frame Skip Subtle slowing the game, to whatever leaves room for that window's drawing inside one frame, at least 4 ms), never under 5. On her 11-17 laggy windows (15.9 ms an update, 44 soldiers, levy bodies 6.6 + army shots 3.6 = 10.2 ms) that is 27.
+
+### Measured (Solar Pillar, `pw=45`, Calamity, Master + Death, 2,400 ticks, one tML server; `lab/activecap/ac_pillar.tsv`, `ac_table.py`)
+
+`ac=N` is the harness token (0: no size, logged as the control). Update ms is the server analyzer's own per-window update time (first window skipped); army ms its army reference; the box was at load 14 to 18 throughout, so compare arms, not absolute numbers.
+
+| army, size | fights | update ms/tick | army ms/tick | in the field | dead at end | army damage/s | damage/s at 15 / 25 / 35 s |
+|---|---|---|---|---|---|---|---|
+| her 45, no size | 2 | 21.7 (19.7, 23.8) | 18.9 | 42 | 4 | 39,918 | 41.4k / 37.8k / 41.8k |
+| her 45, 30 | 2 | 15.9 (15.4, 16.4) | 13.1 | 30 | 12 | 41,179 | 39.6k / 44.1k / 40.3k |
+| her 45, 25 | 2 | 14.6 (14.0, 15.2) | 11.3 | 25 | 17 | 37,227 | 38.2k / 39.5k / 37.0k |
+| her 45, 20 | 2 | 11.4 (10.2, 12.5) | 8.3 | 20 | 23 | 35,141 | 37.5k / 37.6k / 36.9k |
+| her 34, no size | 3 | 14.2 (13.5, 16.2, 14.2) | 12.2 | 32 | 2 | 39,617 | 41.0k / 39.2k / 41.7k |
+| her 34, 30 | 3 | 14.9 (13.1, 15.2, 14.9) | 12.3 | 29 | 9 | 39,047 | 34.0k / 48.7k / 37.6k |
+| her 34, 25 | 3 | 13.8 (14.9, 13.8, 13.1) | 11.9 | 25 | 11 | 38,206 | 45.7k / 42.4k / 34.4k |
+| her 34, 20 | 3 | 10.6 (10.6, 12.0, 10.1) | 8.1 | 20 | 11 | 34,781 | 36.3k / 33.1k / 37.6k |
+
+OBSERVED. With her 45, a size of 20 halves the update (21.7 → 11.4 ms, the army's own share 18.9 → 8.3) for 12% less damage per second; 25 takes a third off for 7% less; 30 takes a quarter off for the same damage within noise. The damage per second holds flat across the fight in every capped arm: the field stays full (replacements arrive the tick a soldier falls; with 45, 4 were still waiting at the end of every capped fight) and the pressure stays up. With her 34 the 30 arm is effectively no limit (32 alive) and 25 is inside the box's noise; 20 cuts a quarter.
+
+OBSERVED, and a real cost: **more soldiers die** with a size set (45: 4 deaths uncapped, 12 / 17 / 23 at 30 / 25 / 20). Each death costs a manpower and a respawn wait, so a small size trades lag for attrition. Plausible causes, not yet separated: the pillar keeps 45 enemies alive whatever the army's size, so each fielded soldier draws more of them; a replacement comes in where the last one fell, at the front; fewer soldiers mean fewer heals, auras and set procs shared between them. A follow-up lab (replacement at the muster point vs at the spot, same size) would separate the second from the rest.
+
+INFERRED for her machine (a headless server cannot draw): the update scales with the arms above (20: 52%, 25: 67%, 30: 73% of uncapped), so her 15.9 ms becomes about 8.3 / 10.7 / 11.6 ms. With Frame Skip On the game spends 60 × update ms a second on updates and draws in what is left at about 12 ms a frame: (1000 − 60 × 15.9) / 12 ≈ 4 fps uncapped (her log: 3 to 5), and about 42 / 30 / 25 fps at full speed with sizes 20 / 25 / 30, before the drawing itself gets cheaper with fewer soldiers on screen. With Frame Skip Subtle, about 49 / 44 / 42 fps at 0.82 / 0.73 / 0.71 game speed (36 fps at 0.6 uncapped).
+
+### Checks
+
+- `[ActiveArmy]` world check (ship world, both halves; `LEVY_ACTIVEARMY_ONLY=1` runs it alone), 30 soldiers of one commander, three Champions enlisted last, size 20: the size holds through two deployment passes, one body per soldier; the Champions stay in the field and the last-enlisted Levies are benched; benching keeps all 120 items and the live HP; command points held by all; militia never limited; a soldier who falls is dead with his own respawn timer and is replaced within one tick by the lowest-id soldier waiting, where he fell (0.0 tiles); five falling in one tick are all replaced in that tick; after a lava death the replacement comes in beside the commander, not in the lava; under Regroup beside the commander; respawned soldiers are refused a body while the field is full; sizes 25 and none field the rest; a save and load round trip (records written and read back, bodies gone) gives back 30 records with unique ids, 20 in the field, one dead, one body each and every item; the live notice shows at once with the right size and words, only once a session, and Don't ask again silences it; the "?" text and the labels.
+- `PerfSelfTest` (boot and the command-line tool): the suggestion's arithmetic (27 for her numbers; the cut comes off the player's own soldiers; the floor of 5; nothing under budget or with a number missing; the largest army that lands at 12 ms), the post-fight offer (after Lower levy effects, with the size in words; never in the other-mod popup or when the frames were the cost), and the live notice's rules (14 ms, 0.8 speed with Subtle, the army's share, ten soldiers, focus). The option-count guard still expects six options; "reserve bank" is now "active army".

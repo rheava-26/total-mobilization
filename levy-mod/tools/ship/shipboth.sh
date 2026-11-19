@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The ship pipeline: build Levy, Mechanization and Warbands on the shipping toolchain (tML 2026.08), boot a vanilla headless
 # server with all three enabled, then the Calamity build/boot (shipcal.sh) and the world checks (shipworld.sh).
-#   shipboth.sh [--no-cal] [--no-world]      (SHIPWOTG=1 also runs the optional "wotg" configuration: shipwotg.sh)
+#   shipboth.sh [--no-cal] [--no-world]      (SHIPWOTG=1 also runs the optional "wotg" configuration: shipwotg.sh; SHIPMS=1 the optional Magic Storage boot: shipms.sh)
 # 1. build on tML 2026.08 into $SAVE08/Mods (needs ThoriumMod + MagicStorage + SerousCommonLib there: setup_toolchain.sh)
 # 2. copy (never link) the three tmods to $VERIFY_SAVE/Mods and boot the PRIVATE vanilla install $SHIPNORM against it. No world:
 #    the boot stops at the world menu after "Finalizing Content" + the load-time self-checks.
@@ -43,5 +43,10 @@ else echo "NO LOG at $L"; fi
 if [ "${SHIPWOTG:-0}" = 1 ]; then
   echo "######## 5/5 WOTG (shipwotg) ########"
   if [ $NOWORLD = 1 ]; then "$SHIP_DIR/shipwotg.sh"; else "$SHIP_DIR/shipwotg.sh" --world; fi
+fi
+# OPTIONAL, off by default: SHIPMS=1 adds Calamity + Magic Storage (shipms.sh: Levy's Magic Storage boot self-check, crafting with armory racks)
+if [ "${SHIPMS:-0}" = 1 ]; then
+  echo "######## MS (shipms) ########"
+  "$SHIP_DIR/shipms.sh"
 fi
 echo "######## shipboth done in $((SECONDS - T0))s ########"

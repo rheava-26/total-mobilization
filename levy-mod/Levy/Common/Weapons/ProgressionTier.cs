@@ -26,6 +26,9 @@ namespace Levy.Common.Weapons
 		private static bool _built;
 		internal static double BuildMs; internal static int BossRoutes, ShopRoutes, Recipes;
 
+		/// <summary>Bumped whenever the table changes (built, reset, or a test table installed), so caches built on it know to rebuild.</summary>
+		internal static int Version;
+
 		/// <summary>True once the table is built.</summary>
 		public static bool Ready => _t != null;
 
@@ -52,16 +55,16 @@ namespace Levy.Common.Weapons
 			if (_built || Main.netMode == NetmodeID.MultiplayerClient) return;
 			_built = true;
 			var sw = Stopwatch.StartNew();
-			try { _t = Solve(Gather()); }
-			catch (Exception e) { _t = null; _found = null; log?.Invoke("progression tiers failed: " + e.GetType().Name + ": " + e.Message); return; }
+			try { _t = Solve(Gather()); Version++; }
+			catch (Exception e) { _t = null; _found = null; Version++; log?.Invoke("progression tiers failed: " + e.GetType().Name + ": " + e.Message); return; }
 			BuildMs = sw.Elapsed.TotalMilliseconds;
 			log?.Invoke($"progression tiers: {BossRoutes} boss-loot items, {ShopRoutes} shop items, {Recipes} recipes, {BuildMs:F0} ms");
 		}
 
-		internal static void Reset() { _t = null; _found = null; _built = false; }
+		internal static void Reset() { _t = null; _found = null; _built = false; Version++; }
 
 		/// <summary>Self-check seam: installs a made-up table (and, optionally, which types count as found).</summary>
-		internal static void SetForTest(float[] table, bool[] found = null) { _t = table; _found = found; _built = true; }
+		internal static void SetForTest(float[] table, bool[] found = null) { _t = table; _found = found; _built = true; Version++; }
 
 		// ------------------------------------------------------------------ data
 

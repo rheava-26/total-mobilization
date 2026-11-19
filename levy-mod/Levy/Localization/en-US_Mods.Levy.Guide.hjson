@@ -246,6 +246,7 @@ Pages: {
 			With Magic Storage installed, an Armory Heart joins the nearest Armory to a Magic Storage network.
 			Connect the heart to a Storage Heart with connectors.
 			Orders and buying draw from the network, and overflow goes into it.
+			The network's Crafting Interface crafts with the armory's racks: storage and the weapon rack. A weapon crafted from an armory weapon goes back to that armory. Favorited items and gear a levy carries are never used. Single player only.
 			An Armory near a Storage Heart, Storage Access or Remote Access can issue gear from that network.
 			Armories in a settlement with a pylon pool their stored gear with each other.
 			'''

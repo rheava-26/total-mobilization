@@ -29,6 +29,8 @@ namespace Levy.Common.Weapons
 				try { body(); }
 				catch (Exception e) { failures.Add($"{name} threw {e.GetType().Name}: {e.Message}"); }
 			}
+			LevyFit.SetForTest(new()); // these checks pin the price, stage and found terms; the measured levy table has its own check (TierRankCheck)
+			try {
 			Guard("cost solver", () => CheckSolver(Check));
 			Guard("real recipes", () => CheckRealRecipes(Check));
 			Guard("sword shots", () => CheckSwordShots(Check));
@@ -45,6 +47,7 @@ namespace Levy.Common.Weapons
 				try { Guard($"mode consistency {mode}/skip={skip}", () => CheckConsistency(Check, mode)); }
 				finally { WeaponRank.Release(); }
 			}
+			} finally { LevyFit.SetForTest(null); }
 			try
 			{
 				if (failures.Count == 0) Mod.Logger.Info($"Levy weapon ranking self-check: {ok} checks OK (material cost: {MaterialCost.RecipesRead} recipes, {MaterialCost.Passes} passes, {MaterialCost.SolveMs:F0} ms)");

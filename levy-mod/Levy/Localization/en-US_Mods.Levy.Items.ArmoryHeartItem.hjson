@@ -3,4 +3,5 @@ Tooltip:
 	'''
 	Joins the nearest Armory to a Magic Storage network
 	Orders and buying draw from the network
+	The Crafting Interface crafts with the armory's racks
 	'''

@@ -775,6 +775,7 @@ namespace Levy.Common.Systems
 		public override void PostUpdateNPCs()
 		{
 			if (LevyUtil.IsClient) return;
+			DrainOpenings(); // an active army size: soldiers who fell in the NPC phase are replaced where they fell, before the deployment pass below
 			if (RallyCooldown > 0) RallyCooldown--;
 			TickDeserters();
 			if (++_deployTimer >= LevyConstants.DeployIntervalTicks)

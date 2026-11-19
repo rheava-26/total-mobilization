@@ -133,11 +133,15 @@ namespace Levy.Common.Systems
 		private void NoteOpening(SoldierRecord rec, Vector2 where, int killerNpcType)
 		{
 			if (rec == null || rec.Kind != SoldierKind.Regular || ArmyCapOf(rec.CommanderName) <= 0) return;
-			bool hazard = killerNpcType == LevyConstants.EnvKillerLava || killerNpcType == LevyConstants.EnvKillerDrowning || killerNpcType == LevyConstants.EnvKillerFall || killerNpcType == LevyConstants.EnvKillerHazard;
-			_openings.Add(new Opening { Commander = rec.CommanderName, Spot = where, UseSpot = !hazard }); // lava, water, a fall or thorns: not on the same spot
+			// lava, water or thorns: not on the same spot. A fall is not one (he landed on ground; -1 is also "no attacker known")
+			bool hazard = killerNpcType == LevyConstants.EnvKillerLava || killerNpcType == LevyConstants.EnvKillerDrowning || killerNpcType == LevyConstants.EnvKillerHazard;
+			_openings.Add(new Opening { Commander = rec.CommanderName, Spot = where, UseSpot = !hazard });
 		}
 
-		public override void PostUpdateEverything()
+		public override void PostUpdateEverything() => DrainOpenings();
+
+		/// <summary>Fills the places freed since the last call. Run after the NPC phase (before the deployment pass, which would otherwise field the waiting soldier at the muster point) and at the end of the tick (deaths in the projectile and player phases).</summary>
+		private void DrainOpenings()
 		{
 			if (LevyUtil.IsClient || _openings.Count == 0) return;
 			int made = 0;

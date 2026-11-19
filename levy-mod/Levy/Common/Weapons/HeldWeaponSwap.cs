@@ -124,6 +124,7 @@ namespace Levy.Common.Weapons
 			{
 				hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(item.shoot); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0;
 				if (hg.ModHolder && ModShotKinds.ChargeRelease(item) is ChargePlan cp) { hg.CycleRelease = true; hg.ReleaseOnKill = false; hg.HoldMax = cp.HoldTicks; hg.Linger = cp.LingerTicks; }
+				if (hg.CycleRelease && RogueGrenade.Is(item)) { hg.Grenade = true; hg.HoldMax = RogueGrenade.CapTicks; } // the Doomsday Device: let go on a full charge, held inside the grace for a full bar (RogueGrenade)
 				if (hg.ModHolder && ModShotKinds.CursorScriptOf(item) is CursorScript cs) hg.Script = cs;
 			}
 			p.direction = dir.X < 0f ? -1 : 1;
@@ -350,7 +351,15 @@ namespace Levy.Common.Weapons
 				// a modded charge-and-release holdout is held for a charge, then let go (its shot is made when it ends)
 				release = g.ReleaseOnKill && feed && ++g.HeldTicks > g.HoldMax;
 				// a charge-by-button holdout (ModShotKinds.ChargeRelease) is held for its charge, the button is let go for the rest of its life (it fires on the release and keeps its recoil pose), and it is ended after the linger so the next one is cast
-				if (g.CycleRelease && feed)
+				if (g.CycleRelease && g.Grenade)
+				{
+					// a grenade: let go on the full charge (and the full bar, see RogueGrenade.ReleaseNow); once thrown it flies, ricochets and falls by itself like a player's, and the hand is free for the next one
+					// as soon as Calamity's own gate allows (localAI[1] = 5 a few ticks into the flight). It is never cut short.
+					if (feed && !g.Released) { ++g.HeldTicks; if (RogueGrenade.ReleaseNow(body, p, g.HeldTicks)) g.Released = true; }
+					release = g.Released;
+					if (g.Released && _holder.TryGetValue(idx, out int hi) && hi == p.whoAmI && RogueGrenade.HandFree(p)) _holder.Remove(idx);
+				}
+				else if (g.CycleRelease && feed)
 				{
 					++g.HeldTicks;
 					release = g.HeldTicks > g.HoldMax;
@@ -449,6 +458,8 @@ namespace Levy.Common.Weapons
 			ArkSwings.DamageScope ark = g.Ark != ArkRole.None ? new ArkSwings.DamageScope(body, p, g) : default; // an Ark's blade reads its owner's centre: the real player stands at the soldier for the call
 			BiomeBlades.DamageScope bb = g.Biome != 0 ? new BiomeBlades.DamageScope(body, p, g) : default; // a Biome Blade's too, with the soldier's blade in the real player's hand
 			RealWhips.DamageScope wh = g.Whip && item0 != null ? new RealWhips.DamageScope(body, item0) : default; // a lash's hit writes the owner (the minion focus, the item's on-hit hooks): the commander is put back as it was
+			// a rogue weapon's hit that writes its owner's stealth bar (the Doomsday Device gives back 30% of it on a plain hit) writes the LEVY's bar: the real player's bar is lent the levy's values for the call
+			StealthLend lend = g.Grenade ? StealthLend.Begin(body) : default;
 			try
 			{
 				p.owner = SoldierMinions.TrueMyPlayer;
@@ -456,6 +467,7 @@ namespace Levy.Common.Weapons
 			}
 			finally
 			{
+				lend.End();
 				if (p.type == savedType) p.owner = savedOwner; // undo only our own edit: if the cascade killed p and recycled its slot, the new projectile keeps its owner
 				ark.Dispose();
 				bb.Dispose();
@@ -556,6 +568,8 @@ namespace Levy.Common.Weapons
 		public bool ModHolder, ReleaseOnKill;
 		/// <summary>A charge-by-button holdout (see ModShotKinds.ChargeRelease): held HoldMax ticks, released, ended Linger ticks later.</summary>
 		public bool CycleRelease;
+		/// <summary>A held-then-thrown grenade (RogueGrenade, the Doomsday Device): let go on its full charge, then left to fly; Released once the button has been let go.</summary>
+		public bool Grenade, Released;
 		/// <summary>A projectile a holdout's AI made that stays bound to it (see OwnerLockProbe.BoundToHolder): it and what it spawns stay in the chain.</summary>
 		public bool BoundChild;
 		public int HeldTicks, HoldMax, Linger;

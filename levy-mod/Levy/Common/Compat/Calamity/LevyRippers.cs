@@ -202,6 +202,8 @@ namespace Levy.Common.Compat.Calamity
 		public static bool IsRogue(object cp) { try { return cp != null && _stealthMax != null && (float)_stealthMax.GetValue(cp) > 0f; } catch (Exception) { return false; } }
 		public static float Stealth(object cp) { try { return _stealth == null ? 0f : (float)_stealth.GetValue(cp); } catch (Exception) { return 0f; } }
 		public static float StealthMax(object cp) { try { return _stealthMax == null ? 0f : (float)_stealthMax.GetValue(cp); } catch (Exception) { return 0f; } }
+		/// <summary>Writes the bar (and its size): the lend of a levy's bar to the real player for a hit that writes "the owner's" bar (HeldWeapons.RunDamage). False when unwritable.</summary>
+		public static bool SetStealth(object cp, float value, float max) { try { if (cp == null || _stealth == null || _stealthMax == null) return false; _stealthMax.SetValue(cp, max); _stealth.SetValue(cp, value); return true; } catch (Exception) { return false; } }
 		/// <summary>Calamity's stealth regeneration speed for the player's gear: 1 fills the bar in two seconds standing still; moving it is halved (BalancingConstants.MovingStealthGenRatio) before the move multiplier.</summary>
 		public static float StealthGen(object cp, bool moving)
 		{

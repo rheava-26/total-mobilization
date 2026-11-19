@@ -70,6 +70,8 @@ namespace Levy.Common.Weapons
 			["CalamityMod/AuroradicalThrow"] = RogueMode.Spam, // spam 683, strike 479 dps (x0.70) boss x0.86
 			["CalamityMod/BallisticPoisonBomb"] = RogueMode.Situational, // spam 650, strike 627 dps (x0.96) boss x0.97
 			["CalamityMod/StellarKnife"] = RogueMode.Spam, // spam 490, strike 494 dps (x1.01) boss x0.83
+			["CalamityMod/TheSyringe"] = RogueMode.Spam, // rogue army sweep (a stand-in player, Statigel, 30 s): spam 1235, strike 818 dps (x0.66), crowd x0.48
+			["CalamityMod/RegulusRiot"] = RogueMode.Spam, // rogue army sweep: spam 972, strike 836 dps (x0.86), crowd x0.89
 			["CalamityMod/Whitewater"] = RogueMode.Spam, // spam 351, strike 250 dps (x0.71) boss x0.96
 			["CalamityMod/DeepWounder"] = RogueMode.Wait, // spam 328, strike 443 dps (x1.35) boss x1.01
 			["CalamityMod/Apoctolith"] = RogueMode.Wait, // spam 7, strike 270 dps (x36.22) boss x0.99

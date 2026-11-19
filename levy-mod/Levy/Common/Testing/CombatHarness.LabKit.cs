@@ -69,13 +69,13 @@ namespace Levy.Common.Testing
 		/// <summary>Station object wanted by name (null list = the level-based default).</summary>
 		private static bool KitWant(string name, bool byLevel) => _kitSt == null ? byLevel : _kitSt.Contains(name);
 
-		private static int _kitCasts0; private static long _kitHooked0, _kitHang0, _kitWh0, _kitWr0, _kitLava0, _kitFt0, _kitAir0, _kitWs0, _kitHv0, _kitHn0;
+		private static int _kitCasts0; private static long _kitHooked0, _kitHang0, _kitWh0, _kitWr0, _kitLava0, _kitFt0, _kitAir0, _kitWs0, _kitHv0, _kitHn0, _kitTs0, _kitDg0, _kitDp0, _kitDn0;
 		private void KitFinish(CrRun run, CrState st)
 		{
 			try
 			{
 				string path = _crOut + ".kit.tsv";
-				if (!File.Exists(path)) File.WriteAllText(path, "key\ttag\tn\tavgHp\trankSum\tweaponDmg\tclassDmg\tdeathTimes\thkCasts\thookedSec\thangSec\twingHoldSec\twingRelSec\tlavaCatches\tairPct\twingSpentSec\thoverSec\thoverNoGearSec\tfightLevySec\n");
+				if (!File.Exists(path)) File.WriteAllText(path, "key\ttag\tn\tavgHp\trankSum\tweaponDmg\tclassDmg\tdeathTimes\thkCasts\thookedSec\thangSec\twingHoldSec\twingRelSec\tlavaCatches\tairPct\twingSpentSec\thoverSec\thoverNoGearSec\tfightLevySec\tthreatScans\tdodges\tdodgePartial\tdodgeNoBetter\n");
 				var cd = new Dictionary<string, long>(); var wd = new Dictionary<string, long>(); double rank = 0;
 				foreach (var l in st.Levies)
 				{
@@ -89,9 +89,10 @@ namespace Levy.Common.Testing
 					string.Join(" ", cd.Select(kv => kv.Key + "=" + kv.Value)),
 					string.Join(",", st.Levies.Where(l => l.Dead).Select(l => l.DeathTick / 60.0).OrderBy(x => x).Select(f1)),
 					SoldierHooks.Casts - _kitCasts0, f1((SoldierNPC.StatHookedTicks - _kitHooked0) / 60.0), f1((SoldierNPC.StatHangTicks - _kitHang0) / 60.0), f1((SoldierNPC.StatWingHoldTicks - _kitWh0) / 60.0), f1((SoldierNPC.StatWingRelTicks - _kitWr0) / 60.0), SoldierNPC.StatLavaCatches - _kitLava0,
-					f1(SoldierNPC.StatFightTicks - _kitFt0 > 0 ? 100.0 * (SoldierNPC.StatAirTicks - _kitAir0) / (SoldierNPC.StatFightTicks - _kitFt0) : 0), f1((SoldierNPC.StatWingSpent - _kitWs0) / 60.0), f1((SoldierNPC.StatHoverTicks - _kitHv0) / 60.0), f1((SoldierNPC.StatHoverNoGear - _kitHn0) / 60.0), f1((SoldierNPC.StatFightTicks - _kitFt0) / 60.0) }) + "\n");
+					f1(SoldierNPC.StatFightTicks - _kitFt0 > 0 ? 100.0 * (SoldierNPC.StatAirTicks - _kitAir0) / (SoldierNPC.StatFightTicks - _kitFt0) : 0), f1((SoldierNPC.StatWingSpent - _kitWs0) / 60.0), f1((SoldierNPC.StatHoverTicks - _kitHv0) / 60.0), f1((SoldierNPC.StatHoverNoGear - _kitHn0) / 60.0), f1((SoldierNPC.StatFightTicks - _kitFt0) / 60.0), SoldierNPC.StatThreatScans - _kitTs0, SoldierNPC.StatDodges - _kitDg0, SoldierNPC.StatDodgePartial - _kitDp0, SoldierNPC.StatDodgeNoBetter - _kitDn0 }) + "\n");
 				_kitCasts0 = SoldierHooks.Casts; _kitHooked0 = SoldierNPC.StatHookedTicks; _kitHang0 = SoldierNPC.StatHangTicks; _kitWh0 = SoldierNPC.StatWingHoldTicks; _kitWr0 = SoldierNPC.StatWingRelTicks; _kitLava0 = SoldierNPC.StatLavaCatches;
 				_kitFt0 = SoldierNPC.StatFightTicks; _kitAir0 = SoldierNPC.StatAirTicks; _kitWs0 = SoldierNPC.StatWingSpent; _kitHv0 = SoldierNPC.StatHoverTicks; _kitHn0 = SoldierNPC.StatHoverNoGear;
+				_kitTs0 = SoldierNPC.StatThreatScans; _kitDg0 = SoldierNPC.StatDodges; _kitDp0 = SoldierNPC.StatDodgePartial; _kitDn0 = SoldierNPC.StatDodgeNoBetter;
 			}
 			catch (Exception e) { Mod.Logger.Warn("HARNESS-KIT: finish row failed: " + e.Message); }
 		}

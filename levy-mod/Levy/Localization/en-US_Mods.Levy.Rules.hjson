@@ -125,6 +125,10 @@ BreakFound: Found weapon x{0}
 BreakRules: Rules x{0} ({1})
 BreakRulesNone: Rules x1
 BreakArmored: Armored foes shrug it off.
+BreakBand: Progression band x{0}
+BreakFitOk: Measured in levy hands x{0}
+BreakFitWeak: Weak in levy hands x{0}
+BreakBroken: Broken in levy hands. Never issued unless set or preferred.
 BreakSet: Override: rank set to {0}
 BreakNever: Override: never used
 BreakPrefer: Override: always preferred

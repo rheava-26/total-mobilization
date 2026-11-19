@@ -298,7 +298,11 @@ namespace Levy.Common.UI
 				lines.Add((LevyUtil.T("Rules.BreakStage", b.Stage.ToString("0.##")), b.Stage < 1f ? warn : dim));
 				lines.Add((LevyUtil.T("Rules.BreakRecency", b.Recency.ToString("0.##")), dim));
 				lines.Add((LevyUtil.T("Rules.BreakFound", b.Found.ToString("0.##")), dim));
+				if (b.Band != 1f) lines.Add((LevyUtil.T("Rules.BreakBand", b.Band.ToString("0.###")), b.Band < 1f ? warn : dim));
+				if (b.FitStatus == global::Levy.Common.Weapons.FitStatus.Ok) lines.Add((LevyUtil.T("Rules.BreakFitOk", b.Fit.ToString("0.##")), dim));
+				else if (b.FitStatus == global::Levy.Common.Weapons.FitStatus.Weak) lines.Add((LevyUtil.T("Rules.BreakFitWeak", b.Fit.ToString("0.###")), warn));
 			}
+			if (b.Broken) lines.Add((LevyUtil.T("Rules.BreakBroken"), warn));
 			lines.Add((b.Rules != 1f ? LevyUtil.T("Rules.BreakRules", b.Rules.ToString("0.##"), b.RuleNote) : LevyUtil.T("Rules.BreakRulesNone"), dim));
 			if (b.Negligible) lines.Add((LevyUtil.T("Rules.BreakArmored"), warn));
 			if (b.Override == RankOverrideMode.Set) lines.Add((LevyUtil.T("Rules.BreakSet", b.OverrideValue.ToString("0.#")), warn));

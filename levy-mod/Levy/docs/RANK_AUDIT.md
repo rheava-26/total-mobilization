@@ -79,3 +79,19 @@ I recommend 1 then 2, behind the same `ScoreRanked`-style switch, each validated
 
 ## Reproduce
 Private toolchain, Calamity enabled: build, then `LEVY_RANKAUDIT=/path/dump.tsv dotnet tModLoader.dll -server -nosteam -tmlsavedirectory <save> -world <world>`; the dump is written about 10 seconds after the world loads. `LEVY_RANKAUDIT_MODS=CalamityMod,ThoriumMod` adds mods.
+
+## TIER BANDS AND THE MEASURED TABLE (armory2)
+
+Trigger: "Why are they using post-Golem weapons over direct Moon Lord drops?" At world progress 18 a post-Golem Calamity weapon (Astrum Deus, tier 17.5) and a Moon Lord drop were within 1.2x on price, and a fresh deposit (x1.6) beat an old Moon Lord drop.
+
+Balanced rank, in order (`WeaponRank.Core`):
+1. Base: value^0.7 (minion staves, sentries, whips: Score x copper per point).
+2. Stage discount: exp(-(gap/7)^3) for a weapon the world has outgrown (unchanged).
+3. Tier band: x6 per band the weapon is ahead of the world, /6 per band behind. Bands start at the mechanical bosses (9), Plantera (12), Golem (13), Moon Lord (18), Providence (19), Polterghast (20), the Devourer of Gods (21), Yharon (22), Supreme Calamitas (23); everything before the mechanical bosses is one band. Tier is `ProgressionTier` (boss drop, shop, recipe, rarity floor including Calamity's custom rarities). World progress now also reads Calamity's post-Golem bosses (`Call("Downed", ...)`).
+4. Measured fit (`LevyFit`, table `Common/Weapons/LevyFit.tsv` from `tools/gen_levy_fit.py` over `docs/ARMYSWEEP_DPS.tsv` and `docs/ENDGAME_SWEEP.tsv`): WEAK (under 0.6 of a player's damage) = ratio/0.6, then one band lost (/6); OK = sqrt(levy DPS / median levy DPS of the band's measured OK weapons), held to 0.75..1.33 (needs 3 measured weapons in the band); unmeasured, NOREF and rows a later fix covers = 1.
+5. Found x1.12, recency up to x1.6, armory rules, armor skip, overrides (unchanged).
+6. BROKEN (every mode): rank 0 and never issued (`ArmoryTE.IsIssuable`), unless the armory's per-item override sets or prefers it.
+
+Why 6: the spread inside one band is price up to 1.4x, measured DPS 1.8x, fresh deposit 1.6x (4.0x together). 4 let a fresh Apathanull (Deus, 1105 levy DPS) pass an old Celebration Mk2.
+
+Check: `TierRankCheck` (boot, both halves): every working Moon Lord drop, deposited long ago, outranks every post-Golem weapon of the real table deposited just now (vanilla 85, Calamity 188) and puts the best of them outside the 0.75 variety band; an armory offered an old Meowmere and the best fresh post-Golem melee weapon arms the levy with the Meowmere; a weapon marked BROKEN ranks 0 in every mode, is passed over for a working Terra Blade and is not issued alone; every real BROKEN row ranks 0; the table resolves. It logs `[TierRank] OBSERVED` before/after picks per class at progress 18.

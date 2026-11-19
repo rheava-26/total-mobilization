@@ -26,6 +26,13 @@ namespace Levy.Common.Weapons
 	///   FoundBoost = 1.12 for a weapon with no recipe that no shop sells (drops, chests, shrines, fishing): a little above a crafted weapon of the same price, and below the 1.15 swap margin so a clearly better crafted weapon still wins.
 	///   RecencyBoost(a) = 1 + 0.6 x exp(-a^2), a in game days since deposit: x1.6 at once, x1.47 after half a day, x1.22 after one, x1.06 after a day and a half, x1.01 after two. 1.6 clears the 1.15 swap margin with room,
 	///   and on the value^0.7 scale it is worth a 1.96x sell price: a fresh weapon beats an older one down to about half its price, while a fresh weapon a quarter of the price (rank 0.38 x 1.6 = 0.6) loses to it.
+	/// TIER BANDS (Balanced). Past early Hardmode, progression comes in bands whose weapons are a clear step up: <see cref="BandEdges"/> = after the mechanical bosses (9), Plantera (12), Golem (13), Moon Lord (18),
+	///   then Calamity's Providence (19), Polterghast (20), Devourer of Gods (21), Yharon (22) and Supreme Calamitas (23). Everything before the mechanical bosses is one band, ranked as above. The rank is multiplied
+	///   by <see cref="BandLift"/> (6) per band the weapon is ahead of the world, divided by it per band behind. 6 is more than the spread inside one band (price up to 1.4x, measured DPS 1.8x, a fresh deposit 1.6x: 4.0x together; the 4 first tried let a fresh Apathanull pass an old Celebration Mk2),
+	///   so a Moon Lord drop beats every post-Golem weapon however fresh, and a weapon one band behind is out of the 0.75 variety band of the best. The world's progress reads Calamity's post-Golem bosses too.
+	/// MEASURED (Balanced; <see cref="LevyFit"/>, from the army and endgame sweeps, levy vs a stand-in player): a WEAK weapon (under 0.6 of a player's damage) loses one band and is scaled by its ratio over 0.6;
+	///   a working (OK) weapon is scaled within its band by sqrt(its levy DPS / the band's median measured levy DPS), held to 0.75..1.33, so the measured damage in levy hands decides between weapons of one band, not the
+	///   tooltip. In every mode a BROKEN weapon (no damage in levy hands, or its shots come from the commander) ranks 0 and is never issued, unless the armory's per-item override sets or prefers it.
 	/// ARMOR. With <see cref="SkipArmored"/> (price modes only) a weapon whose hit mostly bounces off the defense of enemies at the world's stage ranks below every weapon that does real damage; see <see cref="Negligible"/>.
 	/// </summary>
 	public static class WeaponRank
@@ -38,10 +45,20 @@ namespace Levy.Common.Weapons
 		public const float RecentBoostMax = 0.6f, RecentDays = 1f;
 		/// <summary>Balanced: a weapon nobody crafts or sells (<see cref="ProgressionTier.IsFound"/>: a drop, a chest or shrine find, a catch) ranks this much higher than a crafted weapon of the same price. Kept under the 1.15 swap margin, so a crafted weapon that is clearly better still wins.</summary>
 		public const float FoundBoost = 1.12f;
+		/// <summary>Balanced: the rank multiplies by this per progression band the weapon is ahead of the world's band, and divides by it per band behind (see the class summary).</summary>
+		public const float BandLift = 6f;
+		/// <summary>Balanced: where each progression band starts, on the Boss Checklist scale: after the mechanical bosses, Plantera, Golem, Moon Lord, Providence, Polterghast, the Devourer of Gods, Yharon, Supreme Calamitas.</summary>
+		public static readonly float[] BandEdges = { 9f, 12f, 13f, 18f, 19f, 20f, 21f, 22f, 23f };
+
+		/// <summary>The progression band of a tier (0 = up to early Hardmode, then one per <see cref="BandEdges"/> entry passed).</summary>
+		public static int Band(float tier) { int b = 0; for (int i = 0; i < BandEdges.Length; i++) if (tier >= BandEdges[i]) b++; return b; }
+
 		/// <summary>A blade or shortsword that fires nothing (<see cref="WeaponProfile.IsPureContactBlade"/>) ranks at this fraction of its normal rank in every mode, so a levy takes any melee weapon that launches a projectile or beam (Enchanted Sword, Beam Sword, Starfury, Terra Blade; <see cref="WeaponProfile.FiresProjectileMelee"/>) first and falls back to a plain blade only when nothing else on the shelf is current. Spears, yoyos, flails, whips and boomerangs are not touched. The stage discount still applies, so an outdated weapon loses to a current one of either kind.</summary>
 		public const float PureContactFactor = 0.15f;
 		/// <summary>Probe seam: false restores the pre-change ranking (the boss trials' baseline).</summary>
 		internal static bool PureContactPenalty = true;
+		/// <summary>Probe seam: false turns off the tier bands, the measured levy table and the Calamity progress read (the ranking before them), so a check can show a pick before and after.</summary>
+		internal static bool TierAware = true;
 		/// <summary>A weapon whose hit lands less than this share of its damage on an enemy at the world's stage defense is negligible.</summary>
 		public const float NegligibleShare = 0.25f;
 		/// <summary>Defense of the tougher ordinary enemies by progression stage: before Eye of Cthulhu, after it, after Skeletron, Hardmode, after the mechanical bosses, after Plantera, after Golem.</summary>
@@ -86,6 +103,10 @@ namespace Levy.Common.Weapons
 			/// <summary>The item's progression tier (-1 = none), how many stages the world is past it, and the Balanced discount that follows.</summary>
 			public float Tier, Gap, Stage;
 			public float Recency, Found;
+			/// <summary>Balanced: the band factor (<see cref="BandLift"/> per band ahead of the world, 1 / it per band behind) and the measured-in-levy-hands factor with its status.</summary>
+			public float Band, Fit; public FitStatus FitStatus;
+			/// <summary>Measured BROKEN in levy hands: ranks 0 unless a per-item override sets or prefers it.</summary>
+			public bool Broken;
 			/// <summary>The armory's weight rules: the product, and which rules matched.</summary>
 			public float Rules; public string RuleNote;
 			public bool Negligible;
@@ -107,7 +128,7 @@ namespace Levy.Common.Weapons
 			var rules = ArmoryRules.Current;
 			ItemOverride ov = rules?.OverrideOf(it.type);
 			bool excluded = rules != null && rules.Excluded(it);
-			if (explain) { bd.Mode = mode; bd.Rules = 1f; bd.Recency = 1f; bd.Found = 1f; bd.Stage = 1f; bd.Tier = -1f; bd.Excluded = excluded; if (ov != null) { bd.Override = ov.Rank; bd.OverrideValue = ov.Value; } }
+			if (explain) { bd.Mode = mode; bd.Rules = 1f; bd.Recency = 1f; bd.Found = 1f; bd.Stage = 1f; bd.Tier = -1f; bd.Band = 1f; bd.Fit = 1f; bd.Excluded = excluded; if (ov != null) { bd.Override = ov.Rank; bd.OverrideValue = ov.Value; } }
 			if (excluded && !explain) return 0f;
 			float r;
 			if (mode == WeaponRankMode.Damage) { r = WeaponClassifier.Score(it); if (explain) { bd.Key = r; bd.Base = r; } }
@@ -121,7 +142,14 @@ namespace Levy.Common.Weapons
 				if (mode == WeaponRankMode.Balanced)
 				{
 					float tier = ProgressionTier.Of(it.type);
-					if (tier >= 0f) { float d = StageDiscount(Progress() - tier); r *= d; if (explain) { bd.Tier = tier; bd.Gap = Progress() - tier; bd.Stage = d; } }
+					if (tier >= 0f)
+					{
+						float d = StageDiscount(Progress() - tier); r *= d; if (explain) { bd.Tier = tier; bd.Gap = Progress() - tier; bd.Stage = d; }
+						float bl = TierAware ? BandFactor(tier) : 1f; r *= bl; if (explain) bd.Band = bl;
+					}
+					var fit = TierAware ? LevyFit.Of(it.type) : default;
+					float ff = fit.Status == FitStatus.Weak ? LevyFit.WeakFactor(fit.Ratio) / BandLift : fit.Status == FitStatus.Ok ? LevyFit.OkFactor(it.type, fit.Dps, tier) : 1f;
+					r *= ff; if (explain) { bd.Fit = ff; bd.FitStatus = fit.Status; }
 					if (ProgressionTier.IsFound(it.type)) { r *= FoundBoost; if (explain) bd.Found = FoundBoost; }
 					float rec = DepositStamp.Boost(it);
 					r = Math.Max(1f, r * rec);
@@ -140,6 +168,7 @@ namespace Levy.Common.Weapons
 				if (ov.Rank == RankOverrideMode.Set) r = Math.Max(0.01f, ov.Value);
 				else if (ov.Rank == RankOverrideMode.Prefer) r += ArmoryRules.PreferBase;
 			}
+			if (BrokenBarred(it.type, ov)) { r = 0f; if (explain) bd.Broken = true; } // measured broken in levy hands: never issued, whatever works is picked first; the player can still set or prefer it
 			if (excluded) r = 0f;
 			if (explain) bd.Final = r;
 			return r;
@@ -147,6 +176,14 @@ namespace Levy.Common.Weapons
 
 		/// <summary>The Balanced discount for a weapon <paramref name="gap"/> stages behind the world: 1 at or ahead of the world, exp(-(gap/7)^3) behind it.</summary>
 		public static float StageDiscount(float gap) => gap <= 0f ? 1f : (float)Math.Exp(-Math.Pow(gap / StageScale, StageSharpness));
+
+		/// <summary>True for a weapon measured BROKEN in levy hands that the current armory's rules do not set or prefer by hand: it ranks 0 and the armory never issues it.</summary>
+		public static bool BrokenBarred(Item it) => it != null && !it.IsAir && BrokenBarred(it.type, ArmoryRules.Current?.OverrideOf(it.type));
+
+		private static bool BrokenBarred(int type, ItemOverride ov) => TierAware && LevyFit.StatusOf(type) == FitStatus.Broken && !(ov != null && (ov.Rank == RankOverrideMode.Set || ov.Rank == RankOverrideMode.Prefer));
+
+		/// <summary>The Balanced band factor of a weapon of <paramref name="tier"/>: <see cref="BandLift"/> to the power of (its band - the world's band).</summary>
+		public static float BandFactor(float tier) => tier < 0f ? 1f : (float)Math.Pow(BandLift, Band(tier) - Band(Progress()));
 
 		/// <summary>The Balanced boost for a weapon deposited <paramref name="ageTicks"/> world ticks ago: 1 + 0.6 x exp(-(days)^2).</summary>
 		public static float RecencyBoost(long ageTicks)
@@ -185,7 +222,29 @@ namespace Levy.Common.Weapons
 			if (NPC.downedEmpressOfLight) p = Math.Max(p, 15f);
 			if (NPC.downedAncientCultist) p = Math.Max(p, 17f);
 			if (NPC.downedMoonlord) p = Math.Max(p, 18f);
+			if (TierAware) p = Math.Max(p, CalamityProgress(now));
 			_prog = p;
+			return p;
+		}
+
+		// Calamity's bosses past Golem, by Calamity's own "Downed" call, on its registered Boss Checklist values. Read at most once a second.
+		private static readonly (string boss, float p)[] CalamityBosses =
+		{
+			("plaguebringergoliath", 14.5f), ("ravager", 16.5f), ("astrumdeus", 17.5f), ("profanedguardians", 18.5f), ("dragonfolly", 18.6f), ("providence", 19f), ("ceaselessvoid", 19.6f), ("stormweaver", 19.61f),
+			("signus", 19.62f), ("polterghast", 20f), ("oldduke", 20.5f), ("dog", 21f), ("yharon", 22f), ("exomechs", 22.99f), ("scal", 23f),
+		};
+		private static uint _calTick = uint.MaxValue; private static float _calProg; private static bool _calProbed; private static Mod _cal;
+
+		private static float CalamityProgress(uint now)
+		{
+			if (!_calProbed) { _calProbed = true; ModLoader.TryGetMod("CalamityMod", out _cal); }
+			if (_cal == null) return 0f;
+			if (_calTick != uint.MaxValue && now >= _calTick && now - _calTick < 60) return _calProg;
+			_calTick = now;
+			float p = 0f;
+			try { foreach (var (boss, v) in CalamityBosses) if (v > p && _cal.Call("Downed", boss) is bool b && b) p = v; }
+			catch (Exception) { }
+			_calProg = p;
 			return p;
 		}
 

@@ -31,7 +31,7 @@ namespace Levy.Common.Dialogue
 	///   And when the sky swallows the Old Duke in front of the army, a burst of shocked lines from the levies near each commander (RIFT_DUKE).
 	/// The day count, whether the sky has been seen and who was away are saved with the world and sent to clients.
 	/// </summary>
-	public class RiftMood : ModSystem
+	public partial class RiftMood : ModSystem
 	{
 		private const int Never = int.MinValue / 2;
 
@@ -74,7 +74,7 @@ namespace Levy.Common.Dialogue
 		/// <summary>The worried talk right after the covering.</summary>
 		public static bool PanicNow => TestPanic ?? (_panicUntil != Never && (uint)(_panicUntil - Now) <= (uint)LevyConstants.RiftPanicTicks);
 
-		internal static bool IsRift(DialogueTrigger t) => t >= DialogueTrigger.RIFT_PANIC && t <= DialogueTrigger.RIFT_DUKE;
+		internal static bool IsRift(DialogueTrigger t) => t >= DialogueTrigger.RIFT_PANIC && t <= DialogueTrigger.RIFT_WORN;
 
 		/// <summary>Chat-log notices: not a levy speaking, never touched.</summary>
 		internal static bool IsNotice(DialogueTrigger t) => t == DialogueTrigger.DEATH_MESSAGE || t == DialogueTrigger.DESERTED || t == DialogueTrigger.NO_ONE_LEFT;
@@ -114,7 +114,7 @@ namespace Levy.Common.Dialogue
 		// The rift chat
 		// =====================================================================================================
 
-		private static readonly DialogueTrigger[] Order = new DialogueTrigger[12];
+		private static readonly DialogueTrigger[] Order = new DialogueTrigger[24];
 
 		/// <summary>The rift pools to try, in order, for this speaker right now. RIFT_IDLE is always last.</summary>
 		internal static int ChatOrder(SoldierRecord rec, SoldierNPC body, bool camp)
@@ -123,11 +123,12 @@ namespace Levy.Common.Dialogue
 			if (PanicNow) Order[n++] = DialogueTrigger.RIFT_PANIC;
 			if (camp) { Order[n++] = DialogueTrigger.RIFT_CAMP; Order[n++] = DialogueTrigger.RIFT_IDLE; return n; }
 			if (rec != null && Away.Contains(rec.Id) && Main.rand.NextFloat() < LevyConstants.RiftAwayChance) Order[n++] = DialogueTrigger.RIFT_ABSENT;
+			SkyOrder(ref n, body); // a Blood Moon, the fog, the growing rift, the ice (RiftMood.Sky.cs)
 			if (Cold(body) && Main.rand.NextFloat() < LevyConstants.RiftColdChance) Order[n++] = DialogueTrigger.RIFT_COLD;
 			if (Main.rand.NextFloat() < LevyConstants.RiftRespectChance) Order[n++] = DialogueTrigger.RIFT_RESPECT;
 			RiftPhase ph = Phase;
 			if (ph == RiftPhase.Tense && Main.rand.NextFloat() < LevyConstants.RiftShockChance) Order[n++] = DialogueTrigger.RIFT_SHOCK;
-			if (Days >= LevyConstants.RiftDarkFromDay && Main.rand.NextFloat() < LevyConstants.RiftDarkChance) Order[n++] = DialogueTrigger.RIFT_DARK;
+			MoraleOrder(ref n); // the worn-down and bitter lines, and the jokes getting darker (RiftMood.Sky.cs)
 			if (Days >= LevyConstants.RiftLaterFromDay && Main.rand.NextFloat() < LevyConstants.RiftLaterChance) Order[n++] = DialogueTrigger.RIFT_LATER;
 			if (Days >= LevyConstants.RiftPowerFromDay && Main.rand.NextFloat() < LevyConstants.RiftPowerChance) Order[n++] = DialogueTrigger.RIFT_POWER;
 			Order[n++] = DialogueTrigger.RIFT_IDLE;
@@ -170,6 +171,7 @@ namespace Levy.Common.Dialogue
 			if (ph == RiftPhase.None) return 1f;
 			if (ph == RiftPhase.Silent) return 0f;
 			bool tense = ph == RiftPhase.Tense;
+			if (IsBurst(t)) return 1f;
 			switch (t)
 			{
 				case DialogueTrigger.RIFT_PANIC: case DialogueTrigger.RIFT_DUKE: case DialogueTrigger.MUTINY: return 1f;
@@ -179,7 +181,7 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.LIFE_CRYSTAL: case DialogueTrigger.CHEST_OPENED: case DialogueTrigger.ARMORY_GOT: case DialogueTrigger.ECLIPSE_END:
 				case DialogueTrigger.TAKEOFF: case DialogueTrigger.LANDING: case DialogueTrigger.FLIGHT_FEAR:
 				case DialogueTrigger.RIFT_SHOCK: case DialogueTrigger.RIFT_ABSENT: case DialogueTrigger.RIFT_COLD: case DialogueTrigger.RIFT_LATER: case DialogueTrigger.RIFT_RESPECT: case DialogueTrigger.RIFT_IDLE: case DialogueTrigger.RIFT_CAMP:
-				case DialogueTrigger.RIFT_DARK: case DialogueTrigger.RIFT_POWER:
+				case DialogueTrigger.RIFT_DARK: case DialogueTrigger.RIFT_POWER: case DialogueTrigger.RIFT_FOG: case DialogueTrigger.RIFT_GRIM: case DialogueTrigger.RIFT_WORN:
 					return tense ? LevyConstants.RiftTenseChatterShare : LevyConstants.RiftSettledChatterShare;
 				case DialogueTrigger.BOSS_SIGHTED: case DialogueTrigger.BOSS: case DialogueTrigger.COMRADE_DOWN: case DialogueTrigger.ROUTED: case DialogueTrigger.RALLIED: case DialogueTrigger.VICTORY:
 				case DialogueTrigger.EVENT_GOBLINS: case DialogueTrigger.EVENT_PIRATES: case DialogueTrigger.EVENT_ECLIPSE: case DialogueTrigger.EVENT_PUMPKIN:
@@ -220,6 +222,7 @@ namespace Levy.Common.Dialogue
 			DaysSince = 0; Seen = false; Away.Clear(); AwayAsked.Clear();
 			_panicUntil = Never; _primed = false; _wasTransition = false; _lastDay = false;
 			_dukePrimed = false; _dukeWasKilled = false; _dukeSeenAt = Never;
+			SkyReset();
 		}
 
 		public override void PostUpdateEverything()
@@ -243,6 +246,7 @@ namespace Levy.Common.Dialogue
 			}
 			if (covered && !trans && !Seen) { Seen = true; DaysSince = 0; } // first sight of a sky already covered (a save from before Levy, or a world joined late)
 			DukeTick(now);
+			SkyTick(now);
 		}
 
 		/// <summary>
@@ -302,6 +306,7 @@ namespace Levy.Common.Dialogue
 			tag["riftSeen"] = true;
 			tag["riftDays"] = DaysSince;
 			if (Away.Count > 0) { var ids = new int[Away.Count]; Away.CopyTo(ids); tag["riftAway"] = ids; }
+			tag["riftTier"] = TierSeen; tag["riftIce"] = IceSeen;
 		}
 
 		public override void LoadWorldData(TagCompound tag)
@@ -310,6 +315,7 @@ namespace Levy.Common.Dialogue
 			DaysSince = tag.GetInt("riftDays");
 			Away.Clear();
 			if (tag.TryGet("riftAway", out int[] ids)) foreach (int id in ids) Away.Add(id);
+			TierSeen = tag.GetInt("riftTier"); IceSeen = tag.GetInt("riftIce");
 		}
 
 		public override void NetSend(BinaryWriter writer)
@@ -319,6 +325,7 @@ namespace Levy.Common.Dialogue
 			int n = Math.Min(Away.Count, 255);
 			writer.Write((byte)n);
 			foreach (int id in Away) { if (n-- <= 0) break; writer.Write(id); }
+			writer.Write((byte)TierSeen); writer.Write((byte)IceSeen);
 		}
 
 		public override void NetReceive(BinaryReader reader)
@@ -328,6 +335,7 @@ namespace Levy.Common.Dialogue
 			int n = reader.ReadByte();
 			Away.Clear();
 			for (int i = 0; i < n; i++) Away.Add(reader.ReadInt32());
+			TierSeen = reader.ReadByte(); IceSeen = reader.ReadByte();
 		}
 	}
 }

@@ -15,7 +15,7 @@ namespace Levy.Common.Dialogue
 	/// untouched; shock lines only while tense, "what now" lines only from the later day; the absent and cold pools; the rift voice over the Blood Moon's; and the floating share per phase.
 	/// Every global it touches (RNG, the roster, the overrides, the real NoxusBoss members, Main.raining) is put back.
 	/// </summary>
-	public class RiftMoodCheck : ModSystem
+	public partial class RiftMoodCheck : ModSystem
 	{
 		private int _pass, _fail;
 
@@ -31,7 +31,8 @@ namespace Levy.Common.Dialogue
 			return r;
 		}
 
-		private static readonly DialogueTrigger[] Rift = { DialogueTrigger.RIFT_PANIC, DialogueTrigger.RIFT_SHOCK, DialogueTrigger.RIFT_ABSENT, DialogueTrigger.RIFT_COLD, DialogueTrigger.RIFT_LATER, DialogueTrigger.RIFT_RESPECT, DialogueTrigger.RIFT_IDLE, DialogueTrigger.RIFT_CAMP, DialogueTrigger.RIFT_DARK, DialogueTrigger.RIFT_POWER, DialogueTrigger.RIFT_DUKE };
+		private static readonly DialogueTrigger[] Rift = { DialogueTrigger.RIFT_PANIC, DialogueTrigger.RIFT_SHOCK, DialogueTrigger.RIFT_ABSENT, DialogueTrigger.RIFT_COLD, DialogueTrigger.RIFT_LATER, DialogueTrigger.RIFT_RESPECT, DialogueTrigger.RIFT_IDLE, DialogueTrigger.RIFT_CAMP, DialogueTrigger.RIFT_DARK, DialogueTrigger.RIFT_POWER, DialogueTrigger.RIFT_DUKE,
+			DialogueTrigger.RIFT_BLOOD, DialogueTrigger.RIFT_GROW1, DialogueTrigger.RIFT_GROW2, DialogueTrigger.RIFT_GROW3, DialogueTrigger.RIFT_ICE, DialogueTrigger.RIFT_FROZEN, DialogueTrigger.RIFT_FOG, DialogueTrigger.RIFT_SCARE, DialogueTrigger.RIFT_GRIM, DialogueTrigger.RIFT_WORN };
 
 		private void Core()
 		{
@@ -115,13 +116,15 @@ namespace Levy.Common.Dialogue
 			catch (Exception e) { Note("could not read the packed file: " + e.Message); }
 			Check($"the packed dialogue file parses with no bad line ({bad} rejected)", bad == 0);
 			int total = 0;
-			var mins = new Dictionary<DialogueTrigger, int> { [DialogueTrigger.RIFT_PANIC] = 10, [DialogueTrigger.RIFT_SHOCK] = 10, [DialogueTrigger.RIFT_ABSENT] = 6, [DialogueTrigger.RIFT_COLD] = 8, [DialogueTrigger.RIFT_LATER] = 6, [DialogueTrigger.RIFT_RESPECT] = 8, [DialogueTrigger.RIFT_IDLE] = 15, [DialogueTrigger.RIFT_CAMP] = 8, [DialogueTrigger.RIFT_DARK] = 10, [DialogueTrigger.RIFT_POWER] = 6, [DialogueTrigger.RIFT_DUKE] = 6 };
+			var mins = new Dictionary<DialogueTrigger, int> { [DialogueTrigger.RIFT_PANIC] = 10, [DialogueTrigger.RIFT_SHOCK] = 10, [DialogueTrigger.RIFT_ABSENT] = 6, [DialogueTrigger.RIFT_COLD] = 8, [DialogueTrigger.RIFT_LATER] = 6, [DialogueTrigger.RIFT_RESPECT] = 8, [DialogueTrigger.RIFT_IDLE] = 15, [DialogueTrigger.RIFT_CAMP] = 8, [DialogueTrigger.RIFT_DARK] = 10, [DialogueTrigger.RIFT_POWER] = 6, [DialogueTrigger.RIFT_DUKE] = 6,
+				[DialogueTrigger.RIFT_BLOOD] = 12, [DialogueTrigger.RIFT_GROW1] = 8, [DialogueTrigger.RIFT_GROW2] = 8, [DialogueTrigger.RIFT_GROW3] = 8, [DialogueTrigger.RIFT_ICE] = 6, [DialogueTrigger.RIFT_FROZEN] = 6,
+				[DialogueTrigger.RIFT_FOG] = 8, [DialogueTrigger.RIFT_SCARE] = 6, [DialogueTrigger.RIFT_GRIM] = 8, [DialogueTrigger.RIFT_WORN] = 8 };
 			foreach (DialogueTrigger t in Rift)
 			{
 				int n = DialogueTable.Get(t)?.Count ?? 0; total += n;
 				Check($"{t} has {n} lines (needs {mins[t]})", n >= mins[t]);
 			}
-			Check($"{total} rift lines in all (60 to 150)", total >= 60 && total <= 150);
+			Check($"{total} rift lines in all (200 to 320)", total >= 200 && total <= 320);
 
 			// every line: ASCII, short, no annoyed tag, every placeholder filled for a speaker it suits
 			var mia = Make("Mia", Temperament.Greenhorn, ItemID.WandofSparking);
@@ -331,6 +334,8 @@ namespace Levy.Common.Dialogue
 			string duke = DialogueSystem.Pick(DialogueTrigger.RIFT_DUKE, pat, ctx, null, true, -1, out _, false);
 			Check($"the shocked burst draws from RIFT_DUKE ({duke}) and is never thinned", duke != null && RiftMood.AllowFloating((byte)DialogueTrigger.RIFT_DUKE));
 			RiftSky.TestDukeKilled = null; RiftSky.TestDukeAlive = null; RiftMood.Reset();
+
+			SkyChecks(pat, ctx);
 
 			// the cold: snow falling or lying, on the surface
 			RiftSky.TestSnowing = true; RiftMood.TestSurface = true;

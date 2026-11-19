@@ -244,7 +244,8 @@ namespace Levy.Common.Dialogue
 				case DialogueTrigger.FLIGHT_SHOUT: case DialogueTrigger.FLIGHT_FEAR: case DialogueTrigger.TAKEOFF: case DialogueTrigger.LANDING: case DialogueTrigger.FIRESIDE: case DialogueTrigger.PASTIME: case DialogueTrigger.PASTIME_NIGHT:
 				case DialogueTrigger.LIFE_CRYSTAL: case DialogueTrigger.CHEST_OPENED: case DialogueTrigger.ARMORY_GOT: case DialogueTrigger.ECLIPSE_END:
 				case DialogueTrigger.DRINK_ALE: case DialogueTrigger.DRINK_STOUT: case DialogueTrigger.DRINK_RUM: case DialogueTrigger.DRINK_FIZZ: case DialogueTrigger.DRINK_ICEBERG:
-				case DialogueTrigger.RIFT_PANIC: case DialogueTrigger.RIFT_CAMP: case DialogueTrigger.RIFT_DUKE:
+				case DialogueTrigger.RIFT_PANIC: case DialogueTrigger.RIFT_CAMP: case DialogueTrigger.RIFT_DUKE: case DialogueTrigger.RIFT_BLOOD: case DialogueTrigger.RIFT_SCARE:
+				case DialogueTrigger.RIFT_GROW1: case DialogueTrigger.RIFT_GROW2: case DialogueTrigger.RIFT_GROW3: case DialogueTrigger.RIFT_ICE: case DialogueTrigger.RIFT_FROZEN:
 				case DialogueTrigger.VICTORY: return DialogueChannel.FloatingText;
 
 				case DialogueTrigger.DEATH_MESSAGE:

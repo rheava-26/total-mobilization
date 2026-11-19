@@ -70,7 +70,7 @@ namespace Levy.Common.Testing
 				foreach (string arm in new[] { "levies", "player", "spectator" })
 				{
 					ClearHostiles(); ClearMachines();
-					for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) Main.npc[i].active = false;
+					for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) Main.npc[i].active = false; global::Levy.Common.Systems.RosterSystem.Instance.Regulars.RemoveAll(r => r.CommanderName == Commander);
 					global::Levy.Common.Systems.RosterSystem.Instance.Regulars.RemoveAll(r => r.CommanderName == Commander);
 					_spectator = arm == "spectator";
 					global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(type, true);
@@ -78,7 +78,7 @@ namespace Levy.Common.Testing
 					try
 					{
 						PlaceCommander(0);
-						if (arm == "levies") Levies(6, 3f, 45f); // the army 45 tiles off; the machines right under the boss, far closer to it than anything else
+						if (arm == "levies") foreach (var l in Levies(6, 3f, 12f)) l.NPC.immortal = true; // the army 12 tiles off (kept alive for the watch); the machines right under the boss, far closer to it than anything else
 						Step(2);
 						Vector2 spawnAt = _cmdAt + new Vector2(0, -30 * 16f);
 						var machines = Machines(spawnAt + new Vector2(0, 6 * 16f), 3, 3);
@@ -136,25 +136,34 @@ namespace Levy.Common.Testing
 			int type = CalType("CalamitasClone");
 			if (type <= 0 || !ModLoader.HasMod("Mechanization")) { Check("(CalClone) Calamitas Clone and Mechanization resolve", false); return; }
 			CalCloneDamage(calMod);
-			CalCloneArena(type);
+			CalCloneArena(type, false);
+			CalCloneArena(type, true);
 		}
 
-		/// <summary>One real CalamitousDart at the dart's own damage on a target that stands still; returns the first hit's damage (-1: no hit in 20 ticks).</summary>
+		/// <summary>One real CalamitousDart at the dart's own damage, struck on a target at full life through the game's own Projectile.Damage (as the Shots part does); returns the hit's damage (-1: no hit in 4 tries).</summary>
 		private static int DartHit(NPC target, int projType, int dmg)
 		{
 			for (int i = 0; i < Main.maxProjectiles; i++) Main.projectile[i].active = false;
+			target.life = target.lifeMax; target.immune[0] = 0; target.immune[Main.maxPlayers] = 0;
+			if (target.ModNPC is SoldierNPC s0 && s0.Record != null) s0.Record.CurrentHp = target.lifeMax;
 			int before = target.life;
-			int p = Projectile.NewProjectile(new EntitySource_WorldEvent("BossBugsCheck"), target.Center, Vector2.Zero, projType, dmg, 0f, Main.myPlayer);
+			int myKeep = Main.myPlayer; Main.myPlayer = 0; // an enemy's shot carries the local player's index, as it does in the lab and in a single-player world
+			int p = Projectile.NewProjectile(new EntitySource_WorldEvent("BossBugsCheck"), target.Center, Vector2.Zero, projType, dmg, 0f, 0);
+			Main.myPlayer = myKeep;
 			if (p < 0 || p >= Main.maxProjectiles) return -1;
-			for (int t = 0; t < 20; t++)
+			Projectile pr = Main.projectile[p];
+			try
 			{
-				Main.projectile[p].Center = target.Center; Main.projectile[p].velocity = Vector2.Zero;
-				Step(1);
-				if (!target.active) return before;
-				if (target.life != before) { Main.projectile[p].active = false; return before - target.life; }
+				for (int k = 0; k < 4; k++)
+				{
+					pr.Center = target.Center; pr.velocity = Vector2.Zero;
+					DamageNow(pr);
+					if (!target.active) return before;
+					if (target.life != before) return before - target.life;
+				}
+				return -1;
 			}
-			Main.projectile[p].active = false;
-			return -1;
+			finally { pr.active = false; }
 		}
 
 		private static void CalCloneDamage(Mod calMod)
@@ -174,8 +183,6 @@ namespace Levy.Common.Testing
 				// an armed drone's defense: the rarity tier of an endgame weapon (what a player mounts by the time she fights Calamitas Clone)
 				int armedDefense = global::Levy.Common.Weapons.DroneArsenal.DefenseFor(ItemID.Zenith);
 				drone.defense = drone.defDefense = armedDefense;
-				foreach (NPC m in new[] { drone, turret }) { m.lifeMax = m.life = 20000; }
-				lv.NPC.lifeMax = lv.NPC.life = 20000; lv.Record.CurrentHp = 20000;
 				int hl = DartHit(lv.NPC, dart.Type, dmg), hd = DartHit(drone, dart.Type, dmg), ht = DartHit(turret, dart.Type, dmg);
 				string seen = $"dart damage {dmg} (Revengeance, Expert): a bare levy took {hl}, a drone (defense {drone.defense}) {hd}, a turret (defense {turret.defense}) {ht}";
 				Note("(CalClone) " + seen);
@@ -183,18 +190,20 @@ namespace Levy.Common.Testing
 				Check("(CalClone) her dart hurts an armed drone for real damage (at least 10, and at least 40% of a bare levy's hit)", hd >= 10 && hd * 10 >= hl * 4, () => seen);
 				Check("(CalClone) her dart hurts a turret for real damage (at least 10, and at least 40% of a bare levy's hit)", ht >= 10 && ht * 10 >= hl * 4, () => seen);
 			}
-			finally { ClearHostiles(); ClearMachines(); for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) Main.npc[i].active = false; }
+			finally { ClearHostiles(); ClearMachines(); for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) Main.npc[i].active = false; global::Levy.Common.Systems.RosterSystem.Instance.Regulars.RemoveAll(r => r.CommanderName == Commander); }
 		}
 
-		private static void CalCloneArena(int type)
+		/// <summary>Machines outside her arena: with the army beside the commander, or (<paramref name="spectator"/>) with a hidden commander and no levies, so a machine is the only thing left to target.</summary>
+		private static void CalCloneArena(int type, bool spectator)
 		{
 			ClearHostiles(); ClearMachines();
 			global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(type, true);
 			SetBossesTarget(true); EnemyTargeting.RefreshConfig();
 			try
 			{
+				_spectator = spectator;
 				PlaceCommander(-60);
-				Levies(6, 3f, -60f); // the army around the commander, inside the arena her Revengeance AI raises on him
+				if (!spectator) Levies(6, 3f, -60f); // the army around the commander, inside the arena her Revengeance AI raises on him
 				// three turrets and three drones 75 tiles off, past the arena's side wall (1,000 px from its centre); the drones fly in to fight her
 				Machines(new Vector2((Cx + 15) * 16f, (_floorY - 3) * 16f), 3, 3);
 				Step(2);
@@ -213,17 +222,20 @@ namespace Levy.Common.Testing
 					if (OnMachine(b)) onMachine++; else if (Locked(b)) onLevy++;
 					if (b.dontTakeDamage) shielded++;
 				}
+				string tag = spectator ? "a hidden commander, no levies" : "the army beside the commander";
 				string seen = $"{ticks} ticks: on a levy {onLevy}, on a machine {onMachine}, invulnerable {shielded}; {LiveMachines()} machines live";
-				Note("(CalClone) arena: " + seen);
-				Check("(CalClone) with machines outside her arena she never locks one", onMachine == 0, () => seen);
-				Check("(CalClone) with machines outside her arena she never turns invulnerable", shielded == 0, () => seen);
-				Check("(CalClone) she fights the levies", onLevy >= ticks / 2, () => seen);
+				Note($"(CalClone) arena [{tag}]: " + seen);
+				Check($"(CalClone) [{tag}] with machines outside her arena she never locks one", onMachine == 0, () => seen);
+				Check($"(CalClone) [{tag}] with machines outside her arena she never turns invulnerable", shielded == 0, () => seen);
+				if (!spectator) Check("(CalClone) she fights the levies", onLevy >= ticks / 2, () => seen);
 			}
 			finally
 			{
-				_perTick = null;
+				_perTick = null; _spectator = false;
+				try { var c = Main.player[0]; int bt = ModContent.BuffType<global::Levy.Content.Buffs.SpectatorBuff>(); if (c.HasBuff(bt)) c.ClearBuff(bt); } catch (Exception) { }
 				global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(type, false);
 				ClearHostiles(); ClearMachines();
+				for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is SoldierNPC) Main.npc[i].active = false; global::Levy.Common.Systems.RosterSystem.Instance.Regulars.RemoveAll(r => r.CommanderName == Commander);
 			}
 		}
 	}

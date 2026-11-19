@@ -852,7 +852,7 @@ namespace Mechanization.Content.NPCs
 		/// </summary>
 		public override void ModifyHitByProjectile(Projectile projectile, ref NPC.HitModifiers modifiers)
 		{
-			if (!projectile.hostile || projectile.friendly) return;
+			if (!projectile.hostile || projectile.friendly || !global::Levy.Common.Util.HostileProjectile.On) return; // LEVY_PROJPARITY=0 is the A/B switch, as for levies
 			modifiers.SourceDamage *= global::Levy.Common.LevyConstants.HostileProjectileDamageMult;
 			if (!LevyUtil.IsClient) global::Levy.Common.Util.HostileProjectile.Modify(projectile, global::Levy.Common.Util.HostileContact.Stand, ref modifiers);
 		}

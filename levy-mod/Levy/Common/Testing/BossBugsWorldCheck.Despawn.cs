@@ -24,6 +24,14 @@ namespace Levy.Common.Testing
 			p.dead = true; p.statLife = 0; p.respawnTimer = 600; p.ghost = false;
 		}
 
+		/// <summary>Active levy NPCs (alive or not) and how many of them are alive, for the trace.</summary>
+		private static string LevyNpcCount()
+		{
+			int a = 0, l = 0;
+			for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is global::Levy.Content.NPCs.SoldierNPC s) { a++; if (s.IsAlive) l++; }
+			return $"{l}/{a} alive";
+		}
+
 		private static int CalType(string name) => ModLoader.TryGetMod("CalamityMod", out Mod cal) && cal.TryFind(name, out ModNPC mn) ? mn.Type : -1;
 
 		/// <summary>One fight: the boss is fought for 3 s, then the commander dies; returns the ticks until the boss is gone (-1: still there after the watch) and what the boss did meanwhile.
@@ -49,7 +57,8 @@ namespace Levy.Common.Testing
 				SetBossesTarget(drawn);
 				if (cfg != null && arm == "off") cfg.EnemiesTargetSoldiers = false;
 				EnemyTargeting.RefreshConfig();
-				if (levies) Levies(6, 3f, half);
+				var army = levies ? Levies(6, 3f, half) : new List<global::Levy.Content.NPCs.SoldierNPC>();
+				if (arm == "drawn") foreach (var l in army) l.NPC.immortal = true; // the beaten boss keeps fighting them: they must outlive the watch (a levy is pinned to 500 HP)
 				if (drones) Machines(_cmdAt, 3, 3); // three field drones and three turrets beside the commander, and no levies: machines alone must not hold the boss
 				Step(2);
 				NPC boss = SpawnNpc(type, _cmdAt + new Vector2(0, -30 * 16f));
@@ -61,9 +70,12 @@ namespace Levy.Common.Testing
 				_perTick = () => { if (Alive() && Locked(Main.npc[who])) lockedFight++; };
 				Step(180);
 				if (!Alive()) return (-3, "left before the commander died");
-				_cmdDead = true;
+				_cmdDead = true; EnemyTargeting.WhyTrack = new string[Main.maxNPCs + 1]; EnemyTargeting.WhyCount = new int[Main.maxNPCs + 1]; string trace = "";
 				int gone = -1, lockedAfter = 0, maxTl = 0, watched = 0; float minY = float.MaxValue, startY = Main.npc[who].Center.Y;
-				_perTick = null;
+				if (far || leash) { Main.npc[who].Center = _cmdAt + new Vector2(0, -30 * 16f); Main.npc[who].velocity = Vector2.Zero; } // the boss chased the commander toward the army; it starts the lost fight where it began, the full distance from the levies
+				float nearLevy = float.MaxValue; foreach (var l in army) if (l.NPC.active) nearLevy = Math.Min(nearLevy, Vector2.Distance(l.NPC.Center, Main.npc[who].Center) / 16f);
+				trace = $" nearest levy at the death {(nearLevy == float.MaxValue ? "none" : nearLevy.ToString("0") + " tiles")};" + trace;
+				_perTick = arm == "drawn" ? () => { foreach (var l in army) if (l.NPC.active) { l.NPC.life = l.NPC.lifeMax; if (l.Record != null) l.Record.CurrentHp = l.NPC.lifeMax; } } : null;
 				int watch = arm == "drawn" ? DespawnBudget : DespawnWatch;
 				for (int t = 0; t < watch; t++)
 				{
@@ -71,15 +83,16 @@ namespace Levy.Common.Testing
 					if (!Alive()) { gone = t; break; }
 					NPC b = Main.npc[who]; watched++;
 					if (Locked(b)) { if (EnemyTargeting.IsMachineBody(Main.npc[LevyNpcData.Of(b).SoldierTarget])) machineTicks++; else lockedAfter++; }
+					if (t == 1 || t == 10 || t == 60 || t == 300) trace += $" [t{t}: target {b.target}, lock {LevyNpcData.Of(b).SoldierTarget}, ai0 {b.ai[0]:0}, searches {EnemyTargeting.WhyCount[who]}, why \"{EnemyTargeting.WhyTrack[who]}\", bodies {EnemyTargeting.Bodies.Count}, levy NPCs {LevyNpcCount()}]";
 					maxTl = Math.Max(maxTl, b.timeLeft); minY = Math.Min(minY, b.Center.Y);
 				}
 				lockedFrac = watched > 0 ? lockedAfter / (float)watched : 0f;
-				string seen = $"locked during the fight {lockedFight}/180 ticks, after the death {lockedAfter} ticks on levies and {machineTicks} on machines, max timeLeft after {maxTl}, rose {(startY - Math.Min(minY, startY)) / 16f:0} tiles (top y {minY / 16f:0})";
+				string seen = $"locked during the fight {lockedFight}/180 ticks, after the death {lockedAfter} ticks on levies and {machineTicks} on machines, max timeLeft after {maxTl}, rose {(startY - Math.Min(minY, startY)) / 16f:0} tiles (top y {minY / 16f:0});{trace}";
 				return (gone, seen);
 			}
 			finally
 			{
-				_cmdDead = false; _perTick = null;
+				_cmdDead = false; _perTick = null; EnemyTargeting.WhyTrack = null; EnemyTargeting.WhyCount = null;
 				if (cfg != null) cfg.EnemiesTargetSoldiers = savedEnemies;
 				EnemyTargeting.RefreshConfig();
 				SetBossesTarget(null);

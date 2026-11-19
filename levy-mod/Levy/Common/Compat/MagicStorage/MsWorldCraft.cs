@@ -153,7 +153,61 @@ namespace Levy.Common.Compat.MagicStorageLink
 				check(c1 == 1 && (!traded || craftableAgain == 1) && swords0 - swordsNow == c1 + c2 && madeNow - made0 == c1 + c2 && ArmoryCraftLink.Shortfall == 0,
 					$"world craft: a levy trading his sword back makes the recipe craftable again, and every craft costs exactly one sword (crafts {c1}+{c2}, swords {swords0}->{swordsNow}, results {made0}->{madeNow})");
 
-				// 8. the Armory Heart is unlinked after the list was built, and the click comes before any refresh: the sword is never used unpaid
+				// 9-10. the network does not list the armory module at the moment of the craft, so none of the module hooks run.
+				//  9: the sword is still on the rack: the craft is made and the armory pays exactly one sword.
+				//  10: a levy drew the sword after the list was built: nothing is made, nothing is taken, the levy keeps it.
+				unit.DepositItem(Make(other.type, per * 2));
+				var s9 = Make(sword); armory.Deposit(s9);
+				Frame(); Refresh(heart);
+				long sw9 = All(sword), bars9 = Net(other.type), made9 = All(made);
+				ArmoryCraftLink.TestHideModule = true;
+				int c9;
+				try { c9 = Craft(1); } finally { ArmoryCraftLink.TestHideModule = false; }
+				check(((c9 == 1 && All(sword) == sw9 - 1 && Net(other.type) == bars9 - per) || (c9 == 0 && All(sword) == sw9 && Net(other.type) == bars9)) && ArmoryCraftLink.Shortfall == 0 && ArmoryCraftLink.ClawedBack == 0,
+					$"world craft: with the module missing from the network at the click, the craft is either made and paid or not made at all (made {c9}, swords {sw9}->{All(sword)}, bars {bars9}->{Net(other.type)}, shortfall {ArmoryCraftLink.Shortfall})");
+				var s10 = Make(sword); armory.Deposit(s10);
+				Frame(); Refresh(heart);
+				long bars10 = Net(other.type), made10 = All(made);
+				int i10 = Array.FindIndex(armory.Storage, i => ReferenceEquals(i, s10));
+				var levy10 = new SoldierRecord { Id = 9004, Name = "Quartermaster" }; armory.Storage[i10] = new Item(); levy10.Gear.Weapon = s10;
+				ArmoryCraftLink.TestHideModule = true;
+				int c10;
+				try { c10 = Craft(1); } finally { ArmoryCraftLink.TestHideModule = false; }
+				check(c10 == 0 && All(made) == made10 && Net(other.type) == bars10 && levy10.Gear.HasWeapon && s10.type == sword && s10.stack == 1 && ArmoryCraftLink.Shortfall == 0,
+					$"world craft: with the module missing and the sword drawn by a levy after the list was built, nothing is made (made {c10}, results {made10}->{All(made)}, bars {bars10}->{Net(other.type)}, levy keeps it: {levy10.Gear.HasWeapon}, shortfall {ArmoryCraftLink.Shortfall})");
+
+				// 11-12. HER CASE: the crafted weapon went back to the armory, so the Crafting Interface's RESULT slot shows the armory's copy (the network has none). Clicking the result slot
+				//  withdraws it from the module items (Magic Storage clones it and lowers the module's copy; no module hook runs).
+				//  11: the armory still holds it: the player gets one and the armory gives up exactly one.
+				//  12: levies drew every copy after the list was built: the player gets nothing.
+				var withdrawResult = typeof(CraftingGUI).GetMethod("DoWithdrawResult", S);
+				unit.Items.RemoveAll(i => i.type == made); // earlier cases left one in the network; her network had none
+				long inArmory = Armory(made), inNet = Net(made);
+				check(inArmory >= 1 && inNet == 0, $"world craft: the armory holds the crafted {Lang.GetItemNameValue(made)} and the network none (armory {inArmory}, network {inNet})");
+				Frame(); Refresh(heart);
+				var resultItem = (Item)typeof(CraftingGUI).GetField("result", S).GetValue(null);
+				check(resultItem != null && resultItem.type == made && resultItem.stack > 0, "world craft: the result slot shows the armory's copy (" + (resultItem?.Name ?? "none") + ")");
+				{
+					var sim = (List<Item>)typeof(CraftingGUI).GetField("sourceItemsFromModules", S).GetValue(null);
+					var itemsL = (List<Item>)typeof(CraftingGUI).GetField("items", S).GetValue(null);
+					observe($"[MsWorldCraft] OBSERVED result slot: {resultItem?.Name} prefix {resultItem?.prefix}; module items {sim.Count} ({string.Join(", ", sim.Where(i => i.type == made).Select(i => i.Name + " p" + i.prefix + " x" + i.stack))}); items {itemsL.Count}, without simulators {typeof(CraftingGUI).GetField("numItemsWithoutSimulators", S).GetValue(null)}");
+				}
+				var w11 = (Item)withdrawResult.Invoke(null, new object[] { 1, false });
+				ArmoryCraftLink.AfterUi(heart);
+				int got11 = w11 == null || w11.IsAir ? 0 : w11.stack;
+				check(got11 == 1 && Armory(made) == inArmory - 1 && Net(made) == 0 && ArmoryCraftLink.Shortfall == 0 && ArmoryCraftLink.ClawedBack == 0,
+					$"world craft: taking the result slot's copy hands over 1 and the armory gives up exactly 1 (got {got11}, armory {inArmory}->{Armory(made)}, shortfall {ArmoryCraftLink.Shortfall})");
+				Frame(); Refresh(heart);
+				var drawn = new List<Item>();
+				foreach (var arr in new[] { armory.Storage, armory.IssueWeapons }) for (int i = 0; i < arr.Length; i++) if (!arr[i].IsAir && arr[i].type == made) { drawn.Add(arr[i]); arr[i] = new Item(); } // levies drew them after the list was built
+				var w12 = (Item)withdrawResult.Invoke(null, new object[] { 1, false });
+				ArmoryCraftLink.AfterUi(heart);
+				int got12 = w12 == null || w12.IsAir ? 0 : w12.stack;
+				check(got12 == 0 && drawn.All(d => d.type == made && d.stack == 1) && ArmoryCraftLink.Shortfall == 0,
+					$"world craft: with every copy drawn by levies after the list was built, the result slot hands over nothing (got {got12}, levies hold {drawn.Count}, shortfall {ArmoryCraftLink.Shortfall})");
+				foreach (var d in drawn) armory.Deposit(d);
+
+				// 13. the Armory Heart is unlinked after the list was built, and the click comes before any refresh: the sword is never used unpaid
 				armory.Deposit(Make(sword));
 				Frame(); Refresh(heart);
 				long sw8 = All(sword), net8 = Net(other.type);
@@ -182,6 +236,11 @@ namespace Levy.Common.Compat.MagicStorageLink
 		private static void Refresh(TEStorageHeart heart)
 		{
 			var gui = typeof(CraftingGUI);
+			// what MagicUI.RefreshItems / RefreshItems_Inner do first: clear every collection (keeping the selected recipe)
+			var sel = gui.GetField("selectedRecipe", S); object keep = sel.GetValue(null);
+			gui.GetMethod("ClearAllCollections", S)?.Invoke(null, null);
+			sel.SetValue(null, keep);
+			gui.GetField("numItemsWithoutSimulators", S)?.SetValue(null, 0);
 			var stateType = gui.GetNestedType("ThreadState", BindingFlags.NonPublic) ?? throw new InvalidOperationException("ThreadState not found");
 			var state = Activator.CreateInstance(stateType, true);
 			object sandbox = Activator.CreateInstance(typeof(EnvironmentSandbox), I, null, new object[] { Main.LocalPlayer, heart }, null);

@@ -28,6 +28,14 @@ namespace Levy.Common.Compat.MagicStorageLink
 			var getModules = typeof(TEStorageHeart).GetMethod(nameof(TEStorageHeart.GetModules), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, Type.EmptyTypes, null);
 			if (getModules == null) throw new InvalidOperationException("TEStorageHeart.GetModules not found");
 			MonoModHooks.Add(getModules, (Func<ArmoryCraftLink.OrigGetModules, TEStorageHeart, IEnumerable<global::MagicStorage.EnvironmentModule>>)ArmoryCraftLink.GetModulesDetour);
+			// the Craft button's entry: proxies checked against the racks before Magic Storage crafts, the racks paid after, whatever modules the network lists
+			var craft = typeof(global::MagicStorage.CraftingGUI).GetMethod("Craft", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, null, new[] { typeof(int) }, null);
+			if (craft == null) throw new InvalidOperationException("CraftingGUI.Craft(int) not found");
+			MonoModHooks.Add(craft, (Action<ArmoryCraftLink.OrigCraft, int>)ArmoryCraftLink.CraftDetour);
+			// the result slot's withdrawal from module items (no module hook runs there)
+			var wmod = typeof(global::MagicStorage.CraftingGUI).GetMethod("TryToWithdrawFromModuleItems", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, null, new[] { typeof(Item), typeof(bool) }, null);
+			if (wmod == null) throw new InvalidOperationException("CraftingGUI.TryToWithdrawFromModuleItems(Item, bool) not found");
+			MonoModHooks.Add(wmod, (Func<ArmoryCraftLink.OrigWithdrawModule, Item, bool, Item>)ArmoryCraftLink.WithdrawModuleDetour);
 		}
 
 		public static void Unregister() { ArmoryCraftLink.ResetForTest(); ResetCache(); NetworkStocks.Provider = null; NetworkStocks.HasStation = null; NetworkStocks.ItemTypes = null; NetworkStocks.CanDecraft = null; }

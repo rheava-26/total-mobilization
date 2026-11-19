@@ -235,6 +235,48 @@ namespace Levy.Common.Testing
 				Note($"tense, three minutes: {tenseSaid} ambient lines picked, {tense} floating lines out = {tense / 3f:F1} a minute (control {control / 3f:F1}), {Standing(army)} standing");
 				Check($"the tense army is much quieter, but not mute ({tense} floating lines against {control}; {tenseSaid} picked)", tense <= control * 0.6f && tenseSaid > 0);
 
+				// the sky's later turns: the rift grows, the water freezes, a Blood Moon rises
+				int gl0 = RiftMood.BurstLinesOf(DialogueTrigger.RIFT_GROW1), il0 = RiftMood.BurstLinesOf(DialogueTrigger.RIFT_ICE), bl0 = RiftMood.BurstLinesOf(DialogueTrigger.RIFT_BLOOD);
+				int burstWait = 20 + 3 * LevyConstants.RiftBurstStepTicks + 60;
+				RiftSky.TestIntensity = 0.3f; RiftStep(burstWait);
+				int grew = RiftMood.BurstLinesOf(DialogueTrigger.RIFT_GROW1) - gl0;
+				RiftStep(300);
+				Check($"the rift grows: the levies near the commander say so, once ({grew} lines, {RiftMood.BurstLinesOf(DialogueTrigger.RIFT_GROW1) - gl0} after five more seconds)", grew == Math.Min(LevyConstants.RiftGrowSpeakers, Standing(army)) && RiftMood.BurstLinesOf(DialogueTrigger.RIFT_GROW1) - gl0 == grew);
+				RiftSky.TestIceCover = true; RiftStep(burstWait);
+				int froze = RiftMood.BurstLinesOf(DialogueTrigger.RIFT_ICE) - il0;
+				Check($"the water freezes: {froze} levies notice", froze == Math.Min(LevyConstants.RiftIceSpeakers, Standing(army)));
+				Main.dayTime = false; Main.time = 600; Main.bloodMoon = true; RiftStep(burstWait);
+				int blood = RiftMood.BurstLinesOf(DialogueTrigger.RIFT_BLOOD) - bl0;
+				Check($"a Blood Moon rises under the rift: {blood} levies speak", blood == Math.Min(LevyConstants.RiftBloodSpeakers, Standing(army)));
+				DialogueSystem.ResetRuntime();
+				int bloodChat = 0, chats = 0;
+				for (int round = 0; round < 6; round++) // one chat per levy a round, fresh repeat cooldowns each round: the pool is not drained by the sampling itself
+				{
+					DialogueSystem.ResetRuntime();
+					foreach (SoldierNPC s in army) { if (s == null || !s.NPC.active) continue; string t = DialogueSystem.ChatLine(s); chats++; if (RiftMoodCheck.Contains(DialogueTrigger.RIFT_BLOOD, t)) bloodChat++; }
+				}
+				Check($"and most right-click chat is about it ({bloodChat} of {chats})", chats > 0 && bloodChat * 2 > chats);
+				Main.bloodMoon = false; Main.dayTime = true; Main.time = 9000; RiftSky.TestIntensity = null; RiftSky.TestIceCover = null; DialogueSystem.ResetRuntime();
+				RiftStep(5);
+
+				// a scare in the fog: with NoxusBoss, a real fog tree set down by the commander
+				if (real && RiftSky.FogwoodType >= 0)
+				{
+					_keepDuke = true;
+					int sl0 = RiftMood.BurstLinesOf(DialogueTrigger.RIFT_SCARE), ss0 = RiftMood.ScaresSeen;
+					int fi = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent(), (int)_cmdAt.X + 120, (int)_cmdAt.Y - 8, RiftSky.FogwoodType);
+					int ft = 0;
+					while (RiftMood.ScaresSeen == ss0 && ft < 600) { RiftStep(1); ft++; }
+					NPC f = fi >= 0 && fi < Main.maxNPCs ? Main.npc[fi] : null;
+					Note($"fog tree set down (slot {fi}): after {ft} ticks active={f?.active} state={f?.ai[0]}");
+					RiftStep(burstWait);
+					int scared = RiftMood.BurstLinesOf(DialogueTrigger.RIFT_SCARE) - sl0;
+					Check($"a real fog tree screams by the army and the levies near it are shocked ({RiftMood.ScaresSeen - ss0} scares, {scared} lines)", RiftMood.ScaresSeen > ss0 && scared == Math.Min(LevyConstants.RiftScareSpeakers, Standing(army)));
+					if (f != null && f.type == RiftSky.FogwoodType) f.active = false;
+					_keepDuke = false; RiftStep(5);
+				}
+				else Note("no fog trees without NoxusBoss: the scare rule is checked at boot");
+
 				// the sky swallows the Old Duke in front of the army
 				int de0 = RiftMood.DukeEndings, dr0 = RiftMood.DukeRounds, dl0 = RiftMood.DukeLines;
 				bool realDuke = real && RiftSky.DukeType >= 0 && !RiftSky.DukeKilled;
@@ -273,6 +315,7 @@ namespace Levy.Common.Testing
 			finally
 			{
 				_keepDuke = false;
+				Main.bloodMoon = false;
 				if (real) RiftSky.SetReal(covered: false, eventTimer: 0, waiting: false, snowHeight: 0f, dukeKilled: false);
 				try { for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && (n.type == RiftSky.DukeType || n.ModNPC?.Mod.Name == RiftSky.ModName)) n.active = false; } } catch (Exception) { }
 				RiftSky.ClearOverrides(); RiftMood.Reset(); DialogueSystem.ResetRuntime();

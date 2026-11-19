@@ -296,5 +296,36 @@ namespace Levy.Common.Weapons
 			_stage = p < 2 ? 0 : p < 5 ? 1 : p < 7 ? 2 : p < 9 ? 3 : p < 11 ? 4 : p < 13 ? 5 : 6;
 			return _stage;
 		}
+
+		// =====================================================================================================
+		// Same weapon, different reforge
+		// =====================================================================================================
+
+		/// <summary>
+		/// Which of two copies of the SAME weapon has the better reforge: positive when <paramref name="a"/> is better, negative when <paramref name="b"/> is, 0 when they are equal.
+		/// The value first (the game builds an item's value from every stat its modifier changes, so it ranks any modifier of any weapon), then damage, critical chance, speed and knockback
+		/// for a weapon that has no value. Levies take a weapon whatever its modifier; this only decides which copy goes out first when the armory holds two or more of one weapon.
+		/// </summary>
+		public static int CompareReforge(Item a, Item b)
+		{
+			if (a == null || a.IsAir) return b == null || b.IsAir ? 0 : -1;
+			if (b == null || b.IsAir) return 1;
+			int c = a.value.CompareTo(b.value); if (c != 0) return c;
+			c = a.damage.CompareTo(b.damage); if (c != 0) return c;
+			c = a.crit.CompareTo(b.crit); if (c != 0) return c;
+			c = b.useAnimation.CompareTo(a.useAnimation); if (c != 0) return c; // faster is better
+			return a.knockBack.CompareTo(b.knockBack);
+		}
+
+		/// <summary>
+		/// True when copy <paramref name="a"/> (rank <paramref name="rankA"/>) should be issued before copy <paramref name="b"/> (rank <paramref name="rankB"/>) of the same weapon: a copy the rules bar
+		/// (rank 0) never goes before one they allow; otherwise the better reforge goes first, and the rank (recency, rack before storage) only breaks a tie between equal reforges.
+		/// </summary>
+		public static bool BetterCopy(Item a, float rankA, Item b, float rankB)
+		{
+			if ((rankA > 0f) != (rankB > 0f)) return rankA > 0f;
+			int c = CompareReforge(a, b);
+			return c != 0 ? c > 0 : rankA > rankB;
+		}
 	}
 }

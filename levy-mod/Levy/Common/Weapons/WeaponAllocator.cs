@@ -109,10 +109,44 @@ namespace Levy.Common.Weapons
 		/// <summary>The live head count per class while a class balance or a minimum is in force (null = none); a class at its maximum is closed to free levies.</summary>
 		private static ClassBook _book;
 
+		/// <summary>
+		/// Two or more copies of one weapon: the better-reforged copy goes out first (<see cref="WeaponRank.CompareReforge"/>). Within each weapon type the copies swap places and ranks so the best
+		/// reforge holds the type's highest rank, the next best the next, and so on; the ranks every type holds, and so the order between different weapons, do not change. A copy the rules bar
+		/// (rank 0) and thrown stacks are left where they are. <paramref name="cands"/> must already be sorted by rank, best first.
+		/// </summary>
+		internal static void PreferBetterReforge(List<AllocCand> cands)
+		{
+			Dictionary<int, List<int>> byType = null;
+			for (int i = 0; i < cands.Count; i++)
+			{
+				var c = cands[i];
+				if (c.Rank <= 0f || c.Thrown || c.It == null) continue;
+				byType ??= new Dictionary<int, List<int>>();
+				if (!byType.TryGetValue(c.Type, out var at)) byType[c.Type] = at = new List<int>(2);
+				at.Add(i);
+			}
+			if (byType == null) return;
+			foreach (var at in byType.Values)
+			{
+				if (at.Count < 2) continue;
+				var copies = new List<AllocCand>(at.Count); var ranks = new float[at.Count];
+				for (int k = 0; k < at.Count; k++) { copies.Add(cands[at[k]]); ranks[k] = cands[at[k]].Rank; }
+				// stable insertion sort, best reforge first: equal reforges keep their rank order (rack before storage, then the deposit order)
+				for (int k = 1; k < copies.Count; k++)
+				{
+					var x = copies[k]; int j = k - 1;
+					while (j >= 0 && WeaponRank.CompareReforge(x.It, copies[j].It) > 0) { copies[j + 1] = copies[j]; j--; }
+					copies[j + 1] = x;
+				}
+				for (int k = 0; k < at.Count; k++) { copies[k].Rank = ranks[k]; cands[at[k]] = copies[k]; }
+			}
+		}
+
 		/// <summary>Decides every levy's <see cref="AllocLevy.Target"/>. <paramref name="cands"/> may be in any order and is sorted in place. <paramref name="rules"/> are the armory's hard rules (null = none).</summary>
 		internal static void Plan(List<AllocLevy> levies, List<AllocCand> cands, AllocRules rules = null)
 		{
 			cands.Sort((a, b) => { int c = b.Rank.CompareTo(a.Rank); if (c != 0) return c; c = a.Pref.CompareTo(b.Pref); return c != 0 ? c : a.Seq.CompareTo(b.Seq); });
+			PreferBetterReforge(cands);
 			foreach (var l in levies) { l.Target = null; l.Own = null; }
 			foreach (var c in cands) { c.Used = false; c.Owner = c.Phys; if (c.Phys != null && c.Slot == AllocSlot.Primary) c.Phys.Own = c; }
 			_rules = rules != null && rules.Active ? rules : null;

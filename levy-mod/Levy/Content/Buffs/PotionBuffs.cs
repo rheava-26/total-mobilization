@@ -17,6 +17,16 @@ namespace Levy.Content.Buffs
 			Main.pvpBuff[Type] = false;
 			Main.buffNoSave[Type] = true; // the tether anchor is not saved, so the buff is not either
 		}
+
+		/// <summary>The hover text, with the red warning line (the buff text is drawn with chat colour tags).</summary>
+		public override void ModifyBuffText(ref string buffName, ref string tip, ref int rare) => tip = WithWarning(tip);
+
+		/// <summary>The buff tip with the warning appended as a red line.</summary>
+		public static string WithWarning(string tip)
+		{
+			var c = global::Levy.Content.Items.Potions.SpectatorPotion.WarningColor;
+			return tip + "\n[c/" + c.Hex3() + ":" + global::Levy.Common.Util.LevyUtil.T("Potions.SpectatorWarning").Replace("]", ")") + "]";
+		}
 	}
 
 	/// <summary>Seeker: highlights the one item chosen when the potion was drunk. Drawn by <see cref="SeekerSystem"/>.</summary>

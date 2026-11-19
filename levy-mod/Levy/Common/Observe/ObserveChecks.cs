@@ -162,6 +162,25 @@ namespace Levy.Common.Observe
 			}
 			finally { te.Label = keep; }
 			Check(ModContent.TileType<Content.Tiles.StaticCameraTile>() > 0 && ModContent.ItemType<Content.Items.Observe.StaticCameraItem>() > 0, "the camera tile and item are registered");
+
+			// the view's lost-signal clock: a multiplayer client gets 2 s for the server's first position (it used to drop the view on the very first frame), a target out of sight that long is lost
+			Check(!ObserveSystem.SignalLost(1000u, 1000u, 0u) && !ObserveSystem.SignalLost(1000u + ObserveSystem.LostGraceTicks, 1000u, 0u), "a view just connected is not lost before the grace time");
+			Check(ObserveSystem.SignalLost(1001u + ObserveSystem.LostGraceTicks, 1000u, 0u), "a view that never got a position is lost after the grace time");
+			Check(!ObserveSystem.SignalLost(5000u, 1000u, 4990u) && ObserveSystem.SignalLost(5000u, 1000u, 4000u), "a target seen recently is kept; one out of sight past the grace time is lost");
+			// who can be watched: a GoPro levy with a body (single player / server); a multiplayer client lists every living GoPro levy and the server checks the body
+			{
+				var rec = new SoldierRecord { Id = 9001 };
+				rec.Gear.Camera = new Item(ModContent.ItemType<Content.Items.Observe.GoProItem>());
+				Check(!ObserveSystem.Watchable(rec, false), "a GoPro levy with no body (waiting to deploy) is not offered in single player");
+				Check(ObserveSystem.Watchable(rec, true), "a multiplayer client offers a GoPro levy whose body it cannot see");
+				rec.Dead = true; Check(!ObserveSystem.Watchable(rec, true), "a fallen GoPro levy is not offered");
+				rec.Dead = false; rec.Reserve = true; Check(!ObserveSystem.Watchable(rec, true), "a GoPro levy in reserve is not offered");
+				rec.Reserve = false; rec.Gear.Camera = new Item(); Check(!ObserveSystem.Watchable(rec, true), "a levy without a GoPro is not offered");
+			}
+			// the on-screen keys say what the view really does
+			string goKeys = global::Levy.Common.Util.LevyUtil.T("Observe.KeysGoPro"), camKeys = global::Levy.Common.Util.LevyUtil.T("Observe.KeysCamera");
+			Check(goKeys.Contains("Left / Right") && goKeys.Contains("Page Up / Down") && !goKeys.Contains("1 / 2"), "the GoPro keys line names the keys that switch levies (no weapon keys: those are mind control's)");
+			Check(camKeys.Contains("zoom out"), "the camera keys line says the wheel zooms out");
 		}
 
 		// ---- GoPro: recipe without wire (copper or tin), right-click opens the viewer, tooltip says so ----

@@ -103,6 +103,7 @@ namespace Levy.Common.Testing
 					player.tileInteractAttempted = true;
 					player.TileInteractionsCheck(left, top + 1);
 					Check("Player.TileInteractionsCheck right-click connects the view", ObserveSystem.IsConnectedTo(te.ID));
+					Check("the camera opens at normal size (the wheel zooms out)", Math.Abs(ObserveSystem.Zoom - 1f) < 1e-4f);
 				}
 				catch (Exception e) { Check("Player.TileInteractionsCheck threw " + e.GetType().Name + ": " + e.Message, false); }
 				finally { Main.mouseRight = false; }

@@ -36,3 +36,5 @@ WornByAll: Worn by all levies.
 WornByClass: Worn by {0}.
 WornByLevies: Worn by {0} chosen levies.
 NoLevies: No levies served here.
+LensSetting: Now {0}% transparent.
+LensSetTo: "{0}% transparent"

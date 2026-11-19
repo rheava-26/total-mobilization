@@ -43,6 +43,15 @@ namespace Levy.Common.Observe
 		public static bool TryViewCenter(out Vector2 c) { c = _lastCenter; return Kind != ViewKind.None && _haveLast; }
 
 		private static Vector2 _remotePos, _lastCenter; private static uint _remoteTick = uint.MaxValue; private static bool _haveLast;
+		/// <summary>How long a view may go without a position for its target before the signal counts as lost (a multiplayer client waits this long for the server's first position).</summary>
+		public const uint LostGraceTicks = 120;
+		private static uint _connectTick, _lastSeenTick;
+
+		/// <summary>True when a view connected at <paramref name="connectTick"/> whose target was last seen at <paramref name="lastSeenTick"/> (0 = never) has had no position for longer than <see cref="LostGraceTicks"/>.</summary>
+		internal static bool SignalLost(uint now, uint connectTick, uint lastSeenTick) => now - Math.Max(connectTick, lastSeenTick) > LostGraceTicks;
+
+		/// <summary>A new target: the lost-signal clock starts again.</summary>
+		private static void Connected() { _connectTick = Main.GameUpdateCount; _lastSeenTick = 0; }
 		private static int _bodyCache = -1; private static bool _closeMenu; private static uint _nextAuto; private static bool _optOut, _deathPicked;
 
 
@@ -72,7 +81,7 @@ namespace Levy.Common.Observe
 		{
 			if (Main.dedServ && !CheckMode) return;
 			if (MindControl.LocalSoldierId >= 0) MindControl.RequestEnd();
-			Kind = ViewKind.Camera; TargetId = id; Zoom = MaxZoom; _haveLast = false; _remoteTick = uint.MaxValue;
+			Kind = ViewKind.Camera; TargetId = id; Zoom = 1f; _haveLast = false; _remoteTick = uint.MaxValue; Connected(); // opens at normal size; the wheel zooms out (ArenaView)
 			ObserveNet.SendRequest(1, id);
 			ObserveNet.SendRequest(3, 0);
 			if (!Main.dedServ) Main.NewText(LevyUtil.T("Observe.Connected", CameraName(id)), 160, 220, 255);
@@ -83,12 +92,12 @@ namespace Levy.Common.Observe
 		{
 			if (Main.dedServ) return;
 			var ids = GoProLevies(Main.LocalPlayer);
-			if (ids.Count == 0) { Main.NewText(LevyUtil.T("Observe.NoGoPro"), 255, 200, 120); return; }
+			if (ids.Count == 0) { SayNoGoPro(); return; }
 			int pick = ids[0];
 			if (next && Kind == ViewKind.Levy) foreach (int id in ids) if (id > TargetId) { pick = id; goto found; }
 			found:
 			if (MindControl.LocalSoldierId >= 0) MindControl.RequestEnd();
-			Kind = ViewKind.Levy; TargetId = pick; Zoom = 1f; _haveLast = false; _remoteTick = uint.MaxValue; _bodyCache = -1;
+			Kind = ViewKind.Levy; TargetId = pick; Zoom = 1f; _haveLast = false; _remoteTick = uint.MaxValue; _bodyCache = -1; Connected();
 			ArenaView.Factor = 1f;
 			ObserveNet.SendRequest(2, pick);
 			Main.NewText(LevyUtil.T("Observe.Watching", NameOf(pick)), 160, 220, 255);
@@ -98,9 +107,9 @@ namespace Levy.Common.Observe
 		public static void WatchLevy(int id)
 		{
 			if (Main.dedServ) return;
-			if (!GoProLevies(Main.LocalPlayer).Contains(id)) { Main.NewText(LevyUtil.T("Observe.NoGoPro"), 255, 200, 120); return; }
+			if (!GoProLevies(Main.LocalPlayer).Contains(id)) { SayNoGoPro(); return; }
 			if (MindControl.LocalSoldierId >= 0) MindControl.RequestEnd();
-			Kind = ViewKind.Levy; TargetId = id; Zoom = 1f; _haveLast = false; _remoteTick = uint.MaxValue; _bodyCache = -1;
+			Kind = ViewKind.Levy; TargetId = id; Zoom = 1f; _haveLast = false; _remoteTick = uint.MaxValue; _bodyCache = -1; Connected();
 			ArenaView.Factor = 1f;
 			ObserveNet.SendRequest(2, id);
 			Main.NewText(LevyUtil.T("Observe.Watching", NameOf(id)), 160, 220, 255);
@@ -147,14 +156,30 @@ namespace Levy.Common.Observe
 		// targets
 		// =====================================================================================================
 
-		/// <summary>Soldier ids (of the local player's Regulars) that carry a GoPro and are alive, ascending.</summary>
+		/// <summary>
+		/// Soldier ids (of the local player's Regulars) that can be watched now, ascending: alive, not in reserve, carrying a GoPro and, in single player, on the field with a body
+		/// (a levy waiting to deploy past the army's body cap, or between death and respawn, has nothing to look through). A multiplayer client cannot see the server's bodies; the server checks there.
+		/// </summary>
 		public static List<int> GoProLevies(Player p)
 		{
 			var list = new List<int>();
 			var roster = RosterSystem.Instance; if (roster == null) return list;
-			foreach (var r in roster.RegularsOf(p)) if (!r.Reserve && !r.Dead && GoProItem.Carries(r.Gear)) list.Add(r.Id);
+			bool client = Main.netMode == NetmodeID.MultiplayerClient;
+			foreach (var r in roster.RegularsOf(p)) if (Watchable(r, client)) list.Add(r.Id);
 			list.Sort();
 			return list;
+		}
+
+		/// <summary>The rule <see cref="GoProLevies"/> applies to one levy.</summary>
+		internal static bool Watchable(SoldierRecord r, bool client) => r != null && !r.Reserve && !r.Dead && GoProItem.Carries(r.Gear) && (client || r.HasBody);
+
+		/// <summary>No GoPro levy to watch: says whether none carries one, or the ones that do are off the field.</summary>
+		private static void SayNoGoPro()
+		{
+			bool any = false;
+			var roster = RosterSystem.Instance;
+			if (roster != null) foreach (var r in roster.RegularsOf(Main.LocalPlayer)) if (!r.Reserve && GoProItem.Carries(r.Gear)) { any = true; break; }
+			Main.NewText(LevyUtil.T(any ? "Observe.NoGoProField" : "Observe.NoGoPro"), 255, 200, 120);
 		}
 
 		public static string NameOf(int soldierId) => RosterSystem.Instance?.FindById(soldierId)?.Name ?? "?";
@@ -185,7 +210,15 @@ namespace Levy.Common.Observe
 
 		private static bool TryCenter(out Vector2 c)
 		{
-			c = _lastCenter;
+			bool ok = TryCenterCore(out c, out bool fresh);
+			if (fresh) _lastSeenTick = Main.GameUpdateCount;
+			return ok;
+		}
+
+		/// <summary>The view's centre; <paramref name="fresh"/> is true when it was found this frame (not the last known spot kept while the target is out of sight).</summary>
+		private static bool TryCenterCore(out Vector2 c, out bool fresh)
+		{
+			c = _lastCenter; fresh = false;
 			bool remoteFresh = _remoteTick != uint.MaxValue && Main.GameUpdateCount - _remoteTick < 120u;
 			switch (Kind)
 			{
@@ -208,7 +241,7 @@ namespace Levy.Common.Observe
 				default: return false;
 			}
 			have:
-			_lastCenter = c; _haveLast = true;
+			_lastCenter = c; _haveLast = true; fresh = true;
 			return true;
 		}
 
@@ -231,15 +264,16 @@ namespace Levy.Common.Observe
 				foreach (var c in Cams) if (!ids.Contains(c.Id)) ids.Add(c.Id);
 				if (ids.Count == 0) return;
 				ids.Sort(); int i = ids.IndexOf(TargetId); i = ((i < 0 ? 0 : i + dir) % ids.Count + ids.Count) % ids.Count;
-				int z = ids[i]; Zoom = MaxZoom; TargetId = z; _haveLast = false; _remoteTick = uint.MaxValue;
+				int z = ids[i]; Zoom = 1f; TargetId = z; _haveLast = false; _remoteTick = uint.MaxValue; Connected();
 				ObserveNet.SendRequest(1, z);
 			}
 			else if (Kind == ViewKind.Levy)
 			{
 				var ids = GoProLevies(Main.LocalPlayer); if (ids.Count == 0) return;
 				int i = ids.IndexOf(TargetId); i = ((i < 0 ? 0 : i + dir) % ids.Count + ids.Count) % ids.Count;
-				TargetId = ids[i]; _haveLast = false; _remoteTick = uint.MaxValue; _bodyCache = -1;
+				TargetId = ids[i]; _haveLast = false; _remoteTick = uint.MaxValue; _bodyCache = -1; Connected();
 				ObserveNet.SendRequest(2, TargetId);
+				Main.NewText(LevyUtil.T("Observe.Watching", NameOf(TargetId)), 160, 220, 255);
 			}
 			else if (Kind == ViewKind.Mind)
 			{
@@ -257,11 +291,15 @@ namespace Levy.Common.Observe
 		{
 			if (Main.dedServ) return;
 			if (Kind == ViewKind.None) { if (ArenaView.Active || ArenaView.Inflated) ArenaView.Leave(); return; }
-			if (!TryCenter(out Vector2 c))
+			bool have = TryCenter(out Vector2 c);
+			if (Kind != ViewKind.Mind && SignalLost(Main.GameUpdateCount, _connectTick, _lastSeenTick))
 			{
-				if (Main.GameUpdateCount > 0 && Kind != ViewKind.Mind) { Main.NewText(LevyUtil.T("Observe.Lost"), 255, 200, 120); Exit(); }
+				// the target has been out of sight past the grace time (a watched levy fell, or a camera was removed): the next GoPro levy if there is one, else back to your own view
+				if (Kind == ViewKind.Levy && GoProLevies(Main.LocalPlayer).Exists(x => x != TargetId)) { Main.NewText(LevyUtil.T("Observe.Lost"), 255, 200, 120); Cycle(1); return; }
+				Main.NewText(LevyUtil.T("Observe.Lost"), 255, 200, 120); Exit();
 				return;
 			}
+			if (!have) return;
 			ArenaView.Factor = Kind == ViewKind.Camera ? ArenaView.ClampFactor(Math.Min(Zoom, MaxZoom)) : 1f;
 			ArenaView.Frame(c, ArenaView.Factor);
 		}
@@ -301,9 +339,11 @@ namespace Levy.Common.Observe
 			if (!typing)
 			{
 				// while driving a levy the arrow keys are movement keys: switching levies is Page Up / Page Down there
-				Keys next = Kind == ViewKind.Mind ? Keys.PageDown : Keys.Right, prev = Kind == ViewKind.Mind ? Keys.PageUp : Keys.Left;
-				if (Main.keyState.IsKeyDown(next) && !Main.oldKeyState.IsKeyDown(next)) Cycle(1);
-				if (Main.keyState.IsKeyDown(prev) && !Main.oldKeyState.IsKeyDown(prev)) Cycle(-1);
+				// a GoPro or camera view takes the arrow keys and Page Up / Page Down alike
+				bool Pressed(Keys k) => Main.keyState.IsKeyDown(k) && !Main.oldKeyState.IsKeyDown(k);
+				bool arrows = Kind != ViewKind.Mind;
+				if (Pressed(Keys.PageDown) || (arrows && Pressed(Keys.Right))) Cycle(1);
+				if (Pressed(Keys.PageUp) || (arrows && Pressed(Keys.Left))) Cycle(-1);
 			}
 			if (Kind == ViewKind.Camera && PlayerInput.ScrollWheelDelta != 0)
 			{

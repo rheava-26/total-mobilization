@@ -81,6 +81,29 @@ namespace Levy.Common.Weapons
 				check(melee.Target?.It == terra, "a melee levy takes the best blade from an unclassed levy");
 				check(flex.Target != null && flex.Target.It != terra, "the unclassed levy is re-armed from what is left, not left bare");
 			}
+			// REFORGE TIE-BREAK: two copies of one weapon, the better-reforged one goes out first even when the worse copy ranks higher (a newer deposit's recency boost); the other weapons keep their order.
+			{
+				var good = Make(ItemID.Musket); good.Prefix(PrefixID.Unreal);
+				var bad = Make(ItemID.Musket); bad.Prefix(PrefixID.Awful);
+				check(good.prefix == PrefixID.Unreal && bad.prefix == PrefixID.Awful && WeaponRank.CompareReforge(good, bad) > 0, "an Unreal Musket has the better reforge than an Awful one");
+				check(WeaponRank.BetterCopy(good, 1f, bad, 100f) && !WeaponRank.BetterCopy(bad, 100f, good, 1f) && !WeaponRank.BetterCopy(good, 0f, bad, 5f) && WeaponRank.BetterCopy(Make(ItemID.Musket), 2f, Make(ItemID.Musket), 1f),
+					"the better reforge wins between copies; a copy the rules bar never does; equal reforges keep the rank order");
+				var saved = WeaponAllocator.RankOf;
+				try
+				{
+					WeaponAllocator.RankOf = it => ReferenceEquals(it, bad) ? 200f : ReferenceEquals(it, good) ? 150f : saved(it);
+					var lv = Lv(1, DamageClass.Ranged);
+					var levies = new List<AllocLevy> { lv };
+					var cands = Cands(levies, bad, good);
+					WeaponAllocator.Plan(levies, cands);
+					check(lv.Target?.It == good, "the better-reforged Musket is issued first though the worse copy ranks higher (got " + (lv.Target?.It == null ? "nothing" : lv.Target.It.AffixName()) + ")");
+					var ownGood = Lv(2, DamageClass.Ranged, bad); var levies2 = new List<AllocLevy> { ownGood };
+					var cands2 = Cands(levies2, good);
+					WeaponAllocator.Plan(levies2, cands2);
+					check(cands2.Count == 2 && ReferenceEquals(cands2[0].It, good) && cands2[0].Rank >= cands2[1].Rank, "the copies swap ranks: the better reforge holds the type's top rank");
+				}
+				finally { WeaponAllocator.RankOf = saved; }
+			}
 			// e) a better-matched levy is never stripped: two melee levies, one holds the Terra Blade, the other is bare; the bare one gets the next blade.
 			{
 				var a = Lv(1, DamageClass.Melee, terra); var b = Lv(2, DamageClass.Melee);
@@ -160,6 +183,31 @@ namespace Levy.Common.Weapons
 				ArmoryTE.TestServed = new List<SoldierRecord> { s };
 				try { te.IssueGear(s); } finally { ArmoryTE.TestServed = null; }
 				check(s.Gear.HasWeapon && s.Gear.Weapon.type == ItemID.ChlorophyteSaber, "the best weapon in storage beats a worse one on the rack (got " + (s.Gear.HasWeapon ? s.Gear.Weapon.Name : "nothing") + ")");
+			}
+			// Two copies of one weapon in storage: the better reforge is issued (the Awful copy first in storage).
+			{
+				var bad = Make(ItemID.Musket); bad.Prefix(PrefixID.Awful);
+				var good = Make(ItemID.Musket); good.Prefix(PrefixID.Unreal);
+				var te = Armory(bad, good);
+				var s = new SoldierRecord { Id = 100 };
+				ArmoryTE.TestServed = new List<SoldierRecord> { s };
+				try { te.IssueGear(s); } finally { ArmoryTE.TestServed = null; }
+				check(s.Gear.HasWeapon && s.Gear.Weapon.type == ItemID.Musket && s.Gear.Weapon.prefix == PrefixID.Unreal, "the better-reforged copy is issued (got " + (s.Gear.HasWeapon ? s.Gear.Weapon.AffixName() : "nothing") + ")");
+			}
+			// Useless accessories: a levy wearing a Lucky Coin (hand-locked) and a Gold Ring hands both back; the armory never issues a Discount Card.
+			{
+				var te = Armory(Make(ItemID.IronBroadsword), Make(ItemID.DiscountCard));
+				var s = new SoldierRecord { Id = 101 };
+				s.Gear.Accessories[0] = Make(ItemID.LuckyCoin); s.Gear.SetLocked(SoldierGear.SlotAcc0, true);
+				if (s.Gear.Accessories.Length > 1) s.Gear.Accessories[1] = Make(ItemID.GoldRing);
+				ArmoryTE.TestServed = new List<SoldierRecord> { s };
+				try { te.IssueGear(s); } finally { ArmoryTE.TestServed = null; }
+				bool worn(int t) { foreach (var a in s.Gear.Accessories) if (a != null && !a.IsAir && a.type == t) return true; return false; }
+				bool stored(int t) { foreach (var a in te.Storage) if (a != null && !a.IsAir && a.type == t) return true; return false; }
+				check(!worn(ItemID.LuckyCoin) && stored(ItemID.LuckyCoin), "a levy hands a hand-locked Lucky Coin back to the armory");
+				check(!worn(ItemID.GoldRing) && stored(ItemID.GoldRing), "a levy hands a Gold Ring back to the armory");
+				check(!worn(ItemID.DiscountCard) && stored(ItemID.DiscountCard), "the armory never issues a Discount Card");
+				check(!s.Gear.IsLocked(SoldierGear.SlotAcc0), "the emptied slot is unlocked so the armory can fill it");
 			}
 			// ... and the rack still wins a tie.
 			{

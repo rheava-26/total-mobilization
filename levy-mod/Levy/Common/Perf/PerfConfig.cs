@@ -40,6 +40,8 @@ namespace Levy.Common.Perf
 		[Header("Effects")]
 		/// <summary>Reduced hides nameplates and thins the dust levy weapons throw. The army fights exactly the same.</summary>
 		[DefaultValue(LevyEffectsQuality.Full)] [DrawTicks] public LevyEffectsQuality LevyEffects;
+		/// <summary>Minions a levy's accessory summons (Calamity's Heart of the Elements and the elemental bottles, any mod's "summons a minion while worn") are not drawn. They still fight. Draw-only, this machine only.</summary>
+		[DefaultValue(false)] public bool HideLevyAccessoryMinions;
 
 		[Header("Speed")]
 		/// <summary>

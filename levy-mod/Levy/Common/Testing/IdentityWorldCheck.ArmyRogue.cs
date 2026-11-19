@@ -187,6 +187,7 @@ namespace Levy.Common.Testing
 						if (!Main.npc[body].active || Main.npc[body].ModNPC is not SoldierNPC) { res.Err = "levy gone"; break; }
 						if (soldier.LastUseTick != use0 && use0 != 0 && (ph0 == AmbushPhase.FallBack || ph0 == AmbushPhase.Charge) && (soldier.AmPhase == AmbushPhase.FallBack || soldier.AmPhase == AmbushPhase.Charge) && !grenade) res.ChargeThrows++;
 						if (shoot > 0 && soldier.TicksSinceDamaged == 0) res.Struck++;
+						if (ArmyDebug && k % 15 == 0) { NPC b0 = Main.npc[body]; float[] bb = HarnessCalamityProbe.Stealth(soldier.Dummy); Note($"  ambush dbg t={k} phase {soldier.AmPhase} x {(b0.Center.X - _sweepTarget.Center.X) / 16f:0.0} y {(b0.Bottom.Y - _sweepTarget.Bottom.Y) / 16f:0.0} vel {b0.velocity.X:0.0},{b0.velocity.Y:0.0} bar {(bb != null ? bb[0] / Math.Max(0.01f, bb[1]) : -1):0.00} why {soldier.StillReason()} b {soldier.WhyB} goal {(soldier.HasMoveGoal ? ((soldier.MoveGoal.X - _sweepTarget.Center.X) / 16f).ToString("0.0") : "-")} state {soldier.State}"); }
 						Main.npc[body].life = Main.npc[body].lifeMax;
 						if (grenade && soldier.Dummy != null && GrenadeInHand(soldier.Dummy.whoAmI, w.shoot, out _) != null) res.HoldTicks++;
 						if (!grenade && soldier.LastUseTick != prevUse) { if (prevUse != 0) res.Throws++; prevUse = soldier.LastUseTick; }
@@ -199,7 +200,7 @@ namespace Levy.Common.Testing
 						{
 							Projectile q = Main.projectile[i];
 							if (!q.active || !q.hostile || !shots.Contains(q.identity)) continue;
-							if (q.Hitbox.Intersects(box)) { if (player) res.Struck++; q.active = false; shots.Remove(q.identity); }
+							if (q.Hitbox.Intersects(box)) { if (player || soldier.TicksSinceDamaged != 0) res.Struck++; q.active = false; shots.Remove(q.identity); }
 						}
 					}
 					ClearNaturalHostiles(); ArmyReadDamage(new ArmyRes());

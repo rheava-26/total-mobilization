@@ -498,6 +498,31 @@ namespace Levy.Content.TileEntities
 			return any;
 		}
 
+		/// <summary>
+		/// Takes every accessory that has no effect on a levy (<see cref="WeaponClassifier.IsUsefulAccessory"/> false: the coin and shop rings, Lucky Coin, Discount Card, information and fishing gear) out of
+		/// his accessory, wings and boots slots, locked or not, and files it in storage (on the ground at the armory if storage is full). Vanity and the GoPro camera slot are not touched. Returns true when anything moved.
+		/// </summary>
+		internal bool PurgeUseless(SoldierGear g)
+		{
+			if (g == null) return false;
+			bool any = false;
+			void Out(int slot)
+			{
+				Item it = g.Get(slot);
+				if (IsAir(it) || !it.accessory || it.vanity || WeaponClassifier.IsUsefulAccessory(it)) return;
+				if (it.ModItem is global::Levy.Content.Items.Observe.GoProItem) return; // an old kit's GoPro in an accessory slot moves to the camera slot on load, never to storage
+				g.Set(slot, new Item()); g.SetLocked(slot, false);
+				var rest = Deposit(it);
+				if (!IsAir(rest)) Item.NewItem(new Terraria.DataStructures.EntitySource_Misc("Levy.Purge"), Center, rest);
+				any = true;
+			}
+			int n = g.Accessories?.Length ?? 0;
+			for (int i = 0; i < n && i < SoldierGear.AccessorySlots; i++) Out(SoldierGear.SlotAcc0 + i);
+			Out(SoldierGear.SlotWings); Out(SoldierGear.SlotBoots);
+			if (any) MarkDirty();
+			return any;
+		}
+
 		/// <summary>Gives a soldier back what ReturnGear took from his locked slots earlier in the same tick (a Re-arm). Locks are restored.</summary>
 		private bool ReclaimLocked(SoldierGear g, int accessorySlots)
 		{
@@ -841,18 +866,23 @@ namespace Levy.Content.TileEntities
 				msHeart = MsHeart();
 				if (msHeart != null) { var msArr = MagicStorageBridge.Snapshot(msHeart).ToArray(); if (msArr.Length > 0) segs.Add((null, msArr, msArr.Length)); else msHeart = null; }
 			}
-			var byType = new Dictionary<int, (int seg, int idx, float score)>();
+			// per weapon type: the copy that goes out (the better reforge first, WeaponRank.BetterCopy; on equal reforges the earlier source, rack first, stays) and the type's best score among its copies
+			var byType = new Dictionary<int, (int seg, int idx, float score, float pickScore)>();
 			for (int s = 0; s < segs.Count; s++) {
 				var (owner, arr, to) = segs[s];
 				for (int i = 0; i < to && i < arr.Length; i++) {
 					var it = arr[i];
 					if (IsAir(it) || (owner != null && owner.IsReservedRef(it)) || !userPred(it)) continue;
 					float sc = WeaponRank.Of(it);
-					if (!byType.TryGetValue(it.type, out var cur) || sc > cur.score) byType[it.type] = (s, i, sc); // strict >: on a tie the earlier source (rack first) stays
+					if (!byType.TryGetValue(it.type, out var cur)) { byType[it.type] = (s, i, sc, sc); continue; }
+					float best = Math.Max(cur.score, sc);
+					if (WeaponRank.BetterCopy(it, sc, segs[cur.seg].arr[cur.idx], cur.pickScore)) byType[it.type] = (s, i, best, sc);
+					else if (best != cur.score) byType[it.type] = (cur.seg, cur.idx, best, cur.pickScore);
 				}
 			}
 			if (byType.Count > 0) {
-				var list = new List<(int seg, int idx, float score)>(byType.Values);
+				var list = new List<(int seg, int idx, float score)>(byType.Count);
+				foreach (var v in byType.Values) list.Add((v.seg, v.idx, v.score));
 				list.Sort((a, b) => { int c = b.score.CompareTo(a.score); if (c != 0) return c; c = a.seg.CompareTo(b.seg); return c != 0 ? c : a.idx.CompareTo(b.idx); });
 				float cutoff = list[0].score * LevyConstants.WeaponVarietyTopFraction;
 				int tier = 1;
@@ -877,16 +907,20 @@ namespace Levy.Content.TileEntities
 		private static bool TryPickVaried(Item[] arr, Func<Item, bool> pred, SoldierRecord who, int from, int to, out int bestIdx)
 		{
 			bestIdx = -1;
-			var byType = new Dictionary<int, (int idx, float score)>();
+			var byType = new Dictionary<int, (int idx, float score, float pickScore)>(); // the copy that goes out (better reforge first, WeaponRank.BetterCopy) and the type's best score
 			for (int i = from; i < to && i < arr.Length; i++)
 			{
 				var it = arr[i];
 				if (IsAir(it) || !pred(it)) continue;
 				float sc = WeaponRank.Of(it);
-				if (!byType.TryGetValue(it.type, out var cur) || sc > cur.score) byType[it.type] = (i, sc);
+				if (!byType.TryGetValue(it.type, out var cur)) { byType[it.type] = (i, sc, sc); continue; }
+				float best = Math.Max(cur.score, sc);
+				if (WeaponRank.BetterCopy(it, sc, arr[cur.idx], cur.pickScore)) byType[it.type] = (i, best, sc);
+				else if (best != cur.score) byType[it.type] = (cur.idx, best, cur.pickScore);
 			}
 			if (byType.Count == 0) return false;
-			var list = new List<(int idx, float score)>(byType.Values);
+			var list = new List<(int idx, float score)>(byType.Count);
+			foreach (var v in byType.Values) list.Add((v.idx, v.score));
 			list.Sort((a, b) => { int c = b.score.CompareTo(a.score); return c != 0 ? c : a.idx.CompareTo(b.idx); });
 			float cutoff = list[0].score * LevyConstants.WeaponVarietyTopFraction;
 			int tier = 1;
@@ -2047,6 +2081,8 @@ namespace Levy.Content.TileEntities
 
 			// A kit made before the world-alter rule (or hand-assigned): anything that alters the world goes back to storage and is never issued again.
 			if (PurgeAltering(g)) changed = true;
+			// An accessory that does nothing on a levy (Lucky Coin, Discount Card, Gold Ring and the rest of WeaponClassifier's list) goes back to the armory; it is never issued.
+			if (PurgeUseless(g)) changed = true;
 
 			// A Re-arm in this very tick parked this soldier's hand-assigned items: take exactly those back first.
 			if (g.Reserved != null && ReclaimLocked(g, soldier.AccessorySlots)) changed = true;

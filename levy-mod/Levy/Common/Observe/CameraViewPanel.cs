@@ -108,11 +108,21 @@ namespace Levy.Common.Observe
 				Append(_panel);
 			}
 
-			/// <summary>The sources the player can watch right now: (kind, id, name). Kind 1 = camera, 2 = GoPro levy.</summary>
+			/// <summary>The sources the player can watch right now: (kind, id, name). Kind 1 = camera, 2 = GoPro levy, 3 = GoPro levy off the field (shown greyed).</summary>
 			private static List<(int kind, int id, string name)> Sources()
 			{
 				var res = new List<(int, int, string)>();
-				foreach (int id in ObserveSystem.GoProLevies(Main.LocalPlayer)) res.Add((2, id, ObserveSystem.NameOf(id)));
+				var watch = ObserveSystem.GoProLevies(Main.LocalPlayer);
+				foreach (int id in watch) res.Add((2, id, ObserveSystem.NameOf(id)));
+				// GoPro levies with nothing to look through right now (fallen, or waiting to deploy past the army's body cap) are listed greyed, so a camera never seems to vanish
+				var roster = global::Levy.Common.Systems.RosterSystem.Instance;
+				if (roster != null)
+				{
+					var off = new List<int>();
+					foreach (var r in roster.RegularsOf(Main.LocalPlayer)) if (!r.Reserve && global::Levy.Content.Items.Observe.GoProItem.Carries(r.Gear) && !watch.Contains(r.Id)) off.Add(r.Id);
+					off.Sort();
+					foreach (int id in off) res.Add((3, id, ObserveSystem.NameOf(id)));
+				}
 				var cams = new List<int>(); foreach (var te in StaticCameraTE.All()) cams.Add(te.ID);
 				foreach (var c in ObserveSystem.Cams) if (!cams.Contains(c.Id)) cams.Add(c.Id);
 				cams.Sort();
@@ -135,14 +145,22 @@ namespace Levy.Common.Observe
 				int lastKind = 0;
 				foreach (var (kind, id, name) in src)
 				{
-					if (kind != lastKind)
+					if (kind != lastKind && !(kind == 3 && lastKind == 2))
 					{
 						lastKind = kind;
 						var head = new UIElement(); head.Width.Set(0f, 1f); head.Height.Set(20, 0f);
-						var l = new Label(LevyUtil.T(kind == 2 ? "Observe.CamLevies" : "Observe.CamCameras"), 0.8f) { TextColor = new Color(200, 210, 240) };
+						var l = new Label(LevyUtil.T(kind != 1 ? "Observe.CamLevies" : "Observe.CamCameras"), 0.8f) { TextColor = new Color(200, 210, 240) };
 						head.Append(l); _list.Add(head);
 					}
+					lastKind = kind;
 					int k = kind, i = id;
+					if (kind == 3)
+					{
+						var off = new LevyButton(LevyUtil.T("Observe.CamOffField", name), LevyConstants.UI.ButtonTextScale, 0, 28, null, LevyUtil.T("Observe.NoGoProField")) { Enabled = false };
+						off.Width.Set(0f, 1f);
+						_list.Add(off);
+						continue;
+					}
 					var b = new LevyButton(name, LevyConstants.UI.ButtonTextScale, 0, 28, () => { if (k == 2) ObserveSystem.WatchLevy(i); else ObserveSystem.ConnectCamera(i); });
 					b.Width.Set(0f, 1f); b.Lit = Watching(kind, id);
 					_list.Add(b);

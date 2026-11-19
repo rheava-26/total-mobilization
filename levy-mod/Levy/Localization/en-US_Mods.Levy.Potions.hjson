@@ -6,7 +6,6 @@ SpectatorPotion: {
 		Enemies ignore you
 		You cannot fight or build
 		Ends against a boss you have not beaten
-		Fatal if your levies all fall to a boss
 		'''
 }
 
@@ -50,6 +49,7 @@ LostBet: {
 }
 
 Forfeit: "{0} forfeited."
+SpectatorWarning: Cancel this during a boss fight, or run out of soldiers and manpower in one while it's active, and you die.
 SpectatorRefused: Too soon after damage.
 SpectatorBossRefused: Beat this boss first.
 SpectatorBossEnds: A boss you have not beaten ends it.

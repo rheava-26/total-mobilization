@@ -27,6 +27,11 @@ namespace Levy.Common.Officers
 					try { desc = LevyUtil.T("Officers.Kit." + def.Key + ".Desc", def.Kit?.DescriptionArgs ?? Array.Empty<object>()); }
 					catch (Exception e) { fail.Add(def.Key + " description threw " + e.Message); continue; }
 					if (desc.Contains("Mods.Levy") || desc.Contains("{") || desc.Contains("}")) fail.Add(def.Key + " description unresolved: " + desc);
+					// the player-facing text rule: 1 to 4 short declarative sentences, plain words
+					int sentences = System.Text.RegularExpressions.Regex.Matches(desc.Trim(), @"\.(\s|$)").Count;
+					if (sentences < 1 || sentences > 4) fail.Add(def.Key + " description has " + sentences + " sentences (1 to 4): " + desc);
+					foreach (string w in new[] { "elevate", "seamless", "robust", "strays into reach", "lifts the whole", "unleash", "harness" })
+						if (desc.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0) fail.Add(def.Key + " description uses \"" + w + "\": " + desc);
 
 					int at = NPCID.Sets.AttackType[def.NpcType];
 					float a0 = SoldierNPC.OfficerPoseState(def.NpcType, 20, 40, 0.9f, out float a1, out float a2);
@@ -62,6 +67,31 @@ namespace Levy.Common.Officers
 							if (Math.Abs(got - want) > 0.01f) fail.Add($"officer list for content {c} on {screenH} should be {want} (whole when it fits, else the room the screen leaves), was {got}");
 						}
 					}
+				// the resizable panel at the resolutions players use (1366x768 to 2560x1440, UI scale 1 to 1.5): every width and height the grip allows fits the screen; a dragged height is kept
+				foreach (var (sw, sh) in new[] { (1366, 768), (1600, 900), (1920, 1080), (2560, 1440) })
+					foreach (float ui in new[] { 1f, 1.25f, 1.5f })
+					{
+						float w = sw / ui, hh = sh / ui;
+						foreach (float want in new[] { 0f, 300f, 600f, 5000f })
+						{
+							float fw = global::Levy.Common.UI.OfficerPanel.FitWidth(want, w);
+							if (fw > w - 2 * global::Levy.Common.UI.OfficerPanel.EdgeMargin + 0.01f && fw > global::Levy.Common.UI.OfficerPanel.MinW) fail.Add($"officer panel {fw} wide does not fit {sw}x{sh} x{ui}");
+							foreach (float header in new[] { 96f, 150f })
+							{
+								float lst = global::Levy.Common.UI.OfficerPanel.ListHeight(9000f, hh, header, want);
+								float total = header + lst + 24f;
+								if (total > Math.Max(hh - 2 * global::Levy.Common.UI.OfficerPanel.EdgeMargin, header + 144f) + 0.01f) fail.Add($"officer panel {total} tall (header {header}, asked {want}) does not fit {sw}x{sh} x{ui}");
+								if (want > 0f && want >= global::Levy.Common.UI.OfficerPanel.MinH && want <= hh - 2 * global::Levy.Common.UI.OfficerPanel.EdgeMargin && Math.Abs(total - want) > 0.01f) fail.Add($"officer panel dragged to {want} is {total} at {sw}x{sh} x{ui}");
+							}
+						}
+					}
+				// a card is as tall as its text: nine description lines are all shown (no line cap), and a card never cuts its cost line
+				{
+					float h9 = global::Levy.Common.UI.OfficerPanel.CandidateCardHeight(2, 24f, 9, 23f, 2, 22f), h1 = global::Levy.Common.UI.OfficerPanel.CandidateCardHeight(1, 24f, 1, 23f, 1, 22f);
+					if (h9 < 10 + 48 + 4 + 9 * 23 + 4 + 2 * 22 + 10 - 0.01f) fail.Add("a candidate card with 9 description lines is " + h9 + " tall: lines are cut");
+					if (h1 < 66f) fail.Add("a one-line candidate card is shorter than its portrait: " + h1);
+					if (global::Levy.Common.UI.OfficerPanel.DescScale < 0.8f || global::Levy.Common.UI.OfficerPanel.SmallScale < 0.8f) fail.Add("officer panel text below 0.8 scale");
+				}
 				// the pylon is vanilla's: no Levy GlobalTile claims a right-click on any tile
 				foreach (var gt in ModContent.GetContent<GlobalTile>())
 					if (gt.Mod == Mod && gt.GetType().GetMethod("RightClick", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly) != null)

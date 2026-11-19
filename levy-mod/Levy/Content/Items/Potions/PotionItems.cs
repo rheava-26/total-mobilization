@@ -40,6 +40,14 @@ namespace Levy.Content.Items.Potions
 			return true;
 		}
 
+		/// <summary>The bright red warning line under the tooltip (and on the buff, see <see cref="SpectatorBuff"/>).</summary>
+		public static readonly Color WarningColor = new Color(255, 60, 60);
+
+		public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips)
+		{
+			tooltips.Add(new TooltipLine(Mod, "SpectatorWarning", LevyUtil.T("Potions.SpectatorWarning")) { OverrideColor = WarningColor });
+		}
+
 		public override void AddRecipes()
 		{
 			CreateRecipe()

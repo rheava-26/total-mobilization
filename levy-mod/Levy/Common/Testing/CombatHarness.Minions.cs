@@ -263,15 +263,17 @@ namespace Levy.Common.Testing
 			{
 				var sb = new System.Text.StringBuilder();
 				var names = watch.Split(',');
+				int watchedNow = 0, hiddenNow = 0;
 				for (int i = 0; i < Main.maxProjectiles; i++)
 				{
 					Projectile q = Main.projectile[i];
 					if (!q.active || q.ModProjectile == null || Array.IndexOf(names, q.ModProjectile.Name) < 0) continue;
 					q.TryGetGlobalProjectile(out SoldierProjectileTag tg2);
-					sb.Append($"[{q.ModProjectile.Name} slot={i} owner={q.owner} tag={tg2?.SoldierIndex} dmg={q.damage} timeLeft={q.timeLeft} pos={(q.Center - Main.npc[_mnBody].Center)}] ");
+					sb.Append($"[{q.ModProjectile.Name} slot={i} owner={q.owner} tag={tg2?.SoldierIndex} accMinion={(global::Levy.Common.Vanity.AccessoryMinionHide.IsLevyAccessoryMinion(q))} dmg={q.damage} timeLeft={q.timeLeft} pos={(q.Center - Main.npc[_mnBody].Center)}] ");
+					watchedNow++; if (global::Levy.Common.Vanity.AccessoryMinionHide.IsLevyAccessoryMinion(q)) hiddenNow++;
 				}
 				_mnWatchTicks++; if (sb.Length > 0) _mnWatchAlive++;
-				Mod.Logger.Info($"HARNESS-ACCMIN t{_mnTick}: watched={(sb.Length == 0 ? "NONE" : sb.ToString())} targetDamage={_mnTargetLife0 - Main.npc[_mnTarget].life} body={_mnBody}");
+				Mod.Logger.Info($"HARNESS-ACCMIN t{_mnTick}: count={watchedNow} hideable={hiddenNow} watched={(sb.Length == 0 ? "NONE" : sb.ToString())} targetDamage={_mnTargetLife0 - Main.npc[_mnTarget].life} body={_mnBody}");
 			}
 			if (_mnTick == 200 || _mnTick == 500 || _mnTick == 850) Mod.Logger.Info($"HARNESS-MINION-DBG state t{_mnTick} target@{(Main.npc[_mnTarget].Center - Main.npc[_mnBody].Center)} {_mnPrevDesc}");
 			if (_mnTick < (int.TryParse(Environment.GetEnvironmentVariable("LEVY_HARNESS_MNTICKS"), out int mt) ? mt : 900)) return;

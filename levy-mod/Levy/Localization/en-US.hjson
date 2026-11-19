@@ -48,7 +48,8 @@ Mods: {
 				DisplayName: Spectral Lens
 				Tooltip:
 					'''
-					Makes levies, their weapons, shots and summons 85% transparent
+					Makes levies, their weapons, shots and summons see-through
+					Right-click it in your inventory to switch between 85%, 95% and 99% transparent
 					Only you see the effect
 					'''
 			}

@@ -16,10 +16,12 @@ CameraName: Camera {0}
 Connected: Connected to {0}.
 Watching: Watching {0}.
 NoGoPro: No levy of yours carries a GoPro.
+NoGoProField: Your GoPro levies are not on the field right now (fallen, in reserve or waiting to deploy).
 Lost: The signal is lost.
 CamTitle: Camera view
 CamLevies: Levies
 CamCameras: Cameras
+CamOffField: "{0} (off the field)"
 CamEmpty: No GoPro or camera to watch.
 CamHideHud: Hide HUD
 CamShowHud: Show HUD
@@ -32,6 +34,6 @@ MindNone: You have no living levy to control.
 HudCamera: CAMERA: {0}  (x{1})
 HudGoPro: GOPRO: {0}
 HudMind: MIND LINK: {0}
-KeysCamera: Left/Right: switch camera   Mouse wheel: zoom   Esc: disconnect
-KeysGoPro: 1 / 2: main weapon / sidearm   Page Up / Down: switch levy   Esc: stop watching
+KeysCamera: Left / Right: switch camera   Mouse wheel: zoom out   Esc: disconnect
+KeysGoPro: Left / Right or Page Up / Down: switch levy   Esc: stop watching
 KeysMind: Move, aim and attack as this levy   1 / 2: main weapon or sidearm   Page Up / Down: switch levy   Esc: release

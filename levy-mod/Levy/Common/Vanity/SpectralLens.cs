@@ -12,11 +12,17 @@ namespace Levy.Common.Vanity
 	public class SpectralLensPlayer : ModPlayer
 	{
 		public bool Worn;
-		public override void ResetEffects() => Worn = false;
+		/// <summary>The opacity of the lens worn this tick (the faintest setting when two are worn).</summary>
+		public float Opacity = LevyConstants.LensOpacity;
+		public override void ResetEffects() { Worn = false; Opacity = LevyConstants.LensOpacity; }
+
+		/// <summary>Records a lens worn at <paramref name="opacity"/>.</summary>
+		public void Wear(float opacity) { Opacity = Worn ? System.Math.Min(Opacity, opacity) : opacity; Worn = true; }
 	}
 
 	/// <summary>
-	/// Spectral Lens: while the local player wears it, this client draws every levy, its held weapon, its projectiles, its summoned units and its officers at <see cref="LevyConstants.LensOpacity"/>.
+	/// Spectral Lens: while the local player wears it, this client draws every levy, its held weapon, its projectiles, its summoned units and its officers at the worn lens's opacity
+	/// (<see cref="LevyConstants.LensOpacities"/>: 85%, 95% or 99% transparent, chosen on the item).
 	/// A draw-only effect on this machine: nothing in the simulation changes and other players see the army as usual.
 	/// </summary>
 	public static class LensDraw
@@ -32,8 +38,22 @@ namespace Levy.Common.Vanity
 			}
 		}
 
-		/// <summary>The rule on its own: a colour's four channels scaled to the lens opacity.</summary>
-		public static Color Fade(Color c) => c * LevyConstants.LensOpacity;
+		/// <summary>The opacity of the lens the local player wears (its first setting when none is worn).</summary>
+		public static float Opacity
+		{
+			get
+			{
+				if (Main.dedServ || Main.gameMenu) return LevyConstants.LensOpacity;
+				Player p = Main.LocalPlayer;
+				return p != null && p.active && p.TryGetModPlayer(out SpectralLensPlayer s) && s.Worn ? s.Opacity : LevyConstants.LensOpacity;
+			}
+		}
+
+		/// <summary>The rule on its own: a colour's four channels scaled to <paramref name="opacity"/>.</summary>
+		public static Color Fade(Color c, float opacity) => c * opacity;
+
+		/// <summary>A colour faded to the worn lens's opacity.</summary>
+		public static Color Fade(Color c) => Fade(c, Opacity);
 	}
 
 	/// <summary>
@@ -72,7 +92,7 @@ namespace Levy.Common.Vanity
 			if (!LensDraw.Active || !IsLevys(projectile)) return true;
 			_faded = true; _savedAlpha = projectile.alpha;
 			lightColor = LensDraw.Fade(lightColor);
-			projectile.alpha = 255 - (int)((255 - projectile.alpha) * LevyConstants.LensOpacity); // the stock draw reads GetAlpha; a custom draw that reads the alpha does too
+			projectile.alpha = 255 - (int)((255 - projectile.alpha) * LensDraw.Opacity); // the stock draw reads GetAlpha; a custom draw that reads the alpha does too
 			return true;
 		}
 

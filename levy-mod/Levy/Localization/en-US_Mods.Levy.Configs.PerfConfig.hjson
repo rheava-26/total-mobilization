@@ -43,6 +43,11 @@ LevyEffects: {
 	Tooltip: Reduced hides nameplates and thins the dust levy weapons throw. The army fights the same.
 }
 
+HideLevyAccessoryMinions: {
+	Label: Hide minions from levy accessories
+	Tooltip: Minions summoned by a levy's accessory, such as Heart of the Elements, are not drawn. They still fight. Only you see the change.
+}
+
 GearUpdateIntervalWhenFighting: {
 	Label: Gear update interval when fighting
 	Tooltip:

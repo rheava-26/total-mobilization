@@ -14,16 +14,21 @@ namespace Levy.Common.UI
 	{
 		/// <summary>Per-character UI state: the barracks panel size the player dragged it to (0 = never resized, use the default). Saved with the character.</summary>
 		public int BarracksW, BarracksH;
+		/// <summary>The officer panel size the player dragged it to (0 = never resized, use the default). Saved with the character.</summary>
+		public int OfficersW, OfficersH;
 
 		public override void SaveData(TagCompound tag)
 		{
 			if (BarracksW > 0 && BarracksH > 0) { tag["barracksW"] = BarracksW; tag["barracksH"] = BarracksH; }
+			if (OfficersW > 0 && OfficersH > 0) { tag["officersW"] = OfficersW; tag["officersH"] = OfficersH; }
 		}
 
 		public override void LoadData(TagCompound tag)
 		{
 			BarracksW = tag.GetInt("barracksW");
 			BarracksH = tag.GetInt("barracksH");
+			OfficersW = tag.GetInt("officersW");
+			OfficersH = tag.GetInt("officersH");
 		}
 
 		/// <summary>

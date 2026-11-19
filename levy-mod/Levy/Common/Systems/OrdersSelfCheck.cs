@@ -97,6 +97,13 @@ namespace Levy.Common.Systems
 
 				// 9. Spectral Lens
 				Check("9 85% transparent", System.Math.Abs(LevyConstants.LensOpacity - 0.15f) < 1e-6f && LensDraw.Fade(Color.White).A == 38);
+				Check("9 settings 85%, 95%, 99% transparent", SpectralLens.TransparencyPercent(0) == 85 && SpectralLens.TransparencyPercent(1) == 95 && SpectralLens.TransparencyPercent(2) == 99
+					&& LensDraw.Fade(Color.White, SpectralLens.OpacityOf(1)).A is 12 or 13 && LensDraw.Fade(Color.White, SpectralLens.OpacityOf(2)).A is 2 or 3);
+				Check("9 right-click steps 85 -> 95 -> 99 -> 85; a bad saved setting is held in range", SpectralLens.Next(0) == 1 && SpectralLens.Next(1) == 2 && SpectralLens.Next(2) == 0 && SpectralLens.Clamp(7) == 2 && SpectralLens.Clamp(-1) == 0);
+				{
+					var lp = new SpectralLensPlayer(); lp.Wear(SpectralLens.OpacityOf(1)); lp.Wear(SpectralLens.OpacityOf(0));
+					Check("9 two lenses worn: the more transparent one wins", lp.Worn && System.Math.Abs(lp.Opacity - 0.05f) < 1e-6f);
+				}
 				int lens = ModContent.ItemType<SpectralLens>();
 				Recipe r = null; foreach (Recipe x in Main.recipe) if (x != null && x.createItem != null && x.createItem.type == lens) { r = x; break; }
 				bool recipeOk = r != null && r.requiredTile.Contains(TileID.WorkBenches) && r.requiredItem.Count == 3

@@ -30,7 +30,7 @@ namespace Levy.Common.Systems
 	/// a Regular kept whole but off active duty). Server-authoritative: every mutating member is a no-op on a
 	/// multiplayer client; clients hold a display-only copy of <see cref="Regulars"/> fed by roster snapshots.
 	/// </summary>
-	public class RosterSystem : ModSystem
+	public partial class RosterSystem : ModSystem
 	{
 		public static RosterSystem Instance => ModContent.GetInstance<RosterSystem>();
 
@@ -51,7 +51,12 @@ namespace Levy.Common.Systems
 
 		private sealed class Deserter { public SoldierNPC Body; public int Ticks; }
 
-		private static readonly Comparison<SoldierRecord> DeployOrder = (a, b) => DeployPriority(a).CompareTo(DeployPriority(b));
+		private static readonly Comparison<SoldierRecord> DeployOrder = (a, b) =>
+		{
+			int c = DeployPriority(a).CompareTo(DeployPriority(b)); if (c != 0) return c;
+			c = b.Grade.CompareTo(a.Grade); if (c != 0) return c; // Champions first, then Men-at-Arms (an active army size fields the best first)
+			return a.Id.CompareTo(b.Id); // then enlistment order, so the same soldiers are fielded every time
+		};
 
 		public override void Load() => RosterNet.Register();
 
@@ -632,6 +637,7 @@ namespace Levy.Common.Systems
 			if (LevyUtil.IsClient || rec == null) return -1;
 			if (rec.Reserve) return -1; // a soldier in reserve has no body until he is recalled
 			if (rec.HasBody) return rec.BodyIndex; // never two bodies for one record
+			if (!ArmyHasRoom(rec)) return -1; // the commander's active army size is full: he waits (RosterSystem.ActiveArmy.cs)
 			if (global::Levy.Common.Events.OldOnesArmySystem.BlocksSpawn(rec)) return -1; // Old One's Army: regular levies stand down; only sentries call them up
 			if (ActiveBodyCount >= LevyConfig.Get.RenderCap) return -1;
 			int type = ModContent.NPCType<SoldierNPC>();
@@ -991,7 +997,7 @@ namespace Levy.Common.Systems
 			{
 				var rec = _deployScratch[i];
 				if (!SpawnPositionFor(rec, out var pos)) continue;
-				if (SpawnBody(rec, pos) < 0) break; // render cap or no NPC slot: the rest wait
+				if (SpawnBody(rec, pos) < 0) { if (!ArmyHasRoom(rec)) continue; break; } // his commander's active army size is full: the next commander's may not be; render cap or no NPC slot: the rest wait
 			}
 			_deployScratch.Clear();
 		}
@@ -1059,6 +1065,7 @@ namespace Levy.Common.Systems
 			if (rec.Kind == SoldierKind.Regular)
 			{
 				rec.RespawnTimer = LevyConstants.RegularRespawnTicks;
+				NoteOpening(rec, npc.Bottom, killerNpcType); // an active army size: the next soldier waiting takes his place this tick
 				if (hardcore && Regulars.Remove(rec)) Memorial.Add(rec);
 				PostDeathLine(body, rec, ctx, LevyConfig.Get.RegularDeathMessages);
 				if (hardcore) LevyUtil.Chat(LevyUtil.T("Roster.Memorial", rec.Name));
@@ -1653,6 +1660,7 @@ namespace Levy.Common.Systems
 			_bodies.Clear(); _deserters.Clear(); _deployScratch.Clear(); _onlineByName.Clear();
 			_deployTimer = 0; _snapshotTimer = 0; _feedTimer = 0; _spoilsTimer = 0; _spoilsSoundCd = 0; RallyCooldown = 0; _focusTargets.Clear(); _focusPositions.Clear();
 			_dawnInit = false; _lastDayTime = Main.dayTime;
+			ResetActiveArmy();
 		}
 
 		public override void OnWorldLoad()

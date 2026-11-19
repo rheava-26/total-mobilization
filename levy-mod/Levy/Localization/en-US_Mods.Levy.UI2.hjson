@@ -83,6 +83,7 @@ WagePerDay: "{0} a day"
 Home: Home: {0}
 Homeless: No barracks
 NotDeployed: Not deployed
+WaitingInReserve: Waiting in reserve
 DeadRespawn: Dead. Back in {0}s
 Dead: Dead
 Hp: HP {0}/{1}
@@ -215,3 +216,10 @@ AlterReasonLiquid: Places or moves liquid.
 AlterReasonConvert: Changes blocks or the biome.
 AlterReasonPlace: Places blocks.
 AlterReasonPaint: Paints the world.
+ActiveArmy: "Active: {0}"
+ActiveArmyAll: "Active: All"
+ActiveArmyShort: Active army size
+ActiveArmySetTo: "Set active army to {0}"
+ActiveArmyHint: Soldiers in the field at once. Click for no limit.
+ActiveArmyStepHint: Changes the active army size. Shift: 5 at a time.
+ActiveArmyHelp: Set how many soldiers fight at once. When one falls, the next in reserve takes their place right away. Fewer soldiers on the field means less lag.

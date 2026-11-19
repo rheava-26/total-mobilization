@@ -52,6 +52,20 @@ GearUpdateIntervalWhenFighting: {
 		'''
 }
 
+ActiveArmySize: {
+	Label: Active army size
+	Tooltip:
+		'''
+		Soldiers in the field at once. 0 fields all of them.
+		When one falls, the next in reserve takes their place right away.
+		'''
+}
+
+ArmyNoticeDontAskAgain: {
+	Label: Never ask about army size
+	Tooltip: Set by Don't ask again in the army size note.
+}
+
 FrameSkip: {
 	Label: Frame Skip
 	Tooltip: The game's Frame Skip setting. Subtle keeps the picture moving in heavy fights by slowing the game slightly.

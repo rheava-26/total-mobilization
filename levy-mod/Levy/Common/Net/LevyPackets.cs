@@ -101,6 +101,7 @@ namespace Levy.Common.Net
 		LogisticsStoragePreview, // server -> one client: the list "send the rest to storage" would move (StorageSend.Preview)
 		StripKit, // client -> server: int soldierId, bool issue - false strips the levy's whole kit to his Armory and stops issue, true issues him a kit again
 		ArmoryInUseList, // server -> one client: the items out of an armory's racks (layout above)
+		ActiveArmy, // client -> server: int size - the sender's active army size (0: no limit); RosterSystem.ActiveArmy.cs. Appended so no existing value moves
 	}
 
 	public static class LevyPackets

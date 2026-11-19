@@ -392,12 +392,17 @@ namespace Levy.Common.Perf
 
 		private static void CountEntities(PerfWindow w)
 		{
-			int npcs = 0, levies = 0, projs = 0, minions = 0, dust = 0, gore = 0;
-			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (!n.active) continue; npcs++; if (n.ModNPC is SoldierNPC) levies++; }
+			int npcs = 0, levies = 0, projs = 0, minions = 0, dust = 0, gore = 0, mine = 0;
+			string me = Main.LocalPlayer?.name;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i]; if (!n.active) continue; npcs++;
+				if (n.ModNPC is SoldierNPC s) { levies++; if (s.Record != null && !s.OfficerMode && s.Record.Kind == global::Levy.Common.SoldierKind.Regular && s.Record.CommanderName == me) mine++; } // mine: the local player's own Regulars (the active army size counts these)
+			}
 			for (int i = 0; i < Main.maxProjectiles; i++) { Projectile p = Main.projectile[i]; if (!p.active) continue; projs++; if (p.minion) minions++; }
 			for (int i = 0; i < Main.maxDust; i++) if (Main.dust[i].active) dust++;
 			for (int i = 0; i < Main.gore.Length; i++) if (Main.gore[i] != null && Main.gore[i].active) gore++;
-			w.Npcs = npcs; w.Levies = levies; w.Projs = projs; w.Minions = minions; w.Dust = dust; w.Gore = gore;
+			w.Npcs = npcs; w.Levies = levies; w.Mine = string.IsNullOrEmpty(me) ? -1 : mine; w.Projs = projs; w.Minions = minions; w.Dust = dust; w.Gore = gore;
 		}
 
 		// ------------------------------------------------------------------------------------------ boss and fights
@@ -431,6 +436,7 @@ namespace Levy.Common.Perf
 			Recent.Add(w); while (Recent.Count > 16) Recent.RemoveAt(0);
 			WriteLog(w.ToJson());
 			if (EchoToLog) Levy.Instance?.Logger.Info("[PerfWin] " + w.ToJson()); // lab: the windows in the server log too
+			try { PerfPopup.CheckLive(w, Math.Max(0, w.Mine)); } catch (Exception e) { Levy.Instance?.Logger.Warn("[PerfAnalyzer] army notice failed: " + e.Message); }
 			if (!string.IsNullOrEmpty(w.Boss)) { if (!_inFight) { _inFight = true; _fight.Clear(); } _fight.Add(w); }
 			else if (_inFight) EndFight();
 		}

@@ -160,6 +160,9 @@ Compiled during the passing preset idea in section 8. CANON facts, PITCH fills.
 - **Abyss:** a bare trench, home to Anahita, the hidden wyrms, the Old Duke and the Aquatic Scourge. The Sulphurous Sea is polluted but not yet irradiated. (CANON)
 - **Dungeon:** the Dragon Cult's fortress and library; its ritual keeps the Moon Lord sealed; Yharim calls them former friends. (CANON)
 - **Sky:** Chrysadia, under the Storm Dragon, later reduced to remnants. (CANON) Alive but fading. (PITCH)
+  - Moonstone Crown flavour (CANON, paraphrased; Eve found it 11-19): Chrysadia was mourned for its "marring": one dusk its clouds parted not onto the stars it loved or its patron gods, but onto a hungry void and a dread that would not lift. The crown is crafted from the Feather Crown (a sky-island item), so feathers → Chrysadia, moonstone → its night sky.
+  - Cross-references (CANON): the Storm Weaver lore says Chrysadia knew that serpent for eating wyverns whole, and that it came into the world through a rift the Devourer opened; wyverns still guard Chrysadia's ruins for the Storm Dragon; harpies settled the sky islands only after the old civilization fell.
+  - Reading (PITCH): Chrysadia fell to an attack from the sky, most likely the Devourer's rift and its serpents (the Storm Weaver, maybe the Ceaseless Void as the literal 'void'), while its patron, the Storm Dragon, didn't come. Fits Eve's earlier 'Storm: Chrysadia's god or its destroyer' and answers open question 8 (Chrysadia no longer stands by the present). Resonance, not canon: Wrath of the Gods' rift eclipse is the same image, a sky swallowed by a void.
 - **Forest:** unowned in the text. God-ruled human kingdoms. (PITCH)
 - **Onyx Kinsmen:** on the surface. (PITCH)
 - **Empty land:** monsters spawn wherever there are no walls, so people live in walled towns. (EVE)

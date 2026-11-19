@@ -73,12 +73,13 @@ namespace Levy.Common.Testing
 			}
 		}
 
-		private static int _crDefHpScale = int.MinValue;
+		private static float _crDefHpScale = float.NaN;
+		/// <summary>hpscale=<percent per command point at gear strength 1> spec token (2 = the shipped rule): sets LevyConfig.BossHpArmyStrength to hpscale / 2 for this fight; restored afterwards.</summary>
 		private static void CrSetHpScale(CrRun run)
 		{
 			var c = global::Levy.Common.Config.LevyConfig.Get;
-			if (_crDefHpScale == int.MinValue) _crDefHpScale = c.BossHpScalingPercentPerCp;
-			c.BossHpScalingPercentPerCp = run != null && run.HpScale >= 0f ? (int)run.HpScale : _crDefHpScale;
+			if (float.IsNaN(_crDefHpScale)) _crDefHpScale = c.BossHpArmyStrength;
+			c.BossHpArmyStrength = run != null && run.HpScale >= 0f ? run.HpScale / 2f : _crDefHpScale;
 		}
 
 		private static float _crDefFear = float.NaN;

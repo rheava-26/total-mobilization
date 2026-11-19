@@ -27,6 +27,8 @@ namespace Levy.Common.Globals
 
 		// ---- boss rule ----
 		public int EngagedCp;
+		/// <summary>Boss life scaling: summed gear strength of the engaged soldiers (command points x strength) and the plain strength sum, for the fight report.</summary>
+		public float EngagedPower, EngagedStrength;
 		public readonly HashSet<int> EngagedSoldierIds = new();
 		public int SpiteTarget = -1;
 		public int SpiteTimer;

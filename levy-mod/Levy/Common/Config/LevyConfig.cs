@@ -35,8 +35,10 @@ namespace Levy.Common.Config
 		[Header("BossBehaviour")]
 		[DefaultValue(true)] public bool BossesPunishSoldiers;
 		[DefaultValue(true)] public bool BossesTargetSoldiers;
-		[Range(0, 10)] [DefaultValue(2)] public int BossHpScalingPercentPerCp;
-		[Range(0, 200)] [DefaultValue(80)] public int BossHpScalingCapPercent;
+		/// <summary>Retired (boss life now follows gear strength, BossHpArmyStrength); kept so saved config files still load. Hidden and ignored.</summary>
+		[Newtonsoft.Json.JsonIgnore] [DefaultValue(2)] public int BossHpScalingPercentPerCp = 2;
+		[Range(0f, 5f)] [Increment(0.1f)] [DefaultValue(1f)] public float BossHpArmyStrength;
+		[Range(0, 1000)] [DefaultValue(0)] public int BossHpScalingCapPercent;
 		[Range(0f, 3f)] [DefaultValue(1f)] public float FearMultiplier;
 		[DefaultValue(FearModelSetting.Events)] [DrawTicks] public FearModelSetting FearModel;
 		[DefaultValue(true)] public bool EnemiesTargetSoldiers;

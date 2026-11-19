@@ -169,7 +169,10 @@ namespace Levy.Common
 		public const float SpiteDamageFraction = 0.01f;
 		public const int RedirectEveryNth = 3;
 		public const int RedirectDurationTicks = 180;
+		/// <summary>Boss life one command point adds at gear strength 1 (gear of the boss's own stage).</summary>
 		public const float HpScalePerCp = 0.02f;
+		/// <summary>Gear strength doubles every this many progression tiers the gear is ahead of the boss, and halves every this many behind; clamped to [Min, Max].</summary>
+		public const float HpStrengthTiersPerDouble = 3f, HpStrengthMin = 0.05f, HpStrengthMax = 4f;
 		/// <summary>Boss life scaling cap by progression (Boss Checklist scale, see ProgressionTier): from this progress on, a boss gains at most this fraction of its base life.
 		/// Pre-Hardmode, Hardmode, Golem, Moon Lord, Providence, Devourer of Gods, Yharon and beyond.</summary>
 		public static readonly (float from, float cap)[] HpScaleCapBands = { (0f, 0.8f), (7f, 1.2f), (13f, 1.6f), (18f, 2.2f), (19f, 2.8f), (21f, 3.4f), (22f, 4.0f) };

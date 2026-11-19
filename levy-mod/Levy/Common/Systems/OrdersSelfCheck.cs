@@ -67,11 +67,47 @@ namespace Levy.Common.Systems
 					fake.boss = true;
 					bool modRoot = BossRule.TryGetScalingRoot(fake, out NPC root, out _) && ReferenceEquals(root, fake);
 					Check("4 a non-boss gets no scaling root, a boss outside the vanilla list does", !plainRoot && modRoot, "vanilla list only before: modded boss root = false");
-					Check("4 +2%/CP, cap 80%: 10 CP on 1000 life = +200 (199 after truncation), 60 CP = +800", System.Math.Abs(BossRule.ScaledAdd(1000, 10, 0.02f, 0.8f) - 200) <= 1 && BossRule.ScaledAdd(1000, 60, 0.02f, 0.8f) == 800);
+					Check("4 +2% per power, cap 220%: 10 power on 1000 life = +200, 50 = +1000, 100 = +2000, 200 stops at +2200 (linear to the cap)",
+						System.Math.Abs(BossRule.ScaledAdd(1000, 10, 0.02f, 2.2f) - 200) <= 1 && System.Math.Abs(BossRule.ScaledAdd(1000, 50, 0.02f, 2.2f) - 1000) <= 1
+						&& System.Math.Abs(BossRule.ScaledAdd(1000, 100, 0.02f, 2.2f) - 2000) <= 1 && BossRule.ScaledAdd(1000, 200, 0.02f, 2.2f) == 2200);
+					Check("4 gear strength: boss-stage gear 1, three tiers ahead 2, three behind 0.5, a copper levy against Providence 0.05, capped at 4",
+						System.Math.Abs(BossRule.Strength(19f, 19f) - 1f) < 1e-4f && System.Math.Abs(BossRule.Strength(21f, 18f) - 2f) < 1e-4f && System.Math.Abs(BossRule.Strength(15f, 18f) - 0.5f) < 1e-4f
+						&& BossRule.Strength(0f, 19f) == LevyConstants.HpStrengthMin && BossRule.Strength(30f, 1f) == LevyConstants.HpStrengthMax);
+					Check("4 gear tier = 60% weapon + 40% armor and accessories: weapon 20, kit 15 -> 18", System.Math.Abs(BossRule.GearTierOf(20f, 15f) - 18f) < 1e-4f);
+					Check("4 cap bands 80/120/160/220/280/340/400% at pre-Hardmode, Hardmode, Golem, Moon Lord, Providence, Devourer of Gods, Yharon",
+						BossRule.BandCap(0f) == 0.8f && BossRule.BandCap(6.9f) == 0.8f && BossRule.BandCap(7f) == 1.2f && BossRule.BandCap(12.9f) == 1.2f && BossRule.BandCap(13f) == 1.6f && BossRule.BandCap(18f) == 2.2f
+						&& BossRule.BandCap(18.6f) == 2.2f && BossRule.BandCap(19f) == 2.8f && BossRule.BandCap(20.5f) == 2.8f && BossRule.BandCap(21f) == 3.4f && BossRule.BandCap(22f) == 4.0f && BossRule.BandCap(23f) == 4.0f);
+					var cfg4 = LevyConfig.Get; int ovPrev = cfg4.BossHpScalingCapPercent;
+					try
+					{
+						cfg4.BossHpScalingCapPercent = 0; fake.SetDefaults(NPCID.MoonLordCore);
+						float mlCap = BossRule.HpCapFor(fake);
+						cfg4.BossHpScalingCapPercent = 150; float ovCap = BossRule.HpCapFor(fake);
+						Check("4 the band is the further of world progress and the boss's own tier (Moon Lord >= 220%); a cap override above 0 wins", (BossRule.Legacy || mlCap >= 2.2f) && ovCap == 1.5f, mlCap + " / " + ovCap);
+					}
+					finally { cfg4.BossHpScalingCapPercent = ovPrev; }
+					fake.SetDefaults(NPCID.Zombie); fake.active = true; fake.whoAmI = Main.maxNPCs - 1; fake.boss = true; fake.lifeMax = fake.life = 1000; BossRule.ForgetNpc(fake.whoAmI);
 					BossRule.ApplyScaling(fake, 0.2f);
 					Check("4 applying 20% raises max and current life of the modded boss", fake.lifeMax == 1200 && fake.life == 1200, fake.lifeMax + "/" + fake.life);
+					BossRule.ApplyScaling(fake, 0.2f); bool same = fake.lifeMax == 1200;
+					BossRule.ApplyScaling(fake, 0.5f); bool up = fake.lifeMax == 1500 && fake.life == 1500;
+					BossRule.ApplyScaling(fake, 0.3f); bool never = fake.lifeMax == 1500;
+					Check("4 no double application: 20% twice = +200, a raised cap tops up to +500 once, a lower fraction never takes life away", same && up && never, fake.lifeMax.ToString());
+					// worm segments: an Eater of Worlds body that turns into a head keeps its scaling record
+					fake.SetDefaults(NPCID.EaterofWorldsBody); fake.active = true; fake.whoAmI = Main.maxNPCs - 1; fake.lifeMax = fake.life = 1000; BossRule.ForgetNpc(fake.whoAmI);
+					BossRule.ApplyScaling(fake, 0.2f); fake.type = NPCID.EaterofWorldsHead; BossRule.ApplyScaling(fake, 0.3f);
+					Check("4 an Eater of Worlds segment that becomes a head tops up to +30%, not +50%", fake.lifeMax == 1300, fake.lifeMax.ToString());
+					// worm segments: a Destroyer body resolves to its head through realLife, so the whole worm scales once
+					NPC head = Main.npc[Main.maxNPCs - 2]; bool headWas = head.active;
+					try
+					{
+						head.SetDefaults(NPCID.TheDestroyer); head.active = true; head.whoAmI = Main.maxNPCs - 2;
+						fake.SetDefaults(NPCID.TheDestroyerBody); fake.active = true; fake.whoAmI = Main.maxNPCs - 1; fake.realLife = head.whoAmI;
+						Check("4 a Destroyer body scales its head (realLife root)", BossRule.TryGetScalingRoot(fake, out NPC wr, out _) && ReferenceEquals(wr, head));
+					}
+					finally { head.active = headWas; BossRule.ForgetNpc(head.whoAmI); }
 				}
-				finally { fake.boss = false; fake.active = wasActive; }
+				finally { fake.boss = false; fake.realLife = -1; fake.active = wasActive; BossRule.ForgetNpc(fake.whoAmI); }
 
 				// 5. fear: events, fearless only with the Spectator buff
 				var spec = new Player(); spec.active = true; spec.AddBuff(ModContent.BuffType<SpectatorBuff>(), 600);

@@ -37,6 +37,7 @@ namespace Levy.Common.Boss
 		// ---- Eater of Worlds: segments have no realLife and heads split, so one fight record covers the whole worm ----
 		private static readonly HashSet<int> _eowEngagedIds = new();
 		private static int _eowEngagedCp;
+		private static float _eowEngagedPower, _eowEngagedStrength;
 
 		// =====================================================================================================
 		// Detection
@@ -210,7 +211,8 @@ namespace Levy.Common.Boss
 
 		/// <summary>
 		/// Called whenever a soldier damages an enemy. On a main boss: the soldier's command points join the fight once
-		/// (+BossHpScalingPercentPerCp % of base life per CP, capped by <see cref="HpCapFor"/>), and the hit is recorded for
+		/// (+2% of base life per command point times the soldier's gear strength <see cref="SoldierStrength"/>, times the
+		/// BossHpArmyStrength config, capped by <see cref="HpCapFor"/>), and the hit is recorded for
 		/// spite. Eater of Worlds: engagement is per worm fight, the scaling lands on the segment that was hit.
 		/// </summary>
 		public static void OnSoldierDamagedNpc(NPC target, SoldierNPC soldier, int damage)
@@ -221,25 +223,24 @@ namespace Levy.Common.Boss
 			var data = LevyNpcData.Of(root);
 			bool eow = rootType == NPCID.EaterofWorldsHead;
 			int engagementKey = EngagementKey(rec);
-			int engagedCp;
+			int soldiers; float power, strengthSum;
 			if (eow)
 			{
-				if (_eowEngagedIds.Add(engagementKey)) _eowEngagedCp += rec.CommandPointCost;
-				engagedCp = _eowEngagedCp;
+				if (_eowEngagedIds.Add(engagementKey)) { float st = SoldierStrength(rec, root); _eowEngagedCp += rec.CommandPointCost; _eowEngagedPower += rec.CommandPointCost * st; _eowEngagedStrength += st; }
+				soldiers = _eowEngagedIds.Count; power = _eowEngagedPower; strengthSum = _eowEngagedStrength;
 			}
 			else
 			{
-				if (data.EngagedSoldierIds.Add(engagementKey)) data.EngagedCp += rec.CommandPointCost;
-				engagedCp = data.EngagedCp;
+				if (data.EngagedSoldierIds.Add(engagementKey)) { float st = SoldierStrength(rec, root); data.EngagedCp += rec.CommandPointCost; data.EngagedPower += rec.CommandPointCost * st; data.EngagedStrength += st; }
+				soldiers = data.EngagedSoldierIds.Count; power = data.EngagedPower; strengthSum = data.EngagedStrength;
 			}
 			rec.EngagedBosses.Add(root.whoAmI);
 
 			var cfg = LevyConfig.Get;
-			float perCp = cfg.BossHpScalingPercentPerCp / 100f;
-			float cap = HpCapFor(root);
-			float fraction = Math.Min(engagedCp * perCp, cap);
-			ApplyScaling(eow ? target : root, fraction, engagedCp);
-			NoteFightScale((int)Math.Round(fraction * 100f), engagedCp);
+			float fraction = ScaleFraction(power, PerPowerFraction(), HpCapFor(root));
+			int pct = (int)Math.Round(fraction * 100f), str100 = soldiers > 0 ? (int)Math.Round(strengthSum / soldiers * 100f) : 0;
+			ApplyScaling(eow ? target : root, fraction, soldiers, str100);
+			NoteFightScale(pct, soldiers, str100);
 
 			if (damage > 0 && cfg.BossesPunishSoldiers && soldier.NPC != null) RecordDamage(data, soldier.NPC.whoAmI, damage);
 		}
@@ -259,12 +260,59 @@ namespace Levy.Common.Boss
 			return true;
 		}
 
+		// ---- gear strength ----
+		/// <summary>Test seam (env LEVY_BOSSHP=legacy): the old rule, every soldier at strength 1 under a flat 80% cap, for A/B labs.</summary>
+		internal static readonly bool Legacy = Environment.GetEnvironmentVariable("LEVY_BOSSHP") == "legacy";
+
+		/// <summary>Life fraction one unit of power adds: LevyConstants.HpScalePerCp times the config multiplier.</summary>
+		internal static float PerPowerFraction() => LevyConstants.HpScalePerCp * Math.Max(0f, LevyConfig.Get.BossHpArmyStrength);
+
+		/// <summary>Engaged power (command points x gear strength, summed) times the per-power share, held under the cap.</summary>
+		internal static float ScaleFraction(float power, float perPower, float cap) => Math.Min(Math.Max(0f, power) * perPower, Math.Max(0f, cap));
+
+		/// <summary>
+		/// Gear strength of one soldier against one boss: 2^((gear tier - boss tier) / <see cref="LevyConstants.HpStrengthTiersPerDouble"/>), clamped. Gear of the boss's own stage is 1, three tiers ahead 2, three behind 0.5.
+		/// The boss tier is its own place on the progression scale, else the world's progress.
+		/// </summary>
+		internal static float SoldierStrength(Soldiers.SoldierRecord rec, NPC root)
+		{
+			if (Legacy) return 1f;
+			float bt = root != null ? BossTierCached(root.type) : -1f;
+			if (bt < 0f) bt = Weapons.WeaponRank.Progress();
+			return Strength(GearTier(rec), bt);
+		}
+
+		internal static float Strength(float gearTier, float bossTier)
+			=> Math.Clamp((float)Math.Pow(2.0, (gearTier - bossTier) / LevyConstants.HpStrengthTiersPerDouble), LevyConstants.HpStrengthMin, LevyConstants.HpStrengthMax);
+
+		/// <summary>A soldier's gear tier on the progression scale: 60% his weapon, 40% the mean of his three armor slots and worn accessories (an empty slot counts 0).</summary>
+		internal static float GearTier(Soldiers.SoldierRecord rec)
+		{
+			var g = rec?.Gear;
+			if (g == null) return 0f;
+			float sum = ItemTier(g.Head) + ItemTier(g.Body) + ItemTier(g.Legs); int n = 3;
+			if (g.Accessories != null) for (int i = 0; i < g.Accessories.Length && i < rec.AccessorySlots; i++) { sum += ItemTier(g.Accessories[i]); n++; }
+			return GearTierOf(ItemTier(g.Weapon), sum / n);
+		}
+
+		internal static float GearTierOf(float weaponTier, float kitTier) => 0.6f * weaponTier + 0.4f * kitTier;
+
+		/// <summary>An item's progression tier (the armory's table), else the stage its rarity implies, else 0. Empty slot 0.</summary>
+		internal static float ItemTier(Item it)
+		{
+			if (it == null || it.IsAir || it.type <= 0) return 0f;
+			float t = Weapons.ProgressionTier.Of(it.type);
+			if (t < 0f) t = Weapons.ProgressionTier.RarityFloor(it);
+			return Math.Max(0f, t);
+		}
+
 		/// <summary>The scaling cap for a boss (a fraction of base life): the config override when it is above 0, else the band of <see cref="LevyConstants.HpScaleCapBands"/>
 		/// for the furthest of the world's progress and the boss's own place on the progression scale (the first fight against a band's boss already counts as that band).</summary>
 		public static float HpCapFor(NPC root)
 		{
 			int ov = LevyConfig.Get.BossHpScalingCapPercent;
 			if (ov > 0) return ov / 100f;
+			if (Legacy) return 0.8f;
 			float p = Weapons.WeaponRank.Progress();
 			if (root != null) p = Math.Max(p, BossTierCached(root.type));
 			return BandCap(p);
@@ -287,14 +335,17 @@ namespace Levy.Common.Boss
 		}
 
 		// ---- the current fight's scaling, for the fight report (the server notes it as it scales; a multiplayer client hears it through the BossLifeMax packet) ----
-		/// <summary>The largest scaling this fight reached, in percent of base life, and the command points engaged when it did.</summary>
-		public static int FightScalePct, FightScaleCp;
-		internal static void NoteFightScale(int pct, int cp) { if (pct > FightScalePct || (pct == FightScalePct && cp > FightScaleCp)) { FightScalePct = pct; FightScaleCp = cp; } }
+		/// <summary>The largest scaling this fight reached, in percent of base life, the soldiers engaged when it did and their mean gear strength (x100).</summary>
+		public static int FightScalePct, FightScaleSoldiers, FightScaleStrength100;
+		internal static void NoteFightScale(int pct, int soldiers, int strength100)
+		{
+			if (pct > FightScalePct || (pct == FightScalePct && soldiers > FightScaleSoldiers)) { FightScalePct = pct; FightScaleSoldiers = soldiers; FightScaleStrength100 = strength100; }
+		}
 		/// <summary>A new recording starts: forget the last fight's scaling.</summary>
-		public static void ResetFightScale() { FightScalePct = 0; FightScaleCp = 0; }
+		public static void ResetFightScale() { FightScalePct = 0; FightScaleSoldiers = 0; FightScaleStrength100 = 0; }
 
-		/// <summary>The life an engagement adds to a boss of <paramref name="baseLifeMax"/>: engaged command points times the per-CP share, held under the cap (both fractions).</summary>
-		internal static int ScaledAdd(int baseLifeMax, int engagedCp, float perCp, float cap) => (int)(Math.Max(1, baseLifeMax) * Math.Min(engagedCp * perCp, Math.Max(0f, cap)));
+		/// <summary>The life an engagement adds to a boss of <paramref name="baseLifeMax"/>: engaged power times the per-power share, held under the cap (both fractions).</summary>
+		internal static int ScaledAdd(int baseLifeMax, float power, float perPower, float cap) => (int)(Math.Max(1, baseLifeMax) * ScaleFraction(power, perPower, cap));
 
 		/// <summary>Regulars dedupe by record Id; a record without an Id (transient militia) dedupes by object identity in the negative range.</summary>
 		private static int EngagementKey(Soldiers.SoldierRecord rec)
@@ -305,7 +356,7 @@ namespace Levy.Common.Boss
 		/// <summary>Same NPC for scaling purposes. Eater of Worlds segments turn into heads/tails with a bare type change (NPC.cs 45852/45866) and keep their life.</summary>
 		private static bool SameScalingKind(int a, int b) => a == b || (IsEowSegment(a) && IsEowSegment(b));
 
-		internal static void ApplyScaling(NPC npc, float fraction, int engagedCp = 0)
+		internal static void ApplyScaling(NPC npc, float fraction, int soldiers = 0, int strength100 = 0)
 		{
 			if (npc == null || !npc.active || fraction <= 0f) return;
 			if (!_scale.TryGetValue(npc.whoAmI, out var st) || !SameScalingKind(st.Type, npc.type) || npc.lifeMax < st.BaseLifeMax + st.AppliedAdd)
@@ -321,7 +372,7 @@ namespace Levy.Common.Boss
 				if (Main.netMode == NetmodeID.Server)
 				{
 					var p = LevyPackets.New(LevyPacket.BossLifeMax);
-					p.Write((short)npc.whoAmI); p.Write(npc.lifeMax); p.Write((short)Math.Min(short.MaxValue, (int)Math.Round(fraction * 100f))); p.Write((short)Math.Min(short.MaxValue, engagedCp)); p.Send();
+					p.Write((short)npc.whoAmI); p.Write(npc.lifeMax); p.Write((short)Math.Min(short.MaxValue, (int)Math.Round(fraction * 100f))); p.Write((short)Math.Min(short.MaxValue, soldiers)); p.Write((short)Math.Min(short.MaxValue, strength100)); p.Send();
 				}
 			}
 			_scale[npc.whoAmI] = st;
@@ -373,7 +424,7 @@ namespace Levy.Common.Boss
 				else if (n.ModNPC is SoldierNPC s && s.Record != null && s.IsAlive && !s.Hostile) LiveBodies.Add(s);
 				if (n.type == NPCID.EaterofWorldsHead || n.type == NPCID.EaterofWorldsBody || n.type == NPCID.EaterofWorldsTail) anyEow = true;
 			}
-			if (!anyEow && (_eowEngagedIds.Count > 0 || _eowEngagedCp != 0)) { _eowEngagedIds.Clear(); _eowEngagedCp = 0; }
+			if (!anyEow && (_eowEngagedIds.Count > 0 || _eowEngagedCp != 0)) EndEowFight();
 			if (_scale.Count > 0)
 			{
 				_pruneBuffer.Clear();
@@ -389,13 +440,13 @@ namespace Levy.Common.Boss
 		internal static void ForgetNpc(int whoAmI) => _scale.Remove(whoAmI);
 
 		/// <summary>The worm fight is over: forget who engaged it.</summary>
-		internal static void EndEowFight() { _eowEngagedIds.Clear(); _eowEngagedCp = 0; }
+		internal static void EndEowFight() { _eowEngagedIds.Clear(); _eowEngagedCp = 0; _eowEngagedPower = _eowEngagedStrength = 0f; }
 
 		/// <summary>World unload / clear: forget everything.</summary>
 		internal static void ClearAll()
 		{
 			LiveBosses.Clear(); LiveBodies.Clear(); _scale.Clear(); _pruneBuffer.Clear();
-			_eowEngagedIds.Clear(); _eowEngagedCp = 0; _bossTier.Clear(); ResetFightScale();
+			EndEowFight(); _bossTier.Clear(); ResetFightScale();
 			TerrorTable.ClearCaches();
 		}
 	}

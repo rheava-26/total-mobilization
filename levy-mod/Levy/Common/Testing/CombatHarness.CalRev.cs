@@ -719,7 +719,7 @@ namespace Levy.Common.Testing
 				if (run.Diag) global::Levy.Common.Potions.SpectatorDiagnostic.Set(true);
 				global::Levy.Common.Recording.FightRecAuto.Tag(("arena", run.Arena), ("seed", run.Seed), ("mode", run.Mode), ("gear", run.Gear + "_n" + run.N), ("cellkey", run.Key));
 				if (probe && !File.Exists(_crOut + ".probe.tsv")) File.WriteAllText(_crOut + ".probe.tsv", "mode\ttick\tlevy\tgear\tupkeep\trage\tadr\trageMode\tadrMode\thp\tboss\n");
-				Mod.Logger.Info($"HARNESS-CR: start {run.Key}: {run.Boss} {boss.life}/{boss.lifeMax} def {boss.defense} dmg {boss.damage} revenge={LevyRippers.RevengeanceOn} death={CrDeathOn()} expert={Main.expertMode} rippersOff={LevyRippers.Disabled} arena={run.Arena} gear={run.Gear} n={run.N} hpscale%/cp={(global::Levy.Common.Config.LevyConfig.Get.BossHpScalingPercentPerCp)}; {run.Desc}");
+				Mod.Logger.Info($"HARNESS-CR: start {run.Key}: {run.Boss} {boss.life}/{boss.lifeMax} def {boss.defense} dmg {boss.damage} revenge={LevyRippers.RevengeanceOn} death={CrDeathOn()} expert={Main.expertMode} rippersOff={LevyRippers.Disabled} arena={run.Arena} gear={run.Gear} n={run.N} hpstrength={(global::Levy.Common.Config.LevyConfig.Get.BossHpArmyStrength)} hpcap={(global::Levy.Common.Boss.BossRule.HpCapFor(boss)):0.00} legacy={(global::Levy.Common.Boss.BossRule.Legacy)}; {run.Desc}");
 				return;
 			}
 			var st = _crS; st.Tick = ++_crTickInRun;
@@ -728,7 +728,7 @@ namespace Levy.Common.Testing
 			NPC e = Main.npc[st.BossIdx];
 			bool bossAlive = e.active && e.type == st.BossType;
 			if (st.Worm) bossAlive = CrWormTick(st, ref e);
-			else if (bossAlive) { st.BossLife = e.life; e.timeLeft = 99999; if (st.HalfTick < 0 && e.life * 2 <= st.BossLifeMax) st.HalfTick = st.Tick; }
+			else if (bossAlive) { st.BossLife = e.life; st.BossLifeMax = Math.Max(st.BossLifeMax, e.lifeMax); e.timeLeft = 99999; if (st.HalfTick < 0 && e.life * 2 <= st.BossLifeMax) st.HalfTick = st.Tick; }
 			else if (!st.BossGone) { st.BossGone = true; st.EndTick = st.Tick; st.Result = BbIsBoss(run.Boss) ? (BbWon(run.Boss, st.BossLife, st.BossLifeMax) ? "WIN" : "DESPAWN") : e.life <= 0 ? "WIN" : "DESPAWN"; st.BossLife = BbIsBoss(run.Boss) ? 0 : Math.Max(0, e.life); }
 			int adds = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && st.AddTypes.Contains(Main.npc[i].type)) adds++;
 			st.AddsPeak = Math.Max(st.AddsPeak, adds); st.MaxAdds = st.AddsPeak;

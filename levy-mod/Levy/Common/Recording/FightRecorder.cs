@@ -568,7 +568,7 @@ namespace Levy.Common.Recording
 				w.WriteLine("{\"k\":\"end\",\"reason\":" + FightRecFormat.Esc(reason) + ",\"ticks\":" + Elapsed + ",\"frames\":" + _frames + ",\"events\":" + _events
 					+ ",\"target\":{\"none\":" + _tkNone + ",\"player\":" + _tkPlayer + ",\"levy\":" + _tkLevy + ",\"spite\":" + _tkSpite + "},\"levyHits\":" + _levyHits + ",\"levyDeaths\":" + _levyDeaths + ",\"outcome\":" + FightRecFormat.Esc(_outcome) + ",\"arenaChunks\":" + _chunks
 					+ ",\"result\":" + FightRecFormat.Esc(result) + ",\"durationSec\":" + FightRecFormat.N(secs) + ",\"bossName\":" + FightRecFormat.Esc(_bossNameSeen ?? _boss) + ",\"bosses\":" + _bossesSeen + ",\"cmdDeaths\":" + _cmdDeaths
-					+ ",\"armyAlive\":" + alive + ",\"armyTotal\":" + total + ",\"hpScalePct\":" + global::Levy.Common.Boss.BossRule.FightScalePct + ",\"hpScaleCp\":" + global::Levy.Common.Boss.BossRule.FightScaleCp + ",\"dmgBoss\":" + _dmgBoss + ",\"dmgAll\":" + _dmgAll + ",\"profiled\":" + (_profWindows > 0 ? "1" : "0") + ",\"dropped\":" + w.Dropped + ",\"capped\":" + (w.Full ? "1" : "0") + ",\"writeError\":" + FightRecFormat.Esc(w.Error) + "}", true);
+					+ ",\"armyAlive\":" + alive + ",\"armyTotal\":" + total + ",\"hpScalePct\":" + global::Levy.Common.Boss.BossRule.FightScalePct + ",\"hpScaleSoldiers\":" + global::Levy.Common.Boss.BossRule.FightScaleSoldiers + ",\"hpScaleStrength\":" + FightRecFormat.N(global::Levy.Common.Boss.BossRule.FightScaleStrength100 / 100.0) + ",\"dmgBoss\":" + _dmgBoss + ",\"dmgAll\":" + _dmgAll + ",\"profiled\":" + (_profWindows > 0 ? "1" : "0") + ",\"dropped\":" + w.Dropped + ",\"capped\":" + (w.Full ? "1" : "0") + ",\"writeError\":" + FightRecFormat.Esc(w.Error) + "}", true);
 				_w = null;
 				if (!_gzip)
 				{

@@ -384,13 +384,27 @@ Mods: {
 				}
 
 				BossHpScalingPercentPerCp: {
-					Label: Boss HP scaling per command point (%)
-					Tooltip: Max and current HP a boss gains for every command point of soldiers engaging it
+					Label: Boss HP scaling per command point (retired)
+					Tooltip: Not used
+				}
+
+				BossHpArmyStrength: {
+					Label: Boss life from army strength
+					Tooltip:
+						'''
+						Each soldier who joins a boss fight adds boss life by how good his gear is for that boss.
+						A soldier in gear of the boss's own stage adds 2% per command point. Better gear adds more, outdated gear adds little.
+						1 is normal. 0 turns it off.
+						'''
 				}
 
 				BossHpScalingCapPercent: {
-					Label: Boss HP scaling cap (%)
-					Tooltip: The most a boss can gain from engaged soldiers.
+					Label: Boss life gain cap (%)
+					Tooltip:
+						'''
+						The most life an army can add to a boss.
+						0 follows progress: 80% before Hardmode, rising to 400% after Yharon.
+						'''
 				}
 
 				BossesPunishSoldiers: {

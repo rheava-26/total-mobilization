@@ -169,8 +169,9 @@ namespace Levy.Common.Recording
 			return lines;
 		}
 
-		/// <summary>"Boss life scaled +80% for 40 command points."</summary>
-		internal static string ScaleLine(FightStats s) => "Boss life scaled +" + s.HpScalePct + "% for " + s.HpScaleCp + " command " + Plural(s.HpScaleCp, "point", "points") + ".";
+		/// <summary>"Boss life scaled +80% for 40 soldiers (gear strength 1.2)."</summary>
+		internal static string ScaleLine(FightStats s) => "Boss life scaled +" + s.HpScalePct + "% for " + s.HpScaleSoldiers + " " + Plural(s.HpScaleSoldiers, "soldier", "soldiers")
+			+ " (gear strength " + s.HpScaleStrength.ToString("0.0#", CultureInfo.InvariantCulture) + ").";
 
 		private static string Row(params string[] cols) => string.Join("  ", cols);
 

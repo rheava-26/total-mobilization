@@ -127,8 +127,9 @@ namespace Levy.Common.Movement
 		/// <summary>Harness switch (LEVY_HOSTILE_DODGE=0): a hostile soldier ignores the player's side's shots again (the field then lists only hostile projectiles, as before).</summary>
 		public static bool HostileDodgeOn = Environment.GetEnvironmentVariable("LEVY_HOSTILE_DODGE") != "0";
 
-		/// <summary>Homing shots are predicted on the arc they are turning on (LEVY_PROJTURN=0: straight lines, as before). Turn rates under ProjTurnMinRad are a straight shot; the arc is kept for ProjTurnCapRad of heading change.</summary>
-		public static bool ProjTurnOn = Environment.GetEnvironmentVariable("LEVY_PROJTURN") != "0";
+		/// <summary>LAB ONLY (LEVY_PROJTURN=1): homing shots predicted on the arc they are turning on. Measured 11-20 against the Plaguebringer's homing missiles (Eve's army, 6 seeds each): 47.7 hits per levy-minute with it, 43.2 without, so it stays off.
+		/// Turn rates under ProjTurnMinRad are a straight shot; the arc is kept for ProjTurnCapRad of heading change.</summary>
+		public static bool ProjTurnOn = Environment.GetEnvironmentVariable("LEVY_PROJTURN") == "1";
 		private const float ProjTurnMinRad = 0.004f, ProjTurnMaxRad = 0.2f, ProjTurnCapRad = 1.6f;
 		public static long ProjTurning;
 

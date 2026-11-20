@@ -275,8 +275,9 @@ namespace Levy.Common.Testing
 
 		private static void Run()
 		{
-			int seeds = int.TryParse(Environment.GetEnvironmentVariable("LEVY_BODYGUARD_SEEDS"), out int sd) ? sd : 10;
+			int seeds = int.TryParse(Environment.GetEnvironmentVariable("LEVY_BODYGUARD_SEEDS"), out int sd) ? sd : 16;
 			int ticks = int.TryParse(Environment.GetEnvironmentVariable("LEVY_BODYGUARD_TICKS"), out int tk) ? tk : 1500;
+			Note("state when the check starts (to compare a run inside the chain with one alone): " + StateFingerprint());
 			var off = new List<Result>(); var on = new List<Result>();
 			for (int s = 0; s < seeds; s++)
 			{
@@ -294,13 +295,15 @@ namespace Levy.Common.Testing
 			Check($"a real boss locks onto levies in this scene (targeted levy ticks: rule off {pt0}, on {pt1})", pt0 >= 150 && pt1 >= 150);
 			double dc0 = Mean(off.SelectMany(x => x.DC)), dc1 = Mean(on.SelectMany(x => x.DC));
 			double dk0 = Mean(off.SelectMany(x => x.DK)), dk1 = Mean(on.SelectMany(x => x.DK));
-			// The gain is judged per seed, paired (the same seed with the rule off and on), over enough seeds that one odd fight cannot decide it. Measured over 32 paired seeds (the lab, Nov 20): the gain is 8.6 tiles
-			// with a standard deviation of 4.2 between seeds, one seed in 32 gained nothing, and the mean of 4 of those seeds fell under 3 tiles in 1 boot in 250 to 1 in 2,500, which makes a 4-seed gate flake. The gate is a mean gain of at
-			// least 3 tiles AND a gain in at least 80% of the seeds: with the rule doing nothing, the mean over 10 seeds clears 3 tiles under 1% of the time and 8 of 10 seeds gain under 6% of the time, so a rule that stopped working fails.
+			// The gain is judged per seed, paired (the same seed with the rule off and on), over enough seeds that one odd fight cannot decide it. Measured in the lab over 32 paired seeds on Nov 20: the gain is 8.6 tiles with a standard
+			// deviation of 4.2 between seeds, and the mean of 4 of those seeds fell under 3 tiles in 1 boot in 250 to 1 in 2,500, which is how a 4-seed gate flaked. Inside the ship chain the gain has read 6.6 (sd 5.3, two of ten seeds at or under 0)
+			// in the vanilla half and 11.7 in the Calamity half, so the gate leaves room under that: the mean gain over 16 seeds must be at least 3 tiles, and at least 60% of the seeds must gain (so one huge seed cannot carry it).
+			// With the rule doing nothing (mean 0, sd about 5) the mean over 16 seeds reaches 3 tiles in about 1 boot in 125; with the gain the chain shows it falls under 3 in about 1 boot in 300.
 			var gain = off.Zip(on, (a, b) => Mean(b.DC) - Mean(a.DC)).ToList();
-			int gaining = gain.Count(g => g > 0), needGain = (int)Math.Ceiling(0.8 * gain.Count);
-			Note($"per-seed gain of a hunted levy's distance from the commander, rule on minus rule off (tiles): [{string.Join(", ", gain.Select(g => F(g)))}]; mean {F(gain.Average())}, {gaining} of {gain.Count} seeds gain");
-			Check($"a targeted levy stands farther from the commander with the rule on: mean {F(dc0)} -> {F(dc1)} tiles; per seed the gain averages {F(gain.Average())} tiles (gate 3.0) and {gaining} of {gain.Count} seeds gain (gate {needGain})", gain.Count >= 6 && gain.Average() >= 3.0 && gaining >= needGain);
+			int gaining = gain.Count(g => g > 0), needGain = (int)Math.Ceiling(0.6 * gain.Count);
+			double gMean = gain.Average(), gSd = gain.Count > 1 ? Math.Sqrt(gain.Sum(g => (g - gMean) * (g - gMean)) / (gain.Count - 1)) : 0;
+			Note($"per-seed gain of a hunted levy's distance from the commander, rule on minus rule off (tiles): [{string.Join(", ", gain.Select(g => F(g)))}]; mean {F(gMean)}, sd {F(gSd)}, {gaining} of {gain.Count} seeds gain");
+			Check($"a targeted levy stands farther from the commander with the rule on: mean {F(dc0)} -> {F(dc1)} tiles; per seed the gain averages {F(gMean)} tiles (gate 3.0) and {gaining} of {gain.Count} seeds gain (gate {needGain})", gain.Count >= 6 && gMean >= 3.0 && gaining >= needGain);
 			Check($"a targeted levy stands farther from the rest of the army with the rule on: mean {F(dk0)} -> {F(dk1)} tiles", dk1 >= dk0 + 1.0);
 			double g0 = Mean(off.SelectMany(x => x.Growth)), g1 = Mean(on.SelectMany(x => x.Growth));
 			int e0 = off.Sum(x => x.Episodes), e1 = on.Sum(x => x.Episodes);
@@ -324,6 +327,26 @@ namespace Levy.Common.Testing
 				Note($"inside a Calamity arena box (44 tiles each side): decoy goals seen {seen}, outside the box {outside}, smallest margin {F(boxed.Min(x => x.MinGoalMargin) / 16.0)} tiles");
 				Check("in an arena box no decoy goal is set outside it", seen > 0 && outside == 0);
 			}
+		}
+
+		/// <summary>Every simple setting of Levy's server config and a few world flags, one line: a check that an earlier check left changed shows up as a difference between the line of a run inside the chain and of a run alone.</summary>
+		private static string StateFingerprint()
+		{
+			var sb = new System.Text.StringBuilder();
+			try
+			{
+				var cfg = global::Levy.Common.Config.LevyConfig.Get;
+				if (cfg != null)
+					foreach (var f in cfg.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
+					{
+						object v = f.GetValue(cfg);
+						if (v == null || v is System.Collections.IEnumerable && !(v is string)) continue;
+						sb.Append(f.Name).Append('=').Append(Convert.ToString(v, CultureInfo.InvariantCulture)).Append(' ');
+					}
+			}
+			catch (Exception e) { sb.Append("(config unreadable: " + e.GetType().Name + ") "); }
+			sb.Append($"| hardMode={Main.hardMode} gameMode={Main.GameMode} expert={Main.expertMode} master={Main.masterMode} dayTime={Main.dayTime} raining={Main.raining} bloodMoon={Main.bloodMoon} eclipse={Main.eclipse} invasion={Main.invasionType} bodyguardMode={Bodyguard.Mode} regulars={RosterSystem.Instance.Regulars.Count} nextId={RosterSystem.Instance.NextId}");
+			return sb.ToString();
 		}
 
 		private static void Report(string label, List<Result> off, List<Result> on)

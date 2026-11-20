@@ -397,6 +397,7 @@ namespace Levy.Common.Testing
 					// a weapon that works for the levy on its own must work when she drives it: it shoots at an empty cursor spot, and on an enemy it does at least half the damage the levy deals by itself
 					bool Judge(int emptyProjs, bool firesAny, long drivenDmg, long aloneDmg) => (sample.shoot <= 0 || firesAny) && ((emptyProjs > 0 || sample.shoot <= 0) && (aloneDmg == 0 || drivenDmg * 2 >= aloneDmg));
 					bool good = !aiFires || Judge(empty.projs, fires, onEnemy.damage, ai.Damage);
+					if (aiFires && Environment.GetEnvironmentVariable("LEVY_MIND_RESAMPLE_TEST") == "1") good = false; // lab: treat the first sample as a miss, so the re-sample path runs and its verdict is read
 					// A weapon with random output (Flurrystorm Cannon throws 5 to 13 rounds from the same hold) can miss the half-the-damage bar on one 90-tick sample by chance alone. The verdict then moves to more samples on other seeds:
 					// the damage of every sample is summed on both sides and the same bar applied to the sums, so a weapon that really does less when driven still fails, and one that was only unlucky does not.
 					int extra = 0;

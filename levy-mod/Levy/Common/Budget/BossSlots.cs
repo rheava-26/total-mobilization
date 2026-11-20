@@ -28,7 +28,10 @@ namespace Levy.Common.Budget
 		/// <summary>LEVY_BOSSSLOTS=0 turns the room-making off (A/B switch for the lab: the boss spawn fails as it did).</summary>
 		internal static readonly bool On = Environment.GetEnvironmentVariable("LEVY_BOSSSLOTS") != "0";
 
-		/// <summary>A companion mod's way to give slots back: asked for n slots (and the lowest slot it may take, 0 when any will do), it frees up to n now and returns how many it freed (Mechanization stands its garrison drones down, oldest first).</summary>
+		/// <summary>The lowest slot a retry may use: 1. LEVY_BOSSSLOTS_MINSLOT=0 (lab) lets it use slot 0 again, to show what a worm chain does with a segment there.</summary>
+		internal static readonly int MinSlot = int.TryParse(Environment.GetEnvironmentVariable("LEVY_BOSSSLOTS_MINSLOT"), out int ms) ? Math.Max(0, ms) : 1;
+
+		/// <summary>A companion mod's way to give slots back: asked for n slots (and the lowest slot it may take: 1, never slot 0), it frees up to n now and returns how many it freed (Mechanization stands its garrison drones down, oldest first).</summary>
 		public static readonly List<Func<int, int, int>> SlotReleasers = new();
 
 		/// <summary>Extra NPC slots the drones leave free while a boss that needed the room is alive.</summary>
@@ -70,14 +73,14 @@ namespace Levy.Common.Budget
 			_busy = true;
 			try
 			{
-				// NewNPC searches from index Start up, and Calamity's worms pass their own index (a segment can only land above its head): free slots under the head would never be found. The retries search from slot 0.
+				// NewNPC searches from index Start up, and Calamity's worms pass their own index (a segment can only land above its head): free slots under the head would never be found. The retries search from slot 1 (never 0: Calamity's worm segments read a previous-segment index of 0 as "none" and despawn).
 				int freedNow = 0, futile = 0;
-				if (start > 0) r = orig(0);
+				if (start > MinSlot) r = orig(MinSlot);
 				for (int guard = 0; guard < 180 && r >= Main.maxNPCs; guard++)
 				{
-					if (!FreeOne(new Vector2(x, y), 0, out bool levy)) { Unanswered++; break; }
+					if (!FreeOne(new Vector2(x, y), MinSlot, out bool levy)) { Unanswered++; break; }
 					freedNow++;
-					r = orig(0);
+					r = orig(MinSlot);
 					if (r >= Main.maxNPCs && levy && ++futile >= 3) break; // retiring levies is not helping this spawn: stop taking more of them
 				}
 				if (freedNow > 0)

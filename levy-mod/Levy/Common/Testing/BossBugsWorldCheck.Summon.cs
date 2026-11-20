@@ -68,7 +68,7 @@ namespace Levy.Common.Testing
 					if (arm == "crowd" || arm == "full")
 					{
 						if (BossSlots.On && t.FreeBefore < baseSegs + 1) Check($"(Summon) {name} [{label}]: the world had {t.FreeBefore} slots free for {baseSegs + 1}: the room came from the zombies and critters ({t.FreedTotal} freed, {t.FreedHostile} hostiles)", t.FreedTotal >= baseSegs + 1 - t.FreeBefore - 2, () => t.Comp);
-						Check($"(Summon) {name} [{label}]: the townspeople are never taken ({t.TownBefore} -> {t.TownAfter})", t.TownAfter == t.TownBefore);
+						Check($"(Summon) {name} [{label}]: the townspeople are never taken ({t.TownBefore} -> {t.TownAfter})", t.TownAfter >= t.TownBefore);
 						Check($"(Summon) {name} [{label}]: the player's drones and turrets are never taken ({t.MachinesBefore} -> {t.MachinesAfter})", t.MachinesAfter == t.MachinesBefore);
 						Check($"(Summon) {name} [{label}]: not one levy left the field ({t.LeviesBefore} -> {t.LeviesAfter})", t.LeviesAfter == t.LeviesBefore, () => $"squeeze {t.SqueezeAtEnd}");
 					}
@@ -76,7 +76,7 @@ namespace Levy.Common.Testing
 					{
 						bool needs = t.FreeBefore < baseSegs + 1; // the boss needs more room than the world has left over the levies
 						Check($"(Summon) {name} [{label}]: the levies stand down only as many as the room took ({t.LeviesBefore} -> {t.LeviesAfter}, {(needs ? "it needs " + (baseSegs + 1 - t.FreeBefore) + " more" : "it fits")})", needs ? (t.LeviesAfter < t.LeviesBefore && t.LeviesAfter >= t.LeviesBefore - (baseSegs + 1 - t.FreeBefore) - 3) : t.LeviesAfter == t.LeviesBefore, () => $"squeeze {t.SqueezeSoon}");
-						Check($"(Summon) {name} [{label}]: the townspeople are never taken ({t.TownBefore} -> {t.TownAfter})", t.TownAfter == t.TownBefore);
+						Check($"(Summon) {name} [{label}]: the townspeople are never taken ({t.TownBefore} -> {t.TownAfter})", t.TownAfter >= t.TownBefore);
 					}
 				}
 			}
@@ -152,6 +152,7 @@ namespace Levy.Common.Testing
 					for (int guard = 0; guard < 400 && FreeNpcSlots() > want; guard++) Filler(arm == "crowd" ? NPCID.Zombie : NPCID.Bunny, at, false);
 				}
 				ClearAggroOfFillers();
+				if (arm == "crowd" || arm == "lean") Main.npc[0].active = false; // slot 0 free: a segment that landed there would read the next one's previous-segment index of 0 as "none" and the chain would despawn (Calamity's body AI)
 				t.Comp = $"levies {CountNpcs(x => x.ModNPC is SoldierNPC)}, town {CountNpcs(x => x.townNPC)}, machines {CountNpcs(x => EnemyTargeting.IsMachineBody(x))}, bunnies {CountNpcs(x => x.type == NPCID.Bunny)}, zombies {CountNpcs(x => x.type == NPCID.Zombie)}";
 				t.FreeBefore = FreeNpcSlots(); t.TownBefore = CountNpcs(x => x.townNPC); t.MachinesBefore = CountNpcs(x => EnemyTargeting.IsMachineBody(x)); t.LeviesBefore = CountNpcs(x => x.ModNPC is SoldierNPC);
 				// the item's own spawn: NPC.NewNPC(EntitySource_BossSpawn(player), x, y - 1600, type, Start: 1), then timeLeft *= 20

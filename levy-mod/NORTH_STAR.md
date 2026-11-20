@@ -59,6 +59,12 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 
 ## 3. Design principles
 
+**Never fix a problem by removing a feature (Eve, 2026-11-20).** "Don't remove a feature just because you want to fix an issue. It's the same reason you don't blow up your house because it smells bad." Fix the bug and keep the feature. A temporary block is acceptable only as a clearly labelled stopgap with the real fix already assigned, and Eve is told it's a stopgap. Example: the Magic Storage armory dupe. Blocking withdrawal (3.1.5) is a stopgap; the real fix makes withdrawal work.
+
+**Preference features become settings, never deletions (Eve, 2026-11-20).** If a behaviour is mostly personal taste, add it as a setting you can switch, and keep the old behaviour as an option. "I would always prefer that features don't get fully removed and just get put into the settings menu."
+
+**Keep the Field Manual current (Eve, 2026-11-20).** The in-game Field Manual (Content/Items/FieldManual.cs, Common/UI/GuidePages.cs) must explain the important things as they are now: rallying, what each order does, the active army size, etc. Any builder that adds or changes a player-facing mechanic updates the manual in the same change.
+
 **THE LEVY NORTH STAR: levies emulate real players as much as possible.** "these are supposed to emulate real players as much as possible tbh." (10-18) When a levy's stats, gear or consumables diverge from how a real player works, the default is to match vanilla unless there is a strong reason not to. This settled HP: grade is not an HP ceiling, and levies follow vanilla life crystals and fruit.
 
 **Use the existing systems.** "use the existing systems as much as you possibly can." (10-27) Levies should hold and use the real item the way a player or town NPC does: real item-use code, real projectiles, no hail of bullets from nowhere, no single bolted-on projectile standing in for a class. Eve expects an architecture rewrite of the weapon-use layer eventually and wants sustainable code, not patches over patches. Do not reverse-engineer every weapon by hand: "should we have to reverse engineer every single weapon in the entire game... No." (11-04)

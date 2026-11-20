@@ -183,7 +183,7 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		internal readonly struct DamageScope : IDisposable
 		{
-			private readonly UseGuard.Snap _snap; private readonly Player _real; private readonly int _focus, _anim, _animMax, _dir, _life, _mana; private readonly float _range, _grav, _gfx; private readonly Vector2 _pos; private readonly Rectangle _frame; private readonly long _t0;
+			private readonly UseGuard.Snap _snap; private readonly Player _real; private readonly int _nb, _focus, _anim, _animMax, _dir, _life, _mana; private readonly float _range, _grav, _gfx; private readonly Vector2 _pos; private readonly Rectangle _frame; private readonly long _t0;
 			// one scope is open at a time (the chain's damage wrapper does not nest), so its copies of the commander's buffs live in two shared arrays instead of two allocations per call
 			private static readonly int[] BuffType = new int[Player.MaxBuffs], BuffTime = new int[Player.MaxBuffs];
 			public DamageScope(SoldierNPC body, Item item)
@@ -191,8 +191,8 @@ namespace Levy.Common.Weapons
 				int o = SoldierMinions.TrueMyPlayer;
 				_real = o >= 0 && o < Main.maxPlayers ? Main.player[o] : null;
 				_t0 = Begin(); long ts = _t0;
-				if (_real == null) { _snap = default; _focus = _anim = _animMax = _dir = _life = _mana = 0; _range = _grav = _gfx = 0f; _pos = default; _frame = default; return; }
-				_life = _real.statLife; _mana = _real.statMana; Array.Copy(_real.buffType, BuffType, BuffType.Length); Array.Copy(_real.buffTime, BuffTime, BuffTime.Length);
+				if (_real == null) { _snap = default; _nb = _focus = _anim = _animMax = _dir = _life = _mana = 0; _range = _grav = _gfx = 0f; _pos = default; _frame = default; return; }
+				_life = _real.statLife; _mana = _real.statMana; _nb = Math.Min(BuffType.Length, Math.Min(_real.buffType.Length, _real.buffTime.Length)); Array.Copy(_real.buffType, BuffType, _nb); Array.Copy(_real.buffTime, BuffTime, _nb);
 				_snap = UseGuard.Disabled ? default : UseGuard.Take(o);
 				_focus = _real.MinionAttackTargetNPC; _anim = _real.itemAnimation; _animMax = _real.itemAnimationMax; _dir = _real.direction; _range = _real.whipRangeMultiplier; _grav = _real.gravDir; _gfx = _real.gfxOffY; _pos = _real.position; _frame = _real.bodyFrame;
 				Player d = body.Dummy;
@@ -213,7 +213,7 @@ namespace Levy.Common.Weapons
 						_real.MinionAttackTargetNPC = _focus;
 						// what the lash's on-hit hooks wrote on their "owner": a buff a hit handed out, a heal, a mana refund
 						_real.statLife = _life; _real.statMana = _mana;
-						Array.Copy(BuffType, _real.buffType, BuffType.Length); Array.Copy(BuffTime, _real.buffTime, BuffTime.Length);
+						Array.Copy(BuffType, _real.buffType, _nb); Array.Copy(BuffTime, _real.buffTime, _nb);
 					}
 				}
 				if (ts != 0L) ScopeTicks += System.Diagnostics.Stopwatch.GetTimestamp() - ts;

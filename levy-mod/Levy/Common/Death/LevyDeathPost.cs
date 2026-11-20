@@ -37,22 +37,33 @@ namespace Levy.Common.Death
 		private static bool? _has;
 		public static bool Installed => _has ??= ModLoader.HasMod("NoxusBoss");
 
+		/// <summary>The Avatar's rift (the fight's opening form), the Avatar of Emptiness or Nameless Deity, or one of their parts.</summary>
 		public static bool IsFightNpc(NPC n)
 		{
 			if (n == null || !n.active || n.ModNPC == null || n.ModNPC.Mod == null || n.ModNPC.Mod.Name != "NoxusBoss") return false;
 			string name = n.ModNPC.Name;
-			return name.Contains("NamelessDeity", StringComparison.Ordinal) || name.Contains("AvatarOfEmptiness", StringComparison.Ordinal);
+			return name.Contains("NamelessDeity", StringComparison.Ordinal) || name.Contains("AvatarOfEmptiness", StringComparison.Ordinal) || name.Equals("AvatarRift", StringComparison.Ordinal);
 		}
 
+		private static uint _stamp = uint.MaxValue; private static bool _active;
+		/// <summary>One of those fights is on (read once per tick).</summary>
 		public static bool Active
 		{
 			get
 			{
 				if (Override.HasValue) return Override.Value;
 				if (!Installed) return false;
-				for (int i = 0; i < Main.maxNPCs; i++) if (IsFightNpc(Main.npc[i])) return true;
-				return false;
+				uint now = Main.GameUpdateCount;
+				if (_stamp == now) return _active;
+				_stamp = now; _active = false;
+				for (int i = 0; i < Main.maxNPCs; i++) if (IsFightNpc(Main.npc[i])) { _active = true; break; }
+				return _active;
 			}
 		}
+
+		/// <summary>Levies say nothing while one of these fights is on: no floating line, no emote, no reaction, and right-click chat is "...". Chat-log notices (deaths) still post.</summary>
+		public static bool Hush => Active;
+		/// <summary>Self-check read-back: lines and emotes the hush held back.</summary>
+		public static int HushDropped;
 	}
 }

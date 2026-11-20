@@ -65,6 +65,17 @@ namespace Levy.Content.NPCs
 		public readonly int[] SlotImmune = new int[global::Levy.Common.Util.HostileContact.SlotCount];
 		/// <summary>An all-types immunity window: the general one and every slot (Player.SetImmuneTimeForAllTypes).</summary>
 		public void GrantAllTypeImmunity(int ticks) { ImmuneTime = Math.Max(ImmuneTime, ticks); AllImmune = Math.Max(AllImmune, ticks); }
+		/// <summary>Game tick (this machine's clock) until which the body blinks as an immune player does: a replacement under the active army size. Synced as ticks left.</summary>
+		public uint BlinkUntil;
+		/// <summary>A replacement under the active army size: an all-types immunity window, shown as the player's blink. Protection only. Server / single player; synced to clients.</summary>
+		public void GrantReplacementImmunity(int ticks)
+		{
+			GrantAllTypeImmunity(ticks);
+			BlinkUntil = Main.GameUpdateCount + (uint)Math.Max(0, ticks);
+			NPC.netUpdate = true;
+		}
+		/// <summary>Ticks the replacement blink has left on this machine.</summary>
+		public int BlinkTicksLeft => BlinkUntil > Main.GameUpdateCount ? (int)(BlinkUntil - Main.GameUpdateCount) : 0;
 		public int TicksSinceDamaged = 100000;
 		public int PotionSickness;
 		public int LastAttackerIndex = -1, LastAttackerType = -1;
@@ -676,6 +687,7 @@ namespace Levy.Content.NPCs
 			HookWriteNet(writer); // grappled: clients draw the chain
 			writer.Write(Sit_NetFlag()); // seated: clients draw the sitting pose
 			writer.Write(Leisure_NetByte()); // the pastime: clients draw the prop and the pose (SoldierNPC.Leisure.cs)
+			writer.Write((byte)Math.Min(255, BlinkTicksLeft)); // a replacement's immunity blink (ticks left)
 		}
 
 		public override void ReceiveExtraAI(BinaryReader reader)
@@ -700,6 +712,7 @@ namespace Levy.Content.NPCs
 			HookReadNet(reader);
 			Sit_ReadNet(reader.ReadBoolean());
 			Leisure_ReadNet(reader.ReadByte());
+			int blink = reader.ReadByte(); BlinkUntil = blink > 0 ? Main.GameUpdateCount + (uint)blink : 0;
 			Record.BodyIndex = NPC.whoAmI; Record.CommanderIndex = LevyUtil.FindPlayerByName(Record.CommanderName);
 			NPC.GivenName = Record.Name;
 			EnsureDummy(); ApplyLooks(); EquipDummy();

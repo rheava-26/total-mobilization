@@ -29,6 +29,8 @@ namespace Levy.Common
 		// ---------- Roster: active army size (how many of a commander's soldiers fight at once; RosterSystem.ActiveArmy.cs) ----------
 		/// <summary>Largest active army size the player can pick. 0 always means no limit.</summary>
 		public const int ActiveArmyMax = 200;
+		/// <summary>Hit immunity (all types, blinking like a player's) for a soldier who takes a fallen soldier's place under the active army size: about 1.5 s. Protection only; he moves and attacks through it. Normal respawns, recalls and deployment get none.</summary>
+		public const int ReplacementImmuneTicks = 90;
 
 		// ---------- Roster: growth ----------
 		/// <summary>How often soldiers check their home Armory storage for a growth crystal to absorb (ticks); one crystal per soldier per check.</summary>

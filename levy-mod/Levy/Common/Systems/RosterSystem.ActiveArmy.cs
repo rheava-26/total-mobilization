@@ -105,7 +105,7 @@ namespace Levy.Common.Systems
 		/// (a fallen soldier's place; <see cref="SpawnBody"/> still moves a Regroup soldier beside his commander and keeps anyone out of a crowd of enemies), the others where deployment would put them.
 		/// Returns how many were fielded. Commanders without an active army size are left to the ordinary deployment.
 		/// </summary>
-		private int FillArmy(string commander, Vector2 spot, bool useSpot)
+		private int FillArmy(string commander, Vector2 spot, bool useSpot, bool replacement = false)
 		{
 			int cap = ArmyCapOf(commander);
 			if (cap <= 0) return 0;
@@ -122,7 +122,12 @@ namespace Levy.Common.Systems
 				Vector2 pos;
 				if (useSpot && made == 0) pos = spot;
 				else if (!SpawnPositionFor(rec, out pos)) continue;
-				if (SpawnBody(rec, pos) >= 0) made++;
+				int idx = SpawnBody(rec, pos);
+				if (idx >= 0)
+				{
+					made++;
+					if (replacement && Main.npc[idx].ModNPC is SoldierNPC sn) sn.GrantReplacementImmunity(LevyConstants.ReplacementImmuneTicks); // only a replacement for a fallen soldier, never a raised size
+				}
 				else if (!ArmyHasRoom(rec)) break;
 			}
 			_armyScratch.Clear();
@@ -148,7 +153,7 @@ namespace Levy.Common.Systems
 			for (int i = 0; i < _openings.Count; i++)
 			{
 				var o = _openings[i];
-				int n = FillArmy(o.Commander, o.Spot, o.UseSpot);
+				int n = FillArmy(o.Commander, o.Spot, o.UseSpot, replacement: true);
 				if (n > 0) { made += n; Replacements += n; LastReplacementTick = Main.GameUpdateCount; }
 			}
 			_openings.Clear();

@@ -239,7 +239,8 @@ namespace Levy.Content.NPCs
 					float bodyRot = Dummy.fullRotation; Vector2 bodyOrigin = Dummy.fullRotationOrigin;
 					DrunkPose(ref pos, ref bodyRot, ref bodyOrigin); // SoldierNPC.Drunk.cs: hop, sway and a raised arm under a drink (draw only)
 					LeisurePose(ref pos, ref bodyRot, ref bodyOrigin); // SoldierNPC.Leisure.cs: raised arms for a kite, the stars, a cheer
-					try { Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, bodyRot, bodyOrigin, 0f, 1f); }
+					float blink = BlinkTicksLeft > 0 && (Main.GameUpdateCount / 4) % 2 == 0 ? 0.6f : 0f; // a replacement's immunity: the body flickers as an immune player does
+					try { Main.PlayerRenderer.DrawPlayer(Main.Camera, Dummy, pos, bodyRot, bodyOrigin, blink, 1f); }
 					finally { global::Levy.Common.Util.HangWatch.DrawExit(); }
 					if (!lens) DrawSwordSlash(sb);
 				}

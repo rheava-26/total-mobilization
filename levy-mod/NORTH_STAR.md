@@ -45,6 +45,8 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 - **Check whether a feature already exists before building it, and never overwrite a built system.** (The fight recorder rule above is one case of this.)
 - **Treat all of her messages queued since the last reset or limit halt as one message**, and answer every question in them. Unanswered questions get lost across compactions.
 
+**At most 3 builders at once (Eve, 2026-11-20).** "Keep the thing to 3 workers maximum so we don't annihilate the usage limit." Queue the rest, and start the next only when one finishes. A finished builder doesn't count; a paused or halted one that I plan to resume does.
+
 **Never explain a bug as Eve using it wrong.** "Stop saying the cause of an issue I clearly could have found out by just trying is 'oh you just did it wrong'. No I didn't." (11-11) Her reports are real bugs. Never tell her she was too far, placed it wrong, or used it wrong, not even as a hedge ("if yours is close, tell me"). An inferred cause is not a cause: reproduce what she did in the lab, prove the cause, then fix. Player-facing failure messages state what was checked, never what the player did wrong.
 
 **Reproduce Eve's setup before calling a bug fixed or "not a bug".** Eve plays a real world with real mod lists, and a harness that doesn't match it hasn't tested the report. Example: Magic Storage was OFF in her world, so a Magic Storage fix was not their cause (ROADMAP, 11-07).

@@ -372,7 +372,10 @@ namespace Levy.Content.NPCs
 			Item item = WeaponUse.HeldItem(this);
 			if (item == null || item.IsAir || ItemAnimation <= 0) return;
 			Rectangle box = SwingHitbox(item);
-			if (box.Width > 0 && box.Height > 0) MeleeEffects.SwingTick(this, item, box, target);
+			using (global::Levy.Common.Weapons.OwnerPuppet.LendTransform(this)) // the weapon's swing hooks read the owner: the levy's facing and place, not the commander's
+			{
+				if (box.Width > 0 && box.Height > 0) MeleeEffects.SwingTick(this, item, box, target);
+			}
 		}
 
 		/// <summary>Hits every hostile NPC whose hitbox meets the swing rectangle, once per swing.</summary>
@@ -382,7 +385,7 @@ namespace Levy.Content.NPCs
 			if (item == null || item.IsAir) return;
 			Rectangle box = SwingHitbox(item);
 			if (box.Width <= 0 || box.Height <= 0) return;
-			MeleeEffects.SwingTick(this, item, box, primary); // the weapon's own per-tick swing hooks, as Player.ItemCheck runs them every tick of the animation
+			using (global::Levy.Common.Weapons.OwnerPuppet.LendTransform(this)) MeleeEffects.SwingTick(this, item, box, primary); // the weapon's own per-tick swing hooks, as Player.ItemCheck runs them every tick of the animation (the owner they read is the levy)
 			if (Hostile) { HostileSwing(item, box); return; } // HOSTILE SEAM: the swing hurts the player's side
 			int dmg = Math.Max(1, (int)(WeaponDamage(item) * DamageMultiplier));
 			int critChance = -1;
@@ -398,9 +401,13 @@ namespace Levy.Content.NPCs
 				int dir = n.Center.X < NPC.Center.X ? -1 : 1;
 				LootCredit.Credit(n, this); // before the strike: StrikeNPC runs checkDead → NPCLoot synchronously on a killing blow
 				// The strike runs the item's own hit hooks (ModItem / GlobalItem / ModPlayer) and item statuses; the vanilla hard-coded melee specials follow it.
-				int done = MeleeEffects.StrikeNpc(this, item, n, dmg, dir, crit, item.knockBack, out int sourceDamage);
-				_swingHits.Add(i);
-				MeleeEffects.ApplyVanillaMeleeHit(this, item, n, sourceDamage, box);
+				int done, sourceDamage;
+				using (global::Levy.Common.Weapons.OwnerPuppet.LendTransform(this)) // the strike, the item's hit hooks and every global that looks at the owner read the levy's facing and place
+				{
+					done = MeleeEffects.StrikeNpc(this, item, n, dmg, dir, crit, item.knockBack, out sourceDamage);
+					_swingHits.Add(i);
+					MeleeEffects.ApplyVanillaMeleeHit(this, item, n, sourceDamage, box);
+				}
 				LastMeleeHitTick = (int)Main.GameUpdateCount;
 				LootCredit.OnSoldierHit(n, this, done); // boss rule accounting, kill count, KILL bark
 				OnMeleeHit(n, done); // armor set on-hit bonuses (SoldierNPC.ArmorSets.cs)

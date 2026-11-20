@@ -161,6 +161,43 @@ namespace Levy.Common.Weapons
 		}
 
 
+		/// <summary>An open body-lend (see <see cref="LendTransform"/>); Dispose puts the commander's transform back.</summary>
+		internal readonly struct Lend : IDisposable
+		{
+			private readonly bool _open;
+			internal Lend(bool open) { _open = open; }
+			public void Dispose() { if (_open) Exit(); }
+		}
+
+		/// <summary>Frames the body-lend opened (lab counter).</summary>
+		internal static int BodyLends;
+		/// <summary>Lab A/B switch: LEVY_FACINGFIX=0 runs the levy's use windows as they ran before the facing fix (no body-lend around spawns, swings and a beam's hit pass; a chain projectile's hooks outside its AI body and its Kill see the empty player of slot 255). The facing world check measures both.</summary>
+		internal static readonly bool FacingFixOn = Environment.GetEnvironmentVariable("LEVY_FACINGFIX") != "0";
+
+		/// <summary>
+		/// THE LEVY'S USE WINDOW. Shots that fly are puppeted every tick by <see cref="Enter"/> (Update / Damage / Kill), but the moments a levy MAKES something are not shots yet: the spawn hooks of a shot the weapon's
+		/// Shoot hook makes (OnSpawn, SetDefaults, a ModProjectile that copies <c>Main.player[owner].direction</c> into its own), the hit of a melee swing (the item's hit hooks and every global that looks at the owner), the damage
+		/// pass of a held weapon's beam. All of them run while the shot's owner is the commander's slot (<see cref="WeaponUse.OwnerFor"/>), so each read "the owner" and found the COMMANDER: her facing, her place,
+		/// her velocity. With her facing the other way than the levy's, a lash, a swing or a beam came out of the levy mirrored, and an army split in two halves facing opposite ways fought with two different weapons.
+		/// This is the same transform lend as the shot's own puppet (place, velocity and facing of the soldier, nothing else: her life, buffs, ModPlayers and use state stay hers, and the use guard still puts the rest back),
+		/// opened around the levy's own use. <c>using (OwnerPuppet.LendTransform(body)) { ... }</c>; calls nest; it opens nothing when the owner is not a real active player, so a dedicated server's null owner is left alone.
+		/// </summary>
+		internal static Lend LendTransform(SoldierNPC body)
+		{
+			if (!FacingFixOn || (Mask & 4) == 0 || body == null || body.NPC == null || !body.NPC.active || _depth >= MaxFrames) return default;
+			int o = SoldierMinions.TrueMyPlayer;
+			if (o < 0 || o >= Main.maxPlayers) return default;
+			Player p = Main.player[o];
+			if (p == null || !p.active || p.whoAmI != o || ReferenceEquals(body.Dummy, p) || global::Levy.Common.Owner.SoldierOwner.IsDummy(p)) return default;
+			ref Frame f = ref _stack[_depth];
+			f = default;
+			f.Moved = true; f.P = p; f.Pos = p.position; f.Vel = p.velocity; f.Old = p.oldPosition; f.Dir = p.direction; f.Body = body; f.PrevCtx = Context;
+			_depth++; if (_depth > MaxDepth) MaxDepth = _depth;
+			BodyLends++; Swaps++;
+			p.Center = body.NPC.Center; p.oldPosition = p.position; p.velocity = body.NPC.velocity; p.direction = body.NPC.direction == 0 ? 1 : body.NPC.direction;
+			return new Lend(true);
+		}
+
 		// ---- bit 32: life routing ----
 		internal static int RouteOpens, RoutedHeals, RoutedLife, HealTextOpenUnrouted, HealTextOutside;
 

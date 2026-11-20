@@ -222,7 +222,7 @@ namespace Levy.Common.Observe
 		{
 			var t = Terraria.GameInput.PlayerInput.Triggers.Current;
 			var k = Main.keyState;
-			byte slot = (byte)(k.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.D1) ? 1 : k.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.D2) ? 2 : 0);
+			byte slot = (byte)(Terraria.GameInput.PlayerInput.WritingText ? 0 : k.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.D1) ? 1 : k.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.D2) ? 2 : 0); // typing in a Levy search or number box is not a weapon slot choice
 			return new MindInputState { Left = t.Left, Right = t.Right, Jump = t.Jump, Down = t.Down, Up = t.Up, Use = t.MouseLeft, Alt = t.MouseRight, Hook = t.Grapple, Slot = slot, Aim = Main.MouseWorld };
 		}
 

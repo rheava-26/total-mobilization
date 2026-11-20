@@ -643,11 +643,11 @@ namespace Levy.Content.TileEntities
 		/// non-summoner is never handed one; (2) a summoner leads with his hard summon — while a minion staff is available his primary is a staff, never a whip or a
 		/// sentry (both move to the off-hand / fallback), and with no staff he may lead with any summon weapon; (3) a ranged helmet's ammo subtype (<see cref="RangedSteer"/>).
 		/// </summary>
-		private Func<Item, bool> PrimaryRule(SoldierRecord who, bool asSummoner = false)
+		private Func<Item, bool> PrimaryRule(SoldierRecord who, bool asSummoner = false, bool noLead = false)
 		{
 			bool summoner = asSummoner || IsSummonerSoldier(who); // asSummoner: the army's class balance has made him a summoner although no summon armor is on his back yet
-			bool whipFirst = summoner && WhipAvailableFor(who); // a summoner with a whip in reach leads with it; the staff and the sentry ride as sidearms
-			bool staffFirst = summoner && !whipFirst && StaffAvailableFor(who); // no whip: he leads with the minion staff, never a sentry
+			bool whipFirst = summoner && !noLead && WhipAvailableFor(who); // a summoner with a whip in reach leads with it; the staff and the sentry ride as sidearms (noLead: every whip is dealt already, any summon weapon will do)
+			bool staffFirst = summoner && !noLead && !whipFirst && StaffAvailableFor(who); // no whip: he leads with the minion staff, never a sentry
 			var steer = RangedSteer(who);
 			if (summoner && !whipFirst && !staffFirst && steer == null) return null; // a summoner with neither may lead with any weapon; nothing else to restrict
 			return it =>
@@ -2429,6 +2429,7 @@ namespace Levy.Content.TileEntities
 		{
 			var g = soldier?.Gear;
 			if (g == null || Common.Config.LevyConfig.Get.ClassMatchIssue || g.IsLocked(SoldierGear.SlotWeapon) || !g.HasWeapon) return false;
+			if (Rules.Claims(g.Weapon)) return false; // a weapon the player's rules asked for stays in his hand, whatever armor he wears: the armor follows the weapon, never the other way round
 			var armorCls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
 			if (armorCls == null) return false;
 			if (WeaponClassifier.ItemDamageClass(g.Weapon) == armorCls) return ReconcileWithinClass(soldier, armorCls);

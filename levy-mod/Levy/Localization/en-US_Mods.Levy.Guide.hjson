@@ -273,8 +273,9 @@ Pages: {
 			'''
 			The Rules tab decides which weapons the levies draw. Rules apply from the top, and the upper rule wins.
 			Class balance sets how many levies carry each class. A limit gives way before a levy is left unarmed.
-			Category rule prefers, orders, includes or requires a kind of weapon, such as bows.
+			Category rule prefers, orders, includes or requires a kind of weapon, such as bows or guns. Weight only tilts the pick. Order, Include and At least are firm, and outrank the armor a levy wears.
 			Item list names items that are never used, or the only items used.
+			Re-arm deals the whole army again at once. Without it, levies come to a changed rule on their own, a few at a time.
 			Hover a weapon in storage to set its rank to Auto, Set, Never use or Prefer.
 			'''
 	}

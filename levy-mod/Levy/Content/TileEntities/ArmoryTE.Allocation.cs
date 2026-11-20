@@ -60,10 +60,11 @@ namespace Levy.Content.TileEntities
 					bool hasW = !IsAir(g.Weapon);
 					if (hasW && (g.Weapon.maxStack > 1 || WeaponClassifier.GetProfile(g.Weapon).Family == WeaponFamily.Thrown)) continue; // thrown stacks are restocked, never swapped
 					if (hasW && !ReferenceEquals(rec, requester) && IsBusy(rec)) continue;
-					var lev = new AllocLevy { Tag = rec, Id = rec.Id, Cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs), Current = hasW ? g.Weapon : null, Mana = rec.MaxMana }; // crystals plus what his armor and open accessory slots add
+					var lev = new AllocLevy { Tag = rec, Id = rec.Id, Cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs), Current = hasW ? g.Weapon : null, Mana = rec.MaxMana, FixedClass = classMatch }; // crystals plus what his armor and open accessory slots add
 					if (lev.Cls == null && !classMatch) lev.Flex = ArmorableClasses(rec, hasW);
 					if (classMatch && hasW) lev.ClassLock = WeaponClassifier.ItemDamageClass(g.Weapon);
 					var rule = PrimaryRule(rec);
+					Func<Item, bool> looseRule = null;
 					Func<Item, bool> summonRule = null; // the rule once the class balance has made him a summoner (an armorless levy drafted onto the summon class may be dealt a staff)
 					var pouch = g.Ammo;
 					bool pouchFixed = g.IsLocked(SoldierGear.SlotAmmo) && !IsAir(pouch); // a hand-assigned pouch is never swapped: the weapon must fire it
@@ -75,7 +76,8 @@ namespace Levy.Content.TileEntities
 						if (!WeaponUse.CanEverPay(it, (int)lev.Mana)) return false; // a cast dearer than his whole mana pool (crystals + what his gear adds) would never fire
 						if (it.maxStack > 1 && (hasW || WeaponClassifier.GetProfile(it).Family != WeaponFamily.Thrown)) return false; // a bare-handed levy may be dealt a thrown stack; a stack is never a swap
 						var useRule = rule;
-						if (lev.Virtual && lev.Cls == DamageClass.Summon) useRule = summonRule ??= PrimaryRule(rec, true);
+						if (lev.LooseSummon) useRule = looseRule ??= PrimaryRule(rec, true, true); // a bare-handed summoner whose lead weapon is all dealt: any summon weapon
+						else if (lev.Virtual && lev.Cls == DamageClass.Summon) useRule = summonRule ??= PrimaryRule(rec, true);
 						if (useRule != null && !useRule(it)) return false;
 						if (pouchFixed && it.useAmmo > 0 && pouch.ammo != it.useAmmo) return false;
 						if (!hasW) return true;

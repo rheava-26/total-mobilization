@@ -77,3 +77,25 @@ for army in sorted({f['A'] for f in fights} | {f['B'] for f in fights}):
     tot = sum(wd.values()) or 1
     for w, d in wd.most_common(8):
         print(f"| {army} | {w} x{wn[w] // max(1, nf)} | {d / max(1, wn[w]):.0f} | {100 * d / tot:.0f}% | {100 * wdead[w] / max(1, wn[w]):.0f}% |")
+
+print()
+# per class: levies fielded, seconds on the field, damage and kills per levy, share that died (the staggered format's question: do melee and summoners have a chance?)
+print('| army | class | levies fielded | seconds on the field (median) | damage per levy | kills per levy | died |')
+print('|---|---|---|---|---|---|---|')
+for army in sorted({f['A'] for f in fights} | {f['B'] for f in fights}):
+    rows = collections.defaultdict(list)
+    for f in fights:
+        if army not in (f['A'], f['B']): continue
+        per = f['perA'] if side(f, army) == 'A' else f['perB']
+        for e in per.split(';'):
+            p = e.split(':')
+            if len(p) < 4: continue
+            kv = {x[:2] if x[:2] == 'in' else x[:1]: x for x in p[4:]}
+            t_in = float(kv['in'][2:]) if 'in' in kv else 0.0
+            kills = int(kv['k'][1:]) if 'k' in kv and kv['k'][1:].isdigit() else 0
+            dead = p[3].startswith('dead')
+            t_out = float(p[3][5:]) if dead else f['sec']
+            rows[p[0]].append((int(p[2][3:]), max(0.0, t_out - t_in), kills, dead))
+    for c in sorted(rows):
+        r = rows[c]
+        print(f"| {army} | {c} | {len(r)} | {statistics.median(x[1] for x in r):.1f} | {sum(x[0] for x in r) / len(r):.0f} | {sum(x[2] for x in r) / len(r):.2f} | {100 * sum(x[3] for x in r) / len(r):.0f}% |")

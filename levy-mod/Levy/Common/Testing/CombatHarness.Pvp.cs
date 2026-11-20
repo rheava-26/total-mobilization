@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Systems;
 using Levy.Common.Weapons;
@@ -27,6 +28,9 @@ namespace Levy.Common.Testing
 			public Dictionary<int, CrLevy> ByIdx = new(); public Dictionary<CrLevy, int> TeamOfLevy = new();
 			public Dictionary<CrLevy, long> Dealt = new(); public long[] Unattr = new long[3], Dot = new long[3]; public Dictionary<string, long> Kind = new();
 			public int Tick, EndTick = -1; public string Result = ""; public bool Recording;
+			// staggered format (pf=N): N levies of each side on the field, the rest wait in a pool and enter one by one at the side's spawn points
+			public int Field; public List<(CrLevySpec spec, int k)> PoolA = new(), PoolB = new(); public int[] NextSpawn = new int[3];
+			public Dictionary<CrLevy, int> Entry = new(), Kills = new(); public string[] Label = new string[3];
 		}
 		private static PvState _pvS;
 		private static Projectile _pvProj;
@@ -38,21 +42,39 @@ namespace Levy.Common.Testing
 				ClearAll(); CrPurgeNpcs(); PvpLab.Reset();
 				CrApplyMode(run.Mode); CrDrGlobal.Dr = run.Dr; _crRunCur = run;
 				Main.rand = new Terraria.Utilities.UnifiedRandom(run.Seed * 7919 + 13);
-				_crCmdPos = new Vector2(_crCx * 16f, CrF * 16f); // the commander stands at the arena centre, between the armies
+				_crCmdPos = new Vector2(_crCx * 16f, (run.Arena == "pvpbig" ? CrF - 48 : CrF) * 16f); // the commander stands at the arena centre, between the armies (above the top level in the big arena)
 				CrPinCommander();
 				// the whole arena counts as watched (a player would be looking at her army): no levy takes the off-screen hop across it
-				global::Levy.Common.Movement.OffscreenHop.LabViewers = new List<Vector2> { new Vector2((_crCx - 75) * 16f, (CrF - 10) * 16f), new Vector2(_crCx * 16f, (CrF - 10) * 16f), new Vector2((_crCx + 75) * 16f, (CrF - 10) * 16f) };
+				global::Levy.Common.Movement.OffscreenHop.LabViewers = new List<Vector2>();
+				for (int vx = -150; vx <= 150; vx += 75) { global::Levy.Common.Movement.OffscreenHop.LabViewers.Add(new Vector2((_crCx + vx) * 16f, (CrF - 10) * 16f)); global::Levy.Common.Movement.OffscreenHop.LabViewers.Add(new Vector2((_crCx + vx) * 16f, (CrF - 40) * 16f)); }
+				// and no Search & Destroy catch-up hop to the commander: a server's assumed screen is widened to the whole arena for the fight
+				_pvScreen = (Main.screenWidth, Main.screenHeight); Main.screenWidth = 12000; Main.screenHeight = 4000;
 				CrSetHpScale(run); CrSetFear(run); CrSetOptions(run);
 				if (run.L3) Lab3Stations(run);
+				if (run.Arena == "pvpbig") PvArenaFloor(); // the stations clear the low floor; its cover goes back where no station stands
 				if (run.Dl != "") DlBegin(run);
 				var specsB = KitSpecs(run.LvB);
 				int total = run.Specs.Count + specsB.Count;
 				if (total > global::Levy.Common.Config.LevyConfig.Get.RenderCap) global::Levy.Common.Config.LevyConfig.Get.RenderCap = total;
 				var s = new PvState { Run = run, St = new CrState { Run = run, BossIdx = Main.maxNPCs, BossType = -1 } };
 				PvpLab.On = true;
-				PvSpawn(s, run, run.Specs, 1, run.TeamA, s.A);
-				PvSpawn(s, run, specsB, 2, run.TeamB, s.B);
-				s.St.Levies.AddRange(s.A); s.St.Levies.AddRange(s.B);
+				s.Label[1] = run.TeamA; s.Label[2] = run.TeamB;
+				if (run.PvField > 0)
+				{
+					// staggered: each pool in a seeded order (the same seed shuffles both pools independently), spawn points rotate from a seeded start
+					s.Field = run.PvField;
+					var ra = new Random(run.Seed * 7919 + 101); var rb = new Random(run.Seed * 7919 + 202);
+					s.PoolA = run.Specs.Select((sp, k) => (sp, k)).OrderBy(_ => ra.Next()).ToList();
+					s.PoolB = specsB.Select((sp, k) => (sp, k)).OrderBy(_ => rb.Next()).ToList();
+					s.NextSpawn[1] = run.Seed % 7; s.NextSpawn[2] = run.Seed % 7;
+					for (int q = 0; q < s.Field; q++) { PvEnter(s, run, 1); PvEnter(s, run, 2); }
+				}
+				else
+				{
+					PvSpawn(s, run, run.Specs, 1, run.TeamA, s.A);
+					PvSpawn(s, run, specsB, 2, run.TeamB, s.B);
+				}
+				s.St.Levies.Clear(); s.St.Levies.AddRange(s.A); s.St.Levies.AddRange(s.B);
 				if (run.L3) Lab3Begin(run, s.St);
 				_pvS = s; _crStarted = true; _crTickInRun = 0;
 				PvStartRecording(s, run);
@@ -65,6 +87,18 @@ namespace Levy.Common.Testing
 			Main.player[0].direction = int.TryParse(Environment.GetEnvironmentVariable("LEVY_PVP_CMDDIR"), out int cdir) && cdir != 0 ? cdir : (st.Tick & 1) == 0 ? 1 : -1;
 			CrPinStrays(-1);
 			int aliveA = PvTickArmy(st, run, st.A), aliveB = PvTickArmy(st, run, st.B);
+			if (st.Field > 0 && st.Result == "")
+			{
+				// the next levy of a side enters the moment one of its levies on the field falls; a side with nobody on the field and an empty pool has lost
+				while (aliveA < st.Field && st.PoolA.Count > 0) { PvEnter(st, run, 1); aliveA++; }
+				while (aliveB < st.Field && st.PoolB.Count > 0) { PvEnter(st, run, 2); aliveB++; }
+				PvAnchors(st);
+				if (st.Tick >= run.Cap && aliveA > 0 && aliveB > 0)
+				{
+					int mA = aliveA + st.PoolA.Count, mB = aliveB + st.PoolB.Count; // cap: the side with more manpower left wins
+					st.Result = (mA != mB ? (mA > mB ? "A" : "B") : PvHpShare(st.A) >= PvHpShare(st.B) ? "A" : "B") + "-TIMEOUT"; st.EndTick = st.Tick;
+				}
+			}
 			if (st.Result == "")
 			{
 				if (aliveA == 0 || aliveB == 0) { st.Result = aliveA > 0 ? "A" : aliveB > 0 ? "B" : "DRAW"; st.EndTick = st.Tick; }
@@ -91,6 +125,93 @@ namespace Levy.Common.Testing
 				n.direction = -side;
 				PvpLab.Add(l.Idx, team);
 				s.ByIdx[l.Idx] = l; s.TeamOfLevy[l] = team; s.Dealt[l] = 0; into.Add(l);
+			}
+		}
+
+		private static (int w, int h) _pvScreen;
+		private static void PvScreenRestore() { if (_pvScreen.w > 0 || _pvScreen.h > 0) { Main.screenWidth = _pvScreen.w; Main.screenHeight = _pvScreen.h; _pvScreen = (0, 0); } }
+
+		// -------------------------------------------------------------------------------------------------- the big arena (arena=pvpbig)
+		// 350 tiles wide (walls at +-176), mirrored left / right: a floor with mounds and pillars, and three levels above it (12, 24 and 36 tiles up) of solid ledges and platform bridges with cover blocks,
+		// gaps to drop through and platforms to jump up through. Seven spawn points a side: two on the floor and two, two and one on the levels (dx from the centre, level).
+		private const int PvHalf = 175, PvL1 = 12, PvL2 = 24, PvL3 = 36;
+		private static readonly (int dx, int lv)[] PvSpawns = { (165, 0), (112, 0), (120, PvL1), (50, PvL1), (160, PvL2), (80, PvL2), (140, PvL3) };
+
+		private void PvM(int dx0, int dx1, int y0, int y1, bool solid) { FaFill(_crCx + dx0, y0, _crCx + dx1, y1, solid); FaFill(_crCx - dx1, y0, _crCx - dx0, y1, solid); }
+		private static void PvPlat(int cx, int dx0, int dx1, int y)
+		{
+			for (int dx = dx0; dx <= dx1; dx++)
+				foreach (int x in dx == 0 ? new[] { cx } : new[] { cx + dx, cx - dx })
+				{
+					Tile t = Main.tile[x, y];
+					t.HasTile = true; t.TileType = TileID.Platforms; t.TileFrameX = 0; t.TileFrameY = 0; t.BlockType = Terraria.ID.BlockType.Solid; t.WallType = 0; t.LiquidAmount = 0;
+				}
+		}
+
+		private void PvBuildArena()
+		{
+			float n = Main.maxTilesX / 4200f; n *= n;
+			int band = (int)(60f + 10f * n + Main.worldSurface / 6.0) + 2;
+			_crCx = _cx; int cx = _cx, fy = Math.Clamp(band + 75, 120, Main.maxTilesY - 120);
+			CrF = fy; CombatHarnessFloor = fy;
+			FaFill(cx - PvHalf - 20, fy - 110, cx + PvHalf + 20, fy - 1, false);
+			FaFill(cx - PvHalf - 20, fy, cx + PvHalf + 20, fy + 25, true);
+			FaFill(cx - PvHalf - 1, fy - 110, cx - PvHalf - 1, fy + 25, true);
+			FaFill(cx + PvHalf + 1, fy - 110, cx + PvHalf + 1, fy + 25, true);
+			int y1 = fy - PvL1, y2 = fy - PvL2, y3 = fy - PvL3;
+			// level 1: two solid ledges a side, platform bridges between them and over the centre
+			PvM(20, 60, y1, y1 + 1, true); PvM(85, 130, y1, y1 + 1, true); PvPlat(cx, 0, 19, y1); PvPlat(cx, 61, 84, y1);
+			PvM(40, 41, y1 - 3, y1 - 1, true); PvM(110, 111, y1 - 3, y1 - 1, true);
+			// level 2: a ledge in the middle of each half and one against each wall; a platform bridge over the centre with a hole in its middle, and one between the ledges
+			PvM(45, 95, y2, y2 + 1, true); PvM(140, PvHalf, y2, y2 + 1, true); PvPlat(cx, 10, 44, y2); PvPlat(cx, 96, 139, y2);
+			PvM(70, 71, y2 - 3, y2 - 1, true); PvM(155, 156, y2 - 3, y2 - 1, true);
+			// level 3: a platform walk near the centre and a solid ledge with cover further out
+			PvPlat(cx, 25, 70, y3); PvM(110, 150, y3, y3 + 1, true); PvM(130, 131, y3 - 3, y3 - 1, true);
+			// paths: platform stairs from the floor up to level 1 and from level 1 up to level 2, near each wall
+			for (int k = 1; k <= 5; k++) { PvPlat(cx, 132 + 3 * k, 134 + 3 * k, fy - 2 * k); PvPlat(cx, 131 + 2 * k, 133 + 2 * k, y1 - 2 * k); }
+			PvArenaFloor();
+			_crArenaBuilt = "pvpbig";
+			Mod.Logger.Info($"HARNESS-PVP: big arena built: floor row {fy}, half-width {PvHalf}, levels at {PvL1}/{PvL2}/{PvL3} tiles, {PvSpawns.Length} spawn points a side");
+		}
+
+		/// <summary>Floor cover (mounds and pillars), kept clear of the station groups (x from the centre: -90..-50, -15..25, 60..100).</summary>
+		private void PvArenaFloor()
+		{
+			int fy = CrF;
+			foreach (int a in new[] { 34, 120, 158 }) { PvM(a, a + 12, fy - 1, fy - 1, true); PvM(a + 2, a + 10, fy - 2, fy - 2, true); PvM(a + 4, a + 8, fy - 3, fy - 3, true); }
+			foreach (int a in new[] { 28, 105, 150 }) PvM(a, a + 1, fy - 4, fy - 1, true);
+		}
+
+		/// <summary>The next levy of a side's pool walks onto the field at the side's next spawn point.</summary>
+		private void PvEnter(PvState s, CrRun run, int team)
+		{
+			var pool = team == 1 ? s.PoolA : s.PoolB;
+			if (pool.Count == 0) return;
+			var (spec, k) = pool[0]; pool.RemoveAt(0);
+			int side = (team == 1 ? -1 : 1) * (Environment.GetEnvironmentVariable("LEVY_PVP_FLIP") == "1" ? -1 : 1);
+			var sp = PvSpawns[s.NextSpawn[team]++ % PvSpawns.Length];
+			var at = new Vector2((_crCx + side * sp.dx) * 16f, (CrF - sp.lv) * 16f);
+			var l = CrSpawnLevy(spec, run, k, 1, at);
+			l.Rec.Name = s.Label[team] + " " + spec.Cls + (k + 1);
+			NPC n = Main.npc[l.Idx]; n.Bottom = at; n.velocity = Vector2.Zero; n.direction = -side;
+			PvpLab.Add(l.Idx, team);
+			s.ByIdx[l.Idx] = l; s.TeamOfLevy[l] = team; s.Dealt[l] = 0; s.Entry[l] = s.Tick;
+			(team == 1 ? s.A : s.B).Add(l); s.St.Levies.Add(l);
+			PvAnchors(s);
+		}
+
+		private static System.Reflection.FieldInfo _pvAnchorF, _pvAnchorSetF;
+		/// <summary>Search &amp; Destroy roams around a levy's first position; in the big arena every levy roams around the arena centre instead (its 120-tile leash reaches every spawn point).</summary>
+		private void PvAnchors(PvState s)
+		{
+			if (s.Run.Arena != "pvpbig") return;
+			_pvAnchorF ??= typeof(SoldierNPC).GetField("_searchAnchor", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+			_pvAnchorSetF ??= typeof(SoldierNPC).GetField("_searchAnchorSet", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+			var c = new Vector2(_crCx * 16f, (CrF - PvL1) * 16f);
+			foreach (var l in s.A.Concat(s.B))
+			{
+				if (l.Dead || !(Main.npc[l.Idx].ModNPC is SoldierNPC sn)) continue;
+				_pvAnchorF?.SetValue(sn, c); _pvAnchorSetF?.SetValue(sn, true);
 			}
 		}
 
@@ -169,6 +290,7 @@ namespace Levy.Common.Testing
 			if (enemy && PvIFrames && victim.ImmuneTime > 0) return 0; // inside the window a hit from the other army does nothing (a projectile is stopped earlier, in PvpImmunity)
 			int done = orig(self, hit, fromNet, noPlayerInteraction);
 			PvCredit(self, done, src);
+			if (enemy && done > 0 && !victim.IsAlive && _pvS != null && _pvS.ByIdx.TryGetValue(src, out var killer)) { _pvS.Kills.TryGetValue(killer, out int kn); _pvS.Kills[killer] = kn + 1; }
 			if (enemy && PvIFrames && done > 0)
 			{
 				try
@@ -226,7 +348,7 @@ namespace Levy.Common.Testing
 		{
 			int end = st.EndTick > 0 ? st.EndTick : st.Tick;
 			string f1(double v) => v.ToString("0.0", CultureInfo.InvariantCulture);
-			string Army(List<CrLevy> a) => string.Join(";", a.Select(l => $"{l.Cls}:{l.Weapon.Replace(' ', '_')}:dmg{st.Dealt[l]}:{(l.Dead ? "dead@" + f1(l.DeathTick / 60.0) : "alive")}:hp{l.MaxHp}:pot{l.PotionsDrunk}"));
+			string Army(List<CrLevy> a) => string.Join(";", a.Select(l => $"{l.Cls}:{l.Weapon.Replace(' ', '_')}:dmg{st.Dealt[l]}:{(l.Dead ? "dead@" + f1(l.DeathTick / 60.0) : "alive")}:hp{l.MaxHp}:pot{l.PotionsDrunk}:in{f1((st.Entry.TryGetValue(l, out int e0) ? e0 : 0) / 60.0)}:k{(st.Kills.TryGetValue(l, out int k0) ? k0 : 0)}"));
 			string Cls(List<CrLevy> a) => string.Join(" ", a.GroupBy(l => l.Cls).OrderBy(g => g.Key).Select(g => g.Key + "=" + g.Sum(l => st.Dealt[l])));
 			string Top(List<CrLevy> a) => string.Join(" ", a.GroupBy(l => l.Weapon).Select(g => (w: g.Key, d: g.Sum(l => st.Dealt[l]), n: g.Count())).OrderByDescending(x => x.d).Take(6).Select(x => x.w.Replace("CalamityMod/", "").Replace(' ', '_') + "x" + x.n + "=" + x.d));
 			string Deaths(List<CrLevy> a) => string.Join(",", a.Where(l => l.Dead).Select(l => l.DeathTick / 60.0).OrderBy(x => x).Select(f1));
@@ -251,7 +373,7 @@ namespace Levy.Common.Testing
 			catch (Exception e) { Mod.Logger.Warn("HARNESS-PVP: row failed: " + e); }
 			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s winner={winner} alive {run.TeamA}={aliveA}/{st.A.Count} {run.TeamB}={aliveB}/{st.B.Count} dmg {run.TeamA}={dA} {run.TeamB}={dB} unattr={st.Unattr[1]}/{st.Unattr[2]} dot={st.Dot[1]}/{st.Dot[2]} by={string.Join(",", st.Kind.OrderBy(kv => kv.Key).Select(kv => kv.Key + "=" + kv.Value))}");
 			PvStopRecording(st);
-			PvpLab.Reset(); _pvS = null; _pvProj = null; global::Levy.Common.Movement.OffscreenHop.LabViewers = null;
+			PvpLab.Reset(); _pvS = null; _pvProj = null; global::Levy.Common.Movement.OffscreenHop.LabViewers = null; PvScreenRestore();
 			_crStarted = false; _crI++;
 			if (run.Dl != "") DlEnd();
 			CrSetHpScale(null); CrSetFear(null); CrSetOptions(null);
@@ -269,7 +391,7 @@ namespace Levy.Common.Testing
 		private static void PvAbort()
 		{
 			PvStopRecording(_pvS);
-			PvpLab.Reset(); _pvS = null; _pvProj = null; global::Levy.Common.Movement.OffscreenHop.LabViewers = null;
+			PvpLab.Reset(); _pvS = null; _pvProj = null; global::Levy.Common.Movement.OffscreenHop.LabViewers = null; PvScreenRestore();
 		}
 	}
 

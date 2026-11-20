@@ -212,12 +212,14 @@ namespace Levy.Common.Testing
 				// the end: the burst
 				int atEnd = Standing(army);
 				if (!real) { RiftSky.TestTransition = false; RiftSky.TestCovered = true; }
-				RiftStep(20 + LevyConstants.RiftPanicSpeakers * LevyConstants.RiftPanicStepTicks + 60);
+				int burstTicks = 20 + LevyConstants.RiftPanicSpeakers * LevyConstants.RiftPanicStepTicks + 60, ll0 = RiftMood.LoudLines;
+				RiftStep(burstTicks);
 				int burst = RiftMood.PanicLines - pl0;
 				Note($"at the end of the covering: {atEnd} of {army.Count} levies standing near the commander ({Standing(army)} after the burst)");
 				Check($"the covering ends once and the levies near the commander react ({RiftMood.Changes - ch0} endings, {RiftMood.PanicRounds - pr0} rounds, {burst} worried lines from {atEnd} standing)", RiftMood.Changes == ch0 + 1 && RiftMood.PanicRounds == pr0 + 1 && burst == Math.Min(LevyConstants.RiftPanicSpeakers, atEnd) && atEnd >= LevyConstants.RiftPanicSpeakers);
 				Check($"after the covering the sky reads covered and the mood is Tense ({RiftMood.Phase}, covered={RiftSky.Covered})", RiftSky.Covered && RiftMood.Phase == RiftPhase.Tense && RiftMood.PanicNow);
 				if (real) Note($"NoxusBoss's own rift flag after the scene: {RiftSky.RiftOngoing}");
+				LoudMinute(army, burstTicks, pl0, ll0);
 
 				// the tense days
 				RiftMood.SetPanic(false); DialogueSystem.ResetRuntime();
@@ -335,6 +337,39 @@ namespace Levy.Common.Testing
 				RiftSky.ClearOverrides(); RiftMood.Reset(); DialogueSystem.ResetRuntime();
 				SoldierNPC.ChatterOverride = chat0; Main.raining = rain0;
 				Main.dayTime = true; Main.time = 15000;
+			}
+		}
+
+		/// <summary>
+		/// The loud first minute after the covering: four more levies join the six by the commander (ten near), the rest of the minute runs, and the panic lines (the burst plus the shouting
+		/// over each other) are counted: at least 20. The next half minute is still worried talk but at the usual pace (at most one line a squad gap). The four leave again.
+		/// </summary>
+		private static void LoudMinute(List<SoldierNPC> army, int burstTicks, int pl0, int ll0)
+		{
+			var extra = new List<SoldierNPC>();
+			try
+			{
+				for (int i = 0; i < 4; i++) { var l = MakeLevy(_cmdAt + new Vector2((i < 2 ? -6 + i : 3 + i) * 24f, 0f), 6 + i); if (l != null) extra.Add(l); }
+				int ticks = burstTicks, guard = LevyConstants.RiftPanicLoudTicks + 600;
+				bool loudAtStart = RiftMood.PanicLoud;
+				while (RiftMood.PanicLoud && ticks < guard) { RiftStep(1); ticks++; }
+				int burst = RiftMood.PanicLines - pl0, shouted = RiftMood.LoudLines - ll0, near = Standing(army) + Standing(extra);
+				Note($"the loud minute: {ticks} ticks after the covering ended, {burst} burst lines + {shouted} shouted = {burst + shouted} panic lines from {near} levies near ({(burst + shouted) * 3600f / Math.Max(1, ticks):F1} a minute)");
+				Check($"the loud first minute: ten levies near shout at least 20 panic lines ({burst + shouted}: {burst} burst, {shouted} over each other, {near} near, loud for {ticks} ticks)", loudAtStart && near >= 8 && burst + shouted >= 20 && Math.Abs(ticks - LevyConstants.RiftPanicLoudTicks) <= 30);
+				int a0 = SoldierNPC.ChatterLines, l1 = RiftMood.LoudLines, half = Math.Min(60 * 30, LevyConstants.RiftPanicTicks - LevyConstants.RiftPanicLoudTicks - 30);
+				RiftStep(half);
+				int after = SoldierNPC.ChatterLines - a0, cap = half / LevyConstants.ChatterSquadGapTicks + 1;
+				Note($"after the loud minute, {half / 60} s of worried talk at the usual pace: {after} ambient lines ({after * 3600f / Math.Max(1, half):F1} a minute), still worried: {RiftMood.PanicNow}");
+				Check($"after the loud minute the usual pace is back ({after} ambient lines in {half / 60} s, at most {cap}; none shouted: {RiftMood.LoudLines - l1})", after <= cap && RiftMood.LoudLines == l1 && RiftMood.PanicNow && !RiftMood.PanicLoud);
+			}
+			finally
+			{
+				foreach (SoldierNPC s in extra)
+				{
+					if (s?.Record == null) continue;
+					int id = s.Record.Id; s.Record.Gear = new SoldierGear(); if (s.NPC.active) s.NPC.active = false;
+					RosterSystem.Instance?.Regulars.RemoveAll(r => r.Id == id);
+				}
 			}
 		}
 

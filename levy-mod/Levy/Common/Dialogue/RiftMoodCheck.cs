@@ -117,7 +117,7 @@ namespace Levy.Common.Dialogue
 			catch (Exception e) { Note("could not read the packed file: " + e.Message); }
 			Check($"the packed dialogue file parses with no bad line ({bad} rejected)", bad == 0);
 			int total = 0;
-			var mins = new Dictionary<DialogueTrigger, int> { [DialogueTrigger.RIFT_PANIC] = 10, [DialogueTrigger.RIFT_SHOCK] = 10, [DialogueTrigger.RIFT_ABSENT] = 6, [DialogueTrigger.RIFT_COLD] = 8, [DialogueTrigger.RIFT_LATER] = 6, [DialogueTrigger.RIFT_RESPECT] = 8, [DialogueTrigger.RIFT_IDLE] = 15, [DialogueTrigger.RIFT_CAMP] = 8, [DialogueTrigger.RIFT_DARK] = 10, [DialogueTrigger.RIFT_POWER] = 6, [DialogueTrigger.RIFT_DUKE] = 6,
+			var mins = new Dictionary<DialogueTrigger, int> { [DialogueTrigger.RIFT_PANIC] = 18, [DialogueTrigger.RIFT_SHOCK] = 10, [DialogueTrigger.RIFT_ABSENT] = 6, [DialogueTrigger.RIFT_COLD] = 8, [DialogueTrigger.RIFT_LATER] = 6, [DialogueTrigger.RIFT_RESPECT] = 8, [DialogueTrigger.RIFT_IDLE] = 15, [DialogueTrigger.RIFT_CAMP] = 8, [DialogueTrigger.RIFT_DARK] = 10, [DialogueTrigger.RIFT_POWER] = 6, [DialogueTrigger.RIFT_DUKE] = 6,
 				[DialogueTrigger.RIFT_BLOOD] = 12, [DialogueTrigger.RIFT_GROW1] = 8, [DialogueTrigger.RIFT_GROW2] = 8, [DialogueTrigger.RIFT_GROW3] = 8, [DialogueTrigger.RIFT_ICE] = 6, [DialogueTrigger.RIFT_FROZEN] = 6,
 				[DialogueTrigger.RIFT_FOG] = 8, [DialogueTrigger.RIFT_SCARE] = 6, [DialogueTrigger.RIFT_GRIM] = 8, [DialogueTrigger.RIFT_WORN] = 8,
 				[DialogueTrigger.RIFT_HUSH] = 4, [DialogueTrigger.RIFT_BOSS] = 12, [DialogueTrigger.RIFT_TOWN] = 12, [DialogueTrigger.RIFT_CLASS] = 12, [DialogueTrigger.RIFT_HABIT] = 10, [DialogueTrigger.RIFT_FLIGHT] = 6, [DialogueTrigger.RIFT_ANGRY] = 20 };
@@ -148,7 +148,8 @@ namespace Levy.Common.Dialogue
 					string who = t + ": " + (l.Text.Length > 36 ? l.Text.Substring(0, 36) : l.Text);
 					bool ascii = true; foreach (char ch in l.Text) if (ch < 32 || ch > 126) ascii = false;
 					if (!ascii) Check(who + " is plain ASCII", false);
-					if (l.Text.Length > 60) Check($"{who} is short ({l.Text.Length} chars, 60 at most)", false);
+					int cap = t == DialogueTrigger.RIFT_PANIC ? LevyConstants.RiftPanicLineMaxChars : 60; // panic lines are shouted and may run longer
+					if (l.Text.Length > cap) Check($"{who} is short ({l.Text.Length} chars, {cap} at most)", false);
 					if ((l.Cond & LineCond.Grumpy) != 0) Check(who + " carries no [grumpy] tag", false);
 					// a line naming a town NPC needs that NPC alive (none at boot): it must have parsed the NPC; a rogue line needs a rogue class (Calamity)
 					if (l.NpcTypes.Length > 0) { townLines++; filled++; continue; }
@@ -209,6 +210,43 @@ namespace Levy.Common.Dialogue
 			return false;
 		}
 
+		/// <summary>
+		/// The panic is shouted: every line has an exclamation mark, most have a word in capitals, every temperament and the Veteran have their own; filled with a long name each wraps on a chat bar
+		/// in at most the preferred rows (the wrap estimate of TalkingCheck, capitals counted wide). The loud first minute: on right after the covering, off after a minute and while it is covered,
+		/// and its gaps give ten levies a line every second or two, at least 20 a minute, where the usual squad gap allows a handful.
+		/// </summary>
+		private void LoudPanic()
+		{
+			var pool = DialogueTable.Get(DialogueTrigger.RIFT_PANIC);
+			int shout = 0, caps = 0, maxRows = 0; var per = new int[6]; string worst = null;
+			float sc = LevyConstants.ChatBarTextScale;
+			Func<string, float> measure = s => { float w = 0f; foreach (char c in s) w += (c >= 'A' && c <= 'Z') || c == 'm' || c == 'w' ? 9f : 7f; return w * sc; };
+			foreach (DialogueLine l in pool)
+			{
+				if (l.Text.IndexOf('!') >= 0) shout++;
+				if (System.Text.RegularExpressions.Regex.IsMatch(l.Text, "\\b[A-Z]{2,}\\b")) caps++;
+				per[Math.Clamp((int)l.Filter, 0, 5)]++;
+				string filled = System.Text.RegularExpressions.Regex.Replace(l.Text, "\\{[^}]*\\}", "Bartholomew-Featherstonehaugh");
+				int rows = global::Levy.Common.UI.ChatWrap.Fit(filled, measure, LevyConstants.ChatBarTextWidth, LevyConstants.ChatBarWideTextWidth, LevyConstants.ChatBarPreferredRows, out _).Count;
+				if (rows > maxRows) { maxRows = rows; worst = l.Text; }
+			}
+			bool everyVoice = true; foreach (LineFilter f in new[] { LineFilter.Greenhorn, LineFilter.Sellsword, LineFilter.Zealot, LineFilter.Cynic, LineFilter.Veteran }) if (per[(int)f] < 3) everyVoice = false;
+			Check($"the panic is shouted: {shout} of {pool.Count} lines with an exclamation mark, {caps} with a word in capitals, every voice at least 3 lines (any {per[(int)LineFilter.Any]})", shout == pool.Count && caps * 2 >= pool.Count && everyVoice);
+			Check($"every panic line, a long name filled in, fits a chat bar in {LevyConstants.ChatBarPreferredRows} rows (at most {maxRows}: {worst})", maxRows <= LevyConstants.ChatBarPreferredRows);
+
+			RiftMood.SetPanic(true);
+			bool loud = RiftMood.PanicLoud, worried = RiftMood.PanicNow;
+			RiftPhase? tp0 = RiftMood.TestPhase; RiftMood.TestPhase = RiftPhase.Silent; bool loudSilent = RiftMood.PanicLoud; RiftMood.TestPhase = tp0;
+			RiftMood.SetPanic(false);
+			bool window = RiftMood.LoudAt(0) && RiftMood.LoudAt(LevyConstants.RiftPanicLoudTicks - 1) && !RiftMood.LoudAt(LevyConstants.RiftPanicLoudTicks) && !RiftMood.LoudAt(-1) && LevyConstants.RiftPanicLoudTicks < LevyConstants.RiftPanicTicks;
+			Check($"the loud minute: on right after the covering ({loud}, worried {worried}), off once cleared ({RiftMood.PanicLoud}) and while the sun is covered ({loudSilent}), {LevyConstants.RiftPanicLoudTicks / 60} s of the {LevyConstants.RiftPanicTicks / 60} s worried talk", loud && worried && !RiftMood.PanicLoud && !loudSilent && window);
+			// the squad's pace: one line per gap plus the mean retry; ten levies, each ready every few seconds, keep the squad saturated
+			float squadPerMin = 3600f / (LevyConstants.RiftPanicSquadGapTicks + (10 + LevyConstants.RiftPanicRetryMaxTicks) / 2f);
+			float tenPerMin = 10 * 3600f / ((LevyConstants.RiftPanicChatterMinTicks + LevyConstants.RiftPanicChatterMaxTicks) / 2f);
+			float usualPerMin = 3600f / LevyConstants.ChatterSquadGapTicks;
+			Check($"the loud minute's pace: the squad gap allows {squadPerMin:F0} lines a minute, ten levies offer {tenPerMin:F0}, the usual gap {usualPerMin:F0}", Math.Min(squadPerMin, tenPerMin) >= 30f && squadPerMin >= 3f * usualPerMin);
+		}
+
 		private static bool In(DialogueTrigger t, DialogueLine l) => l != null && (DialogueTable.Get(t)?.Contains(l) ?? false);
 
 		// ---- 3. the mood, on overrides ----
@@ -258,6 +296,7 @@ namespace Levy.Common.Dialogue
 			Check($"right after, chat is worried ({panic}/20 RIFT_PANIC)", panic == 20);
 			string direct = DialogueSystem.Pick(DialogueTrigger.RIFT_PANIC, pat, ctx, null, true, -1, out _, false);
 			Check($"the burst draws from RIFT_PANIC ({direct}) and every floating line goes out", direct != null && RiftMood.AllowFloating((byte)DialogueTrigger.RIFT_PANIC) && RiftMood.AllowFloating((byte)DialogueTrigger.IDLE));
+			LoudPanic();
 			RiftMood.TestPanic = false;
 
 			// tense: the covered pools, the hushed ones, the untouched ones

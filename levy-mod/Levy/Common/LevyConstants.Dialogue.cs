@@ -87,7 +87,16 @@ namespace Levy.Common
 		/// <summary>Chat bar jitter: the offset changes every this many ticks.</summary>
 		public const int ChatShakeStepTicks = 4;
 		/// <summary>The burst right after the sun is covered: levies near each commander, one after another; then this long of worried talk in place of the rift chat.</summary>
-		public const int RiftPanicSpeakers = 4, RiftPanicStepTicks = 75, RiftPanicTicks = 60 * 90;
+		public const int RiftPanicSpeakers = 4, RiftPanicStepTicks = 45, RiftPanicTicks = 60 * 90;
+		/// <summary>
+		/// The loud first minute of the worried talk (<see cref="RiftPanicLoudTicks"/> after the covering ends): every calm levy near the commander shouts a RIFT_PANIC line every
+		/// <see cref="RiftPanicChatterMinTicks"/> to <see cref="RiftPanicChatterMaxTicks"/> ticks, and the squad waits only <see cref="RiftPanicSquadGapTicks"/> between ambient lines
+		/// (a levy who finds the squad just spoke tries again 10 to <see cref="RiftPanicRetryMaxTicks"/> ticks later). With ten levies near that is a new line every second or two.
+		/// After it the usual gaps (<see cref="ChatterMinTicks"/>, <see cref="ChatterSquadGapTicks"/>) are back.
+		/// </summary>
+		public const int RiftPanicLoudTicks = 60 * 60, RiftPanicChatterMinTicks = 60 * 2, RiftPanicChatterMaxTicks = 60 * 7, RiftPanicSquadGapTicks = 60, RiftPanicRetryMaxTicks = 45;
+		/// <summary>Panic lines are shouted and may run this long (every other rift line: 60 characters).</summary>
+		public const int RiftPanicLineMaxChars = 80;
 		/// <summary>A levy who was dead or in reserve when the sun went asks what happened, with this chance, until he has asked this many times.</summary>
 		public const float RiftAwayChance = 0.7f;
 		public const int RiftAwayLines = 2;

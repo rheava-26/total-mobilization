@@ -14,7 +14,8 @@ namespace Levy.Content.NPCs
 	/// <summary>
 	/// AMBIENT CHATTER. A calm Regular (no target, nothing hostile near, not hurt lately, not seated: seated levies chat from SoldierNPC.Sit.cs) says a line from the idle pools to a comrade standing near,
 	/// every so often while a player is around. It talks faster for a short while after a fight ends. Lines come from the dialogue file's own pools (IDLE, IDLE_NIGHT, NAMEDROP, and VICTORY after a fight)
-	/// through the ordinary picker, so the per-line repeat cooldown and the temperament filters apply. A squad also shares one clock so forty levies never talk over each other.
+	/// through the ordinary picker, so the per-line repeat cooldown and the temperament filters apply. A squad also shares one clock so forty levies never talk over each other,
+	/// except in the loud minute after the sun is covered (<see cref="RiftMood.PanicLoud"/>), when they shout RIFT_PANIC lines over each other.
 	/// </summary>
 	public partial class SoldierNPC
 	{
@@ -48,17 +49,22 @@ namespace Levy.Content.NPCs
 			if (!ChatterEnabled || !IsRegular || OfficerMode || Record == null || LevyUtil.IsClient) return;
 			if (_sitMode != 0) return; // a seated or seat-walking levy chats through Sit_Chat
 			if (_chatterAt < 0) { _chatterAt = now + Main.rand.Next(LevyConstants.ChatterFirstMinTicks, LevyConstants.ChatterFirstMaxTicks); return; }
+			bool loud = RiftMood.PanicLoud; // the first minute after the sun is covered: everyone shouts over each other
+			if (loud && _chatterAt - now > LevyConstants.RiftPanicChatterMaxTicks) _chatterAt = now + Main.rand.Next(LevyConstants.RiftPanicChatterMaxTicks);
 			if (now < _chatterAt) return;
 			bool afterFight = now - _chatterFightEnd < LevyConstants.ChatterAfterFightWindowTicks;
-			int next = afterFight ? Main.rand.Next(LevyConstants.ChatterAfterFightMinTicks, LevyConstants.ChatterAfterFightMaxTicks) : Main.rand.Next(LevyConstants.ChatterMinTicks, LevyConstants.ChatterMaxTicks);
+			int next = loud ? Main.rand.Next(LevyConstants.RiftPanicChatterMinTicks, LevyConstants.RiftPanicChatterMaxTicks)
+				: afterFight ? Main.rand.Next(LevyConstants.ChatterAfterFightMinTicks, LevyConstants.ChatterAfterFightMaxTicks) : Main.rand.Next(LevyConstants.ChatterMinTicks, LevyConstants.ChatterMaxTicks);
 			_chatterAt = now + next;
 			if (TargetIndex >= 0 || nearestHostileTiles < LevyConstants.SitWakeEnemyTiles || TicksSinceDamaged < LevyConstants.ChatterQuietTicks || BeingTalkedTo || MutinySystem.IsMutinous(Record) || Shaken) return;
 			if (State != SoldierState.Idle && State != SoldierState.Follow) return;
 			if (!AnyPlayerNear(LevyConstants.ChatterPlayerTiles)) return;
 			string squad = Record.CommanderName ?? "";
-			if (ChatterSquadLast.TryGetValue(squad, out int last) && now - last < LevyConstants.ChatterSquadGapTicks) { _chatterAt = now + Main.rand.Next(120, 360); return; }
+			int squadGap = loud ? LevyConstants.RiftPanicSquadGapTicks : LevyConstants.ChatterSquadGapTicks;
+			if (ChatterSquadLast.TryGetValue(squad, out int last) && now - last < squadGap) { _chatterAt = now + (loud ? Main.rand.Next(10, LevyConstants.RiftPanicRetryMaxTicks) : Main.rand.Next(120, 360)); return; }
 			SoldierNPC partner = NearbyCalmRegular(LevyConstants.ChatterComradeTiles);
 			var ctx = new DialogueContext { Comrade = partner?.SoldierName, Player = Record.CommanderName };
+			if (loud) { Chatter_Panic(squad, partner, ctx, now); return; }
 			string line = null;
 			if (afterFight) line = DialogueSystem.PickLine(DialogueTrigger.VICTORY, Record, ctx);
 			if (line == null && Main.rand.NextFloat() < LevyConstants.ChatterNamedropChance) line = DialogueSystem.PickLine(DialogueTrigger.NAMEDROP, Record, ctx);
@@ -67,6 +73,17 @@ namespace Levy.Content.NPCs
 			ChatterSquadLast[squad] = now; ChatterLines++;
 			DialogueSystem.FloatingText(this, line, DialogueTrigger.IDLE);
 			if (partner != null) DialogueSystem.Emote(partner, SitEmotes[Main.rand.Next(SitEmotes.Length)]);
+		}
+
+		/// <summary>The loud minute: a RIFT_PANIC line shouted out loud. The pool comes round quickly at this rate, so a line said lately may be shouted again (never the one just shouted).</summary>
+		private void Chatter_Panic(string squad, SoldierNPC partner, DialogueContext ctx, int now)
+		{
+			string line = DialogueSystem.Pick(DialogueTrigger.RIFT_PANIC, Record, ctx, this, false, -1, out DialogueLine picked)
+				?? DialogueSystem.Pick(DialogueTrigger.RIFT_PANIC, Record, ctx, this, true, RiftMood.LastLoudLine, out picked);
+			if (string.IsNullOrEmpty(line)) return;
+			ChatterSquadLast[squad] = now; ChatterLines++; RiftMood.LoudLines++; RiftMood.LastLoudLine = picked?.Id ?? -1;
+			DialogueSystem.FloatingText(this, line, DialogueTrigger.RIFT_PANIC);
+			if (partner != null) DialogueSystem.Emote(partner, Terraria.GameContent.UI.EmoteID.EmoteFear);
 		}
 
 		/// <summary>The nearest other Regular within <paramref name="tiles"/> that is calm (no target), or null.</summary>

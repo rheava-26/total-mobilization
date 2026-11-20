@@ -176,36 +176,53 @@ namespace Levy.Common.Compat.MagicStorageLink
 				check(c10 == 0 && All(made) == made10 && Net(other.type) == bars10 && levy10.Gear.HasWeapon && s10.type == sword && s10.stack == 1 && ArmoryCraftLink.Shortfall == 0,
 					$"world craft: with the module missing and the sword drawn by a levy after the list was built, nothing is made (made {c10}, results {made10}->{All(made)}, bars {bars10}->{Net(other.type)}, levy keeps it: {levy10.Gear.HasWeapon}, shortfall {ArmoryCraftLink.Shortfall})");
 
-				// 11-12. HER CASE: the crafted weapon went back to the armory, so the Crafting Interface's RESULT slot shows the armory's copy (the network has none). Clicking the result slot
-				//  withdraws it from the module items (Magic Storage clones it and lowers the module's copy; no module hook runs).
-				//  11: the armory still holds it: the player gets one and the armory gives up exactly one.
-				//  12: levies drew every copy after the list was built: the player gets nothing.
-				var withdrawResult = typeof(CraftingGUI).GetMethod("DoWithdrawResult", S);
-				unit.Items.RemoveAll(i => i.type == made); // earlier cases left one in the network; her network had none
-				long inArmory = Armory(made), inNet = Net(made);
-				check(inArmory >= 1 && inNet == 0, $"world craft: the armory holds the crafted {Lang.GetItemNameValue(made)} and the network none (armory {inArmory}, network {inNet})");
-				Frame(); Refresh(heart);
-				var resultItem = (Item)typeof(CraftingGUI).GetField("result", S).GetValue(null);
-				check(resultItem != null && resultItem.type == made && resultItem.stack > 0, "world craft: the result slot shows the armory's copy (" + (resultItem?.Name ?? "none") + ")");
+				// 11-12. Armory items are ingredients only: no Magic Storage withdrawal hands one out. Every entry the Crafting, Decrafting and Storage interfaces offer is tried, on the armory's crafted
+				//  weapon (shown in the result slot because the network has none) and on an armory Terra Blade (the result slot of the Terra Blade recipe).
+				unit.Items.RemoveAll(i => i.type == made || i.type == sword); // earlier cases left some in the network; hers had none
+				armory.Deposit(Make(sword));
+				var gui = typeof(CraftingGUI);
+				var withdrawResult = gui.GetMethod("DoWithdrawResult", S);
+				var slotFocusLogic = gui.GetMethod("SlotFocusLogic", S);
+				var decraftWithdraw = typeof(DecraftingGUI).GetMethod("DoWithdraw", S, null, new[] { typeof(Item), typeof(bool) }, null);
+				Recipe swordRecipe = null;
+				for (int i = 0; i < Recipe.numRecipes; i++) if (Main.recipe[i].createItem.type == sword) { swordRecipe = Main.recipe[i]; break; }
+				foreach (var (target, targetRecipe) in new[] { (made, rec), (sword, swordRecipe) })
 				{
-					var sim = (List<Item>)typeof(CraftingGUI).GetField("sourceItemsFromModules", S).GetValue(null);
-					var itemsL = (List<Item>)typeof(CraftingGUI).GetField("items", S).GetValue(null);
-					observe($"[MsWorldCraft] OBSERVED result slot: {resultItem?.Name} prefix {resultItem?.prefix}; module items {sim.Count} ({string.Join(", ", sim.Where(i => i.type == made).Select(i => i.Name + " p" + i.prefix + " x" + i.stack))}); items {itemsL.Count}, without simulators {typeof(CraftingGUI).GetField("numItemsWithoutSimulators", S).GetValue(null)}");
+					string tn = Lang.GetItemNameValue(target);
+					if (targetRecipe == null) { check(false, "world craft: a recipe makes " + tn); continue; }
+					selField.SetValue(null, targetRecipe);
+					Frame(); Refresh(heart);
+					var resultItem = (Item)gui.GetField("result", S).GetValue(null);
+					long inArmory = Armory(target), refused0 = ArmoryCraftLink.Refused;
+					check(inArmory >= 1 && Net(target) == 0 && resultItem != null && resultItem.type == target && resultItem.stack > 0, $"world craft: the result slot shows the armory's {tn} (armory {inArmory}, network {Net(target)}, result {resultItem?.Name ?? "none"} x{resultItem?.stack ?? 0})");
+					var paths = new List<(string name, Func<Item> take)>
+					{
+						("result slot click", () => (Item)withdrawResult.Invoke(null, new object[] { 1, false })),
+						("result slot shift-click (to inventory)", () => (Item)withdrawResult.Invoke(null, new object[] { resultItem.maxStack, true })),
+						("result slot right-click hold", () => { Main.mouseItem = new Item(); gui.GetField("slotFocus", S)?.SetValue(null, true); gui.GetField("rightClickTimer", S)?.SetValue(null, 0); slotFocusLogic.Invoke(null, null); var m = Main.mouseItem; Main.mouseItem = new Item(); gui.GetField("slotFocus", S)?.SetValue(null, false); return m; }),
+						("decrafting interface withdraw", () => (Item)decraftWithdraw.Invoke(null, new object[] { Make(target), false })),
+						("decrafting interface shift-withdraw", () => (Item)decraftWithdraw.Invoke(null, new object[] { Make(target), true })),
+						("storage interface withdraw", () => StorageGUI.DoWithdraw(Make(target), false)),
+						("storage interface shift-withdraw", () => StorageGUI.DoWithdraw(Make(target), true)),
+					};
+					foreach (var (name, take) in paths)
+					{
+						Item gotW; try { gotW = take(); } catch (Exception e) { check(false, $"world craft: {name} of the armory's {tn} threw {e.GetType().Name}: {e.Message}"); continue; }
+						ArmoryCraftLink.AfterUi(heart);
+						int n = gotW == null || gotW.IsAir ? 0 : gotW.stack;
+						check(n == 0 && Armory(target) == inArmory && ArmoryCraftLink.Shortfall == 0 && ArmoryCraftLink.ClawedBack == 0, $"world craft: {name} hands out no armory {tn} (got {n}, armory {inArmory}->{Armory(target)}, shortfall {ArmoryCraftLink.Shortfall})");
+						Frame(); Refresh(heart); resultItem = (Item)gui.GetField("result", S).GetValue(null) ?? resultItem;
+					}
+					check(ArmoryCraftLink.Refused > refused0, $"world craft: the refused withdrawals of the armory's {tn} were counted for the message ({ArmoryCraftLink.Refused - refused0})");
+					// still an ingredient: the proxies are back after the refused withdrawals
+					check(ArmoryCraftLink.Offered(heart).Any(o => o.type == target && o.stack > 0), $"world craft: the armory's {tn} is still offered as an ingredient");
 				}
-				var w11 = (Item)withdrawResult.Invoke(null, new object[] { 1, false });
-				ArmoryCraftLink.AfterUi(heart);
-				int got11 = w11 == null || w11.IsAir ? 0 : w11.stack;
-				check(got11 == 1 && Armory(made) == inArmory - 1 && Net(made) == 0 && ArmoryCraftLink.Shortfall == 0 && ArmoryCraftLink.ClawedBack == 0,
-					$"world craft: taking the result slot's copy hands over 1 and the armory gives up exactly 1 (got {got11}, armory {inArmory}->{Armory(made)}, shortfall {ArmoryCraftLink.Shortfall})");
+				selField.SetValue(null, rec);
 				Frame(); Refresh(heart);
-				var drawn = new List<Item>();
-				foreach (var arr in new[] { armory.Storage, armory.IssueWeapons }) for (int i = 0; i < arr.Length; i++) if (!arr[i].IsAir && arr[i].type == made) { drawn.Add(arr[i]); arr[i] = new Item(); } // levies drew them after the list was built
-				var w12 = (Item)withdrawResult.Invoke(null, new object[] { 1, false });
-				ArmoryCraftLink.AfterUi(heart);
-				int got12 = w12 == null || w12.IsAir ? 0 : w12.stack;
-				check(got12 == 0 && drawn.All(d => d.type == made && d.stack == 1) && ArmoryCraftLink.Shortfall == 0,
-					$"world craft: with every copy drawn by levies after the list was built, the result slot hands over nothing (got {got12}, levies hold {drawn.Count}, shortfall {ArmoryCraftLink.Shortfall})");
-				foreach (var d in drawn) armory.Deposit(d);
+				unit.DepositItem(Make(other.type, per));
+				long swBefore = Armory(sword);
+				int cAfter = Craft(1);
+				check(cAfter == 1 && Armory(sword) == swBefore - 1 && ArmoryCraftLink.Shortfall == 0, $"world craft: after the refused withdrawals the armory's Terra Blade still crafts, paid once (made {cAfter}, swords {swBefore}->{Armory(sword)})");
 
 				// 13. the Armory Heart is unlinked after the list was built, and the click comes before any refresh: the sword is never used unpaid
 				armory.Deposit(Make(sword));

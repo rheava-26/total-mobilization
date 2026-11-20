@@ -86,16 +86,23 @@ namespace Levy.Common.Compat.MagicStorageLink
 
 		internal delegate Item OrigWithdrawModule(Item toWithdraw, bool wasAlreadyCloned);
 		/// <summary>
-		/// Detour on <c>CraftingGUI.TryToWithdrawFromModuleItems</c>: the Crafting Interface's result slot (and the Decrafting Interface's) hands the player a module item when the network itself has none, cloning it
-		/// and lowering the module's copy. No module hook runs. Before: every proxy is lowered to what its rack item holds. After: the racks pay at once, and whatever they could not pay is taken off what the player gets.
+		/// Detour on <c>CraftingGUI.TryToWithdrawFromModuleItems</c>, the one place every Magic Storage withdrawal reaches module items (the Crafting Interface's result slot: click, shift-click, right-click hold;
+		/// the Decrafting Interface; a multiplayer client's request on the server). Armory items are ingredients only, never withdrawn: for the length of the call every armory proxy is hidden (its type set to 0, so
+		/// Magic Storage's search passes it over), and an attempt that found nothing else says where the item is. Afterwards the racks are settled, and anything an armory still lost is withheld (never happens).
 		/// </summary>
 		internal static Item WithdrawModuleDetour(OrigWithdrawModule orig, Item toWithdraw, bool wasAlreadyCloned)
 		{
 			_hl_WithdrawModuleDetour_1++;
-			if (Main.netMode == NetmodeID.MultiplayerClient) return orig(toWithdraw, wasAlreadyCloned);
-			lock (Gate) { _short.Clear(); }
-			Validate();
-			Item got = orig(toWithdraw, wasAlreadyCloned);
+			var hidden = new List<(Item p, int type)>();
+			lock (Gate) { _short.Clear(); foreach (var p in ByProxy.Keys) if (p.type > ItemID.None) { hidden.Add((p, p.type)); p.type = ItemID.None; } }
+			Item got;
+			try { got = orig(toWithdraw, wasAlreadyCloned); }
+			finally { lock (Gate) foreach (var (p, t) in hidden) if (p.type == ItemID.None) p.type = t; }
+			if ((got == null || got.IsAir) && toWithdraw != null && hidden.Any(h => h.type == toWithdraw.type && h.p.stack > 0))
+			{
+				Refused++;
+				try { if (!Main.dedServ) Main.NewText(Terraria.Localization.Language.GetTextValue("Mods.Levy.Logistics.ArmoryItemNoWithdraw"), 220, 200, 120); } catch (Exception) { }
+			}
 			int unpaid;
 			lock (Gate) { ReconcileLocked(); unpaid = got == null || got.IsAir ? 0 : (_short.TryGetValue(got.type, out int c) ? c : 0); _short.Clear(); }
 			if (unpaid > 0)
@@ -110,6 +117,8 @@ namespace Levy.Common.Compat.MagicStorageLink
 		private static System.Reflection.FieldInfo _selRecipe => _selRecipeField ??= typeof(CraftingGUI).GetField("selectedRecipe", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
 		/// <summary>Results taken back after a craft that used armory items with nothing behind them (must stay 0).</summary>
 		public static long ClawedBack;
+		/// <summary>Withdrawals of an armory item through Magic Storage that were refused.</summary>
+		public static long Refused;
 
 		private static void ClawBack(Recipe recipe, Dictionary<int, int> shortBy)
 		{
@@ -326,7 +335,7 @@ namespace Levy.Common.Compat.MagicStorageLink
 		/// <summary>Self-check seam: forgets every proxy (each is turned to air first) and the counters.</summary>
 		internal static void ResetForTest()
 		{
-			lock (Gate) { foreach (var l in ByProxy.Values.ToList()) Drop(l); Published.Clear(); Returns.Clear(); _weaponFrom = null; Taken = Shortfall = Returned = ClawedBack = 0; _short.Clear(); TestHideModule = false; _armHeart = -1; _arm = new(); }
+			lock (Gate) { foreach (var l in ByProxy.Values.ToList()) Drop(l); Published.Clear(); Returns.Clear(); _weaponFrom = null; Taken = Shortfall = Returned = ClawedBack = Refused = 0; _short.Clear(); TestHideModule = false; _armHeart = -1; _arm = new(); }
 		}
 
 		private static void Warn(string what) { try { Levy.Instance?.Logger.Warn("Levy/MagicStorage crafting: " + what); } catch (Exception) { } }

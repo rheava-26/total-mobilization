@@ -60,7 +60,7 @@ namespace Levy.Common.Net
 	///  ArmorySnapshot: (unused: same)
 	///  SoldierVisual: (unused: NPC SendExtraAI)
 	///  Bark: short npcIndex, byte channel (DialogueChannel), byte emoteId, string text   (Dialogue)
-	///  BossLifeMax: short npcIndex, int lifeMax                  (Boss) — vanilla syncs life but not lifeMax
+	///  BossLifeMax: short npcIndex, int lifeMax, short scalePct, short soldiers, short strength x100 (Boss) — vanilla syncs life but not lifeMax; the scale feeds the fight report
 	///  MutinyRob: long copper, int damage, int hitDirection, string soldierName   (Mutiny) — to the robbed player only; the client takes up to that much coin from its own pockets and banks, then takes the hit
 	///  CompanionEffect: byte kind, then a payload the companion defines                    (Compat) — to one client; Levy only routes it to the handler the companion registered
 	///  ObserveList: int count, then per camera: int id, short tileX, short tileY, string label   (Observe)

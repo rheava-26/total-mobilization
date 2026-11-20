@@ -27,9 +27,10 @@ namespace Levy.Common.Boss
 		{
 			LevyPackets.Register(LevyPacket.BossLifeMax, (reader, from) =>
 			{
-				int idx = reader.ReadInt16(); int lifeMax = reader.ReadInt32();
+				int idx = reader.ReadInt16(); int lifeMax = reader.ReadInt32(); int pct = reader.ReadInt16(); int soldiers = reader.ReadInt16(); int str100 = reader.ReadInt16();
 				if (Main.netMode != NetmodeID.MultiplayerClient) return;
 				if (idx >= 0 && idx < Main.maxNPCs && Main.npc[idx].active && lifeMax > 0) Main.npc[idx].lifeMax = lifeMax;
+				BossRule.NoteFightScale(pct, soldiers, str100);
 			});
 			On_NPC.TargetClosest += Hook_TargetClosest;
 			On_NPC.TargetClosestUpgraded += Hook_TargetClosestUpgraded;

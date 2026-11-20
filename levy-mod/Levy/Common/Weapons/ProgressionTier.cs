@@ -136,6 +136,9 @@ namespace Levy.Common.Weapons
 			return -1f;
 		}
 
+		/// <summary>A boss's own place on the progression scale (vanilla table, else a modded boss by internal name), or -1 when it has none. Needs no built table.</summary>
+		public static float BossTier(int npcType) => BossP(npcType);
+
 		private static float BossP(int npcType)
 		{
 			if (VanillaBoss.TryGetValue(npcType, out float p)) return p;

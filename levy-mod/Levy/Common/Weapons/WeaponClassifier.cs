@@ -133,6 +133,7 @@ namespace Levy.Common.Weapons
 		{
 			extended = false;
 			if (item == null || item.IsAir) return WeaponFamily.None;
+			if (IsAnchoredSwing(item) && item.damage > 0) return WeaponFamily.Broadsword; // a blade whose blow is a slash circling the wielder (AnchoredSwingReach): swung at blade range, the slash comes out of its own Shoot hook
 			// Thrown consumables (knives, shuriken, javelins, grenades, bombs) are decided before the consumable / zero-damage rejections below: a bomb item has damage 0
 			// (the blast damage lives on its projectile) and every one of them is a consumable.
 			if (item.consumable && IsThrownConsumable(item)) return WeaponFamily.Thrown;
@@ -371,8 +372,30 @@ namespace Levy.Common.Weapons
 			p.MeleeReachTiles = p.RangeTiles;
 			if (p.Family == WeaponFamily.Broadsword) ApplyProjectileMelee(src, p);
 			ApplyLongReach(src, p);
+			ApplyAnchoredSwing(src, p);
 			return p;
 		}
+
+		/// <summary>
+		/// Modded melee weapons whose item shot is a placeholder: the item's own Shoot hook (or default shot) spawns the real blow, a slash that circles its wielder and never flies. Classified by the placeholder's flight they stood off at
+		/// caster range and swung at the air (0 damage in the army sweep while a player at blade range hits). They are blades: the soldier closes to the slash's reach and swings, and each swing launches the item's own shot through
+		/// its real Shoot hook (WeaponUse.StartSwing). The items are no-melee, so the swing box itself deals nothing (SoldierNPC.ProcessSwing), as for a player. Mod -> item internal name -> reach in tiles
+		/// (read from the slash's own code: its distance from the wielder plus half its size, rounded down).
+		/// </summary>
+		private static readonly Dictionary<string, Dictionary<string, int>> AnchoredSwingReach = new()
+		{
+			["StarsAbove"] = new() { ["BloodBlade"] = 5, ["BurningDesire"] = 5, ["Umbra"] = 5, ["SakuraVengeance"] = 5 },
+		};
+
+		private static void ApplyAnchoredSwing(Item src, WeaponProfile p)
+		{
+			if (src.ModItem == null || !AnchoredSwingReach.TryGetValue(src.ModItem.Mod.Name, out var t) || !t.TryGetValue(src.ModItem.Name, out int reach)) return;
+			p.FiresProjectileMelee = false; p.BeamProjType = 0; p.ShortShot = false; // positioned and triggered like a blade: the slash is the blow, not a beam flown from range
+			p.RangeTiles = reach; p.MeleeReachTiles = reach; p.BossReachMult = 1f; p.OpensEarly = false;
+		}
+
+		/// <summary>Self-check hook: true when this item is fought at a slash's reach (<see cref="AnchoredSwingReach"/>).</summary>
+		internal static bool IsAnchoredSwing(Item item) => item?.ModItem != null && AnchoredSwingReach.TryGetValue(item.ModItem.Mod.Name, out var t) && t.ContainsKey(item.ModItem.Name);
 
 		/// <summary>
 		/// A broadsword whose swing launches a real friendly projectile gets FiresProjectileMelee and the projectile's reach as RangeTiles (never below the
@@ -569,7 +592,17 @@ namespace Levy.Common.Weapons
 		public static bool IsIssuableWeapon(Item item) => item != null && !item.IsAir && GetProfile(item).Supported;
 		public static bool IsArmorPiece(Item item, int part) => item != null && !item.IsAir && (part == 0 ? item.headSlot >= 0 : part == 1 ? item.bodySlot >= 0 : item.legSlot >= 0);
 		/// <summary>Accessories that do something on a soldier (plain stats + movement). Info/fishing/building accessories are refused.</summary>
-		public static bool IsUsefulAccessory(Item item) => item != null && !item.IsAir && item.accessory && !item.vanity && !_uselessAccessories.Contains(item.type);
+		public static bool IsUsefulAccessory(Item item) => item != null && !item.IsAir && item.accessory && !item.vanity && !_uselessAccessories.Contains(item.type) && !HarmfulModAccessory(item);
+
+		/// <summary>
+		/// Modded accessories that are harmful on a soldier, by mod and internal name (the modded half of the "harmful or pointless" list above). Mod -> names.
+		/// StarlightRiver BloodlessAmulet: sets its wearer's life to 0 every tick and keeps a player alive through that mod's own barrier shield, which a soldier does not have: the levy wearing it died at once (world gear check).
+		/// </summary>
+		private static readonly Dictionary<string, HashSet<string>> HarmfulModAccessories = new()
+		{
+			["StarlightRiver"] = new() { "BloodlessAmulet" },
+		};
+		internal static bool HarmfulModAccessory(Item item) => item.ModItem != null && HarmfulModAccessories.TryGetValue(item.ModItem.Mod.Name, out var set) && set.Contains(item.ModItem.Name);
 		/// <summary>A round: ammo that is not marked notAmmo. A thrown weapon another mod also lets its launchers fire (ammo > 0 and notAmmo) is still a weapon.</summary>
 		public static bool IsAmmo(Item item) => item != null && !item.IsAir && item.ammo > 0 && !item.notAmmo;
 		public static bool IsHealingPotion(Item item) => item != null && !item.IsAir && item.healLife > 0 && item.consumable;

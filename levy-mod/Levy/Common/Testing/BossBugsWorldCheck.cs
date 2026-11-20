@@ -224,6 +224,7 @@ namespace Levy.Common.Testing
 			if (Part(only, "priority")) { try { BossPriority(); } finally { Cleanup(); } }
 			if (Part(only, "calclone") && ModLoader.HasMod("CalamityMod")) { try { CalClonePart(); } finally { Cleanup(); } }
 			if (Part(only, "redemption") && ModLoader.HasMod("Redemption")) { try { RedemptionPart(); } finally { Cleanup(); } } // only when the mod is loaded
+			if (Part(only, "starsriver") && SrLoaded) { try { StarsRiverPart(); } finally { Cleanup(); } } // only when StarsAbove or StarlightRiver is loaded
 			if (Array.IndexOf(only.Split(','), "noxus") >= 0 && ModLoader.HasMod("NoxusBoss")) { try { NoxusPart(); } finally { Cleanup(); } } // Wrath of the Gods reconnaissance: only when asked for by name (never part of "all") and the mod is loaded
 		}
 

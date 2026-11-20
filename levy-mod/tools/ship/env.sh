@@ -8,6 +8,7 @@ REPO="${REPO:-$(cd "$SHIP_DIR/../../.." && pwd)}"          # repo root (works fr
 LEVY_SRC="$REPO/levy-mod/Levy"
 MECH_SRC="$REPO/mechanization-mod/Mechanization"
 WARB_SRC="$REPO/warbands-mod/Warbands"
+QOL_SRC="$REPO/qol-mod/FieldsideQoL"
 
 U=/home/user
 DOTNET8=$U/dotnet                      # .NET 8 runtime (runs both tML builds)
@@ -53,7 +54,7 @@ use_dotnet10() { export DOTNET_ROOT=$DOTNET10; export PATH=$DOTNET10:$PATH; }
 
 # The mods Eve ships, in build order (Mechanization and Warbands reference Levy.tmod from the Mods folder).
 SHIP_MODS=(Levy Mechanization Warbands)
-mod_src() { case "$1" in Levy) echo "$LEVY_SRC";; Mechanization) echo "$MECH_SRC";; Warbands) echo "$WARB_SRC";; *) echo "$1";; esac; }
+mod_src() { case "$1" in Levy) echo "$LEVY_SRC";; Mechanization) echo "$MECH_SRC";; Warbands) echo "$WARB_SRC";;  FieldsideQoL) echo "$QOL_SRC";; *) echo "$1";; esac; }
 
 # Copy (never link) a tree: removes the destination file first so a stray hardlink can never be written through.
 copy_fresh() { local src="$1" dst="$2"; rm -f "$dst"; cp -f "$src" "$dst"; }

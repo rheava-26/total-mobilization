@@ -1,0 +1,3 @@
+Fieldside QoL - small quality-of-life fixes, one at a time.
+
+Angler fix for Calamity: Wrath of the Gods. While the rift eclipse lasts, the Angler keeps rotating his quests as normal, so quest rewards stay in reach. Veilray stays in the rotation as one of the fish. Turn the option off in the server config for the original behavior. Does nothing when Wrath of the Gods is not installed.

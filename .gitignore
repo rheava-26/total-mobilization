@@ -40,3 +40,9 @@ levy-mod/tools/review2.js
 # tModLoader build scratch
 compile_temp/
 __pycache__/
+
+# Fieldside QoL - small separate QoL tModLoader mod (qol-mod/)
+!qol-mod/
+qol-mod/FieldsideQoL/obj/
+qol-mod/FieldsideQoL/bin/
+qol-mod/FieldsideQoL/.vs/

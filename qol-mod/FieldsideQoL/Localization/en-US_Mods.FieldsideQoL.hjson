@@ -1,0 +1,12 @@
+# Fieldside QoL - player-facing strings. Keys are relative to Mods.FieldsideQoL (prefix comes from the file name).
+# Style: 1-4 short declarative sentences.
+Configs: {
+	AnglerConfig: {
+		DisplayName: Angler
+
+		NormalQuestsDuringRift: {
+			Label: Normal Angler quests during the rift
+			Tooltip: On, the Angler rotates his quests as usual while the rift eclipse lasts. Veilray stays in the rotation. Off, the rift sets every quest to Veilray. Needs Calamity: Wrath of the Gods.
+		}
+	}
+}

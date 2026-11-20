@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Build a mod into a tModLoader save's Mods/ folder.
-#   build_mod.sh [-t 08|10] [-i INSTALL] [-s SAVE] <mod dir | Levy | Mechanization | Warbands>
+#   build_mod.sh [-t 08|10] [-i INSTALL] [-s SAVE] <mod dir | Levy | Mechanization | Warbands | FieldsideQoL>
 #     -t 08 (default): tModLoader 2026.08 at $TML08, save $SAVE08.   -t 10: 2026.10 at $TML10, save $SAVE10.
 #     -i / -s override the install and the save dir (the ship scripts build straight into their private ship save).
 # Two build modes, chosen automatically:
-#   tML mode  (Levy, Mechanization, Warbands, CalamityModMusic): `tModLoader -server -build <dir>`; the mod dir name is the mod name.
+#   tML mode  (Levy, Mechanization, Warbands, FieldsideQoL, CalamityModMusic): `tModLoader -server -build <dir>`; the mod dir name is the mod name.
 #   csproj mode (the .csproj uses Krafs.Publicizer: Calamity, MagicStorage, SerousCommonLib): `dotnet build` with the .NET 10 SDK;
 #     the dir must sit in <save>/ModSources/ next to tModLoader.targets (setup_toolchain.sh arranges that).
 # Weak references (Levy: ThoriumMod, MagicStorage) must already be in <save>/Mods or tML refuses with TML002.

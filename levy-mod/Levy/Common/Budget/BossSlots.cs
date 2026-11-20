@@ -35,7 +35,7 @@ namespace Levy.Common.Budget
 		public static readonly List<Func<int, int, int>> SlotReleasers = new();
 
 		/// <summary>Extra NPC slots the drones leave free while a boss that needed the room is alive.</summary>
-		public const int ExtraReserveSlots = 30;
+		public static int ExtraReserveSlots { get { try { return LevyConfig.Get?.BossRoomSlots ?? 30; } catch (Exception) { return 30; } } }
 		public static int ExtraReserve;
 		/// <summary>Levy bodies held off the field for the boss's segments (subtracted from the render cap until the boss is gone).</summary>
 		public static int Squeeze;
@@ -45,7 +45,8 @@ namespace Levy.Common.Budget
 		private static bool _busy;
 		private static int _loggedFor = -1;
 
-		internal static void Reset() { ExtraReserve = 0; Squeeze = 0; _busy = false; _loggedFor = -1; }
+		private static bool _told;
+		internal static void Reset() { _told = false; ExtraReserve = 0; Squeeze = 0; _busy = false; _loggedFor = -1; }
 
 		/// <summary>True when this spawn is a boss, or something a boss spawns (its segments, its adds): the spawns that may take a slot from the army's surroundings.</summary>
 		internal static bool NeedsRoom(IEntitySource source, int type)
@@ -86,6 +87,7 @@ namespace Levy.Common.Budget
 				if (freedNow > 0)
 				{
 					ExtraReserve = ExtraReserveSlots;
+					if (!_told) { _told = true; try { Terraria.Chat.ChatHelper.BroadcastChatMessage(Terraria.Localization.NetworkText.FromKey("Mods.Levy.Boss.RoomMade", Freed), new Color(200, 200, 120)); } catch (Exception) { } }
 					int who = source is EntitySource_Parent sp && sp.Entity is NPC par ? par.whoAmI : -1;
 					if (who != _loggedFor) { _loggedFor = who; Levy.Instance?.Logger.Info($"[BossSlots] a boss spawn (type {type}) found no free NPC slot: {freedNow} made so far (critters {FreedCritters}, hostiles {FreedHostiles}, garrison {FreedReleased}, summoned {FreedSummons}, levies off the field {FreedLevies}), spawn {(r < Main.maxNPCs ? "succeeded" : "STILL FAILED")}"); }
 				}

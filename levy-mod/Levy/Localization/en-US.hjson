@@ -398,6 +398,11 @@ Mods: {
 					Tooltip: Free NPC slots drones always leave
 				}
 
+				BossRoomSlots: {
+					Label: NPC slots kept free for a boss
+					Tooltip: While a boss that needed room is alive, drones, militia and levies leave this many NPC slots free for its segments and adds
+				}
+
 				ArmySoundVolume: {
 					Label: Army sound volume
 					Tooltip: Volume of every sound the army makes

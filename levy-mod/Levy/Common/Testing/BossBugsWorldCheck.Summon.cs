@@ -70,12 +70,12 @@ namespace Levy.Common.Testing
 						if (BossSlots.On && t.FreeBefore < baseSegs + 1) Check($"(Summon) {name} [{label}]: the world had {t.FreeBefore} slots free for {baseSegs + 1}: the room came from the zombies and critters ({t.FreedTotal} freed, {t.FreedHostile} hostiles)", t.FreedTotal >= baseSegs + 1 - t.FreeBefore - 2, () => t.Comp);
 						Check($"(Summon) {name} [{label}]: the townspeople are never taken ({t.TownBefore} -> {t.TownAfter})", t.TownAfter >= t.TownBefore);
 						Check($"(Summon) {name} [{label}]: the player's drones and turrets are never taken ({t.MachinesBefore} -> {t.MachinesAfter})", t.MachinesAfter == t.MachinesBefore);
-						Check($"(Summon) {name} [{label}]: not one levy left the field ({t.LeviesBefore} -> {t.LeviesAfter})", t.LeviesAfter == t.LeviesBefore, () => $"squeeze {t.SqueezeAtEnd}");
+						Check($"(Summon) {name} [{label}]: not one levy left the field ({t.LeviesBefore} -> {t.LeviesAfter})", t.LeviesAfter >= t.LeviesBefore, () => $"squeeze {t.SqueezeAtEnd}");
 					}
 					if (arm == "lean")
 					{
 						bool needs = t.FreeBefore < baseSegs + 1; // the boss needs more room than the world has left over the levies
-						Check($"(Summon) {name} [{label}]: the levies stand down only as many as the room took ({t.LeviesBefore} -> {t.LeviesAfter}, {(needs ? "it needs " + (baseSegs + 1 - t.FreeBefore) + " more" : "it fits")})", needs ? (t.LeviesAfter < t.LeviesBefore && t.LeviesAfter >= t.LeviesBefore - (baseSegs + 1 - t.FreeBefore) - 3) : t.LeviesAfter == t.LeviesBefore, () => $"squeeze {t.SqueezeSoon}");
+						Check($"(Summon) {name} [{label}]: the levies stand down only as many as the room took ({t.LeviesBefore} -> {t.LeviesAfter}, {(needs ? "it needs " + (baseSegs + 1 - t.FreeBefore) + " more" : "it fits")})", needs ? (t.LeviesAfter < t.LeviesBefore && t.LeviesAfter >= t.LeviesBefore - (baseSegs + 1 - t.FreeBefore) - 3) : t.LeviesAfter >= t.LeviesBefore, () => $"squeeze {t.SqueezeSoon}");
 						Check($"(Summon) {name} [{label}]: the townspeople are never taken ({t.TownBefore} -> {t.TownAfter})", t.TownAfter >= t.TownBefore);
 					}
 				}

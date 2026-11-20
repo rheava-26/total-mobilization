@@ -201,37 +201,42 @@ namespace Levy.Common.Progression
 	{
 		public static int Added;
 
+		/// <summary>One recipe the options ask for, as data (a Recipe can only be built inside the recipe hooks, so the world check reads these).</summary>
+		public sealed class Spec
+		{
+			public int Result, Stack, Tile; public (int type, int stack)[] Ingredients; public Condition Cond;
+		}
+
 		public override void AddRecipes()
 		{
 			Added = 0;
 			var c = LevyProgressionConfig.Get;
 			if (c == null) return;
-			foreach (var r in Make(c)) { r.Register(); Added++; }
+			foreach (var sp in Specs(c))
+			{
+				var r = Recipe.Create(sp.Result, sp.Stack);
+				foreach (var (t, n) in sp.Ingredients) r.AddIngredient(t, n);
+				r.AddTile(sp.Tile);
+				if (sp.Cond != null) r.AddCondition(sp.Cond);
+				r.Register(); Added++;
+			}
 		}
 
-		/// <summary>The recipes the options ask for (not yet registered, so the world check can read them under any option values). Empty without Calamity.</summary>
-		public static List<Recipe> Make(LevyProgressionConfig c)
+		/// <summary>The recipes the options ask for. Empty without Calamity.</summary>
+		public static List<Spec> Specs(LevyProgressionConfig c)
 		{
-			var list = new List<Recipe>();
+			var list = new List<Spec>();
 			if (c == null || !CalamityLink.Loaded) return list;
 			int scoria = CalamityLink.ItemType("ScoriaOre");
-
 			if (c.SuperpoweredMagnetRecipe)
-				list.Add(Recipe.Create(ModContent.ItemType<SuperpoweredMagnet>())
-					.AddIngredient(ItemID.LunarBar, ProgConst.MagnetBars)
-					.AddIngredient(ItemID.FragmentSolar, ProgConst.MagnetFragments).AddIngredient(ItemID.FragmentVortex, ProgConst.MagnetFragments)
-					.AddIngredient(ItemID.FragmentNebula, ProgConst.MagnetFragments).AddIngredient(ItemID.FragmentStardust, ProgConst.MagnetFragments)
-					.AddTile(TileID.LunarCraftingStation).AddCondition(Condition.DownedMoonLord));
-
+				list.Add(new Spec { Result = ModContent.ItemType<SuperpoweredMagnet>(), Stack = 1, Tile = TileID.LunarCraftingStation, Cond = Condition.DownedMoonLord,
+					Ingredients = new (int, int)[] { (ItemID.LunarBar, ProgConst.MagnetBars), (ItemID.FragmentSolar, ProgConst.MagnetFragments), (ItemID.FragmentVortex, ProgConst.MagnetFragments), (ItemID.FragmentNebula, ProgConst.MagnetFragments), (ItemID.FragmentStardust, ProgConst.MagnetFragments) } });
 			if (c.ScoriaOreRecipe && scoria > 0)
-				list.Add(Recipe.Create(scoria, ProgConst.ScoriaYield)
-					.AddIngredient(ItemID.Hellstone, ProgConst.ScoriaHellstone).AddIngredient(ItemID.ChlorophyteOre, ProgConst.ScoriaChlorophyte)
-					.AddTile(TileID.AdamantiteForge).AddCondition(Condition.DownedGolem));
-
+				list.Add(new Spec { Result = scoria, Stack = ProgConst.ScoriaYield, Tile = TileID.AdamantiteForge, Cond = Condition.DownedGolem,
+					Ingredients = new (int, int)[] { (ItemID.Hellstone, ProgConst.ScoriaHellstone), (ItemID.ChlorophyteOre, ProgConst.ScoriaChlorophyte) } });
 			if (c.SlimeAgitatorRecipe && scoria > 0)
-				list.Add(Recipe.Create(ModContent.ItemType<SlimeAgitator>())
-					.AddIngredient(ItemID.RoyalGel, ProgConst.AgitatorKingSlime).AddIngredient(ItemID.VolatileGelatin, ProgConst.AgitatorQueenSlime).AddIngredient(scoria, ProgConst.AgitatorScoria)
-					.AddTile(TileID.MythrilAnvil));
+				list.Add(new Spec { Result = ModContent.ItemType<SlimeAgitator>(), Stack = 1, Tile = TileID.MythrilAnvil,
+					Ingredients = new (int, int)[] { (ItemID.RoyalGel, ProgConst.AgitatorKingSlime), (ItemID.VolatileGelatin, ProgConst.AgitatorQueenSlime), (scoria, ProgConst.AgitatorScoria) } });
 			return list;
 		}
 	}

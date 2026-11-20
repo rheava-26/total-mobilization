@@ -112,12 +112,13 @@ namespace Levy.Common.Testing
 			try { StealthWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[StealthWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { LineWatchWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LineWatch] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { ChatterWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ChatterWorld] check threw " + e.GetType().Name + ": " + e.Message); }
-			try { ProgAssistWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ProgAssist] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { TileSweepCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[TileSweep] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the boss-fight cost check runs last: it spawns the biggest army of any check and floods the field with hostile projectiles
 			try { PerfBossCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfBoss] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the performance analyzer check runs after it: it attaches the analyzer's detours to the process, and its fault test removes them again
 			try { global::Levy.Common.Perf.PerfWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfAnalyzer] check threw " + e.GetType().Name + ": " + e.Message); }
+			// the Calamity progression-assistance check runs after every check that reads the world (it makes planetoids, ore and a meteor) and before the hook liveness check (it drives the ore detours)
+			try { ProgAssistWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ProgAssist] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the hook liveness check reads every detour's call counter once the whole chain has run
 			try { HookLiveCheck.Run(_mod); } catch (Exception e) { _mod.Logger.Warn("[HookLive] check threw " + e.GetType().Name + ": " + e.Message); }
 		}

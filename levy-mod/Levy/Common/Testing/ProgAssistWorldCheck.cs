@@ -111,20 +111,20 @@ namespace Levy.Common.Testing
 			Check("recipes: a Levy magnet recipe exists iff its option is on and Calamity is loaded", (Making(magnet) > 0) == (c.SuperpoweredMagnetRecipe && cal));
 			Check("recipes: a Levy agitator recipe exists iff its option is on and Calamity is loaded", (Making(agit) > 0) == (c.SlimeAgitatorRecipe && cal));
 			Check("recipes: a Levy Scoria recipe exists iff its option is on and Calamity is loaded", scoria <= 0 || (Making(scoria) > 0) == (c.ScoriaOreRecipe && cal));
-			if (!cal) { Check("recipes: without Calamity none are made even with every option on", AllOn(c, () => ProgressionCalamityRecipes.Make(c).Count == 0)); return; }
+			if (!cal) { Check("recipes: without Calamity none are made even with every option on", AllOn(c, () => ProgressionCalamityRecipes.Specs(c).Count == 0)); return; }
 			(int, int) I(int a, int b) => (a, b);
-			bool Same(Recipe r, int result, int stack, (int, int)[] ing, int tile) =>
-				r.createItem.type == result && r.createItem.stack == stack && r.requiredTile.Contains(tile) && r.requiredItem.Count == ing.Length && ing.All(i => r.requiredItem.Any(q => q.type == i.Item1 && q.stack == i.Item2));
-			List<Recipe> all = null; AllOn(c, () => { all = ProgressionCalamityRecipes.Make(c); return true; });
+			bool Same(ProgressionCalamityRecipes.Spec r, int result, int stack, (int, int)[] ing, int tile) =>
+				r.Result == result && r.Stack == stack && r.Tile == tile && r.Ingredients.Length == ing.Length && ing.All(i => r.Ingredients.Any(q => q.type == i.Item1 && q.stack == i.Item2));
+			List<ProgressionCalamityRecipes.Spec> all = null; AllOn(c, () => { all = ProgressionCalamityRecipes.Specs(c); return true; });
 			Check("recipes: with the options on, exactly three are made", all != null && all.Count == 3);
 			if (all == null || all.Count != 3) return;
-			var mag = all.FirstOrDefault(r => r.createItem.type == magnet);
+			var mag = all.FirstOrDefault(r => r.Result == magnet);
 			Check($"recipe: Superpowered Magnet = {ProgConst.MagnetBars} Luminite Bars + {ProgConst.MagnetFragments} of each Lunar Fragment at an Ancient Manipulator, after Moon Lord",
-				mag != null && Same(mag, magnet, 1, new[] { I(ItemID.LunarBar, ProgConst.MagnetBars), I(ItemID.FragmentSolar, ProgConst.MagnetFragments), I(ItemID.FragmentVortex, ProgConst.MagnetFragments), I(ItemID.FragmentNebula, ProgConst.MagnetFragments), I(ItemID.FragmentStardust, ProgConst.MagnetFragments) }, TileID.LunarCraftingStation) && mag.Conditions.Contains(Condition.DownedMoonLord));
-			var sco = all.FirstOrDefault(r => r.createItem.type == scoria);
+				mag != null && Same(mag, magnet, 1, new[] { I(ItemID.LunarBar, ProgConst.MagnetBars), I(ItemID.FragmentSolar, ProgConst.MagnetFragments), I(ItemID.FragmentVortex, ProgConst.MagnetFragments), I(ItemID.FragmentNebula, ProgConst.MagnetFragments), I(ItemID.FragmentStardust, ProgConst.MagnetFragments) }, TileID.LunarCraftingStation) && mag.Cond == Condition.DownedMoonLord);
+			var sco = all.FirstOrDefault(r => r.Result == scoria);
 			Check($"recipe: {ProgConst.ScoriaYield} Scoria Ore = {ProgConst.ScoriaHellstone} Hellstone + {ProgConst.ScoriaChlorophyte} Chlorophyte Ore at an Adamantite Forge, after Golem",
-				sco != null && Same(sco, scoria, ProgConst.ScoriaYield, new[] { I(ItemID.Hellstone, ProgConst.ScoriaHellstone), I(ItemID.ChlorophyteOre, ProgConst.ScoriaChlorophyte) }, TileID.AdamantiteForge) && sco.Conditions.Contains(Condition.DownedGolem));
-			var ag = all.FirstOrDefault(r => r.createItem.type == agit);
+				sco != null && Same(sco, scoria, ProgConst.ScoriaYield, new[] { I(ItemID.Hellstone, ProgConst.ScoriaHellstone), I(ItemID.ChlorophyteOre, ProgConst.ScoriaChlorophyte) }, TileID.AdamantiteForge) && sco.Cond == Condition.DownedGolem);
+			var ag = all.FirstOrDefault(r => r.Result == agit);
 			Check($"recipe: Slime Agitator = {ProgConst.AgitatorKingSlime} Royal Gel + {ProgConst.AgitatorQueenSlime} Volatile Gelatin + {ProgConst.AgitatorScoria} Scoria Ore at a Mythril Anvil",
 				ag != null && Same(ag, agit, 1, new[] { I(ItemID.RoyalGel, ProgConst.AgitatorKingSlime), I(ItemID.VolatileGelatin, ProgConst.AgitatorQueenSlime), I(scoria, ProgConst.AgitatorScoria) }, TileID.MythrilAnvil));
 			// the agitator's ingredients really are King Slime and Queen Slime drops
@@ -165,7 +165,7 @@ namespace Levy.Common.Testing
 				Check("vanilla: no ore hook is installed, no material set built", !CalamityOreGen.Installed && ProgressionDropsSystem.PostMaterials.Count == 0 && ProgressionDropsSystem.ProvidenceRules == 0 && ProgressionDropsSystem.PostMaterialRules == 0);
 				Check("vanilla: the Uelibloom rule drops nothing", !new JungleUelibloomCondition().CanDrop(new DropAttemptInfo { player = Main.player[0], npc = new NPC() }));
 				Check("vanilla: Auric regeneration finds no ore to make", !ProgressionCalamityNpc.GenerateAuric());
-				Check("vanilla: no recipe is made with every option on", ProgressionCalamityRecipes.Make(c).Count == 0 && ProgressionCalamityRecipes.Added == 0);
+				Check("vanilla: no recipe is made with every option on", ProgressionCalamityRecipes.Specs(c).Count == 0 && ProgressionCalamityRecipes.Added == 0);
 			}
 			finally { Restore(c, s); }
 		}

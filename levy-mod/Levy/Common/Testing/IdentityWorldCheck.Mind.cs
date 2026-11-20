@@ -32,7 +32,8 @@ namespace Levy.Common.Testing
 		{
 			public readonly List<float> X = new(), Y = new(), Vx = new(), Vy = new(); public readonly List<int> Dir = new();
 			/// <summary>World spawns removed while this trace ran, and the hit points the driven body lost: a trace that took either is not a clean reference for the movement it measures.</summary>
-			public int Spawns; public int HpLost; public string Info = "";
+			public int Spawns; public int HpLost; public string Info = ""; /// <summary>The first tick the body was no longer driven (the link dropped), or -1.</summary>
+			public int LinkLost = -1;
 			public void Add(float x, float y, float vx, float vy, int dir) { X.Add(x); Y.Add(y); Vx.Add(vx); Vy.Add(vy); Dir.Add(dir); }
 			public float Top(int from, int to) { float m = 0f; for (int i = from; i < Math.Min(to, Vx.Count); i++) m = Math.Max(m, Math.Abs(Vx[i])); return m; }
 			public int FirstAbove(float v, int from = 0) { for (int i = from; i < Vx.Count; i++) if (Math.Abs(Vx[i]) >= v) return i; return -1; }
@@ -110,6 +111,7 @@ namespace Levy.Common.Testing
 				Step(1); tr.Spawns += MindClearSpawns(); // nothing the world spawns may hit the body she drives
 				if (!n.active) break;
 				tr.HpLost = Math.Max(tr.HpLost, n.lifeMax - n.life);
+				if (tr.LinkLost < 0 && !(n.ModNPC is SoldierNPC drv && drv.MindControlled)) tr.LinkLost = t;
 				tr.Add(n.Center.X - at.X, n.Bottom.Y - floor, n.velocity.X, n.velocity.Y, n.direction);
 				if (t == 149 && n.ModNPC is SoldierNPC fsn && fsn.Dummy != null) tr.Info = MindFingerprint(fsn.Dummy) + $" npc[vy {n.velocity.Y:0.000} collideY {n.collideY} wet {n.wet} knockBackResist {n.knockBackResist:0.00} buffs {string.Join("/", Enumerable.Range(0, NPC.maxBuffs).Where(i => n.buffType[i] > 0).Select(i => n.buffType[i]))}]";
 			}
@@ -173,7 +175,7 @@ namespace Levy.Common.Testing
 		private static void MindDumpStop(string label, MTrace pl, MTrace lv)
 		{
 			string Vx(MTrace t) => string.Join(" ", Enumerable.Range(0, 12).Select(i => 148 + i * 4).Where(i => i < t.Vx.Count).Select(i => $"{t.Vx[i]:0.00}"));
-			Note($"  dbg mind {label} stop miss: player vx@148,152.. [{Vx(pl)}] spawns {pl.Spawns} hp lost {pl.HpLost}; levy vx@148,152.. [{Vx(lv)}] spawns removed {lv.Spawns} hp lost {lv.HpLost}; levy Y@150 {(lv.Y.Count > 150 ? lv.Y[150] : 0f):0.0} Vy@150..153 {string.Join(" ", Enumerable.Range(150, 4).Where(i => i < lv.Vy.Count).Select(i => $"{lv.Vy[i]:0.00}"))}");
+			Note($"  dbg mind {label} stop miss: player vx@148,152.. [{Vx(pl)}] spawns {pl.Spawns} hp lost {pl.HpLost}; levy vx@148,152.. [{Vx(lv)}] spawns removed {lv.Spawns} hp lost {lv.HpLost} link dropped at tick {lv.LinkLost}; levy Y@150 {(lv.Y.Count > 150 ? lv.Y[150] : 0f):0.0} Vy@150..153 {string.Join(" ", Enumerable.Range(150, 4).Where(i => i < lv.Vy.Count).Select(i => $"{lv.Vy[i]:0.00}"))}");
 		}
 
 		private static void MindDumpAir(string label, MTrace lv)

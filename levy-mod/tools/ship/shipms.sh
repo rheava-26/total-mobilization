@@ -43,7 +43,7 @@ W="$LAB/world/ShipWorld.wld"
 if [ -f "$W" ]; then
   copy_fresh "$W" "$MS_HOME/MsWorld.wld"
   echo "== world craft ($MS_MODS, ShipWorld copy) =="
-  "$SHIP_DIR/tmlboot.sh" -i "$MS_HOME" -s "$MS_HOME/save" -m "$MS_MODS" -w "$MS_HOME/MsWorld.wld" -p "$PORT_MSW" -e "LEVY_MSCRAFT_WORLD=1 LEVY_MSCRAFT_EXIT=1" \
+  "$SHIP_DIR/tmlboot.sh" -i "$MS_HOME" -s "$MS_HOME/save" -m "$MS_MODS" -w "$MS_HOME/MsWorld.wld" -p "$PORT_MSW" -e "LEVY_MSCRAFT_WORLD=1 LEVY_MSCRAFT_EXIT=1 ${MSW_ENV:-}" \
       -x '\[MsWorldCraft\] self-check pass=' -q 5 -t 600 || echo "WARNING: world boot ended early (see $MS_HOME/boot.out)"
   L="$MS_HOME/tModLoader-Logs/server.log"
   WP=$(grep -c -F '[MsWorldCraft] PASS ' "$L"); WF=$(grep -c -F '[MsWorldCraft] FAIL ' "$L"); WEXC=$(grep -c -E -i "$EXC_RE" "$L")

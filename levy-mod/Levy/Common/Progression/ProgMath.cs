@@ -23,6 +23,13 @@ namespace Levy.Common.Progression
 		public const int ChlorophyteOreMud = 2;
 		public const int ChlorophyteOreSpores = 2;
 
+		// Calamity options.
+		public const int ScoriaHellstone = 4, ScoriaChlorophyte = 2, ScoriaYield = 2;
+		public const int AgitatorKingSlime = 5, AgitatorQueenSlime = 5, AgitatorScoria = 10;   // Royal Gel, Volatile Gelatin, Scoria Ore
+		public const int MagnetBars = 10, MagnetFragments = 4;
+		public const int UelibloomDropMin = 1, UelibloomDropMax = 3;
+		public const int OreSlimeSpawnTicks = 150;   // while an agitated rain is up, each player rolls an ore slime about this often
+
 		// Plantera's Grenade Launcher drops with its Rocket I stack.
 		public const int PlanteraRocketMin = 50;
 		public const int PlanteraRocketMax = 149;

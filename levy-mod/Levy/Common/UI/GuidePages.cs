@@ -13,7 +13,7 @@ namespace Levy.Common.UI
 	public static class GuidePages
 	{
 		/// <summary>How many pages the book has. GuideCheck fails the boot if the table and this number disagree.</summary>
-		public const int ExpectedCount = 30;
+		public const int ExpectedCount = 31;
 
 		public readonly struct Page
 		{
@@ -72,6 +72,7 @@ namespace Levy.Common.UI
 			P("OldOnesArmy", "Levy/LevyStaff"),
 			P("EventBooks", "Levy/GuideToConscription"),
 			P("ProgressionGuides", "Levy/GuideToFirepower"),
+			P("ProgressionCalamity", "Levy/SuperpoweredMagnet"),
 			V("Settings", ItemID.Wrench),
 		};
 	}

@@ -31,6 +31,7 @@ namespace Levy.Common.Progression
 		public Func<double> Average;
 		public bool Army;        // add the army loot bonus
 		public bool Luminite, Fragment;
+		public bool Providence, Post;   // Calamity: a material Providence or her Treasure Bag drops; Divine Geode, Unholy Essence and Uelibloom Ore from any source
 		public List<IItemDropRuleChainAttempt> ChainedRules { get; } = new();
 
 		public double Bonus(Player player)
@@ -41,6 +42,8 @@ namespace Levy.Common.Progression
 			if (Army) b += ProgMath.ArmyBonus(ArmyCp.Of(player), c.ArmyLootPercentPerCp);
 			if (Luminite) b += Math.Max(0f, c.LuminiteDropMultiplier - 1f);
 			if (Fragment) b += Math.Max(0f, c.LunarFragmentDropMultiplier - 1f);
+			if (Providence) b += Math.Max(0f, c.ProvidenceDropMultiplier - 1f);
+			if (Post) b += Math.Max(0f, c.PostProvidenceMaterialMultiplier - 1f);
 			return b;
 		}
 
@@ -81,13 +84,16 @@ namespace Levy.Common.Progression
 	{
 		static readonly HashSet<IItemDropRule> chained = new(ReferenceEqualityComparer.Instance);
 		static readonly HashSet<IItemDropRule> rerolled = new(ReferenceEqualityComparer.Instance);
-		public static int ArmyRules, RareRules, LuminiteRules, FragmentRules;
+		public static int ArmyRules, RareRules, LuminiteRules, FragmentRules, ProvidenceRules, PostMaterialRules;
+		/// <summary>Calamity's post-Providence materials the material multiplier applies to (item types; empty without Calamity).</summary>
+		public static readonly HashSet<int> PostMaterials = new();
+		static bool provCtx;
 		static bool done;
 		public static readonly int[] Fragments = { ItemID.FragmentSolar, ItemID.FragmentVortex, ItemID.FragmentNebula, ItemID.FragmentStardust };
 		static readonly Dictionary<int, bool> materialCache = new();
 
 		public override void PostSetupRecipes() => Ensure();
-		public override void Unload() { chained.Clear(); rerolled.Clear(); materialCache.Clear(); done = false; ArmyRules = RareRules = LuminiteRules = FragmentRules = 0; }
+		public override void Unload() { chained.Clear(); rerolled.Clear(); materialCache.Clear(); PostMaterials.Clear(); done = false; ArmyRules = RareRules = LuminiteRules = FragmentRules = ProvidenceRules = PostMaterialRules = 0; }
 
 		/// <summary>An ore, bar or crafting material (not weapons, armor, pets, trophies or coins).</summary>
 		public static bool IsMaterial(int itemId)
@@ -105,6 +111,9 @@ namespace Levy.Common.Progression
 			done = true;
 			var db = Main.ItemDropsDB;
 			var list = new List<IItemDropRule>();
+			PostMaterials.Clear();
+			foreach (string n in new[] { "DivineGeode", "UnholyEssence", "UelibloomOre" }) { int t = CalamityLink.ItemType(n); if (t > 0) PostMaterials.Add(t); }
+			int provNpc = CalamityLink.NpcType("Providence"), provBag = CalamityLink.ItemType("ProvidenceBag");
 			// Pass 1: bosses and treasure bags (army bonus + lunar items). Pass 2: everything else (lunar items only).
 			foreach (var kv in ContentSamples.NpcsByNetId)
 			{
@@ -112,13 +121,17 @@ namespace Levy.Common.Progression
 				bool boss = n.boss || (kv.Key > 0 && kv.Key < NPCID.Sets.ShouldBeCountedAsBoss.Length && NPCID.Sets.ShouldBeCountedAsBoss[kv.Key]);
 				if (!boss) continue;
 				list.Clear(); ProgressionLootNpc.Collect(db.GetRulesForNPCID(kv.Key, false), list);
+				provCtx = provNpc > 0 && kv.Key == provNpc;
 				foreach (var r in list) Attach(r, true);
+				provCtx = false;
 			}
 			for (int t = 1; t < ItemLoader.ItemCount; t++)
 			{
 				if (!ItemID.Sets.BossBag[t]) continue;
 				list.Clear(); ProgressionLootNpc.Collect(db.GetRulesForItemID(t), list);
+				provCtx = provBag > 0 && t == provBag;
 				foreach (var r in list) Attach(r, true);
+				provCtx = false;
 			}
 			foreach (var kv in ContentSamples.NpcsByNetId)
 			{
@@ -149,12 +162,16 @@ namespace Levy.Common.Progression
 			{
 				bool lum = cd.itemId == ItemID.LunarOre;
 				bool army = boss && IsMaterial(cd.itemId);
-				if ((lum || army) && chained.Add(rule))
+				bool post = PostMaterials.Contains(cd.itemId);
+				bool prov = provCtx && IsMaterial(cd.itemId);
+				if ((lum || army || post || prov) && chained.Add(rule))
 				{
 					int mn = cd.amountDroppedMinimum, mx = cd.amountDroppedMaximum;
-					rule.OnSuccess(new ExtraAmountRule { ItemId = cd.itemId, Army = army, Luminite = lum, Average = () => (mn + mx) / 2.0 }, hideLootReport: true);
+					rule.OnSuccess(new ExtraAmountRule { ItemId = cd.itemId, Army = army, Luminite = lum, Providence = prov, Post = post, Average = () => (mn + mx) / 2.0 }, hideLootReport: true);
 					if (lum) LuminiteRules++;
 					if (army) ArmyRules++;
+					if (prov) ProvidenceRules++;
+					if (post) PostMaterialRules++;
 				}
 				if (boss && cd.chanceNumerator < cd.chanceDenominator && cd.chanceDenominator >= 2 && rerolled.Add(rule))
 				{

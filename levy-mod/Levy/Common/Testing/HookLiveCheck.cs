@@ -40,6 +40,8 @@ namespace Levy.Common.Testing
 			{ "ArmoryCraftLink.WithdrawModuleDetour", "needs MagicStorage: the ship chain does not load it (the optional shipms.sh world check drives it: [MsWorldCraft])" },
 			{ "PlayerBardCompat.Detour", "needs ThoriumMod: the ship chain does not load it" }, { "TeamThorium.HandleNearbyDetour", "needs ThoriumMod: the ship chain does not load it" },
 			// ---- Calamity only: required whenever Calamity is loaded (the Calamity half of the chain)
+			{ "CalamityOreGen.SpawnOreDetour", "needs CalamityMod: the vanilla half does not load it ([ProgAssist] ore drives it in the Calamity half)" }, { "CalamityOreGen.EnchantDetour", "needs CalamityMod: the vanilla half does not load it" },
+			{ "CalamityOreGen.PlaceDetour", "needs CalamityMod: the vanilla half does not load it" }, { "CalamityOreGen.CanMeteorDetour", "needs CalamityMod: the vanilla half does not load it" },
 			{ "CalamityTargetingCompat.PreAiDetour", "needs CalamityMod: the vanilla half does not load it" }, { "CalamityTargetingCompat.SendExtraAiDetour", "needs CalamityMod: the vanilla half does not load it" },
 			// ---- scenarios the ship world does not stage (each fires in play)
 			{ "FollowerTravelSystem.Player_Spawn", "a real player respawning: the ship world's commander is a stand-in that never respawns" },

@@ -46,6 +46,7 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 - **Treat all of her messages queued since the last reset or limit halt as one message**, and answer every question in them. Unanswered questions get lost across compactions.
 
 **At most 3 builders at once (Eve, 2026-11-20).** "Keep the thing to 3 workers maximum so we don't annihilate the usage limit." Queue the rest, and start the next only when one finishes. A finished builder doesn't count; a paused or halted one that I plan to resume does.
+**Cut back and go sequentially (Eve, 2026-11-20 late).** The usage limit ran out by Tuesday and she had to use the weekly reset. Do fewer things, one after another; finish a task before starting anything that would disrupt it. Minor bugs are acceptable, so don't spend builders polishing tests or edge cases unless they block a ship.
 
 **Never explain a bug as Eve using it wrong.** "Stop saying the cause of an issue I clearly could have found out by just trying is 'oh you just did it wrong'. No I didn't." (11-11) Her reports are real bugs. Never tell her she was too far, placed it wrong, or used it wrong, not even as a hedge ("if yours is close, tell me"). An inferred cause is not a cause: reproduce what she did in the lab, prove the cause, then fix. Player-facing failure messages state what was checked, never what the player did wrong.
 

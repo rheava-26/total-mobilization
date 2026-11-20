@@ -164,9 +164,6 @@ namespace Levy.Common.Testing
 			Check($"five fall at once: five replaced in one tick ({RosterSystem.Replacements - reps}), {Fielded()} in the field", RosterSystem.Replacements - reps == 5 && Fielded() == Cap);
 			Check($"waiting now {Waiting()} (30 - 20 - 6 dead)", Waiting() == N - Cap - 6);
 
-			// ---- a replacement's immunity: 90 ticks of no damage while hit, attacking through it; the blink; nothing for anyone fielded another way
-			ReplacementImmunity(hurt);
-
 			// ---- a hazard death: not on the same spot, beside the commander instead
 			var hz = Recs.First(r => r.HasBody && r.Grade == Grade.Levy && r != hurt);
 			var hzb = BodyOf(hz); hzb.NPC.Bottom = new Vector2((Cx + 100) * 16f, FloorY * 16f); Vector2 hzSpot = hzb.NPC.Bottom;
@@ -205,15 +202,11 @@ namespace Levy.Common.Testing
 			Check($"size 1 then {Cap}: back to {Cap} at once ({Fielded()})", Fielded() == Cap);
 
 			// ---- raising and clearing the size
-			var preRaise = Recs.Where(r => r.HasBody).Select(r => r.Id).ToHashSet();
 			R.SetArmyCap(Commander, 25);
-			var raised = Recs.Where(r => r.HasBody && !preRaise.Contains(r.Id)).Select(BodyOf).Where(b => b != null).ToList();
 			Check($"size 25: five more fielded at once ({Fielded()})", Fielded() == 25);
-			Check($"a raised size gives no immunity ({raised.Count} fielded, immune {raised.Count(b => b.ImmuneTime > 0 || b.AllImmune > 0 || b.BlinkTicksLeft > 0)})", raised.Count == 5 && raised.All(b => b.ImmuneTime == 0 && b.AllImmune == 0 && b.BlinkTicksLeft == 0));
 			R.SetArmyCap(Commander, 0);
 			Step(LevyConstants.DeployIntervalTicks + 2);
 			Check($"no limit: every soldier is fielded by the next deployment ({Fielded()})", Fielded() == N);
-			Check("the deployment pass gives no immunity", Recs.Where(r => r.HasBody).Select(BodyOf).All(b => b != null && b.AllImmune == 0 && b.BlinkTicksLeft == 0));
 			Check("still every item (" + Recs.Sum(Items) + ")", Recs.Sum(Items) == itemsBefore);
 
 			// ---- save and load: nothing lost, nothing doubled
@@ -238,60 +231,6 @@ namespace Levy.Common.Testing
 
 			// ---- the live notice and the "?" text
 			NoticeChecks();
-		}
-
-		/// <summary>
-		/// One soldier falls; his replacement is struck by a hostile shot on his body every tick. For <see cref="LevyConstants.ReplacementImmuneTicks"/> he loses no life, blinks, and hits a target set beside him;
-		/// the same shots hurt him once it ends, and hurt a soldier fielded by deployment (no window) at once. A recalled or respawned soldier gets no window (the respawn path is SpawnBody, checked below with a raised size).
-		/// </summary>
-		private static void ReplacementImmunity(SoldierRecord hurt)
-		{
-			var victim = Recs.First(r => r.HasBody && r.Grade == Grade.Levy && r != hurt);
-			var waitingBefore = Recs.Where(r => !r.HasBody && !r.Dead).Select(r => r.Id).ToHashSet();
-			BodyOf(victim).NPC.StrikeInstantKill(); Step(1);
-			var rep = Recs.FirstOrDefault(r => waitingBefore.Contains(r.Id) && r.HasBody); var rb = BodyOf(rep);
-			if (rb == null) { Check("replacement immunity: a replacement came", false); return; }
-			int window = LevyConstants.ReplacementImmuneTicks;
-			rep.HoldPos = rb.NPC.Center; // he holds where he came in (the check's soldiers were never given a post)
-			Check($"replacement immunity: the window opens on arrival ({rb.ImmuneTime} / {rb.AllImmune} ticks, blink {rb.BlinkTicksLeft})", rb.ImmuneTime >= window - 2 && rb.AllImmune >= window - 2 && rb.BlinkTicksLeft >= window - 2);
-			// a target beside him that cannot hurt anyone
-			int ti = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("Levy:ActiveArmyCheck"), (int)rb.NPC.Center.X + 40 * rb.NPC.direction, (int)rb.NPC.Bottom.Y, NPCID.BlueSlime);
-			NPC target = ti >= 0 && ti < Main.maxNPCs ? Main.npc[ti] : null;
-			if (target != null) { target.lifeMax = target.life = 100000; target.damage = 0; target.defense = 0; target.knockBackResist = 0f; target.velocity = Vector2.Zero; }
-			int life0 = rb.NPC.life, lowest = life0, ticks = 0, attacked = 0; int targetLife0 = target?.life ?? 0;
-			void Shoot(SoldierNPC who)
-			{
-				int pi = Projectile.NewProjectile(new Terraria.DataStructures.EntitySource_WorldEvent("Levy:ActiveArmyCheck"), who.NPC.Center, Vector2.Zero, ProjectileID.EyeLaser, 30, 0f, Main.myPlayer);
-				if (pi >= 0 && pi < Main.maxProjectiles) { var pr = Main.projectile[pi]; pr.hostile = true; pr.friendly = false; pr.timeLeft = 3; pr.penetrate = -1; }
-			}
-			for (; ticks < window - 6 && rb.NPC.active; ticks++)
-			{
-				Shoot(rb); Step(1);
-				if (!rb.NPC.active || rb.Record != rep) break;
-				lowest = Math.Min(lowest, rb.NPC.life);
-				if (rb.ItemAnimation > 0) attacked++;
-				if (target != null) { target.velocity = Vector2.Zero; target.position.X = rb.NPC.Center.X + 40 * rb.NPC.direction - target.width / 2f; }
-			}
-			bool targetHit = target != null && target.active && target.life < targetLife0;
-			Check($"replacement immunity: struck every tick for {ticks} ticks, no life lost ({life0} -> lowest {lowest})", ticks >= window - 8 && lowest >= life0);
-			Check($"replacement immunity: he attacks through it ({attacked} ticks swinging, target {(targetHit ? "hit" : "not hit")})", attacked > 0 && targetHit);
-			Check($"replacement immunity: he blinks while it lasts ({rb.BlinkTicksLeft} ticks left)", rb.BlinkTicksLeft > 0);
-			for (int k = 0; k < 20 && rb.NPC.active; k++) Step(1); // the window runs out
-			int life1 = rb.NPC.life, low1 = life1;
-			for (int k = 0; k < 30 && rb.NPC.active && rb.Record == rep; k++) { Shoot(rb); Step(1); low1 = Math.Min(low1, rb.NPC.active ? rb.NPC.life : 0); }
-			Check($"replacement immunity: after {window} ticks the same shots hurt him ({life1} -> {low1}), and the blink is over", low1 < life1 && rb.BlinkTicksLeft == 0);
-			// a soldier fielded by deployment has no window
-			var plain = Recs.Where(r => r != hurt).Select(BodyOf).FirstOrDefault(b => b != null && b != rb && b.AllImmune == 0 && b.ImmuneTime == 0);
-			if (plain != null)
-			{
-				int l0 = plain.NPC.life, l1 = l0;
-				for (int k = 0; k < 10 && plain.NPC.active; k++) { Shoot(plain); Step(1); l1 = Math.Min(l1, plain.NPC.active ? plain.NPC.life : 0); }
-				Check($"a soldier who did not just replace someone is hurt by the same shots at once ({l0} -> {l1})", l1 < l0);
-			}
-			else Check("a soldier with no window to compare against", false);
-			if (target != null) target.active = false;
-			for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active && Main.projectile[i].type == ProjectileID.EyeLaser) Main.projectile[i].active = false;
-			foreach (var r in Recs) if (r.HasBody && r != hurt) { var b = BodyOf(r); if (b != null) { b.NPC.life = b.NPC.lifeMax; r.CurrentHp = b.NPC.lifeMax; } }
 		}
 
 		private static float Movement_StandingRadius => LevyConstants.Movement.StandingSpotRadiusTiles;

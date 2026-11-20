@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Terraria;
 using Terraria.ID;
+using Levy.Common.Soldiers;
 
 namespace Levy.Content.TileEntities
 {
@@ -26,6 +27,22 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>
+		/// An instance that left the racks for good (crafted with, or taken out through Magic Storage) is dropped from every place a levy could get it back from: this armory's Re-arm reservation, the
+		/// hand-assigned gear a Re-arm hands back (<see cref="SoldierGear.Reserved"/>) of every levy it serves, and, should a levy somehow hold the very same instance, his slot.
+		/// </summary>
+		internal void ForgetEverywhere(Item it)
+		{
+			if (it == null) return;
+			_reservedRefs.RemoveAll(r => ReferenceEquals(r, it));
+			foreach (var s in ServedSoldiers())
+			{
+				var g = s?.Gear; if (g == null) continue;
+				if (g.Reserved != null) for (int i = 0; i < g.Reserved.Length; i++) if (ReferenceEquals(g.Reserved[i], it)) g.Reserved[i] = null;
+				for (int slot = 0; slot < SoldierGear.SlotCount; slot++) if (ReferenceEquals(g.Get(slot), it)) { g.Set(slot, new Item()); g.SetLocked(slot, false); }
+			}
+		}
+
+		/// <summary>
 		/// Takes up to <paramref name="n"/> of THIS instance off the racks for a craft (it must still be on a rack and still offered); an emptied slot becomes air. Returns how many were taken.
 		/// The taken items leave the game: the craft that asked has consumed them.
 		/// </summary>
@@ -38,7 +55,7 @@ namespace Levy.Content.TileEntities
 				if (idx < 0) continue;
 				int k = System.Math.Min(n, backing.stack);
 				backing.stack -= k;
-				if (backing.stack <= 0) arr[idx] = new Item();
+				if (backing.stack <= 0) { arr[idx] = new Item(); ForgetEverywhere(backing); }
 				MarkDirty();
 				return k;
 			}

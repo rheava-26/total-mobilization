@@ -176,53 +176,103 @@ namespace Levy.Common.Compat.MagicStorageLink
 				check(c10 == 0 && All(made) == made10 && Net(other.type) == bars10 && levy10.Gear.HasWeapon && s10.type == sword && s10.stack == 1 && ArmoryCraftLink.Shortfall == 0,
 					$"world craft: with the module missing and the sword drawn by a levy after the list was built, nothing is made (made {c10}, results {made10}->{All(made)}, bars {bars10}->{Net(other.type)}, levy keeps it: {levy10.Gear.HasWeapon}, shortfall {ArmoryCraftLink.Shortfall})");
 
-				// 11-12. Armory items are ingredients only: no Magic Storage withdrawal hands one out. Every entry the Crafting, Decrafting and Storage interfaces offer is tried, on the armory's crafted
-				//  weapon (shown in the result slot because the network has none) and on an armory Terra Blade (the result slot of the Terra Blade recipe).
-				unit.Items.RemoveAll(i => i.type == made || i.type == sword); // earlier cases left some in the network; hers had none
-				armory.Deposit(Make(sword));
+				// 11-12. TAKING ARMORY WEAPONS OUT through Magic Storage works, and conserves: every entry the Crafting, Decrafting and Storage interfaces offer, with a shift-click on each,
+				//  on the armory's Terra Blade (the result slot of the Terra Blade recipe) and its crafted Terratomere, with levies holding the same weapon, a levy whose Terra Blade is
+				//  hand-assigned (locked) going through a stand-down and a Re-arm around the withdrawal, and a craft-max that uses armory Terra Blades as ingredients.
+				//  Conservation: armory racks + levies + player (inventory, cursor) + network + items on the ground, before and after, is equal, or lower by exactly what a craft consumed.
+				unit.Items.RemoveAll(i => i.type == made || i.type == sword);
 				var gui = typeof(CraftingGUI);
 				var withdrawResult = gui.GetMethod("DoWithdrawResult", S);
 				var slotFocusLogic = gui.GetMethod("SlotFocusLogic", S);
 				var decraftWithdraw = typeof(DecraftingGUI).GetMethod("DoWithdraw", S, null, new[] { typeof(Item), typeof(bool) }, null);
 				Recipe swordRecipe = null;
 				for (int i = 0; i < Recipe.numRecipes; i++) if (Main.recipe[i].createItem.type == sword) { swordRecipe = Main.recipe[i]; break; }
-				foreach (var (target, targetRecipe) in new[] { (made, rec), (sword, swordRecipe) })
+				var plr = Main.LocalPlayer;
+				var levies = new List<SoldierRecord>();
+				for (int i = 0; i < 3; i++) { var r = new SoldierRecord { Id = 9100 + i, Name = "Holder" + i }; r.Gear.Weapon = Make(sword); levies.Add(r); }
+				levies[2].Gear.SetLocked(SoldierGear.SlotWeapon, true); // her loadout: a hand-assigned Terra Blade
+				long Player(int t) => plr.inventory.Where(i => !i.IsAir && i.type == t).Sum(i => (long)i.stack) + (!Main.mouseItem.IsAir && Main.mouseItem.type == t ? Main.mouseItem.stack : 0);
+				long Levies(int t) => levies.Sum(l => l.Gear.AllItems().Where(i => i != null && !i.IsAir && i.type == t).Sum(i => (long)i.stack));
+				long Ground(int t) { long n = 0; for (int i = 0; i < Main.maxItems; i++) if (Main.item[i].active && Main.item[i].type == t) n += Main.item[i].stack; return n; }
+				long Everywhere(int t) => Armory(t) + Levies(t) + Player(t) + Net(t) + Ground(t);
+				void ClearPlayer(int t) { foreach (var i in plr.inventory) if (!i.IsAir && i.type == t) i.TurnToAir(); if (!Main.mouseItem.IsAir && Main.mouseItem.type == t) Main.mouseItem = new Item(); }
+				var guc2 = typeof(Main).GetField("_gameUpdateCount", BindingFlags.NonPublic | BindingFlags.Static);
+				void Tick() => guc2?.SetValue(null, Main.GameUpdateCount + 1);
+				void LevyCycle() { ArmoryTE.TestServed = levies; try { foreach (var l in levies) { Tick(); armory.IssueGear(l); armory.UpgradeWeapons(l); } } finally { ArmoryTE.TestServed = null; } }
+				Item Shift(Item got) { if (got == null || got.IsAir) return got; return plr.GetItem(Main.myPlayer, got, GetItemSettings.InventoryEntityToPlayerInventorySettings); } // what a shift-click does with the withdrawn item
+
+				foreach (var (target, targetRecipe) in new[] { (sword, swordRecipe), (made, rec) })
 				{
 					string tn = Lang.GetItemNameValue(target);
 					if (targetRecipe == null) { check(false, "world craft: a recipe makes " + tn); continue; }
-					selField.SetValue(null, targetRecipe);
-					Frame(); Refresh(heart);
-					var resultItem = (Item)gui.GetField("result", S).GetValue(null);
-					long inArmory = Armory(target), refused0 = ArmoryCraftLink.Refused;
-					check(inArmory >= 1 && Net(target) == 0 && resultItem != null && resultItem.type == target && resultItem.stack > 0, $"world craft: the result slot shows the armory's {tn} (armory {inArmory}, network {Net(target)}, result {resultItem?.Name ?? "none"} x{resultItem?.stack ?? 0})");
-					var paths = new List<(string name, Func<Item> take)>
+					var paths = new List<(string name, bool shift, Func<Item> take)>
 					{
-						("result slot click", () => (Item)withdrawResult.Invoke(null, new object[] { 1, false })),
-						("result slot shift-click (to inventory)", () => (Item)withdrawResult.Invoke(null, new object[] { resultItem.maxStack, true })),
-						("result slot right-click hold", () => { Main.mouseItem = new Item(); gui.GetField("slotFocus", S)?.SetValue(null, true); gui.GetField("rightClickTimer", S)?.SetValue(null, 0); slotFocusLogic.Invoke(null, null); var m = Main.mouseItem; Main.mouseItem = new Item(); gui.GetField("slotFocus", S)?.SetValue(null, false); return m; }),
-						("decrafting interface withdraw", () => (Item)decraftWithdraw.Invoke(null, new object[] { Make(target), false })),
-						("decrafting interface shift-withdraw", () => (Item)decraftWithdraw.Invoke(null, new object[] { Make(target), true })),
-						("storage interface withdraw", () => StorageGUI.DoWithdraw(Make(target), false)),
-						("storage interface shift-withdraw", () => StorageGUI.DoWithdraw(Make(target), true)),
+						("result slot click", false, () => (Item)withdrawResult.Invoke(null, new object[] { 1, false })),
+						("result slot shift-click", true, () => Shift((Item)withdrawResult.Invoke(null, new object[] { 1, true }))),
+						("result slot right-click hold", false, () => { Main.mouseItem = new Item(); gui.GetField("slotFocus", S)?.SetValue(null, true); gui.GetField("rightClickTimer", S)?.SetValue(null, 0); slotFocusLogic.Invoke(null, null); var m = Main.mouseItem; Main.mouseItem = new Item(); gui.GetField("slotFocus", S)?.SetValue(null, false); return m; }),
+						("result slot right-click hold, shifted", true, () => { Main.mouseItem = new Item(); gui.GetField("slotFocus", S)?.SetValue(null, true); gui.GetField("rightClickTimer", S)?.SetValue(null, 0); slotFocusLogic.Invoke(null, null); var m = Main.mouseItem; Main.mouseItem = new Item(); gui.GetField("slotFocus", S)?.SetValue(null, false); return Shift(m); }),
+						("decrafting withdraw", false, () => (Item)decraftWithdraw.Invoke(null, new object[] { Make(target), false })),
+						("decrafting shift-withdraw", true, () => Shift((Item)decraftWithdraw.Invoke(null, new object[] { Make(target), true }))),
 					};
-					foreach (var (name, take) in paths)
+					foreach (var (name, shift, take) in paths)
 					{
+						armory.Deposit(Make(target)); // one armory copy to take (levies hold their own Terra Blades)
+						selField.SetValue(null, targetRecipe);
+						LevyCycle(); Frame(); Refresh(heart);
+						ClearPlayer(target);
+						long arm0 = Armory(target), lev0 = Levies(target), all0 = Everywhere(target);
 						Item gotW; try { gotW = take(); } catch (Exception e) { check(false, $"world craft: {name} of the armory's {tn} threw {e.GetType().Name}: {e.Message}"); continue; }
+						if (!shift && gotW != null && !gotW.IsAir) { var rest = plr.GetItem(Main.myPlayer, gotW, GetItemSettings.InventoryEntityToPlayerInventorySettings); if (rest != null && !rest.IsAir) Main.mouseItem = rest; } // the cursor's item, kept in the count
 						ArmoryCraftLink.AfterUi(heart);
-						int n = gotW == null || gotW.IsAir ? 0 : gotW.stack;
-						check(n == 0 && Armory(target) == inArmory && ArmoryCraftLink.Shortfall == 0 && ArmoryCraftLink.ClawedBack == 0, $"world craft: {name} hands out no armory {tn} (got {n}, armory {inArmory}->{Armory(target)}, shortfall {ArmoryCraftLink.Shortfall})");
-						Frame(); Refresh(heart); resultItem = (Item)gui.GetField("result", S).GetValue(null) ?? resultItem;
+						LevyCycle(); LevyCycle(); Frame(); // levies re-arm and trade up after the withdrawal
+						long gotN = Player(target), arm1 = Armory(target), lev1 = Levies(target), all1 = Everywhere(target);
+						check(gotN == 1 && all1 == all0 && ArmoryCraftLink.Shortfall == 0, $"world craft: {name} takes one armory {tn} out (player {gotN}, armory {arm0}->{arm1}, levies {lev0}->{lev1}, everywhere {all0}->{all1}, shortfall {ArmoryCraftLink.Shortfall})");
+						ClearPlayer(target);
 					}
-					check(ArmoryCraftLink.Refused > refused0, $"world craft: the refused withdrawals of the armory's {tn} were counted for the message ({ArmoryCraftLink.Refused - refused0})");
-					// still an ingredient: the proxies are back after the refused withdrawals
-					check(ArmoryCraftLink.Offered(heart).Any(o => o.type == target && o.stack > 0), $"world craft: the armory's {tn} is still offered as an ingredient");
+				}
+				// the hand-assigned Terra Blade: a stand-down parks it on the racks; the player takes it out through the result slot (shift); the next Re-arm must not give it back
+				{
+					selField.SetValue(null, swordRecipe);
+					var locked = levies[2]; var mine = locked.Gear.Weapon;
+					armory.ReturnGear(locked.Gear); Tick(); // stand down: back on the racks, the reservation lapses with the tick
+					Frame(); Refresh(heart); ClearPlayer(sword);
+					long all0 = Everywhere(sword);
+					bool offered = ArmoryCraftLink.Offered(heart).Any(o => o.type == sword && o.stack > 0);
+					var gotS = Shift((Item)withdrawResult.Invoke(null, new object[] { 1, true }));
+					ArmoryCraftLink.AfterUi(heart);
+					ArmoryTE.TestServed = levies; try { Tick(); armory.ReturnGear(locked.Gear); armory.IssueGear(locked); } finally { ArmoryTE.TestServed = null; } // Re-arm
+					LevyCycle(); Frame();
+					long all1 = Everywhere(sword);
+					bool sameTwice = locked.Gear.HasWeapon && plr.inventory.Any(i => ReferenceEquals(i, locked.Gear.Weapon));
+					check(all1 == all0 && !sameTwice && ArmoryCraftLink.Shortfall == 0, $"world craft: a hand-assigned Terra Blade stood down, taken out with a shift-click, then a Re-arm: no copy appears (offered {offered}, player {Player(sword)}, levy holds {(locked.Gear.HasWeapon ? locked.Gear.Weapon.Name : "nothing")}, everywhere {all0}->{all1})");
+					ClearPlayer(sword);
+				}
+				// her theory, forced: one Terra Blade instance both on the racks and in a levy's hand. A shift-click takes it out; the levy must not keep the same item
+				{
+					selField.SetValue(null, swordRecipe);
+					var shared = Make(sword); armory.Deposit(shared);
+					var twin = levies[0]; var before = twin.Gear.Weapon; twin.Gear.Weapon = shared;
+					Frame(); Refresh(heart); ClearPlayer(sword);
+					ArmoryTE.TestServed = levies;
+					try { Shift((Item)withdrawResult.Invoke(null, new object[] { 1, true })); } finally { ArmoryTE.TestServed = null; }
+					ArmoryCraftLink.AfterUi(heart);
+					bool levyKept = twin.Gear.HasWeapon && ReferenceEquals(twin.Gear.Weapon, shared);
+					check(Player(sword) == 1 && !levyKept && ArmoryCraftLink.Shortfall == 0, $"world craft: an instance on the racks AND in a levy's hand, taken out with a shift-click, ends with the player only (player {Player(sword)}, levy keeps it {levyKept})");
+					ClearPlayer(sword); twin.Gear.Weapon = before;
+				}
+				// craft-max with armory Terra Blades as ingredients while levies hold Terra Blades; then they re-arm
+				{
+					selField.SetValue(null, rec);
+					armory.Deposit(Make(sword)); armory.Deposit(Make(sword));
+					unit.DepositItem(Make(other.type, per * 5));
+					LevyCycle(); Frame(); Refresh(heart);
+					long sw0 = Everywhere(sword), mk0 = Everywhere(made), armSw0 = Armory(sword);
+					int crafts = Craft(9999);
+					LevyCycle(); LevyCycle(); Frame();
+					long sw1 = Everywhere(sword), mk1 = Everywhere(made);
+					check(crafts == armSw0 && sw0 - sw1 == crafts && mk1 - mk0 == crafts && ArmoryCraftLink.Shortfall == 0, $"world craft: craft-max with {armSw0} armory Terra Blades makes {crafts}, uses exactly {crafts} Terra Blades (everywhere {sw0}->{sw1}, results {mk0}->{mk1}) and the levies keep theirs");
 				}
 				selField.SetValue(null, rec);
-				Frame(); Refresh(heart);
-				unit.DepositItem(Make(other.type, per));
-				long swBefore = Armory(sword);
-				int cAfter = Craft(1);
-				check(cAfter == 1 && Armory(sword) == swBefore - 1 && ArmoryCraftLink.Shortfall == 0, $"world craft: after the refused withdrawals the armory's Terra Blade still crafts, paid once (made {cAfter}, swords {swBefore}->{Armory(sword)})");
 
 				// 13. the Armory Heart is unlinked after the list was built, and the click comes before any refresh: the sword is never used unpaid
 				armory.Deposit(Make(sword));

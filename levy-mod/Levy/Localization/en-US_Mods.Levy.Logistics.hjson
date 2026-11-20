@@ -156,7 +156,6 @@ FindCurrent: Finding: {0}
 FindNone: Click an item to find it.
 HeartNoNetwork: The Armory Heart reaches no storage network. Connect it to a Storage Heart with connectors.
 HeartNetworked: Joined to the storage network. {0}
-ArmoryItemNoWithdraw: This item is in an armory. Take it from the armory.
 HeartNoArmory: No Armory is within reach of this heart.
 PageClear: Clear out
 PageStore: Storage

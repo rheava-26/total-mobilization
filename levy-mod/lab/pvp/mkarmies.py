@@ -23,6 +23,7 @@ for lv in eve['levies']:
 eve['substituted'] = f'Moon Boots -> Solar Wings on {SUB} levies (Moon Boots is from a mod the lab does not load)'
 eve['note'] = "Eve's 40 regular levies (ids 1-40) as worn at the end of her Providence win (2026-11-19 10:14); officers and militia are not levies and are left out. Potions and stations are the battery's stand-ins."
 (H / 'eve_prov_army.json').write_text(json.dumps(eve, indent=1))
+subprocess.run([sys.executable, '-I', str(H / 'addnames.py'), str(H / 'eve_prov_army.json'), rec], check=True)  # her levies' real names
 
 HELM = {'E': 'CalamityMod/TarragonHeadMelee', 'R': 'CalamityMod/TarragonHeadRanged', 'M': 'CalamityMod/TarragonHeadMagic', 'T': 'CalamityMod/TarragonHeadRogue', 'S': 'CalamityMod/TarragonHeadSummon'}
 BODY = ['CalamityMod/TarragonBreastplate', 'CalamityMod/TarragonLeggings']

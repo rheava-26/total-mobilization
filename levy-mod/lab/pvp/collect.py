@@ -25,7 +25,7 @@ for run in map(Path, a.runs):
                        nA=int(r['nA']), nB=int(r['nB']), aliveA=int(r['aliveA']), aliveB=int(r['aliveB']), hpLeftA=int(r['hpLeftA']), hpLeftB=int(r['hpLeftB']),
                        dmgA=int(r['dmgA']), dmgB=int(r['dmgB']), classA=kv(r['classA']), classB=kv(r['classB']), topA=r['topA'], topB=r['topB'],
                        deathsA=[float(x) for x in r['deathsA'].split(',') if x], deathsB=[float(x) for x in r['deathsB'].split(',') if x],
-                       potionsA=int(r['potionsA']), potionsB=int(r['potionsB']), unattr=[int(r['unattrA']), int(r['unattrB'])], dot=[int(r['dotA']), int(r['dotB'])], perA=r['perA'], perB=r['perB'])
+                       potionsA=int(r['potionsA']), potionsB=int(r['potionsB']), unattr=[int(r['unattrA']), int(r['unattrB'])], dot=[int(r['dotA']), int(r['dotB'])], perA=r['perA'], perB=r['perB'], stealthA=r.get('stealthA') or '', stealthB=r.get('stealthB') or '')
             f = recs.get(r['key'])
             if f and not a.no_rec:
                 out = dest / f"{row['A']}_vs_{row['B']}_seed{row['seed']}.levyrec"
@@ -99,3 +99,14 @@ for army in sorted({f['A'] for f in fights} | {f['B'] for f in fights}):
     for c in sorted(rows):
         r = rows[c]
         print(f"| {army} | {c} | {len(r)} | {statistics.median(x[1] for x in r):.1f} | {sum(x[0] for x in r) / len(r):.0f} | {sum(x[2] for x in r) / len(r):.2f} | {100 * sum(x[3] for x in r) / len(r):.0f}% |")
+
+print()
+# Calamity stealth strikes (and the projectiles they spawn) that landed on the other army: hits, damage, kills, the biggest single hit; per fight
+print('| army | fights | stealth strikes thrown per fight | stealth hits per fight | stealth damage per fight | stealth kills per fight | biggest stealth hit | rogue levies per fight |')
+print('|---|---|---|---|---|---|---|---|')
+for army in sorted({f['A'] for f in fights} | {f['B'] for f in fights}):
+    fl = [f for f in fights if army in (f['A'], f['B']) and f.get('stealthA') is not None and (f.get('stealthA') or f.get('stealthB'))]
+    if not fl: continue
+    v = [[int(x) for x in (f['stealthA'] if side(f, army) == 'A' else f['stealthB']).split('/')] for f in fl]
+    rog = [sum(1 for e in (f['perA'] if side(f, army) == 'A' else f['perB']).split(';') if e.startswith('T:')) for f in fl]
+    print(f"| {army} | {len(fl)} | {sum((x[4] if len(x) > 4 else 0) for x in v) / len(v):.1f} | {sum(x[0] for x in v) / len(v):.1f} | {sum(x[1] for x in v) / len(v):.0f} | {sum(x[2] for x in v) / len(v):.2f} | {max(x[3] for x in v)} | {sum(rog) / len(rog):.1f} |")

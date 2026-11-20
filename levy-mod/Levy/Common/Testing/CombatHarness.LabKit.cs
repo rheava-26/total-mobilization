@@ -25,7 +25,7 @@ namespace Levy.Common.Testing
 	{
 		internal sealed class KitLevy
 		{
-			public string cls = "R", weapon = "", ammo = "", potion = "Healing Potion", side = "", hook = "";
+			public string cls = "R", weapon = "", ammo = "", potion = "Healing Potion", side = "", hook = "", name = "";
 			public string[] armor = Array.Empty<string>(), acc = Array.Empty<string>();
 			public int lc = 15, mc = 9, potions = 8, lf;
 		}
@@ -62,7 +62,7 @@ namespace Levy.Common.Testing
 		internal static List<CrLevySpec> KitSpecs(KitData d) => d.levies.Select(l => new CrLevySpec
 		{
 			Cls = char.ToUpperInvariant(l.cls[0]), Weapon = l.weapon, Ammo = l.ammo, Armor = l.armor, Acc = l.acc, LifeCrystals = l.lc, ManaCrystals = l.mc, Potions = l.potions, Potion = l.potion, ManAtArms = false,
-			Side = l.side ?? "", Hook = l.hook ?? "", LifeFruit = l.lf
+			Side = l.side ?? "", Hook = l.hook ?? "", LifeFruit = l.lf, Name = l.name ?? ""
 		}).ToList();
 
 		private static HashSet<string> _kitSt;

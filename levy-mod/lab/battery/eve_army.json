@@ -41,7 +41,8 @@
    "recordedLifeMax": 460,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Sgt. Alice"
   },
   {
    "id": 2,
@@ -65,7 +66,8 @@
    "recordedLifeMax": 450,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Sgt. Lion Pines"
   },
   {
    "id": 3,
@@ -89,7 +91,8 @@
    "recordedLifeMax": 450,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Sgt. Pearl"
   },
   {
    "id": 4,
@@ -113,7 +116,8 @@
    "recordedLifeMax": 450,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Sgt. Elysia"
   },
   {
    "id": 5,
@@ -137,7 +141,8 @@
    "recordedLifeMax": 445,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Sgt. Evvie"
   },
   {
    "id": 6,
@@ -161,7 +166,8 @@
    "recordedLifeMax": 435,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Sgt. Annabel"
   },
   {
    "id": 7,
@@ -185,7 +191,8 @@
    "recordedLifeMax": 435,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Sgt. Shea"
   },
   {
    "id": 8,
@@ -211,7 +218,8 @@
    "recordedLifeMax": 435,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Sgt. Hanno"
   },
   {
    "id": 9,
@@ -236,7 +244,8 @@
    "recordedLifeMax": 435,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Sgt. Maurice"
   },
   {
    "id": 10,
@@ -261,7 +270,8 @@
    "recordedLifeMax": 435,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Bunny"
   },
   {
    "id": 11,
@@ -287,7 +297,8 @@
    "recordedLifeMax": 435,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Jerry"
   },
   {
    "id": 12,
@@ -313,7 +324,8 @@
    "recordedLifeMax": 435,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Seymour"
   },
   {
    "id": 13,
@@ -339,7 +351,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Adam"
   },
   {
    "id": 14,
@@ -365,7 +378,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Flora"
   },
   {
    "id": 15,
@@ -391,7 +405,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Belle"
   },
   {
    "id": 16,
@@ -415,7 +430,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Kathryn"
   },
   {
    "id": 17,
@@ -440,7 +456,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Tweed"
   },
   {
    "id": 18,
@@ -465,7 +482,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Barkeep"
   },
   {
    "id": 19,
@@ -489,7 +507,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Hime"
   },
   {
    "id": 20,
@@ -514,7 +533,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Yehomilk"
   },
   {
    "id": 21,
@@ -538,7 +558,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Jacob"
   },
   {
    "id": 22,
@@ -562,7 +583,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Emilia"
   },
   {
    "id": 23,
@@ -587,7 +609,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Tyrone"
   },
   {
    "id": 24,
@@ -611,7 +634,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Seonag"
   },
   {
    "id": 25,
@@ -636,7 +660,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Aphraim"
   },
   {
    "id": 26,
@@ -661,7 +686,8 @@
    "recordedLifeMax": 430,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Jane"
   },
   {
    "id": 27,
@@ -686,7 +712,8 @@
    "recordedLifeMax": 425,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Luca"
   },
   {
    "id": 28,
@@ -710,7 +737,8 @@
    "recordedLifeMax": 425,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Lorraine"
   },
   {
    "id": 29,
@@ -735,7 +763,8 @@
    "recordedLifeMax": 420,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Marco"
   },
   {
    "id": 30,
@@ -760,7 +789,8 @@
    "recordedLifeMax": 420,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Jake Nicklelisp"
   },
   {
    "id": 31,
@@ -784,7 +814,8 @@
    "recordedLifeMax": 420,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Hannibal"
   },
   {
    "id": 32,
@@ -808,7 +839,8 @@
    "recordedLifeMax": 420,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Carroll"
   },
   {
    "id": 33,
@@ -833,7 +865,8 @@
    "recordedLifeMax": 420,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Lilith"
   },
   {
    "id": 34,
@@ -857,7 +890,8 @@
    "recordedLifeMax": 420,
    "mc": 9,
    "potions": 8,
-   "potion": "Greater Healing Potion"
+   "potion": "Greater Healing Potion",
+   "name": "Pvt. Kathryn"
   }
  ],
  "notes": []

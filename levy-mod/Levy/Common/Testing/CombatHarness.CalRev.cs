@@ -55,7 +55,7 @@ namespace Levy.Common.Testing
 		{
 			public char Cls; public string Weapon, Ammo; public string[] Armor = Array.Empty<string>(), Acc = Array.Empty<string>();
 			public int LifeCrystals, ManaCrystals, Potions; public string Potion = ""; public bool ManAtArms, Tank;
-			public string Side = "", Hook = ""; public int LifeFruit; // lab kit (lv=): a per-levy sidearm and grappling hook, and Life Fruit fed after the crystals
+			public string Side = "", Hook = "", Name = ""; public int LifeFruit; // lab kit (lv=): a per-levy sidearm and grappling hook, and Life Fruit fed after the crystals
 			public int Hp => 100 + 20 * LifeCrystals; public int Mana => 20 + 20 * ManaCrystals;
 			public string Describe() => $"{Cls}:{Weapon}{(string.IsNullOrEmpty(Ammo) ? "" : "/" + Ammo)}|{string.Join("+", Armor.Select(a => a.Split(' ')[0]).Distinct())}|{(Acc.Length == 0 ? "-" : string.Join("+", Acc))}|{(ManAtArms ? "MaA" : "Lv")}|{Hp}hp/{Mana}mp|{Potions}x{Potion}";
 		}
@@ -351,7 +351,8 @@ namespace Levy.Common.Testing
 				PvpLab.SetPersp(body ? PvpLab.TeamOf(i) : 0);
 				int prevCtx = _crNpcCtx; if (body) _crNpcCtx = self.whoAmI;
 				int pvDir = PvFaceOwner(body ? self : null);
-				try { orig(self, i); } finally { _crNpcCtx = prevCtx; PvFaceRestore(pvDir); }
+				int pvStrikes = LevyRippers.Strikes; // a levy's stealth strike is counted inside his own update (SoldierNPC.Rippers: the bar drops from ready)
+				try { orig(self, i); } finally { _crNpcCtx = prevCtx; PvFaceRestore(pvDir); if (body && LevyRippers.Strikes > pvStrikes) PvNoteStrikes(PvpLab.TeamOf(i), LevyRippers.Strikes - pvStrikes); }
 				return;
 			}
 			if (_cr != null && _cr.Run.BossDef >= 0 && !(self.ModNPC is SoldierNPC) && CrIsBossOrAdd(self.type)) // bdef=N: the boss and its parts hold defense N (measurement of low-damage weapons without the defense floor)

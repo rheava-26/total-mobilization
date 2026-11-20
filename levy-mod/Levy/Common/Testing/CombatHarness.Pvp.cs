@@ -31,6 +31,7 @@ namespace Levy.Common.Testing
 			// staggered format (pf=N): N levies of each side on the field, the rest wait in a pool and enter one by one at the side's spawn points
 			public int Field; public List<(CrLevySpec spec, int k)> PoolA = new(), PoolB = new(); public int[] NextSpawn = new int[3];
 			public Dictionary<CrLevy, int> Entry = new(), Kills = new(); public string[] Label = new string[3];
+			public int[] StealthThrown = new int[3], StealthHits = new int[3], StealthKills = new int[3], StealthMax = new int[3]; public long[] StealthDmg = new long[3]; // Calamity stealth strikes (and their children) by army
 		}
 		private static PvState _pvS;
 		private static Projectile _pvProj;
@@ -119,7 +120,7 @@ namespace Levy.Common.Testing
 			for (int k = 0; k < specs.Count; k++)
 			{
 				var l = CrSpawnLevy(specs[k], run, k, specs.Count, new Vector2((_crCx + side * 70) * 16f, CrF * 16f));
-				l.Rec.Name = label + " " + specs[k].Cls + (k + 1);
+				l.Rec.Name = PvName(label, specs[k], k);
 				NPC n = Main.npc[l.Idx];
 				n.Bottom = new Vector2((_crCx + side * (35f + 25f * k / Math.Max(1, specs.Count - 1))) * 16f, CrF * 16f); n.velocity = Vector2.Zero; // 35-60 tiles out from the centre (inside Search & Destroy's 60-tile catch-up), the two fronts 70 tiles apart
 				n.direction = -side;
@@ -192,7 +193,7 @@ namespace Levy.Common.Testing
 			var sp = PvSpawns[s.NextSpawn[team]++ % PvSpawns.Length];
 			var at = new Vector2((_crCx + side * sp.dx) * 16f, (CrF - sp.lv) * 16f);
 			var l = CrSpawnLevy(spec, run, k, 1, at);
-			l.Rec.Name = s.Label[team] + " " + spec.Cls + (k + 1);
+			l.Rec.Name = PvName(s.Label[team], spec, k);
 			NPC n = Main.npc[l.Idx]; n.Bottom = at; n.velocity = Vector2.Zero; n.direction = -side;
 			PvpLab.Add(l.Idx, team);
 			s.ByIdx[l.Idx] = l; s.TeamOfLevy[l] = team; s.Dealt[l] = 0; s.Entry[l] = s.Tick;
@@ -214,6 +215,16 @@ namespace Levy.Common.Testing
 				_pvAnchorF?.SetValue(sn, c); _pvAnchorSetF?.SetValue(sn, true);
 			}
 		}
+
+		/// <summary>A levy's name in the fight and its recording: the real name the army file carries (Eve's levies), else "Opt. Ranger 3" for an optimal army, else "&lt;army&gt; &lt;class&gt; &lt;n&gt;".</summary>
+		private static string PvName(string label, CrLevySpec spec, int k)
+		{
+			if (!string.IsNullOrWhiteSpace(spec.Name)) return spec.Name;
+			string cls = spec.Cls switch { 'E' => "Melee", 'R' => "Ranger", 'M' => "Mage", 'S' => "Summoner", 'T' => "Rogue", _ => spec.Cls.ToString() };
+			return (label.StartsWith("opt") ? "Opt." : label) + " " + cls + " " + (k + 1);
+		}
+
+		private static void PvNoteStrikes(int team, int n) { if (_pvS != null && team > 0 && team < 3) _pvS.StealthThrown[team] += n; }
 
 		private static double PvHpShare(List<CrLevy> army)
 		{
@@ -291,6 +302,11 @@ namespace Levy.Common.Testing
 			int done = orig(self, hit, fromNet, noPlayerInteraction);
 			PvCredit(self, done, src);
 			if (enemy && done > 0 && !victim.IsAlive && _pvS != null && _pvS.ByIdx.TryGetValue(src, out var killer)) { _pvS.Kills.TryGetValue(killer, out int kn); _pvS.Kills[killer] = kn + 1; }
+			if (enemy && done > 0 && _pvS != null && _crProjDepth > 0 && _pvProj != null)
+			{
+				bool ss = false; try { ss = HarnessCalamityProbe.IsStealthStrike(_pvProj, out bool sub) || sub; } catch { }
+				if (ss) { _pvS.StealthHits[at]++; _pvS.StealthDmg[at] += done; _pvS.StealthMax[at] = Math.Max(_pvS.StealthMax[at], done); if (!victim.IsAlive) _pvS.StealthKills[at]++; }
+			}
 			if (enemy && PvIFrames && done > 0)
 			{
 				try
@@ -358,10 +374,10 @@ namespace Levy.Common.Testing
 			try
 			{
 				string path = _crOut + ".pvp.tsv";
-				if (!File.Exists(path)) File.WriteAllText(path, "key\tseed\tteamA\tteamB\tresult\twinner\tsec\tnA\tnB\taliveA\taliveB\thpLeftA\thpLeftB\tdmgA\tdmgB\tclassA\tclassB\ttopA\ttopB\tdeathsA\tdeathsB\tpotionsA\tpotionsB\ttakenA\ttakenB\tunattrA\tunattrB\tdotA\tdotB\tperA\tperB\n");
+				if (!File.Exists(path)) File.WriteAllText(path, "key\tseed\tteamA\tteamB\tresult\twinner\tsec\tnA\tnB\taliveA\taliveB\thpLeftA\thpLeftB\tdmgA\tdmgB\tclassA\tclassB\ttopA\ttopB\tdeathsA\tdeathsB\tpotionsA\tpotionsB\ttakenA\ttakenB\tunattrA\tunattrB\tdotA\tdotB\tperA\tperB\tstealthA\tstealthB\n");
 				File.AppendAllText(path, string.Join("\t", new object[] { run.Key, run.Seed, run.TeamA, run.TeamB, st.Result, winner, f1(end / 60.0), st.A.Count, st.B.Count, aliveA, aliveB,
 					(100 * PvHpShare(st.A)).ToString("0", CultureInfo.InvariantCulture), (100 * PvHpShare(st.B)).ToString("0", CultureInfo.InvariantCulture), dA, dB, Cls(st.A), Cls(st.B), Top(st.A), Top(st.B), Deaths(st.A), Deaths(st.B),
-					st.A.Sum(l => l.PotionsDrunk), st.B.Sum(l => l.PotionsDrunk), st.A.Sum(l => l.TakenOther), st.B.Sum(l => l.TakenOther), st.Unattr[1], st.Unattr[2], st.Dot[1], st.Dot[2], Army(st.A), Army(st.B) }) + "\n");
+					st.A.Sum(l => l.PotionsDrunk), st.B.Sum(l => l.PotionsDrunk), st.A.Sum(l => l.TakenOther), st.B.Sum(l => l.TakenOther), st.Unattr[1], st.Unattr[2], st.Dot[1], st.Dot[2], Army(st.A), Army(st.B), $"{st.StealthHits[1]}/{st.StealthDmg[1]}/{st.StealthKills[1]}/{st.StealthMax[1]}/{st.StealthThrown[1]}", $"{st.StealthHits[2]}/{st.StealthDmg[2]}/{st.StealthKills[2]}/{st.StealthMax[2]}/{st.StealthThrown[2]}" }) + "\n");
 				// the ordinary calrev row, so drivers see the fight as done (result A / B / DRAW, deaths of both armies)
 				var cols = CrHeader.Split('\t'); var v = new string[cols.Length]; for (int i = 0; i < v.Length; i++) v[i] = "0";
 				void Set(string c, object o) { int i = Array.IndexOf(cols, c); if (i >= 0) v[i] = Convert.ToString(o, CultureInfo.InvariantCulture); }
@@ -371,7 +387,7 @@ namespace Levy.Common.Testing
 				File.AppendAllText(_crOut, string.Join("\t", v) + "\n");
 			}
 			catch (Exception e) { Mod.Logger.Warn("HARNESS-PVP: row failed: " + e); }
-			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s winner={winner} alive {run.TeamA}={aliveA}/{st.A.Count} {run.TeamB}={aliveB}/{st.B.Count} dmg {run.TeamA}={dA} {run.TeamB}={dB} unattr={st.Unattr[1]}/{st.Unattr[2]} dot={st.Dot[1]}/{st.Dot[2]} by={string.Join(",", st.Kind.OrderBy(kv => kv.Key).Select(kv => kv.Key + "=" + kv.Value))}");
+			Mod.Logger.Info($"HARNESS-CR: RESULT {run.Key} -> {st.Result} t={end / 60.0:0.0}s winner={winner} alive {run.TeamA}={aliveA}/{st.A.Count} {run.TeamB}={aliveB}/{st.B.Count} dmg {run.TeamA}={dA} {run.TeamB}={dB} unattr={st.Unattr[1]}/{st.Unattr[2]} dot={st.Dot[1]}/{st.Dot[2]} by={string.Join(",", st.Kind.OrderBy(kv => kv.Key).Select(kv => kv.Key + "=" + kv.Value))} stealth hits/dmg/kills/max/thrown A={st.StealthHits[1]}/{st.StealthDmg[1]}/{st.StealthKills[1]}/{st.StealthMax[1]}/{st.StealthThrown[1]} B={st.StealthHits[2]}/{st.StealthDmg[2]}/{st.StealthKills[2]}/{st.StealthMax[2]}/{st.StealthThrown[2]}");
 			PvStopRecording(st);
 			PvpLab.Reset(); _pvS = null; _pvProj = null; global::Levy.Common.Movement.OffscreenHop.LabViewers = null; PvScreenRestore();
 			_crStarted = false; _crI++;

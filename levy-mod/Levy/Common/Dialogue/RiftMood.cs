@@ -21,7 +21,8 @@ namespace Levy.Common.Dialogue
 	/// <summary>
 	/// THE RIFT MOOD. With Wrath of the Gods, once Moon Lord falls and the sun is covered, the levies change how they talk (see <see cref="RiftSky"/> for what is read).
 	///   Silent: while the sun is being covered nobody says anything (no floating line, no emote, no bark; right-click chat is "..."). Chat-log notices (deaths, desertions) still post.
-	///   The moment it ends: a burst of worried lines from the levies near each commander (RIFT_PANIC), then <see cref="LevyConstants.RiftPanicTicks"/> of worried talk.
+	///   The moment it ends: a burst of worried lines from the levies near each commander (RIFT_PANIC), then <see cref="LevyConstants.RiftPanicTicks"/> of worried talk; for the first
+	///   <see cref="LevyConstants.RiftPanicLoudTicks"/> of it (<see cref="PanicLoud"/>) the calm levies near the commander shout panic lines over each other (SoldierNPC.Chatter.cs).
 	///   Tense, for <see cref="LevyConstants.RiftTenseDays"/> dawns, then Settled for as long as the sky stays covered. In both, every calm or joking pool is routed to the rift pools
 	///   (right-click and ambient chat, situations, biomes, name-drops, armory talk, the Blood Moon chat), camp and drink talk becomes RIFT_CAMP, the commander reactions, gear thanks and flight
 	///   chatter go quiet, and the floating lines that remain are thinned (<see cref="AllowFloating"/>). Combat barks, boss lines, pay, mutiny and officer voices keep their own pools.
@@ -47,10 +48,12 @@ namespace Levy.Common.Dialogue
 
 		// ---- self-check overrides and telemetry ----
 		internal static RiftPhase? TestPhase;
-		internal static bool? TestPanic, TestSurface;
+		internal static bool? TestPanic, TestSurface, TestLoud;
 		internal static int? TestDays;
 		/// <summary>Coverings seen ending, panic rounds started (an army was near), panic lines spoken, floating lines held back by the mood.</summary>
 		internal static int Changes, PanicRounds, PanicLines, FloatingHeld, DukeEndings, DukeRounds, DukeLines;
+		/// <summary>Panic lines shouted by ambient chatter in the loud minute (telemetry), and the last one (the next shouter avoids it when the pool has come round).</summary>
+		internal static int LoudLines, LastLoudLine = -1;
 		private static bool _dukePrimed, _dukeWasKilled;
 		private static int _dukeSeenAt = Never;
 		private static Microsoft.Xna.Framework.Vector2 _dukeSpot;
@@ -73,6 +76,12 @@ namespace Levy.Common.Dialogue
 
 		/// <summary>The worried talk right after the covering.</summary>
 		public static bool PanicNow => TestPanic ?? (_panicUntil != Never && (uint)(_panicUntil - Now) <= (uint)LevyConstants.RiftPanicTicks);
+
+		/// <summary>The loud first minute of the worried talk: the levies near the commander shout over each other (SoldierNPC.Chatter.cs). Never while the sun is being covered.</summary>
+		public static bool PanicLoud => TestLoud ?? (_panicUntil != Never && Phase != RiftPhase.Silent && LoudAt(Now - (_panicUntil - LevyConstants.RiftPanicTicks)));
+
+		/// <summary>Whether this many ticks after the covering ended are still the loud minute.</summary>
+		internal static bool LoudAt(int sinceEnd) => sinceEnd >= 0 && sinceEnd < LevyConstants.RiftPanicLoudTicks;
 
 		internal static bool IsRift(DialogueTrigger t) => t >= DialogueTrigger.RIFT_PANIC && t <= DialogueTrigger.RIFT_FLIGHT;
 
@@ -227,7 +236,7 @@ namespace Levy.Common.Dialogue
 		internal static void Reset()
 		{
 			DaysSince = 0; Seen = false; Away.Clear(); AwayAsked.Clear();
-			_panicUntil = Never; _primed = false; _wasTransition = false; _lastDay = false;
+			_panicUntil = Never; LastLoudLine = -1; _primed = false; _wasTransition = false; _lastDay = false;
 			_dukePrimed = false; _dukeWasKilled = false; _dukeSeenAt = Never;
 			SkyReset();
 		}

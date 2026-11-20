@@ -2168,7 +2168,8 @@ OFFICER_Princess_VICTORY | Any | [grumpy] Fine! Good job! Go home!
 # ============================================================================================================
 # 15. THE RIFT SKY (Wrath of the Gods only; nothing here is read without it)
 # After Moon Lord the mod covers the sun. While that happens the levies say nothing. Right after, the levies near each commander
-# speak a RIFT_PANIC line one after another, and for the next ninety seconds their chat is worried (RIFT_PANIC too).
+# shout a RIFT_PANIC line one after another; for the first minute they shout over each other (a new panic line every second or two),
+# and for the ninety seconds after the covering their chat is worried (RIFT_PANIC too). Panic lines may run to 80 characters.
 # From then on, for as long as the sky stays covered, every calm or joking pool (IDLE IDLE_NIGHT NAMEDROP BLOOD_MOON PARTY GRAVEYARD RAIN
 # BIOME_* ARMORY_WANT ARMORY_BEST ARMORY_WORST) is answered from these pools instead, camp and drink talk (FIRESIDE PASTIME PASTIME_NIGHT DRINK*)
 # from RIFT_CAMP, and LIFE_CRYSTAL CHEST_OPENED ARMORY_GOT ECLIPSE_END TAKEOFF LANDING FLIGHT_FEAR go quiet. Combat, boss, pay, mutiny and officer
@@ -2186,21 +2187,31 @@ OFFICER_Princess_VICTORY | Any | [grumpy] Fine! Good job! Go home!
 # The voice: quieter and more formal, still the same people. Keep lines short: they type in on the chat bar.
 # ============================================================================================================
 
-# ---------------------------------------------------------------- RIFT_PANIC (floating, right after the sun is covered)
-RIFT_PANIC | Any | The sun! {Player}, the sun's gone!
-RIFT_PANIC | Any | Is that a hole? There's a hole in the sky.
-RIFT_PANIC | Any | Nobody move. I don't know why. Just don't.
-RIFT_PANIC | Any | It's midday and it's getting dark.
-RIFT_PANIC | Any | Did everyone feel that? The ground felt that.
-RIFT_PANIC | Greenhorn | Is it supposed to do that, {Player}?
-RIFT_PANIC | Greenhorn | I want to go home. If it's still there.
-RIFT_PANIC | Sellsword | That is not in the contract.
-RIFT_PANIC | Zealot | Not even Rigroth the Undying saw this coming.
-RIFT_PANIC | Zealot | Stay calm. I'm calm. Somebody tell me I'm calm.
-RIFT_PANIC | Cynic | I said it would go badly. I didn't mean the sun.
-RIFT_PANIC | Cynic | Well. That's the sun gone, then.
-RIFT_PANIC | Veteran | Eyes on me! Stay together. Stay together.
-RIFT_PANIC | Veteran | I've seen a lot of skies. Not this one.
+# ---------------------------------------------------------------- RIFT_PANIC (floating, shouted, right after the sun is covered)
+RIFT_PANIC | Any | The sun's GONE! It's just GONE! Where did it GO!?
+RIFT_PANIC | Any | {Player}! {Player}, the sun! LOOK UP!
+RIFT_PANIC | Any | It's the middle of the day and it's DARK! DARK!
+RIFT_PANIC | Any | There's a HOLE in the sky! Why is there a HOLE in the sky!?
+RIFT_PANIC | Any | Don't look at it! Don't look at it! Don't LOOK at it!
+RIFT_PANIC | Any | What is that!? WHAT IS THAT!?
+RIFT_PANIC | Any | Somebody do something! ANYBODY! DO SOMETHING!
+RIFT_PANIC | Any | It's watching us! I swear it's WATCHING us!
+RIFT_PANIC | Greenhorn | I want to go home! I want to go home RIGHT NOW!
+RIFT_PANIC | Greenhorn | {Player}! Make it stop! Please make it STOP!
+RIFT_PANIC | Greenhorn | Is this the end of the world!? Nobody said it'd be the END OF THE WORLD!
+RIFT_PANIC | Greenhorn | I can't see! I can't see anything! {Player}, where ARE you!?
+RIFT_PANIC | Sellsword | That's it! I'm out! Keep the pay! I'M OUT!
+RIFT_PANIC | Sellsword | Nobody pays me enough for THIS! NOBODY!
+RIFT_PANIC | Sellsword | Which way is out!? Somebody point me OUT of here!
+RIFT_PANIC | Zealot | Rigroth the Undying, PROTECT US! PROTECT US NOW!
+RIFT_PANIC | Zealot | I'm praying! I'm PRAYING! Why isn't it WORKING!?
+RIFT_PANIC | Zealot | Forgive us! Whatever we did, we're SORRY! WE'RE SORRY!
+RIFT_PANIC | Cynic | OH GOOD! THE SUN! THAT'S GREAT! THAT'S JUST GREAT!
+RIFT_PANIC | Cynic | Sure! Fine! Who needed the SUN anyway!?
+RIFT_PANIC | Cynic | Wonderful! Did anyone else order the END OF THE WORLD!?
+RIFT_PANIC | Veteran | Nobody panic! NOBODY PANIC! I am NOT PANICKING!
+RIFT_PANIC | Veteran | Hold the line! Hold the... what line!? Hold SOMETHING!
+RIFT_PANIC | Veteran | Eyes on me! EYES ON ME! Nobody runs! I SAID NOBODY RUNS!
 
 # ---------------------------------------------------------------- RIFT_SHOCK (the first days)
 RIFT_SHOCK | Any | Nobody's seen the sun since. Nobody.
@@ -2471,7 +2482,7 @@ RIFT_WORN | Cynic | I've run out of things to complain about. Almost.
 RIFT_WORN | Veteran | I've had enough, {Player}. I'm still here.
 
 # ---------------------------------------------------------------- more for the pools of part 15
-RIFT_PANIC | Any | Get inside! Everyone get inside!
+RIFT_PANIC | Any | Get inside! Everyone get INSIDE! NOW!
 RIFT_SHOCK | Any | How long is it going to stay up there?
 RIFT_SHOCK | Greenhorn | Was it there when I woke up? I can't remember.
 RIFT_SHOCK | Cynic | So that's what the end looks like.

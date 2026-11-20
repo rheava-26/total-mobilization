@@ -13,7 +13,7 @@ namespace Levy.Common.UI
 	public static class GuidePages
 	{
 		/// <summary>How many pages the book has. GuideCheck fails the boot if the table and this number disagree.</summary>
-		public const int ExpectedCount = 30;
+		public const int ExpectedCount = 40;
 
 		public readonly struct Page
 		{
@@ -45,13 +45,21 @@ namespace Levy.Common.UI
 		{
 			P("Welcome", "Levy/FieldManual"),
 			P("Barracks", "Levy/BarracksItem"),
+			V("CommandPoints", ItemID.WarTable),
+			V("Grades", ItemID.LifeCrystal),
+			V("BossLife", ItemID.SuspiciousLookingEye),
 			V("Wages", ItemID.GoldCoin),
+			V("Reserve", ItemID.Bed),
 			P("Militia", "Levy/WarHorn"),
 			P("Orders", "Levy/CommandRadio"),
-			P("OrdersList", "Levy/WarHorn"),
+			P("OrdersMove", "Levy/HoldingBannerItem"),
+			V("OrdersHunt", ItemID.Spear),
+			V("OrdersFire", ItemID.Revolver),
+			P("Rally", "Levy/WarHorn"),
 			P("BarracksOrders", "Levy/BarracksItem"),
 			V("MapOrders", ItemID.GPS),
 			P("Armory", "Levy/ArmoryItem"),
+			V("BlockBreakers", ItemID.Dynamite),
 			V("ItemsPutIn", ItemID.Chest),
 			V("ItemsWeapons", ItemID.Handgun),
 			V("ItemsGear", ItemID.GrapplingHook),
@@ -68,7 +76,9 @@ namespace Levy.Common.UI
 			V("OfficersUtility", ItemID.GoldCoin),
 			V("OfficersSummoners", ItemID.SlimeStaff),
 			P("Potions", "Levy/SpectatorPotion"),
+			P("Provisions", "Levy/GrandFeast"),
 			P("Cameras", "Levy/StaticCameraItem"),
+			V("Recorder", ItemID.Stopwatch),
 			P("OldOnesArmy", "Levy/LevyStaff"),
 			P("EventBooks", "Levy/GuideToConscription"),
 			P("ProgressionGuides", "Levy/GuideToFirepower"),
@@ -100,7 +110,7 @@ namespace Levy.Common.UI
 				Check("page count", GuidePages.All.Length == GuidePages.ExpectedCount, $"{GuidePages.All.Length} pages, expected {GuidePages.ExpectedCount}");
 				Check("chrome strings", Resolves("Guide.Title") && Resolves("Guide.Contents") && Resolves("Guide.Previous") && Resolves("Guide.Next") && Resolves("Guide.PageOf")
 					&& Resolves("Guide.CloseHint") && Resolves("Guide.PreviousHint") && Resolves("Guide.NextHint") && Resolves("Guide.StorageHint") && Resolves("Guide.DepositJunkHint"), "a Guide.* chrome key is missing");
-				Check("page format", SafeFormat("Guide.PageOf", 3, 30), "Guide.PageOf does not format with two arguments");
+				Check("page format", SafeFormat("Guide.PageOf", 3, GuidePages.ExpectedCount), "Guide.PageOf does not format with two arguments");
 				var seen = new System.Collections.Generic.HashSet<string>();
 				int lines = 0;
 				foreach (var page in GuidePages.All)

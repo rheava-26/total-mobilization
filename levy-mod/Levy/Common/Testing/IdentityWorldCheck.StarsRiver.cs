@@ -46,7 +46,7 @@ namespace Levy.Common.Testing
 		private static void SrSwords()
 		{
 			if (!ModLoader.TryGetMod("StarsAbove", out Mod sa)) return;
-			foreach (string n in new[] { "BloodBlade", "BurningDesire", "Umbra", "SakuraVengeance" })
+			foreach (string n in new[] { "BloodBlade", "BurningDesire", "Umbra" })
 			{
 				if (!sa.TryFind(n, out ModItem mi)) { Check("StarsAbove/" + n + " exists", false); continue; }
 				Item probe = new Item(); probe.SetDefaults(mi.Type);
@@ -133,7 +133,7 @@ namespace Levy.Common.Testing
 					for (int k = 0; k < ticks; k++)
 					{
 						try { OriginStep(); } catch (Exception) { thrown++; }
-						ClearNaturalHostiles();
+						ClearNaturalHostiles(Main.npc[idx].type == type ? Main.npc[idx] : null); // the world's spawns go, the boss under test stays
 						NPC b = Main.npc[idx];
 						if (!b.active || b.type != type) { if (!gone) goneAt = k; gone = true; }
 						else { alive++; b.timeLeft = Math.Max(b.timeLeft, 300); if (LevyNpcData.Of(b).SoldierTarget >= 0) locked++; if (b.dontTakeDamage || b.immortal) immune++; bMin = Vector2.Min(bMin, b.Center); bMax = Vector2.Max(bMax, b.Center); }

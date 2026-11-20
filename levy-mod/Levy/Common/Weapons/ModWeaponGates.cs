@@ -36,6 +36,7 @@ namespace Levy.Common.Weapons
 				["CaesuraOfDespair"] = "a companion the item summons while a player holds it; a levy never holds it that way, so nothing fights",
 				["HollowheartAlbion"] = "a companion the item summons while a player holds it; a levy never holds it that way, so nothing fights",
 				["KonpakuKatana"] = "a companion the item summons while a player holds it; a levy never holds it that way, so nothing fights",
+				["SakuraVengeance"] = "its slash is spawned by the item's own use handler, which a levy never runs: every swing deals nothing (stopgap until levies run a modded item's use handler)",
 			},
 			["StarlightRiver"] = new()
 			{

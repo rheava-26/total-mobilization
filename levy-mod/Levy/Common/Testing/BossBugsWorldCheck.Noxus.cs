@@ -208,7 +208,10 @@ namespace Levy.Common.Testing
 				if (beaten) Note($"{label}: beaten boss with bosses targeting soldiers: locked on a levy {lockedTicks} of {alive} ticks");
 				boss.active = false;
 				Step(2);
-				Check(label + ": once it is gone it leaves LiveBosses and the levies may talk again", !BossRule.LiveBosses.Contains(boss) && !NoxusFights.Active && levies.Any(l => l.NPC.active && global::Levy.Common.Dialogue.DialogueSystem.ChatLine(l) != "..."), () => $"live {BossRule.LiveBosses.Contains(boss)}, fight flag {NoxusFights.Active}");
+				// a fight like Nameless Deity's first kill can wipe the whole army: a fresh levy then stands in, so the check reads the hush state and not who survived
+				var talkers = levies.Where(l => l.NPC.active).ToList();
+				if (talkers.Count == 0) { var fresh = Levy(new Vector2(Cx * 16f, _floorY * 16f)); if (fresh != null) { talkers.Add(fresh); Step(2); } }
+				Check(label + ": once it is gone it leaves LiveBosses and the levies may talk again", !BossRule.LiveBosses.Contains(boss) && !NoxusFights.Active && talkers.Any(l => l.NPC.active && global::Levy.Common.Dialogue.DialogueSystem.ChatLine(l) != "..."), () => $"live {BossRule.LiveBosses.Contains(boss)}, fight flag {NoxusFights.Active}");
 			}
 			finally { On_NPC.UpdateNPC -= det; On_Player.KillMe -= killDet; _watched.Remove(type); EnemyTargeting.AiProbe = null; }
 		}

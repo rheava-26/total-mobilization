@@ -165,6 +165,8 @@ namespace Levy.Common.Testing
 				Check($"longer-flying wings give a longer wing time: Fledgling {wingTimes["Fledgling Wings"]} < Angel {wingTimes["Angel Wings"]} < Solar {wingTimes["Solar Wings"]}", wingTimes["Fledgling Wings"] < wingTimes["Angel Wings"] && wingTimes["Angel Wings"] < wingTimes["Solar Wings"]);
 			if (flights.ContainsKey("Fledgling Wings") && flights.ContainsKey("Angel Wings")) Check($"longer-flying wings fly longer: Angel {flights["Angel Wings"]} >= Fledgling {flights["Fledgling Wings"]}", flights["Angel Wings"] >= flights["Fledgling Wings"]);
 			ClearSoldiers();
+			try { HoverTrials(); } catch (Exception e) { Check("hover trials threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
+			ClearSoldiers();
 			Arena();
 			try { FloorTrials(); } catch (Exception e) { Check("floor trials threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
 			try { DashTrials(); } catch (Exception e) { Check("dash trials threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
@@ -199,6 +201,46 @@ namespace Levy.Common.Testing
 			if (boots != null) Check($"speed trial {label}: the levy's dummy runs at the boots' speed ({F(ab?.MaxRunSpeed ?? 0)} px/tick from the stat pass)", ab != null && ab.MaxRunSpeed > 3.5f);
 			ClearSoldiers();
 			return (avg, peak);
+		}
+
+		/// <summary>
+		/// Only hover gear hovers (Eve 11-19): a levy told to hold a height 9 tiles over the floor holds it in place on hover wings (Vortex Booster; Hadarian Wings with Calamity), and on other wings (Angel Wings) climbs, falls through
+		/// the height and climbs again as a player's wings do, every climb tick a full tick of flight time. Measured: the longest run of ticks aloft with the vertical speed under 0.6 px/tick, and flight time spent.
+		/// </summary>
+		private static void HoverTrials()
+		{
+			var cases = new List<(string name, int type, bool hovers)> { ("Angel Wings", ItemID.AngelWings, false), ("Harpy Wings", ItemID.HarpyWings, false), ("Vortex Booster", ItemID.WingsVortex, true) };
+			if (ModLoader.TryGetMod("CalamityMod", out Mod cal) && cal.TryFind<ModItem>("HadarianWings", out var hw)) cases.Add(("Hadarian Wings", hw.Type, true));
+			foreach (var (name, type, hovers) in cases)
+			{
+				ClearSoldiers();
+				global::Terraria.Main.rand = new Terraria.Utilities.UnifiedRandom(9300 + type);
+				var at = new Vector2(Cx * 16f, FloorY * 16f);
+				_cmdAt = new Vector2(Cx * 16f + 4 * 16f, (FloorY - 3) * 16f);
+				KeepCommander(); Step(2);
+				int body = SpawnLevy(Make(type), null, at, out var rec);
+				if (body < 0 || !rec.HasBody) { Check($"hover trial {name}: the levy spawns", false); continue; }
+				var sn = (SoldierNPC)Main.npc[body].ModNPC;
+				Step(70);
+				float floorB = FloorY * 16f;
+				sn.LabAltitudeY = floorB - 9 * 16f;
+				int streak = 0, longest = 0, aloft = 0, spent = 0, w0 = sn.LabWingTime; float top = 0f;
+				for (int t = 0; t < 200; t++)
+				{
+					int wBefore = sn.LabWingTime;
+					Step(1);
+					var n = Main.npc[body]; if (!n.active) break;
+					int w = sn.LabWingTime; if (w < wBefore) spent += wBefore - w;
+					bool air = n.Bottom.Y < floorB - 6f;
+					if (air) { aloft++; top = Math.Max(top, (floorB - n.Bottom.Y) / 16f); }
+					if (air && t > 40 && Math.Abs(n.velocity.Y) < 0.6f) { streak++; longest = Math.Max(longest, streak); } else streak = 0;
+				}
+				sn.LabAltitudeY = float.NaN;
+				Note($"hover trial {name} (hover gear: {hovers}, CanHover {sn.Abilities?.CanHover}): aloft {aloft} of 200 ticks, top {F(top)} tiles, longest still run {longest} ticks, flight spent {spent} of {sn.Abilities?.WingTimeMax}");
+				Check($"hover trial {name}: the levy takes off for a height 9 tiles up (top {F(top)} tiles)", top >= 6f);
+				if (hovers) Check($"hover trial {name}: hover wings hold the height in place (longest still run {longest} ticks)", longest >= 40 && sn.Abilities != null && sn.Abilities.CanHover);
+				else Check($"hover trial {name}: wings without a hover never hold still in the air (longest still run {longest} ticks; a player's climb and fall passes through a still apex in a few ticks)", longest <= 8 && sn.Abilities != null && !sn.Abilities.CanHover);
+			}
 		}
 
 		private static (int ticks, float heightTiles, int wingTime) FlightTrial(Item wings, string label)

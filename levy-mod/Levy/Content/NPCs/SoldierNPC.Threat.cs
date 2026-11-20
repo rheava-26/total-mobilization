@@ -39,6 +39,8 @@ namespace Levy.Content.NPCs
 		private static readonly int[] StepDurs = { 8, 14, 22 }, ChainStepDurs = { 8, 14, 22, 34, 48 };
 		internal int DodgeManeuvers, DodgeStays, DodgeSteps, DodgeJumps, DodgeDashes, DodgeDrops, DodgeScansDone;
 		internal long DodgeTs;
+		/// <summary>Fight telemetry (the lab kit reads and resets these): scans that found a predicted hit on the spot, dodges taken, dodges that still expected a hit, scans with no better move.</summary>
+		internal static long StatThreatScans, StatDodges, StatDodgePartial, StatDodgeNoBetter;
 		internal int DodgeAirKicks, DodgeAirFalls;
 		internal int DodgeDoubleJumps, DodgeDashJumps, DodgeHooks, DodgeNearScans, DodgeBaseHitScans, DodgeNoBetter, DodgeSkippedBusy;
 		private uint _air2Ready;
@@ -131,7 +133,7 @@ namespace Levy.Content.NPCs
 			_wormMargin = _wormScan && wpass == 0 ? LevyConstants.WormDodge.MarginPx : 0f;
 			baseHits = ThreatField.Hits(_thrNear, c0, npc.width, npc.height, stay, g, horizon, out firstHit, out lastHit, _wormMargin);
 			if (baseHits == 0) return _wormScan && wpass == 1 ? WormHoldStill() : HoldStep(holding);
-			if (wpass == 0 || !_wormScan) DodgeBaseHitScans++;
+			if (wpass == 0 || !_wormScan) { DodgeBaseHitScans++; StatThreatScans++; }
 			// a threat already past the point of no return cannot be dodged by a long walk, but the same search still picks the best partial answer
 			baseScore = baseHits * 100f;
 			best = stay; bestHits = baseHits; bestScore = baseScore;
@@ -182,8 +184,8 @@ namespace Levy.Content.NPCs
 			if (_wormScan && DodgeDebug) Levy.Instance?.Logger.Info($"WORMDBG t={Main.GameUpdateCount} {SoldierName} margin={_wormMargin} base={baseHits}@{firstHit} best=k{best.Kind}/d{best.Delay} hits={bestHits} grounded={grounded}");
 			_dodgeCooldown = airScan ? AirCooldown : Hostile && ThreatField.HostileDodgeOn ? HostileCooldown : ThreatCooldown;
 			if (DodgeDebug) Levy.Instance?.Logger.Info($"DODGEDBG t={Main.GameUpdateCount} {SoldierName} threats={_thrNear.Count} base={baseHits}@{firstHit}..{lastHit} best=kind{best.Kind} delay={best.Delay} hits={bestHits} vx={NPC.velocity.X:0.0} grounded={grounded}");
-			if (best.Kind == 0 || bestHits >= baseHits) { DodgeStays++; DodgeNoBetter++; if (!grounded && air && AirBlip()) npc.netUpdate = true; return HoldStep(holding); }
-			DodgeManeuvers++; if (airScan) DodgeAirManeuvers++;
+			if (best.Kind == 0 || bestHits >= baseHits) { DodgeStays++; DodgeNoBetter++; StatDodgeNoBetter++; if (!grounded && air && AirBlip()) npc.netUpdate = true; return HoldStep(holding); }
+			DodgeManeuvers++; StatDodges++; if (bestHits > 0) StatDodgePartial++; if (airScan) DodgeAirManeuvers++;
 			switch (best.Kind)
 			{
 				case 1: DodgeSteps++; Begin(best.Vx, best.Dur, airScan ? RunAccel : 0f); break;

@@ -73,7 +73,7 @@ namespace Levy.Content.NPCs
 		// bookkeeping the projectile side calls
 		// ---------------------------------------------------------------------------------------------
 		internal void HookNoteSpawn(int projIndex) { if (!_hkProj.Contains(projIndex)) _hkProj.Add(projIndex); }
-		internal bool HookOwns(int projIndex) => _hkPhase != HookPhase.Idle && _hkProj.Contains(projIndex);
+		internal bool HookOwns(int projIndex) => (_hkPhase != HookPhase.Idle || MindHookOut) && _hkProj.Contains(projIndex);
 
 		/// <summary>A hook moved the dummy by itself (Hook of Dissonance's teleport): the body goes with it.</summary>
 		internal void HookAdoptTeleport(Vector2 pos, Vector2 vel)

@@ -77,16 +77,28 @@ namespace Levy.Common.Testing
 				trace = $" nearest levy at the death {(nearLevy == float.MaxValue ? "none" : nearLevy.ToString("0") + " tiles")};" + trace;
 				_perTick = arm == "drawn" ? () => { foreach (var l in army) if (l.NPC.active) { l.NPC.life = l.NPC.lifeMax; if (l.Record != null) l.Record.CurrentHp = l.NPC.lifeMax; } } : null;
 				int watch = arm == "drawn" ? DespawnBudget : DespawnWatch;
+				// who closes the gap: the boss's and each levy's travel since the death, and the first tick a levy stood within the leash of the boss
+				Vector2 boss0 = Main.npc[who].Center; var levy0 = new List<Vector2>(); foreach (var l in army) levy0.Add(l.NPC.Center);
+				float minNear = nearLevy; int inLeashAt = -1;
 				for (int t = 0; t < watch; t++)
 				{
 					Step(1);
 					if (!Alive()) { gone = t; break; }
 					NPC b = Main.npc[who]; watched++;
+					float near = float.MaxValue, levyMoved = 0f;
+					for (int k = 0; k < army.Count; k++) { var l = army[k]; if (!l.NPC.active) continue; near = Math.Min(near, Vector2.Distance(l.NPC.Center, b.Center) / 16f); levyMoved = Math.Max(levyMoved, Vector2.Distance(l.NPC.Center, levy0[k]) / 16f); }
+					minNear = Math.Min(minNear, near);
+					if (inLeashAt < 0 && near <= LevyConstants.Targeting.LostFightLeashTiles)
+					{
+						inLeashAt = t;
+						trace += $" [a levy first within {LevyConstants.Targeting.LostFightLeashTiles} tiles at t{t}: {near:0} tiles; the boss had moved {Vector2.Distance(b.Center, boss0) / 16f:0} tiles ({(b.Center.X - boss0.X) / 16f:+0;-0} x, {(b.Center.Y - boss0.Y) / 16f:+0;-0} y), the levies up to {levyMoved:0} tiles]";
+					}
 					if (Locked(b)) { if (EnemyTargeting.IsMachineBody(Main.npc[LevyNpcData.Of(b).SoldierTarget])) machineTicks++; else lockedAfter++; }
 					if (t == 1 || t == 10 || t == 60 || t == 300) trace += $" [t{t}: target {b.target}, lock {LevyNpcData.Of(b).SoldierTarget}, ai0 {b.ai[0]:0}, searches {EnemyTargeting.WhyCount[who]}, why \"{EnemyTargeting.WhyTrack[who]}\", bodies {EnemyTargeting.Bodies.Count}, levy NPCs {LevyNpcCount()}]";
 					maxTl = Math.Max(maxTl, b.timeLeft); minY = Math.Min(minY, b.Center.Y);
 				}
 				lockedFrac = watched > 0 ? lockedAfter / (float)watched : 0f;
+				if (army.Count > 0) trace += $" [closest a levy came: {minNear:0} tiles]";
 				string seen = $"locked during the fight {lockedFight}/180 ticks, after the death {lockedAfter} ticks on levies and {machineTicks} on machines, max timeLeft after {maxTl}, rose {(startY - Math.Min(minY, startY)) / 16f:0} tiles (top y {minY / 16f:0});{trace}";
 				return (gone, seen);
 			}

@@ -165,6 +165,9 @@ namespace Levy.Common.Testing
 			public long DotDamage, DotTicks; public double TickAvgMs, TickMaxMs; public long GateSwaps, GateWaits; public double GateMaxWaitMs, GateMaxSaveMs;
 		}
 
+		/// <summary>Saves the gated phase waits for before it ends (the verdict needs 3).</summary>
+		private const int MinSaves = 4;
+
 		private static Phase RunPhase(string name, bool gate, List<SoldierNPC> levies, NPC attacker, bool withSaver, int dotTicks)
 		{
 			var ph = new Phase { Name = name, Gate = gate };
@@ -175,7 +178,7 @@ namespace Levy.Common.Testing
 				b.AddBuff(BuffID.OnFire, 60000); b.AddBuff(BuffID.Poisoned, 60000);
 				b.defense = 0; l.Defense = 0;
 			}
-			long dot0 = SoldierNPC.DotDamage, dt0 = SoldierNPC.DotTicks;
+			long dot0 = SoldierNPC.DotDamage, dt0 = SoldierNPC.DotTicks, dotEnd = dot0, dtEnd = dt0;
 			Interlocked.Exchange(ref _points, 0); Interlocked.Exchange(ref _myWrong, 0); Interlocked.Exchange(ref _localWrong, 0); Interlocked.Exchange(ref _slot255Wrong, 0); Interlocked.Exchange(ref _onWorkerThread, 0); Interlocked.Exchange(ref _quitCalls, 0);
 			_mainThreadId = Environment.CurrentManagedThreadId;
 			volatile_stop = false; Probing = withSaver; _guard = true;
@@ -220,6 +223,11 @@ namespace Levy.Common.Testing
 					}
 					tickMs.Add(Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
 				}
+				dotEnd = SoldierNPC.DotDamage; dtEnd = SoldierNPC.DotTicks;
+				// On an idle, fast box the fixed ticks end in ~50 ms: room for only two saves at the saver's ~25 ms cadence, too few for the verdict (3 saves, 9 probe points). Keep swapping
+				// (damage-over-time steps only, past the counted ticks, so the DoT comparison is unchanged) until the saver has finished MinSaves saves or 5 s pass.
+				while (withSaver && Interlocked.Read(ref saves) < MinSaves && Stopwatch.GetElapsedTime(t0all).TotalSeconds < 5)
+					foreach (var l in levies) l.DebuffDot();
 			}
 			finally
 			{
@@ -231,7 +239,7 @@ namespace Levy.Common.Testing
 			ph.Samples = total; ph.SwappedSamples = swSamples; ph.Runs = runs; ph.WindowSumUs = winSum; ph.WindowMaxUs = winMax; ph.ElapsedMs = elapsedMs; 
 			ph.Saves = saves; ph.SaveThrows = throws; ph.FirstThrow = firstThrow;
 			ph.Points = Interlocked.Read(ref _points); ph.MyWrong = Interlocked.Read(ref _myWrong); ph.LocalWrong = Interlocked.Read(ref _localWrong); ph.Slot255Wrong = Interlocked.Read(ref _slot255Wrong); ph.OnWorker = Interlocked.Read(ref _onWorkerThread); ph.Quits = _quitCalls;
-			ph.DotDamage = SoldierNPC.DotDamage - dot0; ph.DotTicks = SoldierNPC.DotTicks - dt0;
+			ph.DotDamage = dotEnd - dot0; ph.DotTicks = dtEnd - dt0; // the counted ticks only (an extension for the saver is not counted)
 			double sumT = 0, maxT = 0; foreach (double d in tickMs) { sumT += d; if (d > maxT) maxT = d; }
 			ph.TickAvgMs = tickMs.Count > 0 ? sumT / tickMs.Count : 0; ph.TickMaxMs = maxT;
 			ph.GateSwaps = SaveGate.Swaps; ph.GateWaits = SaveGate.SwapWaits; ph.GateMaxWaitMs = SaveGate.MaxSwapWaitMs; ph.GateMaxSaveMs = SaveGate.MaxSaveMs;

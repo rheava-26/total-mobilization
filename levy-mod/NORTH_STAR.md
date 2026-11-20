@@ -33,6 +33,12 @@ The core vision: you collect thousands of weapons but can wield one, so you hand
 
 **Search our own history before saying "I don't know that."** When Eve brings up something that sounds like it was discussed before (lore, a design, a decision), search the session transcript and the scratchpad references first. Never claim not to recognise something we already went through together, and never contradict an earlier analysis without saying so.
 
+**We already built the fight recorder and replay viewer. Never offer to build one (Eve, 2026-11-20).** Eve: "we built a super advanced fight recorder already... note that down whenever you compact." What exists:
+- **Recorder:** in-game `/levyrec start|stop|status|folder` (Levy/Common/Recording: FightRecorder, EventRecorder, dialogue/events, per-weapon attribution, format 12). Headless labs record with `LEVY_REC_DIR`.
+- **Viewer:** a 2D replay with real hitboxes, trails, a hit/death timeline, a roster, commander shots, "Call it" and local-file drop (levy-mod/Levy/tools/fightviewer: `make_site.py` builds a site; `viewer.html` is the local viewer).
+- **Published:** THE replay page is **"Levy Fight Replays" https://claude.ai/artifact/Q6aYA45u8MSxyB7VZxHSEH**. Add new fights to it as a new set by merging into its `data/manifest.json` and publishing the new data files to the same URL. Don't make new replay artifacts. The older "Levy Lab Replays" (5bQWET74N12m4bYMbFxqqK) and "Levy Fight Viewer" (2ycnAhbUmyF1pY9NVqYudB) are superseded, and Eve finds the duplicates confusing.
+- When Eve wants to "watch" a lab fight, the answer is: record it with LEVY_REC_DIR and add it to that page. Her asks are additions to this tool, not a new one.
+
 **Never explain a bug as Eve using it wrong.** "Stop saying the cause of an issue I clearly could have found out by just trying is 'oh you just did it wrong'. No I didn't." (11-11) Her reports are real bugs. Never tell her she was too far, placed it wrong, or used it wrong, not even as a hedge ("if yours is close, tell me"). An inferred cause is not a cause: reproduce what she did in the lab, prove the cause, then fix. Player-facing failure messages state what was checked, never what the player did wrong.
 
 **Reproduce Eve's setup before calling a bug fixed or "not a bug".** Eve plays a real world with real mod lists, and a harness that doesn't match it hasn't tested the report. Example: Magic Storage was OFF in her world, so a Magic Storage fix was not their cause (ROADMAP, 11-07).

@@ -296,8 +296,10 @@ namespace Levy.Common.Targeting
 		private static bool BossAllowlisted(NPC npc)
 		{
 			if (!BossAggroUnlocked(npc)) return false;
-			// The commander (every real player) is dead or gone: the fight is lost. The boss is not handed to the army; its own AI sees no live player, leaves and despawns as it does with no levies.
-			if (LostFightOn && !AnyLivePlayer()) return false;
+			// The commander (every real player) is dead or gone. The unlock above already says this boss type was beaten before: it keeps fighting the levies, but only while one stands within
+			// LostFightLeashTiles of it. With none that close the fight is over: the boss is not handed to the army, its own AI sees no live player, leaves and despawns as it does with no levies.
+			// An unbeaten boss never gets here (no unlock), so it always leaves. Drones and turrets never count (LevyWithin skips machines).
+			if (LostFightOn && !AnyLivePlayer() && !LevyWithin(npc, LevyConstants.Targeting.LostFightLeashPx)) return false;
 			// Skeletron / Skeletron Prime must not be drawn onto the army once it is daytime: they enrage lethally at dawn and would
 			// endlessly massacre the deathless, respawning soldiers. At day they fight the commander as vanilla and despawn on vanilla's terms.
 			if (BossPersistenceGlobalNPC.IsDaytimeExcluded(npc)) return false;
@@ -455,11 +457,24 @@ namespace Levy.Common.Targeting
 			// Soft weighting only: a soldier that is too far away still loses to a close commander, and with no soldier in reach the vanilla pick stands. The range limit uses the real distance.
 			// The army's price here is the best soldier's distance with NO crowding in it, so how many enemies are already on the army never makes the commander the better target.
 			int ownLock = data.SoldierTarget; // the soldier this enemy is on right now (already counted in the tally; Pick leaves its own tally out)
+			// TIERS for a boss, its parts and its adds: players and levies first, machines (drones, turrets) strictly after. Pass 0 weighs levies only; machines get pass 1, and only for an add, only when
+			// no player is a valid pick and no levy is in reach. A boss or boss part never takes a machine at all: a drone alone is no target to it, so a drone never holds it in a fight, never drags it
+			// out of its arena and never trips an enrage that reads its target's position (Calamitas Clone turns invulnerable while her target stands outside her arena).
+			// After the commander's death (no live player) only levies within LostFightLeashTiles of the boss count.
+			bool tiered = BossTierOn && (IsBossClass(npc) || MinionBoss(npc) != null);
+			bool lost = tiered && LostFightOn && !AnyLivePlayer();
+			float leash2 = lost ? LevyConstants.Targeting.LostFightLeashPx * LevyConstants.Targeting.LostFightLeashPx : float.PositiveInfinity;
+			Vector2 leashAt = lost ? LevyUtil.RootNpc(npc).Center : default;
 			int n = 0, nearSoldiers = 0, nearest = -1; float dMin = float.PositiveInfinity;
+			for (int pass = 0; pass < 2; pass++)
+			{
+				if (pass == 1 && (!tiered || n > 0 || vanillaIsPlayer || lost || IsBossBodyOrPart(npc))) break;
 			for (int i = 0; i < Bodies.Count; i++)
 			{
 				ITargetBody body = Bodies[i];
 				if (!body.IsAlive) continue;
+				if (tiered && IsMachineBody(body.NPC) != (pass == 1)) continue;
+				if (lost && Vector2.DistanceSquared(body.NPC.Center, leashAt) > leash2) continue;
 				float real = Metric(npc, center, body.NPC.Center, manhattan);
 				if (real > maxSoldierDist) continue;
 				if (real <= LevyConstants.Targeting.ArmyPullRadiusPx) nearSoldiers++;
@@ -468,6 +483,7 @@ namespace Levy.Common.Targeting
 				_candSlot[n] = i; _candNpc[n] = body.NPC.whoAmI; _candD[n] = d;
 				if (d < dMin) { dMin = d; nearest = n; }
 				n++;
+			}
 			}
 			if (n == 0) { _why = "no levy within reach"; SetLock(npc, data, -1); return false; }
 			if (vanillaIsPlayer) vanillaDist += Math.Min(nearSoldiers, LevyConstants.Targeting.ArmyPullMaxSoldiers) * LevyConstants.Targeting.ArmyPullPerSoldierPx;
@@ -659,6 +675,39 @@ namespace Levy.Common.Targeting
 		/// </summary>
 		/// <summary>LEVY_LOSTFIGHT=0 turns the lost-fight rule off (A/B switch for the lab and the world check): a boss stays on the army after the commander dies.</summary>
 		internal static readonly bool LostFightOn = Environment.GetEnvironmentVariable("LEVY_LOSTFIGHT") != "0";
+
+		/// <summary>LEVY_BOSSTIER=0 restores the old rule (A/B switch): bosses weigh drones and turrets like levies.</summary>
+		internal static readonly bool BossTierOn = Environment.GetEnvironmentVariable("LEVY_BOSSTIER") != "0";
+
+		/// <summary>
+		/// A companion mod's machine (a Mechanization turret or combat drone): an <see cref="ITargetBody"/> ModNPC from any mod but Levy. Bosses, their parts and their adds weigh machines in a tier strictly
+		/// below players and levies (<see cref="CompeteCore"/>), and a machine never keeps a boss in a fight (<see cref="LevyWithin"/>, BossPersistenceGlobalNPC).
+		/// </summary>
+		public static bool IsMachineBody(NPC n) => n != null && n.ModNPC is ITargetBody && n.ModNPC.Mod != Levy.Instance;
+
+		/// <summary>A boss itself, or a part or segment of one (not an add it spawned): what may never be drawn by a machine at all.</summary>
+		internal static bool IsBossBodyOrPart(NPC npc)
+		{
+			if (npc == null || !npc.active) return false;
+			int type = npc.type;
+			if (type < 0 || type >= NPCID.Sets.ShouldBeCountedAsBoss.Length) return false;
+			if (npc.boss || NPCID.Sets.ShouldBeCountedAsBoss[type] || _bossParts.Contains(type)) return true;
+			if (npc.realLife >= 0 && npc.realLife < Main.maxNPCs && Main.npc[npc.realLife].active && Main.npc[npc.realLife].boss) return true;
+			return BossRule.IsMainBoss(LevyUtil.RootNpc(npc));
+		}
+
+		/// <summary>A live levy, officer or summoned unit (never a machine) within <paramref name="px"/> of this NPC's boss (its root NPC).</summary>
+		internal static bool LevyWithin(NPC npc, float px)
+		{
+			Vector2 at = LevyUtil.RootNpc(npc).Center; float r2 = px * px;
+			for (int i = 0; i < Bodies.Count; i++)
+			{
+				ITargetBody b = Bodies[i];
+				if (!b.IsAlive || (BossTierOn && IsMachineBody(b.NPC))) continue;
+				if (Vector2.DistanceSquared(b.NPC.Center, at) <= r2) return true;
+			}
+			return false;
+		}
 
 		internal static bool AnyLivePlayer()
 		{

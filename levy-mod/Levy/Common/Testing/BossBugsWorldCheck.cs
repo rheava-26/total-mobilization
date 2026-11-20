@@ -17,7 +17,7 @@ namespace Levy.Common.Testing
 {
 	/// <summary>
 	/// WORLD-LEVEL self-check of the boss-battery fixes, logged as "[BossBugs]" lines when a world loads on a dedicated server with LEVY_SELFCHECK_WORLD=1 (the summon world check chains it; LEVY_BOSSBUGS_ONLY=1 runs it
-	/// alone; LEVY_BOSSBUGS_PART=calamity|shots|ml|wof|mlkill|killedge|spectarget|lostbet|despawn picks one part). A flat arena, slot 0 standing in as the commander, the real Main.Update stepping the world, throwaway soldiers and bosses only; everything is removed
+	/// alone; LEVY_BOSSBUGS_PART=calamity|shots|ml|wof|mlkill|killedge|spectarget|lostbet|despawn|priority|calclone picks one part). A flat arena, slot 0 standing in as the commander, the real Main.Update stepping the world, throwaway soldiers and bosses only; everything is removed
 	/// again and nothing is saved.
 	///  * CALAMITY (Calamity half only): Revengeance replaces Deerclops' and the Queen Bee's bees' AI with ones that index Main.player[NPC.target]; a 300+ NPC target (the native route) failed on an out-of-range index there every
 	///    tick and Deerclops despawned. Audits every NPCID.Sets.UsesNewTargetting type, then fights a real Deerclops and real bees against a downed-boss army and counts exceptions and the target index their AI saw.
@@ -26,7 +26,8 @@ namespace Levy.Common.Testing
 	///  * ML: a real Moon Lord against levies: he locks onto them and each of his real projectile kinds (Phantasmal Eye, Bolt, Sphere) hurts a levy it reaches.
 	///  * WOF: a real Wall of Flesh in the Underworld, once with a visible commander and once with a Spectator: its parts lock onto levies and the wall hurts them.
 	///  * DESPAWN: the commander dies mid-fight (Dragonfolly and Plaguebringer Goliath with Calamity, Duke Fishron and the Empress of Light in both halves), with no levies, with an army that draws the boss, with that army
-	///    370 tiles off, with a first-fight army and with enemy targeting off: every boss must leave and despawn within 15 s, as it does with no levies (LEVY_DESPAWN_ARMS picks the arms, LEVY_LOSTFIGHT=0 is the old rule).
+	///    370 and 240 tiles off (past the 200-tile leash), with only drones and turrets, with a first-fight army and with enemy targeting off: every boss must leave and despawn within 15 s; with a beaten boss and levies beside it the boss keeps fighting them (LEVY_DESPAWN_ARMS picks the arms, LEVY_LOSTFIGHT=0 is the old rule).
+	///  * PRIORITY: a beaten boss (and its adds) with drones and turrets right under it never locks one while the commander or a levy is valid, nor a boss itself ever. CALCLONE (Calamity): her dart hurts a drone and a turret for real damage next to a levy; machines outside her arena never become her target or make her invulnerable.
 	/// </summary>
 	public partial class BossBugsWorldCheck : ModSystem
 	{
@@ -183,7 +184,7 @@ namespace Levy.Common.Testing
 		{
 			try
 			{
-				ClearHostiles();
+				ClearHostiles(); ClearMachines();
 				for (int i = 0; i < Main.maxNPCs; i++)
 				{
 					NPC n = Main.npc[i];
@@ -220,6 +221,8 @@ namespace Levy.Common.Testing
 			if (Part(only, "drones")) { try { DronesDoNotHoldTheBet(); } finally { Cleanup(); } }
 			if (Part(only, "regroup")) { try { RegroupOrder(); } finally { Cleanup(); } }
 			if (Part(only, "despawn")) { try { Despawn(); } finally { Cleanup(); } }
+			if (Part(only, "priority")) { try { BossPriority(); } finally { Cleanup(); } }
+			if (Part(only, "calclone") && ModLoader.HasMod("CalamityMod")) { try { CalClonePart(); } finally { Cleanup(); } }
 			if (Part(only, "redemption") && ModLoader.HasMod("Redemption")) { try { RedemptionPart(); } finally { Cleanup(); } } // only when the mod is loaded
 			if (Array.IndexOf(only.Split(','), "noxus") >= 0 && ModLoader.HasMod("NoxusBoss")) { try { NoxusPart(); } finally { Cleanup(); } } // Wrath of the Gods reconnaissance: only when asked for by name (never part of "all") and the mod is loaded
 		}

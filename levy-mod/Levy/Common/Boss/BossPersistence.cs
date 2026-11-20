@@ -19,10 +19,10 @@ namespace Levy.Common.Boss
 	/// zero and despawns — and any EncourageDespawn its AI raises that tick (timeLeft slashed, despawnEncouraged set) stands. While a
 	/// boss is validly locked on a LIVE soldier/officer we refresh timeLeft and clear despawnEncouraged so it keeps fighting the army.
 	///
-	/// This is deliberately NOT "pin the boss forever": the refresh happens only while a live soldier target exists AND a real player is
-	/// alive. With no live soldier to fight, or with the commander (every real player) dead, nothing here fires and the boss despawns on
-	/// vanilla's own terms (daytime, no players left, wandered too far). Before that second condition a boss whose AI fled after the
-	/// commander's death kept a lock on a far levy, had its timeLeft refreshed every tick and climbed above the top of the world alive.
+	/// This is deliberately NOT "pin the boss forever": the refresh happens only while a live soldier target exists, never for a drone or turret,
+	/// and, once the commander (every real player) is dead, only while a levy stands within LostFightLeashTiles of the boss. Otherwise nothing
+	/// here fires and the boss despawns on vanilla's own terms (daytime, no players left, wandered too far). Without the leash a boss whose AI
+	/// fled after the commander's death kept a lock on a far levy, had its timeLeft refreshed every tick and climbed above the top of the world alive.
 	///
 	/// Carve-out: Skeletron and Skeletron Prime (heads, hands and limbs) are never held into daytime. At dawn they enrage into a fast,
 	/// lethal spin that — against a deathless, continuously respawning army — is an endless massacre. So while Main.dayTime is true they
@@ -50,9 +50,12 @@ namespace Levy.Common.Boss
 			if (!IsBossLike(npc) || IsDaytimeExcluded(npc)) return;
 			// Only while the boss is validly locked on a live soldier/officer body. If the lock is gone (soldier died, no army left),
 			// we do nothing and vanilla's despawn resumes — the fight is genuinely over.
-			if (EnemyTargeting.LiveTarget(LevyNpcData.Of(npc).SoldierTarget) == null) return;
-			// No real player left alive (the commander fell): the fight is lost, the boss leaves on vanilla's terms whatever levies remain.
-			if (EnemyTargeting.LostFightOn && !EnemyTargeting.AnyLivePlayer()) return;
+			ITargetBody lockOn = EnemyTargeting.LiveTarget(LevyNpcData.Of(npc).SoldierTarget);
+			if (lockOn == null) return;
+			// A drone or turret never keeps a boss in the fight (a boss never locks one, but an add could): only a levy, officer or summoned unit does.
+			if (EnemyTargeting.BossTierOn && EnemyTargeting.IsMachineBody(lockOn.NPC)) return;
+			// No real player left alive (the commander fell): a boss beaten before keeps fighting while a levy stands within LostFightLeashTiles of it; with none, it leaves on vanilla's terms.
+			if (EnemyTargeting.LostFightOn && !EnemyTargeting.AnyLivePlayer() && !EnemyTargeting.LevyWithin(npc, LevyConstants.Targeting.LostFightLeashPx)) return;
 			if (npc.timeLeft < NPC.activeTime) npc.timeLeft = NPC.activeTime;
 			npc.despawnEncouraged = false;
 		}

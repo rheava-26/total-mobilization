@@ -633,7 +633,7 @@ namespace Levy.Common.Systems
 			if (rec.Reserve) return -1; // a soldier in reserve has no body until he is recalled
 			if (rec.HasBody) return rec.BodyIndex; // never two bodies for one record
 			if (global::Levy.Common.Events.OldOnesArmySystem.BlocksSpawn(rec)) return -1; // Old One's Army: regular levies stand down; only sentries call them up
-			if (ActiveBodyCount >= LevyConfig.Get.RenderCap) return -1;
+			if (ActiveBodyCount >= LevyConfig.Get.RenderCap - global::Levy.Common.Budget.BossSlots.Squeeze) return -1; // a boss that needed the room holds Squeeze bodies off the field until it is gone
 			int type = ModContent.NPCType<SoldierNPC>();
 			if (type <= 0) return -1;
 			if (rec.Order == SoldierOrder.Regroup && RegroupSpot(rec, out Vector2 beside)) position = beside; // Regroup: a levy that returns to duty appears beside its commander

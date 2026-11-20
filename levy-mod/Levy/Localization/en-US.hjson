@@ -385,7 +385,7 @@ Mods: {
 
 				ArmyEntityBudget: {
 					Label: Army entity budget
-					Tooltip: Minions, sentries, lingering shots and drones stand down, oldest first, to keep free projectile and NPC slots
+					Tooltip: Minions, sentries, lingering shots and drones stand down, oldest first, to keep free projectile and NPC slots. A boss that needs room for its segments takes it from stray enemies and drones first
 				}
 
 				ReservedProjectileSlots: {

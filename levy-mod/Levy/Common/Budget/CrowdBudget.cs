@@ -38,7 +38,7 @@ namespace Levy.Common.Budget
 		/// <summary>LEVY_CROWD_RESERVE=n (lab): overrides the projectile reserve so the budget can be exercised at a modest army size.</summary>
 		private static readonly int LabReserve = int.TryParse(Environment.GetEnvironmentVariable("LEVY_CROWD_RESERVE"), out int lr) ? lr : -1;
 		public static int ReservedProj { get { if (LabReserve >= 0) return LabReserve; try { return LevyConfig.Get?.ReservedProjectileSlots ?? 150; } catch (Exception) { return 150; } } }
-		public static int ReservedNpc { get { try { return LevyConfig.Get?.ReservedNpcSlots ?? 40; } catch (Exception) { return 40; } } }
+		public static int ReservedNpc { get { try { return (LevyConfig.Get?.ReservedNpcSlots ?? 40) + BossSlots.ExtraReserve; } catch (Exception) { return 40 + BossSlots.ExtraReserve; } } }
 
 		/// <summary>Counts from the last census.</summary>
 		public static int FreeProj = Main.maxProjectiles, FreeNpc = Main.maxNPCs;

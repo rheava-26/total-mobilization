@@ -221,6 +221,7 @@ namespace Levy.Common.Targeting
 		{
 			if (npc == null || !npc.active) return true;
 			if (HostileSide.Active) return !HostileSide.IsEnemy(npc); // HOSTILE SEAM: a hostile soldier's enemies are the player's side, nothing else
+			if (global::Levy.Common.Testing.PvpLab.On) return !global::Levy.Common.Testing.PvpLab.IsEnemy(npc); // LAB ONLY (PvP lab, off in a game): the other army's levies, nothing else
 			int i = npc.whoAmI;
 			// only a real slot of Main.npc is cached (the focus stand-in has a negative index; a stray NPC instance never matches the array entry)
 			if ((uint)i < (uint)Main.maxNPCs && ReferenceEquals(Main.npc[i], npc))

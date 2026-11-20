@@ -554,7 +554,7 @@ namespace Levy.Content.NPCs
 		public override bool? CanFallThroughPlatforms() => WantsToFallThrough ? true : null;
 		public override bool CanHitPlayer(Player target, ref int cooldownSlot) => false;
 		public override bool? CanBeHitByItem(Player player, Item item) => false;
-		public override bool? CanBeHitByProjectile(Projectile projectile) => projectile.friendly && !projectile.hostile ? false : null;
+		public override bool? CanBeHitByProjectile(Projectile projectile) => projectile.friendly && !projectile.hostile ? (Common.Testing.PvpLab.On && Common.Testing.PvpLab.ShotMayHit(projectile, NPC) ? null : false) : null; // LAB ONLY: in the PvP lab the other army's shots land
 		public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) => false;
 		public override bool NeedSaving() => false;
 		public override bool UsesPartyHat() => false;

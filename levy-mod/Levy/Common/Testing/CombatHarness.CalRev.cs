@@ -62,9 +62,9 @@ namespace Levy.Common.Testing
 
 		internal sealed class CrRun
 		{
-			public int Drones, Turrets; public int Mp, BossDef = -1; public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public string Fm = "", Surv = ""; public int Vet = -1; public bool Dbg, Diag; public bool L3; public int Food, RogueN; public bool Hazard; public string HookItem = "", AccItem = "", Stock = ""; public string AmmoMode = "best", Mods = ""; public bool NoSpec, OldAmmo; public string Zone = ""; public string Bb = "", ZSwap = ""; public int Bts = -1; public string Dl = ""; public string Pl = ""; public bool DlOk; public int DlN; public string Tag = ""; public string Imm = ""; public string Meta = ""; public string Tp = ""; public string Xs = ""; public int Pw = -1; public string Gc = ""; public int Gi = -1, Gl = -1; public string Cp = "", Ns = ""; internal KitData Lv; public bool Mixed => AmmoMode == "mixed" || AmmoMode == "mixedm"; public List<CrLevySpec> Specs; public string Desc = "";
+			public int Drones, Turrets; public int Mp, BossDef = -1; public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public string Fm = "", Surv = ""; public int Vet = -1; public bool Dbg, Diag; public bool L3; public int Food, RogueN; public bool Hazard; public string HookItem = "", AccItem = "", Stock = ""; public string AmmoMode = "best", Mods = ""; public bool NoSpec, OldAmmo; public string Zone = ""; public string Bb = "", ZSwap = ""; public int Bts = -1; public string Dl = ""; public string Pl = ""; public bool DlOk; public int DlN; public string Tag = ""; public string Imm = ""; public string Meta = ""; public string Tp = ""; public string Xs = ""; public int Pw = -1; public string Gc = ""; public int Gi = -1, Gl = -1; public string Cp = "", Ns = ""; internal KitData Lv; internal KitData LvB; public string TeamA = "A", TeamB = "B"; public bool Mixed => AmmoMode == "mixed" || AmmoMode == "mixedm"; public List<CrLevySpec> Specs; public string Desc = "";
 			public string Key => $"{Kind}|{Boss}|{Mode}|{Order}|{Seed}|{Cap}" + (N != 10 ? "|n" + N : "") + (HpX != 1f ? "|hp" + HpX.ToString(CultureInfo.InvariantCulture) : "") + (Dr != 0f ? "|dr" + Dr.ToString(CultureInfo.InvariantCulture) : "")
-				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (Drones > 0 ? "|dr" + Drones : "") + (Turrets > 0 ? "|tu" + Turrets : "") + (Mp > 0 ? "|mp" + Mp : "") + (BossDef >= 0 ? "|bdef" + BossDef : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "") + (Fear >= 0f ? "|fe" + Fear.ToString(CultureInfo.InvariantCulture) : "") + (Fm != "" ? "|fm" + Fm : "") + (Surv != "" ? "|sv" + Surv : "") + (Vet >= 0 ? "|vt" + Vet : "") + (L3 ? "|L3" : "") + (Food > 0 ? "|food" + Food : "") + (Hazard ? "|hz" : "") + (HookItem != "" ? "|hk" + HookItem : "") + (AccItem != "" ? "|ac" + AccItem : "") + (Stock != "" ? "|stk" + Stock : "") + (RogueN > 0 ? "|rg" + RogueN : "") + (L3 && AmmoMode != "best" ? "|am" + AmmoMode : "") + (OldAmmo ? "|oldammo" : "") + (NoSpec ? "|nospec" : "") + (Bts >= 0 ? "|bts" + Bts : "") + (Zone != "" ? "|zn" + Zone : "") + (Pl != "" ? "|pl" + Pl : "") + (Imm != "" ? "|im" + Imm : "") + (Tag != "" ? "|t" + Tag : "") + (Xs != "" ? "|xs" + Xs : "") + (Gc != "" ? "|gc" + Gc : "") + (Dl != "" ? "|dl" + Dl + (DlOk ? "ok" : "") + (DlN > 0 ? "n" + DlN : "") : "");
+				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (Drones > 0 ? "|dr" + Drones : "") + (Turrets > 0 ? "|tu" + Turrets : "") + (Mp > 0 ? "|mp" + Mp : "") + (BossDef >= 0 ? "|bdef" + BossDef : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "") + (Fear >= 0f ? "|fe" + Fear.ToString(CultureInfo.InvariantCulture) : "") + (Fm != "" ? "|fm" + Fm : "") + (Surv != "" ? "|sv" + Surv : "") + (Vet >= 0 ? "|vt" + Vet : "") + (L3 ? "|L3" : "") + (Food > 0 ? "|food" + Food : "") + (Hazard ? "|hz" : "") + (HookItem != "" ? "|hk" + HookItem : "") + (AccItem != "" ? "|ac" + AccItem : "") + (Stock != "" ? "|stk" + Stock : "") + (RogueN > 0 ? "|rg" + RogueN : "") + (L3 && AmmoMode != "best" ? "|am" + AmmoMode : "") + (OldAmmo ? "|oldammo" : "") + (NoSpec ? "|nospec" : "") + (Bts >= 0 ? "|bts" + Bts : "") + (Zone != "" ? "|zn" + Zone : "") + (Pl != "" ? "|pl" + Pl : "") + (Imm != "" ? "|im" + Imm : "") + (LvB != null ? "|pv" + TeamA + "-" + TeamB : "") + (Tag != "" ? "|t" + Tag : "") + (Xs != "" ? "|xs" + Xs : "") + (Gc != "" ? "|gc" + Gc : "") + (Dl != "" ? "|dl" + Dl + (DlOk ? "ok" : "") + (DlN > 0 ? "n" + DlN : "") : "");
 		}
 		/// <summary>The plainest ammo item for an ammo type (cw= runs and fallbacks): the lowest-damage vanilla item with that ammo type, else the first modded one.</summary>
 		private static string CrDefaultAmmo(int useAmmo)
@@ -106,6 +106,7 @@ namespace Levy.Common.Testing
 					{
 						int eq = f[x].IndexOf('='); if (eq < 0) continue;
 						string k = f[x].Substring(0, eq), v = f[x].Substring(eq + 1);
+						if (k == "lvb") { r.LvB = KitLoad(v); continue; } if (k == "ta") { r.TeamA = v; continue; } if (k == "tb") { r.TeamB = v; continue; } // PvP lab (CombatHarness.Pvp.cs): the second army and the two labels
 						if (k == "hook") r.HookItem = v.Replace("_", " "); else if (k == "acc") r.AccItem = v.Replace("_", " "); else if (k == "stock") r.Stock = v; else if (k == "order") r.Order = v; else if (k == "n") r.N = v == "cp" ? CrRealMax(r.Boss) : int.Parse(v); else if (k == "hpx") r.HpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "dr") r.Dr = float.Parse(v, CultureInfo.InvariantCulture);
 						else if (k == "clone") r.Clone = v[0]; else if (k == "cmd") r.Cmd = v; else if (k == "arena") r.Arena = v; else if (k == "gear") r.Gear = v; else if (k == "grade") r.Grade = v;
 						else if (k == "drones") r.Drones = int.Parse(v); else if (k == "turrets") r.Turrets = int.Parse(v); else if (k == "mp") r.Mp = int.Parse(v); else if (k == "bdef") r.BossDef = int.Parse(v); else if (k == "cw") r.CloneWeapon = v; else if (k == "side") r.Side = v; else if (k == "jungle") r.Jungle = v == "1"; else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fear") r.Fear = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fm") r.Fm = v; else if (k == "surv") r.Surv = v; else if (k == "vet") r.Vet = int.Parse(v); else if (k == "l3") r.L3 = v == "1"; else if (k == "food") r.Food = int.Parse(v); else if (k == "hazard") r.Hazard = v == "1"; else if (k == "rogue") r.RogueN = int.Parse(v); else if (k == "ammo") r.AmmoMode = v; else if (k == "spec") r.NoSpec = v == "0"; else if (k == "oldammo") r.OldAmmo = v == "1"; else if (k == "bts") r.Bts = int.Parse(v); else if (k == "zone") r.Zone = v; else if (k == "bb") r.Bb = v; else if (k == "zswap") r.ZSwap = v; else if (k == "pl") r.Pl = v; else if (k == "dl") r.Dl = v; else if (k == "dlok") r.DlOk = v == "1"; else if (k == "dln") r.DlN = int.Parse(v); else if (k == "xs") r.Xs = v; else if (k == "tag") r.Tag = v; else if (k == "imm") r.Imm = v; else if (k == "meta") r.Meta = v; else if (k == "tp") r.Tp = v; else if (k == "lv") r.Lv = KitLoad(v); else if (k == "pw") r.Pw = int.Parse(v); else if (k == "gc") r.Gc = v; else if (k == "gi") r.Gi = int.Parse(v); else if (k == "gl") r.Gl = int.Parse(v); else if (k == "cp") r.Cp = v; else if (k == "ns") r.Ns = v;
@@ -343,6 +344,16 @@ namespace Levy.Common.Testing
 
 		private static void CrNpcUpdateInner(On_NPC.orig_UpdateNPC orig, NPC self, int i)
 		{
+			if (PvpLab.On)
+			{
+				// PvP lab: a team body updates under its team's perspective (the other army non-friendly); anything else under none
+				bool body = self.ModNPC is SoldierNPC;
+				PvpLab.SetPersp(body ? PvpLab.TeamOf(i) : 0);
+				int prevCtx = _crNpcCtx; if (body) _crNpcCtx = self.whoAmI;
+				int pvDir = PvFaceOwner(body ? self : null);
+				try { orig(self, i); } finally { _crNpcCtx = prevCtx; PvFaceRestore(pvDir); }
+				return;
+			}
 			if (_cr != null && _cr.Run.BossDef >= 0 && !(self.ModNPC is SoldierNPC) && CrIsBossOrAdd(self.type)) // bdef=N: the boss and its parts hold defense N (measurement of low-damage weapons without the defense floor)
 			{
 				self.defense = _cr.Run.BossDef; self.defDefense = _cr.Run.BossDef;
@@ -379,6 +390,15 @@ namespace Levy.Common.Testing
 
 		private static void CrProjUpdateInner(On_Projectile.orig_Update orig, Projectile self, int i)
 		{
+			if (PvpLab.On)
+			{
+				// PvP lab: a soldier's shot updates (AI, hit loop) under its team's perspective
+				var prevP = _pvProj; _pvProj = self; PvpLab.SetPersp(PvpLab.ProjTeam(self)); _crProjDepth++;
+				int ps = PvpLab.ProjSoldier(self);
+				int pvDir = PvFaceOwner(PvpLab.TeamOf(ps) != 0 ? Main.npc[ps] : null);
+				try { orig(self, i); } finally { _crProjDepth--; _pvProj = prevP; PvFaceRestore(pvDir); }
+				return;
+			}
 			if (_cr == null) { orig(self, i); return; }
 			_crProjDepth++;
 			try { orig(self, i); } finally { _crProjDepth--; }
@@ -386,6 +406,7 @@ namespace Levy.Common.Testing
 
 		private static int CrStrikeDetour(On_NPC.orig_StrikeNPC_HitInfo_bool_bool orig, NPC self, NPC.HitInfo hit, bool fromNet, bool noPlayerInteraction)
 		{
+			if (PvpLab.On && self.ModNPC is SoldierNPC pvVictim && PvpLab.TeamOf(self.whoAmI) != 0) return PvStrike(orig, self, pvVictim, hit, fromNet, noPlayerInteraction); // PvP lab (CombatHarness.Pvp.cs)
 			int done = orig(self, hit, fromNet, noPlayerInteraction);
 			var s = _cr;
 			if (s != null && _crProjDepth == 0 && _crNpcCtx >= 0 && CrIsBossOrAdd(self.type)) s.Credit(_crNpcCtx, self.type, done, "melee");
@@ -500,13 +521,13 @@ namespace Levy.Common.Testing
 			try
 			{
 				if (!_crStarted && _crArenaBuilt != run.Arena) CrBuildArena(run.Arena);
-				if (run.Tp != "") { var tpkv = BtKv(run.Tp); if (tpkv.ContainsKey("hl")) StepHostile(run); else if (tpkv.ContainsKey("fz")) StepFizz(run); else StepTipsy(run); } else StepCrFight(run);
+				if (run.Tp != "") { var tpkv = BtKv(run.Tp); if (tpkv.ContainsKey("hl")) StepHostile(run); else if (tpkv.ContainsKey("fz")) StepFizz(run); else StepTipsy(run); } else if (run.Boss == "pvp") StepPvp(run); else StepCrFight(run);
 			}
 			catch (Exception e)
 			{
 				Mod.Logger.Warn("HARNESS-CR: run threw: " + e);
 				CrAppendError(run, e.GetType().Name + ":" + e.Message);
-				_cr = null; _crStarted = false; _crI++; BbEndFight(); BbEnd();
+				_cr = null; _crStarted = false; _crI++; BbEndFight(); BbEnd(); PvAbort();
 				try { ClearAll(); CrPurgeNpcs(); } catch { }
 			}
 		}
@@ -917,7 +938,8 @@ namespace Levy.Common.Testing
 	public class CalRevSystem : ModSystem
 	{
 		public override void PreUpdateNPCs() { if (CombatHarness.Enabled && CombatHarness.CrOn) { Player p = Main.player[0]; if (p.name == "LevyTester") { p.active = true; p.dead = false; } } }
-		public override void PostUpdateNPCs() { if (CombatHarness.Enabled && CombatHarness.CrOn) { Player p = Main.player[0]; if (p.name == "LevyTester") { p.active = true; p.dead = false; } } }
+		public override void PostUpdateNPCs() { if (PvpLab.On) PvpLab.SetPersp(0); if (CombatHarness.Enabled && CombatHarness.CrOn) { Player p = Main.player[0]; if (p.name == "LevyTester") { p.active = true; p.dead = false; } } }
+		public override void PostUpdateProjectiles() { if (PvpLab.On) PvpLab.SetPersp(0); } // PvP lab: every body friendly again outside the NPC and projectile passes
 		public override void Unload() { try { CombatHarness.CrUnhook(); } catch { } }
 	}
 }

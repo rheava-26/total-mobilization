@@ -1,0 +1,964 @@
+{
+ "note": "Optimal 40-levy army at the post-Providence tier, fight-tested rule: ranged, rogue and whips only.",
+ "accSlots": 2,
+ "honey": true,
+ "stations": [
+  "campfire",
+  "heartlantern",
+  "starinabottle",
+  "sunflower",
+  "bast",
+  "sharpening",
+  "wartable",
+  "bewitching",
+  "ammobox",
+  "crystalball"
+ ],
+ "stationLevel": 2,
+ "buffs": [],
+ "levies": [
+  {
+   "id": 1,
+   "cls": "T",
+   "weapon": "CalamityMod/MoltenAmputator@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2991
+  },
+  {
+   "id": 2,
+   "cls": "T",
+   "weapon": "CalamityMod/MoltenAmputator@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2991
+  },
+  {
+   "id": 3,
+   "cls": "T",
+   "weapon": "CalamityMod/MoltenAmputator@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2991
+  },
+  {
+   "id": 4,
+   "cls": "T",
+   "weapon": "CalamityMod/MoltenAmputator@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2991
+  },
+  {
+   "id": 5,
+   "cls": "T",
+   "weapon": "CalamityMod/MoltenAmputator@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2991
+  },
+  {
+   "id": 6,
+   "cls": "T",
+   "weapon": "CalamityMod/MoltenAmputator@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2991
+  },
+  {
+   "id": 7,
+   "cls": "R",
+   "weapon": "CalamityMod/PristineFury@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2528
+  },
+  {
+   "id": 8,
+   "cls": "R",
+   "weapon": "CalamityMod/PristineFury@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2528
+  },
+  {
+   "id": 9,
+   "cls": "R",
+   "weapon": "CalamityMod/PristineFury@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2528
+  },
+  {
+   "id": 10,
+   "cls": "R",
+   "weapon": "CalamityMod/PristineFury@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2528
+  },
+  {
+   "id": 11,
+   "cls": "R",
+   "weapon": "CalamityMod/PristineFury@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2528
+  },
+  {
+   "id": 12,
+   "cls": "R",
+   "weapon": "CalamityMod/PristineFury@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2528
+  },
+  {
+   "id": 13,
+   "cls": "R",
+   "weapon": "CalamityMod/Spyker@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2328,
+   "ammo": "Luminite Bullet"
+  },
+  {
+   "id": 14,
+   "cls": "R",
+   "weapon": "CalamityMod/Spyker@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2328,
+   "ammo": "Luminite Bullet"
+  },
+  {
+   "id": 15,
+   "cls": "R",
+   "weapon": "CalamityMod/Spyker@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2328,
+   "ammo": "Luminite Bullet"
+  },
+  {
+   "id": 16,
+   "cls": "R",
+   "weapon": "CalamityMod/Spyker@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2328,
+   "ammo": "Luminite Bullet"
+  },
+  {
+   "id": 17,
+   "cls": "R",
+   "weapon": "CalamityMod/Spyker@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2328,
+   "ammo": "Luminite Bullet"
+  },
+  {
+   "id": 18,
+   "cls": "R",
+   "weapon": "CalamityMod/Spyker@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2328,
+   "ammo": "Luminite Bullet"
+  },
+  {
+   "id": 19,
+   "cls": "R",
+   "weapon": "CalamityMod/TelluricGlare@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2276,
+   "ammo": "CalamityMod/SproutingArrow"
+  },
+  {
+   "id": 20,
+   "cls": "R",
+   "weapon": "CalamityMod/TelluricGlare@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2276,
+   "ammo": "CalamityMod/SproutingArrow"
+  },
+  {
+   "id": 21,
+   "cls": "R",
+   "weapon": "CalamityMod/TelluricGlare@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2276,
+   "ammo": "CalamityMod/SproutingArrow"
+  },
+  {
+   "id": 22,
+   "cls": "R",
+   "weapon": "CalamityMod/TelluricGlare@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2276,
+   "ammo": "CalamityMod/SproutingArrow"
+  },
+  {
+   "id": 23,
+   "cls": "R",
+   "weapon": "CalamityMod/TelluricGlare@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2276,
+   "ammo": "CalamityMod/SproutingArrow"
+  },
+  {
+   "id": 24,
+   "cls": "R",
+   "weapon": "CalamityMod/TelluricGlare@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2276,
+   "ammo": "CalamityMod/SproutingArrow"
+  },
+  {
+   "id": 25,
+   "cls": "T",
+   "weapon": "CalamityMod/ReboundingRainbow@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2389
+  },
+  {
+   "id": 26,
+   "cls": "T",
+   "weapon": "CalamityMod/ReboundingRainbow@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2389
+  },
+  {
+   "id": 27,
+   "cls": "T",
+   "weapon": "CalamityMod/ReboundingRainbow@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2389
+  },
+  {
+   "id": 28,
+   "cls": "T",
+   "weapon": "CalamityMod/ReboundingRainbow@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2389
+  },
+  {
+   "id": 29,
+   "cls": "T",
+   "weapon": "CalamityMod/ReboundingRainbow@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2389
+  },
+  {
+   "id": 30,
+   "cls": "R",
+   "weapon": "CalamityMod/PlanetaryAnnihilation@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2032,
+   "ammo": "CalamityMod/SproutingArrow"
+  },
+  {
+   "id": 31,
+   "cls": "R",
+   "weapon": "CalamityMod/PlanetaryAnnihilation@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2032,
+   "ammo": "CalamityMod/SproutingArrow"
+  },
+  {
+   "id": 32,
+   "cls": "R",
+   "weapon": "CalamityMod/PlanetaryAnnihilation@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2032,
+   "ammo": "CalamityMod/SproutingArrow"
+  },
+  {
+   "id": 33,
+   "cls": "R",
+   "weapon": "CalamityMod/PlanetaryAnnihilation@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2032,
+   "ammo": "CalamityMod/SproutingArrow"
+  },
+  {
+   "id": 34,
+   "cls": "R",
+   "weapon": "CalamityMod/PlanetaryAnnihilation@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2032,
+   "ammo": "CalamityMod/SproutingArrow"
+  },
+  {
+   "id": 35,
+   "cls": "S",
+   "weapon": "Morning Star@Legendary",
+   "armor": [
+    "CalamityMod/TarragonHeadSummon",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Papyrus Scarab@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 979,
+   "side": "Stardust Cell Staff@Ruthless"
+  },
+  {
+   "id": 36,
+   "cls": "S",
+   "weapon": "Morning Star@Legendary",
+   "armor": [
+    "CalamityMod/TarragonHeadSummon",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Papyrus Scarab@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 979,
+   "side": "Stardust Cell Staff@Ruthless"
+  },
+  {
+   "id": 37,
+   "cls": "S",
+   "weapon": "Morning Star@Legendary",
+   "armor": [
+    "CalamityMod/TarragonHeadSummon",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Papyrus Scarab@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 979,
+   "side": "Stardust Cell Staff@Ruthless"
+  },
+  {
+   "id": 38,
+   "cls": "S",
+   "weapon": "Morning Star@Legendary",
+   "armor": [
+    "CalamityMod/TarragonHeadSummon",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Papyrus Scarab@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 979,
+   "side": "Stardust Cell Staff@Ruthless"
+  },
+  {
+   "id": 39,
+   "cls": "S",
+   "weapon": "Morning Star@Legendary",
+   "armor": [
+    "CalamityMod/TarragonHeadSummon",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Papyrus Scarab@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 979,
+   "side": "Stardust Cell Staff@Ruthless"
+  },
+  {
+   "id": 40,
+   "cls": "S",
+   "weapon": "Morning Star@Legendary",
+   "armor": [
+    "CalamityMod/TarragonHeadSummon",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Papyrus Scarab@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 979,
+   "side": "Stardust Cell Staff@Ruthless"
+  }
+ ]
+}

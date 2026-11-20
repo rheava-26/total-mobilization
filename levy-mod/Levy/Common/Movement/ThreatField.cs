@@ -35,6 +35,8 @@ namespace Levy.Common.Movement
 		public bool Head; public float Turn, TurnT;
 		/// <summary>HOSTILE SEAM: a projectile of the player's side (friendly, not a hostile body's). Only a hostile soldier's dodge reads it (<see cref="ThreatField.Near"/> keeps each side to its own threats); a levy never sees it.</summary>
 		public bool PlayerSide;
+		/// <summary>LAB ONLY (PvP lab): the army (1, 2) whose levy fired this shot; 0 outside the lab. A levy never dodges its own army's shots.</summary>
+		public sbyte Team;
 	}
 
 	/// <summary>A worm head the field tracks this tick: where it is, how fast it flies, and how fast its heading is turning (rad per tick).</summary>
@@ -141,19 +143,20 @@ namespace Levy.Common.Movement
 				Projectile p = Main.projectile[i];
 				if (!p.active || p.damage < LevyConstants.Movement.DodgeMinDamage) continue;
 				bool theirs = false; // HOSTILE SEAM: a shot of the player's side is a threat to a hostile soldier, never to a levy
-				if (!p.hostile) { if (!wantPlayerSide || !p.friendly) continue; theirs = true; }
+				sbyte team = 0; // LAB ONLY (PvP lab): a levy shot is a threat to the other army
+				if (!p.hostile) { if (global::Levy.Common.Testing.PvpLab.On && p.friendly && (team = (sbyte)global::Levy.Common.Testing.PvpLab.ProjTeam(p)) != 0) { } else { if (!wantPlayerSide || !p.friendly) continue; theirs = true; } }
 				if (BeamOf(p, out float len, out float width))
 				{
 					Vector2 d = p.velocity; if (d == Vector2.Zero || d.HasNaNs()) continue;
 					float ang = d.ToRotation(), omega = 0f;
 					if (PrevAngTick[i] != 0 && now - PrevAngTick[i] <= 8u && now > PrevAngTick[i]) omega = MathHelper.WrapAngle(ang - PrevAng[i]) / (now - PrevAngTick[i]);
 					PrevAng[i] = ang; PrevAngTick[i] = now;
-					Snap.Add(new Threat { P = p.Center, Line = true, Ang = ang, Omega = omega, Len = len, Width = width, Weight = p.damage, PlayerSide = theirs });
+					Snap.Add(new Threat { P = p.Center, Line = true, Ang = ang, Omega = omega, Len = len, Width = width, Weight = p.damage, PlayerSide = theirs, Team = team });
 					continue;
 				}
 				Vector2 v = p.velocity;
 				if (v.LengthSquared() < LevyConstants.Movement.DodgeMinProjectileSpeed * LevyConstants.Movement.DodgeMinProjectileSpeed) continue;
-				Snap.Add(new Threat { P = p.Center, V = v * (1f + p.extraUpdates), Half = new Vector2(p.width, p.height) * 0.5f, Weight = p.damage, PlayerSide = theirs });
+				Snap.Add(new Threat { P = p.Center, V = v * (1f + p.extraUpdates), Half = new Vector2(p.width, p.height) * 0.5f, Weight = p.damage, PlayerSide = theirs, Team = team });
 			}
 			float minSq = LevyConstants.Movement.DodgeNpcMinSpeed * LevyConstants.Movement.DodgeNpcMinSpeed, heavyMinSq = LevyConstants.Movement.DodgeHeavyMinSpeed * LevyConstants.Movement.DodgeHeavyMinSpeed;
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -334,6 +337,7 @@ namespace Levy.Common.Movement
 			{
 				Threat t = all[i];
 				if (HostileDodgeOn && t.PlayerSide != HostileSide.Active) continue; // HOSTILE SEAM: each side reads its own threats (a hostile soldier steps out of the player's shots, not out of its own band's)
+				if (t.Team != 0 && t.Team == global::Levy.Common.Testing.PvpLab.Persp) continue; // LAB ONLY (PvP lab): a levy does not step out of its own army's shots
 				if (t.Line) { if (Vector2.DistanceSquared(t.P, c) <= (t.Len + reach) * (t.Len + reach)) into.Add(t); continue; }
 				if (t.TrajN > 0)
 				{

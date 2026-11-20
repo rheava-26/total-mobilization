@@ -250,7 +250,8 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>Is this projectile one this body should step out of? A levy dodges hostile shots; a hostile body dodges the player's side's.</summary>
-		private bool IsThreatShot(Projectile p) => Hostile ? p.friendly && !p.hostile : p.hostile;
+		private bool IsThreatShot(Projectile p) => Common.Testing.PvpLab.On ? p.friendly && !p.hostile && Common.Testing.PvpLab.ShotMayHit(p, NPC) // LAB ONLY: in the PvP lab a levy steps out of the other army's shots
+			: Hostile ? p.friendly && !p.hostile : p.hostile;
 
 		/// <summary>Name over the head of a hostile body; a subclass overrides it for a band tag.</summary>
 		public virtual string HostilePlateTag => null;

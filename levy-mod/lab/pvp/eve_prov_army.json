@@ -1,0 +1,998 @@
+{
+ "source": "prov_1014.levyrec",
+ "note": "Eve's 40 regular levies (ids 1-40) as worn at the end of her Providence win (2026-11-19 10:14); officers and militia are not levies and are left out. Potions and stations are the battery's stand-ins.",
+ "accSlots": 2,
+ "honey": true,
+ "stations": [
+  "campfire",
+  "heartlantern",
+  "starinabottle",
+  "sunflower",
+  "bast",
+  "sharpening",
+  "wartable",
+  "bewitching",
+  "ammobox",
+  "crystalball"
+ ],
+ "stationLevel": 2,
+ "buffs": [],
+ "levies": [
+  {
+   "id": 1,
+   "weapon": "Dark Harvest@81",
+   "cls": "S",
+   "weaponName": "Dark Harvest",
+   "side": "CalamityMod/SpikecragStaff@28",
+   "armor": [
+    "Stardust Helmet",
+    "Stardust Plate",
+    "Stardust Leggings"
+   ],
+   "acc": [
+    "Celestial Starboard@Invigorating",
+    "CalamityMod/StatisCurse@74",
+    "Apprentice's Scarf"
+   ],
+   "hook": "Sapphire Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 2,
+   "weapon": "CalamityMod/ArkoftheElements@60",
+   "cls": "E",
+   "weaponName": "Ark of the Elements",
+   "armor": [
+    "Solar Flare Helmet",
+    "Solar Flare Breastplate",
+    "Solar Flare Leggings"
+   ],
+   "acc": [
+    "Solar Wings@70",
+    "CalamityMod/AngelTreads",
+    "Yoyo Bag@Dauntless",
+    "Hero Shield@70"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 3,
+   "weapon": "CalamityMod/ArkoftheElements@55",
+   "cls": "E",
+   "weaponName": "Ark of the Elements",
+   "armor": [
+    "Solar Flare Helmet",
+    "Solar Flare Breastplate",
+    "Solar Flare Leggings"
+   ],
+   "acc": [
+    "Solar Wings@62",
+    "CalamityMod/AngelTreads",
+    "Yoyo Bag@63",
+    "CalamityMod/TrinketofChi@69"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 4,
+   "weapon": "CalamityMod/ArkoftheElements@54",
+   "cls": "E",
+   "weaponName": "Ark of the Elements",
+   "armor": [
+    "Solar Flare Helmet",
+    "Solar Flare Breastplate",
+    "Solar Flare Leggings"
+   ],
+   "acc": [
+    "Solar Wings@Silent",
+    "CalamityMod/AngelTreads",
+    "Yoyo Bag@65",
+    "Fire Gauntlet@69"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 5,
+   "weapon": "CalamityMod/Lightspeed@61",
+   "cls": "E",
+   "weaponName": "Lightspeed",
+   "armor": [
+    "Solar Flare Helmet",
+    "Solar Flare Breastplate",
+    "Solar Flare Leggings"
+   ],
+   "acc": [
+    "Solar Wings@Dauntless",
+    "CalamityMod/AngelTreads",
+    "Yoyo Bag@65",
+    "Fire Gauntlet@72"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 6,
+   "weapon": "CalamityMod/GalactusBlade",
+   "cls": "E",
+   "weaponName": "Galactus Blade",
+   "armor": [
+    "Solar Flare Helmet",
+    "Solar Flare Breastplate",
+    "Solar Flare Leggings"
+   ],
+   "acc": [
+    "Solar Wings@62",
+    "CalamityMod/AngelTreads",
+    "Fire Gauntlet@74",
+    "CalamityMod/HeartoftheElements@65"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 7,
+   "weapon": "CalamityMod/SeekingScorcher",
+   "cls": "E",
+   "weaponName": "Seeking Scorcher",
+   "armor": [
+    "Solar Flare Helmet",
+    "Solar Flare Breastplate",
+    "Solar Flare Leggings"
+   ],
+   "acc": [
+    "Solar Wings@69",
+    "Spectre Boots@78",
+    "Fire Gauntlet@70",
+    "CalamityMod/InfectedJewel@71"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 8,
+   "weapon": "CalamityMod/LifehuntScythe@5",
+   "cls": "E",
+   "weaponName": "Lifehunt Scythe",
+   "armor": [
+    "Solar Flare Helmet",
+    "Solar Flare Breastplate",
+    "Solar Flare Leggings"
+   ],
+   "acc": [
+    "Solar Wings@63",
+    "Spectre Boots",
+    "Fire Gauntlet@78",
+    "CalamityMod/InfectedJewel@80"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 9,
+   "weapon": "CalamityMod/Nidhogg@53",
+   "cls": "R",
+   "weaponName": "B-GSS: Nidhogg",
+   "side": "CalamityMod/SolsticeClaymore@46",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "Solar Wings@62",
+    "CalamityMod/ElysianAegis@72",
+    "CalamityMod/DaawnlightSpiritOrigin@65",
+    "Molten Quiver@65"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 10,
+   "weapon": "CalamityMod/Spyker@56",
+   "cls": "R",
+   "weaponName": "Spyker",
+   "side": "CalamityMod/SolsticeClaymore@54",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "Solar Wings@66",
+    "CalamityMod/OrnateShield@71",
+    "CalamityMod/DaawnlightSpiritOrigin@75",
+    "CalamityMod/InfectedJewel@65"
+   ],
+   "ammo": "Luminite Bullet",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 11,
+   "weapon": "CalamityMod/Spyker@50",
+   "cls": "R",
+   "weaponName": "Spyker",
+   "side": "CalamityMod/SolsticeClaymore@38",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "Solar Wings@79",
+    "CalamityMod/OrnateShield@65",
+    "CalamityMod/DaawnlightSpiritOrigin@77",
+    "Frozen Shield@75"
+   ],
+   "ammo": "Luminite Bullet",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 12,
+   "weapon": "CalamityMod/PridefulHuntersPlanarRipper@59",
+   "cls": "R",
+   "weaponName": "Prideful Hunter's Planar Ripper",
+   "side": "CalamityMod/SolsticeClaymore@42",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "Solar Wings@64",
+    "CalamityMod/OrnateShield",
+    "CalamityMod/DaawnlightSpiritOrigin@67",
+    "Charm of Myths@66"
+   ],
+   "ammo": "Luminite Bullet",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 13,
+   "weapon": "CalamityMod/Spyker@21",
+   "cls": "R",
+   "weaponName": "Spyker",
+   "side": "CalamityMod/StormRuler@81",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "Solar Wings@72",
+    "CalamityMod/DeepDiver@74",
+    "CalamityMod/DaawnlightSpiritOrigin@69",
+    "Charm of Myths@Silent"
+   ],
+   "ammo": "Luminite Bullet",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 14,
+   "weapon": "CalamityMod/Spyker@16",
+   "cls": "R",
+   "weaponName": "Spyker",
+   "side": "CalamityMod/EntropicClaymore@81",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "Solar Wings@73",
+    "Shield of Cthulhu@63",
+    "CalamityMod/DaawnlightSpiritOrigin",
+    "Frozen Shield"
+   ],
+   "ammo": "Luminite Bullet",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 15,
+   "weapon": "CalamityMod/NettlevineGreatbow@44",
+   "cls": "R",
+   "weaponName": "Nettlevine Greatbow",
+   "side": "CalamityMod/GalvanizingGlaive@59",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "Solar Wings@66",
+    "CalamityMod/DaawnlightSpiritOrigin",
+    "Frozen Shield"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 16,
+   "weapon": "CalamityMod/Spyker@57",
+   "cls": "R",
+   "weaponName": "Spyker",
+   "side": "Meowmere@4",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "Solar Wings",
+    "CalamityMod/GrandGelatin@73",
+    "Ranger Emblem@72"
+   ],
+   "ammo": "Luminite Bullet",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 17,
+   "weapon": "CalamityMod/SeekingScorcher@59",
+   "cls": "E",
+   "weaponName": "Seeking Scorcher",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Solar Wings",
+    "Fire Gauntlet",
+    "CalamityMod/GrandGelatin@77"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 18,
+   "weapon": "CalamityMod/LifehuntScythe@55",
+   "cls": "E",
+   "weaponName": "Lifehunt Scythe",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Solar Wings",
+    "Power Glove",
+    "CalamityMod/GrandGelatin@77"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 19,
+   "weapon": "CalamityMod/BurningRevelation@54",
+   "cls": "E",
+   "weaponName": "Burning Revelation",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Shell",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Solar Wings",
+    "Sun Stone@66",
+    "Warrior Emblem@73"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 19,
+   "recordedLifeMax": 495,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 20,
+   "weapon": "CalamityMod/PlanetaryAnnihilation@37",
+   "cls": "R",
+   "weaponName": "Planetary Annihilation",
+   "side": "Meowmere@43",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "Solar Wings",
+    "Ranger Emblem@71",
+    "Sun Stone@70"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 19,
+   "recordedLifeMax": 495,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 21,
+   "weapon": "Dark Harvest@46",
+   "cls": "S",
+   "weaponName": "Dark Harvest",
+   "side": "CalamityMod/ViridVanguard@32",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "Solar Wings",
+    "CalamityMod/StatisCurse@74",
+    "CalamityMod/StarTaintedGenerator@65"
+   ],
+   "hook": "Bat Hook",
+   "lc": 15,
+   "lf": 19,
+   "recordedLifeMax": 495,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 22,
+   "weapon": "CalamityMod/CelestialReaper@Flawless",
+   "cls": "T",
+   "weaponName": "Celestial Reaper",
+   "side": "CalamityMod/EntropicClaymore@4",
+   "armor": [
+    "CalamityMod/EmpyreanMask",
+    "CalamityMod/EmpyreanCloak",
+    "CalamityMod/EmpyreanCuisses"
+   ],
+   "acc": [
+    "Solar Wings",
+    "CalamityMod/ElectriciansGlove@Silent",
+    "CalamityMod/RogueEmblem@78"
+   ],
+   "hook": "Bat Hook",
+   "lc": 15,
+   "lf": 19,
+   "recordedLifeMax": 495,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 23,
+   "weapon": "CalamityMod/NettlevineGreatbow@57",
+   "cls": "R",
+   "weaponName": "Nettlevine Greatbow",
+   "side": "Meowmere@5",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings",
+    "Ranger Emblem@Dauntless",
+    "Sun Stone"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Bat Hook",
+   "lc": 15,
+   "lf": 19,
+   "recordedLifeMax": 495,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 24,
+   "weapon": "CalamityMod/Spyker",
+   "cls": "R",
+   "weaponName": "Spyker",
+   "side": "CalamityMod/AstralPike@59",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "CalamityMod/ExodusWings@Silent",
+    "Ranger Emblem",
+    "CalamityMod/VoidofCalamity@72"
+   ],
+   "ammo": "Luminite Bullet",
+   "hook": "Bat Hook",
+   "lc": 15,
+   "lf": 17,
+   "recordedLifeMax": 485,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 25,
+   "weapon": "CalamityMod/PlanetaryAnnihilation@19",
+   "cls": "R",
+   "weaponName": "Planetary Annihilation",
+   "side": "CalamityMod/EntropicClaymore@37",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "Solar Wings@70",
+    "Ranger Emblem",
+    "CalamityMod/VoidofCalamity"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Bat Hook",
+   "lc": 15,
+   "lf": 19,
+   "recordedLifeMax": 495,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 26,
+   "weapon": "CalamityMod/PlanetaryAnnihilation@16",
+   "cls": "R",
+   "weaponName": "Planetary Annihilation",
+   "side": "CalamityMod/EntropicClaymore@60",
+   "armor": [
+    "Vortex Helmet",
+    "Vortex Breastplate",
+    "Vortex Leggings"
+   ],
+   "acc": [
+    "Solar Wings@70",
+    "Soaring Insignia@77",
+    "Eye of the Golem@Invigorating"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Bat Hook",
+   "lc": 15,
+   "lf": 19,
+   "recordedLifeMax": 495,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 27,
+   "weapon": "CalamityMod/TarragonThrowingDart@54",
+   "cls": "T",
+   "weaponName": "Tarragon Throwing Dart",
+   "side": "Meowmere@61",
+   "armor": [
+    "CalamityMod/EmpyreanMask",
+    "CalamityMod/EmpyreanCloak",
+    "CalamityMod/EmpyreanCuisses"
+   ],
+   "acc": [
+    "Stardust Wings@68",
+    "CalamityMod/RogueEmblem@Dauntless",
+    "CalamityMod/CoinofDeceit@62"
+   ],
+   "hook": "Bat Hook",
+   "lc": 15,
+   "lf": 18,
+   "recordedLifeMax": 490,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 28,
+   "weapon": "CalamityMod/TarragonThrowingDart",
+   "cls": "T",
+   "weaponName": "Tarragon Throwing Dart",
+   "side": "CalamityMod/VanishingPoint@37",
+   "armor": [
+    "CalamityMod/EmpyreanMask",
+    "CalamityMod/EmpyreanCloak",
+    "CalamityMod/EmpyreanCuisses"
+   ],
+   "acc": [
+    "Solar Wings@79",
+    "CalamityMod/RogueEmblem@70",
+    "Eye of the Golem@71"
+   ],
+   "hook": "Bat Hook",
+   "lc": 15,
+   "lf": 18,
+   "recordedLifeMax": 490,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 29,
+   "weapon": "CalamityMod/ReboundingRainbow@Flawless",
+   "cls": "T",
+   "weaponName": "Rebounding Rainbow",
+   "side": "Meowmere@15",
+   "armor": [
+    "CalamityMod/EmpyreanMask",
+    "CalamityMod/EmpyreanCloak",
+    "CalamityMod/EmpyreanCuisses"
+   ],
+   "acc": [
+    "Vortex Booster@Dauntless",
+    "Eye of the Golem",
+    "CalamityMod/DivineProvidence"
+   ],
+   "hook": "Thorn Hook",
+   "lc": 15,
+   "lf": 17,
+   "recordedLifeMax": 485,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 30,
+   "weapon": "Morning Star@55",
+   "cls": "S",
+   "weaponName": "Morning Star",
+   "side": "CalamityMod/ViridVanguard@36",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "Solar Wings@80",
+    "CalamityMod/StatisCurse@73",
+    "CalamityMod/StarTaintedGenerator@76"
+   ],
+   "hook": "Hook of Dissonance",
+   "lc": 15,
+   "lf": 17,
+   "recordedLifeMax": 485,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 31,
+   "weapon": "Dark Harvest@59",
+   "cls": "S",
+   "weaponName": "Dark Harvest",
+   "side": "CalamityMod/ViridVanguard",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "Stardust Wings@79",
+    "CalamityMod/StatisCurse@Silent",
+    "CalamityMod/StarTaintedGenerator@74"
+   ],
+   "hook": "Hook of Dissonance",
+   "lc": 15,
+   "lf": 17,
+   "recordedLifeMax": 485,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 32,
+   "weapon": "CalamityMod/PulseGrenade@Flawless",
+   "cls": "T",
+   "weaponName": "R-PLS: Pulse Grenade",
+   "side": "CalamityMod/GreatswordofJudgement@42",
+   "armor": [
+    "CalamityMod/EmpyreanMask",
+    "CalamityMod/EmpyreanCloak",
+    "CalamityMod/EmpyreanCuisses"
+   ],
+   "acc": [
+    "Stardust Wings@Dauntless",
+    "Eye of the Golem",
+    "CalamityMod/WarbanneroftheRighteous@Dauntless"
+   ],
+   "hook": "Hook of Dissonance",
+   "lc": 15,
+   "lf": 17,
+   "recordedLifeMax": 485,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 33,
+   "weapon": "CalamityMod/TarragonThrowingDart",
+   "cls": "T",
+   "weaponName": "Tarragon Throwing Dart",
+   "side": "Meowmere",
+   "armor": [
+    "CalamityMod/EmpyreanMask",
+    "CalamityMod/EmpyreanCloak",
+    "CalamityMod/EmpyreanCuisses"
+   ],
+   "acc": [
+    "Solar Wings@72",
+    "CalamityMod/RottenDogtooth@78",
+    "CalamityMod/ScuttlersJewel@64"
+   ],
+   "hook": "Dual Hook",
+   "lc": 15,
+   "lf": 16,
+   "recordedLifeMax": 480,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 34,
+   "weapon": "CalamityMod/Spyker",
+   "cls": "R",
+   "weaponName": "Spyker",
+   "side": "CalamityMod/GalvanizingGlaive",
+   "armor": [
+    "CalamityMod/LunicCorpsHelmet",
+    "CalamityMod/LunicCorpsVest",
+    "CalamityMod/LunicCorpsBoots"
+   ],
+   "acc": [
+    "Stardust Wings@Dauntless",
+    "CalamityMod/ScionsCurio@67",
+    "CalamityMod/FrostBarrier@73"
+   ],
+   "ammo": "Luminite Bullet",
+   "hook": "Diamond Hook",
+   "lc": 15,
+   "lf": 16,
+   "recordedLifeMax": 480,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 35,
+   "weapon": "CalamityMod/StellarContempt@37",
+   "cls": "E",
+   "weaponName": "Stellar Contempt",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Scale Mail",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Solar Wings@76",
+    "Warrior Emblem@68",
+    "Titan Glove@69"
+   ],
+   "hook": "Ruby Hook",
+   "lc": 15,
+   "lf": 11,
+   "recordedLifeMax": 455,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 36,
+   "weapon": "CalamityMod/ArkoftheElements@37",
+   "cls": "E",
+   "weaponName": "Ark of the Elements",
+   "armor": [
+    "Beetle Helmet",
+    "Beetle Scale Mail",
+    "Beetle Leggings"
+   ],
+   "acc": [
+    "Stardust Wings@72",
+    "Warrior Emblem@Silent",
+    "CalamityMod/HideofAstrumDeus@70"
+   ],
+   "hook": "Amber Hook",
+   "lc": 15,
+   "lf": 11,
+   "recordedLifeMax": 455,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 37,
+   "weapon": "CalamityMod/Nidhogg@55",
+   "cls": "R",
+   "weaponName": "B-GSS: Nidhogg",
+   "side": "CalamityMod/AstralPike@37",
+   "armor": [
+    "CalamityMod/LunicCorpsHelmet",
+    "CalamityMod/LunicCorpsVest",
+    "CalamityMod/LunicCorpsBoots"
+   ],
+   "acc": [
+    "Stardust Wings@64",
+    "CalamityMod/ToxicHeart@78",
+    "Shiny Stone@64"
+   ],
+   "hook": "Amber Hook",
+   "lc": 15,
+   "lf": 11,
+   "recordedLifeMax": 455,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 38,
+   "weapon": "CalamityMod/NanoPurge@38",
+   "cls": "M",
+   "weaponName": "Nano Purge",
+   "side": "CalamityMod/EntropicClaymore@6",
+   "armor": [
+    "Nebula Helmet",
+    "Nebula Breastplate",
+    "Nebula Leggings"
+   ],
+   "acc": [
+    "Stardust Wings@79",
+    "Celestial Cuffs@80",
+    "CalamityMod/MoonstoneCrown@78"
+   ],
+   "hook": "Ruby Hook",
+   "lc": 15,
+   "lf": 11,
+   "recordedLifeMax": 455,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 39,
+   "weapon": "CalamityMod/NanoPurge@83",
+   "cls": "M",
+   "weaponName": "Nano Purge",
+   "side": "CalamityMod/TenebreusTides",
+   "armor": [
+    "Nebula Helmet",
+    "Nebula Breastplate",
+    "Nebula Leggings"
+   ],
+   "acc": [
+    "Solar Wings@75",
+    "Celestial Cuffs@66",
+    "CalamityMod/MoonstoneCrown@78"
+   ],
+   "hook": "Emerald Hook",
+   "lc": 15,
+   "lf": 11,
+   "recordedLifeMax": 455,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  },
+  {
+   "id": 40,
+   "weapon": "Morning Star@46",
+   "cls": "S",
+   "weaponName": "Morning Star",
+   "side": "Rainbow Crystal Staff",
+   "armor": [
+    "Stardust Helmet",
+    "Stardust Plate",
+    "Stardust Leggings"
+   ],
+   "acc": [
+    "Celestial Starboard@Silent",
+    "CalamityMod/StatisCurse@76",
+    "Apprentice's Scarf@Silent"
+   ],
+   "hook": "Emerald Hook",
+   "lc": 15,
+   "lf": 11,
+   "recordedLifeMax": 455,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion"
+  }
+ ],
+ "notes": [],
+ "substituted": "Moon Boots -> Solar Wings on 21 levies (Moon Boots is from a mod the lab does not load)"
+}

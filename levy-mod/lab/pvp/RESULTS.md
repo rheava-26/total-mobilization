@@ -1,36 +1,94 @@
 # PvP: Eve's levies against the optimal levies
 
-64 fights. Each matchup ran 8 seeds with Eve's army on the left and 8 with it on the right. Master + Death, arena a3, Search & Destroy, 180 s cap (no fight reached it). Setup and fairness rules: `README.md`. Per-fight rows: `fights.json`.
+Setup and fairness rules: `README.md`. Recordings: scratchpad `pvp_recs/` (`old_named/`, `big/`, `champ/`; `superseded_v1/` is the first run, before the teleport fix and without names).
+Her levies carry their real names from her recordings (`addnames.py`); the optimal side is "Opt. <class> <n>". The recordings carry no temperament.
 
-## Who won
+## Teleport bug ("Sgt. Alice" landing in the middle of the fight)
+Cause: **Search & Destroy's catch-up hop to the commander** (`SoldierNPC.SearchCatchUp` → `CatchUpTeleport`). A levy more than 60 tiles from the commander, out of every player's sight and past the hop cooldown, hops to her side. In the lab the commander is a spectator at the arena centre, so the hop dropped levies of both armies into the middle of the fight.
+Checked against the 40 big-arena recordings: 3182 position jumps over 12 tiles, every one landing on one of two spots next to the commander (x -70 and +54 tiles, level 3). Alice made 5 of them. The other candidates all came up clean:
+- Respawn: no levy came back; the lab holds the respawn timer.
+- Staggered entry: the 7 spawn points are fixed per side. In arena v2 two of them sat 50-80 tiles from the centre, so an entering levy could look as if it appeared "in the middle". Arena v3 moves them out.
+- Stuck/off-screen hop: the lab's watched points cover the arena.
+- Follow leash and Regroup: not used (order Search & Destroy).
+- Teleport items: no Rod of Discord, mirror, potion or similar in any kit.
+- The screen-size widening meant to blind the hop did nothing: the server resets the screen size.
 
-| matchup | Eve's wins | optimal's wins | Eve wins left / right | median fight s | median survivors (winner) | Eve dmg (median) | optimal dmg (median) |
-|---|---|---|---|---|---|---|---|
-| Eve (Nov 16, 34 levies) vs optimal (measured DPS, pre-Moon Lord) | **8** | **8** | 5/8, 3/8 | 12 | 9 | 26080 | 24290 |
-| Eve (Nov 16) vs optimal, fight-tested ranged | 0 | **16** | 0/8, 0/8 | 7 | 17.5 | 18728 | 24574 |
-| Eve now (post-Providence, 40 levies) vs optimal at that tier | 1 | **15** | 1/8, 0/8 | 6 | 26.5 | 19586 | 33016 |
-| Eve now vs optimal at that tier, fight-tested ranged | 1 | **15** | 0/8, 1/8 | 5 | 30 | 15138 | 37248 |
+Fix (harness only): the hop's cooldown is kept running for every PvP levy, every tick. After the fix the recordings show 0 hops to the commander (2 jumps of 13-14 tiles in 40 fights are hook pulls).
+**Not a Levy bug.** The hop is designed behaviour: a Search & Destroy levy far from the commander and off screen joins her.
 
-Deaths over time (median share of the army dead at 3 / 6 / 10 s; the first death comes at about 2 s in every matchup):
+## 1-damage hits
+The runs of "1" are damage-over-time ticks from debuffs, not weapon hits. The recorder writes every sampled life drop as an lhit (src other, by world, no projectile). In a sample fight, 2187 of 2493 lhits were 1-point drops: a levy losing 1 HP every 2 ticks (30 HP/s) under Elemental Mix.
+Debuffs seen on her levies: Holy Flames (the optimal side's Providence weapons), Elemental Mix, Celled (Stardust Cell minions), Vermillion Flux. On the optimal side: Sage Poison, Elemental Mix, Acid Venom, Astral Infection, Hellfire.
+The ticks are the levy's player-rule debuff damage (`DebuffDot`). They change life without a strike, so the lab's damage-dealt columns do not credit them; they appear only in life lost.
 
-| matchup | Eve | optimal |
+## I-frames
+What a levy gets today when hit by another levy:
+- **Lab off** (`LEVY_PVP_IFRAMES=0`): only vanilla NPC immunity, i.e. per-projectile local immunity, or `npc.immune[owner]` (about 10 ticks) shared by every shot of the other army, because all levy shots are owned by the commander's player slot. Vanilla player PvP immunity does not apply: levies are NPCs.
+- **Lab on** (default): the levy's own enemy-hit rule (`AfterHit`), **30 immune ticks** after a hit. That is player parity, 40 ticks scaled by Levy's 0.75. With `longInvince` it is **60 ticks**.
+
+A/B in the old format (arena a3, whole armies, both sides, 5 seeds each, after the teleport fix):
+
+| arm | matchup | Eve's wins | median fight s | deaths Eve / optimal (median) | first death s |
+|---|---|---|---|---|---|
+| i-frames on | Nov 16 vs optimal | 3/10 | 19.3 | 34 / 31 | 2.5 |
+| i-frames on | Nov 16 vs optimal ranged | 1/10 | 9.0 | 34 / 1 | 2.7 |
+| i-frames on | now vs optimal | 6/10 | 15.0 | 30 / 40 | 2.0 |
+| i-frames on | now vs optimal ranged | 0/10 | 6.1 | 40 / 3 | 1.6 |
+| i-frames off | Nov 16 vs optimal | 1/10 | 8.4 | 34 / 4.5 | 1.8 |
+| i-frames off | Nov 16 vs optimal ranged | 0/10 | 5.4 | 34 / 0 | 1.2 |
+| i-frames off | now vs optimal | 6/10 | 8.9 | 19 / 40 | 1.4 |
+| i-frames off | now vs optimal ranged | 2/10 | 4.2 | 40 / 0.5 | 1.2 |
+
+I-frames roughly double fight length. They help her Nov 16 army a little against the measured optimal (1 → 3 wins of 10) and change little elsewhere.
+
+Hit-window accessories (one 100-damage enemy hit on a levy wearing only that accessory, then the immune ticks read off):
+
+| accessory | longInvince | immune ticks |
 |---|---|---|
-| Nov 16 vs optimal | 7% / 53% / 78% | 49% / 79% / 88% |
-| Nov 16 vs optimal ranged | 21% / 85% / 100% | 21% / 46% / 49% |
-| now vs optimal | 68% / 99% / 100% | 18% / 32% / 34% |
-| now vs optimal ranged | 72% / 100% / 100% | 12% / 25% / 25% |
+| none | no | 30 |
+| Cross Necklace | yes | 60 |
+| Star Veil | yes | 60 |
+| Star Cloak | no | 30 (not an i-frame item) |
+| Deific Amulet (Calamity) | yes | 60 |
+| Rampart of Deities (Calamity) | yes | 60 |
 
-Damage by weapon class (share of the army's damage, all its fights): Eve Nov 16 summon 70-77%; Eve now ranged 31-36%, summon 31-34%, melee 26-27%; optimal summon 35-45% plus ranged (pre-Moon Lord) or rogue and melee (current tier).
+All four i-frame accessories work on a levy and double the window. None of them is a dead slot. Deific Amulet and Rampart give no frames beyond Cross Necklace's in levy hands.
 
-Top weapons (damage per levy per fight): Eve Nov 16: Dark Harvest 2642, Morning Star 2564, Sniper Rifle 1091, then nothing above 450 (Apathanull 97, Terra Blade 173, True Ark 215). Eve now: Dark Harvest 1530, Stellar Contempt 1134, Spyker 793 (x7), Ark of the Elements 672, Morning Star 665. Optimal now: Morning Star 3583, Molten Amputator 1555, Ark of the Elements 556. Optimal ranged now: Morning Star 2371, Spyker 1853, Molten Amputator 1361. Pre-Moon Lord optimal: Morning Star 1712, Star Sputter 1145.
+## Big arena, staggered (v2: 350 tiles, three levels, 7 spawn points a side, 3 a side on the field)
+After the teleport fix, **32 of the 40 fights hit the 400 s cap**. Without the hop the levies rarely find each other across 350 tiles, so the winner is decided by the cap rule (more manpower left). Treat these wins as weak.
 
-## Why
-1. **Whips decide a levy-on-levy fight.** A lash hits every body in a clump, and both armies clump. Whips are 35-77% of every army's damage. Her Nov 16 army had six whips, the same as the measured optimal, and it tied 8-8. Her current army has five whips in 40 levies, and her two Morning Stars do 665 each against 2371-3583 for the optimal Morning Stars in the same fights.
-2. **Many of her slots do almost nothing, and her current army fights at range without the right guns.** Apathanull, Terra Blade, True Ark, Tarragon Throwing Dart, Seeking Scorcher, Planetary Annihilation and Doomsday Device each do under 450 a fight. The optimal fills those slots with Molten Amputator (1361-1555) and Star Sputter or Spyker. Her seven Spykers do 793 each against 1853 for the six in the optimal ranged army. The optimal Spykers live (17% die, against 99% of hers), so they keep firing.
-3. **The first seconds snowball.** Whoever loses bodies early loses the fight. Her current army is 68-72% dead at 3 s and the optimal only 12-18%. The winner keeps 26-30 of 40. The optimal armies also wear one coherent set (Tarragon, Elysian Wings, 500 HP) against her mix, and they drink fewer potions because fewer of them get hurt.
+| matchup | Eve's wins | median deaths Eve / optimal |
+|---|---|---|
+| Nov 16 vs optimal | 4/10 | 11 / 11.5 |
+| Nov 16 vs optimal ranged | 1/10 | 25 / 7.5 |
+| now vs optimal | 0/10 | 39 / 10.5 |
+| now vs optimal ranged | 2/10 | 39 / 17 |
 
-## Lab notes and bugs found (not fixed: gameplay)
-- **The commander's facing changes her levies' damage.** Every levy shot is owned by the commander's player slot. In identical mirrors with the commander facing right, the army on the right (shooting left) won 10 of 12 and its lashes did 2-3 times the damage; facing left, the left army won 6 of 6. In a game, whichever side of the commander the enemy stands on changes what her levies do, whips most of all. The lab cancels it: the commander faces the way each levy faces while that levy and its shots update, and she turns every tick. After that, mirrors came out 10 of 16 for the right side (noise).
-- Whips are the strongest levy weapon against bodies that clump. This fits the battery's open question: whips read 0 on the dummy but 30-50% of boss damage.
-- Fights are short (5-12 s; the first death comes at about 2 s). Levies have about 500 HP and the other army's whole damage output lands on them. Hits use the game's strike with player-mode defense, and every levy gets its own player-style hit window.
-- "Moon Boots" (item 5819 in her world) comes from a mod the lab does not load. It sat in the wings slot of 21 of her current levies and is replaced by Solar Wings.
+Per class (damage per levy fielded, kills per levy):
+- Rogues are the best class on the optimal side: Molten Amputator 5231 damage and 6.45 kills per levy now.
+- Summoners lead her Nov 16 army (1327, 1.45).
+- Melee is viable at the current tier: hers do 565 and 0.53, the optimal's 970 and 1.23.
+- Mages are near zero on both sides.
+Full table: `table_big_f3.md`.
+
+Rogue stealth strikes: her current army throws about 4 a fight and lands 4.1 hits (1789 damage, 2.05 kills); the biggest is 1391. Her Nov 16 army's biggest is 4725. Nothing near 6000 lands on a 500-HP levy. The optimal rogues throw 3.4-7 a fight but almost none land as flagged stealth hits.
+
+## Champions vs Regulars (N Champions against 3N Levies, the same weapons in the same order; arena a3, whole armies, 5 seeds a side)
+Note: in the code a Champion costs **7** command points and a Man-at-Arms 3 (`LevyConstants.GradeCpCost`, the guide says the same). The test is N against 3N as asked. Equal command points would be N against 7N.
+
+| matchup | Champion wins | median s | Champion damage (median) | Regular damage (median) |
+|---|---|---|---|---|
+| 3 vs 9, pre-Moon Lord | 2/10 | 9 | 4654 | 1984 |
+| 5 vs 15, pre-Moon Lord | 3/10 | 10 | 11422 | 3426 |
+| 3 vs 9, post-Providence | 5/10 | 7 | 5753 | 1770 |
+| 5 vs 15, post-Providence | 5/10 | 13 | 9338 | 3471 |
+
+Champions wore 6 accessories plus wings and boots. Per Champion: 700-6500 damage and 0.5-5.9 kills; per Regular: 60-530 damage and 0-0.5 kills. Full table: `table_champ.md`.
+
+## Old format, first run (64 fights, before the teleport fix)
+Kept for the record (`fights.json`). The commander's-facing bias was found and cancelled in that run; the catch-up hop was not yet fixed.
+
+## Side markers for the viewer
+- Header `meta`: `pvp: "1"`, `teamA`, `teamB` (army labels), `sideA: "left"`, `sideB: "right"`, `idsA` and `idsB` (the levy ids, comma lists), `label` ("A vs B").
+- Names: her levies carry real names; the optimal side starts with "Opt.".
+- Damage-over-time ticks show as lhit with src "other", by "world", proj -1.

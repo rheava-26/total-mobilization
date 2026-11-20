@@ -1,0 +1,164 @@
+{
+ "note": "Champions x5, prov tier (mkchamp.py)",
+ "accSlots": 2,
+ "honey": true,
+ "stations": [
+  "campfire",
+  "heartlantern",
+  "starinabottle",
+  "sunflower",
+  "bast",
+  "sharpening",
+  "wartable",
+  "bewitching",
+  "ammobox",
+  "crystalball"
+ ],
+ "stationLevel": 2,
+ "buffs": [],
+ "levies": [
+  {
+   "id": 1,
+   "cls": "T",
+   "weapon": "CalamityMod/MoltenAmputator@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing",
+    "Avenger Emblem@Menacing",
+    "Frozen Shield@Menacing",
+    "Charm of Myths@Menacing",
+    "Star Veil@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2991,
+   "grade": "C"
+  },
+  {
+   "id": 2,
+   "cls": "R",
+   "weapon": "CalamityMod/PristineFury@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing",
+    "Avenger Emblem@Menacing",
+    "Frozen Shield@Menacing",
+    "Charm of Myths@Menacing",
+    "Star Veil@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2528,
+   "grade": "C"
+  },
+  {
+   "id": 3,
+   "cls": "R",
+   "weapon": "CalamityMod/Spyker@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing",
+    "Avenger Emblem@Menacing",
+    "Frozen Shield@Menacing",
+    "Charm of Myths@Menacing",
+    "Star Veil@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2328,
+   "ammo": "Luminite Bullet",
+   "grade": "C"
+  },
+  {
+   "id": 4,
+   "cls": "R",
+   "weapon": "CalamityMod/TelluricGlare@Unreal",
+   "armor": [
+    "CalamityMod/TarragonHeadRanged",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing",
+    "Avenger Emblem@Menacing",
+    "Frozen Shield@Menacing",
+    "Charm of Myths@Menacing",
+    "Star Veil@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2276,
+   "ammo": "CalamityMod/SproutingArrow",
+   "grade": "C"
+  },
+  {
+   "id": 5,
+   "cls": "T",
+   "weapon": "CalamityMod/ReboundingRainbow@Flawless",
+   "armor": [
+    "CalamityMod/TarragonHeadRogue",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/ElysianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing",
+    "Avenger Emblem@Menacing",
+    "Frozen Shield@Menacing",
+    "Charm of Myths@Menacing",
+    "Star Veil@Menacing"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 2389,
+   "grade": "C"
+  }
+ ],
+ "champSlots": 6
+}

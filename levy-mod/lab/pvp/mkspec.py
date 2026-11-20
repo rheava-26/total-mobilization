@@ -18,5 +18,5 @@ for pair in a.pairs.split(','):
     x, y = pair.split(':')
     for ta, tb in ([(x, y)] if a.one_side or x == y else [(x, y), (y, x)]):
         for sd in seeds:
-            lines.append('\t'.join(['fight', 'pvp', 'mdeath', str(sd), str(a.cap * 60), 'order=sd', f'arena={a.arena}', 'cmd=near', f'lv={FILES[ta]}', f'lvb={FILES[tb]}', f'ta={ta}', f'tb={tb}'] + ([f'pf={a.pf}'] if a.pf else [])))
+            lines.append('\t'.join(['fight', 'pvp', 'mdeath', str(sd), str(a.cap * 60), 'order=sd', f'arena={a.arena}', 'cmd=near', f'lv={FILES.get(ta, H / (ta + ".json"))}', f'lvb={FILES.get(tb, H / (tb + ".json"))}', f'ta={ta}', f'tb={tb}'] + ([f'pf={a.pf}'] if a.pf else [])))
 Path(a.out).write_text('\n'.join(lines) + '\n'); print(len(lines), 'fights')

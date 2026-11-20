@@ -25,14 +25,14 @@ namespace Levy.Common.Testing
 	{
 		internal sealed class KitLevy
 		{
-			public string cls = "R", weapon = "", ammo = "", potion = "Healing Potion", side = "", hook = "", name = "";
+			public string cls = "R", weapon = "", ammo = "", potion = "Healing Potion", side = "", hook = "", name = "", grade = "";
 			public string[] armor = Array.Empty<string>(), acc = Array.Empty<string>();
 			public int lc = 15, mc = 9, potions = 8, lf;
 		}
 
 		internal sealed class KitData
 		{
-			public int stationLevel = 2, accSlots = 5; public bool honey;
+			public int stationLevel = 2, accSlots = 5, champSlots; public bool honey;
 			public string[] stations, buffs = Array.Empty<string>();
 			public List<KitLevy> levies = new();
 			internal int[] BuffIds = Array.Empty<int>();
@@ -61,8 +61,8 @@ namespace Levy.Common.Testing
 
 		internal static List<CrLevySpec> KitSpecs(KitData d) => d.levies.Select(l => new CrLevySpec
 		{
-			Cls = char.ToUpperInvariant(l.cls[0]), Weapon = l.weapon, Ammo = l.ammo, Armor = l.armor, Acc = l.acc, LifeCrystals = l.lc, ManaCrystals = l.mc, Potions = l.potions, Potion = l.potion, ManAtArms = false,
-			Side = l.side ?? "", Hook = l.hook ?? "", LifeFruit = l.lf, Name = l.name ?? ""
+			Cls = char.ToUpperInvariant(l.cls[0]), Weapon = l.weapon, Ammo = l.ammo, Armor = l.armor, Acc = l.acc, LifeCrystals = l.lc, ManaCrystals = l.mc, Potions = l.potions, Potion = l.potion,
+			Side = l.side ?? "", Hook = l.hook ?? "", LifeFruit = l.lf, Name = l.name ?? "", Champion = (l.grade ?? "").StartsWith("C", StringComparison.OrdinalIgnoreCase), ManAtArms = (l.grade ?? "").StartsWith("M", StringComparison.OrdinalIgnoreCase)
 		}).ToList();
 
 		private static HashSet<string> _kitSt;

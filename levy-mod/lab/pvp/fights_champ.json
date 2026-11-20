@@ -1,0 +1,2368 @@
+[
+ {
+  "key": "fight|pvp|mdeath|sd|1|10800|n3|aa3|L3|pvchamp3_old-reg9_old|tc0|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 1,
+  "A": "champ3_old",
+  "B": "reg9_old",
+  "result": "B",
+  "winner": "reg9_old",
+  "sec": 5.5,
+  "nA": 3,
+  "nB": 9,
+  "aliveA": 0,
+  "aliveB": 5,
+  "hpLeftA": 0,
+  "hpLeftB": 25,
+  "dmgA": 4387,
+  "dmgB": 2017,
+  "classA": {
+   "R": 4387
+  },
+  "classB": {
+   "R": 1906,
+   "S": 0,
+   "T": 111
+  },
+  "topA": "StarSputter@Unrealx1=3111 AstralBlaster@Unrealx1=851 Vortex_Beater@Unrealx1=425",
+  "topB": "StarSputter@Unrealx2=991 AstralBlaster@Unrealx2=699 Vortex_Beater@Unrealx2=117 RegulusRiot@Flawlessx1=111 RealmRavager@Unrealx1=99 Morning_Star@Legendaryx1=0",
+  "deathsA": [
+   4.8,
+   5.3,
+   5.5
+  ],
+  "deathsB": [
+   3.0,
+   3.9,
+   4.4,
+   5.3
+  ],
+  "potionsA": 2,
+  "potionsB": 7,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg3111:dead@5.5:hp500:pot1:in0.0:k2;R:Vortex_Beater@Unreal:dmg425:dead@4.8:hp500:pot0:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg851:dead@5.3:hp500:pot1:in0.0:k1",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg311:alive:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg117:dead@3.0:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg472:alive:hp500:pot1:in0.0:k1;R:CalamityMod/RealmRavager@Unreal:dmg99:dead@5.3:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg111:dead@3.9:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg680:alive:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg227:dead@4.4:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ3_old_vs_reg9_old_seed1.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|2|10800|n3|aa3|L3|pvchamp3_old-reg9_old|tc0|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 2,
+  "A": "champ3_old",
+  "B": "reg9_old",
+  "result": "B",
+  "winner": "reg9_old",
+  "sec": 7.0,
+  "nA": 3,
+  "nB": 9,
+  "aliveA": 0,
+  "aliveB": 5,
+  "hpLeftA": 0,
+  "hpLeftB": 30,
+  "dmgA": 4395,
+  "dmgB": 1714,
+  "classA": {
+   "R": 4395
+  },
+  "classB": {
+   "R": 1599,
+   "S": 0,
+   "T": 115
+  },
+  "topA": "AstralBlaster@Unrealx1=1656 Vortex_Beater@Unrealx1=1575 StarSputter@Unrealx1=1164",
+  "topB": "StarSputter@Unrealx2=1083 Vortex_Beater@Unrealx2=259 RealmRavager@Unrealx1=257 RegulusRiot@Flawlessx1=115 AstralBlaster@Unrealx2=0 Morning_Star@Legendaryx1=0",
+  "deathsA": [
+   6.1,
+   6.8,
+   7.0
+  ],
+  "deathsB": [
+   4.6,
+   4.7,
+   5.5,
+   6.3
+  ],
+  "potionsA": 2,
+  "potionsB": 7,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg1164:dead@6.8:hp500:pot1:in0.0:k2;R:Vortex_Beater@Unreal:dmg1575:dead@7.0:hp500:pot1:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg1656:dead@6.1:hp500:pot0:in0.0:k1",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg381:dead@4.6:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg137:dead@5.5:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:alive:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg257:alive:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg115:dead@4.7:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg702:alive:hp500:pot1:in0.0:k2;R:Vortex_Beater@Unreal:dmg122:alive:hp500:pot0:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg0:dead@6.3:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ3_old_vs_reg9_old_seed2.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|3|10800|n3|aa3|L3|pvchamp3_old-reg9_old|tc0|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 3,
+  "A": "champ3_old",
+  "B": "reg9_old",
+  "result": "B",
+  "winner": "reg9_old",
+  "sec": 8.5,
+  "nA": 3,
+  "nB": 9,
+  "aliveA": 0,
+  "aliveB": 4,
+  "hpLeftA": 0,
+  "hpLeftB": 24,
+  "dmgA": 4912,
+  "dmgB": 2170,
+  "classA": {
+   "R": 4912
+  },
+  "classB": {
+   "R": 2054,
+   "S": 0,
+   "T": 116
+  },
+  "topA": "StarSputter@Unrealx1=2328 AstralBlaster@Unrealx1=1686 Vortex_Beater@Unrealx1=898",
+  "topB": "StarSputter@Unrealx2=914 Vortex_Beater@Unrealx2=505 AstralBlaster@Unrealx2=487 RealmRavager@Unrealx1=148 RegulusRiot@Flawlessx1=116 Morning_Star@Legendaryx1=0",
+  "deathsA": [
+   6.1,
+   8.4,
+   8.5
+  ],
+  "deathsB": [
+   4.3,
+   5.5,
+   7.1,
+   7.6,
+   8.1
+  ],
+  "potionsA": 3,
+  "potionsB": 8,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg2328:dead@6.1:hp500:pot1:in0.0:k2;R:Vortex_Beater@Unreal:dmg898:dead@8.5:hp500:pot1:in0.0:k2;R:CalamityMod/AstralBlaster@Unreal:dmg1686:dead@8.4:hp500:pot1:in0.0:k1",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg511:alive:hp500:pot1:in0.0:k2;R:Vortex_Beater@Unreal:dmg316:dead@5.5:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg487:alive:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg148:dead@7.1:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg116:dead@4.3:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg403:dead@7.6:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg189:dead@8.1:hp500:pot1:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg0:alive:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ3_old_vs_reg9_old_seed3.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|4|10800|n3|aa3|L3|pvchamp3_old-reg9_old|tc0|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 4,
+  "A": "champ3_old",
+  "B": "reg9_old",
+  "result": "A",
+  "winner": "champ3_old",
+  "sec": 12.6,
+  "nA": 3,
+  "nB": 9,
+  "aliveA": 3,
+  "aliveB": 0,
+  "hpLeftA": 32,
+  "hpLeftB": 0,
+  "dmgA": 6272,
+  "dmgB": 1460,
+  "classA": {
+   "R": 6272
+  },
+  "classB": {
+   "R": 1286,
+   "S": 174,
+   "T": 0
+  },
+  "topA": "StarSputter@Unrealx1=4754 AstralBlaster@Unrealx1=816 Vortex_Beater@Unrealx1=702",
+  "topB": "Vortex_Beater@Unrealx2=666 AstralBlaster@Unrealx2=466 Morning_Star@Legendaryx1=174 RealmRavager@Unrealx1=154 StarSputter@Unrealx2=0 RegulusRiot@Flawlessx1=0",
+  "deathsA": [],
+  "deathsB": [
+   2.8,
+   4.6,
+   5.2,
+   5.8,
+   6.3,
+   7.5,
+   8.2,
+   8.2,
+   12.6
+  ],
+  "potionsA": 3,
+  "potionsB": 8,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg4754:alive:hp500:pot1:in0.0:k7;R:Vortex_Beater@Unreal:dmg702:alive:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg816:alive:hp500:pot1:in0.0:k1",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg0:dead@4.6:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg347:dead@8.2:hp500:pot0:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:dead@5.8:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg154:dead@8.2:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg174:dead@12.6:hp500:pot1:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg0:dead@2.8:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg0:dead@5.2:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg319:dead@7.5:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg466:dead@6.3:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ3_old_vs_reg9_old_seed4.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|5|10800|n3|aa3|L3|pvchamp3_old-reg9_old|tc0|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 5,
+  "A": "champ3_old",
+  "B": "reg9_old",
+  "result": "B",
+  "winner": "reg9_old",
+  "sec": 9.7,
+  "nA": 3,
+  "nB": 9,
+  "aliveA": 0,
+  "aliveB": 2,
+  "hpLeftA": 0,
+  "hpLeftB": 19,
+  "dmgA": 5293,
+  "dmgB": 1950,
+  "classA": {
+   "R": 5293
+  },
+  "classB": {
+   "R": 1582,
+   "S": 132,
+   "T": 236
+  },
+  "topA": "StarSputter@Unrealx1=4374 AstralBlaster@Unrealx1=502 Vortex_Beater@Unrealx1=417",
+  "topB": "StarSputter@Unrealx2=733 AstralBlaster@Unrealx2=490 Vortex_Beater@Unrealx2=359 RegulusRiot@Flawlessx1=236 Morning_Star@Legendaryx1=132 RealmRavager@Unrealx1=0",
+  "deathsA": [
+   5.6,
+   6.5,
+   9.7
+  ],
+  "deathsB": [
+   2.7,
+   3.4,
+   4.8,
+   4.8,
+   6.0,
+   8.2,
+   9.3
+  ],
+  "potionsA": 3,
+  "potionsB": 7,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg4374:dead@6.5:hp500:pot1:in0.0:k4;R:Vortex_Beater@Unreal:dmg417:dead@9.7:hp500:pot1:in0.0:k2;R:CalamityMod/AstralBlaster@Unreal:dmg502:dead@5.6:hp500:pot1:in0.0:k0",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg733:dead@8.2:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg249:alive:hp500:pot1:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg245:dead@3.4:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg0:dead@9.3:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg132:alive:hp500:pot0:in0.0:k1;T:CalamityMod/RegulusRiot@Flawless:dmg236:dead@4.8:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg0:dead@2.7:hp500:pot0:in0.0:k0;R:Vortex_Beater@Unreal:dmg110:dead@6.0:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg245:dead@4.8:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ3_old_vs_reg9_old_seed5.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|1|10800|n9|aa3|L3|pvreg9_old-champ3_old|tc1|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 1,
+  "A": "reg9_old",
+  "B": "champ3_old",
+  "result": "A",
+  "winner": "reg9_old",
+  "sec": 5.0,
+  "nA": 9,
+  "nB": 3,
+  "aliveA": 7,
+  "aliveB": 0,
+  "hpLeftA": 44,
+  "hpLeftB": 0,
+  "dmgA": 2067,
+  "dmgB": 3482,
+  "classA": {
+   "R": 2018,
+   "S": 49,
+   "T": 0
+  },
+  "classB": {
+   "R": 3482
+  },
+  "topA": "StarSputter@Unrealx2=1196 AstralBlaster@Unrealx2=690 Vortex_Beater@Unrealx2=132 Morning_Star@Legendaryx1=49 RealmRavager@Unrealx1=0 RegulusRiot@Flawlessx1=0",
+  "topB": "Vortex_Beater@Unrealx1=1455 AstralBlaster@Unrealx1=1351 StarSputter@Unrealx1=676",
+  "deathsA": [
+   3.7,
+   5.0
+  ],
+  "deathsB": [
+   4.6,
+   4.8,
+   5.0
+  ],
+  "potionsA": 6,
+  "potionsB": 3,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg643:alive:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg70:dead@5.0:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg472:alive:hp500:pot1:in0.0:k1;R:CalamityMod/RealmRavager@Unreal:dmg0:dead@3.7:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg49:alive:hp500:pot0:in0.0:k1;T:CalamityMod/RegulusRiot@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg553:alive:hp500:pot0:in0.0:k0;R:Vortex_Beater@Unreal:dmg62:alive:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg218:alive:hp500:pot1:in0.0:k0",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg676:dead@4.6:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg1455:dead@5.0:hp500:pot1:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg1351:dead@4.8:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg9_old_vs_champ3_old_seed1.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|2|10800|n9|aa3|L3|pvreg9_old-champ3_old|tc1|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 2,
+  "A": "reg9_old",
+  "B": "champ3_old",
+  "result": "A",
+  "winner": "reg9_old",
+  "sec": 12.7,
+  "nA": 9,
+  "nB": 3,
+  "aliveA": 1,
+  "aliveB": 0,
+  "hpLeftA": 2,
+  "hpLeftB": 0,
+  "dmgA": 1914,
+  "dmgB": 6805,
+  "classA": {
+   "R": 1629,
+   "S": 43,
+   "T": 242
+  },
+  "classB": {
+   "R": 6805
+  },
+  "topA": "AstralBlaster@Unrealx2=714 StarSputter@Unrealx2=568 Vortex_Beater@Unrealx2=244 RegulusRiot@Flawlessx1=242 RealmRavager@Unrealx1=103 Morning_Star@Legendaryx1=43",
+  "topB": "StarSputter@Unrealx1=3245 AstralBlaster@Unrealx1=2263 Vortex_Beater@Unrealx1=1297",
+  "deathsA": [
+   2.7,
+   4.1,
+   4.4,
+   5.3,
+   6.5,
+   9.1,
+   9.6,
+   11.3
+  ],
+  "deathsB": [
+   5.7,
+   7.9,
+   12.7
+  ],
+  "potionsA": 8,
+  "potionsB": 3,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg373:dead@4.1:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg113:dead@5.3:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg227:dead@9.1:hp500:pot1:in0.0:k1;R:CalamityMod/RealmRavager@Unreal:dmg103:dead@9.6:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg43:dead@4.4:hp500:pot1:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg242:dead@11.3:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg195:dead@2.7:hp500:pot0:in0.0:k0;R:Vortex_Beater@Unreal:dmg131:dead@6.5:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg487:alive:hp500:pot1:in0.0:k0",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg3245:dead@7.9:hp500:pot1:in0.0:k3;R:Vortex_Beater@Unreal:dmg1297:dead@5.7:hp500:pot1:in0.0:k2;R:CalamityMod/AstralBlaster@Unreal:dmg2263:dead@12.7:hp500:pot1:in0.0:k3",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg9_old_vs_champ3_old_seed2.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|3|10800|n9|aa3|L3|pvreg9_old-champ3_old|tc1|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 3,
+  "A": "reg9_old",
+  "B": "champ3_old",
+  "result": "A",
+  "winner": "reg9_old",
+  "sec": 9.0,
+  "nA": 9,
+  "nB": 3,
+  "aliveA": 5,
+  "aliveB": 0,
+  "hpLeftA": 35,
+  "hpLeftB": 0,
+  "dmgA": 2114,
+  "dmgB": 4284,
+  "classA": {
+   "R": 2114,
+   "S": 0,
+   "T": 0
+  },
+  "classB": {
+   "R": 4284
+  },
+  "topA": "StarSputter@Unrealx2=1334 AstralBlaster@Unrealx2=483 Vortex_Beater@Unrealx2=245 RealmRavager@Unrealx1=52 Morning_Star@Legendaryx1=0 RegulusRiot@Flawlessx1=0",
+  "topB": "StarSputter@Unrealx1=3051 AstralBlaster@Unrealx1=804 Vortex_Beater@Unrealx1=429",
+  "deathsA": [
+   2.7,
+   5.5,
+   5.8,
+   7.3
+  ],
+  "deathsB": [
+   3.8,
+   5.5,
+   9.0
+  ],
+  "potionsA": 5,
+  "potionsB": 3,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg836:dead@5.8:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg245:dead@7.3:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg232:alive:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg52:alive:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:dead@2.7:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg498:alive:hp500:pot0:in0.0:k2;R:Vortex_Beater@Unreal:dmg0:dead@5.5:hp500:pot0:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg251:alive:hp500:pot1:in0.0:k0",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg3051:dead@9.0:hp500:pot1:in0.0:k4;R:Vortex_Beater@Unreal:dmg429:dead@3.8:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg804:dead@5.5:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg9_old_vs_champ3_old_seed3.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|4|10800|n9|aa3|L3|pvreg9_old-champ3_old|tc1|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 4,
+  "A": "reg9_old",
+  "B": "champ3_old",
+  "result": "A",
+  "winner": "reg9_old",
+  "sec": 8.3,
+  "nA": 9,
+  "nB": 3,
+  "aliveA": 5,
+  "aliveB": 0,
+  "hpLeftA": 32,
+  "hpLeftB": 0,
+  "dmgA": 2021,
+  "dmgB": 4333,
+  "classA": {
+   "R": 2021,
+   "S": 0,
+   "T": 0
+  },
+  "classB": {
+   "R": 4333
+  },
+  "topA": "StarSputter@Unrealx2=712 Vortex_Beater@Unrealx2=651 AstralBlaster@Unrealx2=448 RealmRavager@Unrealx1=210 Morning_Star@Legendaryx1=0 RegulusRiot@Flawlessx1=0",
+  "topB": "StarSputter@Unrealx1=3565 Vortex_Beater@Unrealx1=768 AstralBlaster@Unrealx1=0",
+  "deathsA": [
+   4.8,
+   7.1,
+   7.3,
+   8.1
+  ],
+  "deathsB": [
+   6.5,
+   7.3,
+   8.3
+  ],
+  "potionsA": 7,
+  "potionsB": 3,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg186:dead@7.3:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg465:alive:hp500:pot1:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg219:dead@8.1:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg210:alive:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:dead@4.8:hp500:pot1:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg526:alive:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg186:dead@7.1:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg229:alive:hp500:pot1:in0.0:k0",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg3565:dead@8.3:hp500:pot1:in0.0:k4;R:Vortex_Beater@Unreal:dmg768:dead@6.5:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:dead@7.3:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg9_old_vs_champ3_old_seed4.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|5|10800|n9|aa3|L3|pvreg9_old-champ3_old|tc1|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 5,
+  "A": "reg9_old",
+  "B": "champ3_old",
+  "result": "B",
+  "winner": "champ3_old",
+  "sec": 9.9,
+  "nA": 9,
+  "nB": 3,
+  "aliveA": 0,
+  "aliveB": 2,
+  "hpLeftA": 0,
+  "hpLeftB": 22,
+  "dmgA": 1864,
+  "dmgB": 6722,
+  "classA": {
+   "R": 1690,
+   "S": 174,
+   "T": 0
+  },
+  "classB": {
+   "R": 6722
+  },
+  "topA": "StarSputter@Unrealx2=718 AstralBlaster@Unrealx2=493 Vortex_Beater@Unrealx2=375 Morning_Star@Legendaryx1=174 RealmRavager@Unrealx1=104 RegulusRiot@Flawlessx1=0",
+  "topB": "StarSputter@Unrealx1=3531 AstralBlaster@Unrealx1=2109 Vortex_Beater@Unrealx1=1082",
+  "deathsA": [
+   4.3,
+   4.9,
+   5.3,
+   5.6,
+   6.2,
+   6.6,
+   8.4,
+   8.9,
+   9.9
+  ],
+  "deathsB": [
+   6.8
+  ],
+  "potionsA": 9,
+  "potionsB": 3,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg188:dead@4.3:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg304:dead@5.6:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:dead@5.3:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg104:dead@6.6:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg174:dead@6.2:hp500:pot1:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg0:dead@9.9:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg530:dead@8.4:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg71:dead@4.9:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg493:dead@8.9:hp500:pot1:in0.0:k0",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg3531:alive:hp500:pot1:in0.0:k5;R:Vortex_Beater@Unreal:dmg1082:dead@6.8:hp500:pot1:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg2109:alive:hp500:pot1:in0.0:k3",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg9_old_vs_champ3_old_seed5.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|1|10800|n5|aa3|L3|pvchamp5_old-reg15_old|tc2|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 1,
+  "A": "champ5_old",
+  "B": "reg15_old",
+  "result": "B",
+  "winner": "reg15_old",
+  "sec": 7.5,
+  "nA": 5,
+  "nB": 15,
+  "aliveA": 0,
+  "aliveB": 12,
+  "hpLeftA": 0,
+  "hpLeftB": 44,
+  "dmgA": 5243,
+  "dmgB": 3749,
+  "classA": {
+   "R": 5243,
+   "S": 0
+  },
+  "classB": {
+   "R": 3634,
+   "S": 0,
+   "T": 115
+  },
+  "topA": "Vortex_Beater@Unrealx1=1801 StarSputter@Unrealx1=1741 AstralBlaster@Unrealx1=992 RealmRavager@Unrealx1=709 Morning_Star@Legendaryx1=0",
+  "topB": "StarSputter@Unrealx3=1923 AstralBlaster@Unrealx3=1117 Vortex_Beater@Unrealx3=551 RegulusRiot@Flawlessx2=115 RealmRavager@Unrealx2=43 Morning_Star@Legendaryx2=0",
+  "deathsA": [
+   3.7,
+   4.9,
+   6.3,
+   7.1,
+   7.5
+  ],
+  "deathsB": [
+   4.1,
+   4.2,
+   5.6
+  ],
+  "potionsA": 5,
+  "potionsB": 8,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg1741:dead@6.3:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg1801:dead@7.1:hp500:pot1:in0.0:k2;R:CalamityMod/AstralBlaster@Unreal:dmg992:dead@4.9:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg709:dead@7.5:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:dead@3.7:hp500:pot1:in0.0:k0",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg833:alive:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg196:dead@5.6:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg907:dead@4.1:hp500:pot1:in0.0:k1;R:CalamityMod/RealmRavager@Unreal:dmg0:alive:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg390:alive:hp500:pot0:in0.0:k2;R:Vortex_Beater@Unreal:dmg118:alive:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:alive:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg43:alive:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg115:dead@4.2:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg700:alive:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg237:alive:hp500:pot0:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg210:alive:hp500:pot0:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ5_old_vs_reg15_old_seed1.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|2|10800|n5|aa3|L3|pvchamp5_old-reg15_old|tc2|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 2,
+  "A": "champ5_old",
+  "B": "reg15_old",
+  "result": "B",
+  "winner": "reg15_old",
+  "sec": 9.6,
+  "nA": 5,
+  "nB": 15,
+  "aliveA": 0,
+  "aliveB": 6,
+  "hpLeftA": 0,
+  "hpLeftB": 23,
+  "dmgA": 10832,
+  "dmgB": 3474,
+  "classA": {
+   "R": 5090,
+   "S": 5742
+  },
+  "classB": {
+   "R": 2342,
+   "S": 175,
+   "T": 957
+  },
+  "topA": "Morning_Star@Legendaryx1=5742 Vortex_Beater@Unrealx1=1527 StarSputter@Unrealx1=1456 RealmRavager@Unrealx1=1256 AstralBlaster@Unrealx1=851",
+  "topB": "AstralBlaster@Unrealx3=994 RegulusRiot@Flawlessx2=957 StarSputter@Unrealx3=696 Vortex_Beater@Unrealx3=411 RealmRavager@Unrealx2=241 Morning_Star@Legendaryx2=175",
+  "deathsA": [
+   4.3,
+   6.3,
+   8.1,
+   9.2,
+   9.6
+  ],
+  "deathsB": [
+   3.5,
+   3.5,
+   3.5,
+   4.5,
+   4.5,
+   6.4,
+   6.9,
+   6.9,
+   7.6
+  ],
+  "potionsA": 5,
+  "potionsB": 9,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg1456:dead@4.3:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg1527:dead@9.2:hp500:pot1:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg851:dead@8.1:hp500:pot1:in0.0:k1;R:CalamityMod/RealmRavager@Unreal:dmg1256:dead@9.6:hp500:pot1:in0.0:k2;S:Morning_Star@Legendary:dmg5742:dead@6.3:hp500:pot1:in0.0:k5",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg190:dead@3.5:hp500:pot0:in0.0:k0;R:Vortex_Beater@Unreal:dmg112:dead@3.5:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg994:alive:hp500:pot1:in0.0:k1;R:CalamityMod/RealmRavager@Unreal:dmg48:dead@3.5:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg175:alive:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg484:alive:hp500:pot1:in0.0:k2;R:CalamityMod/StarSputter@Unreal:dmg0:dead@4.5:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg299:dead@7.6:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg193:dead@6.9:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg473:dead@6.4:hp500:pot1:in0.0:k1;R:CalamityMod/StarSputter@Unreal:dmg506:alive:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg0:dead@6.9:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:dead@4.5:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ5_old_vs_reg15_old_seed2.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|3|10800|n5|aa3|L3|pvchamp5_old-reg15_old|tc2|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 3,
+  "A": "champ5_old",
+  "B": "reg15_old",
+  "result": "B",
+  "winner": "reg15_old",
+  "sec": 9.4,
+  "nA": 5,
+  "nB": 15,
+  "aliveA": 0,
+  "aliveB": 14,
+  "hpLeftA": 0,
+  "hpLeftB": 70,
+  "dmgA": 3020,
+  "dmgB": 3298,
+  "classA": {
+   "R": 1850,
+   "S": 1170
+  },
+  "classB": {
+   "R": 2699,
+   "S": 134,
+   "T": 465
+  },
+  "topA": "Morning_Star@Legendaryx1=1170 RealmRavager@Unrealx1=970 StarSputter@Unrealx1=402 AstralBlaster@Unrealx1=252 Vortex_Beater@Unrealx1=226",
+  "topB": "StarSputter@Unrealx3=1301 AstralBlaster@Unrealx3=700 Vortex_Beater@Unrealx3=488 RegulusRiot@Flawlessx2=465 RealmRavager@Unrealx2=210 Morning_Star@Legendaryx2=134",
+  "deathsA": [
+   4.3,
+   5.0,
+   7.5,
+   8.5,
+   9.4
+  ],
+  "deathsB": [
+   5.4
+  ],
+  "potionsA": 5,
+  "potionsB": 5,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg402:dead@4.3:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg226:dead@5.0:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg252:dead@8.5:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg970:dead@7.5:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg1170:dead@9.4:hp500:pot1:in0.0:k1",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg909:alive:hp500:pot0:in0.0:k2;R:Vortex_Beater@Unreal:dmg217:dead@5.4:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg469:alive:hp500:pot1:in0.0:k1;R:CalamityMod/RealmRavager@Unreal:dmg110:alive:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg134:alive:hp500:pot0:in0.0:k1;T:CalamityMod/RegulusRiot@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg392:alive:hp500:pot0:in0.0:k0;R:Vortex_Beater@Unreal:dmg271:alive:hp500:pot0:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg231:alive:hp500:pot0:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg100:alive:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg465:alive:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg0:alive:hp500:pot0:in0.0:k0;R:Vortex_Beater@Unreal:dmg0:alive:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:alive:hp500:pot0:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ5_old_vs_reg15_old_seed3.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|4|10800|n5|aa3|L3|pvchamp5_old-reg15_old|tc2|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 4,
+  "A": "champ5_old",
+  "B": "reg15_old",
+  "result": "A",
+  "winner": "champ5_old",
+  "sec": 16.2,
+  "nA": 5,
+  "nB": 15,
+  "aliveA": 2,
+  "aliveB": 0,
+  "hpLeftA": 8,
+  "hpLeftB": 0,
+  "dmgA": 16255,
+  "dmgB": 2989,
+  "classA": {
+   "R": 6787,
+   "S": 9468
+  },
+  "classB": {
+   "R": 1705,
+   "S": 440,
+   "T": 844
+  },
+  "topA": "Morning_Star@Legendaryx1=9468 AstralBlaster@Unrealx1=1872 Vortex_Beater@Unrealx1=1870 StarSputter@Unrealx1=1645 RealmRavager@Unrealx1=1400",
+  "topB": "AstralBlaster@Unrealx3=880 RegulusRiot@Flawlessx2=844 Morning_Star@Legendaryx2=440 Vortex_Beater@Unrealx3=414 RealmRavager@Unrealx2=223 StarSputter@Unrealx3=188",
+  "deathsA": [
+   6.1,
+   8.5,
+   12.3
+  ],
+  "deathsB": [
+   3.4,
+   4.0,
+   6.3,
+   6.3,
+   6.4,
+   6.6,
+   6.7,
+   6.9,
+   6.9,
+   6.9,
+   6.9,
+   8.0,
+   13.0,
+   14.5,
+   16.2
+  ],
+  "potionsA": 5,
+  "potionsB": 13,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg1645:dead@6.1:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg1870:alive:hp500:pot1:in0.0:k2;R:CalamityMod/AstralBlaster@Unreal:dmg1872:dead@12.3:hp500:pot1:in0.0:k2;R:CalamityMod/RealmRavager@Unreal:dmg1400:alive:hp500:pot1:in0.0:k2;S:Morning_Star@Legendary:dmg9468:dead@8.5:hp500:pot1:in0.0:k9",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg188:dead@3.4:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg259:dead@8.0:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg419:dead@6.9:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg135:dead@6.9:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg393:dead@16.2:hp500:pot1:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg227:dead@13.0:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg0:dead@6.7:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg47:dead@6.9:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg235:dead@6.9:hp500:pot0:in0.0:k1;R:CalamityMod/RealmRavager@Unreal:dmg88:dead@6.3:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg47:dead@14.5:hp500:pot1:in0.0:k1;T:CalamityMod/RegulusRiot@Flawless:dmg617:dead@6.6:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg0:dead@6.4:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg108:dead@4.0:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg226:dead@6.3:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ5_old_vs_reg15_old_seed4.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|5|10800|n5|aa3|L3|pvchamp5_old-reg15_old|tc2|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 5,
+  "A": "champ5_old",
+  "B": "reg15_old",
+  "result": "B",
+  "winner": "reg15_old",
+  "sec": 8.6,
+  "nA": 5,
+  "nB": 15,
+  "aliveA": 0,
+  "aliveB": 5,
+  "hpLeftA": 0,
+  "hpLeftB": 28,
+  "dmgA": 12012,
+  "dmgB": 3360,
+  "classA": {
+   "R": 355,
+   "S": 11657
+  },
+  "classB": {
+   "R": 2517,
+   "S": 0,
+   "T": 843
+  },
+  "topA": "Morning_Star@Legendaryx1=11657 Vortex_Beater@Unrealx1=210 RealmRavager@Unrealx1=145 StarSputter@Unrealx1=0 AstralBlaster@Unrealx1=0",
+  "topB": "AstralBlaster@Unrealx3=932 StarSputter@Unrealx3=871 RegulusRiot@Flawlessx2=843 Vortex_Beater@Unrealx3=512 RealmRavager@Unrealx2=202 Morning_Star@Legendaryx2=0",
+  "deathsA": [
+   4.6,
+   5.4,
+   6.0,
+   6.8,
+   8.6
+  ],
+  "deathsB": [
+   5.4,
+   6.0,
+   6.0,
+   6.0,
+   6.0,
+   6.0,
+   6.0,
+   6.0,
+   6.0,
+   6.0
+  ],
+  "potionsA": 5,
+  "potionsB": 1,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg0:dead@5.4:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg210:dead@6.8:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:dead@4.6:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg145:dead@8.6:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg11657:dead@6.0:hp500:pot1:in0.0:k10",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg312:dead@6.0:hp500:pot0:in0.0:k1;R:Vortex_Beater@Unreal:dmg265:dead@6.0:hp500:pot0:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg233:dead@6.0:hp500:pot0:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg49:dead@6.0:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg365:dead@5.4:hp500:pot0:in0.0:k0;R:Vortex_Beater@Unreal:dmg110:dead@6.0:hp500:pot0:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg699:dead@6.0:hp500:pot0:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg153:dead@6.0:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg843:alive:hp500:pot1:in0.0:k3;R:CalamityMod/StarSputter@Unreal:dmg194:dead@6.0:hp500:pot0:in0.0:k0;R:Vortex_Beater@Unreal:dmg137:alive:hp500:pot0:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:dead@6.0:hp500:pot0:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ5_old_vs_reg15_old_seed5.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|1|10800|n15|aa3|L3|pvreg15_old-champ5_old|tc3|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 1,
+  "A": "reg15_old",
+  "B": "champ5_old",
+  "result": "A",
+  "winner": "reg15_old",
+  "sec": 7.2,
+  "nA": 15,
+  "nB": 5,
+  "aliveA": 10,
+  "aliveB": 0,
+  "hpLeftA": 38,
+  "hpLeftB": 0,
+  "dmgA": 4468,
+  "dmgB": 6781,
+  "classA": {
+   "R": 3091,
+   "S": 1377,
+   "T": 0
+  },
+  "classB": {
+   "R": 6702,
+   "S": 79
+  },
+  "topA": "Morning_Star@Legendaryx2=1377 StarSputter@Unrealx3=1358 AstralBlaster@Unrealx3=1168 Vortex_Beater@Unrealx3=353 RealmRavager@Unrealx2=212 RegulusRiot@Flawlessx2=0",
+  "topB": "StarSputter@Unrealx1=4422 Vortex_Beater@Unrealx1=1097 AstralBlaster@Unrealx1=739 RealmRavager@Unrealx1=444 Morning_Star@Legendaryx1=79",
+  "deathsA": [
+   2.7,
+   4.7,
+   4.9,
+   6.0,
+   6.3
+  ],
+  "deathsB": [
+   4.3,
+   6.0,
+   6.1,
+   6.4,
+   7.2
+  ],
+  "potionsA": 12,
+  "potionsB": 4,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg661:alive:hp500:pot0:in0.0:k1;R:Vortex_Beater@Unreal:dmg173:dead@2.7:hp500:pot0:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg1168:alive:hp500:pot1:in0.0:k1;R:CalamityMod/RealmRavager@Unreal:dmg59:dead@4.9:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg1292:dead@4.7:hp500:pot1:in0.0:k1;T:CalamityMod/RegulusRiot@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg522:alive:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg64:alive:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:alive:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg153:dead@6.0:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg85:dead@6.3:hp500:pot1:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg0:alive:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg175:alive:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg116:alive:hp500:pot1:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg0:alive:hp500:pot1:in0.0:k0",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg4422:dead@6.4:hp500:pot1:in0.0:k4;R:Vortex_Beater@Unreal:dmg1097:dead@6.0:hp500:pot1:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg739:dead@7.2:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg444:dead@6.1:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg79:dead@4.3:hp500:pot0:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg15_old_vs_champ5_old_seed1.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|2|10800|n15|aa3|L3|pvreg15_old-champ5_old|tc3|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 2,
+  "A": "reg15_old",
+  "B": "champ5_old",
+  "result": "A",
+  "winner": "reg15_old",
+  "sec": 13.2,
+  "nA": 15,
+  "nB": 5,
+  "aliveA": 11,
+  "aliveB": 0,
+  "hpLeftA": 32,
+  "hpLeftB": 0,
+  "dmgA": 3471,
+  "dmgB": 7415,
+  "classA": {
+   "R": 3297,
+   "S": 174,
+   "T": 0
+  },
+  "classB": {
+   "R": 7192,
+   "S": 223
+  },
+  "topA": "Vortex_Beater@Unrealx3=1196 StarSputter@Unrealx3=948 AstralBlaster@Unrealx3=683 RealmRavager@Unrealx2=470 Morning_Star@Legendaryx2=174 RegulusRiot@Flawlessx2=0",
+  "topB": "StarSputter@Unrealx1=3134 Vortex_Beater@Unrealx1=1952 AstralBlaster@Unrealx1=1304 RealmRavager@Unrealx1=802 Morning_Star@Legendaryx1=223",
+  "deathsA": [
+   2.4,
+   5.9,
+   6.1,
+   10.7
+  ],
+  "deathsB": [
+   6.8,
+   7.4,
+   7.5,
+   11.1,
+   13.2
+  ],
+  "potionsA": 12,
+  "potionsB": 5,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg633:dead@10.7:hp500:pot1:in0.0:k2;R:Vortex_Beater@Unreal:dmg132:alive:hp500:pot1:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg214:alive:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg246:dead@5.9:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:dead@2.4:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg0:alive:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg0:alive:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg452:alive:hp500:pot1:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg214:alive:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg224:alive:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg174:dead@6.1:hp500:pot1:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg315:alive:hp500:pot0:in0.0:k1;R:Vortex_Beater@Unreal:dmg612:alive:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg255:alive:hp500:pot1:in0.0:k0",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg3134:dead@11.1:hp500:pot1:in0.0:k3;R:Vortex_Beater@Unreal:dmg1952:dead@13.2:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg1304:dead@6.8:hp500:pot1:in0.0:k1;R:CalamityMod/RealmRavager@Unreal:dmg802:dead@7.4:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg223:dead@7.5:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg15_old_vs_champ5_old_seed2.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|3|10800|n15|aa3|L3|pvreg15_old-champ5_old|tc3|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 3,
+  "A": "reg15_old",
+  "B": "champ5_old",
+  "result": "B",
+  "winner": "champ5_old",
+  "sec": 10.9,
+  "nA": 15,
+  "nB": 5,
+  "aliveA": 0,
+  "aliveB": 5,
+  "hpLeftA": 0,
+  "hpLeftB": 51,
+  "dmgA": 1911,
+  "dmgB": 16750,
+  "classA": {
+   "R": 1386,
+   "S": 399,
+   "T": 126
+  },
+  "classB": {
+   "R": 3797,
+   "S": 12953
+  },
+  "topA": "Vortex_Beater@Unrealx3=846 Morning_Star@Legendaryx2=399 RealmRavager@Unrealx2=355 StarSputter@Unrealx3=185 RegulusRiot@Flawlessx2=126 AstralBlaster@Unrealx3=0",
+  "topB": "Morning_Star@Legendaryx1=12953 StarSputter@Unrealx1=1380 AstralBlaster@Unrealx1=1017 Vortex_Beater@Unrealx1=759 RealmRavager@Unrealx1=641",
+  "deathsA": [
+   3.6,
+   3.6,
+   3.7,
+   3.7,
+   3.7,
+   3.7,
+   5.2,
+   5.2,
+   5.9,
+   7.6,
+   7.7,
+   8.0,
+   8.7,
+   9.7,
+   10.9
+  ],
+  "deathsB": [],
+  "potionsA": 8,
+  "potionsB": 5,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg0:dead@5.2:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg296:dead@3.6:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:dead@3.7:hp500:pot0:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg297:dead@7.6:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg399:dead@5.9:hp500:pot1:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg126:dead@9.7:hp500:pot0:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg185:dead@3.7:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg472:dead@10.9:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:dead@8.7:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg58:dead@5.2:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:dead@3.6:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg0:dead@8.0:hp500:pot0:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg0:dead@3.7:hp500:pot0:in0.0:k0;R:Vortex_Beater@Unreal:dmg78:dead@7.7:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:dead@3.7:hp500:pot0:in0.0:k0",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg1380:alive:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg759:alive:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg1017:alive:hp500:pot1:in0.0:k1;R:CalamityMod/RealmRavager@Unreal:dmg641:alive:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg12953:alive:hp500:pot1:in0.0:k14",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg15_old_vs_champ5_old_seed3.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|4|10800|n15|aa3|L3|pvreg15_old-champ5_old|tc3|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 4,
+  "A": "reg15_old",
+  "B": "champ5_old",
+  "result": "B",
+  "winner": "champ5_old",
+  "sec": 16.9,
+  "nA": 15,
+  "nB": 5,
+  "aliveA": 0,
+  "aliveB": 1,
+  "hpLeftA": 0,
+  "hpLeftB": 3,
+  "dmgA": 4962,
+  "dmgB": 16731,
+  "classA": {
+   "R": 2012,
+   "S": 2826,
+   "T": 124
+  },
+  "classB": {
+   "R": 7360,
+   "S": 9371
+  },
+  "topA": "Morning_Star@Legendaryx2=2826 Vortex_Beater@Unrealx3=647 StarSputter@Unrealx3=558 AstralBlaster@Unrealx3=452 RealmRavager@Unrealx2=355 RegulusRiot@Flawlessx2=124",
+  "topB": "Morning_Star@Legendaryx1=9371 StarSputter@Unrealx1=5907 Vortex_Beater@Unrealx1=655 AstralBlaster@Unrealx1=480 RealmRavager@Unrealx1=318",
+  "deathsA": [
+   2.7,
+   4.6,
+   5.2,
+   5.2,
+   5.6,
+   5.7,
+   5.8,
+   5.8,
+   7.3,
+   8.0,
+   9.5,
+   10.6,
+   11.4,
+   15.0,
+   16.9
+  ],
+  "deathsB": [
+   4.8,
+   5.3,
+   6.9,
+   9.2
+  ],
+  "potionsA": 12,
+  "potionsB": 4,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg366:dead@5.2:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg599:dead@11.4:hp500:pot1:in0.0:k1;R:CalamityMod/AstralBlaster@Unreal:dmg225:dead@5.8:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg258:dead@7.3:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:dead@2.7:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg124:dead@16.9:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg0:dead@4.6:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg48:dead@5.6:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:dead@5.2:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg97:dead@10.6:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg2826:dead@8.0:hp500:pot1:in0.0:k2;T:CalamityMod/RegulusRiot@Flawless:dmg0:dead@15.0:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg192:dead@5.8:hp500:pot0:in0.0:k0;R:Vortex_Beater@Unreal:dmg0:dead@5.7:hp500:pot0:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg227:dead@9.5:hp500:pot1:in0.0:k1",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg5907:alive:hp500:pot1:in0.0:k7;R:Vortex_Beater@Unreal:dmg655:dead@6.9:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg480:dead@4.8:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg318:dead@5.3:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg9371:dead@9.2:hp500:pot1:in0.0:k7",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg15_old_vs_champ5_old_seed4.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|5|10800|n15|aa3|L3|pvreg15_old-champ5_old|tc3|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 5,
+  "A": "reg15_old",
+  "B": "champ5_old",
+  "result": "A",
+  "winner": "reg15_old",
+  "sec": 9.7,
+  "nA": 15,
+  "nB": 5,
+  "aliveA": 3,
+  "aliveB": 0,
+  "hpLeftA": 13,
+  "hpLeftB": 0,
+  "dmgA": 3382,
+  "dmgB": 16880,
+  "classA": {
+   "R": 2816,
+   "S": 566,
+   "T": 0
+  },
+  "classB": {
+   "R": 2196,
+   "S": 14684
+  },
+  "topA": "StarSputter@Unrealx3=1339 AstralBlaster@Unrealx3=1131 Morning_Star@Legendaryx2=566 Vortex_Beater@Unrealx3=184 RealmRavager@Unrealx2=162 RegulusRiot@Flawlessx2=0",
+  "topB": "Morning_Star@Legendaryx1=14684 RealmRavager@Unrealx1=1002 AstralBlaster@Unrealx1=968 Vortex_Beater@Unrealx1=226 StarSputter@Unrealx1=0",
+  "deathsA": [
+   4.5,
+   4.5,
+   5.0,
+   5.0,
+   5.0,
+   5.4,
+   5.5,
+   5.5,
+   5.5,
+   5.5,
+   6.4,
+   6.4
+  ],
+  "deathsB": [
+   5.3,
+   5.3,
+   5.4,
+   7.6,
+   9.7
+  ],
+  "potionsA": 5,
+  "potionsB": 5,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "R:CalamityMod/StarSputter@Unreal:dmg862:alive:hp500:pot1:in0.0:k2;R:Vortex_Beater@Unreal:dmg56:dead@5.0:hp500:pot0:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg677:dead@5.0:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg52:dead@5.5:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg387:dead@5.4:hp500:pot1:in0.0:k2;T:CalamityMod/RegulusRiot@Flawless:dmg0:alive:hp500:pot1:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg192:dead@4.5:hp500:pot0:in0.0:k0;R:Vortex_Beater@Unreal:dmg128:dead@5.0:hp500:pot0:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg454:dead@6.4:hp500:pot0:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg110:dead@5.5:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg179:dead@5.5:hp500:pot0:in0.0:k0;T:CalamityMod/RegulusRiot@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/StarSputter@Unreal:dmg285:dead@5.5:hp500:pot1:in0.0:k1;R:Vortex_Beater@Unreal:dmg0:dead@4.5:hp500:pot0:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg0:dead@6.4:hp500:pot0:in0.0:k0",
+  "perB": "R:CalamityMod/StarSputter@Unreal:dmg0:dead@5.3:hp500:pot1:in0.0:k0;R:Vortex_Beater@Unreal:dmg226:dead@5.3:hp500:pot1:in0.0:k0;R:CalamityMod/AstralBlaster@Unreal:dmg968:dead@5.4:hp500:pot1:in0.0:k0;R:CalamityMod/RealmRavager@Unreal:dmg1002:dead@9.7:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg14684:dead@7.6:hp500:pot1:in0.0:k12",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg15_old_vs_champ5_old_seed5.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|1|10800|n3|aa3|L3|pvchamp3_prov-reg9_prov|tc4|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 1,
+  "A": "champ3_prov",
+  "B": "reg9_prov",
+  "result": "A",
+  "winner": "champ3_prov",
+  "sec": 7.3,
+  "nA": 3,
+  "nB": 9,
+  "aliveA": 3,
+  "aliveB": 0,
+  "hpLeftA": 42,
+  "hpLeftB": 0,
+  "dmgA": 6401,
+  "dmgB": 996,
+  "classA": {
+   "R": 422,
+   "T": 5979
+  },
+  "classB": {
+   "R": 947,
+   "S": 49,
+   "T": 0
+  },
+  "topA": "MoltenAmputator@Flawlessx1=5979 Spyker@Unrealx1=363 PristineFury@Unrealx1=59",
+  "topB": "Spyker@Unrealx1=882 PristineFury@Unrealx2=65 Morning_Star@Legendaryx1=49 MoltenAmputator@Flawlessx2=0 TelluricGlare@Unrealx1=0 ReboundingRainbow@Flawlessx1=0",
+  "deathsA": [],
+  "deathsB": [
+   1.6,
+   1.8,
+   1.8,
+   3.7,
+   4.5,
+   4.7,
+   6.9,
+   7.0,
+   7.3
+  ],
+  "potionsA": 2,
+  "potionsB": 3,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg5979:alive:hp500:pot1:in0.0:k9;R:CalamityMod/PristineFury@Unreal:dmg59:alive:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg363:alive:hp500:pot1:in0.0:k0",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.6:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg32:dead@3.7:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg882:dead@4.5:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@1.8:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@6.9:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@1.8:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg49:dead@7.3:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@7.0:hp500:pot1:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg33:dead@4.7:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/2",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ3_prov_vs_reg9_prov_seed1.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|2|10800|n3|aa3|L3|pvchamp3_prov-reg9_prov|tc4|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 2,
+  "A": "champ3_prov",
+  "B": "reg9_prov",
+  "result": "B",
+  "winner": "reg9_prov",
+  "sec": 15.0,
+  "nA": 3,
+  "nB": 9,
+  "aliveA": 0,
+  "aliveB": 2,
+  "hpLeftA": 0,
+  "hpLeftB": 12,
+  "dmgA": 5036,
+  "dmgB": 3047,
+  "classA": {
+   "R": 1066,
+   "T": 3970
+  },
+  "classB": {
+   "R": 441,
+   "S": 1906,
+   "T": 700
+  },
+  "topA": "MoltenAmputator@Flawlessx1=3970 PristineFury@Unrealx1=1066 Spyker@Unrealx1=0",
+  "topB": "Morning_Star@Legendaryx1=1906 ReboundingRainbow@Flawlessx1=387 MoltenAmputator@Flawlessx2=313 Spyker@Unrealx1=272 TelluricGlare@Unrealx1=124 PristineFury@Unrealx2=45",
+  "deathsA": [
+   8.3,
+   11.2,
+   15.0
+  ],
+  "deathsB": [
+   1.7,
+   1.8,
+   1.9,
+   3.6,
+   3.6,
+   3.7,
+   12.3
+  ],
+  "potionsA": 3,
+  "potionsB": 3,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg3970:dead@8.3:hp500:pot1:in0.0:k6;R:CalamityMod/PristineFury@Unreal:dmg1066:dead@15.0:hp500:pot1:in0.0:k1;R:CalamityMod/Spyker@Unreal:dmg0:dead@11.2:hp500:pot1:in0.0:k0",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.7:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg36:dead@3.6:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg272:dead@3.7:hp500:pot0:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg124:dead@1.9:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg387:alive:hp500:pot1:in0.0:k1;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@1.8:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg1906:dead@12.3:hp500:pot1:in0.0:k1;T:CalamityMod/MoltenAmputator@Flawless:dmg313:alive:hp500:pot1:in0.0:k1;R:CalamityMod/PristineFury@Unreal:dmg9:dead@3.6:hp500:pot0:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "1/268/0/268/3",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ3_prov_vs_reg9_prov_seed2.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|3|10800|n3|aa3|L3|pvchamp3_prov-reg9_prov|tc4|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 3,
+  "A": "champ3_prov",
+  "B": "reg9_prov",
+  "result": "A",
+  "winner": "champ3_prov",
+  "sec": 13.4,
+  "nA": 3,
+  "nB": 9,
+  "aliveA": 1,
+  "aliveB": 0,
+  "hpLeftA": 9,
+  "hpLeftB": 0,
+  "dmgA": 5505,
+  "dmgB": 2994,
+  "classA": {
+   "R": 1689,
+   "T": 3816
+  },
+  "classB": {
+   "R": 118,
+   "S": 1810,
+   "T": 1066
+  },
+  "topA": "MoltenAmputator@Flawlessx1=3816 PristineFury@Unrealx1=1008 Spyker@Unrealx1=681",
+  "topB": "Morning_Star@Legendaryx1=1810 MoltenAmputator@Flawlessx2=1066 TelluricGlare@Unrealx1=79 PristineFury@Unrealx2=39 Spyker@Unrealx1=0 ReboundingRainbow@Flawlessx1=0",
+  "deathsA": [
+   5.4,
+   13.0
+  ],
+  "deathsB": [
+   1.6,
+   1.7,
+   1.8,
+   2.0,
+   2.0,
+   2.9,
+   9.6,
+   10.4,
+   13.4
+  ],
+  "potionsA": 1,
+  "potionsB": 4,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg3816:dead@5.4:hp500:pot0:in0.0:k6;R:CalamityMod/PristineFury@Unreal:dmg1008:alive:hp500:pot1:in0.0:k2;R:CalamityMod/Spyker@Unreal:dmg681:dead@13.0:hp500:pot0:in0.0:k0",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.6:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg16:dead@1.7:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg0:dead@2.0:hp500:pot0:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg79:dead@1.8:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@9.6:hp500:pot1:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@2.0:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg1810:dead@13.4:hp500:pot1:in0.0:k1;T:CalamityMod/MoltenAmputator@Flawless:dmg1066:dead@10.4:hp500:pot1:in0.0:k1;R:CalamityMod/PristineFury@Unreal:dmg23:dead@2.9:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/2",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ3_prov_vs_reg9_prov_seed3.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|4|10800|n3|aa3|L3|pvchamp3_prov-reg9_prov|tc4|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 4,
+  "A": "champ3_prov",
+  "B": "reg9_prov",
+  "result": "B",
+  "winner": "reg9_prov",
+  "sec": 6.8,
+  "nA": 3,
+  "nB": 9,
+  "aliveA": 0,
+  "aliveB": 7,
+  "hpLeftA": 0,
+  "hpLeftB": 78,
+  "dmgA": 1667,
+  "dmgB": 1891,
+  "classA": {
+   "R": 1667,
+   "T": 0
+  },
+  "classB": {
+   "R": 634,
+   "S": 0,
+   "T": 1257
+  },
+  "topA": "Spyker@Unrealx1=1667 MoltenAmputator@Flawlessx1=0 PristineFury@Unrealx1=0",
+  "topB": "MoltenAmputator@Flawlessx2=1257 Spyker@Unrealx1=546 TelluricGlare@Unrealx1=64 PristineFury@Unrealx2=24 ReboundingRainbow@Flawlessx1=0 PlanetaryAnnihilation@Unrealx1=0",
+  "deathsA": [
+   1.6,
+   3.2,
+   6.8
+  ],
+  "deathsB": [
+   4.3,
+   6.3
+  ],
+  "potionsA": 2,
+  "potionsB": 2,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.6:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg0:dead@3.2:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg1667:dead@6.8:hp500:pot1:in0.0:k2",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg1257:dead@4.3:hp500:pot1:in0.0:k1;R:CalamityMod/PristineFury@Unreal:dmg24:alive:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg546:alive:hp500:pot0:in0.0:k1;R:CalamityMod/TelluricGlare@Unreal:dmg64:dead@6.3:hp500:pot1:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:alive:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg0:alive:hp500:pot0:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ3_prov_vs_reg9_prov_seed4.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|5|10800|n3|aa3|L3|pvchamp3_prov-reg9_prov|tc4|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 5,
+  "A": "champ3_prov",
+  "B": "reg9_prov",
+  "result": "B",
+  "winner": "reg9_prov",
+  "sec": 9.8,
+  "nA": 3,
+  "nB": 9,
+  "aliveA": 0,
+  "aliveB": 4,
+  "hpLeftA": 0,
+  "hpLeftB": 38,
+  "dmgA": 4001,
+  "dmgB": 1648,
+  "classA": {
+   "R": 2666,
+   "T": 1335
+  },
+  "classB": {
+   "R": 1054,
+   "S": 0,
+   "T": 594
+  },
+  "topA": "Spyker@Unrealx1=2058 MoltenAmputator@Flawlessx1=1335 PristineFury@Unrealx1=608",
+  "topB": "MoltenAmputator@Flawlessx2=594 Spyker@Unrealx1=527 TelluricGlare@Unrealx1=526 PlanetaryAnnihilation@Unrealx1=1 PristineFury@Unrealx2=0 ReboundingRainbow@Flawlessx1=0",
+  "deathsA": [
+   1.7,
+   8.1,
+   9.8
+  ],
+  "deathsB": [
+   1.6,
+   1.7,
+   4.5,
+   7.6,
+   7.6
+  ],
+  "potionsA": 2,
+  "potionsB": 4,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg1335:dead@1.7:hp500:pot0:in0.0:k2;R:CalamityMod/PristineFury@Unreal:dmg608:dead@9.8:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg2058:dead@8.1:hp500:pot1:in0.0:k3",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg594:dead@1.7:hp500:pot0:in0.0:k1;R:CalamityMod/PristineFury@Unreal:dmg0:dead@1.6:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg527:dead@7.6:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg526:alive:hp500:pot1:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg1:dead@7.6:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg0:dead@4.5:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ3_prov_vs_reg9_prov_seed5.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|1|10800|n9|aa3|L3|pvreg9_prov-champ3_prov|tc5|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 1,
+  "A": "reg9_prov",
+  "B": "champ3_prov",
+  "result": "A",
+  "winner": "reg9_prov",
+  "sec": 7.4,
+  "nA": 9,
+  "nB": 3,
+  "aliveA": 6,
+  "aliveB": 0,
+  "hpLeftA": 32,
+  "hpLeftB": 0,
+  "dmgA": 2023,
+  "dmgB": 3717,
+  "classA": {
+   "R": 1122,
+   "S": 0,
+   "T": 901
+  },
+  "classB": {
+   "R": 1820,
+   "T": 1897
+  },
+  "topA": "Spyker@Unrealx1=1069 MoltenAmputator@Flawlessx2=901 PristineFury@Unrealx2=51 PlanetaryAnnihilation@Unrealx1=2 TelluricGlare@Unrealx1=0 ReboundingRainbow@Flawlessx1=0",
+  "topB": "MoltenAmputator@Flawlessx1=1897 Spyker@Unrealx1=1026 PristineFury@Unrealx1=794",
+  "deathsA": [
+   1.7,
+   1.8,
+   1.8
+  ],
+  "deathsB": [
+   4.3,
+   7.2,
+   7.4
+  ],
+  "potionsA": 4,
+  "potionsB": 3,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.7:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg41:alive:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg1069:alive:hp500:pot1:in0.0:k1;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@1.8:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@1.8:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg2:alive:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg901:alive:hp500:pot1:in0.0:k1;R:CalamityMod/PristineFury@Unreal:dmg10:alive:hp500:pot1:in0.0:k0",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg1897:dead@4.3:hp500:pot1:in0.0:k3;R:CalamityMod/PristineFury@Unreal:dmg794:dead@7.4:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg1026:dead@7.2:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg9_prov_vs_champ3_prov_seed1.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|2|10800|n9|aa3|L3|pvreg9_prov-champ3_prov|tc5|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 2,
+  "A": "reg9_prov",
+  "B": "champ3_prov",
+  "result": "B",
+  "winner": "champ3_prov",
+  "sec": 6.7,
+  "nA": 9,
+  "nB": 3,
+  "aliveA": 0,
+  "aliveB": 3,
+  "hpLeftA": 0,
+  "hpLeftB": 68,
+  "dmgA": 632,
+  "dmgB": 6108,
+  "classA": {
+   "R": 632,
+   "S": 0,
+   "T": 0
+  },
+  "classB": {
+   "R": 438,
+   "T": 5670
+  },
+  "topA": "Spyker@Unrealx1=560 TelluricGlare@Unrealx1=72 MoltenAmputator@Flawlessx2=0 PristineFury@Unrealx2=0 ReboundingRainbow@Flawlessx1=0 PlanetaryAnnihilation@Unrealx1=0",
+  "topB": "MoltenAmputator@Flawlessx1=5670 Spyker@Unrealx1=349 PristineFury@Unrealx1=89",
+  "deathsA": [
+   1.7,
+   1.7,
+   1.8,
+   1.8,
+   1.9,
+   2.0,
+   2.1,
+   4.7,
+   6.7
+  ],
+  "deathsB": [],
+  "potionsA": 1,
+  "potionsB": 1,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.7:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg0:dead@1.7:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg560:dead@4.7:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg72:dead@2.0:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@1.8:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@1.8:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:dead@6.7:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.9:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg0:dead@2.1:hp500:pot0:in0.0:k0",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg5670:alive:hp500:pot0:in0.0:k9;R:CalamityMod/PristineFury@Unreal:dmg89:alive:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg349:alive:hp500:pot0:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg9_prov_vs_champ3_prov_seed2.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|3|10800|n9|aa3|L3|pvreg9_prov-champ3_prov|tc5|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 3,
+  "A": "reg9_prov",
+  "B": "champ3_prov",
+  "result": "A",
+  "winner": "reg9_prov",
+  "sec": 9.5,
+  "nA": 9,
+  "nB": 3,
+  "aliveA": 1,
+  "aliveB": 0,
+  "hpLeftA": 8,
+  "hpLeftB": 0,
+  "dmgA": 2310,
+  "dmgB": 6270,
+  "classA": {
+   "R": 2310,
+   "S": 0,
+   "T": 0
+  },
+  "classB": {
+   "R": 2455,
+   "T": 3815
+  },
+  "topA": "Spyker@Unrealx1=2231 TelluricGlare@Unrealx1=53 PristineFury@Unrealx2=26 MoltenAmputator@Flawlessx2=0 ReboundingRainbow@Flawlessx1=0 PlanetaryAnnihilation@Unrealx1=0",
+  "topB": "MoltenAmputator@Flawlessx1=3815 Spyker@Unrealx1=2386 PristineFury@Unrealx1=69",
+  "deathsA": [
+   1.7,
+   1.8,
+   2.0,
+   2.2,
+   2.7,
+   4.9,
+   5.2,
+   8.4
+  ],
+  "deathsB": [
+   5.3,
+   6.2,
+   9.5
+  ],
+  "potionsA": 6,
+  "potionsB": 3,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@2.7:hp500:pot1:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg26:dead@4.9:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg2231:alive:hp500:pot1:in0.0:k2;R:CalamityMod/TelluricGlare@Unreal:dmg53:dead@2.2:hp500:pot1:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@1.7:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@2.0:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:dead@5.2:hp500:pot1:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.8:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg0:dead@8.4:hp500:pot1:in0.0:k0",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg3815:dead@5.3:hp500:pot1:in0.0:k6;R:CalamityMod/PristineFury@Unreal:dmg69:dead@6.2:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg2386:dead@9.5:hp500:pot1:in0.0:k2",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg9_prov_vs_champ3_prov_seed3.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|4|10800|n9|aa3|L3|pvreg9_prov-champ3_prov|tc5|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 4,
+  "A": "reg9_prov",
+  "B": "champ3_prov",
+  "result": "B",
+  "winner": "champ3_prov",
+  "sec": 5.2,
+  "nA": 9,
+  "nB": 3,
+  "aliveA": 0,
+  "aliveB": 3,
+  "hpLeftA": 0,
+  "hpLeftB": 85,
+  "dmgA": 90,
+  "dmgB": 6909,
+  "classA": {
+   "R": 39,
+   "S": 51,
+   "T": 0
+  },
+  "classB": {
+   "R": 1516,
+   "T": 5393
+  },
+  "topA": "Morning_Star@Legendaryx1=51 PristineFury@Unrealx2=39 MoltenAmputator@Flawlessx2=0 Spyker@Unrealx1=0 TelluricGlare@Unrealx1=0 ReboundingRainbow@Flawlessx1=0",
+  "topB": "MoltenAmputator@Flawlessx1=5393 Spyker@Unrealx1=1516 PristineFury@Unrealx1=0",
+  "deathsA": [
+   1.7,
+   1.9,
+   1.9,
+   3.3,
+   3.3,
+   3.5,
+   3.5,
+   3.5,
+   5.2
+  ],
+  "deathsB": [],
+  "potionsA": 5,
+  "potionsB": 0,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.7:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg39:dead@3.5:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg0:dead@3.5:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@1.9:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@1.9:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@3.3:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg51:dead@5.2:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@3.3:hp500:pot1:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg0:dead@3.5:hp500:pot1:in0.0:k0",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg5393:alive:hp500:pot0:in0.0:k9;R:CalamityMod/PristineFury@Unreal:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg1516:alive:hp500:pot0:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg9_prov_vs_champ3_prov_seed4.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|5|10800|n9|aa3|L3|pvreg9_prov-champ3_prov|tc5|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 5,
+  "A": "reg9_prov",
+  "B": "champ3_prov",
+  "result": "B",
+  "winner": "champ3_prov",
+  "sec": 6.4,
+  "nA": 9,
+  "nB": 3,
+  "aliveA": 0,
+  "aliveB": 3,
+  "hpLeftA": 0,
+  "hpLeftB": 62,
+  "dmgA": 930,
+  "dmgB": 6001,
+  "classA": {
+   "R": 882,
+   "S": 48,
+   "T": 0
+  },
+  "classB": {
+   "R": 373,
+   "T": 5628
+  },
+  "topA": "Spyker@Unrealx1=846 Morning_Star@Legendaryx1=48 PristineFury@Unrealx2=36 MoltenAmputator@Flawlessx2=0 TelluricGlare@Unrealx1=0 ReboundingRainbow@Flawlessx1=0",
+  "topB": "MoltenAmputator@Flawlessx1=5628 Spyker@Unrealx1=373 PristineFury@Unrealx1=0",
+  "deathsA": [
+   1.7,
+   1.8,
+   2.0,
+   2.0,
+   2.0,
+   2.1,
+   3.2,
+   3.5,
+   6.4
+  ],
+  "deathsB": [],
+  "potionsA": 3,
+  "potionsB": 3,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.7:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg0:dead@2.0:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg846:dead@3.2:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@2.0:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@1.8:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@2.1:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg48:dead@6.4:hp500:pot1:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@2.0:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg36:dead@3.5:hp500:pot1:in0.0:k0",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg5628:alive:hp500:pot1:in0.0:k9;R:CalamityMod/PristineFury@Unreal:dmg0:alive:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg373:alive:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg9_prov_vs_champ3_prov_seed5.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|1|10800|n5|aa3|L3|pvchamp5_prov-reg15_prov|tc6|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 1,
+  "A": "champ5_prov",
+  "B": "reg15_prov",
+  "result": "A",
+  "winner": "champ5_prov",
+  "sec": 15.3,
+  "nA": 5,
+  "nB": 15,
+  "aliveA": 2,
+  "aliveB": 0,
+  "hpLeftA": 27,
+  "hpLeftB": 0,
+  "dmgA": 9719,
+  "dmgB": 3720,
+  "classA": {
+   "R": 4158,
+   "T": 5561
+  },
+  "classB": {
+   "R": 1111,
+   "S": 1655,
+   "T": 954
+  },
+  "topA": "MoltenAmputator@Flawlessx1=3859 ReboundingRainbow@Flawlessx1=1702 TelluricGlare@Unrealx1=1491 Spyker@Unrealx1=1452 PristineFury@Unrealx1=1215",
+  "topB": "Morning_Star@Legendaryx2=1655 MoltenAmputator@Flawlessx3=871 Spyker@Unrealx2=834 PristineFury@Unrealx2=224 ReboundingRainbow@Flawlessx2=83 TelluricGlare@Unrealx2=53",
+  "deathsA": [
+   4.8,
+   8.7,
+   14.7
+  ],
+  "deathsB": [
+   2.1,
+   2.1,
+   2.2,
+   2.2,
+   2.7,
+   4.1,
+   6.7,
+   7.6,
+   7.7,
+   9.7,
+   11.5,
+   11.7,
+   12.8,
+   15.1,
+   15.3
+  ],
+  "potionsA": 4,
+  "potionsB": 10,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg3859:dead@4.8:hp500:pot1:in0.0:k6;R:CalamityMod/PristineFury@Unreal:dmg1215:dead@14.7:hp500:pot1:in0.0:k1;R:CalamityMod/Spyker@Unreal:dmg1452:alive:hp500:pot1:in0.0:k4;R:CalamityMod/TelluricGlare@Unreal:dmg1491:alive:hp500:pot1:in0.0:k2;T:CalamityMod/ReboundingRainbow@Flawless:dmg1702:dead@8.7:hp500:pot0:in0.0:k1",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg311:dead@4.1:hp500:pot1:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg73:dead@7.7:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg555:dead@9.7:hp500:pot1:in0.0:k1;R:CalamityMod/TelluricGlare@Unreal:dmg53:dead@2.1:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@12.8:hp500:pot1:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@2.2:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:dead@2.1:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg560:dead@15.1:hp500:pot1:in0.0:k1;R:CalamityMod/PristineFury@Unreal:dmg151:dead@7.6:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg279:dead@15.3:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@2.2:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg83:dead@6.7:hp500:pot1:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@11.5:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg1655:dead@11.7:hp500:pot1:in0.0:k1;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@2.7:hp500:pot0:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/3",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ5_prov_vs_reg15_prov_seed1.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|2|10800|n5|aa3|L3|pvchamp5_prov-reg15_prov|tc6|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 2,
+  "A": "champ5_prov",
+  "B": "reg15_prov",
+  "result": "B",
+  "winner": "reg15_prov",
+  "sec": 10.1,
+  "nA": 5,
+  "nB": 15,
+  "aliveA": 0,
+  "aliveB": 9,
+  "hpLeftA": 0,
+  "hpLeftB": 44,
+  "dmgA": 6336,
+  "dmgB": 4679,
+  "classA": {
+   "R": 1167,
+   "T": 5169
+  },
+  "classB": {
+   "R": 783,
+   "S": 3055,
+   "T": 841
+  },
+  "topA": "MoltenAmputator@Flawlessx1=2671 ReboundingRainbow@Flawlessx1=2498 Spyker@Unrealx1=1167 PristineFury@Unrealx1=0 TelluricGlare@Unrealx1=0",
+  "topB": "Morning_Star@Legendaryx2=3055 MoltenAmputator@Flawlessx3=608 Spyker@Unrealx2=574 ReboundingRainbow@Flawlessx2=233 TelluricGlare@Unrealx2=142 PristineFury@Unrealx2=66",
+  "deathsA": [
+   2.3,
+   2.4,
+   6.1,
+   9.0,
+   10.1
+  ],
+  "deathsB": [
+   1.6,
+   5.9,
+   6.0,
+   6.8,
+   7.3,
+   9.4
+  ],
+  "potionsA": 3,
+  "potionsB": 6,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg2671:dead@6.1:hp500:pot1:in0.0:k3;R:CalamityMod/PristineFury@Unreal:dmg0:dead@2.3:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg1167:dead@10.1:hp500:pot1:in0.0:k1;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@2.4:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg2498:dead@9.0:hp500:pot1:in0.0:k2",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.6:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg54:alive:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg287:dead@5.9:hp500:pot0:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg11:alive:hp500:pot1:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg233:alive:hp500:pot1:in0.0:k1;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg1:alive:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg3055:dead@9.4:hp500:pot0:in0.0:k2;T:CalamityMod/MoltenAmputator@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg12:alive:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg287:dead@6.0:hp500:pot0:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg131:alive:hp500:pot1:in0.0:k1;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@6.8:hp500:pot1:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:alive:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg608:dead@7.3:hp500:pot1:in0.0:k1",
+  "stealthA": "5/1390/0/302/2",
+  "stealthB": "0/0/0/0/3",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ5_prov_vs_reg15_prov_seed2.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|3|10800|n5|aa3|L3|pvchamp5_prov-reg15_prov|tc6|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 3,
+  "A": "champ5_prov",
+  "B": "reg15_prov",
+  "result": "B",
+  "winner": "reg15_prov",
+  "sec": 19.2,
+  "nA": 5,
+  "nB": 15,
+  "aliveA": 0,
+  "aliveB": 3,
+  "hpLeftA": 0,
+  "hpLeftB": 19,
+  "dmgA": 8922,
+  "dmgB": 4707,
+  "classA": {
+   "R": 8071,
+   "T": 851
+  },
+  "classB": {
+   "R": 510,
+   "S": 1940,
+   "T": 2257
+  },
+  "topA": "Spyker@Unrealx1=6395 TelluricGlare@Unrealx1=1676 ReboundingRainbow@Flawlessx1=851 MoltenAmputator@Flawlessx1=0 PristineFury@Unrealx1=0",
+  "topB": "MoltenAmputator@Flawlessx3=2257 Morning_Star@Legendaryx2=1940 Spyker@Unrealx2=274 TelluricGlare@Unrealx2=181 PristineFury@Unrealx2=49 PlanetaryAnnihilation@Unrealx2=6",
+  "deathsA": [
+   1.6,
+   1.7,
+   4.9,
+   14.7,
+   19.2
+  ],
+  "deathsB": [
+   7.1,
+   7.2,
+   8.0,
+   8.9,
+   9.2,
+   9.3,
+   9.4,
+   10.6,
+   12.6,
+   12.6,
+   13.2,
+   17.2
+  ],
+  "potionsA": 2,
+  "potionsB": 13,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.6:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg0:dead@1.7:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg6395:dead@19.2:hp500:pot1:in0.0:k10;R:CalamityMod/TelluricGlare@Unreal:dmg1676:dead@4.9:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg851:dead@14.7:hp500:pot1:in0.0:k2",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg1173:dead@8.0:hp500:pot1:in0.0:k2;R:CalamityMod/PristineFury@Unreal:dmg37:dead@13.2:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg0:dead@12.6:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg152:dead@9.2:hp500:pot1:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:alive:hp500:pot1:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg4:dead@9.4:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg1761:dead@7.1:hp500:pot1:in0.0:k1;T:CalamityMod/MoltenAmputator@Flawless:dmg1084:alive:hp500:pot0:in0.0:k1;R:CalamityMod/PristineFury@Unreal:dmg12:dead@12.6:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg274:dead@9.3:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg29:dead@8.9:hp500:pot1:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@7.2:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg2:alive:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg179:dead@17.2:hp500:pot1:in0.0:k1;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@10.6:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/1",
+  "stealthB": "0/0/0/0/3",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ5_prov_vs_reg15_prov_seed3.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|4|10800|n5|aa3|L3|pvchamp5_prov-reg15_prov|tc6|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 4,
+  "A": "champ5_prov",
+  "B": "reg15_prov",
+  "result": "B",
+  "winner": "reg15_prov",
+  "sec": 10.0,
+  "nA": 5,
+  "nB": 15,
+  "aliveA": 0,
+  "aliveB": 1,
+  "hpLeftA": 0,
+  "hpLeftB": 3,
+  "dmgA": 9339,
+  "dmgB": 3215,
+  "classA": {
+   "R": 3451,
+   "T": 5888
+  },
+  "classB": {
+   "R": 2473,
+   "S": 145,
+   "T": 597
+  },
+  "topA": "MoltenAmputator@Flawlessx1=5663 Spyker@Unrealx1=2313 TelluricGlare@Unrealx1=868 PristineFury@Unrealx1=270 ReboundingRainbow@Flawlessx1=225",
+  "topB": "Spyker@Unrealx2=2245 MoltenAmputator@Flawlessx3=597 PristineFury@Unrealx2=228 Morning_Star@Legendaryx2=145 TelluricGlare@Unrealx2=0 ReboundingRainbow@Flawlessx2=0",
+  "deathsA": [
+   4.4,
+   6.8,
+   8.8,
+   9.7,
+   10.0
+  ],
+  "deathsB": [
+   1.8,
+   1.9,
+   1.9,
+   1.9,
+   2.0,
+   2.3,
+   3.4,
+   5.0,
+   5.7,
+   6.0,
+   6.5,
+   7.6,
+   9.0,
+   10.1
+  ],
+  "potionsA": 5,
+  "potionsB": 8,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg5663:dead@4.4:hp500:pot1:in0.0:k7;R:CalamityMod/PristineFury@Unreal:dmg270:dead@9.7:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg2313:dead@6.8:hp500:pot1:in0.0:k3;R:CalamityMod/TelluricGlare@Unreal:dmg868:dead@10.0:hp500:pot1:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg225:dead@8.8:hp500:pot1:in0.0:k1",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.8:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg67:dead@3.4:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg1086:dead@6.5:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@1.9:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@5.0:hp500:pot1:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@2.3:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:dead@1.9:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@7.6:hp500:pot1:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg161:dead@6.0:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg1159:dead@10.1:hp500:pot1:in0.0:k1;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@1.9:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@2.0:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@9.0:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg145:alive:hp500:pot0:in0.0:k1;T:CalamityMod/MoltenAmputator@Flawless:dmg597:dead@5.7:hp500:pot1:in0.0:k1",
+  "stealthA": "0/0/0/0/1",
+  "stealthB": "0/0/0/0/1",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ5_prov_vs_reg15_prov_seed4.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|5|10800|n5|aa3|L3|pvchamp5_prov-reg15_prov|tc6|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 5,
+  "A": "champ5_prov",
+  "B": "reg15_prov",
+  "result": "A",
+  "winner": "champ5_prov",
+  "sec": 11.3,
+  "nA": 5,
+  "nB": 15,
+  "aliveA": 2,
+  "aliveB": 0,
+  "hpLeftA": 27,
+  "hpLeftB": 0,
+  "dmgA": 9612,
+  "dmgB": 2605,
+  "classA": {
+   "R": 3370,
+   "T": 6242
+  },
+  "classB": {
+   "R": 2140,
+   "S": 89,
+   "T": 376
+  },
+  "topA": "MoltenAmputator@Flawlessx1=6242 Spyker@Unrealx1=1709 TelluricGlare@Unrealx1=1594 PristineFury@Unrealx1=67 ReboundingRainbow@Flawlessx1=0",
+  "topB": "Spyker@Unrealx2=2001 MoltenAmputator@Flawlessx3=376 TelluricGlare@Unrealx2=110 Morning_Star@Legendaryx2=89 PristineFury@Unrealx2=28 PlanetaryAnnihilation@Unrealx2=1",
+  "deathsA": [
+   4.4,
+   6.2,
+   6.3
+  ],
+  "deathsB": [
+   1.8,
+   1.8,
+   1.8,
+   1.9,
+   1.9,
+   2.0,
+   2.0,
+   3.0,
+   3.6,
+   5.1,
+   7.2,
+   8.2,
+   9.0,
+   10.5,
+   11.3
+  ],
+  "potionsA": 4,
+  "potionsB": 6,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg6242:dead@6.2:hp500:pot1:in0.0:k10;R:CalamityMod/PristineFury@Unreal:dmg67:dead@4.4:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg1709:alive:hp500:pot0:in0.0:k2;R:CalamityMod/TelluricGlare@Unreal:dmg1594:alive:hp500:pot1:in0.0:k3;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@6.3:hp500:pot1:in0.0:k0",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.9:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg15:dead@2.0:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg1140:dead@5.1:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg59:dead@1.8:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@11.3:hp500:pot1:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@1.8:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg0:dead@1.8:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg376:dead@7.2:hp500:pot1:in0.0:k1;R:CalamityMod/PristineFury@Unreal:dmg13:dead@3.6:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg861:dead@8.2:hp500:pot1:in0.0:k1;R:CalamityMod/TelluricGlare@Unreal:dmg51:dead@3.0:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@2.0:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg1:dead@10.5:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg89:dead@9.0:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.9:hp500:pot0:in0.0:k0",
+  "stealthA": "0/0/0/0/1",
+  "stealthB": "0/0/0/0/2",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/champ5_prov_vs_reg15_prov_seed5.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|1|10800|n15|aa3|L3|pvreg15_prov-champ5_prov|tc7|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 1,
+  "A": "reg15_prov",
+  "B": "champ5_prov",
+  "result": "A",
+  "winner": "reg15_prov",
+  "sec": 8.1,
+  "nA": 15,
+  "nB": 5,
+  "aliveA": 8,
+  "aliveB": 0,
+  "hpLeftA": 37,
+  "hpLeftB": 0,
+  "dmgA": 3759,
+  "dmgB": 5749,
+  "classA": {
+   "R": 2344,
+   "S": 0,
+   "T": 1415
+  },
+  "classB": {
+   "R": 5749,
+   "T": 0
+  },
+  "topA": "Spyker@Unrealx2=2215 MoltenAmputator@Flawlessx3=1415 TelluricGlare@Unrealx2=114 PristineFury@Unrealx2=11 PlanetaryAnnihilation@Unrealx2=4 ReboundingRainbow@Flawlessx2=0",
+  "topB": "Spyker@Unrealx1=4701 TelluricGlare@Unrealx1=720 PristineFury@Unrealx1=328 MoltenAmputator@Flawlessx1=0 ReboundingRainbow@Flawlessx1=0",
+  "deathsA": [
+   3.9,
+   6.2,
+   6.3,
+   6.5,
+   6.7,
+   6.7,
+   7.5
+  ],
+  "deathsB": [
+   2.7,
+   3.1,
+   4.8,
+   7.0,
+   8.1
+  ],
+  "potionsA": 8,
+  "potionsB": 4,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg382:dead@6.7:hp500:pot0:in0.0:k1;R:CalamityMod/PristineFury@Unreal:dmg11:alive:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg867:alive:hp500:pot1:in0.0:k1;R:CalamityMod/TelluricGlare@Unreal:dmg114:dead@6.2:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@6.7:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg3:dead@6.5:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot1:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg1033:dead@6.3:hp500:pot0:in0.0:k2;R:CalamityMod/PristineFury@Unreal:dmg0:alive:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg1348:alive:hp500:pot0:in0.0:k1;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@3.9:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:alive:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg1:dead@7.5:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:alive:hp500:pot1:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg0:alive:hp500:pot1:in0.0:k0",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@2.7:hp500:pot1:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg328:dead@3.1:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg4701:dead@8.1:hp500:pot1:in0.0:k7;R:CalamityMod/TelluricGlare@Unreal:dmg720:dead@4.8:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@7.0:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/0",
+  "stealthB": "0/0/0/0/0",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg15_prov_vs_champ5_prov_seed1.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|2|10800|n15|aa3|L3|pvreg15_prov-champ5_prov|tc7|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 2,
+  "A": "reg15_prov",
+  "B": "champ5_prov",
+  "result": "B",
+  "winner": "champ5_prov",
+  "sec": 14.9,
+  "nA": 15,
+  "nB": 5,
+  "aliveA": 0,
+  "aliveB": 2,
+  "hpLeftA": 0,
+  "hpLeftB": 11,
+  "dmgA": 2586,
+  "dmgB": 9333,
+  "classA": {
+   "R": 278,
+   "S": 143,
+   "T": 2165
+  },
+  "classB": {
+   "R": 7543,
+   "T": 1790
+  },
+  "topA": "MoltenAmputator@Flawlessx3=2076 TelluricGlare@Unrealx2=226 Morning_Star@Legendaryx2=143 ReboundingRainbow@Flawlessx2=89 PristineFury@Unrealx2=50 PlanetaryAnnihilation@Unrealx2=2",
+  "topB": "Spyker@Unrealx1=3721 TelluricGlare@Unrealx1=3608 MoltenAmputator@Flawlessx1=1151 ReboundingRainbow@Flawlessx1=639 PristineFury@Unrealx1=214",
+  "deathsA": [
+   1.7,
+   1.7,
+   6.1,
+   6.2,
+   6.5,
+   6.6,
+   6.8,
+   7.3,
+   7.4,
+   8.6,
+   9.0,
+   10.4,
+   11.9,
+   12.0,
+   14.9
+  ],
+  "deathsB": [
+   1.7,
+   3.9,
+   9.9
+  ],
+  "potionsA": 12,
+  "potionsB": 4,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg582:dead@1.7:hp500:pot0:in0.0:k1;R:CalamityMod/PristineFury@Unreal:dmg31:dead@6.2:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg0:dead@6.8:hp500:pot0:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@1.7:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg89:dead@7.3:hp500:pot1:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@6.1:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg54:dead@10.4:hp500:pot1:in0.0:k1;T:CalamityMod/MoltenAmputator@Flawless:dmg1494:dead@7.4:hp500:pot1:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg19:dead@8.6:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg0:dead@6.6:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg226:dead@6.5:hp500:pot1:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@11.9:hp500:pot1:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg2:dead@9.0:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg89:dead@14.9:hp500:pot1:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@12.0:hp500:pot1:in0.0:k0",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg1151:dead@1.7:hp500:pot0:in0.0:k2;R:CalamityMod/PristineFury@Unreal:dmg214:dead@3.9:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg3721:alive:hp500:pot1:in0.0:k6;R:CalamityMod/TelluricGlare@Unreal:dmg3608:alive:hp500:pot1:in0.0:k2;T:CalamityMod/ReboundingRainbow@Flawless:dmg639:dead@9.9:hp500:pot1:in0.0:k4",
+  "stealthA": "0/0/0/0/2",
+  "stealthB": "0/0/0/0/1",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg15_prov_vs_champ5_prov_seed2.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|3|10800|n15|aa3|L3|pvreg15_prov-champ5_prov|tc7|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 3,
+  "A": "reg15_prov",
+  "B": "champ5_prov",
+  "result": "B",
+  "winner": "champ5_prov",
+  "sec": 15.2,
+  "nA": 15,
+  "nB": 5,
+  "aliveA": 0,
+  "aliveB": 3,
+  "hpLeftA": 0,
+  "hpLeftB": 43,
+  "dmgA": 3222,
+  "dmgB": 10397,
+  "classA": {
+   "R": 1198,
+   "S": 1658,
+   "T": 366
+  },
+  "classB": {
+   "R": 6857,
+   "T": 3540
+  },
+  "topA": "Morning_Star@Legendaryx2=1658 Spyker@Unrealx2=1058 MoltenAmputator@Flawlessx3=366 TelluricGlare@Unrealx2=88 PristineFury@Unrealx2=49 PlanetaryAnnihilation@Unrealx2=3",
+  "topB": "Spyker@Unrealx1=5006 MoltenAmputator@Flawlessx1=3540 TelluricGlare@Unrealx1=1501 PristineFury@Unrealx1=350 ReboundingRainbow@Flawlessx1=0",
+  "deathsA": [
+   2.1,
+   2.1,
+   2.2,
+   2.3,
+   2.6,
+   2.6,
+   3.6,
+   4.2,
+   4.7,
+   4.8,
+   5.4,
+   5.8,
+   5.9,
+   11.1,
+   15.2
+  ],
+  "deathsB": [
+   9.5,
+   11.2
+  ],
+  "potionsA": 9,
+  "potionsB": 4,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@2.6:hp500:pot1:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg39:dead@4.2:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg515:dead@2.2:hp500:pot0:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg68:dead@2.1:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@3.6:hp500:pot1:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@2.1:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg1658:dead@11.1:hp500:pot1:in0.0:k1;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@2.3:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg10:dead@5.9:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg543:dead@4.7:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg20:dead@2.6:hp500:pot1:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@4.8:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg3:dead@5.4:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg0:dead@5.8:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg366:dead@15.2:hp500:pot1:in0.0:k1",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg3540:alive:hp500:pot1:in0.0:k6;R:CalamityMod/PristineFury@Unreal:dmg350:alive:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg5006:alive:hp500:pot1:in0.0:k7;R:CalamityMod/TelluricGlare@Unreal:dmg1501:dead@11.2:hp500:pot1:in0.0:k2;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@9.5:hp500:pot0:in0.0:k0",
+  "stealthA": "0/0/0/0/1",
+  "stealthB": "0/0/0/0/1",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg15_prov_vs_champ5_prov_seed3.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|4|10800|n15|aa3|L3|pvreg15_prov-champ5_prov|tc7|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 4,
+  "A": "reg15_prov",
+  "B": "champ5_prov",
+  "result": "A",
+  "winner": "reg15_prov",
+  "sec": 16.3,
+  "nA": 15,
+  "nB": 5,
+  "aliveA": 4,
+  "aliveB": 0,
+  "hpLeftA": 11,
+  "hpLeftB": 0,
+  "dmgA": 4856,
+  "dmgB": 9336,
+  "classA": {
+   "R": 1746,
+   "S": 1789,
+   "T": 1321
+  },
+  "classB": {
+   "R": 9232,
+   "T": 104
+  },
+  "topA": "Morning_Star@Legendaryx2=1789 Spyker@Unrealx2=1664 MoltenAmputator@Flawlessx3=1242 ReboundingRainbow@Flawlessx2=79 TelluricGlare@Unrealx2=53 PristineFury@Unrealx2=26",
+  "topB": "Spyker@Unrealx1=7072 TelluricGlare@Unrealx1=1534 PristineFury@Unrealx1=626 ReboundingRainbow@Flawlessx1=104 MoltenAmputator@Flawlessx1=0",
+  "deathsA": [
+   3.4,
+   4.5,
+   4.7,
+   5.2,
+   5.2,
+   5.2,
+   5.6,
+   5.9,
+   6.2,
+   9.6,
+   11.3
+  ],
+  "deathsB": [
+   1.7,
+   5.2,
+   6.7,
+   13.9,
+   16.3
+  ],
+  "potionsA": 14,
+  "potionsB": 4,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg1242:dead@4.5:hp500:pot0:in0.0:k1;R:CalamityMod/PristineFury@Unreal:dmg6:dead@5.6:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg276:dead@5.2:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg53:dead@4.7:hp500:pot1:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg79:dead@5.9:hp500:pot1:in0.0:k1;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg2:dead@6.2:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg1519:alive:hp500:pot1:in0.0:k1;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@9.6:hp500:pot1:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg20:dead@5.2:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg1388:alive:hp500:pot1:in0.0:k1;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@3.4:hp500:pot1:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@11.3:hp500:pot1:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg1:dead@5.2:hp500:pot1:in0.0:k0;S:Morning_Star@Legendary:dmg270:alive:hp500:pot1:in0.0:k1;T:CalamityMod/MoltenAmputator@Flawless:dmg0:alive:hp500:pot1:in0.0:k0",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.7:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg626:dead@13.9:hp500:pot1:in0.0:k1;R:CalamityMod/Spyker@Unreal:dmg7072:dead@6.7:hp500:pot1:in0.0:k8;R:CalamityMod/TelluricGlare@Unreal:dmg1534:dead@16.3:hp500:pot1:in0.0:k1;T:CalamityMod/ReboundingRainbow@Flawless:dmg104:dead@5.2:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/1",
+  "stealthB": "0/0/0/0/1",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg15_prov_vs_champ5_prov_seed4.levyrec"
+ },
+ {
+  "key": "fight|pvp|mdeath|sd|5|10800|n15|aa3|L3|pvreg15_prov-champ5_prov|tc7|dlK",
+  "run": "/home/user/lab/pvp/runs/champ",
+  "seed": 5,
+  "A": "reg15_prov",
+  "B": "champ5_prov",
+  "result": "B",
+  "winner": "champ5_prov",
+  "sec": 7.9,
+  "nA": 15,
+  "nB": 5,
+  "aliveA": 0,
+  "aliveB": 3,
+  "hpLeftA": 0,
+  "hpLeftB": 40,
+  "dmgA": 1607,
+  "dmgB": 10387,
+  "classA": {
+   "R": 747,
+   "S": 188,
+   "T": 672
+  },
+  "classB": {
+   "R": 1291,
+   "T": 9096
+  },
+  "topA": "MoltenAmputator@Flawlessx3=672 Spyker@Unrealx2=558 PristineFury@Unrealx2=189 Morning_Star@Legendaryx2=188 TelluricGlare@Unrealx2=0 ReboundingRainbow@Flawlessx2=0",
+  "topB": "MoltenAmputator@Flawlessx1=9096 TelluricGlare@Unrealx1=599 PristineFury@Unrealx1=354 Spyker@Unrealx1=338 ReboundingRainbow@Flawlessx1=0",
+  "deathsA": [
+   1.8,
+   1.8,
+   1.8,
+   1.8,
+   1.9,
+   1.9,
+   1.9,
+   2.0,
+   2.9,
+   5.2,
+   5.4,
+   7.1,
+   7.1,
+   7.5,
+   7.9
+  ],
+  "deathsB": [
+   7.8,
+   7.9
+  ],
+  "potionsA": 4,
+  "potionsB": 2,
+  "unattr": [
+   0,
+   0
+  ],
+  "dot": [
+   0,
+   0
+  ],
+  "perA": "T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.8:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg28:dead@1.9:hp500:pot0:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg0:dead@5.4:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@1.8:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@1.8:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@1.9:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg91:dead@7.1:hp500:pot0:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg0:dead@1.8:hp500:pot0:in0.0:k0;R:CalamityMod/PristineFury@Unreal:dmg161:dead@5.2:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg558:dead@2.9:hp500:pot1:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg0:dead@1.9:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:dead@7.1:hp500:pot0:in0.0:k0;R:CalamityMod/PlanetaryAnnihilation@Unreal:dmg0:dead@2.0:hp500:pot0:in0.0:k0;S:Morning_Star@Legendary:dmg97:dead@7.5:hp500:pot1:in0.0:k0;T:CalamityMod/MoltenAmputator@Flawless:dmg672:dead@7.9:hp500:pot0:in0.0:k2",
+  "perB": "T:CalamityMod/MoltenAmputator@Flawless:dmg9096:alive:hp500:pot0:in0.0:k14;R:CalamityMod/PristineFury@Unreal:dmg354:dead@7.8:hp500:pot1:in0.0:k0;R:CalamityMod/Spyker@Unreal:dmg338:dead@7.9:hp500:pot0:in0.0:k0;R:CalamityMod/TelluricGlare@Unreal:dmg599:alive:hp500:pot0:in0.0:k0;T:CalamityMod/ReboundingRainbow@Flawless:dmg0:alive:hp500:pot1:in0.0:k0",
+  "stealthA": "0/0/0/0/1",
+  "stealthB": "0/0/0/0/1",
+  "file": "/tmp/claude-0/-home-user-total-mobilization/9fbf7c25-c34e-53c7-98cd-36a181fc49d3/scratchpad/pvp_recs/champ/reg15_prov_vs_champ5_prov_seed5.levyrec"
+ }
+]

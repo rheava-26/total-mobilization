@@ -55,7 +55,7 @@ namespace Levy.Common.Testing
 		{
 			public char Cls; public string Weapon, Ammo; public string[] Armor = Array.Empty<string>(), Acc = Array.Empty<string>();
 			public int LifeCrystals, ManaCrystals, Potions; public string Potion = ""; public bool ManAtArms, Tank;
-			public string Side = "", Hook = "", Name = ""; public int LifeFruit; // lab kit (lv=): a per-levy sidearm and grappling hook, and Life Fruit fed after the crystals
+			public string Side = "", Hook = "", Name = ""; public int LifeFruit; public bool Champion; // lab kit (lv=): a per-levy sidearm and grappling hook, and Life Fruit fed after the crystals
 			public int Hp => 100 + 20 * LifeCrystals; public int Mana => 20 + 20 * ManaCrystals;
 			public string Describe() => $"{Cls}:{Weapon}{(string.IsNullOrEmpty(Ammo) ? "" : "/" + Ammo)}|{string.Join("+", Armor.Select(a => a.Split(' ')[0]).Distinct())}|{(Acc.Length == 0 ? "-" : string.Join("+", Acc))}|{(ManAtArms ? "MaA" : "Lv")}|{Hp}hp/{Mana}mp|{Potions}x{Potion}";
 		}
@@ -554,7 +554,7 @@ namespace Levy.Common.Testing
 		private CrLevy CrSpawnLevy(CrLevySpec spec, CrRun run, int slot, int count, Vector2 center)
 		{
 			var rec = MakeRecord($"{spec.Cls}{slot}");
-			rec.Grade = spec.ManAtArms ? Grade.ManAtArms : Grade.Levy;
+			rec.Grade = spec.Champion ? Grade.Champion : spec.ManAtArms ? Grade.ManAtArms : Grade.Levy;
 			if (!run.L3) { rec.LifeCrystals = spec.LifeCrystals; rec.ManaCrystals = spec.ManaCrystals; } else { rec.LifeCrystals = 0; rec.ManaCrystals = 0; } // lab 3: MakeRecord starts at 15/9 crystals; zero them and let the real supply path (FeedCrystal) grow the levy if (CrVetFights(run) > 0) rec.BossFightsSurvived = CrVetFights(run);
 			rec.CurrentHp = rec.MaxHp; rec.Mana = rec.MaxMana;
 			rec.LoadoutLocked = true;

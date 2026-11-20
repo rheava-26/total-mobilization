@@ -1,0 +1,108 @@
+{
+ "note": "Champions x3, old tier (mkchamp.py)",
+ "accSlots": 2,
+ "honey": true,
+ "stations": [
+  "campfire",
+  "heartlantern",
+  "starinabottle",
+  "sunflower",
+  "bast",
+  "sharpening",
+  "wartable",
+  "bewitching",
+  "ammobox",
+  "crystalball"
+ ],
+ "stationLevel": 2,
+ "buffs": [],
+ "levies": [
+  {
+   "id": 1,
+   "cls": "R",
+   "weapon": "CalamityMod/StarSputter@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing",
+    "Avenger Emblem@Menacing",
+    "Frozen Shield@Menacing",
+    "Charm of Myths@Menacing",
+    "Star Veil@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 828,
+   "grade": "C"
+  },
+  {
+   "id": 2,
+   "cls": "R",
+   "weapon": "Vortex Beater@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing",
+    "Avenger Emblem@Menacing",
+    "Frozen Shield@Menacing",
+    "Charm of Myths@Menacing",
+    "Star Veil@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 808,
+   "ammo": "CalamityMod/BubonicRound",
+   "grade": "C"
+  },
+  {
+   "id": 3,
+   "cls": "R",
+   "weapon": "CalamityMod/AstralBlaster@Unreal",
+   "armor": [
+    "CalamityMod/AstralHelm",
+    "CalamityMod/AstralBreastplate",
+    "CalamityMod/AstralLeggings"
+   ],
+   "acc": [
+    "CalamityMod/HadarianWings@Menacing",
+    "CalamityMod/AngelTreads@Menacing",
+    "Destroyer Emblem@Menacing",
+    "Celestial Stone@Menacing",
+    "Avenger Emblem@Menacing",
+    "Frozen Shield@Menacing",
+    "Charm of Myths@Menacing",
+    "Star Veil@Menacing"
+   ],
+   "hook": "Spooky Hook",
+   "lc": 15,
+   "lf": 20,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Greater Healing Potion",
+   "measuredDps": 673,
+   "ammo": "CalamityMod/BubonicRound",
+   "grade": "C"
+  }
+ ],
+ "champSlots": 6
+}

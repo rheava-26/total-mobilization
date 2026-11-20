@@ -54,6 +54,10 @@ namespace Levy.Common.Testing
 				if (run.L3) Lab3Stations(run);
 				if (run.Arena == "pvpbig") PvArenaFloor(); // the stations clear the low floor; its cover goes back where no station stands
 				if (run.Dl != "") DlBegin(run);
+				// champions (grade C in an army file): the config's Champion slots for the fight, from the army file's champSlots (Eve's world: 5 + 1 milestone = 6)
+				int cs = Math.Max(run.Lv?.champSlots ?? 0, run.LvB?.champSlots ?? 0);
+				if (cs > 0) { _pvChampSaved = global::Levy.Common.Config.LevyConfig.Get.ChampionAccessorySlots; global::Levy.Common.Config.LevyConfig.Get.ChampionAccessorySlots = cs; }
+				if (PvIProbe(run)) return;
 				var specsB = KitSpecs(run.LvB);
 				int total = run.Specs.Count + specsB.Count;
 				if (total > global::Levy.Common.Config.LevyConfig.Get.RenderCap) global::Levy.Common.Config.LevyConfig.Get.RenderCap = total;
@@ -76,6 +80,7 @@ namespace Levy.Common.Testing
 					PvSpawn(s, run, specsB, 2, run.TeamB, s.B);
 				}
 				s.St.Levies.Clear(); s.St.Levies.AddRange(s.A); s.St.Levies.AddRange(s.B);
+				PvNoCatchUp(s);
 				if (run.L3) Lab3Begin(run, s.St);
 				_pvS = s; _crStarted = true; _crTickInRun = 0;
 				PvStartRecording(s, run);
@@ -88,6 +93,7 @@ namespace Levy.Common.Testing
 			Main.player[0].direction = int.TryParse(Environment.GetEnvironmentVariable("LEVY_PVP_CMDDIR"), out int cdir) && cdir != 0 ? cdir : (st.Tick & 1) == 0 ? 1 : -1;
 			CrPinStrays(-1);
 			int aliveA = PvTickArmy(st, run, st.A), aliveB = PvTickArmy(st, run, st.B);
+			PvNoCatchUp(st);
 			if (st.Field > 0 && st.Result == "")
 			{
 				// the next levy of a side enters the moment one of its levies on the field falls; a side with nobody on the field and an empty pool has lost
@@ -199,6 +205,21 @@ namespace Levy.Common.Testing
 			s.ByIdx[l.Idx] = l; s.TeamOfLevy[l] = team; s.Dealt[l] = 0; s.Entry[l] = s.Tick;
 			(team == 1 ? s.A : s.B).Add(l); s.St.Levies.Add(l);
 			PvAnchors(s);
+			PvNoCatchUp(s);
+		}
+
+		private static System.Reflection.FieldInfo _pvTeleF;
+		/// <summary>
+		/// No catch-up hop to the commander. Search &amp; Destroy (and Follow) hop a levy that is over 60 tiles from the commander and out of every player's sight to her side (SoldierNPC.CatchUpTeleport); in the lab the
+		/// commander is a spectator at the arena centre, so that hop dropped levies of both armies into the middle of the fight (3182 hops in 40 big-arena recordings, every one landing on the same two spots near her).
+		/// The hop's cooldown is kept running for every PvP levy, every tick.
+		/// </summary>
+		private static void PvNoCatchUp(PvState s)
+		{
+			_pvTeleF ??= typeof(SoldierNPC).GetField("_lastTeleportTick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+			if (_pvTeleF == null) return;
+			int now = (int)Main.GameUpdateCount;
+			foreach (var l in s.A.Concat(s.B)) if (!l.Dead && Main.npc[l.Idx].ModNPC is SoldierNPC sn) _pvTeleF.SetValue(sn, now);
 		}
 
 		private static System.Reflection.FieldInfo _pvAnchorF, _pvAnchorSetF;
@@ -222,6 +243,49 @@ namespace Levy.Common.Testing
 			if (!string.IsNullOrWhiteSpace(spec.Name)) return spec.Name;
 			string cls = spec.Cls switch { 'E' => "Melee", 'R' => "Ranger", 'M' => "Mage", 'S' => "Summoner", 'T' => "Rogue", _ => spec.Cls.ToString() };
 			return (label.StartsWith("opt") ? "Opt." : label) + " " + cls + " " + (k + 1);
+		}
+
+		private static int _pvChampSaved = -1;
+
+		/// <summary>
+		/// LEVY_PVP_IPROBE="Acc1+Acc2+..." (use _ for spaces; "none" = a bare levy): the hit-window probe. For each accessory, one levy wearing only it (army A's first loadout otherwise) takes one 100-damage hit through the levy's own
+		/// enemy-hit intake (ReceiveHostileMelee: the same AfterHit the PvP lab and an enemy's blade use) and the next tick; the immune ticks it got are logged and written to LEVY_CR_OUT.iprobe.tsv. No fight.
+		/// </summary>
+		private bool PvIProbe(CrRun run)
+		{
+			string list = Environment.GetEnvironmentVariable("LEVY_PVP_IPROBE");
+			if (string.IsNullOrEmpty(list)) return false;
+			var baseSpec = run.Specs[0];
+			var rows = new List<string>();
+			var att = CrSpawnLevy(baseSpec, run, 0, 1, new Vector2((_crCx + 20) * 16f, CrF * 16f)); // the attacker body (only its slot is used)
+			int k = 1;
+			foreach (string raw in list.Split('+'))
+			{
+				string acc = raw.Replace('_', ' ');
+				var spec = new CrLevySpec { Cls = baseSpec.Cls, Weapon = baseSpec.Weapon, Ammo = baseSpec.Ammo, Armor = baseSpec.Armor, Acc = acc == "none" ? Array.Empty<string>() : new[] { acc }, LifeCrystals = baseSpec.LifeCrystals, ManaCrystals = baseSpec.ManaCrystals, Potions = 0, Potion = baseSpec.Potion, LifeFruit = baseSpec.LifeFruit };
+				string got;
+				try
+				{
+					var l = CrSpawnLevy(spec, run, k++, 1, new Vector2((_crCx - 20 - 3 * k) * 16f, CrF * 16f));
+					var sn = (SoldierNPC)Main.npc[l.Idx].ModNPC; sn.StatsDirty = true; sn.RefreshStats();
+					bool longI = sn.Dummy != null && sn.Dummy.longInvince;
+					sn.ImmuneTime = 0; sn.AllImmune = 0;
+					int done = sn.ReceiveHostileMelee(Main.npc[att.Idx], 100, 1);
+					int slotMax = 0; foreach (int v in sn.SlotImmune) slotMax = Math.Max(slotMax, v);
+					got = $"{acc}\tlongInvince={(longI ? 1 : 0)}\tdamage={done}\timmuneTicks={sn.ImmuneTime}\tallImmune={sn.AllImmune}\tslotMax={slotMax}\tdummyImmuneTime={(sn.Dummy?.immuneTime ?? -1)}\tworn={string.Join("+", l.Rec.Gear.AllItems().Where(it => it != null && !it.IsAir && it.accessory).Select(it => it.Name))}";
+				}
+				catch (Exception e) { got = acc + "\terror " + e.Message; }
+				rows.Add(got); Mod.Logger.Info("HARNESS-PVP: iprobe " + got.Replace('\t', ' '));
+			}
+			try { File.AppendAllText(_crOut + ".iprobe.tsv", string.Join("\n", rows) + "\n"); } catch { }
+			var cols = CrHeader.Split('\t'); var v0 = new string[cols.Length]; for (int i = 0; i < v0.Length; i++) v0[i] = "0";
+			v0[0] = run.Key; v0[1] = run.Kind; v0[2] = "pvp"; v0[3] = run.Mode; v0[4] = run.Order; v0[5] = run.Seed.ToString(CultureInfo.InvariantCulture); v0[6] = "PROBE";
+			File.AppendAllText(_crOut, string.Join("\t", v0) + "\n");
+			if (run.Dl != "") DlEnd();
+			if (_pvChampSaved >= 0) { global::Levy.Common.Config.LevyConfig.Get.ChampionAccessorySlots = _pvChampSaved; _pvChampSaved = -1; }
+			PvpLab.Reset(); global::Levy.Common.Movement.OffscreenHop.LabViewers = null; PvScreenRestore();
+			_crStarted = false; _crI++; ClearAll(); CrPurgeNpcs();
+			return true;
 		}
 
 		private static void PvNoteStrikes(int team, int n) { if (_pvS != null && team > 0 && team < 3) _pvS.StealthThrown[team] += n; }
@@ -392,6 +456,7 @@ namespace Levy.Common.Testing
 			PvpLab.Reset(); _pvS = null; _pvProj = null; global::Levy.Common.Movement.OffscreenHop.LabViewers = null; PvScreenRestore();
 			_crStarted = false; _crI++;
 			if (run.Dl != "") DlEnd();
+			if (_pvChampSaved >= 0) { global::Levy.Common.Config.LevyConfig.Get.ChampionAccessorySlots = _pvChampSaved; _pvChampSaved = -1; }
 			CrSetHpScale(null); CrSetFear(null); CrSetOptions(null);
 			ClearAll(); CrPurgeNpcs();
 		}

@@ -1,0 +1,1 @@
+fight	pvp	mdeath	1	3600	order=sd	arena=a3	cmd=near	lv=/home/user/total-mobilization/.claude/worktrees/agent-a608440cf9294f9ec/levy-mod/lab/pvp/eve_prov_army.json	lvb=/home/user/total-mobilization/.claude/worktrees/agent-a608440cf9294f9ec/levy-mod/lab/pvp/optimal_prov_army.json	ta=eve_prov	tb=optimal_prov

@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Levy Fight Replays</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -15,6 +16,7 @@
   --terr-top:#34966e;--terr-fill:#0d241f;--terr-fill2:#3c826e;--water:#103c5f;
   --hp-lo:#ff4646;--hp-mid:#ffe046;--hp-hi:#3cf46a;
   --old-ink:#ffc266;--old-line:#7a5a1e;--old-bg:#241c0a;--ver-ink:#9fd2cc;
+  --team-a:#4da3ff;--team-b:#ff8a2a;--dmg-num:#ffe27a;
 }
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
   color-scheme:light;
@@ -30,6 +32,7 @@
   --terr-top:#2a8a62;--terr-fill:#c2d6cf;--terr-fill2:#4fa088;--water:#7ab4d6;
   --hp-lo:#d02a2a;--hp-mid:#c79a00;--hp-hi:#1fa060;
   --old-ink:#7a4a00;--old-line:#d9b36a;--old-bg:#fff1d6;--ver-ink:#1d5c55;
+  --team-a:#1560c8;--team-b:#c25400;--dmg-num:#8a5a00;
 }}
 :root[data-theme="light"]{
   color-scheme:light;
@@ -45,6 +48,7 @@
   --terr-top:#2a8a62;--terr-fill:#c2d6cf;--terr-fill2:#4fa088;--water:#7ab4d6;
   --hp-lo:#d02a2a;--hp-mid:#c79a00;--hp-hi:#1fa060;
   --old-ink:#7a4a00;--old-line:#d9b36a;--old-bg:#fff1d6;--ver-ink:#1d5c55;
+  --team-a:#1560c8;--team-b:#c25400;--dmg-num:#8a5a00;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
@@ -111,6 +115,20 @@ canvas#view{position:absolute;inset:0;width:100%;height:100%;display:block;touch
 .roster button.fell{opacity:.55}
 .roster .rb{height:4px;background:var(--bar-bg);border-radius:2px;overflow:hidden;margin-top:3px}.roster .rb i{display:block;height:100%;background:var(--hp-hi)}
 .roster .rs{color:var(--dim);font-size:11px}
+.roster .rh{font-variant-numeric:tabular-nums;font-size:11.5px;margin-top:1px}
+.roster .rhead{grid-column:1/-1;display:flex;gap:8px;align-items:center;font-size:12.5px;font-weight:650;margin:6px 0 0}
+.roster .rhead:first-child{margin-top:0}
+.roster .rhead small{font-weight:400;color:var(--dim)}
+.roster button.ta{border-left:4px solid var(--team-a)}.roster button.tb{border-left:4px solid var(--team-b)}
+.roster .rb i.ta{background:var(--team-a)}.roster .rb i.tb{background:var(--team-b)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none}
+.sw.ta{background:var(--team-a)}.sw.tb{background:var(--team-b);border-radius:1px;transform:rotate(45deg) scale(.9)}
+.tcA{color:var(--team-a)}.tcB{color:var(--team-b)}
+.res.pv{text-transform:none;letter-spacing:.01em;font-size:12px}.res.pva{color:var(--team-a)}.res.pvb{color:var(--team-b)}
+#hud .sides{display:flex;flex-direction:column;gap:1px;align-items:flex-end;font-variant-numeric:tabular-nums}
+#hud .sides span{display:inline-flex;gap:6px;align-items:center}
+#hud .out.pva{color:var(--team-a)}#hud .out.pvb{color:var(--team-b)}#hud .out.pvd{color:var(--timeout)}
+#hud .txs{text-shadow:0 0 3px var(--stage),0 0 3px var(--stage)}
 #lsel{margin-top:10px;font-size:13px}#lsel .kv{margin-top:4px}
 #callBar{display:none;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;margin:0 0 8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px}
 body.call #callBar{display:flex}
@@ -139,6 +157,9 @@ canvas#strip{width:100%;height:92px;display:block;background:var(--strip-a);bord
 .legend{display:flex;gap:12px;color:var(--dim);flex-wrap:wrap;font-size:12px}
 .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}
 .legend i.sq{border-radius:1px}
+.legend i.tA{background:var(--team-a)}.legend i.tB{background:var(--team-b);border-radius:1px;transform:rotate(45deg) scale(.85)}
+.legend i.hpb{width:16px;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--ink) 60%,var(--bar-bg) 60%);vertical-align:2px}
+.legend i.dn{background:none;width:auto;height:auto;border-radius:0;font:700 11px/1 system-ui;color:var(--dmg-num)}
 #info{padding:12px 0 40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px}
 #info section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0;overflow-x:auto}
 #info h2{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:0 0 8px}
@@ -177,6 +198,7 @@ body.big #strip,body.big .legend{display:none}
   #time{order:6;flex:1 1 100%;text-align:left}
   canvas#strip{height:84px}
   .legend{display:none}
+  .legend.pvp{display:flex;gap:8px}
   .filters select{min-height:42px}
 }
 </style>
@@ -213,8 +235,8 @@ body.big #strip,body.big .legend{display:none}
           <button id="bigBtn" title="fill the screen with the radar">Full screen</button>
           <button id="followBoss" title="camera follows the boss">Follow boss</button>
           <button id="tBoss" class="on" title="fading trails behind boss parts">Boss trails</button><button id="tLevy" class="on" title="fading trails behind levies">Levy trails</button><button id="tAdd" title="fading trails behind adds and minions">Add trails</button><button id="tProj" class="on" title="streaks behind projectiles">Proj trails</button><button id="hitBtn" class="on" title="draw the real hitbox rectangles">Hitboxes</button><button id="tCmd" class="on" title="the commander's own projectiles (recordings of format 11 and later)">Commander shots</button>
-          <button id="labelBtn" title="levy numbers">Labels</button>
-          <div class="legend"><span><i style="background:var(--grn)"></i>levy (colour = HP)</span><span><i style="background:var(--red)"></i>boss / part</span><span><i style="background:var(--amb)"></i>add / minion</span><span><i style="background:var(--cyan)"></i>commander</span><span><i style="background:var(--proj)"></i>projectile</span><span><i style="background:var(--cshot)"></i>commander shot</span><span><i class="sq" style="background:var(--red)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span></div>
+          <button id="labelBtn" title="levy numbers">Labels</button><button id="hpBtn" class="on" title="a small HP bar above every levy">HP bars</button><button id="dmgBtn" class="on" title="damage numbers where a levy is hit">Damage numbers</button>
+          <div class="legend" id="legend"><span><i style="background:var(--grn)"></i>levy (colour = HP)</span><span><i style="background:var(--red)"></i>boss / part</span><span><i style="background:var(--amb)"></i>add / minion</span><span><i style="background:var(--cyan)"></i>commander</span><span><i style="background:var(--proj)"></i>projectile</span><span><i style="background:var(--cshot)"></i>commander shot</span><span><i class="sq" style="background:var(--red)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span></div>
         </div>
       </div>
       <div id="info"></div>
@@ -227,12 +249,12 @@ const $=id=>document.getElementById(id);
 const TPS=60, TILE=16;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const RM=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
-let D=null, playing=false, cur=0, last=0, camMode="fit", trBoss=true, trLevy=true, trProj=true, showHit=true, showLabels=false, trAdd=false, showCmdP=true, selL=null;
+let D=null, playing=false, cur=0, last=0, camMode="fit", trBoss=true, trLevy=true, trProj=true, showHit=true, showLabels=false, trAdd=false, showCmdP=true, selL=null, showHpBars=true, showDmg=true;
 const cam={x:0,y:0,z:0.2};
 let blips=[], manifest=null, fights=[], curFight=null, curId=null, loadSeq=0;
 
 // ================================================================ colour tokens (canvas reads the CSS custom properties)
-const TOKS=["stage","grn","cyan","red","amb","vio","proj","cshot","ink","dim","tNone","tbNone","tbCmd","tbLevy","tbSpite","srcBody","srcMinion","srcProj","srcOther","bossLabel","cmdLabel","flash","death","dash","hook","xjump","scale","fire","terrTop","terrFill","terrFill2","water","hpLo","hpMid","hpHi","win","timeout","loss","stripA","stripB","stripLabel","dLabelInk"];
+const TOKS=["stage","grn","cyan","red","amb","vio","proj","cshot","ink","dim","tNone","tbNone","tbCmd","tbLevy","tbSpite","srcBody","srcMinion","srcProj","srcOther","bossLabel","cmdLabel","flash","death","dash","hook","xjump","scale","fire","terrTop","terrFill","terrFill2","water","hpLo","hpMid","hpHi","win","timeout","loss","stripA","stripB","stripLabel","dLabelInk","teamA","teamB","dmgNum"];
 const T={}; const cssName=k=>"--"+k.replace(/[A-Z]/g,m=>"-"+m.toLowerCase());
 function loadTokens(){
   const cs=getComputedStyle(document.documentElement);
@@ -346,29 +368,33 @@ function build(R){
   R.bendFinal=R.bend.length?(R.bend.filter(e=>e.final!==0).pop()||R.bend[R.bend.length-1]):null;
   const gm=/_n(\d+)/.exec(String((R.hdr&&R.hdr.meta&&R.hdr.meta.gear)||""));
   R.levyTotal=Math.max(R.order.length,gm?+gm[1]:0);
+  R.hasBoss=R.frames.some(f=>(f.b||[]).length>0);
   R.fellAt=[]; {const seen=new Set(); for(const e of R.ldeath) if(!seen.has(e.id)){seen.add(e.id);R.fellAt.push(e.t);}} R.fellAt.sort((a,b)=>a-b);
+  pvpBuild(R);
   return R;
 }
 function summary(R){
   const t=R.tally,n=Math.max(1,t.none+t.player+t.levy+t.spite);
   const dmg=R.lhit.reduce((a,e)=>a+e.dmg,0);
   const h=R.hdr||{},m=h.meta||{};
-  return {boss:m.bossName||(h.boss||"?").replace(/_/g," "),dur:(R.tmax-R.tmin)/TPS,pl:100*t.levy/n,pp:100*t.player/n,pn:100*t.none/n,ps:100*t.spite/n,hits:R.lhit.length,dmg,deaths:R.ldeath.length,meta:m,v:R.v,hasT:R.hasTarget};
+  return {boss:R.pvp?pvpTitle(R.pvp):(m.bossName||(h.boss||"?").replace(/_/g," ")),dur:(R.tmax-R.tmin)/TPS,pl:100*t.levy/n,pp:100*t.player/n,pn:100*t.none/n,ps:100*t.spite/n,hits:R.lhit.length,dmg,deaths:R.ldeath.length,meta:m,v:R.v,hasT:R.hasTarget};
 }
 
 // ================================================================ call it (betting game)
 const call={on:false,pick:null,revealed:false};
 function callStore(){try{const v=JSON.parse(localStorage.getItem("levyCall")||"{}");return {right:v.right|0,total:v.total|0};}catch(e){return {right:0,total:0};}}
 function callSave(v){try{localStorage.setItem("levyCall",JSON.stringify(v));}catch(e){}}
-function callTruth(f){return f.result==="win"?"win":f.result==="loss"?"loss":"weird";}
+function callTruth(f){if(f&&f.pvp)return f.pvp.win==="a"?"win":f.pvp.win==="b"?"loss":"weird";return f.result==="win"?"win":f.result==="loss"?"loss":"weird";}
+function callNames(f){return f&&f.pvp?{win:prettyTeam(f.pvp.a)+" wins",loss:prettyTeam(f.pvp.b)+" wins",weird:"Draw"}:{win:"Win",loss:"Loss",weird:"Something weird"};}
 function callHide(){document.body.classList.toggle("callhide",call.on&&!call.revealed);}
 function callUI(){
   const sc=callStore(); $("callScore").textContent="Score "+sc.right+" of "+sc.total;
-  document.querySelectorAll("#callBar .pick").forEach(b=>{b.classList.toggle("on",b.dataset.p===call.pick);b.disabled=!!call.pick;});
+  const cn=callNames(curFight);
+  document.querySelectorAll("#callBar .pick").forEach(b=>{b.classList.toggle("on",b.dataset.p===call.pick);b.disabled=!!call.pick;b.textContent=cn[b.dataset.p];});
   $("callReveal").style.display=call.pick&&!call.revealed?"":"none";
   let t="Call it before you watch:";
-  if(call.pick&&!call.revealed) t="You called: "+({win:"Win",loss:"Loss",weird:"Something weird"})[call.pick]+". Watch to the end.";
-  if(call.revealed&&curFight){const tr=callTruth(curFight),ok=call.pick===tr;t=null;$("callTxt").innerHTML=`<span class="rv ${ok?"ok":"no"}">${ok?"You called it":"Not this time"}</span>: result was ${esc(resLabel[curFight.result]||curFight.result)} (${esc(curFight.mode)}).`;}
+  if(call.pick&&!call.revealed) t="You called: "+cn[call.pick]+". Watch to the end.";
+  if(call.revealed&&curFight){const tr=callTruth(curFight),ok=call.pick===tr;t=null;$("callTxt").innerHTML=`<span class="rv ${ok?"ok":"no"}">${ok?"You called it":"Not this time"}</span>: result was ${esc(resText(curFight))} (${esc(curFight.mode)}).`;}
   if(t!==null) $("callTxt").textContent=t;
 }
 function callReveal(){
@@ -406,6 +432,7 @@ function setRec(R,name,f){
   head(f,name,s);
   hideMsg(); setPlaying(false);
   {const cb=$("tCmd"); cb.disabled=!D.hasCmd; cb.title=D.hasCmd?"the commander's own projectiles, not the army's":"this recording has no commander projectile data (format 11 and later)";}
+  $("followBoss").hidden=$("tBoss").hidden=!D.hasBoss; $("legend").innerHTML=legendHtml(); $("legend").classList.toggle("pvp",!!D.pvp); callUI();
   selL=null; cur=D.tmin; camMode="fit"; $("followBoss").classList.remove("on"); fitView(); renderInfo(); drawStrip(); draw(); syncUI();
   if(call.on&&!call.pick) setPlaying(false); else if(!RM) setPlaying(true);
 }
@@ -419,9 +446,16 @@ function verBadges(f){
   const out=isOutdated(f),n=eraNote(f);
   return `<span class="bd v" title="the Levy version this fight was recorded on">${esc(verText(f))}</span>`+(out?`<span class="bd o" title="${esc((n?n+" ":"")+"Current: Levy "+manifest.current+".")}">outdated</span>`:"");
 }
+function resText(f){return f&&f.pvp?pvpWord(f.pvp):(resLabel[f.result]||f.result);}
+function resChip(f){return f&&f.pvp?`<span class="res pv ${pvpCls(f.pvp)}">${esc(pvpWord(f.pvp))}</span>`:`<span class="res ${f.result}">${resLabel[f.result]||f.result}</span>`;}
 function head(f,name,s){
   const el=$("fightHead");
   if(f&&f.kind==="event"){evHead(f,el);return;}
+  if(D&&D.pvp){   // two levy armies: the winner replaces the boss result
+    const p=f&&f.pvp?f.pvp:D.pvp;
+    el.innerHTML=`<div class="ht"><b>${esc(pvpTitle(p))}</b>${resChip({pvp:p})}<span class="hs">${f?esc(f.mode)+" &middot; "+f.levies+" levies &middot; "+esc(f.arena)+" &middot; "+f.dur.toFixed(0)+" s &middot; "+esc(setTitleOf(f)):"local recording &middot; "+s.dur.toFixed(0)+" s"}</span><span class="badges" style="margin:0">${f?verBadges(f):""}</span></div>`+(f&&isOutdated(f)?`<div class="ho">Outdated${eraNote(f)?": "+esc(eraNote(f)):"."} Current: Levy ${esc(manifest.current)}.</div>`:"")+(f&&f.note?`<div class="hn">${esc(f.note)}</div>`:"");
+    return;
+  }
   if(!f){el.innerHTML=`<div class="ht"><b>${esc(name||s.boss)}</b><span class="hs">local recording &middot; ${s.dur.toFixed(0)} s</span></div>`;return;}
   el.innerHTML=`<div class="ht"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span><span class="hs">${esc(f.mode)} &middot; ${f.levies} levies &middot; ${esc(f.arena)} &middot; ${f.dur.toFixed(0)} s &middot; ${esc(setTitleOf(f))}</span><span class="badges" style="margin:0">${verBadges(f)}</span></div>`+(isOutdated(f)?`<div class="ho">Outdated${eraNote(f)?": "+esc(eraNote(f)):"."} Current: Levy ${esc(manifest.current)}.</div>`:"")+(f.note?`<div class="hn">${esc(f.note)}</div>`:"");
 }
@@ -474,6 +508,12 @@ function renderList(){
       if(g!==null&&g!==lastG){lastG=g;const h=document.createElement("div");h.className="grph";const gn=s.groupBy==="boss"&&s.groupNotes&&s.groupNotes[g];h.innerHTML=esc(g||"Undated")+(gn?`<span class="small">${esc(gn)}</span>`:"");cards.appendChild(h);}
       const b=document.createElement("button"); b.className="card"+(f.id===curId?" sel":""); b.dataset.id=f.id;
       if(f.kind==="event"){b.innerHTML=evCard(f);b.onclick=()=>openFight(f.id);cards.appendChild(b);continue;}
+      if(f.pvp){
+        b.innerHTML=`<div class="ct"><b>${esc(f.boss)}</b>${resChip(f)}</div>`+
+          `<div class="sub">${esc(f.mode)} &middot; ${f.levies} levies &middot; ${esc(f.arena)} &middot; ${f.dur.toFixed(0)} s</div>`+
+          `<div class="badges">${verBadges(f)}<span class="bd" style="color:var(--team-a)" title="levies left standing at the end">${esc(prettyTeam(f.pvp.a))} ${f.pvp.aliveA} left</span><span class="bd" style="color:var(--team-b)" title="levies left standing at the end">${esc(prettyTeam(f.pvp.b))} ${f.pvp.aliveB} left</span><span class="bd d">${f.deaths} deaths</span></div>`+(f.note?`<div class="note">${esc(f.note)}</div>`:"");
+        b.onclick=()=>openFight(f.id); cards.appendChild(b); continue;
+      }
       b.innerHTML=`<div class="ct"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span></div>`+
         `<div class="sub">${esc(f.mode)} &middot; ${f.levies} levies &middot; ${esc(f.arena)} &middot; ${f.dur.toFixed(0)} s</div>`+
         `<div class="badges">${verBadges(f)}${f.hasT?`<span class="bd l" title="share of the fight the boss was aimed at a levy">boss on levies ${f.pl.toFixed(0)}%</span>${f.ps>=1?`<span class="bd h" title="the boss rule redirected its shots and dashes at a levy">spite (redirected shots) ${f.ps.toFixed(0)}%</span>`:""}`:`<span class="bd">no target data</span>`}<span class="bd h">${f.hits} hits</span><span class="bd d">${f.deaths} deaths</span></div>`+
@@ -632,6 +672,82 @@ function renderEventInfo(){
   if(typeof buildRoster==="function") buildRoster();
 }
 
+// ================================================================ PvP (format 12 lab fights: two levy armies of one commander)
+// The header carries meta.pvp="1", teamA, teamB and idsA / idsB. idsA / idsB hold only the FIRST THREE soldier ids of each side (the opening spawn slots);
+// every later levy joins as a reinforcement with a new id. So a levy's side is read in this order: (1) its id is in idsA or idsB; (2) the army-name
+// prefix of its soldier name, learnt from the seeds (the optimal army is named "Opt. ..."; the designer's army has real names), used only when the two
+// seed sides differ in that prefix; (3) which side's seeds it first appeared nearest to. In the 39 lab recordings (1) and (2) agree with (3) for every levy.
+const prettyTeam=s=>{s=String(s||"").replace(/_/g," ").trim();return s?s[0].toUpperCase()+s.slice(1):"?";};
+const pvpTitle=p=>prettyTeam(p.a)+" vs "+prettyTeam(p.b);
+const pvpWord=p=>p.win==="a"?prettyTeam(p.a)+" won":p.win==="b"?prettyTeam(p.b)+" won":(p.cut?"cut short":"draw");
+const pvpCls=p=>p.win==="a"?"pva":p.win==="b"?"pvb":"ended";
+function pvpBuild(R){
+  R.pvp=null; const m=(R.hdr&&R.hdr.meta)||{}; if(String(m.pvp)!=="1") return;
+  const ids=x=>String(x||"").split(",").map(v=>parseInt(v,10)).filter(v=>!isNaN(v));
+  const A=ids(m.idsA),B=ids(m.idsB),nmS=(R.names&&R.names.soldiers)||{};
+  const isOpt=id=>/^opt\./i.test(nmS[id]||"");
+  const first=id=>{const a=R.trL.get(id);return a&&a.length?a[0]:null;};
+  const mean=a=>{const v=a.map(first).filter(Boolean).map(t=>t[1]);return v.length?v.reduce((p,q)=>p+q,0)/v.length:null;};
+  const cA=mean(A),cB=mean(B);
+  const maj=a=>{let o=0,n=0;for(const id of a)if(nmS[id]!=null){n++;if(isOpt(id))o++;}return n?(o*2>n?1:o*2<n?0:-1):-1;};
+  const kA=maj(A),kB=maj(B), byName=kA>=0&&kB>=0&&kA!==kB;
+  const side=new Map(), how={seed:0,name:0,pos:0,unknown:0};
+  for(const id of R.order){
+    let sd=-1;
+    if(A.includes(id)){sd=0;how.seed++;} else if(B.includes(id)){sd=1;how.seed++;}
+    else if(byName&&nmS[id]!=null){sd=((isOpt(id)?1:0)===kA)?0:1;how.name++;}
+    else{const f=first(id); if(f&&cA!=null&&cB!=null){sd=Math.abs(f[1]-cA)<=Math.abs(f[1]-cB)?0:1;how.pos++;}}
+    if(sd<0){sd=0;how.unknown++;}
+    side.set(id,sd);
+  }
+  const born=[[],[]], fell=[[],[]], tot=[0,0], end=[0,0];
+  for(const id of R.order){const sd=side.get(id),f0=first(id),fe=R.fellBy.get(id); tot[sd]++; born[sd].push(f0?f0[0]:R.tmin); if(fe)fell[sd].push(fe.t); else end[sd]++;}
+  for(const k of [0,1]){born[k].sort((a,b)=>a-b);fell[k].sort((a,b)=>a-b);}
+  const win=end[0]>0&&end[1]===0?"a":end[1]>0&&end[0]===0?"b":"draw";
+  const P={a:m.teamA||"A",b:m.teamB||"B",side,how,born,fell,tot,aliveEnd:end,aliveA:end[0],aliveB:end[1],win,cut:!R.end,sideA:m.sideA,sideB:m.sideB};
+  const cnt=(arr,t)=>{let n=0;for(const x of arr){if(x<=t)n++;else break;}return n;};
+  P.alive=t=>[cnt(born[0],t)-cnt(fell[0],t),cnt(born[1],t)-cnt(fell[1],t)];
+  // armies arrive in small waves: "alive" is who is on the field now, "waiting" who has not spawned yet, "left" (alive + waiting) is the strength each side has remaining
+  P.waiting=t=>[tot[0]-cnt(born[0],t),tot[1]-cnt(born[1],t)];
+  P.series=R.frames.map(f=>{const a=P.alive(f.t),w=P.waiting(f.t);return [a[0]+w[0],a[1]+w[1]];});
+  R.pvp=P;
+}
+const sideOf=id=>(D&&D.pvp&&D.pvp.side.get(id))||0;
+const teamCol=sd=>sd?T.teamB:T.teamA;
+const teamVar=sd=>sd?"var(--team-b)":"var(--team-a)";
+// marker for a team: a filled circle for A, a diamond for B (so the sides also differ by shape, not only by colour)
+function teamDot(g,sx,sy,r,sd,stroke){
+  g.fillStyle=teamCol(sd); g.strokeStyle=stroke||T.stage; g.lineWidth=1*Math.max(1,r/4);
+  g.beginPath(); if(sd){g.moveTo(sx,sy-r*1.25);g.lineTo(sx+r*1.25,sy);g.lineTo(sx,sy+r*1.25);g.lineTo(sx-r*1.25,sy);g.closePath();}else g.arc(sx,sy,r,0,6.2832);
+  g.fill(); g.stroke();
+}
+function drawHpBar(g,sx,top,bw,fr,col,dpr){
+  fr=Math.max(0,Math.min(1,fr)); const h=3.5*dpr, x=sx-bw/2, y=top-h;
+  g.fillStyle=al(T.stage,.82); g.fillRect(x-1*dpr,y-1*dpr,bw+2*dpr,h+2*dpr);
+  g.fillStyle=al(T.ink,.22); g.fillRect(x,y,bw,h);
+  g.fillStyle=col; g.fillRect(x,y,bw*fr,h);
+}
+// floating damage numbers: every levy hit of the last second of replay time, rising and fading, in the victim's team colour (or the hit colour when there are no teams)
+function drawDmgNums(g,sc,dpr){
+  const WIN=TPS, list=evWindow(D.lhit,cur-WIN,cur); let n=0;
+  g.save(); g.textAlign="center"; g.lineJoin="round";
+  for(let i=list.length-1;i>=0&&n<120;i--){
+    const e=list[i]; if(e.t>cur) continue; const age=(cur-e.t)/WIN; if(age<0||age>1) continue;
+    const [sx,sy]=sc(e.x,e.y); const rise=RM?0:age*22*dpr, size=Math.round((10+Math.min(7,Math.sqrt(e.dmg)/3.2))*dpr);
+    const x=sx+((e.id*37)%11-5)*0.9*dpr, y=sy-14*dpr-rise;
+    g.globalAlpha=Math.max(0,Math.min(1,(1-age)*1.7)); g.font=`700 ${size}px system-ui`;
+    const txt=String(e.dmg);
+    g.strokeStyle=al(T.stage,.9); g.lineWidth=3*dpr; g.strokeText(txt,x,y);
+    g.fillStyle=D.pvp?teamCol(sideOf(e.id)):T.dmgNum; g.fillText(txt,x,y); n++;
+  }
+  g.restore();
+}
+function legendHtml(){
+  const hp='<span><i class="hpb"></i>HP bar</span>', dn='<span><i class="dn">12</i>damage taken</span>';
+  if(D&&D.pvp){const p=D.pvp; return `<span><i class="tA"></i>${esc(prettyTeam(p.a))} levy</span><span><i class="tB"></i>${esc(prettyTeam(p.b))} levy</span>${hp}${dn}<span><i class="sq" style="background:var(--ink)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span>`;}
+  return `<span><i style="background:var(--grn)"></i>levy (colour = HP)</span><span><i style="background:var(--red)"></i>boss / part</span><span><i style="background:var(--amb)"></i>add / minion</span><span><i style="background:var(--cyan)"></i>commander</span><span><i style="background:var(--proj)"></i>projectile</span><span><i style="background:var(--cshot)"></i>commander shot</span>${hp}${dn}<span><i class="sq" style="background:var(--red)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span>`;
+}
+
 // ================================================================ helpers
 function frameIndex(t){let lo=0,hi=D.frames.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(D.frames[m].t<=t)lo=m;else hi=m-1;}return lo;}
 function trackStart(tr,t){let lo=0,hi=tr.length;while(lo<hi){const m=(lo+hi)>>1;if(tr[m][0]<t)lo=m+1;else hi=m;}return lo;}
@@ -671,7 +787,7 @@ function fitNotes(){
   el.innerHTML=n.map(t=>`<div>${esc(t)}</div>`).join(""); el.hidden=!n.length;
 }
 function fitView(){
-  if(D&&D.isEvent){evFit();return;}
+  if(D&&(D.isEvent||D.pvp)){if(D.pvp){const el=$("viewNote");if(el){el.innerHTML="";el.hidden=true;}}evFit();return;}
   const {w,h}=canvasSize($("view")); let x0=1e12,y0=1e12,x1=-1e12,y1=-1e12;
   fitNotes();
   const B=fightBox(D);
@@ -749,10 +865,10 @@ function draw(){
       const p0=sc(a[1],a[2]),p1=sc(b[1],b[2]); g.beginPath();g.moveTo(p0[0],p0[1]);g.lineTo(p1[0],p1[1]);g.stroke();}
     g.globalAlpha=1;
   };
-  if(trLevy)for(const tr of D.trL.values())trail(tr,T.grn,1.3);
+  if(trLevy)for(const [id,tr] of D.trL)trail(tr,D.pvp?teamCol(sideOf(id)):T.grn,1.3);
   if(trBoss)for(const tr of D.trB.values())trail(tr,T.red,1.4);
   if(trAdd)for(const tr of D.trA.values())trail(tr,T.amb,1);
-  if(trLevy||trBoss)trail(D.trP,T.cyan,1.6);
+  if((trLevy||trBoss)&&!D.pvp)trail(D.trP,T.cyan,1.6);
   for(const j of (f0.j||[])){
     const dt=cur-f0.t, x=j[1]+j[3]*dt, y=j[2]+j[4]*dt;
     if(trProj&&(j[3]||j[4])){
@@ -822,12 +938,14 @@ function draw(){
   for(const l0 of (f0.l||[])){
     const l1=byIdL.get(l0[0])||l0; const x=lerp(l0[1],l1[1],u),y=lerp(l0[2],l1[2],u);
     const mx=l0[10]||D.maxL.get(l0[0])||l0[6]||1, fr=l0[6]/mx, [sx,sy]=sc(x,y), r=8*dpr;
-    const col=hpColor(fr); const hb=hbox(g,sc,dpr,x,y,l0[11],l0[12],al(T.grn,.16),col,1.6,7);
-    g.fillStyle=col; g.beginPath();g.arc(sx,sy,2.2*dpr,0,6.2832);g.fill();
+    const sd=D.pvp?sideOf(l0[0]):0, tc=D.pvp?teamCol(sd):null;   // PvP: colour = team (HP is the bar and the ring); boss fights: colour = HP
+    const col=D.pvp?tc:hpColor(fr); const hb=hbox(g,sc,dpr,x,y,l0[11],l0[12],al(D.pvp?tc:T.grn,.16),col,1.6,7);
+    if(D.pvp) teamDot(g,sx,sy,2.6*dpr,sd); else {g.fillStyle=col; g.beginPath();g.arc(sx,sy,2.2*dpr,0,6.2832);g.fill();}
     const rr=hb[2]; g.strokeStyle=al(T.ink,.6); g.lineWidth=1.4*dpr; g.beginPath();g.arc(sx,sy,rr+3*dpr,-1.5708,-1.5708+6.2832*Math.max(0.02,fr));g.stroke();
-    if(showLabels){g.fillStyle=T.ink;g.font=`${10*dpr}px system-ui`;g.fillText(D.lbl.get(l0[0])||"",sx+r+3*dpr,sy-r);}
+    if(showHpBars) drawHpBar(g,sx,sy-rr-5*dpr,Math.max(16*dpr,Math.min(40*dpr,rr*2.6)),fr,D.pvp?tc:hpColor(fr),dpr);
+    if(showLabels){g.fillStyle=D.pvp?tc:T.ink;g.font=`${10*dpr}px system-ui`;g.fillText(D.lbl.get(l0[0])||"",sx+r+3*dpr,sy-r);}
     if(l0[0]===selL){g.strokeStyle=T.cyan;g.lineWidth=2.6*dpr;g.beginPath();g.arc(sx,sy,rr+8*dpr,0,6.2832);g.stroke();g.fillStyle=T.cyan;g.font=`600 ${11*dpr}px system-ui`;g.fillText(lname(l0[0]),sx+rr+11*dpr,sy-rr);}
-    blips.push({lid:l0[0],x:sx/dpr,y:sy/dpr,r:Math.max(12,rr/dpr+5),info:`levy ${lname(l0[0])}\nlife ${l0[6]}/${mx}  state ${states[l0[7]]||l0[7]}\nweapon ${l0[8]?nm("items",l0[8]):"-"}\nspeed ${(Math.hypot(l0[3],l0[4])*60/16).toFixed(1)} tiles/s`});
+    blips.push({lid:l0[0],x:sx/dpr,y:sy/dpr,r:Math.max(12,rr/dpr+5),info:`levy ${lname(l0[0])}${D.pvp?" ("+prettyTeam(sd?D.pvp.b:D.pvp.a)+")":""}\nlife ${l0[6]}/${mx}  state ${states[l0[7]]||l0[7]}\nweapon ${l0[8]?nm("items",l0[8]):"-"}\nspeed ${(Math.hypot(l0[3],l0[4])*60/16).toFixed(1)} tiles/s`});
   }
   const rows=(f0.b||[]).slice().sort((a,b)=>b[13]-a[13]);
   for(const b0 of rows){
@@ -838,11 +956,12 @@ function draw(){
     if(!part&&((mb0&&b0[1]===mb0[1])||EVENT_NPC.has(b0[0]))){g.fillStyle=T.bossLabel;g.font=`${11*dpr}px system-ui`;g.fillText(nm("npcs",b0[0]),bx+rr+4*dpr,by-rr*0.6);}
     blips.push({x:bx/dpr,y:by/dpr,r:Math.max(9,rr/dpr+3),info:bossInfo(b0)});
   }
-  for(const e of evWindow(D.lhit,cur-20,cur)){ if(e.t>cur||cur-e.t>20) continue; const [sx,sy]=sc(e.x,e.y),a=(cur-e.t)/20,col=T.src[e.src]||T.flash;
+  for(const e of evWindow(D.lhit,cur-20,cur)){ if(e.t>cur||cur-e.t>20) continue; const [sx,sy]=sc(e.x,e.y),a=(cur-e.t)/20,col=D.pvp?teamCol(sideOf(e.id)):(T.src[e.src]||T.flash);
     g.strokeStyle=col;g.globalAlpha=1-a;g.lineWidth=2.4*dpr;g.beginPath();g.arc(sx,sy,(8+a*26)*dpr,0,6.2832);g.stroke();g.fillStyle=T.flash;g.beginPath();g.arc(sx,sy,(5-a*3)*dpr,0,6.2832);g.fill();g.globalAlpha=1;}
-  for(const e of (D.isEvent?evWindow(D.ldeath,cur-60*TPS,cur):D.ldeath)){ if(e.t>cur) continue; const [sx,sy]=sc(e.x,e.y),age=(cur-e.t)/TPS,alp=age<4?1:0.45,s=9*dpr*(age<0.4?1+(0.4-age)*2:1);
-    g.strokeStyle=T.death;g.globalAlpha=alp;g.lineWidth=3*dpr;g.beginPath();g.moveTo(sx-s,sy-s);g.lineTo(sx+s,sy+s);g.moveTo(sx+s,sy-s);g.lineTo(sx-s,sy+s);g.stroke();
-    if(showLabels){g.fillStyle=T.dLabelInk;g.font=`${10*dpr}px system-ui`;g.fillText((D.lbl.get(e.id)||"#"+e.id)+" fell",sx+s+2*dpr,sy);} g.globalAlpha=1;}
+  for(const e of (D.isEvent?evWindow(D.ldeath,cur-60*TPS,cur):D.ldeath)){ if(e.t>cur) continue; const [sx,sy]=sc(e.x,e.y),age=(cur-e.t)/TPS,alp=age<4?1:(D.pvp?0.62:0.45),s=9*dpr*(age<0.4?1+(0.4-age)*2:1);
+    g.strokeStyle=D.pvp?teamCol(sideOf(e.id)):T.death;g.globalAlpha=alp;g.lineWidth=3*dpr;g.beginPath();g.moveTo(sx-s,sy-s);g.lineTo(sx+s,sy+s);g.moveTo(sx+s,sy-s);g.lineTo(sx-s,sy+s);g.stroke();
+    if(showLabels){g.fillStyle=D.pvp?teamCol(sideOf(e.id)):T.dLabelInk;g.font=`${10*dpr}px system-ui`;g.fillText((D.lbl.get(e.id)||"#"+e.id)+" fell",sx+s+2*dpr,sy);} g.globalAlpha=1;}
+  if(showDmg) drawDmgNums(g,sc,dpr);
   const hid=document.body.classList.contains("callhide");
   if(!hid&&!RM) for(const e of (D.bend||[])){ if(e.e!=="bdeath"||e.t>cur||cur-e.t>150) continue;
     const age=(cur-e.t)/TPS, u2=age/2.5, ease=1-(1-u2)*(1-u2), [sx,sy]=sc(e.x,e.y); let seed=(e.t*2654435761)>>>0; const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
@@ -874,13 +993,34 @@ function draw(){
   const outHtml=bE?`<div class="out ${bE.e==="bdeath"?"k":"d"}">${bE.e==="bdeath"?"Boss killed":"Boss left (despawn)"}</div>`:"";
   const bossHp=mb0?`${nm("npcs",mb0[0])}  ${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(0)}%`:"";
   if(D.isEvent){$("hud").innerHTML=evHud(f0);return;}
+  if(D.pvp){   // no boss: the matchup, the winner once the fight is over, and the levies still standing on each side
+    const P=D.pvp, a=P.alive(cur), wt=P.waiting(cur), over=cur>=D.tmax-D.dt;
+    $("hud").innerHTML=`<div class="l txs"><div class="tgt">${esc(pvpTitle(P))}</div>${over?`<div class="out ${P.win==="a"?"pva":P.win==="b"?"pvb":"pvd"}">${esc(pvpWord(P))}</div>`:""}</div>`+
+      `<div class="r txs"><div class="sides"><span class="small">levies alive</span><span>${esc(prettyTeam(P.a))} ${a[0]}${wt[0]>0?` <span class="small">(+${wt[0]} waiting)</span>`:""}<i class="sw ta"></i></span><span>${esc(prettyTeam(P.b))} ${a[1]}${wt[1]>0?` <span class="small">(+${wt[1]} waiting)</span>`:""}<i class="sw tb"></i></span></div>${((cur-D.tmin)/TPS).toFixed(1)} s</div>`;
+    return;
+  }
   $("hud").innerHTML=`<div class="l"><div class="tgt ${tgtCls}">boss target: ${esc(tgtText)}</div>${outHtml}${mb0?`<div class="hpt">${esc(bossHp)}</div><div class="bar"><i style="width:${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(1)}%"></i></div>`:""}</div><div class="r">levies alive ${alive} of ${tot}<br>${D.hasAdds?`adds alive ${(f0.a||[]).length}${D.hasSeg?` + ${(f0.s||[]).length} other hitboxes`:""}${D.offCount?` (${D.offCount} off-screen)`:""}<br>`:""}${((cur-D.tmin)/TPS).toFixed(1)} s</div>`;
 }
 
 // ================================================================ timeline strip
 function stripRows(){return [["target",16],["hits",30],["deaths",14],["cmd hit",10],["cmd moves",14]];}
+function drawPvpStrip(){
+  const c=$("strip"); const {w:W,h:H,dpr}=canvasSize(c); const g=c.getContext("2d"); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,W,H);
+  const P=D.pvp, nmT=[prettyTeam(P.a),prettyTeam(P.b)];
+  const rows=[["levies left",34],[nmT[0]+" hit",22],[nmT[1]+" hit",22],["deaths",14]], tot=rows.reduce((a,r)=>a+r[1],0), k=H/tot, span=Math.max(1,D.tmax-D.tmin), X=t=>(t-D.tmin)/span*(W-2)+1;
+  let y=0; const Y=[];
+  rows.forEach((r,i)=>{Y.push([y,r[1]*k]);g.fillStyle=i%2?T.stripB:T.stripA;g.fillRect(0,y,W,r[1]*k);g.fillStyle=i===1?T.teamA:i===2?T.teamB:T.stripLabel;g.font=`${9*dpr}px system-ui`;g.fillText(r[0],3*dpr,y+9*dpr);y+=r[1]*k;});
+  {const [y0,h]=Y[0]; let mx=1; for(const v of P.series)mx=Math.max(mx,v[0],v[1]);
+    for(const sd of [0,1]){g.strokeStyle=teamCol(sd);g.lineWidth=1.8*dpr;g.beginPath();P.series.forEach((v,i)=>{const x=X(D.frames[i].t),yy=y0+h-2*dpr-(h-6*dpr)*v[sd]/mx;if(i)g.lineTo(x,yy);else g.moveTo(x,yy);});g.stroke();}}
+  {const bins=[new Float32Array(Math.max(1,W)),new Float32Array(Math.max(1,W))]; let mx=1;
+    for(const e of D.lhit){const sd=sideOf(e.id),b=Math.min(W-1,Math.max(0,Math.floor(X(e.t))));bins[sd][b]+=e.dmg;mx=Math.max(mx,bins[sd][b]);}
+    for(const sd of [0,1]){const [y0,h]=Y[1+sd];g.fillStyle=teamCol(sd);for(let x=0;x<W;x++){if(!bins[sd][x])continue;const hh=Math.max(1,(h-3)*Math.sqrt(bins[sd][x]/mx));g.fillRect(x,y0+h-hh,1,hh);}}}
+  {const [y0,h]=Y[3]; for(const e of D.ldeath){const x=X(e.t),s2=Math.min(5*dpr,h*0.38),cy=y0+h/2;g.strokeStyle=teamCol(sideOf(e.id));g.lineWidth=1.6*dpr;g.beginPath();g.moveTo(x-s2,cy-s2);g.lineTo(x+s2,cy+s2);g.moveTo(x+s2,cy-s2);g.lineTo(x-s2,cy+s2);g.stroke();}}
+  const x=X(cur);g.fillStyle=T.ink;g.fillRect(x-1*dpr,0,2*dpr,H);
+}
 function drawStrip(){
   if(D&&D.isEvent){drawEvStrip();return;}
+  if(D&&D.pvp){drawPvpStrip();return;}
   const c=$("strip"); const {w:W,h:H,dpr}=canvasSize(c); const g=c.getContext("2d"); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,W,H); if(!D) return;
   const rows=stripRows(), tot=rows.reduce((a,r)=>a+r[1],0), k=H/tot, span=Math.max(1,D.tmax-D.tmin), X=t=>(t-D.tmin)/span*(W-2)+1;
   let y=0; const Y={};
@@ -907,7 +1047,7 @@ $("strip").addEventListener("pointercancel",()=>stripDrag=false);
 $("strip").addEventListener("pointerleave",()=>{if(!stripDrag)$("tip").style.display="none";});
 function describeEvent(e){
   const s=`${(e.t/TPS).toFixed(1)} s  `;
-  if(e.e==="lhit")return s+`${D.lbl.get(e.id)||"#"+e.id} took ${e.dmg} (${e.src}${e.npc>0?" from "+nm("npcs",e.npc):""}${e.proj>0?", "+nm("projectiles",e.proj):""}) -> ${e.life} left${e.kill?"  FATAL":""}`;
+  if(e.e==="lhit")return s+`${D.lbl.get(e.id)||"#"+e.id}${D.pvp?" ("+prettyTeam(sideOf(e.id)?D.pvp.b:D.pvp.a)+")":""} took ${e.dmg} (${e.src}${e.npc>0?" from "+nm("npcs",e.npc):""}${e.proj>0?", "+nm("projectiles",e.proj):""}) -> ${e.life} left${e.kill?"  FATAL":""}`;
   if(e.e==="ldeath")return s+`${D.lbl.get(e.id)||"#"+e.id} died (${e.by}${e.npc>0?" "+nm("npcs",e.npc):""})`;
   if(e.e==="hit")return s+`commander took ${e.dmg} from ${e.npc>=0?nm("npcs",e.npc):e.proj>0?nm("projectiles",e.proj):"other"}`;
   return s+e.e;
@@ -933,8 +1073,24 @@ function cmdGearHtml(){
   const html=row("armor",arm.filter(g=>g[0]<3).map(T3))+row("accessories",arm.filter(g=>g[0]>=3&&g[0]<10).map(T3))+row("hotbar",inv.filter(g=>g[0]<10).map(g=>T3(g)+(g[3]>1?" x"+g[3]:"")))+row("ammo",inv.filter(g=>g[0]>=54).map(g=>T3(g)+" x"+g[3]))+row("vanity",arm.filter(g=>g[0]>=10).map(T3));
   return `<section><h2>Commander gear</h2><div class="kv">${html||"<span>-</span><span>empty</span>"}</div>${D.gearCmd.length>1?`<div class="small" style="margin-top:6px">Changed ${D.gearCmd.length-1} time${D.gearCmd.length>2?"s":""} during the fight; the list is the start.</div>`:""}</section>`;
 }
+function renderPvpInfo(){
+  const P=D.pvp,h=D.hdr||{},m=h.meta||{},e=D.end||{}, nmT=[prettyTeam(P.a),prettyTeam(P.b)];
+  const st=[{hits:0,dmg:0,deaths:0},{hits:0,dmg:0,deaths:0}];
+  for(const x of D.lhit){const q=st[sideOf(x.id)];q.hits++;q.dmg+=x.dmg;} for(const x of D.ldeath) st[sideOf(x.id)].deaths++;
+  const row=sd=>`<tr><td><i class="sw ${sd?"tb":"ta"}"></i> <span style="color:${teamVar(sd)}">${esc(nmT[sd])}</span></td><td>${P.tot[sd]}</td><td>${st[sd].deaths}</td><td>${P.aliveEnd[sd]}</td><td>${st[sd].hits}</td><td>${st[sd].dmg}</td></tr>`;
+  const how=P.how, src=[how.seed?how.seed+" from the spawn ids":"",how.name?how.name+" by army name":"",how.pos?how.pos+" by where they first stood":"",how.unknown?how.unknown+" unknown":""].filter(Boolean).join(", ");
+  $("info").innerHTML=`<section style="grid-column:1/-1"><h2>Levies</h2><div id="roster" class="roster"></div><div id="lsel"></div></section>`+
+    `<section><h2>Fight</h2><div class="kv"><span>matchup</span><span>${esc(pvpTitle(P))}</span><span>result</span><span>${esc(pvpWord(P))}</span><span>ended</span><span>${esc(e.reason||"cut short")}</span>`+
+    `<span>duration</span><span>${((D.tmax-D.tmin)/TPS).toFixed(1)} s (${D.frames.length} samples)</span>`+
+    ["arena","seed","mode","order"].filter(k=>m[k]!=null).map(k=>`<span>${k}</span><span>${esc(m[k])}</span>`).join("")+
+    `<span>game mode</span><span>${esc(h.mode||"?")}</span><span>sides</span><span>${esc(src||"-")}</span><span>file format</span><span>${D.v}</span></div></section>`+
+    `<section><h2>The two armies</h2><table><tr><th>army</th><th>levies</th><th>fell</th><th>left</th><th>hits</th><th>damage</th></tr>${row(0)}${row(1)}</table>`+
+    `<div class="small" style="margin-top:6px">Levies counts every levy the army sent in, reinforcements included (they arrive in small waves). Hits and damage are what each side took.</div></section>`;
+  buildRoster(); rosterAt=-1; updateRoster();
+}
 function renderInfo(){
   if(D.isEvent){renderEventInfo();return;}
+  if(D.pvp){renderPvpInfo();return;}
   const s=summary(D),m=(D.hdr&&D.hdr.meta)||{},h=D.hdr||{},e=D.end||{};
   const mb=D.frames.map(mainBoss).filter(Boolean); const hp0=mb.length?mb[0][6]/Math.max(1,mb[0][7]):0, hp1=mb.length?mb[mb.length-1][6]/Math.max(1,mb[mb.length-1][7]):0;
   const t=D.tally,n=Math.max(1,t.none+t.player+t.levy+(t.spite||0));
@@ -978,7 +1134,11 @@ function selectLevy(id,keep){
 let rosterAt=-1;
 function buildRoster(){
   const box=$("roster"); if(!box) return; box.innerHTML="";
-  for(const id of D.order){const b=document.createElement("button");b.dataset.id=id;b.innerHTML=`<b>${esc(D.lbl.get(id)||"#"+id)}</b> <span class="small">${esc((D.names.soldiers&&D.names.soldiers[id])||"")}</span><div class="rb"><i></i></div><div class="rs"></div>`;b.onclick=()=>selectLevy(id);box.appendChild(b);}
+  const mk=id=>{const sd=D.pvp?sideOf(id):-1,cl=sd<0?"":sd?"tb":"ta";const b=document.createElement("button");if(cl)b.className=cl;b.dataset.id=id;b.innerHTML=`<b>${esc(D.lbl.get(id)||"#"+id)}</b> <span class="small">${esc((D.names.soldiers&&D.names.soldiers[id])||"")}</span><div class="rb"><i class="${cl}"></i></div><div class="rh"></div><div class="rs"></div>`;b.onclick=()=>selectLevy(id);box.appendChild(b);};
+  if(D.pvp){   // one block per army, each with its own header and a count of who is still standing
+    for(const sd of [0,1]){const hd=document.createElement("div");hd.className="rhead";hd.dataset.side=sd;hd.innerHTML=`<i class="sw ${sd?"tb":"ta"}"></i><span style="color:${teamVar(sd)}">${esc(prettyTeam(sd?D.pvp.b:D.pvp.a))}</span><small></small>`;box.appendChild(hd);
+      for(const id of D.order.filter(i=>sideOf(i)===sd).sort((a,b)=>a-b)) mk(id);}
+  } else for(const id of D.order) mk(id);
 }
 function levyRowAt(id,f){return (f.l||[]).find(l=>l[0]===id)||null;}
 const itemTxt=(t,pre)=>{const pn=pre>0&&D.names.prefixes&&D.names.prefixes[pre];return (pn?pn+" ":"")+nm("items",t);};
@@ -991,10 +1151,13 @@ function levyGearHtml(id){
 function updateRoster(){
   if(!D||!$("roster")||performance.now()-rosterAt<120) return; rosterAt=performance.now();
   const {f0}=interp(), states=(D.hdr&&D.hdr.stateNames||"").split(",");
+  const al2=D.pvp?D.pvp.alive(cur):null;
   for(const b of $("roster").children){
+    if(b.dataset.side!=null){b.querySelector("small").textContent=al2[+b.dataset.side]+" alive of "+D.pvp.tot[+b.dataset.side];continue;}
     const id=+b.dataset.id, l=levyRowAt(id,f0), fe=D.fellBy.get(id), fell=fe&&fe.t<=cur, mx=D.maxL.get(id)||1;
     b.classList.toggle("fell",!!fell); b.classList.toggle("sel",id===selL);
     b.querySelector("i").style.width=(fell?0:l?Math.max(0,100*l[6]/(l[10]||mx)):0)+"%";
+    b.querySelector(".rh").textContent=fell?"HP 0 / "+mx:l?"HP "+l[6]+" / "+(l[10]||mx):"HP -";
     b.querySelector(".rs").textContent=fell?"fell "+(fe.t/TPS).toFixed(0)+" s":l?(states[l[7]]||""):"out of frame";
   }
   const box=$("lsel"); if(!box) return;
@@ -1008,7 +1171,7 @@ function updateRoster(){
   let death="alive";
   if(fell){const lk=(D.lhitBy.get(id)||[]).filter(e=>e.kill).pop(); death=`fell at ${(fe.t/TPS).toFixed(1)} s to ${fe.npc>0?esc(nm("npcs",fe.npc)):esc(fe.by||"?")}${lk?` (${esc(lk.src)} hit, ${lk.dmg} damage${lk.proj>0?", "+esc(nm("projectiles",lk.proj)):""})`:""}`;}
   else if(!l) death="alive, out of recorded range or not yet in the fight";
-  box.innerHTML=`<h2 style="margin:0">${esc(lname(id))} <span class="small">(following; tap again to release)</span></h2><div class="kv">`+
+  box.innerHTML=`<h2 style="margin:0">${esc(lname(id))} <span class="small">(following; tap again to release)</span></h2><div class="kv">`+(D.pvp?`<span>army</span><span style="color:${teamVar(sideOf(id))}">${esc(prettyTeam(sideOf(id)?D.pvp.b:D.pvp.a))}</span>`:"")+
     `<span>held</span><span>${held?esc(nm("items",held)):"-"}</span>`+(D.lgear.has(id)?levyGearHtml(id):`<span>ammo</span><span class="small">not recorded</span>`)+
     `<span>HP</span><span>${l?l[6]+" / "+(l[10]||mx):fell?"0":"-"}</span><span>state</span><span>${l?esc(states[l[7]]||l[7]):"-"}</span>`+
     `<span>buffs</span><span>${esc(buffs)}</span><span>hits taken</span><span>${hits.length} (${dmg} damage${Object.keys(bySrc).length?": "+Object.entries(bySrc).map(([k,v])=>k+" "+v).join(", "):""})</span><span>fate</span><span>${death}</span></div>`;
@@ -1040,7 +1203,7 @@ $("scrub").oninput=e=>{if(!D)return;cur=D.tmin+e.target.value/1000*(D.tmax-D.tmi
 $("fit").onclick=()=>{if(D){camMode="fit";$("followBoss").classList.remove("on");fitView();draw();}};
 $("followBoss").onclick=()=>{if(!D)return;camMode=camMode==="boss"?"free":"boss";$("followBoss").classList.toggle("on",camMode==="boss");if(camMode==="boss"&&cam.z<0.25)cam.z=0.3;draw();};
 const tog=(id,get,set)=>{$(id).onclick=()=>{set(!get());$(id).classList.toggle("on",get());draw();};};
-tog("tBoss",()=>trBoss,v=>trBoss=v);tog("tAdd",()=>trAdd,v=>trAdd=v);tog("tLevy",()=>trLevy,v=>trLevy=v);tog("tProj",()=>trProj,v=>trProj=v);tog("hitBtn",()=>showHit,v=>showHit=v);tog("tCmd",()=>showCmdP,v=>showCmdP=v);
+tog("tBoss",()=>trBoss,v=>trBoss=v);tog("tAdd",()=>trAdd,v=>trAdd=v);tog("tLevy",()=>trLevy,v=>trLevy=v);tog("tProj",()=>trProj,v=>trProj=v);tog("hitBtn",()=>showHit,v=>showHit=v);tog("tCmd",()=>showCmdP,v=>showCmdP=v);tog("hpBtn",()=>showHpBars,v=>showHpBars=v);tog("dmgBtn",()=>showDmg,v=>showDmg=v);
 $("labelBtn").onclick=()=>{showLabels=!showLabels;$("labelBtn").classList.toggle("on",showLabels);draw();};
 $("prevEv").onclick=()=>jumpEvent(-1); $("nextEv").onclick=()=>jumpEvent(1);
 window.addEventListener("keydown",e=>{const tg=e.target.tagName;if(tg==="SELECT"||tg==="BUTTON"||tg==="INPUT"&&e.target.type!=="range")return;

@@ -37,6 +37,9 @@ namespace Levy.Common.Weapons
 		private const int GateRetryTicks = 10;
 
 		/// <summary>Try to attack <paramref name="target"/> with the soldier's current weapon. Returns true if a shot/swing started this tick.</summary>
+		/// <summary>Mind control: 0 the soldier's own alt-fire policy, 1 her left button (the primary only), 2 her right button (the alt only, whatever the policy says).</summary>
+		internal static int MindAltMode;
+
 		public static bool TryAttack(SoldierNPC s, NPC target)
 		{
 			if (s == null || target == null || s.Record == null || !target.active) return false;
@@ -66,10 +69,11 @@ namespace Levy.Common.Weapons
 				// Held right button (channelled holdouts that pick their variant from it): set or cleared from the row's condition before the weapon spawns anything.
 				if (LevyConfig.Get.RealWeaponShoot) AltPolicies.HoldVariant(s, item, seg);
 				// Right-click alternate attack: chosen by the item's policy row, falling back to the primary when it cannot fire.
-				if (AltEligible(profile))
+				if (MindAltMode == 2 && !AltEligible(profile)) return false; // her right button on a weapon with no right-click does nothing
+				if (AltEligible(profile) && MindAltMode != 1)
 				{
 					if (TryAltAttack(s, item, profile, seg, out bool hold)) return true;
-					if (hold) return false; // a caster saving mana for the alt holds fire for a moment
+					if (hold || MindAltMode == 2) return false; // a caster saving mana for the alt holds fire for a moment; her right button never fires the primary
 				}
 				bool primary = Dispatch(s, item, profile, seg);
 				DudTrace.Result(item, primary);
@@ -171,7 +175,7 @@ namespace Levy.Common.Weapons
 			Player d = s.Dummy;
 			if (d == null || !LevyConfig.Get.RealWeaponShoot || now < s.AltReadyTick || _altDudItems.Contains(item.type)) return false;
 			// The policy decides BEFORE the AltFunctionUse probe: some probes perform the alt themselves (Hydra launches its heads inside it), and a NEVER row never probes at all.
-			if (s.AltHoldSince == 0 && !AltPolicies.Want(s, item, seg, out int recheck))
+			if (MindAltMode != 2 && s.AltHoldSince == 0 && !AltPolicies.Want(s, item, seg, out int recheck))
 			{
 				if (recheck > 0) s.AltReadyTick = now + (uint)recheck;
 				return false;

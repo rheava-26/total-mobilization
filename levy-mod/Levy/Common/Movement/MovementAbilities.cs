@@ -16,6 +16,8 @@ namespace Levy.Common.Movement
 		public int JumpTiles = 3;          // vertical reach in tiles
 		public int ExtraJumps;             // enabled tModLoader extra jumps (bottles, jars, mounts)
 		public bool HasWings; public int WingTimeMax; public bool CanGlide;
+		/// <summary>The wings hold a hover (down + jump), as only some do for a player: vanilla's hover wings (Hoverboard, Vortex Booster, Nebula Mantle, Betsy's Wings, the Fishron and Empress sets and the like) and any modded wings that declare a down-hover in their WingStats (Calamity: Hadarian Wings, Tired Tail).</summary>
+		public bool CanHover;
 		/// <summary>Player rules: any equipped wings, or a fall-damage immunity (Lucky Horseshoe family), and the extra tiles of fall a soldier gets free (Frog Leg, balloons).</summary>
 		public bool NoFallDamage; public int ExtraFall;
 		/// <summary>A dash accessory is equipped (Player.dashType: Tabi / Master Ninja Gear, Shield of Cthulhu, Solar Flare, Crystal Assassin).</summary>
@@ -140,6 +142,18 @@ namespace Levy.Common.Movement
 			if (global::Levy.Common.Compat.Calamity.CalamityDashes.TryRead(d, out float v)) { a.DashSpeed = Math.Clamp(v, 8f, LevyConstants.Movement.DashMaxSpeedPx); a.DashHighDecay = 0.985f; a.DashSlow = 0.94f; a.HasDash = true; } // Calamity's own dash decay: x0.985 above 12 px/tick, x0.94 above the run speed
 		}
 
+		/// <summary>The wingsLogic values vanilla's Player.Update freezes in place on down + jump (its hard-coded hover list).</summary>
+		private static readonly int[] VanillaHoverWings = { 22, 28, 30, 31, 33, 35, 37, 45 };
+
+		/// <summary>True when the dummy's wings can hover the way a player's can: vanilla's own hover list, or wings whose WingStats declare a down-hover (the convention modded hover wings follow).</summary>
+		public static bool WingsHover(Player dummy)
+		{
+			int w = dummy?.wingsLogic ?? 0;
+			if (w <= 0) return false;
+			if (Array.IndexOf(VanillaHoverWings, w) >= 0) return true;
+			try { return dummy.GetWingStats(w).HasDownHoverStats; } catch (Exception) { return false; }
+		}
+
 		/// <summary>
 		/// Reads the dummy's stats. Balloons add to jumpSpeedBoost in UpdateEquips; Frog Leg, Empress Brooch and Moon Lord
 		/// Legs only add theirs in Player.UpdateJumpHeight (not run for the dummy), so their flags are added here.
@@ -179,6 +193,7 @@ namespace Levy.Common.Movement
 			a.HasWings = dummy.wingsLogic > 0 && dummy.wingTimeMax > 0;
 			a.WingTimeMax = a.HasWings ? dummy.wingTimeMax : 0;
 			a.CanGlide = a.HasWings;
+			a.CanHover = a.HasWings && WingsHover(dummy);
 			a.NoFallDamage = dummy.noFallDmg || dummy.equippedWings != null; a.ExtraFall = dummy.extraFall;
 			ReadDash(dummy, a);
 			a.SpikedBoots = Math.Clamp(dummy.spikedBoots, 0, 2);

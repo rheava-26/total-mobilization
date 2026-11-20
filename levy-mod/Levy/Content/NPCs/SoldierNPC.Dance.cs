@@ -85,7 +85,7 @@ namespace Levy.Content.NPCs
 		/// <summary>Flight first: a body that can hover and strafe does, at a height that takes it out of the contact lane. Called every think of a boss fight.</summary>
 		private void DanceLift(NPC seg)
 		{
-			if (!DOn(32)) return;
+			if (!DOn(32) || GroundFirst) return;   // a player keeps the floor and the platforms in a boss fight and spends wing time on a reason (reach, a gap, a dodge), not on a standing hover
 			NPC npc = NPC;
 			if (seg != null && (seg.noGravity || seg.aiStyle == NPCAIStyleID.Worm)) return;   // a flyer or a worm owns the air: hovering at its height puts the body in its lane, so on wings the body keeps its floor and strafes
 			if (!(AerialSustained && HasFlightKit && !WantsAltitude && !_aerialSpent && AerialMaxReachTiles >= LevyConstants.Movement.AerialClimbBenefitTiles && !RoofOverhead())) return;
@@ -94,7 +94,7 @@ namespace Levy.Content.NPCs
 			hoverPx = Math.Min(hoverPx, AerialMaxReachTiles * LevyConstants.MaxReachUseFrac * LevyConstants.TilePx);
 			if (hoverPx < LevyConstants.Movement.AerialClimbBenefitTiles * LevyConstants.TilePx) return;
 			if (_aerialCooldown > DanceFlightRelaunchTicks) _aerialCooldown = DanceFlightRelaunchTicks;
-			WantsAltitude = true; AltitudeBottomY = groundY - hoverPx; _altHeld = true; DanceFlights++;
+			WantsAltitude = true; _altWhy = 4; AltitudeBottomY = groundY - hoverPx; _altHeld = true; DanceFlights++;
 		}
 
 		private int _cornerUntil, _cornerDir; internal int DanceCorners, DanceOvers;

@@ -1,5 +1,5 @@
 # The in-game Field Manual: a paged book opened by the Field Manual item. Keys are relative to Mods.Levy.Guide.
-# Every page is Pages.<Name>.Title and Pages.<Name>.Body. A body is 3 to 6 lines, one short declarative sentence per line.
+# Every page is Pages.<Name>.Title and Pages.<Name>.Body. A body is 3 to 6 lines, a few short declarative sentences per line.
 # The page order lives in Common/UI/GuidePages.cs; GuideCheck logs a [GuideCheck] line for every page at boot.
 
 Title: Field Manual
@@ -31,22 +31,70 @@ Pages: {
 		Body:
 			'''
 			Craft a Barracks at a Work Bench and place it in your town.
-			Town NPCs whose homes are within 120 tiles belong to it.
-			Right-click the Barracks to enlist Regulars: named levies who follow you and fight beside you.
-			Regulars live at the Barracks. A fallen Regular returns on their own after a short time.
+			Town NPCs housed within 120 tiles belong to it.
+			Right-click the Barracks to open its panel. Enlist a Levy, a Man-at-Arms or a Champion there. Each one is a Regular: a named soldier who follows you and fights beside you.
+			Regulars report to the Barracks that enlisted them. A fallen Regular returns after 60 seconds.
 			Build an Armory within 120 tiles so they can arm themselves.
 			'''
 	}
 
-	Wages: {
-		Title: Wages and command points
+	CommandPoints: {
+		Title: Command points
 		Body:
 			'''
-			Command points limit how many Regulars you can field. You start with 4, and each boss you beat adds more.
-			A Levy costs 1 point, a Man-at-Arms 3 and a Champion 7. Every grade is available from the start. The only cost is command points.
-			A Regular costs a muster fee up front and a wage at dawn. Both are paid from the Barracks treasury, so deposit coins there.
-			Regulars who go unpaid for days begin to desert.
-			Reserve takes a Regular off active duty: no body in the field, no wage and no command points.
+			Command points limit how many Regulars you can field. A Levy costs 1 point, a Man-at-Arms 3 and a Champion 7.
+			The default is 14 points at the start, 28 at the Wall of Flesh, 34 at Moon Lord and 40 after the last boss. Each boss you beat adds its share.
+			The Barracks panel shows the points used and the points held by Regulars in reserve.
+			Enlisting or promoting needs free points and coins. Every grade is open from the start.
+			Change the counts with Setup or the mod config.
+			'''
+	}
+
+	Grades: {
+		Title: Grades and growth
+		Body:
+			'''
+			A Champion's aim spread is 1 degree, a Man-at-Arms 3 and a Levy 6.
+			Promote raises a Regular one grade for the difference in muster fee and points. Demote lowers one grade and refunds nothing.
+			A Regular who lives through 3 boss fights can become a Veteran. A Veteran aims 40% truer and fears less. At most a quarter of your Regulars are Veterans.
+			Feed Life Crystals, Life Fruit and Mana Crystals from the More page of a Regular's card. Life tops out at 500 and mana at 200.
+			'''
+	}
+
+	BossLife: {
+		Title: Boss life and your army
+		Body:
+			'''
+			A boss gains life from the soldiers who fight it. Each soldier who damages the boss adds 2% of its base life per command point he costs, times his gear strength.
+			Gear strength is 1 for gear of the boss's own stage, 2 for gear three tiers ahead and one half for gear three tiers behind. The weapon counts 60% and the armor and accessories 40%.
+			The gain stops at a cap: 80% before Hardmode, rising to 400% late in the game.
+			Boss life from army strength and Boss life gain cap are under Settings, Mod Configuration, Levy. A strength of 1 is normal and 0 turns the gain off.
+			The fight report states the life a fight added.
+			'''
+	}
+
+	Wages: {
+		Title: Wages and treasury
+		Body:
+			'''
+			A Regular costs a muster fee up front, worth 5 days of wage, and a wage at dawn. Both come from the Barracks treasury. Deposit coins on the Barracks panel.
+			A Levy earns 10 silver a day at the start, a Man-at-Arms 3 times that and a Champion 7 times. Wages rise as the world progresses. Return to barracks halves a wage and Reserve removes it.
+			Soldiers on Follow me or standing idle, with no enemy within 25 tiles, collect loose coins and items within 6 tiles and carry them home. Coins go to the treasury.
+			A Regular unpaid for 2 days may desert: a 25% chance each dawn, then 50%. His kit returns to the Armory.
+			With Wage mutiny on in the mod config, unpaid Regulars refuse orders, rob townsfolk and attack you until the treasury pays them.
+			Hazard pay on the Barracks panel pays every Regular one day's wage, once a day. They fear 25% less until dawn.
+			'''
+	}
+
+	Reserve: {
+		Title: Reserve
+		Body:
+			'''
+			Reserve takes a Regular off active duty. His body leaves the field, and he draws no wage and holds no command points.
+			Name, grade, gear and veteran status are kept. A Regular in reserve rests to full health at dawn and takes no orders.
+			Press Reserve on a Regular's card, or Stand down all on the Barracks panel for everyone. Up to 100 soldiers can wait in reserve.
+			Recall brings a Regular back while you have the points. Remobilize all recalls everyone it can.
+			A Regular in mutiny cannot be sent to reserve.
 			'''
 	}
 
@@ -54,36 +102,73 @@ Pages: {
 		Title: Militia
 		Body:
 			'''
-			Hold the War Horn and left-click to call up your town's militia. Left-click again to stand them down.
-			Militia arm from the Armory and fight at the settlement. A settlement needs at least two town NPCs to raise them.
-			Each town NPC adds 9 manpower. Every militiaman who falls uses 1, and manpower refills at dawn.
-			Calling them up costs a small fee per head from the treasury.
-			A Recruiting drive at the Barracks restores manpower for coins.
+			Hold the War Horn near a Barracks and left-click to call up your town's militia. Left-click again to stand them down. The P key does the same within 120 tiles.
+			Militia arm from the Armory and fight around the settlement. A settlement needs at least two town NPCs to raise them.
+			Each town NPC adds 9 manpower. Every militiaman who falls uses 1. Manpower grows by 1 for every 2 town NPCs at dawn.
+			Up to 10 militia stand at once. Calling them up costs a small fee per head from the treasury.
+			A Recruiting drive at the Barracks refills missing manpower for coins, once a day.
+			Auto-muster calls the militia when an event or a boss fight starts and stands them down when it ends. Switch it on the Barracks panel.
 			'''
 	}
 
 	Orders: {
-		Title: The orders radial
+		Title: Giving orders
 		Body:
 			'''
-			Right-click the War Horn to open the orders radial. Pick an order and your Regulars carry it out.
-			The Command Radio opens the same radial when you click it.
-			With the War Horn, orders reach Regulars within 150 tiles. Carry a Command Radio anywhere in your pack and every order, and Rally, reaches every Regular in the world.
-			Keys: Y follow, U hold, I return, O hold fire, P mobilize, K rally and N army overview.
-			Rebind them under Settings, Controls.
+			Right-click the War Horn to open the orders radial. A click on the Command Radio opens it, and so does the Orders button when you talk to a soldier. Pick an order. Right-click or Esc closes it.
+			Keys need no item: Y follow, U hold, I return, O hold fire, P mobilize, K rally and N army overview. Rebind them under Settings, Controls.
+			By horn, radial or key an order reaches Regulars within 150 tiles. Farther Regulars report that they could not hear it.
+			A Command Radio anywhere in your pack reaches every Regular in the world.
+			The Barracks panel orders every Regular at once, or one at a time, from any distance.
+			An order lasts until you give another. Regulars in reserve take none.
 			'''
 	}
 
-	OrdersList: {
-		Title: What each order does
+	OrdersMove: {
+		Title: Orders - follow, hold, return
 		Body:
 			'''
-			Follow me and Hold here move the line. Hold the banners stands Regulars at the nearest Holding Banner, where they take less damage. Return to barracks sends Regulars home.
-			Hold fire stops all shooting. Fire at will turns it back on.
-			Spread out keeps wide gaps against area attacks. Close up packs the line tight around you.
-			Search & destroy hunts outward from the settlement, and Regulars more than 60 tiles from you and out of sight teleport to you. Free rein lets Regulars roam the whole region and follow the fighting, and they never teleport.
-			Focus attack: click an enemy, a critter or a spot, and the squad attacks it until it is clear.
-			Rally steadies every Regular within 30 tiles, once a minute. With a Command Radio it steadies every Regular in the world.
+			Follow me: Regulars follow you in ranks and fight within 30 tiles of you. A Regular more than 60 tiles away and out of sight teleports to you.
+			Hold here: Regulars stay where they stand. They fight what comes in reach and walk back to the spot.
+			Hold the banners: Regulars walk to the nearest Holding Banner and hold there. Soldiers within 5 tiles of a banner gain 12 defense and take 20% less damage. With no banner it is Hold here.
+			Return to barracks: Regulars walk home and wait there at half wage.
+			Any other order cancels these. A Holding Banner is crafted at a Work Bench from 8 wood and 3 silk.
+			'''
+	}
+
+	OrdersHunt: {
+		Title: Orders - hunting
+		Body:
+			'''
+			Search & destroy: Regulars roam outward from the settlement hunting enemies, up to 120 tiles from their anchor. A Regular more than 60 tiles from you and out of sight teleports to you.
+			Free rein: Regulars act fully on their own. They roam up to 600 tiles from the settlement, follow the fighting and never teleport to you.
+			Regroup & engage: Regulars hunt as in Search & destroy. In a boss fight those in the fight act as in Free rein, and they hunt again when it ends. A Regular who respawns appears beside you.
+			Ranged soldiers keep their distance on all three. Any other order cancels them.
+			'''
+	}
+
+	OrdersFire: {
+		Title: Orders - fire, ranks and focus
+		Body:
+			'''
+			Hold fire: soldiers, their summons and officers stop attacking. The button then reads Fire at will, and the O key toggles it.
+			Spread out keeps wide gaps, even when idle, and blunts area attacks. Close up packs soldiers tight around you and keeps fights within 14 tiles of you. The one button cycles Spread out, Close up and Normal ranks.
+			Focus attack: press it, then click an enemy, a critter or a spot. The squad attacks it until it is clear. Clear focus, a second click on the same target, or Esc while choosing cancels it.
+			Re-arm: every soldier returns their kit to the Armory and draws again from the issue slots.
+			Show names displays every soldier's nameplate. Press it again for the normal fade.
+			'''
+	}
+
+	Rally: {
+		Title: Rally
+		Body:
+			'''
+			Rally steadies soldiers who are afraid. Press K, or pick Rally on the radial.
+			Every Regular within 30 tiles of you settles, and a shaken or routed Regular goes back to its order. With a Command Radio it reaches every Regular in the world.
+			It works once a minute. Pressing early says how many seconds remain.
+			Fear builds while a boss is in view and when comrades fall. A shaken soldier aims worse and deals 40% less damage. A routed soldier backs away from the threat.
+			A routed soldier also recovers after 20 seconds out of sight of a boss. Standing within 10 tiles halves how fast soldiers fear.
+			Rally does not move soldiers. Follow me calls them to you.
 			'''
 	}
 
@@ -91,12 +176,11 @@ Pages: {
 		Title: Orders from the Barracks
 		Body:
 			'''
-			The Barracks panel gives orders to all Regulars at once or to one at a time.
-			All Regulars has Follow, Hold and Return. Mobilize and Stand down call or send home the militia.
-			Stand down all sends every Regular to the reserve. Remobilize all brings them back while command points last.
-			Each Regular's row has Kit, Promote, Demote, Reserve and More. More holds patrol, feeding and rebasing.
+			The Barracks panel gives orders from any distance. All Regulars has Follow, Hold and Return, and each Regular's card has the same three.
+			Mobilize and Stand down call and send home the militia. Stand down all and Remobilize all move every Regular to and from the reserve.
+			A card also has Kit, Promote, Demote and Reserve. More holds Patrol, Rebase, Discharge and feeding.
 			Patrol walks a Regular between the two nearest Patrol Banners. Place the banners within 60 tiles of the Barracks.
-			Send to map point marches every Regular to a spot on the map.
+			Send to map point marches every Regular to a spot on the map. Reset loadouts returns every kit to the Armory for a fresh issue.
 			'''
 	}
 
@@ -106,8 +190,9 @@ Pages: {
 			'''
 			Map orders send your Regulars to a point on the full map. They march there, fight what is in reach and hold the spot.
 			They need A Guide to Autonomy, studied once in the world.
-			Pick Send to map point on the orders radial or the Barracks panel. Double-click a spot on the full map to send the army. Dragging moves the map and never sends. Esc cancels.
-			With a Command Radio in your pack, holding Shift on the full map does the same.
+			Pick Send to map point on the orders radial or the Barracks panel. Double-click a spot on the full map. Dragging moves the map and never sends. Esc cancels.
+			With a Command Radio in your pack, hold Shift and double-click anywhere on the full map.
+			Soldiers who cannot find a way stop as close as they can get. Any other order cancels the march.
 			'''
 	}
 
@@ -119,6 +204,19 @@ Pages: {
 			Levies of any Barracks within 120 tiles arm themselves from it, best gear first.
 			Right-click it to open it. The tabs along the top are Items, Rules, Vanity and Logistics.
 			Each Logistical Center within 40 tiles adds 250 storage slots.
+			An item a soldier carries shows in the grid as in use. Click it to take it back. Its owner gets the Armory's next pick.
+			'''
+	}
+
+	BlockBreakers: {
+		Title: Block-breaking weapons
+		Body:
+			'''
+			Soldiers never break blocks or change the world until you allow it.
+			Putting a weapon that breaks blocks, moves liquid or changes the biome into the Armory opens a warning with Confirm and Cancel.
+			Cancel changes nothing. The weapon stays in storage, is never issued, and the warning returns when you deposit it again.
+			Confirm allows that weapon in this world. Soldiers use it and break blocks the way you would. The choice is saved with the world and shared with every player.
+			Picks, axes, hammers and drills are never offered.
 			'''
 	}
 
@@ -200,7 +298,7 @@ Pages: {
 			New starts an order. Add the item on your cursor, or + Set for the whole armor set of a piece.
 			Orders craft at stations within 30 tiles. They can buy missing materials from shopkeepers, up to a budget.
 			Pause or delete an order at any time. What it made stays in the Armory.
-			Craft items browses every recipe and crafts now from your pack, nearby chests and the Armory.
+			Craft items browses every recipe and crafts at once from your pack, nearby chests and the Armory.
 			'''
 	}
 
@@ -261,6 +359,7 @@ Pages: {
 			You start with 3 command slots. The Wall of Flesh, a mechanical boss, Plantera, Golem and Moon Lord each add one.
 			A commission costs a fee once and a wage every dawn from the settlement's treasuries and stored coin.
 			An unpaid officer goes off duty until paid. A fallen officer is gone until rehoused.
+			Officers take your orders and stances with the soldiers: follow, hold, return, hunt, hold fire and spread out.
 			'''
 	}
 
@@ -304,11 +403,23 @@ Pages: {
 		Title: Spectator and Seeker potions
 		Body:
 			'''
-			Spectator lasts 20 minutes. Enemies ignore you, and your weapons, summons and building tools stop working.
-			You stay within 60 tiles of where you drank it. Taking damage ends it.
-			It does nothing against a boss you have not beaten: it cannot be drunk while one is alive, and one appearing ends it.
+			Spectator lasts 20 minutes. Enemies ignore you and cannot hurt you, and your weapons, summons and building tools stop working. Lava, falls and drowning end it.
+			You stay within 60 tiles of where you drank it. It cannot be drunk within 5 seconds of damage or while a boss you have not beaten is alive, and such a boss appearing ends it.
+			Cancel it during a boss fight and you die. You also die if every soldier falls and no manpower is left in a boss fight.
 			With A Guide to Autonomy, your levies act on their own while you watch: fearless, falling back to heal, and going for the biggest threat.
 			Seeker lasts 12 minutes. Choose one item and tiles and chests that hold it glow, with an arrow to the nearest.
+			'''
+	}
+
+	Provisions: {
+		Title: Provisions
+		Body:
+			'''
+			A meal feeds the nearest soldiers within 60 tiles: the Fish Fry Platter 10, the Fruit Basket 15, the Happy Burger Box 25 and the Grand Feast 50. It gives Well Fed for 30 minutes and Morale for 5.
+			The Case of Fizz gives every soldier within 60 tiles low gravity and a double jump. Knockback hits them far harder.
+			The Iceberg Tray gives every soldier within 60 tiles immunity to lava and fire, and lets them swim through lava. Their aim error grows.
+			The Fizz Can and the Iceberg Shot are single drinks. The Armory can issue them from a buff slot.
+			A provision is refused, and kept, when no soldier is in reach.
 			'''
 	}
 
@@ -319,7 +430,20 @@ Pages: {
 			Every levy has a camera slot that only a GoPro fits. Put GoPros in the Armory and they are issued one per levy, and a levy that carries one can be watched.
 			Use a GoPro to see through the next GoPro levy. Right-click it to open the camera view: pick a levy or camera, hide the HUD, or stop. Esc stops.
 			Place a Static Camera, then right-click it from anywhere in reach to see its view. The mouse wheel zooms out.
-			The Mind Link takes direct control of the levy nearest your cursor. Right-click lets go.
+			The Mind Link takes direct control of the levy nearest your cursor. Right-click lets go. If you die, you control a levy until you respawn.
+			The Spectral Lens makes levies, their weapons and their shots see-through. Right-click it to switch between 85%, 95% and 99%. Only you see the effect.
+			'''
+	}
+
+	Recorder: {
+		Title: Fight recorder
+		Body:
+			'''
+			The recorder saves each boss fight as a .levyrec file, and one recording of each event. Under Settings, Mod Configuration, Levy: Fight recorder choose Off, Boss fights or All fights.
+			Type /levyrec start [name] to begin a recording, /levyrec stop to end it and print its path, /levyrec status to see it, and /levyrec folder to print the folder. A recording stops when the boss dies or after 10 minutes.
+			Recordings go to Levy/Recordings in the tModLoader save folder unless you set another folder. A file stops at 200 MB and the oldest recordings are deleted past 2048 MB.
+			When a boss fight ends, chat shows the result, your damage per second, what killed you and how the army held. The full report is saved as a text file next to the recording.
+			The warning "The line is breaking!" appears when most of the army is shaken or falling fast in a boss fight.
 			'''
 	}
 
@@ -365,9 +489,9 @@ Pages: {
 			A setup popup opens in a new single player world. Type /levysetup, or press Setup on the Barracks panel, to open it again.
 			Pick a preset. Default is the standard army. Relaxed gives more levies and bosses never target them. Hardcore gives fewer levies and bosses you have beaten target them.
 			Customize sets how many levies you have at the start, by the Wall of Flesh, by Moon Lord and by the final boss, and how bosses treat them.
-			New worlds start with 14 levies. Pre-hardmode growth follows how far along you are, so extra modded bosses do not slow it.
-			Skip keeps the current settings. Multiplayer hosts use the mod config.
+			New worlds start with 14 levies. Pre-hardmode growth follows how far along you are, so extra modded bosses do not slow it. Skip keeps the current settings. Multiplayer hosts use the mod config.
 			Every other option is under Settings, Mod Configuration, Levy, with progression assistance on its own page: loot, Dungeon Spirits, Chlorophyte and Luminite.
+			With Wrath of the Gods loaded, /levyrift shows the state of its sky and /levyrift replay plays the covering of the sun again.
 			'''
 	}
 }

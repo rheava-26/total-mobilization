@@ -152,6 +152,59 @@ def summarize_event(rows, hdr):
             "format": hdr.get("format", 12), "seed": None, "gear": None, "cmdDeaths": sum(1 for r in rows if r.get("k") == "e" and r.get("e") == "cdeath")}
 
 
+def pretty_team(s):
+    s = str(s or "").replace("_", " ").strip()
+    return s[:1].upper() + s[1:] if s else "?"
+
+
+def pvp_summary(rows, hdr):
+    """PvP lab fight (meta.pvp == "1"): who won. Same rule as the page (index.html, pvpBuild).
+    idsA / idsB hold only the first three soldier ids of each side; later levies are reinforcements with new ids. A levy's side:
+    its id is a seed id; else the army-name prefix learnt from the seeds ("Opt." = the optimal army), when the seed sides differ in it;
+    else the seed side it first stood nearest to. The winner is the side with levies left standing at the end (both or neither: draw)."""
+    meta = hdr.get("meta") or {}
+    if str(meta.get("pvp")) != "1":
+        return None
+    ids = lambda t: [int(x) for x in str(t or "").split(",") if x.strip().lstrip("-").isdigit()]
+    A, B = ids(meta.get("idsA")), ids(meta.get("idsB"))
+    names = (next((r for r in rows if r.get("k") == "names"), None) or {}).get("soldiers") or {}
+    is_opt = lambda i: str(names.get(str(i)) or "").lower().startswith("opt.")
+    first = {}
+    for f in rows:
+        if f.get("k") == "f":
+            for l in f.get("l") or []:
+                first.setdefault(l[0], l[1])
+    dead = {e.get("id") for e in rows if e.get("k") == "e" and e.get("e") == "ldeath"}
+
+    def mean(a):
+        v = [first[i] for i in a if i in first]
+        return sum(v) / len(v) if v else None
+
+    def maj(a):
+        k = [is_opt(i) for i in a if str(i) in names]
+        return -1 if not k else (1 if sum(k) * 2 > len(k) else 0 if sum(k) * 2 < len(k) else -1)
+    cA, cB, kA, kB = mean(A), mean(B), maj(A), maj(B)
+    by_name = kA >= 0 and kB >= 0 and kA != kB
+    alive = [0, 0]
+    for i in first:
+        if i in dead:
+            continue
+        if i in A:
+            sd = 0
+        elif i in B:
+            sd = 1
+        elif by_name and str(i) in names:
+            sd = 0 if int(is_opt(i)) == kA else 1
+        elif cA is not None and cB is not None:
+            sd = 0 if abs(first[i] - cA) <= abs(first[i] - cB) else 1
+        else:
+            sd = 0
+        alive[sd] += 1
+    win = "a" if alive[0] and not alive[1] else "b" if alive[1] and not alive[0] else "draw"
+    return {"a": meta.get("teamA") or "A", "b": meta.get("teamB") or "B", "win": win, "aliveA": alive[0], "aliveB": alive[1],
+            "cut": not any(r.get("k") == "end" for r in rows)}
+
+
 def summarize(rows):
     hdr = next((r for r in rows if r.get("k") == "hdr"), {})
     if recrules is not None and recrules.is_event_recording(hdr):
@@ -220,7 +273,11 @@ def summarize(rows):
     named = [e.get("name") for e in ev if e.get("e") == "boss" and e.get("name")]
     boss = meta.get("bossName") or (named[0] if named and not meta else None) or ("Other fights" if not meta else (hdr.get("boss") or "?").replace("_", " "))
     ver, about = version_of(hdr)
+    pvp = pvp_summary(rows, hdr)
+    if pvp:
+        boss = pretty_team(pvp["a"]) + " vs " + pretty_team(pvp["b"])
     return {
+        "pvp": pvp,
         "ver": ver, "verAbout": about, "date": hdr.get("date"),
         "boss": boss, "mode": mode, "arena": arena, "levies": max(n_levies, len(ids)), "result": result,
         "pl": round(100.0 * tally[2] / n, 1), "pp": round(100.0 * tally[1] / n, 1), "ps": round(100.0 * tally[3] / n, 1),

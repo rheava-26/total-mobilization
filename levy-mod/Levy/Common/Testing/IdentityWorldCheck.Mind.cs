@@ -87,6 +87,7 @@ namespace Levy.Common.Testing
 			Vector2 at = new Vector2(Cx * 16f + 8f, floor);
 			SpawnOriginTarget(at); _sweepTarget.active = false;
 			SoldierRecord rec = MindRecord(weapon, 0, boots, wings, acc); recOut = rec;
+			if (_mindHookGear != null) { rec.Gear.Set(SoldierGear.SlotHook, _mindHookGear.Clone()); rec.Gear.SetLocked(SoldierGear.SlotHook, true); }
 			RosterSystem.Instance.Regulars.Add(rec);
 			int body = RosterSystem.Instance.SpawnBody(rec, at);
 			if (body < 0 || !rec.HasBody) throw new Exception("levy did not spawn");
@@ -302,7 +303,21 @@ namespace Levy.Common.Testing
 			foreach (int t in new[] { ItemID.Handgun, ItemID.WoodenBow, ItemID.RubyStaff, ItemID.CopperBroadsword, ItemID.Flamethrower, ItemID.SpaceGun, ItemID.WaterBolt })
 				list.Add((t, "Terraria:" + ContentSamples.ItemsByType[t].Name));
 			bool all = Environment.GetEnvironmentVariable("LEVY_MIND_WEAPONS") == "all";
-			if (ModLoader.TryGetMod("CalamityMod", out Mod _))
+			string listFile = Environment.GetEnvironmentVariable("LEVY_MIND_WEAPONS") is string lw && lw.StartsWith("list:") ? lw.Substring(5) : null;
+			if (listFile != null)
+			{
+				// a weapon list (first column Mod:Name, as levy-mod/docs/ENDGAME_SWEEP.tsv): Calamity by internal name, vanilla by display name
+				list.Clear();
+				foreach (string line in System.IO.File.ReadAllLines(listFile).Skip(1))
+				{
+					string w = line.Split('\t')[0].Trim(); int c = w.IndexOf(':'); if (c <= 0) continue;
+					string mod = w.Substring(0, c), name = w.Substring(c + 1); int type = 0;
+					if (mod == "Terraria") { for (int i = 1; i < ItemID.Count; i++) if (Lang.GetItemNameValue(i) == name) { type = i; break; } }
+					else if (ModContent.TryFind<ModItem>(mod + "/" + name, out var mi)) type = mi.Type;
+					if (type > 0) list.Add((type, w)); else Note("mind attack audit: no such weapon " + w);
+				}
+			}
+			else if (ModLoader.TryGetMod("CalamityMod", out Mod _))
 			{
 				var cal = OriginWeapons();
 				var fixedNames = new[] { "StarShower", "ArcNovaDiffuser", "Tumbleweed", "Greentide", "Vesuvius", "Murasama", "Annihilator", "SpectralstormCannon", "RainbowPartyCannon" };
@@ -321,9 +336,10 @@ namespace Levy.Common.Testing
 					// a weapon whose own use gate is shut in this world (Murasama before the Devourer of Gods: its CanUseItem) is used by nobody, a player included: there is nothing to compare
 					if (global::Levy.Common.Weapons.ModWeaponGates.Locked(w1)) { sb.Append($"\n    {label}: skipped (its own use gate is shut in this world: a player cannot use it either)"); ok++; continue; }
 					MindStrays.Clear();
-					var empty = MindWeaponRun(w1, ammo, false, 90, deadRun);
-					var onEnemy = MindWeaponRun(w2, ammo, true, 90, deadRun);
-					OResult ai = OriginOne(type, ammo, label, 90);
+					int wt = int.TryParse(Environment.GetEnvironmentVariable("LEVY_MIND_TICKS"), out int wtv) ? wtv : 90;
+					var empty = MindWeaponRun(w1, ammo, false, wt, deadRun);
+					var onEnemy = MindWeaponRun(w2, ammo, true, wt, deadRun);
+					OResult ai = OriginOne(type, ammo, label, wt);
 					if (sample.sentry || sample.mana >= 200) { sb.Append($"\n    {label}: skipped (a sentry, or {sample.mana} mana a cast, which a levy's mana pool does not hold)"); ok++; continue; }
 					bool fires = empty.projs > 0 || onEnemy.projs > 0;
 					int aiProjs = ai.Projs - Math.Max(0, ai.Far - ai.FarAbove); // the levy alone: rounds that first appeared high over the enemy outside the sky-rain window are the world's (a falling star), not his
@@ -476,6 +492,8 @@ namespace Levy.Common.Testing
 			_mindSpawnsCleared = 0;
 			try { MindMovementAudit(chk); } catch (Exception e) { Check("mind movement audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			Note($"mind movement audit: {_mindSpawnsCleared} world spawns removed while the driven bodies ran");
+			ClearSoldiers();
+			try { MindAirAudit(chk); } catch (Exception e) { Check("mind air audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			ClearSoldiers();
 			try { MindAttackAudit(chk); } catch (Exception e) { Check("mind attack audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			ClearSoldiers();

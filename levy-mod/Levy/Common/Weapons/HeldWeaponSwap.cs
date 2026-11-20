@@ -99,7 +99,13 @@ namespace Levy.Common.Weapons
 			int i = p?.whoAmI ?? -1;
 			if (p == null)
 			{
-				i = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), s.NPC.Center, dir * Math.Max(1f, item.shootSpeed), item.shoot, damage, item.knockBack, ownerSlot);
+				bool swappedForSpawn = OwnerPuppet.FacingFixOn && ownerSlot == Slot && !EnemyTargeting.IsSwapped; // the holder's spawn hooks (every mod's OnSpawn) read slot 255: the levy's dummy stands there for the spawn, as it does for its AI
+				try
+				{
+					if (swappedForSpawn) EnemyTargeting.Swap(s);
+					i = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), s.NPC.Center, dir * Math.Max(1f, item.shootSpeed), item.shoot, damage, item.knockBack, ownerSlot);
+				}
+				finally { if (swappedForSpawn) { EnemyTargeting.Unswap(); EnemyTargeting.EnsureSlotRestored(); } }
 				if (i < 0 || i >= Main.maxProjectiles) return WeaponUse.Dud(s, item);
 				p = Main.projectile[i];
 			}
@@ -302,10 +308,10 @@ namespace Levy.Common.Weapons
 			bool manaWeapon = false, release = false, aliased = false; int aliasWho = Slot;
 			object calPlayer = null; Vector2 savedDelta = default; float savedRot = 0f;
 			bool savedMouseLeft = false, mouseSet = false;
+			bool outer = OuterSwapBody == body.NPC.whoAmI + 1 && EnemyTargeting.IsSwapped; // the whole ProjectileAI of this chain projectile already stands under the levy's dummy (OpenOuterSwap): this call is one step inside it
 			try
 			{
-				EnemyTargeting.Swap(body); // dummy -> Main.player[255]
-				swapped = true;
+				if (!outer) { EnemyTargeting.Swap(body); swapped = true; } // dummy -> Main.player[255]
 				if (!holder || !authority)
 				{
 					// beams and client copies: only the anchor; a lash also lends its dummy the item and the use animation for the call (RealWhips.AiScope)
@@ -434,9 +440,39 @@ namespace Levy.Common.Weapons
 				catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: held weapon cleanup failed: " + e.Message); }
 				finally
 				{
-					if (swapped) EnemyTargeting.Unswap();
-					EnemyTargeting.EnsureSlotRestored(); // never leave a dummy in Main.player[255]
+					if (!outer)
+					{
+						if (swapped) EnemyTargeting.Unswap();
+						EnemyTargeting.EnsureSlotRestored(); // never leave a dummy in Main.player[255]
+					}
 				}
+			}
+		}
+
+		/// <summary>The soldier (NPC index + 1) whose dummy stands in slot 255 for a whole <c>ProjectileLoader.ProjectileAI</c> call of one of its chain projectiles, or 0 (see <see cref="OpenOuterSwap"/>).</summary>
+		[ThreadStatic] internal static int OuterSwapBody;
+
+		/// <summary>
+		/// A chain projectile's WHOLE AI call, not only its vanilla body: <c>ProjectileLoader.ProjectileAI</c> runs the PreAI of every global and of the projectile, the AI body, then every PostAI. The held-weapon wrapper used to stand on the
+		/// vanilla body alone (and on a lash's or a modded holdout's whole call), so for a beam or any other chain child the other mods' PreAI / PostAI and a modded child's own AI read slot 255 as the empty player: facing right, standing at the
+		/// world's corner, whichever way the levy faced. The dummy stands in the slot for the whole call; the wrapper inside it (<see cref="RunAi"/>) sees it already there and leaves it alone.
+		/// </summary>
+		internal static void OpenOuterSwap(Action<Projectile> orig, Projectile p, HeldWeaponProjectile g)
+		{
+			SoldierNPC body = LevyUtil.IsServerOrSingle ? BodyOf(p, g) : null;
+			if (body == null || p.owner != Slot || EnemyTargeting.IsSwapped) { orig(p); return; }
+			int prev = OuterSwapBody;
+			try
+			{
+				EnemyTargeting.Swap(body);
+				OuterSwapBody = body.NPC.whoAmI + 1;
+				orig(p);
+			}
+			finally
+			{
+				OuterSwapBody = prev;
+				EnemyTargeting.Unswap();
+				EnemyTargeting.EnsureSlotRestored(); // never leave a dummy in Main.player[255]
 			}
 		}
 
@@ -460,13 +496,16 @@ namespace Levy.Common.Weapons
 			RealWhips.DamageScope wh = g.Whip && item0 != null ? new RealWhips.DamageScope(body, item0) : default; // a lash's hit writes the owner (the minion focus, the item's on-hit hooks): the commander is put back as it was
 			// a rogue weapon's hit that writes its owner's stealth bar (the Doomsday Device gives back 30% of it on a plain hit) writes the LEVY's bar: the real player's bar is lent the levy's values for the call
 			StealthLend lend = g.Grenade ? StealthLend.Begin(body) : default;
+			OwnerPuppet.Lend facing = default; // a beam's hit pass reads its owner like every other soldier shot's does: the levy's facing and place, not the commander's (a lash lends its own, RealWhips.DamageScope)
 			try
 			{
 				p.owner = SoldierMinions.TrueMyPlayer;
+				if (!g.Whip) facing = OwnerPuppet.LendTransform(body);
 				orig(p);
 			}
 			finally
 			{
+				facing.Dispose();
 				lend.End();
 				if (p.type == savedType) p.owner = savedOwner; // undo only our own edit: if the cascade killed p and recycled its slot, the new projectile keeps its owner
 				ark.Dispose();
@@ -716,6 +755,7 @@ namespace Levy.Common.Weapons
 			catch (Exception e) { Mod.Logger.Warn("Levy: could not hook ProjectileLoader.ProjectileAI: " + e.Message); }
 			On_Projectile.Damage += DamageDetour;
 			On_Projectile.Update += ChainUpdateDetour;
+			On_Projectile.Kill += KillDetour;
 		}
 
 		public override void Unload()
@@ -724,8 +764,19 @@ namespace Levy.Common.Weapons
 			On_Projectile.VanillaAI -= VanillaAiDetour;
 			On_Projectile.Damage -= DamageDetour;
 			On_Projectile.Update -= ChainUpdateDetour;
+			On_Projectile.Kill -= KillDetour;
 			HeldWeapons.Reset();
 		}
+
+		/// <summary>A chain projectile's death (Projectile.Kill: its OnKill hooks, the effects and split shots a mod makes when a beam or a lash ends) reads its owner too: the levy's dummy stands in slot 255 for the call.</summary>
+		private static void KillDetour(On_Projectile.orig_Kill orig, Projectile self)
+		{ _hl_KillDetour_6++;
+			if (!OwnerPuppet.FacingFixOn || self.owner != SoldierNPC.DummySlot || !self.active || _wrapDepth != 0 || EnemyTargeting.IsSwapped || !LevyUtil.IsServerOrSingle || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain) { orig(self); return; }
+			SoldierNPC body = HeldWeapons.BodyOf(self, g);
+			if (body == null) { orig(self); return; }
+			try { EnemyTargeting.Swap(body); orig(self); }
+			finally { EnemyTargeting.Unswap(); EnemyTargeting.EnsureSlotRestored(); }
+		} private static int _hl_KillDetour_6;
 
 		public override void OnWorldLoad() => HeldWeapons.Reset();
 		public override void OnWorldUnload() { HeldWeapons.Reset(); EnemyTargeting.EnsureSlotRestored(); }
@@ -763,7 +814,8 @@ namespace Levy.Common.Weapons
 		{ _hl_LoaderAiDetour_4++;
 			global::Levy.Common.Util.HookProbe.HeldLoader++;
 			// a lash (vanilla or modded) is wrapped here too: Projectile.Update runs every projectile's AI through ProjectileLoader.ProjectileAI, and the vanilla whip AI reads its owner's use animation and arm
-			if (!HeldWeapons.IsChainOwner(self.owner) || _wrapDepth != 0 || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain || !(RealWhips.IsWhipProjectile(self) || (self.ModProjectile != null && g.ModHolder))) { orig(self); return; }
+			if (!HeldWeapons.IsChainOwner(self.owner) || _wrapDepth != 0 || !self.TryGetGlobalProjectile(out HeldWeaponProjectile g) || !g.Chain) { orig(self); return; }
+			if (!(RealWhips.IsWhipProjectile(self) || (self.ModProjectile != null && g.ModHolder))) { if (OwnerPuppet.FacingFixOn) HeldWeapons.OpenOuterSwap(orig, self, g); else orig(self); return; } // a beam or a holder's other child: the vanilla body is wrapped inside (VanillaAiDetour), the rest of the call stands here
 			_wrapDepth++;
 			try { HeldWeapons.RunAi(orig, self, g); }
 			finally { _wrapDepth--; }

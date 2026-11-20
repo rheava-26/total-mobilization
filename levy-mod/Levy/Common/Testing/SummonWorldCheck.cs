@@ -70,6 +70,7 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_RULES_ONLY") == "1") { _done = true; try { LevyRulesCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LevyRules] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the army-follows-the-player's-rules check alone
 			if (Environment.GetEnvironmentVariable("LEVY_IDENTITY_ONLY") == "1") { _done = true; try { IdentityWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[IdentityWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the identity world check alone (origin sweep, mind control)
 			if (Environment.GetEnvironmentVariable("LEVY_WHIPONLY") == "1") { _done = true; try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the whip check alone
+			if (Environment.GetEnvironmentVariable("LEVY_FACING_ONLY") == "1") { _done = true; try { FacingWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[FacingWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the commander-facing check alone
 			if (Environment.GetEnvironmentVariable("LEVY_TILESWEEPSHIPONLY") == "1") { _done = true; try { TileSweepCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[TileSweep] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the ship-mode tile sweep sample alone
 			if (Environment.GetEnvironmentVariable("LEVY_OFFICERONLY") == "1") { _done = true; try { OfficerWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[OfficerWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the officer world check alone
 			if (Environment.GetEnvironmentVariable("LEVY_BODYGUARD_ONLY") == "1") { _done = true; try { BodyguardWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[Bodyguard] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the bodyguard world check alone
@@ -99,6 +100,8 @@ namespace Levy.Common.Testing
 			try { BodyguardWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[Bodyguard] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the whip world check runs next (never two checks stepping the world at once)
 			try { WhipRealCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[WhipReal] check threw " + e.GetType().Name + ": " + e.Message); }
+			// the commander-facing check runs after the whip check (a levy's lash, swing and shot do the same whichever way the commander faces)
+			try { FacingWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[FacingWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the field-fix check (thorn contact break, officers in a boss fight, the off-duty banner) runs after that
 			try { FieldFixCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[FieldFix] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the shop lag check runs after that, then the tile sweep (which also reads what the army shot during every check before it)

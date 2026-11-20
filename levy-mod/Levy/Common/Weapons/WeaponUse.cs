@@ -358,12 +358,15 @@ namespace Levy.Common.Weapons
 		public static Projectile Spawn(SoldierNPC s, Vector2 pos, Vector2 vel, int type, int damage, float knockback, DamageClass damageType, float ai0 = 0f, float ai1 = 0f, float ai2 = 0f)
 		{
 			if (type <= 0) return null;
-			int idx = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), pos, vel, type, Math.Max(1, damage), knockback, OwnerFor(s), ai0, ai1, ai2);
-			if (idx < 0 || idx >= Main.maxProjectiles) return null;
-			Projectile p = Main.projectile[idx];
-			if (!p.active || p.type != type) return null;
-			TagSoldierProjectile(s, p, damageType);
-			return p;
+			using (OwnerPuppet.LendTransform(s)) // the spawn hooks of the shot read its owner (the commander's slot): they find the levy's facing and place, not hers
+			{
+				int idx = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), pos, vel, type, Math.Max(1, damage), knockback, OwnerFor(s), ai0, ai1, ai2);
+				if (idx < 0 || idx >= Main.maxProjectiles) return null;
+				Projectile p = Main.projectile[idx];
+				if (!p.active || p.type != type) return null;
+				TagSoldierProjectile(s, p, damageType);
+				return p;
+			}
 		}
 
 		/// <summary>
@@ -570,8 +573,10 @@ namespace Levy.Common.Weapons
 			object thoriumPrev = null;
 			AltPolicies.AimScope aim = default;
 			UseCycle.Scope cycle = default;
+			OwnerPuppet.Lend lend = default;
 			try
 			{
+				lend = OwnerPuppet.LendTransform(s); // every hook below that reads Main.player[owner] (the commander's slot, which the shot is owned by) reads the levy's facing and place
 				// The cursor is on the target while the hooks run (items that place or steer something at the cursor then act on the enemy, as for a player aiming).
 				// A hook that reads the cursor (Calamity's Conference Call drops its sky bullets over Main.mouseX) must read the soldier's aim and never the commander's: with no target the cursor goes a screen ahead along the shot.
 				if (target != null) aim = new AltPolicies.AimScope(d, target.Center);
@@ -599,7 +604,7 @@ namespace Levy.Common.Weapons
 				}
 			}
 			catch (Exception) { threw = true; }
-			finally { cycle.Dispose(); aim.Dispose(); OwnerPuppet.RestoreThorium(thoriumPrev); d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; d.controlUseItem = savedUse; }
+			finally { cycle.Dispose(); aim.Dispose(); OwnerPuppet.RestoreThorium(thoriumPrev); d.whoAmI = savedWho; d.direction = savedDir; d.Center = savedCenter; d.controlUseItem = savedUse; lend.Dispose(); }
 
 			DamageClass dmgType = profile.Family == WeaponFamily.Broadsword ? (item.DamageType ?? DamageClass.Melee) : profile.DamageType;
 			int adopted = 0;

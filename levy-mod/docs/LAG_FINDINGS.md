@@ -494,3 +494,30 @@ INFERRED for her machine (a headless server cannot draw): the update scales with
 - `[ActiveArmy]` world check (ship world, both halves; `LEVY_ACTIVEARMY_ONLY=1` runs it alone), 30 soldiers of one commander, three Champions enlisted last, size 20: the size holds through two deployment passes, one body per soldier; the Champions stay in the field and the last-enlisted Levies are benched; benching keeps all 120 items and the live HP; command points held by all; militia never limited; a soldier who falls is dead with his own respawn timer and is replaced within one tick by the lowest-id soldier waiting, where he fell (0.0 tiles); five falling in one tick are all replaced in that tick; after a lava death the replacement comes in beside the commander, not in the lava; under Regroup beside the commander; respawned soldiers are refused a body while the field is full; sizes 25 and none field the rest; a save and load round trip (records written and read back, bodies gone) gives back 30 records with unique ids, 20 in the field, one dead, one body each and every item; the live notice shows at once with the right size and words, only once a session, and Don't ask again silences it; the "?" text and the labels.
 - `PerfSelfTest` (boot and the command-line tool): the suggestion's arithmetic (27 for her numbers; the cut comes off the player's own soldiers; the floor of 5; nothing under budget or with a number missing; the largest army that lands at 12 ms), the post-fight offer (after Lower levy effects, with the size in words; never in the other-mod popup or when the frames were the cost), and the live notice's rules (14 ms, 0.8 speed with Subtle, the army's share, ten soldiers, focus). The option-count guard still expects six options; "reserve bank" is now "active army".
 - Ship world (serial, both halves, `SHIPWORLD_SERIAL=1 SHIPWORLD_TIMEOUT=1500`, 1,935 s): **0 FAIL**, 3,593 PASS (the known summon-staff pick line excluded as always); `[ActiveArmy]` 37/37 in both halves. The first run had 6 `[PerfAnalyzer]` popup FAILs: the active army check showed the live notice and left the popup clock set, so the analyzer check after it hit its own rate limit. The check now gives the clock and counters back (and checks that it did); `LEVY_ACTIVEARMY_ONLY=1` runs it followed by the analyzer check.
+
+### Recorded pillar fights (activecap 2, 11-20): why a capped army loses more
+
+The same scene recorded (`lab/activecap/ac_pillar_rec.tsv`, `--rec 2`; a pillar is not a fight boss, so the harness now starts an event recording per fight when `pw=N` and `LEVY_REC_DIR` are set, plain `.jsonl`). Her 45, Calamity, Master + Death, 40 s, two seeds per arm, all six recorded. The box was at load 5 to 10 this time, against 14 to 18 for the first run, and the lab's deaths follow the load (section 2b), so compare these arms with each other, not with the first table.
+
+| arm | update ms/tick | army ms/tick | deaths (per fight) | army damage/s | damage/s at 15 / 25 / 35 s | enemy kills |
+|---|---|---|---|---|---|---|
+| no size | 15.1 (15.0, 15.2) | 13.0 | 22, 23 of 45 | 34,059 | 34.7k / 33.1k / 34.9k | 420, 425 |
+| 30 | 11.2 (13.0, 9.3) | 8.8 | 37, 43 of 45 | 24,627 | 35.0k / 27.4k / 18.9k | 413, 290 |
+| 20 | 8.0 (7.3, 8.7) | 5.1 | 45, 45 (wiped at 17 s and 28 s) | 19,916 | 24.6k / 8.3k / - | 122, 183 |
+
+From the recordings (`lab/activecap/ac_deaths.py`: the bodies in the first frame are the starting field, later bodies are replacements; `ldeath` events give the death times; enemies are the recorded hostile NPCs minus the pillar):
+
+| arm, seed | deaths/s | deaths per 100 soldier-s | starting field: dead (median s alive) | replacements: dead (median s from arrival) | replacements dead within 5 s | enemies alive, first 15 s (per soldier) |
+|---|---|---|---|---|---|---|
+| no size, 1 | 0.55 | 1.5 | 22 (26.9) | - | - | 14.3 (0.32) |
+| no size, 2 | 0.57 | 1.6 | 23 (28.9) | - | - | 19.0 (0.46) |
+| 30, 1 | 0.93 | 3.6 | 24 (27.1) | 13 of 15 (12.6) | 4 | 21.0 (0.70) |
+| 30, 2 | 1.07 | 6.3 | 29 (17.4) | 14 of 15 (4.3) | 8 | 19.1 (0.65) |
+| 20, 1 | 2.60 | 17.1 | 20 (5.5) | 25 of 25 (4.4) | 13 | 29.7 (2.21) |
+| 20, 2 | 1.59 | 12.1 | 20 (12.2) | 25 of 25 (4.3) | 14 | 26.9 (1.39) |
+
+OBSERVED. It is not the same fire shared by fewer soldiers: that would keep the deaths per second the same in every arm, and they rise from 0.56 to about 1.0 at 30 and 1.6 to 2.6 at 20. It is not only the replacements either: the starting field itself dies sooner (median 27 to 29 s alive uncapped, 5.5 to 12 s at 20). What goes with it is the enemy count: a smaller army kills fewer of the pillar's enemies (420 kills uncapped, 122 to 183 at 20), so more of them stay alive (14 to 19 in the first 15 s uncapped, 27 to 30 at 20), and each fielded soldier faces two to five times as many. Replacements then arrive into that crowd: at 20, about half of them die within 5 s of arriving.
+
+INFERRED. A snowball: fewer soldiers, fewer kills, more enemies alive, faster deaths, and the reserve drains into the same crowd one soldier at a time. In this scene the pillar keeps sending enemies whatever the army's size, so a size well under the army trades lag for losses fast; 30 of 45 held damage for the first 15 s and then fell off as the reserve ran out. The size is the player's lever; this is what it costs here, and the lag notice's suggestion (the size that brings the update to 12 ms) does not weigh it. Not tested: whether replacing at the muster point instead of the spot changes the replacements' share (the starting field dies faster too, so it would not change the main effect).
+
+The six recordings load in `Levy/tools/fightviewer/make_site.py` (6 fights, 1.3 MB of site data).

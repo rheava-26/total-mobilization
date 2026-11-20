@@ -721,6 +721,7 @@ namespace Levy.Common.Testing
 				if (run.Diag) global::Levy.Common.Potions.SpectatorDiagnostic.Set(true);
 				global::Levy.Common.Recording.FightRecAuto.Tag(("arena", run.Arena), ("seed", run.Seed), ("mode", run.Mode), ("gear", run.Gear + "_n" + run.N), ("cellkey", run.Key));
 				if (probe && !File.Exists(_crOut + ".probe.tsv")) File.WriteAllText(_crOut + ".probe.tsv", "mode\ttick\tlevy\tgear\tupkeep\trage\tadr\trageMode\tadrMode\thp\tboss\n");
+				CrEventRecStart(run); // pw=N with LEVY_REC_DIR: the pillar fight is an event, so it gets an event recording of its own (the boss recorder never starts for a pillar)
 				Mod.Logger.Info($"HARNESS-CR: start {run.Key}: {run.Boss} {boss.life}/{boss.lifeMax} def {boss.defense} dmg {boss.damage} revenge={LevyRippers.RevengeanceOn} death={CrDeathOn()} expert={Main.expertMode} rippersOff={LevyRippers.Disabled} arena={run.Arena} gear={run.Gear} n={run.N} hpscale%/cp={(global::Levy.Common.Config.LevyConfig.Get.BossHpScalingPercentPerCp)}; {run.Desc}");
 				return;
 			}
@@ -849,10 +850,28 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !(n.ModNPC is SoldierNPC) && !n.townNPC) n.active = false; }
 		}
 
+		/// <summary>Lab: a pillar scene (pw=N) with LEVY_REC_DIR set records each fight as an event recording (format 12) into that folder, plain .jsonl, one file per fight.</summary>
+		private static void CrEventRecStart(CrRun run)
+		{
+			string dir = Environment.GetEnvironmentVariable("LEVY_REC_DIR");
+			if (run.Pw <= 0 || string.IsNullOrEmpty(dir) || Recording.EventRecorder.On) return;
+			Recording.FightRecorder.OutDirOverride = dir; Recording.FightRecorder.GzipOverride = false;
+			Recording.EventRecorder.TestEnabled = true; Recording.EventRecorder.ClearCooldown();
+			string path = Recording.EventRecorder.Start(Main.player[0], "pillars", out string err);
+			global::Levy.Levy.Instance?.Logger.Info(path != null ? "HARNESS-CR: event recording " + path : "HARNESS-CR: event recording could not start: " + err);
+		}
+		private static void CrEventRecStop(CrRun run)
+		{
+			if (run.Pw <= 0 || !Recording.EventRecorder.On) return;
+			string f = Recording.EventRecorder.Stop("lab fight over");
+			global::Levy.Levy.Instance?.Logger.Info("HARNESS-CR: event recording saved " + (f ?? "(none)"));
+		}
+
 		private const string CrHeader = "key\tkind\tboss\tmode\torder\tseed\tresult\tticks\tsec\tbossMax\tbossLeft\tbossDmg\tbossDef\tdmgBoss\tdmgR\tdmgM\tdmgE\tdmgS\tdmgUnattr\tdmgProj\tdmgMelee\tdeaths\tdeathsR\tdeathsM\tdeathsE\tdeathsS\tavgSurvSec\ttakenBoss\ttakenAdd\ttakenOther\taddsPeak\thalfSec\tavgHp\tpotionsDrunk\trageAct\tadrAct\tdrCuts\tadrLost\tpeakRageAvg\tpeakAdrAvg\trageSec\tadrSec\thitsTaken\tgear\tarena\tn\ttgtLevyPct\ttgtPlayerPct\ttgtNonePct\taddTgtLevyPct\taddTgtPlayerPct\thitsBoss\thitsPerSec\tdmgPerSec\tdmgHead\tdmgBody\tdmgTail\tdmgAdd\tbossMoved\tenragedSec\tfirstHitSec\tpartsMax\tdtdPct\tdpsHittable\taddKills\taddKillsPerSec\tphases\tdmgSources\tfirstDeathSec\tavgDef\tfearPct\tshakenPct\troutedPct\tfm\tsurv\tperLevy";
 
 		private void CrFinishFight(CrRun run, CrState st)
 		{
+			CrEventRecStop(run);
 			int end = st.EndTick > 0 ? st.EndTick : st.Tick;
 			Func<char, long> dmg = c => st.Levies.Where(l => l.Cls == c).Sum(l => l.DmgBoss);
 			long dmgBoss = st.Levies.Sum(l => l.DmgBoss);

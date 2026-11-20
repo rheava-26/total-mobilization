@@ -126,11 +126,14 @@ namespace Levy.Common.Dialogue
 		/// The fog pulls the army apart: tiles an idle levy's follow slot sits further from the commander, growing over <see cref="LevyConstants.RiftFogDriftTicks"/> of fog to 2 to 5
 		/// tiles (each levy its own, by record id). Nothing while it has a target, out of the fog, or with no rift mood. Server and single player (the follow logic runs there).
 		/// </summary>
+		/// <summary>The share of the fog's drift range a levy takes, 0 to 1, from its record id (so each levy drifts its own distance, the same every time).</summary>
+		public static float FogOwn(int id) => ((uint)id * 2654435761u >> 24) / 255f;
+
 		public static float FogDriftTiles(SoldierRecord rec, bool fighting, int now)
 		{
 			if (fighting || rec == null || _fogSince == Never) return 0f;
 			float t = Math.Min(1f, Math.Max(0f, (now - _fogSince) / (float)LevyConstants.RiftFogDriftTicks));
-			float own = ((uint)rec.Id * 2654435761u >> 24) / 255f;
+			float own = FogOwn(rec.Id);
 			return t * (LevyConstants.RiftFogDriftMinTiles + own * (LevyConstants.RiftFogDriftMaxTiles - LevyConstants.RiftFogDriftMinTiles));
 		}
 

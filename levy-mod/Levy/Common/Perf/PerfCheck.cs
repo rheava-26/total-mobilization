@@ -71,6 +71,7 @@ namespace Levy.Common.Perf
 			if (!_armed || _done || !Main.dedServ) return;
 			_done = true; _running = true;
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation; string tmp = null;
+			IDisposable quiet = WorldStep.Quiet(); // the windows below time one busy-wait against the analyzer's rows: a zombie the world spawns mid-window adds Levy hook time to the row that the burn is judged against
 			try
 			{
 				global::Levy.Common.Util.LevyUtil.SpEmulation = true; Main.player[0] = Main.player[0] ?? new Player();
@@ -80,7 +81,7 @@ namespace Levy.Common.Perf
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(4).Select(l => l.Trim())), false); }
 			finally
 			{
-				_running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server;
+				quiet.Dispose(); _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server;
 				try { Cleanup(); PerfTestTypes.Reset(); PerfAnalyzer.TestFault = false; PerfAnalyzer.TestRevive(); PerfAnalyzer.TestLog = false; PerfAnalyzer.TestReduced = false; PerfAnalyzer.ConfigChanged(); PerfAnalyzer.TestServer = false; PerfAnalyzer.TestWindowSecs = null; PerfAnalyzer.TestLogDir = null; PerfAnalyzer.TestResetLog(); PerfAnalyzer.TestReset(); PerfPopup.TestMode = false; PerfPopup.TestNow = null; PerfPopup.TestEnabled = null; PerfPopup.TestDontAsk = null; } catch (Exception) { }
 				try { if (tmp != null && Directory.Exists(tmp)) Directory.Delete(tmp, true); } catch (Exception) { }
 			}
@@ -208,7 +209,10 @@ namespace Levy.Common.Perf
 			// A busy-wait and the analyzer's clock are both wall time, so a descheduled thread inflates the row (but never below the burn). Each timing phase judges up to three fresh windows and takes the first inside the band:
 			// a row that is never inside it in three tries is a real attribution fault, a one-off preemption is not.
 			PerfWindow w1 = null; double burned1 = 0, wall1 = 0; PerfItem nt = null, nm = null;
-			for (int attempt = 0; attempt < 3; attempt++)
+			// A preempted thread only ever makes a wall-clock row run long, so of several windows the one nearest the burn is the honest reading: a window is kept when it is inside the band, else the nearest one stands for the phase.
+			// All five outside the band is a real attribution fault; the band itself is unchanged.
+			(PerfWindow w, double b, double wl, PerfItem t, PerfItem m, double score) best1 = (null, 0, 0, null, null, double.MaxValue);
+			for (int attempt = 0; attempt < 5; attempt++)
 			{
 				Cleanup(); PerfTestTypes.Reset(); PerfTestTypes.NpcUs = 1000; PerfTestTypes.NpcCalls = 0;
 				w1 = Window(() => SpawnNpc(ModContent.NPCType<PerfTestNpc>()), 210);
@@ -216,7 +220,10 @@ namespace Levy.Common.Perf
 				wall1 = Math.Max(burned1, PerfTestTypes.WallMs); // what the busy-waits really took: a loaded box preempts them, and the analyzer's wall clock sees that too
 				nt = Row(w1, PerfCat.NpcType, "Levy/PerfTestNpc"); nm = Row(w1, PerfCat.Npc, "Levy");
 				if (nt != null && nm != null && nt.Ms > 0.6 * burned1 && nt.Ms < 1.6 * wall1 && nm.Ms > 0.6 * burned1 && nm.Ms < 1.6 * wall1) break;
+				double sc1 = nt == null || nm == null || burned1 <= 0 ? double.MaxValue : Math.Abs(Math.Log(Math.Max(1e-6, nt.Ms) / wall1)) + Math.Abs(Math.Log(Math.Max(1e-6, nm.Ms) / wall1));
+				if (sc1 < best1.score) best1 = (w1, burned1, wall1, nt, nm, sc1);
 				Note($"NPC phase attempt {attempt + 1} was outside the band ({nt?.Ms:0.0} ms for {burned1:0.0} burned, {wall1:0.0} on the wall); trying again");
+				if (attempt == 4 && best1.w != null) { w1 = best1.w; burned1 = best1.b; wall1 = best1.wl; nt = best1.t; nm = best1.m; }
 			}
 			Note($"NPC phase: {PerfTestTypes.NpcCalls} calls of 1 ms; window updates {w1?.Updates} sampled {w1?.SampledUpdates}, timed NPC calls {PerfAnalyzer.NpcCalls}, context attached {PerfAnalyzer.AttachCount} time(s); window rows: {Dump(w1)}");
 			Check("a test NPC that burns 1 ms an update shows as NPC Levy/PerfTestNpc at about the cost burned", nt != null && nt.Ms > 0.6 * burned1 && nt.Ms < 1.6 * wall1);
@@ -225,14 +232,18 @@ namespace Levy.Common.Perf
 
 			// ---- projectile update
 			PerfWindow w2 = null; double burned2 = 0, wall2 = 0; PerfItem pt = null, pm = null;
-			for (int attempt = 0; attempt < 3; attempt++)
+			(PerfWindow w, double b, double wl, PerfItem t, PerfItem m, double score) best2 = (null, 0, 0, null, null, double.MaxValue);
+			for (int attempt = 0; attempt < 5; attempt++)
 			{
 				Cleanup(); PerfTestTypes.Reset(); PerfTestTypes.ProjUs = 600;
 				w2 = Window(() => SpawnProj(ModContent.ProjectileType<PerfTestProj>(), false), 210);
 				burned2 = PerfTestTypes.ProjCalls * 0.6; wall2 = Math.Max(burned2, PerfTestTypes.WallMs);
 				pt = Row(w2, PerfCat.ProjType, "Levy/PerfTestProj"); pm = Row(w2, PerfCat.Proj, "Levy");
 				if (pt != null && pm != null && pt.Ms > 0.6 * burned2 && pt.Ms < 1.6 * wall2) break;
+				double sc2 = pt == null || pm == null || burned2 <= 0 ? double.MaxValue : Math.Abs(Math.Log(Math.Max(1e-6, pt.Ms) / wall2));
+				if (sc2 < best2.score) best2 = (w2, burned2, wall2, pt, pm, sc2);
 				Note($"projectile phase attempt {attempt + 1} was outside the band ({pt?.Ms:0.0} ms for {burned2:0.0} burned, {wall2:0.0} on the wall); trying again");
+				if (attempt == 4 && best2.w != null) { w2 = best2.w; burned2 = best2.b; wall2 = best2.wl; pt = best2.t; pm = best2.m; }
 			}
 			Note($"projectile phase: {PerfTestTypes.ProjCalls} calls of 0.6 ms; window rows: {Dump(w2)}");
 			Check("a test projectile that burns 0.6 ms an update shows as projectile Levy/PerfTestProj at about the cost burned", pt != null && pt.Ms > 0.6 * burned2 && pt.Ms < 1.6 * wall2);
@@ -240,13 +251,17 @@ namespace Levy.Common.Perf
 
 			// ---- an army shot
 			PerfWindow w3 = null; double burned3 = 0, wall3 = 0; PerfItem am = null;
-			for (int attempt = 0; attempt < 3; attempt++)
+			(PerfWindow w, double b, double wl, PerfItem a, double score) best3 = (null, 0, 0, null, double.MaxValue);
+			for (int attempt = 0; attempt < 5; attempt++)
 			{
 				Cleanup(); PerfTestTypes.Reset(); PerfTestTypes.ProjUs = 600;
 				w3 = Window(() => SpawnProj(ModContent.ProjectileType<PerfTestProj>(), true), 210);
 				burned3 = PerfTestTypes.ProjCalls * 0.6; wall3 = Math.Max(burned3, PerfTestTypes.WallMs); am = Row(w3, PerfCat.Army, "all");
 				if (am != null && am.Ms > 0.6 * burned3 && am.Ms < 1.6 * wall3) break;
+				double sc3 = am == null || burned3 <= 0 ? double.MaxValue : Math.Abs(Math.Log(Math.Max(1e-6, am.Ms) / wall3));
+				if (sc3 < best3.score) best3 = (w3, burned3, wall3, am, sc3);
 				Note($"army shot phase attempt {attempt + 1} was outside the band ({am?.Ms:0.0} ms for {burned3:0.0} burned, {wall3:0.0} on the wall); trying again");
+				if (attempt == 4 && best3.w != null) { w3 = best3.w; burned3 = best3.b; wall3 = best3.wl; am = best3.a; }
 			}
 			Note($"army shot phase: {PerfTestTypes.ProjCalls} calls; window rows: {Dump(w3)}");
 			Check("the same projectile fired by the army lands on the army row", am != null && am.Ms > 0.6 * burned3 && am.Ms < 1.6 * wall3 && Row(w3, PerfCat.Proj, "Levy") == null);
@@ -254,13 +269,17 @@ namespace Levy.Common.Perf
 			// ---- a global hook: its time is charged to its mod and taken out of the NPC's owner
 			// A busy-wait is wall-clock time, so a world autosave or a GC pause that lands inside the window inflates it. Judge the best of three windows.
 			PerfWindow w4 = null; double burned4 = 0, wall4 = 0; PerfItem gm = null, nm4 = null;
-			for (int attempt = 0; attempt < 3; attempt++)
+			(PerfWindow w, double b, double wl, PerfItem g, PerfItem n, double score) best4 = (null, 0, 0, null, null, double.MaxValue);
+			for (int attempt = 0; attempt < 5; attempt++)
 			{
 				Cleanup(); PerfTestTypes.Reset(); PerfTestTypes.GlobUs = 400; PerfTestTypes.NpcUs = 0;
 				w4 = Window(() => SpawnNpc(ModContent.NPCType<PerfTestNpc>()), 210);
 				burned4 = PerfTestTypes.GlobCalls * 0.4; wall4 = Math.Max(burned4, PerfTestTypes.WallMs); gm = Row(w4, PerfCat.Glob, "Levy"); nm4 = Row(w4, PerfCat.Npc, "Levy");
 				if (gm != null && gm.Ms > 0.6 * burned4 && gm.Ms < 1.6 * wall4) break;
+				double sc4 = gm == null || burned4 <= 0 ? double.MaxValue : Math.Abs(Math.Log(Math.Max(1e-6, gm.Ms) / wall4));
+				if (sc4 < best4.score) best4 = (w4, burned4, wall4, gm, nm4, sc4);
 				Note($"global hook phase attempt {attempt + 1} was outside the band ({gm?.Ms:0.0} ms for {burned4:0.0} burned); trying again");
+				if (attempt == 4 && best4.w != null) { w4 = best4.w; burned4 = best4.b; wall4 = best4.wl; gm = best4.g; nm4 = best4.n; }
 			}
 			Note($"global hook phase: {PerfTestTypes.GlobCalls} calls of 0.4 ms; window rows: {Dump(w4)}");
 			Check("a GlobalNPC hook that burns 0.4 ms an update shows as a global hook of Levy at about the cost burned", gm != null && gm.Ms > 0.6 * burned4 && gm.Ms < 1.6 * wall4);

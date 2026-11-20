@@ -31,6 +31,8 @@ namespace Levy.Common.Testing
 		private sealed class MTrace
 		{
 			public readonly List<float> X = new(), Y = new(), Vx = new(), Vy = new(); public readonly List<int> Dir = new();
+			/// <summary>World spawns removed while this trace ran, and the hit points the driven body lost: a trace that took either is not a clean reference for the movement it measures.</summary>
+			public int Spawns; public int HpLost; public string Info = "";
 			public void Add(float x, float y, float vx, float vy, int dir) { X.Add(x); Y.Add(y); Vx.Add(vx); Vy.Add(vy); Dir.Add(dir); }
 			public float Top(int from, int to) { float m = 0f; for (int i = from; i < Math.Min(to, Vx.Count); i++) m = Math.Max(m, Math.Abs(Vx[i])); return m; }
 			public int FirstAbove(float v, int from = 0) { for (int i = from; i < Vx.Count; i++) if (Math.Abs(Vx[i]) >= v) return i; return -1; }
@@ -40,6 +42,8 @@ namespace Levy.Common.Testing
 			public string Sample(params int[] at) => string.Join(" ", at.Where(i => i < Vx.Count).Select(i => $"v@{i}={Vx[i]:0.00}"));
 		}
 
+		/// <summary>Added to the seed of a weapon sample (the weapon audit's re-samples); 0 otherwise.</summary>
+		private static int _mindSeedBump;
 		private static bool _mindRefOn; private static int _mindKillMe; private static string _mindKillWhy;
 		private static void MindKillMeDetour(On_Player.orig_KillMe orig, Player self, Terraria.DataStructures.PlayerDeathReason reason, double dmg, int dir, bool pvp)
 		{
@@ -94,6 +98,7 @@ namespace Levy.Common.Testing
 			NPC n = Main.npc[body]; n.Bottom = at; rec.HoldPos = n.Center;
 			// the world's own spawns are removed from the first tick on: a slime that reaches the body before the script starts knocks it into the run (a 4.4 px/tick start on 11-18)
 			KeepCommander(); for (int t = 0; t < 30; t++) { Step(1); MindClearSpawns(); }
+			if (!MindRest(n)) Note($"  dbg mind trace: the body did not come to rest before the script (vx {n.velocity.X:0.00}, vy {n.velocity.Y:0.00})");
 			if (!MindControl.Begin(Main.player[0], rec.Id, false)) throw new Exception("mind link refused");
 			for (int t = 0; t < 3; t++) { MindControl.SetInput(0, K()); Step(1); MindClearSpawns(); }
 			n.velocity = Vector2.Zero; n.Bottom = at;
@@ -102,9 +107,11 @@ namespace Levy.Common.Testing
 				rec.Mana = rec.MaxMana;
 				MindControl.SetInput(0, inp(t));
 				each?.Invoke(t);
-				Step(1); MindClearSpawns(); // nothing the world spawns may hit the body she drives
+				Step(1); tr.Spawns += MindClearSpawns(); // nothing the world spawns may hit the body she drives
 				if (!n.active) break;
+				tr.HpLost = Math.Max(tr.HpLost, n.lifeMax - n.life);
 				tr.Add(n.Center.X - at.X, n.Bottom.Y - floor, n.velocity.X, n.velocity.Y, n.direction);
+				if (t == 149 && n.ModNPC is SoldierNPC fsn && fsn.Dummy != null) tr.Info = MindFingerprint(fsn.Dummy) + $" npc[vy {n.velocity.Y:0.000} collideY {n.collideY} wet {n.wet} knockBackResist {n.knockBackResist:0.00} buffs {string.Join("/", Enumerable.Range(0, NPC.maxBuffs).Where(i => n.buffType[i] > 0).Select(i => n.buffType[i]))}]";
 			}
 			if (Environment.GetEnvironmentVariable("LEVY_MIND_DEBUG") == "1" && n.active) { Player dd = ((SoldierNPC)n.ModNPC).Dummy; Note($"  dbg levy dummy: maxRun={dd.maxRunSpeed} accRun={dd.accRunSpeed} accel={dd.runAcceleration} slow={dd.runSlowdown} moveSpeed={dd.moveSpeed} wings={dd.wingsLogic} wingMax={dd.wingTimeMax} dash={dd.dashType} jumpH={Player.jumpHeight} jumpS={Player.jumpSpeed} grav={dd.gravity} fall={dd.maxFallSpeed}"); }
 			MindControl.End(0);
@@ -139,6 +146,7 @@ namespace Levy.Common.Testing
 					if (Environment.GetEnvironmentVariable("LEVY_MIND_DEBUG") == "1" && t >= 0 && t < 4 && s.Right) Note($"  dbg player t={t} right={p.controlRight} v={p.velocity} dpos={p.position - pb} active={p.active} dead={p.dead} ghost={p.ghost} frozen={p.frozen} noItems={p.noItems} CCed={p.CCed} maxRun={p.maxRunSpeed} acc={p.runAcceleration} dedServ={Main.dedServ} net={Main.netMode} gameMenu={Main.gameMenu} pause={Main.gamePaused}");
 					p.active = true; p.dead = false;
 					if (t >= 0) tr.Add(p.Center.X - (Cx * 16f + 8f), p.Bottom.Y - floor, p.velocity.X, p.velocity.Y, p.direction);
+					if (t == 149) tr.Info = MindFingerprint(p);
 				}
 			}
 			finally
@@ -153,12 +161,50 @@ namespace Levy.Common.Testing
 			return tr;
 		}
 
+
+		/// <summary>The state of a Player (the stand-in commander or a levy's dummy) that decides how it brakes: logged once at the tick before the key is released, so a run that stops late can be told from one that stops on time by what it carried.</summary>
+		private static string MindFingerprint(Player p)
+		{
+			string buffs = string.Join("/", Enumerable.Range(0, Player.MaxBuffs).Where(i => p.buffType[i] > 0).Select(i => p.buffType[i]));
+			return $"[vy {p.velocity.Y:0.000} maxRun {p.maxRunSpeed:0.00} accRun {p.accRunSpeed:0.00} accel {p.runAcceleration:0.000} slowdown {p.runSlowdown:0.000} moveSpeed {p.moveSpeed:0.00} slippy {p.slippy} slippy2 {p.slippy2} wet {p.wet} honey {p.honeyWet} lava {p.lavaWet} gravDir {p.gravDir:0} grav {p.gravity:0.00} sliding {p.sliding} mount {p.mount?.Active} frozen {p.frozen} webbed {p.webbed} stoned {p.stoned} slow {p.slow} chilled {p.chilled} dash {p.dashType}/{p.dashDelay} buffs {buffs} wind {Main.windSpeedCurrent:0.00} rain {Main.raining}]";
+		}
+
+		/// <summary>Why a stop-after-release check missed: the speed traces round the release, and what touched either body (world spawns removed, hit points lost). Logged only when the check fails.</summary>
+		private static void MindDumpStop(string label, MTrace pl, MTrace lv)
+		{
+			string Vx(MTrace t) => string.Join(" ", Enumerable.Range(0, 12).Select(i => 148 + i * 4).Where(i => i < t.Vx.Count).Select(i => $"{t.Vx[i]:0.00}"));
+			Note($"  dbg mind {label} stop miss: player vx@148,152.. [{Vx(pl)}] spawns {pl.Spawns} hp lost {pl.HpLost}; levy vx@148,152.. [{Vx(lv)}] spawns removed {lv.Spawns} hp lost {lv.HpLost}; levy Y@150 {(lv.Y.Count > 150 ? lv.Y[150] : 0f):0.0} Vy@150..153 {string.Join(" ", Enumerable.Range(150, 4).Where(i => i < lv.Vy.Count).Select(i => $"{lv.Vy[i]:0.00}"))}");
+		}
+
+		private static void MindDumpAir(string label, MTrace lv)
+		{
+			int first = lv.Y.Select((y, i) => (y, i)).FirstOrDefault(a => a.y < -0.5f).i;
+			Note($"  dbg mind {label} left the floor at tick {first}: Y {string.Join(" ", Enumerable.Range(Math.Max(0, first - 2), 8).Where(i => i < lv.Y.Count).Select(i => $"{lv.Y[i]:0.0}"))}; Vx {string.Join(" ", Enumerable.Range(Math.Max(0, first - 2), 8).Where(i => i < lv.Vx.Count).Select(i => $"{lv.Vx[i]:0.00}"))}; spawns removed {lv.Spawns} hp lost {lv.HpLost}");
+		}
+		/// <summary>
+		/// Steps the world one tick at a time with the world's spawns removed after every tick (a slime that reaches a body knocks it into the run: seen as -0.52 px/tick on the very next tick of the MindInput packet check) until body <paramref name="n"/>
+		/// has stood still for <paramref name="need"/> ticks in a row (|vx| under 0.01, no vertical speed), or <paramref name="cap"/> ticks pass. A body that cannot settle is a finding, not something to hide: false is returned and the caller says so.
+		/// </summary>
+		private static bool MindRest(NPC n, int need = 10, int cap = 240)
+		{
+			int still = 0;
+			for (int t = 0; t < cap; t++)
+			{
+				Step(1); MindClearSpawns();
+				if (!n.active) return false;
+				if (Math.Abs(n.velocity.X) < 0.01f && Math.Abs(n.velocity.Y) < 0.01f) { if (++still >= need) return true; } else still = 0;
+			}
+			return false;
+		}
+
 		/// <summary>Spawns removed during the movement traces (the audit notes the count).</summary>
 		private static int _mindSpawnsCleared;
-		private static void MindClearSpawns()
+		private static int MindClearSpawns()
 		{
-			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && n != _sweepTarget && WorldStep.IsNaturalHostile(n)) _mindSpawnsCleared++; }
+			int cleared = 0;
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && n != _sweepTarget && WorldStep.IsNaturalHostile(n)) { _mindSpawnsCleared++; cleared++; } }
 			ClearNaturalHostiles();
+			return cleared;
 		}
 
 		private static MindInputState K(bool l = false, bool r = false, bool j = false, bool d = false, bool use = false, Vector2 aim = default) => new MindInputState { Left = l, Right = r, Jump = j, Down = d, Use = use, Aim = aim };
@@ -183,6 +229,8 @@ namespace Levy.Common.Testing
 				Cmp($"{label} top speed", $"{pTop:0.00} px/tick", $"{lTop:0.00}", NearF(lTop, pTop, 0.05f, 0.1f));
 				Cmp($"{label} ticks to 90% of top speed", $"{p90}", $"{l90}", NearI(l90, p90, Math.Max(4, p90 / 10)));
 				Cmp($"{label} ticks to stop after releasing", $"{pStop}", $"{lStop}", NearI(lStop, pStop, 4));
+				Note($"  dbg mind {label} stop state: player {pl.Info} levy {lv.Info}; vx around the release (ticks 148, 150, 152, ...): player [{string.Join(" ", Enumerable.Range(0, 12).Select(i => 148 + i * 2).Where(i => i < pl.Vx.Count).Select(i => pl.Vx[i].ToString("0.00")))}] levy [{string.Join(" ", Enumerable.Range(0, 12).Select(i => 148 + i * 2).Where(i => i < lv.Vx.Count).Select(i => lv.Vx[i].ToString("0.00")))}]");
+				if (!NearI(lStop, pStop, 4)) MindDumpStop(label, pl, lv);
 				if (Environment.GetEnvironmentVariable("LEVY_MIND_DEBUG") == "1") { Note($"  dbg turn {label} player vx 236..256: " + string.Join(" ", Enumerable.Range(236, 20).Select(i => $"{pl.Vx[i]:0.00}"))); Note($"  dbg turn {label} levy  vx 236..256: " + string.Join(" ", Enumerable.Range(236, 20).Select(i => $"{lv.Vx[i]:0.00}"))); }
 				Cmp($"{label} turning around: first tick moving the other way", $"{pTurn}", $"{lTurn}", NearI(lTurn, pTurn, 3));
 				Cmp($"{label} speed curve", pl.Sample(5, 15, 30, 60, 120), lv.Sample(5, 15, 30, 60, 120), NearF(lv.Vx[30], pl.Vx[30], 0.1f, 0.15f) && NearF(lv.Vx[60], pl.Vx[60], 0.08f, 0.12f));
@@ -270,7 +318,7 @@ namespace Levy.Common.Testing
 			int body = RosterSystem.Instance.SpawnBody(rec, at);
 			if (body < 0 || !rec.HasBody) throw new Exception("levy did not spawn");
 			Main.npc[body].Bottom = at; rec.HoldPos = Main.npc[body].Center;
-			Main.rand = new Terraria.Utilities.UnifiedRandom(777);
+			Main.rand = new Terraria.Utilities.UnifiedRandom(777 + _mindSeedBump);
 			KeepCommander(); PinSweepTarget(); Step(20);
 			if (!MindControl.Begin(Main.player[0], rec.Id, dead)) throw new Exception("mind link refused");
 			int projs = 0, first = -1; long dmg = 0; var live = new Dictionary<int, (int type, int id)>();
@@ -345,7 +393,27 @@ namespace Levy.Common.Testing
 					int aiProjs = ai.Projs - Math.Max(0, ai.Far - ai.FarAbove); // the levy alone: rounds that first appeared high over the enemy outside the sky-rain window are the world's (a falling star), not his
 					bool aiFires = aiProjs > 0;
 					// a weapon that works for the levy on its own must work when she drives it: it shoots at an empty cursor spot, and on an enemy it does at least half the damage the levy deals by itself
-					bool good = !aiFires || (sample.shoot <= 0 || fires) && ((empty.projs > 0 || sample.shoot <= 0) && (ai.Damage == 0 || onEnemy.damage * 2 >= ai.Damage));
+					bool Judge(int emptyProjs, bool firesAny, long drivenDmg, long aloneDmg) => (sample.shoot <= 0 || firesAny) && ((emptyProjs > 0 || sample.shoot <= 0) && (aloneDmg == 0 || drivenDmg * 2 >= aloneDmg));
+					bool good = !aiFires || Judge(empty.projs, fires, onEnemy.damage, ai.Damage);
+					// A weapon with random output (Flurrystorm Cannon throws 5 to 13 rounds from the same hold) can miss the half-the-damage bar on one 90-tick sample by chance alone. The verdict then moves to more samples on other seeds:
+					// the damage of every sample is summed on both sides and the same bar applied to the sums, so a weapon that really does less when driven still fails, and one that was only unlucky does not.
+					int extra = 0;
+					if (!good)
+					{
+						int ep = empty.projs; bool fa = fires; long dd = onEnemy.damage, ad = ai.Damage;
+						for (int r = 1; r <= 3 && !good; r++)
+						{
+							_mindSeedBump = 101 * r;
+							try
+							{
+								var e2 = MindWeaponRun(MindItem(type), ammo, false, wt, deadRun); var o2 = MindWeaponRun(MindItem(type), ammo, true, wt, deadRun); OResult a2 = OriginOne(type, ammo, label, wt);
+								ep += e2.projs; fa |= e2.projs > 0 || o2.projs > 0; dd += o2.damage; ad += a2.Damage; extra = r;
+							}
+							finally { _mindSeedBump = 0; }
+							good = Judge(ep, fa, dd, ad);
+						}
+						if (extra > 0) sb.Append($"\n    {label}: the first sample missed the bar, so {extra} more sample(s) on other seeds were added: driven damage {dd} over {extra + 1} samples against {ad} for the levy alone ({(good ? "now within" : "still below")} half)");
+					}
 					if (good) ok++; else { bad++; failed.Add(label.Replace("CalamityMod:", "")); }
 					sb.Append($"\n    {label}: empty cursor {empty.projs} shots (first at tick {empty.firstShotTick}), on an enemy {onEnemy.projs} shots dmg {onEnemy.damage}, levy alone {aiProjs} shots dmg {ai.Damage}{(good ? "" : $"  <-- BROKEN (levy alone fired: {string.Join(", ", ai.ByType.Select(kv => kv.Key + " x" + kv.Value.n))})")}{(MindStrays.Count > 0 ? $" (not counted, the world's: {string.Join(", ", MindStrays)})" : "")}{(aiProjs != ai.Projs ? $" (not counted for the levy alone: {ai.Projs - aiProjs} first seen far over the enemy)" : "")}");
 				}
@@ -444,7 +512,8 @@ namespace Levy.Common.Testing
 				SoldierRecord rec = MindRecord(MindItem(ItemID.CopperShortsword), 0, null, null, null);
 				RosterSystem.Instance.Regulars.Add(rec);
 				int body = RosterSystem.Instance.SpawnBody(rec, at); Main.npc[body].Bottom = at;
-				KeepCommander(); Step(20); MindControl.Begin(Main.player[0], rec.Id, false); Step(2);
+				KeepCommander(); Step(20); bool rested = MindRest(Main.npc[body]); MindControl.Begin(Main.player[0], rec.Id, false); for (int q = 0; q < 2; q++) { Step(1); MindClearSpawns(); }
+				C($"the levy is at rest before the packet arrives (vx {Main.npc[body].velocity.X:0.00}, vy {Main.npc[body].velocity.Y:0.00})", rested && Math.Abs(Main.npc[body].velocity.X) < 0.01f);
 				var m = typeof(MindControl).GetMethod("OnInput", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 				using (var ms = new System.IO.MemoryStream())
 				{
@@ -487,14 +556,28 @@ namespace Levy.Common.Testing
 		{
 			if (Environment.GetEnvironmentVariable("LEVY_MIND") == "0" || !Main.dedServ) return;
 			bool legacy = MindLegacy, chk = !legacy;
+			using IDisposable quietSpawns = WorldStep.Quiet(); // the audits below measure one body against a real Player: no natural spawn may reach it
 			Note($"mind sweep: drive = {(legacy ? "LEGACY goal-steered" : "direct")}");
 			SetupOriginArena(); KeepCommander(); Step(2);
 			_mindSpawnsCleared = 0;
+			// lab: LEVY_MIND_REPEAT=N runs the movement, air and lifecycle audits N times in one boot (a flake shows as a failure in some of the repeats)
+			int reps = int.TryParse(Environment.GetEnvironmentVariable("LEVY_MIND_REPEAT"), out int rp) ? Math.Max(1, rp) : 1;
+			for (int rep = 1; rep < reps; rep++)
+			{
+				Note($"mind repeat {rep}/{reps}");
+				try { MindMovementAudit(chk); } catch (Exception e) { Check("mind movement audit threw " + e.GetType().Name + ": " + e.Message, false); }
+				ClearSoldiers();
+				try { MindAirAudit(chk); } catch (Exception e) { Check("mind air audit threw " + e.GetType().Name + ": " + e.Message, false); }
+				ClearSoldiers();
+				try { MindLifecycleAudit(chk); } catch (Exception e) { Check("mind lifecycle audit threw " + e.GetType().Name + ": " + e.Message, false); }
+				ClearSoldiers();
+			}
 			try { MindMovementAudit(chk); } catch (Exception e) { Check("mind movement audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			Note($"mind movement audit: {_mindSpawnsCleared} world spawns removed while the driven bodies ran");
 			ClearSoldiers();
 			try { MindAirAudit(chk); } catch (Exception e) { Check("mind air audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			ClearSoldiers();
+			if (Environment.GetEnvironmentVariable("LEVY_MIND_NOATTACK") == "1") { try { MindSyncAudit(chk); } catch (Exception e) { Check("mind sync audit threw " + e.Message, false); } ClearSoldiers(); try { MindLifecycleAudit(chk); } catch (Exception e) { Check("mind lifecycle audit threw " + e.Message, false); } ClearSoldiers(); return; } // lab: skip the weapon audits
 			try { MindAttackAudit(chk); } catch (Exception e) { Check("mind attack audit threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			ClearSoldiers();
 			try { MindAttackAudit(chk, true); } catch (Exception e) { Check("mind attack audit (dead commander) threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }

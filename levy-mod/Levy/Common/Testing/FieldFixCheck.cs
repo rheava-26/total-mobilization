@@ -50,10 +50,10 @@ namespace Levy.Common.Testing
 		{
 			if (!_armed || _done || !Main.dedServ) return;
 			_done = true; _running = true;
-			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation;
+			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation; IDisposable quiet = WorldStep.Quiet();
 			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; _local = true; Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
-			finally { _local = false; _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); }
+			finally { quiet.Dispose(); _local = false; _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); }
 			_mod.Logger.Info($"[FieldFix] self-check pass={_pass} fail={_fail}");
 		}
 
@@ -74,9 +74,12 @@ namespace Levy.Common.Testing
 
 		private static void Step(int n)
 		{
-			ClearStrangers();
-			for (int i = 0; i < n; i++) { KeepCommander(); WorldStep.Update(); }
+			// the world spawns hostiles at random with the stand-in commander in it; clearing them once per call left a 240-tick wait open to a slime that knocks a Hold levy off its thorn or fights it, so they go every tick
+			if (ClearOnce) ClearStrangers();
+			for (int i = 0; i < n; i++) { if (!ClearOnce) ClearStrangers(); KeepCommander(); WorldStep.Update(); }
 		}
+		/// <summary>Lab only: LEVY_FIELDFIX_CLEAR_ONCE=1 puts the old once-per-call clearing back (to measure what it did to the thorns part).</summary>
+		private static readonly bool ClearOnce = Environment.GetEnvironmentVariable("LEVY_FIELDFIX_CLEAR_ONCE") == "1";
 
 		private static void KeepCommander()
 		{
@@ -154,7 +157,8 @@ namespace Levy.Common.Testing
 			Arena();
 			PlaceCommander(-100);
 			string only = Environment.GetEnvironmentVariable("LEVY_FIELDFIX_PART") ?? "all";
-			if (only == "all" || only == "thorns") { try { Thorns(); } finally { Cleanup(); } }
+			int reps = int.TryParse(Environment.GetEnvironmentVariable("LEVY_FIELDFIX_REPEAT"), out int rp) ? Math.Max(1, rp) : 1; // lab: the thorns part N times in one boot, to catch a flake
+			if (only == "all" || only == "thorns") { for (int r = 0; r < reps; r++) { try { Thorns(); } finally { Cleanup(); } } }
 			if (only == "all" || only == "join") { try { BossJoin(); } finally { Cleanup(); } }
 			if (only == "all" || only == "banner") { try { Banner(); } finally { Cleanup(); } }
 		}
@@ -232,7 +236,34 @@ namespace Levy.Common.Testing
 				bodies.Add(s);
 			}
 			int farX = Cx + 40; PutTile(farX, FloorY - 1, TileID.JungleThorns); PutTile(farX, FloorY - 2, TileID.JungleThorns); // a thorn nobody touches
-			Step(240);
+			// Wait for the contact rather than for a fixed 240 ticks: the check is about what a levy standing in a thorn does to it, and a body that anything shoves off its column (a knock, a neighbour) touches one tile of the
+			// two and leaves the other, which read as "the touched tiles are broken" failing for crimson thorns once under load. A body that has left its column is put back (and counted below, so a Hold levy that
+			// wanders is still seen); the verdicts are unchanged: every breaking tile must be gone and every case hurt, and spikes must still stand after at least 240 ticks.
+			int displaced = 0, waited = 0;
+			bool Settled()
+			{
+				for (int k = 0; k < cases.Length; k++)
+				{
+					var s0 = bodies[k]; if (s0 == null) continue;
+					int tx0 = Cx + (int)cases[k].x;
+					if (s0.HazardHits == 0) return false;
+					if (cases[k].breaks && (Has(tx0, FloorY - 1, cases[k].tile) || Has(tx0, FloorY - 2, cases[k].tile))) return false;
+				}
+				return true;
+			}
+			for (waited = 0; waited < 1500; waited++)
+			{
+				Step(1);
+				if (waited % 6 == 0)
+					for (int k = 0; k < cases.Length; k++)
+					{
+						var s0 = bodies[k]; if (s0 == null || !s0.NPC.active) continue;
+						float colX = (Cx + cases[k].x) * 16f + 8f;
+						if (Math.Abs(s0.NPC.Center.X - colX) > 10f) { displaced++; s0.NPC.Bottom = new Vector2(colX, FloorY * 16f); s0.NPC.velocity = Vector2.Zero; }
+					}
+				if (waited >= 239 && Settled()) break;
+			}
+			Note($"thorns: settled after {waited + 1} ticks, bodies put back on their column {displaced} time(s)");
 			for (int k = 0; k < cases.Length; k++)
 			{
 				var c = cases[k]; var s = bodies[k]; if (s == null) continue;

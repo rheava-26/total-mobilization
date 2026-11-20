@@ -68,11 +68,12 @@ namespace Levy.Common.Testing
 			if (!_armed || _done || !Main.dedServ) return;
 			_done = true; _running = true;
 			bool sp = LevyUtil.SpEmulation; int gm = Main.GameMode; bool hm = Main.hardMode; bool day = Main.dayTime; double time = Main.time; int cap = LevyConfig.Get?.RenderCap ?? 40;
+			IDisposable quiet = WorldStep.Quiet(); // no natural spawns: a hostile within 110 tiles resets every levy's calm counter, and the dormancy verdict then depends on the box's luck
 			try { LevyUtil.SpEmulation = true; Main.player[0] = Main.player[0] ?? new Player(); Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(4).Select(l => l.Trim())), false); }
 			finally
 			{
-				_running = false; LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time;
+				quiet.Dispose(); _running = false; LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time;
 				try { if (LevyConfig.Get != null) LevyConfig.Get.RenderCap = cap; } catch (Exception) { }
 				PerfProbe.On = false;
 			}

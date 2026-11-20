@@ -35,6 +35,17 @@ namespace Levy.Common.Testing
 		/// <summary>True once a check has begun stepping the world on this test server: the server loop leaves the player slots alone from then on (cleared again when the world unloads).</summary>
 		public static volatile bool Holding;
 
+		/// <summary>
+		/// While a check holds this, the world spawns no natural enemies for the stand-in commander (maxSpawns 0, see <see cref="WorldStepSpawnGate"/>). With an active player in it the world spawns zombies and slimes at random, and a check that
+		/// measures the army on a quiet field (dormancy needs 360 calm ticks, a Mind Link body must start from rest, a thorn must be walked on) used to remove them after the fact: a spawn inside the very tick could still knock a body or reset
+		/// a calm counter, and which checks it hit depended on the box's luck. Opt-in, because the event checks need the world's own invasion spawns: <c>using (WorldStep.Quiet()) { ... }</c>.
+		/// </summary>
+		public static volatile int QuietSpawns;
+		/// <summary>Lab only: LEVY_WORLDSTEP_NOQUIET=1 lets the world spawn as before (to measure what the spawns did to a check).</summary>
+		private static readonly bool NoQuiet = Environment.GetEnvironmentVariable("LEVY_WORLDSTEP_NOQUIET") == "1";
+		public static IDisposable Quiet() { if (!NoQuiet) QuietSpawns++; return new QuietToken(NoQuiet); }
+		private sealed class QuietToken : IDisposable { private bool _d; public QuietToken(bool noop) { _d = noop; } public void Dispose() { if (_d) return; _d = true; if (QuietSpawns > 0) QuietSpawns--; } }
+
 		/// <summary>Runs one Main.Update with the ambience pass suppressed.</summary>
 		public static void Update()
 		{
@@ -45,6 +56,12 @@ namespace Levy.Common.Testing
 			try { _update.Invoke(Main.instance, new object[] { new GameTime() }); }
 			finally { Main.AmbienceServer = ambience; WorldGen.spawnMeteor = meteor || WorldGen.spawnMeteor; }
 		}
+	}
+
+	/// <summary>No natural enemy spawns while a check asked for quiet (<see cref="WorldStep.Quiet"/>). Inert in play: nothing but the world checks raises the counter.</summary>
+	public sealed class WorldStepSpawnGate : GlobalNPC
+	{
+		public override void EditSpawnRate(Player player, ref int spawnRate, ref int maxSpawns) { if (WorldStep.QuietSpawns > 0) { maxSpawns = 0; spawnRate = int.MaxValue / 4; } }
 	}
 
 	/// <summary>Keeps the server loop thread (Netplay.UpdateConnectedClients) from dropping the check's stand-in player while <see cref="WorldStep.Holding"/>. Inert in play: nothing but the world checks sets it.</summary>

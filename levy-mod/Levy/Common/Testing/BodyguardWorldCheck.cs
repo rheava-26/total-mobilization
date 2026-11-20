@@ -60,6 +60,7 @@ namespace Levy.Common.Testing
 			if (!_armed || _done || !Main.dedServ) return;
 			_done = true; _running = true;
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation; int gm = Main.GameMode; bool hm = Main.hardMode; bool day = Main.dayTime; double time = Main.time; int mode0 = Bodyguard.Mode;
+			using IDisposable quiet = WorldStep.Quiet(); // a slime that wanders in is a second thing for the boss and the army to chase: the scene is the boss and the twelve levies alone
 			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; Main.player[0] = Main.player[0] ?? new Player(); Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(4).Select(l => l.Trim())), false); }
 			finally { _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time; Bodyguard.Mode = mode0; }
@@ -274,7 +275,7 @@ namespace Levy.Common.Testing
 
 		private static void Run()
 		{
-			int seeds = int.TryParse(Environment.GetEnvironmentVariable("LEVY_BODYGUARD_SEEDS"), out int sd) ? sd : 4;
+			int seeds = int.TryParse(Environment.GetEnvironmentVariable("LEVY_BODYGUARD_SEEDS"), out int sd) ? sd : 10;
 			int ticks = int.TryParse(Environment.GetEnvironmentVariable("LEVY_BODYGUARD_TICKS"), out int tk) ? tk : 1500;
 			var off = new List<Result>(); var on = new List<Result>();
 			for (int s = 0; s < seeds; s++)
@@ -288,11 +289,18 @@ namespace Levy.Common.Testing
 			foreach (var arm in new[] { ("off", off), ("on", on) })
 				Note($"rule {arm.Item1}: per-seed targeted ticks [{string.Join(", ", arm.Item2.Select(x => x.PairTicks))}], shots [{string.Join(", ", arm.Item2.Select(x => x.Shots))}], deaths [{string.Join(", ", arm.Item2.Select(x => x.Deaths))}]");
 
+			Note($"per-seed mean distance of a hunted levy from the commander (tiles), rule off [{string.Join(", ", off.Select(x => F(Mean(x.DC))))}], rule on [{string.Join(", ", on.Select(x => F(Mean(x.DC))))}]; per-seed on-minus-off [{string.Join(", ", off.Zip(on, (a, b) => F(Mean(b.DC) - Mean(a.DC))))}]");
 			int pt0 = off.Sum(x => x.PairTicks), pt1 = on.Sum(x => x.PairTicks);
 			Check($"a real boss locks onto levies in this scene (targeted levy ticks: rule off {pt0}, on {pt1})", pt0 >= 150 && pt1 >= 150);
 			double dc0 = Mean(off.SelectMany(x => x.DC)), dc1 = Mean(on.SelectMany(x => x.DC));
 			double dk0 = Mean(off.SelectMany(x => x.DK)), dk1 = Mean(on.SelectMany(x => x.DK));
-			Check($"a targeted levy stands farther from the commander with the rule on: mean {F(dc0)} -> {F(dc1)} tiles", dc1 >= dc0 + 3.0);
+			// The gain is judged per seed, paired (the same seed with the rule off and on), over enough seeds that one odd fight cannot decide it. Measured over 32 paired seeds (the lab, Nov 20): the gain is 8.6 tiles
+			// with a standard deviation of 4.2 between seeds, one seed in 32 gained nothing, and the mean of 4 of those seeds fell under 3 tiles in 1 boot in 250 to 1 in 2,500, which makes a 4-seed gate flake. The gate is a mean gain of at
+			// least 3 tiles AND a gain in at least 80% of the seeds: with the rule doing nothing, the mean over 10 seeds clears 3 tiles under 1% of the time and 8 of 10 seeds gain under 6% of the time, so a rule that stopped working fails.
+			var gain = off.Zip(on, (a, b) => Mean(b.DC) - Mean(a.DC)).ToList();
+			int gaining = gain.Count(g => g > 0), needGain = (int)Math.Ceiling(0.8 * gain.Count);
+			Note($"per-seed gain of a hunted levy's distance from the commander, rule on minus rule off (tiles): [{string.Join(", ", gain.Select(g => F(g)))}]; mean {F(gain.Average())}, {gaining} of {gain.Count} seeds gain");
+			Check($"a targeted levy stands farther from the commander with the rule on: mean {F(dc0)} -> {F(dc1)} tiles; per seed the gain averages {F(gain.Average())} tiles (gate 3.0) and {gaining} of {gain.Count} seeds gain (gate {needGain})", gain.Count >= 6 && gain.Average() >= 3.0 && gaining >= needGain);
 			Check($"a targeted levy stands farther from the rest of the army with the rule on: mean {F(dk0)} -> {F(dk1)} tiles", dk1 >= dk0 + 1.0);
 			double g0 = Mean(off.SelectMany(x => x.Growth)), g1 = Mean(on.SelectMany(x => x.Growth));
 			int e0 = off.Sum(x => x.Episodes), e1 = on.Sum(x => x.Episodes);

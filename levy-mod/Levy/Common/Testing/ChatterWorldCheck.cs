@@ -93,9 +93,13 @@ namespace Levy.Common.Testing
 			catch (Exception) { }
 		}
 
-		private static SoldierNPC MakeLevy(Vector2 at, int n)
+		/// <summary>A levy for the check. <paramref name="minFogOwn"/> picks the record id: the fog drifts each levy by 2 to 5 tiles from a hash of its id, and a levy comes back after the fog only if its drift is large (the follow slack absorbs the rest), so with
+		/// the ids the roster counter happens to hand out, how many of six levies could return, and so how far the army's spread falls once the fog lifts, was a matter of luck (none could in about one run in ten). The ids are therefore taken from the
+		/// counter's next values that give the wanted share, so every run exercises the same drifts.</summary>
+		private static SoldierNPC MakeLevy(Vector2 at, int n, float minFogOwn = 0f)
 		{
 			var temper = (Temperament)(n % 4);
+			if (minFogOwn > 0f) while (RiftMood.FogOwn(RosterSystem.Instance.NextId) < minFogOwn) RosterSystem.Instance.NextId++;
 			var rec = new SoldierRecord { Id = RosterSystem.Instance.NextId++, Kind = SoldierKind.Regular, Grade = Grade.Levy, Temperament = temper, Male = true, Name = "Pvt. Chat" + n, CommanderName = Commander, CommanderIndex = 0, LifeCrystals = 5, HomeBarracksId = -1, StoodDown = false };
 			rec.CurrentHp = rec.MaxHp; rec.Order = SoldierOrder.Follow;
 			RosterSystem.Instance.Regulars.Add(rec);
@@ -127,7 +131,7 @@ namespace Levy.Common.Testing
 			Main.rand = new Terraria.Utilities.UnifiedRandom(5150);
 			Main.dayTime = true; Main.time = 15000; Main.eclipse = false; Main.bloodMoon = false;
 			var army = new List<SoldierNPC>();
-			for (int i = 0; i < 6; i++) { var l = MakeLevy(_cmdAt + new Vector2((-3 + i) * 24f, 0f), i); if (l != null) army.Add(l); }
+			for (int i = 0; i < 6; i++) { var l = MakeLevy(_cmdAt + new Vector2((-3 + i) * 24f, 0f), i, i % 2 == 0 ? 0.85f : 0f); if (l != null) army.Add(l); } // three of the six drift 4.6 to 5 tiles in the fog
 			Check($"the army spawns ({army.Count} levies)", army.Count == 6);
 			CommanderReactions.Reset();
 			Step(60);
@@ -264,8 +268,10 @@ namespace Levy.Common.Testing
 				// the fog pulls the army apart: mean distance from the commander, clear, then deep in the fog
 				RiftStep(300);
 				float clear = MeanSpread(army, 60);
+				string dxClear = Dxs(army);
 				RiftSky.TestFog = true; RiftStep(LevyConstants.RiftFogDriftTicks + 600);
 				float foggy = MeanSpread(army, 60);
+				string dxFog = Dxs(army);
 				{
 					var sb = new System.Text.StringBuilder();
 					foreach (SoldierNPC s in army) if (s != null && s.NPC.active) sb.Append($"{s.State}/{(s.InFollowRow ? "row" : "-")}/drift {RiftMood.FogDriftTiles(s.Record, s.TargetIndex >= 0, (int)Main.GameUpdateCount):F1}/dx {(s.NPC.Center.X - _cmdAt.X) / 16f:F0}; ");
@@ -273,6 +279,7 @@ namespace Levy.Common.Testing
 				}
 				RiftSky.TestFog = null; RiftStep(1200);
 				float after = MeanSpread(army, 60);
+				Note($"fog spread, tiles from the commander per levy: clear [{dxClear}] in the fog [{dxFog}] after [{Dxs(army)}]; follow slack {LevyConstants.FollowDistance / 3f:F1} stop, {LevyConstants.FollowDistance / 2f:F1} start; regrouping now {RiftMood.FogRegrouping((int)Main.GameUpdateCount)}");
 				Check($"in the fog the idle army drifts out from the commander ({clear:F1} tiles clear, {foggy:F1} in the fog, {after:F1} once it lifts)", foggy >= clear + 1f && after <= foggy - 0.25f); // after the fog they settle on their own slots, tighter than the slack left them before it
 
 				// a scare in the fog: with NoxusBoss, a real fog tree set down by the commander
@@ -394,6 +401,8 @@ namespace Levy.Common.Testing
 		}
 
 		/// <summary>Mean horizontal distance (tiles) of the standing army from the commander over <paramref name="ticks"/> real ticks.</summary>
+		private static string Dxs(List<SoldierNPC> army) => string.Join(" ", System.Linq.Enumerable.Select(System.Linq.Enumerable.Where(army, s => s != null && s.NPC.active), s => ((s.NPC.Center.X - _cmdAt.X) / 16f).ToString("0.0")));
+
 		private static float MeanSpread(List<SoldierNPC> army, int ticks)
 		{
 			double sum = 0; int n = 0;

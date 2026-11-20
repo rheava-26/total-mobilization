@@ -41,6 +41,7 @@ namespace Levy.Common.Testing
 				MTrace pl = MindPlayerTrace(boots, wings, null, 180, script, false), lv = MindLevyTrace(boots, wings, null, 180, script, false, out rec);
 				float pa = pl.Apex(0, 180, 0f), la = lv.Apex(0, 180, 0f);
 				Cmp($"walking right with {label} and no jump key: highest the feet leave the floor", $"{pa:0.0} px", $"{la:0.0} px", la < 4f);
+				if (la >= 4f) MindDumpAir(label, lv);
 			}
 
 			// ---- a jump on wings: a tap is a plain jump, a short hold is a jump and a brief flight ----

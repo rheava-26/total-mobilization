@@ -134,7 +134,7 @@ namespace Levy.Common.Testing
 			int body = RosterSystem.Instance.SpawnBody(rec, at);
 			if (body < 0 || !rec.HasBody) throw new Exception("levy did not spawn");
 			Main.npc[body].Bottom = at;
-			Main.rand = new Terraria.Utilities.UnifiedRandom(777);
+			Main.rand = new Terraria.Utilities.UnifiedRandom(777 + _mindSeedBump);
 			KeepCommander(); PinSweepTarget(); CursorOnCommander(); Step(20);
 			var live = new Dictionary<int, OProj>(); int dbg = 0;
 			for (int k = 0; k < ticks; k++)

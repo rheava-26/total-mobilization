@@ -165,6 +165,7 @@ namespace Levy.Common.Testing
 			Arena();
 			_cmdAt = new Vector2(Cx * 16f, (FloorY - 3) * 16f);
 			ClearSoldiers();
+			if (Environment.GetEnvironmentVariable("LEVY_MIND_ALONE") == "1") { MindSweep(); ClearSoldiers(); return; } // lab: the Mind Link audits alone (LEVY_MIND_REPEAT=N runs the movement, air and lifecycle audits N times)
 			if (Environment.GetEnvironmentVariable("LEVY_MEGAGUN_ALONE") == "1") { MegagunCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_DEADHOOKS_ALONE") == "1") { DeadHooksCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_NESTSKIP_ALONE") == "1") { NestSkipCheck(); ClearSoldiers(); return; }

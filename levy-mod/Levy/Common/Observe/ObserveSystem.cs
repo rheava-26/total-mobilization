@@ -331,7 +331,7 @@ namespace Levy.Common.Observe
 			if (Kind == ViewKind.None) { HideHud = false; return; }
 			if (Kind != ViewKind.Mind && me.dead) { Exit(); return; }
 
-			bool typing = Main.drawingPlayerChat || Main.editSign || Main.editChest;
+			bool typing = Main.drawingPlayerChat || Main.editSign || Main.editChest || Terraria.GameInput.PlayerInput.WritingText; // WritingText: any Levy search or number box has the keyboard (Backspace must edit the box, not end the view)
 			bool esc = Main.keyState.IsKeyDown(Keys.Escape) && !Main.oldKeyState.IsKeyDown(Keys.Escape);
 			bool back = Main.keyState.IsKeyDown(Keys.Back) && !Main.oldKeyState.IsKeyDown(Keys.Back) && !typing;
 			if ((esc || back) && HideHud && Main.GameUpdateCount - _hudHiddenAt > 6u) { HideHud = false; if (esc) _closeMenu = true; return; } // the first Esc only brings the HUD back; the next one stops watching

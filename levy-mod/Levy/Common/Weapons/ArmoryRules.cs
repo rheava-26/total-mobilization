@@ -335,6 +335,26 @@ namespace Levy.Common.Weapons
 			return false;
 		}
 
+		/// <summary>
+		/// True when an enabled rule asked for this weapon: its category is one an include, an at-least or an order rule puts first, it is on an only list, its class has a share, a minimum or a fixed count in the class
+		/// balance, or a weight rule raises it. A later pass that fits a levy to his armor (<c>ArmoryTE.ReconcileWeaponToArmor</c>) leaves such a weapon in his hand: the player's rule decides what he carries, the armor follows.
+		/// </summary>
+		public bool Claims(Item it)
+		{
+			if (it == null || it.IsAir) return false;
+			var c = C;
+			if (c.Only != null && c.Only.Contains(it.type)) return true;
+			var cats = CatsOf(it);
+			foreach (var m in c.Alloc.Mins) if (Has(cats, m.Cat)) return true;
+			foreach (var o in c.Alloc.Orders) if (Has(cats, o.A)) return true;
+			if (c.Alloc.Class != null)
+			{
+				string key = ClassKeyOf(it);
+				foreach (var e in c.Alloc.Class.Entries) if (e.Class == key && !e.IsDefault) return true;
+			}
+			return RuleFactor(it, out _) > 1.0001f;
+		}
+
 		/// <summary>The product of every enabled weight rule that matches the item (1 = none), with a short note of which ones.</summary>
 		public float RuleFactor(Item it, out string note)
 		{

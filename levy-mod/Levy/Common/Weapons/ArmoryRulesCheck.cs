@@ -44,6 +44,7 @@ namespace Levy.Common.Weapons
 				Guard("hard order", () => CheckOrder(Check));
 				Guard("class balance", () => CheckClasses(Check));
 				Guard("lists and overrides", () => CheckLists(Check));
+				Guard("armor and rules", () => CheckArmorAndRules(Check));
 				Guard("tag edits", () => CheckTagEdits(Check));
 				Guard("conflicts", () => CheckConflicts(Check));
 				Guard("neutral rules", () => CheckNeutral(Check));
@@ -262,6 +263,90 @@ namespace Levy.Common.Weapons
 			scarce.AddBlock(RuleKind.Category); // an extra block so the status index logic is exercised
 			var st = RuleStatus.Describe(scarce, 0, stock, 6);
 			check(st.Warn, "the preview flags a class count the stock cannot meet");
+		}
+
+		/// <summary>
+		/// Eve's "only guns" report: a rule must outrank the armor a levy wears and the weapon he already holds. The pure half of what ArmoryRulesWorldCheck does with a real army: which weapons a rule claims,
+		/// a hard order that crosses classes, a held weapon the rules bar, and a minimum or class count that drafts a levy in another class's armor.
+		/// </summary>
+		private static void CheckArmorAndRules(Action<bool, string> check)
+		{
+			// which weapons a rule claims (the later fit-to-armor pass leaves those in his hand)
+			var inc = Empty(); Cat(inc, CatMode.Include, "gun");
+			check(inc.Claims(Make(ItemID.Musket)) && !inc.Claims(Make(ItemID.WoodenBow)), "an include claims its category and nothing else");
+			var wt = Empty(); Cat(wt, CatMode.Weight, "gun", null, 1, 20f);
+			check(wt.Claims(Make(ItemID.Musket)) && !wt.Claims(Make(ItemID.WoodenBow)), "a weight above 1 claims its category");
+			var wt1 = Empty(); Cat(wt1, CatMode.Weight, "gun", null, 1, 0.5f);
+			check(!wt1.Claims(Make(ItemID.Musket)), "a weight below 1 claims nothing");
+			var ord = Empty(); Cat(ord, CatMode.Over, "gun", "sword");
+			check(ord.Claims(Make(ItemID.Musket)) && !ord.Claims(Make(ItemID.CopperBroadsword)), "an order claims its first category, not its second");
+			var only = Empty(); var ob = only.AddBlock(RuleKind.ItemList); ob.List = ListMode.Only; ob.Items.Add(ArmoryRules.KeyOf(ItemID.Musket)); only.Changed();
+			check(only.Claims(Make(ItemID.Musket)) && !only.Claims(Make(ItemID.Handgun)), "an only list claims what it lists");
+			var cb = Empty(); var cbb = cb.AddBlock(RuleKind.ClassBalance); cbb.EntryFor("ranged", true).Fixed = 3; cb.Changed();
+			check(cb.Claims(Make(ItemID.Musket)) && !cb.Claims(Make(ItemID.CopperBroadsword)), "a class count claims that class's weapons");
+			check(!ArmoryRules.Default().Claims(Make(ItemID.Musket)) && !Empty().Claims(Make(ItemID.Musket)), "an armory with no rules claims nothing");
+
+			// a hard order crosses the class stages: guns over swords reaches levies the class spread had put on melee
+			var swordsFirst = Deal(Empty(), 6, Swords, Guns, Staves);
+			var gunsFirst = Empty(); Cat(gunsFirst, CatMode.Over, "gun", "sword"); Cat(gunsFirst, CatMode.Over, "gun", "staff"); Cat(gunsFirst, CatMode.Over, "gun", "tome"); Cat(gunsFirst, CatMode.Over, "gun", "wand");
+			var plan = Deal(gunsFirst, 6, Swords, Guns, Staves);
+			check(CountCat(gunsFirst, plan, "gun") == 6, "guns over swords, staves, tomes and wands: all 6 levies carry a gun when 6 are stocked, whatever class the spread gave them (got " + CountCat(gunsFirst, plan, "gun") + ": " + string.Join(", ", plan.Select(i => i?.Name ?? "-")) + "; with no rule " + CountCat(Empty(), swordsFirst, "gun") + ")");
+			var some = Deal(gunsFirst, 8, Swords, Guns.Take(3).ToArray(), Staves);
+			check(CountCat(gunsFirst, some, "gun") == 3 && some.All(i => i != null), "guns over swords, staves, tomes and wands with 3 guns for 8 levies: all 3 are used and nobody is bare");
+
+			// a held weapon the rules bar is traded for anything permitted, and kept when nothing is
+			var deny = Empty(); var db = deny.AddBlock(RuleKind.ItemList); db.List = ListMode.Never; db.Items.Add(ArmoryRules.KeyOf(ItemID.Minishark)); deny.Changed();
+			using (var _rs = ArmoryRules.Enter(deny))
+			{
+				var held = Make(ItemID.Minishark);
+				var l = new AllocLevy { Id = 1, Current = held };
+				var cands = new List<AllocCand>(); l.Own = WeaponAllocator.MakeCand(held, 5, 0, AllocSlot.Primary, l, null); cands.Add(l.Own);
+				cands.Add(WeaponAllocator.MakeCand(Make(ItemID.Handgun), 1, 1, AllocSlot.Shelf, null, null));
+				WeaponAllocator.Plan(new List<AllocLevy> { l }, cands, deny.Alloc);
+				check(l.Target != null && l.Target.It.type == ItemID.Handgun, "a levy holding a barred weapon is given a permitted one");
+				var l2 = new AllocLevy { Id = 2, Current = held };
+				var cands2 = new List<AllocCand>(); l2.Own = WeaponAllocator.MakeCand(held, 5, 0, AllocSlot.Primary, l2, null); cands2.Add(l2.Own);
+				WeaponAllocator.Plan(new List<AllocLevy> { l2 }, cands2, deny.Alloc);
+				check(l2.Target == null || l2.Target == l2.Own, "a levy holding a barred weapon with nothing else in stock is not left bare");
+			}
+
+			// an include, a minimum and a class count outrank the armor a levy wears: he is drafted after every free levy
+			using (var _rs = ArmoryRules.Enter(inc))
+			{
+				var sword = Make(ItemID.IronBroadsword);
+				var armored = new AllocLevy { Id = 1, Cls = DamageClass.Melee, Current = sword };
+				armored.Own = null; var cands = new List<AllocCand>(); armored.Own = WeaponAllocator.MakeCand(sword, 5, 0, AllocSlot.Primary, armored, null); cands.Add(armored.Own);
+				cands.Add(WeaponAllocator.MakeCand(Make(ItemID.Musket), 1, 1, AllocSlot.Shelf, null, null));
+				WeaponAllocator.Plan(new List<AllocLevy> { armored }, cands, inc.Alloc);
+				check(armored.Target != null && armored.Target.It.type == ItemID.Musket, "include guns: a levy in melee armor holding a sword is given the gun");
+			}
+			var minRule = Empty(); Cat(minRule, CatMode.Min, "gun", null, 2);
+			using (var _rs = ArmoryRules.Enter(minRule))
+			{
+				var levies = new List<AllocLevy>(); var cands = new List<AllocCand>();
+				for (int i = 0; i < 4; i++) { var sw = Make(ItemID.IronBroadsword); var l = new AllocLevy { Id = i + 1, Cls = DamageClass.Melee, Current = sw }; l.Own = WeaponAllocator.MakeCand(sw, 5, i, AllocSlot.Primary, l, null); cands.Add(l.Own); levies.Add(l); }
+				cands.Add(WeaponAllocator.MakeCand(Make(ItemID.Musket), 1, 10, AllocSlot.Shelf, null, null)); cands.Add(WeaponAllocator.MakeCand(Make(ItemID.Handgun), 1, 11, AllocSlot.Shelf, null, null)); cands.Add(WeaponAllocator.MakeCand(Make(ItemID.Minishark), 1, 12, AllocSlot.Shelf, null, null));
+				WeaponAllocator.Plan(levies, cands, minRule.Alloc);
+				int guns = levies.Count(l => l.Target != null && ArmoryRules.Has(l.Target.Cats, "gun"));
+				check(guns == 2, "at least 2 guns: two levies in melee armor are drafted onto guns and the other two keep their swords (got " + guns + ")");
+				var again = levies.Select(l => l.Target?.It?.type ?? 0).ToList();
+				foreach (var l in levies) { if (l.Target != null && l.Target.Slot == AllocSlot.Shelf) { l.Own = l.Target; l.Current = l.Target.It; } }
+				// the same levies are drafted again on the next plan: the plan does not churn
+				var cands2 = new List<AllocCand>(); foreach (var l in levies) { if (l.Own != null && l.Own.Slot == AllocSlot.Shelf) { var held = l.Own.It; l.Own = WeaponAllocator.MakeCand(held, 5, l.Id, AllocSlot.Primary, l, null); cands2.Add(l.Own); } }
+				foreach (var l in levies) if (l.Own == null || !cands2.Contains(l.Own)) { var sw = l.Current ?? Make(ItemID.IronBroadsword); l.Own = WeaponAllocator.MakeCand(sw, 5, l.Id, AllocSlot.Primary, l, null); cands2.Add(l.Own); }
+				WeaponAllocator.Plan(levies, cands2, minRule.Alloc);
+				check(levies.Count(l => l.Target != null && ArmoryRules.Has(l.Target.Cats, "gun")) == 2 && levies.All(l => l.Target == l.Own), "at least 2 guns: the next plan changes nobody (no churn)");
+			}
+			var cf = Empty(); var cfb = cf.AddBlock(RuleKind.ClassBalance); cfb.EntryFor("ranged", true).Fixed = 3; cf.Changed();
+			using (var _rs = ArmoryRules.Enter(cf))
+			{
+				var levies = new List<AllocLevy>(); var cands = new List<AllocCand>();
+				for (int i = 0; i < 5; i++) { var sw = Make(ItemID.IronBroadsword); var l = new AllocLevy { Id = i + 1, Cls = DamageClass.Melee, Current = sw }; l.Own = WeaponAllocator.MakeCand(sw, 5, i, AllocSlot.Primary, l, null); cands.Add(l.Own); levies.Add(l); }
+				for (int i = 0; i < 4; i++) cands.Add(WeaponAllocator.MakeCand(Make(Guns[i]), 1, 10 + i, AllocSlot.Shelf, null, null));
+				WeaponAllocator.Plan(levies, cands, cf.Alloc);
+				int ranged = levies.Count(l => l.Target != null && l.Target.Cls == DamageClass.Ranged);
+				check(ranged == 3, "ranged exactly 3: three levies in melee armor are re-classed onto ranged weapons (got " + ranged + ")");
+			}
 		}
 
 		private static void CheckLists(Action<bool, string> check)

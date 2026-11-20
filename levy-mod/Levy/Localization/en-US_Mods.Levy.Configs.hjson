@@ -14,6 +14,7 @@ LevyProgressionConfig: {
 		EventsAndOfficers: Events and officers
 		ChlorophyteSources: Chlorophyte sources
 		Lunar: Luminite and Lunar Fragments
+		Calamity: Calamity only. These do nothing without Calamity Mod.
 	}
 
 	LifeCrystalRecipe: {
@@ -214,5 +215,55 @@ LevyProgressionConfig: {
 	LunarFragmentDropMultiplier: {
 		Label: Lunar Fragment drop
 		Tooltip: Multiplies the fragments the Lunar Pillars drop.
+	}
+
+	SuperpoweredMagnetRecipe: {
+		Label: Superpowered Magnet recipe
+		Tooltip: Craft a Superpowered Magnet from 10 Luminite Bars and 4 of each Lunar Fragment at an Ancient Manipulator after Moon Lord. It re-forms the Exodium planetoids. Needs a reload
+	}
+
+	SuperpoweredMagnetCooldownMinutes: {
+		Label: Superpowered Magnet cooldown
+		Tooltip: Minutes between uses of the magnet. 0 is none.
+	}
+
+	ScoriaOreRecipe: {
+		Label: Scoria Ore recipe
+		Tooltip: Craft 2 Scoria Ore from 4 Hellstone and 2 Chlorophyte Ore at an Adamantite Forge after Golem. Needs a reload
+	}
+
+	SlimeAgitatorRecipe: {
+		Label: Slime Agitator recipe
+		Tooltip: Craft a Slime Agitator from 5 Royal Gel, 5 Volatile Gelatin and 10 Scoria Ore at a Mythril Anvil. It starts a slime rain with Calamity's ore slimes. Needs a reload
+	}
+
+	CalamityOreGenMultiplier: {
+		Label: Calamity ore generation
+		Tooltip: Multiplies the ore Calamity generates when a boss event makes it: Cryonic, Perennial, Hallowed, Uelibloom, Auric, Aerialite and Astral. Applies only to ore generated from now on
+	}
+
+	AuricOreRegeneration: {
+		Label: Auric Ore regeneration
+		Tooltip: Every Yharon kill after the first generates Auric Ore again.
+	}
+
+	JungleUelibloomDrop: {
+		Label: Jungle monsters drop Uelibloom
+		Tooltip: After Providence, monsters killed in the Jungle can drop Uelibloom Ore.
+	}
+
+	JungleUelibloomChance: {
+		Label: Jungle Uelibloom chance
+		Tooltip: Percent chance per kill to drop 1 to 3 Uelibloom Ore.
+	}
+
+	ProvidenceDropMultiplier: {
+		Label: Providence drop rate
+		Tooltip: Multiplies the materials Providence and her Treasure Bag drop. Adds to the material multiplier
+	}
+
+	PostProvidenceMaterialMultiplier: {
+		Label: Post-Providence material drop rate
+		Tooltip: Multiplies drops of Divine Geode, Unholy Essence and Uelibloom Ore from every source
 	}
 }

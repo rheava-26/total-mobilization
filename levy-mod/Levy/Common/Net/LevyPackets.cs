@@ -85,6 +85,7 @@ namespace Levy.Common.Net
 		AlterConsent, // client -> server: byte count, then count x string item key - the player confirmed the block-breaking warning for those items (WorldAlterConsent); the server re-checks and re-sends the world data
 		ArmoryTakeHeld, // client -> server: take a levy's carried item from the armory screen (layout above); appended so no existing value moves
 		ArmoryInUseRequest, // client -> server: int armoryId - asks for the list of items out of the racks (answered with ArmoryInUseList)
+		ProgItemUse, // client -> server: byte kind(0 Superpowered Magnet,1 Slime Agitator) - the server re-checks that the sender holds that item and runs its effect (Common/Progression/ProgressionCalamity)
 		RosterSnapshot = 100, SettlementSnapshot, ArmorySnapshot, SoldierVisual, Bark, BossLifeMax, MutinyRob,
 		CompanionEffect, // server -> one client: an effect a companion mod (Thorium compat) lays on a player; its own handler decodes the payload
 		LogisticsOrderEdit, // client -> server: save / delete / pause / resume a craft order (see LogisticsActions)

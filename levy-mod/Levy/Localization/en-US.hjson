@@ -244,6 +244,25 @@ Mods: {
 				Tooltip: Calls down a meteor when used at night
 			}
 
+			SuperpoweredMagnet: {
+				DisplayName: Superpowered Magnet
+				Tooltip:
+					'''
+					Re-forms the Exodium planetoids above the world
+					Needs Calamity and a defeated Moon Lord
+					Not used up. Cooldown: {0} minutes
+					'''
+			}
+
+			SlimeAgitator: {
+				DisplayName: Slime Agitator
+				Tooltip:
+					'''
+					Starts a slime rain
+					Calamity's ore slimes join it once their bosses are down
+					'''
+			}
+
 			SpicedRum: {
 				DisplayName: Rum Cooler
 				Tooltip:

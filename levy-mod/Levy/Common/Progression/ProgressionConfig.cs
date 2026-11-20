@@ -87,5 +87,18 @@ namespace Levy.Common.Progression
 		[Header("Lunar")]
 		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float LuminiteDropMultiplier;
 		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float LunarFragmentDropMultiplier;
+
+		// ---- Calamity (needs Calamity Mod; inert without it) ---------------------------------------------------
+		[Header("Calamity")]
+		[ReloadRequired] [DefaultValue(false)] public bool SuperpoweredMagnetRecipe;
+		[Range(0, 60)] [DefaultValue(5)] public int SuperpoweredMagnetCooldownMinutes;
+		[ReloadRequired] [DefaultValue(false)] public bool ScoriaOreRecipe;
+		[ReloadRequired] [DefaultValue(false)] public bool SlimeAgitatorRecipe;
+		[Range(1f, 10f)] [Increment(0.5f)] [DefaultValue(1f)] public float CalamityOreGenMultiplier;
+		[DefaultValue(false)] public bool AuricOreRegeneration;
+		[DefaultValue(false)] public bool JungleUelibloomDrop;
+		[Range(1f, 100f)] [Increment(1f)] [DefaultValue(8f)] public float JungleUelibloomChance;
+		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float ProvidenceDropMultiplier;
+		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float PostProvidenceMaterialMultiplier;
 	}
 }

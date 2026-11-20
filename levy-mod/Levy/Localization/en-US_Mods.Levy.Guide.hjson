@@ -479,6 +479,19 @@ Pages: {
 			A Guide to Expertise drops from the Lunatic Cultist: every soldier gains 1 accessory slot.
 			A Guide to Engineering unlocks combat drones at every Barracks. It needs the Mechanization mod.
 			A Guide to Autonomy drops during Slime Rain and unlocks map orders.
+			With Calamity, progression assistance adds more options: see the Calamity progression page.
+			'''
+	}
+
+	ProgressionCalamity: {
+		Title: Calamity progression assistance
+		Body:
+			'''
+			The Superpowered Magnet re-forms the Exodium planetoids after Moon Lord, with a cooldown between uses. The Slime Agitator starts a slime rain that includes Calamity's ore slimes.
+			Extra recipes make Scoria Ore from Hellstone and Chlorophyte after Golem, and the Magnet and Agitator themselves.
+			Calamity ore generation multiplies the ore a boss event makes from then on. Auric Ore regeneration makes Yharon generate it again on repeat kills.
+			Jungle monsters can drop Uelibloom Ore after Providence.
+			Providence and post-Providence material drop rates multiply Divine Geode, Unholy Essence and Uelibloom Ore. All of it is off by default and needs Calamity.
 			'''
 	}
 

@@ -77,6 +77,7 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_BOSSBUGS_ONLY") == "1") { _done = true; try { BossBugsWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[BossBugs] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the boss-bugs check alone
 			if (Environment.GetEnvironmentVariable("LEVY_PERFAN_ONLY") == "1") { _done = true; try { global::Levy.Common.Perf.PerfWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfAnalyzer] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the performance analyzer check alone
 			if (Environment.GetEnvironmentVariable("LEVY_CHATTER_ONLY") == "1") { _done = true; try { ChatterWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ChatterWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the eclipse-end and shared-upgrade chat check alone
+			if (Environment.GetEnvironmentVariable("LEVY_PROGASSIST_ONLY") == "1") { _done = true; try { ProgAssistWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ProgAssist] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the Calamity progression-assistance check alone
 			if (Environment.GetEnvironmentVariable("LEVY_LINEWATCH_ONLY") == "1") { _done = true; try { LineWatchWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LineWatch] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the line-breaking warning check alone
 			if (Environment.GetEnvironmentVariable("LEVY_STEALTH_ONLY") == "1") { _done = true; try { StealthWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[StealthWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the Calamity stealth check alone
 			if (Environment.GetEnvironmentVariable("LEVY_SWAPRACE_ONLY") == "1") { _done = true; try { SwapRaceCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SwapRace] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the save-race check alone
@@ -116,6 +117,8 @@ namespace Levy.Common.Testing
 			try { PerfBossCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfBoss] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the performance analyzer check runs after it: it attaches the analyzer's detours to the process, and its fault test removes them again
 			try { global::Levy.Common.Perf.PerfWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfAnalyzer] check threw " + e.GetType().Name + ": " + e.Message); }
+			// the Calamity progression-assistance check runs after every check that reads the world (it makes planetoids, ore and a meteor) and before the hook liveness check (it drives the ore detours)
+			try { ProgAssistWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ProgAssist] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the hook liveness check reads every detour's call counter once the whole chain has run
 			try { HookLiveCheck.Run(_mod); } catch (Exception e) { _mod.Logger.Warn("[HookLive] check threw " + e.GetType().Name + ": " + e.Message); }
 		}

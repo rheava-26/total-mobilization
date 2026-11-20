@@ -36,7 +36,7 @@ namespace Levy.Common.Progression
 			Mod.Logger.Info("[ProgCheck] START config: " + Newtonsoft.Json.JsonConvert.SerializeObject(c));
 			try
 			{
-				ProgressionDropsSystem.Ensure(); Math_(); Recipes(c); Drops(c); Shimmer(c); Localization_(c); Shop(c);
+				ProgressionDropsSystem.Ensure(); Math_(); Recipes(c); Drops(c); Shimmer(c); Localization_(c); Shop(c); CalamityOptions(c);
 				if (Environment.GetEnvironmentVariable("LEVY_PROGCHECK_DIFF") == "1") Loot(c);
 				LogVanilla();
 			}
@@ -100,6 +100,19 @@ namespace Levy.Common.Progression
 			Check("extractinator mud: after mechs a roll under the percent gives ore", ProgMath.ExtractMud(true, 25f, 0.24, 2) == (ItemID.ChlorophyteOre, 2));
 			Check("extractinator mud: a roll over the percent gives nothing", ProgMath.ExtractMud(true, 25f, 0.26, 2).item == -1);
 			Check("bulk ammo price 150% of 50 = 75", ProgMath.BulkAmmoPrice(50, 150) == 75);
+		}
+
+		// ---- Calamity options: off means nothing is added, on means the recipe / hook / rule is there -----------------------------
+		void CalamityOptions(LevyProgressionConfig c)
+		{
+			bool cal = CalamityLink.Loaded;
+			int magnet = ModContent.ItemType<global::Levy.Content.Items.SuperpoweredMagnet>(), agit = ModContent.ItemType<global::Levy.Content.Items.SlimeAgitator>(), scoria = CalamityLink.ItemType("ScoriaOre");
+			Check("calamity: magnet recipe iff option and Calamity", (RecipesMaking(magnet, Mod) > 0) == (c.SuperpoweredMagnetRecipe && cal));
+			Check("calamity: agitator recipe iff option and Calamity", (RecipesMaking(agit, Mod) > 0) == (c.SlimeAgitatorRecipe && cal));
+			Check("calamity: scoria recipe iff option and Calamity", scoria <= 0 ? !cal || !c.ScoriaOreRecipe : (RecipesMaking(scoria, Mod) > 0) == (c.ScoriaOreRecipe && cal));
+			Check("calamity: the ore hook is installed iff Calamity is loaded", CalamityOreGen.Installed == cal);
+			Check("calamity: post-Providence material set is built iff Calamity is loaded", (ProgressionDropsSystem.PostMaterials.Count == 3) == cal);
+			Check("calamity: no Calamity means every Calamity option is inert (no material set, no rules)", cal || (ProgressionDropsSystem.ProvidenceRules == 0 && ProgressionDropsSystem.PostMaterialRules == 0));
 		}
 
 		// ---- recipes -----------------------------------------------------------------------------------------------

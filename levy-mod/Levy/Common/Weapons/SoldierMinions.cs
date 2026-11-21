@@ -271,7 +271,10 @@ namespace Levy.Common.Weapons
 		{
 			int me = s.NPC.whoAmI;
 			for (int i = 0; i < Main.maxProjectiles; i++)
-				if (OwnedBy(Main.projectile[i], me)) Dismiss(Main.projectile[i]);
+			{
+				Projectile p = Main.projectile[i];
+				if (OwnedBy(p, me) || (IsDrivenHelper(p) && p.GetGlobalProjectile<SoldierProjectileTag>().SoldierIndex == me)) Dismiss(p); // his gear's pets and helpers go with him too
+			}
 		}
 
 		/// <summary>
@@ -385,6 +388,29 @@ namespace Levy.Common.Weapons
 			p.netUpdate = true;
 			return true;
 		}
+
+		/// <summary>
+		/// Adopts a PET or other HELPER (not a minion) a worn accessory or its buff made during the gear upkeep frame (see GearUpkeep.IsGearHelper): owned by 255 and tagged with the soldier like an accessory minion, so every Update of it runs
+		/// under the soldier's dummy (<see cref="IsDrivenHelper"/>): it follows that soldier, the dummy's own flags keep it alive (Daawnlight Spirit Origin's archer reads the wearer's pet flag), and it ends when the gear comes off or
+		/// the soldier is gone. It takes no minion slot and is never part of a flock. False for a hostile soldier's or a minion, which keep their own adoption.
+		/// </summary>
+		internal static bool AdoptAccessoryHelper(SoldierNPC s, Projectile p)
+		{
+			if (s == null || p == null || !p.active || p.minion || p.sentry || p.hostile || s.Hostile || !p.TryGetGlobalProjectile(out SoldierProjectileTag tag)) return false;
+			p.owner = Slot;
+			p.npcProj = true; // the commander's on-hit effects and item drops never run for it
+			p.noDropItem = true;
+			tag.SoldierIndex = s.NPC.whoAmI; tag.Cast = false; tag.GearHelper = true;
+			p.netUpdate = true;
+			HelpersAdopted++;
+			return true;
+		}
+		/// <summary>Lab counter: helpers <see cref="AdoptAccessoryHelper"/> took.</summary>
+		internal static int HelpersAdopted;
+
+		/// <summary>A gear helper of a soldier (a pet, a companion: see <see cref="AdoptAccessoryHelper"/>): owner 255, not a minion, tagged as a helper of a soldier. Known on clients too (the helper bit is synced).</summary>
+		internal static bool IsDrivenHelper(Projectile p) =>
+			p.active && !p.minion && p.owner == Slot && p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.GearHelper && tag.SoldierIndex >= 0;
 
 		/// <summary>
 		/// Vanilla re-derives a minion's damage every tick as <c>owner.GetTotalDamage(Summon).ApplyTo(originalDamage)</c>; the owner here is the dummy, so its own summon ratio is divided
@@ -770,7 +796,7 @@ namespace Levy.Common.Weapons
 		internal static void ReownChild(Projectile parent, Projectile child)
 		{
 			if (parent.owner != Slot || child.owner != Slot || child.minion) return;
-			bool fromChild = !parent.minion; // a shot of a driven shot (the Gamma Hydra's canister bursts into homing bullets) stays on 255 like its parent, whatever its type
+			bool fromChild = !parent.minion && !IsDrivenHelper(parent); // a gear helper's shot (Luxor's Gift fires from its helper) is handled like a minion's; a shot of a driven shot (the Gamma Hydra's canister bursts into homing bullets) stays on 255 like its parent, whatever its type
 			if (fromChild && !IsDrivenChild(parent)) return;
 			if ((fromChild || child.type >= ProjectileID.Count) && child.TryGetGlobalProjectile(out SoldierProjectileTag tag)) { tag.DrivenChild = true; return; } // on a dedicated server too: its parent lookups need the frame
 			if (!Util.LevyUtil.SinglePlayerLike) return;
@@ -863,7 +889,8 @@ namespace Levy.Common.Weapons
 
 			Player d = body.Dummy;
 			int savedMyPlayer = Main.myPlayer, savedMax = d.maxMinions, ownerSlot = p.owner;
-			bool swapped = false, parked = false, parkedDragons = false, buffsSaved = false, ammoGiven = false;
+			bool swapped = false, parked = false, parkedDragons = false, buffsSaved = false, ammoGiven = false, aimed = false;
+			Vector2 savedScreen = default, calDelta = default; int savedMx = 0, savedMy = 0; float calRot = 0f; object cal = null;
 			Projectile outerFrameProj = _frameProj; SoldierNPC outerFrameBody = _frameBody; int outerFrameSlot = _frameOwnerSlot; bool outerArmed = _strikeArmed, outerReal = _realContext;
 			try
 			{
@@ -873,10 +900,20 @@ namespace Levy.Common.Weapons
 				if (ownerSlot != Slot) AliasDummy(ownerSlot, d); // a dragon segment reads Main.player[its own owner slot]: the same dummy stands there too
 				d.maxMinions = LevyConstants.MinionDriverMaxMinions;
 				if (p.type >= ProjectileID.Count && p.TryGetGlobalProjectile(out SoldierProjectileTag at)) at.Age++;
-				if (p.type >= ProjectileID.Count) { SaveBuffs(d); buffsSaved = true; ApplyModdedBuff(body, p); if (p.minion) { GiveMinionAmmo(d); ammoGiven = true; } } // a modded minion's AI re-adds its own buff to its owner every tick: the dummy's real buffs are put back in the finally
+				if (p.type >= ProjectileID.Count) { SaveBuffs(d); buffsSaved = true; if (!(p.TryGetGlobalProjectile(out SoldierProjectileTag ht) && ht.GearHelper)) ApplyModdedBuff(body, p); if (p.minion) { GiveMinionAmmo(d); ammoGiven = true; } } // a modded minion's AI re-adds its own buff to its owner every tick: the dummy's real buffs are put back in the finally (a gear helper is kept by the gear's own buff, not a staff's)
 				if (authority && savedMyPlayer != ownerSlot) { _trueMyPlayer = savedMyPlayer; _faked = true; Main.myPlayer = ownerSlot; }
 				if (GroupIndexed.Contains(p.type)) { parked = true; ParkOtherFlocks(p, body.NPC.whoAmI); } // flag first: a throw halfway still restores what was moved
 				if (IsDragonType(p.type)) { parkedDragons = true; ParkOtherDragons(p, body.NPC.whoAmI); }
+				// a gear helper whose AI reads its owner's cursor (Luxor's Gift turns to Calamity's per-player mouseWorld) sees the levy's aim, as a soldier shot does (OwnerPuppet): the dummy's own cursor is never set, and a cursor
+				// on the owner's centre gives a zero direction, which made the helper's position NaN
+				if (p.ModProjectile != null && CombatFix.On(CombatFix.Cursor) && p.TryGetGlobalProjectile(out SoldierProjectileTag gt) && gt.GearHelper && OwnerLockProbe.ReadsCursor(p.type))
+				{
+					Vector2 aim = body.AimCursor();
+					savedScreen = Main.screenPosition; savedMx = Main.mouseX; savedMy = Main.mouseY; aimed = true;
+					global::Levy.Common.Owner.AimView.Set(aim, body.NPC.Center);
+					cal = AltPolicies.CalamityPlayerOf(d);
+					if (cal != null) { (calDelta, calRot) = AltPolicies.GetCalAimPublic(cal); AltPolicies.SetCalAimPublic(cal, aim - d.MountedCenter); }
+				}
 				_frameProj = p; _frameBody = body; _frameOwnerSlot = ownerSlot; _strikeArmed = false; _realContext = false; // the context RunStrike lifts around a strike, and puts back
 				orig(p, i);
 			}
@@ -890,6 +927,7 @@ namespace Levy.Common.Weapons
 			finally
 			{
 				_frameProj = outerFrameProj; _frameBody = outerFrameBody; _frameOwnerSlot = outerFrameSlot; _strikeArmed = outerArmed; _realContext = outerReal;
+				if (aimed) { Main.screenPosition = savedScreen; Main.mouseX = savedMx; Main.mouseY = savedMy; if (cal != null) AltPolicies.SetCalAimPublic(cal, calDelta, calRot); }
 				if (parked) UnparkOtherFlocks();
 				if (parkedDragons) UnparkOtherDragons();
 				Main.myPlayer = savedMyPlayer;
@@ -1093,7 +1131,7 @@ namespace Levy.Common.Weapons
 		private static void UpdateDetour(On_Projectile.orig_Update orig, Projectile self, int i)
 		{ _hl_UpdateDetour_1++;
 			HangWatch.Proj(self); // diagnostic breadcrumb (see HangWatch): which projectile's Update started last
-			if (self.minion ? SoldierMinions.IsDriven(self) : (self.owner == SoldierNPC.DummySlot && SoldierMinions.IsDrivenChild(self))) SoldierMinions.RunUpdate(orig, self, i);
+			if (self.minion ? SoldierMinions.IsDriven(self) : (self.owner == SoldierNPC.DummySlot && (SoldierMinions.IsDrivenChild(self) || SoldierMinions.IsDrivenHelper(self)))) SoldierMinions.RunUpdate(orig, self, i);
 			else orig(self, i);
 		} private static int _hl_UpdateDetour_1;
 

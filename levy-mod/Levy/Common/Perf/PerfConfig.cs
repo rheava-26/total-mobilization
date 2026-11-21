@@ -42,6 +42,8 @@ namespace Levy.Common.Perf
 		[DefaultValue(LevyEffectsQuality.Full)] [DrawTicks] public LevyEffectsQuality LevyEffects;
 		/// <summary>Minions a levy's accessory summons (Calamity's Heart of the Elements and the elemental bottles, any mod's "summons a minion while worn") are not drawn. They still fight. Draw-only, this machine only.</summary>
 		[DefaultValue(false)] public bool HideLevyAccessoryMinions;
+		/// <summary>Pets and other helpers a levy's accessory makes (Daawnlight Spirit Origin's archer, Scion's Curio, a light pet) are not drawn. They still follow and work. Draw-only, this machine only.</summary>
+		[DefaultValue(false)] public bool HideLevyAccessoryPets;
 
 		[Header("Speed")]
 		/// <summary>

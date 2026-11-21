@@ -39,6 +39,15 @@ namespace Levy.Common.Testing
 		public override void Load()
 		{
 			if (!Main.dedServ || Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") != "1" || Environment.GetEnvironmentVariable("LEVY_STEALTHWORLD") == "0") return;
+			InstallLocalPlayerPatches(Mod);
+		}
+
+		private static bool _patched;
+		/// <summary>The dedicated-server patches a check needs to run the commander as the local player (biome visuals, instruments, the running achievement). Once per boot; the pet check uses them too.</summary>
+		internal static void InstallLocalPlayerPatches(Mod Mod)
+		{
+			if (_patched || !Main.dedServ) return;
+			_patched = true;
 			// A player's own Update (Main.myPlayer == whoAmI) runs the biome sky and filter visuals, which a dedicated server has no managers for: it throws and cuts the rest of the update off. The check runs the commander
 			// as the local player (the single-player situation), so on a dedicated test server that one method is skipped. A client never takes the branch (Main.dedServ is false there).
 			try

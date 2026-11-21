@@ -266,7 +266,7 @@ namespace Levy.Content.NPCs
 				d.whoAmI = savedWho; d.Center = savedCenter;
 				OwnerPuppet.RestoreThorium(thorium);
 				GearUpkeep.Body = prev;
-				AdoptUpkeepSpawns(spawnStart);
+				AdoptUpkeepSpawns(spawnStart, true, true);
 				WriteBackVitals(d, life0, mana0);
 				global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfExit, pf);
 				LastFrameKind = frameKind;
@@ -397,8 +397,11 @@ namespace Levy.Content.NPCs
 			SyncDummyMana();
 		}
 
-		/// <summary>Adopts what the frame spawned. A projectile a hand-made twin already covers is removed (and counted) so the soldier never has two of it.</summary>
-		private void AdoptUpkeepSpawns(int start, bool churnCheck = true)
+		/// <summary>
+		/// Adopts what the frame spawned. A projectile a hand-made twin already covers is removed (and counted) so the soldier never has two of it. <paramref name="frame"/>: called from the per-tick gear frame (not a hurt
+		/// reaction or a key press), where a projectile standing still at the wearer is one of his companions (see <see cref="GearUpkeep.IsGearHelper"/>).
+		/// </summary>
+		private void AdoptUpkeepSpawns(int start, bool churnCheck = true, bool frame = false)
 		{
 			var list = GearUpkeep.Spawned;
 			try
@@ -412,7 +415,11 @@ namespace Levy.Content.NPCs
 					if (GearUpkeep.CoveredByHandMade(p) || (churnCheck && GearUpkeep.OwnerBound(p.type, NPC.whoAmI))) { GearUpkeep.Dropped[p.type] = GearUpkeep.Dropped.TryGetValue(p.type, out int n) ? n + 1 : 1; p.active = false; p.timeLeft = 0; continue; }
 					// A helper MINION an accessory casts (Calamity's Elemental in a Bottle, any mod's "summons a minion while worn"): its AI reads the owner Player's flags and buffs, so it is adopted as a DRIVEN minion
 					// (owner 255, the soldier's dummy stands there for its Update; SoldierMinions) and never given to the commander, whose flags are not set and who would end it on its first tick.
-					if (!(p.minion && SoldierMinions.AdoptAccessoryMinion(this, p))) WeaponUse.TagSoldierProjectile(this, p, p.DamageType);
+					// A PET or other HELPER the gear made (a buff's pet, a light pet, a companion that makes no hit or stands at the wearer: Daawnlight Spirit Origin's archer, Scion's Curio, Frozen Cube's Elumphant) is the
+					// same thing for a non-minion: its AI reads the owner's flags to stay alive and follows the owner, so it is adopted on 255 and driven by this levy's dummy (it follows him, his own flag keeps it, it ends with him).
+					// Handed to the commander like a shot it hovered at her, outlived its levy and, when she wore the same item, was kept alive by her flag and counted against her own pet.
+					if (p.minion) { if (!SoldierMinions.AdoptAccessoryMinion(this, p)) WeaponUse.TagSoldierProjectile(this, p, p.DamageType); }
+					else if (!(GearUpkeep.IsGearHelper(p, NPC.Center, frame) && SoldierMinions.AdoptAccessoryHelper(this, p))) WeaponUse.TagSoldierProjectile(this, p, p.DamageType);
 					GearUpkeep.AdoptedByType[p.type] = GearUpkeep.AdoptedByType.TryGetValue(p.type, out int c) ? c + 1 : 1;
 					GearUpkeep.Adopted++;
 				}
@@ -514,6 +521,24 @@ namespace Levy.Content.NPCs
 		internal static bool WarnOnce(Exception e) => _warned.Add(e.GetType().Name + "@" + (e.StackTrace ?? "").Split('\n')[0].Trim());
 		internal static void ResetCounters() { Ticks = 0; Frames = Failures = HookFailures = Adopted = LifeWriteBacks = ManaWriteBacks = HurtCalls = UseSignals = 0; Dropped.Clear(); AdoptedByType.Clear(); SpawnCounts.Clear(); _churn.Clear(); _bound.Clear(); OwnerBoundTypes.Clear(); }
 
+		/// <summary>
+		/// True when a non-minion projectile a levy's gear made is a HELPER of the wearer rather than a shot: something a buff spawned (a pet, a light pet: the buff respawns it while it lasts), a pet type, or, in the per-tick frame,
+		/// something made standing still that makes no hit (a companion, a marker, a visual: Scion's Curio, Luxor's Gift, the Warbanner's light, the Quiver of Nihility's generators, Daawnlight's bullseyes) or that stands at the wearer
+		/// (a companion that does hit: Frozen Cube's Elumphant, the Marnite shield's hitbox). Such a thing reads its owner's flags to live and follows its owner, so it is driven by the levy's dummy, never handed to the commander.
+		/// </summary>
+		internal static bool IsGearHelper(Projectile p, Vector2 wearer, bool frame)
+		{
+			if (!HelpersOn || p == null || !p.active || p.minion || p.sentry || p.hostile) return false;
+			if (p.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.FromBuff) return true;
+			if (p.type > 0 && p.type < Main.projPet.Length && Main.projPet[p.type]) return true;
+			// the shape-based rules are for the per-tick frame only (a hurt reaction, a heal or a key press makes shots and heal bolts, which are made standing still too), and never for a heal bolt
+			if (!frame || p.velocity != Vector2.Zero || p.aiStyle == ProjAIStyleID.Heal) return false;
+			return p.damage <= 0 || Vector2.DistanceSquared(p.Center, wearer) <= HelperAtWearerPx * HelperAtWearerPx;
+		}
+		private const float HelperAtWearerPx = 8f;
+		/// <summary>Lab A/B switch (env LEVY_GEARHELPERS=0, or a check): off hands every non-minion the gear makes to the commander as a shot, the old behaviour.</summary>
+		internal static bool HelpersOn = Environment.GetEnvironmentVariable("LEVY_GEARHELPERS") != "0";
+
 		/// <summary>Projectiles whose job a hand-made twin already does (the leaf and the Guardian are bound to the commander in vanilla; Spore Sac keeps its per-soldier trap cap by hand).</summary>
 		internal static bool CoveredByHandMade(Projectile p) => (Mode != 3 && (p.type == ProjectileID.CrystalLeaf || p.type == ProjectileID.StardustGuardian)) || p.aiStyle == ProjAIStyleID.SporeTrap;
 
@@ -526,6 +551,8 @@ namespace Levy.Content.NPCs
 		private static readonly Dictionary<int, uint> _bound = new();
 		public static readonly Dictionary<int, int> OwnerBoundTypes = new();
 		/// <summary>The type is held as owner-bound right now (no side effects: the churn count is not touched).</summary>
+		/// <summary>Forgets the churn counts and the held types (a check that ran the old behaviour leaves them behind; the hold would drop what the next run adopts).</summary>
+		internal static void ClearChurn() { _churn.Clear(); _bound.Clear(); }
 		internal static bool BoundNow(int type) => _bound.TryGetValue(type, out uint until) && Main.GameUpdateCount < until;
 		internal static bool OwnerBound(int type, int soldier)
 		{
@@ -581,7 +608,11 @@ namespace Levy.Content.NPCs
 		public override void OnSpawn(Projectile projectile, IEntitySource source)
 		{
 			if (GearUpkeep.CountSpawns) GearUpkeep.SpawnCounts[projectile.type] = GearUpkeep.SpawnCounts.TryGetValue(projectile.type, out int n) ? n + 1 : 1;
-			if (GearUpkeep.Body != null && GearUpkeep.Spawned.Count < 4096) GearUpkeep.Spawned.Add(projectile.whoAmI);
+			if (GearUpkeep.Body != null && GearUpkeep.Spawned.Count < 4096)
+			{
+				GearUpkeep.Spawned.Add(projectile.whoAmI);
+				if (source is EntitySource_Buff && projectile.TryGetGlobalProjectile(out SoldierProjectileTag t)) t.FromBuff = true; // a buff's own spawn: the keep-alive pattern of a pet (GearUpkeep.IsGearHelper)
+			}
 		}
 	}
 }

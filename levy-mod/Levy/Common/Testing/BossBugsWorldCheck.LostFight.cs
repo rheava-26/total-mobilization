@@ -159,7 +159,7 @@ namespace Levy.Common.Testing
 				}
 			}
 			else if (cal) plan.AddRange(new[] { ("The Devourer of Gods", "real"), ("Providence (Hallow)", "real"), ("Yharon", "real"), ("Plaguebringer Goliath", "hold"), ("Plantera", "real"), ("The Devourer of Gods", "unbeaten"), ("Eye of Cthulhu", "wipe"), ("Plaguebringer Goliath", "respawn") });
-			else plan.AddRange(new[] { ("Eye of Cthulhu", "real"), ("The Destroyer", "real"), ("Moon Lord", "real"), ("Plantera", "real"), ("Duke Fishron", "hold"), ("Eye of Cthulhu", "unbeaten"), ("Duke Fishron", "wipe"), ("Eye of Cthulhu", "respawn") });
+			else plan.AddRange(new[] { ("Eye of Cthulhu", "real"), ("The Destroyer", "real"), ("Moon Lord", "real"), ("Plantera", "real"), ("Duke Fishron", "hold"), ("Skeletron Prime", "day"), ("Eye of Cthulhu", "unbeaten"), ("Duke Fishron", "wipe"), ("Eye of Cthulhu", "respawn") });
 			LfNote($"lost fight on={EnemyTargeting.LostFightOn}, rally on={EnemyTargeting.LostFightRallyOn}, leash {LevyConstants.Targeting.LostFightLeashTiles} tiles, watch {watch} ticks after the death, Calamity {(cal ? "Revengeance+Death, Master" : "off, Expert")}, {plan.Count} trials{(sweep ? " (lab sweep)" : "")}");
 			_lfArenaKind = null;
 			int homeTiles = int.TryParse(Environment.GetEnvironmentVariable("LEVY_LF_HOME"), out int ht) && ht > 0 ? ht : 260;
@@ -176,7 +176,7 @@ namespace Levy.Common.Testing
 					string label = arm switch
 					{
 						"follow" => "beaten, 8 armed levies following the commander", "hold" => "beaten, 8 armed levies holding 120 tiles off", "unbeaten" => "first fight, 8 levies following",
-						"wipe" => "beaten, the army wiped 8 s into the lost fight", "respawn" => "beaten, the commander respawns 8 s into the lost fight", "home" => $"beaten, 8 levies following, their barracks {_lfHomeTiles} tiles off", "real" => $"beaten, 8 levies following, their barracks {_lfHomeTiles} tiles off, the real death path",
+						"day" => "beaten, 8 levies following, by day", "wipe" => "beaten, the army wiped 8 s into the lost fight", "respawn" => "beaten, the commander respawns 8 s into the lost fight", "home" => $"beaten, 8 levies following, their barracks {_lfHomeTiles} tiles off", "real" => $"beaten, 8 levies following, their barracks {_lfHomeTiles} tiles off, the real death path",
 						"realmind" => "beaten, as real, the commander driving a levy", _ => arm,
 					};
 					string verdict = r.Gone == -2 ? "did not spawn" : r.Gone == -3 ? "left before the commander died" : r.Gone >= 0 ? $"GONE {r.Gone / 60f:0.0} s after the death ({(r.ByCheckActive ? "timeLeft ran out in CheckActive" : r.ByAi ? "deactivated in its own update" : "deactivated elsewhere")})" : $"still fighting {watch / 60} s after the death";
@@ -195,6 +195,9 @@ namespace Levy.Common.Testing
 							break;
 						case "wipe":
 							LfCheck($"{b.Name} [{label}]: fights the levies until they fall, then leaves", r.Gone >= 0 && r.LockLostAt >= 0, () => verdict + $", lock lost at {r.LockLostAt}");
+							break;
+						case "day":
+							LfCheck($"{b.Name} [{label}]: leaves by day and never fights the levies after the commander's death (the daytime rule)", r.Gone >= 0 && r.Locked == 0, () => verdict + $", locked {r.Locked}/{r.Watched}");
 							break;
 						case "respawn":
 							LfCheck($"{b.Name} [{label}]: stays in the fight after the commander respawns", r.Gone == -1, () => verdict);
@@ -221,7 +224,7 @@ namespace Levy.Common.Testing
 				LfArena(b.Arena);
 				bool calm = ModLoader.HasMod("CalamityMod");
 				SetRevenge(calm, calm); Main.GameMode = calm ? GameModeID.Master : GameModeID.Expert; Main.hardMode = b.Hard;
-				_lfDay = b.Day; _lfZones = b.Zones;
+				_lfDay = b.Day || arm == "day"; _lfZones = b.Zones;
 				PlaceCommander(0);
 				bool beaten = arm != "unbeaten";
 				global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(type, beaten);

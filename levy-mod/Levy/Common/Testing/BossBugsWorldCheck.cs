@@ -86,7 +86,8 @@ namespace Levy.Common.Testing
 		{
 			Player p = Main.player[0];
 			p.active = true; p.name = Commander;
-			Main.dayTime = false; Main.time = 18000;
+			Main.dayTime = _lfDay; Main.time = _lfDay ? 27000 : 18000;
+			_lfZones?.Invoke(p); // the lost-fight part: the commander stands (and lies) in the boss's own biome
 			if (_cmdDead) { HoldCommanderDead(p); return; } // the despawn part: the commander has fallen and lies where he fell
 			p.dead = false;
 			if (p.statLifeMax < 500) p.statLifeMax = p.statLifeMax2 = 500;

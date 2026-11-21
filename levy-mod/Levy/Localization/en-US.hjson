@@ -606,6 +606,11 @@ Mods: {
 					Tooltip: New barracks call the militia when an invasion or Blood Moon starts.
 				}
 
+				AutoMusterBosses: {
+					Label: Auto-muster for boss fights
+					Tooltip: Auto-muster calls the militia when a boss fight starts. Turn it off to call them for events only.
+				}
+
 				OldOnesArmyUsesLevySentries: {
 					Label: Old One's Army uses levy sentries
 					Tooltip: Regular levies stand down during the Old One's Army. Levy sentries call them up for Etherian Mana

@@ -546,6 +546,7 @@ namespace Levy.Content.NPCs
 				{
 					var cmd = Commander;
 					if (cmd != null && !cmd.dead) return SoldierState.Follow;
+					if (cmd != null && EnemyTargeting.LostFightHolds(NPC.Center)) return SoldierState.Follow; // a lost fight goes on: rally on the spot where he fell (ThinkFollow)
 					return Home == null || NearHome() ? SoldierState.Idle : SoldierState.ReturnHome;
 				}
 				case SoldierOrder.Hold: return SoldierState.Idle;
@@ -680,7 +681,7 @@ namespace Levy.Content.NPCs
 			if (IsRegular && Record.Order == SoldierOrder.Follow)
 			{
 				var cmd = Commander;
-				if (cmd != null && !cmd.dead) { anchor = cmd.Bottom; return true; }
+				if (cmd != null && (!cmd.dead || EnemyTargeting.LostFightHolds(NPC.Center))) { anchor = cmd.Bottom; return true; } // a fallen commander in a lost fight: fall back around the spot where he fell, not to the barracks
 			}
 			var home = Home;
 			if (home != null) { anchor = home.MusterPoint; return true; }
@@ -2263,10 +2264,12 @@ namespace Levy.Content.NPCs
 		private void ThinkFollow(int now)
 		{
 			var cmd = Commander;
-			if (cmd == null || cmd.dead) { SetState(Home != null && !NearHome() ? SoldierState.ReturnHome : SoldierState.Idle); ClearGoal(); return; }
+			// A fallen commander: the Follow levy walks home, unless the fight goes on without him (a beaten boss with the army inside its leash, EnemyTargeting.LostFightHolds). Then it keeps its slot around the spot where he fell,
+			// so the boss keeps the army as its target there instead of following it to the barracks or fleeing once it is out of reach. It falls in behind him again the moment he lives.
+			if (cmd == null || (cmd.dead && !EnemyTargeting.LostFightHolds(NPC.Center))) { SetState(Home != null && !NearHome() ? SoldierState.ReturnHome : SoldierState.Idle); ClearGoal(); return; }
 
 			float distTiles = LevyUtil.TileDistance(NPC.Center, cmd.Center);
-			if (distTiles > LevyConstants.TeleportDistance && now - _lastTeleportTick >= LevyConstants.TeleportCooldownTicks && !VisibleToAnyPlayer())
+			if (!cmd.dead && distTiles > LevyConstants.TeleportDistance && now - _lastTeleportTick >= LevyConstants.TeleportCooldownTicks && !VisibleToAnyPlayer())
 			{
 				CatchUpTeleport(cmd);
 				_lastTeleportTick = now;

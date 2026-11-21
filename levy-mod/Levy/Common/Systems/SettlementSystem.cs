@@ -773,12 +773,20 @@ namespace Levy.Common.Systems
 			return _engagedBossTypes.Count > 0;
 		}
 
-		/// <summary>Auto-muster on the rising edge of an event or an engaged boss, stand down on the falling edge (the event over AND every engaged boss gone).</summary>
+		/// <summary>
+		/// What auto-muster answers: any event, and an engaged boss unless the "Auto-muster for boss fights" setting is off (then a boss fight alone never calls the militia out, and the militia an event raised stand down when it ends
+		/// whether a boss still lives or not). Pure, so the world check can read it.
+		/// </summary>
+		internal static bool AutoMusterAnswers(bool eventActive, bool bossEngaged, bool forBosses) => eventActive || (forBosses && bossEngaged);
+
+		/// <summary>True when auto-muster wants the militia out this tick (the event and boss state as <see cref="PostUpdateInvasions"/> reads it).</summary>
+		internal bool AutoMusterWanted() => AutoMusterAnswers(EventActive, BossEngaged(), LevyConfig.Get?.AutoMusterBosses ?? true);
+
+		/// <summary>Auto-muster on the rising edge of an event or an engaged boss, stand down on the falling edge (the event over AND every engaged boss gone). With "Auto-muster for boss fights" off a boss never counts.</summary>
 		public override void PostUpdateInvasions()
 		{
 			if (!LevyUtil.IsServerOrSingle) return;
-			bool bossEngaged = BossEngaged(); // evaluated every tick even during an event, so the engagement set never goes stale
-			bool active = EventActive || bossEngaged;
+			bool active = AutoMusterWanted(); // the boss engagement is evaluated every tick even during an event, so the engagement set never goes stale
 			if (active == _lastEventActive) return;
 			_lastEventActive = active;
 			CollectBarracksIds();

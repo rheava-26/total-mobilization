@@ -709,6 +709,38 @@ namespace Levy.Common.Targeting
 			return false;
 		}
 
+		/// <summary>LEVY_LOSTFIGHTRALLY=0 turns the rally off (A/B switch for the lab and the world check): Follow levies of a fallen commander walk home through a lost fight, as before.</summary>
+		internal static readonly bool LostFightRallyOn = Environment.GetEnvironmentVariable("LEVY_LOSTFIGHTRALLY") != "0";
+		private static uint _lfStamp = uint.MaxValue; private static bool _lfNoPlayer; private static readonly List<Vector2> _lfBosses = new(4);
+
+		/// <summary>
+		/// True while a lost fight goes on near <paramref name="at"/>: no real player is alive, and a boss this world has beaten (its army aggro unlocked; not Skeletron or Prime at dawn) stands within LostFightLeashTiles of it.
+		/// That boss keeps fighting the levies (<see cref="BossAllowlisted"/>, BossPersistenceGlobalNPC), so a Follow levy of the fallen commander rallies on the spot where he fell instead of walking home, and a levy routed by his death
+		/// falls back around that spot (SoldierNPC.Brain: OrderState, ThinkFollow, RoutedAnchor; SoldierNPC.FightZone). Without it the army marched to its barracks, the boss followed it into town or, left behind, lost the leash and fled.
+		/// The boss list is rebuilt once a tick.
+		/// </summary>
+		internal static bool LostFightHolds(Vector2 at)
+		{
+			if (!LostFightOn || !LostFightRallyOn || !Enabled) return false;
+			uint now = Main.GameUpdateCount;
+			if (_lfStamp != now)
+			{
+				_lfStamp = now; _lfBosses.Clear(); _lfNoPlayer = !AnyLivePlayer();
+				if (_lfNoPlayer)
+					for (int i = 0; i < Main.maxNPCs; i++)
+					{
+						NPC n = Main.npc[i];
+						if (!n.active || n.friendly || !IsBossBodyOrPart(n) || !ReferenceEquals(LevyUtil.RootNpc(n), n)) continue;
+						if (!BossAggroUnlocked(n) || BossPersistenceGlobalNPC.IsDaytimeExcluded(n)) continue;
+						_lfBosses.Add(n.Center);
+					}
+			}
+			if (!_lfNoPlayer) return false;
+			float r2 = LevyConstants.Targeting.LostFightLeashPx * LevyConstants.Targeting.LostFightLeashPx;
+			for (int i = 0; i < _lfBosses.Count; i++) if (Vector2.DistanceSquared(_lfBosses[i], at) <= r2) return true;
+			return false;
+		}
+
 		internal static bool AnyLivePlayer()
 		{
 			for (int i = 0; i < Main.maxPlayers; i++)
@@ -885,9 +917,9 @@ namespace Levy.Common.Targeting
 			{
 				// Not locked on a soldier: give the army a chance once a second. Without this a Wyvern/worm/piranha/jellyfish whose first search
 				// went to the player never searches again (their AIs only re-search on target == 255 or a dead target).
-				if (!EnemyTargeting.ShouldPollForSoldier(npc)) return;
+				if (!EnemyTargeting.ShouldPollForSoldier(npc)) { LendBossLock(npc); return; }
 				EnemyTargeting.Retarget(npc);
-				if (data.SoldierTarget < 0) return;
+				if (data.SoldierTarget < 0) { LendBossLock(npc); return; }
 			}
 
 			bool native = EnemyTargeting.UsesNativeTargeting(npc);
@@ -921,6 +953,28 @@ namespace Levy.Common.Targeting
 			if (npc.type == NPCID.WallofFleshEye && EnemyTargeting.WofKinOn) EnemyTargeting.LendWallTarget(slot);
 			if (EnemyTargeting.WhyTrack != null) EnemyTargeting.TgtTrace[npc.whoAmI] = "swapped(pre)=" + npc.target;
 			return;
+		}
+
+		/// <summary>LEVY_PARTLEND=0 turns <see cref="LendBossLock"/> off (A/B switch for the lab and the world check).</summary>
+		internal static readonly bool PartLendOn = Environment.GetEnvironmentVariable("LEVY_PARTLEND") != "0";
+		/// <summary>Lab counter: AI calls of a boss part that read its boss's levy through the lend.</summary>
+		internal static long PartLends;
+
+		/// <summary>
+		/// A boss part with no levy of its own (Plantera's hooks and tentacles, Skeletron's hands, Prime's limbs, Golem's head and fists, Moon Lord's hands and head) reads its target through its BOSS:
+		/// Plantera's hook AI picks the tile it grabs near Main.player[Main.npc[NPC.plantBoss].target]. While the boss is locked on a levy its target is the stand-in slot (255), which outside the boss's own AI call holds vanilla's null player at the
+		/// world's corner, so a hook that had not locked a levy itself picked a tile halfway to the top-left corner of the world and pulled Plantera away from the fight, out of the lost-fight leash, after which she fled.
+		/// For the part's AI call the boss's own levy stands in the slot, so the part reads the target its boss is fighting. Nothing changes for a part that locked a levy itself, or for a boss that targets a player.
+		/// </summary>
+		private static void LendBossLock(NPC npc)
+		{
+			if (!PartLendOn || EnemyTargeting.IsSwapped || EnemyTargeting.Bodies.Count == 0) return;
+			if (!BossRule.TryGetRoot(npc, out NPC root, out _) || root == null || ReferenceEquals(root, npc) || !root.active) return;
+			if (root.target != SoldierNPC.DummySlot || EnemyTargeting.UsesNativeTargeting(root)) return;
+			ITargetBody body = EnemyTargeting.LiveTarget(LevyNpcData.Of(root).SoldierTarget);
+			if (body == null || !EnemyTargeting.IsAllowlisted(root)) return;
+			EnemyTargeting.Swap(body, SoldierNPC.DummySlot);
+			PartLends++;
 		}
 
 		/// <summary>Harness telemetry (LEVY_CR_FLEEPROBE=1): what Skeletron's AI call saw in Main.player[target] on its last tick, to catch the tick it enters its leave state.</summary>

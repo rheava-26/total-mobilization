@@ -218,7 +218,7 @@ namespace Levy.Common.Systems
 			"ArmoryTurnsStarsIntoMana", "SoldiersTriggerPressurePlates", "SoldierEffectsAtSoldier", "RealGearUpkeep", "SoldiersUseHooks", "ExtraTargetingAiStyles",
 			"DoNotAttackNpcNames", "WageMultiplier", "AutoMusterDefault", "MilitiaFieldCap", "WageMutiny", "NurseHealsSoldiers", "Spoils", "MagicStorageSupply", "LeviesAtStart", "LeviesByEndOfPreHardmode",
 			"LeviesByEndOfHardmode", "LeviesByEndOfPostMoonLord", "MaxLevies", "Nameplates", "MilitiaDeathMessages", "RegularDeathMessages", "CustomDeathMessagePercent",
-			"ArmyEntityBudget", "ReservedProjectileSlots", "ReservedNpcSlots", "BossRoomSlots", "ArmySoundVolume", "MagicStorageArmoryCrafting",
+			"ArmyEntityBudget", "ReservedProjectileSlots", "ReservedNpcSlots", "BossRoomSlots", "ArmySoundVolume", "MagicStorageArmoryCrafting", "AutoMusterBosses",
 		};
 
 		public override void PostAddRecipes()

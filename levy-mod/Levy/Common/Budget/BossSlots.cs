@@ -20,8 +20,9 @@ namespace Levy.Common.Budget
 	/// so a 40-levy army with its garrison drones leaves far fewer than 102 (Eve, 2026-11-20: "Can't summon DoG with 40 levies").
 	/// A failed spawn of a BOSS (or of anything a boss spawns) now frees a slot and tries again, one slot at a time, taking from whatever matters least and never from the fight:
 	///  1. critters; 2. ordinary hostile spawns (not a boss or a boss's add, never during an event), farthest first; 3. a companion mod's garrison (<see cref="SlotReleasers"/>: Mechanization's garrison drones);
-	///  4. the army's own summoned units and conjured creatures; 5. as the last resort the levy bodies farthest from the spawn stand off the field (their records untouched, <see cref="Squeeze"/> keeps them off until the boss is gone).
-	/// Town NPCs, officers, player-built drones and turrets, anything of a boss, and the levies the render cap leaves room for are never taken. While the boss lives the drones keep <see cref="ExtraReserve"/> more slots free.
+	///  4. the army's own summoned units and conjured creatures; 5. a companion mod's machines packed into their saved records, farthest from the spawn first (<see cref="MachinePackers"/>: Mechanization's player-built drones and turrets,
+	///     which keep position, health, facing, weapon and battery and come back when the boss is gone); 6. as the last resort the levy bodies farthest from the spawn stand off the field (their records untouched, <see cref="Squeeze"/> keeps them off until the boss is gone).
+	/// Town NPCs, officers, anything of a boss, and the levies the render cap leaves room for are never taken. While the boss lives the drones and machines keep <see cref="ExtraReserve"/> more slots free.
 	/// </summary>
 	public static class BossSlots
 	{
@@ -34,6 +35,10 @@ namespace Levy.Common.Budget
 		/// <summary>A companion mod's way to give slots back: asked for n slots (and the lowest slot it may take: 1, never slot 0), it frees up to n now and returns how many it freed (Mechanization stands its garrison drones down, oldest first).</summary>
 		public static readonly List<Func<int, int, int>> SlotReleasers = new();
 
+		/// <summary>A companion mod's way to make room without losing anything: asked with the failed spawn's spot and the lowest slot it may take, it packs ONE machine (the farthest from the spot) into its saved record
+		/// and returns how many slots it freed (0 when it has none to pack). The machine must stay packed while a boss lives and come back after (Mechanization: <c>MachineDormancy.PackFarthestForBoss</c>).</summary>
+		public static readonly List<Func<Vector2, int, int>> MachinePackers = new();
+
 		/// <summary>Extra NPC slots the drones leave free while a boss that needed the room is alive.</summary>
 		public static int ExtraReserveSlots { get { try { return LevyConfig.Get?.BossRoomSlots ?? 30; } catch (Exception) { return 30; } } }
 		public static int ExtraReserve;
@@ -41,7 +46,7 @@ namespace Levy.Common.Budget
 		public static int Squeeze;
 
 		/// <summary>Lab counters: spawns that found no slot, slots freed in all, by kind, and failures nothing could answer.</summary>
-		public static int Failed, Freed, FreedCritters, FreedHostiles, FreedReleased, FreedSummons, FreedLevies, Unanswered;
+		public static int Failed, Freed, FreedCritters, FreedHostiles, FreedReleased, FreedSummons, FreedPacked, FreedLevies, Unanswered;
 		private static bool _busy;
 		private static int _loggedFor = -1;
 
@@ -89,7 +94,7 @@ namespace Levy.Common.Budget
 					ExtraReserve = ExtraReserveSlots;
 					if (!_told) { _told = true; try { Terraria.Chat.ChatHelper.BroadcastChatMessage(Terraria.Localization.NetworkText.FromKey("Mods.Levy.Boss.RoomMade", Freed), new Color(200, 200, 120)); } catch (Exception) { } }
 					int who = source is EntitySource_Parent sp && sp.Entity is NPC par ? par.whoAmI : -1;
-					if (who != _loggedFor) { _loggedFor = who; Levy.Instance?.Logger.Info($"[BossSlots] a boss spawn (type {type}) found no free NPC slot: {freedNow} made so far (critters {FreedCritters}, hostiles {FreedHostiles}, garrison {FreedReleased}, summoned {FreedSummons}, levies off the field {FreedLevies}), spawn {(r < Main.maxNPCs ? "succeeded" : "STILL FAILED")}"); }
+					if (who != _loggedFor) { _loggedFor = who; Levy.Instance?.Logger.Info($"[BossSlots] a boss spawn (type {type}) found no free NPC slot: {freedNow} made so far (critters {FreedCritters}, hostiles {FreedHostiles}, garrison {FreedReleased}, summoned {FreedSummons}, machines packed {FreedPacked}, levies off the field {FreedLevies}), spawn {(r < Main.maxNPCs ? "succeeded" : "STILL FAILED")}"); }
 				}
 			}
 			finally { _busy = false; }
@@ -115,6 +120,12 @@ namespace Levy.Common.Budget
 			}
 			v = Farthest(at, from, IsArmyExtra);
 			if (v >= 0) { Drop(v); Freed++; FreedSummons++; return true; }
+			for (int i = 0; i < MachinePackers.Count; i++)
+			{
+				int got = 0;
+				try { got = MachinePackers[i](at, from); } catch (Exception e) { Levy.Instance?.Logger.Warn("[BossSlots] a machine packer threw: " + e.Message); }
+				if (got > 0) { Freed += got; FreedPacked += got; return true; }
+			}
 			v = FarthestLevy(at, from);
 			if (v >= 0)
 			{
@@ -203,7 +214,7 @@ namespace Levy.Common.Budget
 	public class BossSlotsSystem : ModSystem
 	{
 		public override void Load() { On_NPC.NewNPC += NewNpcDetour; }
-		public override void Unload() { On_NPC.NewNPC -= NewNpcDetour; BossSlots.SlotReleasers.Clear(); BossSlots.Reset(); }
+		public override void Unload() { On_NPC.NewNPC -= NewNpcDetour; BossSlots.SlotReleasers.Clear(); BossSlots.MachinePackers.Clear(); BossSlots.Reset(); }
 		public override void OnWorldLoad() => BossSlots.Reset();
 		public override void OnWorldUnload() => BossSlots.Reset();
 		public override void PostUpdateNPCs() { if (LevyUtil.IsServerOrSingle) BossSlots.Tick(); }

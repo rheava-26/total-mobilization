@@ -150,6 +150,7 @@ namespace Mechanization.Common
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
+				if (_keepBossParts && (n.boss || n.realLife >= 0 || global::Levy.Common.Util.LevyUtil.IsBossNpc(n))) continue; // a boss under test and its segments stay (the Destroyer's life is under the filler line)
 				if (global::Levy.Common.Testing.WorldStep.IsNaturalHostile(n) && n.lifeMax < 100000) n.active = false;
 			}
 		}
@@ -164,6 +165,7 @@ namespace Mechanization.Common
 			p.position = _cmdAt - new Vector2(p.width / 2f, p.height / 2f); p.velocity = Vector2.Zero;
 			if (!KeepStrangers) ClearStrangers();
 		}
+		private static bool _keepBossParts;
 		private static readonly bool KeepStrangers = Environment.GetEnvironmentVariable("LEVY_MECH_KEEPSTRANGERS") == "1"; // lab: leave the world's own spawns alone (to show what they do to a check)
 
 		/// <summary>Uses an item the way a player does: CanUseItem, UseItem with the cursor on <paramref name="cursor"/> and the local player slot, then the vanilla consume rule.</summary>

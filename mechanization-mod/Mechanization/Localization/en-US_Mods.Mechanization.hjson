@@ -53,7 +53,7 @@ Configs: {
 
 		StandDownDuringBosses: {
 			Label: Machines stand down during boss fights
-			Tooltip: On, no Barracks drone launches while a boss is alive, and the ones in the air fly home and park. They launch again when it is gone. Player-built drones and turrets keep working.
+			Tooltip: On, Barracks drones leave the field while a boss is alive and free their NPC slots. Their weapons go back to the Armory. They launch again when it is gone. Player-built drones and turrets keep working.
 		}
 
 		DormantWhenFar: {

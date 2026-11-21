@@ -61,7 +61,7 @@ namespace Mechanization.Content.NPCs
 		/// A boss that needs room (a segmented worm spawns 60 to 100 NPCs in one pass) asks the garrison for slots through Levy's BossSlots: up to <paramref name="n"/> garrison drones at slot <paramref name="minIndex"/> or above (a failed spawn can only land there) stand down at once, oldest first, and file their
 		/// weapons back (Dismantle). Player-built field drones and turrets are never touched. Returns how many slots it freed; the garrison launches again once the free slots are back over the reserve.
 		/// </summary>
-		private static int ReleaseGarrisonSlots(int n, int minIndex)
+		internal static int ReleaseGarrisonSlots(int n, int minIndex)
 		{
 			int freed = 0;
 			while (freed < n)
@@ -115,7 +115,7 @@ namespace Mechanization.Content.NPCs
 			if (guides == null || !guides.Engineering) return; // no guide, no garrison (and a single bool read is all this costs)
 			if (--_sweepTimer > 0) return;
 			_sweepTimer = D.SweepIntervalTicks;
-			try { StandDownForBudget(); SweepOne(); }
+			try { StandDownForBudget(); if (MachineDormancy.StandingDown) VanishForBoss(); SweepOne(); }
 			catch (Exception e)
 			{
 				// A fault in the garrison must never break the tick. Say so at most every ten seconds.
@@ -179,10 +179,10 @@ namespace Mechanization.Content.NPCs
 
 			ReconcileLoans(armory);
 
-			// A boss is alive and the player asked the machines to stand down: the drones in the air fly home and park, and nothing launches or re-arms until the boss is gone.
+			// A boss is alive and the player asked the machines to stand down: the garrison is off the field (its drones were removed by VanishForBoss, their weapons filed back), and nothing launches until the boss is gone.
 			if (MachineDormancy.StandingDown)
 			{
-				for (int i = 0; i < _mine.Count; i++) _mine[i].StandDownForBoss();
+				for (int i = 0; i < _mine.Count; i++) { _mine[i].Dismantle(); MachineDormancy.GarrisonVanished++; }
 				return;
 			}
 
@@ -216,6 +216,22 @@ namespace Mechanization.Content.NPCs
 				return;
 			}
 			_nextLaunch[barracks.ID] = now + (uint)D.RespawnCadenceTicks;
+		}
+
+		/// <summary>
+		/// The boss stand-down: every Barracks garrison drone in the world leaves at once, its weapon (and round) filed back into its Armory first, exactly as a garrison far from every player does. The drones' NPC slots are
+		/// free for the boss within one sweep (half a second), whichever Barracks the round robin is on. Nothing is lost: the Barracks and the Armory are the garrison's record, and it launches again when the boss is gone.
+		/// Player-built drones (<see cref="DroneNPC.IsField"/>) are not the garrison and are never touched here.
+		/// </summary>
+		private static void VanishForBoss()
+		{
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.ModNPC is not DroneNPC d || !d.IsBound || d.IsField || d.RecordId >= 0) continue;
+				d.Dismantle();
+				MachineDormancy.GarrisonVanished++;
+			}
 		}
 
 		/// <summary>Free NPC slots a launch must leave: the army entity budget's reserve, or the old constant with the budget off.</summary>
@@ -391,6 +407,7 @@ namespace Mechanization.Content.NPCs
 			CollectDrones();
 			int armed = 0, total = 0;
 			foreach (DroneNPC d in _all) if (d.BarracksId == barracks.ID) { total++; if (d.Armed) armed++; }
+			if (total == 0 && MachineDormancy.StandingDown) { Say(player, "Mods.Mechanization.UI.DroneStandingDown", 0); return true; } // the garrison is off the field for the boss
 			if (total == 0) { Say(player, "Mods.Mechanization.UI.DroneNone", 0); return false; }
 			if (armed > 0) Say(player, "Mods.Mechanization.UI.DroneRecalling", RecallAll(barracks.ID));
 			else if (MachineDormancy.StandingDown) Say(player, "Mods.Mechanization.UI.DroneStandingDown", 0);

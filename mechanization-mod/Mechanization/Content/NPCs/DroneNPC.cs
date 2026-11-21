@@ -442,18 +442,6 @@ namespace Mechanization.Content.NPCs
 			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, NPC.whoAmI);
 		}
 
-		/// <summary>
-		/// A boss is alive and the player asked the machines to stand down: a garrison drone flies home and parks, its weapon filed back into the Armory (a recall that holds nothing: the garrison arms it again when the fight is over).
-		/// A parked drone, or one already flying home, is left alone. A player-built drone is never touched.
-		/// </summary>
-		public void StandDownForBoss()
-		{
-			if (!IsBound || IsField || Phase == DronePhase.Parked || Phase == DronePhase.Recall) return;
-			_target = -1;
-			Phase = DronePhase.Recall;
-			NPC.netUpdate = true;
-		}
-
 		/// <summary>The drone lost its weapon on its own account: it flies to its pad and parks there UN-held, so the garrison re-arms it when a spare weapon turns up.</summary>
 		private void StandDown()
 		{

@@ -400,7 +400,7 @@ Mods: {
 
 				BossRoomSlots: {
 					Label: NPC slots kept free for a boss
-					Tooltip: While a boss that needed room is alive, drones, militia and levies leave this many NPC slots free for its segments and adds
+					Tooltip: While a boss that needed room is alive, drones, turrets, militia and levies leave this many NPC slots free for its segments and adds
 				}
 
 				ArmySoundVolume: {

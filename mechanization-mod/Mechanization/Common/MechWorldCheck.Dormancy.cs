@@ -20,7 +20,9 @@ namespace Mechanization.Common
 	/// The world checks for the two machine rules (see <see cref="MachineDormancy"/>), logged as "[MachineDorm]" lines and a "[MachineDorm] self-check pass=N fail=N" summary:
 	///  1. dormancy: turrets and player-built drones far from every player pack (their NPC slots come back), restore as they were when she is near, survive a save and load (packed, live and near, live and far as a server boots), and are never deleted;
 	///     a Barracks garrison far from every player files its weapons back and launches again when she returns;
-	///  2. the boss rule: with the setting on, no garrison drone launches or is re-armed while a boss lives and the airborne ones park, and they fly again after it; with the setting off a boss changes nothing;
+	///  2. the boss rule: with the setting on, the garrison's drones leave the field within two seconds of a boss (weapons back in the Armory, slots free), nothing launches while it lives, and the garrison launches again after it;
+	///     with the setting off a boss changes nothing;
+	///  2b. room for a boss: a worm boss summoned into a near-full NPC array packs placed drones and turrets (farthest first) before any levy is benched, keeps them packed while it lives, and they wake as they were after it;
 	///  3. what a hostile does with nobody near (the farm question), recorded as an OBSERVED line.
 	/// </summary>
 	public partial class MechWorldCheck
@@ -48,6 +50,7 @@ namespace Mechanization.Common
 				DormantMachines();
 				DormantSaveLoad();
 				DormantGarrisonAndBoss();
+				BossRoomPacksMachines();
 				FarmObservation();
 			}
 			finally { cfg.DormantWhenFar = oldEnabled; cfg.StandDownDuringBosses = oldStand; cfg.DormantRangeTiles = oldRange; _cmdAt = oldCmd; }
@@ -284,17 +287,21 @@ namespace Mechanization.Common
 				DChk($"boss rule off, a boss alive (BossSlots sees it: {BossSlots.BossAlive}): the garrison keeps flying ({armedOff} armed)", BossSlots.BossAlive && armedOff >= 1);
 				boss.active = false; Step(60);
 
-				// on: while the boss lives, the ones in the air fly home and park and nothing launches
+				// on: while the boss lives the garrison leaves the field at once, every weapon filed back, its NPC slots free; nothing launches
 				cfg.StandDownDuringBosses = true;
-				int before = GarrisonDrones(true);
+				int before = GarrisonDrones(), beforeArmed = GarrisonDrones(true), lentBefore = armory.Lent.Count, freeBefore = Main.maxNPCs - HeldNpcs();
+				MachineDormancy.GarrisonVanished = 0;
 				boss = Target(cx, 100); boss.boss = true; boss.friendly = false; boss.lifeMax = boss.life = 100000; bossAt = boss.position;
+				int gone = -1;
+				for (int k = 0; k < 180; k++) { Pin(boss, bossAt); Step(1); if (gone < 0 && GarrisonDrones() == 0) gone = k + 1; }
+				int freeAfter = Main.maxNPCs - HeldNpcs();
+				DChk($"boss rule on: every garrison drone is gone within 2 seconds of the boss (gone after {gone} ticks; {before} drones, {beforeArmed} armed before; removed {MachineDormancy.GarrisonVanished})", before >= 1 && gone > 0 && gone <= 120 && GarrisonDrones() == 0 && MachineDormancy.GarrisonVanished >= before);
+				DChk($"boss rule on: every weapon is back in the Armory (lent {lentBefore} -> {armory.Lent.Count}, racks hold {CountStored(armory)})", armory.Lent.Count == 0 && CountStored(armory) >= 6);
+				DChk($"boss rule on: their NPC slots are free (slots not held by a critter {freeBefore} -> {freeAfter}, the boss took 1)", freeAfter >= freeBefore - 1 + before);
 				for (int k = 0; k < 1500; k++) { Pin(boss, bossAt); Step(1); }
-				int armedOn = GarrisonDrones(true), total = GarrisonDrones();
-				DChk($"boss rule on, a boss alive for 25 seconds: no garrison drone is armed ({armedOn}, was {before}) and every weapon is back in the Armory (lent {armory.Lent.Count})", BossSlots.BossAlive && armedOn == 0 && armory.Lent.Count == 0);
-				int parked = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is DroneNPC d && d.IsBound && !d.IsField && d.IsParked) parked++;
-				DChk($"boss rule on: the drones parked on their pads, none deleted (parked {parked} of {total}, was {before} flying)", parked == total && total >= before);
-				for (int k = 0; k < 1500; k++) { Pin(boss, bossAt); Step(1); }
-				DChk($"boss rule on, 25 seconds more: still no new launch or re-arm (armed {GarrisonDrones(true)}, drones {GarrisonDrones()} vs {total})", GarrisonDrones(true) == 0 && GarrisonDrones() == total);
+				DChk($"boss rule on, 25 seconds more: nothing launches (garrison drones {GarrisonDrones()}, lent {armory.Lent.Count})", GarrisonDrones() == 0 && armory.Lent.Count == 0 && BossSlots.BossAlive);
+				int keyDrones = GarrisonDrones(); bool keyed = DroneSystem.Instance.HandleKey(Main.player[0]); for (int k = 0; k < 60; k++) { Pin(boss, bossAt); Step(1); }
+				DChk($"boss rule on: the recall-or-launch key at the Barracks is answered and launches nothing (answered {keyed}, drones {keyDrones} -> {GarrisonDrones()})", keyed && GarrisonDrones() == 0);
 				// a player-built drone and a turret are not touched while the boss lives
 				UseItem(Main.player[0], new Item(ModContent.ItemType<DroneItem>(), 2), new Vector2((cx + 20) * 16f, (FloorY - 5) * 16f), out _);
 				UseItem(Main.player[0], new Item(ModContent.ItemType<TurretItem>(), 2), new Vector2((cx + 24) * 16f, (FloorY - 4) * 16f), out _);
@@ -303,13 +310,190 @@ namespace Mechanization.Common
 				KillAll<TurretNPC>(); KillAll<DroneNPC>(); // the fixtures; the garrison and its records are rebuilt below
 				TurretSystem.Instance.OnWorldUnload(); FieldDroneSystem.Instance.OnWorldUnload();
 
-				// the boss dies: the garrison arms again
+				// the boss dies: the garrison launches again from the Barracks and the Armory
 				boss.active = false;
 				Step(1800);
-				DChk($"boss rule on, the boss gone: the garrison launches again ({GarrisonDrones(true)} armed)", !BossSlots.BossAlive && GarrisonDrones(true) >= 1);
+				DChk($"boss rule on, the boss gone: the garrison launches again ({GarrisonDrones(true)} armed, lent {armory.Lent.Count})", !BossSlots.BossAlive && GarrisonDrones(true) >= 1 && armory.Lent.Count >= 1);
 				DChk("boss rule: no weapon was lost over the whole fight (the Armory ledger and its racks account for all six)", armory.Lent.Count + CountStored(armory) >= 6);
 			}
 			finally { cfg.StandDownDuringBosses = false; g.Engineering = savedEng; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].boss && Main.npc[i].type == NPCID.GreenSlime) Main.npc[i].active = false; ResetMachines(); ClearPlaced(); }
+		}
+
+		/// <summary>Active NPCs that are not critters (a bunny the world drops in beside the check does not move a free-slot count).</summary>
+		private static int HeldNpcs() { int n = 0; for (int i = 0; i < Main.maxNPCs; i++) { NPC x = Main.npc[i]; if (x.active && !(x.friendly && !x.townNPC && x.ModNPC == null && (NPCID.Sets.CountsAsCritter[x.type] || x.catchItem > 0))) n++; } return n; }
+
+		/// <summary>
+		/// Room for a boss, without losing a machine. A worm boss (the Devourer of Gods with Calamity, else the Destroyer) is summoned the way its item does into an NPC array with 3 slots fewer than it needs; the world holds
+		/// four levies, two placed turrets and two placed drones, and friendly fillers nothing may take. Levy's room-making must pack the three machines farthest from the spawn and bench no levy; the reserve it keeps while the boss
+		/// lives then packs the fourth (never a levy); none wakes while the boss lives; when it is gone all four stand again with the position, health, facing, weapon and battery they left with. A control summon with room to spare
+		/// measures how many slots the boss takes first, and must take nothing.
+		/// </summary>
+		private static void BossRoomPacksMachines()
+		{
+			int cx = 1200; PrepareArena(cx); ResetMachines();
+			bool cal = ModLoader.TryGetMod("CalamityMod", out Mod calMod);
+			int bossType = NPCID.TheDestroyer; string bossName = "the Destroyer";
+			if (cal && calMod.TryFind("DevourerofGodsHead", out ModNPC dog)) { bossType = dog.Type; bossName = "the Devourer of Gods"; }
+			bool day = Main.dayTime; double time = Main.time; Main.dayTime = false; Main.time = 3000; // a night: the Destroyer leaves by day
+			var fillers = new List<NPC>(); var levies = new List<NPC>(); NPC standIn = null;
+			Player p = Main.player[0];
+			Vector2 standAt = new Vector2((cx - 150) * 16f, (FloorY - 40) * 16f);
+			_keepBossParts = true;
+			void StepSafe(int n) { for (int k = 0; k < n; k++) { p.immune = true; p.immuneTime = 30; if (standIn != null) Pin(standIn, standAt); Step(1); } }
+			int FreeSlots() => MachineDormancy.FreeNpcSlots();
+			int Levies() { int n = 0; foreach (NPC l in levies) if (l.active && l.ModNPC is global::Levy.Content.NPCs.SoldierNPC) n++; return n; }
+			void KillBoss(int head)
+			{
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC n = Main.npc[i];
+					if (!n.active) continue;
+					if (i == head || (head >= 0 && n.realLife == head) || (!n.friendly && (n.boss || global::Levy.Common.Util.LevyUtil.IsBossNpc(n) || global::Levy.Common.Testing.WorldStep.IsNaturalHostile(n)))) n.active = false;
+				}
+			}
+			void ResetCounters()
+			{
+				BossSlots.Failed = BossSlots.Freed = BossSlots.FreedCritters = BossSlots.FreedHostiles = BossSlots.FreedReleased = BossSlots.FreedSummons = BossSlots.FreedPacked = BossSlots.FreedLevies = BossSlots.Unanswered = 0;
+				MachineDormancy.PackedForBoss = MachineDormancy.WakeHeld = 0; MachineDormancy.BossPackLog.Clear(); MachineBossRoomSystem.ReserveGarrison = MachineBossRoomSystem.ReservePacked = 0;
+			}
+			int Summon(out int head) => Summon2(out head, out _);
+			int Summon2(out int head, out int brought)
+			{
+				brought = 0;
+				var was = new bool[Main.maxNPCs]; for (int i = 0; i < Main.maxNPCs; i++) was[i] = Main.npc[i].active;
+				head = NPC.NewNPC(new EntitySource_BossSpawn(p), (int)_cmdAt.X, (int)_cmdAt.Y - 1600, bossType, 1);
+				if (head < 0 || head >= Main.maxNPCs || Main.npc[head].type != bossType) { head = -1; return -1; }
+				Main.npc[head].timeLeft *= 20;
+				StepSafe(3);
+				int segs = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].realLife == head && i != head) segs++;
+				for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && !Main.npc[i].friendly && (!was[i] || i == head)) brought++;
+				return segs;
+			}
+			try
+			{
+				ArmoryWith(cx, -10, ItemID.Handgun, ItemID.Minishark);
+				UseItem(p, new Item(ModContent.ItemType<TurretItem>(), 4), new Vector2((cx + 2) * 16f, (FloorY - 4) * 16f), out _);
+				UseItem(p, new Item(ModContent.ItemType<TurretItem>(), 4), new Vector2((cx + 14) * 16f, (FloorY - 4) * 16f), out _);
+				UseItem(p, new Item(ModContent.ItemType<DroneItem>(), 4), new Vector2((cx + 26) * 16f, (FloorY - 5) * 16f), out _);
+				UseItem(p, new Item(ModContent.ItemType<DroneItem>(), 4), new Vector2((cx + 38) * 16f, (FloorY - 5) * 16f), out _);
+				for (int k = 0; k < 4; k++) { NPC l = MakeLevy(new Vector2((cx - 6 - 3 * k) * 16f, FloorY * 16f)); if (l != null) levies.Add(l); }
+				StepSafe(150);
+				DChk($"room for a boss: two turrets, two placed drones and four levies stand (turrets {CountNpcs<TurretNPC>()}, drones {FieldDrones()}, levies {Levies()})", CountNpcs<TurretNPC>() == 2 && FieldDrones() == 2 && Levies() == 4);
+				if (Machines() != 4 || Levies() != 4) return;
+				foreach (TurretNPC t in Turrets()) { t.NPC.life -= 11; t.NPC.direction = -1; t.NPC.spriteDirection = -1; }
+				foreach (DroneNPC d in Fielders()) { d.NPC.life -= 9; d.RestoreFromPack(37f); }
+
+				// control: the same boss with room to spare takes nothing and says how many slots it needs
+				ResetCounters();
+				int segs0 = Summon2(out int head0, out int need);
+				DNote($"room for a boss: {bossName} with room to spare spawned {segs0} segments and took {need} NPC slots");
+				DChk($"room for a boss, control: {bossName} with room to spare spawns whole and packs nothing (segments {segs0}, machines {Machines()}, freed {BossSlots.Freed})", head0 >= 0 && segs0 >= 10 && Machines() == 4 && BossSlots.Freed == 0);
+				KillBoss(head0); StepSafe(90);
+				if (head0 < 0 || segs0 < 10) return;
+
+				// the trial: a stand-in boss keeps the fight on whatever the worm does; friendly fillers nothing may take leave 3 slots fewer than the worm needs
+				standIn = Target(cx - 150, 0);
+				if (standIn != null) { standIn.boss = true; standIn.friendly = false; standIn.dontTakeDamage = true; }
+				for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && n.friendly && !n.townNPC && n.ModNPC == null && n.lifeMax < 100000) n.active = false; } // the world's critters would be taken first
+				for (int guard = 0; guard < Main.maxNPCs && FreeSlots() > need - 3; guard++)
+				{
+					int idx = NPC.NewNPC(new EntitySource_WorldEvent("MechWorldCheck"), (cx - 40) * 16, (FloorY - 3) * 16, NPCID.BlueSlime);
+					if (idx < 0 || idx >= Main.maxNPCs) break;
+					NPC n = Main.npc[idx]; n.aiStyle = -1; n.noGravity = true; n.noTileCollide = true; n.lifeMax = n.life = 100000; n.friendly = true; n.dontTakeDamage = true; n.damage = 0; fillers.Add(n);
+				}
+				ResetCounters();
+				var tRec = new Dictionary<int, (Vector2 pos, int weapon)>(); var tDir = new Dictionary<int, int>();
+				foreach (TurretNPC t in Turrets()) tRec[t.RecordId] = (t.NPC.position, t.MountedWeaponType);
+				int free0 = FreeSlots(), leviesBefore = Levies();
+				int segs = Summon(out int head);
+				int others = BossSlots.FreedCritters + BossSlots.FreedHostiles + BossSlots.FreedReleased + BossSlots.FreedSummons;
+				string tally = $"free before {free0} for {need}; freed {BossSlots.Freed}: critters {BossSlots.FreedCritters}, hostiles {BossSlots.FreedHostiles}, garrison {BossSlots.FreedReleased}, summoned {BossSlots.FreedSummons}, machines packed {BossSlots.FreedPacked}, levies {BossSlots.FreedLevies}";
+				DNote("room for a boss, trial: " + tally + $"; segments {segs}; pack distances " + string.Join(", ", MachineDormancy.BossPackLog.ConvertAll(e => $"{e.packed / 16f:0}t (farthest left {e.farthestLeft / 16f:0}t)")));
+				DChk($"room for a boss: {bossName} spawns whole into a world 3 slots short (segments {segs} of {segs0})", head >= 0 && segs == segs0);
+				DChk($"room for a boss: the room comes from packing placed machines and not one levy is benched ({tally}; levies {leviesBefore} -> {Levies()}, squeeze {BossSlots.Squeeze})", BossSlots.FreedPacked >= 2 && BossSlots.FreedPacked + others == 3 && BossSlots.FreedLevies == 0 && BossSlots.Squeeze == 0 && Levies() == leviesBefore);
+				bool farthestFirst = MachineDormancy.BossPackLog.Count >= 2; foreach (var e in MachineDormancy.BossPackLog) farthestFirst &= e.packed >= e.farthestLeft;
+				DChk($"room for a boss: the machines farthest from the spawn pack first ({MachineDormancy.BossPackLog.Count} packs)", farthestFirst);
+				DChk($"room for a boss: what was packed is a record, not a loss (records {TurretSystem.Instance.RecordCount}+{FieldDroneSystem.Instance.RecordCount}, dormant {TurretSystem.Instance.DormantCount}+{FieldDroneSystem.Instance.DormantCount}, standing {Machines()})", TurretSystem.Instance.RecordCount == 2 && FieldDroneSystem.Instance.RecordCount == 2 && TurretSystem.Instance.DormantCount + FieldDroneSystem.Instance.DormantCount == BossSlots.FreedPacked + MachineBossRoomSystem.ReservePacked && Machines() == 4 - BossSlots.FreedPacked - MachineBossRoomSystem.ReservePacked);
+
+				// the reserve the boss keeps: free slots under it, so the last machine packs too; a levy is never benched for it
+				StepSafe(90);
+				DChk($"room for a boss: the boss's reserve ({BossSlots.ExtraReserve} slots) packs the machine left standing and benches no levy (standing {Machines()}, reserve packs {MachineBossRoomSystem.ReservePacked}, levies {Levies()}, squeeze {BossSlots.Squeeze})", BossSlots.ExtraReserve > 0 && Machines() == 0 && MachineBossRoomSystem.ReservePacked >= 1 && Levies() == leviesBefore && BossSlots.Squeeze == 0);
+				var dRec = new Dictionary<int, (int life, float bat, int weapon)>(); var tLife = new Dictionary<int, int>();
+				bool recOk = true; string recWhy = "";
+				foreach (var r in TurretSystem.Instance.Records)
+				{
+					tLife[r.Id] = r.Life; tDir[r.Id] = r.Dir;
+					if (!tRec.TryGetValue(r.Id, out var w) || Vector2.Distance(r.Position, w.pos) > 0.01f || (r.Dir != -1 && r.Dir != 1) || r.Weapon != w.weapon || !r.Dormant || !r.ForBoss) { recOk = false; recWhy += $" turret {r.Id} dormant {r.Dormant} forBoss {r.ForBoss} dir {r.Dir} weapon {r.Weapon};"; }
+				}
+				foreach (var r in FieldDroneSystem.Instance.Records)
+				{
+					dRec[r.Id] = (r.Life, r.Battery, r.Weapon);
+					if (!r.Dormant || !r.ForBoss || r.Life <= 0 || Math.Abs(r.Battery - 37f) > 5f) { recOk = false; recWhy += $" drone {r.Id} dormant {r.Dormant} forBoss {r.ForBoss} life {r.Life} battery {r.Battery:0.0};"; }
+				}
+				DChk("room for a boss: each packed record holds its position, health, facing, weapon and battery" + (recWhy.Length > 0 ? " (" + recWhy + ")" : ""), recOk);
+
+				// the boss lives on, with free slots and a player beside them: they stay packed
+				foreach (NPC n in fillers) n.active = false;
+				fillers.Clear();
+				StepSafe(600);
+				DChk($"room for a boss: with the boss alive and a player beside them none wakes, even with free slots (standing {Machines()}, free {FreeSlots()}, wakes held {MachineDormancy.WakeHeld}, boss alive {BossSlots.BossAlive})", BossSlots.BossAlive && Machines() == 0 && MachineDormancy.WakeHeld > 0);
+
+				// the boss is gone: they wake as they were
+				KillBoss(head);
+				if (standIn != null) { standIn.active = false; standIn = null; }
+				int woke = -1; for (int k = 0; k < 240 && woke < 0; k++) { StepSafe(1); if (Machines() == 4) woke = k + 1; }
+				DChk($"room for a boss: the boss gone, all four stand again (after {woke} ticks; reserve {BossSlots.ExtraReserve}, boss alive {BossSlots.BossAlive})", woke > 0 && !BossSlots.BossAlive && BossSlots.ExtraReserve == 0);
+				StepSafe(3);
+				bool same = true; string why = "";
+				foreach (TurretNPC t in Turrets())
+				{
+					if (!tRec.TryGetValue(t.RecordId, out var w)) { same = false; why += " unknown turret;"; continue; }
+					if (Vector2.Distance(t.NPC.position, w.pos) > 0.5f) { same = false; why += $" turret {t.RecordId} moved;"; }
+					if (t.NPC.life != tLife[t.RecordId]) { same = false; why += $" turret {t.RecordId} life {t.NPC.life} vs {tLife[t.RecordId]};"; }
+					if (t.NPC.direction != tDir[t.RecordId]) { same = false; why += $" turret {t.RecordId} faces {t.NPC.direction} vs {tDir[t.RecordId]};"; }
+					if (t.MountedWeaponType != w.weapon) { same = false; why += $" turret {t.RecordId} weapon {t.MountedWeaponType} vs {w.weapon};"; }
+				}
+				foreach (DroneNPC d in Fielders())
+				{
+					if (!dRec.TryGetValue(d.RecordId, out var w)) { same = false; why += " unknown drone;"; continue; }
+					if (d.NPC.life != w.life) { same = false; why += $" drone {d.RecordId} life {d.NPC.life} vs {w.life};"; }
+					if (Math.Abs(d.Battery - w.bat) > 1f) { same = false; why += $" drone {d.RecordId} battery {d.Battery:0.0} vs {w.bat:0.0};"; }
+					if (d.FieldWeaponType != w.weapon) { same = false; why += $" drone {d.RecordId} weapon {d.FieldWeaponType} vs {w.weapon};"; }
+				}
+				DChk("room for a boss: every machine woke exactly as it was packed" + (why.Length > 0 ? " (" + why + ")" : ""), same);
+				bool flags = true;
+				foreach (var r in TurretSystem.Instance.Records) flags &= !r.Dormant && !r.ForBoss;
+				foreach (var r in FieldDroneSystem.Instance.Records) flags &= !r.Dormant && !r.ForBoss;
+				DChk($"room for a boss: nothing lost and nothing left marked (records {TurretSystem.Instance.RecordCount}+{FieldDroneSystem.Instance.RecordCount}, levies {Levies()})", flags && TurretSystem.Instance.RecordCount == 2 && FieldDroneSystem.Instance.RecordCount == 2 && Levies() == leviesBefore);
+			}
+			finally
+			{
+				_keepBossParts = false;
+				if (standIn != null) standIn.active = false;
+				for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !n.friendly && (n.boss || n.realLife >= 0 || n.type == bossType || global::Levy.Common.Util.LevyUtil.IsBossNpc(n))) n.active = false; }
+				foreach (NPC n in fillers) n.active = false;
+				foreach (NPC l in levies) l.active = false;
+				global::Levy.Common.Systems.RosterSystem.Instance.Regulars.RemoveAll(r => r.Name == "Pvt. MachineDorm");
+				Main.dayTime = day; Main.time = time;
+				ResetMachines(); ClearPlaced();
+			}
+		}
+
+		/// <summary>A Regular levy body for player 0 (immortal for the check), through the roster's own spawn.</summary>
+		private static NPC MakeLevy(Vector2 at)
+		{
+			var roster = global::Levy.Common.Systems.RosterSystem.Instance;
+			var rec = new global::Levy.Common.Soldiers.SoldierRecord
+			{
+				Id = roster.NextId++, Kind = global::Levy.Common.SoldierKind.Regular, Grade = global::Levy.Common.Grade.Levy, Temperament = global::Levy.Common.Temperament.Sellsword, Male = true, Name = "Pvt. MachineDorm",
+				CommanderName = Main.player[0].name, CommanderIndex = 0, LifeCrystals = global::Levy.Common.LevyConstants.MaxLifeCrystals, HomeBarracksId = -1, StoodDown = false,
+			};
+			rec.CurrentHp = rec.MaxHp; rec.Order = global::Levy.Common.SoldierOrder.Hold;
+			roster.Regulars.Add(rec);
+			int body = roster.SpawnBody(rec, at);
+			if (body < 0 || body >= Main.maxNPCs || !rec.HasBody) return null;
+			NPC n = Main.npc[body]; n.Bottom = at; n.immortal = true;
+			return n;
 		}
 
 		private static int CountStored(ArmoryTE a) { int n = 0; for (int i = 0; i < a.Storage.Length; i++) if (a.Storage[i] != null && !a.Storage[i].IsAir) n++; return n; }

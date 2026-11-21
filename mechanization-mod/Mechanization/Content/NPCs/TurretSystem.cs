@@ -44,6 +44,8 @@ namespace Mechanization.Content.NPCs
 			public int Dir, Weapon;
 			/// <summary>Ticks this turret has been out of range of every player (packs at <see cref="MachineDormancy.PackDelayTicks"/>).</summary>
 			public int FarTicks;
+			/// <summary>True when it was packed to make room for a boss: it does not wake while a boss lives (<see cref="MachineDormancy.MayWake"/>). Not saved: a reload ends the fight, and the record is then plainly dormant.</summary>
+			public bool ForBoss;
 		}
 
 		private readonly Dictionary<int, TurretRecord> _records = new();
@@ -254,8 +256,22 @@ namespace Mechanization.Content.NPCs
 			{
 				if (!rec.Dormant) continue;
 				if (on && !MachineDormancy.NearPlayer(BodyCentre(rec), range)) continue;
+				if (!MachineDormancy.MayWake(ref rec.ForBoss)) continue;
 				Wake(rec);
 			}
+		}
+
+		/// <summary>The live turret <paramref name="n"/> could be packed losslessly into its record (it has one and is not packed already).</summary>
+		internal bool CanPack(NPC n) => n != null && n.active && n.ModNPC is TurretNPC t && t.RecordId > 0 && _records.TryGetValue(t.RecordId, out TurretRecord rec) && !rec.Dormant;
+
+		/// <summary>Packs one live turret into its record to make room for a boss (<see cref="MachineDormancy.PackFarthestForBoss"/>): the dormancy pack, held packed until the boss is gone. False when it cannot be packed.</summary>
+		internal bool PackForBoss(NPC n)
+		{
+			if (!CanPack(n)) return false;
+			TurretNPC t = (TurretNPC)n.ModNPC; TurretRecord rec = _records[t.RecordId];
+			Pack(n, t, rec);
+			rec.ForBoss = true; MachineDormancy.PackedForBoss++;
+			return true;
 		}
 
 		private static Vector2 BodyCentre(TurretRecord rec) => rec.Position + new Vector2(T.BodyWidth * 0.5f, T.BodyHeight * 0.5f);

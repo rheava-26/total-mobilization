@@ -186,6 +186,8 @@ def load_spec(path):
             spec = {"raw": rows}
             m = re.search(r"^#\s*mods:\s*(\w+)", text, re.M)   # raw lines: a "# mods: vanilla" comment picks the mod set (default calamity)
             if m: spec["mods"] = m[1]
+            for m in re.finditer(r"^#\s*env:\s*(\S+?)=(\S*)\s*$", text, re.M):   # raw lines: "# env: K=V" sets a process env toggle for the whole run (after the kit defaults, so it can override them)
+                spec.setdefault("env", {})[m[1]] = m[2]
         else:
             hdr = rows[0]; cells = []
             for r in rows[1:]:
@@ -435,7 +437,7 @@ def cmd_run(a):
         parts = min(alloc[(ek, rec)], len(fs))
         for p in range(parts):
             jobs.append(dict(id=f"j{len(jobs)}", fights=[(x[0], x[1], x[2]) for x in fs[p::parts]], rec=rec, env=json.loads(ek)))
-    ctx = dict(rundir=rundir, tmod=tmod, mods=next(iter(mods)), steps=a.steps, env={})
+    ctx = dict(rundir=rundir, tmod=tmod, mods=next(iter(mods)), steps=a.steps, env=dict(spec.get("env") or {}) if "raw" in spec else {})
     t0 = time.time()
     print(f"levylab: {nf} fights = {len(meta_cells)} cells x seeds, {len(jobs)} server processes, {nj} in parallel, build {bid}{' (cached)' if not built else ''}, run dir {rundir}", file=sys.stderr)
     (rundir / "cells.json").write_text(json.dumps(dict(cells=meta_cells, build=bid, spec=a.spec, jobs=nj, steps=a.steps, rec=a.rec), indent=1))

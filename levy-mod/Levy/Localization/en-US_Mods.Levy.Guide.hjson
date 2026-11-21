@@ -42,7 +42,7 @@ Pages: {
 		Title: Command points
 		Body:
 			'''
-			Command points limit how many Regulars you can field. A Levy costs 1 point, a Man-at-Arms 3 and a Champion 7.
+			Command points limit how many Regulars you can field. A Levy costs 1 point, a Man-at-Arms 2 and a Champion 3.
 			The default is 14 points at the start, 28 at the Wall of Flesh, 34 at Moon Lord and 40 after the last boss. Each boss you beat adds its share.
 			The Barracks panel shows the points used and the points held by Regulars in reserve.
 			Enlisting or promoting needs free points and coins. Every grade is open from the start.

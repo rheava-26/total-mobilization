@@ -22,7 +22,7 @@ namespace Levy.Common
 
 		// ---------- Grades ----------
 		public static readonly int[] GradeSlots = { 1, 3, 5 };
-		public static readonly int[] GradeCpCost = { 1, 3, 7 };
+		public static readonly int[] GradeCpCost = { 1, 2, 3 };
 		public static readonly float[] GradeWageMult = { 1f, 3f, 7f };
 		public static readonly float[] GradeAimJitterDeg = { 6f, 3f, 1f };
 		public static readonly float[] GradeLeadError = { 0.25f, 0.10f, 0.03f };

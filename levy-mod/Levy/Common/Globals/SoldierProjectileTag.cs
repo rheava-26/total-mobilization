@@ -43,6 +43,10 @@ namespace Levy.Common.Globals
 		public bool Cast;
 		/// <summary>A modded shot of a driven minion, kept on owner 255 and updated in its minion's frame (see SoldierMinions.ReownChild). Server / single player; not synced.</summary>
 		public bool DrivenChild;
+		/// <summary>A pet, light pet or other helper a levy's GEAR made in its upkeep frame (a buff's pet, a companion that reads its owner's flags), adopted on owner 255 and updated under that levy's dummy (see SoldierMinions.AdoptAccessoryHelper). Synced.</summary>
+		public bool GearHelper;
+		/// <summary>Created by a buff's Update inside a levy's gear frame (EntitySource_Buff). Server / single player; not synced.</summary>
+		public bool FromBuff;
 		/// <summary>Ticks a modded minion has been driven, hits it landed, and whether the upkeep ended it on purpose (see SoldierMinions.NoteModdedDeath). Server / single player.</summary>
 		public int Age, Hits;
 		public bool Dismissed;
@@ -653,11 +657,13 @@ namespace Levy.Common.Globals
 		{
 			binaryWriter.Write((short)SoldierIndex); binaryWriter.Write((short)SourceNpcIndex); binaryWriter.Write((short)CommanderIndex);
 			bitWriter.WriteBit(HostileShot);
+			bitWriter.WriteBit(GearHelper);
 		}
 		public override void ReceiveExtraAI(Projectile projectile, BitReader bitReader, BinaryReader binaryReader)
 		{
 			SoldierIndex = binaryReader.ReadInt16(); SourceNpcIndex = binaryReader.ReadInt16(); CommanderIndex = binaryReader.ReadInt16();
 			HostileShot = bitReader.ReadBit();
+			GearHelper = bitReader.ReadBit();
 			if (HostileShot) { projectile.friendly = false; projectile.hostile = true; }
 			if (SourceNpcIndex >= 0 && SourceNpcIndex < Main.maxNPCs) SourceNpcType = Main.npc[SourceNpcIndex].type;
 		}

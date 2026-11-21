@@ -48,6 +48,11 @@ HideLevyAccessoryMinions: {
 	Tooltip: Minions summoned by a levy's accessory, such as Heart of the Elements, are not drawn. They still fight. Only you see the change.
 }
 
+HideLevyAccessoryPets: {
+	Label: Hide pets from levy accessories
+	Tooltip: Pets and helpers made by a levy's accessory, such as the Daawnlight Spirit Origin's archer, are not drawn. They still work. Only you see the change.
+}
+
 GearUpdateIntervalWhenFighting: {
 	Label: Gear update interval when fighting
 	Tooltip:

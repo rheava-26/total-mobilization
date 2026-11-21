@@ -250,6 +250,7 @@ Pages: {
 		Body:
 			'''
 			Accessories go in storage. Levies wear the best ones that suit their weapon and they work as they would on you. Wings take a slot.
+			A pet or helper from a levy's accessory follows that levy and leaves when he falls.
 			A Levy has 1 accessory slot, a Man-at-Arms 3 and a Champion 5.
 			Grappling hooks go in storage. Each levy carries the best hook, swings across gaps and climbs cliffs with it.
 			Ammo goes in the ammo row or storage. Ammo in the row is used first. Each levy carries one kind of ammo in a pouch and refills it from the Armory.

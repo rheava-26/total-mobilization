@@ -227,7 +227,7 @@ Status key: DONE, BUILDING, QUEUED, SUPERSEDED, ANSWERED, MISSING (the M-items a
 | 110 | Useless economy accessories returned; hide accessory minions | 11-19 | DONE | uipolish, 3.1.4 |
 | 111 | Camera fixes | 11-19 | DONE (GPU picture unverified) | uipolish, 3.1.4 |
 | 112 | Nebula boosters usable by levies | 11-19 | DONE (already existed) | `SoldierNebulaBooster.cs` |
-| 113 | Questions: max HP of levies; Planty Mush; who the red-haired girl is | 11-17, 11-19 | ANSWERED | ROADMAP 195; Heart of the Elements, sprite sheet sent |
+| 113 | Questions: max HP of levies; Planty Mush; who the red-haired girl is | 11-17, 11-19, 11-21 | CORRECTED 11-21 | The earlier answer (Heart of the Elements) was WRONG. It is the pet of Calamity's Daawnlight Spirit Origin worn by ranged levies; orphaned pets fly to the commander when a levy dies (bug) → builder levypets |
 | 114 | Mod-author opt-out stance; HUD off; screenshot choice | 11-20 | ANSWERED | ROADMAP 176-177 (Capture key camera mode) |
 | 115 | "Don't fix by removing features; preferences become settings" | 11-20 | DONE | NORTH_STAR 5ae1bce |
 | 116 | "We already built the fight recorder; note it" | 11-20 | DONE | NORTH_STAR 712c7aa |

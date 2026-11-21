@@ -17,7 +17,7 @@ namespace Levy.Content.Items
 			Item.UseSound = SoundID.Item4; Item.consumable = true; Item.maxStack = Item.CommonMaxStack; Item.rare = ItemRarityID.Yellow; Item.value = Item.sellPrice(gold: 2);
 		}
 
-		public override bool CanUseItem(Player player) => CalamityLink.Loaded && !Main.slimeRain;
+		public override bool CanUseItem(Player player) => AgitatedRain.CanStart;
 
 		public override bool? UseItem(Player player)
 		{

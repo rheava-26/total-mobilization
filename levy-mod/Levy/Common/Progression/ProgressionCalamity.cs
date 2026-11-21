@@ -142,13 +142,28 @@ namespace Levy.Common.Progression
 			return l;
 		}
 
-		/// <summary>Server / single player: start the rain (the item's effect).</summary>
+		/// <summary>True when a use would start the rain. The item's CanUseItem, so a use that cannot work never consumes it. Vanilla never starts a slime rain in a remix world (Don't Dig Up, Get Fixed Boi).</summary>
+		public static bool CanStart => CalamityLink.Loaded && !Main.slimeRain && !Main.remixWorld;
+
+		/// <summary>Server / single player: start the rain (the item's effect). Works in any weather.
+		/// Vanilla's StartSlimeRain returns without starting on the server or in single player while an ordinary rain is up; that rain is left exactly as it is
+		/// (stopping it would also end Calamity's Acid Rain), so the check is masked for the one call and the announcement is made after the rain flag is back,
+		/// because the world-data packet zeroes maxRaining when it sees no rain.</summary>
 		public static bool Start()
 		{
-			if (!CalamityLink.Loaded || Main.slimeRain) return false;
-			Main.StartSlimeRain(true);
+			if (!CanStart) return false;
+			bool rain = Main.raining;
+			Main.raining = false;
+			try { Main.StartSlimeRain(false); }
+			finally { Main.raining = rain; }
 			Armed = Main.slimeRain;
-			return Main.slimeRain;
+			if (!Main.slimeRain) return false;
+			if (Main.netMode != NetmodeID.MultiplayerClient)
+			{
+				Main.slimeWarningTime = Main.slimeWarningDelay;    // what StartSlimeRain(true) does: the "Slime is falling from the sky!" announcement
+				if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.WorldData);
+			}
+			return true;
 		}
 
 		public override void PostUpdateWorld()

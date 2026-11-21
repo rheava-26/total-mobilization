@@ -360,6 +360,8 @@ namespace Levy.Common.Testing
 		// ---- 3. Slime Agitator ------------------------------------------------------------------------------------------------------
 		static void Agitator(LevyProgressionConfig c, Player p0)
 		{
+			// the weather this check changes, put back at the end
+			bool rain0 = Main.raining, remix0 = Main.remixWorld; double rainTime0 = Main.rainTime, slimeTime0 = Main.slimeRainTime; float maxRain0 = Main.maxRaining; int warn0 = Main.slimeWarningTime;
 			try
 			{
 				var item = new Item(); item.SetDefaults(ModContent.ItemType<SlimeAgitator>());
@@ -374,9 +376,33 @@ namespace Levy.Common.Testing
 				Check("agitator: Cryo Slime needs two Mechanical Bosses", !AgitatedRain.Available().Contains(CalamityLink.NpcType("CryoSlime")));
 				NPC.downedMechBoss2 = true;
 				if (Main.slimeRain) Main.StopSlimeRain(false);
-				Check("agitator: can be used when no slime rain is up", item.ModItem.CanUseItem(Main.player[0]) && !Main.slimeRain);
-				Check("agitator: the use starts a slime rain", AgitatedRain.Start() && Main.slimeRain && AgitatedRain.Armed);
-				Check("agitator: cannot be used while it rains", !item.ModItem.CanUseItem(Main.player[0]));
+				Note($"weather when the agitator check began: raining {rain0} (rainTime {rainTime0:0}, maxRaining {maxRain0:0.00}), remix world {remix0}");
+				bool CanUse() => item.ModItem.CanUseItem(Main.player[0]);
+				void Rain() { Main.raining = true; Main.rainTime = 36000; Main.maxRaining = 0.6f; }
+				void EndSlimeRain() { if (Main.slimeRain) Main.StopSlimeRain(false); AgitatedRain.Armed = false; }
+				// vanilla on its own: StartSlimeRain returns without starting while an ordinary rain is up
+				Main.remixWorld = false; Rain(); Main.StartSlimeRain(false); bool vanillaStarts = Main.slimeRain; EndSlimeRain();
+				Note($"vanilla StartSlimeRain while an ordinary rain is up: {(vanillaStarts ? "starts" : "returns without starting")}");
+				// (a) clear skies
+				Main.StopRain();
+				Check("agitator: can be used under clear skies", CanUse() && !Main.slimeRain);
+				Check("agitator: the use starts a slime rain under clear skies", AgitatedRain.Start() && Main.slimeRain && AgitatedRain.Armed);
+				Check("agitator: cannot be used while a slime rain is up", !CanUse());
+				Check("agitator: a use while a slime rain is up starts nothing", !AgitatedRain.Start() && Main.slimeRain);
+				EndSlimeRain();
+				// (b) an ordinary rain: the slime rain starts and the rain carries on untouched
+				Rain(); double rt = Main.rainTime;
+				Check("agitator: can be used while an ordinary rain is up", CanUse());
+				Check("agitator: the use starts a slime rain while an ordinary rain is up", AgitatedRain.Start() && Main.slimeRain && AgitatedRain.Armed);
+				Check($"agitator: the ordinary rain carries on (raining {Main.raining}, rainTime {Main.rainTime:0}, maxRaining {Main.maxRaining:0.00})", Main.raining && Main.rainTime == rt && Main.maxRaining == 0.6f);
+				Check("agitator: cannot be used while a slime rain is up in an ordinary rain", !CanUse());
+				// (c) a remix world, where vanilla never starts a slime rain: the agitator cannot be used, so it is never consumed for nothing
+				EndSlimeRain(); Main.StopRain(); Main.remixWorld = true;
+				Check("agitator: cannot be used in a remix world, and a use there starts nothing", !CanUse() && !AgitatedRain.Start() && !Main.slimeRain);
+				Main.remixWorld = false;
+				// (d) the ore slimes, in the harder case: an agitated slime rain inside an ordinary rain
+				Rain();
+				Check("agitator: the use starts a slime rain for the ore-slime check", AgitatedRain.Start() && Main.slimeRain && AgitatedRain.Armed);
 				// the rain's ore slimes: the player stands high above the ground, in the overworld band
 				p0.position = new Vector2(2100 * 16f, 150 * 16f); p0.ZoneOverworldHeight = true;
 				var sys = ModContent.GetInstance<AgitatedRain>(); int s0 = AgitatedRain.Spawned;
@@ -389,15 +415,16 @@ namespace Levy.Common.Testing
 				Main.StopSlimeRain(false); sys.PostUpdateWorld();
 				int s1 = AgitatedRain.Spawned; for (int i = 0; i < 2000; i++) sys.PostUpdateWorld();
 				Check("agitator: when the rain ends the ore slimes stop", !AgitatedRain.Armed && AgitatedRain.Spawned == s1);
-				// without the agitator a plain slime rain brings none
-				Main.StartSlimeRain(false); for (int i = 0; i < 2000; i++) sys.PostUpdateWorld(); Main.StopSlimeRain(false);
-				Check("agitator: a slime rain that was not agitated spawns no ore slimes", AgitatedRain.Spawned == s1);
+				// without the agitator a plain slime rain brings none (clear skies, or vanilla would not start it)
+				Main.StopRain(); Main.StartSlimeRain(false); bool plain = Main.slimeRain; for (int i = 0; i < 2000; i++) sys.PostUpdateWorld(); Main.StopSlimeRain(false);
+				Check("agitator: a slime rain that was not agitated spawns no ore slimes", plain && AgitatedRain.Spawned == s1);
 			}
 			finally
 			{
 				for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && AgitatedRain.OreSlimes.Any(o => Main.npc[i].type == CalamityLink.NpcType(o.npc))) Main.npc[i].active = false;
 				if (Main.slimeRain) Main.StopSlimeRain(false);
 				AgitatedRain.Armed = false;
+				Main.raining = rain0; Main.rainTime = rainTime0; Main.maxRaining = maxRain0; Main.remixWorld = remix0; Main.slimeRainTime = slimeTime0; Main.slimeWarningTime = warn0;
 			}
 		}
 	}

@@ -866,8 +866,14 @@ namespace Mechanization.Common
 	/// <summary>The check's eyes on the rounds a machine spawns: how many, owned by whom, and how long each lived. Costs one flag test when the check is not running.</summary>
 	public class MechShotProbe : GlobalProjectile
 	{
-		internal static bool On; internal static int Spawned, Killed, ShortLived; internal static string FirstKill = "";
-		public override void OnSpawn(Projectile projectile, Terraria.DataStructures.IEntitySource source) { if (On && source is Terraria.DataStructures.EntitySource_Parent { Entity: NPC }) Spawned++; }
+		internal static bool On; internal static int Spawned, Killed, ShortLived, TurretShots, FieldShots; internal static string FirstKill = "";
+		public override void OnSpawn(Projectile projectile, Terraria.DataStructures.IEntitySource source)
+		{
+			if (!On || source is not Terraria.DataStructures.EntitySource_Parent { Entity: NPC parent }) return;
+			Spawned++;
+			if (parent.ModNPC is TurretNPC) TurretShots++;
+			else if (parent.ModNPC is DroneNPC d && d.IsField) FieldShots++;
+		}
 		public override void OnKill(Projectile projectile, int timeLeft) { if (!On || projectile.owner != 0) return; Killed++; if (FirstKill == "") FirstKill = $"type {projectile.type} timeLeft {timeLeft}/{projectile.timeLeft} pos {projectile.Center} vel {projectile.velocity}"; }
 	}
 }

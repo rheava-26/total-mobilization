@@ -21,8 +21,9 @@ namespace Mechanization.Content.NPCs
 	/// garrison drones and the army's summons, and before any levy is benched (<see cref="PackFarthestForBoss"/>, registered in <see cref="BossSlots.MachinePackers"/>). While a boss that needed room is alive the same pack keeps
 	/// its <see cref="BossSlots.ExtraReserve"/> free (<see cref="MachineBossRoomSystem"/>). A machine packed for a boss does not wake while a boss lives; after, it wakes like any dormant record (a player near, a free slot).
 	///
-	/// STAND DOWN FOR BOSSES. With <see cref="MechConfig.StandDownDuringBosses"/> on, the garrison's drones leave the field while a boss lives (Levy's <see cref="BossSlots.BossAlive"/>, the same notion of "a boss" the room-making uses):
-	/// each files its weapon back into the Armory and its NPC slot is free; nothing launches until the boss is gone, then the garrison launches again from the Barracks and the Armory.
+	/// STAND DOWN FOR BOSSES. With <see cref="MechConfig.StandDownDuringBosses"/> on, every machine leaves the field while a boss lives (Levy's <see cref="BossSlots.BossAlive"/>, the same notion of "a boss" the room-making uses):
+	/// the garrison's drones file their weapons back into the Armory and go (nothing launches until the boss is gone, then the garrison launches again from the Barracks and the Armory), and every placed drone and turret
+	/// packs into its record held for the boss (<see cref="MachineBossRoomSystem"/>), waking as it was once the boss is gone. Nothing wakes while it stands down.
 	/// </summary>
 	public static class MachineDormancy
 	{
@@ -34,7 +35,7 @@ namespace Mechanization.Content.NPCs
 		/// <summary>Counters the world check reads: machines packed, machines unpacked, unpack attempts that found no free NPC slot.</summary>
 		public static int Packed, Unpacked, NoSlot, GarrisonDismissed;
 		/// <summary>Counters the world check reads: machines packed to make room for a boss, garrison drones removed by the boss stand-down, wakes held back while a boss lives.</summary>
-		public static int PackedForBoss, GarrisonVanished, WakeHeld;
+		public static int PackedForBoss, GarrisonVanished, WakeHeld, StandDownPacked;
 		/// <summary>Lab log of each boss pack: how far the packed machine was from the spot, and the farthest machine still standing after it (farthest first means the first is never below the second).</summary>
 		internal static readonly List<(float packed, float farthestLeft)> BossPackLog = new();
 
@@ -77,6 +78,7 @@ namespace Mechanization.Content.NPCs
 		/// </summary>
 		public static bool MayWake(ref bool forBoss)
 		{
+			if (StandingDown) { WakeHeld++; return false; } // the machines stand down for the boss: none comes back while it lives (one placed mid-fight packs on the next pass)
 			if (forBoss)
 			{
 				if (BossSlots.BossAlive) { WakeHeld++; return false; }
@@ -130,7 +132,8 @@ namespace Mechanization.Content.NPCs
 	}
 
 	/// <summary>
-	/// Keeps a boss's room. While a boss that needed room is alive (Levy's <see cref="BossSlots.ExtraReserve"/> above 0) and the free NPC slots fall under that reserve, the garrison's drones stand down first and then
+	/// Stands placed machines down for a boss and keeps a boss's room. With <see cref="MechConfig.StandDownDuringBosses"/> on and a boss alive, every placed drone and turret packs into its record, held for the boss, each sweep
+	/// (a machine placed during the fight goes on the next one). Otherwise only the room: while a boss that needed room is alive (Levy's <see cref="BossSlots.ExtraReserve"/> above 0) and the free NPC slots fall under that reserve, the garrison's drones stand down first and then
 	/// player-built drones and turrets pack into their records, farthest from the nearest boss first, until the reserve is whole again. Levies are never benched for the reserve: their bodies only wait behind it. Server / single player.
 	/// Registers the lossless pack with Levy's room-making (<see cref="BossSlots.MachinePackers"/>).
 	/// </summary>
@@ -148,8 +151,15 @@ namespace Mechanization.Content.NPCs
 		public override void PostUpdateNPCs()
 		{
 			if (Main.netMode == Terraria.ID.NetmodeID.MultiplayerClient) return;
+			if (Main.GameUpdateCount % (uint)MachineDormancy.SweepTicks != 0u) return;
+			if (MachineDormancy.StandingDown)
+			{
+				NearestBoss(out Vector2 bossAt);
+				for (int k = 0; k < Main.maxNPCs && MachineDormancy.PackFarthestForBoss(bossAt, 0) > 0; k++) MachineDormancy.StandDownPacked++;
+				return;
+			}
 			int reserve = BossSlots.ExtraReserve;
-			if (reserve <= 0 || Main.GameUpdateCount % (uint)MachineDormancy.SweepTicks != 0u) return;
+			if (reserve <= 0) return;
 			int short_ = reserve - MachineDormancy.FreeNpcSlots();
 			if (short_ <= 0) return;
 			if (!NearestBoss(out Vector2 at)) return;

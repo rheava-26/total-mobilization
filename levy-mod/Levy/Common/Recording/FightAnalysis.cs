@@ -72,6 +72,8 @@ namespace Levy.Common.Recording
 
 		// boss life
 		public double BossLeftFrac = -1; public int FirstBossTick = -1;
+		/// <summary>The fight's final boss end event as written (bdeath | bdespawn, tick, life, max, last hit damage, kh = the death hook ran, absent in files made before it) and whether this reader overrode the file's own result because of it.</summary>
+		public string EndEvent; public int EndEvTick, EndHd; public double EndLife, EndMax; public bool EndHasKh; public bool Rederived;
 		public readonly List<(int pct, int sec, int army)> Milestones = new();
 		public readonly List<(int tick, string what)> Phases = new();
 		public int EndTick;
@@ -316,6 +318,7 @@ namespace Levy.Common.Recording
 					if (Int(r, "final") == 1)
 					{
 						double life = Dbl(r, "life"), max = Dbl(r, "max");
+						st.EndEvent = e; st.EndEvTick = Int(r, "t"); st.EndLife = life; st.EndMax = max; st.EndHd = Int(r, "hd"); st.EndHasKh = r.TryGetProperty("kh", out _);
 						st.BossLeftFrac = e == "bdeath" ? 0 : (max > 0 ? Math.Clamp(life / max, 0, 1) : -1);
 					}
 					break;
@@ -345,8 +348,28 @@ namespace Levy.Common.Recording
 			int j = Math.Max(0, Math.Min(n - 1, lo - 1)); return st.FrameHeld[j];
 		}
 
+		/// <summary>
+		/// Files written before the kill rule (recwin) called a boss "killed" when it vanished within a second of a hit that left it under 1% life, even though the game had only removed it: a commander who fell, in-flight shots taking
+		/// the Devourer of Gods to 14542 of 1836000, then Calamity despawning it with no player alive, read as won. Such a file has a bdeath with no "kh" (death hook) field and a life that no lethal blow explains
+		/// (above 1 and above the last hit's damage: Calamity's death animation sits at 1) within 10 s of the commander's fall. Read it as the boss leaving, and the result by the same rule the recorder uses. Files with "kh" are never touched.
+		/// </summary>
+		/// <summary>An old bdeath with no hook and no lethal blow counts as a boss that left only this soon after the commander's fall (10 s: no living player, so the game removed it). Python: recrules.REDERIVE_WINDOW.</summary>
+		internal const int RederiveWindowTicks = 600;
+
+		internal static void RederiveKill(FightStats st)
+		{
+			if (st.Outcome != "killed" || st.EndEvent != "bdeath" || st.EndHasKh || st.EndLife <= Math.Max(1, st.EndHd)) return;
+			int last = -1, n = 0;
+			foreach (var kn in st.KillNotes) if (kn.tick <= st.EndEvTick + 10) { n++; last = kn.tick; }
+			if (n == 0 || st.EndEvTick - last > RederiveWindowTicks) return;
+			st.Outcome = "despawn"; st.Rederived = true;
+			st.Result = FightRecorder.DecideResult("despawn", n, false, st.EndEvTick, last, 1);
+			if (st.EndMax > 0) st.BossLeftFrac = Math.Clamp(st.EndLife / st.EndMax, 0, 1);
+		}
+
 		private static void Finish(FightStats st, double lastFrac)
 		{
+			RederiveKill(st);
 			// boss life left: the boss's own end record, else the last sample
 			if (st.Outcome == "killed") st.BossLeftFrac = 0;
 			else if (st.BossLeftFrac < 0 && lastFrac >= 0) st.BossLeftFrac = Math.Clamp(lastFrac, 0, 1);

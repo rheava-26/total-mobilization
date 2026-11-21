@@ -16,14 +16,10 @@ namespace Levy.Common.Recording
 			try
 			{
 				// the real recordings: Desert Scourge, 10200 life, head gone at 4..80 life within a tick of the last hit
-				Check(FightRecorder.LooksKilled(45, 10200, 3744, 10, 3744, false), "left at 45/10200 on the hit tick is a kill");
-				Check(FightRecorder.LooksKilled(80, 10200, 2286, 12, 2290, false), "left at 80/10200 4 ticks after a hit is a kill");
-				Check(FightRecorder.LooksKilled(900, 10200, 100, 2000, 110, false), "a hit bigger than the remaining life is a kill");
-				Check(FightRecorder.LooksKilled(5000, 10200, 100, 10, 110, true), "OnKill on any part is a kill");
-				Check(FightRecorder.LooksKilled(0, 10200, -1, 0, 500, false), "life 0 is a kill");
-				Check(!FightRecorder.LooksKilled(8000, 10200, 100, 40, 110, false), "leaving healthy right after a hit is a despawn");
-				Check(!FightRecorder.LooksKilled(45, 10200, 100, 10, 400, false), "leaving at low life with no recent hit is a despawn");
-				Check(!FightRecorder.LooksKilled(45, 10200, -1, 0, 400, false), "leaving at low life that was never hit is a despawn");
+				Check(FightRecorder.LooksKilled(5000, true), "the death hook on any part is a kill");
+				Check(FightRecorder.LooksKilled(0, false), "life 0 is a kill");
+				Check(!FightRecorder.LooksKilled(45, false) && !FightRecorder.LooksKilled(1, false), "leaving at 45 or at 1 life with no death hook is a boss that left (Calamity's death animation sits at 1 until the hook runs)");
+				Check(!FightRecorder.LooksKilled(14542, false), "leaving at 14542 of 1836000 right after a hit is a boss that left (the false Devourer of Gods win)");
 				// the closing window of a fight: a kill that other bosses vanish with is still the fight's end (Moon Lord's core with his hands and head, the Cultist with the pillars his death spawns)
 				Check(FightRecorder.FinalEndIndex(new[] { true, false, false, false }) == 0, "a killed core and three parts that vanish with it: the kill names the end");
 				Check(FightRecorder.FinalEndIndex(new[] { true, false, false, false, false }) == 0, "a killed boss and four pillars purged after it: the kill names the end");

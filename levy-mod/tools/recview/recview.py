@@ -168,7 +168,7 @@ def analyse(rec):
     for x in ev.get("boss", []):
         notes.append((x["t"], "boss appears: %s" % x.get("name")))
     for x in ev.get("bdeath", []) + ev.get("bdespawn", []):
-        what = "killed" if x["e"] == "bdeath" else "left alive"
+        what = "killed" if recrules.end_is_kill(x, [d["t"] for d in ev.get("cdeath", [])]) else "left alive"
         extra = ""
         if "hn" in x:
             extra = ", last hit %s damage by %s (%s)" % (x.get("hd"), x.get("hn") or x.get("hs"), x.get("hs"))

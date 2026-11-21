@@ -298,6 +298,48 @@ namespace Levy.Common.Recording
 				string f1f = FightRecorder.LastResult;
 				Chk(f1f != null && Regex.IsMatch(Path.GetFileName(f1f), @"_Eye_of_Cthulhu_fled\.levyrec$"), "the commander alive and the boss leaves: fled (" + Path.GetFileName(f1f ?? "none") + ")");
 
+				// ---------- 1f2. THE KILL RULE (recwin): a boss that goes inactive without its death path is a boss that LEFT, whatever life it had. The false win this guards: the commander fell, her in-flight shots took the boss to 0.8%, the game removed it with no player alive
+				// (Calamity DoG, 14542 of 1836000) and the file said won. A kill is the death hook (OnKill) of the boss or of its realLife pool, or life 0.
+				// (a) the commander falls, the boss is cut down to 0.8% by a late hit, then removed with no kill: lost, bdespawn, kh 0
+				FightRecAuto.TestMode = FightRecMode.BossFights; FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int rB = SpawnBoss(cx);
+				Step(40, p, rB); ScriptHits(p, rB, 200);
+				p.dead = true; Step(4, p, rB);
+				FightRecorder.NoteBossHit(Main.npc[rB], 2792); Main.npc[rB].life = 22; Step(2, p, rB);
+				Main.npc[rB].active = false; Step(3, p, null); p.dead = false;
+				StepUntilStopped(p, -1, 1500);
+				string f1h = FightRecorder.LastResult;
+				Chk(f1h != null && Regex.IsMatch(Path.GetFileName(f1h), @"_Eye_of_Cthulhu_lost(_\d+)?\.levyrec$"), "the commander fell, a last hit left the boss at 0.8%, then it was removed with no death: lost, never won (" + Path.GetFileName(f1h ?? "none") + ")");
+				if (f1h != null) { var l1h = ReadLines(f1h, true, out _); Chk(l1h.Exists(l => l.Contains("\"e\":\"bdespawn\"") && l.Contains("\"final\":1") && l.Contains("\"kh\":0")) && !l1h.Exists(l => l.Contains("\"e\":\"bdeath\"")) && l1h.Exists(l => l.Contains("\"k\":\"end\"") && l.Contains("\"outcome\":\"despawn\"") && l.Contains("\"result\":\"lost\"")), "the end record reads boss left (bdespawn, outcome despawn, result lost)"); }
+				// (b) the same boss at 0.8% that really dies (the death hook runs): won
+				FightRecAuto.ClearCooldown(); Step(3, p, null);
+				int rC = SpawnBoss(cx);
+				Step(40, p, rC); ScriptHits(p, rC, 200);
+				FightRecorder.NoteBossHit(Main.npc[rC], 2792); Main.npc[rC].life = 22; Step(2, p, rC);
+				FightRecorder.NoteBossKill(Main.npc[rC]); Main.npc[rC].active = false;
+				StepUntilStopped(p, -1, 1500);
+				string f1i = FightRecorder.LastResult;
+				Chk(f1i != null && Regex.IsMatch(Path.GetFileName(f1i), @"_Eye_of_Cthulhu_won(_\d+)?\.levyrec$"), "the same boss whose death hook ran is won (" + Path.GetFileName(f1i ?? "none") + ")");
+				if (f1i != null) { var l1i = ReadLines(f1i, true, out _); Chk(l1i.Exists(l => l.Contains("\"e\":\"bdeath\"") && l.Contains("\"final\":1") && l.Contains("\"kh\":1")), "the bdeath says the death hook ran (kh 1)"); }
+				// (c) a worm (realLife pool): the head stays at life 1 (a death animation), the loot runs on a BODY segment, the pool leaves: won; with no loot at all the same pool leaving is boss left
+				foreach (bool dies in new[] { true, false })
+				{
+					FightRecAuto.TestMode = FightRecMode.BossFights; FightRecAuto.ClearCooldown(); Step(3, p, null);
+					int wH = SpawnBoss(cx, NPCID.TheDestroyer);
+					int wB = SpawnBoss(cx, NPCID.TheDestroyerBody);
+					if (wH >= 0 && wB >= 0) { Main.npc[wH].realLife = wH; Main.npc[wB].realLife = wH; }
+					Step(40, p, wH); ScriptHits(p, wH, 200);
+					p.dead = !dies; Step(4, p, wH);
+					FightRecorder.NoteBossHit(Main.npc[wH], 10); Main.npc[wH].life = 1; Main.npc[wB].life = 1; Step(2, p, wH);
+					if (dies) FightRecorder.NoteBossKill(Main.npc[wB]);
+					Main.npc[wH].active = false; Main.npc[wB].active = false; Step(3, p, null); p.dead = false;
+					StepUntilStopped(p, -1, 1500);
+					string fw = FightRecorder.LastResult;
+					Chk(fw != null && Regex.IsMatch(Path.GetFileName(fw), dies ? @"_won(_\d+)?\.levyrec$" : @"_lost(_\d+)?\.levyrec$"), "a worm at life 1 whose loot " + (dies ? "ran on a body segment is won" : "never ran and left with the commander down is lost, not won") + " (" + Path.GetFileName(fw ?? "none") + ")");
+				}
+				for (int q = 0; q < Main.maxNPCs; q++) if (Main.npc[q].active && !(Main.npc[q].ModNPC is SoldierNPC) && !Main.npc[q].friendly && !Main.npc[q].townNPC) Main.npc[q].active = false;
+				Step(3, p, null);
+
 				// ---------- 1g. format 11: the commander's own projectiles are in the frames, the army's shots (same owner slot) are not
 				FightRecAuto.ClearCooldown(); Step(3, p, null);
 				int gB = SpawnBoss(cx);

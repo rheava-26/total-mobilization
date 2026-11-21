@@ -123,10 +123,13 @@ namespace Levy.Common.Recording
 		private static int _ex0, _ey0, _ex1, _ey1;
 		private static string _camName;
 		private static int _camId = -1;
-		private sealed class BTrack { public int Mil; public int Slot, Type, Serial, Life, Max; public float X, Y; public bool Seen; public string Name; public int HitT = -1, HitDmg, HitType = -1; public string HitSrc = "other", HitName = ""; }
+		private sealed class BTrack { public int Mil; public int Born, Owner; public bool Hook; public int Slot, Type, Serial, Life, Max; public float X, Y; public bool Seen; public string Name; public int HitT = -1, HitDmg, HitType = -1; public string HitSrc = "other", HitName = ""; }
 		private static readonly Dictionary<int, BTrack> _bt = new();
 		private static readonly Dictionary<int, (int tick, int dmg, string src, int type, string name)> _bhook = new();
-		private static readonly HashSet<int> _bkilled = new();
+		/// <summary>Slot -> tick of the last GlobalNPC.OnKill (the game's death path, loot included) of a fight boss in that slot (_bkilled) or of any NPC whose realLife pool owner is that slot (_bkillOwner).
+		/// A kill only counts for a track born at or before that tick, so a slot reused later is not read as killed.</summary>
+		private static readonly Dictionary<int, int> _bkilled = new();
+		private static readonly Dictionary<int, int> _bkillOwner = new();
 		private static readonly List<(BTrack t, bool killed, int tick)> _bpend = new();
 		private static readonly List<int> _bgone = new();
 		private static bool _bAlive;
@@ -459,7 +462,7 @@ namespace Levy.Common.Recording
 				_nonWeapons.Clear(); _items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = _tkSpite = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
-				_lbuf.Clear(); _lgear.Clear(); _prefixes.Clear(); _cmdGear = int.MinValue; _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1; _farCells.Clear(); _farQ.Clear(); _ntSeen.Clear(); _farCentres.Clear(); _moveCells.Clear();
+				_lbuf.Clear(); _lgear.Clear(); _prefixes.Clear(); _cmdGear = int.MinValue; _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bkillOwner.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1; _farCells.Clear(); _farQ.Clear(); _ntSeen.Clear(); _farCentres.Clear(); _moveCells.Clear();
 				_startTick = (int)Main.GameUpdateCount; _calOn = ModLoader.HasMod("CalamityMod") && global::Levy.Common.Testing.HarnessCalamityProbe.Available; _killTick = -100000;
 				_startMaxSerial = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active) _startMaxSerial = Math.Max(_startMaxSerial, FightRecSpawnTag.SerialOf(Main.npc[i]));
 				string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -1113,9 +1116,12 @@ namespace Levy.Common.Recording
 		public static void NoteBossKill(NPC n)
 		{
 			if (!On) return;
+			int el = Elapsed;
 			NPC r = BossRoot(n);
-			if (r == null) return;
-			_bkilled.Add(r.whoAmI);
+			if (r != null) _bkilled[r.whoAmI] = el;
+			// a pool of segments that share one life (realLife): the kill of any member is the kill of the owner, whichever segment the game ran the loot on
+			int owner = n.realLife >= 0 && n.realLife < Main.maxNPCs ? n.realLife : n.whoAmI;
+			_bkillOwner[owner] = el;
 		}
 
 		/// <summary>The fight boss a struck or killed NPC belongs to: itself, or for a worm segment the head that owns its life (realLife). Null when neither is a fight boss.
@@ -1128,13 +1134,16 @@ namespace Levy.Common.Recording
 			return null;
 		}
 
-		/// <summary>True when a boss that left the world was killed: the game said so (OnKill on any part), its last life was 0, or it vanished within ~1 s of a hit that took it to a sliver
-		/// (the kill came through Calamity's own death path, or on a segment, after the last poll).</summary>
-		internal static bool LooksKilled(int life, int max, int lastHitTick, int lastHitDmg, int el, bool onKill)
+		/// <summary>
+		/// True when a boss that left the world was killed. THE KILL RULE: the game's death path ran (GlobalNPC.OnKill, i.e. NPCLoot, for the boss, any part of its realLife pool, or the head that owns a segment), or its last life was 0.
+		/// An NPC that goes inactive without that is a boss that LEFT (despawn), whatever life it had: Calamity removes a boss with no live player to target, and a worm that is despawned after a blow that left it at 0.8% is not dead.
+		/// (Calamity's death animation leaves life at 1 and runs the death path when it ends, so the hook is what tells a finished death from a removal.)
+		/// </summary>
+		internal static bool LooksKilled(int life, bool onKill) => onKill || life <= 0;
+
+		private static bool KillHook(BTrack t)
 		{
-			if (onKill || life <= 0) return true;
-			if (lastHitTick < 0 || el - lastHitTick > 60) return false;
-			return life <= Math.Max(1, lastHitDmg) || life <= max * 0.01;
+			return (_bkilled.TryGetValue(t.Slot, out int k1) && k1 >= t.Born) || (_bkillOwner.TryGetValue(t.Owner, out int k2) && k2 >= t.Born) || (_bkillOwner.TryGetValue(t.Slot, out int k3) && k3 >= t.Born);
 		}
 
 		private static void PollBosses(int el)
@@ -1149,11 +1158,11 @@ namespace Levy.Common.Recording
 				if (_bt.TryGetValue(i, out var t) && (t.Type != n.type || (serial != t.Serial && serial > 0 && t.Serial > 0)))
 				{
 					// the slot now holds a different NPC: the old one left
-					_bt.Remove(i); BossGone(t, el); _bkilled.Remove(i); _bhook.Remove(i); t = null;
+					_bt.Remove(i); BossGone(t, el); _bhook.Remove(i); t = null;
 				}
 				if (t == null)
 				{
-					t = new BTrack { Slot = i, Type = n.type, Serial = serial, Life = n.life, Name = n.FullName };
+					t = new BTrack { Slot = i, Type = n.type, Serial = serial, Life = n.life, Name = n.FullName, Born = el };
 					_bt[i] = t;
 				}
 				if (n.life < t.Life)
@@ -1161,13 +1170,13 @@ namespace Levy.Common.Recording
 					if (_bhook.TryGetValue(i, out var h) && el - h.tick <= 2) { t.HitT = h.tick; t.HitDmg = h.dmg > 0 ? h.dmg : t.Life - n.life; t.HitSrc = h.src; t.HitType = h.type; t.HitName = h.name; }
 					else { t.HitT = el; t.HitDmg = t.Life - n.life; t.HitSrc = "other"; t.HitType = -1; t.HitName = ""; }
 				}
-				t.Life = n.life; t.Max = n.lifeMax; t.X = n.Center.X; t.Y = n.Center.Y; t.Seen = true;
+				t.Life = n.life; t.Max = n.lifeMax; t.X = n.Center.X; t.Y = n.Center.Y; t.Seen = true; t.Owner = n.realLife >= 0 && n.realLife < Main.maxNPCs ? n.realLife : i;
 				if (i == _primaryWho && t.Max > 0 && n.life > 0) BossMilestones(t, n);
 				if (!(Headless && IsNewFightSerial(n))) alive = true;
 			}
 			_bgone.Clear();
 			foreach (var kv in _bt) if (!kv.Value.Seen) _bgone.Add(kv.Key);
-			foreach (int id in _bgone) { var t = _bt[id]; _bt.Remove(id); BossGone(t, el); _bkilled.Remove(id); _bhook.Remove(id); }
+			foreach (int id in _bgone) { var t = _bt[id]; _bt.Remove(id); BossGone(t, el); _bhook.Remove(id); }
 			_bAlive = alive;
 			FlushBossEnd(false);
 		}
@@ -1190,11 +1199,11 @@ namespace Levy.Common.Recording
 
 		private static void BossGone(BTrack t, int el)
 		{
-			// killed: the game's OnKill fired for that slot, or its last seen life was already 0
-			// or it vanished right after a hit that took it to a sliver of life (worms: the final blow lands on a segment, or Calamity ends the fight itself)
+			// killed: the game's OnKill fired for that slot or its realLife pool, or its last seen life was already 0. Nothing else: a boss that vanishes alive left.
 			// the lethal blow lands after the last poll: take the hook's note, if any
 			if (_bhook.TryGetValue(t.Slot, out var h) && h.tick >= t.HitT) { t.HitT = h.tick; t.HitDmg = h.dmg > 0 ? h.dmg : t.HitDmg; t.HitSrc = h.src; t.HitType = h.type; t.HitName = h.name; }
-			bool killed = LooksKilled(t.Life, t.Max, t.HitT, t.HitDmg, el, _bkilled.Contains(t.Slot));
+			t.Hook = KillHook(t);
+			bool killed = LooksKilled(t.Life, t.Hook);
 			_bpend.Add((t, killed, el));
 		}
 
@@ -1238,7 +1247,7 @@ namespace Levy.Common.Recording
 		{
 			if (final) { _outcome = killed ? "killed" : "despawn"; _endTick = tick; _endDead = _pDead; }
 			var ex = new List<(string, string)> { ("npc", t.Type.ToString()), ("name", FightRecFormat.Esc(t.Name)), ("id", t.Slot.ToString()), ("x", FightRecFormat.N(t.X)), ("y", FightRecFormat.N(t.Y)),
-				("life", Math.Max(0, t.Life).ToString()), ("max", t.Max.ToString()), ("final", final ? "1" : "0") };
+				("life", Math.Max(0, t.Life).ToString()), ("max", t.Max.ToString()), ("final", final ? "1" : "0"), ("kh", t.Hook ? "1" : "0") };
 			if (t.HitT >= 0) { ex.Add(("ht", t.HitT.ToString())); ex.Add(("hd", t.HitDmg.ToString())); ex.Add(("hs", FightRecFormat.Esc(t.HitSrc))); ex.Add(("hy", t.HitType.ToString())); ex.Add(("hn", FightRecFormat.Esc(t.HitName ?? ""))); }
 			Line(FightRecFormat.Event(tick, killed ? "bdeath" : "bdespawn", ex.ToArray())); _events++;
 		}

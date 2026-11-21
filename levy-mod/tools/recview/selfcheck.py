@@ -244,5 +244,32 @@ with tempfile.TemporaryDirectory() as td:
     chk(any(d["kind"] == "spike" for d in found) and any(d["kind"] == "weapon" for d in found), "scan: a one-second damage spike and a weapon far above the army's median (%s)" % sorted(kinds))
     chk(any(d["kind"] == "stuck" and d.get("levy") == 1 for d in found), "scan: a levy standing still while the commander walks 40 tiles is stuck")
 
+# ---- the kill rule (recwin): a boss that vanishes with no death hook is a boss that LEFT, whatever life it had
+DOG = 796
+cd_ev = {"k": "e", "t": 9334, "e": "cdeath"}
+false_win = {"k": "e", "t": 9384, "e": "bdeath", "npc": DOG, "name": "The Devourer of Gods", "id": 190, "life": 14542, "max": 1836000, "final": 1, "ht": 9351, "hd": 2792, "hs": "other"}
+fw = R.classify(rec([frame(t, [brow(DOG, 190)]) for t in range(0, 9500, 20)], [cd_ev, false_win], {"outcome": "killed", "result": "won"}, {str(DOG): "The Devourer of Gods"}))
+chk(fw["outcome"] == "despawn" and fw["result"] == "lost", "old DoG false win (bdeath life 14542 after a cdeath, no kh) reads boss left, lost: %s" % fw)
+real_win = {"k": "e", "t": 10153, "e": "bdeath", "npc": 795, "name": "The Devourer of Gods", "id": 69, "life": 1, "max": 1836000, "final": 1, "ht": 10153, "hd": 10, "hs": "other"}
+rw = R.classify(rec([frame(t, [brow(795, 69)]) for t in range(0, 10200, 20)], [real_win], {"outcome": "killed", "result": "won"}, {"795": "The Devourer of Gods"}))
+chk(rw["outcome"] == "killed" and rw["result"] == "won", "old DoG real win (life 1, no commander death) stays won: %s" % rw)
+rw2 = R.classify(rec([frame(t, [brow(795, 69)]) for t in range(0, 10200, 20)], [cd_ev, dict(real_win, hd=10)], {}, {"795": "The Devourer of Gods"}))
+chk(rw2["outcome"] == "killed", "life 1 after a commander death is a death animation, still a kill")
+hk = R.classify(rec([frame(t, [brow(DOG, 190)]) for t in range(0, 9500, 20)], [cd_ev, dict(false_win, kh=1)], {}, {str(DOG): "The Devourer of Gods"}))
+chk(hk["outcome"] == "killed", "a bdeath with kh 1 is believed whatever the life")
+chk(not R.end_is_kill(false_win, [9334]) and R.end_is_kill(false_win, []) and R.suspect_end(false_win, []) and not R.suspect_end(false_win, [9334]), "end_is_kill / suspect_end on the DoG event")
+chk(R.end_is_kill(dict(false_win, life=0), [9334]), "life 0 is always a kill")
+# the real recordings, when they are on disk (LEVY_EVE_RECS = folder of her 2026-11-20 files)
+eve = os.environ.get("LEVY_EVE_RECS", "")
+for nm, want in (("2026-11-20_15-19_The_Devourer_of_Gods_won.jsonl.gz", "lost"), ("2026-11-20_15-29_The_Devourer_of_Gods_won.jsonl.gz", "won")):
+    fp = os.path.join(eve, nm) if eve else ""
+    if fp and os.path.exists(fp):
+        with gzip.open(fp, "rt") as g:
+            rws = [json.loads(l) for l in g if '"k":"f"' not in l[:12]]
+        got = R.classify(rws)
+        chk(got["result"] == want, "real recording %s reads %s (got %s, %s)" % (nm[:16], want, got["result"], got["outcome"]))
+    else:
+        print("SKIP real recording %s (set LEVY_EVE_RECS)" % nm[:16])
+
 print("fail=%d" % fails)
 sys.exit(1 if fails else 0)

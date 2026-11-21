@@ -143,6 +143,24 @@ namespace Levy.Common.Recording
 				var sl = FightReport.Summary(st, new List<HistoryEntry>());
 				Chk(sl.Count >= 2 && sl[0].StartsWith("Plantera, won in 1:00.") && sl.Any(x => x == "Army: 20 to 17, held."), "a won fight reads 'won in' and 'held': " + string.Join(" / ", sl));
 
+				// ---- the kill rule on old files (recwin): the commander fell at 9334, her in-flight shots took the Devourer of Gods to 14542 of 1836000, Calamity removed it, and the file said killed / won. A file with no
+				// "kh" field has no proof of a death: the reader says the boss left and the fight was lost. A real win (Calamity's death animation leaves life 1) and any file with kh keep their result.
+				List<string> Dog(string cdeath, string bend, string outcome, string result) => new List<string> {
+					"{\"k\":\"hdr\",\"format\":12,\"boss\":\"The_Devourer_of_Gods\",\"player\":\"Tester\",\"mode\":\"Master\",\"world\":\"W\",\"date\":\"2026-11-20T15:19:00\",\"auto\":1}",
+					cdeath, bend,
+					"{\"k\":\"names\",\"items\":{},\"npcs\":{\"796\":\"The Devourer of Gods\"},\"projectiles\":{},\"buffs\":{},\"soldiers\":{},\"prefixes\":{}}",
+					"{\"k\":\"end\",\"reason\":\"boss gone\",\"ticks\":9684,\"frames\":4842,\"events\":3,\"outcome\":\"" + outcome + "\",\"result\":\"" + result + "\",\"durationSec\":161.4,\"bossName\":\"The Devourer of Gods\",\"bosses\":102,\"cmdDeaths\":" + (cdeath.Contains("cdeath") ? 1 : 0) + "}" };
+				const string cd = "{\"k\":\"e\",\"t\":9334,\"e\":\"cdeath\",\"x\":22368.5,\"y\":4812.6,\"n\":1}";
+				var falseWin = FightRecReader.ReadLines(Dog(cd, "{\"k\":\"e\",\"t\":9384,\"e\":\"bdeath\",\"npc\":796,\"name\":\"The Devourer of Gods\",\"id\":190,\"x\":0,\"y\":0,\"life\":14542,\"max\":1836000,\"final\":1,\"ht\":9351,\"hd\":2792,\"hs\":\"other\"}", "killed", "won"));
+				Chk(falseWin.Result == "lost" && falseWin.Outcome == "despawn" && falseWin.Rederived, "the old Devourer false win reads boss left, lost: " + falseWin.Result + " " + falseWin.Outcome);
+				Chk(FightReport.Outcome(falseWin) != null && !FightReport.Outcome(falseWin).StartsWith("won"), "its report line does not say won: " + FightReport.Outcome(falseWin));
+				var realWin = FightRecReader.ReadLines(Dog("{\"k\":\"e\",\"t\":5,\"e\":\"tgt\",\"kind\":1,\"levy\":0,\"boss\":1}", "{\"k\":\"e\",\"t\":10153,\"e\":\"bdeath\",\"npc\":795,\"name\":\"The Devourer of Gods\",\"id\":69,\"x\":0,\"y\":0,\"life\":1,\"max\":1836000,\"final\":1,\"ht\":10153,\"hd\":10,\"hs\":\"other\"}", "killed", "won"));
+				Chk(realWin.Result == "won" && realWin.Outcome == "killed" && !realWin.Rederived, "the real Devourer win (life 1, no commander death) stays won: " + realWin.Result);
+				var hooked = FightRecReader.ReadLines(Dog(cd, "{\"k\":\"e\",\"t\":9384,\"e\":\"bdeath\",\"npc\":796,\"name\":\"The Devourer of Gods\",\"id\":190,\"x\":0,\"y\":0,\"life\":14542,\"max\":1836000,\"final\":1,\"kh\":1,\"ht\":9351,\"hd\":2792,\"hs\":\"other\"}", "killed", "won"));
+				Chk(hooked.Result == "won" && !hooked.Rederived, "a file that says the death hook ran is believed whatever the life: " + hooked.Result);
+				var newLeft = FightRecReader.ReadLines(Dog(cd, "{\"k\":\"e\",\"t\":9384,\"e\":\"bdespawn\",\"npc\":796,\"name\":\"The Devourer of Gods\",\"id\":190,\"x\":0,\"y\":0,\"life\":14542,\"max\":1836000,\"final\":1,\"kh\":0,\"ht\":9351,\"hd\":2792,\"hs\":\"other\"}", "despawn", "lost"));
+				Chk(newLeft.Result == "lost" && newLeft.Outcome == "despawn" && !newLeft.Rederived && Math.Abs(newLeft.BossLeftFrac - 14542.0 / 1836000) < 1e-9, "a new file's bdespawn is read as it is written: " + newLeft.Result);
+
 				// ---- the detector alone
 				var d = new LineBreakDetector(); int fired = 0, firedAt = -1;
 				for (int sec = 0; sec < 120; sec++) { if (d.Feed(sec * 60, 30, sec % 17 == 0 ? 3 : 0, sec / 40)) { fired++; firedAt = sec; } }

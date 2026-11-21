@@ -127,7 +127,9 @@ def _scan_rows(rows):
             life = mb[6] / max(1, mb[7]); break
     bevs = [e for e in ev if e.get("e") in ("bdeath", "bdespawn") and e.get("final", 1) != 0]
     if bevs and bevs[-1].get("max"):
-        life = max(0.0, bevs[-1]["life"] / bevs[-1]["max"]) if bevs[-1]["e"] == "bdespawn" else 0.0
+        rr = getattr(ms, "recrules", None)
+        killed = bevs[-1]["e"] == "bdeath" and (rr is None or rr.end_is_kill(bevs[-1], [e["t"] for e in ev if e.get("e") == "cdeath"]))
+        life = 0.0 if killed else max(0.0, bevs[-1]["life"] / bevs[-1]["max"])
     bnames = {e["npc"]: e.get("name") for e in ev if e.get("e") == "boss" and "npc" in e}
     cd = [e for e in ev if e.get("e") == "cdeath"]
     last = None

@@ -6,7 +6,7 @@ way a format 11 recording is written. The C# originals are FightRecorder.DecideR
 comment at the top of FightRecFormat.cs.
 
 RESULT RULE  (won | lost | fled | ended)
-  won     the last boss was killed (bdeath).
+  won     the last boss was killed (bdeath with the death hook, kh 1, or life 0; an old bdeath with no kh that no lethal blow explains, right after the commander's fall, is a boss that left).
   lost    a boss left alive (bdespawn) and the COMMANDER's fall is why: she was dead at that moment, or her latest cdeath is within
           LOST_WINDOW ticks (60 s) before it. A boss with no living player to target despawns, so her death reads as the boss leaving.
   fled    a boss left alive while the commander was alive and not recently fallen: dawn, distance, a timer. The army is not part of the
@@ -22,6 +22,7 @@ import copy, datetime, re
 
 TICKS = 60
 LOST_WINDOW = 60 * TICKS          # FightRecorder.LostWindowTicks
+REDERIVE_WINDOW = 10 * TICKS      # FightAnalysis.RederiveWindowTicks: an old bdeath this soon after a cdeath, with no hook and no lethal blow, is a despawn
 AUTO_GRACE = 300                  # FightRecorder.AutoGraceTicks: an automatic recording ends this long after the last boss is gone
 LEAD = 60                         # ticks kept before an episode's first boss frame (the real recorder starts a little before the boss is in view)
 DEAD_FLAG = 8192                  # frame p[5]: the commander is dead
@@ -63,15 +64,38 @@ def dead_at(frames, tick):
     return bool(last and len(last.get("p", [])) > 5 and int(last["p"][5]) & DEAD_FLAG)
 
 
+def end_is_kill(e, deaths):
+    """Whether a bdeath / bdespawn event really is a kill (FightRecorder's kill rule: the death hook ran, or life 0).
+    A file with the "kh" field (written since 2026-11-20) is read as written. An older file has no proof of a hook, and its recorder called a boss killed
+    when it vanished within a second of a hit that left it under 1% life, so a commander's fall followed by a despawn read as a win (the Devourer of
+    Gods at 14542 of 1836000). Such a bdeath is a boss that LEFT: no kh, life above 1 (Calamity's death animation sits at 1) and above the last hit's
+    damage (a lethal blow explains that), within REDERIVE_WINDOW (10 s) after a cdeath: no living player, so the game removed it. A longer gap (she respawned, the army went on hitting)
+    is not enough on its own and is only listed by suspect_end. `deaths` = the commander's cdeath ticks."""
+    if e.get("e") != "bdeath":
+        return False
+    if "kh" in e:
+        return True
+    life, hd = e.get("life", 0), e.get("hd", 0) or 0
+    if life > max(1, hd) and any(e["t"] - REDERIVE_WINDOW <= d <= e["t"] + 10 for d in deaths):
+        return False
+    return True
+
+
+def suspect_end(e, deaths):
+    """A bdeath with no kh whose life no lethal blow explains but with no recent commander fall: kept as won, listed for a human to look at."""
+    return e.get("e") == "bdeath" and "kh" not in e and e.get("life", 0) > max(1, e.get("hd", 0) or 0) and end_is_kill(e, deaths)
+
+
 def final_end(events):
-    """The event naming the end of a fight: among bdeath / bdespawn events (event NPCs left out), the last one that was a kill, else the last one
+    """The event naming the end of a fight: among bdeath / bdespawn events (event NPCs left out), the last one that was a real kill (end_is_kill), else the last one
     (FightRecorder.FinalEndIndex). None when there is none. Events carry final 0 or 1; a file that kept the pillars alive wrote final 0 for the Cultist."""
     ends = [e for e in events if e.get("e") in ("bdeath", "bdespawn") and not is_event_npc(e.get("npc", -1))]
     if not ends:
         return None
+    deaths = [e["t"] for e in events if e.get("e") == "cdeath"]
     flagged = [e for e in ends if e.get("final", 1) != 0]
     pool = flagged or ends
-    kills = [e for e in pool if e["e"] == "bdeath"]
+    kills = [e for e in pool if end_is_kill(e, deaths)]
     return (kills or pool)[-1]
 
 
@@ -88,7 +112,7 @@ def classify(rows, t0=None, t1=None):
     if fin is None:
         outcome, end_tick = "none", None
     else:
-        outcome, end_tick = ("killed" if fin["e"] == "bdeath" else "despawn"), fin["t"]
+        outcome, end_tick = ("killed" if end_is_kill(fin, deaths) else "despawn"), fin["t"]
     if outcome == "despawn":
         # deaths after the boss was gone do not count; the rule looks at the latest fall at or before its end
         before = [d for d in deaths if d <= end_tick + 10]

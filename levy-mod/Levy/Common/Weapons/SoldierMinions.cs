@@ -812,19 +812,26 @@ namespace Levy.Common.Weapons
 		private static void LearnBuff(Player d, Projectile p)
 		{
 			if (LearnedBuff.ContainsKey(p.type)) return;
-			for (int i = 0; i < Player.MaxBuffs; i++)
+			for (int i = 0; i < Math.Min(d.buffType.Length, d.buffTime.Length); i++)
 			{
 				int b = d.buffType[i];
 				if (b < BuffID.Count || d.buffTime[i] <= 0) continue;
 				bool had = false;
-				for (int k = 0; k < Player.MaxBuffs; k++) if (SavedBuffType[k] == b) { had = true; break; }
+				for (int k = 0; k < _savedN; k++) if (SavedBuffType[k] == b) { had = true; break; }
 				if (!had) { LearnedBuff[p.type] = b; return; }
 			}
 		}
 
-		private static readonly int[] SavedBuffType = new int[Player.MaxBuffs], SavedBuffTime = new int[Player.MaxBuffs];
-		private static void SaveBuffs(Player d) { Array.Copy(d.buffType, SavedBuffType, Player.MaxBuffs); Array.Copy(d.buffTime, SavedBuffTime, Player.MaxBuffs); }
-		private static void RestoreBuffs(Player d) { Array.Copy(SavedBuffType, d.buffType, Player.MaxBuffs); Array.Copy(SavedBuffTime, d.buffTime, Player.MaxBuffs); }
+		// sized by the dummy's own arrays, not Player.MaxBuffs: a mod's ExtraPlayerBuffSlots raises MaxBuffs after load, and a Player built before that keeps 44 slots
+		private static int[] SavedBuffType = Array.Empty<int>(), SavedBuffTime = Array.Empty<int>();
+		private static int _savedN;
+		internal static void SaveBuffs(Player d)
+		{
+			_savedN = Math.Min(d.buffType.Length, d.buffTime.Length);
+			if (SavedBuffType.Length < _savedN) { SavedBuffType = new int[_savedN]; SavedBuffTime = new int[_savedN]; }
+			Array.Copy(d.buffType, SavedBuffType, _savedN); Array.Copy(d.buffTime, SavedBuffTime, _savedN);
+		}
+		internal static void RestoreBuffs(Player d) { int n = Math.Min(_savedN, Math.Min(d.buffType.Length, d.buffTime.Length)); Array.Copy(SavedBuffType, d.buffType, n); Array.Copy(SavedBuffTime, d.buffTime, n); }
 
 		private static void ApplyModdedBuff(SoldierNPC body, Projectile p)
 		{

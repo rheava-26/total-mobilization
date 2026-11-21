@@ -40,7 +40,22 @@ namespace Warbands.Common
 		{
 			if (TestForce) return true;
 			var b = SunkenSea; if (b == null || p == null) return false;
-			try { return p.InModBiome(b) || (scanned || ScannedProbe) && b.IsBiomeActive(p); } catch { return false; }
+			try
+			{
+				// a player whose biome flags were sized before every mod's biomes were counted (seen with many biome mods loaded) has no flag for this biome: ask the biome itself instead of reading past the end
+				if (!HasFlag(p, b)) return b.IsBiomeActive(p);
+				return p.InModBiome(b) || (scanned || ScannedProbe) && b.IsBiomeActive(p);
+			}
+			catch { return false; }
+		}
+
+		private static System.Reflection.FieldInfo _flags;
+		/// <summary>True when the player's mod-biome flag array reaches this biome's index (tModLoader keeps the array internal: found once through reflection).</summary>
+		internal static bool HasFlag(Player p, ModBiome b)
+		{
+			_flags ??= typeof(Player).GetField("modBiomeFlags", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+			if (_flags == null) return true;
+			return _flags.GetValue(p) is System.Collections.BitArray a && b.Type < a.Length;
 		}
 
 		public static void Reset() { _looked = false; _sunken = null; }

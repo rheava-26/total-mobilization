@@ -432,7 +432,7 @@ namespace Levy.Content.NPCs
 			DudTrace.Note(weapon, replacing != null ? "sentry-replant" : "sentry-plant");
 			SoldierMinions.SentryTally++;
 			replacing?.Kill();
-			Projectile p = WeaponUse.Spawn(this, pos, vel, weapon.shoot, SentryDamage(weapon), weapon.knockBack, DamageClass.Summon, ai0, ai1, 0f);
+			Projectile p = weapon.shoot >= ProjectileID.Count ? SpawnModdedSentry(weapon, pos, vel, ai0, ai1) : WeaponUse.Spawn(this, pos, vel, weapon.shoot, SentryDamage(weapon), weapon.knockBack, DamageClass.Summon, ai0, ai1, 0f);
 			if (p == null) { DudTrace.Note(weapon, "sentry-spawn-null"); _sentryCd = LevyConstants.SentryRetryTicks; return false; }
 			if (localAi0 != 0f) p.localAI[0] = localAi0;
 			p.timeLeft = Projectile.SentryLifeTime;
@@ -444,6 +444,30 @@ namespace Levy.Content.NPCs
 			if (!UsingSidearm && ItemAnimation <= 0 && ReferenceEquals(weapon, Record?.Gear?.Weapon)) { ItemAnimation = ItemAnimationMax = Math.Max(1, weapon.useAnimation); NPC.netUpdate = true; }
 			if (weapon.UseSound.HasValue) Terraria.Audio.SoundEngine.PlaySound(weapon.UseSound.Value, NPC.Center);
 			return true;
+		}
+
+		/// <summary>Self-check counter: modded sentries spawned with the owner and the cursor on the soldier's planned spot.</summary>
+		internal static int ModdedSentrySpawns;
+
+		/// <summary>
+		/// A modded sentry often places ITSELF when it spawns (its OnSpawn calls the owner's FindSentryRestingSpot, which reads the cursor and clamps it to the owner's reach). The shot's owner is the commander, so the tower
+		/// went down at her cursor, up to a hundred tiles from the levy. For the spawn only, the owner stands where the soldier stands and the cursor is on the spot Levy planned; both are put back in the same finally.
+		/// </summary>
+		private Projectile SpawnModdedSentry(Item weapon, Vector2 pos, Vector2 vel, float ai0, float ai1)
+		{
+			int who = WeaponUse.OwnerFor(this);
+			Player o = who >= 0 && who < Main.maxPlayers ? Main.player[who] : null;
+			Vector2 oPos = default, oVel = default, oOld = default; int oDir = 1; bool moved = false;
+			try
+			{
+				if (o != null && !Hostile) { oPos = o.position; oVel = o.velocity; oOld = o.oldPosition; oDir = o.direction; o.Center = NPC.Center; o.oldPosition = o.position; o.velocity = Vector2.Zero; o.direction = NPC.direction == 0 ? 1 : NPC.direction; moved = true; }
+				using (new AltPolicies.AimScope(Dummy, pos))
+				{
+					ModdedSentrySpawns++;
+					return WeaponUse.Spawn(this, pos, vel, weapon.shoot, SentryDamage(weapon), weapon.knockBack, DamageClass.Summon, ai0, ai1, 0f);
+				}
+			}
+			finally { if (moved) { o.position = oPos; o.velocity = oVel; o.oldPosition = oOld; o.direction = oDir; } }
 		}
 
 		/// <summary>

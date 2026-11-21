@@ -355,7 +355,7 @@ namespace Levy.Common.Testing
 			Main.rand = new Terraria.Utilities.UnifiedRandom(9100);
 			_t1 = MakeTarget(_t1At); _t2 = MakeTarget(_t2At);
 			if (_t1 == null || _t2 == null) { Check("the enemies spawn", false); return; }
-			for (int i = 0; i < Player.MaxBuffs; i++) { p.buffType[i] = 0; p.buffTime[i] = 0; } // whatever the checks before this one left on the stand-in (a potion buff counts down for minutes)
+			for (int i = 0; i < p.buffType.Length; i++) { p.buffType[i] = 0; p.buffTime[i] = 0; } // whatever the checks before this one left on the stand-in (a potion buff counts down for minutes)
 			Step(240);
 			float[] s0 = Bar();
 			Note($"the commander's update reached: equips {UpdateEnd.Equips}, misc effects {UpdateEnd.Misc}, movement {UpdateEnd.Move}, its last hook {UpdateEnd.Ends}, of {_steps} steps; held {Main.player[0].HeldItem.Name}, myPlayer {Main.myPlayer}");

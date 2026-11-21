@@ -99,9 +99,9 @@ namespace Levy.Common.Testing
 
 		private static void OriginStep() { CursorOnCommander(); Step(1); }
 
-		private static void ClearNaturalHostiles()
+		private static void ClearNaturalHostiles(NPC keep = null)
 		{
-			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && n != _sweepTarget && !_rogueAdds.Contains(n) && WorldStep.IsNaturalHostile(n)) n.active = false; }
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && n != _sweepTarget && n != keep && !_rogueAdds.Contains(n) && WorldStep.IsNaturalHostile(n)) n.active = false; }
 		}
 
 		private static SoldierRecord MakeOriginRecord(Item w, int ammoType)

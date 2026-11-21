@@ -22,6 +22,41 @@ namespace Levy.Common.Weapons
 			["Murasama"] = new Gate("CalamityMod", "CalamityMod.DownedBossSystem", "downedDoG", "CanUseItem is false until the Devourer of Gods is downed"),
 		};
 
+		/// <summary>
+		/// Modded weapons MEASURED unusable in levy hands (the army weapon sweep: a real player deals damage with them, a levy none, whatever the commander is doing), where the cause is beyond a table fix.
+		/// They are never issued and a levy already carrying one uses his sidearm, so he fights with something that works. Mod -> item internal name -> why (mechanism only). Remove a row once the weapon is made to work.
+		/// </summary>
+		private static readonly Dictionary<string, Dictionary<string, string>> UnusableByLevies = new()
+		{
+			["StarsAbove"] = new()
+			{
+				["Mercy"] = "its swing is placed from its owner's use state, which for a levy's shot is the commander's: the blade appears far off the map",
+				["LiberationBlazing"] = "its follow-up shots come out at the commander, not at the levy",
+				["DreadnoughtChemtank"] = "the levy never finds a moment to fire it (its use needs a held state the soldier does not have)",
+				["CaesuraOfDespair"] = "a companion the item summons while a player holds it; a levy never holds it that way, so nothing fights",
+				["HollowheartAlbion"] = "a companion the item summons while a player holds it; a levy never holds it that way, so nothing fights",
+				["KonpakuKatana"] = "a companion the item summons while a player holds it; a levy never holds it that way, so nothing fights",
+				["SakuraVengeance"] = "its slash is spawned by the item's own use handler, which a levy never runs: every swing deals nothing (stopgap until levies run a modded item's use handler)",
+			},
+			["StarlightRiver"] = new()
+			{
+				["BreachCannon"] = "the tower fixes itself to a wall spot its item picks when a player fires; a levy's tower has none and lands at the corner of the world",
+				["FrostFlail"] = "the flail only exists while its owner holds the button; a levy's use spawns nothing",
+				["Gunchucks"] = "its shots spawn at the levy but are steered by the owner's cursor and never reach the enemy",
+				["VitricMagicBook"] = "its spikes are placed for the owner and never strike the levy's enemy",
+			},
+		};
+		private static readonly HashSet<int> _reportedUnusable = new();
+		/// <summary>Self-check: every row of <see cref="UnusableByLevies"/> as (mod, item name).</summary>
+		internal static IEnumerable<(string mod, string name)> UnusableRows() { foreach (var m in UnusableByLevies) foreach (var r in m.Value) yield return (m.Key, r.Key); }
+
+		/// <summary>True for a weapon in <see cref="UnusableByLevies"/>.</summary>
+		internal static bool UnusableByLevy(Item item, out string why)
+		{
+			why = null;
+			return item?.ModItem != null && UnusableByLevies.TryGetValue(item.ModItem.Mod.Name, out var t) && t.TryGetValue(item.ModItem.Name, out why);
+		}
+
 		private static readonly Dictionary<string, MemberInfo> _fields = new();
 		private static readonly Dictionary<int, (uint tick, bool locked)> _probed = new();
 		private static Player _probePlayer;
@@ -34,6 +69,11 @@ namespace Levy.Common.Weapons
 		{
 			if (item == null || item.IsAir || item.type < Terraria.ID.ItemID.Count || item.ModItem == null) return false;
 			if (item.ModItem.Mod.Name == "CalamityMod" && CalamityGates.TryGetValue(item.ModItem.Name, out Gate g)) return !FlagUp(g);
+			if (UnusableByLevy(item, out string why))
+			{
+				if (_reportedUnusable.Add(item.type)) ModContent.GetInstance<Levy>()?.Logger.Info($"[Gate] {item.ModItem.FullName} is not issued to levies: {why}");
+				return true;
+			}
 			return ProbeLocked(item);
 		}
 

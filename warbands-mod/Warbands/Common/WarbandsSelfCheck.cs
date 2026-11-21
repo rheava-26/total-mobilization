@@ -271,6 +271,17 @@ namespace Warbands.Common
 			catch (Exception e) { Check("neutral roll", false, e.GetType().Name + ": " + e.Message); }
 			bool calamity = ModLoader.HasMod("CalamityMod"); var sunken = CalamityZones.SunkenSea;
 			Check("Sunken Sea zone: found by name when Calamity is loaded, inert when it is not", calamity ? sunken != null : sunken == null, calamity ? (sunken?.FullName ?? "NOT FOUND") : "Calamity not loaded");
+			if (sunken != null)
+			{
+				// a player whose biome flag array is shorter than the biome list (seen with StarsAbove + StarlightRiver loaded): the zone test answers without reading past the end
+				var shortP = new Player(); int threw = 0;
+				var fld = typeof(Player).GetField("modBiomeFlags", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+				fld?.SetValue(shortP, new System.Collections.BitArray(0));
+				void Fc(object s, System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs e) { if (e.Exception is ArgumentOutOfRangeException) threw++; }
+				AppDomain.CurrentDomain.FirstChanceException += Fc;
+				bool inSea; try { inSea = CalamityZones.InSunkenSea(shortP); } finally { AppDomain.CurrentDomain.FirstChanceException -= Fc; }
+				Check("Sunken Sea zone: a player with a short biome flag array is answered without an out-of-range read", fld != null && threw == 0 && !inSea, $"field {(fld != null)} out-of-range throws {threw} inSea {inSea}");
+			}
 
 			// rare, and they stay
 			try

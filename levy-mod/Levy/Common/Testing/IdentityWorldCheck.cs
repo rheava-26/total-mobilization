@@ -169,6 +169,7 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_DEADHOOKS_ALONE") == "1") { DeadHooksCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_NESTSKIP_ALONE") == "1") { NestSkipCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ALONE") == "1") { UseCycleProbe(); ClearSoldiers(); ArmySweep(); ClearSoldiers(); return; }
+			if (Environment.GetEnvironmentVariable("LEVY_SR_ALONE") == "1") { StarsRiverCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_ORIGIN_ALONE") != "1")
 			{
 				AlchemistMenu();
@@ -202,6 +203,8 @@ namespace Levy.Common.Testing
 			UseCycleProbe();
 			ClearSoldiers();
 			ArmySweep();
+			ClearSoldiers();
+			StarsRiverCheck(); // only with StarsAbove or StarlightRiver loaded
 			ClearSoldiers();
 		}
 

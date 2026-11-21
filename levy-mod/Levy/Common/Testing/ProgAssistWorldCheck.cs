@@ -334,11 +334,11 @@ namespace Levy.Common.Testing
 				Check($"providence off: her Treasure Bag drops its normal 60-70 Divine Geode ({bg1})", bg1 >= 60 && bg1 <= 70);
 				Set(c, "ProvidenceDropMultiplier", 4f);
 				int g4 = Drop(0, geode), e4 = Drop(0, ess), bg4 = Drop(bag, geode);
-				Check($"providence x4: her Divine Geode and Unholy Essence drops quadruple ({g4} vs {g1}, {e4} vs {e1})", g4 >= 3.5 * g1 && g4 <= 4.5 * g1 && e4 >= 3.5 * e1 && e4 <= 4.5 * e1);
-				Check($"providence x4: her Treasure Bag's Divine Geode quadruples ({bg4} vs {bg1})", bg4 >= 3.5 * bg1 && bg4 <= 4.5 * bg1);
+				Check($"providence x4: her Divine Geode and Unholy Essence drops quadruple: four times the normal 50-60 and 30-40 ({g4} vs {g1}, {e4} vs {e1})", g4 >= 200 && g4 <= 240 && e4 >= 120 && e4 <= 160);
+				Check($"providence x4: her Treasure Bag's Divine Geode quadruples ({bg4} vs {bg1})", bg4 >= 240 && bg4 <= 280);
 				Set(c, "ProvidenceDropMultiplier", 1f); Set(c, "PostProvidenceMaterialMultiplier", 4f);
 				int gp = Drop(0, geode), ep = Drop(0, ess);
-				Check($"materials x4: Providence's own Divine Geode and Unholy Essence quadruple too ({gp}, {ep})", gp >= 3.5 * g1 && gp <= 4.5 * g1 && ep >= 3.5 * e1 && ep <= 4.5 * e1);
+				Check($"materials x4: Providence's own Divine Geode and Unholy Essence quadruple too ({gp}, {ep})", gp >= 200 && gp <= 240 && ep >= 120 && ep <= 160);
 				if (imp > 0)
 				{
 					NPC m = Spawn(imp);

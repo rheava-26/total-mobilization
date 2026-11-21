@@ -104,7 +104,7 @@ namespace Levy.Common.Boss
 			if (!LevyUtil.IsServerOrSingle || !BossRule.MainBossSet.Contains(npc.type)) return;
 			var data = LevyNpcData.Of(npc);
 			UpdatePhase(npc, data);
-			if (LevyConfig.Get.BossesPunishSoldiers) UpdateSpite(npc, data);
+			if (LevyConfig.Get.BossesPunishSoldiers && !ModdedMainBosses.Is(npc.type)) UpdateSpite(npc, data); // a modded main boss is counted for the fight, never steered: no spite, so no re-aimed shots or dashes
 			else if (data.SpiteTarget != -1 || data.SpiteTimer != 0) { data.SpiteTarget = -1; data.SpiteTimer = 0; }
 		}
 

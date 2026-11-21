@@ -73,6 +73,7 @@ namespace Levy.Common.Config
 		[DefaultValue(global::Levy.Common.Weapons.WeaponRankMode.Balanced)] [DrawTicks] public global::Levy.Common.Weapons.WeaponRankMode WeaponRanking;
 		[DefaultValue(false)] public bool SkipArmoredWeapons;
 		[DefaultValue(false)] public bool ClassMatchIssue;
+		[DefaultValue(true)] public bool ClassMatchSidearms;
 		[DefaultValue(true)] public bool AutoUpgradeWeapons;
 		[DefaultValue(true)] public bool MagicStorageSupply;
 		[DefaultValue(true)] public bool MagicStorageArmoryCrafting;

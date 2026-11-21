@@ -2492,6 +2492,11 @@ namespace Levy.Content.TileEntities
 			if (IsAir(cur)) return false; // empty hand: IssueGear's job
 			var fam = WeaponClassifier.GetProfile(cur).Family;
 			bool summoner = IsSummonerSoldier(soldier);
+			if (!summoner && g.HasWeapon && !SidearmPolicy.IsDeployer(cur) && Common.Config.LevyConfig.Get.ClassMatchSidearms)
+			{
+				var target = SidearmClass.TargetClass(g, Rules); // a levy in class armor upgrades toward a sidearm of his class (see SidearmClass)
+				if (target != null) return UpgradeClassSidearm(soldier, g, cur, target);
+			}
 			float need = WeaponRank.Of(cur) * LevyConstants.AutoUpgradeScoreMargin;
 			Func<Item, bool> pool, shelf = null; // pool = the role (and the dedicated sidearm slot); shelf = what the armory's racks may supply for it
 			// Summon-class off-hands are a summoner's only (the reservation): a sentry kit wants a sentry in hand, else each summon role upgrades within itself.
@@ -2502,7 +2507,8 @@ namespace Levy.Content.TileEntities
 			else if (IsMeleeFamily(fam)) { pool = IsIssuableMelee; shelf = LesserBlade(soldier); } // a blade sidearm only upgrades to another lesser blade, never to the top of the shelf
 			else return false;
 			shelf ??= pool;
-			bool Fits(Item it, Func<Item, bool> role) => !IsReservedRef(it) && role(it) && WeaponRank.Of(it) >= need;
+			var beside = CarriedWeapons(g); beside.Remove(cur);
+			bool Fits(Item it, Func<Item, bool> role) => !IsReservedRef(it) && role(it) && WeaponRank.Of(it) >= need && SidearmPolicy.Fits(g.Weapon, it, beside); // never the primary's own item type, never a second of a role
 			// Same order as the initial pick: the dedicated sidearm slot first, then the best in the weapon row / storage / networked armories.
 			Item neu = Fits(IssueWeapons[SidearmSlot], pool) ? Remove(IssueWeapons, SidearmSlot) : null;
 			neu ??= TakeBest(IssueWeapons, 0, SidearmSlot, 1, it => Fits(it, shelf), WeaponRank.Of);

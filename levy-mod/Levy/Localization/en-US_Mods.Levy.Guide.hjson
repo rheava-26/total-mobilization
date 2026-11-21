@@ -263,6 +263,7 @@ Pages: {
 			The other potion slots hold buff potions for the whole army. Buff potions are only used from these slots.
 			Consumable throwables, such as grenades and throwing knives, go in storage. A levy refills a thrown stack from the Armory when it runs low.
 			The last weapon slot is the sidearm. A minion staff or sentry there goes to a levy who is not a summoner, if he has no other sidearm.
+			A levy in class armor carries a sidearm of his own damage class, such as a gun or bow for a ranger and a staff for a mage. This grows stricter as the world advances, and an off-class sidearm is taken only when it is far better. He never carries a second copy of his primary.
 			Two more slots hold summon weapons: a sentry staff and a minion staff, and a summoner leads with a whip. A levy who is not a summoner carries at most one summon weapon, in a free sidearm slot. A sentry staff keeps one sentry up, plus one for each sentry slot the levy's gear gives.
 			'''
 	}

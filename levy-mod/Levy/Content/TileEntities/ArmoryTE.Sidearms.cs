@@ -124,6 +124,73 @@ namespace Levy.Content.TileEntities
 			return true;
 		}
 
+		/// <summary>
+		/// The hand sidearm of a levy who is not a summoner and is not melee. A levy in class armor takes a sidearm of HIS class (<see cref="SidearmClass"/>): a ranger a gun or a bow that shares his ammo, a mage a staff, a rogue a rogue weapon;
+		/// the lesser blades stay in the pool as an off-class choice that wins only when the class has nothing of a similar tier. The dedicated sidearm slot (the player's own choice) still comes first. A levy with no class to match
+		/// (no class armor, or the setting off) gets the old pick, a lesser blade (<see cref="TakeSidearm"/>). Never the primary's own item type. Removes the pick. Null if none.
+		/// </summary>
+		internal Item TakeClassSidearm(SoldierRecord soldier, SoldierGear g)
+		{
+			using var _rs = ArmoryRules.Enter(Rules);
+			var target = Common.Config.LevyConfig.Get.ClassMatchSidearms ? SidearmClass.TargetClass(g, Rules) : null;
+			if (target == null || g == null || !g.HasWeapon) return TakeSidearm(soldier);
+			var carried = CarriedWeapons(g);
+			var slot = IssueWeapons[SidearmSlot];
+			if (!IsReservedRef(slot) && IsIssuable(slot) && !SidearmPolicy.IsDeployer(slot) && SidearmClass.Usable(g, slot) && SidearmPolicy.Fits(g.Weapon, slot, carried)) return Remove(IssueWeapons, SidearmSlot);
+			var pool = ClassSidearmPool(soldier, g, target, carried, out var score);
+			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, pool, score);
+		}
+
+		/// <summary>
+		/// The weapons a class-matched sidearm may be, and how they rank. A candidate is a weapon the army's plan has not spoken for (<see cref="ClaimedWeapons"/>; with no army to plan for, one ranking at most
+		/// <see cref="LevyConstants.SidearmScoreCapFraction"/> of the best of its kind in stock), that fits beside his primary (never its own item type, never a second of a role), that he can feed and pay for, and that is either of the
+		/// target class or a lesser blade. Its score is its rank times <see cref="SidearmClass.Weight"/>.
+		/// </summary>
+		private Func<Item, bool> ClassSidearmPool(SoldierRecord soldier, SoldierGear g, DamageClass target, List<Item> carried, out Func<Item, float> score)
+		{
+			float strength = SidearmClass.Strength();
+			var rules = Rules;
+			score = it => WeaponRank.Of(it) * SidearmClass.Weight(g, it, target, rules, strength);
+			var claimed = ClaimedWeapons(soldier);
+			float bladeCap = float.MaxValue, classCap = float.MaxValue;
+			if (claimed == null)
+			{
+				float topBlade = 0f, topClass = 0f;
+				ForEachShelfItem(it =>
+				{
+					if (!IsIssuable(it) || SidearmPolicy.IsDeployer(it)) return;
+					float r = WeaponRank.Of(it);
+					if (IsIssuableMelee(it)) topBlade = Math.Max(topBlade, r);
+					if (SidearmClass.SameClass(it, target, rules) && !IsMeleeFamily(WeaponClassifier.GetProfile(it).Family)) topClass = Math.Max(topClass, r);
+				});
+				bladeCap = topBlade * LevyConstants.SidearmScoreCapFraction; classCap = topClass * LevyConstants.SidearmScoreCapFraction;
+			}
+			int mana = (int)soldier.MaxMana;
+			return it =>
+			{
+				if (!IsIssuable(it) || SidearmPolicy.IsDeployer(it) || !SidearmClass.Usable(g, it)) return false;
+				bool blade = IsIssuableMelee(it);
+				if (!blade && !SidearmClass.SameClass(it, target, rules)) return false; // off-class is the lesser blade only
+				if (claimed != null ? claimed.Contains(it) : WeaponRank.Of(it) > (blade ? bladeCap : classCap)) return false;
+				return SidearmPolicy.Fits(g.Weapon, it, carried) && WeaponUse.CanEverPay(it, mana);
+			};
+		}
+
+		/// <summary>
+		/// The sidearm upgrade of a levy in class armor: his hand sidearm yields to a candidate whose weighted score (<see cref="ClassSidearmPool"/>) is at least <see cref="LevyConstants.AutoUpgradeScoreMargin"/> times his own,
+		/// so a blade he was dealt before his armor was known gives way to a sidearm of his class, and a better one of his class to a better one still. Null target = not handled here (false).
+		/// </summary>
+		private bool UpgradeClassSidearm(SoldierRecord soldier, SoldierGear g, Item cur, DamageClass target)
+		{
+			var others = CarriedWeapons(g); others.Remove(cur);
+			float need = WeaponRank.Of(cur) * SidearmClass.Weight(g, cur, target, Rules, SidearmClass.Strength()) * LevyConstants.AutoUpgradeScoreMargin;
+			var pool = ClassSidearmPool(soldier, g, target, others, out var score);
+			Func<Item, bool> better = it => !IsReservedRef(it) && pool(it) && score(it) >= need;
+			Item neu = better(IssueWeapons[SidearmSlot]) ? Remove(IssueWeapons, SidearmSlot) : null;
+			neu ??= TakeBest(IssueWeapons, 0, SidearmSlot, 1, better, score);
+			return neu != null && SwapIn(g, SoldierGear.SlotSidearm, neu);
+		}
+
 		/// <summary>The best minion staff no levy's primary needs (the army plan's claims), for a hand slot: the dedicated sidearm row is read by the caller; here the racks and storage. The staff that fills a levy's minion slots comes first. A sentry is the fallback. Removes it.</summary>
 		private Item TakeSummonSecondary(Func<Item, bool> free)
 		{
@@ -150,7 +217,7 @@ namespace Levy.Content.TileEntities
 				if (summoner && !meleeRole) s = TakeSummonerComplement(soldier, primaryFam);
 				else if (summoner) s = TakeDeployerFromSidearmSlot() ?? TakeSummonSecondary(Free); // a whip-leading summoner: a staff, never a blade
 				else if (meleeRole || primaryMelee) s = TakeDeployerFromSidearmSlot(); // a melee levy has no other sidearm: the one the player placed there, never a sword
-				else s = TakeSidearm(soldier) ?? TakeDeployerFromSidearmSlot(); // ranged / magic: a lesser blade first, the summon item only when there is none
+				else s = TakeClassSidearm(soldier, g) ?? TakeDeployerFromSidearmSlot(); // ranged / magic: a sidearm of his own class when his armor has one (a lesser blade when it does not), the summon item only when there is none
 				if (s != null)
 				{
 					if (!g.HasWeapon || SidearmPolicy.Fits(g.Weapon, s, CarriedWeapons(g))) { g.Sidearm = s; changed = true; }
@@ -256,7 +323,7 @@ namespace Levy.Content.TileEntities
 		}
 
 		/// <summary>The periodic look at the sidearm slots (a levy enlisted before staves were stocked, or while the plan had claimed them all, stayed without).</summary>
-		private bool FillEmptySidearms(SoldierRecord soldier)
+		internal bool FillEmptySidearms(SoldierRecord soldier)
 		{
 			var g = soldier.Gear;
 			if (!g.HasWeapon) return false;

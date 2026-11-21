@@ -96,8 +96,8 @@ namespace Levy.Content.TileEntities
 					if (ReferenceEquals(rec, requester)) plan.Requester = lev;
 					if (hasW) lev.Own = WeaponAllocator.MakeCand(g.Weapon, 5, seq++, AllocSlot.Primary, lev, null);
 					if (lev.Own != null) plan.Cands.Add(lev.Own);
-					if (!g.IsLocked(SoldierGear.SlotSidearm) && IsIssuableMelee(g.Sidearm) && g.Sidearm.maxStack <= 1)
-						plan.Cands.Add(WeaponAllocator.MakeCand(g.Sidearm, 9, seq++, AllocSlot.Sidearm, lev, null)); // a blade carried as a sidearm: any primary outranks it
+					if (!g.IsLocked(SoldierGear.SlotSidearm) && IsIssuable(g.Sidearm) && !SidearmPolicy.IsDeployer(g.Sidearm) && g.Sidearm.maxStack <= 1)
+						plan.Cands.Add(WeaponAllocator.MakeCand(g.Sidearm, 9, seq++, AllocSlot.Sidearm, lev, null)); // a blade, gun, bow or staff carried as a sidearm: any primary outranks it
 					// A minion staff or sentry a levy who is not a summoner carries as a sidearm is spare stock too: a summoner who needs a primary staff may have it, and the levy is dealt another later.
 					for (int si = 0; si < LevyConstants.MaxSidearms && !IsSummonerSoldier(rec); si++) {
 						int sslot = SoldierGear.SidearmSlotAt(si); var sit = g.Get(sslot);

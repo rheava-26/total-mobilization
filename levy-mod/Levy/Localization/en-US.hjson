@@ -506,6 +506,11 @@ Mods: {
 					Tooltip: Off, soldiers take the strongest weapon they can use. On, a soldier's armor decides its weapon class
 				}
 
+				ClassMatchSidearms: {
+					Label: Class-matched sidearms
+					Tooltip: On, a soldier in class armor carries a sidearm of its own damage class, more strictly as the world progresses. Off, the sidearm is a blade
+				}
+
 				WeaponRanking: {
 					Label: Weapon ranking
 					Tooltip: What the Armory ranks weapons by

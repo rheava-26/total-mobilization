@@ -20,8 +20,18 @@ namespace Levy.Common.Weapons
 	/// </summary>
 	public enum ModShotKind { None, Holdout, Shortsword, ArkSwing, BiomeBlade }
 
-	/// <summary>How long a charge-by-button holdout is held before the button is let go, and how long it lingers after the release.</summary>
-	public sealed class ChargePlan { public readonly int HoldTicks, LingerTicks; public ChargePlan(int hold, int linger) { HoldTicks = hold; LingerTicks = linger; } }
+	/// <summary>
+	/// How long a charge-by-button holdout is held before the button is let go, and how long it lingers after the release.
+	/// A holdout that counts its own charge in <c>ai[0]</c> can be let go on the charge instead of the clock: <see cref="Stages"/> lists, per mode (the holdout's <c>ai[2]</c>), the charges worth holding for, each behind a condition
+	/// read once when the hold starts; the first stage whose condition holds is the charge the holdout is released at, and with none the button is let go at once (an uncharged shot). <see cref="HoldTicks"/> then only caps the hold.
+	/// Conditions: "always", "tough" (a boss or a target with 600 or more life), "crowd:N" (N or more enemies within 8 tiles of the target), "fast:V" (the target moves V or more px a tick), "far:T" (the target is T or more tiles away).
+	/// </summary>
+	public sealed class ChargePlan
+	{
+		public readonly int HoldTicks, LingerTicks;
+		public Dictionary<int, (string cond, float ai0)[]> Stages;
+		public ChargePlan(int hold, int linger) { HoldTicks = hold; LingerTicks = linger; }
+	}
 
 	/// <summary>A circle the held cursor traces around the target: radius in px and radians per tick. The phase is the world tick, so a holdout and the children it spawns trace the same circle.</summary>
 	public sealed class CursorScript
@@ -40,7 +50,7 @@ namespace Levy.Common.Weapons
 		/// <summary>
 		/// Calamity holdouts that were measured as DUDS (or far weaker) as plain shots and gain from being held (boss lab, docs/boss_lab/dud/holdout_routes.tsv: dmg/s per levy against a x40 Eye, single-player emulation, plain vs held).
 		/// A holdout NOT in this table keeps the plain shot: for those the item's Shoot hook / the holdout's first tick already delivers the damage (it fires from the commander's mana pool at full rate), and holding them
-		/// measured lower (Nidhogg, Phalanx Surge, Apoctosis Array, Ion Blaster, Ontological Despoiler, Fetid Emesis...), which would be a nerf. Later Calamity weapons default to the plain shot until they are measured.
+		/// measured lower (Nidhogg, Arc Nova Diffuser...), which would be a nerf (Phalanx Surge, Apoctosis Array and Ion Blaster were later routed for their fire rate, the Ontological Despoiler, Fetid Emesis and Purge Guzzler for the reasons noted at their entries). Later Calamity weapons default to the plain shot until they are measured.
 		/// </summary>
 		private static readonly HashSet<string> HoldoutRouted = new()
 		{
@@ -58,6 +68,11 @@ namespace Levy.Common.Weapons
 			"ArtAttack", "Rancor", "TitaniumRailgun", "GrandDad", "Basher",
 			// the UUID-bound holdouts (their children find the holdout through Projectile.GetByUUID, which refuses owner 255): the chain lives in the slot below 255 (HeldWeapons.OwnerSlotFor): Yharim's Crystal 0 -> ~290, Starmageddon 0 -> ~840.
 			"YharimsCrystal", "Starmageddon",
+			// the two-mode charge gun: as a plain shot it was owned by the commander's slot, its charge penalty and mode state lived on HER Calamity player, it could only ever fire the uncharged unstable volley (her button reads up) and it never swapped
+			// (its right button is read from the shooter's own Calamity player). Held, the levy's dummy owns it: it charges (ChargeReleaseTable), fires its charged volleys, sphere and beam from the levy, and swaps modes (AltPolicies row HOLD_VARIANT cond=meter).
+			"OntologicalDespoiler",
+			// despoiler sweep (2026-11-21, one levy, a pinned target 12 tiles off, 360 ticks): plain -> held damage. Their plain holdouts read the commander's button as up and end before they fire.
+			"FetidEmesis", "PurgeGuzzler", // 0 -> 16062, 0 -> 10433
 		};
 
 		/// <summary>
@@ -77,6 +92,9 @@ namespace Levy.Common.Weapons
 		/// <summary>Measurement switch (env LEVY_HOLD_FORCE=Name1,Name2 or "all"): routes these Calamity holdouts through the held path as if they were in <see cref="HoldoutRouted"/> (A/B runs of a weapon that is not routed yet).</summary>
 		private static readonly string _force = Environment.GetEnvironmentVariable("LEVY_HOLD_FORCE");
 		private static bool ForceHold(string name) => !string.IsNullOrEmpty(_force) && (_force == "all" || ("," + _force + ",").Contains("," + name + ","));
+		/// <summary>Measurement switch (env LEVY_HOLD_PLAIN=Name1,Name2): these Calamity holdouts keep the plain shot although they are routed (the A/B of a newly routed weapon against its old behaviour).</summary>
+		private static readonly string _plain = Environment.GetEnvironmentVariable("LEVY_HOLD_PLAIN");
+		private static bool ForcePlain(string name) => !string.IsNullOrEmpty(_plain) && ("," + _plain + ",").Contains("," + name + ",");
 
 		/// <summary>
 		/// Held modded weapons whose damage comes from children bound to the holdout, which the held chain must carry: the dummy's owned-projectile counts are kept real for them (Rancor's circle ends when it counts no holdout), children that read
@@ -93,6 +111,11 @@ namespace Levy.Common.Weapons
 			["TitaniumRailgun"] = new ChargePlan(66, 20),
 			// DoomsdayDevice: the grenade charges while the button is down (about 30 ticks to full charge once the wind-up is done) and is thrown when it is let go; the linger covers the throw so the next one is cast after it has left the hand.
 			["DoomsdayDevice"] = new ChargePlan(70, 90),
+			// OntologicalDespoiler: ai[0] counts the charge (2 a tick, 0.5 a tick past the first level in null mode, 0.4x of that while its repeat penalty is on); 156 = the first level (the volley fires faster and holds 23 shots), 312 = full charge
+			// (unstable: the homing disruption sphere; null: the always-crit hitscan beam). Measured on a pinned target (2 levies, 400 ticks): the uncharged unstable volley a player gets by tapping is the most damage by far (about 116k), a
+			// first-level unstable volley about a quarter less per tick, the null volleys and the beam far less. So the unstable mode taps, and charges to the first level only to reach null mode (the swap needs a charged shot) when its
+			// straight shots are poor: the target is fast or far. Null mode always charges (an uncharged null volley is two quarter-damage shots): the beam against a tough target, the homing volley otherwise. ai[2] 0 = unstable, 5 = null.
+			["OntologicalDespoiler"] = new ChargePlan(460, 110) { Stages = new Dictionary<int, (string, float)[]> { [0] = new[] { ("fast:6", 158f), ("far:35", 158f) }, [5] = new[] { ("tough", 314f), ("always", 158f) } } },
 		};
 		internal static ChargePlan ChargeRelease(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && ChargeReleaseTable.TryGetValue(item.ModItem.Name, out ChargePlan p) ? p : null;
 
@@ -154,6 +177,7 @@ namespace Levy.Common.Weapons
 			if (mace) return ModShotKind.None; // thrown at the cursor, not held (see the class summary)
 			// A held / charge-and-release holdout reads its owner's button (and is the weapon's own shot).
 			// Only holdouts measured as duds as plain shots are routed (see HoldoutRouted); everything else keeps the plain shot, which already works for it.
+			if (item.ModItem?.Mod.Name == "CalamityMod" && ForcePlain(item.ModItem.Name)) return ModShotKind.None;
 			if (item.ModItem?.Mod.Name == "CalamityMod" && !ProjAiHooks.Off && HeldGrenadeRouted.Contains(item.ModItem.Name) && item.channel && item.shoot > 0 && sample?.ModProjectile != null) return ModShotKind.Holdout;
 			if (item.ModItem?.Mod.Name == "CalamityMod" && (HoldoutRouted.Contains(item.ModItem.Name) || (!ProjAiHooks.Off && HeldItemRateRouted.Contains(item.ModItem.Name)) || ForceHold(item.ModItem.Name)) && item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
 				&& (item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)))

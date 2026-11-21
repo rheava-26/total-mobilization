@@ -22,6 +22,8 @@ namespace Levy.Common.Testing
 		// What a phase of the tick (the NPCs, the projectiles) changed on slot 0: the end-of-tick snapshot misses a value that a later phase puts back.
 		private static bool _watch; private static Dictionary<string, string> _phaseBefore; private static readonly HashSet<string> PhaseDiffs = new();
 		private static NPC _sweepTarget; private static Vector2 _sweepTargetAt;
+		/// <summary>The pinned target's velocity as other code reads it (zero except while the holdout check moves it: a fast target).</summary>
+		private static Vector2 _sweepVel;
 
 		private static void PhaseOpen() { if (_watch) _phaseBefore = PlayerProbe.WatchedSnapshot(Main.player[0]); }
 		private static void PhaseClose(string phase)
@@ -34,7 +36,7 @@ namespace Levy.Common.Testing
 		private static void PinSweepTarget()
 		{
 			if (_sweepTarget == null || !_sweepTarget.active) return;
-			_sweepTarget.active = true; _sweepTarget.timeLeft = 9999; _sweepTarget.Bottom = _sweepTargetAt; _sweepTarget.velocity = Vector2.Zero; _sweepTarget.life = _sweepTarget.lifeMax; _sweepTarget.dontTakeDamage = false;
+			_sweepTarget.active = true; _sweepTarget.timeLeft = 9999; _sweepTarget.Bottom = _sweepTargetAt; _sweepTarget.velocity = _sweepVel; _sweepTarget.life = _sweepTarget.lifeMax; _sweepTarget.dontTakeDamage = false;
 		}
 
 		/// <summary>

@@ -395,6 +395,9 @@ namespace Levy.Common.Weapons
 				case "heavy": return x.IsTough(a.ToughLife) && x.Dist >= a.MinDist && x.Dist <= a.MaxDist;
 				case "rate": return x.Dist <= a.MaxDist;
 				case "close": return x.Dist <= a.MaxDist && x.Crowd(Math.Max(3f, a.MaxDist * 0.6f)) >= a.MinEnemies;
+				// a named field of the levy's own Calamity / Thorium player is at least `min` (a flag reads 1): the Ontological Despoiler's mode swap only works after a charged shot, which sets despoilerNerf (the
+				// repeat-charge penalty) on the shooter, and the swap clears it, so the right button is held exactly while the penalty is on
+				case "meter": { float m = x.Meter(a.Meter ?? ""); return !float.IsNaN(m) && m >= a.Min; }
 				default: return x.Crowd(a.Radius) >= a.MinEnemies;
 			}
 		}
@@ -462,8 +465,12 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>An alt fired.</summary>
+		/// <summary>Lab counter: right-click attacks fired, by item type.</summary>
+		internal static readonly Dictionary<int, int> AltFired = new();
+
 		internal static void NoteAlt(SoldierNPC s, Item item)
 		{
+			if (item != null) { AltFired.TryGetValue(item.type, out int n); AltFired[item.type] = n + 1; }
 			AltState st = StateOf(s);
 			st.PrimarySinceAlt = 0;
 			st.AltStacks++;
@@ -476,7 +483,12 @@ namespace Levy.Common.Weapons
 		/// Before an attack: sets (or clears) <c>mouseRight</c> on the dummy's Calamity player for items whose variant is picked by the held right button, from the row's condition. Cleared as soon as the
 		/// soldier holds anything else, so a stale button never reaches another weapon. No-op when Calamity is not loaded.
 		/// </summary>
-		internal static void HoldVariant(SoldierNPC s, Item item, NPC target)
+		internal static void HoldVariant(SoldierNPC s, Item item, NPC target) => HoldVariant(s, item, target, false);
+
+		/// <summary>Lab counter: holdouts spawned with the variant (right) button held, by item type.</summary>
+		internal static readonly Dictionary<int, int> HoldVariantSpawns = new();
+
+		private static void HoldVariant(SoldierNPC s, Item item, NPC target, bool force)
 		{
 			Player d = s.Dummy;
 			if (d == null) return;
@@ -490,7 +502,7 @@ namespace Levy.Common.Weapons
 				return;
 			}
 			uint now = Main.GameUpdateCount;
-			if (st.LastItemType == item.type && now - st.HoldCheckTick < (uint)SituationalRecheckTicks) return; // the variant is re-decided a few times a second, not every tick
+			if (!force && st.LastItemType == item.type && now - st.HoldCheckTick < (uint)SituationalRecheckTicks) return; // the variant is re-decided a few times a second, not every tick (and always when a holdout is spawned)
 			st.LastItemType = item.type; st.HoldCheckTick = now;
 			bool want;
 			if (mode == "left") want = false;
@@ -500,7 +512,11 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>A holdout was just spawned for a soldier (HeldWeapons.TryFire): the variant button is set for it.</summary>
-		internal static void OnHoldoutSpawn(SoldierNPC s, Item item, NPC target) => HoldVariant(s, item, target);
+		internal static void OnHoldoutSpawn(SoldierNPC s, Item item, NPC target)
+		{
+			HoldVariant(s, item, target, true);
+			if (StateOf(s).MouseRightSet) { HoldVariantSpawns.TryGetValue(item.type, out int n); HoldVariantSpawns[item.type] = n + 1; }
+		}
 
 		// ---------------------------------------------------------------------------------------------
 		// AimPoint: the dummy's cursor on the target around a Shoot call

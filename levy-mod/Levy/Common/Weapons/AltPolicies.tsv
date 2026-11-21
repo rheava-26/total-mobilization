@@ -61,7 +61,7 @@ CalamityMod	Hydra	DETONATE	proj=HydraHead;minOut=3;minDist=5	not measurable: Alt
 CalamityMod	Leviatitan	ALT_MIX	p=0.8	alt +23% boss / +34% pack
 CalamityMod	MidasPrime	NEVER		coin alt needs money the dummy never has
 CalamityMod	NullificationPistol	NEVER		alt -8% boss / -37% pack at 80%; toggling every 12 shots still measured -9% boss / -30% pack (a toggle wastes a shot; polarity effects are not modelled)
-CalamityMod	OntologicalDespoiler	NEVER		
+CalamityMod	OntologicalDespoiler	HOLD_VARIANT	cond=meter;meter=despoilerNerf;min=1	swap modes after every charged shot: the swap only works then, clears the repeat-charge penalty, and staying charges at 0.4x
 CalamityMod	Photoviscerator	HOLD_VARIANT	cond=aoe;minEnemies=2	
 CalamityMod	PlagueTaintedSMG	ALT_MIX	p=0.5	
 CalamityMod	PolarisParrotfish	NEVER		

@@ -242,9 +242,15 @@ def summarize(rows):
     # format 4 records the boss's end explicitly (bdeath: it died, bdespawn: it left alive); older files are inferred from the frames
     bend = [e for e in ev if e.get("e") in ("bdeath", "bdespawn")]
     fin = ([e for e in bend if e.get("final", 1) != 0] or bend or [None])[-1]
-    # recordings made before the worm-kill fix logged a worm that died to a body-segment blow as bdespawn: a leave with <=1% life and a hit within ~1 s is a kill
-    if fin is not None and fin["e"] == "bdespawn" and fin.get("max", 0) > 0 and fin.get("life", 1) <= 0.01 * fin["max"] and fin.get("ht") is not None and fin["t"] - fin["ht"] <= 60:
+    # recordings made before the worm-kill fix logged a worm that died to a body-segment blow as bdespawn: a leave with <=1% life and a hit within ~1 s is a kill.
+    # Only for files with no kh (the death-hook field, written since 2026-11-20) and when the commander had not just fallen: a boss that Calamity removed after her death is a boss that left, whatever its life.
+    cdeaths = [e["t"] for e in ev if e.get("e") == "cdeath"]
+    if fin is not None and fin["e"] == "bdespawn" and "kh" not in fin and fin.get("max", 0) > 0 and fin.get("life", 1) <= 0.01 * fin["max"] and fin.get("ht") is not None and fin["t"] - fin["ht"] <= 60 \
+            and not any(fin["t"] - 3600 <= d <= fin["t"] + 10 for d in cdeaths):
         fin = dict(fin, e="bdeath", inferred=True)
+    # the other direction: an old bdeath that no death hook and no lethal blow explains, right after the commander's fall, is a boss that left (recrules.end_is_kill)
+    if fin is not None and fin["e"] == "bdeath" and recrules is not None and not recrules.end_is_kill(fin, cdeaths):
+        fin = dict(fin, e="bdespawn", rederived=True)
     if fin is not None and fin["e"] == "bdeath":
         result = "win"
     elif fin is not None and n_levies and deaths >= n_levies:

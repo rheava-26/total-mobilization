@@ -107,7 +107,7 @@ Pages: {
 			Each town NPC adds 9 manpower. Every militiaman who falls uses 1. Manpower grows by 1 for every 2 town NPCs at dawn.
 			Up to 10 militia stand at once. Calling them up costs a small fee per head from the treasury.
 			A Recruiting drive at the Barracks refills missing manpower for coins, once a day.
-			Auto-muster calls the militia when an event or a boss fight starts and stands them down when it ends. Switch it on the Barracks panel.
+			Auto-muster calls the militia when an event or a boss fight starts and stands them down when it ends. Switch it on the Barracks panel. Turn off Auto-muster for boss fights under Settings, Mod Configuration, Levy to keep it to events.
 			'''
 	}
 
@@ -132,6 +132,7 @@ Pages: {
 			Hold here: Regulars stay where they stand. They fight what comes in reach and walk back to the spot.
 			Hold the banners: Regulars walk to the nearest Holding Banner and hold there. Soldiers within 5 tiles of a banner gain 12 defense and take 20% less damage. With no banner it is Hold here.
 			Return to barracks: Regulars walk home and wait there at half wage.
+			If you fall while a boss you have beaten is near, Regulars on Follow me hold where you fell and keep fighting it. Otherwise they walk home until you respawn.
 			Any other order cancels these. A Holding Banner is crafted at a Work Bench from 8 wood and 3 silk.
 			'''
 	}

@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Levy.Common;
+using Levy.Common.Targeting;
 using Levy.Common.Boss;
 using Levy.Common.Soldiers;
 using static Levy.Common.LevyConstants.Movement;
@@ -31,7 +32,7 @@ namespace Levy.Content.NPCs
 				if (ZoneMode >= 1 && IsRegular && Record != null && Record.Order == SoldierOrder.Follow && !HoldPosition && State != SoldierState.Desert && State != SoldierState.Dead)
 				{
 					Player cmd = Commander;
-					if (cmd != null && !cmd.dead)
+					if (cmd != null && (!cmd.dead || EnemyTargeting.LostFightHolds(NPC.Center))) // a lost fight keeps the zone around the spot where he fell
 					{
 						float r2 = FightZoneBossTiles * LevyConstants.TilePx; r2 *= r2;
 						for (int i = 0; i < Main.maxNPCs; i++)

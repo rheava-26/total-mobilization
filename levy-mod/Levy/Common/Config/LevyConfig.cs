@@ -107,6 +107,7 @@ namespace Levy.Common.Config
 		[Header("Economy")]
 		[Range(0f, 5f)] [DefaultValue(1f)] public float WageMultiplier;
 		[DefaultValue(true)] public bool AutoMusterDefault;
+		[DefaultValue(true)] public bool AutoMusterBosses;
 		[DefaultValue(false)] public bool WageMutiny;
 		[DefaultValue(true)] public bool NurseHealsSoldiers;
 		[DefaultValue(true)] public bool Spoils;

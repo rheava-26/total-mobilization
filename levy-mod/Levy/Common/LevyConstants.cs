@@ -40,6 +40,14 @@ namespace Levy.Common
 		public const float ArmorSetBonusScore = 300f, ArmorSetClassMatchScore = 1400f;
 		/// <summary>A complete matching set is only preferred while its piece scores total at least this fraction of the best loose pieces (never trade Hallowed for Wood just to match).</summary>
 		public const float ArmorSetMinFractionOfBest = 0.5f;
+		/// <summary>
+		/// Class-matched armor (<see cref="Config.LevyConfig.ClassMatchArmor"/>): a set or piece of the levy's weapon class is worn over any other whenever its progression tier (Boss Checklist scale, see
+		/// <see cref="Weapons.ProgressionTier"/>) is at most this far behind the best other armor in reach. Three tiers keeps Spectre over Beetle, Stardust over Solar Flare and Silva or Tarragon over God Slayer, and refuses
+		/// pre-Hardmode class armor once the army is in Hardmode gear well past it.
+		/// </summary>
+		public const float ClassArmorTierTolerance = 3f;
+		/// <summary>Per-piece pick: an on-class piece within the tolerance outranks every other piece by this much (the rest of the score still orders the on-class pieces).</summary>
+		public const float ClassArmorPieceBonus = 1e6f;
 		/// <summary>Cross-family (set-bonus verified) set search considers only the top N pieces of each slot.</summary>
 		public const int ArmorSetCrossSearchTop = 6;
 		/// <summary>Accessory score = rarity tier x Rarity + defense x Defense + log10(1 + value) x Value + prefix + class fit (damage fraction for the soldier's class) x ClassFit.</summary>

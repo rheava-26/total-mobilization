@@ -1022,10 +1022,12 @@ namespace Levy.Content.TileEntities
 			return TakeBest(IssueWeapons, 0, SidearmSlot, 1, IsIssuableSentry, WeaponRank.Of);
 		}
 
-		/// <summary>Best armor piece for the given equip slot (0 head, 1 body, 2 legs); removes it. Null if none.</summary>
+		/// <summary>Best armor piece for the given equip slot (0 head, 1 body, 2 legs); removes it. Null if none. With class-matched armor a piece of his weapon's class comes first (<see cref="TakeClassArmorPiece"/>).</summary>
 		public virtual Item TakeArmor(SoldierRecord forSoldier, int part)
 		{
 			if (part < 0 || part > 2) return null;
+			var cls = ArmorTargetClass(forSoldier?.Gear);
+			if (cls != null) { var on = TakeClassArmorPiece(part, cls); if (on != null) return on; }
 			bool Pred(Item it) => WeaponClassifier.IsArmorPiece(it, part) && !it.vanity;
 			// Sets are laid out head/body/legs, so the slots for one part are part, part+ArmorParts, part+2*ArmorParts, ... across every set.
 			return TakeBest(IssueArmor, part, ArmorSlots, ArmorParts, Pred, ArmorScore);
@@ -1184,11 +1186,17 @@ namespace Levy.Content.TileEntities
 
 			// The armor follows the weapon: the set bonus should land on the class he actually fires, whichever way he was armed.
 			DamageClass wc = g.HasWeapon ? WeaponClassifier.ItemDamageClass(g.Weapon) : null;
+			// Class-matched armor: a set (or piece) of his class within the tier tolerance is worn over any stronger armor of another class (see ArmoryTE.ArmorClass.cs).
+			DamageClass tc = ArmorTargetClass(g);
 			// Raise-the-floor upgrade: a set of another class is not his to take while a levy of that class would gain from it (the best set stays with its best-suited user).
 			Func<DamageClass, float, bool> classGuard = upgrade && FloorFirst && wc != null ? ClassWantsSet(soldier) : null;
 
 			float bestScore = float.NegativeInfinity;
 			ArmorCand[] best = null;
+			// Class-matched armor: the best combination that reads as his class, and the highest tier among the ones that do not.
+			float onScore = float.NegativeInfinity, offTier = float.NegativeInfinity;
+			ArmorCand[] onBest = null;
+			bool onlyOn = false; // the extra irregular-name search below looks for his class only
 			float SetScore(ArmorCand h, ArmorCand b, ArmorCand l, bool requireBonus)
 			{
 				bool full = h.It != null && b.It != null && l.It != null;
@@ -1207,7 +1215,12 @@ namespace Levy.Content.TileEntities
 			{
 				foreach (var h in opts[0]) foreach (var b in opts[1]) foreach (var l in opts[2]) {
 					float sc = SetScore(h, b, l, requireBonus);
-					if (sc > bestScore) { bestScore = sc; best = new[] { h, b, l }; }
+					if (sc == float.NegativeInfinity) continue;
+					if (tc != null) {
+						if (ArmorDoctrine.PreferredClass(h.It, b.It, l.It) == tc) { if (sc > onScore) { onScore = sc; onBest = new[] { h, b, l }; } }
+						else if (!onlyOn) offTier = Math.Max(offTier, KitTier(h.It, b.It, l.It));
+					}
+					if (!onlyOn && sc > bestScore) { bestScore = sc; best = new[] { h, b, l }; }
 				}
 			}
 
@@ -1236,6 +1249,46 @@ namespace Levy.Content.TileEntities
 				}
 				EvalCombos(opts, true);
 			}
+			// Class-matched armor, irregular names: a set of his class the game itself calls one, among his class's and generic pieces (the search above only looked at the strongest pieces of any class).
+			if (tc != null && onBest == null && !IsMissingFixed(fixedC)) {
+				var opts = new List<ArmorCand>[ArmorParts];
+				for (int p = 0; p < ArmorParts; p++) {
+					if (!need[p]) { opts[p] = new List<ArmorCand> { fixedC[p] }; continue; }
+					var top = pool[p].FindAll(c => { var pc = PieceClass(c.It); return pc == null || pc == tc; });
+					top.Sort((a, b) => b.Score.CompareTo(a.Score));
+					if (top.Count > LevyConstants.ArmorSetCrossSearchTop) top.RemoveRange(LevyConstants.ArmorSetCrossSearchTop, top.Count - LevyConstants.ArmorSetCrossSearchTop);
+					opts[p] = top;
+				}
+				onlyOn = true;
+				if (opts[0].Count > 0 && opts[1].Count > 0 && opts[2].Count > 0) EvalCombos(opts, true);
+				onlyOn = false;
+			}
+			if (tc != null) {
+				// Every piece in reach counts toward the tier the class armor is held against, not only the pieces that formed a set.
+				for (int p = 0; p < ArmorParts; p++) if (need[p]) foreach (var c in pool[p]) if (PieceClass(c.It) != tc) offTier = Math.Max(offTier, PieceTier(c.It));
+				float floor = offTier - LevyConstants.ClassArmorTierTolerance;
+				if (onBest != null && KitTier(onBest[0].It, onBest[1].It, onBest[2].It) >= floor) { best = onBest; bestScore = onScore; }
+				else {
+					// No set of his class within reach of the best armor: his class's pieces still go on, the strongest other pieces fill the rest (a summoner's hood over another class's set bonus).
+					var mixed = new ArmorCand[ArmorParts]; bool anyOn = false;
+					for (int p = 0; p < ArmorParts; p++) {
+						if (!need[p]) { mixed[p] = fixedC[p]; continue; }
+						float top = float.NegativeInfinity;
+						foreach (var c in pool[p]) top = Math.Max(top, PieceTier(c.It));
+						float pf = top - LevyConstants.ClassArmorTierTolerance;
+						ArmorCand pick = default; float ps = float.NegativeInfinity;
+						foreach (var c in pool[p]) {
+							bool on = PieceClass(c.It) == tc && PieceTier(c.It) >= pf;
+							float sc = c.Score + (on ? LevyConstants.ClassArmorPieceBonus : 0f);
+							if (sc > ps) { ps = sc; pick = c; }
+						}
+						mixed[p] = pick;
+						if (PieceClass(pick.It) == tc && PieceTier(pick.It) >= pf) anyOn = true;
+					}
+					float ms = mixed[0].It != null || mixed[1].It != null || mixed[2].It != null ? SetScore(mixed[0], mixed[1], mixed[2], false) : float.NegativeInfinity;
+					if (anyOn && ms > float.NegativeInfinity && ClassFitRank(mixed[0].It, mixed[1].It, mixed[2].It, tc) > (best == null ? -1 : ClassFitRank(best[0].It, best[1].It, best[2].It, tc))) { best = mixed; bestScore = ms; }
+				}
+			}
 			if (best == null) return false;
 
 			// Never trade a lot of armor for a tidy set: compare the taken pieces to the best loose ones.
@@ -1249,7 +1302,11 @@ namespace Levy.Content.TileEntities
 			}
 			if (taken < loose * LevyConstants.ArmorSetMinFractionOfBest) return false;
 
-			if (upgrade) return CommitArmorUpgrade(g, slot, cur, need, best, bestScore, SetScore, msHeart);
+			if (upgrade) {
+				// A class correction (the new kit fits his weapon's class better than what he wears) is made without the upgrade margin: it is a fix, not an upgrade, and never runs the other way.
+				bool correction = tc != null && ClassFitRank(best[0].It, best[1].It, best[2].It, tc) > ClassFitRank(cur[0], cur[1], cur[2], tc);
+				return CommitArmorUpgrade(g, slot, cur, need, best, bestScore, SetScore, msHeart, correction);
+			}
 
 			// Commit: each pick is a distinct real slot; remove it and equip it.
 			bool any = false;
@@ -1276,7 +1333,7 @@ namespace Levy.Content.TileEntities
 		/// Every new piece is drawn first; if any draw fails, the ones already drawn go back and nothing changes on the soldier.
 		/// </summary>
 		private bool CommitArmorUpgrade(SoldierGear g, int[] slot, Item[] cur, bool[] need, ArmorCand[] best, float bestScore,
-			Func<ArmorCand, ArmorCand, ArmorCand, bool, float> setScore, object msHeart)
+			Func<ArmorCand, ArmorCand, ArmorCand, bool, float> setScore, object msHeart, bool correction = false)
 		{
 			bool change = false;
 			var worn = new ArmorCand[ArmorParts];
@@ -1285,7 +1342,7 @@ namespace Levy.Content.TileEntities
 				worn[p] = IsAir(cur[p]) ? new ArmorCand() : new ArmorCand { Worn = true, It = cur[p], Score = ArmorScore(cur[p]) };
 				change |= !best[p].Worn;
 			}
-			if (!change || bestScore < setScore(worn[0], worn[1], worn[2], false) * LevyConstants.AutoUpgradeScoreMargin) return false;
+			if (!change || (!correction && bestScore < setScore(worn[0], worn[1], worn[2], false) * LevyConstants.AutoUpgradeScoreMargin)) return false;
 
 			var drawn = new Item[ArmorParts];
 			bool ok = true;

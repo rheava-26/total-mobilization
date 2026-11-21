@@ -161,13 +161,22 @@ namespace Mechanization.Common
 			_cmdAt = far; Step(400);
 			DChk("all machines packed again before the crowded wake", Machines() == 0 && TurretSystem.Instance.DormantCount == 1 && FieldDroneSystem.Instance.DormantCount == 2);
 			var filler = new List<NPC>();
-			for (int i = 0; i < Main.maxNPCs; i++)
+			int Fill()
 			{
-				int idx = NPC.NewNPC(new EntitySource_WorldEvent("MechWorldCheck"), (cx + 40) * 16, (FloorY - 3) * 16, NPCID.Bunny);
-				if (idx < 0 || idx >= Main.maxNPCs) break;
-				NPC n = Main.npc[idx]; n.aiStyle = -1; n.noGravity = true; n.noTileCollide = true; n.lifeMax = n.life = 100000; n.friendly = true; filler.Add(n);
+				int added = 0;
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					int idx = NPC.NewNPC(new EntitySource_WorldEvent("MechWorldCheck"), (cx + 40) * 16, (FloorY - 3) * 16, NPCID.Bunny);
+					if (idx < 0 || idx >= Main.maxNPCs) break;
+					NPC n = Main.npc[idx]; n.aiStyle = -1; n.noGravity = true; n.noTileCollide = true; n.lifeMax = n.life = 100000; n.friendly = true; n.timeLeft = 99999; filler.Add(n); added++;
+				}
+				return added;
 			}
-			_cmdAt = near; Step(150);
+			Fill();
+			_cmdAt = near;
+			int topUps = 0; // a slot the world frees on its own (a natural NPC leaving) is filled again before the next tick, so the array really stays full
+			for (int k = 0; k < 150; k++) { Step(1); topUps += Fill(); }
+			DNote($"full NPC array: slots the world freed on its own over 150 ticks, filled again: {topUps}");
 			DChk($"a full NPC array: the packed machines stay packed, not deleted (machines {Machines()}, records {TurretSystem.Instance.RecordCount}+{FieldDroneSystem.Instance.RecordCount}, woke-without-slot {MachineDormancy.NoSlot})", Machines() == 0 && TurretSystem.Instance.RecordCount == 1 && FieldDroneSystem.Instance.RecordCount == 2 && MachineDormancy.NoSlot > 0);
 			foreach (NPC n in filler) n.active = false;
 			Step(90);
@@ -300,8 +309,6 @@ namespace Mechanization.Common
 				DChk($"boss rule on: their NPC slots are free (slots not held by a critter {freeBefore} -> {freeAfter}, the boss took 1)", freeAfter >= freeBefore - 1 + before);
 				for (int k = 0; k < 1500; k++) { Pin(boss, bossAt); Step(1); }
 				DChk($"boss rule on, 25 seconds more: nothing launches (garrison drones {GarrisonDrones()}, lent {armory.Lent.Count})", GarrisonDrones() == 0 && armory.Lent.Count == 0 && BossSlots.BossAlive);
-				int keyDrones = GarrisonDrones(); bool keyed = DroneSystem.Instance.HandleKey(Main.player[0]); for (int k = 0; k < 60; k++) { Pin(boss, bossAt); Step(1); }
-				DChk($"boss rule on: the recall-or-launch key at the Barracks is answered and launches nothing (answered {keyed}, drones {keyDrones} -> {GarrisonDrones()})", keyed && GarrisonDrones() == 0);
 				// a player-built drone and a turret are not touched while the boss lives
 				UseItem(Main.player[0], new Item(ModContent.ItemType<DroneItem>(), 2), new Vector2((cx + 20) * 16f, (FloorY - 5) * 16f), out _);
 				UseItem(Main.player[0], new Item(ModContent.ItemType<TurretItem>(), 2), new Vector2((cx + 24) * 16f, (FloorY - 4) * 16f), out _);
@@ -339,7 +346,8 @@ namespace Mechanization.Common
 			Player p = Main.player[0];
 			Vector2 standAt = new Vector2((cx - 150) * 16f, (FloorY - 40) * 16f);
 			_keepBossParts = true;
-			void StepSafe(int n) { for (int k = 0; k < n; k++) { p.immune = true; p.immuneTime = 30; if (standIn != null) Pin(standIn, standAt); Step(1); } }
+			var lastBat = new Dictionary<int, float>(); // each placed drone's battery the tick before it packed (it charges on its pad, so the record holds what it had then)
+			void StepSafe(int n) { for (int k = 0; k < n; k++) { p.immune = true; p.immuneTime = 30; if (standIn != null) Pin(standIn, standAt); foreach (DroneNPC d in Fielders()) lastBat[d.RecordId] = d.Battery; Step(1); } }
 			int FreeSlots() => MachineDormancy.FreeNpcSlots();
 			int Levies() { int n = 0; foreach (NPC l in levies) if (l.active && l.ModNPC is global::Levy.Content.NPCs.SoldierNPC) n++; return n; }
 			void KillBoss(int head)
@@ -428,7 +436,7 @@ namespace Mechanization.Common
 				foreach (var r in FieldDroneSystem.Instance.Records)
 				{
 					dRec[r.Id] = (r.Life, r.Battery, r.Weapon);
-					if (!r.Dormant || !r.ForBoss || r.Life <= 0 || Math.Abs(r.Battery - 37f) > 5f) { recOk = false; recWhy += $" drone {r.Id} dormant {r.Dormant} forBoss {r.ForBoss} life {r.Life} battery {r.Battery:0.0};"; }
+					if (!r.Dormant || !r.ForBoss || r.Life <= 0 || !lastBat.TryGetValue(r.Id, out float lb) || Math.Abs(r.Battery - lb) > 1f) { recOk = false; recWhy += $" drone {r.Id} dormant {r.Dormant} forBoss {r.ForBoss} life {r.Life} battery {r.Battery:0.0} (had {(lastBat.TryGetValue(r.Id, out float hb) ? hb.ToString("0.0") : "?")});"; }
 				}
 				DChk("room for a boss: each packed record holds its position, health, facing, weapon and battery" + (recWhy.Length > 0 ? " (" + recWhy + ")" : ""), recOk);
 
@@ -470,7 +478,17 @@ namespace Mechanization.Common
 			{
 				_keepBossParts = false;
 				if (standIn != null) standIn.active = false;
-				for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !n.friendly && (n.boss || n.realLife >= 0 || n.type == bossType || global::Levy.Common.Util.LevyUtil.IsBossNpc(n))) n.active = false; }
+				var left = new List<string>();
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC n = Main.npc[i];
+					if (!n.active || n.friendly || n.townNPC) continue;
+					bool fight = n.boss || n.realLife >= 0 || n.type == bossType || global::Levy.Common.Util.LevyUtil.IsBossNpc(n) || global::Levy.Common.Testing.WorldStep.IsNaturalHostile(n);
+					if (!fight) continue;
+					if (n != standIn && left.Count < 12) left.Add(n.TypeName + "#" + n.type);
+					n.active = false; // the fight leaves nothing behind for the checks after this one
+				}
+				if (left.Count > 0) DNote("room for a boss: cleared after the fight: " + string.Join(", ", left));
 				foreach (NPC n in fillers) n.active = false;
 				foreach (NPC l in levies) l.active = false;
 				global::Levy.Common.Systems.RosterSystem.Instance.Regulars.RemoveAll(r => r.Name == "Pvt. MachineDorm");

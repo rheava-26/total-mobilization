@@ -33,19 +33,31 @@ namespace Mechanization.Content.NPCs
 			public int Life;
 			/// <summary>True when the NPC could not be spawned yet (no free NPC slot on load): the record is kept and the spawn retried, never dropped as destroyed.</summary>
 			public bool Pending;
+			/// <summary>True while the drone is packed: no NPC, no slot, no brain; the record holds everything and the sweep spawns it again when a player is near (<see cref="MachineDormancy"/>). Saved with the world.</summary>
+			public bool Dormant;
+			/// <summary>What the record keeps beyond pad and life while dormant: the way it faces (-1 / 1, 0 = never packed), the battery in seconds of flight (-1 = full) and the type of the weapon it had mounted (re-mounted from the Armories in reach on waking).</summary>
+			public int Dir, Weapon;
+			public float Battery = -1f;
+			/// <summary>Ticks this drone has been out of range of every player (packs at <see cref="MachineDormancy.PackDelayTicks"/>).</summary>
+			public int FarTicks;
 		}
 
 		private readonly Dictionary<int, FieldRecord> _records = new();
+		private int _asleep;
 		private readonly HashSet<int> _liveIds = new();
 		private int _nextId = 1;
 		private bool _pendingRespawn;
 		private static readonly uint[] _lastPlace = new uint[Main.maxPlayers + 1];
 
 		public int RecordCount => _records.Count;
+		public int DormantCount => _asleep;
+		/// <summary>The saved record of a drone, for the world check (null when it has none).</summary>
+		internal FieldRecord RecordOf(int id) => _records.TryGetValue(id, out FieldRecord r) ? r : null;
+		internal IEnumerable<FieldRecord> Records => _records.Values;
 
 		public override void OnWorldUnload()
 		{
-			_records.Clear(); _liveIds.Clear(); _nextId = 1; _pendingRespawn = false;
+			_records.Clear(); _liveIds.Clear(); _nextId = 1; _pendingRespawn = false; _asleep = 0;
 			System.Array.Clear(_lastPlace, 0, _lastPlace.Length);
 		}
 
@@ -199,6 +211,50 @@ namespace Mechanization.Content.NPCs
 			if (Main.netMode == NetmodeID.MultiplayerClient) return;
 			if (_pendingRespawn) { _pendingRespawn = false; RespawnAll(); return; } // let the re-spawned NPCs register before the first reconcile
 			Reconcile();
+			if (_records.Count > 0 && Main.GameUpdateCount % (uint)MachineDormancy.SweepTicks == 0u) SleepSweep();
+		}
+
+		// =====================================================================================================
+		// Dormancy: a drone with no player in range is packed into its record and spawned again when one comes near
+		// =====================================================================================================
+		private void SleepSweep()
+		{
+			bool on = MachineDormancy.Enabled; float range = MachineDormancy.RangePx;
+			if (on)
+			{
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC n = Main.npc[i];
+					if (!n.active || n.ModNPC is not DroneNPC d || d.RecordId <= 0 || !_records.TryGetValue(d.RecordId, out FieldRecord rec) || rec.Dormant) continue;
+					if (MachineDormancy.NearPlayer(n.Center, range)) { rec.FarTicks = 0; continue; }
+					rec.FarTicks += MachineDormancy.SweepTicks;
+					if (rec.FarTicks >= MachineDormancy.PackDelayTicks) Pack(n, d, rec);
+				}
+			}
+			if (_asleep <= 0) return;
+			foreach (FieldRecord rec in _records.Values)
+			{
+				if (!rec.Dormant) continue;
+				if (on && !MachineDormancy.NearPlayer(rec.Pad, range)) continue;
+				Wake(rec);
+			}
+		}
+
+		/// <summary>Packs one live drone into its record: what it had when it left is what comes back. The record is kept, never dropped.</summary>
+		private void Pack(NPC n, DroneNPC d, FieldRecord rec)
+		{
+			rec.Life = n.life; rec.Dir = n.direction; rec.Battery = d.Battery; rec.Weapon = d.FieldWeaponType;
+			rec.Dormant = true; rec.FarTicks = 0; _asleep++; MachineDormancy.Packed++;
+			int slot = n.whoAmI;
+			n.active = false; n.netUpdate = true;
+			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, slot);
+		}
+
+		/// <summary>Spawns a dormant drone from its record, as it was. With no free NPC slot it stays dormant and the next sweep tries again.</summary>
+		private void Wake(FieldRecord rec)
+		{
+			if (Spawn(new EntitySource_WorldEvent("Mechanization:DroneWake"), rec) < 0) { MachineDormancy.NoSlot++; return; }
+			rec.Dormant = false; rec.FarTicks = 0; if (_asleep > 0) _asleep--; MachineDormancy.Unpacked++;
 		}
 
 		/// <summary>Spawns a drone NPC for every saved record that has no live NPC. Runs once right after a world load.</summary>
@@ -208,6 +264,8 @@ namespace Mechanization.Content.NPCs
 			foreach (FieldRecord rec in _records.Values)
 			{
 				if (LiveNpcFor(rec.Id) != null) continue;
+				if (rec.Dormant) continue; // saved packed: it wakes when a player is near
+				if (MachineDormancy.Enabled && !MachineDormancy.NearPlayer(rec.Pad, MachineDormancy.RangePx)) { rec.Dormant = true; _asleep++; continue; } // no player near on load (a server before anyone joins): load it packed, holding no slot
 				if (Spawn(new EntitySource_WorldEvent("Mechanization:DroneRestore"), rec) >= 0) spawned++;
 				else rec.Pending = true;
 			}
@@ -224,11 +282,12 @@ namespace Mechanization.Content.NPCs
 				NPC n = Main.npc[i];
 				if (n.active && n.ModNPC is DroneNPC d && d.RecordId > 0) _liveIds.Add(d.RecordId);
 			}
-			if (_liveIds.Count == _records.Count) return;
+			if (_liveIds.Count + _asleep == _records.Count) return;
 			List<int> gone = null;
 			foreach (KeyValuePair<int, FieldRecord> kv in _records)
 			{
 				if (_liveIds.Contains(kv.Key)) { kv.Value.Pending = false; continue; }
+				if (kv.Value.Dormant) continue; // packed, not destroyed
 				if (kv.Value.Pending)
 				{
 					if (Main.GameUpdateCount % 60u == 0u) Spawn(new EntitySource_WorldEvent("Mechanization:DroneRestore"), kv.Value);
@@ -250,6 +309,8 @@ namespace Mechanization.Content.NPCs
 			if (n.ModNPC is not DroneNPC drone) { n.active = false; return -1; }
 			drone.BindField(rec.Id, rec.Pad);
 			if (rec.Life > 0) n.life = rec.Life > n.lifeMax ? n.lifeMax : rec.Life; // a damaged drone reloads damaged; -1 means a fresh placement
+			if (rec.Dir != 0) { n.direction = rec.Dir; n.spriteDirection = rec.Dir; }
+			if (rec.Dormant) drone.RestoreFromPack(rec.Battery); // woken from a pack: its battery as it left
 			n.netUpdate = true;
 			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, idx);
 			return idx;
@@ -273,18 +334,18 @@ namespace Mechanization.Content.NPCs
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
-				if (n.active && n.ModNPC is DroneNPC d && d.RecordId > 0 && _records.TryGetValue(d.RecordId, out FieldRecord rec)) rec.Life = n.life; // the pad is the home: it never moves
+				if (n.active && n.ModNPC is DroneNPC d && d.RecordId > 0 && _records.TryGetValue(d.RecordId, out FieldRecord rec)) { rec.Life = n.life; rec.Dir = n.direction; rec.Battery = d.Battery; rec.Weapon = d.FieldWeaponType; } // the pad is the home: it never moves
 			}
 			var list = new List<TagCompound>(_records.Count);
 			foreach (FieldRecord rec in _records.Values)
-				list.Add(new TagCompound { ["id"] = rec.Id, ["x"] = rec.Pad.X, ["y"] = rec.Pad.Y, ["life"] = rec.Life });
+				list.Add(new TagCompound { ["id"] = rec.Id, ["x"] = rec.Pad.X, ["y"] = rec.Pad.Y, ["life"] = rec.Life, ["dormant"] = rec.Dormant, ["dir"] = rec.Dir, ["battery"] = rec.Battery, ["weapon"] = rec.Weapon });
 			tag["fieldDrones"] = list;
 			tag["nextId"] = _nextId;
 		}
 
 		public override void LoadWorldData(TagCompound tag)
 		{
-			_records.Clear();
+			_records.Clear(); _asleep = 0;
 			_nextId = tag.ContainsKey("nextId") ? tag.GetInt("nextId") : 1;
 			if (_nextId < 1) _nextId = 1;
 			int maxId = 0;
@@ -292,7 +353,9 @@ namespace Mechanization.Content.NPCs
 			{
 				int id = rt.GetInt("id");
 				if (id <= 0) continue;
-				_records[id] = new FieldRecord { Id = id, Pad = new Vector2(rt.GetFloat("x"), rt.GetFloat("y")), Life = rt.ContainsKey("life") ? rt.GetInt("life") : -1 };
+				_records[id] = new FieldRecord { Id = id, Pad = new Vector2(rt.GetFloat("x"), rt.GetFloat("y")), Life = rt.ContainsKey("life") ? rt.GetInt("life") : -1,
+					Dormant = rt.ContainsKey("dormant") && rt.GetBool("dormant"), Dir = rt.ContainsKey("dir") ? rt.GetInt("dir") : 0, Battery = rt.ContainsKey("battery") ? rt.GetFloat("battery") : -1f, Weapon = rt.ContainsKey("weapon") ? rt.GetInt("weapon") : 0 };
+				if (_records[id].Dormant) _asleep++;
 				if (id > maxId) maxId = id;
 			}
 			if (_nextId <= maxId) _nextId = maxId + 1;

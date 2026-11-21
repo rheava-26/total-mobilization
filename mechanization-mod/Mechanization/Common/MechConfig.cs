@@ -14,6 +14,15 @@ namespace Mechanization.Common
 
 		/// <summary>Off by default: drones and turrets hold fire on a boss (or one of its parts or segments) whose type the world has not beaten yet.</summary>
 		[DefaultValue(false)] public bool FireOnUnbeatenBosses;
+
+		/// <summary>Off by default (a preference: the garrison is part of how some players hold a boss fight). On: while any boss is alive the Barracks garrison launches and re-arms no drone and the ones in the air fly home and park. Player-built drones and every turret keep working.</summary>
+		[DefaultValue(false)] public bool StandDownDuringBosses;
+
+		/// <summary>On by default: a placed turret, a player-built drone or a Barracks garrison with no player within <see cref="DormantRangeTiles"/> tiles is packed into its saved record, which frees its NPC slot and its per-tick cost, and comes back as it was when a player is that near.</summary>
+		[DefaultValue(true)] public bool DormantWhenFar;
+
+		/// <summary>The distance in tiles from every player past which a machine goes dormant. The game removes an enemy within a tick once it is past about 260 tiles sideways or 140 tiles up and down from every player (measured in the world check), so a machine this far out has nothing to shoot.</summary>
+		[Range(60, 1000)] [DefaultValue(280)] public int DormantRangeTiles;
 	}
 
 	/// <summary>The one rule drones and turrets share for bosses.</summary>

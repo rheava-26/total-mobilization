@@ -50,6 +50,21 @@ Configs: {
 			Label: Drones and turrets fire on bosses you haven't beaten
 			Tooltip: Off, they hold fire on a boss until you have defeated it once. Its minions are always fair game.
 		}
+
+		StandDownDuringBosses: {
+			Label: Machines stand down during boss fights
+			Tooltip: On, no Barracks drone launches while a boss is alive, and the ones in the air fly home and park. They launch again when it is gone. Player-built drones and turrets keep working.
+		}
+
+		DormantWhenFar: {
+			Label: Machines sleep when no player is near
+			Tooltip: On, a turret, a player-built drone or a Barracks garrison with no player in range is packed away. It frees its NPC slot and comes back as it was when a player is in range.
+		}
+
+		DormantRangeTiles: {
+			Label: Sleep range in tiles
+			Tooltip: How far from every player a machine must be before it sleeps. The game removes enemies past about 260 tiles sideways or 140 tiles up and down, so a machine this far out has nothing to shoot.
+		}
 	}
 }
 
@@ -79,6 +94,7 @@ UI: {
 	DroneRecalling: Drones recalled: {0}.
 	DroneLaunching: Drones launched: {0}.
 	DroneNoSpare: No spare weapon in the armory.
+	DroneStandingDown: The machines are standing down for the boss fight. Drones launch again when it ends.
 	DroneKeyNoBarracks: No Barracks within reach.
 	DroneNone: This Barracks has no drones.
 	DronePackUp: Pack up

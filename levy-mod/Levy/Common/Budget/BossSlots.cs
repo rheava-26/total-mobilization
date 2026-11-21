@@ -46,7 +46,7 @@ namespace Levy.Common.Budget
 		private static int _loggedFor = -1;
 
 		private static bool _told;
-		internal static void Reset() { _told = false; ExtraReserve = 0; Squeeze = 0; _busy = false; _loggedFor = -1; }
+		internal static void Reset() { _bossKnown = false; _told = false; ExtraReserve = 0; Squeeze = 0; _busy = false; _loggedFor = -1; }
 
 		/// <summary>True when this spawn is a boss, or something a boss spawns (its segments, its adds): the spawns that may take a slot from the army's surroundings.</summary>
 		internal static bool NeedsRoom(IEntitySource source, int type)
@@ -171,6 +171,18 @@ namespace Levy.Common.Budget
 		private static bool IsArmyExtra(NPC n) => !n.townNPC && (n.ModNPC is SummonedUnitNPC || (n.TryGetGlobalNPC(out ConjuredGlobalNPC c) && c.Active));
 
 		private static bool EventOn() => Main.invasionType != 0 || Main.eclipse || Main.pumpkinMoon || Main.snowMoon || Terraria.GameContent.Events.DD2Event.Ongoing || NPC.LunarApocalypseIsUp;
+
+		/// <summary>True while any boss (or a boss's part) is alive, read from a scan that is at most half a second old (a companion mod's "stand down during a boss fight" rule asks every tick). Server / single player.</summary>
+		public static bool BossAlive
+		{
+			get
+			{
+				uint now = Main.GameUpdateCount;
+				if (!_bossKnown || now < _bossStamp || now - _bossStamp >= 30u) { _bossKnown = true; _bossStamp = now; _bossCached = AnyBoss(); }
+				return _bossCached;
+			}
+		}
+		private static bool _bossKnown, _bossCached; private static uint _bossStamp;
 
 		/// <summary>True while any boss (or a boss's part) is alive.</summary>
 		private static bool AnyBoss()

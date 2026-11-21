@@ -205,6 +205,7 @@ namespace Mechanization.Common
 				for (int i = 0; i < reps; i++) DroneLeavesPlayerAlone();
 				return;
 			}
+			if (Environment.GetEnvironmentVariable("LEVY_MECHWORLD_ONLY") == "dorm") { DormancyWorld(); return; } // lab: the dormancy and boss-rule checks alone
 			RelayAcrossPylons();
 			TurretItemUse();
 			DroneItemUse();
@@ -218,6 +219,7 @@ namespace Mechanization.Common
 			if (Environment.GetEnvironmentVariable("LEVY_MECHAMMO") == "1") AmmoResolveAudit();
 			if (Environment.GetEnvironmentVariable("LEVY_MECHSHOTS") == "1") MachineShotAudit();
 			DroneGarrison();
+			DormancyWorld();
 			CrowdedWorld();
 		}
 

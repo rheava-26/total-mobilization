@@ -169,9 +169,22 @@ namespace Mechanization.Content.NPCs
 				d.ArmoryId = armory.ID; // an unarmed drone simply adopts the Armory the Barracks links to now
 				_mine.Add(d);
 			}
+			// No player within the dormancy range: the garrison is asleep. Its drones file their weapons back into the Armory (the loans are on its ledger, nothing is lost), no new one launches, and it launches again when a player is near.
+			if (MachineDormancy.GarrisonAsleep(barracks.Center))
+			{
+				for (int i = 0; i < _mine.Count; i++) { _mine[i].Dismantle(); MachineDormancy.GarrisonDismissed++; }
+				return;
+			}
 			if (armory == null) return;
 
 			ReconcileLoans(armory);
+
+			// A boss is alive and the player asked the machines to stand down: the drones in the air fly home and park, and nothing launches or re-arms until the boss is gone.
+			if (MachineDormancy.StandingDown)
+			{
+				for (int i = 0; i < _mine.Count; i++) _mine[i].StandDownForBoss();
+				return;
+			}
 
 			// A drone the player recalled (flying home or parked) holds the whole garrison: no new launch and no re-arming, so the weapon that came back is not lent straight out again while the
 			// player is still working the Armory. A launch order (or the drone being destroyed) lifts the hold.
@@ -355,9 +368,10 @@ namespace Mechanization.Content.NPCs
 			switch (order)
 			{
 				case DroneOrder.Recall: Recall(drone); Say(player, "Mods.Mechanization.UI.DroneRecalling", 1); return true;
-				case DroneOrder.Launch: Say(player, LaunchOne(drone) ? "Mods.Mechanization.UI.DroneLaunching" : "Mods.Mechanization.UI.DroneNoSpare", 1); return true;
+				case DroneOrder.Launch: if (MachineDormancy.StandingDown) { Say(player, "Mods.Mechanization.UI.DroneStandingDown", 0); return true; } Say(player, LaunchOne(drone) ? "Mods.Mechanization.UI.DroneLaunching" : "Mods.Mechanization.UI.DroneNoSpare", 1); return true;
 				case DroneOrder.RecallAll: Say(player, "Mods.Mechanization.UI.DroneRecalling", RecallAll(drone.BarracksId)); return true;
 				case DroneOrder.LaunchAll:
+					if (MachineDormancy.StandingDown) { Say(player, "Mods.Mechanization.UI.DroneStandingDown", 0); return true; }
 					int n = LaunchAll(drone.BarracksId);
 					Say(player, n > 0 ? "Mods.Mechanization.UI.DroneLaunching" : "Mods.Mechanization.UI.DroneNoSpare", n);
 					return true;
@@ -379,6 +393,7 @@ namespace Mechanization.Content.NPCs
 			foreach (DroneNPC d in _all) if (d.BarracksId == barracks.ID) { total++; if (d.Armed) armed++; }
 			if (total == 0) { Say(player, "Mods.Mechanization.UI.DroneNone", 0); return false; }
 			if (armed > 0) Say(player, "Mods.Mechanization.UI.DroneRecalling", RecallAll(barracks.ID));
+			else if (MachineDormancy.StandingDown) Say(player, "Mods.Mechanization.UI.DroneStandingDown", 0);
 			else
 			{
 				int n = LaunchAll(barracks.ID);

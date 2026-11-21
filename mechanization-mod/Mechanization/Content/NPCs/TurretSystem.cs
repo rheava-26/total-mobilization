@@ -38,9 +38,16 @@ namespace Mechanization.Content.NPCs
 			public int Life;
 			/// <summary>True when the NPC could not be spawned yet (no free NPC slot on load): the record is kept and the spawn retried, never dropped as "destroyed".</summary>
 			public bool Pending;
+			/// <summary>True while the turret is packed: no NPC, no slot, no brain; the record holds everything and the sweep spawns it again when a player is near (<see cref="MachineDormancy"/>). Saved with the world.</summary>
+			public bool Dormant;
+			/// <summary>What the record keeps beyond position and life while dormant: the way it faces (-1 / 1, 0 = never packed) and the type of the weapon it had mounted (re-mounted from the Armories in reach on waking).</summary>
+			public int Dir, Weapon;
+			/// <summary>Ticks this turret has been out of range of every player (packs at <see cref="MachineDormancy.PackDelayTicks"/>).</summary>
+			public int FarTicks;
 		}
 
 		private readonly Dictionary<int, TurretRecord> _records = new();
+		private int _asleep;
 		private readonly HashSet<int> _liveIds = new();
 		private int _nextId = 1;
 		/// <summary>Set by <see cref="LoadWorldData"/>; the next server / single update re-spawns the saved turrets (the safe window for <see cref="NPC.NewNPC"/>).</summary>
@@ -54,7 +61,15 @@ namespace Mechanization.Content.NPCs
 			_liveIds.Clear();
 			_nextId = 1;
 			_pendingRespawn = false;
+			_asleep = 0;
 		}
+
+		/// <summary>Records and dormant records, for the world check and the log.</summary>
+		public int RecordCount => _records.Count;
+		public int DormantCount => _asleep;
+		/// <summary>The saved record of a turret, for the world check (null when it has none).</summary>
+		internal TurretRecord RecordOf(int id) => _records.TryGetValue(id, out TurretRecord r) ? r : null;
+		internal IEnumerable<TurretRecord> Records => _records.Values;
 
 		// =====================================================================================================
 		// Placement
@@ -214,6 +229,52 @@ namespace Mechanization.Content.NPCs
 			if (Main.netMode == NetmodeID.MultiplayerClient) return;
 			if (_pendingRespawn) { _pendingRespawn = false; RespawnAll(); return; } // let the re-spawned NPCs register before the first reconcile
 			Reconcile();
+			if (_records.Count > 0 && Main.GameUpdateCount % (uint)MachineDormancy.SweepTicks == 0u) SleepSweep();
+		}
+
+		// =====================================================================================================
+		// Dormancy: a turret with no player in range is packed into its record and spawned again when one comes near
+		// =====================================================================================================
+		private void SleepSweep()
+		{
+			bool on = MachineDormancy.Enabled; float range = MachineDormancy.RangePx;
+			if (on)
+			{
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC n = Main.npc[i];
+					if (!n.active || n.ModNPC is not TurretNPC t || t.RecordId <= 0 || !_records.TryGetValue(t.RecordId, out TurretRecord rec) || rec.Dormant) continue;
+					if (MachineDormancy.NearPlayer(n.Center, range)) { rec.FarTicks = 0; continue; }
+					rec.FarTicks += MachineDormancy.SweepTicks;
+					if (rec.FarTicks >= MachineDormancy.PackDelayTicks) Pack(n, t, rec);
+				}
+			}
+			if (_asleep <= 0) return;
+			foreach (TurretRecord rec in _records.Values)
+			{
+				if (!rec.Dormant) continue;
+				if (on && !MachineDormancy.NearPlayer(BodyCentre(rec), range)) continue;
+				Wake(rec);
+			}
+		}
+
+		private static Vector2 BodyCentre(TurretRecord rec) => rec.Position + new Vector2(T.BodyWidth * 0.5f, T.BodyHeight * 0.5f);
+
+		/// <summary>Packs one live turret into its record: what it had when it left is what comes back. The record is kept, never dropped.</summary>
+		private void Pack(NPC n, TurretNPC t, TurretRecord rec)
+		{
+			rec.Position = n.position; rec.Life = n.life; rec.Dir = n.direction; rec.Weapon = t.MountedWeaponType;
+			rec.Dormant = true; rec.FarTicks = 0; _asleep++; MachineDormancy.Packed++;
+			int slot = n.whoAmI;
+			n.active = false; n.netUpdate = true;
+			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, slot);
+		}
+
+		/// <summary>Spawns a dormant turret from its record, as it was. With no free NPC slot it stays dormant and the next sweep tries again.</summary>
+		private void Wake(TurretRecord rec)
+		{
+			if (Spawn(new EntitySource_WorldEvent("Mechanization:TurretWake"), rec, rec.Position + new Vector2(T.BodyWidth * 0.5f, T.BodyHeight)) < 0) { MachineDormancy.NoSlot++; return; }
+			rec.Dormant = false; rec.FarTicks = 0; if (_asleep > 0) _asleep--; MachineDormancy.Unpacked++;
 		}
 
 		/// <summary>Spawns a turret NPC for every saved record that has no live NPC. Runs once right after a world load.</summary>
@@ -223,7 +284,9 @@ namespace Mechanization.Content.NPCs
 			foreach (TurretRecord rec in _records.Values)
 			{
 				if (LiveNpcFor(rec.Id) != null) continue;
+				if (rec.Dormant) continue; // saved packed: it wakes when a player is near
 				Vector2 spot = rec.Position + new Vector2(T.BodyWidth * 0.5f, T.BodyHeight); // bottom-centre of the saved top-left
+				if (MachineDormancy.Enabled && !MachineDormancy.NearPlayer(BodyCentre(rec), MachineDormancy.RangePx)) { rec.Dormant = true; _asleep++; continue; } // no player near on load (a server before anyone joins): load it packed, holding no slot
 				if (Spawn(new EntitySource_WorldEvent("Mechanization:TurretRestore"), rec, spot) >= 0) spawned++;
 				else rec.Pending = true; // no free NPC slot right now: keep the record and try again, do not let the reconcile pass call it destroyed
 			}
@@ -240,11 +303,12 @@ namespace Mechanization.Content.NPCs
 				NPC n = Main.npc[i];
 				if (n.active && n.ModNPC is TurretNPC t && t.RecordId > 0) _liveIds.Add(t.RecordId);
 			}
-			if (_liveIds.Count == _records.Count) return; // every record still has its NPC
+			if (_liveIds.Count + _asleep == _records.Count) return; // every record still has its NPC, or is packed
 			List<int> gone = null;
 			foreach (KeyValuePair<int, TurretRecord> kv in _records)
 			{
 				if (_liveIds.Contains(kv.Key)) { kv.Value.Pending = false; continue; }
+				if (kv.Value.Dormant) continue; // packed, not destroyed
 				if (kv.Value.Pending)
 				{
 					if (Main.GameUpdateCount % 60u == 0u)
@@ -270,6 +334,8 @@ namespace Mechanization.Content.NPCs
 			if (n.ModNPC is not TurretNPC t) { n.active = false; return -1; }
 			t.RecordId = rec.Id;
 			if (rec.Life > 0) n.life = rec.Life > n.lifeMax ? n.lifeMax : rec.Life; // a damaged turret reloads damaged; -1 means a fresh placement
+			if (rec.Dir != 0) { n.direction = rec.Dir; n.spriteDirection = rec.Dir; } // it faces the way it did
+			if (rec.Dormant) n.position = rec.Position; // woken from a pack: back on the very pixel it left (the rest-spot spawn is an integer)
 			n.netUpdate = true;
 			if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, idx);
 			return idx;
@@ -297,20 +363,20 @@ namespace Mechanization.Content.NPCs
 				if (n.active && n.ModNPC is TurretNPC t && t.RecordId > 0 && _records.TryGetValue(t.RecordId, out TurretRecord rec))
 				{
 					rec.Position = n.position;
-					rec.Life = n.life;
+					rec.Life = n.life; rec.Dir = n.direction; rec.Weapon = t.MountedWeaponType;
 				}
 			}
 
 			var list = new List<TagCompound>(_records.Count);
 			foreach (TurretRecord rec in _records.Values)
-				list.Add(new TagCompound { ["id"] = rec.Id, ["x"] = rec.Position.X, ["y"] = rec.Position.Y, ["life"] = rec.Life });
+				list.Add(new TagCompound { ["id"] = rec.Id, ["x"] = rec.Position.X, ["y"] = rec.Position.Y, ["life"] = rec.Life, ["dormant"] = rec.Dormant, ["dir"] = rec.Dir, ["weapon"] = rec.Weapon });
 			tag["turrets"] = list;
 			tag["nextId"] = _nextId;
 		}
 
 		public override void LoadWorldData(TagCompound tag)
 		{
-			_records.Clear();
+			_records.Clear(); _asleep = 0;
 			_nextId = tag.ContainsKey("nextId") ? tag.GetInt("nextId") : 1;
 			if (_nextId < 1) _nextId = 1;
 
@@ -324,7 +390,11 @@ namespace Mechanization.Content.NPCs
 					Id = id,
 					Position = new Vector2(rt.GetFloat("x"), rt.GetFloat("y")),
 					Life = rt.ContainsKey("life") ? rt.GetInt("life") : -1,
+					Dormant = rt.ContainsKey("dormant") && rt.GetBool("dormant"),
+					Dir = rt.ContainsKey("dir") ? rt.GetInt("dir") : 0,
+					Weapon = rt.ContainsKey("weapon") ? rt.GetInt("weapon") : 0,
 				};
+				if (rec.Dormant) _asleep++;
 				_records[id] = rec;
 				if (id > maxId) maxId = id;
 			}

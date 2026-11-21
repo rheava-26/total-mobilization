@@ -54,6 +54,33 @@ namespace Mechanization.Content.NPCs
 		private uint _lastWarnTick;
 		private bool _announcedFirst;
 
+		public override void Load() { Levy.Common.Budget.BossSlots.SlotReleasers.Add(ReleaseGarrisonSlots); }
+		public override void Unload() { Levy.Common.Budget.BossSlots.SlotReleasers.Remove(ReleaseGarrisonSlots); }
+
+		/// <summary>
+		/// A boss that needs room (a segmented worm spawns 60 to 100 NPCs in one pass) asks the garrison for slots through Levy's BossSlots: up to <paramref name="n"/> garrison drones at slot <paramref name="minIndex"/> or above (a failed spawn can only land there) stand down at once, oldest first, and file their
+		/// weapons back (Dismantle). Player-built field drones and turrets are never touched. Returns how many slots it freed; the garrison launches again once the free slots are back over the reserve.
+		/// </summary>
+		private static int ReleaseGarrisonSlots(int n, int minIndex)
+		{
+			int freed = 0;
+			while (freed < n)
+			{
+				DroneNPC oldest = null;
+				for (int i = Math.Max(0, minIndex); i < Main.maxNPCs; i++)
+				{
+					NPC npc = Main.npc[i];
+					if (!npc.active || i < minIndex || npc.ModNPC is not DroneNPC d || !d.IsBound || d.IsField || d.RecordId >= 0) continue;
+					if (oldest == null || d.Born < oldest.Born) oldest = d;
+				}
+				if (oldest == null) break;
+				oldest.Dismantle();
+				Levy.Common.Budget.CrowdBudget.NoteRetiredDrone();
+				freed++;
+			}
+			return freed;
+		}
+
 		public override void OnWorldLoad() => Reset();
 		public override void OnWorldUnload() => Reset();
 

@@ -131,6 +131,9 @@ namespace Levy.Common.Weapons
 		// the weapon take its alt branch exactly as a right-click does. Melee swings, held weapons, thrown stacks, whips, boomerangs, yoyos and
 		// flails keep their left-click-only behaviour.
 		// ------------------------------------------------------------------------------------------------------------
+		/// <summary>Lab A/B switch (env LEVY_HOLDALT_OLD=1): a held HOLD_VARIANT holdout also fires its right-click as a separate plain use, as it did before.</summary>
+		internal static readonly bool HoldAltOld = Environment.GetEnvironmentVariable("LEVY_HOLDALT_OLD") == "1";
+
 		/// <summary>True while an alt attack is being fired: the plain-spread fallback is off, so an alt whose hooks spawn nothing fails (and the primary is used) instead of firing a stand-in.</summary>
 		private static bool _altActive;
 
@@ -174,6 +177,9 @@ namespace Levy.Common.Weapons
 			uint now = Main.GameUpdateCount;
 			Player d = s.Dummy;
 			if (d == null || !LevyConfig.Get.RealWeaponShoot || now < s.AltReadyTick || _altDudItems.Contains(item.type)) return false;
+			// A held modded holdout whose right button picks the variant it spawns as (HOLD_VARIANT) gets that button when its chain holdout is spawned (AltPolicies.OnHoldoutSpawn). A separate right-click use would fire the item's Shoot hook
+			// as a plain shot, owned by the commander's slot and outside the levy's chain: a second, unheld holdout that reads her player (and, for the Ontological Despoiler, swaps her mode state, not the levy's). LEVY_HOLDALT_OLD=1 = the old behaviour (lab A/B).
+			if (profile.Family == WeaponFamily.HeldWeapon && !HoldAltOld && AltPolicies.For(item.type).Kind == AltPolicyKind.HoldVariant && ModShotKinds.Of(item) == ModShotKind.Holdout) { s.AltReadyTick = now + (uint)AltPolicies.NeverRecheckTicks; return false; }
 			// The policy decides BEFORE the AltFunctionUse probe: some probes perform the alt themselves (Hydra launches its heads inside it), and a NEVER row never probes at all.
 			if (MindAltMode != 2 && s.AltHoldSince == 0 && !AltPolicies.Want(s, item, seg, out int recheck))
 			{

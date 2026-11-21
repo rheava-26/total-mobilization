@@ -174,8 +174,10 @@ namespace Levy.Common.Weapons
 			Vector2 pos = s.NPC.Center, v = vel; int type = item.shoot, dmg = damage; float kb = item.knockBack;
 			bool swapped = false;
 			UseCycle.Scope cycle = default;
+			int masked = 0;
 			try
 			{
+				masked = MaskSiblings(s, item, ownerSlot);
 				EnemyTargeting.Swap(s); // dummy -> Main.player[255], at the soldier
 				swapped = true;
 				if (ownerSlot != Slot) SoldierMinions.AliasDummy(ownerSlot, d); // a UUID-bound holdout lives in the throwaway slot below 255 (see OwnerSlotFor)
@@ -196,6 +198,7 @@ namespace Levy.Common.Weapons
 			catch (Exception) { threw = true; }
 			finally
 			{
+				UnmaskSiblings(masked);
 				cycle.Dispose();
 				d.whoAmI = savedWho; Main.myPlayer = savedMy; d.selectedItem = savedSel; d.inventory[0] = saved0; d.controlUseItem = savedUse; d.channel = savedChannel; d.altFunctionUse = savedAlt;
 				if (item.mana > 0) s.Record.Mana = Math.Clamp(d.statMana, 0, Math.Max(0, s.Record.MaxMana));
@@ -210,6 +213,40 @@ namespace Levy.Common.Weapons
 				if (c.active && !before[k]) made.Add(c);
 			}
 			return made;
+		}
+
+		private static readonly List<Projectile> _masked = new();
+		/// <summary>Lab counter: other levies' holdouts hidden from a Shoot hook's "one of mine is already out" test.</summary>
+		internal static int SiblingMasks;
+		/// <summary>Lab A/B switch (env LEVY_SIBLINGMASK=0): other levies' holdouts stay visible to a Shoot hook, as before.</summary>
+		private static readonly bool SiblingMaskOff = Environment.GetEnvironmentVariable("LEVY_SIBLINGMASK") == "0";
+
+		/// <summary>
+		/// Every levy's held chain shares one owner slot (255), so a modded weapon whose Shoot hook refuses while "one of my holdouts is out" (<c>Main.projectile.Any(n =&gt; n.type == Item.shoot &amp;&amp; n.owner == player.whoAmI)</c>: the Ontological
+		/// Despoiler, Fetid Emesis and their kind) sees every OTHER levy's holdout as its own and makes nothing, and the fallback holder skips the hook (its mode, its ai[] and any swap). For the length of this levy's Shoot call the
+		/// other levies' live chain projectiles of the item's own shoot type are given another owner value, so the hook sees exactly what a player holding the weapon sees: their own holdouts. Put back in the same finally.
+		/// Returns how many were masked (0 = nothing to undo).
+		/// </summary>
+		private static int MaskSiblings(SoldierNPC s, Item item, int ownerSlot)
+		{
+			_masked.Clear();
+			if (SiblingMaskOff || item == null || item.type < ItemID.Count || item.shoot <= 0) return 0;
+			int idx = s.NPC.whoAmI, other = ownerSlot == Slot ? Slot - 1 : Slot;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile q = Main.projectile[i];
+				if (!q.active || q.type != item.shoot || q.owner != ownerSlot || !q.TryGetGlobalProjectile(out SoldierProjectileTag t) || t.SoldierIndex == idx) continue;
+				q.owner = other; _masked.Add(q);
+			}
+			SiblingMasks += _masked.Count;
+			return _masked.Count == 0 ? 0 : ownerSlot + 1;
+		}
+
+		private static void UnmaskSiblings(int token)
+		{
+			if (token == 0) return;
+			foreach (Projectile q in _masked) q.owner = token - 1;
+			_masked.Clear();
 		}
 
 		/// <summary>
@@ -368,8 +405,10 @@ namespace Levy.Common.Weapons
 				else if (g.CycleRelease && feed)
 				{
 					++g.HeldTicks;
-					release = g.HeldTicks > g.HoldMax;
-					if (g.HeldTicks > g.HoldMax + g.Linger) { p.Kill(); return; }
+					// let go when the hold runs out, or (a holdout that counts its own charge) when the charge it is held for is reached
+					if (!g.Released && (g.HeldTicks > g.HoldMax || ChargeReached(body, p, g, item))) { g.Released = true; g.ReleasedAt = g.HeldTicks; }
+					release = g.Released;
+					if (g.Released && g.HeldTicks >= g.ReleasedAt + g.Linger) { p.Kill(); return; }
 				}
 				if (ModShotKinds.ChainExtras(item)) CountOwned(body); // vanilla counts a player's own projectiles in Player.Update; the dummy never runs it, and holdouts and their children test ownedProjectileCounts (Rancor's circle ends when it sees no holdout)
 				bool button = g.Biome != 0 ? BiomeBlades.WantsButton(body, p, g) : ark ? ArkSwings.WantsButton(p, g) : feed && !release; // the thrown scissors read the use button: held until the snap window opens, then let go
@@ -447,6 +486,48 @@ namespace Levy.Common.Weapons
 					}
 				}
 			}
+		}
+
+		/// <summary>Lab counters: releases of an ai[0]-charge plan, uncharged (let go at once) and charged.</summary>
+		internal static int TapReleases, ChargeReleases;
+		private static readonly bool ChargeDbg = Environment.GetEnvironmentVariable("LEVY_HOLDOUT_DEBUG") == "1";
+
+		/// <summary>
+		/// A holdout with an ai[0] charge plan (<see cref="ChargePlan.Stages"/>) has reached the charge it is held for. The charge is picked once, on the first held tick, from the holdout's mode (ai[2]) and the situation:
+		/// the first stage whose condition holds, else none (the button is let go at once: an uncharged shot).
+		/// </summary>
+		private static bool ChargeReached(SoldierNPC body, Projectile p, HeldWeaponProjectile g, Item item)
+		{
+			if (ModShotKinds.ChargeRelease(item) is not ChargePlan plan || plan.Stages == null) return false;
+			if (!g.ChargeDecided)
+			{
+				g.ChargeDecided = true; g.ChargeTo = 0f;
+				if (plan.Stages.TryGetValue((int)Math.Round(p.ai[2]), out var stages))
+					foreach (var (cond, ai0) in stages) if (StageWanted(body, cond)) { g.ChargeTo = ai0; break; }
+				if (ChargeDbg) { NPC dt = TargetOf(body); ModContent.GetInstance<Levy>()?.Logger.Info($"[HoldoutWorld] OBSERVED   dbg charge levy={body.NPC.whoAmI} ai2={p.ai[2]} ai0={p.ai[0]} heldTicks={g.HeldTicks} target={(dt == null ? "none" : dt.FullName + " v=" + dt.velocity.Length().ToString("0.0") + " d=" + (Vector2.Distance(dt.Center, body.NPC.Center) / 16f).ToString("0.0"))} -> chargeTo={g.ChargeTo}"); }
+			}
+			bool done = g.ChargeTo <= 0f || p.ai[0] >= g.ChargeTo;
+			if (done) { if (g.ChargeTo <= 0f) TapReleases++; else ChargeReleases++; }
+			return done;
+		}
+
+		private static bool StageWanted(SoldierNPC body, string cond)
+		{
+			if (string.IsNullOrEmpty(cond)) return false;
+			if (cond == "always") return true;
+			NPC t = TargetOf(body);
+			var x = new AltCtx(body, t);
+			int c = cond.IndexOf(':');
+			string k = c < 0 ? cond : cond.Substring(0, c);
+			float v = c < 0 ? 0f : float.TryParse(cond.Substring(c + 1), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float f) ? f : 0f;
+			switch (k)
+			{
+				case "tough": return x.IsTough(600f);
+				case "crowd": return x.Crowd(8f) >= (int)v;
+				case "fast": return t != null && t.velocity.Length() >= v;
+				case "far": return t != null && x.Dist >= v;
+			}
+			return false;
 		}
 
 		/// <summary>The soldier (NPC index + 1) whose dummy stands in slot 255 for a whole <c>ProjectileLoader.ProjectileAI</c> call of one of its chain projectiles, or 0 (see <see cref="OpenOuterSwap"/>).</summary>
@@ -612,6 +693,9 @@ namespace Levy.Common.Weapons
 		/// <summary>A projectile a holdout's AI made that stays bound to it (see OwnerLockProbe.BoundToHolder): it and what it spawns stay in the chain.</summary>
 		public bool BoundChild;
 		public int HeldTicks, HoldMax, Linger;
+		/// <summary>A charge-by-button holdout: the hold tick it was let go at, and (an ai[0] charge plan) the charge it is held for (0 = let go at once), picked on its first held tick.</summary>
+		public int ReleasedAt;
+		public bool ChargeDecided; public float ChargeTo;
 		/// <summary>An Ark's swung blade or parry holdout (or a child bound to the blade): see <see cref="ArkSwings"/>.</summary>
 		public ArkRole Ark;
 		/// <summary>A Biome Blade's attunement blade (1) or a child bound to it (2): see <see cref="BiomeBlades"/>. Server side only.</summary>

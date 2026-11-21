@@ -287,6 +287,12 @@ namespace Mechanization.Common
 				_cmdAt = near; Step(1500);
 				DChk($"garrison, a player back: it launches again ({GarrisonDrones(true)} armed)", GarrisonDrones(true) >= 1);
 
+				// a placed drone and a placed turret beside the base, for the boss rule
+				UseItem(Main.player[0], new Item(ModContent.ItemType<DroneItem>(), 2), new Vector2((cx + 20) * 16f, (FloorY - 5) * 16f), out _);
+				UseItem(Main.player[0], new Item(ModContent.ItemType<TurretItem>(), 2), new Vector2((cx + 24) * 16f, (FloorY - 4) * 16f), out _);
+				Step(120);
+				DChk($"boss rule: a placed drone and a placed turret stand (drones {FieldDrones()}, turrets {CountNpcs<TurretNPC>()})", FieldDrones() == 1 && CountNpcs<TurretNPC>() == 1);
+
 				// the boss rule. Control first: setting off, a boss changes nothing.
 				NPC boss = Target(cx, 100); boss.boss = true; boss.friendly = false; boss.lifeMax = boss.life = 100000;
 				Vector2 bossAt = boss.position;
@@ -294,31 +300,49 @@ namespace Mechanization.Common
 				for (int k = 0; k < 700; k++) { Pin(boss, bossAt); Step(1); }
 				int armedOff = GarrisonDrones(true);
 				DChk($"boss rule off, a boss alive (BossSlots sees it: {BossSlots.BossAlive}): the garrison keeps flying ({armedOff} armed)", BossSlots.BossAlive && armedOff >= 1);
+				// the placed machines keep firing: a pinned hostile (not a boss) beside the turret, rounds counted by the machine that fired them
+				NPC foe = Target(cx + 34, 0);
+				MechShotProbe.TurretShots = MechShotProbe.FieldShots = 0; MechShotProbe.On = true;
+				_pinTgt = foe; _pinAt = new Vector2((cx + 34) * 16f, (FloorY - 6) * 16f); _pinFollow = null; _localIsSlot0 = true;
+				try { for (int k = 0; k < 300; k++) { Pin(boss, bossAt); Step(1); } }
+				finally { _pinTgt = null; _localIsSlot0 = false; MechShotProbe.On = false; }
+				if (foe != null) foe.active = false;
+				DChk($"boss rule off, a boss alive: the placed turret and drone keep standing and firing (turret rounds {MechShotProbe.TurretShots}, placed drone rounds {MechShotProbe.FieldShots}, standing {FieldDrones()}+{CountNpcs<TurretNPC>()})", MechShotProbe.TurretShots > 0 && MechShotProbe.FieldShots > 0 && FieldDrones() == 1 && CountNpcs<TurretNPC>() == 1);
 				boss.active = false; Step(60);
 
 				// on: while the boss lives the garrison leaves the field at once, every weapon filed back, its NPC slots free; nothing launches
 				cfg.StandDownDuringBosses = true;
 				int before = GarrisonDrones(), beforeArmed = GarrisonDrones(true), lentBefore = armory.Lent.Count, freeBefore = Main.maxNPCs - HeldNpcs();
 				MachineDormancy.GarrisonVanished = 0;
+				MachineDormancy.StandDownPacked = MachineDormancy.WakeHeld = 0;
 				boss = Target(cx, 100); boss.boss = true; boss.friendly = false; boss.lifeMax = boss.life = 100000; bossAt = boss.position;
-				int gone = -1;
-				for (int k = 0; k < 180; k++) { Pin(boss, bossAt); Step(1); if (gone < 0 && GarrisonDrones() == 0) gone = k + 1; }
+				int gone = -1, mGone = -1;
+				for (int k = 0; k < 180; k++) { Pin(boss, bossAt); Step(1); if (gone < 0 && GarrisonDrones() == 0) gone = k + 1; if (mGone < 0 && FieldDrones() == 0 && CountNpcs<TurretNPC>() == 0) mGone = k + 1; }
+				DChk($"boss rule on: the placed drone and turret pack within 2 seconds of the boss (gone after {mGone} ticks; packed {MachineDormancy.StandDownPacked}; records {TurretSystem.Instance.RecordCount}+{FieldDroneSystem.Instance.RecordCount}, dormant {TurretSystem.Instance.DormantCount}+{FieldDroneSystem.Instance.DormantCount})",
+					mGone > 0 && mGone <= 120 && MachineDormancy.StandDownPacked >= 2 && TurretSystem.Instance.RecordCount == 1 && FieldDroneSystem.Instance.RecordCount == 1 && TurretSystem.Instance.DormantCount == 1 && FieldDroneSystem.Instance.DormantCount == 1);
+				var sdT = new List<(int id, Vector2 pos, int life, int dir, int weapon)>(); var sdD = new List<(int id, int life, float bat, int weapon)>(); bool sdHeld = true;
+				foreach (var r in TurretSystem.Instance.Records) { sdT.Add((r.Id, r.Position, r.Life, r.Dir, r.Weapon)); sdHeld &= r.ForBoss; }
+				foreach (var r in FieldDroneSystem.Instance.Records) { sdD.Add((r.Id, r.Life, r.Battery, r.Weapon)); sdHeld &= r.ForBoss; }
+				DChk("boss rule on: both records are held for the boss", sdHeld && sdT.Count == 1 && sdD.Count == 1);
 				int freeAfter = Main.maxNPCs - HeldNpcs();
 				DChk($"boss rule on: every garrison drone is gone within 2 seconds of the boss (gone after {gone} ticks; {before} drones, {beforeArmed} armed before; removed {MachineDormancy.GarrisonVanished})", before >= 1 && gone > 0 && gone <= 120 && GarrisonDrones() == 0 && MachineDormancy.GarrisonVanished >= before);
 				DChk($"boss rule on: every weapon is back in the Armory (lent {lentBefore} -> {armory.Lent.Count}, racks hold {CountStored(armory)})", armory.Lent.Count == 0 && CountStored(armory) >= 6);
 				DChk($"boss rule on: their NPC slots are free (slots not held by a critter {freeBefore} -> {freeAfter}, the boss took 1)", freeAfter >= freeBefore - 1 + before);
 				for (int k = 0; k < 1500; k++) { Pin(boss, bossAt); Step(1); }
 				DChk($"boss rule on, 25 seconds more: nothing launches (garrison drones {GarrisonDrones()}, lent {armory.Lent.Count})", GarrisonDrones() == 0 && armory.Lent.Count == 0 && BossSlots.BossAlive);
-				// a player-built drone and a turret are not touched while the boss lives
-				UseItem(Main.player[0], new Item(ModContent.ItemType<DroneItem>(), 2), new Vector2((cx + 20) * 16f, (FloorY - 5) * 16f), out _);
-				UseItem(Main.player[0], new Item(ModContent.ItemType<TurretItem>(), 2), new Vector2((cx + 24) * 16f, (FloorY - 4) * 16f), out _);
-				for (int k = 0; k < 300; k++) { Pin(boss, bossAt); Step(1); }
-				DChk("boss rule on: a player-built drone and a turret still work and are standing", FieldDrones() == 1 && CountNpcs<TurretNPC>() == 1);
-				KillAll<TurretNPC>(); KillAll<DroneNPC>(); // the fixtures; the garrison and its records are rebuilt below
-				TurretSystem.Instance.OnWorldUnload(); FieldDroneSystem.Instance.OnWorldUnload();
+				DChk($"boss rule on, 25 seconds with a player beside them: the placed drone and turret stay packed (standing {FieldDrones()}+{CountNpcs<TurretNPC>()}, wakes held {MachineDormancy.WakeHeld})", FieldDrones() == 0 && CountNpcs<TurretNPC>() == 0 && MachineDormancy.WakeHeld > 0);
 
-				// the boss dies: the garrison launches again from the Barracks and the Armory
+				// the boss dies: the placed machines wake as they were, and the garrison launches again from the Barracks and the Armory
 				boss.active = false;
+				int mBack = -1; for (int k = 0; k < 240 && mBack < 0; k++) { Step(1); if (FieldDrones() == 1 && CountNpcs<TurretNPC>() == 1) mBack = k + 1; }
+				Step(2);
+				bool sdSame = mBack > 0; string sdWhy = "";
+				foreach (TurretNPC t in Turrets()) foreach (var w in sdT) if (w.id == t.RecordId && (Vector2.Distance(t.NPC.position, w.pos) > 0.5f || t.NPC.life != w.life || t.NPC.direction != w.dir || t.MountedWeaponType == 0)) { sdSame = false; sdWhy += $" turret pos {t.NPC.position}/{w.pos} life {t.NPC.life}/{w.life} dir {t.NPC.direction}/{w.dir} weapon {t.MountedWeaponType}/{w.weapon};"; }
+				foreach (DroneNPC d in Fielders()) foreach (var w in sdD) if (w.id == d.RecordId && (d.NPC.life != w.life || Math.Abs(d.Battery - w.bat) > 1f || d.FieldWeaponType == 0)) { sdSame = false; sdWhy += $" drone life {d.NPC.life}/{w.life} battery {d.Battery:0.0}/{w.bat:0.0} weapon {d.FieldWeaponType}/{w.weapon};"; }
+				bool sdFlags = true; foreach (var r in TurretSystem.Instance.Records) sdFlags &= !r.Dormant && !r.ForBoss; foreach (var r in FieldDroneSystem.Instance.Records) sdFlags &= !r.Dormant && !r.ForBoss;
+				string sdWeapons = ""; foreach (TurretNPC t in Turrets()) foreach (var w in sdT) if (w.id == t.RecordId) sdWeapons += $"turret {w.weapon} -> {t.MountedWeaponType} "; foreach (DroneNPC d in Fielders()) foreach (var w in sdD) if (w.id == d.RecordId) sdWeapons += $"drone {w.weapon} -> {d.FieldWeaponType} ";
+				DNote("boss rule on: weapons mounted when packed -> after waking (a machine mounts the best weapon its Armories hold when it wakes; the garrison's loans came home meanwhile): " + sdWeapons);
+				DChk($"boss rule on, the boss gone: the placed drone and turret wake as they were, armed from the Armory (after {mBack} ticks)" + (sdWhy.Length > 0 ? " (" + sdWhy + ")" : ""), sdSame && sdFlags && TurretSystem.Instance.RecordCount == 1 && FieldDroneSystem.Instance.RecordCount == 1);
 				Step(1800);
 				DChk($"boss rule on, the boss gone: the garrison launches again ({GarrisonDrones(true)} armed, lent {armory.Lent.Count})", !BossSlots.BossAlive && GarrisonDrones(true) >= 1 && armory.Lent.Count >= 1);
 				DChk("boss rule: no weapon was lost over the whole fight (the Armory ledger and its racks account for all six)", armory.Lent.Count + CountStored(armory) >= 6);

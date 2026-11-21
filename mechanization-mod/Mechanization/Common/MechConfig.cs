@@ -15,7 +15,7 @@ namespace Mechanization.Common
 		/// <summary>Off by default: drones and turrets hold fire on a boss (or one of its parts or segments) whose type the world has not beaten yet.</summary>
 		[DefaultValue(false)] public bool FireOnUnbeatenBosses;
 
-		/// <summary>Off by default (a preference: the garrison is part of how some players hold a boss fight). On: while any boss is alive the Barracks garrison's drones are removed at once (each weapon filed back into its Armory, so their NPC slots are free for the boss) and none launches; the garrison launches again from the Barracks and Armory when the boss is gone. Player-built drones and every turret keep working.</summary>
+		/// <summary>Off by default (a preference: the garrison is part of how some players hold a boss fight). On: while any boss is alive every machine leaves the field. The Barracks garrison's drones are removed at once (each weapon filed back into its Armory) and none launches; every player-built drone and turret packs into its saved record. Their NPC slots are free for the boss, and all of them come back as they were when it is gone.</summary>
 		[DefaultValue(false)] public bool StandDownDuringBosses;
 
 		/// <summary>On by default: a placed turret, a player-built drone or a Barracks garrison with no player within <see cref="DormantRangeTiles"/> tiles is packed into its saved record, which frees its NPC slot and its per-tick cost, and comes back as it was when a player is that near.</summary>

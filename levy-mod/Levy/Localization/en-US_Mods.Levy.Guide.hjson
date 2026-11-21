@@ -504,7 +504,7 @@ Pages: {
 			A setup popup opens in a new single player world. Type /levysetup, or press Setup on the Barracks panel, to open it again. Pick a preset. Default is the standard army. Relaxed gives more levies and bosses never target them. Hardcore gives fewer levies and bosses you have beaten target them.
 			Customize sets how many levies you have at the start, by the Wall of Flesh, by Moon Lord and by the final boss, and how bosses treat them. New worlds start with 14 levies. Pre-hardmode growth follows how far along you are, so extra modded bosses do not slow it. Skip keeps the current settings. Multiplayer hosts use the mod config.
 			Every other option is under Settings, Mod Configuration, Levy, with progression assistance on its own page: loot, Dungeon Spirits, Chlorophyte and Luminite.
-			Machines stand down during boss fights is a Mechanization setting. While a boss lives, Barracks drones leave the field, free their NPC slots and return their weapons to the Armory. They launch again when it is gone. It is off by default.
+			Machines stand down during boss fights is a Mechanization setting, off by default. While a boss lives, every drone and turret leaves the field and frees its NPC slot. Barracks drones return their weapons to the Armory. All of them come back when the boss is gone.
 			Machines sleep when no player is near is a Mechanization setting. Turrets, placed drones and garrisons out of range pack away and free their NPC slots, then wake as they were. It is on by default. A boss that needs more NPC slots packs turrets and placed drones the same way until it is gone.
 			With Wrath of the Gods loaded, /levyrift shows the state of its sky and /levyrift replay plays the covering of the sun again.
 			'''

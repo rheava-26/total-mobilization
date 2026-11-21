@@ -156,7 +156,11 @@ namespace Mechanization.Content.NPCs
 				Check("unloading the world empties the registry", sys.RecordCount == 0);
 				sys.LoadWorldData(tag);
 				Check("the saved records load back (two drones)", sys.RecordCount == 2);
-				sys.RespawnAll();
+				// a drone loads packed when no player is near (MachineDormancy), so the respawn runs with the stand-in player beside it
+				Player near = Main.player[0] ?? (Main.player[0] = new Player()); bool nearActive = near.active; Vector2 nearAt = near.position;
+				near.active = true; near.position = savedPad;
+				try { sys.RespawnAll(); }
+				finally { near.active = nearActive; near.position = nearAt; }
 				DroneNPC back = null; int live = 0;
 				for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC is DroneNPC db && db.IsField) { live++; if (db.RecordId == savedId) back = db; }
 				Check("both drones respawn", live == 2 && back != null);

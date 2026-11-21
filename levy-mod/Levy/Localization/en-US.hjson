@@ -511,6 +511,11 @@ Mods: {
 					Tooltip: On, a soldier in class armor carries a sidearm of its own damage class, more strictly as the world progresses. Off, the sidearm is a blade
 				}
 
+				ClassMatchArmor: {
+					Label: Class-matched armor
+					Tooltip: On, a soldier wears armor of its weapon's class when the Armory has some no more than three tiers behind its best. Off, the strongest set wins
+				}
+
 				WeaponRanking: {
 					Label: Weapon ranking
 					Tooltip: What the Armory ranks weapons by

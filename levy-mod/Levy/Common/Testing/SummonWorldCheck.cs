@@ -119,6 +119,7 @@ namespace Levy.Common.Testing
 			try { LevyRulesCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LevyRules] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { ArmoryRulesWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ArmoryRulesWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { SidearmWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SidearmWorld] check threw " + e.GetType().Name + ": " + e.Message); }
+			try { ArmorClassWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ArmorClassWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { StealthWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[StealthWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { PetWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PetWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { LineWatchWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LineWatch] check threw " + e.GetType().Name + ": " + e.Message); }

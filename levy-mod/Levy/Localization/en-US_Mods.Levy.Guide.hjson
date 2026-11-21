@@ -489,7 +489,7 @@ Pages: {
 		Title: Calamity progression assistance
 		Body:
 			'''
-			The Superpowered Magnet re-forms the Exodium planetoids after Moon Lord, with a cooldown between uses. The Slime Agitator starts a slime rain that includes Calamity's ore slimes.
+			The Superpowered Magnet re-forms the Exodium planetoids after Moon Lord, with a cooldown between uses. The Slime Agitator starts a slime rain that includes Calamity's ore slimes. It works in any weather and leaves an ordinary rain falling. It cannot be used while a slime rain is up or in a remix world.
 			Extra recipes make Scoria Ore from Hellstone and Chlorophyte after Golem, and the Magnet and Agitator themselves.
 			Calamity ore generation multiplies the ore a boss event makes from then on. Auric Ore regeneration makes Yharon generate it again on repeat kills.
 			Jungle monsters can drop Uelibloom Ore after Providence.

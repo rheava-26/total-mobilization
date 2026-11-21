@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """labcompare: OLD vs NEW tables, and the recordings copied out as gzip.
-  compare.py tables  --prehm RUN [--prehm-sp1 RUN] --hm RUN --bat RUN        -> markdown tables on stdout
-  compare.py recs    --dest DIR RUN [RUN ...]                                -> <DIR>/<set>/<boss>_<mode>_<cell>_s<seed>_<result>.jsonl.gz + index.txt
+  compare.py tables  [--prehm-matched RUN] [--prehm-shipped RUN] [--bat-matched RUN] ... [--hm-shipped RUN]   -> markdown tables on stdout
+  compare.py finish  --dest DIR [--drop-raw] RUN [RUN ...]                    -> <DIR>/<run>/<boss>_<mode>_<cell>_s<seed>_<result>.jsonl.gz + index.txt, <run>/tgt.json
 
 OLD data:
   pre-hardmode = boss-lab lab 1 (Levy 2.0.12/2.0.13; old_prehm.py reads the exact fights lab 1's main table counted)
@@ -100,9 +100,14 @@ def prehm_row(r):
 
 _tgt_cache = {}
 def rec_tgt(run, cid, seed):
-    """boss-target-on-levy % from the fight's recording (make_site.summarize 'pl'), as hmbattery2's collector read it."""
+    """boss-target-on-levy % from the fight's recording (make_site.summarize 'pl'), as hmbattery2's collector read it.
+    `finish` stores these in <run>/tgt.json before the raw recordings are removed; that file is read first."""
     k = (str(run), cid, seed)
     if k in _tgt_cache: return _tgt_cache[k]
+    tj = Path(run) / "tgt.json"
+    if tj.exists():
+        d = json.loads(tj.read_text())
+        if f"{cid}:{seed}" in d: _tgt_cache[k] = f(d[f"{cid}:{seed}"]); return _tgt_cache[k]
     import make_site
     best = None
     for p in Path(run).glob("rec/*/*.jsonl"):
@@ -160,98 +165,146 @@ def bat_old():
 
 
 # ------------------------------------------------------------------ tables
-HDR = "| boss | mode | levies | OLD win rate (95% CI) | NEW win rate (95% CI) | Fisher p | OLD kill s median (range) | NEW kill s median (range) | OLD deaths/fight | NEW deaths/fight | OLD army DPS | NEW army DPS | OLD boss on levy % | NEW boss on levy % | OLD other results | NEW other results |"
-SEP = "|" + "---|" * 16
+LEVIES = {"wof": 28, "deer": 28, "crab": 19, "hive": 22, "perf": 24}
+ARMS = ("matched", "shipped")
 
 
-def line(boss, mode, n, so, sn):
-    p = fisher(so["w"], so["n"] - so["w"], sn["w"], sn["n"] - sn["w"]) if so["n"] and sn["n"] else float("nan")
-    rng = lambda s: "-" if math.isnan(s["ttk"]) else f"{s['ttk']:.0f} ({s['ttk_lo']:.0f}-{s['ttk_hi']:.0f})"
-    return f"| {boss} | {mode} | {n} | {fmt_win(so)} | {fmt_win(sn)} | {g(p, 2)} | {rng(so)} | {rng(sn)} | {g(so['deaths'], 1)} | {g(sn['deaths'], 1)} | {g(so['dps'])} | {g(sn['dps'])} | {g(so['tgt'])} | {g(sn['tgt'])} | {fmt_other(so)} | {fmt_other(sn)} |"
+def rng(s): return "-" if math.isnan(s["ttk"]) else f"{s['ttk']:.0f} ({s['ttk_lo']:.0f}-{s['ttk_hi']:.0f})"
 
 
-def prehm_table(run, title):
-    old, _ = old_prehm.rows(); new = {}
-    for c, r in run_rows(run): new.setdefault((r["boss"], r["mode"], int(r["n"])), []).append(prehm_row(r))
-    print(f"\n### {title}\n\n{HDR}\n{SEP}")
-    tot = {"o": [], "n": []}
-    for k in [(b, m, n) for b, m, n in __import__("mkspecs").CELLS]:
-        o = [prehm_row(r) for r in old.get(k, [])]; nw = new.get(k, [])
-        if not nw: continue
-        tot["o"] += o; tot["n"] += nw
-        print(line(BOSS[k[0]], MODE[k[1]], k[2], summ(o), summ(nw)))
-    print(line("**all cells**", "-", "-", summ(tot["o"]), summ(tot["n"])))
-    # paired: only the seeds lab 1 ran
-    print(f"\nSame seeds only (lab 1's seeds; the armies are identical seed for seed):\n\n| boss | mode | seeds | OLD wins | NEW wins | OLD deaths | NEW deaths |\n|---|---|---|---|---|---|---|")
-    for k in [(b, m, n) for b, m, n in __import__("mkspecs").CELLS]:
-        o = [prehm_row(r) for r in old.get(k, [])]; nw = new.get(k, [])
-        if not nw or not o: continue
-        seeds = sorted({r["seed"] for r in o}); np_ = [r for r in nw if r["seed"] in seeds]
-        print(f"| {BOSS[k[0]]} | {MODE[k[1]]} | {','.join(map(str, seeds))} | {sum(r['result'] == 'win' for r in o)}/{len(o)} | {sum(r['result'] == 'win' for r in np_)}/{len(np_)} | {g(summ(o)['deaths'], 1)} | {g(summ(np_)['deaths'], 1)} |")
+def pval(so, sn): return fisher(so["w"], so["n"] - so["w"], sn["w"], sn["n"] - sn["w"]) if so["n"] and sn["n"] else float("nan")
 
 
-def hm_table(run):
-    old, new = hm_old(), hm_new(run)
-    print(f"\n### Hardmode broad sweep: hmbattery2 (2.0.66) vs NEW\n\n{HDR}\n{SEP}")
-    tot = {p: {"o": [], "n": []} for p in PAIR}
+def emit(title, rows, old_label):
+    """rows: list of (boss, mode, levies, old rows, {arm: new rows})."""
+    arms = [a for a in ARMS if any(r[4].get(a) for r in rows)]
+    print(f"\n### {title}: win rate and kill time\n")
+    h = ["boss", "mode", "levies", f"{old_label} win rate (95% CI)"]
+    for a in arms: h += [f"NEW {a} win rate (95% CI)", f"p vs OLD"]
+    h += [f"{old_label} kill s"] + [f"NEW {a} kill s" for a in arms]
+    print("| " + " | ".join(h) + " |\n|" + "---|" * len(h))
+    for boss, mode, n, o, nw in rows:
+        so = summ(o); c = [boss, mode, str(n), fmt_win(so)]
+        for a in arms:
+            sn = summ(nw.get(a, [])); c += [fmt_win(sn), g(pval(so, sn), 2) if sn["n"] else "-"]
+        c += [rng(so)] + [rng(summ(nw.get(a, []))) for a in arms]
+        print("| " + " | ".join(c) + " |")
+    print(f"\n### {title}: deaths, army DPS, boss target\n")
+    h = ["boss", "mode", f"{old_label} deaths/fight"] + [f"NEW {a} deaths/fight" for a in arms] + [f"{old_label} army DPS"] + [f"NEW {a} army DPS" for a in arms]
+    h += [f"{old_label} boss on levy %"] + [f"NEW {a} boss on levy %" for a in arms] + [f"non-wins {old_label}"] + [f"non-wins NEW {a}" for a in arms]
+    print("| " + " | ".join(h) + " |\n|" + "---|" * len(h))
+    for boss, mode, n, o, nw in rows:
+        so = summ(o); sns = [summ(nw.get(a, [])) for a in arms]
+        c = [boss, mode, g(so["deaths"], 1)] + [g(x["deaths"], 1) for x in sns] + [g(so["dps"])] + [g(x["dps"]) for x in sns]
+        c += [g(so["tgt"])] + [g(x["tgt"]) for x in sns] + [fmt_other(so)] + [fmt_other(x) for x in sns]
+        print("| " + " | ".join(c) + " |")
+
+
+def prehm_rows(runs):
+    old, _ = old_prehm.rows(); new = {a: {} for a in runs}
+    for a, run in runs.items():
+        for c, r in run_rows(run): new[a].setdefault((r["boss"], r["mode"], int(r["n"])), []).append(prehm_row(r))
+    rows, tot = [], ([], {a: [] for a in runs})
+    for k in __import__("mkspecs").CELLS:
+        o = [prehm_row(r) for r in old.get(k, [])]; nw = {a: new[a].get(k, []) for a in runs}
+        if not any(nw.values()): continue
+        tot[0].extend(o); [tot[1][a].extend(v) for a, v in nw.items()]
+        rows.append((BOSS[k[0]], MODE[k[1]], k[2], o, nw))
+    rows.append(("**all cells**", "-", "-", tot[0], tot[1]))
+    return rows, old, new
+
+
+def prehm_tables(runs):
+    rows, old, new = prehm_rows(runs)
+    emit("Pre-hardmode vs boss-lab lab 1 (Levy 2.0.13)", rows, "OLD")
+    print("\nSame seeds only (the seeds lab 1 ran; the armies are identical seed for seed; lab 1 ran some seeds twice):\n")
+    arms = [a for a in ARMS if a in runs]
+    print("| boss | mode | seeds | OLD wins | " + " | ".join(f"NEW {a} wins" for a in arms) + " | OLD deaths | " + " | ".join(f"NEW {a} deaths" for a in arms) + " |\n|" + "---|" * (5 + 2 * len(arms)))
+    for k in __import__("mkspecs").CELLS:
+        o = [prehm_row(r) for r in old.get(k, [])]
+        if not o or not any(new[a].get(k) for a in arms): continue
+        seeds = sorted({r["seed"] for r in o}); ps = {a: [r for r in new[a].get(k, []) if r["seed"] in seeds] for a in arms}
+        print(f"| {BOSS[k[0]]} | {MODE[k[1]]} | {','.join(map(str, seeds))} | {sum(r['result'] == 'win' for r in o)}/{len(o)} | " + " | ".join(f"{sum(r['result'] == 'win' for r in ps[a])}/{len(ps[a])}" for a in arms)
+              + f" | {g(summ(o)['deaths'], 1)} | " + " | ".join(g(summ(ps[a])["deaths"], 1) for a in arms) + " |")
+
+
+def hm_tables(runs):
+    old = hm_old(); new = {a: hm_new(r) for a, r in runs.items()}
+    rows, tot = [], {p: ([], {a: [] for a in runs}) for p in PAIR}
     for slug in SWEEP_ORDER:
         for pair in PAIR:
-            o, nw = old.get((slug, pair), []), new.get((slug, pair), [])
-            if not nw: continue
-            tot[pair]["o"] += o; tot[pair]["n"] += nw
-            n = re.search(r"n(\d+)", "n34")[1]
-            print(line(BOSS[slug], PAIR[pair], "", summ(o), summ(nw)).replace("|  |", f"| {LEVIES.get(slug, 34)} |", 1))
-    for pair in PAIR: print(line(f"**all bosses**", PAIR[pair], "-", summ(tot[pair]["o"]), summ(tot[pair]["n"])))
+            nw = {a: new[a].get((slug, pair), []) for a in runs}
+            if not any(nw.values()): continue
+            o = old.get((slug, pair), []); tot[pair][0].extend(o); [tot[pair][1][a].extend(v) for a, v in nw.items()]
+            rows.append((BOSS[slug], PAIR[pair], LEVIES.get(slug, 34), o, nw))
+    for pair in PAIR: rows.append(("**all bosses**", PAIR[pair], "-", tot[pair][0], tot[pair][1]))
+    emit("Hardmode broad sweep vs hmbattery2 (Levy 2.0.66); 3 on-tier seeds + 1 one-tier-below seed per boss and mode", rows, "OLD")
 
 
-LEVIES = {"wof": 28, "deer": 28, "crab": 19, "hive": 22, "perf": 24}
-
-
-def bat_table(run):
-    so, sn = summ(bat_old()), summ(bat_new(run))
-    print(f"\n### Destroyer battery baseline, Master+Death, 34 levies, one fixed army (hmbattery2 vs NEW)\n\n{HDR}\n{SEP}")
-    print(line("The Destroyer", "Master+Death", 34, so, sn))
+def bat_tables(runs):
+    emit("Destroyer battery baseline vs hmbattery2 (Levy 2.0.66); Master+Death, 34 levies, one fixed army, seeds 1-40",
+         [("The Destroyer", "Master+Death", 34, bat_old(), {a: bat_new(r) for a, r in runs.items()})], "OLD")
 
 
 # ------------------------------------------------------------------ recordings
-def recs(dest, runs):
-    dest = Path(dest); dest.mkdir(parents=True, exist_ok=True); idx = []
-    for run in map(Path, runs):
-        rows = {(re.search(r"\|t(c\d+)", r["key"])[1], int(r["seed"])): (c, r) for c, r in run_rows(run)}
-        sub = dest / run.name; sub.mkdir(exist_ok=True)
-        best = {}
-        for p in sorted(run.glob("rec/*/*.jsonl")):
-            try: hdr = json.loads(open(p).readline())
-            except Exception: continue
-            m = re.search(r"\|t(c\d+)(?:\||$)", hdr.get("meta", {}).get("cellkey", ""))
-            if not m: continue
-            k = (m[1], int(hdr["meta"].get("seed", 0)))
-            if k not in best or p.stat().st_size > best[k].stat().st_size: best[k] = p
-        for k, p in sorted(best.items(), key=lambda kv: (int(kv[0][0][1:]), kv[0][1])):
-            if k not in rows: continue
-            c, r = rows[k]; mm = re.search(r"meta=(\w+?)_(on|mid)_(rev|mdeath)_n(\d+)", c["name"]); mb = re.search(r"meta=hmb_(\w+?)_(\w+?)_(mdeath)", c["name"])
-            if mm: nm = f"{mm[1]}_{mm[3]}_{mm[2]}_n{mm[4]}"
-            elif mb: nm = f"{mb[1]}_{mb[3]}_battery-{mb[2]}"
-            else: nm = f"{r['boss']}_{r['mode']}_n{r['n']}_cmdfar"
-            res = classify(r) if not mm and not mb else r["result"].lower()
-            fn = f"{nm}_s{r['seed']}_{res}.jsonl.gz"
-            with open(p, "rb") as src, gzip.open(sub / fn, "wb", compresslevel=9) as z: shutil.copyfileobj(src, z)
-            idx.append(f"{run.name}/{fn}\t{BOSS.get(r['boss'], r['boss'])}\t{r['mode']}\tseed {r['seed']}\t{res}\t{f(r['sec']):.0f} s\t{r['deaths']}/{r['n']} levy deaths")
-    (dest / "index.txt").write_text("labcompare recordings (FightRecorder format 12, gzip). Columns: file, boss, mode, seed, result, fight seconds, levy deaths.\n"
-                                    "prehm_sp0 = pre-hardmode cells vs boss-lab lab 1 (cmd=far, surface arena, gear=mod), prehm_sp1 = the same with single-player owner emulation on,\n"
-                                    "hm = hardmode broad sweep vs hmbattery2 (_on_ = on-tier kit, _mid_ = one tier below), bat = Destroyer battery baseline (one fixed army).\n\n" + "\n".join(idx) + "\n")
-    print(len(idx), "recordings ->", dest)
+INDEX_HEAD = ("labcompare recordings (FightRecorder format 12, gzip; Levy 3.1.8, Calamity 2.2.2, tML 2026.10). One folder per run:\n"
+              "  prehm_matched / prehm_shipped = pre-hardmode cells vs boss-lab lab 1 (cmd=far, surface arena, gear=mod; matched = old enemy rules, shipped = as shipped)\n"
+              "  bat_matched / bat_shipped     = Destroyer battery baseline, Master+Death, one fixed 34-levy army (vs hmbattery2)\n"
+              "  hm_matched / hm_shipped       = hardmode broad sweep vs hmbattery2 (_on_ = on-tier kit, _mid_ = one tier below; rev = Expert+Rev, mdeath = Master+Death)\n"
+              "Columns: file, boss, mode, seed, result, fight seconds, levy deaths.\n\n")
+
+
+def rec_name(c, r):
+    mm = re.search(r"meta=(\w+?)_(on|mid)_(rev|mdeath)_n(\d+)", c["name"]); mb = re.search(r"meta=hmb_(\w+?)_(\w+?)_(mdeath)", c["name"])
+    if mm: return f"{mm[1]}_{mm[3]}_{mm[2]}_n{mm[4]}", r["result"].lower()
+    if mb: return f"{mb[1]}_{mb[3]}_battery-{mb[2]}_n{r['n']}", r["result"].lower()
+    return f"{r['boss']}_{r['mode']}_n{r['n']}_cmdfar", classify(r)
+
+
+def finish(dest, run, drop_raw=False):
+    """for one run: cache the boss-target values (tgt.json), gzip every recording into <dest>/<run name>/, write its index part, rebuild <dest>/index.txt;
+    with drop_raw the raw .jsonl recordings are deleted afterwards (the gzip copies are the keepers)."""
+    import make_site
+    dest = Path(dest); run = Path(run); sub = dest / run.name; sub.mkdir(parents=True, exist_ok=True)
+    rows = {(re.search(r"\|t(c\d+)", r["key"])[1], int(r["seed"])): (c, r) for c, r in run_rows(run)}
+    best = {}
+    for p in sorted(run.glob("rec/*/*.jsonl")):
+        try: hdr = json.loads(open(p).readline())
+        except Exception: continue
+        m = re.search(r"\|t(c\d+)(?:\||$)", hdr.get("meta", {}).get("cellkey", ""))
+        if not m: continue
+        k = (m[1], int(hdr["meta"].get("seed", 0)))
+        if k not in best or p.stat().st_size > best[k].stat().st_size: best[k] = p
+    tj = run / "tgt.json"; tgt = json.loads(tj.read_text()) if tj.exists() else {}
+    part = []
+    for k, p in sorted(best.items(), key=lambda kv: (int(kv[0][0][1:]), kv[0][1])):
+        if k not in rows: continue
+        c, r = rows[k]; nm, res = rec_name(c, r)
+        if f"{k[0]}:{k[1]}" not in tgt:
+            try: tgt[f"{k[0]}:{k[1]}"] = make_site.summarize(make_site.load(str(p))).get("pl")
+            except Exception as e: print("summarize failed", p, e, file=sys.stderr)
+        fn = f"{nm}_s{r['seed']}_{res}.jsonl.gz"
+        with open(p, "rb") as src, gzip.open(sub / fn, "wb", compresslevel=6) as z: shutil.copyfileobj(src, z)
+        part.append(f"{run.name}/{fn}\t{BOSS.get(r['boss'], r['boss'])}\t{MODE.get(r['mode'], r['mode'])}\tseed {r['seed']}\t{res}\t{f(r['sec']):.0f} s\t{r['deaths']}/{r['n']} levy deaths")
+    tj.write_text(json.dumps(tgt))
+    (sub / "index.part").write_text("\n".join(part) + "\n")
+    parts = [q.read_text().rstrip("\n") for q in sorted(dest.glob("*/index.part"))]
+    (dest / "index.txt").write_text(INDEX_HEAD + "\n".join(x for x in parts if x) + "\n")
+    if drop_raw:
+        for q in run.glob("rec/*/*.jsonl"): q.unlink()
+    print(len(part), "recordings ->", sub)
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); sp = ap.add_subparsers(dest="cmd", required=True)
-    t = sp.add_parser("tables"); t.add_argument("--prehm"); t.add_argument("--prehm-sp1"); t.add_argument("--hm"); t.add_argument("--bat")
-    r = sp.add_parser("recs"); r.add_argument("--dest", required=True); r.add_argument("runs", nargs="+")
+    t = sp.add_parser("tables")
+    for k in ("prehm", "bat", "hm"):
+        for arm in ARMS: t.add_argument(f"--{k}-{arm}")
+    r = sp.add_parser("finish"); r.add_argument("--dest", required=True); r.add_argument("--drop-raw", action="store_true"); r.add_argument("runs", nargs="+")
     a = ap.parse_args()
     if a.cmd == "tables":
-        if a.prehm: prehm_table(a.prehm, "Pre-hardmode: boss-lab lab 1 (2.0.13) vs NEW, matched setup (no single-player owner emulation)")
-        if a.prehm_sp1: prehm_table(a.prehm_sp1, "Pre-hardmode: lab 1 vs NEW with single-player owner emulation on (extra)")
-        if a.bat: bat_table(a.bat)
-        if a.hm: hm_table(a.hm)
+        for k, fn in (("prehm", prehm_tables), ("bat", bat_tables), ("hm", hm_tables)):
+            runs = {arm: getattr(a, f"{k}_{arm}") for arm in ARMS if getattr(a, f"{k}_{arm}")}
+            if runs: fn(runs)
     else:
-        recs(a.dest, a.runs)
+        for run in a.runs: finish(a.dest, run, a.drop_raw)

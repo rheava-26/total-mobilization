@@ -10,6 +10,10 @@ from pathlib import Path
 
 BL = Path(__file__).resolve().parents[2] / "Levy" / "docs" / "boss_lab"
 RES = {"W": "WIN", "L": "LOSS", "T": "TIMEOUT", "D": "DESPAWN"}
+# run order of lab 1 (RESULTS.md sections 0 and 8). When several raw rows fit a main-table fight (a 300 s timeout fits every rerun), the latest run is
+# taken, as lab 1's tab.py kept the last row of a key. Checked: the deaths per fight then equal the main table's column.
+ORDER = ["smoke1", "smoke2", "dbg_eye", "e0", "s1_main", "b1b", "b2_eye", "b4_ug", "b3_clone", "b3_dps", "b3_hpscale0", "b2_brain", "b5_brain", "b1a_far", "b1_far13",
+         "b2_eye13", "near13", "death_more", "wormsx", "worms_fix", "eye_phase", "eye_phase_hs0", "e16v19", "big1", "big2", "big3", "anom_ds", "anom2", "brain_new", "diag_brain"]
 
 
 def _raw():
@@ -35,6 +39,7 @@ def rows():
         for tok in line.rstrip().split("|")[-1].strip().split(","):
             sd, rs = tok.split(":"); res, sec = RES[rs[0]], float(rs[1:])
             cand = [r for r in idx.get((boss, mode, n, int(sd)), []) if r["result"] == res and abs(float(r["sec"]) - sec) < 0.51]
+            cand.sort(key=lambda r: ORDER.index(r["_file"]) if r["_file"] in ORDER else len(ORDER))
             if cand: out.setdefault((boss, mode, n), []).append(cand[-1])
             else: missing.append((boss, mode, n, sd, rs))
     return out, missing
@@ -43,5 +48,5 @@ def rows():
 if __name__ == "__main__":
     o, miss = rows()
     for (b, m, n), v in sorted(o.items()):
-        print(f"{b:7} {m:6} n={n:2} fights={len(v):2} wins={sum(r['result'] == 'WIN' for r in v):2}  {' '.join(r['result'][0] + r['seed'] for r in v)}  files={sorted({r['_file'] for r in v})}")
+        print(f"{b:7} {m:6} n={n:2} fights={len(v):2} wins={sum(r['result'] == 'WIN' for r in v):2} deaths={sum(float(r['deaths']) for r in v) / len(v):4.1f}{' '.join(r['result'][0] + r['seed'] for r in v)}  files={sorted({r['_file'] for r in v})}")
     print("unmatched:", miss)

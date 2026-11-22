@@ -16,6 +16,10 @@ For every set directory it reads the recordings (*.levyrec, *.jsonl or *.jsonl.g
   <outdir>/data/manifest.json    the fight list: one row per fight with boss, mode, levies, arena, result, targeting %, hits, deaths, note
   <outdir>/data/<id>.json        one plain-JSON file per fight (frames downsampled to --hz, coordinates rounded, levy and boss rows delta-coded), loaded lazily by the page
 
+  make_site.py --stamp <site>/data/manifest.json
+  writes the "Hide broken or very old fights" rules (HIDE, the eras' broken flags, BROKEN; see below) into an existing manifest in place and prints
+  how many fights the page hides by default. Every build also writes them.
+
 Adding a set is just adding another <set-name>=<dir> argument and re-running. Sets show in the order given.
 Set names lab1 lab2 lab3 worm options get nice titles; any other name is shown with underscores as spaces.
 The whole <outdir> is what gets published (static files, relative URLs only). Old data/*.json is removed first so renamed fights leave no strays.
@@ -42,12 +46,73 @@ MAX_C_ROWS = 120         # format 11 key c (the commander's own projectiles): ro
 # ---------------------------------------------------------------- versions
 # Mechanics eras: a fight recorded on Levy <= upTo (and older than CURRENT) is outdated for that reason. The lead appends eras and updates CURRENT in
 # data/manifest.json (no data rebuild); these are the defaults a build writes.
+# "broken": True marks an era whose bug makes the recording itself unreliable (the fight did not play as the game plays), not merely outdated.
 ERAS = [
-    {"upTo": "2.0.63", "note": "Levies were hit by bosses where you would not be."},
-    {"upTo": "2.0.65", "note": "Boss shots never hit levies when the commander had a Spectator potion."},
-    {"upTo": "2.0.67", "note": "Boss shots did about 1 damage to levies; touching a boss did 3 to 7 times too much."},
+    {"upTo": "2.0.63", "note": "Levies were hit by bosses where you would not be.", "broken": True},
+    {"upTo": "2.0.65", "note": "Boss shots never hit levies when the commander had a Spectator potion.", "broken": True},
+    {"upTo": "2.0.67", "note": "Boss shots did about 1 damage to levies; touching a boss did 3 to 7 times too much.", "broken": True},
 ]
 CURRENT = "2.0.68 (not yet released)"
+
+# The page's "Hide broken or very old fights" toggle (on by default) hides a fight when one of these rules holds. They are read from data/manifest.json
+# (the "hide" object, the eras' "broken" flags, each fight's "broken" reason), so editing the manifest, or `make_site.py --stamp manifest.json`, changes
+# what is hidden without rebuilding any data. hidden_reason() below and the page's hideWhy() are the same rule.
+#   broken:   the fight carries a "broken" reason (set from BROKEN at build time), or its version falls inside an era marked "broken" (checked in this order,
+#             the very-old rule between them, so the default eras, all <= the cut-off, read as very old)
+#   very old: recorded on Levy <= hide.oldUpTo (a fight whose version is only known from its format counts by the newest version that format allows)
+# A fight with no version (a local file) is never hidden. Outdated alone (older than "current") never hides a fight.
+HIDE = {"oldUpTo": "2.0.67"}    # the last version the default eras describe; the page uses the same value when a manifest has no "hide"
+# per-fight broken reasons: (regex searched in the fight's source file name or id, reason). A reason already in the manifest is kept.
+BROKEN = [
+    # (r"^2026-11-19-15-19-the-devourer-of-gods", "The recorder logged the boss leaving as a kill."),   # example: a known false result
+]
+
+
+def vkey(v):
+    return tuple(int(x) for x in (re.findall(r"\d+", str(v or "").split(" ")[0]) + ["0", "0", "0"])[:3])
+
+
+def broken_reason(f):
+    for pat, why in BROKEN:
+        if re.search(pat, str(f.get("src") or "")) or re.search(pat, str(f.get("id") or "")):
+            return why
+    return None
+
+
+def hidden_reason(f, man):
+    """('broken' | 'old', text) when the toggle hides fight row f of manifest man, else None. Same rule as the page's hideWhy()."""
+    if f.get("broken"):
+        return "broken", "Broken recording: " + str(f["broken"])
+    if not f.get("ver"):
+        return None
+    v = vkey(f["ver"])
+    era = next((e for e in sorted(man.get("eras") or [], key=lambda e: vkey(e.get("upTo"))) if v <= vkey(e.get("upTo"))), None)
+    cut = (man.get("hide") or {}).get("oldUpTo", HIDE["oldUpTo"])
+    if cut and v <= vkey(cut):
+        return "old", "Very old: Levy %s%s, the cut-off is %s.%s" % ("about " if f.get("verAbout") else "", f["ver"], cut, (" " + era["note"]) if era and era.get("note") else "")
+    if era and era.get("broken"):
+        return "broken", "Broken recording: " + str(era.get("note") or "a known bug of that version.")
+    return None
+
+
+def stamp(man):
+    """Write the hide rules into a manifest dict in place: man["hide"] (values already there win), the "broken" flag of every era whose upTo matches a
+    default era and has none, and each fight's "broken" reason from BROKEN where it has none. Returns {"broken": n, "old": n, "shown": n}."""
+    man["hide"] = dict(HIDE, **(man.get("hide") or {}))
+    dflt = {e["upTo"]: e for e in ERAS}
+    for e in man.get("eras") or []:
+        if "broken" not in e and e.get("upTo") in dflt and dflt[e["upTo"]].get("broken"):
+            e["broken"] = True
+    n = {"broken": 0, "old": 0, "shown": 0}
+    for st in man.get("sets") or []:
+        for f in st.get("fights") or []:
+            if not f.get("broken"):
+                why = broken_reason(f)
+                if why:
+                    f["broken"] = why
+            r = hidden_reason(f, man)
+            n[r[0] if r else "shown"] += 1
+    return n
 # recording format -> (oldest, newest) Levy version known to write it; used only when a recording carries no version
 FORMAT_VERS = {1: ("2.0.0", "2.0.12"), 2: ("2.0.0", "2.0.12"), 3: ("2.0.13", "2.0.19"), 4: ("2.0.13", "2.0.19"), 5: ("2.0.20", "2.0.20"),
                6: ("2.0.21", "2.0.25"), 7: ("2.0.26", "2.0.40"), 8: ("2.0.41", "2.0.63"), 9: ("2.0.64", "2.0.99"), 10: ("3.0.0", "3.0.9"), 11: ("3.0.10", "3.9.99"), 12: ("3.0.10", "3.9.99"), 13: ("3.1.9", "3.9.99")}
@@ -110,7 +175,7 @@ def parse_index(path):
         line = raw.rstrip("\n")
         if not line.strip():
             continue
-        if not line[0].isspace() and ".jsonl" in line:
+        if not line[0].isspace() and (".jsonl" in line or ".levyrec" in line):
             names = [n.strip() for n in line.split("+") if n.strip()]
             cur = {"names": names, "note": None, "result": None}
             for n in names:
@@ -554,8 +619,9 @@ def auto_note(s):
 def main():
     global MAX_C_ROWS
     ap = argparse.ArgumentParser(description="Build the hosted Levy fight-replay site.")
-    ap.add_argument("outdir")
+    ap.add_argument("outdir", nargs="?")
     ap.add_argument("sets", nargs="*", metavar="name=dir")
+    ap.add_argument("--stamp", metavar="MANIFEST", help="write the hide rules (HIDE, the eras' broken flags, BROKEN) into an existing data/manifest.json in place, print what the page hides by default, and exit; no data is rebuilt")
     ap.add_argument("--hz", type=int, default=15, help="sample rate of the data files (recordings are 30 Hz); default 15")
     ap.add_argument("--auto", action="append", default=[], metavar="dir", help="add a spread of fights from every recording under this folder (repeatable): one set per boss, up to --per-cell per boss x mode x result")
     ap.add_argument("--per-cell", type=int, default=2)
@@ -565,6 +631,15 @@ def main():
     ap.add_argument("--batches", type=float, default=0, metavar="MB", help="split the site into publishable batches of at most MB megabytes of data (and 250 files): <outdir>/b01, b02, ...; each holds index.html, the manifest of everything up to that batch and only its own data files, so publishing them in order to the same URL builds the full page")
     a = ap.parse_args()
     MAX_C_ROWS = max(0, a.cmd_cap)
+    if a.stamp:
+        man = json.load(open(a.stamp, encoding="utf-8"))
+        n = stamp(man)
+        with open(a.stamp, "w", encoding="utf-8") as fh:
+            json.dump(man, fh, separators=(",", ":"))
+        print("stamped %s: hidden by default %d broken + %d very old, %d shown (cut-off Levy %s)" % (a.stamp, n["broken"], n["old"], n["shown"], man["hide"].get("oldUpTo")), file=sys.stderr)
+        return
+    if not a.outdir:
+        ap.error("outdir is required")
 
     out = os.path.abspath(a.outdir)
     shutil.rmtree(out, ignore_errors=True)
@@ -615,6 +690,9 @@ def main():
         blobs[fid] = blob
         paths[fid] = (path, factor, hz0, suffix)
         s.update({"id": fid, "file": "data/%s.json" % fid, "bytes": len(blob), "hz": max(1, hz0 // factor), "note": text, "src": fn + suffix})
+        why = broken_reason(s)
+        if why:
+            s["broken"] = why
         fights.append(s)
         seen_keys.add(dkey(s))
 
@@ -709,9 +787,11 @@ def main():
         for st in manifest_sets:
             fl = [f for f in st["fights"] if (not nb) or batch_of[f["id"]] <= upto]
             if fl:
-                sets.append({"id": st["id"], "title": st["title"], "fights": fl})
+                sets.append(dict({k: v for k, v in st.items() if k != "fights"}, fights=fl))   # intro, kind, groupBy ... travel with the set
+        man = {"version": 2, "default": default, "current": CURRENT, "eras": [dict(e) for e in ERAS], "hide": dict(HIDE), "sets": sets}
+        stamp(man)
         with open(os.path.join(data, "manifest.json"), "w", encoding="utf-8") as f:
-            json.dump({"version": 2, "default": default, "current": CURRENT, "eras": ERAS, "sets": sets}, f, separators=(",", ":"))
+            json.dump(man, f, separators=(",", ":"))
         shutil.copyfile(os.path.join(HERE, "site", "index.html"), os.path.join(root, "index.html"))
         size = total + os.path.getsize(os.path.join(data, "manifest.json")) + os.path.getsize(os.path.join(root, "index.html"))
         return count + 2, size, sum(len(s["fights"]) for s in sets)

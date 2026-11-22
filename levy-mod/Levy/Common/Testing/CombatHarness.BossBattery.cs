@@ -26,7 +26,7 @@ namespace Levy.Common.Testing
 	{
 		// ------------------------------------------------------------------------------------------------------------------ bosses
 		internal static bool BbIsBoss(string b) => b is "twins" or "prime" or "brim" or "cryo" or "aqua" or "cal" or "plant" or "eol" or "fish" or "qslime" or "wof" or "levi"
-			or "aureus" or "pbg" or "ravager" or "golem" or "cultist" or "ml" or "deer" or "prov" // "prov" Providence (post-Moon Lord world, day, Hallow); the seven before it: headless replay recordings (hmreplays)
+			or "aureus" or "pbg" or "ravager" or "golem" or "cultist" or "ml" or "deer" or "prov" or "polter" // "polter" Polterghast (post-Providence world, the commander in the Dungeon; perf pass bench); "prov" Providence (post-Moon Lord world, day, Hallow); the seven before it: headless replay recordings (hmreplays)
 			or "solarp" or "nebulap" or "vortexp" or "stardustp" // the Celestial Pillars with their enemy waves (CombatHarness.PillarLab.cs)
 			or "exoares" or "exothan" or "exotwins"; // the Exo Mechs, by Draedon's first choice (CombatHarness.ExoLab.cs)
 
@@ -34,7 +34,7 @@ namespace Levy.Common.Testing
 		{
 			"twins" => NPCID.Retinazer, "prime" => NPCID.SkeletronPrime, "brim" => CrCalNpc("BrimstoneElemental"), "cryo" => CrCalNpc("Cryogen"), "aqua" => CrCalNpc("AquaticScourgeHead"),
 			"cal" => CrCalNpc("CalamitasClone"), "plant" => NPCID.Plantera, "eol" => NPCID.HallowBoss, "fish" => NPCID.DukeFishron, "qslime" => NPCID.QueenSlimeBoss, "wof" => NPCID.WallofFlesh, "levi" => CrCalNpc("Anahita"),
-			"aureus" => CrCalNpc("AstrumAureus"), "pbg" => CrCalNpc("PlaguebringerGoliath"), "ravager" => CrCalNpc("RavagerBody"), "golem" => NPCID.Golem, "cultist" => NPCID.CultistBoss, "ml" => NPCID.MoonLordCore, "deer" => NPCID.Deerclops, "prov" => CrCalNpc("Providence"), "exoares" or "exothan" or "exotwins" => ExBossType(), _ => PwTower(b)
+			"aureus" => CrCalNpc("AstrumAureus"), "pbg" => CrCalNpc("PlaguebringerGoliath"), "ravager" => CrCalNpc("RavagerBody"), "golem" => NPCID.Golem, "cultist" => NPCID.CultistBoss, "ml" => NPCID.MoonLordCore, "deer" => NPCID.Deerclops, "prov" => CrCalNpc("Providence"), "polter" => CrCalNpc("Polterghast"), "exoares" or "exothan" or "exotwins" => ExBossType(), _ => PwTower(b)
 		};
 
 		private static void BbAddCal(HashSet<int> set, params string[] names) { foreach (string n in names) { int t = CrCalNpc(n); if (t > 0) set.Add(t); else global::Levy.Levy.Instance.Logger.Warn("HARNESS-BB: unknown Calamity NPC " + n); } }
@@ -70,6 +70,7 @@ namespace Levy.Common.Testing
 				case "ml": foreach (int t in new[] { NPCID.MoonLordCore, NPCID.MoonLordHead, NPCID.MoonLordHand, NPCID.MoonLordLeechBlob }) s.PartTypes.Add(t); s.AddTypes.Add(NPCID.MoonLordFreeEye); break;
 				case "deer": break;
 				case "prov": BbAddCal(s.AddTypes, "ProvSpawnDefense", "ProvSpawnHealer", "ProvSpawnOffense"); break;
+				case "polter": BbAddCal(s.AddTypes, "PolterghastHook", "PhantomFuckYou", "PolterPhantom"); break;
 				case "wof": s.AddTypes.Add(NPCID.WallofFleshEye); s.AddTypes.Add(NPCID.TheHungry); s.AddTypes.Add(NPCID.TheHungryII); s.AddTypes.Add(NPCID.LeechHead); break;
 			}
 			return true;
@@ -86,6 +87,7 @@ namespace Levy.Common.Testing
 			NPC.downedGolemBoss = false; NPC.downedAncientCultist = false; NPC.downedMoonlord = false; NPC.downedDeerclops = false;
 			BbCalDowned(false);
 			if (run.Boss == "prov") { NPC.downedMoonlord = NPC.downedAncientCultist = NPC.downedGolemBoss = NPC.downedPlantBoss = true; Main.dayTime = true; Main.time = 27000; } // a post-Moon Lord world at noon: Providence enrages at night
+			if (run.Boss == "polter") { NPC.downedMoonlord = NPC.downedAncientCultist = NPC.downedGolemBoss = NPC.downedPlantBoss = true; BbCalSet("downedProvidence", true); } // a post-Providence world (Polterghast's Ectoplasm summon needs it)
 			if (ExIsExo(run.Boss)) ExBegin(run); // a post-Yharon world
 		}
 		private static void BbEnd()
@@ -108,6 +110,10 @@ namespace Levy.Common.Testing
 			}
 			catch { }
 		}
+		private static void BbCalSet(string fn, bool v)
+		{
+			try { var p = _bbDownedType?.GetProperty(fn, BindingFlags.Public | BindingFlags.Static); if (p != null) p.SetValue(null, v); else _bbDownedType?.GetField(fn, BindingFlags.Public | BindingFlags.Static)?.SetValue(null, v); } catch { }
+		}
 		private static bool BbCalGet(string fn)
 		{
 			try { var p = _bbDownedType?.GetProperty(fn, BindingFlags.Public | BindingFlags.Static); if (p != null) return (bool)p.GetValue(null); var f = _bbDownedType?.GetField(fn, BindingFlags.Public | BindingFlags.Static); return f != null && (bool)f.GetValue(null); } catch { return false; }
@@ -120,7 +126,7 @@ namespace Levy.Common.Testing
 			{
 				"twins" => NPC.downedMechBoss2, "prime" => NPC.downedMechBoss3, "destroyer" => NPC.downedMechBoss1, "aqua" => BbCalGet("downedAquaticScourge"), "plant" => NPC.downedPlantBoss,
 				"cryo" => BbCalGet("downedCryogen"), "brim" => BbCalGet("downedBrimstoneElemental"), "cal" => BbCalGet("downedCalamitasClone"), "levi" => BbCalGet("downedLeviathan"), "qslime" => NPC.downedQueenSlime, "fish" => NPC.downedFishron, "eol" => NPC.downedEmpressOfLight,
-				"aureus" => BbCalGet("downedAstrumAureus"), "pbg" => BbCalGet("downedPlaguebringer"), "ravager" => BbCalGet("downedRavager"), "golem" => NPC.downedGolemBoss, "cultist" => NPC.downedAncientCultist, "ml" => NPC.downedMoonlord, "deer" => NPC.downedDeerclops, "prov" => BbCalGet("downedProvidence"), _ => false
+				"aureus" => BbCalGet("downedAstrumAureus"), "pbg" => BbCalGet("downedPlaguebringer"), "ravager" => BbCalGet("downedRavager"), "golem" => NPC.downedGolemBoss, "cultist" => NPC.downedAncientCultist, "ml" => NPC.downedMoonlord, "deer" => NPC.downedDeerclops, "prov" => BbCalGet("downedProvidence"), "polter" => BbCalGet("downedPolterghast"), _ => false
 			};
 			return flag || (lifeMax > 0 && lastLife <= 0.25 * lifeMax);
 		}
@@ -131,6 +137,7 @@ namespace Levy.Common.Testing
 			if (!BbIsBoss(r.Boss)) return;
 			if (r.Boss is "eol" or "qslime" or "prov") p.ZoneHallow = true;
 			if (r.Boss == "cryo") p.ZoneSnow = true;
+			if (r.Boss == "polter") p.ZoneDungeon = true; // Polterghast enrages outside the Dungeon
 			if (r.Boss is "plant" or "pbg") p.ZoneJungle = true;
 			if (r.Boss == "deer") p.ZoneSnow = true;
 			if (r.Boss is "fish" or "levi") p.ZoneBeach = true;
@@ -369,7 +376,7 @@ namespace Levy.Common.Testing
 			catch (Exception e) { Mod.Logger.Warn("HARNESS-BB: finish row failed: " + e.Message); }
 		}
 
-		private void BbStartFight(CrRun run) { _bb = PwIsPillar(run.Boss) && string.IsNullOrEmpty(run.Imm) ? null : new BbStats(); // a pillar fight is a cost lab: the per-shot immunity census (its own Colliding pass over every part, per shot) stays off unless imm= asks for it
+		private void BbStartFight(CrRun run) { _bb = (PwIsPillar(run.Boss) || Environment.GetEnvironmentVariable("LEVY_CR_IMMCENSUS") == "0") && string.IsNullOrEmpty(run.Imm) ? null : new BbStats(); // LEVY_CR_IMMCENSUS=0: a cost lab (the perf-pass bench) leaves the census out too; // a pillar fight is a cost lab: the per-shot immunity census (its own Colliding pass over every part, per shot) stays off unless imm= asks for it
 			 BbImmMode = string.IsNullOrEmpty(run.Imm) ? "shared" : run.Imm; }
 		private void BbEndFight() { _bb = null; BbImmMode = "shared"; }
 	}

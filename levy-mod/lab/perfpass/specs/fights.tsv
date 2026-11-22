@@ -1,0 +1,6 @@
+fight	exoares	mdeath	1	3600	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ac7099cc2e7ff819d/levy-mod/lab/perfpass/armies/eve_exo.json	meta=fight_exoares
+fight	exoares	mdeath	2	3600	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ac7099cc2e7ff819d/levy-mod/lab/perfpass/armies/eve_exo.json	meta=fight_exoares
+fight	prov	mdeath	1	3600	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ac7099cc2e7ff819d/levy-mod/lab/perfpass/armies/eve_polter.json	meta=fight_prov
+fight	prov	mdeath	2	3600	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ac7099cc2e7ff819d/levy-mod/lab/perfpass/armies/eve_polter.json	meta=fight_prov
+fight	polter	mdeath	1	3600	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ac7099cc2e7ff819d/levy-mod/lab/perfpass/armies/eve_polter.json	meta=fight_polter
+fight	polter	mdeath	2	3600	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ac7099cc2e7ff819d/levy-mod/lab/perfpass/armies/eve_polter.json	meta=fight_polter

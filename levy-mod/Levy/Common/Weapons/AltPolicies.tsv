@@ -1,7 +1,7 @@
 mod	item	policy	params	note
 CalamityMod	Auger	NEVER		
 CalamityMod	CountermeasureMitt	HOLD_VARIANT	cond=close;maxDist=9;minEnemies=1	
-CalamityMod	HolofibreImmolator	HOLD_VARIANT	cond=rate;maxDist=25	
+CalamityMod	HolofibreImmolator	HOLD_VARIANT	cond=rate;maxDist=6	right = rapid sprays (no charge, the release wipes it): they fall under gravity and never reached a target 12 tiles off (0 damage); the left charge fires the 4.5x arrow
 CalamityMod	HydraulicVoltCrasher	NEVER		
 CalamityMod	Nidhogg	HOLD_VARIANT	cond=heavy;minDist=10	
 CalamityMod	PhalanxSurge	HOLD_VARIANT	cond=heavy;maxDist=14	
@@ -56,7 +56,7 @@ CalamityMod	BlossomFlux	ALT_MIX	p=0.6	alt +1% boss / +8% pack
 CalamityMod	CorinthPrime	NEVER		alt -79% boss / -75% pack: the 90-tick grenade loses to six bullets per 30 ticks
 CalamityMod	CrackshotColt	NEVER		coin alt needs money the dummy never has
 CalamityMod	Drataliornus	ALT_HEAVY	tough=1;minDist=6	
-CalamityMod	Hellborn	HOLD_VARIANT	cond=heavy;minDist=8	
+CalamityMod	Hellborn	HOLD_VARIANT	cond=meter;meter=hellbornShots;min=1	right fires a loaded shot; shots are loaded only by the left button's spin hitting (each hit +1, up to 12): with none loaded the right button only dry-fires (17 holdouts, 0 damage at 12 tiles)
 CalamityMod	Hydra	DETONATE	proj=HydraHead;minOut=3;minDist=5	not measurable: AltFunctionUse launches the heads on the probe whatever the veto
 CalamityMod	Leviatitan	ALT_MIX	p=0.8	alt +23% boss / +34% pack
 CalamityMod	MidasPrime	NEVER		coin alt needs money the dummy never has

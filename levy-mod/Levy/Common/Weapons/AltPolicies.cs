@@ -487,6 +487,8 @@ namespace Levy.Common.Weapons
 
 		/// <summary>Lab counter: holdouts spawned with the variant (right) button held, by item type.</summary>
 		internal static readonly Dictionary<int, int> HoldVariantSpawns = new();
+		/// <summary>Lab counter: times the variant (right) button was pressed on a levy's dummy (up -> down), by item type: a holdout that reads the button every tick (the Apoctosis Array's mana refill) changes mode with it.</summary>
+		internal static readonly Dictionary<int, int> HoldVariantPresses = new();
 
 		private static void HoldVariant(SoldierNPC s, Item item, NPC target, bool force)
 		{
@@ -495,7 +497,9 @@ namespace Levy.Common.Weapons
 			AltState st = StateOf(s);
 			AltPolicy pol = For(item.type);
 			string mode = CombatHarness.Enabled ? AltPolicyLab.Mode : "";
-			bool isHold = pol.Kind == AltPolicyKind.HoldVariant && HasRow(item.type);
+			// a mana-refill right button of a held modded holdout (Apoctosis Array, Ion Blaster: held, the holdout drinks mana back instead of firing) is a variant held on the dummy too: the holdout reads it every tick
+			bool refill = pol.Kind == AltPolicyKind.ManaRefill && ModShotKinds.Of(item) == ModShotKind.Holdout;
+			bool isHold = (pol.Kind == AltPolicyKind.HoldVariant || refill) && HasRow(item.type);
 			if (!isHold)
 			{
 				if (st.MouseRightSet) { SetMouseRight(d, false); st.MouseRightSet = false; }
@@ -505,11 +509,18 @@ namespace Levy.Common.Weapons
 			if (!force && st.LastItemType == item.type && now - st.HoldCheckTick < (uint)SituationalRecheckTicks) return; // the variant is re-decided a few times a second, not every tick (and always when a holdout is spawned)
 			st.LastItemType = item.type; st.HoldCheckTick = now;
 			bool want;
-			if (mode == "left") want = false;
+			if (mode == "left" || WeaponUse.MindAltMode == 1) want = false;
+			else if (WeaponUse.MindAltMode == 2) want = true; // the Mind Link: her right button
 			else if (mode == "random") want = Main.rand.NextFloat() < LevyConstants.AltUseChance;
+			else if (refill) want = EvaluateCtx(s, item, pol, new AltCtx(s, target)) || (st.MouseRightSet && s.Record != null && s.Record.Mana < s.Record.MaxMana); // held until the pool is full, as a player holds it
 			else want = HoldCond(pol.P, new AltCtx(s, target));
+			bool was = st.MouseRightSet;
 			if (SetMouseRight(d, want)) { st.MouseRightSet = want; if (want && CombatHarness.Enabled) AltPolicyLab.Hold(item); }
+			if (want && !was && st.MouseRightSet) { HoldVariantPresses.TryGetValue(item.type, out int np); HoldVariantPresses[item.type] = np + 1; }
 		}
+
+		/// <summary>Whether the variant (right) button is held on this soldier's dummy now.</summary>
+		internal static bool MouseRightHeld(SoldierNPC s) => s != null && StateOf(s).MouseRightSet;
 
 		/// <summary>A holdout was just spawned for a soldier (HeldWeapons.TryFire): the variant button is set for it.</summary>
 		internal static void OnHoldoutSpawn(SoldierNPC s, Item item, NPC target)
@@ -681,6 +692,34 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>Reads a meter by field or property name from the dummy's Calamity player, then its Thorium player. NaN when no such member exists.</summary>
+		/// <summary>The named meter of a weapon's row (HOLD_VARIANT cond=meter, METER_READY): the field of the holder's own mod player the row reads, or null.</summary>
+		internal static string MeterOf(int itemType)
+		{
+			if (!HasRow(itemType)) return null;
+			AltPolicy pol = For(itemType);
+			if (pol.Kind == AltPolicyKind.MeterReady || (pol.Kind == AltPolicyKind.HoldVariant && string.Equals(pol.P.Cond, "meter", StringComparison.OrdinalIgnoreCase))) return string.IsNullOrEmpty(pol.P.Meter) ? null : pol.P.Meter;
+			return null;
+		}
+
+		/// <summary>
+		/// Exchanges the value of a named mod-player field (Calamity, else Thorium) between two players; calling it again puts both back. The hit pass of a levy's held projectile runs under the real player (HeldWeapons.RunDamage),
+		/// so a hit that loads its owner's meter (the Hellborn's spin: hellbornShots + 1) wrote the COMMANDER's meter; with the levy's value lent to her for the call, it writes the levy's. Returns false when the field is missing.
+		/// </summary>
+		internal static bool SwapMeter(Player a, Player b, string name)
+		{
+			if (a == null || b == null || ReferenceEquals(a, b) || string.IsNullOrEmpty(name)) return false;
+			foreach (var (mod, type) in new[] { (CalMod, CalPlayerType), (ThMod, ThPlayerType) })
+			{
+				object oa = PlayerOf(a, mod, type), ob = PlayerOf(b, mod, type);
+				if (oa == null || ob == null) continue;
+				const BindingFlags f = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+				FieldInfo fi = oa.GetType().GetField(name, f);
+				if (fi == null) continue;
+				try { object va = fi.GetValue(oa); fi.SetValue(oa, fi.GetValue(ob)); fi.SetValue(ob, va); return true; } catch (Exception) { return false; }
+			}
+			return false;
+		}
+
 		public static float ReadMeter(Player p, string name)
 		{
 			if (p == null || string.IsNullOrEmpty(name)) return float.NaN;

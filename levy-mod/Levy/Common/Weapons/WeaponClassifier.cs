@@ -364,6 +364,7 @@ namespace Levy.Common.Weapons
 					p.HeldMelee = src.CountsAsClass(DamageClass.Melee) && !src.CountsAsClass(DamageClass.Ranged) && !src.CountsAsClass(DamageClass.Magic);
 					p.RangeTiles = p.HeldMelee ? (ArkSwings.IsArkItem(src) ? ArkSwings.BlowTiles(src) : BiomeBlades.IsBiomeItem(src) ? BiomeBlades.ItemReach(src) : LevyConstants.HeldMeleeReachTiles)
 						: src.useAmmo == AmmoID.Arrow ? LevyConstants.RangeBow : src.useAmmo == AmmoID.Bullet ? BumpedRange(LevyConstants.RangeGun) : BumpedRange(LevyConstants.RangeMagic);
+					if (ModShotKinds.HeldReachTiles(src) is int hr && hr > 0) p.RangeTiles = hr; // a held weapon that only reaches so far from its holder (ModShotKinds.HeldReachTable)
 					break;
 				default: p.RangeTiles = LevyConstants.RangeMelee; break;
 			}

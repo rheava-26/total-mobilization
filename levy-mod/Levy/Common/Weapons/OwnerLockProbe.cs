@@ -234,7 +234,7 @@ namespace Levy.Common.Weapons
 						{
 							const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 							foreach (MethodInfo m in t.GetMethods(flags))
-								if (m.Name == "PreAI" || m.Name == "AI" || m.Name == "PostAI" || m.Name == "HoldoutAI" || m.Name == "KillHoldoutLogic" || m.Name == "ManageHoldout") Scan(m, 0, visited, found);
+								if (m.Name == "PreAI" || m.Name == "AI" || m.Name == "PostAI" || m.Name == "HoldoutAI" || m.Name == "KillHoldoutLogic" || m.Name == "ManageHoldout" || m.Name == "SafeAI") Scan(m, 0, visited, found); // SafeAI: the body of Calamity's idle holdouts
 						}
 					}
 					finally { _sink = null; }
@@ -383,6 +383,29 @@ namespace Levy.Common.Weapons
 			}
 			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: shot-type probe failed for {item?.Name}: {e.Message}"); }
 			return list;
+		}
+
+		/// <summary>True when the modded item's own <paramref name="hook"/> (declared on its class chain) calls a method named <paramref name="callee"/> (directly or through the same-class helpers it calls): Thread of Eradication's
+		/// UseItemFrame calls <c>Projectile.NewProjectile</c> (its beams are fired from the use animation, not from Shoot).</summary>
+		public static bool ItemHookCalls(Item item, string hook, string callee)
+		{
+			ModItem mi = item?.ModItem;
+			if (mi == null) return false;
+			try
+			{
+				EnsureReflection();
+				var sink = new HashSet<string>(); _sink = sink;
+				try
+				{
+					const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+					for (Type t = mi.GetType(); t != null && t != typeof(ModItem) && t != typeof(object); t = t.BaseType)
+						foreach (MethodInfo m in t.GetMethods(flags))
+							if (m.Name == hook) Scan(m, 0, new HashSet<MethodBase>(), new HashSet<FieldInfo>());
+				}
+				finally { _sink = null; }
+				return sink.Contains(callee);
+			}
+			catch (Exception) { return false; }
 		}
 
 		private static void ScanProjectileTypes(MethodBase method, List<Type> into)

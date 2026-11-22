@@ -286,7 +286,7 @@ namespace Levy.Content.NPCs
 					break;
 			}
 
-			if (State != SoldierState.Dead && State != SoldierState.Desert) { ApplyBodyguard(now); ApplyFightZone(now); } // a boss's target draws it away from the army (SoldierNPC.Bodyguard.cs), inside the fight zone
+			if (State != SoldierState.Dead && State != SoldierState.Desert) { ApplyBodyguard(now); ApplyFightZone(now); ApplyBlastAvoid(now); } // a boss's target draws it away from the army (SoldierNPC.Bodyguard.cs), inside the fight zone; out of a telegraphed blast before anything (SoldierNPC.Blast.cs)
 			HangWatch.Brain(-1, 0); // this think finished (a stall after this point is not in the brain)
 			if (!NPC.active) return; // despawned this think
 			if (State != prevState) StateTimer = 0;
@@ -816,6 +816,26 @@ namespace Levy.Content.NPCs
 			return Vector2.DistanceSquared(NPC.Center, n.Center) < Vector2.DistanceSquared(NPC.Center, current.Center) * ratio * ratio ? pick : -1;
 		}
 
+		private int _armourNextTick;
+		/// <summary>Harness telemetry: held targets dropped because their armour shut and an open part was in sight.</summary>
+		internal static long ArmourSwaps;
+
+		/// <summary>
+		/// The held target is a boss part behind closed armour (<see cref="SoldierTargeting.IsArmouredPart"/>): the index of a part in sight that can be hurt (the pick ranks those first), or -1 to keep it.
+		/// Paced like the beam swordsman's nearer-target look, since it is a full scan with line of sight.
+		/// </summary>
+		private int OpenPartInstead(NPC current, float rangeTiles, int now)
+		{
+			if (now < _armourNextTick || !SoldierTargeting.IsArmouredPart(current)) return -1;
+			_armourNextTick = now + LevyConstants.Targeting.NearerTargetScanIntervalTicks + ScanSpreadTicks();
+			int pick = SoldierTargeting.PickTarget(this, rangeTiles * BossRangeMult(current), useFocus: false, preferNearest: FiresBeamMelee, alsoExclude: UnreachableNow(now));
+			if (pick < 0 || pick == TargetIndex || !ValidNpc(pick)) return -1;
+			var n = Main.npc[pick];
+			if (n.life <= 0 || SoldierTargeting.IsNeverTarget(n) || SoldierTargeting.IsArmouredPart(n) || !WithinChaseBounds(n, rangeTiles * BossRangeMult(n))) return -1;
+			ArmourSwaps++;
+			return pick;
+		}
+
 		/// <summary>Posts, holds, settlements and commanders bound how far a soldier may be dragged by a target.</summary>
 		private bool WithinChaseBounds(NPC target, float rangeTiles)
 		{
@@ -875,7 +895,9 @@ namespace Levy.Content.NPCs
 			{
 				// the held target costs nothing to keep: it is re-validated here (alive, legal, in reach, inside the order's bounds) and only replaced when that fails
 				target = Main.npc[TargetIndex];
-				if (FiresBeamMelee) { int near = NearerBeamTarget(target, range, now); if (near >= 0) { TargetIndex = near; target = Main.npc[near]; } } // a closer threat steals the beam
+				int open = OpenPartInstead(target, range, now); // a held segment that shut its armour gives way to one that can be hurt
+				if (open >= 0) { TargetIndex = open; target = Main.npc[open]; }
+				else if (FiresBeamMelee) { int near = NearerBeamTarget(target, range, now); if (near >= 0) { TargetIndex = near; target = Main.npc[near]; } } // a closer threat steals the beam
 			}
 			else
 			{

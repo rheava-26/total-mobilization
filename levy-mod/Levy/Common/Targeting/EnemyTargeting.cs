@@ -297,7 +297,7 @@ namespace Levy.Common.Targeting
 		{
 			if (!BossAggroUnlocked(npc)) return false;
 			// The commander (every real player) is dead or gone. The unlock above already says this boss type was beaten before: it keeps fighting the levies, but only while one stands within
-			// LostFightLeashTiles of it. With none that close the fight is over: the boss is not handed to the army, its own AI sees no live player, leaves and despawns as it does with no levies.
+			// LostFightLeashTiles of it (a worm: of its head or its tail). With none that close the fight is over: the boss is not handed to the army, its own AI sees no live player, leaves and despawns as it does with no levies.
 			// An unbeaten boss never gets here (no unlock), so it always leaves. Drones and turrets never count (LevyWithin skips machines).
 			if (LostFightOn && !AnyLivePlayer() && !LevyWithin(npc, LevyConstants.Targeting.LostFightLeashPx)) return false;
 			// Skeletron / Skeletron Prime must not be drawn onto the army once it is daytime: they enrage lethally at dawn and would
@@ -465,6 +465,8 @@ namespace Levy.Common.Targeting
 			bool lost = tiered && LostFightOn && !AnyLivePlayer();
 			float leash2 = lost ? LevyConstants.Targeting.LostFightLeashPx * LevyConstants.Targeting.LostFightLeashPx : float.PositiveInfinity;
 			Vector2 leashAt = lost ? LevyUtil.RootNpc(npc).Center : default;
+			NPC leashTail = lost ? WormTail(LevyUtil.RootNpc(npc)) : null; // a worm: a levy within the leash of its tail counts too
+			Vector2 tailAt = leashTail != null ? leashTail.Center : default;
 			int n = 0, nearSoldiers = 0, nearest = -1; float dMin = float.PositiveInfinity;
 			for (int pass = 0; pass < 2; pass++)
 			{
@@ -474,7 +476,7 @@ namespace Levy.Common.Targeting
 				ITargetBody body = Bodies[i];
 				if (!body.IsAlive) continue;
 				if (tiered && IsMachineBody(body.NPC) != (pass == 1)) continue;
-				if (lost && Vector2.DistanceSquared(body.NPC.Center, leashAt) > leash2) continue;
+				if (lost && Vector2.DistanceSquared(body.NPC.Center, leashAt) > leash2 && (leashTail == null || Vector2.DistanceSquared(body.NPC.Center, tailAt) > leash2)) continue;
 				float real = Metric(npc, center, body.NPC.Center, manhattan);
 				if (real > maxSoldierDist) continue;
 				if (real <= LevyConstants.Targeting.ArmyPullRadiusPx) nearSoldiers++;
@@ -696,10 +698,20 @@ namespace Levy.Common.Targeting
 			return BossRule.IsMainBoss(LevyUtil.RootNpc(npc));
 		}
 
-		/// <summary>A live levy, officer or summoned unit (never a machine) within <paramref name="px"/> of this NPC's boss (its root NPC).</summary>
+		/// <summary>
+		/// A live levy, officer or summoned unit (never a machine) within <paramref name="px"/> of this NPC's boss (its root NPC), or, for a worm boss, of its tail (<see cref="WormTail"/>):
+		/// a worm whose head has dug away while its body lies on the army is still in the fight. Not every segment: the head and the tail are two points, every segment would be a hundred.
+		/// </summary>
 		internal static bool LevyWithin(NPC npc, float px)
 		{
-			Vector2 at = LevyUtil.RootNpc(npc).Center; float r2 = px * px;
+			NPC root = LevyUtil.RootNpc(npc); float r2 = px * px;
+			if (LevyNear(root.Center, r2)) return true;
+			NPC tail = WormTail(root);
+			return tail != null && LevyNear(tail.Center, r2);
+		}
+
+		private static bool LevyNear(Vector2 at, float r2)
+		{
 			for (int i = 0; i < Bodies.Count; i++)
 			{
 				ITargetBody b = Bodies[i];
@@ -709,12 +721,64 @@ namespace Levy.Common.Targeting
 			return false;
 		}
 
+		/// <summary>LEVY_WORMTAIL=0 turns the tail leash off (A/B switch for the lab; the world check flips it for one comparison): a worm is measured from its head alone.</summary>
+		internal static bool WormTailOn = Environment.GetEnvironmentVariable("LEVY_WORMTAIL") != "0";
+		private static readonly int[] _tailIdx = new int[Main.maxNPCs], _tailRootType = new int[Main.maxNPCs];
+		private static readonly uint[] _tailAt = NewStamps();
+		private static readonly Dictionary<int, int> _tailTypes = new();
+		private static uint[] NewStamps() { var a = new uint[Main.maxNPCs]; Array.Fill(a, uint.MaxValue); return a; }
+
+		/// <summary>
+		/// The tail of a worm boss: <paramref name="root"/> is its head, and a worm is a head with at least LostFightWormMinSegments segments in its realLife pool, one segment type at least LostFightWormMinBody times (the body).
+		/// The tail is the segment type that appears once and is neither the head's nor the body's (several: the one farthest from the head); with no such type, the segment farthest from the head.
+		/// One scan of the NPC array, cached per head for LostFightTailRefreshTicks; a cached tail that died or left the pool is looked up again at once. Null for anything that is not a worm. Server / single player.
+		/// </summary>
+		internal static NPC WormTail(NPC root)
+		{
+			if (!WormTailOn || root == null || !root.active) return null;
+			int w = root.whoAmI;
+			if (w < 0 || w >= Main.maxNPCs) return null;
+			uint now = Main.GameUpdateCount, at = _tailAt[w];
+			if (at != uint.MaxValue && _tailRootType[w] == root.type && now >= at && now - at < LevyConstants.Targeting.LostFightTailRefreshTicks)
+			{
+				int c = _tailIdx[w];
+				if (c < 0) return null;
+				NPC cn = Main.npc[c];
+				if (cn.active && cn.realLife == w && c != w) return cn;
+			}
+			_tailAt[w] = now; _tailRootType[w] = root.type; _tailIdx[w] = -1;
+			_tailTypes.Clear();
+			int segs = 0;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (i == w || !n.active || n.realLife != w) continue;
+				segs++;
+				_tailTypes[n.type] = _tailTypes.TryGetValue(n.type, out int k) ? k + 1 : 1;
+			}
+			if (segs < LevyConstants.Targeting.LostFightWormMinSegments) return null;
+			int bodyType = -1, bodyCount = 0;
+			foreach (var kv in _tailTypes) if (kv.Value > bodyCount) { bodyCount = kv.Value; bodyType = kv.Key; }
+			if (bodyCount < LevyConstants.Targeting.LostFightWormMinBody) return null;
+			int best = -1, far = -1; float bestD = -1f, farD = -1f;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (i == w || !n.active || n.realLife != w) continue;
+				float d = Vector2.DistanceSquared(n.Center, root.Center);
+				if (d > farD) { farD = d; far = i; }
+				if (n.type != root.type && n.type != bodyType && _tailTypes[n.type] == 1 && d > bestD) { bestD = d; best = i; }
+			}
+			_tailIdx[w] = best >= 0 ? best : far;
+			return _tailIdx[w] >= 0 ? Main.npc[_tailIdx[w]] : null;
+		}
+
 		/// <summary>LEVY_LOSTFIGHTRALLY=0 turns the rally off (A/B switch for the lab and the world check): Follow levies of a fallen commander walk home through a lost fight, as before.</summary>
 		internal static readonly bool LostFightRallyOn = Environment.GetEnvironmentVariable("LEVY_LOSTFIGHTRALLY") != "0";
 		private static uint _lfStamp = uint.MaxValue; private static bool _lfNoPlayer; private static readonly List<Vector2> _lfBosses = new(4);
 
 		/// <summary>
-		/// True while a lost fight goes on near <paramref name="at"/>: no real player is alive, and a boss this world has beaten (its army aggro unlocked; not Skeletron or Prime at dawn) stands within LostFightLeashTiles of it.
+		/// True while a lost fight goes on near <paramref name="at"/>: no real player is alive, and a boss this world has beaten (its army aggro unlocked; not Skeletron or Prime at dawn) stands within LostFightLeashTiles of it (a worm: its head or its tail).
 		/// That boss keeps fighting the levies (<see cref="BossAllowlisted"/>, BossPersistenceGlobalNPC), so a Follow levy of the fallen commander rallies on the spot where he fell instead of walking home, and a levy routed by his death
 		/// falls back around that spot (SoldierNPC.Brain: OrderState, ThinkFollow, RoutedAnchor; SoldierNPC.FightZone). Without it the army marched to its barracks, the boss followed it into town or, left behind, lost the leash and fled.
 		/// The boss list is rebuilt once a tick.
@@ -733,6 +797,8 @@ namespace Levy.Common.Targeting
 						if (!n.active || n.friendly || !IsBossBodyOrPart(n) || !ReferenceEquals(LevyUtil.RootNpc(n), n)) continue;
 						if (!BossAggroUnlocked(n) || BossPersistenceGlobalNPC.IsDaytimeExcluded(n)) continue;
 						_lfBosses.Add(n.Center);
+						NPC tail = WormTail(n); // a worm: its tail holds the fight as its head does
+						if (tail != null) _lfBosses.Add(tail.Center);
 					}
 			}
 			if (!_lfNoPlayer) return false;

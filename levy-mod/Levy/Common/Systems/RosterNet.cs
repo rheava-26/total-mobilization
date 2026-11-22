@@ -25,6 +25,7 @@ namespace Levy.Common.Systems
 			LevyPackets.Register(LevyPacket.Promote, OnPromote);
 			LevyPackets.Register(LevyPacket.Demote, OnDemote);
 			LevyPackets.Register(LevyPacket.Reserve, OnReserve);
+			LevyPackets.Register(LevyPacket.ActiveArmy, OnActiveArmy);
 			LevyPackets.Register(LevyPacket.Order, OnOrder);
 			LevyPackets.Register(LevyPacket.HoldFire, OnHoldFire);
 			LevyPackets.Register(LevyPacket.SpreadOut, OnSpreadOut);
@@ -103,6 +104,16 @@ namespace Levy.Common.Systems
 			var rec = Owned(soldierId, Sender(whoAmI));
 			if (rec == null) return;
 			if (toReserve) Roster.Demobilize(rec); else Roster.Remobilize(rec);
+		}
+
+		/// <summary>The sender's active army size (his own setting, sent when he enters the world and whenever he changes it). bool: say it in chat.</summary>
+		private static void OnActiveArmy(BinaryReader r, int whoAmI)
+		{
+			int size = r.ReadInt32(); bool announce = r.ReadBoolean();
+			if (!LevyUtil.IsServer) return;
+			var sender = Sender(whoAmI);
+			if (sender == null || string.IsNullOrEmpty(sender.name)) return;
+			Roster.SetArmyCap(sender.name, size, announce);
 		}
 
 		private static void OnOrder(BinaryReader r, int whoAmI)

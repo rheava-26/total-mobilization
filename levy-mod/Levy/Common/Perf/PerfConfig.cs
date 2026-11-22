@@ -19,7 +19,7 @@ namespace Levy.Common.Perf
 		public static PerfConfig Get => ModContent.GetInstance<PerfConfig>();
 
 		public override void OnLoaded() => PerfAnalyzer.ConfigChanged();
-		public override void OnChanged() => PerfAnalyzer.ConfigChanged();
+		public override void OnChanged() { PerfAnalyzer.ConfigChanged(); global::Levy.Common.UI.UIActions.SendActiveArmy(false); }
 
 		[Header("Analyzer")]
 		/// <summary>Always-on light profiling: a window of numbers every eight seconds in the perf folder next to the recordings. Costs well under a tenth of a millisecond per tick.</summary>
@@ -36,6 +36,8 @@ namespace Levy.Common.Perf
 		[DefaultValue(true)] public bool LagPopup;
 		/// <summary>Set by "Don't ask again" in the popup. Turn Lag popup off or this on to stop it.</summary>
 		[DefaultValue(false)] public bool LagPopupDontAskAgain;
+		/// <summary>Set by "Don't ask again" in the note that says the army is more than this computer can run smoothly.</summary>
+		[DefaultValue(false)] public bool ArmyNoticeDontAskAgain;
 
 		[Header("Effects")]
 		/// <summary>Reduced hides nameplates and thins the dust levy weapons throw. The army fights exactly the same.</summary>
@@ -51,6 +53,12 @@ namespace Levy.Common.Perf
 		/// are kept in between while the per-tick part (Rage, Adrenaline, stealth, cooldowns) still runs every tick, and a change of gear, buffs, held weapon or a life step rebuilds at once (SoldierNPC.GearApprox.cs).
 		/// </summary>
 		[Range(1, 8)] [DefaultValue(Content.NPCs.SoldierNPC.GearApproxDefaultInterval)] [Slider] public int GearUpdateIntervalWhenFighting;
+
+		/// <summary>
+		/// Active army size: how many of this player's Regulars fight at once (0: all of them). The rest wait on active duty, and when one in the field falls the next takes his place at once (RosterSystem.ActiveArmy.cs).
+		/// A setting of this computer, like Frame Skip: sent to the server when the player enters a world and whenever it changes. Also set from the Barracks and the lag notes.
+		/// </summary>
+		[Range(0, LevyConstants.ActiveArmyMax)] [DefaultValue(0)] public int ActiveArmySize;
 
 		/// <summary>The game's own Frame Skip setting (Settings, Video), read and written here and saved the game's way. Not stored in this config.</summary>
 		[JsonIgnore] [ShowDespiteJsonIgnore] [DrawTicks]

@@ -88,6 +88,7 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_SWAPRACE_ONLY") == "1") { _done = true; try { SwapRaceCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SwapRace] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the save-race check alone
 			if (Environment.GetEnvironmentVariable("LEVY_PYLONCLICK_ONLY") == "1") { _done = true; try { if (Environment.GetEnvironmentVariable("LEVY_PYLONCLICK_AFTER") == "identity") IdentityWorldCheck.RunIfArmed(); if (Environment.GetEnvironmentVariable("LEVY_PYLONCLICK_AFTER") == "shop") ShopLagCheck.RunIfArmed(); PylonClickCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PylonClick] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the pylon click check alone (LEVY_PYLONCLICK_AFTER=shop: right after the shop check, as the chain runs it)
 			if (Environment.GetEnvironmentVariable("LEVY_FIELDFIX_ONLY") == "1") { _done = true; try { FieldFixCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[FieldFix] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the field-fix check alone
+			if (Environment.GetEnvironmentVariable("LEVY_ACTIVEARMY_ONLY") == "1") { _done = true; try { ActiveArmyWorldCheck.RunIfArmed(); global::Levy.Common.Perf.PerfWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ActiveArmy] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the active army size check alone, then the analyzer check (which reads the popup state it leaves)
 			_done = true; _running = true;
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation;
 			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; _local = true; Run(); }
@@ -129,6 +130,8 @@ namespace Levy.Common.Testing
 			try { LineWatchWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LineWatch] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { ChatterWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ChatterWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { TileSweepCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[TileSweep] check threw " + e.GetType().Name + ": " + e.Message); }
+			// the active army size check (its own commander, 30 soldiers: the size, same-tick replacement, a save and load round trip, the live notice)
+			try { ActiveArmyWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ActiveArmy] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the boss-fight cost check runs last: it spawns the biggest army of any check and floods the field with hostile projectiles
 			try { PerfBossCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfBoss] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the performance analyzer check runs after it: it attaches the analyzer's detours to the process, and its fault test removes them again

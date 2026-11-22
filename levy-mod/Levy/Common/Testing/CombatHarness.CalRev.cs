@@ -62,7 +62,7 @@ namespace Levy.Common.Testing
 
 		internal sealed class CrRun
 		{
-			public int Drones, Turrets; public int Mp, BossDef = -1; public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public string Fm = "", Surv = ""; public int Vet = -1; public bool Dbg, Diag; public bool L3; public int Food, RogueN; public bool Hazard; public string HookItem = "", AccItem = "", Stock = ""; public string AmmoMode = "best", Mods = ""; public bool NoSpec, OldAmmo; public string Zone = ""; public string Bb = "", ZSwap = ""; public int Bts = -1; public string Dl = ""; public string Pl = ""; public bool DlOk; public int DlN; public string Tag = ""; public string Imm = ""; public string Meta = ""; public string Tp = ""; public string Xs = ""; public int Pw = -1; public string Gc = ""; public int Gi = -1, Gl = -1; public string Cp = "", Ns = ""; internal KitData Lv; public bool Mixed => AmmoMode == "mixed" || AmmoMode == "mixedm"; public List<CrLevySpec> Specs; public string Desc = "";
+			public int Drones, Turrets; public int Mp, BossDef = -1; public bool Jungle; public string CloneWeapon, Side; public string Kind, Boss = "eye", Mode = "exp", Order = "free", Arena = "surf", Gear = "van", Grade = "mix", Cmd = "near"; public char Clone; public int Seed, Cap, N = 10; public float HpX = 1f, Dr, BossHpX = 1f, HpScale = -1f, Fear = -1f; public string Fm = "", Surv = ""; public int Vet = -1; public bool Dbg, Diag; public bool L3; public int Food, RogueN; public bool Hazard; public string HookItem = "", AccItem = "", Stock = ""; public string AmmoMode = "best", Mods = ""; public bool NoSpec, OldAmmo; public string Zone = ""; public string Bb = "", ZSwap = ""; public int Bts = -1; public string Dl = ""; public string Pl = ""; public bool DlOk; public int DlN; public string Tag = ""; public string Imm = ""; public string Meta = ""; public string Tp = ""; public string Xs = ""; public int Pw = -1; public int Ac = -1; public string Gc = ""; public int Gi = -1, Gl = -1; public string Cp = "", Ns = ""; internal KitData Lv; public bool Mixed => AmmoMode == "mixed" || AmmoMode == "mixedm"; public List<CrLevySpec> Specs; public string Desc = "";
 			public string Key => $"{Kind}|{Boss}|{Mode}|{Order}|{Seed}|{Cap}" + (N != 10 ? "|n" + N : "") + (HpX != 1f ? "|hp" + HpX.ToString(CultureInfo.InvariantCulture) : "") + (Dr != 0f ? "|dr" + Dr.ToString(CultureInfo.InvariantCulture) : "")
 				+ (Arena != "surf" ? "|a" + Arena : "") + (Gear != "van" ? "|g" + Gear : "") + (Grade != "mix" ? "|gr" + Grade : "") + (Clone != 0 ? "|cl" + Clone : "") + (Cmd != "near" ? "|c" + Cmd : "") + (Jungle ? "|jg" : "") + (Drones > 0 ? "|dr" + Drones : "") + (Turrets > 0 ? "|tu" + Turrets : "") + (Mp > 0 ? "|mp" + Mp : "") + (BossDef >= 0 ? "|bdef" + BossDef : "") + (string.IsNullOrEmpty(CloneWeapon) ? "" : "|cw" + CloneWeapon) + (string.IsNullOrEmpty(Side) ? "" : "|sd" + Side) + (BossHpX != 1f ? "|bhp" + BossHpX.ToString(CultureInfo.InvariantCulture) : "") + (HpScale >= 0f ? "|hs" + HpScale.ToString(CultureInfo.InvariantCulture) : "") + (Fear >= 0f ? "|fe" + Fear.ToString(CultureInfo.InvariantCulture) : "") + (Fm != "" ? "|fm" + Fm : "") + (Surv != "" ? "|sv" + Surv : "") + (Vet >= 0 ? "|vt" + Vet : "") + (L3 ? "|L3" : "") + (Food > 0 ? "|food" + Food : "") + (Hazard ? "|hz" : "") + (HookItem != "" ? "|hk" + HookItem : "") + (AccItem != "" ? "|ac" + AccItem : "") + (Stock != "" ? "|stk" + Stock : "") + (RogueN > 0 ? "|rg" + RogueN : "") + (L3 && AmmoMode != "best" ? "|am" + AmmoMode : "") + (OldAmmo ? "|oldammo" : "") + (NoSpec ? "|nospec" : "") + (Bts >= 0 ? "|bts" + Bts : "") + (Zone != "" ? "|zn" + Zone : "") + (Pl != "" ? "|pl" + Pl : "") + (Imm != "" ? "|im" + Imm : "") + (Tag != "" ? "|t" + Tag : "") + (Xs != "" ? "|xs" + Xs : "") + (Gc != "" ? "|gc" + Gc : "") + (Dl != "" ? "|dl" + Dl + (DlOk ? "ok" : "") + (DlN > 0 ? "n" + DlN : "") : "");
 		}
@@ -108,7 +108,7 @@ namespace Levy.Common.Testing
 						string k = f[x].Substring(0, eq), v = f[x].Substring(eq + 1);
 						if (k == "hook") r.HookItem = v.Replace("_", " "); else if (k == "acc") r.AccItem = v.Replace("_", " "); else if (k == "stock") r.Stock = v; else if (k == "order") r.Order = v; else if (k == "n") r.N = v == "cp" ? CrRealMax(r.Boss) : int.Parse(v); else if (k == "hpx") r.HpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "dr") r.Dr = float.Parse(v, CultureInfo.InvariantCulture);
 						else if (k == "clone") r.Clone = v[0]; else if (k == "cmd") r.Cmd = v; else if (k == "arena") r.Arena = v; else if (k == "gear") r.Gear = v; else if (k == "grade") r.Grade = v;
-						else if (k == "drones") r.Drones = int.Parse(v); else if (k == "turrets") r.Turrets = int.Parse(v); else if (k == "mp") r.Mp = int.Parse(v); else if (k == "bdef") r.BossDef = int.Parse(v); else if (k == "cw") r.CloneWeapon = v; else if (k == "side") r.Side = v; else if (k == "jungle") r.Jungle = v == "1"; else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fear") r.Fear = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fm") r.Fm = v; else if (k == "surv") r.Surv = v; else if (k == "vet") r.Vet = int.Parse(v); else if (k == "l3") r.L3 = v == "1"; else if (k == "food") r.Food = int.Parse(v); else if (k == "hazard") r.Hazard = v == "1"; else if (k == "rogue") r.RogueN = int.Parse(v); else if (k == "ammo") r.AmmoMode = v; else if (k == "spec") r.NoSpec = v == "0"; else if (k == "oldammo") r.OldAmmo = v == "1"; else if (k == "bts") r.Bts = int.Parse(v); else if (k == "zone") r.Zone = v; else if (k == "bb") r.Bb = v; else if (k == "zswap") r.ZSwap = v; else if (k == "pl") r.Pl = v; else if (k == "dl") r.Dl = v; else if (k == "dlok") r.DlOk = v == "1"; else if (k == "dln") r.DlN = int.Parse(v); else if (k == "xs") r.Xs = v; else if (k == "tag") r.Tag = v; else if (k == "imm") r.Imm = v; else if (k == "meta") r.Meta = v; else if (k == "tp") r.Tp = v; else if (k == "lv") r.Lv = KitLoad(v); else if (k == "pw") r.Pw = int.Parse(v); else if (k == "gc") r.Gc = v; else if (k == "gi") r.Gi = int.Parse(v); else if (k == "gl") r.Gl = int.Parse(v); else if (k == "cp") r.Cp = v; else if (k == "ns") r.Ns = v;
+						else if (k == "drones") r.Drones = int.Parse(v); else if (k == "turrets") r.Turrets = int.Parse(v); else if (k == "mp") r.Mp = int.Parse(v); else if (k == "bdef") r.BossDef = int.Parse(v); else if (k == "cw") r.CloneWeapon = v; else if (k == "side") r.Side = v; else if (k == "jungle") r.Jungle = v == "1"; else if (k == "dbg") r.Dbg = v == "1"; else if (k == "diag") r.Diag = v == "1"; else if (k == "bhp") r.BossHpX = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "hpscale") r.HpScale = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fear") r.Fear = float.Parse(v, CultureInfo.InvariantCulture); else if (k == "fm") r.Fm = v; else if (k == "surv") r.Surv = v; else if (k == "vet") r.Vet = int.Parse(v); else if (k == "l3") r.L3 = v == "1"; else if (k == "food") r.Food = int.Parse(v); else if (k == "hazard") r.Hazard = v == "1"; else if (k == "rogue") r.RogueN = int.Parse(v); else if (k == "ammo") r.AmmoMode = v; else if (k == "spec") r.NoSpec = v == "0"; else if (k == "oldammo") r.OldAmmo = v == "1"; else if (k == "bts") r.Bts = int.Parse(v); else if (k == "zone") r.Zone = v; else if (k == "bb") r.Bb = v; else if (k == "zswap") r.ZSwap = v; else if (k == "pl") r.Pl = v; else if (k == "dl") r.Dl = v; else if (k == "dlok") r.DlOk = v == "1"; else if (k == "dln") r.DlN = int.Parse(v); else if (k == "xs") r.Xs = v; else if (k == "tag") r.Tag = v; else if (k == "imm") r.Imm = v; else if (k == "meta") r.Meta = v; else if (k == "tp") r.Tp = v; else if (k == "lv") r.Lv = KitLoad(v); else if (k == "pw") r.Pw = int.Parse(v); else if (k == "ac") r.Ac = int.Parse(v); else if (k == "gc") r.Gc = v; else if (k == "gi") r.Gi = int.Parse(v); else if (k == "gl") r.Gl = int.Parse(v); else if (k == "cp") r.Cp = v; else if (k == "ns") r.Ns = v;
 					}
 					if (r.Gear == "mod" && r.Grade == "mix") r.Grade = "lv";
 					if (r.Lv != null) r.Dl = "K"; // lv=<file>: army, supplies and stations come from data (CombatHarness.LabKit.cs)
@@ -683,7 +683,9 @@ namespace Levy.Common.Testing
 				if (run.Pl != "") PlBegin(run);
 				int total = run.Specs.Count, slot = 0;
 				if (total > global::Levy.Common.Config.LevyConfig.Get.RenderCap) global::Levy.Common.Config.LevyConfig.Get.RenderCap = total;
+				RosterSystem.Instance.SetArmyCap(CommanderName, 0); // ac=N: the active army size, set once the whole army stands (RosterSystem.ActiveArmy.cs); never carried over from a previous fight
 				foreach (var sp in run.Specs) s.Levies.Add(CrSpawnLevy(sp, run, slot++, total, _crCmdPos));
+				if (run.Ac > 0) { RosterSystem.Instance.SetArmyCap(CommanderName, run.Ac); Mod.Logger.Info($"HARNESS-CR: active army size {run.Ac}: {RosterSystem.Instance.FieldedOf(CommanderName)} of {total} in the field"); }
 				if (run.Stock != "") CrStockArmory(s, run);
 				if (run.Drones > 0 || run.Turrets > 0) CrSpawnMech(run);
 				if (probe) { for (int k = 0; k < s.Levies.Count; k++) s.Levies[k].Upkeep = k >= 2; }
@@ -719,6 +721,7 @@ namespace Levy.Common.Testing
 				if (run.Diag) global::Levy.Common.Potions.SpectatorDiagnostic.Set(true);
 				global::Levy.Common.Recording.FightRecAuto.Tag(("arena", run.Arena), ("seed", run.Seed), ("mode", run.Mode), ("gear", run.Gear + "_n" + run.N), ("cellkey", run.Key));
 				if (probe && !File.Exists(_crOut + ".probe.tsv")) File.WriteAllText(_crOut + ".probe.tsv", "mode\ttick\tlevy\tgear\tupkeep\trage\tadr\trageMode\tadrMode\thp\tboss\n");
+				CrEventRecStart(run); // pw=N with LEVY_REC_DIR: the pillar fight is an event, so it gets an event recording of its own (the boss recorder never starts for a pillar)
 				Mod.Logger.Info($"HARNESS-CR: start {run.Key}: {run.Boss} {boss.life}/{boss.lifeMax} def {boss.defense} dmg {boss.damage} revenge={LevyRippers.RevengeanceOn} death={CrDeathOn()} expert={Main.expertMode} rippersOff={LevyRippers.Disabled} arena={run.Arena} gear={run.Gear} n={run.N} hpstrength={(global::Levy.Common.Config.LevyConfig.Get.BossHpArmyStrength)} hpcap={(global::Levy.Common.Boss.BossRule.HpCapFor(boss)):0.00} legacy={(global::Levy.Common.Boss.BossRule.Legacy)}; {run.Desc}");
 				return;
 			}
@@ -760,6 +763,12 @@ namespace Levy.Common.Testing
 			foreach (var l in st.Levies)
 			{
 				if (l.Dead) continue;
+				if (run.Ac > 0)
+				{
+					// active army size: a soldier waiting in reserve is neither alive in the field nor dead; one who took a fallen soldier's place is followed in his new body
+					if (!l.Rec.HasBody && !l.Rec.Dead) continue;
+					if (l.Rec.HasBody && l.Rec.BodyIndex != l.Idx) { l.Idx = l.Rec.BodyIndex; l.LastLife = Main.npc[l.Idx].life; }
+				}
 				NPC n = Main.npc[l.Idx];
 				bool body = l.Rec.HasBody && n.active && n.ModNPC is SoldierNPC sn0 && ReferenceEquals(sn0.Record, l.Rec) && n.life > 0;
 				if (body)
@@ -803,6 +812,12 @@ namespace Levy.Common.Testing
 					if (at == st.BossType || st.PartTypes.Contains(at)) { l.TakenBoss += l.LastLife; st.Src("boss:" + CrNpcName(at), l.LastLife); } else if (st.AddTypes.Contains(at)) { l.TakenAdd += l.LastLife; st.Src("add:" + CrNpcName(at), l.LastLife); } else { l.TakenOther += l.LastLife; st.Src("other:" + CrNpcName(at), l.LastLife); }
 				}
 			}
+			if (run.Ac >= 0 && st.Tick % 300 == 0) // ac=N (0: no size, logged for the control arm): the army over time, every 5 s
+			{
+				int waiting = st.Levies.Count(x => !x.Dead && !x.Rec.HasBody && !x.Rec.Dead), dead = st.Levies.Count(x => x.Dead);
+				long dmg = st.Levies.Sum(x => x.DmgBoss + x.DmgAdd) + st.DmgUnattributed;
+				Mod.Logger.Info($"HARNESS-AC: t={st.Tick} fielded={alive} waiting={waiting} dead={dead} dmg={dmg} unattributed={st.DmgUnattributed}");
+			}
 			if (st.Result == "" && alive == 0) { st.Result = "LOSS"; st.EndTick = st.Tick; }
 			if (st.Result == "" && st.Tick >= run.Cap) { st.Result = probe ? "PROBE" : "TIMEOUT"; st.EndTick = st.Tick; }
 			if (st.Result != "" && (st.Result != "WIN" || st.Tick >= st.EndTick + 20)) CrFinishFight(run, st);
@@ -835,10 +850,28 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !(n.ModNPC is SoldierNPC) && !n.townNPC) n.active = false; }
 		}
 
+		/// <summary>Lab: a pillar scene (pw=N) with LEVY_REC_DIR set records each fight as an event recording (format 12) into that folder, plain .jsonl, one file per fight.</summary>
+		private static void CrEventRecStart(CrRun run)
+		{
+			string dir = Environment.GetEnvironmentVariable("LEVY_REC_DIR");
+			if (run.Pw <= 0 || string.IsNullOrEmpty(dir) || Recording.EventRecorder.On) return;
+			Recording.FightRecorder.OutDirOverride = dir; Recording.FightRecorder.GzipOverride = false;
+			Recording.EventRecorder.TestEnabled = true; Recording.EventRecorder.ClearCooldown();
+			string path = Recording.EventRecorder.Start(Main.player[0], "pillars", out string err);
+			global::Levy.Levy.Instance?.Logger.Info(path != null ? "HARNESS-CR: event recording " + path : "HARNESS-CR: event recording could not start: " + err);
+		}
+		private static void CrEventRecStop(CrRun run)
+		{
+			if (run.Pw <= 0 || !Recording.EventRecorder.On) return;
+			string f = Recording.EventRecorder.Stop("lab fight over");
+			global::Levy.Levy.Instance?.Logger.Info("HARNESS-CR: event recording saved " + (f ?? "(none)"));
+		}
+
 		private const string CrHeader = "key\tkind\tboss\tmode\torder\tseed\tresult\tticks\tsec\tbossMax\tbossLeft\tbossDmg\tbossDef\tdmgBoss\tdmgR\tdmgM\tdmgE\tdmgS\tdmgUnattr\tdmgProj\tdmgMelee\tdeaths\tdeathsR\tdeathsM\tdeathsE\tdeathsS\tavgSurvSec\ttakenBoss\ttakenAdd\ttakenOther\taddsPeak\thalfSec\tavgHp\tpotionsDrunk\trageAct\tadrAct\tdrCuts\tadrLost\tpeakRageAvg\tpeakAdrAvg\trageSec\tadrSec\thitsTaken\tgear\tarena\tn\ttgtLevyPct\ttgtPlayerPct\ttgtNonePct\taddTgtLevyPct\taddTgtPlayerPct\thitsBoss\thitsPerSec\tdmgPerSec\tdmgHead\tdmgBody\tdmgTail\tdmgAdd\tbossMoved\tenragedSec\tfirstHitSec\tpartsMax\tdtdPct\tdpsHittable\taddKills\taddKillsPerSec\tphases\tdmgSources\tfirstDeathSec\tavgDef\tfearPct\tshakenPct\troutedPct\tfm\tsurv\tperLevy";
 
 		private void CrFinishFight(CrRun run, CrState st)
 		{
+			CrEventRecStop(run);
 			int end = st.EndTick > 0 ? st.EndTick : st.Tick;
 			Func<char, long> dmg = c => st.Levies.Where(l => l.Cls == c).Sum(l => l.DmgBoss);
 			long dmgBoss = st.Levies.Sum(l => l.DmgBoss);

@@ -70,6 +70,34 @@ namespace Levy.Common.UI
 			else { var p = LevyPackets.New(LevyPacket.Reserve); p.Write(-1); p.Write(reserve); p.Send(); }
 		}
 
+		/// <summary>The local player's active army size (0: everyone fights), from Levy: Performance.</summary>
+		public static int ActiveArmySize { get { try { return System.Math.Max(0, Perf.PerfConfig.Get?.ActiveArmySize ?? 0); } catch (System.Exception) { return 0; } } }
+
+		/// <summary>Sets the local player's active army size: saved in Levy: Performance and applied at once (<see cref="RosterSystem.SetArmyCap"/>). 0 removes the limit.</summary>
+		public static void SetActiveArmy(int size)
+		{
+			size = System.Math.Clamp(size, 0, LevyConstants.ActiveArmyMax);
+			var c = Perf.PerfConfig.Get;
+			if (c != null && c.ActiveArmySize != size) { c.ActiveArmySize = size; Perf.PerfPopup.SaveConfig(c); }
+			SendActiveArmy(true);
+		}
+
+		/// <summary>Sends the local player's active army size to the server (applies it directly in single player). Quiet unless <paramref name="announce"/>. No-op outside a world.</summary>
+		public static void SendActiveArmy(bool announce)
+		{
+			try
+			{
+				if (Main.dedServ || Main.gameMenu || Me == null || !Me.active || string.IsNullOrEmpty(Me.name)) return;
+				int size = ActiveArmySize;
+				if (Single) RosterSystem.Instance?.SetArmyCap(Me.name, size, announce);
+				else { var p = LevyPackets.New(LevyPacket.ActiveArmy); p.Write(size); p.Write(announce); p.Send(); }
+			}
+			catch (System.Exception e) { Levy.Instance?.Logger.Warn("Levy: sending the active army size failed: " + e.Message); }
+		}
+
+		/// <summary>True for a soldier of the local player who is on active duty and alive but waiting for room in the field because an active army size is set.</summary>
+		public static bool WaitingInReserve(SoldierRecord rec) => rec != null && !rec.Reserve && !rec.Dead && ActiveArmySize > 0 && BodyOf(rec) == null;
+
 		public static void AssignPatrol(SoldierRecord rec, Point16 a, Point16 b)
 		{
 			if (rec == null) return;
@@ -541,6 +569,7 @@ namespace Levy.Common.UI
 			var body = BodyOf(rec);
 			if (body != null) return LevyUtil.T("UI2.State." + body.State);
 			if (rec.Dead) return LevyUtil.T("UI2.DeadRespawn", System.Math.Max(0, rec.RespawnTimer) / 60);
+			if (WaitingInReserve(rec)) return LevyUtil.T("UI2.WaitingInReserve"); // an active army size is set: he takes the next place in the field
 			return LevyUtil.T("UI2.NotDeployed");
 		}
 

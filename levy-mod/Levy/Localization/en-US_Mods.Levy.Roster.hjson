@@ -19,6 +19,8 @@ Demoted: "{0} has been demoted to {1}."
 DemoteBlocked: "{0} cannot be demoted yet. The spare accessories have nowhere to go."
 Demobilized: "{0} goes to the reserve."
 Remobilized: "{0} returns to active duty."
+ActiveArmySet: Active army size: {0}. The rest wait in reserve.
+ActiveArmyOff: Active army size: no limit.
 InReserve: "{0} is in reserve. Recall them first."
 ReservedAll: "{0} levies go to the reserve."
 RecalledAll: "{0} levies return to active duty."

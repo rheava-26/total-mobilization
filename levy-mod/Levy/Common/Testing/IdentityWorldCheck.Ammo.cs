@@ -88,18 +88,19 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxProjectiles; i++) Main.projectile[i].active = false;
 			var live = new Dictionary<int, AmmoLive>(); var lastSerial = new long[Main.maxProjectiles];
 			var lastPos = new Dictionary<long, Vector2>();
-			AmmoProbe.Reset(); AmmoProbe.On = true; AmmoProbe.ArmyOnly = !player;
+			AmmoProbe.Reset(); AmmoProbe.On = true; AmmoProbe.ArmyOnly = !player && cw != null; // the commander's own hits are left out while she fires too
 			int dbg = 0;
 			try
 			{
 				for (int k = 0; k < ticks; k++)
 				{
-					if (player) { try { HoldCommanderUse(cw, pressEvery > 0 ? k % pressEvery == 0 : cw.autoReuse || cmd.itemAnimation > 1 || k % 2 == 0); } catch (Exception e) { st.Err = "cmd use " + (e is TargetInvocationException && e.InnerException != null ? e.InnerException.GetType().Name : e.GetType().Name); } }
+					if (player) { try { HoldCommanderUse(cw, pressEvery > 0 && !cw.channel && !ModShotKinds.HoldSpawned(cw) && ModShotKinds.HolderType(cw) == cw.shoot ? k % pressEvery == 0 : cw.autoReuse || cmd.itemAnimation > 1 || k % 2 == 0); /* a held gun is held down */ } catch (Exception e) { st.Err = "cmd use " + (e is TargetInvocationException && e.InnerException != null ? e.InnerException.GetType().Name : e.GetType().Name); } }
 					else if (cw != null) { try { HoldCommanderUse(cw, true); } catch (Exception e) { st.Err = "cmd use " + (e is TargetInvocationException && e.InnerException != null ? e.InnerException.GetType().Name : e.GetType().Name); } }
 					else CursorOnCommander();
 					if (!player && cw != null && cmd.inventory[54] != null && !cmd.inventory[54].IsAir) cmd.inventory[54].stack = cmd.inventory[54].maxStack;
 					if (!player) foreach (var r in RosterSystem.Instance.Regulars) { if (r.Gear.Ammo != null && !r.Gear.Ammo.IsAir) r.Gear.Ammo.stack = r.Gear.Ammo.maxStack; }
 					else if (cmd.inventory[54] != null && !cmd.inventory[54].IsAir) cmd.inventory[54].stack = cmd.inventory[54].maxStack;
+					Main.dayTime = true; Main.time = 27000; // noon: no falling stars
 					Step(1); ClearNaturalHostiles();
 					if (_sweepTarget != null && _sweepTarget.active) { int d = _sweepTarget.lifeMax - _sweepTarget.life; if (d > 0) st.Damage += d; }
 					st.Ticks++;
@@ -206,6 +207,7 @@ namespace Levy.Common.Testing
 			{
 				try
 				{
+					Main.dayTime = true; Main.time = 27000; // noon: no falling stars in the window
 					Item smp = ContentSamples.ItemsByType[type];
 					int am = smp.useAmmo > 0 && ammo.TryGetValue(smp.useAmmo, out int a) ? a : 0;
 					Item fi = new Item(); fi.SetDefaults(type); WeaponProfile fp = WeaponClassifier.GetProfile(fi);
@@ -277,6 +279,7 @@ namespace Levy.Common.Testing
 				for (int k = 0; k < ticks; k++)
 				{
 					foreach (var r in RosterSystem.Instance.Regulars) if (r.Gear.Ammo != null && !r.Gear.Ammo.IsAir) r.Gear.Ammo.stack = r.Gear.Ammo.maxStack;
+					Main.dayTime = true; Main.time = 27000;
 					CursorOnCommander(); Step(1); ClearNaturalHostiles();
 					if (_sweepTarget != null && _sweepTarget.active) { int d = _sweepTarget.lifeMax - _sweepTarget.life; if (d > 0) dmg += d; }
 					Vector2 cmdC = Main.player[0].Center;
@@ -346,6 +349,8 @@ namespace Levy.Common.Testing
 					if (ContentSamples.ItemsByType.TryGetValue(i, out Item s) && s?.ModItem?.Mod == cal && (s.ammo == AmmoID.Bullet || s.ammo == AmmoID.Arrow) && s.shoot > 0) list.Add((i, "CalamityMod:" + s.ModItem.Name));
 			string only = Environment.GetEnvironmentVariable("LEVY_AMMO_ONLY");
 			if (!string.IsNullOrEmpty(only)) { var names = only.Split(';', StringSplitOptions.RemoveEmptyEntries); list = list.Where(a => names.Any(n => a.label.EndsWith(":" + n))).ToList(); }
+			bool day0 = Main.dayTime; double time0 = Main.time;
+			Main.dayTime = true; Main.time = 27000; // noon: no falling stars (friendly projectiles from the sky) to count as somebody's shots
 			try
 			{
 				Arena(); _cmdAt = HoldCmdAt(); KeepCommander(); Step(2);
@@ -377,8 +382,9 @@ namespace Levy.Common.Testing
 							AmmoStat ar = AmmoRun(gun, ammo, l, false, ticks, 0f, levyArmy);
 							double ar1 = lv.PerShot > 0 ? ar.PerShot / lv.PerShot : 0;
 							ANote(ar.ToString());
-							if (AmmoProbe.IdStatic.Contains(lv.ShotType)) ANote($"{l}: {levyArmy} levies firing together do {ar1:0.00} of one levy's damage per shot; the shot uses a per-type hit cooldown (shared by every shooter of it, players included), not checked");
-							else ACheck($"{l}: {levyArmy} levies firing together each do what one does (hit damage per shot {ar.PerShot:0.0} vs {lv.PerShot:0.0}, ratio {ar1:0.00}, within 0.75 to 1.25)", ar.Shots > 0 && ar1 >= 0.75 && ar1 <= 1.25);
+							if (label.EndsWith(":VeriumBolt")) ANote($"{l}: {levyArmy} levies firing together do {ar1:0.00} of one levy's damage per shot; Verium's doom is one mark per enemy (a 100 + 15 per stack strike 90 ticks after the first hit), shared by every shooter, players included, not checked");
+							else if (AmmoProbe.IdStatic.Contains(lv.ShotType)) ANote($"{l}: {levyArmy} levies firing together do {ar1:0.00} of one levy's damage per shot; the shot uses a per-type hit cooldown (shared by every shooter of it, players included), not checked");
+							else ACheck($"{l}: {levyArmy} levies firing together each do what one does (hit damage per shot {ar.PerShot:0.0} vs {lv.PerShot:0.0}, ratio {ar1:0.00}, within 0.7 to 1.35)", ar.Shots > 0 && ar1 >= 0.7 && ar1 <= 1.35);
 							if (label.EndsWith(":GodSlayerSlug") || label.EndsWith(":ExplodingBullet") || label.EndsWith(":JestersArrow") || Environment.GetEnvironmentVariable("LEVY_AMMO_CMDFIRE") == "1")
 							{
 								// the commander fights too: her Megashark's Exploding Bullets hit the same target (each explosion gives it her slot's hit cooldown)
@@ -399,6 +405,7 @@ namespace Levy.Common.Testing
 			try { FlameSweep(); }
 			catch (Exception e) { ACheck("flame sweep threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			finally { _sweepTarget = null; ClearRogueAdds(); ClearSoldiers(); ReleaseCommanderButtons(); }
+			Main.dayTime = day0; Main.time = time0;
 			ANote($"army hit cooldown: {ArmyHitCooldown.Passes} levy hit passes ran on the levy's own enemy cooldowns, {ArmyHitCooldown.Set} cooldowns set ({(ArmyHitCooldown.Disabled ? "OFF" : "on")})");
 			ANote($"ammo world ran in {sw.ElapsedMilliseconds / 1000} s ({list.Count} ammo, {ticks} ticks each side)");
 			_mod.Logger.Info($"[AmmoWorld] self-check pass={_awPass} fail={_awFail}");

@@ -34,7 +34,7 @@ namespace Levy.Common.Perf
 				Chk(Def("LevyEffects") is LevyEffectsQuality q && q == LevyEffectsQuality.Full, "army effects default to full");
 				Chk(Def("PerfLogDays") is int d && d >= 1 && Def("PerfLogMaxMB") is int mb && mb >= 5, "the log keeps some days and some megabytes by default");
 				Chk(ModContent.TryFind("Levy/PerfTestNpc", out ModNPC _) == PerfTestTypes.Loaded && ModContent.TryFind("Levy/PerfTestLayer", out ModMapLayer _) == PerfTestTypes.Loaded, "the test-only NPC and map layer exist only when the self-check variable is set");
-				Chk(PerfAnalysis.ReserveBankAvailable == false, "the reserve bank hook is off");
+				Chk(PerfAnalysis.ActiveArmyAvailable && Def("ActiveArmySize") is 0 && Def("ArmyNoticeDontAskAgain") is false, "the active army size is offered, defaults to no limit, and its notice is not silenced");
 			}
 			catch (Exception e) { fails.Add("threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim()); }
 			if (fails.Count == 0) Mod.Logger.Info($"[PerfAnalyzer] self-check pass={pass} fail=0");

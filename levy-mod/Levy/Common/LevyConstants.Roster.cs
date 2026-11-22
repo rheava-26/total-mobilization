@@ -26,6 +26,10 @@ namespace Levy.Common
 		/// </summary>
 		public const int ReserveMax = 100;
 
+		// ---------- Roster: active army size (how many of a commander's soldiers fight at once; RosterSystem.ActiveArmy.cs) ----------
+		/// <summary>Largest active army size the player can pick. 0 always means no limit.</summary>
+		public const int ActiveArmyMax = 200;
+
 		// ---------- Roster: growth ----------
 		/// <summary>How often soldiers check their home Armory storage for a growth crystal to absorb (ticks); one crystal per soldier per check.</summary>
 		public const int AutoFeedIntervalTicks = 180;

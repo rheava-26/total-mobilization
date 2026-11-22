@@ -141,7 +141,7 @@ namespace Levy.Common.Testing
 			string armsEnv = Environment.GetEnvironmentVariable("LEVY_LF_ARMS");
 			// the lab sweep (any LEVY_LF_* pick, or LEVY_LF_FULL=1): every chosen boss on every chosen arm. The ship run: the plan below, a few minutes a half.
 			bool sweep = only != null || armsEnv != null || Environment.GetEnvironmentVariable("LEVY_LF_FULL") == "1";
-			string[] arms = (armsEnv ?? "real,hold,unbeaten,wipe,respawn").Split(',');
+			string[] arms = (armsEnv ?? "real,hold,unbeaten,wipe,respawn,wormtail").Split(',');
 			bool cal = ModLoader.HasMod("CalamityMod");
 			int watch = int.TryParse(Environment.GetEnvironmentVariable("LEVY_LF_WATCH"), out int w) && w > 0 ? w : sweep ? 1200 : 900;
 			var plan = new List<(string boss, string arm)>();
@@ -153,13 +153,14 @@ namespace Levy.Common.Testing
 					foreach (string arm in arms)
 					{
 						// the first-fight, wipe and respawn arms ask about the rule's exits; with no boss named a few bosses stand for the rest
+						if (arm == "wormtail" && !b.Worm) continue; // the head-or-tail leash is a worm's
 						if ((arm == "wipe" || arm == "respawn" || arm == "unbeaten") && only == null && !(b.Name.StartsWith("Eye") || b.Name.StartsWith("Duke") || b.Name.StartsWith("Plaguebringer") || b.Name.StartsWith("The Devourer"))) continue;
 						plan.Add((b.Name, arm));
 					}
 				}
 			}
-			else if (cal) plan.AddRange(new[] { ("The Devourer of Gods", "real"), ("Providence (Hallow)", "real"), ("Yharon", "real"), ("Plaguebringer Goliath", "hold"), ("Plantera", "real"), ("The Devourer of Gods", "unbeaten"), ("Eye of Cthulhu", "wipe"), ("Plaguebringer Goliath", "respawn") });
-			else plan.AddRange(new[] { ("Eye of Cthulhu", "real"), ("The Destroyer", "real"), ("Moon Lord", "real"), ("Plantera", "real"), ("Duke Fishron", "hold"), ("Skeletron Prime", "day"), ("Eye of Cthulhu", "unbeaten"), ("Duke Fishron", "wipe"), ("Eye of Cthulhu", "respawn") });
+			else if (cal) plan.AddRange(new[] { ("The Devourer of Gods", "real"), ("Providence (Hallow)", "real"), ("Yharon", "real"), ("Plaguebringer Goliath", "hold"), ("Plantera", "real"), ("The Devourer of Gods", "unbeaten"), ("Eye of Cthulhu", "wipe"), ("Plaguebringer Goliath", "respawn"), ("Desert Scourge", "wormtail"), ("The Destroyer", "wormtail") });
+			else plan.AddRange(new[] { ("Eye of Cthulhu", "real"), ("The Destroyer", "real"), ("Moon Lord", "real"), ("Plantera", "real"), ("Duke Fishron", "hold"), ("Skeletron Prime", "day"), ("Eye of Cthulhu", "unbeaten"), ("Duke Fishron", "wipe"), ("Eye of Cthulhu", "respawn"), ("The Destroyer", "wormtail") });
 			LfNote($"lost fight on={EnemyTargeting.LostFightOn}, rally on={EnemyTargeting.LostFightRallyOn}, leash {LevyConstants.Targeting.LostFightLeashTiles} tiles, watch {watch} ticks after the death, Calamity {(cal ? "Revengeance+Death, Master" : "off, Expert")}, {plan.Count} trials{(sweep ? " (lab sweep)" : "")}");
 			_lfArenaKind = null;
 			int homeTiles = int.TryParse(Environment.GetEnvironmentVariable("LEVY_LF_HOME"), out int ht) && ht > 0 ? ht : 260;
@@ -171,6 +172,7 @@ namespace Levy.Common.Testing
 				if (b == null) continue;
 				int type = b.Type;
 				if (type <= 0) { LfCheck($"{b.Name}: the type resolves", false); continue; }
+				if (arm == "wormtail") { LfWormTrial(b, type); continue; }
 				{
 					LfResult r = LfTrial(b, type, arm, watch);
 					string label = arm switch
@@ -327,6 +329,141 @@ namespace Levy.Common.Testing
 				RosterSystem.Instance.Regulars.RemoveAll(x => x.CommanderName == Commander);
 				_lfDay = false; _lfZones = null;
 			}
+		}
+
+		/// <summary>
+		/// The worm leash (Eve, 2026-11-22: a beaten worm measured from its head alone dug its head 201 tiles off while its body was on the army, and left). After the commander's death the worm's head is held 260 tiles from the army
+		/// and its tail 15 tiles over it: a levy is within the leash of the tail, so the worm keeps fighting (the head-only rule would have let it go). Then the tail is held out too: both ends out, the worm drops the army and leaves.
+		/// The two ends are put back after their own update every tick, so every reader that tick sees them where the trial put them.
+		/// </summary>
+		private static void LfWormTrial(LfBoss b, int type)
+		{
+			string label = $"{b.Name} [worm leash]";
+			ClearHostiles();
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && n.ModNPC is SoldierNPC) n.active = false; }
+			RosterSystem.Instance.Regulars.RemoveAll(x => x.CommanderName == Commander);
+			_cmdDead = false;
+			int who = -1, tailWho = -1; Vector2 headAt = default, tailAt = default; bool pin = false;
+			On_NPC.hook_UpdateNPC pinDet = (orig, self, i) =>
+			{
+				orig(self, i);
+				if (!pin) return;
+				if (i == who && self.active) { self.Center = headAt; self.velocity = Vector2.Zero; }
+				if (i == tailWho && self.active) { self.Center = tailAt; self.velocity = Vector2.Zero; }
+			};
+			On_NPC.UpdateNPC += pinDet;
+			bool tailOn = EnemyTargeting.WormTailOn;
+			try
+			{
+				LfArena("big");
+				bool calm = ModLoader.HasMod("CalamityMod");
+				SetRevenge(calm, calm); Main.GameMode = calm ? GameModeID.Master : GameModeID.Expert; Main.hardMode = b.Hard;
+				_lfDay = false; _lfZones = b.Zones;
+				PlaceCommander(0);
+				global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(type, true);
+				SetBossesTarget(true);
+				EnemyTargeting.RefreshConfig();
+				var army = new List<SoldierNPC>();
+				for (int k = 0; k < 8; k++)
+				{
+					var s = LfLevy(new Vector2((Cx + (k % 2 == 0 ? -1 : 1) * (6 + k * 2)) * 16f, _floorY * 16f), SoldierOrder.Follow);
+					if (s == null) continue;
+					s.NPC.immortal = true; army.Add(s);
+				}
+				Step(2);
+				int idx = NPC.NewNPC(new EntitySource_BossSpawn(Main.player[0]), (int)_cmdAt.X, (int)_cmdAt.Y - 1600, type, 1);
+				NPC boss = idx >= 0 && idx < Main.maxNPCs ? Main.npc[idx] : null;
+				if (boss == null || boss.type != type) { LfCheck(label + ": the worm spawns", false); return; }
+				boss.timeLeft *= 20; who = boss.whoAmI;
+				bool Alive() => Main.npc[who].active && Main.npc[who].type == type;
+				void TopUp() { if (!Alive()) return; NPC n = Main.npc[who]; n.life = n.lifeMax; for (int i = 0; i < Main.maxNPCs; i++) { NPC x = Main.npc[i]; if (x.active && i != who && x.realLife == who && x.lifeMax > 0) x.life = x.lifeMax; } }
+				void Heal() { foreach (var l in army) if (l.NPC.active) { l.NPC.life = l.NPC.lifeMax; if (l.Record != null) l.Record.CurrentHp = l.NPC.lifeMax; } }
+				void Pin() { if (!pin) return; if (Alive()) { Main.npc[who].Center = headAt; Main.npc[who].velocity = Vector2.Zero; } if (tailWho >= 0 && Main.npc[tailWho].active) { Main.npc[tailWho].Center = tailAt; Main.npc[tailWho].velocity = Vector2.Zero; } }
+				_perTick = () => { TopUp(); Heal(); Pin(); };
+				Step(120);
+				if (!Alive()) { LfCheck(label + ": the worm is still in the fight before the commander falls", false); return; }
+				_cmdDead = true;
+				Step(2);
+				NPC head = Main.npc[who];
+				int segs = 0; for (int i = 0; i < Main.maxNPCs; i++) if (i != who && Main.npc[i].active && Main.npc[i].realLife == who) segs++;
+				EnemyTargeting.WormTailOn = true; NPC tail = EnemyTargeting.WormTail(head); EnemyTargeting.WormTailOn = tailOn; // found even with LEVY_WORMTAIL=0 (the A/B run: the same trial with the head-only rule)
+				int expect = b.Cal != null ? CalType(b.Cal.Replace("Head", "Tail")) : NPCID.TheDestroyerTail;
+				LfCheck($"{label}: the tail is found ({(tail == null ? "none" : "type " + tail.type)}, expected type {expect}, {segs} segments in the pool)", tail != null && tail.type == expect);
+				if (tail == null) return;
+				tailWho = tail.whoAmI;
+				// the army stands around the spot where the commander fell; the head goes 260 tiles off, the tail 15 tiles over the army
+				Vector2 army0 = _cmdAt;
+				headAt = army0 + new Vector2(260 * 16f, -30 * 16f); tailAt = army0 + new Vector2(0f, -15 * 16f); pin = true; Pin();
+				float leash = LevyConstants.Targeting.LostFightLeashPx;
+				int ticks = 300, alive = 0, locked = 0, within = 0, headOut = 0, tailIn = 0, holds = 0, minTl = int.MaxValue, headOnly = 0;
+				for (int t = 0; t < ticks; t++)
+				{
+					Step(1);
+					if (!Alive()) break;
+					alive++;
+					NPC h = Main.npc[who];
+					if (t >= 60 && Locked(h)) locked++;
+					if (EnemyTargeting.LevyWithin(h, leash)) within++;
+					float dh = NearestTo(army, h.Center), dt = NearestTo(army, Main.npc[tailWho].Center);
+					if (dh > LevyConstants.Targeting.LostFightLeashTiles) headOut++;
+					if (dt <= LevyConstants.Targeting.LostFightLeashTiles) tailIn++;
+					if (army.Count > 0 && EnemyTargeting.LostFightHolds(army[0].NPC.Center)) holds++;
+					if (t >= 60) minTl = Math.Min(minTl, h.timeLeft);
+					if (t % 60 == 30) { EnemyTargeting.WormTailOn = false; if (!EnemyTargeting.LevyWithin(h, leash)) headOnly++; EnemyTargeting.WormTailOn = tailOn; }
+				}
+				LfNote($"{label}: head held 260 tiles off, tail over the army: alive {alive}/{ticks}, head out of the leash {headOut}, tail in it {tailIn}, a levy within the leash {within}, the army holds the rally {holds}, locked on a levy {locked}/{ticks - 60} after the first second, min timeLeft {minTl}, head alone out of reach {headOnly}/5 samples");
+				LfCheck($"{label}: the geometry holds (head out of the leash, tail in it, every tick)", headOut == alive && tailIn == alive && alive > 0, () => $"head out {headOut}, tail in {tailIn}, of {alive}");
+				LfCheck($"{label}: measured from the head alone no levy is in the leash (the head-only rule lets it go)", headOnly == 5, () => headOnly + "/5");
+				LfCheck($"{label}: head out, tail in: the worm keeps fighting the levies", alive == ticks && within == ticks && locked * 10 >= (ticks - 60) * 7 && minTl > 60, () => $"alive {alive}, within {within}, locked {locked}/{ticks - 60}, min timeLeft {minTl}");
+				LfCheck($"{label}: head out, tail in: the army holds where the commander fell", holds == alive, () => $"{holds}/{alive}");
+				if (!Alive()) return;
+				// both ends out: head and tail held 400 tiles off (past the leash and past the range the game keeps an NPC alive in around a player)
+				headAt = army0 + new Vector2(400 * 16f, -30 * 16f); tailAt = headAt + new Vector2(0f, 12 * 16f); Pin();
+				int lockedB = 0, withinB = 0, holdsB = 0;
+				for (int t = 0; t < 150; t++)
+				{
+					Step(1);
+					if (!Alive()) break;
+					NPC h = Main.npc[who];
+					if (t >= 90 && Locked(h)) lockedB++;
+					if (EnemyTargeting.LevyWithin(h, leash)) withinB++;
+					if (army.Count > 0 && EnemyTargeting.LostFightHolds(army[0].NPC.Center)) holdsB++;
+				}
+				LfCheck($"{label}: both ends out: no levy in the leash, the lock drops within 1.5 s and the army stops holding", withinB == 0 && lockedB == 0 && holdsB == 0, () => $"within {withinB}, locked after 1.5 s {lockedB}/60, holds {holdsB}");
+				// let it go: nothing holds it now, so it leaves on its own AI's terms. The army is held 450 tiles the other way, so the worm's flight cannot bring it back into the leash by chance.
+				// The spawn-time timeLeft boost of this trial is taken back first: the worm starts from the timeLeft the keep-alive gave it (NPC.activeTime), as in a real fight.
+				pin = false; Main.npc[who].timeLeft = Math.Min(Main.npc[who].timeLeft, NPC.activeTime);
+				_perTick = () => { TopUp(); Heal(); for (int k = 0; k < army.Count; k++) if (army[k].NPC.active) { army[k].NPC.Bottom = new Vector2((Cx - 450 + k * 2) * 16f, _floorY * 16f); army[k].NPC.velocity = Vector2.Zero; } };
+				int gone = -1; var leaveTrace = new StringBuilder();
+				for (int t = 0; t < 1500 && gone < 0; t++)
+				{
+					Step(1);
+					if (!Alive()) { gone = t; break; }
+					NPC h = Main.npc[who];
+					if (t % 300 == 0) leaveTrace.Append($" | t{t} ({h.Center.X / 16f:0},{h.Center.Y / 16f:0}) target {h.target} lock {LevyNpcData.Of(h).SoldierTarget} tl {h.timeLeft} nearest levy {NearestTo(army, h.Center):0} (tail {NearestTo(army, Main.npc[tailWho].Center):0})");
+				}
+				LfNote($"{label}: both ends out: {(gone >= 0 ? "gone " + (gone / 60f).ToString("0.0") + " s later" : "still here after 25 s")}{leaveTrace}");
+				LfCheck($"{label}: both ends out: the worm leaves", gone >= 0, () => "still here after 25 s at (" + (Main.npc[who].Center.X / 16f).ToString("0") + "," + (Main.npc[who].Center.Y / 16f).ToString("0") + ")");
+			}
+			finally
+			{
+				pin = false; EnemyTargeting.WormTailOn = tailOn;
+				On_NPC.UpdateNPC -= pinDet;
+				_cmdDead = false; _perTick = null;
+				SetBossesTarget(null);
+				global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(type, false);
+				ClearHostiles(); ClearMachines();
+				for (int i = 0; i < Main.maxNPCs; i++) { NPC x = Main.npc[i]; if (x.active && x.ModNPC is SoldierNPC) x.active = false; }
+				RosterSystem.Instance.Regulars.RemoveAll(x => x.CommanderName == Commander);
+				_lfDay = false; _lfZones = null;
+			}
+		}
+
+		private static float NearestTo(List<SoldierNPC> army, Vector2 at)
+		{
+			float near = float.MaxValue;
+			foreach (var l in army) if (l.NPC.active && l.IsAlive) near = Math.Min(near, Vector2.Distance(l.NPC.Center, at) / 16f);
+			return near;
 		}
 
 		/// <summary>Trace: up to three parts of this boss (hooks, hands, segments), where they are, what they are locked on and what they target.</summary>

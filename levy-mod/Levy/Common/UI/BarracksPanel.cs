@@ -38,6 +38,7 @@ namespace Levy.Common.UI
 		private string _titleRaw = "", _treasuryRaw = "";
 		// full (un-ellipsised) captions of the two flex control buttons, so the row reflow always fits from the complete text
 		private string _recruitRaw = "", _hazardRaw = "";
+		private LevyButton _armyMinus, _armySize, _armyPlus, _armyHelp;
 		private LevyButton _setupBtn, _close, _dep1, _dep10, _dep100, _depAll, _wd1, _wd10, _wd100, _mobilize, _standAll, _remobAll, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
 		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire, _resetLoadouts, _officers, _goMap;
 		private LevyButton _fClassBtn, _fGradeBtn, _fTierBtn, _fDutyBtn, _sortBtn;
@@ -107,6 +108,11 @@ namespace Levy.Common.UI
 			_mobilize = Put(new LevyButton("", BtnScale, 118, BH, () => UIActions.ToggleMobilize(Te)), 12, y7);
 			_standAll = Put(new LevyButton(LevyUtil.T("UI.StandDownAll"), 0.7f, 110, BH, () => UIActions.SetReserveAll(true), LevyUtil.T("UI2.StandDownAllHint")), 138, y7);
 			_remobAll = Put(new LevyButton(LevyUtil.T("UI.RemobilizeAll"), 0.7f, 120, BH, () => UIActions.SetReserveAll(false), LevyUtil.T("UI2.RemobilizeAllHint")), 256, y7);
+			// active army size beside the reserve buttons: - / size / + (Shift: 5 at a time; the size button clears it), and a "?" that says what it does
+			_armyMinus = Put(new LevyButton("-", 0.7f, 22, BH, () => StepArmy(-1), LevyUtil.T("UI2.ActiveArmyStepHint")), 382, y7);
+			_armySize = Put(new LevyButton("", 0.7f, 84, BH, () => UIActions.SetActiveArmy(0), LevyUtil.T("UI2.ActiveArmyHint")), 406, y7);
+			_armyPlus = Put(new LevyButton("+", 0.7f, 22, BH, () => StepArmy(1), LevyUtil.T("UI2.ActiveArmyStepHint")), 492, y7);
+			_armyHelp = Put(new LevyButton("?", 0.7f, 22, BH, null, LevyUtil.T("UI2.ActiveArmyHelp")), 516, y7);
 
 			// manpower + command-point bars (widths follow the panel width, see ApplyLayout)
 			_manpower = Put(new BarElement(260, LevyConstants.UI.BarracksBarH) { Fill = new Color(90, 160, 90) }, 12, RowY(1) + 1);
@@ -191,6 +197,19 @@ namespace Levy.Common.UI
 
 		// ------------------------------------------------------------------ size
 		/// <summary>Positions everything that depends on the panel size: the right-anchored header controls, the two bars, the grid, scrollbar and grip.</summary>
+		/// <summary>The active army size one step down or up (Shift: five). Down from no limit starts at the soldiers on duty; up past them is no limit again.</summary>
+		private static void StepArmy(int dir)
+		{
+			int step = Main.keyState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) || Main.keyState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.RightShift) ? 5 : 1;
+			int onDuty = 0; foreach (var r in UIActions.MyRegulars()) if (!r.Reserve) onDuty++;
+			int cur = UIActions.ActiveArmySize;
+			if (cur <= 0) { if (dir > 0) return; cur = Math.Max(2, onDuty); }
+			int next = cur + dir * step;
+			if (dir > 0 && next > onDuty) next = 0; // past the whole army: no limit
+			else next = Math.Clamp(next, 1, LevyConstants.ActiveArmyMax);
+			UIActions.SetActiveArmy(next);
+		}
+
 		private void ApplyLayout()
 		{
 			_panel.Width.Set(_w, 0f); _panel.Height.Set(_h, 0f);
@@ -365,6 +384,9 @@ namespace Levy.Common.UI
 			_cp.Label = ReserveCount > 0 ? LevyUtil.T("UI2.CommandPointsReserve", cpUsed, cpTotal, ReserveCount) : LevyUtil.T("UI.CommandPoints", cpUsed, cpTotal);
 
 			_mobilize.Set(LevyUtil.T(te.Mobilized ? "UI.StandDown" : "UI.Mobilize"), true, LevyUtil.T(te.Mobilized ? "UI2.StandDownHint" : "UI2.MobilizeHint"));
+			int army = UIActions.ActiveArmySize;
+			_armySize.Set(army > 0 ? LevyUtil.T("UI2.ActiveArmy", army) : LevyUtil.T("UI2.ActiveArmyAll"), true);
+			_armyPlus.Enabled = army > 0;
 			_autoMuster.Set(LevyUtil.T("UI2.Toggle", LevyUtil.T("UI.AutoMuster"), LevyUtil.T(te.AutoMuster ? "UI2.On" : "UI2.Off")), true);
 			_tax.Set(LevyUtil.T("UI2.Toggle", LevyUtil.T("UI2.TaxShort"), LevyUtil.T(te.TaxToTreasury ? "UI2.On" : "UI2.Off")), true);
 			// "used today" is shown by greying the button (with a hint) instead of a text suffix, so a long coin amount cannot widen the row

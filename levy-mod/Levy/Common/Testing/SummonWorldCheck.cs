@@ -118,6 +118,7 @@ namespace Levy.Common.Testing
 			try { BossBugsWorldCheck.MusterBossRunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[MusterBoss] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { LevyRulesCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LevyRules] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { ArmoryRulesWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ArmoryRulesWorld] check threw " + e.GetType().Name + ": " + e.Message); }
+			try { AllyTagsWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[AllyTags] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { SidearmWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SidearmWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { ArmorClassWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ArmorClassWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { StealthWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[StealthWorld] check threw " + e.GetType().Name + ": " + e.Message); }

@@ -157,6 +157,7 @@ Pages: {
 			Focus attack: press it, then click an enemy, a critter or a spot. The squad attacks it until it is clear. Clear focus, a second click on the same target, or Esc while choosing cancels it.
 			Re-arm: every soldier returns their kit to the Armory and draws again from the issue slots.
 			Show names displays every soldier's nameplate. Press it again for the normal fade.
+			Your levies' minions, your officers' creatures and your machines carry a small name tag. In a crowd only the one under the cursor shows it.
 			'''
 	}
 
@@ -277,7 +278,8 @@ Pages: {
 			'''
 			The Rules tab decides which weapons the levies draw. Rules apply from the top, and the upper rule wins.
 			Class balance sets how many levies carry each class. A limit gives way before a levy is left unarmed.
-			Category rule prefers, orders, includes or requires a kind of weapon, such as bows or guns. Weight only tilts the pick. Order, Include and At least are firm, and outrank the armor a levy wears.
+			Category rule includes, limits, requires, orders or prefers a kind of weapon, such as bows or guns. A new one starts as Include. Weight only tilts the pick. Include, Only, At least and Order are firm, and outrank the armor a levy wears.
+			Only issues nothing outside its category, wherever the block sits. Two Only blocks allow both kinds. A levy holding another kind keeps it until one is free, and an unarmed levy takes another kind when none is left.
 			Item list names items that are never used, or the only items used.
 			Re-arm deals the whole army again at once. Without it, levies come to a changed rule on their own, a few at a time.
 			Hover a weapon in storage to set its rank to Auto, Set, Never use or Prefer.

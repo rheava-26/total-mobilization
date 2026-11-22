@@ -29,7 +29,7 @@ namespace Levy.Common.Testing
 	/// </list>
 	/// Everything it places is removed again; nothing is saved.
 	/// </summary>
-	public class ArmoryRulesWorldCheck : ModSystem
+	public partial class ArmoryRulesWorldCheck : ModSystem
 	{
 		private static bool _armed, _done, _running; private static int _calls, _pass, _fail;
 		private static Mod _mod; private static int _savedMy;
@@ -210,6 +210,7 @@ namespace Levy.Common.Testing
 					if (only == null || only == "classes") Classes_(s);
 					if (only == null || only == "saved") Saved_(s);
 					if (only == null || only == "census") Census_();
+					if (only == null || only == "onlymode") OnlyMode_(s); // [OnlyRule]: the category "Only" mode (ArmoryRulesWorldCheck.Only.cs); before the bodies stand in the world
 					if (only == null || only == "bodies") Bodies_(s);
 				}
 				finally { WeaponRank.Release(); }

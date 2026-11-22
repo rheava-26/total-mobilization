@@ -148,6 +148,8 @@ namespace Levy.Common
 			public const int PotionPipWidth = 22, PotionPipHeight = 9, PotionPipGap = 3;
 			public const float PotionPipTextScale = 0.7f;
 			public const float FearIconMinScale = 0.6f, FearIconMaxScale = 1.3f;
+			/// <summary>Ally tags (<see cref="Levy.Common.UI.AllyTags"/>): pixels above the top of a minion, of an officer's creature or unit (clear of its HP bar), and of a machine (clear of its battery bar).</summary>
+			public const float AllyTagLiftMinion = 4f, AllyTagLiftUnit = 18f, AllyTagLiftMachine = 16f;
 
 			// ---- HUD strip ----
 			public const int HudHeadSize = 36, HudEntryPitch = 44, HudBarHeight = 5;

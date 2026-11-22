@@ -80,6 +80,13 @@ namespace Levy.Common.Weapons
 					return new BlockStatus(WeaponTags.Cap(T("StatusOver", cat, Plural(b.Other), have, stock.Cat(b.Other))), false);
 				case CatMode.Include:
 					return have == 0 ? new BlockStatus(T("StatusIncludeNone", cat), true) : new BlockStatus(T("StatusInclude", have, cat), false);
+				case CatMode.Only:
+				{
+					if (have == 0) return new BlockStatus(T("StatusOnlyCatNone", cat), true);
+					bool more = false;
+					foreach (var e in rules.Blocks) if (e != b && e.On && e.Kind == RuleKind.Category && e.Mode == CatMode.Only && e.Cat != b.Cat) { more = true; break; }
+					return new BlockStatus(T(more ? "StatusOnlyCatMore" : "StatusOnlyCat", have, cat), false);
+				}
 				default:
 				{
 					string text = T("StatusMin", b.Count, cat, have);

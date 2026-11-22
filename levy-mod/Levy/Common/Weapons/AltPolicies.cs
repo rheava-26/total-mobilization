@@ -692,6 +692,34 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>Reads a meter by field or property name from the dummy's Calamity player, then its Thorium player. NaN when no such member exists.</summary>
+		/// <summary>The named meter of a weapon's row (HOLD_VARIANT cond=meter, METER_READY): the field of the holder's own mod player the row reads, or null.</summary>
+		internal static string MeterOf(int itemType)
+		{
+			if (!HasRow(itemType)) return null;
+			AltPolicy pol = For(itemType);
+			if (pol.Kind == AltPolicyKind.MeterReady || (pol.Kind == AltPolicyKind.HoldVariant && string.Equals(pol.P.Cond, "meter", StringComparison.OrdinalIgnoreCase))) return string.IsNullOrEmpty(pol.P.Meter) ? null : pol.P.Meter;
+			return null;
+		}
+
+		/// <summary>
+		/// Exchanges the value of a named mod-player field (Calamity, else Thorium) between two players; calling it again puts both back. The hit pass of a levy's held projectile runs under the real player (HeldWeapons.RunDamage),
+		/// so a hit that loads its owner's meter (the Hellborn's spin: hellbornShots + 1) wrote the COMMANDER's meter; with the levy's value lent to her for the call, it writes the levy's. Returns false when the field is missing.
+		/// </summary>
+		internal static bool SwapMeter(Player a, Player b, string name)
+		{
+			if (a == null || b == null || ReferenceEquals(a, b) || string.IsNullOrEmpty(name)) return false;
+			foreach (var (mod, type) in new[] { (CalMod, CalPlayerType), (ThMod, ThPlayerType) })
+			{
+				object oa = PlayerOf(a, mod, type), ob = PlayerOf(b, mod, type);
+				if (oa == null || ob == null) continue;
+				const BindingFlags f = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+				FieldInfo fi = oa.GetType().GetField(name, f);
+				if (fi == null) continue;
+				try { object va = fi.GetValue(oa); fi.SetValue(oa, fi.GetValue(ob)); fi.SetValue(ob, va); return true; } catch (Exception) { return false; }
+			}
+			return false;
+		}
+
 		public static float ReadMeter(Player p, string name)
 		{
 			if (p == null || string.IsNullOrEmpty(name)) return float.NaN;

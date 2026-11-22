@@ -156,7 +156,7 @@ namespace Levy.Common.Testing
 					if (HoldDebug && !pn.EndsWith("Shot") && dbg++ < 80) HNote($"  dbg {label} [{mode}] t={k} new {pn} owner={p.owner} tagged={tagged} fromLevy={dl / 16f:0.0}t fromCmd={dc / 16f:0.0}t ai=({p.ai[0]:0},{p.ai[1]:0},{p.ai[2]:0}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0})");
 				}
 			}
-			} finally { HoldBirthProbe.On = false; HoldBirthProbe.At.Clear(); _sweepVel = Vector2.Zero; _parityAim = null; if (_sweepTarget != null && _sweepTarget.active) _sweepTarget.GetGlobalNPC<HarnessTarget>().Path = null; }
+			} finally { HoldBirthProbe.On = false; HoldBirthProbe.At.Clear(); _sweepVel = Vector2.Zero; _parityAim = null; _cmdHolds = false; if (_sweepTarget != null && _sweepTarget.active) _sweepTarget.GetGlobalNPC<HarnessTarget>().Path = null; }
 			if (cmdWeapon != null) { try { MegaCommanderUse(cmdWeapon, false); } catch (Exception) { } Main.mouseLeft = false; Main.mouseLeftRelease = true; _parityAim = null; } // the raw button is global: the next run must not start with it down
 			st.Alt = (AltPolicies.AltFired.TryGetValue(weaponType, out int a1) ? a1 : 0) - alt0;
 			st.Variant = (AltPolicies.HoldVariantSpawns.TryGetValue(weaponType, out int v1) ? v1 : 0) - var0;
@@ -205,6 +205,7 @@ namespace Levy.Common.Testing
 			Player p = Main.player[0];
 			Vector2 aim = _sweepTarget != null ? _sweepTarget.Center : p.Center + new Vector2(300f, 0f);
 			_parityAim = aim; // her cursor stays on the target through the projectile pass too (her holdouts aim from Main.MouseWorld there)
+			_cmdHolds = press && weapon.channel; // and her button stays down through the NPC and projectile passes (a holdout that reads channel there ended on the stand-in)
 			try { object cp = AltPolicies.CalamityPlayerOf(p); if (cp != null) AltPolicies.SetCalAimPublic(cp, aim - p.MountedCenter); } catch (Exception) { }
 			Main.mouseLeft = press; Main.mouseLeftRelease = !press;
 			int ht = ModShotKinds.HolderType(weapon);

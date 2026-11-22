@@ -617,14 +617,20 @@ namespace Levy.Common.Weapons
 			// a rogue weapon's hit that writes its owner's stealth bar (the Doomsday Device gives back 30% of it on a plain hit) writes the LEVY's bar: the real player's bar is lent the levy's values for the call
 			StealthLend lend = g.Grenade ? StealthLend.Begin(body) : default;
 			OwnerPuppet.Lend facing = default; // a beam's hit pass reads its owner like every other soldier shot's does: the levy's facing and place, not the commander's (a lash lends its own, RealWhips.DamageScope)
+			// a hit that loads its owner's meter (the row's named field: the Hellborn's spin loads hellbornShots) loads the LEVY's: his value is lent to the real player for the call and taken back after
+			string meter = g.ModHolder && LevyUtil.IsServerOrSingle ? AltPolicies.MeterOf(g.ItemType) : null;
+			Player real = meter != null && SoldierMinions.TrueMyPlayer >= 0 && SoldierMinions.TrueMyPlayer <= Main.maxPlayers ? Main.player[SoldierMinions.TrueMyPlayer] : null; // slot 255 on a dedicated server (the null player the hit pass runs under)
+			bool lentMeter = false;
 			try
 			{
 				p.owner = SoldierMinions.TrueMyPlayer;
 				if (!g.Whip) facing = OwnerPuppet.LendTransform(body);
+				if (real != null) lentMeter = AltPolicies.SwapMeter(real, body.Dummy, meter);
 				orig(p);
 			}
 			finally
 			{
+				if (lentMeter) AltPolicies.SwapMeter(real, body.Dummy, meter);
 				facing.Dispose();
 				lend.End();
 				if (p.type == savedType) p.owner = savedOwner; // undo only our own edit: if the cascade killed p and recycled its slot, the new projectile keeps its owner
@@ -656,9 +662,20 @@ namespace Levy.Common.Weapons
 					if (c.TryGetGlobalProjectile(out HeldWeaponProjectile cg)) { cg.ModHolder = true; cg.BoundChild = true; if (holder.TryGetGlobalProjectile(out HeldWeaponProjectile hh)) cg.Script = hh.Script; }
 					DudTrace.Note(item, "child-in-chain:" + (c.ModProjectile?.Name ?? c.type.ToString()));
 				}
-				else WeaponUse.TagSoldierProjectile(body, c, cls);
+				else
+				{
+					// a child the holdout made as a non-damaging helper (friendly off: the Eternity hex, which orbits the target and summons the homing bolts) stays one: made friendly as an ordinary soldier shot, it struck the
+					// target on its first tick, died (it pierces once) and never cast its bolts (the levy's Eternity did a fifth of a player's damage). A helper that turns itself friendly later does so in its own AI.
+					bool helper = !c.friendly && !c.hostile && c.ModProjectile != null && !HelperFriendlyOld;
+					WeaponUse.TagSoldierProjectile(body, c, cls);
+					if (helper) { c.friendly = false; HelpersKept++; }
+				}
 			}
 		}
+
+		/// <summary>Lab counter: non-friendly helper children of a held chain kept non-friendly. Switch: LEVY_HELPERFRIENDLY_OLD=1 makes them friendly like any soldier shot, as before.</summary>
+		internal static int HelpersKept;
+		private static readonly bool HelperFriendlyOld = Environment.GetEnvironmentVariable("LEVY_HELPERFRIENDLY_OLD") == "1";
 
 		/// <summary>A child that carries its holder's slot in one of its ai[] (Dark Spark's beams: the prism's index, through the UUID table, in ai[1]) is bound to that holder: it reads it every tick.</summary>
 		private static bool PointsAt(Projectile c, Projectile holder)
@@ -858,6 +875,7 @@ namespace Levy.Common.Weapons
 		{
 			if (Chain && Ark == ArkRole.Parry && !ParryHit) { ParryHit = true; ParryContact = target.damage > 0; }
 			if (Chain && Whip) RealWhips.OnHit(projectile, target);
+			if (Chain && ModHolder) Made++; // a holder's own hit counts as what it made (the Hellborn's spin deals its damage by touch): the stall release is only for a holder that has done nothing at all
 		}
 
 		/// <summary>A lash's hit line is taken from its soldier, not from the commander who owns the projectile.</summary>

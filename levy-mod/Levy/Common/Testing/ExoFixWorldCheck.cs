@@ -146,6 +146,27 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxProjectiles; i++) Main.projectile[i].active = false;
 		}
 
+		/// <summary>
+		/// Frees NPC slots when fewer than <paramref name="need"/> are free: whatever an earlier check of the chain left standing (its levies, their creatures) that is not a town NPC is removed here,
+		/// and noted. Nothing is saved, so this only affects the checks after this one, which build their own fixtures.
+		/// </summary>
+		private static void MakeRoom(int need)
+		{
+			int free = 0; for (int i = 0; i < Main.maxNPCs; i++) if (!Main.npc[i].active) free++;
+			if (free >= need) return;
+			var kinds = new Dictionary<string, int>();
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.townNPC) continue;
+				if (n.ModNPC is SoldierNPC sn && sn.Record != null && sn.Record.CommanderName == Commander) continue;
+				string k = n.ModNPC != null ? n.ModNPC.Mod.Name + "/" + n.ModNPC.Name : n.TypeName;
+				kinds[k] = kinds.GetValueOrDefault(k) + 1;
+				n.active = false;
+			}
+			Note($"only {free} NPC slots were free; cleared what earlier checks left: {string.Join(", ", kinds.OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + " x" + kv.Value))}");
+		}
+
 		private static void Cleanup()
 		{
 			try
@@ -219,6 +240,7 @@ namespace Levy.Common.Testing
 		private static void ScaleOne(string name, int mode, Func<NPC> spawn, Func<NPC> spawn2, int partType)
 		{
 			ClearHostiles();
+			MakeRoom(130); // Thanatos strings ~100 segments; with no free slot his head clamps to an empty slot's life (0) and dies
 			BossRule.GroupScaling = mode != 0; global::Levy.Common.Compat.Calamity.CalamityLife.MirrorOff = mode == 2;
 			NPC root = spawn(); NPC second = spawn2?.Invoke();
 			if (root == null) { Check(name + " spawns", false); return; }
@@ -237,11 +259,11 @@ namespace Levy.Common.Testing
 			// every NPC of the group got the same add on its life as on its maximum (a segment whose life already sat under its own maximum keeps that gap)
 			var bad = group.Where(i => { var b = before[i]; int dm = Main.npc[i].lifeMax - b.max, dl = Main.npc[i].life - b.life; return dm <= 0 || dl != dm; }).Select(i => $"{Main.npc[i].TypeName}#{i}: life {before[i].life}->{Main.npc[i].life} max {before[i].max}->{Main.npc[i].lifeMax}").ToList();
 			bool allNow = hitRoot.life == hitRoot.lifeMax && bad.Count == 0;
-			if (bad.Count > 0) Note($"{name}: members whose add did not land on life and maximum alike: {bad.Count}, first {bad[0]}");
+			if (bad.Count > 0 && mode != 0) Note($"{name}: members whose add did not land on life and maximum alike: {bad.Count}, first {bad[0]}");
 			Step(60);
 			bool rootHeld = hitRoot.active && hitRoot.life == hitRoot.lifeMax;
 			bool partnerHeld = second == null || (second.active && second.life == second.lifeMax && second.lifeMax > baseMax);
-			string state = $"base max {baseMax} life {baseLife}; +{added}; now max {hitRoot.lifeMax} life {hitRoot.life}{(second != null ? $"; partner max {second.lifeMax} life {second.life}" : "")}; group {group.Count} NPCs; members raised so far {BossRule.GroupMembersScaled}, partners found by the fall-back {BossRule.FallBackPartnersFound}";
+			string state = $"{parts} parts, {Main.npc.Count(n => !n.active)} NPC slots free; base max {baseMax} life {baseLife}; +{added}; now max {hitRoot.lifeMax} life {hitRoot.life}{(second != null ? $"; partner max {second.lifeMax} life {second.life}" : "")}; group {group.Count} NPCs; members raised so far {BossRule.GroupMembersScaled}, partners found by the fall-back {BossRule.FallBackPartnersFound}";
 			Note($"{name} [{(mode == 0 ? "old rule" : mode == 1 ? "fixed" : "fixed, twin link unread")}]: {state}");
 			if (mode == 0) Check($"{name}: old rule reproduced (the add falls back, the raised maximum stays)", added > 0 && hitRoot.life < hitRoot.lifeMax - added / 2, () => state);
 			else

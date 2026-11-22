@@ -144,9 +144,10 @@ def hm_new(runs):
     return out
 
 
-def bat_new(run):
+def bat_new(runs):
+    """runs: one run dir, or several joined by commas (the shipped battery was split by a container restart)."""
     rows = []
-    for c, r in run_rows(run):
+    for run, c, r in [(rd, c, r) for rd in str(runs).split(",") for c, r in run_rows(rd)]:
         if "meta=hmb_destroyer_baseline" not in c["name"]: continue
         sec = f(r["sec"])
         rows.append(dict(result=r["result"].lower(), sec=sec, deaths=f(r["deaths"]), dps=f(r["dmgBoss"]) / sec if sec > 0 else float("nan"),
@@ -254,7 +255,7 @@ def hm_tables(runs):
             pk = next(k for k, v in PAIR.items() if v == m); mt[pk][0].extend(oo); mt[pk][1].extend(nw.get("matched", []))
             mrows.append((b + ("" if len(sd) == 4 else f" (seeds {','.join(map(str, sorted(sd)))})"), m, n, oo, {"matched": nw.get("matched", [])}))
         for pk, pv in PAIR.items(): mrows.append(("**all bosses**", pv, "-", mt[pk][0], {"matched": mt[pk][1]}))
-        emit("Hardmode broad sweep vs hmbattery2 (Levy 2.0.66), matched arm; 3 on-tier seeds + 1 one-tier-below seed per boss and mode (the bosses after Plantera: on-tier seeds 1-2)", mrows, "OLD")
+        emit("Hardmode broad sweep vs hmbattery2 (Levy 2.0.66), matched arm; 3 on-tier seeds + 1 one-tier-below seed per boss and mode (rows marked with seeds ran only those seeds)", mrows, "OLD")
     if "shipped" in runs:   # the shipped arm ran fewer seeds: every column here is cut to the seeds it ran, so the three are the same armies
         srows = []
         for b, m, n, o, nw in rows:
@@ -271,9 +272,10 @@ def bat_tables(runs):
 # ------------------------------------------------------------------ recordings
 INDEX_HEAD = ("labcompare recordings (FightRecorder format 12, gzip; Levy 3.1.8, Calamity 2.2.2, tML 2026.10). One folder per run:\n"
               "  prehm_matched / prehm_shipped = pre-hardmode cells vs boss-lab lab 1 (cmd=far, surface arena, gear=mod; matched = old enemy rules, shipped = as shipped)\n"
-              "  bat_matched / bat_shipped     = Destroyer battery baseline, Master+Death, one fixed 34-levy army (vs hmbattery2)\n"
-              "  hm_matched / hm_shipped       = hardmode broad sweep vs hmbattery2 (_on_ = on-tier kit, _mid_ = one tier below; rev = Expert+Rev, mdeath = Master+Death)\n"
-              "Columns: file, boss, mode, seed, result, fight seconds, levy deaths.\n\n")
+              "  bat_matched / bat_shipped     = Destroyer battery baseline, Master+Death, one fixed 34-levy army (vs hmbattery2; matched seeds 1-40, shipped 1-20: bat_shipped 1-12 + bat_shipped_b 13-20)\n"
+              "  hm_matched + hm_matched_b     = hardmode broad sweep vs hmbattery2, matched arm (_on_ = on-tier kit, _mid_ = one tier below; rev = Expert+Rev,\n"
+              "                                  mdeath = Master+Death); hm_matched = Wall of Flesh .. Plantera seed 1, hm_matched_b = the rest on seeds 1-2 (wall-time cut)\n"
+              "  bat_parityonly                = Destroyer battery, shipped rules except boss life scaling (legacy), seeds 1-12: isolates the hit-parity rules\nColumns: file, boss, mode, seed, result, fight seconds, levy deaths.\n\n")
 
 
 def rec_name(c, r):

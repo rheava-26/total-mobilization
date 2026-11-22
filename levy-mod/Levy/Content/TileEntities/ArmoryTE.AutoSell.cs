@@ -42,6 +42,7 @@ namespace Levy.Content.TileEntities
 		public static bool CanMarkForSale(int type)
 		{
 			if (type <= 0 || type == ItemID.CopperCoin || type == ItemID.SilverCoin || type == ItemID.GoldCoin || type == ItemID.PlatinumCoin) return false;
+			if (type == Terraria.ModLoader.ModContent.ItemType<Terraria.ModLoader.Default.UnloadedItem>()) return false; // the stand-in for every item of a mod that is not loaded
 			return ArmoryRules.KeyOf(type) != null;
 		}
 

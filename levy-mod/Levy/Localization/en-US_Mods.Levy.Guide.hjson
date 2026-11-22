@@ -324,7 +324,7 @@ Pages: {
 		Title: Autosell
 		Body:
 			'''
-			Point at an item in the Armory and switch Sell on in the item panel. Every copy in Armory storage beyond the kept number is sold, at once and whenever more arrive.
+			Point at an item in the Armory and switch Sell on in the item panel. Every copy in Armory storage beyond the kept number is sold within seconds, and so is every copy that arrives later.
 			Keep sets how many copies stay. It starts at 0.
 			Each copy sells for its normal sell price, with no shopkeeper needed. The coins go to the treasury of the Barracks that pays for the Armory, or into the Armory as coins when none does.
 			Favourited items, items a rule names, the issue rows and the gear levies carry are never sold.

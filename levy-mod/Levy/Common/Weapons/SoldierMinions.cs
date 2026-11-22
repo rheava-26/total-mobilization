@@ -450,14 +450,14 @@ namespace Levy.Common.Weapons
 		/// Runs the staff's ModifyShootStats and Shoot with the soldier's dummy as the player (see HeldWeapons.ShootHooks) and returns what they made, still owned by 255. Every OTHER soldier's minions sit on the parked
 		/// owner for the call: a Shoot counts the owner's minions to decide between its cast and its fallback, and all soldiers share owner 255. The staff's buff, which Shoot adds to the dummy, is put back afterwards.
 		/// </summary>
-		/// <summary>Lab A/B (env LEVY_SUMMON_CASTAT=self): a modded staff that is not self-ending is cast beside the soldier even when he has a target (the behaviour before the summon sweep).</summary>
-		private static readonly bool CastAtSelfLab = Environment.GetEnvironmentVariable("LEVY_SUMMON_CASTAT") == "self";
+		/// <summary>Lab A/B (env LEVY_SUMMON_CASTAT=target): every modded cast is made at the soldier's target (when it is not inside a wall), as the summon sweep's parity commander casts at hers.</summary>
+		private static readonly bool CastAtTargetLab = Environment.GetEnvironmentVariable("LEVY_SUMMON_CASTAT") == "target";
 		private static List<Projectile> RunShoot(SoldierNPC s, Item weapon, int damage, out bool threw)
 		{
-			// the cast is aimed where a player aims her staff, at the enemy he fights: a self-ending cast (a bomber, a fist, a field: see SoldierNPC.TransientStaff) acts there, and a staff whose Shoot places its minion at the
-			// cursor (Calamity's ClampedMouseWorld: Vigilance's seekers, the Pole Warper's magnets) starts it there (measured against the commander casting at her target: Vigilance 0.25 -> 0.78 of her damage, Pole Warper 0.62 -> 1.02).
-			// With no enemy, or a spot inside a wall, the cast is made beside the soldier as before.
-			bool atTarget = SoldierNPC.TransientStaff(weapon) || (!CastAtSelfLab && s.TargetIndex >= 0 && s.TargetIndex < Main.maxNPCs && Main.npc[s.TargetIndex].active);
+			// a self-ending cast (a bomber, a fist, a field: see SoldierNPC.TransientStaff) is aimed where a player aims it, at the enemy he fights; a minion that stays is cast beside the soldier. Casting every modded staff at the
+			// target was measured too (LEVY_SUMMON_CASTAT=target, summon sweep 2026-11-22) and was mixed: Vigilance 0.25 -> 0.78 and the Pole Warper 0.62 -> 0.93 of the commander's damage, but the Ethereal Subjugator, the Gastric
+			// Belcher, the Resurrection Butterfly and Entropy's Vigil lost half or more, so it is not the default.
+			bool atTarget = SoldierNPC.TransientStaff(weapon) || (CastAtTargetLab && s.TargetIndex >= 0 && s.TargetIndex < Main.maxNPCs && Main.npc[s.TargetIndex].active);
 			Player d = s.Dummy; threw = false;
 			var moved = new List<Projectile>();
 			int me = s.NPC.whoAmI, saved = Main.myPlayer;
@@ -499,7 +499,11 @@ namespace Levy.Common.Weapons
 		private static Action<Terraria.DataStructures.IEntitySource, Vector2> HeldCast(SoldierNPC s, Item weapon, int damage) => (src, v0) =>
 		{
 			Player d = s.Dummy;
-			try { weapon.ModItem?.HoldItem(d); } catch (Exception) { }
+			// the holder is not this machine's player for the hook: a staff's HoldItem that toggles its minion on a hotkey (the Void Eater Marionette's fetch mode: "Main.myPlayer == player.whoAmI && JustPressedKeybind")
+			// never fires for a levy, who presses no keys (measured: the worm toggled into fetching on some casts and dealt 64 damage a second instead of 5k)
+			int my = Main.myPlayer;
+			try { Main.myPlayer = d.whoAmI == Main.maxPlayers - 2 ? Main.maxPlayers - 3 : Main.maxPlayers - 2; weapon.ModItem?.HoldItem(d); } catch (Exception) { }
+			finally { Main.myPlayer = my; }
 			Vector2 pos = s.NPC.Center, v = v0; int type = weapon.shoot, dmg = damage; float kb = weapon.knockBack;
 			try
 			{
@@ -1255,7 +1259,17 @@ namespace Levy.Common.Weapons
 			On_Projectile.Update += UpdateDetour;
 			On_NPC.StrikeNPC_HitInfo_bool_bool += StrikeDetour;
 			On_Projectile.GetByUUID_int_int += UuidDetour;
+			On_Player.CanPullItem += PullDetour;
 		}
+
+		/// <summary>
+		/// A soldier's dummy never pulls an item to itself: it has no real inventory and never picks anything up, so a minion that fetches the items its owner could pull (the Void Eater Marionette plays fetch whenever an item lies within
+		/// 50 tiles) carried one to the levy forever and stopped fighting (summon sweep 2026-11-22: 64 damage a second instead of 5k with a stack of gel on the floor).
+		/// </summary>
+		private static bool PullDetour(On_Player.orig_CanPullItem orig, Player self, Item item, Player.ItemSpaceStatus status)
+		{ _hl_PullDetour_1++;
+			return !global::Levy.Common.Owner.SoldierOwner.IsDummy(self) && orig(self, item, status);
+		} private static int _hl_PullDetour_1;
 
 		private static int UuidDetour(On_Projectile.orig_GetByUUID_int_int orig, int owner, int uuid)
 		{ _hl_UuidDetour_2++;
@@ -1268,6 +1282,7 @@ namespace Levy.Common.Weapons
 			On_Projectile.Update -= UpdateDetour;
 			On_NPC.StrikeNPC_HitInfo_bool_bool -= StrikeDetour;
 			On_Projectile.GetByUUID_int_int -= UuidDetour;
+			On_Player.CanPullItem -= PullDetour;
 			SoldierMinions.Reset();
 			EnemyTargeting.EnsureSlotRestored();
 		}

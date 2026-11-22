@@ -106,6 +106,9 @@ namespace Levy.Common.Testing
 				body = RosterSystem.Instance.SpawnBody(rec, at);
 				if (body < 0 || !rec.HasBody) throw new Exception("levy did not spawn");
 				Main.npc[body].Bottom = at; sn = Main.npc[body].ModNPC as SoldierNPC;
+				// a stack of gel on the floor beside him, as a battlefield has: a minion that fetches its owner's items (the Void Eater Marionette) must still fight
+				int gi = Item.NewItem(new EntitySource_WorldEvent("IdentityWorldCheck"), (int)at.X - 5 * 16, (int)at.Y - 24, 16, 16, ItemID.Gel, 20, noGrabDelay: true);
+				if (gi >= 0 && gi < Main.maxItems) Main.item[gi].noGrabDelay = 0;
 			}
 			var buffs0 = new HashSet<int>(); for (int i = 0; i < cmd.buffType.Length; i++) if (cmd.buffType[i] > 0 && cmd.buffTime[i] > 0) buffs0.Add(cmd.buffType[i]);
 			int c0 = SoldierMinions.CastTally, h0 = SoldierMinions.HelperTally, s0 = SoldierMinions.SentryTally, k0 = SoldierMinions.StackTally, r0 = SoldierMinions.RecastTally;
@@ -151,11 +154,12 @@ namespace Levy.Common.Testing
 						bool tagged = p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex >= 0 && tag.SoldierIndex == body;
 						if (p.type == ProjectileID.FallingStarSpawner || p.type == ProjectileID.FallingStar) continue; // the world's own falling stars
 						string pn = p.ModProjectile?.Name ?? ProjectileID.Search.GetName(p.type);
-						if (!commander && p.owner == 0 && (p.minion || p.sentry)) owned++;
+						if (!commander && p.owner == 0 && p.minion && !p.sentry) owned++; // a levy's tower is owned by her slot by design (parked out of her tower cap); a minion is never
 						bool mine = commander ? p.owner == 0 && !(p.TryGetGlobalProjectile(out SoldierProjectileTag ct) && ct.SoldierIndex >= 0) : tagged;
 						if (mine)
 						{
 							st.AliveTicks.TryGetValue(pn, out int at0); st.AliveTicks[pn] = at0 + 1;
+							if (SumDebug && !commander && k % 90 == 0 && p.minion) SNote($"  dbg {label} t={k} {pn} ai=({p.ai[0]:0.##},{p.ai[1]:0.##},{p.ai[2]:0.##}) slots={p.minionSlots} dmg={p.damage} orig={p.originalDamage} fromTarget={((p.Center - (_sweepTarget?.Center ?? levyC)) / 16f).ToString()} fromLevy={(p.Center - levyC).Length() / 16f:0.0}t vel={p.velocity.Length():0.0}");
 							if (p.minion || p.sentry)
 							{
 								alive++; slots += p.minionSlots; st.MaxSingleSlots = Math.Max(st.MaxSingleSlots, p.minionSlots); st.MinionTicks++;
@@ -198,14 +202,21 @@ namespace Levy.Common.Testing
 			}
 			st.CmdBuffNames = string.Join(",", buffNames);
 			st.Casts = SoldierMinions.CastTally - c0; st.Helpers = SoldierMinions.HelperTally - h0; st.Sentries = SoldierMinions.SentryTally - s0; st.Stacks = SoldierMinions.StackTally - k0; st.Recasts = SoldierMinions.RecastTally - r0;
+			for (int i = 0; i < Main.maxItems; i++) if (Main.item[i].active && Main.item[i].type == ItemID.Gel) Main.item[i].active = false;
 			ClearSoldiers(); ClearRogueAdds(); ReleaseCommanderButtons(); cmd.inventory[0] = new Item(); cmd.heldProj = -1; cmd.itemAnimation = 0; cmd.itemTime = 0; cmd.numMinions = 0; cmd.slotsMinions = 0f;
 			return st;
 		}
 
-		/// <summary>The staves fixed in the summonsweep pass (asserted on the Calamity half).</summary>
-		private static readonly string[] SumFixedCal = { "SarosPossession" };
-		/// <summary>Ship sample: post-Plantera and post-Moon Lord staves and towers covering the ways a modded summon works (a flock, a slot-less cast, a tower, a chain).</summary>
-		private static readonly string[] SumSampleCal = { "TacticalPlagueEngine", "EtherealSubjugator", "CosmicImmaterializer", "Endogenesis", "CorvidHarbringerStaff" };
+		/// <summary>The staves fixed in the summonsweep pass (asserted on the Calamity half): one minion that grows with repeated casts (Saros Possession and its ray, Sirius, the Void Eater Marionette), a ring of shots that counts for its
+		/// owner (Void Concentration Staff), a cast of two half-slot pieces (Pole Warper), a staff that sizes its slime from its holder's free slots (Abandoned Slime Staff), staves that ask for a number of slots and were never issued
+		/// (Cosmilamp, Kingof Constellations, Temporal Umbrella, Mutated Truffle, Lilies of Finality, Dragonblood Disgorger), and a tower whose hive sends out minions (Hive Pod).</summary>
+		private static readonly string[] SumFixedCal = { "SarosPossession", "Sirius", "VoidEaterMarionette", "VoidConcentrationStaff", "PoleWarper", "AbandonedSlimeStaff", "Cosmilamp", "KingofConstellationsTenryu", "TemporalUmbrella", "MutatedTruffle", "LiliesOfFinality", "DragonbloodDisgorger", "HivePod" };
+		/// <summary>Staves whose Shoot powers up the minion already out: one minion, grown to the levy's slots.</summary>
+		private static readonly string[] SumStackers = { "SarosPossession", "Sirius", "VoidEaterMarionette" };
+		/// <summary>Staves whose own CanUseItem asks for minion slots: issued now (the armory's use gate probe has slots).</summary>
+		private static readonly string[] SumSlotGated = { "Cosmilamp", "KingofConstellationsTenryu", "TemporalUmbrella", "MutatedTruffle", "LiliesOfFinality", "DragonbloodDisgorger", "Endogenesis", "CosmicImmaterializer" };
+		/// <summary>Ship sample: post-Plantera and post-Moon Lord staves covering the ways a modded summon works (a flock, a minion that fires its owner's gun).</summary>
+		private static readonly string[] SumSampleCal = { "TacticalPlagueEngine", "EtherealSubjugator", "CorvidHarbringerStaff" };
 		private static readonly short[] SumSampleVanilla = { ItemID.RavenStaff, ItemID.XenoStaff, ItemID.StardustDragonStaff, ItemID.EmpressBlade, ItemID.MoonlordTurretStaff };
 
 		/// <summary>Every summon weapon of <paramref name="cal"/> a levy can carry as a staff or a tower whose rarity is post-Moon Lord (Purple and up, Calamity's own rarities), and an even spread of the post-Plantera ones (Lime to Red).</summary>
@@ -273,11 +284,19 @@ namespace Levy.Common.Testing
 						SCheck($"{label}: hits the dummy line (damage {lv.Damage} in {lv.Ticks} ticks)", lv.Damage > 0);
 						SCheck($"{label}: nothing lands on the commander (minions or towers she owns {lv.CmdOwned}, her minion count {lv.CmdMinions}, her slots {lv.CmdSlots:0.##}, buffs she did not have {lv.CmdBuffs}{(lv.CmdBuffNames.Length > 0 ? ": " + lv.CmdBuffNames : "")}, untagged births {lv.Untagged})",
 							lv.CmdOwned == 0 && lv.CmdMinions == 0 && lv.CmdSlots < 0.01f && lv.CmdBuffs == 0 && lv.Untagged == 0);
-						if (label == "CalamityMod:SarosPossession")
-						{
-							SCheck($"{label}: repeated summons grow one aura to the levy's slots (biggest aura {lv.MaxSingleSlots:0.##} slots of {lv.Capacity}, auras alive at most {lv.MaxAlive})", lv.MaxAlive == 1 && lv.MaxSingleSlots >= lv.Capacity - 0.01f);
-							SCheck($"{label}: at full slots the levy channels the Totality Ray (rays born {lv.BornOf("SarosEclipseBeam")}, alive {lv.AliveOf("SarosEclipseBeam")} ticks of {lv.Ticks})", lv.BornOf("SarosEclipseBeam") > 0 && lv.AliveOf("SarosEclipseBeam") >= lv.Ticks / 4);
-						}
+						string nm = label.Substring(label.IndexOf(':') + 1);
+						if (SumStackers.Contains(nm))
+							SCheck($"{label}: repeated summons grow one minion to the levy's slots instead of casting new ones (biggest {lv.MaxSingleSlots:0.##} slots of {lv.Capacity}, alive at most {lv.MaxAlive}, {lv.Stacks} casts powered it up)", lv.MaxAlive == 1 && lv.MaxSingleSlots >= lv.Capacity - 0.01f && lv.Stacks > 0);
+						if (nm == "VoidEaterMarionette")
+							SCheck($"{label}: the worm fights with an item on the floor instead of fetching it to the levy forever ({lv.Dps:0} damage a second; it was 64 while it played fetch)", lv.Dps >= 1000f);
+						if (nm == "SarosPossession")
+							SCheck($"{label}: at full slots the levy channels the Totality Ray (rays born {lv.BornOf("SarosEclipseBeam")}, alive {lv.AliveOf("SarosEclipseBeam")} ticks of {lv.Ticks}, button held {lv.HoldTicks} ticks)", lv.BornOf("SarosEclipseBeam") > 0 && lv.AliveOf("SarosEclipseBeam") >= lv.Ticks / 4);
+						if (nm == "PoleWarper" || nm == "AbandonedSlimeStaff")
+							SCheck($"{label}: the levy's flock fills his slots ({lv.MaxSlots:0.##} of {lv.MaxMinions})", lv.MaxSlots >= lv.MaxMinions - 0.01f);
+						if (nm == "VoidConcentrationStaff")
+							SCheck($"{label}: its ring of shots stays one ring and the real minion keeps working (born {lv.Born.Values.Sum(v => v.n)} in {lv.Ticks} ticks, the staff on the stand-in: {SoldierMinions.IsBadStaff(fi.shoot)})", !SoldierMinions.IsBadStaff(fi.shoot) && lv.Born.Values.Sum(v => v.n) < 400);
+						if (SumSlotGated.Contains(nm))
+							SCheck($"{label}: issued to levies (its own CanUseItem asks for minion slots, which is the holder's gear, not a world lock)", !ModWeaponGates.Locked(fi));
 					}
 					catch (Exception e) { SCheck($"{label} threw {e.GetType().Name}: {e.Message} @ {(e.StackTrace ?? "").Split('\n')[0].Trim()}", false); }
 				}

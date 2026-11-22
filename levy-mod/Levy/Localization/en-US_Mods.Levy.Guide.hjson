@@ -279,10 +279,9 @@ Pages: {
 			The Rules tab decides which weapons the levies draw. Rules apply from the top, and the upper rule wins.
 			Class balance sets how many levies carry each class. A limit gives way before a levy is left unarmed.
 			Category rule includes, limits, requires, orders or prefers a kind of weapon, such as bows or guns. A new one starts as Include. Weight only tilts the pick. Include, Only, At least and Order are firm, and outrank the armor a levy wears.
-			Only issues nothing outside its category, wherever the block sits. Two Only blocks allow both kinds. A levy holding another kind keeps it until one is free, and an unarmed levy takes another kind when none is left.
-			Item list names items that are never used, or the only items used.
+			Only issues nothing outside its category, wherever the block sits, and two Only blocks allow both kinds. A levy holding another kind keeps it until one is free, and an unarmed levy takes another kind when none is left.
+			Item list names items that are never used, or the only items used. Hover a weapon in storage to set its rank to Auto, Set, Never use or Prefer.
 			Re-arm deals the whole army again at once. Without it, levies come to a changed rule on their own, a few at a time.
-			Hover a weapon in storage to set its rank to Auto, Set, Never use or Prefer.
 			'''
 	}
 

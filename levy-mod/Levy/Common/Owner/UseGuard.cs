@@ -296,7 +296,7 @@ namespace Levy.Common.Owner
 
 		public override void PreUpdateNPCs() { _aiDepth = 0; _aiOwner = -1; StealthGuard.ResetTick(); }
 
-		/// <summary>The stealth side of a guarded pass (<see cref="StealthGuard"/>): a soldier's shot lends the soldier's stealth bar to the owner for the pass, anything else only puts the owner's back.</summary>
+		/// <summary>The stealth side of a guarded pass (<see cref="StealthGuard"/>): a levy's pass or modded shot lends the levy's stealth state to the owner for the pass, <paramref name="nobody"/> lends an empty bar (a machine's modded round), anything else only puts the owner's back.</summary>
 		private static StealthGuard.Scope StealthOpen(int owner, SoldierNPC body, bool nobody = false) => owner >= 0 && owner < Main.maxPlayers ? StealthGuard.Open(Main.player[owner], body, nobody) : default;
 
 		/// <summary>The soldier whose modded shot this is (a levy's or an officer's: a mod's projectile code is where "the owner's" stealth is read and spent), or null (a vanilla round, a round that is not a soldier's: the owner's bar is only put back).</summary>

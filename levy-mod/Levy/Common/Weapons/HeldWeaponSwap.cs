@@ -42,7 +42,7 @@ namespace Levy.Common.Weapons
 		private static readonly Dictionary<int, uint> _fed = new(), _spawned = new();
 		private static bool[] _before;
 
-		internal static void Reset() { _holder.Clear(); _fed.Clear(); _spawned.Clear(); _countStamp.Clear(); ArkSwings.Reset(); BiomeBlades.Reset(); RealWhips.Reset(); }
+		internal static void Reset() { _holder.Clear(); _fed.Clear(); _spawned.Clear(); _altNext.Clear(); _countStamp.Clear(); ArkSwings.Reset(); BiomeBlades.Reset(); RealWhips.Reset(); }
 
 		private static readonly Dictionary<int, uint> _countStamp = new();
 		/// <summary>Once a tick per soldier: the dummy's <c>ownedProjectileCounts</c> recounted from the projectiles tagged to this soldier (what Player.Update does for a real player).</summary>
@@ -84,7 +84,15 @@ namespace Levy.Common.Weapons
 			if ((now & 15u) == 0u) s.NPC.netUpdate = true;
 			s.AttackCooldown = 1; // fed every tick; the weapon's own cadence lives in the held AI
 
-			if (LiveHolder(s, item) != null) return true;
+			Projectile live = LiveHolder(s, item);
+			if (live != null)
+			{
+				// the right-click is wanted while the left holdout is held: a player lets go and right-clicks (two uses can't overlap), so the levy lets go now and the next use is the alt (HeldAlt)
+				if (item.type >= ItemID.Count && now >= s.AltReadyTick && live.TryGetGlobalProjectile(out HeldWeaponProjectile lg) && lg.ModHolder && !lg.AltHolder && !lg.Released && !lg.BoundChild && lg.Ark == ArkRole.None && lg.Biome == 0
+					&& HeldAlt.Want(s, item, target))
+				{ lg.CycleRelease = true; lg.Released = true; lg.ReleasedAt = lg.HeldTicks; lg.Linger = 2; _altNext[idx] = now; }
+				return true;
+			}
 			if (_spawned.TryGetValue(idx, out uint last) && now - last < (uint)Math.Max(LevyConstants.HeldRespawnMinTicks, WeaponUse.SwingFloor(item))) return false;
 			if (ModShotKinds.StartWait(item, s.Record.Mana, s.Record.MaxMana)) { DudTrace.Note(item, "held-start-wait"); return false; } // a drain-in-AI holdout starts on a full pool (ModShotKinds.StartFractionTable)
 			_spawned[idx] = now;
@@ -94,7 +102,8 @@ namespace Levy.Common.Weapons
 			AltPolicies.OnHoldoutSpawn(s, item, target); // the held right button (variant) is set before the holdout exists
 			int holderType = ModShotKinds.HolderType(item);
 			// the right-click of a held modded weapon is a use of its own, made the way the left one is (the item's hooks with the dummy's alt button down) and held in this levy's chain like it (WeaponUse.TryAltAttack hands it here)
-			bool alt = item.type >= ItemID.Count && HeldAlt.Want(s, item, target);
+			bool alt = item.type >= ItemID.Count && ((_altNext.TryGetValue(idx, out uint an) && now - an < 60u) || HeldAlt.Want(s, item, target));
+			_altNext.Remove(idx);
 			// owner 255 is deliberate (see class summary); the holder's real owner-gated code runs under the wrapper's Main.myPlayer swap.
 			// A MODDED holdout is made by its item's own Shoot hook (Calamity's guns pass the holdout its gun type / mode in ai[], and some fire real shots from the hook itself): run the hook, with the dummy as the player.
 			// A holder the mod spawns for whoever HOLDS the item (ModShotKinds.HoldSpawned: the item's use is shut) is spawned here directly, at the levy, as the mod spawns it for a player.
@@ -138,6 +147,8 @@ namespace Levy.Common.Weapons
 		}
 
 		private static readonly List<Projectile> _extraHolders = new();
+		/// <summary>Levies that let go of their held holdout for a right-click: their next spawn is the alt use (by NPC index, the tick it was decided).</summary>
+		private static readonly Dictionary<int, uint> _altNext = new();
 		/// <summary>The holder SpawnViaHooks just returned is the alt use's own projectile (another type than the left holder: Chronomancer's Scythe's spinning scythe).</summary>
 		private static bool _altHolder;
 
@@ -171,7 +182,9 @@ namespace Levy.Common.Weapons
 			{
 				if (c.type == holderType && c.owner == ownerSlot && holder == null) holder = c; // the holdout joins the chain in TryFire
 				else if (c.type == holderType && c.owner == ownerSlot && ModShotKinds.Of(item) == ModShotKind.Holdout) _extraHolders.Add(c); // a second holdout of the same weapon (TryFire puts it in the chain too)
-				else if (alt && holder == null && c.owner == ownerSlot && c.ModProjectile != null && !c.hostile) { holder = c; _altHolder = true; } // the alt's own projectile (anchored to its owner like the left holder): held in the chain the same way
+				// the alt's own held projectile (it reads its owner's buttons or pins its use state, as the left holder does: Chronomancer's Scythe's spinning scythe) is held in the chain the same way; an alt that only fires
+				// ordinary shots (Drataliornus's flames) leaves them ordinary soldier shots
+				else if (alt && holder == null && c.owner == ownerSlot && c.ModProjectile != null && !c.hostile && (OwnerLockProbe.ReadsOwnerButton(c.type) || OwnerLockProbe.ReadsUseButtons(c.type) || OwnerLockProbe.LocksOwner(c.type))) { holder = c; _altHolder = true; }
 				else WeaponUse.TagSoldierProjectile(s, c, item.DamageType ?? DamageClass.Default); // anything else the hook fired is an ordinary soldier shot
 			}
 			madeAny = !threw && made.Count > 0;
@@ -439,7 +452,7 @@ namespace Levy.Common.Weapons
 					// (ModShotKinds.VariantAtSpawn). The way back needs nothing: a fired shot holdout turns back into the spin by itself once the right button is up.
 					g.CycleRelease = true; g.Released = true; g.ReleasedAt = g.HeldTicks; g.Linger = 12; VariantReleases++;
 				}
-				else if (g.ModHolder && !g.ReleaseOnKill && !g.CycleRelease && feed && g.Biome == 0 && !ark && !StallOff)
+				else if (g.ModHolder && !g.ReleaseOnKill && !g.CycleRelease && feed && g.Biome == 0 && !ark && !g.BoundChild && !ModShotKinds.ChainExtras(item) && !StallOff) // never a bound child (Rancor's circle charges 180 ticks) nor a chain-extras weapon
 				{
 					// a holdout with no charge plan that has been held a long while and made nothing: it loads or charges while the button is down and fires when it is LET GO (a player lets go; a pinned target never pauses the feed, so it
 					// was held for ever and never fired). The button is let go once, as a charge plan would, and the holdout lives out its release.

@@ -92,20 +92,46 @@ namespace Levy.Common.Recording
 		}
 	}
 
-	/// <summary>Gives every NPC a spawn serial while LEVY_REC_DIR is set, so headless recording can tell one trial's boss from the next even when it reuses the same slot. Absent entirely when the variable is unset.</summary>
+	/// <summary>Gives every NPC a spawn serial while LEVY_REC_DIR is set (and in a self-check world, so the world checks drive the same path), so headless recording can tell one trial's boss from the next even when it reuses the same slot.
+	/// Absent entirely otherwise. The serials are read only by a headless recording (<see cref="SerialOf"/> is 0 for every other recording, so a player's recordings behave the same in a self-check world).</summary>
 	public class FightRecSpawnTag : GlobalNPC
 	{
 		private static int _counter;
 		public int Serial;
+		/// <summary>The tags exist: LEVY_REC_DIR is set, or this is a self-check world (LEVY_SELFCHECK_WORLD=1).</summary>
+		internal static readonly bool Tagging = !string.IsNullOrEmpty(FightRecAuto.Dir) || System.Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") == "1";
 		public override bool InstancePerEntity => true;
-		public override bool AppliesToEntity(NPC entity, bool lateInstantiation) => !string.IsNullOrEmpty(FightRecAuto.Dir);
+		public override bool AppliesToEntity(NPC entity, bool lateInstantiation) => Tagging;
 		public override void OnSpawn(NPC npc, Terraria.DataStructures.IEntitySource source)
 		{
-			// a segment, servant or add spawned by an NPC belongs to its parent's fight (Eater of Worlds spawns its body from the head's AI): same serial, so a worm's segments are not mistaken for the next trial's boss
-			if (source is Terraria.DataStructures.EntitySource_Parent par && par.Entity is NPC parent && parent.active && SerialOf(parent) > 0) { Serial = SerialOf(parent); return; }
+			// a segment, servant or add spawned by an NPC belongs to its parent's fight (Eater of Worlds spawns its body from the head's AI): same serial, so a worm's segments are not mistaken for the next trial's boss.
+			// An NPC a projectile spawns takes the serial of the NPC that made the projectile (Anahita's LeviathanSpawner summons the Leviathan).
+			if (source is Terraria.DataStructures.EntitySource_Parent par)
+			{
+				if (par.Entity is NPC parent && parent.active && RawSerial(parent) > 0) { Serial = RawSerial(parent); return; }
+				if (par.Entity is Projectile pr && pr.active && FightRecProjSerial.SerialOf(pr) > 0) { Serial = FightRecProjSerial.SerialOf(pr); return; }
+			}
 			Serial = ++_counter;
 		}
-		public static int SerialOf(NPC n) => n.TryGetGlobalNPC(out FightRecSpawnTag t) ? t.Serial : 0;
+		internal static int RawSerial(NPC n) => n.TryGetGlobalNPC(out FightRecSpawnTag t) ? t.Serial : 0;
+		/// <summary>The spawn serial a headless recording reads; 0 while no headless recording mode is on.</summary>
+		public static int SerialOf(NPC n) => FightRecorder.Headless ? RawSerial(n) : 0;
+	}
+
+	/// <summary>A projectile an NPC (or a projectile of one) makes carries that NPC's spawn serial, where <see cref="FightRecSpawnTag"/> runs: a boss a projectile summons belongs to the fight of the boss that made it, and the recorder
+	/// holds a fight open while such a no-damage summoner is still out.</summary>
+	public class FightRecProjSerial : GlobalProjectile
+	{
+		public int Serial;
+		public override bool InstancePerEntity => true;
+		public override bool AppliesToEntity(Projectile entity, bool lateInstantiation) => FightRecSpawnTag.Tagging;
+		public override void OnSpawn(Projectile projectile, Terraria.DataStructures.IEntitySource source)
+		{
+			if (source is not Terraria.DataStructures.EntitySource_Parent par) return;
+			if (par.Entity is NPC n && n.active) Serial = FightRecSpawnTag.RawSerial(n);
+			else if (par.Entity is Projectile p && p.active) Serial = SerialOf(p);
+		}
+		public static int SerialOf(Projectile p) => p.TryGetGlobalProjectile(out FightRecProjSerial t) ? t.Serial : 0;
 	}
 
 	/// <summary>Remembers which item fired a projectile (and which one fired the projectile that spawned it), while a recording runs, so the report can name the weapon of a hit and not only the item in the hand. Format 10.</summary>

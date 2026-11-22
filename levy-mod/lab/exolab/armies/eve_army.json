@@ -1,0 +1,1006 @@
+{
+ "source": "2026-11-21_17-19_Draedon_XF_09_Ares_XF_09_Ares_Plasma_Can_lost.jsonl.gz",
+ "note": "Eve's 40 regular levies as worn in her 2026-11-21 17:19 Exo Mechs fight (Levy 3.1.8).",
+ "accSlots": 2,
+ "honey": true,
+ "stations": [
+  "campfire",
+  "heartlantern",
+  "starinabottle",
+  "sunflower",
+  "bast",
+  "sharpening",
+  "wartable",
+  "bewitching",
+  "ammobox",
+  "crystalball"
+ ],
+ "stationLevel": 2,
+ "buffs": [],
+ "levies": [
+  {
+   "id": 1,
+   "weapon": "CalamityMod/TimeBolt@Flawless",
+   "cls": "T",
+   "weaponName": "Time Bolt",
+   "side": "CalamityMod/EtherealSubjugator@33",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRogue",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders",
+    "CalamityMod/InfectedJewel@65",
+    "CalamityMod/EclipseMirror"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 2,
+   "weapon": "CalamityMod/GhoulishGouger@Sleek",
+   "cls": "T",
+   "weaponName": "Ghoulish Gouger",
+   "side": "CalamityMod/MirrorofKalandra@50",
+   "armor": [
+    "CalamityMod/FearmongerGreathelm",
+    "CalamityMod/FearmongerPlateMail",
+    "CalamityMod/FearmongerGreaves"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@69",
+    "CalamityMod/AngelTreads",
+    "CalamityMod/StatisCurse@71",
+    "CalamityMod/TheAmalgam@71"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 3,
+   "weapon": "CalamityMod/StreamGouge@59",
+   "cls": "E",
+   "weaponName": "Stream Gouge",
+   "side": "CalamityMod/PoleWarper",
+   "armor": [
+    "CalamityMod/GodSlayerHeadMelee",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@71",
+    "CalamityMod/AngelTreads",
+    "Molten Quiver@65",
+    "CalamityMod/TrinketofChi@69"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 4,
+   "weapon": "CalamityMod/Ataraxia@59",
+   "cls": "E",
+   "weaponName": "Ataraxia",
+   "side": "CalamityMod/EndoHydraStaff",
+   "armor": [
+    "CalamityMod/GodSlayerHeadMelee",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@77",
+    "CalamityMod/AngelTreads",
+    "Warrior Emblem@68",
+    "Moon Stone@62"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 5,
+   "weapon": "CalamityMod/MawOfInfinity@37",
+   "cls": "E",
+   "weaponName": "Maw of Infinity",
+   "side": "CalamityMod/VoidEaterMarionette@59",
+   "armor": [
+    "CalamityMod/GodSlayerHeadMelee",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@79",
+    "CalamityMod/AngelTreads",
+    "CalamityMod/FragmentsOfAnotherWorld",
+    "CalamityMod/StatisNinjaBelt@Invigorating"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 6,
+   "weapon": "CalamityMod/StreamGouge@59",
+   "cls": "E",
+   "weaponName": "Stream Gouge",
+   "side": "CalamityMod/VoidEaterMarionette@44",
+   "armor": [
+    "CalamityMod/GodSlayerHeadMelee",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@79",
+    "CalamityMod/AngelTreads",
+    "CalamityMod/ElementalGauntlet",
+    "Yoyo Bag@63"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 7,
+   "weapon": "CalamityMod/TheOracle",
+   "cls": "E",
+   "weaponName": "The Oracle",
+   "side": "CalamityMod/VoidEaterMarionette@44",
+   "armor": [
+    "CalamityMod/GodSlayerHeadMelee",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@64",
+    "CalamityMod/StatisNinjaBelt@62",
+    "Yoyo Bag@Dauntless",
+    "CalamityMod/ElementalGauntlet@64"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 8,
+   "weapon": "CalamityMod/NebulousCataclysm@57",
+   "cls": "M",
+   "weaponName": "Nebulous Cataclysm",
+   "side": "CalamityMod/VoidEaterMarionette@42",
+   "armor": [
+    "CalamityMod/GodSlayerHeadMelee",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@79",
+    "CalamityMod/StatisNinjaBelt@Silent",
+    "CalamityMod/EtherealTalisman@80",
+    "Celestial Cuffs@75"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 9,
+   "weapon": "CalamityMod/MawOfInfinity@43",
+   "cls": "E",
+   "weaponName": "Maw of Infinity",
+   "armor": [
+    "CalamityMod/GodSlayerHeadMelee",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@Invigorating",
+    "CalamityMod/StatisNinjaBelt@80",
+    "CalamityMod/ElementalGauntlet@75",
+    "CalamityMod/BadgeofBravery@73"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 10,
+   "weapon": "CalamityMod/SDFMG@38",
+   "cls": "R",
+   "weaponName": "SDFMG",
+   "side": "CalamityMod/LifehuntScythe@5",
+   "armor": [
+    "CalamityMod/GodSlayerHeadMelee",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@66",
+    "CalamityMod/StatisNinjaBelt",
+    "Charm of Myths@Silent",
+    "CalamityMod/Affliction@72"
+   ],
+   "ammo": "CalamityMod/GodSlayerSlug",
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 11,
+   "weapon": "CalamityMod/Riftburst@36",
+   "cls": "R",
+   "weaponName": "Riftburst",
+   "side": "CalamityMod/WarloksMoonFist@46",
+   "armor": [
+    "CalamityMod/GodSlayerHeadMelee",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@68",
+    "CalamityMod/StatisNinjaBelt",
+    "CalamityMod/TheSponge@Invigorating",
+    "CalamityMod/EclipseMirror@70"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 12,
+   "weapon": "CalamityMod/VoltaicClimax@55",
+   "cls": "M",
+   "weaponName": "Voltaic Climax",
+   "side": "CalamityMod/Sirius@26",
+   "armor": [
+    "CalamityMod/GodSlayerHeadMelee",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@76",
+    "Spectre Boots@78",
+    "CalamityMod/MoonstoneCrown@78",
+    "Frozen Shield"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 13,
+   "weapon": "CalamityMod/DimensionTearingDisk@59",
+   "cls": "T",
+   "weaponName": "Dimension-Tearing Disk",
+   "side": "CalamityMod/NebulousCataclysm@38",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRogue",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@71",
+    "Spectre Boots",
+    "CalamityMod/ElectriciansGlove@Silent",
+    "CalamityMod/EclipseMirror@63"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 14,
+   "weapon": "CalamityMod/PlasmaGrenade@Flawless",
+   "cls": "T",
+   "weaponName": "Plasma Grenade",
+   "side": "Stardust Cell Staff@35",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRogue",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@79",
+    "CalamityMod/ElysianAegis@68",
+    "CalamityMod/TheSponge",
+    "CalamityMod/EclipseMirror@79"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 15,
+   "weapon": "CalamityMod/DimensionTearingDisk@60",
+   "cls": "T",
+   "weaponName": "Dimension-Tearing Disk",
+   "side": "CalamityMod/CosmicViperEngine",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRogue",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@76",
+    "CalamityMod/ElysianAegis@72",
+    "CalamityMod/InfectedJewel@71",
+    "CalamityMod/EclipseMirror@Silent"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 16,
+   "weapon": "CalamityMod/DimensionTearingDisk@60",
+   "cls": "T",
+   "weaponName": "Dimension-Tearing Disk",
+   "side": "CalamityMod/EndoHydraStaff@44",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRogue",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@70",
+    "CalamityMod/ElysianAegis@64",
+    "Hero Shield@70",
+    "CalamityMod/GrandGelatin@73"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 17,
+   "weapon": "CalamityMod/Norfleet",
+   "cls": "R",
+   "weaponName": "Norfleet",
+   "armor": [
+    "CalamityMod/BloodflareHeadMelee",
+    "CalamityMod/BloodflareBodyArmor",
+    "CalamityMod/BloodflareCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@77",
+    "CalamityMod/ElysianAegis@75",
+    "Moon Stone@62",
+    "CalamityMod/TheAbsorber@77"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 18,
+   "weapon": "CalamityMod/Nadir",
+   "cls": "E",
+   "weaponName": "Nadir",
+   "armor": [
+    "CalamityMod/BloodflareHeadMelee",
+    "CalamityMod/BloodflareBodyArmor",
+    "CalamityMod/BloodflareCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@63",
+    "CalamityMod/ElysianAegis@65",
+    "Yoyo Bag@65",
+    "CalamityMod/ElementalGauntlet@73"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 19,
+   "weapon": "CalamityMod/VoltaicClimax@59",
+   "cls": "M",
+   "weaponName": "Voltaic Climax",
+   "armor": [
+    "CalamityMod/BloodflareHeadMelee",
+    "CalamityMod/BloodflareBodyArmor",
+    "CalamityMod/BloodflareCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@75",
+    "CalamityMod/ElysianAegis@66",
+    "CalamityMod/GrandGelatin@77",
+    "CalamityMod/MoonstoneCrown@78"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 20,
+   "weapon": "CalamityMod/Ataraxia",
+   "cls": "E",
+   "weaponName": "Ataraxia",
+   "side": "CalamityMod/ViridVanguard",
+   "armor": [
+    "CalamityMod/BloodflareHeadMelee",
+    "CalamityMod/BloodflareBodyArmor",
+    "CalamityMod/BloodflareCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@80",
+    "CalamityMod/StatisNinjaBelt@67",
+    "CalamityMod/EtherealTalisman",
+    "Celestial Cuffs"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 21,
+   "weapon": "CalamityMod/PulseRifle@44",
+   "cls": "R",
+   "weaponName": "A-PLS: Pulse Rifle",
+   "armor": [
+    "CalamityMod/BloodflareHeadMelee",
+    "CalamityMod/BloodflareBodyArmor",
+    "CalamityMod/BloodflareCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@74",
+    "CalamityMod/ElysianAegis",
+    "Warrior Emblem@Silent",
+    "CalamityMod/ChaliceOfTheBloodGod"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 22,
+   "weapon": "CalamityMod/TheOracle",
+   "cls": "E",
+   "weaponName": "The Oracle",
+   "side": "CalamityMod/ViridVanguard",
+   "armor": [
+    "CalamityMod/BloodflareHeadMelee",
+    "CalamityMod/BloodflareBodyArmor",
+    "CalamityMod/BloodflareCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@77",
+    "CalamityMod/OrnateShield@65",
+    "CalamityMod/EtherealTalisman@65",
+    "Celestial Cuffs@63"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 23,
+   "weapon": "CalamityMod/PrismaticBreaker@38",
+   "cls": "R",
+   "weaponName": "Prismatic Breaker",
+   "side": "CalamityMod/GammaHeart@45",
+   "armor": [
+    "CalamityMod/BloodflareHeadMelee",
+    "CalamityMod/BloodflareBodyArmor",
+    "CalamityMod/BloodflareCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@67",
+    "CalamityMod/StatisNinjaBelt@66",
+    "CalamityMod/FragmentsOfAnotherWorld@72",
+    "CalamityMod/ElementalGauntlet@65"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 24,
+   "weapon": "CalamityMod/TheOracle",
+   "cls": "E",
+   "weaponName": "The Oracle",
+   "side": "CalamityMod/SnakeEyes@37",
+   "armor": [
+    "CalamityMod/BloodflareHeadMelee",
+    "CalamityMod/BloodflareBodyArmor",
+    "CalamityMod/BloodflareCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@71",
+    "CalamityMod/OrnateShield",
+    "CalamityMod/Affliction@62",
+    "CalamityMod/Nucleogenesis@73"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 25,
+   "weapon": "CalamityMod/PrimordialAncient@38",
+   "cls": "M",
+   "weaponName": "Primordial Ancient",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRanged",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@Dauntless",
+    "CalamityMod/DeepDiver@74",
+    "CalamityMod/DynamoStemCells@68",
+    "CalamityMod/TheAbsorber@62"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 26,
+   "weapon": "CalamityMod/PrimordialAncient@61",
+   "cls": "M",
+   "weaponName": "Primordial Ancient",
+   "side": "CalamityMod/MawOfInfinity@43",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRanged",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@74",
+    "Shield of Cthulhu@63",
+    "Celestial Cuffs@80",
+    "CalamityMod/EtherealTalisman@79"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 27,
+   "weapon": "Durendal@55",
+   "cls": "S",
+   "weaponName": "Durendal",
+   "side": "CalamityMod/ViridVanguard",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRanged",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@69",
+    "CalamityMod/GrandGelatin@77",
+    "CalamityMod/PlanebreakersPouch@Dauntless"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 28,
+   "weapon": "CalamityMod/ThreadOfEradication@20",
+   "cls": "R",
+   "weaponName": "Thread of Eradication",
+   "side": "CalamityMod/DazzlingStabberStaff@60",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRanged",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@72",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/TheAbsorber@Invigorating"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 29,
+   "weapon": "Durendal@44",
+   "cls": "S",
+   "weaponName": "Durendal",
+   "side": "CalamityMod/MirrorofKalandra",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRanged",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@64",
+    "CalamityMod/DynamoStemCells@69",
+    "CalamityMod/TheAbsorber@79"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 30,
+   "weapon": "CalamityMod/VoltaicClimax@54",
+   "cls": "M",
+   "weaponName": "Voltaic Climax",
+   "side": "CalamityMod/DazzlingStabberStaff@53",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRanged",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@76",
+    "CalamityMod/MoonstoneCrown@72",
+    "CalamityMod/FragmentsOfAnotherWorld@72"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 31,
+   "weapon": "CalamityMod/Onyxia@53",
+   "cls": "R",
+   "weaponName": "Onyxia",
+   "side": "CalamityMod/ViridVanguard",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRanged",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@64",
+    "CalamityMod/PlanebreakersPouch@75",
+    "Charm of Myths@66"
+   ],
+   "ammo": "CalamityMod/GodSlayerSlug",
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 32,
+   "weapon": "CalamityMod/Riftburst",
+   "cls": "R",
+   "weaponName": "Riftburst",
+   "side": "CalamityMod/EndoHydraStaff",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRanged",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@Invigorating",
+    "CalamityMod/PlanebreakersPouch@79",
+    "CalamityMod/QuiverofNihility@68"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 33,
+   "weapon": "CalamityMod/NebulousCataclysm@60",
+   "cls": "M",
+   "weaponName": "Nebulous Cataclysm",
+   "armor": [
+    "CalamityMod/BloodflareHeadMelee",
+    "CalamityMod/BloodflareBodyArmor",
+    "CalamityMod/BloodflareCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@67",
+    "Celestial Cuffs@66",
+    "CalamityMod/EtherealTalisman@66"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 19,
+   "recordedLifeMax": 495,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 34,
+   "weapon": "CalamityMod/Ataraxia",
+   "cls": "E",
+   "weaponName": "Ataraxia",
+   "armor": [
+    "CalamityMod/BloodflareHeadMelee",
+    "CalamityMod/BloodflareBodyArmor",
+    "CalamityMod/BloodflareCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@73",
+    "CalamityMod/ElementalGauntlet",
+    "Frozen Shield@75"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 19,
+   "recordedLifeMax": 495,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 35,
+   "weapon": "CalamityMod/DevilsDevastation@4",
+   "cls": "E",
+   "weaponName": "Devil's Devastation",
+   "armor": [
+    "CalamityMod/BloodflareHeadMelee",
+    "CalamityMod/BloodflareBodyArmor",
+    "CalamityMod/BloodflareCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@79",
+    "CalamityMod/TheAbsorber",
+    "Power Glove"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 13,
+   "recordedLifeMax": 465,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 36,
+   "weapon": "CalamityMod/MawOfInfinity@37",
+   "cls": "E",
+   "weaponName": "Maw of Infinity",
+   "armor": [
+    "CalamityMod/TarragonHeadMelee",
+    "CalamityMod/TarragonBreastplate",
+    "CalamityMod/TarragonLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@Dauntless",
+    "CalamityMod/OccultSkullCrown@Silent",
+    "CalamityMod/FragmentsOfAnotherWorld@69"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 13,
+   "recordedLifeMax": 465,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 37,
+   "weapon": "CalamityMod/Vega@38",
+   "cls": "T",
+   "weaponName": "Vega",
+   "side": "CalamityMod/TheOracle",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRanged",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@Silent",
+    "CalamityMod/OrnateShield@71",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/QuiverofNihility@Invigorating"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 13,
+   "recordedLifeMax": 465,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 38,
+   "weapon": "CalamityMod/Riftburst@36",
+   "cls": "R",
+   "weaponName": "Riftburst",
+   "side": "CalamityMod/StarspawnHelixStaff@28",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRanged",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders",
+    "Frozen Shield",
+    "CalamityMod/PlanebreakersPouch"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 13,
+   "recordedLifeMax": 465,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 39,
+   "weapon": "CalamityMod/Vega@Flawless",
+   "cls": "T",
+   "weaponName": "Vega",
+   "side": "CalamityMod/CorvidHarbringerStaff@32",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRogue",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders",
+    "CalamityMod/EclipseMirror",
+    "CalamityMod/RogueEmblem@Dauntless"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 13,
+   "recordedLifeMax": 465,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  },
+  {
+   "id": 40,
+   "weapon": "CalamityMod/PrimordialAncient@38",
+   "cls": "M",
+   "weaponName": "Primordial Ancient",
+   "side": "CalamityMod/CorvidHarbringerStaff",
+   "armor": [
+    "CalamityMod/GodSlayerHeadRogue",
+    "CalamityMod/GodSlayerChestplate",
+    "CalamityMod/GodSlayerLeggings"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders",
+    "CalamityMod/ElysianAegis",
+    "CalamityMod/TheAbsorber@62",
+    "CalamityMod/YharimsGift@79"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 13,
+   "recordedLifeMax": 465,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion"
+  }
+ ],
+ "notes": []
+}

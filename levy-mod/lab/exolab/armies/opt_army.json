@@ -1,0 +1,1138 @@
+{
+ "source": "2026-11-21_17-19_Draedon_XF_09_Ares_XF_09_Ares_Plasma_Can_lost.jsonl.gz",
+ "note": "The \"optimal at her tier\" army for the Exo Mechs lab: the best of her own stock, fight-tested, in the best armour she can make.\n  mkopt.py RUN_DIR [RUN_DIR ...] OUT.json\nWeapons: every weapon her 40 regulars carried, ranked by the damage one carrier did to the mechs per fight, pooled over her army's lab fights\n(the kit's per-weapon damage, kit.tsv, divided by how many of her levies carry that weapon); the top ones fill 40 places, at most 6 levies per weapon\n(so no single weapon's per-type hit cooldown is shared by the whole army), best prefix she has.\nEach levy keeps the sidearm, accessories, wings, boots, hook and ammo of her levy that carried that weapon (her Armory's own deal for that class).\nArmour: Auric Tesla for everyone, the head of the levy's class (post-Yharon; her commander wears it, so she can craft it).\nNot her stock (untested in levy hands, left out): the commander's own Auric weapons (Dynamic Pursuer, Eclipse's Fall, The Final Dawn).",
+ "accSlots": 2,
+ "honey": true,
+ "stations": [
+  "campfire",
+  "heartlantern",
+  "starinabottle",
+  "sunflower",
+  "bast",
+  "sharpening",
+  "wartable",
+  "bewitching",
+  "ammobox",
+  "crystalball"
+ ],
+ "stationLevel": 2,
+ "buffs": [],
+ "levies": [
+  {
+   "id": 1,
+   "weapon": "CalamityMod/PlasmaGrenade@Flawless",
+   "cls": "T",
+   "weaponName": "Plasma Grenade",
+   "side": "Stardust Cell Staff@35",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@79",
+    "CalamityMod/ElysianAegis@68",
+    "CalamityMod/TheSponge",
+    "CalamityMod/EclipseMirror@79"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 199786
+  },
+  {
+   "id": 2,
+   "weapon": "CalamityMod/PlasmaGrenade@Flawless",
+   "cls": "T",
+   "weaponName": "Plasma Grenade",
+   "side": "Stardust Cell Staff@35",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@79",
+    "CalamityMod/ElysianAegis@68",
+    "CalamityMod/TheSponge",
+    "CalamityMod/EclipseMirror@79"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 199786
+  },
+  {
+   "id": 3,
+   "weapon": "CalamityMod/PlasmaGrenade@Flawless",
+   "cls": "T",
+   "weaponName": "Plasma Grenade",
+   "side": "Stardust Cell Staff@35",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@79",
+    "CalamityMod/ElysianAegis@68",
+    "CalamityMod/TheSponge",
+    "CalamityMod/EclipseMirror@79"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 199786
+  },
+  {
+   "id": 4,
+   "weapon": "CalamityMod/PlasmaGrenade@Flawless",
+   "cls": "T",
+   "weaponName": "Plasma Grenade",
+   "side": "Stardust Cell Staff@35",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@79",
+    "CalamityMod/ElysianAegis@68",
+    "CalamityMod/TheSponge",
+    "CalamityMod/EclipseMirror@79"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 199786
+  },
+  {
+   "id": 5,
+   "weapon": "CalamityMod/PlasmaGrenade@Flawless",
+   "cls": "T",
+   "weaponName": "Plasma Grenade",
+   "side": "Stardust Cell Staff@35",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@79",
+    "CalamityMod/ElysianAegis@68",
+    "CalamityMod/TheSponge",
+    "CalamityMod/EclipseMirror@79"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 199786
+  },
+  {
+   "id": 6,
+   "weapon": "CalamityMod/PlasmaGrenade@Flawless",
+   "cls": "T",
+   "weaponName": "Plasma Grenade",
+   "side": "Stardust Cell Staff@35",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@79",
+    "CalamityMod/ElysianAegis@68",
+    "CalamityMod/TheSponge",
+    "CalamityMod/EclipseMirror@79"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 199786
+  },
+  {
+   "id": 7,
+   "weapon": "CalamityMod/PulseRifle@44",
+   "cls": "R",
+   "weaponName": "A-PLS: Pulse Rifle",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@74",
+    "CalamityMod/ElysianAegis",
+    "Warrior Emblem@Silent",
+    "CalamityMod/ChaliceOfTheBloodGod"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 180663
+  },
+  {
+   "id": 8,
+   "weapon": "CalamityMod/PulseRifle@44",
+   "cls": "R",
+   "weaponName": "A-PLS: Pulse Rifle",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@74",
+    "CalamityMod/ElysianAegis",
+    "Warrior Emblem@Silent",
+    "CalamityMod/ChaliceOfTheBloodGod"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 180663
+  },
+  {
+   "id": 9,
+   "weapon": "CalamityMod/PulseRifle@44",
+   "cls": "R",
+   "weaponName": "A-PLS: Pulse Rifle",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@74",
+    "CalamityMod/ElysianAegis",
+    "Warrior Emblem@Silent",
+    "CalamityMod/ChaliceOfTheBloodGod"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 180663
+  },
+  {
+   "id": 10,
+   "weapon": "CalamityMod/PulseRifle@44",
+   "cls": "R",
+   "weaponName": "A-PLS: Pulse Rifle",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@74",
+    "CalamityMod/ElysianAegis",
+    "Warrior Emblem@Silent",
+    "CalamityMod/ChaliceOfTheBloodGod"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 180663
+  },
+  {
+   "id": 11,
+   "weapon": "CalamityMod/PulseRifle@44",
+   "cls": "R",
+   "weaponName": "A-PLS: Pulse Rifle",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@74",
+    "CalamityMod/ElysianAegis",
+    "Warrior Emblem@Silent",
+    "CalamityMod/ChaliceOfTheBloodGod"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 180663
+  },
+  {
+   "id": 12,
+   "weapon": "CalamityMod/PulseRifle@44",
+   "cls": "R",
+   "weaponName": "A-PLS: Pulse Rifle",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@74",
+    "CalamityMod/ElysianAegis",
+    "Warrior Emblem@Silent",
+    "CalamityMod/ChaliceOfTheBloodGod"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 180663
+  },
+  {
+   "id": 13,
+   "weapon": "CalamityMod/DimensionTearingDisk@59",
+   "cls": "T",
+   "weaponName": "Dimension-Tearing Disk",
+   "side": "CalamityMod/NebulousCataclysm@38",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@71",
+    "Spectre Boots",
+    "CalamityMod/ElectriciansGlove@Silent",
+    "CalamityMod/EclipseMirror@63"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 155637
+  },
+  {
+   "id": 14,
+   "weapon": "CalamityMod/DimensionTearingDisk@59",
+   "cls": "T",
+   "weaponName": "Dimension-Tearing Disk",
+   "side": "CalamityMod/NebulousCataclysm@38",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@71",
+    "Spectre Boots",
+    "CalamityMod/ElectriciansGlove@Silent",
+    "CalamityMod/EclipseMirror@63"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 155637
+  },
+  {
+   "id": 15,
+   "weapon": "CalamityMod/DimensionTearingDisk@59",
+   "cls": "T",
+   "weaponName": "Dimension-Tearing Disk",
+   "side": "CalamityMod/NebulousCataclysm@38",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@71",
+    "Spectre Boots",
+    "CalamityMod/ElectriciansGlove@Silent",
+    "CalamityMod/EclipseMirror@63"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 155637
+  },
+  {
+   "id": 16,
+   "weapon": "CalamityMod/DimensionTearingDisk@59",
+   "cls": "T",
+   "weaponName": "Dimension-Tearing Disk",
+   "side": "CalamityMod/NebulousCataclysm@38",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@71",
+    "Spectre Boots",
+    "CalamityMod/ElectriciansGlove@Silent",
+    "CalamityMod/EclipseMirror@63"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 155637
+  },
+  {
+   "id": 17,
+   "weapon": "CalamityMod/DimensionTearingDisk@59",
+   "cls": "T",
+   "weaponName": "Dimension-Tearing Disk",
+   "side": "CalamityMod/NebulousCataclysm@38",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@71",
+    "Spectre Boots",
+    "CalamityMod/ElectriciansGlove@Silent",
+    "CalamityMod/EclipseMirror@63"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 155637
+  },
+  {
+   "id": 18,
+   "weapon": "CalamityMod/DimensionTearingDisk@59",
+   "cls": "T",
+   "weaponName": "Dimension-Tearing Disk",
+   "side": "CalamityMod/NebulousCataclysm@38",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@71",
+    "Spectre Boots",
+    "CalamityMod/ElectriciansGlove@Silent",
+    "CalamityMod/EclipseMirror@63"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 155637
+  },
+  {
+   "id": 19,
+   "weapon": "CalamityMod/ThreadOfEradication@20",
+   "cls": "R",
+   "weaponName": "Thread of Eradication",
+   "side": "CalamityMod/DazzlingStabberStaff@60",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@72",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/TheAbsorber@Invigorating"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 146586
+  },
+  {
+   "id": 20,
+   "weapon": "CalamityMod/ThreadOfEradication@20",
+   "cls": "R",
+   "weaponName": "Thread of Eradication",
+   "side": "CalamityMod/DazzlingStabberStaff@60",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@72",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/TheAbsorber@Invigorating"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 146586
+  },
+  {
+   "id": 21,
+   "weapon": "CalamityMod/ThreadOfEradication@20",
+   "cls": "R",
+   "weaponName": "Thread of Eradication",
+   "side": "CalamityMod/DazzlingStabberStaff@60",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@72",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/TheAbsorber@Invigorating"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 146586
+  },
+  {
+   "id": 22,
+   "weapon": "CalamityMod/ThreadOfEradication@20",
+   "cls": "R",
+   "weaponName": "Thread of Eradication",
+   "side": "CalamityMod/DazzlingStabberStaff@60",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@72",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/TheAbsorber@Invigorating"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 146586
+  },
+  {
+   "id": 23,
+   "weapon": "CalamityMod/ThreadOfEradication@20",
+   "cls": "R",
+   "weaponName": "Thread of Eradication",
+   "side": "CalamityMod/DazzlingStabberStaff@60",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@72",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/TheAbsorber@Invigorating"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 146586
+  },
+  {
+   "id": 24,
+   "weapon": "CalamityMod/ThreadOfEradication@20",
+   "cls": "R",
+   "weaponName": "Thread of Eradication",
+   "side": "CalamityMod/DazzlingStabberStaff@60",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@72",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/TheAbsorber@Invigorating"
+   ],
+   "ammo": "CalamityMod/SproutingArrow",
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 146586
+  },
+  {
+   "id": 25,
+   "weapon": "CalamityMod/Vega@Flawless",
+   "cls": "T",
+   "weaponName": "Vega",
+   "side": "CalamityMod/TheOracle",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@Silent",
+    "CalamityMod/OrnateShield@71",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/QuiverofNihility@Invigorating"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 13,
+   "recordedLifeMax": 465,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 140565
+  },
+  {
+   "id": 26,
+   "weapon": "CalamityMod/Vega@Flawless",
+   "cls": "T",
+   "weaponName": "Vega",
+   "side": "CalamityMod/TheOracle",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@Silent",
+    "CalamityMod/OrnateShield@71",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/QuiverofNihility@Invigorating"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 13,
+   "recordedLifeMax": 465,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 140565
+  },
+  {
+   "id": 27,
+   "weapon": "CalamityMod/Vega@Flawless",
+   "cls": "T",
+   "weaponName": "Vega",
+   "side": "CalamityMod/TheOracle",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@Silent",
+    "CalamityMod/OrnateShield@71",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/QuiverofNihility@Invigorating"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 13,
+   "recordedLifeMax": 465,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 140565
+  },
+  {
+   "id": 28,
+   "weapon": "CalamityMod/Vega@Flawless",
+   "cls": "T",
+   "weaponName": "Vega",
+   "side": "CalamityMod/TheOracle",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@Silent",
+    "CalamityMod/OrnateShield@71",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/QuiverofNihility@Invigorating"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 13,
+   "recordedLifeMax": 465,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 140565
+  },
+  {
+   "id": 29,
+   "weapon": "CalamityMod/Vega@Flawless",
+   "cls": "T",
+   "weaponName": "Vega",
+   "side": "CalamityMod/TheOracle",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@Silent",
+    "CalamityMod/OrnateShield@71",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/QuiverofNihility@Invigorating"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 13,
+   "recordedLifeMax": 465,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 140565
+  },
+  {
+   "id": 30,
+   "weapon": "CalamityMod/Vega@Flawless",
+   "cls": "T",
+   "weaponName": "Vega",
+   "side": "CalamityMod/TheOracle",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@Silent",
+    "CalamityMod/OrnateShield@71",
+    "CalamityMod/PlanebreakersPouch",
+    "CalamityMod/QuiverofNihility@Invigorating"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 13,
+   "recordedLifeMax": 465,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 140565
+  },
+  {
+   "id": 31,
+   "weapon": "CalamityMod/TimeBolt@Flawless",
+   "cls": "T",
+   "weaponName": "Time Bolt",
+   "side": "CalamityMod/EtherealSubjugator@33",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders",
+    "CalamityMod/InfectedJewel@65",
+    "CalamityMod/EclipseMirror"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 113740
+  },
+  {
+   "id": 32,
+   "weapon": "CalamityMod/TimeBolt@Flawless",
+   "cls": "T",
+   "weaponName": "Time Bolt",
+   "side": "CalamityMod/EtherealSubjugator@33",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders",
+    "CalamityMod/InfectedJewel@65",
+    "CalamityMod/EclipseMirror"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 113740
+  },
+  {
+   "id": 33,
+   "weapon": "CalamityMod/TimeBolt@Flawless",
+   "cls": "T",
+   "weaponName": "Time Bolt",
+   "side": "CalamityMod/EtherealSubjugator@33",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders",
+    "CalamityMod/InfectedJewel@65",
+    "CalamityMod/EclipseMirror"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 113740
+  },
+  {
+   "id": 34,
+   "weapon": "CalamityMod/TimeBolt@Flawless",
+   "cls": "T",
+   "weaponName": "Time Bolt",
+   "side": "CalamityMod/EtherealSubjugator@33",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders",
+    "CalamityMod/InfectedJewel@65",
+    "CalamityMod/EclipseMirror"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 113740
+  },
+  {
+   "id": 35,
+   "weapon": "CalamityMod/TimeBolt@Flawless",
+   "cls": "T",
+   "weaponName": "Time Bolt",
+   "side": "CalamityMod/EtherealSubjugator@33",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders",
+    "CalamityMod/InfectedJewel@65",
+    "CalamityMod/EclipseMirror"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 113740
+  },
+  {
+   "id": 36,
+   "weapon": "CalamityMod/TimeBolt@Flawless",
+   "cls": "T",
+   "weaponName": "Time Bolt",
+   "side": "CalamityMod/EtherealSubjugator@33",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRogue",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders",
+    "CalamityMod/InfectedJewel@65",
+    "CalamityMod/EclipseMirror"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 113740
+  },
+  {
+   "id": 37,
+   "weapon": "CalamityMod/Norfleet",
+   "cls": "R",
+   "weaponName": "Norfleet",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@77",
+    "CalamityMod/ElysianAegis@75",
+    "Moon Stone@62",
+    "CalamityMod/TheAbsorber@77"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 110816
+  },
+  {
+   "id": 38,
+   "weapon": "CalamityMod/Norfleet",
+   "cls": "R",
+   "weaponName": "Norfleet",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@77",
+    "CalamityMod/ElysianAegis@75",
+    "Moon Stone@62",
+    "CalamityMod/TheAbsorber@77"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 110816
+  },
+  {
+   "id": 39,
+   "weapon": "CalamityMod/Norfleet",
+   "cls": "R",
+   "weaponName": "Norfleet",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@77",
+    "CalamityMod/ElysianAegis@75",
+    "Moon Stone@62",
+    "CalamityMod/TheAbsorber@77"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 110816
+  },
+  {
+   "id": 40,
+   "weapon": "CalamityMod/Norfleet",
+   "cls": "R",
+   "weaponName": "Norfleet",
+   "armor": [
+    "CalamityMod/AuricTeslaHeadRanged",
+    "CalamityMod/AuricTeslaBodyArmor",
+    "CalamityMod/AuricTeslaCuisses"
+   ],
+   "acc": [
+    "CalamityMod/VoidStriders@77",
+    "CalamityMod/ElysianAegis@75",
+    "Moon Stone@62",
+    "CalamityMod/TheAbsorber@77"
+   ],
+   "hook": "Lunar Hook",
+   "lc": 15,
+   "lf": 20,
+   "recordedLifeMax": 500,
+   "mc": 9,
+   "potions": 8,
+   "potion": "Super Healing Potion",
+   "measuredPerCarrier": 110816
+  }
+ ],
+ "notes": [],
+ "ranking": [
+  [
+   "CalamityMod/PlasmaGrenade",
+   199786
+  ],
+  [
+   "CalamityMod/PulseRifle",
+   180663
+  ],
+  [
+   "CalamityMod/DimensionTearingDisk",
+   155637
+  ],
+  [
+   "CalamityMod/ThreadOfEradication",
+   146586
+  ],
+  [
+   "CalamityMod/Vega",
+   140565
+  ],
+  [
+   "CalamityMod/TimeBolt",
+   113740
+  ],
+  [
+   "CalamityMod/Norfleet",
+   110816
+  ],
+  [
+   "CalamityMod/PrimordialAncient",
+   104796
+  ],
+  [
+   "CalamityMod/GhoulishGouger",
+   85529
+  ],
+  [
+   "CalamityMod/NebulousCataclysm",
+   71007
+  ],
+  [
+   "CalamityMod/Onyxia",
+   67595
+  ],
+  [
+   "CalamityMod/VoltaicClimax",
+   54504
+  ],
+  [
+   "CalamityMod/Ataraxia",
+   51626
+  ],
+  [
+   "CalamityMod/SDFMG",
+   47069
+  ],
+  [
+   "CalamityMod/PrismaticBreaker",
+   40747
+  ],
+  [
+   "CalamityMod/Riftburst",
+   39243
+  ],
+  [
+   "CalamityMod/MawOfInfinity",
+   20771
+  ],
+  [
+   "CalamityMod/StreamGouge",
+   18664
+  ],
+  [
+   "CalamityMod/TheOracle",
+   15952
+  ],
+  [
+   "CalamityMod/Nadir",
+   7018
+  ],
+  [
+   "Durendal",
+   5849
+  ],
+  [
+   "CalamityMod/DevilsDevastation",
+   1481
+  ]
+ ],
+ "fightsUsed": 24
+}

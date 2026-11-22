@@ -471,7 +471,7 @@ namespace Levy.Common.Weapons
 			if (Collision.SolidCollision(at - LevyConstants.MinionSpawnProbe * 0.5f, (int)LevyConstants.MinionSpawnProbe.X, (int)LevyConstants.MinionSpawnProbe.Y)) at = s.NPC.Center;
 			if (atTarget)
 			{
-				Vector2 aim = s.AimCursor();
+				Vector2 aim = s.AimCursor() - new Vector2(0f, 16f * AltPolicies.CastUp(weapon));
 				if (SoldierNPC.TransientStaff(weapon) || !Collision.SolidCollision(aim - LevyConstants.MinionSpawnProbe * 0.5f, (int)LevyConstants.MinionSpawnProbe.X, (int)LevyConstants.MinionSpawnProbe.Y)) at = aim;
 			}
 			List<Projectile> made;

@@ -25,7 +25,7 @@ namespace Levy.Common.Weapons
 	/// <summary>The numbers of one policy row (the <c>params</c> column: <c>key=value;key=value</c>). Unset values keep the defaults below.</summary>
 	public struct AltParams
 	{
-		public float P, MinDist, MaxDist, Radius, HpBelow, OwnHpBelow, OwnHpAbove, ManaBelow, Near, NoEnemyWithin, Min, Max, ToughLife;
+		public float P, MinDist, MaxDist, Radius, HpBelow, OwnHpBelow, OwnHpAbove, ManaBelow, Near, NoEnemyWithin, Min, Max, ToughLife, CastUp;
 		public int MinEnemies, Enemies, MinOut, MaxOut, AfterShots, MinWounded, MaxStacks;
 		public bool Tough, Invert, MinFull, Primary, Steer, Hold;
 		/// <summary>Projectile name (resolved against the item's mod) for <see cref="AltPolicyKind.Detonate"/> / <see cref="AltPolicyKind.Place"/>.</summary>
@@ -74,6 +74,7 @@ namespace Levy.Common.Weapons
 					case "primary": a.Primary = v == "1"; break;
 					case "steer": a.Steer = v == "1"; break;
 					case "hold": a.Hold = v == "1"; break;
+					case "castup": a.CastUp = F(v, a.CastUp); break;
 					case "proj": a.Proj = v; break;
 					case "cond": a.Cond = v; break;
 					case "meter": a.Meter = v; break;
@@ -401,6 +402,9 @@ namespace Levy.Common.Weapons
 			hold = pol.P.Hold;
 			return string.Equals(pol.P.Cond, "slotsFull", StringComparison.OrdinalIgnoreCase) && full;
 		}
+
+		/// <summary>Tiles above his target a soldier aims a self-ending summon cast (the row's castUp; 0 without one): the Borealis Bomber's bomber made on the enemy never strikes it, one made above it dives.</summary>
+		internal static float CastUp(Item staff) => staff != null && ByItem.TryGetValue(staff.type, out AltPolicy pol) ? pol.P.CastUp : 0f;
 
 		/// <summary>True for a staff with a RECAST row (see <see cref="RecastWanted"/>).</summary>
 		internal static bool IsRecast(Item staff) => staff != null && ByItem.TryGetValue(staff.type, out AltPolicy pol) && pol.Kind == AltPolicyKind.Recast;

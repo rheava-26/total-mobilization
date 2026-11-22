@@ -92,33 +92,24 @@ namespace Levy.Common.Weapons
 {
 	/// <summary>
 	/// A levy's held projectile hits with the real player as its owner (HeldWeapons.RunDamage). A rogue projectile whose hit writes "the owner's" stealth bar (the Doomsday Device's plain hit gives back 30% of
-	/// the bar) would fill the real player's bar and never the levy's: for the call the real player's bar is set to the levy's, and what the hit left there is the levy's new bar.
+	/// the bar) would fill the real player's bar and never the levy's: for the call the real player's stealth state is the levy's (<see cref="StealthGuard"/>), and what the hit did to it is the levy's.
 	/// </summary>
 	internal struct StealthLend
 	{
-		private object _cmd, _levy; private float _bar, _max; private bool _on;
-		internal static StealthLend Begin(global::Levy.Content.NPCs.SoldierNPC body)
+		private StealthGuard.Scope _scope;
+		internal static StealthLend Begin(SoldierNPC body)
 		{
 			var l = new StealthLend();
 			try
 			{
-				if (body?.Dummy == null || !global::Levy.Common.Compat.Calamity.LevyRippers.Available) return l;
-				Terraria.Player real = Terraria.Main.player[SoldierMinions.TrueMyPlayer];
-				object cmd = real != null && real.active ? global::Levy.Common.Compat.Calamity.LevyRippers.Of(real) : null, levy = global::Levy.Common.Compat.Calamity.LevyRippers.Of(body.Dummy);
-				if (cmd == null || levy == null || ReferenceEquals(cmd, levy)) return l;
-				l._cmd = cmd; l._levy = levy; l._bar = global::Levy.Common.Compat.Calamity.LevyRippers.Stealth(cmd); l._max = global::Levy.Common.Compat.Calamity.LevyRippers.StealthMax(cmd);
-				l._on = global::Levy.Common.Compat.Calamity.LevyRippers.SetStealth(cmd, global::Levy.Common.Compat.Calamity.LevyRippers.Stealth(levy), global::Levy.Common.Compat.Calamity.LevyRippers.StealthMax(levy));
+				int o = SoldierMinions.TrueMyPlayer;
+				if (body?.Dummy == null || o < 0 || o >= Main.maxPlayers) return l;
+				Player real = Main.player[o];
+				if (real != null && real.active) l._scope = StealthGuard.Open(real, body);
 			}
-			catch (System.Exception) { l._on = false; }
+			catch (Exception) { }
 			return l;
 		}
-		internal void End()
-		{
-			if (!_on) return;
-			_on = false;
-			float after = global::Levy.Common.Compat.Calamity.LevyRippers.Stealth(_cmd), levyMax = global::Levy.Common.Compat.Calamity.LevyRippers.StealthMax(_levy);
-			global::Levy.Common.Compat.Calamity.LevyRippers.SetStealth(_levy, System.Math.Clamp(after, 0f, levyMax), levyMax);
-			global::Levy.Common.Compat.Calamity.LevyRippers.SetStealth(_cmd, _bar, _max);
-		}
+		internal void End() => StealthGuard.Close(ref _scope);
 	}
 }

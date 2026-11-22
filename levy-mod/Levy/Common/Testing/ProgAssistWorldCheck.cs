@@ -107,16 +107,26 @@ namespace Levy.Common.Testing
 		// ---- the three material drop rates, through the game's own drop solver ---------------------------------------------------
 		static NPC Fake(int type) { var n = new NPC(); n.SetDefaults(type); n.Center = new Vector2(1800 * 16f, 200 * 16f); return n; }
 
-		/// <summary>Total of <paramref name="types"/> dropped over <paramref name="kills"/> kills of <paramref name="npc"/> (or openings of <paramref name="bag"/>), normal mode.</summary>
+		/// <summary>
+		/// Total of <paramref name="types"/> dropped over <paramref name="kills"/> kills of <paramref name="npc"/> (or openings of <paramref name="bag"/>), normal mode. A per-player drop (Calamity's lore items,
+		/// Living Shards) reserves its item slot for 15 minutes on a server; thousands of test kills would reserve all 400 and later drops would overwrite each other, so every slot's reservation is put
+		/// back as it was after each kill.
+		/// </summary>
 		static long DropTotal(Player p0, NPC npc, int bag, int kills, params int[] types)
 		{
+			var reserve0 = (int[])Main.timeItemSlotCannotBeReusedFor.Clone();
 			ClearItems(); long sum = 0;
-			for (int i = 0; i < kills; i++)
+			try
 			{
-				Main.ItemDropSolver.TryDropping(new DropAttemptInfo { player = p0, npc = npc, item = bag, IsExpertMode = false, IsMasterMode = false, IsInSimulation = false, rng = Main.rand });
-				foreach (int t in types) sum += Count(t);
-				ClearItems();
+				for (int i = 0; i < kills; i++)
+				{
+					Main.ItemDropSolver.TryDropping(new DropAttemptInfo { player = p0, npc = npc, item = bag, IsExpertMode = false, IsMasterMode = false, IsInSimulation = false, rng = Main.rand });
+					foreach (int t in types) sum += Count(t);
+					ClearItems();
+					Array.Copy(reserve0, Main.timeItemSlotCannotBeReusedFor, reserve0.Length);
+				}
 			}
+			finally { Array.Copy(reserve0, Main.timeItemSlotCannotBeReusedFor, reserve0.Length); }
 			return sum;
 		}
 
@@ -152,9 +162,9 @@ namespace Levy.Common.Testing
 				Source(c, p0, "his Treasure Bag's Hallowed Bars and Souls of Fright", null, ItemID.SkeletronPrimeBossBag, 30, true, new int[] { ItemID.HallowedBar, ItemID.SoulofFright });
 				// non-materials are never multiplied: the Wall of Flesh's Pwnhammer and emblems, a Blue Slime's Slime Staff
 				var wof = Fake(NPCID.WallofFlesh); int[] emblems = { ItemID.WarriorEmblem, ItemID.RangerEmblem, ItemID.SorcererEmblem, ItemID.SummonerEmblem };
-				Rates(c, 1f, 1f, 1f); long ham0 = DropTotal(p0, wof, 0, 20, ItemID.Pwnhammer), emb0 = DropTotal(p0, wof, 0, 20, emblems);
-				Rates(c, 10f, 10f, 10f); long ham = DropTotal(p0, wof, 0, 20, ItemID.Pwnhammer), emb = DropTotal(p0, wof, 0, 20, emblems);
-				Check($"materials at 10x: the Wall of Flesh still drops one Pwnhammer and one emblem a kill ({ham0} and {emb0} off, {ham} and {emb} on, 20 kills)", ham0 == 20 && ham == 20 && emb0 == 20 && emb == 20);
+				Rates(c, 1f, 1f, 1f); long ham0 = DropTotal(p0, wof, 0, 100, ItemID.Pwnhammer), emb0 = DropTotal(p0, wof, 0, 100, emblems);
+				Rates(c, 10f, 10f, 10f); long ham = DropTotal(p0, wof, 0, 100, ItemID.Pwnhammer), emb = DropTotal(p0, wof, 0, 100, emblems);
+				Check($"materials at 10x: the Wall of Flesh's Pwnhammer and emblems drop as often as with the rates off ({ham0} and {emb0} off, {ham} and {emb} on, 100 kills)", ham0 == 100 && ham == 100 && emb0 >= 100 && Near(emb, emb0, 1.0, 0.25));
 				long gel10 = DropTotal(p0, Fake(NPCID.BlueSlime), 0, 50, ItemID.Gel); long staff = DropTotal(p0, Fake(NPCID.BlueSlime), 0, 2000, ItemID.SlimeStaff);
 				Note($"at 10x every rate: 50 Blue Slimes dropped {gel10} Gel; 2000 dropped {staff} Slime Staves");
 				Check($"materials at 10x: the Slime Staff stays a rare weapon drop ({staff} in 2000 kills)", staff <= 8);

@@ -212,7 +212,12 @@ namespace Levy.Common.Progression
 			foreach (int pillar in new[] { NPCID.LunarTowerSolar, NPCID.LunarTowerVortex, NPCID.LunarTowerNebula, NPCID.LunarTowerStardust }) frag &= Chains<ExtraAmountRule>(db.GetRulesForNPCID(pillar, false)) >= 1;
 			Check("each lunar pillar carries the fragment bonus rule", frag, $"{ProgressionDropsSystem.FragmentRules} fragment rules");
 			Check("a vanilla boss (Skeletron Prime) has its rare drops rerolled", Chains<RareRerollRule>(db.GetRulesForNPCID(NPCID.SkeletronPrime, false)) >= 1);
-			Check("ordinary monsters get no army bonus or reroll", Chains<ExtraAmountRule>(db.GetRulesForNPCID(NPCID.Zombie, false)) + Chains<RareRerollRule>(db.GetRulesForNPCID(NPCID.Zombie, false)) == 0);
+			{
+				var zl = new List<IItemDropRule>(); ProgressionLootNpc.Collect(db.GetRulesForNPCID(NPCID.Zombie, false), zl);
+				int armyOnZombie = 0; var zMat = new List<string>();
+				foreach (var r in zl) if (r.ChainedRules != null) foreach (var ch in r.ChainedRules) if (ch.RuleToChain is ExtraAmountRule e) { if (e.Army || e.BossRule) armyOnZombie++; else if (e.Material) zMat.Add(Lang.GetItemNameValue(e.ItemId)); }
+				Check("ordinary monsters get no army bonus or reroll (only the material drop rates, on materials)", armyOnZombie + Chains<RareRerollRule>(db.GetRulesForNPCID(NPCID.Zombie, false)) == 0, zMat.Count > 0 ? "material rule on: " + string.Join(", ", zMat) : "");
+			}
 			Check("Chlorophyte global drop rules registered (jungle + event)", ProgressionGlobalNpc.GlobalRules >= 2 && db.GetRulesForNPCID(NPCID.Zombie, true).OfType<ChlorophyteSourceRule>().Count() == 2, ProgressionGlobalNpc.GlobalRules.ToString());
 			Check("extractinator: mud mode iff option", ProgressionExtractinatorSystem.Registered == c.ExtractinatorChlorophyte && (!c.ExtractinatorChlorophyte || ItemID.Sets.ExtractinatorMode[ItemID.MudBlock] == ItemID.MudBlock), $"mode {ItemID.Sets.ExtractinatorMode[ItemID.MudBlock]}");
 			Check("hooks present: dungeon spirit OnKill, extractinator", ModContent.GetInstance<ProgressionGlobalNpc>() != null && ModContent.GetInstance<ProgressionExtractinator>() != null);

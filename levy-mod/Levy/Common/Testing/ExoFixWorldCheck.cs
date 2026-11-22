@@ -277,7 +277,7 @@ namespace Levy.Common.Testing
 				p.timeLeft = 180;
 				ThreatField.TestInvalidate();
 				var areas = ThreatField.AreasNow();
-				if (fix) Check("the Gauss Nuke registers as a pending area of its telegraph's radius (740 px)", areas.Any(a => a.Proj == pi && Math.Abs(a.R - R) < 1f && a.Fuse > 100), () => string.Join(",", areas.Select(a => $"{a.Proj}:{a.R}/{a.Fuse}")));
+				if (fix) Check("the Gauss Nuke registers as a pending area of its blast's reach (1350 px, past the 740 px circle it draws)", areas.Any(a => a.Proj == pi && Math.Abs(a.R - 1350f) < 1f && a.Fuse > 100), () => string.Join(",", areas.Select(a => $"{a.Proj}:{a.R}/{a.Fuse}")));
 				int[] outAt = Enumerable.Repeat(-1, lv.Count).ToArray();
 				for (int t = 0; t < 170; t++)
 				{
@@ -305,6 +305,24 @@ namespace Levy.Common.Testing
 				Check("the Gauss Nuke's damaging blast is an area while it grows; the waves drawn for show are not", dmg && rb > 300f && !show, () => $"damaging {dmg} r {rb:0}, show-only {show}");
 				Main.projectile[bi].active = false; Main.projectile[bz].active = false;
 			}
+			// parity: the blast hurts a player inside 0.4 of its hitbox (a circle); a levy in the band between that circle and the rectangle, where a player is safe, is not hit either
+			int pb = Projectile.NewProjectile(new EntitySource_WorldEvent("ExoFixCheck"), new Vector2(Cx * 16f, (FloorY - 20) * 16f), Vector2.Zero, boom, 400, 0f, Main.myPlayer);
+			var probe = Levy(new Vector2(Cx * 16f + 1000f, FloorY * 16f));
+			if (pb >= 0 && probe != null)
+			{
+				Projectile b = Main.projectile[pb];
+				b.ai[0] = 740f; b.ai[1] = 740f; b.scale = 3f; b.timeLeft = 40;
+				Vector2 bc = new Vector2(Cx * 16f, FloorY * 16f - 21f); b.width = b.height = (int)(740f * 3f); b.Center = bc; // the hitbox the blast's own AI gives it: CurrentRadius x scale wide
+				probe.NPC.Center = bc + new Vector2(1000f, 0f);
+				bool farOk = global::Levy.Common.Util.HostileContact.ProjectileAllows(b, probe.NPC, probe.Dummy ?? global::Levy.Common.Util.HostileContact.Stand);
+				probe.NPC.Center = bc + new Vector2(500f, 0f);
+				bool nearOk = global::Levy.Common.Util.HostileContact.ProjectileAllows(b, probe.NPC, probe.Dummy ?? global::Levy.Common.Util.HostileContact.Stand);
+				Note($"Gauss blast with an 888 px player reach and a 1110 px half-wide hitbox: a levy 1000 px out may be hit {farOk}, 500 px out {nearOk}");
+				Check("projectile parity: the Gauss blast does not hit a levy where it would not hit a player (1000 px out: inside its rectangle, outside its 888 px circle), and does 500 px out", !farOk && nearOk);
+				b.active = false;
+			}
+			if (probe != null) { if (probe.Record != null) probe.Record.Gear = new SoldierGear(); probe.NPC.active = false; }
+			RosterSystem.Instance.Regulars.RemoveAll(r => r.CommanderName == Commander);
 		}
 
 		// =====================================================================================================

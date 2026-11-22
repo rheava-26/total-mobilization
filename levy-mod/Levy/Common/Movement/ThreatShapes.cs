@@ -122,7 +122,9 @@ namespace Levy.Common.Movement
 		/// <summary>Known telegraphs (mod/name: the radius the game draws in px, or the hit-radius factor of a growing blast). Data: a new telegraph is one more line.</summary>
 		private static readonly Dictionary<string, float> KnownRadius = new()
 		{
-			["CalamityMod/AresGaussNukeProjectile"] = 740f,   // a 1480 px telegraph circle drawn for its whole 180-tick flight, then three explosion waves
+			// draws a 1480 px telegraph circle (radius 740) for its whole 180-tick flight; its damaging wave then grows to hit a player within 0.4 x 740 x scale, scale reaching 4.56 by its last hitting tick:
+			// 1350 px. Lab recordings (exofixes) saw levies die 900 to 1350 px out, 20 to 50 ticks after the blast, so the area is where it reaches, not the circle it draws.
+			["CalamityMod/AresGaussNukeProjectile"] = 1350f,
 			["CalamityMod/CrimsonEye"] = 124f,                // Calamity's Brain of Cthulhu eye: a 248 px telegraph circle
 		};
 		/// <summary>Growing blasts whose player hit test is a circle smaller than the hitbox: the fraction of CurrentRadius * scale it reaches (the base hitbox is 0.5 of it).</summary>

@@ -79,6 +79,36 @@ namespace Levy.Common.Util
 			return hit;
 		}
 
+		/// <summary>Harness switch (LEVY_PROJPARITY=0): a hostile projectile hits a body wherever its hitbox touches, as before.</summary>
+		public static readonly bool ProjParity = Environment.GetEnvironmentVariable("LEVY_PROJPARITY") != "0";
+		/// <summary>Telemetry: hostile projectile hits on a body that the projectile's own player rule refused (a player standing there would not have been hit).</summary>
+		public static long ProjVetoed;
+		private static bool _projWarned;
+
+		/// <summary>
+		/// Would hostile projectile <paramref name="p"/> be allowed to hurt a PLAYER standing at <paramref name="victim"/>'s hitbox? Vanilla asks <see cref="ProjectileLoader.CanHitPlayer"/> before it hurts a player, and a
+		/// mod writes its real hit shape there (Calamity's growing blasts hit a player only inside 0.4 of their hitbox, as a circle: Ares's Gauss explosion; many boss shots are circles), while a body (an NPC) was hit by the
+		/// whole rectangle. Asked only once the rectangles touch (the cheap test first). True when the projectile has no such rule or it throws.
+		/// </summary>
+		public static bool ProjectileAllows(Projectile p, NPC victim, Player who)
+		{
+			if (!ProjParity || p == null || victim == null || who == null) return true;
+			if (!p.Hitbox.Intersects(victim.Hitbox)) return true; // the rectangle decides alone where they do not even touch (a beam's line is its own Colliding)
+			try
+			{
+				if (who.width != victim.width) who.width = victim.width;
+				if (who.height != victim.height) who.height = victim.height;
+				who.position = victim.position;
+				if (ProjectileLoader.CanHitPlayer(p, who)) return true;
+				ProjVetoed++; return false;
+			}
+			catch (Exception e)
+			{
+				if (!_projWarned) { _projWarned = true; Levy.Instance?.Logger.Warn($"[HostileContact] projectile {p.Name} threw {e.GetType().Name} in its player hit rule ({e.Message}); its hitbox decides for it"); }
+				return true;
+			}
+		}
+
 		/// <summary>Player.Update_NPCCollision's decision for <paramref name="who"/> standing at <paramref name="victim"/>, with the player's own hurt and immunity bookkeeping left out.</summary>
 		public static bool PlayerRules(NPC a, int index, Rectangle victim, Player who, out int slot, out float mult)
 		{

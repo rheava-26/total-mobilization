@@ -71,6 +71,30 @@ namespace Levy.Common
 		/// <summary>Ticks a Guardian is kept alive by each AI tick; the authority ends it when its wearer dies or takes the set off.</summary>
 		public const int StardustGuardianTimeLeftTicks = 120;
 
+		// ---------- God Slayer dash (Calamity GodslayerArmorDash; the live numbers are read from GodSlayerChestplate and the dash itself, these are the fallbacks) ----------
+		/// <summary>The dash starts at 32 px a tick and eases to 11 over its 75 ticks (speed = lerp(32, 11, 1 - (1 - t)^0.2)); it turns toward the held direction at most 0.175 rad a tick.</summary>
+		public const float GodSlayerDashStartSpeed = 32f, GodSlayerDashEndSpeed = 11f, GodSlayerDashEase = 0.2f, GodSlayerDashTurn = 0.175f;
+		public const int GodSlayerDashTicks = 75;
+		/// <summary>GodSlayerChestplate: 3000 base damage of the wearer's best class per enemy struck, 12 ticks of immunity for the wearer per strike, 45 s cooldown, 5 s of God Slayer Inferno on the enemy.</summary>
+		public const int GodSlayerDashDamage = 3000, GodSlayerDashIFrames = 12, GodSlayerDashCooldownTicks = 2700, GodSlayerInfernoTicks = 300;
+		/// <summary>An enemy struck by the dash cannot be struck by the same levy's dash again for this many ticks (Calamity's dashImmunityTime).</summary>
+		public const int GodSlayerDashEnemyGapTicks = 12;
+		/// <summary>The player's gravity, which bends the dash while it lasts (Player.defaultGravity), and the box margin a dash strikes with (the body plus 4 px, half a tick of velocity ahead).</summary>
+		public const float GodSlayerDashGravity = 0.4f, DashStrikeMarginPx = 4f;
+		/// <summary>The held direction points at the target on an axis only when it is more than this far off on that axis (px); the server re-sends the body this often while it dashes (ticks).</summary>
+		public const float GodSlayerSteerDeadzonePx = 16f;
+		public const int GodSlayerDashNetTicks = 6;
+		/// <summary>Dust the dash throws each tick on screen (Calamity's cosmilite ring and trail: dust 181 and 295, 180 now and then), and at the first strike.</summary>
+		public const int GodSlayerDashRingDust = 3, GodSlayerImpactDust = 25;
+
+		// ---------- Solar Flare dash (Player.DashMovement, dash 3) ----------
+		/// <summary>Each enemy the dash passes takes 150 melee damage (knockback 9) and a flare burst; the first one spends a shield. An enemy is struck again after this many ticks; the wearer gets 4 ticks of immunity per strike.</summary>
+		public const int SolarDashDamage = 150, SolarDashEnemyGapTicks = 6, SolarDashIFrames = 4;
+		public const float SolarDashKnockback = 9f;
+		/// <summary>The Solar Flare dash (Player.DashMovement, dash 3): 21.9 px a tick, x0.985 above 14, x0.94 below; a ram runs at most this far past the target (tiles) and this many ticks.</summary>
+		public const float SolarDashSpeed = 21.9f, SolarDashSplit = 14f, SolarDashHighDecay = 0.985f, SolarDashSlowDecay = 0.94f, SolarRamOvershootTiles = 5f;
+		public const int SolarRamMaxTicks = 90;
+
 		// ---------- Diagnostics ----------
 		/// <summary>The "[Levy SETBONUS]" log writes at most this many distinct first-time lines per world, so a bad session cannot flood the log.</summary>
 		public const int SetBonusLogMaxKeys = 64;

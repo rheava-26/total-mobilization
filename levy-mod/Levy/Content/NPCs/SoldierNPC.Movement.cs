@@ -113,6 +113,7 @@ namespace Levy.Content.NPCs
 			else WantsToFallThrough = false;
 			if (_dashCooldown > 0) _dashCooldown--;
 			if (_dashTravelCd > 0) _dashTravelCd--;
+			if (TickSetDash()) { WhyM = Why.MBusyAir; _dashTicks = 0; MirrorDummyControls(); return; } // a set-bonus dash (God Slayer, Solar Flare) owns the tick while it lasts (SoldierNPC.SetDash.cs)
 			if (_hkPhase == HookPhase.Idle && _rtHookWant) RouteHookTick(grounded);
 			if (_hkPhase == HookPhase.Idle && _hkTrigTicks > 0) HookEvaluate(); // a trigger that held long enough becomes a plan and a cast (SoldierNPC.Hook.cs)
 			if (_hkPhase == HookPhase.Idle) { FallCatchCheck(); HookFollowCommander(); }

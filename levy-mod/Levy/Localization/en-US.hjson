@@ -556,6 +556,11 @@ Mods: {
 					Tooltip: Levies carry the best grappling hook in the Armory and use it to cross gaps and climb cliffs
 				}
 
+				SoldiersUseSetAbilities: {
+					Label: Levies use armor set abilities
+					Tooltip: Levies use the set abilities a key starts, such as the God Slayer dash, the Solar Flare dash and the Forbidden storm
+				}
+
 				SoldiersTakeFallDamage: {
 					Label: Levies take fall damage
 					Tooltip: Levies take fall damage by the player's rules. Wings, a Lucky Horseshoe and water landings spare them.

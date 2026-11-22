@@ -1,0 +1,18 @@
+# When a levy uses an armor set ability that a key (or a double-tap) starts. One row per set; a set with no row is never used. Tab separated.
+# policy: DASH (God Slayer dash), RAM (Solar Flare dash), AT_TARGET (cast at the target), FIGHT (once a fight is on), FIGHT_TOGGLE (on in a fight, off after it), NEVER.
+# params (key=value;...): minDist / maxDist (tiles to the target), tough=1 (a boss, or a target with toughLife or more max life), mana (mana the levy keeps for it),
+#   dodge=1 (DASH: also dash when a hit is coming), dodgeTicks (how far ahead a coming hit counts), loop (DASH: 1 steers back into the target after passing it, 0 runs out straight), maxRise (RAM: tiles the target may sit above or below), minShields (RAM), gap (RAM: ticks between dashes), calm (FIGHT_TOGGLE: ticks out of a fight before it is switched off).
+set	mod	policy	params	note
+godslayer	CalamityMod	DASH	minDist=3;maxDist=40;dodge=1;dodgeTicks=24;loop=1	God Slayer and Auric Tesla: dash through the target and steer back into it; a coming hit is dodged by the dash
+solarflare	Terraria	RAM	minDist=1.5;maxDist=24;maxRise=3;minShields=1;gap=90	Solar Flare: dash into a close enemy (150 melee damage and a flare burst per enemy, one shield spent)
+forbidden	Terraria	AT_TARGET	maxDist=30;mana=20	Forbidden: the sandstorm lands on the target
+vortex	Terraria	FIGHT_TOGGLE	calm=240	Vortex: stealth on in a fight, off once it is over
+brimflame	CalamityMod	FIGHT		Brimflame frenzy
+tarragon	CalamityMod	FIGHT		Tarragon (melee) cloak
+bloodflare	CalamityMod	FIGHT		Bloodflare (ranged) souls
+omegablue	CalamityMod	FIGHT		Omega Blue abyssal madness
+demonshade	CalamityMod	FIGHT		Demonshade enrage (the enemies it tags only change colour)
+plaguereaper	CalamityMod	FIGHT		Plague Reaper blackout
+circlet	CalamityMod	AT_TARGET	mana=40	Forbidden Circlet tornado at the target
+prismatic	CalamityMod	FIGHT		Prismatic lasers
+desertprowler	CalamityMod	FIGHT		Desert Prowler smoke (Lights Out crit on the next shot)

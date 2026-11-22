@@ -7,6 +7,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common;
+using Levy.Common.Soldiers;
 using Levy.Common.Util;
 using Levy.Common.Weapons;
 
@@ -18,6 +19,8 @@ namespace Levy.Content.NPCs
 	/// bonuses (Vortex stealth, the Forbidden storm). A levy never pressed it, so those bonuses sat unused. <see cref="TickSetBonusKey"/> decides WHEN a competent player would press it and
 	/// <see cref="PressSetBonusKey"/> presses it on the soldier's dummy through the very same method, in the same frame the upkeep and the hurt reaction use (slot 255, projectiles caught and adopted).
 	/// Also here: the per-tick stealth stepping of the Vortex and Shroomite sets (vanilla advances it in the set pass, which runs once a second for a levy).
+	/// WHEN each set is used is the policy table Common/Soldiers/SetAbilities.tsv (SetAbilityPolicies); the setting "Levies use armor set abilities" (LevyConfig.SoldiersUseSetAbilities) turns every press off.
+	/// The sets whose ability is a dash of the body (God Slayer / Auric Tesla on Calamity's own God Slayer Dash key, Solar Flare on a double-tapped direction) are SoldierNPC.SetDash.cs.
 	/// </summary>
 	public partial class SoldierNPC
 	{
@@ -44,23 +47,31 @@ namespace Levy.Content.NPCs
 			{
 				TickStealthSets();
 				TickCalamityMeters();
-				if (_keyCd > 0) { _keyCd--; return; }
+				SetDashWatchdog();
 				Player d = Dummy;
-				bool vortex = d.setVortex, forbidden = d.setForbidden;
+				if (!global::Levy.Common.Config.LevyConfig.Get.SoldiersUseSetAbilities)
+				{
+					if (d.vortexStealthActive) d.vortexStealthActive = false; // the setting went off mid-fight: no levy is left in a stealth he will never switch off
+					return;
+				}
+				if (TryStartSetDash(KeyTarget())) return; // the God Slayer and Solar Flare dashes (SoldierNPC.SetDash.cs): their own keys, their own cooldowns
+				if (_keyCd > 0) { _keyCd--; return; }
+				var vPol = SetAbilityPolicies.For("vortex"); var fPol = SetAbilityPolicies.For("forbidden");
+				bool vortex = d.setVortex && vPol.Kind != SetAbilityKind.Never, forbidden = d.setForbidden && fPol.Kind != SetAbilityKind.Never;
 				string calKind = CalamityKeyWanted(d, out bool calWants);
 				if (!vortex && !forbidden && !calWants) return;
 				NPC t = KeyTarget();
 				if (t == null)
 				{
 					// out of the fight: a Vortex wearer drops stealth again so he can run
-					if (vortex && d.vortexStealthActive && ++_keyCalmTicks > KeyCalmTicks) { _keyCalmTicks = 0; PressSetBonusKey(NPC.Center + new Vector2(NPC.direction * 64f, 0f), "vortex-off"); }
+					if (vortex && d.vortexStealthActive && ++_keyCalmTicks > (int)vPol.Get("calm", KeyCalmTicks)) { _keyCalmTicks = 0; PressSetBonusKey(NPC.Center + new Vector2(NPC.direction * 64f, 0f), "vortex-off"); }
 					return;
 				}
 				_keyCalmTicks = 0;
-				if (calWants) { PressSetBonusKey(t.Center, calKind); return; }
+				if (calWants && PolicyAllows(CalPolicyOf(calKind), t)) { PressSetBonusKey(t.Center, calKind); return; }
 				if (forbidden)
 				{
-					if (NPC.Distance(t.Center) > KeyForbiddenTiles * 16f || Record.Mana < 20 || OwnStormAlive()) return;
+					if (NPC.Distance(t.Center) > fPol.Get("maxDist", KeyForbiddenTiles) * 16f || Record.Mana < fPol.Get("mana", 20f) || OwnStormAlive()) return;
 					PressSetBonusKey(t.Center, "forbidden-storm");
 					return;
 				}
@@ -104,7 +115,7 @@ namespace Levy.Content.NPCs
 				fs = EnterFrameSlot();
 				thorium = OwnerPuppet.SwapThorium(d, true);
 				global::Levy.Common.Owner.AimView.Set(aim, NPC.Center);
-				d.KeyDoubleTap(Main.ReversedUpDownArmorSetBonuses ? 1 : 0);
+				PressArmorSetBonus(d);
 				ran = true;
 				if (Record != null && d.statMana != mana0) Record.Mana = Math.Clamp(Record.Mana + (d.statMana - mana0), 0, Record.MaxMana);
 			}
@@ -130,6 +141,26 @@ namespace Levy.Content.NPCs
 				if (SetBonusLog.First("key:" + kind)) SetBonusLog.Write("Set bonus key pressed by soldier '" + SoldierName + "': " + kind + ".");
 			}
 			return ran;
+		}
+
+		/// <summary>Harness: press through Player.KeyDoubleTap even with Calamity loaded (the old path), to show what Calamity's key option does to it.</summary>
+		internal static bool PressViaDoubleTap;
+
+		/// <summary>
+		/// The press itself. Without Calamity: <c>Player.KeyDoubleTap</c>, the vanilla double-tap. With Calamity the set bonus has its own key (default Y), and its On_Player.KeyDoubleTap detour drops the double-tap for the local
+		/// player (the dummy, for the length of the frame) when its client option "set bonus double tap" is Off, and off a server when the key is bound and the option is Auto (the frame reads as a server, so in practice
+		/// Off). So the body Calamity itself runs when its key is pressed runs here, whatever that option says (CalamityPlayer.ProcessTriggers: every ModPlayer's ArmorSetBonusActivated, then the Vortex and Forbidden switches).
+		/// </summary>
+		private static void PressArmorSetBonus(Player d)
+		{
+			if (!ModLoader.HasMod("CalamityMod") || PressViaDoubleTap) { d.KeyDoubleTap(Main.ReversedUpDownArmorSetBonuses ? 1 : 0); return; }
+			PlayerLoader.ArmorSetBonusActivated(d);
+			if (d.setVortex && !d.mount.Active) d.vortexStealthActive = !d.vortexStealthActive;
+			if (d.setForbidden)
+			{
+				d.MinionRestTargetAim();
+				if (!d.setForbiddenCooldownLocked) d.CommandForbiddenStorm();
+			}
 		}
 
 		// ------------------------------------------------------------------------------------------------------------
@@ -168,7 +199,7 @@ namespace Levy.Content.NPCs
 		{
 			_calKeyInit = true;
 			if (!ModLoader.TryGetMod("CalamityMod", out Mod cal) || cal.Code == null) return;
-			foreach (string f in new[] { "brimflameSet", "brimflameFrenzy", "tarraMelee", "tarragonCloak", "bloodflareRanged", "omegaBlueSet", "demonshadeSet", "plagueReaper", "forbiddenCirclet", "prismaticSet" })
+			foreach (string f in new[] { "brimflameSet", "brimflameFrenzy", "tarraMelee", "tarragonCloak", "bloodflareRanged", "omegaBlueSet", "demonshadeSet", "plagueReaper", "forbiddenCirclet", "prismaticSet", "godSlayer" })
 			{
 				var fn = Common.Team.TeamItems.ModFlag("CalamityMod", "CalamityMod.CalPlayer.CalamityPlayer", f);
 				if (fn != null) CalFlags[f] = fn;
@@ -176,7 +207,7 @@ namespace Levy.Content.NPCs
 			Type cp = cal.Code.GetType("CalamityMod.CalPlayer.CalamityPlayer");
 			_calCooldownsField = cp?.GetField("cooldowns", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 			_calPlayerBase = ModContent.GetContent<ModPlayer>().FirstOrDefault(x => x.GetType() == cp);
-			foreach (string c in new[] { "BrimflameFrenzy", "TarragonCloak", "BloodflareRangedSet", "OmegaBlue", "PlagueBlackout", "PrismaticLaser", "SandsmokeBomb" })
+			foreach (string c in new[] { "BrimflameFrenzy", "TarragonCloak", "BloodflareRangedSet", "OmegaBlue", "PlagueBlackout", "PrismaticLaser", "SandsmokeBomb", "GodSlayerDash" })
 			{
 				Type t = cal.Code.GetType("CalamityMod.Cooldowns." + c);
 				object id = t?.GetField("ID", BindingFlags.Static | BindingFlags.Public)?.GetValue(null) ?? t?.GetProperty("ID", BindingFlags.Static | BindingFlags.Public)?.GetValue(null);
@@ -199,22 +230,36 @@ namespace Levy.Content.NPCs
 
 		private bool WearsHead(string item) => Record?.Gear.Head != null && !Record.Gear.Head.IsAir && ModContent.TryFind(item, out ModItem m) && Record.Gear.Head.type == m.Type;
 
-		/// <summary>The Calamity set bonus a levy would press now (ready, not on cooldown, not already running), or null.</summary>
+		/// <summary>The policy row of a Calamity set-key kind (the kind names below are the row names, "circlet" included).</summary>
+		private static SetAbilityPolicy CalPolicyOf(string kind) => SetAbilityPolicies.For(kind);
+
+		/// <summary>FIGHT / AT_TARGET rows: the target is within the row's reach (60 tiles by default), tough when the row asks (a boss or toughLife max life), and the levy keeps the row's mana.</summary>
+		private bool PolicyAllows(SetAbilityPolicy pol, NPC t)
+		{
+			if (pol.Kind == SetAbilityKind.Never || t == null) return false;
+			if (NPC.Distance(t.Center) > pol.Get("maxDist", KeyEngageTiles) * 16f) return false;
+			if (pol.Flag("tough") && !(t.boss || t.lifeMax >= pol.Get("toughLife", 600f))) return false;
+			if (Record != null && Record.Mana < pol.Get("mana", 0f)) return false;
+			return true;
+		}
+
+		/// <summary>The Calamity set bonus a levy would press now (ready, not on cooldown, not already running, and its policy row not NEVER), or null.</summary>
 		private string CalamityKeyWanted(Player d, out bool wants)
 		{
 			wants = false;
 			if (!_calKeyInit) CalKeyInit();
 			if (CalFlags.Count == 0) return null;
 			string k = null;
-			if (CalFlag(d, "brimflameSet") && !CalFlag(d, "brimflameFrenzy") && !CalOnCooldown(d, "BrimflameFrenzy")) k = "brimflame";
-			else if (CalFlag(d, "tarraMelee") && !CalFlag(d, "tarragonCloak") && !CalOnCooldown(d, "TarragonCloak")) k = "tarragon";
-			else if (CalFlag(d, "bloodflareRanged") && !CalOnCooldown(d, "BloodflareRangedSet")) k = "bloodflare";
-			else if (CalFlag(d, "omegaBlueSet") && !CalOnCooldown(d, "OmegaBlue")) k = "omegablue";
-			else if (CalFlag(d, "demonshadeSet") && !d.HasBuff(CalBuff("Enraged"))) k = "demonshade";
-			else if (CalFlag(d, "plagueReaper") && !CalOnCooldown(d, "PlagueBlackout")) k = "plaguereaper";
-			else if (CalFlag(d, "forbiddenCirclet") && d.ownedProjectileCounts[CalProj("CircletTornado")] < 2 && Record != null && Record.Mana >= 40) k = "circlet";
-			else if (CalFlag(d, "prismaticSet") && !CalOnCooldown(d, "PrismaticLaser")) k = "prismatic";
-			else if (WearsHead("CalamityMod/DesertProwlerHat") && Record.Gear.Body != null && Record.Gear.Legs != null && !CalOnCooldown(d, "SandsmokeBomb")) k = "desertprowler";
+			bool U(string kind) => SetAbilityPolicies.Uses(kind);
+			if (U("brimflame") && CalFlag(d, "brimflameSet") && !CalFlag(d, "brimflameFrenzy") && !CalOnCooldown(d, "BrimflameFrenzy")) k = "brimflame";
+			else if (U("tarragon") && CalFlag(d, "tarraMelee") && !CalFlag(d, "tarragonCloak") && !CalOnCooldown(d, "TarragonCloak")) k = "tarragon";
+			else if (U("bloodflare") && CalFlag(d, "bloodflareRanged") && !CalOnCooldown(d, "BloodflareRangedSet")) k = "bloodflare";
+			else if (U("omegablue") && CalFlag(d, "omegaBlueSet") && !CalOnCooldown(d, "OmegaBlue")) k = "omegablue";
+			else if (U("demonshade") && CalFlag(d, "demonshadeSet") && !d.HasBuff(CalBuff("Enraged"))) k = "demonshade";
+			else if (U("plaguereaper") && CalFlag(d, "plagueReaper") && !CalOnCooldown(d, "PlagueBlackout")) k = "plaguereaper";
+			else if (U("circlet") && CalFlag(d, "forbiddenCirclet") && d.ownedProjectileCounts[CalProj("CircletTornado")] < 2 && Record != null && Record.Mana >= SetAbilityPolicies.For("circlet").Get("mana", 40f)) k = "circlet";
+			else if (U("prismatic") && CalFlag(d, "prismaticSet") && !CalOnCooldown(d, "PrismaticLaser")) k = "prismatic";
+			else if (U("desertprowler") && WearsHead("CalamityMod/DesertProwlerHat") && Record.Gear.Body != null && Record.Gear.Legs != null && !CalOnCooldown(d, "SandsmokeBomb")) k = "desertprowler";
 			wants = k != null;
 			return k;
 		}

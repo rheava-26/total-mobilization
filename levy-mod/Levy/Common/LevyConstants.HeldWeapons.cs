@@ -17,6 +17,8 @@ namespace Levy.Common
 		public const float SwingRateCompMax = 3f;
 		/// <summary>A modded charge-and-release holdout (its shot is made when the projectile ends) is held this many ticks, then let go: the release fires the charged shot at the target. Charge staffs top out around 50-75 ticks.</summary>
 		public const int HeldModHoldTicks = 100;
+		/// <summary>A modded holdout with no charge plan that has made nothing in this many held ticks is let go once (it fires on the release: a loading bow, a charge cannon), and ended this many ticks after the release.</summary>
+		public const int HeldStallReleaseTicks = 150, HeldStallLingerTicks = 90;
 		/// <summary>How often (ticks) the grade-based aim wobble is re-rolled while a holder is aiming.</summary>
 		public const int HeldAimJitterRefreshTicks = 24;
 		/// <summary>The soldier's raised-weapon pose is kept at least this many ticks while it feeds a holder.</summary>

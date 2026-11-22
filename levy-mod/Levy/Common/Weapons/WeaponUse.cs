@@ -73,7 +73,8 @@ namespace Levy.Common.Weapons
 				if (AltEligible(profile) && MindAltMode != 1)
 				{
 					if (TryAltAttack(s, item, profile, seg, out bool hold)) return true;
-					if (hold || MindAltMode == 2) return false; // a caster saving mana for the alt holds fire for a moment; her right button never fires the primary
+					// a caster saving mana for the alt holds fire for a moment; her right button never fires the primary (except on a held modded weapon: its right-click is made through the held chain, by the primary's own path)
+					if (hold || (MindAltMode == 2 && !(profile.Family == WeaponFamily.HeldWeapon && ModShotKinds.Of(item) == ModShotKind.Holdout))) return false;
 				}
 				bool primary = Dispatch(s, item, profile, seg);
 				DudTrace.Result(item, primary);
@@ -146,7 +147,7 @@ namespace Levy.Common.Weapons
 		private static bool ShootPipelineFamily(WeaponFamily f) => f == WeaponFamily.Gun || f == WeaponFamily.Bow || f == WeaponFamily.Magic;
 
 		/// <summary>The item fields an alt's CanUseItem/ModifyShootStats may rewrite; put back after the alt so the primary is unchanged.</summary>
-		private struct ItemStatSnapshot
+		internal struct ItemStatSnapshot
 		{
 			private readonly int useTime, useAnimation, reuseDelay, shoot, mana, damage, crit, useAmmo, useStyle;
 			private readonly float shootSpeed, knockBack, scale;
@@ -177,9 +178,10 @@ namespace Levy.Common.Weapons
 			uint now = Main.GameUpdateCount;
 			Player d = s.Dummy;
 			if (d == null || !LevyConfig.Get.RealWeaponShoot || now < s.AltReadyTick || _altDudItems.Contains(item.type)) return false;
-			// A held modded holdout whose right button picks the variant it spawns as (HOLD_VARIANT) gets that button when its chain holdout is spawned (AltPolicies.OnHoldoutSpawn). A separate right-click use would fire the item's Shoot hook
-			// as a plain shot, owned by the commander's slot and outside the levy's chain: a second, unheld holdout that reads her player (and, for the Ontological Despoiler, swaps her mode state, not the levy's). LEVY_HOLDALT_OLD=1 = the old behaviour (lab A/B).
-			if (profile.Family == WeaponFamily.HeldWeapon && !HoldAltOld && AltPolicies.For(item.type).Kind == AltPolicyKind.HoldVariant && ModShotKinds.Of(item) == ModShotKind.Holdout) { s.AltReadyTick = now + (uint)AltPolicies.NeverRecheckTicks; return false; }
+			// A held modded holdout never right-clicks as a separate plain use: that fired the item's Shoot hook as a plain shot, owned by the commander's slot and outside the levy's chain (a second, unheld holdout that reads her player;
+			// for the Ontological Despoiler it swapped her mode state, for Chronomancer's Scythe the spinning scythe circled her). A right button that picks the holdout's variant (HOLD_VARIANT, MANA_REFILL) is held on the dummy when the chain
+			// holdout is spawned (AltPolicies.HoldVariant); any other right-click is a use of its own, made and held in the levy's chain like the left one (HeldAlt, from HeldWeapons.TryFire). LEVY_HOLDALT_OLD=1 = the old behaviour (lab A/B).
+			if (profile.Family == WeaponFamily.HeldWeapon && !HoldAltOld && ModShotKinds.Of(item) == ModShotKind.Holdout) return false;
 			// The policy decides BEFORE the AltFunctionUse probe: some probes perform the alt themselves (Hydra launches its heads inside it), and a NEVER row never probes at all.
 			if (MindAltMode != 2 && s.AltHoldSince == 0 && !AltPolicies.Want(s, item, seg, out int recheck))
 			{
@@ -625,6 +627,8 @@ namespace Levy.Common.Weapons
 			// A hook that threw may already have fired: keep what it spawned rather than firing a second shot on top of it.
 			if (threw) { DudTrace.Note(item, "hooks-threw"); return adopted > 0; }
 			if (adopted == 0) DudTrace.Note(item, !canShoot ? "hooks-0-cannotshoot" : useDefault ? "hooks-0-default" : "hooks-0-nodefault");
+			// a weapon that fires from its use animation (UseFrameShots: Thread of Eradication's Shoot only stores the damage): the use goes on tick by tick and its frame hook makes the shots
+			if (!useDefault && adopted == 0 && canShoot && UseFrameShots.Is(item)) { UseFrameShots.Begin(s, item); DudTrace.Note(item, "useframe-begin"); return true; }
 			if (!useDefault) { declined = adopted == 0 && !SharedOwnerRefusal(s, item, profile); return adopted > 0; } // the weapon made its own shot, or chose to make none this use: never a stand-in on top
 
 

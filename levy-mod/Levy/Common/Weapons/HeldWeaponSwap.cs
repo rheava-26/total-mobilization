@@ -92,27 +92,44 @@ namespace Levy.Common.Weapons
 			int damage = Math.Max(1, (int)Math.Round(s.WeaponDamage(item) * s.DamageMultiplier));
 			Vector2 dir = Vector2.Normalize(toTarget);
 			AltPolicies.OnHoldoutSpawn(s, item, target); // the held right button (variant) is set before the holdout exists
+			int holderType = ModShotKinds.HolderType(item);
+			// the right-click of a held modded weapon is a use of its own, made the way the left one is (the item's hooks with the dummy's alt button down) and held in this levy's chain like it (WeaponUse.TryAltAttack hands it here)
+			bool alt = item.type >= ItemID.Count && HeldAlt.Want(s, item, target);
 			// owner 255 is deliberate (see class summary); the holder's real owner-gated code runs under the wrapper's Main.myPlayer swap.
 			// A MODDED holdout is made by its item's own Shoot hook (Calamity's guns pass the holdout its gun type / mode in ai[], and some fire real shots from the hook itself): run the hook, with the dummy as the player.
+			// A holder the mod spawns for whoever HOLDS the item (ModShotKinds.HoldSpawned: the item's use is shut) is spawned here directly, at the levy, as the mod spawns it for a player.
 			int ownerSlot = OwnerSlotFor(item);
-			Projectile p = item.type >= ItemID.Count ? SpawnViaHooks(s, item, dir * Math.Max(1f, item.shootSpeed), damage, ownerSlot) : null;
+			bool madeAny = false;
+			Projectile p = item.type >= ItemID.Count && (alt || !ModShotKinds.HoldSpawned(item)) ? SpawnViaHooks(s, item, dir * Math.Max(1f, item.shootSpeed), damage, ownerSlot, alt, out madeAny) : null;
+			if (alt) HeldAlt.Fired(s, item, p != null || madeAny);
+			if (p == null && madeAny)
+			{
+				// the hook made the use's shots itself and no holder (the Surge Driver's right-button bullets, a variant fired straight from the hook): they are ordinary soldier shots (SpawnViaHooks tagged them), and the next use waits
+				// the respawn gap like any other
+				DudTrace.Note(item, "held-hook-shots");
+				return true;
+			}
 			int i = p?.whoAmI ?? -1;
+			if (p == null && alt) return false; // an alt whose hook made nothing: the left use goes next tick
 			if (p == null)
 			{
 				bool swappedForSpawn = OwnerPuppet.FacingFixOn && ownerSlot == Slot && !EnemyTargeting.IsSwapped; // the holder's spawn hooks (every mod's OnSpawn) read slot 255: the levy's dummy stands there for the spawn, as it does for its AI
 				try
 				{
 					if (swappedForSpawn) EnemyTargeting.Swap(s);
-					i = Projectile.NewProjectile(s.NPC.GetSource_FromAI(), s.NPC.Center, dir * Math.Max(1f, item.shootSpeed), item.shoot, damage, item.knockBack, ownerSlot);
+					bool idle = ModShotKinds.HoldSpawned(item) && holderType != item.shoot;
+					i = Projectile.NewProjectile(idle ? s.Dummy.GetSource_ItemUse(item) : s.NPC.GetSource_FromAI(), s.NPC.Center, idle ? dir : dir * Math.Max(1f, item.shootSpeed), holderType, damage, item.knockBack, ownerSlot);
 				}
 				finally { if (swappedForSpawn) { EnemyTargeting.Unswap(); EnemyTargeting.EnsureSlotRestored(); } }
 				if (i < 0 || i >= Main.maxProjectiles) return WeaponUse.Dud(s, item);
 				p = Main.projectile[i];
 			}
-			if (!p.active || p.type != item.shoot) { DudTrace.Note(item, "held-spawn-dud"); return WeaponUse.Dud(s, item); }
+			if (!p.active || (p.type != holderType && !_altHolder)) { DudTrace.Note(item, "held-spawn-dud"); _altHolder = false; return WeaponUse.Dud(s, item); }
 			DudTrace.Note(item, "held-spawn");
 			if (DudTrace.On && ProjectileID.Sets.NeedsUUID[p.type]) DudTrace.Note(item, "uuid who=" + p.whoAmI + " id=" + p.identity + " uuid=" + p.projUUID + " lookup=" + Projectile.GetByUUID(p.owner, p.whoAmI) + " owner=" + p.owner);
 			SetUpHolder(s, item, p, dir);
+			if (p.TryGetGlobalProjectile(out HeldWeaponProjectile ag)) { ag.AltHolder = _altHolder; ag.SpawnRight = AltPolicies.MouseRightHeld(s); }
+			_altHolder = false;
 			// a weapon whose Shoot hook makes more than one holdout (Wingman holds one gun in each hand) has them all in the chain, fed and ended together: a second holdout left outside the chain reads the empty slot 255 and dies on its first tick
 			foreach (Projectile extra in _extraHolders) if (extra.active) SetUpHolder(s, item, extra, dir);
 			_extraHolders.Clear();
@@ -121,6 +138,8 @@ namespace Levy.Common.Weapons
 		}
 
 		private static readonly List<Projectile> _extraHolders = new();
+		/// <summary>The holder SpawnViaHooks just returned is the alt use's own projectile (another type than the left holder: Chronomancer's Scythe's spinning scythe).</summary>
+		private static bool _altHolder;
 
 		private static void SetUpHolder(SoldierNPC s, Item item, Projectile p, Vector2 dir)
 		{
@@ -128,7 +147,7 @@ namespace Levy.Common.Weapons
 			if (ModShotKinds.ChainExtras(item)) FixIdentity(p);
 			if (p.TryGetGlobalProjectile(out HeldWeaponProjectile hg))
 			{
-				hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(item.shoot); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0;
+				hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(p.type); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0;
 				if (hg.ModHolder && ModShotKinds.ChargeRelease(item) is ChargePlan cp) { hg.CycleRelease = true; hg.ReleaseOnKill = false; hg.HoldMax = cp.HoldTicks; hg.Linger = cp.LingerTicks; }
 				if (hg.CycleRelease && RogueGrenade.Is(item)) { hg.Grenade = true; hg.HoldMax = RogueGrenade.CapTicks; } // the Doomsday Device: let go on a full charge, held inside the grace for a full bar (RogueGrenade)
 				if (hg.ModHolder && ModShotKinds.CursorScriptOf(item) is CursorScript cs) hg.Script = cs;
@@ -140,19 +159,23 @@ namespace Levy.Common.Weapons
 		/// Runs a modded item's ModifyShootStats + Shoot hooks with the soldier's dummy as the player (slot 255 swapped to it, Main.myPlayer = 255 so the spawn keeps its ai[] and owner) and returns the projectile of the
 		/// item's own shoot type the hook made (the holdout), or null when the hook made none (the caller then spawns the plain holder). A hook that returns true leaves the default shot to us: spawned the same way.
 		/// </summary>
-		private static Projectile SpawnViaHooks(SoldierNPC s, Item item, Vector2 vel, int damage, int ownerSlot)
+		private static Projectile SpawnViaHooks(SoldierNPC s, Item item, Vector2 vel, int damage, int ownerSlot, bool alt, out bool madeAny)
 		{
+			madeAny = false; _altHolder = false;
 			if (s.Dummy == null || item.shoot <= 0) return null;
 			_extraHolders.Clear();
-			List<Projectile> made = ShootHooks(s, item, vel, damage, ownerSlot, false, null, out bool threw);
+			int holderType = ModShotKinds.HolderType(item);
+			List<Projectile> made = alt ? HeldAlt.Shoot(s, item, vel, damage, ownerSlot, out bool threw) : ShootHooks(s, item, vel, damage, ownerSlot, false, null, out threw);
 			Projectile holder = null;
 			foreach (Projectile c in made)
 			{
-				if (c.type == item.shoot && c.owner == ownerSlot && holder == null) holder = c; // the holdout joins the chain in TryFire
-				else if (c.type == item.shoot && c.owner == ownerSlot && ModShotKinds.Of(item) == ModShotKind.Holdout) _extraHolders.Add(c); // a second holdout of the same weapon (TryFire puts it in the chain too)
+				if (c.type == holderType && c.owner == ownerSlot && holder == null) holder = c; // the holdout joins the chain in TryFire
+				else if (c.type == holderType && c.owner == ownerSlot && ModShotKinds.Of(item) == ModShotKind.Holdout) _extraHolders.Add(c); // a second holdout of the same weapon (TryFire puts it in the chain too)
+				else if (alt && holder == null && c.owner == ownerSlot && c.ModProjectile != null && !c.hostile) { holder = c; _altHolder = true; } // the alt's own projectile (anchored to its owner like the left holder): held in the chain the same way
 				else WeaponUse.TagSoldierProjectile(s, c, item.DamageType ?? DamageClass.Default); // anything else the hook fired is an ordinary soldier shot
 			}
-			if (threw) { if (holder != null) holder.Kill(); foreach (Projectile x in _extraHolders) if (x.active) x.Kill(); _extraHolders.Clear(); }
+			madeAny = !threw && made.Count > 0;
+			if (threw) { if (holder != null) holder.Kill(); foreach (Projectile x in _extraHolders) if (x.active) x.Kill(); _extraHolders.Clear(); _altHolder = false; }
 			return threw ? null : holder;
 		}
 
@@ -231,11 +254,11 @@ namespace Levy.Common.Weapons
 		{
 			_masked.Clear();
 			if (SiblingMaskOff || item == null || item.type < ItemID.Count || item.shoot <= 0) return 0;
-			int idx = s.NPC.whoAmI, other = ownerSlot == Slot ? Slot - 1 : Slot;
+			int idx = s.NPC.whoAmI, other = ownerSlot == Slot ? Slot - 1 : Slot, holderType = ModShotKinds.HolderType(item);
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile q = Main.projectile[i];
-				if (!q.active || q.type != item.shoot || q.owner != ownerSlot || !q.TryGetGlobalProjectile(out SoldierProjectileTag t) || t.SoldierIndex == idx) continue;
+				if (!q.active || q.type != holderType || q.owner != ownerSlot || !q.TryGetGlobalProjectile(out SoldierProjectileTag t) || t.SoldierIndex == idx) continue;
 				q.owner = other; _masked.Add(q);
 			}
 			SiblingMasks += _masked.Count;
@@ -279,7 +302,7 @@ namespace Levy.Common.Weapons
 			if (pi >= 0 && pi < Main.maxProjectiles)
 			{
 				Projectile p = Main.projectile[pi];
-				if (p.active && p.type == item.shoot && p.TryGetGlobalProjectile(out HeldWeaponProjectile g) && g.Chain && g.ItemType == item.type
+				if (p.active && p.TryGetGlobalProjectile(out HeldWeaponProjectile g) && (p.type == ModShotKinds.HolderType(item) || g.AltHolder) && g.Chain && g.ItemType == item.type
 					&& ReferenceEquals(g.Record, s.Record) && p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex == idx)
 					return p;
 				if (DudTrace.On) DudTrace.Note(item, "livecheck-fail active=" + p.active + " type=" + (p.type == item.shoot) + " chain=" + (p.TryGetGlobalProjectile(out HeldWeaponProjectile g2) && g2.Chain) + " itemT=" + (g2 != null && g2.ItemType == item.type) + " rec=" + (g2 != null && ReferenceEquals(g2.Record, s.Record)) + " tag=" + (p.TryGetGlobalProjectile(out SoldierProjectileTag tg2) && tg2.SoldierIndex == idx));
@@ -410,6 +433,18 @@ namespace Levy.Common.Weapons
 					release = g.Released;
 					if (g.Released && g.HeldTicks >= g.ReleasedAt + g.Linger) { p.Kill(); return; }
 				}
+				else if (g.ModHolder && !g.CycleRelease && feed && ModShotKinds.VariantAtSpawn(item) && AltPolicies.MouseRightHeld(body) && Math.Round(p.ai[2]) == 0)
+				{
+					// the right variant is wanted (the Hellborn has a shot loaded) but this holdout was made with the left one (its mode, ai[2], is 0: spinning): let go, and the next holdout is made with the right button
+					// (ModShotKinds.VariantAtSpawn). The way back needs nothing: a fired shot holdout turns back into the spin by itself once the right button is up.
+					g.CycleRelease = true; g.Released = true; g.ReleasedAt = g.HeldTicks; g.Linger = 12; VariantReleases++;
+				}
+				else if (g.ModHolder && !g.ReleaseOnKill && !g.CycleRelease && feed && g.Biome == 0 && !ark && !StallOff)
+				{
+					// a holdout with no charge plan that has been held a long while and made nothing: it loads or charges while the button is down and fires when it is LET GO (a player lets go; a pinned target never pauses the feed, so it
+					// was held for ever and never fired). The button is let go once, as a charge plan would, and the holdout lives out its release.
+					if (++g.HeldTicks > LevyConstants.HeldStallReleaseTicks && g.Made == 0) { g.CycleRelease = true; g.Released = true; g.ReleasedAt = g.HeldTicks; g.Linger = LevyConstants.HeldStallLingerTicks; StallReleases++; }
+				}
 				if (ModShotKinds.ChainExtras(item)) CountOwned(body); // vanilla counts a player's own projectiles in Player.Update; the dummy never runs it, and holdouts and their children test ownedProjectileCounts (Rancor's circle ends when it sees no holdout)
 				bool button = g.Biome != 0 ? BiomeBlades.WantsButton(body, p, g) : ark ? ArkSwings.WantsButton(p, g) : feed && !release; // the thrown scissors read the use button: held until the snap window opens, then let go
 				d.channel = button;
@@ -448,7 +483,8 @@ namespace Levy.Common.Weapons
 				before = _before ??= new bool[Main.maxProjectiles];
 				for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
 				if (!DbgNaN) orig(p); else { try { orig(p); } catch (ArithmeticException ex) { ModContent.GetInstance<Levy>()?.Logger.Info($"[DeadHooks] NaN in {p.ModProjectile?.Name} ai: cursor={cursor} dir={dir} dummyCenter={d.Center} mounted={d.MountedCenter} soldier={body.NPC.Center} calAim={(calPlayer != null ? AltPolicies.GetCalAimPublic(calPlayer).Item1.ToString() : "-")} ex={ex.StackTrace?.Split((char)10)[1]?.Trim()}"); } }
-				if (release && p.active && !g.CycleRelease) { g.HeldTicks = 0; p.Kill(); } // the release: the charged shot is made while the soldier is still the owner (dummy swapped in, cursor on the target)
+				if (release && p.active && !g.CycleRelease) { g.HeldTicks = 0; p.Kill(); }
+				if (ChargeDbg && _holdDbgLines < 300 && (_dbgHold == null || p.ModProjectile?.Name == _dbgHold)) { _holdDbgLines++; ModContent.GetInstance<Levy>()?.Logger.Info($"[HoldoutWorld] OBSERVED   dbg hold {p.ModProjectile?.Name} t={Main.GameUpdateCount % 100000} held={g.HeldTicks} button={button} rel={release} cyc={g.CycleRelease} made={g.Made} ai=({p.ai[0]:0.#},{p.ai[1]:0.#},{p.ai[2]:0.#}) lai=({p.localAI[0]:0.#},{p.localAI[1]:0.#}) tl={p.timeLeft} active={p.active} right={AltPolicies.GetMouseRight(d)} animMax={d.itemAnimationMax}"); } // the release: the charged shot is made while the soldier is still the owner (dummy swapped in, cursor on the target)
 			}
 			finally
 			{
@@ -488,9 +524,12 @@ namespace Levy.Common.Weapons
 			}
 		}
 
-		/// <summary>Lab counters: releases of an ai[0]-charge plan, uncharged (let go at once) and charged.</summary>
-		internal static int TapReleases, ChargeReleases;
+		/// <summary>Lab counters: releases of an ai[0]-charge plan, uncharged (let go at once) and charged; stall releases (a holdout with no plan that made nothing in HeldStallReleaseTicks, let go once).</summary>
+		internal static int TapReleases, ChargeReleases, StallReleases, VariantReleases;
+		/// <summary>Lab A/B switch (env LEVY_HOLDSTALL=0): a holdout with no charge plan is held for as long as the levy fights, as before.</summary>
+		private static readonly bool StallOff = Environment.GetEnvironmentVariable("LEVY_HOLDSTALL") == "0";
 		private static readonly bool ChargeDbg = Environment.GetEnvironmentVariable("LEVY_HOLDOUT_DEBUG") == "1";
+		private static int _holdDbgLines; private static readonly string _dbgHold = Environment.GetEnvironmentVariable("LEVY_HOLDOUT_DEBUGHOLD");
 
 		/// <summary>
 		/// A holdout with an ai[0] charge plan (<see cref="ChargePlan.Stages"/>) has reached the charge it is held for. The charge is picked once, on the first held tick, from the holdout's mode (ai[2]) and the situation:
@@ -605,10 +644,11 @@ namespace Levy.Common.Weapons
 				Projectile c = Main.projectile[i];
 				if (!c.active || before[i] || i == holder.whoAmI) continue;
 				if (DudTrace.On) DudTrace.NoteType(c.type, "adopted@" + c.owner + (c.friendly ? "+f" : "-f") + "+dmg" + (c.damage > 0 ? "1" : "0"));
+				if (holder.TryGetGlobalProjectile(out HeldWeaponProjectile mg)) mg.Made++;
 				if (c.aiStyle == ProjAIStyleID.HeldProjectile || c.aiStyle == ProjAIStyleID.ThickLaser) JoinChain(body, c, item);
 				else if (ArkSwings.AdoptChild(body, holder, c, item)) { }
 				else if (BiomeBlades.AdoptChild(body, holder, c, item)) { }
-				else if (ModShotKinds.ChainExtras(item) && c.ModProjectile != null && ((holder.TryGetGlobalProjectile(out HeldWeaponProjectile pg) && pg.BoundChild) || OwnerLockProbe.BoundToHolder(c)))
+				else if (ModShotKinds.ChainExtras(item) && c.ModProjectile != null && ((holder.TryGetGlobalProjectile(out HeldWeaponProjectile pg) && pg.BoundChild) || OwnerLockProbe.BoundToHolder(c) || PointsAt(c, holder)))
 				{
 					// bound to its holder (reads the button / finds its parent by UUID) or made by a bound child (Starmageddon's stars, made by the star centre): stays in the chain, same owner, dummy and button as the holdout
 					JoinChain(body, c, item);
@@ -618,6 +658,14 @@ namespace Levy.Common.Weapons
 				}
 				else WeaponUse.TagSoldierProjectile(body, c, cls);
 			}
+		}
+
+		/// <summary>A child that carries its holder's slot in one of its ai[] (Dark Spark's beams: the prism's index, through the UUID table, in ai[1]) is bound to that holder: it reads it every tick.</summary>
+		private static bool PointsAt(Projectile c, Projectile holder)
+		{
+			int w = holder.whoAmI;
+			for (int k = 0; k < c.ai.Length; k++) if ((int)Math.Round(c.ai[k]) == w && w > 0) return true;
+			return false;
 		}
 
 		// =====================================================================================================
@@ -696,6 +744,12 @@ namespace Levy.Common.Weapons
 		/// <summary>A charge-by-button holdout: the hold tick it was let go at, and (an ai[0] charge plan) the charge it is held for (0 = let go at once), picked on its first held tick.</summary>
 		public int ReleasedAt;
 		public bool ChargeDecided; public float ChargeTo;
+		/// <summary>Projectiles this holder's AI made (counted when they are adopted): a holdout with no charge plan that made none in its hold is let go once (the stall release).</summary>
+		public int Made;
+		/// <summary>The holder is a right-click use's own projectile, of another type than the item's left holder (Chronomancer's Scythe's spinning scythe).</summary>
+		public bool AltHolder;
+		/// <summary>The variant (right) button was held when this holder was made.</summary>
+		public bool SpawnRight;
 		/// <summary>An Ark's swung blade or parry holdout (or a child bound to the blade): see <see cref="ArkSwings"/>.</summary>
 		public ArkRole Ark;
 		/// <summary>A Biome Blade's attunement blade (1) or a child bound to it (2): see <see cref="BiomeBlades"/>. Server side only.</summary>

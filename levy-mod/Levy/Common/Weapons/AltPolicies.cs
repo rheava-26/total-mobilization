@@ -487,6 +487,8 @@ namespace Levy.Common.Weapons
 
 		/// <summary>Lab counter: holdouts spawned with the variant (right) button held, by item type.</summary>
 		internal static readonly Dictionary<int, int> HoldVariantSpawns = new();
+		/// <summary>Lab counter: times the variant (right) button was pressed on a levy's dummy (up -> down), by item type: a holdout that reads the button every tick (the Apoctosis Array's mana refill) changes mode with it.</summary>
+		internal static readonly Dictionary<int, int> HoldVariantPresses = new();
 
 		private static void HoldVariant(SoldierNPC s, Item item, NPC target, bool force)
 		{
@@ -495,7 +497,9 @@ namespace Levy.Common.Weapons
 			AltState st = StateOf(s);
 			AltPolicy pol = For(item.type);
 			string mode = CombatHarness.Enabled ? AltPolicyLab.Mode : "";
-			bool isHold = pol.Kind == AltPolicyKind.HoldVariant && HasRow(item.type);
+			// a mana-refill right button of a held modded holdout (Apoctosis Array, Ion Blaster: held, the holdout drinks mana back instead of firing) is a variant held on the dummy too: the holdout reads it every tick
+			bool refill = pol.Kind == AltPolicyKind.ManaRefill && ModShotKinds.Of(item) == ModShotKind.Holdout;
+			bool isHold = (pol.Kind == AltPolicyKind.HoldVariant || refill) && HasRow(item.type);
 			if (!isHold)
 			{
 				if (st.MouseRightSet) { SetMouseRight(d, false); st.MouseRightSet = false; }
@@ -505,11 +509,18 @@ namespace Levy.Common.Weapons
 			if (!force && st.LastItemType == item.type && now - st.HoldCheckTick < (uint)SituationalRecheckTicks) return; // the variant is re-decided a few times a second, not every tick (and always when a holdout is spawned)
 			st.LastItemType = item.type; st.HoldCheckTick = now;
 			bool want;
-			if (mode == "left") want = false;
+			if (mode == "left" || WeaponUse.MindAltMode == 1) want = false;
+			else if (WeaponUse.MindAltMode == 2) want = true; // the Mind Link: her right button
 			else if (mode == "random") want = Main.rand.NextFloat() < LevyConstants.AltUseChance;
+			else if (refill) want = EvaluateCtx(s, item, pol, new AltCtx(s, target)) || (st.MouseRightSet && s.Record != null && s.Record.Mana < s.Record.MaxMana); // held until the pool is full, as a player holds it
 			else want = HoldCond(pol.P, new AltCtx(s, target));
+			bool was = st.MouseRightSet;
 			if (SetMouseRight(d, want)) { st.MouseRightSet = want; if (want && CombatHarness.Enabled) AltPolicyLab.Hold(item); }
+			if (want && !was && st.MouseRightSet) { HoldVariantPresses.TryGetValue(item.type, out int np); HoldVariantPresses[item.type] = np + 1; }
 		}
+
+		/// <summary>Whether the variant (right) button is held on this soldier's dummy now.</summary>
+		internal static bool MouseRightHeld(SoldierNPC s) => s != null && StateOf(s).MouseRightSet;
 
 		/// <summary>A holdout was just spawned for a soldier (HeldWeapons.TryFire): the variant button is set for it.</summary>
 		internal static void OnHoldoutSpawn(SoldierNPC s, Item item, NPC target)

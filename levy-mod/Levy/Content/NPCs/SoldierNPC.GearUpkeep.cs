@@ -64,12 +64,24 @@ namespace Levy.Content.NPCs
 			if (_defDamageLive) return true; // Calamity's defense damage (taken on a hit, regained over time) lives in the player pass: the frame keeps it ticking until it is regained
 			if (Common.Team.TeamItems.HoldsStatBuff(NPC)) return true; // a team item's mod buff raises a flag the mod's later hooks read: that needs the frame
 			if (NeedsUpkeep(g.Head) || NeedsUpkeep(g.Body) || NeedsUpkeep(g.Legs)) return true;
+			if (Common.Weapons.ModShotKinds.NeedsPlayerTick(g.Weapon) || Common.Weapons.ModShotKinds.NeedsPlayerTick(g.Sidearm)) return true; // a held weapon whose meter fills in the player's own tick (the Unstable Caster's Gauntlet's vis)
 			int slots = Math.Min(Record.AccessorySlots, g.Accessories.Length);
 			for (int i = 0; i < slots; i++) if (NeedsUpkeep(g.Accessories[i])) return true;
 			return NeedsUpkeep(g.Wings) || NeedsUpkeep(g.Boots); // a modded pair of wings or boots has hooks of its own (Calamity's Angel Treads sets a flag its player reads every tick)
 		}
 
 		private static bool NeedsUpkeep(Item it) => it != null && !it.IsAir && (it.type >= ItemID.Count || UpkeepVanillaAccessories.Contains(it.type));
+
+		/// <summary>
+		/// A held weapon's holder that the frame made: Calamity spawns the holdout of a held-item weapon for whoever holds it (the Starfleet, Starmada, Grand Dad and Basher holdouts in its player's misc effects, every idle holdout such as the
+		/// Heavenly Gale's) and the dummy holds the levy's weapon through the frame. The levy's own holder is made and held in his chain (HeldWeapons.TryFire); this copy, handed to the commander like a shot, read her hand and cursor
+		/// (the Starfleet's took a NaN position). It is removed.
+		/// </summary>
+		private bool HeldHolderCopy(Projectile p)
+		{
+			Item w = Common.Weapons.WeaponUse.HeldItem(this);
+			return w != null && !w.IsAir && w.type >= ItemID.Count && Common.Weapons.ModShotKinds.Of(w) == Common.Weapons.ModShotKind.Holdout && p.type == Common.Weapons.ModShotKinds.HolderType(w);
+		}
 
 		/// <summary>True when this soldier's Volatile Gelatin is driven by the real UpdateEquips step, so the hand-made twin stands down.</summary>
 		private bool RealGelatin => UpkeepActive && GearUpkeep.Mode >= 2;
@@ -412,7 +424,7 @@ namespace Levy.Content.NPCs
 					if (idx < 0 || idx >= Main.maxProjectiles) continue;
 					Projectile p = Main.projectile[idx];
 					if (!p.active) continue;
-					if (GearUpkeep.CoveredByHandMade(p) || (churnCheck && GearUpkeep.OwnerBound(p.type, NPC.whoAmI))) { GearUpkeep.Dropped[p.type] = GearUpkeep.Dropped.TryGetValue(p.type, out int n) ? n + 1 : 1; p.active = false; p.timeLeft = 0; continue; }
+					if (GearUpkeep.CoveredByHandMade(p) || HeldHolderCopy(p) || (churnCheck && GearUpkeep.OwnerBound(p.type, NPC.whoAmI))) { GearUpkeep.Dropped[p.type] = GearUpkeep.Dropped.TryGetValue(p.type, out int n) ? n + 1 : 1; p.active = false; p.timeLeft = 0; continue; }
 					// A helper MINION an accessory casts (Calamity's Elemental in a Bottle, any mod's "summons a minion while worn"): its AI reads the owner Player's flags and buffs, so it is adopted as a DRIVEN minion
 					// (owner 255, the soldier's dummy stands there for its Update; SoldierMinions) and never given to the commander, whose flags are not set and who would end it on its first tick.
 					// A PET or other HELPER the gear made (a buff's pet, a light pet, a companion that makes no hit or stands at the wearer: Daawnlight Spirit Origin's archer, Scion's Curio, Frozen Cube's Elumphant) is the

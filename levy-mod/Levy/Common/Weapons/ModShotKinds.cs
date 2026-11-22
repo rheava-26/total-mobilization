@@ -73,6 +73,10 @@ namespace Levy.Common.Weapons
 			"OntologicalDespoiler",
 			// despoiler sweep (2026-11-21, one levy, a pinned target 12 tiles off, 360 ticks): plain -> held damage. Their plain holdouts read the commander's button as up and end before they fire.
 			"FetidEmesis", "PurgeGuzzler", // 0 -> 16062, 0 -> 10433
+			// brokenguns (2026-11-22): guns whose holdout is NOT the item's shot (HolderType): Condemnation and the Surge Driver make it in their Shoot hook, the Starfleet, Starmada, Heavenly Gale and Halley's Inferno are
+			// held-item holdouts Calamity spawns for whoever holds the item (CanUseItem / CanShoot are false). As plain shots they made nothing, or a holdout owned by the commander that read her hand and cursor (Starfleet: a NaN position).
+			// The Barracuda Gun's piranhas (vanilla aiStyle 39) latch on only while their owner channels and steer to the owner's cursor: held, they are the levy's. The Eternity book holds its hex only while channelled.
+			"Condemnation", "SurgeDriver", "Starfleet", "Starmada", "HeavenlyGale", "HalleysInferno", "BarracudaGun", "Eternity",
 		};
 
 		/// <summary>
@@ -101,7 +105,10 @@ namespace Levy.Common.Weapons
 		/// the button or find the holdout by UUID stay in the chain (<see cref="OwnerLockProbe.BoundToHolder"/>), and a UUID-bound holdout gets the chain slot below 255. Every other routed weapon keeps the chain exactly as it was measured:
 		/// its children are handed to the commander like ordinary shots (an earlier all-weapons version of this rule changed Roxcalibur from 5853 to 60 dmg/s per levy).
 		/// </summary>
-		private static readonly HashSet<string> ChainExtraNames = new() { "ArtAttack", "Rancor", "Starmageddon", "YharimsCrystal" };
+		private static readonly HashSet<string> ChainExtraNames = new() { "ArtAttack", "Rancor", "Starmageddon", "YharimsCrystal",
+			// Gruesome Eminence: the holdout keeps one spirit congregation out (it counts it in its owner's ownedProjectileCounts) and the congregation lives only while its owner channels: handed to the commander it died at once and the holdout made
+			// a new one every tick (322 in 360 ticks, no damage). Dark Spark: its beams find the prism by UUID (as Yharim's Crystal's do).
+			"GruesomeEminence", "DarkSpark" };
 		internal static bool ChainExtras(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && ChainExtraNames.Contains(item.ModItem.Name);
 
 		/// <summary>A held modded weapon that deals its damage only when the button is LET GO after a charge: hold for <see cref="HoldTicks"/>, release, and end the holdout <see cref="LingerTicks"/> later so the next one is cast.</summary>
@@ -116,8 +123,151 @@ namespace Levy.Common.Weapons
 			// first-level unstable volley about a quarter less per tick, the null volleys and the beam far less. So the unstable mode taps, and charges to the first level only to reach null mode (the swap needs a charged shot) when its
 			// straight shots are poor: the target is fast or far. Null mode always charges (an uncharged null volley is two quarter-damage shots): the beam against a tough target, the homing volley otherwise. ai[2] 0 = unstable, 5 = null.
 			["OntologicalDespoiler"] = new ChargePlan(460, 110) { Stages = new Dictionary<int, (string, float)[]> { [0] = new[] { ("fast:6", 158f), ("far:35", 158f) }, [5] = new[] { ("tough", 314f), ("always", 158f) } } },
+			// brokenguns (2026-11-22): holdouts that load or charge while the button is down and fire everything when it is LET GO. Held without a release (a pinned target never pauses the feed) they never fired: 0 damage in 360 ticks.
+			// ClockworkBow: a bolt loads every useAnimation (30) ticks, each 5% sooner, up to 6 (about 159 ticks); the release fires them all in a fan.
+			["ClockworkBow"] = new ChargePlan(160, 30),
+			// Condemnation: an arrow loads every 22 ticks up to 9 (198 ticks; the ninth makes the volley home); the release fires one arrow a tick.
+			["Condemnation"] = new ChargePlan(200, 30),
+			// TheHive: the charge counts to MaxCharge (90); past it the release fires the nuke (10x damage, 75-tick cooldown), before it four missiles (30-tick cooldown).
+			["TheHive"] = new ChargePlan(92, 90),
+			// TauCannon: 60 ticks a level; level 1 sprays bolts for 54 ticks, level 2 fires a 13x beam, level 3 a beam and four or five portals. The release fires; the holdout then lives out its fire and cooldown (up to 136 ticks).
+			["TauCannon"] = new ChargePlan(181, 140),
+			// HolofibreImmolator: the charge is full after 1.5 x the use animation (21 ticks); letting go then fires the 4.5x immolation arrow (before it, a spread of three sprays). It is spent and ends one use animation later.
+			["HolofibreImmolator"] = new ChargePlan(23, 30),
 		};
-		internal static ChargePlan ChargeRelease(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && ChargeReleaseTable.TryGetValue(item.ModItem.Name, out ChargePlan p) ? p : null;
+		/// <summary>Measurement switch (env LEVY_CHARGEPLAN=Name:hold:linger[,Name:hold:linger]): these Calamity holdouts are held and released on this plan instead of the table's (no stages), for A/B runs of a charge length.</summary>
+		private static readonly Dictionary<string, ChargePlan> _planOverride = ParsePlanOverride(Environment.GetEnvironmentVariable("LEVY_CHARGEPLAN"));
+		private static Dictionary<string, ChargePlan> ParsePlanOverride(string env)
+		{
+			var d = new Dictionary<string, ChargePlan>();
+			if (string.IsNullOrEmpty(env)) return d;
+			foreach (string part in env.Split(',', StringSplitOptions.RemoveEmptyEntries))
+			{
+				string[] f = part.Split(':');
+				if (f.Length >= 3 && int.TryParse(f[1], out int h) && int.TryParse(f[2], out int l)) d[f[0]] = new ChargePlan(h, l);
+			}
+			return d;
+		}
+		internal static ChargePlan ChargeRelease(Item item) => item?.ModItem == null || item.ModItem.Mod.Name != "CalamityMod" ? null : _planOverride.TryGetValue(item.ModItem.Name, out ChargePlan o) ? o : ChargeReleaseTable.TryGetValue(item.ModItem.Name, out ChargePlan p) ? p : null;
+
+		/// <summary>
+		/// Held weapons whose state lives in the holder's per-tick player step (Calamity's PostUpdateMiscEffects), not in the holdout: the Unstable Caster's Gauntlet's vis meter (+0.1 every 4 ticks while it is held) pays for every needle.
+		/// The levy's gear frame (which runs that step) runs every tick while he carries one, as it does for modded accessories: on the once-a-second stat pass the meter filled 60 times too slowly and the holdout ended on its first needle.
+		/// </summary>
+		private static readonly HashSet<string> PlayerTickNames = new() { "UnstableCastersGauntlet" };
+
+		/// <summary>
+		/// Held weapons whose damage is dealt within a short reach of their holder, whatever the item's class says, in tiles: the Burning Sea's fireball follows the cursor to at most 8 tiles from its caster, the Hellborn's left button
+		/// spins the gun as a 6-tile blade (each hit loads one of its right-button shots). At the class's range (a magic or gun stand-off of 12+ tiles) they never reached a target.
+		/// </summary>
+		private static readonly Dictionary<string, int> HeldReachTable = new() { ["BurningSea"] = 8, ["Hellborn"] = 6 };
+		/// <summary>
+		/// Held weapons whose variant is fixed when the holdout is made (the item's Shoot hook reads the right button once): the Hellborn spins (left) or fires a loaded shot (right). A player changes variant by letting go and using the
+		/// other button; the levy does the same: when the wanted variant (AltPolicies.HoldVariant) is not the one his holdout was made with, he lets go and the next holdout is made with the other button.
+		/// </summary>
+		private static readonly HashSet<string> VariantAtSpawnNames = new() { "Hellborn" };
+		internal static bool VariantAtSpawn(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && VariantAtSpawnNames.Contains(item.ModItem.Name);
+
+		internal static int HeldReachTiles(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && HeldReachTable.TryGetValue(item.ModItem.Name, out int r) && Of(item) == ModShotKind.Holdout ? r : 0;
+		internal static bool NeedsPlayerTick(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && PlayerTickNames.Contains(item.ModItem.Name) && Of(item) == ModShotKind.Holdout;
+
+		// ---------------------------------------------------------------------------------------------
+		// The holder: the projectile a held modded weapon is held through (usually its shot, sometimes another projectile its hooks or its holder make)
+		// ---------------------------------------------------------------------------------------------
+		private static readonly Dictionary<int, int> _holderCache = new();
+		private static readonly Dictionary<int, bool> _holdSpawnedCache = new();
+		private static Dictionary<int, int> _associated;
+
+		/// <summary>
+		/// The projectile type a held modded weapon is held through. Usually <c>item.shoot</c>; for a weapon whose shot is not the holdout it is found from the weapon's own code, never from a name:
+		/// the idle holdout Calamity spawns for whoever holds the item (<c>BaseIdleHoldoutProjectile.ItemProjectileRelationship</c>: the Heavenly Gale), else the Calamity gun holdout whose <c>AssociatedItemID</c> is this item
+		/// (<c>BaseGunHoldoutProjectile</c>: Condemnation, Starfleet, Starmada), else a projectile named in the item's own hooks that reads its owner's button (the Surge Driver's snipe holdout). Vanilla items: their shot.
+		/// </summary>
+		internal static int HolderType(Item item)
+		{
+			if (item == null || item.IsAir) return 0;
+			if (item.type < ItemID.Count) return item.shoot;
+			if (_holderCache.TryGetValue(item.type, out int h)) return h;
+			h = item.shoot;
+			try { h = FindHolder(item); } catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: holder probe failed for {item.Name}: {e.Message}"); }
+			_holderCache[item.type] = h;
+			return h;
+		}
+
+		private static int FindHolder(Item item)
+		{
+			if (item.shoot > 0 && WeaponClassifier.ProjectileSample(item.shoot)?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)) return item.shoot;
+			int idle = IdleHolder(item.type);
+			if (idle > 0) return idle;
+			if (Associated().TryGetValue(item.type, out int a)) return a;
+			foreach (Type t in OwnerLockProbe.NamedProjectileTypes(item))
+			{
+				int pt = TypeOf(t);
+				if (pt > 0 && pt != item.shoot && OwnerLockProbe.ReadsOwnerButton(pt)) return pt;
+			}
+			return item.shoot;
+		}
+
+		private static int TypeOf(Type t)
+		{
+			foreach (ModProjectile mp in ModContent.GetContent<ModProjectile>()) if (mp.GetType() == t) return mp.Type;
+			return 0;
+		}
+
+		/// <summary>Calamity's idle holdouts: item type -> holdout type, read from <c>BaseIdleHoldoutProjectile.ItemProjectileRelationship</c> (0 when none or Calamity is not loaded).</summary>
+		private static int IdleHolder(int itemType)
+		{
+			Type b = FindBase("BaseIdleHoldoutProjectile");
+			var f = b?.GetField("ItemProjectileRelationship", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+			return f?.GetValue(null) is Dictionary<int, int> rel && rel.TryGetValue(itemType, out int p) ? p : 0;
+		}
+
+		private static Type FindBase(string name)
+		{
+			if (!ModLoader.TryGetMod("CalamityMod", out Mod cal)) return null;
+			return cal.Code?.GetType("CalamityMod.Projectiles.BaseProjectiles." + name);
+		}
+
+		/// <summary>Every Calamity gun holdout (<c>BaseGunHoldoutProjectile</c>) by the item it belongs to (its <c>AssociatedItemID</c>), built once.</summary>
+		private static Dictionary<int, int> Associated()
+		{
+			if (_associated != null) return _associated;
+			var d = new Dictionary<int, int>();
+			Type b = FindBase("BaseGunHoldoutProjectile");
+			var prop = b?.GetProperty("AssociatedItemID");
+			if (prop != null)
+				foreach (ModProjectile mp in ModContent.GetContent<ModProjectile>())
+				{
+					if (!b.IsInstanceOfType(mp)) continue;
+					try { if (prop.GetValue(mp) is int it && it > 0 && !d.ContainsKey(it)) d[it] = mp.Type; } catch (Exception) { }
+				}
+			return _associated = d;
+		}
+
+		/// <summary>
+		/// The holder is not made by the item's use: the mod spawns it for whoever HOLDS the item and the use itself is shut (its <c>CanUseItem</c> or <c>CanShoot</c> is the constant false: Halley's Inferno, the Starfleet,
+		/// the Heavenly Gale), or it is one of Calamity's idle holdouts. The levy's held chain then spawns the holder itself, at the levy, as the mod does for a player.
+		/// </summary>
+		internal static bool HoldSpawned(Item item)
+		{
+			if (item?.ModItem == null) return false;
+			if (_holdSpawnedCache.TryGetValue(item.type, out bool c)) return c;
+			bool r = false;
+			try
+			{
+				r = IdleHolder(item.type) > 0;
+				for (Type t = item.ModItem.GetType(); !r && t != null && t != typeof(ModItem) && t != typeof(object); t = t.BaseType)
+					foreach (string hook in new[] { "CanUseItem", "CanShoot" })
+					{
+						var m = t.GetMethod(hook, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly, null, new[] { typeof(Player) }, null);
+						byte[] il = m?.GetMethodBody()?.GetILAsByteArray();
+						if (il != null && il.Length == 2 && il[0] == 0x16 && il[1] == 0x2A) { r = true; break; } // ldc.i4.0; ret
+					}
+			}
+			catch (Exception) { r = false; }
+			_holdSpawnedCache[item.type] = r;
+			return r;
+		}
 
 		/// <summary>
 		/// Held modded weapons whose holdout pays its mana INSIDE its own AI at a rate far above the pool (Rancor: 25 per 12 ticks, Yharim's Crystal: 15 every 5-15 ticks): started the moment one payment is affordable they end at their
@@ -138,6 +288,9 @@ namespace Levy.Common.Weapons
 			["ArtAttack"] = new CursorScript(140f, 0.22f),
 		};
 		internal static CursorScript CursorScriptOf(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && CursorScripts.TryGetValue(item.ModItem.Name, out CursorScript c) ? c : null;
+
+		/// <summary>Vanilla AI styles that live only while their owner channels the item (and steer to the owner's cursor): 39 = the Piranha Gun's mechanical piranha.</summary>
+		private static readonly HashSet<int> ChannelAiStyles = new() { 39 };
 
 		/// <summary>Class-chain names of the Calamity base projectiles whose AI is a held melee stab (matched by name: no compile-time reference to Calamity).</summary>
 		private const string ShortswordBase = "BaseShortswordProjectile", MaceFlailBase = "BaseMaceFlailProjectile", FlailBase = "BaseFlailProjectile";
@@ -179,9 +332,16 @@ namespace Levy.Common.Weapons
 			// Only holdouts measured as duds as plain shots are routed (see HoldoutRouted); everything else keeps the plain shot, which already works for it.
 			if (item.ModItem?.Mod.Name == "CalamityMod" && ForcePlain(item.ModItem.Name)) return ModShotKind.None;
 			if (item.ModItem?.Mod.Name == "CalamityMod" && !ProjAiHooks.Off && HeldGrenadeRouted.Contains(item.ModItem.Name) && item.channel && item.shoot > 0 && sample?.ModProjectile != null) return ModShotKind.Holdout;
-			if (item.ModItem?.Mod.Name == "CalamityMod" && (HoldoutRouted.Contains(item.ModItem.Name) || (!ProjAiHooks.Off && HeldItemRateRouted.Contains(item.ModItem.Name)) || ForceHold(item.ModItem.Name)) && item.channel && item.shoot > 0 && sample?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)
+			if (item.ModItem?.Mod.Name == "CalamityMod" && (HoldoutRouted.Contains(item.ModItem.Name) || (!ProjAiHooks.Off && HeldItemRateRouted.Contains(item.ModItem.Name)) || ForceHold(item.ModItem.Name)) && item.shoot > 0
 				&& (item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)))
-				return ModShotKind.Holdout;
+			{
+				int holder = HolderType(item);
+				Projectile hs = WeaponClassifier.ProjectileSample(holder);
+				// the holder reads its owner's button (a modded holdout), or it is a vanilla channel shot that does (the piranha style: latched on while its owner channels, steered to the cursor)
+				// (a holder that is not the item's shot may read the raw mouse button instead: the Heavenly Gale's idle bow fires while Main.mouseLeft is down)
+				bool reads = hs?.ModProjectile != null && hs.aiStyle != 39 ? OwnerLockProbe.ReadsOwnerButton(holder) || (holder != item.shoot && OwnerLockProbe.ReadsUseButtons(holder)) : hs != null && ChannelAiStyles.Contains(hs.aiStyle);
+				if (reads && (item.channel || holder != item.shoot || HoldSpawned(item))) return ModShotKind.Holdout;
+			}
 			return ModShotKind.None;
 		}
 	}
@@ -202,7 +362,7 @@ namespace Levy.Common.Weapons
 					ModShotKind k = ModShotKinds.Of(it);
 					if (k == ModShotKind.None) continue;
 					WeaponProfile p = WeaponClassifier.GetProfile(it);
-					Mod.Logger.Info($"MODSHOT-AUDIT {it.ModItem?.Mod.Name}/{it.ModItem?.Name} kind={k} family={p.Family} range={p.RangeTiles} class={it.DamageType?.Name} channel={it.channel} shoot={(it.shoot > 0 ? WeaponClassifier.ProjectileSample(it.shoot)?.ModProjectile?.GetType().Name : "-")}");
+					Mod.Logger.Info($"MODSHOT-AUDIT {it.ModItem?.Mod.Name}/{it.ModItem?.Name} kind={k} family={p.Family} range={p.RangeTiles} class={it.DamageType?.Name} channel={it.channel} shoot={(it.shoot > 0 ? WeaponClassifier.ProjectileSample(it.shoot)?.ModProjectile?.GetType().Name : "-")}{(ModShotKinds.HolderType(it) != it.shoot ? " holder=" + (ProjectileLoader.GetProjectile(ModShotKinds.HolderType(it))?.Name ?? ModShotKinds.HolderType(it).ToString()) : "")}{(ModShotKinds.HoldSpawned(it) ? " held-spawn" : "")}");
 					n++;
 				}
 				Mod.Logger.Info($"MODSHOT-AUDIT total {n}");

@@ -84,6 +84,8 @@ namespace Levy.Common.Weapons
 		private static bool ProbeLocked(Item item)
 		{
 			if (item.damage <= 0 || item.consumable || item.accessory || item.ammo > 0 || item.mountType >= 0 || item.createTile >= 0 || (item.shoot <= 0 && item.useStyle == 0)) return false;
+			// a held-item weapon whose use is shut for good (CanUseItem is the constant false: Halley's Inferno, the Starfleet, the Starmada) is used through the holdout the mod spawns for whoever holds it, not locked by the world
+			if (ModShotKinds.HoldSpawned(item) && ModShotKinds.Of(item) == ModShotKind.Holdout) return false;
 			uint now = Main.GameUpdateCount;
 			if (_probed.TryGetValue(item.type, out var hit) && now - hit.tick < 180 && now >= hit.tick) return hit.locked;
 			bool locked = false;

@@ -204,8 +204,9 @@ namespace Levy.Content.NPCs
 			MaintainAccessoryProjectiles();
 			if (++_sidearmTick >= LevyConstants.SidearmCheckIntervalTicks) { _sidearmTick = 0; UpdateSidearm(); WeaponUse.ThrownRestockTick(this); WeaponUse.WeaponUpgradeTick(this); }
 
-			if (MindDirect) { MindFire(); return; } // a player's buttons fire the weapon at the cursor (SoldierNPC.MindDrive.cs)
 			bool fighting = State == SoldierState.Engage || State == SoldierState.Shaken || State == SoldierState.Routed; // a routed body backpedals and keeps shooting
+			Common.Weapons.UseFrameShots.Tick(this, (fighting && !Record.HoldFire) || MindDirect); // a use that fires from its animation runs on every tick of it (UseFrameShots)
+			if (MindDirect) { MindFire(); return; } // a player's buttons fire the weapon at the cursor (SoldierNPC.MindDrive.cs)
 			if (!fighting && Weapon != null && Weapon.Supported && Weapon.IsWhip && !Record.HoldFire && !Hostile) { WhipOpportunity(); return; } // a whip lashes whatever is in its reach, whatever the body is doing
 			if (!fighting || Record.HoldFire) return;
 			NPC target;

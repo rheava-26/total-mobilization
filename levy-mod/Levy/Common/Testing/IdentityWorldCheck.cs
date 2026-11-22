@@ -54,7 +54,7 @@ namespace Levy.Common.Testing
 		public override void PostUpdatePlayers() { if (_running && Main.player[0] != null) Main.player[0].active = true; }
 		public override void PreUpdateNPCs() { if (!_running) return; Main.player[0].active = true; if (_cmdHolds) { Main.player[0].channel = true; Main.player[0].controlUseItem = true; } Pin(); PinSweepTarget(); PinRogueAdds(); _savedMy = Main.myPlayer; Main.myPlayer = _my; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; PhaseOpen(); }
 		public override void PostUpdateNPCs() { if (!_running) return; PhaseClose("npcs"); Main.myPlayer = _savedMy; Main.netMode = _savedNet; }
-		public override void PreUpdateProjectiles() { if (!_running) return; Main.player[0].active = true; if (_cmdHolds) { Main.player[0].channel = true; Main.player[0].controlUseItem = true; } _savedMy = Main.myPlayer; Main.myPlayer = _my; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; PhaseOpen(); }
+		public override void PreUpdateProjectiles() { if (!_running) return; if (_parityAim.HasValue) { Main.screenPosition = Vector2.Zero; Main.mouseX = (int)_parityAim.Value.X; Main.mouseY = (int)_parityAim.Value.Y; } Main.player[0].active = true; if (_cmdHolds) { Main.player[0].channel = true; Main.player[0].controlUseItem = true; } _savedMy = Main.myPlayer; Main.myPlayer = _my; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; PhaseOpen(); }
 		public override void PostUpdateProjectiles() { if (!_running) return; PhaseClose("projectiles"); Main.myPlayer = _savedMy; Main.netMode = _savedNet; }
 
 		/// <summary>Runs now when this boot armed it (the summon world check calls this at its end, so the checks run one after another).</summary>

@@ -120,6 +120,13 @@ report() { # $1 = label, $2 = run dir
   echo "ArmoryRulesWorld (the armory's rules decide who gets which weapon: guns and every other kind and class, armor of every class in stock, Re-arm and the upgrade passes, save and wire, a standing army): PASS=$(grep -c -F '[ArmoryRulesWorld] PASS ' "$L") FAIL=$(grep -c -F '[ArmoryRulesWorld] FAIL ' "$L")"
   grep -F "[ArmoryRulesWorld] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[ArmoryRulesWorld] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
+  echo "OnlyRule (the category Only mode: nothing outside the kind is issued, nobody left unarmed, class balance above and below, two Only blocks, save, wire and an old save; a new category rule starts as Include): PASS=$(grep -c -F '[OnlyRule] PASS ' "$L") FAIL=$(grep -c -F '[OnlyRule] FAIL ' "$L")"
+  grep -F "[OnlyRule] self-check pass=" "$L" | sed 's/^/  /'
+  grep -F '[OnlyRule] FAIL' "$L" | head -10 | cut -c1-300 | sed 's/^/  /'
+  echo "AllyTags (name tags over the army's allies: a levy's minion and sentry, an officer's creature, Mechanization's turret and drone, the settings, a cached frame allocates nothing): PASS=$(grep -c -F '[AllyTags] PASS ' "$L") FAIL=$(grep -c -F '[AllyTags] FAIL ' "$L")"
+  grep -F "[AllyTags] self-check pass=" "$L" | sed 's/^/  /'
+  grep -F '[AllyTags] OBSERVED' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-300 | sed 's/^/  /'
+  grep -F '[AllyTags] FAIL' "$L" | head -10 | cut -c1-300 | sed 's/^/  /'
   echo "SidearmWorld (a levy in class armor carries a sidearm of his class, never his primary's type; rules win over armor; pre-Hardmode off-class allowed when much better): PASS=$(grep -c -F '[SidearmWorld] PASS ' "$L") FAIL=$(grep -c -F '[SidearmWorld] FAIL ' "$L")"
   grep -F "[SidearmWorld] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[SidearmWorld] OBSERVED' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-300 | sed 's/^/  /'
@@ -181,7 +188,7 @@ report() { # $1 = label, $2 = run dir
   echo "FightReport (boot self-check of the analyzer): $(grep -F '[FightReport] self-check pass=' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | head -1)"
   [ -z "$(grep -F '[MechWorld] self-check pass=' "$L")" ] && echo "  !! no MechWorld summary line (check did not finish; see $2/tml/boot.out)"
   echo "other failures (any FAIL / fail=[1-9] / !!! line not listed above), known summon-staff pick failure excluded:"
-  fail_lines "$L" | grep -v -F -e '[MechWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[PylonClick] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' -e '[BossBugs] FAIL ' -e '[SwapRace] FAIL ' -e '[LevyRules] FAIL ' -e '[PerfBoss] FAIL ' -e '[StealthWorld] FAIL ' -e '[LineWatch] FAIL ' -e '[PerfAnalyzer] FAIL ' -e '[ChatterWorld] FAIL ' -e '[SaveHold] FAIL ' -e '[EventRec] FAIL ' -e '[HookLive] FAIL ' -e '[MobWorld] FAIL ' -e '[Bodyguard] FAIL ' -e '[ProgAssist] FAIL ' -e '[AutoSell] FAIL ' -e '[ArmoryRulesWorld] FAIL ' -e '[SidearmWorld] FAIL ' -e '[FacingWorld] FAIL ' -e '[MachineDorm] FAIL ' -e '[LostFight] FAIL ' -e '[MusterBoss] FAIL ' -e '[PetWorld] FAIL ' -e '[ArmorClassWorld] FAIL ' -e '[HoldoutWorld] FAIL ' | head -20
+  fail_lines "$L" | grep -v -F -e '[MechWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[PylonClick] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' -e '[BossBugs] FAIL ' -e '[SwapRace] FAIL ' -e '[LevyRules] FAIL ' -e '[PerfBoss] FAIL ' -e '[StealthWorld] FAIL ' -e '[LineWatch] FAIL ' -e '[PerfAnalyzer] FAIL ' -e '[ChatterWorld] FAIL ' -e '[SaveHold] FAIL ' -e '[EventRec] FAIL ' -e '[HookLive] FAIL ' -e '[MobWorld] FAIL ' -e '[Bodyguard] FAIL ' -e '[ProgAssist] FAIL ' -e '[AutoSell] FAIL ' -e '[ArmoryRulesWorld] FAIL ' -e '[SidearmWorld] FAIL ' -e '[FacingWorld] FAIL ' -e '[MachineDorm] FAIL ' -e '[LostFight] FAIL ' -e '[MusterBoss] FAIL ' -e '[PetWorld] FAIL ' -e '[ArmorClassWorld] FAIL ' -e '[HoldoutWorld] FAIL ' -e '[OnlyRule] FAIL ' -e '[AllyTags] FAIL ' | head -20
   grep -E "$KNOWN_FAIL_RE" "$L" | head -1 | sed 's/^/  (known, excluded) /'
   echo "FAIL lines in the whole log (known excluded): $(fail_lines "$L" | wc -l)"
   local ex; ex=$(grep -c -E -i "$EXC_RE" "$L"); echo "exceptions: $ex"

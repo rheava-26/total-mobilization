@@ -711,6 +711,11 @@ Mods: {
 					Tooltip: Name, grade and HP over each soldier. Hidden above 20 on screen
 				}
 
+				AllyNameTags: {
+					Label: Name tags on allies
+					Tooltip: A small tag over each minion, creature and machine of the army. Needs nameplates on. Above 20 on screen, only the hovered one shows
+				}
+
 				MilitiaDeathMessages: {
 					Label: Militia death messages
 					Tooltip: Count posts one line when the event ends.

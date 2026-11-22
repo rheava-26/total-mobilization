@@ -2263,6 +2263,7 @@ namespace Levy.Content.TileEntities
 			w ??= TakeBestWeapon(soldier);
 			// Soldiers get first pick: nothing on the racks, but a drone is carrying a weapon he could use. It goes back to the racks and he takes it; the drone stands down.
 			if (w == null && ReclaimLentWeaponFor(soldier)) w = TakeBestWeapon(soldier);
+			if (w == null && Rules.HasCategoryOnly) { using var _ro = ArmoryRules.RelaxOnly(); w = TakeBestWeapon(soldier); } // an "Only" category rule never leaves a levy unarmed: with none of its kinds left he takes the best of the rest, and trades it on the next deal that has one free
 			if (w == null) return false;
 			g.Weapon = w;
 			return true;

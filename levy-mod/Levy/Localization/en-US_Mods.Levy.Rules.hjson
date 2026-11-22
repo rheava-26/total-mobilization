@@ -7,7 +7,7 @@ TabRulesHint: The armory's rule list. It decides which weapons the levies draw.
 AddClass: + Class balance
 AddClassHint: Sets how many levies carry each class. A limit gives way before a levy is left unarmed.
 AddCategory: + Category rule
-AddCategoryHint: Prefers, orders, includes or requires a kind of weapon, such as bows.
+AddCategoryHint: Includes, limits, requires, orders or prefers a kind of weapon, such as bows. Starts as Include.
 AddList: + Item list
 AddListHint: Names items that are never used, or the only items used.
 Reset: Reset
@@ -37,10 +37,12 @@ Mode_Weight: Weight
 Mode_Over: Order
 Mode_Include: Include
 Mode_Min: At least
+Mode_Only: Only
 ModeHint_Weight: Multiplies the rank of every weapon in the category.
 ModeHint_Over: Weapons of the first category are always chosen before the second.
 ModeHint_Include: Every weapon in the category is put to use.
 ModeHint_Min: At least this many levies carry a weapon in the category.
+ModeHint_Only: Issues only weapons in this category, wherever the block sits. A levy without one keeps the weapon in hand. An unarmed levy takes another kind when none is left.
 CategoryHint: The kind of weapon this rule is about.
 OtherHint: The kind of weapon that comes second.
 OverWord: before
@@ -63,6 +65,9 @@ StatusOverNone: No {0} in stock. The rule has no effect.
 StatusOver: "{0} come before {1}. {2} {0} and {3} {1} in stock."
 StatusIncludeNone: No {0} in stock.
 StatusInclude: All {0} {1} are used.
+StatusOnlyCat: "{0} {1} in stock. No other weapons are issued."
+StatusOnlyCatMore: "{0} {1} in stock. Only the kinds in Only blocks are issued."
+StatusOnlyCatNone: No {0} in stock. Unarmed levies take other weapons.
 StatusMin: "{0} {1} wanted, {2} in stock."
 StatusFewLevies: Only {0} levies.
 BlockedOrder: Block {0} puts {1} before {2}.
@@ -112,7 +117,7 @@ InfoAmmo: Needs ammo.
 InfoTierNone: No tier known.
 InfoTierPast: Tier: {0}. The world is {1} stages past it.
 InfoTierAhead: Tier: {0}. Not reached yet.
-InfoBarred: A list rule bars this item.
+InfoBarred: A rule bars this item.
 InfoRank: Rank {0}
 RankNever: never used
 RankPrefer: preferred

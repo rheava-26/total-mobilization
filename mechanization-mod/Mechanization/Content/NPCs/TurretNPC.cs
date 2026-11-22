@@ -48,7 +48,7 @@ namespace Mechanization.Content.NPCs
 	/// <see cref="TurretSystem"/>, so hostiles acquire and chase it through the same slot-255 dummy swap that points them at a soldier or
 	/// a combat drone. The contact damage of an enemy that reaches it is applied by the turret itself in <see cref="ContactDamage"/>.
 	/// </summary>
-	public class TurretNPC : ModNPC, ITargetBody
+	public class TurretNPC : ModNPC, ITargetBody, global::Levy.Common.UI.IMachineNameTag
 	{
 		/// <summary>Id of this turret's saved record in <see cref="TurretSystem"/> (server / single player; -1 until placed or restored). Not synced: clients never touch the registry.</summary>
 		public int RecordId = -1;
@@ -327,6 +327,10 @@ namespace Mechanization.Content.NPCs
 
 		/// <summary>The item type of the mounted weapon, or 0 when it fires the plain fallback bullet. Synced to clients.</summary>
 		public int MountedWeaponType => _weaponType;
+
+		// Levy's ally tag over the turret ("Turret", or "Turret: <weapon>").
+		bool global::Levy.Common.UI.IMachineNameTag.TagIsDrone => false;
+		int global::Levy.Common.UI.IMachineNameTag.TagWeaponType => _weaponType;
 
 		/// <summary>
 		/// The strongest surplus weapon on an Armory's racks that a turret can fire: issue rows and bulk storage, scored by

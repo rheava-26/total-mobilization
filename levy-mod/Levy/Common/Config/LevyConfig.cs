@@ -119,6 +119,8 @@ namespace Levy.Common.Config
 		// ---- Interface --------------------------------------------------------------------------------------
 		[Header("Interface")]
 		[DefaultValue(true)] public bool Nameplates;
+		/// <summary>A small name tag over every ally that is the army's: levies' minions and helpers, officers' creatures and units, Mechanization's machines. Shown only while nameplates are on.</summary>
+		[DefaultValue(true)] public bool AllyNameTags;
 		[DefaultValue(MilitiaDeathMessageMode.Count)] [DrawTicks] public MilitiaDeathMessageMode MilitiaDeathMessages;
 		[DefaultValue(true)] public bool RegularDeathMessages;
 		[Range(0, 100)] [DefaultValue(30)] public int CustomDeathMessagePercent;

@@ -82,14 +82,17 @@ namespace Levy.Content.TileEntities
 		private Func<DamageClass, float, bool> ClassWantsSet(SoldierRecord who)
 		{
 			var low = new Dictionary<DamageClass, float>();
+			var needy = new HashSet<DamageClass>(); // classes with a levy whose armor does not read as his class yet: any set of that class is a class correction for him
+			bool follow = Common.Config.LevyConfig.Get.ClassMatchArmor && LoadoutFixes.Armor;
 			foreach (var z in FloorLevies()) {
 				if (ReferenceEquals(z, who) || !z.Gear.HasWeapon) continue;
 				var zc = WeaponClassifier.ItemDamageClass(z.Gear.Weapon);
 				if (zc == null) continue;
 				float k = KitScore(z.Gear);
 				if (!low.TryGetValue(zc, out var cur) || k < cur) low[zc] = k;
+				if (follow && !ArmorSlotsLocked(z.Gear) && ArmorDoctrine.PreferredClass(z.Gear.Head, z.Gear.Body, z.Gear.Legs) != zc) needy.Add(zc);
 			}
-			return (cls, raw) => low.TryGetValue(cls, out var k) && k * LevyConstants.AutoUpgradeScoreMargin < raw;
+			return (cls, raw) => needy.Contains(cls) || (low.TryGetValue(cls, out var k) && k * LevyConstants.AutoUpgradeScoreMargin < raw);
 		}
 
 		/// <summary>A levy's own accessory pass: fills and upgrades his slots. True if anything changed.</summary>
@@ -100,8 +103,53 @@ namespace Levy.Content.TileEntities
 			bool changed = false;
 			if (MobilitySlotsStep(soldier)) changed = true; // wings and boots first: they have their own slots and never take an accessory slot
 			var all = FloorLevies();
+			if (GiveBackClassAccessories(soldier, all)) changed = true; // another class's accessory he wears goes to a levy of that class (served at once), so his slot refills below
 			for (int i = 0, n = AccSlotsOf(soldier); i < n; i++) if (AccessoryStep(soldier, all)) changed = true; else break;
 			return changed;
+		}
+
+		/// <summary>Set while a levy who was given back a class accessory is served, so his own pass does not start another give-back chain.</summary>
+		private bool _accGiveBack;
+
+		/// <summary>
+		/// A levy wearing an accessory made for another class that helps his own by nothing (<see cref="ArmorDoctrine.AccessoryMismatch"/>: Eclipse Mirror on a ranger, Statis' Curse on a rogue) gives it back when a levy of its class
+		/// would put it on, and that levy is served at once (he takes it, and gives back what it replaces), so the pair trades in one pass. Before this a class accessory taken as a last resort stayed where it was: the floor
+		/// pass only ever takes from the shelf. Generic accessories, mobility accessories, preferred ones and locked slots never move. True if anything was given back.
+		/// </summary>
+		private bool GiveBackClassAccessories(SoldierRecord w, List<SoldierRecord> all)
+		{
+			if (_accGiveBack || !LoadoutFixes.Accessories) return false;
+			var g = w.Gear;
+			var cls = AccClassOf(w);
+			if (cls == null || LevyIsClosed(w)) return false;
+			bool any = false;
+			for (int i = 0, n = AccSlotsOf(w); i < n; i++) {
+				if (g.IsLocked(SoldierGear.SlotAcc0 + i)) continue;
+				var a = g.Accessories[i];
+				if (IsAir(a) || GearPreferred(a) || AccessoryMobility.Is(a) || !ArmorDoctrine.AccessoryMismatch(a, cls)) continue;
+				var z = ClassTaker(a, w, cls, all);
+				if (z == null) continue;
+				g.Accessories[i] = new Item();
+				var rem = DepositOld(a);
+				any = true;
+				MarkDirty();
+				if (!IsAir(rem)) { Spill(rem, protect: true); continue; } // storage full: it lies protected in front of the armory (nothing is lost), the slot refills below
+				_accGiveBack = true;
+				try
+				{
+					bool zc = false; for (int k = 0, zn = AccSlotsOf(z); k < zn; k++) if (AccessoryStep(z, all)) zc = true; else break;
+					if (zc) {
+						Notify(z);
+						// what he gave up for it is on the shelf now: a levy who was left with an empty slot earlier in this round (nothing was free for him then) is served too, so the round settles in one pass
+						foreach (var y in all) {
+							if (ReferenceEquals(y, w) || ReferenceEquals(y, z) || !AnyEmpty(y.Gear, AccSlotsOf(y))) continue;
+							if (AccessoryStep(y, all)) Notify(y);
+						}
+					}
+				}
+				finally { _accGiveBack = false; }
+			}
+			return any;
 		}
 
 		/// <summary>
@@ -182,6 +230,9 @@ namespace Levy.Content.TileEntities
 
 		private static bool LevyIsClosed(SoldierRecord w) => w.LoadoutLocked;
 
+		/// <summary>Tells a levy's body his kit changed (the roster snapshot carries it to clients).</summary>
+		private static void Notify(SoldierRecord r) { if (r != null && r.HasBody && Main.netMode != NetmodeID.MultiplayerClient && Main.npc[r.BodyIndex].ModNPC is SoldierNPC sn) sn.NotifyGearChanged(); }
+
 		private static bool AnyEmpty(SoldierGear g, int n) { for (int i = 0; i < n; i++) if (IsAir(g.Accessories[i])) return true; return false; }
 
 		/// <summary>True when the player marked <paramref name="worn"/> as preferred and <paramref name="cand"/> is not: a preferred piece is never swapped out for an ordinary one.</summary>
@@ -194,6 +245,12 @@ namespace Levy.Content.TileEntities
 		private bool ClassReserved(Item it, SoldierRecord taker, DamageClass takerCls, List<SoldierRecord> all)
 		{
 			if (takerCls != null && ArmorDoctrine.AccessoryClassFit(it, takerCls) > 0f) return false;
+			return ClassTaker(it, taker, takerCls, all) != null;
+		}
+
+		/// <summary>The levy of another class than <paramref name="takerCls"/> who would put <paramref name="it"/> on (its bonus is for his class, and he has a free slot or a clearly weaker one it can go in), or null.</summary>
+		private SoldierRecord ClassTaker(Item it, SoldierRecord taker, DamageClass takerCls, List<SoldierRecord> all)
+		{
 			foreach (var z in all) {
 				if (ReferenceEquals(z, taker)) continue;
 				var zc = AccClassOf(z);
@@ -207,10 +264,10 @@ namespace Levy.Content.TileEntities
 					bool better = IsAir(cur) || zs >= AccessoryScore(cur, zc) * LevyConstants.AutoUpgradeScoreMargin;
 					if (!better) continue;
 					var ex = (Item[])z.Gear.Accessories.Clone(); ex[i] = new Item();
-					if (CanWearWith(ex, it)) return true;
+					if (CanWearWith(ex, it)) return z;
 				}
 			}
-			return false;
+			return null;
 		}
 	}
 }

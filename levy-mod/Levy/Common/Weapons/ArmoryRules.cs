@@ -375,7 +375,13 @@ namespace Levy.Common.Weapons
 		/// True when an enabled rule asked for this weapon: its category is one an include, an at-least, an only or an order rule puts first, it is on an only list, its class has a share, a minimum or a fixed count in the class
 		/// balance, or a weight rule raises it. A later pass that fits a levy to his armor (<c>ArmoryTE.ReconcileWeaponToArmor</c>) leaves such a weapon in his hand: the player's rule decides what he carries, the armor follows.
 		/// </summary>
-		public bool Claims(Item it)
+		public bool Claims(Item it) => Claims(it, true);
+
+		/// <summary>
+		/// <see cref="Claims(Item)"/>, optionally without the class balance. A class balance that lists every class claims every classed weapon, so it says nothing about which weapon a levy of one class may carry
+		/// beside his primary: the sidearm pick (<see cref="Levy.Common.Soldiers.SidearmClass"/>) asks with <paramref name="classBalance"/> false.
+		/// </summary>
+		public bool Claims(Item it, bool classBalance)
 		{
 			if (it == null || it.IsAir) return false;
 			var c = C;
@@ -384,7 +390,7 @@ namespace Levy.Common.Weapons
 			var cats = CatsOf(it);
 			foreach (var m in c.Alloc.Mins) if (Has(cats, m.Cat)) return true;
 			foreach (var o in c.Alloc.Orders) if (Has(cats, o.A)) return true;
-			if (c.Alloc.Class != null)
+			if (classBalance && c.Alloc.Class != null)
 			{
 				string key = ClassKeyOf(it);
 				foreach (var e in c.Alloc.Class.Entries) if (e.Class == key && !e.IsDefault) return true;

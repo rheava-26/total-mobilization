@@ -255,7 +255,7 @@ Pages: {
 			Weapons in storage or on the weapon rack are issued best first. The rack is optional. Hover a weapon to see its class and rank.
 			Armor goes in storage or the armor set slots. The armor set slots are optional: armor in them is used first.
 			Levies prefer a complete matching set so the set bonus works. They use the set abilities a key starts, such as the God Slayer dash, the Solar Flare dash and the Forbidden storm.
-			A levy wears armor of his weapon's class, such as a summoner's hood or a mage's cap, when the Armory has some no more than three tiers behind its best armor. The class comes from his weapon, so the Rules tab decides it too.
+			A levy wears armor of his weapon's class, such as a summoner's hood or a mage's cap, when the Armory has some no more than three tiers behind its best armor. The class comes from his weapon, so the Rules tab decides it too. A class's armor is kept for levies of that class, and two levies wearing each other's trade it.
 			'''
 	}
 
@@ -264,6 +264,7 @@ Pages: {
 		Body:
 			'''
 			Accessories go in storage. Levies wear the best ones that suit their weapon and they work as they would on you. Wings take a slot.
+			An accessory made for one class, such as the Sorcerer Emblem, goes to a levy of that class first. Another levy wears it only when nothing else is left, and gives it back when a levy of its class has room.
 			A pet or helper from a levy's accessory follows that levy and leaves when he falls.
 			A Levy has 1 accessory slot, a Man-at-Arms 3 and a Champion 5.
 			Grappling hooks go in storage. Each levy carries the best hook, swings across gaps and climbs cliffs with it.
@@ -279,7 +280,7 @@ Pages: {
 			The other potion slots hold buff potions for the whole army. Buff potions are only used from these slots.
 			Consumable throwables, such as grenades and throwing knives, go in storage. A levy refills a thrown stack from the Armory when it runs low.
 			The last weapon slot is the sidearm. A minion staff or sentry there goes to a levy who is not a summoner, if he has no other sidearm.
-			A levy in class armor carries a sidearm of his own damage class, such as a gun or bow for a ranger and a staff for a mage. This grows stricter as the world advances, and an off-class sidearm is taken only when it is far better. He never carries a second copy of his primary.
+			A levy carries a sidearm of his weapon's class, such as a gun or bow for a ranger and a staff for a mage. Before the Moon Lord an off-class sidearm is taken only when it is far better. After the Moon Lord he carries none. He never carries a second copy of his primary.
 			Two more slots hold summon weapons: a sentry staff and a minion staff, and a summoner leads with a whip. A levy who is not a summoner carries at most one summon weapon, in a free sidearm slot. A sentry staff keeps one sentry up, plus one for each sentry slot the levy's gear gives.
 			'''
 	}

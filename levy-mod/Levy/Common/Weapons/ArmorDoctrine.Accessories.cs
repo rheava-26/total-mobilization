@@ -40,7 +40,7 @@ namespace Levy.Common.Weapons
 			("manaFlower", 2, XK.Flag, .10f), ("magicCuffs", 2, XK.Flag, .10f), ("manaMagnet", 2, XK.Flag, .08f), ("manaCost", 2, XK.Reduction, 1f), ("statManaMax2", 2, XK.Num, .002f), ("manaRegenBonus", 2, XK.Num, .002f),
 			("magicQuiver", 1, XK.Flag, .10f), ("arrowDamage", 1, XK.Mod, 1f), ("bulletDamage", 1, XK.Mod, 1f), ("specialistDamage", 1, XK.Mod, 1f), ("rocketDamage", 1, XK.Mod, 1f),
 			("ammoBox", 1, XK.Flag, .10f), ("ammoPotion", 1, XK.Flag, .10f), ("ammoCost75", 1, XK.Flag, .10f), ("ammoCost80", 1, XK.Flag, .10f), ("scope", 1, XK.Flag, .05f),
-			("autoReuseGlove", 0, XK.Flag, .10f), ("kbGlove", 0, XK.Flag, .05f), ("magmaStone", 0, XK.Flag, .05f), ("yoyoGlove", 0, XK.Flag, .10f), ("counterWeight", 0, XK.Num, .05f), ("yoyoString", 0, XK.Flag, .05f), ("meleeScaleGlove", 0, XK.Flag, .05f),
+			("autoReuseGlove", 0, XK.Flag, .10f), ("kbGlove", 0, XK.Flag, .05f), ("magmaStone", 0, XK.Flag, .05f), ("yoyoGlove", 0, XK.Flag, .10f), ("counterWeight", 0, XK.Flag, .05f), ("yoyoString", 0, XK.Flag, .05f), ("meleeScaleGlove", 0, XK.Flag, .05f),
 			("maxTurrets", 3, XK.Num, .10f), ("dd2Accessory", 3, XK.Flag, .10f),
 		};
 		private static MemberInfo[] _extraMembers;
@@ -105,7 +105,8 @@ namespace Levy.Common.Weapons
 			for (int k = 0; k < Extras.Length; k++)
 			{
 				var e = Extras[k]; if (e.ClassIdx >= n) continue;
-				r.Extra[e.ClassIdx] += (e.Kind == XK.Reduction ? (1f - ex[k]) : ex[k]) * e.W; // a cost reduction reads 1 - value; the bare reading's 0 is subtracted by the caller
+				float v = e.Kind == XK.Reduction ? (1f - ex[k]) : e.Kind == XK.Flag ? (ex[k] != 0f ? 1f : 0f) : ex[k]; // a cost reduction reads 1 - value (the bare reading's 0 is subtracted by the caller); a flag is on or off (counterWeight holds a projectile id, which read as a fit of 28 for the Yoyo Bag)
+				r.Extra[e.ClassIdx] += v * e.W;
 			}
 			for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
 			return r;
@@ -198,6 +199,16 @@ namespace Levy.Common.Weapons
 			if (ci < 0) return false;
 			var pr = ProfileOf(acc);
 			return pr.Mask != 0 && (pr.Mask & (1 << ci)) == 0 && pr.Fit[ci] <= 0f;
+		}
+
+		/// <summary>The classes an accessory is made for (its damage, speed, class effects or tooltip name them); empty for a generic accessory or when the read fails.</summary>
+		public static List<DamageClass> AccessoryClasses(Item acc)
+		{
+			var res = new List<DamageClass>();
+			if (acc == null || acc.IsAir || _broken) return res;
+			var pr = ProfileOf(acc);
+			for (int i = 0; i < Classes.Length; i++) if (((pr.Mask >> i) & 1) != 0) res.Add(Classes[i]);
+			return res;
 		}
 
 		/// <summary>Test / log use: the accessory's fit per class, a star on each class it is for (none = generic).</summary>

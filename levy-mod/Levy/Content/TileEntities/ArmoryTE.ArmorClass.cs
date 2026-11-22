@@ -57,6 +57,49 @@ namespace Levy.Content.TileEntities
 			return r;
 		}
 
+		/// <summary>True when every armor slot is hand-assigned (nothing of his armor is the armory's to change).</summary>
+		private static bool ArmorSlotsLocked(SoldierGear g) => g.IsLocked(SoldierGear.SlotHead) && g.IsLocked(SoldierGear.SlotBody) && g.IsLocked(SoldierGear.SlotLegs);
+
+		/// <summary>True when any armor slot is hand-assigned (a kit with a locked piece is never traded as a whole).</summary>
+		private static bool AnyArmorSlotLocked(SoldierGear g) => g.IsLocked(SoldierGear.SlotHead) || g.IsLocked(SoldierGear.SlotBody) || g.IsLocked(SoldierGear.SlotLegs);
+
+		/// <summary>
+		/// Class armor between levies. A levy whose armor reads as another class X (no set of his own class was free when he was armed, or his primary changed class) trades his whole kit with a levy of class X whose armor
+		/// is not X: that levy gets his class's armor, and he gets the other kit, which is his class's when the two had each other's (a straight swap, tried first). Only the shelf's armor reaches a levy otherwise
+		/// (<see cref="UpgradeArmor"/>), so two levies in each other's sets kept them for good. Neither side drops more than <see cref="LevyConstants.ClassArmorTierTolerance"/> tiers, every new pair of class-correct
+		/// kits is strictly one more coherent levy (so it never runs in a circle), and locked pieces are never traded. True if a trade was made.
+		/// </summary>
+		internal bool ExchangeClassArmor(SoldierRecord w)
+		{
+			if (!Common.Config.LevyConfig.Get.ClassMatchArmor || !FloorFirst || !LoadoutFixes.Armor || Main.netMode == Terraria.ID.NetmodeID.MultiplayerClient) return false;
+			var g = w?.Gear;
+			if (g == null || w.LoadoutLocked || w.Disarmed || AnyArmorSlotLocked(g)) return false;
+			var tc = ArmorTargetClass(g);
+			var wc = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
+			if (tc == null || wc == null || wc == tc) return false;
+			float wTier = KitTier(g.Head, g.Body, g.Legs);
+			SoldierRecord pick = null; bool straight = false;
+			foreach (var z in FloorLevies()) {
+				if (ReferenceEquals(z, w) || !z.Gear.HasWeapon || AnyArmorSlotLocked(z.Gear)) continue;
+				if (ArmorTargetClass(z.Gear) != wc) continue;
+				var zg = z.Gear;
+				var zc = ArmorDoctrine.PreferredClass(zg.Head, zg.Body, zg.Legs);
+				if (zc == wc) continue; // he already wears his class
+				float zTier = KitTier(zg.Head, zg.Body, zg.Legs);
+				if (wTier < zTier - LevyConstants.ClassArmorTierTolerance || zTier < wTier - LevyConstants.ClassArmorTierTolerance) continue; // neither may fall far behind (God Slayer for Tarragon is no trade)
+				bool st = zc == tc;
+				if (pick == null || (st && !straight)) { pick = z; straight = st; if (st) break; }
+			}
+			if (pick == null) return false;
+			var pg = pick.Gear;
+			(g.Head, pg.Head) = (pg.Head, g.Head);
+			(g.Body, pg.Body) = (pg.Body, g.Body);
+			(g.Legs, pg.Legs) = (pg.Legs, g.Legs);
+			MarkDirty();
+			if (pick.HasBody && Main.netMode != Terraria.ID.NetmodeID.MultiplayerClient && Main.npc[pick.BodyIndex].ModNPC is Content.NPCs.SoldierNPC sn) sn.NotifyGearChanged();
+			return true;
+		}
+
 		/// <summary>Every unreserved armor piece for <paramref name="part"/> this armory can issue from: its armor rows, storage, the networked armories' storage and a connected Magic Storage network (read only).</summary>
 		private IEnumerable<Item> ArmorInReach(int part)
 		{

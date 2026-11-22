@@ -131,7 +131,7 @@ namespace Levy.Common.Testing
 
 		private static NPC SpawnNpc(int type, Vector2 at)
 		{
-			int i = NPC.NewNPC(new EntitySource_WorldEvent("ExoFixCheck"), (int)at.X, (int)at.Y, type);
+			int i = NPC.NewNPC(new EntitySource_WorldEvent("ExoFixCheck"), (int)at.X, (int)at.Y, type, 1); // never slot 0: Calamity reads ai index 0 as "no segment yet", so a Thanatos head in slot 0 strings no body and clamps itself to 0 life
 			if (i < 0 || i >= Main.maxNPCs) return null;
 			NPC n = Main.npc[i]; n.timeLeft = 99999; n.netOffset = Vector2.Zero;
 			return n;
@@ -246,8 +246,18 @@ namespace Levy.Common.Testing
 			if (root == null) { Check(name + " spawns", false); return; }
 			_perTick = () => { for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !n.friendly && n.ModNPC is not SoldierNPC) { n.timeLeft = 99999; n.dontTakeDamage = false; } } };
 			Step(20);
-			NPC part = null; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].type == partType) { part = Main.npc[i]; break; }
 			int parts = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].realLife == root.whoAmI && i != root.whoAmI) parts++;
+			for (int retry = 0; retry < 2 && partType != (second?.type ?? -1) && parts == 0; retry++)
+			{
+				// a body whose parts never came (seen once in the full chain for Thanatos: his head clamps to slot ai[0]'s life, an empty slot's 0, and dies): note what it looked like and spawn it again
+				Note($"{name} came without its parts: active {root.active} life {root.life}/{root.lifeMax} ai {root.ai[0]},{root.ai[1]},{root.ai[2]},{root.ai[3]} slot {root.whoAmI}, {Main.npc.Count(n => !n.active)} slots free; spawning it again");
+				ClearHostiles(); Step(10);
+				root = spawn(); if (root == null) break;
+				Step(20);
+				parts = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].realLife == root.whoAmI && i != root.whoAmI) parts++;
+			}
+			if (root == null) { Check(name + " spawns", false); return; }
+			NPC part = null; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].type == partType) { part = Main.npc[i]; break; }
 			bool resolved = part != null && BossRule.TryGetScalingRoot(part, out NPC r, out _) && (r == root || (second != null && r == second));
 			if (mode == 1) Check($"{name}: a hit on a part resolves to the boss's root ({parts} parts share its life)", resolved || (second != null && part == second));
 			NPC hitRoot = second != null ? root : (resolved && BossRule.TryGetScalingRoot(part, out NPC rr, out _) ? rr : root);

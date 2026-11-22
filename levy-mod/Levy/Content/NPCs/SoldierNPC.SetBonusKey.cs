@@ -19,6 +19,8 @@ namespace Levy.Content.NPCs
 	/// bonuses (Vortex stealth, the Forbidden storm). A levy never pressed it, so those bonuses sat unused. <see cref="TickSetBonusKey"/> decides WHEN a competent player would press it and
 	/// <see cref="PressSetBonusKey"/> presses it on the soldier's dummy through the very same method, in the same frame the upkeep and the hurt reaction use (slot 255, projectiles caught and adopted).
 	/// Also here: the per-tick stealth stepping of the Vortex and Shroomite sets (vanilla advances it in the set pass, which runs once a second for a levy).
+	/// WHEN each set is used is the policy table Common/Soldiers/SetAbilities.tsv (SetAbilityPolicies); the setting "Levies use armor set abilities" (LevyConfig.SoldiersUseSetAbilities) turns every press off.
+	/// The sets whose ability is a dash of the body (God Slayer / Auric Tesla on Calamity's own God Slayer Dash key, Solar Flare on a double-tapped direction) are SoldierNPC.SetDash.cs.
 	/// </summary>
 	public partial class SoldierNPC
 	{
@@ -45,6 +47,7 @@ namespace Levy.Content.NPCs
 			{
 				TickStealthSets();
 				TickCalamityMeters();
+				SetDashWatchdog();
 				Player d = Dummy;
 				if (!global::Levy.Common.Config.LevyConfig.Get.SoldiersUseSetAbilities)
 				{

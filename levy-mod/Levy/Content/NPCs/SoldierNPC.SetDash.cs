@@ -35,7 +35,7 @@ namespace Levy.Content.NPCs
 		private uint _gsStart; private int _gsTarget = -1, _gsLoop; private Vector2 _gsSteer; private bool _gsStruck, _gsGrav, _gsNoLoop;
 		private byte[] _gsGap;
 		// ---- Solar Flare ram (authority) ----
-		private int _srTicks, _srDir; private float _srV, _srCapPx, _srDist; private bool _srSpent; private uint _srNext;
+		private int _srTicks, _srDir; private float _srV, _srCapPx, _srDist; private bool _srSpent; private uint _srNext, _srStartTick;
 		private byte[] _srGap;
 		// ---- visuals (every machine) ----
 		private int _gsFxTicks;
@@ -50,6 +50,14 @@ namespace Levy.Content.NPCs
 		public bool SolarRamming => _srTicks > 0;
 		/// <summary>Checks: the Solar Flare shields up now.</summary>
 		internal int SolarShieldsLab => _setKind == KindSolar ? _setOrbs : 0;
+
+		/// <summary>Every combat tick (authority, whatever the setting): a dash whose movement tick stopped running (mind control, a seat, a knock took the body over) ends on time all the same, so the body never keeps the dash's lift.</summary>
+		private void SetDashWatchdog()
+		{
+			uint now = Main.GameUpdateCount;
+			if (_gsStart != 0 && now - _gsStart > (uint)GodSlayerCal.ForceEndAt + 2u) EndGodSlayerDash();
+			if (_srTicks > 0 && now - _srStartTick > (uint)LevyConstants.SolarRamMaxTicks + 2u) _srTicks = 0;
+		}
 
 		/// <summary>Called from TickSetBonusKey (combat, authority) before the set key: starts a dash when its policy says so. True when one started.</summary>
 		private bool TryStartSetDash(NPC target)
@@ -279,7 +287,7 @@ namespace Levy.Content.NPCs
 			_srDir = dx >= 0f ? 1 : -1;
 			_srV = LevyConstants.SolarDashSpeed; // the set's dash replaces any accessory dash (UpdateArmorSets runs after the accessories)
 			_srCapPx = Math.Abs(dx) + LevyConstants.SolarRamOvershootTiles * 16f; _srDist = 0f;
-			_srTicks = 1; _srSpent = false;
+			_srTicks = 1; _srSpent = false; _srStartTick = Main.GameUpdateCount;
 			_srGap ??= new byte[Main.maxNPCs]; Array.Clear(_srGap);
 			_srNext = Main.GameUpdateCount + (uint)Math.Max(20f, pol.Get("gap", 90f));
 			_dashTicks = 0; _dodgeTicks = 0; _dodgePend = 0;

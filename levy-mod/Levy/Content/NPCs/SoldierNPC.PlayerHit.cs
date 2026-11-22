@@ -120,6 +120,7 @@ namespace Levy.Content.NPCs
 				_buffSnap.Clear(); for (int i = 0; i < d.buffType.Length; i++) if (d.buffType[i] > 0) _buffSnap[d.buffType[i]] = d.buffTime[i];
 				var reason = a != null ? PlayerDeathReason.ByNPC(a.whoAmI) : PlayerDeathReason.ByProjectile(-1, p.whoAmI);
 				var hm = new Player.HurtModifiers { DamageSource = reason, CooldownCounter = cooldownSlot, Dodgeable = true, HitDirection = dir };
+				using var gsDodge = new GodSlayerDodgeScope(this); // mid God Slayer dash the dummy reads as dashing, so Calamity's own dodge takes the hit (SoldierNPC.SetDash.cs)
 				PlayerLoader.ModifyHurt(d, ref hm);
 				if (p != null) hm.ArmorPenetration += p.ArmorPenetration;
 				if (Endurance > 0f) hm.FinalDamage *= 1f - Endurance; // Player.Hurt's ApplyVanillaHurtEffectModifiers: endurance (Endurance potion, Worm Scarf, Brain of Confusion, Calamity's DR)

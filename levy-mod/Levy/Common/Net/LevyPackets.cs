@@ -104,6 +104,7 @@ namespace Levy.Common.Net
 		StripKit, // client -> server: int soldierId, bool issue - false strips the levy's whole kit to his Armory and stops issue, true issues him a kit again
 		ArmoryInUseList, // server -> one client: the items out of an armory's racks (layout above)
 		ArmorySellMark, // client -> server: int armoryId, string item key (ArmoryRules.KeyOf), bool on, int keep - mark an item type for autosell; the server checks the sender is near, applies and re-syncs the tile entity
+		SetAbilityFx, // server -> clients: short npcIndex, byte kind (0 a God Slayer dash starts, 1 its first strike): the dash's dust and sounds at that levy (SoldierNPC.SetDash.cs)
 	}
 
 	public static class LevyPackets

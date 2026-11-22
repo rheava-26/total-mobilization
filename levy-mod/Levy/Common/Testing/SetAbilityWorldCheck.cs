@@ -172,17 +172,26 @@ namespace Levy.Common.Testing
 			Clear(); Arena();
 			_cmdAt = Ground(-70) - new Vector2(0f, 24f);
 			ResetCommander(); KeepCommander(); Step(2);
+			SoldierNPC.HitDbg = new();
 			bystander = SpawnLevy("Pvt. Bystander", Ground(4), 0, null);
 			return bystander;
 		}
 
 		private static int Life(int body) => body >= 0 && Main.npc[body].active ? Main.npc[body].life : -1;
 
+		/// <summary>What hurt the levies in this trial (contact and projectile hits by source, the bystander's last attacker, the time of day), for a failure line.</summary>
+		private static string Hurt(int body)
+		{
+			string hits = SoldierNPC.HitDbg == null || SoldierNPC.HitDbg.Count == 0 ? "no attributed hits" : string.Join(", ", SoldierNPC.HitDbg.Select(kv => kv.Key + " " + kv.Value.dmg + "/" + kv.Value.n));
+			string last = body >= 0 && Main.npc[body].ModNPC is SoldierNPC s ? s.LastAttackerName + " (" + s.LastAttackerType + ")" : "-";
+			return $"hits [{hits}], bystander's last attacker {last}, {(Main.dayTime ? "day" : "night")}";
+		}
+
 		private static void Run()
 		{
 			Main.player[0] = Main.player[0] ?? new Player();
 			string part = Environment.GetEnvironmentVariable("LEVY_SETABILITY_PART") ?? "all";
-			void Try(string name, Action a) { if (part != "all" && part != name) return; try { a(); } catch (Exception e) { Check(name + " trial threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); } finally { LevyConfig.Get.SoldiersUseSetAbilities = true; SoldierNPC.PressViaDoubleTap = false; Clear(); } }
+			void Try(string name, Action a) { if (part != "all" && part != name) return; try { a(); } catch (Exception e) { Check(name + " trial threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); } finally { LevyConfig.Get.SoldiersUseSetAbilities = true; SoldierNPC.PressViaDoubleTap = false; SoldierNPC.HitDbg = null; Clear(); } }
 			Check("the policy table loaded (" + SetAbilityPolicies.Count + " rows) with the God Slayer, Solar Flare, Forbidden and Vortex rows", SetAbilityPolicies.Count >= 10 && SetAbilityPolicies.For("godslayer").Kind == SetAbilityKind.Dash && SetAbilityPolicies.For("solarflare").Kind == SetAbilityKind.Ram && SetAbilityPolicies.For("forbidden").Kind == SetAbilityKind.AtTarget && SetAbilityPolicies.For("vortex").Kind == SetAbilityKind.FightToggle);
 			Check("the setting is on by default", (typeof(LevyConfig).GetField("SoldiersUseSetAbilities")?.GetCustomAttributes(typeof(System.ComponentModel.DefaultValueAttribute), false).FirstOrDefault() as System.ComponentModel.DefaultValueAttribute)?.Value is true);
 			LevyConfig.Get.SoldiersUseSetAbilities = true;
@@ -228,7 +237,7 @@ namespace Levy.Common.Testing
 			Check($"solar: the dash starts at the levy and carries him through the line ({F((maxX - startX) / 16f)} tiles)", Math.Abs(bodyX - startX) < 40f && maxX - startX >= 4 * 16f);
 			Check($"solar: the first strike spends a shield ({shieldsBefore} -> {shieldsAfter})", shieldsAfter == shieldsBefore - 1);
 			Check("solar: the commander 70 tiles away takes nothing (" + (CommanderWhole(out string why) ? why : why) + ")", CommanderWhole(out _));
-			Check($"solar: the bare levy in the line takes nothing (life {byLife} -> {Life(by)})", Life(by) >= byLife && byLife > 0);
+			Check($"solar: the bare levy in the line takes nothing (life {byLife} -> {Life(by)}; {Hurt(by)})", Life(by) >= byLife && byLife > 0);
 		}
 
 		private static void ForbiddenTrial()
@@ -261,7 +270,7 @@ namespace Levy.Common.Testing
 			Step(120);
 			Check($"forbidden: the target is hurt while the storm is up ({life0 - target.life})", target.life < life0);
 			Check("forbidden: the commander 70 tiles away takes nothing (" + (CommanderWhole(out string why) ? why : why) + ")", CommanderWhole(out _));
-			Check($"forbidden: the bare levy takes nothing (life {byLife} -> {Life(by)})", Life(by) >= byLife && byLife > 0);
+			Check($"forbidden: the bare levy takes nothing (life {byLife} -> {Life(by)}; {Hurt(by)})", Life(by) >= byLife && byLife > 0);
 		}
 
 		private static void VortexTrial()
@@ -345,7 +354,7 @@ namespace Levy.Common.Testing
 			Check($"god slayer: a struck enemy burns with God Slayer Inferno", infernoSeen || GodSlayerCal.InfernoBuff <= 0);
 			Check($"god slayer: the dash carries the levy along its path ({F(far / 16f)} tiles)", far >= 12f * 16f);
 			Check("god slayer: the commander 70 tiles away takes nothing (" + (CommanderWhole(out string why) ? why : why) + ")", CommanderWhole(out _));
-			Check($"god slayer: the bare levy in the line takes nothing (life {byLife} -> {Life(by)})", Life(by) >= byLife && byLife > 0);
+			Check($"god slayer: the bare levy in the line takes nothing (life {byLife} -> {Life(by)}; {Hurt(by)})", Life(by) >= byLife && byLife > 0);
 			int left0 = GodSlayerCal.CooldownLeft(sn.Dummy);
 			Check($"god slayer: Calamity's God Slayer Dash cooldown is on the levy ({left0} of {GodSlayerCal.CooldownTicks} ticks left)", left0 > GodSlayerCal.CooldownTicks - 300 && left0 <= GodSlayerCal.CooldownTicks);
 			int d1 = sn.GsDashesOwn;

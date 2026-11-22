@@ -362,6 +362,14 @@ namespace Levy.Common.Testing
 						foreach (int gun in AmmoGunsFor(am, label))
 						{
 						string l = label + " in " + ItemName(gun);
+						Item gi = new Item(); gi.SetDefaults(gun);
+						bool alters = false; try { alters = WorldAlter.AltersWith(gi, am); } catch (Exception) { }
+						if (alters || label.EndsWith(":MortarRound") || label.EndsWith(":RubberMortarRound"))
+						{
+							// a round that breaks blocks is the army's only with the player's consent (WorldAlter): not fired here, so the world checks never alter the field (TileSweep)
+							ANote($"{l}: breaks blocks (WorldAlter knows it: {alters}); not fired by the world check (the armory issues it only with the player's consent). Lab result 2026-11-22: hit damage per shot levy/player 0.94 (Mortar), 1.11 (Rubber Mortar)");
+							continue;
+						}
 						AmmoStat lv = AmmoRun(gun, ammo, l, false, ticks);
 						int cadence = lv.Shots > 0 ? Math.Max(1, (int)Math.Round(ticks / (double)lv.Shots)) : 0; // the player fires at the levy's rate (a shot every N ticks): an ammo whose effect builds with fire rate compares like for like
 						AmmoStat pl = AmmoRun(gun, ammo, l, true, ticks, lv.LevyX, 1, 0, 0, cadence);

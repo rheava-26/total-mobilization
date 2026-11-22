@@ -264,7 +264,7 @@ namespace Levy.Common.Testing
 				int itemsBefore = Mine().Sum(Items);
 				// nothing in the world that the room-making takes before a levy: vanilla critters and hostiles go, then the array is filled with inert filler (out of reach, it cannot be hurt, so the room-making leaves it)
 				for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !n.townNPC && n.ModNPC == null) n.active = false; }
-				Vector2 far = new Vector2((Cx + 420) * 16f, (FloorY - 40) * 16f);
+				Vector2 far = new Vector2((Cx + 150) * 16f, (FloorY - 50) * 16f); // inside the active range of the commander (farther off, the game despawns it)
 				for (int g = 0; g < Main.maxNPCs; g++)
 				{
 					int i = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("ActiveArmyFiller"), (int)far.X, (int)far.Y, NPCID.BlueSlime);
@@ -287,7 +287,7 @@ namespace Levy.Common.Testing
 				_mod.Logger.Info($"[ActiveArmy] OBSERVED boss room: field {fieldedFull} before, {Fielded()} after; levies taken off by the room-making {BossSlots.FreedLevies - before}; squeeze {BossSlots.Squeeze}, extra reserve {BossSlots.ExtraReserve}, free NPC slots {free}; boss {(boss != null ? "spawned" : "FAILED")}");
 				Check($"boss room: the boss spawns into a full array and the room-making takes {K} of the field ({squeezed})", boss != null && squeezed == K && BossSlots.Squeeze >= K);
 				Check($"boss room: the soldiers taken off wait alive on duty, with their kit ({Waiting()} waiting, items {itemsBefore} -> {Mine().Sum(Items)})", Mine().All(r => !r.Reserve) && Mine().Sum(Items) == itemsBefore && Waiting() == N - 1 - (Cap - K));
-				Step(LevyConstants.DeployIntervalTicks * 2 + 2);
+				for (int q = 0; q < 4; q++) { Step(16); _mod.Logger.Info($"[ActiveArmy] OBSERVED boss room t{(q + 1) * 16}: fielded {Fielded()}, made alive {made.Count(i => Main.npc[i].active)}/{made.Count}, boss {(boss != null && boss.active && boss.boss)}, free {CrowdBudget.LiveFreeNpcs()}, squeeze {BossSlots.Squeeze}, extra {BossSlots.ExtraReserve}, bossAlive {BossSlots.BossAlive}"); }
 				Check($"boss room: the deployment leaves the boss's room alone ({Fielded()} in the field after two passes, size {Cap})", Fielded() == Cap - K);
 				// a soldier falls while the boss holds the room: no replacement takes the slot he leaves
 				int reps = RosterSystem.Replacements;

@@ -386,7 +386,7 @@ namespace Levy.Common.Testing
 				Step(2);
 				NPC head = Main.npc[who];
 				int segs = 0; for (int i = 0; i < Main.maxNPCs; i++) if (i != who && Main.npc[i].active && Main.npc[i].realLife == who) segs++;
-				NPC tail = EnemyTargeting.WormTail(head);
+				EnemyTargeting.WormTailOn = true; NPC tail = EnemyTargeting.WormTail(head); EnemyTargeting.WormTailOn = tailOn; // found even with LEVY_WORMTAIL=0 (the A/B run: the same trial with the head-only rule)
 				int expect = b.Cal != null ? CalType(b.Cal.Replace("Head", "Tail")) : NPCID.TheDestroyerTail;
 				LfCheck($"{label}: the tail is found ({(tail == null ? "none" : "type " + tail.type)}, expected type {expect}, {segs} segments in the pool)", tail != null && tail.type == expect);
 				if (tail == null) return;
@@ -417,8 +417,8 @@ namespace Levy.Common.Testing
 				LfCheck($"{label}: head out, tail in: the worm keeps fighting the levies", alive == ticks && within == ticks && locked * 10 >= (ticks - 60) * 7 && minTl > 60, () => $"alive {alive}, within {within}, locked {locked}/{ticks - 60}, min timeLeft {minTl}");
 				LfCheck($"{label}: head out, tail in: the army holds where the commander fell", holds == alive, () => $"{holds}/{alive}");
 				if (!Alive()) return;
-				// both ends out: the tail joins the head 260 tiles off
-				tailAt = headAt + new Vector2(0f, 12 * 16f); Pin();
+				// both ends out: head and tail held 400 tiles off (past the leash and past the range the game keeps an NPC alive in around a player)
+				headAt = army0 + new Vector2(400 * 16f, -30 * 16f); tailAt = headAt + new Vector2(0f, 12 * 16f); Pin();
 				int lockedB = 0, withinB = 0, holdsB = 0;
 				for (int t = 0; t < 150; t++)
 				{
@@ -430,11 +430,19 @@ namespace Levy.Common.Testing
 					if (army.Count > 0 && EnemyTargeting.LostFightHolds(army[0].NPC.Center)) holdsB++;
 				}
 				LfCheck($"{label}: both ends out: no levy in the leash, the lock drops within 1.5 s and the army stops holding", withinB == 0 && lockedB == 0 && holdsB == 0, () => $"within {withinB}, locked after 1.5 s {lockedB}/60, holds {holdsB}");
-				// let it go: it leaves on its own AI's terms
-				pin = false;
-				int gone = -1;
-				for (int t = 0; t < 1500 && gone < 0; t++) { Step(1); if (!Alive()) gone = t; }
-				LfNote($"{label}: both ends out, let go: {(gone >= 0 ? "gone " + (gone / 60f).ToString("0.0") + " s later" : "still here after 25 s")}");
+				// let it go: nothing holds it now, so it leaves on its own AI's terms. The army is held 450 tiles the other way, so the worm's flight cannot bring it back into the leash by chance.
+				// The spawn-time timeLeft boost of this trial is taken back first: the worm starts from the timeLeft the keep-alive gave it (NPC.activeTime), as in a real fight.
+				pin = false; Main.npc[who].timeLeft = Math.Min(Main.npc[who].timeLeft, NPC.activeTime);
+				_perTick = () => { TopUp(); Heal(); for (int k = 0; k < army.Count; k++) if (army[k].NPC.active) { army[k].NPC.Bottom = new Vector2((Cx - 450 + k * 2) * 16f, _floorY * 16f); army[k].NPC.velocity = Vector2.Zero; } };
+				int gone = -1; var leaveTrace = new StringBuilder();
+				for (int t = 0; t < 1500 && gone < 0; t++)
+				{
+					Step(1);
+					if (!Alive()) { gone = t; break; }
+					NPC h = Main.npc[who];
+					if (t % 300 == 0) leaveTrace.Append($" | t{t} ({h.Center.X / 16f:0},{h.Center.Y / 16f:0}) target {h.target} lock {LevyNpcData.Of(h).SoldierTarget} tl {h.timeLeft} nearest levy {NearestTo(army, h.Center):0} (tail {NearestTo(army, Main.npc[tailWho].Center):0})");
+				}
+				LfNote($"{label}: both ends out: {(gone >= 0 ? "gone " + (gone / 60f).ToString("0.0") + " s later" : "still here after 25 s")}{leaveTrace}");
 				LfCheck($"{label}: both ends out: the worm leaves", gone >= 0, () => "still here after 25 s at (" + (Main.npc[who].Center.X / 16f).ToString("0") + "," + (Main.npc[who].Center.Y / 16f).ToString("0") + ")");
 			}
 			finally

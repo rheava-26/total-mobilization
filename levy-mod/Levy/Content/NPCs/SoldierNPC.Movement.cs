@@ -164,8 +164,8 @@ namespace Levy.Content.NPCs
 			{
 				int face = FacingWhileMoving(dir);
 				npc.direction = face; npc.spriteDirection = face;
-				bool close = Math.Abs(_pathFromRoute && !TravelLegacy.On && HasMoveGoal ? MoveGoal.X - npc.Center.X : dx) < WalkWithinTiles * 16 && !Retreating; // a retreat always runs, however short the step; on a planned route the waypoints are close together, the leg end is what counts
-				bool walk = reversing || (close && !(PathSearch.Travel6On && _pathFromRoute && RouteFlying && !grounded)) || State == SoldierState.Idle || State == SoldierState.Patrol;   // (a glide to a landing does not slow to a stroll for its last six tiles)
+				bool close = Math.Abs(_pathFromRoute && !TravelLegacy.On && HasMoveGoal ? MoveGoal.X - npc.Center.X : dx) < WalkWithinTiles * 16 && !Retreating && !_blastFlee; // a retreat always runs, however short the step; on a planned route the waypoints are close together, the leg end is what counts
+				bool walk = !_blastFlee && (reversing || (close && !(PathSearch.Travel6On && _pathFromRoute && RouteFlying && !grounded)) || State == SoldierState.Idle || State == SoldierState.Patrol);   // (a glide to a landing does not slow to a stroll for its last six tiles)
 				maxSpeed = walk ? WalkSpeedPx * Abilities.WalkSpeed : Abilities.MaxRunSpeed; // MaxRunSpeed already carries moveSpeed the way Player.Update applies it (not on the sprint)
 				float floorAccel = 1f;
 				if (!walk && grounded && _floorKind != TileRun.Floor.Plain && TileRun.On) { TileRun.Resolve(Abilities, _floorKind, out maxSpeed, out floorAccel, out _); FloorTicks++; FloorTop = maxSpeed; } // asphalt, honey, ice: what the floor does to a run (SoldierNPC.TileRun in Common/Movement)

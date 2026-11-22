@@ -104,7 +104,11 @@ namespace Levy.Common.Weapons
 		/// <summary>Set around a soldier's firing code by a rule that wants a different segment than the nearest (worm momentum); null = the nearest.</summary>
 		public static System.Func<NPC, Vector2, NPC> Prefer;
 
-		public static NPC NearestSegment(NPC npc, Vector2 from)
+		/// <summary>
+		/// With <paramref name="preferOpen"/> (the aim of a shot or a swing): when the nearest segment is shut behind armour (<see cref="Targeting.SoldierTargeting.IsArmouredPart"/>: Thanatos's plates at 99.99%),
+		/// the nearest segment of the same body that is open and in sight, no more than <see cref="OpenExtraTiles"/> further than the shut one, is aimed at instead. A player shoots the vent, not the plate in front of it.
+		/// </summary>
+		public static NPC NearestSegment(NPC npc, Vector2 from, bool preferOpen = false)
 		{
 			if (npc == null) return null;
 			if (Prefer != null) { NPC pick = Prefer(npc, from); if (pick != null) return pick; }
@@ -120,6 +124,33 @@ namespace Levy.Common.Weapons
 				if (!related) continue;
 				float d = Vector2.DistanceSquared(n.Hitbox.ClosestPointInRect(from), from);
 				if (d < bestDist) { bestDist = d; best = n; }
+			}
+			if (preferOpen && Targeting.SoldierTargeting.IsArmouredPart(best))
+			{
+				float lim = (float)Math.Sqrt(bestDist) + OpenExtraTiles * LevyConstants.TilePx;
+				NPC open = NearestOpenSegment(npc, root, from, lim * lim);
+				if (open != null) { OpenAims++; return open; }
+			}
+			return best;
+		}
+
+		/// <summary>How much further (tiles) than the shut plate in front an open segment may be and still be aimed at instead.</summary>
+		public const float OpenExtraTiles = 25f;
+		/// <summary>Harness telemetry: aims turned from a shut plate to an open segment of the same body.</summary>
+		public static long OpenAims;
+
+		private static NPC NearestOpenSegment(NPC npc, int root, Vector2 from, float maxSq)
+		{
+			NPC best = null; float bestDist = maxSq;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.dontTakeDamage) continue;
+				if (!(i == npc.whoAmI || i == root || n.realLife == root || n.realLife == npc.whoAmI)) continue;
+				float d = Vector2.DistanceSquared(n.Hitbox.ClosestPointInRect(from), from);
+				if (d >= bestDist || Targeting.SoldierTargeting.IsArmouredPart(n)) continue;
+				if (!Collision.CanHitLine(from, 1, 1, n.Center, 1, 1)) continue; // an open vent behind a wall is no better than the plate
+				bestDist = d; best = n;
 			}
 			return best;
 		}

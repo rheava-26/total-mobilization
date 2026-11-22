@@ -50,7 +50,7 @@ namespace Levy.Common.Targeting
 			float rangePx = rangeTiles * LevyConstants.TilePx;
 			float rangeSq = rangePx * rangePx;
 			int self = s.NPC.whoAmI;
-			int best = -1; float bestDistSq = float.MaxValue; bool bestAttacking = false;
+			int best = -1; float bestDistSq = float.MaxValue; bool bestAttacking = false, bestArmoured = false;
 			bool auto = Potions.AutonomySystem.IsAutonomous(s); int bestTier = -1; // Autonomous levies rank the most dangerous enemy in reach first
 			bool needLos = !noLos && !(Weapons.CombatFix.On(Weapons.CombatFix.Through) && s.ShotsPassTiles); // a shot that flies through tiles needs no line of sight: the pick may be behind a wall
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -64,15 +64,52 @@ namespace Levy.Common.Targeting
 				int tier = auto ? Potions.AutonomySystem.ThreatTier(npc) : 0;
 				if (tier < bestTier) continue;
 				bool attacking = !preferNearest && (IsAttackingUs(npc) || LevyUtil.IsProjectileNpc(npc.type)); // an orb in reach is a threat to the line: priority 1 // nearest-only: every candidate ranks as priority 2, so distance alone decides
+				bool armoured = IsArmouredPart(npc); // a closed boss segment (Thanatos's shut armour) ranks under any part that can be hurt, whatever else it is
 				if (tier == bestTier)
 				{
-					if (bestAttacking && !attacking) continue;                 // a priority-1 target already beats every priority-2 one
-					if (attacking == bestAttacking && distSq >= bestDistSq) continue;
+					if (!bestArmoured && armoured && best >= 0) continue;
+					if (bestArmoured == armoured)
+					{
+						if (bestAttacking && !attacking) continue;                 // a priority-1 target already beats every priority-2 one
+						if (attacking == bestAttacking && distSq >= bestDistSq) continue;
+					}
 				}
 				if (needLos && !Collision.CanHitLine(from, 1, 1, npc.Center, 1, 1)) continue; // LOS only for candidates that would win (it is the expensive check)
-				best = i; bestDistSq = distSq; bestAttacking = attacking; bestTier = tier;
+				best = i; bestDistSq = distSq; bestAttacking = attacking; bestTier = tier; bestArmoured = armoured;
 			}
 			return best;
+		}
+
+		/// <summary>Harness switch (LEVY_ARMOURPICK=0): closed armour ranks like any other part again (before/after labs).</summary>
+		internal static bool ArmourPickOn = Environment.GetEnvironmentVariable("LEVY_ARMOURPICK") != "0";
+		private static readonly uint[] _armStamp = new uint[Main.maxNPCs];
+		private static readonly int[] _armType = new int[Main.maxNPCs];
+		private static readonly bool[] _armValue = new bool[Main.maxNPCs];
+
+		/// <summary>
+		/// A boss part shut behind armour right now, which a player would not waste shots on: Calamity's own damage reduction at 90% or more (Thanatos's closed segments sit at 99.99% and open
+		/// to 10% while they vent), or a segment the game marks as not worth homing at (<c>chaseable</c> off; Calamity sets it with the same vent). Answered once per NPC slot per tick.
+		/// </summary>
+		public static bool IsArmouredPart(NPC npc)
+		{
+			if (!ArmourPickOn || npc == null || !npc.active) return false;
+			int i = npc.whoAmI;
+			if ((uint)i >= (uint)Main.maxNPCs || !ReferenceEquals(Main.npc[i], npc)) return ComputeArmoured(npc);
+			uint stamp = Main.GameUpdateCount + 1u;
+			if (_armStamp[i] == stamp && _armType[i] == npc.type) return _armValue[i];
+			bool v = ComputeArmoured(npc);
+			_armStamp[i] = stamp; _armType[i] = npc.type; _armValue[i] = v;
+			return v;
+		}
+
+		/// <summary>World check: forget this tick's armour answers (a check that changes a part's armour and asks within one tick).</summary>
+		internal static void TestForgetArmourCache() => System.Array.Clear(_armStamp, 0, _armStamp.Length);
+
+		private static bool ComputeArmoured(NPC npc)
+		{
+			if (!LevyUtil.IsBossNpc(npc)) return false;
+			if (!npc.chaseable && npc.realLife >= 0 && npc.realLife != npc.whoAmI) return true;
+			return Compat.Calamity.CalamityLife.DamageReduction(npc, out _) >= 0.9f;
 		}
 
 		private static bool IsIn(ReadOnlySpan<int> set, int value)

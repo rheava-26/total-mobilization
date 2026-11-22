@@ -14,7 +14,7 @@ LevyProgressionConfig: {
 		EventsAndOfficers: Events and officers
 		ChlorophyteSources: Chlorophyte sources
 		Lunar: Luminite and Lunar Fragments
-		Calamity: Calamity only. These do nothing without Calamity Mod.
+		Calamity: Calamity. Options that name Calamity items need Calamity Mod. The three material drop rates work in any world.
 	}
 
 	LifeCrystalRecipe: {
@@ -234,7 +234,7 @@ LevyProgressionConfig: {
 
 	SlimeAgitatorRecipe: {
 		Label: Slime Agitator recipe
-		Tooltip: Craft a Slime Agitator from 5 Royal Gel, 5 Volatile Gelatin and 10 Scoria Ore at a Mythril Anvil. It starts a slime rain with Calamity's ore slimes. Needs a reload
+		Tooltip: Craft a Slime Agitator from 5000 Gel and 10 Perennial Bars at a Mythril Anvil after Plantera. It starts a slime rain with Calamity's ore slimes. Needs a reload
 	}
 
 	CalamityOreGenMultiplier: {
@@ -265,5 +265,20 @@ LevyProgressionConfig: {
 	PostProvidenceMaterialMultiplier: {
 		Label: Post-Providence material drop rate
 		Tooltip: Multiplies drops of Divine Geode, Unholy Essence and Uelibloom Ore from every source
+	}
+
+	UniversalMaterialDropMultiplier: {
+		Label: Universal material drop rate
+		Tooltip: Multiplies every crafting material from enemies, bosses and boss Treasure Bags. Works without Calamity. The material, Providence and army loot rates add: 2x here with 2x boss materials gives 3x.
+	}
+
+	BossMaterialDropMultiplier: {
+		Label: Boss material drop rate
+		Tooltip: Multiplies crafting materials from bosses and their Treasure Bags. Works without Calamity. Adds to the universal rate.
+	}
+
+	EnemyMaterialDropMultiplier: {
+		Label: Event and enemy material drop rate
+		Tooltip: Multiplies crafting materials from enemies that are not bosses, events included. Works without Calamity. Adds to the universal rate.
 	}
 }

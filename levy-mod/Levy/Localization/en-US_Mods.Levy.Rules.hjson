@@ -202,3 +202,7 @@ Plural_summon: summon
 Plural_rogue: rogue
 Plural_bard: bard
 Plural_healer: healer
+SellOn: Sell: On
+SellOff: Sell: Off
+SellKeep: Keep
+SellHint: Sells every copy in Armory storage beyond the kept number, at the normal sell price. The coins go to the Barracks treasury. Favourited items and items a rule names are never sold.

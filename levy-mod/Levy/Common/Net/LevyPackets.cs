@@ -66,6 +66,7 @@ namespace Levy.Common.Net
 	///  ObserveList: int count, then per camera: int id, short tileX, short tileY, string label   (Observe)
 	///  ObservePos: byte kind(1 camera,2 levy,3 mind), int id, float x, float y   (Observe) — the watched target's world position, every 6 ticks
 	///  ArmoryInUseList: int armoryId, int count, then per entry: byte kind(0 carried,1 lent), int soldierId (-1 for a loan), byte slot (255 for a loan), string holder, Item via ItemIO.Send(writeStack:true)   (UI) — answer to ArmoryInUseRequest
+	///  ArmorySellMark: int armoryId, string itemKey, bool on, int keep   (UI) — autosell mark for one item type (ArmoryTE.SetSellMark); the server applies it and re-syncs the tile entity
 	///  TeamEffect / TeamRequest: byte kind, then a payload   (Team, see TeamNet) — server -> one client: a team-item effect on the player; client -> server: a team-item reaction the player's own client owns
 	/// </summary>
 	public enum LevyPacket : byte
@@ -102,6 +103,7 @@ namespace Levy.Common.Net
 		LogisticsStoragePreview, // server -> one client: the list "send the rest to storage" would move (StorageSend.Preview)
 		StripKit, // client -> server: int soldierId, bool issue - false strips the levy's whole kit to his Armory and stops issue, true issues him a kit again
 		ArmoryInUseList, // server -> one client: the items out of an armory's racks (layout above)
+		ArmorySellMark, // client -> server: int armoryId, string item key (ArmoryRules.KeyOf), bool on, int keep - mark an item type for autosell; the server checks the sender is near, applies and re-syncs the tile entity
 	}
 
 	public static class LevyPackets

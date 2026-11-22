@@ -257,7 +257,55 @@ namespace Levy.Common.Progression
 				Check("base-game boss materials stay materials (bars, souls, scales, husks, ectoplasm, luminite)", bars.Count == 0, bars.Count == 0 ? "" : string.Join(", ", bars));
 				Mod.Logger.Info($"[ProgCheck] OBSERVED {ProgressionDropsSystem.NotArmyAnyMore.Count} base-game boss drops another mod's recipe makes a material get no army bonus: {string.Join(", ", ProgressionDropsSystem.NotArmyAnyMore.Take(30).Select(t => Lang.GetItemNameValue(t)))}");
 			}
+			MaterialRates(c);
 			Check("chlorophyte density cap follows config", ProgMath.ChlorophyteCaps(40, 130, c.ChlorophyteChunkScale).nearCap == (int)(40 * c.ChlorophyteChunkScale), $"scale {c.ChlorophyteChunkScale}, growth x{c.ChlorophyteGrowthMultiplier}");
+		}
+
+		// ---- the three material drop rates (universal, boss, event and enemy) ---------------------------------------------
+		static List<ExtraAmountRule> ExtrasOn(IEnumerable<IItemDropRule> roots, int item)
+		{
+			var all = new List<IItemDropRule>(); ProgressionLootNpc.Collect(roots, all);
+			var l = new List<ExtraAmountRule>();
+			foreach (var r in all) if (r.ChainedRules != null) foreach (var ch in r.ChainedRules) if (ch.RuleToChain is ExtraAmountRule e && e.ItemId == item) l.Add(e);
+			return l;
+		}
+
+		void MaterialRates(LevyProgressionConfig c)
+		{
+			var db = Main.ItemDropsDB;
+			Check("material rates: the material rule is on boss, enemy and global drops", ProgressionDropsSystem.MaterialRules > ProgressionDropsSystem.ArmyRules && ProgressionDropsSystem.GlobalMaterialRules > 0, $"{ProgressionDropsSystem.MaterialRules} material rules, {ProgressionDropsSystem.GlobalMaterialRules} global, {ProgressionDropsSystem.ArmyRules} army");
+			var gel = ExtrasOn(db.GetRulesForNPCID(NPCID.BlueSlime, false), ItemID.Gel);
+			Check("material rates: a Blue Slime's Gel carries the material rule (an enemy rule)", gel.Count >= 1 && gel.All(e => e.Material && !e.BossRule), $"{gel.Count} rules");
+			var bars = ExtrasOn(db.GetRulesForNPCID(NPCID.SkeletronPrime, false), ItemID.HallowedBar).Concat(ExtrasOn(db.GetRulesForItemID(ItemID.SkeletronPrimeBossBag), ItemID.HallowedBar)).ToList();
+			Check("material rates: Skeletron Prime's and his bag's Hallowed Bars carry it as a boss rule", bars.Count >= 2 && bars.All(e => e.Material && e.BossRule), $"{bars.Count} rules");
+			var souls = ExtrasOn(db.GetRulesForNPCID(NPCID.BlueSlime, true), ItemID.SoulofLight);
+			Check("material rates: the global Soul of Light drop carries it, its source decided at the kill", souls.Count >= 1 && souls.All(e => e.Material && !e.BossRule), $"{souls.Count} rules");
+			// non-materials never carry it
+			int bad = 0; string first = "";
+			var seen = new HashSet<ExtraAmountRule>(ReferenceEqualityComparer.Instance);
+			foreach (var kv in ContentSamples.NpcsByNetId)
+			{
+				var all = new List<IItemDropRule>(); ProgressionLootNpc.Collect(db.GetRulesForNPCID(kv.Key, true), all);
+				foreach (var r in all) if (r.ChainedRules != null) foreach (var ch in r.ChainedRules)
+					if (ch.RuleToChain is ExtraAmountRule e && seen.Add(e) && e.Material && !ProgressionDropsSystem.RateMaterial(e.ItemId)) { bad++; if (first == "") first = Lang.GetItemNameValue(e.ItemId); }
+			}
+			Check("material rates: no weapon, accessory, bag or other non-material carries the material rule", bad == 0, bad == 0 ? $"{seen.Count} extra-amount rules looked at" : $"{bad}, first {first}");
+			Check("material rates: the Pwnhammer and the Wall of Flesh's emblems carry no extra-amount rule", ExtrasOn(db.GetRulesForNPCID(NPCID.WallofFlesh, false), ItemID.Pwnhammer).Count == 0 && ExtrasOn(db.GetRulesForNPCID(NPCID.WallofFlesh, false), ItemID.WarriorEmblem).Count == 0);
+			// source of a drop
+			var eye = new NPC(); eye.SetDefaults(NPCID.EyeofCthulhu); var zom = new NPC(); zom.SetDefaults(NPCID.Zombie);
+			Check("material rates: a boss, a boss bag or a boss's rule is a boss source; a zombie and a crate are not",
+				ExtraAmountRule.BossSource(new DropAttemptInfo { npc = eye }, false) && ExtraAmountRule.BossSource(new DropAttemptInfo { item = ItemID.EyeOfCthulhuBossBag }, false) && ExtraAmountRule.BossSource(new DropAttemptInfo { npc = zom }, true)
+				&& !ExtraAmountRule.BossSource(new DropAttemptInfo { npc = zom }, false) && !ExtraAmountRule.BossSource(new DropAttemptInfo { item = ItemID.WoodenCrate }, false));
+			// the combination rule (a standalone config object: the live one is never written)
+			var t = new LevyProgressionConfig { UniversalMaterialDropMultiplier = 2f, BossMaterialDropMultiplier = 2f, EnemyMaterialDropMultiplier = 1f };
+			Check("material rates: 2x universal and 2x boss give a boss material 3x (bonus 2) and an enemy material 2x (bonus 1)", Math.Abs(ExtraAmountRule.MaterialBonus(true, t) - 2) < 1e-9 && Math.Abs(ExtraAmountRule.MaterialBonus(false, t) - 1) < 1e-9);
+			t.UniversalMaterialDropMultiplier = 1f; t.BossMaterialDropMultiplier = 1f; t.EnemyMaterialDropMultiplier = 3.5f;
+			Check("material rates: 3.5x event and enemy alone gives enemies 3.5x and bosses nothing extra", Math.Abs(ExtraAmountRule.MaterialBonus(false, t) - 2.5) < 1e-9 && ExtraAmountRule.MaterialBonus(true, t) == 0);
+			t.EnemyMaterialDropMultiplier = 1f;
+			Check("material rates: all three at 1 add nothing", ExtraAmountRule.MaterialBonus(true, t) == 0 && ExtraAmountRule.MaterialBonus(false, t) == 0);
+			bool off = c.UniversalMaterialDropMultiplier <= 1f && c.BossMaterialDropMultiplier <= 1f && c.EnemyMaterialDropMultiplier <= 1f;
+			if (off) Check("material rates: off as booted, a material rule adds nothing to a boss or an enemy drop", ExtraAmountRule.MaterialBonus(true, c) == 0 && ExtraAmountRule.MaterialBonus(false, c) == 0);
+			else Mod.Logger.Info($"[ProgCheck] INFO material rates as booted: universal x{c.UniversalMaterialDropMultiplier}, boss x{c.BossMaterialDropMultiplier}, event and enemy x{c.EnemyMaterialDropMultiplier}");
 		}
 
 		// ---- shimmer -----------------------------------------------------------------------------------------------
@@ -337,7 +385,7 @@ namespace Levy.Common.Progression
 			{
 				var a = new List<IItemDropRule>(); var b = new List<IItemDropRule>();
 				ProgressionLootNpc.Collect(vanilla.GetRulesForNPCID(id, true), a);
-				ProgressionLootNpc.Collect(ours.GetRulesForNPCID(id, true), b); b.RemoveAll(r => r is ChlorophyteSourceRule);
+				ProgressionLootNpc.Collect(ours.GetRulesForNPCID(id, true), b); b.RemoveAll(r => r is ChlorophyteSourceRule || r is ExtraAmountRule || r is UelibloomSourceRule);
 				int compared = 0, bad = 0; string firstBad = "";
 				if (a.Count != b.Count) { Check($"loot rule structure NPC {id}", false, $"{a.Count} vs {b.Count}"); continue; }
 				for (int k = 0; k < a.Count; k++)

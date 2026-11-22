@@ -355,6 +355,14 @@ namespace Levy.Common.Weapons
 			return RuleFactor(it, out _) > 1.0001f;
 		}
 
+		/// <summary>True when a rule names this item type for use: an only-these list that holds it, or an Always prefer or Set rank override (armor and accessories included). Autosell never sells such an item.</summary>
+		public bool NamesForUse(int type)
+		{
+			var c = C;
+			if (c.Only != null && c.Only.Contains(type)) return true;
+			return c.ByType.TryGetValue(type, out var o) && (o.Rank == RankOverrideMode.Prefer || o.Rank == RankOverrideMode.Set);
+		}
+
 		/// <summary>The product of every enabled weight rule that matches the item (1 = none), with a short note of which ones.</summary>
 		public float RuleFactor(Item it, out string note)
 		{

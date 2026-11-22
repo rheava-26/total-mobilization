@@ -100,5 +100,9 @@ namespace Levy.Common.Progression
 		[Range(1f, 100f)] [Increment(1f)] [DefaultValue(8f)] public float JungleUelibloomChance;
 		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float ProvidenceDropMultiplier;
 		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float PostProvidenceMaterialMultiplier;
+		// The three material drop rates work in any world (vanilla materials too). Each adds (multiplier - 1) extra copies, summed with the army bonus and the options above.
+		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float UniversalMaterialDropMultiplier;
+		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float BossMaterialDropMultiplier;
+		[Range(1f, 20f)] [Increment(0.5f)] [DefaultValue(1f)] public float EnemyMaterialDropMultiplier;
 	}
 }

@@ -49,8 +49,8 @@ namespace Levy.Common.Testing
 			try
 			{
 				p0.active = true; p0.dead = false;
-				Off(c); Recipes(c);
-				if (!CalamityLink.Loaded) Vanilla(c); else { Magnet(c); OreGen(c); Auric(c); Uelibloom(c, p0); Providence(c, p0); Agitator(c, p0); }
+				Off(c); Recipes(c); Materials(c, p0);
+				if (!CalamityLink.Loaded) Vanilla(c); else { CalMaterials(c, p0); Magnet(c); OreGen(c); Auric(c); Uelibloom(c, p0); Providence(c, p0); Agitator(c, p0); }
 			}
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			finally
@@ -70,6 +70,7 @@ namespace Levy.Common.Testing
 		{
 			"SuperpoweredMagnetRecipe", "SuperpoweredMagnetCooldownMinutes", "ScoriaOreRecipe", "SlimeAgitatorRecipe", "CalamityOreGenMultiplier", "AuricOreRegeneration",
 			"JungleUelibloomDrop", "JungleUelibloomChance", "ProvidenceDropMultiplier", "PostProvidenceMaterialMultiplier",
+			"UniversalMaterialDropMultiplier", "BossMaterialDropMultiplier", "EnemyMaterialDropMultiplier",
 		};
 		static Dictionary<string, object> Snapshot(LevyProgressionConfig c) => Fields.ToDictionary(f => f, f => typeof(LevyProgressionConfig).GetField(f).GetValue(c));
 		static void Restore(LevyProgressionConfig c, Dictionary<string, object> s) { foreach (var kv in s) typeof(LevyProgressionConfig).GetField(kv.Key).SetValue(c, kv.Value); }
@@ -98,7 +99,123 @@ namespace Levy.Common.Testing
 			var ex = new ExtraAmountRule { Providence = true, Post = true };
 			bool allOff = !c.SuperpoweredMagnetRecipe && !c.ScoriaOreRecipe && !c.SlimeAgitatorRecipe && !c.AuricOreRegeneration && !c.JungleUelibloomDrop && c.CalamityOreGenMultiplier <= 1f && c.ProvidenceDropMultiplier <= 1f && c.PostProvidenceMaterialMultiplier <= 1f;
 			if (allOff) Check("off: a Providence or material drop rule adds nothing", ex.Bonus(Main.player[0]) == 0);
+			bool matOff = c.UniversalMaterialDropMultiplier <= 1f && c.BossMaterialDropMultiplier <= 1f && c.EnemyMaterialDropMultiplier <= 1f;
+			if (matOff) Check("off: the three material drop rates add nothing to a boss or an enemy drop", ExtraAmountRule.MaterialBonus(true, c) == 0 && ExtraAmountRule.MaterialBonus(false, c) == 0);
 			Check("off: extra rounds for multiplier 1 are none", CalamityOreGen.ExtraRounds(1f, 0.0) == 0);
+		}
+
+		// ---- the three material drop rates, through the game's own drop solver ---------------------------------------------------
+		static NPC Fake(int type) { var n = new NPC(); n.SetDefaults(type); n.Center = new Vector2(1800 * 16f, 200 * 16f); return n; }
+
+		/// <summary>Total of <paramref name="types"/> dropped over <paramref name="kills"/> kills of <paramref name="npc"/> (or openings of <paramref name="bag"/>), normal mode.</summary>
+		static long DropTotal(Player p0, NPC npc, int bag, int kills, params int[] types)
+		{
+			ClearItems(); long sum = 0;
+			for (int i = 0; i < kills; i++)
+			{
+				Main.ItemDropSolver.TryDropping(new DropAttemptInfo { player = p0, npc = npc, item = bag, IsExpertMode = false, IsMasterMode = false, IsInSimulation = false, rng = Main.rand });
+				foreach (int t in types) sum += Count(t);
+				ClearItems();
+			}
+			return sum;
+		}
+
+		static void Rates(LevyProgressionConfig c, float universal, float boss, float enemy) { Set(c, "UniversalMaterialDropMultiplier", universal); Set(c, "BossMaterialDropMultiplier", boss); Set(c, "EnemyMaterialDropMultiplier", enemy); }
+
+		static bool Near(long got, long baseline, double factor, double tol = 0.15) => baseline > 0 && got >= baseline * factor * (1 - tol) && got <= baseline * factor * (1 + tol);
+
+		/// <summary>One source, every slider setting: off is the baseline; the matching slider and the universal one multiply it; the other slider leaves it alone; two sliders add.</summary>
+		static void Source(LevyProgressionConfig c, Player p0, string what, NPC npc, int bag, int kills, bool boss, int[] types, double tol = 0.15)
+		{
+			Rates(c, 1f, 1f, 1f); long b0 = DropTotal(p0, npc, bag, kills, types), b0b = DropTotal(p0, npc, bag, kills, types);
+			Check($"materials off: {what} drops the same as without the options ({b0} and {b0b} over {kills})", b0 > 0 && Near(b0b, b0, 1.0, tol));
+			Rates(c, 1f, boss ? 3f : 1f, boss ? 1f : 3f); long own = DropTotal(p0, npc, bag, kills, types);
+			Check($"materials: the {(boss ? "boss" : "event and enemy")} rate at 3x triples {what} ({own} vs {b0})", Near(own, b0, 3.0, tol));
+			Rates(c, 1f, boss ? 1f : 3f, boss ? 3f : 1f); long other = DropTotal(p0, npc, bag, kills, types);
+			Check($"materials: the {(boss ? "event and enemy" : "boss")} rate at 3x leaves {what} alone ({other} vs {b0})", Near(other, b0, 1.0, tol));
+			Rates(c, 3f, 1f, 1f); long uni = DropTotal(p0, npc, bag, kills, types);
+			Check($"materials: the universal rate at 3x triples {what} ({uni} vs {b0})", Near(uni, b0, 3.0, tol));
+			Rates(c, 2f, boss ? 2f : 1f, boss ? 1f : 2f); long both = DropTotal(p0, npc, bag, kills, types);
+			Check($"materials: 2x universal and 2x {(boss ? "boss" : "event and enemy")} add up to 3x {what} ({both} vs {b0})", Near(both, b0, 3.0, tol));
+			Rates(c, 1f, 1f, 1f);
+		}
+
+		static void Materials(LevyProgressionConfig c, Player p0)
+		{
+			var s = Snapshot(c);
+			try
+			{
+				Check($"materials: the material rule is attached ({ProgressionDropsSystem.MaterialRules} rules, {ProgressionDropsSystem.GlobalMaterialRules} global)", ProgressionDropsSystem.MaterialRules > 0);
+				// an enemy material (Gel), a boss's materials (Skeletron Prime's Hallowed Bars and Souls of Fright), the same from his Treasure Bag
+				Source(c, p0, "a Blue Slime's Gel", Fake(NPCID.BlueSlime), 0, 300, false, new int[] { ItemID.Gel });
+				Source(c, p0, "Skeletron Prime's Hallowed Bars and Souls of Fright", Fake(NPCID.SkeletronPrime), 0, 30, true, new int[] { ItemID.HallowedBar, ItemID.SoulofFright });
+				Source(c, p0, "his Treasure Bag's Hallowed Bars and Souls of Fright", null, ItemID.SkeletronPrimeBossBag, 30, true, new int[] { ItemID.HallowedBar, ItemID.SoulofFright });
+				// non-materials are never multiplied: the Wall of Flesh's Pwnhammer and emblems, a Blue Slime's Slime Staff
+				var wof = Fake(NPCID.WallofFlesh); int[] emblems = { ItemID.WarriorEmblem, ItemID.RangerEmblem, ItemID.SorcererEmblem, ItemID.SummonerEmblem };
+				Rates(c, 1f, 1f, 1f); long ham0 = DropTotal(p0, wof, 0, 20, ItemID.Pwnhammer), emb0 = DropTotal(p0, wof, 0, 20, emblems);
+				Rates(c, 10f, 10f, 10f); long ham = DropTotal(p0, wof, 0, 20, ItemID.Pwnhammer), emb = DropTotal(p0, wof, 0, 20, emblems);
+				Check($"materials at 10x: the Wall of Flesh still drops one Pwnhammer and one emblem a kill ({ham0} and {emb0} off, {ham} and {emb} on, 20 kills)", ham0 == 20 && ham == 20 && emb0 == 20 && emb == 20);
+				long gel10 = DropTotal(p0, Fake(NPCID.BlueSlime), 0, 50, ItemID.Gel); long staff = DropTotal(p0, Fake(NPCID.BlueSlime), 0, 2000, ItemID.SlimeStaff);
+				Note($"at 10x every rate: 50 Blue Slimes dropped {gel10} Gel; 2000 dropped {staff} Slime Staves");
+				Check($"materials at 10x: the Slime Staff stays a rare weapon drop ({staff} in 2000 kills)", staff <= 8);
+				Rates(c, 1f, 1f, 1f);
+			}
+			finally { Restore(c, s); ClearItems(); }
+		}
+
+		/// <summary>Calamity's boss and event materials the designer named carry the material rule (and, for a sample, drop at the multiplied rate).</summary>
+		static void CalMaterials(LevyProgressionConfig c, Player p0)
+		{
+			var s = Snapshot(c);
+			bool prov0 = CalamityLink.Downed("downedProvidence");
+			try
+			{
+				var db = Main.ItemDropsDB;
+				List<ExtraAmountRule> Extras(int npcType, int bagType, int item)
+				{
+					var all = new List<IItemDropRule>();
+					if (npcType > 0) ProgressionLootNpc.Collect(db.GetRulesForNPCID(npcType, false), all);
+					if (bagType > 0) ProgressionLootNpc.Collect(db.GetRulesForItemID(bagType), all);
+					var l = new List<ExtraAmountRule>();
+					foreach (var r in all) if (r.ChainedRules != null) foreach (var ch in r.ChainedRules) if (ch.RuleToChain is ExtraAmountRule e && e.ItemId == item && e.Material) l.Add(e);
+					return l;
+				}
+				var bosses = new (string npc, string bag, string item)[]
+				{
+					("StormWeaverHead", "StormWeaverBag", "ArmoredShell"), ("CeaselessVoid", "CeaselessVoidBag", "DarkPlasma"), ("Signus", "SignusBag", "TwistingNether"),
+					("Dragonfolly", "DragonfollyBag", "EffulgentFeather"), ("Polterghast", "PolterghastBag", "RuinousSoul"), ("DevourerofGodsHead", "DevourerofGodsBag", "CosmiliteBar"),
+					("Yharon", "YharonBag", "YharonSoulFragment"), ("CalamitasClone", "CalamitasCloneBag", "AshesofCalamity"),
+				};
+				foreach (var (npc, bag, item) in bosses)
+				{
+					int n = CalamityLink.NpcType(npc), b = CalamityLink.ItemType(bag), it = CalamityLink.ItemType(item);
+					var onNpc = Extras(n, 0, it); var onBag = Extras(0, b, it);
+					Check($"calamity boss material: {item} from {npc} and {bag} carries the boss material rule ({onNpc.Count} on the kill, {onBag.Count} in the bag)", n > 0 && b > 0 && it > 0 && onNpc.Count >= 1 && onBag.Count >= 1 && onNpc.Concat(onBag).All(e => e.BossRule));
+				}
+				int shard = CalamityLink.ItemType("LivingShard");
+				var plNpc = Extras(NPCID.Plantera, 0, shard); var plB = Extras(0, ItemID.PlanteraBossBag, shard);
+				Check($"calamity boss material: Plantera's Living Shard carries the boss material rule ({plNpc.Count} on the kill, {plB.Count} in the bag)", shard > 0 && plNpc.Count + plB.Count >= 1 && plNpc.Concat(plB).All(e => e.BossRule));
+				var events = new (int npc, string calNpc, string item)[]
+				{
+					(NPCID.Splinterling, null, "NightmareFuel"), (NPCID.HeadlessHorseman, null, "NightmareFuel"), (NPCID.ElfCopter, null, "EndothermicEnergy"), (NPCID.Yeti, null, "EndothermicEnergy"),
+					(NPCID.Frankenstein, null, "DarksunFragment"), (NPCID.Eyezor, null, "DarksunFragment"), (0, "PhantomSpirit", "Necroplasm"), (0, "Scryllar", "Bloodstone"), (0, "SoulSlurper", "Bloodstone"),
+				};
+				foreach (var (vn, cn, item) in events)
+				{
+					int n = vn > 0 ? vn : CalamityLink.NpcType(cn), it = CalamityLink.ItemType(item);
+					var l = Extras(n, 0, it);
+					string who = vn > 0 ? Lang.GetNPCNameValue(vn) : cn;
+					Check($"calamity event material: {item} from {who} carries the material rule as an enemy drop ({l.Count})", n > 0 && it > 0 && l.Count >= 1 && l.All(e => !e.BossRule));
+				}
+				// a sample through the drop solver: the Dragonfolly's Effulgent Feathers (boss), a Phantom Spirit's Necroplasm and a Scryllar's Bloodstone (enemies)
+				int fol = CalamityLink.NpcType("Dragonfolly"), fea = CalamityLink.ItemType("EffulgentFeather"), ps = CalamityLink.NpcType("PhantomSpirit"), necro = CalamityLink.ItemType("Necroplasm");
+				if (fol > 0 && fea > 0) Source(c, p0, "the Dragonfolly's Effulgent Feathers", Fake(fol), 0, 20, true, new[] { fea });
+				if (ps > 0 && necro > 0) Source(c, p0, "a Phantom Spirit's Necroplasm", Fake(ps), 0, 200, false, new[] { necro });
+				CalamityLink.SetDowned("downedProvidence", true);
+				int scry = CalamityLink.NpcType("Scryllar"), blood = CalamityLink.ItemType("Bloodstone");
+				if (scry > 0 && blood > 0) Source(c, p0, "a Scryllar's Bloodstone (after Providence)", Fake(scry), 0, 2000, false, new[] { blood }, 0.22);
+			}
+			finally { Restore(c, s); ClearItems(); CalamityLink.SetDowned("downedProvidence", prov0); }
 		}
 
 		// ---- recipes ------------------------------------------------------------------------------------------------
@@ -124,21 +241,21 @@ namespace Levy.Common.Testing
 			var sco = all.FirstOrDefault(r => r.Result == scoria);
 			Check($"recipe: {ProgConst.ScoriaYield} Scoria Ore = {ProgConst.ScoriaHellstone} Hellstone + {ProgConst.ScoriaChlorophyte} Chlorophyte Ore at an Adamantite Forge, after Golem",
 				sco != null && Same(sco, scoria, ProgConst.ScoriaYield, new[] { I(ItemID.Hellstone, ProgConst.ScoriaHellstone), I(ItemID.ChlorophyteOre, ProgConst.ScoriaChlorophyte) }, TileID.AdamantiteForge) && sco.Cond == Condition.DownedGolem);
-			var ag = all.FirstOrDefault(r => r.Result == agit);
-			Check($"recipe: Slime Agitator = {ProgConst.AgitatorKingSlime} Royal Gel + {ProgConst.AgitatorQueenSlime} Volatile Gelatin + {ProgConst.AgitatorScoria} Scoria Ore at a Mythril Anvil",
-				ag != null && Same(ag, agit, 1, new[] { I(ItemID.RoyalGel, ProgConst.AgitatorKingSlime), I(ItemID.VolatileGelatin, ProgConst.AgitatorQueenSlime), I(scoria, ProgConst.AgitatorScoria) }, TileID.MythrilAnvil));
-			// the agitator's ingredients really are King Slime and Queen Slime drops
-			bool Drops(int npcType, int bag, int item)
+			var ag = all.FirstOrDefault(r => r.Result == agit); int perennial = CalamityLink.ItemType("PerennialBar");
+			Check($"recipe: Slime Agitator = {ProgConst.AgitatorGel} Gel + {ProgConst.AgitatorPerennial} Perennial Bars at a Mythril Anvil, after Plantera",
+				perennial > 0 && ag != null && Same(ag, agit, 1, new[] { I(ItemID.Gel, ProgConst.AgitatorGel), I(perennial, ProgConst.AgitatorPerennial) }, TileID.MythrilAnvil) && ag.Cond == Condition.DownedPlantera);
+			Check("agitator: no Royal Gel, Volatile Gelatin or Scoria Ore in the recipe", ag != null && !ag.Ingredients.Any(q => q.type == ItemID.RoyalGel || q.type == ItemID.VolatileGelatin || q.type == scoria));
+			// the recipe is reachable: Gel stacks to 5000, and Perennial Bars are a real Calamity recipe result
+			var gel = new Item(); gel.SetDefaults(ItemID.Gel);
+			Check($"agitator: 5000 Gel fit one stack (max {gel.maxStack})", gel.maxStack >= ProgConst.AgitatorGel);
+			bool barRecipe = false; for (int r = 0; r < Recipe.numRecipes; r++) { var x = Main.recipe[r]; if (x != null && !x.Disabled && x.createItem.type == perennial) { barRecipe = true; break; } }
+			Check("agitator: Perennial Bars have a crafting recipe", barRecipe);
+			// the live recipe matches the spec when the option is on (the boot config decides whether it was registered)
+			if (c.SlimeAgitatorRecipe)
 			{
-				var rules = new List<IItemDropRule>();
-				ProgressionLootNpc.Collect(Main.ItemDropsDB.GetRulesForNPCID(npcType, false), rules);
-				ProgressionLootNpc.Collect(Main.ItemDropsDB.GetRulesForItemID(bag), rules);
-				foreach (var r in rules)
-					if (r is CommonDrop cd && cd.itemId == item || r is OneFromOptionsDropRule o1 && o1.dropIds.Contains(item) || r is OneFromOptionsNotScaledWithLuckDropRule o2 && o2.dropIds.Contains(item) || r is DropOneByOne obo && obo.itemId == item) return true;
-				return false;
+				Recipe live = null; for (int r = 0; r < Recipe.numRecipes; r++) { var x = Main.recipe[r]; if (x != null && !x.Disabled && x.Mod == _mod && x.createItem.type == agit) { live = x; break; } }
+				Check("agitator: the registered recipe takes 5000 Gel and 10 Perennial Bars at a Mythril Anvil after Plantera", live != null && live.requiredItem.Count == 2 && live.requiredItem.Any(i => i.type == ItemID.Gel && i.stack == ProgConst.AgitatorGel) && live.requiredItem.Any(i => i.type == perennial && i.stack == ProgConst.AgitatorPerennial) && live.requiredTile.Contains(TileID.MythrilAnvil) && live.Conditions.Contains(Condition.DownedPlantera));
 			}
-			Check("agitator: Royal Gel is a King Slime drop", Drops(NPCID.KingSlime, ItemID.KingSlimeBossBag, ItemID.RoyalGel));
-			Check("agitator: Volatile Gelatin is a Queen Slime drop", Drops(NPCID.QueenSlimeBoss, ItemID.QueenSlimeBossBag, ItemID.VolatileGelatin));
 			Check("scoria recipe: Hellstone and Chlorophyte Ore are real items and Scoria Ore resolves", ItemID.Hellstone > 0 && scoria > 0);
 		}
 

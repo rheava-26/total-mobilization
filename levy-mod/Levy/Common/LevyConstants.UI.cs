@@ -61,7 +61,7 @@ namespace Levy.Common
 			public const float CardGradeTint = 0.22f;
 			public static readonly Color GradeColorLevy = new(150, 165, 190), GradeColorManAtArms = new(90, 165, 240), GradeColorChampion = new(240, 190, 60);
 			public const float ButtonTextScale = 0.75f, SmallTextScale = 0.8f;
-			public const long DepositSmall = 10000, DepositLarge = 100000; // 1 gold, 10 gold
+			public const long DepositSmall = 10000, DepositLarge = 100000, DepositPlatinum = 1000000; // 1 gold, 10 gold, 1 platinum
 			/// <summary>First and one-past-last main-inventory slot (hotbar, coins and ammo excluded).</summary>
 			public const int InventoryMainStart = 10, InventoryMainEnd = 50;
 			public const int InventoryMouseSlot = 58;

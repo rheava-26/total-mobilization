@@ -32,14 +32,15 @@ namespace Levy.Common.Movement
 
 		// ---- beams ----
 		private sealed class BeamKind { public int Kind; public PropertyInfo Length; public float Width; }   // Kind 0 none, 1 laserbeam base (LaserLength), 2 deathray pattern (localAI[1])
-		private static readonly Dictionary<int, BeamKind> _beam = new();
+		private static BeamKind[] _beam = new BeamKind[0];
 
 		/// <summary>True (with the line's current length and width) when this modded projectile is a beam.</summary>
 		public static bool BeamOf(Projectile p, out float len, out float width)
 		{
 			len = width = 0f;
 			if (!BeamsOn || p.ModProjectile == null) return false;
-			if (!_beam.TryGetValue(p.type, out var k)) _beam[p.type] = k = ClassifyBeam(p.ModProjectile.GetType());
+			if (p.type >= _beam.Length) Array.Resize(ref _beam, Math.Max(p.type + 1, ProjectileLoader.ProjectileCount));
+			var k = _beam[p.type] ??= ClassifyBeam(p.ModProjectile.GetType());
 			switch (k.Kind)
 			{
 				case 1:
@@ -128,7 +129,7 @@ namespace Levy.Common.Movement
 		private static readonly Dictionary<string, float> BlastFactor = new() { ["CalamityMod/AresGaussNukeProjectileBoom"] = 0.4f };
 
 		private sealed class AreaKind { public int Kind; public float R; }   // 0 none, 1 interface, 2 known telegraph, 3 growing blast (R = hit factor)
-		private static readonly Dictionary<int, AreaKind> _area = new();
+		private static AreaKind[] _area = new AreaKind[0];
 		/// <summary>Ticks of growth a fleeing levy is given against a blast that is still expanding.</summary>
 		private const float BlastLeadScale = 1.3f;
 
@@ -137,7 +138,8 @@ namespace Levy.Common.Movement
 		{
 			radius = 0f; fuse = 0;
 			if (!AreasOn || p.ModProjectile == null) return false;
-			if (!_area.TryGetValue(p.type, out var k)) _area[p.type] = k = ClassifyArea(p.ModProjectile);
+			if (p.type >= _area.Length) Array.Resize(ref _area, Math.Max(p.type + 1, ProjectileLoader.ProjectileCount));
+			var k = _area[p.type] ??= ClassifyArea(p.ModProjectile);
 			switch (k.Kind)
 			{
 				case 1:

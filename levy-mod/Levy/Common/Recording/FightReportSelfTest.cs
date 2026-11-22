@@ -52,10 +52,12 @@ namespace Levy.Common.Recording
 			}
 			if (sc.Collapse)
 			{
-				Ev(50 * 60 + 5, "{\"k\":\"e\",\"t\":3005,\"e\":\"hit\",\"dmg\":100,\"npc\":-1,\"proj\":777,\"other\":-1,\"life\":400}");
-				Ev(52 * 60, "{\"k\":\"e\",\"t\":3120,\"e\":\"hit\",\"dmg\":100,\"npc\":-1,\"proj\":777,\"other\":-1,\"life\":300}");
-				Ev(54 * 60, "{\"k\":\"e\",\"t\":3240,\"e\":\"hit\",\"dmg\":200,\"npc\":262,\"proj\":-1,\"other\":-1,\"life\":100}");
-				Ev(57 * 60 + 50, "{\"k\":\"e\",\"t\":3470,\"e\":\"hit\",\"dmg\":200,\"npc\":262,\"proj\":-1,\"other\":-1,\"life\":0}");
+				// "life" is the commander's life when the hit came (before it); the frames show what it left. The mine's hit is the game's 233,134 that took no life at all.
+				Ev(50 * 60 + 5, "{\"k\":\"e\",\"t\":3005,\"e\":\"hit\",\"dmg\":100,\"npc\":-1,\"proj\":777,\"other\":-1,\"life\":600}");
+				Ev(52 * 60, "{\"k\":\"e\",\"t\":3120,\"e\":\"hit\",\"dmg\":100,\"npc\":-1,\"proj\":777,\"other\":-1,\"life\":500}");
+				Ev(54 * 60, "{\"k\":\"e\",\"t\":3240,\"e\":\"hit\",\"dmg\":200,\"npc\":262,\"proj\":-1,\"other\":-1,\"life\":400}");
+				Ev(55 * 60, "{\"k\":\"e\",\"t\":3300,\"e\":\"hit\",\"dmg\":233134,\"npc\":-1,\"proj\":888,\"other\":-1,\"life\":200}");
+				Ev(57 * 60 + 50, "{\"k\":\"e\",\"t\":3470,\"e\":\"hit\",\"dmg\":200,\"npc\":262,\"proj\":-1,\"other\":-1,\"life\":200}");
 				Ev(58 * 60, sc.Ext ? "{\"k\":\"e\",\"t\":3480,\"e\":\"cdeath\",\"x\":0,\"y\":0,\"n\":1,\"kn\":262,\"kp\":-1,\"ko\":-1,\"kc\":\"\",\"kd\":200}" : "{\"k\":\"e\",\"t\":3480,\"e\":\"cdeath\",\"x\":0,\"y\":0,\"n\":1}");
 				Ev(18 * 60, "{\"k\":\"e\",\"t\":1080,\"e\":\"lbw\",\"why\":\"morale\",\"n\":20,\"broken\":8,\"deaths\":0}");
 			}
@@ -67,14 +69,15 @@ namespace Levy.Common.Recording
 				if (sc.Collapse && dead >= 14) n = Math.Max(0, 6 - (sec - 40) / 3); // the last six fall away after the fourteenth death
 				if (sc.Collapse && sec >= 55) n = 0;
 				int shaken = sc.Collapse && sec >= 20 ? Math.Min(8, n) : 0;
-				var sb = new StringBuilder("{\"k\":\"f\",\"t\":" + t + ",\"p\":[0,0,0,0,1,1,500,200,0,0,0," + (sec < 30 ? 1000 : 2000) + ",-1,0,0,0],\"b\":[[262,1,0,0,0,0," + Math.Max(200, 10000 - 9800 * t / ticks) + ",10000,0,0,0,0,0,0,1,-1,86,86]],\"l\":[");
+				int plife = !sc.Collapse || t <= 3005 ? 600 : t <= 3120 ? 500 : t <= 3240 ? 400 : t <= 3470 ? 200 : 0;
+				var sb = new StringBuilder("{\"k\":\"f\",\"t\":" + t + ",\"p\":[0,0,0,0,1,1," + plife + ",200,0,0,0," + (sec < 30 ? 1000 : 2000) + ",-1,0,0,0],\"b\":[[262,1,0,0,0,0," + Math.Max(200, 10000 - 9800 * t / ticks) + ",10000,0,0,0,0,0,0,1,-1,86,86]],\"l\":[");
 				for (int i = 0; i < n; i++) { if (i > 0) sb.Append(','); sb.Append("[" + (100 + i) + ",0,0,0,0,0,400," + (i < shaken ? 6 : 1) + ",0,0,500,20,42]"); }
 				sb.Append("]}"); L.Add(sb.ToString());
 			}
 			while (ei < evKeys.Count) { foreach (string e in events[evKeys[ei]]) L.Add(e); ei++; }
 			L.Add("{\"k\":\"e\",\"t\":" + ticks + ",\"e\":\"bdespawn\",\"npc\":262,\"name\":\"Plantera\",\"id\":1,\"x\":0,\"y\":0,\"life\":200,\"max\":10000,\"final\":1}");
 			if (sc.Acc) { L.Add("{\"k\":\"e\",\"t\":" + (12 * 60) + ",\"e\":\"bph\",\"pct\":75}"); L.Add("{\"k\":\"e\",\"t\":" + (30 * 60) + ",\"e\":\"bph\",\"pct\":50,\"what\":\"Plantera enters phase two\"}"); }
-			L.Add("{\"k\":\"names\",\"items\":{\"1000\":\"Iron Francisca\",\"2000\":\"Spear of Destiny\",\"5000\":\"Abyssal Mirror\",\"6000\":\"Advanced Portable Remote Storage Access\"},\"nonweapons\":[5000,6000],\"npcs\":{\"262\":\"Plantera\"},\"projectiles\":{\"777\":\"Spore Gas\",\"9001\":\"Francisca\"},\"buffs\":{},\"soldiers\":{},\"prefixes\":{}}");
+			L.Add("{\"k\":\"names\",\"items\":{\"1000\":\"Iron Francisca\",\"2000\":\"Spear of Destiny\",\"5000\":\"Abyssal Mirror\",\"6000\":\"Advanced Portable Remote Storage Access\"},\"nonweapons\":[5000,6000],\"npcs\":{\"262\":\"Plantera\"},\"projectiles\":{\"777\":\"Spore Gas\",\"888\":\"Auric Land Mine Explosion\",\"9001\":\"Francisca\"},\"buffs\":{},\"soldiers\":{},\"prefixes\":{}}");
 			L.Add("{\"k\":\"end\",\"reason\":\"boss gone\",\"ticks\":" + ticks + ",\"frames\":" + (ticks / 2) + ",\"events\":0,\"outcome\":\"despawn\",\"result\":\"" + (sc.Collapse ? "lost" : "won") + "\",\"durationSec\":" + sc.Seconds + ",\"bossName\":\"Plantera\",\"bosses\":1,\"cmdDeaths\":" + (sc.Collapse ? 1 : 0) + ",\"armyAlive\":0,\"armyTotal\":" + sc.Levies + ",\"dmgBoss\":0,\"dmgAll\":0}");
 			return L;
 		}
@@ -98,7 +101,8 @@ namespace Levy.Common.Recording
 				Chk(s.Weapons.TryGetValue("Spear of Destiny", out var sw) && sw.Hits == 7 * 51 && sw.StealthHits == 0 && sw.Crits == 51, "Spear of Destiny: hits and crits");
 				Chk(s.CmdAddDmg == 90 * 51 && s.LevyBossDmg == 2000 * 51, "adds and the army's damage kept apart");
 				Chk(s.StealthBarSeen && s.StealthPct.Count == 51 && s.StealthPct.Count(p => p >= 99) == 21, "stealth bar samples read back (" + s.StealthPct.Count + ", full " + s.StealthPct.Count(p => p >= 99) + ")");
-				Chk(s.TakenHits == 4 && s.TakenTotal == 600 && s.Taken.ContainsKey("Spore Gas") && s.Taken["Spore Gas"].Dmg == 200 && s.Taken.ContainsKey("Plantera (contact)") && s.Taken["Plantera (contact)"].Deaths == 1, "damage taken by source");
+				Chk(s.TakenHits == 5 && s.TakenTotal == 600 && s.Taken.ContainsKey("Spore Gas") && s.Taken["Spore Gas"].Dmg == 200 && s.Taken.ContainsKey("Plantera (contact)") && s.Taken["Plantera (contact)"].Deaths == 1, "damage taken by source (" + s.TakenHits + " hits, " + s.TakenTotal + ")");
+				Chk(s.Taken.TryGetValue("Auric Land Mine Explosion", out var mine) && mine.Dmg == 0 && mine.Raw == 233134 && s.TakenRaw == 233734, "a hit that took no life counts as 0 taken, its game number kept apart (" + (mine?.Dmg ?? -1) + " of " + (mine?.Raw ?? -1) + ")");
 				Chk(s.Deaths.Count == 1 && s.Deaths[0].Killer == "Plantera (contact)" && s.Deaths[0].ArmyAt == 0, "killed by Plantera (contact) with no army left: " + (s.Deaths.Count > 0 ? s.Deaths[0].Killer + " " + s.Deaths[0].ArmyAt : "none"));
 				Chk(s.ArmyStart == 20 && s.ArmyEnd == 0 && s.LeviesLost == 14, "army 20 to 0, 14 fell: " + s.ArmyStart + " " + s.ArmyEnd + " " + s.LeviesLost);
 				Chk(Math.Abs(s.BreakSec - 23) < 0.01 && s.BreakWhy == "morale", "the line broke at 23 s by morale, got " + F(s.BreakSec) + " " + s.BreakWhy);
@@ -116,7 +120,7 @@ namespace Levy.Common.Recording
 				var l2 = FightReport.Summary(s, prior);
 				Chk(l2.Count == 4 && l2[3] == "Your best against Plantera: 5,000 per second. Last time: 3,900.", "line 4 compares with the best and the last: " + (l2.Count > 3 ? l2[3] : "none"));
 				string full = FightReport.Full(s, prior);
-				foreach (string want in new[] { "Plantera, lost at 2%", "3,570 damage per second over the whole fight", "Stealth strikes: 71% of your damage", "Iron Francisca", "Spear of Destiny", "Spore Gas", "Plantera (contact)", "The line broke at 0:23", "The warning came at 0:18", "On you 33%", "Morale break", "Strength line", "Best: 5,000 per second", "Last: 3,900 per second" })
+				foreach (string want in new[] { "Plantera, lost at 2%", "3,570 damage per second over the whole fight", "Stealth strikes: 71% of your damage", "Iron Francisca", "Spear of Destiny", "Spore Gas", "Plantera (contact)", "600 damage taken in 5 hits", "(the game counted 233,134)", "The line broke at 0:23", "The warning came at 0:18", "On you 33%", "Morale break", "Strength line", "Best: 5,000 per second", "Last: 3,900 per second" })
 					Chk(full.Contains(want), "the full report says '" + want + "'");
 				Chk(!full.Contains("not recorded"), "a current recording has nothing marked not recorded");
 

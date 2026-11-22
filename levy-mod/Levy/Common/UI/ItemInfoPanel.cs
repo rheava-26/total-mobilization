@@ -9,6 +9,7 @@ using Terraria.GameContent.UI.Elements;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.UI;
+using Levy.Common.Systems;
 using Levy.Common.Util;
 using Levy.Common.Weapons;
 using Levy.Content.TileEntities;
@@ -21,8 +22,8 @@ namespace Levy.Common.UI
 	/// </summary>
 	public class ItemInfoPanel : UIPanel
 	{
-		public const int PanelWidth = 256, PanelHeight = 462;
-		private const int TextTop = 10, LineH = 16, ControlsTop = 262;
+		public const int PanelWidth = 256, PanelHeight = 496;
+		private const int TextTop = 10, LineH = 16, ControlsTop = 262, SellTop = 464;
 
 		private readonly ArmoryPanel _owner;
 		private readonly TextBody _body = new();
@@ -33,6 +34,12 @@ namespace Levy.Common.UI
 		private readonly DropButton _classDrop;
 		private readonly Label _rankLabel, _classLabel, _catLabel, _note;
 		private readonly ChoicePopup _popup = new();
+		// autosell row (every kind of item): the Sell switch and the copies kept
+		private readonly LevyButton _sell;
+		private readonly NumberField _keep;
+		private readonly Label _keepLabel;
+		/// <summary>The kept count set before the item is marked; the mark takes it when Sell is switched on.</summary>
+		private int _pendingKeep;
 		private readonly List<UIElement> _chips = new();
 		private Item _item;
 		private int _tick;
@@ -83,6 +90,32 @@ namespace Levy.Common.UI
 			_preferSet.Left.Set(PanelWidth - 120, 0f); _preferSet.Top.Set(ControlsTop, 0f);
 			_gearNote = new Label(LevyUtil.T("Rules.GearNote"), 0.8f);
 			_gearNote.Left.Set(10, 0f); _gearNote.Top.Set(ControlsTop + 36, 0f);
+
+			_sell = new LevyButton("", LevyConstants.UI.ButtonTextScale, 96, 24, ToggleSell, LevyUtil.T("Rules.SellHint"));
+			_sell.Left.Set(10, 0f); _sell.Top.Set(SellTop, 0f); Append(_sell);
+			_keepLabel = Lbl(LevyUtil.T("Rules.SellKeep"), 114, SellTop + 4);
+			_keep = new NumberField(96, 0, ArmoryTE.MaxSellKeep, 1, true, () => KeepNow(), v => SetKeep((int)Math.Round(v)));
+			_keep.Left.Set(PanelWidth - 106, 0f); _keep.Top.Set(SellTop, 0f); Append(_keep);
+		}
+
+		// ------------------------------------------------------------------ autosell
+
+		private bool Marked(out int keep) { keep = 0; var te = _owner.Te; return te != null && _item != null && te.IsSellMarked(_item.type, out keep); }
+
+		private float KeepNow() => Marked(out int k) ? k : _pendingKeep;
+
+		private void SetKeep(int v)
+		{
+			v = Math.Clamp(v, 0, ArmoryTE.MaxSellKeep);
+			if (Marked(out _)) ArmoryEditNet.SetSellMark(_owner.Te, _item.type, true, v);
+			else _pendingKeep = v;
+		}
+
+		private void ToggleSell()
+		{
+			var te = _owner.Te; if (te == null || _item == null || !ArmoryTE.CanMarkForSale(_item.type)) return;
+			if (Marked(out int k)) { _pendingKeep = k; ArmoryEditNet.SetSellMark(te, _item.type, false, k); }
+			else ArmoryEditNet.SetSellMark(te, _item.type, true, _pendingKeep);
 		}
 
 		/// <summary>True for an armor piece or accessory the armory can issue (and not a weapon).</summary>
@@ -149,8 +182,10 @@ namespace Levy.Common.UI
 		{
 			if (it == null || it.IsAir) return;
 			if (_item != null && _item.type == it.type && _item.prefix == it.prefix) return;
+			_keep.StopTypingIfAny(); // a half-typed kept count settles on the item it was typed for
 			_item = it.Clone();
 			_tick = 0; _catSig = "";
+			_pendingKeep = 0;
 			if (_popup.Open) _popup.Remove();
 		}
 
@@ -335,6 +370,10 @@ namespace Levy.Common.UI
 			base.Update(gameTime);
 			if (ContainsPoint(Main.MouseScreen)) Main.LocalPlayer.mouseInterface = true;
 			SyncGearMode();
+			bool marked = Marked(out _);
+			_sell.Set(LevyUtil.T(marked ? "Rules.SellOn" : "Rules.SellOff"), true);
+			_sell.Lit = marked;
+			_sell.Enabled = _item != null && ArmoryTE.CanMarkForSale(_item.type);
 			var o = Ov(false);
 			var mode = o?.Rank ?? RankOverrideMode.Auto;
 			if (_gearShown)

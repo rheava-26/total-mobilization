@@ -153,12 +153,50 @@ const cam={x:0,y:0,z:0.2};
 let blips=[], arenaCanvas=null, gallery=null, galleryIdx=-1;
 
 // ================================================================ parsing
+// ---- format 13 frame rows (hdr.codec 1): K = as predicted, [K,mask,d...] = the masked fields are prediction + d, [[row]] = a full row. Same code as tools/recview/reccodec.py and FightRecFormat.RowCodec.
+const RC_SPECS={b:[1,[2,3],[4,5,8,9,10,11]],a:[1,[2,3],[4,5]],l:[0,[1,2],[3,4]],j:[8,[1,2],[3,4]],c:[7,[1,2],[3,4]]};
+const rcQ=(v,ten)=>{if(typeof v!=="number"||!isFinite(v))return 0;const x=ten?v*10:v;return x>=0?Math.floor(x+0.5):-Math.floor(-x+0.5);};
+const rcVStep=(a,b)=>Math.floor((a+b+5)/10);
+function makeRowDecoder(){
+  const st={}; let on=false;
+  return {
+    header(h){on=!!(h&&h.codec===1);for(const k in RC_SPECS)st[k]=new Map();},
+    frame(f){
+      if(!on) return;
+      for(const k in RC_SPECS){
+        const [ki,pos,ten]=RC_SPECS[k], tset=new Set(ten), old=st[k]||new Map(), cur=new Map(), rows=f[k];
+        if(rows){
+          const out=[];
+          for(const e of rows){
+            let q;
+            if(Array.isArray(e)&&e.length&&Array.isArray(e[0])){q=e[0].map((v,i)=>rcQ(v,tset.has(i)));cur.set(q[ki],{q,s:[0,0],vel:true});}
+            else{
+              let key,mask=0,vals=[]; if(Array.isArray(e)){key=e[0];mask=e[1];vals=e.slice(2);}else key=e;
+              const pv=old.get(key); if(!pv) continue;
+              const pq=pv.q; q=pq.slice(); const d=new Map(); let vi=0;
+              for(let i=0;i<pq.length&&(mask>>i);i++) if((mask>>i)&1){d.set(i,vals[vi]||0);vi++;}
+              for(const [i,dv] of d) if(i!==pos[0]&&i!==pos[1]) q[i]+=dv;
+              for(let pi=0;pi<2;pi++){const p=pos[pi];q[p]=(pv.vel?pq[p]+rcVStep(pq[ten[pi]],q[ten[pi]]):pq[p]+pv.s[pi])+(d.get(p)||0);}
+              let es=0,ev=0; for(let pi=0;pi<2;pi++){const p=pos[pi],step=q[p]-pq[p];es+=Math.abs(step-pv.s[pi]);ev+=Math.abs(step-rcVStep(pq[ten[pi]],q[ten[pi]]));}
+              cur.set(key,{q,s:[q[pos[0]]-pq[pos[0]],q[pos[1]]-pq[pos[1]]],vel:ev<=es});
+            }
+            out.push(q.map((v,i)=>tset.has(i)?v/10:v));
+          }
+          f[k]=out;
+        }
+        st[k]=cur;
+      }
+    }
+  };
+}
 function parseRec(text){
   const R={sdef:new Map(),hdr:null,arena:null,frames:[],events:[],names:{items:{},npcs:{},projectiles:{},buffs:{},soldiers:{}},end:null};
+  const dec=makeRowDecoder();
   for(const line of text.split("\n")){
     const s=line.trim(); if(!s) continue;
     let o; try{o=JSON.parse(s);}catch(e){continue;}
-    switch(o.k){case "hdr":R.hdr=o;break;case "arena":(R.arenas||(R.arenas=[])).push(o);if(!R.arena)R.arena=o;break;case "f":if(o.s){const o2=[];for(const q of o.s){if(q.length>=8){R.sdef.set(q[1],q);o2.push(q);}else{const d=R.sdef.get(q[0]);if(d)o2.push([d[0],q[0],q[1],q[2],d[4],d[5],d[6],d[7]]);}}o.s=o2;}R.frames.push(o);break;case "e":R.events.push(o);break;case "names":R.names=o;break;case "nt":(R.nt=R.nt||[]).push(o);break;case "end":R.end=o;break;}
+    // a format 13 part file starts with the header again: it restarts the row decoder (and the hitbox rows), the first header stays the recording's
+    switch(o.k){case "hdr":if(!R.hdr)R.hdr=o;else R.sdef=new Map();dec.header(o);break;case "arena":(R.arenas||(R.arenas=[])).push(o);if(!R.arena)R.arena=o;break;case "f":dec.frame(o);if(o.s){const o2=[];for(const q of o.s){if(q.length>=8){R.sdef.set(q[1],q);o2.push(q);}else{const d=R.sdef.get(q[0]);if(d)o2.push([d[0],q[0],q[1],q[2],d[4],d[5],d[6],d[7]]);}}o.s=o2;}R.frames.push(o);break;case "e":R.events.push(o);break;case "names":R.names=o;break;case "nt":(R.nt=R.nt||[]).push(o);break;case "end":R.end=o;break;}
   }
   if(!R.frames.length) throw new Error("no frames in file");
   return R;
@@ -166,7 +204,8 @@ function parseRec(text){
 const tkOf=b=>b.length>14?b[14]:((b[12]>=0&&b[12]<255)?1:0);
 // event NPCs (Celestial Pillars, Martian Saucer, Flying Dutchman, Pumpkin/Frost Moon bosses) are never the main boss: same list as tools/recview/recrules.py
 const EVENT_NPC=new Set([517,422,507,493,392,393,394,395,491,492,325,327,328,344,345,346]);
-function mainBoss(f){const bs=(f.b||[]).filter(b=>!EVENT_NPC.has(b[0]));for(const b of bs) if(!b[13]) return b; return bs[0]||null;}
+// the boss row a sample follows: of the bosses (not parts) the largest life pool, its owner first (format 13 field 18 realLife: a worm's head, Ares and not an arm), the lowest life on a tie (a live head before segments frozen at full life); Draedon's own 16,000 never beats a mech. Same rule as make_site.py main_boss
+function mainBoss(f){const bs=(f.b||[]).filter(b=>!EVENT_NPC.has(b[0]));if(!bs.length)return null;let h=bs.filter(b=>!b[13]);if(!h.length)h=bs;let o=h.filter(b=>b.length<=18||b[18]<0||b[18]===b[1]);if(!o.length)o=h;let best=o[0];for(const b of o)if(b[7]>best[7]||(b[7]===best[7]&&b[6]<best[6]))best=b;return best;}
 function build(R){
   R.v=(R.hdr&&R.hdr.format)||1;
   R.hasTarget=R.frames.some(f=>(f.b||[]).some(b=>b.length>14));
@@ -258,6 +297,11 @@ function parseChecked(info){
   return R;
 }
 async function readRecFile(file){
+  if(file&&file.parts){ // a format 13 recording split into NAME.levyrec, NAME_part2.levyrec ...: read every part in order as one file
+    const infos=[]; for(const f of file.parts) infos.push(await textFromBytes(new Uint8Array(await f.arrayBuffer())));
+    const info={text:infos.map(i=>i.text).join("\n"),gz:infos.some(i=>i.gz),gzErr:(infos.find(i=>i.gzErr)||{}).gzErr||null};
+    return parseChecked(info);
+  }
   const u8=new Uint8Array(await file.arrayBuffer());
   const info=await textFromBytes(u8);
   try{return parseChecked(info);}
@@ -377,7 +421,23 @@ async function openEntry(ent){
   try{setRec(R,ent.kind==="gallery"?ent.g.title:ent.name);}catch(e){empty.style.display="flex";empty.textContent="Could not show this recording: "+e.message;return;}
   document.body.classList.remove("showlist");
 }
+// NAME_partN.levyrec belongs to NAME.levyrec: the parts of one recording become one entry (a part dropped without its first part still opens on its own)
+const PART_RE=/^(.*)_part(\d+)(\.levyrec|\.jsonl\.gz|\.jsonl)$/i;
+function joinParts(items){
+  const byBase=new Map(), out=[];
+  for(const it of items){const m=PART_RE.exec(it.rel||it.file.name); if(m){const k=m[1]+m[3];(byBase.get(k)||byBase.set(k,[]).get(k)).push([+m[2],it]);}}
+  for(const it of items){
+    const nm=it.rel||it.file.name; if(PART_RE.test(nm)&&byBase.has(PART_RE.exec(nm)[1]+PART_RE.exec(nm)[3])&&items.some(x=>(x.rel||x.file.name)===PART_RE.exec(nm)[1]+PART_RE.exec(nm)[3])) continue;
+    const ps=byBase.get(nm);
+    if(!ps){out.push(it);continue;}
+    ps.sort((a,b)=>a[0]-b[0]); const all=[it.file,...ps.map(x=>x[1].file)];
+    const f={name:it.file.name,size:all.reduce((a,x)=>a+x.size,0),lastModified:it.file.lastModified,parts:all,arrayBuffer:()=>it.file.arrayBuffer()};
+    out.push({file:f,rel:it.rel});
+  }
+  return out;
+}
 async function addFiles(items,skipped){
+  items=joinParts(items);
   let ok=0,bad=0,dup=0; const added=[];
   for(let i=0;i<items.length;i++){
     const file=items[i].file, path=items[i].rel||file.name, key=path+"|"+file.size+"|"+file.lastModified;

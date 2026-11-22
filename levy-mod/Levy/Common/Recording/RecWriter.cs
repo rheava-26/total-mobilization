@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -12,6 +13,9 @@ namespace Levy.Common.Recording
 	/// sync-flushed every couple of seconds, so a crash leaves a file that still reads up to the last flush. The writer stops accepting lines once the compressed size passes the cap
 	/// (<see cref="Full"/>) or the queue holds more than <see cref="MaxQueuedChars"/> (a stalled disk); lines written with force always go in, so the closing records are never lost.
 	/// A recording that cannot be written (disk full, folder gone) sets <see cref="Error"/> and the recorder stops itself.
+	/// The gzip stream uses the smallest-size level (zlib 9): the writer has its own thread, and the files are about 4% smaller than at the default level.
+	/// PART FILES (gzip only): once the current part passes the part size, <see cref="PartDue"/> is set; the recorder answers with <see cref="StartPart"/> (the header of the next part), and every line queued after that
+	/// goes to NAME_partN.levyrec. On close every part is moved to its final name (the first one to the name given, part N to that name with _partN before the extension). The size cap counts all parts.
 	/// </summary>
 	internal sealed class RecWriter
 	{
@@ -23,7 +27,13 @@ namespace Levy.Common.Recording
 		private readonly Thread _thread;
 		private readonly string _tempPath, _finalPath;
 		private readonly bool _gzip;
-		private readonly long _maxBytes;
+		private readonly long _maxBytes, _partBytes;
+		private long _closedBytes;
+		private int _part = 1;
+		private volatile bool _partDue;
+		private readonly List<string> _temps = new();
+		/// <summary>Marks a part switch in the queue (no recording line starts with it).</summary>
+		private const char PartMark = '\u0001';
 		private long _queuedChars, _rawBytes, _fileBytes, _dropped;
 		private volatile bool _closing, _done, _full;
 		private volatile string _error;
@@ -33,29 +43,34 @@ namespace Levy.Common.Recording
 
 		/// <summary>The compressed (or plain) size on disk has passed the cap: the recorder should stop and close.</summary>
 		public bool Full => _full;
+		/// <summary>The part being written has passed the part size: the recorder should call <see cref="StartPart"/> now.</summary>
+		public bool PartDue => _partDue;
+		/// <summary>The part the next lines go to (1 = the first file).</summary>
+		public int Part => _part;
 		public string Error => _error;
 		public bool Done => _done;
 		public long Dropped => Interlocked.Read(ref _dropped);
 		public long RawBytes => Interlocked.Read(ref _rawBytes);
+		/// <summary>Compressed (or plain) bytes on disk, every part together.</summary>
 		public long FileBytes => Interlocked.Read(ref _fileBytes);
 		/// <summary>Where the bytes are right now (the .part name while writing).</summary>
 		public string TempPath => _tempPath;
 
 		/// <summary>Opens a recording. False with the reason when the folder is missing or the file cannot be created (no exception for the usual cases).</summary>
-		public static bool TryOpen(string path, bool gzip, long maxBytes, out RecWriter w, out string why)
+		public static bool TryOpen(string path, bool gzip, long maxBytes, out RecWriter w, out string why, long partBytes = 0)
 		{
 			w = null; why = null;
 			string dir = Path.GetDirectoryName(path);
 			if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) { why = "the folder " + dir + " does not exist"; return false; }
-			try { w = new RecWriter(path, gzip, maxBytes); return true; }
+			try { w = new RecWriter(path, gzip, maxBytes, partBytes); return true; }
 			catch (Exception e) { why = e.Message; return false; }
 		}
 
 		/// <param name="path">The file written to. For a gzip recording it is written under path + ".part" and moved to <paramref name="path"/> (or the name given to Close) when finished.</param>
-		public RecWriter(string path, bool gzip, long maxBytes)
+		public RecWriter(string path, bool gzip, long maxBytes, long partBytes = 0)
 		{
-			_gzip = gzip; _maxBytes = maxBytes <= 0 ? long.MaxValue : maxBytes;
-			_finalPath = path; _tempPath = gzip ? path + ".part" : path;
+			_gzip = gzip; _maxBytes = maxBytes <= 0 ? long.MaxValue : maxBytes; _partBytes = gzip && partBytes > 0 ? partBytes : 0;
+			_finalPath = path; _tempPath = gzip ? path + ".part" : path; _temps.Add(_tempPath);
 			_thread = new Thread(Run) { IsBackground = true, Name = "LevyFightRec" };
 			// create the file here so an unwritable folder fails at Start, on the caller's thread, not later
 			_fs = new FileStream(_tempPath, FileMode.Create, FileAccess.Write, FileShare.Read, 1 << 16, FileOptions.None);
@@ -63,6 +78,19 @@ namespace Levy.Common.Recording
 		}
 
 		private FileStream _fs;
+
+		/// <summary>NAME.levyrec -> NAME_partN.levyrec (N >= 2; N 1 is the name itself).</summary>
+		public static string PartName(string path, int n) => RecParts.PartName(path, n);
+
+		/// <summary>Every line queued after this call goes to the next part file, which starts with <paramref name="header"/>. Only for a gzip recording with a part size; does nothing otherwise.</summary>
+		public void StartPart(string header)
+		{
+			if (_closing || _partBytes <= 0 || header == null) return;
+			_partDue = false;
+			Interlocked.Add(ref _queuedChars, header.Length + 2);
+			_q.Enqueue(PartMark + header);
+			_sig.Release();
+		}
 
 		public void WriteLine(string s, bool force = false)
 		{
@@ -106,7 +134,7 @@ namespace Levy.Common.Recording
 			try
 			{
 				Stream target = raw;
-				if (_gzip) { gz = new GZipStream(raw, CompressionLevel.Optimal, leaveOpen: true); target = gz; }
+				if (_gzip) { gz = new GZipStream(raw, CompressionLevel.SmallestSize, leaveOpen: true); target = gz; }
 				w = new StreamWriter(target, new UTF8Encoding(false), 1 << 16) { NewLine = "\n" };
 				while (true)
 				{
@@ -116,6 +144,22 @@ namespace Levy.Common.Recording
 					while (_q.TryDequeue(out string line))
 					{
 						Interlocked.Add(ref _queuedChars, -(line.Length + 1));
+						if (_error == null && line.Length > 0 && line[0] == PartMark)
+						{
+							// the next part: close this gzip stream and file, open NAME_partN.levyrec.part, start it with the header
+							try
+							{
+								w.Flush(); w.Dispose(); w = null; gz = null; raw.Flush(); _closedBytes += raw.Length; raw.Dispose(); raw = null;
+								_part++;
+								string tp = PartName(_finalPath, _part) + ".part"; _temps.Add(tp);
+								raw = new FileStream(tp, FileMode.Create, FileAccess.Write, FileShare.Read, 1 << 16, FileOptions.None);
+								gz = new GZipStream(raw, CompressionLevel.SmallestSize, leaveOpen: true);
+								w = new StreamWriter(gz, new UTF8Encoding(false), 1 << 16) { NewLine = "\n" };
+								string h = line.Substring(1); w.WriteLine(h); Interlocked.Add(ref _rawBytes, h.Length + 1); n++;
+							}
+							catch (Exception e) { _error = e.Message; }
+							continue;
+						}
 						if (_error == null)
 						{
 							try { w.WriteLine(line); Interlocked.Add(ref _rawBytes, line.Length + 1); n++; }
@@ -128,8 +172,9 @@ namespace Levy.Common.Recording
 						try
 						{
 							w.Flush(); gz?.Flush(); raw.Flush();
-							long len = raw.Length; Interlocked.Exchange(ref _fileBytes, len);
-							if (len > _maxBytes) _full = true;
+							long len = raw.Length; Interlocked.Exchange(ref _fileBytes, _closedBytes + len);
+							if (_closedBytes + len > _maxBytes) _full = true;
+							if (_partBytes > 0 && len > _partBytes) _partDue = true;
 						}
 						catch (Exception e) { _error = e.Message; }
 						lastFlushMs = now;
@@ -141,7 +186,7 @@ namespace Levy.Common.Recording
 				{
 					try { w.Flush(); w.Dispose(); w = null; gz?.Dispose(); gz = null; } // a plain recording's StreamWriter closes the file with it
 					catch (Exception e) { _error = e.Message; }
-					try { Interlocked.Exchange(ref _fileBytes, new FileInfo(_tempPath).Length); } catch { }
+					try { Interlocked.Exchange(ref _fileBytes, _closedBytes + new FileInfo(_temps[_temps.Count - 1]).Length); } catch { }
 				}
 			}
 			catch (Exception e) { _error ??= e.Message; }
@@ -154,10 +199,12 @@ namespace Levy.Common.Recording
 			try
 			{
 				string to = _renameTo ?? _finalPath;
-				if (File.Exists(_tempPath))
+				for (int i = 0; i < _temps.Count; i++)
 				{
-					if (!string.Equals(to, _tempPath, StringComparison.Ordinal)) { if (File.Exists(to)) File.Delete(to); File.Move(_tempPath, to); }
-					result = to;
+					string from = _temps[i], dest = PartName(to, i + 1);
+					if (!File.Exists(from)) continue;
+					if (!string.Equals(dest, from, StringComparison.Ordinal)) { if (File.Exists(dest)) File.Delete(dest); File.Move(from, dest); }
+					if (i == 0) result = to;
 				}
 			}
 			catch (Exception e) { _error ??= e.Message; result = _gzip ? _tempPath : result; }

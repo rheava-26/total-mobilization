@@ -158,6 +158,7 @@ namespace Levy.Content.TileEntities
 			long pt = global::Levy.Common.Util.LevyProf.Begin();
 			if (_dirty) Sync();
 			if (Main.netMode != NetmodeID.MultiplayerClient && ++_stampTimer >= StampIntervalTicks) { _stampTimer = 0; StampNew(); }
+			TickAutoSell();
 			global::Levy.Common.Util.LevyProf.EndCount(global::Levy.Common.Util.LevyProf.ArmTick, pt);
 		}
 
@@ -2262,6 +2263,7 @@ namespace Levy.Content.TileEntities
 			w ??= TakeBestWeapon(soldier);
 			// Soldiers get first pick: nothing on the racks, but a drone is carrying a weapon he could use. It goes back to the racks and he takes it; the drone stands down.
 			if (w == null && ReclaimLentWeaponFor(soldier)) w = TakeBestWeapon(soldier);
+			if (w == null && Rules.HasCategoryOnly) { using var _ro = ArmoryRules.RelaxOnly(); w = TakeBestWeapon(soldier); } // an "Only" category rule never leaves a levy unarmed: with none of its kinds left he takes the best of the rest, and trades it on the next deal that has one free
 			if (w == null) return false;
 			g.Weapon = w;
 			return true;
@@ -2689,6 +2691,7 @@ namespace Levy.Content.TileEntities
 			tag["storage"] = SaveStorageWithLoans(); tag["weapons"] = SaveList(IssueWeapons); tag["armor"] = SaveList(IssueArmor); tag["ammo"] = SaveList(IssueAmmo); tag["potions"] = SaveList(IssuePotions);
 			if (!Rules.IsNeutral || Rules.Blocks.Count != 1) tag["rulesV1"] = Rules.ToBytes(); // an untouched default list is not written: an old build reading this save loses nothing
 			if (!Vanity.IsNeutral) tag["vanityV1"] = Vanity.ToTag(); // no vanity rows: nothing written
+			SaveSellMarks(tag);
 		}
 
 		/// <summary>
@@ -2719,6 +2722,7 @@ namespace Levy.Content.TileEntities
 			LoadList(tag, "storage", Storage); LoadList(tag, "weapons", IssueWeapons); LoadList(tag, "armor", IssueArmor); LoadList(tag, "ammo", IssueAmmo); LoadList(tag, "potions", IssuePotions);
 			Rules = tag.ContainsKey("rulesV1") ? ArmoryRules.FromBytes(tag.GetByteArray("rulesV1")) : ArmoryRules.Default();
 			Vanity = tag.ContainsKey("vanityV1") ? ArmoryVanity.FromTag(tag.GetCompound("vanityV1")) : new ArmoryVanity();
+			LoadSellMarks(tag);
 			FitPotions(); // the world's guide flag may already be loaded; if not, the periodic reconcile in LogisticsSystem catches it
 			// Worlds saved with the smaller rows: the old sidearm (last of the old weapon slots) moves to the new last slot.
 			if (tag.GetList<TagCompound>("weapons").Count == LegacyWeaponSlots && SidearmSlot != LegacyWeaponSlots - 1) {
@@ -2738,6 +2742,7 @@ namespace Levy.Content.TileEntities
 			writer.Write(Rules.Rev); writer.Write(rules.Length); writer.Write(rules);
 			var vanity = Vanity.ToBytes();
 			writer.Write(Vanity.Rev); writer.Write(vanity.Length); writer.Write(vanity);
+			WriteSellMarks(writer);
 		}
 		public override void NetReceive(BinaryReader reader)
 		{
@@ -2756,6 +2761,7 @@ namespace Levy.Content.TileEntities
 			var vbytes = vlen > 0 && vlen <= ArmoryVanity.MaxWireBytes ? reader.ReadBytes(vlen) : null;
 			if (vlen > ArmoryVanity.MaxWireBytes) reader.BaseStream.Seek(vlen, SeekOrigin.Current);
 			if (vbytes != null && !VanityHeldBack) { var fresh = ArmoryVanity.FromBytes(vbytes); fresh.Rev = vrev; Vanity.CopyFrom(fresh); } // same object, so an open screen keeps its reference
+			ReadSellMarks(reader);
 		}
 	}
 }

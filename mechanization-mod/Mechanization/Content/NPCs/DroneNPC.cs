@@ -48,7 +48,7 @@ namespace Mechanization.Content.NPCs
 	/// Server / single player drives the brain and fires; clients draw the hand-built side view (phase in ai[1], battery in ai[2], bound flag in ai[3], weapon type and shot counter on the extra-AI sync),
 	/// the mounted weapon (aim in ai[0]) and the bars. Transient: never saved. The manager re-garrisons on reload.
 	/// </summary>
-	public class DroneNPC : ModNPC, ITargetBody
+	public class DroneNPC : ModNPC, ITargetBody, global::Levy.Common.UI.IMachineNameTag
 	{
 		// ---- bound data (server; clients learn what they draw from the sync) ----
 		/// <summary>Tile-entity ids of the Barracks that fields this drone and the Armory that lent the weapon. -1 until bound.</summary>
@@ -232,6 +232,10 @@ namespace Mechanization.Content.NPCs
 
 		/// <summary>The item type of the weapon a player-built drone has mounted (0 = the plain bullet). For the self-check.</summary>
 		public int FieldWeaponType => WeaponType;
+
+		// Levy's ally tag over the drone ("Drone", or "Drone: <weapon>").
+		bool global::Levy.Common.UI.IMachineNameTag.TagIsDrone => true;
+		int global::Levy.Common.UI.IMachineNameTag.TagWeaponType => WeaponType;
 
 		/// <summary>The Armories a player-built drone reads (for its chat panel); on a client the read is from where the drone flies.</summary>
 		private int ArmoriesInReach()

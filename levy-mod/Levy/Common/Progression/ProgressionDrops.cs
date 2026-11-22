@@ -24,7 +24,8 @@ namespace Levy.Common.Progression
 		}
 	}
 
-	/// <summary>Extra copies of the item the parent rule just dropped: Luminite, Lunar Fragments, and the army loot bonus on boss materials. Chained to the vanilla rule, so every vanilla rule and condition still decides whether the drop happens at all.</summary>
+	/// <summary>Extra copies of the item the parent rule just dropped: Luminite, Lunar Fragments, the army loot bonus on boss materials and the three material drop rates. Chained to the vanilla rule, so every vanilla rule and condition still decides whether the drop happens at all.
+	/// Every option adds its (multiplier - 1) to one bonus, and the drop gets Average x bonus extra copies: a 2x universal and a 2x boss rate on a boss material is 1 + 1 + 1 = 3 times the normal amount.</summary>
 	public class ExtraAmountRule : IItemDropRule
 	{
 		public int ItemId;
@@ -32,7 +33,30 @@ namespace Levy.Common.Progression
 		public bool Army;        // add the army loot bonus
 		public bool Luminite, Fragment;
 		public bool Providence, Post;   // Calamity: a material Providence or her Treasure Bag drops; Divine Geode, Unholy Essence and Uelibloom Ore from any source
+		/// <summary>A crafting material (<see cref="ProgressionDropsSystem.IsMaterial"/>): the universal rate applies, and the boss rate or the event and enemy rate by the source of the drop.</summary>
+		public bool Material;
+		/// <summary>The rule sits in a boss's or a boss Treasure Bag's loot (a worm boss's segments share it): its drops count as boss drops whichever segment dies.</summary>
+		public bool BossRule;
 		public List<IItemDropRuleChainAttempt> ChainedRules { get; } = new();
+
+		/// <summary>True when a drop comes from a boss or a boss Treasure Bag: the rule is a boss's, the dying NPC is a boss, or the opened item is a boss bag.</summary>
+		public static bool BossSource(DropAttemptInfo info, bool bossRule)
+		{
+			if (bossRule) return true;
+			var n = info.npc;
+			if (n != null) return n.boss || (n.type > 0 && n.type < NPCID.Sets.ShouldBeCountedAsBoss.Length && NPCID.Sets.ShouldBeCountedAsBoss[n.type]);
+			return info.item > 0 && info.item < ItemID.Sets.BossBag.Length && ItemID.Sets.BossBag[info.item];
+		}
+
+		/// <summary>The material drop rates' share of the bonus: the universal rate plus the boss rate (boss drops) or the event and enemy rate (everything else).</summary>
+		public static double MaterialBonus(bool boss, LevyProgressionConfig c)
+		{
+			if (c == null) return 0;
+			return Math.Max(0f, c.UniversalMaterialDropMultiplier - 1f) + Math.Max(0f, (boss ? c.BossMaterialDropMultiplier : c.EnemyMaterialDropMultiplier) - 1f);
+		}
+
+		/// <summary>The whole bonus for one drop: <see cref="Bonus(Player)"/> plus the material rates when this rule's item is a material.</summary>
+		public double Bonus(DropAttemptInfo info) => Bonus(info.player) + (Material ? MaterialBonus(BossSource(info, BossRule), LevyProgressionConfig.Get) : 0);
 
 		public double Bonus(Player player)
 		{
@@ -51,7 +75,7 @@ namespace Levy.Common.Progression
 		public void ReportDroprates(List<DropRateInfo> drops, DropRateInfoChainFeed ratesInfo) { }
 		public ItemDropAttemptResult TryDroppingItem(DropAttemptInfo info)
 		{
-			double b = Bonus(info.player);
+			double b = Bonus(info);
 			int n = b > 0 ? ProgMath.RoundStochastic(Average() * b, info.rng.NextDouble()) : 0;
 			if (n > 0) CommonCode.DropItem(info, ItemId, n, scattered: true);
 			return new ItemDropAttemptResult { State = n > 0 ? ItemDropAttemptResultState.Success : ItemDropAttemptResultState.DoesntFillConditions };
@@ -84,7 +108,7 @@ namespace Levy.Common.Progression
 	{
 		static readonly HashSet<IItemDropRule> chained = new(ReferenceEqualityComparer.Instance);
 		static readonly HashSet<IItemDropRule> rerolled = new(ReferenceEqualityComparer.Instance);
-		public static int ArmyRules, RareRules, LuminiteRules, FragmentRules, ProvidenceRules, PostMaterialRules;
+		public static int ArmyRules, RareRules, LuminiteRules, FragmentRules, ProvidenceRules, PostMaterialRules, MaterialRules, GlobalMaterialRules;
 		/// <summary>Calamity's post-Providence materials the material multiplier applies to (item types; empty without Calamity).</summary>
 		public static readonly HashSet<int> PostMaterials = new();
 		static bool provCtx;
@@ -93,7 +117,7 @@ namespace Levy.Common.Progression
 		static readonly Dictionary<int, bool> materialCache = new();
 
 		public override void PostSetupRecipes() => Ensure();
-		public override void Unload() { chained.Clear(); rerolled.Clear(); materialCache.Clear(); PostMaterials.Clear(); baseMaterials = null; NotArmyAnyMore.Clear(); done = false; ArmyRules = RareRules = LuminiteRules = FragmentRules = ProvidenceRules = PostMaterialRules = 0; }
+		public override void Unload() { chained.Clear(); rerolled.Clear(); materialCache.Clear(); PostMaterials.Clear(); baseMaterials = null; NotArmyAnyMore.Clear(); done = false; ArmyRules = RareRules = LuminiteRules = FragmentRules = ProvidenceRules = PostMaterialRules = MaterialRules = GlobalMaterialRules = 0; }
 
 		/// <summary>An ore, bar or crafting material (not weapons, armor, pets, trophies or coins). <c>Item.material</c>, narrowed for a base-game item to the ones a base-game recipe uses:
 		/// another mod's recipe that takes a boss mask, a trophy or a treasure bag (Fargo's Mutant Mod) does not make it a boss material. A mod's item keeps <c>Item.material</c>.</summary>
@@ -185,6 +209,33 @@ namespace Levy.Common.Progression
 				list.Clear(); ProgressionLootNpc.Collect(db.GetRulesForNPCID(kv.Key, false), list);
 				foreach (var r in list) Attach(r, false);
 			}
+			// Pass 3: the global rules every NPC shares (vanilla's Souls of Light and Night, other mods' global drops): the material drop rates only, whose boss or enemy share is decided at the kill.
+			var mine = new HashSet<IItemDropRule>(db.GetRulesForNPCID(NPCID.BlueSlime, false), ReferenceEqualityComparer.Instance);
+			var globals = new List<IItemDropRule>();
+			foreach (var r in db.GetRulesForNPCID(NPCID.BlueSlime, true)) if (!mine.Contains(r)) globals.Add(r);
+			list.Clear(); ProgressionLootNpc.Collect(globals, list);
+			int before = MaterialRules;
+			foreach (var r in list) AttachMaterialOnly(r);
+			GlobalMaterialRules = MaterialRules - before;
+		}
+
+		/// <summary>A crafting material the material drop rates apply to: the material test, never a Treasure Bag.</summary>
+		public static bool RateMaterial(int itemId) => IsMaterial(itemId) && !(itemId > 0 && itemId < ItemID.Sets.BossBag.Length && ItemID.Sets.BossBag[itemId]);
+
+		/// <summary>Global rules: only the material drop rates (the army, lunar and Calamity options keep the sources they always had).</summary>
+		static void AttachMaterialOnly(IItemDropRule rule)
+		{
+			int id; Func<double> avg;
+			if (rule is DropOneByOne obo)
+			{
+				var p = obo.parameters; id = obo.itemId;
+				avg = () => (p.MinimumItemDropsCount + p.MaximumItemDropsCount) / 2.0 * ((p.MinimumStackPerChunkBase + p.MaximumStackPerChunkBase) / 2.0 + Main.CurrentFrameFlags.ActivePlayersCount * (p.BonusMinDropsPerChunkPerPlayer + p.BonusMaxDropsPerChunkPerPlayer) / 2.0);
+			}
+			else if (rule is CommonDrop cd) { id = cd.itemId; int mn = cd.amountDroppedMinimum, mx = cd.amountDroppedMaximum; avg = () => (mn + mx) / 2.0; }
+			else return;
+			if (!RateMaterial(id) || !chained.Add(rule)) return;
+			rule.OnSuccess(new ExtraAmountRule { ItemId = id, Material = true, Average = avg }, hideLootReport: true);
+			MaterialRules++;
 		}
 
 		static void Attach(IItemDropRule rule, bool boss)
@@ -193,16 +244,18 @@ namespace Levy.Common.Progression
 			{
 				bool frag = Array.IndexOf(Fragments, obo.itemId) >= 0;
 				bool army = boss && IsMaterial(obo.itemId);
+				bool mat = RateMaterial(obo.itemId);
 				if (boss && !army && obo.itemId > 0 && obo.itemId < ItemID.Count && ItemID.Sets.IsAMaterial[obo.itemId]) NotArmyAnyMore.Add(obo.itemId);
-				if ((frag || army) && chained.Add(rule))
+				if ((frag || army || mat) && chained.Add(rule))
 				{
 					var p = obo.parameters;
 					// Expected items per success: drops x stack per drop, the same arithmetic DropOneByOne uses.
 					double Avg() => (p.MinimumItemDropsCount + p.MaximumItemDropsCount) / 2.0
 						* ((p.MinimumStackPerChunkBase + p.MaximumStackPerChunkBase) / 2.0 + Main.CurrentFrameFlags.ActivePlayersCount * (p.BonusMinDropsPerChunkPerPlayer + p.BonusMaxDropsPerChunkPerPlayer) / 2.0);
-					rule.OnSuccess(new ExtraAmountRule { ItemId = obo.itemId, Army = army, Fragment = frag, Average = Avg }, hideLootReport: true);
+					rule.OnSuccess(new ExtraAmountRule { ItemId = obo.itemId, Army = army, Fragment = frag, Material = mat, BossRule = boss, Average = Avg }, hideLootReport: true);
 					if (frag) FragmentRules++;
 					if (army) ArmyRules++;
+					if (mat) MaterialRules++;
 				}
 				return;
 			}
@@ -212,11 +265,13 @@ namespace Levy.Common.Progression
 				bool army = boss && IsMaterial(cd.itemId);
 				bool post = PostMaterials.Contains(cd.itemId);
 				bool prov = provCtx && IsMaterial(cd.itemId);
+				bool mat = RateMaterial(cd.itemId);
 				if (boss && !army && cd.itemId > 0 && cd.itemId < ItemID.Count && ItemID.Sets.IsAMaterial[cd.itemId]) NotArmyAnyMore.Add(cd.itemId);
-				if ((lum || army || post || prov) && chained.Add(rule))
+				if ((lum || army || post || prov || mat) && chained.Add(rule))
 				{
 					int mn = cd.amountDroppedMinimum, mx = cd.amountDroppedMaximum;
-					rule.OnSuccess(new ExtraAmountRule { ItemId = cd.itemId, Army = army, Luminite = lum, Providence = prov, Post = post, Average = () => (mn + mx) / 2.0 }, hideLootReport: true);
+					rule.OnSuccess(new ExtraAmountRule { ItemId = cd.itemId, Army = army, Luminite = lum, Providence = prov, Post = post, Material = mat, BossRule = boss, Average = () => (mn + mx) / 2.0 }, hideLootReport: true);
+					if (mat) MaterialRules++;
 					if (lum) LuminiteRules++;
 					if (army) ArmyRules++;
 					if (prov) ProvidenceRules++;

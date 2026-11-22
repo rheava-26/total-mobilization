@@ -1,0 +1,6 @@
+# Ally name tags over the army's minions, officers' creatures and machines (Common/UI/AllyTags.cs). Keys are relative to Mods.Levy.AllyTags.
+
+Of: "{0}'s {1}"
+Turret: Turret
+Drone: Drone
+Armed: "{0}: {1}"

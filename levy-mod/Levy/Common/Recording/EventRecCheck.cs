@@ -32,6 +32,8 @@ namespace Levy.Common.Recording
 		{
 			public JsonElement Hdr, End; public bool HasHdr, HasEnd;
 			public readonly List<JsonElement> Frames = new(), Events = new(), Arenas = new(), Nt = new();
+			/// <summary>Each frame's l and a rows, decoded (a format 13 fight recording codes them; an event recording's are plain).</summary>
+			public readonly List<List<double[]>> L = new(), A = new();
 			public string Err; public int Lines;
 		}
 
@@ -40,7 +42,7 @@ namespace Levy.Common.Recording
 			var r = new Rec();
 			if (path == null || !File.Exists(path)) { r.Err = "no file " + path; return r; }
 			var lines = FightRecAutoCheck.ReadLines(path, path.EndsWith(".levyrec"), out string err);
-			r.Err = err; r.Lines = lines.Count;
+			r.Err = err; r.Lines = lines.Count; var dec = new RowDecoder();
 			foreach (string l in lines)
 			{
 				try
@@ -48,9 +50,9 @@ namespace Levy.Common.Recording
 					using var d = JsonDocument.Parse(l); var e = d.RootElement.Clone(); string k = e.GetProperty("k").GetString();
 					switch (k)
 					{
-						case "hdr": r.Hdr = e; r.HasHdr = true; break;
+						case "hdr": if (!r.HasHdr) r.Hdr = e; r.HasHdr = true; dec.Header(e); break;
 						case "end": r.End = e; r.HasEnd = true; break;
-						case "f": r.Frames.Add(e); break;
+						case "f": r.Frames.Add(e); r.L.Add(dec.Rows(e, 2)); r.A.Add(dec.Rows(e, 1)); break;
 						case "e": r.Events.Add(e); break;
 						case "arena": r.Arenas.Add(e); break;
 						case "nt": r.Nt.Add(e); break;
@@ -76,8 +78,8 @@ namespace Levy.Common.Recording
 		/// <summary>True when some frame's l rows hold levy id at x beyond minX.</summary>
 		private static bool LevyFar(Rec r, int id, float minX)
 		{
-			foreach (var f in r.Frames)
-				if (f.TryGetProperty("l", out var l)) foreach (var row in l.EnumerateArray()) if (row[0].GetInt32() == id && row[1].GetDouble() > minX) return true;
+			foreach (var l in r.L)
+				foreach (var row in l) if (row.Length > 1 && (int)row[0] == id && row[1] > minX) return true;
 			return false;
 		}
 
@@ -161,13 +163,13 @@ namespace Levy.Common.Recording
 				Chk(r1.Err == null && r1.HasHdr && r1.HasEnd, "the file decompresses and every line parses (" + (r1.Err ?? r1.Lines + " lines") + ")");
 				if (r1.HasHdr && r1.HasEnd)
 				{
-					Chk(r1.Hdr.GetProperty("format").GetInt32() == 12 && r1.Hdr.GetProperty("kind").GetString() == "event" && r1.Hdr.GetProperty("event").GetString() == "goblinarmy", "header: format 12, kind event, event goblinarmy");
+					Chk(r1.Hdr.GetProperty("format").GetInt32() == FightRecFormat.Version && r1.Hdr.GetProperty("kind").GetString() == "event" && r1.Hdr.GetProperty("event").GetString() == "goblinarmy", "header: format " + FightRecFormat.Version + ", kind event, event goblinarmy");
 					Chk(r1.Hdr.GetProperty("roster").TryGetProperty(NPCID.GoblinSummoner.ToString(), out var ro) && ro.GetProperty("imp").GetInt32() == 1, "header: the roster names the Goblin Summoner a miniboss");
 					Chk(LevyFar(r1, farId, (cx + 1000) * 16f), "the levy 1500 tiles away is in the frames");
 					Chk(ArenaCovers(r1, farX, farY - 2) && ArenaCovers(r1, cx, Floor - 2), "terrain is recorded around the far levy and around the commander");
 					Chk(NtImp(r1, NPCID.GoblinSummoner) == 1 && NtImp(r1, NPCID.GoblinPeon) == 0, "the Goblin Summoner is labelled a miniboss, the Goblin Peon a normal enemy (" + NtImp(r1, NPCID.GoblinSummoner) + ", " + NtImp(r1, NPCID.GoblinPeon) + ")");
 					Chk(HasEvent(r1, "ekill", e => e.GetProperty("npc").GetInt32() == NPCID.GoblinSummoner && e.GetProperty("imp").GetInt32() == 1), "the Summoner's death is an ekill event");
-					bool aType = false; foreach (var f in r1.Frames) if (f.TryGetProperty("a", out var a)) foreach (var row in a.EnumerateArray()) if (row[0].GetInt32() == NPCID.GoblinSummoner) aType = true;
+					bool aType = false; foreach (var a in r1.A) foreach (var row in a) if (row.Length > 0 && (int)row[0] == NPCID.GoblinSummoner) aType = true;
 					Chk(aType, "enemy rows carry the type");
 					var e1 = r1.End;
 					Chk(e1.GetProperty("result").GetString() == "won" && e1.GetProperty("kind").GetString() == "event" && e1.GetProperty("kills").GetInt32() >= 5 && e1.GetProperty("minibossKills").GetInt32() == 1 && e1.GetProperty("results").GetProperty("goblinarmy").GetString() == "won",

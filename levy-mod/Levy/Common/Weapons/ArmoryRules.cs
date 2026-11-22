@@ -15,8 +15,12 @@ namespace Levy.Common.Weapons
 	/// Over:   a hard order, the first category is always chosen over the second when a levy can take either.
 	/// Include: a hard include, every weapon of the category is put in service (the other weapons are still dealt by rank to the remaining levies).
 	/// Min:    at least N levies carry a weapon of the category (as far as the stock goes).
+	/// Only:   no weapon outside the category is issued (primaries and sidearms). Several Only blocks add up: a weapon of any of their categories may be issued. Like an item list it is a filter on the stock, wherever the block
+	///         sits: every other rule works on what it lets through. A levy holding a weapon of another kind keeps it until one of the kind is free for him; a levy with no weapon at all is armed from the rest when none of the kind
+	///         is left (<see cref="RelaxOnly"/>, used by <c>ArmoryTE.IssuePrimary</c>), so the rule never leaves anyone unarmed. Added as mode 4 without a format bump: an older build reads it as a weight rule.
+	/// A category block added from the Rules tab starts as Include (<see cref="ArmoryRules.AddBlock"/>).
 	/// </summary>
-	public enum CatMode : byte { Weight = 0, Over = 1, Include = 2, Min = 3 }
+	public enum CatMode : byte { Weight = 0, Over = 1, Include = 2, Min = 3, Only = 4 }
 
 	/// <summary>Only: just the listed items are used. Never: the listed items are not used.</summary>
 	public enum ListMode : byte { Only = 0, Never = 1 }
@@ -213,6 +217,8 @@ namespace Levy.Common.Weapons
 			public readonly Dictionary<int, ItemOverride> ByType = new();
 			public readonly HashSet<int> Never = new();
 			public HashSet<int> Only;
+			/// <summary>The categories of every enabled "Only" category block (null = none): a weapon in none of them is not issued.</summary>
+			public HashSet<string> OnlyCats;
 			public readonly List<(string cat, float w)> Weights = new();
 			public readonly Dictionary<int, string[]> Cats = new();
 			public AllocRules Alloc;
@@ -237,7 +243,8 @@ namespace Levy.Common.Weapons
 						break;
 					case RuleKind.Category:
 						if (string.IsNullOrEmpty(b.Cat)) break;
-						if (b.Mode == CatMode.Weight) c.Weights.Add((b.Cat, Math.Max(0.01f, b.Weight)));
+						if (b.Mode == CatMode.Only) (c.OnlyCats ??= new HashSet<string>()).Add(b.Cat);
+						else if (b.Mode == CatMode.Weight) c.Weights.Add((b.Cat, Math.Max(0.01f, b.Weight)));
 						else if (b.Mode == CatMode.Over) { if (!string.IsNullOrEmpty(b.Other) && b.Other != b.Cat) alloc.Orders.Add(new OrderRule { A = b.Cat, B = b.Other, Block = i }); }
 						else if (b.Mode == CatMode.Include) alloc.Mins.Add(new MinRule { Cat = b.Cat, Count = int.MaxValue, Block = i });
 						else alloc.Mins.Add(new MinRule { Cat = b.Cat, Count = Math.Max(0, b.Count), Block = i });
@@ -280,14 +287,43 @@ namespace Levy.Common.Weapons
 			if (dead != null) foreach (var k in dead) Overrides.Remove(k);
 		}
 
-		/// <summary>True when the armory must not issue this item: an "always never" override, a never list, or an only list that does not hold it.</summary>
+		/// <summary>True when the armory must not issue this item: an "always never" override, a never list, an only list that does not hold it, or "Only" category rules none of whose categories it has (unless <see cref="RelaxOnly"/>).</summary>
 		public bool Excluded(Item it)
 		{
 			var c = C;
 			if (c.Never.Contains(it.type)) return true;
 			if (c.Only != null && !c.Only.Contains(it.type)) return true;
+			if (c.OnlyCats != null && !_relaxOnly && !InOnlyCats(c, it)) return true;
 			return c.ByType.TryGetValue(it.type, out var o) && o.Rank == RankOverrideMode.Never;
 		}
+
+		private bool InOnlyCats(Compiled c, Item it)
+		{
+			var cats = CatsOf(it);
+			for (int i = 0; i < cats.Length; i++) if (c.OnlyCats.Contains(cats[i])) return true;
+			return false;
+		}
+
+		/// <summary>True when an enabled "Only" category rule limits what is issued.</summary>
+		public bool HasCategoryOnly => C.OnlyCats != null;
+
+		/// <summary>True when the item is of a category an enabled "Only" rule names (false when there is none).</summary>
+		public bool OnlyAllows(Item it) { var c = C; return c.OnlyCats != null && it != null && !it.IsAir && InOnlyCats(c, it); }
+
+		private static bool _relaxOnly;
+
+		public readonly struct RelaxScope : IDisposable
+		{
+			private readonly bool _prev;
+			public RelaxScope(bool prev) { _prev = prev; }
+			public void Dispose() { _relaxOnly = _prev; }
+		}
+
+		/// <summary>
+		/// Lifts the "Only" category rules (never the item lists or the never overrides) until the scope is disposed. The armory uses it for one pick only: a levy with no weapon at all, once nothing of the allowed kinds is left
+		/// for him, is armed from the rest. His weapon then ranks 0 under the rules, so the next deal trades it for one of the allowed kinds as soon as one is free.
+		/// </summary>
+		public static RelaxScope RelaxOnly() { var s = new RelaxScope(_relaxOnly); _relaxOnly = true; return s; }
 
 		/// <summary>If the player replaced this item type's class: true, and the class (null = no class). Otherwise false.</summary>
 		public bool TryClassEdit(Item it, out DamageClass dc)
@@ -336,7 +372,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>
-		/// True when an enabled rule asked for this weapon: its category is one an include, an at-least or an order rule puts first, it is on an only list, its class has a share, a minimum or a fixed count in the class
+		/// True when an enabled rule asked for this weapon: its category is one an include, an at-least, an only or an order rule puts first, it is on an only list, its class has a share, a minimum or a fixed count in the class
 		/// balance, or a weight rule raises it. A later pass that fits a levy to his armor (<c>ArmoryTE.ReconcileWeaponToArmor</c>) leaves such a weapon in his hand: the player's rule decides what he carries, the armor follows.
 		/// </summary>
 		public bool Claims(Item it)
@@ -344,6 +380,7 @@ namespace Levy.Common.Weapons
 			if (it == null || it.IsAir) return false;
 			var c = C;
 			if (c.Only != null && c.Only.Contains(it.type)) return true;
+			if (c.OnlyCats != null && InOnlyCats(c, it)) return true;
 			var cats = CatsOf(it);
 			foreach (var m in c.Alloc.Mins) if (Has(cats, m.Cat)) return true;
 			foreach (var o in c.Alloc.Orders) if (Has(cats, o.A)) return true;
@@ -353,6 +390,14 @@ namespace Levy.Common.Weapons
 				foreach (var e in c.Alloc.Class.Entries) if (e.Class == key && !e.IsDefault) return true;
 			}
 			return RuleFactor(it, out _) > 1.0001f;
+		}
+
+		/// <summary>True when a rule names this item type for use: an only-these list that holds it, or an Always prefer or Set rank override (armor and accessories included). Autosell never sells such an item.</summary>
+		public bool NamesForUse(int type)
+		{
+			var c = C;
+			if (c.Only != null && c.Only.Contains(type)) return true;
+			return c.ByType.TryGetValue(type, out var o) && (o.Rank == RankOverrideMode.Prefer || o.Rank == RankOverrideMode.Set);
 		}
 
 		/// <summary>The product of every enabled weight rule that matches the item (1 = none), with a short note of which ones.</summary>
@@ -375,6 +420,7 @@ namespace Levy.Common.Weapons
 			if (Blocks.Count >= MaxBlocks) return null;
 			var b = new RuleBlock { Kind = kind };
 			if (kind == RuleKind.ItemList) b.List = ListMode.Never;
+			if (kind == RuleKind.Category) b.Mode = CatMode.Include; // a new category rule starts as Include
 			Blocks.Add(b);
 			Changed();
 			return b;
@@ -468,7 +514,7 @@ namespace Levy.Common.Weapons
 							}
 							break;
 						case RuleKind.Category:
-							byte mode = r.ReadByte(); if (mode > (byte)CatMode.Min) mode = 0;
+							byte mode = r.ReadByte(); if (mode > (byte)CatMode.Only) mode = 0; // an unknown mode from a newer build reads as a weight rule
 							b.Mode = (CatMode)mode; b.Cat = Id(r.ReadString()); b.Other = Id(r.ReadString()); b.Weight = Clamp(r.ReadSingle(), 0.01f, 100f); b.Count = Math.Clamp((int)r.ReadInt16(), 0, 9999);
 							break;
 						case RuleKind.ItemList:

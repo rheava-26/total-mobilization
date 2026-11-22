@@ -64,6 +64,10 @@ DepositTenGold: +10 gold
 DepositAll: +all coins
 WithdrawOneGold: -1 gold
 WithdrawTenGold: -10 gold
+DepositPlatinum: +1 platinum
+WithdrawPlatinum: -1 platinum
+DepositPlatinumShort: +1 plat
+WithdrawPlatinumShort: -1 plat
 DepositHint: Move coins from your inventory into the treasury.
 WithdrawHint: Take coins out of the treasury.
 On: On

@@ -85,6 +85,18 @@ namespace Levy.Common.Recording
 		private static Dictionary<string, string> _meta;
 		private static string _fileBase;
 		private static int _bossGoneTick, _primaryWho = -1, _primarySerial;
+		/// <summary>Format 13: the boss whose target and life the fight's target counts, tgt events and bph milestones follow: the fight boss that owns the largest life pool (a worm's head, Ares rather than his arms, any mech rather than
+		/// Draedon's own NPC), re-chosen every sample. -1 none.</summary>
+		private static int _aimWho = -1;
+		/// <summary>Format 13 row coding (gzip recordings; plain harness files keep plain rows). Reset at every part.</summary>
+		private static RowCodec _codec;
+		/// <summary>A compressed part passing this size goes on in NAME_part2.levyrec (format 13). Under the 10 MB a file share can fetch; the writer checks it at each flush (every 2 s).</summary>
+		public const long PartBytes = 9L * 1000 * 1000;
+		/// <summary>Self-check: a small part size so a short fight splits. 0 = <see cref="PartBytes"/>.</summary>
+		public static long PartBytesOverride;
+		private static int _parts;
+		/// <summary>Levies this close (tiles) to the commander or a fight boss are "in the arena" (bph.army; the report applies the same rule to the frames).</summary>
+		public const int ArenaRangeTiles = FightRecFormat.ArenaRangeTiles;
 		/// <summary>Highest spawn serial alive when the recording started. A boss-like NPC with a HIGHER serial was spawned afterwards by someone other than this fight (the next trial); serial 0 (a worm segment that became a head: SetDefaults resets its tag) and a lower one belong to this fight.</summary>
 		private static int _startMaxSerial;
 		private static bool IsNewFightSerial(NPC n) { int sr = FightRecSpawnTag.SerialOf(n); return sr > _startMaxSerial; }
@@ -460,7 +472,7 @@ namespace Levy.Common.Recording
 				_startWall = DateTime.Now; _profWindows = 0; _cmdDeaths = 0; _pDead = false; _lastDeathTick = -1; _endTick = -1; _endDead = false; _dmg.Clear(); _dmgBoss = _dmgAll = 0; _lastDmgFlush = 0; LastResult = null; global::Levy.Common.Boss.BossRule.ResetFightScale();
 				_cmd = cmd; _frames = 0; _events = 0; _bossSeen = false; _bossesSeen = 0; _bossIdsSeen.Clear(); _hbDef.Clear(); _lastBossSeen = 0;
 				_nonWeapons.Clear(); _items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
-				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _tkNone = _tkPlayer = _tkLevy = _tkSpite = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
+				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _aimWho = -1; _parts = 1; _hitQ.Clear(); _tkNone = _tkPlayer = _tkLevy = _tkSpite = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
 				_lbuf.Clear(); _lgear.Clear(); _prefixes.Clear(); _cmdGear = int.MinValue; _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bkillOwner.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1; _farCells.Clear(); _farQ.Clear(); _ntSeen.Clear(); _farCentres.Clear(); _moveCells.Clear();
 				_startTick = (int)Main.GameUpdateCount; _calOn = ModLoader.HasMod("CalamityMod") && global::Levy.Common.Testing.HarnessCalamityProbe.Available; _killTick = -100000;
@@ -487,7 +499,8 @@ namespace Levy.Common.Recording
 				_path = System.IO.Path.Combine(dir, (_gzip ? "rec_" : "") + stem + ext);
 				if (!string.IsNullOrEmpty(fileBase) || _gzip) { int dup = 2; while (File.Exists(_path) || File.Exists(_path + ".part")) _path = System.IO.Path.Combine(dir, (_gzip ? "rec_" : "") + stem + "_" + dup++ + ext); }
 				long cap = _gzip ? (MaxFileBytes > 0 ? MaxFileBytes : ConfigFileBytes()) : 0;
-				if (!RecWriter.TryOpen(_path, _gzip, cap, out _w, out string openWhy)) { error = "could not create " + _path + ": " + openWhy; return null; }
+				if (!RecWriter.TryOpen(_path, _gzip, cap, out _w, out string openWhy, _gzip ? (PartBytesOverride > 0 ? PartBytesOverride : PartBytes) : 0)) { error = "could not create " + _path + ": " + openWhy; return null; }
+				_codec = _gzip ? new RowCodec() : null;
 				string mods = ModList(out string mode);
 				string ver = Levy.Instance?.Version?.ToString() ?? "?";
 				string metaJson = FightRecFormat.MetaJson(meta);
@@ -496,7 +509,7 @@ namespace Levy.Common.Recording
 					+ ",\"world\":" + FightRecFormat.Esc(Main.worldName) + ",\"date\":" + FightRecFormat.Esc(DateTime.Now.ToString("s"))
 					+ ",\"stateNames\":" + FightRecFormat.Esc(string.Join(",", Enum.GetNames(typeof(SoldierState))))
 					+ ",\"schemaP\":" + FightRecFormat.Esc(FightRecFormat.SchemaP) + ",\"flagsP\":" + FightRecFormat.Esc(FightRecFormat.SchemaPFlags)
-					+ ",\"schemaB\":" + FightRecFormat.Esc(FightRecFormat.SchemaB) + ",\"schemaJ\":" + FightRecFormat.Esc(FightRecFormat.SchemaJ)
+					+ ",\"schemaB\":" + FightRecFormat.Esc(FightRecFormat.SchemaB) + ",\"schemaJ\":" + FightRecFormat.Esc(FightRecFormat.SchemaJ) + ",\"schemaC\":" + FightRecFormat.Esc(FightRecFormat.SchemaC) + ",\"codec\":" + (_gzip ? "1" : "0")
 					+ ",\"tkinds\":" + FightRecFormat.Esc(FightRecFormat.TKinds) + ",\"schemaA\":" + FightRecFormat.Esc(FightRecFormat.SchemaA) + ",\"schemaL\":" + FightRecFormat.Esc(FightRecFormat.SchemaL) + ",\"flagsL\":" + FightRecFormat.Esc(FightRecFormat.SchemaLFlags)
 					+ ",\"imp\":" + FightRecFormat.Esc(FightRecFormat.ImpNames) + ",\"auto\":" + _auto + ",\"gzip\":" + (_gzip ? "1" : "0") + ",\"cmd\":" + CommanderSummary(cmd) + ",\"army\":" + ArmySummary() + extra + "}");
 				LastHeader = hdr;
@@ -519,23 +532,14 @@ namespace Levy.Common.Recording
 		}
 
 		/// <summary>How long after the commander falls a boss that leaves still counts as having left because of it: bosses go once no player is alive, and they may still be on their way out after she has respawned (Death and Master respawn timers run to 15 s and more).</summary>
-		public const int LostWindowTicks = 60 * 60;
+		public const int LostWindowTicks = FightRecFormat.LostWindowTicks;
 
 		/// <summary>
 		/// The result word of a fight (file name, end.result, report). won: the last boss was killed. A boss that leaves alive is lost when the commander's fall is why (she was dead when it went, or had fallen within
 		/// <see cref="LostWindowTicks"/> before: a boss with no living player to target despawns, so a death reads as the boss leaving), fled when she was alive and well: dawn, distance, a timer. What the army was doing does not matter, only the commander.
 		/// No boss end at all (the 20 minute limit, the recorder stopped): lost when the commander fell and a boss was seen, else ended.
 		/// </summary>
-		internal static string DecideResult(string outcome, int cmdDeaths, bool cmdDeadAtEnd, int endTick, int lastDeathTick, int bossesSeen)
-		{
-			if (outcome == "killed") return "won";
-			if (outcome == "despawn")
-			{
-				bool fell = cmdDeaths > 0 && lastDeathTick >= 0 && endTick - lastDeathTick >= -10 && endTick - lastDeathTick <= LostWindowTicks;
-				return cmdDeadAtEnd || fell ? "lost" : "fled";
-			}
-			return cmdDeaths > 0 && bossesSeen > 0 ? "lost" : "ended";
-		}
+		internal static string DecideResult(string outcome, int cmdDeaths, bool cmdDeadAtEnd, int endTick, int lastDeathTick, int bossesSeen) => FightRecFormat.DecideResult(outcome, cmdDeaths, cmdDeadAtEnd, endTick, lastDeathTick, bossesSeen);
 
 		/// <summary>The word in the file name: won (boss killed), lost (the commander fell and the boss left because of it), fled (it left with the commander alive), ended (no boss, or the limit), interrupted (the world closed).</summary>
 		private static string ResultWord(string reason)
@@ -560,6 +564,7 @@ namespace Levy.Common.Recording
 			bool discard = false; string result = "ended";
 			try
 			{
+				FlushHits(true);
 				FlushBossEnd(true);
 				FlushDmg(Elapsed, true);
 				result = ResultWord(reason);
@@ -623,6 +628,37 @@ namespace Levy.Common.Recording
 		private static string _bossNameSeen;
 
 		private static void Line(string s) { _w.WriteLine(s); }
+
+		/// <summary>The current part passed the part size: the next lines go to NAME_partN.levyrec, which starts with the header (plus its part number) and full rows.</summary>
+		private static void NextPart()
+		{
+			_parts++;
+			_codec?.Reset(); _hbDef.Clear();
+			string h = LastHeader ?? "{\"k\":\"hdr\"}";
+			_w.StartPart(h.StartsWith("{\"k\":\"hdr\",", StringComparison.Ordinal) ? "{\"k\":\"hdr\",\"part\":" + _parts + "," + h.Substring(11) : h);
+			Levy.Instance?.Logger.Info("[FightRec] part " + _parts + " of " + System.IO.Path.GetFileName(_path) + " (" + (_w.FileBytes / 1024) + " KB so far)");
+		}
+
+		/// <summary>A hit on the commander waits one tick for the life it actually took (OnHurt runs before the game subtracts it, and a dodge, a heal or an immunity can undo it).</summary>
+		private sealed class PendingHit { public int Tick, Dmg, Npc, Proj, Other, Life; }
+		private static readonly List<PendingHit> _hitQ = new();
+
+		/// <summary>Writes the waiting hit events with "taken": each hit's share of the life the commander lost since it (life before it minus life before the next one, or now), at most its damage.</summary>
+		private static void FlushHits(bool all)
+		{
+			if (_hitQ.Count == 0 || _w == null) return;
+			int el = Elapsed;
+			if (!all && _hitQ[_hitQ.Count - 1].Tick >= el) return;
+			int now = _cmd == null ? 0 : _cmd.dead ? 0 : Math.Max(0, _cmd.statLife);
+			for (int i = 0; i < _hitQ.Count; i++)
+			{
+				var h = _hitQ[i];
+				int after = i + 1 < _hitQ.Count ? _hitQ[i + 1].Life : now;
+				int taken = Math.Clamp(h.Life - after, 0, Math.Max(0, h.Dmg));
+				Line(FightRecFormat.Event(h.Tick, "hit", ("dmg", h.Dmg.ToString()), ("npc", h.Npc.ToString()), ("proj", h.Proj.ToString()), ("other", h.Other.ToString()), ("life", h.Life.ToString()), ("taken", taken.ToString()))); _events++;
+			}
+			_hitQ.Clear();
+		}
 		private static void Ev(string kind, params (string, string)[] extra) { Line(FightRecFormat.Event(Elapsed, kind, extra)); _events++; }
 		private static string ItemName(Item it)
 		{
@@ -640,7 +676,7 @@ namespace Levy.Common.Recording
 				int npcType = -1;
 				if (srcNpcIndex >= 0 && srcNpcIndex < Main.maxNPCs) { npcType = Main.npc[srcNpcIndex].type; _npcs[npcType] = Main.npc[srcNpcIndex].FullName; }
 				if (srcProjType > 0 && !_projs.ContainsKey(srcProjType)) _projs[srcProjType] = Lang.GetProjectileName(srcProjType).Value;
-				Ev("hit", ("dmg", damage.ToString()), ("npc", npcType.ToString()), ("proj", srcProjType.ToString()), ("other", srcOther.ToString()), ("life", p.statLife.ToString()));
+				_hitQ.Add(new PendingHit { Tick = Elapsed, Dmg = damage, Npc = npcType, Proj = srcProjType, Other = srcOther, Life = p.statLife });
 			}
 			catch { }
 		}
@@ -798,10 +834,12 @@ namespace Levy.Common.Recording
 			{
 				if (_cmd == null || (!_cmd.active && !IgnoreInactive && !Headless)) { Stop("player gone"); return; }
 				int el = Elapsed;
+				FlushHits(false);
 				PollLevies(el);
 				PollBosses(el);
 				if (_w != null && _w.Error != null) { Stop("write error"); return; }
 				if (_w != null && _w.Full) { Stop("size limit"); return; }
+				if (_w != null && _w.PartDue) NextPart();
 				FlushDmg(el, false);
 				if (_auto != 0 ? el >= AutoMaxTicks : el >= MaxTicks) { Stop(_auto != 0 ? "20 minute limit" : "10 minute limit"); return; }
 				if (el % SampleEvery != 0) return;
@@ -864,7 +902,7 @@ namespace Levy.Common.Recording
 			AccessoryEvents(p);
 
 			// bosses and parts
-			bool anyBoss = false, otherSerial = false;
+			bool anyBoss = false, otherSerial = false; int aimBest = -1;
 			if (Headless && _primaryWho >= 0)
 			{
 				// a harness that clears the arena and spawns the next trial's boss in the same step leaves no gap: the boss we follow is gone and a boss with a newer spawn serial stands in the world
@@ -890,16 +928,22 @@ namespace Levy.Common.Recording
 				if (isBoss && _bossIdsSeen.Add(n.whoAmI)) { _bossesSeen++; Ev("boss", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString())); NoteFightBoss(n); }
 				_bossTypes.Add(n.type);
 				TargetOf(n, out int tk, out int tl);
-				f.B.Add(new double[] { n.type, n.whoAmI, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, n.life, n.lifeMax, n.ai[0], n.ai[1], n.ai[2], n.ai[3], n.target, part ? 1 : 0, tk, tl, n.width, n.height });
+				f.B.Add(new double[] { n.type, n.whoAmI, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, n.life, n.lifeMax, n.ai[0], n.ai[1], n.ai[2], n.ai[3], n.target, part ? 1 : 0, tk, tl, n.width, n.height, n.realLife });
 				if (isBoss)
 				{
 					if (_primaryWho < 0) { _primaryWho = n.whoAmI; _primarySerial = FightRecSpawnTag.SerialOf(n); }
-					if (n.whoAmI == _primaryWho && FightRecSpawnTag.SerialOf(n) == _primarySerial)
-					{
-						if (tk == 2) _tkLevy++; else if (tk == 3) _tkSpite++; else if (tk == 1) _tkPlayer++; else _tkNone++;
-						if (tk != _lastTk || tl != _lastTl) { _lastTk = tk; _lastTl = tl; Ev("tgt", ("kind", tk.ToString()), ("levy", tl.ToString()), ("boss", n.whoAmI.ToString())); }
-					}
+					// the boss the target counts follow: the one that owns the largest life pool (pool owners only: a segment or an arm reads through its owner)
+					bool owner = n.realLife < 0 || n.realLife == n.whoAmI || n.realLife >= Main.maxNPCs || !Main.npc[n.realLife].active;
+					if (owner && (aimBest < 0 || AimBetter(n, Main.npc[aimBest]))) aimBest = n.whoAmI;
 				}
+			}
+			_aimWho = aimBest;
+			if (aimBest >= 0)
+			{
+				NPC an = Main.npc[aimBest];
+				TargetOf(an, out int tk, out int tl);
+				if (tk == 2) _tkLevy++; else if (tk == 3) _tkSpite++; else if (tk == 1) _tkPlayer++; else _tkNone++;
+				if (tk != _lastTk || tl != _lastTl) { _lastTk = tk; _lastTl = tl; Ev("tgt", ("kind", tk.ToString()), ("levy", tl.ToString()), ("boss", an.whoAmI.ToString())); }
 			}
 			int grace = Headless ? HeadlessGraceTicks : _auto != 0 ? AutoGraceTicks : GraceTicks;
 			if (anyBoss)
@@ -927,7 +971,7 @@ namespace Levy.Common.Recording
 				if (Math.Abs(pr.Center.X - p.Center.X) > ProjRangePx || Math.Abs(pr.Center.Y - p.Center.Y) > ProjRangePx) continue;
 				if (!_projs.ContainsKey(pr.type)) _projs[pr.type] = Lang.GetProjectileName(pr.type).Value;
 				if (pc++ >= MaxProj) break;
-				f.J.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.damage, pr.width, pr.height });
+				f.J.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.damage, pr.width, pr.height, i });
 			}
 
 			// format 11: the commander's own projectiles (his weapons, his minions and sentries); the army's shots, owned by the same slot, are left out
@@ -938,7 +982,7 @@ namespace Levy.Common.Recording
 				if (!IsCommanderShot(pr, p)) continue;
 				if (Math.Abs(pr.Center.X - p.Center.X) > ProjRangePx || Math.Abs(pr.Center.Y - p.Center.Y) > ProjRangePx) continue;
 				if (!_projs.ContainsKey(pr.type)) _projs[pr.type] = Lang.GetProjectileName(pr.type).Value;
-				f.C.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.width, pr.height });
+				f.C.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.width, pr.height, i });
 				cc++;
 			}
 
@@ -998,7 +1042,7 @@ namespace Levy.Common.Recording
 			// after the captured area grew: what is still outside it gets cells (the commander and bosses a wide window, far levies a smaller one)
 			foreach (var a in _anch) { if (a.far) WantFarTerrain(a.x, a.y); else WantFarTerrain(a.x, a.y, MoveX, MoveY, far: false); }
 			PumpFarTerrain();
-			Line(FightRecFormat.Frame(f));
+			Line(FightRecFormat.Frame(f, _codec));
 			_frames++;
 		}
 
@@ -1006,6 +1050,40 @@ namespace Levy.Common.Recording
 		/// <summary>The id a levy goes by in a recording: its record id, or -whoAmI with no record. Officers all carry the same synthetic record id (-1) and militia have their own negative ids, so an officer is -OfficerIdBase - whoAmI.</summary>
 		internal const int OfficerIdBase = 100000;
 		internal static int LevyId(SoldierNPC s, int whoAmI) => s.Record == null ? -whoAmI : s.OfficerMode ? -OfficerIdBase - whoAmI : s.Record.Id;
+
+		/// <summary>The aim boss rule: a boss that can be hurt beats one that cannot, then the larger life pool, then the boss followed so far, then the lower slot.</summary>
+		private static bool AimBetter(NPC a, NPC b)
+		{
+			if (a.dontTakeDamage != b.dontTakeDamage) return !a.dontTakeDamage;
+			if (a.lifeMax != b.lifeMax) return a.lifeMax > b.lifeMax;
+			if (a.whoAmI == _aimWho) return true;
+			if (b.whoAmI == _aimWho) return false;
+			return a.whoAmI < b.whoAmI;
+		}
+
+		/// <summary>Levies within <see cref="ArenaRangeTiles"/> of the commander or a fight boss.</summary>
+		internal static int LeviesInArena()
+		{
+			float r = ArenaRangeTiles * 16f; int c = 0;
+			var anchors = new List<Vector2>(4);
+			if (_cmd != null) anchors.Add(_cmd.Center);
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !n.friendly && !(n.ModNPC is SoldierNPC) && IsFightBoss(n) && (n.realLife < 0 || n.realLife == n.whoAmI)) anchors.Add(n.Center); }
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i]; if (!n.active || !(n.ModNPC is SoldierNPC)) continue;
+				foreach (var a in anchors) if (Math.Abs(n.Center.X - a.X) <= r && Math.Abs(n.Center.Y - a.Y) <= r) { c++; break; }
+			}
+			return c;
+		}
+
+		/// <summary>An NPC whose target slot is the empty one (255) between AI calls still aimed at someone on its last search: NPC.targetRect holds that body's hitbox. The player or levy standing there (within 4 tiles) is its target.</summary>
+		internal static void TargetFromRect(NPC n, ref int kind, ref int levyId)
+		{
+			var r = n.targetRect; if (r.Width <= 0 || r.Height <= 0) return;
+			Vector2 c = r.Center.ToVector2(); const float near = 64f;
+			for (int i = 0; i < Main.maxPlayers; i++) { Player p = Main.player[i]; if (p != null && p.active && !p.dead && Vector2.Distance(p.Center, c) <= near) { kind = 1; levyId = -1; return; } }
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC s = Main.npc[i]; if (s.active && s.ModNPC is SoldierNPC sn && Vector2.Distance(s.Center, c) <= near) { kind = 2; levyId = LevyId(sn, i); return; } }
+		}
 
 		/// <summary>What the boss is attacking right now: kind 0 none, 1 player, 2 levy (the targeting lock, or the boss's own NPC target; levy = its recording id, see <see cref="LevyId"/>), 3 spite (no real target on a levy, but the boss rule's grudge redirects its shots and dashes at one; levy = that one).</summary>
 		internal static void TargetOf(NPC n, out int kind, out int levyId)
@@ -1023,7 +1101,7 @@ namespace Levy.Common.Recording
 				}
 				if (st >= 0) { var s = (SoldierNPC)Main.npc[st].ModNPC; kind = spite ? 3 : 2; levyId = LevyId(s, st); return; }
 				if (n.target >= 0 && n.target < Main.maxPlayers) kind = 1; // the stand-in commander of a headless server flips inactive, so a valid player slot counts
-				else if (n.target == SoldierNPC.DummySlot) kind = 0;
+				else if ((n.target == SoldierNPC.DummySlot || n.target < 0) && IsBossOrPart(n)) TargetFromRect(n, ref kind, ref levyId); // bosses only: an add with slot 255 simply has no target
 			}
 			catch { }
 		}
@@ -1171,7 +1249,7 @@ namespace Levy.Common.Recording
 					else { t.HitT = el; t.HitDmg = t.Life - n.life; t.HitSrc = "other"; t.HitType = -1; t.HitName = ""; }
 				}
 				t.Life = n.life; t.Max = n.lifeMax; t.X = n.Center.X; t.Y = n.Center.Y; t.Seen = true; t.Owner = n.realLife >= 0 && n.realLife < Main.maxNPCs ? n.realLife : i;
-				if (i == _primaryWho && t.Max > 0 && n.life > 0) BossMilestones(t, n);
+				if (i == _aimWho && t.Max > 0 && n.life > 0) BossMilestones(t, n);
 				if (!(Headless && IsNewFightSerial(n))) alive = true;
 			}
 			_bgone.Clear();
@@ -1192,7 +1270,7 @@ namespace Levy.Common.Recording
 				if (pct <= MilestonePcts[k] && (t.Mil & bit) == 0)
 				{
 					t.Mil |= bit;
-					Ev("bph", ("pct", MilestonePcts[k].ToString()), ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString()), ("army", _lt.Count.ToString()), ("hp", (_cmd != null ? _cmd.statLife : 0).ToString()));
+					Ev("bph", ("pct", MilestonePcts[k].ToString()), ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString()), ("army", LeviesInArena().ToString()), ("hp", (_cmd != null ? _cmd.statLife : 0).ToString()));
 				}
 			}
 		}

@@ -61,7 +61,7 @@ namespace Levy.Common
 			public const float CardGradeTint = 0.22f;
 			public static readonly Color GradeColorLevy = new(150, 165, 190), GradeColorManAtArms = new(90, 165, 240), GradeColorChampion = new(240, 190, 60);
 			public const float ButtonTextScale = 0.75f, SmallTextScale = 0.8f;
-			public const long DepositSmall = 10000, DepositLarge = 100000; // 1 gold, 10 gold
+			public const long DepositSmall = 10000, DepositLarge = 100000, DepositPlatinum = 1000000; // 1 gold, 10 gold, 1 platinum
 			/// <summary>First and one-past-last main-inventory slot (hotbar, coins and ammo excluded).</summary>
 			public const int InventoryMainStart = 10, InventoryMainEnd = 50;
 			public const int InventoryMouseSlot = 58;
@@ -148,6 +148,8 @@ namespace Levy.Common
 			public const int PotionPipWidth = 22, PotionPipHeight = 9, PotionPipGap = 3;
 			public const float PotionPipTextScale = 0.7f;
 			public const float FearIconMinScale = 0.6f, FearIconMaxScale = 1.3f;
+			/// <summary>Ally tags (<see cref="Levy.Common.UI.AllyTags"/>): pixels above the top of a minion, of an officer's creature or unit (clear of its HP bar), and of a machine (clear of its battery bar).</summary>
+			public const float AllyTagLiftMinion = 4f, AllyTagLiftUnit = 18f, AllyTagLiftMachine = 16f;
 
 			// ---- HUD strip ----
 			public const int HudHeadSize = 36, HudEntryPitch = 44, HudBarHeight = 5;

@@ -39,7 +39,7 @@ namespace Levy.Common.UI
 		// full (un-ellipsised) captions of the two flex control buttons, so the row reflow always fits from the complete text
 		private string _recruitRaw = "", _hazardRaw = "";
 		private LevyButton _armyMinus, _armySize, _armyPlus, _armyHelp;
-		private LevyButton _setupBtn, _close, _dep1, _dep10, _depAll, _wd1, _wd10, _mobilize, _standAll, _remobAll, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
+		private LevyButton _setupBtn, _close, _dep1, _dep10, _dep100, _depAll, _wd1, _wd10, _wd100, _mobilize, _standAll, _remobAll, _autoMuster, _tax, _hazard, _recruit, _enlistLevy, _enlistMaa, _enlistChamp;
 		private LevyButton _allFollow, _allHold, _allReturn, _allHoldFire, _resetLoadouts, _officers, _goMap;
 		private LevyButton _fClassBtn, _fGradeBtn, _fTierBtn, _fDutyBtn, _sortBtn;
 		private BarElement _manpower, _cp;
@@ -101,6 +101,8 @@ namespace Levy.Common.UI
 			_depAll = Put(new LevyButton(LevyUtil.T("UI2.DepositAll"), 0.7f, 92, BH, () => UIActions.Deposit(Te, UIActions.InventoryCoins()), depHint), 168, y0);
 			_wd1 = Put(new LevyButton(LevyUtil.T("UI2.WithdrawOneGold"), 0.7f, 70, BH, () => UIActions.Withdraw(Te, LevyConstants.UI.DepositSmall), wdHint), 268, y0);
 			_wd10 = Put(new LevyButton(LevyUtil.T("UI2.WithdrawTenGold"), 0.7f, 78, BH, () => UIActions.Withdraw(Te, LevyConstants.UI.DepositLarge), wdHint), 342, y0);
+			_dep100 = Put(new LevyButton(LevyUtil.T("UI2.DepositPlatinum"), 0.7f, 86, BH, () => UIActions.Deposit(Te, LevyConstants.UI.DepositPlatinum), depHint), 0, y0);
+			_wd100 = Put(new LevyButton(LevyUtil.T("UI2.WithdrawPlatinum"), 0.7f, 86, BH, () => UIActions.Withdraw(Te, LevyConstants.UI.DepositPlatinum), wdHint), 0, y0); // the coin row is laid out by LayoutCoinRow
 			// muster row (the last header row): Mobilize / Stand down for this barracks, then the whole army to or from the reserve
 			float y7 = RowY(7);
 			_mobilize = Put(new LevyButton("", BtnScale, 118, BH, () => UIActions.ToggleMobilize(Te)), 12, y7);
@@ -239,6 +241,7 @@ namespace Levy.Common.UI
 		{
 			if (_recruit == null) return;
 			const float pad = 12f, gap = 8f, s = 0.7f;
+			LayoutCoinRow(pad, s);
 
 			// row 2: toggles then hazard pay, each snug to its text; hazard is clamped so it never spills past the right edge
 			float y2 = RowY(2);
@@ -259,6 +262,26 @@ namespace Levy.Common.UI
 			float goW = Measure(_goMap.Text, s) + 16f, goX = officersX - gap - goW;
 			_goMap.Left.Set(goX, 0f); _goMap.Top.Set(y3, 0f); _goMap.Width.Set(goW, 0f);
 			PlaceFlex(_recruit, _recruitRaw, pad, y3, goX - gap - pad, s);
+		}
+
+		/// <summary>
+		/// Row 0: the deposit buttons (+1 gold, +10 gold, +1 platinum, +all coins), then the withdraw buttons (-1 gold, -10 gold, -1 platinum), each snug to its text. When the row does not fit the panel the
+		/// platinum buttons take their short caption, then the gaps close up, so no two buttons ever overlap down to the minimum width.
+		/// </summary>
+		private void LayoutCoinRow(float pad, float s)
+		{
+			float y0 = RowY(0);
+			var dep = new[] { _dep1, _dep10, _dep100, _depAll }; var wd = new[] { _wd1, _wd10, _wd100 };
+			float RowW(float gap, float group) { float w = 0; foreach (var b in dep) w += Measure(b.Text, s) + 16f; foreach (var b in wd) w += Measure(b.Text, s) + 16f; return w + (dep.Length + wd.Length - 2) * gap + group; }
+			float room = _w - 2f * pad;
+			_dep100.Set(LevyUtil.T("UI2.DepositPlatinum"), _dep100.Enabled); _wd100.Set(LevyUtil.T("UI2.WithdrawPlatinum"), _wd100.Enabled);
+			if (RowW(6f, 14f) > room) { _dep100.Set(LevyUtil.T("UI2.DepositPlatinumShort"), _dep100.Enabled); _wd100.Set(LevyUtil.T("UI2.WithdrawPlatinumShort"), _wd100.Enabled); }
+			float g = 6f, grp = 14f;
+			if (RowW(g, grp) > room) { g = 2f; grp = 6f; }
+			float x = pad;
+			foreach (var b in dep) x = PlaceSnug(b, x, y0, s) + g;
+			x += grp - g;
+			foreach (var b in wd) x = PlaceSnug(b, x, y0, s) + g;
 		}
 
 		/// <summary>Sizes a button to its own text and places it at (<paramref name="x"/>, <paramref name="y"/>); returns its right edge.</summary>
@@ -344,9 +367,11 @@ namespace Levy.Common.UI
 			PlaceTitle();
 			_wd1.Enabled = te.Treasury >= LevyConstants.UI.DepositSmall;
 			_wd10.Enabled = te.Treasury >= LevyConstants.UI.DepositLarge;
+			_wd100.Enabled = te.Treasury >= LevyConstants.UI.DepositPlatinum;
 			long coins = UIActions.InventoryCoins();
 			_dep1.Enabled = coins >= LevyConstants.UI.DepositSmall;
 			_dep10.Enabled = coins >= LevyConstants.UI.DepositLarge;
+			_dep100.Enabled = coins >= LevyConstants.UI.DepositPlatinum;
 			_depAll.Enabled = coins > 0;
 
 			int cap = SettlementSystem.Instance.ManpowerCap(te);

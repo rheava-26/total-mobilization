@@ -72,6 +72,10 @@ label.btn{position:relative;display:inline-flex;align-items:center;justify-conte
 #main{min-height:0;min-width:0;overflow:auto;border-radius:10px}
 .filters{display:flex;gap:6px;margin-bottom:8px}
 .filters select{flex:1;min-width:0;padding:4px 8px}
+.hidetog{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-2px 2px 8px;min-height:38px;font-size:12.5px;cursor:pointer}
+.hidetog input{width:18px;height:18px;margin:0;accent-color:var(--grn);flex:none;cursor:pointer}
+.hidetog #hideCount{color:var(--dim);font-size:12px}
+.bd.x{color:var(--old-ink);border-color:var(--old-line);background:var(--old-bg);font-weight:650;border-style:dashed}
 details.grp{margin:0 0 8px}
 details.grp>summary{cursor:pointer;color:var(--dim);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;padding:8px 4px;list-style:revert;min-height:36px}
 .cards{display:flex;flex-direction:column;gap:8px}
@@ -213,6 +217,7 @@ body.big #strip,body.big .legend{display:none}
   <div id="body">
     <nav id="list" aria-label="Recorded fights">
       <div class="filters"><button id="callBtn" title="hide the results, pick a fight and call the outcome">Call it</button><select id="fBoss" aria-label="filter by boss"><option value="">All bosses</option></select><select id="fRes" aria-label="filter by result"><option value="">Any result</option><option value="win">Win</option><option value="loss">Loss</option><option value="timeout">Timeout</option><option value="fled">Fled</option><option value="despawn">Boss left</option><option value="survived">Survived</option></select></div>
+      <label class="hidetog" title="hides fights recorded on a very old Levy version or during a known recording bug; everything is still listed when this is off"><input type="checkbox" id="fHide" checked>Hide broken or very old fights<span id="hideCount"></span></label>
       <div id="groups"><p class="small">Loading the fight list ...</p></div>
       <div class="listfoot"><label class="btn">Open a local recording (.jsonl)<input id="file" type="file" accept=".jsonl,.json,.txt"></label><span class="small">Or drop a recording on the radar.</span></div>
     </nav>
@@ -303,7 +308,8 @@ function fromData(o){      // a data/<fight>.json file written by make_site.py
 const tkOf=b=>b.length>14?b[14]:((b[12]>=0&&b[12]<255)?1:0);
 // event NPCs (Celestial Pillars, Martian Saucer, Flying Dutchman, Pumpkin/Frost Moon bosses) are never the main boss: same list as tools/recview/recrules.py
 const EVENT_NPC=new Set([517,422,507,493,392,393,394,395,491,492,325,327,328,344,345,346]);
-function mainBoss(f){const bs=(f.b||[]).filter(b=>!EVENT_NPC.has(b[0]));for(const b of bs) if(!b[13]) return b; return bs[0]||null;}
+// the boss row a sample follows: of the bosses (not parts) the largest life pool, its owner first (format 13 field 18 realLife: a worm's head, Ares and not an arm), the lowest life on a tie (a live head before segments frozen at full life); Draedon's own 16,000 never beats a mech. Same rule as make_site.py main_boss
+function mainBoss(f){const bs=(f.b||[]).filter(b=>!EVENT_NPC.has(b[0]));if(!bs.length)return null;let h=bs.filter(b=>!b[13]);if(!h.length)h=bs;let o=h.filter(b=>b.length<=18||b[18]<0||b[18]===b[1]);if(!o.length)o=h;let best=o[0];for(const b of o)if(b[7]>best[7]||(b[7]===best[7]&&b[6]<best[6]))best=b;return best;}
 function makeArena(R){
   makeExtraTerrain(R);
   const A=R.terr; R.arenaImg=null; if(!A) return;
@@ -403,7 +409,7 @@ function callReveal(){
   callHide(); callUI(); head(curFight,curFight.boss,summary(D)); renderList(); if(D){draw();drawStrip();renderInfo();}
 }
 function callNext(){
-  const pool=fights.filter(f=>f.id!==curId); if(!pool.length) return;
+  const pool=fights.filter(f=>f.id!==curId&&shownFight(f)); if(!pool.length) return;
   call.pick=null; call.revealed=false; callHide(); callUI();
   openFight(pool[Math.floor(Math.random()*pool.length)].id);
 }
@@ -441,10 +447,28 @@ function vcmp(a,b){a=vkey(a);b=vkey(b);for(let i=0;i<3;i++){const d=(a[i]||0)-(b
 function verText(f){return f&&f.ver?"Levy "+(f.verAbout?"about ":"")+f.ver:"";}
 function isOutdated(f){return !!(f&&f.ver&&manifest&&manifest.current&&vcmp(f.ver,manifest.current)<0);}
 function eraNote(f){if(!isOutdated(f))return "";const e=(manifest.eras||[]).slice().sort((a,b)=>vcmp(a.upTo,b.upTo)).find(x=>vcmp(f.ver,x.upTo)<=0);return e?e.note:"";}
+// "Hide broken or very old fights": the same rule as make_site.hidden_reason (manifest "hide", the eras' "broken" flags, a fight's "broken" reason)
+const HIDE_OLD_DEFAULT="2.0.67";   // make_site.HIDE: used when a manifest carries no "hide"
+function hideWhy(f){
+  if(!f) return null;
+  if(f.broken) return {k:"broken",t:"Broken recording: "+f.broken};
+  if(!f.ver||!manifest) return null;
+  const e=(manifest.eras||[]).slice().sort((a,b)=>vcmp(a.upTo,b.upTo)).find(x=>vcmp(f.ver,x.upTo)<=0);
+  const h=manifest.hide||{}, cut=("oldUpTo" in h)?h.oldUpTo:HIDE_OLD_DEFAULT;
+  if(cut&&vcmp(f.ver,cut)<=0) return {k:"old",t:"Very old: Levy "+(f.verAbout?"about ":"")+f.ver+", the cut-off is "+cut+"."+(e&&e.note?" "+e.note:"")};
+  if(e&&e.broken) return {k:"broken",t:"Broken recording: "+(e.note||"a known bug of that version.")};
+  return null;
+}
+let hideOn=true;
+try{const v=localStorage.getItem("levyHideOld"); if(v==="0") hideOn=false;}catch(e){}
+function hideSave(){try{localStorage.setItem("levyHideOld",hideOn?"1":"0");}catch(e){}}
+function shownFight(f){return !(hideOn&&f._hide);}
+function hideBadge(f){const w=f&&f._hide;return w?`<span class="bd x" title="${esc(w.t)}">${w.k==="broken"?"broken":"very old"}</span>`:"";}
+function brokenNote(f){return f&&f.broken?`<div class="ho">Broken recording: ${esc(f.broken)}</div>`:"";}
 function verBadges(f){
-  if(!f||!f.ver)return "";
+  if(!f||!f.ver)return hideBadge(f);
   const out=isOutdated(f),n=eraNote(f);
-  return `<span class="bd v" title="the Levy version this fight was recorded on">${esc(verText(f))}</span>`+(out?`<span class="bd o" title="${esc((n?n+" ":"")+"Current: Levy "+manifest.current+".")}">outdated</span>`:"");
+  return `<span class="bd v" title="the Levy version this fight was recorded on">${esc(verText(f))}</span>`+(out?`<span class="bd o" title="${esc((n?n+" ":"")+"Current: Levy "+manifest.current+".")}">outdated</span>`:"")+hideBadge(f);
 }
 function resText(f){return f&&f.pvp?pvpWord(f.pvp):(resLabel[f.result]||f.result);}
 function resChip(f){return f&&f.pvp?`<span class="res pv ${pvpCls(f.pvp)}">${esc(pvpWord(f.pvp))}</span>`:`<span class="res ${f.result}">${resLabel[f.result]||f.result}</span>`;}
@@ -453,11 +477,11 @@ function head(f,name,s){
   if(f&&f.kind==="event"){evHead(f,el);return;}
   if(D&&D.pvp){   // two levy armies: the winner replaces the boss result
     const p=f&&f.pvp?f.pvp:D.pvp;
-    el.innerHTML=`<div class="ht"><b>${esc(pvpTitle(p))}</b>${resChip({pvp:p})}<span class="hs">${f?esc(f.mode)+" &middot; "+f.levies+" levies &middot; "+esc(f.arena)+" &middot; "+f.dur.toFixed(0)+" s &middot; "+esc(setTitleOf(f)):"local recording &middot; "+s.dur.toFixed(0)+" s"}</span><span class="badges" style="margin:0">${f?verBadges(f):""}</span></div>`+(f&&isOutdated(f)?`<div class="ho">Outdated${eraNote(f)?": "+esc(eraNote(f)):"."} Current: Levy ${esc(manifest.current)}.</div>`:"")+(f&&f.note?`<div class="hn">${esc(f.note)}</div>`:"");
+    el.innerHTML=`<div class="ht"><b>${esc(pvpTitle(p))}</b>${resChip({pvp:p})}<span class="hs">${f?esc(f.mode)+" &middot; "+f.levies+" levies &middot; "+esc(f.arena)+" &middot; "+f.dur.toFixed(0)+" s &middot; "+esc(setTitleOf(f)):"local recording &middot; "+s.dur.toFixed(0)+" s"}</span><span class="badges" style="margin:0">${f?verBadges(f):""}</span></div>`+(f&&isOutdated(f)?`<div class="ho">Outdated${eraNote(f)?": "+esc(eraNote(f)):"."} Current: Levy ${esc(manifest.current)}.</div>`:"")+brokenNote(f)+(f&&f.note?`<div class="hn">${esc(f.note)}</div>`:"");
     return;
   }
   if(!f){el.innerHTML=`<div class="ht"><b>${esc(name||s.boss)}</b><span class="hs">local recording &middot; ${s.dur.toFixed(0)} s</span></div>`;return;}
-  el.innerHTML=`<div class="ht"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span><span class="hs">${esc(f.mode)} &middot; ${f.levies} levies &middot; ${esc(f.arena)} &middot; ${f.dur.toFixed(0)} s &middot; ${esc(setTitleOf(f))}</span><span class="badges" style="margin:0">${verBadges(f)}</span></div>`+(isOutdated(f)?`<div class="ho">Outdated${eraNote(f)?": "+esc(eraNote(f)):"."} Current: Levy ${esc(manifest.current)}.</div>`:"")+(f.note?`<div class="hn">${esc(f.note)}</div>`:"");
+  el.innerHTML=`<div class="ht"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span><span class="hs">${esc(f.mode)} &middot; ${f.levies} levies &middot; ${esc(f.arena)} &middot; ${f.dur.toFixed(0)} s &middot; ${esc(setTitleOf(f))}</span><span class="badges" style="margin:0">${verBadges(f)}</span></div>`+(isOutdated(f)?`<div class="ho">Outdated${eraNote(f)?": "+esc(eraNote(f)):"."} Current: Levy ${esc(manifest.current)}.</div>`:"")+brokenNote(f)+(f.note?`<div class="hn">${esc(f.note)}</div>`:"");
 }
 function loadLocal(file){
   file.text().then(t=>{curId=null;document.querySelectorAll(".card").forEach(c=>c.classList.remove("sel"));setRec(parseRec(t),file.name,null);$("app").classList.remove("showlist");}).catch(err=>showMsg("Could not read that file: "+err.message,"err"));
@@ -497,9 +521,10 @@ async function openFight(id){
 }
 function renderList(){
   const bs=$("fBoss").value, rs=$("fRes").value, box=$("groups"); box.innerHTML="";
-  let shown=0;
+  let shown=0, hid=0;
   for(const s of manifest.sets){
-    const list=s.fights.filter(f=>(!bs||f.boss===bs)&&(!rs||f.result===rs)); if(!list.length) continue; shown+=list.length;
+    const match=s.fights.filter(f=>(!bs||f.boss===bs)&&(!rs||f.result===rs)), list=match.filter(shownFight); hid+=match.length-list.length;
+    if(!list.length) continue; shown+=list.length;
     const d=document.createElement("details"); d.className="grp"; d.open=true;
     d.innerHTML=`<summary>${esc(s.title)} (${list.length})</summary>`+(s.intro?`<p class="setintro">${esc(s.intro)}</p>`:"")+`<div class="cards"></div>`;
     const cards=d.querySelector(".cards"); let lastG=null;
@@ -522,7 +547,9 @@ function renderList(){
     }
     box.appendChild(d);
   }
-  if(!shown) box.innerHTML='<p class="small">No fights match these filters.</p>';
+  const all=fights.filter(f=>f._hide).length;
+  $("hideCount").textContent=hideOn?(all?"("+all+" hidden"+(hid!==all?", "+hid+" in this view":"")+")":"(none hidden)"):(all?"("+all+" shown, marked)":"(none)");
+  if(!shown) box.innerHTML='<p class="small">No fights match these filters.'+(hid?" "+hid+" "+(hid===1?"is":"are")+" hidden as broken or very old.":"")+'</p>';
 }
 async function init(){
   showMsg("Loading the fight list ...");
@@ -533,15 +560,16 @@ async function init(){
     $("groups").innerHTML='<p class="warn">Could not load the fight list.</p>';
     showMsg("Could not load the fight list: "+e.message+".","err",init); return;
   }
-  fights=[]; for(const s of manifest.sets) for(const f of s.fights){f.set=s.id;fights.push(f);}
+  fights=[]; for(const s of manifest.sets) for(const f of s.fights){f.set=s.id;f._hide=hideWhy(f);fights.push(f);}
   if(!fights.length){showMsg("The fight list is empty.","err");return;}
+  $("fHide").checked=hideOn; $("fHide").onchange=()=>{hideOn=$("fHide").checked;hideSave();renderList();};
   const bosses=[...new Set(fights.map(f=>f.boss))].sort(); const sel=$("fBoss");
   sel.innerHTML='<option value="">All bosses</option>'+bosses.map(b=>`<option>${esc(b)}</option>`).join("");
   sel.onchange=renderList; $("fRes").onchange=renderList;
   $("listBtn").onclick=()=>{const on=$("app").classList.toggle("showlist");$("listBtn").setAttribute("aria-expanded",on?"true":"false");};
   $("listBtnSub").textContent="· "+fights.length+" recorded";
   const m=/[#&]f=([^&]+)/.exec(location.hash); let id=m?decodeURIComponent(m[1]):null;
-  if(!fights.some(f=>f.id===id)) id=manifest.default&&fights.some(f=>f.id===manifest.default)?manifest.default:fights[0].id;
+  if(!fights.some(f=>f.id===id)){const vis=fights.filter(shownFight),pool=vis.length?vis:fights; id=manifest.default&&pool.some(f=>f.id===manifest.default)?manifest.default:pool[0].id;}
   curId=id; renderList();
   const c=document.querySelector(".card.sel"); if(c&&window.innerWidth>820) c.scrollIntoView({block:"nearest"});
   openFight(id);
@@ -648,7 +676,7 @@ function evCard(f){
     `<div class="badges">${verBadges(f)}<span class="bd l">${f.kills} kills</span><span class="bd h">${f.miniKills} miniboss kills</span><span class="bd d">${f.deaths} levy deaths</span></div>`+(f.note?`<div class="note">${esc(f.note)}</div>`:"");
 }
 function evHead(f,el){
-  el.innerHTML=`<div class="ht"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span><span class="hs">event &middot; ${fmtClock((f.dur||0)*TPS)} &middot; ${f.levies} levies &middot; ${f.kills} kills &middot; ${f.miniKills} miniboss kills &middot; ${f.deaths} levy deaths</span><span class="badges" style="margin:0">${verBadges(f)}</span></div>`+(f.note?`<div class="hn">${esc(f.note)}</div>`:"");
+  el.innerHTML=`<div class="ht"><b>${esc(f.boss)}</b><span class="res ${f.result}">${resLabel[f.result]||f.result}</span><span class="hs">event &middot; ${fmtClock((f.dur||0)*TPS)} &middot; ${f.levies} levies &middot; ${f.kills} kills &middot; ${f.miniKills} miniboss kills &middot; ${f.deaths} levy deaths</span><span class="badges" style="margin:0">${verBadges(f)}</span></div>`+brokenNote(f)+(f.note?`<div class="hn">${esc(f.note)}</div>`:"");
 }
 function renderEventInfo(){
   const h=D.hdr||{},e=D.end||{};

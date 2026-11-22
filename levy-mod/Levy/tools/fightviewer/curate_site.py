@@ -385,7 +385,9 @@ def main():
     # default: Eve's most recent Plantera loss
     pl = [e for e in eve if e["f"]["boss"] == "Plantera" and e["f"]["result"] == "loss"]
     default = pl[0]["id"] if pl else (eve or events)[0]["id"]
-    man = {"version": 2, "default": default, "current": ms.CURRENT, "eras": ms.ERAS, "sets": sets}
+    man = {"version": 2, "default": default, "current": ms.CURRENT, "eras": [dict(e) for e in ms.ERAS], "hide": dict(ms.HIDE), "sets": sets}
+    hid = ms.stamp(man)    # the page's "Hide broken or very old fights" rules (make_site.HIDE, the eras' broken flags, make_site.BROKEN)
+    print("hidden by default: %d broken, %d very old; %d shown" % (hid["broken"], hid["old"], hid["shown"]), file=sys.stderr)
     json.dump(man, open(os.path.join(out, "data", "manifest.json"), "w"), separators=(",", ":"))
     shutil.copyfile(os.path.join(HERE, "site", "index.html"), os.path.join(out, "index.html"))
     files = sorted("data/" + f for f in os.listdir(os.path.join(out, "data")))

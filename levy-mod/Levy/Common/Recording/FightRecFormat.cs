@@ -87,6 +87,18 @@ namespace Levy.Common.Recording
 	///         IMPORTANCE (imp): 2 boss = NPC.boss, counted as a boss, a fight boss, the Celestial Pillars, Betsy; 1 miniboss = the hand list (EventRecorder.MinibossTypes: Goblin Summoner, Flying Dutchman and cannons, Martian Saucer and parts,
 	///           Mourning Wood, Pumpking and its blade, Everscream, Santa-NK1, Ice Queen, Mothron, Dark Mage T1/T3, Ogre T2/T3, Dreadnautilus; with Calamity Cragmaw Mire, Nuclear Terror, Mauler) or, in an event recording, the FALLBACK:
 	///           once 3 ordinary types have been seen, a type whose largest life is at least 6 times their median and at least 1000; 0 normal otherwise. A boss that appears during an event still gets its own fight recording.
+	///         Format 13 makes fight recordings compact and splits big ones. Readers of format 12 read format 13 once they decode the rows (FightRecFormat.RowDecoder; Python tools/recview/reccodec.py; the viewers' own copy).
+	///         hdr.codec = 1: the frame keys b, a, l, j and c are ROW CODED (RowCodec). Every number is an integer in its field's unit: whole pixels, points and ids, velocities (and b's ai0..ai3) in tenths.
+	///           An entry of a row list is K (the entity whose key is K, every field as predicted), [K, mask, d, ...] (the fields whose bit i is set in mask are prediction + d, in field order; the rest as predicted)
+	///           or [[full row]] (a new entity, or one that was not in the sample before: the row in natural units, as in format 12). The key is b / a field 1 (the NPC slot), l field 0 (the levy id), j field 8 and c field 7 (the projectile slot, new).
+	///           Prediction: x and y carry on by the last step, or by the velocity (pixels moved = (v before + v now + 5) div 10, rounded down, in tenths), whichever was closer on the sample before; a fresh entity starts with the velocity. Every other field stays as it was.
+	///           An entity is predicted only from the sample right before it: one missing from a sample is forgotten and comes back as a full row. A hdr line forgets everything. p and s are written as before.
+	///         Positions are whole pixels in every list (format 12 kept a tenth). SchemaB gains realLife (field 18: the slot that owns the NPC's life, -1 none), SchemaJ and SchemaC gain slot (the projectile's slot, the row key).
+	///         The hit event gains taken: the life the commander actually lost to that hit (dmg stays the game's damage number; a hit that a dodge, a heal or immunity undid takes 0).
+	///         The tgt event and the target counts follow the main pool (the fight boss with the largest life pool), not the first boss seen; Draedon's own NPC never counts against his mechs. A boss whose target slot is the empty slot 255 reads the target its AI last chose (NPC.targetRect).
+	///         bph.army counts the levies within ArenaRangeTiles of the commander or a fight boss.
+	///         PART FILES: a recording whose compressed part passes FightRecorder.PartBytes (9 MB) goes on in NAME_part2.levyrec, NAME_part3.levyrec ...; each part starts with the header plus "part": n, and its rows start full, so it reads on its own.
+	///           The names and end records are in the last part. FightRecReader.Read, make_site.py and the viewer join the parts back into one fight. The size cap of the setting counts every part.
 	///   names type id to name tables (items, npcs, projectiles, buffs, soldiers), written at the end
 	///   end   stop reason and counts
 	/// All positions are world pixels (centers). Plain data; nothing here touches the game, so it can self-check at boot.
@@ -106,22 +118,74 @@ namespace Levy.Common.Recording
 		public List<double[]> A = new();
 		/// <summary>Format 7 hitboxes of other hostile NPCs, integer pixels: full [type,id,x,y,w,h,realLife,flags] when the NPC is new or its shape changed, else the short [id,x,y].</summary>
 		public List<double[]> S = new();
-		/// <summary>Format 11: the commander's own projectiles [type,x,y,vx,vy,w,h].</summary>
+		/// <summary>Format 11: the commander's own projectiles [type,x,y,vx,vy,w,h] (format 13: + slot).</summary>
 		public List<double[]> C = new();
+	}
+
+	/// <summary>Format 13 part files: NAME.levyrec, NAME_part2.levyrec, NAME_part3.levyrec ... Plain file names, no game types (the command-line report tool uses them too).</summary>
+	internal static class RecParts
+	{
+		private static readonly System.Text.RegularExpressions.Regex PartRe = new(@"^(.*)_part(\d+)(\.levyrec|\.jsonl)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+		/// <summary>NAME.levyrec -> NAME_partN.levyrec (N >= 2; N 1 is the name itself).</summary>
+		public static string PartName(string path, int n)
+		{
+			if (n <= 1) return path;
+			string ext = System.IO.Path.GetExtension(path); string stem = path.Substring(0, path.Length - ext.Length);
+			return stem + "_part" + n + ext;
+		}
+
+		/// <summary>The first part's path and N for NAME_partN.levyrec (1 for the first part or a file with no parts).</summary>
+		public static string PartBase(string path, out int part)
+		{
+			var m = PartRe.Match(path ?? ""); part = 1;
+			if (!m.Success) return path;
+			part = int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
+			return m.Groups[1].Value + m.Groups[3].Value;
+		}
+
+		/// <summary>True for NAME_part2.levyrec and later parts (the first part carries the recording's own name).</summary>
+		public static bool IsLaterPart(string path) { PartBase(path, out int n); return n >= 2; }
+
+		/// <summary>Every part of the recording <paramref name="path"/> belongs to, in order: the first part, then NAME_part2 ... while they exist.</summary>
+		public static List<string> Parts(string path)
+		{
+			string b = PartBase(path, out _); var l = new List<string>();
+			if (System.IO.File.Exists(b)) l.Add(b); else return new List<string> { path };
+			for (int n = 2; ; n++) { string p = PartName(b, n); if (!System.IO.File.Exists(p)) break; l.Add(p); }
+			return l;
+		}
 	}
 
 	internal static class FightRecFormat
 	{
-		public const int Version = 12;
+		public const int Version = 13;
+		/// <summary>Levies this close (tiles) to the commander or a fight boss are "in the arena": bph.army, and the report's army counts read from the frames.</summary>
+		public const int ArenaRangeTiles = 120;
+		/// <summary>FightRecorder.LostWindowTicks: a boss that leaves this soon after the commander's fall left because of it.</summary>
+		public const int LostWindowTicks = 60 * 60;
+
+		/// <summary>The result rule (FightRecorder.DecideResult forwards here, so the command-line report tool shares it).</summary>
+		internal static string DecideResult(string outcome, int cmdDeaths, bool cmdDeadAtEnd, int endTick, int lastDeathTick, int bossesSeen)
+		{
+			if (outcome == "killed") return "won";
+			if (outcome == "despawn")
+			{
+				bool fell = cmdDeaths > 0 && lastDeathTick >= 0 && endTick - lastDeathTick >= -10 && endTick - lastDeathTick <= LostWindowTicks;
+				return cmdDeadAtEnd || fell ? "lost" : "fled";
+			}
+			return cmdDeaths > 0 && bossesSeen > 0 ? "lost" : "ended";
+		}
+
 		public const string SchemaP = "x,y,vx,vy,dir,flags,life,mana,immune,wingTime,rocketTime,held,mount,hookX,hookY,dashDelay";
 		public const string SchemaPFlags = "1 grounded,2 flying,4 hookOut,8 hookAttached,16 left,32 right,64 jump,128 down,256 up,512 grapple,1024 useItem,2048 dashing,4096 mounted,8192 dead";
-		public const string SchemaB = "type,id,x,y,vx,vy,life,lifeMax,ai0,ai1,ai2,ai3,target,isPart,tkind,tlevy,w,h";
+		public const string SchemaB = "type,id,x,y,vx,vy,life,lifeMax,ai0,ai1,ai2,ai3,target,isPart,tkind,tlevy,w,h,realLife";
 		public const string TKinds = "0 none,1 player,2 levy (the boss targets a levy: tlevy = its id),3 spite (redirected shots: the boss rule's grudge sends its projectiles and dashes at a levy that is too close or does a lot of damage; tlevy = that levy)";
 		public const string SchemaA = "type,id,x,y,vx,vy,life,lifeMax,tkind,tlevy,w,h";
 		public const string SchemaS = "type,id,x,y,w,h,realLife,flags  (a row of 3 = id,x,y: same type, size, realLife and flags as that id's last full row)";
 		public const string SFlags = "1 deals contact damage,2 does not take damage,4 body segment (realLife = the head that owns its life)";
-		public const string SchemaJ = "type,x,y,vx,vy,damage,w,h";
-		public const string SchemaC = "type,x,y,vx,vy,w,h";
+		public const string SchemaJ = "type,x,y,vx,vy,damage,w,h,slot";
+		public const string SchemaC = "type,x,y,vx,vy,w,h,slot";
 		public const string SchemaL = "id,x,y,vx,vy,flags,life,state,held,wingTime,lifeMax,w,h";
 		public const string ImpNames = "0 normal,1 miniboss,2 boss";
 		public const string SchemaLFlags = "1 grounded,2 flying,4 aerial,8 hooking,16 blocked";
@@ -170,11 +234,12 @@ namespace Levy.Common.Recording
 			sb.Append(']');
 		}
 
-		public static string Frame(RecFrame f)
+		public static string Frame(RecFrame f, RowCodec codec = null)
 		{
 			var sb = new StringBuilder(256);
 			sb.Append("{\"k\":\"f\",\"t\":").Append(f.T).Append(",\"p\":"); Arr(sb, f.P);
-			Rows(sb, "b", f.B); Rows(sb, "j", f.J); Rows(sb, "l", f.L); Rows(sb, "a", f.A); Rows(sb, "s", f.S); Rows(sb, "c", f.C);
+			if (codec == null) { Rows(sb, "b", f.B); Rows(sb, "j", f.J); Rows(sb, "l", f.L); Rows(sb, "a", f.A); Rows(sb, "s", f.S); Rows(sb, "c", f.C); }
+			else { codec.Rows(sb, 0, f.B); codec.Rows(sb, 3, f.J); codec.Rows(sb, 2, f.L); codec.Rows(sb, 1, f.A); Rows(sb, "s", f.S); codec.Rows(sb, 4, f.C); }
 			return sb.Append('}').ToString();
 		}
 
@@ -213,6 +278,65 @@ namespace Levy.Common.Recording
 			var o = new List<int>(); int n = pairs.GetArrayLength();
 			for (int i = 0; i + 1 < n; i += 2) { int c = pairs[i].GetInt32(), run = pairs[i + 1].GetInt32(); for (int k = 0; k < run; k++) o.Add(c); }
 			return o;
+		}
+
+		/// <summary>The lines the Python codec (tools/recview/reccodec.py) writes for <see cref="GoldenFrames"/>: the C# writer must produce exactly these, so the game, the site builder and the viewer agree.</summary>
+		internal static readonly string[] Golden =
+		{
+			"{\"k\":\"f\",\"t\":0,\"p\":[0],\"j\":[[[5,100,200,3.5,-1,20,8,8,7]],[[5,10,10,0,0,20,8,8,9]]],\"l\":[[[-100003,50,60,1.2,0,1,100,2,757,0,100,18,40]]]}",
+			"{\"k\":\"f\",\"t\":2,\"p\":[0],\"j\":[7,[9,4,-1]],\"l\":[[-100003,10,-2,-2]]}",
+			"{\"k\":\"f\",\"t\":4,\"p\":[0],\"j\":[[7,30,-1,1,-3,-4]],\"l\":[[-100003,74,2,-2,-10],[[4,0,0,0,0,0,1,0,0,0,1,1,1]]]}",
+			"{\"k\":\"f\",\"t\":6,\"p\":[0],\"j\":[[7,30,-12,5,-2,-1],[[5,10,9,0,0,20,8,8,9]]]}",
+		};
+
+		/// <summary>The input of <see cref="Golden"/>: a projectile that flies on (slot 7), one that stops, misses a sample and comes back (slot 9), a levy (an officer id) that slows, and one that appears.</summary>
+		internal static List<RecFrame> GoldenFrames()
+		{
+			var o = new List<RecFrame>();
+			RecFrame F(int t) { var f = new RecFrame { T = t, P = new double[] { 0 } }; o.Add(f); return f; }
+			var a = F(0); a.J.Add(new double[] { 5, 100, 200, 3.5, -1, 20, 8, 8, 7 }); a.J.Add(new double[] { 5, 10, 10, 0, 0, 20, 8, 8, 9 }); a.L.Add(new double[] { -100003, 50, 60, 1.2, 0, 1, 100, 2, 757, 0, 100, 18, 40 });
+			var b = F(2); b.J.Add(new double[] { 5, 107, 198, 3.5, -1, 20, 8, 8, 7 }); b.J.Add(new double[] { 5, 10, 9, 0, 0, 20, 8, 8, 9 }); b.L.Add(new double[] { -100003, 50.4, 60, 1.0, 0, 1, 100, 2, 757, 0, 100, 18, 40 });
+			var c = F(4); c.J.Add(new double[] { 5, 112.6, 197.2, 3.2, -1.4, 20, 8, 8, 7 }); c.L.Add(new double[] { -100003, 52, 60, 0.8, 0, 1, 90, 2, 757, 0, 100, 18, 40 }); c.L.Add(new double[] { 4, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1 });
+			var d = F(6); d.J.Add(new double[] { 5, 107, 199, 3, -1.5, 20, 8, 8, 7 }); d.J.Add(new double[] { 5, 10, 9, 0, 0, 20, 8, 8, 9 });
+			return o;
+		}
+
+		/// <summary>Row codec: the Python golden lines, then a random round trip (entities that come, go, repeat a key, carry NaN or huge numbers; position steps and velocities of every size) decodes back to the stored units.</summary>
+		internal static string CodecSelfCheck()
+		{
+			var gc = new RowCodec(); var gf = GoldenFrames();
+			for (int i = 0; i < gf.Count; i++) { string line = Frame(gf[i], gc); if (line != Golden[i]) return "golden line " + i + " is " + line; }
+			var rnd = new Random(1234); var codec = new RowCodec(); var dec = new RowDecoder();
+			using (var hd = JsonDocument.Parse("{\"k\":\"hdr\",\"codec\":1}")) dec.Header(hd.RootElement);
+			var live = new Dictionary<int, double[]>();
+			for (int t = 0; t < 400; t += 2)
+			{
+				var f = new RecFrame { T = t, P = new double[] { 1, 2 } };
+				for (int k = 0; k < 30; k++)
+				{
+					if (rnd.NextDouble() < 0.1) { live.Remove(k); continue; }
+					if (!live.TryGetValue(k, out var r)) live[k] = r = new double[] { rnd.Next(1, 900), rnd.Next(-5000, 5000) + rnd.NextDouble(), rnd.Next(-5000, 5000), rnd.Next(-20, 20) * 0.37, rnd.Next(-20, 20) * 0.1, 30, 16, 16, k };
+					r[3] += rnd.Next(-3, 4) * 0.13; r[4] += rnd.NextDouble() < 0.3 ? 0.3 : 0; r[1] += r[3] * 2 * (k % 3 == 0 ? 3 : 1) + (k % 5 == 0 ? rnd.Next(-40, 40) : 0); r[2] += r[4] * 2;
+					if (k == 3 && t == 40) r[5] = double.NaN; else if (k == 3) r[5] = 30;
+					f.J.Add((double[])r.Clone());
+					if (k == 11 && t % 6 == 0) f.J.Add((double[])r.Clone()); // the same key twice in one sample
+				}
+				f.B.Add(new double[] { 125, 4, 1e7 + t * 3.3, -t, 1.25, -0.05, 2.5e6 - t, 3e6, 1.5, 2e9, -3, 0.15, 255, 0, 1, -1, 40, 40, 4 });
+				string line = Frame(f, codec);
+				using var d = JsonDocument.Parse(line);
+				var back = dec.Rows(d.RootElement, 3);
+				if (back.Count != f.J.Count) return "t=" + t + ": " + back.Count + " projectile rows of " + f.J.Count;
+				for (int i = 0; i < back.Count; i++)
+					for (int c = 0; c < 9; c++)
+					{
+						double want = RowCodec.Q(f.J[i][c], c == 3 || c == 4) / (c == 3 || c == 4 ? 10.0 : 1.0);
+						if (Math.Abs(back[i][c] - want) > 1e-9) return "t=" + t + " row " + i + " field " + c + ": " + back[i][c] + " for " + want;
+					}
+				var bb = dec.Rows(d.RootElement, 0);
+				if (bb.Count != 1 || Math.Abs(bb[0][2] - RowCodec.Q(f.B[0][2], false)) > 1e-9 || Math.Abs(bb[0][9] - 2e9) > 1e-6 || bb[0][18] != 4 || Math.Abs(bb[0][11] - 0.2) > 1e-9) return "t=" + t + ": boss row";
+				if (dec.Rows(d.RootElement, 2).Count != 0) return "t=" + t + ": a list with no key";
+			}
+			return null;
 		}
 
 		/// <summary>Boot self-check: serialize a synthetic frame, an event and an arena row, parse them back, compare. Returns null when ok, else the failure text.</summary>
@@ -257,9 +381,179 @@ namespace Levy.Common.Recording
 					if (back.Count != codes.Count) return "arena length";
 					for (int i = 0; i < codes.Count; i++) if (back[i] != codes[i]) return "arena data";
 				}
+				string rc = CodecSelfCheck();
+				if (rc != null) return "row codec: " + rc;
 				return null;
 			}
 			catch (Exception e) { return e.GetType().Name + ": " + e.Message; }
+		}
+	}
+
+	/// <summary>
+	/// Format 13 row coding of the frame keys b, a, l, j and c (see the format notes above; the Python twin is tools/recview/reccodec.py, the JS one sits in the viewers). One instance per recording;
+	/// <see cref="Reset"/> at the start of every part file. Lossless for the stored units: whole pixels, tenths of velocity.
+	/// </summary>
+	internal sealed class RowCodec
+	{
+		/// <summary>A row list: its frame key, key field, position fields (x, y), and the fields stored in tenths (the first two are vx, vy).</summary>
+		internal sealed class Spec
+		{
+			public string Key; public int Ki; public int[] Pos, Ten; public bool[] IsTen;
+			public Spec(string key, int ki, int n, int[] pos, int[] ten) { Key = key; Ki = ki; Pos = pos; Ten = ten; IsTen = new bool[n]; foreach (int t in ten) IsTen[t] = true; }
+			public bool TenAt(int i) => i < IsTen.Length && IsTen[i];
+		}
+		/// <summary>0 b, 1 a, 2 l, 3 j, 4 c.</summary>
+		internal static readonly Spec[] Specs =
+		{
+			new Spec("b", 1, 19, new[] { 2, 3 }, new[] { 4, 5, 8, 9, 10, 11 }),
+			new Spec("a", 1, 12, new[] { 2, 3 }, new[] { 4, 5 }),
+			new Spec("l", 0, 13, new[] { 1, 2 }, new[] { 3, 4 }),
+			new Spec("j", 8, 9, new[] { 1, 2 }, new[] { 3, 4 }),
+			new Spec("c", 7, 8, new[] { 1, 2 }, new[] { 3, 4 }),
+		};
+
+		internal sealed class State { public long[] Q; public long S0, S1; public bool Vel = true; }
+		private readonly Dictionary<long, State>[] _old = new Dictionary<long, State>[5], _new = new Dictionary<long, State>[5];
+
+		public RowCodec() { for (int i = 0; i < 5; i++) { _old[i] = new Dictionary<long, State>(); _new[i] = new Dictionary<long, State>(); } }
+		public void Reset() { for (int i = 0; i < 5; i++) { _old[i].Clear(); _new[i].Clear(); } }
+
+		internal static long Q(double v, bool ten)
+		{
+			if (double.IsNaN(v) || double.IsInfinity(v)) return 0;
+			double x = ten ? v * 10 : v;
+			if (x > 9e15) x = 9e15; else if (x < -9e15) x = -9e15;
+			return (long)Math.Round(x, MidpointRounding.AwayFromZero);
+		}
+
+		internal static long FloorDiv10(long x) => x >= 0 ? x / 10 : -((-x + 9) / 10);
+		/// <summary>Pixels moved over one sample (2 ticks) by a body whose velocity went from a to b (tenths of a pixel per tick).</summary>
+		internal static long VStep(long a, long b) => FloorDiv10(a + b + 5);
+
+		internal static long Pred(Spec sp, long[] pq, long[] q, State st, int pi)
+		{
+			int p = sp.Pos[pi];
+			if (st.Vel) return pq[p] + VStep(pq[sp.Ten[pi]], q[sp.Ten[pi]]);
+			return pq[p] + (pi == 0 ? st.S0 : st.S1);
+		}
+
+		internal static State Next(Spec sp, long[] pq, long[] q, State st)
+		{
+			long es = 0, ev = 0;
+			for (int pi = 0; pi < 2; pi++)
+			{
+				int p = sp.Pos[pi]; long step = q[p] - pq[p];
+				es += Math.Abs(step - (pi == 0 ? st.S0 : st.S1));
+				ev += Math.Abs(step - VStep(pq[sp.Ten[pi]], q[sp.Ten[pi]]));
+			}
+			return new State { Q = q, S0 = q[sp.Pos[0]] - pq[sp.Pos[0]], S1 = q[sp.Pos[1]] - pq[sp.Pos[1]], Vel = ev <= es };
+		}
+
+		internal static void Nat(StringBuilder sb, long q, bool ten)
+		{
+			if (!ten || q % 10 == 0) { sb.Append(ten ? q / 10 : q); return; }
+			if (q < 0) { sb.Append('-'); q = -q; }
+			sb.Append(q / 10).Append('.').Append((char)('0' + q % 10));
+		}
+
+		/// <summary>Writes ,"key":[entries] for list <paramref name="li"/> (nothing when there are no rows) and moves the state on: entities absent from this sample are forgotten.</summary>
+		public void Rows(StringBuilder sb, int li, List<double[]> rows)
+		{
+			var sp = Specs[li]; var old = _old[li]; var cur = _new[li]; cur.Clear();
+			if (rows.Count > 0)
+			{
+				sb.Append(",\"").Append(sp.Key).Append("\":[");
+				for (int r = 0; r < rows.Count; r++)
+				{
+					if (r > 0) sb.Append(',');
+					double[] row = rows[r]; int n = row.Length;
+					var q = new long[n];
+					for (int i = 0; i < n; i++) q[i] = Q(row[i], sp.TenAt(i));
+					long k = q[sp.Ki];
+					if (cur.ContainsKey(k) || !old.TryGetValue(k, out var prev) || prev.Q.Length != n)
+					{
+						sb.Append("[[");
+						for (int i = 0; i < n; i++) { if (i > 0) sb.Append(','); Nat(sb, q[i], sp.TenAt(i)); }
+						sb.Append("]]");
+						cur[k] = new State { Q = q };
+						continue;
+					}
+					long[] pq = prev.Q;
+					int mask = 0; int nd = 0; var d = new long[n];
+					for (int i = 0; i < n; i++)
+					{
+						if (i == sp.Ki) continue;
+						long pred = i == sp.Pos[0] ? Pred(sp, pq, q, prev, 0) : i == sp.Pos[1] ? Pred(sp, pq, q, prev, 1) : pq[i];
+						if (q[i] != pred) { mask |= 1 << i; d[nd++] = q[i] - pred; }
+					}
+					if (mask == 0) sb.Append(k);
+					else { sb.Append('[').Append(k).Append(',').Append(mask); for (int i = 0; i < nd; i++) sb.Append(',').Append(d[i]); sb.Append(']'); }
+					cur[k] = Next(sp, pq, q, prev);
+				}
+				sb.Append(']');
+			}
+			_old[li] = cur; _new[li] = old;
+		}
+	}
+
+	/// <summary>Reads format 13 coded rows back into natural rows (and passes plain rows of older files through). One per recording; <see cref="Header"/> on every hdr line.</summary>
+	internal sealed class RowDecoder
+	{
+		public bool On;
+		private readonly Dictionary<long, RowCodec.State>[] _old = new Dictionary<long, RowCodec.State>[5];
+		public RowDecoder() { for (int i = 0; i < 5; i++) _old[i] = new Dictionary<long, RowCodec.State>(); }
+
+		public void Header(JsonElement hdr)
+		{
+			On = hdr.TryGetProperty("codec", out var c) && c.ValueKind == JsonValueKind.Number && c.GetInt32() == 1;
+			for (int i = 0; i < 5; i++) _old[i].Clear();
+		}
+
+		private static double Num(JsonElement e) => e.ValueKind == JsonValueKind.Number ? e.GetDouble() : 0;
+
+		/// <summary>The rows of list <paramref name="li"/> (0 b, 1 a, 2 l, 3 j, 4 c) in this frame, natural units. Call it for every frame, also when the key is absent, so entities that left are forgotten.</summary>
+		public List<double[]> Rows(JsonElement frame, int li)
+		{
+			var sp = RowCodec.Specs[li]; var res = new List<double[]>();
+			bool has = frame.TryGetProperty(sp.Key, out var arr) && arr.ValueKind == JsonValueKind.Array;
+			if (!On)
+			{
+				if (has) foreach (var r in arr.EnumerateArray()) { if (r.ValueKind != JsonValueKind.Array) continue; var o = new double[r.GetArrayLength()]; int i = 0; foreach (var v in r.EnumerateArray()) o[i++] = Num(v); res.Add(o); }
+				return res;
+			}
+			var old = _old[li]; var cur = new Dictionary<long, RowCodec.State>();
+			if (has)
+				foreach (var e in arr.EnumerateArray())
+				{
+					long[] q; long k;
+					if (e.ValueKind == JsonValueKind.Array && e.GetArrayLength() > 0 && e[0].ValueKind == JsonValueKind.Array)
+					{
+						var r = e[0]; int n = r.GetArrayLength(); q = new long[n];
+						for (int i = 0; i < n; i++) q[i] = RowCodec.Q(Num(r[i]), sp.TenAt(i));
+						if (sp.Ki >= n) continue;
+						k = q[sp.Ki]; cur[k] = new RowCodec.State { Q = q };
+					}
+					else
+					{
+						int mask = 0; int vi; JsonElement ea = default; bool isArr = e.ValueKind == JsonValueKind.Array;
+						if (isArr) { if (e.GetArrayLength() < 2) continue; k = (long)Num(e[0]); mask = (int)Num(e[1]); ea = e; vi = 2; }
+						else if (e.ValueKind == JsonValueKind.Number) { k = (long)Num(e); vi = 0; }
+						else continue;
+						if (!old.TryGetValue(k, out var prev)) continue; // coded with nothing before it: a reader that started mid-part
+						long[] pq = prev.Q; int n = pq.Length; q = (long[])pq.Clone();
+						var d = new long[n]; var has2 = new bool[n];
+						for (int i = 0; i < n && mask >> i != 0; i++)
+							if ((mask >> i & 1) != 0) { has2[i] = true; d[i] = isArr && vi < ea.GetArrayLength() ? (long)Num(ea[vi]) : 0; vi++; }
+						for (int i = 0; i < n; i++) if (i != sp.Pos[0] && i != sp.Pos[1] && has2[i]) q[i] += d[i];
+						for (int pi = 0; pi < 2; pi++) { int p = sp.Pos[pi]; q[p] = RowCodec.Pred(sp, pq, q, prev, pi) + d[p]; }
+						cur[k] = RowCodec.Next(sp, pq, q, prev);
+					}
+					var o = new double[q.Length];
+					for (int i = 0; i < q.Length; i++) o[i] = sp.TenAt(i) ? q[i] / 10.0 : q[i];
+					res.Add(o);
+				}
+			_old[li] = cur;
+			return res;
 		}
 	}
 }

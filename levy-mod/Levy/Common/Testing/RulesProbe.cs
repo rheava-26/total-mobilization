@@ -17,6 +17,7 @@ namespace Levy.Common.Testing
 	///   ROVER bow gun                            bows are always chosen over guns (hard order)
 	///   RINCLUDE bow                             every bow is put to use
 	///   RMIN bow 7                               at least 7 levies carry a bow
+	///   RCATONLY gun                             only guns are issued (the category Only mode)
 	///   RDENY Vanilla/Minishark   RONLY Vanilla/Musket    item lists (several items per line)
 	///   OVERRIDE Vanilla/WoodenSword prefer|never|set 400|clear
 	///   TAG Vanilla/Musket class melee|none|auto   TAG Vanilla/Minishark +bow -gun
@@ -54,6 +55,7 @@ namespace Levy.Common.Testing
 				case "ROVER": { var b = r.AddBlock(RuleKind.Category); b.Mode = CatMode.Over; b.Cat = t[1]; b.Other = t[2]; r.Changed(); return true; }
 				case "RINCLUDE": { var b = r.AddBlock(RuleKind.Category); b.Mode = CatMode.Include; b.Cat = t[1]; r.Changed(); return true; }
 				case "RMIN": { var b = r.AddBlock(RuleKind.Category); b.Mode = CatMode.Min; b.Cat = t[1]; b.Count = int.Parse(t[2]); r.Changed(); return true; }
+				case "RCATONLY": { var b = r.AddBlock(RuleKind.Category); b.Mode = CatMode.Only; b.Cat = t[1]; r.Changed(); return true; }
 				case "RDENY": case "RONLY":
 				{
 					var b = r.AddBlock(RuleKind.ItemList); b.List = t[0] == "RDENY" ? ListMode.Never : ListMode.Only;

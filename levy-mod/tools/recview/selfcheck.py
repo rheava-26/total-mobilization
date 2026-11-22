@@ -271,5 +271,30 @@ for nm, want in (("2026-11-20_15-19_The_Devourer_of_Gods_won.jsonl.gz", "lost"),
     else:
         print("SKIP real recording %s (set LEVY_EVE_RECS)" % nm[:16])
 
+# ---- make_site: the "Hide broken or very old fights" rules (the page's hideWhy is the same rule; tested headlessly against this one)
+import copy as _copy
+hman = {"current": "3.1.10", "eras": [dict(e) for e in ms.ERAS], "sets": [{"id": "s", "fights": [
+    {"id": "a", "ver": "2.0.13"}, {"id": "b", "ver": "2.0.63", "verAbout": True}, {"id": "c", "ver": "2.0.67"}, {"id": "d", "ver": "2.0.68"},
+    {"id": "e", "ver": "3.0.6"}, {"id": "f", "ver": "3.1.8", "src": "x.levyrec"}, {"id": "g"}]}]}
+hr = lambda m: {f["id"]: (ms.hidden_reason(f, m) or ("",))[0] for f in m["sets"][0]["fights"]}
+chk(hr(hman) == {"a": "old", "b": "old", "c": "old", "d": "", "e": "", "f": "", "g": ""}, "hide: <= 2.0.67 very old, later or unversioned shown, outdated alone not hidden %s" % hr(hman))
+m2 = _copy.deepcopy(hman); m2["eras"].append({"upTo": "3.0.9", "note": "n", "broken": True})
+chk(hr(m2)["e"] == "broken" and hr(m2)["f"] == "", "hide: a broken era after the cut-off hides its fights only")
+m3 = _copy.deepcopy(hman); m3["hide"] = {"oldUpTo": "2.0.13"}
+chk(hr(m3)["a"] == "old" and hr(m3)["b"] == "broken" and hr(m3)["c"] == "broken", "hide: an earlier cut-off leaves the broken eras to hide the rest %s" % hr(m3))
+m4 = _copy.deepcopy(hman); m4["eras"] = [{k: v for k, v in e.items() if k != "broken"} for e in m4["eras"]]
+_old = ms.BROKEN[:]
+ms.BROKEN[:] = [(r"^x\.levyrec$", "why")]
+n4 = ms.stamp(m4)
+ms.BROKEN[:] = _old
+chk(m4["hide"]["oldUpTo"] == ms.HIDE["oldUpTo"] and all(e.get("broken") for e in m4["eras"]) and m4["sets"][0]["fights"][5].get("broken") == "why" and n4 == {"broken": 1, "old": 3, "shown": 3},
+    "hide: stamp writes the cut-off, the default eras' flags and a per-fight reason %s" % n4)
+m5 = _copy.deepcopy(m4); m5["hide"]["oldUpTo"] = "2.0.0"; ms.stamp(m5)
+chk(m5["hide"]["oldUpTo"] == "2.0.0", "hide: stamp keeps a cut-off already in the manifest")
+with tempfile.TemporaryDirectory() as td:
+    ip = os.path.join(td, "index.txt")
+    open(ip, "w").write("a--b_s1_win.levyrec\n    Won in 5 s.\n")
+    chk((ms.parse_index(ip).get("a--b_s1_win.levyrec") or {}).get("note") == "Won in 5 s.", "make_site: index.txt notes work for .levyrec names")
+
 print("fail=%d" % fails)
 sys.exit(1 if fails else 0)

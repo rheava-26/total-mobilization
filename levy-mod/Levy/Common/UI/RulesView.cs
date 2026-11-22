@@ -83,7 +83,7 @@ namespace Levy.Common.UI
 			var r = Rules; if (r == null) return;
 			var b = r.AddBlock(kind);
 			if (b == null) return;
-			if (kind == RuleKind.Category) { b.Mode = CatMode.Weight; b.Cat = "bow"; b.Other = "gun"; }
+			if (kind == RuleKind.Category) { b.Cat = "bow"; b.Other = "gun"; } // the mode is AddBlock's default (Include)
 			SoundEngine.PlaySound(SoundID.MenuTick);
 			Reshape();
 			_bar.ViewPosition = float.MaxValue;
@@ -308,7 +308,7 @@ namespace Levy.Common.UI
 		private List<(string, Action, bool)> ModeChoices(RuleBlock b)
 		{
 			var l = new List<(string, Action, bool)>();
-			foreach (CatMode m in new[] { CatMode.Weight, CatMode.Over, CatMode.Include, CatMode.Min })
+			foreach (CatMode m in new[] { CatMode.Include, CatMode.Only, CatMode.Min, CatMode.Over, CatMode.Weight })
 			{
 				var mode = m;
 				l.Add((LevyUtil.T("Rules.Mode_" + m), () => { b.Mode = mode; Reshape(); }, b.Mode == m));

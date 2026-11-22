@@ -77,7 +77,7 @@ Pages: {
 		Title: Wages and treasury
 		Body:
 			'''
-			A Regular costs a muster fee up front, worth 5 days of wage, and a wage at dawn. Both come from the Barracks treasury. Deposit coins on the Barracks panel.
+			A Regular costs a muster fee up front, worth 5 days of wage, and a wage at dawn. Both come from the Barracks treasury. Deposit or withdraw coins on the Barracks panel, 1 gold to 1 platinum at a time.
 			A Levy earns 10 silver a day at the start, a Man-at-Arms 3 times that and a Champion 7 times. Wages rise as the world progresses. Return to barracks halves a wage and Reserve removes it.
 			Soldiers on Follow me or standing idle, with no enemy within 25 tiles, collect loose coins and items within 6 tiles and carry them home. Coins go to the treasury.
 			A Regular unpaid for 2 days may desert: a 25% chance each dawn, then 50%. His kit returns to the Armory.
@@ -157,6 +157,7 @@ Pages: {
 			Focus attack: press it, then click an enemy, a critter or a spot. The squad attacks it until it is clear. Clear focus, a second click on the same target, or Esc while choosing cancels it.
 			Re-arm: every soldier returns their kit to the Armory and draws again from the issue slots.
 			Show names displays every soldier's nameplate. Press it again for the normal fade.
+			Your levies' minions, your officers' creatures and your machines carry a small name tag. In a crowd only the one under the cursor shows it.
 			'''
 	}
 
@@ -289,10 +290,10 @@ Pages: {
 			'''
 			The Rules tab decides which weapons the levies draw. Rules apply from the top, and the upper rule wins.
 			Class balance sets how many levies carry each class. A limit gives way before a levy is left unarmed.
-			Category rule prefers, orders, includes or requires a kind of weapon, such as bows or guns. Weight only tilts the pick. Order, Include and At least are firm, and outrank the armor a levy wears.
-			Item list names items that are never used, or the only items used.
+			Category rule includes, limits, requires, orders or prefers a kind of weapon, such as bows or guns. A new one starts as Include. Weight only tilts the pick. Include, Only, At least and Order are firm, and outrank the armor a levy wears.
+			Only issues nothing outside its category, wherever the block sits, and two Only blocks allow both kinds. A levy holding another kind keeps it until one is free, and an unarmed levy takes another kind when none is left.
+			Item list names items that are never used, or the only items used. Hover a weapon in storage to set its rank to Auto, Set, Never use or Prefer.
 			Re-arm deals the whole army again at once. Without it, levies come to a changed rule on their own, a few at a time.
-			Hover a weapon in storage to set its rank to Auto, Set, Never use or Prefer.
 			'''
 	}
 
@@ -329,6 +330,17 @@ Pages: {
 			To storage sends the selection to Magic Storage, or to a chest beside the Armory.
 			Clear out lists every weapon, armor piece and accessory below a tier, from the Armory, nearby chests and the Magic Storage network. Preview the list, then confirm to sell it, or to take it apart when a Decrafting Interface is linked. Favourited and preferred items stay.
 			The Storage page lists what the army cannot use: blocks, tools, banners and vanity. Preview the list, then send it to Magic Storage, or to a chest beside the Armory. Weapons, armor, accessories, ammo, potions, coins and favourited items stay.
+			'''
+	}
+
+	Autosell: {
+		Title: Autosell
+		Body:
+			'''
+			Point at an item in the Armory and switch Sell on in the item panel. Every copy in Armory storage beyond the kept number is sold within seconds, and so is every copy that arrives later.
+			Keep sets how many copies stay. It starts at 0.
+			Each copy sells for its normal sell price, with no shopkeeper needed. The coins go to the treasury of the Barracks that pays for the Armory, or into the Armory as coins when none does.
+			Favourited items, items a rule names, the issue rows and the gear levies carry are never sold.
 			'''
 	}
 
@@ -505,10 +517,11 @@ Pages: {
 		Body:
 			'''
 			The Superpowered Magnet re-forms the Exodium planetoids after Moon Lord, with a cooldown between uses. The Slime Agitator starts a slime rain that includes Calamity's ore slimes. It works in any weather and leaves an ordinary rain falling. It cannot be used while a slime rain is up or in a remix world.
-			Extra recipes make Scoria Ore from Hellstone and Chlorophyte after Golem, and the Magnet and Agitator themselves.
+			Extra recipes make Scoria Ore from Hellstone and Chlorophyte after Golem, the Magnet after Moon Lord, and the Agitator from 5000 Gel and 10 Perennial Bars after Plantera.
 			Calamity ore generation multiplies the ore a boss event makes from then on. Auric Ore regeneration makes Yharon generate it again on repeat kills.
 			Jungle monsters can drop Uelibloom Ore after Providence.
 			Providence and post-Providence material drop rates multiply Divine Geode, Unholy Essence and Uelibloom Ore. All of it is off by default and needs Calamity.
+			Three material drop rates multiply crafting materials from every source, from bosses and their bags, or from other enemies and events. They work in any world, and all drop rates add together.
 			'''
 	}
 

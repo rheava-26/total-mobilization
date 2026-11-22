@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text.Json;
 
 namespace Levy.Common.Recording
@@ -21,12 +22,30 @@ namespace Levy.Common.Recording
 		public int NormalHits => Hits - StealthHits;
 	}
 
-	/// <summary>One kind of damage the commander took, grouped by its source label ("Spore Gas", "Plantera (contact)").</summary>
-	internal sealed class TakenStat { public string Label; public int Hits; public long Dmg; public int Deaths; }
+	/// <summary>One kind of damage the commander took, grouped by its source label ("Spore Gas", "Plantera (contact)"). Dmg is the life it took; Raw the game's own damage numbers (a dodge, a heal or an immunity can undo a hit).</summary>
+	internal sealed class TakenStat { public string Label; public int Hits; public long Dmg, Raw; public int Deaths; }
 
-	internal struct ArmyPoint { public int Sec, N, Broken, Deaths; public double BossFrac; }
+	/// <summary>
+	/// One life pool of the fight's bosses as the frames show it: a boss with its own life, a worm and its segments, Ares and his arms, the Exo Twins (who share one pool).
+	/// Format 13 groups rows by realLife (the slot that owns the life); older files by NPC type, rows of one type giving the lowest life (a worm's segments freeze at full life while the head loses it).
+	/// Pools with the same life and maximum in a sample are one pool there (Ares and his arms, Artemis and Apollo).
+	/// </summary>
+	internal sealed class BossTrack
+	{
+		public string Key; public readonly List<int> Types = new();
+		public long Max, FirstLife = -1, MinLife = long.MaxValue, LastLife; public int FirstTick = -1, LastTick, RowsMax; public bool Killed;
+		/// <summary>The keys of the other tracks that shared this one's life in its last sample.</summary>
+		public List<string> LastGroup = new();
+		/// <summary>(tick, kind) whenever its target kind changed: 0 none, 1 the commander, 2 a levy, 3 a levy by spite.</summary>
+		public readonly List<(int tick, int kind)> Kinds = new();
+		/// <summary>It lost life at some point (Draedon's own NPC, a part that only mirrors, never do).</summary>
+		public bool Damaged => MinLife < Max;
+		public double Frac => Max > 0 ? Math.Clamp((double)LastLife / Max, 0, 1) : 0;
+	}
 
-	internal sealed class DeathNote { public int Tick; public string Killer; public int ArmyAt; public int ArmyStart; }
+	internal struct ArmyPoint { public int Sec, N, Broken, Deaths; public double BossFrac; public int Snap; }
+
+	internal sealed class DeathNote { public int Tick; public string Killer; public int ArmyAt; public int ArmyStart; public int FallenBefore; }
 
 	internal sealed class FightStats
 	{
@@ -75,15 +94,33 @@ namespace Levy.Common.Recording
 		/// <summary>The fight's final boss end event as written (bdeath | bdespawn, tick, life, max, last hit damage, kh = the death hook ran, absent in files made before it) and whether this reader overrode the file's own result because of it.</summary>
 		public string EndEvent; public int EndEvTick, EndHd; public double EndLife, EndMax; public bool EndHasKh; public bool Rederived;
 		public readonly List<(int pct, int sec, int army)> Milestones = new();
+		/// <summary>The bosses' life pools in the order they appeared (frames only).</summary>
+		public readonly List<BossTrack> Tracks = new();
+		internal readonly Dictionary<string, BossTrack> TrackBy = new();
+		/// <summary>Per second: the pools standing then, as groups (the tracks sharing one life, life, max).</summary>
+		internal readonly List<List<(string[] keys, long life, long max)>> Snaps = new();
+		internal readonly Dictionary<int, string> SlotTrack = new();
+		/// <summary>The pools the report names at the end: groups of tracks that lost life, with their life left (0 when killed).</summary>
+		public readonly List<(string name, double frac, bool killed, string key)> EndPools = new();
+		/// <summary>The pool the "who the boss went for" lines follow (the largest that lost life), and whether its target was readable at all.</summary>
+		public string AimKey; public bool TargetUnread, TargetFromFrames;
+		internal readonly HashSet<int> TgtBosses = new();
+		/// <summary>Per pool target shares, when the fight had several pools that lost life: (name, on you, on levies, nobody).</summary>
+		public readonly List<(string name, double you, double levies, double none)> PoolAggro = new();
+		/// <summary>The game's own damage numbers of the hits on the commander (TakenTotal is the life they took).</summary>
+		public long TakenRaw;
+		/// <summary>Every levy, officer and militiaman the frames carry, wherever they stood.</summary>
+		public readonly HashSet<long> LevyIds = new();
 		public readonly List<(int tick, string what)> Phases = new();
 		public int EndTick;
 
 		// internals while reading
-		internal readonly List<int> FrameTicks = new(), FrameHeld = new();
+		internal readonly List<int> FrameTicks = new(), FrameHeld = new(), FrameLife = new();
+		internal readonly RowDecoder Rows = new();
 		internal sealed class DmgRow { public string Owner, Cls, Src; public int Type, SrcItem, Ss, Crits; public bool Boss, Ext; public long Dmg; public int Hits; }
 		internal sealed class DmgEvt { public int Tick; public List<DmgRow> Rows = new(); }
 		internal readonly List<DmgEvt> DmgEvents = new();
-		internal readonly List<(int tick, int dmg, string label)> HitEvents = new();
+		internal readonly List<(int tick, int dmg, string label, int life, int taken)> HitEvents = new();
 		internal readonly List<(int tick, string label)> KillNotes = new();
 		internal readonly Dictionary<int, int> UseCount = new();
 		internal bool Finalized;
@@ -145,15 +182,26 @@ namespace Levy.Common.Recording
 		/// <summary>Reads a recording. <paramref name="full"/> false skips the sample frames (damage, hits, deaths and the end record only): about ten times faster, enough for the history of earlier fights.</summary>
 		public static FightStats Read(string path, bool full = true)
 		{
-			using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-			Stream s = fs;
-			bool gz = path.EndsWith(".levyrec", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".part", StringComparison.OrdinalIgnoreCase);
-			if (gz) s = new GZipStream(fs, CompressionMode.Decompress);
-			using var rd = new StreamReader(s);
-			var st = ReadLines(Lines(rd), full);
-			st.File = path;
-			if (!st.HasEnd) st.Result = ResultFromName(path) ?? st.Result;
+			// format 13: a recording past the part size goes on in NAME_part2.levyrec ...; every part is read, in order, as one fight
+			var parts = RecParts.Parts(path);
+			var st = ReadLines(PartLines(parts), full);
+			st.File = parts[0];
+			if (!st.HasEnd) st.Result = ResultFromName(parts[0]) ?? st.Result;
 			return st;
+		}
+
+		private static IEnumerable<string> PartLines(List<string> parts)
+		{
+			foreach (string path in parts)
+			{
+				using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+				Stream s = fs;
+				// gzip by its magic bytes, whatever the name (.levyrec, .part, a .jsonl.gz copy)
+				int b0 = fs.ReadByte(), b1 = fs.ReadByte(); fs.Seek(0, SeekOrigin.Begin);
+				if (b0 == 0x1f && b1 == 0x8b) s = new GZipStream(fs, CompressionMode.Decompress);
+				using var rd = new StreamReader(s);
+				foreach (string l in Lines(rd)) yield return l;
+			}
 		}
 
 		private static IEnumerable<string> Lines(StreamReader r)
@@ -179,7 +227,7 @@ namespace Levy.Common.Recording
 		public static FightStats ReadLines(IEnumerable<string> lines, bool full = true)
 		{
 			var st = new FightStats();
-			int prevFrame = -1, lastSec = -1, prevDmgTick = -1; int lastFrameTick = 0;
+			int prevFrame = -1, lastSec = -1, prevDmgTick = -1; int lastFrameTick = 0; bool hdrSeen = false;
 			double lastFrac = -1, lastBossLife = 0, lastBossMax = 0; int pendingEndTick = 0;
 			foreach (string line in lines)
 			{
@@ -195,7 +243,7 @@ namespace Levy.Common.Recording
 					string k = kk.GetString();
 					switch (k)
 					{
-						case "hdr": Header(st, r); break;
+						case "hdr": if (!hdrSeen) Header(st, r); hdrSeen = true; st.Rows.Header(r); break; // a later part's header only restarts the row decoder
 						case "f": Frame(st, r, ref prevFrame, ref lastSec, ref lastFrac); lastFrameTick = Int(r, "t"); break;
 						case "e": Event(st, r, ref prevDmgTick); break;
 						case "names": Names(st, r); break;
@@ -207,6 +255,72 @@ namespace Levy.Common.Recording
 			st.EndTick = st.HasEnd ? (int)Math.Round(st.DurationSec * 60) : lastFrameTick; _ = pendingEndTick; _ = lastBossLife; _ = lastBossMax;
 			Finish(st, lastFrac);
 			return st;
+		}
+
+		/// <summary>A boss row's target kind: field 14 (format 2+), else whether field 12 names a player.</summary>
+		internal static int TKind(double[] b) => b.Length > 14 ? (int)b[14] : b.Length > 12 && b[12] >= 0 && b[12] < 255 ? 1 : 0;
+
+		/// <summary>The life pools of one sample (see <see cref="BossTrack"/>), updating the tracks; returns the groups (tracks that share one life).</summary>
+		private static List<(string[] keys, long life, long max)> Pools(FightStats st, List<double[]> rows, int t)
+		{
+			var units = new Dictionary<string, (List<int> types, long life, long max, bool owner, int kind, int rows)>(); var order = new List<string>();
+			foreach (var b in rows)
+			{
+				if (b.Length < 14 || b[13] != 0) continue; // a part, not a boss
+				int slot = (int)b[1]; long life = Math.Max(0, (long)b[6]), max = Math.Max(1, (long)b[7]);
+				string key; bool own = false;
+				if (b.Length > 18) { int o = b[18] >= 0 ? (int)b[18] : slot; key = "o" + o; own = o == slot; }
+				else key = "t" + (int)b[0];
+				st.SlotTrack[slot] = key;
+				// the row that stands for the pool gives its life and its target: the owner (format 13), else the row with the lowest life (a worm's live head, not a segment frozen at full life)
+				if (!units.TryGetValue(key, out var u)) { u = (new List<int>(), life, max, own, TKind(b), 1); order.Add(key); }
+				else
+				{
+					u.rows++;
+					if (own && !u.owner) { u.life = life; u.max = max; u.owner = true; u.kind = TKind(b); }
+					else if (!u.owner && life < u.life) { u.life = life; u.max = max; u.kind = TKind(b); }
+				}
+				if (!u.types.Contains((int)b[0])) u.types.Add((int)b[0]);
+				units[key] = u;
+			}
+			var groups = new List<(string[] keys, long life, long max)>();
+			var gk = new List<List<string>>();
+			foreach (string k in order)
+			{
+				var u = units[k];
+				if (!st.TrackBy.TryGetValue(k, out var tr)) { tr = new BossTrack { Key = k, FirstTick = t, FirstLife = u.life }; st.TrackBy[k] = tr; st.Tracks.Add(tr); }
+				foreach (int ty in u.types) if (!tr.Types.Contains(ty)) tr.Types.Add(ty);
+				tr.Max = u.max; tr.LastLife = u.life; tr.LastTick = t; if (u.life < tr.MinLife) tr.MinLife = u.life; if (u.rows > tr.RowsMax) tr.RowsMax = u.rows;
+				if (tr.Kinds.Count == 0 || tr.Kinds[tr.Kinds.Count - 1].kind != u.kind) tr.Kinds.Add((t, u.kind));
+				int gi = groups.FindIndex(g => g.life == u.life && g.max == u.max);
+				if (gi < 0) { groups.Add((new[] { k }, u.life, u.max)); gk.Add(new List<string> { k }); }
+				else { gk[gi].Add(k); groups[gi] = (gk[gi].ToArray(), u.life, u.max); }
+			}
+			foreach (var g in gk) foreach (string k in g) st.TrackBy[k].LastGroup = g;
+			return groups;
+		}
+
+		/// <summary>Life left over the groups of a sample whose tracks lost life at some point in the fight (all of them when none did). -1 with no boss.</summary>
+		private static double Combined(FightStats st, List<(string[] keys, long life, long max)> groups, bool anyDamaged)
+		{
+			double life = 0, max = 0;
+			foreach (var g in groups)
+			{
+				bool dmg = false; foreach (string k in g.keys) if (st.TrackBy[k].Damaged) dmg = true;
+				if (anyDamaged && !dmg) continue;
+				life += Math.Min(g.life, g.max); max += g.max;
+			}
+			return max > 0 ? life / max : -1;
+		}
+
+		/// <summary>A pool's name: its NPC names, without the ones that only extend another ("XF-09 Ares Laser Cannon" goes with "XF-09 Ares"), joined with and.</summary>
+		internal static string PoolName(FightStats st, IEnumerable<int> types)
+		{
+			var names = new List<string>();
+			foreach (int t in types) { string n = st.NpcName(t); if (!names.Contains(n)) names.Add(n); }
+			var keep = names.Where(n => !names.Any(o => o != n && n.StartsWith(o + " ", StringComparison.Ordinal))).ToList();
+			if (keep.Count <= 1) return keep.Count == 1 ? keep[0] : "the boss";
+			return string.Join(", ", keep.Take(keep.Count - 1)) + " and " + keep[keep.Count - 1];
 		}
 
 		private static int Int(JsonElement e, string name, int def = 0) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? (int)Math.Round(v.GetDouble()) : def;
@@ -244,26 +358,32 @@ namespace Levy.Common.Recording
 		private static void Frame(FightStats st, JsonElement r, ref int prevFrame, ref int lastSec, ref double lastFrac)
 		{
 			int t = Int(r, "t"); int dt = prevFrame < 0 ? 2 : Math.Clamp(t - prevFrame, 1, 12); prevFrame = t;
-			int held = 0;
-			if (r.TryGetProperty("p", out var p) && p.ValueKind == JsonValueKind.Array) held = (int)Num(p, 11);
-			st.FrameTicks.Add(t); st.FrameHeld.Add(held);
+			int held = 0; double px = 0, py = 0; int plife = 0; bool pdead = false;
+			if (r.TryGetProperty("p", out var p) && p.ValueKind == JsonValueKind.Array) { held = (int)Num(p, 11); px = Num(p, 0); py = Num(p, 1); plife = (int)Num(p, 6); pdead = ((int)Num(p, 5) & 8192) != 0; }
+			st.FrameTicks.Add(t); st.FrameHeld.Add(held); st.FrameLife.Add(pdead ? 0 : plife);
+			var bossRows = st.Rows.Rows(r, 0); var levyRows = st.Rows.Rows(r, 2);
+			st.Rows.Rows(r, 1); st.Rows.Rows(r, 3); st.Rows.Rows(r, 4); // keep the decoder's other lists in step
+			// levies in the arena: within FightRecorder.ArenaRangeTiles of the commander or of a boss (a militiaman at his outpost 230 tiles away is not in the fight)
+			double rr = FightRecFormat.ArenaRangeTiles * 16.0; var anchors = new List<(double x, double y)> { (px, py) };
+			foreach (var b in bossRows) if (b.Length > 13 && b[13] == 0 && (b.Length <= 18 || b[18] < 0 || b[18] == b[1])) anchors.Add((b[2], b[3]));
 			int n = 0, broken = 0;
-			if (r.TryGetProperty("l", out var l) && l.ValueKind == JsonValueKind.Array)
-				foreach (var row in l.EnumerateArray()) { n++; if (st.IsBroken((int)Num(row, 7))) broken++; }
+			foreach (var row in levyRows)
+			{
+				if (row.Length < 3) continue;
+				bool near = false; foreach (var a in anchors) if (Math.Abs(row[1] - a.x) <= rr && Math.Abs(row[2] - a.y) <= rr) { near = true; break; }
+				if (!near) continue;
+				n++; if (row.Length > 7 && st.IsBroken((int)row[7])) broken++;
+			}
 			st.LevyTime += n * dt; st.BrokenTime += broken * dt;
-			double life = 0, max = 0; bool anyBoss = false;
-			if (r.TryGetProperty("b", out var b) && b.ValueKind == JsonValueKind.Array)
-				foreach (var row in b.EnumerateArray())
-				{
-					if (Num(row, 13) != 0) continue; // a part, not a boss
-					life += Math.Max(0, Num(row, 6)); max += Math.Max(1, Num(row, 7)); anyBoss = true;
-				}
-			if (anyBoss) { lastFrac = max > 0 ? life / max : 0; if (st.FirstBossTick < 0) st.FirstBossTick = t; }
+			foreach (var row in levyRows) if (row.Length > 0) st.LevyIds.Add((long)row[0]);
+			var groups = Pools(st, bossRows, t); bool anyBoss = groups.Count > 0;
+			if (anyBoss) { lastFrac = Combined(st, groups, false); if (st.FirstBossTick < 0) st.FirstBossTick = t; }
 			int sec = t / 60;
 			if (sec != lastSec)
 			{
 				lastSec = sec;
-				st.Army.Add(new ArmyPoint { Sec = sec, N = n, Broken = broken, BossFrac = anyBoss ? lastFrac : -1 });
+				st.Snaps.Add(groups);
+				st.Army.Add(new ArmyPoint { Sec = sec, N = n, Broken = broken, BossFrac = anyBoss ? lastFrac : -1, Snap = st.Snaps.Count - 1 });
 			}
 			if (n > st.ArmyPeak) st.ArmyPeak = n;
 		}
@@ -293,7 +413,7 @@ namespace Levy.Common.Recording
 				case "hit":
 					{
 						int dmg = Int(r, "dmg"), npc = Int(r, "npc", -1), proj = Int(r, "proj", -1), other = Int(r, "other", -1);
-						st.HitEvents.Add((t, dmg, "\u0001" + npc + "," + proj + "," + other)); // labels are resolved at the end, when the names table is known
+						st.HitEvents.Add((t, dmg, "\u0001" + npc + "," + proj + "," + other, Int(r, "life", -1), Int(r, "taken", -1))); // labels are resolved at the end, when the names table is known
 						break;
 					}
 				case "cdeath":
@@ -307,7 +427,7 @@ namespace Levy.Common.Recording
 						st.KillNotes.Add((t, note));
 						break;
 					}
-				case "tgt": st.Target.Add((t, Int(r, "kind"))); break;
+				case "tgt": st.Target.Add((t, Int(r, "kind"))); st.TgtBosses.Add(Int(r, "boss", -1)); break;
 				case "ldeath": st.LevyDeathTicks.Add(t); break;
 				case "use": { int it = Int(r, "item"); st.UseCount[it] = st.UseCount.TryGetValue(it, out int c) ? c + 1 : 1; break; }
 				case "stl": st.StealthPct.Add(Int(r, "s")); st.StealthBarSeen = true; break;
@@ -315,6 +435,7 @@ namespace Levy.Common.Recording
 				case "bph": st.Phases.Add((t, Str(r, "what", Int(r, "pct") + "% life"))); break;
 				case "bdeath":
 				case "bdespawn":
+					if (e == "bdeath" && st.SlotTrack.TryGetValue(Int(r, "id", -1), out string tk) && st.TrackBy.TryGetValue(tk, out var ktr)) ktr.Killed = true;
 					if (Int(r, "final") == 1)
 					{
 						double life = Dbl(r, "life"), max = Dbl(r, "max");
@@ -363,15 +484,79 @@ namespace Levy.Common.Recording
 			foreach (var kn in st.KillNotes) if (kn.tick <= st.EndEvTick + 10) { n++; last = kn.tick; }
 			if (n == 0 || st.EndEvTick - last > RederiveWindowTicks) return;
 			st.Outcome = "despawn"; st.Rederived = true;
-			st.Result = FightRecorder.DecideResult("despawn", n, false, st.EndEvTick, last, 1);
+			st.Result = FightRecFormat.DecideResult("despawn", n, false, st.EndEvTick, last, 1);
 			if (st.EndMax > 0) st.BossLeftFrac = Math.Clamp(st.EndLife / st.EndMax, 0, 1);
+		}
+
+		/// <summary>After the last line: which pools lost life, the boss life per second from them (Draedon's own NPC and other pools that never lost life drop out), the pools at the end, and the target from the main pool.</summary>
+		private static void BossPools(FightStats st)
+		{
+			if (st.Tracks.Count == 0) return;
+			bool anyDamaged = st.Tracks.Any(t => t.Damaged);
+			for (int i = 0; i < st.Army.Count; i++)
+			{
+				var a = st.Army[i]; if (a.BossFrac < 0 || a.Snap < 0 || a.Snap >= st.Snaps.Count) continue;
+				a.BossFrac = Combined(st, st.Snaps[a.Snap], anyDamaged); st.Army[i] = a;
+			}
+			// the pools at the end: each group of tracks that lost life, as its last sample left it (0 when killed)
+			var done = new HashSet<string>();
+			foreach (var tr in st.Tracks.OrderBy(t => t.FirstTick))
+			{
+				if (done.Contains(tr.Key) || (anyDamaged && !tr.Damaged)) continue;
+				var grp = tr.LastGroup.Count > 0 ? tr.LastGroup.Where(k => st.TrackBy.ContainsKey(k) && st.TrackBy[k].LastTick == tr.LastTick).ToList() : new List<string> { tr.Key };
+				if (!grp.Contains(tr.Key)) grp.Add(tr.Key);
+				foreach (string k in grp) done.Add(k);
+				var types = new List<int>(); bool killed = false;
+				foreach (string k in grp) { var t2 = st.TrackBy[k]; types.AddRange(t2.Types); killed |= t2.Killed || t2.LastLife <= 0; }
+				st.EndPools.Add((PoolName(st, types), killed || st.Outcome == "killed" ? 0 : tr.Frac, killed || st.Outcome == "killed", tr.Key));
+			}
+			// one name once: a worm's head and body types that ended a little apart are one boss (the lower life stands); an arm whose life drifted a little from its body's ("XF-09 Ares Plasma Cannon") goes with it ("XF-09 Ares")
+			for (int i = st.EndPools.Count - 1; i >= 0; i--)
+			{
+				string ni = st.EndPools[i].name;
+				int pj = st.EndPools.FindIndex(x => x.name != ni && ni.StartsWith(x.name + " ", StringComparison.Ordinal));
+				if (pj >= 0) st.EndPools.RemoveAt(i);
+			}
+			for (int i = st.EndPools.Count - 1; i > 0; i--)
+			{
+				int j = st.EndPools.FindIndex(x => x.name == st.EndPools[i].name);
+				if (j >= 0 && j < i) { var a = st.EndPools[j]; var b = st.EndPools[i]; st.EndPools[j] = (a.name, Math.Min(a.frac, b.frac), a.killed || b.killed, st.TrackBy[a.key].Max >= st.TrackBy[b.key].Max ? a.key : b.key); st.EndPools.RemoveAt(i); }
+			}
+			// the target: the main pool (the largest that lost life) over its samples
+			// (on a tie, the pool seen in the fewest rows: an old file's worm head is one row, its body type ninety)
+			var main = st.Tracks.Where(t => !anyDamaged || t.Damaged).OrderByDescending(t => t.Max).ThenBy(t => t.RowsMax).ThenBy(t => t.Frac).FirstOrDefault();
+			if (main == null) return;
+			st.AimKey = main.Key;
+			// the tgt events stand when they follow the main pool (format 13 always does); a file whose tgt events follow another boss (the first one seen: Draedon, not his mechs) reads the main pool's own rows instead
+			bool eventsFollowMain = st.Target.Count > 0 && st.TgtBosses.All(b => st.SlotTrack.TryGetValue(b, out string k) && k == main.Key);
+			if (!eventsFollowMain)
+			{
+				st.Target.Clear(); foreach (var k in main.Kinds) st.Target.Add(k); st.TargetFromFrames = true;
+				st.TargetUnread = st.Format < 13 && Share(st, main, 0) >= 0.9;
+			}
+			if (st.EndPools.Count >= 2)
+				foreach (var ep in st.EndPools) { var tr = st.TrackBy[ep.key]; st.PoolAggro.Add((ep.name, Share(st, tr, 1), Share(st, tr, 2) + Share(st, tr, 3), Share(st, tr, 0))); }
+		}
+
+		/// <summary>The share of a track's samples (first to last tick) its target kind was <paramref name="kind"/>.</summary>
+		private static double Share(FightStats st, BossTrack tr, int kind)
+		{
+			double on = 0, all = 0;
+			for (int i = 0; i < tr.Kinds.Count; i++)
+			{
+				int t0 = tr.Kinds[i].tick, t1 = i + 1 < tr.Kinds.Count ? tr.Kinds[i + 1].tick : tr.LastTick + 2;
+				if (t1 <= t0) continue; all += t1 - t0; if (tr.Kinds[i].kind == kind) on += t1 - t0;
+			}
+			return all > 0 ? on / all : 0;
 		}
 
 		private static void Finish(FightStats st, double lastFrac)
 		{
 			RederiveKill(st);
-			// boss life left: the boss's own end record, else the last sample
+			BossPools(st);
+			// boss life left: the pools at the end (a worm's real pool, the mechs together, never Draedon's own life), else the boss's own end record, else the last sample
 			if (st.Outcome == "killed") st.BossLeftFrac = 0;
+			else if (st.EndPools.Count > 0) { double l = 0, m = 0; foreach (var ep in st.EndPools) { var tr = st.TrackBy[ep.key]; l += ep.frac * tr.Max; m += tr.Max; } st.BossLeftFrac = m > 0 ? Math.Clamp(l / m, 0, 1) : st.BossLeftFrac; }
 			else if (st.BossLeftFrac < 0 && lastFrac >= 0) st.BossLeftFrac = Math.Clamp(lastFrac, 0, 1);
 
 			// damage rows: who dealt what, the commander's per weapon
@@ -410,16 +595,29 @@ namespace Levy.Common.Recording
 			if (st.AllBossDmg <= 0) st.AllBossDmg = st.CmdBossDmg + st.LevyBossDmg + st.DroneBossDmg + st.OtherBossDmg;
 			foreach (var kv in st.UseCount) { string nm = st.ItemName(kv.Key); if (st.Weapons.TryGetValue(nm, out var ws)) ws.Uses += kv.Value; }
 
-			// damage taken
-			foreach (var h in st.HitEvents)
+			// damage taken: the life each hit took (format 13 writes it; older files read it from the life before the hit and the commander's life in the next sample), never more than the game's number
+			for (int hi = 0; hi < st.HitEvents.Count; hi++)
 			{
+				var h = st.HitEvents[hi];
+				long taken = h.taken >= 0 ? h.taken : h.dmg;
+				if (h.taken < 0 && h.life >= 0 && st.FrameTicks.Count > 0)
+				{
+					int fi = st.FrameTicks.BinarySearch(h.tick + 1); if (fi < 0) fi = ~fi;
+					if (fi < st.FrameTicks.Count)
+					{
+						int after = st.FrameLife[fi];
+						if (hi + 1 < st.HitEvents.Count && st.HitEvents[hi + 1].life >= 0 && st.HitEvents[hi + 1].tick < st.FrameTicks[fi]) after = st.HitEvents[hi + 1].life;
+						taken = Math.Clamp(h.life - after, 0, Math.Max(0, h.dmg));
+					}
+				}
 				string label = Resolve(st, h.label);
 				if (!st.Taken.TryGetValue(label, out var ts)) st.Taken[label] = ts = new TakenStat { Label = label };
-				ts.Hits++; ts.Dmg += h.dmg; st.TakenTotal += h.dmg; st.TakenHits++;
+				ts.Hits++; ts.Dmg += taken; ts.Raw += h.dmg; st.TakenTotal += taken; st.TakenRaw += h.dmg; st.TakenHits++;
 			}
 
-			// the army: start and end, the first ten seconds give the roster that came to the fight
-			int startN = 0; foreach (var a in st.Army) { if (a.Sec > 10) break; if (a.N > startN) startN = a.N; }
+			// the army: start and end, the first ten seconds with levies in the arena give the roster that came to the fight (an army that marched in from 700 tiles away arrives later)
+			int firstSec = -1; foreach (var a in st.Army) if (a.N > 0) { firstSec = a.Sec; break; }
+			int startN = 0; if (firstSec >= 0) foreach (var a in st.Army) { if (a.Sec > firstSec + 10) break; if (a.Sec >= firstSec && a.N > startN) startN = a.N; }
 			if (startN > 0) st.ArmyStart = startN;
 			else if (st.Army.Count > 0) st.ArmyStart = 0;
 			st.ArmyEnd = st.Army.Count > 0 ? st.Army[st.Army.Count - 1].N : 0;
@@ -438,7 +636,7 @@ namespace Levy.Common.Recording
 					for (int i = st.HitEvents.Count - 1; i >= 0; i--) if (st.HitEvents[i].tick <= kn.tick + 2 && kn.tick - st.HitEvents[i].tick <= 180) { killer = Resolve(st, st.HitEvents[i].label); break; }
 				}
 				int armyAt = 0; foreach (var a in st.Army) { if (a.Sec * 60 > kn.tick) break; armyAt = a.N; }
-				st.Deaths.Add(new DeathNote { Tick = kn.tick, Killer = killer, ArmyAt = armyAt, ArmyStart = st.ArmyStart });
+				st.Deaths.Add(new DeathNote { Tick = kn.tick, Killer = killer, ArmyAt = armyAt, ArmyStart = st.ArmyStart, FallenBefore = st.LevyDeathTicks.Count(x => x <= kn.tick) });
 				if (killer != null) { if (!st.Taken.TryGetValue(killer, out var ts)) st.Taken[killer] = ts = new TakenStat { Label = killer }; ts.Deaths++; }
 			}
 			if (st.CmdDeaths < st.Deaths.Count) st.CmdDeaths = st.Deaths.Count;

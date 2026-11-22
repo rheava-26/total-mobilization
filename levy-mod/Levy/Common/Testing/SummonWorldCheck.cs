@@ -124,6 +124,8 @@ namespace Levy.Common.Testing
 			try { AllyTagsWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[AllyTags] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { SidearmWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SidearmWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { ArmorClassWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ArmorClassWorld] check threw " + e.GetType().Name + ": " + e.Message); }
+			// one class per levy: primary, sidearm, armor and class accessories (Eve's post-Yharon army and stock, and a vanilla equivalent)
+			try { LoadoutFitWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LoadoutFit] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the armor set abilities a key starts: the God Slayer and Solar Flare dashes, the Forbidden storm, Vortex stealth, Calamity's set key
 			try { SetAbilityWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SetAbility] check threw " + e.GetType().Name + ": " + e.Message); }
 			// Armory autosell and the 1 platinum treasury buttons (its own placed Barracks and Armory, removed again)

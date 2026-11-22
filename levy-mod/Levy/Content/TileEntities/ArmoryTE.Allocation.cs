@@ -60,7 +60,7 @@ namespace Levy.Content.TileEntities
 					bool hasW = !IsAir(g.Weapon);
 					if (hasW && (g.Weapon.maxStack > 1 || WeaponClassifier.GetProfile(g.Weapon).Family == WeaponFamily.Thrown)) continue; // thrown stacks are restocked, never swapped
 					if (hasW && !ReferenceEquals(rec, requester) && IsBusy(rec)) continue;
-					var lev = new AllocLevy { Tag = rec, Id = rec.Id, Cls = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs), Current = hasW ? g.Weapon : null, Mana = rec.MaxMana, FixedClass = classMatch }; // crystals plus what his armor and open accessory slots add
+					var lev = new AllocLevy { Tag = rec, Id = rec.Id, Cls = PlanClass(g, hasW, classMatch), Current = hasW ? g.Weapon : null, Mana = rec.MaxMana, FixedClass = classMatch }; // crystals plus what his armor and open accessory slots add
 					if (lev.Cls == null && !classMatch) lev.Flex = ArmorableClasses(rec, hasW);
 					if (classMatch && hasW) lev.ClassLock = WeaponClassifier.ItemDamageClass(g.Weapon);
 					var rule = PrimaryRule(rec);
@@ -131,6 +131,18 @@ namespace Levy.Content.TileEntities
 			}
 			finally { _armorableMemo = null; }
 			return plan;
+		}
+
+		/// <summary>
+		/// The class the plan reads a levy as: the class his armor favours, except that with class-matched armor (the armor follows the primary) a classed primary in armor of another class is his class, not the armor's.
+		/// That armor is only waiting for a set of his class to come free; reading it as his class pulled the plan toward a weapon of the armor's class, and the armor then followed the new weapon back: one levy flipped
+		/// between two classes, and his accessories and sidearm never caught up.
+		/// </summary>
+		private static DamageClass PlanClass(SoldierGear g, bool hasW, bool classMatch)
+		{
+			var worn = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
+			if (worn == null || !hasW || classMatch || !Common.Config.LevyConfig.Get.ClassMatchArmor || !LoadoutFixes.PlanClass) return worn;
+			return WeaponClassifier.ItemDamageClass(g.Weapon) ?? worn;
 		}
 
 		/// <summary>Adds the issuable weapons of the connected Magic Storage network as shelf candidates (at most one per levy of each type and prefix: a stack of identical staves is not offered a thousand times).</summary>
@@ -258,11 +270,14 @@ namespace Levy.Content.TileEntities
 			}
 			// 2. Hand each changer his new primary; what he put down goes back to storage (unless another changer was dealt it, in which case it is already gone from his hand).
 			bool requesterChanged = false;
+			var wasCls = new Dictionary<SoldierRecord, DamageClass>(ReferenceEqualityComparer.Instance);
 			foreach (var l in changers) {
 				var neu = picked[l];
 				if (IsAir(neu)) continue;
 				var rec = (SoldierRecord)l.Tag; var g = rec.Gear;
 				var old = g.Weapon;
+				if (!IsAir(old)) wasCls[rec] = WeaponClassifier.ItemDamageClass(old);
+				else if (l.Own != null && !IsAir(l.Own.It)) wasCls[rec] = WeaponClassifier.ItemDamageClass(l.Own.It); // his weapon was dealt to another changer in step 1
 				g.Weapon = neu; g.ThrownRestockType = 0;
 				if (!IsAir(old)) { var rem = DepositOld(old); if (!IsAir(rem)) Spill(rem, protect: true); }
 				ShelveSidearmForPrimary(g, neu, WeaponClassifier.ItemDamageClass(old) != WeaponClassifier.ItemDamageClass(neu));
@@ -275,6 +290,8 @@ namespace Levy.Content.TileEntities
 			foreach (var rec in affected) {
 				if (!ReferenceEquals(rec, requester)) {
 					IssueGear(rec);
+					// his primary changed class: the armor, accessories and sidearm follow it now, not on his own next look (which the swap cooldown below puts off, and which never comes mid-fight)
+					if (LoadoutFixes.Follow && wasCls.TryGetValue(rec, out var oc) && oc != null && rec.Gear.HasWeapon && oc != WeaponClassifier.ItemDamageClass(rec.Gear.Weapon)) FollowPrimary(rec);
 					if (upgrade) rec.Gear.UpgradeCheckTick = now + (uint)LevyConstants.AutoUpgradeSwapCooldownTicks;
 				}
 				if (Main.netMode != NetmodeID.MultiplayerClient && rec.HasBody && Main.npc[rec.BodyIndex].ModNPC is SoldierNPC sn) sn.NotifyGearChanged();

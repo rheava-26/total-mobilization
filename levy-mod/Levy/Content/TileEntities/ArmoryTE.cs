@@ -633,6 +633,8 @@ namespace Levy.Content.TileEntities
 			var g = soldier?.Gear;
 			if (g == null) return false;
 			if (g.HasWeapon && WeaponClassifier.ItemDamageClass(g.Weapon) == DamageClass.Summon) return true; // a summon weapon in hand makes him one, whatever his armor
+			// Class-matched armor: the armor follows the primary, so a classed primary decides. A rogue still in a summoner's hood (no rogue set free yet) is a rogue: no whip on his belt, no summon complement.
+			if (LoadoutFixes.Summoner && Common.Config.LevyConfig.Get.ClassMatchArmor && !Common.Config.LevyConfig.Get.ClassMatchIssue && g.HasWeapon && WeaponClassifier.ItemDamageClass(g.Weapon) != null) return false;
 			var worn = ArmorDoctrine.PreferredClass(g.Head, g.Body, g.Legs);
 			if (worn != null) return worn == DamageClass.Summon; // armor on his back decides; another class is never a summoner
 			if (Common.Config.LevyConfig.Get.ClassMatchIssue) return false; // fixed-class and no summon armor worn: not a summoner
@@ -1002,7 +1004,8 @@ namespace Levy.Content.TileEntities
 			if (!haveWhip) { var w = TakeWhipSidearm(); if (w != null) return w; } // the whip is the summoner's attack tool
 			if (!haveStaff) { var st = TakeSummonStaffSidearm(); if (st != null) return st; } // then a summon role he does not cover yet
 			if (!haveSentry) { var se = TakeSentrySidearm(forSoldier); if (se != null) return se; }
-			var blade = TakeSidearm(forSoldier); // no summon weapon to spare: a lesser blade keeps an attack tool in hand
+			// no summon weapon to spare: a lesser blade keeps an attack tool in hand, but not after the Moon Lord with class-matched sidearms on (no weapon of another class beside the primary then, see SidearmClass.OffClassAllowed)
+			var blade = Common.Config.LevyConfig.Get.ClassMatchSidearms && !SidearmClass.OffClassAllowed(SidearmClass.Strength()) ? null : TakeSidearm(forSoldier);
 			if (blade != null) return blade;
 			return haveSentry ? TakeSentrySidearm(forSoldier) : null; // only sentries in the whole armory: double up rather than go one-handed
 		}
@@ -1087,7 +1090,16 @@ namespace Levy.Content.TileEntities
 			int nSlots = Math.Clamp(forSoldier?.AccessorySlots ?? SoldierGear.AccessorySlots, 0, worn?.Length ?? 0);
 			// the last free slot is kept for a non-mobility accessory: a mobility one only goes in while one more slot would still be left for it
 			bool mobRoom = !mobFirst || MobilityRoom(worn, nSlots);
-			bool Pred(Item it) => Ordinary(it) && CanWearWith(worn, it, g) && (mobRoom || !AccessoryMobility.Is(it));
+			// A class accessory a levy of its class would put on is left for him (the floor pass's rule, at issue too): a Re-arm deals every primary before anyone's accessories, so a ranger drawn before the rogues never takes their Eclipse Mirror.
+			List<SoldierRecord> floor = null; Dictionary<int, bool> reservedByType = null; // one answer per item type for this pick: the whole shelf is scanned, the army once per class accessory type
+			bool Reserved(Item it)
+			{
+				if (!FloorFirst || !LoadoutFixes.Accessories || forSoldier == null) return false;
+				reservedByType ??= new Dictionary<int, bool>();
+				if (!reservedByType.TryGetValue(it.type, out bool r)) reservedByType[it.type] = r = ClassReserved(it, forSoldier, cls, floor ??= FloorLevies());
+				return r;
+			}
+			bool Pred(Item it) => Ordinary(it) && CanWearWith(worn, it, g) && (mobRoom || !AccessoryMobility.Is(it)) && !Reserved(it);
 			// Every levy takes one mobility accessory (wings, then the most extra jumps) before anything else; a second one is only a mild plus.
 			bool hasMob = mobFirst && AccessoryMobility.Best(worn) > 0f;
 			if (mobFirst && !hasMob) {
@@ -1099,7 +1111,7 @@ namespace Levy.Content.TileEntities
 			var best = TakeBest(null, 0, 0, 1, Pred, Score);
 			if (best != null || mobRoom) return best;
 			// nothing but mobility accessories is stocked: a second one beats an empty slot (a non-mobility one replaces it when it arrives, see AccessoryStep)
-			return TakeBest(null, 0, 0, 1, it => Ordinary(it) && CanWearWith(worn, it, g), Score);
+			return TakeBest(null, 0, 0, 1, it => Ordinary(it) && CanWearWith(worn, it, g) && !Reserved(it), Score);
 		}
 
 		/// <summary>An item (or its upgrade, or its ingredient) the soldier already wears is only issued when nothing else is stocked.</summary>
@@ -1190,7 +1202,8 @@ namespace Levy.Content.TileEntities
 			// Class-matched armor: a set (or piece) of his class within the tier tolerance is worn over any stronger armor of another class (see ArmoryTE.ArmorClass.cs).
 			DamageClass tc = ArmorTargetClass(g);
 			// Raise-the-floor upgrade: a set of another class is not his to take while a levy of that class would gain from it (the best set stays with its best-suited user).
-			Func<DamageClass, float, bool> classGuard = upgrade && FloorFirst && wc != null ? ClassWantsSet(soldier) : null;
+			// At issue too while class-matched armor is on: a Re-arm deals the whole army's primaries before anyone's armor, so a mage drawn before the summoners never takes their only summon set.
+			Func<DamageClass, float, bool> classGuard = (upgrade || (tc != null && LoadoutFixes.Armor)) && FloorFirst && wc != null ? ClassWantsSet(soldier) : null;
 
 			float bestScore = float.NegativeInfinity;
 			ArmorCand[] best = null;
@@ -2430,6 +2443,7 @@ namespace Levy.Content.TileEntities
 			if (!g.IsLocked(SoldierGear.SlotWeapon) && UpgradePrimary(soldier)) changed = true; // its own time is in arm.alloc
 			ps = global::Levy.Common.Util.LevyProf.Begin();
 			if (UpgradeArmor(soldier)) changed = true; // after the primary: the armor follows the weapon he now carries (locked slots are skipped inside)
+			if (ExchangeClassArmor(soldier)) changed = true; // armor of another class (none of his was free) goes to a levy of that class, his class's set comes back (ArmoryTE.ArmorClass.cs)
 			Mark(global::Levy.Common.Util.LevyProf.ArmArmor);
 			if (ReconcileWeaponToArmor(soldier)) changed = true; // the armor may not have followed (margin, locks, stock): a class mismatch is corrected, never upgraded into
 			if (UpgradeAccessories(soldier)) changed = true;
@@ -2444,6 +2458,25 @@ namespace Levy.Content.TileEntities
 			// The new weapon may fire other ammo (or none): IssueGear returns the wrong pouch and draws the right one (it only fills what is empty otherwise).
 			if (changed) { IssueGear(soldier); Mark(global::Levy.Common.Util.LevyProf.ArmIssue); }
 			return changed;
+		}
+
+		/// <summary>
+		/// A levy whose primary the army's plan changed to another class while he was not the one asking (<see cref="AllocateArmy"/>): his armor, accessories and sidearm follow the new class at once, the way his own
+		/// upgrade pass would (class correction, class accessories given back to their class, a sidearm of his class). True if anything changed.
+		/// </summary>
+		private bool FollowPrimary(SoldierRecord rec)
+		{
+			var g = rec?.Gear;
+			if (g == null || !g.HasWeapon || rec.LoadoutLocked || rec.Disarmed) return false;
+			bool ch = false;
+			if (UpgradeArmor(rec)) ch = true;
+			if (ExchangeClassArmor(rec)) ch = true;
+			if (UpgradeAccessories(rec)) ch = true;
+			if (!g.IsLocked(SoldierGear.SlotSidearm) && UpgradeSidearm(rec)) ch = true;
+			if (TidySidearms(g, rec)) ch = true;
+			if (FillEmptySidearms(rec)) ch = true;
+			if (ch) IssueGear(rec);
+			return ch;
 		}
 
 		/// <summary>
@@ -2551,10 +2584,20 @@ namespace Levy.Content.TileEntities
 			if (IsAir(cur)) return false; // empty hand: IssueGear's job
 			var fam = WeaponClassifier.GetProfile(cur).Family;
 			bool summoner = IsSummonerSoldier(soldier);
-			if (!summoner && g.HasWeapon && !SidearmPolicy.IsDeployer(cur) && Common.Config.LevyConfig.Get.ClassMatchSidearms)
+			if (g.HasWeapon && !SidearmPolicy.IsDeployer(cur) && Common.Config.LevyConfig.Get.ClassMatchSidearms)
 			{
-				var target = SidearmClass.TargetClass(g, Rules); // a levy in class armor upgrades toward a sidearm of his class (see SidearmClass)
-				if (target != null) return UpgradeClassSidearm(soldier, g, cur, target);
+				var target = summoner ? DamageClass.Summon : SidearmClass.TargetClass(g, Rules); // a levy upgrades toward a sidearm of his class (see SidearmClass)
+				if (!summoner && target != null && UpgradeClassSidearm(soldier, g, cur, target)) return true;
+				// after the Moon Lord a weapon of another class is not carried beside the primary: nothing of his class came in for it, so it goes back to the shelf (a staff or sentry may take the slot later)
+				if (target != null && !SidearmClass.OffClassAllowed(SidearmClass.Strength()) && !SidearmClass.SameClass(cur, target, Rules))
+				{
+					var rem = DepositOld(cur);
+					if (!IsAir(rem)) Spill(rem, protect: true);
+					g.Sidearm = new Item();
+					MarkDirty();
+					return true;
+				}
+				if (!summoner && target != null) return false;
 			}
 			float need = WeaponRank.Of(cur) * LevyConstants.AutoUpgradeScoreMargin;
 			Func<Item, bool> pool, shelf = null; // pool = the role (and the dedicated sidearm slot); shelf = what the armory's racks may supply for it

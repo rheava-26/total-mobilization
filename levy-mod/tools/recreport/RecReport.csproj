@@ -13,6 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../Levy/Common/Recording/FightAnalysis.cs" Link="FightAnalysis.cs" />
+    <Compile Include="../../Levy/Common/Recording/FightRecFormat.cs" Link="FightRecFormat.cs" />
     <Compile Include="../../Levy/Common/Recording/FightReport.cs" Link="FightReport.cs" />
     <Compile Include="../../Levy/Common/Recording/LineBreak.cs" Link="LineBreak.cs" />
     <Compile Include="../../Levy/Common/Recording/FightReportSelfTest.cs" Link="FightReportSelfTest.cs" />

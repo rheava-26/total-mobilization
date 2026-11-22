@@ -83,7 +83,7 @@ namespace Levy.Common.Recording
 			{
 				var idx = ReadIndex(dir); var known = new HashSet<string>(idx.Select(e => e.File), StringComparer.OrdinalIgnoreCase);
 				string ex = exclude == null ? null : Path.GetFileName(exclude);
-				var files = Directory.EnumerateFiles(dir, "*.levyrec").Where(f => !f.EndsWith(".part")).Select(f => Path.GetFileName(f)).OrderByDescending(f => f, StringComparer.Ordinal).ToList();
+				var files = Directory.EnumerateFiles(dir, "*.levyrec").Where(f => !f.EndsWith(".part") && !RecParts.IsLaterPart(f)).Select(f => Path.GetFileName(f)).OrderByDescending(f => f, StringComparer.Ordinal).ToList();
 				foreach (string f in files)
 				{
 					if (budget <= 0) break;
@@ -144,7 +144,8 @@ namespace Levy.Common.Recording
 			{
 				var last = s.Deaths.Count > 0 ? s.Deaths[s.Deaths.Count - 1] : null;
 				string killer = last?.Killer;
-				bool fell = last != null && last.ArmyStart > 0 && last.ArmyAt <= Math.Max(2, last.ArmyStart / 10);
+				// the army fell: few left in the arena AND at least half of it died (levies that were never near, or walked off, did not fall)
+				bool fell = last != null && last.ArmyStart > 0 && last.ArmyAt <= Math.Max(2, last.ArmyStart / 10) && last.FallenBefore * 2 >= last.ArmyStart;
 				string tail = fell ? " after the army fell." : ".";
 				if (s.CmdDeaths == 1) lines.Add("Killed by " + (killer ?? "something that left no trace in the recording") + tail);
 				else lines.Add("Killed " + s.CmdDeaths + " times, last by " + (killer ?? "something unrecorded") + tail);
@@ -226,9 +227,10 @@ namespace Levy.Common.Recording
 			if (s.TakenHits == 0) L("  Nothing hit you.");
 			else
 			{
-				L("  " + N0(s.TakenTotal) + " damage in " + s.TakenHits + " hits. By source:");
-				foreach (var t in s.Taken.Values.OrderByDescending(t => t.Dmg).Take(12))
-					L("    " + t.Label.PadRight(34) + " " + N0(t.Dmg).PadLeft(8) + " damage, " + t.Hits.ToString().PadLeft(3) + " hits" + (t.Deaths > 0 ? ", killed you " + t.Deaths + (t.Deaths == 1 ? " time" : " times") : ""));
+				L("  " + N0(s.TakenTotal) + " damage taken in " + s.TakenHits + " hits. By source:");
+				foreach (var t in s.Taken.Values.OrderByDescending(t => t.Dmg).ThenByDescending(t => t.Hits).Take(12))
+					L("    " + t.Label.PadRight(34) + " " + N0(t.Dmg).PadLeft(8) + " damage, " + t.Hits.ToString().PadLeft(3) + " hits" + (t.Deaths > 0 ? ", killed you " + t.Deaths + (t.Deaths == 1 ? " time" : " times") : "")
+						+ (t.Raw > t.Dmg + Math.Max(50, t.Dmg / 10) ? " (the game counted " + N0(t.Raw) + ")" : ""));
 			}
 			foreach (var d in s.Deaths)
 				L("  You fell at " + FightStats.Clock(d.Tick / 60.0) + " to " + (d.Killer ?? "something unrecorded") + ", with " + d.ArmyAt + " levies in the arena" + (d.ArmyStart > 0 ? " of " + d.ArmyStart : "") + ".");
@@ -236,7 +238,7 @@ namespace Levy.Common.Recording
 			L();
 
 			L("The army");
-			if (s.Army.Count == 0 || s.ArmyStart <= 0) L("  No levies were in the arena.");
+			if (s.Army.Count == 0 || s.ArmyStart <= 0) L(s.LevyIds.Count > 0 ? "  None of the " + s.LevyIds.Count + " recorded levies came within " + FightRecFormat.ArenaRangeTiles + " tiles of you or the boss." : "  No levies were in the arena.");
 			else
 			{
 				L("  " + s.ArmyStart + " at the start, " + s.ArmyEnd + " at the end. " + s.LeviesLost + " levies fell.");
@@ -256,9 +258,10 @@ namespace Levy.Common.Recording
 			foreach (var line in AggroLines(s)) L("  " + line);
 			L();
 
-			if (s.Milestones.Count > 0 || s.Phases.Count > 0)
+			if (s.Milestones.Count > 0 || s.Phases.Count > 0 || s.EndPools.Count >= 2)
 			{
 				L("The boss's life");
+				if (s.EndPools.Count >= 2) L("  At the end: " + string.Join(", ", s.EndPools.Select(p => p.name + " " + (p.killed ? "killed" : Pct(p.frac) + " left"))) + ".");
 				foreach (var m in s.Milestones) L("  Down to " + m.pct + "% at " + FightStats.Clock(m.sec) + ", " + m.army + " levies in the arena.");
 				foreach (var p in s.Phases.Where(p => !(s.Milestones.Count > 0 && System.Text.RegularExpressions.Regex.IsMatch(p.what, @"^\d+% life$")))) L("  " + FightStats.Clock(p.tick / 60.0) + ": " + p.what + ".");
 				L();
@@ -335,6 +338,7 @@ namespace Levy.Common.Recording
 		{
 			var lines = new List<string>();
 			if (s.Target.Count == 0) { lines.Add("No target changes were recorded."); return lines; }
+			if (s.TargetUnread) { lines.Add("The boss's target was not readable in this recording."); return lines; }
 			int endTick = Math.Max(s.EndTick, s.Target[s.Target.Count - 1].tick);
 			double[] by = new double[4]; double[,] band = new double[3, 4];
 			for (int i = 0; i < s.Target.Count; i++)
@@ -356,6 +360,7 @@ namespace Levy.Common.Recording
 			int lastSwitch = -1; for (int i = 1; i < s.Target.Count; i++) if (s.Target[i].kind == 1 && s.Target[i - 1].kind != 1) lastSwitch = s.Target[i].tick;
 			if (lastSwitch >= 0) lines.Add("It last turned on you at " + FightStats.Clock(lastSwitch / 60.0) + (s.Target[s.Target.Count - 1].kind == 1 ? " and stayed there." : "."));
 			else if (s.Target[0].kind == 1) lines.Add("It was on you from the start.");
+			foreach (var pa in s.PoolAggro) lines.Add(pa.name + ": on you " + Pct(pa.you) + ", on levies " + Pct(pa.levies) + (pa.none >= 0.005 ? ", on nobody " + Pct(pa.none) : "") + ".");
 			return lines;
 		}
 

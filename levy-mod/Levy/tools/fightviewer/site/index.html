@@ -303,7 +303,8 @@ function fromData(o){      // a data/<fight>.json file written by make_site.py
 const tkOf=b=>b.length>14?b[14]:((b[12]>=0&&b[12]<255)?1:0);
 // event NPCs (Celestial Pillars, Martian Saucer, Flying Dutchman, Pumpkin/Frost Moon bosses) are never the main boss: same list as tools/recview/recrules.py
 const EVENT_NPC=new Set([517,422,507,493,392,393,394,395,491,492,325,327,328,344,345,346]);
-function mainBoss(f){const bs=(f.b||[]).filter(b=>!EVENT_NPC.has(b[0]));for(const b of bs) if(!b[13]) return b; return bs[0]||null;}
+// the boss row a sample follows: of the bosses (not parts) the largest life pool, its owner first (format 13 field 18 realLife: a worm's head, Ares and not an arm), the lowest life on a tie (a live head before segments frozen at full life); Draedon's own 16,000 never beats a mech. Same rule as make_site.py main_boss
+function mainBoss(f){const bs=(f.b||[]).filter(b=>!EVENT_NPC.has(b[0]));if(!bs.length)return null;let h=bs.filter(b=>!b[13]);if(!h.length)h=bs;let o=h.filter(b=>b.length<=18||b[18]<0||b[18]===b[1]);if(!o.length)o=h;let best=o[0];for(const b of o)if(b[7]>best[7]||(b[7]===best[7]&&b[6]<best[6]))best=b;return best;}
 function makeArena(R){
   makeExtraTerrain(R);
   const A=R.terr; R.arenaImg=null; if(!A) return;

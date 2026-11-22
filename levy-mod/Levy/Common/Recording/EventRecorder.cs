@@ -49,6 +49,7 @@ namespace Levy.Common.Recording
 
 		public static bool On;
 		private static RecWriter _w;
+		private static int _parts = 1;
 		private static Player _cmd;
 		private static string _path, _dir, _mainId, _startId;
 		private static DateTime _startWall;
@@ -287,7 +288,8 @@ namespace Levy.Common.Recording
 				_path = System.IO.Path.Combine(_dir, "event_" + eventId + "_" + stamp + (_gzip ? FightRecFolder.Ext : ".jsonl"));
 				{ int dup = 2; string b = _path; while (File.Exists(_path) || File.Exists(_path + ".part")) _path = b.Replace(_gzip ? FightRecFolder.Ext : ".jsonl", "_" + dup++ + (_gzip ? FightRecFolder.Ext : ".jsonl")); }
 				long cap = FightRecorder.MaxFileBytes > 0 ? FightRecorder.MaxFileBytes : FightRecorder.ConfigFileBytes();
-				if (!RecWriter.TryOpen(_path, _gzip, cap, out _w, out string why)) { error = "could not create " + _path + ": " + why; _w = null; return null; }
+				if (!RecWriter.TryOpen(_path, _gzip, cap, out _w, out string why, _gzip ? (FightRecorder.PartBytesOverride > 0 ? FightRecorder.PartBytesOverride : FightRecorder.PartBytes) : 0)) { error = "could not create " + _path + ": " + why; _w = null; return null; }
+				_parts = 1;
 				ActiveEvents(_active);
 				foreach (string id in _active) NoteSeen(id);
 				string mods = FightRecorder.ModList(out string mode);
@@ -343,6 +345,13 @@ namespace Levy.Common.Recording
 				if (ProfileParts) { long q2 = System.Diagnostics.Stopwatch.GetTimestamp(); PartPoll += q1 - q0; PartLevyPoll += q2 - q1; }
 				if (_w.Error != null) { Stop("write error"); return; }
 				if (_w.Full) { Stop("size limit"); return; }
+				if (_w.PartDue)
+				{
+					// format 13: past the part size the recording goes on in NAME_part2.levyrec, which starts with the header (and its part number); the hitbox rows start full again
+					_parts++; _hbDef.Clear();
+					string h = LastHeader ?? "{\"k\":\"hdr\"}";
+					_w.StartPart(h.StartsWith("{\"k\":\"hdr\",", StringComparison.Ordinal) ? "{\"k\":\"hdr\",\"part\":" + _parts + "," + h.Substring(11) : h);
+				}
 				if (el >= (TestMaxTicks > 0 ? TestMaxTicks : MaxTicks)) { Stop("time limit"); return; }
 				FlushDmg(el, false);
 				PumpTerrain();

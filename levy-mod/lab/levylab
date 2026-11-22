@@ -186,6 +186,8 @@ def load_spec(path):
             spec = {"raw": rows}
             m = re.search(r"^#\s*mods:\s*(\w+)", text, re.M)   # raw lines: a "# mods: vanilla" comment picks the mod set (default calamity)
             if m: spec["mods"] = m[1]
+            for m in re.finditer(r"^#\s*env:\s*(\S+?)=(\S*)\s*$", text, re.M):   # raw lines: "# env: K=V" sets a process env toggle for the whole run (after the kit defaults, so it can override them)
+                spec.setdefault("env", {})[m[1]] = m[2]
         else:
             hdr = rows[0]; cells = []
             for r in rows[1:]:
@@ -432,10 +434,10 @@ def cmd_run(a):
         if sum(alloc.values()) < nj and alloc[g] < len(groups[g]): alloc[g] += 1
     jobs = []
     for (ek, rec), fs in groups.items():
-        parts = min(alloc[(ek, rec)], len(fs))
+        parts = min(max(alloc[(ek, rec)], -(-len(fs) // a.max_per_proc) if a.max_per_proc > 0 else 0), len(fs))   # --max-per-proc: more, shorter processes (run one after another when --jobs is lower)
         for p in range(parts):
             jobs.append(dict(id=f"j{len(jobs)}", fights=[(x[0], x[1], x[2]) for x in fs[p::parts]], rec=rec, env=json.loads(ek)))
-    ctx = dict(rundir=rundir, tmod=tmod, mods=next(iter(mods)), steps=a.steps, env={})
+    ctx = dict(rundir=rundir, tmod=tmod, mods=next(iter(mods)), steps=a.steps, env=dict(spec.get("env") or {}) if "raw" in spec else {})
     t0 = time.time()
     print(f"levylab: {nf} fights = {len(meta_cells)} cells x seeds, {len(jobs)} server processes, {nj} in parallel, build {bid}{' (cached)' if not built else ''}, run dir {rundir}", file=sys.stderr)
     (rundir / "cells.json").write_text(json.dumps(dict(cells=meta_cells, build=bid, spec=a.spec, jobs=nj, steps=a.steps, rec=a.rec), indent=1))
@@ -627,7 +629,7 @@ def main():
     sp = ap.add_subparsers(dest="cmd", required=True)
     r = sp.add_parser("run", help="build once per revision, run every cell x seed headless in parallel, print the table")
     r.add_argument("spec"); r.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1)); r.add_argument("--rec", type=int, default=0, help="record K seeds per cell (default 0: none)")
-    r.add_argument("--per-proc", type=int, default=8, help="min fights per server process (boot is ~55 s each)"); r.add_argument("--seeds", help="override the spec's seeds"); r.add_argument("--rev", help="build this git revision instead of the working tree"); r.add_argument("--steps", type=int, default=120, help="game ticks per server turn")
+    r.add_argument("--per-proc", type=int, default=8, help="min fights per server process (boot is ~55 s each)"); r.add_argument("--max-per-proc", type=int, default=0, help="at most this many fights per server process (0 = no limit); bounds a long run's memory"); r.add_argument("--seeds", help="override the spec's seeds"); r.add_argument("--rev", help="build this git revision instead of the working tree"); r.add_argument("--steps", type=int, default=120, help="game ticks per server turn")
     r.add_argument("--out"); r.add_argument("--rebuild", action="store_true"); r.add_argument("--quiet", action="store_true", help="skip the table at the end")
     t = sp.add_parser("table", help="markdown summary of a run dir"); t.add_argument("run_dir"); t.add_argument("--cols", help="extra results.csv columns (mean over fights), comma list"); t.add_argument("--wide", action="store_true", help="also top weapons per cell")
     sp.add_parser("list", help="every spec field, token, env toggle and preset")

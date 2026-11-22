@@ -131,9 +131,9 @@ namespace Levy.Content.TileEntities
 				if (z == null) continue;
 				g.Accessories[i] = new Item();
 				var rem = DepositOld(a);
-				if (!IsAir(rem)) { Spill(rem, protect: true); continue; } // storage full: it lies protected in front of the armory, the slot refills below
 				any = true;
 				MarkDirty();
+				if (!IsAir(rem)) { Spill(rem, protect: true); continue; } // storage full: it lies protected in front of the armory (nothing is lost), the slot refills below
 				_accGiveBack = true;
 				try { bool zc = false; for (int k = 0, zn = AccSlotsOf(z); k < zn; k++) if (AccessoryStep(z, all)) zc = true; else break; if (zc && z.HasBody && Main.netMode != NetmodeID.MultiplayerClient && Main.npc[z.BodyIndex].ModNPC is SoldierNPC sn) sn.NotifyGearChanged(); }
 				finally { _accGiveBack = false; }

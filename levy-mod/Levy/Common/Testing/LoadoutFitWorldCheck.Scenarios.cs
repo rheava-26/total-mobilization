@@ -230,6 +230,18 @@ namespace Levy.Common.Testing
 			var snap = Snapshot(s); Upgrades(s, 2);
 			Check("vanilla: two more upgrade passes change nothing (no thrash)", Snapshot(s) == snap);
 
+			// ---- a ranger in a summoner's armor (hand-assigned, so it cannot follow his gun): still a ranger, so no whip or staff in his hand slot, a gun there
+			Reset(s, 1); StockLunar(te);
+			var lone = s.Levies[0]; var lg = lone.Gear;
+			lg.Head = Make(Stardust[0]); lg.Body = Make(Stardust[1]); lg.Legs = Make(Stardust[2]);
+			lg.SetLocked(SoldierGear.SlotHead, true); lg.SetLocked(SoldierGear.SlotBody, true); lg.SetLocked(SoldierGear.SlotLegs, true);
+			lg.Weapon = Make(ItemID.SniperRifle); lg.SetLocked(SoldierGear.SlotWeapon, true); lg.Ammo = Make(ItemID.MoonlordBullet, 999);
+			census = Census(s);
+			Tick(); te.IssueGear(lone); Upgrades(s, 1);
+			Note("a ranger in locked Stardust armor: " + Row(s, lone));
+			Check("a ranger in a summoner's armor (locked) is no summoner: his hand sidearm is a ranged weapon, not a whip or a staff", !IsAir(lg.Sidearm) && WClass(s, lone) == DamageClass.Ranged && IClass(s, lg.Sidearm) == DamageClass.Ranged);
+			Check("vanilla: nothing duplicated or lost (ranger in Stardust) " + (SameCensus(census, Census(s), out var d4) ? "" : d4), SameCensus(census, Census(s), out _));
+
 			// ---- a strong class accessory goes to its class first: two Sorcerer Emblems and six weak generic accessories for 8 levies with 16 slots (the shelf runs dry, so a last resort is taken)
 			Reset(s, 8); StockLunar(te);
 			for (int i = 0; i < te.Storage.Length; i++) if (!IsAir(te.Storage[i]) && te.Storage[i].accessory && !AccessoryMobility.Is(te.Storage[i])) te.Storage[i] = new Item();

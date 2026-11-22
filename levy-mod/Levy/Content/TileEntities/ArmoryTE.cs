@@ -1091,8 +1091,14 @@ namespace Levy.Content.TileEntities
 			// the last free slot is kept for a non-mobility accessory: a mobility one only goes in while one more slot would still be left for it
 			bool mobRoom = !mobFirst || MobilityRoom(worn, nSlots);
 			// A class accessory a levy of its class would put on is left for him (the floor pass's rule, at issue too): a Re-arm deals every primary before anyone's accessories, so a ranger drawn before the rogues never takes their Eclipse Mirror.
-			List<SoldierRecord> floor = null;
-			bool Reserved(Item it) => FloorFirst && LoadoutFixes.Accessories && forSoldier != null && ClassReserved(it, forSoldier, cls, floor ??= FloorLevies());
+			List<SoldierRecord> floor = null; Dictionary<int, bool> reservedByType = null; // one answer per item type for this pick: the whole shelf is scanned, the army once per class accessory type
+			bool Reserved(Item it)
+			{
+				if (!FloorFirst || !LoadoutFixes.Accessories || forSoldier == null) return false;
+				reservedByType ??= new Dictionary<int, bool>();
+				if (!reservedByType.TryGetValue(it.type, out bool r)) reservedByType[it.type] = r = ClassReserved(it, forSoldier, cls, floor ??= FloorLevies());
+				return r;
+			}
 			bool Pred(Item it) => Ordinary(it) && CanWearWith(worn, it, g) && (mobRoom || !AccessoryMobility.Is(it)) && !Reserved(it);
 			// Every levy takes one mobility accessory (wings, then the most extra jumps) before anything else; a second one is only a mild plus.
 			bool hasMob = mobFirst && AccessoryMobility.Best(worn) > 0f;

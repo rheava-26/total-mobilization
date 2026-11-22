@@ -249,9 +249,10 @@ namespace Levy.Common.Progression
 			if (c.ScoriaOreRecipe && scoria > 0)
 				list.Add(new Spec { Result = scoria, Stack = ProgConst.ScoriaYield, Tile = TileID.AdamantiteForge, Cond = Condition.DownedGolem,
 					Ingredients = new (int, int)[] { (ItemID.Hellstone, ProgConst.ScoriaHellstone), (ItemID.ChlorophyteOre, ProgConst.ScoriaChlorophyte) } });
-			if (c.SlimeAgitatorRecipe && scoria > 0)
-				list.Add(new Spec { Result = ModContent.ItemType<SlimeAgitator>(), Stack = 1, Tile = TileID.MythrilAnvil,
-					Ingredients = new (int, int)[] { (ItemID.RoyalGel, ProgConst.AgitatorKingSlime), (ItemID.VolatileGelatin, ProgConst.AgitatorQueenSlime), (scoria, ProgConst.AgitatorScoria) } });
+			int perennial = CalamityLink.ItemType("PerennialBar");
+			if (c.SlimeAgitatorRecipe && perennial > 0)
+				list.Add(new Spec { Result = ModContent.ItemType<SlimeAgitator>(), Stack = 1, Tile = TileID.MythrilAnvil, Cond = Condition.DownedPlantera,
+					Ingredients = new (int, int)[] { (ItemID.Gel, ProgConst.AgitatorGel), (perennial, ProgConst.AgitatorPerennial) } });
 			return list;
 		}
 	}

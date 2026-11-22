@@ -77,7 +77,7 @@ Pages: {
 		Title: Wages and treasury
 		Body:
 			'''
-			A Regular costs a muster fee up front, worth 5 days of wage, and a wage at dawn. Both come from the Barracks treasury. Deposit coins on the Barracks panel.
+			A Regular costs a muster fee up front, worth 5 days of wage, and a wage at dawn. Both come from the Barracks treasury. Deposit or withdraw coins on the Barracks panel, 1 gold to 1 platinum at a time.
 			A Levy earns 10 silver a day at the start, a Man-at-Arms 3 times that and a Champion 7 times. Wages rise as the world progresses. Return to barracks halves a wage and Reserve removes it.
 			Soldiers on Follow me or standing idle, with no enemy within 25 tiles, collect loose coins and items within 6 tiles and carry them home. Coins go to the treasury.
 			A Regular unpaid for 2 days may desert: a 25% chance each dawn, then 50%. His kit returns to the Armory.
@@ -320,6 +320,17 @@ Pages: {
 			'''
 	}
 
+	Autosell: {
+		Title: Autosell
+		Body:
+			'''
+			Point at an item in the Armory and switch Sell on in the item panel. Every copy in Armory storage beyond the kept number is sold within seconds, and so is every copy that arrives later.
+			Keep sets how many copies stay. It starts at 0.
+			Each copy sells for its normal sell price, with no shopkeeper needed. The coins go to the treasury of the Barracks that pays for the Armory, or into the Armory as coins when none does.
+			Favourited items, items a rule names, the issue rows and the gear levies carry are never sold.
+			'''
+	}
+
 	LogisticsFind: {
 		Title: Logistics tab - find
 		Body:
@@ -493,10 +504,11 @@ Pages: {
 		Body:
 			'''
 			The Superpowered Magnet re-forms the Exodium planetoids after Moon Lord, with a cooldown between uses. The Slime Agitator starts a slime rain that includes Calamity's ore slimes. It works in any weather and leaves an ordinary rain falling. It cannot be used while a slime rain is up or in a remix world.
-			Extra recipes make Scoria Ore from Hellstone and Chlorophyte after Golem, and the Magnet and Agitator themselves.
+			Extra recipes make Scoria Ore from Hellstone and Chlorophyte after Golem, the Magnet after Moon Lord, and the Agitator from 5000 Gel and 10 Perennial Bars after Plantera.
 			Calamity ore generation multiplies the ore a boss event makes from then on. Auric Ore regeneration makes Yharon generate it again on repeat kills.
 			Jungle monsters can drop Uelibloom Ore after Providence.
 			Providence and post-Providence material drop rates multiply Divine Geode, Unholy Essence and Uelibloom Ore. All of it is off by default and needs Calamity.
+			Three material drop rates multiply crafting materials from every source, from bosses and their bags, or from other enemies and events. They work in any world, and all drop rates add together.
 			'''
 	}
 

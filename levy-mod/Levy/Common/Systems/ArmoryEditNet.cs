@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using Terraria;
 using Terraria.DataStructures;
@@ -22,6 +23,7 @@ namespace Levy.Common.Systems
 		{
 			LevyPackets.Register(LevyPacket.ArmoryReforgePlan, OnReforgePlan);
 			LevyPackets.Register(LevyPacket.ArmoryVanitySet, OnVanitySet);
+			LevyPackets.Register(LevyPacket.ArmorySellMark, OnSellMark);
 		}
 
 		public override void OnWorldUnload() => VanityLookup.Reset();
@@ -48,6 +50,15 @@ namespace Levy.Common.Systems
 			if (Main.netMode == NetmodeID.SinglePlayer) { te.MarkDirty(); return; }
 			var bytes = te.Vanity.ToBytes();
 			var p = LevyPackets.New(LevyPacket.ArmoryVanitySet); p.Write(te.ID); p.Write(bytes.Length); p.Write(bytes); p.Send();
+		}
+
+		/// <summary>Marks (or clears) an item type for autosell: single player directly; a multiplayer client updates its own copy at once and asks the server, whose sync confirms it.</summary>
+		public static void SetSellMark(ArmoryTE te, int type, bool on, int keep)
+		{
+			if (te == null || !UIActions.IsLive(te) || !ArmoryTE.CanMarkForSale(type)) return;
+			te.SetSellMark(type, on, keep);
+			if (Main.netMode != NetmodeID.MultiplayerClient) return;
+			var p = LevyPackets.New(LevyPacket.ArmorySellMark); p.Write(te.ID); p.Write(ArmoryRules.KeyOf(type)); p.Write(on); p.Write(Math.Clamp(keep, 0, ArmoryTE.MaxSellKeep)); p.Send();
 		}
 
 		// ------------------------------------------------------------------ server side
@@ -78,6 +89,17 @@ namespace Levy.Common.Systems
 				RosterSystem.SyncBarracks(payer);
 			}
 			ArmoryTE.ReportTargeted(sender, result, plan);
+		}
+
+		/// <summary>Server: a client marked or cleared an item type for autosell. Payload: int armoryId, string item key, bool on, int keep.</summary>
+		private static void OnSellMark(BinaryReader r, int whoAmI)
+		{
+			int armoryId = r.ReadInt32(); string key = r.ReadString(); bool on = r.ReadBoolean(); int keep = r.ReadInt32();
+			var armory = NearbyArmory(armoryId, whoAmI, out _);
+			int type = ArmoryRules.TypeOf(key);
+			if (armory == null || type <= 0) return;
+			armory.SetSellMark(type, on, keep);
+			armory.Sync();
 		}
 
 		/// <summary>Server: a client sent its edited vanity list. Payload: int armoryId, int length, bytes.</summary>

@@ -25,7 +25,7 @@ namespace Levy.Common.Progression
 
 		// Calamity options.
 		public const int ScoriaHellstone = 4, ScoriaChlorophyte = 2, ScoriaYield = 2;
-		public const int AgitatorKingSlime = 5, AgitatorQueenSlime = 5, AgitatorScoria = 10;   // Royal Gel, Volatile Gelatin, Scoria Ore
+		public const int AgitatorGel = 5000, AgitatorPerennial = 10;   // Gel, Calamity's Perennial Bar (post-Plantera)
 		public const int MagnetBars = 10, MagnetFragments = 4;
 		public const int UelibloomDropMin = 1, UelibloomDropMax = 3;
 		public const int OreSlimeSpawnTicks = 150;   // while an agitated rain is up, each player rolls an ore slime about this often

@@ -141,7 +141,7 @@ report() { # $1 = label, $2 = run dir
   grep -F "[MachineDorm] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[MachineDorm] OBSERVED' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-400 | sed 's/^/  /'
   grep -F '[MachineDorm] FAIL' "$L" | head -10 | cut -c1-300 | sed 's/^/  /'
-  echo "ActiveArmy (active army size: the cap, same-tick replacement, save and load, the live notice): PASS=$(grep -c -F '[ActiveArmy] PASS ' "$L") FAIL=$(grep -c -F '[ActiveArmy] FAIL ' "$L")"
+  echo "ActiveArmy (active army size: the cap, same-tick replacement, save and load, beside the boss room-making, the live notice): PASS=$(grep -c -F '[ActiveArmy] PASS ' "$L") FAIL=$(grep -c -F '[ActiveArmy] FAIL ' "$L")"
   grep -F "[ActiveArmy] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[ActiveArmy] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
   echo "PerfBoss: PASS=$(grep -c -F '[PerfBoss] PASS ' "$L") FAIL=$(grep -c -F '[PerfBoss] FAIL ' "$L")"

@@ -432,6 +432,7 @@ namespace Levy.Common.Testing
 			int band = (int)(60f + 10f * n + Main.worldSurface / 6.0) + 2;
 			_crCx = _cx;
 			int cx = _cx, half = 110, fy;
+			if (kind.StartsWith("big")) { ExBuildBig(kind); return; }
 			if (kind.StartsWith("a3")) { CrBuildArena3(kind); return; }
 			if (kind == "ug")
 			{
@@ -476,7 +477,7 @@ namespace Levy.Common.Testing
 				if (_crWofDir == 0 && Math.Abs(wallX - _crCmdPos.X) > 16f) _crWofDir = wallX > _crCmdPos.X ? 1 : -1; // the wall comes from this side; the commander runs the other way
 				if (_crWofDir != 0) { float want = wallX - _crWofDir * gap * 16f; if (_crWofDir > 0) _crCmdPos.X = Math.Max(Math.Min(_crCmdPos.X, want), (_crCx - 880) * 16f); else _crCmdPos.X = Math.Min(Math.Max(_crCmdPos.X, want), (_crCx + 880) * 16f); }
 			}
-			Vector2 pin = _crRunCur != null && _crRunCur.Cmd == "far" ? new Vector2((_crCx + 121) * 16f, CrF * 16f) : _crCmdPos; // cmd=far: the commander stands outside the arena, so he is never the closer target
+			Vector2 pin = _crRunCur != null && _crRunCur.Cmd == "far" ? new Vector2((_crCx + (_crRunCur.Arena.StartsWith("big") ? -150 : 121)) * 16f, CrF * 16f) : _crCmdPos; // cmd=far: the commander stands outside the arena, so he is never the closer target
 			p.position = new Vector2(pin.X - p.width / 2f, pin.Y - p.height);
 			p.velocity = Vector2.Zero; p.immune = true; p.immuneTime = 30;
 			CrApplyZones(p, _crTickInRun); // Brain of Cthulhu flees a target outside the Crimson, Desert Scourge enrages outside the desert; the dummy copies the commander's zones (BiomeMirror)
@@ -727,7 +728,8 @@ namespace Levy.Common.Testing
 			CrPinStrays(st.BossIdx);
 			NPC e = Main.npc[st.BossIdx];
 			bool bossAlive = e.active && e.type == st.BossType;
-			if (st.Worm) bossAlive = CrWormTick(st, ref e);
+			if (ExIsExo(run.Boss)) bossAlive = ExTick(st, ref e);
+			else if (st.Worm) bossAlive = CrWormTick(st, ref e);
 			else if (bossAlive) { st.BossLife = e.life; st.BossLifeMax = Math.Max(st.BossLifeMax, e.lifeMax); e.timeLeft = 99999; if (st.HalfTick < 0 && e.life * 2 <= st.BossLifeMax) st.HalfTick = st.Tick; }
 			else if (!st.BossGone) { st.BossGone = true; st.EndTick = st.Tick; st.Result = BbIsBoss(run.Boss) ? (BbWon(run.Boss, st.BossLife, st.BossLifeMax) ? "WIN" : "DESPAWN") : e.life <= 0 ? "WIN" : "DESPAWN"; st.BossLife = BbIsBoss(run.Boss) ? 0 : Math.Max(0, e.life); }
 			int adds = 0; for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && st.AddTypes.Contains(Main.npc[i].type)) adds++;
@@ -870,6 +872,7 @@ namespace Levy.Common.Testing
 			KitFinish(run, st);
 			HitParityLiveFinish(run);
 			BbFinish(run, st, end);
+			ExFinish(run, st, end);
 			if (global::Levy.Common.Util.LevyProf.On) { string pl = global::Levy.Common.Util.LevyProf.Dump(end) + " path[" + global::Levy.Common.Movement.Pathfinder.StatSummary() + "] route[" + global::Levy.Common.Movement.RoutePlanner.StatSummary() + "] paircull[eligible=" + global::Levy.Common.Weapons.PairCull.Eligible + " ineligible=" + global::Levy.Common.Weapons.PairCull.Ineligible + " refused=" + global::Levy.Common.Util.LevyProf.PairsCulled + " checked=" + global::Levy.Common.Weapons.PairCull.Checked + " enabled=" + global::Levy.Common.Weapons.PairCull.Enabled + " audited=" + global::Levy.Common.Weapons.PairCull.Audited + " violations=" + global::Levy.Common.Weapons.PairCull.Violations + " maxHitExcessPx=" + global::Levy.Common.Weapons.PairCull.MaxHitExcessPx.ToString("0.0") + "] pairwhy[" + global::Levy.Common.Weapons.PairCull.WhyNotSummary(8) + "] cutchk[checked=" + SoldierNPC.CutChecked + " cut=" + SoldierNPC.CutCut + " bad=" + SoldierNPC.CutBad + "] TOP[" + global::Levy.Common.Util.LevyProf.TopTypes(end, 12) + "] " + $" projTypes={ProjectileLoader.ProjectileCount} npcTypes={NPCLoader.NPCCount} " + $" wm={SoldierNPC.WmThinks}/{SoldierNPC.WmHolds}/{SoldierNPC.WmShifts}/{SoldierNPC.WmAims}/{SoldierNPC.WmAimCalls}/{SoldierNPC.WmPierce} chk=" + global::Levy.Common.Movement.ThreatField.ChkBad + "/" + global::Levy.Common.Movement.ThreatField.ChkN; Mod.Logger.Info("PROF " + run.Key + " ms/tick " + pl); try { File.AppendAllText(_crOut + ".prof.tsv", run.Key + "\t" + pl + "\n"); } catch { } }
 			if (SoldierNPC.HitDbg != null) { try { File.AppendAllText(_crOut + ".hit.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitDbg.OrderByDescending(kv => kv.Value.dmg).Select(kv => $"{kv.Key}={kv.Value.dmg}/{kv.Value.n}")) + "\n"); } catch { } SoldierNPC.HitDbg = new(); }
 			if (SoldierNPC.HitGapDbg != null) { try { File.AppendAllText(_crOut + ".gap.tsv", run.Key + "\t" + string.Join(" ", SoldierNPC.HitGapDbg.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}:{kv.Value}")) + "\n"); } catch { } SoldierNPC.HitGapDbg = new(); }

@@ -27,13 +27,14 @@ namespace Levy.Common.Testing
 		// ------------------------------------------------------------------------------------------------------------------ bosses
 		internal static bool BbIsBoss(string b) => b is "twins" or "prime" or "brim" or "cryo" or "aqua" or "cal" or "plant" or "eol" or "fish" or "qslime" or "wof" or "levi"
 			or "aureus" or "pbg" or "ravager" or "golem" or "cultist" or "ml" or "deer" or "prov" // "prov" Providence (post-Moon Lord world, day, Hallow); the seven before it: headless replay recordings (hmreplays)
-			or "solarp" or "nebulap" or "vortexp" or "stardustp"; // the Celestial Pillars with their enemy waves (CombatHarness.PillarLab.cs)
+			or "solarp" or "nebulap" or "vortexp" or "stardustp" // the Celestial Pillars with their enemy waves (CombatHarness.PillarLab.cs)
+			or "exoares" or "exothan" or "exotwins"; // the Exo Mechs, by Draedon's first choice (CombatHarness.ExoLab.cs)
 
 		internal static int BbType(string b) => b switch
 		{
 			"twins" => NPCID.Retinazer, "prime" => NPCID.SkeletronPrime, "brim" => CrCalNpc("BrimstoneElemental"), "cryo" => CrCalNpc("Cryogen"), "aqua" => CrCalNpc("AquaticScourgeHead"),
 			"cal" => CrCalNpc("CalamitasClone"), "plant" => NPCID.Plantera, "eol" => NPCID.HallowBoss, "fish" => NPCID.DukeFishron, "qslime" => NPCID.QueenSlimeBoss, "wof" => NPCID.WallofFlesh, "levi" => CrCalNpc("Anahita"),
-			"aureus" => CrCalNpc("AstrumAureus"), "pbg" => CrCalNpc("PlaguebringerGoliath"), "ravager" => CrCalNpc("RavagerBody"), "golem" => NPCID.Golem, "cultist" => NPCID.CultistBoss, "ml" => NPCID.MoonLordCore, "deer" => NPCID.Deerclops, "prov" => CrCalNpc("Providence"), _ => PwTower(b)
+			"aureus" => CrCalNpc("AstrumAureus"), "pbg" => CrCalNpc("PlaguebringerGoliath"), "ravager" => CrCalNpc("RavagerBody"), "golem" => NPCID.Golem, "cultist" => NPCID.CultistBoss, "ml" => NPCID.MoonLordCore, "deer" => NPCID.Deerclops, "prov" => CrCalNpc("Providence"), "exoares" or "exothan" or "exotwins" => ExBossType(), _ => PwTower(b)
 		};
 
 		private static void BbAddCal(HashSet<int> set, params string[] names) { foreach (string n in names) { int t = CrCalNpc(n); if (t > 0) set.Add(t); else global::Levy.Levy.Instance.Logger.Warn("HARNESS-BB: unknown Calamity NPC " + n); } }
@@ -43,6 +44,7 @@ namespace Levy.Common.Testing
 		{
 			if (!BbIsBoss(run.Boss)) return false;
 			if (PwIsPillar(run.Boss)) { PwSetup(s, run); return true; }
+			if (ExIsExo(run.Boss)) { ExSetup(s); return true; }
 			switch (run.Boss)
 			{
 				case "twins": s.PartTypes.Add(NPCID.Retinazer); s.PartTypes.Add(NPCID.Spazmatism); break;
@@ -84,10 +86,12 @@ namespace Levy.Common.Testing
 			NPC.downedGolemBoss = false; NPC.downedAncientCultist = false; NPC.downedMoonlord = false; NPC.downedDeerclops = false;
 			BbCalDowned(false);
 			if (run.Boss == "prov") { NPC.downedMoonlord = NPC.downedAncientCultist = NPC.downedGolemBoss = NPC.downedPlantBoss = true; Main.dayTime = true; Main.time = 27000; } // a post-Moon Lord world at noon: Providence enrages at night
+			if (ExIsExo(run.Boss)) ExBegin(run); // a post-Yharon world
 		}
 		private static void BbEnd()
 		{
 			if (_bbHardSaved) { Main.hardMode = _bbHardPrev; _bbHardSaved = false; }
+			ExEnd();
 		}
 
 		private static Type _bbDownedType;
@@ -155,6 +159,7 @@ namespace Levy.Common.Testing
 		/// <summary>After the first boss has been spawned and moved: Twins spawn as a pair, every battery boss also gets its spawn logged.</summary>
 		private static void BbAfterSpawn(CrState s, CrRun run, int ei, int bx, int by)
 		{
+			if (ExIsExo(run.Boss)) { ExAfterSpawn(s, run, ei); return; }
 			if (run.Boss != "twins") return;
 			NPC.SpawnOnPlayer(0, NPCID.Spazmatism);
 			for (int q = 0; q < Main.maxNPCs; q++)

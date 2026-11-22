@@ -54,7 +54,7 @@ namespace Levy.Common.Boss
 			if (lockOn == null) return;
 			// A drone or turret never keeps a boss in the fight (a boss never locks one, but an add could): only a levy, officer or summoned unit does.
 			if (EnemyTargeting.BossTierOn && EnemyTargeting.IsMachineBody(lockOn.NPC)) return;
-			// No real player left alive (the commander fell): a boss beaten before keeps fighting while a levy stands within LostFightLeashTiles of it; with none, it leaves on vanilla's terms.
+			// No real player left alive (the commander fell): a boss beaten before keeps fighting while a levy stands within LostFightLeashTiles of it (a worm: of its head or its tail, EnemyTargeting.LevyWithin); with none, it leaves on vanilla's terms.
 			if (EnemyTargeting.LostFightOn && !EnemyTargeting.AnyLivePlayer() && !EnemyTargeting.LevyWithin(npc, LevyConstants.Targeting.LostFightLeashPx)) return;
 			if (npc.timeLeft < NPC.activeTime) npc.timeLeft = NPC.activeTime;
 			npc.despawnEncouraged = false;

@@ -45,6 +45,14 @@ namespace Levy.Common
 			/// </summary>
 			public const int LostFightLeashTiles = 200;
 			public const float LostFightLeashPx = LostFightLeashTiles * 16f;
+			/// <summary>
+			/// A worm boss (segments sharing its head's realLife pool) is measured from its head AND its tail for that leash: a levy within it of either end counts (Calamity's Destroyer dug its head 201 tiles off while its body lay on the army).
+			/// The tail is found by one scan of the NPC array and cached per boss for this many ticks (EnemyTargeting.WormTail).
+			/// </summary>
+			public const int LostFightTailRefreshTicks = 60;
+			/// <summary>A boss counts as a worm for the leash when this many segments share its realLife pool, the most common segment type at least <see cref="LostFightWormMinBody"/> times.</summary>
+			public const int LostFightWormMinSegments = 4;
+			public const int LostFightWormMinBody = 3;
 			/// <summary>Soldiers counted for the collective pull stop here (so the penalty tops out at this x <see cref="ArmyPullPerSoldierPx"/> px).</summary>
 			public const int ArmyPullMaxSoldiers = 8;
 			/// <summary>Each (enemy, soldier) pair gets a fixed random offset of up to +/- this many px, so enemies do not all rank the soldiers in the same order. Ties and near-ties only; the load terms below do the real spreading.</summary>

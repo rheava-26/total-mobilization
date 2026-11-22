@@ -1268,6 +1268,8 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		private static bool PullDetour(On_Player.orig_CanPullItem orig, Player self, Item item, Player.ItemSpaceStatus status)
 		{ _hl_PullDetour_1++;
+			// vanilla asks this for every item near every player each tick: a real player in its own slot is answered at once
+			if (self.whoAmI < Main.maxPlayers - 4 && ReferenceEquals(Main.player[self.whoAmI], self)) return orig(self, item, status);
 			return !global::Levy.Common.Owner.SoldierOwner.IsDummy(self) && orig(self, item, status);
 		} private static int _hl_PullDetour_1;
 

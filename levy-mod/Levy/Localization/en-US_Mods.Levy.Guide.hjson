@@ -173,6 +173,18 @@ Pages: {
 			'''
 	}
 
+	ActiveArmy: {
+		Title: Active army size
+		Body:
+			'''
+			Active army size sets how many of your Regulars fight at once. The rest wait in reserve on full duty.
+			Set it in the Barracks beside Stand down all, in Levy: Performance, or from the lag note.
+			It is off by default, and 0 fields everyone. The suggested size is 30.
+			When a soldier falls, the next one waiting takes his place right away.
+			Fewer soldiers on the field means less lag but less firepower. Below about 30, the army can be overwhelmed.
+			'''
+	}
+
 	BarracksOrders: {
 		Title: Orders from the Barracks
 		Body:

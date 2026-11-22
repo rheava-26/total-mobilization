@@ -88,6 +88,8 @@ namespace Levy.Common.Perf
 		/// <summary>Update ms per tick: the NPC phase, the projectile phase.</summary>
 		public double[] UpdSplit = new double[2];
 		public int Npcs, Projs, Dust, Gore, Levies, Minions;
+		/// <summary>The local player's own Regulars with a body in the field (-1: not counted, as in a log line). Not written to the log.</summary>
+		public int Mine = -1;
 		/// <summary>The boss within reach of the player ("" none), a boss elsewhere in the world, 0 no map / 1 minimap or overlay / 2 fullscreen map, the held item.</summary>
 		public string Boss = "", BossFar = ""; public int Map; public int Held; public string HeldName = ""; public int NetMode; public int Effects;
 		/// <summary>The game's Frame Skip setting (0 Off, 1 On, 2 Subtle; -1 not known: a server, an old log).</summary>
@@ -293,10 +295,16 @@ namespace Levy.Common.Perf
 		public const double LevyLeadsRatio = 0.8;
 		/// <summary>Seconds between two popups, and after "It's fine".</summary>
 		public const double PopupGapSecs = 600, FineGapSecs = 1800;
+		/// <summary>The update time (ms per tick) a suggested active army size aims for: under the 16.7 ms frame with room left to draw.</summary>
+		public const double ArmyTargetMs = 12.0;
+		/// <summary>A suggestion never puts fewer soldiers in the field than this; the notice needs at least <see cref="ArmyMinFielded"/> of the player's own soldiers in the field.</summary>
+		public const int ArmyMinSuggest = 5, ArmyMinFielded = 10;
+		/// <summary>The live notice: a whole window (8 s) with updates this long, or with Frame Skip Subtle at under this share of full speed, while the army is at least <see cref="ArmyBigShare"/> of the update.</summary>
+		public const double ArmySlowUpdMs = 14.0, ArmySlowSpeed = 0.8, ArmyBigShare = 0.30;
 	}
 
-	internal enum PopupOption { LowerLevyEffects, ReserveBank, ItsFine, DontAskAgain, OpenSettings, FrameSkipSubtle }
-	internal enum LagKind { Smooth, TooShort, Levy, OtherMod, BaseGame, Unknown }
+	internal enum PopupOption { LowerLevyEffects, ActiveArmy, ItsFine, DontAskAgain, OpenSettings, FrameSkipSubtle }
+	internal enum LagKind { Smooth, TooShort, Levy, OtherMod, BaseGame, Unknown, ArmyTooBig }
 
 	/// <summary>What the analyzer concluded about one fight and what the popup should say.</summary>
 	internal sealed class LagVerdict
@@ -317,14 +325,16 @@ namespace Levy.Common.Perf
 		public bool FrameSkipOn;
 		/// <summary>The levy weapons over the whole fight, ms per update, biggest first, and all of them together (empty when no levy was timed).</summary>
 		public List<WeaponRow> Weapons = new(); public double WeaponAttribMs; public double Levies;
+		/// <summary>The active army size suggested for this fight (-1: none), and the update time and army cost it was worked out from (ms per tick).</summary>
+		public int SuggestedArmy = -1; public double ArmyUpdMs, ArmyCostMs;
 	}
 
 	internal static class PerfAnalysis
 	{
 		public static string Mod(string name) => new PerfItem("", name, 0, 0).Mod;
 
-		/// <summary>Reserve bank hook: the reserve bank is not built yet. When it is, set this true (or read its availability here) and the popup offers it with the other options.</summary>
-		public static bool ReserveBankAvailable = false;
+		/// <summary>Self-check: false hides the active army option, as if the roster could not take it.</summary>
+		public static bool ActiveArmyAvailable = true;
 
 		/// <summary>Why a popup may not be shown now, or null when it may. The rules in one place, in the order they are checked.</summary>
 		public static string Refusal(bool enabled, bool dontAsk, bool bossNear, DateTime now, DateTime lastShown, DateTime snoozeUntil)
@@ -337,11 +347,11 @@ namespace Levy.Common.Perf
 			return null;
 		}
 
-		/// <summary>The label of an option. There is no label for anything that would take command points or soldiers from the army.</summary>
+		/// <summary>The label of an option. Nothing takes command points or soldiers from the army: the active army size only sets how many of them are in the field at once, and the player picks it.</summary>
 		public static string Label(PopupOption o) => o switch
 		{
 			PopupOption.LowerLevyEffects => "Lower levy effects",
-			PopupOption.ReserveBank => "Use the reserve bank", // HOOK(reserve bank): not built yet; no verdict lists this option until ReserveBankAvailable is true
+			PopupOption.ActiveArmy => "Set active army size",
 			PopupOption.ItsFine => "It's fine",
 			PopupOption.DontAskAgain => "Don't ask again",
 			PopupOption.OpenSettings => "Open Levy settings",
@@ -376,7 +386,83 @@ namespace Levy.Common.Perf
 			var v = JudgeCause(fight);
 			if (v.Laggy) FrameSkipAdvice(v, fight);
 			WeaponAdvice(v, fight);
+			if (v.Laggy) ArmyAdvice(v, fight);
 			return v;
+		}
+
+		// ----------------------------------------------------------------------------------- active army size
+		/// <summary>
+		/// The active army size that brings an update of <paramref name="updMs"/> down to <paramref name="targetMs"/>. The army's own cost per update (<paramref name="armyMs"/>: its bodies and shots) shared out over the
+		/// <paramref name="soldiersOnField"/> soldier bodies it was measured on is the cost of one soldier; enough of the player's <paramref name="fielded"/> soldiers come off the field to save the excess.
+		/// Never below <see cref="PerfThresholds.ArmyMinSuggest"/>. -1 when nothing needs to change or a number is missing.
+		/// </summary>
+		public static int SuggestArmyCap(double updMs, double armyMs, double soldiersOnField, int fielded, double targetMs = PerfThresholds.ArmyTargetMs)
+		{
+			if (!(soldiersOnField > 0) || fielded <= 0 || !(armyMs > 0) || double.IsNaN(updMs) || double.IsInfinity(updMs)) return -1;
+			double excess = updMs - targetMs;
+			if (!(excess > 0)) return -1;
+			double per = Math.Min(armyMs, updMs) / soldiersOnField;
+			if (per <= 1e-6) return -1;
+			int cut = (int)Math.Ceiling(excess / per - 1e-9);
+			int cap = Math.Max(PerfThresholds.ArmyMinSuggest, fielded - cut);
+			return cap >= fielded ? -1 : cap;
+		}
+
+		/// <summary>The army's cost per update in a window, ms: its bodies, its shots, other mods' hooks on them and the owner swaps (the weapon attribution's reference), else Levy's own NPC row plus the army's shots. 0 unknown.</summary>
+		public static double ArmyMs(PerfWindow w)
+		{
+			if (w == null) return 0;
+			if (w.ArmyRefMs != null && w.ArmyRefMs.Length > 0) { double t = 0; foreach (double d in w.ArmyRefMs) t += Math.Max(0, d); if (t > 0) return t; }
+			if (w.Updates <= 0) return 0;
+			double ms = 0;
+			foreach (var it in w.Top) if (it.Cat == PerfCat.Army || (it.Cat == PerfCat.Npc && it.Mod == "Levy")) ms += it.Ms;
+			return ms / w.Updates;
+		}
+
+		/// <summary>The update time a suggestion aims for: 12 ms, or with Frame Skip Subtle slowing the game, what leaves room for this window's drawing inside one frame (never under 4 ms).</summary>
+		private static double ArmyTarget(PerfWindow w, bool speedCase) => speedCase ? Math.Max(4.0, Math.Min(PerfThresholds.ArmyTargetMs, 15.9 - w.DrawMs)) : PerfThresholds.ArmyTargetMs;
+
+		/// <summary>
+		/// The live notice (once a session, from the analyzer as each 8-second window closes): the whole window ran at <see cref="PerfThresholds.ArmySlowUpdMs"/> ms an update or more, or with Frame Skip Subtle the game ran under
+		/// <see cref="PerfThresholds.ArmySlowSpeed"/> of full speed, the army was a big part of the update, and an active army size would bring it down. <paramref name="mine"/>: the player's own soldiers in the field.
+		/// Null when there is nothing to say.
+		/// </summary>
+		public static LagVerdict ArmyNotice(PerfWindow w, int mine)
+		{
+			if (w == null || !w.Focus || w.Updates <= 0 || w.Secs <= 0 || mine < PerfThresholds.ArmyMinFielded || !ActiveArmyAvailable) return null;
+			bool slowUpd = w.UpdMs >= PerfThresholds.ArmySlowUpdMs;
+			bool slowSpeed = w.FrameSkip == 2 && w.Ups < PerfThresholds.ArmySlowSpeed * 60.0;
+			if (!slowUpd && !slowSpeed) return null;
+			double army = ArmyMs(w);
+			if (!(army >= PerfThresholds.ArmyBigShare * w.UpdMs)) return null;
+			int cap = SuggestArmyCap(w.UpdMs, army, Math.Max(w.Levies, mine), mine, ArmyTarget(w, !slowUpd));
+			if (cap < 0) return null;
+			var v = new LagVerdict { Kind = LagKind.ArmyTooBig, Laggy = true, SuggestedArmy = cap, ArmyUpdMs = w.UpdMs, ArmyCostMs = army, Levies = mine, MedianFps = w.Fps, MedianUps = w.Ups };
+			v.Headline = "This fight is lagging.";
+			v.Detail = new[] { ArmyNoticeLine(cap) };
+			v.Options = new List<PopupOption> { PopupOption.ActiveArmy, PopupOption.OpenSettings, PopupOption.DontAskAgain };
+			return v;
+		}
+
+		/// <summary>The notice's words.</summary>
+		public static string ArmyNoticeLine(int cap) => string.Format(CultureInfo.InvariantCulture, "Your army is more than this computer can run smoothly (about {0} soldiers at once). Set an active army size?", cap);
+
+		/// <summary>A laggy fight where the army was the cost: the active army size that would have brought its laggy windows to about 12 ms an update, offered in the popup with a line that says so.</summary>
+		private static void ArmyAdvice(LagVerdict v, IList<PerfWindow> fight)
+		{
+			if (v.Kind != LagKind.Levy || !ActiveArmyAvailable) return;
+			var laggy = fight.Where(w => w != null && w.Focus && w.Secs > 0 && w.Frames > 0 && w.Updates > 0 && (w.Fps < PerfThresholds.LagFps || w.Ups < PerfThresholds.LagUps)).ToList();
+			double secs = laggy.Sum(w => w.Secs); if (secs <= 0) return;
+			double upd = laggy.Sum(w => w.UpdMs * w.Secs) / secs, army = laggy.Sum(w => ArmyMs(w) * w.Secs) / secs, levies = laggy.Sum(w => w.Levies * w.Secs) / secs;
+			var mineW = laggy.Where(w => w.Mine >= 0).ToList();
+			double mine = mineW.Count > 0 ? mineW.Sum(w => w.Mine * w.Secs) / mineW.Sum(w => w.Secs) : levies;
+			int fielded = (int)Math.Round(mine);
+			int cap = SuggestArmyCap(upd, army, Math.Max(levies, mine), fielded);
+			if (cap < 0) return;
+			v.SuggestedArmy = cap; v.ArmyUpdMs = upd; v.ArmyCostMs = army;
+			v.Detail = v.Detail.Concat(new[] { string.Format(CultureInfo.InvariantCulture, "About {0} soldiers at once would run smoothly here. Set an active army size?", cap) }).ToArray();
+			int at = v.Options.IndexOf(PopupOption.LowerLevyEffects);
+			v.Options.Insert(at >= 0 ? at + 1 : 0, PopupOption.ActiveArmy);
 		}
 
 		/// <summary>
@@ -487,8 +573,7 @@ namespace Levy.Common.Perf
 		{
 			v.Kind = LagKind.Levy; v.Headline = "That fight got laggy.";
 			v.Detail = new[] { "Your army was a big part of the cost.", string.Format(CultureInfo.InvariantCulture, "Levy took about {0:0}% of the game's time.", v.LevyShare * 100), Stats(v) }.Where(x => x.Length > 0).ToArray();
-			v.Options = new List<PopupOption> { PopupOption.LowerLevyEffects };
-			if (ReserveBankAvailable) v.Options.Add(PopupOption.ReserveBank); // HOOK(reserve bank): not built yet, so this stays false and the option is never shown
+			v.Options = new List<PopupOption> { PopupOption.LowerLevyEffects }; // the active army size is added after it when a size would help (ArmyAdvice)
 			v.Options.Add(PopupOption.ItsFine); v.Options.Add(PopupOption.DontAskAgain); v.Options.Add(PopupOption.OpenSettings);
 		}
 

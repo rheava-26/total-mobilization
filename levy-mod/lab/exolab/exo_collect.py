@@ -20,7 +20,7 @@ def rows(path):
 def rec_facts(path):
     """From a recording: what dealt each levy's killing hit (projectile name, else the NPC), the largest number of levy deaths inside any 2 s and its cause,
     the mechs' target kinds over every frame (0 none, 1 player, 2 levy, 3 spite) and the recorder's end record."""
-    names, hits, deaths, tk, end = {}, {}, [], Counter(), {}
+    names, hits, deaths, tk, end, firstOf = {}, {}, [], Counter(), {}, {}
     with open(path, errors="replace") as fh:
         for l in fh:
             try: r = json.loads(l)
@@ -29,13 +29,14 @@ def rec_facts(path):
             if k == "names": names = r
             elif k == "e" and r.get("e") == "lhit": hits[r["id"]] = r
             elif k == "e" and r.get("e") == "ldeath": deaths.append((r, hits.get(r["id"], {})))
+            elif k == "e" and r.get("e") == "boss": firstOf.setdefault(r.get("name"), r.get("npc"))
             elif k == "f":
                 for b in r.get("b", []):
                     if len(b) > 14: tk[(b[0], b[14])] += 1
             elif k == "nt": pass
             elif k == "end": end = r
     pn, nn = names.get("projectiles", {}), names.get("npcs", {})
-    mech = {int(t) for t, n in nn.items() if any(x in n for x in ("Ares", "Thanatos", "Artemis", "Apollo")) and "Cannon" not in n and "Nuke" not in n}
+    mech = {t for n, t in firstOf.items() if n in ("XF-09 Ares", "XM-05 Thanatos", "XS-01 Artemis", "XS-03 Apollo")}  # the first NPC of each name (Thanatos's segments share his name)
     tkm = Counter()
     for (ty, kd), v in tk.items():
         if ty in mech: tkm[kd] += v

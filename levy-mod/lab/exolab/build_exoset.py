@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Build the curated "Your army vs the Exo Mechs (lab)" replay set: make_site over a folder of picked recordings, then OUT/{set.json, data/*.json}
 (the layout of scratchpad/labset_v1: one set to merge into the published page's manifest). Not published here.
-  build_exoset.py PICKS_DIR OUT_DIR WORK_DIR
+  build_exoset.py PICKS_DIR OUT_DIR WORK_DIR [HZ]
 PICKS_DIR holds the chosen .jsonl.gz recordings and an index.txt (one "file<TAB>note" line each, the note shown on the page)."""
 import json, os, shutil, subprocess, sys
 
 FV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "Levy", "tools", "fightviewer")
-picks, out, work = sys.argv[1:4]
+picks, out, work = sys.argv[1:4]; hz = sys.argv[4] if len(sys.argv) > 4 else "15"
 site = os.path.join(work, "site")
 shutil.rmtree(site, ignore_errors=True)
-subprocess.run([sys.executable, os.path.join(FV, "make_site.py"), site, "exolab=" + picks, "--hz", "15"], check=True)
+subprocess.run([sys.executable, os.path.join(FV, "make_site.py"), site, "exolab=" + picks, "--hz", hz], check=True)
 man = json.load(open(os.path.join(site, "data", "manifest.json")))
 assert len(man["sets"]) == 1
 st = man["sets"][0]

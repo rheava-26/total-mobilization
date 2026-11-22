@@ -135,7 +135,18 @@ namespace Levy.Content.TileEntities
 				MarkDirty();
 				if (!IsAir(rem)) { Spill(rem, protect: true); continue; } // storage full: it lies protected in front of the armory (nothing is lost), the slot refills below
 				_accGiveBack = true;
-				try { bool zc = false; for (int k = 0, zn = AccSlotsOf(z); k < zn; k++) if (AccessoryStep(z, all)) zc = true; else break; if (zc && z.HasBody && Main.netMode != NetmodeID.MultiplayerClient && Main.npc[z.BodyIndex].ModNPC is SoldierNPC sn) sn.NotifyGearChanged(); }
+				try
+				{
+					bool zc = false; for (int k = 0, zn = AccSlotsOf(z); k < zn; k++) if (AccessoryStep(z, all)) zc = true; else break;
+					if (zc) {
+						Notify(z);
+						// what he gave up for it is on the shelf now: a levy who was left with an empty slot earlier in this round (nothing was free for him then) is served too, so the round settles in one pass
+						foreach (var y in all) {
+							if (ReferenceEquals(y, w) || ReferenceEquals(y, z) || !AnyEmpty(y.Gear, AccSlotsOf(y))) continue;
+							if (AccessoryStep(y, all)) Notify(y);
+						}
+					}
+				}
 				finally { _accGiveBack = false; }
 			}
 			return any;
@@ -218,6 +229,9 @@ namespace Levy.Content.TileEntities
 		}
 
 		private static bool LevyIsClosed(SoldierRecord w) => w.LoadoutLocked;
+
+		/// <summary>Tells a levy's body his kit changed (the roster snapshot carries it to clients).</summary>
+		private static void Notify(SoldierRecord r) { if (r != null && r.HasBody && Main.netMode != NetmodeID.MultiplayerClient && Main.npc[r.BodyIndex].ModNPC is SoldierNPC sn) sn.NotifyGearChanged(); }
 
 		private static bool AnyEmpty(SoldierGear g, int n) { for (int i = 0; i < n; i++) if (IsAir(g.Accessories[i])) return true; return false; }
 

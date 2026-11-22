@@ -84,7 +84,7 @@ namespace Levy.Common.Recording
 		public static bool Headless;
 		private static Dictionary<string, string> _meta;
 		private static string _fileBase;
-		private static int _bossGoneTick, _primaryWho = -1, _primarySerial;
+		private static int _bossGoneTick;
 		/// <summary>Format 13: the boss whose target and life the fight's target counts, tgt events and bph milestones follow: the fight boss that owns the largest life pool (a worm's head, Ares rather than his arms, any mech rather than
 		/// Draedon's own NPC), re-chosen every sample. -1 none.</summary>
 		private static int _aimWho = -1;
@@ -97,9 +97,28 @@ namespace Levy.Common.Recording
 		private static int _parts;
 		/// <summary>Levies this close (tiles) to the commander or a fight boss are "in the arena" (bph.army; the report applies the same rule to the frames).</summary>
 		public const int ArenaRangeTiles = FightRecFormat.ArenaRangeTiles;
-		/// <summary>Highest spawn serial alive when the recording started. A boss-like NPC with a HIGHER serial was spawned afterwards by someone other than this fight (the next trial); serial 0 (a worm segment that became a head: SetDefaults resets its tag) and a lower one belong to this fight.</summary>
+		/// <summary>Highest spawn serial alive when the recording started. A boss-like NPC with a HIGHER serial was spawned afterwards; serial 0 (a worm segment that became a head: SetDefaults resets its tag) and a lower one belong to this fight.</summary>
 		private static int _startMaxSerial;
-		private static bool IsNewFightSerial(NPC n) { int sr = FightRecSpawnTag.SerialOf(n); return sr > _startMaxSerial; }
+		/// <summary>
+		/// THE ENCOUNTER RULE (headless, recmulti): the spawn serials of this fight's bosses. A boss spawned after the start joins the fight when it appears while a boss of the fight still stands (Anahita's Leviathan, which a projectile summons;
+		/// the Exo Mechs, which call each other in with NPC.SpawnOnPlayer; a second boss summoned mid-fight). Only a boss that appears once every boss of the fight is gone is the next fight. Before this, the first boss seen leaving with any
+		/// newer-serial boss in the world ended the file as "next fight started", which cut Leviathan and Anahita at Anahita's death.
+		/// </summary>
+		private static readonly HashSet<int> _fightSerials = new();
+		private static bool IsNewFightSerial(NPC n) { int sr = FightRecSpawnTag.SerialOf(n); return sr > _startMaxSerial && !_fightSerials.Contains(sr); }
+		/// <summary>The fight's last boss is gone, but a no-damage projectile one of its bosses made is still out (Anahita's LeviathanSpawner calls the Leviathan 405 ticks after she makes it): the end waits for it, at most this long.</summary>
+		public const int SpawnerHoldTicks = 600;
+		private static bool FightSpawnerPending()
+		{
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile pr = Main.projectile[i];
+				if (!pr.active || pr.friendly || pr.damage > 0) continue;
+				int sr = FightRecProjSerial.SerialOf(pr);
+				if (sr > 0 && _fightSerials.Contains(sr)) return true;
+			}
+			return false;
+		}
 		private static int _tkNone, _tkPlayer, _tkLevy, _tkSpite, _lastTk = -1, _lastTl = int.MinValue, _levyHits, _levyDeaths;
 		private sealed class LTrack { public int Life, Max; public float X, Y; public int Who; public bool Seen; }
 		private static readonly Dictionary<int, LTrack> _lt = new();
@@ -472,7 +491,7 @@ namespace Levy.Common.Recording
 				_startWall = DateTime.Now; _profWindows = 0; _cmdDeaths = 0; _pDead = false; _lastDeathTick = -1; _endTick = -1; _endDead = false; _dmg.Clear(); _dmgBoss = _dmgAll = 0; _lastDmgFlush = 0; LastResult = null; global::Levy.Common.Boss.BossRule.ResetFightScale();
 				_cmd = cmd; _frames = 0; _events = 0; _bossSeen = false; _bossesSeen = 0; _bossIdsSeen.Clear(); _hbDef.Clear(); _lastBossSeen = 0;
 				_nonWeapons.Clear(); _items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
-				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _primaryWho = -1; _aimWho = -1; _parts = 1; _hitQ.Clear(); _tkNone = _tkPlayer = _tkLevy = _tkSpite = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
+				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _fightSerials.Clear(); _aimWho = -1; _parts = 1; _hitQ.Clear(); _tkNone = _tkPlayer = _tkLevy = _tkSpite = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
 				_lbuf.Clear(); _lgear.Clear(); _prefixes.Clear(); _cmdGear = int.MinValue; _bt.Clear(); _bhook.Clear(); _bkilled.Clear(); _bkillOwner.Clear(); _bpend.Clear(); _bAlive = false; _outcome = "none"; _hasCover = false; _chunks = 0; _camName = null; _camId = -1; _farCells.Clear(); _farQ.Clear(); _ntSeen.Clear(); _farCentres.Clear(); _moveCells.Clear();
 				_startTick = (int)Main.GameUpdateCount; _calOn = ModLoader.HasMod("CalamityMod") && global::Levy.Common.Testing.HarnessCalamityProbe.Available; _killTick = -100000;
@@ -903,15 +922,25 @@ namespace Levy.Common.Recording
 
 			// bosses and parts
 			bool anyBoss = false, otherSerial = false; int aimBest = -1;
-			if (Headless && _primaryWho >= 0)
+			if (Headless && _bossSeen)
 			{
-				// a harness that clears the arena and spawns the next trial's boss in the same step leaves no gap: the boss we follow is gone and a boss with a newer spawn serial stands in the world
-				NPC pn = Main.npc[_primaryWho];
-				if (!(pn.active && IsFightBoss(pn) && !IsNewFightSerial(pn)))
+				// THE ENCOUNTER RULE (see _fightSerials). A boss with a newer serial that appears while a boss of this fight stands joins it. One that stands when none of the fight's bosses does is the next fight: a harness that
+				// clears the arena and spawns the next trial's boss in the same step leaves no gap, so this does not wait for the grace.
+				bool member = false, stranger = false;
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC n = Main.npc[i];
+					if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC || !IsFightBoss(n)) continue;
+					if (IsNewFightSerial(n)) stranger = true; else member = true;
+				}
+				if (stranger && !member) { Stop("next fight started"); return; }
+				if (stranger)
 					for (int i = 0; i < Main.maxNPCs; i++)
 					{
 						NPC n = Main.npc[i];
-						if (n.active && IsFightBoss(n) && !n.friendly && !n.townNPC && !(n.ModNPC is SoldierNPC) && IsNewFightSerial(n)) { Stop("next fight started"); return; }
+						if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC || !IsFightBoss(n) || !IsNewFightSerial(n)) continue;
+						_fightSerials.Add(FightRecSpawnTag.SerialOf(n));
+						Levy.Instance?.Logger.Info("[FightRec] " + n.FullName + " joins the fight (spawned while a boss of it stands)");
 					}
 			}
 			for (int i = 0; i < Main.maxNPCs; i++)
@@ -920,7 +949,7 @@ namespace Levy.Common.Recording
 				if (!n.active || n.friendly || n.townNPC || n.ModNPC is SoldierNPC) continue;
 				if (!IsBossOrPart(n)) continue;
 				bool isBoss = IsFightBoss(n);
-				if (isBoss) { anyBoss = true; if (_primaryWho >= 0 && IsNewFightSerial(n)) otherSerial = true; }
+				if (isBoss) { anyBoss = true; if (_bossSeen && IsNewFightSerial(n)) otherSerial = true; else if (Headless) _fightSerials.Add(FightRecSpawnTag.SerialOf(n)); }
 				bool part = !isBoss;
 				SeeEntity(n.Center.X, n.Center.Y);
 				if (isBoss) _anch.Add((n.Center.X, n.Center.Y, false)); // and wherever the boss goes
@@ -931,7 +960,6 @@ namespace Levy.Common.Recording
 				f.B.Add(new double[] { n.type, n.whoAmI, n.Center.X, n.Center.Y, n.velocity.X, n.velocity.Y, n.life, n.lifeMax, n.ai[0], n.ai[1], n.ai[2], n.ai[3], n.target, part ? 1 : 0, tk, tl, n.width, n.height, n.realLife });
 				if (isBoss)
 				{
-					if (_primaryWho < 0) { _primaryWho = n.whoAmI; _primarySerial = FightRecSpawnTag.SerialOf(n); }
 					// the boss the target counts follow: the one that owns the largest life pool (pool owners only: a segment or an arm reads through its owner)
 					bool owner = n.realLife < 0 || n.realLife == n.whoAmI || n.realLife >= Main.maxNPCs || !Main.npc[n.realLife].active;
 					if (owner && (aimBest < 0 || AimBetter(n, Main.npc[aimBest]))) aimBest = n.whoAmI;
@@ -959,7 +987,7 @@ namespace Levy.Common.Recording
 			else if (_bossSeen)
 			{
 				if (_bossGoneTick == 0) _bossGoneTick = el;
-				if (el - _lastBossSeen > grace) { Stop("boss gone"); return; }
+				if (el - _lastBossSeen > grace && !(Headless && el - _lastBossSeen <= SpawnerHoldTicks && FightSpawnerPending())) { Stop("boss gone"); return; }
 			}
 
 			// hostile projectiles near the player, nearest first when there are too many
@@ -1291,6 +1319,8 @@ namespace Levy.Common.Recording
 			if (_bpend.Count == 0) return;
 			int el = Elapsed;
 			if (!force && el - _bpend[_bpend.Count - 1].tick < EndGapTicks) return;
+			// the fight's last boss left while one of its summoners is still out (Anahita's LeviathanSpawner): not the fight's end yet; the boss it brings decides whether this end is final
+			if (!force && !_bAlive && Headless && el - _bpend[_bpend.Count - 1].tick <= SpawnerHoldTicks && FightSpawnerPending()) return;
 			if (_bAlive)
 			{
 				// others still stand: a different boss type that ended is an event of its own (Twins), a same-type successor is a handoff

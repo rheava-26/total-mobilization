@@ -45,7 +45,10 @@ def hm(lab, group, arm):
     src = lab / "work" / group / "spec.tsv"
     if not src.exists(): print("missing", src, "(run hm_mk.py / hm_battery.py first)"); return
     name = f"hm_{arm}"
-    lines = head(f"labcompare {group} {arm}: hardmode vs hmbattery2 (2.0.66), armies and fight lines unchanged", ENV[name]) + src.read_text().splitlines()
+    body = src.read_text().splitlines()
+    cut = group == "hmall" and arm == "shipped"   # cut for wall time (the 5-hour budget): the shipped sweep runs the on-tier seeds 1-2 only; the matched sweep has all 4
+    if cut: body = [l for l in body if not l.startswith("fight") or l.split("\t")[3] in ("1", "2")]
+    lines = head(f"labcompare {group} {arm}: hardmode vs hmbattery2 (2.0.66), armies and fight lines unchanged", ENV[name]) + (["# cut for time: on-tier seeds 1-2 only (the matched arm has all 4 seeds)"] if cut else []) + body
     (lab / "work" / group / f"spec_{arm}.tsv").write_text("\n".join(lines) + "\n")
     print(group, arm, sum(1 for l in lines if l.startswith("fight")), "fights")
 

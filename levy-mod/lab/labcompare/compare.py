@@ -59,8 +59,9 @@ def summ(rows):
     def mean(k):
         xs = [r[k] for r in rows if not math.isnan(r[k])]
         return sum(xs) / len(xs) if xs else float("nan")
+    left = [r["left"] for r in rows if r["result"] != "win" and not math.isnan(r.get("left", float("nan")))]
     return dict(n=n, w=len(w), lo=lo, hi=hi, ttk=statistics.median(tt) if tt else float("nan"), ttk_lo=min(tt) if tt else float("nan"), ttk_hi=max(tt) if tt else float("nan"),
-                deaths=mean("deaths"), dps=mean("dps"), tgt=mean("tgt"), other=other)
+                deaths=mean("deaths"), dps=mean("dps"), tgt=mean("tgt"), other=other, left=statistics.median(left) if left else float("nan"))
 
 
 def fmt_win(s):
@@ -69,7 +70,14 @@ def fmt_win(s):
 
 
 def fmt_other(s):
-    return ", ".join(f"{v} {k}" for k, v in sorted(s["other"].items())) or "-"
+    t = ", ".join(f"{v} {k}" for k, v in sorted(s["other"].items())) or "-"
+    return t + (f"; boss left {s['left']:.0f}%" if s["other"] and not math.isnan(s["left"]) else "")
+
+
+def left_pct(r, cap=float("inf")):
+    """boss life left as % of its max (non-wins). Pre-HM passes cap=50000: lab 1's early Desert Scourge rows summed every segment into bossMax."""
+    bm, bl = f(r.get("bossMax")), f(r.get("bossLeft"))
+    return 100 * bl / bm if bm and bm > 0 and bm < cap and not math.isnan(bl) else float("nan")
 
 
 def g(x, nd=0):
@@ -95,7 +103,7 @@ def classify(r):
 
 
 def prehm_row(r):
-    return dict(result=classify(r), sec=f(r["sec"]), deaths=f(r["deaths"]), dps=f(r.get("dmgPerSec")), tgt=f(r.get("tgtLevyPct")), seed=int(r["seed"]))
+    return dict(result=classify(r), sec=f(r["sec"]), deaths=f(r["deaths"]), dps=f(r.get("dmgPerSec")), tgt=f(r.get("tgtLevyPct")), seed=int(r["seed"]), left=left_pct(r, 50000))
 
 
 _tgt_cache = {}
@@ -123,15 +131,16 @@ def rec_tgt(run, cid, seed):
     return v
 
 
-def hm_new(run):
+def hm_new(runs):
+    """runs: one run dir, or several joined by commas (the matched sweep was split by the wall-time cut)."""
     out = {}
-    for c, r in run_rows(run):
+    for run, c, r in [(rd, c, r) for rd in str(runs).split(",") for c, r in run_rows(rd)]:
         m = re.search(r"meta=(\w+?)_(on|mid)_(rev|mdeath)_n(\d+)_T", c["name"])
         if not m: continue
         slug, kit, pair = m[1], m[2], m[3]; sec = f(r["sec"]); bm, bl = f(r["bossMax"], 0), f(r["bossLeft"], 0)
         out.setdefault((slug, pair), []).append(dict(result=r["result"].lower(), sec=sec, deaths=f(r["deaths"]), dps=(bm - bl) / sec if sec > 0 else float("nan"),
                                                      tgt=rec_tgt(run, re.search(r"\|t(c\d+)", r["key"])[1], int(r["seed"])), seed=int(r["seed"]), kit=kit,
-                                                     contact=sum(f(r.get(k), 0) for k in ("takenBoss",)), proj=float("nan")))
+                                                     left=left_pct(r)))
     return out
 
 
@@ -141,7 +150,7 @@ def bat_new(run):
         if "meta=hmb_destroyer_baseline" not in c["name"]: continue
         sec = f(r["sec"])
         rows.append(dict(result=r["result"].lower(), sec=sec, deaths=f(r["deaths"]), dps=f(r["dmgBoss"]) / sec if sec > 0 else float("nan"),
-                         tgt=rec_tgt(run, re.search(r"\|t(c\d+)", r["key"])[1], int(r["seed"])), seed=int(r["seed"])))
+                         tgt=rec_tgt(run, re.search(r"\|t(c\d+)", r["key"])[1], int(r["seed"])), seed=int(r["seed"]), left=left_pct(r)))
     return rows
 
 
@@ -151,7 +160,7 @@ def hm_old():
     for r in csv.DictReader(open(HERE.parent / "hmbattery2" / "sweep_fights.csv")):
         sec = f(r["sec"]); bm, bl = f(r["bossMax"], 0), f(r["bossLeft"], 0)
         out.setdefault((r["slug"], r["pair"]), []).append(dict(result=r["result"].lower(), sec=sec, deaths=f(r["deaths"]), dps=(bm - bl) / sec if sec > 0 else float("nan"),
-                                                               tgt=f(r["tgtLevyPct"]), seed=int(r["seed"]), kit=r["kit"]))
+                                                               tgt=f(r["tgtLevyPct"]), seed=int(r["seed"]), kit=r["kit"], left=left_pct(r)))
     return out
 
 
@@ -160,7 +169,7 @@ def bat_old():
     for r in csv.DictReader(open(HERE.parent / "hmbattery2" / "battery_fights.csv")):
         if r["cell"] != "baseline" or r["boss"] != "destroyer": continue
         sec = f(r["sec"])
-        rows.append(dict(result=r["result"].lower(), sec=sec, deaths=f(r["deaths"]), dps=f(r["dmgBoss"]) / sec if sec > 0 else float("nan"), tgt=f(r["tgtLevyPct"]), seed=int(r["seed"])))
+        rows.append(dict(result=r["result"].lower(), sec=sec, deaths=f(r["deaths"]), dps=f(r["dmgBoss"]) / sec if sec > 0 else float("nan"), tgt=f(r["tgtLevyPct"]), seed=int(r["seed"]), left=left_pct(r)))
     return rows
 
 
@@ -238,7 +247,20 @@ def hm_tables(runs):
             o = old.get((slug, pair), []); tot[pair][0].extend(o); [tot[pair][1][a].extend(v) for a, v in nw.items()]
             rows.append((BOSS[slug], PAIR[pair], LEVIES.get(slug, 34), o, nw))
     for pair in PAIR: rows.append(("**all bosses**", PAIR[pair], "-", tot[pair][0], tot[pair][1]))
-    emit("Hardmode broad sweep vs hmbattery2 (Levy 2.0.66); 3 on-tier seeds + 1 one-tier-below seed per boss and mode", rows, "OLD")
+    if "matched" in runs:   # OLD is cut to the seeds the matched arm ran for that boss (all 4, or 1-2 after the wall-time cut), so each row compares the same armies
+        mrows, mt = [], {p: ([], []) for p in PAIR}
+        for b, m, n, o, nw in rows[:-len(PAIR)]:
+            sd = {r["seed"] for r in nw.get("matched", [])}; oo = [r for r in o if r["seed"] in sd]
+            pk = next(k for k, v in PAIR.items() if v == m); mt[pk][0].extend(oo); mt[pk][1].extend(nw.get("matched", []))
+            mrows.append((b + ("" if len(sd) == 4 else f" (seeds {','.join(map(str, sorted(sd)))})"), m, n, oo, {"matched": nw.get("matched", [])}))
+        for pk, pv in PAIR.items(): mrows.append(("**all bosses**", pv, "-", mt[pk][0], {"matched": mt[pk][1]}))
+        emit("Hardmode broad sweep vs hmbattery2 (Levy 2.0.66), matched arm; 3 on-tier seeds + 1 one-tier-below seed per boss and mode (the bosses after Plantera: on-tier seeds 1-2)", mrows, "OLD")
+    if "shipped" in runs:   # the shipped arm ran fewer seeds: every column here is cut to the seeds it ran, so the three are the same armies
+        srows = []
+        for b, m, n, o, nw in rows:
+            sd = {r["seed"] for r in nw.get("shipped", [])}
+            srows.append((b, m, n, [r for r in o if r["seed"] in sd], {a: [r for r in nw.get(a, []) if r["seed"] in sd] for a in runs}))
+        emit("Hardmode broad sweep, the seeds the shipped arm ran (on-tier seeds 1-2), OLD vs matched vs shipped", srows, "OLD")
 
 
 def bat_tables(runs):

@@ -508,7 +508,7 @@ Mods: {
 
 				ClassMatchSidearms: {
 					Label: Class-matched sidearms
-					Tooltip: On, a soldier in class armor carries a sidearm of its own damage class, more strictly as the world progresses. Off, the sidearm is a blade
+					Tooltip: On, a soldier carries a sidearm of its weapon's class, more strictly as the world progresses, and none of another class after the Moon Lord. Off, the sidearm is a blade
 				}
 
 				ClassMatchArmor: {

@@ -89,6 +89,9 @@ namespace Levy.Common.Weapons
 	/// </summary>
 	internal static class WeaponAllocator
 	{
+		/// <summary>Harness-only switch for before/after runs: a class floor takes the weakest-armed levy of any class (the old pick), not only from classes above their own floor (env LEVY_ALLOC_LEGACYFLOOR=1).</summary>
+		internal static bool LegacyFloorDonors = Environment.GetEnvironmentVariable("LEVY_ALLOC_LEGACYFLOOR") == "1" || !LoadoutFixes.FloorDonors;
+
 		/// <summary>The ranking key. Kept in one place so the ranking decision (the current score, or another) is a one-line change.</summary>
 		internal static Func<Item, float> RankOf = WeaponRank.Of;
 
@@ -400,13 +403,22 @@ namespace Levy.Common.Weapons
 				if (need > 0 && Left(cls) > 0) Give(cls, Math.Min(Math.Min(need, Left(cls)), free.Count));
 			}
 			// a floor the free levies could not fill: the rule outranks the armor a levy wears, so levies in another class's armor are re-classed, the worst equipped first (his armor is refitted afterwards where the armory has the set)
+			// A levy is only taken from a class that stays at or above its own floor, the class with the most to spare first: taking the weakest-armed levy of any class (the whips of the summoners for the rogue floor, then the
+			// rogues for the summon floor) robbed one floor to fill the next, and every plan traded the same levies back.
+			var floorOf = new Dictionary<DamageClass, int>();
+			foreach (var (cls, lo, hi, w) in entries) floorOf[cls] = lo;
+			int Spare(DamageClass c) => book.Of(c) - (floorOf.TryGetValue(c, out var f) ? f : 0);
 			foreach (var (cls, lo, hi, w) in entries) {
 				int need = Math.Min(lo - book.Of(cls), Left(cls));
-				if (need <= 0) continue;
-				var worn = levies.FindAll(l => l.Target == null && l.Cls != null && !l.Virtual && l.Cls != cls && l.ClassLock == null && !l.FixedClass);
-				worn.Sort((a, b) => { int ka = a.Own != null && a.Own.Cls == cls ? 0 : 1, kb = b.Own != null && b.Own.Cls == cls ? 0 : 1; int c0 = ka.CompareTo(kb); if (c0 != 0) return c0; float ra = a.Own == null ? -1f : a.Own.Rank, rb = b.Own == null ? -1f : b.Own.Rank; int c = ra.CompareTo(rb); return c != 0 ? c : a.Id.CompareTo(b.Id); }); // holders of the class first, so the same levies are re-classed every plan
-				for (int i = 0; i < need && i < worn.Count; i++) {
-					var l = worn[i];
+				for (int i = 0; i < need; i++) {
+					var worn = levies.FindAll(l => l.Target == null && l.Cls != null && !l.Virtual && l.Cls != cls && l.ClassLock == null && !l.FixedClass && (LegacyFloorDonors || Spare(l.Cls) > 0));
+					if (worn.Count == 0) break;
+					worn.Sort((a, b) => {
+						int ka = a.Own != null && a.Own.Cls == cls ? 0 : 1, kb = b.Own != null && b.Own.Cls == cls ? 0 : 1; int c0 = ka.CompareTo(kb); if (c0 != 0) return c0; // holders of the class first, so the same levies are re-classed every plan
+						if (!LegacyFloorDonors) { c0 = Spare(b.Cls).CompareTo(Spare(a.Cls)); if (c0 != 0) return c0; } // then from the class with the most to spare
+						float ra = a.Own == null ? -1f : a.Own.Rank, rb = b.Own == null ? -1f : b.Own.Rank; int c = ra.CompareTo(rb); return c != 0 ? c : a.Id.CompareTo(b.Id);
+					});
+					var l = worn[0];
 					book.Add(l.Cls, -1); l.Cls = cls; l.Virtual = true; book.Add(cls, 1);
 					given[cls] = (given.TryGetValue(cls, out var g) ? g : 0) + 1;
 				}

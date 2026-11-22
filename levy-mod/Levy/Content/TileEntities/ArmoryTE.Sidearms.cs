@@ -166,11 +166,12 @@ namespace Levy.Content.TileEntities
 				bladeCap = topBlade * LevyConstants.SidearmScoreCapFraction; classCap = topClass * LevyConstants.SidearmScoreCapFraction;
 			}
 			int mana = (int)soldier.MaxMana;
+			bool offOk = SidearmClass.OffClassAllowed(strength);
 			return it =>
 			{
 				if (!IsIssuable(it) || SidearmPolicy.IsDeployer(it) || !SidearmClass.Usable(g, it)) return false;
 				bool blade = IsIssuableMelee(it);
-				if (!blade && !SidearmClass.SameClass(it, target, rules)) return false; // off-class is the lesser blade only
+				if (!SidearmClass.SameClass(it, target, rules) && (!blade || !offOk)) return false; // off-class is the lesser blade only, and none at all after the Moon Lord
 				if (claimed != null ? claimed.Contains(it) : WeaponRank.Of(it) > (blade ? bladeCap : classCap)) return false;
 				return SidearmPolicy.Fits(g.Weapon, it, carried) && WeaponUse.CanEverPay(it, mana);
 			};

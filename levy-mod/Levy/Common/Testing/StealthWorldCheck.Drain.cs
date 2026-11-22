@@ -185,7 +185,36 @@ namespace Levy.Common.Testing
 				}
 			}
 
+			NotHerStrikes(head, body, legs);
 			EclipseMirrorLevy(fran, head, body, legs, alone);
+		}
+
+		/// <summary>
+		/// A levy never strikes off HER bar: Calamity's Refraction Rotor decides its strike from the LOCAL player's bar (<c>Main.LocalPlayer.Calamity().StealthStrikeAvailable()</c> in its Shoot), and the local player is the commander
+		/// while a levy uses it. Her bar is kept full and the levies' bars empty: a strike flag on a levy's throw is a strike taken from her bar.
+		/// </summary>
+		private static void NotHerStrikes(int head, int body, int legs)
+		{
+			int rotor = ItemOf("RefractionRotor");
+			if (rotor <= 0) { Note("drain: the Refraction Rotor is not in this Calamity build"); return; }
+			var squad = DrainSquad(3, rotor, head, body, legs);
+			if (squad == null) { Note("drain: the armory will not hand a levy the Refraction Rotor"); return; }
+			var seen = new HashSet<int>(); int shots = 0, strikes = 0;
+			for (int t = 0; t < 300; t++)
+			{
+				float[] her = Bar(); if (her != null) HarnessCalamityProbe.SetStealth(Main.player[0], her[1]);
+				foreach (var l in squad) HarnessCalamityProbe.SetStealth(l.Dummy, 0f);
+				Step(1);
+				for (int i = 0; i < Main.maxProjectiles; i++)
+				{
+					Projectile p = Main.projectile[i];
+					if (!p.active || !p.TryGetGlobalProjectile(out SoldierProjectileTag tg) || !tg.IsSoldierShot || !seen.Add(p.identity * 1000 + i)) continue;
+					shots++; if (HarnessCalamityProbe.IsStealthStrike(p, out _)) strikes++;
+				}
+			}
+			Note($"drain: three Refraction Rotor levies on empty bars beside her full one, 300 ticks: {shots} shots, {strikes} flagged stealth strikes");
+			Check($"drain: a levy on an empty bar never throws a stealth strike off her full one ({strikes} of {shots} Refraction Rotor throws flagged)", shots > 0 && strikes == 0);
+			ClearLevies(squad);
 		}
 
 		/// <summary>A levy wearing Calamity's Eclipse Mirror (more bar, a strike at half cost, a dodge that refills the wearer's bar by half) fights beside her: her bar fills as alone, and its dodge fills the LEVY's bar, not hers.</summary>

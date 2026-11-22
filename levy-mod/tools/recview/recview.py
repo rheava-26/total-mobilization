@@ -21,6 +21,7 @@ from collections import Counter, defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import recrules
+import reccodec  # format 13 row coding and part files
 
 TICKS = 60.0
 # levy gear (lgear) slot names; 13 and 14 are the two mobility slots (a recording from before them has neither)
@@ -29,7 +30,19 @@ LSLOT = ["weapon", "sidearm", "head", "body", "legs", "accessory", "accessory", 
 
 # ------------------------------------------------------------------ reading
 def open_lines(path):
-    """Yield the JSON records of a file; sets truncated info in the returned list's .note."""
+    """The JSON records of a recording (a format 13 recording's part files joined, its frame rows decoded) and a note when a file is cut short."""
+    parts = reccodec.parts_of(path)
+    if len(parts) > 1:
+        lists, note = [], None
+        for p in parts:
+            r, n = _open_one(p)
+            lists.append(r); note = note or n
+        return reccodec.join_parts(lists), note
+    rows, note = _open_one(path)
+    return reccodec.decode_rows(rows), note
+
+
+def _open_one(path):
     with open(path, "rb") as f:
         magic = f.read(2)
     rows, note = [], None
@@ -682,8 +695,11 @@ def list_folder(path):
 
 
 def write_levyrec(path, rows):
+    """Writes records as they are in memory: frame rows already decoded, so a format 13 header loses its codec flag (the rows are written in full)."""
     with gzip.open(path, "wt", encoding="utf-8") as g:
         for r in rows:
+            if r.get("k") == "hdr" and r.get("codec"):
+                r = dict(r, codec=0)
             g.write(json.dumps(r, separators=(",", ":")) + "\n")
 
 

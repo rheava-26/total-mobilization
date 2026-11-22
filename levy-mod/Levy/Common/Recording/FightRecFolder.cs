@@ -10,6 +10,10 @@ namespace Levy.Common.Recording
 	internal static class FightRecFolder
 	{
 		public const string Ext = ".levyrec";
+		/// <summary>Format 13 part files (see <see cref="RecParts"/>).</summary>
+		public static string PartBase(string path, out int part) => RecParts.PartBase(path, out part);
+		public static bool IsLaterPart(string path) => RecParts.IsLaterPart(path);
+		public static List<string> Parts(string path) => RecParts.Parts(path);
 
 		public static string DefaultDir => Path.Combine(Main.SavePath, "Levy", "Recordings");
 
@@ -105,7 +109,7 @@ namespace Levy.Common.Recording
 				foreach (var f in files)
 				{
 					if (total <= maxBytes) break;
-					if (keep != null && SamePath(f.FullName, keep)) continue;
+					if (keep != null && (SamePath(f.FullName, keep) || SamePath(PartBase(f.FullName, out _), keep))) continue; // the recording just saved, every part of it
 					try { long len = f.Length; f.Delete(); total -= len; deleted++; } catch { }
 				}
 				totalAfter = total;
@@ -126,8 +130,10 @@ namespace Levy.Common.Recording
 					{
 						if (DateTime.UtcNow - File.GetLastWriteTimeUtc(f) < TimeSpan.FromMinutes(2)) continue; // still being written by a live recorder
 						string stem = f.Substring(0, f.Length - (Ext + ".part").Length);
-						string to = stem + "_crashed" + Ext; int k = 2;
-						while (File.Exists(to)) to = stem + "_crashed_" + k++ + Ext;
+						// a later part keeps its _partN at the end, so it still joins the first part's crashed name
+						var pm = System.Text.RegularExpressions.Regex.Match(stem, @"^(.*)_part(\d+)$");
+						string to = pm.Success ? pm.Groups[1].Value + "_crashed_part" + pm.Groups[2].Value + Ext : stem + "_crashed" + Ext; int k = 2;
+						while (File.Exists(to)) to = pm.Success ? pm.Groups[1].Value + "_crashed_" + k++ + "_part" + pm.Groups[2].Value + Ext : stem + "_crashed_" + k++ + Ext;
 						File.Move(f, to); n++;
 					}
 					catch { }

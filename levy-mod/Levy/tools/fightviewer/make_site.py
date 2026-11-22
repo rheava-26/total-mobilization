@@ -5,7 +5,7 @@ usage: make_site.py <outdir> <set-name>=<dir> [<set-name>=<dir> ...] [--hz 15] [
 
   make_site.py /tmp/replay-site lab1=replays/notable lab2=replays/notable2 worm=replays/worm5 options=replays/options lab3=replays/lab3
 
-For every set directory it reads the recordings (*.jsonl or *.jsonl.gz, FightRecorder format 1-4), the optional index.txt
+For every set directory it reads the recordings (*.levyrec, *.jsonl or *.jsonl.gz, FightRecorder format 1-13; a format 13 recording's NAME_part2.levyrec ... are joined to NAME.levyrec), the optional index.txt
 ("why it's notable" notes) and each recording's header meta, and writes
 
   make_site.py <outdir> <sets...> --auto <dir> [--auto <dir2> ...] [--per-cell 2] [--max-auto 110] [--batches 55] [--cache scan.json]
@@ -29,6 +29,7 @@ try:
     import recrules
 except ImportError:      # the page still builds without it; results then come from the old frame-based reading
     recrules = None
+import reccodec          # format 13: compact frame rows and part files (tools/recview/reccodec.py)
 TITLES = {"eve": "Eve's fights", "rec2": "Recorder test", "lab1": "Lab 1", "lab2": "Lab 2", "lab3": "Lab 3", "worm": "Worm round", "worm5": "Worm round", "options": "Options", "vert1": "Movement lab", "moblab": "Mobility gear lab", "adds": "Boss minions", "wormdodge": "Worm dodge lab", "wormbody": "Worm body lab", "eowrev": "Eater of Worlds: Rev vs Death", "deathladder": "Death EoW gear ladder", "paladin": "Paladin's Shield lab"}
 MODES = {"exp": "Expert", "rev": "Rev", "death": "Death", "revoff": "Rev, rage off", "mdeath": "Master+Death"}
 ARENAS = {"surf": "Surface", "ug": "Underground"}
@@ -49,7 +50,7 @@ ERAS = [
 CURRENT = "2.0.68 (not yet released)"
 # recording format -> (oldest, newest) Levy version known to write it; used only when a recording carries no version
 FORMAT_VERS = {1: ("2.0.0", "2.0.12"), 2: ("2.0.0", "2.0.12"), 3: ("2.0.13", "2.0.19"), 4: ("2.0.13", "2.0.19"), 5: ("2.0.20", "2.0.20"),
-               6: ("2.0.21", "2.0.25"), 7: ("2.0.26", "2.0.40"), 8: ("2.0.41", "2.0.63"), 9: ("2.0.64", "2.0.99"), 10: ("3.0.0", "3.0.9"), 11: ("3.0.10", "3.9.99"), 12: ("3.0.10", "3.9.99")}
+               6: ("2.0.21", "2.0.25"), 7: ("2.0.26", "2.0.40"), 8: ("2.0.41", "2.0.63"), 9: ("2.0.64", "2.0.99"), 10: ("3.0.0", "3.0.9"), 11: ("3.0.10", "3.9.99"), 12: ("3.0.10", "3.9.99"), 13: ("3.1.9", "3.9.99")}
 EVENT_MAX_FACTOR = 60    # an event recording (format 12, 5 Hz, up to an hour) may be thinned to one sample every 12 s to fit a data file
 EVENT_HZ = 1             # the default rate of an event's data file (the page interpolates between samples)
 
@@ -67,18 +68,23 @@ def version_of(hdr):
 
 
 # ---------------------------------------------------------------- reading
-def load(path):
-    op = gzip.open if path.endswith((".gz", ".levyrec")) else open
+def load_one(path):
     rows = []
-    with op(path, "rt", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                try:
-                    rows.append(json.loads(line))
-                except ValueError:
-                    pass
+    for line in reccodec.read_lines(path):
+        try:
+            rows.append(json.loads(line))
+        except ValueError:
+            pass
     return rows
+
+
+def load(path):
+    """Every record of a recording, its frame rows decoded (format 13) and its part files (NAME_part2.levyrec ...) joined back into one fight."""
+    return reccodec.join_parts([load_one(p) for p in reccodec.parts_of(path)])
+
+
+def is_later_part(path):
+    return reccodec.part_of(path)[1] >= 2
 
 
 def episode_list(path):
@@ -127,12 +133,15 @@ def tkind(b):
 
 
 def main_boss(f):
-    # event NPCs (Celestial Pillars and the like) are never the main boss, so a fight cut from a pillar recording reads its real boss
+    """The row the fight follows in a sample: of the bosses (not parts) the one with the largest life pool, a pool's owner first (format 13 field 18 realLife: a worm's head, not a segment; Ares, not
+    an arm), the lowest life on a tie (a worm's live head before segments frozen at full life). Draedon's own 16,000 never beats a mech. Event NPCs (Celestial Pillars and the like) are never the main boss.
+    The page's mainBoss() is the same rule."""
     bs = [b for b in (f.get("b") or []) if not (recrules and recrules.is_event_npc(b[0]))]
-    for b in bs:
-        if not b[13]:
-            return b
-    return bs[0] if bs else None
+    if not bs:
+        return None
+    heads = [b for b in bs if not b[13]] or bs
+    own = [b for b in heads if len(b) <= 18 or b[18] < 0 or b[18] == b[1]] or heads
+    return max(own, key=lambda b: (b[7], -b[6]))
 
 
 def summarize_event(rows, hdr):
@@ -349,10 +358,10 @@ def shrink_frame(f):
     if f.get("s"):
         o["s"] = [[int(round(v)) for v in r] for r in f["s"]]
     if f.get("j"):
-        o["j"] = [row(j, ints=(1, 2)) for j in f["j"]]
+        o["j"] = [row(j[:8], ints=(1, 2)) for j in f["j"]]      # format 13 adds the slot (field 8): the page has no use for it
     if f.get("c") and MAX_C_ROWS > 0:
         # the commander's own projectiles: [type,x,y,vx,vy,w,h], positions and sizes as integers, velocity to a tenth; the nearest-listed MAX_C_ROWS stay
-        o["c"] = [row(c, ints=(0, 1, 2, 5, 6), ones=(3, 4)) for c in f["c"][:MAX_C_ROWS]]
+        o["c"] = [row(c[:7], ints=(0, 1, 2, 5, 6), ones=(3, 4)) for c in f["c"][:MAX_C_ROWS]]
     return o
 
 
@@ -449,7 +458,7 @@ def walk_recordings(dirs):
     for d in dirs:
         for root, _dn, fn in os.walk(d):
             for f in fn:
-                if f.endswith((".jsonl", ".jsonl.gz", ".levyrec")):
+                if f.endswith((".jsonl", ".jsonl.gz", ".levyrec")) and not is_later_part(f):   # a part file is read with its first part
                     out.append(os.path.join(root, f))
     return sorted(out)
 
@@ -465,7 +474,7 @@ def prescan(paths, cache_path):
     res, dirty = {}, 0
     for i, p in enumerate(paths):
         st = os.stat(p)
-        key = "%s|%d|%d" % (p, st.st_size, int(st.st_mtime))
+        key = "%s|%d|%d" % (p, sum(os.path.getsize(x) for x in reccodec.parts_of(p)), int(st.st_mtime))
         if key in cache:
             res[p] = cache[key]
             continue
@@ -617,7 +626,7 @@ def main():
             print("skip set %s: %s is not a directory" % (name, d), file=sys.stderr)
             continue
         idx = parse_index(os.path.join(d, "index.txt"))
-        files = sorted(f for f in os.listdir(d) if f.endswith((".jsonl", ".jsonl.gz", ".levyrec")))
+        files = sorted(f for f in os.listdir(d) if f.endswith((".jsonl", ".jsonl.gz", ".levyrec")) and not is_later_part(f))
         ordered = [n for n in sorted(idx, key=lambda n: list(idx).index(n)) if n in files]
         ordered += [f for f in files if f not in ordered]
         fights = []

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
@@ -143,6 +144,37 @@ namespace Levy.Common.Recording
 					Check(new FileInfo(d).Length < 3000 + 6000, "the capped file stays near the cap (" + new FileInfo(d).Length + " bytes for 3000)");
 				}
 				finally { RecWriter.FlushMs = oldFlush; }
+				// ---- writer: part files (format 13)
+				{
+					int oldF = RecWriter.FlushMs; RecWriter.FlushMs = 10;
+					try
+					{
+						string pp = Path.Combine(tmp, "parts.levyrec"), pf = Path.Combine(tmp, "parts_done.levyrec");
+						var wq = new RecWriter(pp, true, 0, 2000); var rnd2 = new Random(3); var buf2 = new byte[200]; int nPart = 1;
+						for (int i = 0; i < 400; i++)
+						{
+							rnd2.NextBytes(buf2); wq.WriteLine("{\"k\":\"f\",\"t\":" + i + ",\"x\":\"" + Convert.ToBase64String(buf2) + "\"}");
+							if (wq.PartDue) { nPart++; wq.StartPart("{\"k\":\"hdr\",\"part\":" + nPart + "}"); }
+							if (i % 5 == 0) System.Threading.Thread.Sleep(3);
+						}
+						wq.WriteLine("{\"k\":\"end\"}", true); wq.Close(pf, null, true);
+						var plist = FightRecFolder.Parts(pf); int got = 0, last = -1; bool order = true, hdrs = true;
+						for (int i = 0; i < plist.Count; i++)
+						{
+							var pl2 = ReadLines(plist[i], true, out string pe);
+							if (pe != null) { order = false; continue; }
+							if (i > 0 && (pl2.Count == 0 || pl2[0] != "{\"k\":\"hdr\",\"part\":" + (i + 1) + "}")) hdrs = false;
+							foreach (string x in pl2) { var m = System.Text.RegularExpressions.Regex.Match(x, "\"t\":(\\d+),"); if (!m.Success) continue; int tt = int.Parse(m.Groups[1].Value); if (tt != last + 1) order = false; last = tt; got++; }
+						}
+						Check(nPart >= 3 && plist.Count == nPart && File.Exists(RecWriter.PartName(pf, 2)) && !File.Exists(pp + ".part") && !File.Exists(RecWriter.PartName(pp, 2) + ".part"), "the writer splits a recording into part files and moves every part to its final name (" + plist.Count + " of " + nPart + ")");
+						Check(order && got == 400 && hdrs, "the parts read back every line once, in order, each later part starting with its header (" + got + " lines)");
+						Check(FightRecFolder.PartBase(RecWriter.PartName(pf, 3), out int pn) == pf && pn == 3 && FightRecFolder.IsLaterPart(RecWriter.PartName(pf, 2)) && !FightRecFolder.IsLaterPart(pf), "a part file names its first part");
+						string crash = Path.Combine(tmp, "z_part2.levyrec.part"); File.WriteAllBytes(crash, new byte[10]); File.SetLastWriteTimeUtc(crash, DateTime.UtcNow.AddHours(-1));
+						FightRecFolder.RecoverParts(tmp);
+						Check(File.Exists(Path.Combine(tmp, "z_crashed_part2.levyrec")), "a crash-cut later part keeps its _partN at the end of its new name");
+					}
+					finally { RecWriter.FlushMs = oldF; }
+				}
 				// ---- writer: unwritable path
 				bool opened = RecWriter.TryOpen(Path.Combine(tmp, "nope", "x.levyrec"), true, 0, out _, out string why0);
 				Check(!opened && why0 != null, "a recording in a missing folder fails at start with a reason, not later");
@@ -398,15 +430,16 @@ namespace Levy.Common.Recording
 				string f1g = FightRecorder.LastResult;
 				if (f1g != null)
 				{
-					int withC = 0, maxRows = 0, wrongType = 0, noC = 0; string hdrFmt = null;
+					int withC = 0, maxRows = 0, wrongType = 0, noC = 0; string hdrFmt = null; var dec = new RowDecoder();
 					foreach (string l in ReadLines(f1g, true, out _))
 					{
 						try
 						{
 							using var d = JsonDocument.Parse(l); var r = d.RootElement; string k = r.GetProperty("k").GetString();
-							if (k == "hdr") hdrFmt = r.GetProperty("format").GetInt32().ToString();
+							if (k == "hdr") { hdrFmt = r.GetProperty("format").GetInt32().ToString(); dec.Header(r); }
 							if (k != "f") continue;
-							if (r.TryGetProperty("c", out var c)) { withC++; maxRows = Math.Max(maxRows, c.GetArrayLength()); foreach (var row in c.EnumerateArray()) { if (row.GetArrayLength() != 7 || row[0].GetInt32() != ProjectileID.MagicMissile) wrongType++; } }
+							var c = dec.Rows(r, 4); // format 13: coded rows, [type,x,y,vx,vy,w,h,slot] once decoded
+							if (c.Count > 0) { withC++; maxRows = Math.Max(maxRows, c.Count); foreach (var row in c) { if (row.Length != 8 || (int)row[0] != ProjectileID.MagicMissile) wrongType++; } }
 							else noC++;
 						}
 						catch { }
@@ -449,6 +482,9 @@ namespace Levy.Common.Recording
 				Chk(l4.Count > 0 && l4[l4.Count - 1].Contains("\"k\":\"end\"") && l4[l4.Count - 1].Contains("\"capped\":1") && l4[l4.Count - 1].Contains("size limit"), "a capped recording still ends with its end record, marked capped");
 				Chk(f4 != null && new FileInfo(f4).Length < 6000 + 30000, "the capped file stays near the cap (" + (f4 != null ? new FileInfo(f4).Length : -1) + " bytes for 6000)");
 				FightRecorder.MaxFileBytes = 0; Main.npc[boss].active = false; Step(5, p, null);
+
+				// ---------- 4b. format 13: past the part size a recording goes on in NAME_part2.levyrec ...; each part starts with the header and full rows, and the reader joins them into one fight
+				PartSplit(p, cx, good);
 
 				// ---------- 5. folder cap removes the oldest
 				int n0 = Directory.GetFiles(good, "*.levyrec").Length;
@@ -765,10 +801,21 @@ namespace Levy.Common.Recording
 			FightRecorder.TargetOf(rb, out int kLock, out _); Chk(kLock == 2, "the targeting lock stays kind 2 even with spite set (kind " + kLock + ")");
 			data.SoldierTarget = -1; rb.target = 300 + lv;
 			FightRecorder.TargetOf(rb, out int kNpc, out _); Chk(kNpc == 2, "an NPC target of 300 or more stays kind 2 (kind " + kNpc + ")");
+			// format 13: a boss whose target slot is the empty 255 between AI calls (Calamity's Exo Mechs) reads the body its last search chose: NPC.targetRect
+			data.SoldierTarget = -1; data.SpiteTarget = -1; data.SpiteTimer = 0; rb.target = 255; var rectWas = rb.targetRect;
+			rb.targetRect = p.Hitbox; FightRecorder.TargetOf(rb, out int kRect, out _);
+			var pWas = p.position; p.position.X += 3000f; // the commander well away from the levy for the levy case
+			rb.targetRect = Main.npc[lv].Hitbox; FightRecorder.TargetOf(rb, out int kRectL, out int idRectL);
+			p.position = pWas;
+			rb.targetRect = default; FightRecorder.TargetOf(rb, out int kRect0, out _);
+			rb.targetRect = rectWas;
+			Chk(kRect == 1 && kRectL == 2 && idRectL == FightRecorder.LevyId(sn, lv) && kRect0 == 0, "target slot 255: the commander or the levy the boss last searched for is its target, nobody with no search (kinds " + kRect + "/" + kRectL + "/" + kRect0 + ")");
 			rb.target = 0; data.SpiteTarget = lv; data.SpiteTimer = 300;
 			// and in the file: the grudge held for a few seconds
-			for (int k = 0; k < 120; k++) { data.SoldierTarget = -1; rb.target = 0; data.SpiteTarget = lv; data.SpiteTimer = 300; One(p, ret, k); if (k % 7 == 0) FightRecorder.NoteDamage(rb, p, null, new Item(ItemID.Zenith), 220); if (k % 4 == 0) System.Threading.Thread.Sleep(1); }
-			data.SoldierTarget = lockWas; rb.target = tWas; data.SpiteTarget = spT; data.SpiteTimer = spN;
+			// (format 13: the tgt events follow the twin with the larger life pool, so both carry the grudge)
+			NPC sb2 = Main.npc[spaz]; var data2 = global::Levy.Common.Globals.LevyNpcData.Of(sb2); int lock2 = data2.SoldierTarget, t2 = sb2.target, sp2 = data2.SpiteTarget, sn2 = data2.SpiteTimer;
+			for (int k = 0; k < 120; k++) { data.SoldierTarget = -1; rb.target = 0; data.SpiteTarget = lv; data.SpiteTimer = 300; data2.SoldierTarget = -1; sb2.target = 0; data2.SpiteTarget = lv; data2.SpiteTimer = 300; One(p, ret, k); if (k % 7 == 0) FightRecorder.NoteDamage(rb, p, null, new Item(ItemID.Zenith), 220); if (k % 4 == 0) System.Threading.Thread.Sleep(1); }
+			data.SoldierTarget = lockWas; rb.target = tWas; data.SpiteTarget = spT; data.SpiteTimer = spN; data2.SoldierTarget = lock2; sb2.target = t2; data2.SpiteTarget = sp2; data2.SpiteTimer = sn2;
 			FightRecorder.NoteBossKill(Main.npc[ret]); FightRecorder.NoteBossKill(Main.npc[spaz]);
 			Main.npc[ret].life = 0; Main.npc[ret].active = false; Main.npc[spaz].life = 0; Main.npc[spaz].active = false;
 			StepUntilStopped(p, -1, 1500);
@@ -793,6 +840,62 @@ namespace Levy.Common.Recording
 			Chk(bossEv >= 2, "both Twins are logged as bosses (" + bossEv + ")");
 			Chk(tgt3, "a tgt event of kind 3 (spite) is written");
 			Chk(endSpite, "end.target.spite counts the spite samples");
+		}
+
+		/// <summary>Format 13 part files: a fight that passes the (small, for the check) part size is split, every part is a whole gzip file that starts with its header, the reader joins the parts with nothing lost, the coded rows decode
+		/// to the levies standing in the fight, and the folder cap never deletes a part of the recording just saved.</summary>
+		private void PartSplit(Player p, int cx, string good)
+		{
+			FightRecAuto.TestMode = FightRecMode.BossFights; FightRecAuto.ClearCooldown(); Step(3, p, null);
+			FightRecorder.PartBytesOverride = 3000;
+			try
+			{
+				int boss = SpawnBoss(cx); Step(40, p, boss);
+				bool started = FightRecorder.On;
+				ScriptHits(p, boss, 900, sleep: 2);
+				FightRecorder.NoteBossKill(Main.npc[boss]); Main.npc[boss].life = 0; Main.npc[boss].active = false;
+				StepUntilStopped(p, -1, 1500);
+				string f = FightRecorder.LastResult;
+				var parts = f != null ? FightRecFolder.Parts(f) : new List<string>();
+				Chk(started && f != null && parts.Count >= 2, "a recording past the part size is split into part files (" + parts.Count + " parts: " + string.Join(", ", parts.ConvertAll(Path.GetFileName)) + ")");
+				if (parts.Count < 2) return;
+				bool names = true, heads = true, whole = true; int frames = 0, endFrames = -1, levyRows = 0, framesWithLevies = 0; long biggest = 0; bool fullAfterHead = true;
+				var dec = new RowDecoder();
+				for (int i = 0; i < parts.Count; i++)
+				{
+					if (parts[i] != RecWriter.PartName(parts[0], i + 1)) names = false;
+					biggest = Math.Max(biggest, new FileInfo(parts[i]).Length);
+					var lines = ReadLines(parts[i], true, out string err);
+					if (err != null || lines.Count == 0) { whole = false; continue; }
+					if (!lines[0].StartsWith("{\"k\":\"hdr\"") || (i > 0 && !lines[0].Contains("\"part\":" + (i + 1) + ","))) heads = false;
+					bool firstFrame = true;
+					foreach (string l in lines)
+					{
+						using var d = JsonDocument.Parse(l); var r = d.RootElement; string k = r.GetProperty("k").GetString();
+						if (k == "hdr") dec.Header(r);
+						else if (k == "end") endFrames = r.GetProperty("frames").GetInt32();
+						else if (k == "f")
+						{
+							frames++;
+							if (firstFrame && r.TryGetProperty("l", out var raw) && raw.GetArrayLength() > 0 && !(raw[0].ValueKind == JsonValueKind.Array && raw[0].GetArrayLength() > 0 && raw[0][0].ValueKind == JsonValueKind.Array)) fullAfterHead = false;
+							firstFrame = false;
+							var lv = dec.Rows(r, 2); levyRows += lv.Count; if (lv.Count >= 2) framesWithLevies++;
+						}
+					}
+				}
+				Chk(names, "part files are named NAME_part2.levyrec, NAME_part3.levyrec ... after the first");
+				Chk(heads && whole, "every part is a whole gzip file that starts with the header, later parts with their part number");
+				Chk(fullAfterHead, "a part's first sample writes its rows in full, so a part reads on its own");
+				Chk(biggest < 3000 + 40000, "no part grows far past the part size (" + biggest + " bytes for 3000)");
+				Chk(endFrames == frames && frames > 200, "the end record (in the last part) counts every sample of every part (" + frames + " read, " + endFrames + " in the end record)");
+				Chk(framesWithLevies >= frames - 2, "the coded levy rows decode in every part: both levies in " + framesWithLevies + " of " + frames + " samples");
+				var st = FightRecReader.Read(parts[0]); var st2 = FightRecReader.Read(parts[parts.Count - 1]);
+				Chk(st.HasEnd && st.Result == "won" && st.FrameTicks.Count == frames && st2.FrameTicks.Count == frames, "the report reads the parts as one fight from any of its files (" + st.FrameTicks.Count + " / " + st2.FrameTicks.Count + " samples, " + st.Result + ")");
+				Chk(!Directory.GetFiles(good, "*.part").Any(), "no .part file is left behind");
+				int gone = FightRecFolder.Enforce(good, 1, parts[0], out _);
+				Chk(parts.TrueForAll(File.Exists), "the folder cap keeps every part of the recording just saved (" + gone + " others removed)");
+			}
+			finally { FightRecorder.PartBytesOverride = 0; }
 		}
 
 		// ---------------------------------------------------------------- scripting helpers

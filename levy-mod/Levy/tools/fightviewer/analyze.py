@@ -11,6 +11,7 @@ player also has real jump/dash events). A boss dash = the main boss's speed rise
 """
 import json
 import math
+import os
 import statistics
 import sys
 from collections import Counter, defaultdict
@@ -20,30 +21,35 @@ STILL = 0.3
 JUMP_VY = -1.5
 
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tools", "recview"))
+import reccodec  # noqa: E402  format 13 row coding and part files
+
+
 def load(path):
     rec = {"hdr": None, "arena": None, "frames": [], "events": [], "names": {}, "end": None}
-    with open(path, "r", encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
+    rows = []
+    for p in reccodec.parts_of(path):
+        part = []
+        for line in reccodec.read_lines(p):
             try:
-                o = json.loads(line)
+                part.append(json.loads(line))
             except ValueError:
                 continue
-            k = o.get("k")
-            if k == "hdr":
-                rec["hdr"] = o
-            elif k == "arena":
-                rec["arena"] = o
-            elif k == "f":
-                rec["frames"].append(o)
-            elif k == "e":
-                rec["events"].append(o)
-            elif k == "names":
-                rec["names"] = o
-            elif k == "end":
-                rec["end"] = o
+        rows.append(part)
+    for o in reccodec.join_parts(rows):
+        k = o.get("k")
+        if k == "hdr":
+            rec["hdr"] = o
+        elif k == "arena":
+            rec["arena"] = o
+        elif k == "f":
+            rec["frames"].append(o)
+        elif k == "e":
+            rec["events"].append(o)
+        elif k == "names":
+            rec["names"] = o
+        elif k == "end":
+            rec["end"] = o
     return rec
 
 

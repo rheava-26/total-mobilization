@@ -190,3 +190,4 @@ ThoriumMod	TheBlackDagger	ALT_AOE	minEnemies=2;radius=6;minDist=4
 ThoriumMod	ShroomiteRocketDrill	NEVER		
 ThoriumMod	DarkGate	PORTAL_USE	ignoreIfPlayerHasChaos=1;ignoreIfPlayerHoldsGate=1;useWhenFarFromCommander=40;useWhenOwnHpBelow=0.5;placeNearWoundedAlly=1;cooldownTicks=720	
 ThoriumMod	EnergyProjector	NEVER	primary=1;proj=GraniteBarrier	primary placement guarded
+CalamityMod	SarosPossession	RECAST	cond=slotsFull;hold=1	used again at full slots, the aura fires the Totality Ray (ray damage x the aura's slots, 2x falling to 1x while it is held), which lives while the button is held: measured above the aura's own sunfire at every slot count, so the levy holds it while he fights

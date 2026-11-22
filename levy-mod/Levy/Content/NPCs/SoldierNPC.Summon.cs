@@ -32,6 +32,12 @@ namespace Levy.Content.NPCs
 		/// <summary>Projectiles this soldier's minions have created (flood guard tally), the value the last upkeep pass saw, and the live count that pass found.</summary>
 		internal int ChildSpawns;
 		private int _childSpawnsSeen, _childrenAlive;
+		/// <summary>The minion slots his upkeep keeps filled (each staff's casts times its slots, summed): what a RECAST staff's minion reads as its owner's slots while it updates (SoldierMinions.RunUpdate).</summary>
+		internal float MinionSlotBudget;
+		/// <summary>The shot of the carried staff with a RECAST row (AltPolicies.RecastWanted), or -1; and the tick until which his button stays held for that staff's channelled use (the Saros ray).</summary>
+		internal int RecastShoot = -1;
+		internal uint RecastHoldUntil;
+		private uint _recastNext;
 
 		/// <summary>The summon weapon this soldier maintains a flock for, or null: the primary if it summons, else the first summon staff carried as a sidearm. See <see cref="SummonWeapons"/> for all of them.</summary>
 		public Item SummonWeapon()
@@ -130,11 +136,13 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		/// <summary>Measurement switch (env LEVY_SUMMON_OLD=1): casts and helper swings without the combat rule, for the before / after of the summon-loop check.</summary>
 		internal static readonly bool SummonOld = Environment.GetEnvironmentVariable("LEVY_SUMMON_OLD") == "1";
+		/// <summary>Lab switch (env LEVY_SUMMONSWEEP_DEBUG=1): the upkeep's dismissals are logged.</summary>
+		internal static readonly bool SummonDebug = Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP_DEBUG") == "1";
 
 		internal static bool TransientStaff(Item weapon)
 		{
 			if (SummonOld || weapon == null || weapon.shoot < ProjectileID.Count || weapon.sentry) return false;
-			if (SoldierMinions.CastSlots.ContainsKey(weapon.type)) return false;
+			if (SoldierMinions.CastSlots.ContainsKey(weapon.type) || SoldierMinions.IsStacker(weapon.type)) return false; // a minion that grows with each cast (the Void Eater Marionette starts at no slots) is not a self-ending cast
 			Projectile sample = WeaponClassifier.ProjectileSample(weapon.shoot);
 			return sample != null && sample.minion && sample.minionSlots <= SoldierMinions.ChildSlotMin;
 		}
@@ -182,6 +190,9 @@ namespace Levy.Content.NPCs
 				if (!has) return;
 
 				int[] desired = AllotCasts(weapons);
+				float budget = 0f; RecastShoot = -1;
+				for (int k = 0; k < n; k++) { budget += desired[k] * SlotsPerMinion(weapons[k]); if (RecastShoot < 0 && driven[k] && AltPolicies.IsRecast(weapons[k])) RecastShoot = weapons[k].shoot; }
+				MinionSlotBudget = budget;
 				for (int k = 0; k < n; k++)
 				{
 					Item weapon = weapons[k];
@@ -257,13 +268,25 @@ namespace Levy.Content.NPCs
 				if (worst < 0) break;
 				Projectile q = Main.projectile[_minionScratch[worst]];
 				have -= SoldierMinions.SlotOf(q, perCast);
-				if (CombatHarness.Enabled) Levy.Instance?.Logger.Info($"HARNESS-MINION-DBG overflow dismiss {q.ModProjectile?.Name ?? q.type.ToString()} slots={q.minionSlots} have={have} want={want} perCast={perCast} desired={desired}");
+				if (CombatHarness.Enabled || SummonDebug) Levy.Instance?.Logger.Info($"HARNESS-MINION-DBG overflow dismiss {q.ModProjectile?.Name ?? q.type.ToString()} slots={q.minionSlots} have={have} want={want} perCast={perCast} desired={desired}");
 				SoldierMinions.Dismiss(q);
 				_minionScratch.RemoveAt(worst);
 			}
 			SoldierMinions.MaintainCompanion(this, weapon, _minionScratch);
 			// a full flock: a staff whose shot takes no slot may still make a helper when swung again (see SoldierMinions.Helper)
 			bool fighting = SentryInCombat() || SummonOld, transient = TransientStaff(weapon);
+			// a staff a player keeps using at full slots (a RECAST row: the Saros Possession's aura fires its ray when used again with no slot left): used again while he fights, and the button held for as long as the row says
+			if (AltPolicies.RecastWanted(weapon, have + perCast > want + LevyConstants.MinionSlotEpsilon && _minionScratch.Count > 0, out bool hold) && fighting)
+			{
+				uint now = Main.GameUpdateCount;
+				if (hold) RecastHoldUntil = now + (uint)LevyConstants.MinionMaintainIntervalTicks + 10u; // past the next upkeep pass, so the hold never lapses between passes while he fights
+				if (now >= _recastNext && SoldierMinions.CanUse(this, weapon))
+				{
+					_recastNext = now + (uint)Math.Max(LevyConstants.MinionSpawnCooldownTicks, weapon.useTime);
+					SoldierMinions.Recast(this, weapon, damage);
+				}
+				return;
+			}
 			if (have + perCast > want + LevyConstants.MinionSlotEpsilon && _minionScratch.Count > 0 && _minionSpawnCd <= 0 && fighting && --_helperCd <= 0) // a player swings the staff again to help a full flock while she fights, not while she stands about
 			{
 				_helperCd = LevyConstants.MinionHelperPasses;
@@ -272,6 +295,7 @@ namespace Levy.Content.NPCs
 			// the count guard keeps a staff whose minion reports no slot cost from casting without end
 			if (_minionSpawnCd > 0 || have + perCast > want + LevyConstants.MinionSlotEpsilon || _minionScratch.Count >= LevyConstants.MinionControllerMaxPerSoldier * 2) return;
 			if (transient && !fighting) return; // a self-ending cast is made while fighting only
+			if (transient && !SoldierMinions.CanUse(this, weapon)) return; // and only when the staff allows a use, as for a player (the Universe Splitter waits while its field is out)
 
 			if (!CrowdBudget.MayAddProjectiles(Math.Max(1, (int)Math.Ceiling(perCast)))) return; // the army entity budget
 			_minionSpawnCd = transient ? Math.Max(LevyConstants.MinionSpawnCooldownTicks, weapon.useTime) : LevyConstants.MinionSpawnCooldownTicks;

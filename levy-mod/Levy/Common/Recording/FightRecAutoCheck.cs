@@ -516,6 +516,7 @@ namespace Levy.Common.Recording
 				boss = SpawnBoss(cx); Step(60, p, boss); FightRecAuto.Pump();
 				Chk(!FightRecorder.On && FightRecAuto.Said.Exists(m => m.Contains("could not start") || m.Contains("recording is off")), "with no writable folder at all it does not record and says why");
 				Main.npc[boss].active = false;
+				if (Environment.GetEnvironmentVariable("LEVY_RECMULTI") != "0") FightRecMultiCheck.Run(Mod, p, cx, tmp); // the encounter rule on the headless (harness) path
 				RunProf(p, cx, good, def, recs, spawned);
 				if (Environment.GetEnvironmentVariable("LEVY_EVENTREC") != "0") EventRecCheck.Run(Mod, p, cx, good, recs, spawned);
 				if (Environment.GetEnvironmentVariable("LEVY_FIGHTRECAUTO_SIZEPROBE") == "1") SizeProbe(p, cx, good, recs, spawned);

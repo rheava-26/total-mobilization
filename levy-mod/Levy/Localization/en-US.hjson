@@ -508,7 +508,7 @@ Mods: {
 
 				ClassMatchSidearms: {
 					Label: Class-matched sidearms
-					Tooltip: On, a soldier in class armor carries a sidearm of its own damage class, more strictly as the world progresses. Off, the sidearm is a blade
+					Tooltip: On, a soldier carries a sidearm of its weapon's class, more strictly as the world progresses, and none of another class after the Moon Lord. Off, the sidearm is a blade
 				}
 
 				ClassMatchArmor: {
@@ -554,6 +554,11 @@ Mods: {
 				SoldiersUseHooks: {
 					Label: Levies use grappling hooks
 					Tooltip: Levies carry the best grappling hook in the Armory and use it to cross gaps and climb cliffs
+				}
+
+				SoldiersUseSetAbilities: {
+					Label: Levies use armor set abilities
+					Tooltip: Levies use the set abilities a key starts, such as the God Slayer dash, the Solar Flare dash and the Forbidden storm
 				}
 
 				SoldiersTakeFallDamage: {

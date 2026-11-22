@@ -65,7 +65,7 @@ namespace Levy.Content.NPCs
 				thrustWing = (thrustTick && !_usedRocket) || _flying;
 				if (_jumpsUsed > _fxJumpsPrev) { jumpFired = true; jump = SpentJump(_jumpsUsed - 1); }
 				_fxJumpsPrev = _jumpsUsed;
-				dashing = _dashTicks > 0;
+				dashing = _dashTicks > 0 || SolarRamming; // a Solar Flare ram (SoldierNPC.SetDash.cs) is the same dash
 			}
 			else
 			{

@@ -28,7 +28,7 @@ namespace Levy.Common.Testing
 	/// the damage that landed on the commander's pinned enemy; the stealth left after a strike; and the strike flag Calamity puts on the projectile.
 	/// Pass: the numbers are Calamity's own (the rates, a flagged strike, the bar spent) and the army run equals the no-army runs.
 	/// </summary>
-	public class StealthWorldCheck : ModSystem
+	public partial class StealthWorldCheck : ModSystem
 	{
 		private static bool _armed, _done, _running; private static int _calls, _pass, _fail; private static Mod _mod;
 		private const int FloorY = 300, Cx = 1800;
@@ -246,7 +246,7 @@ namespace Levy.Common.Testing
 
 		private sealed class Run3
 		{
-			public string Name; public int ChargeStand, ChargeMove; public double StrikeProjDmg, NormalProjDmg, StrikeHitMean, NormalHitMean; public int StrikeFlagged, NormalFlagged, Strikes, Normals;
+			public string Name; public int ChargeStand, ChargeMove; public double StrikeProjDmg, NormalProjDmg, StrikeHitMean, NormalHitMean; public int StrikeFlagged, NormalFlagged, Strikes, Normals; public int StrikeHits, StrikeCrits; public double StrikeNonCritMean;
 			public float BarMax, BarAfterStrike, BarBeforeStrike, BarAfterNormal; public int AvailBefore, AvailAfter; public int ChargeStandMax, ChargeStandMin;
 			public double LevyStealthMax; public int LevyCount;
 			public string Aim;
@@ -312,7 +312,7 @@ namespace Levy.Common.Testing
 				int h0 = Probe.Hits.Count;
 				if (Throw(out int d1, out bool f1, out float b1, out float a1, out string aim)) { sSum += d1; sN++; if (f1) sFlag++; r.BarBeforeStrike = b1; r.BarAfterStrike = a1; r.Aim ??= aim; }
 				Step(50);
-				for (int i = h0; i < Probe.Hits.Count; i++) { sHit += Probe.Hits[i].dmg; sHitN++; }
+				for (int i = h0; i < Probe.Hits.Count; i++) { sHit += Probe.Hits[i].dmg; sHitN++; r.StrikeHits++; if (Probe.Hits[i].crit) r.StrikeCrits++; else r.StrikeNonCritMean += Probe.Hits[i].dmg; }
 				r.AvailAfter += HarnessCalamityProbe.StealthStrikeAvailable(p) ? 1 : 0;
 				int h1 = Probe.Hits.Count;
 				if (Throw(out int d2, out bool f2, out float b2, out float a2, out _)) { nSum += d2; nN++; if (f2) nFlag++; r.BarAfterNormal = a2; }
@@ -389,9 +389,10 @@ namespace Levy.Common.Testing
 			Player p2 = Main.player[0]; p2.armor[0] = new Item(); p2.armor[0].SetDefaults(head); p2.armor[1] = new Item(); p2.armor[1].SetDefaults(body); p2.armor[2] = new Item(); p2.armor[2].SetDefaults(legs); p2.inventory[0] = new Item(); p2.inventory[0].SetDefaults(fran);
 			Step(60);
 			var c = Measure("no army again", 4);
+			DrainPhase(fran, head, body, legs, a);
 
 			foreach (var r in new[] { a, b, c })
-				Note($"{r.Name}: bar max {r.BarMax:0.##}; fill standing {r.ChargeStand} ticks (min {r.ChargeStandMin}, max {r.ChargeStandMax}), moving {r.ChargeMove} ticks; strike throws {r.Strikes} (flagged {r.StrikeFlagged}), projectile damage {r.StrikeProjDmg:0.##}, enemy took {r.StrikeHitMean:0.##} a hit; plain throws {r.Normals} (flagged {r.NormalFlagged}), projectile damage {r.NormalProjDmg:0.##}, enemy took {r.NormalHitMean:0.##} a hit; bar just before the strike {r.BarBeforeStrike:0.##}, just after {r.BarAfterStrike:0.##}, after the plain throw {r.BarAfterNormal:0.##}; strike available before {r.AvailBefore}/4, after {r.AvailAfter}/4");
+				Note($"{r.Name}: bar max {r.BarMax:0.##}; fill standing {r.ChargeStand} ticks (min {r.ChargeStandMin}, max {r.ChargeStandMax}), moving {r.ChargeMove} ticks; strike throws {r.Strikes} (flagged {r.StrikeFlagged}), projectile damage {r.StrikeProjDmg:0.##}, enemy took {r.StrikeHitMean:0.##} a hit ({r.StrikeCrits} of {r.StrikeHits} hits crits, {(r.StrikeHits > r.StrikeCrits ? r.StrikeNonCritMean / (r.StrikeHits - r.StrikeCrits) : 0):0.##} a non-crit hit); plain throws {r.Normals} (flagged {r.NormalFlagged}), projectile damage {r.NormalProjDmg:0.##}, enemy took {r.NormalHitMean:0.##} a hit; bar just before the strike {r.BarBeforeStrike:0.##}, just after {r.BarAfterStrike:0.##}, after the plain throw {r.BarAfterNormal:0.##}; strike available before {r.AvailBefore}/4, after {r.AvailAfter}/4");
 			Note("aim: " + (a.Aim ?? "no throw seen"));
 
 			// Calamity's own numbers: 120 ticks standing, 240 moving at the default rates; a strike is flagged and spends the bar; the plain throw after it is not a strike
@@ -406,6 +407,7 @@ namespace Levy.Common.Testing
 			Check($"the measurement repeats with no army (fill {a.ChargeStand}/{c.ChargeStand}, {a.ChargeMove}/{c.ChargeMove}; strike damage {a.StrikeProjDmg:0.##}/{c.StrikeProjDmg:0.##})", Math.Abs(a.ChargeStand - c.ChargeStand) <= 1 && Math.Abs(a.ChargeMove - c.ChargeMove) <= 1 && Near(a.StrikeProjDmg, c.StrikeProjDmg) && Near(a.NormalProjDmg, c.NormalProjDmg));
 			Check($"with the army: the bar fills as fast (standing {a.ChargeStand} vs {b.ChargeStand}, moving {a.ChargeMove} vs {b.ChargeMove})", Math.Abs(a.ChargeStand - b.ChargeStand) <= 1 && Math.Abs(a.ChargeMove - b.ChargeMove) <= 1 && b.ChargeStandMax - b.ChargeStandMin <= 3);
 			Check($"with the army: a strike does the same damage ({a.StrikeProjDmg:0.##} vs {b.StrikeProjDmg:0.##}; plain {a.NormalProjDmg:0.##} vs {b.NormalProjDmg:0.##})", Near(a.StrikeProjDmg, b.StrikeProjDmg) && Near(a.NormalProjDmg, b.NormalProjDmg));
+			Check($"with the army: a strike that is not a crit lands as hard ({NonCrit(a):0.##} vs {NonCrit(b):0.##} a hit; crits {a.StrikeCrits}/{a.StrikeHits} alone, {b.StrikeCrits}/{b.StrikeHits} with the army: the per-hit mean moves with the crit rolls)", NonCrit(a) <= 0 || NonCrit(b) <= 0 || WithinVariance(NonCrit(a), NonCrit(b)));
 			Check($"with the army: a strike is still flagged and spends the bar ({b.StrikeFlagged}/{b.Strikes}; {b.BarBeforeStrike:0.##} -> {b.BarAfterStrike:0.##}; plain throws flagged {b.NormalFlagged})", b.Strikes == a.Strikes && b.StrikeFlagged == b.Strikes && b.NormalFlagged == 0 && b.BarBeforeStrike >= b.BarMax - 1e-3f && b.BarAfterStrike <= 0.05f * b.BarMax);
 			Check($"with the army: the same bar size ({a.BarMax:0.##} vs {b.BarMax:0.##})", Math.Abs(a.BarMax - b.BarMax) < 1e-3f);
 			Check($"the levies run Calamity's stealth too (a levy bar of {b.LevyStealthMax:0.##})", b.LevyStealthMax > 0);

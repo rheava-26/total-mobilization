@@ -155,9 +155,9 @@ namespace Levy.Common.Testing
 			{
 				Check("a real barracks and armory were placed and a levy housed", s.Barracks != null && s.Armory != null && s.Levy != null);
 				if (s.Barracks == null || s.Armory == null || s.Levy == null) return;
-				bool oldCfg = Common.Config.LevyConfig.Get.ClassMatchSidearms;
-				try { Scenarios(s); }
-				finally { Common.Config.LevyConfig.Get.ClassMatchSidearms = oldCfg; }
+				bool oldCfg = Common.Config.LevyConfig.Get.ClassMatchSidearms, oldArmor = Common.Config.LevyConfig.Get.ClassMatchArmor;
+				try { Common.Config.LevyConfig.Get.ClassMatchArmor = true; Scenarios(s); }
+				finally { Common.Config.LevyConfig.Get.ClassMatchSidearms = oldCfg; Common.Config.LevyConfig.Get.ClassMatchArmor = oldArmor; }
 			}
 			finally { Teardown(s); }
 		}
@@ -226,20 +226,34 @@ namespace Levy.Common.Testing
 			Note("pre-Hardmode ranger, a Flintlock Pistol beside a Copper Shortsword: sidearm " + Nm(early2));
 			Check("before Hardmode a ranged sidearm still wins when the blade is not much better", !IsAir(early2) && early2.type == ItemID.FlintlockPistol);
 
-			// ---- no class armor: the old pick
+			// ---- no class armor: the primary's class (class-matched armor on: the whole kit follows the primary); the setting off keeps the old pick
 			WeaponRank.ForceProgress = 18f;
 			var bare = Sidearm(s, new[] { 0, 0, 0 }, ItemID.SDMG, ItemID.MusketBall, stockML);
 			Note("no armor: sidearm " + Nm(bare));
-			Check("a levy with no class armor keeps the old pick, a lesser blade", !IsAir(bare) && WeaponClassifier.ItemDamageClass(bare) == DamageClass.Melee);
+			Check("a post-ML levy with no class armor carries a sidearm of his primary's class (a gun beside the S.D.M.G.), not a blade", !IsAir(bare) && WeaponClassifier.ItemDamageClass(bare) == DamageClass.Ranged);
+			Common.Config.LevyConfig.Get.ClassMatchArmor = false;
+			var bareOld = Sidearm(s, new[] { 0, 0, 0 }, ItemID.SDMG, ItemID.MusketBall, stockML);
+			Note("no armor, class-matched armor off: sidearm " + Nm(bareOld));
+			Check("with class-matched armor off a levy with no class armor keeps the old pick, a lesser blade", !IsAir(bareOld) && WeaponClassifier.ItemDamageClass(bareOld) == DamageClass.Melee);
+			Common.Config.LevyConfig.Get.ClassMatchArmor = true;
 
-			// ---- the armory's rules win over the armor
+			// ---- the primary leads (class-matched armor on), the armor leads with it off; the armory's rules win over the armor
 			var mageStock = new int[] { ItemID.Meowmere, ItemID.LunarFlareBook, ItemID.NebulaBlaze, ItemID.SDMG, ItemID.Megashark, ItemID.ChainGun };
+			var follow = Sidearm(s, NebulaArmor, ItemID.Megashark, ItemID.MusketBall, mageStock);
+			Note("Nebula armor, no rule, gun primary, class-matched armor on: sidearm " + Nm(follow));
+			Check("class-matched armor on: a gun primary in Nebula armor (armor about to follow the gun) carries a ranged sidearm, never a staff", !IsAir(follow) && WeaponClassifier.ItemDamageClass(follow) == DamageClass.Ranged && follow.type != ItemID.Megashark);
+			Common.Config.LevyConfig.Get.ClassMatchArmor = false;
 			var mage = Sidearm(s, NebulaArmor, ItemID.Megashark, ItemID.MusketBall, mageStock);
-			Note("Nebula mage, no rule, gun primary: sidearm " + Nm(mage));
-			Check("with no rule a mage in Nebula armor carries a magic sidearm", !IsAir(mage) && WeaponClassifier.ItemDamageClass(mage) == DamageClass.Magic);
+			Note("Nebula mage, no rule, gun primary, class-matched armor off: sidearm " + Nm(mage));
+			Check("with class-matched armor off and no rule a mage in Nebula armor carries a magic sidearm", !IsAir(mage) && WeaponClassifier.ItemDamageClass(mage) == DamageClass.Magic);
 			var forced = Sidearm(s, NebulaArmor, ItemID.Megashark, ItemID.MusketBall, mageStock, r => { var b = r.AddBlock(RuleKind.Category); b.Mode = CatMode.Include; b.Cat = "gun"; });
 			Note("Nebula mage, rules include guns, gun primary: sidearm " + Nm(forced));
 			Check("a rule asking for guns wins over the armor: the gun primary gets a gun sidearm, not a staff", !IsAir(forced) && WeaponClassifier.ItemDamageClass(forced) == DamageClass.Ranged && forced.type != ItemID.Megashark);
+			Common.Config.LevyConfig.Get.ClassMatchArmor = true;
+			// a class balance of every class claims every classed weapon: that is no reason to carry another class's weapon (Eve's rules, at least 8 of each class)
+			var balanced = Sidearm(s, VortexArmor, ItemID.SniperRifle, ItemID.MusketBall, stockML, r => { var b = r.AddBlock(RuleKind.ClassBalance); foreach (var c in new[] { "melee", "ranged", "magic", "summon" }) { var e = b.EntryFor(c, true); e.Min = 1; e.Weight = 2f; } });
+			Note("post-ML ranger, a class balance of every class: sidearm " + Nm(balanced));
+			Check("under a class balance of every class a post-ML ranger still carries a ranged sidearm, not a blade", !IsAir(balanced) && WeaponClassifier.ItemDamageClass(balanced) == DamageClass.Ranged);
 			Clear(te); te.Rules.Blocks.Clear(); te.Rules.Changed();
 		}
 

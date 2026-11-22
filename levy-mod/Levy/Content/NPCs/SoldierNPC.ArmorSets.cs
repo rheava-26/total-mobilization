@@ -110,6 +110,7 @@ namespace Levy.Content.NPCs
 				if (LevyUtil.IsClient) { int enc = (int)NPC.ai[0]; _setKind = enc / 10; _setOrbs = enc % 10; }
 				else TickSetState(d);
 				ApplySetVisuals(d);
+				TickSetAbilityFx(); // the God Slayer dash's dust (SoldierNPC.SetDash.cs)
 			}
 			catch (Exception e)
 			{

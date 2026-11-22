@@ -21,7 +21,10 @@ namespace Levy.Common.Recording
 	internal static class FightRecAuto
 	{
 		public static readonly string Dir = Environment.GetEnvironmentVariable("LEVY_REC_DIR");
-		public static bool Enabled => !string.IsNullOrEmpty(Dir) && Main.dedServ;
+		/// <summary>Self-check: drive the headless (harness) path in a world check without LEVY_REC_DIR; recordings go to this folder.</summary>
+		public static string TestHeadlessDir;
+		private static string HeadlessDir => TestHeadlessDir ?? Dir;
+		public static bool Enabled => !string.IsNullOrEmpty(HeadlessDir) && Main.dedServ;
 
 		/// <summary>Self-check: act as a client on a dedicated server (the commander is Main.player[0]) and use this mode instead of the config.</summary>
 		public static bool TestClient;
@@ -196,7 +199,7 @@ namespace Levy.Common.Recording
 		// ------------------------------------------------------------------------------------------ headless (harness)
 		private static void HeadlessUpdate()
 		{
-			if (!_announced) { _announced = true; Levy.Instance?.Logger.Info("[FightRec] headless auto-recording on, folder " + Dir); }
+			if (!_announced && TestHeadlessDir == null) { _announced = true; Levy.Instance?.Logger.Info("[FightRec] headless auto-recording on, folder " + Dir); }
 			if (FightRecorder.On) return;
 			if ((int)Main.GameUpdateCount < _cooldownUntil) return;
 			NPC boss = null; bool levy = false;
@@ -210,7 +213,7 @@ namespace Levy.Common.Recording
 			if (boss == null || !levy) return;
 			Player cmd = Main.player[0];
 			FightRecorder.Headless = true;
-			FightRecorder.OutDirOverride = Dir;
+			FightRecorder.OutDirOverride = HeadlessDir;
 			FightRecorder.IgnoreInactive = true;
 			var meta = new Dictionary<string, string>();
 			string harness = Env("LEVY_HARNESS_SCENARIO") ?? (Env("LEVY_FIELD_SPEC") != null ? "field" : "harness");
@@ -239,5 +242,7 @@ namespace Levy.Common.Recording
 
 		/// <summary>The recorder stopped in headless mode: a short pause so the next trial does not start a file on a dying boss.</summary>
 		public static void Stopped() { _cooldownUntil = (int)Main.GameUpdateCount + 20; }
+		/// <summary>Self-check: the trial counter, so the headless check can restore it.</summary>
+		public static int Seq { get => _seq; set => _seq = value; }
 	}
 }

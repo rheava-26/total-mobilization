@@ -88,6 +88,7 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_STEALTH_ONLY") == "1") { _done = true; try { StealthWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[StealthWorld] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the Calamity stealth check alone
 			if (Environment.GetEnvironmentVariable("LEVY_SWAPRACE_ONLY") == "1") { _done = true; try { SwapRaceCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SwapRace] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the save-race check alone
 			if (Environment.GetEnvironmentVariable("LEVY_PYLONCLICK_ONLY") == "1") { _done = true; try { if (Environment.GetEnvironmentVariable("LEVY_PYLONCLICK_AFTER") == "identity") IdentityWorldCheck.RunIfArmed(); if (Environment.GetEnvironmentVariable("LEVY_PYLONCLICK_AFTER") == "shop") ShopLagCheck.RunIfArmed(); PylonClickCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PylonClick] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the pylon click check alone (LEVY_PYLONCLICK_AFTER=shop: right after the shop check, as the chain runs it)
+			if (Environment.GetEnvironmentVariable("LEVY_SETABILITY_ONLY") == "1") { _done = true; try { SetAbilityWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SetAbility] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the armor set ability check alone
 			if (Environment.GetEnvironmentVariable("LEVY_FIELDFIX_ONLY") == "1") { _done = true; try { FieldFixCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[FieldFix] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the field-fix check alone
 			if (Environment.GetEnvironmentVariable("LEVY_ACTIVEARMY_ONLY") == "1") { _done = true; try { ActiveArmyWorldCheck.RunIfArmed(); global::Levy.Common.Perf.PerfWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ActiveArmy] check threw " + e.GetType().Name + ": " + e.Message); } return; } // lab: the active army size check alone, then the analyzer check (which reads the popup state it leaves)
 			_done = true; _running = true;
@@ -125,6 +126,10 @@ namespace Levy.Common.Testing
 			try { AllyTagsWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[AllyTags] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { SidearmWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SidearmWorld] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { ArmorClassWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ArmorClassWorld] check threw " + e.GetType().Name + ": " + e.Message); }
+			// one class per levy: primary, sidearm, armor and class accessories (Eve's post-Yharon army and stock, and a vanilla equivalent)
+			try { LoadoutFitWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[LoadoutFit] check threw " + e.GetType().Name + ": " + e.Message); }
+			// the armor set abilities a key starts: the God Slayer and Solar Flare dashes, the Forbidden storm, Vortex stealth, Calamity's set key
+			try { SetAbilityWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[SetAbility] check threw " + e.GetType().Name + ": " + e.Message); }
 			// Armory autosell and the 1 platinum treasury buttons (its own placed Barracks and Armory, removed again)
 			try { AutoSellWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[AutoSell] check threw " + e.GetType().Name + ": " + e.Message); }
 			try { StealthWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[StealthWorld] check threw " + e.GetType().Name + ": " + e.Message); }

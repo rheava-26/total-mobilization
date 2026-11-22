@@ -8,6 +8,7 @@ using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Levy.Common.Compat.Calamity;
 using Levy.Common.Globals;
 using Levy.Common.Weapons;
 using Levy.Content.NPCs;
@@ -165,7 +166,8 @@ namespace Levy.Common.Owner
 		{
 			if (Disabled) { body(); return; }
 			Snap s = TakeT(owner); Scopes++;
-			try { body(); } finally { PutT(s, "hold", 0); }
+			var st = StealthOpen(owner, null);
+			try { body(); } finally { StealthGuard.Close(ref st); PutT(s, "hold", 0); }
 		}
 
 		/// <summary>Cost of one snapshot + restore of <paramref name="owner"/>'s use state, in microseconds, over <paramref name="n"/> round trips.</summary>
@@ -216,10 +218,12 @@ namespace Levy.Common.Owner
 			Snap s = TakeT(self.owner); GuardedUpdates++;
 			int type = self.type;
 			long g1 = global::Levy.Common.Weapons.SwapProf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+			var st = StealthOpen(self.owner, ShotBody(self), self.ModProjectile != null);
 			try { orig(self, i); }
 			finally
 			{
 				long g2 = global::Levy.Common.Weapons.SwapProf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+				StealthGuard.Close(ref st);
 				PutT(s, "update", type);
 				if (global::Levy.Common.Weapons.SwapProf.On) { global::Levy.Common.Weapons.SwapProf.GuardSwap += (g1 - g0) + (System.Diagnostics.Stopwatch.GetTimestamp() - g2); global::Levy.Common.Weapons.SwapProf.GuardN++; }
 			}
@@ -255,14 +259,16 @@ namespace Levy.Common.Owner
 			if (ProbesTileAtPosition(self.type) && IsArmyRound(self)) KeepProbeInWorld(self);
 			if (Disabled || !IsArmyRound(self)) { orig(self); return; }
 			Snap s = TakeT(self.owner); int type = self.type;
-			try { orig(self); } finally { PutT(s, "kill", type); }
+			var st = StealthOpen(self.owner, ShotBody(self), self.ModProjectile != null);
+			try { orig(self); } finally { StealthGuard.Close(ref st); PutT(s, "kill", type); }
 		} private static int _hl_KillDetour_2;
 
 		private static void DamageDetour(On_Projectile.orig_Damage orig, Projectile self)
 		{ _hl_DamageDetour_1++;
 			if (Disabled || !IsArmyRound(self)) { orig(self); return; }
 			Snap s = TakeT(self.owner); int type = self.type;
-			try { orig(self); } finally { PutT(s, "damage", type); }
+			var st = StealthOpen(self.owner, ShotBody(self), self.ModProjectile != null);
+			try { orig(self); } finally { StealthGuard.Close(ref st); PutT(s, "damage", type); }
 		} private static int _hl_DamageDetour_1;
 
 		/// <summary>A body of the army: a levy or officer (SoldierNPC) or a machine of the companion mod (a drone, a turret).</summary>
@@ -275,7 +281,8 @@ namespace Levy.Common.Owner
 			if (!RealOwner(owner) || (_aiDepth > 0 && _aiOwner == owner)) { orig(self); return; }
 			Snap s = TakeT(owner); Scopes++;
 			int prevOwner = _aiOwner; _aiOwner = owner; _aiDepth++;
-			try { orig(self); } finally { _aiDepth--; _aiOwner = prevOwner; PutT(s, "soldierAI", 0); }
+			var st = StealthOpen(owner, self.ModNPC as SoldierNPC); // a levy's pass: its spawn hooks and whatever reads "the owner's" bar read its own (its gear frame works on its dummy directly); a machine's: her bar is put back
+			try { orig(self); } finally { _aiDepth--; _aiOwner = prevOwner; StealthGuard.Close(ref st); PutT(s, "soldierAI", 0); }
 		} private static int _hl_NpcAiDetour_4;
 
 		private static int NewProjectileDetour(On_Projectile.orig_NewProjectile_IEntitySource_float_float_float_float_int_int_float_int_float_float_float orig, IEntitySource source, float x, float y, float sx, float sy, int type, int damage, float kb, int owner, float ai0, float ai1, float ai2)
@@ -283,9 +290,16 @@ namespace Levy.Common.Owner
 			if (Disabled || !RealOwner(owner) || (_aiDepth > 0 && _aiOwner == owner) || source is not EntitySource_Parent { Entity: NPC army } || !IsArmyNpc(army))
 				return orig(source, x, y, sx, sy, type, damage, kb, owner, ai0, ai1, ai2);
 			Snap s = TakeT(owner); Scopes++;
-			try { return orig(source, x, y, sx, sy, type, damage, kb, owner, ai0, ai1, ai2); } finally { PutT(s, "spawn", type); }
+			var st = StealthOpen(owner, army.ModNPC as SoldierNPC);
+			try { return orig(source, x, y, sx, sy, type, damage, kb, owner, ai0, ai1, ai2); } finally { StealthGuard.Close(ref st); PutT(s, "spawn", type); }
 		} private static int _hl_NewProjectileDetour_3;
 
-		public override void PreUpdateNPCs() { _aiDepth = 0; _aiOwner = -1; }
+		public override void PreUpdateNPCs() { _aiDepth = 0; _aiOwner = -1; StealthGuard.ResetTick(); }
+
+		/// <summary>The stealth side of a guarded pass (<see cref="StealthGuard"/>): a levy's pass or modded shot lends the levy's stealth state to the owner for the pass, <paramref name="nobody"/> lends an empty bar (a machine's modded round), anything else only puts the owner's back.</summary>
+		private static StealthGuard.Scope StealthOpen(int owner, SoldierNPC body, bool nobody = false) => owner >= 0 && owner < Main.maxPlayers ? StealthGuard.Open(Main.player[owner], body, nobody) : default;
+
+		/// <summary>The soldier whose modded shot this is (a levy's or an officer's: a mod's projectile code is where "the owner's" stealth is read and spent), or null (a vanilla round, a round that is not a soldier's: the owner's bar is only put back).</summary>
+		private static SoldierNPC ShotBody(Projectile p) => p.ModProjectile != null && p.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.IsSoldierShot ? global::Levy.Common.Targeting.EnemyTargeting.LiveBody(t.SoldierIndex) : null;
 	}
 }

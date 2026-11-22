@@ -627,8 +627,8 @@ namespace Levy.Common.Weapons
 			ArkSwings.DamageScope ark = g.Ark != ArkRole.None ? new ArkSwings.DamageScope(body, p, g) : default; // an Ark's blade reads its owner's centre: the real player stands at the soldier for the call
 			BiomeBlades.DamageScope bb = g.Biome != 0 ? new BiomeBlades.DamageScope(body, p, g) : default; // a Biome Blade's too, with the soldier's blade in the real player's hand
 			RealWhips.DamageScope wh = g.Whip && item0 != null ? new RealWhips.DamageScope(body, item0) : default; // a lash's hit writes the owner (the minion focus, the item's on-hit hooks): the commander is put back as it was
-			// a rogue weapon's hit that writes its owner's stealth bar (the Doomsday Device gives back 30% of it on a plain hit) writes the LEVY's bar: the real player's bar is lent the levy's values for the call
-			StealthLend lend = g.Grenade ? StealthLend.Begin(body) : default;
+			// a hit that reads or writes its owner's stealth bar (the Doomsday Device gives back 30% of it on a plain hit) uses the LEVY's bar: the real player's stealth state is lent the levy's for the call
+			StealthLend lend = StealthLend.Begin(body);
 			OwnerPuppet.Lend facing = default; // a beam's hit pass reads its owner like every other soldier shot's does: the levy's facing and place, not the commander's (a lash lends its own, RealWhips.DamageScope)
 			// a hit that loads its owner's meter (the row's named field: the Hellborn's spin loads hellbornShots) loads the LEVY's: his value is lent to the real player for the call and taken back after
 			string meter = g.ModHolder && LevyUtil.IsServerOrSingle ? AltPolicies.MeterOf(g.ItemType) : null;

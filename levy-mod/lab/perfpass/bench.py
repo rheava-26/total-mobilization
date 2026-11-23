@@ -30,7 +30,9 @@ def fights(run):
                 if cur["n"] <= 3: continue
                 m = re.search(r"cpu ms/tick entities=([0-9.]+) npcs=([0-9.]+) projectiles=([0-9.]+) \| alloc KB/tick=([0-9.]+)", line)
                 lv = re.search(r"levy (\d+)", line); sh = re.search(r"armyShot (\d+)", line); mn = re.search(r"\bminion (\d+)", line); en = re.search(r"enemy (\d+)", line); ep = re.search(r"proj (\d+)/1000", line)
-                if m: cur["cen"].append(dict(cpu=float(m[1]), npc=float(m[2]), proj=float(m[3]), alloc=float(m[4]), levy=int(lv[1]), shots=int(sh[1]), minions=int(mn[1]), enemy=int(en[1]), projs=int(ep[1])))
+                gc = re.search(r"gc0/1/2 \+(\d+)/(\d+)/(\d+) gcPause ms \+([0-9.]+)", line)
+                if m: cur["cen"].append(dict(cpu=float(m[1]), npc=float(m[2]), proj=float(m[3]), alloc=float(m[4]), levy=int(lv[1]), shots=int(sh[1]), minions=int(mn[1]), enemy=int(en[1]), projs=int(ep[1]),
+                                             gc0=int(gc[1]) if gc else 0, gcms=float(gc[4]) / 120.0 if gc else 0.0))
             elif "[PerfWin]" in line and cur["n"] > 3:
                 try: cur["win"].append(json.loads(line.split("[PerfWin] ", 1)[1]))
                 except Exception: pass
@@ -59,12 +61,12 @@ for run in args:
     cells = collections.defaultdict(list)
     for f in fights(run): cells[label(f["key"])].append(summarize(f))
     print(f"\n### {run}   ({os.popen('cat ' + os.path.join(run, 'loadavg.txt') + ' 2>/dev/null').read().strip() or 'load: not recorded'})")
-    print("| scene | fights | CPU ms/tick (entities) | NPC phase | proj phase | Levy ms/update (analyzer) | Levy share | alloc KB/tick | levies | army shots | minions | enemy NPCs | dmg to boss | hits on boss | deaths | no-target % |")
-    print("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+    print("| scene | fights | CPU ms/tick (entities) | NPC phase | proj phase | Levy ms/update (analyzer) | Levy share | alloc KB/tick | gen0 GCs per 10 s | GC pause ms/tick | levies | army shots | minions | enemy NPCs | dmg to boss | hits on boss | deaths | no-target % |")
+    print("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for k, L in cells.items():
         g = lambda key: med([x[key] for x in L])
         share = med([x["levyms"] / x["updwall"] for x in L if x["updwall"] == x["updwall"] and x["updwall"] > 0])
-        print(f"| {k} | {len(L)} | {g('cpu'):.2f} | {g('npc'):.2f} | {g('proj'):.2f} | {g('levyms'):.2f} | {100*share:.0f}% | {g('alloc'):.0f} | {g('levy'):.0f} | {g('shots'):.0f} | {g('minions'):.0f} | {g('enemy'):.0f} | {g('dmgBoss')/1e3:.0f}k | {g('hitsBoss'):.0f} | {g('deaths'):.0f} | {g('tgtNonePct'):.0f} |")
+        print(f"| {k} | {len(L)} | {g('cpu'):.2f} | {g('npc'):.2f} | {g('proj'):.2f} | {g('levyms'):.2f} | {100*share:.0f}% | {g('alloc'):.0f} | {5*g('gc0'):.1f} | {g('gcms'):.3f} | {g('levy'):.0f} | {g('shots'):.0f} | {g('minions'):.0f} | {g('enemy'):.0f} | {g('dmgBoss')/1e3:.0f}k | {g('hitsBoss'):.0f} | {g('deaths'):.0f} | {g('tgtNonePct'):.0f} |")
     if TOP:
         for k, L in cells.items():
             print(f"\n#### {k}: top cost rows (ms per update, analyzer windows; median over fights)")

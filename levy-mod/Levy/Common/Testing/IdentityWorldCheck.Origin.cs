@@ -95,7 +95,7 @@ namespace Levy.Common.Testing
 		}
 
 		/// <summary>The stand-in commander lets go of her use buttons (nothing in the stand-in world does it for her: a run that held them would leave them held for the next).</summary>
-		private static void ReleaseCommanderButtons() { Player c = Main.player[0]; c.channel = false; c.controlUseItem = false; c.controlUseTile = false; c.releaseUseItem = true; }
+		private static void ReleaseCommanderButtons() { StandInDrivesUse = false; Player c = Main.player[0]; c.channel = false; c.controlUseItem = false; c.controlUseTile = false; c.releaseUseItem = true; }
 
 		private static void OriginStep() { CursorOnCommander(); Step(1); }
 

@@ -154,7 +154,8 @@ namespace Levy.Common.Weapons
 		/// Held weapons whose state lives in the holder's per-tick player step (Calamity's PostUpdateMiscEffects), not in the holdout: the Unstable Caster's Gauntlet's vis meter (+0.1 every 4 ticks while it is held) pays for every needle.
 		/// The levy's gear frame (which runs that step) runs every tick while he carries one, as it does for modded accessories: on the once-a-second stat pass the meter filled 60 times too slowly and the holdout ended on its first needle.
 		/// </summary>
-		private static readonly HashSet<string> PlayerTickNames = new() { "UnstableCastersGauntlet" };
+		/// Plain guns too: the Auralis counts the ticks its holder has stood still with it in hand (up to 300, +25% damage) in the same step; a levy who held his ground with it never counted (gunparity, 2026-11-23: 0.82 of a player's DPS).
+		private static readonly HashSet<string> PlayerTickNames = new() { "UnstableCastersGauntlet", "Auralis" };
 
 		/// <summary>
 		/// Held weapons whose damage is dealt within a short reach of their holder, whatever the item's class says, in tiles: the Burning Sea's fireball follows the cursor to at most 8 tiles from its caster, the Hellborn's left button
@@ -169,7 +170,16 @@ namespace Levy.Common.Weapons
 		internal static bool VariantAtSpawn(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && VariantAtSpawnNames.Contains(item.ModItem.Name);
 
 		internal static int HeldReachTiles(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && HeldReachTable.TryGetValue(item.ModItem.Name, out int r) && Of(item) == ModShotKind.Holdout ? r : 0;
-		internal static bool NeedsPlayerTick(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && PlayerTickNames.Contains(item.ModItem.Name) && Of(item) == ModShotKind.Holdout;
+		/// <summary>
+		/// Held guns whose holder overrides OnKill only to stop a sound (so the probe reads it as a release-on-kill holdout, let go every <see cref="LevyConstants.HeldModHoldTicks"/> ticks) but that fire while held: the Voidragon
+		/// reloads for 90 ticks, so it got two bullets out of each 100-tick hold. Held for as long as the levy fights, as a player holds the button. Lab (gunparity 2026-11-23, levy DPS old -> held, 600 ticks, one levy at his range):
+		/// Voidragon 3,534 -> 8,791, Photoviscerator 3,950 -> 6,420 (0.57 -> 0.92 of a player's), Phalanx Surge 1,659 -> 1,895 (0.80 -> 0.92). The same change measured WORSE for Helium Flash and Vitriolic Viper (their timed release helps),
+		/// so it is per weapon, not the probe's rule.
+		/// </summary>
+		private static readonly HashSet<string> HeldNoTimerNames = new() { "Voidragon", "Photoviscerator", "PhalanxSurge" };
+		internal static bool HeldWithoutTimer(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && HeldNoTimerNames.Contains(item.ModItem.Name);
+
+		internal static bool NeedsPlayerTick(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && PlayerTickNames.Contains(item.ModItem.Name);
 
 		// ---------------------------------------------------------------------------------------------
 		// The holder: the projectile a held modded weapon is held through (usually its shot, sometimes another projectile its hooks or its holder make)

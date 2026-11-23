@@ -199,8 +199,14 @@ namespace Levy.Common.Testing
 		/// <summary>The parity commander's cursor, put back before every projectile pass while she uses her weapon (null: not in a parity run).</summary>
 		internal static Vector2? _parityAim;
 
-		private static void HoldCommanderUse(Item weapon, bool press)
+		/// <summary>True while a parity run drives the stand-in's use (one ItemCheck a tick, the check's own): the server's player pass skips hers (<see cref="HarnessCommanderPlayer.PreItemCheck"/>). Cleared with her buttons.</summary>
+		internal static bool StandInDrivesUse;
+		/// <summary>True for the length of the check's own ItemCheck call on the stand-in (<see cref="MegaCommanderUse"/>): the one pass a tick that is let through.</summary>
+		internal static bool InStandInUse;
+
+		internal static void HoldCommanderUse(Item weapon, bool press)
 		{
+			StandInDrivesUse = true;
 			MegaCommanderUse(weapon, press);
 			Player p = Main.player[0];
 			Vector2 aim = _sweepTarget != null ? _sweepTarget.Center : p.Center + new Vector2(300f, 0f);

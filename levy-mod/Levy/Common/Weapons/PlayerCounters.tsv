@@ -1,0 +1,2 @@
+# A weapon's counter kept on the player (a ModPlayer field), held per levy while his shots update, hit and die (PlayerCounters.cs). Columns: mod, ModPlayer class, field, what reads it.
+CalamityMod	CalamityMod.CalPlayer.CalamityPlayer	sharkGunDamageScaling	Megalodon, Seadragon, Voidragon, Archerfish: each bullet hit adds one; the holdout's rocket / fish / jet scales with it and the reload resets it

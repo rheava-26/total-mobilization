@@ -285,6 +285,25 @@ namespace Levy.Common.Weapons
 		/// <summary>Item types already reported as throwing, so the log gets one line per weapon instead of one per shot.</summary>
 		private static readonly System.Collections.Generic.HashSet<int> _reportedDuds = new();
 
+		/// <summary>
+		/// The weapon's own hooks chose to make no shot this use (Shoot returned false and spawned nothing, or CanShoot said no): for a player that use still happened (the use time runs, the next use follows), so the levy's does
+		/// too while it has fired recently (<see cref="LevyConstants.DeclinedUsesBeforeDud"/> declined uses in a row); past that the weapon is treated as a dud until it fires. Infinity and Svantechnical fire their pair on every
+		/// 4th use: with every declined use a 30-tick dud they fired every 91 ticks instead of every 4.
+		/// </summary>
+		private static bool DeclinedUse(SoldierNPC s)
+		{
+			if (DeclineAsDudOld || s.DeclineStreak >= LevyConstants.DeclinedUsesBeforeDud) return false;
+			s.DeclineStreak++;
+			DeclinedUses++;
+			return true;
+		}
+		/// <summary>Lab A/B switch (env LEVY_DECLINE_OLD=1): every declined use is a dud, as before the gunparity pass.</summary>
+		internal static readonly bool DeclineAsDudOld = Environment.GetEnvironmentVariable("LEVY_DECLINE_OLD") == "1";
+		/// <summary>Lab counter: declined uses run as uses.</summary>
+		internal static long DeclinedUses;
+		/// <summary>Set by <see cref="TryRealShoot"/>: the last decline came from Shoot (after the player's PickAmmo spent the round), not from CanShoot.</summary>
+		private static bool _declineAfterAmmo;
+
 		/// <summary>A weapon spawned nothing this use: back off for a while so the soldier does not rerun its hooks every tick.</summary>
 		internal static bool Dud(SoldierNPC s, Item item)
 		{
@@ -419,9 +438,10 @@ namespace Levy.Common.Weapons
 			Vector2 vel = AimShot(s, muzzle, target, projType, speed, pouch.type);
 			bool fired = TryRealShoot(s, item, profile, target, pouch.type, muzzle, vel, projType, damage, knockback, out bool declined);
 			if (!fired && !_altActive && !declined) fired = FirePlain(s, item, profile, target, muzzle, vel, projType, damage, knockback); // the weapon chose no shot: a player gets none either
-			if (!fired) return Dud(s, item); // nothing came out: keep the ammo, hold
-
-			if (ConsumesAmmo(s, item, pouch))
+			if (!fired && !(declined && !_altActive && DeclinedUse(s))) return Dud(s, item); // nothing came out: keep the ammo, hold
+			if (fired) s.DeclineStreak = 0;
+			// a use the weapon's own Shoot declined (Infinity between its pairs) is still a use: a player's PickAmmo spent the round before Shoot ran, so the round goes; a CanShoot refusal never reached PickAmmo and spends none
+			if ((fired || _declineAfterAmmo) && ConsumesAmmo(s, item, pouch))
 			{
 				pouch.stack--;
 				if (pouch.stack <= 0)
@@ -467,8 +487,9 @@ namespace Levy.Common.Weapons
 			ItemShots.PreShoot(s, projType); // vanilla's kill-the-previous-one rule (Rainbow Gun) runs before any shot path spawns
 			bool fired = TryRealShoot(s, item, profile, target, 0, muzzle, vel, projType, damage, item.knockBack, out bool declined);
 			if (!fired && !_altActive && !declined) fired = FirePlain(s, item, profile, target, muzzle, vel, projType, damage, item.knockBack); // the weapon chose no shot: a player gets none either
-			if (!fired) { DudTrace.Note(item, "magic-nothing-spawned"); return Dud(s, item); } // nothing came out: keep the mana, hold
-			DudTrace.Note(item, "magic-fired");
+			if (!fired && !(declined && !_altActive && DeclinedUse(s))) { DudTrace.Note(item, "magic-nothing-spawned"); return Dud(s, item); } // nothing came out: keep the mana, hold
+			if (fired) s.DeclineStreak = 0;
+			DudTrace.Note(item, fired ? "magic-fired" : "magic-declined-use"); // a declined use still paid its mana at the use start, as a player's does
 			s.Record.Mana -= cost;
 			FinishUse(s, item, vel);
 			return true;
@@ -567,7 +588,7 @@ namespace Levy.Common.Weapons
 
 		private static bool TryRealShoot(SoldierNPC s, Item item, WeaponProfile profile, NPC target, int ammoItemId, Vector2 muzzle, Vector2 vel, int projType, int damage, float knockback, out bool declined)
 		{
-			declined = false;
+			declined = false; _declineAfterAmmo = false;
 			if (!LevyConfig.Get.RealWeaponShoot) return false;
 			Player d = s.Dummy;
 			if (d == null || item == null || item.IsAir) return false;
@@ -629,7 +650,7 @@ namespace Levy.Common.Weapons
 			if (adopted == 0) DudTrace.Note(item, !canShoot ? "hooks-0-cannotshoot" : useDefault ? "hooks-0-default" : "hooks-0-nodefault");
 			// a weapon that fires from its use animation (UseFrameShots: Thread of Eradication's Shoot only stores the damage): the use goes on tick by tick and its frame hook makes the shots
 			if (!useDefault && adopted == 0 && canShoot && UseFrameShots.Is(item)) { UseFrameShots.Begin(s, item); DudTrace.Note(item, "useframe-begin"); return true; }
-			if (!useDefault) { declined = adopted == 0 && !SharedOwnerRefusal(s, item, profile); return adopted > 0; } // the weapon made its own shot, or chose to make none this use: never a stand-in on top
+			if (!useDefault) { declined = adopted == 0 && !SharedOwnerRefusal(s, item, profile); _declineAfterAmmo = declined && canShoot; return adopted > 0; } // the weapon made its own shot, or chose to make none this use: never a stand-in on top
 
 
 			DefaultShoot(s, item, profile, target, pos, v, type, dmg, kb);

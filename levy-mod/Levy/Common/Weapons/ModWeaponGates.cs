@@ -78,7 +78,7 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>
-		/// The general rule: a modded WEAPON whose own <c>CanUseItem</c> refuses a pristine player (full mana, none of its own projectiles out, no alt-fire) is locked by something the world has not reached (a boss not
+		/// The general rule: a modded WEAPON whose own <c>CanUseItem</c> refuses a pristine player (full mana, plenty of minion and sentry slots, none of its own projectiles out, no alt-fire) is locked by something the world has not reached (a boss not
 		/// downed, a quest not done), so nobody can use it and the armory does not issue it. Read from the item's real code, cached per item type for 3 s; any failure reads as "usable".
 		/// </summary>
 		private static bool ProbeLocked(Item item)
@@ -93,17 +93,41 @@ namespace Levy.Common.Weapons
 			{
 				var p = _probePlayer ??= new Player();
 				p.ResetEffects(); p.statMana = p.statManaMax2 = 1000; p.statLife = p.statLifeMax2 = 500; p.altFunctionUse = 0;
+				// a summon staff that asks for a number of minion slots (Calamity's Cosmilamp 2, Kingof Constellations 4, Temporal Umbrella 5, Endogenesis 10, Lilies of Finality 2 free) is asking about its holder's gear, not the world:
+				// the probe player has plenty, as SummonCap's does. With the bare 1 slot of a fresh player every such staff read as locked and was never issued (summonsweep 2026-11-22: eight post-Moon Lord Calamity staves).
+				p.maxMinions = 100; p.slotsMinions = 0f; p.maxTurrets = 100;
 				Array.Clear(p.ownedProjectileCounts, 0, p.ownedProjectileCounts.Length);
 				var sample = new Item(); sample.SetDefaults(item.type);
 				Item saved = p.inventory[0]; int savedSel = p.selectedItem;
 				p.inventory[0] = sample; p.selectedItem = 0;
-				try { locked = !ItemLoader.CanUseItem(sample, p); }
+				try { HoldForProbe(sample, p); locked = !ItemLoader.CanUseItem(sample, p); }
 				finally { p.inventory[0] = saved; p.selectedItem = savedSel; }
 			}
 			catch (Exception) { locked = false; }
 			_probed[item.type] = (now, locked);
 			if (locked) { ProbeLocks++; if (_reported.Add(item.type)) ModContent.GetInstance<Levy>()?.Logger.Info($"[Gate] {item.Name} ({item.ModItem?.FullName}) refuses use from a pristine player (its own CanUseItem): not issued, not used until the world allows it"); }
 			return locked;
+		}
+
+		/// <summary>
+		/// A summon staff whose own HoldItem sets what its CanUseItem reads (the Abandoned Slime Staff counts its holder's free slots there and refuses a use with none) is held by the probe first, as a player holds it when she
+		/// uses it: without that every such staff read as locked and was never issued. The probe player stands on a slot nothing uses (its "my minions" scan finds none), and anything the hook makes is ended at once.
+		/// </summary>
+		private static void HoldForProbe(Item sample, Player p)
+		{
+			if (sample.ModItem == null || !(sample.CountsAsClass(DamageClass.Summon) || sample.sentry)) return;
+			var hold = sample.ModItem.GetType().GetMethod("HoldItem", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(Player) }, null);
+			if (hold == null || hold.DeclaringType == typeof(ModItem)) return;
+			int who = p.whoAmI; p.whoAmI = Main.maxPlayers - 4;
+			var before = new bool[Main.maxProjectiles];
+			for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
+			try { sample.ModItem.HoldItem(p); }
+			catch (Exception) { }
+			finally
+			{
+				p.whoAmI = who;
+				for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active && !before[i]) Main.projectile[i].active = false;
+			}
 		}
 
 		private static bool FlagUp(Gate g)

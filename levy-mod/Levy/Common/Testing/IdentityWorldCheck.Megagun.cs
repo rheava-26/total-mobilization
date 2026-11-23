@@ -37,11 +37,13 @@ namespace Levy.Common.Testing
 		private static readonly bool MegaDebug = Environment.GetEnvironmentVariable("LEVY_MEGAGUN_DEBUG") == "1";
 
 		/// <summary>The commander uses her own weapon through the real vanilla ItemCheck (the button down, her cursor on the enemy), as a single-player client does every tick.</summary>
+		/// <summary>Lab: the stand-in commander's mana pool while she uses a weapon (at least 200; the summon sweep raises it for a staff that costs more a cast, the Universe Splitter's 300).</summary>
+		internal static int _cmdManaFloor;
 		private static void MegaCommanderUse(Item weapon, bool press)
 		{
 			Player p = Main.player[0];
 			p.active = true; p.dead = false;
-			p.statManaMax = p.statManaMax2 = 200; p.statMana = 200;
+			p.statManaMax = p.statManaMax2 = Math.Max(200, _cmdManaFloor); p.statMana = p.statManaMax2;
 			if (p.inventory[0] == null || p.inventory[0].IsAir || p.inventory[0].type != weapon.type) p.inventory[0] = weapon.Clone();
 			p.selectedItem = 0; p.noItems = false;
 			Vector2 aim = _sweepTarget != null ? _sweepTarget.Center : p.Center + new Vector2(300f, 0f);

@@ -1,0 +1,176 @@
+key	sec	event	detail
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	0.0	draedon	spawned beside the commander; choice Ares
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	0.0	phase	pre
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	3.1	spawn	Ares life 3084918
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	3.1	open	Ares at 100%
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	3.1	phase	A
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	13.3	immune	Ares at 70%
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	13.3	state	Ares secondary 0->2 at 70%
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	13.3	spawn	Thanatos life 2374466
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	13.3	open	Thanatos at 100%
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	13.3	spawn	Twins life 3081509
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	13.3	open	Twins at 100%
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	13.3	phase	aTW
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	30.7	open	Ares at 70%
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	30.7	state	Ares secondary 2->1 at 70%
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	30.7	state	Thanatos secondary 0->1 at 94%
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	30.7	state	Twins secondary 0->1 at 70%
+fight|exoares|mdeath|free|1|36000|n40|abig|cfar|L3|tc0|dlK	30.7	phase	ATW
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	0.0	draedon	spawned beside the commander; choice Ares
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	0.0	phase	pre
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	3.1	spawn	Ares life 3049800
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	3.1	open	Ares at 100%
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	3.1	phase	A
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	13.7	immune	Ares at 70%
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	13.7	state	Ares secondary 0->2 at 70%
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	13.7	spawn	Thanatos life 2346000
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	13.7	open	Thanatos at 100%
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	13.7	spawn	Twins life 3049800
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	13.7	open	Twins at 99%
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	13.7	phase	aTW
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	24.1	open	Ares at 70%
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	24.1	state	Ares secondary 2->1 at 70%
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	24.1	state	Twins secondary 0->1 at 70%
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	24.1	phase	ATW
+fight|exoares|mdeath|free|2|36000|n40|abig|cfar|L3|tc0|dlK	24.1	state	Thanatos secondary 0->1 at 100%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	0.0	draedon	spawned beside the commander; choice Ares
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	0.0	phase	pre
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	3.1	spawn	Ares life 3049800
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	3.1	open	Ares at 100%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	3.1	phase	A
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	13.1	immune	Ares at 70%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	13.1	state	Ares secondary 0->2 at 70%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	13.1	spawn	Thanatos life 2346000
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	13.1	open	Thanatos at 100%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	13.1	spawn	Twins life 3049800
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	13.1	open	Twins at 97%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	13.1	phase	aTW
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	27.4	open	Ares at 70%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	27.4	state	Ares secondary 2->1 at 70%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	27.4	state	Twins secondary 0->1 at 70%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	27.4	phase	ATW
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	27.4	state	Thanatos secondary 0->1 at 99%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	54.7	state	Ares secondary 1->0 at 40%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	54.7	immune	Thanatos at 92%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	54.7	state	Thanatos secondary 1->2 at 92%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	54.7	state	Twins secondary 1->2 at 49%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	54.7	phase	AtW
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	54.7	immune	Twins at 49%
+fight|exoares|mdeath|free|3|36000|n40|abig|cfar|L3|tc0|dlK	54.7	phase	Atw
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	0.0	draedon	spawned beside the commander; choice Thanatos
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	0.0	phase	pre
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	3.1	spawn	Thanatos life 2346000
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	3.1	open	Thanatos at 100%
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	3.1	phase	T
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	30.8	spawn	Ares life 3049800
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	30.8	open	Ares at 100%
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	30.8	immune	Thanatos at 70%
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	30.8	state	Thanatos secondary 0->2 at 70%
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	30.8	spawn	Twins life 3049800
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	30.8	open	Twins at 99%
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	30.8	phase	AtW
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	38.9	state	Ares secondary 0->1 at 70%
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	38.9	open	Thanatos at 70%
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	38.9	state	Thanatos secondary 2->1 at 70%
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	38.9	state	Twins secondary 0->1 at 82%
+fight|exothan|mdeath|free|1|36000|n40|abig|cfar|L3|tc1|dlK	38.9	phase	ATW
+fight|exothan|mdeath|free|2|36000|n40|abig|cfar|L3|tc1|dlK	0.0	draedon	spawned beside the commander; choice Thanatos
+fight|exothan|mdeath|free|2|36000|n40|abig|cfar|L3|tc1|dlK	0.0	phase	pre
+fight|exothan|mdeath|free|2|36000|n40|abig|cfar|L3|tc1|dlK	3.1	spawn	Thanatos life 2346000
+fight|exothan|mdeath|free|2|36000|n40|abig|cfar|L3|tc1|dlK	3.1	open	Thanatos at 100%
+fight|exothan|mdeath|free|2|36000|n40|abig|cfar|L3|tc1|dlK	3.1	phase	T
+fight|exothan|mdeath|free|2|36000|n40|abig|cfar|L3|tc1|dlK	22.3	spawn	Ares life 3049800
+fight|exothan|mdeath|free|2|36000|n40|abig|cfar|L3|tc1|dlK	22.3	open	Ares at 100%
+fight|exothan|mdeath|free|2|36000|n40|abig|cfar|L3|tc1|dlK	22.3	immune	Thanatos at 70%
+fight|exothan|mdeath|free|2|36000|n40|abig|cfar|L3|tc1|dlK	22.3	state	Thanatos secondary 0->2 at 70%
+fight|exothan|mdeath|free|2|36000|n40|abig|cfar|L3|tc1|dlK	22.3	spawn	Twins life 3049800
+fight|exothan|mdeath|free|2|36000|n40|abig|cfar|L3|tc1|dlK	22.3	open	Twins at 100%
+fight|exothan|mdeath|free|2|36000|n40|abig|cfar|L3|tc1|dlK	22.3	phase	AtW
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	0.0	draedon	spawned beside the commander; choice Thanatos
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	0.0	phase	pre
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	3.1	spawn	Thanatos life 2346000
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	3.1	open	Thanatos at 100%
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	3.1	phase	T
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	11.5	offarena	levy 215 (T CalamityMod/DimensionTearingDisk@60) at 68,18 tiles from the arena centre floor
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	29.7	spawn	Ares life 3049800
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	29.7	open	Ares at 100%
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	29.7	immune	Thanatos at 70%
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	29.7	state	Thanatos secondary 0->2 at 70%
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	29.7	spawn	Twins life 3049800
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	29.7	open	Twins at 100%
+fight|exothan|mdeath|free|3|36000|n40|abig|cfar|L3|tc1|dlK	29.7	phase	AtW
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	0.0	draedon	spawned beside the commander; choice Twins
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	0.0	phase	pre
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	3.1	spawn	Twins life 3049800
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	3.1	open	Twins at 100%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	3.1	phase	W
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	15.4	spawn	Ares life 3049800
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	15.4	open	Ares at 100%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	15.4	spawn	Thanatos life 2346000
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	15.4	open	Thanatos at 100%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	15.4	state	Twins secondary 0->2 at 70%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	15.4	phase	ATW
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	15.4	immune	Twins at 70%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	15.4	phase	ATw
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	24.6	state	Ares secondary 0->1 at 70%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	24.6	open	Twins at 70%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	24.6	state	Twins secondary 2->1 at 70%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	24.6	phase	ATW
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	24.6	state	Thanatos secondary 0->1 at 100%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	49.7	state	Ares secondary 1->0 at 40%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	49.7	immune	Thanatos at 91%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	49.7	state	Thanatos secondary 1->2 at 91%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	49.7	state	Twins secondary 1->2 at 64%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	49.7	phase	AtW
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	49.7	immune	Twins at 64%
+fight|exotwins|mdeath|free|1|36000|n40|abig|cfar|L3|tc2|dlK	49.7	phase	Atw
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	0.0	draedon	spawned beside the commander; choice Twins
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	0.0	phase	pre
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	3.1	spawn	Twins life 3049800
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	3.1	open	Twins at 100%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	3.1	phase	W
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	12.5	spawn	Ares life 3049800
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	12.5	open	Ares at 100%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	12.5	spawn	Thanatos life 2346000
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	12.5	open	Thanatos at 100%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	12.5	state	Twins secondary 0->2 at 70%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	12.5	phase	ATW
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	12.5	immune	Twins at 70%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	12.5	phase	ATw
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	28.3	state	Ares secondary 0->1 at 70%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	28.3	open	Twins at 70%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	28.3	state	Twins secondary 2->1 at 70%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	28.3	phase	ATW
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	28.3	state	Thanatos secondary 0->1 at 95%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	68.8	state	Ares secondary 1->0 at 40%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	68.8	immune	Thanatos at 84%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	68.8	state	Thanatos secondary 1->2 at 84%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	68.8	state	Twins secondary 1->2 at 59%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	68.8	phase	AtW
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	68.8	immune	Twins at 59%
+fight|exotwins|mdeath|free|2|36000|n40|abig|cfar|L3|tc2|dlK	68.8	phase	Atw
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	0.0	draedon	spawned beside the commander; choice Twins
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	0.0	phase	pre
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	3.1	spawn	Twins life 3049800
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	3.1	open	Twins at 100%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	3.1	phase	W
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	14.5	spawn	Ares life 3049800
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	14.5	open	Ares at 100%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	14.5	spawn	Thanatos life 2370539
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	14.5	open	Thanatos at 100%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	14.5	state	Twins secondary 0->2 at 70%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	14.5	phase	ATW
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	14.5	immune	Twins at 70%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	14.5	phase	ATw
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	24.4	state	Ares secondary 0->1 at 70%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	24.4	open	Twins at 70%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	24.4	state	Twins secondary 2->1 at 70%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	24.4	phase	ATW
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	24.4	state	Thanatos secondary 0->1 at 99%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	39.7	state	Ares secondary 1->0 at 40%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	39.7	immune	Thanatos at 98%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	39.7	state	Thanatos secondary 1->2 at 98%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	39.7	state	Twins secondary 1->2 at 69%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	39.7	phase	AtW
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	39.7	immune	Twins at 69%
+fight|exotwins|mdeath|free|3|36000|n40|abig|cfar|L3|tc2|dlK	39.7	phase	Atw

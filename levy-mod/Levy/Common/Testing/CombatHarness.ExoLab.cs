@@ -108,7 +108,7 @@ namespace Levy.Common.Testing
 				}
 			}
 			catch { }
-			_ex = new ExState(); _exHitOn = true;
+			_ex = new ExState(); _exHitOn = true; BaBegin();
 			ExSetDraedonChoice(0); // a choice left over from a fight before must not summon the next mech early
 		}
 
@@ -192,7 +192,8 @@ namespace Levy.Common.Testing
 			if (st.HalfTick < 0 && x.Seen.All(b => b) && sum * 2 <= st.BossLifeMaxSum) st.HalfTick = st.Tick;
 			int lead = -1; for (int k = 0; k < 3 && lead < 0; k++) if (x.Present[k] && !x.Immune[k]) lead = k; for (int k = 0; k < 3 && lead < 0; k++) if (x.Present[k]) lead = k;
 			if (lead >= 0) e = Main.npc[x.Main[lead]]; else if (x.DraedonIdx >= 0 && Main.npc[x.DraedonIdx].active) e = Main.npc[x.DraedonIdx];
-			if (st.Tick % 15 == 0) ExSample(st, x);
+			BaTick(st);
+			if (st.Tick % 15 == 0) { ExSample(st, x); BaSample(st); }
 			bool any = x.Present.Any(b => b);
 			bool alive = any || (!x.Seen.Any(b => b) && st.Tick < 1800);
 			if (!alive && !st.BossGone)
@@ -276,12 +277,13 @@ namespace Levy.Common.Testing
 				string ep = _crOut + ".exo_events.tsv";
 				if (!File.Exists(ep)) File.WriteAllText(ep, "key\tsec\tevent\tdetail\n");
 				File.AppendAllText(ep, string.Concat(x.Events.Select(ev => run.Key + "\t" + ev + "\n")));
+				BaFinish(run, st, end);
 				Mod.Logger.Info($"HARNESS-EXO: {run.Key} {st.Result} t={end / 60.0:0.0}s kill={ko} phases={string.Join(" ", x.Phases)} msPerTick={(x.WallTicks > 0 ? x.WallMs / x.WallTicks : 0):0.00}");
 			}
 			catch (Exception ex) { Mod.Logger.Warn("HARNESS-EXO: finish failed: " + ex); }
 		}
 
-		private static void ExEnd() { _ex = null; _exHitOn = false; ExSetDraedonChoice(0); }
+		private static void ExEnd() { _ex = null; _exHitOn = false; ExSetDraedonChoice(0); BaEnd(); }
 
 		// ------------------------------------------------------------------------------------------------------------------ the big arena
 		private static int _exHalf = 110;

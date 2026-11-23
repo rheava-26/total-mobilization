@@ -35,6 +35,8 @@ namespace Levy.Common.Config
 		[Header("BossBehaviour")]
 		[DefaultValue(true)] public bool BossesPunishSoldiers;
 		[DefaultValue(true)] public bool BossesTargetSoldiers;
+		/// <summary>Calamity's Exo Mechs use their multi-target attacks on the army (Common/Boss/ArmyAwareExo.cs). Off by default; only acts while a beaten mech fights a fielded army.</summary>
+		[DefaultValue(false)] public bool BossesAdaptToArmies;
 		/// <summary>Retired (boss life now follows gear strength, BossHpArmyStrength); kept so saved config files still load. Hidden and ignored.</summary>
 		[Newtonsoft.Json.JsonIgnore] [DefaultValue(2)] public int BossHpScalingPercentPerCp = 2;
 		[Range(0f, 5f)] [Increment(0.1f)] [DefaultValue(1f)] public float BossHpArmyStrength;

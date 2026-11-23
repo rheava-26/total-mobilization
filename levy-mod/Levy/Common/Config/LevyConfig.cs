@@ -90,6 +90,8 @@ namespace Levy.Common.Config
 		[DefaultValue(false)] public bool SoldiersCanDrown;
 		[DefaultValue(true)] public bool LeviesSitWhenIdle;
 		[DefaultValue(true)] public bool AmbientChatter;
+		/// <summary>Levies speak lines written for Wrath of the Gods's fights (the Genesis, the Avatar, the Nameless Deity) in place of their ordinary chatter, between the boss's own moments (Common/Dialogue/WotgScenes.cs). Off: they stay silent through those fights.</summary>
+		[DefaultValue(true)] public bool WotgFightChatter;
 		[Range(60, 600)] [DefaultValue(200)] public int FreeReinRadius;
 		[DefaultValue(true)] public bool FreeReinPastimes;
 
@@ -126,6 +128,10 @@ namespace Levy.Common.Config
 		[DefaultValue(MilitiaDeathMessageMode.Count)] [DrawTicks] public MilitiaDeathMessageMode MilitiaDeathMessages;
 		[DefaultValue(true)] public bool RegularDeathMessages;
 		[Range(0, 100)] [DefaultValue(30)] public int CustomDeathMessagePercent;
+		/// <summary>Calamity boss lines that assume a lone hero are swapped for versions that fit an army, while an army is on the field (Common/Compat/Calamity/BossLines.cs).</summary>
+		[DefaultValue(true)] public bool BossLinesFitArmy;
+		/// <summary>With the swap on, the boss's original line follows its army version in chat.</summary>
+		[DefaultValue(false)] public bool BossLinesShowOriginal;
 
 		// ---- Crowd ------------------------------------------------------------------------------------------
 		[Header("Crowd")]

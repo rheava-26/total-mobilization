@@ -44,7 +44,8 @@ namespace Levy.Common
 		RIFT_PANIC, RIFT_SHOCK, RIFT_ABSENT, RIFT_COLD, RIFT_LATER, RIFT_RESPECT, RIFT_IDLE, RIFT_CAMP,
 		RIFT_DARK, RIFT_POWER, RIFT_DUKE, // appended: dark humour once the army settles, weary talk of its own strength, and the shock when the sky swallows a boss
 		RIFT_BLOOD, RIFT_GROW1, RIFT_GROW2, RIFT_GROW3, RIFT_ICE, RIFT_FROZEN, RIFT_FOG, RIFT_SCARE, RIFT_GRIM, RIFT_WORN, // appended (RiftMood.Sky.cs): a Blood Moon under the rift, the rift growing, water freezing, the fog and its scares, the long slide of morale
-		RIFT_HUSH, RIFT_ANGRY, RIFT_BOSS, RIFT_TOWN, RIFT_CLASS, RIFT_HABIT, RIFT_FLIGHT // appended (and flying under it) (with the class talk and each temperament's small habits): the silences of a Blood Moon under the rift, the women's anger on one, boss fights under the rift, and talk of the town NPCs
+		RIFT_HUSH, RIFT_ANGRY, RIFT_BOSS, RIFT_TOWN, RIFT_CLASS, RIFT_HABIT, RIFT_FLIGHT, // appended (and flying under it) (with the class talk and each temperament's small habits): the silences of a Blood Moon under the rift, the women's anger on one, boss fights under the rift, and talk of the town NPCs
+		BOSS_SCENE // appended: a scripted reaction in a Wrath of the Gods fight (WotgScenes); the line itself comes from a SCENE_<FIGHT>_<MOMENT> pool
 	}
 
 	/// <summary>Where a dialogue line is delivered.</summary>

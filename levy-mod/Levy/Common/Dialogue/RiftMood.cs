@@ -189,7 +189,7 @@ namespace Levy.Common.Dialogue
 			if (IsBurst(t)) return 1f;
 			switch (t)
 			{
-				case DialogueTrigger.RIFT_PANIC: case DialogueTrigger.RIFT_DUKE: case DialogueTrigger.MUTINY: return 1f;
+				case DialogueTrigger.RIFT_PANIC: case DialogueTrigger.RIFT_DUKE: case DialogueTrigger.MUTINY: case DialogueTrigger.BOSS_SCENE: return 1f;
 				case DialogueTrigger.FLIGHT_SHOUT: return 0f; // nobody whoops in the air under the rift
 				case DialogueTrigger.IDLE: case DialogueTrigger.IDLE_NIGHT: case DialogueTrigger.NAMEDROP: case DialogueTrigger.FIRESIDE: case DialogueTrigger.PASTIME: case DialogueTrigger.PASTIME_NIGHT:
 				case DialogueTrigger.DRINK: case DialogueTrigger.DRINK_ALE: case DialogueTrigger.DRINK_STOUT: case DialogueTrigger.DRINK_RUM: case DialogueTrigger.DRINK_FIZZ: case DialogueTrigger.DRINK_ICEBERG:

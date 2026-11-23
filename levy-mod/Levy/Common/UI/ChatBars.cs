@@ -32,7 +32,7 @@ namespace Levy.Common.UI
 			switch ((DialogueTrigger)triggerByte)
 			{
 				case DialogueTrigger.BOSS_SIGHTED: case DialogueTrigger.BOSS: case DialogueTrigger.COMRADE_DOWN:
-				case DialogueTrigger.ROUTED: case DialogueTrigger.MUTINY:
+				case DialogueTrigger.ROUTED: case DialogueTrigger.MUTINY: case DialogueTrigger.BOSS_SCENE:
 					return LevyConstants.ChatBarPriorityBig;
 				case DialogueTrigger.RALLIED: case DialogueTrigger.VICTORY: case DialogueTrigger.FLIGHT_SHOUT:
 				case DialogueTrigger.EVENT_GOBLINS: case DialogueTrigger.EVENT_PIRATES: case DialogueTrigger.EVENT_ECLIPSE: case DialogueTrigger.EVENT_PUMPKIN:

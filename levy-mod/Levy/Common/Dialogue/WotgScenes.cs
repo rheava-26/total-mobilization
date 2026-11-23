@@ -202,7 +202,9 @@ namespace Levy.Common.Dialogue
 
 		private static void Started(WotgFight fight, int now)
 		{
-			MomentAt.Clear(); Queue.Clear(); _nextChatter = Never;
+			_nextChatter = Never;
+			if (_fight != WotgFight.None) return; // the Genesis opens the rift, the rift gives way to the Avatar: one fight, and what was about to be said still is
+			MomentAt.Clear(); Queue.Clear();
 			FightAlive.Clear();
 			foreach (SoldierRecord r in RosterSystem.Instance.Regulars) if (!r.Dead && !r.Reserve) FightAlive.Add(r.Id);
 			Array.Clear(WasDead);

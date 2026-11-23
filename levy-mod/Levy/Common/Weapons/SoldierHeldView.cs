@@ -32,8 +32,8 @@ namespace Levy.Common.Weapons
 			On_Projectile.VanillaAI -= VanillaAiDetour;
 		}
 
-		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self) { _hl_AiDetour_1++; HookProbe.ViewAi++; if (!Wants(self, out SoldierNPC b, out Item it)) orig(self); else Run(pp => orig(pp), self, b, it); } private static int _hl_AiDetour_1;
-		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self) { _hl_VanillaAiDetour_3++; HookProbe.ViewVanilla++; if (!Wants(self, out SoldierNPC b, out Item it)) orig(self); else Run(pp => orig(pp), self, b, it); } private static int _hl_VanillaAiDetour_3;
+		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self) { _hl_AiDetour_1++; HookProbe.ViewAi++; if (!Wants(self, out SoldierNPC b, out Item it)) orig(self); else Run(global::Levy.Common.Weapons.ProjAiHooks.Wrap(orig), self, b, it); } private static int _hl_AiDetour_1;
+		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self) { _hl_VanillaAiDetour_3++; HookProbe.ViewVanilla++; if (!Wants(self, out SoldierNPC b, out Item it)) orig(self); else Run(global::Levy.Common.Weapons.ProjAiHooks.Wrap(orig), self, b, it); } private static int _hl_VanillaAiDetour_3;
 		private static void LoaderAiDetour(Action<Projectile> orig, Projectile self) { _hl_LoaderAiDetour_2++; HookProbe.ViewLoader++; if (!Wants(self, out SoldierNPC b, out Item it)) orig(self); else Run(orig, self, b, it); } private static int _hl_LoaderAiDetour_2;
 
 		/// <summary>A soldier's plain shot (tagged, owner a player slot, not a held chain) with a live soldier that carries a weapon.</summary>

@@ -584,12 +584,12 @@ namespace Levy.Common.Weapons
 			}
 			catch (Exception) { return null; }
 		}
-		private static readonly Dictionary<string, ModPlayerAccess> _mp = new();
+		private static readonly Dictionary<(string, string), ModPlayerAccess> _mp = new(); // keyed by the (mod, type) pair: a concatenated key allocated a string on every call (perf pass)
 		private static readonly Dictionary<string, MemberInfo> _meters = new();
 
 		private static ModPlayerAccess Access(string mod, string typeName)
 		{
-			string key = mod + "/" + typeName;
+			var key = (mod, typeName);
 			if (_mp.TryGetValue(key, out ModPlayerAccess acc)) return acc;
 			acc = null;
 			try

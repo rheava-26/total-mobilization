@@ -115,8 +115,8 @@ namespace Levy.Common.Weapons
 		public override void PreUpdateProjectiles() => EnemyTargeting.EnsureSlotRestored();
 		public override void PostUpdateProjectiles() => EnemyTargeting.EnsureSlotRestored();
 
-		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self) { _hl_AiDetour_1++; global::Levy.Common.Util.HookProbe.MiscAi++; if (!Wants(self)) orig(self); else Go(pp => orig(pp), self); } private static int _hl_AiDetour_1;
-		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self) { _hl_VanillaAiDetour_3++; global::Levy.Common.Util.HookProbe.MiscVanilla++; if (!Wants(self)) orig(self); else Go(pp => orig(pp), self); } private static int _hl_VanillaAiDetour_3;
+		private static void AiDetour(On_Projectile.orig_AI orig, Projectile self) { _hl_AiDetour_1++; global::Levy.Common.Util.HookProbe.MiscAi++; if (!Wants(self)) orig(self); else Go(global::Levy.Common.Weapons.ProjAiHooks.Wrap(orig), self); } private static int _hl_AiDetour_1;
+		private static void VanillaAiDetour(On_Projectile.orig_VanillaAI orig, Projectile self) { _hl_VanillaAiDetour_3++; global::Levy.Common.Util.HookProbe.MiscVanilla++; if (!Wants(self)) orig(self); else Go(global::Levy.Common.Weapons.ProjAiHooks.Wrap(orig), self); } private static int _hl_VanillaAiDetour_3;
 		private static void LoaderAiDetour(Action<Projectile> orig, Projectile self) { _hl_LoaderAiDetour_2++; global::Levy.Common.Util.HookProbe.MiscLoader++; if (!Wants(self)) orig(self); else Go(orig, self); } private static int _hl_LoaderAiDetour_2;
 
 		/// <summary>The cheap test every projectile passes: a Zenith sword of a soldier, not already inside the wrapper.</summary>

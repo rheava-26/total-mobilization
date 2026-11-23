@@ -43,7 +43,8 @@ namespace Levy.Common.Owner
 			public bool Channel, UseItem, UseTile, ReleaseUse, NoItems, CCed;
 			public float ItemRotation; public Vector2 ItemLocation, Velocity;
 			public Player.CompositeArmData Front, Back;
-			public bool[] Listeners; // the mouseWorldListener of each mod player that has one (see ListenerSet)
+			public bool[] Listeners; // the mouseWorldListener of each mod player that has one (see ListenerSet), when there are more than 64 of them
+			public ulong ListenerBits; public int ListenerN; // the same flags as bits (64 or fewer: every real case), so a snapshot allocates nothing (it runs for every army round's update, hit pass and death)
 			public object Set;
 		}
 
@@ -107,11 +108,18 @@ namespace Levy.Common.Owner
 			s.ItemRotation = p.itemRotation; s.ItemLocation = p.itemLocation; s.Velocity = p.velocity; s.Front = p.compositeFrontArm; s.Back = p.compositeBackArm;
 			s.CCed = p.CCed; s.NoThrow = p.noThrow; s.Frozen = p.frozen ? 1 : 0; s.Stoned = p.stoned ? 1 : 0; s.Webbed = p.webbed ? 1 : 0; s.TalkNpc = p.talkNPC;
 			ListenerSet set = ListenersOf(p); s.Set = set;
-			if (set.Slots.Length > 0)
+			int ln = set.Slots.Length;
+			if (ln > 64)
 			{
-				var flags = new bool[set.Slots.Length];
+				var flags = new bool[ln];
 				for (int i = 0; i < flags.Length; i++) flags[i] = set.Slots[i].Get(set.Slots[i].Owner);
 				s.Listeners = flags;
+			}
+			else if (ln > 0)
+			{
+				ulong bits = 0;
+				for (int i = 0; i < ln; i++) if (set.Slots[i].Get(set.Slots[i].Owner)) bits |= 1UL << i;
+				s.ListenerBits = bits; s.ListenerN = ln;
 			}
 			return s;
 		}
@@ -135,6 +143,12 @@ namespace Levy.Common.Owner
 			p.itemRotation = s.ItemRotation; p.itemLocation = s.ItemLocation; p.velocity = s.Velocity; p.compositeFrontArm = s.Front; p.compositeBackArm = s.Back;
 			p.noThrow = s.NoThrow; p.frozen = s.Frozen != 0; p.stoned = s.Stoned != 0; p.webbed = s.Webbed != 0;
 			if (p.talkNPC != s.TalkNpc) p.SetTalkNPC(s.TalkNpc, true);
+			if (s.ListenerN > 0)
+			{
+				ListenerSlot[] ls = ((ListenerSet)s.Set).Slots;
+				for (int i = 0; i < ls.Length && i < s.ListenerN; i++) ls[i].Set(ls[i].Owner, (s.ListenerBits & (1UL << i)) != 0);
+				return;
+			}
 			if (s.Listeners == null) return;
 			ListenerSlot[] slots = ((ListenerSet)s.Set).Slots;
 			for (int i = 0; i < slots.Length && i < s.Listeners.Length; i++) slots[i].Set(slots[i].Owner, s.Listeners[i]);

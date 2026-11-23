@@ -21,7 +21,7 @@ namespace Levy.Common.Testing
 	/// each, so the per-tick gear frame runs), a pinned boss-flagged target in front of them that never dies, and a stream of hostile projectiles over the army (the threat field, the dodge solver and the hostile hit tests run).
 	/// A CONTROL arm runs the same field with no army; the ARMY arm lets the army loose for <see cref="Warm"/> ticks and then measures two halves of <see cref="Half"/> ticks each. Every tick is timed in thread CPU time.
 	/// <para/>PASS rules: the army's added cost (army arm minus control, ms per tick) stays under <see cref="CeilMs"/> (generous: about ten times what it measures, so a loaded box cannot fail it, an order-of-magnitude regression does);
-	/// every levy acquires the target; shots fired and hits landed per levy-second are inside the reference band measured on the build before the perf pass (<see cref="RefShots"/>, <see cref="RefHits"/>: 0.5x to 2x, fights are chaotic);
+	/// every levy acquires the target; shots fired and hits landed per levy-second are inside the reference band measured on the build before the perf pass (<see cref="RefShots"/>, <see cref="RefHits"/>: 0.7x to 1.43x; the scene repeats to within 1% on one build, the band leaves room for the wall-clock search budget on a loaded box);
 	/// and the two halves agree with each other within noise (0.6x to 1.67x), so a change that made the army stop fighting halfway is caught. The numbers are logged as OBSERVED.
 	/// Env: with LEVY_SELFCHECK_WORLD=1 it runs in the world-check chain (LEVY_PERFPASSWORLD=0 skips it); LEVY_PERFPASS=1 runs it alone, a few ticks after a world loads.
 	/// </summary>
@@ -33,7 +33,7 @@ namespace Levy.Common.Testing
 		/// <summary>Reference rates from the build before the perf pass (same scene; see <c>lab/perfpass/README.md</c>): shots made and target hits per levy per second, vanilla and Calamity halves.</summary>
 		private static double RefShots => ModLoader.HasMod("CalamityMod") ? RefShotsCal : RefShotsVan;
 		private static double RefHits => ModLoader.HasMod("CalamityMod") ? RefHitsCal : RefHitsVan;
-		internal static double RefShotsVan = 0, RefShotsCal = 0, RefHitsVan = 0, RefHitsCal = 0; // 0: not measured yet, only the floors and the halves apply
+		internal static double RefShotsVan = 5.14, RefShotsCal = 5.26, RefHitsVan = 2.00, RefHitsCal = 2.00; // measured 11-22 on the pre-pass build (244c881, product code of 57c5a09), two runs per half: shots 5.156/5.132 and 5.271/5.257, hits 2.003/1.993 and 2.007/1.993
 		private const string Commander = "PerfPassTester";
 
 		private static bool _armed, _done, _running, _lab; private static int _calls, _pass, _fail; private static Mod _mod; private static int _savedMy;
@@ -257,8 +257,8 @@ namespace Levy.Common.Testing
 			Check($"every levy acquires the target ({acquired.Count}/{Army.Count}) and the army spends most of the window on it ({tgt:P0} of levy-ticks, floor 50%)", acquired.Count == Army.Count && tgt >= 0.5);
 			Check($"the army fires and hits (shots {a.Shots + b.Shots}, hits {a.Hits + b.Hits})", a.Shots + b.Shots > 0 && a.Hits + b.Hits > 0);
 			Check($"the two halves fight alike (shots {a.Shots}/{b.Shots} = {ra:F2}, hits {a.Hits}/{b.Hits} = {rh:F2}; band 0.6 to 1.67)", ra >= 0.6 && ra <= 1.67 && rh >= 0.6 && rh <= 1.67);
-			if (RefShots > 0) Check($"shots per levy-second match the pre-pass reference within noise ({shots:F3} against {RefShots:F3}; band 0.5x to 2x)", shots >= 0.5 * RefShots && shots <= 2 * RefShots);
-			if (RefHits > 0) Check($"hits per levy-second match the pre-pass reference within noise ({hits:F3} against {RefHits:F3}; band 0.5x to 2x)", hits >= 0.5 * RefHits && hits <= 2 * RefHits);
+			if (RefShots > 0) Check($"shots per levy-second match the pre-pass reference within noise ({shots:F3} against {RefShots:F3}; band 0.7x to 1.43x)", shots >= 0.7 * RefShots && shots <= 1.43 * RefShots);
+			if (RefHits > 0) Check($"hits per levy-second match the pre-pass reference within noise ({hits:F3} against {RefHits:F3}; band 0.7x to 1.43x)", hits >= 0.7 * RefHits && hits <= 1.43 * RefHits);
 		}
 
 		private static string LoadAvg() { try { return System.IO.File.ReadAllText("/proc/loadavg").Split(' ').Take(3).Aggregate((x, y) => x + " " + y); } catch (Exception) { return "?"; } }

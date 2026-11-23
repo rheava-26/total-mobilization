@@ -71,6 +71,10 @@ Reading: allocation per tick fell 38-43% and gen0 collections 30-40%; CPU per ti
 
 `Common/Testing/PerfPassCheck.cs`: 24 levies (four kits, proc accessories, modded accessories when a gear mod is loaded) against a pinned boss-flagged target with 250 hostile seeds over them; control arm without the army. Measured on the pre-pass build (two runs each): added cost 3.8-4.7 ms/tick (Calamity), 1.8-2.1 (vanilla); shots 5.26 (Calamity) / 5.14 (vanilla) per levy-second, target hits 2.00. After: 4.06 ms, shots 5.25, hits 1.99 (halves 766/746 shots against 766/748 before).
 
+The `[PerfBoss]` flood-through rule (fixes on against off, same boot) read 0.52 and 0.60 after the pass. Standalone on the same box, base 4d2d345 against this branch: fixes on 22.9 -> 21.2 ms/tick, fixes off 71.9 -> 42.7. The off arm (hostile pair cull off) had been paying the per-pair environment read in `SoldierProjectileImmunity` for every (hostile shot, levy) pair, so the old 0.5 ratio partly measured that read; the threshold for that arm is now 0.65.
+
+Ship tests on the merged branch (private lab, serial halves): vanilla 0 FAIL; Calamity, final run, only the known intermittents (IdentityWorld Rocket Boots feet, Infested Clawmerang ratio); `[PerfPass]` 7/0 in both halves; `[SetAbility]` 34/0 (one earlier run had the God Slayer dodge pair fail, not reproduced in two reruns); shipms 52 boot checks OK and `[MsWorldCraft]` 36/0.
+
 ## Needs a design decision (not done)
 
 1. The gear frame's tail (Calamity's PostUpdateMiscEffects and PostUpdateEquips for every fighting levy every tick, about 1.5 ms at 40 levies in the lab): a setting to run it every N ticks would cut it, at the price of rage, stealth and cooldowns stepping in N-tick jumps. The build half already has such a setting (default 4).

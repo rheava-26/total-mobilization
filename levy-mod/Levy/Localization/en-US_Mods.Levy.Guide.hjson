@@ -69,8 +69,7 @@ Pages: {
 			Gear strength is 1 for gear of the boss's own stage, 2 for gear three tiers ahead and one half for gear three tiers behind. The weapon counts 60% and the armor and accessories 40%.
 			The gain stops at a cap: 80% before Hardmode, rising to 400% late in the game.
 			Parts that share the boss's life gain the same share, such as a worm's segments, Ares's arms and the Exo Twins.
-			Boss life from army strength and Boss life gain cap are under Settings, Mod Configuration, Levy. A strength of 1 is normal and 0 turns the gain off.
-			The fight report states the life a fight added.
+			Boss life from army strength and Boss life gain cap are under Settings, Mod Configuration, Levy. A strength of 1 is normal and 0 turns the gain off. The fight report states the life a fight added.
 			Bosses adapt to armies, under the same settings, is off by default. On, Calamity's Exo Mechs aim at your army: Ares's arms aim at your soldiers, Thanatos's vents fire at the soldiers near them, and rockets and the Gauss Nuke home on the nearest soldier.
 			'''
 	}

@@ -9,6 +9,7 @@ Per fight (between `HARNESS-CR: start` and `RESULT` in server.log.gz), the first
 Prints, per cell (the fight's meta= label), the median over seeds, then (with --top) the top-cost tables."""
 import sys, gzip, glob, os, re, json, statistics as S, collections, csv
 args = [a for a in sys.argv[1:] if not a.startswith("--")]; TOP = "--top" in sys.argv
+if "--merge" in sys.argv: args = [args]  # --merge: one table over all the run dirs given (seeds pooled)
 def med(v): return S.median(v) if v else float("nan")
 def fights(run):
     out = []
@@ -58,9 +59,11 @@ def summarize(f):
         except ValueError: d[k] = float("nan")
     return d
 for run in args:
+    runs = run if isinstance(run, list) else [run]
     cells = collections.defaultdict(list)
-    for f in fights(run): cells[label(f["key"])].append(summarize(f))
-    print(f"\n### {run}   ({os.popen('cat ' + os.path.join(run, 'loadavg.txt') + ' 2>/dev/null').read().strip() or 'load: not recorded'})")
+    for rd in runs:
+        for f in fights(rd): cells[label(f["key"])].append(summarize(f))
+    print(f"\n### {' + '.join(runs)}   ({'; '.join(os.popen('cat ' + os.path.join(rd, 'loadavg.txt') + ' 2>/dev/null').read().strip() or 'load: not recorded' for rd in runs)})")
     print("| scene | fights | CPU ms/tick (entities) | NPC phase | proj phase | Levy ms/update (analyzer) | Levy share | alloc KB/tick | gen0 GCs per 10 s | GC pause ms/tick | levies | army shots | minions | enemy NPCs | dmg to boss | hits on boss | deaths | no-target % |")
     print("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for k, L in cells.items():

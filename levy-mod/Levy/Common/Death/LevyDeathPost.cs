@@ -65,7 +65,7 @@ namespace Levy.Common.Death
 		/// The levies' ordinary voice is held while one of these fights is on, and while the Genesis is fired (with the fight lines on): no floating line, no emote, no reaction, and right-click chat is "...".
 		/// Chat-log notices (deaths) still post. What the army says in these fights comes from <see cref="global::Levy.Common.Dialogue.WotgScenes"/>, the one voice let through.
 		/// </summary>
-		public static bool Hush => Active || (Override == null && global::Levy.Common.Dialogue.WotgScenes.Enabled && global::Levy.Common.Dialogue.WotgScenes.GenesisOn);
+		public static bool Hush => (Active && (Override.HasValue || !global::Levy.Common.Dialogue.WotgScenes.DukeSceneOnly)) || (Override == null && global::Levy.Common.Dialogue.WotgScenes.Enabled && global::Levy.Common.Dialogue.WotgScenes.GenesisOn);
 		/// <summary>Self-check read-back: lines and emotes the hush held back.</summary>
 		public static int HushDropped;
 	}

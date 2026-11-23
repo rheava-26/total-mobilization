@@ -357,7 +357,7 @@ namespace Levy.Common.Dialogue
 			WotgFight f;
 			if (avatar != null) { boss = avatar; f = WotgFight.Avatar; }
 			else if (nameless != null) { boss = nameless; f = WotgFight.Nameless; }
-			else if (rift != null) { boss = rift; f = WotgFight.Rift; }
+			else if (rift != null) { boss = rift; f = WotgFight.Rift; if (StateOf(rift) == "KillOldDuke") return WotgFight.None; } // the sky taking the Old Duke is RiftMood's scene (RIFT_DUKE), not a fight
 			else return GenesisOn ? WotgFight.Genesis : WotgFight.None;
 			state = StateOf(boss);
 			life = boss.lifeMax > 0 ? (float)boss.life / boss.lifeMax : 0f;
@@ -375,6 +375,35 @@ namespace Levy.Common.Dialogue
 			if (pool == null) return null;
 			var ctx = new DialogueContext { Player = s.Record.CommanderName };
 			return DialogueSystem.PickLine(pool, s.Record, ctx) ?? DialogueSystem.PickLine(pool, s.Record, ctx, true);
+		}
+
+		/// <summary>The only Wrath of the Gods boss up is the rift taking Calamity's Old Duke (a scene the army watches and reacts to through RiftMood, not a fight to hush).</summary>
+		public static bool DukeSceneOnly
+		{
+			get
+			{
+				if (TestFight.HasValue || !Installed) return false;
+				uint tick = Main.GameUpdateCount;
+				if (tick == _dukeTick) return _dukeOnly;
+				_dukeTick = tick; _dukeOnly = ScanDuke();
+				return _dukeOnly;
+			}
+		}
+		private static uint _dukeTick = uint.MaxValue; private static bool _dukeOnly;
+
+		private static bool ScanDuke()
+		{
+			{
+				bool rift = false;
+				for (int i = 0; i < Main.maxNPCs; i++)
+				{
+					NPC n = Main.npc[i];
+					if (n == null || !n.active) continue;
+					if (n.type == _avatarType || n.type == _namelessType) return false;
+					if (n.type == _riftType) { if (StateOf(n) != "KillOldDuke") return false; rift = true; }
+				}
+				return rift;
+			}
 		}
 
 		/// <summary>Self-check: the text is one of the fight pools' lines (placeholders matched loosely: the literal parts in order).</summary>

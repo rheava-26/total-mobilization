@@ -442,6 +442,11 @@ Mods: {
 					Tooltip: Bosses you have beaten chase the nearest soldier, but first kills stay solo. Needs Enemies target soldiers.
 				}
 
+				BossesAdaptToArmies: {
+					Label: Bosses adapt to armies
+					Tooltip: Calamity's Exo Mechs spread their attacks across your army. Needs Bosses target soldiers.
+				}
+
 				FearMultiplier: {
 					Label: Fear multiplier
 					Tooltip: Scales every fear gain during boss fights.

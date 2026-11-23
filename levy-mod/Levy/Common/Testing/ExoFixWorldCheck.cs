@@ -25,8 +25,9 @@ namespace Levy.Common.Testing
 	///  * AREA (Calamity): a real Gauss Nuke telegraph over a row of levies: they leave its 740 px circle before it would go off.
 	///  * BEAM (Calamity): Thanatos's beam, the Blenderbeam, the Ohio Beam (laserbeam base) and the Exothermal Laser (deathray pattern) register as line threats of their length.
 	///  * ARMOUR (Calamity): a real Thanatos held in a row over armed levies, every segment shut but one: their hits land on the open one.
+	///  * ADAPT (Calamity, ExoFixWorldCheck.Adapt.cs): "Bosses adapt to armies" (ArmyAwareExo) off and on: Ares's arms, Thanatos's vents, an Apollo rocket, and a solo commander.
 	/// </summary>
-	public class ExoFixWorldCheck : ModSystem
+	public partial class ExoFixWorldCheck : ModSystem
 	{
 		private static bool _armed, _done, _running; private static int _pass, _fail;
 		private static Mod _mod;
@@ -82,6 +83,7 @@ namespace Levy.Common.Testing
 			if (Part(only, "area")) { try { Area(); } finally { Cleanup(); } }
 			if (Part(only, "beam")) { try { Beam(); } finally { Cleanup(); } }
 			if (Part(only, "armour")) { try { Armour(); } finally { Cleanup(); } }
+			if (Part(only, "adapt")) { try { Adapt(); } finally { AdaptRestore(); Cleanup(); } }
 		}
 
 		// =====================================================================================================

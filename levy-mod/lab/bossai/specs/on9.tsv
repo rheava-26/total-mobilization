@@ -1,0 +1,10 @@
+# env: LEVY_BOSSADAPT=1
+fight	exoares	mdeath	1	36000	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ab4eb746dd6e148e9/levy-mod/lab/exolab/armies/eve_matched_army.json	meta=bossai_exoares
+fight	exothan	mdeath	1	36000	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ab4eb746dd6e148e9/levy-mod/lab/exolab/armies/eve_matched_army.json	meta=bossai_exothan
+fight	exotwins	mdeath	1	36000	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ab4eb746dd6e148e9/levy-mod/lab/exolab/armies/eve_matched_army.json	meta=bossai_exotwins
+fight	exoares	mdeath	2	36000	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ab4eb746dd6e148e9/levy-mod/lab/exolab/armies/eve_matched_army.json	meta=bossai_exoares
+fight	exothan	mdeath	2	36000	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ab4eb746dd6e148e9/levy-mod/lab/exolab/armies/eve_matched_army.json	meta=bossai_exothan
+fight	exotwins	mdeath	2	36000	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ab4eb746dd6e148e9/levy-mod/lab/exolab/armies/eve_matched_army.json	meta=bossai_exotwins
+fight	exoares	mdeath	3	36000	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ab4eb746dd6e148e9/levy-mod/lab/exolab/armies/eve_matched_army.json	meta=bossai_exoares
+fight	exothan	mdeath	3	36000	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ab4eb746dd6e148e9/levy-mod/lab/exolab/armies/eve_matched_army.json	meta=bossai_exothan
+fight	exotwins	mdeath	3	36000	cmd=far	order=free	arena=big	lv=/home/user/total-mobilization/.claude/worktrees/agent-ab4eb746dd6e148e9/levy-mod/lab/exolab/armies/eve_matched_army.json	meta=bossai_exotwins

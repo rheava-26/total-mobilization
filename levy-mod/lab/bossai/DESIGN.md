@@ -12,7 +12,7 @@ The second, quieter effect is that the bosses never commit to a target. Calamity
 
 My proposal is to fix the first effect for every boss as plain parity (a boss's arms and missiles should see what its body sees, and "every player near me" should include soldiers), and then make a few deliberate, code-grounded choices about how a boss fights a crowd: area weapons aim at where soldiers are bunched, single-target weapons keep focus, bosses commit to a target per attack instead of per tick, a pair like the twins keeps one shared victim, and an enrage that punishes a player for running away should not fire because one soldier happens to stand outside the arena. Nothing here makes a boss stronger by number tweaks, and none of it touches your own fight when you're solo.
 
-I built the first three for the Exo Mechs behind a new setting, "Bosses adapt to armies" (off by default; it only does anything while a beaten mech is fighting a fielded army). The numbers are in the Prototype section. I would not turn it on by default without you trying it: it makes Ares and Thanatos genuinely dangerous to the army for the first time, and your army already loses the Exo fight in the lab.
+I built the first three for the Exo Mechs behind a new setting, "Bosses adapt to armies" (off by default; it only does anything while a beaten mech is fighting a fielded army). With all three on, your army was wiped in 42-55 seconds instead of 84-100, and the mechs kept 73-81% of their life instead of 39-51% (three seeds per opener, so the direction is solid and the exact sizes are not). The arms and missiles alone change much less (the mechs kept 55-77%) and cost nothing extra; Thanatos's vents are the big step, and they cost about 3.6 ms of server time per tick, from the three times as many lasers. I would not turn it on by default without you trying it: it makes Ares and Thanatos genuinely dangerous to the army for the first time, and your army already loses the Exo fight in the lab. Details and tables are in the Prototype section.
 
 ## How Levy points a boss at the army today
 
@@ -54,7 +54,19 @@ The twins hover on opposite sides of their (shared, in Calamity) target and atta
 
 Your army as it is now armed (`eve_matched_army.json`: your 40 regulars' 3.1.8 gear with class-matched armour), Master+Death, arena `big`, you invisible 150 tiles away, Free Rein, 3 seeds per opener (`specs/off9.tsv`). Fights end when the army is wiped.
 
-FIGHTS_OFF
+| build | opener | fights | wins | length s | levy deaths | worst 2 s | mechs killed | pool left % (losses) | kill order |
+|---|---|---|---|---|---|---|---|---|---|
+| current | Ares first | 3 | 0 | 99.8 | 40 | 5 | 0 | 39 | none, none, Ares@57.0 |
+| current | Thanatos first | 3 | 0 | 99.2 | 40 | 5 | 0 | 51 | none, none, none |
+| current | twins first | 3 | 0 | 84.3 | 40 | 7 | 0 | 51 | Ares@41.1, none, none |
+
+| build | opener | lock switches/min Ares / Thanatos / Artemis / Apollo | mechs sharing one target % | tiles to own target Ares / Thanatos / Apollo | Thanatos under the floor % | Ares enraged % | Ares's arms read (empty / commander / levy) | arm aim point, tiles from nearest levy |
+|---|---|---|---|---|---|---|---|---|
+| current | Ares first | 12.2 / 25.8 / 16.1 / 17.5 | 13 | 30 / 63 / 48 | 82 | 0 | 100% / 0% / 0% | 1935 |
+| current | Thanatos first | 9.5 / 22.5 / 8.2 / 6.9 | 0 | 38 / 57 / 49 | 84 | 11 | 100% / 0% / 0% | 1868 |
+| current | twins first | 11.7 / 35.0 / 16.1 / 25.3 | 26 | 27 / 62 / 50 | 66 | 0 | 100% / 0% / 0% | 1968 |
+
+Every hostile projectile the mechs made, pooled (made / touched at least one levy / levy hits): AresPlasmaBolt 2204/157 (7%), ThanatosLaser 1372/47 (3%), ArtemisLaser 391/60 (15%), ApolloFireball 304/58 (19%), AresGaussNukeProjectileSpark 300/13 (4%), AresTeslaOrb 240/4 (2%), AresPlasmaFireball 133/6 (5%), AresDeathBeamTelegraph 120/0 (0%), AresDeathBeamStart 100/51 (51%), AresGaussNukeProjectileBoom 63/15 (24%), AresLaserBeamStart 41/29 (71%), ApolloRocket 40/15 (38%), AresGaussNukeProjectile 25/0 (0%), ArtemisChargeTelegraph 8/0 (0%), ApolloChargeTelegraph 5/0 (0%).
 
 The killing hits, pooled over the nine fights (351 deaths): no named source 23% (debuffs and unattributed hits), Exothermal Laser (AresLaserBeamStart, the Laser Cannon's sweep) 17%, Blenderbeam (AresDeathBeamStart) 12%, Gauss explosion 8%, Exoplasma Bolt 7%, Artemis's laser 4%, the Laser Cannon's body 4%, Thanatos's body 4%, Thanatos's laser 4%. The worst two seconds took 5-7 soldiers (median per opener); the 81-fight exolab on 3.1.10 had 10-13 before exofixes taught levies to leave the Gauss circle and dodge beams.
 
@@ -108,11 +120,59 @@ World check (`[ExoFix]` part `adapt`, ExoFixWorldCheck.Adapt.cs, runs in the Cal
 
 Same army, same seeds (`specs/off9.tsv` vs `specs/on9.tsv`; same seed = same army in both).
 
-FIGHTS_BOTH
+Arms: off = the current build; arms+homing = `LEVY_BOSSADAPT_PARTS=arms,homing` (`specs/armsonly9.tsv`); all = all three parts (`specs/on9.tsv`).
+
+| arm | opener | fights | wins | length s | levy deaths | worst 2 s | mechs killed | pool left % (losses) | kill order |
+|---|---|---|---|---|---|---|---|---|---|
+| off | Ares first | 3 | 0 | 99.8 | 40 | 5 | 0 | 39 | none, none, Ares@57.0 |
+| off | Thanatos first | 3 | 0 | 99.2 | 40 | 5 | 0 | 51 | none, none, none |
+| off | twins first | 3 | 0 | 84.3 | 40 | 7 | 0 | 51 | Ares@41.1, none, none |
+| arms+homing | Ares first | 3 | 0 | 75.9 | 40 | 7 | 0 | 55 | none, none, none |
+| arms+homing | Thanatos first | 3 | 0 | 57.6 | 40 | 8 | 0 | 77 | none, none, none |
+| arms+homing | twins first | 3 | 0 | 111.9 | 40 | 7 | 0 | 57 | none, none, none |
+| all | Ares first | 3 | 0 | 42.2 | 40 | 7 | 0 | 73 | none, none, none |
+| all | Thanatos first | 3 | 0 | 43.8 | 40 | 9 | 0 | 81 | none, none, none |
+| all | twins first | 3 | 0 | 55.0 | 40 | 11 | 0 | 77 | none, none, none |
+
+| arm | opener | lock switches/min Ares / Thanatos / Artemis / Apollo | mechs sharing one target % | tiles to own target Ares / Thanatos / Apollo | Thanatos under the floor % | Ares enraged % | Ares's arms read (empty / commander / levy) | arm aim point, tiles from nearest levy |
+|---|---|---|---|---|---|---|---|---|
+| off | Ares first | 12.2 / 25.8 / 16.1 / 17.5 | 13 | 30 / 63 / 48 | 82 | 0 | 100% / 0% / 0% | 1935 |
+| off | Thanatos first | 9.5 / 22.5 / 8.2 / 6.9 | 0 | 38 / 57 / 49 | 84 | 11 | 100% / 0% / 0% | 1868 |
+| off | twins first | 11.7 / 35.0 / 16.1 / 25.3 | 26 | 27 / 62 / 50 | 66 | 0 | 100% / 0% / 0% | 1968 |
+| arms+homing | Ares first | 20.2 / 25.6 / 14.9 / 28.3 | 5 | 30 / 60 / 50 | 76 | 0 | 0% / 0% / 100% | 0 |
+| arms+homing | Thanatos first | 17.0 / 41.8 / 15.3 / 18.7 | 19 | 31 / 61 / 49 | 63 | 0 | 0% / 0% / 100% | 0 |
+| arms+homing | twins first | 9.9 / 19.2 / 13.2 / 20.3 | 5 | 39 / 62 / 51 | 85 | 9 | 0% / 0% / 100% | 0 |
+| all | Ares first | 22.8 / 45.8 / 33.6 / 24.3 | 15 | 28 / 65 / 48 | 72 | 0 | 0% / 0% / 100% | 0 |
+| all | Thanatos first | 7.9 / 51.6 / 18.2 / 11.7 | 39 | 30 / 58 / 46 | 69 | 0 | 0% / 0% / 100% | 0 |
+| all | twins first | 15.8 / 31.6 / 16.2 / 24.3 | 22 | 29 / 70 / 54 | 72 | 0 | 0% / 0% / 100% | 0 |
+
+Mech projectiles, pooled (made / touched at least one levy / levy hits):
+
+- **off**: AresPlasmaBolt 2204/157 (7%), ThanatosLaser 1372/47 (3%), ArtemisLaser 391/60 (15%), ApolloFireball 304/58 (19%), AresGaussNukeProjectileSpark 300/13 (4%), AresTeslaOrb 240/4 (2%), AresPlasmaFireball 133/6 (5%), AresDeathBeamTelegraph 120/0 (0%), AresDeathBeamStart 100/51 (51%), AresGaussNukeProjectileBoom 63/15 (24%), AresLaserBeamStart 41/29 (71%), ApolloRocket 40/15 (38%), AresGaussNukeProjectile 25/0 (0%), ArtemisChargeTelegraph 8/0 (0%), ApolloChargeTelegraph 5/0 (0%)
+- **arms+homing**: AresPlasmaBolt 1812/182 (10%), ThanatosLaser 964/7 (1%), AresGaussNukeProjectileSpark 288/3 (1%), ArtemisLaser 287/48 (17%), ApolloFireball 250/26 (10%), AresTeslaOrb 234/72 (31%), AresPlasmaFireball 129/25 (19%), AresDeathBeamTelegraph 80/0 (0%), AresDeathBeamStart 80/32 (40%), AresGaussNukeProjectileBoom 60/19 (32%), AresLaserBeamStart 42/23 (55%), AresGaussNukeProjectile 24/0 (0%), ApolloRocket 21/10 (48%), ArtemisChargeTelegraph 14/0 (0%)
+- **all**: ThanatosLaser 3980/294 (7%), AresPlasmaBolt 1164/139 (12%), ArtemisLaser 274/47 (17%), ApolloFireball 172/23 (13%), AresGaussNukeProjectileSpark 120/0 (0%), AresTeslaOrb 94/45 (48%), AresPlasmaFireball 64/16 (25%), ApolloRocket 32/12 (38%), AresGaussNukeProjectileBoom 30/10 (33%), AresLaserBeamStart 21/10 (48%), ArtemisChargeTelegraph 18/0 (0%), AresGaussNukeProjectile 10/0 (0%)
+
+Killing hits, pooled:
+
+- **off** (351 deaths): none 23%, AresLaserBeamStart 17%, AresDeathBeamStart 12%, AresGaussNukeProjectileBoom 8%, AresPlasmaBolt 7%, ArtemisLaser 4%, AresLaserCannon 4%, ThanatosBody2 4%, ThanatosLaser 4%
+- **arms+homing** (351 deaths): none 26%, AresGaussNukeProjectileBoom 13%, AresPlasmaBolt 13%, AresTeslaOrb 12%, AresLaserBeamStart 10%, AresTeslaCannon 6%, Artemis 3%, ArtemisLaser 3%, ApolloRocket 2%
+- **all** (351 deaths): ThanatosLaser 27%, none 13%, AresTeslaOrb 10%, AresPlasmaBolt 9%, ThanatosBody1 9%, ThanatosBody2 9%, AresGaussNukeProjectileBoom 7%, ArtemisLaser 4%, Artemis 2%
+
+Feature counters:
+
+- off: arm calls 141535, lent 0, read the empty slot 141535; vent calls 0, stand-ins placed 0; homing calls 0, placed 0
+- arms+homing: arm calls 134194, lent 134194, read the empty slot 0; vent calls 0, stand-ins placed 0; homing calls 6291, placed 5173
+- all: arm calls 78249, lent 78249, read the empty slot 0; vent calls 45901, stand-ins placed 88704; homing calls 7948, placed 6844
+
+Server time per tick (median per fight): off: 11.67, arms+homing: 10.63, all: 15.28.
 
 ### What the numbers mean
 
-RESULT_TEXT
+The targeting pieces do exactly what they should, and nothing else moves. OBSERVED: with the feature on, 100% of arm AI calls read a levy (none read the empty slot) and the point every arm aims at stands on a soldier (0 tiles from the nearest levy, against about 1,900 before); 82-86% of missile AI calls stood the nearest soldier in (the rest had a player nearer, or no army mech on the army); Thanatos's opening segments got 88,704 stand-ins over nine fights. Phases, interludes and the mechs' order were unchanged; the "how the mechs hunt" columns that the prototype doesn't touch (shared target, distance to target, Thanatos under the floor) stayed in the same range. The lock-switch rate went up in the all-parts arm, but that is INFERRED to be soldiers dying faster (a dead lock forces a new one, and my counter counts it as a switch), not a change in the targeting.
+
+What changes is how dangerous the mechs are, and it splits cleanly between the two parts. Arms and homing alone (the parity piece) make Ares's own weapons the killers they are in Calamity: tesla orbs touch a soldier 31% of the time instead of 2%, plasma fireballs 19% instead of 5%, and the killing hits move from the two beams to the arms (Gauss explosion 13%, Exoplasma bolts 13%, tesla orbs 12%). The fight is a little shorter for the army on two openers and a little longer on the third (median 58-112 s against 84-100 s, three seeds: noise-sized), the mechs keep more life (55-77% of their pool left, against 39-51%), the worst two seconds go from 5-7 soldiers to 7-8, and the server cost is unchanged (10.6 ms per tick against 11.7). The vents are the big step. With them, Thanatos's segments fired 3,980 lasers at the army (three times as many, since every opening segment now has three targets), his lasers became the killing hit in 27% of deaths and his body in another 18%, the army was wiped in 42-55 s instead of 84-100 s, the mechs kept 73-81% of their life, and the worst two seconds took 7-11 soldiers. The server cost rose to 15.3 ms per tick; INFERRED from the arms+homing arm costing nothing extra, that is the extra lasers (each is a telegraphed line that every levy's threat field reads and dodges), not the hook, which only runs on opening ticks.
+
+So the honest reading is that the Exo fight your army has been losing was against half-blind mechs. Ares's arms were aiming at the corner of the world and Thanatos's vents were aimed at you or at nobody, and your army still lost every lab fight. With the mechs aiming the way Calamity wrote them, your army dies about twice as fast and does about half the damage. That is the tenet working as intended (a smarter, scarier enemy, the army's toys untouched), but it widens a gap that is already total in the lab, so the setting stays off until you have tried it. If you want one piece on by default, it is the arms and the missiles: they are a straight fix of a Levy side effect (Ares reads his target the way Calamity meant), they cost nothing, and they make Ares's barrage readable as aimed at the army without changing who wins. The vents are a real design choice (Calamity's three-player budget spent on soldiers), and if you like them, the cost and the lethality both scale with the number of targets per segment, which is a dial (Calamity's own number is 3; one or two would keep the look of the attack at a third or two thirds of the volume).
 
 ## Not tested, and what I'd do next
 

@@ -141,6 +141,8 @@ namespace Levy.Common.Testing
 			try { ActiveArmyWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[ActiveArmy] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the boss-fight cost check runs last: it spawns the biggest army of any check and floods the field with hostile projectiles
 			try { PerfBossCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfBoss] check threw " + e.GetType().Name + ": " + e.Message); }
+			// the perf-pass guard: a fighting army's added cost under a ceiling, and it still finds, shoots and hits its target as the pre-pass build did
+			try { PerfPassCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfPass] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the performance analyzer check runs after it: it attaches the analyzer's detours to the process, and its fault test removes them again
 			try { global::Levy.Common.Perf.PerfWorldCheck.RunIfArmed(); } catch (Exception e) { _mod.Logger.Warn("[PerfAnalyzer] check threw " + e.GetType().Name + ": " + e.Message); }
 			// the Calamity progression-assistance check runs after every check that reads the world (it makes planetoids, ore and a meteor) and before the hook liveness check (it drives the ore detours)

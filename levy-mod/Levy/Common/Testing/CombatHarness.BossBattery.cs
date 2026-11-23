@@ -243,8 +243,13 @@ namespace Levy.Common.Testing
 
 		private static void BbDamageDetour(On_Projectile.orig_Damage orig, Projectile self)
 		{
+			if (_cr == null || _bb == null || !self.active || !self.friendly || self.hostile || self.damage <= 0) { orig(self); return; }
+			BbDamageCensus(orig, self); // the census body has lambdas over its locals: kept out of the detour so a projectile that is not counted allocates nothing (a cost lab measures the product, not the census)
+		}
+
+		private static void BbDamageCensus(On_Projectile.orig_Damage orig, Projectile self)
+		{
 			var st = _cr; var bb = _bb;
-			if (st == null || bb == null || !self.active || !self.friendly || self.hostile || self.damage <= 0) { orig(self); return; }
 			long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
 			int soldier = -1;
 			if (self.TryGetGlobalProjectile(out SoldierProjectileTag tag)) soldier = tag.SoldierIndex;

@@ -19,15 +19,15 @@ namespace Levy.Common.Weapons
 	/// <summary>When a soldier right-clicks. One kind per alt-fire pattern; see tools/altfire/patterns.md.</summary>
 	public enum AltPolicyKind
 	{
-		Never, Mix, Heavy, Aoe, Rate, Far, Always, ToggleN, Detonate, Place, Guard, MeterReady, HoldVariant, ManaRefill, StackUp, AllyHeal, DashClose, PortalUse,
+		Never, Mix, Heavy, Aoe, Rate, Far, Always, ToggleN, Detonate, Place, Guard, MeterReady, HoldVariant, ManaRefill, StackUp, AllyHeal, DashClose, PortalUse, Recast,
 	}
 
 	/// <summary>The numbers of one policy row (the <c>params</c> column: <c>key=value;key=value</c>). Unset values keep the defaults below.</summary>
 	public struct AltParams
 	{
-		public float P, MinDist, MaxDist, Radius, HpBelow, OwnHpBelow, OwnHpAbove, ManaBelow, Near, NoEnemyWithin, Min, Max, ToughLife;
+		public float P, MinDist, MaxDist, Radius, HpBelow, OwnHpBelow, OwnHpAbove, ManaBelow, Near, NoEnemyWithin, Min, Max, ToughLife, CastUp;
 		public int MinEnemies, Enemies, MinOut, MaxOut, AfterShots, MinWounded, MaxStacks;
-		public bool Tough, Invert, MinFull, Primary, Steer;
+		public bool Tough, Invert, MinFull, Primary, Steer, Hold;
 		/// <summary>Projectile name (resolved against the item's mod) for <see cref="AltPolicyKind.Detonate"/> / <see cref="AltPolicyKind.Place"/>.</summary>
 		public string Proj, Cond, Meter, MeterMax;
 
@@ -73,6 +73,8 @@ namespace Levy.Common.Weapons
 					case "invert": a.Invert = v == "1"; break;
 					case "primary": a.Primary = v == "1"; break;
 					case "steer": a.Steer = v == "1"; break;
+					case "hold": a.Hold = v == "1"; break;
+					case "castup": a.CastUp = F(v, a.CastUp); break;
 					case "proj": a.Proj = v; break;
 					case "cond": a.Cond = v; break;
 					case "meter": a.Meter = v; break;
@@ -252,7 +254,7 @@ namespace Levy.Common.Weapons
 			["NEVER"] = AltPolicyKind.Never, ["ALT_MIX"] = AltPolicyKind.Mix, ["ALT_HEAVY"] = AltPolicyKind.Heavy, ["ALT_AOE"] = AltPolicyKind.Aoe, ["ALT_RATE"] = AltPolicyKind.Rate,
 			["ALT_FAR"] = AltPolicyKind.Far, ["ALT_ALWAYS"] = AltPolicyKind.Always, ["TOGGLE_N"] = AltPolicyKind.ToggleN, ["DETONATE"] = AltPolicyKind.Detonate, ["PLACE"] = AltPolicyKind.Place,
 			["GUARD"] = AltPolicyKind.Guard, ["METER_READY"] = AltPolicyKind.MeterReady, ["HOLD_VARIANT"] = AltPolicyKind.HoldVariant, ["MANA_REFILL"] = AltPolicyKind.ManaRefill,
-			["STACK_UP"] = AltPolicyKind.StackUp, ["ALLY_HEAL"] = AltPolicyKind.AllyHeal, ["DASH_CLOSE"] = AltPolicyKind.DashClose, ["PORTAL_USE"] = AltPolicyKind.PortalUse,
+			["STACK_UP"] = AltPolicyKind.StackUp, ["ALLY_HEAL"] = AltPolicyKind.AllyHeal, ["DASH_CLOSE"] = AltPolicyKind.DashClose, ["PORTAL_USE"] = AltPolicyKind.PortalUse, ["RECAST"] = AltPolicyKind.Recast,
 		};
 
 		/// <summary>Parses a table (header line <c>mod item policy params [note]</c>, tab separated, <c>#</c> comments) into unresolved rows.</summary>
@@ -332,6 +334,7 @@ namespace Levy.Common.Weapons
 			{
 				case AltPolicyKind.Never: recheck = NeverRecheckTicks; return false;
 				case AltPolicyKind.PortalUse: recheck = NeverRecheckTicks; return false; // not an item alt: the Dark Gate compat drives it
+				case AltPolicyKind.Recast: recheck = NeverRecheckTicks; return false; // not an item alt: the summoner's minion upkeep uses the staff again (SoldierNPC.MaintainRealMinions, RecastWanted)
 				case AltPolicyKind.Mix: return Main.rand.NextFloat() < a.P;
 				case AltPolicyKind.Always: return true;
 			}
@@ -387,6 +390,24 @@ namespace Levy.Common.Weapons
 			}
 			return false;
 		}
+
+		/// <summary>
+		/// RECAST rows (summon staves a player keeps using once her slots are full: the use then powers the flock instead of adding to it, the Saros Possession's Totality Ray). True when the row's condition holds for a flock that
+		/// is <paramref name="full"/> (cond=slotsFull, the only one so far), and whether the levy keeps the button held while it lasts (hold=1: the ray lives while its owner channels).
+		/// </summary>
+		internal static bool RecastWanted(Item staff, bool full, out bool hold)
+		{
+			hold = false;
+			if (staff == null || !ByItem.TryGetValue(staff.type, out AltPolicy pol) || pol.Kind != AltPolicyKind.Recast) return false;
+			hold = pol.P.Hold;
+			return string.Equals(pol.P.Cond, "slotsFull", StringComparison.OrdinalIgnoreCase) && full;
+		}
+
+		/// <summary>Tiles above his target a soldier aims a self-ending summon cast (the row's castUp; 0 without one): the Borealis Bomber's bomber made on the enemy never strikes it, one made above it dives.</summary>
+		internal static float CastUp(Item staff) => staff != null && ByItem.TryGetValue(staff.type, out AltPolicy pol) ? pol.P.CastUp : 0f;
+
+		/// <summary>True for a staff with a RECAST row (see <see cref="RecastWanted"/>).</summary>
+		internal static bool IsRecast(Item staff) => staff != null && ByItem.TryGetValue(staff.type, out AltPolicy pol) && pol.Kind == AltPolicyKind.Recast;
 
 		private static bool HoldCond(AltParams a, AltCtx x)
 		{

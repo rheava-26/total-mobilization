@@ -190,3 +190,5 @@ ThoriumMod	TheBlackDagger	ALT_AOE	minEnemies=2;radius=6;minDist=4
 ThoriumMod	ShroomiteRocketDrill	NEVER		
 ThoriumMod	DarkGate	PORTAL_USE	ignoreIfPlayerHasChaos=1;ignoreIfPlayerHoldsGate=1;useWhenFarFromCommander=40;useWhenOwnHpBelow=0.5;placeNearWoundedAlly=1;cooldownTicks=720	
 ThoriumMod	EnergyProjector	NEVER	primary=1;proj=GraniteBarrier	primary placement guarded
+CalamityMod	SarosPossession	RECAST	cond=slotsFull;hold=1	used again at full slots the aura fires the Totality Ray (damage x its slots, 2x falling to 1x while held), which lives while the button is held; held while he fights. Summon sweep 2026-11-22: levy 12.5k dps with the ray, the commander 14.8k with it and 2.4k with the aura alone
+CalamityMod	BorealisBomber	NEVER	castUp=6	summon: the bomber is cast 6 tiles above the levy's target. Summon sweep 2026-11-22: cast beside the levy 155 damage a second, on the target 0, 6 tiles above it 515

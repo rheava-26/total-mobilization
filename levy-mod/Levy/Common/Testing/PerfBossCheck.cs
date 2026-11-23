@@ -27,7 +27,7 @@ namespace Levy.Common.Testing
 	/// and through it; and a real Plantera at the army's edge. The army stands at Hold (idle) in every arm but the last, where it is let loose.
 	/// <para/>With LEVY_PERFBOSS_PROF=1 every hook of the mod is instrumented (<see cref="PerfProbe"/>) and the per-hook cost per tick is logged for each arm, ranked; LEVY_PERFBOSS_DEEP=Type,Type instruments every method of the named types too.
 	/// PASS rules (relative, so a loaded box cannot fail them): each of the quiet, flood-over and flood-through arms is timed with the fixes off and then on in the same boot, and the army's added cost with them on must be a clear fraction
-	/// of the cost with them off (flood under 0.5; the quiet field must show dormant levies skipping gear frames). Absolute microseconds per levy are logged as information. Lab (measured, 150 levies, same boot, off -> on): quiet 75 -> 42 us per levy; a 500-projectile flood over, far from and
+	/// of the cost with them off (flood over the army under 0.5, flood through it under 0.65 since the perf pass made the off arm cheaper; the quiet field must show dormant levies skipping gear frames). Absolute microseconds per levy are logged as information. Lab (measured, 150 levies, same boot, off -> on): quiet 75 -> 42 us per levy; a 500-projectile flood over, far from and
 	/// through the army 520, 640, 520 -> 41, 11, 97 us. What it cannot show: draw cost (a headless server cannot draw).
 	/// </summary>
 	public partial class PerfBossCheck : ModSystem
@@ -578,7 +578,9 @@ namespace Levy.Common.Testing
 			// the quiet field is timed for information; the verdict on it is that calm levies really did go dormant (counted, so box load cannot move it)
 			if (a0 != null && dormOn) Check($"a calm army goes dormant on a quiet field: {a0.Skips} gear frames skipped over {a0.Ticks + 60} ticks ({a0.Mean - (c0?.Mean ?? 0):F2} ms/tick added; {(b0 != null ? (b0.Mean - (c0?.Mean ?? 0)).ToString("F2") : "n/a")} with the fix off)", a0.Skips > levies * (a0.Ticks + 60) * 0.05);
 			Versus($"an idle army under a flood of {flood} hostile projectiles", a1, b1, c1, cullOn, 0.5);
-			Versus($"an army taking a flood of {flood} hostile projectiles", a3, b3, c2, cullOn, 0.5);
+			// 0.65, not 0.5 (perf pass 11-22): the fixes-off arm got cheaper when a per-pair environment read left the hostile hit test (SoldierProjectileImmunity), which every uncull'd (hostile shot, levy)
+			// pair paid. The fixes-on cost did not grow (standalone, same box: 22.9 -> 21.2 ms/tick); the off arm fell from 71.9 to 42.7, so the old ratio partly measured that read. The cull must still save a third.
+			Versus($"an army taking a flood of {flood} hostile projectiles", a3, b3, c2, cullOn, 0.65);
 			if (Arms.Count > 0) Check("every arm ticked", Arms.All(a => a.Ticks > 0));
 		}
 	}

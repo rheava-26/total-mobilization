@@ -43,10 +43,20 @@ namespace Levy.Common.Weapons
 			catch (Exception) { _redClassic = _redExpert = _capClassic = _capExpert = null; }
 		}
 
-		internal static void Unload() { _tried = false; _redClassic = _redExpert = _capClassic = _capExpert = null; }
+		internal static void Unload() { _tried = false; _redClassic = _redExpert = _capClassic = _capExpert = null; _rulesTick = uint.MaxValue; }
 
 		/// <summary>True when Calamity is loaded and its refill reduction was found (<paramref name="reduction"/> per tick while below <paramref name="cap"/>).</summary>
 		internal static bool CalamityRules(out float cap, out float reduction)
+		{
+			// Read once a tick (per difficulty): the reflection read boxed two floats on every routed pass of every army round (perf pass: one of the larger allocators of a busy tick). The answer is the same within a tick.
+			uint now = Main.GameUpdateCount; bool ex = Main.expertMode;
+			if (_rulesTick == now && _rulesExpert == ex) { cap = _rulesCap; reduction = _rulesRed; return _rulesOk; }
+			_rulesOk = CalamityRulesRead(out _rulesCap, out _rulesRed); _rulesTick = now; _rulesExpert = ex;
+			cap = _rulesCap; reduction = _rulesRed; return _rulesOk;
+		}
+		private static uint _rulesTick = uint.MaxValue; private static bool _rulesExpert, _rulesOk; private static float _rulesCap, _rulesRed;
+
+		private static bool CalamityRulesRead(out float cap, out float reduction)
 		{
 			EnsureCalamity();
 			bool expert = Main.expertMode;

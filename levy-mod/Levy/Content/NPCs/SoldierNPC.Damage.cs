@@ -431,11 +431,14 @@ namespace Levy.Content.NPCs
 	{
 		public override bool AppliesToEntity(NPC entity, bool lateInstantiation) => entity.type == ModContent.NPCType<SoldierNPC>();
 
+		/// <summary>Lab A/B: LEVY_PROJSLOTS=0 folds the immunity slots into the one window. Read once: this hook runs for every (hostile shot, levy) pair the game tests, and the environment read was about 1% of a busy tick (perf pass).</summary>
+		private static readonly bool ProjSlotsOn = Environment.GetEnvironmentVariable("LEVY_PROJSLOTS") != "0";
+
 		public override bool? CanBeHitByProjectile(NPC npc, Projectile projectile)
 		{
 			if (projectile.hostile && npc.ModNPC is SoldierNPC s)
 			{
-				if (SoldierNPC.PlayerHitOn && HostileContact.Slots && HostileContact.Parity && Environment.GetEnvironmentVariable("LEVY_PROJSLOTS") != "0")
+				if (SoldierNPC.PlayerHitOn && HostileContact.Slots && HostileContact.Parity && ProjSlotsOn)
 				{
 					// Player.Hurt: a hit with its own immunity slot (Moon Lord, the Empress) waits on that slot, not on the general window; an all-types window closes every slot
 					if (s.AllImmune > 0) return false;

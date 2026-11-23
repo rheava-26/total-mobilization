@@ -15,6 +15,13 @@ namespace Levy.Common.Weapons
 		/// <summary>Lab A/B switch (env LEVY_DEADHOOKS_OFF=1): the revived wrappers (Zenith anchor, flyer slot, held-item view) pass straight through, which is how the behaviour before the revival is measured.</summary>
 		internal static readonly bool Off = Environment.GetEnvironmentVariable("LEVY_DEADHOOKS_OFF") == "1";
 
+		/// <summary>
+		/// The original call of an AI detour as an <see cref="Action{Projectile}"/> for a wrapper. The lambda lives here, not in the detour: a lambda over the detour's own <c>orig</c> parameter makes the compiler
+		/// allocate its closure when the detour is entered, on every projectile's AI call, wrapped or not (perf pass: four such detours were among the largest allocators of a busy tick). Now it is made only when a wrapper runs.
+		/// </summary>
+		internal static Action<Projectile> Wrap(On_Projectile.orig_VanillaAI orig) => p => orig(p);
+		internal static Action<Projectile> Wrap(On_Projectile.orig_AI orig) => p => orig(p);
+
 		/// <summary>Detours <c>ProjectileLoader.ProjectileAI(Projectile)</c> (what <c>Projectile.AI</c> calls: PreAI of every global and the projectile, then the vanilla or modded AI).</summary>
 		internal static void AddLoader(Action<Action<Projectile>, Projectile> detour, string who)
 		{

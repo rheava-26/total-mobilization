@@ -43,6 +43,11 @@ namespace Levy.Common.Compat.Calamity
 		private static MethodInfo _getModPlayer, _updateRippers, _loseAdrenaline, _applyRippers, _getDr;
 		private static FieldInfo _rage, _rageMax, _rageMode, _adr, _adrMax, _adrMode, _bossesAlive, _revenge;
 		private static PropertyInfo _rageEnabled, _adrEnabled, _shielding;
+		// Compiled accessors of the same members (Common/Util/FieldAccess.cs): these are read and written per levy per tick, and the reflection calls boxed every value (perf pass).
+		private static Func<object, float> _gRage, _gRageMax, _gAdr, _gAdrMax, _gStealth, _gStealthMax, _gGenStand, _gGenMove;
+		private static Func<object, bool> _gRageMode, _gAdrMode, _gRageEn, _gAdrEn, _gBosses, _gRevenge;
+		private static Action<object, bool> _sRageMode, _sAdrMode; private static Action<object, float> _sRage, _sAdr;
+		private static Func<Player, object> _modPlayerOf;
 
 		public static bool Available { get { Init(); return _ok; } }
 		/// <summary>True when the levies use the rippers (Calamity loaded and not switched off).</summary>
@@ -77,6 +82,19 @@ namespace Levy.Common.Compat.Calamity
 				_loseAdrenaline = _cpT.GetMethod("LoseAdrenalineOnHurt", I);
 				_applyRippers = util.GetMethod("ApplyRippersToDamage", S);
 				_getDr = util.GetMethod("GetAdrenalineDR", S);
+				try
+				{
+					_gRage = Util.FieldAccess.Getter<float>(_rage); _gRageMax = Util.FieldAccess.Getter<float>(_rageMax); _gAdr = Util.FieldAccess.Getter<float>(_adr); _gAdrMax = Util.FieldAccess.Getter<float>(_adrMax);
+					_gRageMode = Util.FieldAccess.Getter<bool>(_rageMode); _gAdrMode = Util.FieldAccess.Getter<bool>(_adrMode); _sRageMode = Util.FieldAccess.Setter<bool>(_rageMode); _sAdrMode = Util.FieldAccess.Setter<bool>(_adrMode);
+					_sRage = Util.FieldAccess.Setter<float>(_rage); _sAdr = Util.FieldAccess.Setter<float>(_adr);
+					_gRageEn = Util.FieldAccess.PropGetter<bool>(_rageEnabled); _gAdrEn = Util.FieldAccess.PropGetter<bool>(_adrEnabled);
+					_gBosses = Util.FieldAccess.Getter<bool>(_bossesAlive); _gRevenge = Util.FieldAccess.Getter<bool>(_revenge);
+					_gStealth = Util.FieldAccess.Getter<float>(_stealth); _gStealthMax = Util.FieldAccess.Getter<float>(_stealthMax); _gGenStand = Util.FieldAccess.Getter<float>(_genStand); _gGenMove = Util.FieldAccess.Getter<float>(_genMove);
+					// Player.GetModPlayer<CalamityPlayer>(base), compiled once
+					var pp = System.Linq.Expressions.Expression.Parameter(typeof(Player));
+					_modPlayerOf = System.Linq.Expressions.Expression.Lambda<Func<Player, object>>(System.Linq.Expressions.Expression.Convert(System.Linq.Expressions.Expression.Call(pp, _getModPlayer, System.Linq.Expressions.Expression.Constant(_cpBase, _cpT)), typeof(object)), pp).Compile();
+				}
+				catch (Exception e) { Levy.Instance?.Logger.Warn("LEVYRIPPERS: compiled accessors failed, reflection is used: " + e.Message); _gRage = _gRageMax = _gAdr = _gAdrMax = _gStealth = _gStealthMax = _gGenStand = _gGenMove = null; _gRageMode = _gAdrMode = _gRageEn = _gAdrEn = _gBosses = _gRevenge = null; _sRageMode = _sAdrMode = null; _sRage = _sAdr = null; _modPlayerOf = null; }
 				_ok = _rage != null && _rageMax != null && _rageMode != null && _adr != null && _adrMax != null && _adrMode != null && _bossesAlive != null && _revenge != null
 					&& _rageEnabled != null && _adrEnabled != null && _updateRippers != null && _loseAdrenaline != null && _applyRippers != null && _getDr != null;
 				if (!_ok) Levy.Instance?.Logger.Warn("LEVYRIPPERS: Calamity member missing, rippers off (updateRippers=" + (_updateRippers != null) + " lose=" + (_loseAdrenaline != null) + " apply=" + (_applyRippers != null) + " dr=" + (_getDr != null) + ")");
@@ -89,23 +107,27 @@ namespace Levy.Common.Compat.Calamity
 		public static object Of(Player p)
 		{
 			Init(); if (!_ok || p == null) return null;
-			try { return _getModPlayer.Invoke(p, new object[] { _cpBase }); } catch (Exception) { return null; }
+			try { return _modPlayerOf != null ? _modPlayerOf(p) : _getModPlayer.Invoke(p, new object[] { _cpBase }); } catch (Exception) { return null; }
 		}
 
-		public static bool RevengeanceOn { get { Init(); try { return _ok && (bool)_revenge.GetValue(null); } catch (Exception) { return false; } } }
-		public static bool BossAlive { get { Init(); try { return _ok && (bool)_bossesAlive.GetValue(null); } catch (Exception) { return false; } } }
+		public static bool RevengeanceOn { get { Init(); try { return _ok && (_gRevenge != null ? _gRevenge(null) : (bool)_revenge.GetValue(null)); } catch (Exception) { return false; } } }
+		public static bool BossAlive { get { Init(); try { return _ok && (_gBosses != null ? _gBosses(null) : (bool)_bossesAlive.GetValue(null)); } catch (Exception) { return false; } } }
 
-		public static float Rage(object cp) => cp == null ? 0f : (float)_rage.GetValue(cp);
-		public static float RageMax(object cp) => cp == null ? 0f : (float)_rageMax.GetValue(cp);
-		public static float Adrenaline(object cp) => cp == null ? 0f : (float)_adr.GetValue(cp);
-		public static float AdrenalineMax(object cp) => cp == null ? 0f : (float)_adrMax.GetValue(cp);
-		public static bool RageEnabled(object cp) { try { return (bool)_rageEnabled.GetValue(cp); } catch (Exception) { return false; } }
-		public static bool AdrenalineEnabled(object cp) { try { return (bool)_adrEnabled.GetValue(cp); } catch (Exception) { return false; } }
-		public static bool RageModeActive(object cp) => cp != null && (bool)_rageMode.GetValue(cp);
-		public static bool AdrenalineModeActive(object cp) => cp != null && (bool)_adrMode.GetValue(cp);
-		public static void SetModes(object cp, bool rage, bool adrenaline) { _rageMode.SetValue(cp, rage); _adrMode.SetValue(cp, adrenaline); }
-		public static void SetRage(object cp, float v) => _rage.SetValue(cp, v);
-		public static void SetAdrenaline(object cp, float v) => _adr.SetValue(cp, v);
+		public static float Rage(object cp) => cp == null ? 0f : _gRage != null ? _gRage(cp) : (float)_rage.GetValue(cp);
+		public static float RageMax(object cp) => cp == null ? 0f : _gRageMax != null ? _gRageMax(cp) : (float)_rageMax.GetValue(cp);
+		public static float Adrenaline(object cp) => cp == null ? 0f : _gAdr != null ? _gAdr(cp) : (float)_adr.GetValue(cp);
+		public static float AdrenalineMax(object cp) => cp == null ? 0f : _gAdrMax != null ? _gAdrMax(cp) : (float)_adrMax.GetValue(cp);
+		public static bool RageEnabled(object cp) { try { return _gRageEn != null ? _gRageEn(cp) : (bool)_rageEnabled.GetValue(cp); } catch (Exception) { return false; } }
+		public static bool AdrenalineEnabled(object cp) { try { return _gAdrEn != null ? _gAdrEn(cp) : (bool)_adrEnabled.GetValue(cp); } catch (Exception) { return false; } }
+		public static bool RageModeActive(object cp) => cp != null && (_gRageMode != null ? _gRageMode(cp) : (bool)_rageMode.GetValue(cp));
+		public static bool AdrenalineModeActive(object cp) => cp != null && (_gAdrMode != null ? _gAdrMode(cp) : (bool)_adrMode.GetValue(cp));
+		public static void SetModes(object cp, bool rage, bool adrenaline)
+		{
+			if (_sRageMode != null && _sAdrMode != null && cp != null) { _sRageMode(cp, rage); _sAdrMode(cp, adrenaline); return; }
+			_rageMode.SetValue(cp, rage); _adrMode.SetValue(cp, adrenaline);
+		}
+		public static void SetRage(object cp, float v) { if (_sRage != null && cp != null) _sRage(cp, v); else _rage.SetValue(cp, v); }
+		public static void SetAdrenaline(object cp, float v) { if (_sAdr != null && cp != null) _sAdr(cp, v); else _adr.SetValue(cp, v); }
 
 		/// <summary>Calamity's own fill/burn step (private UpdateRippers), for a dummy that is not in the per-tick gear frame.</summary>
 		public static void RunStep(object cp) { try { _updateRippers.Invoke(cp, null); } catch (TargetInvocationException e) { Warn("UpdateRippers", e.InnerException ?? e); } catch (Exception e) { Warn("UpdateRippers", e); } }
@@ -199,9 +221,9 @@ namespace Levy.Common.Compat.Calamity
 		}
 
 		/// <summary>A rogue (Calamity gave the dummy a stealth bar): max stealth above zero.</summary>
-		public static bool IsRogue(object cp) { try { return cp != null && _stealthMax != null && (float)_stealthMax.GetValue(cp) > 0f; } catch (Exception) { return false; } }
-		public static float Stealth(object cp) { try { return _stealth == null ? 0f : (float)_stealth.GetValue(cp); } catch (Exception) { return 0f; } }
-		public static float StealthMax(object cp) { try { return _stealthMax == null ? 0f : (float)_stealthMax.GetValue(cp); } catch (Exception) { return 0f; } }
+		public static bool IsRogue(object cp) { try { return cp != null && _stealthMax != null && (_gStealthMax != null ? _gStealthMax(cp) : (float)_stealthMax.GetValue(cp)) > 0f; } catch (Exception) { return false; } }
+		public static float Stealth(object cp) { try { return _stealth == null ? 0f : _gStealth != null && cp != null ? _gStealth(cp) : (float)_stealth.GetValue(cp); } catch (Exception) { return 0f; } }
+		public static float StealthMax(object cp) { try { return _stealthMax == null ? 0f : _gStealthMax != null && cp != null ? _gStealthMax(cp) : (float)_stealthMax.GetValue(cp); } catch (Exception) { return 0f; } }
 		/// <summary>Writes the bar (and its size): the lend of a levy's bar to the real player for a hit that writes "the owner's" bar (HeldWeapons.RunDamage). False when unwritable.</summary>
 		public static bool SetStealth(object cp, float value, float max) { try { if (cp == null || _stealth == null || _stealthMax == null) return false; _stealthMax.SetValue(cp, max); _stealth.SetValue(cp, value); return true; } catch (Exception) { return false; } }
 		/// <summary>Calamity's stealth regeneration speed for the player's gear: 1 fills the bar in two seconds standing still; moving it is halved (BalancingConstants.MovingStealthGenRatio) before the move multiplier.</summary>
@@ -210,7 +232,8 @@ namespace Levy.Common.Compat.Calamity
 			try
 			{
 				FieldInfo f = moving ? _genMove : _genStand;
-				float g = f == null ? 1f : (float)f.GetValue(cp);
+				Func<object, float> fg = moving ? _gGenMove : _gGenStand;
+				float g = f == null ? 1f : fg != null && cp != null ? fg(cp) : (float)f.GetValue(cp);
 				return Math.Max(0.05f, moving ? g * 0.5f : g);
 			}
 			catch (Exception) { return moving ? 0.5f : 1f; }

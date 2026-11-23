@@ -246,7 +246,7 @@ namespace Levy.Content.NPCs
 				// Player.Update's tail: the mod hooks that read the finished equip pass. Calamity regenerates rogue stealth in the last.
 				// What the mods' PostUpdateEquips add to lifeRegen (Calamity adds the regeneration of its buffs and gear here, a dummy never runs Player.UpdateLifeRegen) is the levy's regeneration, in the same units as the Campfire's.
 				int regen0 = d.lifeRegen;
-				RunHook(() => PlayerLoader.PostUpdateEquips(d));
+				RunHook(HookPostEquips, d);
 				_modRegenDelta = 0;
 				if (d.lifeRegen > regen0) { _buffLifeRegen += d.lifeRegen - regen0; _modRegenDelta = d.lifeRegen - regen0; } // already inside Player.lifeRegen: the regeneration pass must not count it again
 				Common.Team.TeamItems.LevyThoriumEquips(this, d, ref _buffLifeRegen); // Thorium's Ring of Unity and life recovery for the dummy
@@ -264,7 +264,7 @@ namespace Levy.Content.NPCs
 				}
 				else { d.itemAnimation = 0; d.itemAnimationMax = 0; d.itemTime = 0; }
 				Rippers_Restore(); // ResetEffects cleared Calamity's Rage / Adrenaline mode flags; Calamity's fill/burn step (in PostUpdateMiscEffects) reads them
-				RunHook(() => PlayerLoader.PostUpdateMiscEffects(d)); GearUpkeep.TailRuns++;
+				RunHook(HookPostMisc, d); GearUpkeep.TailRuns++;
 				d.itemAnimation = animSaved; d.itemAnimationMax = animMaxSaved; d.itemTime = timeSaved;
 				NoteRegenBase(d);
 				if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 5); 
@@ -306,13 +306,7 @@ namespace Levy.Content.NPCs
 			if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 1); 
 
 			// Buffs: only the mod's. A vanilla buff on the dummy comes from a set bonus whose stat side is built by hand (ApplyPotionBuffs / ApplySetStats), which would count twice.
-			RunHook(() =>
-			{
-				for (int b = 0; b < d.buffType.Length; b++) if (d.buffType[b] > 0 && d.buffType[b] < BuffID.Count && !(GearUpkeep.Mode == 3 && d.buffType[b] == BuffID.LeafCrystal)) d.DelBuff(b);
-				PlayerLoader.PreUpdateBuffs(d);
-				for (int b = 0; b < d.buffType.Length; b++) if (d.buffType[b] > 0) { d.UpdateBuffs(ownerSlot); break; }
-				PlayerLoader.PostUpdateBuffs(d);
-			});
+			RunHook(HookBuffPass, d);
 
 			if (global::Levy.Common.Testing.GearCacheProbe.On) global::Levy.Common.Testing.GearCacheProbe.Mark(this, d, 2); 
 			global::Levy.Common.Util.LevyProf.End(global::Levy.Common.Util.LevyProf.GfBuffs, pf); pf = global::Levy.Common.Util.LevyProf.Begin();
@@ -378,6 +372,31 @@ namespace Levy.Content.NPCs
 			Main.soundVolume = f.Volume;
 			Dummy.whoAmI = DummySlot;
 			SaveGate.Exit(f.Gate); // last: the globals are the real ones again
+		}
+
+		// The frame's guarded hook calls as static delegates with the dummy passed in: a lambda over the dummy made a closure and a delegate or two per levy per tick (perf pass).
+		private static readonly Action<Player> HookPostEquips = PlayerLoader.PostUpdateEquips, HookPostMisc = PlayerLoader.PostUpdateMiscEffects, HookBuffPass = BuffPass;
+		/// <summary>The buff pass of the build. Only the mod's buffs: a vanilla buff on the dummy comes from a set bonus whose stat side is built by hand (ApplyPotionBuffs / ApplySetStats), which would count twice.</summary>
+		private static void BuffPass(Player d)
+		{
+			for (int b = 0; b < d.buffType.Length; b++) if (d.buffType[b] > 0 && d.buffType[b] < BuffID.Count && !(GearUpkeep.Mode == 3 && d.buffType[b] == BuffID.LeafCrystal)) d.DelBuff(b);
+			PlayerLoader.PreUpdateBuffs(d);
+			for (int b = 0; b < d.buffType.Length; b++) if (d.buffType[b] > 0) { d.UpdateBuffs(DummySlot); break; }
+			PlayerLoader.PostUpdateBuffs(d);
+		}
+
+		/// <summary><see cref="RunHook(Action)"/> for a hook that takes the dummy.</summary>
+		private void RunHook(Action<Player> a, Player d)
+		{
+			int idm = global::Levy.Common.Owner.IdentityGuard.Mark();
+			try { a(d); }
+			catch (Exception e)
+			{
+				if (e is System.Reflection.TargetInvocationException { InnerException: not null } t) e = t.InnerException;
+				global::Levy.Common.Owner.IdentityGuard.Release(idm); // the hook's own exit never ran
+				GearUpkeep.HookFailures++;
+				if (GearUpkeep.WarnOnce(e)) Levy.Instance?.Logger.Warn("Levy: a gear hook threw during upkeep (once per kind): " + e);
+			}
 		}
 
 		private void RunHook(Action a)

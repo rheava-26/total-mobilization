@@ -155,7 +155,10 @@ namespace Levy.Common.Team
 				if (f == null || f.FieldType != typeof(bool)) return null;
 				ModPlayer baseInstance = ModContent.GetContent<ModPlayer>().FirstOrDefault(x => x.GetType() == t);
 				if (baseInstance == null) return null;
-				return p => { try { return (bool)f.GetValue(p.GetModPlayer(baseInstance)); } catch (Exception) { return false; } };
+				// a compiled field read, not FieldInfo.GetValue: this runs per levy per tick and the reflection read boxed a bool each time (perf pass)
+				var mp = System.Linq.Expressions.Expression.Parameter(typeof(ModPlayer));
+				var read = System.Linq.Expressions.Expression.Lambda<Func<ModPlayer, bool>>(System.Linq.Expressions.Expression.Field(System.Linq.Expressions.Expression.Convert(mp, t), f), mp).Compile();
+				return p => { try { return read(p.GetModPlayer(baseInstance)); } catch (Exception) { return false; } };
 			}
 			catch (Exception) { return null; }
 		}

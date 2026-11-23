@@ -80,7 +80,7 @@ namespace Levy.Content.NPCs
 
 		private void Movement_UpdateCore()
 		{
-			NPC npc = NPC; WhyM = Why.MNone; DbgStage = $"v0={npc.velocity.X:0.00}";
+			NPC npc = NPC; WhyM = Why.MNone; _dbgV0 = npc.velocity.X; _dbgKind = 0; // DbgStage is formatted only when read (it was a string built every tick for every levy; perf pass)
 			if (!_stepInit) { npc.stepSpeed = StepSpeed; _stepInit = true; }
 			TickReturnHomeProgress();
 			// on a slope the body keeps a small downward velocity as it walks: with solid ground within a few pixels under the feet and no real fall under way it is standing, not airborne (jumping, dodging and strafing all need that)
@@ -216,9 +216,9 @@ namespace Levy.Content.NPCs
 				if (dropNudged) npc.velocity.X = _dropNudge * 0.6f;   // stepping clear of the shaft wall: the walk toward the waypoint's tile centre (which overlaps the wall by a pixel or two) waits one tick
 				else if (horizontal)
 				{
-					if (_blocked) { npc.velocity.X *= BlockedDecel; DbgStage += " blocked"; }
-					else if (MobilityMode >= 1 && LavaAhead(dir)) { npc.velocity.X *= 0.5f; DbgStage += " lava"; }   // never run or drift toward lava, on the ground or in the air
-					else { Accelerate(dir, maxSpeed, accel); DbgStage += $" acc(dir={dir},max={maxSpeed:0.0})->{npc.velocity.X:0.00}"; }
+					if (_blocked) { npc.velocity.X *= BlockedDecel; _dbgKind = 1; }
+					else if (MobilityMode >= 1 && LavaAhead(dir)) { npc.velocity.X *= 0.5f; _dbgKind = 2; }   // never run or drift toward lava, on the ground or in the air
+					else { Accelerate(dir, maxSpeed, accel); _dbgKind = 3; _dbgDir = dir; _dbgMax = maxSpeed; _dbgVx = npc.velocity.X; }
 				}
 				else Decelerate();
 				DbgJump = jumpTiles * 10 + (horizontal ? 1 : 0) + (grounded ? 2 : 0) + (_blocked ? 4 : 0);
@@ -1175,7 +1175,10 @@ namespace Levy.Content.NPCs
 		/// <summary>Why the last platform-drop test said no (lab: the travel lab's STUCK lines print it).</summary>
 		internal string DropWhy = ""; private int _dropNudge;
 		/// <summary>Lab: which rule asked for wing thrust this tick (1 goal above, 2 rise, 3 route rise, 4 planned arc, 5 overhang, 6 wall, 7 gap, 8 deep drop; 0 none).</summary>
-		internal int FlyWhy, DbgJump; internal string DbgStage = "";
+		internal int FlyWhy, DbgJump;
+		private float _dbgV0, _dbgMax, _dbgVx; private int _dbgKind = -1, _dbgDir;
+		/// <summary>Harness telemetry: what the last movement step did to the horizontal speed ("v0=.. blocked", "v0=.. acc(dir=..,max=..)->.."), formatted when read.</summary>
+		internal string DbgStage => _dbgKind < 0 ? "" : $"v0={_dbgV0:0.00}" + (_dbgKind == 1 ? " blocked" : _dbgKind == 2 ? " lava" : _dbgKind == 3 ? $" acc(dir={_dbgDir},max={_dbgMax:0.0})->{_dbgVx:0.00}" : "");
 		private bool PlatformDropIsSafe()
 		{
 			var npc = NPC;

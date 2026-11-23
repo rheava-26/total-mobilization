@@ -1017,7 +1017,7 @@ namespace Levy.Common.Weapons
 			global::Levy.Common.Util.HookProbe.HeldVanilla++;
 			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
 			_wrapDepth++;
-			try { HeldWeapons.RunAi(pp => orig(pp), self, g); }
+			try { HeldWeapons.RunAi(global::Levy.Common.Weapons.ProjAiHooks.Wrap(orig), self, g); }
 			finally { _wrapDepth--; }
 		} private static int _hl_VanillaAiDetour_5;
 
@@ -1026,7 +1026,7 @@ namespace Levy.Common.Weapons
 			global::Levy.Common.Util.HookProbe.HeldAi++;
 			if (!ShouldWrap(self, out HeldWeaponProjectile g)) { orig(self); return; }
 			_wrapDepth++;
-			try { HeldWeapons.RunAi(pp => orig(pp), self, g); }
+			try { HeldWeapons.RunAi(global::Levy.Common.Weapons.ProjAiHooks.Wrap(orig), self, g); }
 			finally { _wrapDepth--; }
 		} private static int _hl_AiDetour_1;
 

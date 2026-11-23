@@ -165,6 +165,10 @@ report() { # $1 = label, $2 = run dir
   grep -F "[PerfBoss] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[PerfBoss] OBSERVED' "$L" | head -8 | cut -c1-240 | sed 's/^/  /'
   grep -F '[PerfBoss] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
+  echo "PerfPass (perf-pass guard: a fighting army's added cost under a ceiling, targets acquired, shots and hits against the pre-pass reference and between halves): PASS=$(grep -c -F '[PerfPass] PASS ' "$L") FAIL=$(grep -c -F '[PerfPass] FAIL ' "$L")"
+  grep -F "[PerfPass] self-check pass=" "$L" | sed 's/^/  /'
+  grep -F '[PerfPass] OBSERVED' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-700 | sed 's/^/  /'
+  grep -F '[PerfPass] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
   echo "HookLive (every detour of Levy, Mechanization and Warbands ran during the chain, or is listed with the scenario that needs it): PASS=$(grep -c -F '[HookLive] PASS ' "$L") FAIL=$(grep -c -F '[HookLive] FAIL ' "$L")"
   grep -F "[HookLive] self-check pass=" "$L" | sed 's/^/  /'
   grep -F "[HookLive] OBSERVED" "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-1200 | sed 's/^/  /'
@@ -208,7 +212,7 @@ report() { # $1 = label, $2 = run dir
   echo "FightReport (boot self-check of the analyzer): $(grep -F '[FightReport] self-check pass=' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | head -1)"
   [ -z "$(grep -F '[MechWorld] self-check pass=' "$L")" ] && echo "  !! no MechWorld summary line (check did not finish; see $2/tml/boot.out)"
   echo "other failures (any FAIL / fail=[1-9] / !!! line not listed above), known summon-staff pick failure excluded:"
-  fail_lines "$L" | grep -v -F -e '[MechWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[PylonClick] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' -e '[BossBugs] FAIL ' -e '[SwapRace] FAIL ' -e '[LevyRules] FAIL ' -e '[PerfBoss] FAIL ' -e '[StealthWorld] FAIL ' -e '[LineWatch] FAIL ' -e '[PerfAnalyzer] FAIL ' -e '[ChatterWorld] FAIL ' -e '[SaveHold] FAIL ' -e '[EventRec] FAIL ' -e '[HookLive] FAIL ' -e '[MobWorld] FAIL ' -e '[Bodyguard] FAIL ' -e '[ProgAssist] FAIL ' -e '[AutoSell] FAIL ' -e '[ArmoryRulesWorld] FAIL ' -e '[SidearmWorld] FAIL ' -e '[FacingWorld] FAIL ' -e '[MachineDorm] FAIL ' -e '[LostFight] FAIL ' -e '[MusterBoss] FAIL ' -e '[ExoFix] FAIL ' -e '[PetWorld] FAIL ' -e '[ArmorClassWorld] FAIL ' -e '[LoadoutFit] FAIL ' -e '[HoldoutWorld] FAIL ' -e '[OnlyRule] FAIL ' -e '[AllyTags] FAIL ' -e '[ActiveArmy] FAIL ' -e '[SetAbility] FAIL ' -e '[SummonSweep] FAIL ' -e '[AmmoWorld] FAIL ' | head -20
+  fail_lines "$L" | grep -v -F -e '[MechWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[PylonClick] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' -e '[BossBugs] FAIL ' -e '[SwapRace] FAIL ' -e '[LevyRules] FAIL ' -e '[PerfBoss] FAIL ' -e '[StealthWorld] FAIL ' -e '[LineWatch] FAIL ' -e '[PerfAnalyzer] FAIL ' -e '[ChatterWorld] FAIL ' -e '[SaveHold] FAIL ' -e '[EventRec] FAIL ' -e '[HookLive] FAIL ' -e '[MobWorld] FAIL ' -e '[Bodyguard] FAIL ' -e '[ProgAssist] FAIL ' -e '[AutoSell] FAIL ' -e '[ArmoryRulesWorld] FAIL ' -e '[SidearmWorld] FAIL ' -e '[FacingWorld] FAIL ' -e '[MachineDorm] FAIL ' -e '[LostFight] FAIL ' -e '[MusterBoss] FAIL ' -e '[ExoFix] FAIL ' -e '[PetWorld] FAIL ' -e '[ArmorClassWorld] FAIL ' -e '[LoadoutFit] FAIL ' -e '[HoldoutWorld] FAIL ' -e '[OnlyRule] FAIL ' -e '[AllyTags] FAIL ' -e '[ActiveArmy] FAIL ' -e '[SetAbility] FAIL ' -e '[SummonSweep] FAIL ' -e '[AmmoWorld] FAIL ' -e '[PerfPass] FAIL ' | head -20
   grep -E "$KNOWN_FAIL_RE" "$L" | head -1 | sed 's/^/  (known, excluded) /'
   echo "FAIL lines in the whole log (known excluded): $(fail_lines "$L" | wc -l)"
   local ex; ex=$(grep -c -E -i "$EXC_RE" "$L"); echo "exceptions: $ex"

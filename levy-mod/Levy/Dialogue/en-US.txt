@@ -42,6 +42,8 @@
 #               RIFT_BLOOD RIFT_GROW1 RIFT_GROW2 RIFT_GROW3 RIFT_ICE RIFT_FROZEN RIFT_FOG RIFT_SCARE RIFT_GRIM RIFT_WORN
 #               RIFT_HUSH RIFT_ANGRY RIFT_BOSS RIFT_TOWN RIFT_CLASS RIFT_HABIT RIFT_FLIGHT   (Wrath of the Gods only: the covered
 #                               sky after Moon Lord; parts 15 to 15d explain when each is used and which pools they stand in for)
+#               SCENE_<FIGHT>_<MOMENT>   (Wrath of the Gods fights: what the army says in place of its usual chatter while the Genesis fires,
+#                               the Avatar's rift is open, the Avatar of Emptiness or the Nameless Deity is up; part 16 lists every pool and when it is used)
 #
 # WHERE A LINE SHOWS UP
 #   Right-click chat:   IDLE IDLE_NIGHT NAMEDROP BLOOD_MOON PARTY GRAVEYARD RAIN BIOME_* PAYDAY UNPAID HOLD_FIRE EVENT_* ARMORY_WANT ARMORY_BEST ARMORY_WORST
@@ -105,6 +107,7 @@
 #  13. Officer chat, generic                              OFFICER_CHAT_<STATE>, used when an officer has no voice of his own
 #  14. Officer voices                                     one block per officer, OFFICER_<Officer>_<STATE>, then the women's annoyed sets
 #  15. The rift sky                                       RIFT_* (Wrath of the Gods only)
+#  16. The Wrath of the Gods fights                       SCENE_* (the Genesis, the rift, the Avatar of Emptiness, the Nameless Deity)
 #
 # EDITING WITHOUT REBUILDING THE MOD
 #   1. In game (single player, or on the server) type  /levydialogue export  . It copies this file to
@@ -2672,3 +2675,327 @@ RIFT_CLASS | Any | [summoner] Whip, staff, minions. Fully optimized. Still cold.
 RIFT_CLASS | Any | [summoner] My minion setup is flawless. The world isn't.
 RIFT_CLASS | Any | Let's see {Summoner}'s staff patch the sky. Go on.
 RIFT_BOSS | Any | [summoner] Sentries placed. Minions queued. Moving on.
+
+
+
+
+# ============================================================================================================
+# 16. THE WRATH OF THE GODS FIGHTS (Wrath of the Gods only; nothing here is read without it)
+# While the Genesis fires, the Avatar's rift is open, or the Avatar of Emptiness or the Nameless Deity is up, the levies' usual chatter is held
+# (no pay talk, no camp grumbles, no generic boss shouts) and these pools speak instead, a few levies near the commander at a time, never while the
+# boss has the floor (its screams, Solyn's lines, the Nameless Deity's words) and never two lines within two seconds.
+#   SCENE_GENESIS            the Genesis is fired and the sky tears open (three levies)
+#   SCENE_RIFT_OPEN          the rift opens over the army (three)          SCENE_RIFT_SUCK    the rift pulls everything toward it
+#   SCENE_RIFT_DOWN          the rift is beaten, and something is still coming
+#   SCENE_RIFT_FIGHT         now and then while the rift fight goes on
+#   SCENE_AVATAR_EMERGE      the Avatar climbs out: its legs               SCENE_AVATAR_HEAD  its head
+#   SCENE_AVATAR_SCREAM      after its first scream (three)                SCENE_AVATAR_PHASE3  after its second scream
+#   SCENE_AVATAR_FIGHT       now and then while the Avatar fight goes on
+#   SCENE_AVATAR_COLD SCENE_AVATAR_BLOOD SCENE_AVATAR_ATTACK SCENE_AVATAR_HEADPATS   its frost dimension, its blood, its biggest attacks, and the headpats
+#   SCENE_AVATAR_UNIVERSE    the commander is taken into its universe      SCENE_AVATAR_RETURN  the commander is back
+#   SCENE_AVATAR_HOPE        it is nearly beaten                           SCENE_AVATAR_STATIC  the static chases everyone
+#   SCENE_AVATAR_NAMELESS    the Nameless Deity appears in the dark        SCENE_AVATAR_HOME    everyone is put back in the world
+#   SCENE_AVATAR_KILL        the Avatar leaves for good (three)
+#   SCENE_NAMELESS_AWAKEN SCENE_NAMELESS_SCREAM SCENE_NAMELESS_PHASE2 SCENE_NAMELESS_PHASE3 SCENE_NAMELESS_CLOCK SCENE_NAMELESS_ATTACK SCENE_NAMELESS_HOPE SCENE_NAMELESS_KILL
+#                            the Nameless Deity's arrival, its scream, its phases, the clock, its biggest attacks, nearly beaten, beaten
+#   SCENE_NAMELESS_FIGHT     now and then while the Nameless Deity fight goes on
+#   SCENE_NAMELESS_RESCUE    the Nameless Deity takes the commander out of the Avatar's grip
+#   SCENE_NAMELESS_HOMECOMING   the commander comes home from the garden with the Nameless Deity beaten (the army does not follow into the garden)
+#   SCENE_WOTG_COMMANDER_DOWN   the commander falls in one of these fights (the levies near where it happened)
+#   SCENE_WOTG_MOURN         after a kill, for one of the levies who fell in the fight ({Comrade})
+# ============================================================================================================
+
+# ---------------------------------------------------------------- SCENE_GENESIS
+SCENE_GENESIS | Any | {Player}, what did you just DO?!
+SCENE_GENESIS | Any | The sky's tearing! It's tearing right down the middle!
+SCENE_GENESIS | Any | That's a hole! In the sky! Again! A BIGGER one!
+SCENE_GENESIS | Any | Everybody down! Down! I don't know why, just get DOWN!
+SCENE_GENESIS | Greenhorn | Was that on purpose?! Please tell me that was on purpose!
+SCENE_GENESIS | Sellsword | Whatever you just fired, {Player}, I want it off my contract!
+SCENE_GENESIS | Zealot | The commander calls and the heavens open! I knew it! I KNEW it!
+SCENE_GENESIS | Cynic | Oh good. We're knocking now. On THAT.
+SCENE_GENESIS | Veteran | Form up! Whatever comes out of that, it comes out to us!
+
+# ---------------------------------------------------------------- SCENE_RIFT_OPEN
+SCENE_RIFT_OPEN | Any | It's opening! The thing in the sky is OPENING!
+SCENE_RIFT_OPEN | Any | Don't look into it! {Player}, don't look into it!
+SCENE_RIFT_OPEN | Any | Is that the same rift?! It's right on top of us!
+SCENE_RIFT_OPEN | Any | It's breathing. Why is it breathing?
+SCENE_RIFT_OPEN | Greenhorn | I want to go back to the slimes. I liked the slimes.
+SCENE_RIFT_OPEN | Sellsword | No. No, this is a different job. This is a whole different job.
+SCENE_RIFT_OPEN | Zealot | Mother Gnash, I take back everything I said about the dark!
+SCENE_RIFT_OPEN | Cynic | So that's what's been behind the sun. Great. Good to know.
+SCENE_RIFT_OPEN | Veteran | Weapons up! It bleeds or it doesn't, we find out now!
+
+# ---------------------------------------------------------------- SCENE_RIFT_SUCK
+SCENE_RIFT_SUCK | Any | It's pulling! Grab something! Grab ANYTHING!
+SCENE_RIFT_SUCK | Any | My feet are leaving the ground! I didn't tell them to!
+SCENE_RIFT_SUCK | Any | Hold on to {Player}! No, don't, then we all go in!
+SCENE_RIFT_SUCK | Greenhorn | It's eating the air! Where's the air going?!
+SCENE_RIFT_SUCK | Sellsword | I am NOT going in there! Hold my boots! Hold ME!
+SCENE_RIFT_SUCK | Veteran | Dig in! Heels down! Nobody goes in that hole!
+
+# ---------------------------------------------------------------- SCENE_RIFT_DOWN
+SCENE_RIFT_DOWN | Any | It's closing! We did it! It's closing!
+SCENE_RIFT_DOWN | Any | Wait. Why is it getting bigger. Why is it getting BIGGER?
+SCENE_RIFT_DOWN | Any | Something's climbing out. Something's climbing OUT.
+SCENE_RIFT_DOWN | Greenhorn | That was the door? That was just the DOOR?!
+SCENE_RIFT_DOWN | Cynic | We killed the door. Congratulations. Here comes the house.
+SCENE_RIFT_DOWN | Veteran | Don't cheer. Reload.
+
+# ---------------------------------------------------------------- SCENE_RIFT_FIGHT
+SCENE_RIFT_FIGHT | Any | Keep shooting into it! Something in there has to feel it!
+SCENE_RIFT_FIGHT | Any | Those stars aren't stars! Don't touch the stars!
+SCENE_RIFT_FIGHT | Any | It reached out! An arm! It reached out of the SKY!
+SCENE_RIFT_FIGHT | Any | Stay near {Player}! The ground's the only thing that's ours!
+SCENE_RIFT_FIGHT | Any | [mage] I'm casting into a hole in the sky. I hope it counts!
+SCENE_RIFT_FIGHT | Any | [summoner] My minions won't go near it. Smart minions.
+SCENE_RIFT_FIGHT | Any | [melee] I'd charge it! It's in the sky! I'm being responsible!
+SCENE_RIFT_FIGHT | Greenhorn | Is it hurt? How do you tell if a hole is hurt?
+SCENE_RIFT_FIGHT | Zealot | Rigroth the Undying would have shot it sooner. Shoot it!
+SCENE_RIFT_FIGHT | Cynic | I'm aiming at nothing. And nothing is winning.
+SCENE_RIFT_FIGHT | Veteran | Short bursts! Watch the thorns! Watch your feet!
+
+# ---------------------------------------------------------------- SCENE_AVATAR_EMERGE
+SCENE_AVATAR_EMERGE | Any | Those are legs. Those are LEGS coming out of it!
+SCENE_AVATAR_EMERGE | Any | It's getting out! {Player}, it's getting OUT!
+SCENE_AVATAR_EMERGE | Any | How tall is it?! How tall IS it?!
+SCENE_AVATAR_EMERGE | Greenhorn | Nobody said it had legs. I could've lived not knowing it had legs.
+SCENE_AVATAR_EMERGE | Sellsword | I quit. I'm writing it down right now. I quit.
+SCENE_AVATAR_EMERGE | Zealot | Ul'Thazhra the Unblinking would not want us to watch this.
+SCENE_AVATAR_EMERGE | Cynic | Of course the hole had a body. Why wouldn't the hole have a body.
+SCENE_AVATAR_EMERGE | Veteran | Hold! Let it climb all the way out, then give it everything!
+
+# ---------------------------------------------------------------- SCENE_AVATAR_HEAD
+SCENE_AVATAR_HEAD | Any | Is that a face? Is that its FACE?
+SCENE_AVATAR_HEAD | Any | It's looking at us. It's looking at all of us at once.
+SCENE_AVATAR_HEAD | Greenhorn | Don't make eye contact! Where are its eyes?!
+SCENE_AVATAR_HEAD | Cynic | I liked it better without a head.
+SCENE_AVATAR_HEAD | Veteran | Head's out. That's where we shoot.
+
+# ---------------------------------------------------------------- SCENE_AVATAR_SCREAM
+SCENE_AVATAR_SCREAM | Any | Is everyone still here?! Sound off! SOUND OFF!
+SCENE_AVATAR_SCREAM | Any | I can't hear my own gun! Am I firing?! I think I'm firing!
+SCENE_AVATAR_SCREAM | Any | My teeth hurt. Why do my TEETH hurt?
+SCENE_AVATAR_SCREAM | Any | {Player}! Orders! Any orders! Please!
+SCENE_AVATAR_SCREAM | Greenhorn | I'm okay! I'm okay! I'm not okay! I'm shooting!
+SCENE_AVATAR_SCREAM | Sellsword | I've been paid to stand near worse. No. No, I haven't.
+SCENE_AVATAR_SCREAM | Zealot | It screams because it's afraid of us! It's afraid of US!
+SCENE_AVATAR_SCREAM | Cynic | Well, it's awake. Anybody want to go back to sleep?
+SCENE_AVATAR_SCREAM | Veteran | On your feet! It's just loud! Loud doesn't kill you!
+SCENE_AVATAR_SCREAM | Veteran | Ears ring, hands don't! FIRE!
+
+# ---------------------------------------------------------------- SCENE_AVATAR_FIGHT
+SCENE_AVATAR_FIGHT | Any | It doesn't bleed right! Why doesn't it bleed right?!
+SCENE_AVATAR_FIGHT | Any | Keep close to {Player}! Keep CLOSE!
+SCENE_AVATAR_FIGHT | Any | The ground's moving! The ground shouldn't move!
+SCENE_AVATAR_FIGHT | Any | I saw my own hands go dark. Are my hands still there?
+SCENE_AVATAR_FIGHT | Any | Don't look at the background! The background is looking back!
+SCENE_AVATAR_FIGHT | Any | It's not even trying to hit me. It's trying to hit the WORLD.
+SCENE_AVATAR_FIGHT | Any | [mage] I've got one spell left in me and it's going straight up!
+SCENE_AVATAR_FIGHT | Any | [summoner] My minions are hiding behind me. I'm hiding behind {Player}.
+SCENE_AVATAR_FIGHT | Any | [ranger] Bullets go in. Nothing comes out. I'm still shooting.
+SCENE_AVATAR_FIGHT | Any | [melee] I'm getting closer! I'm getting closer! I'm getting further!
+SCENE_AVATAR_FIGHT | Greenhorn | Is this what the end of the world sounds like? It's so quiet between the screams.
+SCENE_AVATAR_FIGHT | Greenhorn | I counted the arms. I stopped counting the arms.
+SCENE_AVATAR_FIGHT | Sellsword | I've fought for anyone who'd pay me! I'm fighting this one for free!
+SCENE_AVATAR_FIGHT | Zealot | Vorrath of the Thousand Teeth fears THIS. And we're shooting it!
+SCENE_AVATAR_FIGHT | Zealot | Hold the faith! Hold the line! Hold SOMETHING!
+SCENE_AVATAR_FIGHT | Cynic | Great plan, everyone. Shoot the god. Love it.
+SCENE_AVATAR_FIGHT | Cynic | If we live, I'm never complaining about the weather again.
+SCENE_AVATAR_FIGHT | Veteran | Pick a spot on it and keep hitting that spot!
+SCENE_AVATAR_FIGHT | Veteran | Breathe. Aim. It's big, so you won't miss.
+
+# ---------------------------------------------------------------- SCENE_AVATAR_COLD
+SCENE_AVATAR_COLD | Any | My breath is freezing! My EYELASHES are freezing!
+SCENE_AVATAR_COLD | Any | Where did the world go? It's all ice! It's all ICE!
+SCENE_AVATAR_COLD | Any | Keep moving or you'll stick! Keep MOVING!
+SCENE_AVATAR_COLD | Sellsword | I've been cold before. Not like this. Not from the inside.
+SCENE_AVATAR_COLD | Veteran | Watch the twinkles! The twinkles are where it hits!
+
+# ---------------------------------------------------------------- SCENE_AVATAR_BLOOD
+SCENE_AVATAR_BLOOD | Any | It's raining blood! Whose blood?! WHOSE BLOOD?!
+SCENE_AVATAR_BLOOD | Any | It's crying! The god is crying blood at us!
+SCENE_AVATAR_BLOOD | Greenhorn | I'm going to need a new uniform. And a new everything.
+SCENE_AVATAR_BLOOD | Zealot | Mother Gnash would call this a blessing. Mother Gnash is wrong.
+SCENE_AVATAR_BLOOD | Cynic | Red. Lovely. Matches the sky we used to have.
+
+# ---------------------------------------------------------------- SCENE_AVATAR_ATTACK
+SCENE_AVATAR_ATTACK | Any | It's breaking the world! It's breaking the actual world!
+SCENE_AVATAR_ATTACK | Any | Everybody MOVE! Wherever it's looking, MOVE!
+SCENE_AVATAR_ATTACK | Any | The sky just cracked! Like glass! Like GLASS!
+SCENE_AVATAR_ATTACK | Greenhorn | I don't know what that was but I'm lying down now!
+SCENE_AVATAR_ATTACK | Veteran | Brace! Then shoot it while it's tired!
+
+# ---------------------------------------------------------------- SCENE_AVATAR_HEADPATS
+SCENE_AVATAR_HEADPATS | Any | Is it... petting {Player}?
+SCENE_AVATAR_HEADPATS | Any | It's patting the commander! Why is it patting the commander?!
+SCENE_AVATAR_HEADPATS | Greenhorn | Does that mean it likes us? Please let that mean it likes us.
+SCENE_AVATAR_HEADPATS | Cynic | That's worse. Somehow that's worse.
+SCENE_AVATAR_HEADPATS | Zealot | Only the commander gets headpats from a god. As it should be!
+
+# ---------------------------------------------------------------- SCENE_AVATAR_UNIVERSE
+SCENE_AVATAR_UNIVERSE | Any | {Player}?! {Player}, where did you go?!
+SCENE_AVATAR_UNIVERSE | Any | It took the commander! It took {Player} somewhere!
+SCENE_AVATAR_UNIVERSE | Any | Everyone stay put! The commander always comes back!
+SCENE_AVATAR_UNIVERSE | Greenhorn | Who's in charge now?! Is it me?! It can't be me!
+SCENE_AVATAR_UNIVERSE | Sellsword | If {Player} doesn't come back, I'm not working for anyone else. I mean it.
+SCENE_AVATAR_UNIVERSE | Veteran | Hold position. When {Player}'s back, we'll be right here.
+
+# ---------------------------------------------------------------- SCENE_AVATAR_RETURN
+SCENE_AVATAR_RETURN | Any | {Player}'s back! Did you see what's in there?!
+SCENE_AVATAR_RETURN | Any | You're back! Don't tell us what was in there! Actually, tell us later!
+SCENE_AVATAR_RETURN | Greenhorn | You came back! I knew it! I didn't know it! I hoped it!
+SCENE_AVATAR_RETURN | Veteran | Welcome back, {Player}. We held. Now let's finish it.
+
+# ---------------------------------------------------------------- SCENE_AVATAR_PHASE3
+SCENE_AVATAR_PHASE3 | Any | It's angrier! How is it ANGRIER?!
+SCENE_AVATAR_PHASE3 | Any | We're hurting it! You only scream like that when you're hurt!
+SCENE_AVATAR_PHASE3 | Any | Everything's changing again! Where are we now?!
+SCENE_AVATAR_PHASE3 | Zealot | It's afraid! The god is afraid! Keep going!
+SCENE_AVATAR_PHASE3 | Cynic | Second scream. I didn't like the first one either.
+SCENE_AVATAR_PHASE3 | Veteran | Halfway's behind us! Don't you dare slow down now!
+
+# ---------------------------------------------------------------- SCENE_AVATAR_HOPE
+SCENE_AVATAR_HOPE | Any | It's slowing down! It's actually slowing down!
+SCENE_AVATAR_HOPE | Any | We can do this! I can't believe I'm saying it! We can DO this!
+SCENE_AVATAR_HOPE | Any | Everything you've got! Everything! Now!
+SCENE_AVATAR_HOPE | Greenhorn | Is it dying?! Can it die?! Please let it die!
+SCENE_AVATAR_HOPE | Zealot | The commander was right! The commander is always right! FIRE!
+SCENE_AVATAR_HOPE | Veteran | It's on its knees! Don't let it get up!
+
+# ---------------------------------------------------------------- SCENE_AVATAR_STATIC
+SCENE_AVATAR_STATIC | Any | Run! The static! RUN!
+SCENE_AVATAR_STATIC | Any | Don't let it touch you! Don't let the gray touch you!
+SCENE_AVATAR_STATIC | Any | It's eating the world! It's eating everything behind us!
+SCENE_AVATAR_STATIC | Greenhorn | Which way?! WHICH WAY?! There's only one way!
+SCENE_AVATAR_STATIC | Veteran | Stay with the commander! Run where {Player} runs!
+
+# ---------------------------------------------------------------- SCENE_AVATAR_NAMELESS
+SCENE_AVATAR_NAMELESS | Any | There's something else here. Something BIGGER.
+SCENE_AVATAR_NAMELESS | Any | It's bright. It's so bright. Who is that?
+SCENE_AVATAR_NAMELESS | Any | The static stopped. Something stopped the static.
+SCENE_AVATAR_NAMELESS | Greenhorn | Is that one on our side? Please be on our side.
+SCENE_AVATAR_NAMELESS | Zealot | That is not one of my gods. That's above my gods.
+SCENE_AVATAR_NAMELESS | Cynic | Oh, there's a second one. Of course there's a second one.
+SCENE_AVATAR_NAMELESS | Veteran | Nobody shoot that. Nobody shoot that until {Player} says.
+
+# ---------------------------------------------------------------- SCENE_AVATAR_HOME
+SCENE_AVATAR_HOME | Any | We're home! That's the ground! That's OUR ground!
+SCENE_AVATAR_HOME | Any | I can see the sky! It's the real sky! Mostly!
+SCENE_AVATAR_HOME | Greenhorn | I'm going to hug a tree. Any tree. That tree.
+SCENE_AVATAR_HOME | Veteran | Count heads. Then count them again.
+
+# ---------------------------------------------------------------- SCENE_AVATAR_KILL
+SCENE_AVATAR_KILL | Any | It's gone! It's really gone! {Player}, it's GONE!
+SCENE_AVATAR_KILL | Any | We beat it! We beat a GOD! What do we even do now?!
+SCENE_AVATAR_KILL | Any | Is it over? Somebody say it's over. Out loud.
+SCENE_AVATAR_KILL | Any | I'm never going to sleep again. I'm so happy. I'm never going to sleep again.
+SCENE_AVATAR_KILL | Greenhorn | I fought a god! My mother is never going to believe the office job now!
+SCENE_AVATAR_KILL | Sellsword | I've had a lot of employers. None of them ever did THAT.
+SCENE_AVATAR_KILL | Zealot | The commander faced the void and the void LEFT! Glory to {Player}!
+SCENE_AVATAR_KILL | Cynic | We won. I'll believe it when the sun comes back.
+SCENE_AVATAR_KILL | Veteran | Good work. All of you. Every one of you.
+SCENE_AVATAR_KILL | Veteran | Weapons down. Breathe. You've earned the breath.
+
+# ---------------------------------------------------------------- SCENE_NAMELESS_AWAKEN
+SCENE_NAMELESS_AWAKEN | Any | The stars are moving. The stars are moving AWAY.
+SCENE_NAMELESS_AWAKEN | Any | There's an eye. In everything. Looking at us.
+SCENE_NAMELESS_AWAKEN | Any | It's the bright one. From before. It's here for US now.
+SCENE_NAMELESS_AWAKEN | Greenhorn | I don't think we're supposed to be here. I don't think anyone is.
+SCENE_NAMELESS_AWAKEN | Zealot | Every god I ever prayed to just went quiet.
+SCENE_NAMELESS_AWAKEN | Cynic | Whatever it is, it's not impressed with us.
+SCENE_NAMELESS_AWAKEN | Veteran | Steady. It's a fight. It's just a bigger fight.
+
+# ---------------------------------------------------------------- SCENE_NAMELESS_SCREAM
+SCENE_NAMELESS_SCREAM | Any | My ears! My EARS! Is it singing or screaming?!
+SCENE_NAMELESS_SCREAM | Any | Everyone up! Get up! It's starting!
+SCENE_NAMELESS_SCREAM | Greenhorn | I think I saw the whole world for a second. It was small.
+SCENE_NAMELESS_SCREAM | Sellsword | No amount. There is no amount of coin for this.
+SCENE_NAMELESS_SCREAM | Veteran | On your feet! It wants us on our knees, so on your FEET!
+
+# ---------------------------------------------------------------- SCENE_NAMELESS_FIGHT
+SCENE_NAMELESS_FIGHT | Any | It's throwing stars! Actual stars! At us!
+SCENE_NAMELESS_FIGHT | Any | The sky keeps cutting open! Watch the cuts!
+SCENE_NAMELESS_FIGHT | Any | Stay near {Player}! {Player}'s the only thing that makes sense here!
+SCENE_NAMELESS_FIGHT | Any | It's so beautiful. I hate how beautiful it is. Shoot it.
+SCENE_NAMELESS_FIGHT | Any | [mage] I'm casting at a god! This is the best day of my life! Also the worst!
+SCENE_NAMELESS_FIGHT | Any | [summoner] My minions keep bowing to it. Stop bowing!
+SCENE_NAMELESS_FIGHT | Any | [melee] I'm going in! I'm going in after this volley! After the next one!
+SCENE_NAMELESS_FIGHT | Greenhorn | Are we allowed to hit it? Is there a rule? There should be a rule.
+SCENE_NAMELESS_FIGHT | Sellsword | I've stopped counting the danger. It's just all danger now.
+SCENE_NAMELESS_FIGHT | Zealot | K'Or'Arath said nothing about this one. Nothing!
+SCENE_NAMELESS_FIGHT | Cynic | Every time I blink there's a new sky. Pick one.
+SCENE_NAMELESS_FIGHT | Veteran | Don't watch the light show! Watch where it lands!
+
+# ---------------------------------------------------------------- SCENE_NAMELESS_ATTACK
+SCENE_NAMELESS_ATTACK | Any | That beam just split the world in half! MOVE!
+SCENE_NAMELESS_ATTACK | Any | It's making a star! It's making a STAR in its hand!
+SCENE_NAMELESS_ATTACK | Any | Everything went white! Is anyone still here?!
+SCENE_NAMELESS_ATTACK | Veteran | Get behind something! There's nothing! Get behind ME!
+
+# ---------------------------------------------------------------- SCENE_NAMELESS_CLOCK
+SCENE_NAMELESS_CLOCK | Any | Did time stop? I think time stopped. Is my heart still going?
+SCENE_NAMELESS_CLOCK | Any | There's a clock! In the stars! It's counting us down!
+SCENE_NAMELESS_CLOCK | Cynic | Of course it owns time. Why wouldn't it own time.
+
+# ---------------------------------------------------------------- SCENE_NAMELESS_PHASE2
+SCENE_NAMELESS_PHASE2 | Any | It's changing! Everything's changing again!
+SCENE_NAMELESS_PHASE2 | Any | We hurt it! I felt it! I felt the whole sky flinch!
+SCENE_NAMELESS_PHASE2 | Zealot | It noticed us! The god noticed US!
+SCENE_NAMELESS_PHASE2 | Veteran | It's taking us seriously now. Good. So are we.
+
+# ---------------------------------------------------------------- SCENE_NAMELESS_PHASE3
+SCENE_NAMELESS_PHASE3 | Any | This is it! This is everything it has!
+SCENE_NAMELESS_PHASE3 | Any | Hold on! Whatever happens next, hold ON!
+SCENE_NAMELESS_PHASE3 | Greenhorn | I'm scared! I'm still shooting! I'm scared and I'm shooting!
+SCENE_NAMELESS_PHASE3 | Veteran | Last stretch. Every one of you, with me.
+
+# ---------------------------------------------------------------- SCENE_NAMELESS_HOPE
+SCENE_NAMELESS_HOPE | Any | It's fading! The light's fading! Keep going!
+SCENE_NAMELESS_HOPE | Any | We're winning?! Against THAT?! Keep shooting!
+SCENE_NAMELESS_HOPE | Zealot | No god above the commander! None! FIRE!
+SCENE_NAMELESS_HOPE | Veteran | Almost! Don't you dare stop now!
+
+# ---------------------------------------------------------------- SCENE_NAMELESS_RESCUE
+SCENE_NAMELESS_RESCUE | Any | It pulled {Player} out! The bright one pulled {Player} OUT!
+SCENE_NAMELESS_RESCUE | Any | Who IS that?! Why did it help us?!
+SCENE_NAMELESS_RESCUE | Greenhorn | Thank you! Whoever you are! Thank you!
+SCENE_NAMELESS_RESCUE | Cynic | Something that big doesn't help for free. Remember I said that.
+
+# ---------------------------------------------------------------- SCENE_NAMELESS_KILL
+SCENE_NAMELESS_KILL | Any | It's over. It's really over. The light went out.
+SCENE_NAMELESS_KILL | Any | We beat the thing above the gods! {Player}, we BEAT it!
+SCENE_NAMELESS_KILL | Greenhorn | I'm going to tell everyone. Nobody's going to believe me. I don't believe me.
+SCENE_NAMELESS_KILL | Zealot | Every god bows to {Player} now! Every one!
+SCENE_NAMELESS_KILL | Cynic | So what's left? Who do we fight now? Each other?
+SCENE_NAMELESS_KILL | Veteran | That's the last one. Rest, all of you. That's an order.
+
+# ---------------------------------------------------------------- SCENE_NAMELESS_HOMECOMING
+SCENE_NAMELESS_HOMECOMING | Any | {Player}! You're back! What happened in there?!
+SCENE_NAMELESS_HOMECOMING | Any | You did it! Without us! With us! In spirit! You did it!
+SCENE_NAMELESS_HOMECOMING | Any | You went somewhere we couldn't follow, and you came back. Welcome home.
+SCENE_NAMELESS_HOMECOMING | Greenhorn | We waited the whole time! I polished my armor twice!
+SCENE_NAMELESS_HOMECOMING | Sellsword | You went in alone?! Next time I'm coming. I'll waive the fee.
+SCENE_NAMELESS_HOMECOMING | Zealot | The commander walked among the gods and came home! I'll tell my children!
+SCENE_NAMELESS_HOMECOMING | Cynic | Next time, take us. We'd have been useless, but take us.
+SCENE_NAMELESS_HOMECOMING | Veteran | Welcome back, {Player}. The army's all here. We kept it all here.
+
+# ---------------------------------------------------------------- SCENE_WOTG_COMMANDER_DOWN
+SCENE_WOTG_COMMANDER_DOWN | Any | {Player}! No! NO! Get up!
+SCENE_WOTG_COMMANDER_DOWN | Any | The commander's down! Hold the line! HOLD THE LINE!
+SCENE_WOTG_COMMANDER_DOWN | Any | Nobody runs! {Player} always comes back!
+SCENE_WOTG_COMMANDER_DOWN | Greenhorn | What do we do?! What do we do without {Player}?!
+SCENE_WOTG_COMMANDER_DOWN | Sellsword | Cover the spot! Nobody else here knows the plan!
+SCENE_WOTG_COMMANDER_DOWN | Zealot | The commander falls and rises! Hold until the commander rises!
+SCENE_WOTG_COMMANDER_DOWN | Cynic | Well. That's bad. That's very bad. Keep shooting.
+SCENE_WOTG_COMMANDER_DOWN | Veteran | Close ranks! We hold here till {Player}'s back on their feet!
+
+# ---------------------------------------------------------------- SCENE_WOTG_MOURN
+SCENE_WOTG_MOURN | Any | {Comrade} didn't get to see this. Somebody tell {Comrade} when they're back.
+SCENE_WOTG_MOURN | Any | This one's for {Comrade}. And everyone who went down with them.
+SCENE_WOTG_MOURN | Greenhorn | {Comrade} was right next to me. Then {Comrade} wasn't.
+SCENE_WOTG_MOURN | Sellsword | {Comrade}'s share stays {Comrade}'s. I'll hold it till they're back.
+SCENE_WOTG_MOURN | Zealot | {Comrade} fell facing a god. There's no better way to fall.
+SCENE_WOTG_MOURN | Cynic | {Comrade} picked a bad day to die. Every day's been a bad day.
+SCENE_WOTG_MOURN | Veteran | Remember {Comrade}. Not the fall. The fight.

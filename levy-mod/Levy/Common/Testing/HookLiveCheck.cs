@@ -42,7 +42,8 @@ namespace Levy.Common.Testing
 			// ---- Calamity only: required whenever Calamity is loaded (the Calamity half of the chain)
 			{ "CalamityOreGen.SpawnOreDetour", "needs CalamityMod: the vanilla half does not load it ([ProgAssist] ore drives it in the Calamity half)" }, { "CalamityOreGen.EnchantDetour", "needs CalamityMod: the vanilla half does not load it" },
 			{ "CalamityOreGen.PlaceDetour", "needs CalamityMod: the vanilla half does not load it" }, { "CalamityOreGen.CanMeteorDetour", "needs CalamityMod: the vanilla half does not load it" },
-			{ "CalamityTargetingCompat.PreAiDetour", "needs CalamityMod: the vanilla half does not load it" }, { "CalamityTargetingCompat.SendExtraAiDetour", "needs CalamityMod: the vanilla half does not load it" },
+			{ "CalamityTargetingCompat.PreAiDetour", "needs CalamityMod: the vanilla half does not load it" },
+			{ "BossLines.BroadcastDetour", "needs CalamityMod: the vanilla half does not load it ([BossScene] boss lines drive it in the Calamity half)" }, { "CalamityTargetingCompat.SendExtraAiDetour", "needs CalamityMod: the vanilla half does not load it" },
 			// ---- scenarios the ship world does not stage (each fires in play)
 			{ "FollowerTravelSystem.Player_Spawn", "a real player respawning: the ship world's commander is a stand-in that never respawns" },
 			{ "TeamNebula.Hook", "a real player wearing Nebula armor picking up a booster: not staged" }, { "TeamSpectre.Hook", "a real player in Spectre armor healing from a ghost: not staged" },

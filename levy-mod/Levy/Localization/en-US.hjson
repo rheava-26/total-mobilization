@@ -576,6 +576,11 @@ Mods: {
 					Tooltip: Idle levies talk to a nearby comrade every 18 to 45 seconds. Needs a player within 70 tiles
 				}
 
+				WotgFightChatter: {
+					Label: Levies react in Wrath of the Gods fights
+					Tooltip: During the Avatar and Nameless Deity fights, levies speak lines written for the fight instead of their usual chatter. Off, they stay silent.
+				}
+
 				FreeReinRadius: {
 					Label: Free Rein range
 					Tooltip: How far Free Rein levies roam from home, in tiles
@@ -729,6 +734,16 @@ Mods: {
 				RegularDeathMessages: {
 					Label: Regular death messages
 					Tooltip: A chat line when a Regular dies.
+				}
+
+				BossLinesFitArmy: {
+					Label: Boss lines acknowledge your army
+					Tooltip: Some boss lines are changed to fit fighting with an army. Applies to Supreme Witch Calamitas and Draedon while 3 or more levies are deployed.
+				}
+
+				BossLinesShowOriginal: {
+					Label: Show the original boss line too
+					Tooltip: When a boss line is changed for your army, the original line follows it in chat.
 				}
 
 				CustomDeathMessagePercent: {

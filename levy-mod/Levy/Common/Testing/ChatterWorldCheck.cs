@@ -22,7 +22,7 @@ namespace Levy.Common.Testing
 	/// a life crystal and a life fruit send none; a character loaded with the upgrades already on sends none; an upgrade used with no army sends none. The vanilla half checks that nothing is ever sent.
 	/// Every global it touches (the clock, the eclipse, the Blood Moon, the RNG, the commander's Calamity state and life) is put back.
 	/// </summary>
-	public class ChatterWorldCheck : ModSystem
+	public partial class ChatterWorldCheck : ModSystem
 	{
 		private static bool _armed, _done; private static int _calls, _pass, _fail; private static Mod _mod;
 		private const int FloorY = 300, Cx = 1800; private const string Commander = "ChatTester";
@@ -116,7 +116,7 @@ namespace Levy.Common.Testing
 				foreach (SoldierRecord r in RosterSystem.Instance.Regulars) if (r.CommanderName == Commander) r.DaysUnpaid = 0;
 				if (p.statLifeMax < 400) p.statLifeMax = p.statLifeMax2 = 400; p.statLife = p.statLifeMax2;
 				p.Bottom = _cmdAt; p.velocity = Vector2.Zero; p.fallStart = p.fallStart2 = (int)(_cmdAt.Y / 16f); p.noFallDmg = true;
-				for (int k = 0; k < Main.maxNPCs; k++) { NPC e = Main.npc[k]; if (e.active && WorldStep.IsNaturalHostile(e) && !(_keepDuke && (e.type == RiftSky.DukeType || e.ModNPC?.Mod.Name == RiftSky.ModName))) e.active = false; }
+				for (int k = 0; k < Main.maxNPCs; k++) { NPC e = Main.npc[k]; if (e.active && WorldStep.IsNaturalHostile(e) && !(_keepDuke && (e.type == RiftSky.DukeType || e.ModNPC?.Mod.Name == RiftSky.ModName)) && !(_keepCal && e.ModNPC?.Mod.Name == "CalamityMod")) e.active = false; }
 				WorldStep.Update();
 			}
 		}
@@ -131,9 +131,9 @@ namespace Levy.Common.Testing
 			Check($"the army spawns ({army.Count} levies)", army.Count == 6);
 			CommanderReactions.Reset();
 			Step(60);
-			Eclipse();
-			Rift(army);
-			Upgrades(army);
+			bool sceneOnly = Environment.GetEnvironmentVariable("LEVY_BOSSSCENE_ONLY") == "1";
+			if (!sceneOnly) { Eclipse(); Rift(army); Upgrades(army); }
+			BossScene(army);
 		}
 
 		private static void Eclipse()

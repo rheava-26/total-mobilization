@@ -15,7 +15,7 @@ namespace Levy.Common.Dialogue
 	public partial class ChatterConditionCheck
 	{
 		private const LineCond NewTagMask = LineCond.Female | LineCond.Ranger | LineCond.Melee | LineCond.Early | LineCond.PostSkeletron | LineCond.Hardmode | LineCond.PostPlantera | LineCond.PostMoonlord | LineCond.Grumpy;
-		private static readonly HashSet<string> GrumpyExemptKeys = new(StringComparer.OrdinalIgnoreCase) { "MUTINY", "MUTINY_BEGIN", "MUTINY_REFUSE", "MUTINY_CALM", "DEATH_MESSAGE", "DESERTED", "NO_ONE_LEFT" };
+		private static readonly HashSet<string> GrumpyExemptKeys = new(StringComparer.OrdinalIgnoreCase) { "MUTINY", "MUTINY_BEGIN", "MUTINY_REFUSE", "MUTINY_CALM", "DEATH_MESSAGE", "DESERTED", "NO_ONE_LEFT", "BOSS_SCENE" };
 		private static readonly string[] FemaleOfficers = { "Nurse", "Dryad", "Zoologist", "Princess" };
 		private static readonly HashSet<string> BigGrumpySets = new(StringComparer.OrdinalIgnoreCase)
 			{ "ENGAGE", "KILL", "HURT", "LOW_HP", "OUT_OF_AMMO", "COMRADE_HIT", "COMRADE_DOWN", "SHAKEN", "ROUTED", "RALLIED", "VICTORY", "BOSS_SIGHTED" };

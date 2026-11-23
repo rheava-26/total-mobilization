@@ -58,6 +58,8 @@ namespace Levy.Common.Dialogue
 	public static class DialogueTable
 	{
 		public const string BossPrefix = "BOSS_";
+		/// <summary>Scripted reactions in a Wrath of the Gods fight: SCENE_&lt;FIGHT&gt;_&lt;MOMENT&gt; (WotgScenes.Pools).</summary>
+		public const string ScenePrefix = "SCENE_";
 		/// <summary>Per-officer pools are OFFICER_&lt;officer Key&gt;_&lt;STATE&gt; (e.g. OFFICER_Nurse_FIGHT); the generic fallbacks are OFFICER_CHAT_&lt;STATE&gt;.</summary>
 		public const string OfficerPrefix = "OFFICER_";
 		/// <summary>The situations an officer talks in. The suffix of every per-officer pool key must be one of these.</summary>
@@ -277,6 +279,14 @@ namespace Levy.Common.Dialogue
 			if (s.StartsWith(BossPrefix, StringComparison.OrdinalIgnoreCase) && s.Length > BossPrefix.Length)
 			{
 				key = BossPrefix + s.Substring(BossPrefix.Length);
+				return true;
+			}
+			if (s.StartsWith(ScenePrefix, StringComparison.OrdinalIgnoreCase))
+			{
+				// SCENE_<FIGHT>_<MOMENT>: a Wrath of the Gods fight's scripted reaction (WotgScenes). The pool must be one the code asks for, so a typo is caught.
+				string canon = WotgScenes.CanonicalPool(s);
+				if (canon == null) { problem = "unknown scene pool '" + s + "' (see WotgScenes.Pools)"; return false; }
+				key = canon;
 				return true;
 			}
 			if (s.StartsWith(OfficerPrefix, StringComparison.OrdinalIgnoreCase))

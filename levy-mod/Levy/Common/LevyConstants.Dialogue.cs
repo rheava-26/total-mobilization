@@ -106,5 +106,23 @@ namespace Levy.Common
 		public const float RiftSnowLyingHeight = 1.5f;
 		/// <summary>Share of floating lines still spoken under the rift. Chatter: ambient, camp, drinks and reactions. Barks: combat shouts. Big: boss sightings, a comrade down, routs, victory.</summary>
 		public const float RiftTenseChatterShare = 0.3f, RiftSettledChatterShare = 0.5f, RiftTenseBarkShare = 0.6f, RiftSettledBarkShare = 0.8f, RiftTenseBigShare = 0.85f;
+
+		// ---- Wrath of the Gods fights (Common/Dialogue/WotgScenes.cs) ----
+		/// <summary>After the boss has the floor (a scream, a rant, Solyn, subtitles) nothing scripted is said for this long. Scripted lines are at least <see cref="SceneLineGapTicks"/> apart army-wide; the speakers of one moment <see cref="SceneStepTicks"/> apart.</summary>
+		public const int SceneVoiceGapTicks = 60, SceneLineGapTicks = 100, SceneStepTicks = 110;
+		/// <summary>A moment's reaction not said within this long (the boss kept the floor) is dropped; a kill's waits longer.</summary>
+		public const int SceneMomentExpireTicks = 60 * 8, SceneKillExpireTicks = 60 * 20;
+		/// <summary>The worried line now and then while a fight goes on: every 20 to 40 seconds, dropped if it cannot be said within six.</summary>
+		public const int SceneChatterMinTicks = 60 * 20, SceneChatterMaxTicks = 60 * 40, SceneChatterExpireTicks = 60 * 6;
+		/// <summary>The boss's life share at which the army starts to hope.</summary>
+		public const float SceneHopeLife = 0.15f;
+		/// <summary>Speakers stand within this many tiles of their commander (or of where he fell).</summary>
+		public const float SceneReachTiles = 60f;
+		/// <summary>A commander's death is mourned at most this often; the army greets its commander home this long after the Nameless Deity's defeat is first seen.</summary>
+		public const int SceneCommanderDownCooldownTicks = 60 * 30, SceneHomecomingDelayTicks = 60 * 8;
+
+		// ---- boss lines that acknowledge the army (Common/Compat/Calamity/BossLines.cs) ----
+		/// <summary>An army is on the field when at least this many standing regular levies are deployed.</summary>
+		public const int BossLineArmyMin = 3;
 	}
 }

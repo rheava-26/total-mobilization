@@ -94,7 +94,8 @@ namespace Levy.Common.Dialogue
 		public static string ChatLine(SoldierNPC s)
 		{
 			SoldierRecord rec = s?.Record;
-			if (rec == null || s.NPC == null || global::Levy.Common.Death.NoxusFights.Hush) return Localized("Silence", "...");
+			if (rec == null || s.NPC == null) return Localized("Silence", "...");
+			if (global::Levy.Common.Death.NoxusFights.Hush) return WotgScenes.ChatLine(s) ?? Localized("Silence", "..."); // in a Wrath of the Gods fight: a line about the fight, never camp talk
 			int idx = s.NPC.whoAmI;
 			bool tracked = (uint)idx < MaxBodies;
 			int now = Now;
@@ -209,6 +210,20 @@ namespace Levy.Common.Dialogue
 
 		/// <summary>As <see cref="FloatingText(SoldierNPC, string)"/>, coloured for the trigger that produced the line.</summary>
 		public static void FloatingText(SoldierNPC s, string text, DialogueTrigger trigger) { if (HushHolds()) return; DeliverFloating(s, text, (byte)trigger); }
+
+		/// <summary>
+		/// A scripted reaction in a Wrath of the Gods fight (<see cref="WotgScenes"/>): a line from a SCENE_ pool over the levy, delivered like any floating line (a Bark packet to the clients in reach).
+		/// It is the one voice the fight hush lets through; the caller owns the timing and the rate limit. Server and single player. Returns the line said, or null.
+		/// </summary>
+		internal static string SayScene(SoldierNPC s, string pool, DialogueContext ctx)
+		{
+			if (s == null || s.Record == null || s.NPC == null || !s.NPC.active || s.Hostile || LevyUtil.IsClient) return null;
+			var lines = DialogueTable.Get(pool);
+			string text = PickFromPool(lines, s.Record, ctx, s, false, -1, out _, true, true) ?? PickFromPool(lines, s.Record, ctx, s, true, -1, out _, true, true);
+			if (string.IsNullOrEmpty(text)) return null;
+			DeliverFloating(s, text, (byte)DialogueTrigger.BOSS_SCENE);
+			return text;
+		}
 
 		/// <summary>Random soldier name from vanilla town-NPC name lists.</summary>
 		public static string RandomSoldierName(bool male) => DialogueNames.RandomSoldierName(male);
@@ -488,6 +503,7 @@ namespace Levy.Common.Dialogue
 			{
 				case DialogueTrigger.BOSS_SIGHTED:
 				case DialogueTrigger.BOSS: return new Color(255, 170, 70);
+				case DialogueTrigger.BOSS_SCENE: return new Color(225, 205, 255);
 				case DialogueTrigger.COMRADE_DOWN: return new Color(255, 110, 110);
 				case DialogueTrigger.MUTINY: return new Color(255, 60, 50);
 				case DialogueTrigger.ROUTED: return new Color(255, 225, 90);

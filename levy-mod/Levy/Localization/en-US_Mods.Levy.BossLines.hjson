@@ -1,0 +1,42 @@
+# Boss lines that know about the army (Common/Compat/Calamity/BossLines.cs).
+# Each key is the last part of a Calamity key "Mods.CalamityMod.Status.Boss.<key>". While 3 or more levies are deployed and "Boss lines acknowledge your army" is on,
+# the boss says the line below in place of its own. A line that already fits an army has no entry here and is said as Calamity wrote it.
+# Keep each line's point and tone; change only what assumes the player fights alone.
+
+# shown after the army version when "Show the original boss line too" is on
+OriginalLine: (original) {0}
+# ---- Supreme Witch Calamitas, the first battle
+SCalSummonText: Do you enjoy dragging all of them through hell?
+SCalStartText: You should have just died... all of you.
+SCalBH2Text: It wasn't too long ago you and your rabble barely managed to defeat my doppelganger. Quite the failure, wasn't it?
+SCalBH3Text: You take all this power, and what do you do with it? Build an army?
+SCalBrothersText: You brought your family. Would you like to meet mine? Horrible, isn't it?
+SCalPhase2Text: You will all suffer greatly.
+SCalBH4Text: It's absurd to even think of trying to get away. As long as any of you live, you will suffer.
+SCalSeekerRingText: An upstart who stole and killed their way to power, then armed a following with it. I wonder, who does that remind me of...?
+SCalBH5Text: None of you have any stake in this battle. No one gave you any say in this matter!
+SCalSepulcher2Text: Once the dust has settled and only your army remains, what value will this have had?!
+SCalAcceptanceText2: I have no more energy left to resent him, or you, or any of them...
+SCalAcceptanceText3: It will all be in your hands now. Yours, and theirs.
+# ---- Supreme Witch Calamitas, the rematch
+SCalSummonTextRematch: If you're all looking for some fourth-degree burns, you've got the right person.
+SCalStartTextRematch: When the time comes, would you and your soldiers like to join my creation?
+SCalBH2TextRematch: All of you will still have to work hard for this victory.
+SCalBH3TextRematch: I haven't had so many interesting target dummies to test my magic on in a long time.
+SCalBH4TextRematch: I wonder how many of you have seen these in your nightmares since our first battle?
+SCalSeekerRingTextRematch: Your army's skill hasn't faltered in the least.
+SCalDesparationText1Rematch: A terrific display, I concede this match to you, and to them.
+SCalDesparationText2Rematch: No doubt all of you will face enemies stronger than I.
+# ---- Draedon: the introduction
+DraedonIntroductionText2: Your nature fascinates me. You gain all this power, and you give it away. I do not understand it.
+DraedonIntroductionText3: You and your soldiers will face my creations, which have surpassed gods.
+DraedonIntroductionText4: And you will show me your disposition, and theirs, through battle.
+# ---- Draedon: during the Exo Mechs
+DraedonExoPhase2Text1: Your army's performance falls neatly within the margins of error.
+DraedonExoPhase3Text1: Ever since I was alerted to your presence, I have processed your battles, and your army's, in order to make my machines stronger.
+DraedonExoPhase3Text2: Even now, I monitor every one of you. Nothing should escape the bounds of my calculations.
+DraedonExoPhase4Text2: You and your soldiers progress steadily against more difficult challenges.
+DraedonExoPhase5Text1: Your nature remains unknown to me. They follow you with a loyalty I have seen once before, and even he did not give away this much.
+# ---- Draedon: after the battle
+DraedonEndText1: An unknown factor--a catalyst is what you are. And you have made catalysts of all of them.
+DraedonEndText5: You and yours have also spilled blood, but it may be enough to usher a new age... Of what, I do not know. But it is something I am eager to see.

@@ -172,6 +172,7 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_SR_ALONE") == "1") { StarsRiverCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_HOLDOUTWORLD_ALONE") == "1") { HoldoutWorldCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_AMMOWORLD_ALONE") == "1") { AmmoWorldCheck(); ClearSoldiers(); return; }
+			if (Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP_ALONE") == "1") { SummonSweepCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_ORIGIN_ALONE") != "1")
 			{
 				AlchemistMenu();
@@ -203,6 +204,8 @@ namespace Levy.Common.Testing
 			HoldoutWorldCheck();
 			ClearSoldiers();
 			AmmoWorldCheck();
+			ClearSoldiers();
+			SummonSweepCheck();
 			ClearSoldiers();
 			SentryProbe();
 			ClearSoldiers();

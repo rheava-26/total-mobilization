@@ -356,9 +356,31 @@ namespace Levy.Common.Boss
 		/// <summary>Same NPC for scaling purposes. Eater of Worlds segments turn into heads/tails with a bare type change (NPC.cs 45852/45866) and keep their life.</summary>
 		private static bool SameScalingKind(int a, int b) => a == b || (IsEowSegment(a) && IsEowSegment(b));
 
+		/// <summary>
+		/// Raises a boss's life (and its maximum) to <paramref name="fraction"/> of its base, and does the same for every NPC that shares or mirrors its life (<see cref="LifeGroup"/>):
+		/// its realLife pool (a worm's segments, Ares's arms) and its mirrored partners (Artemis and Apollo). Calamity clamps each of these to its partner's life every tick
+		/// (a part whose life is above its partner's drops to it), so an add on the root alone was taken back the next tick while the raised maximum stayed: the bar started at ~73%
+		/// and the 70% and 40% phase thresholds came with a third less real damage. A partner this does not know is caught afterwards (<see cref="CheckFallBack"/>).
+		/// </summary>
 		internal static void ApplyScaling(NPC npc, float fraction, int soldiers = 0, int strength100 = 0)
 		{
 			if (npc == null || !npc.active || fraction <= 0f) return;
+			int delta = ScaleOne(npc, fraction, soldiers, strength100);
+			if (delta <= 0 || !GroupScaling || IsEowSegment(npc.type)) return; // Eater of Worlds segments each have their own life: the hit segment alone, as before
+			LifeGroup(npc, _group);
+			for (int i = 0; i < _group.Count; i++) if (_group[i] != npc.whoAmI && ScaleOne(Main.npc[_group[i]], fraction, soldiers, strength100) > 0) GroupMembersScaled++;
+			if (_watch.Count < 64) _watch.Add(new FallBackWatch { Who = npc.whoAmI, Type = npc.type, LifeAfter = npc.life, Delta = delta, Tick = Main.GameUpdateCount });
+		}
+
+		/// <summary>Harness switch (LEVY_BOSSHP_GROUP=0): scale the root alone again (the old rule) for before/after labs.</summary>
+		internal static bool GroupScaling = Environment.GetEnvironmentVariable("LEVY_BOSSHP_GROUP") != "0";
+		/// <summary>Telemetry (harness and world check): group members raised with a root, partners found only by the fall-back check, fall-backs with no partner found.</summary>
+		public static long GroupMembersScaled, FallBackPartnersFound, FallBackUnexplained;
+
+		/// <summary>One NPC's own add: <paramref name="fraction"/> of its base life over what it already has. Returns the life added now (0 when it already had that much).</summary>
+		private static int ScaleOne(NPC npc, float fraction, int soldiers, int strength100)
+		{
+			if (npc == null || !npc.active) return 0;
 			if (!_scale.TryGetValue(npc.whoAmI, out var st) || !SameScalingKind(st.Type, npc.type) || npc.lifeMax < st.BaseLifeMax + st.AppliedAdd)
 				st = new ScaleState { Type = npc.type, BaseLifeMax = Math.Max(1, npc.lifeMax), AppliedAdd = 0 };
 			int targetAdd = (int)(st.BaseLifeMax * fraction);
@@ -376,6 +398,86 @@ namespace Levy.Common.Boss
 				}
 			}
 			_scale[npc.whoAmI] = st;
+			return Math.Max(0, delta);
+		}
+
+		private static readonly List<int> _group = new(), _groupScratch = new(), _partnerPool = new();
+		/// <summary>Mirrored-life partners the fall-back check found, both ways (slot -> partner slots, each with the type it had when found).</summary>
+		private static readonly Dictionary<int, List<(int who, int type)>> _learned = new();
+
+		/// <summary>
+		/// Every active NPC whose life moves with <paramref name="root"/>'s, root first: the root, its realLife pool (segments and limbs whose realLife is the root), its mirrored partners
+		/// (<see cref="Compat.Calamity.CalamityLife.MirrorPartner"/>, Calamity's Exo twins, and any partner the fall-back check learned) and their pools. Nothing is keyed to a boss name.
+		/// </summary>
+		internal static void LifeGroup(NPC root, List<int> into)
+		{
+			into.Clear();
+			if (root == null || !root.active) return;
+			AddPool(root.whoAmI, into);
+			int partner = Compat.Calamity.CalamityLife.MirrorPartner(root);
+			if (partner >= 0 && partner < Main.maxNPCs && Main.npc[partner].active && !into.Contains(partner)) AddPool(partner, into);
+			if (_learned.TryGetValue(root.whoAmI, out var l))
+				for (int i = 0; i < l.Count; i++)
+				{
+					var (w, t) = l[i];
+					if (w >= 0 && w < Main.maxNPCs && Main.npc[w].active && Main.npc[w].type == t && !into.Contains(w)) AddPool(w, into);
+				}
+		}
+
+		/// <summary>An NPC and every active NPC whose realLife points at it.</summary>
+		private static void AddPool(int who, List<int> into)
+		{
+			into.Add(who);
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (i != who && n.active && n.realLife == who && !into.Contains(i)) into.Add(i);
+			}
+		}
+
+		private struct FallBackWatch { public int Who, Type, LifeAfter, Delta; public uint Tick; public int Tries; }
+		private static readonly List<FallBackWatch> _watch = new();
+
+		/// <summary>
+		/// After the NPCs moved (their life clamps have run): did a scaled boss lose the life it was just given? A boss clamped to a partner's life now has EXACTLY the partner's life,
+		/// so that partner (an active NPC of a similar size with the same life, outside the group already scaled) is learned as mirrored, raised by the same share, and the boss gets its add back.
+		/// The army deals far less than half an add between the scaling and this check, so a drop of more than half the add is not damage. Cheap: runs only while a scaling is fresh.
+		/// </summary>
+		internal static void CheckFallBack()
+		{
+			if (_watch.Count == 0) return;
+			uint now = Main.GameUpdateCount;
+			for (int k = _watch.Count - 1; k >= 0; k--)
+			{
+				var w = _watch[k];
+				if (now <= w.Tick) continue; // its NPCs have not run since the add
+				NPC n = Main.npc[w.Who];
+				if (!n.active || n.type != w.Type) { _watch.RemoveAt(k); continue; }
+				if (n.life >= w.LifeAfter - w.Delta / 2) { if (++w.Tries >= 3) _watch.RemoveAt(k); else _watch[k] = w; continue; } // the add held
+				_watch.RemoveAt(k);
+				if (!_scale.TryGetValue(n.whoAmI, out var st) || st.BaseLifeMax <= 0) continue;
+				float fraction = st.AppliedAdd / (float)st.BaseLifeMax;
+				LifeGroup(n, _groupScratch);
+				bool found = false;
+				for (int i = 0; i < Main.maxNPCs && fraction > 0f; i++)
+				{
+					NPC c = Main.npc[i];
+					if (!c.active || i == n.whoAmI || c.friendly || c.townNPC || c.life != n.life || _groupScratch.Contains(i) || c.ModNPC is SoldierNPC) continue;
+					if (c.lifeMax < st.BaseLifeMax / 4 || c.lifeMax > st.BaseLifeMax * 4L) continue;
+					Learn(n.whoAmI, i); Learn(i, n.whoAmI); found = true; FallBackPartnersFound++;
+					_partnerPool.Clear(); AddPool(i, _partnerPool);
+					for (int j = 0; j < _partnerPool.Count; j++) ScaleOne(Main.npc[_partnerPool[j]], fraction, 0, 0);
+				}
+				if (found) { n.life = Math.Min(n.lifeMax, n.life + w.Delta); n.netUpdate = true; }
+				else { FallBackUnexplained++; if (FallBackUnexplained <= 3) global::Levy.Levy.Instance?.Logger.Info($"[BossHp] {n.TypeName} lost {w.LifeAfter - n.life} of a {w.Delta} life add and no partner with its life was found"); }
+			}
+		}
+
+		private static void Learn(int a, int b)
+		{
+			if (!_learned.TryGetValue(a, out var l)) _learned[a] = l = new List<(int, int)>();
+			int t = Main.npc[b].type;
+			if (!l.Contains((b, t))) l.Add((b, t));
 		}
 
 		/// <summary>Life added to this NPC by soldier engagement so far (0 when untouched).</summary>
@@ -434,6 +536,12 @@ namespace Levy.Common.Boss
 				}
 				for (int i = 0; i < _pruneBuffer.Count; i++) _scale.Remove(_pruneBuffer[i]);
 			}
+			if (_learned.Count > 0)
+			{
+				_pruneBuffer.Clear();
+				foreach (var kv in _learned) if (!Main.npc[kv.Key].active || !_scale.ContainsKey(kv.Key)) _pruneBuffer.Add(kv.Key);
+				for (int i = 0; i < _pruneBuffer.Count; i++) _learned.Remove(_pruneBuffer[i]);
+			}
 		}
 
 		/// <summary>Drops scaling bookkeeping for one NPC slot (death).</summary>
@@ -445,7 +553,7 @@ namespace Levy.Common.Boss
 		/// <summary>World unload / clear: forget everything.</summary>
 		internal static void ClearAll()
 		{
-			LiveBosses.Clear(); LiveBodies.Clear(); _scale.Clear(); _pruneBuffer.Clear();
+			LiveBosses.Clear(); LiveBodies.Clear(); _scale.Clear(); _pruneBuffer.Clear(); _learned.Clear(); _watch.Clear();
 			EndEowFight(); _bossTier.Clear(); ResetFightScale();
 			TerrorTable.ClearCaches();
 		}

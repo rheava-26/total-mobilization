@@ -140,12 +140,19 @@ namespace Levy.Common.Movement
 			_tick = now;
 			long t0 = Stopwatch.GetTimestamp();
 			bool wantPlayerSide = HostileDodgeOn && now - HostileSeen <= 2u;
-			Snap.Clear(); BossBodies = 0; _trajN = 0; ChainsThisTick = 0; ChainSegsThisTick = 0; ChainHeads.Clear(); Heads.Clear();
+			Snap.Clear(); Areas.Clear(); BossBodies = 0; _trajN = 0; ChainsThisTick = 0; ChainSegsThisTick = 0; ChainHeads.Clear(); Heads.Clear();
 			for (int i = 0; i < _childOf.Length; i++) { _childOf[i] = -1; _follower[i] = false; _snapOf[i] = -1; _chainOf[i] = -1; }
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
-				if (!p.active || p.damage < LevyConstants.Movement.DodgeMinDamage) continue;
+				if (!p.active) continue;
+				if (p.hostile && p.ModProjectile != null && ThreatShapes.AreaOf(p, out float ar, out int fuse))
+				{
+					// a telegraphed explosion: the circle where it will go off, swept along the way it is still flying (a levy has to be out of all of it)
+					Vector2 av = p.velocity * (1f + p.extraUpdates);
+					Areas.Add(new ThreatArea { P = p.Center, End = p.Center + av * Math.Min(fuse, AreaLeadTicks), R = ar, Fuse = fuse, Proj = i });
+				}
+				if (p.damage < LevyConstants.Movement.DodgeMinDamage) continue;
 				bool theirs = false; // HOSTILE SEAM: a shot of the player's side is a threat to a hostile soldier, never to a levy
 				if (!p.hostile) { if (!wantPlayerSide || !p.friendly) continue; theirs = true; }
 				if (BeamOf(p, out float len, out float width))
@@ -329,7 +336,31 @@ namespace Levy.Common.Movement
 			len = width = 0f;
 			if (p.ModProjectile is IThreatBeam b) { len = b.BeamLength(p); width = b.BeamWidth(p); return len > 0f; }
 			if (p.type == ProjectileID.PhantasmalDeathray) { len = p.localAI[1]; width = 36f * p.scale; return len > 0f; }
-			return false;
+			return ThreatShapes.BeamOf(p, out len, out width); // another mod's deathray, read from its own shape (Calamity's laserbeams and vanilla-pattern rays)
+		}
+
+		/// <summary>World check: the next <see cref="Snapshot"/> is rebuilt even within the same tick.</summary>
+		internal static void TestInvalidate() => _tick = uint.MaxValue;
+
+		/// <summary>Harness / world check: is this projectile a line threat, and how long and wide.</summary>
+		public static bool IsBeam(Projectile p, out float len, out float width) => BeamOf(p, out len, out width);
+
+		/// <summary>A telegraphed explosion: the circle (<see cref="R"/>) around the segment from where it is (<see cref="P"/>) to where its flight takes it before it goes off (<see cref="End"/>).</summary>
+		public struct ThreatArea { public Vector2 P, End; public float R; public int Fuse, Proj; }
+		/// <summary>Telegraphed explosions this tick (built with the snapshot; read through <see cref="AreasNow"/>).</summary>
+		public static readonly List<ThreatArea> Areas = new(8);
+		/// <summary>How far along its flight (ticks) a telegraphed projectile's circle is swept.</summary>
+		public const int AreaLeadTicks = 30;
+		/// <summary>The telegraphed areas of this tick (builds the snapshot when no one has yet).</summary>
+		public static List<ThreatArea> AreasNow() { Snapshot(); return Areas; }
+
+		/// <summary>How deep (px) <paramref name="c"/> is inside this area with <paramref name="margin"/> added to its radius (0 or less: outside), and the nearest point of its swept centre.</summary>
+		public static float AreaDepth(in ThreatArea a, Vector2 c, float margin, out Vector2 nearest)
+		{
+			Vector2 ab = a.End - a.P; float l2 = ab.LengthSquared();
+			float u = l2 < 1e-4f ? 0f : MathHelper.Clamp(Vector2.Dot(c - a.P, ab) / l2, 0f, 1f);
+			nearest = a.P + ab * u;
+			return a.R + margin - Vector2.Distance(nearest, c);
 		}
 
 		/// <summary>Keeps the threats that can come within <paramref name="reach"/> px of <paramref name="c"/> inside <paramref name="horizon"/> ticks.</summary>

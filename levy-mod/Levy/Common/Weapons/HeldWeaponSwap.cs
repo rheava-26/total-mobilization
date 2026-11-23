@@ -725,7 +725,7 @@ namespace Levy.Common.Weapons
 				if (g.AimDir == Vector2.Zero) g.AimDir = Vector2.UnitX * (body.NPC.direction == 0 ? 1 : body.NPC.direction);
 				return g.AimDir;
 			}
-			NPC seg = Aiming.NearestSegment(t, c) ?? t;
+			NPC seg = Aiming.NearestSegment(t, c, preferOpen: true) ?? t;
 			Vector2 dir;
 			if (pouch != null)
 			{

@@ -131,7 +131,7 @@ namespace Levy.Common.Weapons
 
 		internal static void Reset()
 		{
-			BadTypes.Clear(); ShortLives.Clear(); LearnedBuff.Clear(); Parked.Clear(); ParkedDragons.Clear(); CastSlots.Clear(); NoRealShoot.Clear(); EmptyCasts.Clear(); Helpers.Clear();
+			BadTypes.Clear(); ShortLives.Clear(); LearnedBuff.Clear(); Parked.Clear(); ParkedAll.Clear(); ParkedDragons.Clear(); CastSlots.Clear(); Stackers.Clear(); NoRealShoot.Clear(); EmptyCasts.Clear(); Helpers.Clear();
 			GroupMinionsNow.Clear(); GroupMinionOwners.Clear(); DragonSegmentsNow.Clear(); DragonSegmentOwners.Clear();
 			PendingBody = null; _faked = false; EnsureAliasRestored(); ClearFrame();
 		}
@@ -297,12 +297,15 @@ namespace Levy.Common.Weapons
 		/// <summary>The vanilla cast of one staff: the minion(s) it makes, with the starting ai[1] / localAI[0] Player.ItemCheck_Shoot / SpawnMinionOnCursor give them. Returns false when nothing was created.</summary>
 		/// <summary>Lab counters (the summon-loop check reads them): casts of a minion staff, helper swings of a full flock, sentry plantings.</summary>
 		internal static int CastTally, HelperTally, SentryTally;
+		/// <summary>Lab counters: casts whose Shoot powered up a minion already out instead of making one (Saros Possession, Sirius, Void Eater Marionette), and RECAST uses of a full flock's staff.</summary>
+		internal static int StackTally, RecastTally;
 
 		internal static bool Summon(SoldierNPC s, Item weapon, int damage)
 		{
 			int shoot = weapon.shoot;
 			if (shoot == ProjectileID.StardustDragon1) return SummonDragon(s, weapon, damage);
 			if (UsesRealShoot(weapon) && SummonReal(s, weapon, damage)) return true;
+			if (UsesRealShoot(weapon) && !NoRealShoot.Contains(weapon.type) && _lastStacked) return true; // the Shoot powered up the minion already out: nothing to cast directly
 			int type = shoot;
 			float ai1 = 0f, localAi0 = 0f;
 			bool pair = false;
@@ -447,8 +450,14 @@ namespace Levy.Common.Weapons
 		/// Runs the staff's ModifyShootStats and Shoot with the soldier's dummy as the player (see HeldWeapons.ShootHooks) and returns what they made, still owned by 255. Every OTHER soldier's minions sit on the parked
 		/// owner for the call: a Shoot counts the owner's minions to decide between its cast and its fallback, and all soldiers share owner 255. The staff's buff, which Shoot adds to the dummy, is put back afterwards.
 		/// </summary>
+		/// <summary>Lab A/B (env LEVY_SUMMON_CASTAT=target): every modded cast is made at the soldier's target (when it is not inside a wall), as the summon sweep's parity commander casts at hers.</summary>
+		private static readonly bool CastAtTargetLab = Environment.GetEnvironmentVariable("LEVY_SUMMON_CASTAT") == "target";
 		private static List<Projectile> RunShoot(SoldierNPC s, Item weapon, int damage, out bool threw)
 		{
+			// a self-ending cast (a bomber, a fist, a field: see SoldierNPC.TransientStaff) is aimed where a player aims it, at the enemy he fights; a minion that stays is cast beside the soldier. Casting every modded staff at the
+			// target was measured too (LEVY_SUMMON_CASTAT=target, summon sweep 2026-11-22) and was mixed: Vigilance 0.25 -> 0.78 and the Pole Warper 0.62 -> 0.93 of the commander's damage, but the Ethereal Subjugator, the Gastric
+			// Belcher, the Resurrection Butterfly and Entropy's Vigil lost half or more, so it is not the default.
+			bool atTarget = SoldierNPC.TransientStaff(weapon) || (CastAtTargetLab && s.TargetIndex >= 0 && s.TargetIndex < Main.maxNPCs && Main.npc[s.TargetIndex].active);
 			Player d = s.Dummy; threw = false;
 			var moved = new List<Projectile>();
 			int me = s.NPC.whoAmI, saved = Main.myPlayer;
@@ -460,6 +469,11 @@ namespace Levy.Common.Weapons
 			float scatter = Main.rand.NextFloat(-1f, 1f) * LevyConstants.MinionSpawnScatterPx;
 			Vector2 at = s.NPC.Center + new Vector2(scatter, 0f);
 			if (Collision.SolidCollision(at - LevyConstants.MinionSpawnProbe * 0.5f, (int)LevyConstants.MinionSpawnProbe.X, (int)LevyConstants.MinionSpawnProbe.Y)) at = s.NPC.Center;
+			if (atTarget)
+			{
+				Vector2 aim = s.AimCursor() - new Vector2(0f, 16f * AltPolicies.CastUp(weapon));
+				if (SoldierNPC.TransientStaff(weapon) || !Collision.SolidCollision(aim - LevyConstants.MinionSpawnProbe * 0.5f, (int)LevyConstants.MinionSpawnProbe.X, (int)LevyConstants.MinionSpawnProbe.Y)) at = aim;
+			}
 			List<Projectile> made;
 			SaveBuffs(d);
 			PendingBody = s;
@@ -467,7 +481,7 @@ namespace Levy.Common.Weapons
 			{
 				if (saved != Slot) { _trueMyPlayer = saved; _faked = true; }
 				using (new AltPolicies.AimScope(d, at))
-					made = HeldWeapons.ShootHooks(s, weapon, new Vector2(0f, -Math.Max(1f, weapon.shootSpeed)), damage, Slot, false, null, out threw);
+					made = HeldWeapons.ShootHooks(s, weapon, new Vector2(0f, -Math.Max(1f, weapon.shootSpeed)), damage, Slot, false, HeldCast(s, weapon, damage), out threw);
 			}
 			finally
 			{
@@ -477,6 +491,37 @@ namespace Levy.Common.Weapons
 			}
 			return made;
 		}
+
+		/// <summary>
+		/// The cast as Player.ItemCheck makes it for a player holding the staff: the staff's own HoldItem first (a staff that reads its holder's free slots there, the Abandoned Slime Staff, sizes its slime from them), then
+		/// ModifyShootStats and Shoot exactly as <see cref="HeldWeapons.ShootHooks"/> runs them. Only the staff's own HoldItem runs, not every mod's global one.
+		/// </summary>
+		private static Action<Terraria.DataStructures.IEntitySource, Vector2> HeldCast(SoldierNPC s, Item weapon, int damage) => (src, v0) =>
+		{
+			Player d = s.Dummy;
+			// the holder is not this machine's player for the hook: a staff's HoldItem that toggles its minion on a hotkey (the Void Eater Marionette's fetch mode: "Main.myPlayer == player.whoAmI && JustPressedKeybind")
+			// never fires for a levy, who presses no keys (measured: the worm toggled into fetching on some casts and dealt 64 damage a second instead of 5k)
+			int my = Main.myPlayer;
+			try { Main.myPlayer = d.whoAmI == Main.maxPlayers - 2 ? Main.maxPlayers - 3 : Main.maxPlayers - 2; weapon.ModItem?.HoldItem(d); } catch (Exception) { }
+			finally { Main.myPlayer = my; }
+			Vector2 pos = s.NPC.Center, v = v0; int type = weapon.shoot, dmg = damage; float kb = weapon.knockBack;
+			try
+			{
+				CombinedHooks.ModifyShootStats(d, weapon, ref pos, ref v, ref type, ref dmg, ref kb);
+				var source = src as Terraria.DataStructures.EntitySource_ItemUse_WithAmmo ?? new Terraria.DataStructures.EntitySource_ItemUse_WithAmmo(d, weapon, 0);
+				if (CombinedHooks.Shoot(d, weapon, source, pos, v, type, dmg, kb)) Projectile.NewProjectile(source, pos, v, type, dmg, kb, Slot);
+			}
+			catch (Exception e)
+			{
+				if (_shootThrowLogged.Add(weapon.type))
+				{
+					int mine = 0, any = 0; for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && q.type == weapon.shoot) { any++; if (q.owner == d.whoAmI) mine++; } }
+					ModContent.GetInstance<Levy>()?.Logger.Info("Levy: " + weapon.Name + "'s Shoot threw for a soldier (" + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim() + "; its shot: owned by the dummy's count " + (weapon.shoot < d.ownedProjectileCounts.Length ? d.ownedProjectileCounts[weapon.shoot] : -1) + ", in the world " + mine + " on slot " + d.whoAmI + " of " + any + ")");
+				}
+				throw;
+			}
+		};
+		private static readonly HashSet<int> _shootThrowLogged = new();
 
 		/// <summary>True for the minion a cast is "of" (the staff's own shot or a variant of it); the other parts a Shoot makes are companions that count through their own slots.</summary>
 		private static bool IsMainPiece(Item weapon, Projectile p) => p.type == weapon.shoot || InFamily(weapon.shoot, p.type);
@@ -503,8 +548,10 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		private static bool SummonReal(SoldierNPC s, Item weapon, int damage)
 		{
+			_lastStacked = false;
+			SnapFlock(s);
 			List<Projectile> made = RunShoot(s, weapon, damage, out bool threw);
-			float slots = 0f; int minions = 0;
+			float slots = 0f, all = 0f; int minions = 0;
 			var seenTypes = new HashSet<int>();
 			foreach (Projectile p in made)
 			{
@@ -512,10 +559,24 @@ namespace Levy.Common.Weapons
 				if (p.minion && !p.sentry)
 				{
 					minions++;
-					if (seenTypes.Add(p.type)) slots += p.minionSlots; // one of each part: a staff that makes five petals still costs one petal's slots per cast, as the owner's slot cap keeps what fits
+					if (seenTypes.Add(p.type)) slots += p.minionSlots; // one of each part for a staff with a limit of its own: the Flowers of Mortality's five petals replace the last five, so its limit counts petals
+					all += p.minionSlots;
 					AdoptMade(s, weapon, p, damage, IsMainPiece(weapon, p));
 				}
 				else WeaponUse.TagSoldierProjectile(s, p, weapon.DamageType ?? DamageClass.Summon);
+			}
+			if (!SummonCap.IsCapped(weapon)) slots = all; // a staff with no limit keeps every piece a cast makes: the Pole Warper's two half-slot magnets are one slot a cast, as for a player
+			if (!threw && minions == 0 && FlockChanged(s))
+			{
+				// the Shoot powered up a minion already out instead of making one (the Saros Possession's aura, Sirius, the Void Eater Marionette take another slot each cast): a cast, not an empty one
+				_lastStacked = true; StackTally++; EmptyCasts[weapon.type] = 0; Stackers.Add(weapon.type);
+				return false;
+			}
+			if (!threw && minions == 0 && made.Count > 0 && SoldierNPC.TransientStaff(weapon))
+			{
+				// a self-ending staff's Shoot that made something else (the Universe Splitter on its cooldown throws out scrap): what a player's click makes then, not a staff that cannot work under the soldier
+				_lastStacked = true; EmptyCasts[weapon.type] = 0;
+				return false;
 			}
 			if (threw || minions == 0)
 			{
@@ -529,6 +590,64 @@ namespace Levy.Common.Weapons
 			return true;
 		}
 
+		/// <summary>True when the last <see cref="SummonReal"/> was a cast that powered up a minion already out (see <see cref="FlockChanged"/>).</summary>
+		private static bool _lastStacked;
+		/// <summary>Staves (item types) whose cast was seen powering up the minion already out (see <see cref="FlockChanged"/>): their minion is a flock of one that grows, never a self-ending cast or a summoner shot with a helper.</summary>
+		private static readonly HashSet<int> Stackers = new();
+		internal static bool IsStacker(int itemType) => Stackers.Contains(itemType);
+		private static readonly List<(Projectile p, float a0, float a1, float a2, float slots, bool net)> _flockSnap = new();
+
+		/// <summary>What this soldier's own minions look like before a cast (ai, slots, the net flag), so a cast that changes one of them instead of making a new one is told from an empty one.</summary>
+		private static void SnapFlock(SoldierNPC s)
+		{
+			_flockSnap.Clear();
+			int me = s.NPC.whoAmI;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (OwnedBy(p, me) && IsCast(p)) _flockSnap.Add((p, p.ai[0], p.ai[1], p.ai[2], p.minionSlots, p.netUpdate));
+			}
+		}
+
+		/// <summary>True when the Shoot just run changed one of the minions <see cref="SnapFlock"/> saw (its ai or slots, or it flagged it for a net update).</summary>
+		private static bool FlockChanged(SoldierNPC s)
+		{
+			foreach (var f in _flockSnap)
+			{
+				Projectile p = f.p;
+				if (!p.active) continue;
+				if (p.ai[0] != f.a0 || p.ai[1] != f.a1 || p.ai[2] != f.a2 || p.minionSlots != f.slots || (p.netUpdate && !f.net)) return true;
+			}
+			return false;
+		}
+
+		/// <summary>
+		/// A RECAST use of a full flock's staff (see AltPolicies.RecastWanted): the staff's own Shoot run again with the flock out, as a player using it again at full slots does. Whatever it makes is the soldier's: a minion is
+		/// adopted as a cast (a staff whose flock was not as full as it looked), anything else is tagged as his shot.
+		/// </summary>
+		internal static void Recast(SoldierNPC s, Item weapon, int damage)
+		{
+			if (!UsesRealShoot(weapon)) return;
+			RecastTally++;
+			foreach (Projectile p in RunShoot(s, weapon, damage, out _))
+			{
+				if (!p.active) continue;
+				if (p.minion && !p.sentry) AdoptMade(s, weapon, p, damage, IsMainPiece(weapon, p));
+				else WeaponUse.TagSoldierProjectile(s, p, weapon.DamageType ?? DamageClass.Summon);
+			}
+		}
+
+		/// <summary>The staff's own CanUseItem with the soldier's dummy holding it (a staff that refuses a use while its ray is out, the Saros Possession, or while its field is out, the Universe Splitter). Any failure reads as "usable".</summary>
+		internal static bool CanUse(SoldierNPC s, Item weapon)
+		{
+			Player d = s?.Dummy;
+			if (d == null || weapon?.ModItem == null) return true;
+			Item saved = d.inventory[0]; int sel = d.selectedItem;
+			try { d.inventory[0] = weapon; d.selectedItem = 0; return ItemLoader.CanUseItem(weapon, d); }
+			catch (Exception) { return true; }
+			finally { d.inventory[0] = saved; d.selectedItem = sel; }
+		}
+
 		/// <summary>
 		/// A staff whose own shot takes no slot (a summoner shot the minion comes out of) is swung again by a player when the flock is full, and its Shoot then makes something else: the Dormant Brimseeker's aura that
 		/// empowers its Brimseekers. Learned here: the soldier's full flock gets the staff's Shoot now and then, and what it makes that takes no slot is kept; anything that would take a slot is ended. A staff that
@@ -536,11 +655,12 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		internal static void Helper(SoldierNPC s, Item weapon, int damage)
 		{
-			if (!UsesRealShoot(weapon)) return;
+			if (!UsesRealShoot(weapon) || Stackers.Contains(weapon.type)) return; // a staff that grows its minion: swung again it would grow it past the flock's slots
 			Projectile sample = WeaponClassifier.ProjectileSample(weapon.shoot);
 			if (sample == null || sample.minionSlots > ChildSlotMin) return;
 			if (!Helpers.TryGetValue(weapon.type, out HelperInfo info)) Helpers[weapon.type] = info = new HelperInfo();
 			if (!info.Seen && info.Probes >= 2) return;
+			if (!CanUse(s, weapon)) return; // a player cannot swing it again while its own use gate is shut (the Universe Splitter while its field is out)
 			if (!info.Seen) info.Probes++;
 			HelperTally++; // the staff's own Shoot really runs
 			foreach (Projectile p in RunShoot(s, weapon, damage, out _))
@@ -722,7 +842,17 @@ namespace Levy.Common.Weapons
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
-				if (!IsDriven(p)) continue;
+				if (!IsDriven(p))
+				{
+					// a driven minion's own shot (kept on 255 in its frame) counts for its soldier as a player's own projectiles count for her: a minion that makes its ring of shots only while it owns none (the Void Concentration Staff),
+					// a staff that refuses a use while its ray is out (the Saros Possession) and a minion that holds its fire while that ray lives all read these counts
+					if (p.active && p.owner == Slot && !p.minion && p.TryGetGlobalProjectile(out SoldierProjectileTag ct) && ct.DrivenChild && ct.SoldierIndex >= 0 && MiscProjSwap.BodyOf(p) is SoldierNPC cb && cb.Dummy != null)
+					{
+						PrepDummy(cb, now, authority);
+						if (p.type < cb.Dummy.ownedProjectileCounts.Length) cb.Dummy.ownedProjectileCounts[p.type]++;
+					}
+					continue;
+				}
 				// index the minions whose Update parks their neighbours (see ParkOtherFlocks / ParkOtherDragons): one entry per driven minion, with its soldier read once, here
 				bool dragon = IsDragonType(p.type);
 				if (dragon || GroupIndexed.Contains(p.type))
@@ -734,21 +864,26 @@ namespace Levy.Common.Weapons
 				SoldierNPC s = MiscProjSwap.BodyOf(p);
 				if (s == null) continue;
 				Player d = s.Dummy;
-				if (s.MinionPrepStamp != now)
-				{
-					s.MinionPrepStamp = now;
-					d.numMinions = 0;
-					d.slotsMinions = 0f;
-					Array.Clear(d.ownedProjectileCounts, 0, d.ownedProjectileCounts.Length);
-					d.highestStormTigerGemOriginalDamage = 0;
-					d.highestAbigailCounterOriginalDamage = 0;
-					d.miscCounter = (int)(now % 300u);
-					d.MinionAttackTargetNPC = authority ? AttackTarget(s) : -1;
-				}
+				PrepDummy(s, now, authority);
 				if (p.type < d.ownedProjectileCounts.Length) d.ownedProjectileCounts[p.type]++;
 				if (p.type == ProjectileID.StormTigerGem) d.highestStormTigerGemOriginalDamage = Math.Max(d.highestStormTigerGemOriginalDamage, p.originalDamage);
 				else if (p.type == ProjectileID.AbigailCounter) d.highestAbigailCounterOriginalDamage = Math.Max(d.highestAbigailCounterOriginalDamage, p.originalDamage);
 			}
+		}
+
+		/// <summary>Once a tick per soldier, before its first driven projectile is counted: the dummy's minion counters zeroed, its clock set and its attack target chosen (see <see cref="PrepareTick"/>).</summary>
+		private static void PrepDummy(SoldierNPC s, uint now, bool authority)
+		{
+			if (s.MinionPrepStamp == now) return;
+			Player d = s.Dummy;
+			s.MinionPrepStamp = now;
+			d.numMinions = 0;
+			d.slotsMinions = 0f;
+			Array.Clear(d.ownedProjectileCounts, 0, d.ownedProjectileCounts.Length);
+			d.highestStormTigerGemOriginalDamage = 0;
+			d.highestAbigailCounterOriginalDamage = 0;
+			d.miscCounter = (int)(now % 300u);
+			d.MinionAttackTargetNPC = authority ? AttackTarget(s) : -1;
 		}
 
 		/// <summary>The enemy this soldier's minions are told to attack: the soldier's own target (incl. the commander's focus) when it is a live hostile inside the leash, else the nearest whip-tagged enemy in the leash, else -1 (vanilla proximity).</summary>
@@ -889,7 +1024,9 @@ namespace Levy.Common.Weapons
 
 			Player d = body.Dummy;
 			int savedMyPlayer = Main.myPlayer, savedMax = d.maxMinions, ownerSlot = p.owner;
-			bool swapped = false, parked = false, parkedDragons = false, buffsSaved = false, ammoGiven = false, aimed = false;
+			bool swapped = false, parked = false, parkedDragons = false, buffsSaved = false, ammoGiven = false, aimed = false, parkedAll = false, savedChannel = d.channel;
+			// a minion of a RECAST staff (AltPolicies.RecastWanted) decides between growing and firing from its owner's free slots: it sees the slots the soldier's upkeep keeps (not the driver's cap) and only his own flock
+			bool recastMinion = p.minion && body.RecastShoot > 0 && InFamily(body.RecastShoot, p.type);
 			Vector2 savedScreen = default, calDelta = default; int savedMx = 0, savedMy = 0; float calRot = 0f; object cal = null;
 			Projectile outerFrameProj = _frameProj; SoldierNPC outerFrameBody = _frameBody; int outerFrameSlot = _frameOwnerSlot; bool outerArmed = _strikeArmed, outerReal = _realContext;
 			try
@@ -898,15 +1035,19 @@ namespace Levy.Common.Weapons
 				EnemyTargeting.Swap(body); // dummy -> Main.player[255], at the soldier
 				swapped = true;
 				if (ownerSlot != Slot) AliasDummy(ownerSlot, d); // a dragon segment reads Main.player[its own owner slot]: the same dummy stands there too
-				d.maxMinions = LevyConstants.MinionDriverMaxMinions;
+				d.maxMinions = recastMinion ? Math.Max(1, (int)Math.Round(body.MinionSlotBudget)) : LevyConstants.MinionDriverMaxMinions;
+				if (body.RecastShoot > 0) d.channel = Main.GameUpdateCount < body.RecastHoldUntil; // the levy's button, held while a RECAST staff's channelled use lasts (the Saros ray lives while its owner channels)
 				if (p.type >= ProjectileID.Count && p.TryGetGlobalProjectile(out SoldierProjectileTag at)) at.Age++;
 				if (p.type >= ProjectileID.Count) { SaveBuffs(d); buffsSaved = true; if (!(p.TryGetGlobalProjectile(out SoldierProjectileTag ht) && ht.GearHelper)) ApplyModdedBuff(body, p); if (p.minion) { GiveMinionAmmo(d); ammoGiven = true; } } // a modded minion's AI re-adds its own buff to its owner every tick: the dummy's real buffs are put back in the finally (a gear helper is kept by the gear's own buff, not a staff's)
 				if (authority && savedMyPlayer != ownerSlot) { _trueMyPlayer = savedMyPlayer; _faked = true; Main.myPlayer = ownerSlot; }
 				if (GroupIndexed.Contains(p.type)) { parked = true; ParkOtherFlocks(p, body.NPC.whoAmI); } // flag first: a throw halfway still restores what was moved
 				if (IsDragonType(p.type)) { parkedDragons = true; ParkOtherDragons(p, body.NPC.whoAmI); }
+				if (recastMinion) { parkedAll = true; ParkOtherSoldiers(p, body.NPC.whoAmI); }
 				// a gear helper whose AI reads its owner's cursor (Luxor's Gift turns to Calamity's per-player mouseWorld) sees the levy's aim, as a soldier shot does (OwnerPuppet): the dummy's own cursor is never set, and a cursor
 				// on the owner's centre gives a zero direction, which made the helper's position NaN
-				if (p.ModProjectile != null && CombatFix.On(CombatFix.Cursor) && p.TryGetGlobalProjectile(out SoldierProjectileTag gt) && gt.GearHelper && OwnerLockProbe.ReadsCursor(p.type))
+				// the same for any modded minion or minion shot whose own code reads its owner's cursor (the Saros ray turns to Calamity's per-player cursor): on a single-player machine the plain cursor is the COMMANDER's mouse.
+				// A RECAST staff's minion gets it too, for the shot it makes in its frame (the ray is aimed in its OnSpawn).
+				if (p.ModProjectile != null && CombatFix.On(CombatFix.Cursor) && (recastMinion || OwnerLockProbe.ReadsCursor(p.type)))
 				{
 					Vector2 aim = body.AimCursor();
 					savedScreen = Main.screenPosition; savedMx = Main.mouseX; savedMy = Main.mouseY; aimed = true;
@@ -930,6 +1071,8 @@ namespace Levy.Common.Weapons
 				if (aimed) { Main.screenPosition = savedScreen; Main.mouseX = savedMx; Main.mouseY = savedMy; if (cal != null) AltPolicies.SetCalAimPublic(cal, calDelta, calRot); }
 				if (parked) UnparkOtherFlocks();
 				if (parkedDragons) UnparkOtherDragons();
+				if (parkedAll) UnparkOtherSoldiers();
+				if (body.RecastShoot > 0) d.channel = savedChannel;
 				Main.myPlayer = savedMyPlayer;
 				_faked = false;
 				d.maxMinions = savedMax;
@@ -1037,6 +1180,29 @@ namespace Levy.Common.Weapons
 			Parked.Clear();
 		}
 
+		private static readonly List<Projectile> ParkedAll = new();
+		/// <summary>
+		/// Every OTHER soldier's minion (any type) sits on the parked owner for the length of the call: a minion that sums "every minion of my owner" to find its free slots (the Saros aura, Sirius, the Void Eater Marionette) would
+		/// otherwise count the whole army's minions on the shared slot 255. Used for RECAST staves' minions, whose growth and ray depend on it; one walk of the projectile array per such update.
+		/// </summary>
+		private static void ParkOtherSoldiers(Projectile p, int soldierIndex)
+		{
+			ParkedAll.Clear();
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile q = Main.projectile[i];
+				if (!q.active || q.whoAmI == p.whoAmI || q.owner != Slot || !q.minion || !q.TryGetGlobalProjectile(out SoldierProjectileTag t) || t.SoldierIndex < 0 || t.SoldierIndex == soldierIndex) continue;
+				q.owner = ParkedOwner;
+				ParkedAll.Add(q);
+			}
+		}
+
+		private static void UnparkOtherSoldiers()
+		{
+			foreach (Projectile q in ParkedAll) if (q.owner == ParkedOwner) q.owner = Slot;
+			ParkedAll.Clear();
+		}
+
 		/// <summary>
 		/// Every OTHER soldier's dragon segments sit on <see cref="DragonParkOwner"/> for the length of this segment's Update. Vanilla scans by owner when a dragon segment hits something
 		/// (Projectile.Damage borrows the first head of the owner for the shared hit cooldowns) and when a link breaks (the AI's relink fallback), so without this one soldier's dragon could
@@ -1093,7 +1259,19 @@ namespace Levy.Common.Weapons
 			On_Projectile.Update += UpdateDetour;
 			On_NPC.StrikeNPC_HitInfo_bool_bool += StrikeDetour;
 			On_Projectile.GetByUUID_int_int += UuidDetour;
+			On_Player.CanPullItem += PullDetour;
 		}
+
+		/// <summary>
+		/// A soldier's dummy never pulls an item to itself: it has no real inventory and never picks anything up, so a minion that fetches the items its owner could pull (the Void Eater Marionette plays fetch whenever an item lies within
+		/// 50 tiles) carried one to the levy forever and stopped fighting (summon sweep 2026-11-22: 64 damage a second instead of 5k with a stack of gel on the floor).
+		/// </summary>
+		private static bool PullDetour(On_Player.orig_CanPullItem orig, Player self, Item item, Player.ItemSpaceStatus status)
+		{ _hl_PullDetour_1++;
+			// vanilla asks this for every item near every player each tick: a real player in its own slot is answered at once
+			if (self.whoAmI < Main.maxPlayers - 4 && ReferenceEquals(Main.player[self.whoAmI], self)) return orig(self, item, status);
+			return !global::Levy.Common.Owner.SoldierOwner.IsDummy(self) && orig(self, item, status);
+		} private static int _hl_PullDetour_1;
 
 		private static int UuidDetour(On_Projectile.orig_GetByUUID_int_int orig, int owner, int uuid)
 		{ _hl_UuidDetour_2++;
@@ -1106,6 +1284,7 @@ namespace Levy.Common.Weapons
 			On_Projectile.Update -= UpdateDetour;
 			On_NPC.StrikeNPC_HitInfo_bool_bool -= StrikeDetour;
 			On_Projectile.GetByUUID_int_int -= UuidDetour;
+			On_Player.CanPullItem -= PullDetour;
 			SoldierMinions.Reset();
 			EnemyTargeting.EnsureSlotRestored();
 		}

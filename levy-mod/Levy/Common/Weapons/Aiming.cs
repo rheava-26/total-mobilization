@@ -104,22 +104,67 @@ namespace Levy.Common.Weapons
 		/// <summary>Set around a soldier's firing code by a rule that wants a different segment than the nearest (worm momentum); null = the nearest.</summary>
 		public static System.Func<NPC, Vector2, NPC> Prefer;
 
-		public static NPC NearestSegment(NPC npc, Vector2 from)
+		/// <summary>
+		/// With <paramref name="preferOpen"/> (the aim of a shot or a swing): when the nearest segment is shut behind armour (<see cref="Targeting.SoldierTargeting.IsArmouredPart"/>: Thanatos's plates at 99.99%)
+		/// or out of sight (a worm's body under the floor), the nearest segment of the same body that is open and in sight, no more than <see cref="OpenExtraTiles"/> further, is aimed at instead; failing that,
+		/// for a part out of sight, the nearest one in sight. A player shoots the vent he can see, not the plate in front of it or the coil under the ground.
+		/// </summary>
+		public static NPC NearestSegment(NPC npc, Vector2 from, bool preferOpen = false)
 		{
 			if (npc == null) return null;
 			if (Prefer != null) { NPC pick = Prefer(npc, from); if (pick != null) return pick; }
 			if (npc.realLife < 0 && !npc.boss) return npc; // single-part ordinary enemy: no segment scan needed
 			int root = npc.realLife >= 0 && npc.realLife < Main.maxNPCs ? npc.realLife : npc.whoAmI;
 			NPC best = npc;
-			float bestDist = float.MaxValue;
+			float bestDist = float.MaxValue; int parts = 0;
 			for (int i = 0; i < Main.maxNPCs; i++)
 			{
 				NPC n = Main.npc[i];
 				if (!n.active || n.dontTakeDamage) continue;
 				bool related = i == npc.whoAmI || i == root || n.realLife == root || n.realLife == npc.whoAmI;
 				if (!related) continue;
+				parts++;
 				float d = Vector2.DistanceSquared(n.Hitbox.ClosestPointInRect(from), from);
 				if (d < bestDist) { bestDist = d; best = n; }
+			}
+			if (preferOpen && parts > 1)
+			{
+				bool shut = Targeting.SoldierTargeting.IsArmouredPart(best);
+				bool hidden = SegmentAimOn && !Collision.CanHitLine(from, 1, 1, best.Center, 1, 1);
+				if (shut || hidden)
+				{
+					float lim = (float)Math.Sqrt(bestDist) + OpenExtraTiles * LevyConstants.TilePx;
+					NPC open = NearestOpenSegment(npc, root, from, lim * lim, false);
+					if (open != null) { if (shut) OpenAims++; else SeenAims++; return open; }
+					if (hidden) { NPC seen = NearestOpenSegment(npc, root, from, lim * lim, true); if (seen != null) { SeenAims++; return seen; } } // nothing open in sight: at least a part the shot can reach
+				}
+			}
+			return best;
+		}
+
+		/// <summary>Harness switch (LEVY_SEGAIM=0): a part out of sight is aimed at as before (the shot is then held).</summary>
+		public static bool SegmentAimOn = Environment.GetEnvironmentVariable("LEVY_SEGAIM") != "0";
+		/// <summary>Harness telemetry: aims turned from a part out of sight (a worm's segment under the floor) to one in sight.</summary>
+		public static long SeenAims;
+
+		/// <summary>How much further (tiles) than the shut plate in front an open segment may be and still be aimed at instead.</summary>
+		public const float OpenExtraTiles = 25f;
+		/// <summary>Harness telemetry: aims turned from a shut plate to an open segment of the same body.</summary>
+		public static long OpenAims;
+
+		/// <summary>The nearest part of the same body within sqrt(<paramref name="maxSq"/>) px that is in sight and (unless <paramref name="allowShut"/>) not behind closed armour, or null.</summary>
+		private static NPC NearestOpenSegment(NPC npc, int root, Vector2 from, float maxSq, bool allowShut)
+		{
+			NPC best = null; float bestDist = maxSq;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.dontTakeDamage) continue;
+				if (!(i == npc.whoAmI || i == root || n.realLife == root || n.realLife == npc.whoAmI)) continue;
+				float d = Vector2.DistanceSquared(n.Hitbox.ClosestPointInRect(from), from);
+				if (d >= bestDist || (!allowShut && Targeting.SoldierTargeting.IsArmouredPart(n))) continue;
+				if (!Collision.CanHitLine(from, 1, 1, n.Center, 1, 1)) continue; // a part behind a wall (or under the floor) cannot be shot
+				bestDist = d; best = n;
 			}
 			return best;
 		}

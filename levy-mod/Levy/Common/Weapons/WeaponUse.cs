@@ -51,7 +51,7 @@ namespace Levy.Common.Weapons
 			if (profile == null || !profile.Supported) return false;
 			if (ModWeaponGates.Locked(item)) { s.AttackCooldown = 30; return false; } // the weapon's own use gate is shut in this world (Murasama before the Devourer of Gods): nobody swings it, whatever family it was classified as
 			DudTrace.Call(item, profile);
-			NPC seg = Aiming.NearestSegment(target, s.NPC.Center) ?? target;
+			NPC seg = Aiming.NearestSegment(target, s.NPC.Center, preferOpen: true) ?? target; // an open vent before a shut plate
 			// A rogue lets its stealth bar fill and throws the strike the moment it is full (Calamity empties the bar on every other throw)
 			if (StealthPolicy.Hold(s, item, target)) { s.AttackCooldown = 2; return false; }
 			if (s.Hostile && !s.HostileMayFire(seg)) { s.AttackCooldown = 4; return false; } // HOSTILE SEAM: a band's attack token and warning rule (SoldierNPC.Hostile.cs)

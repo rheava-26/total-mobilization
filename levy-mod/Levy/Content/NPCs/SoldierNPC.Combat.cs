@@ -226,7 +226,7 @@ namespace Levy.Content.NPCs
 			if (Weapon == null || !Weapon.Supported) return;
 			if (Weapon.IsDeployer) return; // a summoner / sentry keeper with no hand weapon stands off while the flock or tower fights
 
-			NPC seg = Aiming.NearestSegment(target, NPC.Center) ?? target;
+			NPC seg = Aiming.NearestSegment(target, NPC.Center, preferOpen: true) ?? target; // the same segment the weapon will aim at (WeaponUse.TryAttack): an open vent before a shut plate
 			if (!SwingFacingLocked && Math.Abs(seg.Center.X - NPC.Center.X) > 2f) NPC.direction = seg.Center.X < NPC.Center.X ? -1 : 1;
 
 			if (Weapon.IsRanged)

@@ -443,6 +443,7 @@ namespace Levy.Content.NPCs
 					if (slot < 0 ? s.ImmuneTime > 0 : s.SlotImmune[slot] > 0) return false;
 				}
 				else if (s.ImmuneTime > 0) return false;
+				if (!HostileContact.ProjectileAllows(projectile, npc, s.Dummy ?? HostileContact.Stand)) return false; // the projectile's own player rule: where a player standing here would not be hit, neither is the body
 				if (!LevyUtil.IsClient && s.TryShadowDodge()) return false; // Hallowed armor's dodge turns the shot aside; its 80 immune ticks cover the rest
 			}
 			return null;

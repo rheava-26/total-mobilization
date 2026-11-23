@@ -49,7 +49,11 @@ namespace Levy.Common.Boss
 			BossRule.RebuildCaches();
 		}
 
-		public override void PostUpdateNPCs() => BossRuleGlobalNPC.EnsureRestored();
+		public override void PostUpdateNPCs()
+		{
+			BossRuleGlobalNPC.EnsureRestored();
+			if (LevyUtil.IsServerOrSingle) BossRule.CheckFallBack(); // the NPCs' own life clamps have run: a scaling a mirrored partner took back is caught here
+		}
 
 		public override void ClearWorld()
 		{

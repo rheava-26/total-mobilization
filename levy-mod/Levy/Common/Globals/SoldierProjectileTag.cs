@@ -131,6 +131,10 @@ namespace Levy.Common.Globals
 					projectile.noDropItem = true;
 					if (parent.minion && LevyUtil.IsServerOrSingle) { SoldierNPC pb = EnemyTargeting.LiveBody(parentTag.SoldierIndex); if (pb != null) pb.ChildSpawns++; } // flood guard tally
 					SoldierMinions.ReownChild(parent, projectile); // a real minion's stinger / spear: single player processes damage only for the real owner
+					// a MINION a soldier's tower makes (the Hive Pod's hive sends out hivelings) is the soldier's, never the commander's: towers are owned by her slot, so the hiveling was hers, took her minion slots and counted in her
+					// minion count. It is adopted on the soldier's own minion slot like a minion his gear makes, and runs under his dummy.
+					if (parent.sentry && projectile.minion && !projectile.sentry && projectile.owner != SoldierNPC.DummySlot && LevyUtil.IsServerOrSingle && EnemyTargeting.LiveBody(parentTag.SoldierIndex) is SoldierNPC tb && !tb.Hostile)
+						SoldierMinions.AdoptAccessoryMinion(tb, projectile);
 				}
 				if (parentTag.CommanderIndex >= 0)
 				{

@@ -364,6 +364,41 @@ namespace Levy.Common.Dialogue
 			return f;
 		}
 
+		/// <summary>Right-click chat during one of these fights (any side: the fight is read from the NPCs here): a worried line from the fight's pool, or null (then "...") with the setting off or no fight.</summary>
+		internal static string ChatLine(SoldierNPC s)
+		{
+			if (!Enabled || s?.Record == null) return null;
+			WotgFight f = TestFight ?? (AnyNpc(AvatarType) ? WotgFight.Avatar : AnyNpc(NamelessType) ? WotgFight.Nameless : AnyNpc(RiftType) ? WotgFight.Rift : GenesisOn ? WotgFight.Genesis : WotgFight.None);
+			string pool = f == WotgFight.Genesis ? "SCENE_GENESIS" : FightPool(f);
+			if (pool == null) return null;
+			var ctx = new DialogueContext { Player = s.Record.CommanderName };
+			return DialogueSystem.PickLine(pool, s.Record, ctx) ?? DialogueSystem.PickLine(pool, s.Record, ctx, true);
+		}
+
+		/// <summary>Self-check: the text is one of the fight pools' lines (placeholders matched loosely: the literal parts in order).</summary>
+		internal static bool IsFightChat(string text)
+		{
+			if (string.IsNullOrEmpty(text)) return false;
+			foreach (string pool in new[] { "SCENE_GENESIS", "SCENE_RIFT_FIGHT", "SCENE_AVATAR_FIGHT", "SCENE_NAMELESS_FIGHT" })
+			{
+				var lines = DialogueTable.Get(pool);
+				if (lines == null) continue;
+				foreach (DialogueLine l in lines)
+				{
+					int at = 0; bool ok = true;
+					foreach (LinePart p in l.Parts)
+					{
+						if (p.Kind != PlaceholderKind.Literal || string.IsNullOrEmpty(p.Literal)) continue;
+						int i = text.IndexOf(p.Literal, at, StringComparison.Ordinal);
+						if (i < 0) { ok = false; break; }
+						at = i + p.Literal.Length;
+					}
+					if (ok && l.Parts.Length > 0) return true;
+				}
+			}
+			return false;
+		}
+
 		private static bool AnyNpc(int type)
 		{
 			if (type < 0) return false;

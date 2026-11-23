@@ -186,7 +186,7 @@ namespace Levy.Common.Testing
 							global::Levy.Common.Dialogue.DialogueSystem.React(l, global::Levy.Common.DialogueTrigger.BOSS_SIGHTED); tries++;
 							global::Levy.Common.Dialogue.DialogueSystem.FloatingText(l, "check"); tries++;
 							global::Levy.Common.Dialogue.DialogueSystem.Emote(l, Terraria.GameContent.UI.EmoteID.EmoteFear); tries++;
-							chatTries++; if (global::Levy.Common.Dialogue.DialogueSystem.ChatLine(l) == "...") chatSilent++;
+							chatTries++; { string cl = global::Levy.Common.Dialogue.DialogueSystem.ChatLine(l); if (cl == "..." || global::Levy.Common.Dialogue.WotgScenes.IsFightChat(cl)) chatSilent++; } // "..." or a line about the fight (WotgScenes), never camp talk
 						}
 					}
 				};
@@ -204,7 +204,7 @@ namespace Levy.Common.Testing
 				Check(label + ": in BossRule.LiveBosses every tick it is up", alive > 0 && liveBossTicks >= alive - 1, () => $"{liveBossTicks} of {alive}");
 				Check(label + ": the boss-fight fact and the 'another main boss is up' test see it", factTicks >= alive - 1 && anotherTicks >= alive - 1, () => $"fact {factTicks}, another {anotherTicks} of {alive}");
 				Check(label + ": no spite on it (no re-aimed shots, no dash at a levy)" + (beaten ? " with bosses punishing soldiers on" : ""), spiteTicks == 0, () => $"{spiteTicks} ticks");
-				Check(label + ": the levies say nothing while it is up", hushTicks >= alive - 1 && tries > 0 && NoxusFights.HushDropped - hush0 >= tries && chatSilent == chatTries, () => $"fight flag {hushTicks} of {alive} ticks, held {NoxusFights.HushDropped - hush0} of {tries}, chat silent {chatSilent} of {chatTries}");
+				Check(label + ": the levies' ordinary voice is held while it is up (right-click chat is silent or about the fight)", hushTicks >= alive - 1 && tries > 0 && NoxusFights.HushDropped - hush0 >= tries && chatSilent == chatTries, () => $"fight flag {hushTicks} of {alive} ticks, held {NoxusFights.HushDropped - hush0} of {tries}, chat silent {chatSilent} of {chatTries}");
 				if (beaten) Note($"{label}: beaten boss with bosses targeting soldiers: locked on a levy {lockedTicks} of {alive} ticks");
 				boss.active = false;
 				Step(2);

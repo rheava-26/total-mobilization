@@ -2779,7 +2779,7 @@ SCENE_AVATAR_SCREAM | Any | I can't hear my own gun! Am I firing?! I think I'm f
 SCENE_AVATAR_SCREAM | Any | My teeth hurt. Why do my TEETH hurt?
 SCENE_AVATAR_SCREAM | Any | {Player}! Orders! Any orders! Please!
 SCENE_AVATAR_SCREAM | Greenhorn | I'm okay! I'm okay! I'm not okay! I'm shooting!
-SCENE_AVATAR_SCREAM | Sellsword | Hazard pay. Triple. Starting from that noise.
+SCENE_AVATAR_SCREAM | Sellsword | I've been paid to stand near worse. No. No, I haven't.
 SCENE_AVATAR_SCREAM | Zealot | It screams because it's afraid of us! It's afraid of US!
 SCENE_AVATAR_SCREAM | Cynic | Well, it's awake. Anybody want to go back to sleep?
 SCENE_AVATAR_SCREAM | Veteran | On your feet! It's just loud! Loud doesn't kill you!
@@ -2798,7 +2798,7 @@ SCENE_AVATAR_FIGHT | Any | [ranger] Bullets go in. Nothing comes out. I'm still 
 SCENE_AVATAR_FIGHT | Any | [melee] I'm getting closer! I'm getting closer! I'm getting further!
 SCENE_AVATAR_FIGHT | Greenhorn | Is this what the end of the world sounds like? It's so quiet between the screams.
 SCENE_AVATAR_FIGHT | Greenhorn | I counted the arms. I stopped counting the arms.
-SCENE_AVATAR_FIGHT | Sellsword | Nobody's getting paid if there's no world left to pay us in!
+SCENE_AVATAR_FIGHT | Sellsword | I've fought for anyone who'd pay me! I'm fighting this one for free!
 SCENE_AVATAR_FIGHT | Zealot | Vorrath of the Thousand Teeth fears THIS. And we're shooting it!
 SCENE_AVATAR_FIGHT | Zealot | Hold the faith! Hold the line! Hold SOMETHING!
 SCENE_AVATAR_FIGHT | Cynic | Great plan, everyone. Shoot the god. Love it.
@@ -2810,7 +2810,7 @@ SCENE_AVATAR_FIGHT | Veteran | Breathe. Aim. It's big, so you won't miss.
 SCENE_AVATAR_COLD | Any | My breath is freezing! My EYELASHES are freezing!
 SCENE_AVATAR_COLD | Any | Where did the world go? It's all ice! It's all ICE!
 SCENE_AVATAR_COLD | Any | Keep moving or you'll stick! Keep MOVING!
-SCENE_AVATAR_COLD | Sellsword | Cold-weather pay. I'm invoicing the god.
+SCENE_AVATAR_COLD | Sellsword | I've been cold before. Not like this. Not from the inside.
 SCENE_AVATAR_COLD | Veteran | Watch the twinkles! The twinkles are where it hits!
 
 # ---------------------------------------------------------------- SCENE_AVATAR_BLOOD
@@ -2839,7 +2839,7 @@ SCENE_AVATAR_UNIVERSE | Any | {Player}?! {Player}, where did you go?!
 SCENE_AVATAR_UNIVERSE | Any | It took the commander! It took {Player} somewhere!
 SCENE_AVATAR_UNIVERSE | Any | Everyone stay put! The commander always comes back!
 SCENE_AVATAR_UNIVERSE | Greenhorn | Who's in charge now?! Is it me?! It can't be me!
-SCENE_AVATAR_UNIVERSE | Sellsword | If {Player} doesn't come back, who signs the pay? Asking for everyone.
+SCENE_AVATAR_UNIVERSE | Sellsword | If {Player} doesn't come back, I'm not working for anyone else. I mean it.
 SCENE_AVATAR_UNIVERSE | Veteran | Hold position. When {Player}'s back, we'll be right here.
 
 # ---------------------------------------------------------------- SCENE_AVATAR_RETURN
@@ -2892,7 +2892,7 @@ SCENE_AVATAR_KILL | Any | We beat it! We beat a GOD! What do we even do now?!
 SCENE_AVATAR_KILL | Any | Is it over? Somebody say it's over. Out loud.
 SCENE_AVATAR_KILL | Any | I'm never going to sleep again. I'm so happy. I'm never going to sleep again.
 SCENE_AVATAR_KILL | Greenhorn | I fought a god! My mother is never going to believe the office job now!
-SCENE_AVATAR_KILL | Sellsword | I'd like to talk about a bonus. A large one. Later. Now I'd like to sit.
+SCENE_AVATAR_KILL | Sellsword | I've had a lot of employers. None of them ever did THAT.
 SCENE_AVATAR_KILL | Zealot | The commander faced the void and the void LEFT! Glory to {Player}!
 SCENE_AVATAR_KILL | Cynic | We won. I'll believe it when the sun comes back.
 SCENE_AVATAR_KILL | Veteran | Good work. All of you. Every one of you.
@@ -2976,7 +2976,7 @@ SCENE_NAMELESS_HOMECOMING | Any | {Player}! You're back! What happened in there?
 SCENE_NAMELESS_HOMECOMING | Any | You did it! Without us! With us! In spirit! You did it!
 SCENE_NAMELESS_HOMECOMING | Any | You went somewhere we couldn't follow, and you came back. Welcome home.
 SCENE_NAMELESS_HOMECOMING | Greenhorn | We waited the whole time! I polished my armor twice!
-SCENE_NAMELESS_HOMECOMING | Sellsword | You beat it alone? Do we still get paid? We still get paid.
+SCENE_NAMELESS_HOMECOMING | Sellsword | You went in alone?! Next time I'm coming. I'll waive the fee.
 SCENE_NAMELESS_HOMECOMING | Zealot | The commander walked among the gods and came home! I'll tell my children!
 SCENE_NAMELESS_HOMECOMING | Cynic | Next time, take us. We'd have been useless, but take us.
 SCENE_NAMELESS_HOMECOMING | Veteran | Welcome back, {Player}. The army's all here. We kept it all here.
@@ -2986,7 +2986,7 @@ SCENE_WOTG_COMMANDER_DOWN | Any | {Player}! No! NO! Get up!
 SCENE_WOTG_COMMANDER_DOWN | Any | The commander's down! Hold the line! HOLD THE LINE!
 SCENE_WOTG_COMMANDER_DOWN | Any | Nobody runs! {Player} always comes back!
 SCENE_WOTG_COMMANDER_DOWN | Greenhorn | What do we do?! What do we do without {Player}?!
-SCENE_WOTG_COMMANDER_DOWN | Sellsword | Cover the spot! That's where the coin and the plan come back!
+SCENE_WOTG_COMMANDER_DOWN | Sellsword | Cover the spot! Nobody else here knows the plan!
 SCENE_WOTG_COMMANDER_DOWN | Zealot | The commander falls and rises! Hold until the commander rises!
 SCENE_WOTG_COMMANDER_DOWN | Cynic | Well. That's bad. That's very bad. Keep shooting.
 SCENE_WOTG_COMMANDER_DOWN | Veteran | Close ranks! We hold here till {Player}'s back on their feet!

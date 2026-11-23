@@ -175,6 +175,8 @@ namespace Levy.Common.Testing
 			SNote($"two minutes of the Avatar fight: {fightLines} worried lines ({string.Join(" / ", chatter.Select(x => x.Text).Take(4))}), {generic} ordinary floating lines, ambient chatter tried {SoldierNPC.ChatterLines - amb0}, hush held {NoxusFights.HushDropped - hh0}");
 			SCheck($"in two minutes of fight the army says {fightLines} worried lines, all from the fight's pool", fightLines >= 3 && fightLines <= 7 && chatter.All(x => x.Pool == "SCENE_AVATAR_FIGHT"));
 			SCheck($"and none of its ordinary chatter ({generic} ordinary lines out)", generic == 0);
+			var chats = army.Where(a => a != null && a.NPC.active && a.IsAlive).Select(a => DialogueSystem.ChatLine(a)).ToList();
+			SCheck($"right-click chat in the fight is about the fight ({chats.Count(WotgScenes.IsFightChat)} of {chats.Count}: {chats.FirstOrDefault()})", chats.Count > 0 && chats.All(WotgScenes.IsFightChat));
 
 			// hope, the fallen, the kill
 			int k0 = WotgScenes.Log.Count;
@@ -228,7 +230,8 @@ namespace Levy.Common.Testing
 			WotgScenes.Reset(); WotgScenes.TestEnabled = false; WotgScenes.TestNamelessDefeated = false; WotgScenes.TestFight = WotgFight.Avatar; WotgScenes.TestState = "Teleport"; Step(5);
 			int off0 = WotgScenes.Log.Count, offF = DialogueSystem.FloatingDelivered;
 			WotgScenes.TestState = "Awaken_LegEmergence"; Step(60 * 50);
-			SCheck($"with the setting off the fight is silent ({LinesSince(off0)} fight lines, {DialogueSystem.FloatingDelivered - offF} floating lines in fifty seconds)", LinesSince(off0) == 0 && DialogueSystem.FloatingDelivered - offF == 0);
+			string offChat = army.FirstOrDefault(a => a != null && a.NPC.active && a.IsAlive) is SoldierNPC oc ? DialogueSystem.ChatLine(oc) : "...";
+			SCheck($"with the setting off the fight is silent ({LinesSince(off0)} fight lines, {DialogueSystem.FloatingDelivered - offF} floating lines in fifty seconds, right-click \"{offChat}\")", LinesSince(off0) == 0 && DialogueSystem.FloatingDelivered - offF == 0 && offChat == "...");
 			WotgScenes.TestEnabled = true; WotgScenes.TestFight = WotgFight.None; NoxusFights.Override = null; Step(5);
 
 			RealNoxus(army);

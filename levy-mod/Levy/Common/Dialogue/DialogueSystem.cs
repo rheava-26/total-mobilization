@@ -94,7 +94,8 @@ namespace Levy.Common.Dialogue
 		public static string ChatLine(SoldierNPC s)
 		{
 			SoldierRecord rec = s?.Record;
-			if (rec == null || s.NPC == null || global::Levy.Common.Death.NoxusFights.Hush) return Localized("Silence", "...");
+			if (rec == null || s.NPC == null) return Localized("Silence", "...");
+			if (global::Levy.Common.Death.NoxusFights.Hush) return WotgScenes.ChatLine(s) ?? Localized("Silence", "..."); // in a Wrath of the Gods fight: a line about the fight, never camp talk
 			int idx = s.NPC.whoAmI;
 			bool tracked = (uint)idx < MaxBodies;
 			int now = Now;

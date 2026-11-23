@@ -144,9 +144,16 @@ namespace Levy.Common.Testing
 				PlaceCommander(-20);
 				NPC a = SpawnNpc(ares, new Vector2(Cx * 16f, (FloorY - 40) * 16f));
 				_adaptProbes = _adaptOnLevy = _adaptEmpty = _adaptCmd = 0; ArmyAwareExo.ArmProbe = AdaptProbe;
+				// earlier checks of the chain leave regulars that respawn beside the commander, and creatures an officer conjured: no army may stand here for this scenario
+				int cleared = 0, bodyTicks = 0;
+				_perTick = () =>
+				{
+					for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && (n.ModNPC is SoldierNPC || n.ModNPC is SummonedUnitNPC || (n.TryGetGlobalNPC(out ConjuredGlobalNPC cj) && cj.Active))) { n.active = false; cleared++; } else if (n.active && !n.friendly && n.ModNPC is not SoldierNPC) n.timeLeft = 99999; }
+					if (global::Levy.Common.Targeting.EnemyTargeting.Bodies.Count > 0) bodyTicks++;
+				};
 				Step(60);
 				ArmyAwareExo.ArmProbe = null;
-				string st = $"Ares target {a?.target}; arm calls {ArmyAwareExo.ArmCalls}, lent {ArmyAwareExo.ArmLent}; vent placed {ArmyAwareExo.VentPlaced}; homing placed {ArmyAwareExo.HomingPlaced}; probes {_adaptProbes}";
+				string st = $"Ares target {a?.target}; arm calls {ArmyAwareExo.ArmCalls}, lent {ArmyAwareExo.ArmLent}; vent placed {ArmyAwareExo.VentPlaced}; homing placed {ArmyAwareExo.HomingPlaced}; probes {_adaptProbes} (levy {_adaptOnLevy}, empty {_adaptEmpty}, commander {_adaptCmd}); bodies removed {cleared}, ticks that still saw a body {bodyTicks}";
 				Note("SOLO: " + st);
 				Check("SOLO, feature on, no army: nothing is lent or placed (Ares and his arms fight the commander exactly as Calamity wrote them)", a != null && a.target == 0 && ArmyAwareExo.ArmLent == 0 && ArmyAwareExo.VentPlaced == 0 && ArmyAwareExo.HomingPlaced == 0 && _adaptProbes == 0, () => st);
 				PlaceCommander(-200);

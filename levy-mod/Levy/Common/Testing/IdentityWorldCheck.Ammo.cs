@@ -30,14 +30,14 @@ namespace Levy.Common.Testing
 		private static void ANote(string s) => _mod.Logger.Info("[AmmoWorld] OBSERVED " + s);
 		private static readonly bool AmmoDebug = Environment.GetEnvironmentVariable("LEVY_AMMO_DEBUG") == "1";
 		private const int AmmoCmdTiles = 64, AmmoNearCmdTiles = 10;
-		/// <summary>Lab: the age (ticks) at which LEVY_AMMO_DEBUG notes a shot's place (LEVY_AMMO_DEBUGAGE), and the commander's cursor offset from her in a levy run (LEVY_AMMO_CMDCURSOR=x,y in pixels; default on herself).</summary>
+		/// <summary>Lab: the age (ticks) at which LEVY_AMMO_DEBUG notes a shot's place (LEVY_AMMO_DEBUGAGE), and the offset of the commander's Calamity cursor from her in a levy run (LEVY_AMMO_CMDCURSOR=x,y in pixels; default 0: on herself; her screen cursor stays on her).</summary>
 		private static readonly int AmmoDebugAge = int.TryParse(Environment.GetEnvironmentVariable("LEVY_AMMO_DEBUGAGE"), out int dage) ? dage : 30;
-		private static readonly Vector2? AmmoCmdCursor = ParseCursor(Environment.GetEnvironmentVariable("LEVY_AMMO_CMDCURSOR"));
+		private static Vector2? AmmoCmdCursor = ParseCursor(Environment.GetEnvironmentVariable("LEVY_AMMO_CMDCURSOR"));
 		private static Vector2? ParseCursor(string v) { if (string.IsNullOrEmpty(v)) return null; var a = v.Split(','); return a.Length == 2 && float.TryParse(a[0], out float x) && float.TryParse(a[1], out float y) ? new Vector2(x, y) : null; }
 
 		private sealed class AmmoType
 		{
-			public int Born, Children, AtCmd, Untagged, Died, Jumps, JumpsToCmd, Hits, NearCmdTicks; public long LifeSum, HitDamage; public int MaxLife; public float MaxJump, MaxChildFromParent, MinFromCmd = 1e9f, MaxBornFromShooter;
+			public int Born, Children, AtCmd, Untagged, Died, Jumps, JumpsToCmd, Hits, NearCmdTicks, OnCmdTicks; public long LifeSum, HitDamage; public int MaxLife; public float MaxJump, MaxChildFromParent, MinFromCmd = 1e9f, MaxBornFromShooter;
 		}
 
 		private sealed class AmmoStat
@@ -47,6 +47,8 @@ namespace Levy.Common.Testing
 			public int AtCmd => ByType.Values.Sum(v => v.AtCmd);
 			public int JumpsToCmd => ByType.Values.Sum(v => v.JumpsToCmd);
 			public int NearCmd => ByType.Values.Sum(v => v.NearCmdTicks);
+			/// <summary>Ticks a shot of the levy's spent within 4 tiles of the commander (where a shot that goes to her cursor ends up).</summary>
+			public int OnCmd => ByType.Values.Sum(v => v.OnCmdTicks);
 			public int Untagged => ByType.Values.Sum(v => v.Untagged);
 			public float MaxChildFromParent => ByType.Count == 0 ? 0f : ByType.Values.Max(v => v.MaxChildFromParent);
 			public long HitDamage; /// <summary>Hit damage (every hit the shot and its children landed, without damage over time) per shot fired.</summary>
@@ -106,7 +108,7 @@ namespace Levy.Common.Testing
 					string dbgUse = AmmoDebug && player && k < 24 ? $"t={k} before {cmd.itemAnimation}/{cmd.itemAnimationMax},{cmd.itemTime}/{cmd.itemTimeMax}" : null;
 					if (player) { try { HoldCommanderUse(cw, pressEvery > 0 && !cw.channel && !ModShotKinds.HoldSpawned(cw) && ModShotKinds.HolderType(cw) == cw.shoot ? k % pressEvery == 0 : cw.autoReuse || cmd.itemAnimation > 1 || k % 2 == 0); /* a held gun is held down */ } catch (Exception e) { st.Err = "cmd use " + (e is TargetInvocationException && e.InnerException != null ? e.InnerException.GetType().Name : e.GetType().Name); } }
 					else if (cw != null) { try { HoldCommanderUse(cw, true); } catch (Exception e) { st.Err = "cmd use " + (e is TargetInvocationException && e.InnerException != null ? e.InnerException.GetType().Name : e.GetType().Name); } }
-					else { CursorOnCommander(); if (AmmoCmdCursor.HasValue) { Player c0 = Main.player[0]; Main.mouseX = (int)(c0.Center.X + AmmoCmdCursor.Value.X); Main.mouseY = (int)(c0.Center.Y + AmmoCmdCursor.Value.Y); try { object cp = AltPolicies.CalamityPlayerOf(c0); if (cp != null) AltPolicies.SetCalAimPublic(cp, AmmoCmdCursor.Value); } catch (Exception) { } } }
+					else { CursorOnCommander(); if (AmmoCmdCursor.HasValue) { Player c0 = Main.player[0]; try { object cp = AltPolicies.CalamityPlayerOf(c0); if (cp != null) AltPolicies.SetCalAimPublic(cp, AmmoCmdCursor.Value); } catch (Exception) { } } }
 					if (!player && cw != null && cmd.inventory[54] != null && !cmd.inventory[54].IsAir) cmd.inventory[54].stack = cmd.inventory[54].maxStack;
 					if (!player) foreach (var r in RosterSystem.Instance.Regulars) { if (r.Gear.Ammo != null && !r.Gear.Ammo.IsAir) r.Gear.Ammo.stack = r.Gear.Ammo.maxStack; }
 					else if (cmd.inventory[54] != null && !cmd.inventory[54].IsAir) cmd.inventory[54].stack = cmd.inventory[54].maxStack;
@@ -166,7 +168,7 @@ namespace Levy.Common.Testing
 							if (!player && jc < AmmoNearCmdTiles * 16f) at2.JumpsToCmd++;
 							if (AmmoDebug && dbg++ < 60) ANote($"  dbg {label} [{st.Mode}] t={k} {pn} jumped {moved / 16f:0.0}t to {(p.Center.X - shooter.X) / 16f:0.0},{(p.Center.Y - shooter.Y) / 16f:0.0}t from the shooter, {jc / 16f:0.0}t from the commander, ai=({p.ai[0]:0.#},{p.ai[1]:0.#}) vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) dmg={p.damage} pen={p.penetrate}");
 						}
-						if (!player && Vector2.Distance(p.Center, cmdC) < AmmoNearCmdTiles * 16f) { at2.NearCmdTicks++; if (AmmoDebug && at2.NearCmdTicks <= 3) ANote($"  dbg {label} [{st.Mode}] t={k} {pn} near the commander: {(p.Center.X - cmdC.X) / 16f:0.0},{(p.Center.Y - cmdC.Y) / 16f:0.0}t from her, born t={lv.Born}, vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.#},{p.ai[1]:0.#},{p.ai[2]:0.#}) tl={p.timeLeft} owner={p.owner}"); }
+						if (!player && Vector2.Distance(p.Center, cmdC) < AmmoNearCmdTiles * 16f) { at2.NearCmdTicks++; if (Vector2.Distance(p.Center, cmdC) < 4 * 16f) at2.OnCmdTicks++; if (AmmoDebug && at2.NearCmdTicks <= 3) ANote($"  dbg {label} [{st.Mode}] t={k} {pn} near the commander: {(p.Center.X - cmdC.X) / 16f:0.0},{(p.Center.Y - cmdC.Y) / 16f:0.0}t from her, born t={lv.Born}, vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) ai=({p.ai[0]:0.#},{p.ai[1]:0.#},{p.ai[2]:0.#}) tl={p.timeLeft} owner={p.owner}"); }
 						else if (AmmoDebug && !player && k - lv.Born == AmmoDebugAge && lv.Index <= 6) ANote($"  dbg {label} [{st.Mode}] t={k} {pn} {AmmoDebugAge} ticks old: {(p.Center.X - shooter.X) / 16f:0.0},{(p.Center.Y - shooter.Y) / 16f:0.0}t from the shooter, {(p.Center.X - _sweepTargetAt.X) / 16f:0.0},{(p.Center.Y - _sweepTargetAt.Y) / 16f:0.0}t from the target's feet, {(p.Center.X - cmdC.X) / 16f:0.0},{(p.Center.Y - cmdC.Y) / 16f:0.0}t from her, vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) tl={p.timeLeft} owner={p.owner}");
 						lv.Last = p.Center; lv.LastSpeed = p.velocity.Length() * (1 + p.extraUpdates);
 					}
@@ -471,12 +473,12 @@ namespace Levy.Common.Testing
 		private static readonly string CursorTrace = Environment.GetEnvironmentVariable("LEVY_AMMO_CURSORTRACE");
 		public override void PostAI(Projectile projectile)
 		{
-			if (!On || CursorTrace == null || _cursorNotes >= 12 || projectile.ModProjectile?.Name != CursorTrace || projectile.timeLeft % 97 != 0) return;
+			if (!On || CursorTrace == null || _cursorNotes >= 160 || projectile.ModProjectile?.Name != CursorTrace || Main.GameUpdateCount % 20 != 0) return;
 			Player o = Main.player[projectile.owner];
 			object cp = AltPolicies.CalamityPlayerOf(o);
 			Vector2 d = cp != null ? AltPolicies.GetCalAimPublic(cp).Item1 : Vector2.Zero;
 			_cursorNotes++;
-			ModContent.GetInstance<Levy>().Logger.Info($"[AmmoWorld] OBSERVED   cursor trace {CursorTrace} tl={projectile.timeLeft} owner={projectile.owner} ownerCenter=({o.MountedCenter.X / 16f:0.0},{o.MountedCenter.Y / 16f:0.0})t calDelta=({d.X / 16f:0.0},{d.Y / 16f:0.0})t cursor=({(o.MountedCenter.X + d.X) / 16f:0.0},{(o.MountedCenter.Y + d.Y) / 16f:0.0})t shot=({projectile.Center.X / 16f:0.0},{projectile.Center.Y / 16f:0.0})t vel=({projectile.velocity.X:0.0},{projectile.velocity.Y:0.0}) puppetDepth={OwnerPuppet.DebugDepth}");
+			ModContent.GetInstance<Levy>().Logger.Info($"[AmmoWorld] OBSERVED   cursor trace {CursorTrace} tl={projectile.timeLeft} owner={projectile.owner} ownerCenter=({o.MountedCenter.X / 16f:0.0},{o.MountedCenter.Y / 16f:0.0})t calDelta=({d.X / 16f:0.0},{d.Y / 16f:0.0})t cursor=({(o.MountedCenter.X + d.X) / 16f:0.0},{(o.MountedCenter.Y + d.Y) / 16f:0.0})t shot=({projectile.Center.X / 16f:0.0},{projectile.Center.Y / 16f:0.0})t vel=({projectile.velocity.X:0.0},{projectile.velocity.Y:0.0}) puppetDepth={OwnerPuppet.DebugDepth} shark={(cp != null ? cp.GetType().GetField("sharkGunDamageScaling")?.GetValue(cp) : "-")} ai=({projectile.ai[0]:0.#},{projectile.ai[1]:0.#},{projectile.ai[2]:0.#})");
 		}
 		public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone)
 		{

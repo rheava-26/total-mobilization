@@ -108,7 +108,10 @@ namespace Levy.Common.Weapons
 		private static readonly HashSet<string> ChainExtraNames = new() { "ArtAttack", "Rancor", "Starmageddon", "YharimsCrystal",
 			// Gruesome Eminence: the holdout keeps one spirit congregation out (it counts it in its owner's ownedProjectileCounts) and the congregation lives only while its owner channels: handed to the commander it died at once and the holdout made
 			// a new one every tick (322 in 360 ticks, no damage). Dark Spark: its beams find the prism by UUID (as Yharim's Crystal's do).
-			"GruesomeEminence", "DarkSpark" };
+			"GruesomeEminence", "DarkSpark",
+			// Voidragon: after its 50-round magazine the holdout fires the Abyssal Fire beam, which ends itself when its owner cannot use the holdout (CantUseHoldout: the button is up). Handed to the commander it read her button and died
+			// on its first tick (no beam in 900 ticks; the beam is 90% of a player's Voidragon damage, gunparity 2026-11-23).
+			"Voidragon" };
 		internal static bool ChainExtras(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && ChainExtraNames.Contains(item.ModItem.Name);
 
 		/// <summary>A held modded weapon that deals its damage only when the button is LET GO after a charge: hold for <see cref="HoldTicks"/>, release, and end the holdout <see cref="LingerTicks"/> later so the next one is cast.</summary>

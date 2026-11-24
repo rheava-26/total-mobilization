@@ -1,0 +1,5 @@
+# A weapon's counter kept on the player (a ModPlayer field), per levy (PlayerCounters.cs).
+# C	mod	ModPlayer class	field	(held as the levy's own while his shots update, hit and die)
+# H	mod	GlobalProjectile class	bool field	ModPlayer class	int field	(a levy's shot with the flag adds one to his counter on its first hit: the player's own ModPlayer hit hook, which an NPC shot skips)
+C	CalamityMod	CalamityMod.CalPlayer.CalamityPlayer	sharkGunDamageScaling
+H	CalamityMod	CalamityMod.Projectiles.CalamityGlobalProjectile	sharkBullets	CalamityMod.CalPlayer.CalamityPlayer	sharkGunDamageScaling

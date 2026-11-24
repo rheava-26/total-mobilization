@@ -55,8 +55,8 @@ namespace Levy.Common.Testing
 				foreach (var m in typeof(Player).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
 					if (m.Name == "ItemCheck") { var ps = m.GetParameters(); if (ps.Length == 0) { _itemCheck = m; _itemCheckTakesInt = false; break; } if (ps.Length == 1 && ps[0].ParameterType == typeof(int)) { _itemCheck = m; _itemCheckTakesInt = true; } }
 			int saved = Main.myPlayer;
-			try { Main.myPlayer = 0; _itemCheck.Invoke(p, _itemCheckTakesInt ? new object[] { 0 } : null); }
-			finally { Main.myPlayer = saved; }
+			try { Main.myPlayer = 0; InStandInUse = true; _itemCheck.Invoke(p, _itemCheckTakesInt ? new object[] { 0 } : null); }
+			finally { Main.myPlayer = saved; InStandInUse = false; }
 		}
 
 		private static MegaStat MegaOne(int weaponType, int ammoType, string label, string mode, int levies, int ticks, Item cmdWeapon, int cmdAmmoType)

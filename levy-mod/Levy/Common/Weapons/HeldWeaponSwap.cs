@@ -46,7 +46,7 @@ namespace Levy.Common.Weapons
 
 		private static readonly Dictionary<int, uint> _countStamp = new();
 		/// <summary>Once a tick per soldier: the dummy's <c>ownedProjectileCounts</c> recounted from the projectiles tagged to this soldier (what Player.Update does for a real player).</summary>
-		private static void CountOwned(SoldierNPC body)
+		internal static void CountOwned(SoldierNPC body)
 		{
 			uint now = Main.GameUpdateCount; int idx = body.NPC.whoAmI;
 			if (_countStamp.TryGetValue(idx, out uint st) && st == now) return;
@@ -158,7 +158,7 @@ namespace Levy.Common.Weapons
 			if (ModShotKinds.ChainExtras(item)) FixIdentity(p);
 			if (p.TryGetGlobalProjectile(out HeldWeaponProjectile hg))
 			{
-				hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(p.type); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0;
+				hg.ModHolder = item.type >= ItemID.Count && p.aiStyle != ProjAIStyleID.HeldProjectile; hg.ReleaseOnKill = hg.ModHolder && OwnerLockProbe.FiresOnKill(p.type) && !ModShotKinds.HeldWithoutTimer(item); hg.HoldMax = LevyConstants.HeldModHoldTicks; hg.HeldTicks = 0;
 				if (hg.ModHolder && ModShotKinds.ChargeRelease(item) is ChargePlan cp) { hg.CycleRelease = true; hg.ReleaseOnKill = false; hg.HoldMax = cp.HoldTicks; hg.Linger = cp.LingerTicks; }
 				if (hg.CycleRelease && RogueGrenade.Is(item)) { hg.Grenade = true; hg.HoldMax = RogueGrenade.CapTicks; } // the Doomsday Device: let go on a full charge, held inside the grace for a full bar (RogueGrenade)
 				if (hg.ModHolder && ModShotKinds.CursorScriptOf(item) is CursorScript cs) hg.Script = cs;
@@ -372,7 +372,7 @@ namespace Levy.Common.Weapons
 			bool touched = false;
 			int savedMyPlayer = Main.myPlayer, savedMouseX = Main.mouseX, savedMouseY = Main.mouseY;
 			bool savedChannel = false, savedUse = false, savedNoItems = false;
-			int savedAnimMax = 0, savedMana = 0, savedManaMax = 0, savedSelected = 0;
+			int savedAnimMax = 0, savedTimeMax = 0, savedMana = 0, savedManaMax = 0, savedSelected = 0;
 			Item saved0 = null, saved54 = null;
 			StatModifier savedDamage = default;
 			Item pouch = null;
@@ -417,7 +417,7 @@ namespace Levy.Common.Weapons
 				if (!ark && since > (uint)LevyConstants.HeldIdleKillTicks) { p.Kill(); return; }
 				bool feed = ark || since <= (uint)LevyConstants.HeldFeedGraceTicks;
 
-				savedChannel = d.channel; savedUse = d.controlUseItem; savedNoItems = d.noItems; savedAnimMax = d.itemAnimationMax;
+				savedChannel = d.channel; savedUse = d.controlUseItem; savedNoItems = d.noItems; savedAnimMax = d.itemAnimationMax; savedTimeMax = d.itemTimeMax;
 				savedMana = d.statMana; savedManaMax = d.statManaMax2; savedSelected = d.selectedItem;
 				saved0 = d.inventory[0]; saved54 = d.inventory[54];
 				savedDamage = d.GetDamage(DamageClass.Generic);
@@ -463,6 +463,9 @@ namespace Levy.Common.Weapons
 				d.channel = button;
 				d.controlUseItem = button;
 				d.itemAnimationMax = Math.Max(1, CombinedHooks.TotalAnimationTime(Math.Max(1, item.useAnimation), d, item));
+				// and its use time: a holdout that fires on its own clock reads the holder's itemTimeMax as its period (Dragon's Breath: a fireball volley each time its timer passes it). A player's is the weapon's use time while she holds it;
+				// the dummy's was 0 (it never runs ItemCheck), so the levy's Dragon's Breath fired a volley every tick (2.3x a player's DPS, gunparity 2026-11-23)
+				d.itemTimeMax = Math.Max(1, CombinedHooks.TotalUseTime(Math.Max(1, item.useTime), d, item));
 				manaWeapon = item.mana > 0;
 				d.statManaMax2 = Math.Max(1, body.Record.MaxMana);
 				d.statMana = Math.Clamp(body.Record.Mana, 0, d.statManaMax2);
@@ -510,7 +513,7 @@ namespace Levy.Common.Weapons
 					if (touched)
 					{
 						if (manaWeapon) body.Record.Mana = Math.Clamp(d.statMana, 0, Math.Max(0, body.Record.MaxMana));
-						d.channel = savedChannel; d.controlUseItem = savedUse; d.noItems = savedNoItems; d.itemAnimationMax = savedAnimMax;
+						d.channel = savedChannel; d.controlUseItem = savedUse; d.noItems = savedNoItems; d.itemAnimationMax = savedAnimMax; d.itemTimeMax = savedTimeMax;
 						d.statMana = savedMana; d.statManaMax2 = savedManaMax; d.selectedItem = savedSelected;
 						d.inventory[0] = saved0; d.inventory[54] = saved54;
 						d.GetDamage(DamageClass.Generic) = savedDamage;

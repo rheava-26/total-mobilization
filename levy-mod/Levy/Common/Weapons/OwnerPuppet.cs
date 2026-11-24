@@ -93,7 +93,11 @@ namespace Levy.Common.Weapons
 			/// <summary>The use-button puppet: the commander's buttons as this pass found them.</summary>
 			public bool Btn, BCh, BUse, BTile, BRel;
 			/// <summary>The projectile and the pass (bit 1, 2 or 4) this frame was opened for.</summary>
-			public Projectile Proj; public int Bit; }
+			public Projectile Proj; public int Bit;
+			/// <summary>The levy's weapon counters were opened on the owner by this frame (<see cref="PlayerCounters"/>).</summary>
+			public bool Ctr;
+			/// <summary>The owner's ownedProjectileCounts were swapped for the levy's own by this frame.</summary>
+			public bool Cnt; }
 
 		private const int MaxFrames = 32;
 		private static readonly Frame[] _stack = new Frame[MaxFrames];
@@ -119,6 +123,8 @@ namespace Levy.Common.Weapons
 				RouteOpens++;
 				OpenPool(ref f, p, body);
 			}
+			f.Ctr = PlayerCounters.Open(p, body); // the levy's own weapon counters on the owner's player for the pass (a shark gun's hit count)
+			f.Cnt = OpenCounts(self, p, body); // a shot that counts its owner's projectiles counts the levy's (Seadragon's fish die when no holdout of their owner's is out)
 			_depth++; if (_depth > MaxDepth) MaxDepth = _depth;
 			Context = body;
 			// the commander's use buttons read as a levy's shot has always expected them (up) for a modded shot whose own AI reads them (see bit 128)
@@ -157,9 +163,36 @@ namespace Levy.Common.Weapons
 				if (f.Moved) { f.P.position = f.Pos; f.P.velocity = f.Vel; f.P.oldPosition = f.Old; f.P.direction = f.Dir; Restores++; }
 				if (f.Route) CloseRoute(ref f);
 			}
-			finally { if (f.WasDead) f.P.dead = true; if (f.WasGhost) f.P.ghost = true; if (f.Route) ClosePool(ref f); RestoreThorium(f.Th); Context = f.PrevCtx; f = default; }
+			finally { if (f.Cnt) CloseCounts(); if (f.Ctr) PlayerCounters.Close(); if (f.WasDead) f.P.dead = true; if (f.WasGhost) f.P.ghost = true; if (f.Route) ClosePool(ref f); RestoreThorium(f.Th); Context = f.PrevCtx; f = default; }
 		}
 
+
+		private static Player _cntOwner, _cntDummy;
+		/// <summary>Lab counter: passes run with the levy's own projectile counts on the owner.</summary>
+		internal static long CountSwaps;
+		/// <summary>Lab A/B switch (env LEVY_OWNEDCOUNTS=0): a levy's shot reads the commander's ownedProjectileCounts, as before the gunparity pass.</summary>
+		internal static readonly bool OwnedCountsOff = Environment.GetEnvironmentVariable("LEVY_OWNEDCOUNTS") == "0";
+
+		/// <summary>
+		/// For the pass of a levy's shot whose own code reads its owner's <c>ownedProjectileCounts</c> (<see cref="OwnerLockProbe.ReadsOwnedCounts"/>), the owner's count array IS the levy's (his dummy's, counted from the projectiles tagged to him
+		/// this tick): the two array references are swapped and swapped back in the same finally. Nested passes find it open and leave it.
+		/// </summary>
+		private static bool OpenCounts(Projectile self, Player p, SoldierNPC body)
+		{
+			if (OwnedCountsOff || _cntOwner != null || self.ModProjectile == null || body?.Dummy == null || ReferenceEquals(body.Dummy, p) || !OwnerLockProbe.ReadsOwnedCounts(self.type)) return false;
+			Player d = body.Dummy;
+			HeldWeapons.CountOwned(body);
+			int[] mine = p.ownedProjectileCounts; p.ownedProjectileCounts = d.ownedProjectileCounts; d.ownedProjectileCounts = mine;
+			_cntOwner = p; _cntDummy = d; CountSwaps++;
+			return true;
+		}
+
+		private static void CloseCounts()
+		{
+			Player p = _cntOwner, d = _cntDummy; _cntOwner = null; _cntDummy = null;
+			if (p == null || d == null) return;
+			int[] levy = p.ownedProjectileCounts; p.ownedProjectileCounts = d.ownedProjectileCounts; d.ownedProjectileCounts = levy;
+		}
 
 		/// <summary>An open body-lend (see <see cref="LendTransform"/>); Dispose puts the commander's transform back.</summary>
 		internal readonly struct Lend : IDisposable
@@ -192,6 +225,7 @@ namespace Levy.Common.Weapons
 			ref Frame f = ref _stack[_depth];
 			f = default;
 			f.Moved = true; f.P = p; f.Pos = p.position; f.Vel = p.velocity; f.Old = p.oldPosition; f.Dir = p.direction; f.Body = body; f.PrevCtx = Context;
+			f.Ctr = PlayerCounters.Open(p, body);
 			_depth++; if (_depth > MaxDepth) MaxDepth = _depth;
 			BodyLends++; Swaps++;
 			p.Center = body.NPC.Center; p.oldPosition = p.position; p.velocity = body.NPC.velocity; p.direction = body.NPC.direction == 0 ? 1 : body.NPC.direction;

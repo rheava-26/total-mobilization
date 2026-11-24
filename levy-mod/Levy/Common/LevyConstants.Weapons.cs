@@ -118,6 +118,11 @@ namespace Levy.Common
 		public const int FlameLifetimeUpdates = 50;
 		/// <summary>A weapon that spawned nothing (hooks fired no projectile / threw) waits this many ticks before the soldier tries again, so a dud never spams hooks every tick.</summary>
 		public const int DudWeaponRetryTicks = 30;
+		/// <summary>
+		/// A gun or staff whose own Shoot / CanShoot chose to make nothing this use (Infinity and Svantechnical fire their pair on every 4th use, Nucleosynthesis between its beams) has still been USED, as for a player: the use
+		/// time runs and the next use follows. Up to this many such uses in a row count as uses; after that the weapon is treated as a dud (<see cref="DudWeaponRetryTicks"/>) until it fires again.
+		/// </summary>
+		public const int DeclinedUsesBeforeDud = 12;
 		/// <summary>Rarity tier given to Expert / Master items (negative item.rare values) when ranking.</summary>
 		public const int SpecialRarityTier = 6;
 		/// <summary>Highest rarity tier counted when ranking (modded rarities above vanilla Purple still count up to here).</summary>

@@ -19,14 +19,15 @@ SCalSepulcher2Text: Once the dust has settled and only your army remains, what v
 SCalAcceptanceText2: I have no more energy left to resent him, or you, or any of them...
 SCalAcceptanceText3: It will all be in your hands now. Yours, and theirs.
 # ---- Supreme Witch Calamitas, the rematch
-SCalSummonTextRematch: If you're all looking for some fourth-degree burns, you've got the right person.
-SCalStartTextRematch: When the time comes, would you and your soldiers like to join my creation?
-SCalBH2TextRematch: All of you will still have to work hard for this victory.
-SCalBH3TextRematch: I haven't had so many interesting target dummies to test my magic on in a long time.
-SCalBH4TextRematch: I wonder how many of you have seen these in your nightmares since our first battle?
-SCalSeekerRingTextRematch: Your army's skill hasn't faltered in the least.
-SCalDesparationText1Rematch: A terrific display, I concede this match to you, and to them.
-SCalDesparationText2Rematch: No doubt all of you will face enemies stronger than I.
+SCalSummonTextRematch: Hm? You want me to fight all of you? So be it.
+SCalStartTextRematch: When the time comes, would you all wish to be part of my creation?
+SCalBH2TextRematch: Don't expect this to be easy. I have destroyed armies like these many times.
+SCalBH3TextRematch: I haven't had such interesting target dummies to test my magic on in a long time.
+SCalBH4TextRematch: Most soldiers were terrified of fighting me. I wonder if they are too?
+SCalSeekerRingTextRematch: Their skill is incredible. You have fostered something truly immense.
+SCalDesparationText1Rematch: An incredible display of discipline. I concede this match.
+SCalDesparationText2Rematch: With their strength alone, you would no doubt face a greater threat than I.
+SCalDesparationText4Rematch: I cannot imagine what comes next for someone of your caliber.
 # ---- Draedon: the introduction
 DraedonIntroductionText2: Your nature fascinates me. You gain all this power, and you give it away. I do not understand it.
 DraedonIntroductionText3: You and your soldiers will face my creations, which have surpassed gods.

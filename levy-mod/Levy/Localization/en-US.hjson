@@ -857,6 +857,11 @@ Mods: {
 					Label: Shaking Chat Text
 					Tooltip: Under the Wrath of the Gods rift, some lines tremble on the chat bar
 				}
+
+				BossLineNoteShown: {
+					Label: Boss line note shown
+					Tooltip: Set after the one-time note about boss dialogue. Turn it off to see the note again.
+				}
 			}
 		}
 

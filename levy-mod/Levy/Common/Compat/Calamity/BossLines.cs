@@ -96,4 +96,42 @@ namespace Levy.Common.Compat.Calamity
 
 		private static Color Dim(Color c) => new Color((int)(c.R * 0.6f + 40), (int)(c.G * 0.6f + 40), (int)(c.B * 0.6f + 40));
 	}
+
+	/// <summary>
+	/// The one-time note about boss dialogue: the first time this install enters a world with Calamity loaded (the mod whose lines it changes), a line in chat says Levy adds and changes some boss dialogue and where to turn it off.
+	/// Once per install: the seen flag is saved in the client-side Observe settings ("Boss line note shown" there is a record, not a switch).
+	/// </summary>
+	public class BossLineNotice : ModPlayer
+	{
+		/// <summary>Self-check: stand-ins for the saved flag and for Calamity being loaded (null in play).</summary>
+		internal static bool? TestSeen, TestCalamity;
+		/// <summary>Times the note was said this session.</summary>
+		internal static int Said;
+
+		/// <summary>The note shows when Calamity is loaded and it has not been shown before.</summary>
+		internal static bool ShouldShow(bool seen, bool calamity) => calamity && !seen;
+
+		private static bool Seen { get { if (TestSeen.HasValue) return TestSeen.Value; try { return global::Levy.Common.Observe.ObserveConfig.Get?.BossLineNoteShown ?? true; } catch (Exception) { return true; } } }
+
+		public override void OnEnterWorld()
+		{
+			if (Main.dedServ || Player.whoAmI != Main.myPlayer) return;
+			Announce();
+		}
+
+		/// <summary>Says the note if it is due, and records that it was said.</summary>
+		internal static void Announce()
+		{
+			if (!ShouldShow(Seen, TestCalamity ?? BossLines.Installed)) return;
+			Said++;
+			Main.NewText(global::Levy.Common.Util.LevyUtil.T("Dialogue.BossLineNotice"), 230, 200, 120);
+			if (TestSeen.HasValue) { TestSeen = true; return; }
+			try
+			{
+				var c = global::Levy.Common.Observe.ObserveConfig.Get;
+				if (c != null) { c.BossLineNoteShown = true; global::Levy.Common.Perf.PerfPopup.SaveConfig(c); }
+			}
+			catch (Exception e) { global::Levy.Levy.Instance.Logger.Warn("Levy boss line note: could not save the seen flag: " + e.Message); }
+		}
+	}
 }

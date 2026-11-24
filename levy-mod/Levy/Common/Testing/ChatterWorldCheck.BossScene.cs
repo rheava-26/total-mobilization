@@ -66,6 +66,14 @@ namespace Levy.Common.Testing
 			BossLines.TestArmy = null; BossLines.TestOn = null;
 			SCheck($"six deployed levies count as an army on the field ({Standing(army)} standing)", BossLines.ArmyOnField());
 
+			SCheck("the boss line note shows once, and only with Calamity loaded", BossLineNotice.ShouldShow(false, true) && !BossLineNotice.ShouldShow(true, true) && !BossLineNotice.ShouldShow(false, false));
+			{
+				string note = Language.GetTextValue("Mods.Levy.Dialogue.BossLineNotice"), fit = Language.GetTextValue("Mods.Levy.Configs.LevyConfig.BossLinesFitArmy.Label"), orig = Language.GetTextValue("Mods.Levy.Configs.LevyConfig.BossLinesShowOriginal.Label");
+				SCheck($"the note names the real settings (\"{fit}\", \"{orig}\")", note.StartsWith("Levy adds and changes some boss dialogue.") && note.Contains(fit) && note.Contains(orig) && fit.Length > 0 && !fit.StartsWith("Mods."));
+				BossLineNotice.TestSeen = false; BossLineNotice.TestCalamity = true; int said0 = BossLineNotice.Said;
+				try { BossLineNotice.Announce(); BossLineNotice.Announce(); }
+				finally { bool seen = BossLineNotice.TestSeen == true; BossLineNotice.TestSeen = null; BossLineNotice.TestCalamity = null; SCheck($"entering a world twice says it once and marks it seen ({BossLineNotice.Said - said0})", BossLineNotice.Said - said0 == 1 && seen); }
+			}
 			if (!ModLoader.TryGetMod("CalamityMod", out Mod cal)) { SCheck("without Calamity nothing is hooked", !BossLines.Installed); SNote("Calamity is not loaded: Calamity's own broadcast is checked in the Calamity half"); return; }
 			SCheck("the detour on CalamityUtils.BroadcastLocalizedText is in place", BossLines.Installed);
 			var stray = new List<string>();
@@ -77,6 +85,11 @@ namespace Levy.Common.Testing
 				else if (t.Value == Language.GetTextValue(BossLines.CalamityPrefix + shortKey)) stray.Add(shortKey + " (same as Calamity's)");
 			}
 			SCheck($"every army line stands for a real Calamity boss line and changes it ({stray.Count} do not{(stray.Count > 0 ? ": " + string.Join(", ", stray.Take(6)) : "")})", stray.Count == 0);
+
+			string[] scalRematch = { "SCalSummonTextRematch", "SCalStartTextRematch", "SCalBH2TextRematch", "SCalBH3TextRematch", "SCalBH4TextRematch", "SCalSeekerRingTextRematch", "SCalDesparationText1Rematch", "SCalDesparationText2Rematch", "SCalDesparationText4Rematch" };
+			SCheck("Supreme Calamitas's rematch has nine army lines, each on a real Calamity key", scalRematch.All(k => Language.Exists(BossLines.CalamityPrefix + k) && BossLines.ArmyKeyFor(BossLines.CalamityPrefix + k) == BossLines.LevyPrefix + k));
+			SCheck("the Brothers' rematch line and the third closing line stay Calamity's own", BossLines.ArmyKeyFor(BossLines.CalamityPrefix + "SCalBrothersTextRematch") == null && BossLines.ArmyKeyFor(BossLines.CalamityPrefix + "SCalDesparationText3Rematch") == null);
+			SCheck("her lines read as written (Hm? You want me to fight all of you? / ... a greater threat than I.)", Language.GetTextValue(BossLines.LevyPrefix + "SCalSummonTextRematch") == "Hm? You want me to fight all of you? So be it." && Language.GetTextValue(BossLines.LevyPrefix + "SCalDesparationText2Rematch").EndsWith("a greater threat than I.") && Language.GetTextValue(BossLines.LevyPrefix + "SCalDesparationText4Rematch") == "I cannot imagine what comes next for someone of your caliber.");
 
 			MethodInfo say = cal.Code.GetType("CalamityMod.CalamityUtils")?.GetMethod("BroadcastLocalizedText", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string), typeof(Color?) }, null);
 			SCheck("Calamity's BroadcastLocalizedText is found", say != null);

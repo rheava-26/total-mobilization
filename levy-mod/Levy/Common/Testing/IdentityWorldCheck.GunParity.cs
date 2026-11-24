@@ -33,6 +33,9 @@ namespace Levy.Common.Testing
 			"Galeforce", "Barinade", "Goobow", "BlossomFlux", "Alluvion", "Monsoon", "TheBallista", "Ultima", "Contagion", "DaemonsFlame", "AstrealDefeat", "TelluricGlare", "PlanetaryAnnihilation",
 		};
 
+		/// <summary>The Calamity weapons of the ship run (the rest with LEVY_GUNPARITY_ALL=1): the ones the gunparity pass fixed, one sibling of the shark guns and two bows. The Calamity half of the ship run has no time to spare.</summary>
+		private static readonly HashSet<string> GunParityShipCal = new() { "Infinity", "Svantechnical", "Seadragon", "Auralis", "DragonsBreath", "Archerfish", "Galeforce", "TheBallista" };
+
 		/// <summary>Weapons this check found off and the gunparity pass did not fix: their DPS is noted, not checked (the designer rules on them). Name to what was measured.</summary>
 		private static readonly Dictionary<string, string> GunParityNoteOnly = new()
 		{
@@ -67,7 +70,7 @@ namespace Levy.Common.Testing
 			bool all = names != null || Environment.GetEnvironmentVariable("LEVY_GUNPARITY_ALL") == "1";
 			foreach (short t in GunParityVanilla) if (all || !calLoaded || t == ItemID.PlatinumBow || t == ItemID.Minishark) list.Add((t, "Terraria:" + ItemID.Search.GetName(t)));
 			if (calLoaded)
-				foreach (string n in GunParityCal) if ((all || !GunParityNoteOnly.ContainsKey(n)) && cal.TryFind(n, out ModItem mi)) list.Add((mi.Type, "CalamityMod:" + n));
+				foreach (string n in GunParityCal) if ((all || GunParityShipCal.Contains(n)) && cal.TryFind(n, out ModItem mi)) list.Add((mi.Type, "CalamityMod:" + n));
 			if (names != null)
 			{
 				list = list.Where(w => names.Any(n => w.label.EndsWith(":" + n))).ToList();

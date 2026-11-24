@@ -120,7 +120,8 @@ namespace Levy.Content.NPCs
 				StationFlags stations = Stations | _gearStations;
 				scene.HasCampfire = (stations & StationFlags.Campfire) != 0;
 				scene.HasHeartLantern = (stations & StationFlags.HeartLantern) != 0;
-				InFrame(() => d.UpdateLifeRegen());
+				if (Bleedout_On) { var parked = global::Levy.Common.Compat.Calamity.ChaliceBleed.Park(d); try { InFrame(() => d.UpdateLifeRegen()); } finally { global::Levy.Common.Compat.Calamity.ChaliceBleed.Unpark(d, parked); } } // the Chalice's buffer is drained by Bleedout_Update, once a tick, into the body
+				else InFrame(() => d.UpdateLifeRegen());
 			}
 			finally { scene.HasCampfire = camp0; scene.HasHeartLantern = lantern0; d.sitting.isSitting = wasSitting; d.sleeping.isSleeping = wasSleeping; }
 			if (d.statLife < hp0 || d.lifeRegenCount < count0 && d.statLife == hp0) { d.statLife = hp0; d.lifeRegenCount = Math.Max(0, count0); return 0; } // damage over time is not this pass's: nothing is taken here

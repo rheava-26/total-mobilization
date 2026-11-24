@@ -62,6 +62,8 @@ namespace Levy.Content.NPCs
 			if (!Hostile && (ImmuneTime == 0 || (HostileContact.Parity && HostileContact.Slots && AllImmune == 0))) ContactDamage();
 			DebuffDot(); // the debuffs on the body hurt it by the player's rules (SoldierNPC.PlayerHit.cs)
 			if (!IsAlive) return;
+			Bleedout_Update(); // Calamity's Chalice of the Blood God: the part of a hit it deferred is taken a little each tick, as a player takes it (SoldierNPC.Bleedout.cs)
+			if (!IsAlive) return;
 			if (IsAlive && ImmuneTime == 0) TileHazards(); // spikes, thorns, meteorite and the like, when the setting is on (SoldierNPC.TileHazards.cs)
 			if (!IsAlive) return;
 			Regen();

@@ -577,6 +577,11 @@ Mods: {
 					Tooltip: Levies use the set abilities a key starts, such as the God Slayer dash, the Solar Flare dash and the Forbidden storm
 				}
 
+				SoldiersBleedOut: {
+					Label: Levies bleed out Chalice damage
+					Tooltip: A levy wearing Calamity's Chalice of the Blood God takes the part of a hit the Chalice deferred over the next seconds, as a player does. Off, the levy takes only the 5 damage the Chalice lets through
+				}
+
 				SoldiersTakeFallDamage: {
 					Label: Levies take fall damage
 					Tooltip: Levies take fall damage by the player's rules. Wings, a Lucky Horseshoe and water landings spare them.

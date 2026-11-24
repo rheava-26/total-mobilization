@@ -105,10 +105,23 @@ Pages: {
 			'''
 			Hold the War Horn near a Barracks and left-click to call up your town's militia. Left-click again to stand them down. The P key does the same within 120 tiles.
 			Militia arm from the Armory and fight around the settlement. A settlement needs at least two town NPCs to raise them.
-			Each town NPC adds 9 manpower. Every militiaman who falls uses 1. Manpower grows by 1 for every 2 town NPCs at dawn.
+			Each town NPC adds manpower to the pool, 9 by default. Every militiaman who falls uses 1. Manpower grows by 1 for every 2 town NPCs at dawn.
 			Up to 10 militia stand at once. Calling them up costs a small fee per head from the treasury.
-			A Recruiting drive at the Barracks refills missing manpower for coins, once a day.
+			A Recruiting drive at the Barracks refills missing manpower for coins, once a day. The Manpower and recruiting page has the rest.
 			Auto-muster calls the militia when an event or a boss fight starts and stands them down when it ends. Switch it on the Barracks panel. Turn off Auto-muster for boss fights under Settings, Mod Configuration, Levy to keep it to events.
+			'''
+	}
+
+	Recruiting: {
+		Title: Manpower and recruiting
+		Body:
+			'''
+			Every Barracks with a pylon near it shares one manpower pool. A Barracks with no pylon near it keeps a pool of its own.
+			Each town NPC with a home adds 9 manpower, in every town on the pylon network and in pylon towns that have no Barracks. The shared pool holds up to 300. Both numbers are set under Settings, Mod Configuration, Levy.
+			The Barracks panel shows the pool and how many townsfolk feed it. The Conscription book raises what each one adds.
+			A Recruiting drive refills the pool for coins, once a day.
+			A Recruitment Office is crafted from an Enchanted Sundial at a Work Bench. Right-click one in a settlement or anywhere on the pylon network to run a rush drive on that pool.
+			A rush drive refills the pool at any time, as often as you like, at twice the price per point from the nearest Barracks treasury. Build as many Offices as you like.
 			'''
 	}
 

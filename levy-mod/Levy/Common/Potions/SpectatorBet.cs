@@ -12,7 +12,7 @@ namespace Levy.Common.Potions
 {
 	/// <summary>
 	/// The Spectator's bet. While a Spectator potion is active against a boss, the army is the player's whole stake: when every levy is dead and no manpower is left to field another, the player dies
-	/// (<see cref="SpectatorPlayer"/> asks once a tick). Manpower is a barracks pool (BarracksTE.Manpower): a fallen regular returns to duty only while his home pool has someone left,
+	/// (<see cref="SpectatorPlayer"/> asks once a tick). Manpower is a barracks pool (BarracksTE.Manpower; the Barracks on the pylon network all read one shared pool): a fallen regular returns to duty only while his home pool has someone left,
 	/// and militia are raised from the same pools. A soldier in reserve or waiting to deploy still counts as someone who can be fielded.
 	/// </summary>
 	public static class SpectatorBet

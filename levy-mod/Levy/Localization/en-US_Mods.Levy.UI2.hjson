@@ -76,6 +76,8 @@ TaxShort: Tax to treasury
 Toggle: "{0}: {1}"
 UsedToday: used today
 RecruitingDriveUsed: A recruiting drive was already run here today. Try again tomorrow.
+RecruitingDriveHint: Buys back missing manpower for coins. Once a day.
+RecruitingDriveHintNet: Buys back missing manpower for the whole pylon network. Once a day.
 HazardPayUsed: Hazard pay was already issued here today. Try again tomorrow.
 AllOrders: All Regulars
 FollowAll: Follow

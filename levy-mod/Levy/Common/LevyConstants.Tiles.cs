@@ -12,6 +12,7 @@ namespace Levy.Common
 		// ---------- Recipes (Work Bench) ----------
 		public const int BarracksRecipeWood = 30, BarracksRecipeIron = 10, BarracksRecipeBanners = 1;
 		public const int ArmoryRecipeIron = 20, ArmoryRecipeChests = 1;
+		public const int RecruitmentOfficeRecipeWood = 20, RecruitmentOfficeRecipeIron = 8, RecruitmentOfficeRecipeSilk = 6;
 		public const int PatrolBannerRecipeWood = 2, PatrolBannerRecipeSilk = 1;
 		public const int WarHornRecipeWood = 5, WarHornRecipeIron = 1;
 		public const string RecipeGroupAnyBanner = "Levy:AnyBanner";
@@ -21,6 +22,7 @@ namespace Levy.Common
 		// ---------- Tiles ----------
 		public const int BarracksWidth = 3, BarracksHeight = 3;
 		public const int ArmoryWidth = 2, ArmoryHeight = 3;
+		public const int RecruitmentOfficeWidth = 3, RecruitmentOfficeHeight = 2;
 		public const int PatrolBannerWidth = 1, PatrolBannerHeight = 3;
 		/// <summary>Spread (pixels) of items spilled when an armory is broken.</summary>
 		public const int ArmorySpillWidth = 32, ArmorySpillHeight = 48;

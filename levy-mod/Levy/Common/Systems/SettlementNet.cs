@@ -39,6 +39,13 @@ namespace Levy.Common.Systems
 		private static void HandleRecruitingDrive(BinaryReader reader, int from)
 		{
 			int id = reader.ReadInt32();
+			bool rush = reader.ReadBoolean();
+			if (rush) // id is a Recruitment Office's entity id
+			{
+				if (Main.netMode != NetmodeID.Server || from < 0 || from >= Main.maxPlayers || !Main.player[from].active) return;
+				if (Terraria.DataStructures.TileEntity.ByID.TryGetValue(id, out var te) && te is global::Levy.Content.TileEntities.RecruitmentOfficeTE office) SettlementSystem.Instance.RushDriveAt(office, Main.player[from]);
+				return;
+			}
 			if (!Validate(from, id, out var player, out var barracks)) return;
 			SettlementSystem.Instance.RecruitingDrive(barracks, player);
 		}

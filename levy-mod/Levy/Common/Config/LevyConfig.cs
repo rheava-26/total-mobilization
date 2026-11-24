@@ -58,6 +58,10 @@ namespace Levy.Common.Config
 		[Range(4, 200)] [DefaultValue(60)] public int MaxLevies;
 		[DefaultValue(true)] public bool CapLeviesByStage;
 		[Range(1, 40)] [DefaultValue(10)] public int MilitiaFieldCap;
+		/// <summary>Manpower each housed town NPC adds to the pool. The Conscription book raises it in the same proportion (15 for 9).</summary>
+		[Range(1, 100)] [DefaultValue(LevyConstants.ManpowerPerNpc)] public int ManpowerPerTownNpc;
+		/// <summary>Ceiling of the manpower pool shared by every Barracks on the pylon network. 0 means no ceiling (the townsfolk count alone sets it).</summary>
+		[Range(0, 2000)] [DefaultValue(LevyConstants.ManpowerNetworkCap)] public int ManpowerCap;
 		[Range(5, 100)] [DefaultValue(40)] public int RenderCap;
 		/// <summary>Boss milestones. The boss is a vanilla boss id (KingSlime, EyeOfCthulhu, EaterOrBrain, QueenBee, Skeletron, Deerclops, WallOfFlesh, QueenSlime, Destroyer, Twins,
 		/// SkeletronPrime, Plantera, Golem, EmpressOfLight, DukeFishron, LunaticCultist, MoonLord) or a modded boss's exact NPC name.</summary>

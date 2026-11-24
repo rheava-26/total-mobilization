@@ -134,6 +134,10 @@ namespace Levy.Common
 		// Manpower is the militia RESERVE (drains 1 per death). Simultaneous bodies on the field are capped separately by
 		// LevyConfig.RenderCap, so a deep reserve just lets a town absorb a long invasion's attrition, not flood the screen.
 		public const int ManpowerPerNpc = 9, ManpowerPerNpcConscription = 15;
+		/// <summary>Default ceiling of the pylon network's shared manpower pool (config ManpowerCap; 0 = none).</summary>
+		public const int ManpowerNetworkCap = 300;
+		/// <summary>A rush drive (Recruitment Office) costs this many times the price of the daily drive per point: 4 x the daily wage.</summary>
+		public const int RushDrivePriceMult = 2;
 		public const int NpcsPerManpowerRegen = 2;       // +1 per 2 town NPCs at dawn, rounded up
 		public const int FortificationDefense = 4, FortificationRadius = 60;
 		public const float PlunderCoinMult = 1.5f;

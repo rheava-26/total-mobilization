@@ -26,7 +26,7 @@ namespace Levy.Common.Net
 	///  StandDown: int barracksId                                  (Militia)
 	///  Deposit: int barracksId, long copper                       (Roster) — client already removed the coins
 	///  Withdraw: int barracksId, long copper                      (Roster) — server deducts and spawns coins at the player
-	///  RecruitingDrive: int barracksId                            (Militia)
+	///  RecruitingDrive: int id, bool rush                         (Militia) — rush false: id is a barracks (daily drive); rush true: id is a Recruitment Office entity
 	///  HazardPay: int barracksId                                  (Militia)
 	///  ArmorySlotSet: int armoryId, byte region(0 storage,1 weapons,2 armor,3 ammo,4 potions), short slot, Item via ItemIO.Send(writeStack:true)  (UI)
 	///  ArmorySort: int armoryId                                   (UI) — server merges and orders the storage, then re-syncs the tile entity

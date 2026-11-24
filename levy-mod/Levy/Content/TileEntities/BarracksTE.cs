@@ -25,7 +25,25 @@ namespace Levy.Content.TileEntities
 		// ---- persistent ----
 		public string TownName = "";
 		public long Treasury;
-		public int Manpower;
+		private int _manpower;
+		/// <summary>
+		/// The militia reserve. A Barracks on the pylon network (<see cref="OnPool"/>) shares one pool with every other: writing it here writes it to all of them, so any reader on any of them sees the same number
+		/// (and clients, which read the synced entity, need no pool logic). A Barracks off the network keeps its own.
+		/// </summary>
+		public int Manpower
+		{
+			get => _manpower;
+			set
+			{
+				if (_manpower == value && !OnPool) return;
+				_manpower = value;
+				if (OnPool) SettlementSystem.Instance?.SpreadPool(this);
+			}
+		}
+		/// <summary>Sets the pool value on this entity alone (the spread, load and net paths). Never spreads.</summary>
+		internal void SetPoolLocal(int v) => _manpower = v;
+		/// <summary>True while this Barracks draws on the shared pylon-network pool. Saved, so a reload keeps who was pooled; an older save has none and its pools are summed on the first pass.</summary>
+		public bool OnPool;
 		public bool AutoMuster = true;
 		public bool Mobilized;
 		public bool TaxToTreasury;
@@ -82,7 +100,7 @@ namespace Levy.Content.TileEntities
 			catch (Exception) { AutoMuster = true; }
 			try { ManpowerCapCached = Math.Max(0, SettlementSystem.Instance?.ManpowerCap(this) ?? 0); }
 			catch (Exception e) { Levy.Instance.Logger.Warn("Levy: ManpowerCap failed: " + e.Message); ManpowerCapCached = 0; }
-			Manpower = ManpowerCapCached;
+			SettlementSystem.Instance?.InitManpower(this);
 		}
 
 		/// <summary>The barracks tile was broken: the militia stands down and its regulars re-base to the nearest other barracks (or go homeless).</summary>
@@ -133,24 +151,24 @@ namespace Levy.Content.TileEntities
 
 		public override void SaveData(TagCompound tag)
 		{
-			tag["name"] = TownName ?? ""; tag["treasury"] = Treasury; tag["manpower"] = Manpower; tag["auto"] = AutoMuster; tag["mob"] = Mobilized; tag["tax"] = TaxToTreasury;
+			tag["name"] = TownName ?? ""; tag["treasury"] = Treasury; tag["manpower"] = _manpower; tag["pool"] = OnPool; tag["auto"] = AutoMuster; tag["mob"] = Mobilized; tag["tax"] = TaxToTreasury;
 			tag["rdDay"] = RecruitingDriveDay; tag["hzDay"] = HazardPayDay; tag["tip"] = TooltipShown;
 		}
 
 		public override void LoadData(TagCompound tag)
 		{
-			TownName = tag.GetString("name"); Treasury = tag.GetLong("treasury"); Manpower = tag.GetInt("manpower"); AutoMuster = tag.GetBool("auto"); Mobilized = tag.GetBool("mob");
+			TownName = tag.GetString("name"); Treasury = tag.GetLong("treasury"); _manpower = tag.GetInt("manpower"); OnPool = tag.GetBool("pool"); AutoMuster = tag.GetBool("auto"); Mobilized = tag.GetBool("mob");
 			TaxToTreasury = tag.GetBool("tax"); RecruitingDriveDay = tag.GetInt("rdDay"); HazardPayDay = tag.GetInt("hzDay"); TooltipShown = tag.GetBool("tip");
 		}
 
 		public override void NetSend(BinaryWriter writer)
 		{
-			writer.Write(TownName ?? ""); writer.Write(Treasury); writer.Write(Manpower); writer.Write(AutoMuster); writer.Write(Mobilized); writer.Write(TaxToTreasury); writer.Write(ManpowerCapCached);
+			writer.Write(TownName ?? ""); writer.Write(Treasury); writer.Write(_manpower); writer.Write(AutoMuster); writer.Write(Mobilized); writer.Write(TaxToTreasury); writer.Write(ManpowerCapCached); writer.Write(OnPool);
 		}
 
 		public override void NetReceive(BinaryReader reader)
 		{
-			TownName = reader.ReadString(); Treasury = reader.ReadInt64(); Manpower = reader.ReadInt32(); AutoMuster = reader.ReadBoolean(); Mobilized = reader.ReadBoolean(); TaxToTreasury = reader.ReadBoolean(); ManpowerCapCached = reader.ReadInt32();
+			TownName = reader.ReadString(); Treasury = reader.ReadInt64(); _manpower = reader.ReadInt32(); AutoMuster = reader.ReadBoolean(); Mobilized = reader.ReadBoolean(); TaxToTreasury = reader.ReadBoolean(); ManpowerCapCached = reader.ReadInt32(); OnPool = reader.ReadBoolean();
 		}
 	}
 }

@@ -261,7 +261,8 @@ namespace Levy.Common.UI
 			_officers.Left.Set(officersX, 0f); _officers.Top.Set(y3, 0f); _officers.Width.Set(officersW, 0f);
 			float goW = Measure(_goMap.Text, s) + 16f, goX = officersX - gap - goW;
 			_goMap.Left.Set(goX, 0f); _goMap.Top.Set(y3, 0f); _goMap.Width.Set(goW, 0f);
-			PlaceFlex(_recruit, _recruitRaw, pad, y3, goX - gap - pad, s);
+			float room3 = goX - gap - pad;
+			PlaceFlex(_recruit, _recruitRaw, pad, y3, room3, s);
 		}
 
 		/// <summary>
@@ -377,7 +378,7 @@ namespace Levy.Common.UI
 			int cap = SettlementSystem.Instance.ManpowerCap(te);
 			if (cap <= 0) cap = te.ManpowerCapCached;
 			_manpower.Fraction = cap > 0 ? te.Manpower / (float)cap : 0f;
-			_manpower.Label = LevyUtil.T("UI.Manpower", te.Manpower, Math.Max(0, cap));
+			SetManpowerLabel(te, cap);
 			int cpTotal = roster.CommandPoints, cpUsed = roster.CommandPointsUsed;
 			ReserveCount = roster.ReserveCount;
 			_cp.Fraction = cpTotal > 0 ? cpUsed / (float)cpTotal : 0f;
@@ -396,7 +397,7 @@ namespace Levy.Common.UI
 			_hazard.Set(_hazardRaw, !hazardUsed, hazardUsed ? LevyUtil.T("UI2.HazardPayUsed") : "");
 			_officers.Set(LevyUtil.T("Officers.UI.Open", OfficerSystem.Instance.UsedSlots(Main.LocalPlayer.name), OfficerSystem.Instance.SlotCap(Main.LocalPlayer.name)), true);
 			_recruitRaw = LevyUtil.T("UI.RecruitingDrive", LevyUtil.Coins(EconomySystem.RecruitingDrivePerPoint));
-			_recruit.Set(_recruitRaw, !recruitUsed, recruitUsed ? LevyUtil.T("UI2.RecruitingDriveUsed") : "");
+			_recruit.Set(_recruitRaw, !recruitUsed, recruitUsed ? LevyUtil.T("UI2.RecruitingDriveUsed") : te.OnPool ? LevyUtil.T("UI2.RecruitingDriveHintNet") : LevyUtil.T("UI2.RecruitingDriveHint"));
 			LayoutControlRows(); // re-flow now that the captions (and so their widths) are current
 
 			RefreshEnlist(_enlistLevy, Grade.Levy, "UI.EnlistLevy");
@@ -415,6 +416,20 @@ namespace Levy.Common.UI
 			HasLifeCrystal = me.HasItem(ItemID.LifeCrystal); HasLifeFruit = me.HasItem(ItemID.LifeFruit); HasManaCrystal = me.HasItem(ItemID.ManaCrystal);
 			OtherBarracks = UIActions.NearestOtherBarracks(te.Center, te);
 			foreach (var card in _cards) if (card.Parent != null) card.Refresh(); // off-screen cards refresh when they scroll into view
+		}
+
+		/// <summary>The manpower bar's caption. A Barracks on the pylon network shows the shared pool and how many townsfolk feed it; the full sentence is the bar's hover hint when the short one has to be used.</summary>
+		private void SetManpowerLabel(BarracksTE te, int cap)
+		{
+			int mp = te.Manpower, c = Math.Max(0, cap);
+			if (!te.OnPool) { _manpower.TextScale = 0.75f; _manpower.Hint = ""; _manpower.Label = LevyUtil.T("UI.Manpower", mp, c); return; }
+			int npcs = SettlementSystem.Instance.ManpowerNpcCount(te);
+			string full = LevyUtil.T("UI.ManpowerNet", mp, c, npcs);
+			float room = _manpower.Width.Pixels - 10f;
+			float sc = 0.75f;
+			while (sc > 0.55f && Measure(full, sc) > room) sc -= 0.05f;
+			if (Measure(full, sc) <= room) { _manpower.TextScale = sc; _manpower.Label = full; _manpower.Hint = ""; return; }
+			_manpower.TextScale = 0.75f; _manpower.Label = LevyUtil.T("UI.ManpowerNetShort", mp, c, npcs); _manpower.Hint = full;
 		}
 
 		private long HazardPayCost()

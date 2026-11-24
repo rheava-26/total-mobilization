@@ -275,7 +275,15 @@ namespace Levy.Common.UI
 		{
 			if (te == null) return;
 			if (Single) SettlementSystem.Instance.RecruitingDrive(te, Me);
-			else { var p = LevyPackets.New(LevyPacket.RecruitingDrive); p.Write(te.ID); p.Send(); }
+			else { var p = LevyPackets.New(LevyPacket.RecruitingDrive); p.Write(te.ID); p.Write(false); p.Send(); }
+		}
+
+		/// <summary>Right-click on a Recruitment Office: the server runs a rush drive on what it serves.</summary>
+		public static void RushDrive(global::Levy.Content.TileEntities.RecruitmentOfficeTE office)
+		{
+			if (office == null) return;
+			if (Single) SettlementSystem.Instance.RushDriveAt(office, Me);
+			else { var p = LevyPackets.New(LevyPacket.RecruitingDrive); p.Write(office.ID); p.Write(true); p.Send(); }
 		}
 
 		public static void HazardPay(BarracksTE te)

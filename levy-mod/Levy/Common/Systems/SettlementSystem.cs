@@ -51,6 +51,7 @@ namespace Levy.Common.Systems
 		private bool _eventActive, _lastEventActive;
 		private uint _eventTick = uint.MaxValue;
 		private int _housekeepingTimer;
+		private bool _poolChecked;
 		/// <summary>Boss NPC types that have called the garrison out and still live somewhere in the world (see <see cref="BossEngaged"/>). Server / single player runtime only.</summary>
 		private readonly List<int> _engagedBossTypes = new();
 		private readonly List<int> _seenBossTypes = new();
@@ -99,6 +100,7 @@ namespace Levy.Common.Systems
 			_lastEventActive = false; _eventTick = uint.MaxValue;
 			_engagedBossTypes.Clear(); _seenBossTypes.Clear();
 			_housekeepingTimer = 0;
+			_poolChecked = false; _poolNpcStamp = uint.MaxValue; _poolNpcs.Clear();
 		}
 
 		public override void SaveWorldData(TagCompound tag)
@@ -391,7 +393,7 @@ namespace Levy.Common.Systems
 		}
 
 		/// <summary>Forget the cached housing lists (a world edit or test that re-homes townsfolk inside one tick).</summary>
-		public void InvalidateTownNpcs() { foreach (var rt in _rt.Values) rt.HasNpcs = false; _linkStamp = uint.MaxValue; _netStamp = uint.MaxValue; _pylonTownStamp = uint.MaxValue; }
+		public void InvalidateTownNpcs() { foreach (var rt in _rt.Values) rt.HasNpcs = false; _linkStamp = uint.MaxValue; _netStamp = uint.MaxValue; _pylonTownStamp = uint.MaxValue; _poolNpcStamp = uint.MaxValue; }
 
 		/// <summary>Which pylon puts a settlement on the network, and how far it is from the Barracks. <see cref="Linked"/> is false when no pylon reaches the settlement.</summary>
 		public struct PylonLink { public bool Linked; public Point16 Pylon; public int Tiles; public string Name; }
@@ -570,21 +572,130 @@ namespace Levy.Common.Systems
 			return best;
 		}
 
-		/// <summary>Manpower ceiling from the town-NPC count. On the server also refreshes the cached cap and clamps the pool when the cap drops.</summary>
+		// =====================================================================================================
+		// Manpower: one pool for the whole pylon network
+		// =====================================================================================================
+		// A Barracks on the pylon network (BarracksTE.OnPool) draws on ONE shared pool: every housed town NPC of every networked settlement, and of every pylon town that has no Barracks, feeds it. The pool is
+		// stored on each pooled Barracks (the BarracksTE.Manpower setter writes them all), so every reader sees the same number and clients need no pool logic. A Barracks off the network keeps its own pool,
+		// counted from the townsfolk nearest to it, exactly as before. Radius: the settlement box (SettlementRadiusX x SettlementRadiusY) the pylon link and the Barracks already use, so "near a pylon" means
+		// what the pylon line on the panel says.
+
+		private readonly List<NPC> _poolNpcs = new(); private readonly HashSet<int> _poolSeen = new(); private uint _poolNpcStamp = uint.MaxValue;
+
+		/// <summary>Manpower one town NPC adds: the config value, and the Conscription book raises it in the same proportion as the stock 9 to 15.</summary>
+		public virtual int ManpowerPerNpcNow(bool conscription)
+		{
+			int per = Math.Max(1, LevyConfig.Get?.ManpowerPerTownNpc ?? LevyConstants.ManpowerPerNpc);
+			return conscription ? (int)Math.Round(per * (double)LevyConstants.ManpowerPerNpcConscription / LevyConstants.ManpowerPerNpc, MidpointRounding.AwayFromZero) : per;
+		}
+
+		/// <summary>The Barracks that share the pool, in id order. Read-only use; a fresh list.</summary>
+		public List<BarracksTE> PoolMembers()
+		{
+			var res = new List<BarracksTE>(4);
+			foreach (var te in TileEntity.ByID.Values) if (te is BarracksTE b && b.OnPool) res.Add(b);
+			return res;
+		}
+
+		/// <summary>Every housed town NPC that feeds the shared pool, each once: the townsfolk of every pooled Barracks plus the pylon towns that have none. Cached per tick; read-only use.</summary>
+		public virtual List<NPC> PoolTownNpcs()
+		{
+			uint now = Main.GameUpdateCount;
+			if (_poolNpcStamp == now) return _poolNpcs;
+			_poolNpcStamp = now; _poolNpcs.Clear(); _poolSeen.Clear();
+			bool any = false;
+			foreach (var te in TileEntity.ByID.Values)
+			{
+				if (te is not BarracksTE b || !b.OnPool) continue;
+				any = true;
+				foreach (var n in TownNpcsOf(b)) if (_poolSeen.Add(n.whoAmI)) _poolNpcs.Add(n);
+			}
+			if (any) foreach (var t in PylonTownNpcs()) if (_poolSeen.Add(t.Npc.whoAmI)) _poolNpcs.Add(t.Npc);
+			return _poolNpcs;
+		}
+
+		/// <summary>How many townsfolk feed this Barracks's manpower: the whole network's for a pooled Barracks, its own settlement's otherwise.</summary>
+		public virtual int ManpowerNpcCount(BarracksTE barracks) => barracks == null ? 0 : barracks.OnPool ? PoolTownNpcs().Count : TownNpcsOf(barracks).Count;
+
+		/// <summary>
+		/// Manpower ceiling: townsfolk x manpower each. A pooled Barracks counts the whole network and is held under the config ceiling (0 = none); a lone one counts its own settlement.
+		/// On the server also refreshes the cached cap on every Barracks of the pool and clamps the pool when the cap drops.
+		/// </summary>
 		public virtual int ManpowerCap(BarracksTE barracks)
 		{
 			if (barracks == null) return 0;
-			int count = TownNpcsOf(barracks).Count;
-			int cap = (BookConscription ? LevyConstants.ManpowerPerNpcConscription : LevyConstants.ManpowerPerNpc) * count;
+			int count = ManpowerNpcCount(barracks);
+			long raw = (long)ManpowerPerNpcNow(BookConscription) * count;
+			if (barracks.OnPool) { int ceil = LevyConfig.Get?.ManpowerCap ?? LevyConstants.ManpowerNetworkCap; if (ceil > 0) raw = Math.Min(raw, ceil); }
+			int cap = (int)Math.Min(raw, int.MaxValue);
 			if (LevyUtil.IsServerOrSingle)
 			{
-				bool changed = barracks.ManpowerCapCached != cap;
-				barracks.ManpowerCapCached = cap;
-				if (barracks.Manpower > cap) { barracks.Manpower = cap; changed = true; }
-				if (barracks.Manpower < 0) { barracks.Manpower = 0; changed = true; }
-				if (changed) SyncTE(barracks);
+				if (barracks.OnPool)
+				{
+					foreach (var m in PoolMembers()) if (m.ManpowerCapCached != cap) { m.ManpowerCapCached = cap; m.MarkDirty(); }
+					if (barracks.Manpower > cap) barracks.Manpower = cap;
+					else if (barracks.Manpower < 0) barracks.Manpower = 0;
+				}
+				else
+				{
+					bool changed = barracks.ManpowerCapCached != cap;
+					barracks.ManpowerCapCached = cap;
+					if (barracks.Manpower > cap) { barracks.Manpower = cap; changed = true; }
+					if (barracks.Manpower < 0) { barracks.Manpower = 0; changed = true; }
+					if (changed) SyncTE(barracks);
+				}
 			}
 			return cap;
+		}
+
+		/// <summary>A pooled Barracks's pool value changed: copy it to every other pooled Barracks and queue their sync. Server and single player.</summary>
+		public virtual void SpreadPool(BarracksTE src)
+		{
+			if (src == null || Main.netMode == NetmodeID.MultiplayerClient) return;
+			foreach (var te in TileEntity.ByID.Values)
+				if (te is BarracksTE b && b.OnPool && !ReferenceEquals(b, src) && b.Manpower != src.Manpower) { b.SetPoolLocal(src.Manpower); b.MarkDirty(); }
+		}
+
+		/// <summary>
+		/// Keeps the pool in step with the pylons: a Barracks newly on the network joins and its own reserve is added to the pool (an older world's per-Barracks pools are summed this way on the first pass, then held
+		/// under the new cap); a Barracks that left the network keeps what the pool held. Cheap when nothing changed. Server and single player.
+		/// </summary>
+		public virtual void RefreshPool()
+		{
+			if (!LevyUtil.IsServerOrSingle) return;
+			var members = new List<BarracksTE>(); var joiners = new List<BarracksTE>();
+			foreach (var te in TileEntity.ByID.Values)
+			{
+				if (te is not BarracksTE b) continue;
+				if (LinkOf(b).Linked) { if (b.OnPool) members.Add(b); else joiners.Add(b); }
+				else if (b.OnPool) { b.OnPool = false; b.MarkDirty(); _poolNpcStamp = uint.MaxValue; }
+			}
+			if (joiners.Count > 0)
+			{
+				long total = members.Count > 0 ? members[0].Manpower : 0;
+				foreach (var j in joiners) total += Math.Max(0, j.Manpower);
+				int v = (int)Math.Min(total, int.MaxValue);
+				foreach (var j in joiners) { j.OnPool = true; members.Add(j); }
+				foreach (var m in members) { m.SetPoolLocal(v); m.MarkDirty(); }
+				_poolNpcStamp = uint.MaxValue;
+			}
+			if (members.Count > 0) ManpowerCap(members[0]); // refresh the cached cap and clamp to it
+		}
+
+		/// <summary>A freshly placed Barracks: a pooled one joins the shared pool at its current level (placing one never refills it; the first one on a network starts it full); a lone one starts full.</summary>
+		internal void InitManpower(BarracksTE b)
+		{
+			if (b == null) return;
+			InvalidateTownNpcs();
+			RefreshPool(); // puts the new Barracks on the pool when a pylon links it, and folds in any other linked one: one pool to join
+			if (b.OnPool)
+			{
+				int cap = ManpowerCap(b);
+				if (PoolMembers().Count == 1) b.Manpower = cap;
+				return;
+			}
+			int c = ManpowerCap(b);
+			b.ManpowerCapCached = c; b.SetPoolLocal(c);
 		}
 
 		public virtual bool CanRaiseMilitia(BarracksTE barracks)
@@ -608,11 +719,14 @@ namespace Levy.Common.Systems
 		public virtual void OnDawn(int dayNumber)
 		{
 			if (!LevyUtil.IsServerOrSingle) return;
+			RefreshPool();
 			CollectBarracksIds();
+			bool poolDone = false;
 			for (int k = 0; k < _scratchIds.Count; k++)
 			{
 				var te = GetBarracks(_scratchIds[k]); if (te == null) continue;
-				int count = TownNpcsOf(te).Count;
+				if (te.OnPool) { if (poolDone) continue; poolDone = true; } // the shared pool regrows once, from the whole network's townsfolk
+				int count = ManpowerNpcCount(te);
 				int cap = ManpowerCap(te);
 				int regen = (count + LevyConstants.NpcsPerManpowerRegen - 1) / LevyConstants.NpcsPerManpowerRegen;
 				int before = te.Manpower;
@@ -736,6 +850,7 @@ namespace Levy.Common.Systems
 		{
 			if (!LevyUtil.IsServerOrSingle) return;
 			if (_pendingKits.Count > 0) RestorePendingKits();
+			if (!_poolChecked) { _poolChecked = true; RefreshPool(); } // first tick after load: pools of an older world are folded together here
 			CollectBarracksIds();
 			for (int k = 0; k < _scratchIds.Count; k++)
 			{
@@ -876,31 +991,92 @@ namespace Levy.Common.Systems
 				if (home.Mobilized) home.Militia.Add(s.Record); else DismissMilitiaBody(s);
 			}
 
+			RefreshPool();
 			FlushArmorySync();
 		}
 
 		// =====================================================================================================
 		// Economy actions (server)
 		// =====================================================================================================
-		public virtual bool RecruitingDrive(BarracksTE barracks, Player by)
+		/// <summary>The daily recruiting drive: refills the missing manpower (the shared pool's, for a Barracks on the pylon network) at <see cref="EconomySystem.RecruitingDrivePerPoint"/> from this treasury, once a day.</summary>
+		public virtual bool RecruitingDrive(BarracksTE barracks, Player by) => RunDrive(barracks, by, EconomySystem.RecruitingDrivePerPoint, daily: true);
+
+		/// <summary>The rush drive for a Barracks, any time and any number of times a day, while a Recruitment Office serves it (tests and callers that already hold the Barracks).</summary>
+		public virtual bool RushRecruitingDrive(BarracksTE barracks, Player by)
+		{
+			if (!LevyUtil.IsServerOrSingle || barracks == null) return false;
+			if (!HasRecruitmentOffice(barracks)) { ChatTo(by, LevyUtil.T("Militia.NoRecruitmentOffice", TownName(barracks))); return false; }
+			return RunDrive(barracks, by, EconomySystem.RushRecruitingDrivePerPoint, daily: false);
+		}
+
+		/// <summary>
+		/// The Barracks a Recruitment Office serves: the nearest one whose settlement box holds the office; failing that, when the office is within <see cref="LevyConstants.PylonShareRadius"/> tiles of a pylon, the nearest Barracks
+		/// on the shared pool. Null when neither exists. The drive is paid from that Barracks's treasury, as the daily drive is.
+		/// </summary>
+		public virtual BarracksTE BarracksServedBy(RecruitmentOfficeTE office)
+		{
+			if (office == null) return null;
+			BarracksTE best = null; float bd = float.MaxValue;
+			foreach (var te in TileEntity.ByID.Values)
+				if (te is BarracksTE b && InBox(office.Position, b)) { float d = Vector2.DistanceSquared(b.Center, office.Center); if (d < bd) { bd = d; best = b; } }
+			if (best != null) return best;
+			if (!OnPylonNet(office.Center)) return null;
+			foreach (var b in PoolMembers()) { float d = Vector2.DistanceSquared(b.Center, office.Center); if (d < bd) { bd = d; best = b; } }
+			return best;
+		}
+
+		/// <summary>A player right-clicked a Recruitment Office: run a rush drive on the pool or settlement it serves. Server and single player.</summary>
+		public virtual bool RushDriveAt(RecruitmentOfficeTE office, Player by)
+		{
+			if (!LevyUtil.IsServerOrSingle || office == null) return false;
+			var b = BarracksServedBy(office);
+			if (b == null) { ChatTo(by, LevyUtil.T("Militia.OfficeNoBarracks")); return false; }
+			return RunDrive(b, by, EconomySystem.RushRecruitingDrivePerPoint, daily: false);
+		}
+
+		private bool RunDrive(BarracksTE barracks, Player by, long price, bool daily)
 		{
 			if (!LevyUtil.IsServerOrSingle || barracks == null) return false;
 			int day = RosterSystem.Instance.DayNumber;
 			string town = TownName(barracks);
-			if (barracks.RecruitingDriveDay == day) { ChatTo(by, LevyUtil.T("Militia.RecruitingDriveDone", town)); return false; }
+			if (daily && barracks.RecruitingDriveDay == day) { ChatTo(by, LevyUtil.T("Militia.RecruitingDriveDone", town)); return false; }
 			int missing = ManpowerCap(barracks) - barracks.Manpower;
 			if (missing <= 0) { ChatTo(by, LevyUtil.T("Militia.ManpowerFull", town)); return false; }
-			long price = EconomySystem.RecruitingDrivePerPoint;
 			int bought = price <= 0 ? missing : (int)Math.Min(missing, barracks.Treasury / price);
 			if (bought < 1) { ChatTo(by, LevyUtil.T("UI.NotEnoughMoney")); return false; }
 			long cost = bought * Math.Max(0, price);
 			if (cost > 0 && !EconomySystem.TryPay(barracks, cost)) { ChatTo(by, LevyUtil.T("UI.NotEnoughMoney")); return false; }
 			barracks.Manpower += bought;
-			barracks.RecruitingDriveDay = day;
-			LevyUtil.Chat(LevyUtil.T("Chat.RecruitingDrive", town, LevyUtil.Coins(cost)));
+			if (daily)
+			{
+				barracks.RecruitingDriveDay = day;
+				if (barracks.OnPool) foreach (var m in PoolMembers()) { m.RecruitingDriveDay = day; m.MarkDirty(); } // one pool, one drive a day
+			}
+			LevyUtil.Chat(daily ? LevyUtil.T("Chat.RecruitingDrive", town, LevyUtil.Coins(cost)) : LevyUtil.T("Chat.RushRecruitingDrive", town, bought, LevyUtil.Coins(cost)));
 			SyncTE(barracks);
 			return true;
 		}
+
+		/// <summary>
+		/// True when a Recruitment Office serves this Barracks: one stands inside its settlement box (<see cref="LevyConstants.SettlementRadiusX"/> x <see cref="LevyConstants.SettlementRadiusY"/> tiles), or, for a Barracks on the
+		/// shared pool, inside the box of any pooled Barracks or within <see cref="LevyConstants.PylonShareRadius"/> tiles of any pylon.
+		/// </summary>
+		public virtual bool HasRecruitmentOffice(BarracksTE barracks)
+		{
+			if (barracks == null) return false;
+			List<BarracksTE> pool = barracks.OnPool ? PoolMembers() : null;
+			foreach (var te in TileEntity.ByID.Values)
+			{
+				if (te is not RecruitmentOfficeTE o) continue;
+				if (InBox(o.Position, barracks)) return true;
+				if (pool == null) continue;
+				foreach (var m in pool) if (InBox(o.Position, m)) return true;
+				if (OnPylonNet(o.Center)) return true;
+			}
+			return false;
+		}
+
+		private static bool InBox(Point16 p, BarracksTE b) => Math.Abs(p.X - b.Position.X) <= LevyConstants.SettlementRadiusX && Math.Abs(p.Y - b.Position.Y) <= LevyConstants.SettlementRadiusY;
 
 		public virtual bool HazardPay(BarracksTE barracks, Player by)
 		{

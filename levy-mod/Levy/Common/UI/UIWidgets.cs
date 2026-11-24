@@ -179,6 +179,8 @@ namespace Levy.Common.UI
 		public string Label = "";
 		public Color Fill = new(90, 170, 90), Back = new(20, 20, 30, 220);
 		public float TextScale = 0.75f;
+		/// <summary>Shown while the pointer is over the bar (drawn from the screen position, so the bar keeps ignoring clicks).</summary>
+		public string Hint = "";
 
 		public BarElement(float width, float height) { Width.Set(width, 0f); Height.Set(height, 0f); IgnoresMouseInteraction = true; }
 
@@ -192,6 +194,7 @@ namespace Levy.Common.UI
 			if (w > 0) spriteBatch.Draw(pixel, new Rectangle(r.X, r.Y, w, r.Height), Fill);
 			if (!string.IsNullOrEmpty(Label))
 				Utils.DrawBorderString(spriteBatch, Label, new Vector2(r.X + r.Width * 0.5f, r.Y + r.Height * 0.5f + 2f), Color.White, TextScale, 0.5f, 0.5f);
+			if (!string.IsNullOrEmpty(Hint) && ContainsPoint(Main.MouseScreen)) HintTooltip.Queue(Hint);
 		}
 	}
 

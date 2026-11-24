@@ -17,6 +17,8 @@ namespace Levy.Common.Systems
 		public static long PromotionCost(Grade from, Grade to) => System.Math.Max(0, MusterFee(to) - MusterFee(from));
 		public static long MilitiaMusterFeePerHead => LevyWage / LevyConstants.MilitiaMusterDivisor;
 		public static long RecruitingDrivePerPoint => LevyWage * LevyConstants.RecruitingDriveWageMult;
+		/// <summary>A rush drive (Recruitment Office): twice the daily drive's price per point, 4 x the wage.</summary>
+		public static long RushRecruitingDrivePerPoint => RecruitingDrivePerPoint * LevyConstants.RushDrivePriceMult;
 
 		public static bool CanAfford(BarracksTE b, long cost) => b != null && b.Treasury >= cost;
 		public static bool TryPay(BarracksTE b, long cost) { if (!CanAfford(b, cost)) return false; b.Treasury -= cost; return true; }

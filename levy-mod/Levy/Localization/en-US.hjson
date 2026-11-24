@@ -21,6 +21,16 @@ Mods: {
 					'''
 			}
 
+			RecruitmentOfficeItem: {
+				DisplayName: Recruitment Office
+				Tooltip:
+					'''
+					Right click to run a rush recruiting drive at any time
+					A rush drive costs twice as much
+					Serves its settlement, or the whole pylon network
+					'''
+			}
+
 			LogisticalCenterItem: {
 				DisplayName: Logistical Center
 				Tooltip: Adds 250 slots to the nearest Armory within 40 tiles
@@ -276,6 +286,7 @@ Mods: {
 		Tiles: {
 			BarracksTile.MapEntry: Barracks
 			ArmoryTile.MapEntry: Armory
+			RecruitmentOfficeTile.MapEntry: Recruitment Office
 			LogisticalCenterTile.MapEntry: Logistical Center
 			PatrolBannerTile.MapEntry: Patrol Banner
 			StaticCameraTile.MapEntry: Static Camera
@@ -641,6 +652,16 @@ Mods: {
 					Tooltip: Militia a town fields at once. The rest of its manpower stays in reserve
 				}
 
+				ManpowerPerTownNpc: {
+					Label: Manpower per town NPC
+					Tooltip: Manpower each housed town NPC adds to the pool. The Conscription book raises it by the same proportion
+				}
+
+				ManpowerCap: {
+					Label: Manpower cap
+					Tooltip: Most manpower the pylon network's shared pool can hold. 0 means no cap. A Barracks off the network is not capped
+				}
+
 				LeviesAtStart: {
 					Label: Levies at the start
 					Tooltip: Levies you can field in a new world. Recommended 6 to 20
@@ -869,6 +890,8 @@ Mods: {
 			Barracks: "{0} Barracks"
 			Treasury: Treasury: {0}
 			Manpower: Manpower {0} / {1}
+			ManpowerNet: Manpower {0} / {1} · {2} townsfolk across the pylon network
+			ManpowerNetShort: Manpower {0} / {1} · {2} townsfolk
 			CommandPoints: Command points {0} / {1}
 			Enlist: Enlist
 			EnlistLevy: Enlist Levy ({0})
@@ -952,6 +975,7 @@ Mods: {
 			LogisticalCenterInUse: Items are stored in the {0} slots this center provides. Sort the Armory or take them out first.
 			GuideHint: Throw your junk in the Armory and the town will arm itself. A Field Manual, crafted from a little wood, has the whole story.
 			RecruitingDrive: "{0} ran a recruiting drive: manpower restored for {1}."
+			RushRecruitingDrive: Rush drive in {0}: {1} recruits for {2}.
 			HazardPay: Hazard pay issued at {0}: {1}.
 		}
 

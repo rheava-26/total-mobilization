@@ -91,6 +91,7 @@ namespace Levy.Common.Weapons
 			["CalamityMod/ScarletDevil"] = RogueMode.Spam, // spam 52314, strike 38639 dps (x0.74) boss x0.90
 			["CalamityMod/GhoulishGouger"] = RogueMode.SmallTargets, // spam 2078, strike 2237 dps (x1.08) boss x0.88
 			["CalamityMod/Valediction"] = RogueMode.SmallTargets, // spam 2063, strike 2538 dps (x1.23) boss x0.95
+			["CalamityMod/NanoblackReaper"] = RogueMode.Spam, // rogue lab (Statigel, 20 tiles, 6 seeds, docs/nanoblack): spam 26703, strike 13682 dps (x0.51), patient x0.31; boss-size spam 34759, strike 17819 (x0.51). Levies cannot throw its real strike, the right-click Focus Flurry (Calamity reads it only for the owning client), so a "strike" here is one heavier carve for two seconds of standing still
 		};
 
 		internal static RogueMode For(Item item)

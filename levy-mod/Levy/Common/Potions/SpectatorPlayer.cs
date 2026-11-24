@@ -129,13 +129,34 @@ namespace Levy.Common.Potions
 		/// </summary>
 		internal bool CheckBet(bool covered)
 		{
-			if (!covered || Player.dead || !SpectatorBet.AnyActiveBoss()) { _betArmySeen = false; return false; }
-			if (SpectatorBet.ArmyAlive(Player)) { _betArmySeen = true; return false; }
-			if (!SpectatorBet.Lost(Player, _betArmySeen)) return false;
-			_betArmySeen = false;
-			SpectatorBet.Kill(Player);
+			if (!covered || Player.dead) { _betArmySeen = false; ResetLeave(); return false; }
+			if (SpectatorBet.AnyActiveBoss())
+			{
+				if (!_bossWas) { _bossWas = true; _fightStart = Main.GameUpdateCount; SpectatorBet.ResetLeave(); }
+				_leaveTicks = 0; _goneAt = Main.GameUpdateCount;
+				if (SpectatorBet.ArmyAlive(Player)) { _betArmySeen = true; return false; }
+				if (!SpectatorBet.Lost(Player, _betArmySeen)) return false;
+				_betArmySeen = false; ResetLeave();
+				SpectatorBet.Kill(Player);
+				return true;
+			}
+			if (!_bossWas) { _betArmySeen = false; return false; }
+			// the boss is gone: after the grace a boss that left on its own (not killed, not for want of a target) is a lost bet
+			if (++_leaveTicks < SpectatorBet.LeaveGraceTicks) return false;
+			bool seen = _betArmySeen; uint start = _fightStart, gone = _goneAt;
+			_betArmySeen = false; ResetLeave();
+			LastLeave = SpectatorBet.LeaveVerdict(start, gone, SpectatorBet.BossKillTick, SpectatorBet.BossBlindTick, seen);
+			if (LastLeave != SpectatorBet.LeaveResult.Lost) return false;
+			SpectatorBet.KillLeft(Player);
 			return true;
 		}
+
+		private bool _bossWas; private int _leaveTicks; private uint _fightStart, _goneAt;
+		private void ResetLeave() { _bossWas = false; _leaveTicks = 0; }
+		/// <summary>The verdict of the last boss that went (self-check).</summary>
+		internal SpectatorBet.LeaveResult? LastLeave;
+		/// <summary>The world was entered (a subworld transfer included): nothing carried over from the world before counts.</summary>
+		public override void OnEnterWorld() { _betArmySeen = false; ResetLeave(); SpectatorBet.ResetLeave(); }
 
 		public override void PostUpdateEquips()
 		{
@@ -259,6 +280,7 @@ namespace Levy.Common.Potions
 	public class SpectatorNpcWindow : ModSystem
 	{
 		public override void PostUpdateNPCs() => UnhideAll();
+		public override void PostUpdateProjectiles() { UnhideAll(); SpectatorHitGuard.Clear(); }
 
 		internal static void UnhideAll()
 		{
@@ -268,6 +290,38 @@ namespace Levy.Common.Potions
 				if (p.TryGetModPlayer(out SpectatorPlayer s)) s.Unhide();
 			}
 		}
+	}
+
+	/// <summary>
+	/// A Spectator cannot be hurt by any enemy, including one that hurts without a hit. Vanilla asks a projectile or an NPC "can you hit this player" (<c>CanHitPlayer</c>) before the player's own refusal, and some bosses
+	/// do their damage inside that question (the Brimstone Monster takes life straight off the player there and never makes a hit). So the question is answered "no" for a Spectator first, for every projectile and NPC.
+	/// A hostile projectile's AI runs with the Spectator hidden from it (as an NPC's does, see <see cref="SpectatorNpcHide"/>), so a homing shot does not chase one either.
+	/// </summary>
+	public class SpectatorHitGuard : GlobalProjectile
+	{
+		public override bool CanHitPlayer(Projectile projectile, Player target) => !SpectatorPlayer.IsSpectator(target);
+
+		public override bool PreAI(Projectile projectile)
+		{
+			if (!projectile.hostile || projectile.friendly || !SpectatorPlayer.AnyActive) return true;
+			SpectatorPlayer.HideAll();
+			_hid.Add(projectile.whoAmI);
+			return true;
+		}
+
+		public override void PostAI(Projectile projectile)
+		{
+			if (_hid.Remove(projectile.whoAmI)) SpectatorPlayer.ReleaseAll();
+		}
+
+		private static readonly System.Collections.Generic.HashSet<int> _hid = new();
+		internal static void Clear() { _hid.Clear(); }
+	}
+
+	public class SpectatorNpcGuard : GlobalNPC
+	{
+		public override bool CanHitPlayer(NPC npc, Player target, ref int cooldownSlot) => !SpectatorPlayer.IsSpectator(target);
+		public override void OnKill(NPC npc) { if (SpectatorBet.IsBoss(npc)) SpectatorBet.NoteBossKilled(); }
 	}
 
 	public class SpectatorNpcHide : GlobalNPC
@@ -280,6 +334,7 @@ namespace Levy.Common.Potions
 			if (global::Levy.Common.Targeting.EnemyTargeting.IsAllowlisted(npc) && global::Levy.Common.Targeting.EnemyTargeting.Bodies.Count > 0) return true;
 			if (!global::Levy.Common.Targeting.EnemyTargeting.HidesSpectatorFrom(npc)) return true; // an unbeaten boss sees a spectator like any player
 			if (!_hiding.Add(npc.whoAmI)) return true;
+			if (SpectatorBet.IsBoss(npc)) SpectatorBet.NoteBossBlind(); // a boss that finds nobody to fight may leave: that is not the player's lost bet
 			if (global::Levy.Common.Targeting.EnemyTargeting.DiagOn) SpectatorDiagnostic.NoteHidden(npc);
 			SpectatorPlayer.HideAll();
 			return true;

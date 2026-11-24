@@ -15,9 +15,10 @@ namespace Levy.Common.Perf
 	/// <summary>
 	/// THE POST-FIGHT LAG POPUP. When a boss fight ends and the analyzer judged it laggy (<see cref="PerfAnalysis.Judge"/>), a small window in the corner says so, names the cause plainly, and offers what can be done.
 	/// When Levy's share was large: "Lower levy effects" (the Army effects setting: nameplates hidden, levy weapon dust thinned), the active army size when one would help (a stepper set to the suggested size, then
-	/// "Set active army size"), It's fine, Don't ask again, Open Levy settings. When the cost was another mod's or the base game's: only the last three.
+	/// "Set active army size"), It's fine, Don't ask again, Open Levy settings. When the cost was another mod's or the base game's: the last three, and the active army size too when the army was a big part of the update.
+	/// "It's fine" closes the note and keeps every note away for the rest of the play session (not saved); "Don't ask again" is the permanent version.
 	/// Nothing here touches the army's command points or takes a soldier from it: the active army size only sets how many are in the field at once, and only when the player presses it.
-	/// THE LIVE ARMY NOTICE (<see cref="CheckLive"/>): once a session, during a fight whose updates stay over budget because of the army, the same window says so with the suggested size (Set it / settings / Don't ask again).
+	/// THE LIVE ARMY NOTICE (<see cref="CheckLive"/>): once a session, during a fight whose updates stay over budget because of the army, the same window says so with the suggested size (Set it / It's fine / settings / Don't ask again).
 	/// It never shows during a fight (a pending popup is dropped the moment a boss is near again), shows at most once in ten minutes (half an hour after "It's fine"), and stays away for good after "Don't ask again".
 	/// The window is not modal: the game goes on under it, and it goes away by itself after a minute.
 	/// </summary>
@@ -29,10 +30,12 @@ namespace Levy.Common.Perf
 		internal static int Shown; internal static LagVerdict Current; internal static string LastRefusal;
 		/// <summary>The live army notice was shown this session (it shows once), and the size the popup's stepper holds.</summary>
 		internal static bool ArmyNoticeShown; internal static int ArmyStep;
+		/// <summary>"It's fine" was pressed this play session: no note shows again until the game is restarted. Not saved ("Don't ask again" is the permanent version).</summary>
+		internal static bool SessionQuiet;
 		internal static bool? TestArmyDontAsk;
 		private static bool _live;
 		/// <summary>Self-check: the popup's clock and counters, saved and given back by a check that shows a popup, so the next check starts from the same state.</summary>
-		internal static (DateTime last, DateTime snooze, int shown, bool notice) TestState { get => (_lastShown, _snoozeUntil, Shown, ArmyNoticeShown); set { _lastShown = value.last; _snoozeUntil = value.snooze; Shown = value.shown; ArmyNoticeShown = value.notice; _pending = null; } }
+		internal static (DateTime last, DateTime snooze, int shown, bool notice) TestState { get => (_lastShown, _snoozeUntil, Shown, ArmyNoticeShown); set { _lastShown = value.last; _snoozeUntil = value.snooze; Shown = value.shown; ArmyNoticeShown = value.notice; _pending = null; SessionQuiet = false; } }
 		private static bool ArmyDontAsk { get { if (TestArmyDontAsk.HasValue) return TestArmyDontAsk.Value; try { return PerfConfig.Get?.ArmyNoticeDontAskAgain ?? false; } catch (Exception) { return false; } } }
 		private static DateTime _lastShown = DateTime.MinValue, _snoozeUntil = DateTime.MinValue;
 		private static LagVerdict _pending; private static uint _showAtTick; private static uint _hideAtTick;
@@ -52,7 +55,7 @@ namespace Levy.Common.Perf
 		{
 			if (v == null || !v.ShowPopup) return;
 			if (Main.dedServ && !TestMode) return;
-			string why = PerfAnalysis.Refusal(Enabled, DontAsk, PerfAnalyzer.InFight || PerfAnalyzer.BossNear, Now, _lastShown, _snoozeUntil);
+			string why = SessionQuiet ? "it's fine, this session" : PerfAnalysis.Refusal(Enabled, DontAsk, PerfAnalyzer.InFight || PerfAnalyzer.BossNear, Now, _lastShown, _snoozeUntil);
 			LastRefusal = why;
 			if (why != null) { Levy.Instance?.Logger.Info("[PerfAnalyzer] lag popup not shown (" + why + ")"); return; }
 			_pending = v; _showAtTick = Main.GameUpdateCount + DelayTicks;
@@ -78,7 +81,7 @@ namespace Levy.Common.Perf
 		/// </summary>
 		internal static LagVerdict CheckLive(PerfWindow w, int mine)
 		{
-			if (ArmyNoticeShown || ArmyDontAsk) return null;
+			if (ArmyNoticeShown || ArmyDontAsk || SessionQuiet) return null;
 			if (Main.dedServ && !TestMode) return null;
 			var v = PerfAnalysis.ArmyNotice(w, mine);
 			if (v == null) return null;
@@ -141,7 +144,7 @@ namespace Levy.Common.Perf
 					case PopupOption.ActiveArmy:
 						if (!TestMode) UI.UIActions.SetActiveArmy(Math.Max(1, ArmyStep)); // the roster says it in chat
 						break;
-					case PopupOption.ItsFine: _snoozeUntil = Now.AddSeconds(PerfThresholds.FineGapSecs); break;
+					case PopupOption.ItsFine: _snoozeUntil = Now.AddSeconds(PerfThresholds.FineGapSecs); SessionQuiet = true; break; // quiet for the rest of this play session; not saved
 					case PopupOption.DontAskAgain:
 						if (Current != null && Current.Kind == LagKind.ArmyTooBig) { SetArmyDontAsk(); Say("This note will not show again. Turn it back on in the Levy performance settings."); }
 						else { SetDontAsk(); Say("The lag note will not show again. Turn it back on in the Levy performance settings."); }

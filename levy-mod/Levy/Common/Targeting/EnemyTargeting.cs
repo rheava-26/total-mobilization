@@ -146,11 +146,20 @@ namespace Levy.Common.Targeting
 			return mn == null || !LevyConstants.Targeting.NativeSafeModdedTypes.Contains(mn.Mod.Name + "/" + mn.Name);
 		}
 
+		/// <summary>
+		/// Calamity's Draedon (the non-combat NPC that offers the Exo Mech choice). He always targets the real summoning player: his AI reads Main.player[npc.target] for the choice (the selection UI is opened on that player),
+		/// the introduction and his hover, so a levy in his slot would make the choice impossible. Never lent a levy, never swapped, on every summon. The Exo Mechs he summons are not exempt (their army targeting is unchanged).
+		/// </summary>
+		internal static bool IsDraedon(NPC npc) => npc != null && npc.ModNPC != null && npc.ModNPC.Name == "Draedon" && npc.ModNPC.Mod.Name == "CalamityMod";
+		/// <summary>Self-check switch: false puts Draedon back under the normal rules (the world check watches what that did).</summary>
+		internal static bool DraedonExempt = true;
+
 		/// <summary>Config on, not friendly, not a boss or boss part (unless its boss type is unlocked), and an AI style we verified against the chosen mechanism.</summary>
 		public static bool IsAllowlisted(NPC npc)
 		{
 			if (npc == null || !npc.active || !Enabled) return false;
 			if (npc.friendly || npc.townNPC || npc.ModNPC is SoldierNPC) return false;
+			if (DraedonExempt && IsDraedon(npc)) return false;
 			if (HoldFire.Any && HoldFire.Holds(npc)) return false; // a choice is open on it: it keeps facing the player whose choice it is
 			int type = npc.type;
 			if (type == NPCID.WallofFlesh && WofKinOn && !WofMouthSwaps && WallHasPlayerToWalkAt(npc)) return false; // the wall's walk stays on the real player; its eyes, Hungry and Leeches are what the army draws
@@ -965,6 +974,7 @@ namespace Levy.Common.Targeting
 		internal static void Prepare(NPC npc)
 		{
 			if (!EnemyTargeting.Enabled) return;
+			if (EnemyTargeting.DraedonExempt && EnemyTargeting.IsDraedon(npc)) { LevyNpcData.Of(npc).SoldierTarget = -1; return; } // Draedon keeps the player he was summoned by
 			LevyNpcData stamp = LevyNpcData.Of(npc);
 			// A boss's worm that loses its head promotes the next body segment in place (Calamity's Perforator worms call SetDefaults with the head type): that resets this NPC's global data, ownership included,
 			// without a new spawn. Remember the owner per slot every tick and give it back to the same slot (no OnSpawn in between) so the promoted head still belongs to its boss.
@@ -1035,6 +1045,7 @@ namespace Levy.Common.Targeting
 		private static void LendBossLock(NPC npc)
 		{
 			if (!PartLendOn || EnemyTargeting.IsSwapped || EnemyTargeting.Bodies.Count == 0) return;
+			if (EnemyTargeting.DraedonExempt && EnemyTargeting.IsDraedon(npc)) return;
 			if (!BossRule.TryGetRoot(npc, out NPC root, out _) || root == null || ReferenceEquals(root, npc) || !root.active) return;
 			if (root.target != SoldierNPC.DummySlot || EnemyTargeting.UsesNativeTargeting(root)) return;
 			ITargetBody body = EnemyTargeting.LiveTarget(LevyNpcData.Of(root).SoldierTarget);

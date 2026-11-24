@@ -25,5 +25,7 @@ namespace Levy.Common.Observe
 		[Header("ChatBars")]
 		/// <summary>Under the Wrath of the Gods rift, silences and despairing lines tremble a little on the chat bar.</summary>
 		[DefaultValue(true)] public bool ShakingChatText;
+		/// <summary>Set once the one-time note about boss dialogue has been shown (Compat/Calamity/BossLines.cs). Turn it off to see the note again.</summary>
+		[DefaultValue(false)] public bool BossLineNoteShown;
 	}
 }

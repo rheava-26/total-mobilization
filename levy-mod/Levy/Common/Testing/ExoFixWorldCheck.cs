@@ -84,6 +84,7 @@ namespace Levy.Common.Testing
 			if (Part(only, "beam")) { try { Beam(); } finally { Cleanup(); } }
 			if (Part(only, "armour")) { try { Armour(); } finally { Cleanup(); } }
 			if (Part(only, "adapt")) { try { Adapt(); } finally { AdaptRestore(); Cleanup(); } }
+			if (Part(only, "draedon")) { try { DraedonChoice(); } finally { Cleanup(); } }
 		}
 
 		// =====================================================================================================
@@ -404,6 +405,66 @@ namespace Levy.Common.Testing
 				_hits[open] = _hits.GetValueOrDefault(open) + 1;
 				_hitBy[npc.whoAmI] = _hitBy.GetValueOrDefault(npc.whoAmI) + 1;
 			}
+		}
+
+		// =====================================================================================================
+		// DRAEDON: always targets the real summoning player, so the Exo Mech choice can be made, with an army around
+		// =====================================================================================================
+		private static void DraedonChoice()
+		{
+			int draedon = CalNpc("Draedon");
+			if (draedon <= 0 || !ModLoader.TryGetMod("CalamityMod", out Mod cal)) { Check("Draedon's type is found", false); return; }
+			Type worldT = cal.Code.GetType("CalamityMod.World.CalamityWorld");
+			var mechField = worldT?.GetField("DraedonMechToSummon", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+			var talkedField = worldT?.GetField("TalkedToDraedon", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+			Type cpT = cal.Code.GetType("CalamityMod.CalPlayer.CalamityPlayer");
+			var ableField = (System.Reflection.MemberInfo)cpT?.GetField("AbleToSelectExoMech") ?? cpT?.GetProperty("AbleToSelectExoMech");
+			Check("the selection state and the world's choice are readable", mechField != null && talkedField != null && cpT != null && ableField != null);
+			if (mechField == null || talkedField == null || cpT == null || ableField == null) return;
+			ModPlayer cp = null; foreach (var mp in Main.player[0].ModPlayers) if (mp.GetType() == cpT) cp = mp;
+			Check("Calamity's player is found", cp != null);
+			if (cp == null) return;
+			bool Able() => ableField is System.Reflection.FieldInfo fi ? (bool)fi.GetValue(cp) : (bool)((System.Reflection.PropertyInfo)ableField).GetValue(cp);
+			void SetAble(bool v) { if (ableField is System.Reflection.FieldInfo fi) fi.SetValue(cp, v); else ((System.Reflection.PropertyInfo)ableField).SetValue(cp, v); }
+			bool cfgWas = global::Levy.Common.Config.LevyConfig.Get.BossesTargetSoldiers; bool exempt0 = EnemyTargeting.DraedonExempt;
+			object talked0 = talkedField.GetValue(null), mech0 = mechField.GetValue(null);
+			try
+			{
+				global::Levy.Common.Config.LevyConfig.Get.BossesTargetSoldiers = true;
+				global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(draedon, true); // a beaten Draedon: the rematch, where the army may be drawn
+				foreach (bool rematch in new[] { false, true })
+				foreach (bool exemptOn in new[] { false, true })
+				{
+					string arm = (rematch ? "rematch" : "first summon") + (exemptOn ? "" : ", exemption off (the control)");
+					ClearHostiles(); EnemyTargeting.DraedonExempt = exemptOn; SetAble(false);
+					PlaceCommander(-150);
+					talkedField.SetValue(null, rematch); mechField.SetValue(null, Enum.ToObject(mechField.FieldType, 0));
+					int made = 0;
+					for (int k = 0; k < 24; k++) if (Levy(new Vector2((Cx - 150 - 12 + k) * 16f, FloorY * 16f), ItemID.Megashark, ItemID.MusketBall) != null) made++;
+					Check($"({arm}) at least 20 levies stand around the player ({made})", made >= 20);
+					NPC d = SpawnNpc(draedon, _cmdAt + new Vector2(0f, -160f));
+					if (d == null) { Check($"({arm}) Draedon spawns", false); continue; }
+					d.target = 0;
+					int off = 0, first = -1; bool able = false;
+					_perTick = () => { if (!d.active) return; if (d.target != 0) { off++; if (first < 0) first = d.target; } if (Able()) able = true; };
+					Step(4);
+					d.ai[0] = 668f; // the introduction is long: jump to the moment he opens the choice (680)
+					Step(60);
+					_perTick = null;
+					Check($"({arm}) Draedon is still there", d.active);
+					if (exemptOn)
+					{
+						Check($"({arm}) his target stays the player on every tick ({off} ticks elsewhere, first {first})", off == 0);
+						Check($"({arm}) the Exo Mech choice is offered to the player", able);
+					}
+					else Note($"({arm}) Draedon's target left the player on {off} ticks (first {first}); the choice was {(able ? "still" : "not")} offered");
+					Check($"({arm}) the army is untouched: levies alive ({Main.npc.Count(n => n.active && n.ModNPC is SoldierNPC)})", Main.npc.Count(n => n.active && n.ModNPC is SoldierNPC) >= 20);
+					d.active = false;
+					foreach (var n in Main.npc) if (n.active && n.ModNPC is SoldierNPC sn) { if (sn.Record != null) sn.Record.Gear = new SoldierGear(); n.active = false; }
+					RosterSystem.Instance.Regulars.RemoveAll(r => r.CommanderName == Commander);
+				}
+			}
+			finally { global::Levy.Common.Config.LevyConfig.Get.BossesTargetSoldiers = cfgWas; EnemyTargeting.DraedonExempt = exempt0; global::Levy.Common.Boss.BossDownedSystem.ClearForTest(); mechField.SetValue(null, mech0); talkedField.SetValue(null, talked0); }
 		}
 
 		private static void Armour()

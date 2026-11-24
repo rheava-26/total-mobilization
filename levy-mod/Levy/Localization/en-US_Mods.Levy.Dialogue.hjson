@@ -2,3 +2,4 @@
 # Soldier lines themselves live in Dialogue/en-US.txt.
 DefaultPlayer: the boss
 Silence: ...
+BossLineNotice: Levy adds and changes some boss dialogue. Most of it plays only when you fight with an army, and none of it is locked away from solo play. Turn it off or change when it shows in Levy settings: Boss lines acknowledge your army, and Show the original boss line too.

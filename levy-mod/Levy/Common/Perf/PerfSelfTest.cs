@@ -98,33 +98,43 @@ namespace Levy.Common.Perf
 			Chk(rep.Any(l => l.Contains("map layer MagicStorage/PortableAccessRangeDisplay: 20.0 ms per frame")) && rep[0].Contains("21.0 frames"), "/levyperf shows it as the biggest single cost");
 
 			// ---- the active army size: the suggestion's arithmetic, the post-fight offer and the live notice
-			Chk(PerfAnalysis.SuggestArmyCap(16, 10.2, 45, 45) == 27, "16 ms an update, 10.2 of it 45 soldiers: 27 at once lands at 12 ms (" + PerfAnalysis.SuggestArmyCap(16, 10.2, 45, 45) + ")");
-			Chk(PerfAnalysis.SuggestArmyCap(16, 10.2, 45, 30) == 12, "the cut comes off the player's own soldiers, costed over every soldier body (" + PerfAnalysis.SuggestArmyCap(16, 10.2, 45, 30) + ")");
-			Chk(PerfAnalysis.SuggestArmyCap(40, 10, 45, 45) == PerfThresholds.ArmyMinSuggest, "never under the floor of five");
+			Chk(PerfAnalysis.SuggestArmyCap(16, 10.2, 45, 45) == 30, "16 ms an update, 10.2 of it 45 soldiers: 30 at once lands at 12 ms (" + PerfAnalysis.SuggestArmyCap(16, 10.2, 45, 45) + ")");
+			Chk(PerfAnalysis.SuggestArmyCap(16, 10.2, 45, 30) == 15, "the cut comes off the player's own soldiers, costed over every soldier body (" + PerfAnalysis.SuggestArmyCap(16, 10.2, 45, 30) + ")");
+			Chk(PerfAnalysis.SuggestArmyCap(40, 10, 45, 45) == 18 && PerfAnalysis.SuggestArmyCap(40, 10, 100, 100) == 40 && PerfAnalysis.SuggestArmyCap(40, 10, 10, 10) == -1, "never under 40% of the fielded army or ten soldiers, even when the arithmetic says the whole army must go (" + PerfAnalysis.SuggestArmyCap(40, 10, 45, 45) + ")");
+			Chk(PerfAnalysis.SuggestArmyCap(16.46, 12.715, 40, 40) == 28 && PerfAnalysis.SuggestArmyCap(24, 12, 40, 40) == 16 && PerfAnalysis.SuggestArmyCap(20, 7, 40, 40) == 16, "Eve's worst window (16.5 ms, 12.7 of it 40 soldiers) suggests 28; a window needing more than the army can give stops at 40% (" + PerfAnalysis.SuggestArmyCap(16.46, 12.715, 40, 40) + ")");
 			Chk(PerfAnalysis.SuggestArmyCap(11.5, 10, 45, 45) == -1 && PerfAnalysis.SuggestArmyCap(16, 0, 45, 45) == -1 && PerfAnalysis.SuggestArmyCap(16, 10, 0, 45) == -1 && PerfAnalysis.SuggestArmyCap(16, 10, 45, 0) == -1 && PerfAnalysis.SuggestArmyCap(double.NaN, 10, 45, 45) == -1, "nothing under budget or with a number missing");
 			Chk(PerfAnalysis.SuggestArmyCap(12.3, 10, 45, 45) == 43, "a small excess takes a few off (" + PerfAnalysis.SuggestArmyCap(12.3, 10, 45, 45) + ")");
+			for (int n = 12; n <= 300; n += 11)
+			{
+				int cap = PerfAnalysis.SuggestArmyCap(40, 30, n, n);
+				Chk(cap == -1 || (cap >= Math.Max(PerfThresholds.ArmyMinSuggest, 0.4 * n - 1e-9) && cap >= n / 2 - n * 0.1 && cap < n), "a suggestion never cuts more than 60% of the fielded army (" + n + " fielded: " + cap + ")");
+			}
 			for (int k = 0; k < 2; k++)
 			{
 				// whatever it suggests, the arithmetic lands at or under the target, and one more soldier would not
-				double upd = 13 + 7 * k, army = 6 + 4 * k; int n = 30 + 15 * k; int cap = PerfAnalysis.SuggestArmyCap(upd, army, n, n);
-				Chk(cap > 0 && upd - (n - cap) * (army / n) <= PerfThresholds.ArmyTargetMs + 1e-9 && upd - (n - cap - 1) * (army / n) > PerfThresholds.ArmyTargetMs, "the suggestion is the largest army that lands at 12 ms (" + upd + " ms, " + n + " soldiers: " + cap + ")");
+				double upd = 13 + 3 * k, army = 6 + 4 * k; int n = 30 + 15 * k; int cap = PerfAnalysis.SuggestArmyCap(upd, army, n, n);
+				double At(int c) => upd - army + army * Math.Pow(c / (double)n, PerfThresholds.ArmyCostExponent);
+				Chk(cap > 0 && At(cap) <= PerfThresholds.ArmyTargetMs + 1e-9 && At(cap + 1) > PerfThresholds.ArmyTargetMs - 1e-9 + 0 && At(cap - 1) < At(cap), "the suggestion is the largest army that lands at 12 ms (" + upd + " ms, " + n + " soldiers: " + cap + ")");
 			}
 			List<PerfWindow> Heavy(int n) { var l = Fight(n, 4, 58, 0.45, "CalamityMod", 0.1); foreach (var w in l) { w.UpdMs = 16; w.Levies = 45; w.Mine = 45; w.ArmyRefMs = new[] { 6.6, 3.6, 0, 0 }; } return l; }
 			bool avail = PerfAnalysis.ActiveArmyAvailable;
 			try
 			{
 				var hv = PerfAnalysis.Judge(Heavy(20));
-				Chk(hv.Kind == LagKind.Levy && hv.SuggestedArmy == 27 && hv.Options.Contains(PopupOption.ActiveArmy) && hv.Options.IndexOf(PopupOption.ActiveArmy) == hv.Options.IndexOf(PopupOption.LowerLevyEffects) + 1, "a laggy army fight offers the active army size after lower effects (" + Opts(hv) + ", " + hv.SuggestedArmy + ")");
-				Chk(hv.Detail.Contains("About 27 soldiers at once would run smoothly here. Set an active army size?"), "and says the size in words (" + string.Join(" | ", hv.Detail) + ")");
+				Chk(hv.Kind == LagKind.Levy && hv.SuggestedArmy == 30 && hv.Options.Contains(PopupOption.ActiveArmy) && hv.Options.IndexOf(PopupOption.ActiveArmy) == hv.Options.IndexOf(PopupOption.LowerLevyEffects) + 1, "a laggy army fight offers the active army size after lower effects (" + Opts(hv) + ", " + hv.SuggestedArmy + ")");
+				Chk(hv.Detail.Contains("About 30 soldiers at once would run smoothly here. Set an active army size?"), "and says the size in words (" + string.Join(" | ", hv.Detail) + ")");
 				Chk(!levy.Options.Contains(PopupOption.ActiveArmy) && levy.SuggestedArmy == -1, "not when the updates were under budget (the frames were the cost)");
-				Chk(!PerfAnalysis.Judge(Fight(20, 30, 60, 0.1, "CalamityMod", 0.55)).Options.Contains(PopupOption.ActiveArmy), "never in the other-mod popup");
+				Chk(!PerfAnalysis.Judge(Fight(20, 30, 60, 0.1, "CalamityMod", 0.55)).Options.Contains(PopupOption.ActiveArmy), "not in the other-mod popup when the army is a small part of the update");
+				List<PerfWindow> HeavyOther(int n) { var l = Fight(n, 4, 58, 0.1, "CalamityMod", 0.55); foreach (var w in l) { w.UpdMs = 16; w.Levies = 45; w.Mine = 45; w.ArmyRefMs = new[] { 6.6, 3.6, 0, 0 }; } return l; }
+				var ho = PerfAnalysis.Judge(HeavyOther(20));
+				Chk(ho.Kind == LagKind.OtherMod && Opts(ho) == "ActiveArmy,ItsFine,DontAskAgain,OpenSettings" && ho.SuggestedArmy == 30 && ho.Detail.Contains("About 30 soldiers at once would run smoothly here. Set an active army size?"), "another mod's popup also offers the active army size when the army was most of the update's cost (" + Opts(ho) + ", " + ho.SuggestedArmy + ")");
 				PerfAnalysis.ActiveArmyAvailable = false;
 				Chk(!PerfAnalysis.Judge(Heavy(20)).Options.Contains(PopupOption.ActiveArmy), "and not when the roster cannot take it");
 				PerfAnalysis.ActiveArmyAvailable = true;
 				// the live notice
 				PerfWindow Live(double upd, double army, int levies, int fs = 1, double ups = 58, double draw = 10) { var w = Fight(1, 8, ups, 0.45, "CalamityMod", 0.1)[0]; w.UpdMs = upd; w.DrawMs = draw; w.Levies = levies; w.FrameSkip = fs; w.ArmyRefMs = new[] { army, 0, 0, 0 }; return w; }
 				var ln = PerfAnalysis.ArmyNotice(Live(15, 9, 45), 45);
-				Chk(ln != null && ln.Kind == LagKind.ArmyTooBig && ln.SuggestedArmy == PerfAnalysis.SuggestArmyCap(15, 9, 45, 45) && Opts(ln) == "ActiveArmy,OpenSettings,DontAskAgain", "15 ms an update, 9 of it the army: the notice offers set it / settings / don't ask again (" + (ln == null ? "none" : Opts(ln) + " " + ln.SuggestedArmy) + ")");
+				Chk(ln != null && ln.Kind == LagKind.ArmyTooBig && ln.SuggestedArmy == PerfAnalysis.SuggestArmyCap(15, 9, 45, 45) && Opts(ln) == "ActiveArmy,ItsFine,OpenSettings,DontAskAgain", "15 ms an update, 9 of it the army: the notice offers set it / it's fine / settings / don't ask again (" + (ln == null ? "none" : Opts(ln) + " " + ln.SuggestedArmy) + ")");
 				Chk(ln != null && ln.Detail.Length == 1 && ln.Detail[0] == "Your army is more than this computer can run smoothly (about " + ln.SuggestedArmy + " soldiers at once). Set an active army size?", "in the words asked for (" + (ln == null ? "" : ln.Detail[0]) + ")");
 				Chk(PerfAnalysis.ArmyNotice(Live(13.5, 9, 45), 45) == null, "not at 13.5 ms an update with Frame Skip On");
 				var sp = PerfAnalysis.ArmyNotice(Live(11, 8, 45, 2, 40, 9), 45);

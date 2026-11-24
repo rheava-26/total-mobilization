@@ -1,0 +1,25 @@
+# Nanoblack Reaper rogue screen, measured like docs/fizzrogue/rogue_screen2.yaml: a Statigel rogue levy on a dummy 20 tiles away, 40 s window.
+#  spam    = never hold a throw for stealth (every throw drains the bar, so no strikes)
+#  wait    = hold up to 130 ticks for the bar, else throw (Force 1)
+#  patient = always wait for the full bar (up to 900 ticks), strike, repeat (Force 2)
+# ScarletDevil and GhoulishGouger are controls: their rows in RoguePolicy.cs come from the same lab.
+name: nanoblack_screen
+mods: calamity
+arena: a3
+seeds: 6
+tipsy:
+  dist: [20]
+  motion: [static]
+  size: [small, boss]
+  warm: 300
+  win: 2400
+  every: {rg: 1}
+  arms: {spam: {pol: spam}, wait: {pol: wait}, patient: {pol: patient}}
+  weapons:
+    - {name: CalamityMod/NanoblackReaper, cls: R}
+    - {name: CalamityMod/ScarletDevil, cls: R}
+    - {name: CalamityMod/GhoulishGouger, cls: R}
+# Result (levylab run, 108 fights, damage per levy-second, mean of 6 seeds; % of spam):
+#   small hitbox: NanoblackReaper spam 26703, wait 13682 (51%), patient 8396 (31%) | ScarletDevil 65431 / 48357 (74%) / 42326 (65%) | GhoulishGouger 2993 / 3116 (104%) / 3107 (104%)
+#   boss hitbox:  NanoblackReaper spam 34759, wait 17819 (51%), patient 17778 (51%) | ScarletDevil 57322 / 53152 (93%) / 29426 (51%) | GhoulishGouger 3253 / 3039 (93%) / 2076 (64%)
+# The two controls land on the rows already in RoguePolicy.cs (Scarlet Devil x0.74 / x0.90, Ghoulish Gouger x1.08 / x0.88).

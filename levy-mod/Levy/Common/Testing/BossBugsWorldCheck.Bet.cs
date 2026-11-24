@@ -114,6 +114,44 @@ namespace Levy.Common.Testing
 					Check("(Spectator, boss, no levy was ever fielded) no death", _betKills == kills0);
 					if (boss != null) boss.active = false;
 				}
+
+				// ---- a boss that leaves is a lost bet, unless it was killed, it left for want of a target, no army was ever fielded, or it was back within the grace
+				{
+					int Grace = SpectatorBet.LeaveGraceTicks + 20;
+					var leaves = new (string name, int levies, Action<NPC> end, int wait, bool dies)[]
+					{
+						("the boss despawns with the army standing", 4, b => b.active = false, Grace, true),
+						("the boss is killed", 4, b => b.StrikeInstantKill(), Grace, false),
+						("the boss flees from a spectator it could not see", 4, b => { SpectatorBet.NoteBossBlind(); b.active = false; }, Grace, false),
+						("the boss despawns and no army was ever fielded", 0, b => b.active = false, Grace, false),
+						("the boss is gone for a second only", 4, null, Grace, false),
+					};
+					foreach (var c in leaves)
+					{
+						NewBetScene(bar, 12);
+						me.GetModPlayer<SpectatorPlayer>().OnEnterWorld(); // a new world: no fight carries over from the case before
+						_spectator = true; PlaceCommander(-20);
+						var levies = Levies(c.levies, 3f, 10f); foreach (var l in levies) l.Record.HomeBarracksId = BetBarracksId;
+						Step(4);
+						NPC boss = SpawnNpc(NPCID.KingSlime, new Vector2((Cx + 190) * 16f, (_floorY - 30) * 16f));
+						_perTick = () => { if (boss != null && boss.active) { boss.life = boss.lifeMax; boss.timeLeft = 99999; } };
+						BetStep(30);
+						int kills0 = _betKills; _betText = null; _perTick = null;
+						if (c.end != null) c.end(boss);
+						else { boss.active = false; BetStep(60); boss = SpawnNpc(NPCID.KingSlime, new Vector2((Cx + 190) * 16f, (_floorY - 30) * 16f)); _perTick = () => { if (boss != null && boss.active) { boss.life = boss.lifeMax; boss.timeLeft = 99999; } }; }
+						BetStep(c.wait);
+						bool died = _betKills > kills0;
+						Note($"({c.name}) verdict {me.GetModPlayer<SpectatorPlayer>().LastLeave?.ToString() ?? "none"}, kill tick {SpectatorBet.BossKillTick}, blind tick {SpectatorBet.BossBlindTick}");
+						Check($"({c.name}) {(c.dies ? "the player dies" : "no death")}", died == c.dies);
+						if (died && c.dies) Check($"({c.name}) the death message is one of the boss-left lines: \"{_betText}\"", Enumerable.Range(0, SpectatorBet.LeftMessageCount).Any(k => SpectatorBet.LeftMessage(k, Commander) == _betText));
+						_perTick = null; if (boss != null) boss.active = false;
+					}
+					Check("each of the boss-left lines is real text with the player's name filled in", Enumerable.Range(0, SpectatorBet.LeftMessageCount).All(k => { string m = SpectatorBet.LeftMessage(k, "Eve"); return m.Contains("Eve") && !m.Contains("Mods.Levy") && !m.Contains("{0}"); }));
+					Check("the verdicts: a kill wins, a blind boss is not a loss, no army is no bet, the rest is lost",
+						SpectatorBet.LeaveVerdict(100, 500, 400, 0, true) == SpectatorBet.LeaveResult.Won && SpectatorBet.LeaveVerdict(100, 500, 0, 450, true) == SpectatorBet.LeaveResult.Blinded
+						&& SpectatorBet.LeaveVerdict(100, 500, 0, 0, false) == SpectatorBet.LeaveResult.NoArmy && SpectatorBet.LeaveVerdict(100, 500, 0, 0, true) == SpectatorBet.LeaveResult.Lost
+						&& SpectatorBet.LeaveVerdict(100, 900, 0, 450, true) == SpectatorBet.LeaveResult.Lost && SpectatorBet.LeaveVerdict(100, 500, 50, 0, true) == SpectatorBet.LeaveResult.Lost);
+				}
 			}
 			finally
 			{
@@ -121,6 +159,51 @@ namespace Levy.Common.Testing
 				if (TileEntity.ByID.TryGetValue(BetBarracksId, out var betBar)) TestTileEntities.Remove(betBar);
 				global::Levy.Common.Boss.BossDownedSystem.ClearForTest();
 			}
+		}
+
+		// =====================================================================================================
+		// BRIMSTONE MONSTER: Supreme Calamitas's vortex takes life inside its own CanHitPlayer and homes on Main.player[ai0]; a Spectator must be neither chased nor drained
+		// =====================================================================================================
+		private static void BrimstoneGuard()
+		{
+			if (!ModLoader.TryGetMod("CalamityMod", out Mod cal) || !cal.TryFind("BrimstoneMonster", out ModProjectile bm)) { Note("Calamity is not loaded: the Brimstone Monster guard is checked in the Calamity half"); return; }
+			Arena(FloorY, Half);
+			SetRevenge(true, false); Main.GameMode = GameModeID.Expert; Main.hardMode = true;
+			global::Levy.Common.Boss.BossDownedSystem.ClearForTest();
+			global::Levy.Common.Boss.BossDownedSystem.SetDownedForTest(NPCID.KingSlime, true);
+			System.Reflection.FieldInfo anyBoss = cal.Code.GetType("CalamityMod.CalPlayer.CalamityPlayer")?.GetField("areThereAnyDamnBosses", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+			Player me = Main.player[0];
+			int bt = ModContent.BuffType<global::Levy.Content.Buffs.SpectatorBuff>();
+			try
+			{
+				foreach (bool spec in new[] { false, true })
+				{
+					string arm = spec ? "Spectator" : "no Spectator";
+					ClearHostiles(); me.dead = false; if (me.HasBuff(bt)) me.ClearBuff(bt);
+					_spectator = spec; PlaceCommander(-50);
+					Step(4);
+					NPC boss = SpawnNpc(NPCID.KingSlime, new Vector2((Cx + 150) * 16f, (_floorY - 30) * 16f));
+					_perTick = () => { if (boss != null && boss.active) { boss.life = boss.lifeMax; boss.timeLeft = 99999; boss.Center = new Vector2((Cx + 150) * 16f, (_floorY - 30) * 16f); } anyBoss?.SetValue(null, true); };
+					Vector2 start = _cmdAt + new Vector2(900f, -40f);
+					int pi = Projectile.NewProjectile(new EntitySource_WorldEvent(), start, Vector2.Zero, bm.Type, 100, 0f, Main.myPlayer, 0f, 0f);
+					Projectile mon = Main.projectile[pi];
+					BetStep(280); // the vortex grows for 180 ticks and sits for 90 more
+					// the drain: put the vortex on the commander and ask the question vanilla asks first
+					mon.Center = me.Center; mon.Opacity = 1f; mon.scale = 1.9f; me.statLife = me.statLifeMax2 = 500; me.immune = false; me.immuneTime = 0;
+					int before = me.statLife; bool hit = Terraria.ModLoader.ProjectileLoader.CanHitPlayer(mon, me);
+					int drained = before - me.statLife;
+					Check($"(Brimstone Monster, {arm}) {(spec ? "it takes no life off the player" : "it drains life (the control: the check can see the bug)")} ({drained})", spec ? drained == 0 : drained > 0);
+					Check($"(Brimstone Monster, {arm}) no standard hit is made", !hit);
+					// the chase
+					mon.Center = start; mon.velocity = Vector2.Zero; mon.ai[0] = 0f; mon.timeLeft = 36000; mon.Opacity = 1f; mon.scale = 1.9f;
+					float d0 = Vector2.Distance(mon.Center, me.Center);
+					BetStep(240);
+					float d1 = mon.active ? Vector2.Distance(mon.Center, me.Center) : d0;
+					Check($"(Brimstone Monster, {arm}) {(spec ? "it does not chase: the gap stays" : "it chases: the gap closes (the control)")} ({d0:0} -> {d1:0} px)", spec ? d1 > d0 - 60f : d1 < d0 - 200f);
+					_perTick = null; if (boss != null) boss.active = false; if (mon.active) mon.active = false;
+				}
+			}
+			finally { _spectator = false; _perTick = null; if (me.HasBuff(bt)) me.ClearBuff(bt); global::Levy.Common.Boss.BossDownedSystem.ClearForTest(); SetRevenge(false, false); }
 		}
 
 		private static void NewBetScene(BarracksTE bar, int manpower)

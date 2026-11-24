@@ -20,20 +20,61 @@ namespace Levy.Common.Potions
 		/// <summary>The number of "Potions.LostBet.BetN" death messages.</summary>
 		public const int MessageCount = 5;
 
-		/// <summary>Any active boss: a boss-class NPC that is not an enemy-event tower. Parts and minions count through their boss's own flag.</summary>
+		/// <summary>A boss-class NPC that is not an enemy-event tower. Parts and minions count through their boss's own flag.</summary>
+		public static bool IsBoss(NPC n)
+		{
+			if (n == null || n.friendly || n.townNPC) return false;
+			int t = n.type;
+			if (t < 0 || t >= NPCID.Sets.ShouldBeCountedAsBoss.Length) return false;
+			if (!n.boss && !NPCID.Sets.ShouldBeCountedAsBoss[t]) return false;
+			return Array.IndexOf(LevyConstants.Targeting.EventTowerTypes, t) < 0;
+		}
+
+		/// <summary>Any active boss.</summary>
 		public static bool AnyActiveBoss()
 		{
 			for (int i = 0; i < Main.maxNPCs; i++)
-			{
-				NPC n = Main.npc[i];
-				if (!n.active || n.friendly || n.townNPC) continue;
-				int t = n.type;
-				if (t < 0 || t >= NPCID.Sets.ShouldBeCountedAsBoss.Length) continue;
-				if (!n.boss && !NPCID.Sets.ShouldBeCountedAsBoss[t]) continue;
-				if (Array.IndexOf(LevyConstants.Targeting.EventTowerTypes, t) >= 0) continue;
-				return true;
-			}
+				if (Main.npc[i].active && IsBoss(Main.npc[i])) return true;
 			return false;
+		}
+
+		// ------------------------------------------------------------------ a boss that leaves
+		/// <summary>The number of "Potions.LostBetLeft.LeftN" death messages.</summary>
+		public const int LeftMessageCount = 4;
+		/// <summary>No boss for this many ticks after one was there: it has left (a boss between two forms or two bodies is not).</summary>
+		public const int LeaveGraceTicks = 180;
+		/// <summary>A boss that hid a spectator from its AI this recently before leaving left because it had nobody to fight, not because the bet was lost.</summary>
+		public const int BlindWindowTicks = 300;
+		/// <summary>Game ticks of the last boss death and of the last time a boss AI was handed a spectator it could not see (<see cref="SpectatorNpcHide"/>).</summary>
+		internal static uint BossKillTick, BossBlindTick;
+		public static void NoteBossKilled() => BossKillTick = Main.GameUpdateCount;
+		public static void NoteBossBlind() => BossBlindTick = Main.GameUpdateCount;
+		public static void ResetLeave() { BossKillTick = 0; BossBlindTick = 0; }
+
+		/// <summary>What became of a boss fight whose boss is gone.</summary>
+		public enum LeaveResult { Won, Blinded, NoArmy, Lost }
+
+		/// <summary>
+		/// The verdict for a boss that is no longer there. <paramref name="fightStart"/>: the tick the fight began; <paramref name="goneAt"/>: the tick the last boss was seen. A boss killed since the fight began is a win;
+		/// a boss whose AI was handed a spectator it could not see just before it went fled for want of a target, which is not the player's loss; with no army ever fielded there was no bet; otherwise it left on its own
+		/// (dawn, its own time running out, a despawn rule) and the bet is lost.
+		/// </summary>
+		public static LeaveResult LeaveVerdict(uint fightStart, uint goneAt, uint killTick, uint blindTick, bool armySeen)
+		{
+			if (killTick >= fightStart && killTick > 0) return LeaveResult.Won;
+			if (blindTick > 0 && blindTick + BlindWindowTicks >= goneAt && blindTick >= fightStart) return LeaveResult.Blinded;
+			if (!armySeen) return LeaveResult.NoArmy;
+			return LeaveResult.Lost;
+		}
+
+		/// <summary>The death message for a boss that left, with the player's name filled in.</summary>
+		public static string LeftMessage(int pick, string playerName) => LevyUtil.T("Potions.LostBetLeft.Left" + (1 + Math.Clamp(pick, 0, LeftMessageCount - 1)), playerName);
+
+		/// <summary>Kills the player with one of the boss-left messages (a random one when <paramref name="pick"/> is negative).</summary>
+		public static void KillLeft(Player p, int pick = -1)
+		{
+			if (pick < 0) pick = Main.rand.Next(LeftMessageCount);
+			p.KillMe(PlayerDeathReason.ByCustomReason(NetworkText.FromLiteral(LeftMessage(pick, p.name))), 9999.0, 0);
 		}
 
 		/// <summary>True while a levy of this player (a regular of his, or any militiaman) is alive on the field.</summary>

@@ -335,6 +335,16 @@ namespace Levy.Common.Testing
 				Check($"live notice: a window at 15.5 ms with the army 10.2 of it shows the notice at once (suggests {v?.SuggestedArmy}, expected {expect})", v != null && PerfPopup.Current == v && v.SuggestedArmy == expect && PerfPopup.ArmyStep == expect);
 				Check("live notice: the words", v != null && v.Detail[0] == "Your army is more than this computer can run smoothly (about " + expect + " soldiers at once). Set an active army size?");
 				Check("live notice: once a session", PerfPopup.CheckLive(w, 45) == null);
+				PerfPopup.ArmyNoticeShown = false; PerfPopup.Hide();
+				var vf = PerfPopup.CheckLive(w, 45);
+				Check("live notice: the note offers a fourth button, It's fine", vf != null && vf.Options.Contains(PopupOption.ItsFine) && vf.Options.Contains(PopupOption.ActiveArmy) && vf.Options.Contains(PopupOption.OpenSettings) && vf.Options.Contains(PopupOption.DontAskAgain));
+				PerfPopup.Act(PopupOption.ItsFine); PerfPopup.ArmyNoticeShown = false;
+				Check("live notice: It's fine keeps the note away for the rest of the session, without saving anything", PerfPopup.SessionQuiet && PerfPopup.CheckLive(w, 45) == null && PerfPopup.TestArmyDontAsk == false);
+				int shown0 = PerfPopup.Shown;
+				PerfPopup.Offer(new LagVerdict { Kind = LagKind.OtherMod, Laggy = true, Options = new System.Collections.Generic.List<PopupOption> { PopupOption.ItsFine } });
+				Check("live notice: and the after-fight note stays away too", PerfPopup.Shown == shown0);
+				PerfPopup.SessionQuiet = false; PerfPopup.ArmyNoticeShown = false; PerfPopup.Hide();
+				Check("live notice: a new session starts without it", PerfPopup.CheckLive(w, 45) != null);
 				PerfPopup.Act(PopupOption.DontAskAgain);
 				Check("live notice: Don't ask again silences the army note, not the lag note", PerfPopup.TestArmyDontAsk == true);
 				PerfPopup.ArmyNoticeShown = false;

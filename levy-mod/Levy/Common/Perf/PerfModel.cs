@@ -298,7 +298,9 @@ namespace Levy.Common.Perf
 		/// <summary>The update time (ms per tick) a suggested active army size aims for: under the 16.7 ms frame with room left to draw.</summary>
 		public const double ArmyTargetMs = 12.0;
 		/// <summary>A suggestion never puts fewer soldiers in the field than this; the notice needs at least <see cref="ArmyMinFielded"/> of the player's own soldiers in the field.</summary>
-		public const int ArmyMinSuggest = 5, ArmyMinFielded = 10;
+		public const int ArmyMinSuggest = 10, ArmyMinFielded = 10;
+		/// <summary>A suggestion keeps at least this share of the fielded army. The army's cost grows with the soldier count to the power below (more than 1: the soldiers' scans run over the shots the army fires).</summary>
+		public const double ArmyKeepShare = 0.4, ArmyCostExponent = 1.25;
 		/// <summary>The live notice: a whole window (8 s) with updates this long, or with Frame Skip Subtle at under this share of full speed, while the army is at least <see cref="ArmyBigShare"/> of the update.</summary>
 		public const double ArmySlowUpdMs = 14.0, ArmySlowSpeed = 0.8, ArmyBigShare = 0.30;
 	}
@@ -392,19 +394,24 @@ namespace Levy.Common.Perf
 
 		// ----------------------------------------------------------------------------------- active army size
 		/// <summary>
-		/// The active army size that brings an update of <paramref name="updMs"/> down to <paramref name="targetMs"/>. The army's own cost per update (<paramref name="armyMs"/>: its bodies and shots) shared out over the
-		/// <paramref name="soldiersOnField"/> soldier bodies it was measured on is the cost of one soldier; enough of the player's <paramref name="fielded"/> soldiers come off the field to save the excess.
-		/// Never below <see cref="PerfThresholds.ArmyMinSuggest"/>. -1 when nothing needs to change or a number is missing.
+		/// The active army size that brings an update of <paramref name="updMs"/> down to <paramref name="targetMs"/>. The army's own cost per update (<paramref name="armyMs"/>: its bodies, shots and the hooks on them) is measured on
+		/// <paramref name="soldiersOnField"/> soldier bodies; what is not the army's (the boss, the base game, other mods) stays whatever the size. The army's cost falls faster than its head count, because each soldier's
+		/// dodge and target scans run over every projectile and the shots the army fires are projectiles too, so it is modelled as growing with the soldier count to the power <see cref="PerfThresholds.ArmyCostExponent"/> (a straight
+		/// line would cut too deep). A suggestion never cuts below <see cref="PerfThresholds.ArmyKeepShare"/> of the fielded army (and never below <see cref="PerfThresholds.ArmyMinSuggest"/> soldiers): the target may then be missed,
+		/// which is better than a size that leaves the army toothless. -1 when nothing needs to change, a number is missing or the army is too small to cut.
 		/// </summary>
 		public static int SuggestArmyCap(double updMs, double armyMs, double soldiersOnField, int fielded, double targetMs = PerfThresholds.ArmyTargetMs)
 		{
 			if (!(soldiersOnField > 0) || fielded <= 0 || !(armyMs > 0) || double.IsNaN(updMs) || double.IsInfinity(updMs)) return -1;
 			double excess = updMs - targetMs;
 			if (!(excess > 0)) return -1;
-			double per = Math.Min(armyMs, updMs) / soldiersOnField;
-			if (per <= 1e-6) return -1;
-			int cut = (int)Math.Ceiling(excess / per - 1e-9);
-			int cap = Math.Max(PerfThresholds.ArmyMinSuggest, fielded - cut);
+			double army = Math.Min(armyMs, updMs);
+			if (army / soldiersOnField <= 1e-6) return -1;
+			double keep = 1 - excess / army; // the share of the army's cost that may stay
+			double removed = keep <= 0 ? soldiersOnField : soldiersOnField * (1 - Math.Pow(keep, 1.0 / PerfThresholds.ArmyCostExponent));
+			int cut = (int)Math.Ceiling(removed - 1e-9);
+			int floor = Math.Max(PerfThresholds.ArmyMinSuggest, (int)Math.Ceiling(PerfThresholds.ArmyKeepShare * fielded - 1e-9));
+			int cap = Math.Max(floor, fielded - cut);
 			return cap >= fielded ? -1 : cap;
 		}
 
@@ -440,20 +447,25 @@ namespace Levy.Common.Perf
 			var v = new LagVerdict { Kind = LagKind.ArmyTooBig, Laggy = true, SuggestedArmy = cap, ArmyUpdMs = w.UpdMs, ArmyCostMs = army, Levies = mine, MedianFps = w.Fps, MedianUps = w.Ups };
 			v.Headline = "This fight is lagging.";
 			v.Detail = new[] { ArmyNoticeLine(cap) };
-			v.Options = new List<PopupOption> { PopupOption.ActiveArmy, PopupOption.OpenSettings, PopupOption.DontAskAgain };
+			v.Options = new List<PopupOption> { PopupOption.ActiveArmy, PopupOption.ItsFine, PopupOption.OpenSettings, PopupOption.DontAskAgain };
 			return v;
 		}
 
 		/// <summary>The notice's words.</summary>
 		public static string ArmyNoticeLine(int cap) => string.Format(CultureInfo.InvariantCulture, "Your army is more than this computer can run smoothly (about {0} soldiers at once). Set an active army size?", cap);
 
-		/// <summary>A laggy fight where the army was the cost: the active army size that would have brought its laggy windows to about 12 ms an update, offered in the popup with a line that says so.</summary>
+		/// <summary>
+		/// A laggy fight where the army was a big part of the cost: the active army size that would have brought its laggy windows to about 12 ms an update, offered in the popup with a line that says so. Offered in every popup that
+		/// shows (the army's, another mod's, the base game's) when the army was at least <see cref="PerfThresholds.ArmyBigShare"/> of the laggy updates; the army's own popup offers it whenever a size would help.
+		/// </summary>
 		private static void ArmyAdvice(LagVerdict v, IList<PerfWindow> fight)
 		{
-			if (v.Kind != LagKind.Levy || !ActiveArmyAvailable) return;
+			if (!ActiveArmyAvailable || !v.ShowPopup) return;
+			if (v.Kind != LagKind.Levy && v.Kind != LagKind.OtherMod && v.Kind != LagKind.BaseGame) return;
 			var laggy = fight.Where(w => w != null && w.Focus && w.Secs > 0 && w.Frames > 0 && w.Updates > 0 && (w.Fps < PerfThresholds.LagFps || w.Ups < PerfThresholds.LagUps)).ToList();
 			double secs = laggy.Sum(w => w.Secs); if (secs <= 0) return;
 			double upd = laggy.Sum(w => w.UpdMs * w.Secs) / secs, army = laggy.Sum(w => ArmyMs(w) * w.Secs) / secs, levies = laggy.Sum(w => w.Levies * w.Secs) / secs;
+			if (v.Kind != LagKind.Levy && !(army >= PerfThresholds.ArmyBigShare * upd)) return;
 			var mineW = laggy.Where(w => w.Mine >= 0).ToList();
 			double mine = mineW.Count > 0 ? mineW.Sum(w => w.Mine * w.Secs) / mineW.Sum(w => w.Secs) : levies;
 			int fielded = (int)Math.Round(mine);

@@ -49,6 +49,9 @@ namespace Levy.Common.Testing
 		{
 			["DaedalusStormbow"] = "its arrows fall from the top of the screen above the target, where the commander stands in this check",
 			["PulseBow"] = "its bolts ricochet off the arena's walls and ceiling",
+			// Shredder's splits (ChargedBlastSplit with ai[2] 0) never read a cursor: they fly straight back from the hit within 0.9 radians, bounce off tiles up to 4 times and live about 40 ticks (some 90 tiles of flight); observed
+			// passing her on a straight line (velocity (-5.6, -2.2) unchanged over the ticks near her)
+			["Shredder"] = "its splits fly straight back from the hit and bounce off the arena, far enough to pass the commander 60 tiles up",
 		};
 
 		private const int GunParityCmdUpTiles = 60;
@@ -58,9 +61,13 @@ namespace Levy.Common.Testing
 			var list = new List<(int type, string label)>();
 			string only = Environment.GetEnvironmentVariable("LEVY_GUNPARITY_ONLY");
 			string[] names = string.IsNullOrEmpty(only) ? null : only.Split(';', StringSplitOptions.RemoveEmptyEntries);
-			foreach (short t in GunParityVanilla) list.Add((t, "Terraria:" + ItemID.Search.GetName(t)));
-			if (ModLoader.TryGetMod("CalamityMod", out Mod cal))
-				foreach (string n in GunParityCal) if (cal.TryFind(n, out ModItem mi)) list.Add((mi.Type, "CalamityMod:" + n));
+			// The ship run keeps the Calamity half inside its time budget (the full list cost 163 s there): with Calamity loaded the vanilla weapons are left to the vanilla half (one bow and one gun stay as a control),
+			// and the weapons whose DPS is only noted are skipped. LEVY_GUNPARITY_ALL=1 (or a LEVY_GUNPARITY_ONLY list) runs everything.
+			bool calLoaded = ModLoader.TryGetMod("CalamityMod", out Mod cal);
+			bool all = names != null || Environment.GetEnvironmentVariable("LEVY_GUNPARITY_ALL") == "1";
+			foreach (short t in GunParityVanilla) if (all || !calLoaded || t == ItemID.PlatinumBow || t == ItemID.Minishark) list.Add((t, "Terraria:" + ItemID.Search.GetName(t)));
+			if (calLoaded)
+				foreach (string n in GunParityCal) if ((all || !GunParityNoteOnly.ContainsKey(n)) && cal.TryFind(n, out ModItem mi)) list.Add((mi.Type, "CalamityMod:" + n));
 			if (names != null)
 			{
 				list = list.Where(w => names.Any(n => w.label.EndsWith(":" + n))).ToList();

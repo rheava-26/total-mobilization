@@ -289,6 +289,7 @@ namespace Levy.Common.Testing
 			// -------- B: the drain rate, once, against Calamity's own constant; a levy that bleeds to death
 			try { DrainRate(levy, real); } catch (Exception e) { Check("drain-rate trial threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
 			try { BleedToDeath(chaliceType); } catch (Exception e) { Check("bleed-to-death trial threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
+			try { VideoLike(chaliceType); } catch (Exception e) { Check("video-like trial threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
 			// -------- C: the army in the area attack
 			try { Army(chaliceType, attacks.Count > 0 ? attacks[0].dmg : 550, attacks.Count > 0 ? attacks[0].label : "constructed"); } catch (Exception e) { Check("army trial threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())), false); }
 		}
@@ -334,6 +335,34 @@ namespace Levy.Common.Testing
 		}
 
 		/// <summary>An army of 12 levies in the Chalice (real life, a little defense) inside one big area shot: how many are alive each second, the drain off and on, against 12 players.</summary>
+		/// <summary>
+		/// The video's numbers: a levy whose hits show as "(-435)" in the Chalice (a shot sized so the hit before the Chalice's cut is about 440 after the levy's defense and endurance), 400 life, standing in it. Time to death with the drain off and on.
+		/// </summary>
+		private static void VideoLike(int chaliceType)
+		{
+			foreach (bool on in new[] { false, true })
+			{
+				SoldierNPC.BleedoutLab = on; Cleanup(); Arena();
+				var l = MakeLevy("Sgt. Alice", new Vector2(Cx * 16f, FloorY * 16f), chaliceType, 0);
+				if (l == null) { Check("the video-like levy spawns", false); continue; }
+				NPC body = l.NPC; Step(8);
+				l.NPC.defense = 40; l.Defense = 40; l.Dummy.statDefense = Player.DefenseStat.Default + 40; l.Endurance = 0.25f;
+				var pr = Shot(100, body.Center, 0, false); int diedAt = -1, firstBuf = 0; double peak = 0; int life0 = body.lifeMax;
+				Step(1800, k =>
+				{
+					l.Endurance = 0.25f; l.Defense = 40; body.defense = 40; l.Dummy.statDefense = Player.DefenseStat.Default + 40;
+					Pin(pr, body.Center);
+					peak = Math.Max(peak, ChaliceBleed.Buffer(l.Dummy)); if (k == 3 && firstBuf == 0) firstBuf = (int)ChaliceBleed.Buffer(l.Dummy);
+					if (diedAt < 0 && (!body.active || body.life <= 0)) diedAt = k;
+				});
+				if (pr != null) pr.active = false;
+				Note($"video-like levy ({life0} life, first hit's deferred damage about {firstBuf}, peak buffer {peak:0}) standing in the shot, drain {(on ? "ON" : "OFF")}: " + (diedAt >= 0 ? $"dies at tick {diedAt} ({diedAt / 60.0:0.0} s)" : "alive after 30 s"));
+				Check(on ? "a levy taking about 440 per hit in the Chalice dies standing in the shot, as a player of that life would" : "(drain off) the same levy stays alive in the shot for 30 s: the bug", on ? diedAt >= 0 && diedAt < 600 : diedAt < 0);
+				if (body.active) body.active = false;
+			}
+			SoldierNPC.BleedoutLab = true; Cleanup();
+		}
+
 		private static void Army(int chaliceType, int dmg, string label)
 		{
 			var res = new Dictionary<string, int[]>();

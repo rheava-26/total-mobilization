@@ -156,7 +156,7 @@ namespace Levy.Common.Weapons
 		internal static ChargePlan ChargeRelease(Item item) => item?.ModItem == null || item.ModItem.Mod.Name != "CalamityMod" ? null : _planOverride.TryGetValue(item.ModItem.Name, out ChargePlan o) ? o : ChargeReleaseTable.TryGetValue(item.ModItem.Name, out ChargePlan p) ? p : null;
 
 		/// <summary>
-		/// The stall rule of an AutoHoldMods mod's blade held through a swing projectile (<see cref="AutoHoldType"/>, melee class): a held weapon that has done nothing is let go once (<see cref="LevyConstants.HeldStallReleaseTicks"/>), because a
+		/// The stall rule of an AutoHoldMods mod's held weapon (<see cref="AutoHoldType"/>: a blade, a hammer, a charged staff): a held weapon that has done nothing is let go once (<see cref="LevyConstants.HeldStallReleaseTicks"/>), because a
 		/// weapon that swings when the button goes UP never swings on a held one. A sword that swings on the release has hit nothing while it charges, so it is let go after a short wait and lives out its swing; one that fights while held
 		/// (a combo) hits at once, counts as having done something, and is never let go. Returns the (hold, linger) in ticks, or null for the general rule.
 		/// </summary>

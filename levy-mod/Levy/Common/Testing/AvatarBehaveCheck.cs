@@ -62,7 +62,7 @@ namespace Levy.Common.Testing
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation; int gm = Main.GameMode; bool hm = Main.hardMode; bool day = Main.dayTime; double time = Main.time; bool? on0 = AvatarFight.TestOn;
 			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; Main.player[0] = Main.player[0] ?? new Player(); Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(4).Select(l => l.Trim())), false); }
-			finally { On_Player.KillMe -= killDet; _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); AvatarFight.TestOn = on0; AvatarFight.TestZones = null; WotgScenes.TestAvatarPercent = null; WotgScenes.TestVoice = null; Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time; }
+			finally { On_Player.KillMe -= killDet; _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); AvatarFight.TestOn = on0; AvatarFight.TestZones = null; AoeVoice.TestActive = null; AoeVoice.FloatLog = null; WotgScenes.TestVoice = null; Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time; }
 			_mod.Logger.Info($"[AvatarBehave] self-check pass={_pass} fail={_fail}");
 		}
 
@@ -218,7 +218,7 @@ namespace Levy.Common.Testing
 		private sealed class Result
 		{
 			public Acc All = new(), Flier = new(), Foot = new(), Hook = new(); public int Hits, Ticks, Lost, Shifts, AliveAtEnd; public long Damage; public double Near2s, Near10s; public int Near2sN, Near10sN;
-			public int Lines, Floating, Reforced, CmdKills, Moments, Dropped, Voice, FightLines; public string Telemetry = ""; public long InSphere; public bool BossAlive; public readonly HashSet<string> States = new();
+			public List<(byte trigger, string text)> Floats = new(); public int Lines, Floating, Reforced, CmdKills, Moments, Dropped, Voice, FightLines; public string Telemetry = ""; public long InSphere; public bool BossAlive; public readonly HashSet<string> States = new();
 			public readonly Dictionary<string, long> StateTicks = new(); public readonly Dictionary<string, int> HitBy = new(), ZoneTicks = new(), HitState = new(); public long Urgent;
 		}
 
@@ -227,7 +227,7 @@ namespace Levy.Common.Testing
 		private static Result RunScene(Scn sc, int variant)
 		{
 			var r = new Result();
-			bool behave = variant > 0; WotgScenes.TestVoice = false; Cleanup(); AvatarFight.TestVoid = sc.Portal ? true : null; AvatarFight.TestOn = behave; AvatarFight.TestZones = variant == 1 ? false : null; WotgScenes.TestAvatarPercent = behave ? null : 100;   // off = the chatter the army had before (every line of the fight pools at the old rate)
+			bool behave = variant > 0; WotgScenes.TestVoice = false; Cleanup(); AvatarFight.TestVoid = sc.Portal ? true : null; AvatarFight.TestOn = behave; AvatarFight.TestZones = variant == 1 ? false : null; AoeVoice.TestActive = behave ? null : false; AoeVoice.FloatLog = new();   // off = the chatter the army had before (every line of the fight pools at the old rate)
 			Terraria.Main.rand = new Terraria.Utilities.UnifiedRandom(4242);
 			Arena();
 			Main.GameMode = GameModeID.Master; Main.hardMode = true;
@@ -321,7 +321,7 @@ namespace Levy.Common.Testing
 				if (Trace && (t % 120 == 0 || (t >= 100 && t < 240 && t % 10 == 0 && st.StartsWith("RealityShatter")))) _mod.Logger.Info($"[AvatarBehave] TRACE t={t} state={st} void={AvatarFight.Void} zones={AvatarFight.Zones.Count} avatarDx={(boss.Center.X - cm.Center.X) / 16f:0} zone[{string.Join(";", AvatarFight.Zones.Select(z => z.Why + " x " + ((z.Rect.Left - cm.Center.X) / 16f).ToString("0") + ".." + ((z.Rect.Right - cm.Center.X) / 16f).ToString("0") + " y " + ((z.Rect.Top - cm.Center.Y) / 16f).ToString("0") + ".." + ((z.Rect.Bottom - cm.Center.Y) / 16f).ToString("0")))}] cmd=({cm.Center.X / 16f:0},{cm.Center.Y / 16f:0}) levies: " + string.Join(" ", levies.Where((l, i) => i % 3 == 0 && l.s.NPC.active).Select(l => $"{l.c.ToString()[0]}({(l.s.NPC.Center.X - cm.Center.X) / 16f:0},{(l.s.NPC.Center.Y - cm.Center.Y) / 16f:0})v{l.s.NPC.velocity.X:0},{l.s.NPC.velocity.Y:0}")));
 			}
 			r.Lost = levies.Count(l => !l.s.NPC.active); r.CmdKills = _cmdKills; r.Telemetry = $"fly {SoldierNPC.AvFlyTicks} carry {SoldierNPC.AvCarryTicks} hold {SoldierNPC.AvHoldTicks} rejoins {SoldierNPC.AvRejoins} yields {SoldierNPC.AvYields} not-owned why [{string.Join("/", SoldierNPC.AvWhy)}]";
-			r.Lines = WotgScenes.Log.Count - lines0; r.Floating = DialogueSystem.FloatingDelivered - fl0; r.Moments = WotgScenes.MomentsStarted - mom0; r.Dropped = WotgScenes.CuesDropped - drop0; r.Voice = WotgScenes.VoiceTicks - voice0; r.FightLines = WotgScenes.FightLines - fight0;
+			r.Lines = WotgScenes.Log.Count - lines0; r.Floating = DialogueSystem.FloatingDelivered - fl0; r.Floats = AoeVoice.FloatLog ?? new(); r.Moments = WotgScenes.MomentsStarted - mom0; r.Dropped = WotgScenes.CuesDropped - drop0; r.Voice = WotgScenes.VoiceTicks - voice0; r.FightLines = WotgScenes.FightLines - fight0;
 			return r;
 		}
 		private static Vector2 WeaveOffset(int t) => new Vector2((float)Math.Sin(t * 2f * Math.PI / 900f) * 16f * 16f, (float)Math.Sin(t * 2f * Math.PI / 600f + 1f) * 5f * 16f);
@@ -331,7 +331,7 @@ namespace Levy.Common.Testing
 			Acc A = r.All; double n = Math.Max(1, A.Ticks);
 			string cls(Acc a) => P(100.0 * a.Far / Math.Max(1, a.Ticks));
 			return $"{name}: {r.Ticks} ticks, moved {r.Shifts}x; mean distance {F(A.Dist / n)} tiles, stranded(>40) {P(100.0 * A.Far / n)} (fliers {cls(r.Flier)}, foot {cls(r.Foot)}, hookers {cls(r.Hook)}), lost(>100) {P(100.0 * A.Lost / n)}, falling {P(100.0 * A.Fall / n)}, aloft {P(100.0 * A.Aloft / n)} (fliers {P(100.0 * r.Flier.Aloft / Math.Max(1, r.Flier.Ticks))}, foot {P(100.0 * r.Foot.Aloft / Math.Max(1, r.Foot.Ticks))}); " +
-				$"near after move 2s {(r.Near2sN > 0 ? P(r.Near2s / r.Near2sN) : "-")}, 10s {(r.Near10sN > 0 ? P(r.Near10s / r.Near10sN) : "-")}; hits {r.Hits} (dmg {r.Damage}) [{string.Join(",", r.HitBy.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}], by state [{string.Join(",", r.HitState.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}], in annihilation sphere {r.InSphere} body-ticks; lines {r.Lines} scripted ({r.FightLines} worried, {r.Moments} moments started, {r.Dropped} cues dropped, the boss held the floor {r.Voice} ticks) + {r.Floating - r.Lines} other floating in {F(r.Ticks / 3600.0)} min; levies lost {r.Lost}; the commander would have died {r.CmdKills}x; attack put back {r.Reforced}x; body ticks [{r.Telemetry}]; attack rules active [{string.Join(",", r.ZoneTicks.Select(kv => kv.Key + ":" + kv.Value))}]; states [{string.Join(",", r.StateTicks.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}]";
+				$"near after move 2s {(r.Near2sN > 0 ? P(r.Near2s / r.Near2sN) : "-")}, 10s {(r.Near10sN > 0 ? P(r.Near10s / r.Near10sN) : "-")}; hits {r.Hits} (dmg {r.Damage}) [{string.Join(",", r.HitBy.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}], by state [{string.Join(",", r.HitState.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}], in annihilation sphere {r.InSphere} body-ticks; lines {r.Lines} scripted ({r.FightLines} worried, {r.Moments} moments started, {r.Dropped} cues dropped, the boss held the floor {r.Voice} ticks) + {r.Floating - r.Lines} other floating ({r.Floats.Count(f => !AoeVoice.IsPlainText(f.text))} not plain callouts) in {F(r.Ticks / 3600.0)} min; levies lost {r.Lost}; the commander would have died {r.CmdKills}x; attack put back {r.Reforced}x; body ticks [{r.Telemetry}]; attack rules active [{string.Join(",", r.ZoneTicks.Select(kv => kv.Key + ":" + kv.Value))}]; states [{string.Join(",", r.StateTicks.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}]";
 		}
 
 		private static readonly Scn[] All =
@@ -358,6 +358,11 @@ namespace Levy.Common.Testing
 			ModLoader.TryGetMod("NoxusBoss", out Mod nox); Seams(nox);
 			string only = Environment.GetEnvironmentVariable("LEVY_AVBEHAVE_SCN");   // lab: a comma list of scenario number prefixes (0-based), e.g. "4,11"
 			int scale = int.TryParse(Environment.GetEnvironmentVariable("LEVY_AVBEHAVE_TICKS"), out int sc) ? sc : 0;   // lab: override every scenario's length
+			foreach (var trig in AoeVoice.PlainTriggers)
+			{
+				var lines = global::Levy.Common.Dialogue.DialogueTable.Get(trig);
+				Note($"plain callout pool {trig}: {lines?.Count ?? 0} lines, {lines?.Count(AoeVoice.LineIsPlainPublic) ?? 0} that anyone may say (temperament Any, no tag, no placeholder but the commander's name)");
+			}
 			var results = new List<(Scn s, Result off, Result on)>();
 			for (int i = 0; i < All.Length; i++)
 			{
@@ -414,8 +419,11 @@ namespace Levy.Common.Testing
 				}
 				if (natural)
 				{
-					double lpmOn = on.Lines / Math.Max(0.1, on.Ticks / 3600.0), lpmOff = off.Lines / Math.Max(0.1, off.Ticks / 3600.0);
-					Check($"{s.Name}: the Avatar fight is quiet ({F(lpmOn)} scripted lines a minute, against {F(lpmOff)} before)", lpmOn <= 3.5 && (lpmOn < lpmOff || lpmOff < 3.0));
+					Check($"{s.Name}: plain combat callouts do play ({on.Floats.Count(f => AoeVoice.IsPlainText(f.text))} in {F(on.Ticks / 3600.0)} minutes)", on.Floats.Count(f => AoeVoice.IsPlainText(f.text)) >= 1);
+				}
+				{
+					int jokes = on.Floats.Count(f => !AoeVoice.IsPlainText(f.text));
+					Check($"{s.Name}: no joke or banter pool plays while the Avatar is up ({jokes} lines that are not plain callouts, {on.Lines} scripted scene lines; {off.Floats.Count(f => !AoeVoice.IsPlainText(f.text))} and {off.Lines} before)", jokes == 0 && on.Lines == 0);
 				}
 				if (s.Send)
 				{

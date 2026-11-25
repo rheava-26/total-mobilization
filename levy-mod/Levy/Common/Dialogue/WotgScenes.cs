@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
+using Levy.Common.Compat.Wotg;
 using Levy.Common.Config;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
@@ -126,23 +127,6 @@ namespace Levy.Common.Dialogue
 		/// <summary>The setting (on by default).</summary>
 		public static bool Enabled { get { if (TestEnabled.HasValue) return TestEnabled.Value; try { return LevyConfig.Get?.WotgFightChatter ?? true; } catch (Exception) { return true; } } }
 
-		/// <summary>Self-check: the Avatar fight's chatter share (percent), or null for the setting.</summary>
-		internal static int? TestAvatarPercent;
-
-		/// <summary>
-		/// How many times rarer the repeating chatter is in this fight: 1 outside the Avatar of Emptiness fight and at 100 percent, 100 / percent below that, infinity at 0 (nothing between the boss's own moments).
-		/// The setting is AvatarFightChatterPercent (default 25): the army speaks the story moments (the rift, the scream, the kill) in full and a quarter of the worried lines and attack reactions.
-		/// </summary>
-		internal static float Quiet(WotgFight fight)
-		{
-			if (fight != WotgFight.Avatar) return 1f;
-			int pct = TestAvatarPercent ?? 25;
-			if (!TestAvatarPercent.HasValue) { try { pct = LevyConfig.Get?.AvatarFightChatterPercent ?? 25; } catch (Exception) { pct = 25; } }
-			if (pct >= 100) return 1f;
-			if (pct <= 0) return float.PositiveInfinity;
-			return 100f / pct;
-		}
-
 		/// <summary>The Genesis scene (the summoning of the Avatar's rift) is playing.</summary>
 		public static bool GenesisOn { get { if (TestGenesis.HasValue) return TestGenesis.Value; Resolve(); return Read(_genesisActive, null, false); } }
 
@@ -207,12 +191,10 @@ namespace Levy.Common.Dialogue
 			string pool = FightPool(fight);
 			if (pool != null && Queue.Count == 0 && enabled)
 			{
-				float quiet = Quiet(fight);   // the Avatar fight keeps a share of it (the AvatarFightChatterPercent setting): 4 means one worried line where there were four
-				if (float.IsPositiveInfinity(quiet)) { }
-				else if (_nextChatter == Never) _nextChatter = now + (int)(Main.rand.Next(LevyConstants.SceneChatterMinTicks / 2, LevyConstants.SceneChatterMaxTicks / 2) * quiet);
+				if (_nextChatter == Never) _nextChatter = now + Main.rand.Next(LevyConstants.SceneChatterMinTicks / 2, LevyConstants.SceneChatterMaxTicks / 2);
 				else if (now - _nextChatter >= 0)
 				{
-					_nextChatter = now + (int)(Main.rand.Next(LevyConstants.SceneChatterMinTicks, LevyConstants.SceneChatterMaxTicks) * quiet);
+					_nextChatter = now + Main.rand.Next(LevyConstants.SceneChatterMinTicks, LevyConstants.SceneChatterMaxTicks);
 					Enqueue(pool, 1, now, 0, LevyConstants.SceneChatterExpireTicks);
 				}
 			}
@@ -274,17 +256,15 @@ namespace Levy.Common.Dialogue
 		/// <summary>Starts a moment: its speakers queued one after another. A moment speaks once a fight, or once per its cooldown.</summary>
 		private static void Begin(Moment m, WotgFight fight, int now, bool force = false)
 		{
-			float quiet = m.Cooldown > 0 ? Quiet(fight) : 1f;   // a moment that comes round again (the Avatar's attacks and trips) is quieter in the Avatar fight; the story moments and the kill are not touched
-			if (float.IsPositiveInfinity(quiet) && !force) return;
-			int cooldown = float.IsPositiveInfinity(quiet) ? m.Cooldown : (int)(m.Cooldown * quiet);
-			if (!force && MomentAt.TryGetValue(m.Pool, out int at) && (m.Cooldown <= 0 || now - at < cooldown)) return;
+			if (!force && MomentAt.TryGetValue(m.Pool, out int at) && (m.Cooldown <= 0 || now - at < m.Cooldown)) return;
 			MomentAt[m.Pool] = now;
 			MomentsStarted++;
-			Enqueue(m.Pool, quiet > 1f ? 1 : m.Speakers, now + 20, LevyConstants.SceneStepTicks, m.Pool.EndsWith("_KILL") ? LevyConstants.SceneKillExpireTicks : LevyConstants.SceneMomentExpireTicks);
+			Enqueue(m.Pool, m.Speakers, now + 20, LevyConstants.SceneStepTicks, m.Pool.EndsWith("_KILL") ? LevyConstants.SceneKillExpireTicks : LevyConstants.SceneMomentExpireTicks);
 		}
 
 		private static void Enqueue(string pool, int speakers, int due, int step, int expire, string comrade = null)
 		{
+			if (global::Levy.Common.Compat.Wotg.AoeVoice.MutesScene(pool)) return;   // the Avatar of Emptiness is up: no joke or banter pool speaks (Compat/Wotg/AoeVoice.cs)
 			for (int k = 0; k < speakers; k++) Queue.Add(new Cue { Pool = pool, Due = due + k * step + Main.rand.Next(12), Expire = due + k * step + expire, Comrade = comrade });
 			Queue.Sort((a, b) => a.Due.CompareTo(b.Due));
 		}
@@ -297,6 +277,7 @@ namespace Levy.Common.Dialogue
 			Cue c = Queue[0];
 			if (now - c.Due < 0) return;
 			Queue.RemoveAt(0);
+			if (global::Levy.Common.Compat.Wotg.AoeVoice.MutesScene(c.Pool)) { CuesDropped++; return; }
 			SoldierNPC s = PickSpeaker(c);
 			if (s == null) { CuesDropped++; return; }
 			var ctx = new DialogueContext { Player = s.Record.CommanderName, Comrade = c.Comrade };
@@ -392,6 +373,7 @@ namespace Levy.Common.Dialogue
 		internal static string ChatLine(SoldierNPC s)
 		{
 			if (!Enabled || s?.Record == null) return null;
+			if (global::Levy.Common.Compat.Wotg.AoeVoice.Active && !TestFight.HasValue) { var c0 = new DialogueContext { Player = s.Record.CommanderName }; return DialogueSystem.PickLine("ENGAGE", s.Record, c0) ?? DialogueSystem.PickLine("ENGAGE", s.Record, c0, true); }   // right-click while the Avatar is up: a plain callout
 			WotgFight f = TestFight ?? (AnyNpc(AvatarType) ? WotgFight.Avatar : AnyNpc(NamelessType) ? WotgFight.Nameless : AnyNpc(RiftType) ? WotgFight.Rift : GenesisOn ? WotgFight.Genesis : WotgFight.None);
 			string pool = f == WotgFight.Genesis ? "SCENE_GENESIS" : FightPool(f);
 			if (pool == null) return null;
@@ -432,6 +414,7 @@ namespace Levy.Common.Dialogue
 		internal static bool IsFightChat(string text)
 		{
 			if (string.IsNullOrEmpty(text)) return false;
+			if (AoeVoice.IsPlainText(text)) return true;
 			foreach (string pool in new[] { "SCENE_GENESIS", "SCENE_RIFT_FIGHT", "SCENE_AVATAR_FIGHT", "SCENE_NAMELESS_FIGHT" })
 			{
 				var lines = DialogueTable.Get(pool);

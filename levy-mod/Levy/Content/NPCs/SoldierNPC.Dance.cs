@@ -54,7 +54,10 @@ namespace Levy.Content.NPCs
 				if (aloft)
 				{
 					float x = npc.Center.X + dir * DanceRunTiles * LevyConstants.TilePx;
-					if (AirLaneSafe(dir, DanceRunTiles)) { dest = new Vector2(x, npc.Center.Y); have = true; }
+					// the ground leg is picked where the weapon still fires (SpotFires); an air leg (a hop counts) holds to the same: it never runs on past the weapon's own reach (a boomerang's 22 tiles), though it may always run back toward the boss
+					float destTiles = Math.Abs(seg.Center.X - x) / LevyConstants.TilePx;
+					bool inReach = destTiles <= range * LevyConstants.ShootableRangeFrac || destTiles <= distTiles;
+					if (inReach && AirLaneSafe(dir, DanceRunTiles)) { dest = new Vector2(x, npc.Center.Y); have = true; }
 				}
 				else
 				{

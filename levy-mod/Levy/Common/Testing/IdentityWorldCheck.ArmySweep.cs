@@ -78,6 +78,9 @@ namespace Levy.Common.Testing
 		/// <summary>LEVY_ARMYSWEEP_REACH=1 (on by default in a LEVY_ARMYSWEEP_MODS sweep): a weapon whose own reach is 10 tiles or less meets its enemy at blade distance, like a blade.</summary>
 		private static bool ArmyReachPlace => Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_REACH") == "1" || (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_MODS")) && Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_REACH") != "0");
 		private static readonly bool ArmyDebug = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_DEBUG") == "1";
+		/// <summary>Lab (LEVY_ARMYSWEEP_STATES=1): every change of the levy's state in a run, with where he stands and where the enemy is.</summary>
+		private static readonly bool ArmyStates = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_STATES") == "1";
+		private static SoldierState _armyPrevState;
 		private static string ArmyKey(string s) => new string(s.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
 
 		private sealed class ArmyRes
@@ -230,6 +233,8 @@ namespace Levy.Common.Testing
 						if (soldier.LastUseTick != prevUse) { if (prevUse != 0) res.Uses++; prevUse = soldier.LastUseTick; }
 						if (soldier.State == SoldierState.Engage) res.Engage++;
 						if (soldier.Dummy != null) { res.DummyMinions = soldier.Dummy.maxMinions; res.DummyTurrets = soldier.Dummy.maxTurrets; }
+						if (ArmyStates && (k == 0 || k % 20 == 0 || soldier.State != _armyPrevState)) Note($"  armystate {(cmdHolds ? "B" : "A")} t={k} {_armyPrevState}->{soldier.State} levyX={(Main.npc[body].Center.X - at.X) / 16f:0.0} toTarget={(_sweepTarget.Center.X - Main.npc[body].Center.X) / 16f:0.0}t dy={(_sweepTarget.Center.Y - Main.npc[body].Center.Y) / 16f:0.0}t levyVx={Main.npc[body].velocity.X:0.0} order={soldier.Record?.Order} whyB={SoldierNPC.Why.BNames[Math.Min(soldier.WhyB, SoldierNPC.Why.BNames.Length - 1)]} whyM={SoldierNPC.Why.MNames[Math.Min(soldier.WhyM, SoldierNPC.Why.MNames.Length - 1)]} uses={res.Uses} alive={Enumerable.Range(0, Main.maxProjectiles).Count(j => Main.projectile[j].active && Main.projectile[j].TryGetGlobalProjectile(out SoldierProjectileTag stg) && stg.SoldierIndex == body)}");
+						_armyPrevState = soldier.State;
 						res.States[soldier.State.ToString()] = res.States.TryGetValue(soldier.State.ToString(), out int sc) ? sc + 1 : 1; float dx = (Main.npc[body].Center.X - at.X) / 16f; res.MinX = Math.Min(res.MinX, dx); res.MaxX = Math.Max(res.MaxX, dx);
 						actor = Main.npc[body].Center;
 					}

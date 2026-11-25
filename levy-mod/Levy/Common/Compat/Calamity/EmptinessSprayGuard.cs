@@ -9,13 +9,12 @@ using Levy.Content.NPCs;
 namespace Levy.Common.Compat.Calamity
 {
 	/// <summary>
-	/// WRATH OF THE GODS' EMPTINESS SPRAY never removes a levy. What the spray does to an NPC (NoxusBoss EmptinessSprayerGas.DeleteEverything, run every update of each gas puff, 9 updates a tick): every active NPC whose hitbox touches the gas is
+	/// WRATH OF THE GODS' EMPTINESS SPRAY never ERASES a levy: it KILLS it (the normal death path). What the spray does to an NPC (NoxusBoss EmptinessSprayerGas.DeleteEverything, run every update of each gas puff, 9 updates a tick): every active NPC whose hitbox touches the gas is
 	/// set <c>active = false</c> on the spot, with no death, no loot and no record update, unless its type is in <c>EmptinessSprayer.NPCsToNotDelete</c> (the Cultist's tablet, the old-one portals, the target dummy, Solyn, the Avatar's rifts, the
-	/// Eternal Garden critters). A levy's body is an ordinary NPC, so a puff that crossed one removed it, and nothing in Levy asked for that. Only the commander removes a levy (by firing it).
-	/// <para/>Fix: every NPC type that is a levy's body (SoldierNPC and anything built on it, in any of our mods) joins <c>NPCsToNotDelete</c> once content is set up. A levy that uses the spray as a weapon is untouched otherwise: its gas deletes hostile
-	/// NPCs as a player's does.
+	/// Eternal Garden critters). A levy's body is an ordinary NPC, so a puff that crossed one would remove it with no death, no death line, no respawn and a stale roster record.
+	/// <para/>Fix: every NPC type that is a levy's body (SoldierNPC and anything built on it) joins <c>NPCsToNotDelete</c>, so the gas never erases one. Instead each living levy body a puff touches is killed through its normal death path (<see cref="SoldierNPC.KillBySpray"/>): death line, respawn queued, roster intact. A levy's own puff spares the friendly side (levies, officers, town NPCs, critters, machines) and kills hostile NPCs, hostile Warband soldiers included.
 	/// <para/>Second seam: a puff that touches an NPC in <c>NPCsThatReflectSpray</c> (Nameless Deity) turns around and, when it touches the PLAYER at <c>Projectile.owner</c>, deletes that player (the game kicks to the menu). A levy's shot is owned
-	/// by the commander, so a levy that sprayed Nameless would delete the commander. A levy's puff has that flag cleared every tick, so it still turns around but removes no one.
+	/// by the commander, so the flag is cleared on a levy's puff (the commander is never deleted) and the turned-around puff kills the levy that sprayed it when it reaches that levy, as a player is erased. That levy dies normally and respawns.
 	/// Everything by reflection (Levy has no reference to NoxusBoss); <c>LEVY_SPRAYGUARD=0</c> turns it off (lab A/B).
 	/// </summary>
 	public class EmptinessSprayGuard : ModSystem
@@ -26,6 +25,8 @@ namespace Levy.Common.Compat.Calamity
 		public static int Protected;
 		/// <summary>Lab: gas puffs of a levy whose reflect flag was cleared.</summary>
 		public static long ReflectCleared;
+		/// <summary>Lab: the whole guard acts as if the levy had no protection and the spray had no kill step (the old behaviour: the gas erases a levy).</summary>
+		internal static bool LabKillOff;
 
 		public override void PostSetupContent()
 		{
@@ -49,6 +50,7 @@ namespace Levy.Common.Compat.Calamity
 		/// <summary>Lab: takes the levy types out of (false) or puts them back into (true) the sprayer's protected set, to measure what the spray did before.</summary>
 		internal static void SetProtectedForLab(bool on)
 		{
+			LabKillOff = !on;
 			try
 			{
 				if (!ModLoader.TryGetMod("NoxusBoss", out Mod nox)) return;
@@ -116,10 +118,44 @@ namespace Levy.Common.Compat.Calamity
 			_spared.Clear();
 		}
 
+		public override bool InstancePerEntity => true;
+		/// <summary>This levy's puff was reflected (by the Nameless Deity): it turned around and now carries the delete-the-shooter flag.</summary>
+		private bool _reflected;
+		/// <summary>Lab: levies a puff of anyone's killed; levies killed by their own reflected puff.</summary>
+		public static long LevyKills, ReflectKills;
+
+		/// <summary>
+		/// THE SPRAY KILLS LEVIES. Their body types sit in the sprayer's protected set, so the gas itself never erases one (no vanished body, no lost record). Instead, on every update of a puff, each living levy body its hitbox touches
+		/// dies through the normal death path (SoldierNPC.KillBySpray: death line, respawn queued). A levy's own puff leaves the friendly side alone (levies, officers) and kills hostile ones (Warband soldiers).
+		/// </summary>
+		private static void KillTouchedLevies(Projectile projectile, bool fromLevy)
+		{
+			Rectangle hb = projectile.Hitbox;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.life <= 0 || !(n.ModNPC is SoldierNPC s) || !n.Hitbox.Intersects(hb)) continue;
+				if (fromLevy && !s.Hostile) continue;
+				if (s.KillBySpray()) LevyKills++;
+			}
+		}
+
 		public override bool PreAI(Projectile projectile)
 		{
-			if (EmptinessSprayGuard.On && projectile.TryGetGlobalProjectile(out SoldierProjectileTag lt) && lt.IsSoldierShot) SpareFriendlies(projectile);
-			if (EmptinessSprayGuard.On && projectile.ai[0] == 1f && projectile.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.IsSoldierShot) { projectile.ai[0] = 0f; EmptinessSprayGuard.ReflectCleared++; }
+			if (!EmptinessSprayGuard.On) return true;
+			bool fromLevy = projectile.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.IsSoldierShot;
+			if (fromLevy) SpareFriendlies(projectile);
+			if (!EmptinessSprayGuard.LabKillOff && Main.netMode != Terraria.ID.NetmodeID.MultiplayerClient) KillTouchedLevies(projectile, fromLevy);
+			if (fromLevy)
+			{
+				// the reflection: the flag that would delete the commander is cleared; the levy that sprayed is the one the puff finds
+				if (projectile.ai[0] == 1f) { projectile.ai[0] = 0f; _reflected = true; EmptinessSprayGuard.ReflectCleared++; }
+				if (_reflected && !EmptinessSprayGuard.LabKillOff && Main.netMode != Terraria.ID.NetmodeID.MultiplayerClient && tag.SoldierIndex >= 0 && tag.SoldierIndex < Main.maxNPCs)
+				{
+					NPC sh = Main.npc[tag.SoldierIndex];
+					if (sh.active && sh.life > 0 && sh.ModNPC is SoldierNPC ss && sh.Hitbox.Intersects(projectile.Hitbox) && ss.KillBySpray()) ReflectKills++;
+				}
+			}
 			return true;
 		}
 	}

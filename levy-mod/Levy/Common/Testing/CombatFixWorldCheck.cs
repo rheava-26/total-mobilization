@@ -397,37 +397,87 @@ namespace Levy.Common.Testing
 			Cleanup(); Arena(); Main.GameMode = GameModeID.Expert; _cmdAt = new Vector2(Cx * 16f, (FloorY - 3) * 16f);
 			int soldierType = ModContent.NPCType<SoldierNPC>();
 			Check($"every levy NPC type is in the sprayer's protected set ({EmptinessSprayGuard.Protected} added)", EmptinessSprayGuard.Protects(soldierType));
-			// BEFORE / NOW: a puff over a levy and over a hostile slime
-			bool Survives(bool guard)
+			// BEFORE (guard off: the gas erases a levy) / NOW (guard on: the levy DIES through its normal death path)
+			int sprayDeadId = -1;
+			(bool standsGone, bool died) Run(bool guard)
 			{
 				EmptinessSprayGuard.SetProtectedForLab(guard);
 				Cleanup(); Arena(); KeepCommander();
+				global::Levy.Common.Death.NoxusFights.Override = true; // every levy death posts its line
 				var l = Levy(4, new Vector2(Cx * 16f, FloorY * 16f), SoldierOrder.Hold); Step(5);
+				var rec = l.Record; int regs0 = RosterSystem.Instance.Regulars.Count; int deaths0 = rec.Deaths; int posted0 = global::Levy.Common.Death.LevyDeathPost.Posted; long kills0 = SoldierNPC.SprayKills;
 				NPC slime = PinNpc(NPCID.BlueSlime, new Vector2((Cx + 40) * 16f, (FloorY - 2) * 16f));
 				Projectile.NewProjectile(new EntitySource_WorldEvent("CombatFix"), l.NPC.Center, Vector2.Zero, gas.Type, 0, 0f, 0);
 				Projectile.NewProjectile(new EntitySource_WorldEvent("CombatFix"), slime.Center, Vector2.Zero, gas.Type, 0, 0f, 0);
 				Step(6);
-				bool lv = l.NPC.active && l.NPC.type == soldierType, sl = slime.active;
-				Note($"spray [{(guard ? "NOW, guard on" : "BEFORE, guard off")}]: the levy {(lv ? "stands" : "was ERASED")}; the hostile slime {(sl ? "stands" : "was erased")} (the spray erases a hostile NPC in its gas with no death and no loot)");
+				global::Levy.Common.Death.NoxusFights.Override = null;
+				bool gone = !l.NPC.active || l.NPC.type != soldierType, sl = slime.active;
+				bool recDead = rec.Dead && rec.RespawnTimer > 0 && rec.Deaths == deaths0 + 1 && rec.BodyIndex == -1;
+				bool line = global::Levy.Common.Death.LevyDeathPost.Posted == posted0 + 1;
+				bool rosterKept = RosterSystem.Instance.Regulars.Count == regs0 && RosterSystem.Instance.Regulars.Contains(rec);
+				var tag = new Terraria.ModLoader.IO.TagCompound(); RosterSystem.Instance.SaveWorldData(tag);
+				var deadIds = tag.GetList<int>("deadIds"); bool deadSaved = deadIds.Contains(rec.Id);
+				bool saved = tag.GetList<Terraria.ModLoader.IO.TagCompound>("regulars").Count == regs0;
+				Note($"spray [{(guard ? "NOW, guard on" : "BEFORE, guard off")}]: the levy {(gone ? "is gone" : "stands")}; record dead {rec.Dead}, respawn timer {rec.RespawnTimer}, deaths {deaths0}->{rec.Deaths}; death line posted {(global::Levy.Common.Death.LevyDeathPost.Posted - posted0)}; spray kills {SoldierNPC.SprayKills - kills0}; roster {regs0}->{RosterSystem.Instance.Regulars.Count}, saved regulars {tag.GetList<Terraria.ModLoader.IO.TagCompound>("regulars").Count}, dead-list in the save {deadSaved}; the hostile slime {(sl ? "stands" : "was erased")}");
 				EmptinessSprayGuard.SetProtectedForLab(true);
-				return lv && !sl;
+				sprayDeadId = rec.Id;
+				return (gone && !sl, recDead && line && rosterKept && saved && deadSaved && SoldierNPC.SprayKills == kills0 + 1);
 			}
-			bool beforeOk = Survives(false); bool nowOk = Survives(true);
-			Check("BEFORE the guard a levy in the gas is erased (the check has teeth)", !beforeOk);
-			Check("NOW a levy in the gas stays, and the gas still erases a hostile slime", nowOk);
-			// a levy's own puff never carries the reflect flag that deletes the player
+			var before = Run(false); var now = Run(true);
+			Check("BEFORE (guard off) a levy in the gas is erased: no death, no line, the record still says it is alive (the check has teeth)", before.standsGone && !before.died);
+			Check("NOW a levy in the gas DIES: body gone, record dead with a respawn queued, deaths +1, the death line posted, the roster and its save intact; the gas still erases the hostile slime", now.standsGone && now.died);
+			// the spray's death is the same death as a combat death: a levy killed by an ordinary lethal strike ends in the same record state (the respawn timer is what TickRespawns counts down; this lab's levies have no barracks, so neither returns)
 			{
 				Cleanup(); Arena(); KeepCommander();
-				var l = Levy(5, new Vector2(Cx * 16f, FloorY * 16f), SoldierOrder.Hold);
+				var a = Levy(12, new Vector2(Cx * 16f, FloorY * 16f), SoldierOrder.Hold); var c = Levy(13, new Vector2((Cx + 6) * 16f, FloorY * 16f), SoldierOrder.Hold); Step(3);
+				var ra = a.Record; var rc = c.Record;
+				global::Levy.Common.Death.NoxusFights.Override = true;
+				c.LastAttackerType = NPCID.BlueSlime; c.NPC.SimpleStrikeNPC(100_000_000, 0, false, 0f, null, false, 0f, true); // combat control
+				a.KillBySpray();
+				global::Levy.Common.Death.NoxusFights.Override = null;
+				string St(SoldierRecord r) => $"dead {r.Dead} timer {r.RespawnTimer} deaths {r.Deaths} body {r.BodyIndex} hp {r.CurrentHp} fear {r.Fear} inRoster {RosterSystem.Instance.Regulars.Contains(r)}";
+				Note($"spray death vs combat death: spray [{St(ra)}], combat [{St(rc)}]");
+				Check("a levy the spray kills ends in the same roster state as one killed in combat: dead, same respawn timer, deaths 1, no body, still listed", ra.Dead == rc.Dead && ra.RespawnTimer == rc.RespawnTimer && ra.Deaths == rc.Deaths && ra.BodyIndex == rc.BodyIndex && ra.CurrentHp == rc.CurrentHp && ra.RespawnTimer == LevyConstants.RegularRespawnTicks && ra.Dead && ra.Deaths == 1 && RosterSystem.Instance.Regulars.Contains(ra));
+			}
+			// the player's OWN puff (untagged) kills a levy too
+			{
+				Cleanup(); Arena(); KeepCommander();
+				var l = Levy(9, new Vector2(Cx * 16f, FloorY * 16f), SoldierOrder.Hold); Step(3);
+				var rec = l.Record; long k0 = SoldierNPC.SprayKills;
+				Projectile.NewProjectile(new EntitySource_WorldEvent("CombatFix"), l.NPC.Center, Vector2.Zero, gas.Type, 0, 0f, Main.myPlayer);
+				Step(3);
+				Check("the commander's own puff over a levy kills it (death, not erasure)", rec.Dead && rec.Deaths == 1 && SoldierNPC.SprayKills == k0 + 1);
+			}
+			// a levy's puff over a levy of its own side: no kill (friendly side)
+			{
+				Cleanup(); Arena(); KeepCommander();
+				var a = Levy(10, new Vector2(Cx * 16f, FloorY * 16f), SoldierOrder.Hold); var b2 = Levy(11, new Vector2((Cx + 1) * 16f, FloorY * 16f), SoldierOrder.Hold); Step(3);
+				int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("CombatFix"), a.NPC.Center, Vector2.Zero, gas.Type, 0, 0f, 0);
+				if (pi >= 0 && pi < Main.maxProjectiles && Main.projectile[pi].TryGetGlobalProjectile(out global::Levy.Common.Globals.SoldierProjectileTag tg)) tg.SoldierIndex = a.NPC.whoAmI;
+				Step(4);
+				Check("a levy's own puff (not reflected) leaves its own side standing: shooter and neighbour alive", !a.Record.Dead && !b2.Record.Dead && a.NPC.active && b2.NPC.active);
+			}
+			// a levy's puff that was REFLECTED (Nameless Deity) kills the levy that sprayed it, never deletes the commander; the commander's own reflected puff keeps its flag
+			{
+				Cleanup(); Arena(); KeepCommander();
+				var l = Levy(5, new Vector2(Cx * 16f, FloorY * 16f), SoldierOrder.Hold); Step(3);
+				var rec = l.Record;
 				int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("CombatFix"), l.NPC.Center + new Vector2(300f, 0f), Vector2.Zero, gas.Type, 0, 0f, 0);
 				int pj = Projectile.NewProjectile(new EntitySource_WorldEvent("CombatFix"), l.NPC.Center + new Vector2(-300f, 0f), Vector2.Zero, gas.Type, 0, 0f, 0);
 				if (pi >= 0 && pi < Main.maxProjectiles && pj >= 0 && pj < Main.maxProjectiles)
 				{
 					Projectile mine = Main.projectile[pi], hers = Main.projectile[pj];
 					if (mine.TryGetGlobalProjectile(out global::Levy.Common.Globals.SoldierProjectileTag tag)) tag.SoldierIndex = l.NPC.whoAmI;
-					mine.ai[0] = 1f; hers.ai[0] = 1f; long c0 = EmptinessSprayGuard.ReflectCleared;
+					mine.ai[0] = 1f; hers.ai[0] = 1f; long c0 = EmptinessSprayGuard.ReflectCleared, r0 = EmptinessSprayGuardProjectile.ReflectKills;
 					Step(2);
-					Check($"a levy's puff that was reflected has the delete-the-player flag cleared ({mine.ai[0]}, cleared {EmptinessSprayGuard.ReflectCleared - c0}); the commander's own puff keeps it ({hers.ai[0]})", mine.ai[0] == 0f && hers.ai[0] == 1f);
+					bool aliveFar = !rec.Dead;
+					Check($"a levy's puff that was reflected has the delete-the-player flag cleared ({mine.ai[0]}, cleared {EmptinessSprayGuard.ReflectCleared - c0}); the commander's own puff keeps it ({hers.ai[0]}); the shooter is not touched while the puff is away from it", mine.ai[0] == 0f && hers.ai[0] == 1f && aliveFar);
+					mine.Center = l.NPC.Center; // the turned-around puff reaches the levy that sprayed
+					Step(2);
+					var delType = nox.Code.GetType("NoxusBoss.Core.Graphics.SpecificEffectManagers.EmptinessSprayPlayerDeletionSystem");
+					bool playerGone = delType != null && (bool)(delType.GetProperty("PlayerWasDeleted")?.GetValue(null) ?? false);
+					Note($"spray reflection: shooter dead {rec.Dead}, respawn timer {rec.RespawnTimer}, deaths {rec.Deaths}, reflect kills {EmptinessSprayGuardProjectile.ReflectKills - r0}, player-deletion flag {playerGone}, levy still in the roster {RosterSystem.Instance.Regulars.Contains(rec)}");
+					Check("the reflected puff kills the levy that sprayed (a normal death, respawn queued, still in the roster) and the commander is not deleted", rec.Dead && rec.Deaths == 1 && rec.RespawnTimer > 0 && EmptinessSprayGuardProjectile.ReflectKills == r0 + 1 && !playerGone && RosterSystem.Instance.Regulars.Contains(rec));
 				}
 			}
 			// a levy's puff spares everything friendly (town NPCs, critters, other mods' machines), and still erases a hostile slime; the commander's own puff spares only what a player's spares
@@ -473,7 +523,7 @@ namespace Levy.Common.Testing
 				Note($"spray weapon profile: family {wp?.Family} supported {wp?.Supported} range {wp?.RangeTiles} tiles ranged {wp?.IsRanged}; the levy holds {(l.Weapon == null ? "nothing" : l.Weapon.Family.ToString())}; state {l.State}");
 				int firstGas = -1;
 				Step(900, k => { if (firstGas < 0) for (int p = 0; p < Main.maxProjectiles; p++) if (Main.projectile[p].active && Main.projectile[p].type == gas.Type) { firstGas = k; break; } });
-				bool deleted = !slime.active; bool levyOk = l.NPC.active && (friend == null || friend.active);
+				bool deleted = !slime.active; bool levyOk = l.NPC.active && !l.Record.Dead && (friend == null || friend.active);
 				var delType = nox.Code.GetType("NoxusBoss.Core.Graphics.SpecificEffectManagers.EmptinessSprayPlayerDeletionSystem");
 				bool playerGone = delType != null && (bool)(delType.GetProperty("PlayerWasDeleted")?.GetValue(null) ?? false);
 				Note($"spray as a weapon: a levy holding the Emptiness Spray, a hostile slime 10 tiles away: first gas at tick {firstGas}, slime {(deleted ? "erased" : "still there")}, levies {(levyOk ? "untouched" : "LOST")}, player-deletion flag {playerGone}");

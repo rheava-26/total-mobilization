@@ -55,6 +55,7 @@ namespace Levy.Common.Testing
 						ArmyRes lv = ArmyOne(mi.Type, ammo, 600, false, false);
 						ArmyRes pl = ArmyPlayerBest(mi.Type, ammo, 600, Math.Max(lv.DummyMinions, 1), Math.Max(lv.DummyTurrets, 1), sample);
 						double ratio = lv.Dmg / (double)Math.Max(1, pl.Dmg);
+						if (sample.sentry && sample.buffType > 0) Check($"Redemption/{name}: the staff buff the tower asks its owner for never shows on the commander (no icon, no slot effect)", !Main.player[0].HasBuff(sample.buffType) && Main.player[0].numMinions == 0);
 						Note($"redemption {name} [{route}]: levy damage {lv.Dmg} ({lv.Hits} hits), player {pl.Dmg} ({pl.Hits} hits), ratio {ratio:0.00}, from the commander {lv.FromCommander}{(lv.Err != null ? ", threw " + lv.Err : "")}");
 						Check($"Redemption/{name} [{route}]: a levy lands at least {floor:0.00} of a player's damage (levy {lv.Dmg}, player {pl.Dmg}, ratio {ratio:0.00}), none from the commander, nothing thrown", pl.Dmg > 0 && ratio >= floor && lv.Err == null && !lv.FromCommander);
 					}

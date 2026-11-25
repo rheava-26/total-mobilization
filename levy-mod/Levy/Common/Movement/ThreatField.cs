@@ -409,7 +409,20 @@ namespace Levy.Common.Movement
 
 		public static Vector2 PathAt(Vector2 c0, in Maneuver m, float g, int t) => BodyAt(c0, m, g, t);
 
+		/// <summary>
+		/// While a Calamity arena box holds the body being judged (ArenaBoxes), the centre bounds the body can reach: a manoeuvre's path stops at the wall, as the body does, so a step toward a wall is not credited with
+		/// a distance it cannot cover. Set around one soldier's scan by the dodge (SoldierNPC.TickThreatDodge); off otherwise.
+		/// </summary>
+		internal static bool ClipOn; internal static Vector2 ClipLo, ClipHi;
+
 		private static Vector2 BodyAt(Vector2 c0, in Maneuver m, float g, int t)
+		{
+			Vector2 p = BodyAtFree(c0, m, g, t);
+			if (ClipOn) { p.X = MathHelper.Clamp(p.X, ClipLo.X, ClipHi.X); p.Y = MathHelper.Clamp(p.Y, ClipLo.Y, ClipHi.Y); }
+			return p;
+		}
+
+		private static Vector2 BodyAtFree(Vector2 c0, in Maneuver m, float g, int t)
 		{
 			if (m.Hook) return Vector2.Lerp(c0, m.HookTarget, MathHelper.Clamp((t - 8) / (float)Math.Max(1, m.HookDur), 0f, 1f));
 			if (m.Air) return AirBodyAt(c0, m, g, t);

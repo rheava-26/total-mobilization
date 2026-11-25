@@ -19,6 +19,7 @@ namespace Levy.Common.Compat.Calamity
 		public static readonly bool On = Environment.GetEnvironmentVariable("LEVY_ARENABOX") != "0";
 		/// <summary>Harness telemetry: bodies a box held, and the ticks a body was inside the effect range.</summary>
 		public static long Held, Checked;
+		private static readonly bool Dbg = Environment.GetEnvironmentVariable("LEVY_ARENABOX_DBG") == "1"; private static int _dbgN;
 
 		private static bool _init, _ok;
 		private static FieldInfo _boxes;
@@ -85,14 +86,18 @@ namespace Levy.Common.Compat.Calamity
 			return false;
 		}
 
-		/// <summary>Holds <paramref name="npc"/> inside every active box that would hold a player standing there (ArenaWallPlayer.ContainPlayerLogic). Call after the body's movement for the tick is decided, before it is applied.</summary>
-		public static void Contain(NPC npc)
+		/// <summary>
+		/// Holds <paramref name="npc"/> inside every active box that would hold a player standing there (ArenaWallPlayer.ContainPlayerLogic). Call after the body's movement for the tick is decided, before it is applied.
+		/// True when the body rests on the box's bottom wall (its feet at the wall and no upward motion): a wall that stops a fall holds a body up as a floor does, and the caller treats it as standing.
+		/// </summary>
+		public static bool Contain(NPC npc)
 		{
-			if (!On || npc == null) return;
+			bool floor = false;
+			if (!On || npc == null) return false;
 			Init();
-			if (!_ok) return;
+			if (!_ok) return false;
 			IList boxes = Boxes();
-			if (boxes == null) return;
+			if (boxes == null) return false;
 			try
 			{
 				_stand ??= new Player { active = true };
@@ -105,11 +110,17 @@ namespace Levy.Common.Compat.Calamity
 					Checked++;
 					if (!(bool)_contains.Invoke(box, new object[] { npc.position, npc.Size })) continue;
 					Vector2 tl = (Vector2)_topLeft.GetValue(box), br = (Vector2)_bottomRight.GetValue(box);
-					if (Snap(npc, tl, br)) { Held++; npc.netUpdate = true; }
+					Vector2 dbgP = npc.position, dbgV = npc.velocity;
+					if (Snap(npc, tl, br)) { Held++; npc.netUpdate = true; if (Dbg && Math.Abs(dbgP.Y - npc.position.Y) > 0.01f && _dbgN++ < 60) Levy.Instance?.Logger.Info($"ARENABOX-DBG t={Main.GameUpdateCount} who={npc.whoAmI} pos {dbgP.Y - tl.Y:0.0}->{npc.position.Y - tl.Y:0.0} vel {dbgV.X:0.00},{dbgV.Y:0.00} -> {npc.velocity.X:0.00},{npc.velocity.Y:0.00} wallBottom={br.Y - tl.Y:0.0} h={npc.height}"); }
+					if (npc.velocity.Y >= 0f && br.Y - npc.BottomRight.Y - npc.velocity.Y <= FloorSlackPx) floor = true;
 				}
 			}
 			catch (Exception e) { if (!_warned) { _warned = true; Levy.Instance?.Logger.Warn("Levy: Calamity arena box hold failed (" + e.Message + ")"); } }
+			return floor;
 		}
+
+		/// <summary>How close (px) a falling body's feet must be to a box's bottom wall, once the wall has held it, to count as resting on it.</summary>
+		private const float FloorSlackPx = 0.75f;
 
 		/// <summary>The snap and velocity trim of ArenaWallPlayer.ContainPlayerLogic, on an NPC. True when the body was outside the walls and was moved or slowed.</summary>
 		public static bool Snap(NPC npc, Vector2 tl, Vector2 br)

@@ -147,6 +147,7 @@ namespace Levy.Content.NPCs
 
 			Point bestTile = default; float bestScore = float.MinValue; int bestAlt = 0;
 			_rowCandN = 0;
+			bool boxed = ArenaInner(out Vector2 boxLo, out Vector2 boxHi);   // a row across or outside a Calamity arena box's walls is not a row this body can stand on
 			for (int dx = -RowColumns; dx <= RowColumns; dx++)
 			{
 				int x = feet.X + dx;
@@ -159,6 +160,7 @@ namespace Levy.Content.NPCs
 					if (Math.Abs(dy) < 2 && Math.Abs(dx) < 3) continue;
 					if (!TileNav.InBounds(x, y) || !TileNav.IsStandable(x, y)) continue;
 					if (!InFightZone(now, new Vector2(x * 16f + 8f, y * 16f))) continue;
+					if (boxed && (x * 16f + 8f < boxLo.X || x * 16f + 8f > boxHi.X || (y + 1) * 16f < boxLo.Y || (y + 1) * 16f > boxHi.Y)) continue;
 					if (dy > 0 && TileNav.IsStandable(x, y - 1)) continue;
 					if (Math.Abs(dy) >= 2 && TileNav.IsStandable(x, y - 1)) continue; // the tile just above a floor is the same footing
 					int alt = BandAlt(x, y);

@@ -114,7 +114,7 @@ namespace Levy.Content.NPCs
 		private void AirPost()
 		{
 			NPC npc = NPC;
-			if (npc.life <= 0 || OfficerMode) return;
+			if (npc.life <= 0 || OfficerMode || AvatarOwnsTick) return;   // the Avatar fight owns the air (SoldierNPC.AvatarFlight.cs)
 			bool hookOwns = _hkPhase == HookPhase.InFlight || _hkPhase == HookPhase.Reel;
 			if (hookOwns)
 			{

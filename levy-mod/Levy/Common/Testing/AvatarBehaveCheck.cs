@@ -60,7 +60,7 @@ namespace Levy.Common.Testing
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation; int gm = Main.GameMode; bool hm = Main.hardMode; bool day = Main.dayTime; double time = Main.time; bool? on0 = AvatarFight.TestOn;
 			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; Main.player[0] = Main.player[0] ?? new Player(); Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(4).Select(l => l.Trim())), false); }
-			finally { _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); AvatarFight.TestOn = on0; Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time; }
+			finally { _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); AvatarFight.TestOn = on0; WotgScenes.TestAvatarPercent = null; Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time; }
 			_mod.Logger.Info($"[AvatarBehave] self-check pass={_pass} fail={_fail}");
 		}
 
@@ -202,7 +202,7 @@ namespace Levy.Common.Testing
 		{
 			public Acc All = new(), Flier = new(), Foot = new(), Hook = new(); public int Hits, Ticks, Lost, Shifts, AliveAtEnd; public long Damage; public double Near2s, Near10s; public int Near2sN, Near10sN;
 			public int Lines, Floating; public long InSphere; public bool BossAlive; public readonly HashSet<string> States = new();
-			public readonly Dictionary<string, long> StateTicks = new();
+			public readonly Dictionary<string, long> StateTicks = new(); public readonly Dictionary<string, int> HitBy = new();
 		}
 
 		private sealed record Scn(string Name, int Phase, string[] States, int Ticks, bool Send);
@@ -210,7 +210,7 @@ namespace Levy.Common.Testing
 		private static Result RunScene(Scn sc, bool behave)
 		{
 			var r = new Result();
-			Cleanup(); AvatarFight.TestOn = behave;
+			Cleanup(); AvatarFight.TestOn = behave; WotgScenes.TestAvatarPercent = behave ? null : 100;   // off = the chatter the army had before (every line of the fight pools at the old rate)
 			Terraria.Main.rand = new Terraria.Utilities.UnifiedRandom(4242);
 			Arena();
 			Main.GameMode = GameModeID.Master; Main.hardMode = true;
@@ -270,7 +270,7 @@ namespace Levy.Common.Testing
 						if (pr.ModProjectile?.Name == "AnnihilationSphere") { if (Vector2.Distance(pr.Center, n.Center) < pr.width * 0.38f) r.InSphere++; continue; }
 						if (pr.damage <= 0 || !pr.Hitbox.Intersects(body)) continue;
 						if (!hitSeen.Add(((long)pr.identity << 20) ^ ((long)pr.type << 8) ^ (long)n.whoAmI)) continue;
-						r.Hits++; r.Damage += pr.damage;
+						r.Hits++; r.Damage += pr.damage; string hn = pr.ModProjectile?.Name ?? pr.type.ToString(); r.HitBy[hn] = r.HitBy.GetValueOrDefault(hn) + 1;
 					}
 					Acc a = c == Cls.Flier ? r.Flier : c == Cls.Foot ? r.Foot : r.Hook;
 					float d = Vector2.Distance(n.Center, cm.Center) / 16f;
@@ -296,7 +296,7 @@ namespace Levy.Common.Testing
 			Acc A = r.All; double n = Math.Max(1, A.Ticks);
 			string cls(Acc a) => P(100.0 * a.Far / Math.Max(1, a.Ticks));
 			return $"{name}: {r.Ticks} ticks, moved {r.Shifts}x; mean distance {F(A.Dist / n)} tiles, stranded(>40) {P(100.0 * A.Far / n)} (fliers {cls(r.Flier)}, foot {cls(r.Foot)}, hookers {cls(r.Hook)}), lost(>100) {P(100.0 * A.Lost / n)}, falling {P(100.0 * A.Fall / n)}, aloft {P(100.0 * A.Aloft / n)} (fliers {P(100.0 * r.Flier.Aloft / Math.Max(1, r.Flier.Ticks))}, foot {P(100.0 * r.Foot.Aloft / Math.Max(1, r.Foot.Ticks))}); " +
-				$"near after move 2s {(r.Near2sN > 0 ? P(r.Near2s / r.Near2sN) : "-")}, 10s {(r.Near10sN > 0 ? P(r.Near10s / r.Near10sN) : "-")}; hits {r.Hits} (dmg {r.Damage}), in annihilation sphere {r.InSphere} body-ticks; lines {r.Lines} scripted + {r.Floating - r.Lines} other floating in {F(r.Ticks / 3600.0)} min; levies lost {r.Lost}; states [{string.Join(",", r.StateTicks.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}]";
+				$"near after move 2s {(r.Near2sN > 0 ? P(r.Near2s / r.Near2sN) : "-")}, 10s {(r.Near10sN > 0 ? P(r.Near10s / r.Near10sN) : "-")}; hits {r.Hits} (dmg {r.Damage}) [{string.Join(",", r.HitBy.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}], in annihilation sphere {r.InSphere} body-ticks; lines {r.Lines} scripted + {r.Floating - r.Lines} other floating in {F(r.Ticks / 3600.0)} min; levies lost {r.Lost}; states [{string.Join(",", r.StateTicks.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}]";
 		}
 
 		private static readonly Scn[] All =

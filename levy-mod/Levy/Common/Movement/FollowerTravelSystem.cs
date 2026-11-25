@@ -46,7 +46,7 @@ namespace Levy.Common.Movement
 		private static void AfterTravel(Player player)
 		{
 			if (Main.netMode == NetmodeID.MultiplayerClient || player == null || !player.active) return;
-			try { FollowerTravel.BringFollowers(player); }
+			try { if (global::Levy.Common.Compat.Wotg.AvatarFight.Applies) global::Levy.Common.Compat.Wotg.AvatarFightSystem.BringArmy(player, 0f); else FollowerTravel.BringFollowers(player); } // in the Avatar of Emptiness fight there may be no ground to find: the army comes into the air beside the commander
 			catch (Exception e) { Levy.Instance?.Logger.Warn("Levy: follower travel failed: " + e); }
 		}
 

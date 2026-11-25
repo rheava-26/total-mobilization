@@ -91,10 +91,12 @@ namespace Levy.Common.Testing
 		{
 			public int Hits, Strikes, AwayHits, ProjHits, Shots, ForwardShots, SeenLevyDir; public long Dmg;
 			public double FwdSum, UpSum; public int Pos;
-			public int CmdDirEnd, BornFacing, BornFacingBad;
+			public int CmdDirEnd, BornFacing, BornFacingBad, BornStale;
 			/// <summary>Per hook kind (Kinds): how often a levy's shot or strike was handled, how often the owner it reads stood facing the other way than the levy, and how often it stood away from the levy.</summary>
 			public readonly int[] Seen = new int[Kinds.Length], DirBad = new int[Kinds.Length], PosBad = new int[Kinds.Length];
 			public readonly Dictionary<string, int> Types = new();
+			/// <summary>The births behind BornFacingBad, by projectile: the shots that were born with a facing neither the way they fly nor the way the levy faces.</summary>
+			public readonly Dictionary<string, int> BornBadTypes = new(), BornTypes = new(), BornStaleTypes = new();
 			public double Fwd => Pos > 0 ? FwdSum / Pos : 0; public double Up => Pos > 0 ? UpSum / Pos : 0;
 			public double AwayShare => Strikes > 0 ? (double)AwayHits / Strikes : 0; public double ForwardShare => Shots > 0 ? (double)ForwardShots / Shots : 0;
 		}
@@ -133,7 +135,7 @@ namespace Levy.Common.Testing
 				_ => false,
 			};
 		}
-		private static readonly bool Debug = Environment.GetEnvironmentVariable("LEVY_FACING_DEBUG") == "1"; private static int _dbgStacks, _dbgOwner;
+		private static readonly bool Debug = Environment.GetEnvironmentVariable("LEVY_FACING_DEBUG") == "1"; private static int _dbgStacks, _dbgOwner, _dbgBorn; private static readonly int[] _slotDir = new int[Main.maxProjectiles + 1], _slotType = new int[Main.maxProjectiles + 1];
 
 		private static int StrikeProbe(On_NPC.orig_StrikeNPC_HitInfo_bool_bool orig, NPC self, NPC.HitInfo hit, bool fromNet, bool noPlayerInteraction)
 		{
@@ -161,13 +163,28 @@ namespace Levy.Common.Testing
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
+				int prevDir = _slotDir[i], prevType = _slotType[i]; _slotDir[i] = p.direction; _slotType[i] = p.type; // what the slot held at the last look (a freed slot keeps its direction: vanilla does not reset it for the next projectile)
 				if (!p.active || !p.TryGetGlobalProjectile(out SoldierProjectileTag tag) || tag.SoldierIndex != idx) continue;
 				if (!_seen.Add(((long)tag.SpawnTick << 12) | (uint)i)) continue;
 				string key = p.ModProjectile != null ? p.ModProjectile.Name : ProjectileID.Search.GetName(p.type);
 				_sc.Types[key] = _sc.Types.TryGetValue(key, out int n) ? n + 1 : 1;
 				if (Math.Abs(p.velocity.X) > 0.5f) { _sc.Shots++; if (p.velocity.X * _levyDir > 0f) _sc.ForwardShots++; }
-				// the facing a shot is born with (Projectile.direction, which the game and mods copy from the owner when it is made): it must be the way the levy faces, and the way it flies
-				if (p.direction != 0 && Math.Abs(p.velocity.X) > 0.5f) { _sc.BornFacing++; if (p.direction != (p.velocity.X > 0f ? 1 : -1) && p.direction != _levyDir) _sc.BornFacingBad++; }
+				// the facing a shot is born with (Projectile.direction, which the game and mods copy from the owner when it is made): it must be the way the levy faces, and the way it flies.
+				// Vanilla never resets Projectile.direction for a new projectile (NewProjectile and SetDefaults leave it): a shot whose mod does not set it carries what the slot's last projectile had, a thrown blade that came
+				// back, a spark. A birth whose direction is just what its slot held a tick ago says nothing about the owner it was made by, so it is counted apart (BornStale) and not judged.
+				if (p.direction != 0 && Math.Abs(p.velocity.X) > 0.5f)
+				{
+					_sc.BornFacing++; _sc.BornTypes[key] = _sc.BornTypes.GetValueOrDefault(key) + 1;
+					if (p.direction != (p.velocity.X > 0f ? 1 : -1) && p.direction != _levyDir)
+					{
+						if (p.direction == prevDir) { _sc.BornStale++; _sc.BornStaleTypes[key] = _sc.BornStaleTypes.GetValueOrDefault(key) + 1; }
+						else
+						{
+							_sc.BornFacingBad++; _sc.BornBadTypes[key] = _sc.BornBadTypes.GetValueOrDefault(key) + 1;
+							if (Debug && _dbgBorn++ < 40) Note($"  dbg bad birth {key}: direction={p.direction} vel=({p.velocity.X:0.0},{p.velocity.Y:0.0}) levyDir={_levyDir} cmdDir={Main.player[0].direction} slot={i} slotHeldBefore={(prevType >= ProjectileID.Count ? ProjectileLoader.GetProjectile(prevType)?.Name : ProjectileID.Search.GetName(prevType))} dir {prevDir}");
+						}
+					}
+				}
 			}
 		}
 
@@ -330,7 +347,7 @@ namespace Levy.Common.Testing
 		}
 
 		private static string Fmt(Scene s) => s == null ? "none" :
-			$"bornFacing {s.BornFacingBad}/{s.BornFacing} dmg={s.Dmg} strikes={s.Strikes} projHits={s.ProjHits} away={s.AwayShare:0.00} shots={s.Shots} forward={s.ForwardShare:0.00} hitAt(fwd={s.Fwd:0.0},up={s.Up:0.0})px cmdSawLevyDir={s.SeenLevyDir}/{s.Strikes} proj=[{string.Join(",", s.Types.OrderBy(k => k.Key).Select(k => k.Key + "x" + k.Value))}] ownerWrongWay/seen=[{string.Join(" ", Kinds.Select((k, i) => s.Seen[i] > 0 ? $"{k}:{s.DirBad[i]}/{s.Seen[i]}" : null).Where(x => x != null))}] ownerAway/seen=[{string.Join(" ", Kinds.Select((k, i) => s.Seen[i] > 0 ? $"{k}:{s.PosBad[i]}/{s.Seen[i]}" : null).Where(x => x != null))}]";
+			$"bornFacing {s.BornFacingBad}/{s.BornFacing} (stale slot direction {s.BornStale}) [{string.Join(",", s.BornTypes.OrderBy(k => k.Key).Select(k => k.Key + " " + s.BornBadTypes.GetValueOrDefault(k.Key) + "+" + s.BornStaleTypes.GetValueOrDefault(k.Key) + "/" + k.Value))}] dmg={s.Dmg} strikes={s.Strikes} projHits={s.ProjHits} away={s.AwayShare:0.00} shots={s.Shots} forward={s.ForwardShare:0.00} hitAt(fwd={s.Fwd:0.0},up={s.Up:0.0})px cmdSawLevyDir={s.SeenLevyDir}/{s.Strikes} proj=[{string.Join(",", s.Types.OrderBy(k => k.Key).Select(k => k.Key + "x" + k.Value))}] ownerWrongWay/seen=[{string.Join(" ", Kinds.Select((k, i) => s.Seen[i] > 0 ? $"{k}:{s.DirBad[i]}/{s.Seen[i]}" : null).Where(x => x != null))}] ownerAway/seen=[{string.Join(" ", Kinds.Select((k, i) => s.Seen[i] > 0 ? $"{k}:{s.PosBad[i]}/{s.Seen[i]}" : null).Where(x => x != null))}]";
 
 		private static void Run()
 		{
@@ -473,7 +490,7 @@ namespace Levy.Common.Testing
 				if (seen > 0) Check($"{label}: the owner a levy's {Kinds[k]} reads faces the way the levy faces, with the commander facing either way ({bad} of {seen} the other way)", bad == 0);
 			}
 			// the facing a shot is born with: a weapon may give some of its own shots a facing of their own (sparks, scatter), so the two runs are compared, not the shots against the levy
-			if (a.BornFacing + b.BornFacing >= 20) Check($"{label}: the facing a shot is born with does not depend on the commander's facing ({a.BornFacingBad} of {a.BornFacing} against the way it flies and the levy faces, vs {b.BornFacingBad} of {b.BornFacing})", Math.Abs(a.BornFacingBad - b.BornFacingBad) <= Math.Max(4, 0.25 * Math.Max(a.BornFacingBad, b.BornFacingBad)));
+			if (a.BornFacing + b.BornFacing >= 20) Check($"{label}: the facing a shot is born with does not depend on the commander's facing ({a.BornFacingBad} of {a.BornFacing} against the way it flies and the levy faces, vs {b.BornFacingBad} of {b.BornFacing}; {a.BornStale} and {b.BornStale} more only carry their slot's old direction)", Math.Abs(a.BornFacingBad - b.BornFacingBad) <= Math.Max(4, 0.25 * Math.Max(a.BornFacingBad, b.BornFacingBad)));
 			Check($"{label}: the commander was left facing as the scene set her", a.CmdDirEnd == 1 && b.CmdDirEnd == -1);
 		}
 	}

@@ -35,7 +35,7 @@ namespace Levy.Common.Testing
 
 		private static void PinSweepTarget()
 		{
-			if (_sweepTarget == null || !_sweepTarget.active) return;
+			if (_sumGone || _sweepTarget == null || !_sweepTarget.active) return;
 			_sweepTarget.active = true; _sweepTarget.timeLeft = 9999; _sweepTarget.Bottom = _sweepTargetAt; _sweepTarget.velocity = _sweepVel; _sweepTarget.life = _sweepTarget.lifeMax; _sweepTarget.dontTakeDamage = false;
 		}
 

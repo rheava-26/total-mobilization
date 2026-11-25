@@ -156,6 +156,55 @@ namespace Levy.Common.Weapons
 		/// <summary>The owner slot a driven minion of <paramref name="type"/> lives on: 255, except the Stardust Dragon's own slot.</summary>
 		private static int OwnerSlotFor(int type) => IsDragonType(type) ? DragonOwner : Slot;
 
+		/// <summary>Staves (item types) whose slot-free shot was seen to make a minion that takes slots and stays (the Midnight Sun Beacon: its shot rises and becomes a UFO). Learned from the first such child; session only.</summary>
+		private static readonly HashSet<int> LastingMakers = new();
+		/// <summary>True when the staff's slot-free shot has been seen to turn into a minion that takes slots, so the staff is cast like any minion staff, not only while its soldier fights.</summary>
+		internal static bool MakesLastingMinions(int itemType)
+		{
+			if (LastingMakers.Contains(itemType)) return true;
+			if (!LastingScan.TryGetValue(itemType, out bool v))
+			{
+				try { v = ScanShotForLastingChild(itemType); } catch (Exception) { v = false; }
+				LastingScan[itemType] = v;
+			}
+			return v;
+		}
+		private static readonly Dictionary<int, bool> LastingScan = new();
+
+		/// <summary>
+		/// Reads the IL of the staff's shot AI for the projectile types it makes (<c>ModContent.ProjectileType&lt;T&gt;()</c>): true when one of them is a minion that takes slots. The Midnight Sun Beacon's shot (no slots of its own,
+		/// 420 ticks of rising) makes the UFO that stays. Any failure reads as "no"; the first such child seen in play teaches the same thing (<see cref="NoteLastingChild"/>).
+		/// </summary>
+		private static bool ScanShotForLastingChild(int itemType)
+		{
+			if (!ContentSamples.ItemsByType.TryGetValue(itemType, out Item it) || it.shoot < ProjectileID.Count) return false;
+			ModProjectile mp = ProjectileLoader.GetProjectile(it.shoot);
+			var m = mp?.GetType().GetMethod("AI", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly);
+			byte[] il = m?.GetMethodBody()?.GetILAsByteArray();
+			if (il == null) return false;
+			for (int i = 0; i + 4 < il.Length; i++)
+			{
+				if (il[i] != 0x28 && il[i] != 0x6F) continue; // call, callvirt
+				int token = BitConverter.ToInt32(il, i + 1);
+				if ((int)((uint)token >> 24) != 0x2B) continue; // a generic method instance
+				System.Reflection.MethodBase target;
+				try { target = m.Module.ResolveMethod(token, mp.GetType().GenericTypeArguments, null); } catch (Exception) { continue; }
+				if (target == null || target.Name != "ProjectileType" || !target.IsGenericMethod) continue;
+				Type arg = target.GetGenericArguments()[0];
+				int type = (int)typeof(ModContent).GetMethod("ProjectileType", Type.EmptyTypes).MakeGenericMethod(arg).Invoke(null, null);
+				if (type >= ProjectileID.Count && ContentSamples.ProjectilesByType.TryGetValue(type, out Projectile sample) && sample.minion && !sample.sentry && sample.minionSlots > ChildSlotMin) return true;
+			}
+			return false;
+		}
+		/// <summary>A modded minion that takes no slot just made a minion that does (OnSpawn of the child): the staff of the parent is a minion staff whatever its shot's own slots say.</summary>
+		internal static void NoteLastingChild(Projectile parent, Projectile child)
+		{
+			if (!parent.minion || !child.minion || child.sentry || child.minionSlots <= ChildSlotMin || parent.minionSlots > ChildSlotMin || parent.type < ProjectileID.Count) return;
+			Item staff = MiscProjSwap.BodyOf(parent)?.SummonWeaponFor(parent.type);
+			if (staff == null || staff.shoot != parent.type) return;
+			if (LastingMakers.Add(staff.type)) ModContent.GetInstance<Levy>()?.Logger.Info("Levy: " + staff.Name + "'s slot-free shot made a minion that takes " + child.minionSlots + " slot(s): cast as a minion staff from now on.");
+		}
+
 		/// <summary>True when <paramref name="p"/> is a driven minion belonging to the soldier at NPC index <paramref name="soldierIndex"/>.</summary>
 		internal static bool OwnedBy(Projectile p, int soldierIndex) =>
 			IsDriven(p) && p.GetGlobalProjectile<SoldierProjectileTag>().SoldierIndex == soldierIndex;
@@ -173,8 +222,8 @@ namespace Levy.Common.Weapons
 		/// <summary>A minion-flagged child counts toward its soldier's flock only when it takes more than this many slots.</summary>
 		internal const float ChildSlotMin = 0.01f;
 
-		/// <summary>The slots one live minion counts for: its own, or for a modded minion that reports none (its AI sets it later or never) the cast's slot cost.</summary>
-		internal static float SlotOf(Projectile p, float perCast) => p.minionSlots > 0.01f || p.type < ProjectileID.Count ? p.minionSlots : perCast;
+		/// <summary>The slots one live minion counts for: its own, or for a modded minion that reports none (its AI sets it later or never) the cast's slot cost. When the staff's cast cost is already known from the pieces that do report slots (<paramref name="castKnown"/>), a piece that reports none is a companion that takes no slot (the Endo Hydra's body).</summary>
+		internal static float SlotOf(Projectile p, float perCast, bool castKnown = false) => p.minionSlots > 0.01f || p.type < ProjectileID.Count ? p.minionSlots : castKnown ? 0f : perCast;
 
 		/// <summary>True for a minion that is a direct cast of the staff (created by <see cref="NewMinion"/>), false for a minion-flagged child a modded minion's own AI made.</summary>
 		internal static bool IsCast(Projectile p) => p.type < ProjectileID.Count || (p.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.Cast);
@@ -241,6 +290,7 @@ namespace Levy.Common.Weapons
 		{
 			Item staff = MiscProjSwap.BodyOf(p)?.SummonWeaponFor(p.type);
 			if (staff == null || staff.shoot <= 0) return; // the soldier gave the staff back (rearm), left, or fell: a death with no staff in hand is not evidence about the staff
+			if (SoldierNPC.TransientStaff(staff)) return; // a self-ending cast (a bomber that dives, a fist that strikes) dies within moments by design: it says nothing about whether it can live under a dummy owner
 			int root = staff.shoot;
 			if (age >= LevyConstants.ModdedMinionShortLifeTicks) { ShortLives[root] = 0; return; }
 			int n = ShortLives.GetValueOrDefault(root) + 1;
@@ -459,6 +509,7 @@ namespace Levy.Common.Weapons
 			// Belcher, the Resurrection Butterfly and Entropy's Vigil lost half or more, so it is not the default.
 			bool atTarget = SoldierNPC.TransientStaff(weapon) || (CastAtTargetLab && s.TargetIndex >= 0 && s.TargetIndex < Main.maxNPCs && Main.npc[s.TargetIndex].active);
 			Player d = s.Dummy; threw = false;
+			RefreshCounts(s); // a Shoot that asks the owner how many of its minion are out (to grow it, or to make a fresh one) must be told the truth, not last tick's count
 			var moved = new List<Projectile>();
 			int me = s.NPC.whoAmI, saved = Main.myPlayer;
 			for (int i = 0; i < Main.maxProjectiles; i++)
@@ -586,9 +637,53 @@ namespace Levy.Common.Weapons
 				return false;
 			}
 			EmptyCasts[weapon.type] = 0;
-			if (slots > ChildSlotMin && !CastSlots.ContainsKey(weapon.type)) CastSlots[weapon.type] = slots;
+			if (slots > ChildSlotMin) CastSlots[weapon.type] = slots; // the latest cast's cost: a minion sized from its holder's free slots (the Abandoned Slime) costs what his slots allow now
+			TrimMade(s, made);
 			return true;
 		}
+
+		/// <summary>
+		/// A cast that does not fit his minion slots keeps only the part that does, as for a player: a minion a player's gear has no room for ends itself (Calamity's minions check the owner's slots, the Aqueous Hunter Drone's three
+		/// 4-slot drones at 1 slot are gone at once, Entropy's Vigil keeps one of its three). The pieces just made are ended, newest first, until his flock fits.
+		/// </summary>
+		private static void TrimMade(SoldierNPC s, List<Projectile> made)
+		{
+			float cap = s.Dummy != null ? Math.Max(1, s.Dummy.maxMinions) : 1f, total = 0f;
+			int me = s.NPC.whoAmI;
+			for (int i = 0; i < Main.maxProjectiles; i++) { Projectile p = Main.projectile[i]; if (p.active && p.minion && !p.sentry && p.minionSlots > ChildSlotMin && OwnedBy(p, me)) total += p.minionSlots; }
+			for (int k = made.Count - 1; k >= 0 && total > cap + LevyConstants.MinionSlotEpsilon; k--)
+			{
+				Projectile p = made[k];
+				if (!p.active || !p.minion || p.sentry || p.minionSlots <= ChildSlotMin) continue;
+				total -= p.minionSlots;
+				Dismiss(p);
+				TrimTally++;
+			}
+		}
+		/// <summary>
+		/// The dummy's minion counters (numMinions, slotsMinions, ownedProjectileCounts) counted now from this soldier's own flock. PrepareTick does this once a tick, but only for a soldier that has a driven projectile left: a flock that just died
+		/// left the counts of its last tick standing, and a staff's Shoot that finds "one of my minion is out" makes nothing (the Void Eater Marionette throws on it).
+		/// </summary>
+		internal static void RefreshCounts(SoldierNPC s)
+		{
+			Player d = s.Dummy;
+			if (d == null) return;
+			d.numMinions = 0; d.slotsMinions = 0f;
+			Array.Clear(d.ownedProjectileCounts, 0, d.ownedProjectileCounts.Length);
+			int me = s.NPC.whoAmI;
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (!p.active || p.owner != Slot) continue;
+				if (!OwnedBy(p, me) && !IsDrivenChild(p)) continue;
+				if (!(p.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.SoldierIndex == me)) continue;
+				if (p.type < d.ownedProjectileCounts.Length) d.ownedProjectileCounts[p.type]++;
+				if (p.minion) { d.numMinions++; d.slotsMinions += p.minionSlots; }
+			}
+		}
+
+		/// <summary>Lab counter: pieces of a cast that did not fit his slots and were ended at once.</summary>
+		internal static int TrimTally;
 
 		/// <summary>True when the last <see cref="SummonReal"/> was a cast that powered up a minion already out (see <see cref="FlockChanged"/>).</summary>
 		private static bool _lastStacked;
@@ -643,6 +738,7 @@ namespace Levy.Common.Weapons
 			Player d = s?.Dummy;
 			if (d == null || weapon?.ModItem == null) return true;
 			Item saved = d.inventory[0]; int sel = d.selectedItem;
+			RefreshCounts(s);
 			try { d.inventory[0] = weapon; d.selectedItem = 0; return ItemLoader.CanUseItem(weapon, d); }
 			catch (Exception) { return true; }
 			finally { d.inventory[0] = saved; d.selectedItem = sel; }

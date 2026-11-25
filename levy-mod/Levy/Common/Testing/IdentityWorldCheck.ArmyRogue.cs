@@ -41,6 +41,7 @@ namespace Levy.Common.Testing
 		/// <summary>Pins the rogue sweep's extra enemies in place at full life (called with the sweep target's pin, before the NPCs update).</summary>
 		private static void PinRogueAdds()
 		{
+			if (_sumGone) return;
 			for (int i = 0; i < _rogueAdds.Count; i++)
 			{
 				NPC n = _rogueAdds[i]; if (n == null || !n.active) continue;

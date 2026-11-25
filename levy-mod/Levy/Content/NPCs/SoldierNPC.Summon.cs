@@ -89,9 +89,17 @@ namespace Levy.Content.NPCs
 		internal int[] AllotCasts(List<Item> weapons) =>
 			SummonCap.Allot(weapons, Dummy != null ? Math.Max(1, Dummy.maxMinions) : 1f, SlotsPerMinion, w => SoldierMinions.Capacity(this, w));
 
-		/// <summary>How many minions this soldier's gear supports: the dummy's maxMinions (read after the stat pipeline) over the weapon's slot cost, clamped to [1, cap].</summary>
+		/// <summary>True when this soldier's gear gives enough minion slots for one cast of the staff. A staff that asks its holder for free minion slots in its own CanUseItem (Endogenesis asks for 10, the Aqueous Hunter Drone for 4) is refused to a player whose maxMinions is lower, and to him too (<see cref="SummonCap.NeedsMoreSlots"/>).</summary>
+		public bool FitsOneCast(Item weapon)
+		{
+			int cap = Dummy != null ? Math.Max(1, Dummy.maxMinions) : 1;
+			return !SummonCap.NeedsMoreSlots(weapon, cap);
+		}
+
+		/// <summary>How many minions this soldier's gear supports: the dummy's maxMinions (read after the stat pipeline) over the weapon's slot cost, clamped to [1, cap]; none when one cast needs more slots than he has.</summary>
 		public int MinionCapacity(Item weapon)
 		{
+			if (!FitsOneCast(weapon)) return 0;
 			float cap = Dummy != null ? Math.Max(1, Dummy.maxMinions) : 1f;
 			int n = (int)Math.Floor(cap / SlotsPerMinion(weapon) + 0.001f);
 			return Math.Clamp(n, 1, LevyConstants.MinionMaxPerSoldier);
@@ -141,7 +149,7 @@ namespace Levy.Content.NPCs
 
 		internal static bool TransientStaff(Item weapon)
 		{
-			if (SummonOld || weapon == null || weapon.shoot < ProjectileID.Count || weapon.sentry) return false;
+			if (SummonOld || weapon == null || weapon.shoot < ProjectileID.Count || weapon.sentry || SoldierMinions.MakesLastingMinions(weapon.type)) return false; // a shot with no slot that turns into a minion that stays (the Midnight Sun Beacon's UFO) is a minion staff: cast until the slots are full, in combat or not
 			if (SoldierMinions.CastSlots.ContainsKey(weapon.type) || SoldierMinions.IsStacker(weapon.type)) return false; // a minion that grows with each cast (the Void Eater Marionette starts at no slots) is not a self-ending cast
 			Projectile sample = WeaponClassifier.ProjectileSample(weapon.shoot);
 			return sample != null && sample.minion && sample.minionSlots <= SoldierMinions.ChildSlotMin;
@@ -242,7 +250,10 @@ namespace Levy.Content.NPCs
 				int spawned = ChildSpawns - _childSpawnsSeen; _childSpawnsSeen = ChildSpawns;
 				if (spawned > LevyConstants.ModdedMinionMaxChildSpawnsPerPass || _childrenAlive > LevyConstants.ModdedMinionMaxChildrenAlive) { SoldierMinions.FloodGuard(this, weapon, spawned, _childrenAlive); return; }
 			}
-			float perCast = SlotsPerMinion(weapon), want = desired * perCast, have = 0f;
+			// never more slots than his gear gives: a player's minions that do not fit end themselves (a cast of 4-slot drones with 1 slot out: none stay); his upkeep ends them
+			float perCast = SlotsPerMinion(weapon), want = Math.Min(desired * perCast, Dummy != null ? Math.Max(1, Dummy.maxMinions) : 1f), have = 0f;
+			bool transientCast = TransientStaff(weapon); // a self-ending cast takes no slot: not counted, not gated by the flock
+			bool known = transientCast || SoldierMinions.CastSlots.ContainsKey(weapon.type);
 			bool dragon = weapon.shoot == ProjectileID.StardustDragon1;
 			// A Stardust Dragon is ONE chain (head, 2 bodies per cast, tail): a segment killed by anything else leaves the rest following a dead link, so a broken chain is torn down and recast whole.
 			if (dragon && !SoldierMinions.DragonIntact(this, _minionScratch))
@@ -254,7 +265,7 @@ namespace Levy.Content.NPCs
 			{
 				Projectile p = Main.projectile[i];
 				SoldierMinions.Retune(this, p, weapon, damage);
-				have += SoldierMinions.SlotOf(p, perCast);
+				have += SoldierMinions.SlotOf(p, perCast, known);
 			}
 			if (dragon) have = SoldierMinions.TrimDragon(_minionScratch, have, want); // shortened body by body from the tail end, never below one cast
 			while (!dragon && have > want + LevyConstants.MinionSlotEpsilon)
@@ -263,11 +274,11 @@ namespace Levy.Content.NPCs
 				for (int k = 0; k < _minionScratch.Count; k++)
 				{
 					Projectile p = Main.projectile[_minionScratch[k]];
-					if (p.active && SoldierMinions.SlotOf(p, perCast) > 0f && (worst < 0 || _minionScratch[k] > _minionScratch[worst])) worst = k;
+					if (p.active && SoldierMinions.SlotOf(p, perCast, known) > 0f && (worst < 0 || _minionScratch[k] > _minionScratch[worst])) worst = k;
 				}
 				if (worst < 0) break;
 				Projectile q = Main.projectile[_minionScratch[worst]];
-				have -= SoldierMinions.SlotOf(q, perCast);
+				have -= SoldierMinions.SlotOf(q, perCast, known);
 				if (CombatHarness.Enabled || SummonDebug) Levy.Instance?.Logger.Info($"HARNESS-MINION-DBG overflow dismiss {q.ModProjectile?.Name ?? q.type.ToString()} slots={q.minionSlots} have={have} want={want} perCast={perCast} desired={desired}");
 				SoldierMinions.Dismiss(q);
 				_minionScratch.RemoveAt(worst);
@@ -293,12 +304,12 @@ namespace Levy.Content.NPCs
 				if (CrowdBudget.MayAddProjectiles(1)) SoldierMinions.Helper(this, weapon, damage);
 			}
 			// the count guard keeps a staff whose minion reports no slot cost from casting without end
-			if (_minionSpawnCd > 0 || have + perCast > want + LevyConstants.MinionSlotEpsilon || _minionScratch.Count >= LevyConstants.MinionControllerMaxPerSoldier * 2) return;
+			if (_minionSpawnCd > 0 || (!transientCast && have + perCast > want + LevyConstants.MinionSlotEpsilon) || _minionScratch.Count >= LevyConstants.MinionControllerMaxPerSoldier * 2) return;
 			if (transient && !fighting) return; // a self-ending cast is made while fighting only
 			if (transient && !SoldierMinions.CanUse(this, weapon)) return; // and only when the staff allows a use, as for a player (the Universe Splitter waits while its field is out)
 
 			if (!CrowdBudget.MayAddProjectiles(Math.Max(1, (int)Math.Ceiling(perCast)))) return; // the army entity budget
-			_minionSpawnCd = transient ? Math.Max(LevyConstants.MinionSpawnCooldownTicks, weapon.useTime) : LevyConstants.MinionSpawnCooldownTicks;
+			_minionSpawnCd = transient ? Math.Max(LevyConstants.MinionMaintainIntervalTicks, weapon.useTime) : LevyConstants.MinionSpawnCooldownTicks; // a player's click again as soon as the use is over; the upkeep looks every MinionMaintainIntervalTicks
 			if (!SoldierMinions.Summon(this, weapon, damage)) return;
 			SoldierMinions.CastTally++;
 			CrowdBudget.NoteAdded();

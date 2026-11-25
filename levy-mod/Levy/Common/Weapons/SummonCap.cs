@@ -40,7 +40,7 @@ namespace Levy.Common.Weapons
 		public static bool IsCapped(Item it) => MaxCasts(it) < None;
 
 		/// <summary>Drops the cache (world change / tests).</summary>
-		internal static void Reset() { Cache.Clear(); _probe = null; }
+		internal static void Reset() { Cache.Clear(); NeedCache.Clear(); _probe = null; }
 
 		/// <summary>Test seam: pins an item type's cap (None for unlimited).</summary>
 		internal static void Force(int itemType, int cap) => Cache[itemType] = cap;
@@ -67,12 +67,48 @@ namespace Levy.Common.Weapons
 					int fit = (int)Math.Floor(remaining / per + LevyConstants.MinionSlotEpsilon);
 					int want = cap < None ? Math.Min(cap, fit) : (unlimitedTaken ? 0 : Math.Min(fit, unlimitedFit(w)));
 					if (cap >= None) unlimitedTaken = true;
-					if (want < 1 && first) want = 1;
+					if (want < 1 && first && per <= Math.Max(1f, budget) + LevyConstants.MinionSlotEpsilon) want = 1; // the first staff gets a cast, unless one cast takes more slots than he has (a player cannot use it either)
 					n[i] = Math.Max(0, want);
 					remaining -= n[i] * per;
 					first = false;
 				}
 			return n;
+		}
+
+		private static readonly Dictionary<(int type, int slots), bool> NeedCache = new();
+
+		/// <summary>
+		/// True when the staff's own CanUseItem refuses a holder with <paramref name="slots"/> minion slots and nothing out, but allows one with plenty: the staff asks for more free slots than that (Endogenesis, Cosmic Immaterializer,
+		/// the Aqueous Hunter Drone...). A player cannot use it then, so a levy with that few slots does not cast it either. A staff whose gate is something else (it refuses even with plenty: a boss, a biome, its holder's own hand)
+		/// and a vanilla staff are never "needing more slots". Asked of the item's real hook with a scratch player, cached per item and slot count.
+		/// </summary>
+		public static bool NeedsMoreSlots(Item it, int slots)
+		{
+			if (it == null || it.IsAir || it.shoot <= 0 || it.ModItem == null) return false;
+			if (NeedCache.TryGetValue((it.type, slots), out bool hit)) return hit;
+			bool needs = false;
+			try
+			{
+				var sample = new Item(); sample.SetDefaults(it.type);
+				var mi = sample.ModItem;
+				if (mi != null)
+				{
+					var p = _probe ??= new Player();
+					p.ResetEffects();
+					p.statMana = p.statManaMax2 = 1000;
+					p.slotsMinions = 0f;
+					Array.Clear(p.ownedProjectileCounts, 0, p.ownedProjectileCounts.Length);
+					p.maxMinions = 100;
+					bool plenty = mi.CanUseItem(p);
+					p.maxMinions = slots;
+					p.slotsMinions = 0f;
+					bool few = plenty && mi.CanUseItem(p);
+					needs = plenty && !few;
+				}
+			}
+			catch (Exception) { needs = false; }
+			NeedCache[(it.type, slots)] = needs;
+			return needs;
 		}
 
 		private static int Read(Item it)

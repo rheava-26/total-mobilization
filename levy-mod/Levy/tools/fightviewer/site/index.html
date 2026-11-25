@@ -205,6 +205,18 @@ body.big #strip,body.big .legend{display:none}
   .legend.pvp{display:flex;gap:8px}
   .filters select{min-height:42px}
 }
+#pcard{position:absolute;right:10px;bottom:34px;max-width:min(330px,72%);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12px;z-index:4;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+#pcard[hidden]{display:none}
+#pcard h3{margin:0 0 4px;font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+#pcard h3 button{padding:0 8px;min-width:0;line-height:1.4}
+#pcard .kv{display:grid;grid-template-columns:auto 1fr;gap:1px 10px}
+#pcard .kv span:nth-child(odd){color:var(--dim)}
+#pcard .foot{margin-top:5px;color:var(--dim);font-size:11px}
+#buffs{position:absolute;left:10px;bottom:34px;width:min(250px,46%);max-height:48%;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:11.5px;z-index:3;opacity:.95;pointer-events:none}
+#buffs[hidden]{display:none}
+#buffs h3{margin:0 0 3px;font-size:11.5px;color:var(--dim);font-weight:600}
+#buffs .b{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums}
+#buffs .b i{font-style:normal;color:var(--dim)}
 </style>
 <div id="app">
   <div id="top" role="banner">
@@ -224,7 +236,7 @@ body.big #strip,body.big .legend{display:none}
     <main id="main">
       <div id="fightHead"></div>
       <div id="callBar" role="group" aria-label="Call it"><span id="callTxt">Call it before you watch:</span><button class="pick" data-p="win">Win</button><button class="pick" data-p="loss">Loss</button><button class="pick" data-p="weird">Something weird</button><button id="callNext">Another fight</button><button id="callReveal">Reveal</button><span class="sc" id="callScore"></span></div>
-      <div id="stage"><canvas id="view"></canvas><div id="hud"></div><div id="viewNote" hidden></div><div id="msg" class="show"><div class="spin"></div><div id="msgText">Loading ...</div></div><div id="tip"></div></div>
+      <div id="stage"><canvas id="view"></canvas><div id="hud"></div><div id="viewNote" hidden></div><div id="msg" class="show"><div class="spin"></div><div id="msgText">Loading ...</div></div><div id="buffs" hidden></div><div id="pcard" hidden></div><div id="tip"></div></div>
       <div id="controls">
         <div class="row">
           <button id="play" style="min-width:76px">Play</button>
@@ -240,7 +252,7 @@ body.big #strip,body.big .legend{display:none}
           <button id="bigBtn" title="fill the screen with the radar">Full screen</button>
           <button id="followBoss" title="camera follows the boss">Follow boss</button>
           <button id="tBoss" class="on" title="fading trails behind boss parts">Boss trails</button><button id="tLevy" class="on" title="fading trails behind levies">Levy trails</button><button id="tAdd" title="fading trails behind adds and minions">Add trails</button><button id="tProj" class="on" title="streaks behind projectiles">Proj trails</button><button id="hitBtn" class="on" title="draw the real hitbox rectangles">Hitboxes</button><button id="tCmd" class="on" title="the commander's own projectiles (recordings of format 11 and later)">Commander shots</button><button id="tSum" title="summon trace: every minion's path as a fading trail and its shots, coloured by owner (the commander's own minions and the levies'; recordings of format 14 and later show the levies')">Summon trace</button>
-          <button id="labelBtn" title="levy numbers">Labels</button><button id="hpBtn" class="on" title="a small HP bar above every levy">HP bars</button><button id="dmgBtn" class="on" title="damage numbers where a levy is hit">Damage numbers</button>
+          <button id="labelBtn" title="levy numbers">Labels</button><button id="enBtn" class="on" title="the name of every enemy (bosses and minibosses always; ordinary enemies when zoomed in and not crowded)">Enemy names</button><button id="buffBtn" class="on" title="the commander's active buffs at this moment">Buffs</button><button id="hpBtn" class="on" title="a small HP bar above every levy">HP bars</button><button id="dmgBtn" class="on" title="damage numbers where a levy is hit">Damage numbers</button>
           <div class="legend" id="legend"><span><i style="background:var(--grn)"></i>levy (colour = HP)</span><span><i style="background:var(--red)"></i>boss / part</span><span><i style="background:var(--amb)"></i>add / minion</span><span><i style="background:var(--cyan)"></i>commander</span><span><i style="background:var(--proj)"></i>projectile</span><span><i style="background:var(--cshot)"></i>commander shot</span><span><i class="sq" style="background:var(--red)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span></div>
         </div>
       </div>
@@ -256,6 +268,9 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const RM=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
 let D=null, playing=false, cur=0, last=0, camMode="fit", trBoss=true, trLevy=true, trProj=true, showHit=true, showLabels=false, trAdd=false, showCmdP=true, showSum=false, sumTouched=false, selL=null, showHpBars=true, showDmg=true;
 const cam={x:0,y:0,z:0.2};
+let showEN=true, showBuff=true, selP=null, lblRects=[];   // enemy name labels, the commander's buffs panel, the clicked projectile {src:"j"|"c"|"m", slot, type, x, y}
+// write innerHTML only when the text changed (the HUD and the cards are rewritten every frame otherwise)
+function setIf(el,html){if(el.__s!==html){el.__s=html;el.innerHTML=html;}}
 let blips=[], manifest=null, fights=[], curFight=null, curId=null, loadSeq=0;
 
 // ================================================================ colour tokens (canvas reads the CSS custom properties)
@@ -368,6 +383,8 @@ function build(R){
   R.fellBy=new Map(); for(const e of R.ldeath) if(!R.fellBy.has(e.id)) R.fellBy.set(e.id,e);
   R.hasCmd=R.frames.some(f=>f.c&&f.c.length);
   R.hasSum=R.frames.some(f=>(f.m&&f.m.length)||(f.c&&f.c.some(q=>q[7]===1||q[7]===2))); R.trS=null;
+  R.buffEv=R.events.filter(e=>e.e==="buffs"&&Array.isArray(e.b)).sort((a,b)=>a.t-b.t);
+  R.hasZ=R.frames.some(f=>f.z&&f.z.length);
   evBuild(R);
   mergeTerrain(R); makeArena(R);
   // boss outcome (format 4) and levy totals
@@ -442,7 +459,7 @@ function setRec(R,name,f){
   {const sb=$("tSum"); sb.disabled=!D.hasSum; sb.classList.toggle("on",showSum&&D.hasSum); sb.title=D.hasSum?"every minion's path as a fading trail and its shots, coloured by owner: cyan = the commander's, green = the levy's; circles are minions, squares towers, small dots shots":"this recording has no minion data";
    if(D.hasSum&&D.hdr&&D.hdr.meta&&D.hdr.meta.who&&!sumTouched){showSum=true;sb.classList.add("on");}}
   $("followBoss").hidden=$("tBoss").hidden=!D.hasBoss; $("legend").innerHTML=legendHtml(); $("legend").classList.toggle("pvp",!!D.pvp); callUI();
-  selL=null; cur=D.tmin; camMode="fit"; $("followBoss").classList.remove("on"); fitView(); renderInfo(); drawStrip(); draw(); syncUI();
+  selL=null; selP=null; cur=D.tmin; camMode="fit"; $("followBoss").classList.remove("on"); fitView(); renderInfo(); drawStrip(); draw(); syncUI();
   if(call.on&&!call.pick) setPlaying(false); else if(!RM) setPlaying(true);
 }
 function vkey(v){return (String(v||"").split(" ")[0].match(/\d+/g)||[]).slice(0,3).map(Number);}
@@ -628,7 +645,7 @@ function drawAddMark(g,sx,sy,a0,dpr){
     const col=imp>=2?T.red:T.vio, r=(imp>=2?9:7)*dpr, fr=a0[6]/Math.max(1,a0[7]);
     g.save(); g.strokeStyle=col; g.lineWidth=2*dpr; g.globalAlpha=.9; g.beginPath(); g.arc(sx,sy,r+5*dpr,0,6.2832); g.stroke();
     g.fillStyle=col; g.beginPath(); for(let k=0;k<10;k++){const ang=-1.5708+k*0.6283,rr=k%2?r*0.45:r;g.lineTo(sx+Math.cos(ang)*rr,sy+Math.sin(ang)*rr);} g.closePath(); g.fill(); g.strokeStyle=T.stage; g.lineWidth=1*dpr; g.stroke();
-    g.globalAlpha=1; g.fillStyle=T.bossLabel; g.font=`600 ${11*dpr}px system-ui`; const lab=nm("npcs",a0[0]); g.fillText(lab,sx+r+8*dpr,sy-2*dpr);
+    g.globalAlpha=1; g.fillStyle=T.bossLabel; g.font=`600 ${11*dpr}px system-ui`; const lab=nm("npcs",a0[0]); g.fillText(lab,sx+r+8*dpr,sy-2*dpr); lblRects.push([sx+r+8*dpr,sy-14*dpr,sx+r+8*dpr+Math.max(40*dpr,g.measureText(lab).width),sy+6*dpr]);
     const bw=Math.max(40*dpr,g.measureText(lab).width); g.fillStyle=al(T.ink,.25); g.fillRect(sx+r+8*dpr,sy+3*dpr,bw,3*dpr); g.fillStyle=hpColor(fr); g.fillRect(sx+r+8*dpr,sy+3*dpr,bw*Math.max(0,Math.min(1,fr)),3*dpr);
     g.restore(); return;
   }
@@ -776,7 +793,7 @@ function drawDmgNums(g,sc,dpr){
 function legendHtml(){
   const hp='<span><i class="hpb"></i>HP bar</span>', dn='<span><i class="dn">12</i>damage taken</span>';
   if(D&&D.pvp){const p=D.pvp; return `<span><i class="tA"></i>${esc(prettyTeam(p.a))} levy</span><span><i class="tB"></i>${esc(prettyTeam(p.b))} levy</span>${hp}${dn}<span><i class="sq" style="background:var(--ink)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span>`;}
-  return `<span><i style="background:var(--grn)"></i>levy (colour = HP)</span><span><i style="background:var(--red)"></i>boss / part</span><span><i style="background:var(--amb)"></i>add / minion</span><span><i style="background:var(--cyan)"></i>commander</span><span><i style="background:var(--proj)"></i>projectile</span><span><i style="background:var(--cshot)"></i>commander shot</span>${hp}${dn}<span><i class="sq" style="background:var(--red)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span>`;
+  return `<span><i style="background:var(--grn)"></i>levy (colour = HP)</span><span><i style="background:var(--red)"></i>boss / part</span><span><i style="background:var(--amb)"></i>add / minion</span><span><i style="background:var(--cyan)"></i>commander</span><span><i style="background:var(--proj)"></i>projectile</span><span><i style="background:var(--cshot)"></i>commander shot</span>${D&&D.hasZ?`<span><i style="background:var(--proj)"></i>beam</span><span><i style="background:var(--amb)"></i>warning line</span><span><i style="background:var(--vio)"></i>linked field</span>`:""}${hp}${dn}<span><i class="sq" style="background:var(--red)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span>`;
 }
 
 // ================================================================ summon trace (format 14)
@@ -801,7 +818,7 @@ function sumBuild(R){
   }
   return R.trS=out;
 }
-function drawSummon(g,sc,dpr,f0){
+function drawSummon(g,sc,dpr,f0,f1,u,SP){
   const tracks=sumBuild(D); if(!tracks.length) return;
   const dt=cur-f0.t, MINT=4*TPS, SHOT=0.7*TPS;
   g.lineCap="round";
@@ -815,22 +832,24 @@ function drawSummon(g,sc,dpr,f0){
       const p0=sc(a[1],a[2]),p1=sc(b[1],b[2]); g.beginPath();g.moveTo(p0[0],p0[1]);g.lineTo(p1[0],p1[1]);g.stroke();}
   }
   g.globalAlpha=1;
-  const mark=(o,type,x,y,w,h,k)=>{
+  const mark=(o,type,x,y,w,h,k,src,row)=>{
     const col=sumCol(o),[sx,sy]=sc(x,y),r=Math.max(3.2*dpr,Math.min(w,h||w)*cam.z*dpr/2);
     g.lineWidth=1.4*dpr; g.strokeStyle=col;
     if(k===1){g.fillStyle=al(col,.85);g.beginPath();g.arc(sx,sy,r,0,6.2832);g.fill();g.strokeStyle=T.stage;g.stroke();}
     else if(k===2){g.fillStyle=al(col,.85);g.fillRect(sx-r,sy-r,2*r,2*r);g.strokeStyle=T.stage;g.strokeRect(sx-r,sy-r,2*r,2*r);}
     else{g.fillStyle=col;g.beginPath();g.arc(sx,sy,Math.max(1.8*dpr,r*0.5),0,6.2832);g.fill();}
-    blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,r/dpr+3),info:`${k===1?"minion":k===2?"tower":"shot"} ${nm("projectiles",type)}\n${o===0?"the commander's":"levy "+lname(o)+"'s"}`});};
-  for(const q of (f0.c||[])) mark(0,q[0],q[1]+q[3]*dt,q[2]+q[4]*dt,q[5],q[6],q[7]||4);
-  for(const q of (f0.m||[])) mark(q[8],q[0],q[1]+q[3]*dt,q[2]+q[4]*dt,q[5],q[6],q[9]||4);
+    blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,r/dpr+3),info:projInfo(src,row,dt),p:{src,row}});};
+  for(const q of (f0.c||[])){const pq=ppos(q,"c",f1,u,SP,dt);mark(0,q[0],pq[0],pq[1],q[5],q[6],q[7]||4,"c",q);}
+  for(const q of (f0.m||[])){const pq=ppos(q,"m",f1,u,SP,dt);mark(q[8],q[0],pq[0],pq[1],q[5],q[6],q[9]||4,"m",q);}
 }
 const GAPDRAW=24;
 
 // ================================================================ helpers
 function frameIndex(t){let lo=0,hi=D.frames.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(D.frames[m].t<=t)lo=m;else hi=m-1;}return lo;}
 function trackStart(tr,t){let lo=0,hi=tr.length;while(lo<hi){const m=(lo+hi)>>1;if(tr[m][0]<t)lo=m+1;else hi=m;}return lo;}
-const nm=(tbl,id)=>(D.names[tbl]&&D.names[tbl][id])||("#"+id);
+// Nameless Deity's display name is random glitch text (a new string on every read): older recordings carry it as is
+const GLITCH=/[\u0180-\u02FF][^]*[\u0180-\u02FF]/;
+const nm=(tbl,id)=>{const v=D.names[tbl]&&D.names[tbl][id]; if(!v) return "#"+id; return tbl==="npcs"&&GLITCH.test(v)?"Nameless Deity":v;};
 const lname=id=>(D.lbl.get(id)||("#"+id))+" "+((D.names.soldiers&&D.names.soldiers[id])||"");
 function canvasSize(c){const r=c.getBoundingClientRect();const dpr=window.devicePixelRatio||1;const w=Math.max(10,Math.round(r.width*dpr)),h=Math.max(10,Math.round(r.height*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}return {w,h,dpr};}
 // The fight's own box (px), cached per recording: the main boss while it stands plus the living commander near it (2-98% of each axis; a fight
@@ -919,6 +938,138 @@ function hbox(g,sc,dpr,x,y,w,h,fill,stroke,lw,minPx){
   g.fillStyle=fill; g.fillRect(sx-pw/2,sy-ph/2,pw,ph); g.strokeStyle=stroke; g.lineWidth=lw*dpr; g.strokeRect(sx-pw/2,sy-ph/2,pw,ph);
   return [sx,sy,Math.max(pw,ph)/2];
 }
+// ================================================================ smooth motion, lookups, lines, labels, cards
+// Cubic Hermite between two samples with the recorded velocities as tangents. A step the velocities do not explain (a script moving a body with velocity 0) is a straight line;
+// a step far bigger than any velocity (a teleport, a respawn) snaps at the half instead of sliding across the map. Rows with no velocity (vxi < 0) are straight lines.
+const MV=[0,0];
+function mv(a,b,xi,yi,vxi,vyi,u,sp){
+  const x0=a[xi],y0=a[yi];
+  if(a===b||u<=0){MV[0]=x0;MV[1]=y0;return MV;}
+  const x1=b[xi],y1=b[yi],dx=x1-x0,dy=y1-y0,dd=Math.hypot(dx,dy);
+  if(vxi<0){MV[0]=x0+dx*u;MV[1]=y0+dy*u;return MV;}
+  let m0x=(a[vxi]||0)*sp,m0y=(a[vyi]||0)*sp,m1x=(b[vxi]||0)*sp,m1y=(b[vyi]||0)*sp;
+  const l0=Math.hypot(m0x,m0y),l1=Math.hypot(m1x,m1y),mx=Math.max(l0,l1);
+  if(dd>480&&dd>3*mx+96){const h=u<.5;MV[0]=h?x0:x1;MV[1]=h?y0:y1;return MV;}
+  if(Math.abs(dd-(l0+l1)/2)>0.6*dd+8){MV[0]=x0+dx*u;MV[1]=y0+dy*u;return MV;}
+  const cap=2*dd+1; if(l0>cap){m0x*=cap/l0;m0y*=cap/l0;} if(l1>cap){m1x*=cap/l1;m1y*=cap/l1;}
+  const u2=u*u,u3=u2*u,h00=2*u3-3*u2+1,h10=u3-2*u2+u,h01=3*u2-2*u3,h11=u3-u2;
+  MV[0]=h00*x0+h10*m0x+h01*x1+h11*m1x; MV[1]=h00*y0+h10*m0y+h01*y1+h11*m1y; return MV;
+}
+// id -> row of one list of one frame, built once per frame and kept on it (the page used to rebuild four maps every drawn frame)
+function fmap(f,key,idx){const ck="$"+key;let m=f[ck];if(m!==undefined)return m;m=new Map();const rows=f[key];if(rows)for(const r of rows)m.set(r[idx],r);f[ck]=m;return m;}
+const mbC=f=>f.$mb!==undefined?f.$mb:(f.$mb=mainBoss(f));
+const bsC=f=>f.$bs||(f.$bs=(f.b||[]).slice().sort((a,b)=>b[13]-a[13]));
+const SLOT={j:8,c:8,m:7};   // the slot field of a projectile row of the page: the key that follows one projectile from sample to sample (absent in files made before format 13)
+function ppos(r,src,f1,u,sp,dt){
+  const si=SLOT[src];
+  if(r.length>si&&r[si]>=0){const r1=fmap(f1,src,si).get(r[si]);if(r1&&r1[0]===r[0])return mv(r,r1,1,2,3,4,u,sp);}
+  MV[0]=r[1]+r[3]*dt;MV[1]=r[2]+r[4]*dt;return MV;
+}
+// a projectile row of the page, as named fields: j (hostile) [type,x,y,vx,vy,damage,w,h,slot,penetrate,timeLeft], c (the commander's) [type,x,y,vx,vy,w,h,kind,slot,damage,penetrate,timeLeft],
+// m (a levy's minion or shot) [type,x,y,vx,vy,w,h,slot,owner,kind,damage,penetrate,timeLeft]. null = not recorded (files made before format 15 carry no penetrate or timeLeft).
+function pf(src,r){
+  const o=(v,i)=>r.length>i&&v!=null?v:null;
+  if(src==="j") return {type:r[0],vx:r[3],vy:r[4],dmg:r[5],w:r[6],h:r[7],pen:o(r[9],9),tl:o(r[10],10),own:"enemy",kind:0};
+  if(src==="c") return {type:r[0],vx:r[3],vy:r[4],w:r[5],h:r[6],kind:r[7]||4,dmg:o(r[9],9),pen:o(r[10],10),tl:o(r[11],11),own:"commander"};
+  return {type:r[0],vx:r[3],vy:r[4],w:r[5],h:r[6],kind:r[9]||4,dmg:o(r[10],10),pen:o(r[11],11),tl:o(r[12],12),own:"levy",lid:r[8]};
+}
+function ownerText(f){return f.own==="enemy"?"enemy (hostile)":f.own==="commander"?"the commander":"levy "+lname(f.lid);}
+function projInfo(src,r,dt){
+  const f=pf(src,r), kn=f.kind===1?"minion":f.kind===2?"sentry":src==="j"?"hostile projectile":"shot";
+  return `${kn} ${nm("projectiles",f.type)}\nowner ${ownerText(f)}${f.dmg!=null?"\ndamage "+f.dmg:""}${f.pen!=null?"\npierce "+(f.pen<0?"endless":f.pen+" hit"+(f.pen===1?"":"s")+" left"):""}${f.tl!=null?"\ntime left "+(Math.max(0,f.tl-dt)/TPS).toFixed(1)+" s":""}${f.w?"\nhitbox "+f.w+" x "+f.h+" px":""}\nspeed ${(Math.hypot(f.vx,f.vy)*60/16).toFixed(1)} tiles/s\n(click for details)`;
+}
+function selRow(f0){
+  if(!selP) return null; const rows=f0[selP.src]; if(!rows) return null; const si=SLOT[selP.src];
+  for(const r of rows){
+    if(r[0]!==selP.type) continue;
+    if(selP.slot!=null&&selP.slot>=0&&r.length>si){if(r[si]===selP.slot&&Math.hypot(r[1]-selP.x,r[2]-selP.y)<1500) return r;}
+    else if(Math.hypot(r[1]-selP.x,r[2]-selP.y)<500) return r;
+  }
+  return null;
+}
+function setSel(b){
+  if(!b){selP=null;return;}
+  const r=b.row,si=SLOT[b.src]; selP={src:b.src,slot:r.length>si?r[si]:null,type:r[0],x:r[1],y:r[2],t0:cur};
+}
+function updateCard(f0,f1,u,SP,g,sc,dpr){
+  const el=$("pcard"); if(!el) return;
+  if(!selP||!D){el.hidden=true;return;}
+  const r=selRow(f0), nmz=nm("projectiles",selP.type), dt=cur-f0.t;
+  el.hidden=false;
+  if(!r){setIf(el,`<h3><span>${esc(nmz)}</span><button id="pcx" aria-label="close">&times;</button></h3><div class="small">This projectile is not in the recording at this moment (it had not been fired yet, or it is gone).</div>`);return;}
+  const f=pf(selP.src,r), q=ppos(r,selP.src,f1,u,SP,dt), tx=(q[0]/16).toFixed(0), ty=(q[1]/16).toFixed(0);
+  selP.x=r[1]; selP.y=r[2];
+  const [sx,sy]=sc(q[0],q[1]), rr=Math.max(10*dpr,(f.w||0)*cam.z*dpr/2+6*dpr);
+  g.save(); g.strokeStyle=T.cyan; g.lineWidth=2*dpr; g.beginPath(); g.arc(sx,sy,rr,0,6.2832); g.moveTo(sx-rr-6*dpr,sy);g.lineTo(sx-rr+4*dpr,sy);g.moveTo(sx+rr-4*dpr,sy);g.lineTo(sx+rr+6*dpr,sy);g.moveTo(sx,sy-rr-6*dpr);g.lineTo(sx,sy-rr+4*dpr);g.moveTo(sx,sy+rr-4*dpr);g.lineTo(sx,sy+rr+6*dpr); g.stroke(); g.restore();
+  const kn=f.kind===1?"minion":f.kind===2?"sentry":selP.src==="j"?"hostile projectile":"shot";
+  const row=(k,v)=>v==null?"":`<span>${k}</span><span>${v}</span>`;
+  setIf(el,`<h3><span>${esc(nmz)}</span><button id="pcx" aria-label="close">&times;</button></h3><div class="kv">`+
+    row("kind",kn)+row("owner",esc(ownerText(f)))+
+    row("damage",f.dmg!=null?f.dmg:"not recorded")+
+    row("HP","none (a projectile has no life; pierce is its hit count)")+
+    row("pierce",f.pen!=null?(f.pen<0?"endless":f.pen+" hit"+(f.pen===1?"":"s")+" left"):"not recorded")+
+    row("time left",f.tl!=null?(Math.max(0,f.tl-dt)/TPS).toFixed(1)+" s":"not recorded")+
+    row("hitbox",f.w?f.w+" x "+f.h+" px":"-")+row("speed",(Math.hypot(f.vx,f.vy)*60/16).toFixed(1)+" tiles/s")+row("tile",tx+", "+ty)+row("type id",f.type)+`</div>`+
+    (f.pen==null&&f.tl==null?`<div class="foot">Pierce and time left come with recordings of format 15 and later.</div>`:""));
+}
+// the commander's buffs at this moment: the last "buffs" event (written once a second) with its times counted down
+function bufTime(s){s=Math.max(0,s);return s>=60?Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0"):Math.ceil(s)+" s";}
+function updateBuffs(){
+  const el=$("buffs"); if(!el) return;
+  if(!D||D.isEvent||D.pvp||!showBuff){el.hidden=true;return;}
+  const ev=D.buffEv; el.hidden=false;
+  if(!ev.length){setIf(el,`<h3>Commander buffs</h3><div class="small">None recorded in this file.</div>`);return;}
+  let lo=0,hi=ev.length-1; if(ev[0].t>cur){setIf(el,`<h3>Commander buffs</h3><div class="small">none yet</div>`);return;}
+  while(lo<hi){const m=(lo+hi+1)>>1;if(ev[m].t<=cur)lo=m;else hi=m-1;}
+  const e=ev[lo], age=(cur-e.t), names=(D.names&&D.names.buffs)||{};
+  const list=e.b.map(b=>({n:names[b[0]]||("buff #"+b[0]),s:(b[1]-age)/TPS,raw:b[1]})).filter(b=>b.s>0||b.raw>2e6).sort((a,b)=>b.s-a.s);
+  const key=e.t+"|"+Math.floor(cur/30)+"|"+list.length; if(el.__k===key) return; el.__k=key;
+  const body=list.length?list.slice(0,14).map(b=>`<div class="b"><span>${esc(b.n)}</span><i>${b.raw>2e6?"&infin;":bufTime(b.s)}</i></div>`).join("")+(list.length>14?`<div class="small">+${list.length-14} more</div>`:""):`<div class="small">none</div>`;
+  el.innerHTML=`<h3>Commander buffs (${list.length})</h3>`+body;
+}
+// beams, warning lines, linked fields and strike segments (format 15 key z: [x0,y0,x1,y1,width,kind,type,slot], kind 1 beam, 2 warning, 3 link, 4 strike)
+function drawLines(g,sc,dpr,f0,f1,u){
+  const zs=f0.z; if(!zs||!zs.length) return; const m1=fmap(f1,"z",7); g.save(); g.lineCap="round"; g.lineJoin="round";
+  for(const z of zs){
+    let x0=z[0],y0=z[1],x1=z[2],y1=z[3]; const z1=m1.get(z[7]);
+    if(z1&&z1[6]===z[6]&&Math.hypot(z1[0]-x0,z1[1]-y0)<800){x0+=(z1[0]-x0)*u;y0+=(z1[1]-y0)*u;x1+=(z1[2]-x1)*u;y1+=(z1[3]-y1)*u;}
+    const a=sc(x0,y0),b=sc(x1,y1),k=z[5],w=Math.max(z[4]*cam.z*dpr,1.5*dpr);
+    if(k===3){   // the electric field between two orbs: a glow and a crackling line
+      const L=Math.hypot(b[0]-a[0],b[1]-a[1])||1,n=Math.max(2,Math.min(48,Math.round(L/(12*dpr)))),nx=-(b[1]-a[1])/L,ny=(b[0]-a[0])/L,ph=Math.floor(cur/3)*1.3+z[7]*1.7;
+      for(const pass of [0,1]){
+        g.beginPath();g.moveTo(a[0],a[1]);
+        for(let i=1;i<n;i++){const t=i/n,off=Math.sin(i*2.3+ph)*5*dpr*Math.sin(Math.PI*t);g.lineTo(a[0]+(b[0]-a[0])*t+nx*off,a[1]+(b[1]-a[1])*t+ny*off);}
+        g.lineTo(b[0],b[1]); g.strokeStyle=pass?T.vio:al(T.vio,.28); g.lineWidth=pass?1.6*dpr:Math.max(5*dpr,w*2.2); g.stroke();
+      }
+      g.fillStyle=al(T.vio,.55); g.beginPath(); g.arc(a[0],a[1],Math.max(3.5*dpr,16*cam.z*dpr),0,6.2832); g.fill(); g.beginPath(); g.arc(b[0],b[1],Math.max(3.5*dpr,16*cam.z*dpr),0,6.2832); g.fill();
+    } else if(k===2){   // a warning: the band it will fill, dashed
+      g.strokeStyle=al(T.amb,.12); g.lineWidth=w; g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();
+      g.strokeStyle=al(T.amb,.8); g.lineWidth=Math.max(1.2*dpr,Math.min(w*0.25,3*dpr)); g.setLineDash([8*dpr,6*dpr]); g.lineDashOffset=-cur*0.5*dpr; g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke(); g.setLineDash([]); g.lineDashOffset=0;
+    } else {            // a damaging beam or strike
+      const col=k===4?T.red:T.proj;
+      g.strokeStyle=al(col,.26); g.lineWidth=w; g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();
+      g.strokeStyle=al(col,.95); g.lineWidth=Math.max(1.5*dpr,Math.min(w*0.3,4*dpr)); g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();
+    }
+    const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2; if(mx>=0&&my>=0&&mx<=g.canvas.width&&my<=g.canvas.height){
+      const len=Math.hypot(x1-x0,y1-y0);
+      blips.push({x:mx/dpr,y:my/dpr,r:11,info:`${k===3?"linked field":k===2?"warning line":k===4?"strike line":"beam"} ${nm("projectiles",z[6])}\nwidth ${z[4]} px, length ${len.toFixed(0)} px (${(len/16).toFixed(0)} tiles)`});}
+  }
+  g.restore();
+}
+// enemy names: bosses and minibosses always; ordinary enemies only when zoomed in, and a name that would cover one already placed is left out
+function drawEnemyNames(g,W,H,dpr,c){
+  if(!showEN||!c.length) return;
+  c.sort((a,b)=>b.pri-a.pri); const placed=lblRects.slice(); let n=0;
+  g.save(); g.font=`${10*dpr}px system-ui`; g.lineJoin="round";
+  for(const e of c){
+    if(n>=80) break; if(e.sx<-30||e.sx>W+30||e.sy<-30||e.sy>H+30) continue;
+    const w=g.measureText(e.name).width, x=e.sx+7*dpr, y=e.sy-6*dpr, h=11*dpr; let hit=false;
+    for(const r of placed) if(x<r[2]&&x+w>r[0]&&y-h<r[3]&&y>r[1]){hit=true;break;}
+    if(hit) continue; placed.push([x,y-h,x+w,y]);
+    g.strokeStyle=al(T.stage,.85); g.lineWidth=3*dpr; g.strokeText(e.name,x,y); g.fillStyle=e.col; g.fillText(e.name,x,y); n++;
+  }
+  g.restore();
+}
 function interp(){
   const i=frameIndex(cur),f0=D.frames[i],f1=D.frames[Math.min(D.frames.length-1,i+1)];
   const span=f1.t-f0.t,u=span>0?Math.max(0,Math.min(1,(cur-f0.t)/span)):0;
@@ -928,17 +1079,18 @@ function draw(){
   const c=$("view"),g=c.getContext("2d"); const {w:W,h:H,dpr}=canvasSize(c);
   g.setTransform(1,0,0,1,0,0); g.fillStyle=T.stage; g.fillRect(0,0,W,H); blips=[];
   if(!D) return;
-  const {f0,f1,u}=interp();
-  const byIdL=new Map((f1.l||[]).map(l=>[l[0],l])), byIdB=new Map((f1.b||[]).map(b=>[b[1],b]));
-  const mb0=mainBoss(f0);
-  const P=[lerp(f0.p[0],f1.p[0],u),lerp(f0.p[1],f1.p[1],u)];
-  if(camMode==="levy"&&selL!=null){const l0=(f0.l||[]).find(l=>l[0]===selL);if(l0){const l1=byIdL.get(selL)||l0;cam.x=lerp(l0[1],l1[1],u);cam.y=lerp(l0[2],l1[2],u);}}
-  if(camMode==="boss"&&mb0){const b1=byIdB.get(mb0[1])||mb0;cam.x=lerp(mb0[2],b1[2],u);cam.y=lerp(mb0[3],b1[3],u);}
+  const {f0,f1,u}=interp(), SP=Math.max(1,f1.t-f0.t);
+  const byIdL=fmap(f1,"l",0), byIdB=fmap(f1,"b",1);
+  const mb0=mbC(f0);
+  const P=mv(f0.p,f1.p,0,1,2,3,u,SP).slice();
+  if(camMode==="levy"&&selL!=null){const l0=fmap(f0,"l",0).get(selL);if(l0){const l1=byIdL.get(selL)||l0;const q=mv(l0,l1,1,2,3,4,u,SP);cam.x=q[0];cam.y=q[1];}}
+  if(camMode==="boss"&&mb0){const b1=byIdB.get(mb0[1])||mb0;const q=mv(mb0,b1,2,3,4,5,u,SP);cam.x=q[0];cam.y=q[1];}
+  const enc=[]; lblRects=[];   // enemy name candidates; name boxes already placed this frame
   const sc=(x,y)=>w2s(x,y,W,H);
   g.imageSmoothingEnabled=false;
   if(D.arenaImg){const A=D.terr;const [sx,sy]=sc(A.x0*TILE,A.y0*TILE);g.drawImage(D.arenaImg,sx,sy,A.w*TILE*cam.z,A.h*TILE*cam.z);}
   drawExtraTerrain(g,sc,W,H);
-  const ctr=mb0?sc(lerp(mb0[2],(byIdB.get(mb0[1])||mb0)[2],u),lerp(mb0[3],(byIdB.get(mb0[1])||mb0)[3],u)):sc(P[0],P[1]);
+  const ctr=mb0?(q=>sc(q[0],q[1]))(mv(mb0,byIdB.get(mb0[1])||mb0,2,3,4,5,u,SP)):sc(P[0],P[1]);
   g.lineWidth=1*dpr; g.strokeStyle=al(T.grn,.22); g.setLineDash([4*dpr,6*dpr]);
   for(const tiles of [15,30,60]){g.beginPath();g.arc(ctr[0],ctr[1],tiles*TILE*cam.z,0,6.2832);g.stroke();}
   g.setLineDash([]);
@@ -957,46 +1109,48 @@ function draw(){
   if(trBoss)for(const tr of D.trB.values())trail(tr,T.red,1.4);
   if(trAdd)for(const tr of D.trA.values())trail(tr,T.amb,1);
   if((trLevy||trBoss)&&!D.pvp)trail(D.trP,T.cyan,1.6);
+  drawLines(g,sc,dpr,f0,f1,u);
   for(const j of (f0.j||[])){
-    const dt=cur-f0.t, x=j[1]+j[3]*dt, y=j[2]+j[4]*dt;
+    const dt=cur-f0.t, jq=ppos(j,"j",f1,u,SP,dt), x=jq[0], y=jq[1];
     if(trProj&&(j[3]||j[4])){
       const a=sc(x,y);
       for(let k=1;k<=4;k++){const b=sc(x-j[3]*k*3,y-j[4]*k*3);g.strokeStyle=T.proj;g.globalAlpha=0.5*(1-(k-1)/4);g.lineWidth=Math.max(1.5,(j[7]||6)*cam.z*dpr*0.5);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();a[0]=b[0];a[1]=b[1];}
       g.globalAlpha=1;
     }
     const [sx,sy,rr]=hbox(g,sc,dpr,x,y,j[6],j[7],al(T.proj,.35),T.proj,1,3);
-    blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,rr/dpr+3),info:`projectile ${nm("projectiles",j[0])}\ndamage ${j[5]}${j[6]?"\nhitbox "+j[6]+" x "+j[7]+" px":""}\nspeed ${(Math.hypot(j[3],j[4])*60/16).toFixed(1)} tiles/s`});
+    blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,rr/dpr+3),info:projInfo("j",j,dt),p:{src:"j",row:j}});
   }
   if(showCmdP&&D.hasCmd&&f0.c&&f0.c.length){
     // format 11 key c: the commander's own projectiles [type,x,y,vx,vy,w,h]; the army's shots are not in it
     const dt=cur-f0.t;
     for(const q of f0.c){
-      const x=q[1]+q[3]*dt, y=q[2]+q[4]*dt;
+      const cq=ppos(q,"c",f1,u,SP,dt), x=cq[0], y=cq[1];
       if(trProj&&(q[3]||q[4])){
         const a=sc(x,y);
         for(let k=1;k<=4;k++){const b=sc(x-q[3]*k*3,y-q[4]*k*3);g.strokeStyle=T.cshot;g.globalAlpha=0.5*(1-(k-1)/4);g.lineWidth=Math.max(1.5,(q[6]||6)*cam.z*dpr*0.5);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();a[0]=b[0];a[1]=b[1];}
         g.globalAlpha=1;
       }
       const [sx,sy,rr]=hbox(g,sc,dpr,x,y,q[5],q[6],al(T.cshot,.35),T.cshot,1,3);
-      blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,rr/dpr+3),info:`commander projectile ${nm("projectiles",q[0])}${q[5]?"\nhitbox "+q[5]+" x "+q[6]+" px":""}\nspeed ${(Math.hypot(q[3],q[4])*60/16).toFixed(1)} tiles/s`});
+      blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,rr/dpr+3),info:projInfo("c",q,dt),p:{src:"c",row:q}});
     }
   }
-  if(showSum&&D.hasSum) drawSummon(g,sc,dpr,f0);
+  if(showSum&&D.hasSum) drawSummon(g,sc,dpr,f0,f1,u,SP);
   let tgtText="none", tgtCls="";
   if(mb0){
-    const k=tkOf(mb0), b1=byIdB.get(mb0[1])||mb0; const bx=lerp(mb0[2],b1[2],u),by=lerp(mb0[3],b1[3],u);
+    const k=tkOf(mb0), b1=byIdB.get(mb0[1])||mb0; const bq=mv(mb0,b1,2,3,4,5,u,SP),bx=bq[0],by=bq[1];
     let tx=null,ty=null,col=T.tNone;
     if(!D.hasTarget) tgtText="unknown (format 1)";
-    else if(k===2){const l0=(f0.l||[]).find(l=>l[0]===mb0[15]);if(l0){const l1=byIdL.get(l0[0])||l0;tx=lerp(l0[1],l1[1],u);ty=lerp(l0[2],l1[2],u);}col=T.red;tgtText="levy "+lname(mb0[15]);tgtCls="levy";}
-    else if(k===3){const l0=(f0.l||[]).find(l=>l[0]===mb0[15]);if(l0){const l1=byIdL.get(l0[0])||l0;tx=lerp(l0[1],l1[1],u);ty=lerp(l0[2],l1[2],u);}col=T.amb;tgtText="spite (redirected shots) at "+lname(mb0[15]);tgtCls="spite";}
+    else if(k===2){const l0=fmap(f0,"l",0).get(mb0[15]);if(l0){const l1=byIdL.get(l0[0])||l0;const lq=mv(l0,l1,1,2,3,4,u,SP);tx=lq[0];ty=lq[1];}col=T.red;tgtText="levy "+lname(mb0[15]);tgtCls="levy";}
+    else if(k===3){const l0=fmap(f0,"l",0).get(mb0[15]);if(l0){const l1=byIdL.get(l0[0])||l0;const lq=mv(l0,l1,1,2,3,4,u,SP);tx=lq[0];ty=lq[1];}col=T.amb;tgtText="spite (redirected shots) at "+lname(mb0[15]);tgtCls="spite";}
     else if(k===1){tx=P[0];ty=P[1];col=T.cyan;tgtText="commander";tgtCls="cmd";}
     if(tx!=null){const a=sc(bx,by),b=sc(tx,ty);g.strokeStyle=col;g.lineWidth=1.6*dpr;g.setLineDash([7*dpr,5*dpr]);g.lineDashOffset=-cur*0.6*dpr;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();g.setLineDash([]);g.lineDashOffset=0;
       g.strokeStyle=col;g.beginPath();g.arc(b[0],b[1],11*dpr,0,6.2832);g.stroke();}
   }
   if(D.hasAdds){
-    const byIdA=new Map((f1.a||[]).map(a=>[a[1],a]));
+    const byIdA=fmap(f1,"a",1);
     for(const a0 of (f0.a||[])){
-      const a1=byIdA.get(a0[1])||a0, x=lerp(a0[2],a1[2],u), y=lerp(a0[3],a1[3],u), [sx,sy]=sc(x,y), k=a0[8];
+      const a1x=byIdA.get(a0[1]), a1=(a1x&&a1x[0]===a0[0])?a1x:a0, aq=mv(a0,a1,2,3,4,5,u,SP), [sx,sy]=sc(aq[0],aq[1]), k=a0[8];
+      if(impOf(a0[0])<1) enc.push({sx,sy,name:nm("npcs",a0[0]),pri:10,col:T.amb});
       if(showHit&&a0[10]>0){const pw=Math.max(a0[10]*cam.z*dpr,4*dpr),ph=Math.max(a0[11]*cam.z*dpr,4*dpr);g.fillStyle=al(T.amb,.14);g.fillRect(sx-pw/2,sy-ph/2,pw,ph);g.strokeStyle=T.amb;g.lineWidth=1*dpr;g.strokeRect(sx-pw/2,sy-ph/2,pw,ph);}
       drawAddMark(g,sx,sy,a0,dpr);
       blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(8,Math.max(a0[10],a0[11])*cam.z/2+3),info:`add ${nm("npcs",a0[0])}  slot ${a0[1]}\nlife ${a0[6]}/${a0[7]}  (${(100*a0[6]/Math.max(1,a0[7])).toFixed(0)}%)\ntarget ${D.hasTarget?(k===3?"spite (redirected shots) at levy "+(D.lbl.get(a0[9])||a0[9]):k===2?"levy "+(D.lbl.get(a0[9])||a0[9]):k===1?"commander":"none"):"?"}${a0[10]?"\nhitbox "+a0[10]+" x "+a0[11]+" px":""}\nspeed ${(Math.hypot(a0[4],a0[5])*60/16).toFixed(1)} tiles/s`});
@@ -1004,9 +1158,9 @@ function draw(){
   }
   if(D.hasSeg&&f0.s&&f0.s.length){
     // format 7: every other hostile hitbox (worm segments, damage-0 adds); the dashed ones deal no contact damage
-    const byIdS=new Map((f1.s||[]).map(q=>[q[1],q]));
+    const byIdS=fmap(f1,"s",1);
     for(const s0 of f0.s){
-      const s1=byIdS.get(s0[1])||s0, x=lerp(s0[2],s1[2],u), y=lerp(s0[3],s1[3],u), [sx,sy]=sc(x,y), fl=s0[7];
+      const s1=byIdS.get(s0[1])||s0, sq=mv(s0,s1,2,3,-1,-1,u,SP), [sx,sy]=sc(sq[0],sq[1]), fl=s0[7];
       const pw=Math.max(s0[4]*cam.z*dpr,3*dpr),ph=Math.max(s0[5]*cam.z*dpr,3*dpr), dmg=fl&1;
       if(showHit){g.fillStyle=al(T.amb,dmg?.12:.05);g.fillRect(sx-pw/2,sy-ph/2,pw,ph);g.strokeStyle=al(T.amb,dmg?1:.55);g.lineWidth=1*dpr;if(!dmg)g.setLineDash([3*dpr,3*dpr]);g.strokeRect(sx-pw/2,sy-ph/2,pw,ph);g.setLineDash([]);}
       else{g.fillStyle=T.amb;g.fillRect(sx-1.5*dpr,sy-1.5*dpr,3*dpr,3*dpr);}
@@ -1018,6 +1172,7 @@ function draw(){
       const ex=Math.max(10*dpr,Math.min(W-10*dpr,sx)), ey=Math.max(10*dpr,Math.min(H-10*dpr,sy)), ang=Math.atan2(sy-ey,sx-ex), r=6*dpr;
       g.fillStyle=col; g.globalAlpha=.85; g.beginPath(); g.moveTo(ex+Math.cos(ang)*r,ey+Math.sin(ang)*r); g.lineTo(ex+Math.cos(ang+2.5)*r,ey+Math.sin(ang+2.5)*r); g.lineTo(ex+Math.cos(ang-2.5)*r,ey+Math.sin(ang-2.5)*r); g.closePath(); g.fill(); g.globalAlpha=1;
       blips.push({x:ex/dpr,y:ey/dpr,r:10,info:info+"\n(off-screen, "+(Math.hypot(sx-ex,sy-ey)/(TILE*cam.z*dpr)).toFixed(0)+" tiles away)"});};
+    for(const b0 of (f0.b||[])) if(!b0[13]&&!EVENT_NPC.has(b0[0])) mark(b0[2],b0[3],T.red,`boss ${nm("npcs",b0[0])}`);
     for(const a0 of (f0.a||[])) if(!D.isEvent||impOf(a0[0])>=1) mark(a0[2],a0[3],impOf(a0[0])>=1?T.vio:T.amb,`${impOf(a0[0])>=1?IMPN[impOf(a0[0])]:"add"} ${nm("npcs",a0[0])}`);
     if(D.isEvent) for(const l of (f0.l||[])) mark(l[1],l[2],T.grn,`levy ${lname(l[0])}`);
     if(!D.isEvent) for(const s0 of (f0.s||[])) mark(s0[2],s0[3],T.amb,`hostile ${nm("npcs",s0[0])}`);
@@ -1025,7 +1180,7 @@ function draw(){
     D.offCount=off;}
   const states=(D.hdr&&D.hdr.stateNames||"").split(",");
   for(const l0 of (f0.l||[])){
-    const l1=byIdL.get(l0[0])||l0; const x=lerp(l0[1],l1[1],u),y=lerp(l0[2],l1[2],u);
+    const l1=byIdL.get(l0[0])||l0; const lq=mv(l0,l1,1,2,3,4,u,SP), x=lq[0], y=lq[1];
     const mx=l0[10]||D.maxL.get(l0[0])||l0[6]||1, fr=l0[6]/mx, [sx,sy]=sc(x,y), r=8*dpr;
     const sd=D.pvp?sideOf(l0[0]):0, tc=D.pvp?teamCol(sd):null;   // PvP: colour = team (HP is the bar and the ring); boss fights: colour = HP
     const col=D.pvp?tc:hpColor(fr); const hb=hbox(g,sc,dpr,x,y,l0[11],l0[12],al(D.pvp?tc:T.grn,.16),col,1.6,7);
@@ -1036,15 +1191,18 @@ function draw(){
     if(l0[0]===selL){g.strokeStyle=T.cyan;g.lineWidth=2.6*dpr;g.beginPath();g.arc(sx,sy,rr+8*dpr,0,6.2832);g.stroke();g.fillStyle=T.cyan;g.font=`600 ${11*dpr}px system-ui`;g.fillText(lname(l0[0]),sx+rr+11*dpr,sy-rr);}
     blips.push({lid:l0[0],x:sx/dpr,y:sy/dpr,r:Math.max(12,rr/dpr+5),info:`levy ${lname(l0[0])}${D.pvp?" ("+prettyTeam(sd?D.pvp.b:D.pvp.a)+")":""}\nlife ${l0[6]}/${mx}  state ${states[l0[7]]||l0[7]}\nweapon ${l0[8]?nm("items",l0[8]):"-"}\nspeed ${(Math.hypot(l0[3],l0[4])*60/16).toFixed(1)} tiles/s`});
   }
-  const rows=(f0.b||[]).slice().sort((a,b)=>b[13]-a[13]);
+  const rows=bsC(f0);
   for(const b0 of rows){
-    const b1=byIdB.get(b0[1])||b0; const x=lerp(b0[2],b1[2],u),y=lerp(b0[3],b1[3],u),[sx,sy]=sc(x,y);
+    const b1x=byIdB.get(b0[1]), b1=(b1x&&b1x[0]===b0[0])?b1x:b0; const bq=mv(b0,b1,2,3,4,5,u,SP),x=bq[0],y=bq[1],[sx,sy]=sc(x,y);
     const part=!!b0[13];
     const [bx,by,rr]=hbox(g,sc,dpr,x,y,b0[16],b0[17],al(T.red,part?.22:.14),T.red,part?1.2:2,part?5:9);
     g.fillStyle=T.red; g.beginPath();g.arc(bx,by,(part?1.6:3)*dpr,0,6.2832);g.fill();
-    if(!part&&((mb0&&b0[1]===mb0[1])||EVENT_NPC.has(b0[0]))){g.fillStyle=T.bossLabel;g.font=`${11*dpr}px system-ui`;g.fillText(nm("npcs",b0[0]),bx+rr+4*dpr,by-rr*0.6);}
+    if(!part&&((mb0&&b0[1]===mb0[1])||EVENT_NPC.has(b0[0]))){g.fillStyle=T.bossLabel;g.font=`${11*dpr}px system-ui`;{const lt=nm("npcs",b0[0]),lw=g.measureText(lt).width;g.fillText(lt,bx+rr+4*dpr,by-rr*0.6);lblRects.push([bx+rr+4*dpr,by-rr*0.6-12*dpr,bx+rr+4*dpr+lw,by-rr*0.6]);}}
     blips.push({x:bx/dpr,y:by/dpr,r:Math.max(9,rr/dpr+3),info:bossInfo(b0)});
+    if(!part&&!(mb0&&b0[1]===mb0[1])&&!EVENT_NPC.has(b0[0])) enc.push({sx:bx,sy:by,name:nm("npcs",b0[0]),pri:95,col:T.bossLabel});
+    else if(part&&cam.z>=0.5) enc.push({sx:bx,sy:by,name:nm("npcs",b0[0]),pri:20,col:T.bossLabel});
   }
+  if(showEN&&(cam.z>=0.2||enc.some(e=>e.pri>=90))) drawEnemyNames(g,W,H,dpr,cam.z>=0.2?enc:enc.filter(e=>e.pri>=90));
   for(const e of evWindow(D.lhit,cur-20,cur)){ if(e.t>cur||cur-e.t>20) continue; const [sx,sy]=sc(e.x,e.y),a=(cur-e.t)/20,col=D.pvp?teamCol(sideOf(e.id)):(T.src[e.src]||T.flash);
     g.strokeStyle=col;g.globalAlpha=1-a;g.lineWidth=2.4*dpr;g.beginPath();g.arc(sx,sy,(8+a*26)*dpr,0,6.2832);g.stroke();g.fillStyle=T.flash;g.beginPath();g.arc(sx,sy,(5-a*3)*dpr,0,6.2832);g.fill();g.globalAlpha=1;}
   for(const e of (D.isEvent?evWindow(D.ldeath,cur-60*TPS,cur):D.ldeath)){ if(e.t>cur) continue; const [sx,sy]=sc(e.x,e.y),age=(cur-e.t)/TPS,alp=age<4?1:(D.pvp?0.62:0.45),s=9*dpr*(age<0.4?1+(0.4-age)*2:1);
@@ -1076,7 +1234,7 @@ function draw(){
     if(fl&8){const [hx,hy]=sc(f0.p[13],f0.p[14]);g.strokeStyle=T.hook;g.lineWidth=1.5*dpr;g.beginPath();g.moveTo(sx,sy);g.lineTo(hx,hy);g.stroke();}
     blips.push({x:sx/dpr,y:sy/dpr,r:12,info:`COMMANDER  life ${f0.p[6]}  mana ${f0.p[7]}\nheld ${f0.p[11]?nm("items",f0.p[11]):"-"}`});}
   g.fillStyle=T.scale;g.font=`${11*dpr}px system-ui`;const bw=10*TILE*cam.z;g.fillRect(12*dpr,H-16*dpr,bw,2*dpr);g.fillText("10 tiles",12*dpr,H-22*dpr);
-  renderParts(f0); updateRoster();
+  renderParts(f0); updateRoster(); updateCard(f0,f1,u,SP,g,sc,dpr); updateBuffs();
   let fell=0; for(const t of D.fellAt){ if(t<=cur) fell++; else break; }
   const tot=Math.max(D.levyTotal,1), alive=Math.max(0,tot-fell), bE=D.bendFinal&&cur>=D.bendFinal.t?D.bendFinal:null;
   const outHtml=bE?`<div class="out ${bE.e==="bdeath"?"k":"d"}">${bE.e==="bdeath"?"Boss killed":"Boss left (despawn)"}</div>`:"";
@@ -1294,6 +1452,10 @@ $("followBoss").onclick=()=>{if(!D)return;camMode=camMode==="boss"?"free":"boss"
 const tog=(id,get,set)=>{$(id).onclick=()=>{set(!get());$(id).classList.toggle("on",get());draw();};};
 tog("tBoss",()=>trBoss,v=>trBoss=v);tog("tAdd",()=>trAdd,v=>trAdd=v);tog("tLevy",()=>trLevy,v=>trLevy=v);tog("tProj",()=>trProj,v=>trProj=v);tog("hitBtn",()=>showHit,v=>showHit=v);tog("tCmd",()=>showCmdP,v=>showCmdP=v);$("tSum").onclick=()=>{showSum=!showSum;sumTouched=true;$("tSum").classList.toggle("on",showSum);draw();};tog("hpBtn",()=>showHpBars,v=>showHpBars=v);tog("dmgBtn",()=>showDmg,v=>showDmg=v);
 $("labelBtn").onclick=()=>{showLabels=!showLabels;$("labelBtn").classList.toggle("on",showLabels);draw();};
+$("enBtn").onclick=()=>{showEN=!showEN;$("enBtn").classList.toggle("on",showEN);draw();};
+$("buffBtn").onclick=()=>{showBuff=!showBuff;$("buffBtn").classList.toggle("on",showBuff);const b=$("buffs");if(b)b.__k=null;draw();};
+$("pcard").addEventListener("click",e=>{if(e.target.id==="pcx"){selP=null;draw();}});
+window.addEventListener("keydown",e=>{if(e.key==="Escape"&&selP){selP=null;if(D)draw();}});
 $("prevEv").onclick=()=>jumpEvent(-1); $("nextEv").onclick=()=>jumpEvent(1);
 window.addEventListener("keydown",e=>{const tg=e.target.tagName;if(tg==="SELECT"||tg==="BUTTON"||tg==="INPUT"&&e.target.type!=="range")return;
   if(e.code==="Space"){e.preventDefault();$("play").click();}
@@ -1319,8 +1481,10 @@ view.addEventListener("pointermove",e=>{
 let tapStart=null;
 view.addEventListener("pointerdown",e=>{tapStart={x:e.clientX,y:e.clientY};});
 view.addEventListener("pointerup",e=>{if(!tapStart)return;if(Math.hypot(e.clientX-tapStart.x,e.clientY-tapStart.y)>6)return;
-  const r=view.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;let best=null,bd=1e9;for(const b of blips){const d=Math.hypot(b.x-mx,b.y-my);if(d<b.r+8&&(b.lid!=null?d-4:d)<bd){bd=d;best=b;}}
+  const r=view.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;let best=null,bd=1e9;for(const b of blips){const d=Math.hypot(b.x-mx,b.y-my);if(d<b.r+8&&(b.lid!=null?d-4:b.p?d-6:d)<bd){bd=(b.lid!=null?d-4:b.p?d-6:d);best=b;}}
   if(best&&best.lid!=null)selectLevy(best.lid);
+  else if(best&&best.p){setSel(best.p);draw();}
+  else if(!best&&selP){selP=null;draw();}
   if(e.pointerType==="mouse")return;
   const tip=$("tip");if(best){tip.style.display="block";tip.textContent=best.info;tip.style.left=Math.max(4,Math.min(mx+10,r.width-230))+"px";tip.style.top=Math.max(4,Math.min(my+10,r.height-110))+"px";}else tip.style.display="none";});
 const endPtr=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(!ptrs.size)view.style.cursor="grab";};
@@ -1347,8 +1511,9 @@ $("stage").addEventListener("pointerdown",()=>{if(document.body.classList.contai
 $("controls").addEventListener("pointerdown",()=>{if(document.body.classList.contains("big"))wake();});
 window.addEventListener("orientationchange",relayout);
 let rsz=null;window.addEventListener("resize",()=>{if(!D)return;clearTimeout(rsz);rsz=setTimeout(()=>{if(camMode==="fit")fitView();draw();drawStrip();},60);});
+let stripCur=-1e9;
 function frameLoop(now){
-  if(playing&&D){const dt=Math.min(0.1,(now-last)/1000);last=now;cur+=dt*TPS*parseFloat($("speed").value);if(cur>=D.tmax){cur=D.tmax;setPlaying(false);if(call.on&&call.pick&&!call.revealed)callReveal();}syncUI();draw();drawStrip();}
+  if(playing&&D){const dt=Math.min(0.1,(now-last)/1000);last=now;cur+=dt*TPS*parseFloat($("speed").value);if(cur>=D.tmax){cur=D.tmax;setPlaying(false);if(call.on&&call.pick&&!call.revealed)callReveal();}syncUI();draw();{const st=(D.tmax-D.tmin)/Math.max(300,$("strip").clientWidth);if(Math.abs(cur-stripCur)>=st||cur>=D.tmax){stripCur=cur;drawStrip();}}}
   requestAnimationFrame(frameLoop);
 }
 loadTokens();

@@ -353,6 +353,10 @@ def summarize(rows):
     # a hand-made recording (/levyrec start <name>) carries its file name in hdr.boss: name the fight after the boss it actually met, or "Other fights" when none
     named = [e.get("name") for e in ev if e.get("e") == "boss" and e.get("name")]
     boss = meta.get("bossName") or (named[0] if named and not meta else None) or ("Other fights" if not meta else (hdr.get("boss") or "?").replace("_", " "))
+    if is_glitch(boss) or boss.strip("_ ") == "":
+        end0 = next((r for r in reversed(rows) if r.get("k") == "end"), {})
+        nm0 = [e.get("name") for e in ev if e.get("e") == "boss" and e.get("name") and not is_glitch(e.get("name")) and e.get("name").strip("?") != ""]
+        boss = (nm0[0] if nm0 else None) or (end0.get("bossName") if not is_glitch(end0.get("bossName")) and (end0.get("bossName") or "").strip("_ ") else None) or clean_boss_name(boss, os.path.basename(str(meta.get("label") or hdr.get("player") or "")))
     ver, about = version_of(hdr)
     pvp = pvp_summary(rows, hdr)
     if pvp:
@@ -424,14 +428,19 @@ def shrink_frame(f):
     if f.get("s"):
         o["s"] = [[int(round(v)) for v in r] for r in f["s"]]
     if f.get("j"):
-        o["j"] = [row(j[:8], ints=(1, 2)) for j in f["j"]]      # format 13 adds the slot (field 8): the page has no use for it
+        # page row [type,x,y,vx,vy,damage,w,h,slot,penetrate,timeLeft]: format 13 adds the slot (the page follows one projectile by it), format 15 penetrate and timeLeft
+        o["j"] = [row(j[:11], ints=(0, 1, 2, 5, 6, 7, 8, 9, 10), ones=(3, 4)) for j in f["j"]]
     if f.get("c") and MAX_C_ROWS > 0:
         # the commander's own projectiles: [type,x,y,vx,vy,w,h], positions and sizes as integers, velocity to a tenth; the nearest-listed MAX_C_ROWS stay
         # page row [type,x,y,vx,vy,w,h,kind,slot]: format 14 appends the kind (1 minion, 2 sentry, 4 shot) to the recording row; older files have none (0 = unknown, drawn as a shot). The slot (field 7 of the recording row, format 13) follows one minion from sample to sample
-        o["c"] = [row(c[:7] + [c[8] if len(c) > 8 else 0, c[7] if len(c) > 7 else -1], ints=(0, 1, 2, 5, 6, 7, 8), ones=(3, 4)) for c in f["c"][:MAX_C_ROWS]]
+        # format 15 appends damage, penetrate, timeLeft (c fields 9-11 of the recording row)
+        o["c"] = [row(c[:7] + [c[8] if len(c) > 8 else 0, c[7] if len(c) > 7 else -1] + list(c[9:12]), ints=(0, 1, 2, 5, 6, 7, 8, 9, 10, 11), ones=(3, 4)) for c in f["c"][:MAX_C_ROWS]]
     if f.get("m") and MAX_M_ROWS > 0:
         # format 14 key m: the levies' own minions, sentries and (summon trace) shots [type,x,y,vx,vy,w,h,slot,owner,kind]; the slot lets the page follow one minion from sample to sample
-        o["m"] = [row(m[:10], ints=(0, 1, 2, 5, 6, 7, 8, 9), ones=(3, 4)) for m in f["m"][:MAX_M_ROWS]]
+        o["m"] = [row(m[:13], ints=(0, 1, 2, 5, 6, 7, 8, 9, 10, 11, 12), ones=(3, 4)) for m in f["m"][:MAX_M_ROWS]]
+    if f.get("z"):
+        # format 15 key z: the line or link a hostile projectile is [x0,y0,x1,y1,width,kind,type,slot], whole pixels
+        o["z"] = [[int(round(v)) for v in z[:8]] for z in f["z"]]
     return o
 
 
@@ -466,6 +475,25 @@ def shrink_event(e):
     return {k: (r1(v) if isinstance(v, float) else v) for k, v in e.items() if k != "k"}
 
 
+GLITCH = re.compile("[\u0180-\u02ff][\\s\\S]*[\u0180-\u02ff]")
+
+
+def is_glitch(v):
+    return isinstance(v, str) and bool(GLITCH.search(v))
+
+
+def clean_boss_name(v, hint=""):
+    """A name that is random glitch text (Nameless Deity) or only underscores becomes the boss it belongs to; hint is the recording's file name."""
+    if v is None:
+        return v
+    if is_glitch(v) or (isinstance(v, str) and v.strip("_ ") == "" and v != ""):
+        h = hint.lower()
+        if "avatar" in h or "aoe" in h:
+            return "The Avatar of Emptiness"
+        return "Nameless Deity"
+    return v
+
+
 def convert(rows, factor):
     hdr = next((r for r in rows if r.get("k") == "hdr"), {})
     frames = [r for r in rows if r.get("k") == "f"]
@@ -497,6 +525,14 @@ def convert(rows, factor):
         r = next((x for x in rows if x.get("k") == k), None)
         if r:
             out[k] = {kk: vv for kk, vv in r.items() if kk != "k"}
+    for tbl in ("npcs",):
+        for kk, vv in list((out.get("names") or {}).get(tbl, {}).items()):
+            if is_glitch(vv):
+                out["names"][tbl][kk] = clean_boss_name(vv)
+    if out.get("end") and is_glitch(out["end"].get("bossName")):
+        out["end"]["bossName"] = clean_boss_name(out["end"]["bossName"])
+    if is_glitch(out["hdr"].get("boss")):
+        out["hdr"]["boss"] = clean_boss_name(out["hdr"]["boss"])
     # format 12: enemy importance by type (0 normal, 1 miniboss, 2 boss; the last nt line of a type wins)
     nt = {}
     for r in rows:

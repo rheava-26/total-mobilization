@@ -514,7 +514,7 @@ namespace Levy.Common.Recording
 				_auto = AutoKind; AutoKind = 0; string extra = HeaderExtra; HeaderExtra = "";
 				_gzip = GzipOverride ?? (!Headless && OutDirOverride == null);
 				_startWall = DateTime.Now; _profWindows = 0; _cmdDeaths = 0; _pDead = false; _lastDeathTick = -1; _endTick = -1; _endDead = false; _dmg.Clear(); _dmgBoss = _dmgAll = 0; _lastDmgFlush = 0; LastResult = null; global::Levy.Common.Boss.BossRule.ResetFightScale();
-				_cmd = cmd; _sampTicks = 0; _sampMax = 0; _sampN = 0; _frames = 0; _events = 0; _bossSeen = false; _bossesSeen = 0; _bossIdsSeen.Clear(); _hbDef.Clear(); _lastBossSeen = 0;
+				_cmd = cmd; _lastState = null; _sampTicks = 0; _sampMax = 0; _sampN = 0; _frames = 0; _events = 0; _bossSeen = false; _bossesSeen = 0; _bossIdsSeen.Clear(); _hbDef.Clear(); _lastBossSeen = 0;
 				_nonWeapons.Clear(); _items.Clear(); _npcs.Clear(); _projs.Clear(); _buffs.Clear(); _soldiers.Clear(); _pXJump.Clear();
 				_meta = meta; _fileBase = fileBase; _bossGoneTick = 0; _fightSerials.Clear(); _aimWho = -1; _parts = 1; _hitQ.Clear(); _tkNone = _tkPlayer = _tkLevy = _tkSpite = 0; _lastTk = -1; _lastTl = int.MinValue; _levyHits = _levyDeaths = 0;
 				_lt.Clear(); _deadNoted.Clear(); _bossTypes.Clear(); _projHit.Clear();
@@ -875,6 +875,28 @@ namespace Levy.Common.Recording
 		private static long _sampTicks, _sampMax; private static int _sampN;
 		internal static double SampleMeanUs => _sampN == 0 ? 0 : _sampTicks * 1e6 / System.Diagnostics.Stopwatch.Frequency / _sampN;
 		internal static double SampleMaxUs => _sampMax * 1e6 / System.Diagnostics.Stopwatch.Frequency;
+		/// <summary>Format 15 p flag 16384: the Avatar of Emptiness's dimension is up (Wrath of the Gods; false without it).</summary>
+		private static bool InRift()
+		{
+			try { return global::Levy.Common.Compat.Wotg.AvatarFight.Void; } catch (Exception) { return false; }
+		}
+
+		/// <summary>Format 15 event bstate (s = the state name, npc = its type): the main boss's CurrentState, for a ModNPC that has a public CurrentState property (Nameless Deity and the Avatar of Emptiness name their attack in it). Checked every 6 ticks; written on a change.</summary>
+		private static readonly Dictionary<int, System.Reflection.PropertyInfo> _stateProp = new(); private static string _lastState;
+		private static void NoteBossState(NPC n)
+		{
+			if (n.ModNPC == null) return;
+			if (!_stateProp.TryGetValue(n.type, out var pi))
+			{
+				try { pi = n.ModNPC.GetType().GetProperty("CurrentState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance); if (pi != null && pi.GetIndexParameters().Length != 0) pi = null; } catch (Exception) { pi = null; }
+				_stateProp[n.type] = pi;
+			}
+			if (pi == null) return;
+			string st; try { st = pi.GetValue(n.ModNPC)?.ToString(); } catch (Exception) { return; }
+			if (st == null || st == _lastState) return;
+			_lastState = st; Ev("bstate", ("s", FightRecFormat.Esc(st)), ("npc", n.type.ToString()));
+		}
+
 		public static void Tick()
 		{
 			if (!On) return;
@@ -919,7 +941,7 @@ namespace Levy.Common.Recording
 			bool fly = !grounded && p.controlJump && flyKit && p.jump == 0;
 			bool dashing = p.dashDelay < 0 || p.timeSinceLastDashStarted < 8;
 			int flags = (grounded ? 1 : 0) | (fly ? 2 : 0) | (hookOut ? 4 : 0) | (hookAtt ? 8 : 0) | (p.controlLeft ? 16 : 0) | (p.controlRight ? 32 : 0) | (p.controlJump ? 64 : 0)
-				| (p.controlDown ? 128 : 0) | (p.controlUp ? 256 : 0) | (p.controlHook ? 512 : 0) | (p.controlUseItem ? 1024 : 0) | (dashing ? 2048 : 0) | (p.mount.Active ? 4096 : 0) | (p.dead ? 8192 : 0);
+				| (p.controlDown ? 128 : 0) | (p.controlUp ? 256 : 0) | (p.controlHook ? 512 : 0) | (p.controlUseItem ? 1024 : 0) | (dashing ? 2048 : 0) | (p.mount.Active ? 4096 : 0) | (p.dead ? 8192 : 0) | (InRift() ? 16384 : 0);
 			Item held = p.HeldItem;
 			f.P = new double[] { p.Center.X, p.Center.Y, p.velocity.X, p.velocity.Y, p.direction, flags, p.statLife, p.statMana, p.immuneTime, p.wingTime, p.rocketTime,
 				held != null && !held.IsAir ? held.type : 0, p.mount.Active ? p.mount.Type : -1, hookPos.X, hookPos.Y, p.dashDelay };
@@ -998,6 +1020,7 @@ namespace Levy.Common.Recording
 				}
 			}
 			_aimWho = aimBest;
+			if (aimBest >= 0 && el % 6 == 0) NoteBossState(Main.npc[aimBest]);
 			if (aimBest >= 0)
 			{
 				NPC an = Main.npc[aimBest];

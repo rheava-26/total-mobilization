@@ -729,7 +729,8 @@ function renderEventInfo(){
 // ================================================================ helpers
 function frameIndex(t){let lo=0,hi=D.frames.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(D.frames[m].t<=t)lo=m;else hi=m-1;}return lo;}
 function trackStart(tr,t){let lo=0,hi=tr.length;while(lo<hi){const m=(lo+hi)>>1;if(tr[m][0]<t)lo=m+1;else hi=m;}return lo;}
-const nm=(tbl,id)=>(D.names[tbl]&&D.names[tbl][id])||("#"+id);
+const GLITCH=/[\u0180-\u02FF][^]*[\u0180-\u02FF]/;   // Nameless Deity's display name is random glitch text in older recordings
+const nm=(tbl,id)=>{const v=D.names[tbl]&&D.names[tbl][id]; if(!v) return "#"+id; return tbl==="npcs"&&GLITCH.test(v)?"Nameless Deity":v;};
 const LSLOT=["weapon","sidearm","head","body","legs","accessory","accessory","accessory","accessory","accessory","accessory","ammo","hook","wings","boots"]; // lgear slot names: 13 wings and 14 boots are the levy's mobility slots
 const lname=id=>(D.lbl.get(id)||("#"+id))+" "+((D.names.soldiers&&D.names.soldiers[id])||"");
 function canvasSize(c){const r=c.getBoundingClientRect();const dpr=window.devicePixelRatio||1;const w=Math.max(10,Math.round(r.width*dpr)),h=Math.max(10,Math.round(r.height*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}return {w,h,dpr};}
@@ -771,6 +772,47 @@ function hbox(g,sc,dpr,x,y,w,h,fill,stroke,lw,minPx){
   g.fillStyle=fill; g.fillRect(sx-pw/2,sy-ph/2,pw,ph); g.strokeStyle=stroke; g.lineWidth=lw*dpr; g.strokeRect(sx-pw/2,sy-ph/2,pw,ph);
   return [sx,sy,Math.max(pw,ph)/2];
 }
+// ---- smooth motion (same rules as the site): Hermite with the recorded velocities, a straight line where they do not explain the step, a snap on a jump
+const MV=[0,0];
+function mv(a,b,xi,yi,vxi,vyi,u,sp){
+  const x0=a[xi],y0=a[yi];
+  if(a===b||u<=0){MV[0]=x0;MV[1]=y0;return MV;}
+  const x1=b[xi],y1=b[yi],dx=x1-x0,dy=y1-y0,dd=Math.hypot(dx,dy);
+  if(vxi<0){MV[0]=x0+dx*u;MV[1]=y0+dy*u;return MV;}
+  let m0x=(a[vxi]||0)*sp,m0y=(a[vyi]||0)*sp,m1x=(b[vxi]||0)*sp,m1y=(b[vyi]||0)*sp;
+  const l0=Math.hypot(m0x,m0y),l1=Math.hypot(m1x,m1y),mx=Math.max(l0,l1);
+  if(dd>480&&dd>3*mx+96){const h=u<.5;MV[0]=h?x0:x1;MV[1]=h?y0:y1;return MV;}
+  if(Math.abs(dd-(l0+l1)/2)>0.6*dd+8){MV[0]=x0+dx*u;MV[1]=y0+dy*u;return MV;}
+  const cap=2*dd+1; if(l0>cap){m0x*=cap/l0;m0y*=cap/l0;} if(l1>cap){m1x*=cap/l1;m1y*=cap/l1;}
+  const u2=u*u,u3=u2*u,h00=2*u3-3*u2+1,h10=u3-2*u2+u,h01=3*u2-2*u3,h11=u3-u2;
+  MV[0]=h00*x0+h10*m0x+h01*x1+h11*m1x; MV[1]=h00*y0+h10*m0y+h01*y1+h11*m1y; return MV;
+}
+function fmap(f,key,idx){const ck="$"+key;let m=f[ck];if(m!==undefined)return m;m=new Map();const rows=f[key];if(rows)for(const r of rows)m.set(r[idx],r);f[ck]=m;return m;}
+const mbC=f=>f.$mb!==undefined?f.$mb:(f.$mb=mainBoss(f));
+// beams, warning lines, linked fields and strike segments (format 15 key z: [x0,y0,x1,y1,width,kind,type,slot])
+function drawLines(g,sc,dpr,f0,f1,u){
+  const zs=f0.z; if(!zs||!zs.length) return; const m1=fmap(f1,"z",7); g.save(); g.lineCap="round"; g.lineJoin="round";
+  for(const z of zs){
+    let x0=z[0],y0=z[1],x1=z[2],y1=z[3]; const z1=m1.get(z[7]);
+    if(z1&&z1[6]===z[6]&&Math.hypot(z1[0]-x0,z1[1]-y0)<800){x0+=(z1[0]-x0)*u;y0+=(z1[1]-y0)*u;x1+=(z1[2]-x1)*u;y1+=(z1[3]-y1)*u;}
+    const a=sc(x0,y0),b=sc(x1,y1),k=z[5],w=Math.max(z[4]*cam.z*dpr,1.5*dpr);
+    if(k===3){
+      const L=Math.hypot(b[0]-a[0],b[1]-a[1])||1,n=Math.max(2,Math.min(48,Math.round(L/(12*dpr)))),nx=-(b[1]-a[1])/L,ny=(b[0]-a[0])/L,ph=Math.floor(cur/3)*1.3+z[7]*1.7;
+      for(const pass of [0,1]){g.beginPath();g.moveTo(a[0],a[1]);for(let i=1;i<n;i++){const t=i/n,off=Math.sin(i*2.3+ph)*5*dpr*Math.sin(Math.PI*t);g.lineTo(a[0]+(b[0]-a[0])*t+nx*off,a[1]+(b[1]-a[1])*t+ny*off);}
+        g.lineTo(b[0],b[1]);g.strokeStyle=pass?"#c77dff":"rgba(199,125,255,.28)";g.lineWidth=pass?1.6*dpr:Math.max(5*dpr,w*2.2);g.stroke();}
+    } else if(k===2){
+      g.strokeStyle="rgba(255,176,32,.12)";g.lineWidth=w;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();
+      g.strokeStyle="rgba(255,176,32,.8)";g.lineWidth=Math.max(1.2*dpr,Math.min(w*0.25,3*dpr));g.setLineDash([8*dpr,6*dpr]);g.lineDashOffset=-cur*0.5*dpr;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();g.setLineDash([]);g.lineDashOffset=0;
+    } else {
+      const col=k===4?"255,77,77":"255,159,46";
+      g.strokeStyle="rgba("+col+",.26)";g.lineWidth=w;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();
+      g.strokeStyle="rgba("+col+",.95)";g.lineWidth=Math.max(1.5*dpr,Math.min(w*0.3,4*dpr));g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();
+    }
+    const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2; if(mx>=0&&my>=0&&mx<=g.canvas.width&&my<=g.canvas.height){const len=Math.hypot(x1-x0,y1-y0);
+      blips.push({x:mx/dpr,y:my/dpr,r:11,info:`${k===3?"linked field":k===2?"warning line":k===4?"strike line":"beam"} ${nm("projectiles",z[6])}\nwidth ${z[4]} px, length ${len.toFixed(0)} px (${(len/16).toFixed(0)} tiles)`});}
+  }
+  g.restore();
+}
 function interp(){
   const i=frameIndex(cur),f0=D.frames[i],f1=D.frames[Math.min(D.frames.length-1,i+1)];
   const span=f1.t-f0.t,u=span>0?Math.max(0,Math.min(1,(cur-f0.t)/span)):0;
@@ -780,17 +822,17 @@ function draw(){
   const c=$("view"),g=c.getContext("2d"); const {w:W,h:H,dpr}=canvasSize(c);
   g.setTransform(1,0,0,1,0,0); g.fillStyle="#03070a"; g.fillRect(0,0,W,H); blips=[];
   if(!D) return;
-  const {f0,f1,u}=interp();
-  const byIdL=new Map((f1.l||[]).map(l=>[l[0],l])), byIdB=new Map((f1.b||[]).map(b=>[b[1],b]));
-  const mb0=mainBoss(f0);
-  const P=[lerp(f0.p[0],f1.p[0],u),lerp(f0.p[1],f1.p[1],u)];
-  if(camMode==="boss"&&mb0){const b1=byIdB.get(mb0[1])||mb0;cam.x=lerp(mb0[2],b1[2],u);cam.y=lerp(mb0[3],b1[3],u);}
+  const {f0,f1,u}=interp(), SP=Math.max(1,f1.t-f0.t);
+  const byIdL=fmap(f1,"l",0), byIdB=fmap(f1,"b",1);
+  const mb0=mbC(f0);
+  const P=mv(f0.p,f1.p,0,1,2,3,u,SP).slice();
+  if(camMode==="boss"&&mb0){const b1=byIdB.get(mb0[1])||mb0;const q=mv(mb0,b1,2,3,4,5,u,SP);cam.x=q[0];cam.y=q[1];}
   const sc=(x,y)=>w2s(x,y,W,H);
   // terrain silhouette
   g.imageSmoothingEnabled=false;
   for(const ai of (D.arenaImgs||[])){const A=ai.A;const [sx,sy]=sc(A.x0*TILE,A.y0*TILE);g.drawImage(ai.img,sx,sy,A.w*TILE*cam.z,A.h*TILE*cam.z);}
   // radar rings around the boss (or the commander without a boss) + a slow cosmetic sweep
-  const ctr=mb0?sc(lerp(mb0[2],(byIdB.get(mb0[1])||mb0)[2],u),lerp(mb0[3],(byIdB.get(mb0[1])||mb0)[3],u)):sc(P[0],P[1]);
+  const ctr=mb0?(q=>sc(q[0],q[1]))(mv(mb0,byIdB.get(mb0[1])||mb0,2,3,4,5,u,SP)):sc(P[0],P[1]);
   g.lineWidth=1*dpr; g.strokeStyle="rgba(60,255,154,.13)"; g.setLineDash([4*dpr,6*dpr]);
   for(const tiles of [15,30,60]){g.beginPath();g.arc(ctr[0],ctr[1],tiles*TILE*cam.z,0,6.2832);g.stroke();}
   g.setLineDash([]);
@@ -811,8 +853,11 @@ function draw(){
   if(trBoss)for(const tr of D.trB.values())trail(tr,"#ff4d4d",1.4);
   if(trLevy||trBoss)trail(D.trP,"#4fe3ff",1.6);
   // hostile projectiles: the real hitbox, and a short fading streak back along the velocity
+  drawLines(g,sc,dpr,f0,f1,u);
+  const jm=f0.j&&f0.j.length&&f0.j[0].length>8?fmap(f1,"j",8):null;
   for(const j of (f0.j||[])){
-    const dt=cur-f0.t, x=j[1]+j[3]*dt, y=j[2]+j[4]*dt;
+    const dt=cur-f0.t; let x,y; const j1=jm&&jm.get(j[8]);
+    if(j1&&j1[0]===j[0]){const q=mv(j,j1,1,2,3,4,u,SP);x=q[0];y=q[1];}else{x=j[1]+j[3]*dt;y=j[2]+j[4]*dt;}
     if(trProj&&(j[3]||j[4])){
       const a=sc(x,y);
       for(let k=1;k<=4;k++){const b=sc(x-j[3]*k*3,y-j[4]*k*3);g.strokeStyle="#ff9f2e";g.globalAlpha=0.5*(1-(k-1)/4);g.lineWidth=Math.max(1.5,(j[7]||6)*cam.z*dpr*0.5);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();a[0]=b[0];a[1]=b[1];}
@@ -824,11 +869,11 @@ function draw(){
   // target line: main boss to what it is going for
   let tgtText="none";
   if(mb0){
-    const k=tkOf(mb0), b1=byIdB.get(mb0[1])||mb0; const bx=lerp(mb0[2],b1[2],u),by=lerp(mb0[3],b1[3],u);
+    const k=tkOf(mb0), b1=byIdB.get(mb0[1])||mb0; const bq=mv(mb0,b1,2,3,4,5,u,SP),bx=bq[0],by=bq[1];
     let tx=null,ty=null,col="#8a97a8";
     if(!D.hasTarget) tgtText="unknown (format 1)";
-    else if(k===2){const l0=(f0.l||[]).find(l=>l[0]===mb0[15]);if(l0){const l1=byIdL.get(l0[0])||l0;tx=lerp(l0[1],l1[1],u);ty=lerp(l0[2],l1[2],u);}col="#ff5a5a";tgtText="levy "+lname(mb0[15]);}
-    else if(k===3){const l0=(f0.l||[]).find(l=>l[0]===mb0[15]);if(l0){const l1=byIdL.get(l0[0])||l0;tx=lerp(l0[1],l1[1],u);ty=lerp(l0[2],l1[2],u);}col="#ffb34d";tgtText="spite (redirected shots) at "+lname(mb0[15]);}
+    else if(k===2){const l0=fmap(f0,"l",0).get(mb0[15]);if(l0){const l1=byIdL.get(l0[0])||l0;const lq=mv(l0,l1,1,2,3,4,u,SP);tx=lq[0];ty=lq[1];}col="#ff5a5a";tgtText="levy "+lname(mb0[15]);}
+    else if(k===3){const l0=fmap(f0,"l",0).get(mb0[15]);if(l0){const l1=byIdL.get(l0[0])||l0;const lq=mv(l0,l1,1,2,3,4,u,SP);tx=lq[0];ty=lq[1];}col="#ffb34d";tgtText="spite (redirected shots) at "+lname(mb0[15]);}
     else if(k===1){tx=P[0];ty=P[1];col="#4fe3ff";tgtText="commander";}
     if(tx!=null){const a=sc(bx,by),b=sc(tx,ty);g.strokeStyle=col;g.lineWidth=1.6*dpr;g.setLineDash([7*dpr,5*dpr]);g.lineDashOffset=-cur*0.6*dpr;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();g.setLineDash([]);g.lineDashOffset=0;
       g.strokeStyle=col;g.beginPath();g.arc(b[0],b[1],11*dpr,0,6.2832);g.stroke();}
@@ -838,11 +883,11 @@ function draw(){
     if(showHit){g.fillStyle=col+(dash?"0d":"22");g.fillRect(sx-pw/2,sy-ph/2,pw,ph);g.strokeStyle=col;g.lineWidth=1*dpr;if(dash)g.setLineDash([3*dpr,3*dpr]);g.strokeRect(sx-pw/2,sy-ph/2,pw,ph);g.setLineDash([]);}
     else{g.fillStyle=col;g.fillRect(sx-1.5*dpr,sy-1.5*dpr,3*dpr,3*dpr);}
     blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,Math.max(w,h)*cam.z/2+2),info});};
-  {const byA=new Map((f1.a||[]).map(q=>[q[1],q]));
-   for(const a0 of (f0.a||[])){const a1=byA.get(a0[1])||a0;hbx(lerp(a0[2],a1[2],u),lerp(a0[3],a1[3],u),a0[10]||8,a0[11]||8,"#ffb020",false,`add ${nm("npcs",a0[0])}  slot ${a0[1]}\nlife ${a0[6]}/${a0[7]}\ntarget ${a0[8]===3?"spite (redirected shots) at levy "+(D.lbl.get(a0[9])||a0[9]):a0[8]===2?"levy "+(D.lbl.get(a0[9])||a0[9]):a0[8]===1?"commander":"none"}\nhitbox ${a0[10]} x ${a0[11]} px`);}
-   for(const a0 of (f0.a||[])){if(impOf(a0[0])<1)continue;const a1=byA.get(a0[1])||a0;const [sx,sy]=sc(lerp(a0[2],a1[2],u),lerp(a0[3],a1[3],u));drawAddMark(g,sx,sy,a0,dpr);}
-   const byS=new Map((f1.s||[]).map(q=>[q[1],q]));
-   for(const s0 of (f0.s||[])){const s1=byS.get(s0[1])||s0;hbx(lerp(s0[2],s1[2],u),lerp(s0[3],s1[3],u),s0[4],s0[5],"#ffb020",!(s0[7]&1),`${s0[7]&4?"segment":"hostile"} ${nm("npcs",s0[0])}  slot ${s0[1]}\nhitbox ${s0[4]} x ${s0[5]} px\n${s0[7]&1?"deals contact damage":"no contact damage"}`);}}
+  {const byA=fmap(f1,"a",1);
+   for(const a0 of (f0.a||[])){const a1x=byA.get(a0[1]),a1=(a1x&&a1x[0]===a0[0])?a1x:a0,aq=mv(a0,a1,2,3,4,5,u,SP);hbx(aq[0],aq[1],a0[10]||8,a0[11]||8,"#ffb020",false,`add ${nm("npcs",a0[0])}  slot ${a0[1]}\nlife ${a0[6]}/${a0[7]}\ntarget ${a0[8]===3?"spite (redirected shots) at levy "+(D.lbl.get(a0[9])||a0[9]):a0[8]===2?"levy "+(D.lbl.get(a0[9])||a0[9]):a0[8]===1?"commander":"none"}\nhitbox ${a0[10]} x ${a0[11]} px`);}
+   for(const a0 of (f0.a||[])){if(impOf(a0[0])<1)continue;const a1x=byA.get(a0[1]),a1=(a1x&&a1x[0]===a0[0])?a1x:a0,aq=mv(a0,a1,2,3,4,5,u,SP);const [sx,sy]=sc(aq[0],aq[1]);drawAddMark(g,sx,sy,a0,dpr);}
+   const byS=fmap(f1,"s",1);
+   for(const s0 of (f0.s||[])){const s1=byS.get(s0[1])||s0,sq=mv(s0,s1,2,3,-1,-1,u,SP);hbx(sq[0],sq[1],s0[4],s0[5],"#ffb020",!(s0[7]&1),`${s0[7]&4?"segment":"hostile"} ${nm("npcs",s0[0])}  slot ${s0[1]}\nhitbox ${s0[4]} x ${s0[5]} px\n${s0[7]&1?"deals contact damage":"no contact damage"}`);}}
   // hostiles outside the view (recorded at any distance): a marker on the frame edge pointing at each, so something firing from off-screen is never invisible
   {let off=0; const mark=(x,y,col,info)=>{const [sx,sy]=sc(x,y); if(sx>=0&&sx<=W&&sy>=0&&sy<=H) return; off++;
       const ex=Math.max(10*dpr,Math.min(W-10*dpr,sx)), ey=Math.max(10*dpr,Math.min(H-10*dpr,sy)), ang=Math.atan2(sy-ey,sx-ex), r=6*dpr;
@@ -856,7 +901,7 @@ function draw(){
   // levies
   const states=(D.hdr&&D.hdr.stateNames||"").split(",");
   for(const l0 of (f0.l||[])){
-    const l1=byIdL.get(l0[0])||l0; const x=lerp(l0[1],l1[1],u),y=lerp(l0[2],l1[2],u);
+    const l1=byIdL.get(l0[0])||l0; const lq=mv(l0,l1,1,2,3,4,u,SP), x=lq[0], y=lq[1];
     const mx=l0[10]||D.maxL.get(l0[0])||l0[6]||1, fr=l0[6]/mx, [sx,sy]=sc(x,y), r=8*dpr;
     const col=hpColor(fr); const hb=hbox(g,sc,dpr,x,y,l0[11],l0[12],"rgba(60,255,154,.16)",col,1.6,7);
     g.fillStyle=col; g.beginPath();g.arc(sx,sy,2.2*dpr,0,6.2832);g.fill();
@@ -867,7 +912,7 @@ function draw(){
   // boss parts then the main boss
   const rows=(f0.b||[]).slice().sort((a,b)=>b[13]-a[13]);
   for(const b0 of rows){
-    const b1=byIdB.get(b0[1])||b0; const x=lerp(b0[2],b1[2],u),y=lerp(b0[3],b1[3],u),[sx,sy]=sc(x,y);
+    const b1x=byIdB.get(b0[1]), b1=(b1x&&b1x[0]===b0[0])?b1x:b0; const bq=mv(b0,b1,2,3,4,5,u,SP),x=bq[0],y=bq[1],[sx,sy]=sc(x,y);
     const part=!!b0[13];
     const [bx,by,rr]=hbox(g,sc,dpr,x,y,b0[16],b0[17],part?"rgba(255,77,77,.22)":"rgba(255,77,77,.14)","#ff4d4d",part?1.2:2,part?5:9);
     g.fillStyle="#ff4d4d"; g.beginPath();g.arc(bx,by,(part?1.6:3)*dpr,0,6.2832);g.fill();

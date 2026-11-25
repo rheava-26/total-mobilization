@@ -107,6 +107,7 @@ namespace Levy.Common.Recording
 	///         j, c and m rows gain penetrate (the hits it has left, -1 endless) and timeLeft (ticks before it expires) as the last two fields; c and m rows also gain damage (c field 9, m field 10). j already carried damage.
 	///         Frame key z (SchemaZ, plain rows, at most RecLines.MaxRows a sample): the line or link a hostile projectile IS, which its box cannot say: deathrays and primitive laserbeams (Calamity, Wrath of the Gods, vanilla pattern), Nameless Deity's screen slices and light slashes,
 	///         the Avatar's blood torrent, arm strikes and thorns, and the linked electric field between Ares's tesla orbs (kind 3). See RecLines.
+	///         p flag 16384: the Avatar of Emptiness's dimension is up (AvatarFight.Void; no tile holds anything up). Event bstate (s, npc): the main boss's CurrentState changed (a ModNPC with a public CurrentState property: Nameless Deity, the Avatar).
 	///         Names: an NPC whose display name is random glitch text (Nameless Deity) is recorded by its class name instead (FightRecorder.NpcName).
 	///   names type id to name tables (items, npcs, projectiles, buffs, soldiers), written at the end
 	///   end   stop reason and counts
@@ -191,7 +192,7 @@ namespace Levy.Common.Recording
 		}
 
 		public const string SchemaP = "x,y,vx,vy,dir,flags,life,mana,immune,wingTime,rocketTime,held,mount,hookX,hookY,dashDelay";
-		public const string SchemaPFlags = "1 grounded,2 flying,4 hookOut,8 hookAttached,16 left,32 right,64 jump,128 down,256 up,512 grapple,1024 useItem,2048 dashing,4096 mounted,8192 dead";
+		public const string SchemaPFlags = "1 grounded,2 flying,4 hookOut,8 hookAttached,16 left,32 right,64 jump,128 down,256 up,512 grapple,1024 useItem,2048 dashing,4096 mounted,8192 dead,16384 in the Avatar's dimension";
 		public const string SchemaB = "type,id,x,y,vx,vy,life,lifeMax,ai0,ai1,ai2,ai3,target,isPart,tkind,tlevy,w,h,realLife";
 		public const string TKinds = "0 none,1 player,2 levy (the boss targets a levy: tlevy = its id),3 spite (redirected shots: the boss rule's grudge sends its projectiles and dashes at a levy that is too close or does a lot of damage; tlevy = that levy)";
 		public const string SchemaA = "type,id,x,y,vx,vy,life,lifeMax,tkind,tlevy,w,h";

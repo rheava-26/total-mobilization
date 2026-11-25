@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Xna.Framework;
@@ -10,6 +11,7 @@ using Terraria.ModLoader;
 using Levy.Common.Boss;
 using Levy.Common.Compat.Wotg;
 using Levy.Common.Dialogue;
+using Levy.Common.Recording;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
 using Levy.Content.NPCs;
@@ -353,9 +355,61 @@ namespace Levy.Common.Testing
 			new("The whole cycle as the game picks it, phase 4 (what the army says)", 2, new[] { "ResetCycle" }, 10800, false),
 		};
 
+		// ---------------------------------------------------------------------------------------------- recorder lab (LEVY_AVBEHAVE_REC=avatar|nd)
+		/// <summary>
+		/// Lab for the fight recorder (recorder3): the army and a weaving stand-in commander in the REAL Avatar of Emptiness (the whole attack cycle as the game picks it, from phase 2) or the REAL Nameless Deity, with the fight recorder running.
+		/// LEVY_AVBEHAVE_REC = avatar | nd, LEVY_AVBEHAVE_RECDIR = the folder the recording lands in, LEVY_AVBEHAVE_TICKS = fight length (default 5400), LEVY_RECLINES=0 turns the recorder's line key off (cost A/B).
+		/// Measurement only; the levies are kept alive so the whole fight is watchable.
+		/// </summary>
+		private static void RecLab(string kind, Mod nox)
+		{
+			bool nd = kind == "nd";
+			int ticks = int.TryParse(Environment.GetEnvironmentVariable("LEVY_AVBEHAVE_TICKS"), out int tk) && tk > 0 ? tk : 5400;
+			string dir = Environment.GetEnvironmentVariable("LEVY_AVBEHAVE_RECDIR") ?? "/tmp/levyrec";
+			string tag = Environment.GetEnvironmentVariable("LEVY_AVBEHAVE_RECTAG") ?? "";
+			Cleanup(); Terraria.Main.rand = new Terraria.Utilities.UnifiedRandom(4242); Arena();
+			Main.GameMode = GameModeID.Master; Main.hardMode = true;
+			var cfg = global::Levy.Common.Config.LevyConfig.Get; if (cfg != null) { _savedBossTarget ??= cfg.BossesTargetSoldiers; cfg.BossesTargetSoldiers = true; }
+			if (!ModContent.TryFind(nd ? "NoxusBoss/NamelessDeityBoss" : "NoxusBoss/AvatarOfEmptiness", out ModNPC bt)) { Check("the boss type is found", false); return; }
+			BossDownedSystem.SetDownedForTest(bt.Type, true);
+			_shifts = 0; _lastShiftTick = -100000; _tick = 0; _cmdKills = 0; _goneNotes = 0; _goneLogged.Clear(); _seen.Clear();
+			_anchor = new Vector2(Cx * 16f, (FloorY - 12) * 16f); _cmdAt = _anchor;
+			KeepCommander(); Step(2);
+			var levies = new List<SoldierNPC>();
+			var plan = new List<Cls>(); for (int i = 0; i < 5; i++) plan.Add(Cls.Flier); for (int i = 0; i < 6; i++) plan.Add(Cls.Foot); for (int i = 0; i < 4; i++) plan.Add(Cls.Hooker);
+			for (int k = 0; k < plan.Count; k++) { var s = Levy(k, plan[k], new Vector2((Cx + (k - plan.Count / 2) * 3f) * 16f, FloorY * 16f)); if (s != null) levies.Add(s); }
+			Step(60);
+			Directory.CreateDirectory(dir);
+			FightRecorder.OutDirOverride = dir; FightRecorder.GzipOverride = true; FightRecorder.ForceSync = true; FightRecorder.IgnoreInactive = true; FightRecPost.TestForce = false;
+			var meta = new Dictionary<string, string> { ["label"] = "recorder lab " + kind + tag, ["bossName"] = nd ? "Nameless Deity" : "The Avatar of Emptiness", ["gear"] = "n" + levies.Count, ["source"] = "recorder3 lab" };
+			string path = FightRecorder.Start(Main.player[0], nd ? "Nameless Deity" : "The Avatar of Emptiness", out string err, meta, "r3_" + kind + tag);
+			Note($"recorder {(path == null ? "did not start: " + err : "started: " + path)}");
+			Vector2 spawnAt = new Vector2(Cx * 16f, _anchor.Y - 43f * 16f);
+			int bi = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("AvatarBehaveCheck"), (int)spawnAt.X, (int)spawnAt.Y, bt.Type, 1);
+			if (bi < 0 || bi >= Main.maxNPCs) { Check("the boss spawns", false); FightRecorder.Stop("lab: no boss"); return; }
+			NPC boss = Main.npc[bi]; _boss = boss; boss.timeLeft = 99999; boss.netOffset = Vector2.Zero;
+			if (!nd) ForceStates(boss, new[] { "ResetCycle" }, 2, null, 0);
+			var sw = System.Diagnostics.Stopwatch.StartNew(); int t;
+			for (t = 0; t < ticks; t++)
+			{
+				_tick = t; _cmdAt = _anchor + WeaveOffset(t);
+				foreach (var s0 in levies) { NPC n0 = s0.NPC; if (n0.active) { n0.life = n0.lifeMax; s0.Record.CurrentHp = n0.lifeMax; } }
+				Step(1);
+				if (!boss.active || boss.type != bt.Type) break;
+				boss.timeLeft = 99999;
+				if (t % 600 == 0) Note($"rec t={t} state={(nd ? "-" : CurrentState(boss))} boss life {boss.life}/{boss.lifeMax} commander at ({Main.player[0].Center.X / 16f:0},{Main.player[0].Center.Y / 16f:0}) moved {_shifts}x levies {levies.Count(l => l.NPC.active)} ms/tick {sw.Elapsed.TotalMilliseconds / (t + 1):0.0}");
+			}
+			Note($"rec done after {t} ticks, {sw.Elapsed.TotalSeconds:0.0} s wall, {sw.Elapsed.TotalMilliseconds / Math.Max(1, t):0.0} ms/tick, boss alive {boss.active}");
+			string saved = FightRecorder.Stop("lab done");
+			Note("recording saved: " + saved);
+			Check("the recording was written", saved != null);
+		}
+
 		private static void Run()
 		{
 			ModLoader.TryGetMod("NoxusBoss", out Mod nox); Seams(nox);
+			string recKind = Environment.GetEnvironmentVariable("LEVY_AVBEHAVE_REC");
+			if (!string.IsNullOrEmpty(recKind)) { RecLab(recKind.ToLowerInvariant(), nox); return; }
 			string only = Environment.GetEnvironmentVariable("LEVY_AVBEHAVE_SCN");   // lab: a comma list of scenario number prefixes (0-based), e.g. "4,11"
 			int scale = int.TryParse(Environment.GetEnvironmentVariable("LEVY_AVBEHAVE_TICKS"), out int sc) ? sc : 0;   // lab: override every scenario's length
 			foreach (var trig in AoeVoice.PlainTriggers)

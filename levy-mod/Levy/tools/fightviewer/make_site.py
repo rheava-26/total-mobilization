@@ -14,7 +14,7 @@ For every set directory it reads the recordings (*.levyrec, *.jsonl or *.jsonl.g
 
   <outdir>/index.html            copy of site/index.html (the page, no data inside)
   <outdir>/data/manifest.json    the fight list: one row per fight with boss, mode, levies, arena, result, targeting %, hits, deaths, note
-  <outdir>/data/<id>.json        one plain-JSON file per fight (frames downsampled to --hz, coordinates rounded, levy and boss rows delta-coded), loaded lazily by the page
+  <outdir>/data/<id>.json        one plain-JSON file per fight in the compact page format v5 (compact.py; the page expands it, v4 files still load)
 
   make_site.py --stamp <site>/data/manifest.json
   writes the "Hide broken or very old fights" rules (HIDE, the eras' broken flags, BROKEN; see below) into an existing manifest in place and prints
@@ -33,6 +33,7 @@ try:
     import recrules
 except ImportError:      # the page still builds without it; results then come from the old frame-based reading
     recrules = None
+import compact as compactdata   # page format v5: the same JSON, about a third smaller (compact.py)
 import reccodec          # format 13: compact frame rows and part files (tools/recview/reccodec.py)
 TITLES = {"eve": "Eve's fights", "rec2": "Recorder test", "lab1": "Lab 1", "lab2": "Lab 2", "lab3": "Lab 3", "worm": "Worm round", "worm5": "Worm round", "options": "Options", "vert1": "Movement lab", "moblab": "Mobility gear lab", "adds": "Boss minions", "wormdodge": "Worm dodge lab", "wormbody": "Worm body lab", "eowrev": "Eater of Worlds: Rev vs Death", "deathladder": "Death EoW gear ladder", "paladin": "Paladin's Shield lab"}
 MODES = {"exp": "Expert", "rev": "Rev", "death": "Death", "revoff": "Rev, rage off", "mdeath": "Master+Death", "player": "Player", "levy": "Levy"}
@@ -551,7 +552,7 @@ def convert(rows, factor):
 
 
 def dump(o):
-    return json.dumps(o, separators=(",", ":")).encode("utf-8")
+    return json.dumps(compactdata.compact(o) if o.get("v") == 4 else o, separators=(",", ":")).encode("utf-8")
 
 
 # ---------------------------------------------------------------- build

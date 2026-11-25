@@ -315,9 +315,72 @@ function decRows(rows,last,idx,ipos){
   }
   return out.filter(Boolean);
 }
+//<compact>
+// Page format v5 (compact.py): the same data as v4, written smaller. Projectile rows (j, c, m) that continue a row of the previous frame are [ref,dx,dy(,mask,values...)], events are one table per kind.
+const SLOTI={j:8,c:8,m:7};
+function expandCompact(o){
+  if(!(o.v>=5)) return o;
+  const R=x=>Math.floor(x+0.5);
+  for(const key of ["j","c","m"]){
+    let prev=null,pt=0;
+    for(const f of o.frames){
+      const rows=f[key];
+      if(!rows||!rows.length){prev=null;continue;}
+      const dt=prev?f.t-pt:0, out=new Array(rows.length);
+      for(let n=0;n<rows.length;n++){
+        const e=rows[n];
+        if(Array.isArray(e[0])){out[n]=e[0];continue;}
+        const p=prev[e[0]], r=p.slice();
+        r[1]=e[1]+R(p[1]+p[3]*dt); r[2]=e[2]+R(p[2]+p[4]*dt);
+        if(e.length>3){let m=e[3],vi=4;for(let k=0;m;k++,m=Math.floor(m/2))if(m%2){r[k]=e[vi++];}}
+        out[n]=r;
+      }
+      f[key]=out; prev=out; pt=f.t;
+    }
+  }
+  // l, b, a, s: keyed rows; a row is the key alone (as predicted), [key,dx,dy(,mask,values...)] (dx dy = position minus last position + velocity x time since), or [[full row]]
+  for(const [key,ki,xi,yi,vxi,vyi] of [["l",0,1,2,3,4],["b",1,2,3,4,5],["a",1,2,3,4,5],["s",1,2,3,-1,-1]]){
+    const last=new Map(), lt=new Map();
+    for(const f of o.frames){
+      const rows=f[key]; if(!rows) continue; const out=[];
+      for(const e of rows){
+        let r,k;
+        if(typeof e==="number"){k=e;const p=last.get(k);if(!p)continue;r=p.slice();if(vxi>=0){const dt=f.t-lt.get(k);r[xi]=R(p[xi]+p[vxi]*dt);r[yi]=R(p[yi]+p[vyi]*dt);}}
+        else if(Array.isArray(e[0])){r=e[0];k=r[ki];}
+        else{
+          k=e[0];const p=last.get(k);if(!p)continue;const dt=f.t-lt.get(k);r=p.slice();
+          if(vxi<0){r[xi]=p[xi]+e[1];r[yi]=p[yi]+e[2];}else{r[xi]=e[1]+R(p[xi]+p[vxi]*dt);r[yi]=e[2]+R(p[yi]+p[vyi]*dt);}
+          if(e.length>3){let m=e[3],vi=4;for(let i=0;m;i++,m=Math.floor(m/2))if(m%2)r[i]=e[vi++];}
+        }
+        last.set(k,r);lt.set(k,f.t);out.push(r);
+      }
+      f[key]=out;
+    }
+  }
+  o.full=1;
+  if(o.evc){
+    const res=[];
+    for(const tb of o.events){
+      const spec=tb.c, last=new Array(spec.length).fill(0); let t=0;
+      for(let i=0;i<tb.r.length;i++){
+        const row=tb.r[i]; t+=tb.t[i]; const e={t,e:tb.k};
+        for(let ci=0;ci<spec.length;ci++){
+          let v=ci<row.length?row[ci]:null; if(v===null) continue;
+          const s=spec[ci]; if(s[1]===1){v+=last[ci];last[ci]=v;}else if(s[1]===2)v=s[2][v];
+          e[s[0]]=v;
+        }
+        res.push(e);
+      }
+    }
+    o.events=res; delete o.evc;
+  }
+  o.v=4; return o;
+}
+//</compact>
 function fromData(o){      // a data/<fight>.json file written by make_site.py
+  o=expandCompact(o);
   if(!o||!o.frames||!o.frames.length) throw new Error("the data file has no frames");
-  if(o.v>=2){const L=new Map(),B=new Map(),AA=new Map(),SS=new Map(),pl=new Set([1,2]),pb=new Set([2,3]);for(const f of o.frames){if(f.l)f.l=decRows(f.l,L,0,pl);if(f.b)f.b=decRows(f.b,B,1,pb);if(f.a)f.a=decRows(f.a,AA,1,pb);if(f.s)f.s=decRows(f.s,SS,1,pb);}}
+  if(o.v>=2&&!o.full){const L=new Map(),B=new Map(),AA=new Map(),SS=new Map(),pl=new Set([1,2]),pb=new Set([2,3]);for(const f of o.frames){if(f.l)f.l=decRows(f.l,L,0,pl);if(f.b)f.b=decRows(f.b,B,1,pb);if(f.a)f.a=decRows(f.a,AA,1,pb);if(f.s)f.s=decRows(f.s,SS,1,pb);}}
   return {hdr:o.hdr||null,arena:o.arena||null,arenas:o.arenas||(o.arena?[o.arena]:[]),cam:o.cam||null,frames:o.frames,events:o.events||[],names:o.names||{items:{},npcs:{},projectiles:{},buffs:{},soldiers:{}},end:o.end||null,nt:o.nt||null};
 }
 const tkOf=b=>b.length>14?b[14]:((b[12]>=0&&b[12]<255)?1:0);

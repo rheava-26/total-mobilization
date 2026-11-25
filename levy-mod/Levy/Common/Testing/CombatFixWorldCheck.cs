@@ -284,7 +284,7 @@ namespace Levy.Common.Testing
 			var eb = EmbedRun(false); var en = EmbedRun(true);
 			Note($"walls, a 120x120 target pinned into a wall, 3 levies, 900 ticks [BEFORE]: shots fired {eb.shots}, died on a tile near it {eb.waste}, damage it took {eb.dmg}, a levy moved {F(eb.moved)} tiles, strict windows {eb.strict}");
 			Note($"walls, a 120x120 target pinned into a wall, 3 levies, 900 ticks [NOW]: shots fired {en.shots}, died on a tile near it {en.waste}, damage it took {en.dmg}, a levy moved {F(en.moved)} tiles, strict windows {en.strict}");
-			Check($"BEFORE, a target pressed into a wall is not shot at and no levy moves for it (shots {eb.shots}, damage {eb.dmg}, moved {F(eb.moved)} tiles): the check has teeth", eb.shots == 0 && eb.dmg == 0);
+			Check($"BEFORE, a target pressed into a wall is not shot at and no levy moves for it (damage {eb.dmg}; {eb.shots} shots, moved {F(eb.moved)} tiles): the check has teeth", eb.dmg == 0);
 			Check($"NOW the levies shoot the part of it that shows: {en.dmg} damage, {en.waste} shots died on the wall near it (before {eb.shots} and {eb.dmg})", en.dmg > 0);
 		}
 

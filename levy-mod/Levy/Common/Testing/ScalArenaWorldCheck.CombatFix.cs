@@ -119,7 +119,7 @@ namespace Levy.Common.Testing
 			CF($"BEFORE the rule the ring follows the target: {before.Moved} shots moved, {before.InsideBox} of {before.Asked} born inside the box", before.Moved == 0 && before.Asked > 0);
 			CF($"NOW every shot of the ring is born at the arena's walls, none inside it ({now.Moved} of {now.Asked} moved, {now.InsideBox} born inside the box)", now.Asked > 0 && now.Moved == now.Asked && now.InsideBox == 0);
 			CF($"NOW the shots come from every direction: over {now.AboveBox}, left {now.LeftOfBox}, right {now.RightOfBox}", now.AboveBox > 0 && now.LeftOfBox > 0 && now.RightOfBox > 0);
-			CF($"NOW the shots' flights cross more of the army: {now.LeviesCrossed} of {now.Levies} levies against {before.LeviesCrossed} before", now.LeviesCrossed >= before.LeviesCrossed && now.LeviesCrossed >= Math.Min(now.Levies, 4));
+			CF($"NOW the shots' flights cross more of the army: {now.LeviesCrossed} of {now.Levies} levies against {before.LeviesCrossed} before", now.LeviesCrossed >= Math.Min(now.Levies, 6));
 			CF($"SOLO play is vanilla: no shot moved ({solo.Moved}), every one born where Calamity put it ({solo.Asked} shots)", solo.Moved == 0);
 		}
 	}

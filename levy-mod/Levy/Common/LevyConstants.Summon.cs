@@ -50,6 +50,11 @@ namespace Levy.Common
 		public const int ModdedMinionMaxChildSpawnsPerPass = 40, ModdedMinionMaxChildrenAlive = 60, ModdedMinionChildrenPerSlot = 16, ModdedMinionFloodPasses = 2;
 		/// <summary>Consecutive immediate self-kills of a modded cast after which the staff uses the stand-in minion.</summary>
 		public const int ModdedMinionMaxShortLives = 3;
+		/// <summary>
+		/// A real minion that THREW while driven benches its staff for the ONE levy it threw for (the stand-in minion meanwhile), for <see cref="MinionBenchTicks"/> ticks, doubling with each further throw of that levy up to <see cref="MinionBenchMaxTicks"/>;
+		/// after that the real minion is tried again. When <see cref="MinionBenchLevies"/> different levies have thrown for the same staff within <see cref="MinionBenchWindowTicks"/> the staff itself is benched for everyone for the session.
+		/// </summary>
+		public const int MinionBenchTicks = 1800, MinionBenchMaxTicks = 28800, MinionBenchWindowTicks = 36000, MinionBenchLevies = 3;
 		/// <summary>Upkeep passes (20 ticks each) between the tries of a full flock's staff at making its helper.</summary>
 		public const int MinionHelperPasses = 6;
 		/// <summary>Horizontal scatter (px) of a fresh real minion around its soldier.</summary>

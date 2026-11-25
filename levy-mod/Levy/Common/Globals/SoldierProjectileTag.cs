@@ -49,6 +49,8 @@ namespace Levy.Common.Globals
 		public bool FromBuff;
 		/// <summary>Ticks a modded minion has been driven, hits it landed, and whether the upkeep ended it on purpose (see SoldierMinions.NoteModdedDeath). Server / single player.</summary>
 		public int Age, Hits;
+		/// <summary>The staff's own factor on the cast's damage that this piece was born with (the Abandoned Slime's 0.8 + 0.2 a free slot, a companion a Shoot gives double): kept by every later retune, as a player's minion keeps its originalDamage.</summary>
+		public float DamageFactor = 1f;
 		public bool Dismissed;
 		/// <summary>Lab counter: minions / towers the OnSpawn safety net took from the commander for a levy.</summary>
 		public static int SafetyNetAdopted;

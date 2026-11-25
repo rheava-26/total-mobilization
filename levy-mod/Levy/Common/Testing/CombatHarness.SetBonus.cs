@@ -198,6 +198,24 @@ namespace Levy.Common.Testing
 			return _sbPlayerFields;
 		}
 
+		private static System.Reflection.MethodInfo _sbGetModPlayer; private static List<ModPlayer> _sbBases;
+		/// <summary>Every ModPlayer instance of a Player, found through the registered ModPlayer types (the Player's own list is not reachable by one name on every tML build).</summary>
+		private static List<object> SbModPlayersOf(Player p)
+		{
+			var res = new List<object>();
+			try
+			{
+				_sbGetModPlayer ??= typeof(Player).GetMethods().FirstOrDefault(m => m.Name == "GetModPlayer" && m.IsGenericMethodDefinition && m.GetParameters().Length == 1);
+				_sbBases ??= ModContent.GetContent<ModPlayer>().ToList();
+				foreach (ModPlayer b in _sbBases)
+				{
+					try { object inst = _sbGetModPlayer.MakeGenericMethod(b.GetType()).Invoke(p, new object[] { b }); if (inst != null) res.Add(inst); } catch (Exception) { }
+				}
+			}
+			catch (Exception) { }
+			return res;
+		}
+
 		private static Dictionary<string, double> SbSnap(Player p)
 		{
 			var d = new Dictionary<string, double>();
@@ -224,7 +242,7 @@ namespace Levy.Common.Testing
 			}
 			try
 			{
-				var mp = typeof(Player).GetProperty("ModPlayers", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(p) as System.Collections.IEnumerable;
+				var mp = SbModPlayersOf(p);
 				if (mp != null)
 					foreach (object m in mp)
 					{

@@ -25,6 +25,8 @@ namespace Levy.Common.Compat.Redemption
 		public static bool Loaded { get; private set; }
 		/// <summary>One line per hold that was wired (or why not), for the world check.</summary>
 		public static readonly List<string> Wired = new();
+		/// <summary>One line for the custom damage class wiring (kept apart from <see cref="Wired"/>, which lists the hold-fire bosses only).</summary>
+		public static readonly List<string> WiredClass = new();
 
 		public static bool HoldsFor(int type, int state) => _holdStates.TryGetValue(type, out var s) && s.Contains(state);
 
@@ -46,7 +48,7 @@ namespace Levy.Common.Compat.Redemption
 			catch (Exception e) { Mod.Logger.Warn("Levy Redemption compat: could not wire the hold-fire states (" + e.GetType().Name + ": " + e.Message + ")"); }
 		}
 
-		public override void Unload() { _fedGauges.Clear(); _gaugeF = _gaugeCdF = _gaugeCdMaxF = _levelF = null; _getModPlayer = _gaugePostUpdate = null; _ritPlayerType = null; _ritPlayerBase = null; _holdStates.Clear(); Wired.Clear(); Loaded = false; if (_ritHook != null) { WeaponClassifier.ExtraCombatClasses.Remove(_ritHook); _ritHook = null; } _ritClass = null; }
+		public override void Unload() { _fedGauges.Clear(); _gaugeF = _gaugeCdF = _gaugeCdMaxF = _levelF = null; _getModPlayer = _gaugePostUpdate = null; _ritPlayerType = null; _ritPlayerBase = null; _holdStates.Clear(); Wired.Clear(); WiredClass.Clear(); Loaded = false; if (_ritHook != null) { WeaponClassifier.ExtraCombatClasses.Remove(_ritHook); _ritHook = null; } _ritClass = null; }
 
 		private static DamageClass _ritClass; private static Func<Item, bool> _ritHook;
 		/// <summary>The mod's own damage class (a dagger class that counts as none of the five combat classes) is declared issuable: levies carry and use its weapons. Found by type name; a renamed class leaves it benched.</summary>
@@ -56,11 +58,11 @@ namespace Levy.Common.Compat.Redemption
 			{
 				Type t = red.Code?.GetType("Redemption.DamageClasses.RitualistClass");
 				_ritClass = t == null ? null : ModContent.GetContent<DamageClass>().FirstOrDefault(d => d.GetType() == t);
-				if (_ritClass == null) { Wired.Add("custom damage class not found"); return; }
-				if (Environment.GetEnvironmentVariable("LEVY_REDECLASS") == "0") { Wired.Add("custom damage class: off (LEVY_REDECLASS=0)"); return; }
+				if (_ritClass == null) { WiredClass.Add("custom damage class not found"); return; }
+				if (Environment.GetEnvironmentVariable("LEVY_REDECLASS") == "0") { WiredClass.Add("custom damage class: off (LEVY_REDECLASS=0)"); return; }
 				_ritHook = it => it.ModItem != null && it.ModItem.Mod == red && it.DamageType == _ritClass;
 				WeaponClassifier.ExtraCombatClasses.Add(_ritHook);
-				Wired.Add("custom damage class -> issuable");
+				WiredClass.Add("custom damage class -> issuable");
 			}
 			catch (Exception e) { Mod.Logger.Warn("Levy Redemption compat: could not wire the custom damage class (" + e.GetType().Name + ": " + e.Message + ")"); }
 		}

@@ -682,6 +682,9 @@ namespace Levy.Common.Weapons
 			}
 		}
 
+		/// <summary>(staff item type, minion slots of the holder) pairs where the staff's one minion was seen taking more slots than the holder has.</summary>
+		internal static readonly HashSet<(int, int)> TooBig = new();
+
 		/// <summary>Lab counter: pieces of a cast that did not fit his slots and were ended at once.</summary>
 		internal static int TrimTally;
 

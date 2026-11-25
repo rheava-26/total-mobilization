@@ -93,7 +93,7 @@ namespace Levy.Content.NPCs
 		public bool FitsOneCast(Item weapon)
 		{
 			int cap = Dummy != null ? Math.Max(1, Dummy.maxMinions) : 1;
-			return !SummonCap.NeedsMoreSlots(weapon, cap);
+			return !SummonCap.NeedsMoreSlots(weapon, cap) && !SoldierMinions.TooBig.Contains((weapon.type, cap));
 		}
 
 		/// <summary>How many minions this soldier's gear supports: the dummy's maxMinions (read after the stat pipeline) over the weapon's slot cost, clamped to [1, cap]; none when one cast needs more slots than he has.</summary>
@@ -282,6 +282,7 @@ namespace Levy.Content.NPCs
 				if (worst < 0) break;
 				Projectile q = Main.projectile[_minionScratch[worst]];
 				have -= SoldierMinions.SlotOf(q, perCast, known);
+				if (_minionScratch.Count == 1 && Dummy != null && q.minionSlots > Dummy.maxMinions + LevyConstants.MinionSlotEpsilon && SoldierMinions.TooBig.Add((weapon.type, Math.Max(1, Dummy.maxMinions)))) Levy.Instance?.Logger.Info("Levy: " + weapon.Name + "'s minion takes " + q.minionSlots + " slots, more than a holder with " + Dummy.maxMinions + " has: not cast at that many."); // one minion that sets its own slots after it is made and does not fit: a player's is gone at once, so is not made again
 				if (CombatHarness.Enabled || SummonDebug) Levy.Instance?.Logger.Info($"HARNESS-MINION-DBG overflow dismiss {q.ModProjectile?.Name ?? q.type.ToString()} slots={q.minionSlots} have={have} want={want} perCast={perCast} desired={desired}");
 				SoldierMinions.Dismiss(q);
 				_minionScratch.RemoveAt(worst);
@@ -308,7 +309,7 @@ namespace Levy.Content.NPCs
 			}
 			if (SummonDebug && ++_dbgN % 3 == 0) Levy.Instance?.Logger.Info($"HARNESS-MINION-DBG maintain {weapon.Name} perCast={perCast} want={want} have={have} desired={desired} cd={_minionSpawnCd} n={_minionScratch.Count} transient={transientCast} fighting={fighting}");
 			// the count guard keeps a staff whose minion reports no slot cost from casting without end; with nothing out the first cast is made even when a whole cast is more than his slots (a player's cast keeps what fits, TrimMade does the same)
-			if (_minionSpawnCd > 0 || (!transientCast && have + perCast > want + LevyConstants.MinionSlotEpsilon && have > LevyConstants.MinionSlotEpsilon) || _minionScratch.Count >= LevyConstants.MinionControllerMaxPerSoldier * 2) return;
+			if (_minionSpawnCd > 0 || (!transientCast && have + perCast > want + LevyConstants.MinionSlotEpsilon && (have > LevyConstants.MinionSlotEpsilon || desired < 1)) || _minionScratch.Count >= LevyConstants.MinionControllerMaxPerSoldier * 2) return;
 			if (transient && !fighting) return; // a self-ending cast is made while fighting only
 			if (transient && !SoldierMinions.CanUse(this, weapon)) return; // and only when the staff allows a use, as for a player (the Universe Splitter waits while its field is out)
 

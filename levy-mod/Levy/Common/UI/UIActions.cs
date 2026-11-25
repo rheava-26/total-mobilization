@@ -282,6 +282,7 @@ namespace Levy.Common.UI
 		public static void RushDrive(global::Levy.Content.TileEntities.RecruitmentOfficeTE office)
 		{
 			if (office == null) return;
+			if (office.RestTicks > 0) { Main.NewText(LevyUtil.T("Militia.OfficeResting", WorldClock.Format(office.RestTicks)), LevyConstants.NoticeChatColor); return; } // resting: say so without a packet (the server checks again)
 			if (Single) SettlementSystem.Instance.RushDriveAt(office, Me);
 			else { var p = LevyPackets.New(LevyPacket.RecruitingDrive); p.Write(office.ID); p.Write(true); p.Send(); }
 		}

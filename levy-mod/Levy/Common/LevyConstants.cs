@@ -94,6 +94,8 @@ namespace Levy.Common
 		public const int ManaPotionDrinkBelowPercent = 30; // magic/summon soldiers sip a mana potion from the heal slot below this fraction of their pool
 		/// <summary>Potion sickness after a healing potion: vanilla's Item.potionDelay (60 s). A levy's own value comes from its dummy (SoldierNPC.PotionDelayFor); this is the base for a body with no dummy.</summary>
 		public const int PotionSicknessTicks = 60 * 60;
+		/// <summary>A synced potion sickness that is this many ticks above the one counted down locally means a healing potion was just drunk (the shortest sickness is 45 s).</summary>
+		public const int PotionDrinkSoundJumpTicks = 60 * 20;
 		public const int RegenDelayTicks = 60 * 5;
 		public const int RegenIntervalTicks = 60;
 		public const int ImmuneTicksOnHit = 20;
@@ -133,7 +135,9 @@ namespace Levy.Common
 		public const int BossMusterTiles = 250;
 		// Manpower is the militia RESERVE (drains 1 per death). Simultaneous bodies on the field are capped separately by
 		// LevyConfig.RenderCap, so a deep reserve just lets a town absorb a long invasion's attrition, not flood the screen.
-		public const int ManpowerPerNpc = 9, ManpowerPerNpcConscription = 15;
+		public const int ManpowerPerNpc = 15, ManpowerPerNpcConscription = 25;
+		/// <summary>The default before it became <see cref="ManpowerPerNpc"/>. A saved config still holding it moves to the new default once (Common/Config/ConfigMigrations.cs).</summary>
+		public const int ManpowerPerNpcOldDefault = 9;
 		/// <summary>Default ceiling of the pylon network's shared manpower pool (config ManpowerCap; 0 = none).</summary>
 		public const int ManpowerNetworkCap = 300;
 		/// <summary>A rush drive (Recruitment Office) costs this many times the price of the daily drive per point: 4 x the daily wage.</summary>

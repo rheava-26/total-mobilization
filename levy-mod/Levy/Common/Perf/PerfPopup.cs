@@ -171,11 +171,11 @@ namespace Levy.Common.Perf
 		private static void SetDontAsk() { var c = PerfConfig.Get; if (c != null) { c.LagPopupDontAskAgain = true; SaveConfig(c); } }
 		private static void SetArmyDontAsk() { if (TestMode) { TestArmyDontAsk = true; return; } var c = PerfConfig.Get; if (c != null) { c.ArmyNoticeDontAskAgain = true; SaveConfig(c); } }
 
+		/// <summary>Writes a client config to its file: tModLoader's own SaveChanges, then the internal ConfigManager.Save if that does not report success. A failure is logged, never silent. Not on a server.</summary>
 		internal static void SaveConfig(ModConfig c)
 		{
 			if (Main.dedServ) return;
-			try { typeof(ConfigManager).GetMethod("Save", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new[] { typeof(ModConfig) }, null)?.Invoke(null, new object[] { c }); }
-			catch (Exception e) { Levy.Instance?.Logger.Warn("[PerfAnalyzer] config save failed: " + e.Message); }
+			if (!global::Levy.Common.Config.ConfigMigrations.SaveConfig(c)) Levy.Instance?.Logger.Warn("[PerfAnalyzer] config save failed: " + c?.Name);
 		}
 
 		/// <summary>Opens the tModLoader configuration screen for Levy's performance settings. When the game's screen cannot be reached, says where the settings are.</summary>

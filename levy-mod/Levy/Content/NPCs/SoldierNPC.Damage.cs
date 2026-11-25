@@ -363,6 +363,28 @@ namespace Levy.Content.NPCs
 		/// <summary>Buff types drunk so far in the current Potions pass (empty between passes).</summary>
 		private int[] _drunkBuffs = Array.Empty<int>();
 
+		/// <summary>Healing potions drunk by soldier bodies that showed their heal number (self-checks), and the amount of the last one.</summary>
+		internal static int PotionHealShown, PotionHealLast;
+
+		/// <summary>
+		/// A healing potion's life, as a player gets it: the amount the potion gives after every mod's heal hooks (<c>Player.GetHealLife</c> on the dummy, as a quick-heal), added to the body, and the same green number over it
+		/// (<c>HealEffect</c>, which a server also sends to the clients). A hook that throws leaves the potion's own amount.
+		/// </summary>
+		private void DrinkHeal(Item potion)
+		{
+			int heal = potion.healLife;
+			Player d = Dummy;
+			if (d != null)
+			{
+				int hooked = heal;
+				InFrame(() => hooked = d.GetHealLife(potion, true));
+				if (hooked > 0) heal = hooked;
+			}
+			NPC.life = Math.Min(NPC.lifeMax, NPC.life + heal);
+			NPC.HealEffect(heal, true);
+			PotionHealShown++; PotionHealLast = heal;
+		}
+
 		private void Potions()
 		{
 			if (Record == null || _armoryRetry > 0 || Hostile) return; // a hostile body has no armory
@@ -382,7 +404,7 @@ namespace Levy.Content.NPCs
 				if (potion == null && wantMana) potion = armory.TakeServingPotion(0, it => it.healMana > 0 && (PotionSickness == 0 || !it.potion)); // a potion that gives sickness waits for it; a mana potion does not
 				if (potion != null && !potion.IsAir)
 				{
-					if (potion.healLife > 0) NPC.life = Math.Min(NPC.lifeMax, NPC.life + potion.healLife);
+					if (potion.healLife > 0) DrinkHeal(potion);
 					if (potion.healMana > 0) Record.Mana = Math.Min(Record.MaxMana, Record.Mana + potion.healMana);
 					if (potion.buffType > 0) { NPC.AddBuff(potion.buffType, Math.Max(1, potion.buffTime)); StatsDirty = true; }
 					if (potion.potion || potion.healLife > 0) PotionSickness = PotionDelayFor(potion); else _manaPotionGap = Math.Max(1, potion.useTime); // the player's rule: only a healing potion brings potion sickness

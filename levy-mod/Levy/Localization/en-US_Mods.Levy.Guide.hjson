@@ -117,11 +117,11 @@ Pages: {
 		Body:
 			'''
 			Every Barracks with a pylon near it shares one manpower pool. A Barracks with no pylon near it keeps a pool of its own.
-			Each town NPC with a home adds 9 manpower, in every town on the pylon network and in pylon towns that have no Barracks. The shared pool holds up to 300. Both numbers are set under Settings, Mod Configuration, Levy.
+			Each town NPC with a home adds 15 manpower, in every town on the pylon network and in pylon towns that have no Barracks. The shared pool holds up to 300. Both numbers are set under Settings, Mod Configuration, Levy.
 			The Barracks panel shows the pool and how many townsfolk feed it. The Conscription book raises what each one adds.
 			A Recruiting drive refills the pool for coins, once a day.
-			A Recruitment Office is crafted from an Enchanted Sundial at a Work Bench. Right-click one in a settlement or anywhere on the pylon network to run a rush drive on that pool.
-			A rush drive refills the pool at any time, as often as you like, at twice the price per point from the nearest Barracks treasury. Build as many Offices as you like.
+			A Recruitment Office is crafted from an Enchanted Sundial at a Work Bench. Right-click one in a settlement or anywhere on the pylon network to run a rush drive on that pool at once.
+			Each Office rests for one in-game day after a drive. A drive costs 4 times the daily wage per recruit from the nearest Barracks treasury, and the price doubles with every rush drive since dawn. Build as many Offices as you like.
 			'''
 	}
 
@@ -509,7 +509,7 @@ Pages: {
 		Body:
 			'''
 			Five books drop from events at 1 in 50. Each is used up once per world and applies to the whole army.
-			A Guide to Conscription, from the Blood Moon: each town NPC provides 15 manpower.
+			A Guide to Conscription, from the Blood Moon: each town NPC provides 25 manpower.
 			A Guide to Drill, from the Goblin Army: militia aim 25% better. A Guide to Plunder, from pirates: hauled coins are worth 50% more.
 			A Guide to Fortification, from the Old One's Army: soldiers within 60 tiles of a Barracks gain 4 defense.
 			A Guide to Discipline, from the Solar Eclipse: shots are 35% tighter.

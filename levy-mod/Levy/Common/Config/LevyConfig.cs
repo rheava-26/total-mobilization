@@ -100,6 +100,8 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool AmbientChatter;
 		/// <summary>Levies speak lines written for Wrath of the Gods's fights (the Genesis, the Avatar, the Nameless Deity) in place of their ordinary chatter, between the boss's own moments (Common/Dialogue/WotgScenes.cs). Off: they stay silent through those fights.</summary>
 		[DefaultValue(true)] public bool WotgFightChatter;
+		/// <summary>In the Avatar of Emptiness fight the army comes along when the commander is moved into the Avatar's dimensions or through its portals, and flies with them: levies with wings stay in the air beside the commander and the rest are carried where there is no ground to stand on (Common/Compat/Wotg/AvatarFight.cs).</summary>
+		[DefaultValue(true)] public bool AvatarFightArmyFlies;
 		[Range(60, 600)] [DefaultValue(200)] public int FreeReinRadius;
 		[DefaultValue(true)] public bool FreeReinPastimes;
 

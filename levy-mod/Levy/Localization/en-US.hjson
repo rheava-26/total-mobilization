@@ -602,6 +602,11 @@ Mods: {
 					Tooltip: During the Avatar and Nameless Deity fights, levies speak lines written for the fight instead of their usual chatter. Off, they stay silent.
 				}
 
+				AvatarFightArmyFlies: {
+					Label: Levies fly with the commander in the Avatar fight
+					Tooltip: The army follows the commander into the Avatar's dimensions and through its portals. Levies with wings stay airborne beside the commander. The others are carried where there is no ground.
+				}
+
 				FreeReinRadius: {
 					Label: Free Rein range
 					Tooltip: How far Free Rein levies roam from home, in tiles

@@ -202,6 +202,7 @@ namespace Levy.Common.Dialogue
 			if (pool == null) return null;
 			// Blood Moon, female speaker: only the [grumpy] lines may be spoken (a pool without any stays silent for her).
 			bool grumpyOnly = !grumpyExempt && RosterFacts.Grumpy(rec);
+			bool plainOnly = global::Levy.Common.Compat.Wotg.AoeVoice.Active && global::Levy.Common.Compat.Wotg.AoeVoice.IsPlainPool(pool); // the Avatar of Emptiness is up: a plain callout pool gives only the lines anyone may say
 
 			int now = Now;
 			Fill.Begin(rec, ctx, body);
@@ -211,6 +212,7 @@ namespace Levy.Common.Dialogue
 			{
 				DialogueLine line = pool[i];
 				if (grumpyOnly && (line.Cond & LineCond.Grumpy) == 0) continue;
+				if (plainOnly && !global::Levy.Common.Compat.Wotg.AoeVoice.LineIsPlain(line)) continue;
 				if (!FilterMatches(line.Filter, rec)) continue;
 				if (line.Id == avoidId) continue;
 				if (!ignoreRepeat && LineUsed.TryGetValue(line.Id, out int last) && Within(last, now, LevyConstants.LineRepeatCooldownTicks)) continue;

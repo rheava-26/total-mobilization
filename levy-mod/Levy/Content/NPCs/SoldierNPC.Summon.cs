@@ -34,6 +34,10 @@ namespace Levy.Content.NPCs
 		private int _childSpawnsSeen, _childrenAlive;
 		/// <summary>The minion slots his upkeep keeps filled (each staff's casts times its slots, summed): what a RECAST staff's minion reads as its owner's slots while it updates (SoldierMinions.RunUpdate).</summary>
 		internal float MinionSlotBudget;
+		/// <summary>Set when one of his driven minions was born or changed its slots this tick (SoldierMinions.RunUpdate): the next tick runs a trim-only pass, so a minion that sizes itself from the 1000 slots its AI is told it has is cut to his real slots at once, not at the next 20-tick upkeep.</summary>
+		internal bool FlockDirty;
+		/// <summary>The game tick until which his modded minions are updated with his real slots in view (set by every cast of a staff's own Shoot, see SoldierMinions.RunUpdate).</summary>
+		internal uint TruthUntil;
 		/// <summary>The shot of the carried staff with a RECAST row (AltPolicies.RecastWanted), or -1; and the tick until which his button stays held for that staff's channelled use (the Saros ray).</summary>
 		internal int RecastShoot = -1;
 		internal uint RecastHoldUntil;
@@ -150,7 +154,7 @@ namespace Levy.Content.NPCs
 		internal static bool TransientStaff(Item weapon)
 		{
 			if (SummonOld || weapon == null || weapon.shoot < ProjectileID.Count || weapon.sentry || SoldierMinions.MakesLastingMinions(weapon.type)) return false; // a shot with no slot that turns into a minion that stays (the Midnight Sun Beacon's UFO) is a minion staff: cast until the slots are full, in combat or not
-			if (SoldierMinions.CastSlots.ContainsKey(weapon.type) || SoldierMinions.IsStacker(weapon.type)) return false; // a minion that grows with each cast (the Void Eater Marionette starts at no slots) is not a self-ending cast
+			if (SoldierMinions.CastSlots.ContainsKey(weapon.type) || SoldierMinions.IsStacker(weapon.type) || SoldierMinions.LateSlotted.Contains(weapon.type)) return false; // a minion that grows with each cast (the Void Eater Marionette starts at no slots) is not a self-ending cast
 			Projectile sample = WeaponClassifier.ProjectileSample(weapon.shoot);
 			return sample != null && sample.minion && sample.minionSlots <= SoldierMinions.ChildSlotMin;
 		}
@@ -158,8 +162,11 @@ namespace Levy.Content.NPCs
 		private void MaintainMinions()
 		{
 			if (_minionSpawnCd > 0) _minionSpawnCd--;
-			if (++_minionTick < LevyConstants.MinionMaintainIntervalTicks) return;
-			_minionTick = 0;
+			bool pass = ++_minionTick >= LevyConstants.MinionMaintainIntervalTicks;
+			if (!pass && !FlockDirty) return;
+			bool trimOnly = !pass; // between upkeep passes only the overflow check runs, and only when a minion was born or resized
+			FlockDirty = false;
+			if (pass) _minionTick = 0;
 			try
 			{
 				var weapons = SummonWeapons();
@@ -199,7 +206,7 @@ namespace Levy.Content.NPCs
 				if (!has) return;
 
 				int[] desired = AllotCasts(weapons);
-				if (SummonDebug && ++_dbgN % 5 == 0) Levy.Instance?.Logger.Info($"HARNESS-MINION-DBG upkeep n={n} desired={string.Join(',', desired)} cap={Dummy?.maxMinions} driven={string.Join(',', driven)} per={(n > 0 ? SlotsPerMinion(weapons[0]) : 0)} fits={(n > 0 ? FitsOneCast(weapons[0]) : false)}");
+				if (SummonDebug && !trimOnly && ++_dbgN % 5 == 0) Levy.Instance?.Logger.Info($"HARNESS-MINION-DBG upkeep n={n} desired={string.Join(',', desired)} cap={Dummy?.maxMinions} driven={string.Join(',', driven)} per={(n > 0 ? SlotsPerMinion(weapons[0]) : 0)} fits={(n > 0 ? FitsOneCast(weapons[0]) : false)}");
 				float budget = 0f; RecastShoot = -1;
 				for (int k = 0; k < n; k++) { budget += desired[k] * SlotsPerMinion(weapons[k]); if (RecastShoot < 0 && driven[k] && AltPolicies.IsRecast(weapons[k])) RecastShoot = weapons[k].shoot; }
 				MinionSlotBudget = budget;
@@ -208,12 +215,12 @@ namespace Levy.Content.NPCs
 					Item weapon = weapons[k];
 					if (weapon.shoot <= 0) continue;
 					Item held = Dummy != null ? Dummy.inventory[0] : null; // WeaponDamage parks the weapon in the dummy's hand: put the real hand item back (matters for a sidearm staff)
-					int damage = Math.Max(1, (int)Math.Round(WeaponDamage(weapon) * DamageMultiplier));
+					int damage = trimOnly ? 0 : Math.Max(1, (int)Math.Round(WeaponDamage(weapon) * DamageMultiplier));
 					if (Dummy != null && held != null) Dummy.inventory[0] = held;
 					_minionScratch.Clear();
 					_minionScratch.AddRange(_flocks[k]);
-					if (driven[k]) { MaintainRealMinions(weapon, damage, desired[k]); continue; }
-					MaintainStandIns(weapon, damage, desired[k]);
+					if (driven[k]) { MaintainRealMinions(weapon, damage, desired[k], trimOnly); continue; }
+					if (!trimOnly) MaintainStandIns(weapon, damage, desired[k]);
 				}
 			}
 			catch (Exception e)
@@ -246,9 +253,9 @@ namespace Levy.Content.NPCs
 		/// keeps a controller staff's companion (Desert Tiger, Abigail) right, and casts one more when a whole cast still fits.
 		/// </summary>
 		private int _dbgN, _dbgM;
-		private void MaintainRealMinions(Item weapon, int damage, int desired)
+		private void MaintainRealMinions(Item weapon, int damage, int desired, bool trimOnly = false)
 		{
-			if (weapon.shoot >= ProjectileID.Count)
+			if (!trimOnly && weapon.shoot >= ProjectileID.Count)
 			{
 				int spawned = ChildSpawns - _childSpawnsSeen; _childSpawnsSeen = ChildSpawns;
 				if (spawned > LevyConstants.ModdedMinionMaxChildSpawnsPerPass || _childrenAlive > LevyConstants.ModdedMinionMaxChildrenAlive) { SoldierMinions.FloodGuard(this, weapon, spawned, _childrenAlive); return; }
@@ -267,7 +274,7 @@ namespace Levy.Content.NPCs
 			foreach (int i in _minionScratch)
 			{
 				Projectile p = Main.projectile[i];
-				SoldierMinions.Retune(this, p, weapon, damage);
+				if (!trimOnly) SoldierMinions.Retune(this, p, weapon, damage);
 				have += SoldierMinions.SlotOf(p, perCast, known);
 			}
 			if (dragon) have = SoldierMinions.TrimDragon(_minionScratch, have, want); // shortened body by body from the tail end, never below one cast
@@ -287,6 +294,7 @@ namespace Levy.Content.NPCs
 				SoldierMinions.Dismiss(q);
 				_minionScratch.RemoveAt(worst);
 			}
+			if (trimOnly) return;
 			SoldierMinions.MaintainCompanion(this, weapon, _minionScratch);
 			// a full flock: a staff whose shot takes no slot may still make a helper when swung again (see SoldierMinions.Helper)
 			bool fighting = SentryInCombat() || SummonOld, transient = TransientStaff(weapon);

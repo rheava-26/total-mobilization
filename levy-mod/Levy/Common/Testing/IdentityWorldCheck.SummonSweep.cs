@@ -35,7 +35,7 @@ namespace Levy.Common.Testing
 
 		private sealed class SumStat
 		{
-			public string Label, Mode, Err = ""; public long Damage; public int Ticks, Casts, Helpers, Sentries, Stacks, Recasts, HoldTicks; public float UsageMax = -1f, UsageEnd = -1f; public int Capacity, MaxMinions, MaxAlive, MinionTicks, NearLevyTicks, AtCmdTicks, CmdMinions, CmdOwned, CmdBuffs, LevyFrom;
+			public string Label, Mode, Err = ""; public long Damage; public int Ticks, Casts, Helpers, Sentries, Stacks, Recasts, HoldTicks; public float UsageMax = -1f, UsageEnd = -1f; public int Uses, Capacity, MaxMinions, MaxAlive, MinionTicks, NearLevyTicks, AtCmdTicks, CmdMinions, CmdOwned, CmdBuffs, LevyFrom;
 			public float MaxSlots, MaxSingleSlots, CmdSlots; public string CmdBuffNames = "";
 			/// <summary>The parity table's steady state: sums over the last third of the window of the live minions that take a slot, of all live minions and towers, and of their slots; the ticks counted; the peak of the slot-bearing count.</summary>
 			public long TailSlotted, TailAll, TailTicks; public double TailSlots; public int MaxSlotted, OverTicks;
@@ -83,6 +83,7 @@ namespace Levy.Common.Testing
 		private static bool SumPress(Item w, int tick, int fullSince, bool clickAgain)
 		{
 			if (fullSince >= 0) return AltPolicies.IsRecast(w) && clickAgain;
+			if (SoldierNPC.TransientStaff(w)) return true; // a self-ending cast (a bomber, a fist) is cast again and again while she fights: the button stays down, the staff's own use time sets the rate
 			return tick % 30 < 20;
 		}
 
@@ -147,7 +148,7 @@ namespace Levy.Common.Testing
 						try { object cp = AltPolicies.CalamityPlayerOf(cmd); if (cp != null) AltPolicies.SetCalAimPublic(cp, aim - cmd.MountedCenter); } catch (Exception) { }
 						if (SumDebug && fullSince >= 0 && k - fullSince < 8) { bool cu = false; try { cu = ItemLoader.CanUseItem(w, cmd); } catch (Exception) { } SNote($"  dbg {label} [commander] t={k} full-tick press={SumPress(w, k, fullSince, again)} canUse={cu} anim={cmd.itemAnimation} release={cmd.releaseUseItem} channel={cmd.channel} held={cmd.HeldItem?.Name} sel={cmd.selectedItem} noItems={cmd.noItems} cc={cmd.CCed}"); }
 						if (SumDebug && k % 45 == 0) SNote($"  dbg {label} [commander] t={k} ownSlots={own} full={full} since={fullSince} press={SumPress(w, k, fullSince, again)} anim={cmd.itemAnimation} time={cmd.itemTime} release={cmd.releaseUseItem} counts(shoot)={(w.shoot < cmd.ownedProjectileCounts.Length ? cmd.ownedProjectileCounts[w.shoot] : -1)} max={cmd.maxMinions}");
-						try { MegaCommanderUse(w, SumPress(w, k, fullSince, again)); } catch (Exception e) { st.Err = "cmd use " + (e is TargetInvocationException && e.InnerException != null ? e.InnerException.GetType().Name + ": " + e.InnerException.Message : e.GetType().Name); }
+						try { StandInDrivesUse = true; int anim0 = cmd.itemAnimation; MegaCommanderUse(w, SumPress(w, k, fullSince, again)); if (cmd.itemAnimation > anim0) st.Uses++; } catch (Exception e) { st.Err = "cmd use " + (e is TargetInvocationException && e.InnerException != null ? e.InnerException.GetType().Name + ": " + e.InnerException.Message : e.GetType().Name); }
 						_cmdHolds = cmd.controlUseItem && w.channel;
 						st.MaxMinions = Math.Max(st.MaxMinions, cmd.maxMinions);
 					}
@@ -287,8 +288,15 @@ namespace Levy.Common.Testing
 		private static readonly string[] SumParityCal = { "MidnightSunBeacon", "EtherealSubjugator", "CorvidHarbringerStaff", "TacticalPlagueEngine", "Cosmilamp", "PoleWarper", "AbandonedSlimeStaff", "SarosPossession" };
 
 		/// <summary>The verdict of one (staff, slot count) pair. <paramref name="n"/> is the slots the kit gives both. A levy over his slots for no more than a few ticks is the replace-on-cast overlap a player's own cast has too; longer is OVERCAST.</summary>
-		private static string SumVerdict(SumStat lv, SumStat pc, int n)
+		private static string SumVerdict(SumStat lv, SumStat pc, int n, bool selfEnding = false)
 		{
+			// A self-ending cast (a bomber, a fist, a puppet) takes no slot and ends on the enemy it hits: how many are out is no measure of anything (a player's bombers explode on the first enemy too; the stand-in's never do, as its
+			// hits are not dealt on a server). What a player does is cast it again and again at the staff's own use time while she fights, so the levy is held to the casts the stand-in made in the same window.
+			if (selfEnding)
+			{
+				if (pc.Uses == 0 && lv.Casts == 0) return "NONE";
+				return lv.Casts + 1 < pc.Uses * SumSelfEndingShare ? "UNDERCAST" : "PARITY";
+			}
 			bool playerMakes = pc.TailAllAvg > 0.05f || pc.MaxAlive > 0, levyMakes = lv.TailAllAvg > 0.05f || lv.MaxAlive > 0;
 			if (!playerMakes && !levyMakes) return "NONE";
 			if (lv.OverTicks > Math.Max(SumOverTolerance, pc.OverTicks + SumOverTolerance)) return "OVERCAST"; // a cast that makes its new minion before the old one goes (Fuel Cell Bundle) overlaps for the player just the same
@@ -297,9 +305,11 @@ namespace Levy.Common.Testing
 			return "PARITY";
 		}
 		private const int SumOverTolerance = 6;
+		/// <summary>The share of a player's casts a levy must make of a self-ending staff: he starts when his target is in reach, so the first few ticks of the window are not his.</summary>
+		private const float SumSelfEndingShare = 0.85f;
 
 		private static string SumRowText(string label, int n, SumStat pc, SumStat lv, string verdict) =>
-			$"ROW | {label} | slots {n} (player {pc.MaxMinions}, levy {lv.MaxMinions}) | player n {pc.TailSlottedAvg:0.0} (all {pc.TailAllAvg:0.0}, peak {pc.MaxSlotted}) | levy n {lv.TailSlottedAvg:0.0} (all {lv.TailAllAvg:0.0}, peak {lv.MaxSlotted}) | player slots {pc.TailSlotsAvg:0.0} (peak {pc.MaxSlots:0.##}) | levy slots {lv.TailSlotsAvg:0.0} (peak {lv.MaxSlots:0.##}) | levy casts {lv.Casts} helpers {lv.Helpers}, ticks over the slots player {pc.OverTicks} levy {lv.OverTicks} | {verdict}";
+			$"ROW | {label} | slots {n} (player {pc.MaxMinions}, levy {lv.MaxMinions}) | player n {pc.TailSlottedAvg:0.0} (all {pc.TailAllAvg:0.0}, peak {pc.MaxSlotted}) | levy n {lv.TailSlottedAvg:0.0} (all {lv.TailAllAvg:0.0}, peak {lv.MaxSlotted}) | player slots {pc.TailSlotsAvg:0.0} (peak {pc.MaxSlots:0.##}) | levy slots {lv.TailSlotsAvg:0.0} (peak {lv.MaxSlots:0.##}) | levy casts {lv.Casts} (player uses {pc.Uses}) helpers {lv.Helpers}, ticks over the slots player {pc.OverTicks} levy {lv.OverTicks} | {verdict}";
 
 		/// <summary>Runs the parity table for <paramref name="list"/>; a row of an <paramref name="asserted"/> staff fails the check unless it is PARITY (or NONE for a staff the kit cannot use).</summary>
 		private static void SumParityTable(List<(int type, string label)> list, int ticks, int[] slotSet, bool asserted)
@@ -315,7 +325,7 @@ namespace Levy.Common.Testing
 					{
 						SumStat pc = SumRun(type, label, ticks, true, n);
 						SumStat lv = SumRun(type, label, ticks, false, n);
-						string v = SumVerdict(lv, pc, n);
+						string v = SumVerdict(lv, pc, n, SoldierNPC.TransientStaff(fi));
 						tally[v] = tally.GetValueOrDefault(v) + 1;
 						_mod.Logger.Info("[SummonParity] " + SumRowText(label, n, pc, lv, v + (sentry ? " (tower)" : "")));
 						if (asserted) SCheck($"parity table: {label} at {n} slots: the levy keeps what the player keeps ({v}: player {pc.TailSlottedAvg:0.0} minions / {pc.TailSlotsAvg:0.0} slots, levy {lv.TailSlottedAvg:0.0} / {lv.TailSlotsAvg:0.0}, levy peak {lv.MaxSlots:0.##} of {lv.MaxMinions})", v == "PARITY" || v == "NONE");

@@ -35,19 +35,47 @@ namespace Levy.Common.Testing
 			foreach (Item h in heads)
 			{
 				string ns = h.ModItem.GetType().Namespace;
-				foreach (Item b in bodies.Where(x => x.ModItem.GetType().Namespace == ns))
-					foreach (Item l in legs.Where(x => x.ModItem.GetType().Namespace == ns))
-					{
-						bool set = false; try { set = h.ModItem.IsArmorSet(h, b, l); } catch (Exception) { }
-						if (!set) continue;
-						string cls = h.CountsAsClass(DamageClass.Ranged) ? "ranged" : h.CountsAsClass(DamageClass.Magic) ? "magic" : h.CountsAsClass(DamageClass.Summon) ? "summon" : "melee";
-						SbAdd($"{tag}:{h.ModItem.Name}", mod.Name + "/" + h.ModItem.Name, mod.Name + "/" + b.ModItem.Name, mod.Name + "/" + l.ModItem.Name, cls);
-						sets++;
-					}
+				// the head's own namespace first (a mod that keeps each set in a folder); a mod that mixes its sets in a few namespaces (Thorium) is asked over every body and leg piece
+				for (int pass = 0; pass < 2; pass++)
+				{
+					int before = sets;
+					foreach (Item b in bodies.Where(x => pass == 1 || x.ModItem.GetType().Namespace == ns))
+						foreach (Item l in legs.Where(x => pass == 1 || x.ModItem.GetType().Namespace == ns))
+						{
+							bool set = false; try { set = h.ModItem.IsArmorSet(h, b, l); } catch (Exception) { }
+							if (!set) continue;
+							string cls = h.CountsAsClass(DamageClass.Ranged) ? "ranged" : h.CountsAsClass(DamageClass.Magic) ? "magic" : h.CountsAsClass(DamageClass.Summon) ? "summon" : "melee";
+							string hn = h.ModItem.Name; string wpn = null;
+							if (modName == "ThoriumMod") { (cls, wpn) = ThoriumSetClass(hn, cls); }
+							if (modName == "CalamityMod") { cls = hn.Contains("Rogue") ? "rogue" : hn.Contains("Magic") || hn.Contains("Mage") || hn.StartsWith("Brimflame") ? "magic" : hn.Contains("Ranged") ? "ranged" : hn.Contains("Summon") ? "summon" : hn.Contains("Melee") ? "melee" : cls; switch (hn) { case "EmpyreanMask": case "ForbiddenCirclet": case "UmbraphileHood": case "SnowRuffianMask": cls = "rogue"; break; case "FearmongerGreathelm": case "PlaguebringerVisor": case "TitanHeartMask": cls = "summon"; break; case "PlagueReaperMask": case "GemTechHeadgear": cls = "ranged"; break; } if (cls == "rogue") wpn = "CalamityMod/WulfrumKnife"; }
+							string[] ws = modName == "Redemption" ? null : (Environment.GetEnvironmentVariable("LEVY_HARNESS_SBWEAPONS") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
+							SbAdd($"{tag}:{hn}", mod.Name + "/" + hn, mod.Name + "/" + b.ModItem.Name, mod.Name + "/" + l.ModItem.Name, cls, modName == "Redemption" ? null : "observe", sp => { sp.Poker = true; sp.Ticks = 600; sp.TargetTiles = cls == "melee" ? 3f : 9f; if (wpn != null) sp.Weapon = wpn; });
+							sets++;
+						}
+					if (sets > before) break;
+				}
 			}
+			if (Environment.GetEnvironmentVariable("LEVY_HARNESS_SBNOACC") != "1")
 			foreach (Item a in accs)
 				SbAdd($"{tag}Acc:{a.ModItem.Name}", "", "", "", "melee", null, s => { s.AccOnly = true; s.Acc = new[] { mod.Name + "/" + a.ModItem.Name }; });
 			Mod.Logger.Info($"HARNESS-SB: {modName}: {sets} armor sets, {accs.Count} accessories queued");
+		}
+
+		/// <summary>The class and weapon a Thorium set's fight is run with (the observe fight reads the set's on-hit and on-hurt effects; a vanilla weapon stands in where the mod's own class needs gear the lab levy does not hold).</summary>
+		private static (string cls, string weapon) ThoriumSetClass(string head, string dflt)
+		{
+			switch (head)
+			{
+				case "CriersCap": case "CyberPunkHeadset": case "JestersMask": case "MaestroWig": case "MarchingBandShako": case "NoblesHat": case "OrnateHat": case "ShootingStarHat": case "SoloistHat": case "InspiratorsHelmet": case "HallowedChapeau":
+					return ("melee", "ThoriumMod/Bongos"); // bard
+				case "BioTechHood": case "BloomingCrown": case "CelestialCrown": case "EbonHood": case "FallenPaladinFaceguard": case "IridescentHelmet": case "LifeBinderMask": case "NoviceClericCowl": case "SacredHelmet": case "TemplarsCirclet": case "WarlockHood": case "HallowedCowl": case "DemonBloodHelmet": case "LodeStoneFaceGuard": case "CoralHelmet": case "GeodeHelmet":
+					return ("melee", "ThoriumMod/BoneReaper"); // healer
+				case "AstroHelmet": case "LifeBloomMask": case "LivingWoodMask": case "SpiritTrapperCowl": case "SpiritTrapperMask": return ("summon", null);
+				case "CryomancersCrown": case "LichCowl": case "MagmaSeersMask": case "PyromancerCowl": case "WhiteKnightMask": case "SilkHat": case "NagaSkinMask": return ("magic", null);
+				case "MasterArbalestHood": case "MasterMarksmansScouter": case "YewWoodHelmet": case "TideHunterCap": case "TideTurnersGaze": return ("ranged", null);
+				case "FungusHat": case "PlagueDoctorsMask": case "ShadeMasterMask": case "WhiteDwarfMask": return ("ranged", "ThrowingKnife"); // thrower
+				default: return (dflt, null);
+			}
 		}
 
 		/// <summary>The static diff for one accessory worn alone: reference Player with it minus without it, against the same on a levy.</summary>

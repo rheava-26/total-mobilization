@@ -130,7 +130,7 @@ namespace Levy.Common.Soldiers
 				uint now = Terraria.Main.GameUpdateCount;
 				if (_gearManaStamp != 0 && now - _gearManaStamp < 30u && now >= _gearManaStamp) return _gearMana;
 				int open = Math.Min(AccessorySlots, g.Accessories?.Length ?? 0);
-				float bonus = global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Head, g.Body, g.Legs);
+				float bonus = global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Head, g.Body, g.Legs) + global::Levy.Common.Weapons.ArmorDoctrine.SetManaBonus(g.Head, g.Body, g.Legs); // the pieces, then the full set's own mana
 				for (int i = 0; i < open; i++) bonus += global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Accessories[i]);
 				bonus += global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Wings) + global::Levy.Common.Weapons.ArmorDoctrine.GearManaBonus(g.Boots);
 				_gearMana = Math.Max(0, (int)bonus); _gearManaStamp = now == 0 ? 1u : now;
@@ -138,6 +138,8 @@ namespace Levy.Common.Soldiers
 			}
 		}
 		private int _gearMana; private uint _gearManaStamp;
+		/// <summary>Forgets the cached gear mana (lab: a check that changes the gear and reads the pool in the same tick).</summary>
+		public void InvalidateGearMana() => _gearManaStamp = 0;
 
 		/// <summary>Max mana: the crystal pool (<see cref="BaseMaxMana"/>, never above the vanilla player's 200) plus what the worn gear adds (<see cref="GearMana"/>), the same way a player's pool is built.</summary>
 		public int MaxMana => BaseMaxMana + GearMana;

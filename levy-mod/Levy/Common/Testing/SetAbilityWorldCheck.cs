@@ -204,6 +204,7 @@ namespace Levy.Common.Testing
 			Try("gsdodge", GodSlayerDodgeTrial);
 			Try("gsoff", GodSlayerOffTrial);
 			Try("calkey", CalamityKeyTrial);
+			Try("onhit", OnHitTrial);
 		}
 
 		// ------------------------------------------------------------------------------------------------------------
@@ -463,6 +464,40 @@ namespace Levy.Common.Testing
 				if (cfg != null && opt != null && savedOpt != null) opt.SetValue(cfg, savedOpt);
 				if (ks != null) { if (savedKeys != null) ks[key] = savedKeys; else ks.Remove(key); }
 			}
+		}
+
+		/// <summary>
+		/// A set bonus a mod keeps as a ModPlayer flag and reads in its on-hit hook for a projectile (SoldierNPC.GearOnHit.cs). A levy in the Tarragon ranged set shoots a pinned enemy: the set's leaves (Calamity: the first
+		/// ranged hit throws two Leaf shots and Tarra energy, on a 20 s cooldown) must appear, they are the levy's, the commander (70 tiles behind) takes and gains nothing, and the on-hit switch off (LEVY_GEARONHIT=0 in the
+		/// lab, here SoldierNPC.GearOnHitOn is read-only) is the only way back to the old nothing: the check reads the counters of the hook it ran.
+		/// </summary>
+		private static void OnHitTrial()
+		{
+			int[] armor = { ItemOf("CalamityMod", "TarragonHeadRanged"), ItemOf("CalamityMod", "TarragonBreastplate"), ItemOf("CalamityMod", "TarragonLeggings") };
+			if (armor.Any(a => a <= 0)) { Check("on-hit set: the Tarragon ranged armor exists", false); return; }
+			Setup(out int by);
+			Main.rand = new Terraria.Utilities.UnifiedRandom(5301);
+			LevyConfig.Get.SoldiersUseSetAbilities = false;
+			bool counting = GearUpkeep.CountSpawns; GearUpkeep.CountSpawns = true; GearUpkeep.SpawnCounts.Clear();
+			long calls0 = SoldierNPC.GearHitCalls, err0 = SoldierNPC.GearHitErrors;
+			try
+			{
+				int body = SpawnLevy("Pvt. OnHit", Ground(0), ItemID.Handgun, armor, ItemID.MusketBall);
+				if (body < 0) { Check("on-hit set: the levy spawns", false); return; }
+				var sn = (SoldierNPC)Main.npc[body].ModNPC;
+				NPC target = Pin(Ground(9));
+				Step(420);
+				int leaves = GearUpkeep.SpawnCounts.TryGetValue(ProjectileID.Leaf, out int lf) ? lf : 0;
+				int energy = ModContent.TryFind("CalamityMod/TarraEnergy", out ModProjectile te) && GearUpkeep.SpawnCounts.TryGetValue(te.Type, out int en) ? en : 0;
+				long calls = SoldierNPC.GearHitCalls - calls0;
+				Note($"on-hit set: {calls} on-hit hook calls for the levy's shots, {leaves} leaves and {energy} Tarra energy spawned, target hurt {1_000_000 - target.life}, hook errors {SoldierNPC.GearHitErrors - err0}");
+				Check($"on-hit set: the Tarragon ranged levy's shots run the set's on-hit hook ({calls} calls)", calls > 0);
+				Check($"on-hit set: the set's leaves and Tarra energy appear on his hits ({leaves} leaves, {energy} energy)", leaves >= 2 && energy >= 1);
+				Check($"on-hit set: no hook threw ({SoldierNPC.GearHitErrors - err0})", SoldierNPC.GearHitErrors == err0);
+				bool whole = CommanderWhole(out string why);
+				Check("on-hit set: the commander is whole (a life steal or a heal homed at the owner would show): " + why, whole);
+			}
+			finally { GearUpkeep.CountSpawns = counting; GearUpkeep.SpawnCounts.Clear(); }
 		}
 	}
 }

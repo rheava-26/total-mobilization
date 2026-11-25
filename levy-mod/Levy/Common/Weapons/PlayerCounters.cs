@@ -131,6 +131,16 @@ namespace Levy.Common.Weapons
 			}
 		}
 
+		/// <summary>True when one of the hit rows counts this shot (its flag is set): the counter is kept by <see cref="OnLevyHit"/>, so the dummy's own on-hit hook is not run for it (<c>SoldierNPC.GearOnHitProj</c>: it would count the same hit twice, and into the field the open pass holds for the owner).</summary>
+		internal static bool CountsShot(Projectile p)
+		{
+			for (int i = 0; i < _hits.Count; i++)
+			{
+				try { if (p.TryGetGlobalProjectile(_hits[i].Global, out GlobalProjectile g) && _hits[i].Flag(g)) return true; } catch (Exception) { }
+			}
+			return false;
+		}
+
 		/// <summary>A levy's shot landed a hit (<see cref="PlayerCounterHits"/>): its first hit counts on his player for every hit row whose flag the shot carries.</summary>
 		internal static void OnLevyHit(Projectile p, SoldierNPC body)
 		{

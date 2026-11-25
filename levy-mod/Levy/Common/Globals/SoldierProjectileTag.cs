@@ -238,6 +238,7 @@ namespace Levy.Common.Globals
 			SoldierNPC hitter = EnemyTargeting.LiveBody(SoldierIndex);
 			if (hitter != null) { hitter.MinionHits++; hitter.ProjHitTick = (int)Main.GameUpdateCount; }
 			hitter?.OnProjectileHit(projectile, target, damageDone);
+			hitter?.GearOnHitProj(projectile, target, hit, damageDone); // the levy's own ModPlayer on-hit hooks for his shot (SoldierNPC.GearOnHit.cs)
 		}
 
 		public override void OnKill(Projectile projectile, int timeLeft)

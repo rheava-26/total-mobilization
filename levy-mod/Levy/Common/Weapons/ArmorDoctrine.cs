@@ -154,6 +154,42 @@ namespace Levy.Common.Weapons
 			return v;
 		}
 
+		private static readonly Dictionary<string, float> _setManaCache = new();
+
+		/// <summary>
+		/// The maximum mana the worn head, body and leg pieces add as a SET (Pyromancer Cowl and Magma Seer's Mask +20, Ebon Hood and Novice Cleric's Cowl +5): the scratch Player's statManaMax2 after the equip pass and the set bonus minus after
+		/// the equip pass alone. 0 when the three pieces are no set, the stat pipeline is off or the read fails. Cached by the worn item types.
+		/// </summary>
+		public static float SetManaBonus(Item head, Item body, Item legs)
+		{
+			if (_broken || head == null || body == null || legs == null || head.IsAir || body.IsAir || legs.IsAir) return 0f;
+			string key = head.type + "," + body.type + "," + legs.type;
+			if (_setManaCache.TryGetValue(key, out float hit)) return hit;
+			float v = 0f;
+			try {
+				if (LevyConfig.Get.UseVanillaStatPipeline) {
+					EnsureScratch();
+					var p = _scratch;
+					for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
+					for (int i = 0; i < p.dye.Length; i++) p.dye[i] = new Item();
+					p.armor[0].SetDefaults(head.type); p.armor[1].SetDefaults(body.type); p.armor[2].SetDefaults(legs.type);
+					p.head = p.armor[0].headSlot; p.body = p.armor[1].bodySlot; p.legs = p.armor[2].legSlot;
+					p.inventory[0] = new Item();
+					p.selectedItem = 0;
+					p.ResetEffects();
+					p.setBonus = "";
+					SafeUpdateEquips(p);
+					int withoutSet = p.statManaMax2;
+					p.UpdateArmorSets(SoldierNPC.DummySlot);
+					v = Math.Max(0, p.statManaMax2 - withoutSet);
+					for (int i = 0; i < p.armor.Length; i++) p.armor[i] = new Item();
+				}
+			}
+			catch (Exception) { v = 0f; }
+			_setManaCache[key] = v;
+			return v;
+		}
+
 		private static readonly Dictionary<string, (int minions, int turrets)> _slotCache = new();
 
 		/// <summary>

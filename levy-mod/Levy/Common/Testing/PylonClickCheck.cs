@@ -11,6 +11,7 @@ using Terraria.GameContent.Tile_Entities;
 using Terraria.Chat;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Levy.Common.Officers;
 using Levy.Common.Movement;
 using Levy.Common.Systems;
 using Levy.Common.Soldiers;
@@ -61,11 +62,11 @@ namespace Levy.Common.Testing
 			_mod.Logger.Info($"[PylonClick] self-check pass={_pass} fail={_fail}");
 		}
 
-		private static int _refusals; private static readonly HashSet<string> RefusalKeys = new();
+		private static int _refusals; private static string _lastRefusal = ""; private static readonly HashSet<string> RefusalKeys = new();
 		/// <summary>Logs why vanilla refused a pylon request (its chat line to the client; the stand-in has no socket, so the send itself is skipped).</summary>
 		private static void RefusalSpy(On_ChatHelper.orig_SendChatMessageToClient orig, Terraria.Localization.NetworkText text, Color color, int playerId)
 		{
-			_refusals++; string t = text?.ToString() ?? "?";
+			_refusals++; string t = text?.ToString() ?? "?"; _lastRefusal = t;
 			if (RefusalKeys.Add(t)) { _mod.Logger.Info("[PylonClick] OBSERVED vanilla refused a pylon request: \"" + t + "\""); Diag("at the first refusal"); }
 		}
 
@@ -128,6 +129,72 @@ namespace Levy.Common.Testing
 				}
 			}
 			return l;
+		}
+
+		/// <summary>Officers and pylons: a town with two or three of its town NPCs commissioned and marching with the commander still lets the commander teleport home; the officers come along on every trip.</summary>
+		private static void OfficerPart(Player p, List<TeleportPylonInfo> pylons, List<NPC> townNpcs, List<SoldierRecord> recs, List<BarracksTE> barracks)
+		{
+			foreach (var r in recs) { try { if (r.HasBody) Main.npc[r.BodyIndex].active = false; RosterSystem.Instance.Regulars.Remove(r); } catch { } }
+			recs.Clear();
+			var handle = typeof(TeleportPylonsSystem).GetMethod("HandleTeleportRequest", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+			TeleportPylonInfo west = pylons[0], east = pylons[1];
+			var westNpcs = townNpcs.Take(4).ToList();
+			Vector2 WestSpot() => new Vector2(610 * 16f, (FloorY - 4) * 16f);
+			Vector2 EastSpot() => new Vector2(1010 * 16f, (FloorY - 4) * 16f);
+			bool Req(TeleportPylonInfo dest, out string why)
+			{
+				float x0 = p.Center.X; int r0 = _refusals; _lastRefusal = "";
+				try { handle?.Invoke(Main.PylonSystem, new object[] { dest, 0 }); } catch (Exception e) { Note("officer part: request threw " + (e.InnerException ?? e).Message); }
+				bool moved = Math.Abs(p.Center.X - x0) > 1000f;
+				why = _refusals > r0 ? _lastRefusal : "";
+				return moved;
+			}
+			int NearTown(Vector2 spot) { int n = 0; foreach (NPC t in westNpcs) if (t.active && Math.Abs(t.Center.X - spot.X) < 40 * 16f) n++; return n; }
+			string Enough(TeleportPylonInfo i) => $"{TeleportPylonsSystem.DoesPositionHaveEnoughNPCs(2, i.PositionInTiles)}";
+			p.position = WestSpot(); RefreshVanillaPylons(); Ticks(10);
+
+			// ---- baseline: no officers, the commander walks west -> east -> west
+			bool b1 = Req(east, out string w1); Ticks(5); bool b2 = Req(west, out string w2); Ticks(5);
+			Note($"officers and pylons, no officers: west->east moved {b1} [{w1}], east->west moved {b2} [{w2}]");
+			Check("no officers: the commander teleports to the other town and back", b1 && b2);
+
+			// ---- commission three of the west town's four NPCs and let their avatars march
+			var bar = barracks[0]; var avatars = new List<global::Levy.Content.NPCs.SoldierNPC>();
+			for (int k = 0; k < 3; k++)
+			{
+				NPC t = westNpcs[k]; var g = OfficerSystem.Data(t); if (g == null) continue;
+				g.Enrolled = true; g.Commander = p.name; g.Slot = k; g.BarX = bar.Position.X; g.BarY = bar.Position.Y; g.DaysUnpaid = 0; g.ResetRuntime(); t.netAlways = true;
+			}
+			for (int k = 0; k < 240 && avatars.Count < 3; k++) { Ticks(1); avatars.Clear(); for (int q = 0; q < 3; q++) { var a = OfficerSystem.Instance.AvatarOf(westNpcs[q]); if (a != null) avatars.Add(a); } }
+			Check("three officers commissioned from the west town, their avatars up", avatars.Count == 3);
+			p.position = WestSpot() - new Vector2(p.width / 2f, p.height / 2f); Ticks(20);
+			Note($"officers and pylons: west pylon has enough NPCs (need 2) with all officers still home: {Enough(west)}; NPCs near west {NearTown(WestSpot())}/4");
+
+			foreach (bool fixOn in new[] { false, true })
+			{
+				OfficerPylonCount.LabOff = !fixOn;
+				// commander at west with the officers beside him; teleport east: they come along
+				p.position = WestSpot() - new Vector2(p.width / 2f, p.height / 2f); Ticks(1);
+				foreach (var a in avatars) { a.NPC.Center = WestSpot() + new Vector2(20f, -20f); a.NPC.velocity = Vector2.Zero; }
+				Ticks(5);
+				bool go = Req(east, out string wg); Ticks(10);
+				int atEast = 0; foreach (NPC t in westNpcs.Take(3)) if (t.active && Math.Abs(t.Center.X - EastSpot().X) < 40 * 16f) atEast++;
+				Note($"officers and pylons [fix {(fixOn ? "ON" : "OFF")}]: west->east moved {go} [{wg}]; officers that arrived at the east town {atEast}/3; west pylon now: enough {Enough(west)}, east: {Enough(east)}");
+				Check($"[fix {(fixOn ? "on" : "off")}] the commander teleports out with his officers, and they arrive with him (3/3 beside the east pylon)", go && atEast == 3);
+				// the trip home: the west town has only its one civilian
+				long lowered0 = OfficerPylonCount.Lowered;
+				bool back = Req(west, out string wb); Ticks(10);
+				int atWest = 0; foreach (NPC t in westNpcs.Take(3)) if (t.active && Math.Abs(t.Center.X - WestSpot().X) < 40 * 16f) atWest++;
+				Note($"officers and pylons [fix {(fixOn ? "ON" : "OFF")}]: east->west moved {back} [{wb}]; officers back at the west town {atWest}/3; requirement lowered {OfficerPylonCount.Lowered - lowered0} times");
+				if (fixOn) Check("with the fix, the commander teleports home while three officers are out, and they come back with him", back && atWest == 3);
+				else Check("without the fix the home pylon refuses the trip back (the check has teeth)", !back);
+			}
+			OfficerPylonCount.LabOff = null;
+			foreach (NPC t in westNpcs.Take(3)) { var g = OfficerSystem.Data(t); if (g != null) g.Enrolled = false; }
+			Ticks(5);
+			Check("after the commissions end, no officer is counted for a pylon", OfficerPylonCount.OfficersAway(west.PositionInTiles) == 0);
+			foreach (var a in avatars) { try { a.NPC.active = false; } catch { } }
+			foreach (NPC t in westNpcs.Take(3)) { var g = OfficerSystem.Data(t); g?.EndPark(t); }
 		}
 
 		private static void Run()
@@ -237,6 +304,8 @@ namespace Levy.Common.Testing
 					log.Info($"[PylonClick] {arm}: followers brought to a commander with no ground in reach: median {airMed:F3} ms, max {air.Max():F2} ms");
 					Check($"{arm}: followers join a teleport to a spot with no ground in reach within a frame: median {airMed:F2} ms (budget {ClickBudgetMs} ms)", airMed <= ClickBudgetMs);
 				}
+
+				try { OfficerPart(p, pylons, townNpcs, recs, barracks); } catch (Exception e) { log.Warn("[PylonClick] officer part threw " + e.GetType().Name + ": " + e.Message + " " + string.Join(" | ", (e.StackTrace ?? "").Split((char)10).Take(4).Select(l => l.Trim()))); Check("officer part ran", false); }
 
 				// ---- the full-screen map's own per-frame work and the pylon-network queries it shares with the logistics screens (the draw itself is not measurable headless)
 				var tiles = new Vector2[60]; var assign = new int[tiles.Length]; var sums = new Vector2[6]; var counts = new int[6]; var first = new int[6];

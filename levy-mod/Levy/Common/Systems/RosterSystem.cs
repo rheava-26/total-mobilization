@@ -1114,6 +1114,7 @@ namespace Levy.Common.Systems
 				LevyConstants.EnvKillerDrowning => LevyUtil.T("Roster.KillerDrowning"),
 				LevyConstants.EnvKillerFall => LevyUtil.T("Roster.KillerFall"),
 				LevyConstants.EnvKillerHazard => LevyUtil.T("Roster.KillerHazard"),
+				LevyConstants.EnvKillerSpray => LevyUtil.T("Roster.KillerSpray"),
 				_ => LevyUtil.T("Roster.KillerUnknown"),
 			};
 		}

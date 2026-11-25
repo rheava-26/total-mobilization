@@ -3,6 +3,7 @@ Nothing: nothing
 KillerFall: the fall
 KillerHazard: the spikes
 KillerLava: lava
+KillerSpray: the Emptiness Spray
 KillerDrowning: the water
 KillerUnknown: misadventure
 Fell: "{0} fell."

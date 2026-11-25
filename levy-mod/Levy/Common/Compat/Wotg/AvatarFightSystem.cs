@@ -27,7 +27,7 @@ namespace Levy.Common.Compat.Wotg
 
 		public override void OnWorldLoad() => Reset();
 		public override void OnWorldUnload() => Reset();
-		private static void Reset() { Array.Clear(_have); for (int i = 0; i < _movedAt.Length; i++) _movedAt[i] = uint.MaxValue - 100000; Moves = 0; }
+		private static void Reset() { AvatarFight.Reset(); Array.Clear(_have); for (int i = 0; i < _movedAt.Length; i++) _movedAt[i] = uint.MaxValue - 100000; Moves = 0; }
 
 		/// <summary>True when this player was moved by the fight within the last <paramref name="ticks"/> ticks.</summary>
 		public static bool MovedRecently(int player, int ticks) => (uint)player < (uint)_movedAt.Length && Main.GameUpdateCount - _movedAt[player] <= (uint)ticks;

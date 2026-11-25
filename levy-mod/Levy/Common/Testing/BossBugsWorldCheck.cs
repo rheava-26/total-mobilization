@@ -57,9 +57,12 @@ namespace Levy.Common.Testing
 			if (!_armed || _done || !Main.dedServ) return;
 			_done = true; _running = true;
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation; int gm = Main.GameMode; bool hm = Main.hardMode; bool day = Main.dayTime; double time = Main.time;
+			// The Moon Lord death part really kills Moon Lord: vanilla sets NPC.downedMoonlord, and Wrath of the Gods answers by arming the sun's covering (WaitingToStart), which then plays by itself, by day, in whatever check runs
+			// next (seen: the chat check found the sun already covered and the army already Tense). The world flag and the mod's sky are put back as they were found.
+			bool ml0 = NPC.downedMoonlord; var sky0 = global::Levy.Common.Dialogue.RiftSky.ReadReal();
 			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; _local = true; Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
-			finally { _local = false; _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time; }
+			finally { NPC.downedMoonlord = ml0; if (global::Levy.Common.Dialogue.RiftSky.Installed) global::Levy.Common.Dialogue.RiftSky.SetReal(covered: sky0.covered, eventTimer: sky0.timer, waiting: sky0.waiting, snowHeight: sky0.snow); _local = false; _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time; }
 			_mod.Logger.Info($"[BossBugs] self-check pass={_pass} fail={_fail}");
 		}
 

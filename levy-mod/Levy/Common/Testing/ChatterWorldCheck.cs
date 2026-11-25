@@ -35,6 +35,20 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_SUMMONWORLD") == "0" && Environment.GetEnvironmentVariable("LEVY_CHATTER_ONLY") == "1") Main.OnTickForThirdPartySoftwareOnly += Drive;
 		}
 		public override void OnWorldUnload() { try { Main.OnTickForThirdPartySoftwareOnly -= Drive; } catch { } _armed = false; }
+
+		// lab tracer (LEVY_RIFTWATCH=1): logs every change of the real sky flags and of Moon Lord's downed flag while the world checks run, so the check that moves them can be named
+		private static string _watchLast;
+		public override void PostUpdateEverything()
+		{
+			if (!_armed || _done || !Main.dedServ || Environment.GetEnvironmentVariable("LEVY_RIFTWATCH") != "1") return;
+			try
+			{
+				var r = RiftSky.ReadReal();
+				string now = "covered=" + r.covered + " scene=" + r.ongoing + " timer=" + r.timer + " waiting=" + r.waiting + " rift=" + r.rift + " downedMoonlord=" + NPC.downedMoonlord + " hardMode=" + Main.hardMode + " day=" + Main.dayTime;
+				if (now != _watchLast) { _watchLast = now; _mod.Logger.Info("[ChatterWorld] WATCH tick " + Main.GameUpdateCount + ": " + now); }
+			}
+			catch (Exception) { }
+		}
 		private static void Drive() { if (!_armed || _done || !Main.dedServ) return; if (++_calls < 6) return; RunIfArmed(); }
 
 		public static void RunIfArmed()
@@ -180,15 +194,32 @@ namespace Levy.Common.Testing
 		/// without it the same moments are driven through the overrides. Ambient chatter is forced on and two minutes of it are counted with no mood (the control), then while the sun is covered
 		/// (nothing may be said: no line, no float, right-click "..."), then the burst after (the levies near the commander, one after another), then two tense minutes (fewer lines, every chat line a rift line).
 		/// </summary>
+		/// <summary>What keeps an army quiet, read as it stands now: the rift mood and the real sky flags, every Wrath of the Gods NPC alive, the fight hush and the fight voice (the report line a leak from an earlier check shows up in).</summary>
+		private static string WorldVoiceState()
+		{
+			var nox = new List<string>();
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && n.ModNPC?.Mod?.Name == "NoxusBoss") nox.Add(n.ModNPC.Name); }
+			var real = RiftSky.ReadReal();
+			string V(object o) => o == null ? "-" : o.ToString();
+			return "mood " + RiftMood.Phase + ", covered=" + real.covered + " scene=" + real.ongoing + " timer=" + real.timer + " waiting=" + real.waiting + " rift=" + real.rift + " snow=" + real.snow.ToString("F1") + ", defeated=" + RiftSky.Defeated
+				+ ", fight hush=" + global::Levy.Common.Death.NoxusFights.Hush + ", Avatar voice=" + global::Levy.Common.Compat.Wotg.AoeVoice.Active + ", genesis=" + WotgScenes.GenesisOn
+				+ ", Wrath of the Gods NPCs alive [" + string.Join(", ", nox) + "], overrides: hush=" + V(global::Levy.Common.Death.NoxusFights.Override) + " voice=" + V(WotgScenes.TestVoice) + " fight=" + V(WotgScenes.TestFight)
+				+ " avatar-on=" + V(global::Levy.Common.Compat.Wotg.AvatarFight.TestOn) + " avatar-void=" + V(global::Levy.Common.Compat.Wotg.AvatarFight.TestVoid) + " avatar-voice=" + V(global::Levy.Common.Compat.Wotg.AoeVoice.TestActive);
+		}
+
 		private static void Rift(List<SoldierNPC> army)
 		{
 			bool real = RiftSky.Installed && RiftSky.Problem.Length == 0;
 			Note(real ? "NoxusBoss is loaded: the real covering scene is run" : "NoxusBoss is not loaded: the covering is driven through the overrides (" + RiftSky.Problem + ")");
 			int chat0 = SoldierNPC.ChatterOverride; bool rain0 = Main.raining;
 			SoldierNPC.ChatterOverride = 1; Main.raining = false;
+			bool ml0 = NPC.downedMoonlord;
 			try
 			{
-				Main.dayTime = true; Main.time = 9000; RiftMood.Reset(); DialogueSystem.ResetRuntime();
+				Main.dayTime = true; Main.time = 9000; Note("the world as the rift check begins: " + WorldVoiceState());
+				// this check owns the sky it tests: an earlier check that killed Moon Lord leaves Wrath of the Gods armed or the sun covered, and Moon Lord's flag is what arms it again by itself
+				if (real) { NPC.downedMoonlord = false; RiftSky.SetReal(covered: false, eventTimer: 0, waiting: false, snowHeight: 0f, dukeKilled: false); }
+				RiftMood.Reset(); DialogueSystem.ResetRuntime();
 				int d0 = DialogueSystem.FloatingDelivered, a0 = SoldierNPC.ChatterLines;
 				RiftStep(RiftWindow);
 				int control = DialogueSystem.FloatingDelivered - d0, controlSaid = SoldierNPC.ChatterLines - a0;
@@ -333,6 +364,7 @@ namespace Levy.Common.Testing
 				_keepDuke = false;
 				Main.bloodMoon = false;
 				if (real) RiftSky.SetReal(covered: false, eventTimer: 0, waiting: false, snowHeight: 0f, dukeKilled: false);
+				NPC.downedMoonlord = ml0;
 				try { for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && (n.type == RiftSky.DukeType || n.ModNPC?.Mod.Name == RiftSky.ModName)) n.active = false; } } catch (Exception) { }
 				RiftSky.ClearOverrides(); RiftMood.Reset(); DialogueSystem.ResetRuntime();
 				SoldierNPC.ChatterOverride = chat0; Main.raining = rain0;

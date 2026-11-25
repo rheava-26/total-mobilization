@@ -75,6 +75,12 @@ namespace Levy.Common.Compat.Wotg
 			if (_ok && (_boss != null || _rift != null)) { try { _void = (bool)_tilesOff.GetValue(null); } catch (Exception) { _void = false; } }
 			if (TestVoid.HasValue && (_boss != null || _rift != null)) _void = TestVoid.Value;
 		}
+		/// <summary>A world was loaded or left: nothing read in the last one is kept (a new world's tick count starts over, and a read stamped with the same tick number would answer with the last world's Avatar).</summary>
+		internal static void Reset()
+		{
+			_stamp = uint.MaxValue; _boss = null; _rift = null; _void = false; _state = null;
+			_zoneStamp = uint.MaxValue; _zones.Clear();
+		}
 		/// <summary>Self-check: pretend the dimension is up (true) or down (false); null = read the game.</summary>
 		internal static bool? TestVoid;
 

@@ -136,8 +136,9 @@ namespace Levy.Common.Testing
 
 		private static void Housekeeping()
 		{
-			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !n.friendly && !n.townNPC && n.ModNPC == null) n.active = false; }
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (n.active && !n.friendly && !n.townNPC && n.ModNPC == null) { n.active = false; Housekept++; } }
 		}
+		private static int Housekept;   // natural enemies the world spawned and this check removed (read per calm window: a world that stopped spawning shows 0)
 
 		private static void KeepCommander()
 		{
@@ -173,6 +174,9 @@ namespace Levy.Common.Testing
 			try
 			{
 				Clear(); AvatarFight.TestVoid = null;
+				// Calamity puts its "Boss Effects" buff (it stops the world's own enemies spawning near the player) on a player while a boss is up. The stand-in commander does not seem to be updated like a player (INFERRED), so the buff's two ticks
+				// never run out once the Avatar is gone and the world stays empty of enemies (seen: 33 enemies met in two minutes before the scenes, 0 after). Every buff the fight put on him is taken off.
+				Player cp = Main.player[0]; if (cp != null) for (int b = 0; b < cp.buffType.Length; b++) if (cp.buffType[b] > 0) { cp.buffType[b] = 0; cp.buffTime[b] = 0; }
 				for (int i = 0; i < Main.maxNPCs; i++)
 				{
 					NPC n = Main.npc[i];
@@ -417,6 +421,7 @@ namespace Levy.Common.Testing
 				var lines = global::Levy.Common.Dialogue.DialogueTable.Get(trig);
 				Note($"plain callout pool {trig}: {lines?.Count ?? 0} lines, {lines?.Count(AoeVoice.LineIsPlainPublic) ?? 0} that anyone may say (temperament Any, no tag, no placeholder but the commander's name)");
 			}
+			var calmBefore = CalmWindow();   // the same army, the same night, no Avatar: what "usual" is in this world, read before any scene runs
 			var results = new List<(Scn s, Result off, Result on)>();
 			for (int i = 0; i < All.Length; i++)
 			{
@@ -429,6 +434,64 @@ namespace Levy.Common.Testing
 				results.Add((s, off, on)); if (mid != null) _mids[s.Name] = mid;
 			}
 			Report(results);
+			AfterTheFight(calmBefore);
+		}
+
+		/// <summary>What an army with no Avatar says and feels over two minutes: floating lines, how many are not a plain combat callout (the ordinary chat), the rift mood, and every reading that would hush or redirect it.</summary>
+		private sealed record Calm(int Lines, int Ordinary, RiftPhase Phase, bool Active, bool Applies, bool Voice, bool Hush, bool Void, int Alive, string State, int Picked, int Held, int HushDropped, int Met, string World);
+		private const int CalmTicks = 7200;
+
+		/// <summary>Report text: what else is in the world with the army (live NPCs that are not levies, projectiles) and what the commander stands in.</summary>
+		private static string Census()
+		{
+			var seen = new Dictionary<string, int>();
+			for (int i = 0; i < Main.maxNPCs; i++) { NPC n = Main.npc[i]; if (!n.active || n.ModNPC is SoldierNPC) continue; string k = (n.ModNPC != null ? n.ModNPC.Mod.Name + "/" + n.ModNPC.Name : n.TypeName) + (n.friendly ? "(f)" : ""); seen[k] = seen.GetValueOrDefault(k) + 1; }
+			int proj = 0; for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active) proj++;
+			Player p = Main.player[0];
+			var zones = new List<string>(); if (p.ZoneSnow) zones.Add("snow"); if (p.ZoneDungeon) zones.Add("dungeon"); if (p.ZoneUnderworldHeight) zones.Add("underworld"); if (p.ZoneCorrupt) zones.Add("corrupt"); if (p.ZoneCrimson) zones.Add("crimson"); if (p.ZoneHallow) zones.Add("hallow"); if (p.ZoneJungle) zones.Add("jungle"); if (p.ZoneBeach) zones.Add("beach"); if (p.ZoneRockLayerHeight) zones.Add("cavern"); if (p.ZoneDirtLayerHeight) zones.Add("underground"); if (p.ZoneGraveyard) zones.Add("graveyard");
+			var buffs = new List<string>(); for (int b = 0; b < p.buffType.Length; b++) if (p.buffType[b] > 0 && p.buffTime[b] > 0) buffs.Add(p.buffType[b] >= BuffID.Count ? ((ModContent.GetModBuff(p.buffType[b]) is ModBuff mb ? mb.Mod.Name + "/" + mb.Name : "mod" + p.buffType[b]) + ":" + p.buffTime[b]) : p.buffType[b].ToString());
+			return $"buffs [{string.Join(",", buffs)}] npcs [{string.Join(", ", seen.Select(kv => kv.Key + "x" + kv.Value))}] projectiles {proj} commander zones [{string.Join(",", zones)}] life {p.statLife} dead {p.dead} ghost {p.ghost} time {(int)Main.time} day {Main.dayTime} snowing {Main.snowing}";
+		}
+
+		private static Calm CalmWindow(int seed = 4243)
+		{
+			// every override the scenes set is dropped: this reads the game, as a player's world would
+			AvatarFight.TestOn = null; AvatarFight.TestZones = null; AvatarFight.TestVoid = null; AoeVoice.TestActive = null; WotgScenes.TestVoice = null;
+			Cleanup(); Arena(); Main.rand = new Terraria.Utilities.UnifiedRandom(seed); Main.GameMode = GameModeID.Master; Main.hardMode = true;   // as the scenes leave the world
+			_anchor = new Vector2(Cx * 16f, (FloorY - 12) * 16f); _cmdAt = _anchor; _boss = null;
+			KeepCommander(); Step(2);
+			var levies = new List<SoldierNPC>();
+			for (int k = 0; k < 6; k++) { var l = Levy(k, Cls.Foot, new Vector2((Cx + (k - 3) * 3f) * 16f, FloorY * 16f)); if (l != null) levies.Add(l); }
+			Step(60);
+			int chat0 = SoldierNPC.ChatterOverride; var log0 = AoeVoice.FloatLog;
+			try
+			{
+				SoldierNPC.ChatterOverride = 1; DialogueSystem.ResetRuntime();
+				int hk0 = Housekept, pick0 = SoldierNPC.ChatterLines, held0 = RiftMood.FloatingHeld, drop0 = global::Levy.Common.Death.NoxusFights.HushDropped;
+				AoeVoice.FloatLog = new List<(byte trigger, string text)>();
+				for (int t = 0; t < CalmTicks; t++)
+				{
+					foreach (SoldierNPC l in levies) { NPC n = l.NPC; if (n.active) { n.dontTakeDamage = true; n.life = n.lifeMax; } }
+					Step(1);
+				}
+				var log = AoeVoice.FloatLog;
+				return new Calm(log.Count, log.Count(f => !AoeVoice.IsPlainText(f.text)), RiftMood.Phase, AvatarFight.Active, AvatarFight.Applies, AoeVoice.Active, global::Levy.Common.Death.NoxusFights.Hush, AvatarFight.Void, levies.Count(l => l.NPC.active), AvatarFight.State ?? "-",
+					SoldierNPC.ChatterLines - pick0, RiftMood.FloatingHeld - held0, global::Levy.Common.Death.NoxusFights.HushDropped - drop0, Housekept - hk0,
+					$"natural enemies met {Housekept - hk0}, by trigger [{string.Join(", ", AoeVoice.FloatLog.GroupBy(f => f.trigger).Select(g => (g.Key == byte.MaxValue ? "plain" : ((DialogueTrigger)g.Key).ToString()) + "x" + g.Count()))}] raining={Main.raining} bloodMoon={Main.bloodMoon} eclipse={Main.eclipse} mode={Main.GameMode} hard={Main.hardMode} chatter={SoldierNPC.ChatterOverride} {Census()}");
+			}
+			finally { SoldierNPC.ChatterOverride = chat0; AoeVoice.FloatLog = log0; Cleanup(); }
+		}
+
+		/// <summary>The fight is over (every Avatar gone, the rift closed): the army talks as before, the mood is the sky's own, and nothing of the fight is still switched on.</summary>
+		private static void AfterTheFight(Calm before)
+		{
+			var after = CalmWindow();
+			Note($"two minutes with no Avatar, before the scenes: {before.Lines} floating lines ({before.Ordinary} not plain callouts), mood {before.Phase} (picked {before.Picked}, thinned by the mood {before.Held}, held by the hush {before.HushDropped}; {before.World}); after the last scene: {after.Lines} floating lines ({after.Ordinary} not plain callouts), mood {after.Phase} (picked {after.Picked}, thinned by the mood {after.Held}, held by the hush {after.HushDropped}; {after.World}); Avatar up {after.Active}, fight behaviour {after.Applies}, fight voice {after.Voice}, fight hush {after.Hush}, dimension {after.Void}, state {after.State}");
+			Check($"after the fight nothing of it is still on (Avatar up {after.Active}, behaviour {after.Applies}, voice {after.Voice}, hush {after.Hush}, dimension {after.Void})", !after.Active && !after.Applies && !after.Voice && !after.Hush && !after.Void);
+			Check($"after the fight the mood is the sky's own again ({after.Phase}, as before the fight: {before.Phase})", after.Phase == before.Phase && after.Phase != RiftPhase.Silent);
+			Check($"after the fight the army chats as before ({after.Lines} floating lines in two minutes, {before.Lines} before)", after.Alive == before.Alive && after.Lines >= 2 && after.Lines * 2 >= before.Lines);
+			Check($"after the fight the ordinary chat is back, not only the plain callouts ({after.Ordinary} of {after.Lines} lines are not plain callouts, {before.Ordinary} of {before.Lines} before)", before.Ordinary == 0 || after.Ordinary >= 1);
+			Check($"after the fight the world's own enemies come again, so nothing the fight left on the commander keeps the world empty ({after.Met} enemies met in two minutes, {before.Met} before)", before.Met == 0 || after.Met > 0);
 		}
 
 		private static readonly Dictionary<string, Result> _mids = new();

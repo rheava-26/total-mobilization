@@ -402,7 +402,10 @@ namespace Levy.Common.Testing
 			double sdB = boxed.All.SdSum / Math.Max(1, boxed.All.SdN), sdO = open.All.SdSum / Math.Max(1, open.All.SdN);
 			double fAirB = 100.0 * boxed.Flier.AirTicks / Math.Max(1, boxed.Flier.BodyTicks), fAirO = 100.0 * open.Flier.AirTicks / Math.Max(1, open.Flier.BodyTicks);
 			Check($"{tag}: the arena box does not pin the army: wall time {F(wall)}% and hugging with the commander far off {F(hug)}%", wall <= 25.0 && hug <= 8.0);
-			Check($"{tag}: the army uses the box's height as it uses open sky: height spread {F(sdB)} tiles against {F(sdO)} in the open", sdB >= 0.6 * sdO);
+			// The open-sky control has the world's ground under it. In the Sky shape (the box floats 33 tiles over empty air) that ground is far below the box floor, so the control's foot soldiers sit 33 tiles lower than any body in the box
+			// can stand: its spread is not a spread the box can match. There the box is judged by the height bands the army reaches (the control's count is the bar) instead of by spread.
+			if (tag == "Sky") { int bB = boxed.All.Bands.Count, bO = open.All.Bands.Count; Check($"{tag}: the army reaches as many height bands in the box as in the open: {bB} against {bO} (height spread {F(sdB)} against {F(sdO)} tiles; the open run's ground is 33 tiles below the box floor)", bB >= bO); }
+			else Check($"{tag}: the army uses the box's height as it uses open sky: height spread {F(sdB)} tiles against {F(sdO)} in the open", sdB >= 0.6 * sdO);
 			Check($"{tag}: levies with wings fly in the box: airborne {F(fAirB)}% against {F(fAirO)}% in the open", fAirB >= 0.6 * fAirO);
 		}
 	}

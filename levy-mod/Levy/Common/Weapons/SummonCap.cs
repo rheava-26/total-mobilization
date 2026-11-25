@@ -104,7 +104,6 @@ namespace Levy.Common.Weapons
 					p.slotsMinions = 0f;
 					bool few = plenty && mi.CanUseItem(p);
 					needs = plenty && !few;
-					if (Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP_DEBUG") == "1") ModContent.GetInstance<Levy>()?.Logger.Info($"HARNESS-NEEDSLOTS {it.Name} slots={slots} plenty={plenty} few={few}");
 				}
 			}
 			catch (Exception) { needs = false; }
